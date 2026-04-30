@@ -162,8 +162,8 @@ export const LESSONS_MVP = Object.freeze([
     shortDescription: 'Comprometer trajetória mesmo sem ver a saída.',
     objective: 'Manter ponto de freio e giro em curvas sem visibilidade total.',
     phaseWeights: { [Phase.ENTRADA]: 1.0 },
-    requiredSignals: [Signal.LAT, Signal.LNG, Signal.KMH, Signal.TRAJETORIA],
-    optionalSignals: [Signal.HEADING],
+    requiredSignals: [Signal.LAT, Signal.LNG, Signal.KMH],
+    optionalSignals: [Signal.HEADING, Signal.TRAJETORIA],
     applicableCornerTypes: [CornerType.LENTA, CornerType.MEDIA],
     preferredMessageCodes: ['M060', 'M061', 'M062'],
     successCriteria: {
