@@ -25,6 +25,7 @@
 import { P1Coach } from '../src/domain/p1-coach.js';
 import { Phase } from '../src/domain/lesson-schema.js';
 import { TrackSegments } from '../src/domain/track-segment.js';
+import { TrajectoryMonitor } from '../src/domain/trajectory-monitor.js';
 
 // Limiares idênticos a src/telemetry/fase-curva.js — manter em sincronia.
 const LIMIAR_FREIO_G = -0.35;
