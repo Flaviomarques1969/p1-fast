@@ -64,7 +64,9 @@ Camadas novas (autocontidas, não tocam nada do pipeline atual):
 | `src/data/lesson-library.js` | 12 lições — 7 MVP (`active: true`) + 5 Fase 2 (`active: false`). |
 | `src/data/coach-phrases.js` | Catálogo `M### → texto 2..3 palavras`. SEPARADO de `pipeline/phrases.js`. |
 | `src/domain/p1-coach.js` | Engine: ciclo `startLearningSession → onSegmentEnter → consume → onSegmentExit → onLapEnd`. |
-| `tests/node-smoke-p1-coach.mjs` | 22 asserts (schema, blacklist, gating, cooldown, foco, BAIXA confidence). |
+| `src/domain/trajectory-monitor.js` | Avalia desvios em metros (ponto de freio, giro, tração, entrada, apex) vs volta-ref. Fecha o loop de successCriteria de L001/L007. |
+| `tests/node-smoke-p1-coach.mjs` | 28 asserts (schema, blacklist, gating, cooldown, foco, BAIXA confidence, E2E). |
+| `tests/node-smoke-trajectory-monitor.mjs` | 20 asserts (detecção de eventos, distância em metros, fallback sem IMU, successCriteria). |
 
 ---
 
