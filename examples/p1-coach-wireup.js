@@ -56,27 +56,34 @@ function makeFaseLiveStateMachine() {
 }
 
 /**
- * Liga o P1 Coach ao pipeline. Retorna handle com `start/stop` e o
- * coach instanciado para a UI controlar a sessão de aprendizado.
+ * Liga o P1 Coach ao pipeline. Retorna handle com `start/stop`, o
+ * coach e o monitor de trajetória instanciados para a UI controlar a
+ * sessão de aprendizado.
  *
  * @param {object} deps
  * @param {object} deps.detector       instância de Detector
  * @param {object} deps.sampleBus      instância do sample-bus (sub a samples)
  * @param {function} deps.onMessage    UI consumer; recebe CoachMessage
- * @returns {{coach: P1Coach, stop: ()=>void}}
+ * @param {function} [deps.onLessonEvaluated]  recebe { lessonId, segmentId, result }
+ * @param {function} [deps.getRefSamples]      (segmentId) → Array<sample>|null
+ * @returns {{coach: P1Coach, monitor: TrajectoryMonitor, stop: ()=>void}}
  */
-export function wireUpP1Coach({ detector, sampleBus, onMessage }) {
+export function wireUpP1Coach({ detector, sampleBus, onMessage,
+                                onLessonEvaluated = null,
+                                getRefSamples = () => null } = {}) {
   const coach = new P1Coach({ onMessage });
+  const monitor = new TrajectoryMonitor();
   const fase = makeFaseLiveStateMachine();
   let currentSegment = null;          // TrackSegment enriquecido
-  let currentVelMinima = null;        // streaming V-min dentro do trecho atual
+  let currentVelMinima = null;        // streaming V-min
+  let currentBuffer = [];             // amostras do trecho atual (alimenta o monitor no fim)
 
-  // ── Sample → coach.consume ──
+  // ── Sample → coach.consume + buffer pro monitor ──
   const offSample = sampleBus.attach('p1-coach', async (sample) => {
     if (!currentSegment) return;       // só faz coaching dentro de trecho
 
-    // Atualiza V-min live (fase-curva calcula no fim, mas pra coaching
-    // queremos a info parcial já durante o MEIO).
+    currentBuffer.push(sample);
+
     if (sample.kmh != null) {
       if (currentVelMinima == null || sample.kmh < currentVelMinima) {
         currentVelMinima = sample.kmh;
@@ -84,36 +91,64 @@ export function wireUpP1Coach({ detector, sampleBus, onMessage }) {
     }
 
     const faseAtual = fase.next(sample);
+    // Sinaliza presença de referência: trajetoria fica no Set se o
+    // caller tiver volta-ref para este trecho. Permite L001/L007
+    // entrarem como elegíveis com sinal canônico.
+    const refDisponivel = !!getRefSamples(currentSegment.id);
+    const augmentedSnap = { ...sample };
+    if (refDisponivel) augmentedSnap.trajetoriaMatch = true;
+
     const faseStats = {
       velEntrada: currentSegment.velEntradaSnapshot ?? null,
       velMinima:  currentVelMinima,
-      // velSaida e apexT só existem no fim do trecho — coach não exige
     };
-    const signals = P1Coach.signalsFromSnapshot(sample, faseStats);
+    const signals = P1Coach.signalsFromSnapshot(augmentedSnap, faseStats);
     coach.consume({ faseCurva: faseAtual, snapshot: sample, signals });
   });
 
-  // ── Detector → coach.onSegmentEnter/Exit ──
+  // ── Detector → coach.onSegmentEnter/Exit + monitor ──
   const offSegStart = detector.onSegmentStart(async (ev) => {
-    // Detector emite só { segmentId, ... }. Enriquecemos com TrackSegments.
     const seg = await TrackSegments.get(ev.segmentId);
     if (!seg) return;
     currentSegment = { ...seg, velEntradaSnapshot: ev.velEntrada };
     currentVelMinima = ev.velEntrada ?? null;
+    currentBuffer = [];
     fase.reset();
 
-    // Sinais ainda não derivados nesse instante — usamos um snapshot
-    // mínimo só com velEntrada para deixar o coach eleger lição com
-    // o que tem.
     const stubSnapshot = { kmh: ev.velEntrada, lat: 0, lng: 0, accLong: 0 };
+    if (getRefSamples(seg.id)) stubSnapshot.trajetoriaMatch = true;
     const signals = P1Coach.signalsFromSnapshot(stubSnapshot, { velEntrada: ev.velEntrada });
     coach.onSegmentEnter(seg, signals);
   });
 
   const offSegEnd = detector.onSegmentEnd(() => {
+    // Avalia trajetória contra a referência (se houver) — aqui é onde
+    // o successCriteria de L001/L007 é medido.
+    if (currentSegment && currentBuffer.length) {
+      const refSamples = getRefSamples(currentSegment.id);
+      if (refSamples?.length) {
+        monitor.recordSegment({
+          segmentId: currentSegment.id,
+          samples:   currentBuffer,
+          refSamples,
+        });
+        if (onLessonEvaluated) {
+          // Avalia ambas as lições centradas em referência — silencioso
+          // se não bateu o successCriteria ainda.
+          for (const lessonId of ['L001-referencia-fixa', 'L007-curva-cega']) {
+            const result = monitor.evaluateLesson({ lessonId, segmentId: currentSegment.id });
+            if (result.cumpriu) {
+              try { onLessonEvaluated({ lessonId, segmentId: currentSegment.id, result }); }
+              catch { /* listener falho não derruba o handle */ }
+            }
+          }
+        }
+      }
+    }
     coach.onSegmentExit();
     currentSegment = null;
     currentVelMinima = null;
+    currentBuffer = [];
     fase.reset();
   });
 
@@ -122,12 +157,14 @@ export function wireUpP1Coach({ detector, sampleBus, onMessage }) {
   // ── shutdown ──
   return {
     coach,
+    monitor,
     stop() {
       offSample?.();
       offSegStart?.();
       offSegEnd?.();
       offLap?.();
       coach.endLearningSession();
+      monitor.reset();
     },
   };
 }
