@@ -1,4 +1,17 @@
-// Smoke unificado Fase 3 (contratos) — T-010..T-018
+// Smoke de contratos do P1 Fast — T-011, T-013, T-016, T-018
+//
+// Histórico: este arquivo era originalmente "Smoke unificado Fase 3
+// (contratos) — T-010..T-018" no FAM Racing, com 7 testes. Na extração
+// 2026-04-30 do P1 Fast, três testes ficaram órfãos por dependerem de
+// módulos do cockpit (UI legada) que NÃO foram extraídos:
+//
+//   • T-010 SPEC_MENSAGENS — `docs/SPEC_MENSAGENS.md` ficou no FAM Racing
+//   • T-014 broker active-msg — `src/cockpit/message-broker.js`,
+//     `cockpit-state.js`, `audio-cue.js` são UI e ficaram no FAM Racing
+//   • T-017 Origem.DETECTOR — depende do enum `Origem` do message-broker
+//
+// Ver `README.md` §"O que NÃO está aqui (intencional)". Se o broker
+// algum dia for promovido a domínio (sem deps DOM), os testes voltam.
 
 import 'fake-indexeddb/auto';
 import Dexie from 'dexie';
@@ -6,11 +19,6 @@ globalThis.Dexie = Dexie;
 if (typeof window === 'undefined') globalThis.window = { screen:{width:390,height:844}, devicePixelRatio:3 };
 if (typeof localStorage === 'undefined') globalThis.localStorage = { _s:new Map(), getItem(k){return this._s.get(k)??null}, setItem(k,v){this._s.set(k,String(v))}, removeItem(k){this._s.delete(k)}, clear(){this._s.clear()} };
 
-// Imports dinâmicos após polyfills
-const { readFile } = await import('node:fs/promises');
-const { Origem, Prioridade, MessageBroker, OverloadFilter } = await import('../src/cockpit/message-broker.js');
-const { CockpitState } = await import('../src/cockpit/cockpit-state.js');
-const { AudioCue } = await import('../src/cockpit/audio-cue.js');
 const { Scores } = await import('../src/domain/score.js');
 const { Detector } = await import('../src/telemetry/detector.js');
 const { ProviderState } = await import('../src/telemetry/provider.js');
@@ -22,20 +30,6 @@ async function t(name, fn) {
   catch (e) { console.log('✗', name, '—', e.message); fail++; }
 }
 
-// T-010: SPEC_MENSAGENS tem nota de prioridade (CRITICAL↔CRITICAL, BOX_MANUAL↔HIGH, etc.)
-await t('T-010: SPEC_MENSAGENS cita nota operacional de prioridade', async () => {
-  const txt = await readFile('docs/SPEC_MENSAGENS.md', 'utf8');
-  if (!txt.includes('CRITICAL / BOX_MANUAL / PEDAGOGICAL / CONFIRMATION')) {
-    throw new Error('nota de aliases ausente');
-  }
-});
-
-// T-017: Origem.DETECTOR não existe mais
-await t('T-017: Origem não tem DETECTOR', () => {
-  if (Origem.DETECTOR !== undefined) throw new Error('DETECTOR ainda presente');
-  if (!Origem.SISTEMA || !Origem.BOX || !Origem.IA) throw new Error('enum quebrado');
-});
-
 // T-011: ProviderState tem todos os valores
 await t('T-011: ProviderState enum completo', () => {
   for (const k of ['IDLE','RUNNING','PAUSED','STOPPED','ERROR']) {
@@ -45,6 +39,7 @@ await t('T-011: ProviderState enum completo', () => {
 
 // T-011: grep files por literal strings
 await t('T-011: device-provider e mock-provider sem literais crus', async () => {
+  const { readFile } = await import('node:fs/promises');
   const a = await readFile('src/telemetry/device-provider.js', 'utf8');
   const b = await readFile('src/telemetry/mock-provider.js', 'utf8');
   if (a.includes("this.state = 'error'") || a.includes('this.state = "error"')) throw new Error('device literal');
@@ -75,18 +70,6 @@ await t('T-013: Scores.compensado com P3 null marca parcial + score ≠ null', (
   if (s.parciaisConsideradas !== 2) throw new Error('pc=' + s.parciaisConsideradas);
   if (!s.parcial) throw new Error('parcial false inesperado');
   if (!s.explicacao?.includes('parciais')) throw new Error('explicação não marca parcial: ' + s.explicacao);
-});
-
-// T-014: broker audita active-block
-await t('T-014: broker audita bloqueio por active-msg simétrico aos filter-blocks', async () => {
-  const st = new CockpitState();
-  const audio = new AudioCue({ muted: true });
-  const broker = new MessageBroker({ state: st, filter: new OverloadFilter(), audio });
-  broker.critical('ALERTA');
-  broker.pedagogical('x', 'S1');  // bloqueado por active-msg
-  const hist = broker.history;
-  const bloqueadosPorAtivo = hist.filter(h => h.razao === 'ja-ha-ativo-de-maior-ou-igual-prioridade');
-  if (bloqueadosPorAtivo.length !== 1) throw new Error('esperado 1, veio ' + bloqueadosPorAtivo.length);
 });
 
 // T-016: Detector.onLap/onSegmentEnd retornam unsubscribe
