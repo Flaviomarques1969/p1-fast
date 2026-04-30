@@ -1,235 +1,167 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=430,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>Mockup · HOME vazio · FAM Racing</title>
+<title>Mockup HOME vazio — P1 Fast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: oklch(12% 0.020 290);
-  --aurora-a: oklch(60% 0.18 320 / .35);
-  --aurora-b: oklch(72% 0.14 200 / .28);
-  --surface: oklch(22% 0.030 290 / .8);
-  --surface-2: oklch(28% 0.025 290 / .6);
-  --hairline: oklch(35% 0.025 290 / .6);
-  --ink: oklch(98% 0.005 290);
-  --ink-soft: oklch(78% 0.020 290);
-  --ink-faint: oklch(58% 0.025 290);
-  --accent-a: oklch(76% 0.18 320);
-  --accent-b: oklch(82% 0.14 200);
-  --glow-a: oklch(76% 0.18 320 / .35);
-  --r-md: 18px;
-  --r-pill: 999px;
-  --spring: cubic-bezier(.34, 1.56, .64, 1);
-  --dur-2: 220ms;
+:root{
+  --bg: oklch(20% 0.005 240);
+  --surface: oklch(24% 0.005 240);
+  --surface-2: oklch(28% 0.005 240);
+  --hairline: oklch(33% 0.005 240);
+  --text: oklch(95% 0.003 240);
+  --text-2: oklch(75% 0.01 240);
+  --text-3: oklch(58% 0.012 240);
+  --accent: oklch(78% 0.13 235);
+  --accent-2: oklch(82% 0.10 235 / .15);
+  --radius: 12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{
+  min-height:100dvh;width:100vw;
+  background:linear-gradient(160deg, oklch(22% 0.005 240) 0%, oklch(18% 0.005 240) 100%);
+  color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  font-weight:400;
+}
+body{padding:0 0 96px;}
+
+.app{
+  max-width:430px;margin:0 auto;
+  padding:16px 24px 0;
+  min-height:calc(100dvh - 96px);
+  display:flex;flex-direction:column;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-html, body {
-  min-height: 100dvh;
-  width: 100vw;
-  background: var(--bg);
-  color: var(--ink);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
+.header{padding:14px 4px 18px;}
+.header__brand{
+  font-size:11px;font-weight:600;
+  letter-spacing:.18em;color:var(--text-3);
+  text-transform:uppercase;
 }
 
-body { position: relative; padding: 0 0 96px; }
-
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(80% 60% at 90% 0%, var(--aurora-a), transparent 65%),
-    radial-gradient(80% 60% at 0% 100%, var(--aurora-b), transparent 65%);
-  pointer-events: none;
-  z-index: 0;
+.empty{
+  flex:1 1 auto;
+  display:flex;flex-direction:column;
+  align-items:stretch;justify-content:center;
+  text-align:left;
+  padding:24px 4px 80px;gap:18px;
 }
 
-.app {
-  position: relative;
-  z-index: 1;
-  max-width: 430px;
-  margin: 0 auto;
-  padding: 16px 24px 0;
-  min-height: calc(100dvh - 96px);
-  display: flex;
-  flex-direction: column;
+.empty__eyebrow{
+  align-self:flex-start;
+  display:inline-flex;align-items:center;gap:7px;
+  padding:5px 12px;
+  background:var(--accent-2);
+  border:1px solid oklch(78% 0.13 235 / .35);
+  border-radius:999px;
+  font-size:10px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);
+}
+.empty__eyebrow__dot{
+  width:5px;height:5px;border-radius:50%;
+  background:currentColor;
 }
 
-.header {
-  padding: 12px 4px 18px;
-}
-.header__brand {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  color: var(--ink-faint);
+.empty__title{
+  font-size:28px;font-weight:600;
+  letter-spacing:-.025em;line-height:1.15;
+  color:var(--text);
 }
 
-.empty {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 32px 12px 80px;
-  gap: 22px;
+.empty__sub{
+  font-size:14px;font-weight:400;
+  color:var(--text-2);line-height:1.5;
+  max-width:340px;
 }
 
-.empty__eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  background: oklch(76% 0.18 320 / .15);
-  border: 1px solid oklch(76% 0.18 320 / .35);
-  border-radius: var(--r-pill);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  color: var(--accent-a);
+.empty__bullets{
+  display:flex;flex-direction:column;gap:10px;
+  margin:6px 0 4px;
 }
-.empty__eyebrow__dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--accent-a);
-  box-shadow: 0 0 6px var(--glow-a);
+.empty__bullet{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:14px 16px;
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
 }
+.empty__bullet-num{
+  flex:0 0 auto;
+  width:26px;height:26px;border-radius:50%;
+  background:var(--accent);
+  color:oklch(12% 0.005 240);
+  font-size:13px;font-weight:600;
+  font-variant-numeric:tabular-nums;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+.empty__bullet-body{
+  flex:1 1 auto;
+  font-size:13px;line-height:1.45;
+  color:var(--text-2);
+}
+.empty__bullet-body strong{color:var(--text);font-weight:600;}
 
-.empty__title {
-  font-size: 32px;
-  font-weight: 700;
-  letter-spacing: -0.035em;
-  line-height: 1.1;
-  background: linear-gradient(135deg, oklch(98% 0.005 290), oklch(82% 0.06 280));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.btn--cta{
+  margin-top:6px;
+  padding:16px 22px;
+  background:var(--accent);
+  color:oklch(12% 0.005 240);
+  border:0;border-radius:var(--radius);
+  font-family:inherit;
+  font-size:15px;font-weight:600;
+  letter-spacing:-.005em;cursor:pointer;
+  box-shadow:0 10px 28px oklch(78% 0.13 235 / .25);
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
 }
+.btn--cta:hover{background:oklch(82% 0.14 235);}
+.btn--cta:active{transform:scale(.97);}
+.btn--cta__plus{font-size:18px;font-weight:500;line-height:1;}
 
-.empty__sub {
-  font-size: 15px;
-  font-weight: 400;
-  color: var(--ink-soft);
-  line-height: 1.5;
-  max-width: 320px;
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:40;
+  background:oklch(18% 0.005 240 / .92);
+  -webkit-backdrop-filter:blur(20px) saturate(140%);
+  backdrop-filter:blur(20px) saturate(140%);
+  border-top:1px solid var(--hairline);
+  padding:10px 0 22px;
+  display:grid;grid-template-columns:repeat(4,1fr);
 }
-
-.empty__bullets {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-self: stretch;
-  margin: 6px 0 8px;
+.bottom-nav__item{
+  background:transparent;border:0;padding:8px 6px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  font-family:inherit;font-size:10px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text-3);
+  transition:color .18s;
 }
-.empty__bullet {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--surface);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-md);
-  text-align: left;
+.bottom-nav__item[data-on="true"]{color:var(--accent);}
+.bottom-nav__dot{
+  width:5px;height:5px;border-radius:50%;
+  background:transparent;transition:background .18s;
 }
-.empty__bullet-num {
-  flex: 0 0 auto;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
-  color: oklch(15% 0 0);
-  font-size: 12px;
-  font-weight: 800;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.empty__bullet-body {
-  flex: 1 1 auto;
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--ink-soft);
-}
-.empty__bullet-body strong { color: var(--ink); font-weight: 600; }
-
-.btn--cta {
-  align-self: stretch;
-  min-height: 60px;
-  padding: 18px 22px;
-  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
-  color: oklch(15% 0 0);
-  border: 0;
-  border-radius: var(--r-pill);
-  font-family: inherit;
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -0.005em;
-  cursor: pointer;
-  box-shadow: 0 14px 36px var(--glow-a);
-  transition: transform var(--dur-2) var(--spring);
-}
-.btn--cta:active { transform: scale(.97); }
-
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 40;
-  background: oklch(14% 0.025 290 / .85);
-  backdrop-filter: blur(24px) saturate(140%);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
-  border-top: 1px solid var(--hairline);
-  padding: 8px 0 20px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-}
-.bottom-nav__item {
-  background: transparent;
-  border: 0;
-  padding: 8px 6px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  font-family: inherit;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--ink-faint);
-}
-.bottom-nav__item[data-on="true"] { color: var(--accent-a); }
-.bottom-nav__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: transparent;
-}
-.bottom-nav__item[data-on="true"] .bottom-nav__dot {
-  background: var(--accent-a);
-  box-shadow: 0 0 6px var(--glow-a);
+.bottom-nav__item[data-on="true"] .bottom-nav__dot{
+  background:var(--accent);
 }
 </style>
 </head>
 <body>
 <div class="app">
   <header class="header">
-    <span class="header__brand">FAM RACING</span>
+    <span class="header__brand">FAM Racing</span>
   </header>
 
   <section class="empty">
-    <span class="empty__eyebrow"><span class="empty__eyebrow__dot"></span>VAMOS COMEÇAR</span>
+    <span class="empty__eyebrow"><span class="empty__eyebrow__dot"></span>Vamos começar</span>
     <h1 class="empty__title">Cadastre seu primeiro evento</h1>
-    <p class="empty__sub">O FAM Racing organiza o ritual completo de track day — antes, durante e depois.</p>
+    <p class="empty__sub">O P1 Fast organiza o ritual completo de track day — antes, durante e depois.</p>
 
     <div class="empty__bullets">
       <div class="empty__bullet">
@@ -246,15 +178,15 @@ body::before {
       </div>
     </div>
 
-    <button class="btn--cta" type="button">+ Novo evento</button>
+    <button class="btn--cta" type="button"><span class="btn--cta__plus">+</span>Novo evento</button>
   </section>
 </div>
 
 <nav class="bottom-nav">
-  <button class="bottom-nav__item" type="button" data-on="true"><span class="bottom-nav__dot"></span>HOME</button>
-  <button class="bottom-nav__item" type="button"><span class="bottom-nav__dot"></span>EVENTOS</button>
-  <button class="bottom-nav__item" type="button"><span class="bottom-nav__dot"></span>PENDÊNCIAS</button>
-  <button class="bottom-nav__item" type="button"><span class="bottom-nav__dot"></span>GARAGEM</button>
+  <button class="bottom-nav__item" type="button" data-on="true"><span class="bottom-nav__dot"></span>Home</button>
+  <button class="bottom-nav__item" type="button"><span class="bottom-nav__dot"></span>Eventos</button>
+  <button class="bottom-nav__item" type="button"><span class="bottom-nav__dot"></span>Pendências</button>
+  <button class="bottom-nav__item" type="button"><span class="bottom-nav__dot"></span>Garagem</button>
 </nav>
 </body>
 </html>
