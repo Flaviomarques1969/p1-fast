@@ -291,16 +291,24 @@ t('AUDIT: TODAS as 7 lições MVP ativam com snapshot real iPhone (sem T4000)', 
   }
 });
 
-t('AUDIT: NENHUMA lição Fase 2 ativa só com iPhone (deve esperar sensores)', () => {
+t('AUDIT: lições Fase 2 que dependem de sensor único realmente ativam só com sensor', () => {
+  // L101/L103/L104 declaram steering ou slip — esses não chegam no iPhone.
+  // L102 (círculo de grip) e L105 (zebra) têm requiredSignals que o iPhone
+  // produz; o bloqueio efetivo delas vem de `active: false` (roadmap), não
+  // de gating de sinais. Esse teste documenta a separação.
   const signals = P1Coach.signalsFromSnapshot(SNAPSHOT_REAL_IPHONE, FASE_STATS_REAL);
-  for (const lesson of LESSONS_PHASE_2) {
-    // L102 (círculo de grip) tecnicamente só pede accLat/accLong/phase — esses
-    // chegam no iPhone também. Mas é Fase 2 por active=false, e o coach filtra
-    // por active. Aqui validamos só o gating de sinais — L102 PODE passar.
-    if (lesson.id === 'L102-circulo-de-grip') continue;
-    if (canActivate(lesson, signals)) {
-      throw new Error(`Fase 2 ${lesson.id} ativou só com iPhone — precisa de sensor extra`);
-    }
+  const sensorOnly = ['L101-volante-continuo', 'L103-pneu-arrastando', 'L104-controle-sobresterco'];
+  for (const id of sensorOnly) {
+    const l = LESSONS_PHASE_2.find(x => x.id === id);
+    if (canActivate(l, signals)) throw new Error(`${id} ativou sem sensor extra`);
+  }
+});
+
+t('AUDIT: activeLessons() não retorna nenhuma Fase 2 (gating duro de roadmap)', () => {
+  // Mesmo que sinais bastem, Fase 2 fica fora do pool até `active: true`.
+  const phase2Ids = new Set(LESSONS_PHASE_2.map(l => l.id));
+  for (const l of activeLessons()) {
+    if (phase2Ids.has(l.id)) throw new Error(`Fase 2 ${l.id} apareceu em activeLessons`);
   }
 });
 
