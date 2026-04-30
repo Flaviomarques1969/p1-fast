@@ -344,8 +344,17 @@ Roda com `node tests/node-smoke-p1-coach.mjs`.
   Inicialmente L001/L007 listavam `trajetoria` como required, mas
   nenhum módulo do pipeline emite esse sinal pronto. Voltou para
   `optionalSignals` — a comparação com a volta de referência é
-  responsabilidade da camada de cima (`reference-line.js` ou um
-  `trajectory-monitor` futuro). O coach só decide QUANDO emitir.
+  responsabilidade do `trajectory-monitor.js`. O coach só decide
+  QUANDO emitir; o monitor mede SE o piloto está cumprindo a lição.
+- **`trajectory-monitor` fecha o loop de successCriteria (2026-04-30).**
+  Recebe samples do trecho na volta atual + samples do MESMO trecho
+  na volta-ref. Detecta ponto de freio (`accLong < -0.20g`), giro
+  (`|gyroAlpha| > 15deg/s`) e tração (`accLong > +0.15g`), e mede
+  distância em metros entre os pontos correspondentes. Tem fallback
+  sem IMU via queda de kmh e delta de course (confidence cai para
+  MEDIA/BAIXA). L001 cumpre `successCriteria` quando 3 das últimas 4
+  voltas tiveram `brakingPointDeviationM < 8`. L007 quando 2 das 3
+  tiveram `entryDeviationM < 5`.
 - **Fase 2 é gated por `active: false`, não por sinais.**
   Algumas Fase 2 (L102 círculo de grip, L105 zebra) têm
   `requiredSignals` que o iPhone produz. O bloqueio efetivo vem do
