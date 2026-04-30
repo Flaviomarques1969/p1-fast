@@ -5,8 +5,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "smoke": "node tests/node-smoke-perna1-iphone.mjs && node tests/node-smoke-detector.mjs && node tests/node-smoke-detector-snapshot.mjs && node tests/node-smoke-migration-port.mjs && node tests/node-smoke-migration.mjs && node tests/node-smoke-projector.mjs && node tests/node-smoke-telemetry-p0.mjs && node tests/node-smoke-contracts.mjs && node tests/node-smoke-concurrency.mjs && node tests/node-smoke-proximity-watcher.mjs && node tests/node-smoke-p1-coach.mjs",
+    "smoke": "node tests/node-smoke-perna1-iphone.mjs && node tests/node-smoke-detector.mjs && node tests/node-smoke-detector-snapshot.mjs && node tests/node-smoke-migration-port.mjs && node tests/node-smoke-migration.mjs && node tests/node-smoke-projector.mjs && node tests/node-smoke-telemetry-p0.mjs && node tests/node-smoke-contracts.mjs && node tests/node-smoke-concurrency.mjs && node tests/node-smoke-proximity-watcher.mjs && node tests/node-smoke-p1-coach.mjs && node tests/node-smoke-trajectory-monitor.mjs",
     "smoke:p1-coach": "node tests/node-smoke-p1-coach.mjs",
+    "smoke:trajectory": "node tests/node-smoke-trajectory-monitor.mjs",
     "smoke:perna1": "node tests/node-smoke-perna1-iphone.mjs",
     "smoke:detector": "node tests/node-smoke-detector.mjs",
     "smoke:cross-validation": "node tests/node-smoke-telemetry-p0.mjs"
