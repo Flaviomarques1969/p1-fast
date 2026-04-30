@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="pt-BR" data-mobile="true">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=956, initial-scale=1">
+<title>Mockup Cockpit · dinâmica de mensagem</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(0% 0 0);
+  --surface: oklch(11% 0 0);
+  --border: oklch(22% 0 0);
+  --hairline: oklch(28% 0 0);
+  --ink: oklch(100% 0 0);
+  --muted: oklch(58% 0 0);
+  --faint: oklch(36% 0 0);
+  --bom: oklch(80% 0.22 145);
+  --erro: oklch(68% 0.26 27);
+  --sistema: oklch(78% 0.16 225);
+  --foco: oklch(82% 0.19 70);
+  --ouro: oklch(74% 0.16 73);
+  --halo-recorde: oklch(78% 0.18 65 / .42);
+  --halo-pior:    oklch(56% 0.22 305 / .42);
+
+  --ff-display: 'Inter', system-ui, sans-serif;
+  --ff-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --apex-h: 60px;
+  --acao-h: 44px;
+  --esp-h: 24px;
+  --fs-0: 9px;
+  --fs-1: 11px;
+  --fs-2: 13px;
+  --fs-5: 32px;
+  --fs-6: 32px;
+  --fs-9: 180px;
+  --ls-tight: -0.045em;
+  --ls-caps-s: 0.06em;
+  --ls-caps-l: 0.35em;
+  --ls-caps-m: 0.22em;
+  --lh-dom: 0.88;
+
+  --ease-out:   cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+  /* Easing dedicado pra transição de mensagem — expo-out muito suave,
+     curva mais aberta (gasta mais tempo no fim, sensação flutuante elegante) */
+  --ease-msg:   cubic-bezier(0.16, 1, 0.3, 1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:var(--ff-display);font-weight:500;
+  background:#0a0a0a;color:var(--ink);
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;padding:24px;
+  -webkit-font-smoothing:antialiased;
+  font-feature-settings:"ss01","cv11";
+  user-select:none;
+}
+
+.device{
+  width:956px;height:440px;
+  background:var(--bg);
+  border-radius:48px;border:1px solid oklch(15% 0 0);
+  box-shadow:0 30px 80px oklch(0% 0 0 / .9), 0 0 0 8px oklch(3% 0 0);
+  position:relative;overflow:hidden;
+  --halo-cor: transparent;
+  perspective:1200px;
+}
+.device::before{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:1;
+  background:radial-gradient(ellipse 65% 75% at 50% 55%, var(--halo-cor) 0%, transparent 65%);
+  transition:background 320ms var(--ease-inout);
+}
+.device[data-trecho-status="recorde-stint"]{ --halo-cor: var(--halo-recorde); }
+.device[data-trecho-status="pior-stint"]{    --halo-cor: var(--halo-pior); }
+
+.notch{
+  position:absolute;left:18px;top:50%;transform:translateY(-50%);
+  width:36px;height:128px;background:#000;border-radius:20px;z-index:50;
+  border:1px solid oklch(8% 0 0);
+}
+
+.telemetria-chip{
+  position:absolute;right:18px;top:14px;z-index:60;
+  display:flex;gap:5px;
+}
+.telemetria-chip__dot{width:6px;height:6px;border-radius:50%;background:var(--faint);}
+.telemetria-chip__dot.ok{background:var(--bom);box-shadow:0 0 6px oklch(80% 0.22 145 / .4);}
+.telemetria-chip__dot.warn{background:var(--foco);box-shadow:0 0 6px oklch(82% 0.19 70 / .4);}
+
+.apex{
+  position:absolute;top:18px;left:60px;right:80px;z-index:10;
+  display:flex;align-items:baseline;justify-content:space-between;
+  min-height:var(--apex-h);
+}
+.apex__ponto{
+  display:inline-flex;align-items:baseline;gap:14px;
+  /* sem border, sem background — minimalismo radical */
+}
+
+/* Label SEMPRE branco — independente do estado */
+.apex__label{
+  font-size:14px;font-weight:700;letter-spacing:var(--ls-caps-l);
+  color:var(--ink);text-transform:uppercase;
+}
+
+/* Valor: cor por estado de comparação com a última passada no trecho.
+   - ok-melhor: verde
+   - ok-pior:   vermelho
+   - ativo:     branco (em curso, sem comparação ainda)
+   - pendente:  faint (placeholder, ainda não passou) */
+.apex__valor{
+  font-family:var(--ff-display);
+  font-size:var(--fs-5);font-weight:900;letter-spacing:var(--ls-tight);
+  font-variant-numeric:tabular-nums;
+  color:var(--ink);
+  display:inline-flex;align-items:baseline;gap:4px;
+}
+.apex__ponto[data-estado="ok-melhor"] .apex__valor{ color:var(--bom); }
+.apex__ponto[data-estado="ok-pior"]   .apex__valor{ color:var(--erro); }
+.apex__ponto[data-estado="pendente"]  .apex__valor{ color:var(--faint); }
+.apex__valor small{
+  font-size:var(--fs-0);color:var(--muted);font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+/* Separador "/" entre atual e referência (apex Freio) — discreto */
+.apex__valor__sep{
+  color:var(--faint);font-weight:600;margin:0 4px;
+}
+
+/* INFO-BLOCO — delta + frase pedagógica juntos.
+   Em estado padrão: centralizado.
+   Em estado msg-ativa: desliza pra ESQUERDA. */
+.info-bloco{
+  position:absolute;left:50%;top:50%;
+  transform:translate(-50%, -50%);
+  z-index:20;
+  display:flex;flex-direction:column;align-items:center;gap:14px;
+  pointer-events:none;
+  transition:transform 1200ms var(--ease-msg);
+}
+.device[data-msg-state="ativa"] .info-bloco{
+  transform:translate(calc(-50% - 230px), -50%);
+}
+
+.info__delta{
+  font-family:var(--ff-display);
+  font-size:var(--fs-9);font-weight:900;
+  letter-spacing:var(--ls-tight);line-height:var(--lh-dom);
+  font-variant-numeric:tabular-nums slashed-zero;
+}
+.info__delta.bom{
+  color:var(--bom);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 24px oklch(80% 0.22 145 / .35);
+}
+.info__delta.erro{
+  color:var(--erro);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 24px oklch(68% 0.26 27 / .35);
+}
+.info__acao{
+  font-size:var(--fs-6);font-weight:900;letter-spacing:var(--ls-caps-s);
+  text-transform:uppercase;
+  color:var(--foco);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 24px oklch(82% 0.19 70 / .35);
+}
+.info__acao.erro{
+  color:var(--erro);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 24px oklch(68% 0.26 27 / .35);
+}
+
+/* ALERT-BLOCO — mensagem que vem do fundo (z-axis simulado via scale + blur)
+   Estado oculto: opacity 0, scale .35, translateZ -300px (longe), blur 12px
+   Estado ativo:  opacity 1, scale 1, translateZ 0, blur 0
+   Posição: lado DIREITO da tela, centered Y. */
+.alert-bloco{
+  position:absolute;left:calc(100% - 240px);top:50%;
+  transform:translate(-50%, -50%) translateZ(-300px) scale(.35);
+  filter:blur(12px);
+  opacity:0;
+  z-index:25;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  transition:transform 1200ms var(--ease-msg),
+             opacity 1100ms var(--ease-msg),
+             filter 1100ms var(--ease-msg);
+  max-width:380px;text-align:center;
+}
+.device[data-msg-state="ativa"] .alert-bloco{
+  transform:translate(-50%, -50%) translateZ(0) scale(1);
+  filter:blur(0);
+  opacity:1;
+}
+.alert__msg{
+  font-family:var(--ff-display);
+  font-size:34px;font-weight:900;letter-spacing:-0.01em;line-height:1.05;
+  color:var(--sistema);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 28px oklch(78% 0.16 225 / .45);
+}
+.alert-bloco[data-tipo="grave"] .alert__msg{
+  color:var(--erro);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 28px oklch(68% 0.26 27 / .55);
+}
+
+/* STINT BAR */
+.stint-bar{
+  position:absolute;left:60px;right:8px;bottom:4px;
+  display:flex;gap:3px;height:14px;align-items:flex-end;z-index:30;
+}
+.stint-bar__block{
+  flex:1;background:var(--faint);border-radius:2px;height:14px;position:relative;
+}
+.stint-bar__block.is-neutral{background:var(--ink);}
+.stint-bar__block.is-faster{background:var(--bom);}
+.stint-bar__block.is-slower{background:var(--erro);}
+.stint-bar__block.is-best-stint{
+  background:var(--bom);overflow:hidden;
+  box-shadow:0 0 14px 0 oklch(80% 0.22 145 / .6), inset 0 0 0 1.5px var(--bg);
+}
+.stint-bar__block.is-best-stint::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg, transparent 0%, oklch(95% 0.15 145 / .9) 50%, transparent 100%);
+  background-size:50% 100%;background-repeat:no-repeat;background-position:-50% 0%;
+  animation:lightWaveBidir 3.2s var(--ease-inout) infinite;mix-blend-mode:screen;
+}
+.stint-bar__block.is-best-alltime{
+  background:var(--ouro);position:relative;z-index:5;overflow:hidden;
+  box-shadow:
+    0 0 18px 0 oklch(74% 0.16 73 / .8),
+    0 0 36px 0 oklch(74% 0.16 73 / .5),
+    0 0 60px 0 oklch(82% 0.18 70 / .25),
+    inset 0 0 0 1.5px var(--bg);
+  animation:alltimeBloom 3.2s var(--ease-inout) infinite;
+}
+.stint-bar__block.is-best-alltime::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg, transparent 0%, oklch(98% 0.12 80 / .95) 50%, transparent 100%);
+  background-size:50% 100%;background-repeat:no-repeat;background-position:-50% 0%;
+  animation:lightWaveBidir 3.2s var(--ease-inout) infinite;mix-blend-mode:screen;
+}
+.stint-bar__block.is-current{
+  background:var(--foco);box-shadow:0 0 12px 0 oklch(82% 0.19 70 / .6);
+}
+@keyframes alltimeBloom{
+  0%,100%{box-shadow:
+    0 0 18px 0 oklch(74% 0.16 73 / .8),
+    0 0 36px 0 oklch(74% 0.16 73 / .5),
+    0 0 60px 0 oklch(82% 0.18 70 / .25),
+    inset 0 0 0 1.5px var(--bg);}
+  50%{box-shadow:
+    0 0 26px 0 oklch(82% 0.18 70 / .95),
+    0 0 48px 0 oklch(82% 0.18 70 / .65),
+    0 0 80px 0 oklch(95% 0.14 80 / .4),
+    inset 0 0 0 1.5px var(--bg);}
+}
+@keyframes lightWaveBidir{
+  0%{background-position:-50% 0%;}
+  50%{background-position:150% 0%;}
+  100%{background-position:-50% 0%;}
+}
+
+/* CONTROLES do mockup (não vão pra prod) */
+.controls{
+  display:flex;gap:10px;justify-content:center;align-items:center;
+  margin-top:14px;font-family:var(--ff-mono);font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--muted);
+}
+.controls__lbl{color:var(--faint);font-weight:600;}
+.controls__btn{
+  background:var(--surface);border:1px solid var(--border);color:var(--ink);
+  font-family:inherit;font-size:11px;font-weight:700;letter-spacing:.06em;
+  padding:8px 14px;border-radius:2px;cursor:pointer;text-transform:uppercase;
+  transition:background 180ms var(--ease-out);
+}
+.controls__btn:hover{background:oklch(15% 0 0);}
+.controls__btn.is-active{background:var(--sistema);color:var(--bg);border-color:var(--sistema);}
+.controls__btn[data-action="grave"].is-active{background:var(--erro);color:var(--ink);border-color:var(--erro);}
+
+.legend{
+  position:fixed;bottom:18px;right:18px;max-width:340px;
+  font-family:var(--ff-mono);
+  font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--muted);
+  background:oklch(11% 0 0 / .85);backdrop-filter:blur(12px);
+  border:1px solid var(--border);border-radius:4px;
+  padding:10px 14px;line-height:1.6;
+  text-transform:uppercase;
+}
+.legend b{color:var(--ink);font-weight:700;}
+.legend i{color:var(--foco);font-style:normal;font-weight:700;}
+</style>
+</head>
+<body>
+<div style="display:flex;flex-direction:column;gap:12px;align-items:center;">
+
+  <!-- data-msg-state: oculta | ativa
+       data-msg-tipo:  comunicacao | grave (define cor + comportamento de saída) -->
+  <div class="device" id="device" data-trecho-status="neutro" data-msg-state="oculta">
+    <div class="notch"></div>
+
+    <div class="telemetria-chip">
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot warn"></span>
+      <span class="telemetria-chip__dot ok"></span>
+    </div>
+
+    <section class="apex">
+      <div class="apex__ponto" data-estado="ok-pior">
+        <span class="apex__label">Entrada</span>
+        <span class="apex__valor">88<small>km/h</small></span>
+      </div>
+      <div class="apex__ponto" data-estado="ok-pior" data-papel="freio">
+        <span class="apex__label">Freio</span>
+        <span class="apex__valor">18<span class="apex__valor__sep">/</span>16<small>m</small></span>
+      </div>
+      <div class="apex__ponto" data-estado="ativo">
+        <span class="apex__label">Ápice</span>
+        <span class="apex__valor">71<small>km/h</small></span>
+      </div>
+      <div class="apex__ponto" data-estado="pendente">
+        <span class="apex__label">Saída</span>
+        <span class="apex__valor">—</span>
+      </div>
+    </section>
+
+    <!-- bloco central (default centralizado): delta + frase pedagógica.
+         Quando msg ativa, desliza pra ESQUERDA. -->
+    <div class="info-bloco">
+      <span class="info__delta erro">0.42</span>
+      <div class="info__acao erro">FREIE TARDE</div>
+    </div>
+
+    <!-- bloco direito (oculto default): mensagem que vem do fundo -->
+    <aside class="alert-bloco" id="alertBloco" data-tipo="comunicacao">
+      <div class="alert__msg" id="alertMsg">Pneu DD acima da janela</div>
+    </aside>
+
+    <div class="stint-bar">
+      <div class="stint-bar__block is-neutral"></div>
+      <div class="stint-bar__block is-faster"></div>
+      <div class="stint-bar__block is-slower"></div>
+      <div class="stint-bar__block is-faster"></div>
+      <div class="stint-bar__block is-slower"></div>
+      <div class="stint-bar__block is-best-stint"></div>
+      <div class="stint-bar__block is-best-alltime"></div>
+      <div class="stint-bar__block is-current"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <span class="controls__lbl">Halo ·</span>
+    <button class="controls__btn is-active" data-halo="neutro">Normal</button>
+    <button class="controls__btn" data-halo="recorde-stint">Recorde stint (laranja)</button>
+    <button class="controls__btn" data-halo="pior-stint">Pior stint (roxo)</button>
+  </div>
+  <div class="controls">
+    <span class="controls__lbl">Disparar mensagem ·</span>
+    <button class="controls__btn" id="btnAuto" data-action="auto">Auto-loop (4s)</button>
+    <button class="controls__btn" id="btnComm" data-action="comunicacao">Comunicação · sai em 4s</button>
+    <button class="controls__btn" id="btnGrave" data-action="grave">Grave · fica até resolver</button>
+    <button class="controls__btn" id="btnHide" data-action="ocultar">Ocultar</button>
+  </div>
+
+</div>
+
+<div class="legend">
+  <b>Apex · cor por comparação no trecho</b><br>
+  <i>·</i> label sempre branco<br>
+  <i>·</i> número verde = melhor que a última passada<br>
+  <i>·</i> número vermelho = pior que a última passada<br>
+  <i>·</i> número branco = ainda em curso (ativo)<br>
+  <i>·</i> "—" = ainda não passou (pendente, opacity .4)<br>
+  <br>
+  <b>Halo de fundo · só em estados extremos</b><br>
+  <i>·</i> normal = fundo escuro puro (a maior parte do tempo)<br>
+  <i>·</i> laranja = recorde do trecho neste stint<br>
+  <i>·</i> roxo = pior trecho deste stint<br>
+  <br>
+  <b>Dinâmica de mensagem</b><br>
+  <i>·</i> Default = silêncio<br>
+  <i>·</i> Chega: delta+frase → esquerda; msg vem do fundo → direita<br>
+  <i>·</i> Transição 1200ms expo-out muito suave<br>
+</div>
+
+<script>
+const device = document.getElementById('device');
+const alertBloco = document.getElementById('alertBloco');
+const alertMsg = document.getElementById('alertMsg');
+const btnAuto = document.getElementById('btnAuto');
+const btnComm = document.getElementById('btnComm');
+const btnGrave = document.getElementById('btnGrave');
+const btnHide = document.getElementById('btnHide');
+
+let autoTimer = null;
+let commTimer = null;
+
+function setMessage(tipo){
+  alertBloco.dataset.tipo = tipo;
+  if(tipo === 'comunicacao'){
+    alertMsg.textContent = 'Pneu DD acima da janela';
+  } else if(tipo === 'grave'){
+    alertMsg.textContent = 'Pressão óleo crítica';
+  }
+  device.dataset.msgState = 'ativa';
+  if(commTimer) clearTimeout(commTimer);
+  if(tipo === 'comunicacao'){
+    commTimer = setTimeout(() => {
+      device.dataset.msgState = 'oculta';
+    }, 4000);
+  }
+}
+function hideMessage(){
+  if(commTimer) clearTimeout(commTimer);
+  device.dataset.msgState = 'oculta';
+}
+function clearActive(){
+  [btnAuto, btnComm, btnGrave, btnHide].forEach(b => b.classList.remove('is-active'));
+}
+function startAutoLoop(){
+  if(autoTimer) clearInterval(autoTimer);
+  let phase = 0; // 0=oculto, 1=comunicacao, 2=oculto, 3=grave
+  const tick = () => {
+    phase = (phase + 1) % 4;
+    if(phase === 1) setMessage('comunicacao');
+    else if(phase === 3) setMessage('grave');
+    else hideMessage();
+  };
+  tick();
+  autoTimer = setInterval(tick, 5000);
+}
+function stopAutoLoop(){
+  if(autoTimer) clearInterval(autoTimer);
+  autoTimer = null;
+}
+
+btnAuto.addEventListener('click', () => {
+  if(autoTimer){
+    stopAutoLoop();
+    btnAuto.classList.remove('is-active');
+  } else {
+    clearActive();
+    btnAuto.classList.add('is-active');
+    startAutoLoop();
+  }
+});
+btnComm.addEventListener('click', () => {
+  stopAutoLoop();
+  clearActive();
+  btnComm.classList.add('is-active');
+  setMessage('comunicacao');
+});
+btnGrave.addEventListener('click', () => {
+  stopAutoLoop();
+  clearActive();
+  btnGrave.classList.add('is-active');
+  setMessage('grave');
+});
+btnHide.addEventListener('click', () => {
+  stopAutoLoop();
+  clearActive();
+  btnHide.classList.add('is-active');
+  hideMessage();
+});
+
+// Botões de halo — também trocam a semântica do delta + frase + apex pra coerência
+const infoDelta = document.querySelector('.info__delta');
+const infoAcao = document.querySelector('.info__acao');
+const apexEntrada = document.querySelector('.apex__ponto:nth-child(1)');
+const apexEntradaVal = apexEntrada.querySelector('.apex__valor');
+const apexFreio = document.querySelector('.apex__ponto[data-papel="freio"]');
+const apexFreioVal = apexFreio.querySelector('.apex__valor');
+
+// Freio: distância (m) do ponto que começou a frear até o ponto geográfico
+// do ápice. Referência = distância que produziu MAIOR velocidade no ápice
+// (histórico por autódromo + carro). Cor verde se atual ∈ ref ± 10%, vermelho fora.
+const FREIO_REF = 16; // referência histórica desse autódromo + carro (m)
+function freioEstadoFromAtual(atual, ref){
+  const tolerance = ref * 0.10;
+  return Math.abs(atual - ref) <= tolerance ? 'ok-melhor' : 'ok-pior';
+}
+
+const haloStates = {
+  'neutro':         {deltaClass:'erro', deltaVal:'0.42', acaoText:'FREIE TARDE', acaoClass:'erro',
+                     entradaEstado:'ok-pior',   entradaVal:'88', freioAtual:18},
+  'recorde-stint':  {deltaClass:'bom',  deltaVal:'0.27', acaoText:'ÁPICE TARDE', acaoClass:'',
+                     entradaEstado:'ok-melhor', entradaVal:'95', freioAtual:15},
+  'pior-stint':     {deltaClass:'erro', deltaVal:'0.42', acaoText:'FREIE TARDE', acaoClass:'erro',
+                     entradaEstado:'ok-pior',   entradaVal:'88', freioAtual:22},
+};
+
+document.querySelectorAll('[data-halo]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-halo]').forEach(x => x.classList.remove('is-active'));
+    b.classList.add('is-active');
+    const halo = b.dataset.halo;
+    device.dataset.trechoStatus = halo;
+    const s = haloStates[halo];
+    if(!s) return;
+    infoDelta.className = 'info__delta ' + s.deltaClass;
+    infoDelta.textContent = s.deltaVal;
+    infoAcao.className = 'info__acao ' + s.acaoClass;
+    infoAcao.textContent = s.acaoText;
+    apexEntrada.dataset.estado = s.entradaEstado;
+    apexEntradaVal.innerHTML = s.entradaVal + '<small>km/h</small>';
+    apexFreio.dataset.estado = freioEstadoFromAtual(s.freioAtual, FREIO_REF);
+    apexFreioVal.innerHTML = s.freioAtual + '<span class="apex__valor__sep">/</span>' + FREIO_REF + '<small>m</small>';
+  });
+});
+
+// boot — começar com auto-loop ligado pra demonstração
+btnAuto.classList.add('is-active');
+startAutoLoop();
+</script>
+</body>
+</html>

@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=430,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Mockup · Pendências cascata · FAM Racing</title>
+<style>
+:root {
+  --bg: oklch(12% 0.020 290);
+  --aurora-a: oklch(60% 0.18 320 / .35);
+  --aurora-b: oklch(72% 0.14 200 / .28);
+  --surface: oklch(22% 0.030 290 / .8);
+  --surface-2: oklch(28% 0.025 290 / .6);
+  --hairline: oklch(35% 0.025 290 / .6);
+  --ink: oklch(98% 0.005 290);
+  --ink-soft: oklch(78% 0.020 290);
+  --ink-faint: oklch(58% 0.025 290);
+  --accent-a: oklch(76% 0.18 320);
+  --accent-b: oklch(82% 0.14 200);
+  --glow-a: oklch(76% 0.18 320 / .35);
+  --bom: oklch(72% 0.18 145);
+  --atencao: oklch(82% 0.16 80);
+  --erro: oklch(60% 0.20 25);
+  --r-md: 18px;
+  --r-sm: 12px;
+  --r-pill: 999px;
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --dur-2: 220ms;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  min-height: 100dvh;
+  width: 100vw;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body { position: relative; padding: 0 0 96px; }
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(80% 60% at 90% 0%, var(--aurora-a), transparent 65%),
+    radial-gradient(80% 60% at 0% 100%, var(--aurora-b), transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app {
+  position: relative;
+  z-index: 1;
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 16px 20px 0;
+}
+
+.context-head {
+  padding: 12px 4px 18px;
+}
+.context-head__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  background: oklch(76% 0.18 320 / .15);
+  border: 1px solid oklch(76% 0.18 320 / .35);
+  border-radius: var(--r-pill);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--accent-a);
+  margin-bottom: 12px;
+}
+.context-head__eyebrow__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.context-head__title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  background: linear-gradient(135deg, oklch(98% 0.005 290), oklch(82% 0.06 280));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 4px;
+}
+
+.context-head__when {
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.context-head__when strong {
+  color: var(--accent-a);
+  font-weight: 700;
+}
+
+.summary-card {
+  background: var(--surface);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  padding: 16px 18px;
+  margin-bottom: 16px;
+}
+
+.summary-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.summary-cell {
+  text-align: center;
+  padding: 8px 4px;
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+}
+.summary-cell__num {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  display: block;
+  line-height: 1;
+}
+.summary-cell--total .summary-cell__num { color: var(--ink); }
+.summary-cell--abertas .summary-cell__num { color: var(--atencao); }
+.summary-cell--prontas .summary-cell__num { color: var(--bom); }
+
+.summary-cell__lbl {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--ink-faint);
+  letter-spacing: 0.1em;
+  display: block;
+  margin-top: 6px;
+}
+
+.progress {
+  height: 6px;
+  background: var(--surface-2);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.progress__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+}
+
+.summary-pct {
+  font-size: 13px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+.summary-pct strong { color: var(--ink); font-weight: 700; }
+
+.chip-rail {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 0 14px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -20px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+.chip-rail::-webkit-scrollbar { display: none; }
+
+.chip {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 8px 14px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-pill);
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform var(--dur-2) var(--spring);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.chip:active { transform: scale(.96); }
+.chip[data-on="true"] {
+  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+  color: oklch(15% 0 0);
+  border-color: transparent;
+  font-weight: 600;
+}
+.chip__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: oklch(28% 0.025 290 / .9);
+  color: var(--ink);
+  border-radius: var(--r-pill);
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.chip[data-on="true"] .chip__count {
+  background: oklch(15% 0 0 / .25);
+  color: oklch(15% 0 0);
+}
+
+.group {
+  margin-bottom: 14px;
+}
+
+.group__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--ink-faint);
+}
+.group__head strong { color: var(--accent-b); font-weight: 700; }
+
+.pend-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--surface);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: transform var(--dur-2) var(--spring);
+}
+.pend-row:active { transform: scale(.99); }
+
+.pend-check {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--hairline);
+  background: var(--surface-2);
+  position: relative;
+  transition: background var(--dur-2);
+}
+.pend-row[data-feita="true"] .pend-check {
+  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+  border-color: transparent;
+}
+.pend-row[data-feita="true"] .pend-check::after {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 3px;
+  width: 6px;
+  height: 12px;
+  border: solid oklch(15% 0 0);
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+}
+
+.pend-body { flex: 1 1 auto; min-width: 0; }
+.pend-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 3px;
+  letter-spacing: -0.005em;
+}
+.pend-row[data-feita="true"] .pend-title {
+  color: var(--ink-faint);
+  text-decoration: line-through;
+  text-decoration-color: var(--ink-faint);
+}
+
+.pend-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+
+.pend-prio {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.pend-prio--alta { background: oklch(60% 0.20 25 / .15); color: var(--erro); border: 1px solid oklch(60% 0.20 25 / .35); }
+.pend-prio--media { background: oklch(82% 0.16 80 / .15); color: var(--atencao); border: 1px solid oklch(82% 0.16 80 / .35); }
+.pend-prio--baixa { background: oklch(72% 0.18 145 / .12); color: var(--bom); border: 1px solid oklch(72% 0.18 145 / .35); }
+
+.pend-class {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--ink-faint);
+}
+
+.fab {
+  position: fixed;
+  bottom: 90px;
+  right: 16px;
+  z-index: 50;
+  height: 56px;
+  padding: 0 22px 0 18px;
+  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+  color: oklch(15% 0 0);
+  border: 0;
+  border-radius: var(--r-pill);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 12px 32px var(--glow-a);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform var(--dur-2) var(--spring);
+}
+.fab:active { transform: scale(.96); }
+.fab__plus { font-size: 22px; line-height: 1; }
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background: oklch(14% 0.025 290 / .85);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border-top: 1px solid var(--hairline);
+  padding: 8px 0 20px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+.bottom-nav__item {
+  background: transparent;
+  border: 0;
+  padding: 8px 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+}
+.bottom-nav__item[data-on="true"] { color: var(--accent-a); }
+.bottom-nav__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+}
+.bottom-nav__item[data-on="true"] .bottom-nav__dot {
+  background: var(--accent-a);
+  box-shadow: 0 0 6px var(--glow-a);
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="context-head">
+    <span class="context-head__eyebrow"><span class="context-head__eyebrow__dot"></span>PENDÊNCIAS</span>
+    <h1 class="context-head__title">Brasília · 2 de maio</h1>
+    <p class="context-head__when">Sábado, 02/05 · <strong>faltam 2 dias</strong></p>
+  </header>
+
+  <div class="summary-card">
+    <div class="summary-row">
+      <div class="summary-cell summary-cell--total"><span class="summary-cell__num">14</span><span class="summary-cell__lbl">TOTAL</span></div>
+      <div class="summary-cell summary-cell--abertas"><span class="summary-cell__num">5</span><span class="summary-cell__lbl">ABERTAS</span></div>
+      <div class="summary-cell summary-cell--prontas"><span class="summary-cell__num">9</span><span class="summary-cell__lbl">PRONTAS</span></div>
+    </div>
+    <div class="progress"><div class="progress__fill" style="width: 64%"></div></div>
+    <div class="summary-pct"><strong>64%</strong> preparado</div>
+  </div>
+
+  <div class="chip-rail">
+    <button class="chip" type="button" data-on="true">Todos<span class="chip__count">14</span></button>
+    <button class="chip" type="button">Ferramenta<span class="chip__count">3</span></button>
+    <button class="chip" type="button">Combustível<span class="chip__count">2</span></button>
+    <button class="chip" type="button">Mecânica<span class="chip__count">5</span></button>
+    <button class="chip" type="button">Segurança<span class="chip__count">2</span></button>
+    <button class="chip" type="button">Documentação<span class="chip__count">1</span></button>
+    <button class="chip" type="button">Logística<span class="chip__count">1</span></button>
+  </div>
+
+  <div class="group">
+    <div class="group__head">
+      <span>MECÂNICA</span>
+      <strong>2 ABERTAS · 3 PRONTAS</strong>
+    </div>
+
+    <div class="pend-row" data-feita="false">
+      <span class="pend-check"></span>
+      <div class="pend-body">
+        <div class="pend-title">Trocar pastilhas dianteiras</div>
+        <div class="pend-meta"><span class="pend-prio pend-prio--alta">ALTA</span><span class="pend-class">OBRIG</span></div>
+      </div>
+    </div>
+
+    <div class="pend-row" data-feita="false">
+      <span class="pend-check"></span>
+      <div class="pend-body">
+        <div class="pend-title">Sangrar freios</div>
+        <div class="pend-meta"><span class="pend-prio pend-prio--alta">ALTA</span><span class="pend-class">OBRIG</span></div>
+      </div>
+    </div>
+
+    <div class="pend-row" data-feita="true">
+      <span class="pend-check"></span>
+      <div class="pend-body">
+        <div class="pend-title">Verificar nível de óleo</div>
+        <div class="pend-meta"><span class="pend-prio pend-prio--media">MÉDIA</span><span class="pend-class">OBRIG</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group__head">
+      <span>FERRAMENTA</span>
+      <strong>1 ABERTA · 2 PRONTAS</strong>
+    </div>
+
+    <div class="pend-row" data-feita="false">
+      <span class="pend-check"></span>
+      <div class="pend-body">
+        <div class="pend-title">Comprar manopla 17mm</div>
+        <div class="pend-meta"><span class="pend-prio pend-prio--baixa">BAIXA</span><span class="pend-class">RECOM</span></div>
+      </div>
+    </div>
+
+    <div class="pend-row" data-feita="true">
+      <span class="pend-check"></span>
+      <div class="pend-body">
+        <div class="pend-title">Carregar parafusadeira</div>
+        <div class="pend-meta"><span class="pend-prio pend-prio--media">MÉDIA</span><span class="pend-class">OBRIG</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group__head">
+      <span>COMBUSTÍVEL</span>
+      <strong>1 ABERTA · 1 PRONTA</strong>
+    </div>
+
+    <div class="pend-row" data-feita="false">
+      <span class="pend-check"></span>
+      <div class="pend-body">
+        <div class="pend-title">Reabastecer galões na sexta</div>
+        <div class="pend-meta"><span class="pend-prio pend-prio--alta">ALTA</span><span class="pend-class">OBRIG</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group__head">
+      <span>SEGURANÇA</span>
+      <strong>1 ABERTA · 1 PRONTA</strong>
+    </div>
+
+    <div class="pend-row" data-feita="false">
+      <span class="pend-check"></span>
+      <div class="pend-body">
+        <div class="pend-title">Validar extintor (data 2024)</div>
+        <div class="pend-meta"><span class="pend-prio pend-prio--alta">ALTA</span><span class="pend-class">OBRIG</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<button class="fab" type="button"><span class="fab__plus">+</span>Nova pendência</button>
+
+<nav class="bottom-nav">
+  <button class="bottom-nav__item" type="button"><span class="bottom-nav__dot"></span>HOME</button>
+  <button class="bottom-nav__item" type="button"><span class="bottom-nav__dot"></span>EVENTOS</button>
+  <button class="bottom-nav__item" type="button" data-on="true"><span class="bottom-nav__dot"></span>PENDÊNCIAS</button>
+  <button class="bottom-nav__item" type="button"><span class="bottom-nav__dot"></span>GARAGEM</button>
+</nav>
+</body>
+</html>

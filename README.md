@@ -8,10 +8,18 @@ construída do zero, livre dos padrões antigos.
 
 **Zero código de UI legado.** Só telemetria, domínio, schemas, regras e backends.
 
+> **`_design-reference/`** contém 6 mockups visuais canônicos
+> (cockpit do piloto, modal evento BC, HOME cheio/vazio, pendências cascata,
+> comparação halos). São arquivos auto-contidos para servir de **contrato visual**
+> quando você for construir a UI nova — copiar do mockup ao código real,
+> sem inventar tokens. Detalhes em [`_design-reference/README.md`](_design-reference/README.md).
+
 ## Conteúdo
 
 ```
-_export/
+P1 Fast/
+├── _design-reference/  ← 6 mockups HTML auto-contidos (referência visual,
+│                          não código vivo) + README explicando o uso
 ├── src/
 │   ├── telemetry/   ← detector, session-recorder, cross-validation, timebase,
 │   │                  snapshot, data-quality (em src/domain/), sample-store,

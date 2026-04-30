@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=430,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Mockup · HOME vazio · FAM Racing</title>
+<style>
+:root {
+  --bg: oklch(12% 0.020 290);
+  --aurora-a: oklch(60% 0.18 320 / .35);
+  --aurora-b: oklch(72% 0.14 200 / .28);
+  --surface: oklch(22% 0.030 290 / .8);
+  --surface-2: oklch(28% 0.025 290 / .6);
+  --hairline: oklch(35% 0.025 290 / .6);
+  --ink: oklch(98% 0.005 290);
+  --ink-soft: oklch(78% 0.020 290);
+  --ink-faint: oklch(58% 0.025 290);
+  --accent-a: oklch(76% 0.18 320);
+  --accent-b: oklch(82% 0.14 200);
+  --glow-a: oklch(76% 0.18 320 / .35);
+  --r-md: 18px;
+  --r-pill: 999px;
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --dur-2: 220ms;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  min-height: 100dvh;
+  width: 100vw;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body { position: relative; padding: 0 0 96px; }
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(80% 60% at 90% 0%, var(--aurora-a), transparent 65%),
+    radial-gradient(80% 60% at 0% 100%, var(--aurora-b), transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app {
+  position: relative;
+  z-index: 1;
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 16px 24px 0;
+  min-height: calc(100dvh - 96px);
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 12px 4px 18px;
+}
+.header__brand {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--ink-faint);
+}
+
+.empty {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px 12px 80px;
+  gap: 22px;
+}
+
+.empty__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: oklch(76% 0.18 320 / .15);
+  border: 1px solid oklch(76% 0.18 320 / .35);
+  border-radius: var(--r-pill);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--accent-a);
+}
+.empty__eyebrow__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-a);
+  box-shadow: 0 0 6px var(--glow-a);
+}
+
+.empty__title {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  background: linear-gradient(135deg, oklch(98% 0.005 290), oklch(82% 0.06 280));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.empty__sub {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  max-width: 320px;
+}
+
+.empty__bullets {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-self: stretch;
+  margin: 6px 0 8px;
+}
+.empty__bullet {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  text-align: left;
+}
+.empty__bullet-num {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+  color: oklch(15% 0 0);
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.empty__bullet-body {
+  flex: 1 1 auto;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+.empty__bullet-body strong { color: var(--ink); font-weight: 600; }
+
+.btn--cta {
+  align-self: stretch;
+  min-height: 60px;
+  padding: 18px 22px;
+  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+  color: oklch(15% 0 0);
+  border: 0;
+  border-radius: var(--r-pill);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  box-shadow: 0 14px 36px var(--glow-a);
+  transition: transform var(--dur-2) var(--spring);
+}
+.btn--cta:active { transform: scale(.97); }
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background: oklch(14% 0.025 290 / .85);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border-top: 1px solid var(--hairline);
+  padding: 8px 0 20px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+.bottom-nav__item {
+  background: transparent;
+  border: 0;
+  padding: 8px 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+}
+.bottom-nav__item[data-on="true"] { color: var(--accent-a); }
+.bottom-nav__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+}
+.bottom-nav__item[data-on="true"] .bottom-nav__dot {
+  background: var(--accent-a);
+  box-shadow: 0 0 6px var(--glow-a);
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <span class="header__brand">FAM RACING</span>
+  </header>
+
+  <section class="empty">
+    <span class="empty__eyebrow"><span class="empty__eyebrow__dot"></span>VAMOS COMEÇAR</span>
+    <h1 class="empty__title">Cadastre seu primeiro evento</h1>
+    <p class="empty__sub">O FAM Racing organiza o ritual completo de track day — antes, durante e depois.</p>
+
+    <div class="empty__bullets">
+      <div class="empty__bullet">
+        <span class="empty__bullet-num">1</span>
+        <span class="empty__bullet-body">Crie um <strong>evento</strong> — autódromo, data, janela do dia.</span>
+      </div>
+      <div class="empty__bullet">
+        <span class="empty__bullet-num">2</span>
+        <span class="empty__bullet-body">Organize <strong>pendências</strong> e checklist de preparo.</span>
+      </div>
+      <div class="empty__bullet">
+        <span class="empty__bullet-num">3</span>
+        <span class="empty__bullet-body">No dia, registre <strong>stints</strong> e abra o cockpit no carro.</span>
+      </div>
+    </div>
+
+    <button class="btn--cta" type="button">+ Novo evento</button>
+  </section>
+</div>
+
+<nav class="bottom-nav">
+  <button class="bottom-nav__item" type="button" data-on="true"><span class="bottom-nav__dot"></span>HOME</button>
+  <button class="bottom-nav__item" type="button"><span class="bottom-nav__dot"></span>EVENTOS</button>
+  <button class="bottom-nav__item" type="button"><span class="bottom-nav__dot"></span>PENDÊNCIAS</button>
+  <button class="bottom-nav__item" type="button"><span class="bottom-nav__dot"></span>GARAGEM</button>
+</nav>
+</body>
+</html>

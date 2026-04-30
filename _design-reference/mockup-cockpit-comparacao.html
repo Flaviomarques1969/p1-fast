@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="pt-BR" data-mobile="true">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1024, initial-scale=1">
+<title>Mockup Cockpit · comparação halos · recorde-stint vs pior-stint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(0% 0 0);
+  --surface: oklch(11% 0 0);
+  --border: oklch(22% 0 0);
+  --hairline: oklch(28% 0 0);
+  --ink: oklch(100% 0 0);
+  --muted: oklch(58% 0 0);
+  --faint: oklch(36% 0 0);
+  --bom: oklch(80% 0.22 145);
+  --erro: oklch(68% 0.26 27);
+  --sistema: oklch(78% 0.16 225);
+  --foco: oklch(82% 0.19 70);
+  --ouro: oklch(74% 0.16 73);
+  --halo-recorde: oklch(78% 0.18 65 / .42);
+  --halo-pior:    oklch(56% 0.22 305 / .42);
+  --ff-display: 'Inter', system-ui, sans-serif;
+  --ff-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --apex-h: 60px;
+  --acao-h: 44px;
+  --esp-h: 24px;
+  --fs-0: 9px;
+  --fs-1: 11px;
+  --fs-2: 13px;
+  --fs-5: 32px;
+  --fs-6: 32px;
+  --fs-9: 180px;
+  --ls-tight: -0.045em;
+  --ls-caps-s: 0.06em;
+  --ls-caps-l: 0.35em;
+  --ls-caps-m: 0.22em;
+  --lh-dom: 0.88;
+  --ease-out:   cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:var(--ff-display);font-weight:500;
+  background:#0a0a0a;color:var(--ink);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;
+  min-height:100vh;padding:24px;
+  -webkit-font-smoothing:antialiased;
+  font-feature-settings:"ss01","cv11";
+  user-select:none;
+}
+
+.compare-wrap{
+  display:flex;flex-direction:column;gap:32px;align-items:center;
+  width:100%;
+}
+.compare-row{
+  display:flex;flex-direction:column;align-items:flex-start;gap:8px;
+}
+.compare-row__lbl{
+  font-family:var(--ff-mono);
+  font-size:11px;font-weight:700;letter-spacing:.12em;
+  color:var(--muted);text-transform:uppercase;
+  display:flex;align-items:center;gap:10px;
+}
+.compare-row__lbl b{
+  font-size:13px;color:var(--ink);font-weight:700;letter-spacing:.04em;
+}
+.compare-row__lbl .swatch{
+  display:inline-block;width:14px;height:14px;border-radius:50%;
+}
+.compare-row--orange .swatch{background:oklch(78% 0.18 65);box-shadow:0 0 12px oklch(78% 0.18 65 / .6);}
+.compare-row--purple .swatch{background:oklch(56% 0.22 305);box-shadow:0 0 12px oklch(56% 0.22 305 / .6);}
+
+/* device frame — iPhone 16 Pro Max LANDSCAPE 956×440 */
+.device{
+  width:956px;height:440px;
+  background:var(--bg);
+  border-radius:48px;border:1px solid oklch(15% 0 0);
+  box-shadow:0 20px 60px oklch(0% 0 0 / .7), 0 0 0 8px oklch(3% 0 0);
+  position:relative;overflow:hidden;
+  --halo-cor: transparent;
+}
+.device::before{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:1;
+  background:radial-gradient(ellipse 65% 75% at 50% 55%, var(--halo-cor) 0%, transparent 65%);
+}
+.device[data-trecho-status="recorde-stint"]{ --halo-cor: var(--halo-recorde); }
+.device[data-trecho-status="pior-stint"]{    --halo-cor: var(--halo-pior); }
+
+.notch{
+  position:absolute;left:18px;top:50%;transform:translateY(-50%);
+  width:36px;height:128px;background:#000;border-radius:20px;z-index:50;
+  border:1px solid oklch(8% 0 0);
+}
+
+.telemetria-chip{
+  position:absolute;right:18px;top:14px;z-index:60;
+  display:flex;gap:5px;
+}
+.telemetria-chip__dot{width:6px;height:6px;border-radius:50%;background:var(--faint);}
+.telemetria-chip__dot.ok{background:var(--bom);box-shadow:0 0 6px oklch(80% 0.22 145 / .4);}
+.telemetria-chip__dot.warn{background:var(--foco);box-shadow:0 0 6px oklch(82% 0.19 70 / .4);}
+
+.apex{
+  position:absolute;top:18px;left:60px;right:80px;z-index:10;
+  display:flex;align-items:baseline;justify-content:space-between;
+  min-height:var(--apex-h);
+}
+.apex__ponto{
+  display:inline-flex;align-items:baseline;gap:14px;
+}
+/* Label sempre branco */
+.apex__label{
+  font-size:14px;font-weight:700;letter-spacing:var(--ls-caps-l);
+  color:var(--ink);text-transform:uppercase;
+}
+/* Valor por estado de comparação */
+.apex__valor{
+  font-family:var(--ff-display);
+  font-size:var(--fs-5);font-weight:900;letter-spacing:var(--ls-tight);
+  font-variant-numeric:tabular-nums;color:var(--ink);
+  display:inline-flex;align-items:baseline;gap:4px;
+}
+.apex__ponto[data-estado="ok-melhor"] .apex__valor{ color:var(--bom); }
+.apex__ponto[data-estado="ok-pior"]   .apex__valor{ color:var(--erro); }
+.apex__ponto[data-estado="pendente"]  .apex__valor{ color:var(--faint); }
+.apex__valor__sep{ color:var(--faint);font-weight:600;margin:0 4px; }
+.apex__valor small{
+  font-size:var(--fs-0);color:var(--muted);font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.apex__valor small{
+  font-size:var(--fs-0);color:var(--muted);font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+
+.dom-bloco{
+  position:absolute;left:50%;top:50%;
+  transform:translate(-50%, -50%);z-index:20;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  pointer-events:none;
+}
+.dom__kind{
+  font-family:var(--ff-mono);
+  font-size:var(--fs-1);font-weight:700;letter-spacing:var(--ls-caps-m);
+  color:var(--muted);text-transform:uppercase;
+}
+.dom__value{
+  font-family:var(--ff-display);
+  font-size:var(--fs-9);font-weight:900;
+  letter-spacing:var(--ls-tight);line-height:var(--lh-dom);
+  font-variant-numeric:tabular-nums slashed-zero;
+  font-feature-settings:"ss01" 1, "cv11" 1;
+}
+.dom__value.bom{
+  color:var(--bom);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 24px oklch(80% 0.22 145 / .35);
+}
+.dom__value.erro{
+  color:var(--erro);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 24px oklch(68% 0.26 27 / .35);
+}
+
+.acao{
+  position:absolute;left:60px;right:8px;bottom:62px;z-index:15;
+  display:flex;align-items:center;justify-content:center;
+  min-height:var(--acao-h);
+}
+.acao__msg{
+  font-size:var(--fs-6);font-weight:900;letter-spacing:var(--ls-caps-s);
+  color:var(--foco);text-transform:uppercase;
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 24px oklch(82% 0.19 70 / .35);
+}
+.acao__msg.erro{
+  color:var(--erro);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 24px oklch(68% 0.26 27 / .35);
+}
+
+.especial{
+  position:absolute;left:60px;right:8px;bottom:30px;z-index:15;
+  height:var(--esp-h);
+  display:flex;align-items:center;justify-content:center;gap:14px;
+}
+.especial__msg{
+  font-family:var(--ff-display);
+  font-size:var(--fs-1);font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--sistema);
+}
+.especial__origem{
+  font-family:var(--ff-mono);
+  font-size:8px;font-weight:600;letter-spacing:var(--ls-caps-l);
+  text-transform:uppercase;color:var(--muted);
+  padding:2px 8px;border:1px solid var(--border);border-radius:1px;
+}
+
+.stint-bar{
+  position:absolute;left:60px;right:8px;bottom:4px;
+  display:flex;gap:3px;height:14px;
+  align-items:flex-end;z-index:30;
+}
+.stint-bar__block{
+  flex:1;background:var(--faint);border-radius:2px;height:14px;
+  position:relative;
+}
+.stint-bar__block.is-neutral{background:var(--ink);}
+.stint-bar__block.is-faster{background:var(--bom);}
+.stint-bar__block.is-slower{background:var(--erro);}
+.stint-bar__block.is-best-stint{
+  background:var(--bom);
+  box-shadow:0 0 14px 0 oklch(80% 0.22 145 / .6), inset 0 0 0 1.5px var(--bg);
+  overflow:hidden;
+}
+.stint-bar__block.is-best-stint::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg, transparent 0%, oklch(95% 0.15 145 / .9) 50%, transparent 100%);
+  background-size:50% 100%;background-repeat:no-repeat;background-position:-50% 0%;
+  animation:lightWaveBidir 3.2s var(--ease-inout) infinite;mix-blend-mode:screen;
+}
+.stint-bar__block.is-best-alltime{
+  background:var(--ouro);position:relative;z-index:5;overflow:hidden;
+  box-shadow:
+    0 0 18px 0 oklch(74% 0.16 73 / .8),
+    0 0 36px 0 oklch(74% 0.16 73 / .5),
+    0 0 60px 0 oklch(82% 0.18 70 / .25),
+    inset 0 0 0 1.5px var(--bg);
+  animation:alltimeBloom 3.2s var(--ease-inout) infinite;
+}
+.stint-bar__block.is-best-alltime::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg, transparent 0%, oklch(98% 0.12 80 / .95) 50%, transparent 100%);
+  background-size:50% 100%;background-repeat:no-repeat;background-position:-50% 0%;
+  animation:lightWaveBidir 3.2s var(--ease-inout) infinite;mix-blend-mode:screen;
+}
+.stint-bar__block.is-current{
+  background:var(--foco);
+  box-shadow:0 0 12px 0 oklch(82% 0.19 70 / .6);
+}
+@keyframes alltimeBloom{
+  0%,100%{box-shadow:
+    0 0 18px 0 oklch(74% 0.16 73 / .8),
+    0 0 36px 0 oklch(74% 0.16 73 / .5),
+    0 0 60px 0 oklch(82% 0.18 70 / .25),
+    inset 0 0 0 1.5px var(--bg);}
+  50%{box-shadow:
+    0 0 26px 0 oklch(82% 0.18 70 / .95),
+    0 0 48px 0 oklch(82% 0.18 70 / .65),
+    0 0 80px 0 oklch(95% 0.14 80 / .4),
+    inset 0 0 0 1.5px var(--bg);}
+}
+@keyframes lightWaveBidir{
+  0%{background-position:-50% 0%;}
+  50%{background-position:150% 0%;}
+  100%{background-position:-50% 0%;}
+}
+
+.title{
+  font-family:var(--ff-mono);
+  font-size:14px;font-weight:700;letter-spacing:.16em;
+  color:var(--ink);text-transform:uppercase;
+  text-align:center;
+}
+.title small{
+  display:block;font-size:11px;font-weight:500;color:var(--muted);
+  margin-top:6px;letter-spacing:.04em;text-transform:none;
+}
+</style>
+</head>
+<body>
+<div class="title">
+  Cockpit do piloto · halos do trecho neste stint
+  <small>Mesmo layout, só o halo de fundo muda — laranja celebra o melhor, roxo sinaliza o pior do stint naquele trecho</small>
+</div>
+
+<div class="compare-wrap">
+
+  <!-- ╔═══ ESTADO 1 ═══ RECORDE DO TRECHO NESTE STINT (laranja, delta verde) ╗ -->
+  <div class="compare-row compare-row--orange">
+    <div class="compare-row__lbl">
+      <span class="swatch"></span>
+      <b>Recorde do trecho neste stint</b> · halo laranja · delta verde forte
+    </div>
+
+    <div class="device" data-trecho-status="recorde-stint">
+      <div class="notch"></div>
+      <div class="telemetria-chip">
+        <span class="telemetria-chip__dot ok"></span>
+        <span class="telemetria-chip__dot ok"></span>
+        <span class="telemetria-chip__dot ok"></span>
+        <span class="telemetria-chip__dot ok"></span>
+        <span class="telemetria-chip__dot warn"></span>
+        <span class="telemetria-chip__dot ok"></span>
+      </div>
+      <section class="apex">
+        <div class="apex__ponto" data-estado="ok-melhor">
+          <span class="apex__label">Entrada</span>
+          <span class="apex__valor">95<small>km/h</small></span>
+        </div>
+        <div class="apex__ponto" data-estado="ok-melhor">
+          <span class="apex__label">Freio</span>
+          <span class="apex__valor">15<span class="apex__valor__sep">/</span>16<small>m</small></span>
+        </div>
+        <div class="apex__ponto" data-estado="ativo">
+          <span class="apex__label">Ápice</span>
+          <span class="apex__valor">78<small>km/h</small></span>
+        </div>
+        <div class="apex__ponto" data-estado="pendente">
+          <span class="apex__label">Saída</span>
+          <span class="apex__valor">—</span>
+        </div>
+      </section>
+      <div class="dom-bloco">
+        <span class="dom__value bom">0.27</span>
+      </div>
+      <section class="acao"><span class="acao__msg">ÁPICE TARDE</span></section>
+      <div class="stint-bar">
+        <div class="stint-bar__block is-neutral"></div>
+        <div class="stint-bar__block is-faster"></div>
+        <div class="stint-bar__block is-slower"></div>
+        <div class="stint-bar__block is-faster"></div>
+        <div class="stint-bar__block is-slower"></div>
+        <div class="stint-bar__block is-best-stint"></div>
+        <div class="stint-bar__block is-best-alltime"></div>
+        <div class="stint-bar__block is-current"></div>
+        <div class="stint-bar__block"></div>
+        <div class="stint-bar__block"></div>
+        <div class="stint-bar__block"></div>
+        <div class="stint-bar__block"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ╔═══ ESTADO 2 ═══ PIOR TRECHO DESTE STINT (roxo, delta vermelho) ╗ -->
+  <div class="compare-row compare-row--purple">
+    <div class="compare-row__lbl">
+      <span class="swatch"></span>
+      <b>Pior trecho deste stint</b> · halo roxo · delta vermelho
+    </div>
+
+    <div class="device" data-trecho-status="pior-stint">
+      <div class="notch"></div>
+      <div class="telemetria-chip">
+        <span class="telemetria-chip__dot ok"></span>
+        <span class="telemetria-chip__dot ok"></span>
+        <span class="telemetria-chip__dot ok"></span>
+        <span class="telemetria-chip__dot ok"></span>
+        <span class="telemetria-chip__dot warn"></span>
+        <span class="telemetria-chip__dot ok"></span>
+      </div>
+      <section class="apex">
+        <div class="apex__ponto" data-estado="ok-pior">
+          <span class="apex__label">Entrada</span>
+          <span class="apex__valor">88<small>km/h</small></span>
+        </div>
+        <div class="apex__ponto" data-estado="ok-pior">
+          <span class="apex__label">Freio</span>
+          <span class="apex__valor">22<span class="apex__valor__sep">/</span>16<small>m</small></span>
+        </div>
+        <div class="apex__ponto" data-estado="ativo">
+          <span class="apex__label">Ápice</span>
+          <span class="apex__valor">71<small>km/h</small></span>
+        </div>
+        <div class="apex__ponto" data-estado="pendente">
+          <span class="apex__label">Saída</span>
+          <span class="apex__valor">—</span>
+        </div>
+      </section>
+      <div class="dom-bloco">
+        <span class="dom__value erro">0.42</span>
+      </div>
+      <section class="acao"><span class="acao__msg erro">FREIE TARDE</span></section>
+      <div class="stint-bar">
+        <div class="stint-bar__block is-neutral"></div>
+        <div class="stint-bar__block is-faster"></div>
+        <div class="stint-bar__block is-slower"></div>
+        <div class="stint-bar__block is-faster"></div>
+        <div class="stint-bar__block is-slower"></div>
+        <div class="stint-bar__block is-best-stint"></div>
+        <div class="stint-bar__block is-best-alltime"></div>
+        <div class="stint-bar__block is-current"></div>
+        <div class="stint-bar__block"></div>
+        <div class="stint-bar__block"></div>
+        <div class="stint-bar__block"></div>
+        <div class="stint-bar__block"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
