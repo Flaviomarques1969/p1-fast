@@ -338,3 +338,15 @@ Roda com `node tests/node-smoke-p1-coach.mjs`.
 - **BAIXA confidence ≠ proibida — é guardada por intenção do piloto.**
   Quando o piloto pede "foco em linha de visão", aceita o risco do
   proxy.
+- **`trajetoria` é optional, não required (auditoria 2026-04-30).**
+  Inicialmente L001/L007 listavam `trajetoria` como required, mas
+  nenhum módulo do pipeline emite esse sinal pronto. Voltou para
+  `optionalSignals` — a comparação com a volta de referência é
+  responsabilidade da camada de cima (`reference-line.js` ou um
+  `trajectory-monitor` futuro). O coach só decide QUANDO emitir.
+- **Fase 2 é gated por `active: false`, não por sinais.**
+  Algumas Fase 2 (L102 círculo de grip, L105 zebra) têm
+  `requiredSignals` que o iPhone produz. O bloqueio efetivo vem do
+  flag `active` — `activeLessons()` filtra antes do gating de sinais.
+  Quando o sensor real entrar (RaceBox p/ L105), basta virar
+  `active: true`.
