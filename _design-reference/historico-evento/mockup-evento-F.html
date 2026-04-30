@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=430, initial-scale=1, viewport-fit=cover">
+<title>Mockup Evento — Linha F · Linguagem natural</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-deep: oklch(8% 0 0);
+  --surface: oklch(12% 0.003 240);
+  --surface-2: oklch(15% 0.005 240);
+  --hairline: oklch(25% 0.005 240);
+  --hairline-bold: oklch(35% 0.005 240);
+  --text: oklch(96% 0.005 90);
+  --text-2: oklch(70% 0.01 240);
+  --text-3: oklch(48% 0.01 240);
+  --accent: oklch(62% 0.22 22);
+  --accent-glow: oklch(62% 0.22 22 / .35);
+  --green: oklch(72% 0.18 145);
+  --green-glow: oklch(72% 0.18 145 / .3);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:radial-gradient(ellipse at top, oklch(14% 0.01 240) 0%, var(--bg-deep) 70%);
+  color:var(--text);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+.device{
+  width:430px;height:932px;
+  background:var(--bg-deep);
+  border-radius:48px;border:1px solid oklch(20% 0.005 240);
+  box-shadow:0 30px 80px oklch(0% 0 0 / .8), 0 0 0 8px oklch(5% 0 0);
+  position:relative;overflow:hidden;
+  display:flex;flex-direction:column;
+}
+.notch{
+  position:absolute;top:8px;left:50%;transform:translateX(-50%);
+  width:128px;height:36px;background:#000;border-radius:20px;z-index:50;
+}
+.modal{flex:1;display:flex;flex-direction:column;padding-top:60px;}
+
+/* HEAD */
+.head{
+  padding:14px 22px 12px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--hairline);
+}
+.head__l{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;font-weight:600;letter-spacing:.18em;
+  color:var(--text);text-transform:uppercase;
+  display:flex;align-items:center;gap:8px;
+}
+.head__l::before{
+  content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);
+  box-shadow:0 0 8px var(--accent-glow);
+}
+.head__close{
+  background:transparent;border:1px solid var(--hairline-bold);color:var(--text-2);
+  font-family:inherit;font-size:11px;font-weight:600;letter-spacing:.12em;
+  padding:6px 10px;border-radius:2px;cursor:pointer;text-transform:uppercase;
+}
+
+/* HERO input */
+.hero{
+  padding:20px 22px 18px;
+  border-bottom:1px solid var(--hairline);
+}
+.hero__lbl{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;font-weight:600;letter-spacing:.18em;
+  color:var(--text-3);text-transform:uppercase;margin-bottom:8px;
+  display:flex;align-items:center;gap:8px;
+}
+.hero__lbl::after{content:'';flex:1;height:1px;background:var(--hairline);}
+.hero__input{
+  width:100%;background:transparent;border:0;outline:none;
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  font-size:21px;font-weight:600;letter-spacing:-.02em;line-height:1.25;
+  padding:6px 0;resize:none;
+}
+.hero__input::selection{background:var(--accent-glow);}
+.hero__bar{
+  display:flex;align-items:center;gap:10px;margin-top:14px;
+  padding-top:12px;border-top:1px dashed var(--hairline);
+}
+.hero__pulse{
+  display:inline-flex;align-items:center;gap:4px;
+}
+.hero__pulse i{
+  display:block;width:3px;height:14px;background:var(--green);border-radius:2px;
+  animation:pulse 1.4s ease-in-out infinite;
+}
+.hero__pulse i:nth-child(2){animation-delay:.15s;height:18px;}
+.hero__pulse i:nth-child(3){animation-delay:.3s;height:10px;}
+.hero__pulse i:nth-child(4){animation-delay:.45s;height:16px;}
+.hero__pulse i:nth-child(5){animation-delay:.6s;height:8px;}
+@keyframes pulse{
+  0%,100%{transform:scaleY(.5);opacity:.5;}
+  50%{transform:scaleY(1);opacity:1;}
+}
+.hero__status{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;font-weight:600;letter-spacing:.16em;
+  color:var(--green);text-transform:uppercase;
+  flex:1;
+}
+.hero__rebuild{
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;font-weight:600;letter-spacing:.14em;color:var(--text-3);
+  text-transform:uppercase;background:transparent;border:1px solid var(--hairline-bold);
+  padding:5px 10px;border-radius:2px;cursor:pointer;
+}
+
+/* INTERPRETED list */
+.body{flex:1;overflow-y:auto;padding:14px 22px 22px;}
+.parsed__lbl{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;font-weight:600;letter-spacing:.18em;
+  color:var(--text-3);text-transform:uppercase;margin-bottom:10px;
+  display:flex;align-items:center;gap:8px;
+}
+.parsed__lbl::after{content:'';flex:1;height:1px;background:var(--hairline);}
+.parsed__list{display:flex;flex-direction:column;gap:6px;}
+.parsed{
+  background:var(--surface);border:1px solid var(--hairline);
+  padding:12px 14px;border-radius:4px;
+  display:grid;grid-template-columns:14px 80px 1fr auto;gap:12px;align-items:center;
+  position:relative;
+}
+.parsed__dot{
+  width:8px;height:8px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 8px var(--green-glow);
+}
+.parsed__lbl-row{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;font-weight:600;letter-spacing:.14em;
+  color:var(--text-3);text-transform:uppercase;
+}
+.parsed__val{
+  font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.005em;
+}
+.parsed__val small{
+  display:block;font-size:11px;font-weight:500;color:var(--text-3);margin-top:2px;
+  font-family:'JetBrains Mono',monospace;letter-spacing:.04em;
+}
+.parsed__edit{
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;font-weight:600;letter-spacing:.14em;color:var(--text-3);
+  text-transform:uppercase;background:transparent;border:1px solid var(--hairline-bold);
+  padding:4px 8px;border-radius:2px;cursor:pointer;
+}
+.parsed--inferred{
+  border-style:dashed;
+}
+.parsed--inferred .parsed__dot{background:var(--accent);box-shadow:0 0 8px var(--accent-glow);}
+
+.confidence{
+  margin-top:14px;padding:12px 14px;
+  background:var(--surface);border:1px solid var(--hairline);border-radius:4px;
+  display:flex;align-items:center;gap:12px;
+}
+.confidence__bar{
+  width:60px;height:6px;background:var(--hairline);border-radius:3px;overflow:hidden;
+}
+.confidence__bar i{display:block;height:100%;background:var(--green);width:88%;}
+.confidence__txt{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;font-weight:600;letter-spacing:.12em;
+  color:var(--text-2);text-transform:uppercase;flex:1;
+}
+.confidence__txt b{color:var(--green);font-weight:700;}
+.confidence__txt span{color:var(--text-3);}
+
+/* FOOT */
+.foot{
+  padding:14px 22px 28px;
+  border-top:1px solid var(--hairline-bold);
+  display:grid;grid-template-columns:auto 1fr;gap:10px;
+}
+.btn{
+  padding:16px 14px;border-radius:4px;cursor:pointer;border:0;
+  font-family:inherit;font-size:13px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;outline:none;
+}
+.btn--ghost{
+  background:transparent;border:1px solid var(--hairline-bold);color:var(--text-2);
+}
+.btn--primary{
+  background:var(--accent);color:#fff;
+  box-shadow:0 6px 30px var(--accent-glow);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn--primary::before{
+  content:'';width:6px;height:6px;border-radius:50%;background:#fff;
+}
+</style>
+</head>
+<body>
+<div class="device">
+  <div class="notch"></div>
+  <div class="modal">
+    <div class="head">
+      <div class="head__l">Linguagem Natural</div>
+      <button class="head__close">FECHAR</button>
+    </div>
+
+    <div class="hero">
+      <div class="hero__lbl">Conte como vai ser</div>
+      <textarea class="hero__input" rows="2">Track day em Brasília sábado às 8 da manhã</textarea>
+      <div class="hero__bar">
+        <div class="hero__pulse"><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="hero__status">Entendi · 5 campos preenchidos</div>
+        <button class="hero__rebuild">Reanalisar</button>
+      </div>
+    </div>
+
+    <div class="body">
+      <div class="parsed__lbl">Interpretado do seu texto</div>
+      <div class="parsed__list">
+        <div class="parsed parsed--inferred">
+          <div class="parsed__dot"></div>
+          <div class="parsed__lbl-row">Nome</div>
+          <div class="parsed__val">Copa Brasília — Etapa 2<small>Sugerido por histórico</small></div>
+          <button class="parsed__edit">Trocar</button>
+        </div>
+        <div class="parsed">
+          <div class="parsed__dot"></div>
+          <div class="parsed__lbl-row">Onde</div>
+          <div class="parsed__val">Brasília<small>Auto. Int. Nelson Piquet · DF</small></div>
+          <button class="parsed__edit">Trocar</button>
+        </div>
+        <div class="parsed">
+          <div class="parsed__dot"></div>
+          <div class="parsed__lbl-row">Quando</div>
+          <div class="parsed__val">Sábado, 02/05/2026<small>Próximo sábado</small></div>
+          <button class="parsed__edit">Trocar</button>
+        </div>
+        <div class="parsed">
+          <div class="parsed__dot"></div>
+          <div class="parsed__lbl-row">Janela</div>
+          <div class="parsed__val">08:00 → 17:00<small>Início detectado · fim padrão TD</small></div>
+          <button class="parsed__edit">Trocar</button>
+        </div>
+        <div class="parsed">
+          <div class="parsed__dot"></div>
+          <div class="parsed__lbl-row">Tipo</div>
+          <div class="parsed__val">Track Day<small>Detectado direto da frase</small></div>
+          <button class="parsed__edit">Trocar</button>
+        </div>
+      </div>
+
+      <div class="confidence">
+        <div class="confidence__bar"><i></i></div>
+        <div class="confidence__txt"><b>88% confiança</b><span> · 4 detectados, 1 inferido</span></div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <button class="btn btn--ghost">Editar Texto</button>
+      <button class="btn btn--primary">Tudo Certo · Salvar</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

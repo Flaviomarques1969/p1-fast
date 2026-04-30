@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=430, initial-scale=1, viewport-fit=cover">
+<title>Mockup Evento — Linha B · Cockpit minimalista</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(20% 0.005 240);
+  --surface: oklch(24% 0.005 240);
+  --surface-2: oklch(28% 0.005 240);
+  --hairline: oklch(33% 0.005 240);
+  --text: oklch(95% 0.003 240);
+  --text-2: oklch(75% 0.01 240);
+  --text-3: oklch(58% 0.012 240);
+  --accent: oklch(78% 0.13 235);
+  --accent-2: oklch(82% 0.10 235 / .15);
+  --green: oklch(78% 0.16 150);
+  --radius: 12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:linear-gradient(160deg, oklch(22% 0.005 240) 0%, oklch(18% 0.005 240) 100%);
+  color:var(--text);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  font-weight:400;
+}
+.device{
+  width:430px;height:932px;
+  background:var(--bg);
+  border-radius:48px;
+  border:1px solid oklch(28% 0.005 240);
+  box-shadow:0 30px 80px oklch(0% 0 0 / .6), 0 0 0 8px oklch(12% 0.005 240);
+  position:relative;overflow:hidden;
+  display:flex;flex-direction:column;
+}
+.notch{
+  position:absolute;top:8px;left:50%;transform:translateX(-50%);
+  width:128px;height:36px;background:#000;border-radius:20px;z-index:50;
+}
+.modal{
+  flex:1;display:flex;flex-direction:column;
+  padding-top:60px;
+}
+/* HEAD */
+.head{
+  padding:18px 24px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.head__title{
+  font-size:22px;font-weight:600;letter-spacing:-.02em;color:var(--text);
+}
+.head__sub{
+  font-size:12px;font-weight:400;color:var(--text-3);margin-top:1px;letter-spacing:.005em;
+}
+.head__close{
+  background:transparent;border:0;color:var(--text-2);
+  font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;
+  padding:8px 12px;border-radius:8px;
+}
+.head__close:hover{background:oklch(28% 0.005 240);}
+/* BODY */
+.body{flex:1;overflow-y:auto;padding:6px 24px 24px;}
+.field{margin-bottom:22px;}
+.field__lbl{
+  font-size:13px;font-weight:500;color:var(--text-2);
+  margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;
+  letter-spacing:.005em;
+}
+.field__lbl small{color:var(--text-3);font-weight:400;font-size:12px;}
+.input{
+  width:100%;background:var(--surface);border:1px solid var(--hairline);
+  color:var(--text);font-family:inherit;
+  font-size:17px;font-weight:500;letter-spacing:-.005em;
+  padding:14px 16px;border-radius:var(--radius);
+  outline:none;transition:border-color .18s, box-shadow .18s, background .18s;
+}
+.input:focus, .input.is-focus{
+  border-color:var(--accent);
+  background:oklch(26% 0.01 235);
+  box-shadow:0 0 0 4px oklch(78% 0.13 235 / .14);
+}
+.memory{
+  margin-top:8px;display:inline-flex;align-items:center;gap:8px;
+  font-size:12px;color:var(--text-3);font-weight:400;cursor:pointer;
+  background:transparent;border:0;padding:4px 0;
+}
+.memory b{color:var(--accent);font-weight:500;}
+/* PICKER */
+.picker{
+  width:100%;background:var(--surface);border:1px solid var(--hairline);
+  padding:13px 16px;border-radius:var(--radius);
+  display:flex;align-items:center;justify-content:space-between;cursor:pointer;
+  transition:border-color .18s, background .18s;
+}
+.picker:hover{background:var(--surface-2);}
+.picker__val{font-size:17px;font-weight:500;letter-spacing:-.005em;color:var(--text);}
+.picker__hint{font-size:12px;color:var(--text-3);margin-top:2px;font-weight:400;}
+.picker__chev{
+  width:20px;height:20px;border-radius:6px;background:var(--surface-2);
+  display:flex;align-items:center;justify-content:center;color:var(--text-2);font-size:12px;
+}
+/* CHIP RAIL */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none;}
+.chips::-webkit-scrollbar{display:none;}
+.chip{
+  flex:0 0 auto;padding:10px 14px;
+  background:var(--surface);border:1px solid var(--hairline);
+  border-radius:10px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:1px;
+  min-width:78px;transition:all .2s cubic-bezier(.34,1.56,.64,1);
+}
+.chip__top{font-size:10px;font-weight:500;color:var(--text-3);letter-spacing:.04em;text-transform:uppercase;}
+.chip__main{font-size:14px;font-weight:600;letter-spacing:-.01em;color:var(--text);font-variant-numeric:tabular-nums;}
+.chip.is-active{
+  background:oklch(40% 0.10 235);
+  border-color:var(--accent);
+  color:var(--text);
+  transform:translateY(-1px);
+  box-shadow:0 8px 20px oklch(78% 0.13 235 / .15);
+}
+.chip.is-active .chip__top{color:var(--accent);}
+.chip.is-active .chip__main{color:#fff;}
+/* TIME WHEEL */
+.time-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.time-card{
+  background:var(--surface);border:1px solid var(--hairline);
+  padding:14px 16px;border-radius:var(--radius);
+  cursor:pointer;
+}
+.time-card__lbl{font-size:12px;color:var(--text-3);margin-bottom:8px;font-weight:400;}
+.time-card__val{
+  font-size:32px;font-weight:600;letter-spacing:-.025em;color:var(--text);
+  font-variant-numeric:tabular-nums;line-height:1;
+}
+.time-card__sub{font-size:11px;color:var(--text-3);margin-top:6px;font-weight:400;}
+.time-card .colon{color:var(--text-3);}
+/* SEGMENTED tipo */
+.tipo-rail{display:flex;gap:6px;flex-wrap:wrap;}
+.tipo{
+  padding:9px 14px;border:1px solid var(--hairline);background:var(--surface);
+  border-radius:999px;font-size:13px;font-weight:500;letter-spacing:-.005em;
+  cursor:pointer;color:var(--text-2);
+  transition:all .2s cubic-bezier(.34,1.56,.64,1);
+}
+.tipo:hover{background:var(--surface-2);color:var(--text);}
+.tipo.is-active{
+  background:var(--accent);color:oklch(15% 0.01 235);border-color:var(--accent);
+  font-weight:600;
+}
+.tipo--new{
+  border-style:dashed;color:var(--text-3);
+}
+/* FOOT */
+.foot{
+  padding:14px 24px 30px;
+  background:linear-gradient(180deg,transparent,var(--bg) 30%);
+  display:grid;grid-template-columns:auto 1fr;gap:10px;
+}
+.btn{
+  padding:14px 18px;border-radius:14px;cursor:pointer;
+  font-family:inherit;font-size:15px;font-weight:600;letter-spacing:-.005em;
+  outline:none;border:0;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s;
+}
+.btn:active{transform:scale(.97);}
+.btn--ghost{
+  background:transparent;color:var(--text-2);
+}
+.btn--ghost:hover{background:var(--surface);color:var(--text);}
+.btn--primary{
+  background:var(--accent);color:oklch(12% 0.005 240);
+}
+.btn--primary:hover{background:oklch(82% 0.14 235);}
+/* helper */
+.summary{
+  background:var(--surface);border:1px solid var(--hairline);
+  padding:12px 14px;border-radius:var(--radius);
+  font-size:12px;color:var(--text-2);margin-bottom:10px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.summary b{color:var(--text);font-weight:600;}
+</style>
+</head>
+<body>
+<div class="device">
+  <div class="notch"></div>
+  <div class="modal">
+    <div class="head">
+      <div>
+        <div class="head__title">Novo evento</div>
+        <div class="head__sub">Track day, treino, corrida ou sessão de testes</div>
+      </div>
+      <button class="head__close">Fechar</button>
+    </div>
+    <div class="body">
+      <div class="field">
+        <div class="field__lbl">Nome <small>obrigatório</small></div>
+        <input class="input" value="Copa Brasília — Etapa 2">
+        <button class="memory">Sugerido <b>· Copa Brasília — Etapa 1</b></button>
+      </div>
+
+      <div class="field">
+        <div class="field__lbl">Autódromo <small>obrigatório</small></div>
+        <button class="picker is-focus">
+          <div>
+            <div class="picker__val">Brasília</div>
+            <div class="picker__hint">Auto. Int. Nelson Piquet · DF · 3,4 km</div>
+          </div>
+          <div class="picker__chev">›</div>
+        </button>
+        <button class="memory">Último usado <b>· Brasília</b></button>
+      </div>
+
+      <div class="field">
+        <div class="field__lbl">Quando <small>obrigatório</small></div>
+        <div class="chips">
+          <div class="chip"><span class="chip__top">Hoje</span><span class="chip__main">qui 30/04</span></div>
+          <div class="chip is-active"><span class="chip__top">Sábado</span><span class="chip__main">02/05</span></div>
+          <div class="chip"><span class="chip__top">Domingo</span><span class="chip__main">03/05</span></div>
+          <div class="chip"><span class="chip__top">Próx. FDS</span><span class="chip__main">09/05</span></div>
+          <div class="chip"><span class="chip__top">Calendário</span><span class="chip__main">···</span></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field__lbl">Janela do dia <small>opcional</small></div>
+        <div class="time-row">
+          <div class="time-card">
+            <div class="time-card__lbl">Início</div>
+            <div class="time-card__val">08<span class="colon">:</span>00</div>
+            <div class="time-card__sub">Padrão de track day</div>
+          </div>
+          <div class="time-card">
+            <div class="time-card__lbl">Fim</div>
+            <div class="time-card__val">17<span class="colon">:</span>00</div>
+            <div class="time-card__sub">Padrão de track day</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field__lbl">Tipo <small>opcional</small></div>
+        <div class="tipo-rail">
+          <div class="tipo is-active">Track Day</div>
+          <div class="tipo">Treino</div>
+          <div class="tipo">Treino de largada</div>
+          <div class="tipo">Corrida</div>
+          <div class="tipo">Validação</div>
+          <div class="tipo">Sessão de testes</div>
+          <div class="tipo">Prática livre</div>
+          <div class="tipo tipo--new">+ Novo tipo</div>
+        </div>
+      </div>
+
+      <div class="summary">
+        <span>Resumo</span>
+        <b>Sábado 02/05 · 08–17h · Brasília · Track Day</b>
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn btn--ghost">Cancelar</button>
+      <button class="btn btn--primary">Salvar evento</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

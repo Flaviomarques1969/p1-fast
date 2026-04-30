@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modal Evento — Comparação A / B / C</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100vh;background:#0a0a0c;color:#e5e7eb;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+.shell{padding:24px 28px 60px;}
+.head{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:24px;
+  padding-bottom:18px;border-bottom:1px solid #1a1a1f;margin-bottom:24px;
+}
+.head h1{
+  font-size:22px;font-weight:700;letter-spacing:-.02em;color:#fafafa;
+}
+.head h1 small{
+  display:block;font-size:12px;font-weight:500;color:#71717a;letter-spacing:.04em;
+  text-transform:uppercase;margin-top:4px;
+}
+.controls{
+  display:flex;gap:6px;align-items:center;flex-wrap:wrap;
+}
+.controls__lbl{font-size:11px;color:#71717a;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin-right:8px;}
+.size-btn{
+  background:#15151a;border:1px solid #2a2a31;color:#a1a1aa;
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.04em;
+  padding:7px 11px;border-radius:6px;cursor:pointer;
+}
+.size-btn.is-active{background:#2a2a31;color:#fafafa;border-color:#3f3f46;}
+.size-btn:hover{color:#fafafa;}
+
+.grid{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;
+}
+@media (max-width:1400px){
+  .grid{grid-template-columns:repeat(3,430px);overflow-x:auto;padding-bottom:12px;}
+  .grid::-webkit-scrollbar{height:8px;}
+  .grid::-webkit-scrollbar-thumb{background:#2a2a31;border-radius:4px;}
+}
+.card{
+  background:#0f0f12;border:1px solid #1f1f25;border-radius:18px;overflow:hidden;
+  display:flex;flex-direction:column;
+}
+.card__head{
+  padding:14px 18px;border-bottom:1px solid #1a1a1f;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.card__title{
+  font-size:14px;font-weight:700;color:#fafafa;letter-spacing:-.005em;
+}
+.card__title b{
+  display:inline-block;width:24px;height:24px;border-radius:50%;
+  background:#27272a;color:#fafafa;
+  text-align:center;line-height:24px;
+  font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;
+  margin-right:8px;
+}
+.card--A .card__title b{background:#7f1d1d;color:#fff;}
+.card--B .card__title b{background:#1e3a5f;color:#bfe5ff;}
+.card--C .card__title b{background:linear-gradient(135deg,#a855f7,#22d3ee);color:#fff;}
+.card__sub{
+  font-size:11px;font-weight:500;color:#71717a;letter-spacing:.005em;
+  margin-top:2px;
+}
+.card__open{
+  background:transparent;border:1px solid #2a2a31;color:#a1a1aa;
+  font-family:inherit;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  padding:6px 10px;border-radius:6px;cursor:pointer;
+  text-decoration:none;display:inline-block;
+}
+.card__open:hover{color:#fafafa;border-color:#3f3f46;}
+
+.card__frame{
+  position:relative;background:#000;display:flex;align-items:flex-start;justify-content:center;
+  padding:0;
+}
+.card__frame iframe{
+  width:430px;height:932px;border:0;display:block;background:#000;
+  transform-origin:top center;
+}
+.card__meta{
+  padding:14px 18px;background:#0a0a0c;border-top:1px solid #1a1a1f;
+}
+.card__meta dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:12px;}
+.card__meta dt{color:#71717a;font-weight:500;}
+.card__meta dd{color:#d4d4d8;font-weight:400;}
+.card__meta dd b{color:#fafafa;font-weight:600;}
+
+.foot{
+  margin-top:32px;padding:20px 22px;background:#0f0f12;border:1px solid #1f1f25;border-radius:12px;
+  font-size:13px;color:#a1a1aa;line-height:1.6;
+}
+.foot b{color:#fafafa;font-weight:600;}
+.foot ul{margin-top:8px;padding-left:18px;}
+.foot li{margin-bottom:4px;}
+.foot li b.tag{
+  display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;
+  padding:2px 6px;border-radius:4px;background:#7f1d1d;color:#fff;
+  margin-right:6px;letter-spacing:.04em;
+}
+.foot li b.tag--rec{background:#854d0e;}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="head">
+    <h1>Modal Evento — comparação<small>3 propostas estéticas · escolha o tom que vira DNA da aplicação</small></h1>
+    <div class="controls">
+      <span class="controls__lbl">Zoom</span>
+      <button class="size-btn is-active" data-scale="0.78">78%</button>
+      <button class="size-btn" data-scale="0.92">92%</button>
+      <button class="size-btn" data-scale="1">100%</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card card--A">
+      <div class="card__head">
+        <div>
+          <div class="card__title"><b>A</b>Cronógrafo profissional</div>
+          <div class="card__sub">Tag Heuer Connected · Porsche PCM · MoTeC</div>
+        </div>
+        <a class="card__open" href="mockup-evento-A.html" target="_blank">Abrir</a>
+      </div>
+      <div class="card__frame">
+        <iframe src="mockup-evento-A.html" data-frame></iframe>
+      </div>
+      <div class="card__meta">
+        <dl>
+          <dt>Fundo</dt><dd>OLED black</dd>
+          <dt>Accent</dt><dd>Racing red <b>oklch(0.62 0.22 22)</b></dd>
+          <dt>Cantos</dt><dd>4px (retos)</dd>
+          <dt>Tipografia</dt><dd>Inter + JetBrains Mono <b>uppercase micro-labels</b></dd>
+          <dt>Sensação</dt><dd><b>Instrumento profissional</b></dd>
+          <dt>Critic</dt><dd>Hierarquia 5/5 · Identidade 5/5 · Legib 3/5</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card card--B">
+      <div class="card__head">
+        <div>
+          <div class="card__title"><b>B</b>Cockpit minimalista</div>
+          <div class="card__sub">McLaren MCL · Apple Watch Sport · Arc</div>
+        </div>
+        <a class="card__open" href="mockup-evento-B.html" target="_blank">Abrir</a>
+      </div>
+      <div class="card__frame">
+        <iframe src="mockup-evento-B.html" data-frame></iframe>
+      </div>
+      <div class="card__meta">
+        <dl>
+          <dt>Fundo</dt><dd>Grafite escuro</dd>
+          <dt>Accent</dt><dd>Ice blue <b>oklch(0.78 0.13 235)</b></dd>
+          <dt>Cantos</dt><dd>12px</dd>
+          <dt>Tipografia</dt><dd>Inter 500 · sentence case</dd>
+          <dt>Sensação</dt><dd><b>Precisão silenciosa</b></dd>
+          <dt>Critic</dt><dd>Hierarquia 3/5 · Identidade 3/5 · Legib 4/5</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card card--C">
+      <div class="card__head">
+        <div>
+          <div class="card__title"><b>C</b>Tech wellness premium</div>
+          <div class="card__sub">Whoop · Oura · Linear</div>
+        </div>
+        <a class="card__open" href="mockup-evento-C.html" target="_blank">Abrir</a>
+      </div>
+      <div class="card__frame">
+        <iframe src="mockup-evento-C.html" data-frame></iframe>
+      </div>
+      <div class="card__meta">
+        <dl>
+          <dt>Fundo</dt><dd>Aurora gradient · glassmorphism</dd>
+          <dt>Accent</dt><dd>Magenta+Cyan gradient</dd>
+          <dt>Cantos</dt><dd>18px (arredondado)</dd>
+          <dt>Tipografia</dt><dd>Inter 700 · microcopy conversacional</dd>
+          <dt>Sensação</dt><dd><b>Encantamento expressivo</b></dd>
+          <dt>Critic</dt><dd>Hierarquia 2/5 · Identidade 4/5 · Legib 2/5</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>Achados duros do critic (precisam fix antes da decisão virar definitiva):</b>
+    <ul>
+      <li><b class="tag">A1</b><b>A:</b> botão FECHAR do header com 26px de altura — falha touch target (mín 44px).</li>
+      <li><b class="tag">A2</b><b>A:</b> footer não-sticky — pode cair fora do fold em iPhone real.</li>
+      <li><b class="tag tag--rec">A3</b><b>A:</b> labels 10px JetBrains Mono no limite de leitura sob luz forte.</li>
+      <li><b class="tag">B1</b><b>B:</b> CTA "Salvar evento" fora do viewport mesmo em 1100px — em iPhone 844px é fundo do mar.</li>
+      <li><b class="tag">B2</b><b>B:</b> chips de tipo (Track Day, Treino, ...) com 36px de altura — falha touch + acessibilidade. <code>&lt;div&gt;</code> em vez de <code>&lt;button&gt;</code>.</li>
+      <li><b class="tag tag--rec">B3</b><b>B:</b> memory chips são button mas só 22px — duplica problema A1.</li>
+      <li><b class="tag">C1</b><b>C:</b> colon do time-card com opacity 0.5 some no fundo — vira "08 00", não "08:00".</li>
+      <li><b class="tag tag--rec">C2</b><b>C:</b> subtítulo "Em 5 toques…" 12px com contraste limítrofe.</li>
+      <li><b class="tag tag--rec">C3</b><b>C:</b> 4 elementos com gradient/brilho competindo (título, chip status, chip data ativo, CTA) — escolher 1 hero.</li>
+      <li><b class="tag tag--rec">C4</b><b>C:</b> microcopy conversacional encarece manutenção em 32 campos da Modal Config — cada label vira decisão de copy.</li>
+    </ul>
+    <p style="margin-top:12px"><b>Recomendação do critic:</b> Linha A é o melhor balanço de premium-feel + legibilidade. C tem identidade forte mas confunde a categoria (wellness ≠ esporte motor). B é seguro mas esquecível.</p>
+  </div>
+</div>
+
+<script>
+const frames = document.querySelectorAll('[data-frame]');
+const btns = document.querySelectorAll('.size-btn');
+function setScale(s){
+  frames.forEach(f=>{
+    f.style.transform = `scale(${s})`;
+    const card = f.closest('.card__frame');
+    card.style.height = (932 * s) + 'px';
+    card.style.width = '100%';
+    card.style.overflow = 'hidden';
+    f.style.width = (430 / s) + 'px';
+    f.style.transformOrigin = 'top left';
+    f.style.position = 'absolute';
+    f.style.left = '50%';
+    f.style.marginLeft = (-(430 / 2)) + 'px';
+  });
+  btns.forEach(b=>b.classList.toggle('is-active', parseFloat(b.dataset.scale) === s));
+}
+btns.forEach(b=>b.addEventListener('click', ()=> setScale(parseFloat(b.dataset.scale))));
+// iniciar 78%
+setScale(0.78);
+</script>
+</body>
+</html>

@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=430, initial-scale=1, viewport-fit=cover">
+<title>Mockup Evento — Linha D · Pergunta-por-vez</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-deep: oklch(8% 0 0);
+  --surface: oklch(12% 0.003 240);
+  --surface-2: oklch(15% 0.005 240);
+  --hairline: oklch(25% 0.005 240);
+  --hairline-bold: oklch(35% 0.005 240);
+  --text: oklch(96% 0.005 90);
+  --text-2: oklch(70% 0.01 240);
+  --text-3: oklch(48% 0.01 240);
+  --accent: oklch(62% 0.22 22);
+  --accent-glow: oklch(62% 0.22 22 / .35);
+  --green: oklch(72% 0.18 145);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:radial-gradient(ellipse at top, oklch(14% 0.01 240) 0%, var(--bg-deep) 70%);
+  color:var(--text);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+.device{
+  width:430px;height:932px;
+  background:var(--bg-deep);
+  border-radius:48px;border:1px solid oklch(20% 0.005 240);
+  box-shadow:0 30px 80px oklch(0% 0 0 / .8), 0 0 0 8px oklch(5% 0 0);
+  position:relative;overflow:hidden;
+  display:flex;flex-direction:column;
+}
+.notch{
+  position:absolute;top:8px;left:50%;transform:translateX(-50%);
+  width:128px;height:36px;background:#000;border-radius:20px;z-index:50;
+}
+.modal{
+  flex:1;display:flex;flex-direction:column;
+  padding-top:56px;
+}
+
+/* HEAD — progress + close */
+.head{
+  padding:14px 24px 8px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.dots{display:flex;gap:5px;align-items:center;flex:1;}
+.dot{
+  height:3px;flex:1;background:var(--hairline);border-radius:2px;
+  transition:background .3s cubic-bezier(.34,1.56,.64,1);
+}
+.dot.is-done{background:var(--accent);}
+.dot.is-active{background:var(--accent);box-shadow:0 0 8px var(--accent-glow);}
+.head__close{
+  background:transparent;border:1px solid var(--hairline-bold);color:var(--text-2);
+  font-family:inherit;font-size:11px;font-weight:600;letter-spacing:.12em;
+  padding:6px 12px;border-radius:2px;cursor:pointer;text-transform:uppercase;
+}
+
+/* eyebrow */
+.eyebrow{
+  padding:8px 24px 0;
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;font-weight:600;letter-spacing:.18em;
+  color:var(--accent);text-transform:uppercase;
+  display:flex;align-items:center;gap:8px;
+}
+.eyebrow::before{content:'';width:8px;height:1px;background:var(--accent);}
+.eyebrow::after{content:'';flex:1;height:1px;background:var(--hairline);}
+
+/* HEADLINE */
+.h1{
+  padding:6px 24px 4px;
+  font-size:34px;font-weight:700;letter-spacing:-.025em;line-height:1.05;
+  color:var(--text);
+}
+.sub{
+  padding:0 24px 16px;
+  font-size:14px;font-weight:400;color:var(--text-2);
+}
+
+/* BODY centered */
+.body{flex:1;display:flex;flex-direction:column;padding:0 20px;overflow:auto;}
+
+/* CALENDAR big */
+.cal{
+  background:var(--surface);border:1px solid var(--hairline);
+  border-radius:6px;padding:14px;
+}
+.cal__head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:10px;border-bottom:1px solid var(--hairline);
+}
+.cal__month{
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;font-weight:700;letter-spacing:.16em;
+  color:var(--text);text-transform:uppercase;
+}
+.cal__nav{display:flex;gap:4px;}
+.cal__nav button{
+  background:transparent;border:1px solid var(--hairline-bold);color:var(--text-2);
+  width:32px;height:32px;font-size:14px;font-weight:700;cursor:pointer;border-radius:2px;
+  font-family:'JetBrains Mono',monospace;
+}
+.cal__wkdays{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:0;padding:8px 0 4px;
+}
+.cal__wkdays span{
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;font-weight:600;letter-spacing:.18em;
+  color:var(--text-3);text-align:center;text-transform:uppercase;
+}
+.cal__grid{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:3px;
+}
+.day{
+  aspect-ratio:1;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;font-weight:600;
+  color:var(--text);font-variant-numeric:tabular-nums;
+  background:transparent;border:1px solid transparent;border-radius:3px;
+  cursor:pointer;position:relative;
+}
+.day.is-other{color:var(--text-3);opacity:.4;}
+.day.is-weekend{color:var(--accent);}
+.day.is-today{
+  border-color:var(--accent);
+}
+.day.is-active{
+  background:var(--accent);color:#fff;
+  box-shadow:0 0 0 3px var(--accent-glow);
+}
+.day .has-evt{
+  position:absolute;bottom:5px;width:4px;height:4px;border-radius:50%;background:var(--green);
+}
+.day:hover{background:var(--surface-2);}
+.day.is-active:hover{background:var(--accent);}
+
+/* contextual chips abaixo do calendar */
+.chips{
+  display:flex;gap:6px;overflow-x:auto;padding:14px 0 6px;
+  scrollbar-width:none;
+}
+.chips::-webkit-scrollbar{display:none;}
+.chip{
+  flex:0 0 auto;padding:10px 14px;
+  background:var(--surface);border:1px solid var(--hairline-bold);
+  border-radius:2px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  min-width:78px;
+}
+.chip__top{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.14em;color:var(--text-3);text-transform:uppercase;}
+.chip__main{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
+.chip.is-active{
+  background:oklch(20% 0.05 22);border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-glow), inset 0 0 0 1px var(--accent);
+}
+.chip.is-active .chip__top{color:var(--accent);}
+
+/* trail (mini-roteiro) */
+.trail{
+  margin-top:18px;padding:14px;
+  background:var(--surface);border:1px solid var(--hairline);border-radius:4px;
+}
+.trail__lbl{
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;font-weight:600;letter-spacing:.18em;color:var(--text-3);
+  text-transform:uppercase;margin-bottom:8px;
+  display:flex;align-items:center;gap:8px;
+}
+.trail__lbl::after{content:'';flex:1;height:1px;background:var(--hairline);}
+.trail__list{display:flex;flex-direction:column;gap:6px;}
+.trail__row{
+  display:flex;align-items:center;gap:10px;
+  padding:6px 0;
+  font-size:12px;color:var(--text-2);
+}
+.trail__num{
+  width:18px;height:18px;border-radius:50%;
+  background:transparent;border:1px solid var(--hairline-bold);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:var(--text-3);
+  flex:0 0 auto;
+}
+.trail__row.is-done .trail__num{background:var(--accent);border-color:var(--accent);color:#fff;}
+.trail__row.is-active .trail__num{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 3px var(--accent-glow);}
+.trail__name{flex:1;color:var(--text-2);}
+.trail__row.is-done .trail__name{color:var(--text);}
+.trail__row.is-active .trail__name{color:var(--text);font-weight:600;}
+.trail__val{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;font-weight:600;color:var(--text);
+}
+.trail__val.is-empty{color:var(--text-3);font-weight:500;}
+
+/* FOOT */
+.foot{
+  padding:14px 24px 28px;
+  border-top:1px solid var(--hairline-bold);
+  display:grid;grid-template-columns:auto 1fr;gap:10px;
+}
+.btn{
+  padding:16px;border-radius:4px;cursor:pointer;
+  font-family:inherit;font-size:13px;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;outline:none;border:0;
+}
+.btn--ghost{
+  background:transparent;border:1px solid var(--hairline-bold);color:var(--text-2);
+  padding:16px 18px;
+}
+.btn--primary{
+  background:var(--accent);color:#fff;
+  box-shadow:0 6px 30px var(--accent-glow);
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.btn--primary::after{
+  content:'›';font-family:'JetBrains Mono';font-size:18px;font-weight:700;
+}
+</style>
+</head>
+<body>
+<div class="device">
+  <div class="notch"></div>
+  <div class="modal">
+    <div class="head">
+      <div class="dots">
+        <div class="dot is-done"></div>
+        <div class="dot is-done"></div>
+        <div class="dot is-active"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+      <button class="head__close">FECHAR</button>
+    </div>
+    <div class="eyebrow">Pergunta 03 · 05</div>
+    <h1 class="h1">Quando vai ser?</h1>
+    <div class="sub">Toque um dia ou use os atalhos abaixo</div>
+
+    <div class="body">
+      <div class="cal">
+        <div class="cal__head">
+          <div class="cal__month">Maio 2026</div>
+          <div class="cal__nav">
+            <button>‹</button>
+            <button>›</button>
+          </div>
+        </div>
+        <div class="cal__wkdays">
+          <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
+        </div>
+        <div class="cal__grid">
+          <div class="day is-other">27</div>
+          <div class="day is-other">28</div>
+          <div class="day is-other">29</div>
+          <div class="day is-today">30</div>
+          <div class="day">01</div>
+          <div class="day is-active is-weekend">02<span class="has-evt"></span></div>
+          <div class="day is-weekend">03</div>
+
+          <div class="day">04</div>
+          <div class="day">05</div>
+          <div class="day">06</div>
+          <div class="day">07</div>
+          <div class="day">08</div>
+          <div class="day is-weekend">09<span class="has-evt"></span></div>
+          <div class="day is-weekend">10<span class="has-evt"></span></div>
+
+          <div class="day">11</div>
+          <div class="day">12</div>
+          <div class="day">13</div>
+          <div class="day">14</div>
+          <div class="day">15</div>
+          <div class="day is-weekend">16</div>
+          <div class="day is-weekend">17</div>
+
+          <div class="day">18</div>
+          <div class="day">19</div>
+          <div class="day">20</div>
+          <div class="day">21</div>
+          <div class="day">22</div>
+          <div class="day is-weekend">23<span class="has-evt"></span></div>
+          <div class="day is-weekend">24</div>
+
+          <div class="day">25</div>
+          <div class="day">26</div>
+          <div class="day">27</div>
+          <div class="day">28</div>
+          <div class="day">29</div>
+          <div class="day is-weekend">30</div>
+          <div class="day is-weekend">31</div>
+        </div>
+      </div>
+
+      <div class="chips">
+        <div class="chip"><span class="chip__top">Hoje</span><span class="chip__main">QUI 30</span></div>
+        <div class="chip is-active"><span class="chip__top">Sábado</span><span class="chip__main">02 / 05</span></div>
+        <div class="chip"><span class="chip__top">Domingo</span><span class="chip__main">03 / 05</span></div>
+        <div class="chip"><span class="chip__top">Próx FDS</span><span class="chip__main">09 / 05</span></div>
+      </div>
+
+      <div class="trail">
+        <div class="trail__lbl">Roteiro</div>
+        <div class="trail__list">
+          <div class="trail__row is-done">
+            <div class="trail__num">1</div>
+            <div class="trail__name">Nome</div>
+            <div class="trail__val">Copa Brasília — Etapa 2</div>
+          </div>
+          <div class="trail__row is-done">
+            <div class="trail__num">2</div>
+            <div class="trail__name">Autódromo</div>
+            <div class="trail__val">Brasília</div>
+          </div>
+          <div class="trail__row is-active">
+            <div class="trail__num">3</div>
+            <div class="trail__name">Quando</div>
+            <div class="trail__val">Sáb 02 / 05</div>
+          </div>
+          <div class="trail__row">
+            <div class="trail__num">4</div>
+            <div class="trail__name">Janela do dia</div>
+            <div class="trail__val is-empty">— —</div>
+          </div>
+          <div class="trail__row">
+            <div class="trail__num">5</div>
+            <div class="trail__name">Tipo de sessão</div>
+            <div class="trail__val is-empty">— —</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <button class="btn btn--ghost">Voltar</button>
+      <button class="btn btn--primary">Próximo</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

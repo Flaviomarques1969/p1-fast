@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=430, initial-scale=1, viewport-fit=cover">
+<title>Mockup Evento — Linha E · Calendar-first</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-deep: oklch(8% 0 0);
+  --surface: oklch(12% 0.003 240);
+  --surface-2: oklch(15% 0.005 240);
+  --sheet: oklch(13% 0.003 240);
+  --hairline: oklch(25% 0.005 240);
+  --hairline-bold: oklch(35% 0.005 240);
+  --text: oklch(96% 0.005 90);
+  --text-2: oklch(70% 0.01 240);
+  --text-3: oklch(48% 0.01 240);
+  --accent: oklch(62% 0.22 22);
+  --accent-glow: oklch(62% 0.22 22 / .35);
+  --weekend: oklch(78% 0.16 85);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:radial-gradient(ellipse at top, oklch(14% 0.01 240) 0%, var(--bg-deep) 70%);
+  color:var(--text);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+.device{
+  width:430px;height:932px;
+  background:var(--bg-deep);
+  border-radius:48px;border:1px solid oklch(20% 0.005 240);
+  box-shadow:0 30px 80px oklch(0% 0 0 / .8), 0 0 0 8px oklch(5% 0 0);
+  position:relative;overflow:hidden;
+}
+.notch{
+  position:absolute;top:8px;left:50%;transform:translateX(-50%);
+  width:128px;height:36px;background:#000;border-radius:20px;z-index:50;
+}
+
+/* TOP — calendar half */
+.top{
+  position:absolute;top:0;left:0;right:0;height:480px;
+  padding:60px 20px 16px;
+  display:flex;flex-direction:column;
+  background:linear-gradient(180deg,var(--bg-deep) 0%,oklch(10% 0.005 240) 100%);
+}
+.top__head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 4px 12px;
+}
+.top__title{
+  display:flex;flex-direction:column;
+}
+.top__title__main{
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;font-weight:700;letter-spacing:.18em;
+  color:var(--text);text-transform:uppercase;
+}
+.top__title__sub{
+  font-size:11px;font-weight:500;color:var(--text-3);margin-top:2px;
+  letter-spacing:.04em;
+}
+.top__close{
+  background:transparent;border:1px solid var(--hairline-bold);color:var(--text-2);
+  font-family:inherit;font-size:11px;font-weight:600;letter-spacing:.12em;
+  padding:7px 12px;border-radius:2px;cursor:pointer;text-transform:uppercase;
+}
+.top__nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 4px 8px;
+}
+.top__month{
+  font-family:'JetBrains Mono',monospace;
+  font-size:18px;font-weight:700;letter-spacing:.04em;color:var(--text);
+  display:flex;align-items:center;gap:10px;
+}
+.top__month b{color:var(--accent);}
+.top__month-btns{display:flex;gap:6px;}
+.top__month-btns button{
+  background:transparent;border:1px solid var(--hairline-bold);color:var(--text-2);
+  width:30px;height:30px;font-size:14px;font-weight:700;cursor:pointer;border-radius:2px;
+  font-family:'JetBrains Mono',monospace;
+}
+.top__wk{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:0;padding:6px 4px 4px;
+}
+.top__wk span{
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;font-weight:600;letter-spacing:.18em;
+  color:var(--text-3);text-align:center;text-transform:uppercase;
+}
+.top__grid{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:0 4px;flex:1;
+}
+.day{
+  aspect-ratio:1;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;font-weight:600;
+  color:var(--text);font-variant-numeric:tabular-nums;
+  background:transparent;border:1px solid transparent;border-radius:3px;
+  cursor:pointer;position:relative;
+}
+.day.is-other{color:var(--text-3);opacity:.35;}
+.day.is-weekend{
+  background:oklch(13% 0.02 85);
+  color:var(--weekend);
+}
+.day.is-today{
+  border-color:var(--text-2);
+}
+.day.is-active{
+  background:var(--accent);color:#fff;
+  box-shadow:0 0 0 3px var(--accent-glow), inset 0 0 0 1px var(--accent);
+}
+.day.is-active.is-weekend{
+  background:var(--accent);color:#fff;
+}
+.day .evt{
+  position:absolute;bottom:4px;display:flex;gap:2px;
+}
+.day .evt i{display:block;width:4px;height:4px;border-radius:50%;background:var(--text-2);}
+.day .evt i.next{background:var(--weekend);}
+.day.is-active .evt i{background:#fff;}
+
+/* BOTTOM SHEET */
+.sheet{
+  position:absolute;left:0;right:0;bottom:0;height:452px;
+  background:var(--sheet);
+  border-top-left-radius:24px;border-top-right-radius:24px;
+  border-top:1px solid var(--hairline-bold);
+  box-shadow:0 -10px 40px oklch(0% 0 0 / .6);
+  padding:12px 20px 28px;
+  display:flex;flex-direction:column;
+}
+.sheet__handle{
+  width:44px;height:4px;background:var(--hairline-bold);border-radius:2px;
+  margin:0 auto 12px;
+}
+.sheet__head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px;
+}
+.sheet__date{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--accent);
+  text-transform:uppercase;
+}
+.sheet__h{
+  font-size:24px;font-weight:700;letter-spacing:-.025em;line-height:1.05;color:var(--text);
+  margin-top:3px;
+}
+.sheet__hint{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.12em;
+  color:var(--text-3);text-transform:uppercase;
+  background:var(--surface);padding:5px 9px;border-radius:2px;border:1px solid var(--hairline);
+  flex:0 0 auto;
+}
+.sheet__hint::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent-glow);}
+
+/* row compact */
+.row{
+  display:grid;grid-template-columns:90px 1fr;gap:12px;align-items:center;
+  padding:11px 12px;border:1px solid var(--hairline);border-radius:4px;
+  background:var(--surface);
+  margin-bottom:8px;
+}
+.row__lbl{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;font-weight:600;letter-spacing:.16em;
+  color:var(--text-3);text-transform:uppercase;
+}
+.row__val{
+  font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.005em;
+}
+.row__val small{
+  display:block;font-size:11px;font-weight:500;color:var(--text-3);margin-top:2px;letter-spacing:.005em;
+  font-family:'JetBrains Mono',monospace;
+}
+.row.is-edit{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-glow);
+}
+.row__edit{
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;font-weight:600;letter-spacing:.14em;color:var(--text-3);
+  text-transform:uppercase;
+  background:transparent;border:1px solid var(--hairline-bold);
+  padding:4px 8px;border-radius:2px;cursor:pointer;
+  margin-left:auto;
+}
+.row__container{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+
+/* time row inline */
+.row__time{
+  display:flex;align-items:center;gap:8px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:18px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;
+}
+.row__time .colon{color:var(--text-3);font-weight:500;}
+.row__time .arrow{color:var(--text-3);font-weight:500;font-size:14px;margin:0 4px;}
+
+/* tipo chips inline */
+.row__tipo{display:flex;gap:5px;flex-wrap:wrap;}
+.tipo{
+  padding:5px 10px;border:1px solid var(--hairline-bold);background:transparent;
+  border-radius:2px;font-size:11px;font-weight:600;letter-spacing:.04em;
+  cursor:pointer;color:var(--text-2);
+}
+.tipo.is-active{
+  background:var(--accent);color:#fff;border-color:var(--accent);
+}
+
+/* CTA */
+.cta{
+  margin-top:auto;
+  padding:16px;border-radius:4px;cursor:pointer;border:0;
+  background:var(--accent);color:#fff;
+  font-family:inherit;font-size:14px;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;
+  box-shadow:0 6px 30px var(--accent-glow);
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.cta::after{content:'›';font-family:'JetBrains Mono';font-size:20px;font-weight:700;}
+.cta__sub{
+  text-align:center;font-family:'JetBrains Mono',monospace;
+  font-size:9px;font-weight:500;letter-spacing:.18em;color:var(--text-3);
+  text-transform:uppercase;margin-top:8px;
+}
+</style>
+</head>
+<body>
+<div class="device">
+  <div class="notch"></div>
+
+  <div class="top">
+    <div class="top__head">
+      <div class="top__title">
+        <div class="top__title__main">Novo Evento</div>
+        <div class="top__title__sub">Toque o dia. O resto eu sugiro.</div>
+      </div>
+      <button class="top__close">FECHAR</button>
+    </div>
+    <div class="top__nav">
+      <div class="top__month">Maio <b>2026</b></div>
+      <div class="top__month-btns"><button>‹</button><button>›</button></div>
+    </div>
+    <div class="top__wk">
+      <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
+    </div>
+    <div class="top__grid">
+      <div class="day is-other">27</div>
+      <div class="day is-other">28</div>
+      <div class="day is-other">29</div>
+      <div class="day is-today">30</div>
+      <div class="day">01</div>
+      <div class="day is-weekend is-active">02<span class="evt"><i class="next"></i></span></div>
+      <div class="day is-weekend">03</div>
+
+      <div class="day">04</div>
+      <div class="day">05</div>
+      <div class="day">06</div>
+      <div class="day">07</div>
+      <div class="day">08</div>
+      <div class="day is-weekend">09<span class="evt"><i></i></span></div>
+      <div class="day is-weekend">10<span class="evt"><i></i></span></div>
+
+      <div class="day">11</div>
+      <div class="day">12</div>
+      <div class="day">13</div>
+      <div class="day">14</div>
+      <div class="day">15</div>
+      <div class="day is-weekend">16</div>
+      <div class="day is-weekend">17</div>
+
+      <div class="day">18</div>
+      <div class="day">19</div>
+      <div class="day">20</div>
+      <div class="day">21</div>
+      <div class="day">22</div>
+      <div class="day is-weekend">23<span class="evt"><i></i></span></div>
+      <div class="day is-weekend">24</div>
+
+      <div class="day">25</div>
+      <div class="day">26</div>
+      <div class="day">27</div>
+      <div class="day">28</div>
+      <div class="day">29</div>
+      <div class="day is-weekend">30</div>
+      <div class="day is-weekend">31</div>
+    </div>
+  </div>
+
+  <div class="sheet">
+    <div class="sheet__handle"></div>
+    <div class="sheet__head">
+      <div>
+        <div class="sheet__date">Sábado · 02 maio 2026</div>
+        <div class="sheet__h">Tudo já preenchido<br>do seu histórico</div>
+      </div>
+      <div class="sheet__hint">Smart-fill</div>
+    </div>
+
+    <div class="row">
+      <div class="row__lbl">Nome</div>
+      <div class="row__container">
+        <div class="row__val">Copa Brasília — Etapa 2<small>Sugerido por Etapa 1</small></div>
+        <button class="row__edit">Editar</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="row__lbl">Onde</div>
+      <div class="row__container">
+        <div class="row__val">Brasília<small>Auto. Int. Nelson Piquet · DF</small></div>
+        <button class="row__edit">Editar</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="row__lbl">Janela</div>
+      <div class="row__container">
+        <div class="row__time"><span>08</span><span class="colon">:</span><span>00</span><span class="arrow">→</span><span>17</span><span class="colon">:</span><span>00</span></div>
+        <button class="row__edit">Editar</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="row__lbl">Tipo</div>
+      <div class="row__tipo">
+        <span class="tipo is-active">Track Day</span>
+        <span class="tipo">Treino</span>
+        <span class="tipo">Largada</span>
+        <span class="tipo">Corrida</span>
+        <span class="tipo">+</span>
+      </div>
+    </div>
+
+    <button class="cta">Salvar evento</button>
+    <div class="cta__sub">02/05 · 08–17 · Brasília · Track Day</div>
+  </div>
+</div>
+</body>
+</html>
