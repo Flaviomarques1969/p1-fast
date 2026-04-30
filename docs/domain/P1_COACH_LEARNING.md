@@ -277,6 +277,8 @@ lista os trechos com `ehTrecho === true` da pista atual.
 - [x] Smoke 22/22
 
 ### Fase 1.1 — integração com cockpit (UI separada do pacote)
+- [x] Exemplo de wire-up em `examples/p1-coach-wireup.js`
+      (Detector + sample-bus + state-machine de fase live)
 - [ ] Botão "Aprendizado com IA" no painel do stint
 - [ ] Modal de seleção de área (entrada/apex/saida)
 - [ ] Renderização da `CoachMessage.text` no cockpit
