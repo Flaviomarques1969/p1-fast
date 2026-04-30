@@ -251,6 +251,124 @@ t('signalsFromSnapshot deriva sinais corretamente', () => {
   }
 });
 
+// ─── AUDITORIA: requiredSignals devem ser produzíveis pelo pipeline ────
+// Cada lição active=true tem que conseguir ativar com o snapshot real
+// emitido por mobile-telemetry.js + faseStats de fase-curva.js.
+const SNAPSHOT_REAL_IPHONE = {
+  // Campos do mobile-telemetry.js _buildSample
+  t: 1000, tMono: 1000, source: 'cockpit-mobile', signalQuality: 'GOOD',
+  lat: -15.78, lng: -47.92, kmh: 90, course: 180, acc: 5,
+  accX: 0.1, accY: -0.4, accZ: 9.8,
+  accLong: -0.4, accLat: 0.1,                      // derivados que o caller calcula
+  gyroAlpha: 12, gyroBeta: 0.5, gyroGamma: 0.3,
+  heading: 178,
+};
+const FASE_STATS_REAL = {
+  velEntrada: 110, velMinima: 65, velSaida: 95,
+  apexT: 1234, apexKmh: 65, apexIdx: 42,
+};
+
+t('AUDIT: signalsFromSnapshot com snapshot real do iPhone produz sinais MVP', () => {
+  const signals = P1Coach.signalsFromSnapshot(SNAPSHOT_REAL_IPHONE, FASE_STATS_REAL);
+  const expected = [
+    'kmh', 'lat', 'lng', 'course', 'heading',
+    'accLong', 'accLat', 'gyroAlpha',
+    'phase', 'velEntrada', 'velMinima', 'velSaida', 'apexT', 'apexKmh',
+  ];
+  for (const need of expected) {
+    if (!signals.has(need)) throw new Error(`pipeline real não produz: ${need}`);
+  }
+});
+
+t('AUDIT: TODAS as 7 lições MVP ativam com snapshot real iPhone (sem T4000)', () => {
+  const signals = P1Coach.signalsFromSnapshot(SNAPSHOT_REAL_IPHONE, FASE_STATS_REAL);
+  const naoAtiva = [];
+  for (const lesson of LESSONS_MVP) {
+    if (!canActivate(lesson, signals)) naoAtiva.push(lesson.id);
+  }
+  if (naoAtiva.length > 0) {
+    throw new Error(`lições MVP que NÃO ativam com pipeline real: ${naoAtiva.join(', ')}`);
+  }
+});
+
+t('AUDIT: NENHUMA lição Fase 2 ativa só com iPhone (deve esperar sensores)', () => {
+  const signals = P1Coach.signalsFromSnapshot(SNAPSHOT_REAL_IPHONE, FASE_STATS_REAL);
+  for (const lesson of LESSONS_PHASE_2) {
+    // L102 (círculo de grip) tecnicamente só pede accLat/accLong/phase — esses
+    // chegam no iPhone também. Mas é Fase 2 por active=false, e o coach filtra
+    // por active. Aqui validamos só o gating de sinais — L102 PODE passar.
+    if (lesson.id === 'L102-circulo-de-grip') continue;
+    if (canActivate(lesson, signals)) {
+      throw new Error(`Fase 2 ${lesson.id} ativou só com iPhone — precisa de sensor extra`);
+    }
+  }
+});
+
+// ─── E2E: stint sintético com 3 voltas, foco saída em curva lenta ──
+t('E2E: piloto roda 3 voltas em modo aprendizado e recebe ≤ 1 msg por curva', () => {
+  const out = [];
+  const c = new P1Coach({ onMessage: m => out.push(m), cooldownMs: 0 });
+  c.startLearningSession({ focusPhase: Phase.SAIDA });
+
+  const SLOW = { id: 'curva-1', ehTrecho: true, cornerType: 'lenta' };
+  const FAST = { id: 'curva-2', ehTrecho: true, cornerType: 'rapida' };
+  const RETA = { id: 'reta-1', ehTrecho: false };
+
+  for (let lap = 0; lap < 3; lap++) {
+    const baseT = lap * 100000;
+    const sigSlow = P1Coach.signalsFromSnapshot(SNAPSHOT_REAL_IPHONE, FASE_STATS_REAL);
+
+    // curva 1 — lenta
+    c.onSegmentEnter(SLOW, sigSlow);
+    c.consume({ faseCurva: 'inicio', snapshot: { ...SNAPSHOT_REAL_IPHONE, tMono: baseT + 100 }, signals: sigSlow });
+    c.consume({ faseCurva: 'meio',   snapshot: { ...SNAPSHOT_REAL_IPHONE, tMono: baseT + 500 }, signals: sigSlow });
+    c.consume({ faseCurva: 'fim',    snapshot: { ...SNAPSHOT_REAL_IPHONE, tMono: baseT + 900 }, signals: sigSlow });
+    c.onSegmentExit();
+
+    // reta — não emite
+    c.onSegmentEnter(RETA, sigSlow);
+    c.consume({ faseCurva: 'meio', snapshot: { ...SNAPSHOT_REAL_IPHONE, tMono: baseT + 1500 }, signals: sigSlow });
+    c.onSegmentExit();
+
+    // curva 2 — rápida
+    c.onSegmentEnter(FAST, sigSlow);
+    c.consume({ faseCurva: 'fim', snapshot: { ...SNAPSHOT_REAL_IPHONE, tMono: baseT + 2500 }, signals: sigSlow });
+    c.onSegmentExit();
+
+    c.onLapEnd();
+  }
+
+  // 3 voltas × 2 curvas válidas × max 1 msg = ≤ 6 mensagens; foco SAIDA
+  if (out.length === 0) throw new Error('coach silencioso em 3 voltas');
+  if (out.length > 6) throw new Error(`${out.length} > 6 mensagens (passou maxPerCorner)`);
+  for (const m of out) {
+    if (m.phase !== Phase.SAIDA) throw new Error(`fase ${m.phase} fora do foco`);
+    if (!CoachPhrasesSet.has(m.text)) throw new Error(`frase fora do catálogo: ${m.text}`);
+  }
+  if (c.learningSession.laps !== 3) throw new Error(`laps=${c.learningSession.laps}`);
+});
+
+t('E2E: focusLessonId="L002-v-min" durante 1 volta gera mensagens só de V-Min', () => {
+  const out = [];
+  const c = new P1Coach({ onMessage: m => out.push(m), cooldownMs: 0 });
+  c.startLearningSession({ focusLessonId: 'L002-v-min', focusPhase: Phase.APEX });
+  const sig = P1Coach.signalsFromSnapshot(SNAPSHOT_REAL_IPHONE, FASE_STATS_REAL);
+
+  for (const corner of [{ id: 'c1', ehTrecho: true, cornerType: 'lenta' },
+                        { id: 'c2', ehTrecho: true, cornerType: 'media' },
+                        { id: 'c3', ehTrecho: true, cornerType: 'rapida' }]) {
+    c.onSegmentEnter(corner, sig);
+    c.consume({ faseCurva: 'meio', snapshot: { ...SNAPSHOT_REAL_IPHONE, tMono: out.length * 1000 }, signals: sig });
+    c.onSegmentExit();
+  }
+
+  // V-Min só aplica a lenta+media — em rápida o coach deveria ignorar
+  if (out.length !== 2) throw new Error(`esperava 2 (lenta+media), veio ${out.length}`);
+  for (const m of out) {
+    if (m.lessonId !== 'L002-v-min') throw new Error(`saiu ${m.lessonId} em vez de V-Min`);
+  }
+});
+
 // ─── Resumo ─────────────────────────────────────────────────
 console.log(`\n═══ TOTAL: ${ok} ok / ${fail} fail ═══`);
 if (fail > 0) process.exit(1);
