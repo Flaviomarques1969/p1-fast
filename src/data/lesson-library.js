@@ -48,8 +48,8 @@ export const LESSONS_MVP = Object.freeze([
     shortDescription: 'Frear, virar e acelerar sempre nos mesmos pontos.',
     objective: 'Reduzir variabilidade de pontos de freio, giro e tração entre voltas.',
     phaseWeights: { [Phase.ENTRADA]: 0.6, [Phase.APEX]: 0.2, [Phase.SAIDA]: 0.2 },
-    requiredSignals: [Signal.LAT, Signal.LNG, Signal.KMH, Signal.TRAJETORIA],
-    optionalSignals: [Signal.ACC_LONG],
+    requiredSignals: [Signal.LAT, Signal.LNG, Signal.KMH],
+    optionalSignals: [Signal.ACC_LONG, Signal.TRAJETORIA],
     applicableCornerTypes: [CornerType.LENTA, CornerType.MEDIA, CornerType.RAPIDA],
     preferredMessageCodes: ['M001', 'M002', 'M003'],
     successCriteria: {
