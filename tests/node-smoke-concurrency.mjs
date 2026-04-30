@@ -1,4 +1,14 @@
-// Smoke Fase 4 (concorrência / recursos) — T-019..T-025
+// Smoke Fase 4 (concorrência / recursos) — T-019..T-022
+//
+// Histórico: smoke originalmente cobria T-019..T-025 no FAM Racing.
+// Na extração 2026-04-30, três casos ficaram órfãos por dependerem de
+// módulos não extraídos (cockpit/box são UI/transporte de UI):
+//
+//   • T-023 (BoxBridge eco/sender) — `src/box/box-bridge.js`
+//   • T-024 (AudioCue.release)     — `src/cockpit/audio-cue.js`
+//   • T-025 (main.js beforeunload) — `src/main.js`
+//
+// Mantidos os 4 casos que testam módulos do P1 Fast (telemetry/core).
 
 import 'fake-indexeddb/auto';
 import Dexie from 'dexie';
@@ -7,8 +17,6 @@ if (typeof window === 'undefined') globalThis.window = { screen:{width:390,heigh
 if (typeof localStorage === 'undefined') globalThis.localStorage = { _s:new Map(), getItem(k){return this._s.get(k)??null}, setItem(k,v){this._s.set(k,String(v))}, removeItem(k){this._s.delete(k)}, clear(){this._s.clear()} };
 
 const { MockProvider } = await import('../src/telemetry/mock-provider.js');
-const { AudioCue } = await import('../src/cockpit/audio-cue.js');
-const { BoxBridge, BridgeMsgType } = await import('../src/box/box-bridge.js');
 const { SyncDrainer } = await import('../src/core/sync-drainer.js');
 const { DeviceProvider } = await import('../src/telemetry/device-provider.js');
 
@@ -68,50 +76,6 @@ await t('T-021: SyncDrainer setTimeout recursivo, sem re-entrada', async () => {
   const s = d.stats();
   if (s.running !== false) throw new Error('running inicial deveria ser false');
   if (typeof s.ticking !== 'boolean') throw new Error('stats.ticking ausente (T-021 esperado)');
-});
-
-// T-023: BoxBridge ignora eco de si mesmo
-await t('T-023: BoxBridge ignora mensagem com __sender próprio', async () => {
-  const chan = 'fam-racing-eco-' + Math.random().toString(36).slice(2);
-  const bridge = new BoxBridge({ channelName: chan });
-  let recebi = 0;
-  bridge.subscribe(() => recebi++);
-  // Simular eco: enviar msg e, logo depois, injetar a mesma msg com nosso __sender
-  const fake = { type: BridgeMsgType.BOX_MSG, texto: 'eco', __sender: bridge._senderId };
-  bridge._onMessage({ data: fake });
-  await new Promise(r => setTimeout(r, 20));
-  if (recebi !== 0) throw new Error('não ignorou eco de self');
-  bridge.close();
-});
-
-await t('T-023: BoxBridge aceita mensagens de outra instância (senderId diferente)', async () => {
-  const chan = 'fam-racing-crosssender-' + Math.random().toString(36).slice(2);
-  const a = new BoxBridge({ channelName: chan });
-  const b = new BoxBridge({ channelName: chan });
-  let recebidoB = null;
-  b.subscribe((m) => { if (m.type === BridgeMsgType.BOX_MSG) recebidoB = m; });
-  a.sendMessage('olá');
-  await new Promise(r => setTimeout(r, 50));
-  if (!recebidoB) throw new Error('b não recebeu de a');
-  if (recebidoB.__sender === b._senderId) throw new Error('senderId colidiu');
-  a.close(); b.close();
-});
-
-// T-024: AudioCue.release()
-await t('T-024: AudioCue.release() existe e é idempotente', async () => {
-  const c = new AudioCue({ muted: true });
-  if (typeof c.release !== 'function') throw new Error('release ausente');
-  const r1 = await c.release();
-  const r2 = await c.release();
-  if (!r1.released || !r2.released) throw new Error('release não idempotente');
-});
-
-// T-025: beforeunload handler registrado em main.js (inspeção textual)
-await t('T-025: main.js registra beforeunload handler', async () => {
-  const { readFile } = await import('node:fs/promises');
-  const txt = await readFile('src/main.js', 'utf8');
-  if (!txt.includes("window.addEventListener('beforeunload'")) throw new Error('handler beforeunload ausente');
-  if (!txt.includes('audioCue?.release')) throw new Error('release não acionado no cleanup');
 });
 
 console.log(`\n${ok} ok / ${fail} fail`);
