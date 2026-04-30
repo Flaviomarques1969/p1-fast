@@ -1,0 +1,20 @@
+{
+  "name": "p1-fast",
+  "version": "0.1.0",
+  "description": "P1 Fast — pacote de telemetria + domínio + backends de track day. Extraído do FAM Racing em 2026-04-30, sem nenhuma UI legada.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "smoke": "node tests/node-smoke-perna1-iphone.mjs && node tests/node-smoke-detector.mjs && node tests/node-smoke-detector-snapshot.mjs && node tests/node-smoke-migration-port.mjs && node tests/node-smoke-migration.mjs && node tests/node-smoke-projector.mjs && node tests/node-smoke-telemetry-p0.mjs && node tests/node-smoke-contracts.mjs && node tests/node-smoke-concurrency.mjs && node tests/node-smoke-proximity-watcher.mjs",
+    "smoke:perna1": "node tests/node-smoke-perna1-iphone.mjs",
+    "smoke:detector": "node tests/node-smoke-detector.mjs",
+    "smoke:cross-validation": "node tests/node-smoke-telemetry-p0.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dexie": "^4.4.2",
+    "fake-indexeddb": "^6.2.5"
+  }
+}
