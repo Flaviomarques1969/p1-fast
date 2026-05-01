@@ -27,6 +27,19 @@
   --ghost-cyan: oklch(78% 0.16 225);
   --ghost-cyan-soft: oklch(78% 0.16 225 / .55);
 
+  --warmup-1: oklch(72% 0.22 30);
+  --warmup-2: oklch(82% 0.21 60);
+  --warmup-3: oklch(88% 0.18 85);
+  --cooldown-1: oklch(70% 0.14 230);
+  --cooldown-2: oklch(82% 0.10 215);
+  --cooldown-3: oklch(92% 0.06 210);
+
+  /* Cores da chuva térmica (semântica invertida em relação ao stint-bar):
+     - aquecimento → azul frio (estado: ainda frio, está esquentando)
+     - resfriamento → vermelho quente (estado: ainda quente, está esfriando) */
+  --rain-aquec: oklch(78% 0.20 232);
+  --rain-resfri: oklch(64% 0.30 22);
+
   --ff-display: 'Inter', system-ui, sans-serif;
   --ff-mono: 'JetBrains Mono', ui-monospace, monospace;
 
@@ -78,6 +91,104 @@ body{
 .device[data-trecho-status="recorde-stint"]{ --halo-cor: var(--halo-recorde); }
 .device[data-trecho-status="pior-stint"]{    --halo-cor: var(--halo-pior); }
 .device[data-trecho-status="best-alltime"]{  --halo-cor: oklch(74% 0.16 73 / .50); }
+
+/* CHUVA TÉRMICA — overlay de fundo. Cor varia por fase:
+     warmup → azul (estado frio, aquecendo)
+     cooldown → vermelho (estado quente, resfriando)
+   Intensidade decai conforme temperatura se aproxima da ideal; some no ideal.
+   z-index 3: acima do halo radial, abaixo de toda UI. */
+.rain-layer{
+  position:absolute;inset:0;z-index:3;pointer-events:none;
+  overflow:hidden;border-radius:48px;
+  opacity:0;
+  color:var(--rain-aquec);   /* cor base — herdada pelas gotas via currentColor */
+  transition:opacity 900ms var(--ease-out), color 900ms var(--ease-out);
+}
+.device[data-rain^="cooldown"] .rain-layer{ color:var(--rain-resfri); }
+
+/* Cada gota: trilha (gradiente vertical) + glow.
+   width/height/posição/duração/delay vêm do JS (style inline). */
+.rain-layer .drop{
+  position:absolute;top:-40px;
+  border-radius:2px;
+  background:linear-gradient(to top,
+    currentColor 0%,
+    currentColor 30%,
+    color-mix(in oklch, currentColor 50%, transparent) 60%,
+    transparent 100%);
+  box-shadow:0 0 4px currentColor, 0 0 10px color-mix(in oklch, currentColor 35%, transparent);
+  transform:rotate(8deg);
+  animation:rainFall linear infinite;
+  will-change:transform, opacity;
+}
+.device[data-rain^="cooldown"] .rain-layer .drop{
+  transform:rotate(-7deg);
+  animation-name:rainFallCold;
+}
+
+/* Splash sutil ao bater "embaixo" — pequenas elipses que aparecem no rodapé
+   antes da gota desaparecer. Usa pseudo-element em layer separada via radial. */
+.rain-layer::after{
+  content:'';position:absolute;left:0;right:0;bottom:0;height:24%;
+  background:
+    radial-gradient(ellipse 4% 3% at 12% 70%, currentColor 0%, transparent 60%),
+    radial-gradient(ellipse 3% 2% at 28% 85%, currentColor 0%, transparent 60%),
+    radial-gradient(ellipse 5% 3% at 44% 75%, currentColor 0%, transparent 60%),
+    radial-gradient(ellipse 3% 2% at 60% 88%, currentColor 0%, transparent 60%),
+    radial-gradient(ellipse 4% 3% at 76% 72%, currentColor 0%, transparent 60%),
+    radial-gradient(ellipse 5% 3% at 90% 82%, currentColor 0%, transparent 60%);
+  opacity:.45;
+  filter:blur(.6px);
+  animation:splashFlicker 1.6s var(--ease-inout) infinite;
+  mix-blend-mode:screen;
+}
+@keyframes splashFlicker{
+  0%,100%{ opacity:.30; }
+  50%    { opacity:.65; }
+}
+
+/* Halo de cor de fundo — dá ambiente sutil. Aquecimento halo no topo, resfriamento embaixo. */
+.rain-layer::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 70% at 50% 25%,
+    color-mix(in oklch, var(--rain-aquec) 35%, transparent) 0%, transparent 65%);
+  opacity:0;
+  transition:opacity 900ms var(--ease-out), background 900ms var(--ease-out);
+  mix-blend-mode:screen;
+}
+.device[data-rain^="cooldown"] .rain-layer::before{
+  background:radial-gradient(ellipse 80% 70% at 50% 75%,
+    color-mix(in oklch, var(--rain-resfri) 35%, transparent) 0%, transparent 65%);
+}
+
+/* Estados de intensidade — alto, médio, leve, off */
+.device[data-rain="off"] .rain-layer,
+.device[data-rain=""] .rain-layer,
+.device:not([data-rain]) .rain-layer{ opacity:0; }
+.device[data-rain="warmup-alto"]    .rain-layer{ opacity:1.0;  }
+.device[data-rain="warmup-medio"]   .rain-layer{ opacity:.55; }
+.device[data-rain="warmup-leve"]    .rain-layer{ opacity:.20; }
+.device[data-rain="cooldown-alto"]  .rain-layer{ opacity:.95; }
+.device[data-rain="cooldown-medio"] .rain-layer{ opacity:.50; }
+.device[data-rain="cooldown-leve"]  .rain-layer{ opacity:.18; }
+
+.device[data-rain^="warmup"]   .rain-layer::before{ opacity:.85; }
+.device[data-rain^="cooldown"] .rain-layer::before{ opacity:.75; }
+.device[data-rain="warmup-leve"]   .rain-layer::before,
+.device[data-rain="cooldown-leve"] .rain-layer::before{ opacity:.30; }
+
+@keyframes rainFall{
+  0%   { transform:translateY(-40px) rotate(8deg); opacity:0; }
+  8%   { opacity:1; }
+  88%  { opacity:1; }
+  100% { transform:translateY(490px) rotate(8deg); opacity:0; }
+}
+@keyframes rainFallCold{
+  0%   { transform:translateY(-40px) rotate(-7deg); opacity:0; }
+  10%  { opacity:1; }
+  85%  { opacity:1; }
+  100% { transform:translateY(490px) rotate(-7deg); opacity:0; }
+}
 
 .notch{
   position:absolute;left:18px;top:50%;transform:translateY(-50%);
@@ -386,6 +497,117 @@ body{
 }
 .ghost-bloco__ctx b{ color:var(--ink);font-weight:800; }
 
+/* VISTA DE RESFRIAMENTO — última volta do stint.
+   Esquerda: dados das voltas. Direita: troféus do stint.
+   Apex e info-bloco ficam ocultos. */
+.device[data-vista="resfriamento"] .apex{ opacity:0; pointer-events:none; }
+.device[data-vista="resfriamento"] .info-bloco{ opacity:0; pointer-events:none; }
+.device[data-vista="resfriamento"] .ghost-bloco{
+  opacity:0;
+  transform:translate(-50%, -50%) translateZ(-300px) scale(.35);
+  filter:blur(12px);
+}
+
+.lap-data-bloco, .trofeus-bloco{
+  position:absolute;top:18px;bottom:24px;
+  display:none;flex-direction:column;
+  z-index:20;pointer-events:none;
+  transition:opacity 1100ms var(--ease-msg);
+  opacity:0;
+}
+.device[data-vista="resfriamento"] .lap-data-bloco,
+.device[data-vista="resfriamento"] .trofeus-bloco{
+  display:flex;opacity:1;
+}
+/* Crítica grave também substitui a vista de resfriamento */
+.device[data-msg-state="ativa"][data-msg-tipo="grave"] .lap-data-bloco,
+.device[data-msg-state="ativa"][data-msg-tipo="grave"] .trofeus-bloco{
+  opacity:0;
+}
+.device[data-msg-state="ativa"][data-msg-tipo="comunicacao"][data-vista="resfriamento"] .lap-data-bloco,
+.device[data-msg-state="ativa"][data-msg-tipo="comunicacao"][data-vista="resfriamento"] .trofeus-bloco{
+  opacity:.32;filter:blur(2px);
+}
+
+.lap-data-bloco{ left:60px; width:380px; gap:10px; }
+.trofeus-bloco{ right:18px; width:430px; gap:8px; }
+
+.lap-data-bloco__hdr, .trofeus-bloco__hdr{
+  font-family:var(--ff-mono);font-size:10px;font-weight:800;
+  letter-spacing:var(--ls-caps-l);color:var(--muted);text-transform:uppercase;
+  margin-bottom:6px;
+}
+.lap-data-bloco__list{
+  display:flex;flex-direction:column;gap:5px;
+  font-family:var(--ff-mono);font-size:13px;font-weight:700;
+  font-variant-numeric:tabular-nums slashed-zero;
+}
+.lap-row{
+  display:grid;grid-template-columns:42px 1fr auto;align-items:center;column-gap:12px;
+  padding:4px 8px;border-radius:2px;
+  color:var(--ink);
+  border-left:2px solid transparent;
+}
+.lap-row[data-tipo="warmup"]{ color:var(--muted); border-left-color:var(--warmup-2); }
+.lap-row[data-tipo="cooldown"]{ color:var(--muted); border-left-color:var(--cooldown-2); }
+.lap-row[data-tipo="best-stint"]{ background:oklch(80% 0.22 145 / .12); border-left-color:var(--bom); }
+.lap-row[data-tipo="best-alltime"]{ background:oklch(74% 0.16 73 / .14); border-left-color:var(--ouro); }
+.lap-row__num{
+  font-size:10px;letter-spacing:var(--ls-caps-l);font-weight:800;color:var(--muted);
+  text-transform:uppercase;
+}
+.lap-row__time{ font-size:18px;font-weight:900;letter-spacing:var(--ls-tight);color:var(--ink); }
+.lap-row__delta{ font-size:11px;color:var(--muted); }
+.lap-row[data-tipo="best-stint"] .lap-row__delta{ color:var(--bom); }
+.lap-row[data-tipo="best-alltime"] .lap-row__delta{ color:var(--ouro); }
+
+/* TROFÉUS — cards horizontais com ícone.
+   Grid auto-flow: 4 base sempre; bônus (top speed, volta limpa, frenagem tarde, etc.)
+   só aparecem quando conquistados naquele stint. */
+.trofeus-bloco__list{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;
+  align-content:start;
+}
+.trofeu{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px;background:var(--surface);
+  border:1px solid var(--border);border-radius:3px;
+  font-family:var(--ff-mono);font-weight:700;
+  position:relative;overflow:hidden;
+}
+.trofeu[data-rank="alltime"]{
+  border-color:oklch(74% 0.16 73 / .55);
+  background:linear-gradient(135deg, oklch(11% 0 0) 0%, oklch(18% 0.04 80) 100%);
+  box-shadow:0 0 18px 0 oklch(74% 0.16 73 / .35), inset 0 0 0 1px oklch(74% 0.16 73 / .35);
+}
+.trofeu[data-rank="stint"]{
+  border-color:oklch(80% 0.22 145 / .35);
+}
+.trofeu__icon{
+  width:28px;height:28px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.trofeu__icon svg{ width:100%;height:100%; }
+.trofeu__txt{ display:flex;flex-direction:column;gap:1px;min-width:0; }
+.trofeu__lbl{
+  font-size:9px;letter-spacing:var(--ls-caps-l);text-transform:uppercase;
+  color:var(--muted);font-weight:800;
+}
+.trofeu__val{
+  font-size:14px;color:var(--ink);font-weight:900;
+  font-variant-numeric:tabular-nums;letter-spacing:var(--ls-tight);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.trofeu[data-rank="alltime"] .trofeu__val{ color:var(--ouro); }
+.trofeu[data-rank="stint"] .trofeu__val{ color:var(--bom); }
+.trofeu__sub{
+  font-size:9px;color:var(--faint);font-weight:700;letter-spacing:var(--ls-caps-s);
+  text-transform:uppercase;
+}
+.trofeu__icon--alltime{ color:var(--ouro); filter:drop-shadow(0 0 6px oklch(74% 0.16 73 / .65)); }
+.trofeu__icon--stint{ color:var(--bom); }
+.trofeu__icon--default{ color:var(--muted); }
+
 /* STINT BAR */
 .stint-bar{
   position:absolute;left:60px;right:8px;bottom:4px;
@@ -425,6 +647,80 @@ body{
 .stint-bar__block.is-current{
   background:var(--foco);box-shadow:0 0 12px 0 oklch(82% 0.19 70 / .6);
 }
+
+/* AQUECIMENTO — primeira barra do stint. Onda de calor: gradiente quente
+   fluindo + pulse de halo. Quando concluído, vira branco (.is-warmup-done). */
+.stint-bar__block.is-warmup{
+  background:linear-gradient(90deg,
+    var(--warmup-1) 0%, var(--warmup-2) 35%, var(--warmup-3) 50%,
+    var(--warmup-2) 65%, var(--warmup-1) 100%);
+  background-size:240% 100%;background-position:0% 0%;
+  position:relative;overflow:hidden;
+  box-shadow:0 0 14px 0 oklch(82% 0.21 60 / .6),
+             inset 0 0 0 1.5px var(--bg);
+  animation:warmupFlow 1.4s var(--ease-inout) infinite,
+            warmupGlow 2.4s var(--ease-inout) infinite;
+}
+.stint-bar__block.is-warmup::after{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 100% at 50% 0%,
+    oklch(95% 0.18 90 / .55) 0%, transparent 70%);
+  animation:warmupShimmer 1.8s var(--ease-inout) infinite;
+  mix-blend-mode:screen;
+}
+.stint-bar__block.is-warmup-done{
+  background:var(--ink);
+  box-shadow:0 0 8px 0 oklch(100% 0 0 / .35), inset 0 0 0 1.5px var(--bg);
+}
+@keyframes warmupFlow{
+  0%{ background-position:0% 0%; }
+  100%{ background-position:240% 0%; }
+}
+@keyframes warmupGlow{
+  0%,100%{ box-shadow:0 0 12px 0 oklch(82% 0.21 60 / .55),
+                      inset 0 0 0 1.5px var(--bg); }
+  50%    { box-shadow:0 0 22px 2px oklch(88% 0.22 70 / .85),
+                      inset 0 0 0 1.5px var(--bg); }
+}
+@keyframes warmupShimmer{
+  0%,100%{ opacity:.5; transform:translateY(2px); }
+  50%    { opacity:1;  transform:translateY(-1px); }
+}
+
+/* RESFRIAMENTO — última barra do stint. Onda fria fluindo no sentido oposto. */
+.stint-bar__block.is-cooldown{
+  background:linear-gradient(270deg,
+    var(--cooldown-1) 0%, var(--cooldown-2) 35%, var(--cooldown-3) 50%,
+    var(--cooldown-2) 65%, var(--cooldown-1) 100%);
+  background-size:240% 100%;background-position:0% 0%;
+  position:relative;overflow:hidden;
+  box-shadow:0 0 14px 0 oklch(78% 0.14 230 / .55),
+             inset 0 0 0 1.5px var(--bg);
+  animation:cooldownFlow 2.6s var(--ease-inout) infinite,
+            cooldownGlow 3.2s var(--ease-inout) infinite;
+}
+.stint-bar__block.is-cooldown::after{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 100% at 50% 100%,
+    oklch(95% 0.10 215 / .45) 0%, transparent 70%);
+  animation:cooldownShimmer 2.4s var(--ease-inout) infinite;
+  mix-blend-mode:screen;
+}
+@keyframes cooldownFlow{
+  0%{ background-position:240% 0%; }
+  100%{ background-position:0% 0%; }
+}
+@keyframes cooldownGlow{
+  0%,100%{ box-shadow:0 0 12px 0 oklch(78% 0.14 230 / .45),
+                      inset 0 0 0 1.5px var(--bg); }
+  50%    { box-shadow:0 0 18px 1px oklch(85% 0.10 215 / .70),
+                      inset 0 0 0 1.5px var(--bg); }
+}
+@keyframes cooldownShimmer{
+  0%,100%{ opacity:.4; transform:translateY(-2px); }
+  50%    { opacity:.85; transform:translateY(1px); }
+}
+
 @keyframes alltimeBloom{
   0%,100%{box-shadow:
     0 0 18px 0 oklch(74% 0.16 73 / .8),
@@ -485,15 +781,19 @@ body{
       data-stint-modo:  sem-mapa | mapa | mapa-ghost   (decidido no plano de stint; box pode alterar)
       data-ghost-ref:   presente | ausente             (só relevante em modo mapa-ghost)
       data-mapa-orient: north | heading | track        (preferência do piloto; default north)
-      data-vista:       trecho | volta                  (volta = na reta principal, mostra dados da volta inteira; uma única vez por volta)
+      data-vista:       trecho | volta | resfriamento   (volta = reta principal; resfriamento = última volta do stint, lap-data esquerda + troféus direita)
   -->
   <div class="device" id="device"
        data-trecho-status="neutro"
        data-msg-state="oculta" data-msg-tipo="comunicacao"
        data-stint-modo="mapa-ghost" data-ghost-ref="presente"
        data-mapa-orient="heading"
-       data-vista="trecho">
+       data-vista="trecho"
+       data-rain="off">
     <div class="notch"></div>
+
+    <!-- Chuva térmica (overlay de fundo, gerada por JS) -->
+    <div class="rain-layer" id="rainLayer"></div>
 
     <div class="telemetria-chip">
       <span class="telemetria-chip__dot ok"></span>
@@ -639,8 +939,169 @@ body{
     </div>
 
 
-    <div class="stint-bar">
-      <div class="stint-bar__block is-neutral"></div>
+    <!-- VISTA DE RESFRIAMENTO: lap data esquerda + troféus direita -->
+    <aside class="lap-data-bloco" id="lapDataBloco">
+      <div class="lap-data-bloco__hdr">Voltas do stint</div>
+      <div class="lap-data-bloco__list">
+        <div class="lap-row" data-tipo="warmup">
+          <span class="lap-row__num">V1</span>
+          <span class="lap-row__time">aquec.</span>
+          <span class="lap-row__delta">—</span>
+        </div>
+        <div class="lap-row">
+          <span class="lap-row__num">V2</span>
+          <span class="lap-row__time">1:42.108</span>
+          <span class="lap-row__delta">+0.6</span>
+        </div>
+        <div class="lap-row">
+          <span class="lap-row__num">V3</span>
+          <span class="lap-row__time">1:41.872</span>
+          <span class="lap-row__delta">+0.4</span>
+        </div>
+        <div class="lap-row">
+          <span class="lap-row__num">V4</span>
+          <span class="lap-row__time">1:42.341</span>
+          <span class="lap-row__delta">+0.8</span>
+        </div>
+        <div class="lap-row" data-tipo="best-alltime">
+          <span class="lap-row__num">V5</span>
+          <span class="lap-row__time">1:41.508</span>
+          <span class="lap-row__delta">alltime</span>
+        </div>
+        <div class="lap-row" data-tipo="best-stint">
+          <span class="lap-row__num">V6</span>
+          <span class="lap-row__time">1:41.601</span>
+          <span class="lap-row__delta">+0.09</span>
+        </div>
+        <div class="lap-row">
+          <span class="lap-row__num">V7</span>
+          <span class="lap-row__time">1:41.998</span>
+          <span class="lap-row__delta">+0.5</span>
+        </div>
+        <div class="lap-row" data-tipo="cooldown">
+          <span class="lap-row__num">V8</span>
+          <span class="lap-row__time">resfr.</span>
+          <span class="lap-row__delta">—</span>
+        </div>
+      </div>
+    </aside>
+
+    <aside class="trofeus-bloco" id="trofeusBloco">
+      <div class="trofeus-bloco__hdr">Troféus do stint</div>
+      <div class="trofeus-bloco__list">
+        <div class="trofeu" data-rank="alltime">
+          <div class="trofeu__icon trofeu__icon--alltime">
+            <!-- troféu alltime -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 4h10v4a5 5 0 0 1-10 0V4z" fill="currentColor" fill-opacity=".25"/>
+              <path d="M7 6H4a3 3 0 0 0 3 3"/>
+              <path d="M17 6h3a3 3 0 0 1-3 3"/>
+              <path d="M9 14.5h6"/>
+              <path d="M10 21h4"/>
+              <path d="M12 18v-3.5"/>
+              <path d="M9 21h6"/>
+            </svg>
+          </div>
+          <div class="trofeu__txt">
+            <span class="trofeu__lbl">Best alltime</span>
+            <span class="trofeu__val">1:41.508</span>
+            <span class="trofeu__sub">v5 · novo recorde da pista</span>
+          </div>
+        </div>
+
+        <div class="trofeu" data-rank="stint">
+          <div class="trofeu__icon trofeu__icon--stint">
+            <!-- troféu stint (medalha) -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="14" r="6" fill="currentColor" fill-opacity=".18"/>
+              <circle cx="12" cy="14" r="6"/>
+              <path d="M8 3l4 6 4-6"/>
+              <path d="M9.5 13l1.5 1.5L14.5 11"/>
+            </svg>
+          </div>
+          <div class="trofeu__txt">
+            <span class="trofeu__lbl">Best stint</span>
+            <span class="trofeu__val">1:41.508</span>
+            <span class="trofeu__sub">v5</span>
+          </div>
+        </div>
+
+        <div class="trofeu" data-rank="alltime">
+          <div class="trofeu__icon trofeu__icon--alltime">
+            <!-- troféu setor alltime -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 18C8 11 12 6 21 5" />
+              <path d="M21 5l-1 5"/>
+              <path d="M21 5l-5 1"/>
+              <circle cx="9" cy="14" r="1.5" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="trofeu__txt">
+            <span class="trofeu__lbl">Setor alltime</span>
+            <span class="trofeu__val">1.842s</span>
+            <span class="trofeu__sub">C3 freio→ápice · v5</span>
+          </div>
+        </div>
+
+        <div class="trofeu" data-rank="default">
+          <div class="trofeu__icon trofeu__icon--default">
+            <!-- consistência -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12l4-4 4 4 4-2 6 6"/>
+              <path d="M3 18h18"/>
+            </svg>
+          </div>
+          <div class="trofeu__txt">
+            <span class="trofeu__lbl">Consistência</span>
+            <span class="trofeu__val">Δ 0.49s</span>
+            <span class="trofeu__sub">entre voltas válidas</span>
+          </div>
+        </div>
+
+        <!-- BÔNUS: aparecem só quando conquistados naquele stint -->
+        <div class="trofeu" data-rank="stint">
+          <div class="trofeu__icon trofeu__icon--stint">
+            <!-- top speed (velocímetro) -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 17a8 8 0 1 1 16 0" />
+              <path d="M12 17l4-7" stroke-width="2"/>
+              <circle cx="12" cy="17" r="1.4" fill="currentColor"/>
+              <path d="M5.5 14.5l-1 .5"/>
+              <path d="M18.5 14.5l1 .5"/>
+            </svg>
+          </div>
+          <div class="trofeu__txt">
+            <span class="trofeu__lbl">Top speed</span>
+            <span class="trofeu__val">218 km/h</span>
+            <span class="trofeu__sub">v5 · reta principal</span>
+          </div>
+        </div>
+
+        <div class="trofeu" data-rank="alltime">
+          <div class="trofeu__icon trofeu__icon--alltime">
+            <!-- volta limpa (check ring) -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity=".15"/>
+              <path d="M8 12.5l3 3 5-6.5"/>
+            </svg>
+          </div>
+          <div class="trofeu__txt">
+            <span class="trofeu__lbl">Volta limpa</span>
+            <span class="trofeu__val">v5 perfeita</span>
+            <span class="trofeu__sub">todos trechos verdes</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="stint-bar" id="stintBar">
+      <div class="stint-bar__block is-warmup-done"></div>
       <div class="stint-bar__block is-faster"></div>
       <div class="stint-bar__block is-slower"></div>
       <div class="stint-bar__block is-faster"></div>
@@ -651,7 +1112,7 @@ body{
       <div class="stint-bar__block"></div>
       <div class="stint-bar__block"></div>
       <div class="stint-bar__block"></div>
-      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block is-cooldown"></div>
     </div>
   </div>
 
@@ -679,9 +1140,27 @@ body{
   </div>
 
   <div class="controls">
-    <span class="controls__lbl">Vista (auto por trecho) ·</span>
+    <span class="controls__lbl">Vista (auto pelo contexto) ·</span>
     <button class="controls__btn is-active" data-vista="trecho">Trecho atual</button>
     <button class="controls__btn" data-vista="volta">Reta principal · vista volta</button>
+    <button class="controls__btn" data-vista="resfriamento">Volta de resfriamento</button>
+  </div>
+
+  <div class="controls">
+    <span class="controls__lbl">Aquecimento (1ª barra) ·</span>
+    <button class="controls__btn" id="btnAquecAtivo">Em curso (animado)</button>
+    <button class="controls__btn is-active" id="btnAquecConcl">Concluído (branco)</button>
+  </div>
+
+  <div class="controls">
+    <span class="controls__lbl">Chuva térmica ·</span>
+    <button class="controls__btn" data-rain-btn="warmup-alto">Aquecer · muito</button>
+    <button class="controls__btn" data-rain-btn="warmup-medio">médio</button>
+    <button class="controls__btn" data-rain-btn="warmup-leve">pouco</button>
+    <button class="controls__btn" data-rain-btn="cooldown-alto">Resfriar · muito</button>
+    <button class="controls__btn" data-rain-btn="cooldown-medio">médio</button>
+    <button class="controls__btn" data-rain-btn="cooldown-leve">pouco</button>
+    <button class="controls__btn is-active" data-rain-btn="off">Off (ideal)</button>
   </div>
 
   <div class="controls">
@@ -715,10 +1194,23 @@ body{
   <i>·</i> Sem seta, sem pulsação, sem indicador de posição<br>
   <i>·</i> Sem referência → sem fabricar; placeholder explícito<br>
   <br>
-  <b>Vista por fase da volta</b><br>
-  <i>·</i> Default = trecho atual (mapa de trecho à direita)<br>
-  <i>·</i> Reta principal = vista de volta (info-bloco mostra delta-volta + tempo última no centro)<br>
-  <i>·</i> Antes do próximo trecho volta pra vista trecho<br>
+  <b>Vista por fase</b><br>
+  <i>·</i> Default = trecho atual (mapa à direita)<br>
+  <i>·</i> Reta principal = vista de volta (delta-volta + tempo última no centro)<br>
+  <i>·</i> Volta de resfriamento = lap-data esquerda + troféus direita<br>
+  <br>
+  <b>Stint-bar (fases térmicas, não voltas)</b><br>
+  <i>·</i> Aquecimento e resfriamento são fases térmicas — duram até temperatura ideal<br>
+  <i>·</i> Podem consumir 1+ voltas; barras correspondentes seguem animadas<br>
+  <i>·</i> Aquecimento: gradiente quente + halo; concluído → vira branco<br>
+  <i>·</i> Resfriamento: gradiente frio fluindo no sentido oposto<br>
+  <br>
+  <b>Chuva térmica (semântica de estado, não de processo)</b><br>
+  <i>·</i> Aquecimento: chuva AZUL = ainda frio, está esquentando<br>
+  <i>·</i> Resfriamento: chuva VERMELHA = ainda quente, está esfriando<br>
+  <i>·</i> 3 camadas de gotas (fore/mid/back) pra profundidade<br>
+  <i>·</i> Trilha por gradiente, glow por box-shadow, splash sutil no rodapé<br>
+  <i>·</i> Some quando atinge temperatura ideal<br>
   <br>
   <b>Halo</b><br>
   <i>·</i> Recorde stint = laranja, Pior stint = roxo, Best alltime = ouro<br>
@@ -842,6 +1334,24 @@ document.querySelectorAll('[data-vista]').forEach(b => {
     device.dataset.vista = b.dataset.vista;
   });
 });
+
+// Aquecimento: alterna a primeira barra entre is-warmup (animada) e is-warmup-done (branco).
+const stintBar = document.getElementById('stintBar');
+const firstBlock = stintBar.firstElementChild;
+const btnAquecAtivo = document.getElementById('btnAquecAtivo');
+const btnAquecConcl = document.getElementById('btnAquecConcl');
+btnAquecAtivo.addEventListener('click', () => {
+  firstBlock.classList.remove('is-warmup-done');
+  firstBlock.classList.add('is-warmup');
+  btnAquecAtivo.classList.add('is-active');
+  btnAquecConcl.classList.remove('is-active');
+});
+btnAquecConcl.addEventListener('click', () => {
+  firstBlock.classList.remove('is-warmup');
+  firstBlock.classList.add('is-warmup-done');
+  btnAquecAtivo.classList.remove('is-active');
+  btnAquecConcl.classList.add('is-active');
+});
 btnSemRef.addEventListener('click', toggleSemRef);
 btnCruzarSaida.addEventListener('click', simularCruzarSaida);
 
@@ -864,6 +1374,47 @@ document.querySelectorAll('[data-halo]').forEach(b => {
     document.querySelectorAll('[data-halo]').forEach(x => x.classList.remove('is-active'));
     b.classList.add('is-active');
     device.dataset.trechoStatus = b.dataset.halo;
+  });
+});
+
+// Chuva térmica — gotas com 3 camadas pra dar profundidade:
+//   foreground (15%): largas, opacas, mais rápidas (perto do "vidro")
+//   midground   (55%): médias, opacas, velocidade média (camada principal)
+//   background  (30%): finas, semi-transparentes, lentas (longe, atmosfera)
+const rainLayer = document.getElementById('rainLayer');
+function gerarChuva(n=90){
+  rainLayer.innerHTML = '';
+  for(let i=0; i<n; i++){
+    const drop = document.createElement('span');
+    drop.className = 'drop';
+    const r = Math.random();
+    let camada;
+    if(r < 0.15){       // foreground
+      camada = { w: 2.4 + Math.random()*0.8, h: 26 + Math.random()*18,
+                 dur: 1.0 + Math.random()*0.6, op: 0.85 + Math.random()*0.15 };
+    } else if(r < 0.70){ // midground
+      camada = { w: 1.4 + Math.random()*0.6, h: 14 + Math.random()*14,
+                 dur: 1.5 + Math.random()*1.0, op: 0.65 + Math.random()*0.30 };
+    } else {             // background
+      camada = { w: 0.9 + Math.random()*0.4, h: 8 + Math.random()*10,
+                 dur: 2.4 + Math.random()*1.5, op: 0.30 + Math.random()*0.30 };
+    }
+    drop.style.left = (Math.random()*100) + '%';
+    drop.style.width = camada.w.toFixed(2) + 'px';
+    drop.style.height = camada.h.toFixed(0) + 'px';
+    drop.style.animationDelay = (-Math.random()*2.5).toFixed(2) + 's';
+    drop.style.animationDuration = camada.dur.toFixed(2) + 's';
+    drop.style.opacity = camada.op.toFixed(2);
+    rainLayer.appendChild(drop);
+  }
+}
+gerarChuva();
+
+document.querySelectorAll('[data-rain-btn]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-rain-btn]').forEach(x => x.classList.remove('is-active'));
+    b.classList.add('is-active');
+    device.dataset.rain = b.dataset.rainBtn;
   });
 });
 

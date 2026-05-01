@@ -85,10 +85,46 @@ awk -F, '$3=="imu" {print $2}' arquivo.csv | tail -1   # tMono último
 
 - Código Swift escrito e revisado: ✓
 - Privacy Info.plist documentado: ✓
-- Xcode.app instalado no Mac: ✗ (pendente — instalar pela App Store)
-- Projeto Xcode criado: ✗ (pendente)
-- Build no iPhone: ✗ (pendente)
-- Cenários de teste rodados: ✗ (pendente)
+- Xcode.app instalado no Mac: ✓ Xcode 26.4.1
+- Projeto Xcode criado: ✓ via XcodeGen + `project.yml`
+- Build no iPhone 16 Pro Max real: ✓ (Personal Team K3MU9U9952)
+- Cenário **indoor** rodado: ✓ — **IMU 100.3 Hz / jitter 0.2 ms / 5673 amostras em 57s**
+- Cenário outdoor (carro em pista): pendente — Flavio quando for ao box
+
+## Resultado do teste indoor (2026-05-01)
+
+| Métrica | Valor | Alvo | Status |
+|---|---|---|---|
+| IMU Hz | **100.3** | ≥ 50 | ✓ — 2× o alvo |
+| IMU jitter ms | **0.2** | < 5 | ✓ — 25× melhor |
+| GPS Hz | 0.08 | ≥ 1 | ✗ indoor — sem visão de céu |
+| GPS jitter ms | 41306 | < 200 | ✗ indoor |
+
+ADR-018 confirmada com dado dur. CoreMotion entrega o que prometemos.
+
+## Como rodar o app no iPhone (referência futura)
+
+```bash
+DEV="2D6E7A3B-1449-5BE6-8D82-18F969ED0CCB"   # ID do iPhone 16 Pro Max do Flavio
+APP="/Users/imac/Library/Developer/Xcode/DerivedData/P1FastIMUTest-bajmlqoubxvnjbcgofaqlziimuhv/Build/Products/Debug-iphoneos/P1FastIMUTest.app"
+
+# Rebuild se trocou código
+cd "/Users/imac/Projetos/P1 Fast/ios/imu-test"
+xcodegen generate
+xcodebuild -project P1FastIMUTest.xcodeproj -scheme P1FastIMUTest \
+  -destination 'generic/platform=iOS' -allowProvisioningUpdates build
+
+# Install + launch
+xcrun devicectl device install app --device "$DEV" "$APP"
+xcrun devicectl device process launch --device "$DEV" com.flaviomarques.p1fast.imutest
+
+# Screenshot (precisa pymobiledevice3 + tunneld com sudo)
+osascript -e 'do shell script "/Users/imac/Library/Python/3.9/bin/pymobiledevice3 remote tunneld > /tmp/tunneld.log 2>&1 &" with administrator privileges'
+export PATH="/Users/imac/Library/Python/3.9/bin:$PATH"
+pymobiledevice3 developer dvt screenshot /tmp/foo.png
+```
+
+Cert da Personal Team expira em 7 dias — re-rodar o build + install.
 
 ## Próximo passo (depois deste teste)
 
