@@ -14,9 +14,15 @@ p1fast-core/
     │   ├── Snapshot.swift         ← CarTelemetrySnapshot + SnapshotBuilder
     │   ├── CriticalRules.swift    ← AlertLevel + Engine + 3 regras CRÍTICAS + 3 manuais
     │   ├── CrossValidation.swift  ← V-001 (CAN×GNSS) + V-002 (IMU×derivada speed)
-    │   └── FaseCurva.swift        ← classificação INICIO/MEIO/FIM por accLong (port de fase-curva.js)
+    │   ├── FaseCurva.swift        ← classificação INICIO/MEIO/FIM por accLong
+    │   ├── PathMapper.swift       ← parsePath/buildLookup/snap/parcialFromOffset
+    │   ├── TrajectoryMonitor.swift ← desvio em metros vs volta de referência (L001/L007)
+    │   ├── BaselineVectors.swift  ← vetores configuráveis + filterForBaseline
+    │   ├── FuelCalc.swift         ← combustível em voltas + progressoStint
+    │   ├── CoachPhrases.swift     ← catálogo MVP (M001..M062, 2..3 palavras)
+    │   └── P1Coach.swift          ← motor pedagógico completo (electLesson + consume + signalsFromSnapshot)
     └── P1FastSmoke/             ← executável de teste (não usa XCTest)
-        └── main.swift             ← 41 asserts paridade com pipeline JS
+        └── main.swift             ← 97 asserts paridade com pipeline JS
 ```
 
 ## Por que executável smoke em vez de XCTest
