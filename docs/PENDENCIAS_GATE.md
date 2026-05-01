@@ -210,6 +210,7 @@ Não funde IMU+GPS — cada linha é um Sample independente. Fusão multi-source
 - **V-001 e V-002 da CrossValidation** — feitas (V-003 a V-011 viram item P1 acima).
 - **Frente 3 — Port pipeline JS → Swift** — concluída 2026-05-01. 6 módulos portados em sequência: FaseCurva, PathMapper, TrajectoryMonitor, BaselineVectors, FuelCalc, P1Coach (+ CoachPhrases). Suite Swift: 97/0 (subiu 33 → 97 nesta sessão).
 - **TelemetryReplayEngine** — concluído 2026-05-01. `src/telemetry/replay.js` + smoke 21/0. Pipeline pode ser re-alimentado offline com qualquer array de samples; integração end-to-end com `Detector` validada.
+- **Loader CSV do P1FastIMUTest** — concluído 2026-05-01. `src/telemetry/csv-iphone-loader.js` + smoke 23/0. CSV iPhone (`kind=imu|gps`) → `Array<Sample>` canônico, alimentando ReplayEngine sem fricção. Achado: CSV não vem ordenado por tMono.
 
 ---
 
