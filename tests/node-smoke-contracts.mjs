@@ -23,6 +23,15 @@ const { Scores } = await import('../src/domain/score.js');
 const { Detector } = await import('../src/telemetry/detector.js');
 const { ProviderState } = await import('../src/telemetry/provider.js');
 const { ENTITIES } = await import('../src/core/entities.js');
+const {
+  SESSAO_GHOST_FIELDS,
+  CONFIGURACAO_GHOST_FIELDS,
+  CARRO_GHOST_FIELDS,
+  FONTE_TEMPERATURA,
+  MARCO_TIPOS,
+  MARCO_FIELDS,
+  RETA_ESPECIAL_FIELDS,
+} = await import('../src/data/schemas.js');
 
 let ok = 0, fail = 0;
 async function t(name, fn) {
