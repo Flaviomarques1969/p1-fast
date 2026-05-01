@@ -55,29 +55,24 @@ const assert = (cond, msg) => { if (!cond) throw new Error(msg || 'assertion fai
 const eq = (a, b, msg) => { if (a !== b) throw new Error(`${msg || 'eq'}: esperado ${b}, recebido ${a}`); };
 
 // ── helpers de telemetria sintética ──────────────────────────
-function imuStraight(tMono) {
-  return { sample: { accLong: 0.05, accLat: 0.02, accVert: 0.0 }, quality: Quality.OK, ageMs: 5 };
+// IMU em m/s² (não em g). buildSnapshot lê accLong/accLat direto do sample.
+function imu({ longMs2 = 0, latMs2 = 0 } = {}) {
+  return { sample: { accLong: longMs2, accLat: latMs2, accVert: 0 }, quality: Quality.OK, ageMs: 5 };
 }
-function imuBraking(tMono) {
-  return { sample: { accLong: -0.85, accLat: 0.10, accVert: 0.0 }, quality: Quality.OK, ageMs: 5 };
-}
-function imuCornering(tMono) {
-  return { sample: { accLong: -0.10, accLat: 1.2, accVert: 0.0 }, quality: Quality.OK, ageMs: 5 };
-}
-function imuAccelerating(tMono) {
-  return { sample: { accLong: 0.55, accLat: 0.15, accVert: 0.0 }, quality: Quality.OK, ageMs: 5 };
-}
-function gpsBrasilia({ lat = -15.77000, lng = -47.90000, kmh = 90 } = {}) {
+function gps({ lat = -15.77000, lng = -47.90000, kmh = 90 } = {}) {
+  // speed em m/s (CoreLocation/Geolocation API)
   return { sample: { lat, lng, x: 410, y: 707, speed: kmh / 3.6 }, quality: Quality.OK, ageMs: 5 };
 }
-function engineNominal({ rpm = 5500, oilPressure = 4.2, waterTemp = 92, batteryV = 13.8, lambda = 0.92, tps = 60, map = 0.7 } = {}) {
+function engine({ rpm = 5500, oilPressure = 4.2, waterTemp = 92, kmh = 90, kmhCanOffset = 0 } = {}) {
   return {
     sample: {
-      rpm, tps, map, lambda,
+      rpm, tps: 60, map: 0.7, lambda: 0.92,
       oil_pressure: oilPressure,
       water_temp: waterTemp,
-      battery_voltage: batteryV,
+      battery_voltage: 13.8,
       fuel_pressure: 3.0,
+      // speed_can em m/s (canônico — pickVehicle lê s.speed_can)
+      speed_can: (kmh + kmhCanOffset) / 3.6,
     },
     quality: Quality.OK,
     ageMs: 5,
