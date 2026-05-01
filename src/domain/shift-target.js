@@ -12,6 +12,7 @@
 import { safeTarget } from './safe-mode.js';
 import { hasDyno, getLearnedTarget } from '../data/cars.js';
 import { computeCompensation } from './pilot-reaction.js';
+import { computeOptimalRpmPerGear } from './dyno-target-calculator.js';
 
 const CONFIDENCE_FLOOR = 0.7;
 
