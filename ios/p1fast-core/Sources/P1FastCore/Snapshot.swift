@@ -132,10 +132,11 @@ public enum SnapshotBuilder {
             map: s.map,
             lambda: s.lambda,
             oilPressure: s.oilPressure,
-            oilTemp: nil,
+            oilTemp: s.oilTemp,
             waterTemp: s.waterTemp,
             batteryVoltage: s.batteryVoltage,
-            fuelPressure: nil
+            fuelPressure: nil,
+            gear: s.gear
         )
     }
 
