@@ -44,7 +44,12 @@ Convenção:
 - [x] Função pura (sem side-effects)
 
 ### Auditor
-- [~] `Agent(shift-light-auditor, "Audite Bloco 1")` — em curso
+- [x] `Agent(shift-light-auditor, "Audite Bloco 1")` → ✅ APROVADO COM RESSALVAS
+
+### Notas do auditor
+- 18/18 testes passaram (`node tests/domain/gear-estimation.spec.js`)
+- Nenhum scope creep, nenhum princípio violado
+- Ressalva: package.json sem script "test" — adicionado `test:shift-light` neste bloco
 
 ---
 
