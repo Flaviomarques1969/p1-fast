@@ -11,7 +11,7 @@ if (typeof Dexie === 'undefined') {
 }
 
 export const DB_NAME = 'famracing';
-export const DB_VERSION = 12;
+export const DB_VERSION = 13;
 
 const db = new Dexie(DB_NAME);
 
