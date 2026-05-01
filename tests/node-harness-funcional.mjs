@@ -191,39 +191,39 @@ await step('S1-02: cria StintPlan ATAQUE (meta + abordagem agressiva + foco no P
   eq(planAtaque.trechosFoco.length, 2, 'dois trechos foco');
 });
 
-await step('S1-03: pipeline ATAQUE — pressão óleo cai → BOX_AGORA dispara', async () => {
+await step('S1-03: pipeline ATAQUE — óleo despressuriza → BOX_AGORA + V-001 (CAN vs GNSS diverge)', async () => {
   const critical = new CriticalRulesEngine({ onAlert: a => alertasAtaque.push(a) });
   const xval = new CrossValidationEngine({ onEvent: ev => xvalAtaque.push(ev) });
 
-  // 5 voltas sintéticas, ~10 amostras por volta. Volta 3 sample 4 → óleo despressuriza.
+  // 5 voltas × 10 amostras a 10Hz. IMU constante coerente com velocidade quase
+  // constante → V-002 (IMU vs derivada speed) NÃO dispara nas voltas normais.
   const N_VOLTAS = 5;
   const AMOSTRAS_POR_VOLTA = 10;
   let tMono = 0;
+  const KMH_NOMINAL = 90;
 
   for (let lap = 1; lap <= N_VOLTAS; lap++) {
     for (let i = 0; i < AMOSTRAS_POR_VOLTA; i++) {
-      tMono += 100; // 10Hz
-      const fase = i % AMOSTRAS_POR_VOLTA;
-      const imu = (fase < 3) ? imuBraking(tMono)
-                : (fase < 6) ? imuCornering(tMono)
-                : imuAccelerating(tMono);
-      // Cenário crítico — volta 3, 4ª amostra: pressão cai pra 0.6 bar
+      tMono += 100;
+      // Cenário 1 (crítico): volta 3 amostra 4 → óleo cai pra 0.6 bar com RPM alto
       const oleoCritico = (lap === 3 && i === 4);
-      const eng = engineNominal({
+      // Cenário 2 (V-001): volta 4 inteira (10 amostras = 1s, mas precisa ≥2s)
+      // → estendido pelo final da volta 3 + volta 4 = 16 amostras = 1.6s. Ampliado:
+      // volta 3 amostras 5-9 + volta 4 inteira = 15 amostras (1.5s) → ainda < 2s
+      // → estendido p/ voltas 4 e 5 inteiras = 20 amostras = 2.0s. ✓
+      const dispersao = (lap === 4 || lap === 5);
+      const eng = engine({
         rpm: oleoCritico ? 5800 : 5500,
         oilPressure: oleoCritico ? 0.6 : 4.2,
+        kmh: KMH_NOMINAL,
+        kmhCanOffset: dispersao ? 12 : 0.4,  // V-001 dispara se diff > 5 km/h por 2s
       });
-      // Cross-validation: spd CAN diverge do GNSS por 3 amostras na volta 4 (>5km/h)
-      const dispersao = (lap === 4 && i >= 5 && i < 8);
-      const spdGnss = 90 + i;
-      const spdCan = dispersao ? spdGnss + 12 : spdGnss + 0.3;
-      eng.sample.vehicle_speed = spdCan;
       const snap = buildSnapshot({
         tMono,
         sourcesData: {
           't4000': eng,
-          'racebox-gnss': gpsBrasilia({ kmh: spdGnss }),
-          'iphone-imu': imu,
+          'racebox-gnss': gps({ kmh: KMH_NOMINAL }),
+          'iphone-imu': imu({ longMs2: 0, latMs2: 0 }),  // velocidade ~constante → derivada≈0
         },
       });
       critical.consume(snap);
@@ -236,6 +236,9 @@ await step('S1-03: pipeline ATAQUE — pressão óleo cai → BOX_AGORA dispara'
   eq(oleoAlerts[0].nivel, AlertLevel.BOX_AGORA, 'nível BOX_AGORA');
   assert(oleoAlerts[0].quem_age === 'piloto', 'quem_age');
   assert(oleoAlerts[0].acao_imediata?.includes('Box agora'), 'acao_imediata');
+
+  const v001 = xvalAtaque.filter(e => e.validation === 'V-001');
+  assert(v001.length >= 1, `esperava ≥1 V-001, recebeu ${v001.length}`);
 });
 
 await step('S1-04: stint ATAQUE persiste e pode ser relido', async () => {
