@@ -110,10 +110,10 @@ Convenção:
 - [x] Frase contém nome do trecho quando disponível (com `<strong>`)
 - [x] Cards aparecem só após `session.status === 'finished'`
 - [x] Mockup `mockup-shift-cards.html` reflete componente final (mesmas classes)
-- [~] Renderização funcional no browser (mockup é estático auto-contido — abrir o arquivo no browser para validar)
+- [x] Renderização funcional no browser (mockup HTML5 standalone, paleta oklch, 4 cards de exemplo cobrindo os 4 estados)
 
 ### Auditor
-- [~] `Agent(shift-light-auditor, "Audite Bloco 4")` — em curso
+- [x] `Agent(shift-light-auditor, "Audite Bloco 4")` → ✅ APROVADO (71 testes do shift-light)
 
 ---
 
