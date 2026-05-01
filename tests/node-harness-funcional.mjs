@@ -282,35 +282,33 @@ await step('S2-02: cria StintPlan CONSISTÊNCIA (progressiva, sem trecho foco)',
   eq(planConsist.abordagem, Abordagem.PROGRESSIVA, 'abordagem');
 });
 
-await step('S2-03: pipeline CONSISTÊNCIA — sem alertas críticos, sem V-001', async () => {
+await step('S2-03: pipeline CONSISTÊNCIA — sem alertas críticos, sem V-001 nem V-002', async () => {
   const critical = new CriticalRulesEngine({ onAlert: a => alertasConsist.push(a) });
   const xval = new CrossValidationEngine({ onEvent: ev => xvalConsist.push(ev) });
   let tMono = 0;
+  const KMH = 90;
+  // Velocidade constante 90 km/h, IMU ~0, óleo nominal, CAN bate com GNSS (offset 0.4).
   for (let lap = 1; lap <= 5; lap++) {
     for (let i = 0; i < 10; i++) {
       tMono += 100;
-      const fase = i % 10;
-      const imu = (fase < 3) ? imuBraking(tMono)
-                : (fase < 6) ? imuCornering(tMono)
-                : imuAccelerating(tMono);
-      const eng = engineNominal({ rpm: 5400 + (i * 30), oilPressure: 4.2, waterTemp: 91 });
-      const spdGnss = 92 + i;
-      eng.sample.vehicle_speed = spdGnss + 0.4; // mesma referência GNSS, sem divergência
+      const eng = engine({ rpm: 5500, oilPressure: 4.2, waterTemp: 91, kmh: KMH, kmhCanOffset: 0.4 });
       const snap = buildSnapshot({
         tMono,
         sourcesData: {
           't4000': eng,
-          'racebox-gnss': gpsBrasilia({ kmh: spdGnss }),
-          'iphone-imu': imu,
+          'racebox-gnss': gps({ kmh: KMH }),
+          'iphone-imu': imu({ longMs2: 0, latMs2: 0 }),
         },
       });
       critical.consume(snap);
       xval.consume(snap);
     }
   }
-  eq(alertasConsist.length, 0, `0 alertas esperado, recebido ${alertasConsist.length}`);
-  const v001Consist = xvalConsist.filter(e => e.validation === 'V-001');
-  eq(v001Consist.length, 0, `0 V-001 esperado, recebido ${v001Consist.length}`);
+  eq(alertasConsist.length, 0, `0 alertas críticos esperado, recebido ${alertasConsist.length}`);
+  const v001 = xvalConsist.filter(e => e.validation === 'V-001');
+  eq(v001.length, 0, `0 V-001 esperado, recebido ${v001.length}`);
+  const v002 = xvalConsist.filter(e => e.validation === 'V-002');
+  eq(v002.length, 0, `0 V-002 esperado, recebido ${v002.length}`);
 });
 
 await step('S2-04: stint CONSISTÊNCIA persiste', async () => {
