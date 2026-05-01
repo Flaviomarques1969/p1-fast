@@ -64,6 +64,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/TrajectoryMonitor.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
         },
         {
@@ -84,7 +88,8 @@
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Sample.swift.o",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/SeedBrasilia.swift.o",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Snapshot.swift.o",
-        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Track.swift.o"
+        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Track.swift.o",
+        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/TrajectoryMonitor.swift.o"
       ],
       "otherArguments" : [
         "-target",
@@ -179,6 +184,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/TrajectoryMonitor.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCore.swiftmodule"
         }
       ],
@@ -193,7 +202,8 @@
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Sample.swift",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/SeedBrasilia.swift",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Snapshot.swift",
-        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Track.swift"
+        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Track.swift",
+        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/TrajectoryMonitor.swift"
       ],
       "tempsPath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build",
       "wholeModuleOptimization" : false
@@ -315,6 +325,7 @@
       "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/SeedBrasilia.swift",
       "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Snapshot.swift",
       "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Track.swift",
+      "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/TrajectoryMonitor.swift",
       "-I",
       "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules",
       "-target",
@@ -494,6 +505,10 @@
         {
           "kind" : "file",
           "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Track.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/TrajectoryMonitor.swift"
         }
       ],
       "outputFilePath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/sources"
@@ -572,6 +587,10 @@
         {
           "kind" : "file",
           "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Track.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/TrajectoryMonitor.swift.o"
         },
         {
           "kind" : "file",

@@ -157,6 +157,22 @@ public enum TrajectoryMonitor_ {
         public let confidence: Confidence
         public let debug: Debug
 
+        public init(disponivel: Bool, razao: String?,
+                    brakingPointDeviationM: Double?, turnInPointDeviationM: Double?,
+                    throttlePointDeviationM: Double?, entryDeviationM: Double?,
+                    apexDeviationM: Double?,
+                    confidence: Confidence, debug: Debug) {
+            self.disponivel = disponivel
+            self.razao = razao
+            self.brakingPointDeviationM = brakingPointDeviationM
+            self.turnInPointDeviationM = turnInPointDeviationM
+            self.throttlePointDeviationM = throttlePointDeviationM
+            self.entryDeviationM = entryDeviationM
+            self.apexDeviationM = apexDeviationM
+            self.confidence = confidence
+            self.debug = debug
+        }
+
         public struct Debug: Sendable {
             public let apexIdx: Int
             public let refApexIdx: Int
@@ -166,6 +182,19 @@ public enum TrajectoryMonitor_ {
             public let refTurnInIdx: Int
             public let throttleIdx: Int
             public let refThrottleIdx: Int
+            public init(apexIdx: Int, refApexIdx: Int,
+                        brakingIdx: Int, refBrakingIdx: Int,
+                        turnInIdx: Int, refTurnInIdx: Int,
+                        throttleIdx: Int, refThrottleIdx: Int) {
+                self.apexIdx = apexIdx
+                self.refApexIdx = refApexIdx
+                self.brakingIdx = brakingIdx
+                self.refBrakingIdx = refBrakingIdx
+                self.turnInIdx = turnInIdx
+                self.refTurnInIdx = refTurnInIdx
+                self.throttleIdx = throttleIdx
+                self.refThrottleIdx = refThrottleIdx
+            }
         }
 
         static func empty(_ razao: String) -> Report {
