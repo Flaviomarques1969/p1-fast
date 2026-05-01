@@ -1,10 +1,26 @@
 # P1 Fast — STATUS (continuação após /clear)
 
-**Data deste checkpoint:** 2026-04-30
-**Estado:** repo standalone criado a partir do FAM Racing `_export/`. Smokes 71 ok / 0 fail.
+**Data deste checkpoint:** 2026-05-01
+**Estado:** Smart Shift Light Premium concluído (6/6 blocos auditados). Smoke geral verde; suite `npm run test:shift-light`: 104 ok / 0 fail.
 
 > **Se você é Claude abrindo esta sessão pela primeira vez:**
 > Leia este arquivo primeiro, depois `~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/MEMORY.md`.
+
+---
+
+## Smart Shift Light Premium — entregue (2026-05-01)
+
+Plano: `docs/SHIFT_LIGHT_IMPLEMENTATION_PLAN.md` · Decisões: `docs/SHIFT_LIGHT_DECISIONS.md` · Progresso: `docs/SHIFT_LIGHT_PROGRESS.md`.
+
+Blocos (todos auditados pelo `shift-light-auditor`):
+- **Bloco 1** Estimativa de marcha + confiança — `src/domain/gear-{estimation,signatures,shift-detector}.js`
+- **Bloco 2** Modo seguro + alvo conservador — `src/domain/{shift-target,safe-mode}.js` + `src/data/cars.js`
+- **Bloco 3** Detecção de evento + persistência — `src/pipeline/shift-event-detector.js` + `src/data/{shift-events,trecho-resolver}.js` (Dexie v11)
+- **Bloco 4** Cards pós-sessão Fast Coach — `src/domain/shift-analysis.js` + `src/ui/shift-cards-view.js` + `_design-reference/mockup-shift-cards.html`
+- **Bloco 5** Pilot Reaction Learning — `src/domain/pilot-reaction.js` + `src/data/reaction-profiles.js` + hook em shift-target (Dexie v12)
+- **Bloco 6** DYNO_CALIBRATED + UI — `src/domain/dyno-{csv-parser,target-calculator}.js` + `src/domain/tolerance-from-dyno.js` + aba Dinamômetro em `_design-reference/mockup-carro-novo.html`
+
+Comando de regressão: `npm run test:shift-light` (6 specs em sequência, 104 testes).
 
 ---
 
