@@ -18,6 +18,15 @@ public struct EngineSnap: Codable, Sendable, Equatable {
     public var batteryVoltage: Double?
     public var fuelPressure: Double?
     public var gear: Int?
+    public init(
+        rpm: Double? = nil, tps: Double? = nil, map: Double? = nil, lambda: Double? = nil,
+        oilPressure: Double? = nil, oilTemp: Double? = nil, waterTemp: Double? = nil,
+        batteryVoltage: Double? = nil, fuelPressure: Double? = nil, gear: Int? = nil
+    ) {
+        self.rpm = rpm; self.tps = tps; self.map = map; self.lambda = lambda
+        self.oilPressure = oilPressure; self.oilTemp = oilTemp; self.waterTemp = waterTemp
+        self.batteryVoltage = batteryVoltage; self.fuelPressure = fuelPressure; self.gear = gear
+    }
 }
 
 public struct PositionSnap: Codable, Sendable, Equatable {
@@ -28,6 +37,15 @@ public struct PositionSnap: Codable, Sendable, Equatable {
     public var localY: Double?
     public var heading: Double?
     public var gpsAccuracy: Double?
+    public init(
+        lat: Double? = nil, lon: Double? = nil, alt: Double? = nil,
+        localX: Double? = nil, localY: Double? = nil,
+        heading: Double? = nil, gpsAccuracy: Double? = nil
+    ) {
+        self.lat = lat; self.lon = lon; self.alt = alt
+        self.localX = localX; self.localY = localY
+        self.heading = heading; self.gpsAccuracy = gpsAccuracy
+    }
 }
 
 public struct DynamicsSnap: Codable, Sendable, Equatable {
@@ -35,12 +53,24 @@ public struct DynamicsSnap: Codable, Sendable, Equatable {
     public var accelLateral: Double?
     public var accelVertical: Double?
     public var yawRate: Double?
+    public init(
+        accelLongitudinal: Double? = nil, accelLateral: Double? = nil,
+        accelVertical: Double? = nil, yawRate: Double? = nil
+    ) {
+        self.accelLongitudinal = accelLongitudinal
+        self.accelLateral = accelLateral
+        self.accelVertical = accelVertical
+        self.yawRate = yawRate
+    }
 }
 
 public struct VehicleSnap: Codable, Sendable, Equatable {
     public var speedCan: Double?      // m/s (T4000)
     public var speedGnss: Double?     // m/s (GPS)
     public var speedFused: Double?    // ponderada CAN/GNSS
+    public init(speedCan: Double? = nil, speedGnss: Double? = nil, speedFused: Double? = nil) {
+        self.speedCan = speedCan; self.speedGnss = speedGnss; self.speedFused = speedFused
+    }
 }
 
 public struct SnapshotQuality: Codable, Sendable, Equatable {
@@ -49,6 +79,10 @@ public struct SnapshotQuality: Codable, Sendable, Equatable {
     public var iphone: Quality
     public var sync: Quality
     public var confidence: String   // "Alta" | "Média" | "Baixa"
+    public init(t4000: Quality, racebox: Quality, iphone: Quality, sync: Quality, confidence: String) {
+        self.t4000 = t4000; self.racebox = racebox; self.iphone = iphone
+        self.sync = sync; self.confidence = confidence
+    }
 }
 
 public struct Snapshot: Codable, Sendable, Equatable {
@@ -59,6 +93,15 @@ public struct Snapshot: Codable, Sendable, Equatable {
     public let dynamics: DynamicsSnap
     public let vehicle: VehicleSnap
     public let quality: SnapshotQuality
+    public init(
+        t: Int64, tMono: Double,
+        engine: EngineSnap, position: PositionSnap, dynamics: DynamicsSnap,
+        vehicle: VehicleSnap, quality: SnapshotQuality
+    ) {
+        self.t = t; self.tMono = tMono
+        self.engine = engine; self.position = position; self.dynamics = dynamics
+        self.vehicle = vehicle; self.quality = quality
+    }
 }
 
 /// Source-data-package alimentando o builder. Mesmo shape do JS:
