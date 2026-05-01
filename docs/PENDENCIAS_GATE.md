@@ -100,25 +100,9 @@ Não duplicar com:
 
 ---
 
-### P1 — Port pipeline JS → Swift (Frente 3)
+### ~~P1 — Port pipeline JS → Swift (Frente 3)~~ — CONCLUÍDO 2026-05-01
 
-**Origem:** combinada com Flavio antes do `/clear` em 2026-05-01 (ver `p1-fast-checkpoint-pos-clear-2026-05-01.md`).
-
-**O que falta** (em `ios/p1fast-core/Sources/P1FastCore/`):
-1. `TrajectoryMonitor.swift` (port de [`src/domain/trajectory-monitor.js`](../src/domain/trajectory-monitor.js))
-2. `FuelCalc.swift` (port de [`src/domain/fuel-calc.js`](../src/domain/fuel-calc.js))
-3. `BaselineVectors.swift` (port de [`src/domain/baseline-vectors.js`](../src/domain/baseline-vectors.js))
-4. `P1Coach.swift` motor completo (port de [`src/domain/p1-coach.js`](../src/domain/p1-coach.js))
-5. `FaseCurva.swift` (port de `src/telemetry/fase-curva.js`)
-6. `PathMapper.swift` (port de `src/telemetry/path-mapper.js`)
-
-**Por que P1:** o app iOS nativo (ADR-018) precisa rodar pipeline localmente. Sem o port, depende de chamada de servidor — fora da decisão arquitetural.
-
-**Escopo:** médio. Padrão de port estabelecido (struct/enum + smoke 1:1 com Node).
-
-**Critério de feito:** `swift run p1fast-smoke` continua verde após cada módulo. Tabela de paridade no [`ios/p1fast-core/README.md`](../ios/p1fast-core/README.md) atualizada.
-
-**Bloqueios:** nenhum.
+Todos os 6 módulos da Frente 3 portados em sequência: FaseCurva → PathMapper → TrajectoryMonitor → BaselineVectors → FuelCalc → P1Coach (com CoachPhrases). Smoke Swift sustenta 97/0 (33 → 97 nesta sessão), Node 81/0, harness funcional 23/0, harness API 26/0. Tabela de paridade atualizada em [`ios/p1fast-core/README.md`](../ios/p1fast-core/README.md).
 
 ---
 
