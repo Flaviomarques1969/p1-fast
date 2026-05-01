@@ -341,6 +341,232 @@ step("XV-V001: cooldown bloqueia 2ª emissão dentro de 30s") {
     try assertEq(v001.count, 1, "cooldown — só 1 emissão em 5s")
 }
 
+// ── XV-V003..V-011 (paridade com node-smoke-cross-validation.mjs) ──
+
+/// Helper local — constrói Snapshot diretamente sem passar pelo builder,
+/// porque os cenários V-003..V-011 testam canais específicos sem fundir fontes.
+func mkSnap(
+    tMono: Double,
+    rpm: Double? = nil, tps: Double? = nil, map: Double? = nil, lambda: Double? = nil,
+    oilPressure: Double? = nil, oilTemp: Double? = nil, waterTemp: Double? = nil,
+    batteryVoltage: Double? = nil, gear: Int? = nil,
+    accLong: Double? = nil, accLat: Double? = nil, yawRate: Double? = nil,
+    speedFused: Double? = nil, lat: Double? = nil, lon: Double? = nil
+) -> Snapshot {
+    Snapshot(
+        t: Int64(tMono), tMono: tMono,
+        engine: EngineSnap(
+            rpm: rpm, tps: tps, map: map, lambda: lambda,
+            oilPressure: oilPressure, oilTemp: oilTemp, waterTemp: waterTemp,
+            batteryVoltage: batteryVoltage, fuelPressure: nil, gear: gear
+        ),
+        position: PositionSnap(lat: lat, lon: lon),
+        dynamics: DynamicsSnap(
+            accelLongitudinal: accLong, accelLateral: accLat,
+            accelVertical: nil, yawRate: yawRate
+        ),
+        vehicle: VehicleSnap(speedCan: nil, speedGnss: nil, speedFused: speedFused),
+        quality: SnapshotQuality(t4000: .ok, racebox: .ok, iphone: .ok, sync: .ok, confidence: "Alta")
+    )
+}
+
+step("XV-V002: IMU long 5 m/s² mas velocidade não muda → emite após 1s") {
+    var events: [ValidationEvent] = []
+    let xv = CrossValidationEngine { events.append($0) }
+    var tMono: Double = 1000
+    while tMono < 3000 {
+        xv.consume(mkSnap(tMono: tMono, accLong: 5.0, speedFused: 25))
+        tMono += 100
+    }
+    let v002 = events.filter { $0.validation == "V-002" }
+    try assertEq(v002.count, 1)
+}
+
+step("XV-V003: TPS>80 + MAP<0.6 + acc<1 sustentado 0.5s+ → emite") {
+    var events: [ValidationEvent] = []
+    let xv = CrossValidationEngine { events.append($0) }
+    var tMono: Double = 1000
+    while tMono < 2000 {
+        xv.consume(mkSnap(tMono: tMono, tps: 90, map: 0.4, accLong: 0.2))
+        tMono += 100
+    }
+    try assertEq(events.filter { $0.validation == "V-003" }.count, 1)
+}
+
+step("XV-V003: TPS alto + MAP alto + ganho real → não emite") {
+    var events: [ValidationEvent] = []
+    let xv = CrossValidationEngine { events.append($0) }
+    var tMono: Double = 1000
+    while tMono < 3000 {
+        xv.consume(mkSnap(tMono: tMono, tps: 90, map: 0.95, accLong: 3.0))
+        tMono += 100
+    }
+    try assertEq(events.filter { $0.validation == "V-003" }.count, 0)
+}
+
+step("XV-V004: rpm/gear/speed inconsistente por 1s+ → emite") {
+    var events: [ValidationEvent] = []
+    let xv = CrossValidationEngine { events.append($0) }
+    var tMono: Double = 1000
+    while tMono < 3000 {
+        // 4ª em 5000 RPM esperado ~48.6 m/s; carro a 25 m/s → erro ~50%
+        xv.consume(mkSnap(tMono: tMono, rpm: 5000, gear: 4, speedFused: 25))
+        tMono += 100
+    }
+    try assertEq(events.filter { $0.validation == "V-004" }.count, 1)
+}
+
+step("XV-V004: rpm/gear/speed consistente → não emite") {
+    var events: [ValidationEvent] = []
+    let xv = CrossValidationEngine { events.append($0) }
+    var tMono: Double = 1000
+    while tMono < 3000 {
+        xv.consume(mkSnap(tMono: tMono, rpm: 5000, gear: 4, speedFused: 48.6))
+        tMono += 100
+    }
+    try assertEq(events.filter { $0.validation == "V-004" }.count, 0)
+}
+
+step("XV-V005: water temp slope > 0.5°C/min sustentado 60s+ → emite") {
+    var events: [ValidationEvent] = []
+    let xv = CrossValidationEngine { events.append($0) }
+    var tMono: Double = 0
+    while tMono < 6 * 60_000 {
+        // 100°C +1.5°C/min — quando janela 60s atinge, tw > 100 → critico
+        xv.consume(mkSnap(tMono: tMono, waterTemp: 100 + (tMono / 60_000) * 1.5))
+        tMono += 1000
+    }
+    let v5 = events.filter { $0.validation == "V-005" }
+    try assertTrue(v5.count >= 1, "V-005 não emitiu")
+    try assertEq(v5[0].severity, .critico)
+}
+
+step("XV-V006: pressão óleo 1 bar a 5000 RPM por 2s+ → critico") {
+    var events: [ValidationEvent] = []
+    let xv = CrossValidationEngine { events.append($0) }
+    var tMono: Double = 1000
+    while tMono < 4000 {
+        xv.consume(mkSnap(tMono: tMono, rpm: 5000, oilPressure: 1.0, oilTemp: 90))
+        tMono += 100
+    }
+    let v6 = events.filter { $0.validation == "V-006" }
+    try assertEq(v6.count, 1)
+    try assertEq(v6[0].severity, .critico)
+}
+
+step("XV-V006: pressão óleo saudável → não emite") {
+    var events: [ValidationEvent] = []
+    let xv = CrossValidationEngine { events.append($0) }
+    var tMono: Double = 1000
+    while tMono < 4000 {
+        xv.consume(mkSnap(tMono: tMono, rpm: 5000, oilPressure: 5.0, oilTemp: 90))
+        tMono += 100
+    }
+    try assertEq(events.filter { $0.validation == "V-006" }.count, 0)
+}
+
+step("XV-V007: λ>1.0 sob carga por 1-5s → atencao") {
+    var events: [ValidationEvent] = []
+    let xv = CrossValidationEngine { events.append($0) }
+    var tMono: Double = 1000
+    while tMono < 3000 {
+        xv.consume(mkSnap(tMono: tMono, rpm: 6000, tps: 90, map: 1.0, lambda: 1.05))
+        tMono += 100
+    }
+    let v7 = events.filter { $0.validation == "V-007" }
+    try assertEq(v7.count, 1)
+    try assertEq(v7[0].severity, .atencao)
+}
+
+step("XV-V007: λ>1.0 sob carga por 5s+ com cooldown reduzido → critico") {
+    // Cooldown padrão (30s) bloqueia escalada atencao→critico — mesmo design do JS.
+    // Pra validar lógica de janela 5s, usa cooldown 500ms.
+    var events: [ValidationEvent] = []
+    let xv = CrossValidationEngine(onEvent: { events.append($0) }, cooldownMs: 500)
+    var tMono: Double = 1000
+    while tMono < 7000 {
+        xv.consume(mkSnap(tMono: tMono, rpm: 6000, tps: 90, map: 1.0, lambda: 1.05))
+        tMono += 100
+    }
+    let critico = events.filter { $0.validation == "V-007" && $0.severity == .critico }
+    try assertTrue(critico.count >= 1, "crítico não disparou em 5s+")
+}
+
+step("XV-V008: bateria 10V a 5000 RPM por 2s+ → critico") {
+    var events: [ValidationEvent] = []
+    let xv = CrossValidationEngine { events.append($0) }
+    var tMono: Double = 1000
+    while tMono < 4000 {
+        xv.consume(mkSnap(tMono: tMono, rpm: 5000, batteryVoltage: 10.0))
+        tMono += 100
+    }
+    let v8 = events.filter { $0.validation == "V-008" }
+    try assertEq(v8.count, 1)
+    try assertEq(v8[0].severity, .critico)
+}
+
+step("XV-V008: bateria 11V a 5000 RPM → atencao (não critico)") {
+    var events: [ValidationEvent] = []
+    let xv = CrossValidationEngine { events.append($0) }
+    var tMono: Double = 1000
+    while tMono < 4000 {
+        xv.consume(mkSnap(tMono: tMono, rpm: 5000, batteryVoltage: 11.0))
+        tMono += 100
+    }
+    let v8 = events.filter { $0.validation == "V-008" }
+    try assertEq(v8.count, 1)
+    try assertEq(v8[0].severity, .atencao)
+}
+
+step("XV-V010: yaw alto + aLat baixo → sobresterço (V-010)") {
+    var events: [ValidationEvent] = []
+    let xv = CrossValidationEngine { events.append($0) }
+    xv.consume(mkSnap(tMono: 1000, accLat: 1.5, yawRate: 50))
+    try assertEq(events.filter { $0.validation == "V-010" }.count, 1)
+}
+
+step("XV-V010-b: aLat alto + yaw baixo → subesterço") {
+    var events: [ValidationEvent] = []
+    let xv = CrossValidationEngine { events.append($0) }
+    xv.consume(mkSnap(tMono: 1000, accLat: 9.0, yawRate: 5))
+    try assertEq(events.filter { $0.validation == "V-010-b" }.count, 1)
+}
+
+step("XV-V011: aLat divergente do raio da trajetória → emite info") {
+    var events: [ValidationEvent] = []
+    let xv = CrossValidationEngine { events.append($0) }
+    let radius = 100.0, v = 30.0, omega = v / radius
+    let cosLat = cos(-15.77 * .pi / 180)
+    var tMono: Double = 1000
+    while tMono < 3000 {
+        let theta = (omega * tMono) / 1000
+        let lat = -15.77 + (radius * cos(theta)) / 111_320
+        let lon = -47.90 + (radius * sin(theta)) / (111_320 * cosLat)
+        // aLat 1 m/s² mas trajetória pede ~9 m/s²
+        xv.consume(mkSnap(tMono: tMono, accLat: 1.0, speedFused: v, lat: lat, lon: lon))
+        tMono += 100
+    }
+    try assertTrue(events.filter { $0.validation == "V-011" }.count >= 1)
+}
+
+step("XV-reset: limpa cooldowns e janelas") {
+    var events: [ValidationEvent] = []
+    let xv = CrossValidationEngine { events.append($0) }
+    var tMono: Double = 1000
+    while tMono < 4000 {
+        xv.consume(mkSnap(tMono: tMono, rpm: 5000, oilPressure: 1.0))
+        tMono += 100
+    }
+    try assertEq(events.filter { $0.validation == "V-006" }.count, 1)
+    xv.reset()
+    while tMono < 7000 {
+        xv.consume(mkSnap(tMono: tMono, rpm: 5000, oilPressure: 1.0))
+        tMono += 100
+    }
+    // Após reset, mesmo dentro do cooldown original, nova janela emite de novo
+    try assertEq(events.filter { $0.validation == "V-006" }.count, 2)
+}
+
 step("CR-07: regras manuais existem (3 mínimo)") {
     try assertTrue(MANUAL_RULES.count >= 3, "manual rules >= 3")
     let ids = MANUAL_RULES.map { $0.id }
