@@ -101,5 +101,72 @@ await t('Round-trip v8 preserva contagens e uid', async () => {
   await Dexie.delete(dbName);
 });
 
+await t('Migration v12→v13 aditiva: dado v12 sobrevive + tabelas marcos/retas_especiais criadas vazias', async () => {
+  const dbName = 'migration-v13-' + Math.random().toString(36).slice(2);
+
+  // 1. Cria DB v12 com dado representativo
+  const dbV12 = new Dexie(dbName);
+  dbV12.version(12).stores({
+    cars:               'id, userId, nome, criadoEm',
+    sessions:           'id, userId, carId, trackId, status, dataInicio, criadoEm',
+    carConfigurations:  'id, carId, dataAplicacao, criadoEm',
+    reaction_profiles:  '++id, &key, last_updated',
+  });
+  await dbV12.open();
+  await dbV12.cars.add({ id: 'car_v12', userId: 'u1', nome: 'Celta v12', criadoEm: 1000 });
+  await dbV12.sessions.add({ id: 'ses_v12', userId: 'u1', carId: 'car_v12', trackId: 'br', status: 'finalizada', dataInicio: 2000, criadoEm: 2000 });
+  await dbV12.carConfigurations.add({ id: 'cfg_v12', carId: 'car_v12', dataAplicacao: 1500, criadoEm: 1500 });
+  await dbV12.reaction_profiles.add({ key: 'p1:c1:3:t1', last_updated: 1000, samples: 5 });
+  dbV12.close();
+
+  // 2. Reabre na v13
+  const dbV13 = new Dexie(dbName);
+  dbV13.version(12).stores({
+    cars:               'id, userId, nome, criadoEm',
+    sessions:           'id, userId, carId, trackId, status, dataInicio, criadoEm',
+    carConfigurations:  'id, carId, dataAplicacao, criadoEm',
+    reaction_profiles:  '++id, &key, last_updated',
+  });
+  dbV13.version(13).stores({
+    marcos:          'id, layoutId, tipo, criadoEm',
+    retas_especiais: 'id, trackId, segmentId, autoDetectada, criadoEm',
+  });
+  await dbV13.open();
+
+  // 3. Dados v12 preservados
+  const car = await dbV13.cars.get('car_v12');
+  if (!car || car.nome !== 'Celta v12') throw new Error('car v12 perdido');
+  const ses = await dbV13.sessions.get('ses_v12');
+  if (!ses) throw new Error('session v12 perdida');
+  const cfg = await dbV13.carConfigurations.get('cfg_v12');
+  if (!cfg) throw new Error('cfg v12 perdida');
+  if (await dbV13.reaction_profiles.count() !== 1) throw new Error('reaction_profiles count mudou');
+
+  // 4. Tabelas novas existem e estão vazias
+  if (await dbV13.marcos.count() !== 0) throw new Error('marcos não veio vazio');
+  if (await dbV13.retas_especiais.count() !== 0) throw new Error('retas_especiais não veio vazio');
+
+  // 5. Inserts nas tabelas novas funcionam (incluindo pit-in/pit-out)
+  await dbV13.marcos.bulkAdd([
+    { id: 'm1', layoutId: 'br-l1', tipo: 'pit-in',  posicao: { x: 100, y: 200 }, criadoEm: 3000 },
+    { id: 'm2', layoutId: 'br-l1', tipo: 'pit-out', posicao: { x: 110, y: 200 }, criadoEm: 3001 },
+    { id: 'm3', layoutId: 'br-l1', tipo: 'largada', posicao: { x: 0, y: 0 },     criadoEm: 3002 },
+  ]);
+  await dbV13.retas_especiais.add({
+    id: 're1', trackId: 'br', segmentId: 'seg_reta_principal',
+    tempoMedioMs: 12000, autoDetectada: false, criadoEm: 3100,
+  });
+  if (await dbV13.marcos.where('tipo').equals('pit-in').count() !== 1) throw new Error('pit-in não indexável');
+  if (await dbV13.marcos.where('tipo').equals('pit-out').count() !== 1) throw new Error('pit-out não indexável');
+
+  // 6. Sessão v12 pode receber voltas_planejadas como campo não-indexado
+  await dbV13.sessions.update('ses_v12', { voltas_planejadas: 8 });
+  const sesUp = await dbV13.sessions.get('ses_v12');
+  if (sesUp.voltas_planejadas !== 8) throw new Error('voltas_planejadas não persistiu');
+
+  dbV13.close();
+  await Dexie.delete(dbName);
+});
+
 console.log(`\n${ok} ok / ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);
