@@ -2,6 +2,13 @@
   "": {
     "swift-dependencies": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/primary.swiftdeps"
   },
+  "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/BaselineVectors.swift": {
+    "dependencies": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/BaselineVectors.d",
+    "object": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/BaselineVectors.swift.o",
+    "swiftmodule": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/BaselineVectors~partial.swiftmodule",
+    "swift-dependencies": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/BaselineVectors.swiftdeps",
+    "diagnostics": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/BaselineVectors.dia"
+  },
   "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/CriticalRules.swift": {
     "dependencies": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/CriticalRules.d",
     "object": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/CriticalRules.swift.o",
