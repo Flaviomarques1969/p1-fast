@@ -54,27 +54,61 @@ public final class CrossValidationEngine {
 
     private let v001Window = WindowState(minMs: 2000)
     private let v002Window = WindowState(minMs: 1000)
+    private let v003Window = WindowState(minMs: 500)
+    private let v004Window = WindowState(minMs: 1000)
+    private let v005Window = WindowState(minMs: 60_000)
+    private let v006Window = WindowState(minMs: 2000)
+    private let v007Window = WindowState(minMs: 1000)
+    private let v007bWindow = WindowState(minMs: 5000)
+    private let v008Window = WindowState(minMs: 2000)
 
     private var lastSpeed: Double?
     private var lastTMono: Double?
 
-    public init(onEvent: OnEvent? = nil, cooldownMs: Double = 30_000) {
+    /// Histórico de temperatura água — janela móvel 5min pra V-005.
+    private struct TempPoint { let t: Double; let v: Double }
+    private var tempHistory: [TempPoint] = []
+
+    /// Histórico de posição — janela móvel 1.5s pra V-011.
+    private struct PosPoint { let t: Double; let lat: Double; let lon: Double; let speed: Double }
+    private var posHistory: [PosPoint] = []
+
+    /// Mapa marcha → km/h por 1000 RPM (Celta 1.4 default — ver CROSS_VALIDATION_RULES).
+    private let gearMap: [Int: Double]
+
+    public init(
+        onEvent: OnEvent? = nil,
+        cooldownMs: Double = 30_000,
+        gearMap: [Int: Double]? = nil
+    ) {
         self.onEvent = onEvent
         self.cooldownMs = cooldownMs
+        self.gearMap = gearMap ?? [1: 10, 2: 20, 3: 28, 4: 35, 5: 42, 6: 50]
     }
 
     public func reset() {
         lastEmittedAt.removeAll()
-        v001Window.exit()
-        v002Window.exit()
+        v001Window.exit(); v002Window.exit(); v003Window.exit(); v004Window.exit()
+        v005Window.exit(); v006Window.exit(); v007Window.exit(); v007bWindow.exit()
+        v008Window.exit()
         lastSpeed = nil
         lastTMono = nil
+        tempHistory.removeAll()
+        posHistory.removeAll()
     }
 
     public func consume(_ snap: Snapshot) {
         if snap.tMono <= 0 { return }
         v001(snap)
         v002(snap)
+        v003(snap)
+        v004(snap)
+        v005(snap)
+        v006(snap)
+        v007(snap)
+        v008(snap)
+        v010(snap)
+        v011(snap)
         lastSpeed = snap.vehicle.speedFused
         lastTMono = snap.tMono
     }
