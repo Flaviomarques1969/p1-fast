@@ -110,7 +110,15 @@ Todos os 6 módulos da Frente 3 portados em sequência: FaseCurva → PathMapper
 
 `src/telemetry/replay.js` entregue. `ReplayEngine` standalone (não estende `TelemetryProvider`, não toca `sample-store`/DB — replay é não-destrutivo). 3 modos de velocidade: `'instant'` (síncrono pra regressão), `'realtime'` (respeita delta de `t`), número (multiplicador). Pause/resume/stop completos; `scheduler` injetável pra teste determinístico. Smoke em `tests/node-smoke-replay.mjs` cobre 21 cenários incluindo paridade end-to-end com `Detector` real. Suite Node: 129 → 150 / 0.
 
-Não suporta CSV ainda — aceita array de samples canônico. Helper `csv-iphone-loader.js` (parsing do `P1FastIMUTest`) fica como item separado quando precisar.
+---
+
+### ~~P1 — Loader CSV do P1FastIMUTest~~ — CONCLUÍDO 2026-05-01
+
+`src/telemetry/csv-iphone-loader.js` entregue. Função pura `loadIphoneCsv(text, opts)` parsea o formato `ts_iso,tMono_s,kind,accLong_ms2,accLat_ms2,accVert_ms2,lat,lng,speed_ms,gpsAcc_m` em `Array<Sample>` canônico. IMU vira sample com `acc*` preenchidos, GPS vira sample com `lat/lng/gpsAccuracy` (e `speed` quando disponível). Linhas malformadas, `kind` desconhecido, `ts_iso` ou `tMono_s` inválidos → `dropped`. Smoke em `tests/node-smoke-csv-iphone-loader.mjs` (23 cenários) inclui parsing do CSV real `iphone16promax-2026-05-01-walking-31s.csv` (3197 IMU + 31 GPS). Suite Node: 150 → 173 / 0.
+
+**Achado documentado:** o P1FastIMUTest grava amostras na ordem em que chegam do iOS, NÃO ordenadas por `tMono`. CMMotion (IMU) e CLLocation (GPS) são pipelines independentes e podem produzir inversão de ms entre fontes. O loader preserva ordem original; consumidores que precisam de monotonia rigorosa devem ordenar por `tMono` antes (smoke valida que `samples.sort((a,b) => a.tMono - b.tMono)` elimina drops do replay).
+
+Não funde IMU+GPS — cada linha é um Sample independente. Fusão multi-source fica em camada acima (TelemetryTimebase).
 
 ---
 
