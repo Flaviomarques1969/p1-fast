@@ -326,24 +326,24 @@ await step('IMU-01: snapshot consome accLong e accLat do iphone-imu', async () =
   const snap = buildSnapshot({
     tMono: 100,
     sourcesData: {
-      'iphone-imu': imuBraking(100),
-      'racebox-gnss': gpsBrasilia({ kmh: 100 }),
+      'iphone-imu': imu({ longMs2: -8.3, latMs2: 1.0 }),  // freio ~0.85g
+      'racebox-gnss': gps({ kmh: 100 }),
     },
   });
   assert(snap.dynamics, 'dynamics presente');
-  // Esquema: accLong negativo = freio
-  assert(snap.dynamics.accel_long < 0, `accel_long esperado < 0, recebido ${snap.dynamics.accel_long}`);
+  assert(snap.dynamics.accel_longitudinal < 0, `accel_longitudinal < 0, recebido ${snap.dynamics.accel_longitudinal}`);
+  assert(snap.dynamics.accel_lateral > 0, `accel_lateral > 0, recebido ${snap.dynamics.accel_lateral}`);
 });
 
 await step('IMU-02: 4 fases distintas geram leituras coerentes (reta/freio/curva/acel)', async () => {
-  const reta = buildSnapshot({ tMono: 1, sourcesData: { 'iphone-imu': imuStraight(1), 'racebox-gnss': gpsBrasilia() } });
-  const freio = buildSnapshot({ tMono: 2, sourcesData: { 'iphone-imu': imuBraking(2), 'racebox-gnss': gpsBrasilia() } });
-  const curva = buildSnapshot({ tMono: 3, sourcesData: { 'iphone-imu': imuCornering(3), 'racebox-gnss': gpsBrasilia() } });
-  const acel = buildSnapshot({ tMono: 4, sourcesData: { 'iphone-imu': imuAccelerating(4), 'racebox-gnss': gpsBrasilia() } });
-  assert(Math.abs(reta.dynamics.accel_long) < 0.2, 'reta ~0g');
-  assert(freio.dynamics.accel_long < -0.5, 'freio < -0.5g');
-  assert(Math.abs(curva.dynamics.accel_lateral) > 0.5, 'curva |lateral| > 0.5g');
-  assert(acel.dynamics.accel_long > 0.3, 'acel > 0.3g');
+  const reta  = buildSnapshot({ tMono: 1, sourcesData: { 'iphone-imu': imu({ longMs2: 0.5, latMs2: 0.2 }),  'racebox-gnss': gps() } });
+  const freio = buildSnapshot({ tMono: 2, sourcesData: { 'iphone-imu': imu({ longMs2: -8.3, latMs2: 1.0 }), 'racebox-gnss': gps() } });
+  const curva = buildSnapshot({ tMono: 3, sourcesData: { 'iphone-imu': imu({ longMs2: -1.0, latMs2: 11.8 }),'racebox-gnss': gps() } });
+  const acel  = buildSnapshot({ tMono: 4, sourcesData: { 'iphone-imu': imu({ longMs2: 5.4, latMs2: 1.5 }),  'racebox-gnss': gps() } });
+  assert(Math.abs(reta.dynamics.accel_longitudinal) < 2.0, `reta ~0g, recebido ${reta.dynamics.accel_longitudinal}`);
+  assert(freio.dynamics.accel_longitudinal < -5.0, `freio < -5 m/s² (~0.5g), recebido ${freio.dynamics.accel_longitudinal}`);
+  assert(Math.abs(curva.dynamics.accel_lateral) > 5.0, `curva |lateral| > 5 m/s², recebido ${curva.dynamics.accel_lateral}`);
+  assert(acel.dynamics.accel_longitudinal > 3.0, `acel > 3 m/s² (~0.3g), recebido ${acel.dynamics.accel_longitudinal}`);
 });
 
 // ════════════════════════════════════════════════════════════
