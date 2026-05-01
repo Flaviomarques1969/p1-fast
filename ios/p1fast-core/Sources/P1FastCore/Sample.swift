@@ -53,12 +53,15 @@ public struct Sample: Codable, Sendable {
     // Engine (T4000)
     public var rpm: Double?
     public var oilPressure: Double?
+    public var oilTemp: Double?
     public var waterTemp: Double?
     public var lambda: Double?
     public var tps: Double?
     public var map: Double?
     public var batteryVoltage: Double?
     public var speedCan: Double?
+    public var gear: Int?
+    public var yawRate: Double?
 
     public init(
         t: Int64,
