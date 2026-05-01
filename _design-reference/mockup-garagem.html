@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=430,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Mockup Garagem — P1 Fast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(20% 0.005 240);
+  --surface: oklch(24% 0.005 240);
+  --surface-2: oklch(28% 0.005 240);
+  --hairline: oklch(33% 0.005 240);
+  --text: oklch(95% 0.003 240);
+  --text-2: oklch(75% 0.01 240);
+  --text-3: oklch(58% 0.012 240);
+  --accent: oklch(78% 0.13 235);
+  --accent-2: oklch(82% 0.10 235 / .15);
+  --bom: oklch(78% 0.16 150);
+  --atencao: oklch(82% 0.16 80);
+  --erro: oklch(70% 0.20 25);
+  --radius: 12px;
+  --radius-sm: 10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{
+  min-height:100dvh;width:100vw;
+  background:linear-gradient(160deg, oklch(22% 0.005 240) 0%, oklch(18% 0.005 240) 100%);
+  color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  font-weight:400;
+}
+body{padding:0 0 96px;}
+
+.app{
+  max-width:430px;margin:0 auto;
+  padding:16px 20px 0;
+}
+
+.context-head{padding:14px 4px 16px;}
+.context-head__eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:5px 12px;
+  background:var(--accent-2);
+  border:1px solid oklch(78% 0.13 235 / .35);
+  border-radius:999px;
+  font-size:10px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);
+  margin-bottom:12px;
+}
+.context-head__eyebrow__dot{
+  width:5px;height:5px;border-radius:50%;
+  background:currentColor;
+}
+.context-head__title{
+  font-size:24px;font-weight:600;
+  letter-spacing:-.025em;line-height:1.15;
+  color:var(--text);
+  margin-bottom:4px;
+}
+.context-head__when{
+  font-size:13px;color:var(--text-2);
+}
+.context-head__when strong{color:var(--accent);font-weight:600;}
+
+/* SUMMARY CARD */
+.summary-card{
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
+  padding:14px 16px;margin-bottom:18px;
+}
+.summary-row{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+}
+.summary-cell{
+  text-align:center;
+  padding:10px 4px;
+  background:var(--surface-2);
+  border-radius:var(--radius-sm);
+}
+.summary-cell__num{
+  font-size:20px;font-weight:600;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em;
+  display:block;line-height:1;
+}
+.summary-cell--total .summary-cell__num{color:var(--text);}
+.summary-cell--ativos .summary-cell__num{color:var(--bom);}
+.summary-cell--manut .summary-cell__num{color:var(--atencao);}
+.summary-cell__lbl{
+  font-size:10px;font-weight:500;
+  color:var(--text-3);letter-spacing:.08em;
+  text-transform:uppercase;
+  display:block;margin-top:6px;
+}
+
+/* CAR CARD */
+.car{
+  display:flex;align-items:flex-start;gap:14px;
+  padding:14px 16px;
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
+  margin-bottom:10px;
+  cursor:pointer;text-align:left;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s, border-color .18s;
+}
+.car:hover{background:var(--surface-2);}
+.car:active{transform:scale(.99);}
+.car--ativo{
+  border-color:oklch(78% 0.13 235 / .55);
+  background:var(--accent-2);
+}
+
+.car__swatch{
+  flex:0 0 auto;
+  width:48px;height:48px;border-radius:50%;
+  border:2px solid var(--hairline);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+.car__swatch__dot{
+  width:34px;height:34px;border-radius:50%;
+}
+.car--ativo .car__swatch{
+  border-color:oklch(78% 0.13 235 / .35);
+  box-shadow:0 0 0 3px oklch(78% 0.13 235 / .14);
+}
+
+.car__body{flex:1 1 auto;min-width:0;}
+.car__name{
+  display:block;
+  font-size:17px;font-weight:600;
+  letter-spacing:-.005em;color:var(--text);
+  line-height:1.2;
+}
+.car__model{
+  display:block;
+  font-size:13px;color:var(--text-2);font-weight:400;
+  margin-top:3px;line-height:1.35;
+}
+.car__meta{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  margin-top:10px;
+}
+
+.tag{
+  display:inline-flex;align-items:center;
+  padding:3px 8px;border-radius:999px;
+  font-size:10px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text-3);
+  border:1px solid var(--hairline);
+  background:transparent;
+}
+.tag--proximo{
+  color:var(--accent);
+  border-color:oklch(78% 0.13 235 / .45);
+  background:oklch(78% 0.13 235 / .10);
+}
+.tag--manut{
+  color:var(--atencao);
+  border-color:oklch(82% 0.16 80 / .45);
+  background:oklch(82% 0.16 80 / .10);
+}
+
+.car__chev{
+  flex:0 0 auto;
+  width:24px;height:24px;border-radius:8px;
+  background:var(--surface-2);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-2);font-size:14px;
+  margin-top:12px;
+}
+
+/* FAB */
+.fab{
+  position:fixed;bottom:88px;right:24px;z-index:30;
+  background:var(--accent);color:oklch(12% 0.005 240);
+  padding:12px 18px;
+  border:0;border-radius:999px;
+  font-family:inherit;font-size:15px;font-weight:600;
+  letter-spacing:-.005em;cursor:pointer;
+  box-shadow:0 10px 28px oklch(78% 0.13 235 / .25);
+  display:inline-flex;align-items:center;gap:8px;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s;
+}
+.fab:hover{background:oklch(82% 0.14 235);}
+.fab:active{transform:scale(.96);}
+.fab__plus{font-size:20px;line-height:1;}
+
+/* BOTTOM NAV */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:40;
+  background:oklch(18% 0.005 240 / .92);
+  -webkit-backdrop-filter:blur(20px) saturate(140%);
+  backdrop-filter:blur(20px) saturate(140%);
+  border-top:1px solid var(--hairline);
+  padding:10px 0 22px;
+  display:grid;grid-template-columns:repeat(4,1fr);
+}
+.bottom-nav__item{
+  background:transparent;border:0;padding:8px 6px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  font-family:inherit;font-size:10px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text-3);
+  transition:color .18s;
+}
+.bottom-nav__item[data-on="true"]{color:var(--accent);}
+.bottom-nav__dot{
+  width:5px;height:5px;border-radius:50%;
+  background:transparent;transition:background .18s;
+}
+.bottom-nav__item[data-on="true"] .bottom-nav__dot{
+  background:var(--accent);
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="context-head">
+    <span class="context-head__eyebrow"><span class="context-head__eyebrow__dot"></span>Garagem</span>
+    <h1 class="context-head__title">3 carros</h1>
+    <p class="context-head__when">Honda Civic Si vai pra <strong>Brasília · 02/05</strong></p>
+  </header>
+
+  <div class="summary-card">
+    <div class="summary-row">
+      <div class="summary-cell summary-cell--total">
+        <span class="summary-cell__num">3</span>
+        <span class="summary-cell__lbl">Total</span>
+      </div>
+      <div class="summary-cell summary-cell--ativos">
+        <span class="summary-cell__num">2</span>
+        <span class="summary-cell__lbl">Prontos</span>
+      </div>
+      <div class="summary-cell summary-cell--manut">
+        <span class="summary-cell__num">1</span>
+        <span class="summary-cell__lbl">Manutenção</span>
+      </div>
+    </div>
+  </div>
+
+  <button class="car car--ativo" type="button">
+    <span class="car__swatch">
+      <span class="car__swatch__dot" style="background:#e8001c"></span>
+    </span>
+    <span class="car__body">
+      <span class="car__name">Honda Civic Si</span>
+      <span class="car__model">Honda Civic Si 2018 · Turismo</span>
+      <span class="car__meta">
+        <span class="tag tag--proximo">Próximo evento</span>
+        <span class="tag">12 stints</span>
+      </span>
+    </span>
+    <span class="car__chev">›</span>
+  </button>
+
+  <button class="car" type="button">
+    <span class="car__swatch">
+      <span class="car__swatch__dot" style="background:#f5c400"></span>
+    </span>
+    <span class="car__body">
+      <span class="car__name">Gol GTI</span>
+      <span class="car__model">VW Gol GTI 1996 · Hatch</span>
+      <span class="car__meta">
+        <span class="tag">Sem evento</span>
+        <span class="tag">38 stints</span>
+      </span>
+    </span>
+    <span class="car__chev">›</span>
+  </button>
+
+  <button class="car" type="button">
+    <span class="car__swatch">
+      <span class="car__swatch__dot" style="background:#0099ff"></span>
+    </span>
+    <span class="car__body">
+      <span class="car__name">Caterham</span>
+      <span class="car__model">Caterham Seven 270 · Pista</span>
+      <span class="car__meta">
+        <span class="tag tag--manut">Em manutenção</span>
+        <span class="tag">5 stints</span>
+      </span>
+    </span>
+    <span class="car__chev">›</span>
+  </button>
+
+</div>
+
+<button class="fab" type="button"><span class="fab__plus">+</span>Novo carro</button>
+
+<nav class="bottom-nav">
+  <button class="bottom-nav__item" type="button"><span class="bottom-nav__dot"></span>Home</button>
+  <button class="bottom-nav__item" type="button"><span class="bottom-nav__dot"></span>Eventos</button>
+  <button class="bottom-nav__item" type="button"><span class="bottom-nav__dot"></span>Pendências</button>
+  <button class="bottom-nav__item" type="button" data-on="true"><span class="bottom-nav__dot"></span>Garagem</button>
+</nav>
+</body>
+</html>

@@ -42,6 +42,10 @@ entregues em `_design-reference/`.
   categoria, cor) + setup base com os 14 overrides canônicos
   (`src/data/override-schemas.js`) em 5 grupos: PNEUS, ALINHAMENTO,
   SUSPENSÃO, FREIOS, MOTOR · TRANSMISSÃO.
+- `mockup-garagem.html` (B1) — Tab Garagem do hub: lista de carros com
+  swatch de cor, apelido, modelo + categoria, tags de status (próximo
+  evento / sem evento / em manutenção) e contagem de stints. Header com
+  eyebrow + summary 3-stats. FAB "Novo carro" + bottom-nav com Garagem ativa.
 
 Antes de A1..A3 + B2 (commit `eef0c0d`): 4 mockups do hub alinhados ao
 padrão B (`mockup-evento.html` canônico + `mockup-home-cheio.html` +
@@ -72,6 +76,7 @@ npm run smoke
 # http://localhost:8767/_design-reference/mockup-licao-lista.html
 # http://localhost:8767/_design-reference/mockup-trecho-lista.html
 # http://localhost:8767/_design-reference/mockup-carro.html
+# http://localhost:8767/_design-reference/mockup-garagem.html
 
 # Mockups dos cockpits (NÃO MEXER):
 # http://localhost:8767/_design-reference/mockup-cockpit-piloto.html
