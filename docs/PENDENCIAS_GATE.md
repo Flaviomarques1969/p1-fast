@@ -207,10 +207,11 @@ Todos os 6 módulos da Frente 3 portados em sequência: FaseCurva → PathMapper
 
 ## Concluídas (mantidas para histórico — limpeza 2026-05-01)
 
-- **P0 — TelemetryTimebase** (Spec → Implementação) — feito em JS (`src/telemetry/timebase.js`). Pendente paridade Swift (faz parte do port Frente 3).
+- **P0 — TelemetryTimebase** (Spec → Implementação) — feito em JS (`src/telemetry/timebase.js`). Pendente paridade Swift (não está na Frente 3 — vira frente futura quando precisar).
 - **P0 — TelemetrySnapshotBuilder** — feito em JS (`src/telemetry/snapshot.js`) e Swift (`Snapshot.swift`).
 - **P1 — Migração 4 → 11 categorias de qualidade** — feito em JS (`src/domain/data-quality.js` exporta as 11) e Swift (`Quality.swift`).
 - **V-001 e V-002 da CrossValidation** — feitas (V-003 a V-011 viram item P1 acima).
+- **Frente 3 — Port pipeline JS → Swift** — concluída 2026-05-01. 6 módulos portados em sequência: FaseCurva, PathMapper, TrajectoryMonitor, BaselineVectors, FuelCalc, P1Coach (+ CoachPhrases). Suite Swift: 97/0 (subiu 33 → 97 nesta sessão).
 
 ---
 
