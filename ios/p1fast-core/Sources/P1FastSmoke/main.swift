@@ -402,6 +402,40 @@ step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
     try assertEq(back.svgPath, r.track.svgPath)
 }
 
+// ════════════════════════════════════════════════════════════
+// LessonLibrary — LL-01 .. LL-04 (paridade com node-smoke-p1-coach.mjs)
+// ════════════════════════════════════════════════════════════
+
+step("LL-01: 7 lições MVP ativas (sem Fase 2 / racecraft / setup)") {
+    try assertEq(LessonLibrary.mvp.count, 7)
+    try assertEq(LessonLibrary.active.count, 7)
+}
+
+step("LL-02: lições MVP esperadas pelos títulos") {
+    let titles = LessonLibrary.mvp.map { $0.title }
+    let esperadas = ["Referência Fixa", "V-Min", "Transição Freio-Acelerador",
+                     "Acelerador Progressivo", "Linha de Visão",
+                     "Trail Braking Suave", "Curva Cega"]
+    for esp in esperadas {
+        try assertTrue(titles.contains(esp), "missing: \(esp)")
+    }
+}
+
+step("LL-03: phaseWeights de cada lição soma 1.0") {
+    for l in LessonLibrary.mvp {
+        let total = l.phaseWeights.values.reduce(0.0, +)
+        try assertTrue(abs(total - 1.0) < 0.001, "\(l.id) soma=\(total)")
+    }
+}
+
+step("LL-04: canActivate respeita requiredSignals") {
+    let vmin = LessonLibrary.byId("L002-v-min")!
+    // Sinais obrigatórios: kmh + velMinima + phase
+    try assertTrue(vmin.canActivate(signals: [.kmh, .velMinima, .phase]), "V-Min com kmh+velMinima+phase")
+    try assertTrue(!vmin.canActivate(signals: [.kmh, .phase]), "V-Min SEM velMinima → false")
+    try assertTrue(!vmin.canActivate(signals: []), "V-Min sem nada → false")
+}
+
 step("CLOCK-01: Clock.now retorna epoch ms positivo") {
     let now = Clock.now
     try assertTrue(now > 1_700_000_000_000, "now > 2023-11")
