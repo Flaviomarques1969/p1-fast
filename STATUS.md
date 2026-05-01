@@ -76,6 +76,21 @@ entregues em `_design-reference/`.
 - `mockup-passageiro-lista.html` — passageiro cadastrado na hora do
   stint, salva pro próximo (escolha por nome).
 
+**Forms de cadastro** (cada CTA "Cadastrar X" abre um):
+
+- `mockup-piloto-cadastro.html` — nome + altura + peso + idade.
+- `mockup-passageiro-cadastro.html` — nome + altura + peso.
+- `mockup-combustivel-cadastro.html` — nome do tipo + observação opcional.
+- `mockup-pneu-cadastro.html` — marca/composto + medida + tipo
+  (Radial/Slick/Rua) + apelido opcional.
+- `mockup-carro-novo.html` — apelido + modelo + categoria + cor.
+  Form mínimo: setup base e pneus cadastra depois pelo Modal Carro.
+
+**Modal Carro refeito** (`mockup-carro.html`) — campo único "Composto /
+marca" virou seção "Pneus cadastrados" com lista (cada pneu mostra
+medida + saídas + voltas) + CTA "Adicionar pneu". Bate com a regra de
+que cada pneu é entidade separada com histórico próprio.
+
 ## Realidade canônica (2026-05-01)
 
 - Carro: **Celta 1.4 turismo** (Chevrolet). Refletido em todos os
@@ -119,6 +134,11 @@ npm run smoke
 # http://localhost:8767/_design-reference/mockup-pneu-lista.html
 # http://localhost:8767/_design-reference/mockup-combustivel-lista.html
 # http://localhost:8767/_design-reference/mockup-passageiro-lista.html
+# http://localhost:8767/_design-reference/mockup-piloto-cadastro.html
+# http://localhost:8767/_design-reference/mockup-passageiro-cadastro.html
+# http://localhost:8767/_design-reference/mockup-combustivel-cadastro.html
+# http://localhost:8767/_design-reference/mockup-pneu-cadastro.html
+# http://localhost:8767/_design-reference/mockup-carro-novo.html
 
 # Mockups dos cockpits (NÃO MEXER):
 # http://localhost:8767/_design-reference/mockup-cockpit-piloto.html

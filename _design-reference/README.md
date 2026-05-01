@@ -34,6 +34,11 @@ mockup gerou drift no projeto anterior.
 | `mockup-pneu-lista.html` | Sub-modal aberto pelo picker "Pneu montado" do Modal Stint — estado vazio com bullets explicativos (marca/composto/medida ficam salvos, voltas e km contam automático, comparar duração entre marcas) + CTA primário "Cadastrar primeiro pneu" | Padrão B |
 | `mockup-combustivel-lista.html` | Sub-modal aberto pelo picker "Combustível" do Modal Stint — Álcool padrão (selecionado) + Gasolina + CTA "Cadastrar outro tipo" | Padrão B |
 | `mockup-passageiro-lista.html` | Sub-modal aberto pelo picker "Passageiro" do Modal Stint (quando toggle "Levar passageiro" liga) — 2 passageiros cadastrados + CTA "Cadastrar passageiro" | Padrão B |
+| `mockup-piloto-cadastro.html` | Form de cadastro de novo piloto — nome, altura, peso, idade. Aberto pelo botão "Cadastrar piloto" da lista de pilotos | Padrão B |
+| `mockup-passageiro-cadastro.html` | Form de cadastro de novo passageiro — nome, altura, peso. Aberto pelo botão "Cadastrar passageiro" da lista de passageiros | Padrão B |
+| `mockup-combustivel-cadastro.html` | Form de cadastro de novo tipo de combustível — nome do tipo + observação opcional | Padrão B |
+| `mockup-pneu-cadastro.html` | Form de cadastro de novo pneu — marca/composto, medida, tipo (Radial/Slick/Rua), apelido opcional. Cadastra um pneu que será adicionado à lista do carro | Padrão B |
+| `mockup-carro-novo.html` | Form mínimo de cadastro de novo carro — apelido, modelo, categoria, cor (4 swatches). Setup base e pneus são cadastrados depois pelo Modal Carro | Padrão B |
 | `historico-evento/` | 7 linhas iteradas (A-G) do Modal Evento + comparativo lado-a-lado | Memória de design |
 
 ## Padrão B — tokens canônicos do hub

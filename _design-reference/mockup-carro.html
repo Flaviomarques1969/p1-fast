@@ -135,6 +135,53 @@ body{
   display:flex;align-items:center;justify-content:center;color:var(--text-2);font-size:12px;
 }
 
+/* TIRE LIST (lista de pneus do carro) */
+.tire-list{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;}
+.tire-item{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 14px;
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
+}
+.tire-item__body{flex:1 1 auto;min-width:0;}
+.tire-item__name{
+  font-size:15px;font-weight:600;color:var(--text);
+  letter-spacing:-.005em;
+}
+.tire-item__meta{
+  font-size:12px;color:var(--text-3);font-weight:400;
+  margin-top:3px;font-variant-numeric:tabular-nums;
+}
+.tire-item__edit{
+  flex:0 0 auto;
+  background:transparent;border:0;color:var(--text-2);
+  font-family:inherit;font-size:12px;font-weight:500;
+  cursor:pointer;
+  padding:6px 10px;border-radius:6px;
+  transition:color .18s, background .18s;
+}
+.tire-item__edit:hover{color:var(--text);background:var(--surface-2);}
+
+.add-tire{
+  width:100%;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  background:transparent;
+  border:1px dashed var(--hairline);
+  border-radius:var(--radius);
+  color:var(--text-2);
+  font-family:inherit;font-size:13px;font-weight:600;
+  letter-spacing:-.005em;cursor:pointer;
+  padding:11px 14px;
+  transition:border-color .18s, color .18s, background .18s;
+}
+.add-tire:hover{
+  border-color:var(--accent);
+  color:var(--accent);
+  background:oklch(78% 0.13 235 / .06);
+}
+.add-tire__plus{font-size:16px;line-height:1;font-weight:500;}
+
 /* COR SWATCHES */
 .swatch-rail{display:flex;gap:10px;}
 .swatch{
@@ -260,8 +307,26 @@ body{
         </div>
 
         <div class="field">
-          <div class="field__lbl">Composto / marca</div>
-          <input class="input" value="Pirelli P1 — radial" placeholder="Ex: Pirelli P Zero — médio">
+          <div class="field__lbl">Pneus cadastrados</div>
+          <div class="tire-list">
+            <div class="tire-item">
+              <div class="tire-item__body">
+                <div class="tire-item__name">Pirelli P1 — radial</div>
+                <div class="tire-item__meta">205/50R16 · 4 saídas · 87 voltas</div>
+              </div>
+              <button class="tire-item__edit" type="button">Editar</button>
+            </div>
+            <div class="tire-item">
+              <div class="tire-item__body">
+                <div class="tire-item__name">Hoosier R7 — slick</div>
+                <div class="tire-item__meta">205/50R16 · novo · 0 voltas</div>
+              </div>
+              <button class="tire-item__edit" type="button">Editar</button>
+            </div>
+          </div>
+          <button class="add-tire" type="button">
+            <span class="add-tire__plus">+</span>Adicionar pneu
+          </button>
         </div>
       </section>
 
