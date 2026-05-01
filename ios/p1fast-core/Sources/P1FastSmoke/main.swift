@@ -539,6 +539,90 @@ step("FC-08: sample com velocidade ou accLong nil não quebra") {
     try assertEq(r.total.stats.velMaxima, 100)
 }
 
+// ════════════════════════════════════════════════════════════
+// PathMapper — PM-01 .. PM-08 (port de src/telemetry/path-mapper.js)
+// ════════════════════════════════════════════════════════════
+
+step("PM-01: parsePath M+L extrai vértices") {
+    let pts = PathMapper.parsePath("M 10 20 L 30 40 L 50 60")
+    try assertEq(pts.count, 3)
+    try assertEq(pts[0], PathMapper.Point(x: 10, y: 20))
+    try assertEq(pts[2], PathMapper.Point(x: 50, y: 60))
+}
+
+step("PM-02: Z fecha o path repetindo o primeiro vértice") {
+    let pts = PathMapper.parsePath("M 0 0 L 10 0 L 10 10 Z")
+    try assertEq(pts.count, 4)
+    try assertEq(pts.last!, PathMapper.Point(x: 0, y: 0))
+}
+
+step("PM-03: pathLength soma hipotenusas") {
+    let pts = [
+        PathMapper.Point(x: 0, y: 0),
+        PathMapper.Point(x: 3, y: 4),     // dist 5
+        PathMapper.Point(x: 6, y: 8),     // dist 5
+    ]
+    try assertClose(PathMapper.pathLength(pts), 10, tol: 0.001)
+}
+
+step("PM-04: buildLookup gera N+1 pontos com offsets crescentes") {
+    let lookup = PathMapper.buildLookup("M 0 0 L 100 0", samples: 10)
+    try assertEq(lookup.points.count, 11)
+    try assertClose(lookup.totalLength, 100, tol: 0.001)
+    try assertClose(lookup.points[0].offset, 0)
+    try assertClose(lookup.points[10].offset, 100, tol: 0.001)
+    // 5º ponto deve estar em ~50
+    try assertClose(lookup.points[5].x, 50, tol: 0.5)
+}
+
+step("PM-05: snap projeta GPS no ponto mais próximo do path") {
+    let lookup = PathMapper.buildLookup("M 0 0 L 100 0", samples: 100)
+    let r = PathMapper.snap(lookup, x: 50, y: 5)
+    try assertClose(r.x, 50, tol: 1)
+    try assertClose(r.y, 0, tol: 0.001)
+    try assertClose(r.dist, 5, tol: 0.001)
+    try assertClose(r.offset, 50, tol: 1)
+}
+
+step("PM-06: snap atualiza lastIdx e busca incremental funciona") {
+    let lookup = PathMapper.buildLookup("M 0 0 L 1000 0", samples: 1000)
+    _ = PathMapper.snap(lookup, x: 500, y: 1)
+    try assertTrue(lookup.lastIdx != nil, "lastIdx deve ter sido setado")
+    let idx1 = lookup.lastIdx!
+    // próximo snap muito próximo deve cair na janela incremental
+    let r2 = PathMapper.snap(lookup, x: 502, y: 1)
+    try assertTrue(abs(lookup.lastIdx! - idx1) < 60, "movimento dentro da janela")
+    try assertClose(r2.dist, 1, tol: 0.5)
+}
+
+step("PM-07: parcialFromOffset converte offset → parcial via pct") {
+    let segs: [PathMapper.SegmentBounds] = [
+        .init(parcialId: "P1", pathStart: 0,  pathEnd: 25),
+        .init(parcialId: "P2", pathStart: 25, pathEnd: 50),
+        .init(parcialId: "P3", pathStart: 50, pathEnd: 75),
+        .init(parcialId: "P4", pathStart: 75, pathEnd: 100),
+    ]
+    try assertEq(PathMapper.parcialFromOffset(offset: 10,  totalLength: 100, segments: segs), "P1")
+    try assertEq(PathMapper.parcialFromOffset(offset: 30,  totalLength: 100, segments: segs), "P2")
+    try assertEq(PathMapper.parcialFromOffset(offset: 80,  totalLength: 100, segments: segs), "P4")
+    try assertTrue(PathMapper.parcialFromOffset(offset: 999, totalLength: 100, segments: segs) == nil)
+}
+
+step("PM-08: segmentsIntersect detecta cruzamento") {
+    // X simples
+    let A = PathMapper.Point(x: 0, y: 0)
+    let B = PathMapper.Point(x: 10, y: 10)
+    let C = PathMapper.Point(x: 0, y: 10)
+    let D = PathMapper.Point(x: 10, y: 0)
+    try assertTrue(PathMapper.segmentsIntersect(A, B, C, D), "X clássico cruza")
+    // Paralelos não cruzam
+    let E = PathMapper.Point(x: 0, y: 0)
+    let F = PathMapper.Point(x: 10, y: 0)
+    let G = PathMapper.Point(x: 0, y: 5)
+    let H = PathMapper.Point(x: 10, y: 5)
+    try assertTrue(!PathMapper.segmentsIntersect(E, F, G, H), "paralelos não cruzam")
+}
+
 step("CLOCK-01: Clock.now retorna epoch ms positivo") {
     let now = Clock.now
     try assertTrue(now > 1_700_000_000_000, "now > 2023-11")

@@ -30,6 +30,13 @@
     "swift-dependencies": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Lesson.swiftdeps",
     "diagnostics": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Lesson.dia"
   },
+  "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/PathMapper.swift": {
+    "dependencies": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/PathMapper.d",
+    "object": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/PathMapper.swift.o",
+    "swiftmodule": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/PathMapper~partial.swiftmodule",
+    "swift-dependencies": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/PathMapper.swiftdeps",
+    "diagnostics": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/PathMapper.dia"
+  },
   "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Quality.swift": {
     "dependencies": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Quality.d",
     "object": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Quality.swift.o",
