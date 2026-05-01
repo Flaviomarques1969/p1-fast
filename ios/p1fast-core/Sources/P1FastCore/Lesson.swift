@@ -66,6 +66,12 @@ public struct Lesson: Codable, Sendable, Identifiable {
     public func canActivate(signals: Set<Signal>) -> Bool {
         return requiredSignals.allSatisfy { signals.contains($0) }
     }
+
+    /// Variante para sinais expressos como String (caminho usado pelo
+    /// P1Coach que recebe sinais de signalsFromSnapshot).
+    public func canActivate(stringSignals: Set<String>) -> Bool {
+        return requiredSignals.allSatisfy { stringSignals.contains($0.rawValue) }
+    }
 }
 
 public enum LessonLibrary {
