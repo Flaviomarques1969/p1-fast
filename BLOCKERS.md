@@ -55,9 +55,10 @@ Levantados na sessão "execute até o final". Tudo que é software puro foi entr
 **Recomendação:** primeiro criar o app (sessão separada), depois criar `/api/ingest/iphone.js` com schema compatível com `telemetrySamples` do Box.
 **Ver:** `memory/fam-racing-deploy-policy.md` — política de deploy.
 
-### E4 · RaceBox Mini (Perna 2)
-**Ação Flavio:** preencher formulário `racebox.pro/products/mini-micro-protocol-documentation` e repassar PDF (NDA leve).
-**Impacto:** perna 2 do plano de hardware. Substitui iPhone como fonte GNSS+IMU com 10cm / 25Hz. Não bloqueia perna 1.
+### E4 · RaceBox Mini — REBAIXADO PARA UPGRADE CONDICIONAL (2026-05-01)
+**Estado atual:** spec arquivada como upgrade futuro, não MVP. Não bloqueia nada.
+**Decisão:** captura real do iPhone 16 Pro Max (ver [`docs/hardware/IPHONE_SENSORS_BASELINE.md`](docs/hardware/IPHONE_SENSORS_BASELINE.md)) confirmou IMU 100 Hz / jitter 0.30 ms, suficiente pra todas as features do conceito atual (Coach, fase de curva, V-001/V-002 com T4000). RaceBox volta a ser considerado SOMENTE se entrar feature de **lap timing fino** (delta sub-segundo) ou **traçado sub-metro** que exige GNSS 25 Hz + dual-band — gap real do iPhone (1 Hz / 2-5 m).
+**Ver:** [`docs/hardware/RACEBOX_INTEGRATION_SPEC.md`](docs/hardware/RACEBOX_INTEGRATION_SPEC.md) (cabeçalho marcado como arquivado).
 
 ### F3 · Morning Briefing por voz
 **Ação:** depende do app iOS (E3) rodando + TTS nativo.
@@ -71,4 +72,4 @@ Levantados na sessão "execute até o final". Tudo que é software puro foi entr
 Depende de A1-G1 fecharem.
 
 ### C1/C2/C3 · Detector end-to-end
-**Status:** base pronta (`fase-curva.js` + `corredor.js` + detector existente). Integração ao vivo com Match σ-corredor depende de E3 (sinais iPhone) ou E4 (RaceBox). Testes unitários possíveis sem hardware; validação real não.
+**Status:** base pronta (`fase-curva.js` + `corredor.js` + detector existente). Integração ao vivo com Match σ-corredor depende de E3 (sinais iPhone). Testes unitários possíveis sem hardware; validação real não.
