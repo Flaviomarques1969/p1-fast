@@ -1,13 +1,17 @@
 // ═══════════════════════════════════════════════════════════
-// CrossValidation — port de V-001 .. V-002 (P1)
+// CrossValidation — port completo V-001 .. V-011 (P1)
 // ═══════════════════════════════════════════════════════════
-// Port parcial de src/telemetry/cross-validation.js. Cobre as 2
-// regras já exercitadas no harness Node + smokes JS oficiais:
-//   V-001 — speed CAN vs speed GNSS divergente > 5 km/h por 2s+
-//   V-002 — IMU accel_long vs derivada da velocidade divergente > 2 m/s² por 1s+
+// Port de src/telemetry/cross-validation.js. docs/raceops/CROSS_VALIDATION_RULES.md
+// governa. Port 1:1 com JS — mesmas janelas, thresholds, mensagens, severidades.
 //
-// Resto do catálogo (V-003..V-011) entra quando precisar — mesmo padrão.
-// docs/raceops/CROSS_VALIDATION_RULES.md governa.
+// V-009 é derivada (corner-by-corner), não snapshot-by-snapshot — fica fora aqui.
+//
+// Decisões Swift:
+//  * `gearMap` aceita override no init (default Celta 1.4 — ver JS).
+//  * `circumscribedRadius` em metros locais (lat→m × cos(lat)) igual ao JS.
+//  * Cooldown é POR validação (não por severity) — mesmo design do JS:
+//    se atencao emite primeiro, critico no mesmo `validation` é silenciado
+//    até o cooldown expirar. Smoke documenta isso.
 
 import Foundation
 
