@@ -18,7 +18,7 @@ Convenção:
 
 | Bloco | Estado | Auditor | Commit final |
 |-------|--------|---------|--------------|
-| 1 — Estimativa de marcha + confiança | `[ ]` pendente | — | — |
+| 1 — Estimativa de marcha + confiança | `[~]` em andamento | — | — |
 | 2 — Modo seguro + alvo conservador | `[ ]` pendente | — | — |
 | 3 — Detecção de evento + persistência | `[ ]` pendente | — | — |
 | 4 — Cards pós-sessão (Fast Coach) | `[ ]` pendente | — | — |
