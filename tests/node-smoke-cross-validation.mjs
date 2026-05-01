@@ -284,8 +284,10 @@ t('V-005 transitório: spike curto (10s) não dispara', () => {
 
 t('V-005 severity: > 100°C com slope alto → critico', () => {
   const { engine, events } = makeEngine();
+  // Começa em 100°C (já no threshold) e cresce a 1.5°C/min — quando a janela
+  // de 60s emite, tw ainda está > 100.
   feed(engine, (tMono) => snap(tMono, {
-    engine: { water_temp: 95 + (tMono / 60_000) * 1.5 },
+    engine: { water_temp: 100 + (tMono / 60_000) * 1.5 },
   }), 0, 6 * 60_000, 1000);
   const v5 = events.find((e) => e.validation === 'V-005');
   if (!v5) throw new Error('V-005 não disparou');
