@@ -36,16 +36,16 @@ Solução: o `P1FastSmoke` é um executável Swift comum que roda asserts manuai
 ```bash
 cd ios/p1fast-core
 swift build                # compila a lib
-swift run p1fast-smoke     # roda 41 asserts
+swift run p1fast-smoke     # roda 97 asserts
 ```
 
 Saída esperada:
 ```
 ✓ DQ-01: 11 categorias canônicas
 ✓ DQ-02: fromSignalQuality 4-cat → 11-cat
-... (41 linhas)
+... (97 linhas)
 ═══ RESULTADO ═══
-41 ok / 0 fail
+97 ok / 0 fail
 ```
 
 Exit code 0 se passou, 1 se falhou.
