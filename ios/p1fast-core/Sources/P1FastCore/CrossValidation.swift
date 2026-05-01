@@ -170,6 +170,250 @@ public final class CrossValidationEngine {
         }
     }
 
+    // ─── V-003 · TPS × MAP × accel ─────────────────────────
+    private func v003(_ snap: Snapshot) {
+        guard let tps = snap.engine.tps,
+              let map = snap.engine.map,
+              let acc = snap.dynamics.accelLongitudinal else {
+            v003Window.exit(); return
+        }
+        let isPedal = tps > 80
+        let isMapBaixo = map < 0.6
+        let semGanho = acc < 1
+        if isPedal && isMapBaixo && semGanho {
+            if v003Window.enter(snap.tMono) {
+                emit(ValidationEvent(
+                    validation: "V-003",
+                    severity: .atencao,
+                    message: "TPS alto sem ganho de aceleração ou MAP. Verificar tração, combustível, admissão ou sensor.",
+                    channels: ["engine.tps", "engine.map", "dynamics.accel_longitudinal"],
+                    hypothesis: "perda de tração, falha de bicos, restrição admissão, sensor MAP problemático ou marcha errada",
+                    action: "investigar grupo combustão/admissão/tração",
+                    t: snap.t, tMono: snap.tMono
+                ))
+            }
+        } else {
+            v003Window.exit()
+        }
+    }
+
+    // ─── V-004 · RPM × marcha × velocidade ─────────────────
+    private func v004(_ snap: Snapshot) {
+        guard let rpm = snap.engine.rpm,
+              let gear = snap.engine.gear,
+              let speed = snap.vehicle.speedFused,
+              gear != 0 else {
+            v004Window.exit(); return
+        }
+        if rpm < 1500 { v004Window.exit(); return }
+        guard let expectedKmhPer1000 = gearMap[gear] else { return }
+        let speedKmh = speed * 3.6
+        let expectedKmh = (rpm / 1000) * expectedKmhPer1000
+        let errPct = abs(speedKmh - expectedKmh) / max(1, expectedKmh)
+        if errPct > 0.15 {
+            if v004Window.enter(snap.tMono) {
+                emit(ValidationEvent(
+                    validation: "V-004",
+                    severity: .atencao,
+                    message: String(format: "Relação RPM × velocidade × marcha fora do esperado (erro %.0f%%). Verificar embreagem, slip ou sensor de marcha.", errPct * 100),
+                    channels: ["engine.rpm", "engine.gear", "vehicle.speed_fused"],
+                    hypothesis: "patinação de embreagem, marcha incorreta, slip de rodas ou troca de marcha em curso",
+                    action: "marcar engine.gear como SUSPECT, investigar transmissão",
+                    t: snap.t, tMono: snap.tMono
+                ))
+            }
+        } else {
+            v004Window.exit()
+        }
+    }
+
+    // ─── V-005 · Temperatura água slope ────────────────────
+    private func v005(_ snap: Snapshot) {
+        guard let tw = snap.engine.waterTemp else { v005Window.exit(); return }
+        tempHistory.append(TempPoint(t: snap.tMono, v: tw))
+        let cutoff = snap.tMono - 5 * 60_000
+        tempHistory = tempHistory.filter { $0.t > cutoff }
+        if tempHistory.count < 30 { return }
+        guard let first = tempHistory.first, let last = tempHistory.last else { return }
+        let dtMin = (last.t - first.t) / 60_000
+        if dtMin < 1 { return }
+        let slope = (last.v - first.v) / dtMin
+        if slope > 0.5 && tw > 75 {
+            if v005Window.enter(snap.tMono) {
+                emit(ValidationEvent(
+                    validation: "V-005",
+                    severity: tw > 100 ? .critico : .atencao,
+                    message: String(format: "Temperatura da água subindo %.2f°C/min. Atual %.0f°C. Verificar arrefecimento.", slope, tw),
+                    channels: ["engine.water_temp"],
+                    hypothesis: "falha de arrefecimento, ventoinha desligada, vazamento ou radiador sujo",
+                    action: "verificar sistema de arrefecimento",
+                    t: snap.t, tMono: snap.tMono
+                ))
+            }
+        } else {
+            v005Window.exit()
+        }
+    }
+
+    // ─── V-006 · Pressão óleo × RPM ────────────────────────
+    private func v006(_ snap: Snapshot) {
+        guard let press = snap.engine.oilPressure, let rpm = snap.engine.rpm else {
+            v006Window.exit(); return
+        }
+        var expected = rpm / 1000
+        if let oilT = snap.engine.oilTemp, oilT > 110 { expected *= 0.85 }
+        if press < expected * 0.7 && rpm > 2500 {
+            let severity: ValidationSeverity = press < 1.5 ? .critico : .atencao
+            if v006Window.enter(snap.tMono) {
+                emit(ValidationEvent(
+                    validation: "V-006",
+                    severity: severity,
+                    message: String(format: "Pressão óleo %.1f bar baixa para RPM %.0f (esperado ~%.1f bar). Risco mecânico.", press, rpm, expected),
+                    channels: ["engine.oil_pressure", "engine.rpm"],
+                    hypothesis: "baixo nível, bomba falhando, óleo diluído (combustível) ou filtro entupido",
+                    action: severity == .critico ? "BOX AGORA — risco de pane mecânica" : "monitorar próximas voltas, considerar box",
+                    t: snap.t, tMono: snap.tMono
+                ))
+            }
+        } else {
+            v006Window.exit()
+        }
+    }
+
+    // ─── V-007 · Lambda sob carga ──────────────────────────
+    private func v007(_ snap: Snapshot) {
+        guard let lam = snap.engine.lambda,
+              let tps = snap.engine.tps,
+              let map = snap.engine.map,
+              let rpm = snap.engine.rpm else {
+            v007Window.exit(); v007bWindow.exit(); return
+        }
+        let sobCarga = tps > 70 && map > 0.8 && rpm > 4000
+        let pobre = lam > 1.0
+        if sobCarga && pobre {
+            let t1 = v007Window.enter(snap.tMono)
+            let t5 = v007bWindow.enter(snap.tMono)
+            if t5 {
+                emit(ValidationEvent(
+                    validation: "V-007",
+                    severity: .critico,
+                    message: String(format: "Mistura pobre (λ %.2f) sob carga por 5s+. RISCO DE DETONAÇÃO.", lam),
+                    channels: ["engine.lambda", "engine.tps", "engine.map", "engine.rpm"],
+                    hypothesis: "mapa de combustível inadequado, pressão de combustível caindo, bicos sujos ou restrição admissão",
+                    action: "BOX AGORA — risco de motor",
+                    t: snap.t, tMono: snap.tMono
+                ))
+            } else if t1 {
+                emit(ValidationEvent(
+                    validation: "V-007",
+                    severity: .atencao,
+                    message: String(format: "Mistura pobre (λ %.2f) sob carga. Verificar mapa, pressão e bicos.", lam),
+                    channels: ["engine.lambda", "engine.tps", "engine.map", "engine.rpm"],
+                    hypothesis: "mapa de combustível inadequado ou problema mecânico",
+                    action: "monitorar e investigar combustível",
+                    t: snap.t, tMono: snap.tMono
+                ))
+            }
+        } else {
+            v007Window.exit(); v007bWindow.exit()
+        }
+    }
+
+    // ─── V-008 · Bateria × RPM ─────────────────────────────
+    private func v008(_ snap: Snapshot) {
+        guard let v = snap.engine.batteryVoltage, let rpm = snap.engine.rpm else {
+            v008Window.exit(); return
+        }
+        if rpm < 2000 { v008Window.exit(); return }
+        if v < 11.5 {
+            let severity: ValidationSeverity = v < 10.5 ? .critico : .atencao
+            if v008Window.enter(snap.tMono) {
+                emit(ValidationEvent(
+                    validation: "V-008",
+                    severity: severity,
+                    message: String(format: "Tensão bateria %.1fV baixa com motor a %.0f RPM (alternador deveria carregar).", v, rpm),
+                    channels: ["engine.battery_voltage", "engine.rpm"],
+                    hypothesis: "alternador falhando, correia frouxa ou terminal solto",
+                    action: severity == .critico ? "BOX AGORA — risco de eletrônica desligar" : "verificar alternador no fim do stint",
+                    t: snap.t, tMono: snap.tMono
+                ))
+            }
+        } else {
+            v008Window.exit()
+        }
+    }
+
+    // ─── V-010 · Yaw × accel lateral (sobre/subesterço) ────
+    private func v010(_ snap: Snapshot) {
+        guard let yaw = snap.dynamics.yawRate, let aLat = snap.dynamics.accelLateral else { return }
+        if abs(yaw) > 30 && abs(aLat) < 3 {
+            emit(ValidationEvent(
+                validation: "V-010",
+                severity: .atencao,
+                message: String(format: "Yaw alto (%.0f°/s) com baixa aceleração lateral (%.1f m/s²) — possível sobresterço (perda de aderência).", yaw, aLat),
+                channels: ["dynamics.yaw_rate", "dynamics.accel_lateral"],
+                hypothesis: "sobresterço, perda de aderência traseira ou contra-volante",
+                action: "inferência registrada (não fato) — alimentar análise de pilotagem",
+                t: snap.t, tMono: snap.tMono
+            ))
+        }
+        if abs(aLat) > 8 && abs(yaw) < 10 {
+            emit(ValidationEvent(
+                validation: "V-010-b",
+                severity: .atencao,
+                message: String(format: "Aceleração lateral alta (%.1f m/s²) com yaw baixo — possível subesterço.", aLat),
+                channels: ["dynamics.yaw_rate", "dynamics.accel_lateral"],
+                hypothesis: "subesterço, perda de aderência dianteira",
+                action: "inferência registrada — verificar geometria/pneus",
+                t: snap.t, tMono: snap.tMono
+            ))
+        }
+    }
+
+    // ─── V-011 · Accel lateral × raio da trajetória ────────
+    private func v011(_ snap: Snapshot) {
+        guard let lat = snap.position.lat,
+              let lon = snap.position.lon,
+              let speed = snap.vehicle.speedFused,
+              let aLat = snap.dynamics.accelLateral else { return }
+        posHistory.append(PosPoint(t: snap.tMono, lat: lat, lon: lon, speed: speed))
+        let cutoff = snap.tMono - 1500
+        posHistory = posHistory.filter { $0.t > cutoff }
+        if posHistory.count < 5 { return }
+        let a = posHistory.first!
+        let b = posHistory[posHistory.count / 2]
+        let c = posHistory.last!
+        guard let r = circumscribedRadius(a, b, c), r >= 5, r <= 1000 else { return }
+        let expectedALat = (speed * speed) / r
+        let diff = abs(abs(aLat) - expectedALat)
+        if diff > expectedALat * 0.3 && expectedALat > 2 {
+            emit(ValidationEvent(
+                validation: "V-011",
+                severity: .info,
+                message: String(format: "IMU lateral (%.1f m/s²) diverge do esperado pela trajetória (%.1f m/s²). Verificar calibração.", abs(aLat), expectedALat),
+                channels: ["dynamics.accel_lateral", "position.lat", "position.lon"],
+                hypothesis: "IMU descalibrado ou trajetória mal-medida",
+                action: "marcar accel_lateral como SUSPECT na janela",
+                t: snap.t, tMono: snap.tMono
+            ))
+        }
+    }
+
+    /// Raio circunscrito a 3 pontos lat/lon (metros locais aproximados).
+    /// Mesma fórmula do JS — válida pra distâncias de pista (km), não global.
+    private func circumscribedRadius(_ a: PosPoint, _ b: PosPoint, _ c: PosPoint) -> Double? {
+        let m: Double = 111_320
+        let cosLat = cos(a.lat * .pi / 180)
+        let ax = a.lon * m * cosLat, ay = a.lat * m
+        let bx = b.lon * m * cosLat, by = b.lat * m
+        let cx = c.lon * m * cosLat, cy = c.lat * m
+        let d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by))
+        if abs(d) < 1e-6 { return nil }
+        let ux = ((ax * ax + ay * ay) * (by - cy) + (bx * bx + by * by) * (cy - ay) + (cx * cx + cy * cy) * (ay - by)) / d
+        let uy = ((ax * ax + ay * ay) * (cx - bx) + (bx * bx + by * by) * (ax - cx) + (cx * cx + cy * cy) * (bx - ax)) / d
+        return hypot(ux - ax, uy - ay)
+    }
+
     private func emit(_ ev: ValidationEvent) {
         if let last = lastEmittedAt[ev.validation], ev.tMono - last < cooldownMs { return }
         lastEmittedAt[ev.validation] = ev.tMono
