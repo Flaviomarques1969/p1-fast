@@ -6,8 +6,9 @@
 // Usado pelo app real iOS (importa como dependência) e validável
 // hoje contra o pipeline JS via paridade de saída.
 //
-// Escopo: Quality, Sample, Snapshot, Timebase, helpers de tempo.
-// FORA do escopo aqui: CoreMotion, CoreLocation, SwiftUI, Dexie.
+// Smoke: target executável `p1fast-smoke` (não usa XCTest/Testing,
+// que não estão disponíveis sem Xcode.app). Roda asserts manuais
+// e reporta "N ok / N fail" — mesmo padrão dos smokes JS Node.
 
 import PackageDescription
 
@@ -16,9 +17,10 @@ let package = Package(
     platforms: [.macOS(.v13), .iOS(.v17)],
     products: [
         .library(name: "P1FastCore", targets: ["P1FastCore"]),
+        .executable(name: "p1fast-smoke", targets: ["P1FastSmoke"]),
     ],
     targets: [
         .target(name: "P1FastCore", path: "Sources/P1FastCore"),
-        .testTarget(name: "P1FastCoreTests", dependencies: ["P1FastCore"], path: "Tests/P1FastCoreTests"),
+        .executableTarget(name: "P1FastSmoke", dependencies: ["P1FastCore"], path: "Sources/P1FastSmoke"),
     ]
 )
