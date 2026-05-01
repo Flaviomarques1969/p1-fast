@@ -196,7 +196,7 @@ public let CRITICAL_RULES: [CriticalRule] = [
     ),
 ]
 
-let MANUAL_RULES: [ManualRule] = [
+public let MANUAL_RULES: [ManualRule] = [
     ManualRule(
         id: "bandeira-vermelha",
         nivel: .boxAgora,
