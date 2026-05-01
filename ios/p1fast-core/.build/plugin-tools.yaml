@@ -4,20 +4,49 @@ client:
 tools: {}
 targets:
   "P1FastCore-arm64-apple-macosx26.0-debug.module": ["<P1FastCore-arm64-apple-macosx26.0-debug.module>"]
+  "P1FastCorePackageTests-arm64-apple-macosx26.0-debug.module": ["<P1FastCorePackageTests-arm64-apple-macosx26.0-debug.module>"]
+  "P1FastCorePackageTests-arm64-apple-macosx26.0-debug.test": ["<P1FastCorePackageTests-arm64-apple-macosx26.0-debug.test>"]
+  "P1FastCoreTests-arm64-apple-macosx26.0-debug.module": ["<P1FastCoreTests-arm64-apple-macosx26.0-debug.module>"]
   "PackageStructure": ["<PackageStructure>"]
   "main": ["<P1FastCore-arm64-apple-macosx26.0-debug.module>"]
-  "test": ["<P1FastCore-arm64-apple-macosx26.0-debug.module>"]
+  "test": ["<P1FastCore-arm64-apple-macosx26.0-debug.module>","<P1FastCorePackageTests-arm64-apple-macosx26.0-debug.test>","<P1FastCoreTests-arm64-apple-macosx26.0-debug.module>"]
 default: "main"
 nodes:
   "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/":
     is-directory-structure: true
     content-exclusion-patterns: [".git",".build"]
+  "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Tests/P1FastCoreTests/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
 commands:
   "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/sources":
     tool: write-auxiliary-file
-    inputs: ["<sources-file-list>","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Quality.swift","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Sample.swift"]
+    inputs: ["<sources-file-list>","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Quality.swift","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Sample.swift","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Snapshot.swift"]
     outputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/sources"]
     description: "Write auxiliary file /Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/sources"
+
+  "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.derived/runner.swift"]
+    outputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/sources"]
+    description: "Write auxiliary file /Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/sources"
+
+  "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.derived/runner.swift":
+    tool: test-entry-point-tool
+    inputs: []
+    outputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.derived/runner.swift"]
+
+  "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.product/Objects.LinkFileList":
+    tool: write-auxiliary-file
+    inputs: ["<link-file-list>","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Quality.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Sample.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Snapshot.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/runner.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/QualityTests.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/SnapshotTests.swift.o"]
+    outputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.product/Objects.LinkFileList"]
+    description: "Write auxiliary file /Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.product/Objects.LinkFileList"
+
+  "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Tests/P1FastCoreTests/QualityTests.swift","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Tests/P1FastCoreTests/SnapshotTests.swift"]
+    outputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/sources"]
+    description: "Write auxiliary file /Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/sources"
 
   "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt":
     tool: write-auxiliary-file
@@ -28,19 +57,55 @@ commands:
 
   "<P1FastCore-arm64-apple-macosx26.0-debug.module>":
     tool: phony
-    inputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Quality.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Sample.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCore.swiftmodule"]
+    inputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Quality.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Sample.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Snapshot.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCore.swiftmodule"]
     outputs: ["<P1FastCore-arm64-apple-macosx26.0-debug.module>"]
+
+  "<P1FastCorePackageTests-arm64-apple-macosx26.0-debug.module>":
+    tool: phony
+    inputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/runner.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCorePackageTests.swiftmodule"]
+    outputs: ["<P1FastCorePackageTests-arm64-apple-macosx26.0-debug.module>"]
+
+  "<P1FastCorePackageTests-arm64-apple-macosx26.0-debug.test>":
+    tool: phony
+    inputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.xctest/Contents/MacOS/P1FastCorePackageTests"]
+    outputs: ["<P1FastCorePackageTests-arm64-apple-macosx26.0-debug.test>"]
+
+  "<P1FastCoreTests-arm64-apple-macosx26.0-debug.module>":
+    tool: phony
+    inputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/QualityTests.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/SnapshotTests.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCoreTests.swiftmodule"]
+    outputs: ["<P1FastCoreTests-arm64-apple-macosx26.0-debug.module>"]
 
   "C.P1FastCore-arm64-apple-macosx26.0-debug.module":
     tool: shell
-    inputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Quality.swift","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Sample.swift","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/sources"]
-    outputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Quality.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Sample.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCore.swiftmodule"]
-    description: "Compiling Swift Module 'P1FastCore' (2 sources)"
+    inputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Quality.swift","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Sample.swift","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Snapshot.swift","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/sources"]
+    outputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Quality.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Sample.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Snapshot.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCore.swiftmodule"]
+    description: "Compiling Swift Module 'P1FastCore' (3 sources)"
     args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-module-name","P1FastCore","-emit-dependencies","-emit-module","-emit-module-path","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCore.swiftmodule","-output-file-map","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/output-file-map.json","-parse-as-library","-incremental","-c","@/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/sources","-I","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx13.0","-incremental","-enable-batch-mode","-serialize-diagnostics","-index-store-path","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-j10","-DSWIFT_PACKAGE","-DDEBUG","-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE","-module-cache-path","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-parse-as-library","-emit-objc-header","-emit-objc-header-path","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/include/P1FastCore-Swift.h","-swift-version","5","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xcc","-isysroot","-Xcc","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-Xcc","-fPIC","-Xcc","-g","-package-name","p1fast_core"]
+
+  "C.P1FastCorePackageTests-arm64-apple-macosx26.0-debug.module":
+    tool: shell
+    inputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.derived/runner.swift","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCoreTests.swiftmodule","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/sources"]
+    outputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/runner.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCorePackageTests.swiftmodule"]
+    description: "Compiling Swift Module 'P1FastCorePackageTests' (1 sources)"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-module-name","P1FastCorePackageTests","-emit-dependencies","-emit-module","-emit-module-path","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCorePackageTests.swiftmodule","-output-file-map","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/output-file-map.json","-parse-as-library","-incremental","-c","@/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/sources","-I","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx13.0","-incremental","-enable-batch-mode","-serialize-diagnostics","-index-store-path","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-Xfrontend","-enable-cross-import-overlays","-j10","-DSWIFT_PACKAGE","-DDEBUG","-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE","-module-cache-path","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-parse-as-library","-emit-objc-header","-emit-objc-header-path","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/include/P1FastCorePackageTests-Swift.h","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xcc","-isysroot","-Xcc","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-Xcc","-fPIC","-Xcc","-g","-package-name","p1fast_core"]
+
+  "C.P1FastCorePackageTests-arm64-apple-macosx26.0-debug.test":
+    tool: shell
+    inputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Quality.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Sample.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Snapshot.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/runner.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/QualityTests.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/SnapshotTests.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.product/Objects.LinkFileList"]
+    outputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.xctest/Contents/MacOS/P1FastCorePackageTests"]
+    description: "Linking ./.build/arm64-apple-macosx/debug/P1FastCorePackageTests.xctest/Contents/MacOS/P1FastCorePackageTests"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-L","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug","-o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.xctest/Contents/MacOS/P1FastCorePackageTests","-module-name","P1FastCorePackageTests","-Xlinker","-no_warn_duplicate_libraries","-Xlinker","-bundle","-Xlinker","-rpath","-Xlinker","@loader_path/../../../","@/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.product/Objects.LinkFileList","-Xlinker","-rpath","-Xlinker","/Library/Developer/CommandLineTools/usr/lib/swift-6.2/macosx","-target","arm64-apple-macosx13.0","-Xlinker","-add_ast_path","-Xlinker","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCore.swiftmodule","-Xlinker","-add_ast_path","-Xlinker","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCorePackageTests.swiftmodule","-Xlinker","-add_ast_path","-Xlinker","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCoreTests.swiftmodule","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g"]
+
+  "C.P1FastCoreTests-arm64-apple-macosx26.0-debug.module":
+    tool: shell
+    inputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Tests/P1FastCoreTests/QualityTests.swift","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Tests/P1FastCoreTests/SnapshotTests.swift","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCore.swiftmodule","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/sources"]
+    outputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/QualityTests.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/SnapshotTests.swift.o","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCoreTests.swiftmodule"]
+    description: "Compiling Swift Module 'P1FastCoreTests' (2 sources)"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-module-name","P1FastCoreTests","-emit-dependencies","-emit-module","-emit-module-path","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCoreTests.swiftmodule","-output-file-map","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/output-file-map.json","-parse-as-library","-incremental","-c","@/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/sources","-I","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx13.0","-incremental","-enable-batch-mode","-serialize-diagnostics","-index-store-path","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-Xfrontend","-enable-cross-import-overlays","-j10","-DSWIFT_PACKAGE","-DDEBUG","-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE","-module-cache-path","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-parse-as-library","-swift-version","5","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xcc","-isysroot","-Xcc","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-Xcc","-fPIC","-Xcc","-g","-package-name","p1fast_core"]
 
   "PackageStructure":
     tool: package-structure-tool
-    inputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Package.swift","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Package.resolved"]
+    inputs: ["/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Tests/P1FastCoreTests/","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Package.swift","/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Package.resolved"]
     outputs: ["<PackageStructure>"]
     description: "Planning build"
     allow-missing-inputs: true

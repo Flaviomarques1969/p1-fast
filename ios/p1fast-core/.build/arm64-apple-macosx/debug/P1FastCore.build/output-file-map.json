@@ -15,5 +15,12 @@
     "swiftmodule": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Sample~partial.swiftmodule",
     "swift-dependencies": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Sample.swiftdeps",
     "diagnostics": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Sample.dia"
+  },
+  "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Snapshot.swift": {
+    "dependencies": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Snapshot.d",
+    "object": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Snapshot.swift.o",
+    "swiftmodule": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Snapshot~partial.swiftmodule",
+    "swift-dependencies": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Snapshot.swiftdeps",
+    "diagnostics": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Snapshot.dia"
   }
 }
