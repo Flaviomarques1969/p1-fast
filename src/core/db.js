@@ -103,6 +103,13 @@ db.version(11).stores({
   shift_events: '++id, &dedup_key, sessao_id, [sessao_id+timestamp], piloto_id, carro_id, trecho_id, timestamp',
 });
 
+// ─── Schema v12 — Pilot Reaction Profiles ─────────────────
+// Tempo de reação aprendido por tupla (piloto, carro, gear, trecho).
+// `key` único = 'piloto:carro:gear:trecho'.
+db.version(12).stores({
+  reaction_profiles: '++id, &key, last_updated',
+});
+
 // ─── Abertura + handshake ────────────────────────────────
 db.open()
   .then(() => {
