@@ -8,12 +8,14 @@ Port em Swift do **núcleo de telemetria** do P1 Fast. Sem deps iOS — compila 
 p1fast-core/
 ├── Package.swift
 └── Sources/
-    ├── P1FastCore/        ← lib (importável)
-    │   ├── Quality.swift     ← 11 categorias canônicas + worstOf + helpers
-    │   ├── Sample.swift      ← amostra multi-fonte + SourceTags + Clock
-    │   └── Snapshot.swift    ← CarTelemetrySnapshot + SnapshotBuilder
-    └── P1FastSmoke/       ← executável de teste (não usa XCTest)
-        └── main.swift        ← 14 asserts paridade com pipeline JS
+    ├── P1FastCore/             ← lib (importável)
+    │   ├── Quality.swift          ← 11 categorias canônicas + worstOf + helpers
+    │   ├── Sample.swift           ← amostra multi-fonte + SourceTags + Clock
+    │   ├── Snapshot.swift         ← CarTelemetrySnapshot + SnapshotBuilder
+    │   ├── CriticalRules.swift    ← AlertLevel + Engine + 3 regras CRÍTICAS + 3 manuais
+    │   └── CrossValidation.swift  ← V-001 (CAN×GNSS) + V-002 (IMU×derivada speed)
+    └── P1FastSmoke/             ← executável de teste (não usa XCTest)
+        └── main.swift             ← 24 asserts paridade com pipeline JS
 ```
 
 ## Por que executável smoke em vez de XCTest
