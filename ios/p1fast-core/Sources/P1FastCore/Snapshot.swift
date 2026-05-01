@@ -17,6 +17,7 @@ public struct EngineSnap: Codable, Sendable, Equatable {
     public var waterTemp: Double?
     public var batteryVoltage: Double?
     public var fuelPressure: Double?
+    public var gear: Int?
 }
 
 public struct PositionSnap: Codable, Sendable, Equatable {
