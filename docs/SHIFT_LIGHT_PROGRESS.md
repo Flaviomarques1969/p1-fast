@@ -159,7 +159,7 @@ Convenção:
 - [x] Mockup tem aba Dinamômetro funcional (CSS-only radio tabs, preview SVG, lista de pontos editável, redline e tolerância auto)
 
 ### Auditor
-- [~] `Agent(shift-light-auditor, "Audite Bloco 6")` — em curso
+- [x] `Agent(shift-light-auditor, "Audite Bloco 6")` → ✅ APROVADO (104 testes shift-light, smoke geral verde, sem regressão)
 
 ---
 
