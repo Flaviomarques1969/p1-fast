@@ -96,6 +96,13 @@ db.version(10).stores({
   iphoneSessions:     'id, startedAt, endedAt',
 });
 
+// ─── Schema v11 — Smart Shift Light: eventos de troca ─────
+// Eventos de troca de marcha persistidos por sessão. Cada evento tem 25
+// campos da spec + dedup_key (único) pra idempotência da escrita.
+db.version(11).stores({
+  shift_events: '++id, &dedup_key, sessao_id, [sessao_id+timestamp], piloto_id, carro_id, trecho_id, timestamp',
+});
+
 // ─── Abertura + handshake ────────────────────────────────
 db.open()
   .then(() => {
