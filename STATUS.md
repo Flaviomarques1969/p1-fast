@@ -1,7 +1,7 @@
 # P1 Fast — STATUS (continuação após /clear)
 
 **Data deste checkpoint:** 2026-05-01
-**Estado:** Smart Shift Light Premium concluído (6/6 blocos auditados). Smoke geral verde; suite `npm run test:shift-light`: 104 ok / 0 fail.
+**Estado:** Smart Shift Light Premium **construído e auditado mas em hibernação**. Decisão Flávio 2026-05-01: Shift Light é **Fase 2**. Fase 1 = só GPS+IMU do iPhone, foco continua em P1 Coach (trajetória). Suite `npm run test:shift-light` mantida verde (151 testes) como contrato pra ligar quando Fase 2 entrar.
 
 > **Se você é Claude abrindo esta sessão pela primeira vez:**
 > Leia este arquivo primeiro, depois `~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/MEMORY.md`.
