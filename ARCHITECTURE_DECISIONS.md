@@ -67,3 +67,17 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 **Motivo**: XSS local pode chamar `window.FAM.Laps.invalidar(...)` ou `Sessions.destroy(...)`. Reduzir superfície limita blast radius.
 **Consequência**: dev console perde conveniência em prod (aceitável — prod é piloto usando, não debug). Integrações futuras precisam feature-flag explícito.
 
+## ADR-018 — App do celular é iOS nativo (Swift). PWA descartado.
+**Decisão (Flavio 2026-05-01)**: o app do celular do P1 Fast — cockpit do piloto + hub (HOME, Eventos, Garagem, Pendências, cadastros) — é **iOS nativo em Swift/SwiftUI**. PWA / web no celular é descartado completamente.
+**Motivo**: Safari iOS não garante captura DeviceMotion a 10 Hz consistentes. Throttling em background, low-power mode, contexto cross-origin e perda de wake lock degradam a frequência abaixo do necessário pra IMU motorsports. Captura GPS+IMU confiável só com CoreMotion / CoreLocation acessados nativamente.
+**Escopo afetado**:
+- Mockups B em `_design-reference/*.html` permanecem como **contrato visual** — copiar 1:1 pra SwiftUI, sem inventar tokens. Não são código rodável no celular.
+- `src/pipeline/mobile-telemetry.js` (DeviceMotionEvent + Geolocation API) deixa de ser código de runtime do celular — vira **referência de contrato** (Sample shape, freshness por canal, métricas Hz/jitter). Captura real fica em Swift CoreMotion + CoreLocation.
+- Hub web (HTML/JS) sai do escopo do celular. Mantido apenas como base de mockup.
+- Pipeline puro JS (`src/telemetry/`, `src/domain/`) **continua como base auditável** via Node smokes — pode ser portado pra Swift, embarcado via JavaScriptCore, ou ambos. Decisão futura.
+**Decisões pendentes** (não tomadas hoje):
+- Swift puro vs SwiftUI + JavaScriptCore embarcando o pipeline JS
+- Persistência: SwiftData / CoreData / GRDB / Realm — substitui Dexie no celular
+- Android — fora do escopo V1 (Flavio usa iPhone)
+**Aplica-se a**: qualquer trabalho futuro de UI no celular. Trabalho de pipeline/domínio/backend em Node/Vercel não é afetado por esta ADR.
+
