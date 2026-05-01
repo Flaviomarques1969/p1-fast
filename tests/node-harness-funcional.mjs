@@ -377,6 +377,90 @@ await step('R-02: query Sessions.list por carId retorna 2 stints (ATAQUE + CONSI
   assert(ids.includes(stintConsist.id), 'CONSIST listada');
 });
 
+// ════════════════════════════════════════════════════════════
+// FASE 8 — P1 Coach: stint longo de 20 voltas em Brasília
+// ════════════════════════════════════════════════════════════
+// Pedagogia ao vivo: piloto trava foco em "apex" e sai pra rodar
+// 20 voltas. Coach precisa eleger UMA lição por trecho, emitir ≤ 1
+// mensagem por curva, respeitar cooldown 3.5s, fechar volta com onLapEnd.
+// Trechos curva = 8 (CURVA 01..CURVA DA VITÓRIA). Retas são ignoradas.
+
+const coachMsgs = [];
+
+await step('COACH-01: P1Coach.startLearningSession com foco apex', async () => {
+  const coach = new P1Coach({
+    onMessage: m => coachMsgs.push(m),
+    cooldownMs: 3500,
+    maxPerCorner: 1,
+  });
+  coach.startLearningSession({ focusPhase: 'apex' });
+  // Drive 20 voltas em Brasília — cada volta exercita os 8 trechos.
+  const trechos = brasiliaSegments.filter(s => s.ehTrecho);
+  assert(trechos.length === 8, `esperava 8 trechos, recebeu ${trechos.length}`);
+  let tMono = 0;
+  for (let lap = 0; lap < 20; lap++) {
+    for (const seg of trechos) {
+      // signals MVP — kmh, accLong, accLat, phase
+      const signals = new Set(['kmh', 'lat', 'lng', 'accLong', 'accLat', 'velMinima', 'phase']);
+      coach.onSegmentEnter(seg, signals);
+      // 10 amostras por trecho: 3 INICIO, 3 MEIO (apex), 4 FIM
+      for (let i = 0; i < 10; i++) {
+        tMono += 100;
+        const fase = i < 3 ? 'inicio' : (i < 6 ? 'meio' : 'fim');
+        const snapshot = {
+          tMono, t: Date.now(),
+          kmh: 90 - (i % 3),
+          lat: -15.77, lng: -47.90,
+          accLong: i < 3 ? -8.3 : (i < 6 ? -1 : 4.5),
+          accLat: i < 3 || i >= 6 ? 0.5 : 11.0,
+          velMinima: 88,
+          // alguns trechos vão atrair lições V-Min (apex), outras Acelerador-progressivo (saída)
+          steering: { angle: i < 6 ? 25 : 5 },
+          engine: { rpm: 5500, tps: i < 3 ? 0 : 70, map: 0.7, lambda: 0.92 },
+          phase: fase,
+        };
+        coach.consume({ faseCurva: fase, snapshot, signals });
+      }
+      coach.onSegmentExit();
+    }
+    coach.onLapEnd();
+  }
+});
+
+await step('COACH-02: emitiu mensagens (≥ 1) e respeitou max 1 por trecho', async () => {
+  assert(coachMsgs.length >= 1, `esperava ≥ 1 mensagem, recebeu ${coachMsgs.length}`);
+  // Conta mensagens agrupadas por (lap, segmentId) — não pode haver mais que 1.
+  const seen = new Map();
+  for (const m of coachMsgs) {
+    const key = `${Math.floor(m.tMono / 8000)}-${m.segmentId}`;
+    seen.set(key, (seen.get(key) || 0) + 1);
+  }
+  for (const [k, count] of seen) {
+    assert(count <= 1, `agrupamento ${k} teve ${count} msgs (max 1)`);
+  }
+});
+
+await step('COACH-03: cooldown 3.5s entre mensagens distintas', async () => {
+  if (coachMsgs.length < 2) return; // se só 1 mensagem, cooldown não é exercitado
+  for (let i = 1; i < coachMsgs.length; i++) {
+    const dt = coachMsgs[i].tMono - coachMsgs[i-1].tMono;
+    assert(dt >= 3500 - 0.001, `cooldown violado: ${dt}ms < 3500ms entre msg ${i-1}→${i}`);
+  }
+});
+
+await step('COACH-04: todas as mensagens estão na fase apex (focus respeitado)', async () => {
+  for (const m of coachMsgs) {
+    eq(m.phase, 'apex', `msg ${m.code} fora de apex: ${m.phase}`);
+  }
+});
+
+await step('COACH-05: textos das mensagens têm 2..3 palavras (canônico)', async () => {
+  for (const m of coachMsgs) {
+    const palavras = m.text.trim().split(/\s+/).length;
+    assert(palavras >= 2 && palavras <= 3, `msg "${m.text}" tem ${palavras} palavras`);
+  }
+});
+
 // ── relatório final ──────────────────────────────────────────
 console.log(`\n═══ RESULTADO ═══`);
 console.log(`${ok} ok / ${fail} fail`);
