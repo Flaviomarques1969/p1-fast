@@ -74,8 +74,16 @@ Cada teste Swift mapeia 1:1 pra um teste do `tests/node-smoke-telemetry-p0.mjs` 
 | XV-V001 (cooldown) | XV-cooldown | cooldown 30s bloqueia 2ª emissão |
 | CLOCK-01 | (novo) | Clock.now retorna epoch ms positivo |
 | CLOCK-02 | ADR-015 (espelhado) | Clock.nowMono é monotonic crescente |
+| FC-01 | fase-curva.js (paridade direta) | classificar([]) retorna nil |
+| FC-02 | fase-curva.js | sem accLong → fallback 1/3 1/3 1/3 por tempo |
+| FC-03 | fase-curva.js | com accLong → c1 cruza -0.35g, c2 cruza +0.25g |
+| FC-04 | fase-curva.js | apex = ponto de menor velocidade dentro do MEIO |
+| FC-05 | fase-curva.js | velEntrada/velSaida = primeira/última kmh do bloco |
+| FC-06 | fase-curva.js | accLongPeak preserva sinal do maior em magnitude |
+| FC-07 | fase-curva.js | total.duracaoMs = t_last - t_first |
+| FC-08 | fase-curva.js | sample com kmh ou accLong nil não quebra |
 
-Quando portarmos `p1-coach.js`, `trajectory-monitor.js`, `detector.js` ou outras V-002..V-011, novos asserts entram aqui replicando os smokes JS correspondentes.
+Quando portarmos `p1-coach.js`, `trajectory-monitor.js`, `path-mapper.js` ou V-003..V-011, novos asserts entram aqui replicando os smokes JS correspondentes.
 
 ## Como contribuir um novo módulo portado
 
