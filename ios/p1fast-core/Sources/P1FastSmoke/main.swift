@@ -858,6 +858,86 @@ func makeReport(braking: Double? = nil, entry: Double? = nil) -> TrajectoryMonit
     )
 }
 
+// ════════════════════════════════════════════════════════════
+// BaselineVectors — BV-01 .. BV-07 (port de src/domain/baseline-vectors.js)
+// ════════════════════════════════════════════════════════════
+
+func bvCand(valida: Bool = true, tempoMs: Double = 75_000,
+            userId: String? = "u1", carCfg: String? = "c1",
+            data: Date? = nil, clima: String? = "seco",
+            composto: String? = "R7", desgaste: Int? = 1,
+            tempPista: Double? = 40, tempAr: Double? = 25) -> BaselineVectors.Candidate {
+    return BaselineVectors.Candidate(
+        lap: BaselineVectors.LapInfo(valida: valida, tempoMs: tempoMs),
+        session: BaselineVectors.SessionInfo(userId: userId, carConfigurationId: carCfg,
+                                              dataInicio: data, clima: clima),
+        env: BaselineVectors.EnvSnapshot(composto: composto, desgasteNivelD: desgaste,
+                                          tempPista: tempPista, tempAr: tempAr)
+    )
+}
+
+let bvRef = BaselineVectors.Reference(
+    userId: "u1", carConfigId: "c1",
+    timestamp: Date(timeIntervalSince1970: 1_730_000_000),
+    clima: "seco",
+    env: BaselineVectors.EnvSnapshot(composto: "R7", desgasteNivelD: 1,
+                                      tempPista: 40, tempAr: 25)
+)
+
+step("BV-01: filterForBaseline aceita candidato compatível") {
+    let r = BaselineVectors.filterForBaseline(candidates: [bvCand()], ref: bvRef)
+    try assertEq(r.count, 1)
+}
+
+step("BV-02: descarta lap.valida = false") {
+    let r = BaselineVectors.filterForBaseline(candidates: [bvCand(valida: false)], ref: bvRef)
+    try assertEq(r.count, 0)
+}
+
+step("BV-03: pneu.igualarMarca exclui composto diferente") {
+    let r = BaselineVectors.filterForBaseline(
+        candidates: [bvCand(composto: "M4")], ref: bvRef)
+    try assertEq(r.count, 0)
+}
+
+step("BV-04: pneu.nivelMax exclui desgaste acima do limite") {
+    let r = BaselineVectors.filterForBaseline(
+        candidates: [bvCand(desgaste: 5)], ref: bvRef)
+    try assertEq(r.count, 0)
+}
+
+step("BV-05: ambiente.tempPistaTol exclui pista fora da tolerância (5°C)") {
+    let r = BaselineVectors.filterForBaseline(
+        candidates: [bvCand(tempPista: 50)], ref: bvRef)  // Δ=10
+    try assertEq(r.count, 0)
+    let r2 = BaselineVectors.filterForBaseline(
+        candidates: [bvCand(tempPista: 43)], ref: bvRef)  // Δ=3
+    try assertEq(r2.count, 1)
+}
+
+step("BV-06: piloto.apenasMesmoPiloto exclui userId diferente") {
+    let r = BaselineVectors.filterForBaseline(
+        candidates: [bvCand(userId: "outro")], ref: bvRef)
+    try assertEq(r.count, 0)
+}
+
+step("BV-07: ordena por tempoMs ascendente e respeita minVoltas") {
+    let cands = [
+        bvCand(tempoMs: 80_000),
+        bvCand(tempoMs: 70_000),
+        bvCand(tempoMs: 90_000),
+        bvCand(tempoMs: 60_000),
+    ]
+    var preset = BaselineVectors.defaultPreset
+    preset.minVoltas = 2
+    let r = BaselineVectors.filterForBaseline(candidates: cands, ref: bvRef, preset: preset)
+    // max(2, 10) = 10 → todos cabem, ordenados
+    try assertEq(r.count, 4)
+    try assertEq(r[0].lap.tempoMs, 60_000)
+    try assertEq(r[1].lap.tempoMs, 70_000)
+    try assertEq(r[3].lap.tempoMs, 90_000)
+}
+
 step("CLOCK-01: Clock.now retorna epoch ms positivo") {
     let now = Clock.now
     try assertTrue(now > 1_700_000_000_000, "now > 2023-11")
