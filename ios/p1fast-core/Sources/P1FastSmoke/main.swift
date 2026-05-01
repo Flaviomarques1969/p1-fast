@@ -266,6 +266,81 @@ step("CR-06: fireManual dispara bandeira vermelha BOX_AGORA") {
     try assertEq(alerts[0].nivel, .boxAgora)
 }
 
+// ════════════════════════════════════════════════════════════
+// CrossValidation — XV-01 .. XV-03 (paridade com node-smoke-telemetry-p0.mjs)
+// ════════════════════════════════════════════════════════════
+
+step("XV-V001: divergência CAN vs GNSS > 5 km/h sustentada > 2s emite V-001") {
+    var events: [ValidationEvent] = []
+    let xv = CrossValidationEngine { events.append($0) }
+    // 25 amostras a 100ms = 2.5s, divergência 12 km/h
+    var tMono: Double = 0
+    for _ in 0..<25 {
+        tMono += 100
+        var t4000 = Sample(t: 1_700_000_000_000, tMono: tMono, source: SourceTags.t4000)
+        t4000.speedCan = (90 + 12) / 3.6
+        var racebox = Sample(t: 1_700_000_000_000, tMono: tMono, source: SourceTags.racebox)
+        racebox.speed = 90 / 3.6
+        let snap = SnapshotBuilder.build(
+            tMono: tMono,
+            sourcesData: [
+                SourceTags.t4000:   SourcePacket(sample: t4000, quality: .ok),
+                SourceTags.racebox: SourcePacket(sample: racebox, quality: .ok),
+            ]
+        )
+        xv.consume(snap)
+    }
+    let v001 = events.filter { $0.validation == "V-001" }
+    try assertTrue(v001.count >= 1, "esperava ≥1 V-001, recebeu \(v001.count)")
+    try assertEq(v001[0].severity, .atencao)
+}
+
+step("XV-V001: divergência < 5 km/h NÃO emite") {
+    var events: [ValidationEvent] = []
+    let xv = CrossValidationEngine { events.append($0) }
+    var tMono: Double = 0
+    for _ in 0..<25 {
+        tMono += 100
+        var t4000 = Sample(t: 1_700_000_000_000, tMono: tMono, source: SourceTags.t4000)
+        t4000.speedCan = (90 + 0.4) / 3.6
+        var racebox = Sample(t: 1_700_000_000_000, tMono: tMono, source: SourceTags.racebox)
+        racebox.speed = 90 / 3.6
+        let snap = SnapshotBuilder.build(
+            tMono: tMono,
+            sourcesData: [
+                SourceTags.t4000:   SourcePacket(sample: t4000, quality: .ok),
+                SourceTags.racebox: SourcePacket(sample: racebox, quality: .ok),
+            ]
+        )
+        xv.consume(snap)
+    }
+    try assertEq(events.count, 0, "esperava 0 events")
+}
+
+step("XV-V001: cooldown bloqueia 2ª emissão dentro de 30s") {
+    var events: [ValidationEvent] = []
+    let xv = CrossValidationEngine { events.append($0) }
+    // gera divergência sustentada → emite uma vez → outra rajada idêntica
+    var tMono: Double = 0
+    for _ in 0..<50 {
+        tMono += 100
+        var t4000 = Sample(t: 1_700_000_000_000, tMono: tMono, source: SourceTags.t4000)
+        t4000.speedCan = (90 + 12) / 3.6
+        var racebox = Sample(t: 1_700_000_000_000, tMono: tMono, source: SourceTags.racebox)
+        racebox.speed = 90 / 3.6
+        let snap = SnapshotBuilder.build(
+            tMono: tMono,
+            sourcesData: [
+                SourceTags.t4000:   SourcePacket(sample: t4000, quality: .ok),
+                SourceTags.racebox: SourcePacket(sample: racebox, quality: .ok),
+            ]
+        )
+        xv.consume(snap)
+    }
+    let v001 = events.filter { $0.validation == "V-001" }
+    try assertEq(v001.count, 1, "cooldown — só 1 emissão em 5s")
+}
+
 step("CR-07: regras manuais existem (3 mínimo)") {
     try assertTrue(MANUAL_RULES.count >= 3, "manual rules >= 3")
     let ids = MANUAL_RULES.map { $0.id }
