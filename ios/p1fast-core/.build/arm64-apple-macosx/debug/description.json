@@ -24,6 +24,10 @@
       "inputs" : [
         {
           "kind" : "file",
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/CriticalRules.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Quality.swift"
         },
         {
@@ -47,6 +51,7 @@
       "moduleName" : "P1FastCore",
       "moduleOutputPath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCore.swiftmodule",
       "objects" : [
+        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/CriticalRules.swift.o",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Quality.swift.o",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Sample.swift.o",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Snapshot.swift.o"
@@ -98,6 +103,10 @@
       "outputs" : [
         {
           "kind" : "file",
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/CriticalRules.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Quality.swift.o"
         },
         {
@@ -115,6 +124,7 @@
       ],
       "prepareForIndexing" : false,
       "sources" : [
+        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/CriticalRules.swift",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Quality.swift",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Sample.swift",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Snapshot.swift"
@@ -223,6 +233,7 @@
       "-package-name",
       "p1fast_core",
       "-c",
+      "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/CriticalRules.swift",
       "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Quality.swift",
       "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Sample.swift",
       "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Snapshot.swift",
@@ -356,6 +367,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/CriticalRules.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Quality.swift"
         },
         {
@@ -403,6 +418,10 @@
         {
           "kind" : "virtual",
           "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/CriticalRules.swift.o"
         },
         {
           "kind" : "file",

@@ -193,6 +193,87 @@ step("SNAP-06: quality consolidada → pior das fontes ativas") {
 // Clock — paridade com helpers tempo do JS
 // ════════════════════════════════════════════════════════════
 
+// ════════════════════════════════════════════════════════════
+// CriticalRules — CR-01 .. CR-05 (espelha node-smoke-telemetry-p0.mjs)
+// ════════════════════════════════════════════════════════════
+
+func snapWithEngine(rpm: Double, oilPressure: Double? = nil, waterTemp: Double? = nil, batteryVoltage: Double? = nil, tMono: Double = 100, t4000Quality: Quality = .ok) -> Snapshot {
+    var s = Sample(t: 1_700_000_000_000, tMono: tMono, source: SourceTags.t4000)
+    s.rpm = rpm
+    s.oilPressure = oilPressure
+    s.waterTemp = waterTemp
+    s.batteryVoltage = batteryVoltage
+    return SnapshotBuilder.build(
+        tMono: tMono,
+        sourcesData: [SourceTags.t4000: SourcePacket(sample: s, quality: t4000Quality)]
+    )
+}
+
+step("CR-01: catálogo tem regras canônicas obrigatórias") {
+    let ids = CRITICAL_RULES.map { $0.id }
+    try assertTrue(ids.contains("press-oleo-baixa"), "press-oleo-baixa")
+    try assertTrue(ids.contains("temp-motor-extrema"), "temp-motor-extrema")
+    try assertTrue(ids.contains("bateria-baixa"), "bateria-baixa")
+}
+
+step("CR-02: pressão óleo < 1.0 bar com RPM > 1000 dispara BOX_AGORA") {
+    var alerts: [Alert] = []
+    let engine = CriticalRulesEngine { alerts.append($0) }
+    let snap = snapWithEngine(rpm: 5800, oilPressure: 0.6)
+    engine.consume(snap)
+    try assertEq(alerts.count, 1, "alertas")
+    try assertEq(alerts[0].id, "press-oleo-baixa")
+    try assertEq(alerts[0].nivel, .boxAgora)
+    try assertEq(alerts[0].confianca, "Alta")
+    try assertEq(alerts[0].quemAge, "piloto")
+}
+
+step("CR-03: temp motor escala ATENCAO → CRITICO → BOX_AGORA") {
+    var alerts: [Alert] = []
+    let engine = CriticalRulesEngine { alerts.append($0) }
+    engine.consume(snapWithEngine(rpm: 5500, waterTemp: 102, tMono: 100))
+    engine.consume(snapWithEngine(rpm: 5500, waterTemp: 108, tMono: 31_000))   // depois do cooldown
+    engine.consume(snapWithEngine(rpm: 5500, waterTemp: 117, tMono: 62_000))
+    let temp = alerts.filter { $0.id == "temp-motor-extrema" }
+    try assertEq(temp.count, 3, "três escalões")
+    try assertEq(temp[0].nivel, .atencao)
+    try assertEq(temp[1].nivel, .critico)
+    try assertEq(temp[2].nivel, .boxAgora)
+}
+
+step("CR-04: cooldown bloqueia repetição imediata") {
+    var alerts: [Alert] = []
+    let engine = CriticalRulesEngine { alerts.append($0) }
+    engine.consume(snapWithEngine(rpm: 5800, oilPressure: 0.6, tMono: 100))
+    engine.consume(snapWithEngine(rpm: 5800, oilPressure: 0.6, tMono: 200))   // dentro de cooldown 10s
+    try assertEq(alerts.count, 1, "cooldown bloqueou 2ª")
+}
+
+step("CR-05: regra ignora canal sem Quality.OK (Regra 4)") {
+    var alerts: [Alert] = []
+    let engine = CriticalRulesEngine { alerts.append($0) }
+    let snap = snapWithEngine(rpm: 5800, oilPressure: 0.6, t4000Quality: .suspect)
+    engine.consume(snap)
+    try assertEq(alerts.count, 0, "Regra 4: CRÍTICO precisa OK")
+}
+
+step("CR-06: fireManual dispara bandeira vermelha BOX_AGORA") {
+    var alerts: [Alert] = []
+    let engine = CriticalRulesEngine { alerts.append($0) }
+    engine.fireManual(id: "bandeira-vermelha")
+    try assertEq(alerts.count, 1)
+    try assertEq(alerts[0].id, "bandeira-vermelha")
+    try assertEq(alerts[0].nivel, .boxAgora)
+}
+
+step("CR-07: regras manuais existem (3 mínimo)") {
+    try assertTrue(MANUAL_RULES.count >= 3, "manual rules >= 3")
+    let ids = MANUAL_RULES.map { $0.id }
+    try assertTrue(ids.contains("bandeira-vermelha"))
+    try assertTrue(ids.contains("bandeira-amarela"))
+    try assertTrue(ids.contains("pista-molhada"))
+}
+
 step("CLOCK-01: Clock.now retorna epoch ms positivo") {
     let now = Clock.now
     try assertTrue(now > 1_700_000_000_000, "now > 2023-11")

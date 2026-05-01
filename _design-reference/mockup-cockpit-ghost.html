@@ -1,0 +1,738 @@
+<!doctype html>
+<html lang="pt-BR" data-mobile="true">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=956, initial-scale=1">
+<title>Mockup Cockpit · ghost map de trecho</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(0% 0 0);
+  --surface: oklch(11% 0 0);
+  --border: oklch(22% 0 0);
+  --hairline: oklch(28% 0 0);
+  --ink: oklch(100% 0 0);
+  --muted: oklch(58% 0 0);
+  --faint: oklch(36% 0 0);
+  --bom: oklch(80% 0.22 145);
+  --erro: oklch(68% 0.26 27);
+  --sistema: oklch(78% 0.16 225);
+  --foco: oklch(82% 0.19 70);
+  --ouro: oklch(74% 0.16 73);
+  --halo-recorde: oklch(78% 0.18 65 / .42);
+  --halo-pior:    oklch(56% 0.22 305 / .42);
+
+  --ghost-cyan: oklch(78% 0.16 225);
+  --ghost-cyan-soft: oklch(78% 0.16 225 / .55);
+
+  --ff-display: 'Inter', system-ui, sans-serif;
+  --ff-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --apex-h: 60px;
+  --acao-h: 44px;
+  --esp-h: 24px;
+  --fs-0: 9px;
+  --fs-1: 11px;
+  --fs-2: 13px;
+  --fs-5: 32px;
+  --fs-6: 32px;
+  --fs-9: 180px;
+  --ls-tight: -0.045em;
+  --ls-caps-s: 0.06em;
+  --ls-caps-l: 0.35em;
+  --ls-caps-m: 0.22em;
+  --lh-dom: 0.88;
+
+  --ease-out:   cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-msg:   cubic-bezier(0.16, 1, 0.3, 1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:var(--ff-display);font-weight:500;
+  background:#0a0a0a;color:var(--ink);
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;padding:24px;
+  -webkit-font-smoothing:antialiased;
+  font-feature-settings:"ss01","cv11";
+  user-select:none;
+}
+
+.device{
+  width:956px;height:440px;
+  background:var(--bg);
+  border-radius:48px;border:1px solid oklch(15% 0 0);
+  box-shadow:0 30px 80px oklch(0% 0 0 / .9), 0 0 0 8px oklch(3% 0 0);
+  position:relative;overflow:hidden;
+  --halo-cor: transparent;
+  perspective:1200px;
+}
+.device::before{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:1;
+  background:radial-gradient(ellipse 65% 75% at 50% 55%, var(--halo-cor) 0%, transparent 65%);
+  transition:background 320ms var(--ease-inout);
+}
+.device[data-trecho-status="recorde-stint"]{ --halo-cor: var(--halo-recorde); }
+.device[data-trecho-status="pior-stint"]{    --halo-cor: var(--halo-pior); }
+
+.notch{
+  position:absolute;left:18px;top:50%;transform:translateY(-50%);
+  width:36px;height:128px;background:#000;border-radius:20px;z-index:50;
+  border:1px solid oklch(8% 0 0);
+}
+
+.telemetria-chip{
+  position:absolute;right:18px;top:14px;z-index:60;
+  display:flex;gap:5px;
+}
+.telemetria-chip__dot{width:6px;height:6px;border-radius:50%;background:var(--faint);}
+.telemetria-chip__dot.ok{background:var(--bom);box-shadow:0 0 6px oklch(80% 0.22 145 / .4);}
+.telemetria-chip__dot.warn{background:var(--foco);box-shadow:0 0 6px oklch(82% 0.19 70 / .4);}
+
+.apex{
+  position:absolute;top:18px;left:60px;right:80px;z-index:10;
+  display:flex;align-items:baseline;justify-content:space-between;
+  min-height:var(--apex-h);
+}
+.apex__ponto{
+  display:inline-flex;align-items:baseline;gap:14px;
+}
+.apex__label{
+  font-size:14px;font-weight:700;letter-spacing:var(--ls-caps-l);
+  color:var(--ink);text-transform:uppercase;
+}
+.apex__valor{
+  font-family:var(--ff-display);
+  font-size:var(--fs-5);font-weight:900;letter-spacing:var(--ls-tight);
+  font-variant-numeric:tabular-nums;
+  color:var(--ink);
+  display:inline-flex;align-items:baseline;gap:4px;
+  transition:color 280ms var(--ease-out);
+}
+.apex__ponto[data-estado="ok-melhor"] .apex__valor{ color:var(--bom); }
+.apex__ponto[data-estado="ok-pior"]   .apex__valor{ color:var(--erro); }
+.apex__ponto[data-estado="pendente"]  .apex__valor{ color:var(--faint); }
+.apex__valor small{
+  font-size:var(--fs-0);color:var(--muted);font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.apex__valor__sep{
+  color:var(--faint);font-weight:600;margin:0 4px;
+}
+
+/* INFO-BLOCO — desliza pra esquerda quando msg-state="ativa" OU ghost-state="ativo".
+   Mesma transformação, mesma curva — reutilizando o mecanismo existente. */
+.info-bloco{
+  position:absolute;left:50%;top:50%;
+  transform:translate(-50%, -50%);
+  z-index:20;
+  display:flex;flex-direction:column;align-items:center;gap:14px;
+  pointer-events:none;
+  transition:transform 1200ms var(--ease-msg);
+}
+.device[data-msg-state="ativa"] .info-bloco,
+.device[data-stint-modo="mapa"] .info-bloco,
+.device[data-stint-modo="mapa-ghost"] .info-bloco{
+  transform:translate(calc(-50% - 230px), -50%);
+}
+
+.info__delta{
+  font-family:var(--ff-display);
+  font-size:var(--fs-9);font-weight:900;
+  letter-spacing:var(--ls-tight);line-height:var(--lh-dom);
+  font-variant-numeric:tabular-nums slashed-zero;
+}
+.info__delta.bom{
+  color:var(--bom);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 24px oklch(80% 0.22 145 / .35);
+}
+.info__delta.erro{
+  color:var(--erro);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 24px oklch(68% 0.26 27 / .35);
+}
+.info__acao{
+  font-size:var(--fs-6);font-weight:900;letter-spacing:var(--ls-caps-s);
+  text-transform:uppercase;
+  color:var(--foco);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 24px oklch(82% 0.19 70 / .35);
+}
+.info__acao.erro{
+  color:var(--erro);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 24px oklch(68% 0.26 27 / .35);
+}
+
+/* ALERT-BLOCO — idêntico ao mockup-cockpit-piloto.
+   Quando ghost ativo + alerta tipo grave: alerta tem precedência total (ghost some).
+   Quando ghost ativo + alerta tipo comunicação: alerta sobrepõe; ghost fica em opacity reduzida atrás. */
+.alert-bloco{
+  position:absolute;left:calc(100% - 240px);top:50%;
+  transform:translate(-50%, -50%) translateZ(-300px) scale(.35);
+  filter:blur(12px);
+  opacity:0;
+  z-index:30;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  transition:transform 1200ms var(--ease-msg),
+             opacity 1100ms var(--ease-msg),
+             filter 1100ms var(--ease-msg);
+  max-width:380px;text-align:center;
+}
+.device[data-msg-state="ativa"] .alert-bloco{
+  transform:translate(-50%, -50%) translateZ(0) scale(1);
+  filter:blur(0);
+  opacity:1;
+}
+.alert__msg{
+  font-family:var(--ff-display);
+  font-size:34px;font-weight:900;letter-spacing:-0.01em;line-height:1.05;
+  color:var(--sistema);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 28px oklch(78% 0.16 225 / .45);
+}
+.alert-bloco[data-tipo="grave"] .alert__msg{
+  color:var(--erro);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 28px oklch(68% 0.26 27 / .55);
+}
+
+/* GHOST-BLOCO — mapa de trecho. Ocupa o mesmo slot direito do alert,
+   com a mesma entrada Z-axis (vem do fundo). */
+.ghost-bloco{
+  position:absolute;left:calc(100% - 220px);top:50%;
+  transform:translate(-50%, -50%) translateZ(-300px) scale(.35);
+  filter:blur(12px);
+  opacity:0;
+  z-index:25;pointer-events:none;
+  width:380px;height:288px;
+  transition:transform 1200ms var(--ease-msg),
+             opacity 1100ms var(--ease-msg),
+             filter 1100ms var(--ease-msg);
+}
+.device[data-stint-modo="mapa"] .ghost-bloco,
+.device[data-stint-modo="mapa-ghost"] .ghost-bloco{
+  transform:translate(-50%, -50%) translateZ(0) scale(1);
+  filter:blur(0);
+  opacity:1;
+}
+/* Modo "mapa": pista + traçado atual + marcos, mas SEM linha ghost cyan */
+.device[data-stint-modo="mapa"] .ghost-svg__ghost{ display:none; }
+
+/* Mensagem crítica (grave) substitui o mapa — precedência total */
+.device[data-msg-state="ativa"][data-msg-tipo="grave"] .ghost-bloco{
+  opacity:0;
+  transform:translate(-50%, -50%) translateZ(-300px) scale(.35);
+  filter:blur(12px);
+}
+/* Comunicação: mapa permanece atrás, atenuado */
+.device[data-msg-state="ativa"][data-msg-tipo="comunicacao"][data-stint-modo="mapa"] .ghost-bloco,
+.device[data-msg-state="ativa"][data-msg-tipo="comunicacao"][data-stint-modo="mapa-ghost"] .ghost-bloco{
+  opacity:.22;
+  filter:blur(2px);
+}
+
+.ghost-bloco svg{
+  width:100%;height:100%;display:block;
+  overflow:visible;
+  transition:transform 600ms var(--ease-out);
+  transform-origin:center;
+}
+/* Orientação do mapa — só ilustrativa; em produção viria do bearing do circuito/carro */
+.device[data-mapa-orient="track"]   .ghost-bloco svg{ transform:rotate(-12deg); }
+.device[data-mapa-orient="heading"] .ghost-bloco svg{ transform:rotate(-32deg); }
+
+/* Camada 1: pista (cinza muito claro, contexto) */
+.ghost-svg__pista{
+  fill:none;stroke:oklch(28% 0 0);stroke-width:14;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.ghost-svg__pista-bord{
+  fill:none;stroke:oklch(38% 0 0);stroke-width:1;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+
+/* Camada 2: ghost (melhor traçado mesmo carro+config) */
+.ghost-svg__ghost{
+  fill:none;stroke:var(--ghost-cyan-soft);stroke-width:3.5;
+  stroke-linecap:round;stroke-linejoin:round;
+  filter:drop-shadow(0 0 6px oklch(78% 0.16 225 / .55));
+}
+
+/* Camada 3: traçado atual (volta em curso) */
+.ghost-svg__atual{
+  fill:none;stroke:var(--ink);stroke-width:2.6;
+  stroke-linecap:round;stroke-linejoin:round;
+  filter:drop-shadow(0 0 4px oklch(100% 0 0 / .5));
+}
+
+/* Marcos */
+.ghost-svg__marco{ stroke:#000;stroke-width:1.5; }
+.ghost-svg__marco--entrada{ fill:var(--bom); }
+.ghost-svg__marco--freio{   fill:var(--erro); }
+.ghost-svg__marco--apice{   fill:var(--foco); }
+.ghost-svg__marco--saida{   fill:var(--sistema); }
+.ghost-svg__marco--past{ opacity:.45; }
+
+/* (sem pulsação de alvo — o piloto sabe onde está) */
+/* (sem triângulo de posição — só linhas crescendo) */
+
+/* SEM REFERÊNCIA placeholder — só em modo mapa-ghost quando não há melhor passagem */
+.ghost-bloco__sem-ref{
+  position:absolute;inset:0;display:none;
+  align-items:center;justify-content:center;flex-direction:column;gap:6px;
+  background:oklch(0% 0 0 / .55);backdrop-filter:blur(2px);
+  border-radius:8px;
+}
+.device[data-stint-modo="mapa-ghost"][data-ghost-ref="ausente"] .ghost-bloco__sem-ref{ display:flex; }
+.device[data-stint-modo="mapa-ghost"][data-ghost-ref="ausente"] .ghost-svg__ghost{ display:none; }
+.ghost-bloco__sem-ref-l1{
+  font-size:13px;font-weight:800;letter-spacing:var(--ls-caps-l);
+  color:var(--foco);text-transform:uppercase;
+}
+.ghost-bloco__sem-ref-l2{
+  font-size:10px;font-weight:600;letter-spacing:var(--ls-caps-s);
+  color:var(--muted);text-transform:uppercase;
+}
+
+/* Etiqueta de contexto (no rodapé do mapa, fina) */
+.ghost-bloco__ctx{
+  position:absolute;left:8px;right:8px;bottom:6px;
+  display:flex;justify-content:space-between;align-items:center;
+  font-family:var(--ff-mono);font-size:9px;font-weight:700;
+  letter-spacing:var(--ls-caps-s);color:var(--muted);text-transform:uppercase;
+  pointer-events:none;
+}
+.ghost-bloco__ctx b{ color:var(--ink);font-weight:800; }
+
+/* STINT BAR */
+.stint-bar{
+  position:absolute;left:60px;right:8px;bottom:4px;
+  display:flex;gap:3px;height:14px;align-items:flex-end;z-index:30;
+}
+.stint-bar__block{
+  flex:1;background:var(--faint);border-radius:2px;height:14px;position:relative;
+}
+.stint-bar__block.is-neutral{background:var(--ink);}
+.stint-bar__block.is-faster{background:var(--bom);}
+.stint-bar__block.is-slower{background:var(--erro);}
+.stint-bar__block.is-best-stint{
+  background:var(--bom);overflow:hidden;
+  box-shadow:0 0 14px 0 oklch(80% 0.22 145 / .6), inset 0 0 0 1.5px var(--bg);
+}
+.stint-bar__block.is-best-stint::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg, transparent 0%, oklch(95% 0.15 145 / .9) 50%, transparent 100%);
+  background-size:50% 100%;background-repeat:no-repeat;background-position:-50% 0%;
+  animation:lightWaveBidir 3.2s var(--ease-inout) infinite;mix-blend-mode:screen;
+}
+.stint-bar__block.is-best-alltime{
+  background:var(--ouro);position:relative;z-index:5;overflow:hidden;
+  box-shadow:
+    0 0 18px 0 oklch(74% 0.16 73 / .8),
+    0 0 36px 0 oklch(74% 0.16 73 / .5),
+    0 0 60px 0 oklch(82% 0.18 70 / .25),
+    inset 0 0 0 1.5px var(--bg);
+  animation:alltimeBloom 3.2s var(--ease-inout) infinite;
+}
+.stint-bar__block.is-best-alltime::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg, transparent 0%, oklch(98% 0.12 80 / .95) 50%, transparent 100%);
+  background-size:50% 100%;background-repeat:no-repeat;background-position:-50% 0%;
+  animation:lightWaveBidir 3.2s var(--ease-inout) infinite;mix-blend-mode:screen;
+}
+.stint-bar__block.is-current{
+  background:var(--foco);box-shadow:0 0 12px 0 oklch(82% 0.19 70 / .6);
+}
+@keyframes alltimeBloom{
+  0%,100%{box-shadow:
+    0 0 18px 0 oklch(74% 0.16 73 / .8),
+    0 0 36px 0 oklch(74% 0.16 73 / .5),
+    0 0 60px 0 oklch(82% 0.18 70 / .25),
+    inset 0 0 0 1.5px var(--bg);}
+  50%{box-shadow:
+    0 0 26px 0 oklch(82% 0.18 70 / .95),
+    0 0 48px 0 oklch(82% 0.18 70 / .65),
+    0 0 80px 0 oklch(95% 0.14 80 / .4),
+    inset 0 0 0 1.5px var(--bg);}
+}
+@keyframes lightWaveBidir{
+  0%{background-position:-50% 0%;}
+  50%{background-position:150% 0%;}
+  100%{background-position:-50% 0%;}
+}
+
+/* CONTROLES */
+.controls{
+  display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;
+  margin-top:14px;font-family:var(--ff-mono);font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--muted);
+}
+.controls__lbl{color:var(--faint);font-weight:600;}
+.controls__btn{
+  background:var(--surface);border:1px solid var(--border);color:var(--ink);
+  font-family:inherit;font-size:11px;font-weight:700;letter-spacing:.06em;
+  padding:8px 14px;border-radius:2px;cursor:pointer;text-transform:uppercase;
+  transition:background 180ms var(--ease-out);
+}
+.controls__btn:hover{background:oklch(15% 0 0);}
+.controls__btn.is-active{background:var(--sistema);color:var(--bg);border-color:var(--sistema);}
+.controls__btn[data-action="grave"].is-active{background:var(--erro);color:var(--ink);border-color:var(--erro);}
+.controls__btn[data-action="ghost"].is-active{background:var(--ghost-cyan);color:var(--bg);border-color:var(--ghost-cyan);}
+
+.legend{
+  position:fixed;bottom:18px;right:18px;max-width:360px;
+  font-family:var(--ff-mono);
+  font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--muted);
+  background:oklch(11% 0 0 / .85);backdrop-filter:blur(12px);
+  border:1px solid var(--border);border-radius:4px;
+  padding:10px 14px;line-height:1.6;
+  text-transform:uppercase;
+}
+.legend b{color:var(--ink);font-weight:700;}
+.legend i{color:var(--foco);font-style:normal;font-weight:700;}
+.legend em{color:var(--ghost-cyan);font-style:normal;font-weight:700;}
+</style>
+</head>
+<body>
+<div style="display:flex;flex-direction:column;gap:12px;align-items:center;">
+
+  <!--
+    Estados:
+      data-msg-state:   oculta | ativa
+      data-msg-tipo:    comunicacao | grave
+      data-stint-modo:  sem-mapa | mapa | mapa-ghost   (decidido no plano de stint; box pode alterar)
+      data-ghost-ref:   presente | ausente             (só relevante em modo mapa-ghost)
+      data-mapa-orient: north | heading | track        (preferência do piloto; default north)
+  -->
+  <div class="device" id="device"
+       data-trecho-status="neutro"
+       data-msg-state="oculta" data-msg-tipo="comunicacao"
+       data-stint-modo="mapa-ghost" data-ghost-ref="presente"
+       data-mapa-orient="north">
+    <div class="notch"></div>
+
+    <div class="telemetria-chip">
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot warn"></span>
+      <span class="telemetria-chip__dot ok"></span>
+    </div>
+
+    <section class="apex">
+      <div class="apex__ponto" data-estado="ok-melhor" data-papel="entrada">
+        <span class="apex__label">Entrada</span>
+        <span class="apex__valor">94<small>km/h</small></span>
+      </div>
+      <div class="apex__ponto" data-estado="ok-melhor" data-papel="freio">
+        <span class="apex__label">Freio</span>
+        <span class="apex__valor">15<span class="apex__valor__sep">/</span>16<small>m</small></span>
+      </div>
+      <div class="apex__ponto" data-estado="ativo" data-papel="apice">
+        <span class="apex__label">Ápice</span>
+        <span class="apex__valor">73<small>km/h</small></span>
+      </div>
+      <div class="apex__ponto" data-estado="pendente" data-papel="saida">
+        <span class="apex__label">Saída</span>
+        <span class="apex__valor">—</span>
+      </div>
+    </section>
+
+    <!-- INFO-BLOCO: delta + frase. Desliza pra esquerda quando ghost OU msg ativos. -->
+    <div class="info-bloco">
+      <span class="info__delta bom" id="infoDelta">0.18</span>
+      <div class="info__acao" id="infoAcao">SOLTE FREIO</div>
+    </div>
+
+    <!-- ALERT-BLOCO: igual ao cockpit padrão -->
+    <aside class="alert-bloco" id="alertBloco" data-tipo="comunicacao">
+      <div class="alert__msg" id="alertMsg">Pneu DD acima da janela</div>
+    </aside>
+
+    <!--
+      GHOST-BLOCO: mapa de trecho.
+      Mostra: trecho atual (freio→ápice→saída), com:
+        · pista (cinza)
+        · ghost cyan (melhor traçado mesmo carro+config; oculto se data-ghost-ref="ausente")
+        · traçado atual (branco) — flasha verde/vermelho ao cruzar saída
+        · marcos coloridos
+        · marco-alvo (ápice) pulsando
+        · triângulo da posição atual
+    -->
+    <div class="ghost-bloco" id="ghostBloco">
+      <svg viewBox="0 0 380 288" preserveAspectRatio="xMidYMid meet"
+           xmlns="http://www.w3.org/2000/svg">
+        <!-- Pista cinza (corredor largo) -->
+        <path class="ghost-svg__pista"
+              d="M 24 56
+                 C 90 50, 150 64, 188 110
+                 S 280 234, 358 248" />
+        <!-- Bordas finas da pista pra dar profundidade (acima e abaixo) -->
+        <path class="ghost-svg__pista-bord"
+              d="M 24 47
+                 C 92 41, 152 55, 192 102
+                 S 282 226, 358 240" />
+        <path class="ghost-svg__pista-bord"
+              d="M 24 65
+                 C 88 59, 148 73, 184 118
+                 S 278 242, 358 256" />
+
+        <!-- Ghost (melhor traçado, ciano translúcido) -->
+        <path class="ghost-svg__ghost" id="ghostLine"
+              d="M 26 60
+                 C 96 56, 156 70, 198 122
+                 S 280 226, 354 246" />
+
+        <!-- Atual (branco, parcial até posição atual).
+             Em produção: cresce a 10Hz acompanhando sample-bus (GPS+IMU fundido).
+             Implementação sugerida: dois caminhos sobrepostos com mask animada,
+             ou recálculo incremental do atributo `d`. -->
+        <path class="ghost-svg__atual" id="atualLine"
+              d="M 26 60
+                 C 96 56, 156 72, 196 124
+                 L 220 178" />
+
+        <!-- Marcos (estáticos, contexto visual) -->
+        <circle class="ghost-svg__marco ghost-svg__marco--entrada"
+                cx="26"  cy="60"  r="4.5" />
+        <circle class="ghost-svg__marco ghost-svg__marco--freio"
+                cx="155" cy="71"  r="4.5" />
+        <circle class="ghost-svg__marco ghost-svg__marco--apice"
+                cx="220" cy="178" r="4.5" />
+        <circle class="ghost-svg__marco ghost-svg__marco--saida"
+                cx="354" cy="246" r="4.5" />
+      </svg>
+
+      <!-- Overlay "SEM REFERÊNCIA" (só quando data-ghost-ref="ausente") -->
+      <div class="ghost-bloco__sem-ref">
+        <div class="ghost-bloco__sem-ref-l1">Sem referência</div>
+        <div class="ghost-bloco__sem-ref-l2">Civic Si · Pirelli P7 · trecho C3 fre→api</div>
+      </div>
+
+      <!-- Etiqueta de contexto -->
+      <div class="ghost-bloco__ctx">
+        <span><b>C3</b> · freio → ápice</span>
+        <span id="ghostCtxRef">Ref: <b>1.842s</b> · v8</span>
+      </div>
+    </div>
+
+    <div class="stint-bar">
+      <div class="stint-bar__block is-neutral"></div>
+      <div class="stint-bar__block is-faster"></div>
+      <div class="stint-bar__block is-slower"></div>
+      <div class="stint-bar__block is-faster"></div>
+      <div class="stint-bar__block is-slower"></div>
+      <div class="stint-bar__block is-best-stint"></div>
+      <div class="stint-bar__block is-best-alltime"></div>
+      <div class="stint-bar__block is-current"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <span class="controls__lbl">Stint planejado ·</span>
+    <button class="controls__btn" data-modo="sem-mapa">Sem mapa</button>
+    <button class="controls__btn" data-modo="mapa">Mapa só</button>
+    <button class="controls__btn is-active" data-modo="mapa-ghost" data-action="ghost">Mapa + Ghost</button>
+    <button class="controls__btn" id="btnSemRef">Toggle: sem referência</button>
+    <button class="controls__btn" id="btnCruzarSaida">Simular cruzar saída</button>
+  </div>
+
+  <div class="controls">
+    <span class="controls__lbl">Box altera mid-stint ·</span>
+    <button class="controls__btn" data-box-modo="sem-mapa">→ sem mapa</button>
+    <button class="controls__btn" data-box-modo="mapa">→ mapa só</button>
+    <button class="controls__btn" data-box-modo="mapa-ghost">→ mapa+ghost</button>
+  </div>
+
+  <div class="controls">
+    <span class="controls__lbl">Orientação mapa ·</span>
+    <button class="controls__btn is-active" data-orient="north">North-up (default)</button>
+    <button class="controls__btn" data-orient="track">Track-up</button>
+    <button class="controls__btn" data-orient="heading">Heading-up</button>
+  </div>
+
+  <div class="controls">
+    <span class="controls__lbl">Mensagem ·</span>
+    <button class="controls__btn" id="btnComm" data-action="comunicacao">Comunicação · 4s</button>
+    <button class="controls__btn" id="btnGrave" data-action="grave">Grave · até resolver</button>
+    <button class="controls__btn" id="btnHide">Ocultar mensagem</button>
+  </div>
+
+  <div class="controls">
+    <span class="controls__lbl">Halo ·</span>
+    <button class="controls__btn is-active" data-halo="neutro">Normal</button>
+    <button class="controls__btn" data-halo="recorde-stint">Recorde stint</button>
+    <button class="controls__btn" data-halo="pior-stint">Pior stint</button>
+  </div>
+
+</div>
+
+<div class="legend">
+  <b>Ativação por stint</b><br>
+  <i>·</i> Decidido no plano de stint: sem-mapa | mapa | mapa+ghost<br>
+  <i>·</i> Box pode alterar mid-stint — dispara comunicação ao piloto<br>
+  <br>
+  <b>Conteúdo do mapa</b><br>
+  <em>·</em> Linha ciano = melhor traçado (mesmo carro + config)<br>
+  <i>·</i> Linha branca = volta em curso (cresce conforme avança)<br>
+  <i>·</i> Marcos = pontos estáticos coloridos (contexto)<br>
+  <i>·</i> Sem seta, sem pulsação, sem indicador de posição<br>
+  <i>·</i> Sem referência → sem fabricar; placeholder explícito<br>
+  <br>
+  <b>Conflito mapa × alerta</b><br>
+  <i>·</i> Comunicação: mapa atenua (opacity .22, blur 2px) atrás<br>
+  <i>·</i> Crítica/grave: mapa some — alerta substitui<br>
+  <br>
+  <b>Cruzar saída</b><br>
+  <i>·</i> Mapa não pisca — resultado vive no apex/stint-bar/halo<br>
+  <i>·</i> Apex.Saída atualiza com cor de estado<br>
+  <i>·</i> Stint-bar avança um block<br>
+</div>
+
+<script>
+const device = document.getElementById('device');
+const alertBloco = document.getElementById('alertBloco');
+const alertMsg = document.getElementById('alertMsg');
+const apexSaida = document.querySelector('.apex__ponto[data-papel="saida"]');
+const apexSaidaVal = apexSaida.querySelector('.apex__valor');
+
+const btnSemRef = document.getElementById('btnSemRef');
+const btnCruzarSaida = document.getElementById('btnCruzarSaida');
+const btnComm = document.getElementById('btnComm');
+const btnGrave = document.getElementById('btnGrave');
+const btnHide = document.getElementById('btnHide');
+
+let commTimer = null;
+let saidaResetTimer = null;
+
+function setMessage(tipo){
+  device.dataset.msgTipo = tipo;
+  if(tipo === 'comunicacao'){
+    alertMsg.textContent = 'Pneu DD acima da janela';
+  } else if(tipo === 'grave'){
+    alertMsg.textContent = 'Pressão óleo crítica';
+  }
+  alertBloco.dataset.tipo = tipo;
+  device.dataset.msgState = 'ativa';
+  if(commTimer) clearTimeout(commTimer);
+  if(tipo === 'comunicacao'){
+    commTimer = setTimeout(() => {
+      device.dataset.msgState = 'oculta';
+      btnComm.classList.remove('is-active');
+    }, 4000);
+  }
+}
+function hideMessage(){
+  if(commTimer) clearTimeout(commTimer);
+  device.dataset.msgState = 'oculta';
+  btnComm.classList.remove('is-active');
+  btnGrave.classList.remove('is-active');
+}
+function setStintModo(modo){
+  device.dataset.stintModo = modo;
+  document.querySelectorAll('[data-modo]').forEach(b => {
+    b.classList.toggle('is-active', b.dataset.modo === modo);
+  });
+}
+function boxAlteraModo(modo){
+  setStintModo(modo);
+  // Quando o box altera mid-stint, dispara comunicação informando o piloto
+  const labels = {'sem-mapa':'BOX: sem mapa', 'mapa':'BOX: mapa só', 'mapa-ghost':'BOX: mapa + ghost'};
+  alertMsg.textContent = labels[modo];
+  alertBloco.dataset.tipo = 'comunicacao';
+  device.dataset.msgTipo = 'comunicacao';
+  device.dataset.msgState = 'ativa';
+  if(commTimer) clearTimeout(commTimer);
+  commTimer = setTimeout(() => { device.dataset.msgState = 'oculta'; }, 4000);
+}
+function toggleSemRef(){
+  const atual = device.dataset.ghostRef;
+  device.dataset.ghostRef = (atual === 'ausente') ? 'presente' : 'ausente';
+  btnSemRef.classList.toggle('is-active', device.dataset.ghostRef === 'ausente');
+}
+
+/* Simula cruzamento de gate de saída:
+   - alterna se foi melhor/pior a cada clique
+   - atualiza apex.Saída com cor de estado (canal já existente)
+   - depois de 1.6s, reseta apex pra próximo trecho
+   - SEM flash no mapa: resultado vive no apex, stint-bar e halo */
+let cruzouMelhor = true;
+function simularCruzarSaida(){
+  if(saidaResetTimer) clearTimeout(saidaResetTimer);
+
+  cruzouMelhor = !cruzouMelhor;
+  const estadoSaida = cruzouMelhor ? 'ok-melhor' : 'ok-pior';
+  const velSaida = cruzouMelhor ? 102 : 96;
+
+  apexSaida.dataset.estado = estadoSaida;
+  apexSaidaVal.innerHTML = velSaida + '<small>km/h</small>';
+
+  saidaResetTimer = setTimeout(() => {
+    apexSaida.dataset.estado = 'pendente';
+    apexSaidaVal.innerHTML = '—';
+  }, 1600);
+}
+
+document.querySelectorAll('[data-modo]').forEach(b => {
+  b.addEventListener('click', () => setStintModo(b.dataset.modo));
+});
+document.querySelectorAll('[data-box-modo]').forEach(b => {
+  b.addEventListener('click', () => boxAlteraModo(b.dataset.boxModo));
+});
+document.querySelectorAll('[data-orient]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-orient]').forEach(x => x.classList.remove('is-active'));
+    b.classList.add('is-active');
+    device.dataset.mapaOrient = b.dataset.orient;
+  });
+});
+btnSemRef.addEventListener('click', toggleSemRef);
+btnCruzarSaida.addEventListener('click', simularCruzarSaida);
+
+btnComm.addEventListener('click', () => {
+  btnComm.classList.add('is-active');
+  btnGrave.classList.remove('is-active');
+  setMessage('comunicacao');
+});
+btnGrave.addEventListener('click', () => {
+  btnGrave.classList.add('is-active');
+  btnComm.classList.remove('is-active');
+  setMessage('grave');
+});
+btnHide.addEventListener('click', hideMessage);
+
+// Halo
+document.querySelectorAll('[data-halo]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-halo]').forEach(x => x.classList.remove('is-active'));
+    b.classList.add('is-active');
+    device.dataset.trechoStatus = b.dataset.halo;
+  });
+});
+
+// Boot: stint planejado em "mapa + ghost" (já marcado no HTML)
+</script>
+</body>
+</html>
