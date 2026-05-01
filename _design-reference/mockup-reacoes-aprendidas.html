@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=430,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Reações aprendidas — P1 Fast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(20% 0.005 240);
+  --surface: oklch(24% 0.005 240);
+  --surface-2: oklch(28% 0.005 240);
+  --hairline: oklch(33% 0.005 240);
+  --text: oklch(95% 0.003 240);
+  --text-2: oklch(75% 0.01 240);
+  --text-3: oklch(58% 0.012 240);
+  --accent: oklch(78% 0.13 235);
+  --bad: oklch(72% 0.18 25);
+  --radius: 14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{
+  min-height:100dvh;width:100vw;
+  background:linear-gradient(160deg, oklch(22% 0.005 240) 0%, oklch(18% 0.005 240) 100%);
+  color:var(--text);font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;font-weight:400;
+}
+body{padding:0 0 80px;}
+.app{max-width:430px;margin:0 auto;padding:16px 20px 0;}
+
+.context-head{padding:14px 4px 18px;}
+.context-head__eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:5px 12px;background:oklch(78% 0.13 235 / .15);
+  border:1px solid oklch(78% 0.13 235 / .35);border-radius:999px;
+  font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:12px;
+}
+.context-head__eyebrow__dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+.context-head__title{font-size:24px;font-weight:600;letter-spacing:-.025em;line-height:1.15;margin-bottom:4px;}
+.context-head__sub{font-size:13px;color:var(--text-2);}
+
+.section__head{
+  padding:0 4px 10px;font-size:11px;font-weight:600;
+  letter-spacing:.12em;color:var(--text-3);text-transform:uppercase;
+}
+
+.profile-list{display:flex;flex-direction:column;gap:10px;}
+
+.profile{
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
+  padding:14px 16px 12px;
+}
+.profile__head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.profile__title{
+  font-size:14px;font-weight:600;letter-spacing:-.005em;color:var(--text);
+}
+.profile__title small{color:var(--text-3);font-weight:400;margin-left:6px;font-size:12px;}
+
+.profile__nums{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;
+  padding:10px 0;margin-bottom:8px;
+  border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline);
+}
+.profile__num{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.profile__num__lbl{
+  font-size:9px;font-weight:600;letter-spacing:.1em;color:var(--text-3);text-transform:uppercase;
+}
+.profile__num__val{
+  font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.01em;color:var(--text);
+}
+.profile__num__val small{font-size:10px;color:var(--text-3);font-weight:400;margin-left:2px;}
+
+.profile__foot{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:11px;color:var(--text-3);
+}
+.profile__foot__when{letter-spacing:.04em;}
+.profile__reset{
+  background:none;border:1px solid var(--hairline);
+  color:var(--text-2);font-family:inherit;font-size:11px;
+  padding:5px 10px;border-radius:8px;cursor:pointer;
+  letter-spacing:.04em;
+}
+.profile__reset:hover{border-color:var(--bad);color:var(--bad);}
+
+.profile-empty{
+  background:var(--surface);border:1px dashed var(--hairline);
+  border-radius:var(--radius);padding:20px;
+  font-size:13px;color:var(--text-2);text-align:center;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="context-head">
+  <span class="context-head__eyebrow">
+    <span class="context-head__eyebrow__dot"></span>
+    Pilot Reaction Learning
+  </span>
+  <div class="context-head__title">Reações aprendidas</div>
+  <div class="context-head__sub">Tempo de reação aprendido por trecho. Tocar em <em>Resetar</em> apaga só essa tupla — o sistema volta a aprender do zero ali.</div>
+</div>
+
+<div class="section__head">5 reações</div>
+
+<div class="profile-list">
+
+  <article class="profile">
+    <div class="profile__head">
+      <div class="profile__title">Marcha 3 <small>· Reta principal</small></div>
+    </div>
+    <div class="profile__nums">
+      <div class="profile__num">
+        <span class="profile__num__lbl">Reação</span>
+        <span class="profile__num__val">198<small>ms</small></span>
+      </div>
+      <div class="profile__num">
+        <span class="profile__num__lbl">Amostras</span>
+        <span class="profile__num__val">42</span>
+      </div>
+      <div class="profile__num">
+        <span class="profile__num__lbl">Compensação</span>
+        <span class="profile__num__val">~290<small>rpm</small></span>
+      </div>
+    </div>
+    <div class="profile__foot">
+      <span class="profile__foot__when">atualizado há 2 sessões</span>
+      <button class="profile__reset" type="button">Resetar</button>
+    </div>
+  </article>
+
+  <article class="profile">
+    <div class="profile__head">
+      <div class="profile__title">Marcha 4 <small>· Reta dos boxes</small></div>
+    </div>
+    <div class="profile__nums">
+      <div class="profile__num">
+        <span class="profile__num__lbl">Reação</span>
+        <span class="profile__num__val">222<small>ms</small></span>
+      </div>
+      <div class="profile__num">
+        <span class="profile__num__lbl">Amostras</span>
+        <span class="profile__num__val">17</span>
+      </div>
+      <div class="profile__num">
+        <span class="profile__num__lbl">Compensação</span>
+        <span class="profile__num__val">~310<small>rpm</small></span>
+      </div>
+    </div>
+    <div class="profile__foot">
+      <span class="profile__foot__when">atualizado nesta sessão</span>
+      <button class="profile__reset" type="button">Resetar</button>
+    </div>
+  </article>
+
+  <article class="profile">
+    <div class="profile__head">
+      <div class="profile__title">Marcha 2 <small>· Saída curva 4</small></div>
+    </div>
+    <div class="profile__nums">
+      <div class="profile__num">
+        <span class="profile__num__lbl">Reação</span>
+        <span class="profile__num__val">175<small>ms</small></span>
+      </div>
+      <div class="profile__num">
+        <span class="profile__num__lbl">Amostras</span>
+        <span class="profile__num__val">28</span>
+      </div>
+      <div class="profile__num">
+        <span class="profile__num__lbl">Compensação</span>
+        <span class="profile__num__val">~245<small>rpm</small></span>
+      </div>
+    </div>
+    <div class="profile__foot">
+      <span class="profile__foot__when">atualizado há 3 sessões</span>
+      <button class="profile__reset" type="button">Resetar</button>
+    </div>
+  </article>
+
+  <article class="profile">
+    <div class="profile__head">
+      <div class="profile__title">Marcha 5 <small>· qualquer trecho</small></div>
+    </div>
+    <div class="profile__nums">
+      <div class="profile__num">
+        <span class="profile__num__lbl">Reação</span>
+        <span class="profile__num__val">240<small>ms</small></span>
+      </div>
+      <div class="profile__num">
+        <span class="profile__num__lbl">Amostras</span>
+        <span class="profile__num__val">11</span>
+      </div>
+      <div class="profile__num">
+        <span class="profile__num__lbl">Compensação</span>
+        <span class="profile__num__val">~335<small>rpm</small></span>
+      </div>
+    </div>
+    <div class="profile__foot">
+      <span class="profile__foot__when">atualizado há 1 sessão</span>
+      <button class="profile__reset" type="button">Resetar</button>
+    </div>
+  </article>
+
+  <article class="profile">
+    <div class="profile__head">
+      <div class="profile__title">Carro inteiro <small>· fallback</small></div>
+    </div>
+    <div class="profile__nums">
+      <div class="profile__num">
+        <span class="profile__num__lbl">Reação</span>
+        <span class="profile__num__val">210<small>ms</small></span>
+      </div>
+      <div class="profile__num">
+        <span class="profile__num__lbl">Amostras</span>
+        <span class="profile__num__val">61</span>
+      </div>
+      <div class="profile__num">
+        <span class="profile__num__lbl">Compensação</span>
+        <span class="profile__num__val">~295<small>rpm</small></span>
+      </div>
+    </div>
+    <div class="profile__foot">
+      <span class="profile__foot__when">atualizado nesta sessão</span>
+      <button class="profile__reset" type="button">Resetar</button>
+    </div>
+  </article>
+
+</div>
+
+</div>
+</body>
+</html>
