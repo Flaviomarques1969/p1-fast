@@ -88,8 +88,13 @@ Cada teste Swift mapeia 1:1 pra um teste do `tests/node-smoke-telemetry-p0.mjs` 
 | FC-06 | fase-curva.js | accLongPeak preserva sinal do maior em magnitude |
 | FC-07 | fase-curva.js | total.duracaoMs = t_last - t_first |
 | FC-08 | fase-curva.js | sample com kmh ou accLong nil não quebra |
+| PM-01..PM-08 | path-mapper.js | parsePath M/L/Z, pathLength, buildLookup, snap incremental, parcialFromOffset, segmentsIntersect |
+| TM-01..TM-20 | node-smoke-trajectory-monitor.mjs (1:1) | distanceMetersGeo, find{Apex,Braking,TurnIn,Throttle}Index, evaluateSegmentTrajectory, evaluate{ReferenciaFixa,CurvaCega}, TrajectoryMonitor instance |
+| BV-01..BV-07 | baseline-vectors.js | filterForBaseline com pneu/ambiente/piloto/dia + ordenação por tempoMs |
+| FU-01..FU-07 | fuel-calc.js | calcular (3 estados Disponivel) + calcularProgressoStint |
+| PC-01..PC-14 | node-smoke-p1-coach.mjs (subset MVP) | start/endLearningSession, electLesson com focus, cooldown, maxPerCorner, pause/resume, BAIXA gating, signalsFromSnapshot, AUDIT 7 MVP, E2E 3 voltas, focusLessonId scope |
 
-Quando portarmos `p1-coach.js`, `trajectory-monitor.js`, `path-mapper.js` ou V-003..V-011, novos asserts entram aqui replicando os smokes JS correspondentes.
+A próxima frente — quando vier — adiciona V-003..V-011, sample-store, e providers (mock/device/t4000).
 
 ## Como contribuir um novo módulo portado
 
