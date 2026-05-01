@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=430,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Mockup Evento — detalhe — P1 Fast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(20% 0.005 240);
+  --surface: oklch(24% 0.005 240);
+  --surface-2: oklch(28% 0.005 240);
+  --hairline: oklch(33% 0.005 240);
+  --text: oklch(95% 0.003 240);
+  --text-2: oklch(75% 0.01 240);
+  --text-3: oklch(58% 0.012 240);
+  --accent: oklch(78% 0.13 235);
+  --accent-2: oklch(82% 0.10 235 / .15);
+  --bom: oklch(78% 0.16 150);
+  --atencao: oklch(82% 0.16 80);
+  --ouro: oklch(74% 0.16 73);
+  --radius: 12px;
+  --radius-sm: 10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{
+  min-height:100dvh;width:100vw;
+  background:linear-gradient(160deg, oklch(22% 0.005 240) 0%, oklch(18% 0.005 240) 100%);
+  color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  font-weight:400;
+}
+body{padding:0 0 110px;}
+
+.app{
+  max-width:430px;margin:0 auto;
+  padding:16px 20px 0;
+}
+
+/* TOP BAR (back + ações) */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 0 8px;
+}
+.topbar__back{
+  background:transparent;border:0;color:var(--text-2);
+  font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;
+  padding:8px 4px;display:inline-flex;align-items:center;gap:6px;
+  border-radius:8px;
+}
+.topbar__back:hover{color:var(--text);}
+.topbar__edit{
+  background:transparent;border:0;color:var(--text-2);
+  font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;
+  padding:8px 12px;border-radius:8px;
+}
+.topbar__edit:hover{background:var(--surface);}
+
+/* HEAD */
+.event-head{padding:14px 4px 18px;}
+.event-head__eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:5px 12px;
+  background:var(--accent-2);
+  border:1px solid oklch(78% 0.13 235 / .35);
+  border-radius:999px;
+  font-size:10px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);
+  margin-bottom:12px;
+}
+.event-head__title{
+  font-size:28px;font-weight:600;
+  letter-spacing:-.025em;line-height:1.1;
+  color:var(--text);
+  margin-bottom:4px;
+}
+.event-head__when{
+  font-size:14px;color:var(--text-2);
+  font-variant-numeric:tabular-nums;
+}
+
+/* SUMMARY CARD */
+.summary{
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
+  padding:14px 16px;margin-bottom:18px;
+}
+.summary__row{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+}
+.summary__cell{
+  text-align:center;
+  padding:10px 4px;
+  background:var(--surface-2);
+  border-radius:var(--radius-sm);
+}
+.summary__num{
+  font-size:18px;font-weight:600;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em;
+  display:block;line-height:1;
+}
+.summary__cell--best .summary__num{color:var(--ouro);}
+.summary__lbl{
+  font-size:10px;font-weight:500;
+  color:var(--text-3);letter-spacing:.06em;
+  text-transform:uppercase;
+  display:block;margin-top:6px;
+}
+
+/* GROUP */
+.group__head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 4px 10px;
+  font-size:11px;font-weight:600;
+  letter-spacing:.12em;color:var(--text-3);
+  text-transform:uppercase;
+}
+.group__head strong{color:var(--accent);font-weight:600;}
+
+/* STINT CARD */
+.stint{
+  display:flex;align-items:flex-start;gap:14px;
+  padding:14px 16px;
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
+  margin-bottom:8px;
+  cursor:pointer;text-align:left;
+  font-family:inherit;color:inherit;width:100%;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s, border-color .18s;
+}
+.stint:hover{background:var(--surface-2);}
+.stint:active{transform:scale(.99);}
+
+.stint__num{
+  flex:0 0 auto;
+  width:42px;height:42px;border-radius:50%;
+  background:var(--surface-2);
+  border:1px solid var(--hairline);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:600;color:var(--text);
+  font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em;
+}
+
+.stint__body{flex:1 1 auto;min-width:0;}
+.stint__title{
+  display:block;
+  font-size:15px;font-weight:600;
+  letter-spacing:-.005em;color:var(--text);
+  line-height:1.2;
+}
+.stint__sub{
+  display:block;
+  font-size:12px;color:var(--text-3);font-weight:400;
+  margin-top:3px;
+  font-variant-numeric:tabular-nums;
+}
+.stint__meta{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  margin-top:10px;
+}
+
+.tag{
+  display:inline-flex;align-items:center;
+  padding:3px 8px;border-radius:999px;
+  font-size:10px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text-3);
+  border:1px solid var(--hairline);
+  background:transparent;
+  font-variant-numeric:tabular-nums;
+}
+.tag--ouro{
+  color:var(--ouro);
+  border-color:oklch(74% 0.16 73 / .45);
+  background:oklch(74% 0.16 73 / .12);
+}
+.tag--bom{
+  color:var(--bom);
+  border-color:oklch(78% 0.16 150 / .45);
+  background:oklch(78% 0.16 150 / .12);
+}
+
+.stint__chev{
+  flex:0 0 auto;
+  width:24px;height:24px;border-radius:8px;
+  background:var(--surface-2);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-2);font-size:14px;
+  margin-top:10px;
+}
+
+/* CTA inline pra novo stint */
+.add-stint{
+  width:100%;margin-top:6px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  background:transparent;
+  border:1px dashed var(--hairline);
+  border-radius:var(--radius);
+  color:var(--text-2);
+  font-family:inherit;font-size:14px;font-weight:600;
+  letter-spacing:-.005em;cursor:pointer;
+  padding:14px 16px;
+  transition:border-color .18s, color .18s, background .18s;
+}
+.add-stint:hover{
+  border-color:var(--accent);
+  color:var(--accent);
+  background:oklch(78% 0.13 235 / .06);
+}
+.add-stint__plus{font-size:18px;line-height:1;font-weight:500;}
+
+/* BOTTOM NAV */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:40;
+  background:oklch(18% 0.005 240 / .92);
+  -webkit-backdrop-filter:blur(20px) saturate(140%);
+  backdrop-filter:blur(20px) saturate(140%);
+  border-top:1px solid var(--hairline);
+  padding:10px 0 22px;
+  display:grid;grid-template-columns:repeat(4,1fr);
+}
+.bottom-nav__item{
+  background:transparent;border:0;padding:8px 6px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  font-family:inherit;font-size:10px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text-3);
+  transition:color .18s;
+}
+.bottom-nav__item[data-on="true"]{color:var(--accent);}
+.bottom-nav__dot{
+  width:5px;height:5px;border-radius:50%;
+  background:transparent;transition:background .18s;
+}
+.bottom-nav__item[data-on="true"] .bottom-nav__dot{
+  background:var(--accent);
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <button class="topbar__back" type="button">‹ Eventos</button>
+    <button class="topbar__edit" type="button">Editar</button>
+  </div>
+
+  <header class="event-head">
+    <span class="event-head__eyebrow"><span class="context-head__eyebrow__dot"></span>Evento</span>
+    <h1 class="event-head__title">Brasília</h1>
+    <p class="event-head__when">Sábado · 25/04 · Nelson Piquet</p>
+  </header>
+
+  <div class="summary">
+    <div class="summary__row">
+      <div class="summary__cell">
+        <span class="summary__num">4</span>
+        <span class="summary__lbl">Stints</span>
+      </div>
+      <div class="summary__cell">
+        <span class="summary__num">47</span>
+        <span class="summary__lbl">Voltas</span>
+      </div>
+      <div class="summary__cell summary__cell--best">
+        <span class="summary__num">1:42.3</span>
+        <span class="summary__lbl">Melhor</span>
+      </div>
+      <div class="summary__cell">
+        <span class="summary__num">100%</span>
+        <span class="summary__lbl">Pronto</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="group__head">
+    <span>Stints</span>
+    <strong>4</strong>
+  </div>
+
+  <button class="stint" type="button">
+    <span class="stint__num">1</span>
+    <span class="stint__body">
+      <span class="stint__title">Aquecimento</span>
+      <span class="stint__sub">11 voltas · melhor 1:44.302</span>
+      <span class="stint__meta">
+        <span class="tag">Flavio Marx</span>
+        <span class="tag">Sem Coach</span>
+      </span>
+    </span>
+    <span class="stint__chev">›</span>
+  </button>
+
+  <button class="stint" type="button">
+    <span class="stint__num">2</span>
+    <span class="stint__body">
+      <span class="stint__title">Atacar tempo</span>
+      <span class="stint__sub">14 voltas · melhor 1:42.318</span>
+      <span class="stint__meta">
+        <span class="tag">Flavio Marx</span>
+        <span class="tag">V-Min · apex</span>
+        <span class="tag tag--ouro">PB do dia</span>
+      </span>
+    </span>
+    <span class="stint__chev">›</span>
+  </button>
+
+  <button class="stint" type="button">
+    <span class="stint__num">3</span>
+    <span class="stint__body">
+      <span class="stint__title">Consistência</span>
+      <span class="stint__sub">14 voltas · melhor 1:43.115</span>
+      <span class="stint__meta">
+        <span class="tag">Flavio Marx</span>
+        <span class="tag">Referência Fixa</span>
+        <span class="tag tag--bom">Desvio &lt; 0.4s</span>
+      </span>
+    </span>
+    <span class="stint__chev">›</span>
+  </button>
+
+  <button class="stint" type="button">
+    <span class="stint__num">4</span>
+    <span class="stint__body">
+      <span class="stint__title">Livre</span>
+      <span class="stint__sub">8 voltas · melhor 1:43.521</span>
+      <span class="stint__meta">
+        <span class="tag">Bruno Marx</span>
+        <span class="tag">Sem Coach</span>
+      </span>
+    </span>
+    <span class="stint__chev">›</span>
+  </button>
+
+  <button class="add-stint" type="button">
+    <span class="add-stint__plus">+</span>Novo stint
+  </button>
+
+</div>
+
+<nav class="bottom-nav">
+  <button class="bottom-nav__item" type="button"><span class="bottom-nav__dot"></span>Home</button>
+  <button class="bottom-nav__item" type="button" data-on="true"><span class="bottom-nav__dot"></span>Eventos</button>
+  <button class="bottom-nav__item" type="button"><span class="bottom-nav__dot"></span>Pendências</button>
+  <button class="bottom-nav__item" type="button"><span class="bottom-nav__dot"></span>Garagem</button>
+</nav>
+</body>
+</html>

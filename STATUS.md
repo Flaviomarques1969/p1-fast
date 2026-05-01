@@ -91,6 +91,18 @@ marca" virou seção "Pneus cadastrados" com lista (cada pneu mostra
 medida + saídas + voltas) + CTA "Adicionar pneu". Bate com a regra de
 que cada pneu é entidade separada com histórico próprio.
 
+**Eventos** (tab + detalhe):
+
+- `mockup-eventos-lista.html` — tab Eventos do hub. Próximo (Brasília
+  02/05 destacado em accent) + Passados (Brasília 25/04 com 4 stints /
+  47 voltas / 1:42.318; Brasília 28/03 com 3 stints / 32 voltas /
+  1:43.847). FAB "Novo evento" + bottom-nav com Eventos ativo.
+- `mockup-evento-detalhe.html` — tela de evento (Brasília 25/04). Top
+  bar com "‹ Eventos" / "Editar". Summary 4-stats (4 stints / 47
+  voltas / 1:42.3 em ouro / 100% pronto). 4 stints listados com
+  piloto, lição praticada e tags (PB do dia em ouro, Desvio &lt; 0.4s
+  em verde). CTA "Novo stint" dashed inline.
+
 ## Realidade canônica (2026-05-01)
 
 - Carro: **Celta 1.4 turismo** (Chevrolet). Refletido em todos os
@@ -139,6 +151,8 @@ npm run smoke
 # http://localhost:8767/_design-reference/mockup-combustivel-cadastro.html
 # http://localhost:8767/_design-reference/mockup-pneu-cadastro.html
 # http://localhost:8767/_design-reference/mockup-carro-novo.html
+# http://localhost:8767/_design-reference/mockup-eventos-lista.html
+# http://localhost:8767/_design-reference/mockup-evento-detalhe.html
 
 # Mockups dos cockpits (NÃO MEXER):
 # http://localhost:8767/_design-reference/mockup-cockpit-piloto.html

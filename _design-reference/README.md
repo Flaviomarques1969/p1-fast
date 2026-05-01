@@ -39,6 +39,8 @@ mockup gerou drift no projeto anterior.
 | `mockup-combustivel-cadastro.html` | Form de cadastro de novo tipo de combustível — nome do tipo + observação opcional | Padrão B |
 | `mockup-pneu-cadastro.html` | Form de cadastro de novo pneu — marca/composto, medida, tipo (Radial/Slick/Rua), apelido opcional. Cadastra um pneu que será adicionado à lista do carro | Padrão B |
 | `mockup-carro-novo.html` | Form mínimo de cadastro de novo carro — apelido, modelo, categoria, cor (4 swatches). Setup base e pneus são cadastrados depois pelo Modal Carro | Padrão B |
+| `mockup-eventos-lista.html` | Tab Eventos do hub — eyebrow + título + sub. Group "Próximo" (1 evento destacado em accent com tag "Falta 1 dia" + % pronto) + group "Passados" (cada evento com data + stints + voltas + melhor tempo). FAB "Novo evento" + bottom-nav | Padrão B |
+| `mockup-evento-detalhe.html` | Tela de evento — topbar com voltar/editar + header + summary 4-stats (stints / voltas / melhor / pronto) + lista de stints (cada um com piloto, lição praticada, tags como "PB do dia" em ouro). CTA "Novo stint" dashed inline | Padrão B |
 | `historico-evento/` | 7 linhas iteradas (A-G) do Modal Evento + comparativo lado-a-lado | Memória de design |
 
 ## Padrão B — tokens canônicos do hub
