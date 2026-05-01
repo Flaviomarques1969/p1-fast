@@ -23,6 +23,15 @@ const { Scores } = await import('../src/domain/score.js');
 const { Detector } = await import('../src/telemetry/detector.js');
 const { ProviderState } = await import('../src/telemetry/provider.js');
 const { ENTITIES } = await import('../src/core/entities.js');
+const {
+  SESSAO_GHOST_FIELDS,
+  CONFIGURACAO_GHOST_FIELDS,
+  CARRO_GHOST_FIELDS,
+  FONTE_TEMPERATURA,
+  MARCO_TIPOS,
+  MARCO_FIELDS,
+  RETA_ESPECIAL_FIELDS,
+} = await import('../src/data/schemas.js');
 
 let ok = 0, fail = 0;
 async function t(name, fn) {
@@ -92,6 +101,61 @@ await t('T-018: src/core/entities.js exporta ENTITIES com 14 chaves', () => {
   for (const k of ['USER','CAR','SESSION','LAP','DEVICE_HANDOVER','LAP_VALIDITY_EVENT','PEDAGOGICAL_PLAN','SEGMENT_EXECUTION']) {
     if (!ENTITIES[k]) throw new Error(`${k} ausente`);
   }
+});
+
+// T-019: ghost-map sessoes.voltas_planejadas
+await t('T-019: SESSAO_GHOST_FIELDS.voltas_planejadas (integer, nullable)', () => {
+  const f = SESSAO_GHOST_FIELDS.voltas_planejadas;
+  if (!f) throw new Error('voltas_planejadas ausente');
+  if (f.type !== 'integer') throw new Error('type=' + f.type);
+  if (f.nullable !== true) throw new Error('nullable deve ser true');
+  if (f.min !== 1) throw new Error('min=' + f.min);
+});
+
+// T-020: ghost-map configuracoes.temperatura_ideal_range
+await t('T-020: CONFIGURACAO_GHOST_FIELDS.temperatura_ideal_range (json motor+pneu)', () => {
+  const f = CONFIGURACAO_GHOST_FIELDS.temperatura_ideal_range;
+  if (!f) throw new Error('temperatura_ideal_range ausente');
+  if (f.type !== 'json') throw new Error('type=' + f.type);
+  if (f.nullable !== true) throw new Error('nullable deve ser true');
+  if (!f.shape?.motor?.min || !f.shape?.motor?.max) throw new Error('shape.motor incompleto');
+  if (!f.shape?.pneu?.min || !f.shape?.pneu?.max) throw new Error('shape.pneu incompleto');
+});
+
+// T-021: ghost-map carros.fonte_temperatura
+await t('T-021: CARRO_GHOST_FIELDS.fonte_temperatura (enum motor|pneu|ambos, default motor)', () => {
+  const f = CARRO_GHOST_FIELDS.fonte_temperatura;
+  if (!f) throw new Error('fonte_temperatura ausente');
+  if (f.type !== 'enum') throw new Error('type=' + f.type);
+  if (f.default !== 'motor') throw new Error('default=' + f.default);
+  if (FONTE_TEMPERATURA.length !== 3) throw new Error('FONTE_TEMPERATURA len=' + FONTE_TEMPERATURA.length);
+  for (const v of ['motor','pneu','ambos']) {
+    if (!FONTE_TEMPERATURA.includes(v)) throw new Error(`enum sem ${v}`);
+  }
+});
+
+// T-022: marcos com pit-in/pit-out
+await t('T-022: MARCO_TIPOS aceita pit-in e pit-out + MARCO_FIELDS shape', () => {
+  if (!MARCO_TIPOS.includes('pit-in')) throw new Error('pit-in ausente');
+  if (!MARCO_TIPOS.includes('pit-out')) throw new Error('pit-out ausente');
+  if (!MARCO_TIPOS.includes('largada')) throw new Error('largada removida (regressão)');
+  if (MARCO_FIELDS.tipo?.type !== 'enum') throw new Error('tipo não é enum');
+  if (MARCO_FIELDS.tipo?.values !== MARCO_TIPOS) throw new Error('tipo.values ≠ MARCO_TIPOS');
+  for (const k of ['id','layoutId','tipo','posicao','criadoEm']) {
+    if (!MARCO_FIELDS[k]) throw new Error(`MARCO_FIELDS.${k} ausente`);
+  }
+  if (!ENTITIES.MARCO) throw new Error('ENTITIES.MARCO ausente');
+});
+
+// T-023: retas_especiais
+await t('T-023: RETA_ESPECIAL_FIELDS shape (track_id, segment_id, tempo, auto_detectada)', () => {
+  for (const k of ['id','trackId','segmentId','tempoMedioMs','autoDetectada','criadoEm']) {
+    if (!RETA_ESPECIAL_FIELDS[k]) throw new Error(`${k} ausente`);
+  }
+  if (RETA_ESPECIAL_FIELDS.autoDetectada.type !== 'boolean') throw new Error('autoDetectada não é boolean');
+  if (RETA_ESPECIAL_FIELDS.autoDetectada.default !== false) throw new Error('autoDetectada default ≠ false');
+  if (RETA_ESPECIAL_FIELDS.tempoMedioMs.nullable !== true) throw new Error('tempoMedioMs deve ser nullable');
+  if (!ENTITIES.RETA_ESPECIAL) throw new Error('ENTITIES.RETA_ESPECIAL ausente');
 });
 
 console.log(`\n${ok} ok / ${fail} fail`);

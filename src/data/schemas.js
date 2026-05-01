@@ -209,3 +209,59 @@ export const ITENS_STINT = Object.freeze([
   { id: 'st8', txt: '"OK" do auxiliar antes de sair do box', obs: 'Auxiliar confere que tudo livre + libera saída' },
 ]);
 
+// ═══ Ghost-map (Flavio 2026-05-01) — 5 campos novos ═══
+// Decisões UX do mockup canônico ghost-map (22 decisões fechadas em 2026-05-01,
+// ver memory `project_p1_ghost_map`). Estes shapes documentam os campos não-
+// indexados que sessoes/configuracoes/carros ganham + duas tabelas novas.
+// Dexie só lista index keys no schema string; valores ficam no doc shape.
+
+// Plano de stint — quantas voltas o piloto planejou rodar antes do briefing.
+// Nullable: stint sem plano fica null (modo livre). Inteiro positivo quando set.
+export const SESSAO_GHOST_FIELDS = Object.freeze({
+  voltas_planejadas: { type: 'integer', nullable: true, min: 1 },
+});
+
+// Faixa térmica ideal por canal. Usado pelo coach pra alertar quando motor/pneu
+// sai da janela. Nullable = sem range definido (não emite alerta térmico).
+export const CONFIGURACAO_GHOST_FIELDS = Object.freeze({
+  temperatura_ideal_range: {
+    type: 'json',
+    nullable: true,
+    shape: { motor: { min: 'number', max: 'number' }, pneu: { min: 'number', max: 'number' } },
+  },
+});
+
+// De qual canal o ghost-map lê a fase térmica do carro. `motor` = só leitura
+// motor; `pneu` = só pneu (pirômetro); `ambos` = pior dos dois (mais conservador).
+// Default `motor` porque é o canal universal (todo carro tem; pirômetro não).
+export const FONTE_TEMPERATURA = Object.freeze(['motor', 'pneu', 'ambos']);
+export const CARRO_GHOST_FIELDS = Object.freeze({
+  fonte_temperatura: { type: 'enum', values: FONTE_TEMPERATURA, default: 'motor' },
+});
+
+// Marco = ponto de evento na pista (não-trecho). Inclui pit-in/pit-out além
+// dos tipos legados (largada, chegada, sinalização). Tabela nova v13.
+export const MARCO_TIPOS = Object.freeze([
+  'largada', 'chegada', 'pit-in', 'pit-out', 'sinalizacao', 'box',
+]);
+export const MARCO_FIELDS = Object.freeze({
+  id: { type: 'uid', required: true },
+  layoutId: { type: 'string', required: true },
+  tipo: { type: 'enum', values: MARCO_TIPOS, required: true },
+  posicao: { type: 'json', shape: { x: 'number', y: 'number' }, required: true },
+  label: { type: 'string', nullable: true },
+  criadoEm: { type: 'integer', required: true },
+});
+
+// Reta especial = segmento (já existente em trackSegments) marcado como reta
+// "rápida" relevante pra ghost-map. Tabela nova v13 com flag auto_detectada
+// pra distinguir retas marcadas pelo usuário das detectadas heuristicamente
+// pelo pipeline (futuro). Justificativa em ADR-019.
+export const RETA_ESPECIAL_FIELDS = Object.freeze({
+  id: { type: 'uid', required: true },
+  trackId: { type: 'string', required: true },
+  segmentId: { type: 'string', required: true },
+  tempoMedioMs: { type: 'integer', nullable: true },
+  autoDetectada: { type: 'boolean', default: false },
+  criadoEm: { type: 'integer', required: true },
+});
