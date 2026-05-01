@@ -1,15 +1,21 @@
 // shift-target — computa o RPM alvo para a próxima troca.
 // Função pura. Decide entre: dyno (Bloco 6), learned (telemetria), safe.
 //
-// computeShiftTarget({ car, gear, gearConfidence, mode, learnedTargets })
-//   → { optimalRpm, source: 'dyno' | 'learned' | 'safe' | 'unavailable', reason }
+// computeShiftTarget({ car, gear, gearConfidence, mode, learnedTargets, reactionCtx })
+//   → { optimalRpm, visualRpm, source, reason, reactionSource }
+//
+// reactionCtx (opcional, Bloco 5):
+//   { piloto_id, carro_id, trecho_id, rpmRiseRate, profiles }
+// Quando presente + modo assistido + tupla com ≥10 samples, calcula
+// visualRpm = optimalRpm - reaction_compensation. Caso contrário, visualRpm = optimalRpm.
 
 import { safeTarget } from './safe-mode.js';
 import { hasDyno, getLearnedTarget } from '../data/cars.js';
+import { computeCompensation } from './pilot-reaction.js';
 
 const CONFIDENCE_FLOOR = 0.7;
 
-export function computeShiftTarget({ car, gear, gearConfidence, mode = 'assisted', learnedTargets = null } = {}) {
+export function computeShiftTarget({ car, gear, gearConfidence, mode = 'assisted', learnedTargets = null, reactionCtx = null } = {}) {
   if (!car || typeof car !== 'object') {
     return { optimalRpm: null, source: 'unavailable', reason: 'no car' };
   }
