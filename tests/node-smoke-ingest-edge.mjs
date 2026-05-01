@@ -16,16 +16,11 @@ function extractFn(name) {
   const re = new RegExp(`export function ${name}[\\s\\S]+?\\n\\}`, 'm');
   const m = src.match(re);
   if (!m) throw new Error(`função ${name} não encontrada no source`);
-  // Strip TS types pra rodar como JS puro.
-  let js = m[0]
+  // Strip TS types pra rodar como JS puro: <T>, : Tipo (até vírgula/paren/{).
+  return m[0]
     .replace(/^export\s+/, '')
-    .replace(/:\s*ValidationResult/g, '')
-    .replace(/:\s*any/g, '')
-    .replace(/<T>/g, '')
-    .replace(/:\s*T\[\]/g, '')
-    .replace(/:\s*number/g, '')
-    .replace(/:\s*string/g, '');
-  return js;
+    .replace(/<[A-Za-z, ]+>/g, '')
+    .replace(/:\s*[A-Za-z][\w<>\[\]]*(\s*\|\s*[A-Za-z][\w<>\[\]]*)*/g, '');
 }
 
 const code = `
