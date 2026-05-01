@@ -197,48 +197,146 @@ body{padding:0 0 110px;}
     <p class="context-head__sub">Setup base e pneus você cadastra depois.</p>
   </header>
 
-  <div class="field">
-    <div class="field__lbl">Apelido</div>
-    <input class="input is-focus" placeholder="Ex: Celta 1.4">
+  <input type="radio" name="cn-tab" id="tab-geral" class="tab-input" checked>
+  <input type="radio" name="cn-tab" id="tab-dyno"  class="tab-input">
+
+  <div class="tab-bar">
+    <label for="tab-geral" class="tab-bar__btn">Geral</label>
+    <label for="tab-dyno"  class="tab-bar__btn">Dinamômetro</label>
   </div>
 
-  <div class="field">
-    <div class="field__lbl">Modelo <small>opcional</small></div>
-    <input class="input" placeholder="Marca + ano (ex: Chevrolet Celta 1.4 2010)">
-  </div>
+  <section class="tab-content tab-content--geral is-active">
+    <div class="field">
+      <div class="field__lbl">Apelido</div>
+      <input class="input is-focus" placeholder="Ex: Celta 1.4">
+    </div>
 
-  <div class="field">
-    <div class="field__lbl">Categoria</div>
-    <button class="picker" type="button">
-      <span class="picker__val">Escolher categoria</span>
-      <span class="picker__chev">›</span>
-    </button>
-  </div>
+    <div class="field">
+      <div class="field__lbl">Modelo <small>opcional</small></div>
+      <input class="input" placeholder="Marca + ano (ex: Chevrolet Celta 1.4 2010)">
+    </div>
 
-  <div class="field">
-    <div class="field__lbl">Cor</div>
-    <div class="swatch-rail">
-      <button class="swatch" type="button" aria-label="Vermelho">
-        <span class="swatch__dot" style="background:#e8001c"></span>
-      </button>
-      <button class="swatch" data-on="true" type="button" aria-label="Amarelo">
-        <span class="swatch__dot" style="background:#f5c400"></span>
-      </button>
-      <button class="swatch" type="button" aria-label="Azul">
-        <span class="swatch__dot" style="background:#0099ff"></span>
-      </button>
-      <button class="swatch" type="button" aria-label="Roxo">
-        <span class="swatch__dot" style="background:#a855f7"></span>
+    <div class="field">
+      <div class="field__lbl">Categoria</div>
+      <button class="picker" type="button">
+        <span class="picker__val">Escolher categoria</span>
+        <span class="picker__chev">›</span>
       </button>
     </div>
-  </div>
 
-  <div class="helper-note">
-    Depois de salvar, você abre o carro e cadastra
-    <strong>setup base</strong> (calibragem, alinhamento, suspensão, freios, motor)
-    e <strong>pneus</strong> que esse carro usa.
-  </div>
+    <div class="field">
+      <div class="field__lbl">Cor</div>
+      <div class="swatch-rail">
+        <button class="swatch" type="button" aria-label="Vermelho">
+          <span class="swatch__dot" style="background:#e8001c"></span>
+        </button>
+        <button class="swatch" data-on="true" type="button" aria-label="Amarelo">
+          <span class="swatch__dot" style="background:#f5c400"></span>
+        </button>
+        <button class="swatch" type="button" aria-label="Azul">
+          <span class="swatch__dot" style="background:#0099ff"></span>
+        </button>
+        <button class="swatch" type="button" aria-label="Roxo">
+          <span class="swatch__dot" style="background:#a855f7"></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="helper-note">
+      Depois de salvar, você abre o carro e cadastra
+      <strong>setup base</strong> (calibragem, alinhamento, suspensão, freios, motor)
+      e <strong>pneus</strong> que esse carro usa.
+    </div>
+  </section>
+
+  <section class="tab-content tab-content--dyno">
+    <div class="field">
+      <div class="field__lbl">Curva do motor <small>Dynojet · Mustang · Dynapack</small></div>
+      <div class="dyno-load">
+        <button class="dyno-load__btn" type="button">⤴ Carregar CSV</button>
+        <span class="dyno-load__hint">Auto-detecta formato</span>
+      </div>
+
+      <div class="dyno-preview">
+        <span class="dyno-preview__legend">Curva (preview)</span>
+        <svg viewBox="0 0 320 140" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="curveGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"  stop-color="oklch(78% 0.13 235)" stop-opacity=".40"/>
+              <stop offset="100%" stop-color="oklch(78% 0.13 235)" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M 0 130 L 30 110 L 60 88 L 95 65 L 130 48 L 165 36 L 200 30 L 235 36 L 265 50 L 295 70 L 320 90 L 320 140 L 0 140 Z"
+                fill="url(#curveGrad)" />
+          <path d="M 0 130 L 30 110 L 60 88 L 95 65 L 130 48 L 165 36 L 200 30 L 235 36 L 265 50 L 295 70 L 320 90"
+                fill="none" stroke="oklch(78% 0.13 235)" stroke-width="2"/>
+        </svg>
+      </div>
+
+      <div class="dyno-points__head">
+        <span>RPM</span><span>Torque (Nm)</span><span>Potência (kW)</span><span></span>
+      </div>
+      <div class="dyno-points">
+        <div class="dyno-point">
+          <input class="input input--num" inputmode="numeric" value="3 000">
+          <input class="input input--num" inputmode="numeric" value="240">
+          <input class="input input--num" inputmode="numeric" value="75">
+          <button class="dyno-point__remove" type="button" aria-label="Remover">×</button>
+        </div>
+        <div class="dyno-point">
+          <input class="input input--num" inputmode="numeric" value="4 500">
+          <input class="input input--num" inputmode="numeric" value="290">
+          <input class="input input--num" inputmode="numeric" value="137">
+          <button class="dyno-point__remove" type="button" aria-label="Remover">×</button>
+        </div>
+        <div class="dyno-point">
+          <input class="input input--num" inputmode="numeric" value="6 000">
+          <input class="input input--num" inputmode="numeric" value="305">
+          <input class="input input--num" inputmode="numeric" value="192">
+          <button class="dyno-point__remove" type="button" aria-label="Remover">×</button>
+        </div>
+        <div class="dyno-point">
+          <input class="input input--num" inputmode="numeric" value="6 800">
+          <input class="input input--num" inputmode="numeric" value="295">
+          <input class="input input--num" inputmode="numeric" value="210">
+          <button class="dyno-point__remove" type="button" aria-label="Remover">×</button>
+        </div>
+        <div class="dyno-point">
+          <input class="input input--num" inputmode="numeric" value="7 500">
+          <input class="input input--num" inputmode="numeric" value="270">
+          <input class="input input--num" inputmode="numeric" value="212">
+          <button class="dyno-point__remove" type="button" aria-label="Remover">×</button>
+        </div>
+      </div>
+      <button class="dyno-add" type="button">+ Adicionar ponto</button>
+    </div>
+
+    <div class="dyno-summary">
+      <div class="field">
+        <div class="field__lbl">Redline (RPM) <small>auto</small></div>
+        <input class="input input--num" inputmode="numeric" value="7 800">
+      </div>
+      <div class="field">
+        <div class="field__lbl">Tolerância (RPM) <small>auto</small></div>
+        <input class="input input--num" inputmode="numeric" value="120">
+      </div>
+    </div>
+
+    <div class="helper-note">
+      Sem CSV? Adicione 5+ pontos manualmente. <strong>Redline</strong> e
+      <strong>tolerância</strong> são auto-calculados da curva (5% da janela
+      útil onde a potência ≥ 95% do pico, clamp 80–250 rpm), mas você pode
+      sobrescrever.
+    </div>
+  </section>
 </div>
+
+<style>
+input#tab-geral:checked ~ .tab-bar label[for="tab-geral"]{background:var(--accent);color:oklch(12% 0.005 240);}
+input#tab-dyno:checked  ~ .tab-bar label[for="tab-dyno"] {background:var(--accent);color:oklch(12% 0.005 240);}
+input#tab-geral:checked ~ section.tab-content--geral{display:block;}
+input#tab-dyno:checked  ~ section.tab-content--dyno {display:block;}
+</style>
 
 <div class="foot">
   <div class="foot__inner">
