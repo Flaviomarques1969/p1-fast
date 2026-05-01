@@ -51,6 +51,11 @@ entregues em `_design-reference/`.
   de objetivo cumprido, lição praticada (V-Min, 12 mensagens, sucesso
   ALTA), trecho-foco (Curva da Junção, +1.8 km/h em V-min) e sugestão
   pro próximo (saída na Curva do Placar, lição Acelerador Progressivo).
+- `mockup-stint-override.html` (B3) — modal compacto pra alterar o setup
+  só no stint, sem mexer no setup base do carro. Lista 3 overrides
+  ativos (PRESSÃO pneus, BIAS de freio, MAPA / injeção) com cards de
+  diff Base → Stint, CTA dashed "Adicionar override" pra abrir o picker
+  com os 14 schemas categorizados de `override-schemas.js`.
 
 Antes de A1..A3 + B2 (commit `eef0c0d`): 4 mockups do hub alinhados ao
 padrão B (`mockup-evento.html` canônico + `mockup-home-cheio.html` +
@@ -83,6 +88,7 @@ npm run smoke
 # http://localhost:8767/_design-reference/mockup-carro.html
 # http://localhost:8767/_design-reference/mockup-garagem.html
 # http://localhost:8767/_design-reference/mockup-pos-stint.html
+# http://localhost:8767/_design-reference/mockup-stint-override.html
 
 # Mockups dos cockpits (NÃO MEXER):
 # http://localhost:8767/_design-reference/mockup-cockpit-piloto.html

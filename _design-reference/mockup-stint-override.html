@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=430, initial-scale=1, viewport-fit=cover">
+<title>Mockup Stint — Overrides — P1 Fast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(20% 0.005 240);
+  --surface: oklch(24% 0.005 240);
+  --surface-2: oklch(28% 0.005 240);
+  --hairline: oklch(33% 0.005 240);
+  --text: oklch(95% 0.003 240);
+  --text-2: oklch(75% 0.01 240);
+  --text-3: oklch(58% 0.012 240);
+  --accent: oklch(78% 0.13 235);
+  --accent-2: oklch(82% 0.10 235 / .15);
+  --bom: oklch(78% 0.16 150);
+  --atencao: oklch(82% 0.16 80);
+  --radius: 12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:linear-gradient(160deg, oklch(22% 0.005 240) 0%, oklch(18% 0.005 240) 100%);
+  color:var(--text);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  font-weight:400;
+}
+
+.device{
+  width:430px;height:932px;
+  background:var(--bg);
+  border-radius:48px;
+  border:1px solid oklch(28% 0.005 240);
+  box-shadow:0 30px 80px oklch(0% 0 0 / .6), 0 0 0 8px oklch(12% 0.005 240);
+  position:relative;overflow:hidden;
+  display:flex;flex-direction:column;
+}
+.notch{
+  position:absolute;top:8px;left:50%;transform:translateX(-50%);
+  width:128px;height:36px;background:#000;border-radius:20px;z-index:50;
+}
+
+.modal{
+  flex:1;min-height:0;display:flex;flex-direction:column;
+  padding-top:60px;
+}
+
+/* HEAD */
+.head{
+  padding:18px 24px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.head__title{
+  font-size:22px;font-weight:600;letter-spacing:-.02em;color:var(--text);
+}
+.head__sub{
+  font-size:12px;font-weight:400;color:var(--text-3);margin-top:1px;letter-spacing:.005em;
+}
+.head__close{
+  background:transparent;border:0;color:var(--text-2);
+  font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;
+  padding:8px 12px;border-radius:8px;
+}
+.head__close:hover{background:oklch(28% 0.005 240);}
+
+/* HELPER */
+.helper{
+  padding:0 24px 14px;
+  font-size:12px;color:var(--text-3);font-weight:400;letter-spacing:.005em;
+}
+
+/* BODY */
+.body{flex:1;min-height:0;overflow-y:auto;padding:0 24px 24px;}
+.body::-webkit-scrollbar{display:none;}
+
+/* OVERRIDE CARD */
+.ovr{
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
+  padding:14px 16px;
+  margin-bottom:10px;
+}
+
+.ovr__head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:8px;
+}
+
+.badge{
+  display:inline-flex;align-items:center;
+  padding:3px 8px;border-radius:6px;
+  font-size:10px;font-weight:600;
+  letter-spacing:.10em;text-transform:uppercase;
+  color:var(--text-3);
+  background:var(--surface-2);
+  border:1px solid var(--hairline);
+}
+
+.ovr__remove{
+  background:transparent;border:0;color:var(--text-3);
+  font-family:inherit;font-size:12px;font-weight:500;
+  cursor:pointer;
+  padding:4px 8px;border-radius:6px;
+  transition:color .18s, background .18s;
+}
+.ovr__remove:hover{
+  color:var(--text);
+  background:var(--surface-2);
+}
+
+.ovr__title{
+  font-size:16px;font-weight:600;
+  letter-spacing:-.005em;color:var(--text);
+  line-height:1.2;
+  margin-bottom:10px;
+}
+
+.ovr__diff{
+  display:flex;flex-direction:column;gap:6px;
+}
+.ovr__line{
+  display:flex;align-items:baseline;gap:14px;
+  padding:8px 12px;
+  background:var(--surface-2);
+  border-radius:8px;
+}
+.ovr__lbl{
+  flex:0 0 auto;
+  font-size:10px;font-weight:600;
+  letter-spacing:.10em;text-transform:uppercase;
+  color:var(--text-3);
+  width:36px;
+}
+.ovr__val{
+  font-size:14px;font-weight:500;
+  color:var(--text-2);
+  font-variant-numeric:tabular-nums;
+  letter-spacing:-.005em;
+}
+.ovr__line--new{
+  background:var(--accent-2);
+  border:1px solid oklch(78% 0.13 235 / .35);
+}
+.ovr__line--new .ovr__lbl{color:var(--accent);}
+.ovr__line--new .ovr__val{color:var(--text);font-weight:600;}
+
+/* ADD CTA */
+.add-ovr{
+  width:100%;margin-top:6px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  background:transparent;
+  border:1px dashed var(--hairline);
+  border-radius:var(--radius);
+  color:var(--text-2);
+  font-family:inherit;font-size:14px;font-weight:600;
+  letter-spacing:-.005em;cursor:pointer;
+  padding:14px 16px;
+  transition:border-color .18s, color .18s, background .18s;
+}
+.add-ovr:hover{
+  border-color:var(--accent);
+  color:var(--accent);
+  background:oklch(78% 0.13 235 / .06);
+}
+.add-ovr__plus{font-size:18px;line-height:1;font-weight:500;}
+
+/* FOOT */
+.foot{
+  padding:14px 24px 30px;
+  background:linear-gradient(180deg,transparent,var(--bg) 30%);
+  display:grid;grid-template-columns:auto 1fr;gap:10px;
+}
+.btn{
+  padding:14px 18px;border-radius:14px;cursor:pointer;
+  font-family:inherit;font-size:15px;font-weight:600;letter-spacing:-.005em;
+  outline:none;border:0;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s;
+}
+.btn:active{transform:scale(.97);}
+.btn--ghost{background:transparent;color:var(--text-2);}
+.btn--ghost:hover{background:var(--surface);color:var(--text);}
+.btn--primary{background:var(--accent);color:oklch(12% 0.005 240);}
+.btn--primary:hover{background:oklch(82% 0.14 235);}
+</style>
+</head>
+<body>
+<div class="device">
+  <div class="notch"></div>
+  <div class="modal">
+
+    <div class="head">
+      <div>
+        <div class="head__title">Overrides do stint</div>
+        <div class="head__sub">Stint #3 · Brasília 02/05</div>
+      </div>
+      <button class="head__close">Fechar</button>
+    </div>
+
+    <div class="helper">
+      Sobrescreve o setup base só nesse stint.
+    </div>
+
+    <div class="body">
+
+      <div class="ovr">
+        <div class="ovr__head">
+          <span class="badge">Pressão</span>
+          <button class="ovr__remove">Remover</button>
+        </div>
+        <div class="ovr__title">Pressão pneus</div>
+        <div class="ovr__diff">
+          <div class="ovr__line">
+            <span class="ovr__lbl">Base</span>
+            <span class="ovr__val">35 / 35 / 50 / 50 PSI</span>
+          </div>
+          <div class="ovr__line ovr__line--new">
+            <span class="ovr__lbl">Stint</span>
+            <span class="ovr__val">36 / 36 / 52 / 52 PSI</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ovr">
+        <div class="ovr__head">
+          <span class="badge">Bias</span>
+          <button class="ovr__remove">Remover</button>
+        </div>
+        <div class="ovr__title">Bias de freio</div>
+        <div class="ovr__diff">
+          <div class="ovr__line">
+            <span class="ovr__lbl">Base</span>
+            <span class="ovr__val">55 % F</span>
+          </div>
+          <div class="ovr__line ovr__line--new">
+            <span class="ovr__lbl">Stint</span>
+            <span class="ovr__val">58 % F</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ovr">
+        <div class="ovr__head">
+          <span class="badge">Mapa</span>
+          <button class="ovr__remove">Remover</button>
+        </div>
+        <div class="ovr__title">Mapa / injeção</div>
+        <div class="ovr__diff">
+          <div class="ovr__line">
+            <span class="ovr__lbl">Base</span>
+            <span class="ovr__val">T4000 — mapa seco-1</span>
+          </div>
+          <div class="ovr__line ovr__line--new">
+            <span class="ovr__lbl">Stint</span>
+            <span class="ovr__val">T4000 — mapa molhado-2</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="add-ovr" type="button">
+        <span class="add-ovr__plus">+</span>Adicionar override
+      </button>
+
+    </div>
+
+    <div class="foot">
+      <button class="btn btn--ghost">Cancelar</button>
+      <button class="btn btn--primary">Salvar</button>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

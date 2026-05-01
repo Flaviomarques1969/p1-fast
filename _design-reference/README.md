@@ -29,6 +29,7 @@ mockup gerou drift no projeto anterior.
 | `mockup-carro.html` | Modal Carro — cadastro (apelido + modelo + categoria + cor) e setup base (14 overrides em PNEUS / ALINHAMENTO / SUSPENSÃO / FREIOS / MOTOR · TRANSMISSÃO) | Padrão B |
 | `mockup-garagem.html` | Tab Garagem — eyebrow + summary 3-stats (total / prontos / manutenção) + cards de carro com swatch, apelido, modelo, categoria e tags de status. FAB + bottom-nav | Padrão B |
 | `mockup-pos-stint.html` | Modal pós-stint (debrief do piloto) — hero da volta-recorde + cards de objetivo, lição praticada, trecho-foco e sugestão pro próximo stint | Padrão B |
+| `mockup-stint-override.html` | Modal de overrides do stint — lista de overrides ativos com diff base→stint (PRESSÃO, BIAS, MAPA) e CTA "Adicionar override" | Padrão B |
 | `historico-evento/` | 7 linhas iteradas (A-G) do Modal Evento + comparativo lado-a-lado | Memória de design |
 
 ## Padrão B — tokens canônicos do hub
