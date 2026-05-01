@@ -39,9 +39,16 @@ cadastrar `gear_signatures`, `gear_ratios` e `dyno_curve` do carro,
 chamar `wireUpShiftLight()` no cockpit. Comando de regressão:
 `npm run test:shift-light` (12 specs, 151 testes — o contrato vivo).
 
-**Fase 1 não chama nenhum módulo do Shift Light em runtime.** Schema
-Dexie permanece em v12 (stores `shift_events` e `reaction_profiles`
-existem mas nunca são escritas em Fase 1). Sem efeito colateral.
+**Fase 1 não chama o pipeline de RPM em runtime.** Schema Dexie permanece
+em v12 (stores `shift_events` e `reaction_profiles` existem mas nunca
+são escritas em Fase 1). Sem efeito colateral.
+
+**Componente visual no cockpit em Fase 1:** a barra `.shift-light` do
+`mockup-cockpit-piloto.html` continua presente como placeholder. O caller
+chama `createCockpitShiftLight(el).idle()` na inicialização — apenas o
+tier 1 (verde, nas duas pontas) acende. Marca presença do componente sem
+mentir sobre RPM. Quando Fase 2 entrar, o caller troca `idle()` por
+`update({rpm, visualRpm, redline})` no loop de telemetria.
 
 ---
 
