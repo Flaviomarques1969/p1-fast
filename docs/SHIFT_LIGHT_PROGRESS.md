@@ -141,25 +141,25 @@ Convenção:
 ## Bloco 6 — DYNO_CALIBRATED + UI cadastro
 
 ### Arquivos
-- [ ] `_design-reference/mockup-carro-novo.html` (extensão com aba Dyno)
-- [ ] `src/domain/dyno-csv-parser.js`
-- [ ] `src/domain/dyno-target-calculator.js`
-- [ ] `src/domain/tolerance-from-dyno.js`
-- [ ] `src/data/cars.js` (campo `dyno_curve`)
-- [ ] `tests/domain/dyno-target-calculator.spec.js`
+- [x] `_design-reference/mockup-carro-novo.html` (estendido com aba Dinamômetro via radio-tabs)
+- [x] `src/domain/dyno-csv-parser.js`
+- [x] `src/domain/dyno-target-calculator.js`
+- [x] `src/domain/tolerance-from-dyno.js`
+- [x] `src/data/cars.js` (campo `dyno_curve` já no Bloco 2)
+- [x] `tests/domain/dyno-target-calculator.spec.js`
 
 ### Critérios de aceite
-- [ ] CSV Dynojet → parseia
-- [ ] CSV Mustang → parseia
-- [ ] CSV inválido → erro legível
-- [ ] 5 pontos manuais → cálculo com interpolação funciona
-- [ ] Sem `gear_ratios` → fallback documentado em `reason`
-- [ ] Tolerância auto = 5% da janela útil, clamp [80, 250]
-- [ ] `shift-target.js` retorna `source: 'dyno'` com dados completos
-- [ ] Mockup tem aba dyno funcional
+- [x] CSV Dynojet → parseia (preâmbulo "Dynojet Run File" + lb-ft → Nm + hp → kW)
+- [x] CSV Mustang → parseia (separador `;`, unidades Nm/kW)
+- [x] CSV inválido → erro legível
+- [x] 5 pontos manuais → cálculo com interpolação funciona
+- [x] Sem `gear_ratios` → fallback 90% redline, `reason` explícita
+- [x] Tolerância auto = 5% da janela útil (P ≥ 95% pico), clamp [80, 250]
+- [x] `shift-target.js` retorna `source: 'dyno'` com dados completos
+- [x] Mockup tem aba Dinamômetro funcional (CSS-only radio tabs, preview SVG, lista de pontos editável, redline e tolerância auto)
 
 ### Auditor
-- [ ] `Agent(shift-light-auditor, "Audite Bloco 6")` → ✅
+- [~] `Agent(shift-light-auditor, "Audite Bloco 6")` — em curso
 
 ---
 
