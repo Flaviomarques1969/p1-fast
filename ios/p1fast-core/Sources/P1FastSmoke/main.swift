@@ -938,6 +938,84 @@ step("BV-07: ordena por tempoMs ascendente e respeita minVoltas") {
     try assertEq(r[3].lap.tempoMs, 90_000)
 }
 
+// ════════════════════════════════════════════════════════════
+// FuelCalc — FU-01 .. FU-07 (port de src/domain/fuel-calc.js)
+// ════════════════════════════════════════════════════════════
+
+step("FU-01: sem combustivelInicialL → não disponível") {
+    let r = FuelCalc.calcular(env: FuelCalc.Env())
+    try assertEq(r.disponivel, FuelCalc.Disponivel.nao)
+    try assertEq(r.razao, "sem-combustivel-inicial")
+}
+
+step("FU-02: sem consumo → parcial com pctTanque calculado") {
+    let r = FuelCalc.calcular(env: FuelCalc.Env(tanqueLitros: 50, combustivelInicialL: 25))
+    try assertEq(r.disponivel, FuelCalc.Disponivel.parcial)
+    try assertEq(r.razao, "sem-consumo-medio")
+    try assertEq(r.pctTanque, 50)
+}
+
+step("FU-03: cálculo completo: consumo 2L/volta, 30L iniciais, 5 voltas") {
+    let r = FuelCalc.calcular(
+        env: FuelCalc.Env(tanqueLitros: 40, combustivelInicialL: 30, consumoMedioLVolta: 2),
+        voltasAndadas: 5
+    )
+    try assertEq(r.disponivel, FuelCalc.Disponivel.sim)
+    try assertEq(r.consumidoL, 10)
+    try assertEq(r.restanteL, 20)
+    try assertEq(r.voltasRestantes, 10)   // 20 / 2 = 10
+    try assertEq(r.pctTanque, 50)         // 20/40
+    try assertEq(r.label, "10v")
+}
+
+step("FU-04: restanteL nunca fica negativo") {
+    let r = FuelCalc.calcular(
+        env: FuelCalc.Env(tanqueLitros: 40, combustivelInicialL: 5, consumoMedioLVolta: 2),
+        voltasAndadas: 100
+    )
+    try assertEq(r.restanteL, 0)
+    try assertEq(r.voltasRestantes, 0)
+    try assertEq(r.label, "0v")
+}
+
+step("FU-05: progressoStint sem laps") {
+    let p = FuelCalc.calcularProgressoStint(laps: [], plan: FuelCalc.StintPlan(nVoltasAlvo: 10))
+    try assertEq(p.voltasFeitas, 0)
+    try assertEq(p.voltasAlvo, 10)
+    try assertEq(p.voltasRestantes, 10)
+    try assertEq(p.pctCompleto, 0)
+    try assertTrue(p.melhorMs == nil && p.ritmoMedioMs == nil)
+}
+
+step("FU-06: progressoStint com 3 voltas válidas → ritmo + delta") {
+    let laps = [
+        FuelCalc.LapInfo(valida: true, tempoMs: 80_000),
+        FuelCalc.LapInfo(valida: true, tempoMs: 78_000),
+        FuelCalc.LapInfo(valida: true, tempoMs: 79_000),
+    ]
+    let p = FuelCalc.calcularProgressoStint(laps: laps, plan: FuelCalc.StintPlan(nVoltasAlvo: 10))
+    try assertEq(p.voltasFeitas, 3)
+    try assertEq(p.validas, 3)
+    try assertEq(p.melhorMs, 78_000)
+    try assertEq(p.ritmoMedioMs, 79_000)
+    try assertEq(p.deltaStintMs, 1_000)
+    try assertEq(p.pctCompleto, 30)
+}
+
+step("FU-07: progressoStint ignora invalidas no ritmo mas conta no total") {
+    let laps = [
+        FuelCalc.LapInfo(valida: true,  tempoMs: 80_000),
+        FuelCalc.LapInfo(valida: false, tempoMs: 200_000),  // out lap, fora do ritmo
+        FuelCalc.LapInfo(valida: true,  tempoMs: 78_000),
+    ]
+    let p = FuelCalc.calcularProgressoStint(laps: laps, plan: nil)
+    try assertEq(p.voltasFeitas, 3)
+    try assertEq(p.validas, 2)
+    try assertEq(p.melhorMs, 78_000)
+    try assertEq(p.ritmoMedioMs, 79_000)
+    try assertTrue(p.voltasAlvo == nil && p.pctCompleto == nil)
+}
+
 step("CLOCK-01: Clock.now retorna epoch ms positivo") {
     let now = Clock.now
     try assertTrue(now > 1_700_000_000_000, "now > 2023-11")
