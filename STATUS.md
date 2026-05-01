@@ -26,15 +26,19 @@ slide 3D, halo radial). NÃO mudar.
 
 ## Última tarefa (2026-04-30)
 
-**Mockups do fluxo Stint** (Bloco A1 + A2) entregues em `_design-reference/`.
+**Mockups do fluxo Stint** (Bloco A1 + A2 + A3) entregues em `_design-reference/`.
 
 - `mockup-stint-objetivo.html` (A1) — modal de objetivo do stint com toggle
   P1 Coach, fase de foco e pickers de lição/trecho.
 - `mockup-licao-lista.html` (A2) — lista de seleção da lição específica,
   com as 7 lições MVP cadastradas em `src/data/lesson-library.js`. Abre a
   partir do picker "Lição específica" em A1.
+- `mockup-trecho-lista.html` (A3) — lista de seleção do trecho específico,
+  com os 8 trechos de Brasília agrupados pelas 4 parciais
+  (`src/domain/seed-tracks.js`). Abre a partir do picker "Trecho específico"
+  em A1. Coach atua em todos os trechos elegíveis se "Sem trecho específico".
 
-Antes de A1+A2 (commit `eef0c0d`): 4 mockups do hub alinhados ao padrão B
+Antes de A1..A3 (commit `eef0c0d`): 4 mockups do hub alinhados ao padrão B
 (`mockup-evento.html` canônico + `mockup-home-cheio.html` +
 `mockup-home-vazio.html` + `mockup-pendencias-cascata.html`).
 
@@ -61,6 +65,7 @@ npm run smoke
 # http://localhost:8767/_design-reference/mockup-pendencias-cascata.html
 # http://localhost:8767/_design-reference/mockup-stint-objetivo.html
 # http://localhost:8767/_design-reference/mockup-licao-lista.html
+# http://localhost:8767/_design-reference/mockup-trecho-lista.html
 
 # Mockups dos cockpits (NÃO MEXER):
 # http://localhost:8767/_design-reference/mockup-cockpit-piloto.html
