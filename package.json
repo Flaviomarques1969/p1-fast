@@ -10,7 +10,8 @@
     "smoke:trajectory": "node tests/node-smoke-trajectory-monitor.mjs",
     "smoke:perna1": "node tests/node-smoke-perna1-iphone.mjs",
     "smoke:detector": "node tests/node-smoke-detector.mjs",
-    "smoke:cross-validation": "node tests/node-smoke-telemetry-p0.mjs"
+    "smoke:cross-validation": "node tests/node-smoke-telemetry-p0.mjs",
+    "test:shift-light": "node tests/domain/gear-estimation.spec.js"
   },
   "engines": {
     "node": ">=20"
