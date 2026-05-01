@@ -76,21 +76,22 @@ Convenção:
 ## Bloco 3 — Detecção de evento + persistência
 
 ### Arquivos
-- [ ] `src/pipeline/shift-event-detector.js`
-- [ ] `src/data/shift-events.js`
-- [ ] `src/data/trecho-resolver.js`
-- [ ] `tests/pipeline/shift-event-detector.spec.js`
+- [x] `src/pipeline/shift-event-detector.js`
+- [x] `src/data/shift-events.js`
+- [x] `src/data/trecho-resolver.js`
+- [x] `tests/pipeline/shift-event-detector.spec.js`
+- [x] `src/core/db.js` v11 com store `shift_events`
 
 ### Critérios de aceite
-- [ ] Stream com N trocas conhecidas → produz N eventos
-- [ ] Cada evento tem 25 campos populados ou null com flag de inconsistência
-- [ ] `trecho_id` preenchido com GPS válido + sistema responde; null caso contrário
-- [ ] `lesson_text` é null neste bloco
-- [ ] Detector ignora TPS<10
-- [ ] Persistência idempotente
+- [x] Stream com N trocas conhecidas → produz N eventos
+- [x] Cada evento tem 25 campos populados ou null com flag de inconsistência
+- [x] `trecho_id` preenchido com GPS válido + sistema responde; null caso contrário
+- [x] `lesson_text` é null neste bloco
+- [x] Detector ignora TPS<10
+- [x] Persistência idempotente
 
 ### Auditor
-- [ ] `Agent(shift-light-auditor, "Audite Bloco 3")` → ✅
+- [~] `Agent(shift-light-auditor, "Audite Bloco 3")` — em curso
 
 ---
 
