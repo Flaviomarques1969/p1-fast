@@ -200,7 +200,8 @@ Não funde IMU+GPS — cada linha é um Sample independente. Fusão multi-source
 - **P0 — TelemetryTimebase** (Spec → Implementação) — feito em JS (`src/telemetry/timebase.js`). Pendente paridade Swift (não está na Frente 3 — vira frente futura quando precisar).
 - **P0 — TelemetrySnapshotBuilder** — feito em JS (`src/telemetry/snapshot.js`) e Swift (`Snapshot.swift`).
 - **P1 — Migração 4 → 11 categorias de qualidade** — feito em JS (`src/domain/data-quality.js` exporta as 11) e Swift (`Quality.swift`).
-- **V-001 e V-002 da CrossValidation** — feitas (V-003 a V-011 viram item P1 acima).
+- **V-001 e V-002 da CrossValidation** — feitas (paridade JS+Swift desde 2026-04-30).
+- **V-003 a V-011 da CrossValidation** — concluídas 2026-05-01. JS já implementadas e agora cobertas por smoke explícito (41 asserts, 4 cenários por validação). Swift portadas 1:1 com 16 novos asserts. Achado: cooldown é por validação, não por severidade — bloqueia escalada `atencao→critico` na mesma `validation`.
 - **Frente 3 — Port pipeline JS → Swift** — concluída 2026-05-01. 6 módulos portados em sequência: FaseCurva, PathMapper, TrajectoryMonitor, BaselineVectors, FuelCalc, P1Coach (+ CoachPhrases). Suite Swift: 97/0 (subiu 33 → 97 nesta sessão).
 - **TelemetryReplayEngine** — concluído 2026-05-01. `src/telemetry/replay.js` + smoke 21/0. Pipeline pode ser re-alimentado offline com qualquer array de samples; integração end-to-end com `Detector` validada.
 - **Loader CSV do P1FastIMUTest** — concluído 2026-05-01. `src/telemetry/csv-iphone-loader.js` + smoke 23/0. CSV iPhone (`kind=imu|gps`) → `Array<Sample>` canônico, alimentando ReplayEngine sem fricção. Achado: CSV não vem ordenado por tMono.
