@@ -207,11 +207,10 @@ await step('S1-03: pipeline ATAQUE — óleo despressuriza → BOX_AGORA + V-001
       tMono += 100;
       // Cenário 1 (crítico): volta 3 amostra 4 → óleo cai pra 0.6 bar com RPM alto
       const oleoCritico = (lap === 3 && i === 4);
-      // Cenário 2 (V-001): volta 4 inteira (10 amostras = 1s, mas precisa ≥2s)
-      // → estendido pelo final da volta 3 + volta 4 = 16 amostras = 1.6s. Ampliado:
-      // volta 3 amostras 5-9 + volta 4 inteira = 15 amostras (1.5s) → ainda < 2s
-      // → estendido p/ voltas 4 e 5 inteiras = 20 amostras = 2.0s. ✓
-      const dispersao = (lap === 4 || lap === 5);
+      // Cenário 2 (V-001): WindowState.enter exige strict > minMs (2000ms),
+      // então amostras a 100ms precisam ≥ 21 consecutivas.
+      // Janela: volta 3 amostras 5-9 + voltas 4 e 5 inteiras = 25 amostras = 2.5s. ✓
+      const dispersao = (lap === 3 && i >= 5) || lap === 4 || lap === 5;
       const eng = engine({
         rpm: oleoCritico ? 5800 : 5500,
         oilPressure: oleoCritico ? 0.6 : 4.2,
