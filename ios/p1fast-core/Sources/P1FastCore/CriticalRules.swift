@@ -114,31 +114,31 @@ public final class CriticalRulesEngine {
 }
 
 // ── Regra catalogada ────────────────────────────────────────
-struct CriticalRule {
-    let id: String
-    let canal: String
-    let descricao: String
-    let cooldownMs: Double
-    let quemAge: String
-    let urgencia: String
-    let causaProvavel: String
-    let acaoImediata: String
+public struct CriticalRule {
+    public let id: String
+    public let canal: String
+    public let descricao: String
+    public let cooldownMs: Double
+    public let quemAge: String
+    public let urgencia: String
+    public let causaProvavel: String
+    public let acaoImediata: String
     /// Avaliador. Retorna o nível a disparar, ou nil se a regra não aplica neste snap.
-    let evaluate: (_ snap: Snapshot, _ ctx: inout [String: Double]) -> AlertLevel?
+    public let evaluate: (_ snap: Snapshot, _ ctx: inout [String: Double]) -> AlertLevel?
 }
 
-struct ManualRule {
-    let id: String
-    let nivel: AlertLevel
-    let descricao: String
-    let causaProvavel: String
-    let acaoImediata: String
-    let quemAge: String
-    let urgencia: String
+public struct ManualRule {
+    public let id: String
+    public let nivel: AlertLevel
+    public let descricao: String
+    public let causaProvavel: String
+    public let acaoImediata: String
+    public let quemAge: String
+    public let urgencia: String
 }
 
 // ── Catálogo determinístico ─────────────────────────────────
-let CRITICAL_RULES: [CriticalRule] = [
+public let CRITICAL_RULES: [CriticalRule] = [
     // Pressão óleo baixa
     CriticalRule(
         id: "press-oleo-baixa",
