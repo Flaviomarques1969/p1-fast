@@ -1,75 +1,52 @@
 # BLOCKERS
 
-Bloqueios reais. Cada entrada: fase / motivo / impacto / decisão necessária.
+Bloqueios reais do P1 Fast. Cada entrada: motivo / impacto / decisão necessária.
 
 Vazio = avançar.
 
 ---
 
-## 2026-04-22 — Pós-auditoria
+## Ativos
 
-Todos os bloqueios P0/P1 levantados em `AUDIT_2026-04-22.md` foram fechados em `CORRECTION_PLAN_2026-04-22.md` (Fases 1–7 executadas). Histórico abaixo fica como rastro.
+### E2 · Injepro T4000 — captura real do barramento CAN
+**Estado:** spec oficial confirmada (PDF arquivado em [`docs/raceops/refs/INJEPRO_T4000_CAN_PROTOCOL_2026-04-24.pdf`](docs/raceops/refs/INJEPRO_T4000_CAN_PROTOCOL_2026-04-24.pdf), detalhamento em [`docs/hardware/T4000_CAN_SPEC.md`](docs/hardware/T4000_CAN_SPEC.md)). CAN ID `0x7FB`, 1 Mbit/s, 5×8 bytes a 10 ms, big-endian, checksum `sum mod 256` validado matematicamente.
 
-### Bloqueios fechados durante a correção
+**3 dúvidas residuais que só captura real responde:**
+1. Diferenciação dos 5 pacotes (sem MUX byte documentado).
+2. Bytes 2–6 do pacote 5 (provável zero-padding).
+3. Range físico máximo do EGT (calibrar `OUT_OF_RANGE`).
 
-| ID | sev | task | como ficou |
-|---|---|---|---|
-| A-001 | P0 | T-001 | SessionRecorder liga provider→detector→Laps.create→db.segmentExecutions |
-| A-002 | P0 | T-002 | `_onLineCross` fecha o setor ativo antes de emitir lap |
-| A-003 | P0 | T-003 | `src/telemetry/projector.js` + `geoAncoras` na seed; Provider._emit projeta in-place |
-| A-004 | P1 | T-005 | `seedCalcSegmentPct` preenche pathStart/pathEnd dos 14 trechos |
-| A-015 | P1 | T-004 | linhaChegada vertical x=415, y∈[695,720] calibrada pro path real |
-| A-012 | P1 | T-012 | `collectValidLaps` filtra `session.status !== INVALIDA` |
-| A-018 | P1 | T-006 | ADR-014 declara telemetria como exceção formal a ADR-009 |
-| A-005 | P1 | T-010 | SPEC_MENSAGENS §4 ganhou nota de alias Prioridade |
+**Ação Flavio:** capturar 30–60 s de tráfego com adaptador CAN/USB conectado ao Celta com T4000 ligada.
 
-### Estado atual
-**(sem bloqueios abertos)**
+**Impacto:** sem isso, parser T4000 nasce frágil em detecção de desalinhamento e flag de OUT_OF_RANGE. Implementação do parser fica liberada após captura.
 
-Referência viva: `EXECUTION_TRACKING.md` (dashboard + append-only log de cada task com evidência).
+### E3 · iPhone publicando samples ao vivo no `/api/ingest/iphone`
+**Estado parcial:**
+- Endpoint serverless `api/ingest/iphone.js` existe e aceita chunks no schema canônico.
+- App `P1FastIMUTest` captura IMU 100 Hz / GPS 1 Hz e salva CSV local.
+- Baseline de hardware confirmado em [`docs/hardware/IPHONE_SENSORS_BASELINE.md`](docs/hardware/IPHONE_SENSORS_BASELINE.md).
+
+**Ação Flavio:** decidir quando partir do `P1FastIMUTest` (captura local) para um app que faz POST live no endpoint, conforme `feedback_dev_sem_prod.md` (sem prod até autorização).
+
+**Impacto:** sem app publicando, todo o pipeline real (Coach, fase de curva, V-001/V-002) só roda contra fixtures sintéticos ou CSV exportado manualmente. Para track day real, app precisa estar publicando.
+
+### E4 · RaceBox — REBAIXADO PARA UPGRADE CONDICIONAL (2026-05-01)
+**Estado:** spec arquivada como upgrade futuro, não MVP. Não bloqueia nada.
+
+**Decisão:** baseline iPhone 16 Pro Max (IMU 100 Hz / jitter 0.30 ms) cobre o conceito atual. RaceBox volta SOMENTE se entrar feature de lap timing fino (delta sub-segundo) ou traçado sub-metro — gap real do iPhone (1 Hz / 2–5 m). Detalhes em [`docs/hardware/RACEBOX_INTEGRATION_SPEC.md`](docs/hardware/RACEBOX_INTEGRATION_SPEC.md) (cabeçalho marcado como arquivado).
 
 ---
 
-## 2026-04-23 — Bloqueios para fechar o PLANO_EXECUCAO.md
+## Arquivado — itens herdados do FAM Racing (limpeza 2026-05-01)
 
-Levantados na sessão "execute até o final". Tudo que é software puro foi entregue; o que segue exige ação humana ou hardware.
+P1 Fast é projeto isolado do FAM Racing (ver `MEMORY.md`). Os bloqueios abaixo vieram do FAM Racing original, não se aplicam ao escopo atual:
 
-### A1 · Deploy Vercel
-**Ação Flavio:** criar projeto Vercel `fam-racing` (separado de CDAI/HomeCare), conectar ao repo novo `fam-racing` no GitHub, setar env var `ANTHROPIC_API_KEY` (Production + Preview).
-**Impacto:** sem isso, `/api/advisor` e `/api/post-stint` ficam offline — o Box mostra fallback "AGUARDANDO STREAM" / "endpoint indisponível". Código já está pronto.
-**Critério de fechamento:** botão SETUP ADVISOR no Box do domínio de produção retorna JSON válido da Claude.
+- **A1 · Deploy Vercel** — `feedback_dev_sem_prod.md` declara: sem prod até autorização explícita do Flavio. Quando entrar, voltar a abrir.
+- **E1 · Vídeo Insta360 → nuvem** — streaming de câmera não está no conceito P1 Fast (`p1-fast-conceito.md`).
+- **F3 · Morning Briefing por voz** — dependia de stack FAM Racing + TTS; conceito não confirmado em P1 Fast.
+- **G1 · Track day com Mini PC + câmeras + Box remoto** — setup FAM Racing. P1 Fast roda iOS native + ECU CAN (sem Mini PC, sem Box remoto, sem câmeras na loop).
+- **G3 · Deploy final** — depende de Vercel e demais (todos arquivados acima).
+- **Bloqueios A-001 a A-018 (auditoria 2026-04-22)** — todos fechados na correção. Histórico ficava como rastro mas não pertence ao P1 Fast — viver no `EXECUTION_TRACKING.md` original do FAM Racing se relevante.
+- **C1/C2/C3 · Detector end-to-end** — `fase-curva.js` e `corredor.js` existem em `src/telemetry/`. A "integração ao vivo" depende de E3 (acima), que já é o item ativo. Não é bloqueio adicional.
 
-### E1 · Vídeo Insta360 → nuvem
-**Ação Flavio:** decidir stack — Daily.co (mais caro, fecha mais rápido) vs WebRTC puro custom (barato, mais código).
-**Impacto:** sem isso, painel Box fica com placeholder "AGUARDANDO STREAM". UI já preparada pra trocar `<div>` por `<video autoplay muted playsinline>` quando stream chegar.
-
-### E2 · Injepro T4000 — SPEC RECEBIDA 2026-04-24
-**Estado atual:** Spec oficial Injepro CAN bus recebida via WhatsApp. PDF arquivado em [`docs/raceops/refs/INJEPRO_T4000_CAN_PROTOCOL_2026-04-24.pdf`](docs/raceops/refs/INJEPRO_T4000_CAN_PROTOCOL_2026-04-24.pdf). Documento detalhado em [`docs/raceops/T4000_CAN_SPEC.md`](docs/raceops/T4000_CAN_SPEC.md). Confirmado: CAN ID 0x7FB, 1Mbit/s, 5×8 bytes a 10ms, big-endian, checksum `sum mod 256` validado matematicamente contra exemplo.
-**Pendências residuais (3, baixo risco):** diferenciação dos 5 pacotes (sem MUX byte), bytes 2-6 do pacote 5 (provável zero-padding), range físico máximo do EGT.
-**Ação Flavio:** captura real do barramento com adaptador CAN/USB para validar as 3 dúvidas residuais antes de implementar parser.
-**Impacto:** sem canais do motor (RPM, TPS, MAP, λ, temp motor/ar, pressão óleo/combustível), cockpit roda só com GPS+IMU. Implementação do parser está liberada — fixture canônica = exemplo do PDF.
-
-### E3 · App iOS (iPhone) — **BLOQUEADOR DE DEPLOY FINAL** (atualizado 2026-04-24)
-**Ação Flavio:** repo/xcode separado (app Swift/SwiftUI) publicando `CLLocation` + `CMDeviceMotion` em `/api/ingest/iphone`.
-**Impacto:** Flavio declarou em 2026-04-24 — sistema só vai pra produção quando iPhone estiver publicando telemetria live. Hoje todas as métricas por trecho (velMin, ponto de freio, delta) são derivadas do GPS histórico da volta de referência (Brasília lap 5 do RaceChrono Pro), rotuladas na UI como `HISTÓRICO`. Quando E3 ligar, `state.liveMetricsByTrecho` popula → badge vira `● LIVE` automaticamente.
-**Recomendação:** primeiro criar o app (sessão separada), depois criar `/api/ingest/iphone.js` com schema compatível com `telemetrySamples` do Box.
-**Ver:** `memory/fam-racing-deploy-policy.md` — política de deploy.
-
-### E4 · RaceBox Mini — REBAIXADO PARA UPGRADE CONDICIONAL (2026-05-01)
-**Estado atual:** spec arquivada como upgrade futuro, não MVP. Não bloqueia nada.
-**Decisão:** captura real do iPhone 16 Pro Max (ver [`docs/hardware/IPHONE_SENSORS_BASELINE.md`](docs/hardware/IPHONE_SENSORS_BASELINE.md)) confirmou IMU 100 Hz / jitter 0.30 ms, suficiente pra todas as features do conceito atual (Coach, fase de curva, V-001/V-002 com T4000). RaceBox volta a ser considerado SOMENTE se entrar feature de **lap timing fino** (delta sub-segundo) ou **traçado sub-metro** que exige GNSS 25 Hz + dual-band — gap real do iPhone (1 Hz / 2-5 m).
-**Ver:** [`docs/hardware/RACEBOX_INTEGRATION_SPEC.md`](docs/hardware/RACEBOX_INTEGRATION_SPEC.md) (cabeçalho marcado como arquivado).
-
-### F3 · Morning Briefing por voz
-**Ação:** depende do app iOS (E3) rodando + TTS nativo.
-**Código pronto:** nenhum. Quando E3 fechar, basta endpoint `/api/briefing` com prompt curado.
-
-### G1 · Testes em pista
-**Ação Flavio:** rodar track day com Mini PC + câmeras + iPhone + nuvem Vercel + Box remoto.
-**Critério:** checklist de verificação em `docs/PLANO_EXECUCAO.md` §6 (quando houver stack completa).
-
-### G3 · Deploy final / treinamento
-Depende de A1-G1 fecharem.
-
-### C1/C2/C3 · Detector end-to-end
-**Status:** base pronta (`fase-curva.js` + `corredor.js` + detector existente). Integração ao vivo com Match σ-corredor depende de E3 (sinais iPhone). Testes unitários possíveis sem hardware; validação real não.
+Esses itens podem ser re-abertos a qualquer momento se virarem escopo real do P1 Fast — basta criar entrada nova em "Ativos" com justificativa.
