@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=430, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=430,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>Mockup Stint — Combustível — P1 Fast</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,209 +20,133 @@
   --accent-2: oklch(82% 0.10 235 / .15);
   --radius: 12px;
 }
-*{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;}
-body{
-  font-family:'Inter',system-ui,sans-serif;
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{
+  min-height:100dvh;width:100vw;
   background:linear-gradient(160deg, oklch(22% 0.005 240) 0%, oklch(18% 0.005 240) 100%);
-  color:var(--text);
-  display:flex;align-items:center;justify-content:center;
-  padding:20px;min-height:100vh;
-  -webkit-font-smoothing:antialiased;
-  font-weight:400;
+  color:var(--text);font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;font-weight:400;
 }
+body{padding:0 0 110px;}
+.app{max-width:430px;margin:0 auto;padding:16px 20px 0;}
 
-.device{
-  width:430px;height:932px;
-  background:var(--bg);
-  border-radius:48px;
-  border:1px solid oklch(28% 0.005 240);
-  box-shadow:0 30px 80px oklch(0% 0 0 / .6), 0 0 0 8px oklch(12% 0.005 240);
-  position:relative;overflow:hidden;
-  display:flex;flex-direction:column;
+.context-head{padding:14px 4px 16px;}
+.context-head__eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:5px 12px;background:var(--accent-2);
+  border:1px solid oklch(78% 0.13 235 / .35);border-radius:999px;
+  font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:12px;
 }
-.notch{
-  position:absolute;top:8px;left:50%;transform:translateX(-50%);
-  width:128px;height:36px;background:#000;border-radius:20px;z-index:50;
-}
-
-.modal{
-  flex:1;min-height:0;display:flex;flex-direction:column;
-  padding-top:60px;
-}
-
-.head{
-  padding:18px 24px 14px;
-  display:flex;align-items:center;justify-content:space-between;
-}
-.head__title{
-  font-size:22px;font-weight:600;letter-spacing:-.02em;color:var(--text);
-}
-.head__sub{
-  font-size:12px;font-weight:400;color:var(--text-3);margin-top:1px;letter-spacing:.005em;
-}
-.head__close{
-  background:transparent;border:0;color:var(--text-2);
-  font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;
-  padding:8px 12px;border-radius:8px;
-}
-.head__close:hover{background:oklch(28% 0.005 240);}
-
-.helper{
-  padding:0 24px 14px;
-  font-size:12px;color:var(--text-3);font-weight:400;letter-spacing:.005em;
-}
-
-.body{flex:1;min-height:0;overflow-y:auto;padding:0 24px 24px;}
-.body::-webkit-scrollbar{display:none;}
+.context-head__eyebrow__dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+.context-head__title{font-size:24px;font-weight:600;letter-spacing:-.025em;line-height:1.15;color:var(--text);margin-bottom:4px;}
+.context-head__sub{font-size:13px;color:var(--text-2);}
 
 .group__head{
   display:flex;align-items:center;justify-content:space-between;
-  padding:0 4px 10px;
-  font-size:11px;font-weight:600;
-  letter-spacing:.12em;color:var(--text-3);
-  text-transform:uppercase;
+  padding:18px 4px 10px;font-size:11px;font-weight:600;
+  letter-spacing:.12em;color:var(--text-3);text-transform:uppercase;
 }
+.group__head:first-of-type{padding-top:6px;}
 .group__head strong{color:var(--accent);font-weight:600;}
 
 .fuel-row{
-  width:100%;
-  display:flex;align-items:center;gap:14px;
-  padding:16px;
-  background:var(--surface);
-  border:1px solid var(--hairline);
-  border-radius:var(--radius);
+  width:100%;display:flex;align-items:center;gap:14px;
+  padding:16px;background:var(--surface);
+  border:1px solid var(--hairline);border-radius:var(--radius);
   margin-bottom:8px;cursor:pointer;
   font-family:inherit;color:inherit;text-align:left;
   transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s, border-color .18s;
 }
 .fuel-row:hover{background:var(--surface-2);}
 .fuel-row:active{transform:scale(.99);}
-.fuel-row[data-on="true"]{
-  border-color:oklch(78% 0.13 235 / .55);
-  background:var(--accent-2);
-}
+.fuel-row[data-on="true"]{border-color:oklch(78% 0.13 235 / .55);background:var(--accent-2);}
 
 .fuel-radio{
-  flex:0 0 auto;
-  width:24px;height:24px;border-radius:50%;
-  border:2px solid var(--hairline);
-  background:var(--surface-2);
-  transition:background .18s, border-color .18s;
-  position:relative;
+  flex:0 0 auto;width:24px;height:24px;border-radius:50%;
+  border:2px solid var(--hairline);background:var(--surface-2);
+  transition:background .18s, border-color .18s;position:relative;
 }
-.fuel-row[data-on="true"] .fuel-radio{
-  border-color:var(--accent);
-  background:var(--accent);
-}
+.fuel-row[data-on="true"] .fuel-radio{border-color:var(--accent);background:var(--accent);}
 .fuel-row[data-on="true"] .fuel-radio::after{
-  content:'';
-  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-  width:8px;height:8px;border-radius:50%;
-  background:oklch(12% 0.005 240);
+  content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:8px;height:8px;border-radius:50%;background:oklch(12% 0.005 240);
 }
 
 .fuel-body{flex:1 1 auto;min-width:0;}
-.fuel-name{
-  display:block;
-  font-size:16px;font-weight:600;
-  letter-spacing:-.005em;color:var(--text);
-  line-height:1.2;
-}
-.fuel-hint{
-  display:block;
-  font-size:12px;color:var(--text-3);font-weight:400;
-  margin-top:3px;
-}
+.fuel-name{display:block;font-size:16px;font-weight:600;letter-spacing:-.005em;color:var(--text);line-height:1.2;}
+.fuel-hint{display:block;font-size:12px;color:var(--text-3);font-weight:400;margin-top:3px;}
 
 .add-row{
   width:100%;margin-top:8px;
   display:flex;align-items:center;justify-content:center;gap:8px;
-  background:transparent;
-  border:1px dashed var(--hairline);
-  border-radius:var(--radius);
-  color:var(--text-2);
-  font-family:inherit;font-size:14px;font-weight:600;
-  letter-spacing:-.005em;cursor:pointer;
-  padding:14px 16px;
+  background:transparent;border:1px dashed var(--hairline);border-radius:var(--radius);
+  color:var(--text-2);font-family:inherit;font-size:14px;font-weight:600;
+  letter-spacing:-.005em;cursor:pointer;padding:14px 16px;
   transition:border-color .18s, color .18s, background .18s;
 }
-.add-row:hover{
-  border-color:var(--accent);
-  color:var(--accent);
-  background:oklch(78% 0.13 235 / .06);
-}
+.add-row:hover{border-color:var(--accent);color:var(--accent);background:oklch(78% 0.13 235 / .06);}
 .add-row__plus{font-size:18px;line-height:1;font-weight:500;}
 
 .foot{
-  padding:14px 24px 30px;
-  background:linear-gradient(180deg,transparent,var(--bg) 30%);
-  display:grid;grid-template-columns:auto 1fr;gap:10px;
+  position:fixed;bottom:0;left:0;right:0;z-index:40;
+  background:oklch(18% 0.005 240 / .92);
+  -webkit-backdrop-filter:blur(20px) saturate(140%);
+  backdrop-filter:blur(20px) saturate(140%);
+  border-top:1px solid var(--hairline);padding:14px 20px 28px;
 }
+.foot__inner{max-width:430px;margin:0 auto;display:grid;grid-template-columns:auto 1fr;gap:10px;}
 .btn{
-  padding:14px 18px;border-radius:14px;cursor:pointer;
+  padding:14px 18px;border-radius:var(--radius);cursor:pointer;
   font-family:inherit;font-size:15px;font-weight:600;letter-spacing:-.005em;
-  outline:none;border:0;
-  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s;
+  outline:none;border:1px solid transparent;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s, color .18s;
 }
 .btn:active{transform:scale(.97);}
-.btn--ghost{background:transparent;color:var(--text-2);}
+.btn--ghost{background:transparent;color:var(--text-2);border-color:var(--hairline);}
 .btn--ghost:hover{background:var(--surface);color:var(--text);}
-.btn--primary{background:var(--accent);color:oklch(12% 0.005 240);}
+.btn--primary{background:var(--accent);color:oklch(12% 0.005 240);border-color:var(--accent);}
 .btn--primary:hover{background:oklch(82% 0.14 235);}
 </style>
 </head>
 <body>
-<div class="device">
-  <div class="notch"></div>
-  <div class="modal">
+<div class="app">
+  <header class="context-head">
+    <span class="context-head__eyebrow"><span class="context-head__eyebrow__dot"></span>Combustível</span>
+    <h1 class="context-head__title">Tipo abastecido</h1>
+    <p class="context-head__sub">Stint #3 · Celta 1.4</p>
+  </header>
 
-    <div class="head">
-      <div>
-        <div class="head__title">Combustível</div>
-        <div class="head__sub">Stint #3 · Celta 1.4</div>
-      </div>
-      <button class="head__close">Fechar</button>
-    </div>
+  <div class="group__head">
+    <span>Cadastrados</span>
+    <strong>2</strong>
+  </div>
 
-    <div class="helper">
-      Tipo abastecido pra esse stint.
-    </div>
+  <button class="fuel-row" type="button" data-on="true">
+    <span class="fuel-radio"></span>
+    <span class="fuel-body">
+      <span class="fuel-name">Álcool</span>
+      <span class="fuel-hint">Padrão do Celta 1.4</span>
+    </span>
+  </button>
 
-    <div class="body">
+  <button class="fuel-row" type="button" data-on="false">
+    <span class="fuel-radio"></span>
+    <span class="fuel-body">
+      <span class="fuel-name">Gasolina</span>
+      <span class="fuel-hint">Quando o álcool não está disponível</span>
+    </span>
+  </button>
 
-      <div class="group__head">
-        <span>Cadastrados</span>
-        <strong>2</strong>
-      </div>
+  <button class="add-row" type="button">
+    <span class="add-row__plus">+</span>Cadastrar outro tipo
+  </button>
+</div>
 
-      <button class="fuel-row" type="button" data-on="true">
-        <span class="fuel-radio"></span>
-        <span class="fuel-body">
-          <span class="fuel-name">Álcool</span>
-          <span class="fuel-hint">Padrão do Celta 1.4</span>
-        </span>
-      </button>
-
-      <button class="fuel-row" type="button" data-on="false">
-        <span class="fuel-radio"></span>
-        <span class="fuel-body">
-          <span class="fuel-name">Gasolina</span>
-          <span class="fuel-hint">Quando o álcool não está disponível</span>
-        </span>
-      </button>
-
-      <button class="add-row" type="button">
-        <span class="add-row__plus">+</span>Cadastrar outro tipo
-      </button>
-
-    </div>
-
-    <div class="foot">
-      <button class="btn btn--ghost">Cancelar</button>
-      <button class="btn btn--primary">Confirmar</button>
-    </div>
-
+<div class="foot">
+  <div class="foot__inner">
+    <button class="btn btn--ghost" type="button">Cancelar</button>
+    <button class="btn btn--primary" type="button">Confirmar</button>
   </div>
 </div>
 </body>

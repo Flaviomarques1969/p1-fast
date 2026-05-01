@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=430, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=430,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>Mockup — Novo carro — P1 Fast</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,64 +20,48 @@
   --accent-2: oklch(82% 0.10 235 / .15);
   --radius: 12px;
 }
-*{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;}
-body{
-  font-family:'Inter',system-ui,sans-serif;
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{
+  min-height:100dvh;width:100vw;
   background:linear-gradient(160deg, oklch(22% 0.005 240) 0%, oklch(18% 0.005 240) 100%);
-  color:var(--text);
-  display:flex;align-items:center;justify-content:center;
-  padding:20px;min-height:100vh;
-  -webkit-font-smoothing:antialiased;
-  font-weight:400;
+  color:var(--text);font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;font-weight:400;
 }
-.device{
-  width:430px;height:932px;background:var(--bg);
-  border-radius:48px;
-  border:1px solid oklch(28% 0.005 240);
-  box-shadow:0 30px 80px oklch(0% 0 0 / .6), 0 0 0 8px oklch(12% 0.005 240);
-  position:relative;overflow:hidden;display:flex;flex-direction:column;
-}
-.notch{
-  position:absolute;top:8px;left:50%;transform:translateX(-50%);
-  width:128px;height:36px;background:#000;border-radius:20px;z-index:50;
-}
-.modal{flex:1;min-height:0;display:flex;flex-direction:column;padding-top:60px;}
+body{padding:0 0 110px;}
+.app{max-width:430px;margin:0 auto;padding:16px 20px 0;}
 
-.head{padding:18px 24px 14px;display:flex;align-items:center;justify-content:space-between;}
-.head__title{font-size:22px;font-weight:600;letter-spacing:-.02em;color:var(--text);}
-.head__sub{font-size:12px;font-weight:400;color:var(--text-3);margin-top:1px;letter-spacing:.005em;}
-.head__close{
-  background:transparent;border:0;color:var(--text-2);
-  font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;
-  padding:8px 12px;border-radius:8px;
+.context-head{padding:14px 4px 16px;}
+.context-head__eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:5px 12px;background:var(--accent-2);
+  border:1px solid oklch(78% 0.13 235 / .35);border-radius:999px;
+  font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:12px;
 }
-.head__close:hover{background:oklch(28% 0.005 240);}
+.context-head__eyebrow__dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+.context-head__title{font-size:24px;font-weight:600;letter-spacing:-.025em;line-height:1.15;color:var(--text);margin-bottom:4px;}
+.context-head__sub{font-size:13px;color:var(--text-2);}
 
-.body{flex:1;min-height:0;overflow-y:auto;padding:6px 24px 24px;}
-
-.field{margin-bottom:18px;}
+.field{margin-bottom:16px;}
 .field__lbl{
   font-size:13px;font-weight:500;color:var(--text-2);
-  margin-bottom:8px;letter-spacing:.005em;
-  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;
+  letter-spacing:.005em;
 }
 .field__lbl small{color:var(--text-3);font-weight:400;font-size:12px;}
 
 .input{
   width:100%;background:var(--surface);border:1px solid var(--hairline);
   color:var(--text);font-family:inherit;
-  font-size:17px;font-weight:500;letter-spacing:-.005em;
-  padding:14px 16px;border-radius:var(--radius);
+  font-size:16px;font-weight:500;letter-spacing:-.005em;
+  padding:13px 14px;border-radius:var(--radius);
   outline:none;transition:border-color .18s, box-shadow .18s, background .18s;
 }
 .input:focus, .input.is-focus{
-  border-color:var(--accent);
-  background:oklch(26% 0.01 235);
+  border-color:var(--accent);background:oklch(26% 0.01 235);
   box-shadow:0 0 0 4px oklch(78% 0.13 235 / .14);
 }
 
-/* PICKER */
 .picker{
   width:100%;background:var(--surface);border:1px solid var(--hairline);
   padding:13px 14px;border-radius:var(--radius);
@@ -92,15 +76,12 @@ body{
   display:flex;align-items:center;justify-content:center;color:var(--text-2);font-size:12px;
 }
 
-/* SWATCHES */
 .swatch-rail{display:flex;gap:10px;}
 .swatch{
-  flex:0 0 auto;
-  width:38px;height:38px;border-radius:50%;
-  border:2px solid var(--hairline);
-  background:transparent;cursor:pointer;
-  position:relative;
-  transition:transform .18s cubic-bezier(.34,1.56,.64,1);
+  flex:0 0 auto;width:38px;height:38px;border-radius:50%;
+  border:2px solid var(--hairline);background:transparent;
+  cursor:pointer;position:relative;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), border-color .18s, box-shadow .18s;
 }
 .swatch:active{transform:scale(.92);}
 .swatch__dot{
@@ -114,97 +95,90 @@ body{
 }
 .swatch[data-on="true"] .swatch__dot{width:30px;height:30px;}
 
-/* HELPER NOTE */
 .helper-note{
   margin-top:8px;
-  padding:14px 16px;
-  background:var(--surface);
-  border:1px dashed var(--hairline);
-  border-radius:var(--radius);
+  padding:14px 16px;background:var(--surface);
+  border:1px dashed var(--hairline);border-radius:var(--radius);
   font-size:13px;color:var(--text-2);line-height:1.45;
 }
 .helper-note strong{color:var(--text);font-weight:600;}
 
 .foot{
-  padding:14px 24px 30px;
-  background:linear-gradient(180deg,transparent,var(--bg) 30%);
-  display:grid;grid-template-columns:auto 1fr;gap:10px;
+  position:fixed;bottom:0;left:0;right:0;z-index:40;
+  background:oklch(18% 0.005 240 / .92);
+  -webkit-backdrop-filter:blur(20px) saturate(140%);
+  backdrop-filter:blur(20px) saturate(140%);
+  border-top:1px solid var(--hairline);padding:14px 20px 28px;
 }
+.foot__inner{max-width:430px;margin:0 auto;display:grid;grid-template-columns:auto 1fr;gap:10px;}
 .btn{
-  padding:14px 18px;border-radius:14px;cursor:pointer;
+  padding:14px 18px;border-radius:var(--radius);cursor:pointer;
   font-family:inherit;font-size:15px;font-weight:600;letter-spacing:-.005em;
-  outline:none;border:0;
-  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s;
+  outline:none;border:1px solid transparent;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s, color .18s;
 }
 .btn:active{transform:scale(.97);}
-.btn--ghost{background:transparent;color:var(--text-2);}
+.btn--ghost{background:transparent;color:var(--text-2);border-color:var(--hairline);}
 .btn--ghost:hover{background:var(--surface);color:var(--text);}
-.btn--primary{background:var(--accent);color:oklch(12% 0.005 240);}
+.btn--primary{background:var(--accent);color:oklch(12% 0.005 240);border-color:var(--accent);}
 .btn--primary:hover{background:oklch(82% 0.14 235);}
 </style>
 </head>
 <body>
-<div class="device">
-  <div class="notch"></div>
-  <div class="modal">
+<div class="app">
+  <header class="context-head">
+    <span class="context-head__eyebrow"><span class="context-head__eyebrow__dot"></span>Novo carro</span>
+    <h1 class="context-head__title">Cadastrar carro</h1>
+    <p class="context-head__sub">Setup base e pneus você cadastra depois.</p>
+  </header>
 
-    <div class="head">
-      <div>
-        <div class="head__title">Novo carro</div>
-        <div class="head__sub">Setup base e pneus você cadastra depois.</div>
-      </div>
-      <button class="head__close">Fechar</button>
+  <div class="field">
+    <div class="field__lbl">Apelido</div>
+    <input class="input is-focus" placeholder="Ex: Celta 1.4">
+  </div>
+
+  <div class="field">
+    <div class="field__lbl">Modelo <small>opcional</small></div>
+    <input class="input" placeholder="Marca + ano (ex: Chevrolet Celta 1.4 2010)">
+  </div>
+
+  <div class="field">
+    <div class="field__lbl">Categoria</div>
+    <button class="picker" type="button">
+      <span class="picker__val">Escolher categoria</span>
+      <span class="picker__chev">›</span>
+    </button>
+  </div>
+
+  <div class="field">
+    <div class="field__lbl">Cor</div>
+    <div class="swatch-rail">
+      <button class="swatch" type="button" aria-label="Vermelho">
+        <span class="swatch__dot" style="background:#e8001c"></span>
+      </button>
+      <button class="swatch" data-on="true" type="button" aria-label="Amarelo">
+        <span class="swatch__dot" style="background:#f5c400"></span>
+      </button>
+      <button class="swatch" type="button" aria-label="Azul">
+        <span class="swatch__dot" style="background:#0099ff"></span>
+      </button>
+      <button class="swatch" type="button" aria-label="Roxo">
+        <span class="swatch__dot" style="background:#a855f7"></span>
+      </button>
     </div>
+  </div>
 
-    <div class="body">
-      <div class="field">
-        <div class="field__lbl">Apelido</div>
-        <input class="input is-focus" placeholder="Ex: Celta 1.4">
-      </div>
+  <div class="helper-note">
+    Depois de salvar, você abre o carro e cadastra
+    <strong>setup base</strong> (calibragem, alinhamento, suspensão, freios, motor)
+    e <strong>pneus</strong> que esse carro usa.
+  </div>
+</div>
 
-      <div class="field">
-        <div class="field__lbl">Modelo <small>opcional</small></div>
-        <input class="input" placeholder="Marca + ano (ex: Chevrolet Celta 1.4 2010)">
-      </div>
-
-      <div class="field">
-        <div class="field__lbl">Categoria</div>
-        <button class="picker" type="button">
-          <span class="picker__val">Escolher categoria</span>
-          <span class="picker__chev">›</span>
-        </button>
-      </div>
-
-      <div class="field">
-        <div class="field__lbl">Cor</div>
-        <div class="swatch-rail">
-          <button class="swatch" type="button" aria-label="Vermelho">
-            <span class="swatch__dot" style="background:#e8001c"></span>
-          </button>
-          <button class="swatch" type="button" aria-label="Amarelo">
-            <span class="swatch__dot" style="background:#f5c400"></span>
-          </button>
-          <button class="swatch" type="button" aria-label="Azul">
-            <span class="swatch__dot" style="background:#0099ff"></span>
-          </button>
-          <button class="swatch" type="button" aria-label="Roxo">
-            <span class="swatch__dot" style="background:#a855f7"></span>
-          </button>
-        </div>
-      </div>
-
-      <div class="helper-note">
-        Depois de salvar, você abre o carro e cadastra
-        <strong>setup base</strong> (calibragem, alinhamento, suspensão, freios, motor)
-        e <strong>pneus</strong> que esse carro usa.
-      </div>
-    </div>
-
-    <div class="foot">
-      <button class="btn btn--ghost">Cancelar</button>
-      <button class="btn btn--primary">Salvar carro</button>
-    </div>
-
+<div class="foot">
+  <div class="foot__inner">
+    <button class="btn btn--ghost" type="button">Cancelar</button>
+    <button class="btn btn--primary" type="button">Salvar carro</button>
   </div>
 </div>
 </body>

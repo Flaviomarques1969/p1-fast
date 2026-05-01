@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=430,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>Mockup HOME cheio — P1 Fast</title>
+<!-- Realidade canônica 2026-05-01: P1 Fast / Celta 1.4 (carro único) / 4 gauges = cockpit de histórico -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -19,6 +20,7 @@
   --accent: oklch(78% 0.13 235);
   --accent-2: oklch(82% 0.10 235 / .15);
   --green: oklch(78% 0.16 150);
+  --bom: oklch(78% 0.16 150);
   --rec: oklch(70% 0.20 25);
   --radius: 12px;
 }
@@ -198,37 +200,76 @@ body{padding:0 0 96px;}
   margin:16px 4px 10px;
 }
 
-.event-row{
-  display:flex;align-items:center;gap:14px;
-  padding:14px 14px;
+/* EVENT — 1:1 com mockup-eventos-lista.html (componente canônico) */
+.event{
+  display:flex;align-items:flex-start;gap:14px;
+  padding:14px 16px;
   background:var(--surface);
   border:1px solid var(--hairline);
   border-radius:var(--radius);
-  margin-bottom:8px;cursor:pointer;
-  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s;
+  margin-bottom:8px;
+  cursor:pointer;text-align:left;
+  font-family:inherit;color:inherit;width:100%;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s, border-color .18s;
 }
-.event-row:hover{background:var(--surface-2);}
-.event-row:active{transform:scale(.99);}
-.event-row__date{
-  display:flex;flex-direction:column;align-items:center;
-  min-width:48px;padding:6px 4px;
-  background:var(--surface-2);border-radius:10px;
+.event:hover{background:var(--surface-2);}
+.event:active{transform:scale(.99);}
+.event__date{
+  flex:0 0 auto;
+  width:52px;height:52px;
+  border-radius:10px;
+  background:var(--surface-2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border:1px solid var(--hairline);
+}
+.event__day{
+  font-size:20px;font-weight:600;color:var(--text);
+  font-variant-numeric:tabular-nums;
+  line-height:1;letter-spacing:-.02em;
+}
+.event__mon{
+  font-size:10px;font-weight:600;color:var(--text-3);
+  letter-spacing:.08em;text-transform:uppercase;
+  margin-top:3px;
+}
+.event__body{flex:1 1 auto;min-width:0;}
+.event__name{
+  display:block;
+  font-size:16px;font-weight:600;
+  letter-spacing:-.005em;color:var(--text);
+  line-height:1.2;
+}
+.event__sub{
+  display:block;
+  font-size:12px;color:var(--text-3);font-weight:400;
+  margin-top:3px;
+}
+.event__meta{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  margin-top:10px;
+}
+.tag{
+  display:inline-flex;align-items:center;
+  padding:3px 8px;border-radius:999px;
+  font-size:10px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text-3);
+  border:1px solid var(--hairline);
+  background:transparent;
   font-variant-numeric:tabular-nums;
 }
-.event-row__day{font-size:18px;font-weight:600;line-height:1;color:var(--text);}
-.event-row__mon{
-  font-size:10px;font-weight:500;color:var(--text-3);
-  letter-spacing:.08em;margin-top:3px;text-transform:uppercase;
+.tag--bom{
+  color:var(--bom);
+  border-color:oklch(78% 0.16 150 / .45);
+  background:oklch(78% 0.16 150 / .12);
 }
-.event-row__body{flex:1 1 auto;min-width:0;}
-.event-row__name{
-  font-size:14px;font-weight:600;color:var(--text);
-  margin-bottom:2px;letter-spacing:-.005em;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.event-row__loc{font-size:12px;color:var(--text-3);}
-.event-row__chev{
-  font-size:18px;color:var(--text-3);font-weight:300;
+.event__chev{
+  flex:0 0 auto;
+  width:24px;height:24px;border-radius:8px;
+  background:var(--surface-2);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-2);font-size:14px;
+  margin-top:14px;
 }
 
 .fab{
@@ -278,22 +319,22 @@ body{padding:0 0 96px;}
 <div class="app">
 
   <header class="header">
-    <span class="header__brand">FAM Racing</span>
+    <span class="header__brand">P1 Fast</span>
     <h1 class="header__status">Próximo evento em <strong>2 dias</strong></h1>
   </header>
 
   <div class="gauges">
-    <div class="gauge"><span class="gauge__num">4</span><span class="gauge__lbl">Temporada</span></div>
-    <div class="gauge"><span class="gauge__num">7</span><span class="gauge__lbl">Pendências</span></div>
-    <div class="gauge"><span class="gauge__num">2</span><span class="gauge__lbl">Próximo</span></div>
-    <div class="gauge"><span class="gauge__num">1:38.4</span><span class="gauge__lbl">Melhor</span></div>
+    <div class="gauge"><span class="gauge__num">4</span><span class="gauge__lbl">Eventos</span></div>
+    <div class="gauge"><span class="gauge__num">158</span><span class="gauge__lbl">Voltas</span></div>
+    <div class="gauge"><span class="gauge__num">158</span><span class="gauge__lbl">Celta</span></div>
+    <div class="gauge"><span class="gauge__num">1:42.3</span><span class="gauge__lbl">Melhor</span></div>
   </div>
 
   <div class="card">
     <span class="eyebrow"><span class="eyebrow__dot"></span>Stint em andamento</span>
     <h2 class="card__title">Brasília · 2 de maio</h2>
     <div class="stint-row">
-      <span class="stint-pill"><span class="stint-pill__dot"></span>Civic Type R</span>
+      <span class="stint-pill"><span class="stint-pill__dot"></span>Celta 1.4</span>
       <span class="stint-laps">Volta <strong>4</strong> de <strong>10</strong></span>
     </div>
     <div class="btn-row">
@@ -319,42 +360,66 @@ body{padding:0 0 96px;}
 
   <div class="card">
     <span class="eyebrow"><span class="eyebrow__dot"></span>Sugestão</span>
-    <h2 class="card__title">Cadastrar Civic Type R no próximo evento?</h2>
-    <p class="card__sub">Você usou o Civic em 4 dos últimos 5 track days em Brasília. Posso pré-cadastrar para sábado.</p>
+    <h2 class="card__title">Atualizar setup do Celta?</h2>
+    <p class="card__sub">Última atualização foi no track day de 25/04. Revise antes de sábado se trocou peça, alinhamento ou pneu.</p>
     <div class="btn-row">
       <button class="btn btn--ghost" type="button">Agora não</button>
-      <button class="btn btn--primary" type="button">Cadastrar</button>
+      <button class="btn btn--primary" type="button">Atualizar</button>
     </div>
   </div>
 
   <h3 class="section-title">Eventos recentes</h3>
 
-  <div class="event-row">
-    <div class="event-row__date"><span class="event-row__day">25</span><span class="event-row__mon">Abr</span></div>
-    <div class="event-row__body">
-      <div class="event-row__name">Brasília · 25 de abril</div>
-      <div class="event-row__loc">Nelson Piquet · 3 stints</div>
+  <button class="event" type="button">
+    <div class="event__date">
+      <span class="event__day">25</span>
+      <span class="event__mon">Abr</span>
     </div>
-    <span class="event-row__chev">›</span>
-  </div>
+    <div class="event__body">
+      <span class="event__name">Brasília</span>
+      <span class="event__sub">Nelson Piquet</span>
+      <div class="event__meta">
+        <span class="tag">4 stints</span>
+        <span class="tag">47 voltas</span>
+        <span class="tag tag--bom">1:42.318</span>
+      </div>
+    </div>
+    <span class="event__chev">›</span>
+  </button>
 
-  <div class="event-row">
-    <div class="event-row__date"><span class="event-row__day">12</span><span class="event-row__mon">Abr</span></div>
-    <div class="event-row__body">
-      <div class="event-row__name">Goiânia · domingo de outono</div>
-      <div class="event-row__loc">Internacional Ayrton Senna · 4 stints</div>
+  <button class="event" type="button">
+    <div class="event__date">
+      <span class="event__day">28</span>
+      <span class="event__mon">Mar</span>
     </div>
-    <span class="event-row__chev">›</span>
-  </div>
+    <div class="event__body">
+      <span class="event__name">Brasília</span>
+      <span class="event__sub">Nelson Piquet</span>
+      <div class="event__meta">
+        <span class="tag">3 stints</span>
+        <span class="tag">32 voltas</span>
+        <span class="tag tag--bom">1:43.847</span>
+      </div>
+    </div>
+    <span class="event__chev">›</span>
+  </button>
 
-  <div class="event-row">
-    <div class="event-row__date"><span class="event-row__day">28</span><span class="event-row__mon">Mar</span></div>
-    <div class="event-row__body">
-      <div class="event-row__name">Brasília · final de março</div>
-      <div class="event-row__loc">Nelson Piquet · 2 stints</div>
+  <button class="event" type="button">
+    <div class="event__date">
+      <span class="event__day">14</span>
+      <span class="event__mon">Mar</span>
     </div>
-    <span class="event-row__chev">›</span>
-  </div>
+    <div class="event__body">
+      <span class="event__name">Brasília</span>
+      <span class="event__sub">Nelson Piquet</span>
+      <div class="event__meta">
+        <span class="tag">2 stints</span>
+        <span class="tag">21 voltas</span>
+        <span class="tag tag--bom">1:44.512</span>
+      </div>
+    </div>
+    <span class="event__chev">›</span>
+  </button>
 
 </div>
 
