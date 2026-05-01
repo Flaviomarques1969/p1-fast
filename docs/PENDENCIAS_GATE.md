@@ -106,22 +106,11 @@ Todos os 6 módulos da Frente 3 portados em sequência: FaseCurva → PathMapper
 
 ---
 
-### P1 — TelemetryReplayEngine
+### ~~P1 — TelemetryReplayEngine~~ — CONCLUÍDO 2026-05-01
 
-**Origem:** AUDITORIA_INICIAL_TELEMETRIA §"Lacuna 5".
+`src/telemetry/replay.js` entregue. `ReplayEngine` standalone (não estende `TelemetryProvider`, não toca `sample-store`/DB — replay é não-destrutivo). 3 modos de velocidade: `'instant'` (síncrono pra regressão), `'realtime'` (respeita delta de `t`), número (multiplicador). Pause/resume/stop completos; `scheduler` injetável pra teste determinístico. Smoke em `tests/node-smoke-replay.mjs` cobre 21 cenários incluindo paridade end-to-end com `Detector` real. Suite Node: 129 → 150 / 0.
 
-**O que falta:** módulo que lê samples de uma sessão e re-alimenta o detector para reproduzir análises offline.
-
-**Por que P1:** habilita teste de regressão e auditoria. Útil também pra rodar pipeline contra CSVs do `P1FastIMUTest` (já temos um arquivado em `docs/hardware/baselines/`).
-
-**Escopo:** pequeno (loop simples) — pipeline já é determinístico.
-
-**Critério de feito:**
-- `src/telemetry/replay.js`
-- Aceita `sessionId` ou caminho de CSV
-- Produz mesma sequência de eventos do detector original
-
-**Bloqueios:** nenhum.
+Não suporta CSV ainda — aceita array de samples canônico. Helper `csv-iphone-loader.js` (parsing do `P1FastIMUTest`) fica como item separado quando precisar.
 
 ---
 
@@ -212,6 +201,7 @@ Todos os 6 módulos da Frente 3 portados em sequência: FaseCurva → PathMapper
 - **P1 — Migração 4 → 11 categorias de qualidade** — feito em JS (`src/domain/data-quality.js` exporta as 11) e Swift (`Quality.swift`).
 - **V-001 e V-002 da CrossValidation** — feitas (V-003 a V-011 viram item P1 acima).
 - **Frente 3 — Port pipeline JS → Swift** — concluída 2026-05-01. 6 módulos portados em sequência: FaseCurva, PathMapper, TrajectoryMonitor, BaselineVectors, FuelCalc, P1Coach (+ CoachPhrases). Suite Swift: 97/0 (subiu 33 → 97 nesta sessão).
+- **TelemetryReplayEngine** — concluído 2026-05-01. `src/telemetry/replay.js` + smoke 21/0. Pipeline pode ser re-alimentado offline com qualquer array de samples; integração end-to-end com `Detector` validada.
 
 ---
 
