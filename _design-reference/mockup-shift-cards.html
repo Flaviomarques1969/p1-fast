@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=430,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Mockup Shift Cards — pós-sessão Fast Coach — P1 Fast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(20% 0.005 240);
+  --surface: oklch(24% 0.005 240);
+  --surface-2: oklch(28% 0.005 240);
+  --hairline: oklch(33% 0.005 240);
+  --text: oklch(95% 0.003 240);
+  --text-2: oklch(75% 0.01 240);
+  --text-3: oklch(58% 0.012 240);
+  --accent: oklch(78% 0.13 235);
+  --ok: oklch(78% 0.16 145);
+  --bad: oklch(72% 0.18 25);
+  --neutral: oklch(60% 0.01 240);
+  --radius: 14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{
+  min-height:100dvh;width:100vw;
+  background:linear-gradient(160deg, oklch(22% 0.005 240) 0%, oklch(18% 0.005 240) 100%);
+  color:var(--text);font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;font-weight:400;
+}
+body{padding:0 0 80px;}
+.app{max-width:430px;margin:0 auto;padding:16px 20px 0;}
+
+.context-head{padding:14px 4px 18px;}
+.context-head__eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:5px 12px;background:oklch(78% 0.13 235 / .15);
+  border:1px solid oklch(78% 0.13 235 / .35);border-radius:999px;
+  font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:12px;
+}
+.context-head__eyebrow__dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+.context-head__title{font-size:24px;font-weight:600;letter-spacing:-.025em;line-height:1.15;color:var(--text);margin-bottom:4px;}
+.context-head__sub{font-size:13px;color:var(--text-2);}
+
+.shift-cards{display:flex;flex-direction:column;gap:12px;}
+
+.shift-card{
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
+  padding:14px 16px 16px;
+  position:relative;
+}
+.shift-card.is-correct{border-left:3px solid var(--ok);}
+.shift-card.is-early,.shift-card.is-late{border-left:3px solid var(--bad);}
+.shift-card.is-insufficient{border-left:3px solid var(--neutral);opacity:.85;}
+
+.shift-card__head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;
+}
+.shift-card__title{
+  font-size:15px;font-weight:600;letter-spacing:-.005em;color:var(--text);
+}
+.shift-card__title small{color:var(--text-3);font-weight:400;margin-left:6px;font-size:12px;}
+
+.shift-card__status{
+  font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  padding:3px 9px;border-radius:999px;
+}
+.shift-card__status.is-correct{background:oklch(78% 0.16 145 / .15);color:var(--ok);}
+.shift-card__status.is-early,.shift-card__status.is-late{background:oklch(72% 0.18 25 / .15);color:var(--bad);}
+.shift-card__status.is-insufficient{background:oklch(60% 0.01 240 / .2);color:var(--text-3);}
+
+.shift-card__nums{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;
+  padding:10px 0;margin-bottom:10px;
+  border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline);
+}
+.shift-card__num{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.shift-card__num__lbl{
+  font-size:9px;font-weight:600;letter-spacing:.1em;color:var(--text-3);text-transform:uppercase;
+}
+.shift-card__num__val{
+  font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.01em;color:var(--text);
+}
+.shift-card__num__val.is-ok{color:var(--ok);}
+.shift-card__num__val.is-bad{color:var(--bad);}
+.shift-card__num__val.is-neutral{color:var(--text-3);}
+
+.shift-card__lesson{
+  font-size:13px;line-height:1.45;color:var(--text-2);
+}
+
+.shift-card__foot{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:10px;padding-top:8px;border-top:1px solid var(--hairline);
+  font-size:10px;letter-spacing:.06em;color:var(--text-3);text-transform:uppercase;
+}
+.shift-card__foot__warn{color:var(--bad);}
+
+.section__head{
+  padding:0 4px 10px;font-size:11px;font-weight:600;
+  letter-spacing:.12em;color:var(--text-3);text-transform:uppercase;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="context-head">
+  <span class="context-head__eyebrow">
+    <span class="context-head__eyebrow__dot"></span>
+    Pós-sessão · Fast Coach
+  </span>
+  <div class="context-head__title">Trocas de marcha</div>
+  <div class="context-head__sub">Sessão #42 · 17 trocas analisadas · Brasília</div>
+</div>
+
+<div class="section__head">Por troca</div>
+
+<div class="shift-cards">
+
+  <!-- Correct (verde) -->
+  <article class="shift-card is-correct">
+    <div class="shift-card__head">
+      <div class="shift-card__title">Troca 3→4 <small>· Reta principal</small></div>
+      <div class="shift-card__status is-correct">Verde</div>
+    </div>
+    <div class="shift-card__nums">
+      <div class="shift-card__num">
+        <span class="shift-card__num__lbl">Ideal</span>
+        <span class="shift-card__num__val">6 700</span>
+      </div>
+      <div class="shift-card__num">
+        <span class="shift-card__num__lbl">Real</span>
+        <span class="shift-card__num__val">6 740</span>
+      </div>
+      <div class="shift-card__num">
+        <span class="shift-card__num__lbl">Δ</span>
+        <span class="shift-card__num__val is-ok">+40</span>
+      </div>
+    </div>
+    <p class="shift-card__lesson">Boa troca. Motor permaneceu na faixa útil e a retomada foi consistente.</p>
+    <div class="shift-card__foot">
+      <span>Confiança 91%</span>
+      <span>Telemetry-Learned</span>
+    </div>
+  </article>
+
+  <!-- Early (vermelho) -->
+  <article class="shift-card is-early">
+    <div class="shift-card__head">
+      <div class="shift-card__title">Troca 2→3 <small>· Saída curva 4</small></div>
+      <div class="shift-card__status is-early">Cedo</div>
+    </div>
+    <div class="shift-card__nums">
+      <div class="shift-card__num">
+        <span class="shift-card__num__lbl">Ideal</span>
+        <span class="shift-card__num__val">6 700</span>
+      </div>
+      <div class="shift-card__num">
+        <span class="shift-card__num__lbl">Real</span>
+        <span class="shift-card__num__val">6 200</span>
+      </div>
+      <div class="shift-card__num">
+        <span class="shift-card__num__lbl">Δ</span>
+        <span class="shift-card__num__val is-bad">−500</span>
+      </div>
+    </div>
+    <p class="shift-card__lesson">Você trocou cedo demais. Motor caiu fora da faixa forte e a aceleração demorou a recuperar. Próxima sessão, segure mais a marcha em <strong>Saída curva 4</strong>.</p>
+    <div class="shift-card__foot">
+      <span>Confiança 88%</span>
+      <span>Telemetry-Learned</span>
+    </div>
+  </article>
+
+  <!-- Late (vermelho) -->
+  <article class="shift-card is-late">
+    <div class="shift-card__head">
+      <div class="shift-card__title">Troca 4→5 <small>· Reta dos boxes</small></div>
+      <div class="shift-card__status is-late">Tarde</div>
+    </div>
+    <div class="shift-card__nums">
+      <div class="shift-card__num">
+        <span class="shift-card__num__lbl">Ideal</span>
+        <span class="shift-card__num__val">6 700</span>
+      </div>
+      <div class="shift-card__num">
+        <span class="shift-card__num__lbl">Real</span>
+        <span class="shift-card__num__val">7 050</span>
+      </div>
+      <div class="shift-card__num">
+        <span class="shift-card__num__lbl">Δ</span>
+        <span class="shift-card__num__val is-bad">+350</span>
+      </div>
+    </div>
+    <p class="shift-card__lesson">Você passou do ponto ideal. Aceleração já estava perdendo eficiência antes da troca. Próxima sessão, antecipe a troca em <strong>Reta dos boxes</strong>.</p>
+    <div class="shift-card__foot">
+      <span>Confiança 92%</span>
+      <span class="shift-card__foot__warn">Overrev</span>
+    </div>
+  </article>
+
+  <!-- Insufficient data (cinza) -->
+  <article class="shift-card is-insufficient">
+    <div class="shift-card__head">
+      <div class="shift-card__title">Troca ?→? <small>· trecho não identificado</small></div>
+      <div class="shift-card__status is-insufficient">Sem dados</div>
+    </div>
+    <div class="shift-card__nums">
+      <div class="shift-card__num">
+        <span class="shift-card__num__lbl">Ideal</span>
+        <span class="shift-card__num__val is-neutral">—</span>
+      </div>
+      <div class="shift-card__num">
+        <span class="shift-card__num__lbl">Real</span>
+        <span class="shift-card__num__val is-neutral">5 800</span>
+      </div>
+      <div class="shift-card__num">
+        <span class="shift-card__num__lbl">Δ</span>
+        <span class="shift-card__num__val is-neutral">—</span>
+      </div>
+    </div>
+    <p class="shift-card__lesson">Marcha estimada com pouca confiança. Sistema usou modo seguro. Mais voltas vão melhorar a precisão.</p>
+    <div class="shift-card__foot">
+      <span>Confiança 42%</span>
+      <span>Safe-Mode</span>
+    </div>
+  </article>
+
+</div>
+
+</div>
+</body>
+</html>
