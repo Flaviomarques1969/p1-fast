@@ -253,4 +253,10 @@ export class Detector {
       segmentoAtual: this.segmentoAtual?.segmentId ?? null,
     };
   }
+
+  // Fonte de verdade pra trecho_id em tempo real (lido pelo trecho-resolver
+  // do shift-light). Síncrono — só devolve o segment atualmente ativo.
+  getCurrentSegmentId() {
+    return this.segmentoAtual?.segmentId ?? null;
+  }
 }
