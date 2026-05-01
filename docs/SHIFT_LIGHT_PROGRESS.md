@@ -165,6 +165,17 @@ Convenção:
 
 ## Notas de execução
 
-(Esta seção é preenchida pelo Claude durante a execução: bloqueios, decisões on-the-fly, gambiarras temporárias com TODO, etc.)
+Plano executado em 2026-05-01 do bloco 1 ao bloco 6 com auditor passando em todos.
 
-_(vazio até início da execução)_
+- **Bloco 1.** Função `estimateGear` opera sobre buffer + assinaturas; método rola entre `rpm_speed`, `rpm_speed_history`, `rpm_speed_history_accel` conforme dados disponíveis.
+- **Bloco 2.** Schema do carro (`src/data/cars.js`) reservou desde já os campos do shift-light (gear_signatures, learned_targets, gear_ratios, dyno_curve) com defaults. Placeholder de dyno cai em safe com reason explícita.
+- **Bloco 3.** Schema Dexie bumpou para v11 com store `shift_events`. Idempotência via campo `&dedup_key` (índice único). Detector mantém buffer in-memory; persistência é o único IO.
+- **Bloco 4.** Mockup HTML standalone, mesmas classes geradas pelo `shift-cards-view.js`. HTML escapado em campos hostis. `renderShiftCards` aceita `eventsLoader` injetado pra teste.
+- **Bloco 5.** Schema Dexie v12 com `reaction_profiles` (`&key` único). Hook em `shift-target.js` adicionou campos `visualRpm` e `reactionSource`. Aprendizado descarta eventos com `gear_confidence < 0.8`, inconsistentes ou `early`.
+- **Bloco 6.** Parser CSV detecta separador, formato (Dynojet/Mustang/genérico) e converte unidades; cobre headers com preâmbulo de metadata. Mockup ganhou aba Dinamômetro via radio-tabs CSS-only. `shift-target.js` deixou de ter placeholder e passa a chamar `computeOptimalRpmPerGear` com try/catch tolerante.
+
+Total de testes: **104** (`npm run test:shift-light`). Smoke geral do projeto continua verde — sem regressão.
+
+Pendências fora do plano (não bloqueiam):
+- `trecho-resolver.resolveTrechoId` é async, mas o detector consulta `resolveTrecho` sincronamente no `buildEvent`. Quando o adapter real do P1 Fast for ligado, decidir se a resolução vira async no detector ou se o adapter expõe um lookup síncrono em cache.
+- Branch atual `main`, conforme regra; nada commitado/pushado.
