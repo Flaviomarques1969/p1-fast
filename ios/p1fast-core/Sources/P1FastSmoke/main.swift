@@ -623,6 +623,241 @@ step("PM-08: segmentsIntersect detecta cruzamento") {
     try assertTrue(!PathMapper.segmentsIntersect(E, F, G, H), "paralelos não cruzam")
 }
 
+// ════════════════════════════════════════════════════════════
+// TrajectoryMonitor — TM-01 .. TM-20 (1:1 com node-smoke-trajectory-monitor.mjs)
+// ════════════════════════════════════════════════════════════
+
+let TM_ORIG_LAT = -15.7800
+let TM_ORIG_LNG = -47.9200
+
+func tmSample(tMs: Double, dxM: Double = 0, dyM: Double = 0,
+              kmh: Double? = 100, accLong: Double? = nil,
+              gyroAlpha: Double? = nil, course: Double? = nil) -> TrajectoryMonitor_.InputSample {
+    let cosLat = cos(TM_ORIG_LAT * .pi / 180)
+    return TrajectoryMonitor_.InputSample(
+        t: tMs,
+        lat: TM_ORIG_LAT + dyM / 111000,
+        lng: TM_ORIG_LNG + dxM / (111000 * cosLat),
+        kmh: kmh, accLong: accLong, gyroAlpha: gyroAlpha, course: course
+    )
+}
+
+func tmRefSamples() -> [TrajectoryMonitor_.InputSample] {
+    return [
+        tmSample(tMs:    0, dyM: -100, kmh: 130, accLong:  0.0, gyroAlpha:  0, course:   0),
+        tmSample(tMs:  100, dyM:  -80, kmh: 130, accLong:  0.0, gyroAlpha:  0, course:   0),
+        tmSample(tMs:  200, dyM:  -60, kmh: 125, accLong: -0.3, gyroAlpha:  0, course:   0),  // freio
+        tmSample(tMs:  300, dyM:  -40, kmh: 110, accLong: -0.5, gyroAlpha:  5, course:   5),
+        tmSample(tMs:  400, dyM:  -20, kmh:  90, accLong: -0.4, gyroAlpha: 30, course:  20),  // giro
+        tmSample(tMs:  500, dyM:   -5, kmh:  72, accLong: -0.1, gyroAlpha: 35, course:  50),
+        tmSample(tMs:  600, dxM:    5, kmh:  68, accLong:  0.0, gyroAlpha: 30, course:  80),  // apex
+        tmSample(tMs:  700, dxM:   20, kmh:  72, accLong:  0.2, gyroAlpha: 20, course: 110),  // tração
+        tmSample(tMs:  800, dxM:   45, kmh:  85, accLong:  0.3, gyroAlpha: 10, course: 135),
+        tmSample(tMs:  900, dxM:   75, kmh: 100, accLong:  0.3, gyroAlpha:  3, course: 155),
+        tmSample(tMs: 1000, dxM:  110, kmh: 115, accLong:  0.2, gyroAlpha:  0, course: 170),
+        tmSample(tMs: 1100, dxM:  150, kmh: 125, accLong:  0.1, gyroAlpha:  0, course: 175),
+    ]
+}
+
+step("TM-01: distanceMetersGeo: 1m horizontal ≈ 1m") {
+    let cosLat = cos(TM_ORIG_LAT * .pi / 180)
+    let a = (lat: TM_ORIG_LAT, lng: TM_ORIG_LNG)
+    let b = (lat: TM_ORIG_LAT, lng: TM_ORIG_LNG + 1 / (111000 * cosLat))
+    let d = TrajectoryMonitor_.distanceMetersGeo(a, b)!
+    try assertTrue(abs(d - 1) < 0.05, "d=\(d)")
+}
+
+step("TM-02: distanceMetersGeo: nulo se faltar coord") {
+    try assertTrue(TrajectoryMonitor_.distanceMetersGeo(nil as TrajectoryMonitor_.InputSample?, nil) == nil)
+    let s1 = TrajectoryMonitor_.InputSample(t: 0, lat: 1, lng: nil)
+    let s2 = TrajectoryMonitor_.InputSample(t: 0, lat: 1, lng: 1)
+    try assertTrue(TrajectoryMonitor_.distanceMetersGeo(s1, s2) == nil)
+}
+
+step("TM-03: findApexIndex aponta velocidade mínima") {
+    let arr = tmRefSamples()
+    let i = TrajectoryMonitor_.findApexIndex(arr)
+    try assertEq(arr[i].kmh, 68)
+}
+
+step("TM-04: findBrakingIndex aponta primeira accLong < -0.20") {
+    let arr = tmRefSamples()
+    try assertEq(TrajectoryMonitor_.findBrakingIndex(arr), 2)
+}
+
+step("TM-05: findBrakingIndex fallback sem IMU usa queda de kmh") {
+    let arr = tmRefSamples().map { s in
+        TrajectoryMonitor_.InputSample(t: s.t, lat: s.lat, lng: s.lng,
+                                       kmh: s.kmh, accLong: nil,
+                                       gyroAlpha: s.gyroAlpha, course: s.course)
+    }
+    let i = TrajectoryMonitor_.findBrakingIndex(arr)
+    try assertTrue(i >= 1 && i <= 4, "fallback idx=\(i)")
+}
+
+step("TM-06: findTurnInIndex aponta primeira |gyroAlpha| > 15") {
+    let arr = tmRefSamples()
+    try assertEq(TrajectoryMonitor_.findTurnInIndex(arr), 4)
+}
+
+step("TM-07: findTurnInIndex fallback via course") {
+    let arr = tmRefSamples().map { s in
+        TrajectoryMonitor_.InputSample(t: s.t, lat: s.lat, lng: s.lng,
+                                       kmh: s.kmh, accLong: s.accLong,
+                                       gyroAlpha: nil, course: s.course)
+    }
+    let i = TrajectoryMonitor_.findTurnInIndex(arr)
+    try assertTrue(i >= 3 && i <= 6, "fallback idx=\(i)")
+}
+
+step("TM-08: findThrottleIndex primeira após apex com accLong > 0.15") {
+    let arr = tmRefSamples()
+    let apex = TrajectoryMonitor_.findApexIndex(arr)
+    try assertEq(TrajectoryMonitor_.findThrottleIndex(arr, apexIdx: apex), 7)
+}
+
+step("TM-09: evaluateSegmentTrajectory: ref vs ref → desvios ≈ 0") {
+    let ref = tmRefSamples()
+    let r = TrajectoryMonitor_.evaluateSegmentTrajectory(samples: ref, refSamples: ref)
+    try assertTrue(r.disponivel, r.razao ?? "indisponivel")
+    for d in [r.brakingPointDeviationM, r.turnInPointDeviationM, r.throttlePointDeviationM,
+              r.entryDeviationM, r.apexDeviationM] {
+        try assertTrue(d != nil && d! < 0.5, "desvio fora: \(String(describing: d))")
+    }
+    try assertEq(r.confidence, Confidence.alta)
+}
+
+step("TM-10: evaluateSegmentTrajectory: piloto 1 amostra mais tarde no freio gera desvio") {
+    let ref = tmRefSamples()
+    var cur = ref
+    // sample idx=2 vira "ainda não freou"
+    cur[2] = TrajectoryMonitor_.InputSample(
+        t: cur[2].t, lat: cur[2].lat, lng: cur[2].lng,
+        kmh: 130, accLong: 0.0,
+        gyroAlpha: cur[2].gyroAlpha, course: cur[2].course
+    )
+    let r = TrajectoryMonitor_.evaluateSegmentTrajectory(samples: cur, refSamples: ref)
+    try assertTrue(r.disponivel)
+    let d = r.brakingPointDeviationM
+    try assertTrue(d != nil && d! >= 5 && d! <= 40, "brakingDev fora: \(String(describing: d))")
+}
+
+step("TM-11: evaluateSegmentTrajectory: poucas amostras → indisponivel") {
+    let r = TrajectoryMonitor_.evaluateSegmentTrajectory(samples: [], refSamples: tmRefSamples())
+    try assertTrue(!r.disponivel)
+    try assertEq(r.razao, "sem-amostras-atuais")
+}
+
+step("TM-12: evaluateSegmentTrajectory: sem refSamples → indisponivel") {
+    let r = TrajectoryMonitor_.evaluateSegmentTrajectory(samples: tmRefSamples(), refSamples: [])
+    try assertTrue(!r.disponivel)
+    try assertEq(r.razao, "sem-amostras-referencia")
+}
+
+step("TM-13: evaluateSegmentTrajectory: confidence cai sem IMU em ambos") {
+    let semImu = tmRefSamples().map { s in
+        TrajectoryMonitor_.InputSample(t: s.t, lat: s.lat, lng: s.lng,
+                                       kmh: s.kmh, accLong: nil,
+                                       gyroAlpha: nil, course: s.course)
+    }
+    let r = TrajectoryMonitor_.evaluateSegmentTrajectory(samples: semImu, refSamples: semImu)
+    try assertTrue(r.confidence != .alta, "não deveria ser ALTA sem IMU")
+}
+
+step("TM-14: evaluateReferenciaFixa: 3 voltas com desvio < 8m → cumpriu") {
+    let reports: [TrajectoryMonitor_.Report] = [
+        makeReport(braking: 5),
+        makeReport(braking: 7),
+        makeReport(braking: 4),
+    ]
+    let r = TrajectoryMonitor_.evaluateReferenciaFixa(reports)
+    try assertTrue(r.cumpriu, "deveria cumprir")
+    try assertEq(r.hits, 3)
+    try assertTrue(r.mediaM != nil && abs(r.mediaM! - 5.3) < 0.1, "media=\(String(describing: r.mediaM))")
+}
+
+step("TM-15: evaluateReferenciaFixa: 3 voltas com desvio > 8m → não cumpriu") {
+    let reports: [TrajectoryMonitor_.Report] = [
+        makeReport(braking: 10),
+        makeReport(braking: 12),
+        makeReport(braking: 15),
+    ]
+    let r = TrajectoryMonitor_.evaluateReferenciaFixa(reports)
+    try assertTrue(!r.cumpriu, "não deveria cumprir")
+    try assertEq(r.hits, 0)
+}
+
+step("TM-16: evaluateReferenciaFixa: ignora reports sem desvio") {
+    let reports: [TrajectoryMonitor_.Report] = [
+        makeReport(braking: 5),
+        makeReport(braking: nil),
+        makeReport(braking: 6),
+        makeReport(braking: 4),
+    ]
+    let r = TrajectoryMonitor_.evaluateReferenciaFixa(reports)
+    try assertTrue(r.cumpriu, "3 hits válidos deveriam cumprir")
+}
+
+step("TM-17: evaluateCurvaCega: 2 de 3 voltas com desvio < 5m → cumpriu") {
+    let reports: [TrajectoryMonitor_.Report] = [
+        makeReport(entry: 3),
+        makeReport(entry: 8),
+        makeReport(entry: 4),
+    ]
+    let r = TrajectoryMonitor_.evaluateCurvaCega(reports)
+    try assertTrue(r.cumpriu, "deveria cumprir")
+}
+
+step("TM-18: TrajectoryMonitor recordSegment acumula histórico") {
+    let m = TrajectoryMonitor()
+    let ref = tmRefSamples()
+    _ = m.recordSegment(segmentId: "curva-1", samples: ref, refSamples: ref)
+    _ = m.recordSegment(segmentId: "curva-1", samples: ref, refSamples: ref)
+    _ = m.recordSegment(segmentId: "curva-2", samples: ref, refSamples: ref)
+    try assertEq(m.getHistory("curva-1").count, 2)
+    try assertEq(m.getHistory("curva-2").count, 1)
+    try assertEq(m.getHistory("curva-X").count, 0)
+}
+
+step("TM-19: evaluateLesson roteia para o avaliador certo") {
+    let m = TrajectoryMonitor()
+    let ref = tmRefSamples()
+    for _ in 0..<4 {
+        _ = m.recordSegment(segmentId: "c1", samples: ref, refSamples: ref)
+    }
+    let ev = m.evaluateLesson(lessonId: "L001-referencia-fixa", segmentId: "c1")
+    try assertTrue(ev.cumpriu, "L001 ref-vs-ref deveria cumprir")
+    let evCega = m.evaluateLesson(lessonId: "L007-curva-cega", segmentId: "c1")
+    try assertTrue(evCega.cumpriu, "L007 ref-vs-ref deveria cumprir")
+    let evDesconhecida = m.evaluateLesson(lessonId: "L999-fake", segmentId: "c1")
+    try assertTrue(!evDesconhecida.cumpriu, "lição desconhecida não cumpre")
+    try assertEq(evDesconhecida.razao, "lesson-sem-avaliador")
+}
+
+step("TM-20: TrajectoryMonitor.reset() esvazia tudo") {
+    let m = TrajectoryMonitor()
+    _ = m.recordSegment(segmentId: "c1", samples: tmRefSamples(), refSamples: tmRefSamples())
+    m.reset()
+    try assertEq(m.getHistory("c1").count, 0)
+}
+
+// helper para construir Reports parciais usados em TM-14..17
+func makeReport(braking: Double? = nil, entry: Double? = nil) -> TrajectoryMonitor_.Report {
+    return TrajectoryMonitor_.Report(
+        disponivel: true, razao: nil,
+        brakingPointDeviationM: braking,
+        turnInPointDeviationM: nil,
+        throttlePointDeviationM: nil,
+        entryDeviationM: entry,
+        apexDeviationM: nil,
+        confidence: .alta,
+        debug: TrajectoryMonitor_.Report.Debug(
+            apexIdx: -1, refApexIdx: -1, brakingIdx: -1, refBrakingIdx: -1,
+            turnInIdx: -1, refTurnInIdx: -1, throttleIdx: -1, refThrottleIdx: -1
+        )
+    )
+}
+
 step("CLOCK-01: Clock.now retorna epoch ms positivo") {
     let now = Clock.now
     try assertTrue(now > 1_700_000_000_000, "now > 2023-11")
