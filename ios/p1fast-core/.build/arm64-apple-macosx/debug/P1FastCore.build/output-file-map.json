@@ -30,6 +30,13 @@
     "swift-dependencies": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/FaseCurva.swiftdeps",
     "diagnostics": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/FaseCurva.dia"
   },
+  "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/FuelCalc.swift": {
+    "dependencies": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/FuelCalc.d",
+    "object": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/FuelCalc.swift.o",
+    "swiftmodule": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/FuelCalc~partial.swiftmodule",
+    "swift-dependencies": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/FuelCalc.swiftdeps",
+    "diagnostics": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/FuelCalc.dia"
+  },
   "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Lesson.swift": {
     "dependencies": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Lesson.d",
     "object": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Lesson.swift.o",
