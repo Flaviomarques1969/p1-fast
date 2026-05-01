@@ -23,6 +23,8 @@ mockup gerou drift no projeto anterior.
 | `mockup-home-cheio.html` | HOME do hub mobile · 4 gauges · stint em andamento · próximo evento · sugestão · eventos recentes · FAB | Padrão B |
 | `mockup-home-vazio.html` | HOME empty state — hero + 3 bullets + CTA | Padrão B |
 | `mockup-pendencias-cascata.html` | Tab Pendências em cascata · header contextual · summary card · chip rail · groups colapsáveis | Padrão B |
+| `mockup-stint-objetivo.html` | Modal Stint — objetivo do stint + toggle P1 Coach + fase de foco + pickers de lição e trecho | Padrão B |
+| `mockup-licao-lista.html` | Lista de seleção de lição específica (7 lições MVP) — abre a partir do picker em `mockup-stint-objetivo.html` | Padrão B |
 | `historico-evento/` | 7 linhas iteradas (A-G) do Modal Evento + comparativo lado-a-lado | Memória de design |
 
 ## Padrão B — tokens canônicos do hub

@@ -24,36 +24,19 @@ slide 3D, halo radial). NÃO mudar.
 
 ---
 
-## Tarefa em andamento quando Flavio deu /clear
+## Última tarefa (2026-04-30)
 
-**Refazer 3 mockups do hub no padrão B** + criar `mockup-evento.html` canônico
-(cópia do B sem o BC) + apagar `mockup-evento-BC.html` obsoleto.
+**Mockups do fluxo Stint** (Bloco A1 + A2) entregues em `_design-reference/`.
 
-Detalhes em `~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/p1-fast-tarefa-pendente.md`.
+- `mockup-stint-objetivo.html` (A1) — modal de objetivo do stint com toggle
+  P1 Coach, fase de foco e pickers de lição/trecho.
+- `mockup-licao-lista.html` (A2) — lista de seleção da lição específica,
+  com as 7 lições MVP cadastradas em `src/data/lesson-library.js`. Abre a
+  partir do picker "Lição específica" em A1.
 
-Ordem operacional:
-
-```bash
-cd "/Users/imac/Projetos/P1 Fast/_design-reference"
-
-# 1. Promover B → canônico
-cp historico-evento/mockup-evento-B.html mockup-evento.html
-rm mockup-evento-BC.html
-
-# 2. Reescrever 3 mockups do hub no padrão B (estrutura e conteúdo
-#    preservados, mas tokens/cores/componentes substituídos pelo B)
-#    - mockup-home-cheio.html
-#    - mockup-home-vazio.html
-#    - mockup-pendencias-cascata.html
-
-# 3. Atualizar _design-reference/README.md
-#    - Remover mockup-evento-BC, adicionar mockup-evento
-#    - Substituir bloco "Tokens BC compartilhados" pelos tokens do padrão B
-
-# 4. Validar visualmente cada mockup no preview MCP server p1-fast :8767
-
-# 5. Commit
-```
+Antes de A1+A2 (commit `eef0c0d`): 4 mockups do hub alinhados ao padrão B
+(`mockup-evento.html` canônico + `mockup-home-cheio.html` +
+`mockup-home-vazio.html` + `mockup-pendencias-cascata.html`).
 
 ---
 
@@ -71,10 +54,13 @@ npm run smoke
 #   tool: mcp__Claude_Preview__preview_start name="p1-fast"
 #   → http://localhost:8767/
 
-# Mockups do hub (refazer no padrão B):
+# Mockups do hub (padrão B):
+# http://localhost:8767/_design-reference/mockup-evento.html
 # http://localhost:8767/_design-reference/mockup-home-cheio.html
 # http://localhost:8767/_design-reference/mockup-home-vazio.html
 # http://localhost:8767/_design-reference/mockup-pendencias-cascata.html
+# http://localhost:8767/_design-reference/mockup-stint-objetivo.html
+# http://localhost:8767/_design-reference/mockup-licao-lista.html
 
 # Mockups dos cockpits (NÃO MEXER):
 # http://localhost:8767/_design-reference/mockup-cockpit-piloto.html
@@ -117,5 +103,4 @@ npm run smoke
 
 ---
 
-**Último commit antes do /clear:** `067e172`
-**Próximo commit esperado:** alinhamento dos 3 mockups do hub no padrão B
+**Último commit nomeado:** `eef0c0d` (alinhamento dos 4 mockups do hub no padrão B)
