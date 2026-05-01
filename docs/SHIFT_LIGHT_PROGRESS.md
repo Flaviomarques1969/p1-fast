@@ -30,21 +30,21 @@ Convenção:
 ## Bloco 1 — Estimativa de marcha + confiança
 
 ### Arquivos
-- [ ] `src/domain/gear-estimation.js`
-- [ ] `src/domain/gear-signatures.js`
-- [ ] `src/domain/gear-shift-detector.js`
-- [ ] `tests/domain/gear-estimation.spec.js`
+- [x] `src/domain/gear-estimation.js`
+- [x] `src/domain/gear-signatures.js`
+- [x] `src/domain/gear-shift-detector.js`
+- [x] `tests/domain/gear-estimation.spec.js`
 
 ### Critérios de aceite
-- [ ] Stream sintético 1→2→3 → identifica cada marcha em ≤100ms
-- [ ] Velocidade ruidosa (±5%) → confidence cai mas gear continua razoável
-- [ ] Sem assinatura calibrada → retorna `{gear:null, confidence:0, method:'fallback'}`
-- [ ] TPS=0 + accel desaceleração → reduz confidence
-- [ ] Teste cobre: troca pra cima, redução, neutro, patinação
-- [ ] Função pura (sem side-effects)
+- [x] Stream sintético 1→2→3 → identifica cada marcha em ≤100ms
+- [x] Velocidade ruidosa (±5%) → confidence cai mas gear continua razoável
+- [x] Sem assinatura calibrada → retorna `{gear:null, confidence:0, method:'fallback'}`
+- [x] TPS=0 + accel desaceleração → reduz confidence
+- [x] Teste cobre: troca pra cima, redução, neutro, patinação
+- [x] Função pura (sem side-effects)
 
 ### Auditor
-- [ ] `Agent(shift-light-auditor, "Audite Bloco 1")` → ✅
+- [~] `Agent(shift-light-auditor, "Audite Bloco 1")` — em curso
 
 ---
 
