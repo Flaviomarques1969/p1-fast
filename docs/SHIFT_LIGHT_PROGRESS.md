@@ -56,19 +56,20 @@ Convenção:
 ## Bloco 2 — Modo seguro + alvo conservador
 
 ### Arquivos
-- [ ] `src/domain/shift-target.js`
-- [ ] `src/domain/safe-mode.js`
-- [ ] `src/data/cars.js` (extensão de schema)
+- [x] `src/domain/shift-target.js`
+- [x] `src/domain/safe-mode.js`
+- [x] `src/data/cars.js` (extensão de schema)
+- [x] `tests/domain/shift-target.spec.js` (extra: cobre critérios)
 
 ### Critérios de aceite
-- [ ] Sem dyno + confiança 0.9 → safe target
-- [ ] Sem dyno + confiança 0.5 → safe target
-- [ ] Com learned target marcha 3 + confiança 0.9 + gear=3 → learned
-- [ ] `redline_rpm` ausente → erro explícito
-- [ ] Função pura
+- [x] Sem dyno + confiança 0.9 → safe target
+- [x] Sem dyno + confiança 0.5 → safe target
+- [x] Com learned target marcha 3 + confiança 0.9 + gear=3 → learned
+- [x] `redline_rpm` ausente → erro explícito
+- [x] Função pura
 
 ### Auditor
-- [ ] `Agent(shift-light-auditor, "Audite Bloco 2")` → ✅
+- [~] `Agent(shift-light-auditor, "Audite Bloco 2")` — em curso
 
 ---
 
