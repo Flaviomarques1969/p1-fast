@@ -349,6 +349,59 @@ step("CR-07: regras manuais existem (3 mínimo)") {
     try assertTrue(ids.contains("pista-molhada"))
 }
 
+// ════════════════════════════════════════════════════════════
+// Track / SeedBrasilia — TRK-01 .. TRK-05 (paridade JS seed-tracks.js)
+// ════════════════════════════════════════════════════════════
+
+step("TRK-01: parciaisIguais(4) gera 4 parciais 0-25/25-50/50-75/75-100") {
+    let p = TrackLayout.parciaisIguais(n: 4)
+    try assertEq(p.count, 4)
+    try assertEq(p[0].id, "P1")
+    try assertClose(p[0].tStart, 0)
+    try assertClose(p[0].tEnd, 25)
+    try assertClose(p[3].tEnd, 100)
+}
+
+step("TRK-02: SeedBrasilia.make() retorna track + layout + 12 segmentos") {
+    let r = SeedBrasilia.make()
+    try assertEq(r.track.apelido, "Brasília")
+    try assertEq(r.track.numeroCurvas, 8)
+    try assertEq(r.track.sentido, "anti-horário")
+    try assertEq(r.layout.parciais.count, 4)
+    try assertEq(r.segments.count, 12)
+}
+
+step("TRK-03: Brasília tem 8 trechos (curvas) + 4 retas") {
+    let r = SeedBrasilia.make()
+    let curvas = r.segments.filter { $0.ehTrecho }
+    let retas  = r.segments.filter { !$0.ehTrecho }
+    try assertEq(curvas.count, 8)
+    try assertEq(retas.count, 4)
+}
+
+step("TRK-04: todos os trechos têm apex calibration DEFAULT + apexReference + cornerType") {
+    let r = SeedBrasilia.make()
+    let trechos = r.segments.filter { $0.ehTrecho }
+    for t in trechos {
+        try assertEq(t.apexCalibration, "DEFAULT", "\(t.nome) sem DEFAULT")
+        try assertTrue(t.apexReference != nil, "\(t.nome) sem apexReference")
+        try assertTrue(t.apexStrategy != nil, "\(t.nome) sem apexStrategy")
+        try assertTrue(t.cornerType != nil, "\(t.nome) sem cornerType")
+    }
+}
+
+step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
+    let r = SeedBrasilia.make()
+    let enc = JSONEncoder()
+    let dec = JSONDecoder()
+    let data = try enc.encode(r.track)
+    let back = try dec.decode(Track.self, from: data)
+    try assertEq(back.id, r.track.id)
+    try assertEq(back.apelido, r.track.apelido)
+    try assertEq(back.geoAncoras.count, r.track.geoAncoras.count)
+    try assertEq(back.svgPath, r.track.svgPath)
+}
+
 step("CLOCK-01: Clock.now retorna epoch ms positivo") {
     let now = Clock.now
     try assertTrue(now > 1_700_000_000_000, "now > 2023-11")

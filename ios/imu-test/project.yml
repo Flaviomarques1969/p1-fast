@@ -1,0 +1,62 @@
+# ═══════════════════════════════════════════════════════════
+# project.yml — XcodeGen spec do P1 Fast IMU Test
+# ═══════════════════════════════════════════════════════════
+# Gera P1FastIMUTest.xcodeproj a partir desta spec.
+# Rodar: xcodegen generate
+# Abrir: open P1FastIMUTest.xcodeproj
+#
+# O target é um App iOS SwiftUI puro com 3 arquivos Swift +
+# 2 chaves de privacidade no Info.plist (sem essas, iOS bloqueia
+# IMU e GPS silenciosamente).
+
+name: P1FastIMUTest
+
+options:
+  bundleIdPrefix: com.flaviomarques.p1fast
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: false
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    GENERATE_INFOPLIST_FILE: NO
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+
+targets:
+  P1FastIMUTest:
+    type: application
+    platform: iOS
+    sources:
+      - path: P1FastIMUTestApp.swift
+      - path: ContentView.swift
+      - path: CaptureService.swift
+    info:
+      path: Generated/Info.plist
+      properties:
+        CFBundleName: P1FastIMUTest
+        CFBundleDisplayName: P1 IMU Test
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UILaunchScreen: {}
+        UIRequiredDeviceCapabilities:
+          - armv7
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        # Privacy strings — sem essas iOS bloqueia silenciosamente
+        NSLocationWhenInUseUsageDescription: Captura GPS pra validar taxa de amostragem real do iPhone (ADR-018 P1 Fast).
+        NSMotionUsageDescription: Captura IMU pra validar 10 Hz consistentes (ADR-018 P1 Fast).
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.flaviomarques.p1fast.imutest
+        TARGETED_DEVICE_FAMILY: "1,2"
+        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO

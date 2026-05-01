@@ -77,6 +77,7 @@ body{
 }
 .device[data-trecho-status="recorde-stint"]{ --halo-cor: var(--halo-recorde); }
 .device[data-trecho-status="pior-stint"]{    --halo-cor: var(--halo-pior); }
+.device[data-trecho-status="best-alltime"]{  --halo-cor: oklch(74% 0.16 73 / .50); }
 
 .notch{
   position:absolute;left:18px;top:50%;transform:translateY(-50%);
@@ -134,10 +135,11 @@ body{
   transition:transform 1200ms var(--ease-msg);
 }
 .device[data-msg-state="ativa"] .info-bloco,
-.device[data-stint-modo="mapa"] .info-bloco,
-.device[data-stint-modo="mapa-ghost"] .info-bloco{
+.device[data-vista="trecho"][data-stint-modo="mapa"] .info-bloco,
+.device[data-vista="trecho"][data-stint-modo="mapa-ghost"] .info-bloco{
   transform:translate(calc(-50% - 230px), -50%);
 }
+/* vista=volta NÃO desloca o info-bloco — ele fica centralizado e troca conteúdo */
 
 .info__delta{
   font-family:var(--ff-display);
@@ -175,6 +177,30 @@ body{
     1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
     0 0 24px oklch(68% 0.26 27 / .35);
 }
+
+/* Painéis dentro do info-bloco — alterna por vista (trecho|volta) */
+.info-bloco__panel{
+  display:flex;flex-direction:column;align-items:center;gap:14px;
+}
+.info-bloco__panel--volta{ display:none; }
+.device[data-vista="volta"] .info-bloco__panel--trecho{ display:none; }
+.device[data-vista="volta"] .info-bloco__panel--volta{ display:flex; }
+
+/* Tempo da última volta (no lugar da frase pedagógica em vista=volta) */
+.info__lap-time{
+  font-family:var(--ff-display);
+  font-size:var(--fs-6);font-weight:900;letter-spacing:var(--ls-caps-s);
+  text-transform:uppercase;color:var(--ink);
+  font-variant-numeric:tabular-nums slashed-zero;
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85);
+  display:inline-flex;align-items:baseline;gap:10px;
+}
+.info__lap-time small{
+  font-size:11px;font-weight:700;color:var(--muted);letter-spacing:var(--ls-caps-l);
+}
+.info__lap-time b{ color:var(--ink);font-weight:900; }
 
 /* ALERT-BLOCO — idêntico ao mockup-cockpit-piloto.
    Quando ghost ativo + alerta tipo grave: alerta tem precedência total (ghost some).
@@ -226,8 +252,8 @@ body{
              opacity 1100ms var(--ease-msg),
              filter 1100ms var(--ease-msg);
 }
-.device[data-stint-modo="mapa"] .ghost-bloco,
-.device[data-stint-modo="mapa-ghost"] .ghost-bloco{
+.device[data-vista="trecho"][data-stint-modo="mapa"] .ghost-bloco,
+.device[data-vista="trecho"][data-stint-modo="mapa-ghost"] .ghost-bloco{
   transform:translate(-50%, -50%) translateZ(0) scale(1);
   filter:blur(0);
   opacity:1;
@@ -235,17 +261,40 @@ body{
 /* Modo "mapa": pista + traçado atual + marcos, mas SEM linha ghost cyan */
 .device[data-stint-modo="mapa"] .ghost-svg__ghost{ display:none; }
 
-/* Mensagem crítica (grave) substitui o mapa — precedência total */
+/* Mensagem crítica (grave) substitui o mapa — precedência total.
+   Transição premium: mapa recua mais rápido (650ms, sem delay), abrindo espaço
+   pra mensagem que entra com peso (1400ms, delay 350ms — chega "depois" do mapa sair). */
 .device[data-msg-state="ativa"][data-msg-tipo="grave"] .ghost-bloco{
   opacity:0;
-  transform:translate(-50%, -50%) translateZ(-300px) scale(.35);
-  filter:blur(12px);
+  transform:translate(-50%, -50%) translateZ(-380px) scale(.28);
+  filter:blur(14px);
+  transition:transform 700ms var(--ease-msg),
+             opacity 600ms var(--ease-msg),
+             filter 600ms var(--ease-msg);
 }
-/* Comunicação: mapa permanece atrás, atenuado */
+.device[data-msg-state="ativa"][data-msg-tipo="grave"] .alert-bloco{
+  transition:transform 1400ms var(--ease-msg) 350ms,
+             opacity 1200ms var(--ease-msg) 350ms,
+             filter 1200ms var(--ease-msg) 350ms;
+}
+/* Comunicação: mapa permanece atrás, atenuado (sem o stagger premium) */
 .device[data-msg-state="ativa"][data-msg-tipo="comunicacao"][data-stint-modo="mapa"] .ghost-bloco,
 .device[data-msg-state="ativa"][data-msg-tipo="comunicacao"][data-stint-modo="mapa-ghost"] .ghost-bloco{
   opacity:.22;
   filter:blur(2px);
+}
+
+/* Halo de atenção durante grave — pulse curto na borda do device pra acompanhar a entrada da msg */
+.device[data-msg-state="ativa"][data-msg-tipo="grave"]::after{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:2;
+  border-radius:48px;
+  box-shadow:inset 0 0 0 0 oklch(68% 0.26 27 / 0);
+  animation:gravePulse 1800ms var(--ease-msg) 200ms 1 forwards;
+}
+@keyframes gravePulse{
+  0%   { box-shadow:inset 0 0 0 0    oklch(68% 0.26 27 / 0);   }
+  35%  { box-shadow:inset 0 0 60px 8px oklch(68% 0.26 27 / .55); }
+  100% { box-shadow:inset 0 0 80px 4px oklch(68% 0.26 27 / .25); }
 }
 
 .ghost-bloco svg{
@@ -254,9 +303,13 @@ body{
   transition:transform 600ms var(--ease-out);
   transform-origin:center;
 }
-/* Orientação do mapa — só ilustrativa; em produção viria do bearing do circuito/carro */
-.device[data-mapa-orient="track"]   .ghost-bloco svg{ transform:rotate(-12deg); }
-.device[data-mapa-orient="heading"] .ghost-bloco svg{ transform:rotate(-32deg); }
+/* Orientação do mapa — em produção viria do bearing do circuito/carro.
+   Default = heading-up: SVG é desenhado já com perspectiva do piloto
+     (track passado no fundo, saída/curva-à-frente no topo). Sem rotação adicional.
+   Track-up e North-up são rotações relativas a essa perspectiva. */
+.device[data-mapa-orient="heading"] .ghost-bloco svg{ transform:rotate(0deg); }
+.device[data-mapa-orient="track"]   .ghost-bloco svg{ transform:rotate(45deg); }
+.device[data-mapa-orient="north"]   .ghost-bloco svg{ transform:rotate(75deg); }
 
 /* Camada 1: pista (cinza muito claro, contexto) */
 .ghost-svg__pista{
@@ -310,6 +363,8 @@ body{
   font-size:10px;font-weight:600;letter-spacing:var(--ls-caps-s);
   color:var(--muted);text-transform:uppercase;
 }
+
+/* (lap-bloco removido — vista de volta vive no info-bloco central, não no slot direito) */
 
 /* Etiqueta de contexto (no rodapé do mapa, fina) */
 .ghost-bloco__ctx{
@@ -420,12 +475,14 @@ body{
       data-stint-modo:  sem-mapa | mapa | mapa-ghost   (decidido no plano de stint; box pode alterar)
       data-ghost-ref:   presente | ausente             (só relevante em modo mapa-ghost)
       data-mapa-orient: north | heading | track        (preferência do piloto; default north)
+      data-vista:       trecho | volta                  (volta = na reta principal, mostra dados da volta inteira; uma única vez por volta)
   -->
   <div class="device" id="device"
        data-trecho-status="neutro"
        data-msg-state="oculta" data-msg-tipo="comunicacao"
        data-stint-modo="mapa-ghost" data-ghost-ref="presente"
-       data-mapa-orient="north">
+       data-mapa-orient="heading"
+       data-vista="trecho">
     <div class="notch"></div>
 
     <div class="telemetria-chip">
@@ -456,10 +513,18 @@ body{
       </div>
     </section>
 
-    <!-- INFO-BLOCO: delta + frase. Desliza pra esquerda quando ghost OU msg ativos. -->
+    <!-- INFO-BLOCO: dois painéis alternados por vista.
+         vista=trecho → delta-trecho + frase pedagógica (desloca pra esquerda quando mapa ativo)
+         vista=volta  → delta-volta + tempo da última volta (centralizado, sem mapa) -->
     <div class="info-bloco">
-      <span class="info__delta bom" id="infoDelta">0.18</span>
-      <div class="info__acao" id="infoAcao">SOLTE FREIO</div>
+      <div class="info-bloco__panel info-bloco__panel--trecho">
+        <span class="info__delta bom" id="infoDelta">0.18</span>
+        <div class="info__acao" id="infoAcao">SOLTE FREIO</div>
+      </div>
+      <div class="info-bloco__panel info-bloco__panel--volta">
+        <span class="info__delta bom">−0.31</span>
+        <div class="info__lap-time"><small>última</small><b>1:41.108</b></div>
+      </div>
     </div>
 
     <!-- ALERT-BLOCO: igual ao cockpit padrão -->
@@ -480,45 +545,59 @@ body{
     <div class="ghost-bloco" id="ghostBloco">
       <svg viewBox="0 0 380 288" preserveAspectRatio="xMidYMid meet"
            xmlns="http://www.w3.org/2000/svg">
-        <!-- Pista cinza (corredor largo) -->
+        <!--
+          Perspectiva heading-up: track passado embaixo, ápice no meio,
+          saída no topo. Curva representada: right-hander, com aproximação
+          reta vinda de baixo, frenagem, turn-in, ápice, exit subindo à direita.
+        -->
+
+        <!-- Pista cinza (corredor) -->
         <path class="ghost-svg__pista"
-              d="M 24 56
-                 C 90 50, 150 64, 188 110
-                 S 280 234, 358 248" />
-        <!-- Bordas finas da pista pra dar profundidade (acima e abaixo) -->
+              d="M 178 280
+                 L 178 220
+                 Q 178 175, 215 145
+                 Q 255 115, 308 88
+                 L 356 62" />
+        <!-- Bordas finas (acima/abaixo) -->
         <path class="ghost-svg__pista-bord"
-              d="M 24 47
-                 C 92 41, 152 55, 192 102
-                 S 282 226, 358 240" />
+              d="M 168 280
+                 L 168 218
+                 Q 168 170, 207 138
+                 Q 247 108, 302 80
+                 L 351 54" />
         <path class="ghost-svg__pista-bord"
-              d="M 24 65
-                 C 88 59, 148 73, 184 118
-                 S 278 242, 358 256" />
+              d="M 188 280
+                 L 188 222
+                 Q 188 180, 223 152
+                 Q 263 122, 314 96
+                 L 360 70" />
 
-        <!-- Ghost (melhor traçado, ciano translúcido) -->
+        <!-- Ghost (melhor traçado: late apex, mais próximo da borda interna) -->
         <path class="ghost-svg__ghost" id="ghostLine"
-              d="M 26 60
-                 C 96 56, 156 70, 198 122
-                 S 280 226, 354 246" />
+              d="M 178 280
+                 L 175 215
+                 Q 180 165, 222 138
+                 Q 262 108, 314 82
+                 L 356 60" />
 
-        <!-- Atual (branco, parcial até posição atual).
+        <!-- Atual (branco, parcial até posição atual ~ ápice).
              Em produção: cresce a 10Hz acompanhando sample-bus (GPS+IMU fundido).
-             Implementação sugerida: dois caminhos sobrepostos com mask animada,
-             ou recálculo incremental do atributo `d`. -->
+             Implementação sugerida: stroke-dasharray animada ou recálculo
+             incremental do atributo `d`. -->
         <path class="ghost-svg__atual" id="atualLine"
-              d="M 26 60
-                 C 96 56, 156 72, 196 124
-                 L 220 178" />
+              d="M 178 280
+                 L 178 220
+                 Q 178 178, 218 144" />
 
-        <!-- Marcos (estáticos, contexto visual) -->
+        <!-- Marcos (estáticos, contexto visual; passados embaixo, futuros em cima) -->
         <circle class="ghost-svg__marco ghost-svg__marco--entrada"
-                cx="26"  cy="60"  r="4.5" />
+                cx="178" cy="280" r="4.5" />
         <circle class="ghost-svg__marco ghost-svg__marco--freio"
-                cx="155" cy="71"  r="4.5" />
+                cx="178" cy="220" r="4.5" />
         <circle class="ghost-svg__marco ghost-svg__marco--apice"
-                cx="220" cy="178" r="4.5" />
+                cx="218" cy="144" r="4.5" />
         <circle class="ghost-svg__marco ghost-svg__marco--saida"
-                cx="354" cy="246" r="4.5" />
+                cx="356" cy="62"  r="4.5" />
       </svg>
 
       <!-- Overlay "SEM REFERÊNCIA" (só quando data-ghost-ref="ausente") -->
@@ -527,12 +606,13 @@ body{
         <div class="ghost-bloco__sem-ref-l2">Civic Si · Pirelli P7 · trecho C3 fre→api</div>
       </div>
 
-      <!-- Etiqueta de contexto -->
+      <!-- Etiqueta de contexto: só a referência (qual volta ancora o ghost) -->
       <div class="ghost-bloco__ctx">
-        <span><b>C3</b> · freio → ápice</span>
+        <span></span>
         <span id="ghostCtxRef">Ref: <b>1.842s</b> · v8</span>
       </div>
     </div>
+
 
     <div class="stint-bar">
       <div class="stint-bar__block is-neutral"></div>
@@ -568,23 +648,31 @@ body{
 
   <div class="controls">
     <span class="controls__lbl">Orientação mapa ·</span>
-    <button class="controls__btn is-active" data-orient="north">North-up (default)</button>
+    <button class="controls__btn is-active" data-orient="heading">Heading-up (default)</button>
     <button class="controls__btn" data-orient="track">Track-up</button>
-    <button class="controls__btn" data-orient="heading">Heading-up</button>
+    <button class="controls__btn" data-orient="north">North-up</button>
+  </div>
+
+  <div class="controls">
+    <span class="controls__lbl">Vista (auto por trecho) ·</span>
+    <button class="controls__btn is-active" data-vista="trecho">Trecho atual</button>
+    <button class="controls__btn" data-vista="volta">Reta principal · vista volta</button>
   </div>
 
   <div class="controls">
     <span class="controls__lbl">Mensagem ·</span>
-    <button class="controls__btn" id="btnComm" data-action="comunicacao">Comunicação · 4s</button>
-    <button class="controls__btn" id="btnGrave" data-action="grave">Grave · até resolver</button>
-    <button class="controls__btn" id="btnHide">Ocultar mensagem</button>
+    <button class="controls__btn" id="btnComm" data-action="comunicacao">Comunicação · auto 4s</button>
+    <button class="controls__btn" id="btnGrave" data-action="grave">Grave · só sistema/box dispensa</button>
+    <button class="controls__btn" id="btnSysResolve">Sistema: problema resolvido</button>
+    <button class="controls__btn" id="btnBoxResolve">Box: dispensa grave</button>
   </div>
 
   <div class="controls">
     <span class="controls__lbl">Halo ·</span>
     <button class="controls__btn is-active" data-halo="neutro">Normal</button>
-    <button class="controls__btn" data-halo="recorde-stint">Recorde stint</button>
-    <button class="controls__btn" data-halo="pior-stint">Pior stint</button>
+    <button class="controls__btn" data-halo="recorde-stint">Recorde stint (laranja)</button>
+    <button class="controls__btn" data-halo="best-alltime">Best alltime (ouro)</button>
+    <button class="controls__btn" data-halo="pior-stint">Pior stint (roxo)</button>
   </div>
 
 </div>
@@ -601,9 +689,19 @@ body{
   <i>·</i> Sem seta, sem pulsação, sem indicador de posição<br>
   <i>·</i> Sem referência → sem fabricar; placeholder explícito<br>
   <br>
+  <b>Vista por fase da volta</b><br>
+  <i>·</i> Default = trecho atual (mapa de trecho à direita)<br>
+  <i>·</i> Reta principal = vista de volta (info-bloco mostra delta-volta + tempo última no centro)<br>
+  <i>·</i> Antes do próximo trecho volta pra vista trecho<br>
+  <br>
+  <b>Halo</b><br>
+  <i>·</i> Recorde stint = laranja, Pior stint = roxo, Best alltime = ouro<br>
+  <br>
   <b>Conflito mapa × alerta</b><br>
   <i>·</i> Comunicação: mapa atenua (opacity .22, blur 2px) atrás<br>
-  <i>·</i> Crítica/grave: mapa some — alerta substitui<br>
+  <i>·</i> Grave: mapa recua rápido (700ms), alerta entra com delay 350ms<br>
+  <i>·</i> Halo vermelho pulsa pra acompanhar a entrada da grave<br>
+  <i>·</i> Grave só dispensa por sistema (auto-resolve) ou box<br>
   <br>
   <b>Cruzar saída</b><br>
   <i>·</i> Mapa não pisca — resultado vive no apex/stint-bar/halo<br>
@@ -622,7 +720,8 @@ const btnSemRef = document.getElementById('btnSemRef');
 const btnCruzarSaida = document.getElementById('btnCruzarSaida');
 const btnComm = document.getElementById('btnComm');
 const btnGrave = document.getElementById('btnGrave');
-const btnHide = document.getElementById('btnHide');
+const btnSysResolve = document.getElementById('btnSysResolve');
+const btnBoxResolve = document.getElementById('btnBoxResolve');
 
 let commTimer = null;
 let saidaResetTimer = null;
@@ -644,7 +743,9 @@ function setMessage(tipo){
     }, 4000);
   }
 }
-function hideMessage(){
+function hideMessage(origem){
+  // origem: 'sistema' | 'box' | 'auto-comunicacao'
+  // Grave só sai por sistema ou box; comunicação sai sozinha (auto) ou por box.
   if(commTimer) clearTimeout(commTimer);
   device.dataset.msgState = 'oculta';
   btnComm.classList.remove('is-active');
@@ -708,6 +809,13 @@ document.querySelectorAll('[data-orient]').forEach(b => {
     device.dataset.mapaOrient = b.dataset.orient;
   });
 });
+document.querySelectorAll('[data-vista]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-vista]').forEach(x => x.classList.remove('is-active'));
+    b.classList.add('is-active');
+    device.dataset.vista = b.dataset.vista;
+  });
+});
 btnSemRef.addEventListener('click', toggleSemRef);
 btnCruzarSaida.addEventListener('click', simularCruzarSaida);
 
@@ -721,9 +829,10 @@ btnGrave.addEventListener('click', () => {
   btnComm.classList.remove('is-active');
   setMessage('grave');
 });
-btnHide.addEventListener('click', hideMessage);
+btnSysResolve.addEventListener('click', () => hideMessage('sistema'));
+btnBoxResolve.addEventListener('click', () => hideMessage('box'));
 
-// Halo
+// Halo (4 estados: neutro, recorde-stint, best-alltime, pior-stint)
 document.querySelectorAll('[data-halo]').forEach(b => {
   b.addEventListener('click', () => {
     document.querySelectorAll('[data-halo]').forEach(x => x.classList.remove('is-active'));

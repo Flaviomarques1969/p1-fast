@@ -40,7 +40,15 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/SeedBrasilia.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Snapshot.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Track.swift"
         },
         {
           "kind" : "file",
@@ -59,7 +67,9 @@
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/CrossValidation.swift.o",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Quality.swift.o",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Sample.swift.o",
-        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Snapshot.swift.o"
+        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/SeedBrasilia.swift.o",
+        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Snapshot.swift.o",
+        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Track.swift.o"
       ],
       "otherArguments" : [
         "-target",
@@ -124,7 +134,15 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/SeedBrasilia.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Snapshot.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Track.swift.o"
         },
         {
           "kind" : "file",
@@ -137,7 +155,9 @@
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/CrossValidation.swift",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Quality.swift",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Sample.swift",
-        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Snapshot.swift"
+        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/SeedBrasilia.swift",
+        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Snapshot.swift",
+        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Track.swift"
       ],
       "tempsPath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build",
       "wholeModuleOptimization" : false
@@ -247,7 +267,9 @@
       "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/CrossValidation.swift",
       "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Quality.swift",
       "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Sample.swift",
+      "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/SeedBrasilia.swift",
       "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Snapshot.swift",
+      "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Track.swift",
       "-I",
       "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules",
       "-target",
@@ -394,7 +416,15 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/SeedBrasilia.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Snapshot.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Track.swift"
         }
       ],
       "outputFilePath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/sources"
@@ -452,7 +482,15 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/SeedBrasilia.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Snapshot.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Track.swift.o"
         },
         {
           "kind" : "file",
