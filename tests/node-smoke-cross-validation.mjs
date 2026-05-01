@@ -359,8 +359,12 @@ t('V-007 atenção: λ > 1.0 sob carga por 1-5s → atencao', () => {
   if (v7.severity !== 'atencao') throw new Error('severity=' + v7.severity);
 });
 
-t('V-007 critico: λ > 1.0 sob carga por 5s+ → critico', () => {
-  const { engine, events } = makeEngine();
+t('V-007 critico: λ > 1.0 sob carga por 5s+ → critico (cooldown reduzido)', () => {
+  // Por design, cooldown é por validation, não por severity — emit do atencao
+  // aos 1s bloqueia o critico aos 5s sob cooldown padrão (30s). Pra validar a
+  // lógica de janela 5s e a emissão CRITICO, usa cooldown 500ms.
+  const events = [];
+  const engine = new CrossValidationEngine({ onEvent: (e) => events.push(e), cooldownMs: 500 });
   feed(engine, (tMono) => snap(tMono, {
     engine: { lambda: 1.05, tps: 90, map: 1.0, rpm: 6000 },
   }), 1000, 7000);
