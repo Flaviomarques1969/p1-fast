@@ -69,7 +69,7 @@ Convenção:
 - [x] Função pura
 
 ### Auditor
-- [~] `Agent(shift-light-auditor, "Audite Bloco 2")` — em curso
+- [x] `Agent(shift-light-auditor, "Audite Bloco 2")` → ✅ APROVADO (34 testes passando)
 
 ---
 
