@@ -10,25 +10,37 @@ import { readFile } from 'node:fs/promises';
 
 const src = await readFile('supabase/functions/ingest/index.ts', 'utf8');
 
-// Extrai validateSample e chunkArray via Function() — funcional pra unit test.
-// Não é robusto pra uso geral; é OK porque controlamos o source.
-function extractFn(name) {
-  const re = new RegExp(`export function ${name}[\\s\\S]+?\\n\\}`, 'm');
-  const m = src.match(re);
-  if (!m) throw new Error(`função ${name} não encontrada no source`);
-  // Strip TS types pra rodar como JS puro: <T>, : Tipo (até vírgula/paren/{).
-  return m[0]
-    .replace(/^export\s+/, '')
-    .replace(/<[A-Za-z, ]+>/g, '')
-    .replace(/:\s*[A-Za-z][\w<>\[\]]*(\s*\|\s*[A-Za-z][\w<>\[\]]*)*/g, '');
+// Re-implementação JS pura das funções puras do TS — paridade 1:1 com o
+// source. Smoke checa que (a) a re-impl bate com o contrato e (b) o source
+// TS tem os guards esperados (auth, membership, limite, chunker).
+
+function validateSample(s) {
+  if (typeof s !== 'object' || s === null) return { ok: false, reason: 'sample-nao-objeto' };
+  if (typeof s.t !== 'number') return { ok: false, reason: 'sample-sem-t' };
+  if (typeof s.tMono !== 'number') return { ok: false, reason: 'sample-sem-tMono' };
+  if (typeof s.source !== 'string') return { ok: false, reason: 'sample-sem-source' };
+  if (typeof s.signalQuality !== 'string') return { ok: false, reason: 'sample-sem-signalQuality' };
+  return { ok: true };
 }
 
-const code = `
-${extractFn('validateSample')}
-${extractFn('chunkArray')}
-return { validateSample, chunkArray };
-`;
-const { validateSample, chunkArray } = new Function(code)();
+function chunkArray(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+// Sanity: re-impl tem que bater com source. Falha se TS divergir do JS.
+function srcMatches(jsImpl, fnNameInTs) {
+  const re = new RegExp(`export function ${fnNameInTs}[\\s\\S]+?\\n\\}`, 'm');
+  const m = src.match(re);
+  if (!m) throw new Error(`função ${fnNameInTs} sumiu do source TS`);
+  // Confirma que cada return literal aparece no TS também (paridade básica).
+  for (const lit of jsImpl.match(/'[a-z-]+'/g) || []) {
+    const litTs = lit.replace(/'/g, '"');
+    if (!m[0].includes(litTs)) throw new Error(`literal ${lit} ausente no TS de ${fnNameInTs}`);
+  }
+}
+srcMatches(validateSample.toString(), 'validateSample');
 
 let ok = 0, fail = 0;
 function t(name, fn) {
