@@ -33,10 +33,21 @@ export function computeShiftTarget({ car, gear, gearConfidence, mode = 'assisted
     source = 'safe';
     reason = 'gear_confidence below floor';
   } else if (hasDyno(car)) {
-    // Bloco 6 implementa a lógica completa.
-    optimalRpm = safeTarget(car);
-    source = 'safe';
-    reason = 'dyno present but calculator not implemented (Bloco 6)';
+    const targets = computeOptimalRpmPerGear({
+      curve: car.dyno_curve,
+      gear_ratios: car.gear_ratios,
+      redline_rpm: car.redline_rpm
+    });
+    const t = targets[gear];
+    if (t && Number.isFinite(t.optimal_rpm)) {
+      optimalRpm = t.optimal_rpm;
+      source = t.source === 'dyno' ? 'dyno' : 'safe';
+      reason = t.reason;
+    } else {
+      optimalRpm = safeTarget(car);
+      source = 'safe';
+      reason = 'dyno presente mas sem alvo para gear=' + gear;
+    }
   } else {
     const learnedFromCar = getLearnedTarget(car, gear);
     const learnedFromArg = learnedTargets && learnedTargets[gear] && Number.isFinite(learnedTargets[gear].optimal_rpm)

@@ -94,12 +94,17 @@ A T4000 entrega via CAN bus a **100 Hz por canal** (5 pacotes × 8 bytes a cada 
 - **V-002 (accLong IMU vs derivada da velocidade T4000)** — precisa IMU ≥50 Hz com jitter <5 ms. iPhone entrega 100 Hz / 0.30 ms → V-002 viável.
 - **V-006, V-007, V-008** (validações internas T4000) — não dependem do iPhone.
 
-### O que ainda precisa do RaceBox
+### Decisão sobre RaceBox (2026-05-01)
 
-- GNSS de alta cadência (10 Hz + RTK) para distância de traçado sub-metro
-- Posicionamento absoluto consistente em traçados curtos onde 1 Hz não basta
+RaceBox foi **rebaixado a upgrade condicional**, fora do caminho crítico do MVP. Razão: este baseline mostrou que iPhone resolve tudo do conceito atual (Coach, fase de curva, V-001/V-002).
 
-Em outras palavras: **MVP pode rodar com iPhone + T4000**, RaceBox vira upgrade quando o produto exigir traçado fino.
+RaceBox volta ao roadmap **somente** se aparecerem features que dependem de GNSS de alta cadência ou sub-metro, especificamente:
+
+- Lap timing fino (delta sub-segundo entre voltas, tipo VBOX) — exige ≥10 Hz GNSS, iPhone tem 1 Hz
+- Traçado sub-metro (best-line com precisão de cones) — exige sub-metro, iPhone faz 2–5 m
+- Redundância de fonte como requisito (iPhone falhar por thermal/bateria)
+
+Spec preservada em [`RACEBOX_INTEGRATION_SPEC.md`](RACEBOX_INTEGRATION_SPEC.md) como referência. Não comprar nem assinar NDA agora.
 
 ## Limites — onde NÃO confiar no iPhone
 
