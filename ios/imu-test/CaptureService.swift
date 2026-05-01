@@ -18,6 +18,7 @@ import Foundation
 import CoreMotion
 import CoreLocation
 import Combine
+import QuartzCore
 
 struct Sample {
     let ts: Date            // wall clock

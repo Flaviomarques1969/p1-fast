@@ -311,13 +311,23 @@ body{
 .device[data-mapa-orient="track"]   .ghost-bloco svg{ transform:rotate(45deg); }
 .device[data-mapa-orient="north"]   .ghost-bloco svg{ transform:rotate(75deg); }
 
-/* Camada 1: pista (cinza muito claro, contexto) */
+/* Camada 1: pista (cinza, contexto).
+   --pista-trecho: corredor do trecho propriamente dito.
+   --pista-ctx:    contexto antes/depois (mais faded — "como chegar / como sair"). */
 .ghost-svg__pista{
   fill:none;stroke:oklch(28% 0 0);stroke-width:14;
   stroke-linecap:round;stroke-linejoin:round;
 }
+.ghost-svg__pista-ctx{
+  fill:none;stroke:oklch(20% 0 0);stroke-width:14;
+  stroke-linecap:round;stroke-linejoin:round;
+}
 .ghost-svg__pista-bord{
   fill:none;stroke:oklch(38% 0 0);stroke-width:1;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.ghost-svg__pista-bord-ctx{
+  fill:none;stroke:oklch(28% 0 0);stroke-width:1;
   stroke-linecap:round;stroke-linejoin:round;
 }
 
@@ -546,58 +556,73 @@ body{
       <svg viewBox="0 0 380 288" preserveAspectRatio="xMidYMid meet"
            xmlns="http://www.w3.org/2000/svg">
         <!--
-          Perspectiva heading-up: track passado embaixo, ápice no meio,
-          saída no topo. Curva representada: right-hander, com aproximação
-          reta vinda de baixo, frenagem, turn-in, ápice, exit subindo à direita.
+          Perspectiva heading-up: track passado embaixo, futuro em cima.
+          Mostra contexto antes do marco de entrada e depois do marco de saída
+          ("como chegar / como sair") — pista real, não inventada.
+
+          Marcos:
+            entrada: 175,240   freio: 178,195
+            ápice:   215,130   saída: 320, 65
+          Contexto:
+            pré-trecho começa em 168,285 (borda inferior — vem do trecho anterior)
+            pós-trecho termina em 365, 22 (borda superior — vai pro próximo)
         -->
 
-        <!-- Pista cinza (corredor) -->
+        <!-- PISTA -->
+        <!-- Pré-trecho (mais faded) -->
+        <path class="ghost-svg__pista-ctx"
+              d="M 168 285 L 175 240" />
+        <!-- Trecho propriamente dito -->
         <path class="ghost-svg__pista"
-              d="M 178 280
-                 L 178 220
-                 Q 178 175, 215 145
-                 Q 255 115, 308 88
-                 L 356 62" />
-        <!-- Bordas finas (acima/abaixo) -->
-        <path class="ghost-svg__pista-bord"
-              d="M 168 280
-                 L 168 218
-                 Q 168 170, 207 138
-                 Q 247 108, 302 80
-                 L 351 54" />
-        <path class="ghost-svg__pista-bord"
-              d="M 188 280
-                 L 188 222
-                 Q 188 180, 223 152
-                 Q 263 122, 314 96
-                 L 360 70" />
+              d="M 175 240
+                 L 178 195
+                 Q 178 162, 215 130
+                 Q 255 98,  320 65" />
+        <!-- Pós-trecho (mais faded) -->
+        <path class="ghost-svg__pista-ctx"
+              d="M 320 65 Q 343 42, 365 22" />
 
-        <!-- Ghost (melhor traçado: late apex, mais próximo da borda interna) -->
+        <!-- Bordas (corredor) — pré-trecho mais faded, trecho mais nítido, pós-trecho faded -->
+        <path class="ghost-svg__pista-bord-ctx"
+              d="M 158 285 L 165 240" />
+        <path class="ghost-svg__pista-bord"
+              d="M 165 240 L 168 196 Q 168 156, 207 124 Q 247 92, 314 56" />
+        <path class="ghost-svg__pista-bord-ctx"
+              d="M 314 56 Q 338 33, 360 14" />
+
+        <path class="ghost-svg__pista-bord-ctx"
+              d="M 178 285 L 185 240" />
+        <path class="ghost-svg__pista-bord"
+              d="M 185 240 L 188 195 Q 188 168, 223 136 Q 263 105, 326 74" />
+        <path class="ghost-svg__pista-bord-ctx"
+              d="M 326 74 Q 348 50, 370 30" />
+
+        <!-- GHOST: melhor traçado, percorre TODO o visível (volta ótima cobre adjacentes) -->
         <path class="ghost-svg__ghost" id="ghostLine"
-              d="M 178 280
-                 L 175 215
-                 Q 180 165, 222 138
-                 Q 262 108, 314 82
-                 L 356 60" />
+              d="M 168 285
+                 L 175 240
+                 L 175 198
+                 Q 180 158, 220 128
+                 Q 258 98, 320 65
+                 Q 343 42, 365 22" />
 
-        <!-- Atual (branco, parcial até posição atual ~ ápice).
-             Em produção: cresce a 10Hz acompanhando sample-bus (GPS+IMU fundido).
-             Implementação sugerida: stroke-dasharray animada ou recálculo
-             incremental do atributo `d`. -->
+        <!-- ATUAL: do início do contexto pré-trecho até a posição atual (~ ápice).
+             Em produção: cresce a 10Hz acompanhando sample-bus (GPS+IMU fundido). -->
         <path class="ghost-svg__atual" id="atualLine"
-              d="M 178 280
-                 L 178 220
-                 Q 178 178, 218 144" />
+              d="M 168 285
+                 L 175 240
+                 L 178 195
+                 Q 178 160, 215 130" />
 
-        <!-- Marcos (estáticos, contexto visual; passados embaixo, futuros em cima) -->
+        <!-- Marcos (4 marcos da curva) -->
         <circle class="ghost-svg__marco ghost-svg__marco--entrada"
-                cx="178" cy="280" r="4.5" />
+                cx="175" cy="240" r="4.5" />
         <circle class="ghost-svg__marco ghost-svg__marco--freio"
-                cx="178" cy="220" r="4.5" />
+                cx="178" cy="195" r="4.5" />
         <circle class="ghost-svg__marco ghost-svg__marco--apice"
-                cx="218" cy="144" r="4.5" />
+                cx="215" cy="130" r="4.5" />
         <circle class="ghost-svg__marco ghost-svg__marco--saida"
-                cx="356" cy="62"  r="4.5" />
+                cx="320" cy="65"  r="4.5" />
       </svg>
 
       <!-- Overlay "SEM REFERÊNCIA" (só quando data-ghost-ref="ausente") -->
@@ -686,6 +711,7 @@ body{
   <em>·</em> Linha ciano = melhor traçado (mesmo carro + config)<br>
   <i>·</i> Linha branca = volta em curso (cresce conforme avança)<br>
   <i>·</i> Marcos = pontos estáticos coloridos (contexto)<br>
+  <i>·</i> Pista além dos marcos = "como chegar / como sair" (mais faded)<br>
   <i>·</i> Sem seta, sem pulsação, sem indicador de posição<br>
   <i>·</i> Sem referência → sem fabricar; placeholder explícito<br>
   <br>
