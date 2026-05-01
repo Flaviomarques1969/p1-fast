@@ -23,7 +23,7 @@ Convenção:
 | 3 — Detecção de evento + persistência | `[x]` concluído | ✅ aprovado | — |
 | 4 — Cards pós-sessão (Fast Coach) | `[x]` concluído | ✅ aprovado | — |
 | 5 — Pilot Reaction Learning | `[x]` concluído | ✅ aprovado | — |
-| 6 — DYNO_CALIBRATED + UI cadastro | `[~]` em andamento | — | — |
+| 6 — DYNO_CALIBRATED + UI cadastro | `[x]` concluído | ✅ aprovado | — |
 
 ---
 
