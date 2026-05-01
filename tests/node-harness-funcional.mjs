@@ -311,10 +311,10 @@ await step('S2-03: pipeline CONSISTÊNCIA — sem alertas críticos, sem V-001 n
   eq(v002.length, 0, `0 V-002 esperado, recebido ${v002.length}`);
 });
 
-await step('S2-04: stint CONSISTÊNCIA persiste', async () => {
+await step('S2-04: stint CONSISTÊNCIA persiste e StintPlan ativo é o último', async () => {
   const got = await Sessions.get(stintConsist.id);
   assert(got, 'session lida');
-  const plan = await StintPlans.activeForSession(stintConsist.id);
+  const plan = await StintPlans.getAtivo(stintConsist.id);
   assert(plan && plan.id === planConsist.id, 'plano ativo');
 });
 
