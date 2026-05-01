@@ -8,19 +8,40 @@
 
 ---
 
-## Smart Shift Light Premium — entregue (2026-05-01)
+## Smart Shift Light Premium — em hibernação até Fase 2 (2026-05-01)
 
 Plano: `docs/SHIFT_LIGHT_IMPLEMENTATION_PLAN.md` · Decisões: `docs/SHIFT_LIGHT_DECISIONS.md` · Progresso: `docs/SHIFT_LIGHT_PROGRESS.md`.
 
-Blocos (todos auditados pelo `shift-light-auditor`):
-- **Bloco 1** Estimativa de marcha + confiança — `src/domain/gear-{estimation,signatures,shift-detector}.js`
-- **Bloco 2** Modo seguro + alvo conservador — `src/domain/{shift-target,safe-mode}.js` + `src/data/cars.js`
-- **Bloco 3** Detecção de evento + persistência — `src/pipeline/shift-event-detector.js` + `src/data/{shift-events,trecho-resolver}.js` (Dexie v11)
-- **Bloco 4** Cards pós-sessão Fast Coach — `src/domain/shift-analysis.js` + `src/ui/shift-cards-view.js` + `_design-reference/mockup-shift-cards.html`
-- **Bloco 5** Pilot Reaction Learning — `src/domain/pilot-reaction.js` + `src/data/reaction-profiles.js` + hook em shift-target (Dexie v12)
-- **Bloco 6** DYNO_CALIBRATED + UI — `src/domain/dyno-{csv-parser,target-calculator}.js` + `src/domain/tolerance-from-dyno.js` + aba Dinamômetro em `_design-reference/mockup-carro-novo.html`
+**Decisão Flávio 2026-05-01:** Fase 1 do P1 Fast usa só GPS + IMU do iPhone.
+ECU Injepro e curva de dyno ficam para Fase 2. Sem RPM real, o pipeline
+do Shift Light não entrega valor — fica auditado e dormente esperando
+a fonte real. Princípio "não fabricar dados" cumpre seu papel: sem RPM,
+`shift-light-bridge` descarta o sample → `shift_events` fica vazio.
 
-Comando de regressão: `npm run test:shift-light` (6 specs em sequência, 104 testes).
+Blocos do plano (todos auditados pelo `shift-light-auditor`, 151 testes):
+- **Bloco 1** Estimativa de marcha + confiança
+- **Bloco 2** Modo seguro + alvo conservador
+- **Bloco 3** Detecção de evento + persistência (Dexie v11)
+- **Bloco 4** Cards pós-sessão Fast Coach
+- **Bloco 5** Pilot Reaction Learning (Dexie v12)
+- **Bloco 6** DYNO_CALIBRATED + UI
+
+Integrações posteriores (também dormentes):
+- `trecho-resolver` ↔ Detector (face síncrona via `getCurrentSegmentId`)
+- `shift-light-bridge` MobileTelemetry → shift-event-detector
+- Wireup E2E (`examples/shift-light-wireup.js`)
+- Cockpit consome `visualRpm` em runtime (`src/ui/shift-light-cockpit.js`)
+- Adapter de fonte de RPM (`src/pipeline/rpm-source.js` — Manual/Mock/BLE)
+- Tela "Reações aprendidas" (`src/ui/reaction-profiles-view.js`)
+
+**Para ligar na Fase 2:** parear ECU (Injepro) via `createBleRpmSource`,
+cadastrar `gear_signatures`, `gear_ratios` e `dyno_curve` do carro,
+chamar `wireUpShiftLight()` no cockpit. Comando de regressão:
+`npm run test:shift-light` (12 specs, 151 testes — o contrato vivo).
+
+**Fase 1 não chama nenhum módulo do Shift Light em runtime.** Schema
+Dexie permanece em v12 (stores `shift_events` e `reaction_profiles`
+existem mas nunca são escritas em Fase 1). Sem efeito colateral.
 
 ---
 
