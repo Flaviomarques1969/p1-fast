@@ -1016,6 +1016,219 @@ step("FU-07: progressoStint ignora invalidas no ritmo mas conta no total") {
     try assertTrue(p.voltasAlvo == nil && p.pctCompleto == nil)
 }
 
+// ════════════════════════════════════════════════════════════
+// P1Coach — PC-01 .. PC-14 (port de src/domain/p1-coach.js)
+// ════════════════════════════════════════════════════════════
+
+let PC_ALL_MVP_SIGNALS: Set<String> = [
+    "kmh", "lat", "lng", "course", "heading",
+    "accLong", "accLat", "gyroAlpha",
+    "phase", "velEntrada", "velMinima", "velSaida",
+    "apexT", "apexKmh", "trajetoria",
+]
+let PC_SLOW = CoachSegment(id: "seg-1", ehTrecho: true, cornerType: .lenta)
+let PC_FAST = CoachSegment(id: "seg-2", ehTrecho: true, cornerType: .rapida)
+let PC_STRAIGHT = CoachSegment(id: "seg-r", ehTrecho: false, cornerType: nil)
+
+func pcSnap(_ tMono: Double) -> CoachSnapshot {
+    return CoachSnapshot(t: tMono, tMono: tMono)
+}
+
+step("PC-01: emite mensagem com foco SAIDA em curva lenta") {
+    var out: [CoachMessage] = []
+    let c = P1Coach(onMessage: { out.append($0) }, cooldownMs: 0)
+    c.startLearningSession(focusPhase: .saida)
+    c.onSegmentEnter(PC_SLOW, availableSignals: PC_ALL_MVP_SIGNALS)
+    _ = c.consume(faseCurva: .fim, snapshot: pcSnap(1000), signals: PC_ALL_MVP_SIGNALS)
+    try assertEq(out.count, 1)
+    try assertEq(out[0].phase, Phase.saida)
+    try assertTrue(CoachPhrases.set.contains(out[0].text))
+}
+
+step("PC-02: NÃO emite em fase fora do foco") {
+    var out: [CoachMessage] = []
+    let c = P1Coach(onMessage: { out.append($0) }, cooldownMs: 0)
+    c.startLearningSession(focusPhase: .saida)
+    c.onSegmentEnter(PC_SLOW, availableSignals: PC_ALL_MVP_SIGNALS)
+    _ = c.consume(faseCurva: .inicio, snapshot: pcSnap(1000), signals: PC_ALL_MVP_SIGNALS)
+    try assertEq(out.count, 0)
+}
+
+step("PC-03: respeita maxPerCorner=1") {
+    var out: [CoachMessage] = []
+    let c = P1Coach(onMessage: { out.append($0) }, cooldownMs: 0, maxPerCorner: 1)
+    c.startLearningSession(focusPhase: .saida)
+    c.onSegmentEnter(PC_SLOW, availableSignals: PC_ALL_MVP_SIGNALS)
+    _ = c.consume(faseCurva: .fim, snapshot: pcSnap(100), signals: PC_ALL_MVP_SIGNALS)
+    _ = c.consume(faseCurva: .fim, snapshot: pcSnap(200), signals: PC_ALL_MVP_SIGNALS)
+    try assertEq(out.count, 1)
+}
+
+step("PC-04: cooldown bloqueia mensagem em curva seguinte") {
+    var out: [CoachMessage] = []
+    let c = P1Coach(onMessage: { out.append($0) }, cooldownMs: 5000)
+    c.startLearningSession(focusPhase: .saida)
+    c.onSegmentEnter(PC_SLOW, availableSignals: PC_ALL_MVP_SIGNALS)
+    _ = c.consume(faseCurva: .fim, snapshot: pcSnap(100), signals: PC_ALL_MVP_SIGNALS)
+    c.onSegmentExit()
+    c.onSegmentEnter(CoachSegment(id: "seg-1b", ehTrecho: true, cornerType: .lenta),
+                     availableSignals: PC_ALL_MVP_SIGNALS)
+    _ = c.consume(faseCurva: .fim, snapshot: pcSnap(200), signals: PC_ALL_MVP_SIGNALS)
+    try assertEq(out.count, 1)
+}
+
+step("PC-05: ignora retas (ehTrecho=false)") {
+    var out: [CoachMessage] = []
+    let c = P1Coach(onMessage: { out.append($0) }, cooldownMs: 0)
+    c.startLearningSession()
+    c.onSegmentEnter(PC_STRAIGHT, availableSignals: PC_ALL_MVP_SIGNALS)
+    _ = c.consume(faseCurva: .meio, snapshot: pcSnap(100), signals: PC_ALL_MVP_SIGNALS)
+    try assertEq(out.count, 0)
+}
+
+step("PC-06: pause() suspende emissão; resume() retoma") {
+    var out: [CoachMessage] = []
+    let c = P1Coach(onMessage: { out.append($0) }, cooldownMs: 0)
+    c.startLearningSession(focusPhase: .apex)
+    c.onSegmentEnter(PC_SLOW, availableSignals: PC_ALL_MVP_SIGNALS)
+    c.pause()
+    _ = c.consume(faseCurva: .meio, snapshot: pcSnap(100), signals: PC_ALL_MVP_SIGNALS)
+    try assertEq(out.count, 0)
+    c.resume()
+    _ = c.consume(faseCurva: .meio, snapshot: pcSnap(200), signals: PC_ALL_MVP_SIGNALS)
+    try assertEq(out.count, 1)
+}
+
+step("PC-07: focusLessonId trava na lição mesmo com outras elegíveis") {
+    var out: [CoachMessage] = []
+    let c = P1Coach(onMessage: { out.append($0) }, cooldownMs: 0)
+    c.startLearningSession(focusPhase: .apex, focusLessonId: "L002-v-min")
+    c.onSegmentEnter(PC_SLOW, availableSignals: PC_ALL_MVP_SIGNALS)
+    _ = c.consume(faseCurva: .meio, snapshot: pcSnap(100), signals: PC_ALL_MVP_SIGNALS)
+    try assertEq(out.count, 1)
+    try assertEq(out[0].lessonId, "L002-v-min")
+}
+
+step("PC-08: NÃO ativa sem startLearningSession") {
+    var out: [CoachMessage] = []
+    let c = P1Coach(onMessage: { out.append($0) }, cooldownMs: 0)
+    c.onSegmentEnter(PC_SLOW, availableSignals: PC_ALL_MVP_SIGNALS)
+    _ = c.consume(faseCurva: .meio, snapshot: pcSnap(100), signals: PC_ALL_MVP_SIGNALS)
+    try assertEq(out.count, 0)
+}
+
+step("PC-09: lição BAIXA não emite sem userPick (focusPhase nem focusLessonId)") {
+    var out: [CoachMessage] = []
+    let c = P1Coach(onMessage: { out.append($0) }, cooldownMs: 0)
+    c.startLearningSession()  // sem foco
+    let sig: Set<String> = ["heading", "gyroAlpha", "phase"]
+    c.onSegmentEnter(PC_FAST, availableSignals: sig)
+    _ = c.consume(faseCurva: .inicio, snapshot: pcSnap(100), signals: sig)
+    try assertEq(out.count, 0)
+}
+
+step("PC-10: lição BAIXA emite quando piloto fixa focusLessonId") {
+    var out: [CoachMessage] = []
+    let c = P1Coach(onMessage: { out.append($0) }, cooldownMs: 0)
+    c.startLearningSession(focusPhase: .entrada, focusLessonId: "L005-linha-de-visao")
+    let sig: Set<String> = ["heading", "kmh"]
+    c.onSegmentEnter(PC_FAST, availableSignals: sig)
+    _ = c.consume(faseCurva: .inicio, snapshot: pcSnap(100), signals: sig)
+    try assertEq(out.count, 1)
+    try assertEq(out[0].confidence, Confidence.baixa)
+}
+
+step("PC-11: signalsFromSnapshot deriva sinais corretamente") {
+    let s = P1Coach.signalsFromSnapshot(
+        P1Coach.SnapshotSignalsInput(kmh: 80, lat: 1, lng: 2, accLong: 0.3, gyroAlpha: 5),
+        faseStats: P1Coach.FaseStatsInput(velMinima: 70, apexT: 1234)
+    )
+    for need in ["kmh", "lat", "lng", "accLong", "gyroAlpha", "phase", "velMinima", "apexT"] {
+        try assertTrue(s.contains(need), "faltou \(need)")
+    }
+}
+
+step("PC-12: AUDIT — TODAS as 7 lições MVP ativam com snapshot real iPhone") {
+    let snap = P1Coach.SnapshotSignalsInput(
+        kmh: 90, lat: -15.78, lng: -47.92, course: 180, heading: 178,
+        accLong: -0.4, accLat: 0.1, gyroAlpha: 12
+    )
+    let stats = P1Coach.FaseStatsInput(velEntrada: 110, velMinima: 65, velSaida: 95,
+                                       apexT: 1234, apexKmh: 65)
+    let signals = P1Coach.signalsFromSnapshot(snap, faseStats: stats)
+    var naoAtiva: [String] = []
+    for l in LessonLibrary.mvp {
+        if !l.canActivate(stringSignals: signals) { naoAtiva.append(l.id) }
+    }
+    try assertTrue(naoAtiva.isEmpty, "MVP que NÃO ativam: \(naoAtiva.joined(separator: ", "))")
+}
+
+step("PC-13: E2E 3 voltas com foco SAIDA — todas msgs SAIDA, ≤6 totais") {
+    var out: [CoachMessage] = []
+    let c = P1Coach(onMessage: { out.append($0) }, cooldownMs: 0)
+    c.startLearningSession(focusPhase: .saida)
+
+    let snap = P1Coach.SnapshotSignalsInput(
+        kmh: 90, lat: -15.78, lng: -47.92, course: 180, heading: 178,
+        accLong: -0.4, accLat: 0.1, gyroAlpha: 12
+    )
+    let stats = P1Coach.FaseStatsInput(velEntrada: 110, velMinima: 65, velSaida: 95,
+                                       apexT: 1234, apexKmh: 65)
+    let sig = P1Coach.signalsFromSnapshot(snap, faseStats: stats)
+
+    let SLOW = CoachSegment(id: "curva-1", ehTrecho: true, cornerType: .lenta)
+    let FAST = CoachSegment(id: "curva-2", ehTrecho: true, cornerType: .rapida)
+    let RETA = CoachSegment(id: "reta-1",  ehTrecho: false, cornerType: nil)
+
+    for lap in 0..<3 {
+        let baseT = Double(lap) * 100_000
+        c.onSegmentEnter(SLOW, availableSignals: sig)
+        _ = c.consume(faseCurva: .inicio, snapshot: pcSnap(baseT + 100), signals: sig)
+        _ = c.consume(faseCurva: .meio,   snapshot: pcSnap(baseT + 500), signals: sig)
+        _ = c.consume(faseCurva: .fim,    snapshot: pcSnap(baseT + 900), signals: sig)
+        c.onSegmentExit()
+
+        c.onSegmentEnter(RETA, availableSignals: sig)
+        _ = c.consume(faseCurva: .meio, snapshot: pcSnap(baseT + 1500), signals: sig)
+        c.onSegmentExit()
+
+        c.onSegmentEnter(FAST, availableSignals: sig)
+        _ = c.consume(faseCurva: .fim, snapshot: pcSnap(baseT + 2500), signals: sig)
+        c.onSegmentExit()
+
+        c.onLapEnd()
+    }
+
+    try assertTrue(out.count > 0, "coach silencioso em 3 voltas")
+    try assertTrue(out.count <= 6, "\(out.count) > 6 (passou maxPerCorner)")
+    for m in out {
+        try assertEq(m.phase, Phase.saida)
+        try assertTrue(CoachPhrases.set.contains(m.text), "frase fora: \(m.text)")
+    }
+    try assertEq(c.learningSession.laps, 3)
+}
+
+step("PC-14: focusLessonId='L002-v-min' só emite em lenta+media (não em rápida)") {
+    var out: [CoachMessage] = []
+    let c = P1Coach(onMessage: { out.append($0) }, cooldownMs: 0)
+    c.startLearningSession(focusPhase: .apex, focusLessonId: "L002-v-min")
+    let snap = P1Coach.SnapshotSignalsInput(kmh: 90, lat: -15.78, lng: -47.92,
+                                            course: 180, heading: 178,
+                                            accLong: -0.4, accLat: 0.1, gyroAlpha: 12)
+    let stats = P1Coach.FaseStatsInput(velEntrada: 110, velMinima: 65, velSaida: 95,
+                                       apexT: 1234, apexKmh: 65)
+    let sig = P1Coach.signalsFromSnapshot(snap, faseStats: stats)
+
+    for (i, ct) in [CornerTypeMatch.lenta, .media, .rapida].enumerated() {
+        c.onSegmentEnter(CoachSegment(id: "c\(i)", ehTrecho: true, cornerType: ct),
+                         availableSignals: sig)
+        _ = c.consume(faseCurva: .meio, snapshot: pcSnap(Double(out.count) * 1000), signals: sig)
+        c.onSegmentExit()
+    }
+    try assertEq(out.count, 2)
+    for m in out { try assertEq(m.lessonId, "L002-v-min") }
+}
+
 step("CLOCK-01: Clock.now retorna epoch ms positivo") {
     let now = Clock.now
     try assertTrue(now > 1_700_000_000_000, "now > 2023-11")
