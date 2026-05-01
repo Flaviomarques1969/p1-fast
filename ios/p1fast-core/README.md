@@ -61,10 +61,20 @@ Cada teste Swift mapeia 1:1 pra um teste do `tests/node-smoke-telemetry-p0.mjs` 
 | SNAP-04 | (extra) | pickEngine extrai rpm/oilPressure/waterTemp |
 | SNAP-05 | SB-04 (parcial) | Empty input → MISSING + Baixa |
 | SNAP-06 | SB-04 | quality.sync = pior das fontes ativas |
+| CR-01 | CR-01 | Catálogo tem regras canônicas obrigatórias |
+| CR-02 | CR-02 | Pressão óleo < 1.0 bar com RPM > 1000 → BOX_AGORA |
+| CR-03 | CR-03 | Temp motor escala ATENCAO → CRITICO → BOX_AGORA |
+| CR-04 | CR-04 | Cooldown bloqueia repetição imediata |
+| CR-05 | CR-05 | Regra ignora canal sem Quality.OK (Regra 4) |
+| CR-06 | CR-06 | fireManual dispara bandeira vermelha BOX_AGORA |
+| CR-07 | CR-07 | Regras manuais ≥ 3 (vermelha, amarela, pista molhada) |
+| XV-V001 (sustentada) | XV-V001 | divergência CAN×GNSS > 5 km/h por 2s+ → V-001 |
+| XV-V001 (não emite) | (novo) | divergência < 5 km/h não dispara |
+| XV-V001 (cooldown) | XV-cooldown | cooldown 30s bloqueia 2ª emissão |
 | CLOCK-01 | (novo) | Clock.now retorna epoch ms positivo |
 | CLOCK-02 | ADR-015 (espelhado) | Clock.nowMono é monotonic crescente |
 
-Quando portarmos `cross-validation.js` ou `critical-rules.js`, novos asserts entram aqui replicando os smokes JS correspondentes.
+Quando portarmos `p1-coach.js`, `trajectory-monitor.js`, `detector.js` ou outras V-002..V-011, novos asserts entram aqui replicando os smokes JS correspondentes.
 
 ## Como contribuir um novo módulo portado
 
