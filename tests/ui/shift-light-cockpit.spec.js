@@ -104,6 +104,26 @@ t('reset() apaga tudo', () => {
   assert(activeTiers(el).length === 0);
 });
 
+t('idle() — Fase 1: tier 1 aceso nas duas pontas, resto apagado, state=off', () => {
+  const el = makeShiftLightEl();
+  const sl = createCockpitShiftLight(el);
+  sl.idle();
+  assert(el.state() === 'off');
+  const tiers = activeTiers(el);
+  // 12 dots simétricos com tier 1,2,3,4,5,6,6,5,4,3,2,1 → dois dots tier=1
+  assert(tiers.length === 2, 'exatamente 2 dots tier=1 acesos, foi ' + tiers.length);
+  for (const t of tiers) assert(t === 1, 'tier deveria ser 1, foi ' + t);
+});
+
+t('idle() apaga fire pendente', () => {
+  const el = makeShiftLightEl();
+  const sl = createCockpitShiftLight(el, { mode: 'assisted' });
+  sl.update({ rpm: 6500, visualRpm: 6400, redline: 7000 }); // dispara fire
+  sl.idle();
+  assert(el.state() === 'off');
+  assert(activeTiers(el).every(t => t === 1));
+});
+
 // ─── resolveCockpitMode ──────────────────────────────────────────────────
 
 t('resolveCockpitMode: requested=learning → learning sem downgrade', () => {
