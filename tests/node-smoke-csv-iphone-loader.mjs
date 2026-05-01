@@ -219,7 +219,22 @@ t('CSV real (3197 IMU + 31 GPS) parseia sem dropped', () => {
   if (r.samples.length !== 3228) throw new Error('total=' + r.samples.length);
 });
 
-t('CSV real: t é monotônico (não-decrescente) na sequência emitida', () => {
+t('CSV real: tMono é monotônico não-decrescente (canônico — ADR-015)', () => {
+  const text = readFileSync(CSV_REAL, 'utf8');
+  const { samples } = loadIphoneCsv(text);
+  let lastTMono = -Infinity;
+  let violations = 0;
+  for (const s of samples) {
+    if (s.tMono < lastTMono) violations++;
+    lastTMono = s.tMono;
+  }
+  if (violations !== 0) throw new Error('tMono violations=' + violations);
+});
+
+t('CSV real: t (Date.parse) PODE retroceder entre IMU/GPS — multi-source', () => {
+  // IMU 100Hz e GPS 1Hz vêm de pipelines separados no iOS; ts_iso de cada
+  // pode chegar levemente fora de ordem entre as duas fontes. tMono é o
+  // canônico monotônico. Este smoke documenta esse comportamento.
   const text = readFileSync(CSV_REAL, 'utf8');
   const { samples } = loadIphoneCsv(text);
   let lastT = -Infinity;
@@ -228,23 +243,32 @@ t('CSV real: t é monotônico (não-decrescente) na sequência emitida', () => {
     if (s.t < lastT) violations++;
     lastT = s.t;
   }
-  if (violations !== 0) throw new Error('violations=' + violations + ' (CSV não-monotônico)');
+  if (violations < 1) throw new Error('esperava ≥1 violation em t (multi-source); veio ' + violations);
 });
 
-t('CSV real: ReplayEngine instant emite tudo, dropped=0', async () => {
+t('CSV real: ReplayEngine drop reflete violações de t na ordem do CSV', async () => {
+  // ReplayEngine usa sample.t (não tMono) e dropa retrógrados por design
+  // (preserva monotonia que o pipeline assume). Logo, o nº de drops do
+  // replay deve ser exatamente o nº de violations em t.
   const text = readFileSync(CSV_REAL, 'utf8');
-  const { samples, imuCount, gpsCount } = loadIphoneCsv(text);
+  const { samples } = loadIphoneCsv(text);
+  let lastT = -Infinity;
+  let violations = 0;
+  for (const s of samples) {
+    if (s.t < lastT) violations++;
+    lastT = s.t;
+  }
   const replay = new ReplayEngine({ samples });
-  let imu = 0, gps = 0;
-  replay.onSample((s) => {
-    if (s.kind === 'imu') imu++;
-    else if (s.kind === 'gps') gps++;
-  });
+  let count = 0;
+  replay.onSample(() => count++);
   const result = await replay.start();
-  if (result.emitted !== samples.length) throw new Error('emitted=' + result.emitted);
-  if (result.dropped !== 0) throw new Error('replay dropped=' + result.dropped);
-  if (imu !== imuCount) throw new Error('imu emitted=' + imu);
-  if (gps !== gpsCount) throw new Error('gps emitted=' + gps);
+  if (result.emitted + result.dropped !== samples.length) {
+    throw new Error('emit+drop != total');
+  }
+  if (result.dropped !== violations) {
+    throw new Error('replay dropped=' + result.dropped + ' violations=' + violations);
+  }
+  if (count !== result.emitted) throw new Error('callback count != emitted');
 });
 
 t('CSV real: duração ≈ 31s (firstT/lastT)', () => {
