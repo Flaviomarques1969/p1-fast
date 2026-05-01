@@ -19,4 +19,6 @@ export const ENTITIES = Object.freeze({
   PEDAGOGICAL_PLAN:     'PedagogicalPlan',
   SEGMENT_EXECUTION:    'SegmentExecution',
   TELEMETRY_SAMPLE:     'TelemetrySample',   // NOTA ADR-014: não enfileira por row
+  MARCO:                'Marco',
+  RETA_ESPECIAL:        'RetaEspecial',
 });
