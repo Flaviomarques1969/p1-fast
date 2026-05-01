@@ -134,7 +134,7 @@ Convenção:
 - [x] Fallback hierárquico: exata → piloto-carro-gear → piloto-carro → default
 
 ### Auditor
-- [~] `Agent(shift-light-auditor, "Audite Bloco 5")` — em curso
+- [x] `Agent(shift-light-auditor, "Audite Bloco 5")` → ✅ APROVADO (88 testes do shift-light, smoke geral verde)
 
 ---
 
