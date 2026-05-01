@@ -165,6 +165,7 @@ Se algum critério falhar, **não promover** o CSV a baseline e investigar.
 | Data | Revisão | Motivo |
 |---|---|---|
 | 2026-05-01 | v1.0 | Documento criado a partir das 2 capturas iPhone 16 Pro Max (indoor 57s + caminhando 31.8s). Baseline oficial. |
+| 2026-05-01 | v1.1 | RaceBox rebaixado a upgrade condicional (BLOCKERS §E4 + spec arquivada). iPhone resolve tudo do conceito atual. |
 
 ## Referências cruzadas
 

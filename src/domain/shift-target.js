@@ -33,12 +33,17 @@ export function computeShiftTarget({ car, gear, gearConfidence, mode = 'assisted
     source = 'safe';
     reason = 'gear_confidence below floor';
   } else if (hasDyno(car)) {
-    const targets = computeOptimalRpmPerGear({
-      curve: car.dyno_curve,
-      gear_ratios: car.gear_ratios,
-      redline_rpm: car.redline_rpm
-    });
-    const t = targets[gear];
+    let targets = null;
+    try {
+      targets = computeOptimalRpmPerGear({
+        curve: car.dyno_curve,
+        gear_ratios: car.gear_ratios,
+        redline_rpm: car.redline_rpm
+      });
+    } catch {
+      targets = null;
+    }
+    const t = targets ? targets[gear] : null;
     if (t && Number.isFinite(t.optimal_rpm)) {
       optimalRpm = t.optimal_rpm;
       source = t.source === 'dyno' ? 'dyno' : 'safe';
