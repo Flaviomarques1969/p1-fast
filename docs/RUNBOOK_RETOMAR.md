@@ -25,14 +25,16 @@ cd "/Users/imac/Projetos/P1 Fast" \
   && node tests/node-harness-api.mjs 2>&1 | grep "ok /"
 ```
 
-**Esperado (baseline 2026-05-01 fim da sessão, 227/0 total):**
+**Esperado (baseline 2026-05-01 fim da sessão, 275/0 total):**
 
 | Suite | Resultado |
 |---|---|
 | `swift run p1fast-smoke` | **97 ok / 0 fail** |
-| `npm run smoke` (12 suites somam) | **81 ok / 0 fail** |
+| `npm run smoke` (12 suites — soma de TODOS os ✓) | **129 ok / 0 fail** |
 | `node-harness-funcional.mjs` | **23 ok / 0 fail** |
 | `node-harness-api.mjs` | **26 ok / 0 fail** |
+
+> Para contagem exata do Node smoke: `npm run smoke 2>&1 | grep -c "^✓"` deve retornar **129**.
 
 Se algum cair → REGRESSÃO. Investigar antes de fazer qualquer outra coisa.
 
