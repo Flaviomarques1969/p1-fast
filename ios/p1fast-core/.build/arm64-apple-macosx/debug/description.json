@@ -32,6 +32,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/FaseCurva.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Lesson.swift"
         },
         {
@@ -69,6 +73,7 @@
       "objects" : [
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/CriticalRules.swift.o",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/CrossValidation.swift.o",
+        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/FaseCurva.swift.o",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Lesson.swift.o",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Quality.swift.o",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Sample.swift.o",
@@ -137,6 +142,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/FaseCurva.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Lesson.swift.o"
         },
         {
@@ -168,6 +177,7 @@
       "sources" : [
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/CriticalRules.swift",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/CrossValidation.swift",
+        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/FaseCurva.swift",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Lesson.swift",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Quality.swift",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Sample.swift",
@@ -287,6 +297,7 @@
       "-c",
       "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/CriticalRules.swift",
       "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/CrossValidation.swift",
+      "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/FaseCurva.swift",
       "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Lesson.swift",
       "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Quality.swift",
       "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Sample.swift",
@@ -443,6 +454,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/FaseCurva.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Lesson.swift"
         },
         {
@@ -510,6 +525,10 @@
         {
           "kind" : "file",
           "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/CrossValidation.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/FaseCurva.swift.o"
         },
         {
           "kind" : "file",

@@ -13,9 +13,10 @@ p1fast-core/
     │   ├── Sample.swift           ← amostra multi-fonte + SourceTags + Clock
     │   ├── Snapshot.swift         ← CarTelemetrySnapshot + SnapshotBuilder
     │   ├── CriticalRules.swift    ← AlertLevel + Engine + 3 regras CRÍTICAS + 3 manuais
-    │   └── CrossValidation.swift  ← V-001 (CAN×GNSS) + V-002 (IMU×derivada speed)
+    │   ├── CrossValidation.swift  ← V-001 (CAN×GNSS) + V-002 (IMU×derivada speed)
+    │   └── FaseCurva.swift        ← classificação INICIO/MEIO/FIM por accLong (port de fase-curva.js)
     └── P1FastSmoke/             ← executável de teste (não usa XCTest)
-        └── main.swift             ← 24 asserts paridade com pipeline JS
+        └── main.swift             ← 41 asserts paridade com pipeline JS
 ```
 
 ## Por que executável smoke em vez de XCTest

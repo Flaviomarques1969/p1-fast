@@ -16,6 +16,13 @@
     "swift-dependencies": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/CrossValidation.swiftdeps",
     "diagnostics": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/CrossValidation.dia"
   },
+  "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/FaseCurva.swift": {
+    "dependencies": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/FaseCurva.d",
+    "object": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/FaseCurva.swift.o",
+    "swiftmodule": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/FaseCurva~partial.swiftmodule",
+    "swift-dependencies": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/FaseCurva.swiftdeps",
+    "diagnostics": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/FaseCurva.dia"
+  },
   "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastCore/Lesson.swift": {
     "dependencies": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Lesson.d",
     "object": "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/Lesson.swift.o",
