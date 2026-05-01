@@ -46,6 +46,11 @@ entregues em `_design-reference/`.
   swatch de cor, apelido, modelo + categoria, tags de status (próximo
   evento / sem evento / em manutenção) e contagem de stints. Header com
   eyebrow + summary 3-stats. FAB "Novo carro" + bottom-nav com Garagem ativa.
+- `mockup-pos-stint.html` (A4) — debrief do piloto após encerrar o stint:
+  hero da melhor volta (1:42.318 com gaps vs PB do dia / pessoal), card
+  de objetivo cumprido, lição praticada (V-Min, 12 mensagens, sucesso
+  ALTA), trecho-foco (Curva da Junção, +1.8 km/h em V-min) e sugestão
+  pro próximo (saída na Curva do Placar, lição Acelerador Progressivo).
 
 Antes de A1..A3 + B2 (commit `eef0c0d`): 4 mockups do hub alinhados ao
 padrão B (`mockup-evento.html` canônico + `mockup-home-cheio.html` +
@@ -77,6 +82,7 @@ npm run smoke
 # http://localhost:8767/_design-reference/mockup-trecho-lista.html
 # http://localhost:8767/_design-reference/mockup-carro.html
 # http://localhost:8767/_design-reference/mockup-garagem.html
+# http://localhost:8767/_design-reference/mockup-pos-stint.html
 
 # Mockups dos cockpits (NÃO MEXER):
 # http://localhost:8767/_design-reference/mockup-cockpit-piloto.html

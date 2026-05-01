@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=430, initial-scale=1, viewport-fit=cover">
+<title>Mockup Pós-stint — P1 Fast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(20% 0.005 240);
+  --surface: oklch(24% 0.005 240);
+  --surface-2: oklch(28% 0.005 240);
+  --hairline: oklch(33% 0.005 240);
+  --text: oklch(95% 0.003 240);
+  --text-2: oklch(75% 0.01 240);
+  --text-3: oklch(58% 0.012 240);
+  --accent: oklch(78% 0.13 235);
+  --accent-2: oklch(82% 0.10 235 / .15);
+  --bom: oklch(78% 0.16 150);
+  --atencao: oklch(82% 0.16 80);
+  --erro: oklch(70% 0.20 25);
+  --radius: 12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:linear-gradient(160deg, oklch(22% 0.005 240) 0%, oklch(18% 0.005 240) 100%);
+  color:var(--text);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  font-weight:400;
+}
+
+.device{
+  width:430px;height:932px;
+  background:var(--bg);
+  border-radius:48px;
+  border:1px solid oklch(28% 0.005 240);
+  box-shadow:0 30px 80px oklch(0% 0 0 / .6), 0 0 0 8px oklch(12% 0.005 240);
+  position:relative;overflow:hidden;
+  display:flex;flex-direction:column;
+}
+.notch{
+  position:absolute;top:8px;left:50%;transform:translateX(-50%);
+  width:128px;height:36px;background:#000;border-radius:20px;z-index:50;
+}
+
+.modal{
+  flex:1;min-height:0;display:flex;flex-direction:column;
+  padding-top:60px;
+}
+
+/* HEAD */
+.head{
+  padding:18px 24px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.head__title{
+  font-size:22px;font-weight:600;letter-spacing:-.02em;color:var(--text);
+}
+.head__sub{
+  font-size:12px;font-weight:400;color:var(--text-3);margin-top:1px;letter-spacing:.005em;
+}
+.head__close{
+  background:transparent;border:0;color:var(--text-2);
+  font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;
+  padding:8px 12px;border-radius:8px;
+}
+.head__close:hover{background:oklch(28% 0.005 240);}
+
+/* BODY */
+.body{flex:1;min-height:0;overflow-y:auto;padding:0 24px 24px;}
+.body::-webkit-scrollbar{display:none;}
+
+/* SECTION HEADER */
+.section{margin-top:18px;}
+.section:first-child{margin-top:0;}
+.section__head{
+  padding:0 4px 8px;
+  font-size:11px;font-weight:600;
+  letter-spacing:.12em;color:var(--text-3);
+  text-transform:uppercase;
+}
+
+/* HERO LAP CARD */
+.hero{
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
+  padding:18px 18px 16px;
+}
+.hero__lbl{
+  font-size:11px;font-weight:600;
+  letter-spacing:.12em;color:var(--text-3);
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+.hero__time{
+  font-size:42px;font-weight:600;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:-.03em;
+  color:var(--text);
+  line-height:1;
+  display:block;
+}
+.hero__delta{
+  display:flex;gap:14px;align-items:baseline;
+  margin-top:10px;
+  font-size:12px;color:var(--text-2);
+  font-variant-numeric:tabular-nums;
+}
+.hero__delta strong{
+  color:var(--bom);font-weight:600;
+}
+
+/* CARD genérico */
+.card{
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
+  padding:14px 16px;
+}
+.card + .card{margin-top:8px;}
+
+.card__row{
+  display:flex;align-items:flex-start;gap:12px;
+  justify-content:space-between;
+}
+
+.card__title{
+  font-size:16px;font-weight:600;
+  letter-spacing:-.005em;color:var(--text);
+  line-height:1.2;
+}
+.card__sub{
+  font-size:13px;color:var(--text-2);font-weight:400;
+  margin-top:4px;line-height:1.35;
+}
+.card__meta{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  margin-top:10px;
+}
+
+.tag{
+  display:inline-flex;align-items:center;
+  padding:3px 8px;border-radius:999px;
+  font-size:10px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text-3);
+  border:1px solid var(--hairline);
+  background:transparent;
+}
+.tag--bom{
+  color:var(--bom);
+  border-color:oklch(78% 0.16 150 / .45);
+  background:oklch(78% 0.16 150 / .12);
+}
+.tag--atencao{
+  color:var(--atencao);
+  border-color:oklch(82% 0.16 80 / .45);
+  background:oklch(82% 0.16 80 / .12);
+}
+
+/* STATUS BADGE */
+.status{
+  flex:0 0 auto;
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 10px;border-radius:999px;
+  font-size:10px;font-weight:600;
+  letter-spacing:.10em;text-transform:uppercase;
+}
+.status--bom{
+  color:var(--bom);
+  background:oklch(78% 0.16 150 / .12);
+  border:1px solid oklch(78% 0.16 150 / .45);
+}
+.status__dot{
+  width:5px;height:5px;border-radius:50%;
+  background:currentColor;
+}
+
+/* DELTA NUM grande dentro do card */
+.delta-num{
+  font-size:20px;font-weight:600;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em;
+  color:var(--bom);
+  margin-top:8px;
+  display:block;
+  line-height:1.1;
+}
+
+/* FOOT */
+.foot{
+  padding:14px 24px 30px;
+  background:linear-gradient(180deg,transparent,var(--bg) 30%);
+  display:grid;grid-template-columns:auto 1fr;gap:10px;
+}
+.btn{
+  padding:14px 18px;border-radius:14px;cursor:pointer;
+  font-family:inherit;font-size:15px;font-weight:600;letter-spacing:-.005em;
+  outline:none;border:0;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s;
+}
+.btn:active{transform:scale(.97);}
+.btn--ghost{background:transparent;color:var(--text-2);}
+.btn--ghost:hover{background:var(--surface);color:var(--text);}
+.btn--primary{background:var(--accent);color:oklch(12% 0.005 240);}
+.btn--primary:hover{background:oklch(82% 0.14 235);}
+</style>
+</head>
+<body>
+<div class="device">
+  <div class="notch"></div>
+  <div class="modal">
+
+    <div class="head">
+      <div>
+        <div class="head__title">Stint #3 encerrado</div>
+        <div class="head__sub">Brasília · 02/05 · 16 voltas</div>
+      </div>
+      <button class="head__close">Fechar</button>
+    </div>
+
+    <div class="body">
+
+      <!-- HERO LAP TIME -->
+      <section class="section">
+        <div class="hero">
+          <div class="hero__lbl">Melhor volta</div>
+          <span class="hero__time">1:42.318</span>
+          <div class="hero__delta">
+            <span><strong>−0.842s</strong> vs PB do dia</span>
+            <span><strong>−0.215s</strong> vs PB pessoal</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- OBJETIVO -->
+      <section class="section">
+        <div class="section__head">Objetivo</div>
+        <div class="card">
+          <div class="card__row">
+            <div>
+              <div class="card__title">Atacar tempo na Curva da Junção</div>
+              <div class="card__sub">Foco apex · cumprido nas 4 voltas válidas.</div>
+            </div>
+            <span class="status status--bom">
+              <span class="status__dot"></span>Cumprido
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- LIÇÃO PRATICADA -->
+      <section class="section">
+        <div class="section__head">Lição praticada</div>
+        <div class="card">
+          <div class="card__title">V-Min</div>
+          <div class="card__sub">12 mensagens entregues · velocidade mínima média subiu de 90.6 → 92.4 km/h.</div>
+          <div class="card__meta">
+            <span class="tag">Apex</span>
+            <span class="tag tag--bom">Alta confiança</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- TRECHO-FOCO -->
+      <section class="section">
+        <div class="section__head">Trecho-foco</div>
+        <div class="card">
+          <div class="card__title">Curva da Junção</div>
+          <div class="card__sub">Parcial 2 · 4 voltas válidas · V-min 92.4 km/h.</div>
+          <span class="delta-num">+1.8 km/h vs sua média do dia</span>
+          <div class="card__meta">
+            <span class="tag">Média</span>
+            <span class="tag">Apex neutro</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SUGESTÃO PRÓXIMO STINT -->
+      <section class="section">
+        <div class="section__head">Sugestão pro próximo stint</div>
+        <div class="card">
+          <div class="card__title">Trabalhar saída na Curva do Placar</div>
+          <div class="card__sub">Lição: Acelerador Progressivo · você perdeu 0.31s na retomada das 4 últimas voltas.</div>
+          <div class="card__meta">
+            <span class="tag">Saída</span>
+            <span class="tag tag--atencao">Média confiança</span>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <div class="foot">
+      <button class="btn btn--ghost">Voltar pro hub</button>
+      <button class="btn btn--primary">Iniciar próximo stint</button>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
