@@ -468,4 +468,9 @@ console.log(`Alertas críticos no stint ATAQUE: ${alertasAtaque.length}`);
 console.log(`Alertas críticos no stint CONSISTÊNCIA: ${alertasConsist.length}`);
 console.log(`Eventos cross-validation no stint ATAQUE: ${xvalAtaque.length}`);
 console.log(`Eventos cross-validation no stint CONSISTÊNCIA: ${xvalConsist.length}`);
+console.log(`Mensagens P1 Coach (20 voltas, foco apex): ${coachMsgs.length}`);
+if (coachMsgs.length > 0) {
+  const lessons = [...new Set(coachMsgs.map(m => m.lessonId))];
+  console.log(`Lições disparadas: ${lessons.join(', ')}`);
+}
 process.exit(fail ? 1 : 0);
