@@ -146,9 +146,9 @@ t('linhas vazias e comentários (#) são ignorados', () => {
 
 t('linhas com nº de colunas errado vão para dropped', () => {
   const csv = HEADER + '\n' +
-    '2026-05-01T19:09:54.556Z,9535.152643,imu,-0.9,-0.7,0.0,,,,\n' +   // ok
-    'curto,demais\n' +                                                  // 2 cols
-    '2026-05-01T19:09:54.563Z,9535.160048,imu,-0.8,-0.7,0.0,,,,extra'; // 11 cols
+    '2026-05-01T19:09:54.556Z,9535.152643,imu,-0.9,-0.7,0.0,,,,\n' +              // 10 cols → ok
+    'curto,demais\n' +                                                              //  2 cols → drop
+    '2026-05-01T19:09:54.563Z,9535.160048,imu,-0.8,-0.7,0.0,,,,extra,demais';      // 11 cols → drop
   const r = loadIphoneCsv(csv);
   if (r.samples.length !== 1) throw new Error('samples=' + r.samples.length);
   if (r.dropped !== 2) throw new Error('dropped=' + r.dropped);
