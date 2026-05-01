@@ -436,6 +436,109 @@ step("LL-04: canActivate respeita requiredSignals") {
     try assertTrue(!vmin.canActivate(signals: []), "V-Min sem nada → false")
 }
 
+// ════════════════════════════════════════════════════════════
+// FaseCurva — FC-01 .. FC-08 (port de src/telemetry/fase-curva.js)
+// ════════════════════════════════════════════════════════════
+
+step("FC-01: classificar([]) retorna nil") {
+    try assertTrue(FaseCurva.classificar([]) == nil, "vazio deve retornar nil")
+}
+
+step("FC-02: sem accLong → fallback 1/3 1/3 1/3 por tempo") {
+    let samples = (0...9).map { i in
+        FaseCurva.InputSample(t: Double(i) * 100, kmh: Double(120 - i))
+    }
+    let r = FaseCurva.classificar(samples)!
+    try assertEq(r.metodo, FaseCurva.Metodo.fallback33)
+    // Cortes em t=300 e t=600 → inicio: t<=300 (4), meio: 300<t<=600 (3), fim: t>600 (3)
+    try assertEq(r.inicio.samples.count, 4)
+    try assertEq(r.meio.samples.count, 3)
+    try assertEq(r.fim.samples.count, 3)
+}
+
+step("FC-03: com accLong → c1 onde cruza -0.35g, c2 onde cruza +0.25g") {
+    let samples: [FaseCurva.InputSample] = [
+        .init(t:   0, kmh: 120, accLong: -0.6, accLat: 0.1),
+        .init(t: 100, kmh: 100, accLong: -0.5, accLat: 0.3),
+        .init(t: 200, kmh:  80, accLong: -0.1, accLat: 0.8),  // c1=200 (cruza -0.35)
+        .init(t: 300, kmh:  70, accLong:  0.0, accLat: 0.9),
+        .init(t: 400, kmh:  72, accLong:  0.1, accLat: 0.7),
+        .init(t: 500, kmh:  85, accLong:  0.4, accLat: 0.4),  // c2=500 (cruza +0.25)
+        .init(t: 600, kmh: 100, accLong:  0.5, accLat: 0.2),
+    ]
+    let r = FaseCurva.classificar(samples)!
+    try assertEq(r.metodo, FaseCurva.Metodo.sinais)
+    try assertEq(r.inicio.samples.count, 3)  // t=0,100,200
+    try assertEq(r.meio.samples.count, 3)    // t=300,400,500
+    try assertEq(r.fim.samples.count, 1)     // t=600
+}
+
+step("FC-04: apex = ponto de menor velocidade dentro do MEIO") {
+    let samples: [FaseCurva.InputSample] = [
+        .init(t:   0, kmh: 120, accLong: -0.6),
+        .init(t: 100, kmh: 100, accLong: -0.5),
+        .init(t: 200, kmh:  80, accLong: -0.1),
+        .init(t: 300, kmh:  70, accLong:  0.0),
+        .init(t: 400, kmh:  65, accLong:  0.1),  // apex
+        .init(t: 500, kmh:  85, accLong:  0.4),
+        .init(t: 600, kmh: 100, accLong:  0.5),
+    ]
+    let r = FaseCurva.classificar(samples)!
+    try assertEq(r.meio.stats.apexKmh, 65)
+    try assertEq(r.meio.stats.apexT, 400)
+    try assertEq(r.total.stats.apexKmh, 65)
+}
+
+step("FC-05: stats — velEntrada/velSaida = primeira/última kmh do bloco") {
+    let samples: [FaseCurva.InputSample] = [
+        .init(t:   0, kmh: 120, accLong: -0.6),
+        .init(t: 100, kmh: 100, accLong: -0.5),
+        .init(t: 200, kmh:  80, accLong: -0.1),
+        .init(t: 300, kmh:  70, accLong:  0.0),
+        .init(t: 400, kmh:  65, accLong:  0.1),
+        .init(t: 500, kmh:  85, accLong:  0.4),
+        .init(t: 600, kmh: 100, accLong:  0.5),
+    ]
+    let r = FaseCurva.classificar(samples)!
+    try assertEq(r.inicio.stats.velEntrada, 120)
+    try assertEq(r.inicio.stats.velSaida, 80)
+    try assertEq(r.fim.stats.velEntrada, 100)
+    try assertEq(r.fim.stats.velSaida, 100)
+    try assertEq(r.total.stats.velEntrada, 120)
+    try assertEq(r.total.stats.velSaida, 100)
+}
+
+step("FC-06: accLongPeak preserva sinal do maior em magnitude") {
+    let samples: [FaseCurva.InputSample] = [
+        .init(t:   0, kmh: 120, accLong: -0.6),
+        .init(t: 100, kmh: 100, accLong:  0.5),
+        .init(t: 200, kmh:  80, accLong: -0.1),
+    ]
+    let r = FaseCurva.classificar(samples)!
+    try assertEq(r.total.stats.accLongPeak, -0.6)
+}
+
+step("FC-07: total.duracaoMs = t_last - t_first") {
+    let samples = (0...10).map { i in
+        FaseCurva.InputSample(t: Double(i) * 50, kmh: 100, accLong: 0.0)
+    }
+    let r = FaseCurva.classificar(samples)!
+    try assertEq(r.total.duracaoMs, 500)
+}
+
+step("FC-08: sample com velocidade ou accLong nil não quebra") {
+    let samples: [FaseCurva.InputSample] = [
+        .init(t:   0, kmh: nil, accLong: nil),
+        .init(t: 100, kmh: 100, accLong: -0.5),
+        .init(t: 200, kmh: nil, accLong: nil),
+        .init(t: 300, kmh:  80, accLong:  0.4),
+    ]
+    let r = FaseCurva.classificar(samples)!
+    try assertEq(r.metodo, FaseCurva.Metodo.sinais)
+    try assertEq(r.total.stats.velMinima, 80)
+    try assertEq(r.total.stats.velMaxima, 100)
+}
+
 step("CLOCK-01: Clock.now retorna epoch ms positivo") {
     let now = Clock.now
     try assertTrue(now > 1_700_000_000_000, "now > 2023-11")
