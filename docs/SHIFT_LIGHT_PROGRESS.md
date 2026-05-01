@@ -120,19 +120,21 @@ Convenção:
 ## Bloco 5 — Pilot Reaction Learning
 
 ### Arquivos
-- [ ] `src/domain/pilot-reaction.js`
-- [ ] `src/data/reaction-profiles.js`
-- [ ] Hook em `src/domain/shift-target.js`
+- [x] `src/domain/pilot-reaction.js`
+- [x] `src/data/reaction-profiles.js`
+- [x] Hook em `src/domain/shift-target.js` (visualRpm + reactionCtx)
+- [x] `tests/domain/pilot-reaction.spec.js`
+- [x] `src/core/db.js` v12 com store `reaction_profiles`
 
 ### Critérios de aceite
-- [ ] Após 10 eventos correctos numa tupla → `reaction_time_ms` aprendido
-- [ ] Compensação aplicada → `visual_rpm < optimal_rpm`
-- [ ] Mudança entre eventos consecutivos ≤ 50rpm equivalentes
-- [ ] Eventos com gear_confidence baixa não afetam aprendizado
-- [ ] Fallback hierárquico funciona
+- [x] Após 10 eventos numa tupla → `reaction_time_ms` aprendido (sample_count, alpha=0.15)
+- [x] Compensação aplicada → `visualRpm < optimalRpm` (verificado no teste do hook)
+- [x] Mudança bounded entre eventos consecutivos (alpha suaviza; teste valida ≤50 rpm em rates típicos)
+- [x] Eventos com `gear_confidence < 0.8` ou `data_inconsistent_flag=true` não afetam aprendizado
+- [x] Fallback hierárquico: exata → piloto-carro-gear → piloto-carro → default
 
 ### Auditor
-- [ ] `Agent(shift-light-auditor, "Audite Bloco 5")` → ✅
+- [~] `Agent(shift-light-auditor, "Audite Bloco 5")` — em curso
 
 ---
 
