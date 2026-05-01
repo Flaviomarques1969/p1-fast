@@ -39,3 +39,12 @@ export async function loadAllProfiles() {
 export async function clearProfiles() {
   return db.reaction_profiles.clear();
 }
+
+// deleteProfile(key) — apaga a tupla específica (usado pela tela
+// "Reações aprendidas" pra reverter manualmente uma tupla).
+export async function deleteProfile(key) {
+  if (!key) return 0;
+  const existing = await db.reaction_profiles.where('key').equals(key).first();
+  if (!existing) return 0;
+  return db.reaction_profiles.delete(existing.id);
+}
