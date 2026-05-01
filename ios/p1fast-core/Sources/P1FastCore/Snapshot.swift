@@ -156,7 +156,7 @@ public enum SnapshotBuilder {
             accelLongitudinal: s.accLong,
             accelLateral: s.accLat,
             accelVertical: s.accVert ?? s.accZ,
-            yawRate: s.gyroAlpha
+            yawRate: s.yawRate ?? s.gyroAlpha
         )
     }
 
