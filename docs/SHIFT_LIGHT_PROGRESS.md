@@ -91,7 +91,7 @@ Convenção:
 - [x] Persistência idempotente
 
 ### Auditor
-- [~] `Agent(shift-light-auditor, "Audite Bloco 3")` — em curso
+- [x] `Agent(shift-light-auditor, "Audite Bloco 3")` → ✅ APROVADO (47 testes do shift-light + 20 smoke geral, sem regressão)
 
 ---
 
