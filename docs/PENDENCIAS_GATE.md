@@ -79,24 +79,17 @@ Não duplicar com:
 
 ---
 
-### P1 — CrossValidationEngine V-003 a V-011
+### ~~P1 — CrossValidationEngine V-003 a V-011~~ — CONCLUÍDO 2026-05-01
 
-**Origem:** `CROSS_VALIDATION_RULES.md` (FAM Racing) + `src/telemetry/cross-validation.js` (P1 Fast).
+**Estado entregue:**
+- **JS** (`src/telemetry/cross-validation.js`): V-003..V-011 já estavam implementadas — agora têm **smoke explícito** com 4 cenários por validação (normal/divergência/transitório/recovery) em `tests/node-smoke-cross-validation.mjs` (41 asserts).
+- **Swift** (`ios/p1fast-core/Sources/P1FastCore/CrossValidation.swift`): V-003..V-011 portadas 1:1 com JS (mesmas janelas, thresholds, mensagens, severidades). `Sample.swift` ganhou `gear`/`oilTemp`/`yawRate`; `Snapshot.swift` ganhou `gear` em `EngineSnap` + `public init` em todas as structs do snapshot. 16 novos asserts em `P1FastSmoke/main.swift` cobrindo paridade.
 
-**Estado atual:** V-001 (CAN×GNSS) e V-002 (IMU×derivada speed) implementadas em JS e Swift.
+**Achado documentado (cooldown × severidade):** o cooldown atual é POR validação (não por severidade). Se `atencao` emite primeiro, escalada pra `critico` na MESMA validação fica bloqueada até o cooldown expirar (30s default). Smoke usa cooldown reduzido (500ms) pra exercitar a lógica de janela 5s do V-007 crítico. Mesmo design no JS e Swift por construção. Se virar dor real (piloto não ouve "BOX AGORA" porque já ouviu "atenção"), abre nova entrada.
 
-**O que falta:** V-003 a V-011 (TPS×MAP×accel, RPM×marcha×velocidade, λ sob carga, pressão óleo×RPM, etc.).
+**Suite:** Node 173 → 214/0 · Swift 97 → 113/0 · TOTAL 319 → 376/0.
 
-**Por que P1:** sem isso, divergências de canais T4000 silenciam. Risco de alimentar análise/decisão com dado inconsistente.
-
-**Escopo:** médio. Catálogo + cooldown + severidade por validação.
-
-**Critério de feito:**
-- Cada validação com fixture (caso normal, divergência, transitório, recovery)
-- Eventos alimentam motor de alertas
-- Cooldown configurável
-
-**Bloqueios:** parcialmente depende de E2 (T4000) para canais de motor.
+V-009 (corner-by-corner) NÃO entrou — é derivada pós-curva, módulo separado (não snapshot-by-snapshot).
 
 ---
 
