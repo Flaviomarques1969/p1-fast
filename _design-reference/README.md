@@ -29,6 +29,11 @@ mockup gerou drift no projeto anterior.
 | `mockup-carro.html` | Modal Carro — cadastro (apelido + modelo + categoria + cor) e setup base (14 overrides em PNEUS / ALINHAMENTO / SUSPENSÃO / FREIOS / MOTOR · TRANSMISSÃO) | Padrão B |
 | `mockup-garagem.html` | Tab Garagem — eyebrow + summary 3-stats (total / prontos / manutenção) + cards de carro com swatch, apelido, modelo, categoria e tags de status. FAB + bottom-nav | Padrão B |
 | `mockup-pos-stint.html` | Modal pós-stint (debrief do piloto) — hero da volta-recorde + cards de objetivo, lição praticada, trecho-foco e sugestão pro próximo stint | Padrão B |
+| `mockup-setup-avancado.html` | Sub-modal aberto pelo picker "Setup avançado" do Modal Stint — 11 ajustes herdados da base com diff visual (campo neutro / campo "Alterado" em accent) | Padrão B |
+| `mockup-piloto-lista.html` | Sub-modal aberto pelo picker "Piloto" do Modal Stint — 4 pilotos cadastrados (Flavio Marx, Bruno Marx, Luiz Bresser, Alain Mesquita) com altura/peso/idade + CTA "Cadastrar piloto" | Padrão B |
+| `mockup-pneu-lista.html` | Sub-modal aberto pelo picker "Pneu montado" do Modal Stint — estado vazio com bullets explicativos (marca/composto/medida ficam salvos, voltas e km contam automático, comparar duração entre marcas) + CTA primário "Cadastrar primeiro pneu" | Padrão B |
+| `mockup-combustivel-lista.html` | Sub-modal aberto pelo picker "Combustível" do Modal Stint — Álcool padrão (selecionado) + Gasolina + CTA "Cadastrar outro tipo" | Padrão B |
+| `mockup-passageiro-lista.html` | Sub-modal aberto pelo picker "Passageiro" do Modal Stint (quando toggle "Levar passageiro" liga) — 2 passageiros cadastrados + CTA "Cadastrar passageiro" | Padrão B |
 | `historico-evento/` | 7 linhas iteradas (A-G) do Modal Evento + comparativo lado-a-lado | Memória de design |
 
 ## Padrão B — tokens canônicos do hub

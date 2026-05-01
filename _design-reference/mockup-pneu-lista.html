@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=430, initial-scale=1, viewport-fit=cover">
+<title>Mockup Stint — Pneu montado — P1 Fast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(20% 0.005 240);
+  --surface: oklch(24% 0.005 240);
+  --surface-2: oklch(28% 0.005 240);
+  --hairline: oklch(33% 0.005 240);
+  --text: oklch(95% 0.003 240);
+  --text-2: oklch(75% 0.01 240);
+  --text-3: oklch(58% 0.012 240);
+  --accent: oklch(78% 0.13 235);
+  --accent-2: oklch(82% 0.10 235 / .15);
+  --bom: oklch(78% 0.16 150);
+  --atencao: oklch(82% 0.16 80);
+  --radius: 12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:linear-gradient(160deg, oklch(22% 0.005 240) 0%, oklch(18% 0.005 240) 100%);
+  color:var(--text);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  font-weight:400;
+}
+
+.device{
+  width:430px;height:932px;
+  background:var(--bg);
+  border-radius:48px;
+  border:1px solid oklch(28% 0.005 240);
+  box-shadow:0 30px 80px oklch(0% 0 0 / .6), 0 0 0 8px oklch(12% 0.005 240);
+  position:relative;overflow:hidden;
+  display:flex;flex-direction:column;
+}
+.notch{
+  position:absolute;top:8px;left:50%;transform:translateX(-50%);
+  width:128px;height:36px;background:#000;border-radius:20px;z-index:50;
+}
+
+.modal{
+  flex:1;min-height:0;display:flex;flex-direction:column;
+  padding-top:60px;
+}
+
+.head{
+  padding:18px 24px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.head__title{
+  font-size:22px;font-weight:600;letter-spacing:-.02em;color:var(--text);
+}
+.head__sub{
+  font-size:12px;font-weight:400;color:var(--text-3);margin-top:1px;letter-spacing:.005em;
+}
+.head__close{
+  background:transparent;border:0;color:var(--text-2);
+  font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;
+  padding:8px 12px;border-radius:8px;
+}
+.head__close:hover{background:oklch(28% 0.005 240);}
+
+.body{flex:1;min-height:0;overflow-y:auto;padding:0 24px 24px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;
+}
+
+.empty{
+  max-width:340px;margin:0 auto;padding:20px 0;
+}
+.empty__icon{
+  width:64px;height:64px;margin:0 auto 18px;
+  border-radius:50%;
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-3);
+  font-size:24px;font-weight:300;
+}
+.empty__title{
+  font-size:18px;font-weight:600;color:var(--text);
+  letter-spacing:-.015em;
+  margin-bottom:8px;
+}
+.empty__desc{
+  font-size:13px;color:var(--text-2);font-weight:400;
+  line-height:1.5;
+  margin-bottom:20px;
+}
+.empty__bullets{
+  text-align:left;
+  margin-bottom:24px;
+}
+.empty__bullet{
+  display:flex;align-items:flex-start;gap:10px;
+  font-size:13px;color:var(--text-2);
+  margin-bottom:8px;line-height:1.4;
+}
+.empty__bullet::before{
+  content:'';
+  flex:0 0 auto;
+  margin-top:7px;
+  width:5px;height:5px;border-radius:50%;
+  background:var(--accent);
+}
+.empty__bullet strong{color:var(--text);font-weight:600;}
+
+.add-row{
+  width:100%;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  background:var(--accent);
+  color:oklch(12% 0.005 240);
+  border:0;
+  border-radius:var(--radius);
+  font-family:inherit;font-size:15px;font-weight:600;
+  letter-spacing:-.005em;cursor:pointer;
+  padding:14px 18px;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s;
+}
+.add-row:hover{background:oklch(82% 0.14 235);}
+.add-row:active{transform:scale(.97);}
+.add-row__plus{font-size:18px;line-height:1;font-weight:500;}
+
+.foot{
+  padding:14px 24px 30px;
+  background:linear-gradient(180deg,transparent,var(--bg) 30%);
+  display:grid;grid-template-columns:1fr;
+}
+.btn{
+  padding:14px 18px;border-radius:14px;cursor:pointer;
+  font-family:inherit;font-size:15px;font-weight:600;letter-spacing:-.005em;
+  outline:none;border:0;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s;
+}
+.btn:active{transform:scale(.97);}
+.btn--ghost{background:transparent;color:var(--text-2);}
+.btn--ghost:hover{background:var(--surface);color:var(--text);}
+</style>
+</head>
+<body>
+<div class="device">
+  <div class="notch"></div>
+  <div class="modal">
+
+    <div class="head">
+      <div>
+        <div class="head__title">Pneu montado</div>
+        <div class="head__sub">Stint #3 · Celta 1.4</div>
+      </div>
+      <button class="head__close">Fechar</button>
+    </div>
+
+    <div class="body">
+      <div class="empty">
+        <div class="empty__icon">+</div>
+        <div class="empty__title">Nenhum pneu cadastrado ainda</div>
+        <div class="empty__desc">
+          Cadastre os pneus que você usa nesse Celta.
+          Cada pneu fica com histórico próprio.
+        </div>
+
+        <div class="empty__bullets">
+          <div class="empty__bullet">
+            <span><strong>Marca, composto e medida</strong> ficam salvos.</span>
+          </div>
+          <div class="empty__bullet">
+            <span><strong>Voltas e quilômetros rodados</strong> contam automaticamente em cada stint.</span>
+          </div>
+          <div class="empty__bullet">
+            <span>Comparar duração entre marcas pra saber qual <strong>compensa de verdade</strong>.</span>
+          </div>
+        </div>
+
+        <button class="add-row" type="button">
+          <span class="add-row__plus">+</span>Cadastrar primeiro pneu
+        </button>
+      </div>
+    </div>
+
+    <div class="foot">
+      <button class="btn btn--ghost">Voltar</button>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

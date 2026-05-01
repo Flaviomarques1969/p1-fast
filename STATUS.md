@@ -60,6 +60,29 @@ entregues em `_design-reference/`.
   ALTA), trecho-foco (Curva da Junção, +1.8 km/h em V-min) e sugestão
   pro próximo (saída na Curva do Placar, lição Acelerador Progressivo).
 
+**Sub-modais do Modal Stint** (cada picker do `mockup-stint.html` abre um):
+
+- `mockup-setup-avancado.html` — 11 ajustes herdados da base (cambagem,
+  caster, convergência, mola, amort C/E, altura, barra, bias, mapa,
+  diferencial). Campos alterados destacados em accent + badge "Alterado";
+  campos não alterados com botão pequeno "Da base" pra resetar.
+- `mockup-piloto-lista.html` — 4 pilotos cadastrados (Flavio Marx,
+  Bruno Marx, Luiz Bresser, Alain Mesquita) com altura/peso/idade.
+- `mockup-pneu-lista.html` — estado vazio (pneus são cadastrados ao
+  cadastrar/editar o carro). Bullets explicam que cada pneu fica com
+  histórico próprio (voltas, km) pra comparar duração entre marcas.
+- `mockup-combustivel-lista.html` — Álcool (padrão do Celta) + Gasolina
+  + CTA "Cadastrar outro tipo" pra outros combustíveis.
+- `mockup-passageiro-lista.html` — passageiro cadastrado na hora do
+  stint, salva pro próximo (escolha por nome).
+
+## Realidade canônica (2026-05-01)
+
+- Carro: **Celta 1.4 turismo** (Chevrolet). Refletido em todos os
+  mockups (Honda Civic Si retirado).
+- Pilotos: **Flavio Marx · Bruno Marx · Luiz Bresser · Alain Mesquita**.
+- Combustível: álcool padrão + gasolina alternativa.
+
 Antes de A1..A3 + B2 (commit `eef0c0d`): 4 mockups do hub alinhados ao
 padrão B (`mockup-evento.html` canônico + `mockup-home-cheio.html` +
 `mockup-home-vazio.html` + `mockup-pendencias-cascata.html`).
@@ -91,6 +114,11 @@ npm run smoke
 # http://localhost:8767/_design-reference/mockup-carro.html
 # http://localhost:8767/_design-reference/mockup-garagem.html
 # http://localhost:8767/_design-reference/mockup-pos-stint.html
+# http://localhost:8767/_design-reference/mockup-setup-avancado.html
+# http://localhost:8767/_design-reference/mockup-piloto-lista.html
+# http://localhost:8767/_design-reference/mockup-pneu-lista.html
+# http://localhost:8767/_design-reference/mockup-combustivel-lista.html
+# http://localhost:8767/_design-reference/mockup-passageiro-lista.html
 
 # Mockups dos cockpits (NÃO MEXER):
 # http://localhost:8767/_design-reference/mockup-cockpit-piloto.html
