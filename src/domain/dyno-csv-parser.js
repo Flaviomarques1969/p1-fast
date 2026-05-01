@@ -48,13 +48,25 @@ export function parseDynoCsv(text) {
   if (typeof text !== 'string' || text.trim().length === 0) {
     throw new Error('CSV vazio ou inválido');
   }
-  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-  if (lines.length < 2) {
+  const allLines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+  if (allLines.length < 2) {
     throw new Error('CSV precisa de header + ao menos 1 linha de dados');
   }
+  // CSVs reais frequentemente têm linhas de metadata antes do header.
+  // Header = primeira linha que contém a palavra "rpm" (case-insensitive).
+  let headerIdx = -1;
+  for (let i = 0; i < allLines.length; i++) {
+    if (/\brpm\b/i.test(allLines[i]) && /[,;\t]/.test(allLines[i])) {
+      headerIdx = i;
+      break;
+    }
+  }
+  if (headerIdx < 0) headerIdx = 0;
+  const preamble = allLines.slice(0, headerIdx).join(' ');
+  const lines = allLines.slice(headerIdx);
   const sep = detectSeparator(lines[0]);
   const headers = lines[0].split(sep).map(h => h.trim());
-  const format = detectFormat(lines[0]);
+  const format = detectFormat(preamble + ' ' + lines[0]);
 
   const idxRpm = findCol(headers, [/^rpm$/i, /\brpm\b/i, /engine\s*rpm/i, /eng\.?\s*rpm/i]);
   if (idxRpm < 0) throw new Error('Coluna de RPM não encontrada');
