@@ -26,36 +26,39 @@ slide 3D, halo radial). NÃO mudar.
 
 ## Última tarefa (2026-04-30)
 
-**Mockups do fluxo Stint** (Bloco A1 + A2 + A3) e **Modal Carro** (B2)
+**Mockups do fluxo Stint** + **Garagem / Carro** + **Pós-stint**
 entregues em `_design-reference/`.
 
-- `mockup-stint-objetivo.html` (A1) — modal de objetivo do stint com toggle
-  P1 Coach, fase de foco e pickers de lição/trecho.
-- `mockup-licao-lista.html` (A2) — lista de seleção da lição específica,
-  com as 7 lições MVP cadastradas em `src/data/lesson-library.js`. Abre a
-  partir do picker "Lição específica" em A1.
-- `mockup-trecho-lista.html` (A3) — lista de seleção do trecho específico,
+- `mockup-stint.html` — Modal Stint unificado: Configuração (piloto,
+  passageiro, combustível, pneu montado, calibragem 4 rodas, setup
+  avançado herdado da base) + Objetivo (input + 6 chips de tipo) +
+  Aprendizado com IA (toggle Coach + fase de foco + pickers lição e
+  trecho). Tudo pré-preenchido com a base do carro: piloto confirma
+  tudo direto ou toca em itens específicos pra alterar só nesse stint.
+  Substitui o A1 (mockup-stint-objetivo) e o B3 (mockup-stint-override)
+  antigos — Flavio pediu fluxo "tudo num modal só".
+- `mockup-licao-lista.html` — lista de seleção da lição específica,
+  com as 7 lições MVP cadastradas em `src/data/lesson-library.js`.
+  Abre a partir do picker "Lição específica" em `mockup-stint.html`.
+- `mockup-trecho-lista.html` — lista de seleção do trecho específico,
   com os 8 trechos de Brasília agrupados pelas 4 parciais
-  (`src/domain/seed-tracks.js`). Abre a partir do picker "Trecho específico"
-  em A1. Coach atua em todos os trechos elegíveis se "Sem trecho específico".
-- `mockup-carro.html` (B2) — Modal Carro: cadastro (apelido, modelo,
+  (`src/domain/seed-tracks.js`). Abre do picker "Trecho específico" em
+  `mockup-stint.html`. Coach atua em todos os trechos elegíveis se
+  "Sem trecho específico".
+- `mockup-carro.html` — Modal Carro: cadastro (apelido, modelo,
   categoria, cor) + setup base com os 14 overrides canônicos
   (`src/data/override-schemas.js`) em 5 grupos: PNEUS, ALINHAMENTO,
-  SUSPENSÃO, FREIOS, MOTOR · TRANSMISSÃO.
-- `mockup-garagem.html` (B1) — Tab Garagem do hub: lista de carros com
+  SUSPENSÃO, FREIOS, MOTOR · TRANSMISSÃO. É a "base" que o Modal
+  Stint herda quando você inicia um stint.
+- `mockup-garagem.html` — Tab Garagem do hub: lista de carros com
   swatch de cor, apelido, modelo + categoria, tags de status (próximo
   evento / sem evento / em manutenção) e contagem de stints. Header com
   eyebrow + summary 3-stats. FAB "Novo carro" + bottom-nav com Garagem ativa.
-- `mockup-pos-stint.html` (A4) — debrief do piloto após encerrar o stint:
+- `mockup-pos-stint.html` — debrief do piloto após encerrar o stint:
   hero da melhor volta (1:42.318 com gaps vs PB do dia / pessoal), card
   de objetivo cumprido, lição praticada (V-Min, 12 mensagens, sucesso
   ALTA), trecho-foco (Curva da Junção, +1.8 km/h em V-min) e sugestão
   pro próximo (saída na Curva do Placar, lição Acelerador Progressivo).
-- `mockup-stint-override.html` (B3) — modal compacto pra alterar o setup
-  só no stint, sem mexer no setup base do carro. Lista 3 overrides
-  ativos (PRESSÃO pneus, BIAS de freio, MAPA / injeção) com cards de
-  diff Base → Stint, CTA dashed "Adicionar override" pra abrir o picker
-  com os 14 schemas categorizados de `override-schemas.js`.
 
 Antes de A1..A3 + B2 (commit `eef0c0d`): 4 mockups do hub alinhados ao
 padrão B (`mockup-evento.html` canônico + `mockup-home-cheio.html` +
@@ -82,13 +85,12 @@ npm run smoke
 # http://localhost:8767/_design-reference/mockup-home-cheio.html
 # http://localhost:8767/_design-reference/mockup-home-vazio.html
 # http://localhost:8767/_design-reference/mockup-pendencias-cascata.html
-# http://localhost:8767/_design-reference/mockup-stint-objetivo.html
+# http://localhost:8767/_design-reference/mockup-stint.html
 # http://localhost:8767/_design-reference/mockup-licao-lista.html
 # http://localhost:8767/_design-reference/mockup-trecho-lista.html
 # http://localhost:8767/_design-reference/mockup-carro.html
 # http://localhost:8767/_design-reference/mockup-garagem.html
 # http://localhost:8767/_design-reference/mockup-pos-stint.html
-# http://localhost:8767/_design-reference/mockup-stint-override.html
 
 # Mockups dos cockpits (NÃO MEXER):
 # http://localhost:8767/_design-reference/mockup-cockpit-piloto.html

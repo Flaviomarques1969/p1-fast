@@ -23,13 +23,12 @@ mockup gerou drift no projeto anterior.
 | `mockup-home-cheio.html` | HOME do hub mobile · 4 gauges · stint em andamento · próximo evento · sugestão · eventos recentes · FAB | Padrão B |
 | `mockup-home-vazio.html` | HOME empty state — hero + 3 bullets + CTA | Padrão B |
 | `mockup-pendencias-cascata.html` | Tab Pendências em cascata · header contextual · summary card · chip rail · groups colapsáveis | Padrão B |
-| `mockup-stint-objetivo.html` | Modal Stint — objetivo do stint + toggle P1 Coach + fase de foco + pickers de lição e trecho | Padrão B |
-| `mockup-licao-lista.html` | Lista de seleção de lição específica (7 lições MVP) — abre a partir do picker em `mockup-stint-objetivo.html` | Padrão B |
-| `mockup-trecho-lista.html` | Lista de seleção de trecho específico (8 trechos de Brasília agrupados nas 4 parciais) — abre a partir do picker em `mockup-stint-objetivo.html` | Padrão B |
+| `mockup-stint.html` | Modal Stint — tudo num scroll: configuração (piloto, passageiro, combustível, pneu, calibragem, setup avançado), objetivo e Aprendizado com IA (Coach com fase, lição, trecho). Tudo pré-preenchido com a base do carro | Padrão B |
+| `mockup-licao-lista.html` | Lista de seleção de lição específica (7 lições MVP) — abre do picker "Lição específica" em `mockup-stint.html` | Padrão B |
+| `mockup-trecho-lista.html` | Lista de seleção de trecho específico (8 trechos de Brasília agrupados nas 4 parciais) — abre do picker "Trecho específico" em `mockup-stint.html` | Padrão B |
 | `mockup-carro.html` | Modal Carro — cadastro (apelido + modelo + categoria + cor) e setup base (14 overrides em PNEUS / ALINHAMENTO / SUSPENSÃO / FREIOS / MOTOR · TRANSMISSÃO) | Padrão B |
 | `mockup-garagem.html` | Tab Garagem — eyebrow + summary 3-stats (total / prontos / manutenção) + cards de carro com swatch, apelido, modelo, categoria e tags de status. FAB + bottom-nav | Padrão B |
 | `mockup-pos-stint.html` | Modal pós-stint (debrief do piloto) — hero da volta-recorde + cards de objetivo, lição praticada, trecho-foco e sugestão pro próximo stint | Padrão B |
-| `mockup-stint-override.html` | Modal de overrides do stint — lista de overrides ativos com diff base→stint (PRESSÃO, BIAS, MAPA) e CTA "Adicionar override" | Padrão B |
 | `historico-evento/` | 7 linhas iteradas (A-G) do Modal Evento + comparativo lado-a-lado | Memória de design |
 
 ## Padrão B — tokens canônicos do hub
