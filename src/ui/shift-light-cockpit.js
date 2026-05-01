@@ -114,7 +114,24 @@ export function createCockpitShiftLight(element, { mode = 'assisted' } = {}) {
     lastFireRpm = -Infinity;
   }
 
-  return { update, setMode, reset, _state: () => element.getAttribute('data-state') };
+  // idle() — Fase 1 (sem ECU): mantém o componente visível com APENAS o
+  // primeiro dot verde aceso em cada ponta (tier 1), o resto apagado.
+  // Marca presença sem mentir sobre RPM. Não dispara fire nem overrev.
+  function idle() {
+    if (fireTimer) { clearTimeout(fireTimer); fireTimer = null; }
+    setState('off');
+    for (const d of dots) {
+      const t = Number(d.getAttribute('data-tier'));
+      if (t === 1) d.classList.add('is-on');
+      else d.classList.remove('is-on');
+    }
+    lastFireRpm = -Infinity;
+  }
+
+  return {
+    update, setMode, reset, idle,
+    _state: () => element.getAttribute('data-state')
+  };
 }
 
 // resolveCockpitMode(car, gearConfidence, requestedMode) — degradação
