@@ -1,10 +1,17 @@
 # RACEBOX_INTEGRATION_SPEC — Especificação RaceBox Mini
 
-> **STATUS: HIPÓTESE PARCIAL — DOCUMENTAÇÃO OFICIAL DISPONÍVEL SOB NDA LEVE**
+> **STATUS: SPEC ARQUIVADA — UPGRADE CONDICIONAL (decidido 2026-05-01)**
 >
-> O fabricante (RaceBox) disponibiliza o protocolo BLE via formulário em `racebox.pro/products/mini-micro-protocol-documentation` (preencher email/nome/empresa). Antes de implementar, Flavio precisa preencher o formulário e repassar o PDF para que esta spec seja atualizada com os campos oficiais.
+> Esta spec está fora do caminho crítico do MVP. Captura real do iPhone 16 Pro Max em 2026-05-01 (ver [`IPHONE_SENSORS_BASELINE.md`](IPHONE_SENSORS_BASELINE.md)) demonstrou IMU 100 Hz / jitter 0.30 ms — suficiente para todas as features do conceito atual (Coach, fase de curva, V-001/V-002 com T4000).
 >
-> Ver [`BLOCKERS.md`](../../BLOCKERS.md) §E4 + memória [`fam-racing-dominio.md`](../../../../.claude/projects/-Users-imac-Projetos-FAM-Racing/memory/fam-racing-dominio.md).
+> **RaceBox volta ao caminho crítico SOMENTE se aparecer no roadmap:**
+> - Lap timing fino (delta entre voltas sub-segundo, tipo VBOX) — exige GNSS ≥10 Hz que o iPhone não entrega (tem 1 Hz)
+> - Traçado sub-metro (best-line analysis com precisão de cones) — exige sub-metro GNSS, iPhone faz 2–5 m
+> - Redundância de fonte como requisito (caso iPhone falhe por thermal/bateria)
+>
+> Documento mantido como referência técnica para esses cenários futuros. Não preencher o formulário NDA agora — só quando a feature for priorizada.
+>
+> Ver [`BLOCKERS.md`](../../BLOCKERS.md) §E4 (rebaixado).
 
 ## Contexto
 
