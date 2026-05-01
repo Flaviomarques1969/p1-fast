@@ -107,7 +107,7 @@ public final class P1Coach {
             focusPhase: focusPhase,
             focusLessonId: focusLessonId,
             segmentId: segmentId,
-            startedAt: Clock.now,
+            startedAt: Double(Clock.now),
             laps: 0
         )
         activeLessonForCorner = nil
