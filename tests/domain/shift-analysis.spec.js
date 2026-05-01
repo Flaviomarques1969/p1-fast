@@ -1,8 +1,13 @@
 // Smoke spec: shift-analysis (classifyEvent + buildLessonText + analyzeEvent)
 // + shift-cards-view (HTML pure builders + renderShiftCards stub)
 
-import { classifyEvent, buildLessonText, analyzeEvent } from '../../src/domain/shift-analysis.js';
-import { buildShiftCardHTML, buildShiftCardsListHTML, renderShiftCards } from '../../src/ui/shift-cards-view.js';
+// shift-cards-view importa shift-events.js que importa core/db.js → exige Dexie global.
+import 'fake-indexeddb/auto';
+import Dexie from 'dexie';
+globalThis.Dexie = Dexie;
+
+const { classifyEvent, buildLessonText, analyzeEvent } = await import('../../src/domain/shift-analysis.js');
+const { buildShiftCardHTML, buildShiftCardsListHTML, renderShiftCards } = await import('../../src/ui/shift-cards-view.js');
 
 let ok = 0, fail = 0;
 const runners = [];
