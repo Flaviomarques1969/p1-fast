@@ -21,7 +21,7 @@ Convenção:
 | 1 — Estimativa de marcha + confiança | `[x]` concluído | ✅ aprovado c/ ressalvas | — |
 | 2 — Modo seguro + alvo conservador | `[x]` concluído | ✅ aprovado | — |
 | 3 — Detecção de evento + persistência | `[x]` concluído | ✅ aprovado | — |
-| 4 — Cards pós-sessão (Fast Coach) | `[ ]` pendente | — | — |
+| 4 — Cards pós-sessão (Fast Coach) | `[~]` em andamento | — | — |
 | 5 — Pilot Reaction Learning | `[ ]` pendente | — | — |
 | 6 — DYNO_CALIBRATED + UI cadastro | `[ ]` pendente | — | — |
 
