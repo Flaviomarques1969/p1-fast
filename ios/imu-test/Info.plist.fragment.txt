@@ -1,0 +1,8 @@
+Cole estas chaves no Info.plist do projeto Xcode (target → Info → Custom iOS Target Properties).
+
+CHAVE                                         VALOR (string)
+NSLocationWhenInUseUsageDescription           Captura GPS pra validar taxa de amostragem real do iPhone (ADR-018 P1 Fast).
+NSMotionUsageDescription                      Captura IMU pra validar 10 Hz consistentes (ADR-018 P1 Fast).
+
+Sem essas duas chaves, o iOS NEGA o acesso silenciosamente — Hz fica 0
+e você vai pensar que o teste falhou quando na verdade é só a permissão.
