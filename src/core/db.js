@@ -11,7 +11,7 @@ if (typeof Dexie === 'undefined') {
 }
 
 export const DB_NAME = 'famracing';
-export const DB_VERSION = 12;
+export const DB_VERSION = 13;
 
 const db = new Dexie(DB_NAME);
 
@@ -108,6 +108,20 @@ db.version(11).stores({
 // `key` único = 'piloto:carro:gear:trecho'.
 db.version(12).stores({
   reaction_profiles: '++id, &key, last_updated',
+});
+
+// ─── Schema v13 — Ghost-map (Flavio 2026-05-01) ───────────
+// Adiciona 5 itens da spec ghost-map:
+//   • sessoes.voltas_planejadas — campo não-indexado, vive na row JSON
+//   • configuracoes.temperatura_ideal_range — idem (json)
+//   • carros.fonte_temperatura — idem (enum string)
+//   • marcos: tabela nova (pit-in/pit-out + tipos legados)
+//   • retas_especiais: tabela nova com auto_detectada (ADR-019)
+// Os 3 primeiros NÃO precisam aparecer no schema string (Dexie indexa só o
+// que vai a `where()`); marcação canônica está em src/data/schemas.js.
+db.version(13).stores({
+  marcos:          'id, layoutId, tipo, criadoEm',
+  retas_especiais: 'id, trackId, segmentId, autoDetectada, criadoEm',
 });
 
 // ─── Abertura + handshake ────────────────────────────────
