@@ -1,10 +1,6 @@
 {
   "builtTestProducts" : [
-    {
-      "binaryPath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.xctest/Contents/MacOS/P1FastCorePackageTests",
-      "packagePath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core",
-      "productName" : "P1FastCorePackageTests"
-    }
+
   ],
   "copyCommands" : {
 
@@ -126,107 +122,14 @@
       "tempsPath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build",
       "wholeModuleOptimization" : false
     },
-    "C.P1FastCorePackageTests-arm64-apple-macosx26.0-debug.module" : {
+    "C.P1FastSmoke-arm64-apple-macosx26.0-debug.module" : {
       "executable" : "/Library/Developer/CommandLineTools/usr/bin/swiftc",
-      "fileList" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/sources",
+      "fileList" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastSmoke.build/sources",
       "importPath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules",
       "inputs" : [
         {
           "kind" : "file",
-          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.derived/runner.swift"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCoreTests.swiftmodule"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/sources"
-        }
-      ],
-      "isLibrary" : true,
-      "moduleName" : "P1FastCorePackageTests",
-      "moduleOutputPath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCorePackageTests.swiftmodule",
-      "objects" : [
-        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/runner.swift.o"
-      ],
-      "otherArguments" : [
-        "-target",
-        "arm64-apple-macosx13.0",
-        "-incremental",
-        "-enable-batch-mode",
-        "-serialize-diagnostics",
-        "-index-store-path",
-        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/index/store",
-        "-Onone",
-        "-enable-testing",
-        "-Xfrontend",
-        "-enable-cross-import-overlays",
-        "-j10",
-        "-DSWIFT_PACKAGE",
-        "-DDEBUG",
-        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
-        "-module-cache-path",
-        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/ModuleCache",
-        "-parseable-output",
-        "-parse-as-library",
-        "-emit-objc-header",
-        "-emit-objc-header-path",
-        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/include/P1FastCorePackageTests-Swift.h",
-        "-I",
-        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
-        "-L",
-        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
-        "-plugin-path",
-        "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing",
-        "-sdk",
-        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
-        "-g",
-        "-Xcc",
-        "-isysroot",
-        "-Xcc",
-        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
-        "-Xcc",
-        "-fPIC",
-        "-Xcc",
-        "-g",
-        "-package-name",
-        "p1fast_core"
-      ],
-      "outputFileMapPath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/output-file-map.json",
-      "outputs" : [
-        {
-          "kind" : "file",
-          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/runner.swift.o"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCorePackageTests.swiftmodule"
-        }
-      ],
-      "prepareForIndexing" : false,
-      "sources" : [
-        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.derived/runner.swift"
-      ],
-      "tempsPath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build",
-      "wholeModuleOptimization" : false
-    },
-    "C.P1FastCoreTests-arm64-apple-macosx26.0-debug.module" : {
-      "executable" : "/Library/Developer/CommandLineTools/usr/bin/swiftc",
-      "fileList" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/sources",
-      "importPath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules",
-      "inputs" : [
-        {
-          "kind" : "file",
-          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Tests/P1FastCoreTests/QualityTests.swift"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Tests/P1FastCoreTests/SnapshotTests.swift"
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastSmoke/main.swift"
         },
         {
           "kind" : "file",
@@ -238,15 +141,14 @@
         },
         {
           "kind" : "file",
-          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/sources"
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastSmoke.build/sources"
         }
       ],
-      "isLibrary" : true,
-      "moduleName" : "P1FastCoreTests",
-      "moduleOutputPath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCoreTests.swiftmodule",
+      "isLibrary" : false,
+      "moduleName" : "P1FastSmoke",
+      "moduleOutputPath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastSmoke.swiftmodule",
       "objects" : [
-        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/QualityTests.swift.o",
-        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/SnapshotTests.swift.o"
+        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastSmoke.build/main.swift.o"
       ],
       "otherArguments" : [
         "-target",
@@ -258,8 +160,6 @@
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/index/store",
         "-Onone",
         "-enable-testing",
-        "-Xfrontend",
-        "-enable-cross-import-overlays",
         "-j10",
         "-DSWIFT_PACKAGE",
         "-DDEBUG",
@@ -267,7 +167,10 @@
         "-module-cache-path",
         "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/ModuleCache",
         "-parseable-output",
-        "-parse-as-library",
+        "-Xfrontend",
+        "-entry-point-function-name",
+        "-Xfrontend",
+        "P1FastSmoke_main",
         "-swift-version",
         "5",
         "-I",
@@ -290,27 +193,22 @@
         "-package-name",
         "p1fast_core"
       ],
-      "outputFileMapPath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/output-file-map.json",
+      "outputFileMapPath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastSmoke.build/output-file-map.json",
       "outputs" : [
         {
           "kind" : "file",
-          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/QualityTests.swift.o"
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastSmoke.build/main.swift.o"
         },
         {
           "kind" : "file",
-          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/SnapshotTests.swift.o"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastCoreTests.swiftmodule"
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules/P1FastSmoke.swiftmodule"
         }
       ],
       "prepareForIndexing" : false,
       "sources" : [
-        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Tests/P1FastCoreTests/QualityTests.swift",
-        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Tests/P1FastCoreTests/SnapshotTests.swift"
+        "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastSmoke/main.swift"
       ],
-      "tempsPath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build",
+      "tempsPath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastSmoke.build",
       "wholeModuleOptimization" : false
     }
   },
@@ -374,14 +272,14 @@
       "-driver-use-frontend-path",
       "/Library/Developer/CommandLineTools/usr/bin/swiftc"
     ],
-    "P1FastCorePackageTests" : [
+    "P1FastSmoke" : [
       "/Library/Developer/CommandLineTools/usr/bin/swiftc",
       "-module-name",
-      "P1FastCorePackageTests",
+      "P1FastSmoke",
       "-package-name",
       "p1fast_core",
       "-c",
-      "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.derived/runner.swift",
+      "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastSmoke/main.swift",
       "-I",
       "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules",
       "-target",
@@ -393,8 +291,6 @@
       "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/index/store",
       "-Onone",
       "-enable-testing",
-      "-Xfrontend",
-      "-enable-cross-import-overlays",
       "-j10",
       "-DSWIFT_PACKAGE",
       "-DDEBUG",
@@ -402,62 +298,10 @@
       "-module-cache-path",
       "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/ModuleCache",
       "-parseable-output",
-      "-parse-as-library",
-      "-emit-objc-header",
-      "-emit-objc-header-path",
-      "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/include/P1FastCorePackageTests-Swift.h",
-      "-I",
-      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
-      "-L",
-      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
-      "-plugin-path",
-      "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing",
-      "-sdk",
-      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
-      "-g",
-      "-Xcc",
-      "-isysroot",
-      "-Xcc",
-      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
-      "-Xcc",
-      "-fPIC",
-      "-Xcc",
-      "-g",
-      "-package-name",
-      "p1fast_core",
-      "-driver-use-frontend-path",
-      "/Library/Developer/CommandLineTools/usr/bin/swiftc"
-    ],
-    "P1FastCoreTests" : [
-      "/Library/Developer/CommandLineTools/usr/bin/swiftc",
-      "-module-name",
-      "P1FastCoreTests",
-      "-package-name",
-      "p1fast_core",
-      "-c",
-      "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Tests/P1FastCoreTests/QualityTests.swift",
-      "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Tests/P1FastCoreTests/SnapshotTests.swift",
-      "-I",
-      "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/Modules",
-      "-target",
-      "arm64-apple-macosx13.0",
-      "-incremental",
-      "-enable-batch-mode",
-      "-serialize-diagnostics",
-      "-index-store-path",
-      "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/index/store",
-      "-Onone",
-      "-enable-testing",
       "-Xfrontend",
-      "-enable-cross-import-overlays",
-      "-j10",
-      "-DSWIFT_PACKAGE",
-      "-DDEBUG",
-      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
-      "-module-cache-path",
-      "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/ModuleCache",
-      "-parseable-output",
-      "-parse-as-library",
+      "-entry-point-function-name",
+      "-Xfrontend",
+      "P1FastSmoke_main",
       "-swift-version",
       "5",
       "-I",
@@ -487,11 +331,7 @@
     "P1FastCore" : [
 
     ],
-    "P1FastCorePackageTests" : [
-      "P1FastCoreTests",
-      "P1FastCore"
-    ],
-    "P1FastCoreTests" : [
+    "P1FastSmoke" : [
       "P1FastCore"
     ]
   },
@@ -499,17 +339,7 @@
 
   },
   "testEntryPointCommands" : {
-    "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.derived/runner.swift" : {
-      "inputs" : [
 
-      ],
-      "outputs" : [
-        {
-          "kind" : "file",
-          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.derived/runner.swift"
-        }
-      ]
-    }
   },
   "traitConfiguration" : {
     "default" : {
@@ -539,7 +369,7 @@
       ],
       "outputFilePath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCore.build/sources"
     },
-    "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/sources" : {
+    "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastSmoke.build/sources" : {
       "alwaysOutOfDate" : false,
       "inputs" : [
         {
@@ -548,12 +378,26 @@
         },
         {
           "kind" : "file",
-          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.derived/runner.swift"
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Sources/P1FastSmoke/main.swift"
         }
       ],
-      "outputFilePath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/sources"
+      "outputFilePath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastSmoke.build/sources"
     },
-    "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.product/Objects.LinkFileList" : {
+    "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/p1fast-smoke-entitlement.plist" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<entitlement-plist>"
+        },
+        {
+          "kind" : "virtual",
+          "name" : "<com.apple.security.get-task-allow>"
+        }
+      ],
+      "outputFilePath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/p1fast-smoke-entitlement.plist"
+    },
+    "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/p1fast-smoke.product/Objects.LinkFileList" : {
       "alwaysOutOfDate" : false,
       "inputs" : [
         {
@@ -574,36 +418,10 @@
         },
         {
           "kind" : "file",
-          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.build/runner.swift.o"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/QualityTests.swift.o"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/SnapshotTests.swift.o"
+          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastSmoke.build/main.swift.o"
         }
       ],
-      "outputFilePath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCorePackageTests.product/Objects.LinkFileList"
-    },
-    "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/sources" : {
-      "alwaysOutOfDate" : false,
-      "inputs" : [
-        {
-          "kind" : "virtual",
-          "name" : "<sources-file-list>"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Tests/P1FastCoreTests/QualityTests.swift"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/Tests/P1FastCoreTests/SnapshotTests.swift"
-        }
-      ],
-      "outputFilePath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/P1FastCoreTests.build/sources"
+      "outputFilePath" : "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/p1fast-smoke.product/Objects.LinkFileList"
     },
     "/Users/imac/Projetos/P1 Fast/ios/p1fast-core/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt" : {
       "alwaysOutOfDate" : true,

@@ -33,6 +33,7 @@ const { buildSnapshot } = await import('../src/telemetry/snapshot.js');
 const { CriticalRulesEngine, AlertLevel } = await import('../src/pipeline/critical-rules.js');
 const { CrossValidationEngine } = await import('../src/telemetry/cross-validation.js');
 const { Quality } = await import('../src/domain/data-quality.js');
+const { P1Coach } = await import('../src/domain/p1-coach.js');
 
 await db.open();
 
