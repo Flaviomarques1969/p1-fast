@@ -26,6 +26,7 @@ mockup gerou drift no projeto anterior.
 | `mockup-stint-objetivo.html` | Modal Stint — objetivo do stint + toggle P1 Coach + fase de foco + pickers de lição e trecho | Padrão B |
 | `mockup-licao-lista.html` | Lista de seleção de lição específica (7 lições MVP) — abre a partir do picker em `mockup-stint-objetivo.html` | Padrão B |
 | `mockup-trecho-lista.html` | Lista de seleção de trecho específico (8 trechos de Brasília agrupados nas 4 parciais) — abre a partir do picker em `mockup-stint-objetivo.html` | Padrão B |
+| `mockup-carro.html` | Modal Carro — cadastro (apelido + modelo + categoria + cor) e setup base (14 overrides em PNEUS / ALINHAMENTO / SUSPENSÃO / FREIOS / MOTOR · TRANSMISSÃO) | Padrão B |
 | `historico-evento/` | 7 linhas iteradas (A-G) do Modal Evento + comparativo lado-a-lado | Memória de design |
 
 ## Padrão B — tokens canônicos do hub

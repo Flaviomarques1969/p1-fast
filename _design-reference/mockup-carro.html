@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=430, initial-scale=1, viewport-fit=cover">
+<title>Mockup Carro — cadastro + setup base — P1 Fast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(20% 0.005 240);
+  --surface: oklch(24% 0.005 240);
+  --surface-2: oklch(28% 0.005 240);
+  --hairline: oklch(33% 0.005 240);
+  --text: oklch(95% 0.003 240);
+  --text-2: oklch(75% 0.01 240);
+  --text-3: oklch(58% 0.012 240);
+  --accent: oklch(78% 0.13 235);
+  --accent-2: oklch(82% 0.10 235 / .15);
+  --green: oklch(78% 0.16 150);
+  --radius: 12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:linear-gradient(160deg, oklch(22% 0.005 240) 0%, oklch(18% 0.005 240) 100%);
+  color:var(--text);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  font-weight:400;
+}
+
+.device{
+  width:430px;height:932px;
+  background:var(--bg);
+  border-radius:48px;
+  border:1px solid oklch(28% 0.005 240);
+  box-shadow:0 30px 80px oklch(0% 0 0 / .6), 0 0 0 8px oklch(12% 0.005 240);
+  position:relative;overflow:hidden;
+  display:flex;flex-direction:column;
+}
+.notch{
+  position:absolute;top:8px;left:50%;transform:translateX(-50%);
+  width:128px;height:36px;background:#000;border-radius:20px;z-index:50;
+}
+
+.modal{
+  flex:1;min-height:0;display:flex;flex-direction:column;
+  padding-top:60px;
+}
+
+/* HEAD */
+.head{
+  padding:18px 24px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.head__title{
+  font-size:22px;font-weight:600;letter-spacing:-.02em;color:var(--text);
+}
+.head__sub{
+  font-size:12px;font-weight:400;color:var(--text-3);margin-top:1px;letter-spacing:.005em;
+}
+.head__close{
+  background:transparent;border:0;color:var(--text-2);
+  font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;
+  padding:8px 12px;border-radius:8px;
+}
+.head__close:hover{background:oklch(28% 0.005 240);}
+
+/* BODY */
+.body{flex:1;min-height:0;overflow-y:auto;padding:0 24px 24px;}
+.body::-webkit-scrollbar{display:none;}
+
+/* SECTION HEADER */
+.section{margin-top:18px;}
+.section:first-child{margin-top:0;}
+.section__head{
+  padding:0 4px 10px;
+  font-size:11px;font-weight:600;
+  letter-spacing:.12em;color:var(--text-3);
+  text-transform:uppercase;
+}
+
+/* FIELD */
+.field{margin-bottom:14px;}
+.field:last-child{margin-bottom:0;}
+.field__lbl{
+  font-size:13px;font-weight:500;color:var(--text-2);
+  margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;
+  letter-spacing:.005em;
+}
+.field__lbl small{color:var(--text-3);font-weight:400;font-size:12px;}
+
+/* INPUT */
+.input{
+  width:100%;background:var(--surface);border:1px solid var(--hairline);
+  color:var(--text);font-family:inherit;
+  font-size:16px;font-weight:500;letter-spacing:-.005em;
+  padding:13px 14px;border-radius:var(--radius);
+  outline:none;transition:border-color .18s, box-shadow .18s, background .18s;
+}
+.input:focus{
+  border-color:var(--accent);
+  background:oklch(26% 0.01 235);
+  box-shadow:0 0 0 4px oklch(78% 0.13 235 / .14);
+}
+.input--num{font-variant-numeric:tabular-nums;text-align:center;}
+
+/* GRID 2col / 2x2 (rodas) */
+.grid-2col{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.grid-2x2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+
+.wheel{display:flex;flex-direction:column;gap:5px;}
+.wheel__lbl{
+  font-size:10px;font-weight:600;color:var(--text-3);
+  letter-spacing:.08em;text-transform:uppercase;text-align:center;
+}
+
+/* PICKER */
+.picker{
+  width:100%;background:var(--surface);border:1px solid var(--hairline);
+  padding:12px 14px;border-radius:var(--radius);
+  display:flex;align-items:center;justify-content:space-between;cursor:pointer;
+  transition:border-color .18s, background .18s;
+  font-family:inherit;color:inherit;text-align:left;
+}
+.picker:hover{background:var(--surface-2);}
+.picker__val{font-size:15px;font-weight:500;letter-spacing:-.005em;color:var(--text);}
+.picker__val.is-empty{color:var(--text-3);}
+.picker__chev{
+  width:20px;height:20px;border-radius:6px;background:var(--surface-2);
+  display:flex;align-items:center;justify-content:center;color:var(--text-2);font-size:12px;
+}
+
+/* COR SWATCHES */
+.swatch-rail{display:flex;gap:10px;}
+.swatch{
+  flex:0 0 auto;
+  width:38px;height:38px;border-radius:50%;
+  border:2px solid var(--hairline);
+  background:transparent;
+  cursor:pointer;
+  position:relative;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1);
+}
+.swatch:active{transform:scale(.92);}
+.swatch__dot{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:24px;height:24px;border-radius:50%;
+  transition:width .18s, height .18s;
+}
+.swatch[data-on="true"]{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px oklch(78% 0.13 235 / .18);
+}
+.swatch[data-on="true"] .swatch__dot{width:30px;height:30px;}
+
+/* FOOT */
+.foot{
+  padding:14px 24px 30px;
+  background:linear-gradient(180deg,transparent,var(--bg) 30%);
+  display:grid;grid-template-columns:auto 1fr;gap:10px;
+}
+.btn{
+  padding:14px 18px;border-radius:14px;cursor:pointer;
+  font-family:inherit;font-size:15px;font-weight:600;letter-spacing:-.005em;
+  outline:none;border:0;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s;
+}
+.btn:active{transform:scale(.97);}
+.btn--ghost{background:transparent;color:var(--text-2);}
+.btn--ghost:hover{background:var(--surface);color:var(--text);}
+.btn--primary{background:var(--accent);color:oklch(12% 0.005 240);}
+.btn--primary:hover{background:oklch(82% 0.14 235);}
+</style>
+</head>
+<body>
+<div class="device">
+  <div class="notch"></div>
+  <div class="modal">
+
+    <div class="head">
+      <div>
+        <div class="head__title">Editar carro</div>
+        <div class="head__sub">Honda Civic Si · setup base</div>
+      </div>
+      <button class="head__close">Fechar</button>
+    </div>
+
+    <div class="body">
+
+      <!-- ── IDENTIDADE ── -->
+      <section class="section">
+        <div class="section__head">Identidade</div>
+
+        <div class="field">
+          <div class="field__lbl">Apelido</div>
+          <input class="input" value="Honda Civic Si" placeholder="Como você chama o carro">
+        </div>
+
+        <div class="field">
+          <div class="field__lbl">Modelo <small>opcional</small></div>
+          <input class="input" value="Honda Civic Si 2018" placeholder="Marca + ano">
+        </div>
+
+        <div class="field">
+          <div class="field__lbl">Categoria</div>
+          <button class="picker">
+            <span class="picker__val">Turismo</span>
+            <span class="picker__chev">›</span>
+          </button>
+        </div>
+
+        <div class="field">
+          <div class="field__lbl">Cor</div>
+          <div class="swatch-rail">
+            <button class="swatch" data-on="true" type="button" aria-label="Vermelho">
+              <span class="swatch__dot" style="background:#e8001c"></span>
+            </button>
+            <button class="swatch" type="button" aria-label="Amarelo">
+              <span class="swatch__dot" style="background:#f5c400"></span>
+            </button>
+            <button class="swatch" type="button" aria-label="Azul">
+              <span class="swatch__dot" style="background:#0099ff"></span>
+            </button>
+            <button class="swatch" type="button" aria-label="Roxo">
+              <span class="swatch__dot" style="background:#a855f7"></span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── PNEUS ── -->
+      <section class="section">
+        <div class="section__head">Pneus</div>
+
+        <div class="field">
+          <div class="field__lbl">Pressão (saída box, PSI)</div>
+          <div class="grid-2x2">
+            <div class="wheel">
+              <span class="wheel__lbl">Diant. esq.</span>
+              <input class="input input--num" type="number" value="35" step="0.5">
+            </div>
+            <div class="wheel">
+              <span class="wheel__lbl">Diant. dir.</span>
+              <input class="input input--num" type="number" value="35" step="0.5">
+            </div>
+            <div class="wheel">
+              <span class="wheel__lbl">Tras. esq.</span>
+              <input class="input input--num" type="number" value="50" step="0.5">
+            </div>
+            <div class="wheel">
+              <span class="wheel__lbl">Tras. dir.</span>
+              <input class="input input--num" type="number" value="50" step="0.5">
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field__lbl">Composto / marca</div>
+          <input class="input" value="Pirelli P7 — track" placeholder="Ex: Pirelli P Zero — médio">
+        </div>
+      </section>
+
+      <!-- ── ALINHAMENTO ── -->
+      <section class="section">
+        <div class="section__head">Alinhamento</div>
+
+        <div class="field">
+          <div class="field__lbl">Cambagem por roda (°)</div>
+          <div class="grid-2x2">
+            <div class="wheel">
+              <span class="wheel__lbl">Diant. esq.</span>
+              <input class="input input--num" type="number" value="-2.5" step="0.1">
+            </div>
+            <div class="wheel">
+              <span class="wheel__lbl">Diant. dir.</span>
+              <input class="input input--num" type="number" value="-2.5" step="0.1">
+            </div>
+            <div class="wheel">
+              <span class="wheel__lbl">Tras. esq.</span>
+              <input class="input input--num" type="number" value="-1.5" step="0.1">
+            </div>
+            <div class="wheel">
+              <span class="wheel__lbl">Tras. dir.</span>
+              <input class="input input--num" type="number" value="-1.5" step="0.1">
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field__lbl">Caster dianteiro (°)</div>
+          <div class="grid-2col">
+            <div class="wheel">
+              <span class="wheel__lbl">Diant. esq.</span>
+              <input class="input input--num" type="number" value="3.0" step="0.1">
+            </div>
+            <div class="wheel">
+              <span class="wheel__lbl">Diant. dir.</span>
+              <input class="input input--num" type="number" value="3.0" step="0.1">
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field__lbl">Convergência por roda (mm) <small>positivo = aberto</small></div>
+          <div class="grid-2x2">
+            <div class="wheel">
+              <span class="wheel__lbl">Diant. esq.</span>
+              <input class="input input--num" type="number" value="0" step="0.1">
+            </div>
+            <div class="wheel">
+              <span class="wheel__lbl">Diant. dir.</span>
+              <input class="input input--num" type="number" value="0" step="0.1">
+            </div>
+            <div class="wheel">
+              <span class="wheel__lbl">Tras. esq.</span>
+              <input class="input input--num" type="number" value="0.5" step="0.1">
+            </div>
+            <div class="wheel">
+              <span class="wheel__lbl">Tras. dir.</span>
+              <input class="input input--num" type="number" value="0.5" step="0.1">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── SUSPENSÃO ── -->
+      <section class="section">
+        <div class="section__head">Suspensão</div>
+
+        <div class="field">
+          <div class="field__lbl">Mola (kg/mm)</div>
+          <div class="grid-2col">
+            <div class="wheel">
+              <span class="wheel__lbl">Dianteira</span>
+              <input class="input input--num" type="number" value="7.5" step="0.1">
+            </div>
+            <div class="wheel">
+              <span class="wheel__lbl">Traseira</span>
+              <input class="input input--num" type="number" value="6.0" step="0.1">
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field__lbl">Amortecedor — clique compressão</div>
+          <div class="grid-2col">
+            <div class="wheel">
+              <span class="wheel__lbl">Dianteira</span>
+              <input class="input input--num" type="number" value="12" step="1">
+            </div>
+            <div class="wheel">
+              <span class="wheel__lbl">Traseira</span>
+              <input class="input input--num" type="number" value="10" step="1">
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field__lbl">Amortecedor — clique extensão</div>
+          <div class="grid-2col">
+            <div class="wheel">
+              <span class="wheel__lbl">Dianteira</span>
+              <input class="input input--num" type="number" value="10" step="1">
+            </div>
+            <div class="wheel">
+              <span class="wheel__lbl">Traseira</span>
+              <input class="input input--num" type="number" value="8" step="1">
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field__lbl">Altura (mm — ride height)</div>
+          <div class="grid-2col">
+            <div class="wheel">
+              <span class="wheel__lbl">Dianteira</span>
+              <input class="input input--num" type="number" value="110" step="1">
+            </div>
+            <div class="wheel">
+              <span class="wheel__lbl">Traseira</span>
+              <input class="input input--num" type="number" value="115" step="1">
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field__lbl">Barra estabilizadora</div>
+          <div class="grid-2col">
+            <div class="wheel">
+              <span class="wheel__lbl">Dianteira</span>
+              <input class="input" value="22 mm" placeholder="mm Ø ou clique">
+            </div>
+            <div class="wheel">
+              <span class="wheel__lbl">Traseira</span>
+              <input class="input" value="20 mm" placeholder="mm Ø ou clique">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── FREIOS ── -->
+      <section class="section">
+        <div class="section__head">Freios</div>
+
+        <div class="field">
+          <div class="field__lbl">Bias de freio (% F)</div>
+          <input class="input input--num" type="number" value="55" step="1">
+        </div>
+      </section>
+
+      <!-- ── MOTOR · TRANSMISSÃO ── -->
+      <section class="section">
+        <div class="section__head">Motor · transmissão</div>
+
+        <div class="field">
+          <div class="field__lbl">Combustível</div>
+          <button class="picker">
+            <span class="picker__val">Gasolina aditivada</span>
+            <span class="picker__chev">›</span>
+          </button>
+        </div>
+
+        <div class="field">
+          <div class="field__lbl">Mapa / injeção</div>
+          <input class="input" value="T4000 — mapa seco-1" placeholder="Ex: T4000 — mapa seco-1">
+        </div>
+
+        <div class="field">
+          <div class="field__lbl">Diferencial</div>
+          <button class="picker">
+            <span class="picker__val">Autoblocante (LSD mecânico)</span>
+            <span class="picker__chev">›</span>
+          </button>
+        </div>
+      </section>
+
+    </div>
+
+    <div class="foot">
+      <button class="btn btn--ghost">Cancelar</button>
+      <button class="btn btn--primary">Salvar</button>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
