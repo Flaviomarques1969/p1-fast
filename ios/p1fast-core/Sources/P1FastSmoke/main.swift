@@ -366,7 +366,7 @@ func mkSnap(
             accelVertical: nil, yawRate: yawRate
         ),
         vehicle: VehicleSnap(speedCan: nil, speedGnss: nil, speedFused: speedFused),
-        quality: SnapshotQuality(t4000: .ok, racebox: .ok, iphone: .ok, sync: .ok, confidence: "Alta")
+        quality: SnapshotQuality(t4000: Quality.ok, racebox: Quality.ok, iphone: Quality.ok, sync: Quality.ok, confidence: "Alta")
     )
 }
 
