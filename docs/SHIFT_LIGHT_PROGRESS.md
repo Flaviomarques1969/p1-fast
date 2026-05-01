@@ -98,22 +98,22 @@ Convenção:
 ## Bloco 4 — Cards pós-sessão (Fast Coach)
 
 ### Arquivos
-- [ ] `_design-reference/mockup-shift-cards.html`
-- [ ] `src/domain/shift-analysis.js`
-- [ ] `src/ui/shift-cards-view.js`
-- [ ] `tests/domain/shift-analysis.spec.js`
+- [x] `_design-reference/mockup-shift-cards.html`
+- [x] `src/domain/shift-analysis.js`
+- [x] `src/ui/shift-cards-view.js`
+- [x] `tests/domain/shift-analysis.spec.js`
 
 ### Critérios de aceite
-- [ ] Sessão de N trocas → N cards
-- [ ] Cor do delta correta (verde dentro tolerance, vermelho fora)
-- [ ] Tolerância vem do carro (`tolerance_rpm`)
-- [ ] Frase contém nome do trecho quando disponível
-- [ ] Cards aparecem só após `session.status === 'finished'`
-- [ ] Mockup `mockup-shift-cards.html` reflete componente final
-- [ ] Renderização funcional no browser (testado abrindo HTML)
+- [x] Sessão de N trocas → N cards (buildShiftCardsListHTML, teste cobre)
+- [x] Cor do delta correta (verde dentro tolerance, vermelho fora)
+- [x] Tolerância vem do carro (`tolerance_rpm`)
+- [x] Frase contém nome do trecho quando disponível (com `<strong>`)
+- [x] Cards aparecem só após `session.status === 'finished'`
+- [x] Mockup `mockup-shift-cards.html` reflete componente final (mesmas classes)
+- [~] Renderização funcional no browser (mockup é estático auto-contido — abrir o arquivo no browser para validar)
 
 ### Auditor
-- [ ] `Agent(shift-light-auditor, "Audite Bloco 4")` → ✅
+- [~] `Agent(shift-light-auditor, "Audite Bloco 4")` — em curso
 
 ---
 
