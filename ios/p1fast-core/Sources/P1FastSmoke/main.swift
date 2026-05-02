@@ -1513,14 +1513,14 @@ step("PERSIST-02: telemetry_samples NÃO tem coluna synced_at (ADR-014)") {
     try assertTrue(cols.contains("uploaded_at"), "telemetry_samples deve ter uploaded_at")
 }
 
-step("PERSIST-03: todas tabelas (exceto telemetry_samples e sync_queue) têm synced_at") {
+step("PERSIST-03: todas tabelas (exceto telemetry_samples, sync_queue, sync_meta) têm synced_at") {
     let q = try DB.makeMemoryQueue()
     let tables = try q.read { db in
         try String.fetchAll(db, sql:
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'grdb_%'"
         )
     }
-    let semSyncedAt: Set<String> = ["telemetry_samples", "sync_queue"]
+    let semSyncedAt: Set<String> = ["telemetry_samples", "sync_queue", "sync_meta"]
     for name in tables where !semSyncedAt.contains(name) {
         let cols = try q.read { db in
             try Row.fetchAll(db, sql: "PRAGMA table_info(\(name))").map { $0["name"] as String }
