@@ -57,8 +57,8 @@ t('PG tem 20 tabelas em public', () => {
   if (PG_TABLES.size !== 20) throw new Error('size=' + PG_TABLES.size);
 });
 
-t('GRDB tem 21 tabelas (20 PG + 1 sync_queue local-only)', () => {
-  if (GRDB_TABLES.size !== 21) throw new Error('size=' + GRDB_TABLES.size);
+t('GRDB tem 22 tabelas (20 PG + sync_queue + sync_meta local-only)', () => {
+  if (GRDB_TABLES.size !== 22) throw new Error('size=' + GRDB_TABLES.size);
 });
 
 t('GRDB cobre TODAS as 20 tabelas do PG', () => {
@@ -66,9 +66,10 @@ t('GRDB cobre TODAS as 20 tabelas do PG', () => {
   if (missing.length) throw new Error('faltam no GRDB: ' + missing.join(', '));
 });
 
-t('GRDB tem só sync_queue além das 20 do PG', () => {
-  const extras = [...GRDB_TABLES].filter(x => !PG_TABLES.has(x));
-  if (extras.length !== 1 || extras[0] !== 'sync_queue') {
+t('GRDB tem só sync_queue + sync_meta além das 20 do PG', () => {
+  const extras = [...GRDB_TABLES].filter(x => !PG_TABLES.has(x)).sort();
+  const expected = ['sync_meta', 'sync_queue'];
+  if (extras.length !== 2 || extras[0] !== expected[0] || extras[1] !== expected[1]) {
     throw new Error('extras inesperadas: ' + extras.join(', '));
   }
 });
