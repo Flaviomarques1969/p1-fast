@@ -1914,6 +1914,174 @@ step("DRAIN-06: SyncRequestRow shape — insert sem row_id, update com client_up
     try assertTrue(deleteRow.payload == nil, "delete não deve mandar payload")
 }
 
+// ─── BACKOFF (Sprint 1A.6 — primitive) ───────────────────────
+step("BACKOFF-01: default policy tem 4 attempts (0, 30, 120, 600s)") {
+    let p = BackoffPolicy.default
+    try assertEq(p.maxAttempts, 4)
+    try assertEq(p.baseDelaysSeconds[0], 0)
+    try assertEq(p.baseDelaysSeconds[1], 30)
+    try assertEq(p.baseDelaysSeconds[2], 120)
+    try assertEq(p.baseDelaysSeconds[3], 600)
+}
+
+step("BACKOFF-02: nextDelay attempt=0 retorna 0 (imediato)") {
+    let d = BackoffPolicy.default.nextDelay(attempts: 0, rng: { 0.5 })
+    try assertEq(d, 0)
+}
+
+step("BACKOFF-03: nextDelay aplica jitter ±33%") {
+    let p = BackoffPolicy.default
+    // rng=0.0 → jitter mínimo (-33%); rng=1.0 → jitter máximo (+33%)
+    let dMin = p.nextDelay(attempts: 1, rng: { 0.0 })!  // 30 * (1 - 0.33) = 20.1
+    let dMax = p.nextDelay(attempts: 1, rng: { 1.0 })!  // 30 * (1 + 0.33) = 39.9
+    try assertTrue(abs(dMin - 20.1) < 0.001, "min=\(dMin)")
+    try assertTrue(abs(dMax - 39.9) < 0.001, "max=\(dMax)")
+}
+
+step("BACKOFF-04: nextDelay attempts >= maxAttempts retorna nil (dead-letter)") {
+    let p = BackoffPolicy.default
+    try assertTrue(p.nextDelay(attempts: 4, rng: { 0.5 }) == nil, "esperava nil em attempt=4")
+    try assertTrue(p.nextDelay(attempts: 99, rng: { 0.5 }) == nil, "esperava nil em attempt=99")
+}
+
+step("BACKOFF-05: isDeadLetter consistente com nextDelay nil") {
+    let p = BackoffPolicy.default
+    try assertEq(p.isDeadLetter(attempts: 0), false)
+    try assertEq(p.isDeadLetter(attempts: 3), false)
+    try assertEq(p.isDeadLetter(attempts: 4), true)
+    try assertEq(p.isDeadLetter(attempts: 5), true)
+}
+
+step("BACKOFF-06: policy custom respeita base delays") {
+    let p = BackoffPolicy(baseDelaysSeconds: [0, 5, 60], jitterRatio: 0)
+    try assertEq(p.maxAttempts, 3)
+    try assertEq(p.nextDelay(attempts: 1, rng: { 0.5 }), 5)
+    try assertEq(p.nextDelay(attempts: 2, rng: { 0.5 }), 60)
+    try assertTrue(p.nextDelay(attempts: 3, rng: { 0.5 }) == nil, "attempt=3 dead-letter")
+}
+
+// ─── TELEMETRY UPLOADER (Sprint 1A.6) ────────────────────────
+final class MockTelemetryTransport: TelemetryTransport {
+    var nextResult: IngestResult = IngestResult(accepted: 0, rejected: 0)
+    var lastUploaded: [IngestRequest] = []
+    var uploadError: Error?
+
+    func upload(_ request: IngestRequest) throws -> IngestResult {
+        lastUploaded.append(request)
+        if let e = uploadError { throw e }
+        return nextResult
+    }
+}
+
+step("UPLOAD-01: upload sem pendentes retorna outcome zero") {
+    let q = try makeTestDB()
+    let mock = MockTelemetryTransport()
+    let out = try TelemetryUploader.upload(q, transport: mock)
+    try assertEq(out.processedCount, 0)
+    try assertEq(out.chunksUploaded, 0)
+    try assertTrue(mock.lastUploaded.isEmpty, "transport não devia ter sido chamado")
+}
+
+step("UPLOAD-02: upload manda chunks de 1000 + marca uploaded_at") {
+    let q = try makeTestDB()
+    // Insere 2500 samples (3 chunks: 1000 + 1000 + 500)
+    try q.write { db in
+        for i in 0..<2500 {
+            var s = TelemetrySample(
+                timeId: "team-1", sessaoId: "ses-1", seq: i,
+                t: 1_700_000_000_000 + Int64(i),
+                tMono: Double(i),
+                payload: "{\"source\":\"test\",\"signalQuality\":\"GOOD\"}"
+            )
+            try s.insert(db)
+        }
+    }
+
+    let mock = MockTelemetryTransport()
+    mock.nextResult = IngestResult(accepted: 1000, rejected: 0)
+
+    let out = try TelemetryUploader.upload(q, transport: mock)
+    try assertEq(out.processedCount, 2500)
+    try assertEq(out.chunksUploaded, 3)
+    try assertEq(out.acceptedCount, 3000)  // 1000 × 3 chunks (mock retorna 1000 cada, ok pra teste)
+
+    // Todos marcados como uploaded
+    let pending = try TelemetryUploader.pendingCount(q)
+    try assertEq(pending, 0)
+}
+
+step("UPLOAD-03: filtra por sessionId quando especificado") {
+    let q = try makeTestDB()
+    try q.write { db in
+        for sid in ["ses-A", "ses-B"] {
+            for i in 0..<10 {
+                var s = TelemetrySample(
+                    timeId: "team-1", sessaoId: sid, seq: i,
+                    t: Int64(i), payload: "{\"source\":\"x\",\"signalQuality\":\"GOOD\"}"
+                )
+                try s.insert(db)
+            }
+        }
+    }
+
+    let mock = MockTelemetryTransport()
+    mock.nextResult = IngestResult(accepted: 10, rejected: 0)
+
+    let out = try TelemetryUploader.upload(q, sessionId: "ses-A", transport: mock)
+    try assertEq(out.processedCount, 10)
+
+    // ses-B continua pendente
+    let pendingB = try TelemetryUploader.pendingCount(q, sessionId: "ses-B")
+    try assertEq(pendingB, 10)
+    let pendingA = try TelemetryUploader.pendingCount(q, sessionId: "ses-A")
+    try assertEq(pendingA, 0)
+}
+
+step("UPLOAD-04: transport throw NÃO marca uploaded_at") {
+    let q = try makeTestDB()
+    try q.write { db in
+        for i in 0..<5 {
+            var s = TelemetrySample(
+                timeId: "team-1", sessaoId: "ses-fail", seq: i,
+                t: Int64(i), payload: "{\"source\":\"x\",\"signalQuality\":\"GOOD\"}"
+            )
+            try s.insert(db)
+        }
+    }
+
+    let mock = MockTelemetryTransport()
+    struct NetErr: Error {}
+    mock.uploadError = NetErr()
+
+    var pegou = false
+    do { _ = try TelemetryUploader.upload(q, transport: mock) }
+    catch { pegou = true }
+    try assertTrue(pegou, "esperava erro propagado")
+
+    let pending = try TelemetryUploader.pendingCount(q)
+    try assertEq(pending, 5)
+}
+
+step("UPLOAD-05: chunk-id é determinístico (sessionId-firstSeq-lastSeq)") {
+    let q = try makeTestDB()
+    try q.write { db in
+        for i in 100..<105 {
+            var s = TelemetrySample(
+                timeId: "team-1", sessaoId: "ses-X", seq: i,
+                t: Int64(i), payload: "{\"source\":\"x\",\"signalQuality\":\"GOOD\"}"
+            )
+            try s.insert(db)
+        }
+    }
+    let mock = MockTelemetryTransport()
+    mock.nextResult = IngestResult(accepted: 5, rejected: 0)
+    _ = try TelemetryUploader.upload(q, transport: mock, chunkSize: 10)
+    try assertEq(mock.lastUploaded.count, 1)
+    try assertEq(mock.lastUploaded[0].chunkId, "ses-X-100-104")
+    try assertEq(mock.lastUploaded[0].sessionId, "ses-X")
+    try assertEq(mock.lastUploaded[0].samples.count, 5)
+}
+
 // ── relatório ────────────────────────────────────────────────
 print("\n═══ RESULTADO ═══")
 print("\(ok) ok / \(fail) fail")
