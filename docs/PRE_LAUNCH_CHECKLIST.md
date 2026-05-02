@@ -58,15 +58,16 @@ select count(*) from public.marcos;          -- 4 (largada, chegada, pit-in, pit
 select count(*) from public.retas_especiais; -- 1 (RETA PRINCIPAL global)
 ```
 
-### 1.5 Deploy das 3 Edge Functions
+### 1.5 Deploy das 4 Edge Functions
 
 ```sh
 supabase functions deploy ingest
 supabase functions deploy sync
 supabase functions deploy pull
+supabase functions deploy health --no-verify-jwt
 ```
 
-Todas validam JWT do user — sem `--no-verify-jwt`.
+`ingest`, `sync`, `pull` validam JWT do user. **`health` é diagnostic público** — usado por monitoring e UI "Sincronização" pra detectar drift.
 
 Configurar secrets compartilhados:
 ```sh
@@ -77,11 +78,14 @@ supabase secrets set SUPABASE_ANON_KEY=<anon-key>
 
 **Verificar** (precisa criar user antes — passo 2):
 
-| Função | Para que serve | Test curl em README |
-|---|---|---|
-| `ingest` | telemetry_samples (10Hz IMU/GPS) — append-only batch | `supabase/functions/ingest/README.md` |
-| `sync` | mutations CRUD (12 tabelas com `time_id`) — LWW por updated_at | `supabase/functions/sync/README.md` |
-| `pull` | catch-up sync no app boot — cursor `last_sync_at` por tabela | (sem README — body+resposta no source TS) |
+| Função | Para que serve | Auth | Doc |
+|---|---|---|---|
+| `ingest` | telemetry_samples (10Hz IMU/GPS) — append-only batch | Bearer JWT | `supabase/functions/ingest/README.md` |
+| `sync` | mutations CRUD (12 tabelas com `time_id`) — LWW | Bearer JWT | `supabase/functions/sync/README.md` |
+| `pull` | catch-up sync no app boot — cursor `last_sync_at` por tabela | Bearer JWT | source TS |
+| `health` | drift check (schema + seed + RPCs) | público | source TS |
+
+**Quick health check após deploy**: `curl https://<ref>.supabase.co/functions/v1/health` deve retornar `{"status":"ok",...}`. Se vier `"drift"` com `missing[]`, falta migration; com `extras[]`, repo está atrás do que foi aplicado.
 
 ---
 
