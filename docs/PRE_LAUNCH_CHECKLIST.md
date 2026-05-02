@@ -78,11 +78,14 @@ supabase secrets set SUPABASE_ANON_KEY=<anon-key>
 
 **Verificar** (precisa criar user antes — passo 2):
 
-| Função | Para que serve | Test curl em README |
-|---|---|---|
-| `ingest` | telemetry_samples (10Hz IMU/GPS) — append-only batch | `supabase/functions/ingest/README.md` |
-| `sync` | mutations CRUD (12 tabelas com `time_id`) — LWW por updated_at | `supabase/functions/sync/README.md` |
-| `pull` | catch-up sync no app boot — cursor `last_sync_at` por tabela | (sem README — body+resposta no source TS) |
+| Função | Para que serve | Auth | Doc |
+|---|---|---|---|
+| `ingest` | telemetry_samples (10Hz IMU/GPS) — append-only batch | Bearer JWT | `supabase/functions/ingest/README.md` |
+| `sync` | mutations CRUD (12 tabelas com `time_id`) — LWW | Bearer JWT | `supabase/functions/sync/README.md` |
+| `pull` | catch-up sync no app boot — cursor `last_sync_at` por tabela | Bearer JWT | source TS |
+| `health` | drift check (schema + seed + RPCs) | público | source TS |
+
+**Quick health check após deploy**: `curl https://<ref>.supabase.co/functions/v1/health` deve retornar `{"status":"ok",...}`. Se vier `"drift"` com `missing[]`, falta migration; com `extras[]`, repo está atrás do que foi aplicado.
 
 ---
 
