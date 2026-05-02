@@ -57,7 +57,7 @@ Atualizar `tests/node-smoke-contracts.mjs` pra cobrir os novos campos. Documenta
 
 ---
 
-### Prompt #2 — Migration Dexie v13
+### Prompt #2 — Migration Dexie v13 ✅
 
 **Branch:** `feat/1A1-dexie-v13`
 **blockedBy:** #1
