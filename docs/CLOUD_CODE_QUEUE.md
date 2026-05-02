@@ -240,7 +240,7 @@ REGRAS:
 
 ---
 
-### Prompt #8 — Tela Home (cheio + vazio)
+### Prompt #8 — Tela Home (cheio + vazio) ✅
 
 **Branch:** `feat/1A2-home`
 **blockedBy:** #7
