@@ -26,9 +26,12 @@ Cada prompt abaixo é uma tarefa autocontida → 1 PR. Execute em ordem respeita
 
 ## SPRINT 1A.1 — Fundação
 
+**Progresso:** ✅ #1 · ✅ #2 · ✅ #3 · ✅ #4 · ⏳ #5 · ✅ #6
+(merges em main: `86a3c58`, `0a07473`, `3fd3a94`, `de45ae7`, —, `aff721a`)
+
 ---
 
-### Prompt #1 — Auditar `src/data/schemas.js` e fechar campos do ghost-map
+### Prompt #1 — Auditar `src/data/schemas.js` e fechar campos do ghost-map ✅
 
 **Branch:** `feat/1A1-schema-audit`
 **blockedBy:** —
