@@ -17,7 +17,7 @@ public struct IngestRequestSample: Codable, Equatable {
     public let tMono: Double
     public let source: String
     public let signalQuality: String
-    public let seq: Int64?
+    public let seq: Int?
     /// Resto dos campos do payload (lat, lng, ax, ay, gx etc).
     public let extras: [String: AnyCodable]?
 
