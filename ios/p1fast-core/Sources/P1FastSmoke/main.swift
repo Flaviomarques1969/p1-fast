@@ -1720,6 +1720,149 @@ step("PERSIST-16: migrator é idempotente (rodar de novo não falha)") {
     try assertEq(count, 1)
 }
 
+// ─── DRAINER (Sprint 1A.6 sub-prompt B) ──────────────────────
+// Mock transport: configurado por teste pra retornar o que quisermos.
+final class MockSyncTransport: SyncTransport {
+    var nextResult: SyncResult = SyncResult(accepted: [], rejected: [])
+    var lastSent: [SyncRequestRow] = []
+    var sendError: Error?
+
+    func send(_ rows: [SyncRequestRow]) throws -> SyncResult {
+        lastSent = rows
+        if let e = sendError { throw e }
+        return nextResult
+    }
+}
+
+step("DRAIN-01: drainBatch sem pendentes retorna outcome zero") {
+    let q = try makeTestDB()
+    let mock = MockSyncTransport()
+    let out = try SyncDrainer.drainBatch(q, transport: mock)
+    try assertEq(out.processedCount, 0)
+    try assertEq(out.acceptedCount, 0)
+    try assertEq(out.rejectedCount, 0)
+    try assertTrue(mock.lastSent.isEmpty, "transport não devia ter sido chamado")
+}
+
+step("DRAIN-02: 2 itens enfileirados, ambos accepted → drained + markSynced") {
+    let q = try makeTestDB()
+    // Insere 1 carro real (pra markSynced atualizar coluna existente)
+    try q.write { db in
+        var c = Carro(id: "c-drain-1", timeId: "team-1", apelido: "Celta drain")
+        try c.insert(db)
+        try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-drain-1", op: .insert,
+                              payload: "{\"time_id\":\"team-1\",\"apelido\":\"Celta drain\"}")
+        try SyncQueue.enqueue(db, tableName: "sessoes", rowId: "s-drain-1", op: .delete)
+    }
+
+    let mock = MockSyncTransport()
+    mock.nextResult = SyncResult(accepted: ["c-drain-1", "s-drain-1"], rejected: [])
+
+    let out = try SyncDrainer.drainBatch(q, transport: mock)
+    try assertEq(out.processedCount, 2)
+    try assertEq(out.acceptedCount, 2)
+    try assertEq(out.rejectedCount, 0)
+
+    // sync_queue agora vazia
+    let pending = try q.read { db in try SyncQueue.pendingCount(db) }
+    try assertEq(pending, 0)
+
+    // carros.synced_at atualizado
+    let syncedAt = try q.read { db in
+        try Int64.fetchOne(db, sql: "SELECT synced_at FROM carros WHERE id = ?", arguments: ["c-drain-1"])
+    }
+    try assertTrue(syncedAt != nil && syncedAt! > 0, "synced_at não foi setado")
+}
+
+step("DRAIN-03: rejected (stale-write) incrementa attempts, mantém na fila") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-stale", op: .update, payload: "{}")
+    }
+    let mock = MockSyncTransport()
+    mock.nextResult = SyncResult(
+        accepted: [],
+        rejected: [SyncRejected(row_id: "c-stale", table_name: "carros", reason: "stale-write")]
+    )
+
+    let out = try SyncDrainer.drainBatch(q, transport: mock)
+    try assertEq(out.processedCount, 1)
+    try assertEq(out.rejectedCount, 1)
+    try assertEq(out.acceptedCount, 0)
+
+    let attempts = try q.read { db in
+        try Int.fetchOne(db, sql: "SELECT attempts FROM sync_queue WHERE row_id = 'c-stale'")
+    }
+    try assertEq(attempts, 1)
+}
+
+step("DRAIN-04: maxAttempts excluí dead-letters do próximo batch") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-dead", op: .insert, payload: "{}")
+        // Força attempts = 5 (limite default)
+        try db.execute(sql: "UPDATE sync_queue SET attempts = 5 WHERE row_id = 'c-dead'")
+        try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-vivo", op: .insert, payload: "{}")
+    }
+    let mock = MockSyncTransport()
+    mock.nextResult = SyncResult(accepted: ["c-vivo"], rejected: [])
+
+    let out = try SyncDrainer.drainBatch(q, transport: mock)
+    try assertEq(out.processedCount, 1, "deve processar só c-vivo, não c-dead")
+    try assertEq(out.acceptedCount, 1)
+
+    // c-dead permanece na fila
+    let dlCount = try SyncDrainer.deadLetterCount(q)
+    try assertEq(dlCount, 1)
+}
+
+step("DRAIN-05: transport throw propaga sem mexer em sync_queue") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-net-fail", op: .insert, payload: "{}")
+    }
+    let mock = MockSyncTransport()
+    struct NetErr: Error {}
+    mock.sendError = NetErr()
+
+    var pegou = false
+    do { _ = try SyncDrainer.drainBatch(q, transport: mock) }
+    catch { pegou = true }
+    try assertTrue(pegou, "esperava propagação do erro")
+
+    // sync_queue inalterada (item ainda lá, attempts ainda 0)
+    let attempts = try q.read { db in
+        try Int.fetchOne(db, sql: "SELECT attempts FROM sync_queue WHERE row_id = 'c-net-fail'")
+    }
+    try assertEq(attempts, 0)
+}
+
+step("DRAIN-06: SyncRequestRow shape — insert sem row_id, update com client_updated_at") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-i", op: .insert, payload: "{\"x\":1}")
+        try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-u", op: .update, payload: "{\"y\":2}")
+        try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-d", op: .delete)
+    }
+    let mock = MockSyncTransport()
+    mock.nextResult = SyncResult(accepted: [], rejected: [])
+    _ = try SyncDrainer.drainBatch(q, transport: mock)
+
+    let insertRow = mock.lastSent.first(where: { $0.op == "insert" })!
+    try assertTrue(insertRow.row_id == nil, "insert não deve mandar row_id")
+    try assertTrue(insertRow.payload != nil, "insert deve mandar payload")
+    try assertTrue(insertRow.client_updated_at == nil, "insert não usa LWW")
+
+    let updateRow = mock.lastSent.first(where: { $0.op == "update" })!
+    try assertTrue(updateRow.row_id == "c-u", "update precisa de row_id")
+    try assertTrue(updateRow.payload != nil, "update deve mandar payload")
+    try assertTrue(updateRow.client_updated_at != nil, "update deve mandar client_updated_at (LWW)")
+
+    let deleteRow = mock.lastSent.first(where: { $0.op == "delete" })!
+    try assertTrue(deleteRow.row_id == "c-d", "delete precisa de row_id")
+    try assertTrue(deleteRow.payload == nil, "delete não deve mandar payload")
+}
+
 // ── relatório ────────────────────────────────────────────────
 print("\n═══ RESULTADO ═══")
 print("\(ok) ok / \(fail) fail")
