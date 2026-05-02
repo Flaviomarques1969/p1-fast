@@ -82,8 +82,9 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 **Aplica-se a**: qualquer trabalho futuro de UI no celular. Trabalho de pipeline/domínio/backend em Node/Vercel não é afetado por esta ADR.
 
 ## ADR-019 — `retas_especiais` é tabela separada (não flag em `trackSegments`)
-**Decisão (Flavio 2026-05-01)**: retas marcadas como "especiais" pra ghost-map vivem em tabela própria `retas_especiais` (campos: `trackId`, `segmentId`, `tempoMedioMs`, `autoDetectada`), NÃO como booleano `ehRetaEspecial` em `trackSegments`.
+**Decisão (Flavio 2026-05-01)**: retas marcadas como "especiais" pra ghost-map vivem em tabela própria `retas_especiais` (campos: `trackId`, `segmentId`, `tempoMedioMs`, `autoDetectada` + `timeId` nullable), NÃO como booleano `ehRetaEspecial` em `trackSegments`.
 **Motivo**: a marcação é por **trackId × segmentId** mas pode ter metadados próprios (tempo médio histórico, flag `autoDetectada` separando marcação manual da heurística futura). Misturar com `trackSegments` (que é estrutura geométrica imutável da pista) acopla duas coisas com ciclo de vida diferente: segmento muda quando piloto remapeia a pista; reta especial muda quando o pipeline aprende ou o piloto re-marca.
-**Consequência**: queries de ghost-map fazem JOIN `trackSegments × retas_especiais` por `segmentId`. Pequeno custo, ganho em separar concerns. `MARCO_TIPOS` ganhou `pit-in`/`pit-out` na mesma migração (v13) pra fechar a spec ghost-map de 2026-05-01.
-**Aplica-se a**: `src/data/schemas.js` (RETA_ESPECIAL_FIELDS, MARCO_TIPOS), Dexie v13 (próximo PR), schema Postgres do Supabase (espelha 1:1).
+**Sobre `timeId`** (adicionado em 0001_initial.sql, 2026-05-02): a tabela é híbrida — `time_id NULL` = curadoria global (oficial, compartilhada por todos os times), `time_id` não-nulo = marcação privada do time (auto-detectada pelo pipeline ou re-marcação manual local). Ghost-map aplica fallback: usa a do time se existir, senão a global. Não previsto na spec original mas surge naturalmente do modelo de workspace por time (ver 0001_initial.sql).
+**Consequência**: queries de ghost-map fazem JOIN `trackSegments × retas_especiais` por `segmentId` + filtro `(time_id IS NULL OR time_id = current_team)`. Pequeno custo, ganho em separar concerns. `MARCO_TIPOS` ganhou `pit-in`/`pit-out` na mesma migração (v13) pra fechar a spec ghost-map de 2026-05-01.
+**Aplica-se a**: `src/data/schemas.js` (RETA_ESPECIAL_FIELDS, MARCO_TIPOS), Dexie v13, schema Postgres do Supabase (espelha 1:1), GRDB iOS (`ios/p1fast-core/Sources/P1FastCore/Persistence/Migrations.swift`).
 
