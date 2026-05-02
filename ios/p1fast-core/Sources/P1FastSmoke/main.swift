@@ -2018,6 +2018,10 @@ step("UPLOAD-02: upload manda chunks de 1000 + marca uploaded_at") {
 step("UPLOAD-03: filtra por sessionId quando especificado") {
     let q = try makeTestDB()
     try q.write { db in
+        var sA = Sessao(id: "ses-A", timeId: "team-1"); try sA.insert(db)
+        var sB = Sessao(id: "ses-B", timeId: "team-1"); try sB.insert(db)
+    }
+    try q.write { db in
         for sid in ["ses-A", "ses-B"] {
             for i in 0..<10 {
                 var s = TelemetrySample(
