@@ -36,7 +36,7 @@ Cada prompt abaixo é uma tarefa autocontida → 1 PR. Execute em ordem respeita
 
 ## SPRINT 1A.3 — Stint + Pessoas
 
-**Progresso:** ✅ #11 · 🟡 #12+#13 (em PR) · ⏳ #14 · ⏳ #15 (paralelo)
+**Progresso:** ✅ #11 · 🟡 #12+#13 (em PR #33) · ⏳ #14 · 🟡 #15 (em PR)
 (merges: `ad2789a`, —, —, —)
 
 ---
