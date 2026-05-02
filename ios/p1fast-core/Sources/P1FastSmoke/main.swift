@@ -2097,6 +2097,148 @@ step("UPLOAD-05: chunk-id é determinístico (sessionId-firstSeq-lastSeq)") {
     try assertEq(mock.lastUploaded[0].samples.count, 5)
 }
 
+// ─── PULL EXECUTOR (Sprint 1A.6 sub-prompt E — fechamento do loop) ──
+final class MockPullTransport: PullTransport {
+    var nextResponse: PullResponse = PullResponse(rows: [:], max_updated_at: [:])
+    var lastRequest: PullRequest?
+    var pullError: Error?
+
+    func pull(_ request: PullRequest) throws -> PullResponse {
+        lastRequest = request
+        if let e = pullError { throw e }
+        return nextResponse
+    }
+}
+
+step("PULLEX-01: runOnce sem rows recebidas não muda nada") {
+    let q = try makeTestDB()
+    let mock = MockPullTransport()
+    let out = try PullExecutor.runOnce(q, tables: ["carros"], transport: mock)
+    try assertEq(out.totalRowsApplied, 0)
+    try assertEq(out.cursorsAdvanced, 0)
+    try assertTrue(mock.lastRequest != nil, "transport devia ser chamado")
+    try assertEq(mock.lastRequest!.tables, ["carros"])
+}
+
+step("PULLEX-02: runOnce com 1 row aplica UPSERT + atualiza cursor") {
+    let q = try makeTestDB()
+    let mock = MockPullTransport()
+    let row = PullRow(
+        id: "carro-pull-1",
+        updatedAtMs: 1714693300000,
+        payload: [
+            "time_id": AnyCodable("team-1"),
+            "apelido": AnyCodable("Celta puxado"),
+            "modelo": AnyCodable("Chevrolet Celta"),
+            "fonte_temperatura": AnyCodable("motor"),
+            "created_at": AnyCodable(Int64(1714693200000)),
+            "updated_at": AnyCodable(Int64(1714693300000)),
+        ]
+    )
+    mock.nextResponse = PullResponse(
+        rows: ["carros": [row]],
+        max_updated_at: ["carros": 1714693300000]
+    )
+
+    let out = try PullExecutor.runOnce(q, tables: ["carros"], transport: mock)
+    try assertEq(out.totalRowsApplied, 1)
+    try assertEq(out.cursorsAdvanced, 1)
+
+    // Cursor avançou
+    let cursor = try q.read { db in try PullCursor.get(db, tableName: "carros") }
+    try assertEq(cursor, 1714693300000)
+
+    // Carro existe no GRDB
+    let carro = try q.read { db in try Carro.fetchOne(db, key: "carro-pull-1") }
+    try assertTrue(carro != nil, "carro não foi inserido")
+    try assertEq(carro?.apelido, "Celta puxado")
+    // synced_at foi setado (server already has it)
+    try assertTrue(carro?.syncedAt != nil, "synced_at não foi marcado")
+}
+
+step("PULLEX-03: runOnce subsequente envia cursor anterior como `since`") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try PullCursor.set(db, tableName: "carros", lastSyncAt: 99999)
+    }
+    let mock = MockPullTransport()
+    _ = try PullExecutor.runOnce(q, tables: ["carros"], transport: mock)
+    try assertEq(mock.lastRequest?.since["carros"], 99999)
+}
+
+step("PULLEX-04: UPSERT — 2ª chamada com mesma id atualiza row existente") {
+    let q = try makeTestDB()
+    // Insere 1 carro local
+    try q.write { db in
+        var c = Carro(id: "carro-up", timeId: "team-1", apelido: "Original")
+        try c.insert(db)
+    }
+    // Pull traz a mesma id com apelido novo
+    let mock = MockPullTransport()
+    let row = PullRow(
+        id: "carro-up",
+        updatedAtMs: 1714693400000,
+        payload: [
+            "time_id": AnyCodable("team-1"),
+            "apelido": AnyCodable("Atualizado pelo pull"),
+            "fonte_temperatura": AnyCodable("motor"),
+            "created_at": AnyCodable(Int64(1714693200000)),
+            "updated_at": AnyCodable(Int64(1714693400000)),
+        ]
+    )
+    mock.nextResponse = PullResponse(
+        rows: ["carros": [row]],
+        max_updated_at: ["carros": 1714693400000]
+    )
+    _ = try PullExecutor.runOnce(q, tables: ["carros"], transport: mock)
+
+    let carro = try q.read { db in try Carro.fetchOne(db, key: "carro-up") }
+    try assertEq(carro?.apelido, "Atualizado pelo pull")
+}
+
+step("PULLEX-05: has_more reporta tabelas com paginação pendente") {
+    let q = try makeTestDB()
+    let mock = MockPullTransport()
+    mock.nextResponse = PullResponse(
+        rows: ["carros": [], "sessoes": []],
+        max_updated_at: ["carros": 0, "sessoes": 0],
+        has_more: ["carros": true, "sessoes": false]
+    )
+    let out = try PullExecutor.runOnce(q, tables: ["carros", "sessoes"], transport: mock)
+    try assertEq(out.tablesWithMore, ["carros"])
+}
+
+step("PULLEX-06: transport throw propaga sem mexer em cursor") {
+    let q = try makeTestDB()
+    try q.write { db in try PullCursor.set(db, tableName: "carros", lastSyncAt: 100) }
+    let mock = MockPullTransport()
+    struct NetErr: Error {}
+    mock.pullError = NetErr()
+
+    var pegou = false
+    do { _ = try PullExecutor.runOnce(q, tables: ["carros"], transport: mock) }
+    catch { pegou = true }
+    try assertTrue(pegou, "esperava propagação")
+
+    // Cursor inalterado
+    let cursor = try q.read { db in try PullCursor.get(db, tableName: "carros") }
+    try assertEq(cursor, 100)
+}
+
+step("PULLEX-07: cursor NÃO retrocede mesmo se max_updated_at vier menor") {
+    let q = try makeTestDB()
+    try q.write { db in try PullCursor.set(db, tableName: "carros", lastSyncAt: 5000) }
+    let mock = MockPullTransport()
+    mock.nextResponse = PullResponse(
+        rows: ["carros": []],
+        max_updated_at: ["carros": 1000]  // menor que cursor atual
+    )
+    let out = try PullExecutor.runOnce(q, tables: ["carros"], transport: mock)
+    try assertEq(out.cursorsAdvanced, 0)
+    let cursor = try q.read { db in try PullCursor.get(db, tableName: "carros") }
+    try assertEq(cursor, 5000)
+}
+
 // ── relatório ────────────────────────────────────────────────
 print("\n═══ RESULTADO ═══")
 print("\(ok) ok / \(fail) fail")

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		142C9DCAC1EF4B03B0ABAB71 /* EventoDetalheView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F057E5C739BCFEF58D4DC92A /* EventoDetalheView.swift */; };
 		2841E12C02FD0F7E9A5A9506 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4251545DEF1F73BD4CF7690E /* HomeView.swift */; };
 		2E22B429D84E982E66BF487A /* GaragemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A2A5CD812FBBD663E27ECE1 /* GaragemView.swift */; };
 		4A50FE8B113FA568C5955E0A /* CarroSetupOverrides.swift in Sources */ = {isa = PBXBuildFile; fileRef = C76C98240888EE064C4D2EC5 /* CarroSetupOverrides.swift */; };
@@ -19,6 +20,7 @@
 		878C19864476206B162D941B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9AF697E035B2E094B09108F9 /* Assets.xcassets */; };
 		8FB6DBD08681434559524D83 /* CarroModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0390017441A8A36F834BDC25 /* CarroModalView.swift */; };
 		95A022ADA0074FA202C414F5 /* ThemeShowcaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6589CA76112B0192B9A53BD8 /* ThemeShowcaseView.swift */; };
+		95B2A32565288C523837A89E /* EventoMockSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 139F414C2942139A9367A3B2 /* EventoMockSummary.swift */; };
 		9E8DC084A44D5CF5DEFDB5AA /* Chip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F490211A002128465D71E11 /* Chip.swift */; };
 		A8A95BAB34BBD244FA33A078 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98214EA41661DD13EE2EE258 /* Theme.swift */; };
 		ACD0C3333CFD8B23EC8CF654 /* Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5C6C6F116445DD82A28D553 /* Configuration.swift */; };
@@ -28,14 +30,17 @@
 		B7FEAF45A3D824A60BB968A3 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 178B40E44D727EDB5A1A951C /* Supabase */; };
 		BF1BC3D206E1BFE771A190FE /* CarroRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2285A445626E15C137E07CCA /* CarroRepository.swift */; };
 		BF29F7E9696A4AFE2820D3B1 /* FAB.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7AA3C8D0B1DD8AD9B53B807 /* FAB.swift */; };
+		C37D93B3C8526BF4FC557D07 /* EventosListaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D86DDF0483C4332C5AD704DC /* EventosListaView.swift */; };
 		C782693A038BA9D2B52AB077 /* BottomNav.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46BE3B245CF0DD85E14B841F /* BottomNav.swift */; };
 		CA8540F7384EA2FF4F03F5BC /* Card.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D622390B8BAC3FF6A0AFCCA /* Card.swift */; };
 		CAFB467014D33A664AFEA67F /* AppDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4657F1C12D473CEBB9B300D5 /* AppDatabase.swift */; };
+		DB5448127DA0BD4BDC8C15C4 /* EventoNovoFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8DF3C81C1D5F70ECA1A616 /* EventoNovoFormView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		0390017441A8A36F834BDC25 /* CarroModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarroModalView.swift; sourceTree = "<group>"; };
 		0D622390B8BAC3FF6A0AFCCA /* Card.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Card.swift; sourceTree = "<group>"; };
+		139F414C2942139A9367A3B2 /* EventoMockSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventoMockSummary.swift; sourceTree = "<group>"; };
 		2285A445626E15C137E07CCA /* CarroRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarroRepository.swift; sourceTree = "<group>"; };
 		253F1283A784C08D44C00419 /* p1fast-ios.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "p1fast-ios.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		2871683CCDBF80DA9CED8A64 /* CarroNovoFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarroNovoFormView.swift; sourceTree = "<group>"; };
@@ -52,13 +57,16 @@
 		839526E2A03B6C2ED09D4907 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		98214EA41661DD13EE2EE258 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		9AF697E035B2E094B09108F9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AF8DF3C81C1D5F70ECA1A616 /* EventoNovoFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventoNovoFormView.swift; sourceTree = "<group>"; };
 		B17051FF421D051EE979161D /* SummaryStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryStats.swift; sourceTree = "<group>"; };
 		B586261B93F86A05F5C07DD9 /* P1FastApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P1FastApp.swift; sourceTree = "<group>"; };
 		B5C6C6F116445DD82A28D553 /* Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Configuration.swift; sourceTree = "<group>"; };
 		B7AA3C8D0B1DD8AD9B53B807 /* FAB.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FAB.swift; sourceTree = "<group>"; };
 		C76C98240888EE064C4D2EC5 /* CarroSetupOverrides.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarroSetupOverrides.swift; sourceTree = "<group>"; };
+		D86DDF0483C4332C5AD704DC /* EventosListaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventosListaView.swift; sourceTree = "<group>"; };
 		D99446F65EAEE4B9E2DCD2A1 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		EC2150F5BD2ECEAC0692DA88 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		F057E5C739BCFEF58D4DC92A /* EventoDetalheView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventoDetalheView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -142,6 +150,10 @@
 				0390017441A8A36F834BDC25 /* CarroModalView.swift */,
 				2871683CCDBF80DA9CED8A64 /* CarroNovoFormView.swift */,
 				839526E2A03B6C2ED09D4907 /* ContentView.swift */,
+				F057E5C739BCFEF58D4DC92A /* EventoDetalheView.swift */,
+				139F414C2942139A9367A3B2 /* EventoMockSummary.swift */,
+				AF8DF3C81C1D5F70ECA1A616 /* EventoNovoFormView.swift */,
+				D86DDF0483C4332C5AD704DC /* EventosListaView.swift */,
 				5A2A5CD812FBBD663E27ECE1 /* GaragemView.swift */,
 				4251545DEF1F73BD4CF7690E /* HomeView.swift */,
 				6589CA76112B0192B9A53BD8 /* ThemeShowcaseView.swift */,
@@ -278,7 +290,11 @@
 				9E8DC084A44D5CF5DEFDB5AA /* Chip.swift in Sources */,
 				ACD0C3333CFD8B23EC8CF654 /* Configuration.swift in Sources */,
 				7D9C6DCB181D22F53E8E0AC4 /* ContentView.swift in Sources */,
+				142C9DCAC1EF4B03B0ABAB71 /* EventoDetalheView.swift in Sources */,
+				95B2A32565288C523837A89E /* EventoMockSummary.swift in Sources */,
+				DB5448127DA0BD4BDC8C15C4 /* EventoNovoFormView.swift in Sources */,
 				5F5D9D3E8629E83D6CD0E261 /* EventoRepository.swift in Sources */,
+				C37D93B3C8526BF4FC557D07 /* EventosListaView.swift in Sources */,
 				B39F7F077B8D314FB9A3C41E /* EyebrowHeader.swift in Sources */,
 				BF29F7E9696A4AFE2820D3B1 /* FAB.swift in Sources */,
 				2E22B429D84E982E66BF487A /* GaragemView.swift in Sources */,
