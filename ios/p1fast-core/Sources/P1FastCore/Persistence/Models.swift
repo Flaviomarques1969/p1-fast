@@ -353,6 +353,37 @@ public struct Passageiro: Codable, FetchableRecord, PersistableRecord {
     }
 }
 
+// MARK: - combustiveis
+public struct Combustivel: Codable, FetchableRecord, PersistableRecord {
+    public var id: String
+    public var timeId: String
+    public var nome: String
+    public var tipo: String?
+    public var octanagem: Double?
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "combustiveis"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case nome, tipo, octanagem
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, timeId: String, nome: String,
+                tipo: String? = nil, octanagem: Double? = nil,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.nome = nome
+        self.tipo = tipo; self.octanagem = octanagem
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}
+
 // MARK: - eventos
 public struct Evento: Codable, FetchableRecord, PersistableRecord {
     public var id: String

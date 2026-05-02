@@ -1,25 +1,38 @@
 // ═══════════════════════════════════════════════════════════
-// PessoasView — bundle CRUD pilotos + passageiros
+// PessoasView — bundle CRUD pilotos + passageiros + combustíveis
 // ═══════════════════════════════════════════════════════════
-// Sprint 1A.3 — Prompts #12 + #13 (bundled como "Pessoas").
+// Sprint 1A.3 — Prompts #12 + #13 (Pessoas) + #15 (Combustíveis).
 //
-// Os mockups canônicos `mockup-piloto-lista.html` e
-// `mockup-passageiro-lista.html` foram desenhados como SELETORES
-// dentro do fluxo de stint (eyebrow "Piloto" + título "Quem vai
-// dirigir" + footer Cancelar/Confirmar). Aqui usamos a MESMA
-// estética visual mas em modo CRUD: sub-tabs Pilotos/Passageiros,
-// row tappável com radio escondido (sem selection state), botão
-// dashed "Cadastrar piloto/passageiro" abre sheet de cadastro.
+// Decisão de surface (Prompt #15): em vez de criar 5ª aba pra
+// Combustíveis, embarca como 3ª sub-tab desta tela e renomeia o
+// label do BottomNav "Pessoas" → "Cadastros". Justificativa:
+//   - A nav só tem 4 vagas (Home / Eventos / Pessoas/Cadastros /
+//     Garagem). Criar 5ª aba quebraria o Padrão B (4 cells).
+//   - "Configurações" como surface alternativa diluiria — combus-
+//     tíveis são entidade de domínio (igual pilotos), não setting.
+//   - "Cadastros" é genérico o suficiente pra acomodar Pneus depois
+//     se virar sub-tab também (a outra hipótese é embutir em Carro
+//     Modal — decisão fica pro Prompt #14 Pneus).
+// O nome interno (struct, enum, file) fica como `Pessoas*` pra
+// minimizar churn neste PR; rename completo pode entrar como chore
+// posterior se incomodar — não muda comportamento.
 //
-// Form mínimo (decisão do prompt #12+#13):
+// Os mockups canônicos `mockup-piloto-lista.html`,
+// `mockup-passageiro-lista.html` e `mockup-combustivel-lista.html`
+// foram desenhados como SELETORES dentro do fluxo de stint (eyebrow
+// + título + footer Cancelar/Confirmar). Aqui usamos a MESMA
+// estética visual mas em modo CRUD: sub-tabs Pilotos/Passageiros/
+// Combustíveis, row tappável sem radio (sem selection state), botão
+// dashed "Cadastrar ..." abre sheet de cadastro.
+//
+// Form mínimo (decisões #12/#13/#15):
 //   - Piloto: só nome (user_id FK fica pra Sprint 1A.6)
 //   - Passageiro: só nome
-// O mockup-cadastro mostra altura/peso/idade — esses campos ficam
-// pra próxima migração quando o schema canônico ganhar as colunas.
-//
-// 4ª aba do BottomNav: Home / Eventos / Pessoas / Garagem (substitui
-// "Pendências" placeholder do Prompt #8). Decisão #1 do design 1A.3
-// resolvida: bundle "Pessoas" como aba dedicada.
+//   - Combustível: nome + observação (mapeada pra `combustiveis.tipo`,
+//     texto livre — schema canônico v1 sem migration nova)
+// O mockup-cadastro de Pessoas mostra altura/peso/idade — esses
+// campos ficam pra próxima migração quando o schema canônico ganhar
+// as colunas.
 
 import SwiftUI
 import P1FastCore
@@ -27,11 +40,13 @@ import P1FastCore
 enum PessoasSheet: Identifiable {
     case novoPiloto
     case novoPassageiro
+    case novoCombustivel
 
     var id: String {
         switch self {
         case .novoPiloto: return "novo-piloto"
         case .novoPassageiro: return "novo-passageiro"
+        case .novoCombustivel: return "novo-combustivel"
         }
     }
 }
@@ -39,12 +54,14 @@ enum PessoasSheet: Identifiable {
 enum PessoasSubTab: String, CaseIterable, Identifiable {
     case pilotos = "Pilotos"
     case passageiros = "Passageiros"
+    case combustiveis = "Combustíveis"
     var id: String { rawValue }
 }
 
 struct PessoasView: View {
     @EnvironmentObject private var pilotoRepo: PilotoRepository
     @EnvironmentObject private var passageiroRepo: PassageiroRepository
+    @EnvironmentObject private var combustivelRepo: CombustivelRepository
     @State private var navSelection: BottomNavItem.ID?
     @State private var sheet: PessoasSheet?
     @State private var subTab: PessoasSubTab = .pilotos
@@ -52,7 +69,7 @@ struct PessoasView: View {
     private let navItems: [BottomNavItem] = [
         BottomNavItem("Home"),
         BottomNavItem("Eventos"),
-        BottomNavItem("Pessoas"),
+        BottomNavItem("Cadastros"),
         BottomNavItem("Garagem"),
     ]
 
@@ -91,6 +108,9 @@ struct PessoasView: View {
             case .novoPassageiro:
                 PassageiroCadastroView(onClose: { sheet = nil })
                     .environmentObject(passageiroRepo)
+            case .novoCombustivel:
+                CombustivelCadastroView(onClose: { sheet = nil })
+                    .environmentObject(combustivelRepo)
             }
         }
     }
@@ -105,25 +125,50 @@ struct PessoasView: View {
                 pilotosSection
             case .passageiros:
                 passageirosSection
+            case .combustiveis:
+                CombustivelListaView(onAdd: { sheet = .novoCombustivel })
+                    .environmentObject(combustivelRepo)
             }
         }
     }
 
     private var contextHead: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Eyebrow(text: subTab == .pilotos ? "Pilotos" : "Passageiros")
-            Text(subTab == .pilotos ? "Quem dirige" : "Quem anda junto")
+            Eyebrow(text: eyebrowText)
+            Text(headerTitle)
                 .font(.system(size: 24, weight: .semibold))
                 .tracking(-0.6)
                 .foregroundStyle(Color.text)
-            Text(subTab == .pilotos
-                 ? "Cadastrados ficam disponíveis em todo stint."
-                 : "Passageiros são cadastrados uma vez e reaproveitados.")
+            Text(headerSubtitle)
                 .font(.system(size: 13, weight: .regular))
                 .foregroundStyle(Color.textMuted)
         }
         .padding(.horizontal, Spacing.xs)
         .padding(.bottom, Spacing.sm)
+    }
+
+    private var eyebrowText: String {
+        switch subTab {
+        case .pilotos: return "Pilotos"
+        case .passageiros: return "Passageiros"
+        case .combustiveis: return "Combustível"
+        }
+    }
+
+    private var headerTitle: String {
+        switch subTab {
+        case .pilotos: return "Quem dirige"
+        case .passageiros: return "Quem anda junto"
+        case .combustiveis: return "Tipos cadastrados"
+        }
+    }
+
+    private var headerSubtitle: String {
+        switch subTab {
+        case .pilotos: return "Cadastrados ficam disponíveis em todo stint."
+        case .passageiros: return "Passageiros são cadastrados uma vez e reaproveitados."
+        case .combustiveis: return "Tipos abastecidos ficam disponíveis pra próximos stints."
+        }
     }
 
     private var subTabBar: some View {
@@ -283,12 +328,15 @@ private struct AddRow: View {
     let queue = try! P1FastCore.DB.makeMemoryQueue()
     let pilotoRepo = PilotoRepository(queue: queue)
     let passageiroRepo = PassageiroRepository(queue: queue)
+    let combustivelRepo = CombustivelRepository(queue: queue)
     return PessoasView()
         .environmentObject(pilotoRepo)
         .environmentObject(passageiroRepo)
+        .environmentObject(combustivelRepo)
         .task {
             await pilotoRepo.bootstrap()
             await passageiroRepo.bootstrap()
+            await combustivelRepo.bootstrap()
         }
 }
 
@@ -296,11 +344,30 @@ private struct AddRow: View {
     let queue = try! P1FastCore.DB.makeMemoryQueue()
     let pilotoRepo = PilotoRepository(queue: queue)
     let passageiroRepo = PassageiroRepository(queue: queue)
+    let combustivelRepo = CombustivelRepository(queue: queue)
     return PessoasView(initialSubTab: .passageiros)
         .environmentObject(pilotoRepo)
         .environmentObject(passageiroRepo)
+        .environmentObject(combustivelRepo)
         .task {
             await pilotoRepo.bootstrap()
             await passageiroRepo.bootstrap()
+            await combustivelRepo.bootstrap()
+        }
+}
+
+#Preview("PessoasView — aba combustíveis com seed") {
+    let queue = try! P1FastCore.DB.makeMemoryQueue()
+    let pilotoRepo = PilotoRepository(queue: queue)
+    let passageiroRepo = PassageiroRepository(queue: queue)
+    let combustivelRepo = CombustivelRepository(queue: queue)
+    return PessoasView(initialSubTab: .combustiveis)
+        .environmentObject(pilotoRepo)
+        .environmentObject(passageiroRepo)
+        .environmentObject(combustivelRepo)
+        .task {
+            await pilotoRepo.bootstrap()
+            await passageiroRepo.bootstrap()
+            await combustivelRepo.bootstrap()
         }
 }
