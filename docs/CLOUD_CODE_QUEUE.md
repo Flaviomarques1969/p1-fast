@@ -381,7 +381,7 @@ REGRAS:
 **blockedBy:** #12+#13 (preferencial; pode branchar de `main` se for paralelo a `feat/1A3-combustiveis`)
 **Files (criar):**
 - `ios/p1fast-ios/Sources/Views/PneuCadastroView.swift`
-- `ios/p1fast-core/Sources/.../Persistence/PneuRepository.swift` (CRUD escopado por `carroId` + observable count `ciclos`)
+- `ios/p1fast-ios/Sources/Persistence/PneuRepository.swift` (CRUD escopado por `carroId` + observable count `ciclos`). **Convenção:** repos ficam em `p1fast-ios/Sources/Persistence/` (mesmo path de `PilotoRepository`, `PassageiroRepository`, `CombustivelRepository`), **não** em `p1fast-core`. Apenas a struct `Pneu` (Codable + FetchableRecord + PersistableRecord) entra em `p1fast-core/Sources/P1FastCore/Persistence/Models.swift` — segue padrão de `Passageiro`.
 
 **Files (editar):**
 - `ios/p1fast-ios/Sources/Views/CarroModalView.swift` — substituir o placeholder em `sectionPneusCadastrados` (linhas 196-208) por lista real de `PneuRow`. O comentário existente "CRUD virá no Sprint 1A.4" sai junto.
