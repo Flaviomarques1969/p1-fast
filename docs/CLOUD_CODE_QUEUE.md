@@ -141,7 +141,7 @@ NÃO implementar o sync drainer ainda — ele virá no Sprint 1A.6. Aqui só o s
 
 ---
 
-### Prompt #5 — Inicializar projeto Xcode `p1fast-ios`
+### Prompt #5 — Inicializar projeto Xcode `p1fast-ios` ✅
 
 **Branch:** `feat/1A1-xcode-app`
 **blockedBy:** #4
