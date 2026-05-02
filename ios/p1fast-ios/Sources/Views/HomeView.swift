@@ -323,7 +323,7 @@ struct EventTag: View {
     }
 
     enum TagKind {
-        case neutral, bom, atencao, ouro
+        case neutral, bom, atencao, ouro, accent
     }
 
     private var foreground: Color {
@@ -332,6 +332,7 @@ struct EventTag: View {
         case .bom: return Color.bom
         case .atencao: return Color.atencao
         case .ouro: return Color.ouro
+        case .accent: return Color.accent
         }
     }
 
@@ -341,6 +342,7 @@ struct EventTag: View {
         case .bom: return Color.bom.opacity(0.45)
         case .atencao: return Color.atencao.opacity(0.45)
         case .ouro: return Color.ouro.opacity(0.45)
+        case .accent: return Color.accent.opacity(0.45)
         }
     }
 
@@ -350,6 +352,7 @@ struct EventTag: View {
         case .bom: return Color.bom.opacity(0.12)
         case .atencao: return Color.atencao.opacity(0.12)
         case .ouro: return Color.ouro.opacity(0.12)
+        case .accent: return Color.accent.opacity(0.10)
         }
     }
 
