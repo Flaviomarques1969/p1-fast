@@ -1838,6 +1838,56 @@ step("DRAIN-05: transport throw propaga sem mexer em sync_queue") {
     try assertEq(attempts, 0)
 }
 
+step("CURSOR-01: PullCursor.get retorna 0 pra tabela nunca sincronizada") {
+    let q = try makeTestDB()
+    let cursor = try q.read { db in try PullCursor.get(db, tableName: "carros") }
+    try assertEq(cursor, 0)
+}
+
+step("CURSOR-02: PullCursor.set + get faz roundtrip") {
+    let q = try makeTestDB()
+    try q.write { db in try PullCursor.set(db, tableName: "carros", lastSyncAt: 1714693200000) }
+    let cursor = try q.read { db in try PullCursor.get(db, tableName: "carros") }
+    try assertEq(cursor, 1714693200000)
+}
+
+step("CURSOR-03: PullCursor.set sobrescreve cursor existente (upsert)") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try PullCursor.set(db, tableName: "sessoes", lastSyncAt: 100)
+        try PullCursor.set(db, tableName: "sessoes", lastSyncAt: 200)
+    }
+    let cursor = try q.read { db in try PullCursor.get(db, tableName: "sessoes") }
+    try assertEq(cursor, 200)
+}
+
+step("CURSOR-04: PullCursor.all lista cursors ordenados por table_name") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try PullCursor.set(db, tableName: "voltas", lastSyncAt: 300)
+        try PullCursor.set(db, tableName: "carros", lastSyncAt: 100)
+        try PullCursor.set(db, tableName: "sessoes", lastSyncAt: 200)
+    }
+    let all = try q.read { db in try PullCursor.all(db) }
+    try assertEq(all.count, 3)
+    try assertEq(all[0].tableName, "carros")
+    try assertEq(all[1].tableName, "sessoes")
+    try assertEq(all[2].tableName, "voltas")
+}
+
+step("CURSOR-05: PullCursor.resetAll zera todos os cursors") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try PullCursor.set(db, tableName: "carros", lastSyncAt: 100)
+        try PullCursor.set(db, tableName: "sessoes", lastSyncAt: 200)
+        try PullCursor.resetAll(db)
+    }
+    let all = try q.read { db in try PullCursor.all(db) }
+    try assertEq(all.count, 0)
+    let stillCarros = try q.read { db in try PullCursor.get(db, tableName: "carros") }
+    try assertEq(stillCarros, 0)
+}
+
 step("DRAIN-06: SyncRequestRow shape — insert sem row_id, update com client_updated_at") {
     let q = try makeTestDB()
     try q.write { db in
