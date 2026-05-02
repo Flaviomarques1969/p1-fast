@@ -48,18 +48,38 @@ supabase link --project-ref <ref-do-projeto>
 
 Isso cria `supabase/.temp/project-ref` (gitignored) com o ref.
 
-### 3. Aplicar migration inicial
+### 3. Aplicar migrations
 
 ```sh
 supabase db push
 ```
 
-A 0001_initial cria todas as tabelas + RLS + funções helper. Depois de aplicar,
-verificar no Supabase Studio que:
+Aplica em ordem:
+- `0001_initial.sql` — schema + RLS + helpers `auth.is_member/is_admin`.
+- `0002_team_signup.sql` — RPC `create_team(nome)` + comments documentando policies restritas.
+
+Verificar no Supabase Studio que:
 
 - 20 tabelas existem em `public`.
 - RLS está **ON** em todas.
 - Funções `auth.is_member(uuid)` e `auth.is_admin(uuid)` existem.
+- Função `public.create_team(text)` existe e tem grant `EXECUTE` pra `authenticated`.
+
+### 4. Aplicar seed canônico
+
+```sh
+psql "$DATABASE_URL" -f supabase/seed.sql
+```
+
+`seed.sql` é **idempotente** (`ON CONFLICT DO NOTHING`) — pode rodar quantas vezes quiser. Cria:
+
+- 1 track: **Brasília** (Autódromo Internacional Nelson Piquet).
+- 1 layout principal com path SVG real (volta 5 do Flávio, 171.038s) + 4 parciais de tempo.
+- 12 segments (8 curvas + 4 retas, com apex defaults conservadores).
+- 4 marcos canônicos: largada, chegada, pit-in, pit-out.
+- 1 reta especial global: "RETA PRINCIPAL / BOX" (tempo médio 12s).
+
+Locamente roda automático em `supabase db reset`.
 
 ### 4. Lint local antes de cada migration nova
 
