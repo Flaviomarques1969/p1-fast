@@ -111,7 +111,7 @@ NÃO aplicar em prod ainda. Migration fica versionada no repo, Flávio aplica ma
 
 ---
 
-### Prompt #4 — GRDB iOS schema (espelho do Postgres)
+### Prompt #4 — GRDB iOS schema (espelho do Postgres) ✅
 
 **Branch:** `feat/1A1-grdb-schema`
 **blockedBy:** #3
