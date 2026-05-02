@@ -24,10 +24,15 @@ Cada prompt abaixo é uma tarefa autocontida → 1 PR. Execute em ordem respeita
 
 ---
 
-## SPRINT 1A.1 — Fundação
+## SPRINT 1A.1 — Fundação ✅
 
-**Progresso:** ✅ #1 · ✅ #2 · ✅ #3 · ✅ #4 · ⏳ #5 · ✅ #6
-(merges em main: `86a3c58`, `0a07473`, `3fd3a94`, `de45ae7`, —, `aff721a`)
+**Progresso:** ✅ #1 · ✅ #2 · ✅ #3 · ✅ #4 · ✅ #5 · ✅ #6
+(merges em main: `86a3c58`, `0a07473`, `3fd3a94`, `de45ae7`, `31bcc4e`, `aff721a`)
+
+## SPRINT 1A.2 — Hub iOS
+
+**Progresso:** ✅ #7 · ✅ #8 · ⏳ #9 · ⏳ #10
+(merges: `75335ae`, `4f689eb`, —, —)
 
 ---
 
@@ -136,7 +141,7 @@ NÃO implementar o sync drainer ainda — ele virá no Sprint 1A.6. Aqui só o s
 
 ---
 
-### Prompt #5 — Inicializar projeto Xcode `p1fast-ios`
+### Prompt #5 — Inicializar projeto Xcode `p1fast-ios` ✅
 
 **Branch:** `feat/1A1-xcode-app`
 **blockedBy:** #4
@@ -196,7 +201,7 @@ Marcar `api/ingest/iphone.js` como deprecated (header de comentário) mas não d
 
 ---
 
-### Prompt #7 — `Theme.swift` + componentes base SwiftUI
+### Prompt #7 — `Theme.swift` + componentes base SwiftUI ✅
 
 **Branch:** `feat/1A2-theme-base`
 **blockedBy:** #5
@@ -235,7 +240,7 @@ REGRAS:
 
 ---
 
-### Prompt #8 — Tela Home (cheio + vazio)
+### Prompt #8 — Tela Home (cheio + vazio) ✅
 
 **Branch:** `feat/1A2-home`
 **blockedBy:** #7
