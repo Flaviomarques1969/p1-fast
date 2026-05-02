@@ -3,29 +3,42 @@
 // ═══════════════════════════════════════════════════════════
 // Sprint 1A.1: provou esqueleto + DB local (splash com "DB: ok").
 // Sprint 1A.2 — Prompt #7: ThemeShowcaseView (componentes Padrão B).
-// Sprint 1A.2 — Prompt #8 (este): HomeView é o root quando DB.ok.
+// Sprint 1A.2 — Prompt #8: HomeView (cheio | vazio).
+// Sprint 1A.2 — Prompt #9 (este): GaragemView + sheets de carro.
 //
-// Splash continua sendo renderizado enquanto `database.status == .idle`
-// (milissegundos) e quando `.failed` (estado de erro visível).
+// Splash renderizado enquanto `database.status == .idle` (milissegundos)
+// e quando `.failed` (estado de erro visível).
 //
-// Roteamento de modo (cheio vs vazio):
-//   - Default → estado cheio com mock data (HomeData.mockFilled).
-//   - Launch arg `--p1-empty` → estado vazio (onboarding).
-//   - Launch arg `--p1-showcase` → ThemeShowcaseView (deprecada — só pra
-//     debug rápido enquanto Sprint 1A.2 não fechar todos componentes).
-//
-// Sprint 1A.6 troca o mock pelo Repository real (GRDB → Supabase).
+// Roteamento por launch arg:
+//   --p1-empty           → HomeView estado vazio
+//   --p1-showcase        → ThemeShowcaseView (galeria do Prompt #7)
+//   --p1-garagem         → GaragemView (lista)
+//   --p1-garagem-novo    → GaragemView com sheet "Novo carro" aberta
+//   --p1-garagem-carro   → GaragemView com sheet "Editar carro" do
+//                          primeiro carro da lista
+//   default              → HomeView estado cheio (Sprint 1A.6 troca pelo
+//                          Repository real)
 
 import SwiftUI
+import P1FastCore
+import GRDB
 
-private enum HomeMode {
-    case filled, empty, showcase
+private enum AppRoute {
+    case home
+    case homeEmpty
+    case showcase
+    case garagem
+    case garagemNovo
+    case garagemEditar
 
-    static var fromLaunchArgs: HomeMode {
+    static var fromLaunchArgs: AppRoute {
         let args = ProcessInfo.processInfo.arguments
-        if args.contains("--p1-empty") { return .empty }
+        if args.contains("--p1-empty") { return .homeEmpty }
         if args.contains("--p1-showcase") { return .showcase }
-        return .filled
+        if args.contains("--p1-garagem-novo") { return .garagemNovo }
+        if args.contains("--p1-garagem-carro") { return .garagemEditar }
+        if args.contains("--p1-garagem") { return .garagem }
+        return .home
     }
 }
 
@@ -37,13 +50,78 @@ struct ContentView: View {
         case .idle:
             Splash(stateLabel: "DB: subindo…", isError: false)
         case .ok:
-            switch HomeMode.fromLaunchArgs {
-            case .filled:   HomeView(state: .filled(HomeData.mockFilled))
-            case .empty:    HomeView(state: .empty)
-            case .showcase: ThemeShowcaseView()
+            if let queue = database.queue {
+                ReadyRoot(queue: queue)
+            } else {
+                Splash(stateLabel: "DB: ok mas sem queue", isError: true)
             }
         case .failed(let message):
             Splash(stateLabel: "DB: falhou\n\(message)", isError: true)
+        }
+    }
+}
+
+/// View construída APÓS DB.ok com queue válida — cria o repo de carros
+/// uma única vez como `@StateObject` e injeta no ambiente.
+private struct ReadyRoot: View {
+    let queue: DatabaseQueue
+    @StateObject private var repo: CarroRepository
+
+    init(queue: DatabaseQueue) {
+        self.queue = queue
+        _repo = StateObject(wrappedValue: CarroRepository(queue: queue))
+    }
+
+    var body: some View {
+        routedView
+            .environmentObject(repo)
+            .task { await repo.bootstrap() }
+    }
+
+    @ViewBuilder
+    private var routedView: some View {
+        switch AppRoute.fromLaunchArgs {
+        case .home:
+            HomeView(state: .filled(HomeData.mockFilled))
+        case .homeEmpty:
+            HomeView(state: .empty)
+        case .showcase:
+            ThemeShowcaseView()
+        case .garagem:
+            GaragemView()
+        case .garagemNovo:
+            GaragemView(initialSheet: .novo)
+        case .garagemEditar:
+            GaragemViewEditFirst()
+        }
+    }
+}
+
+/// Helper que abre GaragemView já com a sheet de edição apontando pro
+/// primeiro carro da lista (usado pelo launch arg `--p1-garagem-carro`).
+/// Espera o repo bootar — se não houver carros ainda, abre só a lista.
+private struct GaragemViewEditFirst: View {
+    @EnvironmentObject private var repo: CarroRepository
+    @State private var initial: GaragemSheet?
+    @State private var ready = false
+
+    var body: some View {
+        Group {
+            if ready {
+                GaragemView(initialSheet: initial)
+            } else {
+                Splash(stateLabel: "Abrindo carro…", isError: false)
+            }
+        }
+        .task {
+            for _ in 0..<15 {
+                if !repo.carros.isEmpty { break }
+                try? await Task.sleep(nanoseconds: 100_000_000)
+            }
+            if let primeiro = repo.carros.first {
+                initial = .editar(carroId: primeiro.id)
+            }
+            ready = true
         }
     }
 }
