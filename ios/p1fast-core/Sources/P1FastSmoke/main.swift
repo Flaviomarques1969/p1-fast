@@ -1984,6 +1984,11 @@ step("UPLOAD-01: upload sem pendentes retorna outcome zero") {
 
 step("UPLOAD-02: upload manda chunks de 1000 + marca uploaded_at") {
     let q = try makeTestDB()
+    // Cria sessão (FK requerido pra telemetry_samples)
+    try q.write { db in
+        var s = Sessao(id: "ses-1", timeId: "team-1")
+        try s.insert(db)
+    }
     // Insere 2500 samples (3 chunks: 1000 + 1000 + 500)
     try q.write { db in
         for i in 0..<2500 {
