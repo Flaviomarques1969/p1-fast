@@ -6,6 +6,7 @@
 // Cada bloco espelha um teste do pipeline JS.
 
 import Foundation
+import GRDB
 import P1FastCore
 
 var ok = 0
@@ -1466,6 +1467,257 @@ step("CLOCK-02: Clock.nowMono é monotonic e crescente") {
     let m2 = Clock.nowMono
     try assertTrue(m2 > m1, "monotonic")
     try assertTrue(m2 - m1 < 1000, "delta razoável < 1s")
+}
+
+// ═══════════════════════════════════════════════════════════
+// PERSISTENCE — schema v1 + helpers de sync
+// ═══════════════════════════════════════════════════════════
+// Cada PERSIST-XX usa um DB em memória novo pra isolamento.
+// O DatabaseMigrator é idempotente, então re-rodar não é problema —
+// mas DBs separados garantem que estados anteriores não interferem.
+
+func makeTestDB() throws -> DatabaseQueue {
+    let q = try DB.makeMemoryQueue()
+    // Cria um time + track default pra rows que dependem de FK.
+    try q.write { db in
+        var t = Time(id: "team-1", nome: "Equipe Teste")
+        try t.insert(db)
+        var tk = TrackRow(id: "track-1", apelido: "BSB")
+        try tk.insert(db)
+    }
+    return q
+}
+
+step("PERSIST-01: makeMemoryQueue + migration v1 cria 21 tabelas") {
+    let q = try DB.makeMemoryQueue()
+    let names = try q.read { db in
+        try String.fetchAll(db, sql:
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'grdb_%' ORDER BY name"
+        )
+    }
+    // 20 do Postgres + sync_queue local = 21
+    try assertEq(names.count, 21, "esperava 21 tabelas")
+    for expected in ["times", "carros", "configuracoes", "sessoes", "voltas",
+                     "marcos", "retas_especiais", "telemetry_samples", "sync_queue"] {
+        try assertTrue(names.contains(expected), "tabela \(expected) ausente")
+    }
+}
+
+step("PERSIST-02: telemetry_samples NÃO tem coluna synced_at (ADR-014)") {
+    let q = try DB.makeMemoryQueue()
+    let cols = try q.read { db in
+        try Row.fetchAll(db, sql: "PRAGMA table_info(telemetry_samples)").map { $0["name"] as String }
+    }
+    try assertTrue(!cols.contains("synced_at"), "telemetry_samples NÃO deve ter synced_at")
+    try assertTrue(cols.contains("uploaded_at"), "telemetry_samples deve ter uploaded_at")
+}
+
+step("PERSIST-03: todas tabelas (exceto telemetry_samples e sync_queue) têm synced_at") {
+    let q = try DB.makeMemoryQueue()
+    let tables = try q.read { db in
+        try String.fetchAll(db, sql:
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'grdb_%'"
+        )
+    }
+    let semSyncedAt: Set<String> = ["telemetry_samples", "sync_queue"]
+    for name in tables where !semSyncedAt.contains(name) {
+        let cols = try q.read { db in
+            try Row.fetchAll(db, sql: "PRAGMA table_info(\(name))").map { $0["name"] as String }
+        }
+        try assertTrue(cols.contains("synced_at"), "tabela \(name) deve ter synced_at")
+    }
+}
+
+step("PERSIST-04: insert + fetch carro com fonte_temperatura default 'motor'") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var c = Carro(id: "carro-1", timeId: "team-1", apelido: "Civic Si")
+        try c.insert(db)
+    }
+    let fetched = try q.read { db in try Carro.fetchOne(db, key: "carro-1") }
+    try assertTrue(fetched != nil, "carro deve existir")
+    try assertEq(fetched!.apelido, "Civic Si")
+    try assertEq(fetched!.fonteTemperatura, .motor)
+    try assertTrue(fetched!.syncedAt == nil, "synced_at deve ser nil ao criar")
+}
+
+step("PERSIST-05: insert sessao com voltas_planejadas (ghost-map)") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var s = Sessao(id: "sess-1", timeId: "team-1", voltasPlanejadas: 12)
+        try s.insert(db)
+    }
+    let fetched = try q.read { db in try Sessao.fetchOne(db, key: "sess-1") }
+    try assertEq(fetched!.voltasPlanejadas, 12)
+}
+
+step("PERSIST-06: sessao com voltas_planejadas=0 viola CHECK constraint") {
+    let q = try makeTestDB()
+    var pegou = false
+    do {
+        try q.write { db in
+            var s = Sessao(id: "sess-bad", timeId: "team-1", voltasPlanejadas: 0)
+            try s.insert(db)
+        }
+    } catch {
+        pegou = true
+    }
+    try assertTrue(pegou, "esperava CHECK constraint violation pra voltas_planejadas=0")
+}
+
+step("PERSIST-07: marco aceita pit-in e pit-out") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var l = TrackLayoutRow(id: "layout-1", trackId: "track-1", nome: "Principal")
+        try l.insert(db)
+        var pin = Marco(id: "m-pin", layoutId: "layout-1", tipo: .pitIn, posicao: "{\"x\":0,\"y\":0}")
+        try pin.insert(db)
+        var pout = Marco(id: "m-pout", layoutId: "layout-1", tipo: .pitOut, posicao: "{\"x\":1,\"y\":1}")
+        try pout.insert(db)
+    }
+    let count = try q.read { db in try Marco.fetchCount(db) }
+    try assertEq(count, 2)
+}
+
+step("PERSIST-08: marco com tipo inválido ('saida') é rejeitado pelo CHECK") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var l = TrackLayoutRow(id: "layout-1", trackId: "track-1", nome: "Principal")
+        try l.insert(db)
+    }
+    var pegou = false
+    do {
+        try q.write { db in
+            try db.execute(sql: """
+                INSERT INTO marcos (id, layout_id, tipo, posicao, created_at, updated_at)
+                VALUES ('bad', 'layout-1', 'saida', '{}', 0, 0)
+            """)
+        }
+    } catch {
+        pegou = true
+    }
+    try assertTrue(pegou, "esperava CHECK violation pra tipo inválido")
+}
+
+step("PERSIST-09: reta_especial com auto_detectada default false") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var l = TrackLayoutRow(id: "layout-1", trackId: "track-1", nome: "Principal")
+        try l.insert(db)
+        var seg = TrackSegmentRow(id: "seg-1", layoutId: "layout-1", ordem: 1, ehTrecho: false)
+        try seg.insert(db)
+        var r = RetaEspecial(id: "reta-1", trackId: "track-1", segmentId: "seg-1", tempoMedioMs: 18500)
+        try r.insert(db)
+    }
+    let fetched = try q.read { db in try RetaEspecial.fetchOne(db, key: "reta-1") }
+    try assertEq(fetched!.autoDetectada, false)
+    try assertEq(fetched!.tempoMedioMs, 18500)
+}
+
+step("PERSIST-10: insert telemetry_sample (id auto-incremento, sem synced_at)") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var s = Sessao(id: "sess-1", timeId: "team-1")
+        try s.insert(db)
+        for seq in 0..<3 {
+            var ts = TelemetrySample(timeId: "team-1", sessaoId: "sess-1",
+                                     seq: seq, t: Int64(seq) * 100, payload: "{}")
+            try ts.insert(db)
+        }
+    }
+    let count = try q.read { db in try TelemetrySample.fetchCount(db) }
+    try assertEq(count, 3)
+}
+
+step("PERSIST-11: SyncQueue.markSynced atualiza synced_at do registro") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var c = Carro(id: "carro-1", timeId: "team-1", apelido: "Civic")
+        try c.insert(db)
+    }
+    try q.write { db in
+        try SyncQueue.markSynced(db, tableName: "carros", rowId: "carro-1", at: 9999)
+    }
+    let fetched = try q.read { db in try Carro.fetchOne(db, key: "carro-1") }
+    try assertEq(fetched!.syncedAt, 9999)
+}
+
+step("PERSIST-12: SyncQueue.listPending retorna só não-sincronizados") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var c1 = Carro(id: "c-1", timeId: "team-1", apelido: "A", syncedAt: 100)
+        try c1.insert(db)
+        var c2 = Carro(id: "c-2", timeId: "team-1", apelido: "B")  // syncedAt=nil
+        try c2.insert(db)
+        var c3 = Carro(id: "c-3", timeId: "team-1", apelido: "C")  // syncedAt=nil
+        try c3.insert(db)
+    }
+    let pendentes = try q.read { db in try SyncQueue.listPending(db, type: Carro.self) }
+    try assertEq(pendentes.count, 2)
+    let ids = Set(pendentes.map { $0.id })
+    try assertTrue(ids == ["c-2", "c-3"], "esperava {c-2, c-3}, recebi \(ids)")
+}
+
+step("PERSIST-13: SyncQueue.enqueue + pendingCount + drain") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-1", op: .insert, payload: "{}")
+        try SyncQueue.enqueue(db, tableName: "sessoes", rowId: "s-1", op: .update, payload: "{}")
+    }
+    let countAntes = try q.read { db in try SyncQueue.pendingCount(db) }
+    try assertEq(countAntes, 2)
+
+    // Drena o primeiro item
+    let firstId = try q.read { db in
+        try Int64.fetchOne(db, sql: "SELECT id FROM sync_queue ORDER BY id ASC LIMIT 1")!
+    }
+    try q.write { db in try SyncQueue.drain(db, id: firstId) }
+    let countDepois = try q.read { db in try SyncQueue.pendingCount(db) }
+    try assertEq(countDepois, 1)
+}
+
+step("PERSIST-14: SyncQueue.incrementAttempts incrementa contador") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-1", op: .insert)
+    }
+    let id = try q.read { db in
+        try Int64.fetchOne(db, sql: "SELECT id FROM sync_queue LIMIT 1")!
+    }
+    try q.write { db in
+        try SyncQueue.incrementAttempts(db, id: id)
+        try SyncQueue.incrementAttempts(db, id: id)
+    }
+    let attempts = try q.read { db in
+        try Int.fetchOne(db, sql: "SELECT attempts FROM sync_queue WHERE id = ?", arguments: [id])!
+    }
+    try assertEq(attempts, 2)
+}
+
+step("PERSIST-15: foreign keys habilitadas — insert com time_id inválido falha") {
+    let q = try DB.makeMemoryQueue()
+    var pegou = false
+    do {
+        try q.write { db in
+            var c = Carro(id: "c-1", timeId: "team-INEXISTENTE", apelido: "X")
+            try c.insert(db)
+        }
+    } catch {
+        pegou = true
+    }
+    try assertTrue(pegou, "esperava FK violation")
+}
+
+step("PERSIST-16: migrator é idempotente (rodar de novo não falha)") {
+    let q = try DB.makeMemoryQueue()
+    // Roda migrator de novo na mesma queue — deve ser no-op
+    try DB.migrator.migrate(q)
+    let count = try q.read { db in
+        try Int.fetchOne(db, sql:
+            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='carros'"
+        ) ?? 0
+    }
+    try assertEq(count, 1)
 }
 
 // ── relatório ────────────────────────────────────────────────

@@ -20,9 +20,14 @@ p1fast-core/
     │   ├── BaselineVectors.swift  ← vetores configuráveis + filterForBaseline
     │   ├── FuelCalc.swift         ← combustível em voltas + progressoStint
     │   ├── CoachPhrases.swift     ← catálogo MVP (M001..M062, 2..3 palavras)
-    │   └── P1Coach.swift          ← motor pedagógico completo (electLesson + consume + signalsFromSnapshot)
+    │   ├── P1Coach.swift          ← motor pedagógico completo (electLesson + consume + signalsFromSnapshot)
+    │   └── Persistence/           ← SQLite local via GRDB (espelho do Postgres Supabase)
+    │       ├── DB.swift              ← DatabaseQueue factory + makeMemoryQueue
+    │       ├── Migrations.swift      ← v1: 20 tabelas + sync_queue local
+    │       ├── Models.swift          ← Codable + FetchableRecord + PersistableRecord
+    │       └── SyncQueue.swift       ← markSynced / listPending / enqueue / drain
     └── P1FastSmoke/             ← executável de teste (não usa XCTest)
-        └── main.swift             ← 97 asserts paridade com pipeline JS
+        └── main.swift             ← 129 asserts paridade com pipeline JS + persistência
 ```
 
 ## Por que executável smoke em vez de XCTest
@@ -35,17 +40,17 @@ Solução: o `P1FastSmoke` é um executável Swift comum que roda asserts manuai
 
 ```bash
 cd ios/p1fast-core
-swift build                # compila a lib
-swift run p1fast-smoke     # roda 97 asserts
+swift build                # compila a lib (puxa GRDB.swift via SPM)
+swift run p1fast-smoke     # roda 129 asserts
 ```
 
 Saída esperada:
 ```
 ✓ DQ-01: 11 categorias canônicas
 ✓ DQ-02: fromSignalQuality 4-cat → 11-cat
-... (97 linhas)
+... (129 linhas)
 ═══ RESULTADO ═══
-97 ok / 0 fail
+129 ok / 0 fail
 ```
 
 Exit code 0 se passou, 1 se falhou.
@@ -93,8 +98,58 @@ Cada teste Swift mapeia 1:1 pra um teste do `tests/node-smoke-telemetry-p0.mjs` 
 | BV-01..BV-07 | baseline-vectors.js | filterForBaseline com pneu/ambiente/piloto/dia + ordenação por tempoMs |
 | FU-01..FU-07 | fuel-calc.js | calcular (3 estados Disponivel) + calcularProgressoStint |
 | PC-01..PC-14 | node-smoke-p1-coach.mjs (subset MVP) | start/endLearningSession, electLesson com focus, cooldown, maxPerCorner, pause/resume, BAIXA gating, signalsFromSnapshot, AUDIT 7 MVP, E2E 3 voltas, focusLessonId scope |
+| PERSIST-01..PERSIST-16 | (sem equivalente JS — Dexie é runtime web; aqui é GRDB local) | Schema v1 cria 20 tabelas + sync_queue, telemetry_samples sem synced_at (ADR-014), CHECK constraints (voltas_planejadas≥1, marco.tipo, fonte_temperatura), FK habilitadas, SyncQueue.markSynced/listPending/enqueue/drain/incrementAttempts, migrator idempotente |
 
 A próxima frente — quando vier — adiciona V-003..V-011, sample-store, e providers (mock/device/t4000).
+
+## Persistence — espelho do Postgres no SQLite local
+
+`Sources/P1FastCore/Persistence/` é a camada de SQLite local via [GRDB.swift](https://github.com/groue/GRDB.swift). O schema v1 (em `Migrations.swift`) é 1:1 com `supabase/migrations/0001_initial.sql` — mesmas tabelas, mesmas colunas, tipos compatíveis.
+
+**Convenções:**
+
+- **IDs UUID** ficam como `TEXT` (não há tipo nativo no SQLite)
+- **Timestamps** são `INTEGER` (epoch ms) — uniformiza com `t`/`uploaded_at` da telemetria
+- **JSONB** vira `TEXT` (caller serializa/deserializa via `JSONSerialization`/`JSONEncoder`)
+- **Booleans** são `INTEGER` (0/1) — GRDB converte automático
+- Toda tabela ganha `synced_at INTEGER NULL` **exceto `telemetry_samples`** (ADR-014: append-only, sync por batch consolidado, não row-a-row)
+
+**Tipos persistíveis** (Codable + FetchableRecord + PersistableRecord):
+
+| Swift | Tabela Postgres |
+|---|---|
+| `Time` | `times` |
+| `TrackRow` / `TrackLayoutRow` / `TrackSegmentRow` | `tracks` / `track_layouts` / `track_segments` (`Row` suffix evita colisão com domain types `Track`, `TrackLayout`, `TrackSegment`) |
+| `Marco` (com `Tipo` enum: largada/chegada/pit-in/pit-out/sinalizacao/box) | `marcos` |
+| `RetaEspecial` | `retas_especiais` |
+| `Carro` (com `FonteTemperatura` enum: motor/pneu/ambos) | `carros` |
+| `Configuracao` | `configuracoes` |
+| `Piloto` | `pilotos` |
+| `Evento` | `eventos` |
+| `Sessao` (com `voltasPlanejadas` ghost-map) | `sessoes` |
+| `Volta` | `voltas` |
+| `SegmentExecution` | `segment_executions` |
+| `TelemetrySample` (sem `syncedAt`, ADR-014) | `telemetry_samples` |
+| `SyncQueueItem` (com `SyncOp` enum) | `sync_queue` (LOCAL — não existe no Postgres) |
+
+Tabelas com schema mas sem struct ainda: `usuarios_time`, `passageiros`, `pneus`, `combustiveis`, `mensagens`, `trofeus_ganhos`. Adicionar conforme demanda.
+
+**Helpers (`SyncQueue`):**
+
+```swift
+let queue = try DB.makeQueue(path: ".../app.sqlite")
+try queue.write { db in
+    var carro = Carro(id: "c-1", timeId: "t-1", apelido: "Civic")
+    try carro.insert(db)
+    try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-1", op: .insert)
+}
+// ... mais tarde, após sucesso no Supabase:
+try queue.write { db in
+    try SyncQueue.markSynced(db, tableName: "carros", rowId: "c-1")
+}
+```
+
+**Sync drainer** (worker que consome `sync_queue` e replica pro Supabase) **não está aqui** — Sprint 1A.6.
 
 ## Como contribuir um novo módulo portado
 
@@ -107,4 +162,4 @@ A próxima frente — quando vier — adiciona V-003..V-011, sample-store, e pro
 
 - `CoreMotion` / `CoreLocation` — esses precisam iOS SDK. Vivem em `imu-test/` (mini-app) e no app real iOS futuro, não aqui.
 - `SwiftUI` — UI também vive nos targets que importam P1FastCore como dependência.
-- Persistência (Dexie equivalente) — decisão pendente entre SwiftData / CoreData / GRDB. Quando resolvido, persistência ganha módulo separado.
+- Sync drainer (Sprint 1A.6) — worker que consome `sync_queue` e replica pro Supabase. Aqui só schema + helpers de marcação.

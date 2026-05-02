@@ -11,3 +11,8 @@ build/
 supabase/.temp/
 supabase/.branches/
 supabase/.env.local
+
+# SPM-managed (never commit — re-baixados pelo swift build)
+ios/p1fast-core/.build/checkouts/
+ios/p1fast-core/.build/artifacts/
+ios/p1fast-core/.build/repositories/
