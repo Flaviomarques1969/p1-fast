@@ -25,3 +25,25 @@ supabase/.env.local
 **/.swiftpm/
 ios/**/.env.xcconfig
 ios/p1fast-ios/build/
+
+# Claude Code — estado local efêmero (worktrees, sessões, cache).
+# Mantém apenas .claude/agents/* (definições versionáveis de agentes).
+.claude/worktrees/
+.claude/projects/
+.claude/cache/
+.claude/sessions/
+.claude/shell-snapshots/
+.claude/file-history/
+.claude/scheduled-tasks/
+.claude/tasks/
+.claude/telemetry/
+.claude/debug/
+.claude/downloads/
+.claude/paste-cache/
+.claude/backups/
+.claude/plugins/
+.claude/session-env/
+.claude/history.jsonl
+.claude/scheduled_tasks.lock
+.claude/mcp-needs-auth-cache.json
+.claude/settings.local.json
