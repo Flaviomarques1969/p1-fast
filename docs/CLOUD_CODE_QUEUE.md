@@ -201,7 +201,7 @@ Marcar `api/ingest/iphone.js` como deprecated (header de comentário) mas não d
 
 ---
 
-### Prompt #7 — `Theme.swift` + componentes base SwiftUI
+### Prompt #7 — `Theme.swift` + componentes base SwiftUI ✅
 
 **Branch:** `feat/1A2-theme-base`
 **blockedBy:** #5
