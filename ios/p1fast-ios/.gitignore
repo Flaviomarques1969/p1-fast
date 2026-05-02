@@ -1,0 +1,27 @@
+# ═══════════════════════════════════════════════════════════
+# Xcode + SwiftPM — gerado, baixado, ou específico de usuário
+# ═══════════════════════════════════════════════════════════
+
+# Builds
+build/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+
+# SwiftPM (resolved via build, não commitamos checkouts)
+.build/
+.swiftpm/
+Package.resolved
+
+# Credenciais — NUNCA commitar
+Config/.env.xcconfig
+
+# Sistema
+.DS_Store
+
+# Notas: o .xcodeproj/ é gerado por xcodegen. Mantemos o pbxproj versionado
+# (pra Flávio abrir direto sem precisar de xcodegen instalado), mas
+# xcuserdata/ e schemes específicos de usuário ficam fora.

@@ -1,0 +1,33 @@
+// ═══════════════════════════════════════════════════════════
+// Debug.xcconfig — build settings + injeção de variáveis de ambiente
+// ═══════════════════════════════════════════════════════════
+// Variáveis sensíveis (SUPABASE_URL/ANON_KEY, DAILY_API_KEY) são lidas de
+// .env.xcconfig (gitignored). Exemplo em .env.xcconfig.example. Se o
+// arquivo não existir, valores default abaixo são usados — app sobe mas
+// não conecta na nuvem.
+
+#include? ".env.xcconfig"
+
+// ─── Versão ────────────────────────────────────────────────
+MARKETING_VERSION = 0.1.0
+CURRENT_PROJECT_VERSION = 1
+
+// ─── Defaults pra .env.xcconfig faltante ──────────────────
+// xcconfig trata `//` como início de comentário, então URLs precisam de
+// `https:/$()/host` pra escapar. Quando o usuário sobrescreve no
+// .env.xcconfig, esses defaults são ignorados (last include wins, mas o
+// `#include?` está no topo — então só vale se NÃO houver .env.xcconfig).
+SUPABASE_URL_DEFAULT = https:/$()/example.supabase.co
+SUPABASE_ANON_KEY_DEFAULT = REPLACE_ME
+DAILY_API_KEY_DEFAULT = REPLACE_ME
+
+SUPABASE_URL = $(SUPABASE_URL:default=$(SUPABASE_URL_DEFAULT))
+SUPABASE_ANON_KEY = $(SUPABASE_ANON_KEY:default=$(SUPABASE_ANON_KEY_DEFAULT))
+DAILY_API_KEY = $(DAILY_API_KEY:default=$(DAILY_API_KEY_DEFAULT))
+
+// ─── Compilador ────────────────────────────────────────────
+SWIFT_OPTIMIZATION_LEVEL = -Onone
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG
+GCC_PREPROCESSOR_DEFINITIONS = DEBUG=1
+ENABLE_TESTABILITY = YES
+ONLY_ACTIVE_ARCH = YES

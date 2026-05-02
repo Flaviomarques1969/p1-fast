@@ -1,0 +1,98 @@
+# ═══════════════════════════════════════════════════════════
+# p1fast-ios — Xcode project gerado por xcodegen
+# ═══════════════════════════════════════════════════════════
+# Não edite o .xcodeproj/ direto. Edite este arquivo e rode:
+#   xcodegen --spec project.yml
+# Detalhes em ../README.md.
+
+name: p1fast-ios
+options:
+  bundleIdPrefix: com.flaviomarques
+  deploymentTarget:
+    iOS: "17.0"
+  developmentLanguage: pt-BR
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    GENERATE_INFOPLIST_FILE: NO
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_IDENTITY: ""
+    CODE_SIGNING_REQUIRED: NO
+    CODE_SIGNING_ALLOWED: NO
+    TARGETED_DEVICE_FAMILY: "1"
+
+configFiles:
+  Debug: Config/Debug.xcconfig
+  Release: Config/Release.xcconfig
+
+packages:
+  P1FastCore:
+    path: ../p1fast-core
+  GRDB:
+    url: https://github.com/groue/GRDB.swift.git
+    from: 6.29.0
+  Daily:
+    url: https://github.com/daily-co/daily-client-ios.git
+    from: 0.37.0
+  Supabase:
+    url: https://github.com/supabase/supabase-swift.git
+    from: 2.0.0
+
+targets:
+  p1fast-ios:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+    resources:
+      - path: Resources
+    info:
+      path: Sources/App/Info.plist
+      properties:
+        CFBundleDisplayName: P1 Fast
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen:
+          UIColorName: SplashBackground
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        SUPABASE_URL: $(SUPABASE_URL)
+        SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
+        DAILY_API_KEY: $(DAILY_API_KEY)
+    settings:
+      base:
+        PRODUCT_NAME: p1fast-ios
+        PRODUCT_BUNDLE_IDENTIFIER: com.flaviomarques.p1fast
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ENABLE_PREVIEWS: YES
+    dependencies:
+      - package: P1FastCore
+        product: P1FastCore
+      - package: GRDB
+        product: GRDB
+      - package: Daily
+        product: Daily
+      - package: Supabase
+        product: Supabase
+
+schemes:
+  p1fast-ios:
+    build:
+      targets:
+        p1fast-ios: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
