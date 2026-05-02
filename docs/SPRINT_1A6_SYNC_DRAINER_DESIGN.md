@@ -198,19 +198,25 @@ Mínimo:
 - Reconciliação multi-device com CRDT — overkill pro escopo (1 piloto, 1 device principal).
 - Encryption at rest do payload local — SQLite já é sandboxed por iOS.
 
-## Estimativa de esforço
+## Estimativa de esforço — 5 de 7 já implementados em paralelo
 
-5 sub-prompts numa fila igual à 1A.1/1A.2:
+Pré-trabalho adiantado em paralelo ao Sprint 1A.2:
 
-| # | Tarefa | Tamanho |
-|---|---|---|
-| A | Edge Function `sync` (Deno) + smoke validator/chunker | M |
-| B | `SyncDrainer.swift` em `p1fast-core` + smoke (mock client) | M |
-| C | HTTP client + Reachability em `p1fast-ios` + injection no SyncDrainer | M |
-| D | UI "Sincronização" (status + dead-letter) | S |
-| E | Pull inicial no boot (cursor `last_sync_at` por tabela) | M |
+| # | Tarefa | Status | PR |
+|---|---|---|---|
+| A | Edge Function `sync` (Deno) + smoke validator/chunker | ✅ | #18 |
+| B | `SyncDrainer.swift` em `p1fast-core` + smoke (mock client) | ✅ | #20 |
+| C | HTTP client + Reachability em `p1fast-ios` + injection no SyncDrainer | ⏳ | — |
+| D | UI "Sincronização" (status + dead-letter) | ⏳ | — |
+| E | Pull inicial no boot (cursor `last_sync_at` por tabela) + Edge `pull` | ✅ | #22 |
+| **+ BackoffPolicy** (extra) | exponencial com jitter, usado por C+drainer | ✅ | #24 |
+| **+ TelemetryUploader** (extra) | drena telemetry_samples → Edge `ingest` | ✅ | #24 |
 
-Total: ~5 PRs, ~1 sprint. Telemetria já está coberta pelo `ingest` (Prompt #6).
+**5 de 7 prontos antes do Sprint começar formalmente.** Sub-prompts C+D só fazem sentido depois de p1fast-ios estar maduro (pós Sprint 1A.2 inteiro). Telemetria também já está coberta — falta só o adapter URLSession.
+
+Quando Sprint 1A.6 iniciar, restará:
+- C: criar `URLSessionSyncTransport` + `URLSessionTelemetryTransport` em p1fast-ios; integrar Reachability via `NWPathMonitor`; agendar drains por timer + reachability change
+- D: tela em "Configurações → Sincronização" listando pendentes + dead-letters + botão "Re-tentar"
 
 ## Pré-requisitos antes de começar
 

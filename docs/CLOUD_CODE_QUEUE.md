@@ -31,8 +31,8 @@ Cada prompt abaixo é uma tarefa autocontida → 1 PR. Execute em ordem respeita
 
 ## SPRINT 1A.2 — Hub iOS
 
-**Progresso:** ✅ #7 · ✅ #8 · ⏳ #9 · ⏳ #10
-(merges: `75335ae`, `4f689eb`, —, —)
+**Progresso:** ✅ #7 · ✅ #8 · ✅ #9 · ⏳ #10
+(merges: `75335ae`, `4f689eb`, `01e2750`, —)
 
 ---
 
@@ -272,7 +272,7 @@ REGRAS:
 
 ---
 
-### Prompt #9 — Tela Garagem + Modal Carro + form Carro Novo
+### Prompt #9 — Tela Garagem + Modal Carro + form Carro Novo ✅
 
 **Branch:** `feat/1A2-garagem`
 **blockedBy:** #7
