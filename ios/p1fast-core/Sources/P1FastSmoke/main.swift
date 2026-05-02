@@ -2077,6 +2077,9 @@ step("UPLOAD-04: transport throw NÃO marca uploaded_at") {
 step("UPLOAD-05: chunk-id é determinístico (sessionId-firstSeq-lastSeq)") {
     let q = try makeTestDB()
     try q.write { db in
+        var s = Sessao(id: "ses-X", timeId: "team-1"); try s.insert(db)
+    }
+    try q.write { db in
         for i in 100..<105 {
             var s = TelemetrySample(
                 timeId: "team-1", sessaoId: "ses-X", seq: i,
