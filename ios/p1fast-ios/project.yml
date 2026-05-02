@@ -47,8 +47,17 @@ targets:
     platform: iOS
     sources:
       - path: Sources
-    resources:
-      - path: Resources
+        excludes:
+          # Component docs/screenshots NÃO entram no app bundle.
+          - "**/docs/**"
+          - "**/README.md"
+      # Assets.xcassets vai como folder.assetcatalog explícito —
+      # `resources: - path: Resources` sozinho não pega o catalog
+      # (xcodegen 2.45.4 só copia arquivos soltos quando `path:` é diretório).
+      - path: Resources/Assets.xcassets
+        type: folder.assetcatalog
+        buildPhase: resources
+    resources: []
     info:
       path: Sources/App/Info.plist
       properties:
