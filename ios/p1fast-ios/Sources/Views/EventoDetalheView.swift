@@ -1,7 +1,9 @@
 // ═══════════════════════════════════════════════════════════
 // EventoDetalheView — port de mockup-evento-detalhe.html
 // ═══════════════════════════════════════════════════════════
-// Sprint 1A.2 — Prompt #10. Tela de drill-down de um evento.
+// Sprint 1A.2 — Prompt #10. Sprint 1A.3 — Prompt #11 acoplou os
+// fluxos `StintModalView` (CTA "Novo stint") e `PosStintView`
+// (tap em stint card real → finalize + recap).
 //
 // Composição (1:1 com mockup):
 //   - topbar: "‹ Eventos" (back) à esquerda + "Editar" à direita
@@ -10,20 +12,28 @@
 //   - summary card 4-cells: Stints / Voltas / Melhor (em ouro) / Pronto%
 //   - group__head "Stints" + contagem
 //   - lista de stint cards (numerador 42x42 + título + sub + tags)
-//   - CTA inline dashed "+ Novo stint" (criação chega no Sprint 1A.3)
+//   - CTA inline dashed "+ Novo stint"
 //
-// Dados de stints vêm de `EventoMockSummary.canon(eventoId:)` enquanto
-// a Sprint 1A.3 não popula a tabela `sessoes`. Para eventos criados
-// pelo usuário (não-seedados), a lista de stints fica vazia mas o
-// CTA inline continua aparecendo.
+// Dados:
+//   - Eventos seedados (`evt-mock-*`) renderizam stints do
+//     `EventoMockSummary` — somente leitura, atalho do PR #10.
+//   - Eventos criados pelo usuário renderizam `StintRepository
+//     .stintsPorEvento` (real, GRDB). Tap abre PosStintView; se
+//     stint ainda está ativo, repo.finalize() roda antes pra
+//     gerar voltas (gerador determinístico — Sprint 1B troca pelo
+//     dado real do cockpit).
 
 import SwiftUI
 import P1FastCore
 
 struct EventoDetalheView: View {
     @EnvironmentObject private var repo: EventoRepository
+    @EnvironmentObject private var stintRepo: StintRepository
     let eventoId: String
     let onClose: () -> Void
+
+    @State private var sheet: EventoDetalheSheet?
+    @State private var finalizingStintId: String?
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -38,6 +48,71 @@ struct EventoDetalheView: View {
             }
         }
         .preferredColorScheme(.dark)
+        .task { await loadStintsReais() }
+        .sheet(item: $sheet, onDismiss: {
+            // Recarrega após criar/encerrar stint.
+            Task { await loadStintsReais() }
+        }) { which in
+            sheetView(for: which)
+        }
+    }
+
+    @ViewBuilder
+    private func sheetView(for which: EventoDetalheSheet) -> some View {
+        switch which {
+        case .novoStint:
+            if let ev = repo.find(id: eventoId) {
+                StintModalView(
+                    eventoId: eventoId,
+                    proximoNumero: stintRepo.stintsPorEvento.count + 1,
+                    contextoLinha: contextoStintModal(ev: ev),
+                    onCancel: { sheet = nil },
+                    onCreated: { _ in sheet = nil }
+                )
+                .environmentObject(stintRepo)
+            } else {
+                EmptyView()
+            }
+        case .posStint(let stintId):
+            if let ev = repo.find(id: eventoId) {
+                PosStintView(
+                    stintId: stintId,
+                    contextoLinha: contextoStintModal(ev: ev),
+                    onClose: { sheet = nil }
+                )
+                .environmentObject(stintRepo)
+            } else {
+                EmptyView()
+            }
+        }
+    }
+
+    private func contextoStintModal(ev: EventoView) -> String {
+        let weekday = formatWeekdayLong(ev.evento.dataEvento)
+        let dia = formatDayMonthShort(ev.evento.dataEvento)
+        return "\(ev.pistaDisplay) · \(weekday.lowercased()) \(dia)"
+    }
+
+    private func loadStintsReais() async {
+        do { try await stintRepo.loadByEvento(eventoId: eventoId) } catch {
+            print("loadByEvento failed: \(error)")
+        }
+    }
+
+    private func abrirStintReal(_ stint: Stint) {
+        // Se ainda está ativo, finalizamos antes (gerador determinístico
+        // mockado — Sprint 1B troca pelo dado real). Atalho do MVP pra
+        // poder visualizar o PosStint sem cockpit ao vivo.
+        if stint.isAtivo {
+            finalizingStintId = stint.id
+            Task {
+                _ = try? await stintRepo.finalize(stintId: stint.id)
+                finalizingStintId = nil
+                sheet = .posStint(stintId: stint.id)
+            }
+        } else {
+            sheet = .posStint(stintId: stint.id)
+        }
     }
 
     @ViewBuilder
@@ -155,7 +230,9 @@ struct EventoDetalheView: View {
     // MARK: - Stints
 
     private func stintsSection(ev: EventoView) -> some View {
-        let stints = stintsFor(ev)
+        let mocks = stintsFor(ev)
+        let reais = stintRepo.stintsPorEvento
+        let totalCount = reais.isEmpty ? mocks.count : reais.count
         return VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("Stints")
@@ -163,7 +240,7 @@ struct EventoDetalheView: View {
                     .tracking(1.32) // 0.12em em 11pt
                     .foregroundStyle(Color.textFaint)
                 Spacer()
-                Text("\(stints.count)")
+                Text("\(totalCount)")
                     .font(.system(size: 11, weight: .semibold))
                     .monospacedDigit()
                     .foregroundStyle(Color.accent)
@@ -172,11 +249,22 @@ struct EventoDetalheView: View {
             .padding(.bottom, 10)
 
             VStack(spacing: 8) {
-                ForEach(stints) { stint in
-                    StintCard(stint: stint)
+                if !reais.isEmpty {
+                    // Eventos criados pelo usuário — stints reais do GRDB.
+                    ForEach(reais) { stint in
+                        StintCardReal(
+                            stint: stint,
+                            isFinalizing: finalizingStintId == stint.id,
+                            onTap: { abrirStintReal(stint) }
+                        )
+                    }
+                } else {
+                    // Eventos seedados — fallback pros mocks de design.
+                    ForEach(mocks) { stint in
+                        StintCardMock(stint: stint)
+                    }
                 }
-                AddStintCTA()
-                    .padding(.top, stints.isEmpty ? 0 : 0)
+                AddStintCTA(onTap: { sheet = .novoStint })
             }
         }
     }
@@ -219,13 +307,27 @@ struct EventoDetalheView: View {
     }
 }
 
-// MARK: - StintCard
+// MARK: - Sheet enum
 
-private struct StintCard: View {
+enum EventoDetalheSheet: Identifiable, Equatable {
+    case novoStint
+    case posStint(stintId: String)
+
+    var id: String {
+        switch self {
+        case .novoStint: return "novo-stint"
+        case .posStint(let id): return "pos-\(id)"
+        }
+    }
+}
+
+// MARK: - StintCardMock (eventos seedados — read-only)
+
+private struct StintCardMock: View {
     let stint: StintMock
 
     var body: some View {
-        Button(action: { /* drill-down de stint chega no Sprint 1A.3 */ }) {
+        Button(action: { /* drill-down do mock chega no Sprint 1A.3 */ }) {
             HStack(alignment: .top, spacing: 14) {
                 numCircle
                 bodyBlock
@@ -310,11 +412,117 @@ private struct StintCard: View {
     }
 }
 
+// MARK: - StintCardReal (eventos criados pelo usuário)
+
+private struct StintCardReal: View {
+    let stint: Stint
+    let isFinalizing: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(alignment: .top, spacing: 14) {
+                numCircle
+                bodyBlock
+                Spacer(minLength: 0)
+                chev
+            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .fill(stint.isAtivo ? Color.accentDim.opacity(0.15) : Color.surfaceRaised)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .stroke(stint.isAtivo ? Color.accent.opacity(0.55) : Color.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(isFinalizing)
+    }
+
+    private var numCircle: some View {
+        // Numeração do stint não é persistida no schema (sessoes não tem
+        // `numero` explícito). Usamos só "•" como placeholder visual —
+        // EventoDetalheView ordena por created_at e a posição na lista
+        // é o que conta. Trocar por número real quando o schema ganhar.
+        Text("•")
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundStyle(Color.text)
+            .frame(width: 42, height: 42)
+            .background(
+                Circle()
+                    .fill(stint.isAtivo ? Color.accent.opacity(0.18) : Color.surfaceHover)
+            )
+            .overlay(
+                Circle()
+                    .stroke(stint.isAtivo ? Color.accent.opacity(0.45) : Color.border, lineWidth: 1)
+            )
+    }
+
+    private var bodyBlock: some View {
+        let (tipo, licao) = stint.objetivoDecomposto
+        return VStack(alignment: .leading, spacing: 3) {
+            Text(tipo.isEmpty ? "Stint" : tipo)
+                .font(.system(size: 15, weight: .semibold))
+                .tracking(-0.075)
+                .foregroundStyle(Color.text)
+                .lineLimit(1)
+            Text(subtitle)
+                .font(.system(size: 12, weight: .regular))
+                .monospacedDigit()
+                .foregroundStyle(Color.textFaint)
+                .lineLimit(1)
+            HStack(spacing: 6) {
+                if let nome = stint.pilotoNome, !nome.isEmpty {
+                    EventTag(text: nome, kind: .neutral)
+                }
+                if !licao.isEmpty {
+                    EventTag(text: licao, kind: .neutral)
+                }
+                if stint.isAtivo {
+                    EventTag(text: isFinalizing ? "Finalizando…" : "Ativo", kind: .accent)
+                }
+            }
+            .padding(.top, 7)
+        }
+    }
+
+    private var subtitle: String {
+        if stint.isAtivo {
+            let plan = stint.sessao.voltasPlanejadas ?? 0
+            if plan > 0 { return "\(plan) voltas planejadas · toque pra encerrar" }
+            return "Stint ativo · toque pra encerrar"
+        }
+        let count = stint.voltasCount
+        guard let melhor = stint.melhorVoltaMs else {
+            return "\(count) voltas registradas"
+        }
+        return "\(count) voltas · melhor \(formatTempoMs(melhor))"
+    }
+
+    private var chev: some View {
+        Text("›")
+            .font(.system(size: 14, weight: .regular))
+            .foregroundStyle(Color.textMuted)
+            .frame(width: 24, height: 24)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.surfaceHover)
+            )
+            .padding(.top, 8)
+    }
+}
+
 // MARK: - Add Stint CTA (dashed inline)
 
 private struct AddStintCTA: View {
+    let onTap: () -> Void
+
     var body: some View {
-        Button(action: { /* criação chega no Sprint 1A.3 */ }) {
+        Button(action: onTap) {
             HStack(spacing: Spacing.sm) {
                 Text("+")
                     .font(.system(size: 18, weight: .medium))
@@ -347,7 +555,12 @@ private struct AddStintCTA: View {
 #Preview("EventoDetalhe — 25/04 (4 stints)") {
     let queue = try! P1FastCore.DB.makeMemoryQueue()
     let repo = EventoRepository(queue: queue)
+    let stintRepo = StintRepository(queue: queue)
     return EventoDetalheView(eventoId: EventoRepository.seedPassado1Id, onClose: {})
         .environmentObject(repo)
-        .task { await repo.bootstrap() }
+        .environmentObject(stintRepo)
+        .task {
+            await repo.bootstrap()
+            await stintRepo.bootstrap()
+        }
 }

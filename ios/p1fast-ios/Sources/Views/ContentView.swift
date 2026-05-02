@@ -5,7 +5,10 @@
 // Sprint 1A.2 — Prompt #7: ThemeShowcaseView (componentes Padrão B).
 // Sprint 1A.2 — Prompt #8: HomeView (cheio | vazio).
 // Sprint 1A.2 — Prompt #9: GaragemView + sheets de carro.
-// Sprint 1A.2 — Prompt #10 (este): EventosListaView + EventoDetalheView.
+// Sprint 1A.2 — Prompt #10: EventosListaView + EventoDetalheView.
+// Sprint 1A.3 — Prompt #11 (este): StintModalView + PosStintView,
+//   acoplados ao EventoDetalheView (CTA "Novo stint" + tap em stint
+//   real → finalize + recap).
 //
 // Splash renderizado enquanto `database.status == .idle` (milissegundos)
 // e quando `.failed` (estado de erro visível).
@@ -21,6 +24,11 @@
 //   --p1-eventos-novo      → EventosListaView com sheet "Novo evento"
 //   --p1-evento-detalhe    → EventosListaView com detalhe do 1º evento
 //                            passado (padrão = 25/04, 4 stints)
+//   --p1-stint-novo        → cria evento "demo Sprint 1A.3" + abre o
+//                            detalhe com a sheet "Novo stint" pronta
+//                            pra screenshot do StintModalView
+//   --p1-pos-stint         → cria stint, finaliza (gera voltas mock) e
+//                            abre PosStintView pra screenshot
 //   default                → HomeView estado cheio (Sprint 1A.6 troca
 //                            pelo Repository real)
 
@@ -38,6 +46,8 @@ private enum AppRoute {
     case eventos
     case eventosNovo
     case eventoDetalhe
+    case stintNovo
+    case posStint
 
     static var fromLaunchArgs: AppRoute {
         let args = ProcessInfo.processInfo.arguments
@@ -48,6 +58,8 @@ private enum AppRoute {
         if args.contains("--p1-garagem") { return .garagem }
         if args.contains("--p1-eventos-novo") { return .eventosNovo }
         if args.contains("--p1-evento-detalhe") { return .eventoDetalhe }
+        if args.contains("--p1-stint-novo") { return .stintNovo }
+        if args.contains("--p1-pos-stint") { return .posStint }
         if args.contains("--p1-eventos") { return .eventos }
         return .home
     }
@@ -79,20 +91,24 @@ private struct ReadyRoot: View {
     let queue: DatabaseQueue
     @StateObject private var carroRepo: CarroRepository
     @StateObject private var eventoRepo: EventoRepository
+    @StateObject private var stintRepo: StintRepository
 
     init(queue: DatabaseQueue) {
         self.queue = queue
         _carroRepo = StateObject(wrappedValue: CarroRepository(queue: queue))
         _eventoRepo = StateObject(wrappedValue: EventoRepository(queue: queue))
+        _stintRepo = StateObject(wrappedValue: StintRepository(queue: queue))
     }
 
     var body: some View {
         routedView
             .environmentObject(carroRepo)
             .environmentObject(eventoRepo)
+            .environmentObject(stintRepo)
             .task {
                 await carroRepo.bootstrap()
                 await eventoRepo.bootstrap()
+                await stintRepo.bootstrap()
             }
     }
 
@@ -117,7 +133,143 @@ private struct ReadyRoot: View {
             EventosListaView(initialSheet: .novo)
         case .eventoDetalhe:
             EventosListaViewWithDetalhePadrao()
+        case .stintNovo:
+            StintNovoLauncher()
+        case .posStint:
+            PosStintLauncher()
         }
+    }
+}
+
+/// Helper que cria um evento demo + abre detalhe direto na sheet
+/// "Novo stint" pra screenshot rápido do StintModalView. Usado pelo
+/// launch arg `--p1-stint-novo`.
+private struct StintNovoLauncher: View {
+    @EnvironmentObject private var eventoRepo: EventoRepository
+    @State private var ready = false
+    @State private var demoEventoId: String?
+
+    var body: some View {
+        Group {
+            if ready, let eventoId = demoEventoId {
+                EventoDetalheViewSheet(eventoId: eventoId, openSheet: .novoStint)
+            } else {
+                Splash(stateLabel: "Preparando stint demo…", isError: false)
+            }
+        }
+        .task {
+            for _ in 0..<15 {
+                if !eventoRepo.eventos.isEmpty { break }
+                try? await Task.sleep(nanoseconds: 100_000_000)
+            }
+            // Usa o evento ativo hoje (02/05) — começa vazio (sem mocks).
+            // Cai pro primeiro evento da lista se a seed mudar.
+            let ativoId = EventoRepository.seedAtivoId
+            demoEventoId = eventoRepo.find(id: ativoId)?.id ?? eventoRepo.eventos.first?.id
+            ready = true
+        }
+    }
+}
+
+/// Helper que cria um stint, finaliza (gera voltas) e abre PosStintView.
+/// Usado pelo launch arg `--p1-pos-stint`.
+private struct PosStintLauncher: View {
+    @EnvironmentObject private var eventoRepo: EventoRepository
+    @EnvironmentObject private var stintRepo: StintRepository
+    @State private var stintId: String?
+    @State private var prepared = false
+
+    var body: some View {
+        Group {
+            if let id = stintId {
+                PosStintView(
+                    stintId: id,
+                    contextoLinha: "Brasília · 02/05",
+                    onClose: {}
+                )
+                .environmentObject(stintRepo)
+            } else {
+                Splash(stateLabel: prepared ? "Sem stint demo" : "Preparando stint demo…", isError: false)
+            }
+        }
+        .task {
+            await prepararStintDemo()
+            prepared = true
+        }
+    }
+
+    private func prepararStintDemo() async {
+        // Espera repos bootarem.
+        for _ in 0..<15 {
+            if !eventoRepo.eventos.isEmpty && !stintRepo.pilotos.isEmpty { break }
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
+        guard let evento = eventoRepo.find(id: EventoRepository.seedAtivoId) ?? eventoRepo.eventos.first,
+              let piloto = stintRepo.pilotos.first(where: { $0.id == StintRepository.pilotoFlavioId }) ?? stintRepo.pilotos.first else {
+            return
+        }
+        do {
+            let id = try await stintRepo.create(
+                eventoId: evento.id,
+                pilotoId: piloto.id,
+                objetivoTipo: "Ataque",
+                licaoFocada: "V-Min · apex",
+                voltasPlanejadas: 12
+            )
+            _ = try await stintRepo.finalize(stintId: id, mediaVoltaMs: 102_500)
+            self.stintId = id
+        } catch {
+            print("PosStintLauncher: prepare failed — \(error)")
+        }
+    }
+}
+
+/// EventoDetalheView wrapper que abre uma sheet específica (Novo stint
+/// ou PosStint) ao montar — atalho pra screenshot do prompt #11.
+private struct EventoDetalheViewSheet: View {
+    @EnvironmentObject private var eventoRepo: EventoRepository
+    @EnvironmentObject private var stintRepo: StintRepository
+    let eventoId: String
+    let openSheet: WhichSheet
+
+    enum WhichSheet { case novoStint }
+
+    @State private var presented = false
+
+    var body: some View {
+        ZStack {
+            EventoDetalheView(eventoId: eventoId, onClose: { presented = false })
+                .environmentObject(eventoRepo)
+                .environmentObject(stintRepo)
+            // Overlay invisível só pra disparar a sheet automaticamente.
+            Color.clear
+                .frame(width: 0, height: 0)
+                .sheet(isPresented: $presented) {
+                    switch openSheet {
+                    case .novoStint:
+                        StintModalView(
+                            eventoId: eventoId,
+                            proximoNumero: stintRepo.stintsPorEvento.count + 1,
+                            contextoLinha: contextoLinha,
+                            onCancel: { presented = false },
+                            onCreated: { _ in presented = false }
+                        )
+                        .environmentObject(stintRepo)
+                    }
+                }
+                .task {
+                    // Pequeno delay pra detalhe terminar de montar antes da sheet.
+                    try? await Task.sleep(nanoseconds: 200_000_000)
+                    presented = true
+                }
+        }
+    }
+
+    private var contextoLinha: String {
+        guard let ev = eventoRepo.find(id: eventoId) else { return "" }
+        let weekday = formatWeekdayLong(ev.evento.dataEvento)
+        let dia = formatDayMonthShort(ev.evento.dataEvento)
+        return "\(ev.pistaDisplay) · \(weekday.lowercased()) \(dia)"
     }
 }
 
