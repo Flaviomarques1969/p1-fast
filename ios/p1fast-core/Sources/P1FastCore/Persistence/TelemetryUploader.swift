@@ -22,7 +22,7 @@ public struct IngestRequestSample: Codable, Equatable {
     public let extras: [String: AnyCodable]?
 
     public init(t: Int64, tMono: Double, source: String, signalQuality: String,
-                seq: Int64? = nil, extras: [String: AnyCodable]? = nil) {
+                seq: Int? = nil, extras: [String: AnyCodable]? = nil) {
         self.t = t; self.tMono = tMono; self.source = source
         self.signalQuality = signalQuality; self.seq = seq; self.extras = extras
     }
