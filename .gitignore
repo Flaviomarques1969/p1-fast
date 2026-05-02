@@ -12,7 +12,13 @@ supabase/.temp/
 supabase/.branches/
 supabase/.env.local
 
-# SPM-managed (never commit — re-baixados pelo swift build)
-ios/p1fast-core/.build/checkouts/
-ios/p1fast-core/.build/artifacts/
-ios/p1fast-core/.build/repositories/
+# SPM-managed e Xcode-gerados (never commit — re-baixados/gerados pelo build)
+# Cobre p1fast-core E qualquer projeto iOS futuro (p1fast-ios etc).
+**/.build/
+**/DerivedData/
+**/xcuserdata/
+**/*.xcworkspace/xcuserdata/
+**/*.xcodeproj/xcuserdata/
+**/*.xcodeproj/project.xcworkspace/xcuserdata/
+**/.swiftpm/
+ios/**/.env.xcconfig
