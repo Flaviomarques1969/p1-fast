@@ -1,6 +1,11 @@
 // ═══════════════════════════════════════════════════════════
 // /api/ingest/iphone — recebe Samples do iPhone (cockpit-mobile)
 // ═══════════════════════════════════════════════════════════
+// ⚠️ DEPRECATED (Sprint 1A.1, 2026-05-01): substituído por
+// `supabase/functions/ingest/index.ts` (Edge Function Deno). Mantido
+// rodando até o app iOS confirmar uso da nova URL — então deletar.
+// Ver `supabase/functions/ingest/README.md`.
+//
 // Vercel serverless function (Node runtime). Recebe chunk de samples
 // canônicos + persiste em Vercel Blob.
 //
