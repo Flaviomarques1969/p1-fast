@@ -26,6 +26,17 @@ enum Migrations {
         m.registerMigration("v1_initial") { db in
             try v1Initial(db)
         }
+        // ═══ v2_pull_cursor ════════════════════════════════════
+        // Sprint 1A.6 sub-prompt E: cursor `last_sync_at` por tabela
+        // pra catch-up sync via Edge Function `pull`.
+        m.registerMigration("v2_pull_cursor") { db in
+            try db.execute(sql: """
+                CREATE TABLE sync_meta (
+                    table_name      TEXT PRIMARY KEY,
+                    last_sync_at    INTEGER NOT NULL DEFAULT 0
+                );
+            """)
+        }
     }
 
     // swiftlint:disable:next function_body_length

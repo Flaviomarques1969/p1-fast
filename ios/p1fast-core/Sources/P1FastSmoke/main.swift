@@ -1488,17 +1488,18 @@ func makeTestDB() throws -> DatabaseQueue {
     return q
 }
 
-step("PERSIST-01: makeMemoryQueue + migration v1 cria 21 tabelas") {
+step("PERSIST-01: makeMemoryQueue + migrations v1+v2 cria 22 tabelas") {
     let q = try DB.makeMemoryQueue()
     let names = try q.read { db in
         try String.fetchAll(db, sql:
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'grdb_%' ORDER BY name"
         )
     }
-    // 20 do Postgres + sync_queue local = 21
-    try assertEq(names.count, 21, "esperava 21 tabelas")
+    // 20 do Postgres + sync_queue + sync_meta = 22
+    try assertEq(names.count, 22, "esperava 22 tabelas")
     for expected in ["times", "carros", "configuracoes", "sessoes", "voltas",
-                     "marcos", "retas_especiais", "telemetry_samples", "sync_queue"] {
+                     "marcos", "retas_especiais", "telemetry_samples",
+                     "sync_queue", "sync_meta"] {
         try assertTrue(names.contains(expected), "tabela \(expected) ausente")
     }
 }
@@ -1512,14 +1513,14 @@ step("PERSIST-02: telemetry_samples NÃO tem coluna synced_at (ADR-014)") {
     try assertTrue(cols.contains("uploaded_at"), "telemetry_samples deve ter uploaded_at")
 }
 
-step("PERSIST-03: todas tabelas (exceto telemetry_samples e sync_queue) têm synced_at") {
+step("PERSIST-03: todas tabelas (exceto telemetry_samples, sync_queue, sync_meta) têm synced_at") {
     let q = try DB.makeMemoryQueue()
     let tables = try q.read { db in
         try String.fetchAll(db, sql:
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'grdb_%'"
         )
     }
-    let semSyncedAt: Set<String> = ["telemetry_samples", "sync_queue"]
+    let semSyncedAt: Set<String> = ["telemetry_samples", "sync_queue", "sync_meta"]
     for name in tables where !semSyncedAt.contains(name) {
         let cols = try q.read { db in
             try Row.fetchAll(db, sql: "PRAGMA table_info(\(name))").map { $0["name"] as String }
@@ -1835,6 +1836,56 @@ step("DRAIN-05: transport throw propaga sem mexer em sync_queue") {
         try Int.fetchOne(db, sql: "SELECT attempts FROM sync_queue WHERE row_id = 'c-net-fail'")
     }
     try assertEq(attempts, 0)
+}
+
+step("CURSOR-01: PullCursor.get retorna 0 pra tabela nunca sincronizada") {
+    let q = try makeTestDB()
+    let cursor = try q.read { db in try PullCursor.get(db, tableName: "carros") }
+    try assertEq(cursor, 0)
+}
+
+step("CURSOR-02: PullCursor.set + get faz roundtrip") {
+    let q = try makeTestDB()
+    try q.write { db in try PullCursor.set(db, tableName: "carros", lastSyncAt: 1714693200000) }
+    let cursor = try q.read { db in try PullCursor.get(db, tableName: "carros") }
+    try assertEq(cursor, 1714693200000)
+}
+
+step("CURSOR-03: PullCursor.set sobrescreve cursor existente (upsert)") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try PullCursor.set(db, tableName: "sessoes", lastSyncAt: 100)
+        try PullCursor.set(db, tableName: "sessoes", lastSyncAt: 200)
+    }
+    let cursor = try q.read { db in try PullCursor.get(db, tableName: "sessoes") }
+    try assertEq(cursor, 200)
+}
+
+step("CURSOR-04: PullCursor.all lista cursors ordenados por table_name") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try PullCursor.set(db, tableName: "voltas", lastSyncAt: 300)
+        try PullCursor.set(db, tableName: "carros", lastSyncAt: 100)
+        try PullCursor.set(db, tableName: "sessoes", lastSyncAt: 200)
+    }
+    let all = try q.read { db in try PullCursor.all(db) }
+    try assertEq(all.count, 3)
+    try assertEq(all[0].tableName, "carros")
+    try assertEq(all[1].tableName, "sessoes")
+    try assertEq(all[2].tableName, "voltas")
+}
+
+step("CURSOR-05: PullCursor.resetAll zera todos os cursors") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try PullCursor.set(db, tableName: "carros", lastSyncAt: 100)
+        try PullCursor.set(db, tableName: "sessoes", lastSyncAt: 200)
+        try PullCursor.resetAll(db)
+    }
+    let all = try q.read { db in try PullCursor.all(db) }
+    try assertEq(all.count, 0)
+    let stillCarros = try q.read { db in try PullCursor.get(db, tableName: "carros") }
+    try assertEq(stillCarros, 0)
 }
 
 step("DRAIN-06: SyncRequestRow shape — insert sem row_id, update com client_updated_at") {
