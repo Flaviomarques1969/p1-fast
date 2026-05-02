@@ -1488,17 +1488,18 @@ func makeTestDB() throws -> DatabaseQueue {
     return q
 }
 
-step("PERSIST-01: makeMemoryQueue + migration v1 cria 21 tabelas") {
+step("PERSIST-01: makeMemoryQueue + migrations v1+v2 cria 22 tabelas") {
     let q = try DB.makeMemoryQueue()
     let names = try q.read { db in
         try String.fetchAll(db, sql:
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'grdb_%' ORDER BY name"
         )
     }
-    // 20 do Postgres + sync_queue local = 21
-    try assertEq(names.count, 21, "esperava 21 tabelas")
+    // 20 do Postgres + sync_queue + sync_meta = 22
+    try assertEq(names.count, 22, "esperava 22 tabelas")
     for expected in ["times", "carros", "configuracoes", "sessoes", "voltas",
-                     "marcos", "retas_especiais", "telemetry_samples", "sync_queue"] {
+                     "marcos", "retas_especiais", "telemetry_samples",
+                     "sync_queue", "sync_meta"] {
         try assertTrue(names.contains(expected), "tabela \(expected) ausente")
     }
 }
