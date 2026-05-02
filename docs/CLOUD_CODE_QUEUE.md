@@ -165,7 +165,7 @@ NÃO incluir credenciais Supabase/Daily.co no código. Usar `Configuration.swift
 
 ---
 
-### Prompt #6 — Endpoint ingest migrado pra Supabase Edge Function
+### Prompt #6 — Endpoint ingest migrado pra Supabase Edge Function ✅
 
 **Branch:** `feat/1A1-ingest-edge-function`
 **blockedBy:** #3
