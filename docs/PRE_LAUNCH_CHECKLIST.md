@@ -58,20 +58,30 @@ select count(*) from public.marcos;          -- 4 (largada, chegada, pit-in, pit
 select count(*) from public.retas_especiais; -- 1 (RETA PRINCIPAL global)
 ```
 
-### 1.5 Edge Function `ingest`
+### 1.5 Deploy das 3 Edge Functions
 
 ```sh
-supabase functions deploy ingest --no-verify-jwt
+supabase functions deploy ingest
+supabase functions deploy sync
+supabase functions deploy pull
 ```
 
-Configurar secrets da função:
+Todas validam JWT do user — sem `--no-verify-jwt`.
+
+Configurar secrets compartilhados:
 ```sh
 supabase secrets set SUPABASE_URL=https://<ref>.supabase.co
 supabase secrets set SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
 supabase secrets set SUPABASE_ANON_KEY=<anon-key>
 ```
 
-**Verificar**: chamar com curl + JWT válido (precisa criar user antes — passo 2).
+**Verificar** (precisa criar user antes — passo 2):
+
+| Função | Para que serve | Test curl em README |
+|---|---|---|
+| `ingest` | telemetry_samples (10Hz IMU/GPS) — append-only batch | `supabase/functions/ingest/README.md` |
+| `sync` | mutations CRUD (12 tabelas com `time_id`) — LWW por updated_at | `supabase/functions/sync/README.md` |
+| `pull` | catch-up sync no app boot — cursor `last_sync_at` por tabela | (sem README — body+resposta no source TS) |
 
 ---
 
@@ -167,12 +177,17 @@ CI no GitHub roda os 2 primeiros automaticamente em todo PR.
 
 ## 5. O que ainda NÃO está pronto pra usar (esperado)
 
-- **Sync drainer**: Sprint 1A.6 (designado em `docs/SPRINT_1A6_SYNC_DRAINER_DESIGN.md`). App roda local-first, mutations ficam em `sync_queue` mas não vão pro Supabase ainda — só telemetry via `ingest`.
+- **Sync drainer (HTTP injection)**: Sprint 1A.6 sub-prompts C+D pendentes. Lógica core 100% pronta (`SyncDrainer`, `PullCursor`, `TelemetryUploader`, `BackoffPolicy` em `p1fast-core`) + 3 Edge Functions deployáveis. Falta só URLSession adapter + UI de status no `p1fast-ios`.
 - **Daily.co teleconsulta**: imports e creds prontos, sem uso real.
-- **Garagem (#9), Eventos (#10)**: telas pendentes (Sprint 1A.2).
+- **Eventos (#10)**: tela pendente (último de Sprint 1A.2). EventoRepository pronto em `p1fast-ios/Sources/Persistence/`.
 - **Cockpit do piloto**: Sprint 1B+ (telemetria ao vivo na pista).
 
-Sem esses 4, o app é "skeleton + Home" — útil pra validar fluxo de boot e auth, não pra track day real.
+Sem esses 4, o app permite hoje:
+- Ver Home cheia/vazia (#8)
+- Cadastrar carros + setup base (#9 Garagem)
+- Listar eventos (parcial — falta criar/editar)
+
+Operação local-first 100% offline. Sync remoto vira ON quando #C+D do Sprint 1A.6 forem feitos.
 
 ---
 
