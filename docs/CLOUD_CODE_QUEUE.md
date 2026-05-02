@@ -79,7 +79,7 @@ Migration deve:
 
 ---
 
-### Prompt #3 — Schema Supabase Postgres inicial (espelho do Dexie)
+### Prompt #3 — Schema Supabase Postgres inicial (espelho do Dexie) ✅
 
 **Branch:** `feat/1A1-supabase-schema`
 **blockedBy:** #2
