@@ -15,7 +15,7 @@ struct ThemeShowcaseView: View {
     private let navItems: [BottomNavItem] = [
         BottomNavItem("Home"),
         BottomNavItem("Eventos"),
-        BottomNavItem("Pendências"),
+        BottomNavItem("Pessoas"),
         BottomNavItem("Garagem"),
     ]
 
