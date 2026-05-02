@@ -12,18 +12,16 @@ supabase/.temp/
 supabase/.branches/
 supabase/.env.local
 
-# SPM-managed (never commit — re-baixados pelo swift build)
-ios/p1fast-core/.build/checkouts/
-ios/p1fast-core/.build/artifacts/
-ios/p1fast-core/.build/repositories/
-
-# Xcode (p1fast-ios) — gerado, baixado, ou específico de usuário
+# SPM-managed e Xcode-gerados (never commit — re-baixados/gerados pelo build)
+# Cobre p1fast-core, p1fast-ios e qualquer projeto iOS futuro.
+**/.build/
+**/DerivedData/
+**/xcuserdata/
+**/*.xcworkspace/xcuserdata/
+**/*.xcodeproj/xcuserdata/
+**/*.xcodeproj/project.xcworkspace/xcuserdata/
+**/*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+**/*.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+**/.swiftpm/
+ios/**/.env.xcconfig
 ios/p1fast-ios/build/
-ios/p1fast-ios/DerivedData/
-ios/p1fast-ios/.build/
-ios/p1fast-ios/.swiftpm/
-ios/p1fast-ios/p1fast-ios.xcodeproj/xcuserdata/
-ios/p1fast-ios/p1fast-ios.xcodeproj/project.xcworkspace/xcuserdata/
-ios/p1fast-ios/p1fast-ios.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
-ios/p1fast-ios/p1fast-ios.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
-ios/p1fast-ios/Config/.env.xcconfig
