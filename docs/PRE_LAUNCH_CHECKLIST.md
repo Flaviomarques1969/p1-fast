@@ -58,15 +58,16 @@ select count(*) from public.marcos;          -- 4 (largada, chegada, pit-in, pit
 select count(*) from public.retas_especiais; -- 1 (RETA PRINCIPAL global)
 ```
 
-### 1.5 Deploy das 3 Edge Functions
+### 1.5 Deploy das 4 Edge Functions
 
 ```sh
 supabase functions deploy ingest
 supabase functions deploy sync
 supabase functions deploy pull
+supabase functions deploy health --no-verify-jwt
 ```
 
-Todas validam JWT do user — sem `--no-verify-jwt`.
+`ingest`, `sync`, `pull` validam JWT do user. **`health` é diagnostic público** — usado por monitoring e UI "Sincronização" pra detectar drift.
 
 Configurar secrets compartilhados:
 ```sh
