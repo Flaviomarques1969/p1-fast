@@ -68,6 +68,36 @@ extension Color {
 
     /// `oklch(82% 0.14 235)` → `#58d2ff`. Hover do accent.
     static let accentHover = Color(red: 88.0/255, green: 210.0/255, blue: 255.0/255)
+
+    // MARK: - Tokens semânticos do hub (Sprint 1A.2 — docs/THEME_TOKENS_HUB.md)
+    //
+    // Aparecem em mockup-home-cheio, mockup-garagem, mockup-eventos-lista
+    // e mockup-evento-detalhe. Foram extraídos por audit cruzado e estão
+    // pinados em docs/THEME_TOKENS_HUB.md (mesma fórmula OKLCH→sRGB já
+    // validada por tests/node-smoke-oklch.mjs).
+
+    /// `--bom` — `oklch(78% 0.16 150)` → `#5fd37f`.
+    /// Tag verde "PB do dia / desvio < 0.4s". Mesmo OKLCH de `success` —
+    /// mantemos como alias semântico para deixar claro o uso "esse tempo
+    /// foi bom" vs "operação concluiu com sucesso".
+    static let bom = Color.success
+
+    /// `--rec` — `oklch(70% 0.20 25)` → `#ff5f5b`.
+    /// Indicador "rec" (gravando/em andamento) — pulse no stint vivo.
+    static let rec = Color(red: 255.0/255, green: 95.0/255, blue: 91.0/255)
+
+    /// `--atencao` — `oklch(82% 0.16 80)` → `#fab72a`.
+    /// Tag amarela "atenção" — pneu velho, setup desatualizado, etc.
+    static let atencao = Color(red: 250.0/255, green: 183.0/255, blue: 42.0/255)
+
+    /// `--erro` — `oklch(70% 0.20 25)` → `#ff5f5b`. Alias de `rec`
+    /// (mesmo OKLCH no mockup-garagem) — distingue intenção semântica:
+    /// "rec" = gravando, "erro" = problema/falha.
+    static let erro = Color.rec
+
+    /// `--ouro` — `oklch(74% 0.16 73)` → `#e79800`.
+    /// Tag dourada "melhor volta do dia" — destaca PB do evento.
+    static let ouro = Color(red: 231.0/255, green: 152.0/255, blue: 0.0/255)
 }
 
 // MARK: - Tipografia (5 papéis)
