@@ -2,16 +2,32 @@
 // ContentView — root view
 // ═══════════════════════════════════════════════════════════
 // Sprint 1A.1: provou esqueleto + DB local (splash com "DB: ok").
-// Sprint 1A.2 (este Prompt #7): troca o splash pela ThemeShowcaseView,
-// galeria viva dos componentes Padrão B.
+// Sprint 1A.2 — Prompt #7: ThemeShowcaseView (componentes Padrão B).
+// Sprint 1A.2 — Prompt #8 (este): HomeView é o root quando DB.ok.
 //
 // Splash continua sendo renderizado enquanto `database.status == .idle`
-// (millisegundos) e quando `.failed` (estado de erro visível). Em `.ok`
-// o app entra direto na showcase — sem ícone, texto puro.
-// Quando HomeView/EventosView aterrissarem (Prompts #8-#10), trocamos
-// a showcase pela tela real.
+// (milissegundos) e quando `.failed` (estado de erro visível).
+//
+// Roteamento de modo (cheio vs vazio):
+//   - Default → estado cheio com mock data (HomeData.mockFilled).
+//   - Launch arg `--p1-empty` → estado vazio (onboarding).
+//   - Launch arg `--p1-showcase` → ThemeShowcaseView (deprecada — só pra
+//     debug rápido enquanto Sprint 1A.2 não fechar todos componentes).
+//
+// Sprint 1A.6 troca o mock pelo Repository real (GRDB → Supabase).
 
 import SwiftUI
+
+private enum HomeMode {
+    case filled, empty, showcase
+
+    static var fromLaunchArgs: HomeMode {
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("--p1-empty") { return .empty }
+        if args.contains("--p1-showcase") { return .showcase }
+        return .filled
+    }
+}
 
 struct ContentView: View {
     @EnvironmentObject private var database: AppDatabase
@@ -21,7 +37,11 @@ struct ContentView: View {
         case .idle:
             Splash(stateLabel: "DB: subindo…", isError: false)
         case .ok:
-            ThemeShowcaseView()
+            switch HomeMode.fromLaunchArgs {
+            case .filled:   HomeView(state: .filled(HomeData.mockFilled))
+            case .empty:    HomeView(state: .empty)
+            case .showcase: ThemeShowcaseView()
+            }
         case .failed(let message):
             Splash(stateLabel: "DB: falhou\n\(message)", isError: true)
         }
@@ -69,7 +89,7 @@ private struct Splash: View {
     }
 }
 
-#Preview("ContentView — DB ok (showcase)") {
+#Preview("ContentView — DB ok (Home cheio)") {
     let db = AppDatabase()
     return ContentView()
         .environmentObject(db)
