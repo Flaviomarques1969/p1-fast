@@ -1,0 +1,36 @@
+name: smoke
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  node-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run smoke
+
+  swift-smoke:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer || true
+      - name: Cache SPM
+        uses: actions/cache@v4
+        with:
+          path: ios/p1fast-core/.build
+          key: spm-${{ runner.os }}-${{ hashFiles('ios/p1fast-core/Package.resolved') }}
+          restore-keys: |
+            spm-${{ runner.os }}-
+      - name: Run p1fast-smoke
+        working-directory: ios/p1fast-core
+        run: swift run p1fast-smoke

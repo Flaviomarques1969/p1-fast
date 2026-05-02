@@ -26,9 +26,12 @@ Cada prompt abaixo é uma tarefa autocontida → 1 PR. Execute em ordem respeita
 
 ## SPRINT 1A.1 — Fundação
 
+**Progresso:** ✅ #1 · ✅ #2 · ✅ #3 · ✅ #4 · ⏳ #5 · ✅ #6
+(merges em main: `86a3c58`, `0a07473`, `3fd3a94`, `de45ae7`, —, `aff721a`)
+
 ---
 
-### Prompt #1 — Auditar `src/data/schemas.js` e fechar campos do ghost-map
+### Prompt #1 — Auditar `src/data/schemas.js` e fechar campos do ghost-map ✅
 
 **Branch:** `feat/1A1-schema-audit`
 **blockedBy:** —
@@ -54,7 +57,7 @@ Atualizar `tests/node-smoke-contracts.mjs` pra cobrir os novos campos. Documenta
 
 ---
 
-### Prompt #2 — Migration Dexie v13
+### Prompt #2 — Migration Dexie v13 ✅
 
 **Branch:** `feat/1A1-dexie-v13`
 **blockedBy:** #1
@@ -76,7 +79,7 @@ Migration deve:
 
 ---
 
-### Prompt #3 — Schema Supabase Postgres inicial (espelho do Dexie)
+### Prompt #3 — Schema Supabase Postgres inicial (espelho do Dexie) ✅
 
 **Branch:** `feat/1A1-supabase-schema`
 **blockedBy:** #2
@@ -108,7 +111,7 @@ NÃO aplicar em prod ainda. Migration fica versionada no repo, Flávio aplica ma
 
 ---
 
-### Prompt #4 — GRDB iOS schema (espelho do Postgres)
+### Prompt #4 — GRDB iOS schema (espelho do Postgres) ✅
 
 **Branch:** `feat/1A1-grdb-schema`
 **blockedBy:** #3
@@ -162,7 +165,7 @@ NÃO incluir credenciais Supabase/Daily.co no código. Usar `Configuration.swift
 
 ---
 
-### Prompt #6 — Endpoint ingest migrado pra Supabase Edge Function
+### Prompt #6 — Endpoint ingest migrado pra Supabase Edge Function ✅
 
 **Branch:** `feat/1A1-ingest-edge-function`
 **blockedBy:** #3
