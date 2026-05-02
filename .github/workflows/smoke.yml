@@ -6,24 +6,42 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   node-smoke:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v5
+        # Não temos submodules. Bloquear evita "fatal: No url found for
+        # submodule path" quando algum gitlink órfão escapar pro tree.
+        with:
+          submodules: false
+      - name: Setup Node 20
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: 'npm'
-      - run: npm ci
-      - run: npm run smoke
+      - name: Install
+        run: npm ci
+      - name: Smoke
+        run: npm run smoke
 
   swift-smoke:
     runs-on: macos-14
+    # Pina o Xcode pra evitar drift entre runners (macos-14 vem com vários
+    # Xcodes; sem pin GitHub escolhe o "stable mais recente" e a versão
+    # pode subir sem aviso). 15.4 é compatível com Swift 5.9 (atual do
+    # P1FastCore) e iOS 17 (mínimo do app).
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_15.4.app/Contents/Developer
     steps:
-      - uses: actions/checkout@v4
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer || true
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: false
       - name: Cache SPM
         uses: actions/cache@v4
         with:
@@ -31,6 +49,6 @@ jobs:
           key: spm-${{ runner.os }}-${{ hashFiles('ios/p1fast-core/Package.resolved') }}
           restore-keys: |
             spm-${{ runner.os }}-
-      - name: Run p1fast-smoke
+      - name: Swift smoke
         working-directory: ios/p1fast-core
         run: swift run p1fast-smoke
