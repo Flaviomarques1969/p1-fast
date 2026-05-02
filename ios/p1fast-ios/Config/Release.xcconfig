@@ -1,0 +1,26 @@
+// ═══════════════════════════════════════════════════════════
+// Release.xcconfig — build settings produção
+// ═══════════════════════════════════════════════════════════
+// Mesmas variáveis de ambiente lidas de .env.xcconfig. Em prod (TestFlight/
+// App Store), Flávio injeta via xcodebuild -xcconfig ou via secret no CI.
+
+#include? ".env.xcconfig"
+
+// ─── Versão ────────────────────────────────────────────────
+MARKETING_VERSION = 0.1.0
+CURRENT_PROJECT_VERSION = 1
+
+// ─── Defaults ─────────────────────────────────────────────
+SUPABASE_URL_DEFAULT = https:/$()/example.supabase.co
+SUPABASE_ANON_KEY_DEFAULT = REPLACE_ME
+DAILY_API_KEY_DEFAULT = REPLACE_ME
+
+SUPABASE_URL = $(SUPABASE_URL:default=$(SUPABASE_URL_DEFAULT))
+SUPABASE_ANON_KEY = $(SUPABASE_ANON_KEY:default=$(SUPABASE_ANON_KEY_DEFAULT))
+DAILY_API_KEY = $(DAILY_API_KEY:default=$(DAILY_API_KEY_DEFAULT))
+
+// ─── Compilador ────────────────────────────────────────────
+SWIFT_OPTIMIZATION_LEVEL = -O
+SWIFT_ACTIVE_COMPILATION_CONDITIONS =
+GCC_PREPROCESSOR_DEFINITIONS = NDEBUG=1
+ENABLE_TESTABILITY = NO
