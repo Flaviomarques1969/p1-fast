@@ -2049,6 +2049,9 @@ step("UPLOAD-03: filtra por sessionId quando especificado") {
 step("UPLOAD-04: transport throw NÃO marca uploaded_at") {
     let q = try makeTestDB()
     try q.write { db in
+        var s = Sessao(id: "ses-fail", timeId: "team-1"); try s.insert(db)
+    }
+    try q.write { db in
         for i in 0..<5 {
             var s = TelemetrySample(
                 timeId: "team-1", sessaoId: "ses-fail", seq: i,
