@@ -1,9 +1,15 @@
 // ═══════════════════════════════════════════════════════════
-// ContentView — splash mínimo "Hello P1 Fast"
+// ContentView — root view
 // ═══════════════════════════════════════════════════════════
-// Sprint 1A.1: prova que o esqueleto compila, abre, monta DB local
-// e mostra status. Texto puro, sem ícone (regra do mockup canônico).
-// Padrão visual final (Padrão B) chega no Sprint 1A.2 (Prompt #7+).
+// Sprint 1A.1: provou esqueleto + DB local (splash com "DB: ok").
+// Sprint 1A.2 (este Prompt #7): troca o splash pela ThemeShowcaseView,
+// galeria viva dos componentes Padrão B.
+//
+// Splash continua sendo renderizado enquanto `database.status == .idle`
+// (millisegundos) e quando `.failed` (estado de erro visível). Em `.ok`
+// o app entra direto na showcase — sem ícone, texto puro.
+// Quando HomeView/EventosView aterrissarem (Prompts #8-#10), trocamos
+// a showcase pela tela real.
 
 import SwiftUI
 
@@ -11,49 +17,49 @@ struct ContentView: View {
     @EnvironmentObject private var database: AppDatabase
 
     var body: some View {
+        switch database.status {
+        case .idle:
+            Splash(stateLabel: "DB: subindo…", isError: false)
+        case .ok:
+            ThemeShowcaseView()
+        case .failed(let message):
+            Splash(stateLabel: "DB: falhou\n\(message)", isError: true)
+        }
+    }
+}
+
+private struct Splash: View {
+    let stateLabel: String
+    let isError: Bool
+
+    var body: some View {
         VStack(spacing: 24) {
             Spacer()
-
             VStack(spacing: 4) {
                 Text("P1 Fast")
                     .font(.system(size: 56, weight: .heavy, design: .default))
                     .tracking(-0.5)
+                    .foregroundStyle(Color.text)
                 Text("v\(Configuration.appVersion) · build \(Configuration.buildNumber)")
-                    .font(.system(size: 13, weight: .regular, design: .monospaced))
-                    .foregroundStyle(.secondary)
+                    .font(.monoP1)
+                    .foregroundStyle(Color.textMuted)
             }
-
             Spacer()
-
-            statusLine
+            Text(stateLabel)
                 .font(.system(size: 14, weight: .medium, design: .monospaced))
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 24)
-
+                .foregroundStyle(isError ? Color.red : Color.text)
+                .padding(.horizontal, Spacing.lg)
             Text(footerHint)
                 .font(.system(size: 12, weight: .regular))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(Color.textFaint)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-                .padding(.bottom, 32)
+                .padding(.horizontal, Spacing.xl)
+                .padding(.bottom, Spacing.xl)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(uiColor: .systemBackground))
-    }
-
-    @ViewBuilder
-    private var statusLine: some View {
-        switch database.status {
-        case .idle:
-            Text("DB: subindo…")
-                .foregroundStyle(.secondary)
-        case .ok(let tables):
-            Text("DB: ok · Tabelas: \(tables)")
-                .foregroundStyle(.primary)
-        case .failed(let message):
-            Text("DB: falhou\n\(message)")
-                .foregroundStyle(.red)
-        }
+        .background(Color.surface)
+        .preferredColorScheme(.dark)
     }
 
     private var footerHint: String {
@@ -63,9 +69,13 @@ struct ContentView: View {
     }
 }
 
-#Preview {
+#Preview("ContentView — DB ok (showcase)") {
     let db = AppDatabase()
     return ContentView()
         .environmentObject(db)
         .task { await db.bootstrap() }
+}
+
+#Preview("Splash — idle") {
+    Splash(stateLabel: "DB: subindo…", isError: false)
 }
