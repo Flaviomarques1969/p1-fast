@@ -43,6 +43,21 @@ public enum Configuration {
         return !key.isEmpty && key != "REPLACE_ME"
     }
 
+    /// Alias usado pelo SyncCoordinator/URLSessionTransports (Sprint 1A.6).
+    public static var isConfigured: Bool { hasSupabaseCredentials }
+
+    /// URL base normalizada (sem barra final). Nil quando credenciais
+    /// não estão populadas ou URL é inválida.
+    public static var supabaseBaseUrl: URL? {
+        guard hasSupabaseCredentials else { return nil }
+        let trimmed = supabaseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        return URL(string: trimmed)
+    }
+
+    /// Default time_id usado em V1 (single-tenant). Sprint posterior
+    /// troca por valor vindo de Supabase Auth + RPC create_team.
+    public static let localTimeId = "local-default-team"
+
     private static func infoString(_ key: String) -> String? {
         Bundle.main.object(forInfoDictionaryKey: key) as? String
     }

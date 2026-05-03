@@ -57,6 +57,9 @@
 		E1A2B3C4D5E6F70819203B21 /* PendenciaRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203B20 /* PendenciaRepository.swift */; };
 		E1A2B3C4D5E6F70819203B23 /* PendenciasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203B22 /* PendenciasView.swift */; };
 		E1A2B3C4D5E6F70819203B31 /* SetupAvancadoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203B30 /* SetupAvancadoView.swift */; };
+		E1A2B3C4D5E6F70819203C11 /* Reachability.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203C10 /* Reachability.swift */; };
+		E1A2B3C4D5E6F70819203C21 /* URLSessionTransports.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203C20 /* URLSessionTransports.swift */; };
+		E1A2B3C4D5E6F70819203C31 /* SyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203C30 /* SyncCoordinator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -111,6 +114,9 @@
 		E1A2B3C4D5E6F70819203B20 /* PendenciaRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendenciaRepository.swift; sourceTree = "<group>"; };
 		E1A2B3C4D5E6F70819203B22 /* PendenciasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendenciasView.swift; sourceTree = "<group>"; };
 		E1A2B3C4D5E6F70819203B30 /* SetupAvancadoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupAvancadoView.swift; sourceTree = "<group>"; };
+		E1A2B3C4D5E6F70819203C10 /* Reachability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reachability.swift; sourceTree = "<group>"; };
+		E1A2B3C4D5E6F70819203C20 /* URLSessionTransports.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLSessionTransports.swift; sourceTree = "<group>"; };
+		E1A2B3C4D5E6F70819203C30 /* SyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncCoordinator.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -153,6 +159,7 @@
 				B3E9A89367FF6EF3E8AB9F6D /* App */,
 				355F67A4B62121AA61B72604 /* Components */,
 				AE3A9493BC39695B12A2E3BB /* Persistence */,
+				E1A2B3C4D5E6F70819203C00 /* Sync */,
 				7677CABF8CC8AFD50C6A24DD /* Theme */,
 				55EA84D49EE64D7CA3CD17E6 /* Views */,
 			);
@@ -263,6 +270,16 @@
 				D99446F65EAEE4B9E2DCD2A1 /* Release.xcconfig */,
 			);
 			path = Config;
+			sourceTree = "<group>";
+		};
+		E1A2B3C4D5E6F70819203C00 /* Sync */ = {
+			isa = PBXGroup;
+			children = (
+				E1A2B3C4D5E6F70819203C10 /* Reachability.swift */,
+				E1A2B3C4D5E6F70819203C20 /* URLSessionTransports.swift */,
+				E1A2B3C4D5E6F70819203C30 /* SyncCoordinator.swift */,
+			);
+			path = Sync;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -391,6 +408,9 @@
 				E1A2B3C4D5E6F70819203B21 /* PendenciaRepository.swift in Sources */,
 				E1A2B3C4D5E6F70819203B23 /* PendenciasView.swift in Sources */,
 				E1A2B3C4D5E6F70819203B31 /* SetupAvancadoView.swift in Sources */,
+				E1A2B3C4D5E6F70819203C11 /* Reachability.swift in Sources */,
+				E1A2B3C4D5E6F70819203C21 /* URLSessionTransports.swift in Sources */,
+				E1A2B3C4D5E6F70819203C31 /* SyncCoordinator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
