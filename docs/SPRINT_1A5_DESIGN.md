@@ -197,9 +197,9 @@ feat(1A5): trechos da pista (lista readonly + seed Brasília) — Prompt #19
 
 ### Files a editar
 
-- `ios/p1fast-core/Sources/P1FastCore/Persistence/Migrations.swift` — método `static func v3a_licoes(_ migrator:)` adicionando tabela `licoes`. Registrar em `DB.swift`.
+- `ios/p1fast-core/Sources/P1FastCore/Persistence/Migrations.swift` — método `static func v4_licoes(_ migrator:)` adicionando tabela `licoes` (após v3 que já está em main, vide PR #43). Registrar em `DB.swift`.
 - `ios/p1fast-core/Sources/P1FastCore/Persistence/Models.swift` — struct `Licao` (Codable + GRDB).
-- `supabase/migrations/0003a_licoes.sql` — espelho Postgres.
+- `supabase/migrations/0004_licoes.sql` — espelho Postgres.
 - `ios/p1fast-ios/Sources/Views/ContentView.swift` — entrypoint (decisão: sub-tab "Lições" dentro de Cadastros).
 
 ### Schema delta
@@ -289,9 +289,9 @@ feat(1A5): catálogo de lições (12 do JS canônico) — Prompt #20
 
 ### Files a editar
 
-- `ios/p1fast-core/Sources/P1FastCore/Persistence/Migrations.swift` — método `static func v3b_pendencias(_ migrator:)`. Registrar em `DB.swift`.
+- `ios/p1fast-core/Sources/P1FastCore/Persistence/Migrations.swift` — método `static func v5_pendencias(_ migrator:)` (após v3 RLS fix e v4 lições). Registrar em `DB.swift`.
 - `ios/p1fast-core/Sources/P1FastCore/Persistence/Models.swift` — structs `PendenciaTemplate`, `EventoPendencia`.
-- `supabase/migrations/0003b_pendencias.sql` — espelho Postgres.
+- `supabase/migrations/0005_pendencias.sql` — espelho Postgres.
 - `ios/p1fast-ios/Sources/Views/EventoDetalheView.swift` — adicionar seção "Pendências" no detalhe do evento (linkando pra `PendenciasView`).
 
 ### Schema delta
@@ -471,7 +471,7 @@ Já temos `SyncDrainer.swift`, `SyncQueue.swift`, `PullExecutor.swift` em `p1fas
 ### #24 — Edge Function ingest end-to-end
 `supabase/functions/ingest/index.ts` já existe. Falta:
 - Configurar projeto Supabase real (você cria, dá URL+keys)
-- Aplicar migrations 0001 + 0002 + 0003a + 0003b
+- Aplicar migrations 0001 + 0002 + 0003 + 0004 + 0005
 - Smoke E2E: app → sync queue → drainer → Edge Function → Postgres
 - Verificar latência e RLS
 
