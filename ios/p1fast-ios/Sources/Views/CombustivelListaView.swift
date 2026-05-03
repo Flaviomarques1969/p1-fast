@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════
 // CombustivelListaView — port reduzido de mockup-combustivel-lista.html
 // ═══════════════════════════════════════════════════════════
-// Sprint 1A.3 — Prompt #15.
+// Sprint 1A.3 — Prompt #15 (lista) + fix delete affordances.
 //
 // Origem do mockup: o `mockup-combustivel-lista.html` foi desenhado
 // como SELETOR durante um stint (eyebrow "Combustível", subtitle
@@ -19,6 +19,12 @@
 // Empty state explícito (mockup tem grupo "Cadastrados" + count) —
 // quando count=0 mostra prompt pra cadastrar (princípio "nunca
 // fabricar dados").
+//
+// CRUD completo: o body é um `Group` de rows pra ser usado DENTRO
+// de um `List` parent (PessoasView). Cada row de combustível tem:
+//   - tap-to-edit → callback `onTap(c)`
+//   - swipeActions(.trailing) com botão "Apagar" destrutivo → callback `onDelete(c)`
+// O parent (PessoasView) decide sheet de edit + alert de confirmação.
 
 import SwiftUI
 import P1FastCore
@@ -26,24 +32,41 @@ import P1FastCore
 struct CombustivelListaView: View {
     @EnvironmentObject private var repo: CombustivelRepository
     var onAdd: () -> Void = {}
+    var onTap: (Combustivel) -> Void = { _ in }
+    var onDelete: (Combustivel) -> Void = { _ in }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            groupHead
-            VStack(spacing: 8) {
-                if repo.combustiveis.isEmpty {
-                    emptyState
-                } else {
-                    ForEach(repo.combustiveis, id: \.id) { c in
-                        CombustivelRow(nome: c.nome, hint: c.tipo)
-                    }
+        Group {
+            groupHeadRow
+
+            if repo.combustiveis.isEmpty {
+                emptyStateRow
+            } else {
+                ForEach(repo.combustiveis, id: \.id) { c in
+                    CombustivelRow(nome: c.nome, hint: c.tipo)
+                        .contentShape(Rectangle())
+                        .onTapGesture { onTap(c) }
+                        .listRowInsets(EdgeInsets(top: 4, leading: Spacing.lg, bottom: 4, trailing: Spacing.lg))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                onDelete(c)
+                            } label: {
+                                Text("Apagar")
+                            }
+                        }
                 }
-                AddRow(label: "Cadastrar outro tipo", action: onAdd)
             }
+
+            AddRow(label: "Cadastrar outro tipo", action: onAdd)
+                .listRowInsets(EdgeInsets(top: 4, leading: Spacing.lg, bottom: 4, trailing: Spacing.lg))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
         }
     }
 
-    private var groupHead: some View {
+    private var groupHeadRow: some View {
         HStack {
             Text("Cadastrados".uppercased())
                 .font(.system(size: 11, weight: .semibold))
@@ -56,9 +79,12 @@ struct CombustivelListaView: View {
         }
         .padding(.horizontal, Spacing.xs)
         .padding(.vertical, 10)
+        .listRowInsets(EdgeInsets(top: 0, leading: Spacing.lg, bottom: 0, trailing: Spacing.lg))
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
     }
 
-    private var emptyState: some View {
+    private var emptyStateRow: some View {
         Text("Você ainda não cadastrou nenhum combustível. Cadastre um tipo abaixo pra reaproveitar nos próximos stints.")
             .font(.system(size: 13, weight: .regular))
             .foregroundStyle(Color.textMuted)
@@ -74,6 +100,9 @@ struct CombustivelListaView: View {
                 RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
                     .stroke(Color.border, lineWidth: 1)
             )
+            .listRowInsets(EdgeInsets(top: 4, leading: Spacing.lg, bottom: 4, trailing: Spacing.lg))
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
     }
 }
 
@@ -153,12 +182,13 @@ private struct AddRow: View {
 #Preview("CombustivelListaView — com seed") {
     let queue = try! P1FastCore.DB.makeMemoryQueue()
     let repo = CombustivelRepository(queue: queue)
-    return ScrollView {
+    return List {
         CombustivelListaView(onAdd: {})
-            .padding(Spacing.lg)
+            .environmentObject(repo)
     }
+    .listStyle(.plain)
+    .scrollContentBackground(.hidden)
     .background(Color.surface)
-    .environmentObject(repo)
     .preferredColorScheme(.dark)
     .task { await repo.bootstrap() }
 }
@@ -166,12 +196,13 @@ private struct AddRow: View {
 #Preview("CombustivelListaView — vazio") {
     let queue = try! P1FastCore.DB.makeMemoryQueue()
     let repo = CombustivelRepository(queue: queue)
-    return ScrollView {
+    return List {
         CombustivelListaView(onAdd: {})
-            .padding(Spacing.lg)
+            .environmentObject(repo)
     }
+    .listStyle(.plain)
+    .scrollContentBackground(.hidden)
     .background(Color.surface)
-    .environmentObject(repo)
     .preferredColorScheme(.dark)
     .task {
         // Não chama bootstrap — fica vazio de propósito (empty state).
