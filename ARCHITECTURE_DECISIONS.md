@@ -88,3 +88,26 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 **Consequência**: queries de ghost-map fazem JOIN `trackSegments × retas_especiais` por `segmentId` + filtro `(time_id IS NULL OR time_id = current_team)`. Pequeno custo, ganho em separar concerns. `MARCO_TIPOS` ganhou `pit-in`/`pit-out` na mesma migração (v13) pra fechar a spec ghost-map de 2026-05-01.
 **Aplica-se a**: `src/data/schemas.js` (RETA_ESPECIAL_FIELDS, MARCO_TIPOS), Dexie v13, schema Postgres do Supabase (espelha 1:1), GRDB iOS (`ios/p1fast-core/Sources/P1FastCore/Persistence/Migrations.swift`).
 
+## ADR-020 — Convenção de paths Swift (repos em ios, structs em core)
+**Decisão (validada empiricamente 2026-05-02 no PR #34 Combustíveis)**: Repositories SwiftUI vivem em `ios/p1fast-ios/Sources/Persistence/`, NÃO em `p1fast-core`. Apenas as structs de modelo (Codable + GRDB FetchableRecord/PersistableRecord) entram em `p1fast-core/Sources/P1FastCore/Persistence/Models.swift`.
+**Motivo**: `p1fast-core` é Swift puro reusável (também roda no smoke CLI `swift run p1fast-smoke`). Repositories dependem de `@MainActor`, `@Published`, `ObservableObject` — APIs SwiftUI/Combine que não cabem no core. Tentativa inicial de colocar `CombustivelRepository` em core (Prompt #15) foi corrigida pelo Cloud Code dev pra `ios/Persistence/` durante execução.
+**Padrão canônico vigente** (todos no path certo): `CarroRepository`, `EventoRepository`, `StintRepository`, `PilotoRepository`, `PassageiroRepository`, `CombustivelRepository`. Próximos a entrar: `PneuRepository` (#14), `LicaoRepository` (#20), `PendenciaRepository` (#21), `TrackRepository` (#19).
+**Aplica-se a**: todo prompt futuro pro Cloud Code que cria novo Repository. Models em core, Repos em ios.
+
+## ADR-021 — Worktree obrigatório pra Cloud Code (autosave race protection)
+**Decisão (validada empiricamente 2026-05-02 com 2 sessões paralelas)**: prompts pro Cloud Code DEVEM começar com `git worktree add ../p1-fast-{slug} feat/{branch}`. NÃO permitir trocar branch no checkout principal `/Users/imac/Projetos/P1 Fast`.
+**Motivo**: o IDE auto-save commita a cada 20-30s no branch atual do checkout principal (memória `feedback_autosave_bypass`). Se o Cloud Code troca branch sem worktree, qualquer arquivo que outra sessão (humano OU outro Claude) editar no checkout principal vai pra branch dele via autosave. Já aconteceu 2x nesta sessão: `docs/CLOUD_CODE_QUEUE.md` e `docs/SPRINT_1A4_DESIGN.md` foram absorvidos pelo PR #34 Combustíveis.
+**Consequência**: PRs ficam com edits unrelated, reviewers ficam confusos, cherry-picks viram comuns.
+**Padrão a partir de 2026-05-03**: todo prompt autônomo no formato `feat/X` ou `fix/X` começa com worktree explícito. Visto em #14 Pneus, #16-#22, #23-#24.
+**Aplica-se a**: todo prompt autônomo futuro pro Cloud Code. Sem exceção.
+
+## ADR-022 — Package.resolved guardrail em PRs SPM
+**Decisão (descoberta empírica 2026-05-02 no PR #34)**: `ios/p1fast-core/Package.resolved` é tracked em main (não está em `.gitignore`). Cloud Code rodando `swift build`/`swift run` regenera o arquivo, e às vezes ele entra deletado no diff (visto em commit `fe61cbb`: -72 linhas).
+**Motivo**: SPM regenera durante operações de dependency. Sem `.gitignore`, ele entra no `git rm` ou stage parcial. Deletar quebra reproducibility de CI/novos checkouts.
+**Mitigação**:
+1. Todo prompt autônomo pro Cloud Code que mexe em `ios/p1fast-core/` inclui explicitamente: `❌ NÃO autorizado: tocar Package.resolved`.
+2. Audit de PRs SPM sempre roda: `git diff main..HEAD --stat -- ios/p1fast-core/Package.resolved` (esperado: vazio).
+3. Se foi deletado e build seguinte regenerou, autosave recupera — verificar com `git ls-tree HEAD ios/p1fast-core/Package.resolved` vs `git ls-tree main` (blob hashes batem = OK).
+4. Se não auto-recuperou: `git checkout main -- ios/p1fast-core/Package.resolved && git add . && git commit -m "fix: restore Package.resolved" && git push`.
+**Aplica-se a**: todo PR que toca `ios/p1fast-core/`. Memória `feedback_package_resolved_gotcha.md` tem o procedimento operacional.
+

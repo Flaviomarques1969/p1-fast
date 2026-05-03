@@ -36,7 +36,7 @@ Cada prompt abaixo é uma tarefa autocontida → 1 PR. Execute em ordem respeita
 
 ## SPRINT 1A.3 — Stint + Pessoas
 
-**Progresso:** ✅ #11 · 🟡 #12+#13 (em PR) · ⏳ #14 · ⏳ #15 (paralelo)
+**Progresso:** ✅ #11 · 🟡 #12+#13 (em PR #33) · 🟡 #14 (em PR #35) · 🟡 #15 (em PR #34) · ⏳ CRUD-affordances (após 3 merges)
 (merges: `ad2789a`, —, —, —)
 
 ---
@@ -375,13 +375,13 @@ REGRAS:
 
 ---
 
-### Prompt #14 — Pneus (CRUD inline no Carro Modal)
+### Prompt #14 — Pneus (CRUD inline no Carro Modal) 🟡 PR #35
 
 **Branch:** `feat/1A3-pneus`
 **blockedBy:** #12+#13 (preferencial; pode branchar de `main` se for paralelo a `feat/1A3-combustiveis`)
 **Files (criar):**
 - `ios/p1fast-ios/Sources/Views/PneuCadastroView.swift`
-- `ios/p1fast-core/Sources/.../Persistence/PneuRepository.swift` (CRUD escopado por `carroId` + observable count `ciclos`)
+- `ios/p1fast-ios/Sources/Persistence/PneuRepository.swift` (CRUD escopado por `carroId` + observable count `ciclos`). **Convenção:** repos ficam em `p1fast-ios/Sources/Persistence/` (mesmo path de `PilotoRepository`, `PassageiroRepository`, `CombustivelRepository`), **não** em `p1fast-core`. Apenas a struct `Pneu` (Codable + FetchableRecord + PersistableRecord) entra em `p1fast-core/Sources/P1FastCore/Persistence/Models.swift` — segue padrão de `Passageiro`.
 
 **Files (editar):**
 - `ios/p1fast-ios/Sources/Views/CarroModalView.swift` — substituir o placeholder em `sectionPneusCadastrados` (linhas 196-208) por lista real de `PneuRow`. O comentário existente "CRUD virá no Sprint 1A.4" sai junto.
@@ -441,7 +441,7 @@ Substituir o placeholder do bloco "Pneus cadastrados" no `CarroModalView` por li
 
 ---
 
-### Prompt #15 — Combustíveis (CRUD lista + cadastro)
+### Prompt #15 — Combustíveis (CRUD lista + cadastro) 🟡 PR #34
 
 **Branch:** `feat/1A3-combustiveis`
 **blockedBy:** #12+#13 (preferencial; pode branchar de `main` se for paralelo a `feat/1A3-pneus`)

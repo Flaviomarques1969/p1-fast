@@ -1,10 +1,54 @@
 # P1 Fast — STATUS (continuação após /clear)
 
-**Data deste checkpoint:** 2026-05-01
-**Estado:** Smart Shift Light Premium **construído e auditado mas em hibernação**. Decisão Flávio 2026-05-01: Shift Light é **Fase 2**. Fase 1 = só GPS+IMU do iPhone, foco continua em P1 Coach (trajetória). Suite `npm run test:shift-light` mantida verde (151 testes) como contrato pra ligar quando Fase 2 entrar.
+**Data deste checkpoint:** 2026-05-03
+**Estado:** **Sprint 1A.3 fechando** (3 PRs em flight: #33 Pessoas mergeable, #34 Combustíveis mergeable, #14 Pneus em execução pelo Cloud Code). Sprint 1A.4/1A.5/1A.6 finishing **totalmente bakeados** — pipeline de 13 prompts autônomos prontos pra disparar em sequência até Phase 1A 100%.
 
 > **Se você é Claude abrindo esta sessão pela primeira vez:**
 > Leia este arquivo primeiro, depois `~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/MEMORY.md`.
+
+---
+
+## Snapshot atual — 2026-05-03 (após sessão de planejamento autônomo)
+
+### PRs em flight (todos mergeable, todos auditados)
+- **#33** `feat/1A3-pessoas` — Pilotos+Passageiros CRUD, CI ✅, audit limpo.
+- **#34** `feat/1A3-combustiveis` — Combustíveis CRUD, Package.resolved bug auto-resolvido + push feito, CI ✅.
+- **#35** `feat/1A3-pneus` — Pneus inline no CarroModal, CI ✅, audit ✅ (composto como enum tipado bonus). Falta delete affordance — vai pro fix CRUD-affordances.
+
+### Ordem de merge ótima
+1. **#33** (base, sem rebase)
+2. **#34** (rebase em main pós-#33: 4 BottomNav views)
+3. **#35** (rebase em main pós-#33: ContentView)
+4. Disparar prompt CRUD-affordances **com escopo estendido pra incluir Pneus** (4 listas, não 3) → Sprint 1A.3 fecha 100%
+
+Playbook completo de merge + comandos prontos em `docs/POST_1A3_PLAYBOOK.md`.
+
+### Pipeline de prompts baked (13 totais, prontos pra copy-paste)
+- `docs/SPRINT_1A4_DESIGN.md` (494 linhas) — #16 schema v2 + alias cleanup, #17 stint selectors + ciclos auto, #18 pessoas v2 (altura/peso/idade)
+- `docs/SPRINT_1A5_DESIGN.md` (505 linhas) — #19 trechos + seed Brasília, #20 catálogo lições, #21 pendências cascata, #22 setup avançado
+- `docs/SPRINT_1A6_FINISH_PROMPTS.md` (285 linhas) — #23 HTTP transport + Reachability + SyncCoordinator, #24 SincronizacaoView + status badge
+- Prompt CRUD-affordances (na conversa, copiar do histórico) — fix de tap-to-edit + swipe-to-delete em Combustíveis/Pilotos/Passageiros, dispara só DEPOIS dos 3 PRs em flight mergearem
+
+### Docs novos pra navegação
+- `docs/IMPLEMENTATION_COVERAGE.md` (159 linhas) — matriz mockup canônico vs implementação (27 mockups, status ✅/🟡/❌, débito por item)
+
+### Próximos passos (ordem ótima)
+1. Revisar + mergear PR #33 (Pessoas)
+2. Aguardar #14 voltar
+3. Aplicar Package.resolved fix no #34 se ainda necessário, rebase em main, mergear
+4. Mergear #14 após review
+5. Disparar prompt CRUD-affordances → mergear → **Sprint 1A.3 fechado**
+6. Disparar #16 (worktree) → mergear
+7. Disparar #17 e #18 em paralelo (worktrees) → mergear → **Sprint 1A.4 fechado**
+8. Disparar #19 → mergear
+9. Disparar #20 e #21 em paralelo → mergear
+10. Disparar #22 → mergear → **Sprint 1A.5 fechado**
+11. **Pré-requisito tua**: criar projeto Supabase real + aplicar migrations 0001-0003b + .env.xcconfig
+12. Disparar #23 → mergear
+13. Disparar #24 → mergear → **Phase 1A 100% completa**
+14. Sprint 1B (cockpit ao vivo) — design pronto em `docs/SPRINT_1B_COCKPIT_DESIGN.md`, prompts NÃO bakeados (precisa teu input nas 22 decisões UX)
+
+---
 
 ---
 
