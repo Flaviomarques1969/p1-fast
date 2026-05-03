@@ -32,6 +32,7 @@ struct EventoDetalheView: View {
     @EnvironmentObject private var carroRepo: CarroRepository
     @EnvironmentObject private var pneuRepo: PneuRepository
     @EnvironmentObject private var combustivelRepo: CombustivelRepository
+    @EnvironmentObject private var pendenciaRepo: PendenciaRepository
     let eventoId: String
     let onClose: () -> Void
 
@@ -90,6 +91,17 @@ struct EventoDetalheView: View {
             } else {
                 EmptyView()
             }
+        case .pendencias:
+            if let ev = repo.find(id: eventoId) {
+                PendenciasView(
+                    eventoId: eventoId,
+                    eventoTitulo: contextoStintModal(ev: ev),
+                    onClose: { sheet = nil }
+                )
+                .environmentObject(pendenciaRepo)
+            } else {
+                EmptyView()
+            }
         }
     }
 
@@ -130,6 +142,8 @@ struct EventoDetalheView: View {
                     .padding(.top, 14)
                 summaryCard(ev: ev)
                     .padding(.top, 18)
+                pendenciasSection
+                    .padding(.top, 18)
                 stintsSection(ev: ev)
                     .padding(.top, 18)
             }
@@ -142,6 +156,42 @@ struct EventoDetalheView: View {
                     .padding(.top, Spacing.lg)
             }
         }
+    }
+
+    // MARK: - Seção pendências (CTA pra abrir o checklist completo)
+
+    private var pendenciasSection: some View {
+        Button {
+            sheet = .pendencias
+        } label: {
+            HStack(alignment: .center, spacing: Spacing.sm) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Pendências")
+                        .font(.system(size: 13, weight: .semibold))
+                        .tracking(0.06 * 13)
+                        .foregroundStyle(Color.text)
+                    Text("Checklist 6 grupos · ~45 itens")
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundStyle(Color.textMuted)
+                }
+                Spacer(minLength: 0)
+                Text("Ver ›")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Color.accent)
+            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .fill(Color.surfaceRaised)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .stroke(Color.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Topbar
@@ -318,11 +368,13 @@ struct EventoDetalheView: View {
 enum EventoDetalheSheet: Identifiable, Equatable {
     case novoStint
     case posStint(stintId: String)
+    case pendencias
 
     var id: String {
         switch self {
         case .novoStint: return "novo-stint"
         case .posStint(let id): return "pos-\(id)"
+        case .pendencias: return "pendencias"
         }
     }
 }

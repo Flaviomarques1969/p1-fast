@@ -1488,15 +1488,15 @@ func makeTestDB() throws -> DatabaseQueue {
     return q
 }
 
-step("PERSIST-01: makeMemoryQueue + migrations v1..v4 cria 23 tabelas") {
+step("PERSIST-01: makeMemoryQueue + migrations v1..v5 cria 25 tabelas") {
     let q = try DB.makeMemoryQueue()
     let names = try q.read { db in
         try String.fetchAll(db, sql:
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'grdb_%' ORDER BY name"
         )
     }
-    // 20 do Postgres + sync_queue + sync_meta (v2_pull_cursor) + licoes (v4_licoes) = 23
-    try assertEq(names.count, 23, "esperava 23 tabelas")
+    // 20 do Postgres + sync_queue + sync_meta (v2) + licoes (v4) + pendencias_template + evento_pendencias (v5) = 25
+    try assertEq(names.count, 25, "esperava 25 tabelas")
     for expected in ["times", "carros", "configuracoes", "sessoes", "voltas",
                      "marcos", "retas_especiais", "telemetry_samples",
                      "sync_queue", "sync_meta"] {
