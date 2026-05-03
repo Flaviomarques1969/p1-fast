@@ -33,6 +33,8 @@
 //   --p1-pessoas-passageiros → PessoasView aba Passageiros (Prompt #13)
 //   --p1-piloto-novo       → PessoasView com sheet "Novo piloto" aberta
 //   --p1-passageiro-novo   → PessoasView com sheet "Novo passageiro" aberta
+//   --p1-combustiveis      → PessoasView aba Combustíveis (Prompt #15)
+//   --p1-combustivel-novo  → PessoasView com sheet "Novo combustível" aberta
 //   default                → HomeView estado cheio (Sprint 1A.6 troca
 //                            pelo Repository real)
 
@@ -56,6 +58,8 @@ private enum AppRoute {
     case pessoasPassageiros
     case pilotoNovo
     case passageiroNovo
+    case combustiveis
+    case combustivelNovo
 
     static var fromLaunchArgs: AppRoute {
         let args = ProcessInfo.processInfo.arguments
@@ -71,6 +75,8 @@ private enum AppRoute {
         if args.contains("--p1-piloto-novo") { return .pilotoNovo }
         if args.contains("--p1-passageiro-novo") { return .passageiroNovo }
         if args.contains("--p1-pessoas-passageiros") { return .pessoasPassageiros }
+        if args.contains("--p1-combustivel-novo") { return .combustivelNovo }
+        if args.contains("--p1-combustiveis") { return .combustiveis }
         if args.contains("--p1-pessoas") { return .pessoasPilotos }
         if args.contains("--p1-eventos") { return .eventos }
         return .home
@@ -105,6 +111,7 @@ private struct ReadyRoot: View {
     @StateObject private var eventoRepo: EventoRepository
     @StateObject private var pilotoRepo: PilotoRepository
     @StateObject private var passageiroRepo: PassageiroRepository
+    @StateObject private var combustivelRepo: CombustivelRepository
     @StateObject private var stintRepo: StintRepository
 
     init(queue: DatabaseQueue) {
@@ -113,6 +120,7 @@ private struct ReadyRoot: View {
         _eventoRepo = StateObject(wrappedValue: EventoRepository(queue: queue))
         _pilotoRepo = StateObject(wrappedValue: PilotoRepository(queue: queue))
         _passageiroRepo = StateObject(wrappedValue: PassageiroRepository(queue: queue))
+        _combustivelRepo = StateObject(wrappedValue: CombustivelRepository(queue: queue))
         _stintRepo = StateObject(wrappedValue: StintRepository(queue: queue))
     }
 
@@ -122,6 +130,7 @@ private struct ReadyRoot: View {
             .environmentObject(eventoRepo)
             .environmentObject(pilotoRepo)
             .environmentObject(passageiroRepo)
+            .environmentObject(combustivelRepo)
             .environmentObject(stintRepo)
             .task {
                 await carroRepo.bootstrap()
@@ -130,6 +139,7 @@ private struct ReadyRoot: View {
                 // antes do StintRepo pra que o reloadPilotos pegue eles.
                 await pilotoRepo.bootstrap()
                 await passageiroRepo.bootstrap()
+                await combustivelRepo.bootstrap()
                 await stintRepo.bootstrap()
             }
     }
@@ -167,6 +177,10 @@ private struct ReadyRoot: View {
             PessoasView(initialSheet: .novoPiloto, initialSubTab: .pilotos)
         case .passageiroNovo:
             PessoasView(initialSheet: .novoPassageiro, initialSubTab: .passageiros)
+        case .combustiveis:
+            PessoasView(initialSubTab: .combustiveis)
+        case .combustivelNovo:
+            PessoasView(initialSheet: .novoCombustivel, initialSubTab: .combustiveis)
         }
     }
 }
