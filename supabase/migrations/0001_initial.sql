@@ -48,7 +48,7 @@ create table public.usuarios_time (
 );
 
 -- Helper: usuário é admin do time?
-create or replace function auth.is_admin(p_time_id uuid)
+create or replace function public.is_admin(p_time_id uuid)
 returns boolean language sql stable as $$
   select exists (
     select 1 from public.usuarios_time
@@ -57,7 +57,7 @@ returns boolean language sql stable as $$
 $$;
 
 -- Helper: usuário é membro do time?
-create or replace function auth.is_member(p_time_id uuid)
+create or replace function public.is_member(p_time_id uuid)
 returns boolean language sql stable as $$
   select exists (
     select 1 from public.usuarios_time
@@ -376,16 +376,16 @@ alter table public.trofeus_ganhos     enable row level security;
 
 -- times: vê só os times dos quais é membro; admin pode editar
 create policy times_select on public.times for select
-  using (auth.is_member(id));
+  using (public.is_member(id));
 create policy times_update on public.times for update
-  using (auth.is_admin(id));
+  using (public.is_admin(id));
 
 -- usuarios_time: vê membros dos times dos quais é membro
 create policy usuarios_time_select on public.usuarios_time for select
-  using (auth.is_member(time_id));
+  using (public.is_member(time_id));
 create policy usuarios_time_admin_write on public.usuarios_time for all
-  using (auth.is_admin(time_id))
-  with check (auth.is_admin(time_id));
+  using (public.is_admin(time_id))
+  with check (public.is_admin(time_id));
 
 -- Tracks/layouts/segments/marcos = globais (todos veem; só superuser via service_role muta).
 create policy tracks_public_read on public.tracks for select using (true);
@@ -395,46 +395,46 @@ create policy marcos_public_read on public.marcos for select using (true);
 
 -- retas_especiais: globais (time_id null) ou do time
 create policy retas_especiais_select on public.retas_especiais for select
-  using (time_id is null or auth.is_member(time_id));
+  using (time_id is null or public.is_member(time_id));
 create policy retas_especiais_write on public.retas_especiais for all
-  using (time_id is not null and auth.is_member(time_id))
-  with check (time_id is not null and auth.is_member(time_id));
+  using (time_id is not null and public.is_member(time_id))
+  with check (time_id is not null and public.is_member(time_id));
 
 -- Garagem por time
 create policy carros_all on public.carros for all
-  using (auth.is_member(time_id)) with check (auth.is_member(time_id));
+  using (public.is_member(time_id)) with check (public.is_member(time_id));
 create policy configuracoes_all on public.configuracoes for all
-  using (auth.is_member(time_id)) with check (auth.is_member(time_id));
+  using (public.is_member(time_id)) with check (public.is_member(time_id));
 create policy pilotos_all on public.pilotos for all
-  using (auth.is_member(time_id)) with check (auth.is_member(time_id));
+  using (public.is_member(time_id)) with check (public.is_member(time_id));
 create policy passageiros_all on public.passageiros for all
-  using (auth.is_member(time_id)) with check (auth.is_member(time_id));
+  using (public.is_member(time_id)) with check (public.is_member(time_id));
 create policy pneus_all on public.pneus for all
-  using (auth.is_member(time_id)) with check (auth.is_member(time_id));
+  using (public.is_member(time_id)) with check (public.is_member(time_id));
 create policy combustiveis_all on public.combustiveis for all
-  using (auth.is_member(time_id)) with check (auth.is_member(time_id));
+  using (public.is_member(time_id)) with check (public.is_member(time_id));
 
 -- Eventos / sessões / voltas / executions
 create policy eventos_all on public.eventos for all
-  using (auth.is_member(time_id)) with check (auth.is_member(time_id));
+  using (public.is_member(time_id)) with check (public.is_member(time_id));
 create policy sessoes_all on public.sessoes for all
-  using (auth.is_member(time_id)) with check (auth.is_member(time_id));
+  using (public.is_member(time_id)) with check (public.is_member(time_id));
 create policy voltas_all on public.voltas for all
-  using (auth.is_member(time_id)) with check (auth.is_member(time_id));
+  using (public.is_member(time_id)) with check (public.is_member(time_id));
 create policy segment_executions_all on public.segment_executions for all
-  using (auth.is_member(time_id)) with check (auth.is_member(time_id));
+  using (public.is_member(time_id)) with check (public.is_member(time_id));
 
 -- Telemetria: insert por membro, select por membro, NUNCA update/delete
 create policy telemetry_samples_select on public.telemetry_samples for select
-  using (auth.is_member(time_id));
+  using (public.is_member(time_id));
 create policy telemetry_samples_insert on public.telemetry_samples for insert
-  with check (auth.is_member(time_id));
+  with check (public.is_member(time_id));
 -- NB: sem policy de UPDATE/DELETE = bloqueado por default (append-only, ADR-004).
 
 -- Mensagens: além do RLS, app filtra por visivel_no_box no client.
 create policy mensagens_all on public.mensagens for all
-  using (auth.is_member(time_id)) with check (auth.is_member(time_id));
+  using (public.is_member(time_id)) with check (public.is_member(time_id));
 
 -- Troféus: leitura geral pelos membros, write só pelo backend (service_role)
 create policy trofeus_select on public.trofeus_ganhos for select
-  using (auth.is_member(time_id));
+  using (public.is_member(time_id));

@@ -137,37 +137,40 @@ antes do Sprint começar (prep work pré-#1B).
 5. No → marca status='abandonada'
 ```
 
-## Decisões abertas
+## Fora do projeto P1 Fast (decisão definitiva — Flávio 2026-05-03)
+
+**NÃO fazem parte deste projeto. Não citar nem como "decisão aberta", nem como "futuro", nem como "fase X+":**
+
+- **CarPlay** — não.
+- **Apple Watch** — não.
+- **Android** — não.
+- **PWA / web no celular** — não (vide ADR-018).
+
+P1 Fast é **iPhone único, landscape, app nativo Swift**. Qualquer outra plataforma está fora do projeto, sem horizonte de inclusão.
+
+## Decisões reais abertas (precisam de Flávio antes de bakear prompts 1B)
 
 1. **Modal landscape forçado vs respeita orientação?** Mockup é fixo
    landscape mas iOS por padrão segue rotation lock do device.
    Sugestão: forçar landscape via `supportedInterfaceOrientations`
    override só na CockpitView.
 
-2. **CarPlay?** Cockpit no display do carro via CarPlay seria
-   killer mas exige aprovação Apple (CarPlay templates restritos —
-   instruments não é categoria padrão). Provavelmente fora do V1.
-
-3. **Apple Watch como segunda tela?** Mostrar delta + comando no
-   pulso seria útil pra glance sem tirar olho da pista. Watch app
-   separado, lê via WatchConnectivity.framework.
-
-4. **Detector ao vivo vs replay?** Hoje `src/telemetry/detector.js`
+2. **Detector ao vivo vs replay?** Hoje `src/telemetry/detector.js`
    roda em batch (após sessão). Cockpit ao vivo precisa do detector
    processando streaming. Port preciso isolar effects/output stream.
 
-5. **Pipeline JS reutilizado via JavaScriptCore?** ADR-018 deixou
+3. **Pipeline JS reutilizado via JavaScriptCore?** ADR-018 deixou
    essa decisão aberta. P1FastCore tem implementação Swift de
    parte do pipeline (Lesson, P1Coach, TrajectoryMonitor). Decidir:
    continuar portando, ou embarcar JS via JavaScriptCore pra paridade
    total?
 
-6. **Buffer de samples antes de UI render?** A 10Hz cada sample
+4. **Buffer de samples antes de UI render?** A 10Hz cada sample
    pode disparar re-render. Buffer de N samples (ex: 5 = 500ms)
    reduz pressure no SwiftUI runtime. Trade-off: latência visível
    no delta de 500ms.
 
-7. **Modo offline puro?** Cockpit precisa de internet? GPS
+5. **Modo offline puro?** Cockpit precisa de internet? GPS
    funciona offline; dados de referência (volta PB, ghosts) podem
    estar 100% locais. Sugestão: cockpit é zero-network. Sync
    acontece antes (pull) e depois (drainer + uploader).
