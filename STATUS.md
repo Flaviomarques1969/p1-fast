@@ -1,7 +1,7 @@
 # P1 Fast — STATUS (continuação após /clear)
 
 **Data deste checkpoint:** 2026-05-03
-**Estado:** **Sprint 1A.3 fechando** (3 PRs em flight: #33 Pessoas mergeable, #34 Combustíveis mergeable, #14 Pneus em execução pelo Cloud Code). Sprint 1A.4/1A.5/1A.6 finishing **totalmente bakeados** — pipeline de 13 prompts autônomos prontos pra disparar em sequência até Phase 1A 100%.
+**Estado:** **Sprint 1A.3 fechado** (4 PRs mergeados em main: #33 Pessoas, #37 Combustíveis, #38 docs, #35 Pneus). Único débito: prompt CRUD-affordances v2 (delete em 4 listas) — em flight pelo Cloud Code. Sprint 1A.4/1A.5/1A.6 finishing **totalmente bakeados** — pipeline de 9 prompts autônomos prontos pra disparar em sequência até Phase 1A 100%.
 
 > **Se você é Claude abrindo esta sessão pela primeira vez:**
 > Leia este arquivo primeiro, depois `~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/MEMORY.md`.
