@@ -50,6 +50,8 @@
 		E1A2B3C4D5E6F70819203A43 /* PneuCadastroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203A42 /* PneuCadastroView.swift */; };
 		E1A2B3C4D5E6F70819203A51 /* PneuPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203A50 /* PneuPickerView.swift */; };
 		E1A2B3C4D5E6F70819203A53 /* CombustivelPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203A52 /* CombustivelPickerView.swift */; };
+		E1A2B3C4D5E6F70819203B01 /* TrackRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203B00 /* TrackRepository.swift */; };
+		E1A2B3C4D5E6F70819203B03 /* TrechoListaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203B02 /* TrechoListaView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -97,6 +99,8 @@
 		E1A2B3C4D5E6F70819203A42 /* PneuCadastroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PneuCadastroView.swift; sourceTree = "<group>"; };
 		E1A2B3C4D5E6F70819203A50 /* PneuPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PneuPickerView.swift; sourceTree = "<group>"; };
 		E1A2B3C4D5E6F70819203A52 /* CombustivelPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombustivelPickerView.swift; sourceTree = "<group>"; };
+		E1A2B3C4D5E6F70819203B00 /* TrackRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackRepository.swift; sourceTree = "<group>"; };
+		E1A2B3C4D5E6F70819203B02 /* TrechoListaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrechoListaView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -197,6 +201,7 @@
 				0FD40430C136E8D926EC0FE7 /* PosStintView.swift */,
 				162332DAA2D671F61DFE3881 /* StintModalView.swift */,
 				6589CA76112B0192B9A53BD8 /* ThemeShowcaseView.swift */,
+				E1A2B3C4D5E6F70819203B02 /* TrechoListaView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -220,6 +225,7 @@
 				0E4DC20BF1F609324F2C9EE9 /* PilotoRepository.swift */,
 				E1A2B3C4D5E6F70819203A40 /* PneuRepository.swift */,
 				52184FDD398B02FA4752681B /* StintRepository.swift */,
+				E1A2B3C4D5E6F70819203B00 /* TrackRepository.swift */,
 			);
 			path = Persistence;
 			sourceTree = "<group>";
@@ -363,6 +369,8 @@
 				82318A9F1DB6BFFD6D20BB07 /* SummaryStats.swift in Sources */,
 				A8A95BAB34BBD244FA33A078 /* Theme.swift in Sources */,
 				95A022ADA0074FA202C414F5 /* ThemeShowcaseView.swift in Sources */,
+				E1A2B3C4D5E6F70819203B01 /* TrackRepository.swift in Sources */,
+				E1A2B3C4D5E6F70819203B03 /* TrechoListaView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

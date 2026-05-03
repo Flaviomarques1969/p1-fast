@@ -67,6 +67,10 @@ struct GaragemView: View {
                 CarroNovoFormView(onClose: { sheet = nil })
             case .editar(let carroId):
                 CarroModalView(carroId: carroId, onClose: { sheet = nil })
+            case .trechos:
+                NavigationStack {
+                    TrechoListaView(onClose: { sheet = nil })
+                }
             }
         }
     }
@@ -92,7 +96,11 @@ struct GaragemView: View {
 
     private var contextHead: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Eyebrow(text: "Garagem")
+            HStack(alignment: .firstTextBaseline) {
+                Eyebrow(text: "Garagem")
+                Spacer(minLength: 0)
+                trechosLink
+            }
             Text(headerTitle)
                 .font(.system(size: 24, weight: .semibold))
                 .tracking(-0.6) // -0.025em em 24pt
@@ -103,6 +111,35 @@ struct GaragemView: View {
         }
         .padding(.horizontal, Spacing.xs)
         .padding(.bottom, Spacing.sm)
+    }
+
+    /// Botão "Trechos da pista" no header, alinhado ao eyebrow.
+    /// Abre TrechoListaView (Sprint 1A.5 — Prompt #19) como sheet
+    /// com NavigationStack pra suportar push futuro.
+    private var trechosLink: some View {
+        Button {
+            sheet = .trechos
+        } label: {
+            HStack(spacing: 4) {
+                Text("Trechos da pista")
+                    .font(.system(size: 12, weight: .semibold))
+                    .tracking(0.06 * 12)
+                Text("›")
+                    .font(.system(size: 12, weight: .regular))
+            }
+            .foregroundStyle(Color.text)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.surfaceHover)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     private var headerTitle: String {
@@ -164,11 +201,13 @@ struct GaragemView: View {
 enum GaragemSheet: Identifiable, Equatable {
     case novo
     case editar(carroId: String)
+    case trechos
 
     var id: String {
         switch self {
         case .novo: return "novo"
         case .editar(let id): return "editar-\(id)"
+        case .trechos: return "trechos"
         }
     }
 }
