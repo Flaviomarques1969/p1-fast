@@ -29,12 +29,17 @@
 //                            pra screenshot do StintModalView
 //   --p1-pos-stint         → cria stint, finaliza (gera voltas mock) e
 //                            abre PosStintView pra screenshot
+<<<<<<< HEAD
 //   --p1-pessoas           → PessoasView aba Pilotos (Prompt #12)
 //   --p1-pessoas-passageiros → PessoasView aba Passageiros (Prompt #13)
 //   --p1-piloto-novo       → PessoasView com sheet "Novo piloto" aberta
 //   --p1-passageiro-novo   → PessoasView com sheet "Novo passageiro" aberta
 //   --p1-combustiveis      → PessoasView aba Combustíveis (Prompt #15)
 //   --p1-combustivel-novo  → PessoasView com sheet "Novo combustível" aberta
+=======
+//   --p1-pneu-novo         → abre CarroModalView do primeiro carro já
+//                            com a sheet "Novo pneu" aberta (Prompt #14)
+>>>>>>> 1d51e38 (feat(1A3): Pneus (CRUD inline no Carro Modal) — Prompt #14)
 //   default                → HomeView estado cheio (Sprint 1A.6 troca
 //                            pelo Repository real)
 
@@ -54,12 +59,16 @@ private enum AppRoute {
     case eventoDetalhe
     case stintNovo
     case posStint
+<<<<<<< HEAD
     case pessoasPilotos
     case pessoasPassageiros
     case pilotoNovo
     case passageiroNovo
     case combustiveis
     case combustivelNovo
+=======
+    case pneuNovo
+>>>>>>> 1d51e38 (feat(1A3): Pneus (CRUD inline no Carro Modal) — Prompt #14)
 
     static var fromLaunchArgs: AppRoute {
         let args = ProcessInfo.processInfo.arguments
@@ -72,12 +81,16 @@ private enum AppRoute {
         if args.contains("--p1-evento-detalhe") { return .eventoDetalhe }
         if args.contains("--p1-stint-novo") { return .stintNovo }
         if args.contains("--p1-pos-stint") { return .posStint }
+<<<<<<< HEAD
         if args.contains("--p1-piloto-novo") { return .pilotoNovo }
         if args.contains("--p1-passageiro-novo") { return .passageiroNovo }
         if args.contains("--p1-pessoas-passageiros") { return .pessoasPassageiros }
         if args.contains("--p1-combustivel-novo") { return .combustivelNovo }
         if args.contains("--p1-combustiveis") { return .combustiveis }
         if args.contains("--p1-pessoas") { return .pessoasPilotos }
+=======
+        if args.contains("--p1-pneu-novo") { return .pneuNovo }
+>>>>>>> 1d51e38 (feat(1A3): Pneus (CRUD inline no Carro Modal) — Prompt #14)
         if args.contains("--p1-eventos") { return .eventos }
         return .home
     }
@@ -113,6 +126,7 @@ private struct ReadyRoot: View {
     @StateObject private var passageiroRepo: PassageiroRepository
     @StateObject private var combustivelRepo: CombustivelRepository
     @StateObject private var stintRepo: StintRepository
+    @StateObject private var pneuRepo: PneuRepository
 
     init(queue: DatabaseQueue) {
         self.queue = queue
@@ -122,6 +136,7 @@ private struct ReadyRoot: View {
         _passageiroRepo = StateObject(wrappedValue: PassageiroRepository(queue: queue))
         _combustivelRepo = StateObject(wrappedValue: CombustivelRepository(queue: queue))
         _stintRepo = StateObject(wrappedValue: StintRepository(queue: queue))
+        _pneuRepo = StateObject(wrappedValue: PneuRepository(queue: queue))
     }
 
     var body: some View {
@@ -132,6 +147,7 @@ private struct ReadyRoot: View {
             .environmentObject(passageiroRepo)
             .environmentObject(combustivelRepo)
             .environmentObject(stintRepo)
+            .environmentObject(pneuRepo)
             .task {
                 await carroRepo.bootstrap()
                 await eventoRepo.bootstrap()
@@ -141,6 +157,7 @@ private struct ReadyRoot: View {
                 await passageiroRepo.bootstrap()
                 await combustivelRepo.bootstrap()
                 await stintRepo.bootstrap()
+                await pneuRepo.bootstrap()
             }
     }
 
@@ -181,6 +198,8 @@ private struct ReadyRoot: View {
             PessoasView(initialSubTab: .combustiveis)
         case .combustivelNovo:
             PessoasView(initialSheet: .novoCombustivel, initialSubTab: .combustiveis)
+        case .pneuNovo:
+            PneuNovoLauncher()
         }
     }
 }
@@ -347,6 +366,53 @@ private struct EventosListaViewWithDetalhePadrao: View {
                 initial = .detalhe(eventoId: alvoId)
             } else if let primeiro = repo.eventos.first {
                 initial = .detalhe(eventoId: primeiro.id)
+            }
+            ready = true
+        }
+    }
+}
+
+/// Helper que abre o CarroModalView do primeiro carro com a sheet de
+/// cadastro de pneu já visível. Usado pelo launch arg `--p1-pneu-novo`
+/// pra screenshot do PneuCadastroView.
+private struct PneuNovoLauncher: View {
+    @EnvironmentObject private var carroRepo: CarroRepository
+    @EnvironmentObject private var pneuRepo: PneuRepository
+    @State private var carroId: String?
+    @State private var ready = false
+
+    var body: some View {
+        Group {
+            if ready, let id = carroId {
+                CarroModalView(
+                    carroId: id,
+                    initialPneuSheet: true,
+                    onClose: {}
+                )
+                .environmentObject(carroRepo)
+                .environmentObject(pneuRepo)
+            } else {
+                Splash(stateLabel: ready ? "Sem carro pra screenshot" : "Preparando carro demo…",
+                       isError: false)
+            }
+        }
+        .task {
+            for _ in 0..<15 {
+                if !carroRepo.carros.isEmpty { break }
+                try? await Task.sleep(nanoseconds: 100_000_000)
+            }
+            if let primeiro = carroRepo.carros.first {
+                carroId = primeiro.id
+            } else {
+                // Cria um carro demo só pra screenshot ter algo a abrir.
+                if let id = try? await carroRepo.create(
+                    apelido: "Demo pneu",
+                    modelo: "Carro de mock",
+                    categoria: nil,
+                    cor: nil
+                ) {
+                    carroId = id
+                }
             }
             ready = true
         }

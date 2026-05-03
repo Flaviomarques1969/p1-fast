@@ -326,25 +326,52 @@ public struct Piloto: Codable, FetchableRecord, PersistableRecord {
     }
 }
 
+<<<<<<< HEAD
 // MARK: - passageiros
 public struct Passageiro: Codable, FetchableRecord, PersistableRecord {
     public var id: String
     public var timeId: String
     public var nome: String
+=======
+// MARK: - pneus
+public struct Pneu: Codable, FetchableRecord, PersistableRecord {
+    public enum Composto: String, Codable {
+        case radial, slick, rua
+    }
+
+    public var id: String
+    public var timeId: String
+    public var carroId: String
+    public var marca: String?
+    public var modelo: String?
+    public var medida: String?
+    public var composto: Composto?
+    public var ciclos: Int
+>>>>>>> 1d51e38 (feat(1A3): Pneus (CRUD inline no Carro Modal) — Prompt #14)
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
 
+<<<<<<< HEAD
     public static let databaseTableName = "passageiros"
     enum CodingKeys: String, CodingKey {
         case id
         case timeId = "time_id"
         case nome
+=======
+    public static let databaseTableName = "pneus"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case carroId = "carro_id"
+        case marca, modelo, medida, composto, ciclos
+>>>>>>> 1d51e38 (feat(1A3): Pneus (CRUD inline no Carro Modal) — Prompt #14)
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
     }
 
+<<<<<<< HEAD
     public init(id: String, timeId: String, nome: String,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
@@ -380,6 +407,16 @@ public struct Combustivel: Codable, FetchableRecord, PersistableRecord {
                 syncedAt: Int64? = nil) {
         self.id = id; self.timeId = timeId; self.nome = nome
         self.tipo = tipo; self.octanagem = octanagem
+=======
+    public init(id: String, timeId: String, carroId: String,
+                marca: String? = nil, modelo: String? = nil, medida: String? = nil,
+                composto: Composto? = nil, ciclos: Int = 0,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.carroId = carroId
+        self.marca = marca; self.modelo = modelo; self.medida = medida
+        self.composto = composto; self.ciclos = ciclos
+>>>>>>> 1d51e38 (feat(1A3): Pneus (CRUD inline no Carro Modal) — Prompt #14)
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }

@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════
 // Tela completa de edição do carro: identidade (apelido, modelo,
 // categoria, cor) + setup base com 14 overrides em 5 grupos +
-// seção "Pneus cadastrados".
+// seção "Pneus cadastrados" (CRUD inline — Sprint 1A.3 / Prompt #14).
 //
 // 14 overrides do prompt #9:
 //   PNEUS (4)              — pressão DE/DD/TE/TD
@@ -13,19 +13,40 @@
 //   MOTOR · TRANSMISSÃO (3)— combustível, mapa, diferencial
 //
 // Persistência: identidade vai pra `carros` (tabela); overrides vão
-// pra `configuracoes.overrides` como JSON (CarroSetupOverrides).
-// Pneus: lista hard-coded por enquanto (CRUD virá no Sprint 1A.4).
+// pra `configuracoes.overrides` como JSON (CarroSetupOverrides);
+// pneus vivem em `pneus` (PneuRepository).
 
 import SwiftUI
 import P1FastCore
 
 struct CarroModalView: View {
     @EnvironmentObject private var repo: CarroRepository
+    @EnvironmentObject private var pneuRepo: PneuRepository
     let carroId: String
+    let initialPneuSheet: Bool
     let onClose: () -> Void
+
+    init(carroId: String, initialPneuSheet: Bool = false, onClose: @escaping () -> Void) {
+        self.carroId = carroId
+        self.initialPneuSheet = initialPneuSheet
+        self.onClose = onClose
+    }
 
     @State private var loaded = false
     @State private var carro: Carro?
+    @State private var pneuSheet: PneuSheetMode?
+
+    private enum PneuSheetMode: Identifiable {
+        case novo
+        case editar(Pneu)
+
+        var id: String {
+            switch self {
+            case .novo: return "novo"
+            case .editar(let p): return "editar-\(p.id)"
+            }
+        }
+    }
 
     // Identidade
     @State private var apelido: String = ""
@@ -60,6 +81,24 @@ struct CarroModalView: View {
         }
         .preferredColorScheme(.dark)
         .task { await load() }
+        .sheet(item: $pneuSheet) { mode in
+            switch mode {
+            case .novo:
+                PneuCadastroView(
+                    carroId: carroId,
+                    pneuToEdit: nil,
+                    onClose: { pneuSheet = nil }
+                )
+                .environmentObject(pneuRepo)
+            case .editar(let pneu):
+                PneuCadastroView(
+                    carroId: carroId,
+                    pneuToEdit: pneu,
+                    onClose: { pneuSheet = nil }
+                )
+                .environmentObject(pneuRepo)
+            }
+        }
     }
 
     @ViewBuilder
@@ -195,14 +234,18 @@ struct CarroModalView: View {
 
     private var sectionPneusCadastrados: some View {
         sectionFrame(title: "Pneus cadastrados") {
-            // Por enquanto sem CRUD real — Sprint 1A.4 adiciona a tabela `pneus`
-            // ao CarroRepository e troca este placeholder por dados reais.
+            let pneus = pneuRepo.pneusByCarroId[carroId] ?? []
             VStack(spacing: Spacing.sm) {
-                EmptyTireHint()
-                AddTireButton {
-                    // No-op até Sprint 1A.4. Mantemos o botão com o visual canônico
-                    // (border-dashed) pra cobrir o slot do mockup.
+                if pneus.isEmpty {
+                    EmptyTireHint()
+                } else {
+                    ForEach(pneus, id: \.id) { pneu in
+                        TireItem(pneu: pneu) {
+                            pneuSheet = .editar(pneu)
+                        }
+                    }
                 }
+                AddTireButton { pneuSheet = .novo }
             }
         }
     }
@@ -240,6 +283,11 @@ struct CarroModalView: View {
         } catch {
             // Silencioso — UI mostra empty defaults.
             print("CarroModalView.load configuracao failed: \(error)")
+        }
+        if initialPneuSheet {
+            // Pequeno delay pra view terminar de montar antes da sheet.
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            pneuSheet = .novo
         }
     }
 
@@ -369,5 +417,57 @@ private struct AddTireButton: View {
             )
         }
         .buttonStyle(.plain)
+    }
+}
+
+private struct TireItem: View {
+    let pneu: Pneu
+    let onEdit: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: Spacing.md) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(pneu.marca ?? "Pneu sem marca")
+                    .font(.system(size: 14, weight: .semibold))
+                    .tracking(-0.07)
+                    .foregroundStyle(Color.text)
+                Text(metaLine)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(Color.textFaint)
+            }
+            Spacer(minLength: Spacing.sm)
+            Button(action: onEdit) {
+                Text("Editar")
+                    .font(.system(size: 12, weight: .semibold))
+                    .tracking(-0.06)
+                    .foregroundStyle(Color.textMuted)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(Color.border, lineWidth: 1)
+                    )
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .fill(Color.surfaceRaised)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .stroke(Color.border, lineWidth: 1)
+        )
+    }
+
+    private var metaLine: String {
+        var parts: [String] = []
+        if let m = pneu.medida, !m.isEmpty { parts.append(m) }
+        if let c = pneu.composto { parts.append(c.rawValue) }
+        parts.append(pneu.ciclos == 0 ? "novo" : "\(pneu.ciclos) voltas")
+        return parts.joined(separator: " · ")
     }
 }
