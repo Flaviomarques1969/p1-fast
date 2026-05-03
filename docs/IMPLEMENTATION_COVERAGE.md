@@ -14,9 +14,11 @@
 
 | Status | Count | % |
 |---|---|---|
-| ✅ Done | 8 | 30% |
-| 🟡 Parcial | 8 | 30% |
-| ❌ Não portado | 11 | 40% |
+| ✅ Done | 12 | 44% |
+| 🟡 Parcial (delete affordance pending) | 4 | 15% |
+| ❌ Não portado | 11 | 41% |
+
+**Última atualização:** 2026-05-03 noite, após Sprint 1A.3 fechado.
 
 ---
 
