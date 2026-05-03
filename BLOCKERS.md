@@ -4,9 +4,27 @@ Bloqueios reais do P1 Fast. Cada entrada: motivo / impacto / decisão necessári
 
 Vazio = avançar.
 
+**Última revisão:** 2026-05-03
+
 ---
 
-## Ativos
+## Ativos pra desbloquear Sprint 1A.6 (necessário antes do #23)
+
+### S1 · Projeto Supabase real
+**Estado:** Edge Functions (`sync`, `pull`, `ingest`, `health`) prontas em `supabase/functions/`. Migrations 0001 + (futuras 0002, 0003a, 0003b) versionadas mas **NÃO aplicadas em prod**.
+
+**Ação Flávio:**
+1. Criar projeto Supabase novo (separado do CDAI Imunoterapia conforme `docs/SUPABASE_SETUP.md`).
+2. `supabase link --project-ref xxxxx`
+3. `supabase db push` aplica migrations.
+4. Criar 1 user via Auth + 1 time via RPC `create_team`.
+5. Copiar `SUPABASE_URL` + `SUPABASE_ANON_KEY` pra `ios/p1fast-ios/.env.xcconfig`.
+
+**Impacto:** sem isso, prompts #23 e #24 (Sprint 1A.6 finishing) não rodam smoke E2E real — só com mocks. Phase 1A não fecha.
+
+---
+
+## Ativos pra Phase 1B (cockpit ao vivo)
 
 ### E2 · Injepro T4000 — captura real do barramento CAN
 **Estado:** spec oficial confirmada (PDF arquivado em [`docs/raceops/refs/INJEPRO_T4000_CAN_PROTOCOL_2026-04-24.pdf`](docs/raceops/refs/INJEPRO_T4000_CAN_PROTOCOL_2026-04-24.pdf), detalhamento em [`docs/hardware/T4000_CAN_SPEC.md`](docs/hardware/T4000_CAN_SPEC.md)). CAN ID `0x7FB`, 1 Mbit/s, 5×8 bytes a 10 ms, big-endian, checksum `sum mod 256` validado matematicamente.
