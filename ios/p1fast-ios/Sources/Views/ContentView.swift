@@ -56,16 +56,13 @@ private enum AppRoute {
     case eventoDetalhe
     case stintNovo
     case posStint
-<<<<<<< HEAD
     case pessoasPilotos
     case pessoasPassageiros
     case pilotoNovo
     case passageiroNovo
     case combustiveis
     case combustivelNovo
-=======
     case pneuNovo
->>>>>>> 1d51e38 (feat(1A3): Pneus (CRUD inline no Carro Modal) — Prompt #14)
 
     static var fromLaunchArgs: AppRoute {
         let args = ProcessInfo.processInfo.arguments
