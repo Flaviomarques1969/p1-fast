@@ -8,19 +8,16 @@ Vazio = avançar.
 
 ---
 
-## Ativos pra desbloquear Sprint 1A.6 (necessário antes do #23)
+## ✅ Resolvido — S1 · Projeto Supabase real (2026-05-03)
 
-### S1 · Projeto Supabase real
-**Estado:** Edge Functions (`sync`, `pull`, `ingest`, `health`) prontas em `supabase/functions/`. Migrations 0001 + (futuras 0002, 0003a, 0003b) versionadas mas **NÃO aplicadas em prod**.
+- Projeto **p1-fast** criado (org Flaviomarques1969, região São Paulo, free).
+- Project ref: `fvhwltzhytpnhlqbttmd`.
+- Migrations 0001 + 0002 aplicadas (após fix de schema `auth` → `public` mergeado em PR #40).
+- User canônico: `Flaviomarques@me.com` (id `04fef19d-d1f4-45b6-bd89-b50a6aec121f`).
+- Time canônico: "Flavio P1 Fast" (id `c027a716-dc05-4d3c-9b8f-59f288d5e12c`), role admin.
+- Creds em `ios/p1fast-ios/.env.xcconfig` (gitignored).
 
-**Ação Flávio:**
-1. Criar projeto Supabase novo (separado do CDAI Imunoterapia conforme `docs/SUPABASE_SETUP.md`).
-2. `supabase link --project-ref xxxxx`
-3. `supabase db push` aplica migrations.
-4. Criar 1 user via Auth + 1 time via RPC `create_team`.
-5. Copiar `SUPABASE_URL` + `SUPABASE_ANON_KEY` pra `ios/p1fast-ios/.env.xcconfig`.
-
-**Impacto:** sem isso, prompts #23 e #24 (Sprint 1A.6 finishing) não rodam smoke E2E real — só com mocks. Phase 1A não fecha.
+Sprint 1A.6 destravada. Pode disparar prompt #23 (HTTP transport) quando quiser.
 
 ---
 
