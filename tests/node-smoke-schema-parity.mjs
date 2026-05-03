@@ -62,20 +62,20 @@ const PG_TABLES   = pgTables(pg);
 const GRDB_TABLES = grdbTables(grdb);
 
 // ─── Tests ────────────────────────────────────────────────
-t('PG tem 20 tabelas em public', () => {
-  if (PG_TABLES.size !== 20) throw new Error('size=' + PG_TABLES.size);
+t('PG tem 21 tabelas em public (20 do 0001 + licoes do 0004)', () => {
+  if (PG_TABLES.size !== 21) throw new Error('size=' + PG_TABLES.size);
 });
 
-t('GRDB tem 22 tabelas (20 PG + sync_queue + sync_meta local-only)', () => {
-  if (GRDB_TABLES.size !== 22) throw new Error('size=' + GRDB_TABLES.size);
+t('GRDB tem 23 tabelas (21 PG + sync_queue + sync_meta local-only)', () => {
+  if (GRDB_TABLES.size !== 23) throw new Error('size=' + GRDB_TABLES.size);
 });
 
-t('GRDB cobre TODAS as 20 tabelas do PG', () => {
+t('GRDB cobre TODAS as 21 tabelas do PG', () => {
   const missing = [...PG_TABLES].filter(x => !GRDB_TABLES.has(x));
   if (missing.length) throw new Error('faltam no GRDB: ' + missing.join(', '));
 });
 
-t('GRDB tem só sync_queue + sync_meta além das 20 do PG', () => {
+t('GRDB tem só sync_queue + sync_meta além das 21 do PG', () => {
   const extras = [...GRDB_TABLES].filter(x => !PG_TABLES.has(x)).sort();
   const expected = ['sync_meta', 'sync_queue'];
   if (extras.length !== 2 || extras[0] !== expected[0] || extras[1] !== expected[1]) {
