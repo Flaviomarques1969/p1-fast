@@ -41,6 +41,8 @@
 //                            trechos da pista cadastrada, Prompt #19)
 //   --p1-licoes            → PessoasView aba Lições (catálogo de 12 lições
 //                            curadas, Prompt #20)
+//   --p1-setup-avancado    → SetupAvancadoView do primeiro carro (visualização
+//                            agrupada dos 14 overrides, Prompt #22)
 //   default                → HomeView estado cheio (Sprint 1A.6 troca
 //                            pelo Repository real)
 
@@ -69,6 +71,7 @@ private enum AppRoute {
     case pneuNovo
     case trechos
     case licoes
+    case setupAvancado
 
     static var fromLaunchArgs: AppRoute {
         let args = ProcessInfo.processInfo.arguments
@@ -90,6 +93,7 @@ private enum AppRoute {
         if args.contains("--p1-pneu-novo") { return .pneuNovo }
         if args.contains("--p1-trechos") { return .trechos }
         if args.contains("--p1-licoes") { return .licoes }
+        if args.contains("--p1-setup-avancado") { return .setupAvancado }
         if args.contains("--p1-eventos") { return .eventos }
         return .home
     }
@@ -220,6 +224,42 @@ private struct ReadyRoot: View {
             }
         case .licoes:
             PessoasView(initialSubTab: .licoes)
+        case .setupAvancado:
+            SetupAvancadoLauncher()
+        }
+    }
+}
+
+/// Launcher do `--p1-setup-avancado`: cria carro demo se necessário e
+/// abre `SetupAvancadoView` direto pra screenshot rápido (Prompt #22).
+private struct SetupAvancadoLauncher: View {
+    @EnvironmentObject private var carroRepo: CarroRepository
+    @State private var carroId: String?
+    @State private var ready = false
+
+    var body: some View {
+        Group {
+            if ready, let id = carroId {
+                SetupAvancadoView(carroId: id, onClose: {})
+                    .environmentObject(carroRepo)
+            } else {
+                Splash(stateLabel: ready ? "Sem carro pra screenshot" : "Preparando carro demo…",
+                       isError: false)
+            }
+        }
+        .task {
+            for _ in 0..<15 {
+                if !carroRepo.carros.isEmpty { break }
+                try? await Task.sleep(nanoseconds: 100_000_000)
+            }
+            if let primeiro = carroRepo.carros.first {
+                carroId = primeiro.id
+            } else if let id = try? await carroRepo.create(
+                apelido: "Demo setup", modelo: nil, categoria: nil, cor: nil
+            ) {
+                carroId = id
+            }
+            ready = true
         }
     }
 }

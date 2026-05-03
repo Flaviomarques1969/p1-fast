@@ -56,6 +56,7 @@
 		E1A2B3C4D5E6F70819203B13 /* LicaoListaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203B12 /* LicaoListaView.swift */; };
 		E1A2B3C4D5E6F70819203B21 /* PendenciaRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203B20 /* PendenciaRepository.swift */; };
 		E1A2B3C4D5E6F70819203B23 /* PendenciasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203B22 /* PendenciasView.swift */; };
+		E1A2B3C4D5E6F70819203B31 /* SetupAvancadoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203B30 /* SetupAvancadoView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -109,6 +110,7 @@
 		E1A2B3C4D5E6F70819203B12 /* LicaoListaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicaoListaView.swift; sourceTree = "<group>"; };
 		E1A2B3C4D5E6F70819203B20 /* PendenciaRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendenciaRepository.swift; sourceTree = "<group>"; };
 		E1A2B3C4D5E6F70819203B22 /* PendenciasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendenciasView.swift; sourceTree = "<group>"; };
+		E1A2B3C4D5E6F70819203B30 /* SetupAvancadoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupAvancadoView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -212,6 +214,7 @@
 				E1A2B3C4D5E6F70819203B02 /* TrechoListaView.swift */,
 				E1A2B3C4D5E6F70819203B12 /* LicaoListaView.swift */,
 				E1A2B3C4D5E6F70819203B22 /* PendenciasView.swift */,
+				E1A2B3C4D5E6F70819203B30 /* SetupAvancadoView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -387,6 +390,7 @@
 				E1A2B3C4D5E6F70819203B13 /* LicaoListaView.swift in Sources */,
 				E1A2B3C4D5E6F70819203B21 /* PendenciaRepository.swift in Sources */,
 				E1A2B3C4D5E6F70819203B23 /* PendenciasView.swift in Sources */,
+				E1A2B3C4D5E6F70819203B31 /* SetupAvancadoView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

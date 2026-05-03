@@ -70,6 +70,7 @@ struct CarroModalView: View {
     // UI state
     @State private var savingError: String?
     @State private var isSaving = false
+    @State private var setupAvancadoOpen = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -122,6 +123,13 @@ struct CarroModalView: View {
                 .environmentObject(pneuRepo)
             }
         }
+        .sheet(isPresented: $setupAvancadoOpen, onDismiss: {
+            // Recarrega o setup do banco caso a sheet avançada tenha salvado.
+            Task { await load() }
+        }) {
+            SetupAvancadoView(carroId: carroId, onClose: { setupAvancadoOpen = false })
+                .environmentObject(repo)
+        }
     }
 
     @ViewBuilder
@@ -148,7 +156,11 @@ struct CarroModalView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Eyebrow(text: "Editar carro")
+            HStack(alignment: .firstTextBaseline) {
+                Eyebrow(text: "Editar carro")
+                Spacer(minLength: 0)
+                setupAvancadoLink
+            }
             Text(apelido.isEmpty ? "Carro" : apelido)
                 .font(.system(size: 24, weight: .semibold))
                 .tracking(-0.6)
@@ -158,6 +170,34 @@ struct CarroModalView: View {
                 .foregroundStyle(Color.textMuted)
         }
         .padding(.horizontal, Spacing.xs)
+    }
+
+    /// Botão que abre `SetupAvancadoView` em sheet. Mesma data que o
+    /// modal inline edita — modo focado pra tweaking concentrado.
+    private var setupAvancadoLink: some View {
+        Button {
+            setupAvancadoOpen = true
+        } label: {
+            HStack(spacing: 4) {
+                Text("Setup avançado")
+                    .font(.system(size: 12, weight: .semibold))
+                    .tracking(0.06 * 12)
+                Text("›")
+                    .font(.system(size: 12, weight: .regular))
+            }
+            .foregroundStyle(Color.text)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.surfaceHover)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: Sections
