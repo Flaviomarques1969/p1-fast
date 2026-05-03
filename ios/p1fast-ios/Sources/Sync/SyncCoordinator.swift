@@ -30,6 +30,14 @@ public final class SyncCoordinator: ObservableObject {
     @Published public private(set) var deadLetterCount: Int = 0
     @Published public private(set) var lastSuccessAt: Date?
     @Published public private(set) var nextAttemptAt: Date?
+    /// Itens da sync_queue ainda dentro do limite de attempts.
+    @Published public private(set) var pendingItems: [SyncQueueItem] = []
+    /// Itens da sync_queue que estouraram o limite (attempts >= 5).
+    @Published public private(set) var deadLetterItems: [SyncQueueItem] = []
+
+    /// Limite usado pra separar pending vs dead-letter (precisa bater com o
+    /// SyncDrainer.maxAttempts default).
+    private static let deadLetterThreshold = 5
 
     // ─── Internas ────────────────────────────────────────────
     private let queue: DatabaseQueue
@@ -91,6 +99,35 @@ public final class SyncCoordinator: ObservableObject {
     public func pullNow() async {
         await drainPull()
         await refreshCounters()
+    }
+
+    /// Re-tenta um item dead-letter (zera attempts, próximo drain pega).
+    public func retryItem(_ id: Int64) async {
+        do {
+            try await queue.write { db in
+                try db.execute(sql: "UPDATE sync_queue SET attempts = 0 WHERE id = ?",
+                               arguments: [id])
+            }
+            await refreshCounters()
+            // Tenta drenar imediatamente — feedback visual rápido pra UI.
+            await drainSync()
+        } catch {
+            print("SyncCoordinator.retryItem error: \(error)")
+        }
+    }
+
+    /// Apaga definitivamente um item da fila (usado pelo swipe-to-delete
+    /// na tela de dead-letters). Não há recovery — UI tem que confirmar.
+    public func dropItem(_ id: Int64) async {
+        do {
+            try await queue.write { db in
+                try db.execute(sql: "DELETE FROM sync_queue WHERE id = ?",
+                               arguments: [id])
+            }
+            await refreshCounters()
+        } catch {
+            print("SyncCoordinator.dropItem error: \(error)")
+        }
     }
 
     // MARK: - Internal drain helpers
@@ -171,16 +208,35 @@ public final class SyncCoordinator: ObservableObject {
     }
 
     private func refreshCounters() async {
+        let threshold = Self.deadLetterThreshold
         do {
-            let snap = try await queue.read { db -> (Int, Int) in
-                let pending = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sync_queue WHERE attempts < 5") ?? 0
-                let dead = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sync_queue WHERE attempts >= 5") ?? 0
-                return (pending, dead)
+            let snap = try await queue.read { db -> (Int, Int, [SyncQueueItem], [SyncQueueItem]) in
+                let pending = try Int.fetchOne(db,
+                    sql: "SELECT COUNT(*) FROM sync_queue WHERE attempts < ?",
+                    arguments: [threshold]) ?? 0
+                let dead = try Int.fetchOne(db,
+                    sql: "SELECT COUNT(*) FROM sync_queue WHERE attempts >= ?",
+                    arguments: [threshold]) ?? 0
+                let pendingRows = try SyncQueueItem.fetchAll(db,
+                    sql: "SELECT * FROM sync_queue WHERE attempts < ? ORDER BY created_at ASC LIMIT 100",
+                    arguments: [threshold])
+                let deadRows = try SyncQueueItem.fetchAll(db,
+                    sql: "SELECT * FROM sync_queue WHERE attempts >= ? ORDER BY created_at ASC LIMIT 100",
+                    arguments: [threshold])
+                return (pending, dead, pendingRows, deadRows)
             }
             self.pendingCount = snap.0
             self.deadLetterCount = snap.1
+            self.pendingItems = snap.2
+            self.deadLetterItems = snap.3
         } catch {
             print("SyncCoordinator.refreshCounters error: \(error)")
         }
+    }
+
+    /// Trigger público — UI da SincronizacaoView usa pra pull-to-refresh
+    /// sem disparar drain.
+    public func refresh() async {
+        await refreshCounters()
     }
 }
