@@ -29,17 +29,14 @@
 //                            pra screenshot do StintModalView
 //   --p1-pos-stint         → cria stint, finaliza (gera voltas mock) e
 //                            abre PosStintView pra screenshot
-<<<<<<< HEAD
 //   --p1-pessoas           → PessoasView aba Pilotos (Prompt #12)
 //   --p1-pessoas-passageiros → PessoasView aba Passageiros (Prompt #13)
 //   --p1-piloto-novo       → PessoasView com sheet "Novo piloto" aberta
 //   --p1-passageiro-novo   → PessoasView com sheet "Novo passageiro" aberta
 //   --p1-combustiveis      → PessoasView aba Combustíveis (Prompt #15)
 //   --p1-combustivel-novo  → PessoasView com sheet "Novo combustível" aberta
-=======
 //   --p1-pneu-novo         → abre CarroModalView do primeiro carro já
 //                            com a sheet "Novo pneu" aberta (Prompt #14)
->>>>>>> 1d51e38 (feat(1A3): Pneus (CRUD inline no Carro Modal) — Prompt #14)
 //   default                → HomeView estado cheio (Sprint 1A.6 troca
 //                            pelo Repository real)
 
