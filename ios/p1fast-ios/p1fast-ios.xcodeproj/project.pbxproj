@@ -184,13 +184,10 @@
 				D86DDF0483C4332C5AD704DC /* EventosListaView.swift */,
 				5A2A5CD812FBBD663E27ECE1 /* GaragemView.swift */,
 				4251545DEF1F73BD4CF7690E /* HomeView.swift */,
-<<<<<<< HEAD
 				929E850CB75095F3CADEF4B6 /* PassageiroCadastroView.swift */,
 				C44B2A9473ECC2C908EFE331 /* PessoasView.swift */,
 				7258210661C7A35F7DAFA577 /* PilotoCadastroView.swift */,
-=======
 				E1A2B3C4D5E6F70819203A42 /* PneuCadastroView.swift */,
->>>>>>> 1d51e38 (feat(1A3): Pneus (CRUD inline no Carro Modal) — Prompt #14)
 				0FD40430C136E8D926EC0FE7 /* PosStintView.swift */,
 				162332DAA2D671F61DFE3881 /* StintModalView.swift */,
 				6589CA76112B0192B9A53BD8 /* ThemeShowcaseView.swift */,
