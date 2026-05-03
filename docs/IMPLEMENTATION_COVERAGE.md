@@ -14,9 +14,11 @@
 
 | Status | Count | % |
 |---|---|---|
-| ✅ Done | 8 | 30% |
-| 🟡 Parcial | 8 | 30% |
-| ❌ Não portado | 11 | 40% |
+| ✅ Done | 12 | 44% |
+| 🟡 Parcial (delete affordance pending) | 4 | 15% |
+| ❌ Não portado | 11 | 41% |
+
+**Última atualização:** 2026-05-03 noite, após Sprint 1A.3 fechado.
 
 ---
 
@@ -77,11 +79,12 @@ Tabelas no schema sem view correspondente:
 
 ## Débito consolidado (priorizado)
 
-### 🔴 Bloqueio de Sprint 1A.3 (em flight)
-1. **PR #14 Pneus** — Cloud Code rodando agora.
-2. **PR #34 Combustíveis** — Package.resolved fix pushed, aguardando CI + review.
-3. **PR #33 Pessoas** — mergeable, aguardando review.
-4. **CRUD affordances** (Combustíveis + Pilotos + Passageiros) — prompt baked, dispara depois de #33+#34+#14 mergeados.
+### ✅ Sprint 1A.3 fechado (2026-05-03 noite)
+1. **#33 Pessoas** → mergeado `66bc968`
+2. **#37 Combustíveis** (re-aberto após bug de base no #34) → mergeado `bf8ecfa`
+3. **#38 Docs recovery** (autosave commits salvos via reflog) → mergeado `ef253d1`
+4. **#35 Pneus** → mergeado `56d24b9`
+5. ⏳ **CRUD affordances v2** — prompt baked em `POST_1A3_PLAYBOOK.md`, em flight pelo Cloud Code (delete em 4 listas: Combustível + Piloto + Passageiro + Pneu).
 
 ### 🟡 Sprint 1A.4 (já baked em `SPRINT_1A4_DESIGN.md`)
 5. **#16 Schema migration v2** — adiciona FKs `sessoes.pneu_id` + `sessoes.combustivel_id` + `sessoes.qt_combustivel_litros`. Adiciona `altura_cm`/`peso_kg`/`nascimento` em `pilotos` e `passageiros`. Remove aliases `StintRepository.pilotoFlavioId/pilotoBrunoId`.

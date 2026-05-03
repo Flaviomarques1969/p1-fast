@@ -1,7 +1,7 @@
 # P1 Fast — STATUS (continuação após /clear)
 
 **Data deste checkpoint:** 2026-05-03
-**Estado:** **Sprint 1A.3 fechando** (3 PRs em flight: #33 Pessoas mergeable, #34 Combustíveis mergeable, #14 Pneus em execução pelo Cloud Code). Sprint 1A.4/1A.5/1A.6 finishing **totalmente bakeados** — pipeline de 13 prompts autônomos prontos pra disparar em sequência até Phase 1A 100%.
+**Estado:** **Sprint 1A.3 fechado** (4 PRs mergeados em main: #33 Pessoas, #37 Combustíveis, #38 docs, #35 Pneus). Único débito: prompt CRUD-affordances v2 (delete em 4 listas) — em flight pelo Cloud Code. Sprint 1A.4/1A.5/1A.6 finishing **totalmente bakeados** — pipeline de 9 prompts autônomos prontos pra disparar em sequência até Phase 1A 100%.
 
 > **Se você é Claude abrindo esta sessão pela primeira vez:**
 > Leia este arquivo primeiro, depois `~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/MEMORY.md`.
@@ -10,18 +10,18 @@
 
 ## Snapshot atual — 2026-05-03 (após sessão de planejamento autônomo)
 
-### PRs em flight (todos mergeable, todos auditados)
-- **#33** `feat/1A3-pessoas` — Pilotos+Passageiros CRUD, CI ✅, audit limpo.
-- **#34** `feat/1A3-combustiveis` — Combustíveis CRUD, Package.resolved bug auto-resolvido + push feito, CI ✅.
-- **#35** `feat/1A3-pneus` — Pneus inline no CarroModal, CI ✅, audit ✅ (composto como enum tipado bonus). Falta delete affordance — vai pro fix CRUD-affordances.
+### Sprint 1A.3 fechado (2026-05-03 noite)
+- **#33** Pessoas → mergeado `66bc968`
+- **#37** Combustíveis (re-aberto após bug de base no #34) → mergeado `bf8ecfa`
+- **#38** Docs recovery (autosave commits salvos via reflog) → mergeado `ef253d1`
+- **#35** Pneus → mergeado `56d24b9`
 
-### Ordem de merge ótima
-1. **#33** (base, sem rebase)
-2. **#34** (rebase em main pós-#33: 4 BottomNav views)
-3. **#35** (rebase em main pós-#33: ContentView)
-4. Disparar prompt CRUD-affordances **com escopo estendido pra incluir Pneus** (4 listas, não 3) → Sprint 1A.3 fecha 100%
+**Único débito ativo:** prompt CRUD-affordances v2 (delete affordance em 4 listas: Combustível + Piloto + Passageiro + Pneu). Disparado no Cloud Code.
 
-Playbook completo de merge + comandos prontos em `docs/POST_1A3_PLAYBOOK.md`.
+### Lições do fechamento (salvas em ADRs + memórias novas)
+- ADR-020/021/022 já registradas (paths Swift, worktree obrigatório, Package.resolved guardrail).
+- Bug novo: PR com base errada (apontando pra outra feat branch em vez de main) é auto-fechado pelo GitHub quando a base mergeia. Recovery: cherry-pick em main + nova PR. Memória `feedback_pr_base_branch_gotcha.md`.
+- Recovery de docs perdidos: `git reflog` preserva commits órfãos por ~90 dias antes de gc. Memória `feedback_reflog_recovery.md`.
 
 ### Pipeline de prompts baked (13 totais, prontos pra copy-paste)
 - `docs/SPRINT_1A4_DESIGN.md` (494 linhas) — #16 schema v2 + alias cleanup, #17 stint selectors + ciclos auto, #18 pessoas v2 (altura/peso/idade)
