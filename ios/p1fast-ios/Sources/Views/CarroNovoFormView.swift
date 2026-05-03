@@ -149,6 +149,7 @@ struct FormInput: View {
     var placeholder: String = ""
     var keyboardType: UIKeyboardType = .default
     var isFocus: Bool = false
+    var isError: Bool = false
 
     var body: some View {
         TextField(placeholder, text: $text, prompt: Text(placeholder).foregroundStyle(Color.textFaint))
@@ -165,8 +166,14 @@ struct FormInput: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .stroke(isFocus ? Color.accent : Color.border, lineWidth: 1)
+                    .stroke(borderColor, lineWidth: 1)
             )
+    }
+
+    private var borderColor: Color {
+        if isError { return Color.erro }
+        if isFocus { return Color.accent }
+        return Color.border
     }
 }
 

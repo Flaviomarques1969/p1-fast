@@ -66,8 +66,15 @@ final class PilotoRepository: ObservableObject {
     }
 
     /// Cria piloto novo. Retorna o ID gerado.
+    /// Os 3 campos opcionais (altura/peso/nascimento) entraram no schema v2a
+    /// (#16). Caller pode omitir tudo — todos default `nil`, salvos como NULL.
     @discardableResult
-    func create(nome: String) async throws -> String {
+    func create(
+        nome: String,
+        alturaCm: Int? = nil,
+        pesoKg: Double? = nil,
+        nascimento: Int64? = nil
+    ) async throws -> String {
         let pilotoId = UUID().uuidString
         let now = DB.nowMs()
         try await queue.write { db in
@@ -76,6 +83,9 @@ final class PilotoRepository: ObservableObject {
                 timeId: Self.localTimeId,
                 nome: nome,
                 userId: nil,
+                alturaCm: alturaCm,
+                pesoKg: pesoKg,
+                nascimento: nascimento,
                 createdAt: now,
                 updatedAt: now,
                 syncedAt: nil
