@@ -29,6 +29,9 @@ import P1FastCore
 struct EventoDetalheView: View {
     @EnvironmentObject private var repo: EventoRepository
     @EnvironmentObject private var stintRepo: StintRepository
+    @EnvironmentObject private var carroRepo: CarroRepository
+    @EnvironmentObject private var pneuRepo: PneuRepository
+    @EnvironmentObject private var combustivelRepo: CombustivelRepository
     let eventoId: String
     let onClose: () -> Void
 
@@ -70,6 +73,9 @@ struct EventoDetalheView: View {
                     onCreated: { _ in sheet = nil }
                 )
                 .environmentObject(stintRepo)
+                .environmentObject(carroRepo)
+                .environmentObject(pneuRepo)
+                .environmentObject(combustivelRepo)
             } else {
                 EmptyView()
             }
@@ -556,11 +562,20 @@ private struct AddStintCTA: View {
     let queue = try! P1FastCore.DB.makeMemoryQueue()
     let repo = EventoRepository(queue: queue)
     let stintRepo = StintRepository(queue: queue)
+    let carroRepo = CarroRepository(queue: queue)
+    let pneuRepo = PneuRepository(queue: queue)
+    let combustivelRepo = CombustivelRepository(queue: queue)
     return EventoDetalheView(eventoId: EventoRepository.seedPassado1Id, onClose: {})
         .environmentObject(repo)
         .environmentObject(stintRepo)
+        .environmentObject(carroRepo)
+        .environmentObject(pneuRepo)
+        .environmentObject(combustivelRepo)
         .task {
             await repo.bootstrap()
             await stintRepo.bootstrap()
+            await carroRepo.bootstrap()
+            await pneuRepo.bootstrap()
+            await combustivelRepo.bootstrap()
         }
 }

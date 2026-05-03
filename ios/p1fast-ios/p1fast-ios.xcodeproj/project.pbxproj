@@ -48,6 +48,8 @@
 		DB5448127DA0BD4BDC8C15C4 /* EventoNovoFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8DF3C81C1D5F70ECA1A616 /* EventoNovoFormView.swift */; };
 		E1A2B3C4D5E6F70819203A41 /* PneuRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203A40 /* PneuRepository.swift */; };
 		E1A2B3C4D5E6F70819203A43 /* PneuCadastroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203A42 /* PneuCadastroView.swift */; };
+		E1A2B3C4D5E6F70819203A51 /* PneuPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203A50 /* PneuPickerView.swift */; };
+		E1A2B3C4D5E6F70819203A53 /* CombustivelPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203A52 /* CombustivelPickerView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -93,6 +95,8 @@
 		F057E5C739BCFEF58D4DC92A /* EventoDetalheView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventoDetalheView.swift; sourceTree = "<group>"; };
 		E1A2B3C4D5E6F70819203A40 /* PneuRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PneuRepository.swift; sourceTree = "<group>"; };
 		E1A2B3C4D5E6F70819203A42 /* PneuCadastroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PneuCadastroView.swift; sourceTree = "<group>"; };
+		E1A2B3C4D5E6F70819203A50 /* PneuPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PneuPickerView.swift; sourceTree = "<group>"; };
+		E1A2B3C4D5E6F70819203A52 /* CombustivelPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombustivelPickerView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -177,6 +181,7 @@
 				2871683CCDBF80DA9CED8A64 /* CarroNovoFormView.swift */,
 				9082B3C66C9740F0278E7748 /* CombustivelCadastroView.swift */,
 				334E323E30AB4D759B43CCD6 /* CombustivelListaView.swift */,
+				E1A2B3C4D5E6F70819203A52 /* CombustivelPickerView.swift */,
 				839526E2A03B6C2ED09D4907 /* ContentView.swift */,
 				F057E5C739BCFEF58D4DC92A /* EventoDetalheView.swift */,
 				139F414C2942139A9367A3B2 /* EventoMockSummary.swift */,
@@ -188,6 +193,7 @@
 				C44B2A9473ECC2C908EFE331 /* PessoasView.swift */,
 				7258210661C7A35F7DAFA577 /* PilotoCadastroView.swift */,
 				E1A2B3C4D5E6F70819203A42 /* PneuCadastroView.swift */,
+				E1A2B3C4D5E6F70819203A50 /* PneuPickerView.swift */,
 				0FD40430C136E8D926EC0FE7 /* PosStintView.swift */,
 				162332DAA2D671F61DFE3881 /* StintModalView.swift */,
 				6589CA76112B0192B9A53BD8 /* ThemeShowcaseView.swift */,
@@ -329,6 +335,7 @@
 				9E8DC084A44D5CF5DEFDB5AA /* Chip.swift in Sources */,
 				356C87BA35F17C3FAF721842 /* CombustivelCadastroView.swift in Sources */,
 				02F3175D78223DA6307C1A28 /* CombustivelListaView.swift in Sources */,
+				E1A2B3C4D5E6F70819203A53 /* CombustivelPickerView.swift in Sources */,
 				6F90A7452F0F5831913118ED /* CombustivelRepository.swift in Sources */,
 				ACD0C3333CFD8B23EC8CF654 /* Configuration.swift in Sources */,
 				7D9C6DCB181D22F53E8E0AC4 /* ContentView.swift in Sources */,
@@ -348,6 +355,7 @@
 				1300778DB047AD216AF6FDDB /* PilotoCadastroView.swift in Sources */,
 				3C723CF342C94B20D9DDC593 /* PilotoRepository.swift in Sources */,
 				E1A2B3C4D5E6F70819203A43 /* PneuCadastroView.swift in Sources */,
+				E1A2B3C4D5E6F70819203A51 /* PneuPickerView.swift in Sources */,
 				E1A2B3C4D5E6F70819203A41 /* PneuRepository.swift in Sources */,
 				D3877CDA8893EC7CB3B31F69 /* PosStintView.swift in Sources */,
 				D5156CC89A714F94B6DDCB60 /* StintModalView.swift in Sources */,
