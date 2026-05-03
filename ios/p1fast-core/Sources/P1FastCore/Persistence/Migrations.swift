@@ -55,6 +55,33 @@ enum Migrations {
             try db.execute(sql: "ALTER TABLE passageiros ADD COLUMN peso_kg REAL;")
             try db.execute(sql: "ALTER TABLE passageiros ADD COLUMN nascimento INTEGER;")
         }
+        // ═══ v4_licoes ═════════════════════════════════════════
+        // Sprint 1A.5 — Prompt #20: catálogo curado de lições. Tabela
+        // `licoes` é GLOBAL (não tem `time_id` — é dev-curated). Espelha
+        // supabase/migrations/0004_licoes.sql (a aplicar em prod
+        // manualmente após o merge). Seed das 12 lições é
+        // responsabilidade do LicaoRepository.bootstrap() (canonico em
+        // Swift, portado de src/data/lesson-library.js).
+        m.registerMigration("v4_licoes") { db in
+            try db.execute(sql: """
+                CREATE TABLE licoes (
+                    id                TEXT PRIMARY KEY,
+                    titulo            TEXT NOT NULL,
+                    descricao         TEXT,
+                    categoria         TEXT NOT NULL,
+                    nivel             TEXT NOT NULL,
+                    fase              TEXT,
+                    tipo_curva        TEXT,
+                    sinais_requeridos TEXT,
+                    ativa             INTEGER NOT NULL DEFAULT 1,
+                    created_at        INTEGER NOT NULL,
+                    updated_at        INTEGER NOT NULL,
+                    synced_at         INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX idx_licoes_ativa ON licoes(ativa);")
+            try db.execute(sql: "CREATE INDEX idx_licoes_categoria ON licoes(categoria);")
+        }
     }
 
     // swiftlint:disable:next function_body_length

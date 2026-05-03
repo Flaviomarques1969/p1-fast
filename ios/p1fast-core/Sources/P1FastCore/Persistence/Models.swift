@@ -646,3 +646,43 @@ public struct TelemetrySample: Codable, FetchableRecord, PersistableRecord {
         id = inserted.rowID
     }
 }
+
+// MARK: - licoes (catálogo curado, GLOBAL — sem time_id)
+public struct Licao: Codable, FetchableRecord, PersistableRecord, Equatable {
+    public var id: String
+    public var titulo: String
+    public var descricao: String?
+    public var categoria: String
+    public var nivel: String
+    public var fase: String?
+    public var tipoCurva: String?
+    public var sinaisRequeridos: String?  // JSON serializado pelo client
+    public var ativa: Bool
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "licoes"
+    enum CodingKeys: String, CodingKey {
+        case id, titulo, descricao, categoria, nivel, fase
+        case tipoCurva = "tipo_curva"
+        case sinaisRequeridos = "sinais_requeridos"
+        case ativa
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, titulo: String, descricao: String? = nil,
+                categoria: String, nivel: String, fase: String? = nil,
+                tipoCurva: String? = nil, sinaisRequeridos: String? = nil,
+                ativa: Bool = true,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.titulo = titulo; self.descricao = descricao
+        self.categoria = categoria; self.nivel = nivel; self.fase = fase
+        self.tipoCurva = tipoCurva; self.sinaisRequeridos = sinaisRequeridos
+        self.ativa = ativa
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}

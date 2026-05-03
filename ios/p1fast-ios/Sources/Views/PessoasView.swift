@@ -69,6 +69,7 @@ enum PessoasSubTab: String, CaseIterable, Identifiable {
     case pilotos = "Pilotos"
     case passageiros = "Passageiros"
     case combustiveis = "Combustíveis"
+    case licoes = "Lições"
     var id: String { rawValue }
 }
 
@@ -76,6 +77,7 @@ struct PessoasView: View {
     @EnvironmentObject private var pilotoRepo: PilotoRepository
     @EnvironmentObject private var passageiroRepo: PassageiroRepository
     @EnvironmentObject private var combustivelRepo: CombustivelRepository
+    @EnvironmentObject private var licaoRepo: LicaoRepository
     @State private var navSelection: BottomNavItem.ID?
     @State private var sheet: PessoasSheet?
     @State private var subTab: PessoasSubTab = .pilotos
@@ -115,6 +117,14 @@ struct PessoasView: View {
                         onDelete: { c in combustivelToDelete = c }
                     )
                     .environmentObject(combustivelRepo)
+                case .licoes:
+                    Section {
+                        LicaoListaView()
+                            .environmentObject(licaoRepo)
+                            .listRowInsets(EdgeInsets())
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.surface)
+                    }
                 }
                 bottomSpacerRow
             }
@@ -243,6 +253,7 @@ struct PessoasView: View {
         case .pilotos: return "Pilotos"
         case .passageiros: return "Passageiros"
         case .combustiveis: return "Combustível"
+        case .licoes: return "Lições"
         }
     }
 
@@ -251,6 +262,7 @@ struct PessoasView: View {
         case .pilotos: return "Quem dirige"
         case .passageiros: return "Quem anda junto"
         case .combustiveis: return "Tipos cadastrados"
+        case .licoes: return "Catálogo curado"
         }
     }
 
@@ -259,6 +271,7 @@ struct PessoasView: View {
         case .pilotos: return "Cadastrados ficam disponíveis em todo stint."
         case .passageiros: return "Passageiros são cadastrados uma vez e reaproveitados."
         case .combustiveis: return "Tipos abastecidos ficam disponíveis pra próximos stints."
+        case .licoes: return "12 lições — 7 ativas com sinais do iPhone, 5 esperando sensores."
         }
     }
 
