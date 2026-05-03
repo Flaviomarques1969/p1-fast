@@ -37,6 +37,24 @@ enum Migrations {
                 );
             """)
         }
+        // ═══ v2a_columns ═══════════════════════════════════════
+        // Sprint 1A.4 — Prompt #16: novos campos em sessoes/pilotos/passageiros.
+        // Espelha supabase/migrations/0006_v2_schema_columns.sql (a aplicar em prod
+        // manualmente após o merge). Nome `v2a_columns` evita colisão com
+        // `v2_pull_cursor` que já está em main.
+        m.registerMigration("v2a_columns") { db in
+            try db.execute(sql: "ALTER TABLE sessoes ADD COLUMN pneu_id TEXT REFERENCES pneus(id) ON DELETE SET NULL;")
+            try db.execute(sql: "ALTER TABLE sessoes ADD COLUMN combustivel_id TEXT REFERENCES combustiveis(id) ON DELETE SET NULL;")
+            try db.execute(sql: "ALTER TABLE sessoes ADD COLUMN qt_combustivel_litros REAL;")
+            try db.execute(sql: "CREATE INDEX idx_sessoes_pneu ON sessoes(pneu_id);")
+            try db.execute(sql: "CREATE INDEX idx_sessoes_combustivel ON sessoes(combustivel_id);")
+            try db.execute(sql: "ALTER TABLE pilotos ADD COLUMN altura_cm INTEGER;")
+            try db.execute(sql: "ALTER TABLE pilotos ADD COLUMN peso_kg REAL;")
+            try db.execute(sql: "ALTER TABLE pilotos ADD COLUMN nascimento INTEGER;")
+            try db.execute(sql: "ALTER TABLE passageiros ADD COLUMN altura_cm INTEGER;")
+            try db.execute(sql: "ALTER TABLE passageiros ADD COLUMN peso_kg REAL;")
+            try db.execute(sql: "ALTER TABLE passageiros ADD COLUMN nascimento INTEGER;")
+        }
     }
 
     // swiftlint:disable:next function_body_length

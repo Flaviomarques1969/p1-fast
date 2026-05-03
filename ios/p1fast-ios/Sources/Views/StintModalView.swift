@@ -228,7 +228,7 @@ struct StintModalView: View {
 
     private func hidratarPilotoDefault() {
         if pilotoId == nil {
-            pilotoId = repo.pilotos.first(where: { $0.id == StintRepository.pilotoFlavioId })?.id
+            pilotoId = repo.pilotos.first(where: { $0.id == PilotoRepository.pilotoFlavioId })?.id
                 ?? repo.pilotos.first?.id
         }
     }

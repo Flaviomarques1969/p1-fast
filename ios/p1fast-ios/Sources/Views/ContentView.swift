@@ -259,7 +259,7 @@ private struct PosStintLauncher: View {
             try? await Task.sleep(nanoseconds: 100_000_000)
         }
         guard let evento = eventoRepo.find(id: EventoRepository.seedAtivoId) ?? eventoRepo.eventos.first,
-              let piloto = stintRepo.pilotos.first(where: { $0.id == StintRepository.pilotoFlavioId }) ?? stintRepo.pilotos.first else {
+              let piloto = stintRepo.pilotos.first(where: { $0.id == PilotoRepository.pilotoFlavioId }) ?? stintRepo.pilotos.first else {
             return
         }
         do {
