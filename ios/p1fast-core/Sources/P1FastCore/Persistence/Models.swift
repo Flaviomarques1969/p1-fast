@@ -686,3 +686,77 @@ public struct Licao: Codable, FetchableRecord, PersistableRecord, Equatable {
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }
+
+// MARK: - pendencias_template (catálogo curado, GLOBAL)
+public struct PendenciaTemplate: Codable, FetchableRecord, PersistableRecord, Equatable {
+    public var id: String
+    public var grupoId: String
+    public var grupoTitulo: String
+    public var grupoNum: String
+    public var titulo: String
+    public var observacao: String?
+    public var obrigatorio: Bool
+    public var ordem: Int
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "pendencias_template"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case grupoId = "grupo_id"
+        case grupoTitulo = "grupo_titulo"
+        case grupoNum = "grupo_num"
+        case titulo, observacao, obrigatorio, ordem
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, grupoId: String, grupoTitulo: String, grupoNum: String,
+                titulo: String, observacao: String? = nil,
+                obrigatorio: Bool = false, ordem: Int,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id
+        self.grupoId = grupoId; self.grupoTitulo = grupoTitulo; self.grupoNum = grupoNum
+        self.titulo = titulo; self.observacao = observacao
+        self.obrigatorio = obrigatorio; self.ordem = ordem
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}
+
+// MARK: - evento_pendencias (instâncias por evento)
+public struct EventoPendencia: Codable, FetchableRecord, PersistableRecord, Equatable {
+    public var id: String
+    public var eventoId: String
+    public var templateId: String
+    public var checado: Bool
+    public var checadoAt: Int64?
+    public var nota: String?
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "evento_pendencias"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case eventoId = "evento_id"
+        case templateId = "template_id"
+        case checado
+        case checadoAt = "checado_at"
+        case nota
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, eventoId: String, templateId: String,
+                checado: Bool = false, checadoAt: Int64? = nil, nota: String? = nil,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.eventoId = eventoId; self.templateId = templateId
+        self.checado = checado; self.checadoAt = checadoAt; self.nota = nota
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}

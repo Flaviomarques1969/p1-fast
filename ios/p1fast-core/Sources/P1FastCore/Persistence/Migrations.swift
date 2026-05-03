@@ -82,6 +82,43 @@ enum Migrations {
             try db.execute(sql: "CREATE INDEX idx_licoes_ativa ON licoes(ativa);")
             try db.execute(sql: "CREATE INDEX idx_licoes_categoria ON licoes(categoria);")
         }
+        // ═══ v5_pendencias ═════════════════════════════════════
+        // Sprint 1A.5 — Prompt #21: checklist cascata por evento.
+        // pendencias_template = catálogo curado (GLOBAL, igual licoes).
+        // evento_pendencias = instâncias por evento (UNIQUE evento+template).
+        // Espelha supabase/migrations/0005_pendencias.sql.
+        m.registerMigration("v5_pendencias") { db in
+            try db.execute(sql: """
+                CREATE TABLE pendencias_template (
+                    id            TEXT PRIMARY KEY,
+                    grupo_id      TEXT NOT NULL,
+                    grupo_titulo  TEXT NOT NULL,
+                    grupo_num     TEXT NOT NULL,
+                    titulo        TEXT NOT NULL,
+                    observacao    TEXT,
+                    obrigatorio   INTEGER NOT NULL DEFAULT 0,
+                    ordem         INTEGER NOT NULL,
+                    created_at    INTEGER NOT NULL,
+                    updated_at    INTEGER NOT NULL,
+                    synced_at     INTEGER
+                );
+            """)
+            try db.execute(sql: """
+                CREATE TABLE evento_pendencias (
+                    id           TEXT PRIMARY KEY,
+                    evento_id    TEXT NOT NULL REFERENCES eventos(id) ON DELETE CASCADE,
+                    template_id  TEXT NOT NULL REFERENCES pendencias_template(id) ON DELETE CASCADE,
+                    checado      INTEGER NOT NULL DEFAULT 0,
+                    checado_at   INTEGER,
+                    nota         TEXT,
+                    created_at   INTEGER NOT NULL,
+                    updated_at   INTEGER NOT NULL,
+                    synced_at    INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX idx_evento_pendencias_evento ON evento_pendencias(evento_id);")
+            try db.execute(sql: "CREATE UNIQUE INDEX idx_evento_pendencias_unique ON evento_pendencias(evento_id, template_id);")
+        }
     }
 
     // swiftlint:disable:next function_body_length

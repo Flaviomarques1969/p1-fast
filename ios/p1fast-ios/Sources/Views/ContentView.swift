@@ -128,6 +128,7 @@ private struct ReadyRoot: View {
     @StateObject private var pneuRepo: PneuRepository
     @StateObject private var trackRepo: TrackRepository
     @StateObject private var licaoRepo: LicaoRepository
+    @StateObject private var pendenciaRepo: PendenciaRepository
 
     init(queue: DatabaseQueue) {
         self.queue = queue
@@ -140,6 +141,7 @@ private struct ReadyRoot: View {
         _pneuRepo = StateObject(wrappedValue: PneuRepository(queue: queue))
         _trackRepo = StateObject(wrappedValue: TrackRepository(queue: queue))
         _licaoRepo = StateObject(wrappedValue: LicaoRepository(queue: queue))
+        _pendenciaRepo = StateObject(wrappedValue: PendenciaRepository(queue: queue))
     }
 
     var body: some View {
@@ -153,6 +155,7 @@ private struct ReadyRoot: View {
             .environmentObject(pneuRepo)
             .environmentObject(trackRepo)
             .environmentObject(licaoRepo)
+            .environmentObject(pendenciaRepo)
             .task {
                 await carroRepo.bootstrap()
                 // EventoRepo seeda o TrackRow brasília — TrackRepo
@@ -168,6 +171,7 @@ private struct ReadyRoot: View {
                 await pneuRepo.bootstrap()
                 await trackRepo.bootstrap()
                 await licaoRepo.bootstrap()
+                await pendenciaRepo.bootstrap()
             }
     }
 
@@ -311,6 +315,7 @@ private struct EventoDetalheViewSheet: View {
     @EnvironmentObject private var carroRepo: CarroRepository
     @EnvironmentObject private var pneuRepo: PneuRepository
     @EnvironmentObject private var combustivelRepo: CombustivelRepository
+    @EnvironmentObject private var pendenciaRepo: PendenciaRepository
     let eventoId: String
     let openSheet: WhichSheet
 
@@ -326,6 +331,7 @@ private struct EventoDetalheViewSheet: View {
                 .environmentObject(carroRepo)
                 .environmentObject(pneuRepo)
                 .environmentObject(combustivelRepo)
+                .environmentObject(pendenciaRepo)
             // Overlay invisível só pra disparar a sheet automaticamente.
             Color.clear
                 .frame(width: 0, height: 0)

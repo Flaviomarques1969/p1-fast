@@ -62,20 +62,20 @@ const PG_TABLES   = pgTables(pg);
 const GRDB_TABLES = grdbTables(grdb);
 
 // ─── Tests ────────────────────────────────────────────────
-t('PG tem 21 tabelas em public (20 do 0001 + licoes do 0004)', () => {
-  if (PG_TABLES.size !== 21) throw new Error('size=' + PG_TABLES.size);
+t('PG tem 23 tabelas em public (20 do 0001 + licoes 0004 + pendencias_template/evento_pendencias 0005)', () => {
+  if (PG_TABLES.size !== 23) throw new Error('size=' + PG_TABLES.size);
 });
 
-t('GRDB tem 23 tabelas (21 PG + sync_queue + sync_meta local-only)', () => {
-  if (GRDB_TABLES.size !== 23) throw new Error('size=' + GRDB_TABLES.size);
+t('GRDB tem 25 tabelas (23 PG + sync_queue + sync_meta local-only)', () => {
+  if (GRDB_TABLES.size !== 25) throw new Error('size=' + GRDB_TABLES.size);
 });
 
-t('GRDB cobre TODAS as 21 tabelas do PG', () => {
+t('GRDB cobre TODAS as 23 tabelas do PG', () => {
   const missing = [...PG_TABLES].filter(x => !GRDB_TABLES.has(x));
   if (missing.length) throw new Error('faltam no GRDB: ' + missing.join(', '));
 });
 
-t('GRDB tem só sync_queue + sync_meta além das 21 do PG', () => {
+t('GRDB tem só sync_queue + sync_meta além das 23 do PG', () => {
   const extras = [...GRDB_TABLES].filter(x => !PG_TABLES.has(x)).sort();
   const expected = ['sync_meta', 'sync_queue'];
   if (extras.length !== 2 || extras[0] !== expected[0] || extras[1] !== expected[1]) {
@@ -153,12 +153,12 @@ t('ADR-014: PG telemetry_samples NÃO tem policy UPDATE/DELETE', () => {
 });
 
 // ─── RLS coverage ─────────────────────────────────────────
-t('RLS habilitada em todas as 21 tabelas do PG', () => {
+t('RLS habilitada em todas as 23 tabelas do PG', () => {
   const rlsRe = /alter table public\.([a-z_]+)\s+enable row level security/g;
   const rlsTables = new Set();
   let m;
   while ((m = rlsRe.exec(pg)) !== null) rlsTables.add(m[1]);
-  if (rlsTables.size !== 21) throw new Error('RLS em ' + rlsTables.size + ' tabelas');
+  if (rlsTables.size !== 23) throw new Error('RLS em ' + rlsTables.size + ' tabelas');
   const missing = [...PG_TABLES].filter(x => !rlsTables.has(x));
   if (missing.length) throw new Error('sem RLS: ' + missing.join(', '));
 });
