@@ -210,12 +210,9 @@
 				C76C98240888EE064C4D2EC5 /* CarroSetupOverrides.swift */,
 				EC43A445C874747C1D6C3A8D /* CombustivelRepository.swift */,
 				4D475C80F681ED1F05FC53B5 /* EventoRepository.swift */,
-<<<<<<< HEAD
 				C8419148994E63AE6CDDCE16 /* PassageiroRepository.swift */,
 				0E4DC20BF1F609324F2C9EE9 /* PilotoRepository.swift */,
-=======
 				E1A2B3C4D5E6F70819203A40 /* PneuRepository.swift */,
->>>>>>> 1d51e38 (feat(1A3): Pneus (CRUD inline no Carro Modal) — Prompt #14)
 				52184FDD398B02FA4752681B /* StintRepository.swift */,
 			);
 			path = Persistence;
