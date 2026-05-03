@@ -37,6 +37,8 @@
 //   --p1-combustivel-novo  → PessoasView com sheet "Novo combustível" aberta
 //   --p1-pneu-novo         → abre CarroModalView do primeiro carro já
 //                            com a sheet "Novo pneu" aberta (Prompt #14)
+//   --p1-trechos           → TrechoListaView direto (lista readonly de
+//                            trechos da pista cadastrada, Prompt #19)
 //   default                → HomeView estado cheio (Sprint 1A.6 troca
 //                            pelo Repository real)
 
@@ -63,6 +65,7 @@ private enum AppRoute {
     case combustiveis
     case combustivelNovo
     case pneuNovo
+    case trechos
 
     static var fromLaunchArgs: AppRoute {
         let args = ProcessInfo.processInfo.arguments
@@ -82,6 +85,7 @@ private enum AppRoute {
         if args.contains("--p1-combustiveis") { return .combustiveis }
         if args.contains("--p1-pessoas") { return .pessoasPilotos }
         if args.contains("--p1-pneu-novo") { return .pneuNovo }
+        if args.contains("--p1-trechos") { return .trechos }
         if args.contains("--p1-eventos") { return .eventos }
         return .home
     }
@@ -118,6 +122,7 @@ private struct ReadyRoot: View {
     @StateObject private var combustivelRepo: CombustivelRepository
     @StateObject private var stintRepo: StintRepository
     @StateObject private var pneuRepo: PneuRepository
+    @StateObject private var trackRepo: TrackRepository
 
     init(queue: DatabaseQueue) {
         self.queue = queue
@@ -128,6 +133,7 @@ private struct ReadyRoot: View {
         _combustivelRepo = StateObject(wrappedValue: CombustivelRepository(queue: queue))
         _stintRepo = StateObject(wrappedValue: StintRepository(queue: queue))
         _pneuRepo = StateObject(wrappedValue: PneuRepository(queue: queue))
+        _trackRepo = StateObject(wrappedValue: TrackRepository(queue: queue))
     }
 
     var body: some View {
@@ -139,8 +145,12 @@ private struct ReadyRoot: View {
             .environmentObject(combustivelRepo)
             .environmentObject(stintRepo)
             .environmentObject(pneuRepo)
+            .environmentObject(trackRepo)
             .task {
                 await carroRepo.bootstrap()
+                // EventoRepo seeda o TrackRow brasília — TrackRepo
+                // (Prompt #19) complementa com layout + segments + marcos
+                // e precisa rodar DEPOIS pra evitar duplicar a inserção.
                 await eventoRepo.bootstrap()
                 // PilotoRepo seeda os 2 pilotos canônicos. Tem que rodar
                 // antes do StintRepo pra que o reloadPilotos pegue eles.
@@ -149,6 +159,7 @@ private struct ReadyRoot: View {
                 await combustivelRepo.bootstrap()
                 await stintRepo.bootstrap()
                 await pneuRepo.bootstrap()
+                await trackRepo.bootstrap()
             }
     }
 
@@ -191,6 +202,10 @@ private struct ReadyRoot: View {
             PessoasView(initialSheet: .novoCombustivel, initialSubTab: .combustiveis)
         case .pneuNovo:
             PneuNovoLauncher()
+        case .trechos:
+            NavigationStack {
+                TrechoListaView()
+            }
         }
     }
 }
