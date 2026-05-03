@@ -153,7 +153,7 @@ t('ADR-014: PG telemetry_samples NÃO tem policy UPDATE/DELETE', () => {
 });
 
 // ─── RLS coverage ─────────────────────────────────────────
-t('RLS habilitada em todas as 20 tabelas do PG', () => {
+t('RLS habilitada em todas as 21 tabelas do PG', () => {
   const rlsRe = /alter table public\.([a-z_]+)\s+enable row level security/g;
   const rlsTables = new Set();
   let m;
