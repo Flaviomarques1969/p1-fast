@@ -75,16 +75,13 @@ private enum AppRoute {
         if args.contains("--p1-evento-detalhe") { return .eventoDetalhe }
         if args.contains("--p1-stint-novo") { return .stintNovo }
         if args.contains("--p1-pos-stint") { return .posStint }
-<<<<<<< HEAD
         if args.contains("--p1-piloto-novo") { return .pilotoNovo }
         if args.contains("--p1-passageiro-novo") { return .passageiroNovo }
         if args.contains("--p1-pessoas-passageiros") { return .pessoasPassageiros }
         if args.contains("--p1-combustivel-novo") { return .combustivelNovo }
         if args.contains("--p1-combustiveis") { return .combustiveis }
         if args.contains("--p1-pessoas") { return .pessoasPilotos }
-=======
         if args.contains("--p1-pneu-novo") { return .pneuNovo }
->>>>>>> 1d51e38 (feat(1A3): Pneus (CRUD inline no Carro Modal) — Prompt #14)
         if args.contains("--p1-eventos") { return .eventos }
         return .home
     }
