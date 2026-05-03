@@ -303,6 +303,9 @@ public struct Piloto: Codable, FetchableRecord, PersistableRecord {
     public var timeId: String
     public var nome: String
     public var userId: String?
+    public var alturaCm: Int?
+    public var pesoKg: Double?
+    public var nascimento: Int64?
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -313,15 +316,20 @@ public struct Piloto: Codable, FetchableRecord, PersistableRecord {
         case timeId = "time_id"
         case nome
         case userId = "user_id"
+        case alturaCm = "altura_cm"
+        case pesoKg = "peso_kg"
+        case nascimento
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
     }
 
     public init(id: String, timeId: String, nome: String, userId: String? = nil,
+                alturaCm: Int? = nil, pesoKg: Double? = nil, nascimento: Int64? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.timeId = timeId; self.nome = nome; self.userId = userId
+        self.alturaCm = alturaCm; self.pesoKg = pesoKg; self.nascimento = nascimento
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }
@@ -331,6 +339,9 @@ public struct Passageiro: Codable, FetchableRecord, PersistableRecord {
     public var id: String
     public var timeId: String
     public var nome: String
+    public var alturaCm: Int?
+    public var pesoKg: Double?
+    public var nascimento: Int64?
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -340,15 +351,20 @@ public struct Passageiro: Codable, FetchableRecord, PersistableRecord {
         case id
         case timeId = "time_id"
         case nome
+        case alturaCm = "altura_cm"
+        case pesoKg = "peso_kg"
+        case nascimento
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
     }
 
     public init(id: String, timeId: String, nome: String,
+                alturaCm: Int? = nil, pesoKg: Double? = nil, nascimento: Int64? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.timeId = timeId; self.nome = nome
+        self.alturaCm = alturaCm; self.pesoKg = pesoKg; self.nascimento = nascimento
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }
@@ -473,6 +489,9 @@ public struct Sessao: Codable, FetchableRecord, PersistableRecord {
     public var dataFim: Int64?
     public var voltasPlanejadas: Int?
     public var objetivo: String?
+    public var pneuId: String?
+    public var combustivelId: String?
+    public var qtCombustivelLitros: Double?
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -490,6 +509,9 @@ public struct Sessao: Codable, FetchableRecord, PersistableRecord {
         case dataFim = "data_fim"
         case voltasPlanejadas = "voltas_planejadas"
         case objetivo
+        case pneuId = "pneu_id"
+        case combustivelId = "combustivel_id"
+        case qtCombustivelLitros = "qt_combustivel_litros"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
@@ -499,12 +521,16 @@ public struct Sessao: Codable, FetchableRecord, PersistableRecord {
                 pilotoId: String? = nil, configuracaoId: String? = nil,
                 status: String? = "planejada", dataInicio: Int64? = nil, dataFim: Int64? = nil,
                 voltasPlanejadas: Int? = nil, objetivo: String? = nil,
+                pneuId: String? = nil, combustivelId: String? = nil,
+                qtCombustivelLitros: Double? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.timeId = timeId; self.eventoId = eventoId
         self.carroId = carroId; self.pilotoId = pilotoId; self.configuracaoId = configuracaoId
         self.status = status; self.dataInicio = dataInicio; self.dataFim = dataFim
         self.voltasPlanejadas = voltasPlanejadas; self.objetivo = objetivo
+        self.pneuId = pneuId; self.combustivelId = combustivelId
+        self.qtCombustivelLitros = qtCombustivelLitros
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }

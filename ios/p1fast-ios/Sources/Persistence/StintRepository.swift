@@ -12,8 +12,8 @@
 // Pilotos: a fonte da verdade é PilotoRepository (Prompt #12). Aqui
 // só queryamos `pilotos` pra alimentar o picker do StintModal — seed
 // canônico (Flavio + Bruno) vive em PilotoRepository.bootstrap.
-// IDs canônicos re-exportados como aliases pra back-compat dos
-// callers já existentes (EventoMockSummary, PosStintLauncher).
+// Callers que precisam dos IDs canônicos referenciam `PilotoRepository.*`
+// direto (Sprint 1A.4 #16 removeu os aliases que existiam aqui).
 //
 // Voltas: na criação do stint só temos `voltas_planejadas`. As linhas
 // reais em `voltas` chegam quando o stint é finalizado — esse repo
@@ -32,12 +32,6 @@ import P1FastCore
 final class StintRepository: ObservableObject {
     /// Mesmo ID dos outros repos (single-tenant até 1A.6).
     static let localTimeId = "local-default-team"
-
-    /// Aliases dos IDs canônicos — fonte é `PilotoRepository`.
-    /// Mantidos aqui pra não quebrar callers (EventoMockSummary,
-    /// PosStintLauncher) que ainda referenciam pelo namespace antigo.
-    static let pilotoFlavioId = PilotoRepository.pilotoFlavioId
-    static let pilotoBrunoId = PilotoRepository.pilotoBrunoId
 
     @Published private(set) var pilotos: [Piloto] = []
     /// Stints fetchados do GRDB pelo último `loadByEvento(...)`. Reseta
