@@ -14,11 +14,6 @@
 //
 // Init com `pneuToEdit: nil` cria novo; com pneu preenchido edita
 // in-place via PneuRepository.upsert (.save = INSERT OR REPLACE).
-//
-// Modo edit também ganha botão "Apagar pneu" no rodapé do conteúdo
-// (ghost vermelho). Tap dispara alert "Não dá pra desfazer." antes
-// de chamar `delete(...)` — mesmo padrão dos demais cadastros do
-// Sprint 1A.3.
 
 import SwiftUI
 import P1FastCore
@@ -34,7 +29,6 @@ struct PneuCadastroView: View {
     @State private var composto: Pneu.Composto = .radial
     @State private var savingError: String?
     @State private var isSaving = false
-    @State private var showDeleteAlert = false
 
     private var isEditing: Bool { pneuToEdit != nil }
 
@@ -52,18 +46,12 @@ struct PneuCadastroView: View {
             FootBar(
                 onCancel: onClose,
                 onSave: save,
-                saveLabel: isEditing ? "Salvar alterações" : "Salvar pneu",
+                saveLabel: "Salvar pneu",
                 canSave: !marca.trimmingCharacters(in: .whitespaces).isEmpty && !isSaving
             )
         }
         .preferredColorScheme(.dark)
         .task { hydrateFromExisting() }
-        .alert("Apagar pneu?", isPresented: $showDeleteAlert) {
-            Button("Cancelar", role: .cancel) {}
-            Button("Apagar", role: .destructive) { confirmarDelete() }
-        } message: {
-            Text("Não dá pra desfazer.")
-        }
     }
 
     @ViewBuilder
@@ -99,13 +87,6 @@ struct PneuCadastroView: View {
                     .font(.captionP1)
                     .foregroundStyle(Color.erro)
                     .padding(.horizontal, Spacing.xs)
-            }
-
-            if isEditing {
-                DeleteCadastroButton(label: "Apagar pneu") {
-                    showDeleteAlert = true
-                }
-                .padding(.top, Spacing.sm)
             }
         }
     }
@@ -149,22 +130,6 @@ struct PneuCadastroView: View {
             } catch {
                 isSaving = false
                 savingError = "Não consegui salvar: \(error.localizedDescription)"
-            }
-        }
-    }
-
-    private func confirmarDelete() {
-        guard let p = pneuToEdit else { return }
-        isSaving = true
-        savingError = nil
-        Task {
-            do {
-                try await repo.delete(id: p.id)
-                isSaving = false
-                onClose()
-            } catch {
-                isSaving = false
-                savingError = "Não consegui apagar: \(error.localizedDescription)"
             }
         }
     }

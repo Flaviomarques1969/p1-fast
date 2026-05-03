@@ -10,33 +10,18 @@
 // Visual herda do mockup: eyebrow + título + label + input + textarea
 // + FootBar Cancelar/Salvar. Octanagem do schema fica fora do form
 // v1 (HelperNote deixa explícito).
-//
-// Modo edit: quando `combustivelToEdit` chega não-nil, hidrata o
-// form, troca título e CTA, chama `update(...)` em vez de
-// `create(...)`. Botão "Apagar combustível" no rodapé do conteúdo
-// dispara alert antes de remover.
 
 import SwiftUI
 import P1FastCore
 
 struct CombustivelCadastroView: View {
     @EnvironmentObject private var repo: CombustivelRepository
-    let combustivelToEdit: Combustivel?
     let onClose: () -> Void
-
-    init(combustivelToEdit: Combustivel? = nil, onClose: @escaping () -> Void) {
-        self.combustivelToEdit = combustivelToEdit
-        self.onClose = onClose
-    }
 
     @State private var nome: String = ""
     @State private var observacao: String = ""
     @State private var savingError: String?
     @State private var isSaving = false
-    @State private var hydrated = false
-    @State private var showDeleteAlert = false
-
-    private var isEditing: Bool { combustivelToEdit != nil }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -52,18 +37,11 @@ struct CombustivelCadastroView: View {
             FootBar(
                 onCancel: onClose,
                 onSave: salvar,
-                saveLabel: isEditing ? "Salvar alterações" : "Salvar tipo",
+                saveLabel: "Salvar tipo",
                 canSave: canSave
             )
         }
         .preferredColorScheme(.dark)
-        .task { hydrateFromExisting() }
-        .alert("Apagar combustível?", isPresented: $showDeleteAlert) {
-            Button("Cancelar", role: .cancel) {}
-            Button("Apagar", role: .destructive) { confirmarDelete() }
-        } message: {
-            Text("Não dá pra desfazer.")
-        }
     }
 
     private var canSave: Bool {
@@ -74,12 +52,12 @@ struct CombustivelCadastroView: View {
     private var content: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             VStack(alignment: .leading, spacing: 6) {
-                Eyebrow(text: isEditing ? "Editar combustível" : "Novo combustível")
-                Text(isEditing ? "Editar tipo" : "Cadastrar tipo")
+                Eyebrow(text: "Novo combustível")
+                Text("Cadastrar tipo")
                     .font(.system(size: 24, weight: .semibold))
                     .tracking(-0.6)
                     .foregroundStyle(Color.text)
-                Text(isEditing ? "Atualize os dados ou apague o tipo." : "Fica disponível pra próximos stints.")
+                Text("Fica disponível pra próximos stints.")
                     .font(.system(size: 13, weight: .regular))
                     .foregroundStyle(Color.textMuted)
             }
@@ -90,7 +68,7 @@ struct CombustivelCadastroView: View {
                 FormInput(
                     text: $nome,
                     placeholder: "Ex: Etanol, E85, Metanol",
-                    isFocus: !isEditing
+                    isFocus: true
                 )
             }
 
@@ -110,21 +88,7 @@ struct CombustivelCadastroView: View {
 
             HelperNote(text: "Octanagem entra quando o form de stint precisar dela. Por enquanto guarda no campo de observação se quiser registrar.")
                 .padding(.top, Spacing.sm)
-
-            if isEditing {
-                DeleteCadastroButton(label: "Apagar combustível") {
-                    showDeleteAlert = true
-                }
-                .padding(.top, Spacing.sm)
-            }
         }
-    }
-
-    private func hydrateFromExisting() {
-        guard !hydrated, let c = combustivelToEdit else { return }
-        nome = c.nome
-        observacao = c.tipo ?? ""
-        hydrated = true
     }
 
     private func salvar() {
@@ -135,37 +99,15 @@ struct CombustivelCadastroView: View {
         savingError = nil
         Task {
             do {
-                if var existing = combustivelToEdit {
-                    existing.nome = trimmedNome
-                    existing.tipo = obs.isEmpty ? nil : obs
-                    try await repo.update(combustivel: existing)
-                } else {
-                    try await repo.create(
-                        nome: trimmedNome,
-                        observacao: obs.isEmpty ? nil : obs
-                    )
-                }
+                try await repo.create(
+                    nome: trimmedNome,
+                    observacao: obs.isEmpty ? nil : obs
+                )
                 isSaving = false
                 onClose()
             } catch {
                 isSaving = false
                 savingError = "Não consegui salvar: \(error.localizedDescription)"
-            }
-        }
-    }
-
-    private func confirmarDelete() {
-        guard let c = combustivelToEdit else { return }
-        isSaving = true
-        savingError = nil
-        Task {
-            do {
-                try await repo.delete(combustivelId: c.id)
-                isSaving = false
-                onClose()
-            } catch {
-                isSaving = false
-                savingError = "Não consegui apagar: \(error.localizedDescription)"
             }
         }
     }
@@ -214,20 +156,6 @@ private struct FormTextArea: View {
     let queue = try! P1FastCore.DB.makeMemoryQueue()
     let repo = CombustivelRepository(queue: queue)
     return CombustivelCadastroView(onClose: {})
-        .environmentObject(repo)
-        .task { await repo.bootstrap() }
-}
-
-#Preview("CombustivelCadastroView — edit") {
-    let queue = try! P1FastCore.DB.makeMemoryQueue()
-    let repo = CombustivelRepository(queue: queue)
-    let mock = Combustivel(
-        id: "preview-combustivel",
-        timeId: CombustivelRepository.localTimeId,
-        nome: "Etanol comum",
-        tipo: "Posto Shell BR-040"
-    )
-    return CombustivelCadastroView(combustivelToEdit: mock, onClose: {})
         .environmentObject(repo)
         .task { await repo.bootstrap() }
 }
