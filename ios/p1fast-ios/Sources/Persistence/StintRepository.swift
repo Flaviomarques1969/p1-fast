@@ -152,8 +152,10 @@ final class StintRepository: ObservableObject {
     @discardableResult
     func finalize(stintId: String, mediaVoltaMs: Int = 103_500) async throws -> Stint {
         let now = DB.nowMs()
-        try await queue.write { db in
-            guard var sessao = try Sessao.fetchOne(db, key: stintId) else { return }
+        // Devolve (pneu_id, qtVoltas) pra incrementar ciclos do pneu APÓS o
+        // commit da escrita — incrementarCiclos abre transação própria.
+        let (pneuIdMontado, voltasGeradas): (String?, Int) = try await queue.write { db in
+            guard var sessao = try Sessao.fetchOne(db, key: stintId) else { return (nil, 0) }
             let planejadas = sessao.voltasPlanejadas ?? 0
 
             // Gera N voltas com tempos plausíveis em torno da média (±5%).
@@ -178,11 +180,19 @@ final class StintRepository: ObservableObject {
                 ).insert(db)
             }
 
+            let pid = sessao.pneuId
             sessao.status = "finalizada"
             sessao.dataFim = now
             sessao.updatedAt = now
             sessao.syncedAt = nil
             try sessao.update(db)
+            return (pid, planejadas)
+        }
+
+        // Sprint 1A.4 — auto-incrementa pneus.ciclos quando o stint tem
+        // pneu montado. No-op silencioso se pneu_id == nil.
+        if let pneuIdMontado, voltasGeradas > 0 {
+            try await incrementarCiclos(pneuId: pneuIdMontado, by: voltasGeradas)
         }
 
         // Recarrega o stint pra UI receber tudo composto.
@@ -258,6 +268,54 @@ final class StintRepository: ObservableObject {
 
     func find(stintId: String) -> Stint? {
         stintsPorEvento.first(where: { $0.id == stintId })
+    }
+
+    // MARK: - Selectors (Sprint 1A.4 — Prompt #17)
+
+    /// Atualiza apenas o `pneu_id` do stint. Passar `nil` desvincula. Usado
+    /// pelo `PneuPickerView` no `StintModalView` (Configuração → Pneu
+    /// montado). Não bloqueia status — caller decide a regra (UI mantém
+    /// edição livre em planejado/ativo e read-only em finalizado).
+    func setPneu(stintId: String, pneuId: String?) async throws {
+        let now = DB.nowMs()
+        try await queue.write { db in
+            guard var sessao = try Sessao.fetchOne(db, key: stintId) else { return }
+            sessao.pneuId = pneuId
+            sessao.updatedAt = now
+            sessao.syncedAt = nil
+            try sessao.update(db)
+        }
+    }
+
+    /// Atualiza `combustivel_id` + `qt_combustivel_litros` do stint. Cada
+    /// um pode ficar `nil` independentemente — usuário pode preencher só a
+    /// quantidade ou só o tipo. Mesma regra de status do `setPneu`.
+    func setCombustivel(stintId: String, combustivelId: String?, litros: Double?) async throws {
+        let now = DB.nowMs()
+        try await queue.write { db in
+            guard var sessao = try Sessao.fetchOne(db, key: stintId) else { return }
+            sessao.combustivelId = combustivelId
+            sessao.qtCombustivelLitros = litros
+            sessao.updatedAt = now
+            sessao.syncedAt = nil
+            try sessao.update(db)
+        }
+    }
+
+    /// Soma `voltas` em `pneus.ciclos`. Chamado automaticamente pelo
+    /// `finalize(...)` quando o stint tem pneu_id != nil. Idempotência fica
+    /// pro caller — chamar duas vezes vai dobrar `ciclos`. No-op quando
+    /// `voltas <= 0` ou pneu não existe (protege contra stints fantasmas).
+    func incrementarCiclos(pneuId: String, by voltas: Int) async throws {
+        guard voltas > 0 else { return }
+        let now = DB.nowMs()
+        try await queue.write { db in
+            guard var pneu = try Pneu.fetchOne(db, key: pneuId) else { return }
+            pneu.ciclos += voltas
+            pneu.updatedAt = now
+            pneu.syncedAt = nil
+            try pneu.update(db)
+        }
     }
 
     // MARK: - Internas

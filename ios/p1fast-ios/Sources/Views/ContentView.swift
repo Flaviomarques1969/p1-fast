@@ -283,6 +283,9 @@ private struct PosStintLauncher: View {
 private struct EventoDetalheViewSheet: View {
     @EnvironmentObject private var eventoRepo: EventoRepository
     @EnvironmentObject private var stintRepo: StintRepository
+    @EnvironmentObject private var carroRepo: CarroRepository
+    @EnvironmentObject private var pneuRepo: PneuRepository
+    @EnvironmentObject private var combustivelRepo: CombustivelRepository
     let eventoId: String
     let openSheet: WhichSheet
 
@@ -295,6 +298,9 @@ private struct EventoDetalheViewSheet: View {
             EventoDetalheView(eventoId: eventoId, onClose: { presented = false })
                 .environmentObject(eventoRepo)
                 .environmentObject(stintRepo)
+                .environmentObject(carroRepo)
+                .environmentObject(pneuRepo)
+                .environmentObject(combustivelRepo)
             // Overlay invisível só pra disparar a sheet automaticamente.
             Color.clear
                 .frame(width: 0, height: 0)
@@ -309,6 +315,9 @@ private struct EventoDetalheViewSheet: View {
                             onCreated: { _ in presented = false }
                         )
                         .environmentObject(stintRepo)
+                        .environmentObject(carroRepo)
+                        .environmentObject(pneuRepo)
+                        .environmentObject(combustivelRepo)
                     }
                 }
                 .task {
