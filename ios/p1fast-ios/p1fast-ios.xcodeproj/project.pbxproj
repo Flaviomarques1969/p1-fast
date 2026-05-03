@@ -342,16 +342,13 @@
 				2E22B429D84E982E66BF487A /* GaragemView.swift in Sources */,
 				2841E12C02FD0F7E9A5A9506 /* HomeView.swift in Sources */,
 				B39DBE85EA240E9F1B6698FE /* P1FastApp.swift in Sources */,
-<<<<<<< HEAD
 				5E4293E8007960583EF0C9F6 /* PassageiroCadastroView.swift in Sources */,
 				C49AFE1839DB6C37AF4DB487 /* PassageiroRepository.swift in Sources */,
 				006855C71420AA488C6B4C10 /* PessoasView.swift in Sources */,
 				1300778DB047AD216AF6FDDB /* PilotoCadastroView.swift in Sources */,
 				3C723CF342C94B20D9DDC593 /* PilotoRepository.swift in Sources */,
-=======
 				E1A2B3C4D5E6F70819203A43 /* PneuCadastroView.swift in Sources */,
 				E1A2B3C4D5E6F70819203A41 /* PneuRepository.swift in Sources */,
->>>>>>> 1d51e38 (feat(1A3): Pneus (CRUD inline no Carro Modal) — Prompt #14)
 				D3877CDA8893EC7CB3B31F69 /* PosStintView.swift in Sources */,
 				D5156CC89A714F94B6DDCB60 /* StintModalView.swift in Sources */,
 				8E3DAF8B6F3BE8E346213A37 /* StintRepository.swift in Sources */,
