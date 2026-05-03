@@ -60,6 +60,8 @@
 		E1A2B3C4D5E6F70819203C11 /* Reachability.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203C10 /* Reachability.swift */; };
 		E1A2B3C4D5E6F70819203C21 /* URLSessionTransports.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203C20 /* URLSessionTransports.swift */; };
 		E1A2B3C4D5E6F70819203C31 /* SyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203C30 /* SyncCoordinator.swift */; };
+		E1A2B3C4D5E6F70819203D11 /* SyncStatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203D10 /* SyncStatusBadge.swift */; };
+		E1A2B3C4D5E6F70819203D21 /* SincronizacaoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203D20 /* SincronizacaoView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -117,6 +119,8 @@
 		E1A2B3C4D5E6F70819203C10 /* Reachability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reachability.swift; sourceTree = "<group>"; };
 		E1A2B3C4D5E6F70819203C20 /* URLSessionTransports.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLSessionTransports.swift; sourceTree = "<group>"; };
 		E1A2B3C4D5E6F70819203C30 /* SyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncCoordinator.swift; sourceTree = "<group>"; };
+		E1A2B3C4D5E6F70819203D10 /* SyncStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncStatusBadge.swift; sourceTree = "<group>"; };
+		E1A2B3C4D5E6F70819203D20 /* SincronizacaoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SincronizacaoView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -222,6 +226,8 @@
 				E1A2B3C4D5E6F70819203B12 /* LicaoListaView.swift */,
 				E1A2B3C4D5E6F70819203B22 /* PendenciasView.swift */,
 				E1A2B3C4D5E6F70819203B30 /* SetupAvancadoView.swift */,
+				E1A2B3C4D5E6F70819203D10 /* SyncStatusBadge.swift */,
+				E1A2B3C4D5E6F70819203D20 /* SincronizacaoView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -411,6 +417,8 @@
 				E1A2B3C4D5E6F70819203C11 /* Reachability.swift in Sources */,
 				E1A2B3C4D5E6F70819203C21 /* URLSessionTransports.swift in Sources */,
 				E1A2B3C4D5E6F70819203C31 /* SyncCoordinator.swift in Sources */,
+				E1A2B3C4D5E6F70819203D11 /* SyncStatusBadge.swift in Sources */,
+				E1A2B3C4D5E6F70819203D21 /* SincronizacaoView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

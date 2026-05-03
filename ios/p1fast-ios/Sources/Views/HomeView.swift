@@ -58,7 +58,11 @@ struct CarroMock: Identifiable, Equatable {
 
 struct HomeView: View {
     let state: HomeState
+    /// Opcional pra previews — quando presente, mostra SyncStatusBadge no
+    /// header e abre SincronizacaoView no tap.
+    var syncCoordinator: SyncCoordinator? = nil
     @State private var navSelection: BottomNavItem.ID?
+    @State private var showSyncSheet = false
     private let navItems: [BottomNavItem] = [
         BottomNavItem("Home"),
         BottomNavItem("Eventos"),
@@ -89,6 +93,21 @@ struct HomeView: View {
         .preferredColorScheme(.dark)
         .onAppear {
             if navSelection == nil { navSelection = navItems.first?.id }
+        }
+        .overlay(alignment: .topTrailing) {
+            if let coord = syncCoordinator {
+                SyncStatusBadge(coordinator: coord, compact: false) {
+                    showSyncSheet = true
+                }
+                .padding(.trailing, Spacing.lg)
+                .padding(.top, Spacing.md)
+            }
+        }
+        .sheet(isPresented: $showSyncSheet) {
+            if let coord = syncCoordinator {
+                SincronizacaoView()
+                    .environmentObject(coord)
+            }
         }
     }
 

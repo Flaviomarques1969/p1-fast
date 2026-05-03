@@ -192,9 +192,9 @@ private struct ReadyRoot: View {
     private var routedView: some View {
         switch AppRoute.fromLaunchArgs {
         case .home:
-            HomeView(state: .filled(HomeData.mockFilled))
+            HomeView(state: .filled(HomeData.mockFilled), syncCoordinator: syncCoordinator)
         case .homeEmpty:
-            HomeView(state: .empty)
+            HomeView(state: .empty, syncCoordinator: syncCoordinator)
         case .showcase:
             ThemeShowcaseView()
         case .garagem:
