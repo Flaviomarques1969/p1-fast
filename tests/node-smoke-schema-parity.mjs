@@ -16,13 +16,22 @@
 //   sessoes.voltas_planejadas, configuracoes.temperatura_ideal_range,
 //   carros.fonte_temperatura, marcos (com pit-in/pit-out), retas_especiais.
 
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 
-const PG_PATH    = 'supabase/migrations/0001_initial.sql';
+const PG_DIR     = 'supabase/migrations';
 const GRDB_PATH  = 'ios/p1fast-core/Sources/P1FastCore/Persistence/Migrations.swift';
 const ENTITIES_P = 'src/core/entities.js';
 
-const pg   = await readFile(PG_PATH, 'utf8');
+// Concatena TODAS as migrations Postgres em ordem — o set de tabelas é a
+// soma das CREATEs de todos os arquivos. Antes lia só 0001_initial.sql,
+// passou a ler tudo quando v2a/v4 entraram (Sprint 1A.4/1A.5).
+async function loadAllPgMigrations() {
+  const files = (await readdir(PG_DIR)).filter(f => f.endsWith('.sql')).sort();
+  const parts = await Promise.all(files.map(f => readFile(`${PG_DIR}/${f}`, 'utf8')));
+  return parts.join('\n');
+}
+
+const pg   = await loadAllPgMigrations();
 const grdb = await readFile(GRDB_PATH, 'utf8');
 const ents = await readFile(ENTITIES_P, 'utf8');
 
