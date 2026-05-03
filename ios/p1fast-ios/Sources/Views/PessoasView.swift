@@ -1,7 +1,8 @@
 // ═══════════════════════════════════════════════════════════
 // PessoasView — bundle CRUD pilotos + passageiros + combustíveis
 // ═══════════════════════════════════════════════════════════
-// Sprint 1A.3 — Prompts #12 + #13 (Pessoas) + #15 (Combustíveis).
+// Sprint 1A.3 — Prompts #12 + #13 (Pessoas) + #15 (Combustíveis)
+// + fix delete affordances.
 //
 // Decisão de surface (Prompt #15): em vez de criar 5ª aba pra
 // Combustíveis, embarca como 3ª sub-tab desta tela e renomeia o
@@ -22,8 +23,15 @@
 // foram desenhados como SELETORES dentro do fluxo de stint (eyebrow
 // + título + footer Cancelar/Confirmar). Aqui usamos a MESMA
 // estética visual mas em modo CRUD: sub-tabs Pilotos/Passageiros/
-// Combustíveis, row tappável sem radio (sem selection state), botão
-// dashed "Cadastrar ..." abre sheet de cadastro.
+// Combustíveis.
+//
+// CRUD completo (delete affordances):
+//   - tap no row → abre cadastro em modo edit
+//   - swipeActions trailing → "Apagar" destrutivo + alert "Não dá pra
+//     desfazer." (cancel + apagar)
+// Surface estrutural: outer ScrollView trocou pra `List` com
+// `.listStyle(.plain)` e separators escondidos pra suportar
+// `.swipeActions` (que só funciona em row de List).
 //
 // Form mínimo (decisões #12/#13/#15):
 //   - Piloto: só nome (user_id FK fica pra Sprint 1A.6)
@@ -39,14 +47,20 @@ import P1FastCore
 
 enum PessoasSheet: Identifiable {
     case novoPiloto
+    case editarPiloto(Piloto)
     case novoPassageiro
+    case editarPassageiro(Passageiro)
     case novoCombustivel
+    case editarCombustivel(Combustivel)
 
     var id: String {
         switch self {
         case .novoPiloto: return "novo-piloto"
+        case .editarPiloto(let p): return "editar-piloto-\(p.id)"
         case .novoPassageiro: return "novo-passageiro"
+        case .editarPassageiro(let p): return "editar-passageiro-\(p.id)"
         case .novoCombustivel: return "novo-combustivel"
+        case .editarCombustivel(let c): return "editar-combustivel-\(c.id)"
         }
     }
 }
@@ -65,6 +79,9 @@ struct PessoasView: View {
     @State private var navSelection: BottomNavItem.ID?
     @State private var sheet: PessoasSheet?
     @State private var subTab: PessoasSubTab = .pilotos
+    @State private var pilotoToDelete: Piloto?
+    @State private var passageiroToDelete: Passageiro?
+    @State private var combustivelToDelete: Combustivel?
 
     private let navItems: [BottomNavItem] = [
         BottomNavItem("Home"),
@@ -83,14 +100,28 @@ struct PessoasView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            ScrollView {
-                content
-                    .padding(.horizontal, Spacing.lg)
-                    .padding(.top, Spacing.md)
-                    .padding(.bottom, 140)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+            List {
+                contextHeadRow
+                subTabBarRow
+                switch subTab {
+                case .pilotos:
+                    pilotosRows
+                case .passageiros:
+                    passageirosRows
+                case .combustiveis:
+                    CombustivelListaView(
+                        onAdd: { sheet = .novoCombustivel },
+                        onTap: { c in sheet = .editarCombustivel(c) },
+                        onDelete: { c in combustivelToDelete = c }
+                    )
+                    .environmentObject(combustivelRepo)
+                }
+                bottomSpacerRow
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
             .background(Color.surface)
+            .environment(\.defaultMinListRowHeight, 0)
 
             BottomNav(items: navItems, selection: $navSelection)
         }
@@ -105,34 +136,67 @@ struct PessoasView: View {
             case .novoPiloto:
                 PilotoCadastroView(onClose: { sheet = nil })
                     .environmentObject(pilotoRepo)
+            case .editarPiloto(let p):
+                PilotoCadastroView(pilotoToEdit: p, onClose: { sheet = nil })
+                    .environmentObject(pilotoRepo)
             case .novoPassageiro:
                 PassageiroCadastroView(onClose: { sheet = nil })
+                    .environmentObject(passageiroRepo)
+            case .editarPassageiro(let p):
+                PassageiroCadastroView(passageiroToEdit: p, onClose: { sheet = nil })
                     .environmentObject(passageiroRepo)
             case .novoCombustivel:
                 CombustivelCadastroView(onClose: { sheet = nil })
                     .environmentObject(combustivelRepo)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var content: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            contextHead
-            subTabBar
-            switch subTab {
-            case .pilotos:
-                pilotosSection
-            case .passageiros:
-                passageirosSection
-            case .combustiveis:
-                CombustivelListaView(onAdd: { sheet = .novoCombustivel })
+            case .editarCombustivel(let c):
+                CombustivelCadastroView(combustivelToEdit: c, onClose: { sheet = nil })
                     .environmentObject(combustivelRepo)
             }
         }
+        .alert(
+            "Apagar piloto?",
+            isPresented: Binding(
+                get: { pilotoToDelete != nil },
+                set: { if !$0 { pilotoToDelete = nil } }
+            ),
+            presenting: pilotoToDelete
+        ) { _ in
+            Button("Cancelar", role: .cancel) {}
+            Button("Apagar", role: .destructive) { confirmarDeletePiloto() }
+        } message: { _ in
+            Text("Não dá pra desfazer.")
+        }
+        .alert(
+            "Apagar passageiro?",
+            isPresented: Binding(
+                get: { passageiroToDelete != nil },
+                set: { if !$0 { passageiroToDelete = nil } }
+            ),
+            presenting: passageiroToDelete
+        ) { _ in
+            Button("Cancelar", role: .cancel) {}
+            Button("Apagar", role: .destructive) { confirmarDeletePassageiro() }
+        } message: { _ in
+            Text("Não dá pra desfazer.")
+        }
+        .alert(
+            "Apagar combustível?",
+            isPresented: Binding(
+                get: { combustivelToDelete != nil },
+                set: { if !$0 { combustivelToDelete = nil } }
+            ),
+            presenting: combustivelToDelete
+        ) { _ in
+            Button("Cancelar", role: .cancel) {}
+            Button("Apagar", role: .destructive) { confirmarDeleteCombustivel() }
+        } message: { _ in
+            Text("Não dá pra desfazer.")
+        }
     }
 
-    private var contextHead: some View {
+    // MARK: - Linhas estruturais (head + subTabs + bottom spacer)
+
+    private var contextHeadRow: some View {
         VStack(alignment: .leading, spacing: 6) {
             Eyebrow(text: eyebrowText)
             Text(headerTitle)
@@ -145,6 +209,33 @@ struct PessoasView: View {
         }
         .padding(.horizontal, Spacing.xs)
         .padding(.bottom, Spacing.sm)
+        .listRowInsets(EdgeInsets(top: Spacing.md, leading: Spacing.lg, bottom: 0, trailing: Spacing.lg))
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+    }
+
+    private var subTabBarRow: some View {
+        HStack(spacing: 6) {
+            ForEach(PessoasSubTab.allCases) { tab in
+                SubTabPill(label: tab.rawValue, isActive: tab == subTab) {
+                    subTab = tab
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, Spacing.xs)
+        .listRowInsets(EdgeInsets(top: 0, leading: Spacing.lg, bottom: Spacing.md, trailing: Spacing.lg))
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+    }
+
+    /// Spacer no fim pra não esconder a última linha sob a BottomNav.
+    private var bottomSpacerRow: some View {
+        Color.clear
+            .frame(height: 140)
+            .listRowInsets(EdgeInsets())
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
     }
 
     private var eyebrowText: String {
@@ -171,49 +262,63 @@ struct PessoasView: View {
         }
     }
 
-    private var subTabBar: some View {
-        HStack(spacing: 6) {
-            ForEach(PessoasSubTab.allCases) { tab in
-                SubTabPill(label: tab.rawValue, isActive: tab == subTab) {
-                    subTab = tab
-                }
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, Spacing.xs)
-    }
+    // MARK: - Linhas de Pilotos
 
     @ViewBuilder
-    private var pilotosSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            groupHead(title: "Cadastrados", count: pilotoRepo.pilotos.count)
-            VStack(spacing: 8) {
-                ForEach(pilotoRepo.pilotos, id: \.id) { p in
-                    PersonRow(name: p.nome)
+    private var pilotosRows: some View {
+        groupHeadRow(title: "Cadastrados", count: pilotoRepo.pilotos.count)
+        ForEach(pilotoRepo.pilotos, id: \.id) { p in
+            PersonRow(name: p.nome)
+                .contentShape(Rectangle())
+                .onTapGesture { sheet = .editarPiloto(p) }
+                .listRowInsets(EdgeInsets(top: 4, leading: Spacing.lg, bottom: 4, trailing: Spacing.lg))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .swipeActions(edge: .trailing) {
+                    Button(role: .destructive) {
+                        pilotoToDelete = p
+                    } label: {
+                        Text("Apagar")
+                    }
                 }
-                AddRow(label: "Cadastrar piloto") {
-                    sheet = .novoPiloto
-                }
-            }
         }
+        AddRow(label: "Cadastrar piloto") {
+            sheet = .novoPiloto
+        }
+        .listRowInsets(EdgeInsets(top: 4, leading: Spacing.lg, bottom: 4, trailing: Spacing.lg))
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
     }
+
+    // MARK: - Linhas de Passageiros
 
     @ViewBuilder
-    private var passageirosSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            groupHead(title: "Cadastrados", count: passageiroRepo.passageiros.count)
-            VStack(spacing: 8) {
-                ForEach(passageiroRepo.passageiros, id: \.id) { p in
-                    PersonRow(name: p.nome)
+    private var passageirosRows: some View {
+        groupHeadRow(title: "Cadastrados", count: passageiroRepo.passageiros.count)
+        ForEach(passageiroRepo.passageiros, id: \.id) { p in
+            PersonRow(name: p.nome)
+                .contentShape(Rectangle())
+                .onTapGesture { sheet = .editarPassageiro(p) }
+                .listRowInsets(EdgeInsets(top: 4, leading: Spacing.lg, bottom: 4, trailing: Spacing.lg))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .swipeActions(edge: .trailing) {
+                    Button(role: .destructive) {
+                        passageiroToDelete = p
+                    } label: {
+                        Text("Apagar")
+                    }
                 }
-                AddRow(label: "Cadastrar passageiro") {
-                    sheet = .novoPassageiro
-                }
-            }
         }
+        AddRow(label: "Cadastrar passageiro") {
+            sheet = .novoPassageiro
+        }
+        .listRowInsets(EdgeInsets(top: 4, leading: Spacing.lg, bottom: 4, trailing: Spacing.lg))
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
     }
 
-    private func groupHead(title: String, count: Int) -> some View {
+    private func groupHeadRow(title: String, count: Int) -> some View {
         HStack {
             Text(title.uppercased())
                 .font(.system(size: 11, weight: .semibold))
@@ -226,6 +331,35 @@ struct PessoasView: View {
         }
         .padding(.horizontal, Spacing.xs)
         .padding(.vertical, 10)
+        .listRowInsets(EdgeInsets(top: 0, leading: Spacing.lg, bottom: 0, trailing: Spacing.lg))
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+    }
+
+    // MARK: - Delete confirmados
+
+    private func confirmarDeletePiloto() {
+        guard let p = pilotoToDelete else { return }
+        pilotoToDelete = nil
+        Task {
+            try? await pilotoRepo.delete(pilotoId: p.id)
+        }
+    }
+
+    private func confirmarDeletePassageiro() {
+        guard let p = passageiroToDelete else { return }
+        passageiroToDelete = nil
+        Task {
+            try? await passageiroRepo.delete(passageiroId: p.id)
+        }
+    }
+
+    private func confirmarDeleteCombustivel() {
+        guard let c = combustivelToDelete else { return }
+        combustivelToDelete = nil
+        Task {
+            try? await combustivelRepo.delete(combustivelId: c.id)
+        }
     }
 }
 

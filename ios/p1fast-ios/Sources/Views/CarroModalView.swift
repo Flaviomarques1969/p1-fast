@@ -15,6 +15,15 @@
 // Persistência: identidade vai pra `carros` (tabela); overrides vão
 // pra `configuracoes.overrides` como JSON (CarroSetupOverrides);
 // pneus vivem em `pneus` (PneuRepository).
+//
+// Delete affordance dos pneus (fix Sprint 1A.3): tap no botão "Editar"
+// abre o sheet em modo edit (já existia no #35); botão "Apagar" inline
+// na row dispara alert "Não dá pra desfazer." e remove via
+// `pneuRepo.delete(id:)`. A escolha de botão inline (em vez de
+// swipeActions) preserva a consistência visual com "Editar" (também
+// inline) e evita aninhar `List` dentro do `ScrollView` da form, que
+// teria altura calculada à mão. O alert de confirmação é o mesmo
+// padrão das demais listas do Sprint 1A.3.
 
 import SwiftUI
 import P1FastCore
@@ -35,6 +44,7 @@ struct CarroModalView: View {
     @State private var loaded = false
     @State private var carro: Carro?
     @State private var pneuSheet: PneuSheetMode?
+    @State private var pneuToDelete: Pneu?
 
     private enum PneuSheetMode: Identifiable {
         case novo
@@ -81,6 +91,19 @@ struct CarroModalView: View {
         }
         .preferredColorScheme(.dark)
         .task { await load() }
+        .alert(
+            "Apagar pneu?",
+            isPresented: Binding(
+                get: { pneuToDelete != nil },
+                set: { if !$0 { pneuToDelete = nil } }
+            ),
+            presenting: pneuToDelete
+        ) { _ in
+            Button("Cancelar", role: .cancel) {}
+            Button("Apagar", role: .destructive) { confirmarDeletePneu() }
+        } message: { _ in
+            Text("Não dá pra desfazer.")
+        }
         .sheet(item: $pneuSheet) { mode in
             switch mode {
             case .novo:
@@ -240,9 +263,11 @@ struct CarroModalView: View {
                     EmptyTireHint()
                 } else {
                     ForEach(pneus, id: \.id) { pneu in
-                        TireItem(pneu: pneu) {
-                            pneuSheet = .editar(pneu)
-                        }
+                        TireItem(
+                            pneu: pneu,
+                            onEdit: { pneuSheet = .editar(pneu) },
+                            onDelete: { pneuToDelete = pneu }
+                        )
                     }
                 }
                 AddTireButton { pneuSheet = .novo }
@@ -316,6 +341,16 @@ struct CarroModalView: View {
     private func trimmedOrNil(_ s: String) -> String? {
         let t = s.trimmingCharacters(in: .whitespaces)
         return t.isEmpty ? nil : t
+    }
+
+    // MARK: Delete pneu (alert confirmado)
+
+    private func confirmarDeletePneu() {
+        guard let p = pneuToDelete else { return }
+        pneuToDelete = nil
+        Task {
+            try? await pneuRepo.delete(id: p.id)
+        }
     }
 }
 
@@ -423,6 +458,7 @@ private struct AddTireButton: View {
 private struct TireItem: View {
     let pneu: Pneu
     let onEdit: () -> Void
+    let onDelete: () -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: Spacing.md) {
@@ -436,19 +472,35 @@ private struct TireItem: View {
                     .foregroundStyle(Color.textFaint)
             }
             Spacer(minLength: Spacing.sm)
-            Button(action: onEdit) {
-                Text("Editar")
-                    .font(.system(size: 12, weight: .semibold))
-                    .tracking(-0.06)
-                    .foregroundStyle(Color.textMuted)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .stroke(Color.border, lineWidth: 1)
-                    )
+            HStack(spacing: 6) {
+                Button(action: onEdit) {
+                    Text("Editar")
+                        .font(.system(size: 12, weight: .semibold))
+                        .tracking(-0.06)
+                        .foregroundStyle(Color.textMuted)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .stroke(Color.border, lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+
+                Button(action: onDelete) {
+                    Text("Apagar")
+                        .font(.system(size: 12, weight: .semibold))
+                        .tracking(-0.06)
+                        .foregroundStyle(Color.erro)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .stroke(Color.erro.opacity(0.5), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, 12)
