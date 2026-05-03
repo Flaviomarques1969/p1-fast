@@ -52,6 +52,8 @@
 		E1A2B3C4D5E6F70819203A53 /* CombustivelPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203A52 /* CombustivelPickerView.swift */; };
 		E1A2B3C4D5E6F70819203B01 /* TrackRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203B00 /* TrackRepository.swift */; };
 		E1A2B3C4D5E6F70819203B03 /* TrechoListaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203B02 /* TrechoListaView.swift */; };
+		E1A2B3C4D5E6F70819203B11 /* LicaoRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203B10 /* LicaoRepository.swift */; };
+		E1A2B3C4D5E6F70819203B13 /* LicaoListaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E6F70819203B12 /* LicaoListaView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -101,6 +103,8 @@
 		E1A2B3C4D5E6F70819203A52 /* CombustivelPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombustivelPickerView.swift; sourceTree = "<group>"; };
 		E1A2B3C4D5E6F70819203B00 /* TrackRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackRepository.swift; sourceTree = "<group>"; };
 		E1A2B3C4D5E6F70819203B02 /* TrechoListaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrechoListaView.swift; sourceTree = "<group>"; };
+		E1A2B3C4D5E6F70819203B10 /* LicaoRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicaoRepository.swift; sourceTree = "<group>"; };
+		E1A2B3C4D5E6F70819203B12 /* LicaoListaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicaoListaView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -202,6 +206,7 @@
 				162332DAA2D671F61DFE3881 /* StintModalView.swift */,
 				6589CA76112B0192B9A53BD8 /* ThemeShowcaseView.swift */,
 				E1A2B3C4D5E6F70819203B02 /* TrechoListaView.swift */,
+				E1A2B3C4D5E6F70819203B12 /* LicaoListaView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -226,6 +231,7 @@
 				E1A2B3C4D5E6F70819203A40 /* PneuRepository.swift */,
 				52184FDD398B02FA4752681B /* StintRepository.swift */,
 				E1A2B3C4D5E6F70819203B00 /* TrackRepository.swift */,
+				E1A2B3C4D5E6F70819203B10 /* LicaoRepository.swift */,
 			);
 			path = Persistence;
 			sourceTree = "<group>";
@@ -371,6 +377,8 @@
 				95A022ADA0074FA202C414F5 /* ThemeShowcaseView.swift in Sources */,
 				E1A2B3C4D5E6F70819203B01 /* TrackRepository.swift in Sources */,
 				E1A2B3C4D5E6F70819203B03 /* TrechoListaView.swift in Sources */,
+				E1A2B3C4D5E6F70819203B11 /* LicaoRepository.swift in Sources */,
+				E1A2B3C4D5E6F70819203B13 /* LicaoListaView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

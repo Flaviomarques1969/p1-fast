@@ -39,6 +39,8 @@
 //                            com a sheet "Novo pneu" aberta (Prompt #14)
 //   --p1-trechos           → TrechoListaView direto (lista readonly de
 //                            trechos da pista cadastrada, Prompt #19)
+//   --p1-licoes            → PessoasView aba Lições (catálogo de 12 lições
+//                            curadas, Prompt #20)
 //   default                → HomeView estado cheio (Sprint 1A.6 troca
 //                            pelo Repository real)
 
@@ -66,6 +68,7 @@ private enum AppRoute {
     case combustivelNovo
     case pneuNovo
     case trechos
+    case licoes
 
     static var fromLaunchArgs: AppRoute {
         let args = ProcessInfo.processInfo.arguments
@@ -86,6 +89,7 @@ private enum AppRoute {
         if args.contains("--p1-pessoas") { return .pessoasPilotos }
         if args.contains("--p1-pneu-novo") { return .pneuNovo }
         if args.contains("--p1-trechos") { return .trechos }
+        if args.contains("--p1-licoes") { return .licoes }
         if args.contains("--p1-eventos") { return .eventos }
         return .home
     }
@@ -123,6 +127,7 @@ private struct ReadyRoot: View {
     @StateObject private var stintRepo: StintRepository
     @StateObject private var pneuRepo: PneuRepository
     @StateObject private var trackRepo: TrackRepository
+    @StateObject private var licaoRepo: LicaoRepository
 
     init(queue: DatabaseQueue) {
         self.queue = queue
@@ -134,6 +139,7 @@ private struct ReadyRoot: View {
         _stintRepo = StateObject(wrappedValue: StintRepository(queue: queue))
         _pneuRepo = StateObject(wrappedValue: PneuRepository(queue: queue))
         _trackRepo = StateObject(wrappedValue: TrackRepository(queue: queue))
+        _licaoRepo = StateObject(wrappedValue: LicaoRepository(queue: queue))
     }
 
     var body: some View {
@@ -146,6 +152,7 @@ private struct ReadyRoot: View {
             .environmentObject(stintRepo)
             .environmentObject(pneuRepo)
             .environmentObject(trackRepo)
+            .environmentObject(licaoRepo)
             .task {
                 await carroRepo.bootstrap()
                 // EventoRepo seeda o TrackRow brasília — TrackRepo
@@ -160,6 +167,7 @@ private struct ReadyRoot: View {
                 await stintRepo.bootstrap()
                 await pneuRepo.bootstrap()
                 await trackRepo.bootstrap()
+                await licaoRepo.bootstrap()
             }
     }
 
@@ -206,6 +214,8 @@ private struct ReadyRoot: View {
             NavigationStack {
                 TrechoListaView()
             }
+        case .licoes:
+            PessoasView(initialSubTab: .licoes)
         }
     }
 }

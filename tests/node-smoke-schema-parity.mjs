@@ -16,13 +16,22 @@
 //   sessoes.voltas_planejadas, configuracoes.temperatura_ideal_range,
 //   carros.fonte_temperatura, marcos (com pit-in/pit-out), retas_especiais.
 
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 
-const PG_PATH    = 'supabase/migrations/0001_initial.sql';
+const PG_DIR     = 'supabase/migrations';
 const GRDB_PATH  = 'ios/p1fast-core/Sources/P1FastCore/Persistence/Migrations.swift';
 const ENTITIES_P = 'src/core/entities.js';
 
-const pg   = await readFile(PG_PATH, 'utf8');
+// Concatena TODAS as migrations Postgres em ordem — o set de tabelas é a
+// soma das CREATEs de todos os arquivos. Antes lia só 0001_initial.sql,
+// passou a ler tudo quando v2a/v4 entraram (Sprint 1A.4/1A.5).
+async function loadAllPgMigrations() {
+  const files = (await readdir(PG_DIR)).filter(f => f.endsWith('.sql')).sort();
+  const parts = await Promise.all(files.map(f => readFile(`${PG_DIR}/${f}`, 'utf8')));
+  return parts.join('\n');
+}
+
+const pg   = await loadAllPgMigrations();
 const grdb = await readFile(GRDB_PATH, 'utf8');
 const ents = await readFile(ENTITIES_P, 'utf8');
 
@@ -53,20 +62,20 @@ const PG_TABLES   = pgTables(pg);
 const GRDB_TABLES = grdbTables(grdb);
 
 // ─── Tests ────────────────────────────────────────────────
-t('PG tem 20 tabelas em public', () => {
-  if (PG_TABLES.size !== 20) throw new Error('size=' + PG_TABLES.size);
+t('PG tem 21 tabelas em public (20 do 0001 + licoes do 0004)', () => {
+  if (PG_TABLES.size !== 21) throw new Error('size=' + PG_TABLES.size);
 });
 
-t('GRDB tem 22 tabelas (20 PG + sync_queue + sync_meta local-only)', () => {
-  if (GRDB_TABLES.size !== 22) throw new Error('size=' + GRDB_TABLES.size);
+t('GRDB tem 23 tabelas (21 PG + sync_queue + sync_meta local-only)', () => {
+  if (GRDB_TABLES.size !== 23) throw new Error('size=' + GRDB_TABLES.size);
 });
 
-t('GRDB cobre TODAS as 20 tabelas do PG', () => {
+t('GRDB cobre TODAS as 21 tabelas do PG', () => {
   const missing = [...PG_TABLES].filter(x => !GRDB_TABLES.has(x));
   if (missing.length) throw new Error('faltam no GRDB: ' + missing.join(', '));
 });
 
-t('GRDB tem só sync_queue + sync_meta além das 20 do PG', () => {
+t('GRDB tem só sync_queue + sync_meta além das 21 do PG', () => {
   const extras = [...GRDB_TABLES].filter(x => !PG_TABLES.has(x)).sort();
   const expected = ['sync_meta', 'sync_queue'];
   if (extras.length !== 2 || extras[0] !== expected[0] || extras[1] !== expected[1]) {
@@ -144,12 +153,12 @@ t('ADR-014: PG telemetry_samples NÃO tem policy UPDATE/DELETE', () => {
 });
 
 // ─── RLS coverage ─────────────────────────────────────────
-t('RLS habilitada em todas as 20 tabelas do PG', () => {
+t('RLS habilitada em todas as 21 tabelas do PG', () => {
   const rlsRe = /alter table public\.([a-z_]+)\s+enable row level security/g;
   const rlsTables = new Set();
   let m;
   while ((m = rlsRe.exec(pg)) !== null) rlsTables.add(m[1]);
-  if (rlsTables.size !== 20) throw new Error('RLS em ' + rlsTables.size + ' tabelas');
+  if (rlsTables.size !== 21) throw new Error('RLS em ' + rlsTables.size + ' tabelas');
   const missing = [...PG_TABLES].filter(x => !rlsTables.has(x));
   if (missing.length) throw new Error('sem RLS: ' + missing.join(', '));
 });
