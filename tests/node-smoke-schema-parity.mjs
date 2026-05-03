@@ -158,7 +158,7 @@ t('RLS habilitada em todas as 21 tabelas do PG', () => {
   const rlsTables = new Set();
   let m;
   while ((m = rlsRe.exec(pg)) !== null) rlsTables.add(m[1]);
-  if (rlsTables.size !== 20) throw new Error('RLS em ' + rlsTables.size + ' tabelas');
+  if (rlsTables.size !== 21) throw new Error('RLS em ' + rlsTables.size + ' tabelas');
   const missing = [...PG_TABLES].filter(x => !rlsTables.has(x));
   if (missing.length) throw new Error('sem RLS: ' + missing.join(', '));
 });
