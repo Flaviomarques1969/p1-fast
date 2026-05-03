@@ -326,6 +326,33 @@ public struct Piloto: Codable, FetchableRecord, PersistableRecord {
     }
 }
 
+// MARK: - passageiros
+public struct Passageiro: Codable, FetchableRecord, PersistableRecord {
+    public var id: String
+    public var timeId: String
+    public var nome: String
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "passageiros"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case nome
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, timeId: String, nome: String,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.nome = nome
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}
+
 // MARK: - eventos
 public struct Evento: Codable, FetchableRecord, PersistableRecord {
     public var id: String

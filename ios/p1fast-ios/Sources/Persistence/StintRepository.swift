@@ -9,10 +9,11 @@
 // Time-tenancy: usa o mesmo `local-default-team` dos outros repos.
 // Bootstrap idempotente — pode ser chamado em paralelo.
 //
-// Pilotos: como ainda não tem CRUD próprio (Prompt #12), o bootstrap
-// seeda 2 pilotos canônicos ("Flavio Marx" + "Bruno Marx") pareados
-// com EventoMockSummary. Substituídos pelo CRUD real quando Prompt #12
-// chegar.
+// Pilotos: a fonte da verdade é PilotoRepository (Prompt #12). Aqui
+// só queryamos `pilotos` pra alimentar o picker do StintModal — seed
+// canônico (Flavio + Bruno) vive em PilotoRepository.bootstrap.
+// IDs canônicos re-exportados como aliases pra back-compat dos
+// callers já existentes (EventoMockSummary, PosStintLauncher).
 //
 // Voltas: na criação do stint só temos `voltas_planejadas`. As linhas
 // reais em `voltas` chegam quando o stint é finalizado — esse repo
@@ -32,11 +33,11 @@ final class StintRepository: ObservableObject {
     /// Mesmo ID dos outros repos (single-tenant até 1A.6).
     static let localTimeId = "local-default-team"
 
-    /// IDs estáveis dos pilotos seedados — pareiam com
-    /// `EventoMockSummary.canonicos` (Flavio = stints 1-3, Bruno = #4
-    /// no evento de 25/04).
-    static let pilotoFlavioId = "piloto-mock-flavio"
-    static let pilotoBrunoId = "piloto-mock-bruno"
+    /// Aliases dos IDs canônicos — fonte é `PilotoRepository`.
+    /// Mantidos aqui pra não quebrar callers (EventoMockSummary,
+    /// PosStintLauncher) que ainda referenciam pelo namespace antigo.
+    static let pilotoFlavioId = PilotoRepository.pilotoFlavioId
+    static let pilotoBrunoId = PilotoRepository.pilotoBrunoId
 
     @Published private(set) var pilotos: [Piloto] = []
     /// Stints fetchados do GRDB pelo último `loadByEvento(...)`. Reseta
@@ -49,12 +50,12 @@ final class StintRepository: ObservableObject {
         self.queue = queue
     }
 
-    /// Garante time local + 2 pilotos canônicos (idempotente). Chamar
-    /// uma vez no boot do app antes de qualquer CRUD de stint.
+    /// Garante time local + recarrega lista de pilotos. O seed dos
+    /// pilotos canônicos é responsabilidade de `PilotoRepository`
+    /// (rodar `PilotoRepository.bootstrap()` antes deste no boot).
     func bootstrap() async {
         do {
             try await ensureLocalTime()
-            try await seedPilotosIfEmpty()
             try await reloadPilotos()
         } catch {
             print("StintRepository.bootstrap failed: \(error)")
@@ -276,19 +277,6 @@ final class StintRepository: ObservableObject {
                 nome: "Time local",
                 criadoPor: nil
             ).insert(db)
-        }
-    }
-
-    /// Insere os 2 pilotos canônicos do mockup-evento-detalhe se a
-    /// tabela `pilotos` estiver vazia. Substituído pelo CRUD real quando
-    /// Prompt #12 chegar.
-    private func seedPilotosIfEmpty() async throws {
-        try await queue.write { db in
-            let total = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM pilotos WHERE time_id = ?",
-                                          arguments: [Self.localTimeId]) ?? 0
-            guard total == 0 else { return }
-            try Piloto(id: Self.pilotoFlavioId, timeId: Self.localTimeId, nome: "Flavio Marx").insert(db)
-            try Piloto(id: Self.pilotoBrunoId, timeId: Self.localTimeId, nome: "Bruno Marx").insert(db)
         }
     }
 
