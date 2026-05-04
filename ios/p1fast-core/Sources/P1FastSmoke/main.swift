@@ -1390,6 +1390,79 @@ step("SED-06: ShiftLightBridge descarta sample sem RPM (Tier 0 dormente)") {
     try assertTrue(det.emitted.count >= 1, "com RPM real, detector deve emitir")
 }
 
+// ════════════════════════════════════════════════════════════
+// RpmSource — RS-01..RS-06
+// ════════════════════════════════════════════════════════════
+
+step("RS-01: ManualRpmSource — getRpm retorna nil antes de start") {
+    let src = ManualRpmSource()
+    src.setRpm(6500)
+    try assertTrue(src.getRpm() == nil)
+    try assertEq(src.getStatus(), .lost)
+}
+
+step("RS-02: ManualRpmSource — após start retorna RPM/TPS frescos") {
+    var clock: Double = 1000
+    let src = ManualRpmSource(now: { clock })
+    src.start()
+    src.setRpm(6500)
+    src.setTps(80)
+    try assertEq(src.getRpm(), 6500)
+    try assertEq(src.getTps(), 80)
+    try assertEq(src.getStatus(), .connected)
+}
+
+step("RS-03: ManualRpmSource — freshness expira após 500ms (degraded → lost)") {
+    var clock: Double = 0
+    let src = ManualRpmSource(freshnessMs: 500, now: { clock })
+    src.start()
+    clock = 1000
+    src.setRpm(6500)
+    try assertEq(src.getStatus(), .connected)
+    clock = 1600 // age = 600ms > 500
+    try assertEq(src.getStatus(), .degraded)
+    try assertTrue(src.getRpm() == nil, "RPM expirado deve retornar nil")
+    clock = 2200 // age = 1200ms > 1000 (2x)
+    try assertEq(src.getStatus(), .lost)
+}
+
+step("RS-04: ManualRpmSource — stop limpa RPM/TPS") {
+    var clock: Double = 1000
+    let src = ManualRpmSource(now: { clock })
+    src.start()
+    src.setRpm(6500)
+    src.setTps(80)
+    src.stop()
+    try assertTrue(src.getRpm() == nil)
+    try assertTrue(src.getTps() == nil)
+    try assertEq(src.getStatus(), .lost)
+}
+
+step("RS-05: ManualRpmSource — RPM negativo é rejeitado (vira nil)") {
+    let src = ManualRpmSource()
+    src.start()
+    src.setRpm(-100)
+    try assertTrue(src.getRpm() == nil)
+}
+
+step("RS-06: MockRpmSource — script é avaliado a cada tick") {
+    let src = MockRpmSource { t in
+        if t < 1000 { return (rpm: 5000, tps: 50) }
+        else        { return (rpm: 6500, tps: 80) }
+    }
+    src.start()
+    src.tick(500)
+    try assertEq(src.getRpm(), 5000)
+    try assertEq(src.getTps(), 50)
+    src.tick(2000)
+    try assertEq(src.getRpm(), 6500)
+    try assertEq(src.getTps(), 80)
+    try assertEq(src.getStatus(), .connected)
+    src.stop()
+    try assertTrue(src.getRpm() == nil)
+    try assertEq(src.getStatus(), .lost)
+}
+
 step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
     let r = SeedBrasilia.make()
     let enc = JSONEncoder()
