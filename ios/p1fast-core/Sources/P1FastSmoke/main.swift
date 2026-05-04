@@ -1609,6 +1609,105 @@ step("SC-10: Scores.compensado — fatorContexto > 1 com diferenças de ar/umida
     try assertClose(r.fatorContexto, 1.0302, tol: 0.001)
 }
 
+// ════════════════════════════════════════════════════════════
+// Repeatability — REP-01..REP-04
+// ════════════════════════════════════════════════════════════
+
+step("REP-01: fromSeries — < 2 valores válidos retorna nil") {
+    try assertTrue(Repeatability.fromSeries([]) == nil)
+    try assertTrue(Repeatability.fromSeries([100]) == nil)
+    try assertTrue(Repeatability.fromSeries([nil, nil]) == nil)
+}
+
+step("REP-02: fromSeries — série constante tem CV=0 e index=1") {
+    let r = Repeatability.fromSeries([100_000, 100_000, 100_000, 100_000])!
+    try assertEq(r.cv, 0)
+    try assertEq(r.index, 1.0)
+    try assertEq(r.n, 4)
+}
+
+step("REP-03: categoria — 3 faixas + indefinido") {
+    try assertEq(Repeatability.categoria(0.9), .alta)
+    try assertEq(Repeatability.categoria(0.7), .media)
+    try assertEq(Repeatability.categoria(0.5), .baixa)
+    try assertEq(Repeatability.categoria(nil), .indefinido)
+}
+
+step("REP-04: fromLaps + summary — overall é média dos disponíveis") {
+    let parciais = [
+        Parcial(id: "P1", nome: "P1", apelido: nil, tStart: 0, tEnd: 50),
+        Parcial(id: "P2", nome: "P2", apelido: nil, tStart: 50, tEnd: 100),
+    ]
+    let laps: [Repeatability.LapInput] = [
+        .init(valida: true, tempoMs: 100_000, temposPorParcial: ["P1": 50_000, "P2": 50_000]),
+        .init(valida: true, tempoMs: 100_100, temposPorParcial: ["P1": 50_050, "P2": 50_050]),
+        .init(valida: true, tempoMs: 100_200, temposPorParcial: ["P1": 50_100, "P2": 50_100]),
+    ]
+    let s = Repeatability.summary(laps: laps, parciais: parciais)
+    try assertTrue(s.volta != nil)
+    try assertTrue(s.overall != nil)
+    // Voltas e parciais quase constantes → overall próximo de 1
+    try assertTrue((s.overall ?? 0) > 0.95)
+}
+
+// ════════════════════════════════════════════════════════════
+// PedagogicalDecider — PD-01..PD-06
+// ════════════════════════════════════════════════════════════
+
+step("PD-01: decide — score nil ou repet nil retorna indefinido") {
+    let r1 = PedagogicalDecider.decide(score: nil, repetibilidade: 0.9)
+    try assertEq(r1.decisao, .indefinido)
+    let r2 = PedagogicalDecider.decide(score: 95, repetibilidade: nil)
+    try assertEq(r2.decisao, .indefinido)
+}
+
+step("PD-02: decide — matriz: scoreAlto+repetAlta = MANTER") {
+    let r = PedagogicalDecider.decide(score: 96, repetibilidade: 0.9)
+    try assertEq(r.decisao, .manter)
+    try assertEq(r.razao, "trecho forte e consistente — proteger")
+}
+
+step("PD-03: decide — matriz: scoreBaixo+repetAlta = ATACAR") {
+    let r = PedagogicalDecider.decide(score: 88, repetibilidade: 0.9)
+    try assertEq(r.decisao, .atacar)
+    try assertEq(r.razao, "erro consistente — corrigir agora")
+}
+
+step("PD-04: decide — matriz: scoreAlto+repetBaixa = CONSOLIDAR") {
+    let r = PedagogicalDecider.decide(score: 96, repetibilidade: 0.5)
+    try assertEq(r.decisao, .consolidar)
+}
+
+step("PD-05: decide — matriz: scoreBaixo+repetBaixa = IGNORAR") {
+    let r = PedagogicalDecider.decide(score: 80, repetibilidade: 0.5)
+    try assertEq(r.decisao, .ignorar)
+}
+
+step("PD-06: decideForParciais + agrupar — distribui em 4 grupos") {
+    let parciais = [
+        Parcial(id: "P1", nome: "P1", apelido: nil, tStart: 0, tEnd: 50),
+        Parcial(id: "P2", nome: "P2", apelido: nil, tStart: 50, tEnd: 100),
+    ]
+    let laps: [PedagogicalDecider.DecideLapInput] = [
+        // Voltas válidas com scores: P1 alto (forte), P2 baixo (fraco)
+        .init(valida: true, scoresPorParcial: ["P1": 97, "P2": 88]),
+        .init(valida: true, scoresPorParcial: ["P1": 96, "P2": 87]),
+    ]
+    // P1 com repetibilidade alta → MANTER. P2 com repet alta → ATACAR.
+    let repet: [String: Double?] = ["P1": 0.9, "P2": 0.9]
+    let res = PedagogicalDecider.decideForParciais(
+        parciais: parciais, laps: laps, repetibilidadePorParcial: repet
+    )
+    try assertEq(res.lista.count, 2)
+    try assertEq(res.porParcial["P1"]?.decisao, .manter)
+    try assertEq(res.porParcial["P2"]?.decisao, .atacar)
+    let g = PedagogicalDecider.agrupar(res)
+    try assertEq(g.manter.count, 1)
+    try assertEq(g.atacar.count, 1)
+    try assertEq(g.consolidar.count, 0)
+    try assertEq(g.ignorar.count, 0)
+}
+
 step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
     let r = SeedBrasilia.make()
     let enc = JSONEncoder()
