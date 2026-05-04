@@ -1046,6 +1046,146 @@ step("SA-08: buildLessonText — substitui <TRECHO> ou remove fragmento sem trec
     try assertTrue(res.lessonText.contains("Reta Principal"))
 }
 
+// ════════════════════════════════════════════════════════════
+// ShiftTarget — ST-01..ST-10 (port shift-target+safe-mode+dyno-target+cars)
+// ════════════════════════════════════════════════════════════
+
+step("ST-01: safeTarget — redline - safety_margin (default 300)") {
+    let car = ShiftCar(redlineRpm: 7000)
+    try assertEq(try ShiftSafeMode.safeTarget(car), 6700)
+    let car2 = ShiftCar(redlineRpm: 7000, safetyMarginRpm: 500)
+    try assertEq(try ShiftSafeMode.safeTarget(car2), 6500)
+}
+
+step("ST-02: safeTarget — lança em redline inválido") {
+    do {
+        _ = try ShiftSafeMode.safeTarget(ShiftCar(redlineRpm: 0))
+        try assertTrue(false, "deveria lançar")
+    } catch ShiftTargetError.invalidRedline {
+        // ok
+    }
+}
+
+step("ST-03: dynoTarget — fallback 90% redline sem gear_ratios") {
+    let curve = [
+        DynoPoint(rpm: 2000, powerKw: 30),
+        DynoPoint(rpm: 4000, powerKw: 60),
+        DynoPoint(rpm: 6000, powerKw: 80),
+        DynoPoint(rpm: 7000, powerKw: 70)
+    ]
+    let r = try DynoTargetCalculator.computeOptimalRpmPerGear(
+        curve: curve, gearRatios: nil, redlineRpm: 7000
+    )
+    // Fallback: 5 marchas, 90% de 7000 = 6300
+    try assertEq(r.count, 5)
+    try assertEq(r[1]?.optimalRpm, 6300)
+    try assertEq(r[1]?.source, .fallback)
+}
+
+step("ST-04: dynoTarget — usa gear_ratios + cruzamento de potência") {
+    // Curva sintética com pico em 6000.
+    let curve = [
+        DynoPoint(rpm: 2000, powerKw: 30),
+        DynoPoint(rpm: 3000, powerKw: 50),
+        DynoPoint(rpm: 4000, powerKw: 70),
+        DynoPoint(rpm: 5000, powerKw: 78),
+        DynoPoint(rpm: 6000, powerKw: 80),
+        DynoPoint(rpm: 6500, powerKw: 78),
+        DynoPoint(rpm: 7000, powerKw: 70)
+    ]
+    // 5 marchas, queda média ~70% por troca
+    let ratios: [Double] = [3.5, 2.5, 1.8, 1.3, 1.0]
+    let r = try DynoTargetCalculator.computeOptimalRpmPerGear(
+        curve: curve, gearRatios: ratios, redlineRpm: 7000
+    )
+    try assertEq(r.count, 5)
+    // Última marcha: alvo no pico
+    try assertEq(r[5]?.optimalRpm, 6000)
+    try assertEq(r[5]?.source, .dyno)
+    // Marcha 1 deve ter alvo dyno calculado
+    try assertEq(r[1]?.source, .dyno)
+    try assertTrue((r[1]?.optimalRpm ?? 0) > 0)
+}
+
+step("ST-05: dynoTarget — lança se curva tem < 3 pontos") {
+    do {
+        _ = try DynoTargetCalculator.computeOptimalRpmPerGear(
+            curve: [DynoPoint(rpm: 1, powerKw: 1), DynoPoint(rpm: 2, powerKw: 2)],
+            gearRatios: nil, redlineRpm: 7000
+        )
+        try assertTrue(false, "deveria lançar")
+    } catch ShiftTargetError.curveTooShort {
+        // ok
+    }
+}
+
+step("ST-06: computeShiftTarget — gear_confidence < 0.7 → safe") {
+    let car = ShiftCar(redlineRpm: 7000)
+    let r = try ShiftTarget.computeShiftTarget(car: car, gear: 4, gearConfidence: 0.5)
+    try assertEq(r.source, .safe)
+    try assertEq(r.optimalRpm, 6700) // redline - 300 default
+    try assertEq(r.visualRpm, 6700)  // sem reactionCtx
+    try assertTrue(r.reason?.contains("below floor") == true)
+}
+
+step("ST-07: computeShiftTarget — sem dyno e sem learned → safe") {
+    let car = ShiftCar(redlineRpm: 7000)
+    let r = try ShiftTarget.computeShiftTarget(car: car, gear: 4, gearConfidence: 0.9)
+    try assertEq(r.source, .safe)
+    try assertEq(r.optimalRpm, 6700)
+}
+
+step("ST-08: computeShiftTarget — learned do car prevalece quando sem dyno") {
+    let car = ShiftCar(
+        redlineRpm: 7000,
+        learnedTargets: [4: LearnedTarget(optimalRpm: 6400, sampleCount: 12)]
+    )
+    let r = try ShiftTarget.computeShiftTarget(car: car, gear: 4, gearConfidence: 0.9)
+    try assertEq(r.source, .learned)
+    try assertEq(r.optimalRpm, 6400)
+}
+
+step("ST-09: computeShiftTarget — dyno presente mas sem alvo p/ gear → safe com motivo") {
+    let curve = [
+        DynoPoint(rpm: 2000, powerKw: 30),
+        DynoPoint(rpm: 4000, powerKw: 60),
+        DynoPoint(rpm: 6000, powerKw: 80)
+    ]
+    // gear_ratios só pra 3 marchas → pedir gear=10 retorna safe
+    let car = ShiftCar(redlineRpm: 7000, dynoCurve: curve, gearRatios: [3.5, 2.5, 1.8])
+    let r = try ShiftTarget.computeShiftTarget(car: car, gear: 10, gearConfidence: 0.9)
+    try assertEq(r.source, .safe)
+    try assertTrue(r.reason?.contains("gear=10") == true)
+}
+
+step("ST-10: computeShiftTarget — reactionCtx subtrai compensation no visualRpm") {
+    var profiles: ReactionProfiles = [:]
+    let key = PilotReaction.tupleKey(pilotoId: "p1", carroId: "car-1", gear: 4, trechoId: "t1")
+    profiles[key] = ReactionProfile(key: key, reactionTimeMs: 200, sampleCount: 12, lastUpdated: 0)
+    let car = ShiftCar(
+        id: "car-1", redlineRpm: 7000,
+        learnedTargets: [4: LearnedTarget(optimalRpm: 6400, sampleCount: 15)]
+    )
+    let ctx = ShiftReactionContext(
+        pilotoId: "p1", carroId: "car-1", trechoId: "t1",
+        rpmRiseRate: 5000, profiles: profiles
+    )
+    let r = try ShiftTarget.computeShiftTarget(
+        car: car, gear: 4, gearConfidence: 0.9,
+        reactionCtx: ctx
+    )
+    try assertEq(r.optimalRpm, 6400)
+    // compensation = 200 * 5000 / 1000 = 1000 → visual = 6400 - 1000 = 5400
+    try assertEq(r.visualRpm, 5400)
+    try assertEq(r.reactionSource, .exact)
+    // Modo learning → visualRpm == optimalRpm
+    let r2 = try ShiftTarget.computeShiftTarget(
+        car: car, gear: 4, gearConfidence: 0.9, mode: .learning, reactionCtx: ctx
+    )
+    try assertEq(r2.visualRpm, 6400)
+    try assertEq(r2.reactionSource, .learningMode)
+}
+
 step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
     let r = SeedBrasilia.make()
     let enc = JSONEncoder()
