@@ -617,6 +617,98 @@ step("TRK-04: todos os trechos têm apex calibration DEFAULT + apexReference + c
     }
 }
 
+step("TRK-05a: ApexClassification — 12 valores canônicos") {
+    try assertEq(ApexClassification.allCases.count, 12)
+    // Smoke das raw values: paridade exata com track-segment.js
+    try assertEq(ApexClassification.correto.rawValue, "apex-correto")
+    try assertEq(ApexClassification.antecipado.rawValue, "apex-antecipado")
+    try assertEq(ApexClassification.tardio.rawValue, "apex-tardio")
+    try assertEq(ApexClassification.perdidoFora.rawValue, "apex-perdido-fora")
+    try assertEq(ApexClassification.internoDemais.rawValue, "apex-interno-demais")
+    try assertEq(ApexClassification.duplo.rawValue, "apex-duplo")
+    try assertEq(ApexClassification.sacrificadoIntencional.rawValue, "apex-sacrificado-intencional")
+    try assertEq(ApexClassification.prejudicandoSaida.rawValue, "apex-prejudicando-saida")
+    try assertEq(ApexClassification.bomAceleracaoTardia.rawValue, "apex-bom-aceleracao-tardia")
+    try assertEq(ApexClassification.entradaBoaApexRuim.rawValue, "entrada-boa-apex-ruim")
+    try assertEq(ApexClassification.apexBomSaidaRuim.rawValue, "apex-bom-saida-ruim")
+    try assertEq(ApexClassification.entradaRuimApexComprometido.rawValue, "entrada-ruim-apex-comprometido")
+}
+
+step("TRK-05b: TrackSegment — hasFullPointCadastro exige 4 pontos + ehTrecho") {
+    var seg = TrackSegment(
+        id: "s1", layoutId: "L", ordem: 0, nome: "Curva 1",
+        tipo: .curva, ehTrecho: true, parcialId: "P1",
+        x: 100, y: 100
+    )
+    try assertTrue(!seg.hasFullPointCadastro, "vazio: deve ser false")
+    seg.entryPoint = TrackPoint(x: 50, y: 50)
+    try assertTrue(!seg.hasFullPointCadastro, "só entry: deve ser false")
+    seg.brakingPoint = TrackPoint(x: 60, y: 60)
+    seg.apexReference = ApexReference(x: 100, y: 100)
+    try assertTrue(!seg.hasFullPointCadastro, "sem exit: deve ser false")
+    seg.exitPoint = TrackPoint(x: 150, y: 150)
+    try assertTrue(seg.hasFullPointCadastro, "4 pontos + ehTrecho: deve ser true")
+    // Reta nunca tem cadastro pleno mesmo com 4 pontos
+    seg.ehTrecho = false
+    try assertTrue(!seg.hasFullPointCadastro, "reta nunca: deve ser false")
+}
+
+step("TRK-05c: TrackSegment.setting — atualiza ponto canônico imutavelmente") {
+    let seg = TrackSegment(
+        id: "s1", layoutId: "L", ordem: 0, nome: "Curva 1",
+        tipo: .curva, ehTrecho: true, parcialId: "P1",
+        x: 100, y: 100
+    )
+    let p1 = TrackPoint(x: 10, y: 20)
+    let s2 = seg.setting(.entryPoint, to: p1)
+    try assertEq(s2.entryPoint?.x, 10)
+    try assertEq(s2.entryPoint?.y, 20)
+    try assertTrue(seg.entryPoint == nil, "original não muta")
+    let s3 = s2.setting(.brakingPoint, to: TrackPoint(x: 30, y: 40))
+                .setting(.apexReference, to: ApexReference(x: 50, y: 60))
+                .setting(.exitPoint, to: TrackPoint(x: 70, y: 80))
+    try assertTrue(s3.hasFullPointCadastro, "3 setting + entry: deve ser pleno")
+    let s4 = s3.setting(.entryPoint, to: nil)
+    try assertTrue(s4.entryPoint == nil, "nil limpa")
+    try assertTrue(!s4.hasFullPointCadastro, "limpou entry → modo degradado")
+}
+
+step("TRK-05d: TrackSegment — hasFullApexCadastro exige apexRef+strategy+cornerType+ehTrecho") {
+    var seg = TrackSegment(
+        id: "s1", layoutId: "L", ordem: 0, nome: "Curva 1",
+        tipo: .curva, ehTrecho: true, parcialId: "P1",
+        x: 100, y: 100
+    )
+    try assertTrue(!seg.hasFullApexCadastro, "vazio: false")
+    seg.apexReference = ApexReference(x: 100, y: 100)
+    seg.apexStrategy = .neutro
+    try assertTrue(!seg.hasFullApexCadastro, "sem cornerType: false")
+    seg.cornerType = .media
+    try assertTrue(seg.hasFullApexCadastro, "completo: true")
+    seg.ehTrecho = false
+    try assertTrue(!seg.hasFullApexCadastro, "reta nunca: false")
+}
+
+step("TRK-05e: TrackSegment Codable preserva os 4 pontos canônicos + classification") {
+    var seg = TrackSegment(
+        id: "s1", layoutId: "L", ordem: 0, nome: "Curva 1",
+        tipo: .curva, ehTrecho: true, parcialId: "P1",
+        x: 100, y: 100
+    )
+    seg.entryPoint = TrackPoint(x: 1, y: 2)
+    seg.brakingPoint = TrackPoint(x: 3, y: 4)
+    seg.apexReference = ApexReference(x: 5, y: 6)
+    seg.exitPoint = TrackPoint(x: 7, y: 8)
+    seg.apexClassificationDefault = .sacrificadoIntencional
+    let data = try JSONEncoder().encode(seg)
+    let back = try JSONDecoder().decode(TrackSegment.self, from: data)
+    try assertEq(back.entryPoint?.x, 1)
+    try assertEq(back.brakingPoint?.x, 3)
+    try assertEq(back.apexReference?.x, 5)
+    try assertEq(back.exitPoint?.x, 7)
+    try assertEq(back.apexClassificationDefault, .sacrificadoIntencional)
+}
+
 step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
     let r = SeedBrasilia.make()
     let enc = JSONEncoder()
