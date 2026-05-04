@@ -709,6 +709,129 @@ step("TRK-05e: TrackSegment Codable preserva os 4 pontos canônicos + classifica
     try assertEq(back.apexClassificationDefault, .sacrificadoIntencional)
 }
 
+// ════════════════════════════════════════════════════════════
+// ErrorClassifier — EC-01 .. EC-12 (port de error-classifier.js)
+// ════════════════════════════════════════════════════════════
+
+step("EC-01: ErroTipo — 16 valores canônicos com raw values exatas do JS") {
+    try assertEq(ErroTipo.allCases.count, 16)
+    try assertEq(ErroTipo.freouCedo.rawValue,            "freou-cedo")
+    try assertEq(ErroTipo.freouTardeDemais.rawValue,     "freou-tarde-demais")
+    try assertEq(ErroTipo.entrouForteDemais.rawValue,    "entrou-forte-demais")
+    try assertEq(ErroTipo.entrouTimido.rawValue,         "entrou-timido")
+    try assertEq(ErroTipo.perdeuRotacao.rawValue,        "perdeu-rotacao")
+    try assertEq(ErroTipo.matouSaida.rawValue,           "matou-saida")
+    try assertEq(ErroTipo.perdeuTracao.rawValue,         "perdeu-tracao")
+    try assertEq(ErroTipo.manteveLinha.rawValue,         "manteve-linha")
+    try assertEq(ErroTipo.saiuForte.rawValue,            "saiu-forte")
+    try assertEq(ErroTipo.boaFrenagem.rawValue,          "boa-frenagem")
+    try assertEq(ErroTipo.tempoMedio.rawValue,           "tempo-medio")
+    try assertEq(ErroTipo.apexPerdidoFora.rawValue,      "apex-perdido-fora")
+    try assertEq(ErroTipo.apexAntecipado.rawValue,       "apex-antecipado")
+    try assertEq(ErroTipo.apexTardio.rawValue,           "apex-tardio")
+    try assertEq(ErroTipo.apexInternoDemais.rawValue,    "apex-interno-demais")
+    try assertEq(ErroTipo.apexSacrificouSaida.rawValue,  "apex-sacrificou-saida")
+}
+
+step("EC-02: humanize — 16 labels PT-BR completos") {
+    try assertEq(ErroLabel.humanize(.freouCedo),           "Freou cedo")
+    try assertEq(ErroLabel.humanize(.matouSaida),          "Matou a saída")
+    try assertEq(ErroLabel.humanize(.tempoMedio),          "Ritmo médio")
+    try assertEq(ErroLabel.humanize(.apexSacrificouSaida), "Apex sacrificou saída")
+    try assertEq(ErrorClassifier.humanize(.boaFrenagem),   "Boa frenagem")
+}
+
+step("EC-03: classify — saiuForte (vSaida muito acima + tempo bom)") {
+    let exec = SegmentExecutionInput(tempoMs: 9900, velEntrada: 30, velMinima: 18, velSaida: 32)
+    let ref  = SegmentReferenceInput(tempoMs: 10000, velEntradaMedia: 30, velMinimaMedia: 18, velSaidaMedia: 28)
+    let r = ErrorClassifier.classify(execution: exec, reference: ref)
+    try assertEq(r.principal, .saiuForte)
+    try assertTrue(r.confianca >= 0.85)
+}
+
+step("EC-04: classify — manteveLinha (todas dentro do significant + tempo bom)") {
+    let exec = SegmentExecutionInput(tempoMs: 9950, velEntrada: 30, velMinima: 18, velSaida: 28)
+    let ref  = SegmentReferenceInput(tempoMs: 10000, velEntradaMedia: 30, velMinimaMedia: 18, velSaidaMedia: 28)
+    let r = ErrorClassifier.classify(execution: exec, reference: ref)
+    try assertEq(r.principal, .manteveLinha)
+}
+
+step("EC-05: classify — freouTardeDemais (entrada alta + ápice MUITO baixo)") {
+    let exec = SegmentExecutionInput(tempoMs: 10500, velEntrada: 32, velMinima: 16, velSaida: 27)
+    let ref  = SegmentReferenceInput(tempoMs: 10000, velEntradaMedia: 30, velMinimaMedia: 18, velSaidaMedia: 28)
+    let r = ErrorClassifier.classify(execution: exec, reference: ref)
+    try assertEq(r.principal, .freouTardeDemais)
+}
+
+step("EC-06: classify — entrouForteDemais (vEntrada muito alta + tempo ruim)") {
+    let exec = SegmentExecutionInput(tempoMs: 10500, velEntrada: 33, velMinima: 18, velSaida: 27)
+    let ref  = SegmentReferenceInput(tempoMs: 10000, velEntradaMedia: 30, velMinimaMedia: 18, velSaidaMedia: 28)
+    let r = ErrorClassifier.classify(execution: exec, reference: ref)
+    try assertEq(r.principal, .entrouForteDemais)
+}
+
+step("EC-07: classify — entrouTimido (entrada baixa + tempo ruim)") {
+    let exec = SegmentExecutionInput(tempoMs: 10250, velEntrada: 28, velMinima: 18, velSaida: 28)
+    let ref  = SegmentReferenceInput(tempoMs: 10000, velEntradaMedia: 30, velMinimaMedia: 18, velSaidaMedia: 28)
+    let r = ErrorClassifier.classify(execution: exec, reference: ref)
+    try assertEq(r.principal, .entrouTimido)
+}
+
+step("EC-08: classify — matouSaida (saída baixa + tempo ruim)") {
+    let exec = SegmentExecutionInput(tempoMs: 10200, velEntrada: 30, velMinima: 18, velSaida: 26)
+    let ref  = SegmentReferenceInput(tempoMs: 10000, velEntradaMedia: 30, velMinimaMedia: 18, velSaidaMedia: 28)
+    let r = ErrorClassifier.classify(execution: exec, reference: ref)
+    try assertEq(r.principal, .matouSaida)
+}
+
+step("EC-09: classify — apexPerdidoFora (delta lateral > 2x toleranciaApex)") {
+    let exec = SegmentExecutionInput(
+        tempoMs: 10100, velEntrada: 30, velMinima: 18, velSaida: 28,
+        apexActual: ApexReference(x: 100, y: 100)
+    )
+    let ref = SegmentReferenceInput(
+        tempoMs: 10000, velEntradaMedia: 30, velMinimaMedia: 18, velSaidaMedia: 28,
+        apexReference: ApexReference(x: 95, y: 100)  // dist=5 > 1.5*2=3
+    )
+    let r = ErrorClassifier.classify(execution: exec, reference: ref)
+    try assertEq(r.principal, .apexPerdidoFora)
+}
+
+step("EC-10: classify — apexSacrificouSaida (apex OK + saída ruim + reta longa)") {
+    let exec = SegmentExecutionInput(
+        tempoMs: 10100, velEntrada: 30, velMinima: 18, velSaida: 26,
+        apexActual: ApexReference(x: 100, y: 100)
+    )
+    let ref = SegmentReferenceInput(
+        tempoMs: 10000, velEntradaMedia: 30, velMinimaMedia: 18, velSaidaMedia: 28,
+        apexReference: ApexReference(x: 100.5, y: 100), // dist=0.5 OK
+        nextStraightLength: 400  // > 200 = reta longa
+    )
+    let r = ErrorClassifier.classify(execution: exec, reference: ref)
+    try assertEq(r.principal, .apexSacrificouSaida)
+    try assertEq(r.secundaria, .matouSaida)
+}
+
+step("EC-11: classify — input vazio retorna nulo + confiança 0") {
+    let r = ErrorClassifier.classify(
+        execution: SegmentExecutionInput(),
+        reference: SegmentReferenceInput()
+    )
+    try assertTrue(r.principal == nil)
+    try assertEq(r.confianca, 0)
+}
+
+step("EC-12: classify — evidências têm delta arredondado a 4 casas + pct") {
+    let exec = SegmentExecutionInput(tempoMs: 10100, velEntrada: 30, velMinima: 18, velSaida: 28)
+    let ref  = SegmentReferenceInput(tempoMs: 10000, velEntradaMedia: 30, velMinimaMedia: 18, velSaidaMedia: 28)
+    let r = ErrorClassifier.classify(execution: exec, reference: ref)
+    let tempoEv = r.evidencias.first { $0.metric == "tempo" }
+    try assertTrue(tempoEv != nil, "evidência tempo deve existir")
+    try assertClose(tempoEv?.delta, 0.01, tol: 0.0001)
+    try assertClose(tempoEv?.deltaPct, 1.0, tol: 0.1)
+    try assertEq(tempoEv?.unit, "ms")
+}
+
 step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
     let r = SeedBrasilia.make()
     let enc = JSONEncoder()
