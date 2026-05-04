@@ -23,15 +23,29 @@ public enum CornerTypeMatch: String, Codable, Sendable {
     case rapida
 }
 
-public enum Signal: String, Codable, Sendable {
+public enum Signal: String, Codable, Sendable, CaseIterable {
+    // MVP iPhone (mobile-telemetry.js)
     case lat, lng, kmh, course, heading
     case accLong, accLat, gyroAlpha
+    // Fase de curva (já calculada em fase-curva.js)
+    case phase, velEntrada, velMinima, velSaida, apexT, apexKmh
+    // Cross-volta (path-mapper / projector)
+    case trajetoria
+    // Fase 2: T4000 CAN (BLOCKERS E2)
     case tps, rpm, map, lambda
-    case velMinima, phase, apexKmh, trajetoria
+    // Fase 2: sensores que ainda não existem (rawValue com ponto = paridade JS)
+    case steeringAngle = "steering.angle"
+    case brakePressure = "brake.pressure"
+    case slipRatio = "slip.ratio"
 }
 
-public enum LessonCategory: String, Codable, Sendable {
-    case referencia, velocidade, transicao, racing, mental, fundamentos
+public enum LessonCategory: String, Codable, Sendable, CaseIterable {
+    case referencia    // pontos fixos (frear, virar, acelerar)
+    case velocidade    // V-min, gestão de velocidade
+    case transicao     // freio↔acelerador, suavidade
+    case controle      // sub/sobresterço, recuperação
+    case visao         // olhar, antecipação
+    case superficie    // pista/zebra/grip
 }
 
 public enum LessonLevel: String, Codable, Sendable {
@@ -45,6 +59,11 @@ public enum Confidence: String, Codable, Sendable {
 public struct SuccessCriteria: Codable, Sendable {
     public let metric: String
     public let confidence: Confidence
+
+    public init(metric: String, confidence: Confidence) {
+        self.metric = metric
+        self.confidence = confidence
+    }
 }
 
 public struct Lesson: Codable, Sendable, Identifiable {
@@ -61,6 +80,36 @@ public struct Lesson: Codable, Sendable, Identifiable {
     public let preferredMessageCodes: [String]
     public let successCriteria: SuccessCriteria
     public let active: Bool
+
+    public init(
+        id: String,
+        title: String,
+        category: LessonCategory,
+        level: LessonLevel,
+        shortDescription: String,
+        objective: String,
+        phaseWeights: [Phase: Double],
+        requiredSignals: [Signal],
+        optionalSignals: [Signal],
+        applicableCornerTypes: [CornerTypeMatch],
+        preferredMessageCodes: [String],
+        successCriteria: SuccessCriteria,
+        active: Bool
+    ) {
+        self.id = id
+        self.title = title
+        self.category = category
+        self.level = level
+        self.shortDescription = shortDescription
+        self.objective = objective
+        self.phaseWeights = phaseWeights
+        self.requiredSignals = requiredSignals
+        self.optionalSignals = optionalSignals
+        self.applicableCornerTypes = applicableCornerTypes
+        self.preferredMessageCodes = preferredMessageCodes
+        self.successCriteria = successCriteria
+        self.active = active
+    }
 
     /// Pode ser ativada com este conjunto de sinais disponíveis?
     public func canActivate(signals: Set<Signal>) -> Bool {
@@ -136,7 +185,7 @@ public enum LessonLibrary {
         Lesson(
             id: "L005-linha-de-visao",
             title: "Linha de Visão",
-            category: .fundamentos, level: .intro,
+            category: .visao, level: .intro,
             shortDescription: "Olhar pro próximo ponto, não pro capô.",
             objective: "Antecipar entrada de curva pelo olhar; trajetória mais limpa.",
             phaseWeights: [.entrada: 0.5, .apex: 0.3, .saida: 0.2],
@@ -183,5 +232,107 @@ public enum LessonLibrary {
     /// Lookup por id.
     public static func byId(_ id: String) -> Lesson? {
         mvp.first { $0.id == id }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+// LessonSchema — validação canônica (paridade JS lesson-schema.js)
+// ═══════════════════════════════════════════════════════════
+
+public struct LessonSchemaError: Error, CustomStringConvertible, Equatable {
+    public let lessonId: String?
+    public let message: String
+    public var description: String {
+        if let lessonId { return "\(lessonId): \(message)" }
+        return message
+    }
+    public init(lessonId: String?, _ message: String) {
+        self.lessonId = lessonId
+        self.message = message
+    }
+}
+
+extension Lesson {
+    /// Regex `^L[0-9]{3}-[a-z0-9-]+$` (paridade JS).
+    /// Slug aceita lower-case ASCII + dígito + hífen.
+    public static func isValidId(_ id: String) -> Bool {
+        guard id.count >= 5, id.first == "L" else { return false }
+        let chars = Array(id)
+        // L + 3 dígitos + '-' + slug
+        for i in 1...3 {
+            guard chars[i].isASCII, chars[i].isNumber else { return false }
+        }
+        guard chars[4] == "-" else { return false }
+        let slug = chars[5...]
+        guard !slug.isEmpty else { return false }
+        for c in slug {
+            let isLower = c.isASCII && c.isLetter && c.isLowercase
+            let isDigit = c.isASCII && c.isNumber
+            let isHyphen = c == "-"
+            if !(isLower || isDigit || isHyphen) { return false }
+        }
+        return true
+    }
+
+    /// Regex `^M[0-9]{3}$` (paridade JS).
+    public static func isValidMessageCode(_ code: String) -> Bool {
+        guard code.count == 4, code.first == "M" else { return false }
+        return code.dropFirst().allSatisfy { $0.isASCII && $0.isNumber }
+    }
+
+    /// Valida a lição contra o schema (paridade JS validateLesson).
+    /// Lança `LessonSchemaError` com mensagem específica.
+    public func validate() throws {
+        guard !id.isEmpty else {
+            throw LessonSchemaError(lessonId: nil, "lesson.id obrigatório")
+        }
+        guard Lesson.isValidId(id) else {
+            throw LessonSchemaError(lessonId: id, "lesson.id formato inválido (esperado L### e slug)")
+        }
+        guard !title.isEmpty else {
+            throw LessonSchemaError(lessonId: id, "title obrigatório")
+        }
+        guard !shortDescription.isEmpty else {
+            throw LessonSchemaError(lessonId: id, "shortDescription obrigatória")
+        }
+        guard !objective.isEmpty else {
+            throw LessonSchemaError(lessonId: id, "objective obrigatório")
+        }
+
+        guard !phaseWeights.isEmpty else {
+            throw LessonSchemaError(lessonId: id, "phaseWeights obrigatório")
+        }
+        var sum = 0.0
+        for (_, v) in phaseWeights {
+            guard v >= 0, v <= 1 else {
+                throw LessonSchemaError(lessonId: id, "phaseWeights devem ser 0..1")
+            }
+            sum += v
+        }
+        guard abs(sum - 1.0) <= 0.001 else {
+            let s = String(format: "%.3f", sum)
+            throw LessonSchemaError(lessonId: id, "phaseWeights deve somar 1.0 (somou \(s))")
+        }
+
+        guard !requiredSignals.isEmpty else {
+            throw LessonSchemaError(lessonId: id, "requiredSignals deve ter ao menos 1")
+        }
+
+        guard !applicableCornerTypes.isEmpty else {
+            throw LessonSchemaError(lessonId: id, "applicableCornerTypes deve ter ao menos 1")
+        }
+
+        guard !preferredMessageCodes.isEmpty else {
+            throw LessonSchemaError(lessonId: id, "preferredMessageCodes deve ter ao menos 1")
+        }
+        for code in preferredMessageCodes {
+            guard Lesson.isValidMessageCode(code) else {
+                throw LessonSchemaError(lessonId: id, "messageCode inválido: \(code) (esperado M###)")
+            }
+        }
+
+        guard !successCriteria.metric.isEmpty else {
+            throw LessonSchemaError(lessonId: id, "successCriteria.metric obrigatório")
+        }
     }
 }
