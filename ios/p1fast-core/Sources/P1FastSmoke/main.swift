@@ -2387,6 +2387,146 @@ step("LL-04: canActivate respeita requiredSignals") {
 }
 
 // ════════════════════════════════════════════════════════════
+// LessonSchema — LS-01 .. LS-08 (paridade JS lesson-schema.js)
+// ════════════════════════════════════════════════════════════
+
+step("LS-01: 6 categorias canônicas (paridade JS)") {
+    // referencia, velocidade, transicao, controle, visao, superficie
+    try assertEq(LessonCategory.allCases.count, 6)
+    let names = Set(LessonCategory.allCases.map { $0.rawValue })
+    let esperadas: Set<String> = ["referencia", "velocidade", "transicao", "controle", "visao", "superficie"]
+    try assertEq(names, esperadas)
+}
+
+step("LS-02: Signal completo — 22 categorias incluindo dot-rawValues") {
+    try assertEq(Signal.allCases.count, 22)
+    try assertEq(Signal.steeringAngle.rawValue, "steering.angle")
+    try assertEq(Signal.brakePressure.rawValue, "brake.pressure")
+    try assertEq(Signal.slipRatio.rawValue, "slip.ratio")
+    try assertEq(Signal.gyroAlpha.rawValue, "gyroAlpha")
+}
+
+step("LS-03: validate — todas as 7 lições MVP passam") {
+    for l in LessonLibrary.mvp {
+        try l.validate()
+    }
+}
+
+step("LS-04: validate — id formato L###-slug é estrito") {
+    try assertTrue(Lesson.isValidId("L001-referencia-fixa"))
+    try assertTrue(Lesson.isValidId("L999-x"))
+    try assertTrue(Lesson.isValidId("L100-abc-123"))
+    try assertTrue(!Lesson.isValidId(""))
+    try assertTrue(!Lesson.isValidId("L01-x"))           // 2 dígitos
+    try assertTrue(!Lesson.isValidId("L0001-x"))         // 4 dígitos
+    try assertTrue(!Lesson.isValidId("X001-y"))          // sem L
+    try assertTrue(!Lesson.isValidId("L001"))            // sem slug
+    try assertTrue(!Lesson.isValidId("L001-"))           // slug vazio
+    try assertTrue(!Lesson.isValidId("L001-Maius"))      // slug com maiúscula
+    try assertTrue(!Lesson.isValidId("L001-com_under"))  // underscore
+}
+
+step("LS-05: validate — messageCode formato M###") {
+    try assertTrue(Lesson.isValidMessageCode("M001"))
+    try assertTrue(Lesson.isValidMessageCode("M999"))
+    try assertTrue(!Lesson.isValidMessageCode(""))
+    try assertTrue(!Lesson.isValidMessageCode("M01"))
+    try assertTrue(!Lesson.isValidMessageCode("M0001"))
+    try assertTrue(!Lesson.isValidMessageCode("X001"))
+    try assertTrue(!Lesson.isValidMessageCode("M00A"))
+}
+
+step("LS-06: validate — phaseWeights soma errada lança erro específico") {
+    // Cria lição com soma 0.9 (deve lançar)
+    let bad = Lesson(
+        id: "L900-bad-weights",
+        title: "Bad",
+        category: .referencia, level: .intro,
+        shortDescription: "x",
+        objective: "y",
+        phaseWeights: [.entrada: 0.5, .apex: 0.4],
+        requiredSignals: [.kmh],
+        optionalSignals: [],
+        applicableCornerTypes: [.lenta],
+        preferredMessageCodes: ["M001"],
+        successCriteria: SuccessCriteria(metric: "x", confidence: .alta),
+        active: true
+    )
+    do {
+        try bad.validate()
+        throw Bad(msg: "esperava lançar phaseWeights soma errada")
+    } catch let e as LessonSchemaError {
+        try assertEq(e.lessonId, "L900-bad-weights")
+        try assertTrue(e.message.contains("phaseWeights deve somar 1.0"), "msg: \(e.message)")
+    }
+}
+
+step("LS-07: validate — id formato inválido lança") {
+    let bad = Lesson(
+        id: "lesson-bad",
+        title: "x", category: .referencia, level: .intro,
+        shortDescription: "x", objective: "y",
+        phaseWeights: [.entrada: 1.0],
+        requiredSignals: [.kmh],
+        optionalSignals: [],
+        applicableCornerTypes: [.lenta],
+        preferredMessageCodes: ["M001"],
+        successCriteria: SuccessCriteria(metric: "x", confidence: .alta),
+        active: true
+    )
+    do {
+        try bad.validate()
+        throw Bad(msg: "esperava lançar id inválido")
+    } catch let e as LessonSchemaError {
+        try assertTrue(e.message.contains("formato inválido"))
+    }
+}
+
+step("LS-08: validate — campos vazios obrigatórios lançam") {
+    let testCases: [(Lesson, String)] = [
+        // requiredSignals vazio
+        (Lesson(id: "L901-x", title: "x", category: .referencia, level: .intro,
+                shortDescription: "x", objective: "y",
+                phaseWeights: [.entrada: 1.0],
+                requiredSignals: [], optionalSignals: [],
+                applicableCornerTypes: [.lenta],
+                preferredMessageCodes: ["M001"],
+                successCriteria: SuccessCriteria(metric: "x", confidence: .alta),
+                active: true),
+         "requiredSignals deve ter ao menos 1"),
+        // applicableCornerTypes vazio
+        (Lesson(id: "L902-x", title: "x", category: .referencia, level: .intro,
+                shortDescription: "x", objective: "y",
+                phaseWeights: [.entrada: 1.0],
+                requiredSignals: [.kmh], optionalSignals: [],
+                applicableCornerTypes: [],
+                preferredMessageCodes: ["M001"],
+                successCriteria: SuccessCriteria(metric: "x", confidence: .alta),
+                active: true),
+         "applicableCornerTypes deve ter ao menos 1"),
+        // messageCode inválido
+        (Lesson(id: "L903-x", title: "x", category: .referencia, level: .intro,
+                shortDescription: "x", objective: "y",
+                phaseWeights: [.entrada: 1.0],
+                requiredSignals: [.kmh], optionalSignals: [],
+                applicableCornerTypes: [.lenta],
+                preferredMessageCodes: ["X001"],
+                successCriteria: SuccessCriteria(metric: "x", confidence: .alta),
+                active: true),
+         "messageCode inválido"),
+    ]
+    for (lesson, expectedFragment) in testCases {
+        do {
+            try lesson.validate()
+            throw Bad(msg: "\(lesson.id): esperava lançar")
+        } catch let e as LessonSchemaError {
+            try assertTrue(e.message.contains(expectedFragment),
+                           "msg \"\(e.message)\" deve conter \"\(expectedFragment)\"")
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════
 // FaseCurva — FC-01 .. FC-08 (port de src/telemetry/fase-curva.js)
 // ════════════════════════════════════════════════════════════
 
