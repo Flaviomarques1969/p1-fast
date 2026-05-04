@@ -832,6 +832,160 @@ step("EC-12: classify — evidências têm delta arredondado a 4 casas + pct") {
     try assertEq(tempoEv?.unit, "ms")
 }
 
+// ════════════════════════════════════════════════════════════
+// PilotReaction — PR-01 .. PR-12 (port de pilot-reaction.js)
+// ════════════════════════════════════════════════════════════
+
+func makeShiftEvent(_ apply: (inout ShiftEvent) -> Void = { _ in }) -> ShiftEvent {
+    // Defaults: rpm_at_shift=6800, target_visual_rpm=6500, rate=2000rpm/s → 150ms observed
+    var ev = ShiftEvent(
+        pilotoId: "p1", carroId: "car-1", sessaoId: "s1",
+        trechoId: "t-reta", gearBefore: 3, gearAfter: 4,
+        rpmAtShift: 6800, rpmBefore: 6400, rpmRiseRate: 2000,
+        targetVisualRpm: 6500, targetOptimalRpm: 6500,
+        deltaRpm: 300, gearConfidence: 0.9,
+        dataInconsistentFlag: false, status: "red", timestamp: 1000
+    )
+    apply(&ev)
+    return ev
+}
+
+step("PR-01: tupleKey — paridade JS (campos ausentes viram 'x')") {
+    try assertEq(PilotReaction.tupleKey(pilotoId: "p1", carroId: "c1", gear: 4, trechoId: "t1"),
+                 "p1:c1:4:t1")
+    try assertEq(PilotReaction.tupleKey(pilotoId: "p1", carroId: "c1", gear: 4, trechoId: nil),
+                 "p1:c1:4:x")
+    try assertEq(PilotReaction.tupleKey(pilotoId: nil, carroId: nil, gear: nil, trechoId: nil),
+                 "x:x:x:x")
+}
+
+step("PR-02: learnFromEvent ignora gear_confidence < 0.8") {
+    let ev = makeShiftEvent { $0.gearConfidence = 0.7 }
+    let next = PilotReaction.learnFromEvent(ev, profiles: [:])
+    try assertEq(next.count, 0)
+}
+
+step("PR-03: learnFromEvent ignora data_inconsistent_flag=true") {
+    let ev = makeShiftEvent { $0.dataInconsistentFlag = true }
+    let next = PilotReaction.learnFromEvent(ev, profiles: [:])
+    try assertEq(next.count, 0)
+}
+
+step("PR-04: learnFromEvent ignora eventos early (delta_rpm < 0)") {
+    let ev = makeShiftEvent { $0.deltaRpm = -200 }
+    let next = PilotReaction.learnFromEvent(ev, profiles: [:])
+    try assertEq(next.count, 0)
+}
+
+step("PR-05: learnFromEvent — primeira amostra inicializa rt com observed") {
+    let ev = makeShiftEvent()
+    let next = PilotReaction.learnFromEvent(ev, profiles: [:])
+    let key = PilotReaction.tupleKey(pilotoId: "p1", carroId: "car-1", gear: 4, trechoId: "t-reta")
+    try assertTrue(next[key] != nil, "profile criado")
+    try assertEq(next[key]?.sampleCount, 1)
+    try assertClose(next[key]?.reactionTimeMs, 150, tol: 0.001)
+}
+
+step("PR-06: learnFromEvent — 10 amostras convergem pra rt observado (alpha=0.15)") {
+    var profiles: ReactionProfiles = [:]
+    for i in 0..<10 {
+        let ev = makeShiftEvent { $0.timestamp = 1000 + Double(i) * 100 }
+        profiles = PilotReaction.learnFromEvent(ev, profiles: profiles)
+    }
+    let key = PilotReaction.tupleKey(pilotoId: "p1", carroId: "car-1", gear: 4, trechoId: "t-reta")
+    try assertEq(profiles[key]?.sampleCount, 10)
+    try assertTrue(abs((profiles[key]?.reactionTimeMs ?? 0) - 150) < 5,
+                   "rt deveria convergir pra 150")
+}
+
+step("PR-07: learnFromEvent — alpha suave (mudança bounded entre eventos)") {
+    var profiles: ReactionProfiles = [:]
+    profiles = PilotReaction.learnFromEvent(makeShiftEvent(), profiles: profiles) // 150
+    let ev2 = makeShiftEvent { $0.rpmRiseRate = 1000 } // observed = 300/1000*1000 = 300
+    profiles = PilotReaction.learnFromEvent(ev2, profiles: profiles)
+    let key = PilotReaction.tupleKey(pilotoId: "p1", carroId: "car-1", gear: 4, trechoId: "t-reta")
+    let rt = profiles[key]!.reactionTimeMs
+    // EWMA: 150 * 0.85 + 300 * 0.15 = 127.5 + 45 = 172.5
+    try assertClose(rt, 172.5, tol: 0.5)
+}
+
+step("PR-08: learnFromEvent — clamp em RT_MAX_MS (400ms)") {
+    // observed = (300) * 1000 / 500 = 600ms → clampeia em 400.
+    let ev = makeShiftEvent { $0.rpmRiseRate = 500 }
+    let next = PilotReaction.learnFromEvent(ev, profiles: [:])
+    let key = PilotReaction.tupleKey(pilotoId: "p1", carroId: "car-1", gear: 4, trechoId: "t-reta")
+    try assertClose(next[key]?.reactionTimeMs, 400, tol: 0.001)
+}
+
+step("PR-09: computeCompensation — modo learning sempre 0") {
+    let r = PilotReaction.computeCompensation(
+        pilotoId: "p1", carroId: "car-1", gear: 4, trechoId: "t1",
+        rpmRiseRate: 5000, profiles: [:], mode: .learning
+    )
+    try assertEq(r.rtMs, 0)
+    try assertEq(r.compensationRpm, 0)
+    try assertEq(r.source, .learningMode)
+}
+
+step("PR-10: computeCompensation — rpmRiseRate inválido → invalid_rate") {
+    let r1 = PilotReaction.computeCompensation(
+        pilotoId: "p1", carroId: "car-1", gear: 4, trechoId: "t1",
+        rpmRiseRate: nil, profiles: [:]
+    )
+    try assertEq(r1.source, .invalidRate)
+    let r2 = PilotReaction.computeCompensation(
+        pilotoId: "p1", carroId: "car-1", gear: 4, trechoId: "t1",
+        rpmRiseRate: 0, profiles: [:]
+    )
+    try assertEq(r2.source, .invalidRate)
+}
+
+step("PR-11: computeCompensation — sem aprendizado retorna default 250ms") {
+    let r = PilotReaction.computeCompensation(
+        pilotoId: "p1", carroId: "car-1", gear: 4, trechoId: "t1",
+        rpmRiseRate: 5000, profiles: [:]
+    )
+    try assertEq(r.rtMs, 250)
+    try assertClose(r.compensationRpm, 1250, tol: 0.001) // 250 * 5000 / 1000
+    try assertEq(r.source, .default)
+}
+
+step("PR-12: computeCompensation — fallback exact → piloto-carro-gear → piloto-carro") {
+    var profiles: ReactionProfiles = [:]
+    let keyExact = PilotReaction.tupleKey(pilotoId: "p1", carroId: "car-1", gear: 4, trechoId: "t1")
+    let keyPCG   = PilotReaction.tupleKey(pilotoId: "p1", carroId: "car-1", gear: 4, trechoId: nil)
+    let keyPC    = PilotReaction.tupleKey(pilotoId: "p1", carroId: "car-1", gear: nil, trechoId: nil)
+    profiles[keyPC] = ReactionProfile(key: keyPC, reactionTimeMs: 200, sampleCount: 15, lastUpdated: 0)
+    let r1 = PilotReaction.computeCompensation(
+        pilotoId: "p1", carroId: "car-1", gear: 4, trechoId: "t1",
+        rpmRiseRate: 5000, profiles: profiles
+    )
+    try assertEq(r1.source, .pilotoCarro)
+    try assertEq(r1.rtMs, 200)
+    profiles[keyPCG] = ReactionProfile(key: keyPCG, reactionTimeMs: 180, sampleCount: 12, lastUpdated: 0)
+    let r2 = PilotReaction.computeCompensation(
+        pilotoId: "p1", carroId: "car-1", gear: 4, trechoId: "t1",
+        rpmRiseRate: 5000, profiles: profiles
+    )
+    try assertEq(r2.source, .pilotoCarroGear)
+    try assertEq(r2.rtMs, 180)
+    profiles[keyExact] = ReactionProfile(key: keyExact, reactionTimeMs: 160, sampleCount: 11, lastUpdated: 0)
+    let r3 = PilotReaction.computeCompensation(
+        pilotoId: "p1", carroId: "car-1", gear: 4, trechoId: "t1",
+        rpmRiseRate: 5000, profiles: profiles
+    )
+    try assertEq(r3.source, .exact)
+    try assertEq(r3.rtMs, 160)
+    // Profile com sample_count < MIN não conta
+    var p2: ReactionProfiles = [:]
+    p2[keyExact] = ReactionProfile(key: keyExact, reactionTimeMs: 160, sampleCount: 5, lastUpdated: 0)
+    let r4 = PilotReaction.computeCompensation(
+        pilotoId: "p1", carroId: "car-1", gear: 4, trechoId: "t1",
+        rpmRiseRate: 5000, profiles: p2
+    )
+    try assertEq(r4.source, .default)
+}
+
 step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
     let r = SeedBrasilia.make()
     let enc = JSONEncoder()
