@@ -2224,6 +2224,122 @@ step("ER-05: calcularEventoResumo — agrega 2 dias com melhor global") {
     try assertEq(r.calculadoEm, 555)
 }
 
+// ════════════════════════════════════════════════════════════
+// Corredor — COR-01 .. COR-08 (paridade JS src/telemetry/corredor.js)
+// ════════════════════════════════════════════════════════════
+
+func corredorVolta(deltaX: Double, deltaY: Double, n: Int = 20, t0: Double = 0) -> [CorredorSample] {
+    // Volta sintética: linha reta no espaço entre t=t0 e t=t0+(n-1) com offset (deltaX, deltaY)
+    var arr: [CorredorSample] = []
+    for i in 0..<n {
+        arr.append(CorredorSample(t: t0 + Double(i), x: Double(i) + deltaX, y: deltaY))
+    }
+    return arr
+}
+
+step("COR-01: consolidarTracado — sem voltas → vazio") {
+    let r = Corredor.consolidarTracado(voltasSamples: [])
+    try assertEq(r.pontos.count, 0)
+    try assertEq(r.nVoltas, 0)
+}
+
+step("COR-02: consolidarTracado — voltas com < MIN_PONTOS são descartadas") {
+    let curta = corredorVolta(deltaX: 0, deltaY: 0, n: 4) // MIN_PONTOS = 5
+    let r = Corredor.consolidarTracado(voltasSamples: [curta])
+    try assertEq(r.nVoltas, 0)
+    try assertEq(r.pontos.count, 0)
+}
+
+step("COR-03: consolidarTracado — 3 voltas idênticas → desvPad ≈ 0") {
+    let v1 = corredorVolta(deltaX: 0, deltaY: 0)
+    let v2 = corredorVolta(deltaX: 0, deltaY: 0)
+    let v3 = corredorVolta(deltaX: 0, deltaY: 0)
+    let r = Corredor.consolidarTracado(voltasSamples: [v1, v2, v3], resolucao: 50)
+    try assertEq(r.nVoltas, 3)
+    try assertEq(r.pontos.count, 50)
+    for p in r.pontos {
+        try assertTrue(p.desvPad < 1e-9, "desvPad deveria ser ≈0, foi \(p.desvPad)")
+    }
+}
+
+step("COR-04: consolidarTracado — voltas paralelas com offset → media e variância coerentes") {
+    let v1 = corredorVolta(deltaX: 0, deltaY: 0)
+    let v2 = corredorVolta(deltaX: 0, deltaY: 4)
+    let r = Corredor.consolidarTracado(voltasSamples: [v1, v2], resolucao: 10)
+    try assertEq(r.nVoltas, 2)
+    try assertTrue(r.pontos.count > 0)
+    let mid = r.pontos[r.pontos.count / 2]
+    // y médio deve estar entre 0 e 4 (≈ 2)
+    try assertTrue(abs(mid.y - 2) < 1e-6, "esperado ~2, foi \(mid.y)")
+    // varY = ((0-2)^2 + (4-2)^2) / 2 = 4 → desvPad ≈ √4 = 2
+    try assertTrue(abs(mid.desvPad - 2) < 1e-6, "desvPad esperado ~2, foi \(mid.desvPad)")
+}
+
+step("COR-05: dentroCorredor — consolidado vazio → trivialmente dentro") {
+    let cons = Consolidado(pontos: [], nVoltas: 0)
+    let p = CorredorSample(t: 0, x: 999, y: 999, tN: 0.5)
+    let r = Corredor.dentroCorredor(ponto: p, consolidado: cons)
+    try assertTrue(r.dentro)
+    try assertEq(r.distancia, 0)
+}
+
+step("COR-06: dentroCorredor — raio mínimo 5m vence desvPad pequeno") {
+    // Voltas idênticas → desvPad=0 → raio = max(5, 1*sigma) = max(5, 2) = 5
+    let v1 = corredorVolta(deltaX: 0, deltaY: 0)
+    let v2 = corredorVolta(deltaX: 0, deltaY: 0)
+    let cons = Corredor.consolidarTracado(voltasSamples: [v1, v2], resolucao: 20)
+    let centro = cons.pontos[10]
+    // ponto a 4m fora do centro: dentro do raio 5
+    let pDentro = CorredorSample(t: 0, x: centro.x + 4, y: centro.y, tN: centro.tN)
+    let r1 = Corredor.dentroCorredor(ponto: pDentro, consolidado: cons)
+    try assertTrue(r1.dentro)
+    try assertEq(r1.raio, 5)
+    // ponto a 6m fora: já fora
+    let pFora = CorredorSample(t: 0, x: centro.x + 6, y: centro.y, tN: centro.tN)
+    let r2 = Corredor.dentroCorredor(ponto: pFora, consolidado: cons)
+    try assertTrue(!r2.dentro)
+}
+
+step("COR-07: matchSegmento — inputs inválidos retornam .naoMatch razão inputs-invalidos") {
+    let cons = Consolidado(pontos: [], nVoltas: 0)
+    let r = Corredor.matchSegmento(execSamples: [], trechoId: "T1", consolidado: cons)
+    if case let .naoMatch(razao, _) = r {
+        try assertEq(razao, "inputs-invalidos")
+    } else {
+        throw Bad(msg:"naoMatch inputs-invalidos, got \(r)")
+    }
+}
+
+step("COR-08: matchSegmento — execução dentro do corredor confirma match") {
+    let v1 = corredorVolta(deltaX: 0, deltaY: 0)
+    let v2 = corredorVolta(deltaX: 0, deltaY: 0)
+    let cons = Corredor.consolidarTracado(voltasSamples: [v1, v2], resolucao: 50)
+    // execSamples = volta idêntica com tN populado (todos dentro)
+    var exec: [CorredorSample] = []
+    for i in 0..<20 {
+        exec.append(CorredorSample(t: Double(i), x: Double(i), y: 0, tN: Double(i) / 19.0))
+    }
+    let r = Corredor.matchSegmento(execSamples: exec, trechoId: "T7", consolidado: cons)
+    if case let .match(pct, trechoId) = r {
+        try assertTrue(pct >= 0.7, "pct \(pct) deve ser ≥ 0.7")
+        try assertEq(trechoId, "T7")
+    } else {
+        throw Bad(msg:"match T7, got \(r)")
+    }
+    // execução totalmente fora (offset enorme em y) → não-match com pct < 0.7
+    var execFora: [CorredorSample] = []
+    for i in 0..<20 {
+        execFora.append(CorredorSample(t: Double(i), x: Double(i), y: 200, tN: Double(i) / 19.0))
+    }
+    let r2 = Corredor.matchSegmento(execSamples: execFora, trechoId: "T7", consolidado: cons)
+    if case let .naoMatch(razao, pct) = r2 {
+        try assertEq(razao, "fora-do-corredor")
+        try assertTrue((pct ?? 1) < 0.7)
+    } else {
+        throw Bad(msg:"naoMatch fora-do-corredor, got \(r2)")
+    }
+}
+
 step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
     let r = SeedBrasilia.make()
     let enc = JSONEncoder()
