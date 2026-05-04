@@ -1,7 +1,11 @@
-# PLANO FASE 1A + 1B — P1 Fast
+# PLANO FASE 1A + 1B — P1 Fast `[ARQUIVADO]`
 
-**Data do plano:** 2026-05-01
-**Status:** Aprovado por Flávio · execução iniciada
+> ⚠️ **SUPERSEDED por `docs/PLANO_FASE_1.md` em 2026-05-03.**
+> Este doc é mantido só por histórico. Não há mais split Fase 1A / 1B nem Fase 2 — tudo entra em Fase 1 única (decisão Flávio 2026-05-03 após audit honesto). Em caso de contradição, **PLANO_FASE_1.md vence**.
+
+**Data do plano original:** 2026-05-01
+**Status original:** Aprovado por Flávio · execução iniciada
+**Status atual:** ARQUIVADO 2026-05-03
 **Repo:** https://github.com/Flaviomarques1969/p1-fast
 
 ---
