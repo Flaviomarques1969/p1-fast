@@ -127,4 +127,38 @@ Adicionar ao namespace `Color.Cockpit` em Theme.swift.
 | `--halo-recorde` | `oklch(78% 0.18 65 / .42)` | `#ff9b00` |
 | `--halo-pior` | `oklch(56% 0.22 305 / .42)` | `#9442d9` |
 
+## Swatches da comparação (não tokenizadas no mockup)
 
+`mockup-cockpit-comparacao.html` linhas 76-77 usam 2 cores **hardcoded inline** (não viraram CSS variable). Vão entrar em Theme.swift como `Color.Cockpit.compareSwatchOrange` e `Color.Cockpit.compareSwatchPurple` quando o cockpit comparação for portado (Sprint 1B-7).
+
+| Uso CSS | OKLCH | Hex |
+|---|---|---|
+| `.compare-row--orange .swatch` | `oklch(78% 0.18 65)` | `#ff9b00` |
+| `.compare-row--purple .swatch` | `oklch(56% 0.22 305)` | `#9442d9` |
+
+Notar que **compareSwatchOrange === --halo-recorde com alpha=1** e **compareSwatchPurple === --halo-pior com alpha=1**. Em Theme.swift, dá pra deriver via `.opacity(1)` em vez de duplicar — mas verificar se mockup canônico realmente trata como mesma cor (pode ser coincidência).
+
+## Tokens de motion + tipografia (compartilhados com hub)
+
+Não-color tokens estão no `THEME_TOKENS.md` / `THEME_TOKENS_HUB.md` e devem ser reusados no cockpit (zero divergência). Lista pra referência:
+
+**Motion** (idênticos aos do hub):
+- `--ease-inout: cubic-bezier(0.65, 0, 0.35, 1)`
+- `--ease-out:   cubic-bezier(0.22, 1, 0.36, 1)`
+- `--ease-msg:   cubic-bezier(0.16, 1, 0.3, 1)` (só piloto + ghost)
+
+**Tipografia** (compartilhada):
+- `--ff-display: 'Inter', system-ui, sans-serif`
+- `--ff-mono:    'JetBrains Mono', ui-monospace, monospace`
+
+**Sizing escala** (compartilhada — nomes `fs-0` a `fs-9`):
+- `--fs-0: 9px`, `--fs-1: 11px`, `--fs-2: 13px`, `--fs-5: 32px`, `--fs-6: 32px`, `--fs-9: 180px`
+- `--lh-dom: 0.88`, `--ls-tight: -0.045em`
+- `--ls-caps-l/m/s: 0.35em / 0.22em / 0.06em`
+
+**Layout cockpit-only** (largura/altura semanticos):
+- `--apex-h: 60px` (altura do bloco apex/curva)
+- `--acao-h: 44px` (altura comando ativo)
+- `--esp-h: 24px` (altura espessuras gerais)
+
+Em Theme.swift do app: motion + tipografia ficam no namespace global (`Theme.ease`, `Theme.font`); sizing cockpit-only fica em `Theme.Cockpit.layout`.

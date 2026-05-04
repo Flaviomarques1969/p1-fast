@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Cockpit · piloto (clean)</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;}
+  #f{
+    border:0;display:block;
+    width:1004px;height:488px;
+    position:absolute;top:50%;left:50%;
+    transform-origin:center center;
+    transform:translate(-50%,-50%);
+  }
+</style>
+</head>
+<body>
+<iframe id="f" src="/mockup-cockpit-piloto.html"></iframe>
+<script>
+const f=document.getElementById('f');
+function fit(){
+  const sx=window.innerWidth/1004, sy=window.innerHeight/488;
+  const s=Math.min(sx,sy);
+  f.style.transform=`translate(-50%,-50%) scale(${s})`;
+}
+window.addEventListener('resize',fit);
+fit();
+let cycleIdx=0, cycleTimer=null, fireSeqTimer=null;
+// Build-up canônico: pontas→centro (verde→amarelo→vermelho) + FIRE + OFF, repete.
+const FIRE_SEQ=[
+  {state:'0',    dwell:300},
+  {state:'1',    dwell:160},
+  {state:'2',    dwell:160},
+  {state:'3',    dwell:160},
+  {state:'4',    dwell:160},
+  {state:'5',    dwell:160},
+  {state:'6',    dwell:140},
+  {state:'fire', dwell:420},
+  {state:'0',    dwell:600},
+];
+function startFireRetrigger(){
+  stopFireRetrigger();
+  let i=0;
+  const tick=()=>{
+    try{
+      const d=f.contentDocument, w=f.contentWindow;
+      if(!d||!w){ fireSeqTimer=setTimeout(tick,200); return; }
+      const sl=d.getElementById('shiftLight'), dev=d.getElementById('device');
+      const step=FIRE_SEQ[i];
+      if(step.state==='fire'){
+        sl.querySelectorAll('.shift-light__dot').forEach(x=>x.classList.remove('is-on'));
+        dev.dataset.shiftFire='idle';
+        sl.dataset.state='lit';
+        requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
+          sl.dataset.state='fire'; dev.dataset.shiftFire='active';
+        });});
+      } else {
+        dev.dataset.shiftFire='idle';
+        if(typeof w.setShiftLevel==='function') w.setShiftLevel(step.state);
+      }
+      i=(i+1)%FIRE_SEQ.length;
+      fireSeqTimer=setTimeout(tick,step.dwell);
+    }catch(e){ fireSeqTimer=setTimeout(tick,400); }
+  };
+  tick();
+}
+function stopFireRetrigger(){
+  if(fireSeqTimer){ clearTimeout(fireSeqTimer); fireSeqTimer=null; }
+}
+const CYCLE=[
+  {label:'NEUTRO · SHIFT 3',          shift:'3',       halo:'neutro',        msg:'oculta',     dwell:3500},
+  {label:'SUBIDA · SHIFT 6',          shift:'6',       halo:'neutro',        msg:'oculta',     dwell:3500},
+  {label:'FIRE · STROBE BRANCO',      shift:'fire',    halo:'recorde-stint', msg:'oculta',     dwell:4000},
+  {label:'OVERREV',                   shift:'overrev', halo:'pior-stint',    msg:'oculta',     dwell:3500},
+  {label:'COMUNICAÇÃO',               shift:'4',       halo:'neutro',        msg:'comunicacao',dwell:4000},
+  {label:'GRAVE · PRESSÃO ÓLEO',      shift:'5',       halo:'pior-stint',    msg:'grave',      dwell:4500},
+  {label:'RECORDE · HALO LARANJA',    shift:'auto',    halo:'recorde-stint', msg:'oculta',     dwell:5000},
+];
+function applyAll(scene){
+  try{
+    const d=f.contentDocument, w=f.contentWindow;
+    if(!d||!w) return;
+    if(typeof w.stopShiftAutoCycle==='function') w.stopShiftAutoCycle();
+    if(w.autoTimer) clearInterval(w.autoTimer);
+    if(w.commTimer) clearTimeout(w.commTimer);
+    stopFireRetrigger();
+    if(scene.shift==='auto'){
+      if(typeof w.startShiftAutoCycle==='function') w.startShiftAutoCycle();
+    } else if(scene.shift==='fire'){
+      const sl=d.getElementById('shiftLight');
+      const dev0=d.getElementById('device');
+      sl.querySelectorAll('.shift-light__dot').forEach(x=>x.classList.remove('is-on'));
+      sl.dataset.state='fire';
+      dev0.dataset.shiftFire='active';
+      startFireRetrigger();
+    } else if(scene.shift==='fire-frozen'){
+      const sl=d.getElementById('shiftLight');
+      const dev0=d.getElementById('device');
+      sl.querySelectorAll('.shift-light__dot').forEach(x=>x.classList.remove('is-on'));
+      sl.dataset.state='fire-frozen';
+      dev0.dataset.shiftFire='frozen';
+    } else if(typeof w.setShiftLevel==='function'){
+      w.setShiftLevel(scene.shift);
+    }
+    const dev=d.getElementById('device');
+    if(dev) dev.dataset.trechoStatus=scene.halo;
+    if(scene.msg==='comunicacao'||scene.msg==='grave'){
+      if(typeof w.setMessage==='function') w.setMessage(scene.msg);
+    } else {
+      if(typeof w.hideMessage==='function') w.hideMessage();
+    }
+  }catch(e){}
+}
+function startCycle(){
+  if(cycleTimer) clearTimeout(cycleTimer);
+  const tick=()=>{
+    const scene=CYCLE[cycleIdx];
+    applyAll(scene);
+    // FIRE no celular é override CSS infinite 500ms — não precisa re-trigger.
+    cycleTimer=setTimeout(()=>{
+      cycleIdx=(cycleIdx+1)%CYCLE.length;
+      tick();
+    },scene.dwell);
+  };
+  tick();
+}
+function applyState(){
+  try{
+    const d=f.contentDocument;
+    const w=f.contentWindow;
+    if(!d || !w) return;
+    const params=new URLSearchParams(location.search);
+    if(params.get('cycle')==='1'){ startCycle(); return; }
+    const shift=params.get('shift');
+    const halo=params.get('halo');
+    const msg=params.get('msg');
+    if(typeof w.stopShiftAutoCycle==='function') w.stopShiftAutoCycle();
+    if(w.autoTimer) clearInterval(w.autoTimer);
+    if(w.commTimer) clearTimeout(w.commTimer);
+    stopFireRetrigger();
+    if(shift==='auto'){
+      if(typeof w.startShiftAutoCycle==='function') w.startShiftAutoCycle();
+    } else if(shift==='fire'){
+      const sl=d.getElementById('shiftLight');
+      const dev0=d.getElementById('device');
+      sl.querySelectorAll('.shift-light__dot').forEach(x=>x.classList.remove('is-on'));
+      sl.dataset.state='fire';
+      dev0.dataset.shiftFire='active';
+      startFireRetrigger();
+    } else {
+      if(typeof w.setShiftLevel==='function') w.setShiftLevel(shift||'3');
+    }
+    const dev=d.getElementById('device');
+    if(dev) dev.dataset.trechoStatus=halo||'neutro';
+    if(msg==='comunicacao' || msg==='grave'){
+      if(typeof w.setMessage==='function') w.setMessage(msg);
+    } else if(msg==='auto'){
+      if(typeof w.startAutoLoop==='function') w.startAutoLoop();
+    } else {
+      if(typeof w.hideMessage==='function') w.hideMessage();
+    }
+  }catch(e){}
+}
+f.addEventListener('load',()=>{
+  try{
+    const d=f.contentDocument;
+    const s=d.createElement('style');
+    s.textContent=`
+      .controls,.legend{display:none!important}
+      body{padding:0!important;background:#000!important;min-height:100%!important}
+      /* FIRE FROZEN — congela o pulso de fogo no pico de brilho pra screenshot */
+      .shift-light[data-state="fire-frozen"]{
+        animation:none!important;
+        box-shadow:
+          inset 0 1px 0 oklch(60% 0.08 230 / .9),
+          inset 0 -1px 0 oklch(0% 0 0 / .9),
+          inset 0 0 0 1px oklch(82% 0.12 235),
+          0 0 0 1.5px oklch(94% 0.08 230 / .65),
+          0 2px 6px oklch(0% 0 0 / .6),
+          0 0 70px oklch(92% 0.10 235 / .65) !important;
+      }
+      .shift-light[data-state="fire-frozen"] .shift-light__dot{
+        animation:none!important;opacity:1!important;transform:scale(1.22)!important;
+        background:radial-gradient(circle at 35% 28%,
+          oklch(100% 0 0) 0%,
+          oklch(98% 0.04 230) 55%,
+          oklch(86% 0.12 240) 100%)!important;
+        box-shadow:
+          inset 0 1px 0 oklch(100% 0 0 / 1),
+          inset 0 0 0 1px oklch(96% 0.05 230),
+          0 0 16px oklch(100% 0 0 / 1),
+          0 0 36px oklch(96% 0.06 230 / .95),
+          0 0 70px oklch(88% 0.13 240 / .75),
+          0 0 130px oklch(78% 0.16 245 / .45)!important;
+      }
+      .device[data-shift-fire="frozen"] .fire-overlay{
+        animation:none!important;opacity:1!important;
+      }
+      /* PHONE FIRE — strobe canônico a 10Hz, mas com 4 pulsos em 400ms
+         e wash em cima E embaixo. Re-trigger via JS a cada 1000ms. */
+      @keyframes phoneFire4Dot{
+        0%   { opacity:0;   transform:scale(.85); }
+        3%   { opacity:1;   transform:scale(1.24); }
+        22%  { opacity:1;   transform:scale(1.22); }
+        25%  { opacity:0;   transform:scale(1.0);  }
+        28%  { opacity:1;   transform:scale(1.22); }
+        47%  { opacity:1;   transform:scale(1.20); }
+        50%  { opacity:0;   transform:scale(1.0);  }
+        53%  { opacity:1;   transform:scale(1.22); }
+        72%  { opacity:1;   transform:scale(1.20); }
+        75%  { opacity:0;   transform:scale(1.0);  }
+        78%  { opacity:1;   transform:scale(1.22); }
+        97%  { opacity:1;   transform:scale(1.18); }
+        100% { opacity:0;   transform:scale(.85);  }
+      }
+      .shift-light[data-state="fire"] .shift-light__dot{
+        animation:phoneFire4Dot 400ms linear forwards !important;
+      }
+      @keyframes phoneFire4Flash{
+        0%   { opacity:0;  }
+        3%   { opacity:1;  }   22%  { opacity:1;  }
+        25%  { opacity:0;  }   28%  { opacity:1;  }
+        47%  { opacity:1;  }   50%  { opacity:0;  }
+        53%  { opacity:1;  }   72%  { opacity:1;  }
+        75%  { opacity:0;  }   78%  { opacity:1;  }
+        97%  { opacity:1;  }   100% { opacity:0; }
+      }
+      .device[data-shift-fire="active"] .fire-overlay{
+        animation:phoneFire4Flash 400ms linear forwards !important;
+      }
+      /* PHONE TYPOGRAPHY — variante celular (~6" landscape).
+         O canônico (mockup-cockpit-piloto.html) preserva tamanhos da tela 10.7"
+         do piloto. Aqui só amplificamos pra ficar legível no iPhone. */
+      .apex{
+        top:62px !important; left:60px !important; right:18px !important;
+        justify-content:space-evenly !important;
+      }
+      .apex__ponto{ gap:7px !important; }
+      .apex__label{ font-size:19px !important; letter-spacing:0.16em !important; }
+      .apex__valor{ font-size:38px !important; }
+      .apex__valor small{ font-size:12px !important; letter-spacing:.05em !important; }
+      .apex__valor__sep{ margin:0 4px !important; }
+      .info-bloco{ top:60% !important; gap:8px !important; }
+      .device[data-msg-state="ativa"] .info-bloco{
+        transform:translate(calc(-50% - 230px), -50%) !important;
+      }
+      .info__delta{ font-size:144px !important; }
+      .info__acao{ font-size:26px !important; }
+      .alert-bloco{ font-size:30px !important; }
+    `;
+    d.head.appendChild(s);
+    setTimeout(applyState,80);
+  }catch(e){}
+});
+window.addEventListener('load',()=>{ setTimeout(()=>window.scrollTo(0,1),300); });
+</script>
+</body>
+</html>
