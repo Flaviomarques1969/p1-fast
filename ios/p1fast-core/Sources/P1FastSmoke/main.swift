@@ -1463,6 +1463,152 @@ step("RS-06: MockRpmSource — script é avaliado a cada tick") {
     try assertEq(src.getStatus(), .lost)
 }
 
+// ════════════════════════════════════════════════════════════
+// Score + Benchmark — SC-01..SC-10
+// ════════════════════════════════════════════════════════════
+
+step("SC-01: Scores.lap — empate retorna 100; 5% mais lento retorna ~95") {
+    try assertEq(Scores.lap(tempoAtualMs: 100000, melhorTempoMs: 100000), 100)
+    let s = Scores.lap(tempoAtualMs: 105000, melhorTempoMs: 100000)!
+    try assertClose(s, 95.2, tol: 0.5)
+}
+
+step("SC-02: Scores.lap — input inválido retorna nil") {
+    try assertTrue(Scores.lap(tempoAtualMs: nil, melhorTempoMs: 100000) == nil)
+    try assertTrue(Scores.lap(tempoAtualMs: 100000, melhorTempoMs: 0) == nil)
+    try assertTrue(Scores.lap(tempoAtualMs: -1, melhorTempoMs: 100000) == nil)
+}
+
+step("SC-03: Scores.categoria — 4 faixas + indefinido") {
+    try assertEq(Scores.categoria(99), .excelente)
+    try assertEq(Scores.categoria(96), .bom)
+    try assertEq(Scores.categoria(92), .medio)
+    try assertEq(Scores.categoria(80), .ruim)
+    try assertEq(Scores.categoria(nil), .indefinido)
+}
+
+step("SC-04: Benchmark.compute — escolhe melhor volta + ideal teórica") {
+    let parciais = [
+        Parcial(id: "P1", nome: "P1", apelido: nil, tStart: 0, tEnd: 50),
+        Parcial(id: "P2", nome: "P2", apelido: nil, tStart: 50, tEnd: 100),
+    ]
+    let laps = [
+        BenchmarkLapInput(id: "L1", tempoMs: 100_000, numero: 1,
+                          temposPorParcial: ["P1": 50_000, "P2": 50_000]),
+        BenchmarkLapInput(id: "L2", tempoMs: 99_500, numero: 2,
+                          temposPorParcial: ["P1": 49_500, "P2": 50_000]),
+        BenchmarkLapInput(id: "L3", tempoMs: 99_800, numero: 3,
+                          temposPorParcial: ["P1": 50_000, "P2": 49_800]),
+    ]
+    let scope = BenchmarkScope(carId: "c1", trackId: "t1", carConfigurationId: nil, dia: nil)
+    let r = Benchmark.compute(scope: scope, parciais: parciais, laps: laps)!
+    try assertEq(r.melhorVolta?.id, "L2")
+    try assertEq(r.melhorVolta?.tempoMs, 99_500)
+    try assertEq(r.voltasConsideradas, 3)
+    try assertEq(r.melhorPorParcial["P1"]??.lapId, "L2")
+    try assertEq(r.melhorPorParcial["P2"]??.lapId, "L3")
+    // Ideal teórica = 49500 + 49800 = 99300
+    try assertEq(r.idealTeoricaMs, 99_300)
+    // Ganho = melhorVolta(99500) - ideal(99300) = 200ms
+    try assertEq(r.ganhoTeoricoMs, 200)
+}
+
+step("SC-05: Benchmark.compute — laps vazias retorna nil") {
+    let scope = BenchmarkScope(carId: "c1", trackId: "t1", carConfigurationId: nil, dia: nil)
+    let r = Benchmark.compute(scope: scope, parciais: [], laps: [])
+    try assertTrue(r == nil)
+}
+
+step("SC-06: Benchmark.compute — parcial faltando em todas voltas → ideal teórica nil") {
+    let parciais = [
+        Parcial(id: "P1", nome: "P1", apelido: nil, tStart: 0, tEnd: 50),
+        Parcial(id: "P2", nome: "P2", apelido: nil, tStart: 50, tEnd: 100),
+    ]
+    // P2 ausente em todas as voltas
+    let laps = [
+        BenchmarkLapInput(id: "L1", tempoMs: 100_000, temposPorParcial: ["P1": 50_000]),
+        BenchmarkLapInput(id: "L2", tempoMs: 99_500, temposPorParcial: ["P1": 49_500]),
+    ]
+    let scope = BenchmarkScope(carId: "c1", trackId: "t1", carConfigurationId: nil, dia: nil)
+    let r = Benchmark.compute(scope: scope, parciais: parciais, laps: laps)!
+    try assertTrue(r.idealTeoricaMs == nil)
+    try assertTrue(r.ganhoTeoricoMs == nil)
+    try assertTrue(r.melhorPorParcial["P2"]! == nil)
+}
+
+step("SC-07: Scores.fromLap — score por parcial + volta") {
+    let parciais = [
+        Parcial(id: "P1", nome: "P1", apelido: nil, tStart: 0, tEnd: 50),
+        Parcial(id: "P2", nome: "P2", apelido: nil, tStart: 50, tEnd: 100),
+    ]
+    let laps = [
+        BenchmarkLapInput(id: "L1", tempoMs: 100_000, temposPorParcial: ["P1": 50_000, "P2": 50_000]),
+    ]
+    let scope = BenchmarkScope(carId: "c1", trackId: "t1", carConfigurationId: nil, dia: nil)
+    let bench = Benchmark.compute(scope: scope, parciais: parciais, laps: laps)!
+    let lap = ScoreLapInput(id: "Latual", tempoMs: 102_000,
+                            temposPorParcial: ["P1": 51_000, "P2": 51_000])
+    let r = Scores.fromLap(lap, benchmark: bench)
+    try assertClose(r.volta, 98.0, tol: 0.5) // 100000/102000 ≈ 98.04
+    try assertClose(r.porParcial["P1"] ?? nil, 98.0, tol: 0.5)
+}
+
+step("SC-08: Scores.compensado — distribui peso igual quando sem weights") {
+    let parciais = [
+        Parcial(id: "P1", nome: "P1", apelido: nil, tStart: 0, tEnd: 50),
+        Parcial(id: "P2", nome: "P2", apelido: nil, tStart: 50, tEnd: 100),
+    ]
+    let laps = [
+        BenchmarkLapInput(id: "L1", tempoMs: 100_000, temposPorParcial: ["P1": 50_000, "P2": 50_000]),
+    ]
+    let scope = BenchmarkScope(carId: "c1", trackId: "t1", carConfigurationId: nil, dia: nil)
+    let bench = Benchmark.compute(scope: scope, parciais: parciais, laps: laps)!
+    // Volta atual: P1=51000 (98.04), P2=49500 (101->100 clampeado)
+    let lap = ScoreLapInput(id: "Latual", tempoMs: 100_500,
+                            temposPorParcial: ["P1": 51_000, "P2": 49_500])
+    let r = Scores.compensado(lap: lap, benchmark: bench)!
+    try assertEq(r.parciaisConsideradas, 2)
+    try assertEq(r.totalParciais, 2)
+    try assertTrue(!r.parcial)
+    try assertEq(r.fatorContexto, 1.0)
+    try assertTrue(r.score >= 95 && r.score <= 100)
+}
+
+step("SC-09: Scores.compensado — parcial=true quando faltam parciais") {
+    let parciais = [
+        Parcial(id: "P1", nome: "P1", apelido: nil, tStart: 0, tEnd: 50),
+        Parcial(id: "P2", nome: "P2", apelido: nil, tStart: 50, tEnd: 100),
+    ]
+    let laps = [
+        BenchmarkLapInput(id: "L1", tempoMs: 100_000, temposPorParcial: ["P1": 50_000, "P2": 50_000]),
+    ]
+    let scope = BenchmarkScope(carId: "c1", trackId: "t1", carConfigurationId: nil, dia: nil)
+    let bench = Benchmark.compute(scope: scope, parciais: parciais, laps: laps)!
+    // Volta atual com só P1
+    let lap = ScoreLapInput(id: "Latual", tempoMs: 100_500,
+                            temposPorParcial: ["P1": 50_500])
+    let r = Scores.compensado(lap: lap, benchmark: bench)!
+    try assertTrue(r.parcial)
+    try assertEq(r.parciaisConsideradas, 1)
+    try assertEq(r.totalParciais, 2)
+    try assertTrue(r.explicacao?.contains("dados parciais") == true)
+}
+
+step("SC-10: Scores.compensado — fatorContexto > 1 com diferenças de ar/umidade") {
+    let parciais = [Parcial(id: "P1", nome: "P1", apelido: nil, tStart: 0, tEnd: 100)]
+    let laps = [BenchmarkLapInput(id: "L1", tempoMs: 100_000,
+                                   temposPorParcial: ["P1": 100_000])]
+    let scope = BenchmarkScope(carId: "c1", trackId: "t1", carConfigurationId: nil, dia: nil)
+    let bench = Benchmark.compute(scope: scope, parciais: parciais, laps: laps)!
+    let lap = ScoreLapInput(id: "Latual", tempoMs: 102_000,
+                            temposPorParcial: ["P1": 102_000])
+    let lapCtx = ScoreContexto(temperaturaAr: 35, umidade: 60)
+    let refCtx = ScoreContexto(temperaturaAr: 20, umidade: 30)
+    let r = Scores.compensado(lap: lap, benchmark: bench, contextoLap: lapCtx, contextoRef: refCtx)!
+    // dT=15>10 → 1.02; dU=30>20 → 1.01 → fator = 1.02 * 1.01 ≈ 1.0302
+    try assertClose(r.fatorContexto, 1.0302, tol: 0.001)
+}
+
 step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
     let r = SeedBrasilia.make()
     let enc = JSONEncoder()
