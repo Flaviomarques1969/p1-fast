@@ -1979,6 +1979,89 @@ step("PVE-05: evaluate — sem mapping conhecido + maioria manteveLinha → PARC
     try assertEq(r.focos.first?.resultado, .parcial)
 }
 
+// ════════════════════════════════════════════════════════════
+// AttackPriority — AP-01..AP-04
+// ════════════════════════════════════════════════════════════
+
+step("AP-01: compute — sem benchmark retorna ranking vazio") {
+    let r = AttackPriority.compute(laps: [], benchmark: nil, repetibilidadeSummary: nil)
+    try assertEq(r.ranking.count, 0)
+    try assertEq(r.top3.count, 0)
+}
+
+step("AP-02: compute por parcial — ordena por prioridade desc") {
+    let parciais = [
+        Parcial(id: "P1", nome: "P1", apelido: nil, tStart: 0, tEnd: 50),
+        Parcial(id: "P2", nome: "P2", apelido: nil, tStart: 50, tEnd: 100),
+    ]
+    let benchLaps = [
+        BenchmarkLapInput(id: "Lref", tempoMs: 100_000,
+                          temposPorParcial: ["P1": 50_000, "P2": 50_000])
+    ]
+    let scope = BenchmarkScope(carId: "c1", trackId: "t1", carConfigurationId: nil, dia: nil)
+    let bench = Benchmark.compute(scope: scope, parciais: parciais, laps: benchLaps)!
+    // Voltas com P1 médio=51000 (impacto +1000) e P2 médio=52000 (impacto +2000)
+    let laps: [PvELap] = [
+        PvELap(id: "L1", numero: 1, valida: true,
+               temposPorParcial: ["P1": 51_000, "P2": 52_000]),
+        PvELap(id: "L2", numero: 2, valida: true,
+               temposPorParcial: ["P1": 51_000, "P2": 52_000]),
+    ]
+    let summary = Repeatability.summary(laps: [
+        .init(valida: true, tempoMs: 100_000, temposPorParcial: ["P1": 51_000, "P2": 52_000]),
+        .init(valida: true, tempoMs: 100_000, temposPorParcial: ["P1": 51_000, "P2": 52_000]),
+    ], parciais: parciais)
+    let r = AttackPriority.compute(laps: laps, benchmark: bench, repetibilidadeSummary: summary)
+    try assertEq(r.ranking.count, 2)
+    // P2 tem maior impacto → maior prioridade
+    try assertEq(r.ranking.first?.parcialId, "P2")
+    try assertTrue((r.ranking.first?.prioridade ?? 0) > (r.ranking.last?.prioridade ?? 0))
+}
+
+step("AP-03: compute — repetibilidade indefinida usa fator 0.7") {
+    let parciais = [Parcial(id: "P1", nome: "P1", apelido: nil, tStart: 0, tEnd: 100)]
+    let benchLaps = [BenchmarkLapInput(id: "Lref", tempoMs: 100_000,
+                                        temposPorParcial: ["P1": 100_000])]
+    let scope = BenchmarkScope(carId: "c1", trackId: "t1", carConfigurationId: nil, dia: nil)
+    let bench = Benchmark.compute(scope: scope, parciais: parciais, laps: benchLaps)!
+    let laps: [PvELap] = [
+        PvELap(id: "L1", numero: 1, valida: true,
+               temposPorParcial: ["P1": 102_000]),
+    ]
+    // sem repetSummary → categoria indefinido → fator 0.7
+    let r = AttackPriority.compute(laps: laps, benchmark: bench, repetibilidadeSummary: nil)
+    try assertEq(r.ranking.count, 1)
+    try assertEq(r.ranking.first?.repetibilidadeCategoria, .indefinido)
+    // impacto = 2000; prioridade = 2000 * 0.7 = 1400.0
+    try assertEq(r.ranking.first?.prioridade, 1400.0)
+}
+
+step("AP-04: computeForTrechos — ranking por trecho com amostras") {
+    let trechos = [
+        TrackSegment(id: "T1", layoutId: "L", ordem: 0, nome: "Curva 1",
+                     tipo: .curva, ehTrecho: true, parcialId: "P1", x: 0, y: 0),
+        TrackSegment(id: "T2", layoutId: "L", ordem: 1, nome: "Curva 2",
+                     tipo: .curva, ehTrecho: true, parcialId: "P1", x: 0, y: 0),
+    ]
+    let laps: [AttackPriority.LapPorTrecho] = [
+        .init(id: "L1", valida: true, temposPorTrecho: ["T1": 10_000, "T2": 12_000]),
+        .init(id: "L2", valida: true, temposPorTrecho: ["T1": 10_500, "T2": 12_500]),
+    ]
+    let melhor: [String: AttackPriority.MelhorTrecho] = [
+        "T1": .init(tempoMs: 9_500),
+        "T2": .init(tempoMs: 11_000),
+    ]
+    let r = AttackPriority.computeForTrechos(
+        laps: laps, trechos: trechos, melhorPorTrecho: melhor
+    )
+    try assertEq(r.ranking.count, 2)
+    // T2: impacto = 12250-11000 = 1250
+    // T1: impacto = 10250-9500 = 750
+    // T2 > T1
+    try assertEq(r.ranking.first?.trechoId, "T2")
+    try assertEq(r.ranking.first?.amostras, 2)
+}
+
 step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
     let r = SeedBrasilia.make()
     let enc = JSONEncoder()
