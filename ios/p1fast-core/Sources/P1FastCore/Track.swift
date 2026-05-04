@@ -81,6 +81,14 @@ public struct Parcial: Codable, Sendable, Equatable {
     public var apelido: String?    // "Saída do box"
     public var tStart: Double      // % do tempo total (0..100)
     public var tEnd: Double
+
+    public init(id: String, nome: String, apelido: String? = nil, tStart: Double, tEnd: Double) {
+        self.id = id
+        self.nome = nome
+        self.apelido = apelido
+        self.tStart = tStart
+        self.tEnd = tEnd
+    }
 }
 
 public struct ViewBox: Codable, Sendable, Equatable {
