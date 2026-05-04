@@ -109,16 +109,23 @@ public struct ShiftCar: Sendable, Equatable {
     }
 }
 
-/// Placeholder para gear-signatures (port em PR futuro). O ShiftCar
-/// só carrega; nenhuma lógica deste arquivo a consome.
+/// Assinatura calibrada de rpm/speed por marcha. Usada pelo
+/// `GearEstimation` (MS-8.4). Port de gear-signatures.js.
 public struct GearSignature: Sendable, Equatable, Codable {
-    public let gear: Int
-    public let speedKmh: Double
-    public let rpm: Double
-    public init(gear: Int, speedKmh: Double, rpm: Double) {
-        self.gear = gear
-        self.speedKmh = speedKmh
-        self.rpm = rpm
+    public let rpmSpeedRatio: Double
+    public let rpmSpeedRatioStd: Double?
+    public let sampleCount: Int?
+
+    public init(rpmSpeedRatio: Double, rpmSpeedRatioStd: Double? = nil, sampleCount: Int? = nil) {
+        self.rpmSpeedRatio = rpmSpeedRatio
+        self.rpmSpeedRatioStd = rpmSpeedRatioStd
+        self.sampleCount = sampleCount
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case rpmSpeedRatio = "rpm_speed_ratio"
+        case rpmSpeedRatioStd = "rpm_speed_ratio_std"
+        case sampleCount = "sample_count"
     }
 }
 

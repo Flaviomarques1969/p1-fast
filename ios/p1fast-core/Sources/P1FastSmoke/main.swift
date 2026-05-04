@@ -1186,6 +1186,113 @@ step("ST-10: computeShiftTarget — reactionCtx subtrai compensation no visualRp
     try assertEq(r2.reactionSource, .learningMode)
 }
 
+// ════════════════════════════════════════════════════════════
+// GearEstimation — GE-01..GE-08 (port gear-estimation.js)
+// ════════════════════════════════════════════════════════════
+
+let geCalibration: [Int: GearSignature] = [
+    1: GearSignature(rpmSpeedRatio: 250),
+    2: GearSignature(rpmSpeedRatio: 150),
+    3: GearSignature(rpmSpeedRatio: 100),
+]
+
+step("GE-01: estimateGear — sem calibração retorna fallback") {
+    let r = GearEstimation.estimateGear(
+        sample: GearSampleInput(rpm: 5000, speed: 50),
+        signatures: [:]
+    )
+    try assertEq(r.gear, nil)
+    try assertEq(r.confidence, 0)
+    try assertEq(r.method, .fallback)
+    try assertEq(r.reason, "no calibration")
+}
+
+step("GE-02: estimateGear — speed abaixo do threshold retorna fallback") {
+    let r = GearEstimation.estimateGear(
+        sample: GearSampleInput(rpm: 5000, speed: 3),
+        signatures: geCalibration
+    )
+    try assertEq(r.method, .fallback)
+    try assertEq(r.reason, "speed below threshold")
+}
+
+step("GE-03: estimateGear — ratio bate 1ª marcha (250)") {
+    // rpm=2500, speed=10 → ratio=250
+    let r = GearEstimation.estimateGear(
+        sample: GearSampleInput(rpm: 2500, speed: 10),
+        signatures: geCalibration
+    )
+    try assertEq(r.gear, 1)
+    try assertEq(r.method, .rpmSpeed)
+    try assertTrue(r.confidence > 0.9, "alta confiança esperada, foi \(r.confidence)")
+}
+
+step("GE-04: estimateGear — ratio bate 3ª marcha (100)") {
+    // rpm=6000, speed=60 → ratio=100
+    let r = GearEstimation.estimateGear(
+        sample: GearSampleInput(rpm: 6000, speed: 60),
+        signatures: geCalibration
+    )
+    try assertEq(r.gear, 3)
+    try assertTrue(r.confidence > 0.9)
+}
+
+step("GE-05: estimateGear — ratio entre marchas penaliza confiança (margem pequena)") {
+    // ratio=125 fica entre 150 (g2) e 100 (g3) — escolhe g3 (mais perto), margem pequena
+    let r = GearEstimation.estimateGear(
+        sample: GearSampleInput(rpm: 6250, speed: 50),
+        signatures: geCalibration
+    )
+    try assertTrue(r.gear == 3 || r.gear == 2)
+    try assertTrue(r.confidence < 0.9, "margem pequena penaliza, foi \(r.confidence)")
+}
+
+step("GE-06: estimateGear — tps=0 + decelerando reduz confiança 50%") {
+    let semAccel = GearEstimation.estimateGear(
+        sample: GearSampleInput(rpm: 6000, speed: 60),
+        signatures: geCalibration
+    )
+    let comClutch = GearEstimation.estimateGear(
+        sample: GearSampleInput(rpm: 6000, speed: 60, tps: 0, accelLong: -2.0),
+        signatures: geCalibration
+    )
+    try assertTrue(comClutch.confidence < semAccel.confidence,
+                   "clutch deveria reduzir conf (\(semAccel.confidence) → \(comClutch.confidence))")
+    try assertEq(comClutch.reason, "tps=0 + decelerating: possible clutch/neutral")
+}
+
+step("GE-07: estimateGear — usa histórico (window 200ms) para média de ratios") {
+    let history: [GearSampleInput] = [
+        GearSampleInput(rpm: 6000, speed: 60, timestamp: 800),
+        GearSampleInput(rpm: 6000, speed: 60, timestamp: 900),
+    ]
+    let sample = GearSampleInput(rpm: 6000, speed: 60, timestamp: 1000)
+    let r = GearEstimation.estimateGear(
+        sample: sample, history: history, signatures: geCalibration
+    )
+    try assertEq(r.gear, 3)
+    try assertEq(r.method, .rpmSpeedHistory)
+}
+
+step("GE-08: learnSignature — < 5 amostras retorna nil; ≥ 5 calcula média + std") {
+    let curtas: [GearSampleInput] = [
+        GearSampleInput(rpm: 5000, speed: 50),
+        GearSampleInput(rpm: 5100, speed: 51),
+    ]
+    let r1 = GearEstimation.learnSignature(curtas)
+    try assertEq(r1.signature, nil)
+    try assertEq(r1.reason, "insufficient samples")
+
+    // 6 amostras com ratio ~100 (3ª marcha)
+    let amostras: [GearSampleInput] = (0..<6).map { i in
+        GearSampleInput(rpm: Double(5000 + i * 100), speed: Double(50 + i))
+    }
+    let r2 = GearEstimation.learnSignature(amostras)
+    try assertTrue(r2.signature != nil)
+    try assertClose(r2.signature?.rpmSpeedRatio, 100, tol: 0.5)
+    try assertEq(r2.sampleCount, 6)
+}
+
 step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
     let r = SeedBrasilia.make()
     let enc = JSONEncoder()
