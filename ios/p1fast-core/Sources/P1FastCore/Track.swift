@@ -36,6 +36,31 @@ public struct ApexReference: Codable, Sendable, Equatable {
     public init(x: Double, y: Double) { self.x = x; self.y = y }
 }
 
+/// Alias semântico para os 4 pontos canônicos do trecho (entryPoint,
+/// brakingPoint, apexReference, exitPoint). Estrutura é a mesma de
+/// `ApexReference` ({ x, y } no viewBox do mapa). Decisão Flávio
+/// 2026-04-25 — port pro Swift em MS-1.1 (2026-05-03).
+public typealias TrackPoint = ApexReference
+
+/// 12 classificações canônicas de apex (port de
+/// `src/domain/track-segment.js` `ApexClassification`). Usadas pelo
+/// `error-classifier` (MS-1.2) ao confrontar `apexActual` (execução)
+/// contra `apexReference` (referência).
+public enum ApexClassification: String, Codable, Sendable, CaseIterable {
+    case correto                    = "apex-correto"
+    case antecipado                 = "apex-antecipado"
+    case tardio                     = "apex-tardio"
+    case perdidoFora                = "apex-perdido-fora"
+    case internoDemais              = "apex-interno-demais"
+    case duplo                      = "apex-duplo"
+    case sacrificadoIntencional     = "apex-sacrificado-intencional"
+    case prejudicandoSaida          = "apex-prejudicando-saida"
+    case bomAceleracaoTardia        = "apex-bom-aceleracao-tardia"
+    case entradaBoaApexRuim         = "entrada-boa-apex-ruim"
+    case apexBomSaidaRuim           = "apex-bom-saida-ruim"
+    case entradaRuimApexComprometido = "entrada-ruim-apex-comprometido"
+}
+
 public struct LinhaChegada: Codable, Sendable, Equatable {
     public var x1: Double
     public var y1: Double
@@ -102,12 +127,114 @@ public struct TrackSegment: Codable, Sendable, Equatable {
     // Campos do trecho (curva)
     public var apexReference: ApexReference?
     public var apexStrategy: ApexStrategy?
+    public var apexClassificationDefault: ApexClassification?
     public var cornerType: CornerType?
     public var nextStraightLength: Double?
     public var apexCalibration: String?  // "DEFAULT" | "CONFIRMED"
+    // 4 pontos canônicos do trecho (Flavio 2026-04-25, port em MS-1.1).
+    // Todos opcionais — análise opera em modo degradado se faltarem.
+    // entryPoint   — Vmax PRÉ-FREIO. Define INÍCIO do trecho.
+    // brakingPoint — onde o piloto começa a frear.
+    // exitPoint    — define FIM do trecho (início da reta seguinte).
+    public var entryPoint: TrackPoint?
+    public var brakingPoint: TrackPoint?
+    public var exitPoint: TrackPoint?
     // Calculados pelo seed
     public var pathStart: Double?        // % do path SVG
     public var pathEnd: Double?
+
+    public init(
+        id: String,
+        layoutId: String,
+        ordem: Int,
+        nome: String,
+        tipo: SegmentTipo,
+        ehTrecho: Bool,
+        parcialId: String,
+        x: Double,
+        y: Double,
+        tNaVolta: Double? = nil,
+        apexReference: ApexReference? = nil,
+        apexStrategy: ApexStrategy? = nil,
+        apexClassificationDefault: ApexClassification? = nil,
+        cornerType: CornerType? = nil,
+        nextStraightLength: Double? = nil,
+        apexCalibration: String? = nil,
+        entryPoint: TrackPoint? = nil,
+        brakingPoint: TrackPoint? = nil,
+        exitPoint: TrackPoint? = nil,
+        pathStart: Double? = nil,
+        pathEnd: Double? = nil
+    ) {
+        self.id = id
+        self.layoutId = layoutId
+        self.ordem = ordem
+        self.nome = nome
+        self.tipo = tipo
+        self.ehTrecho = ehTrecho
+        self.parcialId = parcialId
+        self.x = x
+        self.y = y
+        self.tNaVolta = tNaVolta
+        self.apexReference = apexReference
+        self.apexStrategy = apexStrategy
+        self.apexClassificationDefault = apexClassificationDefault
+        self.cornerType = cornerType
+        self.nextStraightLength = nextStraightLength
+        self.apexCalibration = apexCalibration
+        self.entryPoint = entryPoint
+        self.brakingPoint = brakingPoint
+        self.exitPoint = exitPoint
+        self.pathStart = pathStart
+        self.pathEnd = pathEnd
+    }
+}
+
+extension TrackSegment {
+    /// Indica se o trecho está cadastrado o suficiente para análise plena
+    /// de apex. Sem isto, análise opera em modo degradado.
+    /// Port de `TrackSegments.hasFullApexCadastro` (track-segment.js).
+    public var hasFullApexCadastro: Bool {
+        ehTrecho
+            && apexReference != nil
+            && apexStrategy != nil
+            && cornerType != nil
+    }
+
+    /// Indica se o trecho tem os 4 pontos canônicos cadastrados
+    /// (entryPoint=Vmax pré-freio, brakingPoint, apexReference, exitPoint).
+    /// Quando true, o detector pode medir velocidade pré-freio, ponto de
+    /// freio, apex e saída pelo mesmo trecho. Sem isso → modo degradado.
+    /// Port de `TrackSegments.hasFullPointCadastro` (track-segment.js).
+    public var hasFullPointCadastro: Bool {
+        ehTrecho
+            && entryPoint != nil
+            && brakingPoint != nil
+            && apexReference != nil
+            && exitPoint != nil
+    }
+
+    /// Atualiza um dos 4 pontos canônicos (ou o apexReference) movendo-o
+    /// pra `coord` novo. Usado pelo configurador de pista quando o
+    /// piloto arrasta o marcador no mapa. `coord = nil` limpa o ponto.
+    /// Port de `TrackSegments.setPonto` (track-segment.js).
+    public enum CanonicalPoint: String, Sendable {
+        case entryPoint
+        case brakingPoint
+        case apexReference
+        case exitPoint
+    }
+
+    public func setting(_ ponto: CanonicalPoint, to coord: TrackPoint?) -> TrackSegment {
+        var copy = self
+        switch ponto {
+        case .entryPoint:    copy.entryPoint    = coord
+        case .brakingPoint:  copy.brakingPoint  = coord
+        case .apexReference: copy.apexReference = coord
+        case .exitPoint:     copy.exitPoint     = coord
+        }
+        return copy
+    }
 }
 
 extension TrackLayout {
