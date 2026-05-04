@@ -2062,6 +2062,82 @@ step("AP-04: computeForTrechos — ranking por trecho com amostras") {
     try assertEq(r.ranking.first?.amostras, 2)
 }
 
+// ════════════════════════════════════════════════════════════
+// EventoResumo — ER-01..ER-05
+// ════════════════════════════════════════════════════════════
+
+step("ER-01: ResumoQuality — 4 valores canônicos") {
+    try assertEq(ResumoQuality.allCases.count, 4)
+    try assertEq(ResumoQuality.medido.rawValue,    "MEDIDO")
+    try assertEq(ResumoQuality.parcial.rawValue,   "PARCIAL")
+    try assertEq(ResumoQuality.estimado.rawValue,  "ESTIMADO")
+    try assertEq(ResumoQuality.vazio.rawValue,     "VAZIO")
+}
+
+step("ER-02: calcularStintResumo — laps reais → MEDIDO; voltasPlanejadas → ESTIMADO; vazio → VAZIO") {
+    let medido = EventoResumo.calcularStintResumo(StintInput(
+        id: "S1", lapsExecutados: [
+            StintLap(id: "L1", tempoMs: 100_000),
+            StintLap(id: "L2", tempoMs: 99_500),
+            StintLap(id: "L3", tempoMs: 100_500, valida: false), // inválida
+        ]
+    ))
+    try assertEq(medido.quality, .medido)
+    try assertEq(medido.voltas, 2)         // só válidas
+    try assertEq(medido.voltasTotais, 3)
+    try assertEq(medido.melhorMs, 99_500)
+    try assertEq(medido.melhorLapId, "L2")
+
+    let estimado = EventoResumo.calcularStintResumo(StintInput(id: "S2", voltasPlanejadas: 12))
+    try assertEq(estimado.quality, .estimado)
+    try assertEq(estimado.voltas, 12)
+    try assertTrue(estimado.melhorMs == nil)
+
+    let vazio = EventoResumo.calcularStintResumo(StintInput(id: "S3"))
+    try assertEq(vazio.quality, .vazio)
+    try assertEq(vazio.voltas, 0)
+}
+
+step("ER-03: calcularDiaResumo — mistura medido + estimado → PARCIAL") {
+    let stints = [
+        StintInput(id: "S1", lapsExecutados: [StintLap(tempoMs: 100_000)]),
+        StintInput(id: "S2", voltasPlanejadas: 5)
+    ]
+    let dia = EventoResumo.calcularDiaResumo(stints, now: 1234)
+    try assertEq(dia.quality, .parcial)
+    try assertEq(dia.voltas, 6)            // 1 + 5
+    try assertEq(dia.melhorMs, 100_000)
+    try assertEq(dia.melhorStintId, "S1")
+    try assertEq(dia.calculadoEm, 1234)
+}
+
+step("ER-04: calcularDiaResumo — sem stints → VAZIO") {
+    let dia = EventoResumo.calcularDiaResumo([], now: 999)
+    try assertEq(dia.quality, .vazio)
+    try assertEq(dia.voltas, 0)
+    try assertTrue(dia.melhorMs == nil)
+}
+
+step("ER-05: calcularEventoResumo — agrega 2 dias com melhor global") {
+    let evento = EventoResumoInput(
+        dias: [
+            EventoDia(id: "D1", data: "2026-05-01"),
+            EventoDia(id: "D2", data: "2026-05-02"),
+        ],
+        stintsByDia: [
+            "D1": [StintInput(id: "S1", lapsExecutados: [StintLap(tempoMs: 102_000)])],
+            "D2": [StintInput(id: "S2", lapsExecutados: [StintLap(tempoMs: 99_500)])],
+        ]
+    )
+    let r = EventoResumo.calcularEventoResumo(evento, now: 555)
+    try assertEq(r.voltasTotal, 2)
+    try assertEq(r.melhorMsGlobal, 99_500)
+    try assertEq(r.melhorMsPorDia["D1"] ?? nil, 102_000)
+    try assertEq(r.melhorMsPorDia["D2"] ?? nil, 99_500)
+    try assertEq(r.quality, .medido) // ambos medidos
+    try assertEq(r.calculadoEm, 555)
+}
+
 step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
     let r = SeedBrasilia.make()
     let enc = JSONEncoder()
