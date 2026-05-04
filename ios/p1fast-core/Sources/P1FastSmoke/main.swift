@@ -64,19 +64,27 @@ func t4000Sample(rpm: Double, oilPressure: Double, kmh: Double) -> Sample {
 }
 
 // ════════════════════════════════════════════════════════════
-// Quality — DQ-01 .. DQ-06 (espelha node-smoke-telemetry-p0.mjs)
+// Quality — DQ-01 .. DQ-12 (paridade JS data-quality.js)
 // ════════════════════════════════════════════════════════════
 
 step("DQ-01: 11 categorias canônicas") {
     try assertEq(Quality.allCases.count, 11)
 }
 
-step("DQ-02: fromSignalQuality 4-cat → 11-cat") {
+step("DQ-02: fromSignalQuality 4-cat → 11-cat (paridade JS)") {
+    // JS: degraded → LOW_CONFIDENCE; bad → SUSPECT.
     try assertEq(Quality.fromSignalQuality("GOOD"),     .ok)
-    try assertEq(Quality.fromSignalQuality("DEGRADED"), .suspect)
-    try assertEq(Quality.fromSignalQuality("BAD"),      .lowConfidence)
+    try assertEq(Quality.fromSignalQuality("good"),     .ok)
+    try assertEq(Quality.fromSignalQuality("OK"),       .ok)
+    try assertEq(Quality.fromSignalQuality("DEGRADED"), .lowConfidence)
+    try assertEq(Quality.fromSignalQuality("BAD"),      .suspect)
     try assertEq(Quality.fromSignalQuality("LOST"),     .missing)
-    try assertEq(Quality.fromSignalQuality("WAT"),      .missing)
+    try assertEq(Quality.fromSignalQuality("MISSING"),  .missing)
+    // Categoria nova válida — passthrough
+    try assertEq(Quality.fromSignalQuality("OUT_OF_RANGE"), .outOfRange)
+    // Default: JS retorna OK (não MISSING) p/ valor desconhecido
+    try assertEq(Quality.fromSignalQuality("WAT"),      .ok)
+    try assertEq(Quality.fromSignalQuality(nil),        .missing)
 }
 
 step("DQ-03: fromGpsAccuracy thresholds 5/20/50") {
@@ -88,6 +96,7 @@ step("DQ-03: fromGpsAccuracy thresholds 5/20/50") {
     try assertEq(Quality.fromGpsAccuracy(50),  .suspect)
     try assertEq(Quality.fromGpsAccuracy(60),  .missing)
     try assertEq(Quality.fromGpsAccuracy(nil), .missing)
+    try assertEq(Quality.fromGpsAccuracy(.nan),.missing)
 }
 
 step("DQ-04: fromRangeCheck rotula OUT_OF_RANGE") {
@@ -100,6 +109,8 @@ step("DQ-05: worstOf devolve pior por severidade") {
     try assertEq(Quality.worstOf([.ok, .ok, .ok]), .ok)
     try assertEq(Quality.worstOf([.ok, .suspect, .ok]), .suspect)
     try assertEq(Quality.worstOf([.late, .missing, .ok]), .missing)
+    // Paridade JS: lista vazia → OK (seed)
+    try assertEq(Quality.worstOf([]), .ok)
 }
 
 step("DQ-06: isOk + permitsCritical respeitam Regra 4") {
@@ -108,6 +119,81 @@ step("DQ-06: isOk + permitsCritical respeitam Regra 4") {
     try assertTrue(Quality.ok.permitsCritical)
     try assertTrue(!Quality.lowConfidence.permitsCritical)
     try assertTrue(!Quality.missing.permitsCritical)
+}
+
+step("DQ-07: fromGpsAccuracy com numSatellites < 6 derruba pra LOW_CONFIDENCE") {
+    // Accuracy boa (3m) mas só 4 satélites → LOW_CONFIDENCE
+    try assertEq(Quality.fromGpsAccuracy(3, numSatellites: 4),  .lowConfidence)
+    try assertEq(Quality.fromGpsAccuracy(3, numSatellites: 5),  .lowConfidence)
+    try assertEq(Quality.fromGpsAccuracy(3, numSatellites: 6),  .ok)
+    try assertEq(Quality.fromGpsAccuracy(3, numSatellites: 12), .ok)
+    // Accuracy ruim ignora numSatellites
+    try assertEq(Quality.fromGpsAccuracy(30, numSatellites: 12), .suspect)
+}
+
+step("DQ-08: fromRangeCheck com min/max opcionais e value não-finito") {
+    // Apenas min: rejeita abaixo, aceita qualquer coisa acima
+    try assertEq(Quality.fromRangeCheck(value: 100, min: 0), .ok)
+    try assertEq(Quality.fromRangeCheck(value: -1,  min: 0), .outOfRange)
+    // Apenas max: rejeita acima, aceita qualquer coisa abaixo
+    try assertEq(Quality.fromRangeCheck(value: -100, max: 10), .ok)
+    try assertEq(Quality.fromRangeCheck(value: 11,   max: 10), .outOfRange)
+    // value não-finito ou nil → MISSING
+    try assertEq(Quality.fromRangeCheck(value: nil,  min: 0, max: 10), .missing)
+    try assertEq(Quality.fromRangeCheck(value: .nan, min: 0, max: 10), .missing)
+    try assertEq(Quality.fromRangeCheck(value: .infinity, min: 0, max: 10), .missing)
+}
+
+step("DQ-09: permitsVisual — MISSING/INVALID_CHECKSUM/DUPLICATE são descartados") {
+    try assertTrue(Quality.ok.permitsVisual)
+    try assertTrue(Quality.suspect.permitsVisual)
+    try assertTrue(Quality.lowConfidence.permitsVisual)
+    try assertTrue(Quality.late.permitsVisual)
+    try assertTrue(Quality.outOfRange.permitsVisual)
+    try assertTrue(Quality.interpolated.permitsVisual)
+    try assertTrue(Quality.estimated.permitsVisual)
+    try assertTrue(Quality.outOfOrder.permitsVisual)
+    try assertTrue(!Quality.missing.permitsVisual)
+    try assertTrue(!Quality.invalidChecksum.permitsVisual)
+    try assertTrue(!Quality.duplicate.permitsVisual)
+}
+
+step("DQ-10: label snake_case (paridade JS qualityLabel)") {
+    try assertEq(Quality.ok.label,              "ok")
+    try assertEq(Quality.suspect.label,         "suspect")
+    try assertEq(Quality.missing.label,         "missing")
+    try assertEq(Quality.late.label,            "late")
+    try assertEq(Quality.outOfOrder.label,      "out_of_order")
+    try assertEq(Quality.invalidChecksum.label, "invalid_checksum")
+    try assertEq(Quality.outOfRange.label,      "out_of_range")
+    try assertEq(Quality.duplicate.label,       "duplicate")
+    try assertEq(Quality.interpolated.label,    "interpolated")
+    try assertEq(Quality.estimated.label,       "estimated")
+    try assertEq(Quality.lowConfidence.label,   "low_confidence")
+}
+
+step("DQ-11: token CSS (paridade JS qualityToken)") {
+    try assertEq(Quality.ok.token,              "--bom")
+    try assertEq(Quality.interpolated.token,    "--sistema")
+    try assertEq(Quality.estimated.token,       "--sistema")
+    try assertEq(Quality.late.token,            "--atencao")
+    try assertEq(Quality.lowConfidence.token,   "--atencao")
+    try assertEq(Quality.suspect.token,         "--atencao")
+    try assertEq(Quality.outOfRange.token,      "--erro")
+    try assertEq(Quality.invalidChecksum.token, "--erro")
+    try assertEq(Quality.missing.token,         "--erro")
+}
+
+step("DQ-12: severity ordenada — MISSING é máxima") {
+    try assertTrue(Quality.ok.severity < Quality.lowConfidence.severity)
+    try assertTrue(Quality.lowConfidence.severity < Quality.suspect.severity)
+    try assertTrue(Quality.suspect.severity < Quality.outOfRange.severity)
+    try assertTrue(Quality.outOfRange.severity < Quality.invalidChecksum.severity)
+    try assertTrue(Quality.invalidChecksum.severity < Quality.missing.severity)
+    // OK é mínima
+    for q in Quality.allCases where q != .ok {
+        try assertTrue(Quality.ok.severity < q.severity)
+    }
 }
 
 // ════════════════════════════════════════════════════════════
