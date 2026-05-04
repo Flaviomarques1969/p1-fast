@@ -986,6 +986,66 @@ step("PR-12: computeCompensation — fallback exact → piloto-carro-gear → pi
     try assertEq(r4.source, .default)
 }
 
+// ════════════════════════════════════════════════════════════
+// ShiftAnalysis — SA-01 .. SA-08 (port de shift-analysis.js)
+// ════════════════════════════════════════════════════════════
+
+step("SA-01: ShiftClassification — 4 valores canônicos com raw values JS") {
+    try assertEq(ShiftClassification.allCases.count, 4)
+    try assertEq(ShiftClassification.correct.rawValue,          "correct")
+    try assertEq(ShiftClassification.early.rawValue,            "early")
+    try assertEq(ShiftClassification.late.rawValue,             "late")
+    try assertEq(ShiftClassification.insufficientData.rawValue, "insufficient_data")
+}
+
+step("SA-02: classifyEvent — insufficient_data se confidence < 0.7") {
+    let ev = makeShiftEvent { $0.gearConfidence = 0.5 }
+    try assertEq(ShiftAnalysis.classifyEvent(ev), .insufficientData)
+}
+
+step("SA-03: classifyEvent — insufficient_data se data_inconsistent_flag=true") {
+    let ev = makeShiftEvent { $0.dataInconsistentFlag = true }
+    try assertEq(ShiftAnalysis.classifyEvent(ev), .insufficientData)
+}
+
+step("SA-04: classifyEvent — correct quando |delta_rpm| <= tolerance") {
+    let ev = makeShiftEvent { $0.deltaRpm = 100; $0.targetOptimalRpm = 6500 } // |100| <= 150 default
+    try assertEq(ShiftAnalysis.classifyEvent(ev), .correct)
+}
+
+step("SA-05: classifyEvent — early quando delta_rpm < -tolerance") {
+    let ev = makeShiftEvent { $0.deltaRpm = -300; $0.targetOptimalRpm = 6500 }
+    try assertEq(ShiftAnalysis.classifyEvent(ev), .early)
+}
+
+step("SA-06: classifyEvent — late quando delta_rpm > tolerance") {
+    let ev = makeShiftEvent { $0.deltaRpm = 300; $0.targetOptimalRpm = 6500 }
+    try assertEq(ShiftAnalysis.classifyEvent(ev), .late)
+}
+
+step("SA-07: classifyEvent — usa car.toleranceRpm quando provido") {
+    let ev = makeShiftEvent { $0.deltaRpm = 200; $0.targetOptimalRpm = 6500 }
+    let car = ShiftCarContext(toleranceRpm: 250) // |200| <= 250
+    try assertEq(ShiftAnalysis.classifyEvent(ev, car: car), .correct)
+}
+
+step("SA-08: buildLessonText — substitui <TRECHO> ou remove fragmento sem trecho") {
+    let comTrecho = ShiftAnalysis.buildLessonText(classification: .early, trechoName: "Curva da Junção")
+    try assertTrue(comTrecho.contains("Curva da Junção"))
+    try assertTrue(!comTrecho.contains("<TRECHO>"))
+    let semTrecho = ShiftAnalysis.buildLessonText(classification: .early, trechoName: nil)
+    try assertTrue(!semTrecho.contains("<TRECHO>"))
+    try assertTrue(!semTrecho.contains(" em ."))
+    // Frase correct não tem placeholder
+    let correta = ShiftAnalysis.buildLessonText(classification: .correct, trechoName: nil)
+    try assertEq(correta, "Boa troca. Motor permaneceu na faixa útil e a retomada foi consistente.")
+    // analyzeEvent (top-level)
+    let evLate = makeShiftEvent { $0.deltaRpm = 400; $0.targetOptimalRpm = 6500 }
+    let res = ShiftAnalysis.analyzeEvent(evLate, trechoNameLookup: { id in id == "t-reta" ? "Reta Principal" : nil })
+    try assertEq(res.classification, .late)
+    try assertTrue(res.lessonText.contains("Reta Principal"))
+}
+
 step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
     let r = SeedBrasilia.make()
     let enc = JSONEncoder()
