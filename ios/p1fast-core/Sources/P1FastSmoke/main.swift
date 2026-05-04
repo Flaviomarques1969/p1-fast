@@ -1913,6 +1913,72 @@ step("TFD-04: compute — janela enorme clampa em tolMax (250)") {
     try assertEq(r, 250)
 }
 
+// ════════════════════════════════════════════════════════════
+// PlannedVsExecuted — PVE-01..PVE-05
+// ════════════════════════════════════════════════════════════
+
+func pveBenchmarkSimple() -> BenchmarkResult {
+    let parciais = [
+        Parcial(id: "P1", nome: "P1", apelido: nil, tStart: 0, tEnd: 50),
+        Parcial(id: "P2", nome: "P2", apelido: nil, tStart: 50, tEnd: 100),
+    ]
+    let laps = [
+        BenchmarkLapInput(id: "L1", tempoMs: 100_000,
+                          temposPorParcial: ["P1": 50_000, "P2": 50_000])
+    ]
+    let scope = BenchmarkScope(carId: "c1", trackId: "t1", carConfigurationId: nil, dia: nil)
+    return Benchmark.compute(scope: scope, parciais: parciais, laps: laps)!
+}
+
+step("PVE-01: PvEResultado — 5 valores canônicos") {
+    try assertEq(PvEResultado.allCases.count, 5)
+    try assertEq(PvEResultado.conseguiu.rawValue,    "conseguiu")
+    try assertEq(PvEResultado.parcial.rawValue,      "parcial")
+    try assertEq(PvEResultado.tentouFalhou.rawValue, "tentou-falhou")
+    try assertEq(PvEResultado.errado.rawValue,       "errado")
+    try assertEq(PvEResultado.semDados.rawValue,     "sem-dados")
+}
+
+step("PVE-02: evaluate — plan nil retorna nil") {
+    let r = PlannedVsExecuted.evaluate(plan: nil, laps: [], benchmark: nil)
+    try assertTrue(r == nil)
+}
+
+step("PVE-03: evaluate — sem laps válidas → SEM_DADOS") {
+    let plan = PedagogicalPlan(focos: [
+        PlanFoco(parcialId: "P1", parcialNome: "P1", acaoPrincipal: "atrasar frenagem")
+    ])
+    let r = PlannedVsExecuted.evaluate(plan: plan, laps: [], benchmark: pveBenchmarkSimple())!
+    try assertEq(r.focos.count, 1)
+    try assertEq(r.focos.first?.resultado, .semDados)
+}
+
+step("PVE-04: evaluate — voltas alinhadas com ação 'atrasar frenagem' → CONSEGUIU") {
+    let plan = PedagogicalPlan(focos: [
+        PlanFoco(parcialId: "P1", parcialNome: "Curva 1", acaoPrincipal: "atrasar frenagem")
+    ])
+    // Voltas com tempo = ref (manteveLinha) → ação alinhada
+    let laps: [PvELap] = (0..<5).map { i in
+        PvELap(id: "L\(i)", numero: i, valida: true,
+               temposPorParcial: ["P1": 50_000])
+    }
+    let r = PlannedVsExecuted.evaluate(plan: plan, laps: laps, benchmark: pveBenchmarkSimple())!
+    try assertEq(r.focos.first?.resultado, .conseguiu)
+    try assertTrue(r.focos.first?.proximaAcao.flatMap { $0.contains("manter") } == true)
+}
+
+step("PVE-05: evaluate — sem mapping conhecido + maioria manteveLinha → PARCIAL") {
+    let plan = PedagogicalPlan(focos: [
+        PlanFoco(parcialId: "P1", parcialNome: "Curva 1", acaoPrincipal: "ação não mapeada")
+    ])
+    let laps: [PvELap] = (0..<5).map { i in
+        PvELap(id: "L\(i)", numero: i, valida: true,
+               temposPorParcial: ["P1": 50_000])
+    }
+    let r = PlannedVsExecuted.evaluate(plan: plan, laps: laps, benchmark: pveBenchmarkSimple())!
+    try assertEq(r.focos.first?.resultado, .parcial)
+}
+
 step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
     let r = SeedBrasilia.make()
     let enc = JSONEncoder()
