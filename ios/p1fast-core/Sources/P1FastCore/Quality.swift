@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════
 // Quality — 11 categorias canônicas
 // ═══════════════════════════════════════════════════════════
-// Port direto de src/domain/data-quality.js.
+// Port direto de src/domain/data-quality.js (paridade integral 2026-05-04).
 // docs/raceops/DATA_QUALITY_RULES.md governa.
 // Toda amostra (e cada canal de snapshot) carrega EXATAMENTE UMA.
 
@@ -39,42 +39,98 @@ extension Quality {
     }
 
     /// Worst-of N categorias — retorna a de pior severidade.
+    /// Lista vazia retorna .ok (paridade JS data-quality.worstOf).
     public static func worstOf(_ qs: [Quality]) -> Quality {
-        guard let first = qs.first else { return .missing }
-        return qs.dropFirst().reduce(first) { $0.severity >= $1.severity ? $0 : $1 }
+        var worst: Quality = .ok
+        for q in qs where q.severity > worst.severity {
+            worst = q
+        }
+        return worst
     }
 
-    /// Aceita uso livre (Regra 4 ALERT_HIERARCHY: CRÍTICO precisa OK).
     public var isOk: Bool { self == .ok }
 
-    /// Permite emitir alerta CRÍTICO contra esta qualidade?
+    /// Apenas .ok pode emitir alerta CRÍTICO (ALERT_HIERARCHY Regra 4).
     public var permitsCritical: Bool { self == .ok }
+
+    /// Permite uso visual (com indicador). MISSING/INVALID_CHECKSUM/DUPLICATE descartados.
+    public var permitsVisual: Bool {
+        switch self {
+        case .missing, .invalidChecksum, .duplicate: return false
+        default: return true
+        }
+    }
+
+    /// Label humano para UI (snake_case, paridade JS qualityLabel).
+    public var label: String {
+        switch self {
+        case .ok: return "ok"
+        case .suspect: return "suspect"
+        case .missing: return "missing"
+        case .late: return "late"
+        case .outOfOrder: return "out_of_order"
+        case .invalidChecksum: return "invalid_checksum"
+        case .outOfRange: return "out_of_range"
+        case .duplicate: return "duplicate"
+        case .interpolated: return "interpolated"
+        case .estimated: return "estimated"
+        case .lowConfidence: return "low_confidence"
+        }
+    }
+
+    /// Token CSS associado — UI usa pra colorir indicadores.
+    /// Espelha tokens em design-tokens.css.
+    public var token: String {
+        switch self {
+        case .ok: return "--bom"
+        case .interpolated, .estimated: return "--sistema"
+        case .late, .lowConfidence, .suspect: return "--atencao"
+        case .outOfRange, .invalidChecksum, .missing: return "--erro"
+        case .outOfOrder, .duplicate: return "--muted"
+        }
+    }
 }
 
 extension Quality {
     /// Mapeamento da SignalQuality 4-cat antiga (provider.js) pra Quality 11-cat.
-    public static func fromSignalQuality(_ sq: String) -> Quality {
-        switch sq.uppercased() {
-        case "GOOD":     return .ok
-        case "DEGRADED": return .suspect
-        case "BAD":      return .lowConfidence
-        case "LOST":     return .missing
-        default:         return .missing
+    /// Paridade JS data-quality.fromSignalQuality.
+    public static func fromSignalQuality(_ sq: String?) -> Quality {
+        guard let sq else { return .missing }
+        switch sq.lowercased() {
+        case "good", "ok":
+            return .ok
+        case "degraded":
+            return .lowConfidence
+        case "bad":
+            return .suspect
+        case "lost", "missing":
+            return .missing
+        default:
+            // Já pode ser uma categoria nova — aceita se válida
+            if let q = Quality(rawValue: sq) { return q }
+            return .ok
         }
     }
 
-    /// Thresholds de GPS accuracy (m) — espelho de DeviceProvider.
-    public static func fromGpsAccuracy(_ acc: Double?) -> Quality {
+    /// Thresholds de GPS accuracy (m) + numSatellites opcional.
+    /// Paridade JS data-quality.fromGpsAccuracy:
+    ///   > 50 → MISSING; > 20 → SUSPECT; > 5 → LOW_CONFIDENCE.
+    ///   accuracy boa mas <6 satélites → LOW_CONFIDENCE.
+    public static func fromGpsAccuracy(_ acc: Double?, numSatellites: Int? = nil) -> Quality {
         guard let acc, acc.isFinite else { return .missing }
-        if acc <= 5  { return .ok }
-        if acc <= 20 { return .lowConfidence }
-        if acc <= 50 { return .suspect }
-        return .missing
+        if acc > 50 { return .missing }
+        if acc > 20 { return .suspect }
+        if acc > 5 { return .lowConfidence }
+        if let n = numSatellites, n < 6 { return .lowConfidence }
+        return .ok
     }
 
-    /// Range check — retorna .outOfRange se valor fora dos limites.
-    public static func fromRangeCheck(value: Double, min: Double, max: Double) -> Quality {
-        if value < min || value > max { return .outOfRange }
+    /// Range check — paridade JS data-quality.fromRangeCheck.
+    /// Valor não-finito → .missing. min/max opcionais (nil = ignora aquele lado).
+    public static func fromRangeCheck(value: Double?, min: Double? = nil, max: Double? = nil) -> Quality {
+        guard let value, value.isFinite else { return .missing }
+        if let min, value < min { return .outOfRange }
+        if let max, value > max { return .outOfRange }
         return .ok
     }
 }
