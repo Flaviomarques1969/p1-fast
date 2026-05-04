@@ -1293,6 +1293,103 @@ step("GE-08: learnSignature — < 5 amostras retorna nil; ≥ 5 calcula média +
     try assertEq(r2.sampleCount, 6)
 }
 
+// ════════════════════════════════════════════════════════════
+// ShiftEventDetector + Bridge — SED-01..SED-06
+// ════════════════════════════════════════════════════════════
+
+func sedMakeCar() -> ShiftCar {
+    ShiftCar(
+        id: "celta",
+        redlineRpm: 7000,
+        toleranceRpm: 150,
+        gearSignatures: ["3": GearSignature(rpmSpeedRatio: 80),
+                         "4": GearSignature(rpmSpeedRatio: 60)]
+    )
+}
+
+step("SED-01: detector inicia em estado idle e ignora samples inválidos") {
+    let det = ShiftEventDetector(sessaoId: "s1", car: sedMakeCar())
+    try assertEq(det.debugState, "idle")
+    det.pushSample(ShiftDetectorSample(rpm: .nan, speed: 80, timestamp: 1000))
+    try assertEq(det.debugState, "idle")
+    try assertEq(det.emitted.count, 0)
+}
+
+step("SED-02: detecta upshift (queda > 800rpm com speed estável)") {
+    var captured: ShiftEventEmitted? = nil
+    let det = ShiftEventDetector(
+        sessaoId: "s1", car: sedMakeCar(),
+        onEvent: { captured = $0 }
+    )
+    // 50ms before com rpm=6800
+    det.pushSample(ShiftDetectorSample(rpm: 6800, speed: 80, tps: 80, timestamp: 950))
+    // queda 800: 6800 → 6000 com speed 80 estável → entra em pending
+    det.pushSample(ShiftDetectorSample(rpm: 6000, speed: 80, tps: 80, timestamp: 1000))
+    try assertEq(det.debugState, "pending")
+    // Após windowAfter (200ms) emite
+    det.pushSample(ShiftDetectorSample(rpm: 5800, speed: 80, tps: 80, timestamp: 1100))
+    det.pushSample(ShiftDetectorSample(rpm: 5700, speed: 80, tps: 80, timestamp: 1200))
+    try assertTrue(captured != nil, "evento deveria ter sido emitido")
+    try assertEq(captured?.rpmAtShift, 6800)   // antes da queda (upshift)
+    // Sem dyno/learned, ShiftTarget retorna safe (redline-300=6700).
+    // delta=6800-6700=100 ≤ tolerance(150) → "green".
+    try assertEq(captured?.status, "green")
+}
+
+step("SED-03: cooldown bloqueia 2ª detecção em < 400ms") {
+    var count = 0
+    let det = ShiftEventDetector(sessaoId: "s1", car: sedMakeCar(), onEvent: { _ in count += 1 })
+    det.pushSample(ShiftDetectorSample(rpm: 6800, speed: 80, tps: 80, timestamp: 950))
+    det.pushSample(ShiftDetectorSample(rpm: 6000, speed: 80, tps: 80, timestamp: 1000))
+    det.pushSample(ShiftDetectorSample(rpm: 5800, speed: 80, tps: 80, timestamp: 1200))
+    try assertEq(count, 1)
+    // Tentar segunda queda imediatamente — em cooldown
+    det.pushSample(ShiftDetectorSample(rpm: 6800, speed: 80, tps: 80, timestamp: 1300))
+    det.pushSample(ShiftDetectorSample(rpm: 5900, speed: 80, tps: 80, timestamp: 1340))
+    try assertEq(count, 1, "cooldown ativo, não deve emitir 2º")
+}
+
+step("SED-04: speed variando > 5% durante o shift cancela") {
+    var count = 0
+    let det = ShiftEventDetector(sessaoId: "s1", car: sedMakeCar(), onEvent: { _ in count += 1 })
+    det.pushSample(ShiftDetectorSample(rpm: 6800, speed: 80, tps: 80, timestamp: 950))
+    // queda rpm + speed varia 10% → não entra em pending
+    det.pushSample(ShiftDetectorSample(rpm: 6000, speed: 90, tps: 80, timestamp: 1000))
+    try assertEq(det.debugState, "idle")
+    try assertEq(count, 0)
+}
+
+step("SED-05: tps < 10 durante shift descarta evento (clutch/neutral)") {
+    var count = 0
+    let det = ShiftEventDetector(sessaoId: "s1", car: sedMakeCar(), onEvent: { _ in count += 1 })
+    det.pushSample(ShiftDetectorSample(rpm: 6800, speed: 80, tps: 5, timestamp: 950))
+    det.pushSample(ShiftDetectorSample(rpm: 6000, speed: 80, tps: 5, timestamp: 1000))
+    det.pushSample(ShiftDetectorSample(rpm: 5800, speed: 80, tps: 5, timestamp: 1200))
+    try assertEq(count, 0)
+}
+
+step("SED-06: ShiftLightBridge descarta sample sem RPM (Tier 0 dormente)") {
+    let det = ShiftEventDetector(sessaoId: "s1", car: sedMakeCar())
+    var rpmFonte: Double? = nil
+    let bridge = ShiftLightBridge(
+        detector: det,
+        getRpm: { _ in rpmFonte },
+        getTps: { _ in 80 }
+    )
+    // Sample sem RPM: nada acontece (mas bridge avança lastTs)
+    bridge.onTelemetrySample(ShiftBridgeSample(t: 800, kmh: 80))
+    try assertEq(det.debugState, "idle")
+    try assertEq(det.emitted.count, 0)
+    // Liga RPM (Tier 1) com timestamps crescentes
+    rpmFonte = 6800
+    bridge.onTelemetrySample(ShiftBridgeSample(t: 950, tMono: 950, kmh: 80))
+    rpmFonte = 6000
+    bridge.onTelemetrySample(ShiftBridgeSample(t: 1000, tMono: 1000, kmh: 80))
+    rpmFonte = 5800
+    bridge.onTelemetrySample(ShiftBridgeSample(t: 1200, tMono: 1200, kmh: 80))
+    try assertTrue(det.emitted.count >= 1, "com RPM real, detector deve emitir")
+}
+
 step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
     let r = SeedBrasilia.make()
     let enc = JSONEncoder()
