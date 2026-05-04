@@ -186,52 +186,139 @@ public enum LessonLibrary {
             id: "L005-linha-de-visao",
             title: "Linha de Visão",
             category: .visao, level: .intro,
-            shortDescription: "Olhar pro próximo ponto, não pro capô.",
-            objective: "Antecipar entrada de curva pelo olhar; trajetória mais limpa.",
-            phaseWeights: [.entrada: 0.5, .apex: 0.3, .saida: 0.2],
-            requiredSignals: [.kmh, .heading],
-            optionalSignals: [.lat, .lng],
+            shortDescription: "Olhar adiante, antecipar o apex e a saída.",
+            objective: "Reduzir correções tardias de heading dentro da curva.",
+            phaseWeights: [.entrada: 0.7, .apex: 0.3],
+            requiredSignals: [.heading, .gyroAlpha, .phase],
+            optionalSignals: [.trajetoria],
             applicableCornerTypes: [.lenta, .media, .rapida],
             preferredMessageCodes: ["M040", "M041", "M042"],
-            successCriteria: SuccessCriteria(metric: "estabilidade da heading na entrada", confidence: .baixa),
+            successCriteria: SuccessCriteria(metric: "pico de gyroYaw após apex < 0.6× pico antes do apex", confidence: .baixa),
             active: true
         ),
         Lesson(
-            id: "L006-trail-braking-suave",
-            title: "Trail Braking Suave",
-            category: .transicao, level: .avancado,
-            shortDescription: "Soltar freio gradualmente entrando na curva.",
-            objective: "Reduzir frenagem progressivamente do início ao apex.",
-            phaseWeights: [.entrada: 0.7, .apex: 0.3],
-            requiredSignals: [.accLong, .kmh, .phase],
-            optionalSignals: [],
-            applicableCornerTypes: [.lenta, .media],
+            id: "L006-controle-subesterco",
+            title: "Controle de Subesterço",
+            category: .controle, level: .padrao,
+            shortDescription: "Carro empurra: aliviar e abrir, não insistir.",
+            objective: "Detectar entrada com aderência insuficiente e treinar a recuperação.",
+            phaseWeights: [.apex: 0.5, .saida: 0.5],
+            requiredSignals: [.accLat, .kmh, .gyroAlpha, .phase],
+            optionalSignals: [.steeringAngle],
+            applicableCornerTypes: [.media, .rapida],
             preferredMessageCodes: ["M050", "M051", "M052"],
-            successCriteria: SuccessCriteria(metric: "accLong cresce monotônico do início ao apex", confidence: .media),
+            successCriteria: SuccessCriteria(metric: "accLat saturado + yaw abaixo do esperado para velocidade", confidence: .media),
             active: true
         ),
         Lesson(
             id: "L007-curva-cega",
             title: "Curva Cega",
             category: .referencia, level: .padrao,
-            shortDescription: "Trajetória correta sem ver o apex.",
-            objective: "Manter linha em curvas com apex oculto via referência fixa.",
-            phaseWeights: [.entrada: 0.5, .apex: 0.5],
-            requiredSignals: [.lat, .lng, .kmh, .heading],
-            optionalSignals: [.trajetoria],
-            applicableCornerTypes: [.media, .rapida],
+            shortDescription: "Comprometer trajetória mesmo sem ver a saída.",
+            objective: "Manter ponto de freio e giro em curvas sem visibilidade total.",
+            phaseWeights: [.entrada: 1.0],
+            requiredSignals: [.lat, .lng, .kmh],
+            optionalSignals: [.heading, .trajetoria],
+            applicableCornerTypes: [.lenta, .media],
             preferredMessageCodes: ["M060", "M061", "M062"],
-            successCriteria: SuccessCriteria(metric: "desvio < 5m do traçado de referência em 2 de 3 voltas", confidence: .baixa),
+            successCriteria: SuccessCriteria(metric: "desvio entrada < 5m vs voltas-ref em curvas marcadas como cegas", confidence: .alta),
             active: true
         ),
     ]
 
-    /// Apenas as ativas (todas as 7 do MVP).
+    /// 5 lições avançadas (Fase 2 antiga). `active: false` até sensores chegarem.
+    /// Decisão Flávio 2026-05-03: tudo entra em Fase 1, mas estas dependem
+    /// de STEERING / SLIP_RATIO / BRAKE_PRESSURE que ainda não estão no snapshot.
+    public static let phase2: [Lesson] = [
+        Lesson(
+            id: "L101-volante-continuo",
+            title: "Volante Contínuo",
+            category: .controle, level: .avancado,
+            shortDescription: "Sem corrigir, sem rasgar — entrada em arco único.",
+            objective: "Reduzir reversões de ângulo de volante na entrada e apex.",
+            phaseWeights: [.entrada: 0.5, .apex: 0.5],
+            requiredSignals: [.steeringAngle, .phase],
+            optionalSignals: [.gyroAlpha],
+            applicableCornerTypes: [.lenta, .media, .rapida],
+            preferredMessageCodes: ["M100", "M101", "M102"],
+            successCriteria: SuccessCriteria(metric: "reversões de sinal de dSteering/dt = 0 entre INICIO e MEIO", confidence: .alta),
+            active: false
+        ),
+        Lesson(
+            id: "L102-circulo-de-grip",
+            title: "Círculo de Grip",
+            category: .controle, level: .avancado,
+            shortDescription: "Somar lat e long sem perder o envelope.",
+            objective: "Treinar uso da reserva de aderência sem saturar lat ou long.",
+            phaseWeights: [.entrada: 0.4, .apex: 0.3, .saida: 0.3],
+            requiredSignals: [.accLat, .accLong, .phase],
+            optionalSignals: [.slipRatio],
+            applicableCornerTypes: [.lenta, .media, .rapida],
+            preferredMessageCodes: ["M110", "M111", "M112"],
+            successCriteria: SuccessCriteria(metric: "sqrt(accLat² + accLong²) ≤ envelope sem saturar eixo isolado", confidence: .media),
+            active: false
+        ),
+        Lesson(
+            id: "L103-pneu-arrastando",
+            title: "Pneu Arrastando",
+            category: .superficie, level: .avancado,
+            shortDescription: "Entrar travado/derrapando custa mais que parece.",
+            objective: "Detectar e reduzir slip de entrada sob frenagem.",
+            phaseWeights: [.entrada: 1.0],
+            requiredSignals: [.slipRatio, .kmh, .phase],
+            optionalSignals: [.brakePressure],
+            applicableCornerTypes: [.lenta, .media],
+            preferredMessageCodes: ["M120", "M121", "M122"],
+            successCriteria: SuccessCriteria(metric: "slip > limiar por menos de 200ms na frenagem", confidence: .baixa),
+            active: false
+        ),
+        Lesson(
+            id: "L104-controle-sobresterco",
+            title: "Controle de Sobresterço",
+            category: .controle, level: .avancado,
+            shortDescription: "Saída solta na traseira — antecipar a correção.",
+            objective: "Reduzir tempo entre início do escorregamento e correção do volante.",
+            phaseWeights: [.apex: 0.3, .saida: 0.7],
+            requiredSignals: [.gyroAlpha, .accLat, .steeringAngle, .phase],
+            optionalSignals: [.tps],
+            applicableCornerTypes: [.media, .rapida],
+            preferredMessageCodes: ["M130", "M131", "M132"],
+            successCriteria: SuccessCriteria(metric: "latência yaw→correção volante < 250ms", confidence: .media),
+            active: false
+        ),
+        Lesson(
+            id: "L105-uso-seguro-zebra",
+            title: "Uso Seguro de Zebra",
+            category: .superficie, level: .avancado,
+            shortDescription: "Pisar na zebra sem desestabilizar o carro.",
+            objective: "Identificar quando a zebra ajuda e quando rouba aderência.",
+            phaseWeights: [.apex: 0.6, .saida: 0.4],
+            requiredSignals: [.lat, .lng, .accLat, .gyroAlpha],
+            optionalSignals: [.kmh],
+            applicableCornerTypes: [.media, .rapida],
+            preferredMessageCodes: ["M140", "M141", "M142"],
+            successCriteria: SuccessCriteria(metric: "pulso vertical sem perda lateral > 3% no MEIO/FIM", confidence: .media),
+            active: false
+        ),
+    ]
+
+    /// Catálogo completo (12) — paridade com JS LESSON_LIBRARY.
+    public static var all: [Lesson] { mvp + phase2 }
+
+    /// Apenas as ativas — hoje exatamente os 7 MVP.
     public static var active: [Lesson] { mvp.filter(\.active) }
 
-    /// Lookup por id.
+    /// Lookup por id sobre o catálogo completo (paridade JS getLesson).
     public static func byId(_ id: String) -> Lesson? {
-        mvp.first { $0.id == id }
+        all.first { $0.id == id }
+    }
+
+    public static func byCategory(_ cat: LessonCategory) -> [Lesson] {
+        all.filter { $0.category == cat }
+    }
+
+    public static func forCornerType(_ ct: CornerTypeMatch) -> [Lesson] {
+        all.filter { $0.applicableCornerTypes.contains(ct) }
     }
 }
 
