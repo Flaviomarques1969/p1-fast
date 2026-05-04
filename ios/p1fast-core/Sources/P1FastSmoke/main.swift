@@ -2411,23 +2411,33 @@ step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
 // LessonLibrary — LL-01 .. LL-04 (paridade com node-smoke-p1-coach.mjs)
 // ════════════════════════════════════════════════════════════
 
-step("LL-01: 7 lições MVP ativas (sem Fase 2 / racecraft / setup)") {
+step("LL-01: catálogo completo — 7 MVP + 5 avançadas (paridade JS LESSON_LIBRARY)") {
     try assertEq(LessonLibrary.mvp.count, 7)
+    try assertEq(LessonLibrary.phase2.count, 5)
+    try assertEq(LessonLibrary.all.count, 12)
+    // Apenas as 7 MVP estão `active: true` — phase2 dorme até sensores chegarem
     try assertEq(LessonLibrary.active.count, 7)
+    for l in LessonLibrary.phase2 { try assertTrue(!l.active, "\(l.id) deveria estar inativa") }
 }
 
-step("LL-02: lições MVP esperadas pelos títulos") {
-    let titles = LessonLibrary.mvp.map { $0.title }
-    let esperadas = ["Referência Fixa", "V-Min", "Transição Freio-Acelerador",
-                     "Acelerador Progressivo", "Linha de Visão",
-                     "Trail Braking Suave", "Curva Cega"]
-    for esp in esperadas {
-        try assertTrue(titles.contains(esp), "missing: \(esp)")
+step("LL-02: títulos MVP + avançadas esperados (L006 = Controle de Subesterço)") {
+    let mvpTitles = LessonLibrary.mvp.map { $0.title }
+    let mvpEsperadas = ["Referência Fixa", "V-Min", "Transição Freio-Acelerador",
+                        "Acelerador Progressivo", "Linha de Visão",
+                        "Controle de Subesterço", "Curva Cega"]
+    for esp in mvpEsperadas {
+        try assertTrue(mvpTitles.contains(esp), "missing MVP: \(esp)")
+    }
+    let phase2Titles = LessonLibrary.phase2.map { $0.title }
+    let phase2Esperadas = ["Volante Contínuo", "Círculo de Grip", "Pneu Arrastando",
+                           "Controle de Sobresterço", "Uso Seguro de Zebra"]
+    for esp in phase2Esperadas {
+        try assertTrue(phase2Titles.contains(esp), "missing avançada: \(esp)")
     }
 }
 
-step("LL-03: phaseWeights de cada lição soma 1.0") {
-    for l in LessonLibrary.mvp {
+step("LL-03: phaseWeights de cada lição (12) soma 1.0") {
+    for l in LessonLibrary.all {
         let total = l.phaseWeights.values.reduce(0.0, +)
         try assertTrue(abs(total - 1.0) < 0.001, "\(l.id) soma=\(total)")
     }
@@ -2435,10 +2445,46 @@ step("LL-03: phaseWeights de cada lição soma 1.0") {
 
 step("LL-04: canActivate respeita requiredSignals") {
     let vmin = LessonLibrary.byId("L002-v-min")!
-    // Sinais obrigatórios: kmh + velMinima + phase
     try assertTrue(vmin.canActivate(signals: [.kmh, .velMinima, .phase]), "V-Min com kmh+velMinima+phase")
     try assertTrue(!vmin.canActivate(signals: [.kmh, .phase]), "V-Min SEM velMinima → false")
     try assertTrue(!vmin.canActivate(signals: []), "V-Min sem nada → false")
+}
+
+step("LL-05: validate() passa em todas as 12 lições do catálogo") {
+    for l in LessonLibrary.all { try l.validate() }
+}
+
+step("LL-06: byId encontra MVP e Fase 2") {
+    try assertEq(LessonLibrary.byId("L006-controle-subesterco")?.title, "Controle de Subesterço")
+    try assertEq(LessonLibrary.byId("L101-volante-continuo")?.title, "Volante Contínuo")
+    try assertEq(LessonLibrary.byId("L105-uso-seguro-zebra")?.title, "Uso Seguro de Zebra")
+    try assertTrue(LessonLibrary.byId("L999-inexistente") == nil)
+    // L006-trail-braking-suave NÃO existe mais (id antigo, removido)
+    try assertTrue(LessonLibrary.byId("L006-trail-braking-suave") == nil)
+}
+
+step("LL-07: byCategory respeita catálogo JS") {
+    let controle = LessonLibrary.byCategory(.controle)
+    let ids = Set(controle.map { $0.id })
+    // L006 controle-subesterco + L101 volante-continuo + L102 circulo-grip + L104 sobresterco
+    try assertTrue(ids.contains("L006-controle-subesterco"))
+    try assertTrue(ids.contains("L101-volante-continuo"))
+    try assertTrue(ids.contains("L102-circulo-de-grip"))
+    try assertTrue(ids.contains("L104-controle-sobresterco"))
+    try assertEq(ids.count, 4)
+    let superficie = LessonLibrary.byCategory(.superficie)
+    let supIds = Set(superficie.map { $0.id })
+    try assertTrue(supIds.contains("L103-pneu-arrastando"))
+    try assertTrue(supIds.contains("L105-uso-seguro-zebra"))
+}
+
+step("LL-08: forCornerType filtra por tipo de curva") {
+    let rapidas = LessonLibrary.forCornerType(.rapida)
+    // Todas que tiverem .rapida em applicableCornerTypes (várias MVP + algumas avançadas)
+    try assertTrue(rapidas.count >= 5, "esperava ≥5, foi \(rapidas.count)")
+    for l in rapidas {
+        try assertTrue(l.applicableCornerTypes.contains(.rapida))
+    }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -3315,7 +3361,8 @@ step("PC-10: lição BAIXA emite quando piloto fixa focusLessonId") {
     var out: [CoachMessage] = []
     let c = P1Coach(onMessage: { out.append($0) }, cooldownMs: 0)
     c.startLearningSession(focusPhase: .entrada, focusLessonId: "L005-linha-de-visao")
-    let sig: Set<String> = ["heading", "kmh"]
+    // L005 (após paridade JS): requiredSignals = heading + gyroAlpha + phase
+    let sig: Set<String> = ["heading", "gyroAlpha", "phase"]
     c.onSegmentEnter(PC_FAST, availableSignals: sig)
     _ = c.consume(faseCurva: .inicio, snapshot: pcSnap(100), signals: sig)
     try assertEq(out.count, 1)
