@@ -109,8 +109,10 @@ public final class CrossValidationEngine {
         v008(snap)
         v010(snap)
         v011(snap)
-        lastSpeed = snap.vehicle.speedFused
-        lastTMono = snap.tMono
+        // Note: lastSpeed/lastTMono são atualizados DENTRO de v002, só
+        // quando imu E speedFused estão ambos presentes (paridade JS).
+        // Atualizar aqui (incondicionalmente) provocava derivada suja
+        // em snaps com imu nil mas speed presente.
     }
 
     // ─── V-001 · CAN vs GNSS ──────────────────────────────
@@ -156,10 +158,10 @@ public final class CrossValidationEngine {
                         emit(ValidationEvent(
                             validation: "V-002",
                             severity: .atencao,
-                            message: String(format: "IMU long (%.2f m/s²) diverge da derivada da velocidade (%.2f m/s²) por 1s+.", imu, derivada),
+                            message: String(format: "Aceleração longitudinal IMU diverge %.1f m/s² da derivada da velocidade. Possível drift IMU ou impacto.", diff),
                             channels: ["dynamics.accel_longitudinal"],
-                            hypothesis: "IMU calibração errada, frame de referência rotacionado, ou velocidade fundida com erro",
-                            action: "validar fixação do iPhone / RaceBox no carro e calibração de eixo",
+                            hypothesis: "drift IMU, calibração ruim, ou vibração mecânica anômala (zebra, buraco, batida)",
+                            action: "marcar accel_longitudinal como SUSPECT na janela",
                             t: snap.t, tMono: snap.tMono
                         ))
                     }
@@ -168,6 +170,9 @@ public final class CrossValidationEngine {
                 }
             }
         }
+        // Update âncora SÓ quando imu+speed presentes (paridade JS).
+        lastSpeed = speed
+        lastTMono = snap.tMono
     }
 
     // ─── V-003 · TPS × MAP × accel ─────────────────────────
