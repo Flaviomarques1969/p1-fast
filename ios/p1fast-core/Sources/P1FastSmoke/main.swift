@@ -2340,6 +2340,61 @@ step("COR-08: matchSegmento — execução dentro do corredor confirma match") {
     }
 }
 
+// ════════════════════════════════════════════════════════════
+// Projector — PROJ-01 .. PROJ-06 (paridade JS src/telemetry/projector.js)
+// ════════════════════════════════════════════════════════════
+
+step("PROJ-01: < 2 âncoras → nil") {
+    let r1 = Projector.projectToViewBox(lat: -15.6, lng: -47.9, anchors: [])
+    try assertTrue(r1 == nil)
+    let a0 = GeoAncora(lat: -15.6, lng: -47.9, x: 0, y: 0)
+    let r2 = Projector.projectToViewBox(lat: -15.6, lng: -47.9, anchors: [a0])
+    try assertTrue(r2 == nil)
+}
+
+step("PROJ-02: âncoras coincidentes → nil (degenerado)") {
+    let a0 = GeoAncora(lat: -15.6, lng: -47.9, x: 0, y: 0)
+    let a1 = GeoAncora(lat: -15.6, lng: -47.9, x: 100, y: 100)
+    let r = Projector.projectToViewBox(lat: -15.6, lng: -47.9, anchors: [a0, a1])
+    try assertTrue(r == nil)
+}
+
+step("PROJ-03: lat/lng nil ou não-finitos → nil") {
+    let a0 = GeoAncora(lat: -15.6, lng: -47.9, x: 0, y: 0)
+    let a1 = GeoAncora(lat: -15.61, lng: -47.91, x: 100, y: 100)
+    try assertTrue(Projector.projectToViewBox(lat: nil, lng: -47.9, anchors: [a0, a1]) == nil)
+    try assertTrue(Projector.projectToViewBox(lat: -15.6, lng: nil, anchors: [a0, a1]) == nil)
+    try assertTrue(Projector.projectToViewBox(lat: .nan, lng: -47.9, anchors: [a0, a1]) == nil)
+    try assertTrue(Projector.projectToViewBox(lat: .infinity, lng: -47.9, anchors: [a0, a1]) == nil)
+}
+
+step("PROJ-04: identidade — sample na âncora 0 mapeia em (a0.x, a0.y)") {
+    let a0 = GeoAncora(lat: -15.6, lng: -47.9, x: 50, y: 60)
+    let a1 = GeoAncora(lat: -15.61, lng: -47.91, x: 200, y: 200)
+    let r = Projector.projectToViewBox(lat: -15.6, lng: -47.9, anchors: [a0, a1])!
+    try assertClose(r.x, 50, tol: 1e-9)
+    try assertClose(r.y, 60, tol: 1e-9)
+}
+
+step("PROJ-05: identidade — sample na âncora 1 mapeia em (a1.x, a1.y)") {
+    let a0 = GeoAncora(lat: -15.6, lng: -47.9, x: 50, y: 60)
+    let a1 = GeoAncora(lat: -15.61, lng: -47.91, x: 200, y: 200)
+    let r = Projector.projectToViewBox(lat: -15.61, lng: -47.91, anchors: [a0, a1])!
+    try assertClose(r.x, 200, tol: 1e-6)
+    try assertClose(r.y, 200, tol: 1e-6)
+}
+
+step("PROJ-06: ponto medio entre âncoras → ponto medio no viewBox") {
+    let a0 = GeoAncora(lat: -15.6, lng: -47.9, x: 0, y: 0)
+    let a1 = GeoAncora(lat: -15.61, lng: -47.91, x: 100, y: 100)
+    // Ponto medio em lat/lng (aproximadamente — projeção é afim no plano locais)
+    let midLat = (a0.lat + a1.lat) / 2
+    let midLng = (a0.lng + a1.lng) / 2
+    let r = Projector.projectToViewBox(lat: midLat, lng: midLng, anchors: [a0, a1])!
+    try assertClose(r.x, 50, tol: 1e-3)
+    try assertClose(r.y, 50, tol: 1e-3)
+}
+
 step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
     let r = SeedBrasilia.make()
     let enc = JSONEncoder()

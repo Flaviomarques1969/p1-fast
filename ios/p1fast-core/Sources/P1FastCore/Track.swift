@@ -73,6 +73,13 @@ public struct GeoAncora: Codable, Sendable, Equatable {
     public var lng: Double
     public var x: Double
     public var y: Double
+
+    public init(lat: Double, lng: Double, x: Double, y: Double) {
+        self.lat = lat
+        self.lng = lng
+        self.x = x
+        self.y = y
+    }
 }
 
 public struct Parcial: Codable, Sendable, Equatable {
