@@ -1708,6 +1708,92 @@ step("PD-06: decideForParciais + agrupar — distribui em 4 grupos") {
     try assertEq(g.ignorar.count, 0)
 }
 
+// ════════════════════════════════════════════════════════════
+// DynoCsvParser — DCP-01..DCP-06
+// ════════════════════════════════════════════════════════════
+
+step("DCP-01: parse — CSV vazio lança .empty") {
+    do {
+        _ = try DynoCsvParser.parse("")
+        try assertTrue(false)
+    } catch DynoCsvParserError.empty {
+        // ok
+    }
+}
+
+step("DCP-02: parse — CSV genérico vírgula com RPM, Torque (Nm), Power (kW)") {
+    let csv = """
+    RPM,Torque (Nm),Power (kW)
+    2000,80,16.7
+    3000,100,31.4
+    4000,120,50.3
+    5000,130,68.1
+    6000,128,80.5
+    """
+    let r = try DynoCsvParser.parse(csv)
+    try assertEq(r.format, .generic)
+    try assertEq(r.points.count, 5)
+    try assertEq(r.points.first?.rpm, 2000)
+    try assertClose(r.points.first?.powerKw, 16.7, tol: 0.5)
+}
+
+step("DCP-03: parse — Dynojet com hp converte para kW") {
+    let csv = """
+    Dynojet Run 1
+    RPM,HP,Torque (lb-ft)
+    2000,30,80
+    3000,55,90
+    4000,90,110
+    5000,120,118
+    """
+    let r = try DynoCsvParser.parse(csv)
+    try assertEq(r.format, .dynojet)
+    try assertEq(r.points.count, 4)
+    // 30hp ≈ 22.4 kW
+    try assertClose(r.points.first?.powerKw, 22.4, tol: 0.5)
+}
+
+step("DCP-04: parse — separador ; e vírgula como decimal (locale BR)") {
+    let csv = """
+    RPM;Torque (Nm);Power (kW)
+    2000;80,5;16,7
+    3000;100,2;31,4
+    4000;120,9;50,3
+    """
+    let r = try DynoCsvParser.parse(csv)
+    try assertEq(r.points.count, 3)
+    try assertClose(r.points.first?.powerKw, 16.7, tol: 0.5)
+}
+
+step("DCP-05: parse — < 3 pontos válidos lança .insufficientPoints") {
+    let csv = """
+    RPM,Power (kW)
+    2000,30
+    3000,55
+    """
+    do {
+        _ = try DynoCsvParser.parse(csv)
+        try assertTrue(false, "deveria lançar")
+    } catch DynoCsvParserError.insufficientPoints(let found) {
+        try assertEq(found, 2)
+    }
+}
+
+step("DCP-06: parse — só torque preenche power_kw via P=T*RPM/9549") {
+    let csv = """
+    RPM,Torque (Nm)
+    2000,100
+    3000,120
+    4000,130
+    5000,135
+    """
+    let r = try DynoCsvParser.parse(csv)
+    try assertEq(r.points.count, 4)
+    // RPM=4000, T=130 → P = 130 * 4000 / 9549 ≈ 54.5 kW
+    let p4000 = r.points.first { $0.rpm == 4000 }
+    try assertClose(p4000?.powerKw, 54.5, tol: 0.5)
+}
+
 step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
     let r = SeedBrasilia.make()
     let enc = JSONEncoder()
