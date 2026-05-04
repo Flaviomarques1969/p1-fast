@@ -1,7 +1,7 @@
 # P1 Fast — STATUS
 
-**Data deste checkpoint:** 2026-05-04 (após sessão massiva de port domain Swift)
-**Estado:** Plano `docs/PLANO_FASE_1.md` em execução. **17 PRs mergeados nesta sessão (MS-0 a MS-9.1)**, 274 smoke tests verdes. Pipeline shift-light end-to-end + domínio canônico de trecho/erro/score/repeatability/decider em Swift.
+**Data deste checkpoint:** 2026-05-04 (sessão 2 — batch de paridade + 2 ports novos)
+**Estado:** Plano `docs/PLANO_FASE_1.md` em execução. **23 PRs mergeados nas duas sessões de hoje** (#57..#79), 311 smoke tests verdes. Pipeline shift-light + domínio canônico + 2 ports novos (Corredor, Projector) + 4 fixes de paridade JS (Quality, LessonSchema, CoachPhrases, LessonLibrary).
 
 > **Se você é Claude abrindo esta sessão pela primeira vez:**
 > Leia este arquivo primeiro, depois `docs/PLANO_FASE_1.md` (doc mestre), depois `~/.claude/projects/-Users-imac/memory/MEMORY.md` (memória global) + `~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/MEMORY.md` (memória do projeto).
@@ -16,9 +16,9 @@ Audit honesto mostrou que "Phase 1A 100%" foi declarada por engano: cobria só S
 
 ---
 
-## Sessão 2026-05-04 — 17 PRs mergeados
+## Sessão 2026-05-04 (manhã) — 17 PRs mergeados (#57..#73)
 
-`swift run p1fast-smoke` final: **274 ok / 0 fail**.
+`swift run p1fast-smoke` no fim da manhã: **274 ok / 0 fail**.
 
 | # | PR | Mini-sprint | Conteúdo |
 |---|---|---|---|
@@ -41,6 +41,23 @@ Audit honesto mostrou que "Phase 1A 100%" foi declarada por engano: cobria só S
 | 72 | feat | **MS-6.6** | `EventoResumo` + `DiaResumo` + `StintResumo` |
 
 **Totais portados:** ~6 mil linhas Swift novas em `ios/p1fast-core/Sources/P1FastCore/`. ~80 smoke tests novos (TRK-05a..e, EC-01..12, PR-01..12, SA-01..08, ST-01..10, GE-01..08, SED-01..06, RS-01..06, SC-01..10, REP-01..04, PD-01..06, DCP-01..06, ET-01..05, TFD-01..04, PVE-01..05, AP-01..04, ER-01..05).
+
+---
+
+## Sessão 2026-05-04 (tarde) — 6 PRs (#74..#79)
+
+`swift run p1fast-smoke` final: **311 ok / 0 fail**.
+
+| # | PR | Tema | Conteúdo |
+|---|---|---|---|
+| 74 | feat | **Quality paridade** | DEGRADED/BAD invertidos no `fromSignalQuality`; default → `.ok`; `worstOf([])` → `.ok`; `numSatellites` no `fromGpsAccuracy`; `fromRangeCheck` com optional + non-finite; `permitsVisual`/`label`/`token`. +6 smoke (DQ-07..12). |
+| 75 | feat | **Corredor port novo** | Port `src/telemetry/corredor.js` — traçado consolidado + corredor de tolerância (decisão de domínio 2026-04-23). +8 smoke (COR-01..08). |
+| 76 | feat | **LessonSchema paridade** | `LessonCategory` reset pra set canônico (referencia/velocidade/transicao/controle/visao/superficie); L005 fix `.fundamentos` → `.visao`; `Signal` 22-cat (era 16); `Lesson.validate()` + `LessonSchemaError`. +8 smoke (LS-01..08). |
+| 77 | feat | **Projector port novo** | Port `src/telemetry/projector.js` — lat/lng → x/y do viewBox (transformação afim 2D, complex k = B/A). +6 smoke (PROJ-01..06). |
+| 78 | feat | **CoachPhrases paridade** | Catálogo 21 → 36 frases (adiciona M100..M142 = 5 famílias avançadas, antes "Fase 2 fora"). +5 smoke (CP-01..05). |
+| 79 | feat | **LessonLibrary 12 lições** | L005/L006/L007 corrigidas (L006 era "Trail Braking" / .transicao, JS é "Controle de Subesterço" / .controle); +5 lições avançadas (L101..L105 active:false até sensores); novos `all`/`byCategory`/`forCornerType`. +4 smoke (LL-05..08, retrabalho LL-01..04). |
+
+**Característica desta tarde:** quase tudo foi auditoria de paridade JS — descobri que vários ports existentes tinham divergências do source-of-truth (incluindo um Lesson "Trail Braking" que usava phrases de subesterço — esquizofrenia). 2 ports novos (Corredor, Projector) entraram pra cobrir gaps que faltavam.
 
 ---
 
@@ -68,20 +85,23 @@ Audit honesto mostrou que "Phase 1A 100%" foi declarada por engano: cobria só S
 
 ---
 
-## Próximos targets de domínio puro (estilo MS-6.x — pequenos PRs sequenciais)
+## Próximos targets de domínio puro
 
-Ainda em `src/domain/` há código puro (sem IO Dexie) que vale portar:
-- `tire-wear.js` (113 linhas) — desgaste de pneu
-- `data-quality.js` (164 linhas) — qualidade dos dados
-- `stint-env.js` (77 linhas) — ambiente do stint
-- `lesson-schema.js` (201 linhas) — schema de lições (parcial em Swift?)
-- `fuel-calc.js` extensões (já tem base em Swift)
-- `reference-line.js` — linha de referência (consumido pelo ghost map MS-14)
-- `corredor.js` (em `src/telemetry/`) — corredor de pista
-- `cross-validation.js` — já tem `CrossValidation.swift`, conferir paridade
-- `pedagogical-plan.js` (133 linhas) — plano pedagógico (gerador de focos, alimenta MS-6.4)
+Já portado e em paridade JS após hoje:
+- ✅ Quality (data-quality.js)
+- ✅ LessonSchema (lesson-schema.js)
+- ✅ LessonLibrary (12 lições)
+- ✅ CoachPhrases (36 frases)
+- ✅ Corredor (telemetry/corredor.js)
+- ✅ Projector (telemetry/projector.js)
 
-Os com IO (Dexie) são port via GRDB no iOS — não são "port puro": session-master, advisor-suggestion, AdvisorSuggestions, Sessions, Laps repos.
+**Ainda valem port puro (curto prazo):**
+- `tire-wear.js` — pure parts pequenas (estimarVidaUtil), dependentes de Laps/StintEnv. Adiar até GRDB repos.
+- `cross-validation.js` (410 linhas) vs `CrossValidation.swift` (422 linhas) — auditoria de paridade detalhada (não fizemos hoje)
+
+**Não puros (precisam GRDB iOS-side):** tire-wear, stint-env, pedagogical-plan, baseline-vectors, track-layout, reference-line, car, car-configuration, advisor-suggestion, session-master.
+
+**Precisam runtime iOS:** detector.js (262, live engine), adaptive-tick.js (115), timebase.js (304), session-recorder.js (158), sample-store.js (107), provider.js (152), device-provider.js (138), mock-provider.js (63).
 
 ---
 
@@ -111,6 +131,11 @@ Esses precisam de Xcode pra build/validar. Domínio Swift puro pode continuar at
 
 ## Próximo passo concreto pós-/compact
 
-1. Ler `STATUS.md` (este arquivo) e `docs/PLANO_FASE_1.md` §6 MS-6 e MS-9
-2. Continuar empilhando ports de domínio Swift (próximo: tire-wear, data-quality, ou pedagogical-plan)
-3. Anunciar o PR + smoke count em cada commit
+Domínio puro JS está esgotado em paridade. **Nenhum port pequeno trivial sobrou** (tire-wear/stint-env/pedagogical-plan/etc dependem de IO).
+
+Opções pra retomada (decisão Flávio):
+
+1. **Detector live engine port** — 262 linhas, classe stateful com listener pattern. Médio porte, valida sem Xcode (consume(snap) é puro). Resolve o gap "Detector ao vivo: port nativo Swift, JS aposentado".
+2. **Auditoria CrossValidation paridade** — comparar 410 linhas JS vs 422 Swift, achar e fixar divergências. Mesmo padrão de hoje (Quality/LessonLibrary).
+3. **Pivot pra UI iOS** — abrir Xcode e fazer MS-1.4 (configurador visual), MS-2 (LiveTelemetryRecorder) ou MS-13 (CockpitDevice 956×440). Precisa simulator + olho do Flávio.
+4. **STATUS.md atualizado** — pode dar /compact agora; ao retomar, leio este arquivo + plano e escolho com Flávio.
