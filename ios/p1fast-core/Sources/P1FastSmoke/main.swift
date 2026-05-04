@@ -2582,6 +2582,45 @@ step("LS-08: validate — campos vazios obrigatórios lançam") {
 }
 
 // ════════════════════════════════════════════════════════════
+// CoachPhrases — CP-01 .. CP-05 (paridade JS src/data/coach-phrases.js)
+// ════════════════════════════════════════════════════════════
+
+step("CP-01: 36 códigos no catálogo — 21 MVP + 15 avançadas") {
+    // 7 famílias MVP × 3 frases (M001..M062) + 5 famílias avançadas × 3 (M100..M142)
+    try assertEq(CoachPhrases.raw.count, 36)
+}
+
+step("CP-02: validateAll passa — todas têm 2..3 palavras e código válido") {
+    try CoachPhrases.validateAll()
+}
+
+step("CP-03: getPhrase + isCoachCode sobre catálogo conhecido") {
+    try assertEq(CoachPhrases.getPhrase("M001"), "Mesmo ponto")
+    try assertEq(CoachPhrases.getPhrase("M042"), "Antecipa apex")
+    try assertEq(CoachPhrases.getPhrase("M142"), "Zebra livre") // antes Fase 2
+    try assertTrue(CoachPhrases.getPhrase("M999") == nil)
+    try assertTrue(CoachPhrases.isCoachCode("M001"))
+    try assertTrue(CoachPhrases.isCoachCode("M100"))
+    try assertTrue(!CoachPhrases.isCoachCode("X001"))
+    try assertTrue(!CoachPhrases.isCoachCode("M999"))
+}
+
+step("CP-04: set deduplica e tem todas as 36 frases (todas únicas no catálogo)") {
+    try assertEq(CoachPhrases.set.count, 36)
+}
+
+step("CP-05: famílias avançadas presentes (M100..M142)") {
+    let avancadas = ["M100", "M101", "M102",
+                     "M110", "M111", "M112",
+                     "M120", "M121", "M122",
+                     "M130", "M131", "M132",
+                     "M140", "M141", "M142"]
+    for code in avancadas {
+        try assertTrue(CoachPhrases.getPhrase(code) != nil, "missing \(code)")
+    }
+}
+
+// ════════════════════════════════════════════════════════════
 // FaseCurva — FC-01 .. FC-08 (port de src/telemetry/fase-curva.js)
 // ════════════════════════════════════════════════════════════
 
