@@ -4530,6 +4530,133 @@ step("DET-12: unsubscribe remove o listener") {
     try assertEq(hits, 1)
 }
 
+// ════════════════════════════════════════════════════════════
+// SegmentGeometry — MS14-01..MS14-06 (foundation pra MS-1.4)
+// ════════════════════════════════════════════════════════════
+//
+// Encode/decode JSON de track_segments.geometria com 4 pontos canônicos
+// (entry/braking/apex/exit). Usado pelo configurador visual MS-1.4.
+
+step("MS14-01: encode → decode round-trip preserva 4 pontos canônicos") {
+    let seg = TrackSegment(
+        id: "trX", layoutId: "L", ordem: 1, nome: "C1",
+        tipo: .curva, ehTrecho: true, parcialId: "P1",
+        x: 100, y: 50, tNaVolta: 5.5,
+        apexReference: TrackPoint(x: 102, y: 52),
+        apexStrategy: .neutro,
+        apexClassificationDefault: nil,
+        cornerType: .lenta,
+        nextStraightLength: 230,
+        apexCalibration: "DEFAULT",
+        entryPoint: TrackPoint(x: 80, y: 40),
+        brakingPoint: TrackPoint(x: 90, y: 45),
+        exitPoint: TrackPoint(x: 130, y: 70),
+        pathStart: 20, pathEnd: 40
+    )
+    let json = SegmentGeometry.encode(seg)
+    try assertTrue(json != nil, "encode produziu nil")
+    let blob = SegmentGeometry.decode(json)
+    try assertTrue(blob != nil, "decode produziu nil")
+    try assertClose(blob?.x, 100)
+    try assertClose(blob?.y, 50)
+    try assertEq(blob?.tipo, "curva")
+    try assertClose(blob?.apexX, 102)
+    try assertClose(blob?.entryX, 80); try assertClose(blob?.entryY, 40)
+    try assertClose(blob?.brakingX, 90); try assertClose(blob?.brakingY, 45)
+    try assertClose(blob?.exitX, 130); try assertClose(blob?.exitY, 70)
+    try assertEq(blob?.cornerType, "lenta")
+    try assertEq(blob?.apexStrategy, "neutro")
+    try assertClose(blob?.tNaVolta, 5.5)
+    try assertClose(blob?.nextStraightLength, 230)
+}
+
+step("MS14-02: decode helpers reconstroem TrackPoint") {
+    let blob = SegmentGeometry.Blob(
+        x: 0, y: 0, tipo: "curva",
+        apexX: 1, apexY: 2,
+        entryX: 3, entryY: 4,
+        brakingX: 5, brakingY: 6,
+        exitX: 7, exitY: 8
+    )
+    try assertEq(blob.apexReference, TrackPoint(x: 1, y: 2))
+    try assertEq(blob.entryPoint, TrackPoint(x: 3, y: 4))
+    try assertEq(blob.brakingPoint, TrackPoint(x: 5, y: 6))
+    try assertEq(blob.exitPoint, TrackPoint(x: 7, y: 8))
+}
+
+step("MS14-03: blob com pontos nil retorna nil em helpers (modo degradado)") {
+    let blob = SegmentGeometry.Blob(x: 0, y: 0, tipo: "curva")
+    try assertTrue(blob.apexReference == nil)
+    try assertTrue(blob.entryPoint == nil)
+    try assertTrue(blob.brakingPoint == nil)
+    try assertTrue(blob.exitPoint == nil)
+}
+
+step("MS14-04: decode de JSON ausente/malformado → nil (não throw)") {
+    try assertTrue(SegmentGeometry.decode(nil) == nil)
+    try assertTrue(SegmentGeometry.decode("") == nil)
+    try assertTrue(SegmentGeometry.decode("{}") == nil)        // missing required x/y/tipo
+    try assertTrue(SegmentGeometry.decode("{\"trash\":1}") == nil)
+}
+
+step("MS14-05: updateCanonicalPoints muda só os 4 pontos, preserva resto") {
+    let original = SegmentGeometry.Blob(
+        x: 100, y: 50, tipo: "curva",
+        tNaVolta: 5.5,
+        apexX: 102, apexY: 52,
+        apexStrategy: "neutro", cornerType: "lenta",
+        nextStraightLength: 230, apexCalibration: "DEFAULT",
+        entryX: 80, entryY: 40,
+        brakingX: 90, brakingY: 45,
+        exitX: 130, exitY: 70
+    )
+    let updated = SegmentGeometry.updateCanonicalPoints(
+        in: original,
+        entry: TrackPoint(x: 81, y: 41),
+        braking: TrackPoint(x: 91, y: 46),
+        apex: TrackPoint(x: 103, y: 53),
+        exit: TrackPoint(x: 131, y: 71)
+    )
+    // 4 pontos mudaram
+    try assertClose(updated.entryX, 81); try assertClose(updated.entryY, 41)
+    try assertClose(updated.brakingX, 91); try assertClose(updated.brakingY, 46)
+    try assertClose(updated.apexX, 103); try assertClose(updated.apexY, 53)
+    try assertClose(updated.exitX, 131); try assertClose(updated.exitY, 71)
+    // Resto preservado
+    try assertClose(updated.x, 100); try assertClose(updated.y, 50)
+    try assertEq(updated.tipo, "curva")
+    try assertEq(updated.cornerType, "lenta")
+    try assertEq(updated.apexStrategy, "neutro")
+    try assertClose(updated.tNaVolta, 5.5)
+    try assertClose(updated.nextStraightLength, 230)
+    try assertEq(updated.apexCalibration, "DEFAULT")
+}
+
+step("MS14-06: updateCanonicalPoints com apex=nil preserva apex anterior") {
+    // Edge case: configurador deixa o usuário arrastar APENAS um subset.
+    // Pontos não tocados precisam ficar como estavam.
+    let original = SegmentGeometry.Blob(
+        x: 0, y: 0, tipo: "curva",
+        apexX: 99, apexY: 88,
+        entryX: 1, entryY: 2,
+        brakingX: 3, brakingY: 4,
+        exitX: 5, exitY: 6
+    )
+    // Passa apex=nil — espera apexX/apexY preservados (não removidos).
+    let updated = SegmentGeometry.updateCanonicalPoints(
+        in: original,
+        entry: TrackPoint(x: 10, y: 20),
+        braking: TrackPoint(x: 30, y: 40),
+        apex: nil,
+        exit: TrackPoint(x: 50, y: 60)
+    )
+    try assertClose(updated.apexX, 99)   // preservado
+    try assertClose(updated.apexY, 88)
+    try assertClose(updated.entryX, 10)  // mudou
+    try assertClose(updated.brakingX, 30)
+    try assertClose(updated.exitX, 50)
+}
+
 // ── relatório ────────────────────────────────────────────────
 print("\n═══ RESULTADO ═══")
 print("\(ok) ok / \(fail) fail")

@@ -87,6 +87,45 @@ final class TrackRepository: ObservableObject {
         (segmentsByLayout[layoutId] ?? []).filter { $0.ehTrecho }
     }
 
+    /// Decode helper — devolve `SegmentGeometry.Blob` já parseado pra um row.
+    func geometria(forSegmentId segmentId: String) -> P1FastCore.SegmentGeometry.Blob? {
+        for (_, segs) in segmentsByLayout {
+            if let seg = segs.first(where: { $0.id == segmentId }) {
+                return P1FastCore.SegmentGeometry.decode(seg.geometria)
+            }
+        }
+        return nil
+    }
+
+    // MARK: - Updates (MS-1.4 configurador visual)
+
+    /// Atualiza os 4 pontos canônicos do trecho (entry/braking/apex/exit) e
+    /// re-encoda o JSON `geometria`. Demais campos (tipo, tNaVolta, strategy
+    /// etc) são preservados. Idempotente — mesmos pontos não mudam o blob.
+    /// Ponto `nil` remove o campo (modo degradado).
+    ///
+    /// Caller típico: configurador visual MS-1.4 ao confirmar mudanças.
+    func updateCanonicalPoints(
+        segmentId: String,
+        entry: P1FastCore.TrackPoint?,
+        braking: P1FastCore.TrackPoint?,
+        apex: P1FastCore.TrackPoint?,
+        exit: P1FastCore.TrackPoint?
+    ) async throws {
+        try await queue.write { db in
+            guard var row = try TrackSegmentRow.fetchOne(db, key: segmentId) else { return }
+            // Usa blob atual como base; se ausente fabrica neutro com x/y=0.
+            let base = P1FastCore.SegmentGeometry.decode(row.geometria)
+                ?? P1FastCore.SegmentGeometry.Blob(x: 0, y: 0, tipo: P1FastCore.SegmentTipo.curva.rawValue)
+            let next = P1FastCore.SegmentGeometry.updateCanonicalPoints(
+                in: base, entry: entry, braking: braking, apex: apex, exit: exit
+            )
+            row.geometria = P1FastCore.SegmentGeometry.encode(next)
+            try row.update(db)
+        }
+        try await reloadAll()
+    }
+
     // MARK: - Seed
 
     /// Persiste track `trk_brasilia` + layout `lay_brasilia_principal` + 12
@@ -171,34 +210,11 @@ final class TrackRepository: ObservableObject {
         return String(data: data, encoding: .utf8)
     }
 
-    /// Geometria do segment como JSON com x/y/tNaVolta/apex/strat/cornerType.
-    /// Permite recuperar apex e tipo da curva sem ler SeedBrasilia novamente.
+    /// Encode da geometria do segment (delegate p/ `P1FastCore.SegmentGeometry`,
+    /// que é puro Swift e tem smoke próprio). Mantido aqui só pra usar
+    /// no seedBrasilia.
     nonisolated private static func encodeGeometria(_ seg: P1FastCore.TrackSegment) -> String? {
-        struct GeomBlob: Encodable {
-            let x: Double
-            let y: Double
-            let tipo: String
-            let tNaVolta: Double?
-            let apexX: Double?
-            let apexY: Double?
-            let apexStrategy: String?
-            let cornerType: String?
-            let nextStraightLength: Double?
-            let apexCalibration: String?
-        }
-        let blob = GeomBlob(
-            x: seg.x, y: seg.y,
-            tipo: seg.tipo.rawValue,
-            tNaVolta: seg.tNaVolta,
-            apexX: seg.apexReference?.x,
-            apexY: seg.apexReference?.y,
-            apexStrategy: seg.apexStrategy?.rawValue,
-            cornerType: seg.cornerType?.rawValue,
-            nextStraightLength: seg.nextStraightLength,
-            apexCalibration: seg.apexCalibration
-        )
-        guard let data = try? jsonEncoder.encode(blob) else { return nil }
-        return String(data: data, encoding: .utf8)
+        P1FastCore.SegmentGeometry.encode(seg)
     }
 
     // MARK: - Internal types
