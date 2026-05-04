@@ -1794,6 +1794,125 @@ step("DCP-06: parse — só torque preenche power_kw via P=T*RPM/9549") {
     try assertClose(p4000?.powerKw, 54.5, tol: 0.5)
 }
 
+// ════════════════════════════════════════════════════════════
+// ErrorTaxonomy — ET-01..ET-05
+// ════════════════════════════════════════════════════════════
+
+step("ET-01: ErroTipoExtra — 10 valores canônicos com raw values") {
+    try assertEq(ErroTipoExtra.allCases.count, 10)
+    try assertEq(ErroTipoExtra.pegouCorda.rawValue,     "pegou-corda")
+    try assertEq(ErroTipoExtra.naoPegouCorda.rawValue,  "nao-pegou-corda")
+    try assertEq(ErroTipoExtra.usouPistaToda.rawValue,  "usou-pista-toda")
+    try assertEq(ErroTipoExtra.freadaInstavel.rawValue, "freada-instavel")
+    try assertEq(ErroTipoExtra.entradaSuja.rawValue,    "entrada-suja")
+    try assertEq(ErroTipoExtra.saidaRasgada.rawValue,   "saida-rasgada")
+    try assertEq(ErroTipoExtra.trailBrakingOk.rawValue, "trail-braking-ok")
+    try assertEq(ErroTipoExtra.corrigiuLinha.rawValue,  "corrigiu-linha")
+    try assertEq(ErroTipoExtra.abortouCurva.rawValue,   "abortou-curva")
+    try assertEq(ErroTipoExtra.exploracaoOk.rawValue,   "exploracao-ok")
+}
+
+step("ET-02: categoria — distribui ErroTipo + ErroTipoExtra em 4 grupos canônicos") {
+    try assertEq(ErrorTaxonomy.categoria(.freouCedo),         .frenagem)
+    try assertEq(ErrorTaxonomy.categoria(.entrouForteDemais), .entrada)
+    try assertEq(ErrorTaxonomy.categoria(.manteveLinha),      .linha)
+    try assertEq(ErrorTaxonomy.categoria(.matouSaida),        .saida)
+    try assertEq(ErrorTaxonomy.categoria(.pegouCorda),        .linha)
+    try assertEq(ErrorTaxonomy.categoria(.freadaInstavel),    .frenagem)
+    try assertEq(ErrorTaxonomy.categoria(.exploracaoOk),      .geral)
+}
+
+step("ET-03: classifyDetails — input vazio retorna lista vazia") {
+    let r = ErrorTaxonomy.classifyDetails(ErrorTaxonomy.DetailsInput())
+    try assertEq(r.count, 0)
+}
+
+step("ET-04: classifyDetails — aderência alta = pegouCorda; baixa = naoPegouCorda") {
+    let alta = ErrorTaxonomy.classifyDetails(.init(aderenciaCorda: 0.9))
+    try assertTrue(alta.contains(.pegouCorda))
+    let baixa = ErrorTaxonomy.classifyDetails(.init(aderenciaCorda: 0.3))
+    try assertTrue(baixa.contains(.naoPegouCorda))
+    let media = ErrorTaxonomy.classifyDetails(.init(aderenciaCorda: 0.5))
+    try assertTrue(!media.contains(.pegouCorda) && !media.contains(.naoPegouCorda))
+}
+
+step("ET-05: classifyDetails — múltiplos rótulos coexistem") {
+    let r = ErrorTaxonomy.classifyDetails(.init(
+        aderenciaCorda: 0.9,
+        estabilidadeFrear: 0.3,
+        aberturaLinha: 0.9,
+        abortou: false,
+        corrigiu: true,
+        trail: true
+    ))
+    try assertTrue(r.contains(.pegouCorda))
+    try assertTrue(r.contains(.freadaInstavel))
+    try assertTrue(r.contains(.usouPistaToda))
+    try assertTrue(r.contains(.corrigiuLinha))
+    try assertTrue(r.contains(.trailBrakingOk))
+    try assertEq(r.count, 5)
+}
+
+// ════════════════════════════════════════════════════════════
+// ToleranceFromDyno — TFD-01..TFD-04
+// ════════════════════════════════════════════════════════════
+
+step("TFD-01: compute — < 3 pontos lança .curveTooShort") {
+    do {
+        _ = try ToleranceFromDyno.compute(curve: [
+            DynoPoint(rpm: 2000, powerKw: 30),
+            DynoPoint(rpm: 4000, powerKw: 60)
+        ])
+        try assertTrue(false)
+    } catch ToleranceFromDyno.Error.curveTooShort {
+        // ok
+    }
+}
+
+step("TFD-02: compute — janela útil estreita = clamp em tolMin (80)") {
+    // Pico em 5000 só (vizinhos < 95% do pico) → janela < 2 pontos → tolMin
+    let curve = [
+        DynoPoint(rpm: 2000, powerKw: 30),
+        DynoPoint(rpm: 3000, powerKw: 50),
+        DynoPoint(rpm: 4000, powerKw: 70),
+        DynoPoint(rpm: 5000, powerKw: 100), // pico
+        DynoPoint(rpm: 6000, powerKw: 70),
+        DynoPoint(rpm: 7000, powerKw: 50)
+    ]
+    let r = try ToleranceFromDyno.compute(curve: curve)
+    try assertEq(r, 80)
+}
+
+step("TFD-03: compute — janela útil larga, percent default 5") {
+    // Pico ~80kW em 6000. Pontos com >= 95% (76 kW): 5000-7000 (largura 2000)
+    let curve = [
+        DynoPoint(rpm: 2000, powerKw: 30),
+        DynoPoint(rpm: 3000, powerKw: 50),
+        DynoPoint(rpm: 4000, powerKw: 70),
+        DynoPoint(rpm: 5000, powerKw: 78),
+        DynoPoint(rpm: 6000, powerKw: 80),
+        DynoPoint(rpm: 7000, powerKw: 76),
+        DynoPoint(rpm: 8000, powerKw: 60)
+    ]
+    let r = try ToleranceFromDyno.compute(curve: curve, percent: 5)
+    // window = 7000 - 5000 = 2000; tol = 2000 * 5 / 100 = 100
+    try assertEq(r, 100)
+}
+
+step("TFD-04: compute — janela enorme clampa em tolMax (250)") {
+    // Curva chata onde quase todo ponto está em ≥ 95% do pico → janela enorme
+    let curve = [
+        DynoPoint(rpm: 2000, powerKw: 95),
+        DynoPoint(rpm: 4000, powerKw: 99),
+        DynoPoint(rpm: 6000, powerKw: 100),
+        DynoPoint(rpm: 8000, powerKw: 99),
+        DynoPoint(rpm: 10000, powerKw: 96)
+    ]
+    // window = 10000 - 2000 = 8000; tol = 8000 * 5 / 100 = 400 → clamp 250
+    let r = try ToleranceFromDyno.compute(curve: curve, percent: 5)
+    try assertEq(r, 250)
+}
+
 step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
     let r = SeedBrasilia.make()
     let enc = JSONEncoder()
