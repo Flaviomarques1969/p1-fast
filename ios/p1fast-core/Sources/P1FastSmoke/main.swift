@@ -5455,6 +5455,118 @@ step("TSE-04: source_kalman=false (pré-fix) persiste como 0 e roundtrip preserv
     try assertClose(r.posSigmaM, 1e6)
 }
 
+// ════════════════════════════════════════════════════════════
+// EnrichedTelemetryWriter — MS-2.7 PR C (PLANO_FASE_1)
+// ════════════════════════════════════════════════════════════
+// appendBatch: serializa EnrichedSample em telemetry_samples_enriched
+// dentro de uma transação. Espelha a forma de TelemetryWriter.appendBatch
+// do PR raw, sem JSON envelope (schema é flat).
+
+step("WRITE-EN-01: appendBatch insere lote e mantém ordem por seq") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var s = Sessao(id: "ses-en-1", timeId: "team-1", carroId: nil, status: "ativa")
+        try s.insert(db)
+    }
+    let samples: [EnrichedSample] = (0..<5).map { i in
+        EnrichedSample(
+            t: 1_700_000_000_000 + Int64(i),
+            tMono: Double(i) * 10,
+            xM: Double(i),
+            yM: Double(-i),
+            vxMps: 1.0, vyMps: 0,
+            headingDeg: 90,
+            posSigmaM: 2.0,
+            sourceKalman: i > 0
+        )
+    }
+    let n = try EnrichedTelemetryWriter.appendBatch(
+        queue: q, sessaoId: "ses-en-1", timeId: "team-1",
+        samples: samples, startSeq: 7
+    )
+    try assertEq(n, 5)
+    let count = try EnrichedTelemetryWriter.sampleCount(queue: q, sessaoId: "ses-en-1")
+    try assertEq(count, 5)
+
+    let rows = try q.read { db in
+        try TelemetrySampleEnriched.fetchAll(db, sql:
+            "SELECT * FROM telemetry_samples_enriched WHERE sessao_id = ? ORDER BY seq",
+            arguments: ["ses-en-1"]
+        )
+    }
+    try assertEq(rows.count, 5)
+    try assertEq(rows.first?.seq, 7)
+    try assertEq(rows.last?.seq, 11)
+    try assertEq(rows.first?.sourceKalman, false)
+    try assertEq(rows.last?.sourceKalman, true)
+    try assertClose(rows.last?.xM, 4.0)
+}
+
+step("WRITE-EN-02: appendBatch com lote vazio retorna 0 e não falha") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var s = Sessao(id: "ses-en-2", timeId: "team-1", carroId: nil, status: "ativa")
+        try s.insert(db)
+    }
+    let n = try EnrichedTelemetryWriter.appendBatch(
+        queue: q, sessaoId: "ses-en-2", timeId: "team-1",
+        samples: [], startSeq: 0
+    )
+    try assertEq(n, 0)
+    let count = try EnrichedTelemetryWriter.sampleCount(queue: q, sessaoId: "ses-en-2")
+    try assertEq(count, 0)
+}
+
+step("WRITE-EN-03: pipeline KalmanINSGPS → EnrichedTelemetryWriter persiste fix") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var s = Sessao(id: "ses-en-3", timeId: "team-1", carroId: nil, status: "ativa")
+        try s.insert(db)
+    }
+    let f = KalmanINSGPS()
+    var enriched: [EnrichedSample] = []
+
+    // GPS fix inicial em (-15.77, -47.90), course=0 → Norte.
+    var g = Sample(t: 1_700_000_000_000, tMono: 1000, source: SourceTags.gps)
+    g.lat = -15.77; g.lng = -47.90; g.course = 0; g.acc = 3
+    enriched.append(f.update(sample: g))
+
+    // 5 IMU samples a 100Hz com accX = 1 m/s² (forward).
+    for i in 0..<5 {
+        var s = Sample(
+            t: 1_700_000_000_000 + Int64(10 * (i + 1)),
+            tMono: 1000.0 + Double(10 * (i + 1)),
+            source: SourceTags.imu
+        )
+        s.accX = 1.0
+        s.accY = 0.0
+        enriched.append(f.predict(sample: s))
+    }
+
+    let n = try EnrichedTelemetryWriter.appendBatch(
+        queue: q, sessaoId: "ses-en-3", timeId: "team-1",
+        samples: enriched, startSeq: 0
+    )
+    try assertEq(n, 6)
+
+    let stored = try q.read { db in
+        try TelemetrySampleEnriched.fetchAll(db, sql:
+            "SELECT * FROM telemetry_samples_enriched WHERE sessao_id = ? ORDER BY seq",
+            arguments: ["ses-en-3"]
+        )
+    }
+    try assertEq(stored.count, 6)
+    // Primeiro row é o GPS fix → sourceKalman=true, posSigmaM cai pra
+    // perto do acc do fix.
+    try assertEq(stored.first?.sourceKalman, true)
+    try assertTrue((stored.first?.posSigmaM ?? 1e9) < 5.0,
+                   "posSigmaM pós-fix deveria cair, got \(stored.first?.posSigmaM ?? -1)")
+    // Demais predicts mantêm sourceKalman=true (já tem fix).
+    for r in stored.dropFirst() {
+        try assertEq(r.sourceKalman, true)
+    }
+}
+
 step("K-14: integração cinemática básica — 1m/s² por 1s ≈ 1m/s e 0.5m") {
     let f = KalmanINSGPS()
     // course = 0 → carro indo Norte (compass). accX = forward do veículo.
