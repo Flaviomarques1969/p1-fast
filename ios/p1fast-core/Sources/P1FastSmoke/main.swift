@@ -4657,6 +4657,32 @@ step("MS14-06: updateCanonicalPoints com apex=nil preserva apex anterior") {
     try assertClose(updated.exitX, 50)
 }
 
+step("MS14-07: markCalibrated=true força apexCalibration=CONFIRMED") {
+    // Configurador visual ao salvar: marca o trecho como calibrado pra
+    // o usuário ver o ✓ na lista e a bolinha sólida no pager.
+    let original = SegmentGeometry.Blob(
+        x: 0, y: 0, tipo: "curva",
+        apexCalibration: "DEFAULT",
+        entryX: 1, entryY: 2,
+        exitX: 5, exitY: 6
+    )
+    let saved = SegmentGeometry.updateCanonicalPoints(
+        in: original,
+        entry: TrackPoint(x: 1, y: 2),
+        braking: nil,
+        apex: TrackPoint(x: 3, y: 4),
+        exit: TrackPoint(x: 5, y: 6),
+        markCalibrated: true
+    )
+    try assertEq(saved.apexCalibration, "CONFIRMED")
+    // markCalibrated default = false → preserva
+    let preserved = SegmentGeometry.updateCanonicalPoints(
+        in: original,
+        entry: nil, braking: nil, apex: nil, exit: nil
+    )
+    try assertEq(preserved.apexCalibration, "DEFAULT")
+}
+
 // ── relatório ────────────────────────────────────────────────
 print("\n═══ RESULTADO ═══")
 print("\(ok) ok / \(fail) fail")

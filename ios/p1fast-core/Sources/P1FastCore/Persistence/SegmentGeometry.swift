@@ -115,12 +115,16 @@ public enum SegmentGeometry {
     /// Atualiza só os 4 pontos canônicos no blob, preservando os demais
     /// campos. Usado pelo configurador visual MS-1.4. Ponto `nil`
     /// remove o campo (modo degradado — UI normalmente não permite).
+    /// Quando `markCalibrated == true`, marca `apexCalibration = "CONFIRMED"`
+    /// (sinalizando que Flávio passou pelo configurador). Caso contrário
+    /// preserva o valor atual.
     public static func updateCanonicalPoints(
         in current: Blob,
         entry: TrackPoint?,
         braking: TrackPoint?,
         apex: TrackPoint?,
-        exit: TrackPoint?
+        exit: TrackPoint?,
+        markCalibrated: Bool = false
     ) -> Blob {
         Blob(
             x: current.x, y: current.y, tipo: current.tipo,
@@ -130,7 +134,7 @@ public enum SegmentGeometry {
             apexStrategy: current.apexStrategy,
             cornerType: current.cornerType,
             nextStraightLength: current.nextStraightLength,
-            apexCalibration: current.apexCalibration,
+            apexCalibration: markCalibrated ? "CONFIRMED" : current.apexCalibration,
             entryX: entry?.x, entryY: entry?.y,
             brakingX: braking?.x, brakingY: braking?.y,
             exitX: exit?.x, exitY: exit?.y

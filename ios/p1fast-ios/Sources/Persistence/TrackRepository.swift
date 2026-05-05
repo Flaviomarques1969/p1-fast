@@ -110,7 +110,8 @@ final class TrackRepository: ObservableObject {
         entry: P1FastCore.TrackPoint?,
         braking: P1FastCore.TrackPoint?,
         apex: P1FastCore.TrackPoint?,
-        exit: P1FastCore.TrackPoint?
+        exit: P1FastCore.TrackPoint?,
+        markCalibrated: Bool = false
     ) async throws {
         try await queue.write { db in
             guard var row = try TrackSegmentRow.fetchOne(db, key: segmentId) else { return }
@@ -118,7 +119,8 @@ final class TrackRepository: ObservableObject {
             let base = P1FastCore.SegmentGeometry.decode(row.geometria)
                 ?? P1FastCore.SegmentGeometry.Blob(x: 0, y: 0, tipo: P1FastCore.SegmentTipo.curva.rawValue)
             let next = P1FastCore.SegmentGeometry.updateCanonicalPoints(
-                in: base, entry: entry, braking: braking, apex: apex, exit: exit
+                in: base, entry: entry, braking: braking, apex: apex, exit: exit,
+                markCalibrated: markCalibrated
             )
             row.geometria = P1FastCore.SegmentGeometry.encode(next)
             try row.update(db)
