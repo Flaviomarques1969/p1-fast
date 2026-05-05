@@ -1,16 +1,21 @@
 // ═══════════════════════════════════════════════════════════
-// TelemetriaView — UI de captura ao vivo (MS-2.1 + MS-2.3 + MS-2.7)
+// TelemetriaView — UI de captura ao vivo
 // ═══════════════════════════════════════════════════════════
 // Botão REC/STOP + indicadores Hz/jitter/sample count + métricas do
-// pipeline Kalman (enriched count + fix). Cria uma sessao
+// pipeline Kalman (enriched count + fix) + Detector ao vivo (samples
+// consumed/skipped + lap count). Cria uma sessao
 // "telemetria-demo-<ts>" descartável só pra ter um sessao_id que
 // satisfaz a FK de telemetry_samples / telemetry_samples_enriched.
 //
-// MS-2.3 (#101 já em main): LiveKalmanProcessor é instanciado e
-// plugado via attach(to:) no INICIAR. Detach + flush final no PARAR.
+// MS-2.1 #93: LiveTelemetryRecorder.
+// MS-2.3 #102: LiveKalmanProcessor plugado via attach(to:) no INICIAR.
+// MS-2.6 #103: SampleDetectorAdapter + LiveDetectorBridge.
+// MS-2.6.b (este): plug do bridge na view, com Detector demo
+// configurado a partir de SeedBrasilia.make() — Track + linhaChegada
+// + 12 segments. Trocar por TrackRepository.currentTrack quando
+// MS-2.6.c expor a API. Lap count vem direto do detector via onLap.
 //
-// NÃO amarra ao fluxo real de stint (isso é MS-2.x posterior). NÃO
-// conecta ao Detector (MS-2.6).
+// NÃO amarra ao fluxo real de stint (MS-2.5).
 //
 // Acesso: launch arg `--p1-telemetria`.
 
@@ -23,6 +28,7 @@ struct TelemetriaView: View {
 
     @StateObject private var recorder: LiveTelemetryRecorder
     @StateObject private var processor: LiveKalmanProcessor
+    @StateObject private var bridge: LiveDetectorBridge
     @StateObject private var lowPower = LowPowerModeMonitor()
     @State private var sessaoId: String
     @State private var startedAt: Date?
@@ -30,7 +36,10 @@ struct TelemetriaView: View {
     @State private var elapsedS: TimeInterval = 0
     @State private var lastStopCount: Int = 0
     @State private var lastEnrichedCount: Int = 0
+    @State private var lapCount: Int = 0
+    @State private var lastLapMs: Double? = nil
     @State private var sessaoErro: String?
+    @State private var lapCancel: (() -> Void)? = nil
 
     init(queue: DatabaseQueue) {
         self.queue = queue
@@ -45,6 +54,17 @@ struct TelemetriaView: View {
             queue: queue,
             sessaoId: id,
             timeId: "local-default-team"
+        ))
+        // Detector demo: SeedBrasilia até MS-2.6.c expor TrackRepository.currentTrack.
+        let seed = SeedBrasilia.make()
+        let detector = Detector(
+            svgPath: seed.track.svgPath ?? "",
+            linhaChegada: seed.track.linhaChegada,
+            segments: seed.segments
+        )
+        _bridge = StateObject(wrappedValue: LiveDetectorBridge(
+            detector: detector,
+            track: seed.track
         ))
     }
 
@@ -112,6 +132,10 @@ struct TelemetriaView: View {
             row("Estado", recorder.running ? "● REC \(format(elapsedS))s" : "STOP")
             row("Amostras raw", "\(recorder.sampleCount)")
             row("Amostras enriched", "\(processor.enrichedCount)\(processor.hasFix ? " · fix" : "")")
+            row("Detector", "\(bridge.consumed) ok · \(bridge.skipped) skip")
+            row("Voltas", lapCount > 0
+                ? "\(lapCount)" + (lastLapMs.map { String(format: " · última %.2fs", $0 / 1000) } ?? "")
+                : "—")
             row("IMU", String(format: "%.1f Hz · jitter %.2f ms",
                               recorder.imuHz, recorder.imuJitterMs))
             row("GPS", String(format: "%.1f Hz · jitter %.0f ms",
@@ -171,6 +195,9 @@ struct TelemetriaView: View {
             Task {
                 await recorder.stop()
                 await processor.detach()
+                bridge.detach()
+                lapCancel?()
+                lapCancel = nil
                 lastStopCount = recorder.sampleCount
                 lastEnrichedCount = processor.enrichedCount
                 startedAt = nil
@@ -180,6 +207,14 @@ struct TelemetriaView: View {
             Task {
                 await ensureSessao()
                 processor.attach(to: recorder)
+                bridge.attach(to: recorder)
+                lapCancel?()
+                lapCancel = bridge.detector.onLap { ev in
+                    Task { @MainActor in
+                        lapCount = ev.numero
+                        lastLapMs = ev.tempoMs
+                    }
+                }
                 recorder.start()
                 startedAt = Date()
             }

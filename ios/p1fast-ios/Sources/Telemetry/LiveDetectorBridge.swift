@@ -23,8 +23,11 @@ final class LiveDetectorBridge: ObservableObject {
     @Published private(set) var consumed: Int = 0
     @Published private(set) var skipped: Int = 0
 
-    private let detector: Detector
-    private let track: Track
+    /// Exposto pra caller registrar listeners (`onLap`, `onSegmentStart`,
+    /// `onSegmentEnd`) e ler `stats()`. Bridge não centraliza essa
+    /// API porque diferentes views consomem eventos diferentes.
+    let detector: Detector
+    let track: Track
     private weak var recorder: LiveTelemetryRecorder?
     private var sampleHandlerCancel: (() -> Void)?
 
