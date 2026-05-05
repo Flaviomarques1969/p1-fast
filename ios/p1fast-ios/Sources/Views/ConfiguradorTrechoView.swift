@@ -67,9 +67,11 @@ struct ConfiguradorTrechoView: View {
     /// se o toque iniciou perto de um marcador, vira `.marker(kind, ancora)`
     /// e arrasta só esse ponto até onEnded; caso contrário, vira `.pan` e
     /// desliza a vista. Pinch é gesture separado (não conflita com drag).
-    /// `nil` = sem drag em curso.
+    /// `nil` = sem drag em curso. Sem tangente — o ponto segue o dedo
+    /// livremente em ambos os eixos; o snap puxa pra pista mais próxima
+    /// (sensação orgânica em vez de marcador "deslizando" só na linha).
     private enum DragMode {
-        case marker(kind: CanonicalPointKind, anchorPoint: P1FastCore.TrackPoint, anchorTangent: (Double, Double))
+        case marker(kind: CanonicalPointKind, anchorPoint: P1FastCore.TrackPoint)
         case pan
     }
     @State private var dragMode: DragMode?
@@ -368,13 +370,15 @@ struct ConfiguradorTrechoView: View {
                 }
                 guard let mode = dragMode else { return }
                 switch mode {
-                case .marker(let kind, let anchor, let anchorTan):
+                case .marker(let kind, let anchor):
+                    // Ponto segue dedo 1:1 em ambos os eixos. Snap puxa pra
+                    // pista mais próxima — sensação orgânica em vez de
+                    // marcador "deslizando" só na tangente original.
                     let dx = drag.translation.width / xform.zoom
                     let dy = drag.translation.height / xform.zoom
-                    let amount = dx * anchorTan.0 + dy * anchorTan.1
                     let next = P1FastCore.TrackPoint(
-                        x: anchor.x + amount * anchorTan.0,
-                        y: anchor.y + amount * anchorTan.1
+                        x: anchor.x + dx,
+                        y: anchor.y + dy
                     )
                     let snapped = (lookup.flatMap { snapToPath(next, lookup: $0) }) ?? next
                     setPoint(snapped, for: kind)
@@ -412,10 +416,9 @@ struct ConfiguradorTrechoView: View {
         guard let hit = best, let p = point(for: hit.kind) else {
             return .pan
         }
-        let tangent = pathTangent(at: p) ?? (1, 0)
         // Tap em marcador inativo já vira ativo no mesmo gesto.
         if active != hit.kind { active = hit.kind }
-        return .marker(kind: hit.kind, anchorPoint: p, anchorTangent: tangent)
+        return .marker(kind: hit.kind, anchorPoint: p)
     }
 
     // MARK: - Controles de zoom
