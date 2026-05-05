@@ -659,6 +659,66 @@ public struct TelemetrySample: Codable, FetchableRecord, PersistableRecord {
     }
 }
 
+// MARK: - telemetry_samples_enriched (MS-2.7 PR B, ADR-014: SEM synced_at)
+//
+// Saída do KalmanINSGPS (PR A) persistida por sample. Estado 2D em
+// frame local + heading compass + posSigma + flag sourceKalman.
+// Append-only — nunca update/delete. Sync remoto por batch (volume
+// proibitivo a 10 Hz contínuo).
+public struct TelemetrySampleEnriched: Codable, FetchableRecord, PersistableRecord {
+    public var id: Int64?
+    public var timeId: String
+    public var sessaoId: String
+    public var seq: Int
+    public var t: Int64
+    public var tMono: Double?
+    public var xM: Double
+    public var yM: Double
+    public var vxMps: Double
+    public var vyMps: Double
+    public var headingDeg: Double
+    public var posSigmaM: Double
+    public var sourceKalman: Bool
+    public var uploadedAt: Int64?
+
+    public static let databaseTableName = "telemetry_samples_enriched"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case sessaoId = "sessao_id"
+        case seq, t
+        case tMono = "t_mono"
+        case xM = "x_m"
+        case yM = "y_m"
+        case vxMps = "vx_mps"
+        case vyMps = "vy_mps"
+        case headingDeg = "heading_deg"
+        case posSigmaM = "pos_sigma_m"
+        case sourceKalman = "source_kalman"
+        case uploadedAt = "uploaded_at"
+    }
+
+    public init(id: Int64? = nil, timeId: String, sessaoId: String, seq: Int,
+                t: Int64, tMono: Double? = nil,
+                xM: Double, yM: Double,
+                vxMps: Double, vyMps: Double,
+                headingDeg: Double, posSigmaM: Double,
+                sourceKalman: Bool,
+                uploadedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.sessaoId = sessaoId; self.seq = seq
+        self.t = t; self.tMono = tMono
+        self.xM = xM; self.yM = yM
+        self.vxMps = vxMps; self.vyMps = vyMps
+        self.headingDeg = headingDeg; self.posSigmaM = posSigmaM
+        self.sourceKalman = sourceKalman
+        self.uploadedAt = uploadedAt
+    }
+
+    public mutating func didInsert(_ inserted: InsertionSuccess) {
+        id = inserted.rowID
+    }
+}
+
 // MARK: - licoes (catálogo curado, GLOBAL — sem time_id)
 public struct Licao: Codable, FetchableRecord, PersistableRecord, Equatable {
     public var id: String

@@ -3571,18 +3571,19 @@ func makeTestDB() throws -> DatabaseQueue {
     return q
 }
 
-step("PERSIST-01: makeMemoryQueue + migrations v1..v5 cria 25 tabelas") {
+step("PERSIST-01: makeMemoryQueue + migrations v1..v7 cria 26 tabelas") {
     let q = try DB.makeMemoryQueue()
     let names = try q.read { db in
         try String.fetchAll(db, sql:
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'grdb_%' ORDER BY name"
         )
     }
-    // 20 do Postgres + sync_queue + sync_meta (v2) + licoes (v4) + pendencias_template + evento_pendencias (v5) = 25
-    try assertEq(names.count, 25, "esperava 25 tabelas")
+    // 20 do Postgres + sync_queue + sync_meta (v2) + licoes (v4) + pendencias_template + evento_pendencias (v5)
+    // + telemetry_samples_enriched (v7) = 26
+    try assertEq(names.count, 26, "esperava 26 tabelas")
     for expected in ["times", "carros", "configuracoes", "sessoes", "voltas",
                      "marcos", "retas_especiais", "telemetry_samples",
-                     "sync_queue", "sync_meta"] {
+                     "telemetry_samples_enriched", "sync_queue", "sync_meta"] {
         try assertTrue(names.contains(expected), "tabela \(expected) ausente")
     }
 }
@@ -3596,14 +3597,17 @@ step("PERSIST-02: telemetry_samples NÃO tem coluna synced_at (ADR-014)") {
     try assertTrue(cols.contains("uploaded_at"), "telemetry_samples deve ter uploaded_at")
 }
 
-step("PERSIST-03: todas tabelas (exceto telemetry_samples, sync_queue, sync_meta) têm synced_at") {
+step("PERSIST-03: todas tabelas (exceto telemetria append-only e sync_queue/meta) têm synced_at") {
     let q = try DB.makeMemoryQueue()
     let tables = try q.read { db in
         try String.fetchAll(db, sql:
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'grdb_%'"
         )
     }
-    let semSyncedAt: Set<String> = ["telemetry_samples", "sync_queue", "sync_meta"]
+    // ADR-014: telemetria append-only (telemetry_samples + telemetry_samples_enriched)
+    // não passa por syncQueue. sync_queue/sync_meta são tabelas locais sem synced_at.
+    let semSyncedAt: Set<String> = ["telemetry_samples", "telemetry_samples_enriched",
+                                    "sync_queue", "sync_meta"]
     for name in tables where !semSyncedAt.contains(name) {
         let cols = try q.read { db in
             try Row.fetchAll(db, sql: "PRAGMA table_info(\(name))").map { $0["name"] as String }
@@ -5213,6 +5217,110 @@ step("K-13: projeção mantém sinal correto leste/norte") {
     try assertTrue(eNorth.yM > 0, "yM deveria ser positivo, got \(eNorth.yM)")
     try assertTrue(abs(eNorth.xM) < 1.0, "xM próximo de 0 com deslocamento puro norte, got \(eNorth.xM)")
     try assertTrue(abs(eNorth.yM - 10.0) < 1.0, "yM ≈ 10, got \(eNorth.yM)")
+}
+
+// ════════════════════════════════════════════════════════════
+// telemetry_samples_enriched — MS-2.7 PR B (PLANO_FASE_1)
+// ════════════════════════════════════════════════════════════
+// Persistência da saída do KalmanINSGPS (PR A, #99). Append-only
+// ADR-014: sem synced_at. Schema-only nesta rodada — escrita real
+// chega no PR C (LiveKalmanProcessor consumindo LiveTelemetryRecorder).
+
+step("TSE-01: migration v7_telemetry_samples_enriched criou a tabela e colunas") {
+    let q = try DB.makeMemoryQueue()
+    let cols = try q.read { db in
+        try Row.fetchAll(db, sql: "PRAGMA table_info(telemetry_samples_enriched)")
+            .map { $0["name"] as String }
+    }
+    try assertTrue(!cols.isEmpty, "tabela telemetry_samples_enriched ausente")
+    let expected = ["id", "time_id", "sessao_id", "seq", "t", "t_mono",
+                    "x_m", "y_m", "vx_mps", "vy_mps", "heading_deg",
+                    "pos_sigma_m", "source_kalman", "uploaded_at"]
+    for name in expected {
+        try assertTrue(cols.contains(name), "coluna \(name) ausente")
+    }
+}
+
+step("TSE-02: append-only ADR-014 — SEM coluna synced_at") {
+    let q = try DB.makeMemoryQueue()
+    let cols = try q.read { db in
+        try Row.fetchAll(db, sql: "PRAGMA table_info(telemetry_samples_enriched)")
+            .map { $0["name"] as String }
+    }
+    try assertTrue(!cols.contains("synced_at"),
+                   "telemetry_samples_enriched NÃO deve ter synced_at (ADR-014)")
+}
+
+step("TSE-03: insert + fetch round-trip preserva o estado completo") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var s = Sessao(id: "ses-tse-1", timeId: "team-1", carroId: nil, status: "ativa")
+        try s.insert(db)
+        var row = TelemetrySampleEnriched(
+            timeId: "team-1", sessaoId: "ses-tse-1", seq: 1,
+            t: 1_700_000_000_000, tMono: 12345.678,
+            xM: 1.5, yM: -2.5,
+            vxMps: 30.0, vyMps: -10.0,
+            headingDeg: 270.5, posSigmaM: 1.234,
+            sourceKalman: true
+        )
+        try row.insert(db)
+    }
+    let fetched = try q.read { db in
+        try TelemetrySampleEnriched.fetchOne(db, sql:
+            "SELECT * FROM telemetry_samples_enriched WHERE sessao_id = ? AND seq = ?",
+            arguments: ["ses-tse-1", 1]
+        )
+    }
+    guard let r = fetched else { throw Bad(msg: "row sumiu após insert") }
+    try assertEq(r.timeId, "team-1")
+    try assertEq(r.sessaoId, "ses-tse-1")
+    try assertEq(r.seq, 1)
+    try assertEq(r.t, 1_700_000_000_000)
+    try assertClose(r.tMono, 12345.678)
+    try assertClose(r.xM, 1.5)
+    try assertClose(r.yM, -2.5)
+    try assertClose(r.vxMps, 30.0)
+    try assertClose(r.vyMps, -10.0)
+    try assertClose(r.headingDeg, 270.5)
+    try assertClose(r.posSigmaM, 1.234)
+    try assertEq(r.sourceKalman, true)
+}
+
+step("TSE-04: source_kalman=false (pré-fix) persiste como 0 e roundtrip preserva") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var s = Sessao(id: "ses-tse-2", timeId: "team-1", carroId: nil, status: "ativa")
+        try s.insert(db)
+        var row = TelemetrySampleEnriched(
+            timeId: "team-1", sessaoId: "ses-tse-2", seq: 0,
+            t: 1_700_000_000_000, tMono: 0,
+            xM: 0, yM: 0, vxMps: 0, vyMps: 0,
+            headingDeg: 0, posSigmaM: 1e6,
+            sourceKalman: false
+        )
+        try row.insert(db)
+    }
+    // Confere via SQL bruto que source_kalman é 0 (boolean → INTEGER 0/1).
+    let raw = try q.read { db in
+        try Row.fetchOne(db, sql:
+            "SELECT source_kalman FROM telemetry_samples_enriched WHERE sessao_id = ?",
+            arguments: ["ses-tse-2"]
+        )
+    }
+    guard let rr = raw else { throw Bad(msg: "row sumiu") }
+    let raw0: Int64 = rr["source_kalman"]
+    try assertEq(raw0, 0, "source_kalman=false deveria persistir como 0")
+    // Roundtrip Codable preserva o Bool.
+    let fetched = try q.read { db in
+        try TelemetrySampleEnriched.fetchOne(db, sql:
+            "SELECT * FROM telemetry_samples_enriched WHERE sessao_id = ?",
+            arguments: ["ses-tse-2"]
+        )
+    }
+    guard let r = fetched else { throw Bad(msg: "row sumiu no Codable fetch") }
+    try assertEq(r.sourceKalman, false)
+    try assertClose(r.posSigmaM, 1e6)
 }
 
 step("K-14: integração cinemática básica — 1m/s² por 1s ≈ 1m/s e 0.5m") {
