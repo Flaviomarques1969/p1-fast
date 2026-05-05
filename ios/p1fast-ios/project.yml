@@ -18,10 +18,14 @@ settings:
   base:
     SWIFT_VERSION: "5.9"
     GENERATE_INFOPLIST_FILE: NO
-    DEVELOPMENT_TEAM: ""
-    CODE_SIGN_IDENTITY: ""
-    CODE_SIGNING_REQUIRED: NO
-    CODE_SIGNING_ALLOWED: NO
+    # Personal Team Flávio (Q7232XJKXY) — assinatura automática pro device físico.
+    # Antes era unsigned (only-simulator) — bloqueou install no iPhone real em
+    # 2026-05-05. Mantém Apple Development cert (não distribution).
+    DEVELOPMENT_TEAM: Q7232XJKXY
+    CODE_SIGN_STYLE: Automatic
+    CODE_SIGN_IDENTITY: Apple Development
+    CODE_SIGNING_REQUIRED: YES
+    CODE_SIGNING_ALLOWED: YES
     TARGETED_DEVICE_FAMILY: "1"
 
 configFiles:
