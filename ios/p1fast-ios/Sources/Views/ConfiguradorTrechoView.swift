@@ -443,24 +443,14 @@ struct ConfiguradorTrechoView: View {
         return (p1, p2)
     }
 
-    /// Distância 2D padrão de `p` até o segmento [a, b], com projeção
-    /// clampada a [0,1] pra não cair na reta infinita. Quando a barra
-    /// degenera num ponto (zoom mínimo), cai pra distância euclidiana.
+    /// Wrapper em CGPoint sobre `Geometry2D.pointToSegmentDistance` —
+    /// lógica numérica vive no core e é exercitada pelo smoke harness.
     private func distanceFromPoint(_ p: CGPoint, toLineFrom a: CGPoint, to b: CGPoint) -> Double {
-        let abx = Double(b.x - a.x)
-        let aby = Double(b.y - a.y)
-        let apx = Double(p.x - a.x)
-        let apy = Double(p.y - a.y)
-        let lenSq = abx * abx + aby * aby
-        if lenSq < 1e-9 {
-            return (apx * apx + apy * apy).squareRoot()
-        }
-        let t = max(0, min(1, (apx * abx + apy * aby) / lenSq))
-        let projX = Double(a.x) + t * abx
-        let projY = Double(a.y) + t * aby
-        let dx = Double(p.x) - projX
-        let dy = Double(p.y) - projY
-        return (dx * dx + dy * dy).squareRoot()
+        Geometry2D.pointToSegmentDistance(
+            px: Double(p.x), py: Double(p.y),
+            ax: Double(a.x), ay: Double(a.y),
+            bx: Double(b.x), by: Double(b.y)
+        )
     }
 
     // MARK: - Controles de zoom
