@@ -63,13 +63,20 @@ struct ConfiguradorTrechoView: View {
     @State private var didLoad = false
     @State private var lookup: PathMapper.Lookup?
 
-    /// Estado do drag em curso: âncora capturada no início do gesto.
-    /// `drag.translation` é cumulativa desde o start, então só dá pra
-    /// converter pra nova posição se preservarmos o ponto inicial.
-    /// Sem isso, cada onChanged adicionava translação SOBRE o ponto já
-    /// movido — marcador acelerava / pulava.
-    @State private var dragAnchorPoint: P1FastCore.TrackPoint?
-    @State private var dragAnchorTangent: (Double, Double)?
+    /// Modo do drag em curso. Decidido no PRIMEIRO onChanged via hit-test:
+    /// se o toque iniciou perto de um marcador, vira `.marker(kind, ancora)`
+    /// e arrasta só esse ponto até onEnded; caso contrário, vira `.pan` e
+    /// desliza a vista. Pinch é gesture separado (não conflita com drag).
+    /// `nil` = sem drag em curso.
+    private enum DragMode {
+        case marker(kind: CanonicalPointKind, anchorPoint: P1FastCore.TrackPoint, anchorTangent: (Double, Double))
+        case pan
+    }
+    @State private var dragMode: DragMode?
+    /// Raio em pontos pra hit-test do marcador. Generoso (40pt) pra perdoar
+    /// toque impreciso de dedo. Inclui marcador inativo — tocar nele já
+    /// ativa e arrasta no mesmo gesto (sem precisar do pill primeiro).
+    private let markerHitRadius: Double = 40
 
     /// Zoom multiplicador sobre o `focusWindow` base. >1 amplia (mais perto),
     /// <1 afasta. Persistido enquanto o trecho não troca; reseta no
@@ -279,34 +286,25 @@ struct ConfiguradorTrechoView: View {
             let xform = transform(in: geo.size)
 
             ZStack(alignment: .topLeading) {
-                // Camada de gestos do mapa (pinch + pan) — fica no fundo
-                // pra não roubar o drag do marcador ativo (Capsule por
-                // cima, hit-area menor).
-                Color.clear
-                    .contentShape(Rectangle())
-                    .gesture(panGesture)
-                    .simultaneousGesture(pinchGesture)
-
-                // Pista corredor
+                // Pista corredor — apenas visual, sem hit-test próprio.
+                // Toque em qualquer parte do mapa cai no orquestrador único
+                // de drag/pan logo abaixo (.contentShape no ZStack).
                 trackPath(xform: xform)
                     .stroke(
                         Color.textFaint.opacity(0.35),
                         style: StrokeStyle(lineWidth: trackBorderWidth * xform.zoom, lineCap: .round, lineJoin: .round)
                     )
-                    .allowsHitTesting(false)
                 trackPath(xform: xform)
                     .stroke(
                         Color.surfaceRaised,
                         style: StrokeStyle(lineWidth: trackWidth * xform.zoom, lineCap: .round, lineJoin: .round)
                     )
-                    .allowsHitTesting(false)
 
-                // Chevrons direção (cinzas, ao longo do path no entorno do focus)
                 directionChevrons(xform: xform)
-                    .allowsHitTesting(false)
 
                 // Marcadores — desenhados em ordem inversa de prioridade pra
-                // que o ATIVO (último) fique por cima.
+                // que o ATIVO (último) fique por cima. Puramente visuais —
+                // gestos vão pelo orquestrador no .contentShape do ZStack.
                 ForEach(CanonicalPointKind.allCases) { kind in
                     if kind != active, let p = point(for: kind) {
                         perpTick(point: p, kind: kind, xform: xform, isActive: false)
@@ -315,14 +313,20 @@ struct ConfiguradorTrechoView: View {
                 if let p = point(for: active) {
                     perpTick(point: p, kind: active, xform: xform, isActive: true)
                 }
-
-                // Controles de zoom no canto superior direito
-                zoomControls
-                    .padding(8)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             }
             .frame(width: geo.size.width, height: geo.size.height)
+            .contentShape(Rectangle())
+            // ÚNICO drag do canvas: hit-test no início decide se vai
+            // arrastar marcador (perto de algum) ou panar a vista. Pinch é
+            // gesture independente, roda em paralelo via simultaneousGesture.
+            .gesture(canvasDrag(xform: xform))
+            .simultaneousGesture(pinchGesture)
             .clipShape(RoundedRectangle(cornerRadius: 12))
+            // Controles de zoom ficam FORA da camada de drag — overlay
+            // tem hit-test próprio e captura tap antes do canvasDrag.
+            .overlay(alignment: .topTrailing) {
+                zoomControls.padding(8)
+            }
         }
         .aspectRatio(1.0, contentMode: .fit)
         .background(
@@ -347,21 +351,71 @@ struct ConfiguradorTrechoView: View {
             }
     }
 
-    /// Pan acumula em `panInProgress` durante o gesto; no fim soma em
-    /// `panOffset` permanente. Pequenos taps (<3pt) viram no-op pra não
-    /// "deslizar" sem querer ao tocar marcador.
-    private var panGesture: some Gesture {
-        DragGesture(minimumDistance: 3)
-            .onChanged { value in
-                panInProgress = value.translation
+    /// Orquestrador único de drag no canvas. Decide modo no PRIMEIRO
+    /// onChanged via hit-test:
+    /// - se posição inicial cai dentro de `markerHitRadius` de algum
+    ///   marcador (entry/apex/exit), entra em `.marker(kind, ancora)` —
+    ///   ativa esse marcador (se inativo) e arrasta só ele até onEnded.
+    /// - senão, entra em `.pan` e desliza a vista.
+    /// Modo persiste no estado pelo gesto inteiro (não re-decide a cada
+    /// onChanged), pra evitar que o marcador "fugir" do dedo entre os
+    /// frames vire pan acidental.
+    private func canvasDrag(xform: ViewTransform) -> some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { drag in
+                if dragMode == nil {
+                    dragMode = decideDragMode(at: drag.startLocation, xform: xform)
+                }
+                guard let mode = dragMode else { return }
+                switch mode {
+                case .marker(let kind, let anchor, let anchorTan):
+                    let dx = drag.translation.width / xform.zoom
+                    let dy = drag.translation.height / xform.zoom
+                    let amount = dx * anchorTan.0 + dy * anchorTan.1
+                    let next = P1FastCore.TrackPoint(
+                        x: anchor.x + amount * anchorTan.0,
+                        y: anchor.y + amount * anchorTan.1
+                    )
+                    let snapped = (lookup.flatMap { snapToPath(next, lookup: $0) }) ?? next
+                    setPoint(snapped, for: kind)
+                case .pan:
+                    panInProgress = drag.translation
+                }
             }
-            .onEnded { value in
-                panOffset = CGSize(
-                    width: panOffset.width + value.translation.width,
-                    height: panOffset.height + value.translation.height
-                )
-                panInProgress = .zero
+            .onEnded { drag in
+                if case .pan = dragMode {
+                    panOffset = CGSize(
+                        width: panOffset.width + drag.translation.width,
+                        height: panOffset.height + drag.translation.height
+                    )
+                    panInProgress = .zero
+                }
+                dragMode = nil
             }
+    }
+
+    /// Hit-test: devolve o marcador mais próximo do toque inicial (em pts
+    /// da tela) se estiver dentro de `markerHitRadius`. Ativa-o se ainda
+    /// não for o ativo. Senão devolve `.pan`.
+    private func decideDragMode(at touch: CGPoint, xform: ViewTransform) -> DragMode {
+        var best: (kind: CanonicalPointKind, dist: Double)?
+        for kind in CanonicalPointKind.allCases {
+            guard let p = point(for: kind) else { continue }
+            let screen = xform.apply(p)
+            let dx = Double(touch.x - screen.x)
+            let dy = Double(touch.y - screen.y)
+            let d = (dx * dx + dy * dy).squareRoot()
+            if d <= markerHitRadius && (best == nil || d < best!.dist) {
+                best = (kind, d)
+            }
+        }
+        guard let hit = best, let p = point(for: hit.kind) else {
+            return .pan
+        }
+        let tangent = pathTangent(at: p) ?? (1, 0)
+        // Tap em marcador inativo já vira ativo no mesmo gesto.
+        if active != hit.kind { active = hit.kind }
+        return .marker(kind: hit.kind, anchorPoint: p, anchorTangent: tangent)
     }
 
     // MARK: - Controles de zoom
@@ -498,46 +552,8 @@ struct ConfiguradorTrechoView: View {
                 .tracking(0.8)
                 .foregroundStyle(c.opacity(opacity))
                 .position(labelPos)
-
-            // Hit-area só pra o ATIVO captura drag — generosa (80×60)
-            // pra perdoar tap impreciso.
-            if isActive {
-                Capsule()
-                    .fill(Color.clear)
-                    .frame(width: tickLength * xform.zoom + 60, height: 60)
-                    .rotationEffect(.radians(atan2(tangent.1, tangent.0)))
-                    .position(center)
-                    .contentShape(Capsule())
-                    .gesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { drag in
-                                // Captura âncora no PRIMEIRO onChanged
-                                if dragAnchorPoint == nil {
-                                    dragAnchorPoint = p
-                                    dragAnchorTangent = tangent
-                                }
-                                guard let anchor = dragAnchorPoint,
-                                      let anchorTan = dragAnchorTangent else { return }
-                                let dx = drag.translation.width / xform.zoom
-                                let dy = drag.translation.height / xform.zoom
-                                let amount = dx * anchorTan.0 + dy * anchorTan.1
-                                let next = P1FastCore.TrackPoint(
-                                    x: anchor.x + amount * anchorTan.0,
-                                    y: anchor.y + amount * anchorTan.1
-                                )
-                                if let lookup, let snapped = snapToPath(next, lookup: lookup) {
-                                    setPoint(snapped, for: kind)
-                                } else {
-                                    setPoint(next, for: kind)
-                                }
-                            }
-                            .onEnded { _ in
-                                dragAnchorPoint = nil
-                                dragAnchorTangent = nil
-                            }
-                    )
-            }
         }
+        .allowsHitTesting(false)
     }
 
     // MARK: - Help text
