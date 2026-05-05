@@ -53,7 +53,14 @@ struct ConfiguradorTrechoView: View {
     }
 
     @State private var entry: P1FastCore.TrackPoint?
-    @State private var apex: P1FastCore.TrackPoint?
+    /// Lista de 0..3 ápices na ordem em que aparecem no path. Curva pode
+    /// ter chicane / S / dupla — Adriana decide; o configurador permite
+    /// até 3. Quando vazia, a curva ainda não tem apex calibrado.
+    @State private var apexes: [P1FastCore.TrackPoint] = []
+    /// Índice do ápice "ativo" dentro de `apexes`. Usado quando o usuário
+    /// arrasta sem tocar num círculo específico (ex: pediu adicionar ou
+    /// está selecionando via setas). Ignorado quando `apexes` está vazio.
+    @State private var activeApexIdx: Int = 0
     @State private var exitP: P1FastCore.TrackPoint?
     /// Apenas leitura no configurador — preservado no save.
     @State private var existingBraking: P1FastCore.TrackPoint?
@@ -63,24 +70,25 @@ struct ConfiguradorTrechoView: View {
     @State private var didLoad = false
     @State private var lookup: PathMapper.Lookup?
 
+    private static let maxApexes: Int = 3
+
     /// Modo do drag em curso. Decidido no PRIMEIRO onChanged via hit-test:
-    /// se o toque iniciou perto de um marcador, vira `.marker(kind, ancora)`
-    /// e arrasta só esse ponto até onEnded; caso contrário, vira `.pan` e
-    /// desliza a vista. Pinch é gesture separado (não conflita com drag).
+    /// se o toque iniciou perto de um marcador, vira `.marker*` e arrasta
+    /// só esse ponto até onEnded; caso contrário, vira `.pan` e desliza
+    /// a vista. Pinch é gesture separado (não conflita com drag).
     /// `nil` = sem drag em curso. Sem tangente — o ponto segue o dedo
-    /// livremente em ambos os eixos; o snap puxa pra pista mais próxima
-    /// (sensação orgânica em vez de marcador "deslizando" só na linha).
+    /// livremente em ambos os eixos; o snap puxa pra pista mais próxima.
     private enum DragMode {
-        case marker(kind: CanonicalPointKind, anchorPoint: P1FastCore.TrackPoint)
+        case markerLine(kind: CanonicalPointKind, anchor: P1FastCore.TrackPoint)
+        case markerApex(idx: Int, anchor: P1FastCore.TrackPoint)
         case pan
     }
     @State private var dragMode: DragMode?
-    /// Tolerância em pontos da tela pra hit-test do marcador, medida como
-    /// distância ponto-SEGMENTO até a barrinha visível (não ponto-centro).
-    /// 30pt cobre toda a barra rotacionada + perdoa toque impreciso. Match
-    /// natural com o que o usuário vê: tocou na barra, arrastou; tocou
-    /// fora dela, panou. Inclui marcador inativo — tocar já ativa e
-    /// arrasta no mesmo gesto.
+    /// Tolerância em pontos da tela pra hit-test dos marcadores. Entry/exit
+    /// usam distância ponto-SEGMENTO até a barrinha visível; apex usa
+    /// distância euclidiana até o centro do círculo numerado. 30pt cobre
+    /// toda a barra rotacionada + perdoa toque impreciso, e dá ~10pt de
+    /// folga em torno do disco do apex (raio 9pt do ativo).
     private let markerHitTolerance: Double = 30
 
     /// Zoom multiplicador sobre o `focusWindow` base. >1 amplia (mais perto),
@@ -117,20 +125,37 @@ struct ConfiguradorTrechoView: View {
         }
     }
 
+    /// Devolve o ponto referente ao kind. Pra `.apex`, é o ápice ativo
+    /// (`apexes[activeApexIdx]`) — quando há mais de um, "o apex" se
+    /// refere ao em foco. Nil quando não há nenhum cadastrado.
     private func point(for kind: CanonicalPointKind) -> P1FastCore.TrackPoint? {
         switch kind {
         case .entry: return entry
-        case .apex:  return apex
+        case .apex:  return activeApex
         case .exit:  return exitP
         }
+    }
+
+    private var activeApex: P1FastCore.TrackPoint? {
+        guard !apexes.isEmpty else { return nil }
+        let idx = max(0, min(apexes.count - 1, activeApexIdx))
+        return apexes[idx]
     }
 
     private func setPoint(_ p: P1FastCore.TrackPoint, for kind: CanonicalPointKind) {
         switch kind {
         case .entry: entry = p
-        case .apex:  apex = p
+        case .apex:
+            guard !apexes.isEmpty else { return }
+            let idx = max(0, min(apexes.count - 1, activeApexIdx))
+            apexes[idx] = p
         case .exit:  exitP = p
         }
+    }
+
+    private func setApex(_ p: P1FastCore.TrackPoint, at idx: Int) {
+        guard apexes.indices.contains(idx) else { return }
+        apexes[idx] = p
     }
 
     var body: some View {
@@ -142,6 +167,12 @@ struct ConfiguradorTrechoView: View {
             selector
                 .padding(.horizontal, 12)
                 .padding(.top, 12)
+
+            if active == .apex {
+                apexActions
+                    .padding(.horizontal, 12)
+                    .padding(.top, 8)
+            }
 
             mapCanvas
                 .padding(.horizontal, 12)
@@ -167,7 +198,8 @@ struct ConfiguradorTrechoView: View {
             // re-enquadra o zoom/pan no novo focus.
             didLoad = false
             lookup = nil
-            entry = nil; apex = nil; exitP = nil; existingBraking = nil
+            entry = nil; apexes = []; activeApexIdx = 0
+            exitP = nil; existingBraking = nil
             active = .entry
             resetView()
             loadPoints()
@@ -266,7 +298,7 @@ struct ConfiguradorTrechoView: View {
                     .background(
                         Circle().fill(isActive ? c : c.opacity(0.18))
                     )
-                Text(kind.shortName)
+                Text(pillLabel(for: kind))
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(isActive ? Color.text : Color.textMuted)
             }
@@ -282,6 +314,107 @@ struct ConfiguradorTrechoView: View {
             )
         }
         .buttonStyle(.plain)
+    }
+
+    /// Label da pill — pra apex acrescenta contador "(n/N)" quando há
+    /// mais de 1 apex no trecho.
+    private func pillLabel(for kind: CanonicalPointKind) -> String {
+        guard kind == .apex, apexes.count > 1 else { return kind.shortName }
+        let n = max(0, min(apexes.count - 1, activeApexIdx)) + 1
+        return "\(kind.shortName) \(n)/\(apexes.count)"
+    }
+
+    /// Barra de ações específica do .apex — adicionar / remover / navegar
+    /// entre os ápices da curva. Aparece só quando o ápice está ativo.
+    private var apexActions: some View {
+        HStack(spacing: 8) {
+            // − (remover ápice ativo). Esconde quando há ≤1 — não bloqueia
+            // a configuração inicial de curvas que tinham 1 só.
+            if apexes.count > 1 {
+                Button {
+                    removeActiveApex()
+                } label: {
+                    actionPillLabel(systemName: "minus", text: "Remover ápice")
+                }
+                .buttonStyle(.plain)
+            }
+            // Setas pra navegar entre ápices só quando há mais de 1
+            if apexes.count > 1 {
+                Button {
+                    activeApexIdx = (activeApexIdx - 1 + apexes.count) % apexes.count
+                } label: {
+                    actionPillLabel(systemName: "chevron.left", text: nil, compact: true)
+                }
+                .buttonStyle(.plain)
+                Button {
+                    activeApexIdx = (activeApexIdx + 1) % apexes.count
+                } label: {
+                    actionPillLabel(systemName: "chevron.right", text: nil, compact: true)
+                }
+                .buttonStyle(.plain)
+            }
+            // + (adicionar ápice). Esconde quando atingiu o teto.
+            if apexes.count < Self.maxApexes {
+                Button {
+                    addApex()
+                } label: {
+                    actionPillLabel(systemName: "plus", text: "Adicionar ápice")
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func actionPillLabel(systemName: String, text: String?, compact: Bool = false) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: systemName)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(Color.text)
+            if let text {
+                Text(text)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.text)
+            }
+        }
+        .padding(.horizontal, compact ? 10 : 12)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.surfaceRaised)
+        )
+    }
+
+    /// Adiciona um ápice novo. Posição inicial: ponto médio entre o
+    /// último apex existente e o exit (ou centro do trecho se não houver
+    /// referência), passando pelo snap pro path. Vira o apex ativo.
+    private func addApex() {
+        guard apexes.count < Self.maxApexes else { return }
+        let seed = apexSeedPoint()
+        let snapped = (lookup.flatMap { snapToPath(seed, lookup: $0) }) ?? seed
+        apexes.append(snapped)
+        activeApexIdx = apexes.count - 1
+        active = .apex
+    }
+
+    private func apexSeedPoint() -> P1FastCore.TrackPoint {
+        if let last = apexes.last, let exitP {
+            return P1FastCore.TrackPoint(
+                x: (last.x + exitP.x) / 2,
+                y: (last.y + exitP.y) / 2
+            )
+        }
+        if let last = apexes.last {
+            return P1FastCore.TrackPoint(x: last.x + 12, y: last.y + 12)
+        }
+        // Fallback: focusCenter da curva
+        return focusCenter
+    }
+
+    private func removeActiveApex() {
+        guard apexes.count > 1, apexes.indices.contains(activeApexIdx) else { return }
+        apexes.remove(at: activeApexIdx)
+        if activeApexIdx >= apexes.count { activeApexIdx = apexes.count - 1 }
     }
 
     // MARK: - Map
@@ -307,16 +440,33 @@ struct ConfiguradorTrechoView: View {
 
                 directionChevrons(xform: xform)
 
-                // Marcadores — desenhados em ordem inversa de prioridade pra
-                // que o ATIVO (último) fique por cima. Puramente visuais —
-                // gestos vão pelo orquestrador no .contentShape do ZStack.
-                ForEach(CanonicalPointKind.allCases) { kind in
+                // Marcadores — barra rotacionada pra entry/exit; ápices são
+                // círculos numerados (até 3). Ordem de desenho: inativos
+                // primeiro, ativo em cima, pra ATIVO ganhar visibilidade.
+                ForEach([CanonicalPointKind.entry, .exit], id: \.self) { kind in
                     if kind != active, let p = point(for: kind) {
                         perpTick(point: p, kind: kind, xform: xform, isActive: false)
                     }
                 }
-                if let p = point(for: active) {
-                    perpTick(point: p, kind: active, xform: xform, isActive: true)
+                ForEach(Array(apexes.enumerated()), id: \.offset) { idx, p in
+                    let isActiveApex = (active == .apex && idx == activeApexIdx)
+                    if !isActiveApex {
+                        apexDot(point: p, idx: idx, xform: xform, isActive: false)
+                    }
+                }
+                if active == .entry, let p = entry {
+                    perpTick(point: p, kind: .entry, xform: xform, isActive: true)
+                }
+                if active == .exit, let p = exitP {
+                    perpTick(point: p, kind: .exit, xform: xform, isActive: true)
+                }
+                if active == .apex, apexes.indices.contains(activeApexIdx) {
+                    apexDot(
+                        point: apexes[activeApexIdx],
+                        idx: activeApexIdx,
+                        xform: xform,
+                        isActive: true
+                    )
                 }
             }
             .frame(width: geo.size.width, height: geo.size.height)
@@ -358,13 +508,10 @@ struct ConfiguradorTrechoView: View {
 
     /// Orquestrador único de drag no canvas. Decide modo no PRIMEIRO
     /// onChanged via hit-test:
-    /// - se posição inicial cai dentro de `markerHitRadius` de algum
-    ///   marcador (entry/apex/exit), entra em `.marker(kind, ancora)` —
-    ///   ativa esse marcador (se inativo) e arrasta só ele até onEnded.
-    /// - senão, entra em `.pan` e desliza a vista.
-    /// Modo persiste no estado pelo gesto inteiro (não re-decide a cada
-    /// onChanged), pra evitar que o marcador "fugir" do dedo entre os
-    /// frames vire pan acidental.
+    /// - perto de um dos ápices (círculo numerado): `.markerApex(idx, ancora)`
+    /// - perto da barrinha de entry ou exit (ponto-segmento): `.markerLine(kind, ancora)`
+    /// - senão, `.pan`.
+    /// Modo persiste pelo gesto inteiro (não re-decide a cada onChanged).
     private func canvasDrag(xform: ViewTransform) -> some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { drag in
@@ -373,18 +520,12 @@ struct ConfiguradorTrechoView: View {
                 }
                 guard let mode = dragMode else { return }
                 switch mode {
-                case .marker(let kind, let anchor):
-                    // Ponto segue dedo 1:1 em ambos os eixos. Snap puxa pra
-                    // pista mais próxima — sensação orgânica em vez de
-                    // marcador "deslizando" só na tangente original.
-                    let dx = drag.translation.width / xform.zoom
-                    let dy = drag.translation.height / xform.zoom
-                    let next = P1FastCore.TrackPoint(
-                        x: anchor.x + dx,
-                        y: anchor.y + dy
-                    )
-                    let snapped = (lookup.flatMap { snapToPath(next, lookup: $0) }) ?? next
-                    setPoint(snapped, for: kind)
+                case .markerLine(let kind, let anchor):
+                    let next = movedPoint(anchor: anchor, drag: drag, xform: xform)
+                    setPoint(next, for: kind)
+                case .markerApex(let idx, let anchor):
+                    let next = movedPoint(anchor: anchor, drag: drag, xform: xform)
+                    setApex(next, at: idx)
                 case .pan:
                     panInProgress = drag.translation
                 }
@@ -401,29 +542,58 @@ struct ConfiguradorTrechoView: View {
             }
     }
 
-    /// Hit-test ponto-SEGMENTO: cada marcador é uma linha rotacionada de
-    /// 56pt (após zoom/scale). O hit antigo era ponto-centro com raio 40pt
-    /// — em zoom alto, tocar na ponta da barrinha caía fora do raio e o
-    /// gesto virava pan acidental. Aqui calculamos a distância do toque
-    /// até o segmento da barra (mesmas coords da tela usadas pra desenhar
-    /// o tick) e batemos contra `markerHitTolerance` (30pt). Cobre a barra
-    /// inteira + folga generosa pra dedo. Em empate, vence o mais próximo.
+    /// Aplica translation 1:1 no ponto âncora e snap-a pro path mais
+    /// próximo. Ponto segue dedo em ambos os eixos.
+    private func movedPoint(
+        anchor: P1FastCore.TrackPoint,
+        drag: DragGesture.Value,
+        xform: ViewTransform
+    ) -> P1FastCore.TrackPoint {
+        let dx = drag.translation.width / xform.zoom
+        let dy = drag.translation.height / xform.zoom
+        let next = P1FastCore.TrackPoint(x: anchor.x + dx, y: anchor.y + dy)
+        return (lookup.flatMap { snapToPath(next, lookup: $0) }) ?? next
+    }
+
+    /// Hit-test misto: entry/exit usam ponto-SEGMENTO até a barrinha;
+    /// ápices usam ponto-CÍRCULO até o centro. Em empate (ex: ápice
+    /// próximo da entry), vence o mais próximo independente do tipo.
     private func decideDragMode(at touch: CGPoint, xform: ViewTransform) -> DragMode {
-        var best: (kind: CanonicalPointKind, dist: Double)?
-        for kind in CanonicalPointKind.allCases {
+        struct Candidate {
+            enum Hit { case line(CanonicalPointKind), apex(Int) }
+            let hit: Hit
+            let dist: Double
+        }
+        var best: Candidate?
+
+        for kind in [CanonicalPointKind.entry, .exit] {
             guard let p = point(for: kind) else { continue }
             let (p1, p2) = markerSegmentScreen(for: p, kind: kind, xform: xform)
             let d = distanceFromPoint(touch, toLineFrom: p1, to: p2)
             if d <= markerHitTolerance && (best == nil || d < best!.dist) {
-                best = (kind, d)
+                best = .init(hit: .line(kind), dist: d)
             }
         }
-        guard let hit = best, let p = point(for: hit.kind) else {
-            return .pan
+        for (idx, p) in apexes.enumerated() {
+            let center = xform.apply(p)
+            let dx = Double(touch.x - center.x)
+            let dy = Double(touch.y - center.y)
+            let d = (dx * dx + dy * dy).squareRoot()
+            if d <= markerHitTolerance && (best == nil || d < best!.dist) {
+                best = .init(hit: .apex(idx), dist: d)
+            }
         }
-        // Tap em marcador inativo já vira ativo no mesmo gesto.
-        if active != hit.kind { active = hit.kind }
-        return .marker(kind: hit.kind, anchorPoint: p)
+
+        guard let hit = best else { return .pan }
+        switch hit.hit {
+        case .line(let kind):
+            if active != kind { active = kind }
+            return .markerLine(kind: kind, anchor: point(for: kind) ?? .init(x: 0, y: 0))
+        case .apex(let idx):
+            if active != .apex { active = .apex }
+            activeApexIdx = idx
+            return .markerApex(idx: idx, anchor: apexes[idx])
+        }
     }
 
     /// Pontas (p1, p2) da barrinha visível em coords de tela — mesmo
@@ -591,6 +761,56 @@ struct ConfiguradorTrechoView: View {
         .allowsHitTesting(false)
     }
 
+    /// Apex como ponto: círculo numerado vermelho, sem barra perpendicular.
+    /// Curva pode ter até 3 — `idx` numera 1..3 na ordem do array. Ativo
+    /// ganha glow + diâmetro maior (18pt vs 14pt). Label "ÁPICE n" sai
+    /// pela perpendicular da tangente local pra não esconder a pista.
+    private func apexDot(
+        point p: P1FastCore.TrackPoint,
+        idx: Int,
+        xform: ViewTransform,
+        isActive: Bool
+    ) -> some View {
+        let c = color(for: .apex)
+        let opacity: Double = isActive ? 1.0 : 0.45
+        let diameter: Double = isActive ? 18 : 14
+        let center = xform.apply(p)
+        let tangent = pathTangent(at: p) ?? (1, 0)
+        let perp = (-tangent.1, tangent.0)
+        // Label fica deslocado pela perpendicular do path, sempre pro
+        // mesmo lado dos labels de entry/exit (perp positiva).
+        let labelOffset: Double = 22
+        let labelPos = xform.apply(P1FastCore.TrackPoint(
+            x: p.x + perp.0 * labelOffset,
+            y: p.y + perp.1 * labelOffset
+        ))
+
+        return ZStack(alignment: .topLeading) {
+            if isActive {
+                Circle()
+                    .fill(c.opacity(0.35))
+                    .frame(width: diameter * 2, height: diameter * 2)
+                    .blur(radius: 6)
+                    .position(center)
+            }
+            ZStack {
+                Circle().fill(c.opacity(opacity))
+                Text("\(idx + 1)")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(Color.surface)
+            }
+            .frame(width: diameter, height: diameter)
+            .position(center)
+
+            Text("ÁPICE\(apexes.count > 1 ? " \(idx + 1)" : "")")
+                .font(.system(size: 9, weight: .bold))
+                .tracking(0.8)
+                .foregroundStyle(c.opacity(opacity))
+                .position(labelPos)
+        }
+        .allowsHitTesting(false)
+    }
+
     // MARK: - Help text
 
     private var helpText: some View {
@@ -736,7 +956,7 @@ struct ConfiguradorTrechoView: View {
         if let blob = repo.geometria(forSegmentId: segmentId) {
             return P1FastCore.TrackPoint(x: blob.x, y: blob.y)
         }
-        let pts = [entry, apex, exitP].compactMap { $0 }
+        let pts = ([entry, exitP].compactMap { $0 }) + apexes
         guard !pts.isEmpty else { return P1FastCore.TrackPoint(x: 412, y: 400) }
         let cx = pts.map(\.x).reduce(0, +) / Double(pts.count)
         let cy = pts.map(\.y).reduce(0, +) / Double(pts.count)
@@ -788,7 +1008,16 @@ struct ConfiguradorTrechoView: View {
         let cx = blob?.x ?? 412
         let cy = blob?.y ?? 400
         entry = blob?.entryPoint ?? P1FastCore.TrackPoint(x: cx - 60, y: cy - 60)
-        apex = blob?.apexReference ?? P1FastCore.TrackPoint(x: cx, y: cy)
+        // Apex é lista de 0..3. Blob legacy aparece como singleton.
+        // Pra garantir que toda curva tenha pelo menos 1 apex visível
+        // logo de cara (não quebrar fluxo do trecho recém-aberto), seed
+        // um apex no centro quando a lista está vazia.
+        if let stored = blob?.apexReferences, !stored.isEmpty {
+            apexes = Array(stored.prefix(Self.maxApexes))
+        } else {
+            apexes = [P1FastCore.TrackPoint(x: cx, y: cy)]
+        }
+        activeApexIdx = 0
         exitP = blob?.exitPoint ?? P1FastCore.TrackPoint(x: cx + 50, y: cy + 50)
         existingBraking = blob?.brakingPoint  // só preserva, não edita
     }
@@ -856,7 +1085,7 @@ struct ConfiguradorTrechoView: View {
                 // no DB (pode ser nil se nunca foi calculado ainda).
                 try await repo.updateCanonicalPoints(
                     segmentId: segmentId,
-                    entry: entry, braking: existingBraking, apex: apex, exit: exitP,
+                    entry: entry, braking: existingBraking, apexes: apexes, exit: exitP,
                     markCalibrated: true
                 )
                 saving = false
@@ -875,7 +1104,7 @@ struct ConfiguradorTrechoView: View {
             do {
                 try await repo.updateCanonicalPoints(
                     segmentId: segmentId,
-                    entry: entry, braking: existingBraking, apex: apex, exit: exitP,
+                    entry: entry, braking: existingBraking, apexes: apexes, exit: exitP,
                     markCalibrated: true
                 )
                 saving = false
