@@ -32,6 +32,7 @@
 		736D869211707A62F9693C61 /* P1FastCore in Frameworks */ = {isa = PBXBuildFile; productRef = B3F0276D699418949A723AA1 /* P1FastCore */; };
 		73AF37D86286B893F9C9FD29 /* LowPowerModeMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12D3CA77D8F9695EEC42D36E /* LowPowerModeMonitor.swift */; };
 		A11C7E3D2F7C4E1B0A1B0001 /* LiveKalmanProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11C7E3D2F7C4E1B0A1B0002 /* LiveKalmanProcessor.swift */; };
+		C22D6F1E2F8B4F2C0B3D0001 /* LiveDetectorBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = C22D6F1E2F8B4F2C0B3D0002 /* LiveDetectorBridge.swift */; };
 		7D1256B5A41AB5798808ACD9 /* TelemetriaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1298033562868A4C30B884D8 /* TelemetriaView.swift */; };
 		7D9C6DCB181D22F53E8E0AC4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 839526E2A03B6C2ED09D4907 /* ContentView.swift */; };
 		82318A9F1DB6BFFD6D20BB07 /* SummaryStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = B17051FF421D051EE979161D /* SummaryStats.swift */; };
@@ -79,6 +80,7 @@
 		1298033562868A4C30B884D8 /* TelemetriaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetriaView.swift; sourceTree = "<group>"; };
 		12D3CA77D8F9695EEC42D36E /* LowPowerModeMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LowPowerModeMonitor.swift; sourceTree = "<group>"; };
 		A11C7E3D2F7C4E1B0A1B0002 /* LiveKalmanProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveKalmanProcessor.swift; sourceTree = "<group>"; };
+		C22D6F1E2F8B4F2C0B3D0002 /* LiveDetectorBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveDetectorBridge.swift; sourceTree = "<group>"; };
 		139F414C2942139A9367A3B2 /* EventoMockSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventoMockSummary.swift; sourceTree = "<group>"; };
 		162332DAA2D671F61DFE3881 /* StintModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StintModalView.swift; sourceTree = "<group>"; };
 		2285A445626E15C137E07CCA /* CarroRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarroRepository.swift; sourceTree = "<group>"; };
@@ -161,6 +163,7 @@
 			children = (
 				053AA78D342F7B78C9FFC17E /* LiveTelemetryRecorder.swift */,
 				A11C7E3D2F7C4E1B0A1B0002 /* LiveKalmanProcessor.swift */,
+				C22D6F1E2F8B4F2C0B3D0002 /* LiveDetectorBridge.swift */,
 				12D3CA77D8F9695EEC42D36E /* LowPowerModeMonitor.swift */,
 			);
 			path = Telemetry;
@@ -421,6 +424,7 @@
 				99A8671050630E34B1F457EA /* LicaoRepository.swift in Sources */,
 				91C3521B7A7A4CC1C6B0E4DA /* LiveTelemetryRecorder.swift in Sources */,
 				A11C7E3D2F7C4E1B0A1B0001 /* LiveKalmanProcessor.swift in Sources */,
+				C22D6F1E2F8B4F2C0B3D0001 /* LiveDetectorBridge.swift in Sources */,
 				73AF37D86286B893F9C9FD29 /* LowPowerModeMonitor.swift in Sources */,
 				B39DBE85EA240E9F1B6698FE /* P1FastApp.swift in Sources */,
 				5E4293E8007960583EF0C9F6 /* PassageiroCadastroView.swift in Sources */,

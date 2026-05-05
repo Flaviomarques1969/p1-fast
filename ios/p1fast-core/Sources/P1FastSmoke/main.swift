@@ -2474,6 +2474,69 @@ step("PROJ-06: ponto medio entre âncoras → ponto medio no viewBox") {
     try assertClose(r.y, 50, tol: 1e-3)
 }
 
+// ════════════════════════════════════════════════════════════
+// SampleDetectorAdapter — MS-2.6 (PLANO_FASE_1)
+// ════════════════════════════════════════════════════════════
+// Sample (GPS) → DetectorSample projetado pro viewBox via Projector.
+// Source de verdade pra alimentar Detector ao vivo a partir do
+// LiveTelemetryRecorder.
+
+step("ADAPT-01: Sample IMU é ignorado (nil)") {
+    let track = SeedBrasilia.make().track
+    var s = Sample(t: 1_700_000_000_000, tMono: 100, source: SourceTags.imu)
+    s.lat = -15.77; s.lng = -47.90
+    try assertTrue(SampleDetectorAdapter.detectorSample(from: s, track: track) == nil,
+                   "IMU não deve ser projetado")
+}
+
+step("ADAPT-02: Sample GPS sem lat/lng → nil") {
+    let track = SeedBrasilia.make().track
+    let s = Sample(t: 1_700_000_000_000, tMono: 100, source: SourceTags.gps)
+    try assertTrue(SampleDetectorAdapter.detectorSample(from: s, track: track) == nil)
+}
+
+step("ADAPT-03: Sample GPS na âncora 0 de SeedBrasilia projeta em (410, 707)") {
+    let track = SeedBrasilia.make().track
+    var s = Sample(t: 1_700_000_000_000, tMono: 12_345.5, source: SourceTags.gps)
+    s.lat = -15.77000
+    s.lng = -47.90000
+    s.speed = 30.0
+    let ds = SampleDetectorAdapter.detectorSample(from: s, track: track)
+    guard let r = ds else { throw Bad(msg: "esperado DetectorSample") }
+    try assertClose(r.x, 410, tol: 1e-6)
+    try assertClose(r.y, 707, tol: 1e-6)
+    try assertClose(r.t, 1_700_000_000_000, tol: 1e-6)
+    try assertClose(r.tMono, 12_345.5, tol: 1e-6)
+    try assertClose(r.speed, 30.0, tol: 1e-9)
+}
+
+step("ADAPT-04: Sample racebox-gnss também é aceito (source GPS alternativo)") {
+    let track = SeedBrasilia.make().track
+    var s = Sample(t: 1_700_000_000_000, tMono: 100, source: SourceTags.racebox)
+    s.lat = -15.77000
+    s.lng = -47.90000
+    let ds = SampleDetectorAdapter.detectorSample(from: s, track: track)
+    try assertTrue(ds != nil, "racebox-gnss deve produzir DetectorSample")
+}
+
+step("ADAPT-05: track sem âncoras suficientes → nil") {
+    var track = SeedBrasilia.make().track
+    track.geoAncoras = [GeoAncora(lat: -15.77, lng: -47.90, x: 410, y: 707)]
+    var s = Sample(t: 1_700_000_000_000, tMono: 100, source: SourceTags.gps)
+    s.lat = -15.77; s.lng = -47.90
+    try assertTrue(SampleDetectorAdapter.detectorSample(from: s, track: track) == nil,
+                   "1 âncora não basta — adapter deve devolver nil")
+}
+
+step("ADAPT-06: speed nil é propagado pro DetectorSample") {
+    let track = SeedBrasilia.make().track
+    var s = Sample(t: 1_700_000_000_000, tMono: 100, source: SourceTags.gps)
+    s.lat = -15.77; s.lng = -47.90
+    let ds = SampleDetectorAdapter.detectorSample(from: s, track: track)
+    guard let r = ds else { throw Bad(msg: "esperado DetectorSample") }
+    try assertTrue(r.speed == nil, "speed nil no Sample → speed nil no DetectorSample")
+}
+
 step("TRK-05: Codable ida-e-volta — Track → JSON → Track preserva tudo") {
     let r = SeedBrasilia.make()
     let enc = JSONEncoder()
