@@ -4343,6 +4343,15 @@ step("PULLEX-07: cursor NÃO retrocede mesmo se max_updated_at vier menor") {
 // Trecho A: pathStart=20, pathEnd=60, parcialId="P1".
 // Trecho B: pathStart=60, pathEnd=100, parcialId="P2".
 
+/// Box reference-type pra capturar mutável em closure @Sendable do Detector.
+/// Detector handlers são `@Sendable (Event) -> Void`; em Swift 6 mode strict,
+/// mutar `var` local capturado quebra. Smoke é single-thread síncrono — o
+/// `@unchecked Sendable` é seguro aqui.
+final class Box<T>: @unchecked Sendable {
+    var value: T
+    init(_ v: T) { self.value = v }
+}
+
 func detPath() -> String { "M 0 0 L 100 0 L 100 100 L 0 100 Z" }
 func detLinha() -> LinhaChegada { LinhaChegada(x1: 50, y1: -10, x2: 50, y2: 10) }
 func detSegA() -> TrackSegment {
@@ -4362,27 +4371,27 @@ func detSegB() -> TrackSegment {
 
 step("DET-01: 1ª passagem pela linha NÃO emite lap; 2ª emite lap=1") {
     let det = Detector(svgPath: detPath(), linhaChegada: detLinha())
-    var laps: [DetectorLapEvent] = []
-    det.onLap { laps.append($0) }
+    let laps = Box([DetectorLapEvent]())
+    det.onLap { laps.value.append($0) }
     det.consume(DetectorSample(x: 40, y: 0, t: 0, tMono: 0))
     det.consume(DetectorSample(x: 60, y: 0, t: 1000, tMono: 1000))   // 1º cross
-    try assertEq(laps.count, 0, "1ª passagem só inicia volta")
+    try assertEq(laps.value.count, 0, "1ª passagem só inicia volta")
     det.consume(DetectorSample(x: 40, y: 0, t: 2000, tMono: 2000))   // 2º cross — emite
-    try assertEq(laps.count, 1)
-    try assertEq(laps[0].numero, 1)
-    try assertClose(laps[0].tempoMs, 1000, tol: 0.001)
+    try assertEq(laps.value.count, 1)
+    try assertEq(laps.value[0].numero, 1)
+    try assertClose(laps.value[0].tempoMs, 1000, tol: 0.001)
 }
 
 step("DET-02: tempoMs do lap usa tMono, fimAt usa t") {
     let det = Detector(svgPath: detPath(), linhaChegada: detLinha())
-    var lap: DetectorLapEvent?
-    det.onLap { lap = $0 }
+    let lap = Box<DetectorLapEvent?>(nil)
+    det.onLap { lap.value = $0 }
     det.consume(DetectorSample(x: 40, y: 0, t: 100_000, tMono: 50))
     det.consume(DetectorSample(x: 60, y: 0, t: 101_000, tMono: 1050))
     det.consume(DetectorSample(x: 40, y: 0, t: 102_000, tMono: 2050))
-    try assertTrue(lap != nil)
-    try assertClose(lap?.tempoMs, 1000, tol: 0.001)
-    try assertClose(lap?.fimAt, 102_000, tol: 0.001)
+    try assertTrue(lap.value != nil)
+    try assertClose(lap.value?.tempoMs, 1000, tol: 0.001)
+    try assertClose(lap.value?.fimAt, 102_000, tol: 0.001)
 }
 
 step("DET-03: snap.dist > snapMaxDist → sample descartado") {
@@ -4395,8 +4404,8 @@ step("DET-03: snap.dist > snapMaxDist → sample descartado") {
 
 step("DET-04: consumeSnapshot usa speedFused ?? speedGnss") {
     let det = Detector(svgPath: detPath(), linhaChegada: nil, segments: [detSegA()])
-    var startVel: Double?
-    det.onSegmentStart { startVel = $0.velEntrada }
+    let startVel = Box<Double?>(nil)
+    det.onSegmentStart { startVel.value = $0.velEntrada }
     let snap1 = Snapshot(
         t: 0, tMono: 0,
         engine: EngineSnap(),
@@ -4406,11 +4415,11 @@ step("DET-04: consumeSnapshot usa speedFused ?? speedGnss") {
         quality: SnapshotQuality(t4000: .ok, racebox: .ok, iphone: .ok, sync: .ok, confidence: "Alta")
     )
     det.consumeSnapshot(snap1)
-    try assertClose(startVel, 25.0, tol: 0.001)
+    try assertClose(startVel.value, 25.0, tol: 0.001)
 
     let det2 = Detector(svgPath: detPath(), linhaChegada: nil, segments: [detSegA()])
-    var startVel2: Double?
-    det2.onSegmentStart { startVel2 = $0.velEntrada }
+    let startVel2 = Box<Double?>(nil)
+    det2.onSegmentStart { startVel2.value = $0.velEntrada }
     let snap2 = Snapshot(
         t: 0, tMono: 0,
         engine: EngineSnap(),
@@ -4420,78 +4429,78 @@ step("DET-04: consumeSnapshot usa speedFused ?? speedGnss") {
         quality: SnapshotQuality(t4000: .ok, racebox: .ok, iphone: .ok, sync: .ok, confidence: "Alta")
     )
     det2.consumeSnapshot(snap2)
-    try assertClose(startVel2, 22.5, tol: 0.001)
+    try assertClose(startVel2.value, 22.5, tol: 0.001)
 }
 
 step("DET-05: entrada em segment emite segmentStart com velEntrada+offset") {
     let det = Detector(svgPath: detPath(), linhaChegada: nil, segments: [detSegA()])
-    var starts: [DetectorSegmentStartEvent] = []
-    det.onSegmentStart { starts.append($0) }
+    let starts = Box([DetectorSegmentStartEvent]())
+    det.onSegmentStart { starts.value.append($0) }
     det.consume(DetectorSample(x: 40, y: 0, t: 0, tMono: 0, speed: 50))   // pct 10 — fora
-    try assertEq(starts.count, 0)
+    try assertEq(starts.value.count, 0)
     det.consume(DetectorSample(x: 100, y: 0, t: 1000, tMono: 1000, speed: 30))   // pct 25 — dentro
-    try assertEq(starts.count, 1)
-    try assertEq(starts[0].segmentId, "trA")
-    try assertClose(starts[0].velEntrada, 30, tol: 0.001)
-    try assertClose(starts[0].offset, 100, tol: 1)
+    try assertEq(starts.value.count, 1)
+    try assertEq(starts.value[0].segmentId, "trA")
+    try assertClose(starts.value[0].velEntrada, 30, tol: 0.001)
+    try assertClose(starts.value[0].offset, 100, tol: 1)
 }
 
 step("DET-06: saída de segment emite segmentEnd com velSaida e tempoMs") {
     let det = Detector(svgPath: detPath(), linhaChegada: nil, segments: [detSegA()])
-    var ends: [DetectorSegmentEndEvent] = []
-    det.onSegmentEnd { ends.append($0) }
+    let ends = Box([DetectorSegmentEndEvent]())
+    det.onSegmentEnd { ends.value.append($0) }
     det.consume(DetectorSample(x: 100, y: 0, t: 0, tMono: 0, speed: 30))      // pct 25 — entra
     det.consume(DetectorSample(x: 100, y: 100, t: 1000, tMono: 1000, speed: 25))   // pct 50 — ainda dentro
     det.consume(DetectorSample(x: 50, y: 100, t: 2000, tMono: 2000, speed: 60))    // pct 62.5 — sai
-    try assertEq(ends.count, 1)
-    try assertEq(ends[0].segmentId, "trA")
-    try assertClose(ends[0].tempoMs, 2000, tol: 0.001)
-    try assertClose(ends[0].velSaida, 25, tol: 0.001)
-    try assertClose(ends[0].velMinima, 25, tol: 0.001)
+    try assertEq(ends.value.count, 1)
+    try assertEq(ends.value[0].segmentId, "trA")
+    try assertClose(ends.value[0].tempoMs, 2000, tol: 0.001)
+    try assertClose(ends.value[0].velSaida, 25, tol: 0.001)
+    try assertClose(ends.value[0].velMinima, 25, tol: 0.001)
 }
 
 step("DET-07: apex tracking — velMinima/apexOffset/apexActual seguem a queda") {
     let det = Detector(svgPath: detPath(), linhaChegada: nil, segments: [detSegA()])
-    var ends: [DetectorSegmentEndEvent] = []
-    det.onSegmentEnd { ends.append($0) }
+    let ends = Box([DetectorSegmentEndEvent]())
+    det.onSegmentEnd { ends.value.append($0) }
     det.consume(DetectorSample(x: 40, y: 0, t: 0, tMono: 0, speed: 50))           // fora
     det.consume(DetectorSample(x: 100, y: 0, t: 100, tMono: 100, speed: 40))      // entra A
     det.consume(DetectorSample(x: 100, y: 50, t: 200, tMono: 200, speed: 20))     // apex
     det.consume(DetectorSample(x: 100, y: 100, t: 300, tMono: 300, speed: 30))    // ainda em A
     det.consume(DetectorSample(x: 50, y: 100, t: 400, tMono: 400, speed: 60))     // sai
-    try assertEq(ends.count, 1)
-    try assertClose(ends[0].velMinima, 20, tol: 0.001)
-    try assertClose(ends[0].apexT, 200, tol: 0.001)
-    try assertClose(ends[0].apexOffset, 150, tol: 1)
-    try assertClose(ends[0].apexActual?.x, 100, tol: 1)
-    try assertClose(ends[0].apexActual?.y, 50, tol: 1)
+    try assertEq(ends.value.count, 1)
+    try assertClose(ends.value[0].velMinima, 20, tol: 0.001)
+    try assertClose(ends.value[0].apexT, 200, tol: 0.001)
+    try assertClose(ends.value[0].apexOffset, 150, tol: 1)
+    try assertClose(ends.value[0].apexActual?.x, 100, tol: 1)
+    try assertClose(ends.value[0].apexActual?.y, 50, tol: 1)
 }
 
 step("DET-08: pontoFrenagem disparado quando dv>3 m/s em dt>0") {
     let det = Detector(svgPath: detPath(), linhaChegada: nil, segments: [detSegA()])
-    var ends: [DetectorSegmentEndEvent] = []
-    det.onSegmentEnd { ends.append($0) }
+    let ends = Box([DetectorSegmentEndEvent]())
+    det.onSegmentEnd { ends.value.append($0) }
     det.consume(DetectorSample(x: 100, y: 0, t: 0, tMono: 0, speed: 50))         // entra A
     det.consume(DetectorSample(x: 100, y: 50, t: 100, tMono: 100, speed: 40))    // dv=10 em 0.1s — frenagem
     det.consume(DetectorSample(x: 50, y: 100, t: 200, tMono: 200, speed: 30))    // sai
-    try assertEq(ends.count, 1)
-    try assertTrue(ends[0].pontoFrenagem != nil, "pontoFrenagem precisa existir")
-    try assertClose(ends[0].pontoFrenagem?.velPre, 50, tol: 0.001)
-    try assertClose(ends[0].pontoFrenagem?.t, 100, tol: 0.001)
+    try assertEq(ends.value.count, 1)
+    try assertTrue(ends.value[0].pontoFrenagem != nil, "pontoFrenagem precisa existir")
+    try assertClose(ends.value[0].pontoFrenagem?.velPre, 50, tol: 0.001)
+    try assertClose(ends.value[0].pontoFrenagem?.t, 100, tol: 0.001)
 }
 
 step("DET-09: temposPorParcial preenchido na transição de parcial dentro da volta") {
     let det = Detector(svgPath: detPath(), linhaChegada: detLinha(), segments: [detSegA(), detSegB()])
-    var lap: DetectorLapEvent?
-    det.onLap { lap = $0 }
+    let lap = Box<DetectorLapEvent?>(nil)
+    det.onLap { lap.value = $0 }
     det.consume(DetectorSample(x: 40, y: 0, t: 0, tMono: 0, speed: 50))            // antes da linha
     det.consume(DetectorSample(x: 100, y: 0, t: 1000, tMono: 1000, speed: 50))     // cruza linha + entra A (P1)
     det.consume(DetectorSample(x: 50, y: 100, t: 2000, tMono: 2000, speed: 50))    // entra B (P2) — fecha P1
     det.consume(DetectorSample(x: 60, y: 0, t: 2500, tMono: 2500, speed: 50))      // sai dos segs (P2 ainda current)
     det.consume(DetectorSample(x: 40, y: 0, t: 3000, tMono: 3000, speed: 50))      // cruza linha → fecha volta
-    try assertTrue(lap != nil)
-    try assertClose(lap?.temposPorParcial["P1"], 1000, tol: 0.001)
-    try assertClose(lap?.temposPorParcial["P2"], 1000, tol: 0.001)
+    try assertTrue(lap.value != nil)
+    try assertClose(lap.value?.temposPorParcial["P1"], 1000, tol: 0.001)
+    try assertClose(lap.value?.temposPorParcial["P2"], 1000, tol: 0.001)
 }
 
 step("DET-10: getCurrentSegmentId + stats refletem segmento ativo") {
@@ -4506,28 +4515,28 @@ step("DET-10: getCurrentSegmentId + stats refletem segmento ativo") {
 
 step("DET-11: troca direta A→B (sem reta entre) fecha A e abre B") {
     let det = Detector(svgPath: detPath(), linhaChegada: nil, segments: [detSegA(), detSegB()])
-    var starts: [DetectorSegmentStartEvent] = []
-    var ends: [DetectorSegmentEndEvent] = []
-    det.onSegmentStart { starts.append($0) }
-    det.onSegmentEnd { ends.append($0) }
+    let starts = Box([DetectorSegmentStartEvent]())
+    let ends = Box([DetectorSegmentEndEvent]())
+    det.onSegmentStart { starts.value.append($0) }
+    det.onSegmentEnd { ends.value.append($0) }
     det.consume(DetectorSample(x: 100, y: 0, t: 0, tMono: 0, speed: 40))         // entra A (pct 25)
     det.consume(DetectorSample(x: 50, y: 100, t: 1000, tMono: 1000, speed: 50))   // pct 62.5 → entra B direto
-    try assertEq(starts.count, 2)
-    try assertEq(ends.count, 1)
-    try assertEq(ends[0].segmentId, "trA")
-    try assertEq(starts[1].segmentId, "trB")
+    try assertEq(starts.value.count, 2)
+    try assertEq(ends.value.count, 1)
+    try assertEq(ends.value[0].segmentId, "trA")
+    try assertEq(starts.value[1].segmentId, "trB")
 }
 
 step("DET-12: unsubscribe remove o listener") {
     let det = Detector(svgPath: detPath(), linhaChegada: nil, segments: [detSegA()])
-    var hits = 0
-    let off = det.onSegmentStart { _ in hits += 1 }
+    let hits = Box(0)
+    let off = det.onSegmentStart { _ in hits.value += 1 }
     det.consume(DetectorSample(x: 100, y: 0, t: 0, tMono: 0, speed: 30))     // entra A
-    try assertEq(hits, 1)
+    try assertEq(hits.value, 1)
     off()
     det.consume(DetectorSample(x: 50, y: 100, t: 100, tMono: 100, speed: 30))  // sai
     det.consume(DetectorSample(x: 100, y: 0, t: 200, tMono: 200, speed: 30))   // re-entra — não dispara
-    try assertEq(hits, 1)
+    try assertEq(hits.value, 1)
 }
 
 // ════════════════════════════════════════════════════════════
