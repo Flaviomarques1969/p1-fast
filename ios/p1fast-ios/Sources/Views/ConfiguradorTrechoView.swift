@@ -46,7 +46,7 @@ struct ConfiguradorTrechoView: View {
         var helpText: String {
             switch self {
             case .entry: return "Vmáx pré-freio — define o início do trecho."
-            case .apex:  return "Ponto mais interno da trajetória ideal na curva."
+            case .apex:  return "Referência de tangência da linha de corrida ideal — organiza rotação e saída. Não é o Vmin (dado dinâmico) nem o ponto mais interno geométrico."
             case .exit:  return "Início da reta seguinte — define o fim do trecho."
             }
         }
