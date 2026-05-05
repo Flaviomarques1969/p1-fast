@@ -9,10 +9,19 @@
 // Estado: [px, py, vx, vy] em frame local projetado.
 // Origem: primeiro GPS fix válido.
 //
-// Heading vive fora do estado.
-// Heading é alimentado por GPS course quando há fix válido.
-// Durante gap sem GPS, integra gyroAlpha (deg/s, DeviceMotion.rotationRate
-// — ver src/pipeline/mobile-telemetry.js linha 65 e Sample.swift).
+// Heading vive fora do estado, em CONVENÇÃO COMPASS (0 = Norte = +y mundo,
+// π/2 = Leste = +x mundo). Alimentado por GPS course (também compass) quando
+// há fix válido. Durante gap sem GPS, integra gyroAlpha (deg/s,
+// DeviceMotion.rotationRate — ver src/pipeline/mobile-telemetry.js linha 65
+// e Sample.swift).
+//
+// Frame do veículo (entrada IMU): accX = forward, accY = lateral direita.
+// Rotação compass → mundo aplicada em predict:
+//   aWx = aBx · sin(h) + aBy · cos(h)
+//   aWy = aBx · cos(h) − aBy · sin(h)
+// Verificação: h=0 (carro indo Norte), aBx=1, aBy=0 → (aWx, aWy) = (0, 1).
+// Ou seja, +y mundo (Norte). h=π/2 (carro indo Leste), aBx=1, aBy=0 →
+// (1, 0) = +x mundo (Leste).
 //
 // Projeção:
 // Projector.swift exige duas âncoras (transformação afim) — não há helper
@@ -107,8 +116,10 @@ public final class KalmanINSGPS {
         self.sigmaImuY = sigmaImuY
         self.initialPosSigmaM = initialPosSigmaM
 
-        // P inicial: posição com sigma = initialPosSigmaM, velocidade com sigma=1000.
-        // sqrt(P[0,0] + P[1,1]) = initialPosSigmaM (posSigmaM coerente).
+        // P inicial: posição com sigma = initialPosSigmaM (default 1e6),
+        // velocidade com sigma = 1 m/s (assumindo primeiro fix com carro
+        // parado ou andando devagar). sqrt(P[0,0] + P[1,1]) = initialPosSigmaM
+        // (posSigmaM coerente). Ver bloco "DIVERGÊNCIA INTENCIONAL" no header.
         let posVar = (initialPosSigmaM * initialPosSigmaM) / 2.0
         setP(0, 0, posVar)
         setP(1, 1, posVar)
@@ -163,14 +174,16 @@ public final class KalmanINSGPS {
         }
 
         // Aceleração no frame do veículo, bias removido.
+        // Convenção: accX = forward do veículo, accY = lateral direita.
         let aBx = accX - biasAccX
         let aBy = accY - biasAccY
-        // Rotação para o frame do mundo conforme heading.
+        // Rotação compass → mundo. headingRad é compass (0 = Norte = +y mundo).
+        // Carro indo Norte (h=0) com accX=1 (forward) → aceleração +y mundo.
         let h = headingRad
         let cosH = cos(h)
         let sinH = sin(h)
-        let aWx = aBx * cosH - aBy * sinH
-        let aWy = aBx * sinH + aBy * cosH
+        let aWx = aBx * sinH + aBy * cosH
+        let aWy = aBx * cosH - aBy * sinH
 
         // x ← F(dt)x + B(dt)u
         let px = x[0] + dt * x[2] + 0.5 * dt * dt * aWx

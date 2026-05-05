@@ -5217,6 +5217,7 @@ step("K-13: projeção mantém sinal correto leste/norte") {
 
 step("K-14: integração cinemática básica — 1m/s² por 1s ≈ 1m/s e 0.5m") {
     let f = KalmanINSGPS()
+    // course = 0 → carro indo Norte (compass). accX = forward do veículo.
     f.update(sample: kGps(t: 0, tMono: 0, lat: kLat0, lng: kLng0, acc: 3, course: 0))
     var last: EnrichedSample? = nil
     for i in 1...100 {
@@ -5227,10 +5228,30 @@ step("K-14: integração cinemática básica — 1m/s² por 1s ≈ 1m/s e 0.5m")
         ))
     }
     guard let e = last else { throw Bad(msg: "sem amostra final") }
-    // course=0 → headingRad=0 → aWx = (accX-bias) = 1.0, aWy = 0. Aceleração no eixo +x do mundo.
-    try assertTrue(abs(e.vxMps - 1.0) < 0.05, "vx=\(e.vxMps), esperado ~1.0")
+    // course=0 (Norte) + accX=1 (forward) → aWy = 1·cos(0) = 1, aWx = 1·sin(0) = 0.
+    // Aceleração no eixo +y do mundo (Norte). vy=1 m/s, y=0.5 m após 1s.
+    try assertTrue(abs(e.vyMps - 1.0) < 0.05, "vy=\(e.vyMps), esperado ~1.0 (forward com course=0)")
+    try assertTrue(abs(e.vxMps - 0.0) < 0.05, "vx=\(e.vxMps), esperado ~0")
+    try assertTrue(abs(e.yM - 0.5) < 0.05, "y=\(e.yM), esperado ~0.5 (deslocamento Norte)")
+    try assertTrue(abs(e.xM - 0.0) < 0.05, "x=\(e.xM), esperado ~0")
+}
+
+step("K-14b: heading compass — course=90 (Leste) com accX=1 acelera +x mundo") {
+    let f = KalmanINSGPS()
+    f.update(sample: kGps(t: 0, tMono: 0, lat: kLat0, lng: kLng0, acc: 3, course: 90))
+    var last: EnrichedSample? = nil
+    for i in 1...100 {
+        let tMono = Double(i) * 10.0
+        last = f.predict(sample: kImu(
+            t: Int64(tMono), tMono: tMono,
+            accX: kBiasX + 1.0, accY: kBiasY
+        ))
+    }
+    guard let e = last else { throw Bad(msg: "sem amostra final") }
+    // course=90 (Leste): aWx = 1·sin(π/2) = 1, aWy = 1·cos(π/2) = 0. +x mundo.
+    try assertTrue(abs(e.vxMps - 1.0) < 0.05, "vx=\(e.vxMps), esperado ~1.0 (forward com course=90)")
     try assertTrue(abs(e.vyMps - 0.0) < 0.05, "vy=\(e.vyMps), esperado ~0")
-    try assertTrue(abs(e.xM - 0.5) < 0.05, "x=\(e.xM), esperado ~0.5")
+    try assertTrue(abs(e.xM - 0.5) < 0.05, "x=\(e.xM), esperado ~0.5 (deslocamento Leste)")
     try assertTrue(abs(e.yM - 0.0) < 0.05, "y=\(e.yM), esperado ~0")
 }
 
