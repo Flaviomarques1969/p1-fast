@@ -1,14 +1,18 @@
 // ═══════════════════════════════════════════════════════════
-// TelemetriaView — UI mínima de captura ao vivo (MS-2.1)
+// TelemetriaView — UI de captura ao vivo (MS-2.1 + MS-2.3 + MS-2.7)
 // ═══════════════════════════════════════════════════════════
-// Botão REC/STOP + indicador de Hz/jitter/sample count. Cria uma
-// sessao "telemetria-demo-<ts>" descartável só pra ter um sessao_id
-// que satisfaz a FK de telemetry_samples.
+// Botão REC/STOP + indicadores Hz/jitter/sample count + métricas do
+// pipeline Kalman (enriched count + fix). Cria uma sessao
+// "telemetria-demo-<ts>" descartável só pra ter um sessao_id que
+// satisfaz a FK de telemetry_samples / telemetry_samples_enriched.
 //
-// NÃO amarra ao fluxo real de stint (isso é MS-2.3). NÃO usa
-// background mode (MS-2.2). NÃO conecta ao Detector (MS-2.6).
+// MS-2.3 (#101 já em main): LiveKalmanProcessor é instanciado e
+// plugado via attach(to:) no INICIAR. Detach + flush final no PARAR.
 //
-// Acesso: launch arg `--p1-telemetria` ou rota direta.
+// NÃO amarra ao fluxo real de stint (isso é MS-2.x posterior). NÃO
+// conecta ao Detector (MS-2.6).
+//
+// Acesso: launch arg `--p1-telemetria`.
 
 import SwiftUI
 import GRDB
@@ -18,12 +22,14 @@ struct TelemetriaView: View {
     let queue: DatabaseQueue
 
     @StateObject private var recorder: LiveTelemetryRecorder
+    @StateObject private var processor: LiveKalmanProcessor
     @StateObject private var lowPower = LowPowerModeMonitor()
     @State private var sessaoId: String
     @State private var startedAt: Date?
     @State private var ticker = Date()
     @State private var elapsedS: TimeInterval = 0
     @State private var lastStopCount: Int = 0
+    @State private var lastEnrichedCount: Int = 0
     @State private var sessaoErro: String?
 
     init(queue: DatabaseQueue) {
@@ -31,6 +37,11 @@ struct TelemetriaView: View {
         let id = "telemetria-demo-\(Int(Date().timeIntervalSince1970))"
         _sessaoId = State(initialValue: id)
         _recorder = StateObject(wrappedValue: LiveTelemetryRecorder(
+            queue: queue,
+            sessaoId: id,
+            timeId: "local-default-team"
+        ))
+        _processor = StateObject(wrappedValue: LiveKalmanProcessor(
             queue: queue,
             sessaoId: id,
             timeId: "local-default-team"
@@ -99,12 +110,13 @@ struct TelemetriaView: View {
     private var metrics: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             row("Estado", recorder.running ? "● REC \(format(elapsedS))s" : "STOP")
-            row("Amostras gravadas", "\(recorder.sampleCount)")
+            row("Amostras raw", "\(recorder.sampleCount)")
+            row("Amostras enriched", "\(processor.enrichedCount)\(processor.hasFix ? " · fix" : "")")
             row("IMU", String(format: "%.1f Hz · jitter %.2f ms",
                               recorder.imuHz, recorder.imuJitterMs))
             row("GPS", String(format: "%.1f Hz · jitter %.0f ms",
                               recorder.gpsHz, recorder.gpsJitterMs))
-            if let err = recorder.lastError {
+            if let err = recorder.lastError ?? processor.lastError {
                 Text(err)
                     .font(Font.captionP1)
                     .foregroundColor(.rec)
@@ -136,7 +148,7 @@ struct TelemetriaView: View {
                 .font(Font.captionP1)
                 .foregroundColor(.textFaint)
             if lastStopCount > 0 {
-                Text("Última captura: \(lastStopCount) amostras gravadas em telemetry_samples")
+                Text("Última captura: \(lastStopCount) amostras raw · \(lastEnrichedCount) enriched")
                     .font(Font.captionP1)
                     .foregroundColor(.textMuted)
             }
@@ -158,13 +170,16 @@ struct TelemetriaView: View {
         if recorder.running {
             Task {
                 await recorder.stop()
+                await processor.detach()
                 lastStopCount = recorder.sampleCount
+                lastEnrichedCount = processor.enrichedCount
                 startedAt = nil
                 elapsedS = 0
             }
         } else {
             Task {
                 await ensureSessao()
+                processor.attach(to: recorder)
                 recorder.start()
                 startedAt = Date()
             }
