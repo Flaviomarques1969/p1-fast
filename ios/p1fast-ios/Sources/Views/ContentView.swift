@@ -39,6 +39,8 @@
 //                            com a sheet "Novo pneu" aberta (Prompt #14)
 //   --p1-trechos           → TrechoListaView direto (lista readonly de
 //                            trechos da pista cadastrada, Prompt #19)
+//   --p1-configurador      → ConfiguradorTrechoView do primeiro trecho
+//                            (PR-B da MS-1.4)
 //   --p1-licoes            → PessoasView aba Lições (catálogo de 12 lições
 //                            curadas, Prompt #20)
 //   --p1-setup-avancado    → SetupAvancadoView do primeiro carro (visualização
@@ -70,6 +72,7 @@ private enum AppRoute {
     case combustivelNovo
     case pneuNovo
     case trechos
+    case configurador
     case licoes
     case setupAvancado
 
@@ -91,6 +94,7 @@ private enum AppRoute {
         if args.contains("--p1-combustiveis") { return .combustiveis }
         if args.contains("--p1-pessoas") { return .pessoasPilotos }
         if args.contains("--p1-pneu-novo") { return .pneuNovo }
+        if args.contains("--p1-configurador") { return .configurador }
         if args.contains("--p1-trechos") { return .trechos }
         if args.contains("--p1-licoes") { return .licoes }
         if args.contains("--p1-setup-avancado") { return .setupAvancado }
@@ -231,6 +235,8 @@ private struct ReadyRoot: View {
             NavigationStack {
                 TrechoListaView()
             }
+        case .configurador:
+            ConfiguradorLauncher()
         case .licoes:
             PessoasView(initialSubTab: .licoes)
         case .setupAvancado:
@@ -493,6 +499,40 @@ private struct PneuNovoLauncher: View {
                 ) {
                     carroId = id
                 }
+            }
+            ready = true
+        }
+    }
+}
+
+/// Launcher do `--p1-configurador`: abre `ConfiguradorTrechoView` direto
+/// no primeiro trecho cadastrado do layout principal de Brasília. PR-B
+/// da MS-1.4 — pra Flávio validar visualmente os 4 pontos canônicos
+/// no simulador.
+private struct ConfiguradorLauncher: View {
+    @EnvironmentObject private var repo: TrackRepository
+    @State private var segmentId: String?
+    @State private var ready = false
+
+    var body: some View {
+        Group {
+            if ready, let id = segmentId {
+                NavigationStack {
+                    ConfiguradorTrechoView(segmentId: id, onClose: {})
+                }
+            } else {
+                Splash(stateLabel: "Preparando trecho demo…", isError: false)
+            }
+        }
+        .task {
+            for _ in 0..<20 {
+                if !repo.tracks.isEmpty { break }
+                try? await Task.sleep(nanoseconds: 100_000_000)
+            }
+            if let track = repo.tracks.first,
+               let layout = repo.layouts(forTrackId: track.id).first,
+               let primeiro = repo.trechos(forLayoutId: layout.id).first {
+                segmentId = primeiro.id
             }
             ready = true
         }

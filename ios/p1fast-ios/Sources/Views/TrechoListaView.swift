@@ -149,7 +149,13 @@ struct TrechoListaView: View {
                             .frame(height: 1)
                             .padding(.horizontal, Spacing.md)
                     }
-                    trechoRow(seg)
+                    NavigationLink {
+                        ConfiguradorTrechoView(segmentId: seg.id, onClose: nil)
+                            .environmentObject(repo)
+                    } label: {
+                        trechoRow(seg)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -166,6 +172,7 @@ struct TrechoListaView: View {
 
     private func trechoRow(_ seg: TrackSegmentRow) -> some View {
         let geo = TrechoGeometriaTags.parse(seg.geometria)
+        let configured = isConfigured(seg)
         return HStack(alignment: .center, spacing: Spacing.sm) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(seg.nome ?? "Trecho")
@@ -181,9 +188,21 @@ struct TrechoListaView: View {
                 }
             }
             Spacer(minLength: 0)
+            // Indicador de calibração: ✓ quando o trecho passou pelo
+            // configurador (apexCalibration=CONFIRMED), ⨯ quando ainda
+            // está no DEFAULT da seed.
+            Text(configured ? "✓" : "⨯")
+                .font(.system(size: 16, weight: .semibold, design: .monospaced))
+                .foregroundStyle(configured ? Color.bom : Color.textFaint)
+                .frame(width: 20)
         }
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, 12)
+    }
+
+    private func isConfigured(_ row: TrackSegmentRow) -> Bool {
+        let blob = P1FastCore.SegmentGeometry.decode(row.geometria)
+        return blob?.apexCalibration == "CONFIRMED"
     }
 }
 
