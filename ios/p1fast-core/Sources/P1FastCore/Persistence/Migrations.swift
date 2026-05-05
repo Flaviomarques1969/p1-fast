@@ -130,6 +130,36 @@ enum Migrations {
             try db.execute(sql: "ALTER TABLE segment_executions ADD COLUMN vmin_x REAL;")
             try db.execute(sql: "ALTER TABLE segment_executions ADD COLUMN vmin_y REAL;")
         }
+        // ═══ v7_telemetry_samples_enriched ═════════════════════
+        // MS-2.7 PR B (PLANO_FASE_1) — persistência da saída do
+        // KalmanINSGPS (PR A, #99) por sample. Append-only ADR-014:
+        // SEM synced_at, NÃO passa por sync_queue. Volume proibitivo
+        // (36k rows/sessão a 10 Hz) será sincronizado por batch.
+        // Schema-only — escrita real chega no MS-2.7 PR C
+        // (LiveKalmanProcessor consumindo LiveTelemetryRecorder).
+        // Espelha supabase/migrations/0008_telemetry_samples_enriched.sql.
+        m.registerMigration("v7_telemetry_samples_enriched") { db in
+            try db.execute(sql: """
+                CREATE TABLE telemetry_samples_enriched (
+                    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                    time_id       TEXT NOT NULL REFERENCES times(id) ON DELETE CASCADE,
+                    sessao_id     TEXT NOT NULL REFERENCES sessoes(id) ON DELETE CASCADE,
+                    seq           INTEGER NOT NULL,
+                    t             INTEGER NOT NULL,
+                    t_mono        REAL,
+                    x_m           REAL NOT NULL,
+                    y_m           REAL NOT NULL,
+                    vx_mps        REAL NOT NULL,
+                    vy_mps        REAL NOT NULL,
+                    heading_deg   REAL NOT NULL,
+                    pos_sigma_m   REAL NOT NULL,
+                    source_kalman INTEGER NOT NULL CHECK (source_kalman IN (0, 1)),
+                    uploaded_at   INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX idx_telemetry_enriched_sessao_seq ON telemetry_samples_enriched(sessao_id, seq);")
+            try db.execute(sql: "CREATE INDEX idx_telemetry_enriched_sessao_t ON telemetry_samples_enriched(sessao_id, t);")
+        }
     }
 
     // swiftlint:disable:next function_body_length
