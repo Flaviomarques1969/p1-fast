@@ -1,16 +1,53 @@
 name: smoke
 
+# Trigger só em PRs. Merge em main já vem de PR que rodou — push em main
+# foi removido em 2026-05-05 pra cortar o run dobrado (queimava macOS minutes
+# duplicados). Edição direta em main não passa por aqui; se isso virar
+# rotina, voltar a rodar push: main.
 on:
   pull_request:
     branches: [main]
-  push:
-    branches: [main]
+
+# Cancela runs anteriores na mesma PR/branch quando chega push novo. Evita
+# fila de 3-4 jobs macOS quando o autor empurra fixes seguidos.
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
+  pull-requests: read  # dorny/paths-filter precisa pra listar arquivos da PR via API
 
 jobs:
+  # Detecta o que a PR mudou pra cada job decidir se precisa rodar.
+  # macOS minutes valem 10× ubuntu — pular swift-smoke quando mudança
+  # não toca em ios/p1fast-core/ é o maior corte de custo do CI.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      node: ${{ steps.filter.outputs.node }}
+      swift: ${{ steps.filter.outputs.swift }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: false
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            node:
+              - 'src/**'
+              - 'tests/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.github/workflows/**'
+            swift:
+              - 'ios/p1fast-core/**'
+              - '.github/workflows/**'
+
   node-smoke:
+    needs: changes
+    if: needs.changes.outputs.node == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -30,6 +67,8 @@ jobs:
         run: npm run smoke
 
   swift-smoke:
+    needs: changes
+    if: needs.changes.outputs.swift == 'true'
     runs-on: macos-14
     # Pina o Xcode pra evitar drift entre runners (macos-14 vem com vários
     # Xcodes; sem pin GitHub escolhe o "stable mais recente" e a versão
