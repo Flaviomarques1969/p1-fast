@@ -4692,6 +4692,109 @@ step("MS14-07: markCalibrated=true força apexCalibration=CONFIRMED") {
     try assertEq(preserved.apexCalibration, "DEFAULT")
 }
 
+// ════════════════════════════════════════════════════════════
+// Geometry2D — pointToSegmentDistance (configurador hit-test)
+// ════════════════════════════════════════════════════════════
+// Cobertura do hit-test do marcador no ConfiguradorTrechoView
+// (ponto-segmento, PR #87). A view só faz wrapper em CGPoint.
+
+step("GEO-01: ponto na endpoint a → distância 0") {
+    let d = Geometry2D.pointToSegmentDistance(
+        px: 0, py: 0, ax: 0, ay: 0, bx: 10, by: 0
+    )
+    try assertClose(d, 0, tol: 1e-9)
+}
+
+step("GEO-02: ponto na endpoint b → distância 0") {
+    let d = Geometry2D.pointToSegmentDistance(
+        px: 10, py: 0, ax: 0, ay: 0, bx: 10, by: 0
+    )
+    try assertClose(d, 0, tol: 1e-9)
+}
+
+step("GEO-03: ponto no meio do segmento → 0") {
+    let d = Geometry2D.pointToSegmentDistance(
+        px: 5, py: 0, ax: 0, ay: 0, bx: 10, by: 0
+    )
+    try assertClose(d, 0, tol: 1e-9)
+}
+
+step("GEO-04: ponto perpendicular sobre o meio → distância = altura") {
+    let d = Geometry2D.pointToSegmentDistance(
+        px: 5, py: 7, ax: 0, ay: 0, bx: 10, by: 0
+    )
+    try assertClose(d, 7, tol: 1e-9)
+}
+
+step("GEO-05: ponto além de b → euclidiana até b (clampa t=1)") {
+    // segmento [0,0]→[10,0], ponto (15,0) → projeção fica em b → 5
+    let d = Geometry2D.pointToSegmentDistance(
+        px: 15, py: 0, ax: 0, ay: 0, bx: 10, by: 0
+    )
+    try assertClose(d, 5, tol: 1e-9)
+}
+
+step("GEO-06: ponto antes de a → euclidiana até a (clampa t=0)") {
+    let d = Geometry2D.pointToSegmentDistance(
+        px: -3, py: 4, ax: 0, ay: 0, bx: 10, by: 0
+    )
+    // (-3,4) até (0,0) = √(9+16) = 5
+    try assertClose(d, 5, tol: 1e-9)
+}
+
+step("GEO-07: segmento degenerado (a==b) → euclidiana até a") {
+    let d = Geometry2D.pointToSegmentDistance(
+        px: 3, py: 4, ax: 1, ay: 1, bx: 1, by: 1
+    )
+    // (3,4) até (1,1) = √(4+9) = √13
+    try assertClose(d, 13.0.squareRoot(), tol: 1e-9)
+}
+
+step("GEO-08: simetria — distância independe da ordem (a,b) vs (b,a)") {
+    let d1 = Geometry2D.pointToSegmentDistance(
+        px: 3, py: 5, ax: 0, ay: 0, bx: 10, by: 0
+    )
+    let d2 = Geometry2D.pointToSegmentDistance(
+        px: 3, py: 5, ax: 10, ay: 0, bx: 0, by: 0
+    )
+    try assertClose(d1 - d2, 0, tol: 1e-9, "simetria a↔b")
+}
+
+step("GEO-09: BUG REPRO — toque na PONTA da barra em zoom alto") {
+    // Cenário que o hit-test antigo não pegava:
+    // Marcador no centro do canvas (0,0). Barra horizontal de 56pt
+    // (halfL=28). Em zoom 2× sobre viewBox, pontas em (-56,0)/(+56,0).
+    // Dedo toca a 50pt do centro, levemente fora do eixo: (50, 5).
+    //
+    // Hit-test antigo (ponto-centro raio 40pt):
+    //   d = √(50² + 5²) ≈ 50.25 > 40 → MISS → vira pan acidental.
+    //
+    // Hit-test novo (ponto-segmento, tolerância 30pt):
+    //   ponto cai sobre o eixo do segmento → distância = |y| = 5 < 30 → HIT.
+    let dCenter = (50.0 * 50.0 + 5.0 * 5.0).squareRoot()
+    try assertTrue(dCenter > 40, "premissa: ponto-centro caía fora do raio antigo (40)")
+
+    let dSegment = Geometry2D.pointToSegmentDistance(
+        px: 50, py: 5, ax: -56, ay: 0, bx: 56, by: 0
+    )
+    try assertClose(dSegment, 5, tol: 1e-9, "ponto-segmento mede só a distância perpendicular")
+    try assertTrue(dSegment <= 30, "dentro da tolerância nova → marcador é ativado")
+}
+
+step("GEO-10: barra rotacionada 45° — distância perpendicular preservada") {
+    // Barra de (-h,-h) a (+h,+h) com h = √50 ≈ 7.07. Ponto deslocado 5pt
+    // perpendicular ao centro (direção (-1,1)/√2): coordenadas (-r/√2, r/√2)
+    // com r = 5. Distância esperada = 5.
+    let h = (50.0).squareRoot()
+    let r = 5.0
+    let invSqrt2 = 1.0 / (2.0).squareRoot()
+    let d = Geometry2D.pointToSegmentDistance(
+        px: -r * invSqrt2, py: r * invSqrt2,
+        ax: -h, ay: -h, bx: h, by: h
+    )
+    try assertClose(d, r, tol: 1e-9)
+}
+
 // ── relatório ────────────────────────────────────────────────
 print("\n═══ RESULTADO ═══")
 print("\(ok) ok / \(fail) fail")
