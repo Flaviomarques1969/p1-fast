@@ -71,6 +71,21 @@ struct ConfiguradorTrechoView: View {
     @State private var dragAnchorPoint: P1FastCore.TrackPoint?
     @State private var dragAnchorTangent: (Double, Double)?
 
+    /// Zoom multiplicador sobre o `focusWindow` base. >1 amplia (mais perto),
+    /// <1 afasta. Persistido enquanto o trecho não troca; reseta no
+    /// onChange(segmentId) e no botão "Recentralizar".
+    @State private var zoomMultiplier: Double = 1.0
+    /// Acumulador do gesto de pinch — soma com `zoomMultiplier` no onEnded
+    /// pra não pular a cada onChanged.
+    @State private var pinchInProgress: Double = 1.0
+    /// Pan em pontos do canvas (não viewBox). Aplicado depois do zoom.
+    @State private var panOffset: CGSize = .zero
+    @State private var panInProgress: CGSize = .zero
+    /// Limites suaves pra zoom — evita esticar o tick a um pixel ou
+    /// perder o trecho de vista.
+    private let minZoomMultiplier: Double = 0.4
+    private let maxZoomMultiplier: Double = 4.0
+
     init(segmentId: String, onClose: (() -> Void)? = nil) {
         self._segmentId = State(initialValue: segmentId)
         self.onClose = onClose
@@ -136,14 +151,23 @@ struct ConfiguradorTrechoView: View {
         .onAppear { if !didLoad { loadPoints(); buildLookup() } }
         .onChange(of: segmentId) { _ in
             // Troca de trecho via Anterior/Próximo: rehidrata pontos +
-            // lookup do novo segment, reseta active pra Entrada.
+            // lookup do novo segment, reseta active pra Entrada e
+            // re-enquadra o zoom/pan no novo focus.
             didLoad = false
             lookup = nil
             entry = nil; apex = nil; exitP = nil; existingBraking = nil
             active = .entry
+            resetView()
             loadPoints()
             buildLookup()
         }
+    }
+
+    private func resetView() {
+        zoomMultiplier = 1.0
+        pinchInProgress = 1.0
+        panOffset = .zero
+        panInProgress = .zero
     }
 
     // MARK: - Header
@@ -255,20 +279,31 @@ struct ConfiguradorTrechoView: View {
             let xform = transform(in: geo.size)
 
             ZStack(alignment: .topLeading) {
+                // Camada de gestos do mapa (pinch + pan) — fica no fundo
+                // pra não roubar o drag do marcador ativo (Capsule por
+                // cima, hit-area menor).
+                Color.clear
+                    .contentShape(Rectangle())
+                    .gesture(panGesture)
+                    .simultaneousGesture(pinchGesture)
+
                 // Pista corredor
                 trackPath(xform: xform)
                     .stroke(
                         Color.textFaint.opacity(0.35),
                         style: StrokeStyle(lineWidth: trackBorderWidth * xform.zoom, lineCap: .round, lineJoin: .round)
                     )
+                    .allowsHitTesting(false)
                 trackPath(xform: xform)
                     .stroke(
                         Color.surfaceRaised,
                         style: StrokeStyle(lineWidth: trackWidth * xform.zoom, lineCap: .round, lineJoin: .round)
                     )
+                    .allowsHitTesting(false)
 
                 // Chevrons direção (cinzas, ao longo do path no entorno do focus)
                 directionChevrons(xform: xform)
+                    .allowsHitTesting(false)
 
                 // Marcadores — desenhados em ordem inversa de prioridade pra
                 // que o ATIVO (último) fique por cima.
@@ -280,6 +315,11 @@ struct ConfiguradorTrechoView: View {
                 if let p = point(for: active) {
                     perpTick(point: p, kind: active, xform: xform, isActive: true)
                 }
+
+                // Controles de zoom no canto superior direito
+                zoomControls
+                    .padding(8)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             }
             .frame(width: geo.size.width, height: geo.size.height)
             .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -289,6 +329,71 @@ struct ConfiguradorTrechoView: View {
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.surfaceRaised.opacity(0.4))
         )
+    }
+
+    // MARK: - Gestos do mapa (pinch + pan)
+
+    /// Pinch acumula em `pinchInProgress`; no fim multiplica em
+    /// `zoomMultiplier` clampado. Mantém `pinchInProgress = 1.0` entre
+    /// gestos pra não duplicar.
+    private var pinchGesture: some Gesture {
+        MagnificationGesture()
+            .onChanged { value in
+                pinchInProgress = value
+            }
+            .onEnded { value in
+                zoomMultiplier = clampedZoom(zoomMultiplier * value)
+                pinchInProgress = 1.0
+            }
+    }
+
+    /// Pan acumula em `panInProgress` durante o gesto; no fim soma em
+    /// `panOffset` permanente. Pequenos taps (<3pt) viram no-op pra não
+    /// "deslizar" sem querer ao tocar marcador.
+    private var panGesture: some Gesture {
+        DragGesture(minimumDistance: 3)
+            .onChanged { value in
+                panInProgress = value.translation
+            }
+            .onEnded { value in
+                panOffset = CGSize(
+                    width: panOffset.width + value.translation.width,
+                    height: panOffset.height + value.translation.height
+                )
+                panInProgress = .zero
+            }
+    }
+
+    // MARK: - Controles de zoom
+
+    private var zoomControls: some View {
+        VStack(spacing: 6) {
+            zoomButton(systemName: "plus") { adjustZoom(by: 1.4) }
+            zoomButton(systemName: "minus") { adjustZoom(by: 1.0 / 1.4) }
+            zoomButton(systemName: "scope") { resetView() }
+        }
+    }
+
+    private func zoomButton(systemName: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.text)
+                .frame(width: 32, height: 32)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.surface.opacity(0.85))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.border, lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func adjustZoom(by factor: Double) {
+        zoomMultiplier = clampedZoom(zoomMultiplier * factor)
     }
 
     private func trackPath(xform: ViewTransform) -> Path {
@@ -307,7 +412,11 @@ struct ConfiguradorTrechoView: View {
     @ViewBuilder
     private func directionChevrons(xform: ViewTransform) -> some View {
         if let lookup {
-            let halfWindow = focusWindow * 0.6
+            // Em zoom out (mult < 1) ou pan, queremos ver chevrons fora
+            // do focus inicial — escala a janela de filtro pelo inverso
+            // do multiplier corrente.
+            let mult = clampedZoom(zoomMultiplier * pinchInProgress)
+            let halfWindow = focusWindow * 0.6 / mult
             let n = lookup.points.count
             let chevronSpacing = 50.0  // unidades viewBox entre chevrons
             ForEach(Array(stride(from: 0.0, to: lookup.totalLength, by: chevronSpacing).enumerated()), id: \.offset) { _, off in
@@ -587,18 +696,30 @@ struct ConfiguradorTrechoView: View {
         let focus: P1FastCore.TrackPoint
         let zoom: Double
         let canvas: CGSize
+        let pan: CGSize
         func apply(_ p: P1FastCore.TrackPoint) -> CGPoint {
             CGPoint(
-                x: (p.x - focus.x) * zoom + canvas.width / 2,
-                y: (p.y - focus.y) * zoom + canvas.height / 2
+                x: (p.x - focus.x) * zoom + canvas.width / 2 + pan.width,
+                y: (p.y - focus.y) * zoom + canvas.height / 2 + pan.height
             )
         }
     }
 
     private func transform(in size: CGSize) -> ViewTransform {
         let canvasMin = min(size.width, size.height)
-        let zoom = canvasMin / focusWindow
-        return ViewTransform(focus: focusCenter, zoom: zoom, canvas: size)
+        // Zoom base enquadra `focusWindow` no menor lado do canvas.
+        // Multiplica pelo gesto de pinch (zoomMultiplier) clampado.
+        let baseZoom = canvasMin / focusWindow
+        let mult = clampedZoom(zoomMultiplier * pinchInProgress)
+        let pan = CGSize(
+            width: panOffset.width + panInProgress.width,
+            height: panOffset.height + panInProgress.height
+        )
+        return ViewTransform(focus: focusCenter, zoom: baseZoom * mult, canvas: size, pan: pan)
+    }
+
+    private func clampedZoom(_ z: Double) -> Double {
+        min(max(z, minZoomMultiplier), maxZoomMultiplier)
     }
 
     private func findRow() -> TrackSegmentRow? {
