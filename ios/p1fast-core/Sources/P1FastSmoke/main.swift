@@ -4777,6 +4777,138 @@ step("SEXEC-04: SegmentExecution com Vmin nil persiste como NULL") {
 }
 
 // ════════════════════════════════════════════════════════════
+// LiveTelemetry — captura → telemetry_samples (MS-2.1)
+// ════════════════════════════════════════════════════════════
+// LiveTelemetryRecorder vive em p1fast-ios (CoreMotion+CL não dão pra
+// rodar headless). Aqui validamos só o pedaço puro: serialização
+// Sample → JSON e persistência via TelemetryWriter.appendBatch.
+
+step("LIVE-01: Sample IMU sintético → payload JSON tem accX/Y/Z + gyroAlpha/Beta/Gamma") {
+    var s = Sample(t: 1_700_000_000_000, tMono: 12_345.6, source: SourceTags.imu)
+    s.accX = 1.5
+    s.accY = -2.5
+    s.accZ = 9.81
+    s.gyroAlpha = 12.0
+    s.gyroBeta = -3.5
+    s.gyroGamma = 0.7
+
+    let q = try makeTestDB()
+    try q.write { db in
+        try Sessao(id: "ses-live-1", timeId: "team-1", status: "ativa").insert(db)
+    }
+    try TelemetryWriter.appendBatch(
+        queue: q, sessaoId: "ses-live-1", timeId: "team-1",
+        samples: [s], startSeq: 0
+    )
+    let payload: String? = try q.read { db in
+        try String.fetchOne(db, sql: "SELECT payload FROM telemetry_samples WHERE sessao_id = ?",
+                            arguments: ["ses-live-1"])
+    }
+    guard let json = payload else { throw Bad(msg: "payload sumiu") }
+    for key in ["accX", "accY", "accZ", "gyroAlpha", "gyroBeta", "gyroGamma"] {
+        try assertTrue(json.contains("\"\(key)\""), "payload deveria ter \(key)")
+    }
+    try assertTrue(json.contains("\"source\":\"iphone-imu\""), "source IMU")
+}
+
+step("LIVE-02: Sample GPS sintético → kmh = speed * 3.6") {
+    var s = Sample(t: 1_700_000_000_001, tMono: 12_346.0, source: SourceTags.gps)
+    s.lat = -15.7475
+    s.lng = -47.8997
+    s.speed = 25.0
+    s.kmh = 25.0 * 3.6
+    s.acc = 3.5
+    s.course = 145.0
+
+    let q = try makeTestDB()
+    try q.write { db in
+        try Sessao(id: "ses-live-2", timeId: "team-1", status: "ativa").insert(db)
+    }
+    try TelemetryWriter.appendBatch(
+        queue: q, sessaoId: "ses-live-2", timeId: "team-1",
+        samples: [s], startSeq: 0
+    )
+    let payload: String? = try q.read { db in
+        try String.fetchOne(db, sql: "SELECT payload FROM telemetry_samples WHERE sessao_id = ?",
+                            arguments: ["ses-live-2"])
+    }
+    guard let json = payload else { throw Bad(msg: "payload GPS sumiu") }
+    try assertTrue(json.contains("\"kmh\":90"), "kmh esperado 90 (25 m/s × 3.6) — payload: \(json)")
+    try assertTrue(json.contains("\"speed\":25"), "speed esperado 25 m/s")
+    try assertTrue(json.contains("\"source\":\"cockpit-mobile\""), "source GPS")
+}
+
+step("LIVE-03: 100 amostras inseridas em ordem → fetch por seq devolve 0..99") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try Sessao(id: "ses-live-3", timeId: "team-1", status: "ativa").insert(db)
+    }
+    var samples: [Sample] = []
+    for i in 0..<100 {
+        var s = Sample(
+            t: 1_700_000_000_000 + Int64(i * 10),
+            tMono: 1000.0 + Double(i) * 0.01,
+            source: SourceTags.imu
+        )
+        s.accX = Double(i)
+        samples.append(s)
+    }
+    try TelemetryWriter.appendBatch(
+        queue: q, sessaoId: "ses-live-3", timeId: "team-1",
+        samples: samples, startSeq: 0
+    )
+    let seqs: [Int] = try q.read { db in
+        try Int.fetchAll(db, sql: """
+            SELECT seq FROM telemetry_samples
+            WHERE sessao_id = ?
+            ORDER BY seq ASC
+        """, arguments: ["ses-live-3"])
+    }
+    try assertEq(seqs.count, 100)
+    for i in 0..<100 {
+        try assertEq(seqs[i], i, "seq[\(i)] esperado \(i), foi \(seqs[i])")
+    }
+    let total = try TelemetryWriter.sampleCount(queue: q, sessaoId: "ses-live-3")
+    try assertEq(total, 100)
+}
+
+step("LIVE-04: Sample IMU completo → round-trip JSON preserva campos") {
+    var s = Sample(t: 1_700_000_000_002, tMono: 99.9, source: SourceTags.imu)
+    s.accX = 0.1; s.accY = 0.2; s.accZ = 0.3
+    s.gyroAlpha = 1.1; s.gyroBeta = 2.2; s.gyroGamma = 3.3
+
+    let q = try makeTestDB()
+    try q.write { db in
+        try Sessao(id: "ses-live-4", timeId: "team-1", status: "ativa").insert(db)
+    }
+    try TelemetryWriter.appendBatch(
+        queue: q, sessaoId: "ses-live-4", timeId: "team-1",
+        samples: [s], startSeq: 7
+    )
+    let raw = try q.read { db in
+        try Row.fetchOne(db, sql: """
+            SELECT seq, t, t_mono, payload FROM telemetry_samples WHERE sessao_id = ?
+        """, arguments: ["ses-live-4"])
+    }
+    guard let row = raw else { throw Bad(msg: "row sumiu") }
+    try assertEq(row["seq"] as Int, 7, "seq deve ser 7 (startSeq)")
+    try assertEq(row["t"] as Int64, 1_700_000_000_002)
+    try assertClose(row["t_mono"] as Double, 99.9)
+
+    let payload: String = row["payload"]
+    let decoded = try JSONDecoder().decode(Sample.self, from: Data(payload.utf8))
+    try assertEq(decoded.t, 1_700_000_000_002)
+    try assertClose(decoded.tMono, 99.9)
+    try assertClose(decoded.accX, 0.1)
+    try assertClose(decoded.accY, 0.2)
+    try assertClose(decoded.accZ, 0.3)
+    try assertClose(decoded.gyroAlpha, 1.1)
+    try assertClose(decoded.gyroBeta, 2.2)
+    try assertClose(decoded.gyroGamma, 3.3)
+    try assertEq(decoded.source, SourceTags.imu)
+}
+
+// ════════════════════════════════════════════════════════════
 // Multi-apex — 0..3 ápices por trecho (decisão Flávio 2026-05-05)
 // ════════════════════════════════════════════════════════════
 // Curva pode ter chicane / S / dupla — até 3 ápices. Schema cresce em
