@@ -109,7 +109,7 @@ final class TrackRepository: ObservableObject {
         segmentId: String,
         entry: P1FastCore.TrackPoint?,
         braking: P1FastCore.TrackPoint?,
-        apex: P1FastCore.TrackPoint?,
+        apexes: [P1FastCore.TrackPoint],
         exit: P1FastCore.TrackPoint?,
         markCalibrated: Bool = false
     ) async throws {
@@ -119,7 +119,7 @@ final class TrackRepository: ObservableObject {
             let base = P1FastCore.SegmentGeometry.decode(row.geometria)
                 ?? P1FastCore.SegmentGeometry.Blob(x: 0, y: 0, tipo: P1FastCore.SegmentTipo.curva.rawValue)
             let next = P1FastCore.SegmentGeometry.updateCanonicalPoints(
-                in: base, entry: entry, braking: braking, apex: apex, exit: exit,
+                in: base, entry: entry, braking: braking, apexes: apexes, exit: exit,
                 markCalibrated: markCalibrated
             )
             row.geometria = P1FastCore.SegmentGeometry.encode(next)
