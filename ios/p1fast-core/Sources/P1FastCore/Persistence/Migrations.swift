@@ -119,6 +119,17 @@ enum Migrations {
             try db.execute(sql: "CREATE INDEX idx_evento_pendencias_evento ON evento_pendencias(evento_id);")
             try db.execute(sql: "CREATE UNIQUE INDEX idx_evento_pendencias_unique ON evento_pendencias(evento_id, template_id);")
         }
+        // ═══ v6_vmin_georef ════════════════════════════════════
+        // MS-2.4 (PLANO_FASE_1) — segment_executions ganha o trio
+        // (vmin_kmh, vmin_x, vmin_y). Persistência consumindo o Detector
+        // real entra em MS-2.5; aqui só prepara o schema. Todas as
+        // colunas NULL — execuções legadas continuam válidas sem o trio.
+        // Espelha supabase/migrations/0007_vmin_georef.sql.
+        m.registerMigration("v6_vmin_georef") { db in
+            try db.execute(sql: "ALTER TABLE segment_executions ADD COLUMN vmin_kmh REAL;")
+            try db.execute(sql: "ALTER TABLE segment_executions ADD COLUMN vmin_x REAL;")
+            try db.execute(sql: "ALTER TABLE segment_executions ADD COLUMN vmin_y REAL;")
+        }
     }
 
     // swiftlint:disable:next function_body_length

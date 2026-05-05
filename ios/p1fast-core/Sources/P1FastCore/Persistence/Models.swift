@@ -587,6 +587,13 @@ public struct SegmentExecution: Codable, FetchableRecord, PersistableRecord {
     public var segmentId: String?
     public var tempoMs: Int?
     public var velocidadeMax: Double?
+    /// Vmin georef (MS-2.4): trio (kmh + x + y) do ponto onde a velocidade
+    /// mínima foi observada nesta execução do trecho. Detector calcula em
+    /// `DetectorSegmentEndEvent.velMinima` + `apexActual`; persistência
+    /// entra em MS-2.5. Nullable — execuções pré-MS-2.5 ficam sem o trio.
+    public var vminKmh: Double?
+    public var vminX: Double?
+    public var vminY: Double?
     public var createdAt: Int64
     public var syncedAt: Int64?
 
@@ -599,15 +606,20 @@ public struct SegmentExecution: Codable, FetchableRecord, PersistableRecord {
         case segmentId = "segment_id"
         case tempoMs = "tempo_ms"
         case velocidadeMax = "velocidade_max"
+        case vminKmh = "vmin_kmh"
+        case vminX = "vmin_x"
+        case vminY = "vmin_y"
         case createdAt = "created_at"
         case syncedAt = "synced_at"
     }
 
     public init(id: String, timeId: String, sessaoId: String, voltaId: String,
                 segmentId: String? = nil, tempoMs: Int? = nil, velocidadeMax: Double? = nil,
+                vminKmh: Double? = nil, vminX: Double? = nil, vminY: Double? = nil,
                 createdAt: Int64 = DB.nowMs(), syncedAt: Int64? = nil) {
         self.id = id; self.timeId = timeId; self.sessaoId = sessaoId; self.voltaId = voltaId
         self.segmentId = segmentId; self.tempoMs = tempoMs; self.velocidadeMax = velocidadeMax
+        self.vminKmh = vminKmh; self.vminX = vminX; self.vminY = vminY
         self.createdAt = createdAt; self.syncedAt = syncedAt
     }
 }
