@@ -16,8 +16,12 @@
 // Buffer interno + flush em lotes de 100 amostras OU a cada 1s pra
 // telemetry_samples via TelemetryWriter.appendBatch.
 //
+// MS-2.2: tela fica acesa via UIApplication.isIdleTimerDisabled
+// durante a captura. Background location habilitado pra GPS continuar
+// gravando quando o app vai pra background (Info.plist exige
+// UIBackgroundModes.location, já adicionado).
+//
 // NÃO conecta ao Detector ainda — MS-2.6.
-// NÃO usa background mode — MS-2.2.
 // NÃO amarra ao stint real — MS-2.3.
 
 import Foundation
@@ -25,6 +29,7 @@ import CoreMotion
 import CoreLocation
 import Combine
 import QuartzCore
+import UIKit
 import GRDB
 import P1FastCore
 
@@ -90,6 +95,12 @@ final class LiveTelemetryRecorder: NSObject, ObservableObject {
         buffer.removeAll(keepingCapacity: true)
         imuTs.removeAll(keepingCapacity: true)
         gpsTs.removeAll(keepingCapacity: true)
+        // MS-2.2: tela não dorme durante captura.
+        UIApplication.shared.isIdleTimerDisabled = true
+        // MS-2.2: GPS continua em background (Info.plist tem
+        // UIBackgroundModes.location). CoreLocation exige setar APÓS
+        // já ter authorization — então sempre setamos no start.
+        location.allowsBackgroundLocationUpdates = true
         startGps()
         startImu()
         scheduleFlushTimer()
@@ -102,6 +113,9 @@ final class LiveTelemetryRecorder: NSObject, ObservableObject {
         flushTimer = nil
         motion.stopDeviceMotionUpdates()
         location.stopUpdatingLocation()
+        // MS-2.2: libera wake lock + background updates.
+        location.allowsBackgroundLocationUpdates = false
+        UIApplication.shared.isIdleTimerDisabled = false
         await flush()
     }
 

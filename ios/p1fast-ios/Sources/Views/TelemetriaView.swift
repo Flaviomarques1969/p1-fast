@@ -18,6 +18,7 @@ struct TelemetriaView: View {
     let queue: DatabaseQueue
 
     @StateObject private var recorder: LiveTelemetryRecorder
+    @StateObject private var lowPower = LowPowerModeMonitor()
     @State private var sessaoId: String
     @State private var startedAt: Date?
     @State private var ticker = Date()
@@ -38,6 +39,7 @@ struct TelemetriaView: View {
     var body: some View {
         VStack(spacing: Spacing.lg) {
             header
+            if lowPower.isLowPowerMode { lowPowerWarning }
             metrics
             actionButton
             Spacer()
@@ -70,6 +72,16 @@ struct TelemetriaView: View {
                 .foregroundColor(.textFaint)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var lowPowerWarning: some View {
+        Text("Low Power Mode ativo — IMU e GPS podem cair em frequência. Desligue em Ajustes pra captura completa.")
+            .font(Font.captionP1)
+            .foregroundColor(.atencao)
+            .padding(Spacing.sm)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.surfaceRaised)
+            .cornerRadius(Radius.sm)
     }
 
     private var metrics: some View {
