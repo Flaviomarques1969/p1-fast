@@ -22,19 +22,23 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>DAILY_API_KEY</key>
 	<string>$(DAILY_API_KEY)</string>
-	<key>SUPABASE_ANON_KEY</key>
-	<string>$(SUPABASE_ANON_KEY)</string>
-	<key>SUPABASE_URL</key>
-	<string>$(SUPABASE_URL)</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>P1 Fast usa GPS pra gravar a telemetria do stint enquanto você pilota.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>P1 Fast usa o acelerômetro do iPhone pra medir aceleração lateral, longitudinal e curvas durante o stint.</string>
+	<key>SUPABASE_ANON_KEY</key>
+	<string>$(SUPABASE_ANON_KEY)</string>
+	<key>SUPABASE_URL</key>
+	<string>$(SUPABASE_URL)</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
 	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

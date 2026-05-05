@@ -73,6 +73,13 @@ targets:
         SUPABASE_URL: $(SUPABASE_URL)
         SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
         DAILY_API_KEY: $(DAILY_API_KEY)
+        # MS-2.1 — permissões pra captura ao vivo (CoreMotion + GPS).
+        NSLocationWhenInUseUsageDescription: P1 Fast usa GPS pra gravar a telemetria do stint enquanto você pilota.
+        NSMotionUsageDescription: P1 Fast usa o acelerômetro do iPhone pra medir aceleração lateral, longitudinal e curvas durante o stint.
+        # MS-2.2 — GPS continua em background. Wake lock
+        # (isIdleTimerDisabled) é controlado em runtime pelo recorder.
+        UIBackgroundModes:
+          - location
     settings:
       base:
         PRODUCT_NAME: p1fast-ios
