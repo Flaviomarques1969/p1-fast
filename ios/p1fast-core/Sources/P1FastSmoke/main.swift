@@ -4693,6 +4693,90 @@ step("MS14-07: markCalibrated=true força apexCalibration=CONFIRMED") {
 }
 
 // ════════════════════════════════════════════════════════════
+// Vmin georef — MS-2.4 (PLANO_FASE_1)
+// ════════════════════════════════════════════════════════════
+// segment_executions ganhou (vmin_kmh, vmin_x, vmin_y) — ponto georef
+// onde a velocidade mínima do trecho aconteceu. Schema-only nesta
+// rodada; persistência real virá no MS-2.5 (StintRepository.finalize
+// consumindo Detector.onSegmentEnd).
+
+step("SEXEC-01: migration v6_vmin_georef adicionou as 3 colunas") {
+    let q = try DB.makeMemoryQueue()
+    let cols = try q.read { db in
+        try Row.fetchAll(db, sql: "PRAGMA table_info(segment_executions)")
+            .map { $0["name"] as String }
+    }
+    for expected in ["vmin_kmh", "vmin_x", "vmin_y"] {
+        try assertTrue(cols.contains(expected), "coluna \(expected) ausente")
+    }
+}
+
+step("SEXEC-02: as 3 colunas vmin são NULLABLE (compat com legacy)") {
+    let q = try DB.makeMemoryQueue()
+    let cols = try q.read { db in
+        try Row.fetchAll(db, sql: "PRAGMA table_info(segment_executions)")
+    }
+    for name in ["vmin_kmh", "vmin_x", "vmin_y"] {
+        guard let col = cols.first(where: { $0["name"] as String == name }) else {
+            throw Bad(msg: "coluna \(name) sumiu")
+        }
+        let notnull = col["notnull"] as Int
+        try assertEq(notnull, 0, "\(name) deveria ser NULLABLE (notnull=0)")
+    }
+}
+
+step("SEXEC-03: insert + fetch SegmentExecution com trio Vmin → round-trip") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var s = Sessao(id: "ses-1", timeId: "team-1", carroId: nil, status: "ativa")
+        try s.insert(db)
+        var v = Volta(id: "vol-1", timeId: "team-1", sessaoId: "ses-1", numero: 1)
+        try v.insert(db)
+        var ex = SegmentExecution(
+            id: "se-1", timeId: "team-1", sessaoId: "ses-1", voltaId: "vol-1",
+            segmentId: nil, tempoMs: 12345, velocidadeMax: 180.5,
+            vminKmh: 92.3, vminX: 412.7, vminY: 305.1
+        )
+        try ex.insert(db)
+    }
+    let fetched = try q.read { db in
+        try SegmentExecution.fetchOne(db, key: "se-1")
+    }
+    guard let row = fetched else { throw Bad(msg: "row sumiu após insert") }
+    try assertClose(row.vminKmh, 92.3)
+    try assertClose(row.vminX, 412.7)
+    try assertClose(row.vminY, 305.1)
+}
+
+step("SEXEC-04: SegmentExecution com Vmin nil persiste como NULL") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var s = Sessao(id: "ses-2", timeId: "team-1", carroId: nil, status: "ativa")
+        try s.insert(db)
+        var v = Volta(id: "vol-2", timeId: "team-1", sessaoId: "ses-2", numero: 1)
+        try v.insert(db)
+        var ex = SegmentExecution(
+            id: "se-2", timeId: "team-1", sessaoId: "ses-2", voltaId: "vol-2",
+            tempoMs: 9999
+        )
+        try ex.insert(db)
+    }
+    // Confere via SQL bruto que as 3 colunas são NULL (Codable poderia
+    // mascarar 0.0 vs nil se o decode tivesse default — Row.fetchAll
+    // expõe o estado literal da coluna).
+    let row = try q.read { db in
+        try Row.fetchOne(db, sql:
+            "SELECT vmin_kmh, vmin_x, vmin_y FROM segment_executions WHERE id = ?",
+            arguments: ["se-2"]
+        )
+    }
+    guard let r = row else { throw Bad(msg: "row sumiu") }
+    try assertTrue(r["vmin_kmh"] == nil, "vmin_kmh deveria ser NULL")
+    try assertTrue(r["vmin_x"]   == nil, "vmin_x deveria ser NULL")
+    try assertTrue(r["vmin_y"]   == nil, "vmin_y deveria ser NULL")
+}
+
+// ════════════════════════════════════════════════════════════
 // Multi-apex — 0..3 ápices por trecho (decisão Flávio 2026-05-05)
 // ════════════════════════════════════════════════════════════
 // Curva pode ter chicane / S / dupla — até 3 ápices. Schema cresce em
