@@ -4693,6 +4693,105 @@ step("MS14-07: markCalibrated=true força apexCalibration=CONFIRMED") {
 }
 
 // ════════════════════════════════════════════════════════════
+// Multi-apex — 0..3 ápices por trecho (decisão Flávio 2026-05-05)
+// ════════════════════════════════════════════════════════════
+// Curva pode ter chicane / S / dupla — até 3 ápices. Schema cresce em
+// `apexPoints: [Point]?` e mantém apexX/apexY espelhando o primeiro
+// elemento pra retrocompat com leitor antigo / detector / classifier.
+
+step("APEX-01: blob legacy (só apexX/Y) → apexReferences singleton") {
+    // Simula JSON salvo antes da mudança: tem apexX/Y mas não apexPoints.
+    let legacyJson = """
+    {"apexCalibration":"CONFIRMED","apexX":42,"apexY":24,\
+    "tipo":"curva","x":0,"y":0}
+    """
+    let blob = SegmentGeometry.decode(legacyJson)
+    try assertTrue(blob != nil, "decode legacy")
+    try assertEq(blob!.apexReferences.count, 1)
+    try assertClose(blob!.apexReferences[0].x, 42)
+    try assertClose(blob!.apexReferences[0].y, 24)
+    try assertClose(blob!.apexReference?.x, 42, "apexReference singular = first")
+}
+
+step("APEX-02: blob multi-apex → apexReferences preserva ordem") {
+    let blob = SegmentGeometry.Blob(
+        x: 0, y: 0, tipo: "curva",
+        apexPoints: [
+            .init(x: 10, y: 1),
+            .init(x: 20, y: 2),
+            .init(x: 30, y: 3),
+        ]
+    )
+    let json = SegmentGeometry.encode(blob)!
+    let decoded = SegmentGeometry.decode(json)!
+    try assertEq(decoded.apexReferences.count, 3)
+    try assertClose(decoded.apexReferences[0].x, 10)
+    try assertClose(decoded.apexReferences[1].x, 20)
+    try assertClose(decoded.apexReferences[2].x, 30)
+}
+
+step("APEX-03: writes novos espelham apexX/Y no primeiro elemento") {
+    // Garante leitor legacy continua funcionando: precisa achar apexX/Y.
+    let original = SegmentGeometry.Blob(x: 0, y: 0, tipo: "curva")
+    let saved = SegmentGeometry.updateCanonicalPoints(
+        in: original,
+        entry: nil, braking: nil,
+        apexes: [TrackPoint(x: 11, y: 22), TrackPoint(x: 33, y: 44)],
+        exit: nil,
+        markCalibrated: true
+    )
+    try assertEq(saved.apexReferences.count, 2)
+    try assertClose(saved.apexX, 11, "apexX legacy = first.x")
+    try assertClose(saved.apexY, 22, "apexY legacy = first.y")
+}
+
+step("APEX-04: apexes vazio zera lista (nem singleton fica)") {
+    let withApex = SegmentGeometry.Blob(
+        x: 0, y: 0, tipo: "curva",
+        apexX: 1, apexY: 2,
+        apexPoints: [.init(x: 1, y: 2)]
+    )
+    let cleared = SegmentGeometry.updateCanonicalPoints(
+        in: withApex,
+        entry: nil, braking: nil, apexes: [], exit: nil
+    )
+    try assertEq(cleared.apexReferences.count, 0)
+    try assertTrue(cleared.apexX == nil, "apexX nil quando apexes=[]")
+    try assertTrue(cleared.apexReference == nil)
+}
+
+step("APEX-05: clampa em 3 — passar 5 fica com 3 primeiros") {
+    let original = SegmentGeometry.Blob(x: 0, y: 0, tipo: "curva")
+    let saved = SegmentGeometry.updateCanonicalPoints(
+        in: original,
+        entry: nil, braking: nil,
+        apexes: [
+            TrackPoint(x: 1, y: 1),
+            TrackPoint(x: 2, y: 2),
+            TrackPoint(x: 3, y: 3),
+            TrackPoint(x: 4, y: 4),
+            TrackPoint(x: 5, y: 5),
+        ],
+        exit: nil
+    )
+    try assertEq(saved.apexReferences.count, 3)
+    try assertClose(saved.apexReferences[2].x, 3, "último é o terceiro original")
+}
+
+step("APEX-06: overload singular ainda funciona (retrocompat UI)") {
+    let original = SegmentGeometry.Blob(x: 0, y: 0, tipo: "curva")
+    let saved = SegmentGeometry.updateCanonicalPoints(
+        in: original,
+        entry: nil, braking: nil,
+        apex: TrackPoint(x: 7, y: 8),
+        exit: nil
+    )
+    try assertEq(saved.apexReferences.count, 1)
+    try assertClose(saved.apexReferences[0].x, 7)
+    try assertClose(saved.apexX, 7)
+}
+
+// ════════════════════════════════════════════════════════════
 // Geometry2D — pointToSegmentDistance (configurador hit-test)
 // ════════════════════════════════════════════════════════════
 // Cobertura do hit-test do marcador no ConfiguradorTrechoView
