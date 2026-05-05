@@ -24,6 +24,7 @@ struct TelemetriaView: View {
     @State private var ticker = Date()
     @State private var elapsedS: TimeInterval = 0
     @State private var lastStopCount: Int = 0
+    @State private var sessaoErro: String?
 
     init(queue: DatabaseQueue) {
         self.queue = queue
@@ -39,6 +40,7 @@ struct TelemetriaView: View {
     var body: some View {
         VStack(spacing: Spacing.lg) {
             header
+            if let err = sessaoErro { sessaoErroBanner(err) }
             if lowPower.isLowPowerMode { lowPowerWarning }
             metrics
             actionButton
@@ -74,6 +76,16 @@ struct TelemetriaView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    private func sessaoErroBanner(_ msg: String) -> some View {
+        Text("Falha ao preparar sessão demo: \(msg). INICIAR não vai funcionar até resolver.")
+            .font(Font.captionP1)
+            .foregroundColor(.rec)
+            .padding(Spacing.sm)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.surfaceRaised)
+            .cornerRadius(Radius.sm)
+    }
+
     private var lowPowerWarning: some View {
         Text("Low Power Mode ativo — IMU e GPS podem cair em frequência. Desligue em Ajustes pra captura completa.")
             .font(Font.captionP1)
@@ -104,15 +116,18 @@ struct TelemetriaView: View {
     }
 
     private var actionButton: some View {
-        Button(action: toggle) {
+        let bloqueado = sessaoErro != nil && !recorder.running
+        return Button(action: toggle) {
             Text(recorder.running ? "PARAR" : "INICIAR")
                 .font(Font.titleP1)
                 .foregroundColor(.surface)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, Spacing.md)
-                .background(recorder.running ? Color.rec : Color.accent)
+                .background(bloqueado ? Color.textFaint
+                            : recorder.running ? Color.rec : Color.accent)
                 .cornerRadius(Radius.md)
         }
+        .disabled(bloqueado)
     }
 
     private var footer: some View {
@@ -159,6 +174,10 @@ struct TelemetriaView: View {
     /// Cria a sessao demo idempotente. Time `local-default-team` é
     /// criado pelos repos canônicos no boot do app — aqui só inserimos
     /// a Sessao (FK pro time já existe).
+    ///
+    /// FB-02: erro vai pro estado `sessaoErro` que renderiza banner
+    /// vermelho e desabilita INICIAR. Engolir silenciosamente fazia o
+    /// debugging ficar confuso (FK violation no flush mascarava raiz).
     private func ensureSessao() async {
         do {
             try await queue.write { db in
@@ -173,13 +192,17 @@ struct TelemetriaView: View {
                         status: "ativa",
                         dataInicio: DB.nowMs(),
                         dataFim: nil,
-                        voltasPlanejadas: 0,
+                        // CHECK constraint exige NULL ou >= 1; 0 não é
+                        // válido. Sessão demo de telemetria não tem
+                        // voltas planejadas — fica NULL.
+                        voltasPlanejadas: nil,
                         objetivo: "Telemetria demo (MS-2.1)"
                     ).insert(db)
                 }
             }
+            sessaoErro = nil
         } catch {
-            recorder.objectWillChange.send()
+            sessaoErro = error.localizedDescription
         }
     }
 

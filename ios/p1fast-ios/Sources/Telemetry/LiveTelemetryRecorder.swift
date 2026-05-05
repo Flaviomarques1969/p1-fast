@@ -85,6 +85,23 @@ final class LiveTelemetryRecorder: NSObject, ObservableObject {
         location.pausesLocationUpdatesAutomatically = false
     }
 
+    /// FB-01: cleanup síncrono caso a view morra com captura ativa.
+    /// Sem isso, `isIdleTimerDisabled` ficava `true` até reboot e
+    /// `allowsBackgroundLocationUpdates` continuava drenando GPS.
+    /// Buffer in-memory não-flushed é perdido (~1s de amostras no
+    /// pior caso, aceitável em teardown abrupto).
+    deinit {
+        motion.stopDeviceMotionUpdates()
+        location.stopUpdatingLocation()
+        location.allowsBackgroundLocationUpdates = false
+        flushTimer?.invalidate()
+        // UIApplication.shared.isIdleTimerDisabled é UIApplication-only
+        // → marshalling pra main. Ignora se app já tá saindo.
+        Task { @MainActor in
+            UIApplication.shared.isIdleTimerDisabled = false
+        }
+    }
+
     // MARK: - Controle público
 
     func start() {
