@@ -49,6 +49,7 @@ final class LiveKalmanProcessor: ObservableObject {
     private var seq: Int = 0
     private var flushTimer: Timer?
     private weak var recorder: LiveTelemetryRecorder?
+    private var sampleHandlerCancel: (() -> Void)?
 
     init(
         queue: DatabaseQueue,
@@ -72,22 +73,25 @@ final class LiveKalmanProcessor: ObservableObject {
 
     // MARK: - Plug com o recorder
 
-    /// Conecta o processor ao recorder. O recorder já está rodando ou
-    /// ainda não — não importa, o callback só dispara em append. Sobre-
-    /// escreve qualquer onSample anterior do recorder.
+    /// Conecta o processor ao recorder via addSampleHandler. Idempotente
+    /// — chamadas repetidas cancelam o registro anterior antes de
+    /// re-registrar. O recorder pode estar rodando ou não; o handler só
+    /// dispara em append.
     func attach(to recorder: LiveTelemetryRecorder) {
+        sampleHandlerCancel?()
         self.recorder = recorder
-        recorder.onSample = { [weak self] s in
+        sampleHandlerCancel = recorder.addSampleHandler { [weak self] s in
             self?.process(s)
         }
         scheduleFlushTimer()
     }
 
-    /// Solta o callback do recorder e fecha buffer com flush final.
+    /// Cancela o handler do recorder e fecha buffer com flush final.
     func detach() async {
         flushTimer?.invalidate()
         flushTimer = nil
-        recorder?.onSample = nil
+        sampleHandlerCancel?()
+        sampleHandlerCancel = nil
         recorder = nil
         await flush()
     }

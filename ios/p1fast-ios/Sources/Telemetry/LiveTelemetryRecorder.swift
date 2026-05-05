@@ -228,17 +228,27 @@ final class LiveTelemetryRecorder: NSObject, ObservableObject {
 
     // MARK: - Buffer + flush
 
-    /// MS-2.7 PR C: callback chamado por sample logo após o append no
+    /// MS-2.7 PR C: handlers chamados por sample logo após o append no
     /// buffer raw, antes do flush check. Usado pelo LiveKalmanProcessor
-    /// pra alimentar predict/update sem tocar no pipeline GPS/IMU.
-    /// Roda no MainActor (mesma fila do append). Default nil — sem
-    /// overhead quando o processor não está plugado.
-    public var onSample: ((Sample) -> Void)?
+    /// (predict/update) e pelo LiveDetectorBridge (consume → Detector).
+    /// Roda no MainActor (mesma fila do append). MS-2.6: era um único
+    /// callback `onSample`, virou dicionário pra suportar múltiplos
+    /// consumidores ao vivo (Kalman + Detector + futuro Box cockpit).
+    private var sampleHandlers: [UUID: (Sample) -> Void] = [:]
+
+    /// Registra um handler de Sample. Retorna closure que cancela o
+    /// registro — segue o padrão do `Detector.onLap`/`onSegmentStart`.
+    @discardableResult
+    public func addSampleHandler(_ cb: @escaping (Sample) -> Void) -> () -> Void {
+        let id = UUID()
+        sampleHandlers[id] = cb
+        return { [weak self] in self?.sampleHandlers.removeValue(forKey: id) }
+    }
 
     private func append(_ s: Sample) {
         buffer.append(s)
         sampleCount += 1
-        onSample?(s)
+        for cb in sampleHandlers.values { cb(s) }
         if buffer.count >= flushBatchSize {
             Task { await flush() }
         }
