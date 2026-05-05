@@ -30,11 +30,13 @@
 		65468450ADCCFC8E14DBEFE0 /* Daily in Frameworks */ = {isa = PBXBuildFile; productRef = 657FCFF4ED304B535B0A1FDA /* Daily */; };
 		6F90A7452F0F5831913118ED /* CombustivelRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC43A445C874747C1D6C3A8D /* CombustivelRepository.swift */; };
 		736D869211707A62F9693C61 /* P1FastCore in Frameworks */ = {isa = PBXBuildFile; productRef = B3F0276D699418949A723AA1 /* P1FastCore */; };
+		7D1256B5A41AB5798808ACD9 /* TelemetriaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1298033562868A4C30B884D8 /* TelemetriaView.swift */; };
 		7D9C6DCB181D22F53E8E0AC4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 839526E2A03B6C2ED09D4907 /* ContentView.swift */; };
 		82318A9F1DB6BFFD6D20BB07 /* SummaryStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = B17051FF421D051EE979161D /* SummaryStats.swift */; };
 		878C19864476206B162D941B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9AF697E035B2E094B09108F9 /* Assets.xcassets */; };
 		8E3DAF8B6F3BE8E346213A37 /* StintRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52184FDD398B02FA4752681B /* StintRepository.swift */; };
 		8FB6DBD08681434559524D83 /* CarroModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0390017441A8A36F834BDC25 /* CarroModalView.swift */; };
+		91C3521B7A7A4CC1C6B0E4DA /* LiveTelemetryRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 053AA78D342F7B78C9FFC17E /* LiveTelemetryRecorder.swift */; };
 		95A022ADA0074FA202C414F5 /* ThemeShowcaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6589CA76112B0192B9A53BD8 /* ThemeShowcaseView.swift */; };
 		95B2A32565288C523837A89E /* EventoMockSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 139F414C2942139A9367A3B2 /* EventoMockSummary.swift */; };
 		99A8671050630E34B1F457EA /* LicaoRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FBA0DEE7AB4736707796F45 /* LicaoRepository.swift */; };
@@ -68,9 +70,11 @@
 /* Begin PBXFileReference section */
 		0369DF419BB97181FF6FE6D0 /* PneuRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PneuRepository.swift; sourceTree = "<group>"; };
 		0390017441A8A36F834BDC25 /* CarroModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarroModalView.swift; sourceTree = "<group>"; };
+		053AA78D342F7B78C9FFC17E /* LiveTelemetryRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTelemetryRecorder.swift; sourceTree = "<group>"; };
 		0D622390B8BAC3FF6A0AFCCA /* Card.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Card.swift; sourceTree = "<group>"; };
 		0E4DC20BF1F609324F2C9EE9 /* PilotoRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PilotoRepository.swift; sourceTree = "<group>"; };
 		0FD40430C136E8D926EC0FE7 /* PosStintView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PosStintView.swift; sourceTree = "<group>"; };
+		1298033562868A4C30B884D8 /* TelemetriaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetriaView.swift; sourceTree = "<group>"; };
 		139F414C2942139A9367A3B2 /* EventoMockSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventoMockSummary.swift; sourceTree = "<group>"; };
 		162332DAA2D671F61DFE3881 /* StintModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StintModalView.swift; sourceTree = "<group>"; };
 		2285A445626E15C137E07CCA /* CarroRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarroRepository.swift; sourceTree = "<group>"; };
@@ -148,6 +152,14 @@
 			path = Resources;
 			sourceTree = "<group>";
 		};
+		249FD8D7CB7E13D07B7C56A6 /* Telemetry */ = {
+			isa = PBXGroup;
+			children = (
+				053AA78D342F7B78C9FFC17E /* LiveTelemetryRecorder.swift */,
+			);
+			path = Telemetry;
+			sourceTree = "<group>";
+		};
 		24F1A5FA84FB5005E762C261 = {
 			isa = PBXGroup;
 			children = (
@@ -166,6 +178,7 @@
 				355F67A4B62121AA61B72604 /* Components */,
 				AE3A9493BC39695B12A2E3BB /* Persistence */,
 				70525E5A2953450D1691F65D /* Sync */,
+				249FD8D7CB7E13D07B7C56A6 /* Telemetry */,
 				7677CABF8CC8AFD50C6A24DD /* Theme */,
 				55EA84D49EE64D7CA3CD17E6 /* Views */,
 			);
@@ -229,6 +242,7 @@
 				81212C05D55C55EC7D0C0005 /* SincronizacaoView.swift */,
 				162332DAA2D671F61DFE3881 /* StintModalView.swift */,
 				9411252FE97C94D57AF341A7 /* SyncStatusBadge.swift */,
+				1298033562868A4C30B884D8 /* TelemetriaView.swift */,
 				6589CA76112B0192B9A53BD8 /* ThemeShowcaseView.swift */,
 				43F3A2677E46856380EEA8BF /* TrechoListaView.swift */,
 			);
@@ -398,6 +412,7 @@
 				2841E12C02FD0F7E9A5A9506 /* HomeView.swift in Sources */,
 				3FA48650CF026367DF94E0C0 /* LicaoListaView.swift in Sources */,
 				99A8671050630E34B1F457EA /* LicaoRepository.swift in Sources */,
+				91C3521B7A7A4CC1C6B0E4DA /* LiveTelemetryRecorder.swift in Sources */,
 				B39DBE85EA240E9F1B6698FE /* P1FastApp.swift in Sources */,
 				5E4293E8007960583EF0C9F6 /* PassageiroCadastroView.swift in Sources */,
 				C49AFE1839DB6C37AF4DB487 /* PassageiroRepository.swift in Sources */,
@@ -418,6 +433,7 @@
 				82318A9F1DB6BFFD6D20BB07 /* SummaryStats.swift in Sources */,
 				2114E39350EB63E1FFABAD27 /* SyncCoordinator.swift in Sources */,
 				E3DE2A8186A74405CD4D2586 /* SyncStatusBadge.swift in Sources */,
+				7D1256B5A41AB5798808ACD9 /* TelemetriaView.swift in Sources */,
 				A8A95BAB34BBD244FA33A078 /* Theme.swift in Sources */,
 				95A022ADA0074FA202C414F5 /* ThemeShowcaseView.swift in Sources */,
 				312FC3DBAC191F0E3F648CD1 /* TrackRepository.swift in Sources */,

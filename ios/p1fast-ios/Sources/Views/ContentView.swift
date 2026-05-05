@@ -75,6 +75,7 @@ private enum AppRoute {
     case configurador
     case licoes
     case setupAvancado
+    case telemetria
 
     static var fromLaunchArgs: AppRoute {
         let args = ProcessInfo.processInfo.arguments
@@ -98,6 +99,7 @@ private enum AppRoute {
         if args.contains("--p1-trechos") { return .trechos }
         if args.contains("--p1-licoes") { return .licoes }
         if args.contains("--p1-setup-avancado") { return .setupAvancado }
+        if args.contains("--p1-telemetria") { return .telemetria }
         if args.contains("--p1-eventos") { return .eventos }
         return .home
     }
@@ -241,6 +243,8 @@ private struct ReadyRoot: View {
             PessoasView(initialSubTab: .licoes)
         case .setupAvancado:
             SetupAvancadoLauncher()
+        case .telemetria:
+            TelemetriaView(queue: queue)
         }
     }
 }
