@@ -164,6 +164,8 @@ Sem captura, debrief é mock. Tier 0 puro.
 | 2.1 | `LiveTelemetryRecorder.swift` — CoreMotion 100Hz + CLLocationManager 1Hz, sample shape canônico (`t`, `tMono`, `accLong/Lat/Vert`, `gyroX/Y/Z`, `lat/lng/speed/heading`) | Cloud |
 | 2.2 | Wake lock (`isIdleTimerDisabled`) + Background mode em Info.plist (location + processing) + `LowPowerModeMonitor` | Cloud |
 | 2.3 | Botão Iniciar/Encerrar stint dispara captura; Hook fim de stint chama pipeline | Aqui |
+| 2.4 | Migration `segment_executions` ganha `vmin_kmh`, `vmin_x`, `vmin_y` — ponto georef onde a velocidade mínima aconteceu (Detector já calcula em `DetectorSegmentEndEvent.velMinima` + `apexActual`). Decisão Flávio 2026-05-04. | Cloud |
+| 2.5 | `StintRepository.finalize` consome `Detector.onSegmentEnd` real (sai do mock atual de geração de voltas) e grava o trio Vmin por segment_execution. Pré-req do widget Vmin no cockpit (MS-13.6) e do Command Box futuro (MS-12). | Cloud |
 
 ### MS-3 — Edge Function pipeline + smoke E2E
 
@@ -289,6 +291,7 @@ Depende de MS-2 (live data) + MS-8 (shift light já portado).
 | 13.3 | Halo radial 4 estados (neutro / laranja recorde-stint / ouro best-alltime / roxo pior-stint) | Cloud |
 | 13.4 | Wireup live: detector → cockpit (`CockpitState`, `LapDetector`, `DeltaCalculator`, `CommandResolver`, `HaloController`) | Cloud |
 | 13.5 | Validação visual contra `mockup-cockpit-piloto.html` | Aqui |
+| 13.6 | Widget Vmin georef por trecho — exibe Vmin (km/h) + ponto (x/y) da **melhor volta** por trecho. Consome `segment_executions.vmin_*` (MS-2.4/2.5). Decisão Flávio 2026-05-04. | Cloud |
 
 ### MS-14 — Vista de volta + ghost map de trecho + reference line
 
@@ -374,6 +377,7 @@ Depende de MS-9 (T4000 fornece temp motor real) — em Tier 0 usa estimativa.
 - **Package.resolved é tracked, não deletar** — ADR-022
 - **Tier 1 = T4000 via BLE** — §4 deste plano. Outras ECUs ficam pra Tier 2+ (futuro).
 - **Pendências obrigatório × adicional, vivas, por carro+evento** — §6 MS-5 (decisão Flávio 2026-05-03, corrige "simples × completo")
+- **Apex ≠ Vmin ≠ ponto mais interno geométrico** (decisão Flávio 2026-05-04). Apex = referência de tangência da linha de corrida (organiza rotação e saída — métrica de linha). Vmin = dado dinâmico em runtime (onde o carro foi mais devagar — métrica de velocidade). Saída = métrica dominante quando há reta relevante depois. Configurador (MS-1.4) cadastra apex; Vmin é capturado e persistido em runtime (MS-2.4/2.5) e consumido pelo cockpit do piloto (MS-13.6) e Command Box futuro (MS-12).
 
 ---
 
