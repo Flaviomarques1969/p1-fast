@@ -228,9 +228,17 @@ final class LiveTelemetryRecorder: NSObject, ObservableObject {
 
     // MARK: - Buffer + flush
 
+    /// MS-2.7 PR C: callback chamado por sample logo após o append no
+    /// buffer raw, antes do flush check. Usado pelo LiveKalmanProcessor
+    /// pra alimentar predict/update sem tocar no pipeline GPS/IMU.
+    /// Roda no MainActor (mesma fila do append). Default nil — sem
+    /// overhead quando o processor não está plugado.
+    public var onSample: ((Sample) -> Void)?
+
     private func append(_ s: Sample) {
         buffer.append(s)
         sampleCount += 1
+        onSample?(s)
         if buffer.count >= flushBatchSize {
             Task { await flush() }
         }
