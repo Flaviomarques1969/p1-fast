@@ -75,10 +75,13 @@ struct ConfiguradorTrechoView: View {
         case pan
     }
     @State private var dragMode: DragMode?
-    /// Raio em pontos pra hit-test do marcador. Generoso (40pt) pra perdoar
-    /// toque impreciso de dedo. Inclui marcador inativo — tocar nele já
-    /// ativa e arrasta no mesmo gesto (sem precisar do pill primeiro).
-    private let markerHitRadius: Double = 40
+    /// Tolerância em pontos da tela pra hit-test do marcador, medida como
+    /// distância ponto-SEGMENTO até a barrinha visível (não ponto-centro).
+    /// 30pt cobre toda a barra rotacionada + perdoa toque impreciso. Match
+    /// natural com o que o usuário vê: tocou na barra, arrastou; tocou
+    /// fora dela, panou. Inclui marcador inativo — tocar já ativa e
+    /// arrasta no mesmo gesto.
+    private let markerHitTolerance: Double = 30
 
     /// Zoom multiplicador sobre o `focusWindow` base. >1 amplia (mais perto),
     /// <1 afasta. Persistido enquanto o trecho não troca; reseta no
@@ -398,18 +401,20 @@ struct ConfiguradorTrechoView: View {
             }
     }
 
-    /// Hit-test: devolve o marcador mais próximo do toque inicial (em pts
-    /// da tela) se estiver dentro de `markerHitRadius`. Ativa-o se ainda
-    /// não for o ativo. Senão devolve `.pan`.
+    /// Hit-test ponto-SEGMENTO: cada marcador é uma linha rotacionada de
+    /// 56pt (após zoom/scale). O hit antigo era ponto-centro com raio 40pt
+    /// — em zoom alto, tocar na ponta da barrinha caía fora do raio e o
+    /// gesto virava pan acidental. Aqui calculamos a distância do toque
+    /// até o segmento da barra (mesmas coords da tela usadas pra desenhar
+    /// o tick) e batemos contra `markerHitTolerance` (30pt). Cobre a barra
+    /// inteira + folga generosa pra dedo. Em empate, vence o mais próximo.
     private func decideDragMode(at touch: CGPoint, xform: ViewTransform) -> DragMode {
         var best: (kind: CanonicalPointKind, dist: Double)?
         for kind in CanonicalPointKind.allCases {
             guard let p = point(for: kind) else { continue }
-            let screen = xform.apply(p)
-            let dx = Double(touch.x - screen.x)
-            let dy = Double(touch.y - screen.y)
-            let d = (dx * dx + dy * dy).squareRoot()
-            if d <= markerHitRadius && (best == nil || d < best!.dist) {
+            let (p1, p2) = markerSegmentScreen(for: p, kind: kind, xform: xform)
+            let d = distanceFromPoint(touch, toLineFrom: p1, to: p2)
+            if d <= markerHitTolerance && (best == nil || d < best!.dist) {
                 best = (kind, d)
             }
         }
@@ -419,6 +424,43 @@ struct ConfiguradorTrechoView: View {
         // Tap em marcador inativo já vira ativo no mesmo gesto.
         if active != hit.kind { active = hit.kind }
         return .marker(kind: hit.kind, anchorPoint: p)
+    }
+
+    /// Pontas (p1, p2) da barrinha visível em coords de tela — mesmo
+    /// cálculo do `perpTick` (perp da tangente × halfL escalado pelo
+    /// zoom via `xform.apply`). Marcador ativo é 1.25× maior.
+    private func markerSegmentScreen(
+        for p: P1FastCore.TrackPoint,
+        kind: CanonicalPointKind,
+        xform: ViewTransform
+    ) -> (CGPoint, CGPoint) {
+        let tangent = pathTangent(at: p) ?? (1, 0)
+        let perp = (-tangent.1, tangent.0)
+        let scale: Double = active == kind ? 1.25 : 1.0
+        let halfL = tickLength * scale / 2
+        let p1 = xform.apply(P1FastCore.TrackPoint(x: p.x + perp.0 * halfL, y: p.y + perp.1 * halfL))
+        let p2 = xform.apply(P1FastCore.TrackPoint(x: p.x - perp.0 * halfL, y: p.y - perp.1 * halfL))
+        return (p1, p2)
+    }
+
+    /// Distância 2D padrão de `p` até o segmento [a, b], com projeção
+    /// clampada a [0,1] pra não cair na reta infinita. Quando a barra
+    /// degenera num ponto (zoom mínimo), cai pra distância euclidiana.
+    private func distanceFromPoint(_ p: CGPoint, toLineFrom a: CGPoint, to b: CGPoint) -> Double {
+        let abx = Double(b.x - a.x)
+        let aby = Double(b.y - a.y)
+        let apx = Double(p.x - a.x)
+        let apy = Double(p.y - a.y)
+        let lenSq = abx * abx + aby * aby
+        if lenSq < 1e-9 {
+            return (apx * apx + apy * apy).squareRoot()
+        }
+        let t = max(0, min(1, (apx * abx + apy * aby) / lenSq))
+        let projX = Double(a.x) + t * abx
+        let projY = Double(a.y) + t * aby
+        let dx = Double(p.x) - projX
+        let dy = Double(p.y) - projY
+        return (dx * dx + dy * dy).squareRoot()
     }
 
     // MARK: - Controles de zoom
