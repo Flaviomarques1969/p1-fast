@@ -1,7 +1,25 @@
 # P1 Fast — STATUS
 
-**Data deste checkpoint:** 2026-05-04 (sessão 2 — batch de paridade + 2 ports novos)
-**Estado:** Plano `docs/PLANO_FASE_1.md` em execução. **23 PRs mergeados nas duas sessões de hoje** (#57..#79), 311 smoke tests verdes. Pipeline shift-light + domínio canônico + 2 ports novos (Corredor, Projector) + 4 fixes de paridade JS (Quality, LessonSchema, CoachPhrases, LessonLibrary).
+**Data deste checkpoint:** 2026-05-05 (sessão pivot pra captura ao vivo + arquivamento P1 Coach Vision)
+**Estado:** Plano `docs/PLANO_FASE_1.md` em execução. Total 30 PRs mergeados (#57..#92), 358 smoke tests verdes. **4 PRs abertas** (#93/#94/#95/#96) aguardando teste em campo no iPhone real antes de mergear. Pivot importante: MS-2.5 desbloqueada só após MS-2.1/2.2/2.3.
+
+## Sessão 2026-05-05 — pivot e PRs abertas
+
+| PR | Estado | Tema |
+|---|---|---|
+| #84..#90 | mergeado | MS-1.4 (configurador multi-apex) + multi-apex schema/UI 0..3 ápices |
+| #91 | mergeado | CI paths-filter + concurrency + tira `push:main` (resolve estouro Actions) |
+| #92 | mergeado | **MS-2.4** — `segment_executions` ganha `vmin_kmh/x/y` (schema-only) |
+| **#93** | aberto | **MS-2.1** — LiveTelemetryRecorder (CoreMotion 100Hz + GPS 1Hz no app real) |
+| **#94** | aberto | docs: P1 Coach Vision arquivada (renomeado de Fast Coach) |
+| **#95** | aberto | **MS-2.2** — wake lock + GPS background + LowPowerModeMonitor (stacked em #93) |
+| **#96** | aberto | docs: checklist de teste em campo MS-2.1+2.2 |
+
+Auto-review pré-teste em `docs/FIX_BACKLOG_MS_2_1_2_2.md` — 11 itens (2🔴 alta, 4🟡 média, 5🟢 polish). FB-01 (deinit não para captura → wake lock leak) e FB-02 (ensureSessao silencia erros) valem fixar antes de mergear.
+
+**Pivot reconhecido:** o checkpoint anterior dizia "MS-2.5 a fazer agora". Auto-revisão mostrou que MS-2.5 (`StintRepository.finalize` consumindo Detector) é exercício acadêmico sem MS-2.1/2.2/2.3 prontas + telemetria viva no app. MS-2.5 fica gated em MS-2.1/2.2/2.3 + 1-2 sessões reais com Vmin gravado.
+
+**P1 Coach Vision:** spec gigante de Fast Coach virou doc de visão `docs/P1_COACH_VISION.md` (renomeado pra consolidar com `P1Coach.swift` existente). NÃO implementar até pré-requisitos: telemetria viva + volta de referência + heading confiável + linha de corrida cadastrada.
 
 > **Se você é Claude abrindo esta sessão pela primeira vez:**
 > Leia este arquivo primeiro, depois `docs/PLANO_FASE_1.md` (doc mestre), depois `~/.claude/projects/-Users-imac/memory/MEMORY.md` (memória global) + `~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/MEMORY.md` (memória do projeto).
@@ -66,8 +84,13 @@ Audit honesto mostrou que "Phase 1A 100%" foi declarada por engano: cobria só S
 | MS | Tema | Status |
 |---|---|---|
 | **MS-1.1-1.3** | Domínio canônico Swift port | ✅ feito (TrackSegment, ErrorClassifier, TrajectoryMonitor) |
-| **MS-1.4** | Configurador visual de pista (UI) | ❌ não feito (precisa SwiftUI + simulator pra validar) |
-| **MS-2** | LiveTelemetryRecorder | ❌ não feito (CoreMotion + GPS + Info.plist) |
+| **MS-1.4** | Configurador visual de pista (UI) | ✅ feito (PRs #84..#88, multi-apex 0..3 ápices) |
+| **MS-2.1** | LiveTelemetryRecorder | 🟡 PR #93 aberta (build verde, aguarda teste iPhone) |
+| **MS-2.2** | Wake lock + background mode | 🟡 PR #95 aberta (stacked em #93) |
+| **MS-2.3** | Botão amarra captura ao stint (Aqui — Flávio) | ❌ não feito |
+| **MS-2.4** | `segment_executions.vmin_kmh/x/y` | ✅ mergeado (#92) |
+| **MS-2.5** | `StintRepository.finalize` consome Detector real | ⏸️ gated em 2.1/2.2/2.3 + sessões reais |
+| **MS-2.6** | Wire Detector ↔ telemetry pipeline | ⏸️ gated em 2.1/2.2/2.3 |
 | **MS-3** | Edge Function pipeline + smoke E2E | ❌ não feito |
 | **MS-4** | StintPlan iOS port | ❌ não feito (schema + repo + UI) |
 | **MS-5** | Pendências vivas | ❌ não feito (CRUD + por carro + obrigatório/adicional) |
@@ -129,13 +152,17 @@ Esses precisam de Xcode pra build/validar. Domínio Swift puro pode continuar at
 
 ---
 
-## Próximo passo concreto pós-/compact
+## Próximo passo concreto
 
-Domínio puro JS está esgotado em paridade. **Nenhum port pequeno trivial sobrou** (tire-wear/stint-env/pedagogical-plan/etc dependem de IO).
+1. **Flávio testa #93 + #95 no iPhone real** seguindo `docs/MS_2_1_2_2_FIELD_TEST.md`. ~10 min, qualquer lugar com céu aberto.
+2. Se 7/8 passarem → mergear #93 → #95 (#95 vira automaticamente baseada em main).
+3. **MS-2.3 (Aqui — Flávio)**: botão no `StintModalView` que dispara `LiveTelemetryRecorder` no início do stint real e finaliza no encerramento.
+4. Ao menos 1 sessão real com Vmin gravado → desbloqueia MS-2.6 (wire Detector) → MS-2.5 (StintRepository.finalize consome eventos).
 
-Opções pra retomada (decisão Flávio):
+Antes de mergear #93 + #95, considerar fix de FB-01 + FB-02 (`docs/FIX_BACKLOG_MS_2_1_2_2.md`). 10 min, baixo risco.
 
-1. **Detector live engine port** — 262 linhas, classe stateful com listener pattern. Médio porte, valida sem Xcode (consume(snap) é puro). Resolve o gap "Detector ao vivo: port nativo Swift, JS aposentado".
-2. **Auditoria CrossValidation paridade** — comparar 410 linhas JS vs 422 Swift, achar e fixar divergências. Mesmo padrão de hoje (Quality/LessonLibrary).
-3. **Pivot pra UI iOS** — abrir Xcode e fazer MS-1.4 (configurador visual), MS-2 (LiveTelemetryRecorder) ou MS-13 (CockpitDevice 956×440). Precisa simulator + olho do Flávio.
-4. **STATUS.md atualizado** — pode dar /compact agora; ao retomar, leio este arquivo + plano e escolho com Flávio.
+Outras frentes paralelas (sem depender de teste em campo):
+- **Detector live engine port** — 262 linhas JS → Swift. Já existe `Detector.swift` em core; auditoria de paridade vale.
+- **Auditoria CrossValidation paridade** — 410 linhas JS vs 422 Swift, achar divergências.
+- **MS-13** Cockpit ao vivo 956×440 (precisa Xcode + simulator).
+- **MS-9** Adapter BLE T4000 (precisa hardware Injepro).
