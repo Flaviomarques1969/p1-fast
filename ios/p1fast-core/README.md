@@ -99,6 +99,7 @@ Cada teste Swift mapeia 1:1 pra um teste do `tests/node-smoke-telemetry-p0.mjs` 
 | FU-01..FU-07 | fuel-calc.js | calcular (3 estados Disponivel) + calcularProgressoStint |
 | PC-01..PC-14 | node-smoke-p1-coach.mjs (subset MVP) | start/endLearningSession, electLesson com focus, cooldown, maxPerCorner, pause/resume, BAIXA gating, signalsFromSnapshot, AUDIT 7 MVP, E2E 3 voltas, focusLessonId scope |
 | PERSIST-01..PERSIST-16 | (sem equivalente JS — Dexie é runtime web; aqui é GRDB local) | Schema v1 cria 20 tabelas + sync_queue, telemetry_samples sem synced_at (ADR-014), CHECK constraints (voltas_planejadas≥1, marco.tipo, fonte_temperatura), FK habilitadas, SyncQueue.markSynced/listPending/enqueue/drain/incrementAttempts, migrator idempotente |
+| K-01..K-14 | (sem JS — primeira impl. nativa) | KalmanINSGPS — fusão IMU 100Hz + GPS ~1Hz CV-2D, projeção flat-earth privada, heading via course/gyroAlpha, smoke cobre drift, bound, convergência, sinal leste/norte, integração cinemática |
 
 A próxima frente — quando vier — adiciona V-003..V-011, sample-store, e providers (mock/device/t4000).
 
