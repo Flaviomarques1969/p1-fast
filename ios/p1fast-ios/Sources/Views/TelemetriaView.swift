@@ -192,7 +192,10 @@ struct TelemetriaView: View {
                         status: "ativa",
                         dataInicio: DB.nowMs(),
                         dataFim: nil,
-                        voltasPlanejadas: 0,
+                        // CHECK constraint exige NULL ou >= 1; 0 não é
+                        // válido. Sessão demo de telemetria não tem
+                        // voltas planejadas — fica NULL.
+                        voltasPlanejadas: nil,
                         objetivo: "Telemetria demo (MS-2.1)"
                     ).insert(db)
                 }
