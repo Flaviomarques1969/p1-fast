@@ -1,10 +1,10 @@
-# Fast Coach — Visão de Produto
+# P1 Coach — Visão de Produto
 
 **Status:** doc de visão. Não é plano de execução.
 **Decisão:** Flávio 2026-05-05 — arquivar como constituição do módulo.
 **Função:** orientar decisões futuras de Coach. Quando o módulo for implementado (depois de MS-2.1/2.2/2.3 e de 2-3 sessões reais gravadas), este doc define o vocabulário, as regras e o que NÃO fazer. Pesos numéricos e limiares específicos ficam de fora — calibram com dado real, não com palpite.
 
-Este doc trata só do **conceito**. Tipos, migrations, scoring numérico e arquitetura ficam para o `FAST_COACH_DESIGN.md` quando chegar a hora.
+Este doc trata só do **conceito**. Tipos, migrations, scoring numérico e arquitetura ficam para o `P1_COACH_DESIGN.md` quando chegar a hora.
 
 ---
 
@@ -280,7 +280,7 @@ Sem qualquer um destes, o módulo é exercício acadêmico:
 3. **Heading confiável** — fusão IMU+GPS calibrada para dar yaw rate em baixa velocidade.
 4. **Linha de corrida cadastrada** — não só apex points soltos. Configurador atual cadastra apex; falta a linha completa pra fallback geométrico funcionar.
 
-Quando esses 4 estiverem em pé, abrir `FAST_COACH_DESIGN.md` com escopo recortado pelo dado disponível.
+Quando esses 4 estiverem em pé, abrir `P1_COACH_DESIGN.md` com escopo recortado pelo dado disponível.
 
 ---
 
