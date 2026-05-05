@@ -4978,6 +4978,283 @@ step("GEO-10: barra rotacionada 45° — distância perpendicular preservada") {
     try assertClose(d, r, tol: 1e-9)
 }
 
+// ════════════════════════════════════════════════════════════
+// KalmanINSGPS — K-01 .. K-14 (MS-2.7 PR A, primeira impl. nativa)
+// ════════════════════════════════════════════════════════════
+
+func kImu(t: Int64, tMono: Double, accX: Double, accY: Double, gyroAlpha: Double? = nil) -> Sample {
+    var s = Sample(t: t, tMono: tMono, source: SourceTags.imu, signalQuality: "GOOD")
+    s.accX = accX
+    s.accY = accY
+    if let g = gyroAlpha { s.gyroAlpha = g }
+    return s
+}
+
+func kGps(t: Int64, tMono: Double, lat: Double, lng: Double, acc: Double, course: Double? = 0, speed: Double? = 0) -> Sample {
+    var s = Sample(t: t, tMono: tMono, source: SourceTags.gps, signalQuality: "GOOD")
+    s.lat = lat
+    s.lng = lng
+    s.acc = acc
+    s.course = course
+    s.speed = speed
+    return s
+}
+
+let kBiasX = -0.008
+let kBiasY =  0.002
+let kLat0  = -15.79
+let kLng0  = -47.88
+
+step("K-01: predict sem update prévio mantém estado zero e sourceKalman=false") {
+    let f = KalmanINSGPS()
+    let s = kImu(t: 1_700_000_000_000, tMono: 100, accX: 0, accY: 0)
+    let e = f.predict(sample: s)
+    try assertEq(e.sourceKalman, false)
+    try assertClose(e.xM, 0, tol: 1e-9)
+    try assertClose(e.yM, 0, tol: 1e-9)
+    try assertTrue(e.posSigmaM > 1e5, "posSigmaM grande antes do primeiro fix")
+}
+
+step("K-02: origem da projeção no primeiro fix → x=y=0, sourceKalman=true") {
+    let f = KalmanINSGPS()
+    let e = f.update(sample: kGps(t: 1_700_000_000_200, tMono: 200, lat: kLat0, lng: kLng0, acc: 3))
+    try assertClose(e.xM, 0, tol: 1e-6, "xM próximo de 0 no primeiro fix")
+    try assertClose(e.yM, 0, tol: 1e-6, "yM próximo de 0 no primeiro fix")
+    try assertEq(e.sourceKalman, true)
+}
+
+step("K-03: drift 1s entre fixes < 1cm com aceleração líquida zero") {
+    let f = KalmanINSGPS()
+    f.update(sample: kGps(t: 0, tMono: 0, lat: kLat0, lng: kLng0, acc: 3))
+    var lastE: EnrichedSample? = nil
+    for i in 1...100 {
+        let tMono = Double(i) * 10.0
+        lastE = f.predict(sample: kImu(t: Int64(tMono), tMono: tMono, accX: kBiasX, accY: kBiasY))
+    }
+    guard let e = lastE else { throw Bad(msg: "sem amostra final") }
+    let drift = (e.xM * e.xM + e.yM * e.yM).squareRoot()
+    try assertTrue(drift < 0.01, "drift 1s = \(drift) m, esperado < 0.01 m")
+}
+
+step("K-04: bound numérico em 60s sem fix com bias-cancelado") {
+    let f = KalmanINSGPS()
+    f.update(sample: kGps(t: 0, tMono: 0, lat: kLat0, lng: kLng0, acc: 3))
+    var last: EnrichedSample? = nil
+    for i in 1...6000 {
+        let tMono = Double(i) * 10.0
+        last = f.predict(sample: kImu(t: Int64(tMono), tMono: tMono, accX: kBiasX, accY: kBiasY))
+    }
+    guard let e = last else { throw Bad(msg: "sem amostra final") }
+    try assertTrue(abs(e.xM) < 200, "x = \(e.xM)")
+    try assertTrue(abs(e.yM) < 200, "y = \(e.yM)")
+    try assertTrue(e.xM.isFinite && e.yM.isFinite && e.vxMps.isFinite && e.vyMps.isFinite, "estado finito")
+    try assertTrue(f.debugState.traceP.isFinite, "P finito")
+}
+
+step("K-05: convergência com fixes a cada 1s, ruído determinístico σ=3m") {
+    // PRNG determinístico (LCG) → Box-Muller para sintetizar ruído gaussiano.
+    var seed: UInt64 = 0x9E3779B97F4A7C15
+    func next() -> Double {
+        seed = seed &* 6364136223846793005 &+ 1442695040888963407
+        let v = Double(seed >> 11) / Double(1 << 53)
+        return v
+    }
+    func gauss() -> Double {
+        let u1 = max(next(), 1e-12)
+        let u2 = next()
+        return sqrt(-2.0 * log(u1)) * cos(2.0 * .pi * u2)
+    }
+    let f = KalmanINSGPS()
+    let dLatPerM = 1.0 / 111_320.0
+    let dLngPerM = 1.0 / (111_320.0 * cos(kLat0 * .pi / 180.0))
+    var lastResid: [Double] = []
+    f.update(sample: kGps(t: 0, tMono: 0, lat: kLat0, lng: kLng0, acc: 3))
+    for sec in 1...60 {
+        // 100 IMU samples a cada 10ms (aceleração líquida zero — carro parado).
+        for i in 0..<100 {
+            let tMono = Double((sec - 1) * 1000) + Double(i + 1) * 10.0
+            f.predict(sample: kImu(t: Int64(tMono), tMono: tMono, accX: kBiasX, accY: kBiasY))
+        }
+        // GPS no fim de cada segundo, com ruído sintético σ=3m.
+        let nx = gauss() * 3.0
+        let ny = gauss() * 3.0
+        let lat = kLat0 + ny * dLatPerM
+        let lng = kLng0 + nx * dLngPerM
+        let tMono = Double(sec) * 1000.0
+        let e = f.update(sample: kGps(t: Int64(tMono), tMono: tMono, lat: lat, lng: lng, acc: 3))
+        if sec >= 31 {
+            lastResid.append((e.xM * e.xM + e.yM * e.yM).squareRoot())
+        }
+    }
+    let mean = lastResid.reduce(0, +) / Double(lastResid.count)
+    // Critério realista: GPS bruto sem filtro daria hypot Rayleigh σ=3 →
+    // média ≈ 3·√(π/2) ≈ 3.76m. O Kalman CV-2D suaviza parcialmente para
+    // ~2.8m. Valida que está SUAVIZANDO (< GPS cru) sem prometer média
+    // móvel ideal (que exigiria ZUPT, proibido pelo prompt).
+    try assertTrue(mean < 3.0, "média 30s finais = \(mean) m, esperado < 3.0 (GPS bruto Rayleigh σ=3 → ~3.76m)")
+}
+
+step("K-06: heading converge ao mudar course de 0 para 90") {
+    let f = KalmanINSGPS()
+    var t = 0.0
+    for _ in 0..<5 {
+        t += 1000
+        f.update(sample: kGps(t: Int64(t), tMono: t, lat: kLat0, lng: kLng0, acc: 3, course: 0))
+    }
+    for _ in 0..<5 {
+        t += 1000
+        f.update(sample: kGps(t: Int64(t), tMono: t, lat: kLat0, lng: kLng0, acc: 3, course: 90))
+    }
+    let h = f.debugState.headingDeg
+    try assertTrue(abs(h - 90) < 1.0, "headingDeg = \(h), esperado ~90")
+}
+
+step("K-07: traceP cresce em pelo menos 45 dos 50 predicts sem update") {
+    let f = KalmanINSGPS()
+    f.update(sample: kGps(t: 0, tMono: 0, lat: kLat0, lng: kLng0, acc: 3))
+    var prev = f.debugState.traceP
+    var grew = 0
+    for i in 1...50 {
+        let tMono = Double(i) * 20.0
+        f.predict(sample: kImu(t: Int64(tMono), tMono: tMono, accX: kBiasX, accY: kBiasY))
+        let cur = f.debugState.traceP
+        if cur > prev { grew += 1 }
+        prev = cur
+    }
+    try assertTrue(grew >= 45, "predicts que aumentaram traceP = \(grew), esperado >= 45")
+}
+
+step("K-08: traceP cai após update GPS") {
+    let f = KalmanINSGPS()
+    f.update(sample: kGps(t: 0, tMono: 0, lat: kLat0, lng: kLng0, acc: 3))
+    for i in 1...50 {
+        let tMono = Double(i) * 20.0
+        f.predict(sample: kImu(t: Int64(tMono), tMono: tMono, accX: kBiasX, accY: kBiasY))
+    }
+    let antes = f.debugState.traceP
+    f.update(sample: kGps(t: 1100, tMono: 1100, lat: kLat0, lng: kLng0, acc: 3))
+    let depois = f.debugState.traceP
+    try assertTrue(depois < antes, "traceP antes=\(antes) depois=\(depois) — esperado depois<antes")
+}
+
+step("K-09: predict ignora sample com source != IMU") {
+    let f = KalmanINSGPS()
+    var s = Sample(t: 100, tMono: 100, source: SourceTags.racebox, signalQuality: "GOOD")
+    s.accX = 5
+    s.accY = 5
+    let e = f.predict(sample: s)
+    try assertEq(e.sourceKalman, false)
+    try assertClose(f.debugState.x, 0, tol: 1e-12)
+    try assertClose(f.debugState.y, 0, tol: 1e-12)
+}
+
+step("K-10: update ignora sample com source != GPS") {
+    let f = KalmanINSGPS()
+    var s = Sample(t: 100, tMono: 100, source: SourceTags.imu, signalQuality: "GOOD")
+    s.lat = kLat0
+    s.lng = kLng0
+    f.update(sample: s)
+    try assertEq(f.debugState.hasFix, false)
+}
+
+step("K-11: epoch ms preservado no EnrichedSample retornado") {
+    let f = KalmanINSGPS()
+    let tEpoch: Int64 = 1_714_900_000_000
+    let e = f.update(sample: kGps(t: tEpoch, tMono: 0, lat: kLat0, lng: kLng0, acc: 3))
+    try assertEq(e.t, tEpoch)
+}
+
+step("K-12: roundtrip Codable preserva EnrichedSample") {
+    let original = EnrichedSample(
+        t: 1_700_000_000_000,
+        tMono: 12345.678,
+        xM: 1.5, yM: -2.5,
+        vxMps: 30.0, vyMps: -10.0,
+        headingDeg: 270.5,
+        posSigmaM: 1.234,
+        sourceKalman: true
+    )
+    let data = try JSONEncoder().encode(original)
+    let decoded = try JSONDecoder().decode(EnrichedSample.self, from: data)
+    try assertEq(decoded, original)
+}
+
+step("K-13: projeção mantém sinal correto leste/norte") {
+    let dLat10m = 10.0 / 111_320.0
+    let dLng10m = 10.0 / (111_320.0 * cos(kLat0 * .pi / 180.0))
+
+    // Primeiro fix na origem.
+    let f = KalmanINSGPS()
+    f.update(sample: kGps(t: 0, tMono: 0, lat: kLat0, lng: kLng0, acc: 3))
+
+    // +10m leste → xM ≈ +10, yM ≈ 0. Usa acc=0.5 no 2º fix (limite mínimo do
+    // filtro) para forçar K≈1 — caso contrário, com sigma_v inicial=1m/s,
+    // o ganho do filtro é ~0.5 e o estado fica em ~5m (blending consistente
+    // com Bayes mas não validador de SINAL com tolerância apertada).
+    let eEast = f.update(sample: kGps(
+        t: 1000, tMono: 1000,
+        lat: kLat0,
+        lng: kLng0 + dLng10m,
+        acc: 0.5
+    ))
+    try assertTrue(eEast.xM > 0, "xM deveria ser positivo, got \(eEast.xM)")
+    try assertTrue(abs(eEast.yM) < 1.0, "yM próximo de 0 com deslocamento puro leste, got \(eEast.yM)")
+    try assertTrue(abs(eEast.xM - 10.0) < 1.0, "xM ≈ 10, got \(eEast.xM)")
+
+    // +10m norte sobre nova origem ainda relativa: usa filtro fresco para isolar sinal.
+    let f2 = KalmanINSGPS()
+    f2.update(sample: kGps(t: 0, tMono: 0, lat: kLat0, lng: kLng0, acc: 3))
+    let eNorth = f2.update(sample: kGps(
+        t: 1000, tMono: 1000,
+        lat: kLat0 + dLat10m,
+        lng: kLng0,
+        acc: 0.5
+    ))
+    try assertTrue(eNorth.yM > 0, "yM deveria ser positivo, got \(eNorth.yM)")
+    try assertTrue(abs(eNorth.xM) < 1.0, "xM próximo de 0 com deslocamento puro norte, got \(eNorth.xM)")
+    try assertTrue(abs(eNorth.yM - 10.0) < 1.0, "yM ≈ 10, got \(eNorth.yM)")
+}
+
+step("K-14: integração cinemática básica — 1m/s² por 1s ≈ 1m/s e 0.5m") {
+    let f = KalmanINSGPS()
+    // course = 0 → carro indo Norte (compass). accX = forward do veículo.
+    f.update(sample: kGps(t: 0, tMono: 0, lat: kLat0, lng: kLng0, acc: 3, course: 0))
+    var last: EnrichedSample? = nil
+    for i in 1...100 {
+        let tMono = Double(i) * 10.0
+        last = f.predict(sample: kImu(
+            t: Int64(tMono), tMono: tMono,
+            accX: kBiasX + 1.0, accY: kBiasY
+        ))
+    }
+    guard let e = last else { throw Bad(msg: "sem amostra final") }
+    // course=0 (Norte) + accX=1 (forward) → aWy = 1·cos(0) = 1, aWx = 1·sin(0) = 0.
+    // Aceleração no eixo +y do mundo (Norte). vy=1 m/s, y=0.5 m após 1s.
+    try assertTrue(abs(e.vyMps - 1.0) < 0.05, "vy=\(e.vyMps), esperado ~1.0 (forward com course=0)")
+    try assertTrue(abs(e.vxMps - 0.0) < 0.05, "vx=\(e.vxMps), esperado ~0")
+    try assertTrue(abs(e.yM - 0.5) < 0.05, "y=\(e.yM), esperado ~0.5 (deslocamento Norte)")
+    try assertTrue(abs(e.xM - 0.0) < 0.05, "x=\(e.xM), esperado ~0")
+}
+
+step("K-14b: heading compass — course=90 (Leste) com accX=1 acelera +x mundo") {
+    let f = KalmanINSGPS()
+    f.update(sample: kGps(t: 0, tMono: 0, lat: kLat0, lng: kLng0, acc: 3, course: 90))
+    var last: EnrichedSample? = nil
+    for i in 1...100 {
+        let tMono = Double(i) * 10.0
+        last = f.predict(sample: kImu(
+            t: Int64(tMono), tMono: tMono,
+            accX: kBiasX + 1.0, accY: kBiasY
+        ))
+    }
+    guard let e = last else { throw Bad(msg: "sem amostra final") }
+    // course=90 (Leste): aWx = 1·sin(π/2) = 1, aWy = 1·cos(π/2) = 0. +x mundo.
+    try assertTrue(abs(e.vxMps - 1.0) < 0.05, "vx=\(e.vxMps), esperado ~1.0 (forward com course=90)")
+    try assertTrue(abs(e.vyMps - 0.0) < 0.05, "vy=\(e.vyMps), esperado ~0")
+    try assertTrue(abs(e.xM - 0.5) < 0.05, "x=\(e.xM), esperado ~0.5 (deslocamento Leste)")
+    try assertTrue(abs(e.yM - 0.0) < 0.05, "y=\(e.yM), esperado ~0")
+}
+
 // ── relatório ────────────────────────────────────────────────
 print("\n═══ RESULTADO ═══")
 print("\(ok) ok / \(fail) fail")
