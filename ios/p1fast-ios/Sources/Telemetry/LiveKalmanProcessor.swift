@@ -35,6 +35,11 @@ final class LiveKalmanProcessor: ObservableObject {
     @Published private(set) var enrichedCount: Int = 0
     @Published private(set) var lastError: String?
     @Published private(set) var hasFix: Bool = false
+    /// A-07: setado quando um sample dispara reset de covariância
+    /// (gap > 5s sem GPS). UI mostra "captura interrompida X s" e
+    /// limpa esse valor após exibir. Limpeza é responsabilidade do
+    /// caller (Coordinator/UI) — chamar `acknowledgeGap()`.
+    @Published private(set) var lastGapDurationMs: Double?
 
     // MARK: - Config
     private let queue: DatabaseQueue
@@ -113,11 +118,19 @@ final class LiveKalmanProcessor: ObservableObject {
             return
         }
         if enriched.sourceKalman { hasFix = true }
+        if let gap = enriched.gapDurationMs { lastGapDurationMs = gap }
         buffer.append(enriched)
         enrichedCount += 1
         if buffer.count >= flushBatchSize {
             Task { await flush() }
         }
+    }
+
+    /// UI chama após exibir o aviso pra limpar o último gap. Chamar
+    /// antes do próximo gap garante que `lastGapDurationMs` reflita
+    /// só eventos novos (em vez do mais recente histórico).
+    func acknowledgeGap() {
+        lastGapDurationMs = nil
     }
 
     // MARK: - Flush

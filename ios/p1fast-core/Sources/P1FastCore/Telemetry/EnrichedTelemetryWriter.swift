@@ -39,7 +39,8 @@ public enum EnrichedTelemetryWriter {
                     vyMps: s.vyMps,
                     headingDeg: s.headingDeg,
                     posSigmaM: s.posSigmaM,
-                    sourceKalman: s.sourceKalman
+                    sourceKalman: s.sourceKalman,
+                    gapDurationMs: s.gapDurationMs
                 ).insert(db)
                 seq += 1
             }

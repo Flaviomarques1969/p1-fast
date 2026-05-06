@@ -173,6 +173,17 @@ enum Migrations {
             try db.execute(sql: "ALTER TABLE tracks         ADD COLUMN geo_ancoras TEXT;")
             try db.execute(sql: "ALTER TABLE track_layouts  ADD COLUMN view_box    TEXT;")
         }
+        // ═══ v9_telemetry_enriched_gap_duration ═════════════════
+        // A-07 (#117 PR A) — Kalman gap recovery resetando
+        // covariância em gap > 5s. `gap_duration_ms` é setado só na
+        // amostra que disparou reset. Field test 2026-05-06 expôs
+        // pos_sigma divergindo pra 1e+55 quando app foi morto em
+        // background — esta coluna torna o evento observável e
+        // alimenta UI de aviso ("captura interrompida X s").
+        // Espelha supabase/migrations/0010_kalman_gap_duration.sql.
+        m.registerMigration("v9_telemetry_enriched_gap_duration") { db in
+            try db.execute(sql: "ALTER TABLE telemetry_samples_enriched ADD COLUMN gap_duration_ms REAL;")
+        }
     }
 
     // swiftlint:disable:next function_body_length

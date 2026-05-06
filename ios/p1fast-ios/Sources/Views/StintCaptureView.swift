@@ -40,6 +40,9 @@ struct StintCaptureView: View {
     var body: some View {
         VStack(spacing: Spacing.lg) {
             header
+            if let gapMs = coordinator.processor?.lastGapDurationMs {
+                gapBanner(gapMs: gapMs)
+            }
             metrics
             actionStack
             Spacer(minLength: 0)
@@ -119,6 +122,43 @@ struct StintCaptureView: View {
         }
         .padding(Spacing.md)
         .background(Color.surfaceRaised)
+        .cornerRadius(Radius.md)
+    }
+
+    /// A-07: aviso pro piloto que houve interrupção de captura. Exibido
+    /// até o user dar dismiss (botão "ok"). Sample já foi gravado com
+    /// gap_duration_ms != NULL, então debrief vê depois.
+    private func gapBanner(gapMs: Double) -> some View {
+        let segs = String(format: "%.1f", gapMs / 1000.0)
+        return HStack(alignment: .top, spacing: Spacing.sm) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Captura interrompida \(segs) s")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.text)
+                Text("Posição re-ancorada com o GPS atual. Voltas anteriores ao gap continuam válidas.")
+                    .font(Font.captionP1)
+                    .foregroundStyle(Color.textMuted)
+            }
+            Spacer()
+            Button(action: { coordinator.processor?.acknowledgeGap() }) {
+                Text("ok")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Color.atencao)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(Color.atencao.opacity(0.6), lineWidth: 1)
+                    )
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(Spacing.md)
+        .background(Color.surfaceRaised)
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .stroke(Color.atencao.opacity(0.5), lineWidth: 1)
+        )
         .cornerRadius(Radius.md)
     }
 
