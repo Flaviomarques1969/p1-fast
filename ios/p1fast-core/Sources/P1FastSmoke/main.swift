@@ -380,6 +380,11 @@ step("XV-V001: divergência CAN vs GNSS > 5 km/h sustentada > 2s emite V-001") {
     let v001 = events.filter { $0.validation == "V-001" }
     try assertTrue(v001.count >= 1, "esperava ≥1 V-001, recebeu \(v001.count)")
     try assertEq(v001[0].severity, .atencao)
+    // Paridade JS L106-115: emit anota confianca="Alta" por default.
+    // CriticalRules.disparar (L111) filtra eventos CRÍTICO/BOX_AGORA
+    // que não tenham essa string — sem isso, ALERT_HIERARCHY iOS
+    // bloqueia tudo silenciosamente.
+    try assertEq(v001[0].confianca, "Alta", "confianca deveria ser anotada como Alta no emit")
 }
 
 step("XV-V001: divergência < 5 km/h NÃO emite") {
