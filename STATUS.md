@@ -1,7 +1,7 @@
 # P1 Fast — STATUS
 
-**Data deste checkpoint:** 2026-05-06 (sessão 4 — field test E2E real, MS-2 100% fechado, MS-2.6.c em prod)
-**Estado:** Plano `docs/PLANO_FASE_1.md` em execução. **MS-2 100% fechado**. Field test E2E executado e validado em iPhone 16 Pro Max real (varanda Brasília, 559s, IMU 100.5 Hz · accZ ~0.18 confirmado userAcceleration, 56314 raw + 56314 enriched, fix em < 3s, pos_sigma estabilizou ~3m). PRs totais até #112, **397 smoke tests verdes**. Migrations 0007 + 0008 + 0009 todas aplicadas em prod via `supabase db push`.
+**Data deste checkpoint:** 2026-05-06 (sessão 5 — field test em movimento, A-05/A-07, Edge Function deploy)
+**Estado:** Plano `docs/PLANO_FASE_1.md` em execução. **MS-2 + MS-3 fechados em main.** Field test E2E em movimento andando na rua exposed iOS pausa CoreMotion em background (4 janelas, IMU médio 14 Hz, pos_sigma divergiu pra 1e+55) — A-07 gap recovery + visibilidade de background entregues nesta sessão. PRs totais até **#120** mergeados, **404 smoke tests verdes**. Migrations 0007 + 0008 + 0009 + **0010** todas aplicadas em prod. Edge Function `detector` **deployed** em `fvhwltzhytpnhlqbttmd.supabase.co/functions/v1/detector`.
 
 > **Se você é Claude abrindo esta sessão pela primeira vez:**
 > Leia este arquivo primeiro, depois `docs/PLANO_FASE_1.md` (doc mestre), depois `~/.claude/projects/-Users-imac/memory/MEMORY.md` (memória global) + `~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/MEMORY.md` (memória do projeto).
@@ -130,14 +130,50 @@ Verificadas via REST: HTTP 200 + `[]` em todas (RLS OK, colunas existentes — s
 
 ---
 
+## Sessão 2026-05-06 (tarde) — field test em movimento, A-05/A-07, Edge Function
+
+`swift run p1fast-smoke` final: **404 ok / 0 fail**. 7 PRs entregues, todos mergeados em main.
+
+| # | PR | Tema | Conteúdo |
+|---|---|---|---|
+| 114 | feat | **MS-2.5 Coordinator** | `StintCaptureCoordinator` + `StintCaptureView` UI start/stop. Caller real do `StintRepository.finalize(stintId:, segmentEvents:)` — antes ninguém passava em produção. Tier 0 graceful: `trackBundle` opcional. |
+| 115 | feat | **MS-3** | Edge Function `supabase/functions/detector/` — port `path-mapper.ts` + `detector.ts` + `pipeline.ts` puros + `index.ts` Edge Runtime + `detector_test.ts` (Deno, 6/6 fixture sintética). |
+| 116 | test | **A-05** | K-16/17/18 cobertura defensives Kalman (NaN/inf em accX/accY/lat). Finite guard pré/pós existia desde #106 mas sem smoke do caminho de rejeição. |
+| 117 | feat | **A-07 lógica** | Kalman gap recovery: `lastUpdateTMono`, `gapResetThresholdMs = 5_000`, `resetCovarianceForGap()` em update e early-return em predict. `EnrichedSample.gapDurationMs: Double?` exposto. K-19/20/21 novos. |
+| 118 | feat | **A-07 persistência** | Migration 0010 PG + GRDB v9 + `TelemetrySampleEnriched.gapDurationMs` + writer mapeia coluna + `LiveKalmanProcessor.lastGapDurationMs` + `StintCaptureView.gapBanner` ("captura interrompida X s · ok"). TSE-05 round-trip. |
+| 119 | feat | **MS-2.x bg visibility** | `NSLocationAlwaysAndWhenInUseUsageDescription` + `requestAlwaysAuthorization()`. `LiveTelemetryRecorder` ganha 3 @Published (`backgroundTransitionCount`, `lastBackgroundDurationMs`, `isInBackground`) populados via UIApplication notifications. `TelemetriaView` mostra row "Background". |
+| 120 | fix | **CrossValidation paridade** | `ValidationEvent.confianca: String?` + emit anota "Alta" (paridade JS L106-115). `mPerDeg = 111_320 → 111_000` em raio circunscrito (alinha A-03 que ficou solta em #106). |
+
+**Field test 2026-05-06 (sessão telemetria-demo-1778076722, 2h andando na rua):**
+
+Pull do container via `xcrun devicectl device copy from`. SQLite mostrou:
+
+| Janela | Duração | IMU Hz | GPS Hz | Avaliação |
+|---|---|---|---|---|
+| 1 | 71s | 100.9 ✅ | 0.30 | parado/início |
+| 2 | 465s | 105.6 ✅ | 0.09 | parado |
+| 3 | 408s | 93.7 ✅ | **0.94 ✅** | **andando** |
+| 4 | 100s | 101.5 ✅ | **1.01 ✅** | **andando** |
+
+- **GPS 1 Hz andando confirmado** — última peça que faltava do field test parado.
+- **IMU 100 Hz dentro de cada janela** — pipeline raw OK.
+- **4 janelas em 7446s** — 87% do tempo o IMU não capturou. iOS pausou CoreMotion em background (UIBackgroundModes.location não cobre IMU).
+- **`pos_sigma_max = 2.98e+55`** — Kalman explodiu nos gaps. Fix em #117.
+
+**Migration aplicada em prod 2026-05-06:** `0010_kalman_gap_duration.sql` (`ALTER TABLE telemetry_samples_enriched ADD COLUMN gap_duration_ms`). Verificada via REST: HTTP 200 + `[]`.
+
+**Edge Function `detector` deployed:** `https://fvhwltzhytpnhlqbttmd.supabase.co/functions/v1/detector`. Smoke contra endpoint real (anon JWT) retorna `{"error":"invalid-jwt","detail":"invalid claim: missing sub claim"}` — confirma routing + runtime + lógica de auth do `index.ts`. Pra teste full precisaria user-token bound.
+
+---
+
 ## Estado por mini-sprint (em relação ao `docs/PLANO_FASE_1.md`)
 
 | MS | Tema | Status |
 |---|---|---|
 | **MS-1.1-1.3** | Domínio canônico Swift port | ✅ feito (TrackSegment, ErrorClassifier, TrajectoryMonitor) |
 | **MS-1.4** | Configurador visual de pista (UI) | ✅ feito 2026-05-05 (#84..#90 — multi-apex 0..3 ápices) |
-| **MS-2** | Captura ao vivo + Kalman INS-GPS + Detector | ✅ **100% fechado 2026-05-06**. 2.1/2.2/2.3/2.4/2.5/2.6/2.6.b/2.6.c/2.7. Field test E2E executado e validado em iPhone real. Pipeline raw → Kalman → Detector → segment_executions com Vmin georef end-to-end. |
-| **MS-3** | Edge Function pipeline + smoke E2E | ❌ não feito |
+| **MS-2** | Captura ao vivo + Kalman INS-GPS + Detector | ✅ **100% fechado 2026-05-06**. + #114 Coordinator, #117/#118 A-07 gap recovery (lógica + persistência), #119 background visibility. Field test em movimento confirmou GPS 1 Hz e expôs iOS-bg-kill — mitigado e visível. |
+| **MS-3** | Edge Function pipeline + smoke E2E | ✅ feito #115 + deployed em prod 2026-05-06 (`fvhwltzhytpnhlqbttmd/functions/v1/detector`). Smoke Deno 6/6. |
 | **MS-4** | StintPlan iOS port | ❌ não feito (schema + repo + UI) |
 | **MS-5** | Pendências vivas | ❌ não feito (CRUD + por carro + obrigatório/adicional) |
 | **MS-6.1-6.6** | Debrief domain (Score/Bench/Repet/Decider/PvE/Attack/Resumo) | ✅ feito em domain. UI/integração ❌ |
@@ -166,7 +202,7 @@ Já portado e em paridade JS após hoje:
 
 **Ainda valem port puro (curto prazo):**
 - `tire-wear.js` — pure parts pequenas (estimarVidaUtil), dependentes de Laps/StintEnv. Adiar até GRDB repos.
-- `cross-validation.js` (410 linhas) vs `CrossValidation.swift` (422 linhas) — auditoria de paridade detalhada (não fizemos hoje)
+- ~~`cross-validation.js` paridade detalhada~~ — feito 2026-05-06 #120. JS aposentado mantido como referência; achados (confianca anotada, mPerDeg 111_000) corrigidos no Swift.
 
 **Não puros (precisam GRDB iOS-side):** tire-wear, stint-env, pedagogical-plan, baseline-vectors, track-layout, reference-line, car, car-configuration, advisor-suggestion, session-master.
 
@@ -176,7 +212,8 @@ Já portado e em paridade JS após hoje:
 
 ## Próximas fronteiras (precisam Xcode + simulator + iPhone real)
 
-- **StintCaptureCoordinator + UI start/stop** — armar LiveTelemetryRecorder + LiveDetectorBridge + buffer de `DetectorSegmentEndEvent` durante stint real (StintModalView dispara, EventoDetalheView drena no finalize). Atual `StintRepository.finalize` aceita `[DetectorSegmentEndEvent]` mas ninguém ainda passa em produção real. Sem isso, finalize sempre roda com `[]`.
+- ~~**StintCaptureCoordinator + UI start/stop**~~ — feito #114. Falta Flávio refazer field test com fluxo de stint real (criar evento → "Novo stint" → andar → ENCERRAR) pra exercitar o caminho.
+- **Field test refazer** — pendência aberta. Flávio reinstala build com #114-#120 + 0010 em prod, anda na rua, manda app pro background pra ver se row "Background" + `gap_duration_ms` capturam corretamente. Sem novo field test, A-07 e bg-visibility não estão validadas em hardware real.
 - **MS-13** CockpitDevice 956×440: SwiftUI + halo radial + slot direito Z-axis + animations
 - **MS-9** Adapter BLE T4000: CoreBluetooth + parser Injepro
 - **MS-10** Auth Supabase: SDK Auth + tela login + share sheet
@@ -184,7 +221,7 @@ Já portado e em paridade JS após hoje:
 
 ## Próximas fronteiras (independentes de hardware iOS)
 
-- **MS-3** Edge Function pipeline — port mínimo de `src/telemetry/detector.js` + fixture Brasília + smoke E2E
+- ~~**MS-3** Edge Function pipeline~~ — feito #115 + deployed.
 - **MS-4** `StintPlan` iOS — schema + repo + UI (sprint maior, vai precisar quebrar em sub-sprints)
 
 Esses precisam de Xcode pra build/validar. Domínio Swift puro pode continuar até esgotar.
@@ -204,13 +241,18 @@ Esses precisam de Xcode pra build/validar. Domínio Swift puro pode continuar at
 
 ## Próximo passo concreto pós-/compact
 
-**MS-2 100% fechado**. Field test E2E real executado e validado em iPhone físico. Migrations 0007/0008/0009 todas em prod.
+**MS-2 + MS-3 fechados em main e prod.** Field test em movimento andando confirmou GPS 1 Hz e expôs iOS-bg-kill. Mitigation entregue (#117/#118/#119).
+
+**Pendência crítica antes de qualquer feature nova: refazer field test** com build da main pós-#119 (Always location + bg row visível). Validar:
+- pos_sigma fica bounded mesmo após app voltar de background (#117)
+- coluna `gap_duration_ms` recebe valor != NULL nos samples pós-foreground (#118)
+- row "Background" da TelemetriaView mostra contador + duração ao reabrir (#119)
+- banner amarelo "captura interrompida X s" aparece na StintCaptureView durante stint real (#114 + #118)
 
 Opções pra próxima sessão (decisão Flávio):
 
-1. **StintCaptureCoordinator + UI start/stop** — fechar o último elo: durante stint real, armar `LiveTelemetryRecorder` + `LiveDetectorBridge` e bufferizar `DetectorSegmentEndEvent`s. No finalize, drenar buffer e passar pro `StintRepository.finalize` (já aceita o parâmetro desde #111). Sem isso, MS-2.5 só roda em fixture/teste; em produção real `finalize` sempre vê `[]`.
-2. **Field test em movimento** — varanda parado validou pipeline. Falta confirmar GPS 1Hz andando, Voltas em pista (Brasília), background mode com tela travada, Low Power Mode. Inputs reais alimentam decisões de tuning.
-3. **MS-3** Edge Function pipeline + smoke E2E — port mínimo de `src/telemetry/detector.js` + fixture Brasília. Independente de hardware iOS.
-4. **MS-4** `StintPlan` portado pro iOS — schema + repo + UI. Sprint maior; vai precisar quebrar em sub-sprints.
-5. **MS-13** CockpitDevice 956×440 — UI grande, precisa Xcode + simulator.
-6. **MS-9 BLE T4000** — precisa hardware Injepro real.
+1. **Refazer field test** (Flávio, físico) — gate dos próximos passos
+2. **MS-4** `StintPlan` portado pro iOS — schema + repo + UI. Sprint maior; vai precisar quebrar em sub-sprints.
+3. **MS-13** CockpitDevice 956×440 — UI grande, precisa Xcode + simulator.
+4. **MS-9 BLE T4000** — precisa hardware Injepro real.
+5. **MS-10 Auth Supabase** — pré-req pra Edge Function `detector` ser usada com user-token real.
