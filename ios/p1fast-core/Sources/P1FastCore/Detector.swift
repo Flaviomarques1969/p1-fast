@@ -69,6 +69,34 @@ public struct DetectorSegmentEndEvent: Sendable {
     public let apexT: Double?
     public let apexOffset: Double?
     public let apexActual: PathMapper.Point?
+
+    public init(
+        segmentId: String,
+        lapNumero: Int?,
+        entradaAt: Double,
+        saidaAt: Double,
+        tempoMs: Double,
+        velEntrada: Double?,
+        velMinima: Double?,
+        velSaida: Double?,
+        pontoFrenagem: DetectorBrakingPoint?,
+        apexT: Double?,
+        apexOffset: Double?,
+        apexActual: PathMapper.Point?
+    ) {
+        self.segmentId = segmentId
+        self.lapNumero = lapNumero
+        self.entradaAt = entradaAt
+        self.saidaAt = saidaAt
+        self.tempoMs = tempoMs
+        self.velEntrada = velEntrada
+        self.velMinima = velMinima
+        self.velSaida = velSaida
+        self.pontoFrenagem = pontoFrenagem
+        self.apexT = apexT
+        self.apexOffset = apexOffset
+        self.apexActual = apexActual
+    }
 }
 
 public struct DetectorStats: Sendable {
