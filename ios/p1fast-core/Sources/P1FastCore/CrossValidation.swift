@@ -30,6 +30,33 @@ public struct ValidationEvent: Codable, Sendable, Equatable {
     public let action: String
     public let t: Int64
     public let tMono: Double
+    /// Paridade JS L106-115: `_emit` anota "Alta" quando ausente.
+    /// `CriticalRules.disparar` filtra por essa string em events
+    /// CRÍTICO/BOX_AGORA (ver `CriticalRules.swift:111`). Optional
+    /// pra retrocompatibilidade — engine seta default no `emit`.
+    public let confianca: String?
+
+    public init(
+        validation: String,
+        severity: ValidationSeverity,
+        message: String,
+        channels: [String],
+        hypothesis: String,
+        action: String,
+        t: Int64,
+        tMono: Double,
+        confianca: String? = nil
+    ) {
+        self.validation = validation
+        self.severity = severity
+        self.message = message
+        self.channels = channels
+        self.hypothesis = hypothesis
+        self.action = action
+        self.t = t
+        self.tMono = tMono
+        self.confianca = confianca
+    }
 }
 
 /// State machine pra janela mínima sustentada.
@@ -407,7 +434,11 @@ public final class CrossValidationEngine {
     /// Raio circunscrito a 3 pontos lat/lon (metros locais aproximados).
     /// Mesma fórmula do JS — válida pra distâncias de pista (km), não global.
     private func circumscribedRadius(_ a: PosPoint, _ b: PosPoint, _ c: PosPoint) -> Double? {
-        let m: Double = 111_320
+        // 111_000 alinhado com Projector / KalmanINSGPS / TrajectoryMonitor
+        // (A-03 padronizada em #106). Antes era 111_320 — restou aqui
+        // por ser arquivo numérico independente. Diferença em escala
+        // local do raio circunscrito é < 0.3% — sub-erro de medição.
+        let m: Double = 111_000
         let cosLat = cos(a.lat * .pi / 180)
         let ax = a.lon * m * cosLat, ay = a.lat * m
         let bx = b.lon * m * cosLat, by = b.lat * m
@@ -422,6 +453,23 @@ public final class CrossValidationEngine {
     private func emit(_ ev: ValidationEvent) {
         if let last = lastEmittedAt[ev.validation], ev.tMono - last < cooldownMs { return }
         lastEmittedAt[ev.validation] = ev.tMono
-        onEvent?(ev)
+        // Paridade JS L106-115: caller pode descartar eventos com
+        // confianca != "Alta" como defesa em profundidade. Engine
+        // garante "Alta" como default — overridable pelo callsite
+        // quando a regra individual quiser declarar incerteza.
+        let annotated = ev.confianca == nil
+            ? ValidationEvent(
+                validation: ev.validation,
+                severity: ev.severity,
+                message: ev.message,
+                channels: ev.channels,
+                hypothesis: ev.hypothesis,
+                action: ev.action,
+                t: ev.t,
+                tMono: ev.tMono,
+                confianca: "Alta"
+            )
+            : ev
+        onEvent?(annotated)
     }
 }
