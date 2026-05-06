@@ -46,6 +46,13 @@
 import Foundation
 
 /// Saída do filtro: estado 2D em frame local + meta-dados de tempo.
+///
+/// `gapDurationMs` (A-07): ms desde o último GPS update válido. Quando
+/// excede `KalmanINSGPS.gapResetThresholdMs` (5s), o filtro reseta
+/// covariância antes de aplicar o GPS — sinal pra UI saber que aquela
+/// amostra é a "primeira boa" pós-gap. `nil` antes do primeiro fix e
+/// em samples puramente IMU. Persistência em coluna entra na 4.B; por
+/// ora vive só no objeto em memória.
 public struct EnrichedSample: Codable, Sendable, Equatable {
     public let t: Int64
     public let tMono: Double
@@ -56,6 +63,7 @@ public struct EnrichedSample: Codable, Sendable, Equatable {
     public let headingDeg: Double
     public let posSigmaM: Double
     public let sourceKalman: Bool
+    public let gapDurationMs: Double?
 
     public init(
         t: Int64,
@@ -66,7 +74,8 @@ public struct EnrichedSample: Codable, Sendable, Equatable {
         vyMps: Double,
         headingDeg: Double,
         posSigmaM: Double,
-        sourceKalman: Bool
+        sourceKalman: Bool,
+        gapDurationMs: Double? = nil
     ) {
         self.t = t
         self.tMono = tMono
@@ -77,6 +86,7 @@ public struct EnrichedSample: Codable, Sendable, Equatable {
         self.headingDeg = headingDeg
         self.posSigmaM = posSigmaM
         self.sourceKalman = sourceKalman
+        self.gapDurationMs = gapDurationMs
     }
 }
 
@@ -102,6 +112,24 @@ public final class KalmanINSGPS {
     private var lastTMono: Double? = nil
     private var lastT: Int64 = 0
     private var lastGyroAlphaDegS: Double? = nil
+
+    // ── A-07 gap recovery ────────────────────────────────────────
+    // tMono do último GPS update válido (separado de lastTMono que é
+    // qualquer sample). Em sessões reais o app vai pra background, iOS
+    // mata, user reabre — gap pode ser horas. Sem reset, o filtro tenta
+    // continuar a propagação com dt clamped em 1s acumulando Q + erro
+    // de integração IMU; em runs longos pos_sigma diverge (field test
+    // 2026-05-06 viu pos_sigma_max ≈ 1e+55 entre 4 janelas separadas
+    // por gaps de >1h). Threshold 5s: maior que jitter de GPS smart
+    // filter parado (visto 0.05–0.2 Hz = até ~20s entre samples no
+    // cenário "varanda parado"), menor que qualquer interrupção real
+    // de captura (pausa de app, background kill).
+    public static let gapResetThresholdMs: Double = 5_000.0
+    private var lastUpdateTMono: Double? = nil
+    /// Última duração de gap medida em update — exposta no
+    /// EnrichedSample do GPS sample que disparou o reset. `nil` se gap
+    /// foi inferior ao threshold ou se é o primeiro fix.
+    private var lastGapDurationMs: Double? = nil
 
     public init(
         biasAccX: Double = -0.008,
@@ -161,6 +189,17 @@ public final class KalmanINSGPS {
         let rawDt = (sample.tMono - last) / 1000.0
         guard rawDt.isFinite, rawDt > 0 else {
             // Tempo retrocedeu ou inválido — no-op defensivo.
+            return currentState(t: sample.t, tMono: sample.tMono)
+        }
+        // A-07: gap entre IMU samples > threshold (ex: app voltou de
+        // background). Não integra — estado e P ficam preservados, o
+        // próximo update GPS aplica resetCovarianceForGap antes do
+        // kalmanUpdateGPS. Sem isso, o predict tentaria propagar com
+        // dt clamped em 1.0s e velocidade stale do antes-do-gap.
+        if rawDt * 1000.0 > Self.gapResetThresholdMs {
+            lastTMono = sample.tMono
+            lastT = sample.t
+            if let g = sample.gyroAlpha, g.isFinite { lastGyroAlphaDegS = g }
             return currentState(t: sample.t, tMono: sample.tMono)
         }
         let dt = min(max(rawDt, 1e-4), 1.0)
@@ -244,7 +283,25 @@ public final class KalmanINSGPS {
             updateHeadingFromCourse(sample.course)
             lastTMono = sample.tMono
             lastT = sample.t
+            lastUpdateTMono = sample.tMono
+            lastGapDurationMs = nil
             return currentState(t: sample.t, tMono: sample.tMono)
+        }
+
+        // A-07: detecta gap longo desde o último GPS update válido. Se
+        // > threshold, descarta a propagação acumulada (que provavelmente
+        // veio com IMU integrating sem ancoragem) e reinicializa P com
+        // sigma de posição grande + velocidade default. Posição NÃO é
+        // zerada — kalmanUpdateGPS abaixo vai puxar via K. lastGapDurationMs
+        // fica visível no currentState pra UI mostrar o aviso.
+        if let lastUpd = lastUpdateTMono {
+            let gapMs = sample.tMono - lastUpd
+            if gapMs.isFinite, gapMs > Self.gapResetThresholdMs {
+                resetCovarianceForGap()
+                lastGapDurationMs = gapMs
+            } else {
+                lastGapDurationMs = nil
+            }
         }
 
         // Propagação time-only até o tempo do GPS, sem aceleração.
@@ -270,8 +327,26 @@ public final class KalmanINSGPS {
         let zy = (lat - lat0) * mPerDegLat
         kalmanUpdateGPS(zx: zx, zy: zy, sigma: acc)
         updateHeadingFromCourse(sample.course)
+        lastUpdateTMono = sample.tMono
 
         return currentState(t: sample.t, tMono: sample.tMono)
+    }
+
+    /// A-07: reinicializa P para valores conservadores e zera velocidades.
+    /// Posição (x[0], x[1]) é preservada porque o `kalmanUpdateGPS`
+    /// subsequente vai puxá-la pro fix novo via ganho ≈ 1 (P_pos
+    /// inicialmente >> R). Velocidades zeradas evitam projeção espúria
+    /// baseada em movimento que pode ter mudado completamente durante o
+    /// gap (carro estacionou, mudou de direção, etc.).
+    private func resetCovarianceForGap() {
+        for i in 0..<16 { P[i] = 0 }
+        let posVar = (initialPosSigmaM * initialPosSigmaM) / 2.0
+        setP(0, 0, posVar)
+        setP(1, 1, posVar)
+        setP(2, 2, 1.0 * 1.0)
+        setP(3, 3, 1.0 * 1.0)
+        x[2] = 0
+        x[3] = 0
     }
 
     /// Snapshot do estado atual sem alterar o filtro.
@@ -286,7 +361,8 @@ public final class KalmanINSGPS {
                 vxMps: 0, vyMps: 0,
                 headingDeg: 0,
                 posSigmaM: initialPosSigmaM,
-                sourceKalman: false
+                sourceKalman: false,
+                gapDurationMs: nil
             )
         }
         return EnrichedSample(
@@ -296,7 +372,8 @@ public final class KalmanINSGPS {
             vxMps: x[2], vyMps: x[3],
             headingDeg: normalizeAngleDeg(headingRad * 180.0 / .pi),
             posSigmaM: posSigma,
-            sourceKalman: true
+            sourceKalman: true,
+            gapDurationMs: lastGapDurationMs
         )
     }
 
