@@ -18,6 +18,7 @@ import P1FastCore
 
 struct SincronizacaoView: View {
     @EnvironmentObject private var coordinator: SyncCoordinator
+    @EnvironmentObject private var session: SessionManager
     @Environment(\.dismiss) private var dismiss
     @State private var pendingDelete: SyncQueueItem?
     @State private var isWorking = false
@@ -30,6 +31,7 @@ struct SincronizacaoView: View {
                     statCards
                     pendingSection
                     deadLetterSection
+                    contaSection
                 }
                 .padding(.horizontal, Spacing.lg)
                 .padding(.vertical, Spacing.md)
@@ -134,6 +136,40 @@ struct SincronizacaoView: View {
             }
         } else if coordinator.pendingItems.isEmpty {
             EmptyState()
+        }
+    }
+
+    /// MS-10 A.3: identidade do user logado + botão Sair. UI minimalista
+    /// — Padrão B (surfaceRaised + border). Logout volta pro LoginView
+    /// via troca do estado em SessionManager.
+    @ViewBuilder
+    private var contaSection: some View {
+        if case let .authenticated(_, email) = session.state {
+            sectionHeader("Conta")
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                Text(email ?? "Sem email")
+                    .font(Font.bodyP1)
+                    .foregroundStyle(Color.text)
+                Button(action: {
+                    Task { await session.signOut() }
+                }) {
+                    Text("Sair")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color.rec)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 14)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.surfaceRaised)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                                .stroke(Color.border, lineWidth: 1)
+                        )
+                        .cornerRadius(Radius.md)
+                }
+                .buttonStyle(.plain)
+                .disabled(session.isWorking)
+            }
+            .padding(.horizontal, Spacing.xs)
         }
     }
 
