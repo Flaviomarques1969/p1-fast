@@ -55,6 +55,10 @@ public struct TrackRow: Codable, FetchableRecord, PersistableRecord {
     public var id: String
     public var apelido: String
     public var nomeOficial: String?
+    /// MS-2.6.c: JSON serializado de [GeoAncora]. Hidratado por TrackRepository
+    /// pra `Track.geoAncoras` no domínio. Pode ser nil — pista cadastrada sem
+    /// âncoras geo opera só em frame SVG.
+    public var geoAncoras: String?
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -63,15 +67,18 @@ public struct TrackRow: Codable, FetchableRecord, PersistableRecord {
     enum CodingKeys: String, CodingKey {
         case id, apelido
         case nomeOficial = "nome_oficial"
+        case geoAncoras = "geo_ancoras"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
     }
 
     public init(id: String, apelido: String, nomeOficial: String? = nil,
+                geoAncoras: String? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.apelido = apelido; self.nomeOficial = nomeOficial
+        self.geoAncoras = geoAncoras
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }
@@ -84,6 +91,9 @@ public struct TrackLayoutRow: Codable, FetchableRecord, PersistableRecord {
     public var parciais: String?
     public var svgPath: String?
     public var linhaChegada: String?
+    /// MS-2.6.c: JSON serializado de ViewBox `{w, h}`. Casa com svgPath:
+    /// dimensões do plano onde o SVG path foi calibrado.
+    public var viewBox: String?
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -95,6 +105,7 @@ public struct TrackLayoutRow: Codable, FetchableRecord, PersistableRecord {
         case nome, parciais
         case svgPath = "svg_path"
         case linhaChegada = "linha_chegada"
+        case viewBox = "view_box"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
@@ -102,10 +113,12 @@ public struct TrackLayoutRow: Codable, FetchableRecord, PersistableRecord {
 
     public init(id: String, trackId: String, nome: String, parciais: String? = nil,
                 svgPath: String? = nil, linhaChegada: String? = nil,
+                viewBox: String? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.trackId = trackId; self.nome = nome
         self.parciais = parciais; self.svgPath = svgPath; self.linhaChegada = linhaChegada
+        self.viewBox = viewBox
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }

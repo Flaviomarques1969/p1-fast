@@ -105,6 +105,10 @@ public struct Parcial: Codable, Sendable, Equatable {
 public struct ViewBox: Codable, Sendable, Equatable {
     public var w: Double
     public var h: Double
+
+    public init(w: Double, h: Double) {
+        self.w = w; self.h = h
+    }
 }
 
 public struct Track: Codable, Sendable, Equatable {
@@ -122,6 +126,22 @@ public struct Track: Codable, Sendable, Equatable {
     public var linhaChegada: LinhaChegada?
     public var geoAncoras: [GeoAncora]
     public var lapRefSeg: Double?
+
+    public init(
+        id: String, nome: String, apelido: String, pais: String,
+        cidade: String? = nil, extensaoMetros: Double? = nil,
+        numeroCurvas: Int? = nil, sentido: String? = nil,
+        imagemFundo: String? = nil, viewBox: ViewBox? = nil,
+        svgPath: String? = nil, linhaChegada: LinhaChegada? = nil,
+        geoAncoras: [GeoAncora] = [], lapRefSeg: Double? = nil
+    ) {
+        self.id = id; self.nome = nome; self.apelido = apelido; self.pais = pais
+        self.cidade = cidade; self.extensaoMetros = extensaoMetros
+        self.numeroCurvas = numeroCurvas; self.sentido = sentido
+        self.imagemFundo = imagemFundo; self.viewBox = viewBox
+        self.svgPath = svgPath; self.linhaChegada = linhaChegada
+        self.geoAncoras = geoAncoras; self.lapRefSeg = lapRefSeg
+    }
 }
 
 public struct TrackLayout: Codable, Sendable, Equatable {
@@ -130,6 +150,14 @@ public struct TrackLayout: Codable, Sendable, Equatable {
     public var nome: String              // "Principal"
     public var linhaChegada: LinhaChegada?
     public var parciais: [Parcial]
+
+    public init(
+        id: String, trackId: String, nome: String,
+        linhaChegada: LinhaChegada? = nil, parciais: [Parcial] = []
+    ) {
+        self.id = id; self.trackId = trackId; self.nome = nome
+        self.linhaChegada = linhaChegada; self.parciais = parciais
+    }
 }
 
 public struct TrackSegment: Codable, Sendable, Equatable {

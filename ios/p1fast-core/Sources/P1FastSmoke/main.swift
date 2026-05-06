@@ -5821,6 +5821,70 @@ step("SE-06: velEntrada e velSaida ambos nil → velocidadeMax nil; vminKmh nil 
     try assertTrue(row.vminKmh == nil, "vminKmh deveria ser nil sem velMinima")
 }
 
+// ════════════════════════════════════════════════════════════
+// MS-2.6.c — geo_ancoras + view_box (TGA-01..04)
+// ════════════════════════════════════════════════════════════
+
+step("TGA-01: migration v8 cria colunas geo_ancoras em tracks e view_box em track_layouts") {
+    let q = try DB.makeMemoryQueue()
+    let trackCols = try q.read { db in
+        try Row.fetchAll(db, sql: "PRAGMA table_info(tracks)").map { $0["name"] as String }
+    }
+    let layoutCols = try q.read { db in
+        try Row.fetchAll(db, sql: "PRAGMA table_info(track_layouts)").map { $0["name"] as String }
+    }
+    try assertTrue(trackCols.contains("geo_ancoras"), "tracks.geo_ancoras ausente")
+    try assertTrue(layoutCols.contains("view_box"), "track_layouts.view_box ausente")
+}
+
+step("TGA-02: TrackRow round-trip preserva geo_ancoras (TEXT JSON)") {
+    let q = try makeTestDB()
+    let json = "[{\"lat\":-15.77,\"lng\":-47.9,\"x\":410,\"y\":707}]"
+    try q.write { db in
+        var row = TrackRow(id: "trk-tga", apelido: "TGA", nomeOficial: "TGA Oficial", geoAncoras: json)
+        try row.insert(db)
+    }
+    let fetched = try q.read { db in
+        try TrackRow.fetchOne(db, key: "trk-tga")
+    }
+    guard let r = fetched else { throw Bad(msg: "row sumiu") }
+    try assertEq(r.geoAncoras ?? "", json)
+}
+
+step("TGA-03: TrackLayoutRow round-trip preserva view_box (TEXT JSON)") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var t = TrackRow(id: "trk-tga2", apelido: "X", nomeOficial: "Y")
+        try t.insert(db)
+        var row = TrackLayoutRow(
+            id: "lay-tga2",
+            trackId: "trk-tga2",
+            nome: "Principal",
+            viewBox: "{\"w\":823,\"h\":799}"
+        )
+        try row.insert(db)
+    }
+    let fetched = try q.read { db in
+        try TrackLayoutRow.fetchOne(db, key: "lay-tga2")
+    }
+    guard let r = fetched else { throw Bad(msg: "row sumiu") }
+    try assertEq(r.viewBox ?? "", "{\"w\":823,\"h\":799}")
+}
+
+step("TGA-04: ViewBox e [GeoAncora] decodam JSON canônico (formato escrito pela view)") {
+    let vbJson = "{\"w\":823,\"h\":799}"
+    let vb = try JSONDecoder().decode(ViewBox.self, from: Data(vbJson.utf8))
+    try assertClose(vb.w, 823)
+    try assertClose(vb.h, 799)
+    let gaJson = """
+    [{"lat":-15.77,"lng":-47.9,"x":410,"y":707},{"lat":-15.7718,"lng":-47.898,"x":630,"y":400}]
+    """
+    let gas = try JSONDecoder().decode([GeoAncora].self, from: Data(gaJson.utf8))
+    try assertEq(gas.count, 2)
+    try assertClose(gas[0].lat, -15.77)
+    try assertClose(gas[1].x, 630)
+}
+
 // ── relatório ────────────────────────────────────────────────
 print("\n═══ RESULTADO ═══")
 print("\(ok) ok / \(fail) fail")

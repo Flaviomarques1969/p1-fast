@@ -244,7 +244,9 @@ private struct ReadyRoot: View {
         case .setupAvancado:
             SetupAvancadoLauncher()
         case .telemetria:
-            TelemetriaView(queue: queue)
+            // MS-2.6.c: passa o bundle vindo de TrackRepository.currentTrack
+            // se já bootstrapou; senão TelemetriaView usa fallback SeedBrasilia.
+            TelemetriaView(queue: queue, trackBundle: trackRepo.currentTrack())
         }
     }
 }
