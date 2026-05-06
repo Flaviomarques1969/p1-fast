@@ -5728,6 +5728,99 @@ step("K-15: Joseph form preserva simetria e PSD em padrão realista IMU+GPS") {
     }
 }
 
+// ════════════════════════════════════════════════════════════
+// SegmentExecutionMapper — SE-01..06 (MS-2.5)
+// ════════════════════════════════════════════════════════════
+// Lógica pura de mapeamento DetectorSegmentEndEvent → SegmentExecution.
+// StintRepository.finalize chama esse mapper antes de inserir.
+
+func seEvent(
+    segmentId: String = "seg_test",
+    lapNumero: Int? = 1,
+    tempoMs: Double = 12345.6,
+    velEntrada: Double? = nil,
+    velMinima: Double? = nil,
+    velSaida: Double? = nil,
+    apexActual: PathMapper.Point? = nil
+) -> DetectorSegmentEndEvent {
+    DetectorSegmentEndEvent(
+        segmentId: segmentId,
+        lapNumero: lapNumero,
+        entradaAt: 0, saidaAt: tempoMs,
+        tempoMs: tempoMs,
+        velEntrada: velEntrada,
+        velMinima: velMinima,
+        velSaida: velSaida,
+        pontoFrenagem: nil,
+        apexT: nil, apexOffset: nil,
+        apexActual: apexActual
+    )
+}
+
+step("SE-01: campos básicos — id, timeId, sessaoId, voltaId, segmentId preservados") {
+    let ev = seEvent(segmentId: "seg-3", tempoMs: 7531.4)
+    let row = SegmentExecutionMapper.fromEvent(
+        ev,
+        timeId: "team-1",
+        sessaoId: "ses-1",
+        voltaId: "volta-1",
+        id: "exec-1"
+    )
+    try assertEq(row.id, "exec-1")
+    try assertEq(row.timeId, "team-1")
+    try assertEq(row.sessaoId, "ses-1")
+    try assertEq(row.voltaId, "volta-1")
+    try assertEq(row.segmentId, "seg-3")
+    try assertEq(row.tempoMs, 7531) // round half-to-even
+}
+
+step("SE-02: vminKmh = velMinima * 3.6 (m/s → km/h)") {
+    let ev = seEvent(velMinima: 25.0) // 25 m/s = 90 km/h
+    let row = SegmentExecutionMapper.fromEvent(
+        ev, timeId: "t", sessaoId: "s", voltaId: "v"
+    )
+    guard let vmin = row.vminKmh else { throw Bad(msg: "vminKmh nil") }
+    try assertClose(vmin, 90.0, tol: 1e-9)
+}
+
+step("SE-03: vminX/vminY copiados do apexActual") {
+    let ap = PathMapper.Point(x: 415.5, y: 707.8)
+    let ev = seEvent(velMinima: 20.0, apexActual: ap)
+    let row = SegmentExecutionMapper.fromEvent(
+        ev, timeId: "t", sessaoId: "s", voltaId: "v"
+    )
+    try assertClose(row.vminX ?? .nan, 415.5)
+    try assertClose(row.vminY ?? .nan, 707.8)
+}
+
+step("SE-04: apexActual nil → vminX/vminY nil (vminKmh independente)") {
+    let ev = seEvent(velMinima: 20.0, apexActual: nil)
+    let row = SegmentExecutionMapper.fromEvent(
+        ev, timeId: "t", sessaoId: "s", voltaId: "v"
+    )
+    try assertTrue(row.vminX == nil, "vminX deveria ser nil")
+    try assertTrue(row.vminY == nil, "vminY deveria ser nil")
+    try assertTrue(row.vminKmh != nil, "vminKmh ainda deveria existir")
+}
+
+step("SE-05: velocidadeMax = max(velEntrada, velSaida) * 3.6") {
+    let ev = seEvent(velEntrada: 30.0, velSaida: 35.0) // 35 m/s = 126 km/h
+    let row = SegmentExecutionMapper.fromEvent(
+        ev, timeId: "t", sessaoId: "s", voltaId: "v"
+    )
+    guard let vmax = row.velocidadeMax else { throw Bad(msg: "velocidadeMax nil") }
+    try assertClose(vmax, 126.0, tol: 1e-9)
+}
+
+step("SE-06: velEntrada e velSaida ambos nil → velocidadeMax nil; vminKmh nil sem velMinima") {
+    let ev = seEvent(velEntrada: nil, velSaida: nil)
+    let row = SegmentExecutionMapper.fromEvent(
+        ev, timeId: "t", sessaoId: "s", voltaId: "v"
+    )
+    try assertTrue(row.velocidadeMax == nil, "velocidadeMax deveria ser nil quando ambos extremos nil")
+    try assertTrue(row.vminKmh == nil, "vminKmh deveria ser nil sem velMinima")
+}
+
 // ── relatório ────────────────────────────────────────────────
 print("\n═══ RESULTADO ═══")
 print("\(ok) ok / \(fail) fail")

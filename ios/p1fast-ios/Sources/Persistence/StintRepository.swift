@@ -148,9 +148,20 @@ final class StintRepository: ObservableObject {
     /// 1A.3 — random determinístico em torno de uma média), atualiza
     /// `sessao.dataFim` e marca status='finalizada'.
     ///
+    /// MS-2.5 (#?): aceita `segmentEvents` opcional vindo do `Detector`
+    /// ao vivo. Cada evento vira uma row em `segment_executions` com o
+    /// trio Vmin georef (`vmin_kmh = velMinima * 3.6`, `vmin_x/y` do
+    /// `apexActual`). Schema PG/GRDB já tem as 3 colunas (#92, migration
+    /// 0007 aplicada em prod 2026-05-06). Sem eventos, `finalize`
+    /// continua compatível com chamadas antigas.
+    ///
     /// Retorna o stint atualizado (com voltas reais já contadas).
     @discardableResult
-    func finalize(stintId: String, mediaVoltaMs: Int = 103_500) async throws -> Stint {
+    func finalize(
+        stintId: String,
+        mediaVoltaMs: Int = 103_500,
+        segmentEvents: [DetectorSegmentEndEvent] = []
+    ) async throws -> Stint {
         let now = DB.nowMs()
         // Devolve (pneu_id, qtVoltas) pra incrementar ciclos do pneu APÓS o
         // commit da escrita — incrementarCiclos abre transação própria.
@@ -161,22 +172,46 @@ final class StintRepository: ObservableObject {
             // Gera N voltas com tempos plausíveis em torno da média (±5%).
             // Deterministic-ish: usa stintId hash como seed pra mesma sessao
             // dar sempre os mesmos tempos no preview.
+            // Mantém um índice numero→voltaId pra mapear segmentEvents abaixo.
+            var voltaIdByNumero: [Int: String] = [:]
             let seed = abs(stintId.hashValue)
             for i in 0..<planejadas {
                 let jitter = Int(((seed &+ i &* 9973) % 200) - 100) * mediaVoltaMs / 5_000
                 // Volta 1 = aquecimento (mais lenta); volta 2+ = perto da média.
                 let base = (i == 0) ? mediaVoltaMs + 1500 : mediaVoltaMs
                 let tempoMs = base + jitter
+                let voltaId = UUID().uuidString
+                let numero = i + 1
                 try Volta(
-                    id: UUID().uuidString,
+                    id: voltaId,
                     timeId: Self.localTimeId,
                     sessaoId: stintId,
-                    numero: i + 1,
+                    numero: numero,
                     tempoMs: tempoMs,
                     temposPorParcial: nil,
                     valida: true,
                     motivoInvalidacao: nil,
                     inicioAt: nil
+                ).insert(db)
+                voltaIdByNumero[numero] = voltaId
+            }
+
+            // MS-2.5: persiste 1 SegmentExecution por DetectorSegmentEndEvent.
+            // Lógica de mapeamento (m/s → km/h, vmin trio, velocidadeMax) vive
+            // em `SegmentExecutionMapper` (core, testado via smoke). Aqui só
+            // associa lapNumero → voltaId e insere.
+            //
+            // Eventos sem lapNumero conhecido OU com lapNumero fora da gama
+            // de voltas geradas são silenciosamente ignorados — não há
+            // contrato de banco pra associá-los a uma volta.
+            for ev in segmentEvents {
+                guard let lapNumero = ev.lapNumero,
+                      let voltaId = voltaIdByNumero[lapNumero] else { continue }
+                try SegmentExecutionMapper.fromEvent(
+                    ev,
+                    timeId: Self.localTimeId,
+                    sessaoId: stintId,
+                    voltaId: voltaId
                 ).insert(db)
             }
 
