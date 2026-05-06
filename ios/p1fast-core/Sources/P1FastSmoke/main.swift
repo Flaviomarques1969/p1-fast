@@ -5885,6 +5885,34 @@ step("K-21: predict após gap > 5s não integra (estado intacto)") {
     try assertClose(f.debugState.y, yAntes, tol: 1e-9)
 }
 
+step("K-22: gapDurationMs sai consume-once — predicts subsequentes retornam nil") {
+    // Field test 2026-05-06 mostrou 102 enriched rows com mesmo gap_duration_ms
+    // = 5306.8 ms. 1 evento real de bg→fg gerou 102 escritas idênticas porque
+    // lastGapDurationMs ficava setado até o próximo update. Fix: zera após o
+    // currentState() do update que disparou — predicts subsequentes herdam nil.
+    let f = KalmanINSGPS()
+    f.update(sample: kGps(t: 0, tMono: 0, lat: kLat0, lng: kLng0, acc: 3))
+    // Loop de 10 updates apertados pra deixar o filtro convergido.
+    for i in 1...10 {
+        let dLng = Double(i) * 0.1 / (111_000.0 * cos(kLat0 * .pi / 180.0))
+        f.update(sample: kGps(t: Int64(i * 100), tMono: Double(i * 100),
+                              lat: kLat0, lng: kLng0 + dLng, acc: 0.5))
+    }
+    // Update após gap → primeira (e única) saída com gapDurationMs != nil.
+    let primeiroPosGap = f.update(sample: kGps(
+        t: 60_000, tMono: 60_000,
+        lat: kLat0, lng: kLng0, acc: 3
+    ))
+    try assertEq(primeiroPosGap.gapDurationMs != nil, true)
+    // Predicts e updates subsequentes herdam nil — não duplicam o evento.
+    let predict1 = f.predict(sample: kImu(t: 60_100, tMono: 60_100, accX: 0, accY: 0))
+    try assertEq(predict1.gapDurationMs, nil)
+    let predict2 = f.predict(sample: kImu(t: 60_200, tMono: 60_200, accX: 0, accY: 0))
+    try assertEq(predict2.gapDurationMs, nil)
+    let updateNoGap = f.update(sample: kGps(t: 61_000, tMono: 61_000, lat: kLat0, lng: kLng0, acc: 3))
+    try assertEq(updateNoGap.gapDurationMs, nil)
+}
+
 // ════════════════════════════════════════════════════════════
 // SegmentExecutionMapper — SE-01..06 (MS-2.5)
 // ════════════════════════════════════════════════════════════

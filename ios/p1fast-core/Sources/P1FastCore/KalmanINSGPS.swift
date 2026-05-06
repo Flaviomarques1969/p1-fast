@@ -329,7 +329,14 @@ public final class KalmanINSGPS {
         updateHeadingFromCourse(sample.course)
         lastUpdateTMono = sample.tMono
 
-        return currentState(t: sample.t, tMono: sample.tMono)
+        // A-07 consume-once: gapDurationMs sai SÓ no sample que disparou
+        // o reset. Sem isto, todo predict subsequente até o próximo
+        // update herdava o mesmo valor (field test 2026-05-06 viu 102
+        // rows com gap_duration_ms idêntico = 5306.8 ms — 1 evento real,
+        // 102 amostras gravando o mesmo). Captura o snapshot e zera.
+        let result = currentState(t: sample.t, tMono: sample.tMono)
+        lastGapDurationMs = nil
+        return result
     }
 
     /// A-07: reinicializa P para valores conservadores e zera velocidades.
