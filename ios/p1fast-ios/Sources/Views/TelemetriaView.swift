@@ -221,9 +221,11 @@ struct TelemetriaView: View {
         }
     }
 
-    /// Cria a sessao demo idempotente. Time `local-default-team` é
-    /// criado pelos repos canônicos no boot do app — aqui só inserimos
-    /// a Sessao (FK pro time já existe).
+    /// Cria a sessao demo idempotente. Garante o Time canônico
+    /// `local-default-team` antes da Sessao — TelemetriaView pode rodar
+    /// independente de qual repo bootstrapa o team primeiro (race com
+    /// `.task` do ContentView). Mesmo padrão do
+    /// PilotoRepository/PassageiroRepository: Time idempotente local.
     ///
     /// FB-02: erro vai pro estado `sessaoErro` que renderiza banner
     /// vermelho e desabilita INICIAR. Engolir silenciosamente fazia o
@@ -231,10 +233,20 @@ struct TelemetriaView: View {
     private func ensureSessao() async {
         do {
             try await queue.write { db in
+                // 1) Time canônico — idempotente.
+                let timeId = "local-default-team"
+                if try Time.fetchOne(db, key: timeId) == nil {
+                    try Time(
+                        id: timeId,
+                        nome: "Time local",
+                        criadoPor: nil
+                    ).insert(db)
+                }
+                // 2) Sessao demo — idempotente.
                 if try Sessao.fetchOne(db, key: sessaoId) == nil {
                     try Sessao(
                         id: sessaoId,
-                        timeId: "local-default-team",
+                        timeId: timeId,
                         eventoId: nil,
                         carroId: nil,
                         pilotoId: nil,
