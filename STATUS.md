@@ -1,7 +1,7 @@
 # P1 Fast — STATUS
 
-**Data deste checkpoint:** 2026-05-05 (sessão 3 — MS-2 captura ao vivo + Kalman INS-GPS + Detector ao vivo)
-**Estado:** Plano `docs/PLANO_FASE_1.md` em execução. **MS-2 fechado exceto MS-2.5** (gated por field test). PRs totais até #104, **386 smoke tests verdes**. Pipeline ao vivo agora cobre raw IMU/GPS → Kalman INS-GPS → Detector lap/segment com 3 stacks na mesma sessão demo (`--p1-telemetria`).
+**Data deste checkpoint:** 2026-05-06 (sessão 4 — field test E2E real, MS-2 100% fechado, MS-2.6.c em prod)
+**Estado:** Plano `docs/PLANO_FASE_1.md` em execução. **MS-2 100% fechado**. Field test E2E executado e validado em iPhone 16 Pro Max real (varanda Brasília, 559s, IMU 100.5 Hz · accZ ~0.18 confirmado userAcceleration, 56314 raw + 56314 enriched, fix em < 3s, pos_sigma estabilizou ~3m). PRs totais até #112, **397 smoke tests verdes**. Migrations 0007 + 0008 + 0009 todas aplicadas em prod via `supabase db push`.
 
 > **Se você é Claude abrindo esta sessão pela primeira vez:**
 > Leia este arquivo primeiro, depois `docs/PLANO_FASE_1.md` (doc mestre), depois `~/.claude/projects/-Users-imac/memory/MEMORY.md` (memória global) + `~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/MEMORY.md` (memória do projeto).
@@ -96,13 +96,47 @@ Audit honesto mostrou que "Phase 1A 100%" foi declarada por engano: cobria só S
 
 ---
 
+## Sessão 2026-05-06 — field test E2E real, MS-2 100% fechado, MS-2.6.c em prod
+
+`swift run p1fast-smoke` final: **397 ok / 0 fail**. App buildado e instalado no iPhone 16 Pro Max real do Flávio via `xcodebuild` + `xcrun devicectl device install/launch`.
+
+| # | PR | Tema | Conteúdo |
+|---|---|---|---|
+| 106 | feat | **MS-2.7 polimento Kalman** | Joseph form `(I-KH)P(I-KH)ᵀ + KRKᵀ` (PSD por construção); `mPerDegLat` 111_320 → 111_000 (alinha Projector/TrajectoryMonitor); finite guard pré/pós em `predict`/`update` (snapshot + restore se NaN/inf). +1 smoke (K-15 PSD em sessão realista) |
+| 107 | docs | **field test MS-2** | Checklist completo + template de relato pra preencher em campo (`MS_2_FIELD_TEST.md` + `MS_2_FIELD_TEST_REPORT_TEMPLATE.md`). Substitui PR #96 pré-MS-2.6 |
+| 108 | chore | **scheme launch arg** | `--p1-telemetria` salvo no scheme compartilhado (xcscheme), `⌘R` cai direto na TelemetriaView |
+| 109 | fix | **TelemetriaView FK violation** | `ensureSessao` cria Time canônico antes da Sessao (mesmo padrão de PilotoRepository/PassageiroRepository). Bug encontrado em campo no iPhone real |
+| 110 | docs | **field test correções pós-real** | Enriched ≈ raw (1 por sample, não 1 por GPS — design); GPS Hz parado é 0.05–0.2 (iOS rate-limit BestForNavigation); validação completa em campo documentada |
+| 111 | feat | **MS-2.5** | `StintRepository.finalize` consome `[DetectorSegmentEndEvent]` opcional + grava trio Vmin (`vmin_kmh = velMinima*3.6`, `vmin_x/y` do `apexActual`) em `segment_executions`. `SegmentExecutionMapper` puro em core. +6 smoke SE-01..06 |
+| 112 | feat | **MS-2.6.c** | Migration PG `0009_track_geo_anchors_view_box.sql` (aplicada em prod) + GRDB v8. `tracks.geo_ancoras` + `track_layouts.view_box`. `TrackRepository.currentTrack()` hidrata Track + TrackLayout + segments do GRDB. `TelemetriaView` aceita `trackBundle?` injetado pelo ContentView (fallback SeedBrasilia). +4 smoke TGA-01..04 |
+
+**Field test em campo (sessão `telemetria-demo-1778076722`, 559s parado em céu aberto):**
+
+- IMU **100.5 Hz** · jitter < 1ms · accZ ~0.18 (userAcceleration, não gravity) ✅
+- GPS **0.11 Hz** parado (iOS rate-limit BestForNavigation; em movimento sobe pra ~1Hz) — comportamento iOS, não bug
+- 56314 raw + 56314 enriched · 56313 com fix · 1 pre-fix
+- pos_sigma 1e6 → 25.7m → estabiliza ~3m (fix em < 3s)
+- x_m, y_m em escala de cm com iPhone parado
+- Pipeline raw → Kalman → Detector → SQLite end-to-end validado em hardware real
+
+SQL pulled via `xcrun devicectl device copy from --domain-type appDataContainer`. Container baixado, queries rodadas em `p1fast.sqlite` direto.
+
+**Migrations Supabase aplicadas em prod 2026-05-06:**
+- `0007_vmin_georef.sql` (segment_executions vmin trio)
+- `0008_telemetry_samples_enriched.sql` (Kalman output)
+- `0009_track_geo_anchors_view_box.sql` (geo_ancoras + view_box)
+
+Verificadas via REST: HTTP 200 + `[]` em todas (RLS OK, colunas existentes — se não existissem, retornaria 400).
+
+---
+
 ## Estado por mini-sprint (em relação ao `docs/PLANO_FASE_1.md`)
 
 | MS | Tema | Status |
 |---|---|---|
 | **MS-1.1-1.3** | Domínio canônico Swift port | ✅ feito (TrackSegment, ErrorClassifier, TrajectoryMonitor) |
 | **MS-1.4** | Configurador visual de pista (UI) | ✅ feito 2026-05-05 (#84..#90 — multi-apex 0..3 ápices) |
-| **MS-2** | Captura ao vivo + Kalman INS-GPS + Detector | 🟡 quase fechado — 2.1/2.2/2.3/2.4/2.6/2.6.b/2.7 ✅. Falta **MS-2.5** (gated por field test). |
+| **MS-2** | Captura ao vivo + Kalman INS-GPS + Detector | ✅ **100% fechado 2026-05-06**. 2.1/2.2/2.3/2.4/2.5/2.6/2.6.b/2.6.c/2.7. Field test E2E executado e validado em iPhone real. Pipeline raw → Kalman → Detector → segment_executions com Vmin georef end-to-end. |
 | **MS-3** | Edge Function pipeline + smoke E2E | ❌ não feito |
 | **MS-4** | StintPlan iOS port | ❌ não feito (schema + repo + UI) |
 | **MS-5** | Pendências vivas | ❌ não feito (CRUD + por carro + obrigatório/adicional) |
@@ -142,13 +176,16 @@ Já portado e em paridade JS após hoje:
 
 ## Próximas fronteiras (precisam Xcode + simulator + iPhone real)
 
-- **MS-2 field test E2E** — `--p1-telemetria` no iPhone, validar 3 stacks vivos: enriched count sobe junto com raw, fix aparece após GPS, Detector lap count incrementa cruzando linha de chegada em Brasília. Pré-req pra MS-2.5.
-- **MS-2.5** `StintRepository.finalize` consome `Detector.onSegmentEnd` + grava Vmin georef em `segment_executions`. Schema já tem `vmin_kmh/x/y` (#92). Gated pelo field test acima.
-- **MS-2.6.c** trocar `SeedBrasilia.make()` da `TelemetriaView` por `TrackRepository.currentTrack()`. Pré-req: migration adicionando `geo_ancoras` + `view_box` em `tracks`/`track_layouts` (não estão no schema PG hoje, só em SeedBrasilia hardcoded).
+- **StintCaptureCoordinator + UI start/stop** — armar LiveTelemetryRecorder + LiveDetectorBridge + buffer de `DetectorSegmentEndEvent` durante stint real (StintModalView dispara, EventoDetalheView drena no finalize). Atual `StintRepository.finalize` aceita `[DetectorSegmentEndEvent]` mas ninguém ainda passa em produção real. Sem isso, finalize sempre roda com `[]`.
 - **MS-13** CockpitDevice 956×440: SwiftUI + halo radial + slot direito Z-axis + animations
 - **MS-9** Adapter BLE T4000: CoreBluetooth + parser Injepro
 - **MS-10** Auth Supabase: SDK Auth + tela login + share sheet
 - **MS-11** Daily.co SDK iOS
+
+## Próximas fronteiras (independentes de hardware iOS)
+
+- **MS-3** Edge Function pipeline — port mínimo de `src/telemetry/detector.js` + fixture Brasília + smoke E2E
+- **MS-4** `StintPlan` iOS — schema + repo + UI (sprint maior, vai precisar quebrar em sub-sprints)
 
 Esses precisam de Xcode pra build/validar. Domínio Swift puro pode continuar até esgotar.
 
@@ -167,13 +204,13 @@ Esses precisam de Xcode pra build/validar. Domínio Swift puro pode continuar at
 
 ## Próximo passo concreto pós-/compact
 
-MS-2 fechado em código. Próximo bloqueio é o field test E2E no iPhone real — sem ele, MS-2.5 não vale.
+**MS-2 100% fechado**. Field test E2E real executado e validado em iPhone físico. Migrations 0007/0008/0009 todas em prod.
 
-Opções pra retomada (decisão Flávio):
+Opções pra próxima sessão (decisão Flávio):
 
-1. **Field test E2E** — Flávio roda `--p1-telemetria` no iPhone andando em Brasília. Esperado: `Amostras raw`, `Amostras enriched` (com fix), `Detector ok`, `Voltas` todos avançam coerentemente. Achados viram backlog.
-2. **MS-2.5** após o field test — `StintRepository.finalize` consome `Detector.onSegmentEnd` + grava Vmin georef. Schema já está pronto (#92). Cobre MS-13.6 (widget Vmin) e MS-12 (Command Box).
-3. **MS-2.6.c migration** — adicionar `geo_ancoras` + `view_box` no schema (PG + GRDB). Tira hardcode de `SeedBrasilia` da `TelemetriaView` e abre caminho pra múltiplas pistas.
-4. **MS-3** Edge Function pipeline + smoke E2E — agora que telemetria viva grava em local DB, faz sentido subir um endpoint que recebe samples e roda pipeline (port mínimo de `src/telemetry/detector.js` + segmentação) e fixture Brasília.
-5. **MS-4** `StintPlan` portado pro iOS — schema + repo + UI. Independente do field test.
-6. **PR de polimento Kalman** — atacar A-02..A-07 (Joseph form, mPerDegLat divergente, NaN/inf coverage, gap recovery flag).
+1. **StintCaptureCoordinator + UI start/stop** — fechar o último elo: durante stint real, armar `LiveTelemetryRecorder` + `LiveDetectorBridge` e bufferizar `DetectorSegmentEndEvent`s. No finalize, drenar buffer e passar pro `StintRepository.finalize` (já aceita o parâmetro desde #111). Sem isso, MS-2.5 só roda em fixture/teste; em produção real `finalize` sempre vê `[]`.
+2. **Field test em movimento** — varanda parado validou pipeline. Falta confirmar GPS 1Hz andando, Voltas em pista (Brasília), background mode com tela travada, Low Power Mode. Inputs reais alimentam decisões de tuning.
+3. **MS-3** Edge Function pipeline + smoke E2E — port mínimo de `src/telemetry/detector.js` + fixture Brasília. Independente de hardware iOS.
+4. **MS-4** `StintPlan` portado pro iOS — schema + repo + UI. Sprint maior; vai precisar quebrar em sub-sprints.
+5. **MS-13** CockpitDevice 956×440 — UI grande, precisa Xcode + simulator.
+6. **MS-9 BLE T4000** — precisa hardware Injepro real.
