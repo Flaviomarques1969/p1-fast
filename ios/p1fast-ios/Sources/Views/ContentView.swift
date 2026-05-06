@@ -141,6 +141,7 @@ private struct ReadyRoot: View {
     @StateObject private var pendenciaRepo: PendenciaRepository
     @StateObject private var reachability: Reachability
     @StateObject private var syncCoordinator: SyncCoordinator
+    @StateObject private var stintCaptureCoordinator: StintCaptureCoordinator
 
     init(queue: DatabaseQueue) {
         self.queue = queue
@@ -159,6 +160,9 @@ private struct ReadyRoot: View {
         _syncCoordinator = StateObject(
             wrappedValue: SyncCoordinator(queue: queue, reachability: reach)
         )
+        _stintCaptureCoordinator = StateObject(
+            wrappedValue: StintCaptureCoordinator(queue: queue)
+        )
     }
 
     var body: some View {
@@ -175,6 +179,7 @@ private struct ReadyRoot: View {
             .environmentObject(pendenciaRepo)
             .environmentObject(reachability)
             .environmentObject(syncCoordinator)
+            .environmentObject(stintCaptureCoordinator)
             .task {
                 await carroRepo.bootstrap()
                 // EventoRepo seeda o TrackRow brasília — TrackRepo
