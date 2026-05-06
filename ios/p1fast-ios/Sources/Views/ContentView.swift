@@ -107,20 +107,60 @@ private enum AppRoute {
 
 struct ContentView: View {
     @EnvironmentObject private var database: AppDatabase
+    /// MS-10 A.3 — auth como bootstrap separado, paralelo ao DB.
+    /// A view só monta UI após DB.ok E session.state != .restoring.
+    /// Logado → ReadyRoot. Deslogado → LoginView. Sem flicker.
+    @StateObject private var session = SessionManager()
 
     var body: some View {
-        switch database.status {
-        case .idle:
-            Splash(stateLabel: "DB: subindo…", isError: false)
-        case .ok:
+        rootView
+            .environmentObject(session)
+            .task {
+                // Restaura sessão do storage do SDK (auto-refresh JWT
+                // expirado). Roda 1× por subida do app — ContentView é
+                // singleton no scene root.
+                await session.bootstrap()
+            }
+    }
+
+    @ViewBuilder
+    private var rootView: some View {
+        switch (database.status, session.state) {
+        case (.idle, _), (.ok, .restoring):
+            Splash(stateLabel: "Iniciando…", isError: false)
+        case (.failed(let message), _):
+            Splash(stateLabel: "DB: falhou\n\(message)", isError: true)
+        case (.ok, .unauthenticated):
+            if let queue = database.queue {
+                LoginView()
+                    // Repos não são necessários na tela de login, mas
+                    // queue precisa estar pronta antes de logar pra
+                    // que ReadyRoot construa imediatamente após auth
+                    // sem flicker. Injeção early aqui é OK.
+                    .environment(\.databaseQueue, queue)
+            } else {
+                Splash(stateLabel: "DB: ok mas sem queue", isError: true)
+            }
+        case (.ok, .authenticated):
             if let queue = database.queue {
                 ReadyRoot(queue: queue)
             } else {
                 Splash(stateLabel: "DB: ok mas sem queue", isError: true)
             }
-        case .failed(let message):
-            Splash(stateLabel: "DB: falhou\n\(message)", isError: true)
         }
+    }
+}
+
+/// Repassa DatabaseQueue via EnvironmentValues quando útil (LoginView
+/// ainda não consome, mas sprints C.1+ podem). EnvironmentObject não
+/// serve porque DatabaseQueue não é ObservableObject.
+private struct DatabaseQueueKey: EnvironmentKey {
+    static let defaultValue: DatabaseQueue? = nil
+}
+extension EnvironmentValues {
+    var databaseQueue: DatabaseQueue? {
+        get { self[DatabaseQueueKey.self] }
+        set { self[DatabaseQueueKey.self] = newValue }
     }
 }
 

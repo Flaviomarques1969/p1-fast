@@ -238,7 +238,7 @@ struct LoginView: View {
             }
             .buttonStyle(.plain)
             .disabled(session.isWorking)
-            Text("Tenta logar com Flaviomarques@me.com / 1212. Crie a conta antes em Supabase Dashboard → Authentication → Users → Add user.")
+            Text("Tenta logar com Flaviomarques@me.com / 121212.")
                 .font(.system(size: 11, weight: .regular))
                 .foregroundStyle(Color.textFaint)
         }
@@ -246,7 +246,9 @@ struct LoginView: View {
 
     private func devBypassTap() {
         Task {
-            await session.signIn(email: "Flaviomarques@me.com", password: "1212")
+            // Senha "121212" — Supabase exige mínimo 6 chars; "1212"
+            // original foi rejeitado. Mesmo espírito (curta, fácil).
+            await session.signIn(email: "Flaviomarques@me.com", password: "121212")
         }
     }
     #endif
