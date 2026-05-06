@@ -5728,6 +5728,58 @@ step("K-15: Joseph form preserva simetria e PSD em padrão realista IMU+GPS") {
     }
 }
 
+// ────────────────────────────────────────────────────────────
+// Defensives — A-05 (auditoria PR A não endereçada em STATUS.md)
+// ────────────────────────────────────────────────────────────
+// K-16/17/18 cobrem o finite guard pré/pós em predict/update adicionado
+// em #106 junto com Joseph form. K-09/K-10 só validavam "source errado",
+// não NaN/inf nos valores em si.
+
+step("K-16: predict com NaN em accX é no-op defensivo (estado intacto)") {
+    let f = KalmanINSGPS()
+    // Coloca o filtro em fix com posição não-trivial.
+    f.update(sample: kGps(t: 0, tMono: 0, lat: kLat0, lng: kLng0, acc: 3))
+    let xAntes = f.debugState.x
+    let yAntes = f.debugState.y
+    let pAntes = f.debugCovariance
+    let bad = kImu(t: 1000, tMono: 1000, accX: .nan, accY: 0)
+    let e = f.predict(sample: bad)
+    try assertEq(e.xM.isFinite, true)
+    try assertEq(e.yM.isFinite, true)
+    try assertClose(f.debugState.x, xAntes, tol: 1e-12)
+    try assertClose(f.debugState.y, yAntes, tol: 1e-12)
+    for i in 0..<16 {
+        try assertTrue(f.debugCovariance[i].isFinite, "P[\(i)] não-finita após predict NaN")
+        try assertClose(f.debugCovariance[i], pAntes[i], tol: 1e-12)
+    }
+}
+
+step("K-17: predict com inf em accY é no-op defensivo") {
+    let f = KalmanINSGPS()
+    f.update(sample: kGps(t: 0, tMono: 0, lat: kLat0, lng: kLng0, acc: 3))
+    let xAntes = f.debugState.x
+    let yAntes = f.debugState.y
+    let bad = kImu(t: 1000, tMono: 1000, accX: 0, accY: .infinity)
+    let e = f.predict(sample: bad)
+    try assertEq(e.xM.isFinite, true)
+    try assertEq(e.yM.isFinite, true)
+    try assertClose(f.debugState.x, xAntes, tol: 1e-12)
+    try assertClose(f.debugState.y, yAntes, tol: 1e-12)
+}
+
+step("K-18: update com NaN em lat não cria fix nem move estado") {
+    let f = KalmanINSGPS()
+    var s = Sample(t: 100, tMono: 100, source: SourceTags.gps, signalQuality: "GOOD")
+    s.lat = .nan
+    s.lng = kLng0
+    s.acc = 3
+    let e = f.update(sample: s)
+    try assertEq(e.sourceKalman, false)
+    try assertEq(f.debugState.hasFix, false)
+    try assertClose(f.debugState.x, 0, tol: 1e-12)
+    try assertClose(f.debugState.y, 0, tol: 1e-12)
+}
+
 // ════════════════════════════════════════════════════════════
 // SegmentExecutionMapper — SE-01..06 (MS-2.5)
 // ════════════════════════════════════════════════════════════
