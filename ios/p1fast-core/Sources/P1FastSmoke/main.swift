@@ -5728,7 +5728,6 @@ step("K-15: Joseph form preserva simetria e PSD em padrão realista IMU+GPS") {
     }
 }
 
-// ────────────────────────────────────────────────────────────
 // Defensives — A-05 (auditoria PR A não endereçada em STATUS.md)
 // ────────────────────────────────────────────────────────────
 // K-16/17/18 cobrem o finite guard pré/pós em predict/update adicionado
@@ -5778,6 +5777,67 @@ step("K-18: update com NaN em lat não cria fix nem move estado") {
     try assertEq(f.debugState.hasFix, false)
     try assertClose(f.debugState.x, 0, tol: 1e-12)
     try assertClose(f.debugState.y, 0, tol: 1e-12)
+}
+
+// ────────────────────────────────────────────────────────────
+// Gap recovery — A-07 (K-19/20/21)
+// ────────────────────────────────────────────────────────────
+// Field test 2026-05-06 andando na rua expôs o problema: 4 janelas
+// de captura separadas por gaps de >1h (app morto pelo iOS em
+// background). Sem reset de covariância, o filtro tentava propagar
+// com IMU integrating + dt clamped, e pos_sigma divergiu pra 1e+55.
+// Threshold 5s em KalmanINSGPS.gapResetThresholdMs.
+
+step("K-19: update após gap > 5s reseta P e expõe gapDurationMs") {
+    let f = KalmanINSGPS()
+    f.update(sample: kGps(t: 0, tMono: 0, lat: kLat0, lng: kLng0, acc: 3))
+    // Aproxima P_pos via vários updates próximos com acc baixo (K≈1).
+    for i in 1...10 {
+        let dLng = Double(i) * 0.1 / (111_000.0 * cos(kLat0 * .pi / 180.0))
+        f.update(sample: kGps(t: Int64(i * 100), tMono: Double(i * 100),
+                              lat: kLat0, lng: kLng0 + dLng, acc: 0.5))
+    }
+    let pVarBefore = f.debugCovariance[0] + f.debugCovariance[5]
+    try assertTrue(pVarBefore < 100, "P_pos antes do gap deveria estar pequeno (K≈1), got \(pVarBefore)")
+    // Gap de 60s — bem maior que 5s threshold.
+    let post = f.update(sample: kGps(
+        t: 60_000, tMono: 60_000,
+        lat: kLat0, lng: kLng0, acc: 3
+    ))
+    let pVarAfter = f.debugCovariance[0] + f.debugCovariance[5]
+    // Após reset, P_pos volta a sigma grande. Com acc=3 no update pós-gap
+    // (R=9), K não satura → P_post permanece grande, contraste claro vs antes.
+    try assertTrue(pVarAfter > 1.0, "P_pos pós-gap deve ser grande, got \(pVarAfter)")
+    // Último update do loop em tMono=1000 (i=10 → 10*100). Gap até
+    // tMono=60_000 = 59_000 ms.
+    try assertEq(post.gapDurationMs != nil, true)
+    try assertTrue(post.gapDurationMs! >= 59_000.0 - 1.0,
+                   "gapDurationMs ≈ 59_000, got \(post.gapDurationMs!)")
+}
+
+step("K-20: update com gap < 5s não dispara reset, gapDurationMs nil") {
+    let f = KalmanINSGPS()
+    f.update(sample: kGps(t: 0, tMono: 0, lat: kLat0, lng: kLng0, acc: 3))
+    let dLng = 0.5 / (111_000.0 * cos(kLat0 * .pi / 180.0))
+    let post = f.update(sample: kGps(
+        t: 1000, tMono: 1000,
+        lat: kLat0, lng: kLng0 + dLng, acc: 3
+    ))
+    try assertEq(post.gapDurationMs, nil)
+}
+
+step("K-21: predict após gap > 5s não integra (estado intacto)") {
+    let f = KalmanINSGPS()
+    f.update(sample: kGps(t: 0, tMono: 0, lat: kLat0, lng: kLng0, acc: 3))
+    // Injeta um IMU pra criar lastTMono dentro da janela.
+    f.predict(sample: kImu(t: 100, tMono: 100, accX: 0, accY: 0))
+    let xAntes = f.debugState.x
+    let yAntes = f.debugState.y
+    // Gap de 60s no IMU — depois do app voltar de background, dt seria 60s.
+    f.predict(sample: kImu(t: 60_100, tMono: 60_100, accX: 5, accY: 5))
+    // Estado x/y NÃO deve ter sido movido pela aceleração — predict retornou cedo.
+    try assertClose(f.debugState.x, xAntes, tol: 1e-9)
+    try assertClose(f.debugState.y, yAntes, tol: 1e-9)
 }
 
 // ════════════════════════════════════════════════════════════
