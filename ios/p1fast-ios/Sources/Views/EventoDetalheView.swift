@@ -71,12 +71,31 @@ struct EventoDetalheView: View {
                     proximoNumero: stintRepo.stintsPorEvento.count + 1,
                     contextoLinha: contextoStintModal(ev: ev),
                     onCancel: { sheet = nil },
-                    onCreated: { _ in sheet = nil }
+                    // MS-2.5 wire: stint criado entra direto na captura
+                    // ao vivo (StintCaptureView arma o coordinator). Antes
+                    // disso o modal só fechava — finalize nunca recebia
+                    // segmentEvents na prática.
+                    onCreated: { stintId in
+                        sheet = .captureAtivo(stintId: stintId)
+                    }
                 )
                 .environmentObject(stintRepo)
                 .environmentObject(carroRepo)
                 .environmentObject(pneuRepo)
                 .environmentObject(combustivelRepo)
+            } else {
+                EmptyView()
+            }
+        case .captureAtivo(let stintId):
+            if let ev = repo.find(id: eventoId) {
+                StintCaptureView(
+                    stintId: stintId,
+                    contextoLinha: contextoStintModal(ev: ev),
+                    onFinalized: { id in
+                        sheet = .posStint(stintId: id)
+                    },
+                    onCancel: { sheet = nil }
+                )
             } else {
                 EmptyView()
             }
@@ -367,12 +386,14 @@ struct EventoDetalheView: View {
 
 enum EventoDetalheSheet: Identifiable, Equatable {
     case novoStint
+    case captureAtivo(stintId: String)
     case posStint(stintId: String)
     case pendencias
 
     var id: String {
         switch self {
         case .novoStint: return "novo-stint"
+        case .captureAtivo(let id): return "capture-\(id)"
         case .posStint(let id): return "pos-\(id)"
         case .pendencias: return "pendencias"
         }
