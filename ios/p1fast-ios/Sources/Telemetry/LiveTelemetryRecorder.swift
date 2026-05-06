@@ -45,6 +45,19 @@ final class LiveTelemetryRecorder: NSObject, ObservableObject {
     @Published private(set) var sampleCount: Int = 0
     @Published private(set) var lastError: String?
     @Published private(set) var permissionStatus: String = "—"
+    /// Quantas vezes o app entrou em background com captura ativa
+    /// nesta sessão. iOS pausa CoreMotion (IMU) automaticamente em
+    /// background — só GPS continua via UIBackgroundModes.location.
+    /// Field test 2026-05-06 mostrou IMU médio de 14 Hz numa sessão
+    /// de 2h porque app foi pra background entre janelas. Sem
+    /// visibilidade desses eventos, o gap fica invisível pro user
+    /// até alguém olhar o SQLite.
+    @Published private(set) var backgroundTransitionCount: Int = 0
+    /// Duração (ms) do último período em background. nil até a
+    /// primeira volta ao foreground com captura ativa.
+    @Published private(set) var lastBackgroundDurationMs: Double?
+    /// True enquanto app está em background com captura ativa.
+    @Published private(set) var isInBackground: Bool = false
 
     // MARK: - Config
     private let queue: DatabaseQueue
@@ -72,6 +85,10 @@ final class LiveTelemetryRecorder: NSObject, ObservableObject {
     private var gpsTs: [TimeInterval] = []
     private let metricsWindow = 60
 
+    // Background lifecycle tracking — populado pelo NotificationCenter.
+    private var backgroundEnteredAt: Date?
+    private var bgObservers: [NSObjectProtocol] = []
+
     init(queue: DatabaseQueue, sessaoId: String, timeId: String) {
         self.queue = queue
         self.sessaoId = sessaoId
@@ -83,6 +100,45 @@ final class LiveTelemetryRecorder: NSObject, ObservableObject {
         location.activityType = .automotiveNavigation
         location.allowsBackgroundLocationUpdates = false
         location.pausesLocationUpdatesAutomatically = false
+        installBackgroundObservers()
+    }
+
+    /// Observa transições do app pra/de background. Só conta
+    /// transições enquanto `running == true` — abrir/fechar app sem
+    /// captura ativa não polui as métricas.
+    private func installBackgroundObservers() {
+        let center = NotificationCenter.default
+        let didEnter = center.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.handleDidEnterBackground() }
+        }
+        let willEnter = center.addObserver(
+            forName: UIApplication.willEnterForegroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.handleWillEnterForeground() }
+        }
+        bgObservers = [didEnter, willEnter]
+    }
+
+    private func handleDidEnterBackground() {
+        guard running else { return }
+        isInBackground = true
+        backgroundEnteredAt = Date()
+        backgroundTransitionCount += 1
+    }
+
+    private func handleWillEnterForeground() {
+        guard running else { return }
+        isInBackground = false
+        if let enteredAt = backgroundEnteredAt {
+            lastBackgroundDurationMs = Date().timeIntervalSince(enteredAt) * 1000.0
+        }
+        backgroundEnteredAt = nil
     }
 
     /// FB-01: cleanup síncrono caso a view morra com captura ativa.
@@ -95,6 +151,8 @@ final class LiveTelemetryRecorder: NSObject, ObservableObject {
         location.stopUpdatingLocation()
         location.allowsBackgroundLocationUpdates = false
         flushTimer?.invalidate()
+        // Remove observers pra não vazar callbacks após teardown.
+        for o in bgObservers { NotificationCenter.default.removeObserver(o) }
         // UIApplication.shared.isIdleTimerDisabled é UIApplication-only
         // → marshalling pra main. Ignora se app já tá saindo.
         Task { @MainActor in
@@ -112,6 +170,10 @@ final class LiveTelemetryRecorder: NSObject, ObservableObject {
         buffer.removeAll(keepingCapacity: true)
         imuTs.removeAll(keepingCapacity: true)
         gpsTs.removeAll(keepingCapacity: true)
+        backgroundTransitionCount = 0
+        lastBackgroundDurationMs = nil
+        isInBackground = false
+        backgroundEnteredAt = nil
         // MS-2.2: tela não dorme durante captura.
         UIApplication.shared.isIdleTimerDisabled = true
         // MS-2.2: GPS continua em background (Info.plist tem
@@ -184,8 +246,17 @@ final class LiveTelemetryRecorder: NSObject, ObservableObject {
         permissionStatus = describe(st)
         switch st {
         case .notDetermined:
-            location.requestWhenInUseAuthorization()
-        case .authorizedWhenInUse, .authorizedAlways:
+            // Always é a permission que mantém GPS chegando quando o
+            // app é mandado pra background. iOS faz o ladder automatic
+            // (WhenInUse → Always) — pedir Always direto cobre o caso
+            // do user já ter dado WhenInUse no passado.
+            location.requestAlwaysAuthorization()
+        case .authorizedWhenInUse:
+            // User deu WhenInUse antes (ou no install dialog default).
+            // Pedir upgrade pra Always pra GPS sobreviver lock screen.
+            location.requestAlwaysAuthorization()
+            location.startUpdatingLocation()
+        case .authorizedAlways:
             location.startUpdatingLocation()
         default:
             permissionStatus = "GPS negado"

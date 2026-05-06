@@ -146,6 +146,7 @@ struct TelemetriaView: View {
                               recorder.imuHz, recorder.imuJitterMs))
             row("GPS", String(format: "%.1f Hz · jitter %.0f ms",
                               recorder.gpsHz, recorder.gpsJitterMs))
+            row("Background", backgroundLabel)
             if let err = recorder.lastError ?? processor.lastError {
                 Text(err)
                     .font(Font.captionP1)
@@ -192,6 +193,20 @@ struct TelemetriaView: View {
             Spacer()
             Text(value).font(Font.bodyP1).foregroundColor(.text)
         }
+    }
+
+    /// Field test 2026-05-06 mostrou IMU 14 Hz médio numa sessão de
+    /// 2h porque app foi pra background — iOS pausa CoreMotion mesmo
+    /// com UIBackgroundModes.location ativo. Esta linha torna o
+    /// evento visível em tempo real.
+    private var backgroundLabel: String {
+        if recorder.isInBackground { return "● em background agora" }
+        let n = recorder.backgroundTransitionCount
+        if n == 0 { return "—" }
+        if let lastMs = recorder.lastBackgroundDurationMs {
+            return String(format: "%d evento%@ · último %.1fs", n, n == 1 ? "" : "s", lastMs / 1000.0)
+        }
+        return "\(n) evento\(n == 1 ? "" : "s")"
     }
 
     // MARK: - Actions
