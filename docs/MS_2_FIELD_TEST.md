@@ -66,14 +66,14 @@ Com o iPhone parado em cima da mesa, com vista pro céu:
 1. **INICIAR**.
 2. Esperar 30s. Olhar os números na tela:
 
-   | Métrica            | Esperado após 30s parado                                              |
+   | Métrica            | Esperado após 30s parado em céu aberto                                |
    |--------------------|------------------------------------------------------------------------|
    | **Amostras raw**   | ~3030 (3000 IMU + 30 GPS), subindo continuamente                       |
-   | **Amostras enriched** | ~30, com sufixo ` · fix` aparecendo após 1-3 GPS samples            |
-   | **Detector**       | `~30 ok · ~3000 skip` (consome 1 sample por GPS, ignora os 100 IMU/s) |
+   | **Amostras enriched** | ~3030 (≈ raw). `LiveKalmanProcessor.process` empurra 1 enriched por sample raw (IMU + GPS), não só por GPS — pra ghost map vivo ter cadência 100Hz. Sufixo ` · fix` aparece após 1-3 GPS samples. |
+   | **Detector**       | `~30 ok · ~3000 skip` (consome só GPS, ignora os 100 IMU/s)           |
    | **Voltas**         | `—` (sem cruzar linha de chegada)                                      |
    | **IMU**            | 99.5–100.5 Hz · jitter < 1 ms                                          |
-   | **GPS**            | ~1 Hz · jitter < 100 ms                                                |
+   | **GPS**            | ~1 Hz andando · **0.05–0.2 Hz parado** (iOS rate-limita `kCLLocationAccuracyBestForNavigation` quando coordenada não muda) · jitter < 100 ms |
 
 3. **PARAR**.
 4. Linha "Última captura: X amostras raw · Y enriched" aparece no rodapé.
@@ -160,7 +160,7 @@ EOF
 **O que esperar:**
 
 - `telemetry_samples`: `total` ~3030 (30s × 100 Hz IMU + 30 GPS). `seq` contíguo `0..total-1`.
-- `telemetry_samples_enriched`: `total` ~30 (1 por GPS sample). `com_fix` ≥ `total - 3` (os 1-3 primeiros podem ser pré-fix). `seq` contíguo.
+- `telemetry_samples_enriched`: `total` ≈ `total` do raw (1 por sample IMU+GPS, não só GPS). `com_fix` ≥ `total - 3` (os 1-3 primeiros podem ser pré-fix). `seq` contíguo. Validado em campo 2026-05-06: 559s → 56314 raw + 56314 enriched, 56313 com_fix.
 - IMU: `accX`, `accY` perto de 0 (parado). `accZ` perto de 0 também porque `userAcceleration` já tira gravidade. **Se `accZ` perto de -9.81 ou +9.81, é bug — quer dizer que tá pegando `gravity` em vez de `userAcceleration`.**
 - GPS: `lat`/`lng` reais do local. `kmh ≈ speed × 3.6`. `acc < 10` em céu aberto.
 - Enriched: `x_m`, `y_m` perto de 0 (origem é o primeiro fix). `vx_mps`, `vy_mps` perto de 0 (parado). `pos_sigma_m` < 10 após estabilizar.
@@ -255,10 +255,10 @@ Critério mínimo pra desbloquear MS-2.5 (finalize com Vmin georef) com confian�
 
 **Bloco MS-2.6+2.7 novo (mesma sessão de céu aberto):**
 
-- [ ] **Amostras enriched** sobe junto com **Amostras raw** (~1 enriched por GPS sample).
+- [ ] **Amostras enriched** sobe junto com **Amostras raw** (~1 enriched por sample raw, IMU+GPS — não só GPS).
 - [ ] Sufixo `· fix` aparece após 1-3 GPS samples.
 - [ ] **Detector** mostra `ok` próximo de número de GPS samples e `skip` próximo de número de IMU samples.
-- [ ] SQL `telemetry_samples_enriched` retorna ~30 rows em 30s, `source_kalman = 1` na maioria.
+- [ ] SQL `telemetry_samples_enriched` retorna ~3030 rows em 30s, `source_kalman = 1` na maioria.
 - [ ] `x_m`/`y_m` perto de 0 com filtro recém-fixado e iPhone parado.
 
 **Bloco MS-2.6 voltas (opcional, só em Brasília):**
