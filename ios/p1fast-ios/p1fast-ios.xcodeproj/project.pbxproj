@@ -33,6 +33,8 @@
 		73AF37D86286B893F9C9FD29 /* LowPowerModeMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12D3CA77D8F9695EEC42D36E /* LowPowerModeMonitor.swift */; };
 		A11C7E3D2F7C4E1B0A1B0001 /* LiveKalmanProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11C7E3D2F7C4E1B0A1B0002 /* LiveKalmanProcessor.swift */; };
 		C22D6F1E2F8B4F2C0B3D0001 /* LiveDetectorBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = C22D6F1E2F8B4F2C0B3D0002 /* LiveDetectorBridge.swift */; };
+		AB12CD34EF56789012340001 /* SupabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF56789012340002 /* SupabaseManager.swift */; };
+		AB12CD34EF56789012350001 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF56789012350002 /* SessionManager.swift */; };
 		A1A1B1B1C1C1D1D1E1E10001 /* StintCaptureCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A1B1B1C1C1D1D1E1E10002 /* StintCaptureCoordinator.swift */; };
 		A1A1B1B1C1C1D1D1E1E20001 /* StintCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A1B1B1C1C1D1D1E1E20002 /* StintCaptureView.swift */; };
 		7D1256B5A41AB5798808ACD9 /* TelemetriaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1298033562868A4C30B884D8 /* TelemetriaView.swift */; };
@@ -83,6 +85,8 @@
 		12D3CA77D8F9695EEC42D36E /* LowPowerModeMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LowPowerModeMonitor.swift; sourceTree = "<group>"; };
 		A11C7E3D2F7C4E1B0A1B0002 /* LiveKalmanProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveKalmanProcessor.swift; sourceTree = "<group>"; };
 		C22D6F1E2F8B4F2C0B3D0002 /* LiveDetectorBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveDetectorBridge.swift; sourceTree = "<group>"; };
+		AB12CD34EF56789012340002 /* SupabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseManager.swift; sourceTree = "<group>"; };
+		AB12CD34EF56789012350002 /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
 		A1A1B1B1C1C1D1D1E1E10002 /* StintCaptureCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StintCaptureCoordinator.swift; sourceTree = "<group>"; };
 		A1A1B1B1C1C1D1D1E1E20002 /* StintCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StintCaptureView.swift; sourceTree = "<group>"; };
 		139F414C2942139A9367A3B2 /* EventoMockSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventoMockSummary.swift; sourceTree = "<group>"; };
@@ -174,6 +178,15 @@
 			path = Telemetry;
 			sourceTree = "<group>";
 		};
+		AB12CD34EF56789012300000 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				AB12CD34EF56789012340002 /* SupabaseManager.swift */,
+				AB12CD34EF56789012350002 /* SessionManager.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
 		24F1A5FA84FB5005E762C261 = {
 			isa = PBXGroup;
 			children = (
@@ -189,6 +202,7 @@
 			isa = PBXGroup;
 			children = (
 				B3E9A89367FF6EF3E8AB9F6D /* App */,
+				AB12CD34EF56789012300000 /* Auth */,
 				355F67A4B62121AA61B72604 /* Components */,
 				AE3A9493BC39695B12A2E3BB /* Persistence */,
 				70525E5A2953450D1691F65D /* Sync */,
@@ -431,6 +445,8 @@
 				91C3521B7A7A4CC1C6B0E4DA /* LiveTelemetryRecorder.swift in Sources */,
 				A11C7E3D2F7C4E1B0A1B0001 /* LiveKalmanProcessor.swift in Sources */,
 				C22D6F1E2F8B4F2C0B3D0001 /* LiveDetectorBridge.swift in Sources */,
+				AB12CD34EF56789012340001 /* SupabaseManager.swift in Sources */,
+				AB12CD34EF56789012350001 /* SessionManager.swift in Sources */,
 				73AF37D86286B893F9C9FD29 /* LowPowerModeMonitor.swift in Sources */,
 				B39DBE85EA240E9F1B6698FE /* P1FastApp.swift in Sources */,
 				5E4293E8007960583EF0C9F6 /* PassageiroCadastroView.swift in Sources */,
