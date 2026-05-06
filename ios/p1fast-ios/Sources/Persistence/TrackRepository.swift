@@ -140,23 +140,43 @@ final class TrackRepository: ObservableObject {
 
         try await queue.write { db in
             // --- TrackRow ---
-            if try TrackRow.fetchOne(db, key: trackId) == nil {
+            // MS-2.6.c: backfill de geo_ancoras pra rows pré-existentes
+            // (TrackRow `trk_brasilia` já é seedado pelo EventoRepository sem
+            // geo_ancoras). Sempre que a coluna estiver nil, preenche.
+            let geoAncorasJson = Self.encodeGeoAncoras(bundle.track.geoAncoras)
+            if let existing = try TrackRow.fetchOne(db, key: trackId) {
+                if existing.geoAncoras == nil, geoAncorasJson != nil {
+                    var row = existing
+                    row.geoAncoras = geoAncorasJson
+                    try row.update(db)
+                }
+            } else {
                 try TrackRow(
                     id: trackId,
                     apelido: bundle.track.apelido,
-                    nomeOficial: bundle.track.nome
+                    nomeOficial: bundle.track.nome,
+                    geoAncoras: geoAncorasJson
                 ).insert(db)
             }
 
             // --- TrackLayoutRow ---
-            if try TrackLayoutRow.fetchOne(db, key: layoutId) == nil {
+            // MS-2.6.c: idem, view_box backfill se ausente.
+            let viewBoxJson = Self.encodeViewBox(bundle.track.viewBox)
+            if let existing = try TrackLayoutRow.fetchOne(db, key: layoutId) {
+                if existing.viewBox == nil, viewBoxJson != nil {
+                    var row = existing
+                    row.viewBox = viewBoxJson
+                    try row.update(db)
+                }
+            } else {
                 try TrackLayoutRow(
                     id: layoutId,
                     trackId: trackId,
                     nome: bundle.layout.nome,
                     parciais: Self.encodeParciais(bundle.layout.parciais),
                     svgPath: bundle.track.svgPath,
-                    linhaChegada: Self.encodeLinhaChegada(bundle.layout.linhaChegada)
+                    linhaChegada: Self.encodeLinhaChegada(bundle.layout.linhaChegada),
+                    viewBox: viewBoxJson
                 ).insert(db)
             }
 
@@ -212,11 +232,125 @@ final class TrackRepository: ObservableObject {
         return String(data: data, encoding: .utf8)
     }
 
+    nonisolated static func encodeGeoAncoras(_ ancoras: [P1FastCore.GeoAncora]) -> String? {
+        guard !ancoras.isEmpty, let data = try? jsonEncoder.encode(ancoras) else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    nonisolated static func decodeGeoAncoras(_ s: String?) -> [P1FastCore.GeoAncora] {
+        guard let s, let data = s.data(using: .utf8),
+              let arr = try? JSONDecoder().decode([P1FastCore.GeoAncora].self, from: data) else { return [] }
+        return arr
+    }
+
+    nonisolated static func encodeViewBox(_ vb: P1FastCore.ViewBox?) -> String? {
+        guard let vb, let data = try? jsonEncoder.encode(vb) else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    nonisolated static func decodeViewBox(_ s: String?) -> P1FastCore.ViewBox? {
+        guard let s, let data = s.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(P1FastCore.ViewBox.self, from: data)
+    }
+
+    nonisolated static func decodeLinhaChegada(_ s: String?) -> P1FastCore.LinhaChegada? {
+        guard let s, let data = s.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(P1FastCore.LinhaChegada.self, from: data)
+    }
+
+    nonisolated static func decodeParciais(_ s: String?) -> [P1FastCore.Parcial] {
+        guard let s, let data = s.data(using: .utf8),
+              let arr = try? JSONDecoder().decode([P1FastCore.Parcial].self, from: data) else { return [] }
+        return arr
+    }
+
     /// Encode da geometria do segment (delegate p/ `P1FastCore.SegmentGeometry`,
     /// que é puro Swift e tem smoke próprio). Mantido aqui só pra usar
     /// no seedBrasilia.
     nonisolated private static func encodeGeometria(_ seg: P1FastCore.TrackSegment) -> String? {
         P1FastCore.SegmentGeometry.encode(seg)
+    }
+
+    // MARK: - currentTrack (MS-2.6.c)
+
+    /// Hidrata Track + TrackLayout + [TrackSegment] do GRDB no formato que
+    /// o caller esperava de `SeedBrasilia.make()`. Pré-condição: `bootstrap`
+    /// rodou (caches publicados). Default = primeira pista por ordem
+    /// alfabética; em multi-track futuro, parameter passa a aceitar trackId.
+    ///
+    /// Retorna nil se nenhuma pista estiver carregada — caller decide
+    /// fallback (ex.: TelemetriaView pode segurar SeedBrasilia.make() como
+    /// safety net até multi-track entrar).
+    func currentTrack() -> (track: P1FastCore.Track, layout: P1FastCore.TrackLayout, segments: [P1FastCore.TrackSegment])? {
+        guard let row = tracks.first else { return nil }
+        let layouts = layoutsByTrack[row.id] ?? []
+        guard let layoutRow = layouts.first else { return nil }
+        let segs = segments(forLayoutId: layoutRow.id).compactMap { Self.hydrateSegment($0) }
+
+        let parciais = Self.decodeParciais(layoutRow.parciais)
+        let linhaChegada = Self.decodeLinhaChegada(layoutRow.linhaChegada)
+        let viewBox = Self.decodeViewBox(layoutRow.viewBox)
+        let geoAncoras = Self.decodeGeoAncoras(row.geoAncoras)
+
+        let track = P1FastCore.Track(
+            id: row.id,
+            nome: row.nomeOficial ?? row.apelido,
+            apelido: row.apelido,
+            pais: "BR",
+            cidade: nil,
+            extensaoMetros: nil,
+            numeroCurvas: nil,
+            sentido: nil,
+            imagemFundo: nil,
+            viewBox: viewBox,
+            svgPath: layoutRow.svgPath,
+            linhaChegada: linhaChegada,
+            geoAncoras: geoAncoras,
+            lapRefSeg: nil
+        )
+        let layout = P1FastCore.TrackLayout(
+            id: layoutRow.id,
+            trackId: layoutRow.trackId,
+            nome: layoutRow.nome,
+            linhaChegada: linhaChegada,
+            parciais: parciais
+        )
+        return (track, layout, segs)
+    }
+
+    /// Decodifica um TrackSegmentRow → TrackSegment de domínio reaproveitando
+    /// o blob de geometria (que carrega tipo, x/y, apex etc). Campos não
+    /// presentes na geometria são default neutros — Detector/UI tratam.
+    /// `pathStart`/`pathEnd` ficam nil — não estão no blob hoje.
+    nonisolated private static func hydrateSegment(_ row: TrackSegmentRow) -> P1FastCore.TrackSegment? {
+        let blob = P1FastCore.SegmentGeometry.decode(row.geometria)
+            ?? P1FastCore.SegmentGeometry.Blob(x: 0, y: 0, tipo: P1FastCore.SegmentTipo.curva.rawValue)
+        let tipo = P1FastCore.SegmentTipo(rawValue: blob.tipo) ?? .curva
+        let apexRefDomain: P1FastCore.ApexReference? = blob.apexReference.map {
+            P1FastCore.ApexReference(x: $0.x, y: $0.y)
+        }
+        return P1FastCore.TrackSegment(
+            id: row.id,
+            layoutId: row.layoutId,
+            ordem: row.ordem,
+            nome: row.nome ?? "",
+            tipo: tipo,
+            ehTrecho: row.ehTrecho,
+            parcialId: row.parcialId ?? "",
+            x: blob.x,
+            y: blob.y,
+            tNaVolta: blob.tNaVolta,
+            apexReference: apexRefDomain,
+            apexStrategy: blob.apexStrategy.flatMap(P1FastCore.ApexStrategy.init(rawValue:)),
+            cornerType: blob.cornerType.flatMap(P1FastCore.CornerType.init(rawValue:)),
+            nextStraightLength: blob.nextStraightLength,
+            apexCalibration: blob.apexCalibration,
+            entryPoint: blob.entryPoint,
+            brakingPoint: blob.brakingPoint,
+            exitPoint: blob.exitPoint,
+            pathStart: nil,
+            pathEnd: nil
+        )
     }
 
     // MARK: - Internal types

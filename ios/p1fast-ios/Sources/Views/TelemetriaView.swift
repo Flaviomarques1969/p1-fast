@@ -41,7 +41,10 @@ struct TelemetriaView: View {
     @State private var sessaoErro: String?
     @State private var lapCancel: (() -> Void)? = nil
 
-    init(queue: DatabaseQueue) {
+    init(
+        queue: DatabaseQueue,
+        trackBundle: (track: P1FastCore.Track, layout: P1FastCore.TrackLayout, segments: [P1FastCore.TrackSegment])? = nil
+    ) {
         self.queue = queue
         let id = "telemetria-demo-\(Int(Date().timeIntervalSince1970))"
         _sessaoId = State(initialValue: id)
@@ -55,16 +58,19 @@ struct TelemetriaView: View {
             sessaoId: id,
             timeId: "local-default-team"
         ))
-        // Detector demo: SeedBrasilia até MS-2.6.c expor TrackRepository.currentTrack.
-        let seed = SeedBrasilia.make()
+        // MS-2.6.c: caller (ContentView) passa o bundle vindo de
+        // TrackRepository.currentTrack quando disponível. Se nil (ex.: repo
+        // ainda não bootstrapou), fallback pro hardcode SeedBrasilia. Em
+        // multi-track, o seletor de pista vive no caller.
+        let bundle = trackBundle ?? SeedBrasilia.make()
         let detector = Detector(
-            svgPath: seed.track.svgPath ?? "",
-            linhaChegada: seed.track.linhaChegada,
-            segments: seed.segments
+            svgPath: bundle.track.svgPath ?? "",
+            linhaChegada: bundle.track.linhaChegada,
+            segments: bundle.segments
         )
         _bridge = StateObject(wrappedValue: LiveDetectorBridge(
             detector: detector,
-            track: seed.track
+            track: bundle.track
         ))
     }
 

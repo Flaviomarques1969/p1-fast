@@ -160,6 +160,19 @@ enum Migrations {
             try db.execute(sql: "CREATE INDEX idx_telemetry_enriched_sessao_seq ON telemetry_samples_enriched(sessao_id, seq);")
             try db.execute(sql: "CREATE INDEX idx_telemetry_enriched_sessao_t ON telemetry_samples_enriched(sessao_id, t);")
         }
+        // ═══ v8_track_geo_anchors_view_box ═════════════════════
+        // MS-2.6.c (PLANO_FASE_1) — geo_ancoras (em tracks) + view_box
+        // (em track_layouts) deixam de viver hardcoded em SeedBrasilia
+        // e passam a ser persistidos. Pré-requisito pra TelemetriaView
+        // largar `SeedBrasilia.make()` e usar `TrackRepository.currentTrack()`,
+        // e pra cadastro de pista pelo usuário no futuro.
+        // Espelha supabase/migrations/0009_track_geo_anchors_view_box.sql.
+        // Colunas TEXT (JSON) — mesmo padrão de svg_path, parciais,
+        // linha_chegada, geometria.
+        m.registerMigration("v8_track_geo_anchors_view_box") { db in
+            try db.execute(sql: "ALTER TABLE tracks         ADD COLUMN geo_ancoras TEXT;")
+            try db.execute(sql: "ALTER TABLE track_layouts  ADD COLUMN view_box    TEXT;")
+        }
     }
 
     // swiftlint:disable:next function_body_length
