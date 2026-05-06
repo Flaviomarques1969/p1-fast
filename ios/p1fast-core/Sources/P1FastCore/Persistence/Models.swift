@@ -693,6 +693,12 @@ public struct TelemetrySampleEnriched: Codable, FetchableRecord, PersistableReco
     public var posSigmaM: Double
     public var sourceKalman: Bool
     public var uploadedAt: Int64?
+    /// A-07: ms desde o último GPS update válido. Setado APENAS no
+    /// sample que disparou reset de covariância (gap > 5s). NULL na
+    /// esmagadora maioria das amostras. Usado pela UI pra mostrar
+    /// aviso e pelo debrief pra filtrar runs com captura interrompida.
+    /// Ver migration v9 e PR #117.
+    public var gapDurationMs: Double?
 
     public static let databaseTableName = "telemetry_samples_enriched"
     enum CodingKeys: String, CodingKey {
@@ -709,6 +715,7 @@ public struct TelemetrySampleEnriched: Codable, FetchableRecord, PersistableReco
         case posSigmaM = "pos_sigma_m"
         case sourceKalman = "source_kalman"
         case uploadedAt = "uploaded_at"
+        case gapDurationMs = "gap_duration_ms"
     }
 
     public init(id: Int64? = nil, timeId: String, sessaoId: String, seq: Int,
@@ -717,7 +724,8 @@ public struct TelemetrySampleEnriched: Codable, FetchableRecord, PersistableReco
                 vxMps: Double, vyMps: Double,
                 headingDeg: Double, posSigmaM: Double,
                 sourceKalman: Bool,
-                uploadedAt: Int64? = nil) {
+                uploadedAt: Int64? = nil,
+                gapDurationMs: Double? = nil) {
         self.id = id; self.timeId = timeId; self.sessaoId = sessaoId; self.seq = seq
         self.t = t; self.tMono = tMono
         self.xM = xM; self.yM = yM
@@ -725,6 +733,7 @@ public struct TelemetrySampleEnriched: Codable, FetchableRecord, PersistableReco
         self.headingDeg = headingDeg; self.posSigmaM = posSigmaM
         self.sourceKalman = sourceKalman
         self.uploadedAt = uploadedAt
+        self.gapDurationMs = gapDurationMs
     }
 
     public mutating func didInsert(_ inserted: InsertionSuccess) {

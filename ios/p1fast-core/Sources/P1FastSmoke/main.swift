@@ -5430,9 +5430,11 @@ step("TSE-01: migration v7_telemetry_samples_enriched criou a tabela e colunas")
             .map { $0["name"] as String }
     }
     try assertTrue(!cols.isEmpty, "tabela telemetry_samples_enriched ausente")
+    // v9 (A-07) adicionou gap_duration_ms — esperar nova lista canônica.
     let expected = ["id", "time_id", "sessao_id", "seq", "t", "t_mono",
                     "x_m", "y_m", "vx_mps", "vy_mps", "heading_deg",
-                    "pos_sigma_m", "source_kalman", "uploaded_at"]
+                    "pos_sigma_m", "source_kalman", "uploaded_at",
+                    "gap_duration_ms"]
     for name in expected {
         try assertTrue(cols.contains(name), "coluna \(name) ausente")
     }
@@ -5518,6 +5520,44 @@ step("TSE-04: source_kalman=false (pré-fix) persiste como 0 e roundtrip preserv
     guard let r = fetched else { throw Bad(msg: "row sumiu no Codable fetch") }
     try assertEq(r.sourceKalman, false)
     try assertClose(r.posSigmaM, 1e6)
+}
+
+step("TSE-05: gap_duration_ms round-trip preserva nil e valor (A-07 v9)") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var s = Sessao(id: "ses-tse-gap", timeId: "team-1", carroId: nil, status: "ativa")
+        try s.insert(db)
+        // Sample sem gap (esmagadora maioria dos casos).
+        var rowSemGap = TelemetrySampleEnriched(
+            timeId: "team-1", sessaoId: "ses-tse-gap", seq: 0,
+            t: 1, tMono: 0,
+            xM: 0, yM: 0, vxMps: 0, vyMps: 0,
+            headingDeg: 0, posSigmaM: 1.0,
+            sourceKalman: true,
+            gapDurationMs: nil
+        )
+        try rowSemGap.insert(db)
+        // Sample que disparou reset pós-gap.
+        var rowComGap = TelemetrySampleEnriched(
+            timeId: "team-1", sessaoId: "ses-tse-gap", seq: 1,
+            t: 60_000, tMono: 60_000,
+            xM: 1, yM: 2, vxMps: 0, vyMps: 0,
+            headingDeg: 0, posSigmaM: 1e3,
+            sourceKalman: true,
+            gapDurationMs: 59_000.0
+        )
+        try rowComGap.insert(db)
+    }
+    let rows = try q.read { db in
+        try TelemetrySampleEnriched.fetchAll(db, sql:
+            "SELECT * FROM telemetry_samples_enriched WHERE sessao_id = ? ORDER BY seq",
+            arguments: ["ses-tse-gap"]
+        )
+    }
+    try assertEq(rows.count, 2)
+    try assertEq(rows[0].gapDurationMs, nil, "row sem gap deveria persistir como NULL")
+    try assertEq(rows[1].gapDurationMs != nil, true)
+    try assertClose(rows[1].gapDurationMs!, 59_000.0)
 }
 
 // ════════════════════════════════════════════════════════════
