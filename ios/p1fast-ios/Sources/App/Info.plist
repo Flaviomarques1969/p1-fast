@@ -24,6 +24,8 @@
 	<string>$(DAILY_API_KEY)</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>P1 Fast usa GPS pra gravar a telemetria do stint enquanto você pilota.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Se a tela apagar ou outro app tomar foco durante o stint, P1 Fast continua gravando o GPS pra não perder voltas. O acelerômetro pausa em background — limitação do iOS — então mantenha a tela aberta sempre que possível.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>P1 Fast usa o acelerômetro do iPhone pra medir aceleração lateral, longitudinal e curvas durante o stint.</string>
 	<key>SUPABASE_ANON_KEY</key>
