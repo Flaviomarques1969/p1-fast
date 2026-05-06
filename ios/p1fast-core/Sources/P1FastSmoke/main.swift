@@ -5264,8 +5264,9 @@ step("K-05: convergência com fixes a cada 1s, ruído determinístico σ=3m") {
         return sqrt(-2.0 * log(u1)) * cos(2.0 * .pi * u2)
     }
     let f = KalmanINSGPS()
-    let dLatPerM = 1.0 / 111_320.0
-    let dLngPerM = 1.0 / (111_320.0 * cos(kLat0 * .pi / 180.0))
+    // 111_000 alinha com a constante interna do Kalman (Projector convention).
+    let dLatPerM = 1.0 / 111_000.0
+    let dLngPerM = 1.0 / (111_000.0 * cos(kLat0 * .pi / 180.0))
     var lastResid: [Double] = []
     f.update(sample: kGps(t: 0, tMono: 0, lat: kLat0, lng: kLng0, acc: 3))
     for sec in 1...60 {
@@ -5379,8 +5380,9 @@ step("K-12: roundtrip Codable preserva EnrichedSample") {
 }
 
 step("K-13: projeção mantém sinal correto leste/norte") {
-    let dLat10m = 10.0 / 111_320.0
-    let dLng10m = 10.0 / (111_320.0 * cos(kLat0 * .pi / 180.0))
+    // 111_000 alinha com a constante interna do Kalman (Projector convention).
+    let dLat10m = 10.0 / 111_000.0
+    let dLng10m = 10.0 / (111_000.0 * cos(kLat0 * .pi / 180.0))
 
     // Primeiro fix na origem.
     let f = KalmanINSGPS()
@@ -5668,6 +5670,62 @@ step("K-14b: heading compass — course=90 (Leste) com accX=1 acelera +x mundo")
     try assertTrue(abs(e.vyMps - 0.0) < 0.05, "vy=\(e.vyMps), esperado ~0")
     try assertTrue(abs(e.xM - 0.5) < 0.05, "x=\(e.xM), esperado ~0.5 (deslocamento Leste)")
     try assertTrue(abs(e.yM - 0.0) < 0.05, "y=\(e.yM), esperado ~0")
+}
+
+step("K-15: Joseph form preserva simetria e PSD em padrão realista IMU+GPS") {
+    // Joseph form é P ← (I-KH)P(I-KH)ᵀ + KRKᵀ. Garante PSD por construção
+    // (soma de duas formas A·M·Aᵀ). Forma curta (I-KH)P pode driftar
+    // negativa por arredondamento quando K se aproxima da identidade
+    // (acc baixo → ganho alto). Roda 60s no padrão de produção (IMU 100Hz +
+    // GPS 1Hz com acc=0.5 — limite mínimo do filtro, força K≈1) e verifica:
+    //   1. todas diagonais de P ≥ 0 ao longo de toda a sessão
+    //   2. P simétrica no fim (max |P[i,j] - P[j,i]| < 1e-9)
+    //   3. todos elementos finitos no fim
+    let f = KalmanINSGPS()
+    f.update(sample: kGps(t: 0, tMono: 0, lat: kLat0, lng: kLng0, acc: 3))
+    let dLngPerM = 1.0 / (111_000.0 * cos(kLat0 * .pi / 180.0))
+    var minDiag = Double.infinity
+    for sec in 1...60 {
+        for i in 0..<100 {
+            let tMono = Double((sec - 1) * 1000) + Double(i + 1) * 10.0
+            // Aceleração líquida zero — carro em velocidade constante.
+            f.predict(sample: kImu(t: Int64(tMono), tMono: tMono, accX: kBiasX, accY: kBiasY))
+            for d in 0..<4 {
+                let pii = f.debugCovariance[d * 4 + d]
+                if pii < minDiag { minDiag = pii }
+            }
+        }
+        let tMono = Double(sec) * 1000.0
+        let lng = kLng0 + Double(sec) * 1.0 * dLngPerM
+        f.update(sample: kGps(
+            t: Int64(tMono), tMono: tMono,
+            lat: kLat0, lng: lng, acc: 0.5
+        ))
+        for d in 0..<4 {
+            let pii = f.debugCovariance[d * 4 + d]
+            if pii < minDiag { minDiag = pii }
+        }
+    }
+    // 1) Mínimo histórico das diagonais ≥ 0.
+    try assertTrue(minDiag >= 0, "min P[i,i] ao longo da sessão = \(minDiag), esperado ≥ 0 (Joseph PSD)")
+    let p = f.debugCovariance
+    for i in 0..<4 {
+        let pii = p[i * 4 + i]
+        try assertTrue(pii.isFinite, "P[\(i),\(i)] não-finita")
+    }
+    // 2) Simétrica.
+    var maxAsym = 0.0
+    for i in 0..<4 {
+        for j in (i + 1)..<4 {
+            let asym = abs(p[i * 4 + j] - p[j * 4 + i])
+            if asym > maxAsym { maxAsym = asym }
+        }
+    }
+    try assertTrue(maxAsym < 1e-9, "max |P[i,j] - P[j,i]| = \(maxAsym), esperado < 1e-9")
+    // 3) Todos os 16 elementos finitos.
+    for v in p {
+        try assertTrue(v.isFinite, "elemento de P não-finito")
+    }
 }
 
 // ── relatório ────────────────────────────────────────────────

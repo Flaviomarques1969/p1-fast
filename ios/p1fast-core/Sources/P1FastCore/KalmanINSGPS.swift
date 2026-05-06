@@ -165,6 +165,12 @@ public final class KalmanINSGPS {
         }
         let dt = min(max(rawDt, 1e-4), 1.0)
 
+        // Snapshot pré-predict — se gyroAlpha extremo, accX/accY borderline ou
+        // qualquer combinação produzir NaN/inf, restaura em vez de envenenar.
+        let xSnap = x
+        let pSnap = P
+        let headingSnap = headingRad
+
         // Heading: integração por gyroAlpha (deg/s) em gap sem GPS.
         if let g = sample.gyroAlpha, g.isFinite {
             let gPrev = lastGyroAlphaDegS ?? g
@@ -199,6 +205,12 @@ public final class KalmanINSGPS {
 
         lastTMono = sample.tMono
         lastT = sample.t
+
+        if !isStateFinite() {
+            x = xSnap
+            P = pSnap
+            headingRad = headingSnap
+        }
 
         return currentState(t: sample.t, tMono: sample.tMono)
     }
@@ -307,14 +319,28 @@ public final class KalmanINSGPS {
         )
     }
 
+    /// Cópia da matriz P (4x4 row-major). Smoke only — NÃO usar em produção.
+    public var debugCovariance: [Double] { P }
+
     // ─── projeção flat-earth privada ─────────────────────────────
-    private let mPerDegLat: Double = 111_320.0
+    // 111_000 alinhado com Projector.swift e TrajectoryMonitor.swift. O sistema
+    // escolheu 111_000 como referência única — usar 111_320 (geodésico médio)
+    // gera ~0.29% de descasamento de escala entre x/y do Kalman e x/y do
+    // Projector, contaminando consumidores que misturam os dois frames
+    // (ex.: comparar Vmin georef do Detector com posição enriched).
+    private let mPerDegLat: Double = 111_000.0
     private func metersPerDegLng() -> Double {
-        return 111_320.0 * cos(lat0 * .pi / 180.0)
+        return 111_000.0 * cos(lat0 * .pi / 180.0)
     }
 
     // ─── update GPS (Kalman 2x2) ─────────────────────────────────
     private func kalmanUpdateGPS(zx: Double, zy: Double, sigma: Double) {
+        // Snapshot pré-update — se algo virar não-finito durante a aritmética
+        // (medição ruim, dt patológico, P degenerada), restaura state em vez
+        // de propagar NaN/inf adiante (que envenenaria todo o filtro).
+        let xSnap = x
+        let pSnap = P
+
         // y = z - Hx, com H = [[1,0,0,0],[0,1,0,0]]
         let yx = zx - x[0]
         let yy = zy - x[1]
@@ -351,9 +377,13 @@ public final class KalmanINSGPS {
             x[i] = x[i] + K[i * 2 + 0] * yx + K[i * 2 + 1] * yy
         }
 
-        // P ← (I - K H) P
-        // (I - KH) é 4x4 onde (KH)[i,j] = K[i,0] se j=0; K[i,1] se j=1; 0 caso contrário.
-        // Calcula M = I - KH, depois P_new = M · P.
+        // P ← (I - K H) P (I - K H)ᵀ + K R Kᵀ   [Joseph form]
+        // Numericamente mais estável que (I-KH)P: preserva simetria por
+        // construção (soma de duas formas A·M·Aᵀ) e mantém positive-definiteness
+        // mesmo sob arredondamento. Custo: ~3× ops da forma curta, mas o
+        // update GPS roda só 1× por segundo — irrelevante.
+        //
+        // M = I - KH é 4x4 onde (KH)[i,j] = K[i,0] se j=0; K[i,1] se j=1; 0 caso contrário.
         var M = [Double](repeating: 0, count: 16)
         for i in 0..<4 {
             for j in 0..<4 {
@@ -363,18 +393,52 @@ public final class KalmanINSGPS {
                 M[i * 4 + j] = v
             }
         }
-        var Pnew = [Double](repeating: 0, count: 16)
+        // MP = M · P  (4x4)
+        var MP = [Double](repeating: 0, count: 16)
         for i in 0..<4 {
             for j in 0..<4 {
                 var s = 0.0
                 for k in 0..<4 {
                     s += M[i * 4 + k] * getP(k, j)
                 }
-                Pnew[i * 4 + j] = s
+                MP[i * 4 + j] = s
+            }
+        }
+        // MPMt = MP · Mᵀ  (4x4)
+        var MPMt = [Double](repeating: 0, count: 16)
+        for i in 0..<4 {
+            for j in 0..<4 {
+                var s = 0.0
+                for k in 0..<4 {
+                    s += MP[i * 4 + k] * M[j * 4 + k]
+                }
+                MPMt[i * 4 + j] = s
+            }
+        }
+        // KRKt = K · R · Kᵀ  (4x4). R = diag(r, r), então
+        // (KRKt)[i,j] = r · (K[i,0]·K[j,0] + K[i,1]·K[j,1]).
+        var Pnew = [Double](repeating: 0, count: 16)
+        for i in 0..<4 {
+            for j in 0..<4 {
+                let krkt = r * (K[i * 2 + 0] * K[j * 2 + 0] + K[i * 2 + 1] * K[j * 2 + 1])
+                Pnew[i * 4 + j] = MPMt[i * 4 + j] + krkt
             }
         }
         P = Pnew
         symmetrizeP()
+
+        // Finite guard pós-update: se qualquer coisa virou NaN/inf, reverte.
+        if !isStateFinite() {
+            x = xSnap
+            P = pSnap
+        }
+    }
+
+    /// Todos os elementos de x e P são finitos?
+    private func isStateFinite() -> Bool {
+        for v in x where !v.isFinite { return false }
+        for v in P where !v.isFinite { return false }
+        return true
     }
 
     // ─── helpers de matriz 4x4 ──────────────────────────────────
