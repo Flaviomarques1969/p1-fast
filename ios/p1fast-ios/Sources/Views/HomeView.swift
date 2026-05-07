@@ -31,6 +31,11 @@ enum HomeNavTarget: Hashable {
     case cadastros
     case garagem
     case garagemNovo
+    /// Atalho dev — abre TelemetriaView (sessão demo descartável). Usado
+    /// pra captura rápida em test drive sem passar pelo fluxo Evento →
+    /// Stint. Botão fica embaixo do conteúdo da Home, marcado como
+    /// "(dev)" pra não ser confundido com fluxo canônico.
+    case telemetriaDemo
 }
 
 /// Dados necessários para renderizar o estado cheio. Por enquanto vêm
@@ -74,6 +79,10 @@ struct HomeView: View {
     /// Opcional pra previews — quando presente, mostra SyncStatusBadge no
     /// header e abre SincronizacaoView no tap.
     var syncCoordinator: SyncCoordinator? = nil
+    /// Closure opcional injetada por ContentView pra construir a
+    /// TelemetriaView com queue + trackBundle (a Home não tem acesso
+    /// direto aos repositórios). Quando nil, o atalho dev fica oculto.
+    var telemetriaDevView: (() -> AnyView)? = nil
     @State private var navSelection: BottomNavItem.ID?
     @State private var showSyncSheet = false
     @State private var navPath = NavigationPath()
@@ -136,14 +145,24 @@ struct HomeView: View {
 
     @ViewBuilder
     private var content: some View {
-        switch state {
-        case .filled(let data):
-            FilledContent(data: data)
-        case .empty:
-            EmptyContent(
-                onCadastrarCarro: { navPath.append(HomeNavTarget.garagemNovo) },
-                onCriarEvento: { navPath.append(HomeNavTarget.eventosNovo) }
-            )
+        VStack(alignment: .leading, spacing: Spacing.lg) {
+            switch state {
+            case .filled(let data):
+                FilledContent(data: data)
+            case .empty:
+                EmptyContent(
+                    onCadastrarCarro: { navPath.append(HomeNavTarget.garagemNovo) },
+                    onCriarEvento: { navPath.append(HomeNavTarget.eventosNovo) }
+                )
+            }
+            // Atalho dev pra captura rápida em test drive — fica embaixo
+            // do conteúdo canônico. Só renderiza quando o caller injetou
+            // um builder válido.
+            if telemetriaDevView != nil {
+                DevShortcuts(onAbrirTelemetria: {
+                    navPath.append(HomeNavTarget.telemetriaDemo)
+                })
+            }
         }
     }
 
@@ -160,6 +179,12 @@ struct HomeView: View {
             GaragemView()
         case .garagemNovo:
             GaragemView(initialSheet: .novo)
+        case .telemetriaDemo:
+            if let builder = telemetriaDevView {
+                builder()
+            } else {
+                EmptyView()
+            }
         }
     }
 
@@ -685,6 +710,49 @@ extension HomeData {
             ),
         ]
     )
+}
+
+// MARK: - Atalhos dev
+
+/// Caixa discreta com atalhos exclusivos pra desenvolvimento. Borda
+/// cinza, label "ATALHOS DEV", **não faz parte do mockup canônico** —
+/// some quando o ContentView resolver os entry points reais (Stint
+/// real → captura ao vivo).
+private struct DevShortcuts: View {
+    let onAbrirTelemetria: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text("ATALHOS DEV")
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(0.6)
+                .foregroundStyle(Color.textFaint)
+
+            Button(action: onAbrirTelemetria) {
+                HStack {
+                    Text("Gravar telemetria")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.text)
+                    Spacer(minLength: 0)
+                    Text("›")
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundStyle(Color.textMuted)
+                }
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .fill(Color.surfaceRaised)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .stroke(Color.border, lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.top, Spacing.lg)
+    }
 }
 
 // MARK: - Previews
