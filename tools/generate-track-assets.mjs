@@ -263,11 +263,10 @@ function buildReferenceJson({ apelido, nomeOficial, viewBox, resampled }) {
 
 async function generateTrack(track) {
   const rawPath = await extractPathFromSeed(track.pathConst);
-  // Suavização Gaussiana agressiva: σ=30m (FWHM 60m). Linha fica
-  // totalmente homogênea — curvas reais começam a ser arredondadas
-  // (Curva 1 perde um pouco do "fechamento") mas o traçado geral fica
-  // fluido sem nenhum wobble visível. Sem decimação no path final.
-  const svgPath = smoothPathGaussian(rawPath, 30, track.extensaoMetros);
+  // Suavização Gaussiana muito agressiva: σ=40m (FWHM 80m). Mata a quina
+  // residual na saída da Curva 1 → reta de subida. Curvas reais ficam
+  // muito arredondadas mas linha fica completamente homogênea.
+  const svgPath = smoothPathGaussian(rawPath, 40, track.extensaoMetros);
   const resampled = resampleByDistance(svgPath, track.extensaoMetros, track.spacingMeters);
 
   const baseSvg = buildBaseSvg({ viewBox: track.viewBox, svgPath });
