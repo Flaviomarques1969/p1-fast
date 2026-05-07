@@ -142,12 +142,17 @@ function buildAtelier({ svgPath, points, totalM }) {
   const liveTrail = [];
   for (let i = 1; i <= trailLen; i++) {
     const idx = (liveIdx - i + points.length) % points.length;
-    liveTrail.push({ p: points[idx], opacity: 1 - i / trailLen });
+    // piso de opacidade 0.20 (não some) + decaimento exponencial pra dar densidade no início do rastro
+    const t = i / trailLen;
+    const opacity = 0.20 + (1 - t) * (1 - t) * 0.80;
+    liveTrail.push({ p: points[idx], opacity });
   }
   const ghostTrail = [];
   for (let i = 1; i <= ghostTrailLen; i++) {
     const idx = (ghostIdx - i + points.length) % points.length;
-    ghostTrail.push({ p: points[idx], opacity: (1 - i / ghostTrailLen) * 0.5 });
+    const t = i / ghostTrailLen;
+    const opacity = 0.12 + (1 - t) * (1 - t) * 0.55;
+    ghostTrail.push({ p: points[idx], opacity });
   }
 
   // Animação: durações em segundos. Live = volta atual mais lenta, ghost mais rápido.
@@ -241,6 +246,10 @@ function buildAtelier({ svgPath, points, totalM }) {
     <filter id="markerGlow" x="-50%" y="-50%" width="200%" height="200%">
       <feGaussianBlur stdDeviation="4"/>
     </filter>
+    <!-- Glow para o rastro de pontos (cada dot ganha aura) -->
+    <filter id="trailGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="2.2"/>
+    </filter>
 
     <path id="track" d="${svgPath}"/>
   </defs>
@@ -279,9 +288,10 @@ function buildAtelier({ svgPath, points, totalM }) {
 
   <!-- ════════════════ ELEMENTO 3: PISTA ════════════════ -->
   <g transform="translate(${TRACK_OX},${TRACK_OY})">
-    <!-- halo dourado (atmosfera) -->
-    <use href="#track" fill="none" stroke="#E8C97A" stroke-width="80" stroke-opacity="0.06" stroke-linejoin="round" stroke-linecap="round" filter="url(#blurLg)"/>
-    <use href="#track" fill="none" stroke="#E8C97A" stroke-width="46" stroke-opacity="0.08" stroke-linejoin="round" stroke-linecap="round" filter="url(#blurMd)"/>
+    <!-- halo atmosférico amplo (pra dar peso/presença ao traçado, não é elevação) -->
+    <use href="#track" fill="none" stroke="#E8C97A" stroke-width="120" stroke-opacity="0.045" stroke-linejoin="round" stroke-linecap="round" filter="url(#blurLg)"/>
+    <use href="#track" fill="none" stroke="#E8C97A" stroke-width="80"  stroke-opacity="0.07" stroke-linejoin="round" stroke-linecap="round" filter="url(#blurLg)"/>
+    <use href="#track" fill="none" stroke="#E8C97A" stroke-width="46"  stroke-opacity="0.10" stroke-linejoin="round" stroke-linecap="round" filter="url(#blurMd)"/>
 
     <!-- runoff (escape, gradiente warm) -->
     <use href="#track" fill="none" stroke="url(#runoff)" stroke-width="36" stroke-linejoin="round" stroke-linecap="round" stroke-opacity="0.85"/>
@@ -318,13 +328,19 @@ function buildAtelier({ svgPath, points, totalM }) {
     </g>
 
     <!-- ════════════════ ELEMENTO 4: VOLTA (live + ghost + rastros) ════════════════ -->
-    <!-- Rastro do ghost (atrás do live no z-order, fade ciano) -->
-    <g fill="#7DD3FC">
-      ${ghostTrail.map(t => `<circle cx="${t.p.x.toFixed(2)}" cy="${t.p.y.toFixed(2)}" r="1.6" fill-opacity="${t.opacity.toFixed(3)}"/>`).join('')}
+    <!-- Rastro do ghost: glow ciano amplo embaixo + dots sólidos por cima -->
+    <g fill="#7DD3FC" filter="url(#trailGlow)">
+      ${ghostTrail.map(t => `<circle cx="${t.p.x.toFixed(2)}" cy="${t.p.y.toFixed(2)}" r="2.6" fill-opacity="${(t.opacity * 0.55).toFixed(3)}"/>`).join('')}
     </g>
-    <!-- Rastro do live (fade laranja) -->
+    <g fill="#7DD3FC">
+      ${ghostTrail.map(t => `<circle cx="${t.p.x.toFixed(2)}" cy="${t.p.y.toFixed(2)}" r="2.2" fill-opacity="${t.opacity.toFixed(3)}"/>`).join('')}
+    </g>
+    <!-- Rastro do live: glow laranja amplo embaixo + dots sólidos por cima -->
+    <g fill="#FF7A1A" filter="url(#trailGlow)">
+      ${liveTrail.map(t => `<circle cx="${t.p.x.toFixed(2)}" cy="${t.p.y.toFixed(2)}" r="2.8" fill-opacity="${(t.opacity * 0.55).toFixed(3)}"/>`).join('')}
+    </g>
     <g fill="#FF7A1A">
-      ${liveTrail.map(t => `<circle cx="${t.p.x.toFixed(2)}" cy="${t.p.y.toFixed(2)}" r="1.8" fill-opacity="${t.opacity.toFixed(3)}"/>`).join('')}
+      ${liveTrail.map(t => `<circle cx="${t.p.x.toFixed(2)}" cy="${t.p.y.toFixed(2)}" r="2.4" fill-opacity="${t.opacity.toFixed(3)}"/>`).join('')}
     </g>
 
     <!-- Ghost marker — ANIMADO ao longo do path, fase adiantada -->
