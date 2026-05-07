@@ -39,11 +39,22 @@ export const ALLOWED_TABLES = new Set([
   "segment_executions",
   "mensagens",
   "retas_especiais",
+  "evento_pendencias",
 ]);
 
 export const ALLOWED_OPS = new Set(["insert", "update", "delete"]);
 
 const MAX_ROWS_PER_REQUEST = 500;
+
+/**
+ * Tabelas cujo `time_id` é derivado via FK em vez de vir direto no
+ * payload. Necessário pra `evento_pendencias` (referencia evento, não
+ * tem coluna time_id própria) e similares. Inserts dessas tabelas
+ * NÃO precisam mandar time_id; o servidor faz lookup pela parent FK.
+ */
+export const TIME_VIA_FK: Record<string, { fkColumn: string; parentTable: string }> = {
+  evento_pendencias: { fkColumn: "evento_id", parentTable: "eventos" },
+};
 
 interface SyncRow {
   table_name: string;
@@ -116,7 +127,9 @@ export function validateRow(r: any): RowValidation {
     if (typeof r.payload !== "object" || r.payload === null) {
       return { ok: false, reason: "insert-sem-payload" };
     }
-    if (typeof (r.payload as any).time_id !== "string") {
+    // Tabelas com TIME_VIA_FK derivam time_id via parent — não exigem
+    // payload.time_id (a tabela nem tem essa coluna no Postgres).
+    if (!TIME_VIA_FK[r.table_name] && typeof (r.payload as any).time_id !== "string") {
       return { ok: false, reason: "insert-sem-time_id" };
     }
   }
@@ -222,20 +235,56 @@ serve(async (req) => {
 
     // Determina time_id da row (vem do payload em insert; do server em update/delete)
     let timeId: string | null = null;
+    const timeViaFk = TIME_VIA_FK[r.table_name];
     if (r.op === "insert") {
-      timeId = (r.payload as any).time_id;
+      if (timeViaFk) {
+        // Tabelas tipo evento_pendencias: lookup time_id via parent FK
+        // (evento_id → eventos.time_id). Parent precisa existir no
+        // servidor — se ainda está na fila do mesmo batch, depende
+        // da ordem que veio (created_at asc no drainer cuida disso).
+        const fkValue = (r.payload as any)[timeViaFk.fkColumn];
+        if (typeof fkValue !== "string") {
+          rejected.push({ row_id: r.row_id, table_name: r.table_name, reason: `insert-sem-${timeViaFk.fkColumn}` });
+          continue;
+        }
+        const { data: parent } = await admin
+          .from(timeViaFk.parentTable)
+          .select("time_id")
+          .eq("id", fkValue)
+          .maybeSingle();
+        if (!parent) {
+          rejected.push({ row_id: r.row_id, table_name: r.table_name, reason: "parent-not-found", detail: { fk: timeViaFk.fkColumn, value: fkValue } });
+          continue;
+        }
+        timeId = (parent as any).time_id;
+      } else {
+        timeId = (r.payload as any).time_id;
+      }
     } else {
       // Update/delete: lookup do time_id atual no Postgres
+      const selectCols = timeViaFk
+        ? `${timeViaFk.fkColumn}, updated_at`
+        : "time_id, updated_at";
       const { data: existing } = await admin
         .from(r.table_name)
-        .select("time_id, updated_at")
+        .select(selectCols)
         .eq("id", r.row_id!)
         .maybeSingle();
       if (!existing) {
         rejected.push({ row_id: r.row_id, table_name: r.table_name, reason: "row-not-found" });
         continue;
       }
-      timeId = (existing as any).time_id;
+      if (timeViaFk) {
+        const fkValue = (existing as any)[timeViaFk.fkColumn];
+        const { data: parent } = await admin
+          .from(timeViaFk.parentTable)
+          .select("time_id")
+          .eq("id", fkValue)
+          .maybeSingle();
+        timeId = (parent as any)?.time_id ?? null;
+      } else {
+        timeId = (existing as any).time_id;
+      }
 
       // LWW pra update: rejeita se cliente está stale
       if (r.op === "update" && r.client_updated_at !== undefined) {
