@@ -264,9 +264,9 @@ function buildReferenceJson({ apelido, nomeOficial, viewBox, resampled }) {
 
 async function generateTrack(track) {
   const rawPath = await extractPathFromSeed(track.pathConst);
-  // Suavização Gaussiana com σ=8m: mata wobbles de GPS (alguns metros)
-  // sem deformar curvas reais (raio típico 30-100m em Brasília).
-  const svgPath = smoothPathGaussian(rawPath, 8, track.extensaoMetros);
+  // Suavização Gaussiana com σ=14m: mata wobbles de GPS até ~28m de
+  // extensão (FWHM). Curvas reais de Brasília (raio 30-100m) preservadas.
+  const svgPath = smoothPathGaussian(rawPath, 14, track.extensaoMetros);
   const resampled = resampleByDistance(svgPath, track.extensaoMetros, track.spacingMeters);
 
   const baseSvg = buildBaseSvg({ viewBox: track.viewBox, svgPath });
