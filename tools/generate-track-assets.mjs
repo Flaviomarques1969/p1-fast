@@ -19,29 +19,75 @@ import { parsePath, pathLength, buildLookup } from '../src/telemetry/path-mapper
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 
-// Chaikin corner-cutting (1+ iterações). Suaviza ângulos agudos do GPS
-// preservando o traçado geral. ATENÇÃO: aplicado SÓ no gerador, NÃO no
-// svgPath fonte (src/domain/seed-tracks.js) — telemetria do app continua
-// usando a polilinha GPS-calibrada original.
-function smoothPathChaikin(d, iterations = 1) {
-  let pts = parsePath(d);
-  // parsePath devolve o ponto inicial duplicado no fim quando há Z; remove pra fechar limpo
-  if (pts.length > 1 && pts[0].x === pts[pts.length - 1].x && pts[0].y === pts[pts.length - 1].y) {
-    pts = pts.slice(0, -1);
+// Suavização Gaussiana em arc-length real (metros). Mata oscilações
+// menores que ~2σ e preserva curvas reais (cujo raio é >> σ).
+//
+// ATENÇÃO: aplicado SÓ no gerador, NÃO no svgPath fonte
+// (src/domain/seed-tracks.js) — telemetria do app continua usando a
+// polilinha GPS-calibrada original.
+//
+// Pipeline:
+//   1) Reamostra o path em pontos uniformemente espaçados em arc-length
+//      (sub-amostragem fina pra convolução não distorcer)
+//   2) Convolui x(s) e y(s) separadamente com kernel Gaussiano 1D circular
+//   3) Decima pra ~600 vértices (path leve mas detalhado)
+function smoothPathGaussian(d, sigmaMeters, totalRealMeters) {
+  const lookup = buildLookup(d, 4000);
+  const totalSvg = lookup.totalLength;
+  const mPerU = totalRealMeters / totalSvg;
+  const sigmaSvg = sigmaMeters / mPerU;
+  const sampleStepM = 0.5;
+  const sampleStepSvg = sampleStepM / mPerU;
+  const N = Math.max(200, Math.round(totalSvg / sampleStepSvg));
+  const stepFinal = totalSvg / N;
+  const pts = lookup.points;
+
+  // 1) Reamostragem uniforme
+  const xs = new Float64Array(N), ys = new Float64Array(N);
+  for (let i = 0; i < N; i++) {
+    const target = i * stepFinal;
+    let lo = 0, hi = pts.length - 1;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (pts[mid].offset < target) lo = mid + 1; else hi = mid; }
+    const a = pts[Math.max(0, lo - 1)], b = pts[Math.min(pts.length - 1, lo)];
+    const span = (b.offset - a.offset) || 1;
+    const t = (target - a.offset) / span;
+    xs[i] = a.x + (b.x - a.x) * t;
+    ys[i] = a.y + (b.y - a.y) * t;
   }
-  for (let it = 0; it < iterations; it++) {
-    const out = [];
-    const n = pts.length;
-    for (let i = 0; i < n; i++) {
-      const a = pts[i];
-      const b = pts[(i + 1) % n];
-      out.push({ x: a.x * 0.75 + b.x * 0.25, y: a.y * 0.75 + b.y * 0.25 });
-      out.push({ x: a.x * 0.25 + b.x * 0.75, y: a.y * 0.25 + b.y * 0.75 });
+
+  // 2) Kernel Gaussiano (raio 3σ)
+  const kRadius = Math.max(1, Math.ceil(3 * sigmaSvg / stepFinal));
+  const kernel = new Float64Array(2 * kRadius + 1);
+  let kSum = 0;
+  for (let k = -kRadius; k <= kRadius; k++) {
+    const w = Math.exp(-((k * stepFinal) ** 2) / (2 * sigmaSvg * sigmaSvg));
+    kernel[k + kRadius] = w;
+    kSum += w;
+  }
+  for (let k = 0; k < kernel.length; k++) kernel[k] /= kSum;
+
+  // 3) Convolução circular
+  const sx = new Float64Array(N), sy = new Float64Array(N);
+  for (let i = 0; i < N; i++) {
+    let ax = 0, ay = 0;
+    for (let k = -kRadius; k <= kRadius; k++) {
+      const j = ((i + k) % N + N) % N;
+      const w = kernel[k + kRadius];
+      ax += xs[j] * w;
+      ay += ys[j] * w;
     }
-    pts = out;
+    sx[i] = ax;
+    sy[i] = ay;
   }
-  const head = `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`;
-  const rest = pts.slice(1).map(p => `L ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ');
+
+  // 4) Decimação pra ~600 vértices
+  const targetVerts = 600;
+  const decim = Math.max(1, Math.floor(N / targetVerts));
+  const out = [];
+  for (let i = 0; i < N; i += decim) out.push({ x: sx[i], y: sy[i] });
+
+  const head = `M ${out[0].x.toFixed(2)} ${out[0].y.toFixed(2)}`;
+  const rest = out.slice(1).map(p => `L ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ');
   return `${head} ${rest} Z`;
 }
 
@@ -218,9 +264,9 @@ function buildReferenceJson({ apelido, nomeOficial, viewBox, resampled }) {
 
 async function generateTrack(track) {
   const rawPath = await extractPathFromSeed(track.pathConst);
-  // 2 iterações de Chaikin: remove os bicos do GPS sem deformar o traçado.
-  // Vértice mais agudo do raw em Brasília: 47.6° (área da bruxa) → < 12° após smoothing.
-  const svgPath = smoothPathChaikin(rawPath, 2);
+  // Suavização Gaussiana com σ=8m: mata wobbles de GPS (alguns metros)
+  // sem deformar curvas reais (raio típico 30-100m em Brasília).
+  const svgPath = smoothPathGaussian(rawPath, 8, track.extensaoMetros);
   const resampled = resampleByDistance(svgPath, track.extensaoMetros, track.spacingMeters);
 
   const baseSvg = buildBaseSvg({ viewBox: track.viewBox, svgPath });
