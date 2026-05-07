@@ -19,6 +19,32 @@ import { parsePath, pathLength, buildLookup } from '../src/telemetry/path-mapper
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 
+// Chaikin corner-cutting (1+ iterações). Suaviza ângulos agudos do GPS
+// preservando o traçado geral. ATENÇÃO: aplicado SÓ no gerador, NÃO no
+// svgPath fonte (src/domain/seed-tracks.js) — telemetria do app continua
+// usando a polilinha GPS-calibrada original.
+function smoothPathChaikin(d, iterations = 1) {
+  let pts = parsePath(d);
+  // parsePath devolve o ponto inicial duplicado no fim quando há Z; remove pra fechar limpo
+  if (pts.length > 1 && pts[0].x === pts[pts.length - 1].x && pts[0].y === pts[pts.length - 1].y) {
+    pts = pts.slice(0, -1);
+  }
+  for (let it = 0; it < iterations; it++) {
+    const out = [];
+    const n = pts.length;
+    for (let i = 0; i < n; i++) {
+      const a = pts[i];
+      const b = pts[(i + 1) % n];
+      out.push({ x: a.x * 0.75 + b.x * 0.25, y: a.y * 0.75 + b.y * 0.25 });
+      out.push({ x: a.x * 0.25 + b.x * 0.75, y: a.y * 0.25 + b.y * 0.75 });
+    }
+    pts = out;
+  }
+  const head = `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`;
+  const rest = pts.slice(1).map(p => `L ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ');
+  return `${head} ${rest} Z`;
+}
+
 const PALETTE = {
   bgFar:    '#0E1014', // fundo cena
   runoff:   '#3A352E', // anel de escape (warm gray)
@@ -191,7 +217,10 @@ function buildReferenceJson({ apelido, nomeOficial, viewBox, resampled }) {
 }
 
 async function generateTrack(track) {
-  const svgPath = await extractPathFromSeed(track.pathConst);
+  const rawPath = await extractPathFromSeed(track.pathConst);
+  // 2 iterações de Chaikin: remove os bicos do GPS sem deformar o traçado.
+  // Vértice mais agudo do raw em Brasília: 47.6° (área da bruxa) → < 12° após smoothing.
+  const svgPath = smoothPathChaikin(rawPath, 2);
   const resampled = resampleByDistance(svgPath, track.extensaoMetros, track.spacingMeters);
 
   const baseSvg = buildBaseSvg({ viewBox: track.viewBox, svgPath });
