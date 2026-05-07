@@ -49,11 +49,14 @@ def red_mask(bgr):
     return cv2.bitwise_or(m1, m2)
 
 def tire_mask(bgr):
-    """Very dark, low-saturation pixels = tire rubber + tread."""
+    """Very dark, low-saturation pixels = tire rubber + tread.
+    Threshold tighter than before so we hit the rubber sidewall, not random
+    dark chassis members or shadows.
+    """
     hsv = to_hsv(bgr)
     gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
-    dark = cv2.inRange(gray, 0, 55)
-    low_sat = cv2.inRange(hsv[:, :, 1], 0, 60)
+    dark = cv2.inRange(gray, 0, 38)
+    low_sat = cv2.inRange(hsv[:, :, 1], 0, 50)
     return cv2.bitwise_and(dark, low_sat)
 
 def silver_mask(bgr):
@@ -64,28 +67,33 @@ def silver_mask(bgr):
     return cv2.bitwise_and(bright, low_sat)
 
 def engine_mask(bgr):
-    """Engine block: silver intake + dark exhaust + lower frame, all in ROI.
-    Combine silver + dark to capture the whole block."""
+    """Engine block: focus on the SILVER intake manifold + valve cover region.
+    Dark surrounding chassis members are excluded so the polygon doesn't
+    spread onto empty frame pixels. Tighter than v3.0.
+    """
     hsv = to_hsv(bgr)
-    bright = cv2.inRange(hsv[:, :, 2], 90, 255)
-    low_sat = cv2.inRange(hsv[:, :, 1], 0, 80)
+    bright = cv2.inRange(hsv[:, :, 2], 110, 255)
+    low_sat = cv2.inRange(hsv[:, :, 1], 0, 70)
     silver = cv2.bitwise_and(bright, low_sat)
+    # add only the dense engine-block dark zone (not the entire dark chassis)
     gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
-    dark = cv2.inRange(gray, 25, 90)
-    return cv2.bitwise_or(silver, cv2.bitwise_and(dark, low_sat))
+    mid = cv2.inRange(gray, 35, 95)
+    return cv2.bitwise_or(silver, cv2.bitwise_and(mid, low_sat))
 
 # ---------------- ROIs (x, y, w, h) ----------------
 
-# (x, y, w, h, close_kernel, open_kernel) — bigger close = bridges gaps
-# between spring coils so the whole coilover ends up as one blob.
+# (x, y, w, h, close_kernel, open_kernel) — kept conservative to avoid
+# spreading the polygon onto neighbouring pixels. The visualization only
+# tints what is actually colored on the photo, so the recolor reads as a
+# subtle wash, not a painted block.
 ROIS = {
-    "tire-FL":     (320, 1500, 410, 290, 9, 5),
-    "tire-RR":     (1580, 1140, 290, 290, 9, 5),
-    "spring-RL":   (1080, 950, 200, 320, 35, 3),
-    "spring-RR":   (1245, 940, 195, 320, 35, 3),
-    "engine":      (430, 1310, 430, 460, 11, 5),
-    "body-paint":  (260, 470, 820, 660, 11, 5),
-    "body-roof":   (820,  90, 800, 1020, 11, 5),
+    "tire-FL":     (340, 1530, 390, 270, 5, 5),
+    "tire-RR":     (1590, 1145, 200, 270, 5, 5),
+    "spring-RL":   (1085, 970, 165, 305, 21, 3),
+    "spring-RR":   (1280, 990, 160, 290, 21, 3),
+    "engine":      (450, 1340, 410, 380, 5, 7),
+    "body-paint":  (260, 470, 820, 660, 7, 7),
+    "body-roof":   (820,  90, 800, 1020, 7, 7),
 }
 
 MASKS = {
@@ -98,11 +106,9 @@ MASKS = {
     "body-roof":   green_mask,
 }
 
-# Manual polygons for parts that are hard to mask reliably.
-# radiator = front bumper / grille face on the chassis (chassis nose).
-MANUAL_VISIBLE = {
-    "radiator": "M395 1830 L920 1828 L948 1856 L948 1972 L920 1996 L395 1996 L368 1972 L368 1856 Z",
-}
+# Radiator removed: it has no distinct visible region on the photo. Its
+# telemetry (Temp água + Temp ar) folds into the engine indicator.
+MANUAL_VISIBLE = {}
 
 # ---------------- hidden parts: hand-tuned silhouettes ----------------
 # These geometries are inferred from car layout, not from photo pixels —
