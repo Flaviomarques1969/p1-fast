@@ -63,7 +63,7 @@ final class PassageiroRepository: ObservableObject {
         let passageiroId = UUID().uuidString
         let now = DB.nowMs()
         try await queue.write { db in
-            try Passageiro(
+            let passageiro = Passageiro(
                 id: passageiroId,
                 timeId: teamId,
                 nome: nome,
@@ -73,7 +73,9 @@ final class PassageiroRepository: ObservableObject {
                 createdAt: now,
                 updatedAt: now,
                 syncedAt: nil
-            ).insert(db)
+            )
+            try passageiro.insert(db)
+            try SyncQueue.enqueueRecord(db, tableName: "passageiros", rowId: passageiroId, op: .insert, record: passageiro)
         }
         try await reload()
         return passageiroId
@@ -85,6 +87,7 @@ final class PassageiroRepository: ObservableObject {
         copy.syncedAt = nil
         try await queue.write { db in
             try copy.update(db)
+            try SyncQueue.enqueueRecord(db, tableName: "passageiros", rowId: copy.id, op: .update, record: copy)
         }
         try await reload()
     }
@@ -92,6 +95,7 @@ final class PassageiroRepository: ObservableObject {
     func delete(passageiroId: String) async throws {
         try await queue.write { db in
             _ = try Passageiro.deleteOne(db, key: passageiroId)
+            try SyncQueue.enqueueRecord(db, tableName: "passageiros", rowId: passageiroId, op: .delete, record: Passageiro?.none)
         }
         try await reload()
     }

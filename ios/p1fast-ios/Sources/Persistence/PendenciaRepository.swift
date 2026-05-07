@@ -61,11 +61,13 @@ final class PendenciaRepository: ObservableObject {
                 .fetchAll(db)
             let existingTemplateIds = Set(existing.map(\.templateId))
             for tid in allTemplateIds where !existingTemplateIds.contains(tid) {
-                try EventoPendencia(
+                let inst = EventoPendencia(
                     id: UUID().uuidString,
                     eventoId: eventoId,
                     templateId: tid
-                ).insert(db)
+                )
+                try inst.insert(db)
+                try SyncQueue.enqueueRecord(db, tableName: "evento_pendencias", rowId: inst.id, op: .insert, record: inst)
             }
         }
         try await reloadInstancesForEvento(eventoId)
@@ -88,6 +90,7 @@ final class PendenciaRepository: ObservableObject {
             inst.updatedAt = DB.nowMs()
             inst.syncedAt = nil
             try inst.update(db)
+            try SyncQueue.enqueueRecord(db, tableName: "evento_pendencias", rowId: inst.id, op: .update, record: inst)
         }
         // Atualiza cache local sem refetch.
         for (eid, list) in instanciasPorEvento {
@@ -108,6 +111,7 @@ final class PendenciaRepository: ObservableObject {
             inst.updatedAt = DB.nowMs()
             inst.syncedAt = nil
             try inst.update(db)
+            try SyncQueue.enqueueRecord(db, tableName: "evento_pendencias", rowId: inst.id, op: .update, record: inst)
         }
         for (eid, list) in instanciasPorEvento {
             if let idx = list.firstIndex(where: { $0.id == instanceId }) {
