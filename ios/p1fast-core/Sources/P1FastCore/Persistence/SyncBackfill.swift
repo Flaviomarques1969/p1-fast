@@ -29,6 +29,7 @@ public enum SyncBackfill {
         "passageiros",
         "combustiveis",
         "pneus",
+        "evento_pendencias",
         "sessoes",
         "voltas",
         "segment_executions",

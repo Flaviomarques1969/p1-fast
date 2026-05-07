@@ -123,7 +123,10 @@ final class TrackRepository: ObservableObject {
                 markCalibrated: markCalibrated
             )
             row.geometria = P1FastCore.SegmentGeometry.encode(next)
+            row.updatedAt = DB.nowMs()
+            row.syncedAt = nil
             try row.update(db)
+            try SyncQueue.enqueueRecord(db, tableName: "track_segments", rowId: row.id, op: .update, record: row)
         }
         try await reloadAll()
     }

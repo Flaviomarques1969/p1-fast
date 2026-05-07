@@ -74,7 +74,12 @@ final class PneuRepository: ObservableObject {
         copy.updatedAt = DB.nowMs()
         copy.syncedAt = nil
         try await queue.write { db in
+            let exists = try Pneu.fetchOne(db, key: copy.id) != nil
             try copy.save(db)
+            try SyncQueue.enqueueRecord(
+                db, tableName: "pneus", rowId: copy.id,
+                op: exists ? .update : .insert, record: copy
+            )
         }
         await loadAll()
     }
@@ -83,6 +88,7 @@ final class PneuRepository: ObservableObject {
     func delete(id: String) async throws {
         try await queue.write { db in
             _ = try Pneu.deleteOne(db, key: id)
+            try SyncQueue.enqueueRecord(db, tableName: "pneus", rowId: id, op: .delete, record: Pneu?.none)
         }
         await loadAll()
     }

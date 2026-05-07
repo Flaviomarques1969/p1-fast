@@ -79,7 +79,7 @@ final class CombustivelRepository: ObservableObject {
         let now = DB.nowMs()
         let tipo = observacao?.trimmingCharacters(in: .whitespacesAndNewlines)
         try await queue.write { db in
-            try Combustivel(
+            let combustivel = Combustivel(
                 id: id,
                 timeId: teamId,
                 nome: nome,
@@ -88,7 +88,9 @@ final class CombustivelRepository: ObservableObject {
                 createdAt: now,
                 updatedAt: now,
                 syncedAt: nil
-            ).insert(db)
+            )
+            try combustivel.insert(db)
+            try SyncQueue.enqueueRecord(db, tableName: "combustiveis", rowId: id, op: .insert, record: combustivel)
         }
         try await reload()
         return id
@@ -100,6 +102,7 @@ final class CombustivelRepository: ObservableObject {
         copy.syncedAt = nil
         try await queue.write { db in
             try copy.update(db)
+            try SyncQueue.enqueueRecord(db, tableName: "combustiveis", rowId: copy.id, op: .update, record: copy)
         }
         try await reload()
     }
@@ -107,6 +110,7 @@ final class CombustivelRepository: ObservableObject {
     func delete(combustivelId: String) async throws {
         try await queue.write { db in
             _ = try Combustivel.deleteOne(db, key: combustivelId)
+            try SyncQueue.enqueueRecord(db, tableName: "combustiveis", rowId: combustivelId, op: .delete, record: Combustivel?.none)
         }
         try await reload()
     }
