@@ -299,8 +299,8 @@ function buildAtelier({ svgPath, points, totalM }) {
     <!-- asfalto (gradiente vertical = camber) -->
     <use href="#track" fill="none" stroke="url(#asphalt)" stroke-width="22" stroke-linejoin="round" stroke-linecap="round"/>
 
-    <!-- filete champagne na borda interna -->
-    <use href="#track" fill="none" stroke="url(#champagne)" stroke-width="0.7" stroke-opacity="0.55"/>
+    <!-- filete dourado na borda interna — cor SÓLIDA pra ficar uniforme em toda a pista -->
+    <use href="#track" fill="none" stroke="#E8C97A" stroke-width="1.2" stroke-opacity="0.70"/>
 
     <!-- centerline pontilhada muito sutil -->
     <use href="#track" fill="none" stroke="#FFFFFF" stroke-width="0.4" stroke-dasharray="3 9" stroke-opacity="0.10"/>
