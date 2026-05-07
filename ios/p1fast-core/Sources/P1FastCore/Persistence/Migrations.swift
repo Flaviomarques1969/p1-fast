@@ -184,6 +184,29 @@ enum Migrations {
         m.registerMigration("v9_telemetry_enriched_gap_duration") { db in
             try db.execute(sql: "ALTER TABLE telemetry_samples_enriched ADD COLUMN gap_duration_ms REAL;")
         }
+
+        // ═══ v10_brasilia_uuid ═════════════════════════════════
+        // Bug E1: track id literal `"trk_brasilia"` é incompatível com
+        // Postgres que tem `tracks.id` uuid. Evento real (4E6DA001)
+        // travou no sync com `invalid input syntax for type uuid`.
+        // Renomeia pro UUID5 determinístico (DNS namespace, "p1fast.brasilia"):
+        //   e8335412-3312-54fe-b634-db2d02c7fa81
+        // Servidor cria a row em tracks com mesmo UUID via migration
+        // 0012_seed_brasilia.sql. defer_foreign_keys evita CASCADE
+        // problemas durante o re-bind das FKs.
+        m.registerMigration("v10_brasilia_uuid") { db in
+            let oldId = "trk_brasilia"
+            let newId = "e8335412-3312-54fe-b634-db2d02c7fa81"
+            try db.execute(sql: "PRAGMA defer_foreign_keys = ON;")
+            try db.execute(sql: "UPDATE tracks SET id = ? WHERE id = ?;", arguments: [newId, oldId])
+            try db.execute(sql: "UPDATE track_layouts SET track_id = ? WHERE track_id = ?;", arguments: [newId, oldId])
+            try db.execute(sql: "UPDATE eventos SET track_id = ? WHERE track_id = ?;", arguments: [newId, oldId])
+            try db.execute(sql: "UPDATE retas_especiais SET track_id = ? WHERE track_id = ?;", arguments: [newId, oldId])
+            // `marcos` no schema local referencia layouts (`layout_id`),
+            // não tracks direto — não precisa rebind aqui. No servidor
+            // marcos tem `track_id` direto, mas isso é coberto pelo
+            // catálogo (track_layouts.track_id já aponta pro novo UUID).
+        }
     }
 
     // swiftlint:disable:next function_body_length

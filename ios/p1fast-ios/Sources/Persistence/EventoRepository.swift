@@ -31,7 +31,7 @@ final class EventoRepository: ObservableObject {
     /// P1FastCore (mas a Repo só insere a linha na tabela `tracks`,
     /// não popula layouts/segments — aqueles vêm na Sprint 1A.3 quando
     /// o cockpit começar a desenhar a pista).
-    static let brasiliaTrackId = "trk_brasilia"
+    static let brasiliaTrackId = "e8335412-3312-54fe-b634-db2d02c7fa81"
 
     /// IDs estáveis dos 3 eventos seedados — pareiam com
     /// `EventoMockSummary.canonicos`. Trocar IDs aqui exige trocar lá.
