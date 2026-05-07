@@ -237,14 +237,6 @@ function buildAtelier({ svgPath, points, totalM }) {
     <filter id="blurSm" x="-20%" y="-20%" width="140%" height="140%">
       <feGaussianBlur stdDeviation="3"/>
     </filter>
-    <!-- Terreno: turbulência fractal monocromática, low contrast, dá sensação aérea -->
-    <filter id="terrain" x="0%" y="0%" width="100%" height="100%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.012 0.018" numOctaves="3" seed="7" stitchTiles="stitch"/>
-      <feColorMatrix values="0 0 0 0 0.42
-                              0 0 0 0 0.36
-                              0 0 0 0 0.22
-                              0 0 0 0.08 0"/>
-    </filter>
     <!-- Cintilação sutil para o glow do live marker (pulse) -->
     <filter id="markerGlow" x="-50%" y="-50%" width="200%" height="200%">
       <feGaussianBlur stdDeviation="4"/>
@@ -257,17 +249,6 @@ function buildAtelier({ svgPath, points, totalM }) {
   <rect x="0" y="0" width="${FRAME_W}" height="${FRAME_H}" fill="url(#bgBase)"/>
   <rect x="0" y="0" width="${FRAME_W}" height="${FRAME_H}" fill="url(#bloomWarm)"/>
   <rect x="0" y="0" width="${FRAME_W}" height="${FRAME_H}" fill="url(#bloomCool)"/>
-  <!-- terreno aéreo (turbulência fractal) — não é elevação real, dá quality de foto aérea -->
-  <rect x="0" y="0" width="${FRAME_W}" height="${FRAME_H}" filter="url(#terrain)" opacity="0.55"/>
-
-  <!-- topographic concentric rings (decoração sutil) -->
-  <g stroke="#1A2438" stroke-opacity="0.20" fill="none" stroke-width="0.6">
-    <circle cx="550" cy="450" r="120"/>
-    <circle cx="550" cy="450" r="190"/>
-    <circle cx="550" cy="450" r="270"/>
-    <circle cx="550" cy="450" r="360"/>
-    <circle cx="550" cy="450" r="460"/>
-  </g>
 
   <!-- ════════════════ ELEMENTO 1: CHROME (TÍTULO) ════════════════ -->
   <g font-family="'Helvetica Neue', -apple-system, sans-serif" fill="#F5F0E0">
@@ -298,15 +279,6 @@ function buildAtelier({ svgPath, points, totalM }) {
 
   <!-- ════════════════ ELEMENTO 3: PISTA ════════════════ -->
   <g transform="translate(${TRACK_OX},${TRACK_OY})">
-    <!-- ANÉIS DE ELEVAÇÃO (4 níveis topográficos sutis em volta da pista) -->
-    <g fill="none" stroke="#3A4055" stroke-linejoin="round" stroke-linecap="round" stroke-opacity="0.22">
-      <use href="#track" stroke-width="200" stroke-opacity="0.04"/>
-      <use href="#track" stroke-width="150" stroke-opacity="0.06"/>
-      <use href="#track" stroke-width="110" stroke-opacity="0.08"/>
-      <use href="#track" stroke-width="78"  stroke-opacity="0.11"/>
-      <use href="#track" stroke-width="56"  stroke-opacity="0.16"/>
-    </g>
-
     <!-- halo dourado (atmosfera) -->
     <use href="#track" fill="none" stroke="#E8C97A" stroke-width="80" stroke-opacity="0.06" stroke-linejoin="round" stroke-linecap="round" filter="url(#blurLg)"/>
     <use href="#track" fill="none" stroke="#E8C97A" stroke-width="46" stroke-opacity="0.08" stroke-linejoin="round" stroke-linecap="round" filter="url(#blurMd)"/>
