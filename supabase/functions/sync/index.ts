@@ -63,6 +63,23 @@ export interface RowValidation {
 }
 
 /**
+ * Colunas que existem só no schema LOCAL (SQLite cliente) e NÃO devem
+ * ir pro Postgres. Hoje só `synced_at` — flag client-only que marca se
+ * a row já foi sincronizada com o servidor; o cliente sempre envia
+ * `synced_at: null` no payload (porque local NÃO está sincronizado AINDA),
+ * mas o Postgres não tem essa coluna e devolve `column not found`.
+ */
+const CLIENT_ONLY_COLUMNS = new Set(["synced_at"]);
+
+/** Strip de colunas client-only do payload (in-place). */
+export function stripClientOnly(payload: Record<string, unknown> | undefined): void {
+  if (!payload) return;
+  for (const k of CLIENT_ONLY_COLUMNS) {
+    delete payload[k];
+  }
+}
+
+/**
  * Normaliza colunas de timestamp do payload. Cliente Swift serializa
  * `created_at`/`updated_at`/`data_evento`/etc como ms epoch (Int64), mas
  * Postgres `timestamptz`/`date` exige string ISO 8601 — passar inteiro
@@ -242,8 +259,11 @@ serve(async (req) => {
 
     // Normaliza ms epoch → ISO 8601 nas colunas de timestamp (cliente
     // Swift envia Int64 ms; Postgres `timestamptz` quebra com inteiro).
+    // E remove colunas client-only (synced_at é flag do SQLite local,
+    // não existe no Postgres — `column not found` se passar).
     if (r.op === "insert" || r.op === "update") {
       coerceTimestamps(r.payload as Record<string, unknown> | undefined);
+      stripClientOnly(r.payload as Record<string, unknown> | undefined);
     }
 
     // Executa a mutation
