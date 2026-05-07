@@ -80,15 +80,12 @@ function smoothPathGaussian(d, sigmaMeters, totalRealMeters) {
     sy[i] = ay;
   }
 
-  // 4) Decimação pra ~600 vértices
-  const targetVerts = 600;
-  const decim = Math.max(1, Math.floor(N / targetVerts));
-  const out = [];
-  for (let i = 0; i < N; i += decim) out.push({ x: sx[i], y: sy[i] });
-
-  const head = `M ${out[0].x.toFixed(2)} ${out[0].y.toFixed(2)}`;
-  const rest = out.slice(1).map(p => `L ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ');
-  return `${head} ${rest} Z`;
+  // 4) Sem decimação — preserva resolução total da suavização. O peso
+  // extra do SVG é mitigado por <defs>/<use> no render (4 paths viram 1).
+  const head = `M ${sx[0].toFixed(2)} ${sy[0].toFixed(2)}`;
+  const rest = [];
+  for (let i = 1; i < N; i++) rest.push(`L ${sx[i].toFixed(2)} ${sy[i].toFixed(2)}`);
+  return `${head} ${rest.join(' ')} Z`;
 }
 
 const PALETTE = {
@@ -182,12 +179,13 @@ function buildBaseSvg({ viewBox, svgPath }) {
       .asphalt { fill: none; stroke: ${PALETTE.asphalt}; stroke-width: ${strokeAsphalt}; stroke-linejoin: round; stroke-linecap: round; }
       .center  { fill: none; stroke: #FFFFFF; stroke-width: 0.6; stroke-dasharray: 2 6; opacity: 0.10; }
     </style>
+    <path id="track" d="${svgPath}"/>
   </defs>
   <rect class="bg" x="0" y="0" width="${w}" height="${h}"/>
-  <path class="runoff"  d="${svgPath}"/>
-  <path class="kerb"    d="${svgPath}"/>
-  <path class="asphalt" d="${svgPath}"/>
-  <path class="center"  d="${svgPath}"/>
+  <use class="runoff"  href="#track"/>
+  <use class="kerb"    href="#track"/>
+  <use class="asphalt" href="#track"/>
+  <use class="center"  href="#track"/>
 </svg>
 `;
 }
@@ -228,11 +226,12 @@ function buildPreviewSvg({ viewBox, svgPath, points }) {
       .asphalt { fill: none; stroke: ${PALETTE.asphalt}; stroke-width: ${strokeAsphalt}; stroke-linejoin: round; stroke-linecap: round; }
       .dots    { fill: #FF7A1A; }
     </style>
+    <path id="track" d="${svgPath}"/>
   </defs>
   <rect class="bg" x="0" y="0" width="${w}" height="${h}"/>
-  <path class="runoff"  d="${svgPath}"/>
-  <path class="kerb"    d="${svgPath}"/>
-  <path class="asphalt" d="${svgPath}"/>
+  <use class="runoff"  href="#track"/>
+  <use class="kerb"    href="#track"/>
+  <use class="asphalt" href="#track"/>
   <g class="dots">
     ${dots}
   </g>
@@ -264,9 +263,10 @@ function buildReferenceJson({ apelido, nomeOficial, viewBox, resampled }) {
 
 async function generateTrack(track) {
   const rawPath = await extractPathFromSeed(track.pathConst);
-  // Suavização Gaussiana com σ=14m: mata wobbles de GPS até ~28m de
-  // extensão (FWHM). Curvas reais de Brasília (raio 30-100m) preservadas.
-  const svgPath = smoothPathGaussian(rawPath, 14, track.extensaoMetros);
+  // Suavização Gaussiana com σ=18m: mata wobbles até ~36m (FWHM).
+  // Curvas reais de Brasília (raio 30-100m) ficam suavizadas mas
+  // reconhecíveis. Sem decimação no path final pra preservar fluidez.
+  const svgPath = smoothPathGaussian(rawPath, 18, track.extensaoMetros);
   const resampled = resampleByDistance(svgPath, track.extensaoMetros, track.spacingMeters);
 
   const baseSvg = buildBaseSvg({ viewBox: track.viewBox, svgPath });

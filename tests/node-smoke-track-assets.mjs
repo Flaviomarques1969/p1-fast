@@ -30,9 +30,11 @@ t('brasilia.svg começa com <?xml e contém <svg root', () => {
   if (!/<svg[^>]+viewBox="0 0 823 799"/.test(baseSvg)) throw new Error('viewBox errado');
 });
 
-t('brasilia.svg tem 4 paths (runoff, kerb, asphalt, center)', () => {
-  const m = baseSvg.match(/<path /g) || [];
-  if (m.length !== 4) throw new Error(`esperava 4 paths, achei ${m.length}`);
+t('brasilia.svg tem 1 <path> em defs + 4 <use> (runoff/kerb/asphalt/center)', () => {
+  const paths = baseSvg.match(/<path /g) || [];
+  if (paths.length !== 1) throw new Error(`esperava 1 <path>, achei ${paths.length}`);
+  const uses = baseSvg.match(/<use /g) || [];
+  if (uses.length !== 4) throw new Error(`esperava 4 <use>, achei ${uses.length}`);
 });
 
 t('brasilia.svg sem texto (pré-requisito de base layer)', () => {
