@@ -136,7 +136,7 @@ final class EventoRepository: ObservableObject {
         let eventoId = UUID().uuidString
         let now = DB.nowMs()
         try await queue.write { db in
-            try Evento(
+            let ev = Evento(
                 id: eventoId,
                 timeId: teamId,
                 trackId: trackId,
@@ -146,7 +146,9 @@ final class EventoRepository: ObservableObject {
                 createdAt: now,
                 updatedAt: now,
                 syncedAt: nil
-            ).insert(db)
+            )
+            try ev.insert(db)
+            try SyncQueue.enqueueRecord(db, tableName: "eventos", rowId: eventoId, op: .insert, record: ev)
         }
         try await reload()
         return eventoId
@@ -158,6 +160,7 @@ final class EventoRepository: ObservableObject {
         copy.syncedAt = nil
         try await queue.write { db in
             try copy.update(db)
+            try SyncQueue.enqueueRecord(db, tableName: "eventos", rowId: copy.id, op: .update, record: copy)
         }
         try await reload()
     }
@@ -165,6 +168,7 @@ final class EventoRepository: ObservableObject {
     func delete(eventoId: String) async throws {
         try await queue.write { db in
             _ = try Evento.deleteOne(db, key: eventoId)
+            try SyncQueue.enqueueRecord(db, tableName: "eventos", rowId: eventoId, op: .delete, record: Evento?.none)
         }
         try await reload()
     }

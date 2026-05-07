@@ -83,4 +83,35 @@ public enum SyncQueue {
         try db.execute(sql: "UPDATE sync_queue SET attempts = attempts + 1 WHERE id = ?",
                        arguments: [id])
     }
+
+    /// Serializa um GRDB record (Codable) em JSON e enfileira como
+    /// mutação pendente. Encoder usa CodingKeys snake_case definidos
+    /// nos modelos — o que sai bate com o shape esperado pela Edge
+    /// Function `sync` (e por tabelas Postgres). Para `op == .delete`
+    /// passe `record == nil` — o drainer só usa `rowId` nesse caso.
+    public static func enqueueRecord<T: Codable>(
+        _ db: Database,
+        tableName: String,
+        rowId: String,
+        op: SyncOp,
+        record: T?
+    ) throws {
+        let payloadStr: String?
+        if op == .delete || record == nil {
+            payloadStr = nil
+        } else {
+            let data = try Self.payloadEncoder.encode(record)
+            payloadStr = String(data: data, encoding: .utf8)
+        }
+        try Self.enqueue(db, tableName: tableName, rowId: rowId, op: op, payload: payloadStr)
+    }
+
+    /// Encoder dedicado pra payload de sync_queue. Não muda o
+    /// keyEncodingStrategy — modelos definem CodingKeys snake_case
+    /// explicitamente, então o JSON já sai no shape do Postgres.
+    private static let payloadEncoder: JSONEncoder = {
+        let e = JSONEncoder()
+        e.outputFormatting = [.sortedKeys]
+        return e
+    }()
 }

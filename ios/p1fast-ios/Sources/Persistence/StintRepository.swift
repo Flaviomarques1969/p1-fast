@@ -133,7 +133,7 @@ final class StintRepository: ObservableObject {
         let now = DB.nowMs()
         let objetivoComposto = composeObjetivo(tipo: objetivoTipo, licao: licaoFocada)
         try await queue.write { db in
-            try Sessao(
+            let sessao = Sessao(
                 id: stintId,
                 timeId: teamId,
                 eventoId: eventoId,
@@ -148,7 +148,9 @@ final class StintRepository: ObservableObject {
                 createdAt: now,
                 updatedAt: now,
                 syncedAt: nil
-            ).insert(db)
+            )
+            try sessao.insert(db)
+            try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: stintId, op: .insert, record: sessao)
         }
         return stintId
     }
@@ -194,7 +196,7 @@ final class StintRepository: ObservableObject {
                 let tempoMs = base + jitter
                 let voltaId = UUID().uuidString
                 let numero = i + 1
-                try Volta(
+                let volta = Volta(
                     id: voltaId,
                     timeId: teamId,
                     sessaoId: stintId,
@@ -204,7 +206,9 @@ final class StintRepository: ObservableObject {
                     valida: true,
                     motivoInvalidacao: nil,
                     inicioAt: nil
-                ).insert(db)
+                )
+                try volta.insert(db)
+                try SyncQueue.enqueueRecord(db, tableName: "voltas", rowId: voltaId, op: .insert, record: volta)
                 voltaIdByNumero[numero] = voltaId
             }
 
@@ -219,12 +223,14 @@ final class StintRepository: ObservableObject {
             for ev in segmentEvents {
                 guard let lapNumero = ev.lapNumero,
                       let voltaId = voltaIdByNumero[lapNumero] else { continue }
-                try SegmentExecutionMapper.fromEvent(
+                let segExec = SegmentExecutionMapper.fromEvent(
                     ev,
                     timeId: teamId,
                     sessaoId: stintId,
                     voltaId: voltaId
-                ).insert(db)
+                )
+                try segExec.insert(db)
+                try SyncQueue.enqueueRecord(db, tableName: "segment_executions", rowId: segExec.id, op: .insert, record: segExec)
             }
 
             let pid = sessao.pneuId
@@ -233,6 +239,7 @@ final class StintRepository: ObservableObject {
             sessao.updatedAt = now
             sessao.syncedAt = nil
             try sessao.update(db)
+            try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: stintId, op: .update, record: sessao)
             return (pid, planejadas)
         }
 
@@ -310,6 +317,7 @@ final class StintRepository: ObservableObject {
             sessao.updatedAt = DB.nowMs()
             sessao.syncedAt = nil
             try sessao.update(db)
+            try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: sessao.id, op: .update, record: sessao)
         }
     }
 
@@ -331,6 +339,7 @@ final class StintRepository: ObservableObject {
             sessao.updatedAt = now
             sessao.syncedAt = nil
             try sessao.update(db)
+            try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: sessao.id, op: .update, record: sessao)
         }
     }
 
@@ -346,6 +355,7 @@ final class StintRepository: ObservableObject {
             sessao.updatedAt = now
             sessao.syncedAt = nil
             try sessao.update(db)
+            try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: sessao.id, op: .update, record: sessao)
         }
     }
 
@@ -362,6 +372,7 @@ final class StintRepository: ObservableObject {
             pneu.updatedAt = now
             pneu.syncedAt = nil
             try pneu.update(db)
+            try SyncQueue.enqueueRecord(db, tableName: "pneus", rowId: pneu.id, op: .update, record: pneu)
         }
     }
 
