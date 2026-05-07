@@ -239,13 +239,29 @@ private struct ReadyRoot: View {
             }
     }
 
+    /// Closure passada pra `HomeView` montar a `TelemetriaView` do
+    /// atalho dev. Fica em `ContentView`/`ReadyRoot` porque só ele
+    /// tem acesso ao `queue` GRDB e ao `TrackRepository` (Home não
+    /// recebe nada disso pra preservar o mockup canônico).
+    private func telemetriaBuilder() -> AnyView {
+        AnyView(TelemetriaView(queue: queue, trackBundle: trackRepo.currentTrack()))
+    }
+
     @ViewBuilder
     private var routedView: some View {
         switch AppRoute.fromLaunchArgs {
         case .home:
-            HomeView(state: .filled(HomeData.mockFilled), syncCoordinator: syncCoordinator)
+            HomeView(
+                state: .filled(HomeData.mockFilled),
+                syncCoordinator: syncCoordinator,
+                telemetriaDevView: telemetriaBuilder
+            )
         case .homeEmpty:
-            HomeView(state: .empty, syncCoordinator: syncCoordinator)
+            HomeView(
+                state: .empty,
+                syncCoordinator: syncCoordinator,
+                telemetriaDevView: telemetriaBuilder
+            )
         case .showcase:
             ThemeShowcaseView()
         case .garagem:
