@@ -5,7 +5,8 @@
 // e EventoRepository: thin layer acima do GRDB. Sincronização com
 // Supabase fica pro Sprint 1A.6 (drainer).
 //
-// Time-tenancy: usa o mesmo `local-default-team` dos outros repos.
+// MS-10 C.3: time_id vem de TeamContext.currentTeamId. Sem login,
+// reload retorna lista vazia, mutações lançam erro orientador.
 // Bootstrap idempotente — pode ser chamado em paralelo.
 //
 // Seed canônico: 2 pilotos canônicos (Flavio + Bruno) com IDs
@@ -24,9 +25,6 @@ import P1FastCore
 
 @MainActor
 final class PilotoRepository: ObservableObject {
-    /// Mesmo ID dos outros repos (single-tenant até 1A.6).
-    static let localTimeId = "local-default-team"
-
     /// IDs estáveis dos pilotos seedados — pareiam com
     /// `EventoMockSummary.canonicos`. StintRepository expõe aliases
     /// que apontam pra estes constantes.
@@ -56,9 +54,13 @@ final class PilotoRepository: ObservableObject {
     /// Recarrega a lista a partir do GRDB. Ordenado por nome
     /// (mockup-piloto-lista mostra alfabeticamente).
     func reload() async throws {
+        guard let teamId = TeamContext.currentTeamId else {
+            self.pilotos = []
+            return
+        }
         let rows = try await queue.read { db in
             try Piloto
-                .filter(Column("time_id") == Self.localTimeId)
+                .filter(Column("time_id") == teamId)
                 .order(Column("nome").asc)
                 .fetchAll(db)
         }
@@ -75,12 +77,15 @@ final class PilotoRepository: ObservableObject {
         pesoKg: Double? = nil,
         nascimento: Int64? = nil
     ) async throws -> String {
+        guard let teamId = TeamContext.currentTeamId else {
+            throw NSError(domain: "PilotoRepository", code: -1, userInfo: [NSLocalizedDescriptionKey: "Sem equipe associada — faça login antes de cadastrar pilotos."])
+        }
         let pilotoId = UUID().uuidString
         let now = DB.nowMs()
         try await queue.write { db in
             try Piloto(
                 id: pilotoId,
-                timeId: Self.localTimeId,
+                timeId: teamId,
                 nome: nome,
                 userId: nil,
                 alturaCm: alturaCm,
@@ -119,26 +124,28 @@ final class PilotoRepository: ObservableObject {
     // MARK: - Internas
 
     private func ensureLocalTime() async throws {
+        guard let teamId = TeamContext.currentTeamId else { return }
         try await queue.write { db in
-            let exists = try Time.fetchOne(db, key: Self.localTimeId) != nil
+            let exists = try Time.fetchOne(db, key: teamId) != nil
             guard !exists else { return }
             try Time(
-                id: Self.localTimeId,
-                nome: "Time local",
+                id: teamId,
+                nome: "Equipe pessoal",
                 criadoPor: nil
             ).insert(db)
         }
     }
 
     /// Insere os 2 pilotos canônicos (Flavio + Bruno) se a tabela
-    /// `pilotos` estiver vazia. Idempotente — segura para re-execução.
+    /// `pilotos` estiver vazia para o time atual. Idempotente.
     private func seedCanonicalIfEmpty() async throws {
+        guard let teamId = TeamContext.currentTeamId else { return }
         try await queue.write { db in
             let total = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM pilotos WHERE time_id = ?",
-                                          arguments: [Self.localTimeId]) ?? 0
+                                          arguments: [teamId]) ?? 0
             guard total == 0 else { return }
-            try Piloto(id: Self.pilotoFlavioId, timeId: Self.localTimeId, nome: "Flavio Marx").insert(db)
-            try Piloto(id: Self.pilotoBrunoId, timeId: Self.localTimeId, nome: "Bruno Marx").insert(db)
+            try Piloto(id: Self.pilotoFlavioId, timeId: teamId, nome: "Flavio Marx").insert(db)
+            try Piloto(id: Self.pilotoBrunoId, timeId: teamId, nome: "Bruno Marx").insert(db)
         }
     }
 }

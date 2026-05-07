@@ -9,7 +9,8 @@
 // seed seria ruído (diferente de combustíveis/pilotos, que fazem
 // sentido pré-popular). Bootstrap só garante o time local + hidrata.
 //
-// Sincronização com Supabase fica pro Sprint 1A.6 (drainer).
+// MS-10 C.3: time_id vem de TeamContext.currentTeamId. Sem login,
+// loadAll deixa o map vazio.
 
 import Foundation
 import GRDB
@@ -17,9 +18,6 @@ import P1FastCore
 
 @MainActor
 final class PneuRepository: ObservableObject {
-    /// Mesmo ID dos outros repos (single-tenant até 1A.6).
-    static let localTimeId = "local-default-team"
-
     @Published private(set) var pneusByCarroId: [String: [Pneu]] = [:]
 
     private let queue: DatabaseQueue
@@ -50,12 +48,16 @@ final class PneuRepository: ObservableObject {
         }
     }
 
-    /// Recarrega todos os pneus do time local e reconstrói o map por carro.
+    /// Recarrega todos os pneus do time atual e reconstrói o map por carro.
     func loadAll() async {
+        guard let teamId = TeamContext.currentTeamId else {
+            self.pneusByCarroId = [:]
+            return
+        }
         do {
             let rows = try await queue.read { db in
                 try Pneu
-                    .filter(Column("time_id") == Self.localTimeId)
+                    .filter(Column("time_id") == teamId)
                     .order(Column("created_at").asc)
                     .fetchAll(db)
             }
@@ -86,12 +88,13 @@ final class PneuRepository: ObservableObject {
     }
 
     private func ensureLocalTime() async throws {
+        guard let teamId = TeamContext.currentTeamId else { return }
         try await queue.write { db in
-            let exists = try Time.fetchOne(db, key: Self.localTimeId) != nil
+            let exists = try Time.fetchOne(db, key: teamId) != nil
             guard !exists else { return }
             try Time(
-                id: Self.localTimeId,
-                nome: "Time local",
+                id: teamId,
+                nome: "Equipe pessoal",
                 criadoPor: nil
             ).insert(db)
         }

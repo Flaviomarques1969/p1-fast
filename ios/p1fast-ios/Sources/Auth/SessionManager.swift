@@ -15,11 +15,10 @@
 //     UI mostra splash (não login flicker).
 //
 // Sprint B (#127): JWT do user vai no Authorization do transport.
-// Sprint C.2 (esta): após login OK, chama RPC `ensure_personal_team`
+// Sprint C.2 (#130): após login OK, chama RPC `ensure_personal_team`
 // e cacheia o time_id retornado em UserDefaults (key
-// `p1fast.currentTeamId`). Repos vão consumir esse `currentTeamId`
-// na Sprint C.3 — por enquanto seguem usando o constante
-// `Configuration.localTimeId`.
+// `TeamContext.storageKey`). Sprint C.3 fez os repos lerem via
+// `TeamContext.currentTeamId` — constante hardcoded foi removida.
 
 import Foundation
 import Supabase
@@ -43,11 +42,10 @@ final class SessionManager: ObservableObject {
     @Published private(set) var currentTeamId: String?
 
     private let client: SupabaseClient?
-    private let teamIdStorageKey = "p1fast.currentTeamId"
 
     init(client: SupabaseClient? = SupabaseManager.shared) {
         self.client = client
-        self.currentTeamId = UserDefaults.standard.string(forKey: teamIdStorageKey)
+        self.currentTeamId = UserDefaults.standard.string(forKey: TeamContext.storageKey)
     }
 
     /// `true` quando há session válida. Atalho pra @ViewBuilder.
@@ -122,7 +120,7 @@ final class SessionManager: ObservableObject {
         state = .unauthenticated
         lastError = nil
         currentTeamId = nil
-        UserDefaults.standard.removeObject(forKey: teamIdStorageKey)
+        UserDefaults.standard.removeObject(forKey: TeamContext.storageKey)
     }
 
     /// Token atual pra Sprint B usar no Authorization header. nil
@@ -158,7 +156,7 @@ final class SessionManager: ObservableObject {
             )
             guard !teamId.isEmpty else { return }
             currentTeamId = teamId
-            UserDefaults.standard.set(teamId, forKey: teamIdStorageKey)
+            UserDefaults.standard.set(teamId, forKey: TeamContext.storageKey)
         } catch {
             // Não-fatal. Mantém último valor cacheado.
         }

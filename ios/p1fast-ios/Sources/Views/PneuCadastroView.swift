@@ -132,7 +132,7 @@ struct PneuCadastroView: View {
             }
             return Pneu(
                 id: UUID().uuidString,
-                timeId: PneuRepository.localTimeId,
+                timeId: TeamContext.currentTeamId ?? "",
                 carroId: carroId,
                 marca: trimmedMarca,
                 modelo: nil,

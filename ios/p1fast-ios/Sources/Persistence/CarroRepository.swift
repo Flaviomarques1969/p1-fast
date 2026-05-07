@@ -6,9 +6,11 @@
 // vive só no SQLite do device.
 //
 // Time-tenancy: schema requer `time_id` em todo carro/configuracao.
-// `LocalTimeBootstrap.ensureLocalTime()` garante que existe um time
-// "local" antes de qualquer CRUD — ID estável `local-default-team`,
-// criado na primeira abertura do app.
+// MS-10 C.3: time_id vem de `TeamContext.currentTeamId` (populado
+// pelo SessionManager após login + RPC ensure_personal_team).
+// Quando nil (sem login), reload retorna lista vazia e mutações
+// viram no-op. `ensureLocalTime` cria o registro local em `times`
+// pra atender a FK na primeira escrita.
 //
 // Thread-safety: GRDB DatabaseQueue serializa I/O. As funções `read*`
 // rodam async e não bloqueiam o UI thread.
@@ -19,10 +21,6 @@ import P1FastCore
 
 @MainActor
 final class CarroRepository: ObservableObject {
-    /// ID estável do time local (single-tenant até Sprint 1A.6 trocar
-    /// pelo time real do usuário pós-login no Supabase).
-    static let localTimeId = "local-default-team"
-
     @Published private(set) var carros: [Carro] = []
     @Published private(set) var stintsPorCarro: [String: Int] = [:]
 
@@ -45,9 +43,14 @@ final class CarroRepository: ObservableObject {
     }
 
     func reload() async throws {
+        guard let teamId = TeamContext.currentTeamId else {
+            self.carros = []
+            self.stintsPorCarro = [:]
+            return
+        }
         let rows = try await queue.read { db in
             try Carro
-                .filter(Column("time_id") == Self.localTimeId)
+                .filter(Column("time_id") == teamId)
                 .order(Column("created_at").desc)
                 .fetchAll(db)
         }
@@ -71,13 +74,16 @@ final class CarroRepository: ObservableObject {
     /// setup base). Retorna o ID gerado.
     @discardableResult
     func create(apelido: String, modelo: String?, categoria: String?, cor: String?) async throws -> String {
+        guard let teamId = TeamContext.currentTeamId else {
+            throw NSError(domain: "CarroRepository", code: -1, userInfo: [NSLocalizedDescriptionKey: "Sem equipe associada — faça login antes de cadastrar carros."])
+        }
         let carroId = UUID().uuidString
         let configId = UUID().uuidString
         let now = DB.nowMs()
         try await queue.write { db in
             try Carro(
                 id: carroId,
-                timeId: Self.localTimeId,
+                timeId: teamId,
                 apelido: apelido,
                 modelo: modelo,
                 categoria: categoria,
@@ -89,7 +95,7 @@ final class CarroRepository: ObservableObject {
             ).insert(db)
             try Configuracao(
                 id: configId,
-                timeId: Self.localTimeId,
+                timeId: teamId,
                 carroId: carroId,
                 nome: "Setup base",
                 dataAplicacao: now,
@@ -133,6 +139,9 @@ final class CarroRepository: ObservableObject {
 
     /// Persiste o JSON de overrides na Configuracao "Setup base".
     func saveOverrides(carroId: String, overridesJSON: String) async throws {
+        guard let teamId = TeamContext.currentTeamId else {
+            throw NSError(domain: "CarroRepository", code: -1, userInfo: [NSLocalizedDescriptionKey: "Sem equipe associada — faça login antes de salvar."])
+        }
         try await queue.write { db in
             let row = try Configuracao
                 .filter(Column("carro_id") == carroId)
@@ -146,7 +155,7 @@ final class CarroRepository: ObservableObject {
             } else {
                 try Configuracao(
                     id: UUID().uuidString,
-                    timeId: Self.localTimeId,
+                    timeId: teamId,
                     carroId: carroId,
                     nome: "Setup base",
                     dataAplicacao: DB.nowMs(),
@@ -158,12 +167,13 @@ final class CarroRepository: ObservableObject {
     }
 
     private func ensureLocalTime() async throws {
+        guard let teamId = TeamContext.currentTeamId else { return }
         try await queue.write { db in
-            let exists = try Time.fetchOne(db, key: Self.localTimeId) != nil
+            let exists = try Time.fetchOne(db, key: teamId) != nil
             guard !exists else { return }
             try Time(
-                id: Self.localTimeId,
-                nome: "Time local",
+                id: teamId,
+                nome: "Equipe pessoal",
                 criadoPor: nil
             ).insert(db)
         }

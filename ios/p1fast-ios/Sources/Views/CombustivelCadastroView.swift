@@ -223,7 +223,7 @@ private struct FormTextArea: View {
     let repo = CombustivelRepository(queue: queue)
     let mock = Combustivel(
         id: "preview-combustivel",
-        timeId: CombustivelRepository.localTimeId,
+        timeId: "preview-team",
         nome: "Etanol comum",
         tipo: "Posto Shell BR-040"
     )

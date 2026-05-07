@@ -62,9 +62,13 @@ final class StintCaptureCoordinator: ObservableObject {
     private var lapCancel: (() -> Void)?
     private var segEndCancel: (() -> Void)?
 
-    init(queue: DatabaseQueue, timeId: String = "local-default-team") {
+    init(queue: DatabaseQueue, timeId: String? = nil) {
         self.queue = queue
-        self.timeId = timeId
+        // MS-10 C.3: caller pode passar timeId explícito; default puxa
+        // do TeamContext (alimentado pelo SessionManager). Vazio quando
+        // não há login — captura vai falhar no FK do banco, comportamento
+        // intencional pra forçar debug rápido.
+        self.timeId = timeId ?? TeamContext.currentTeamId ?? ""
     }
 
     // MARK: - Controle

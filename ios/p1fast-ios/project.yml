@@ -82,6 +82,7 @@ targets:
         DAILY_API_KEY: $(DAILY_API_KEY)
         # MS-2.1 — permissões pra captura ao vivo (CoreMotion + GPS).
         NSLocationWhenInUseUsageDescription: P1 Fast usa GPS pra gravar a telemetria do stint enquanto você pilota.
+        NSLocationAlwaysAndWhenInUseUsageDescription: Se a tela apagar ou outro app tomar foco durante o stint, P1 Fast continua gravando o GPS pra não perder voltas. O acelerômetro pausa em background — limitação do iOS — então mantenha a tela aberta sempre que possível.
         NSMotionUsageDescription: P1 Fast usa o acelerômetro do iPhone pra medir aceleração lateral, longitudinal e curvas durante o stint.
         # MS-2.2 — GPS continua em background. Wake lock
         # (isIdleTimerDisabled) é controlado em runtime pelo recorder.

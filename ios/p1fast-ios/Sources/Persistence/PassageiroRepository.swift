@@ -5,9 +5,8 @@
 // (mesmo time-tenant, mesma estrutura). Schema canônico v1 só
 // guarda `nome` — altura/peso do mockup ficam pra próxima migração.
 //
-// Sem seed canônico — mockup-passageiro-lista mostra "Bruno Marx"
-// e "Alain Mesquita" mas isso é placeholder ilustrativo. App real
-// começa com lista vazia (estado canônico do mockup).
+// MS-10 C.3: time_id vem de TeamContext.currentTeamId. Sem login,
+// reload retorna lista vazia, mutações lançam erro orientador.
 
 import Foundation
 import GRDB
@@ -15,9 +14,6 @@ import P1FastCore
 
 @MainActor
 final class PassageiroRepository: ObservableObject {
-    /// Mesmo ID dos outros repos (single-tenant até 1A.6).
-    static let localTimeId = "local-default-team"
-
     @Published private(set) var passageiros: [Passageiro] = []
 
     private let queue: DatabaseQueue
@@ -38,9 +34,13 @@ final class PassageiroRepository: ObservableObject {
 
     /// Recarrega a lista a partir do GRDB. Ordenado por nome.
     func reload() async throws {
+        guard let teamId = TeamContext.currentTeamId else {
+            self.passageiros = []
+            return
+        }
         let rows = try await queue.read { db in
             try Passageiro
-                .filter(Column("time_id") == Self.localTimeId)
+                .filter(Column("time_id") == teamId)
                 .order(Column("nome").asc)
                 .fetchAll(db)
         }
@@ -57,12 +57,15 @@ final class PassageiroRepository: ObservableObject {
         pesoKg: Double? = nil,
         nascimento: Int64? = nil
     ) async throws -> String {
+        guard let teamId = TeamContext.currentTeamId else {
+            throw NSError(domain: "PassageiroRepository", code: -1, userInfo: [NSLocalizedDescriptionKey: "Sem equipe associada — faça login antes de cadastrar passageiros."])
+        }
         let passageiroId = UUID().uuidString
         let now = DB.nowMs()
         try await queue.write { db in
             try Passageiro(
                 id: passageiroId,
-                timeId: Self.localTimeId,
+                timeId: teamId,
                 nome: nome,
                 alturaCm: alturaCm,
                 pesoKg: pesoKg,
@@ -100,12 +103,13 @@ final class PassageiroRepository: ObservableObject {
     // MARK: - Internas
 
     private func ensureLocalTime() async throws {
+        guard let teamId = TeamContext.currentTeamId else { return }
         try await queue.write { db in
-            let exists = try Time.fetchOne(db, key: Self.localTimeId) != nil
+            let exists = try Time.fetchOne(db, key: teamId) != nil
             guard !exists else { return }
             try Time(
-                id: Self.localTimeId,
-                nome: "Time local",
+                id: teamId,
+                nome: "Equipe pessoal",
                 criadoPor: nil
             ).insert(db)
         }

@@ -6,7 +6,8 @@
 // Supabase fica pro Sprint 1A.6 (sync drainer já implementado em
 // p1fast-core, falta HTTP transport).
 //
-// Time-tenancy: usa o mesmo `local-default-team` dos outros repos.
+// Time-tenancy: time_id vem de TeamContext.currentTeamId (MS-10 C.3).
+// Sem login, listagens vazias e mutações lançam erro orientador.
 // Bootstrap idempotente — pode ser chamado em paralelo.
 //
 // Pilotos: a fonte da verdade é PilotoRepository (Prompt #12). Aqui
@@ -30,9 +31,6 @@ import P1FastCore
 
 @MainActor
 final class StintRepository: ObservableObject {
-    /// Mesmo ID dos outros repos (single-tenant até 1A.6).
-    static let localTimeId = "local-default-team"
-
     @Published private(set) var pilotos: [Piloto] = []
     /// Stints fetchados do GRDB pelo último `loadByEvento(...)`. Reseta
     /// a cada chamada — é "scoped state" do detalhe de um evento.
@@ -59,9 +57,13 @@ final class StintRepository: ObservableObject {
     /// Recarrega só a lista de pilotos. UI do StintModal usa essa
     /// `@Published` array como fonte do picker.
     func reloadPilotos() async throws {
+        guard let teamId = TeamContext.currentTeamId else {
+            self.pilotos = []
+            return
+        }
         let rows = try await queue.read { db in
             try Piloto
-                .filter(Column("time_id") == Self.localTimeId)
+                .filter(Column("time_id") == teamId)
                 .order(Column("nome").asc)
                 .fetchAll(db)
         }
@@ -71,6 +73,10 @@ final class StintRepository: ObservableObject {
     /// Carrega todos os stints (sessoes) de um evento, mais recentes
     /// primeiro, com a contagem de voltas reais embutida em cada item.
     func loadByEvento(eventoId: String) async throws {
+        guard let teamId = TeamContext.currentTeamId else {
+            self.stintsPorEvento = []
+            return
+        }
         let rows: [(Sessao, Int, Int?, String?)] = try await queue.read { db in
             // sessoes + COUNT(voltas) + MIN(tempo_ms valida=1) + piloto.nome
             let sql = """
@@ -86,7 +92,7 @@ final class StintRepository: ObservableObject {
                 GROUP BY s.id
                 ORDER BY s.data_inicio DESC, s.created_at DESC
             """
-            return try Row.fetchAll(db, sql: sql, arguments: [eventoId, Self.localTimeId]).map { row in
+            return try Row.fetchAll(db, sql: sql, arguments: [eventoId, teamId]).map { row in
                 let sessao = Sessao(
                     id: row["id"],
                     timeId: row["time_id"],
@@ -120,13 +126,16 @@ final class StintRepository: ObservableObject {
     @discardableResult
     func create(eventoId: String, pilotoId: String, objetivoTipo: String,
                 licaoFocada: String, voltasPlanejadas: Int) async throws -> String {
+        guard let teamId = TeamContext.currentTeamId else {
+            throw NSError(domain: "StintRepository", code: -1, userInfo: [NSLocalizedDescriptionKey: "Sem equipe associada — faça login antes de criar stints."])
+        }
         let stintId = UUID().uuidString
         let now = DB.nowMs()
         let objetivoComposto = composeObjetivo(tipo: objetivoTipo, licao: licaoFocada)
         try await queue.write { db in
             try Sessao(
                 id: stintId,
-                timeId: Self.localTimeId,
+                timeId: teamId,
                 eventoId: eventoId,
                 carroId: nil,
                 pilotoId: pilotoId,
@@ -162,6 +171,9 @@ final class StintRepository: ObservableObject {
         mediaVoltaMs: Int = 103_500,
         segmentEvents: [DetectorSegmentEndEvent] = []
     ) async throws -> Stint {
+        guard let teamId = TeamContext.currentTeamId else {
+            throw NSError(domain: "StintRepository", code: -1, userInfo: [NSLocalizedDescriptionKey: "Sem equipe associada — faça login antes de finalizar stints."])
+        }
         let now = DB.nowMs()
         // Devolve (pneu_id, qtVoltas) pra incrementar ciclos do pneu APÓS o
         // commit da escrita — incrementarCiclos abre transação própria.
@@ -184,7 +196,7 @@ final class StintRepository: ObservableObject {
                 let numero = i + 1
                 try Volta(
                     id: voltaId,
-                    timeId: Self.localTimeId,
+                    timeId: teamId,
                     sessaoId: stintId,
                     numero: numero,
                     tempoMs: tempoMs,
@@ -209,7 +221,7 @@ final class StintRepository: ObservableObject {
                       let voltaId = voltaIdByNumero[lapNumero] else { continue }
                 try SegmentExecutionMapper.fromEvent(
                     ev,
-                    timeId: Self.localTimeId,
+                    timeId: teamId,
                     sessaoId: stintId,
                     voltaId: voltaId
                 ).insert(db)
@@ -356,12 +368,13 @@ final class StintRepository: ObservableObject {
     // MARK: - Internas
 
     private func ensureLocalTime() async throws {
+        guard let teamId = TeamContext.currentTeamId else { return }
         try await queue.write { db in
-            let exists = try Time.fetchOne(db, key: Self.localTimeId) != nil
+            let exists = try Time.fetchOne(db, key: teamId) != nil
             guard !exists else { return }
             try Time(
-                id: Self.localTimeId,
-                nome: "Time local",
+                id: teamId,
+                nome: "Equipe pessoal",
                 criadoPor: nil
             ).insert(db)
         }
