@@ -146,12 +146,17 @@ public enum SyncDrainer {
         }
 
         // 2. Converte pra SyncRequestRow (decoda payload JSON pra dict).
+        // Sempre envia row_id (mesmo em insert) — Edge Function ecoa no
+        // `rejected.row_id`, que o drainer usa pra associar item local +
+        // incrementar attempts. Sem isso, rejected de inserts vinha com
+        // row_id=null e o guard abaixo pulava silenciosamente, deixando
+        // a fila travada em attempts=0 indefinidamente.
         let rows: [SyncRequestRow] = pendentes.map { item in
             let payloadDict = decodePayload(item.payload)
             return SyncRequestRow(
                 table_name: item.tableName,
                 op: item.op.rawValue,
-                row_id: item.op == .insert ? nil : item.rowId,
+                row_id: item.rowId,
                 payload: item.op == .delete ? nil : payloadDict,
                 // Pra LWW: client_updated_at = quando a row foi enfileirada localmente.
                 // Em ms epoch (compatível com server.updated_at que vai ser ms também).
@@ -179,9 +184,19 @@ public enum SyncDrainer {
             }
 
             for rej in result.rejected {
-                guard let row_id = rej.row_id,
-                      let item = pendentes.first(where: { $0.rowId == row_id }),
-                      let id = item.id else { continue }
+                // Defensivo: row_id é obrigatório pós-fix (cliente sempre
+                // envia), mas se vier null por algum motivo (servidor
+                // legacy, rejeição de validação onde a row mal foi parsed),
+                // ainda incrementamos attempts na primeira pendente da
+                // mesma tabela ainda não processada — evita fila travada
+                // em attempts=0 ad infinitum.
+                let item: SyncQueueItem?
+                if let row_id = rej.row_id {
+                    item = pendentes.first(where: { $0.rowId == row_id })
+                } else {
+                    item = pendentes.first(where: { $0.tableName == rej.table_name })
+                }
+                guard let item, let id = item.id else { continue }
                 try SyncQueue.incrementAttempts(db, id: id)
                 rejectedCount += 1
                 // Verifica se virou dead-letter (próxima tentativa atingiria maxAttempts)
