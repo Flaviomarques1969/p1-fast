@@ -8,18 +8,20 @@ CELTA_PATHS = Path("/tmp/celta_vector_paths.txt")
 OUT = ROOT / "_design-reference/celta-cockpit-D.html"
 
 W, H = 520, 460
-CAR_X, CAR_Y, CAR_W, CAR_H = 170, 110, 180, 260
+CAR_X, CAR_Y, CAR_W, CAR_H = 170, 60, 180, 260
 CAR_CX = CAR_X + CAR_W // 2
 
 # Wheel dots — at the actual wheel positions on a top-down Celta.
+# The car is oriented FRONT=DOWN (engine bay at bottom of image, since
+# we read the image from top to bottom and the front of an FWD is forward).
 DOTS = {
     "FL": (CAR_X +  20, CAR_Y +  72),
     "FR": (CAR_X + 160, CAR_Y +  72),
     "RL": (CAR_X +  20, CAR_Y + 200),
     "RR": (CAR_X + 160, CAR_Y + 200),
 }
-# Câmbio = transaxle integrated with engine, slightly off-center on FWD.
-GBOX_DOT = (CAR_X + CAR_W // 2 + 16, CAR_Y + 50)
+# Câmbio = transaxle integrated with engine on the FRONT (bottom) of car.
+GBOX_DOT = (CAR_X + CAR_W // 2 - 18, CAR_Y + 230)
 
 # Callouts hug the car edges. Left callouts are RIGHT-aligned (text grows
 # leftward, never enters car); right callouts LEFT-aligned (text grows
@@ -30,7 +32,7 @@ CALLOUT = {
     "RL": (CAR_X - 14,         CAR_Y + 190),
     "RR": (CAR_X + CAR_W + 14, CAR_Y + 190),
 }
-GBOX_LABEL = (CAR_X + CAR_W + 14, CAR_Y +  36)
+GBOX_LABEL = (CAR_X - 14, CAR_Y + 240)
 
 
 def get_paths():
@@ -94,21 +96,30 @@ def main():
     <text y="0" font-size="9" font-weight="500" fill="#5DD18C">TIER 1 · 12Hz · 184ms</text>
     <text y="14" font-size="8" fill="#6E7681">INJEPRO T4000 · BLE</text>
   </g>
-  <g transform="translate(0, 56)" font-family="'JetBrains Mono', ui-monospace, monospace">
-    <g transform="translate({W//2 - 90}, 0)">
-      <text font-family="Inter, sans-serif" font-size="8" font-weight="700" letter-spacing="1.5" fill="#5DD18C">T.MOTOR</text>
-      <text y="16" font-size="14" font-weight="500" fill="#E8EBF0"><tspan id="v-engine-temp">92</tspan><tspan font-size="9" fill="#6E7681" dx="2">°C</tspan></text>
+  <!-- POWERTRAIN CLUSTER abaixo do carro: motor + transaxle são FRONTAIS
+       no Celta (FWD), e a vista top-down tem a frente embaixo. Os 4
+       indicadores ficam abaixo do front bumper, leader curto subindo
+       pra engine bay. -->
+  <g transform="translate(0, {CAR_Y + CAR_H + 32})" font-family="'JetBrains Mono', ui-monospace, monospace">
+    <g transform="translate({W//2 - 138}, 0)">
+      <text font-family="Inter, sans-serif" font-size="8" font-weight="700" letter-spacing="1.6" fill="#5DD18C">T.MOTOR</text>
+      <text y="18" font-size="15" font-weight="500" fill="#E8EBF0" letter-spacing="-0.3"><tspan id="v-engine-temp">92</tspan><tspan font-size="9" fill="#6E7681" dx="2" letter-spacing="0">°C</tspan></text>
     </g>
-    <g transform="translate({W//2}, 0)" text-anchor="middle">
-      <text font-family="Inter, sans-serif" font-size="8" font-weight="700" letter-spacing="1.5" fill="#5DD18C">T.ÓLEO</text>
-      <text y="16" font-size="14" font-weight="500" fill="#E8EBF0"><tspan id="v-oil-temp">108</tspan><tspan font-size="9" fill="#6E7681" dx="2">°C</tspan></text>
+    <g transform="translate({W//2 - 46}, 0)">
+      <text font-family="Inter, sans-serif" font-size="8" font-weight="700" letter-spacing="1.6" fill="#5DD18C">T.ÓLEO</text>
+      <text y="18" font-size="15" font-weight="500" fill="#E8EBF0" letter-spacing="-0.3"><tspan id="v-oil-temp">108</tspan><tspan font-size="9" fill="#6E7681" dx="2" letter-spacing="0">°C</tspan></text>
     </g>
-    <g transform="translate({W//2 + 90}, 0)" text-anchor="end">
-      <text font-family="Inter, sans-serif" font-size="8" font-weight="700" letter-spacing="1.5" fill="#5DD18C">P.ÓLEO</text>
-      <text y="16" font-size="14" font-weight="500" fill="#E8EBF0"><tspan id="v-oil-press">4.2</tspan><tspan font-size="9" fill="#6E7681" dx="2">bar</tspan></text>
+    <g transform="translate({W//2 + 46}, 0)">
+      <text font-family="Inter, sans-serif" font-size="8" font-weight="700" letter-spacing="1.6" fill="#5DD18C">P.ÓLEO</text>
+      <text y="18" font-size="15" font-weight="500" fill="#E8EBF0" letter-spacing="-0.3"><tspan id="v-oil-press">4.2</tspan><tspan font-size="9" fill="#6E7681" dx="2" letter-spacing="0">bar</tspan></text>
+    </g>
+    <g transform="translate({W//2 + 138}, 0)">
+      <text font-family="Inter, sans-serif" font-size="8" font-weight="700" letter-spacing="1.6" fill="#5DD18C" id="lbl-gearbox">T.CÂMBIO</text>
+      <text y="18" font-size="15" font-weight="500" fill="#E8EBF0" letter-spacing="-0.3" id="t-gearbox-temp"><tspan id="v-gearbox-temp">78</tspan><tspan font-size="9" fill="#6E7681" dx="2" letter-spacing="0">°C</tspan></text>
     </g>
   </g>
-  <line x1="{W//2}" y1="78" x2="{CAR_CX}" y2="{CAR_Y + 38}" stroke="#5DD18C" stroke-width="0.6" stroke-opacity="0.4" stroke-linecap="round"/>
+  <!-- leader from cluster up to engine bay (front of car) -->
+  <line x1="{W//2}" y1="{CAR_Y + CAR_H + 22}" x2="{CAR_CX}" y2="{CAR_Y + CAR_H - 18}" stroke="#5DD18C" stroke-width="0.6" stroke-opacity="0.45" stroke-linecap="round"/>
 
   <svg x="{CAR_X}" y="{CAR_Y}" width="{CAR_W}" height="{CAR_H}" viewBox="0 0 2048 2048" preserveAspectRatio="xMidYMid meet">
     {paths}
@@ -119,16 +130,12 @@ def main():
     svg += wheel_block('FR', DOTS['FR'], CALLOUT['FR'], 'right')
     svg += wheel_block('RL', DOTS['RL'], CALLOUT['RL'], 'left')
     svg += wheel_block('RR', DOTS['RR'], CALLOUT['RR'], 'right', alarm=True)
-    svg += f'''  <g>
-    <circle id="halo-gearbox" cx="{dx}" cy="{dy}" r="5" fill="#FFCC1A" fill-opacity="0.25"/>
-    <circle id="dot-gearbox"  cx="{dx}" cy="{dy}" r="2.5" fill="#FFCC1A"/>
-    <line x1="{dx}" y1="{dy}" x2="{lx-2}" y2="{dy}" stroke="#FFCC1A" stroke-width="0.6" stroke-opacity="0.55"/>
-    <line x1="{lx-2}" y1="{dy}" x2="{lx-2}" y2="{ly-12}" stroke="#FFCC1A" stroke-width="0.6" stroke-opacity="0.55"/>
-  </g>
-  <g transform="translate({lx}, {ly})" font-family="'JetBrains Mono', ui-monospace, monospace">
-    <text font-family="Inter, sans-serif" font-size="8" font-weight="700" letter-spacing="1.5" fill="#FFCC1A">T.CÂMBIO</text>
-    <text y="14" font-size="13" font-weight="500" fill="#E8EBF0"><tspan id="v-gearbox-temp">78</tspan><tspan font-size="9" fill="#6E7681" dx="2">°C</tspan></text>
-  </g>
+    # Câmbio agora está integrado ao cluster powertrain (entrada T.CÂMBIO).
+    # Mantemos o ID dot-gearbox/halo-gearbox como elementos invisíveis
+    # ancorados no engine bay, pra JS poder pintar a label do cluster
+    # via mesmo handler.
+    svg += f'''  <circle id="halo-gearbox" cx="{dx}" cy="{dy}" r="0" fill="#5DD18C" fill-opacity="0"/>
+  <circle id="dot-gearbox"  cx="{dx}" cy="{dy}" r="0" fill="#5DD18C"/>
   <line x1="14" y1="{H-50}" x2="{W-14}" y2="{H-50}" stroke="#1F252E" stroke-width="1"/>
   <g transform="translate(14, {H-22})" font-family="'JetBrains Mono', ui-monospace, monospace">
     <text font-family="Inter, sans-serif" font-size="8" font-weight="700" letter-spacing="2" fill="#FFCC1A" y="0">TANQUE</text>
@@ -216,7 +223,7 @@ function tickAll(){
   setText('v-oil-temp',o);setText('d-oil-temp',o+'°C');
   setText('v-oil-press',p.toFixed(1));setText('d-oil-press',p.toFixed(1)+' bar');
   setText('v-gearbox-temp',g);setText('d-gearbox-temp',g+'°C');
-  const gh=COLOR[clsGbox(g)];setFill('dot-gearbox',gh);setFill('halo-gearbox',gh);
+  const gh=COLOR[clsGbox(g)];setFill('lbl-gearbox',gh);setFill('t-gearbox-temp',gh);
   ['FL','FR','RL','RR'].forEach(c=>{
     const psi=parseFloat($('s-tire-'+c+'-psi').value),temp=+$('s-tire-'+c+'-temp').value;
     setText('v-tire-'+c+'-psi',psi.toFixed(1));setText('d-tire-'+c+'-psi',psi.toFixed(1)+' psi');
