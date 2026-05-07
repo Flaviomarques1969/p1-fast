@@ -9,15 +9,19 @@
 //   - POST com headers Supabase (apikey + Authorization Bearer)
 //   - JSON decode do response
 //
-// V1 usa só SUPABASE_ANON_KEY (sem JWT real). RLS no Supabase
-// continua ativo mas com policies que aceitam anon. Sprint
-// posterior troca por sessão Supabase Auth real.
+// MS-10 Sprint B (2026-05-06): Authorization header agora carrega
+// o JWT do user logado (via SupabaseManager.shared.auth.session) em
+// vez da anon key. Quando não há sessão, cai pra anon key — RLS no
+// Supabase recusa o que precisa ser autenticado. Em 401, refresh
+// uma vez e tenta de novo. apikey continua sempre com anon key
+// (Supabase exige).
 //
 // Erros HTTP (não-2xx) viram TransportError pra drainer reagir
 // com backoff. Network errors propagam direto (drainer trata).
 
 import Foundation
 import P1FastCore
+import Supabase
 
 public enum TransportError: Error, LocalizedError {
     case notConfigured
@@ -71,19 +75,12 @@ enum SupabaseHTTP {
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue(Configuration.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        req.setValue("Bearer \(Configuration.supabaseAnonKey)", forHTTPHeaderField: "Authorization")
 
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         req.httpBody = try encoder.encode(body)
 
-        let (data, response) = try syncDataTask(request: req)
-
-        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-            let bodyStr = String(data: data, encoding: .utf8)
-            throw TransportError.httpError(status: http.statusCode, body: bodyStr)
-        }
+        let data = try sendWithAuth(request: req)
 
         guard !data.isEmpty else { throw TransportError.noData }
 
@@ -112,19 +109,81 @@ enum SupabaseHTTP {
         var req = URLRequest(url: url)
         req.httpMethod = "GET"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue(Configuration.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        req.setValue("Bearer \(Configuration.supabaseAnonKey)", forHTTPHeaderField: "Authorization")
 
-        let (data, response) = try syncDataTask(request: req)
+        let data = try sendWithAuth(request: req)
 
-        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-            let bodyStr = String(data: data, encoding: .utf8)
-            throw TransportError.httpError(status: http.statusCode, body: bodyStr)
-        }
         guard !data.isEmpty else { throw TransportError.noData }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(Resp.self, from: data)
+    }
+
+    /// Anexa apikey + Bearer (JWT do user, ou anon key como fallback) e
+    /// dispara o request. Em 401 com sessão de user, força refresh do
+    /// token e tenta uma única vez de novo. Em qualquer outro erro HTTP,
+    /// devolve TransportError.httpError.
+    private static func sendWithAuth(request: URLRequest) throws -> Data {
+        var req = request
+        let initialToken = currentAccessToken()
+        applyAuthHeaders(to: &req, bearerToken: initialToken)
+
+        var (data, response) = try syncDataTask(request: req)
+        var http = response as? HTTPURLResponse
+
+        if let h = http, h.statusCode == 401, initialToken != nil {
+            // JWT pode ter expirado entre a leitura da sessão e a
+            // entrega no servidor — força refresh e retry uma vez.
+            forceRefreshSession()
+            let refreshed = currentAccessToken()
+            applyAuthHeaders(to: &req, bearerToken: refreshed)
+            (data, response) = try syncDataTask(request: req)
+            http = response as? HTTPURLResponse
+        }
+
+        if let h = http, !(200...299).contains(h.statusCode) {
+            let bodyStr = String(data: data, encoding: .utf8)
+            throw TransportError.httpError(status: h.statusCode, body: bodyStr)
+        }
+        return data
+    }
+
+    private static func applyAuthHeaders(to req: inout URLRequest, bearerToken: String?) {
+        // apikey é sempre a anon key — Supabase exige em toda chamada,
+        // mesmo autenticada. Authorization carrega o JWT do user quando
+        // existe; cai pra anon key quando offline/sem login.
+        req.setValue(Configuration.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        let bearer = bearerToken ?? Configuration.supabaseAnonKey
+        req.setValue("Bearer \(bearer)", forHTTPHeaderField: "Authorization")
+    }
+
+    /// Lê o access token atual da sessão Supabase de forma síncrona
+    /// (semaphore-bridge sobre o accessor async do SDK). Retorna nil
+    /// quando não há cliente, não há sessão, ou a leitura estourou o
+    /// timeout. SDK auto-refresha ao acessar `.session` se o token
+    /// estiver perto de expirar.
+    private static func currentAccessToken() -> String? {
+        guard let client = SupabaseManager.shared else { return nil }
+        let semaphore = DispatchSemaphore(value: 0)
+        var token: String?
+        Task.detached {
+            token = try? await client.auth.session.accessToken
+            semaphore.signal()
+        }
+        _ = semaphore.wait(timeout: .now() + 5)
+        return token
+    }
+
+    /// Força refresh imediato da sessão. Usado depois de um 401 pra
+    /// pegar token novo antes do retry. Ignora erro — se refresh
+    /// falhar, o retry vai bater 401 de novo e o drainer cuida.
+    private static func forceRefreshSession() {
+        guard let client = SupabaseManager.shared else { return }
+        let semaphore = DispatchSemaphore(value: 0)
+        Task.detached {
+            _ = try? await client.auth.refreshSession()
+            semaphore.signal()
+        }
+        _ = semaphore.wait(timeout: .now() + 5)
     }
 
     /// Adapter dataTask → sync. Aceitável pra drainer que roda em
