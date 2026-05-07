@@ -186,7 +186,6 @@ function buildReferenceJson({ apelido, nomeOficial, viewBox, resampled }) {
       heading: Number(p.heading.toFixed(5)),
       curvature: Number(p.curvature.toFixed(7)),
     })),
-    geradoEm: new Date().toISOString(),
     fonte: 'tools/generate-track-assets.mjs (svgPath GPS-calibrado em src/domain/seed-tracks.js)',
   };
 }

@@ -8772,6 +8772,5 @@
       "curvature": 0.0001473
     }
   ],
-  "geradoEm": "2026-05-07T00:14:43.967Z",
   "fonte": "tools/generate-track-assets.mjs (svgPath GPS-calibrado em src/domain/seed-tracks.js)"
 }
