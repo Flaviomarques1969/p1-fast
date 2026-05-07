@@ -7,32 +7,29 @@ SRC_SVG = ROOT / "assets/command-box/premium-styles/direction-D-live.svg"
 CELTA_PATHS = Path("/tmp/celta_vector_paths.txt")
 OUT = ROOT / "_design-reference/celta-cockpit-D.html"
 
-W, H = 520, 460
-CAR_X, CAR_Y, CAR_W, CAR_H = 170, 60, 180, 260
+W, H = 460, 388
+CAR_X, CAR_Y, CAR_W, CAR_H = 145, 38, 170, 232
 CAR_CX = CAR_X + CAR_W // 2
 
-# Wheel dots — at the actual wheel positions on a top-down Celta.
-# The car is oriented FRONT=DOWN (engine bay at bottom of image, since
-# we read the image from top to bottom and the front of an FWD is forward).
+# Wheel dots — at actual wheel positions on a top-down Celta.
+# Car oriented FRONT=DOWN (engine bay at bottom — FWD layout).
 DOTS = {
-    "FL": (CAR_X +  20, CAR_Y +  72),
-    "FR": (CAR_X + 160, CAR_Y +  72),
-    "RL": (CAR_X +  20, CAR_Y + 200),
-    "RR": (CAR_X + 160, CAR_Y + 200),
+    "FL": (CAR_X +  18, CAR_Y +  64),
+    "FR": (CAR_X + 152, CAR_Y +  64),
+    "RL": (CAR_X +  18, CAR_Y + 178),
+    "RR": (CAR_X + 152, CAR_Y + 178),
 }
-# Câmbio = transaxle integrated with engine on the FRONT (bottom) of car.
-GBOX_DOT = (CAR_X + CAR_W // 2 - 18, CAR_Y + 230)
+GBOX_DOT = (CAR_X + CAR_W // 2 + 18, CAR_Y + 200)
 
-# Callouts hug the car edges. Left callouts are RIGHT-aligned (text grows
-# leftward, never enters car); right callouts LEFT-aligned (text grows
-# rightward, never enters car).
+# Callouts grudados na borda do carro (8px clearance, era 14px).
+# Left = right-aligned, right = left-aligned.
 CALLOUT = {
-    "FL": (CAR_X - 14,         CAR_Y +  62),
-    "FR": (CAR_X + CAR_W + 14, CAR_Y +  62),
-    "RL": (CAR_X - 14,         CAR_Y + 190),
-    "RR": (CAR_X + CAR_W + 14, CAR_Y + 190),
+    "FL": (CAR_X -  8,         CAR_Y +  56),
+    "FR": (CAR_X + CAR_W +  8, CAR_Y +  56),
+    "RL": (CAR_X -  8,         CAR_Y + 170),
+    "RR": (CAR_X + CAR_W +  8, CAR_Y + 170),
 }
-GBOX_LABEL = (CAR_X - 14, CAR_Y + 240)
+GBOX_LABEL = (CAR_X + CAR_W +  8, CAR_Y + 196)
 
 
 def get_paths():
@@ -88,42 +85,53 @@ def main():
     </linearGradient>
   </defs>
   <rect width="{W}" height="{H}" rx="3" ry="3" fill="url(#tile)" stroke="#1F252E" stroke-width="1"/>
-  <g font-family="Inter, -apple-system, sans-serif">
-    <text x="14" y="22" font-size="9" font-weight="700" letter-spacing="2" fill="#6E7681">CARRO · #16 · BRUNO M.</text>
-    <text x="14" y="38" font-size="11" font-weight="500" fill="#E8EBF0">Telemetria sobreposta · top-down</text>
-  </g>
-  <g transform="translate({W-14}, 22)" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, monospace">
-    <text y="0" font-size="9" font-weight="500" fill="#5DD18C">TIER 1 · 12Hz · 184ms</text>
-    <text y="14" font-size="8" fill="#6E7681">INJEPRO T4000 · BLE</text>
-  </g>
-  <!-- POWERTRAIN CLUSTER abaixo do carro: motor + transaxle são FRONTAIS
-       no Celta (FWD), e a vista top-down tem a frente embaixo. Os 4
-       indicadores ficam abaixo do front bumper, leader curto subindo
-       pra engine bay. -->
-  <g transform="translate(0, {CAR_Y + CAR_H + 32})" font-family="'JetBrains Mono', ui-monospace, monospace">
-    <g transform="translate({W//2 - 138}, 0)">
-      <text font-family="Inter, sans-serif" font-size="8" font-weight="700" letter-spacing="1.6" fill="#5DD18C">T.MOTOR</text>
-      <text y="18" font-size="15" font-weight="500" fill="#E8EBF0" letter-spacing="-0.3"><tspan id="v-engine-temp">92</tspan><tspan font-size="9" fill="#6E7681" dx="2" letter-spacing="0">°C</tspan></text>
-    </g>
-    <g transform="translate({W//2 - 46}, 0)">
-      <text font-family="Inter, sans-serif" font-size="8" font-weight="700" letter-spacing="1.6" fill="#5DD18C">T.ÓLEO</text>
-      <text y="18" font-size="15" font-weight="500" fill="#E8EBF0" letter-spacing="-0.3"><tspan id="v-oil-temp">108</tspan><tspan font-size="9" fill="#6E7681" dx="2" letter-spacing="0">°C</tspan></text>
-    </g>
-    <g transform="translate({W//2 + 46}, 0)">
-      <text font-family="Inter, sans-serif" font-size="8" font-weight="700" letter-spacing="1.6" fill="#5DD18C">P.ÓLEO</text>
-      <text y="18" font-size="15" font-weight="500" fill="#E8EBF0" letter-spacing="-0.3"><tspan id="v-oil-press">4.2</tspan><tspan font-size="9" fill="#6E7681" dx="2" letter-spacing="0">bar</tspan></text>
-    </g>
-    <g transform="translate({W//2 + 138}, 0)">
-      <text font-family="Inter, sans-serif" font-size="8" font-weight="700" letter-spacing="1.6" fill="#5DD18C" id="lbl-gearbox">T.CÂMBIO</text>
-      <text y="18" font-size="15" font-weight="500" fill="#E8EBF0" letter-spacing="-0.3" id="t-gearbox-temp"><tspan id="v-gearbox-temp">78</tspan><tspan font-size="9" fill="#6E7681" dx="2" letter-spacing="0">°C</tspan></text>
-    </g>
-  </g>
-  <!-- leader from cluster up to engine bay (front of car) -->
-  <line x1="{W//2}" y1="{CAR_Y + CAR_H + 22}" x2="{CAR_CX}" y2="{CAR_Y + CAR_H - 18}" stroke="#5DD18C" stroke-width="0.6" stroke-opacity="0.45" stroke-linecap="round"/>
 
+  <!-- HEADER: tight, single line de title + status à direita -->
+  <text x="12" y="18" font-family="Inter, -apple-system, sans-serif" font-size="9" font-weight="700" letter-spacing="2" fill="#6E7681">CARRO · #16 · BRUNO M.</text>
+  <text x="12" y="30" font-family="Inter, sans-serif" font-size="10" font-weight="500" fill="#E8EBF0">Telemetria sobreposta</text>
+  <g transform="translate({W-12}, 18)" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, monospace">
+    <text font-size="8" font-weight="500" fill="#5DD18C">TIER 1 · 12Hz · 184ms</text>
+    <text y="12" font-size="7" fill="#6E7681">INJEPRO T4000 · BLE</text>
+  </g>
+
+  <!-- CARRO vector centered -->
   <svg x="{CAR_X}" y="{CAR_Y}" width="{CAR_W}" height="{CAR_H}" viewBox="0 0 2048 2048" preserveAspectRatio="xMidYMid meet">
     {paths}
   </svg>
+
+  <!-- MOTOR cluster (3 metrics) — abaixo do front bumper, lado esquerdo -->
+  <g transform="translate(20, {CAR_Y + CAR_H + 22})" font-family="'JetBrains Mono', ui-monospace, monospace">
+    <text font-family="Inter, sans-serif" font-size="7" font-weight="700" letter-spacing="2" fill="#6E7681">MOTOR</text>
+    <g transform="translate(0, 14)">
+      <text font-family="Inter, sans-serif" font-size="7" font-weight="700" letter-spacing="1.4" fill="#5DD18C">T.MOTOR</text>
+      <text y="14" font-size="13" font-weight="500" fill="#E8EBF0" letter-spacing="-0.3"><tspan id="v-engine-temp">92</tspan><tspan font-size="8" fill="#6E7681" dx="2" letter-spacing="0">°C</tspan></text>
+    </g>
+    <g transform="translate(72, 14)">
+      <text font-family="Inter, sans-serif" font-size="7" font-weight="700" letter-spacing="1.4" fill="#5DD18C">T.ÓLEO</text>
+      <text y="14" font-size="13" font-weight="500" fill="#E8EBF0" letter-spacing="-0.3"><tspan id="v-oil-temp">108</tspan><tspan font-size="8" fill="#6E7681" dx="2" letter-spacing="0">°C</tspan></text>
+    </g>
+    <g transform="translate(144, 14)">
+      <text font-family="Inter, sans-serif" font-size="7" font-weight="700" letter-spacing="1.4" fill="#5DD18C">P.ÓLEO</text>
+      <text y="14" font-size="13" font-weight="500" fill="#E8EBF0" letter-spacing="-0.3"><tspan id="v-oil-press">4.2</tspan><tspan font-size="8" fill="#6E7681" dx="2" letter-spacing="0">bar</tspan></text>
+    </g>
+  </g>
+
+  <!-- divider entre MOTOR e CÂMBIO -->
+  <line x1="234" y1="{CAR_Y + CAR_H + 18}" x2="234" y2="{CAR_Y + CAR_H + 56}" stroke="#1F252E" stroke-width="1"/>
+
+  <!-- CÂMBIO cluster (1 metric) — abaixo, lado direito, separado do motor -->
+  <g transform="translate(252, {CAR_Y + CAR_H + 22})" font-family="'JetBrains Mono', ui-monospace, monospace">
+    <text font-family="Inter, sans-serif" font-size="7" font-weight="700" letter-spacing="2" fill="#6E7681">CÂMBIO</text>
+    <g transform="translate(0, 14)">
+      <text font-family="Inter, sans-serif" font-size="7" font-weight="700" letter-spacing="1.4" fill="#5DD18C" id="lbl-gearbox">T.CÂMBIO</text>
+      <text y="14" font-size="13" font-weight="500" fill="#E8EBF0" letter-spacing="-0.3" id="t-gearbox-temp"><tspan id="v-gearbox-temp">78</tspan><tspan font-size="8" fill="#6E7681" dx="2" letter-spacing="0">°C</tspan></text>
+    </g>
+  </g>
+
+  <!-- leader from MOTOR section up to engine bay -->
+  <line x1="80" y1="{CAR_Y + CAR_H + 14}" x2="{CAR_CX - 6}" y2="{CAR_Y + CAR_H - 16}" stroke="#5DD18C" stroke-width="0.5" stroke-opacity="0.4" stroke-linecap="round"/>
+  <!-- leader from CÂMBIO section up to transaxle (engine side) -->
+  <line x1="280" y1="{CAR_Y + CAR_H + 14}" x2="{CAR_CX + 18}" y2="{CAR_Y + CAR_H - 22}" stroke="#5DD18C" stroke-width="0.5" stroke-opacity="0.4" stroke-linecap="round"/>
 
 '''
     svg += wheel_block('FL', DOTS['FL'], CALLOUT['FL'], 'left')
@@ -134,19 +142,22 @@ def main():
     # Mantemos o ID dot-gearbox/halo-gearbox como elementos invisíveis
     # ancorados no engine bay, pra JS poder pintar a label do cluster
     # via mesmo handler.
-    svg += f'''  <circle id="halo-gearbox" cx="{dx}" cy="{dy}" r="0" fill="#5DD18C" fill-opacity="0"/>
+    svg += f'''  <!-- gearbox dot ancorado na engine bay (invisivel; recolor no cluster CAMBIO) -->
+  <circle id="halo-gearbox" cx="{dx}" cy="{dy}" r="0" fill="#5DD18C" fill-opacity="0"/>
   <circle id="dot-gearbox"  cx="{dx}" cy="{dy}" r="0" fill="#5DD18C"/>
-  <line x1="14" y1="{H-50}" x2="{W-14}" y2="{H-50}" stroke="#1F252E" stroke-width="1"/>
-  <g transform="translate(14, {H-22})" font-family="'JetBrains Mono', ui-monospace, monospace">
-    <text font-family="Inter, sans-serif" font-size="8" font-weight="700" letter-spacing="2" fill="#FFCC1A" y="0">TANQUE</text>
-    <rect x="50" y="-10" width="140" height="12" fill="none" stroke="#2A3140" stroke-width="1"/>
-    <rect x="50" y="-10" width="63" height="12" fill="#FFCC1A" fill-opacity="0.85" id="v-tank-bar"/>
-    <text x="200" y="0" font-size="13" font-weight="500" fill="#E8EBF0"><tspan id="v-tank-pct">45</tspan><tspan font-size="9" fill="#6E7681">%</tspan></text>
-    <text x="234" y="0" font-size="9" fill="#6E7681">~21L · ~12 voltas</text>
+
+  <!-- FOOTER: TANQUE + Δ TEAM BEST -->
+  <line x1="12" y1="{H-32}" x2="{W-12}" y2="{H-32}" stroke="#1F252E" stroke-width="1"/>
+  <g transform="translate(12, {H-12})" font-family="'JetBrains Mono', ui-monospace, monospace">
+    <text font-family="Inter, sans-serif" font-size="7" font-weight="700" letter-spacing="2" fill="#FFCC1A" y="0">TANQUE</text>
+    <rect x="42" y="-9" width="100" height="10" fill="none" stroke="#2A3140" stroke-width="1"/>
+    <rect x="42" y="-9" width="45" height="10" fill="#FFCC1A" fill-opacity="0.85" id="v-tank-bar"/>
+    <text x="150" y="0" font-size="11" font-weight="500" fill="#E8EBF0" letter-spacing="-0.2"><tspan id="v-tank-pct">45</tspan><tspan font-size="8" fill="#6E7681">%</tspan></text>
+    <text x="178" y="0" font-size="8" fill="#6E7681">~21L · ~12 voltas</text>
   </g>
-  <g transform="translate({W-14}, {H-22})" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, monospace">
-    <text font-family="Inter, sans-serif" font-size="8" font-weight="700" letter-spacing="2" fill="#6E7681" y="-12">Δ TEAM BEST</text>
-    <text id="t-delta" y="0" font-size="16" font-weight="600" fill="#FF5A1F">+0.42<tspan font-size="9" fill="#6E7681" dx="3">s</tspan>
+  <g transform="translate({W-12}, {H-12})" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, monospace">
+    <text font-family="Inter, sans-serif" font-size="7" font-weight="700" letter-spacing="2" fill="#6E7681" y="-10">Δ TEAM BEST</text>
+    <text id="t-delta" y="0" font-size="14" font-weight="600" fill="#FF5A1F" letter-spacing="-0.3">+0.42<tspan font-size="8" fill="#6E7681" dx="2">s</tspan>
       <animate attributeName="fill-opacity" values="1;0.6;1" dur="2.4s" repeatCount="indefinite"/>
     </text>
   </g>
