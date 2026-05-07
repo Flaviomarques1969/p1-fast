@@ -1,111 +1,133 @@
 #!/usr/bin/env python3
 """
-Phase C step 1 — gera uma máscara binária PNG por sub-peça visível.
+Phase C step 1 — gera uma máscara binária PNG por objeto VISÍVEL.
 
-A máscara é PNG grayscale do mesmo tamanho da foto (2048×2048):
-  branco (255) = pixel pertence à peça
-  preto  (0)   = pixel não pertence
+REGRA: só mascara o que realmente aparece na foto. Não inventa pneus
+escondidos atrás do bumper, não confunde cinto Sparco com coilover.
 
-Estratégia: aproveita os polígonos já refinados em
-assets/celta_exploded_partmap.svg (Phase B v3.1, pixel-precisos) e
-rasteriza cada um como máscara. Para coilovers (que precisam separar
-"corpo do amortecedor" da "espiral da mola"), divide o polígono ao meio
-na vertical: parte superior = coil (mola), inferior = shock (amortecedor).
+Inventário (auditado contra crops da foto, 2026-05-07):
 
-Hidden parts (FR tire, RL tire, front shocks/coils, gearbox) NÃO recebem
-máscara porque não há pixels visíveis pra repintar. O cockpit/glow pode
-indicá-los por outros meios mais tarde.
+  VISÍVEL (com máscara)
+    tire-RR       pneu traseiro-direito              (1490..1900, 1240..1550)
+    coilover-RR   coilover real atrás do pneu        (1490..1670, 1140..1340)
+    engine        bloco motor + intake + bowtie      (430..870,   1280..1700)
+    body-paint    amarelo (frente + rocker)
+    body-roof     verde (teto + laterais)
+
+  HIDDEN (sem máscara — só visualização ghost se quisermos depois)
+    tire-FL/FR/RL    cobertos por bumper / chassis
+    coilover-RL      lado oposto, oculto
+    front shocks     atrás do motor
+
+  REJEITADOS (eram identificação errada)
+    "spring-RL/RR"   eram cinto Sparco vermelho do banco, não coilover
+    "tire-FL"        polígono pegava grade do bumper, não pneu
+
+Estratégia de máscara: combinação de mask de cor + ROI + post-process.
+Para o pneu traseiro: dark+lowsat dentro de ROI elíptica + dilate. Para
+o coilover real: red mask dentro de ROI estreita + close. Para engine
+e body: igual antes (já estavam corretos).
 """
 from __future__ import annotations
-import re
 from pathlib import Path
-import numpy as np
 import cv2
+import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
-SVG_PATH = ROOT / "assets/celta_exploded_partmap.svg"
+PHOTO = ROOT / "assets/celta_exploded.png"
 OUT_DIR = ROOT / "assets/masks"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
-
 W, H = 2048, 2048
 
 
-def parse_path_d(d):
-    """SVG d="M x y L x y..." -> list of (x, y) ints."""
-    norm = re.sub(r"([MLZmlz])", r" \1 ", d).replace(",", " ")
-    tokens = norm.split()
-    pts, i = [], 0
-    while i < len(tokens):
-        t = tokens[i]
-        if t in ("M", "L", "m", "l"):
-            try:
-                x = float(tokens[i + 1]); y = float(tokens[i + 2])
-                pts.append((int(round(x)), int(round(y))))
-                i += 3
-            except (ValueError, IndexError):
-                i += 1
-        elif t in ("Z", "z"):
-            i += 1
-        else:
-            try:
-                x = float(t); y = float(tokens[i + 1])
-                pts.append((int(round(x)), int(round(y))))
-                i += 2
-            except (ValueError, IndexError):
-                i += 1
-    return pts
+# ---------------- color masks ----------------
+
+def hsv(bgr):
+    return cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
 
 
-def get_polygon(svg_text, part_id):
-    pat = re.compile(rf'<path[^>]*\bid="{re.escape(part_id)}"[^>]*\bd="([^"]+)"')
-    m = pat.search(svg_text)
-    if not m:
-        raise SystemExit(f"polygon {part_id!r} not found in SVG")
-    return parse_path_d(m.group(1))
+def yellow_mask(bgr):
+    return cv2.inRange(hsv(bgr), (15, 110, 110), (38, 255, 255))
 
 
-def rasterize(pts, hull=False):
-    """Filled binary mask 2048x2048 from a polygon. If hull=True, use the
-    convex hull instead — useful for roughly-convex parts (tires) whose
-    color-traced polygon misses lighter sidewall/edge pixels."""
-    mask = np.zeros((H, W), dtype=np.uint8)
-    if not pts:
+def green_mask(bgr):
+    return cv2.inRange(hsv(bgr), (38, 60, 50), (85, 255, 230))
+
+
+def red_mask(bgr):
+    h = hsv(bgr)
+    m1 = cv2.inRange(h, (0, 100, 70), (12, 255, 255))
+    m2 = cv2.inRange(h, (165, 100, 70), (180, 255, 255))
+    return cv2.bitwise_or(m1, m2)
+
+
+def tire_rubber_mask(bgr):
+    h = hsv(bgr)
+    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+    dark = cv2.inRange(gray, 0, 65)
+    low_sat = cv2.inRange(h[:, :, 1], 0, 65)
+    return cv2.bitwise_and(dark, low_sat)
+
+
+def engine_mask(bgr):
+    """Silver intake + dark valve cover, both low saturation."""
+    h = hsv(bgr)
+    bright = cv2.inRange(h[:, :, 2], 105, 255)
+    low_sat = cv2.inRange(h[:, :, 1], 0, 70)
+    silver = cv2.bitwise_and(bright, low_sat)
+    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+    mid = cv2.inRange(gray, 35, 95)
+    return cv2.bitwise_or(silver, cv2.bitwise_and(mid, low_sat))
+
+
+# ---------------- helpers ----------------
+
+def biggest_blob(mask):
+    n, labels, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
+    if n <= 1:
         return mask
-    arr = np.array(pts, dtype=np.int32)
-    if hull:
-        arr = cv2.convexHull(arr).reshape(-1, 2)
-    cv2.fillPoly(mask, [arr], 255)
+    sizes = stats[1:, cv2.CC_STAT_AREA]
+    idx = 1 + int(np.argmax(sizes))
+    out = np.zeros_like(mask)
+    out[labels == idx] = 255
+    return out
+
+
+def fill_holes(mask):
+    """Fill enclosed holes (donut -> solid disk)."""
+    if mask.max() == 0:
+        return mask
+    inv = cv2.bitwise_not(mask)
+    flood = inv.copy()
+    ff = np.zeros((mask.shape[0] + 2, mask.shape[1] + 2), np.uint8)
+    cv2.floodFill(flood, ff, (0, 0), 0)
+    return cv2.bitwise_or(mask, flood)
+
+
+def morph(mask, close=0, open_=0, dilate=0):
+    if close > 0:
+        k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (close, close))
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k)
+    if open_ > 0:
+        k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (open_, open_))
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k)
+    if dilate > 0:
+        k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (dilate, dilate))
+        mask = cv2.dilate(mask, k)
     return mask
 
 
-def dilate(mask, radius):
-    if radius <= 0 or mask.max() == 0:
-        return mask
-    k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (radius * 2 + 1, radius * 2 + 1))
-    return cv2.dilate(mask, k)
-
-
-def split_horizontal(mask, top_frac=0.55, overlap=0.05):
-    """Splits the mask into a top region and bottom region using its bbox.
-    Returns (top_mask, bot_mask). Top covers up to `top_frac` of bbox height,
-    bottom starts at (top_frac - overlap). The 5% overlap blends the seam."""
-    ys, xs = np.where(mask > 0)
-    if len(ys) == 0:
-        return mask.copy(), mask.copy()
-    y0, y1 = int(ys.min()), int(ys.max())
-    h = y1 - y0
-    cut_top = y0 + int(h * top_frac)
-    cut_bot = y0 + int(h * (top_frac - overlap))
-    top = mask.copy(); top[cut_top:, :] = 0
-    bot = mask.copy(); bot[:cut_bot, :] = 0
-    return top, bot
-
-
 def feather(mask, radius=1):
-    """Tight 1-2px Gaussian feather to avoid stair-stepped edges."""
     if radius <= 0 or mask.max() == 0:
         return mask
     return cv2.GaussianBlur(mask, (radius * 2 + 1, radius * 2 + 1), 0)
+
+
+def roi_only(mask, roi):
+    x, y, w, h = roi
+    out = np.zeros_like(mask)
+    out[y:y + h, x:x + w] = mask[y:y + h, x:x + w]
+    return out
 
 
 def write(name, mask):
@@ -116,34 +138,53 @@ def write(name, mask):
     print(f"[ok] {name:14s} -> {out.relative_to(ROOT)}   {n:>7d} px  ({pct:.2f}% canvas)")
 
 
+# ---------------- pipeline ----------------
+
 def main():
-    svg = SVG_PATH.read_text(encoding="utf-8")
+    bgr = cv2.imread(str(PHOTO))
+    if bgr is None:
+        raise SystemExit(f"missing {PHOTO}")
 
-    # Tires are roughly convex; use convex hull + 8px dilate so the mask
-    # covers rubber + edges, not just the dark-pixel trace.
-    for pid in ("tire-FL", "tire-RR"):
-        pts = get_polygon(svg, pid)
-        write(pid, feather(dilate(rasterize(pts, hull=True), 8), 2))
+    # Wipe stale masks (we may have removed parts since last run)
+    for old in OUT_DIR.glob("*.png"):
+        old.unlink()
 
-    # Engine: small dilate to capture intake highlights without bleeding
-    # onto the surrounding chassis frame.
-    write("engine", feather(dilate(rasterize(get_polygon(svg, "engine")), 4), 2))
+    # tire-RR: rubber sidewall + tread, includes hub face. ROI is the
+    # rear-right tire bbox confirmed by photo crop.
+    tm = roi_only(tire_rubber_mask(bgr), (1490, 1240, 410, 320))
+    tm = morph(tm, close=15, open_=5, dilate=8)
+    tm = biggest_blob(tm)
+    tm = fill_holes(tm)
+    write("tire-RR", feather(tm, 2))
 
-    # Body parts: keep tight; they're large and adjacent to each other,
-    # any dilate would bleed across the green/yellow boundary.
-    for pid in ("body-paint", "body-roof"):
-        pts = get_polygon(svg, pid)
-        write(pid, feather(rasterize(pts), 1))
+    # coilover-RR: the real visible rear-right coilover behind the tire.
+    # Red mask within tight ROI; the seat harnesses (also red) are in
+    # different x range so safe.
+    cm = roi_only(red_mask(bgr), (1490, 1140, 200, 220))
+    cm = morph(cm, close=15, open_=3, dilate=4)
+    cm = biggest_blob(cm)
+    write("coilover-RR", feather(cm, 1))
 
-    # Coilover RL/RR split into coil (upper) + shock body (lower).
-    # Small dilate so the mask covers the full cylinder, not just the red
-    # mask trace.
-    for side, src in [("RL", "spring-RL"), ("RR", "spring-RR")]:
-        pts = get_polygon(svg, src)
-        full = dilate(rasterize(pts), 4)
-        coil, shock = split_horizontal(full, top_frac=0.55, overlap=0.05)
-        write(f"coil-{side}",  feather(coil, 1))
-        write(f"shock-{side}", feather(shock, 1))
+    # engine: silver intake + dark block, ROI matches photo crop.
+    em = roi_only(engine_mask(bgr), (430, 1280, 460, 420))
+    em = morph(em, close=11, open_=7, dilate=4)
+    em = biggest_blob(em)
+    em = fill_holes(em)
+    write("engine", feather(em, 1))
+
+    # body-paint: yellow blob (frente + rocker)
+    bp = roi_only(yellow_mask(bgr), (260, 470, 820, 660))
+    bp = morph(bp, close=11, open_=5)
+    bp = biggest_blob(bp)
+    bp = fill_holes(bp)
+    write("body-paint", feather(bp, 1))
+
+    # body-roof: green blob
+    br = roi_only(green_mask(bgr), (820, 90, 800, 1020))
+    br = morph(br, close=11, open_=5)
+    br = biggest_blob(br)
+    br = fill_holes(br)
+    write("body-roof", feather(br, 1))
 
     print(f"\nmasks under {OUT_DIR.relative_to(ROOT)}/")
 

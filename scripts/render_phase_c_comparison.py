@@ -134,17 +134,14 @@ def rule_body(t):
     return (220, 0.25 * dev * 2)
 
 
-# Map part -> (rule_fn, mask_filename)
+# Inventário REAL — só objetos visíveis na foto. Hidden parts tratados
+# em separado via translucidez ghost (Phase B v3 carryover).
 PARTS = {
-    "tire-FL":   (rule_tire,   "tire-FL.png"),
-    "tire-RR":   (rule_tire,   "tire-RR.png"),
-    "shock-RL":  (rule_shock,  "shock-RL.png"),
-    "shock-RR":  (rule_shock,  "shock-RR.png"),
-    "coil-RL":   (rule_coil,   "coil-RL.png"),
-    "coil-RR":   (rule_coil,   "coil-RR.png"),
-    "engine":    (rule_engine, "engine.png"),
-    "body-paint":(rule_body,   "body-paint.png"),
-    "body-roof": (rule_body,   "body-roof.png"),
+    "tire-RR":     (rule_tire,   "tire-RR.png"),
+    "coilover-RR": (rule_shock,  "coilover-RR.png"),  # cilindro inteiro como uma peça só por enquanto
+    "engine":      (rule_engine, "engine.png"),
+    "body-paint":  (rule_body,   "body-paint.png"),
+    "body-roof":   (rule_body,   "body-roof.png"),
 }
 
 
@@ -157,17 +154,16 @@ def merge(a, **upd):
 
 
 SCENARIOS = [
-    ("Janela ideal · foto pura",
-     {p: 0.5 for p in PARTS} | {"shock-RL": None, "shock-RR": None,
-                                "coil-RL": None, "coil-RR": None}),
-    ("Setup normal · amortecedores azuis",
+    ("Janela ideal · foto pura (sem override)",
+     {p: 0.5 for p in PARTS} | {"coilover-RR": None}),
+    ("Setup normal · coilover RR azul",
      neutral_state()),
     ("Pneu RR superaquecendo",
      merge(neutral_state(), **{"tire-RR": 0.92})),
-    ("Mola RL com problema (vermelha)",
-     merge(neutral_state(), **{"coil-RL": 0.90})),
-    ("Amortecedor RR comprometido",
-     merge(neutral_state(), **{"shock-RR": 0.88})),
+    ("Pneu RR muito frio (azul)",
+     merge(neutral_state(), **{"tire-RR": 0.10})),
+    ("Coilover RR alarmando (vermelho)",
+     merge(neutral_state(), **{"coilover-RR": 0.92})),
     ("Motor superaquecendo",
      merge(neutral_state(), engine=0.92)),
 ]
