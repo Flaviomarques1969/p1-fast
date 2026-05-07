@@ -1,0 +1,709 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  COMMAND BOX — DIRECTION A · PIT WALL ATELIER
+  Canvas: 1920×1080  ·  TV 32" via AirPlay  ·  Daily.co PIP top-left
+  Estilo: derivado de assets/pistas/premium-styles/atelier.svg
+  Sensação: relojoaria Patek + sala de troféu. Calma absoluta, hairlines
+  champagne, sem caixinhas, halo radial atrás de cada zona, glow seletivo.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <!-- ─── BACKGROUND ─────────────────────────────────── -->
+    <radialGradient id="bgBase" cx="50%" cy="42%" r="80%">
+      <stop offset="0%"   stop-color="#0E1322"/>
+      <stop offset="55%"  stop-color="#070A14"/>
+      <stop offset="100%" stop-color="#02030A"/>
+    </radialGradient>
+    <radialGradient id="bloomWarm" cx="22%" cy="20%" r="40%">
+      <stop offset="0%"  stop-color="#C9A961" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#C9A961" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bloomCool" cx="80%" cy="80%" r="42%">
+      <stop offset="0%"  stop-color="#3B82F6" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bloomZone" cx="50%" cy="50%" r="60%">
+      <stop offset="0%"  stop-color="#E8C97A" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#E8C97A" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="78%">
+      <stop offset="65%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.85"/>
+    </radialGradient>
+
+    <!-- ─── TRACK & CHROME ─────────────────────────────── -->
+    <radialGradient id="haloGold" cx="50%" cy="50%" r="60%">
+      <stop offset="0%"   stop-color="#E8C97A" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#E8C97A" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="champagne" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#D4AF37"/>
+      <stop offset="50%"  stop-color="#F0DCA0"/>
+      <stop offset="100%" stop-color="#D4AF37"/>
+    </linearGradient>
+    <linearGradient id="champagneV" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#D4AF37"/>
+      <stop offset="50%"  stop-color="#F0DCA0"/>
+      <stop offset="100%" stop-color="#D4AF37"/>
+    </linearGradient>
+    <linearGradient id="asphalt" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#3A3D44"/>
+      <stop offset="50%"  stop-color="#222428"/>
+      <stop offset="100%" stop-color="#15171B"/>
+    </linearGradient>
+    <linearGradient id="runoff" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#3A3328"/>
+      <stop offset="100%" stop-color="#1F1B14"/>
+    </linearGradient>
+
+    <!-- ─── ENGENHARIA: trace térmica (azul → quente) ─── -->
+    <linearGradient id="thermal" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#7DD3FC"/>
+      <stop offset="35%"  stop-color="#86EFAC"/>
+      <stop offset="65%"  stop-color="#FBBF24"/>
+      <stop offset="100%" stop-color="#FF5A4E"/>
+    </linearGradient>
+
+    <!-- ─── MARKERS ─────────────────────────────────────── -->
+    <radialGradient id="liveGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#FF7A1A" stop-opacity="0.95"/>
+      <stop offset="60%"  stop-color="#FF7A1A" stop-opacity="0.30"/>
+      <stop offset="100%" stop-color="#FF7A1A" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="ghostGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#7DD3FC" stop-opacity="0.85"/>
+      <stop offset="60%"  stop-color="#7DD3FC" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#7DD3FC" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="recDot" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"  stop-color="#FF5A4E" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FF5A4E" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- ─── FILTERS ─────────────────────────────────────── -->
+    <filter id="blurLg" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="20"/>
+    </filter>
+    <filter id="blurMd" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+    <filter id="blurSm" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+
+    <!-- ─── TRACK PATH (Brasília — port do atelier) ──── -->
+    <path id="track" d="M 420.20 707.60 C 416.03 707.55, 411.97 707.50, 407.85 707.46 C 403.73 707.42, 399.61 707.37, 395.49 707.33 C 391.37 707.29, 387.26 707.24, 383.14 707.20 C 379.02 707.16, 374.91 707.11, 370.79 707.07 C 366.67 707.03, 362.55 706.98, 358.43 706.94 C 354.31 706.90, 350.20 706.86, 346.08 706.82 C 341.96 706.78, 337.84 706.73, 333.72 706.69 C 329.60 706.65, 325.54 706.60, 321.37 706.56 C 317.20 706.52, 312.87 706.47, 308.70 706.43 C 304.53 706.39, 300.47 706.35, 296.35 706.30 C 292.23 706.25, 288.12 706.21, 284.00 706.14 C 279.88 706.07, 275.76 706.01, 271.65 705.90 C 267.54 705.79, 263.43 705.68, 259.34 705.48 C 255.25 705.28, 251.16 705.06, 247.10 704.68 C 243.04 704.30, 238.98 703.87, 235.01 703.22 C 231.03 702.57, 227.08 701.82, 223.25 700.79 C 219.42 699.76, 215.67 698.58, 212.02 697.06 C 208.37 695.54, 204.67 693.70, 201.35 691.66 C 198.03 689.62, 194.94 687.32, 192.08 684.79 C 189.22 682.25, 186.56 679.44, 184.21 676.45 C 181.86 673.46, 179.76 670.21, 177.99 666.87 C 176.22 663.53, 174.73 659.98, 173.59 656.39 C 172.45 652.80, 171.64 649.06, 171.14 645.31 C 170.63 641.56, 170.50 637.73, 170.56 633.88 C 170.62 630.03, 171.02 626.14, 171.47 622.23 C 171.92 618.32, 172.61 614.42, 173.26 610.40 C 173.91 606.38, 174.70 602.17, 175.39 598.11 C 176.08 594.05, 176.75 590.05, 177.39 586.01 C 178.03 581.97, 178.63 577.90, 179.23 573.84 C 179.83 569.78, 180.39 565.70, 180.99 561.63 C 181.59 557.56, 182.18 553.48, 182.81 549.42 C 183.44 545.36, 184.10 541.29, 184.80 537.24 C 185.50 533.19, 186.23 529.14, 187.00 525.10 C 187.77 521.06, 188.56 517.07, 189.41 512.99 C 190.26 508.91, 191.19 504.68, 192.11 500.62 C 193.03 496.56, 193.97 492.61, 194.95 488.61 C 195.92 484.61, 196.93 480.63, 197.96 476.64 C 198.99 472.65, 200.05 468.68, 201.11 464.70 C 202.17 460.72, 203.25 456.75, 204.34 452.78 C 205.43 448.81, 206.53 444.84, 207.64 440.88 C 208.75 436.92, 209.87 432.95, 211.01 428.99 C 212.15 425.03, 213.30 421.08, 214.46 417.13 C 215.62 413.18, 216.78 409.29, 217.97 405.29 C 219.16 401.30, 220.41 397.15, 221.62 393.16 C 222.83 389.17, 224.01 385.28, 225.21 381.34 C 226.41 377.40, 227.62 373.47, 228.83 369.53 C 230.04 365.59, 231.25 361.65, 232.45 357.71 C 233.65 353.77, 234.85 349.83, 236.04 345.89 C 237.23 341.95, 238.40 338.01, 239.57 334.06 C 240.74 330.11, 241.89 326.16, 243.04 322.21 C 244.19 318.26, 245.33 314.29, 246.48 310.34 C 247.63 306.38, 248.76 302.48, 249.93 298.48 C 251.10 294.48, 252.31 290.32, 253.48 286.32 C 254.65 282.32, 255.81 278.42, 256.97 274.47 C 258.13 270.52, 259.29 266.56, 260.44 262.61 C 261.59 258.66, 262.74 254.71, 263.88 250.75 C 265.02 246.79, 266.15 242.84, 267.28 238.88 C 268.41 234.92, 269.54 230.95, 270.68 227.00 C 271.82 223.05, 272.95 219.09, 274.13 215.15 C 275.31 211.21, 276.49 207.27, 277.75 203.38 C 279.01 199.49, 280.27 195.65, 281.71 191.83 C 283.15 188.01, 284.69 184.06, 286.40 180.48 C 288.11 176.90, 289.89 173.48, 291.96 170.36 C 294.03 167.24, 296.28 164.28, 298.81 161.77 C 301.34 159.26, 304.15 157.04, 307.15 155.31 C 310.15 153.58, 313.44 152.26, 316.83 151.39 C 320.22 150.52, 323.85 150.13, 327.47 150.11 C 331.09 150.09, 334.87 150.55, 338.57 151.29 C 342.27 152.03, 345.98 153.15, 349.68 154.53 C 353.38 155.91, 357.20 157.68, 360.77 159.55 C 364.34 161.42, 367.75 163.51, 371.10 165.74 C 374.45 167.97, 377.71 170.40, 380.86 172.94 C 384.01 175.48, 387.06 178.18, 390.02 180.96 C 392.98 183.75, 395.84 186.67, 398.63 189.65 C 401.42 192.63, 404.11 195.72, 406.77 198.83 C 409.43 201.94, 412.01 205.13, 414.60 208.32 C 417.19 211.51, 419.73 214.75, 422.29 217.96 C 424.86 221.18, 427.37 224.37, 429.99 227.61 C 432.61 230.85, 435.33 234.21, 438.00 237.41 C 440.67 240.61, 443.29 243.71, 445.99 246.80 C 448.69 249.89, 451.43 252.96, 454.23 255.94 C 457.04 258.92, 459.88 261.87, 462.82 264.70 C 465.76 267.53, 468.75 270.31, 471.85 272.95 C 474.95 275.59, 478.12 278.14, 481.39 280.56 C 484.66 282.98, 488.02 285.27, 491.46 287.44 C 494.90 289.61, 498.42 291.65, 502.01 293.56 C 505.60 295.47, 509.22 297.24, 512.99 298.91 C 516.76 300.58, 520.74 302.16, 524.62 303.56 C 528.50 304.96, 532.34 306.18, 536.26 307.30 C 540.18 308.43, 544.14 309.41, 548.13 310.31 C 552.12 311.21, 556.15 311.97, 560.18 312.69 C 564.21 313.41, 568.27 314.01, 572.33 314.62 C 576.39 315.23, 580.47 315.77, 584.54 316.34 C 588.61 316.91, 592.70 317.45, 596.76 318.06 C 600.82 318.67, 604.89 319.27, 608.92 319.99 C 612.95 320.71, 616.94 321.44, 620.96 322.36 C 624.98 323.28, 629.15 324.30, 633.06 325.48 C 636.97 326.66, 640.75 327.93, 644.41 329.45 C 648.07 330.97, 651.67 332.66, 655.01 334.61 C 658.35 336.56, 661.57 338.74, 664.44 341.16 C 667.31 343.59, 670.00 346.27, 672.24 349.16 C 674.49 352.05, 676.44 355.22, 677.91 358.48 C 679.38 361.75, 680.47 365.25, 681.07 368.75 C 681.67 372.25, 681.83 375.87, 681.51 379.46 C 681.19 383.05, 680.34 386.84, 679.13 390.27 C 677.92 393.70, 676.25 396.99, 674.27 400.02 C 672.28 403.05, 669.86 405.94, 667.22 408.44 C 664.58 410.94, 661.57 413.19, 658.42 415.03 C 655.27 416.87, 651.84 418.38, 648.34 419.46 C 644.85 420.54, 641.14 421.22, 637.45 421.52 C 633.76 421.82, 629.96 421.67, 626.19 421.24 C 622.43 420.81, 618.62 419.95, 614.86 418.92 C 611.10 417.89, 607.41 416.53, 603.64 415.05 C 599.87 413.57, 596.00 411.78, 592.26 410.05 C 588.52 408.32, 584.91 406.50, 581.23 404.69 C 577.55 402.88, 573.88 401.02, 570.19 399.21 C 566.50 397.40, 562.81 395.58, 559.09 393.83 C 555.37 392.08, 551.64 390.37, 547.88 388.73 C 544.12 387.10, 540.33 385.50, 536.51 384.02 C 532.69 382.54, 528.85 381.13, 524.97 379.84 C 521.09 378.55, 517.17 377.35, 513.23 376.28 C 509.29 375.21, 505.37 374.27, 501.32 373.42 C 497.27 372.57, 493.03 371.82, 488.94 371.20 C 484.85 370.58, 480.83 370.10, 476.76 369.71 C 472.69 369.32, 468.60 369.03, 464.51 368.85 C 460.42 368.67, 456.32 368.59, 452.23 368.61 C 448.14 368.63, 444.04 368.76, 439.96 369.00 C 435.88 369.24, 431.79 369.57, 427.72 370.02 C 423.65 370.46, 419.60 371.02, 415.56 371.67 C 411.52 372.32, 407.49 373.09, 403.48 373.93 C 399.47 374.77, 395.53 375.70, 391.50 376.72 C 387.47 377.74, 383.31 378.90, 379.31 380.06 C 375.31 381.22, 371.44 382.42, 367.53 383.67 C 363.62 384.93, 359.71 386.23, 355.84 387.59 C 351.96 388.95, 348.10 390.35, 344.28 391.84 C 340.46 393.33, 336.66 394.87, 332.93 396.53 C 329.20 398.19, 325.50 399.91, 321.89 401.79 C 318.28 403.67, 314.73 405.65, 311.29 407.79 C 307.85 409.93, 304.53 412.16, 301.26 414.61 C 297.99 417.06, 294.69 419.77, 291.67 422.51 C 288.65 425.25, 285.83 428.09, 283.11 431.07 C 280.39 434.05, 277.82 437.18, 275.38 440.40 C 272.94 443.62, 270.64 446.96, 268.47 450.38 C 266.30 453.80, 264.28 457.33, 262.34 460.89 C 260.40 464.45, 258.60 468.09, 256.85 471.74 C 255.10 475.39, 253.44 479.08, 251.85 482.77 C 250.26 486.45, 248.71 490.15, 247.29 493.85 C 245.87 497.55, 244.51 501.19, 243.33 504.95 C 242.15 508.71, 241.05 512.63, 240.21 516.44 C 239.37 520.25, 238.72 524.00, 238.29 527.81 C 237.86 531.62, 237.61 535.48, 237.62 539.28 C 237.63 543.08, 237.81 546.93, 238.34 550.63 C 238.87 554.33, 239.63 558.02, 240.78 561.49 C 241.93 564.96, 243.41 568.35, 245.26 571.47 C 247.11 574.59, 249.35 577.54, 251.87 580.21 C 254.39 582.88, 257.30 585.31, 260.38 587.51 C 263.46 589.71, 266.82 591.62, 270.35 593.40 C 273.88 595.18, 277.79 596.77, 281.58 598.22 C 285.37 599.67, 289.22 600.89, 293.11 602.11 C 297.00 603.33, 300.95 604.44, 304.90 605.56 C 308.84 606.68, 312.81 607.74, 316.78 608.83 C 320.75 609.92, 324.72 611.00, 328.69 612.11 C 332.66 613.22, 336.62 614.33, 340.58 615.46 C 344.54 616.59, 348.49 617.74, 352.44 618.89 C 356.39 620.04, 360.34 621.21, 364.29 622.38 C 368.24 623.55, 372.13 624.71, 376.13 625.91 C 380.13 627.11, 384.27 628.35, 388.27 629.55 C 392.26 630.75, 396.16 631.92, 400.10 633.10 C 404.05 634.28, 408.00 635.47, 411.94 636.65 C 415.88 637.83, 419.83 639.02, 423.77 640.20 C 427.71 641.38, 431.66 642.57, 435.60 643.75 C 439.54 644.93, 443.49 646.12, 447.43 647.30 C 451.38 648.48, 455.32 649.67, 459.27 650.85 C 463.21 652.03, 467.10 653.20, 471.10 654.39 C 475.10 655.58, 479.25 656.82, 483.25 657.98 C 487.25 659.14, 491.15 660.28, 495.10 661.34 C 499.05 662.40, 503.00 663.47, 506.94 664.35 C 510.88 665.23, 514.84 666.07, 518.73 666.61 C 522.62 667.15, 526.54 667.57, 530.30 667.57 C 534.06 667.57, 537.82 667.34, 541.31 666.63 C 544.80 665.92, 548.22 664.84, 551.26 663.32 C 554.30 661.80, 557.17 659.82, 559.57 657.50 C 561.98 655.18, 564.06 652.44, 565.69 649.43 C 567.32 646.42, 568.58 642.87, 569.33 639.42 C 570.08 635.97, 570.33 632.32, 570.20 628.71 C 570.07 625.10, 569.48 621.36, 568.55 617.75 C 567.62 614.14, 566.25 610.53, 564.64 607.05 C 563.03 603.57, 561.04 600.17, 558.89 596.88 C 556.74 593.59, 554.28 590.41, 551.75 587.30 C 549.22 584.19, 546.47 581.19, 543.70 578.21 C 540.93 575.24, 538.04 572.32, 535.13 569.45 C 532.22 566.58, 529.29 563.78, 526.24 560.98 C 523.19 558.18, 519.99 555.30, 516.82 552.66 C 513.65 550.02, 510.51 547.50, 507.24 545.13 C 503.97 542.76, 500.63 540.50, 497.18 538.47 C 493.73 536.44, 490.19 534.55, 486.56 532.92 C 482.93 531.29, 479.19 529.87, 475.40 528.71 C 471.61 527.55, 467.73 526.63, 463.83 525.97 C 459.93 525.31, 455.96 524.90, 452.00 524.75 C 448.04 524.60, 444.04 524.71, 440.07 525.05 C 436.10 525.38, 432.19 525.98, 428.20 526.76 C 424.21 527.54, 420.09 528.63, 416.15 529.76 C 412.21 530.89, 408.41 532.21, 404.57 533.57 C 400.73 534.93, 396.91 536.44, 393.09 537.91 C 389.27 539.38, 385.47 540.92, 381.64 542.36 C 377.81 543.80, 373.99 545.25, 370.13 546.52 C 366.27 547.78, 362.39 549.00, 358.51 549.95 C 354.63 550.90, 350.70 551.73, 346.82 552.22 C 342.94 552.71, 339.06 553.01, 335.21 552.89 C 331.36 552.77, 327.36 552.34, 323.73 551.50 C 320.10 550.66, 316.63 549.46, 313.45 547.88 C 310.27 546.30, 307.24 544.30, 304.68 542.02 C 302.12 539.74, 299.83 537.04, 298.09 534.18 C 296.34 531.32, 295.00 528.10, 294.21 524.86 C 293.42 521.62, 293.15 518.13, 293.37 514.75 C 293.59 511.37, 294.37 507.87, 295.55 504.58 C 296.74 501.29, 298.46 498.01, 300.48 494.99 C 302.50 491.97, 304.94 489.11, 307.66 486.43 C 310.38 483.75, 313.61 481.19, 316.83 478.92 C 320.05 476.65, 323.47 474.69, 326.99 472.83 C 330.51 470.97, 334.22 469.32, 337.95 467.76 C 341.68 466.19, 345.52 464.80, 349.37 463.44 C 353.22 462.08, 357.14 460.83, 361.05 459.59 C 364.96 458.35, 368.90 457.17, 372.84 455.98 C 376.78 454.79, 380.73 453.61, 384.67 452.43 C 388.61 451.25, 392.56 450.06, 396.50 448.88 C 400.44 447.69, 404.32 446.51, 408.32 445.32 C 412.31 444.13, 416.47 442.88, 420.47 441.73 C 424.47 440.58, 428.37 439.45, 432.34 438.39 C 436.31 437.33, 440.29 436.30, 444.28 435.38 C 448.27 434.46, 452.27 433.60, 456.29 432.88 C 460.31 432.16, 464.34 431.53, 468.38 431.07 C 472.42 430.61, 476.47 430.28, 480.52 430.14 C 484.57 430.00, 488.63 430.01, 492.66 430.22 C 496.70 430.43, 500.73 430.82, 504.73 431.38 C 508.73 431.94, 512.67 432.68, 516.67 433.59 C 520.67 434.50, 524.80 435.64, 528.75 436.84 C 532.70 438.04, 536.51 439.38, 540.34 440.80 C 544.17 442.22, 547.98 443.76, 551.75 445.36 C 555.52 446.96, 559.27 448.65, 562.99 450.39 C 566.71 452.13, 570.41 453.93, 574.07 455.79 C 577.73 457.65, 581.38 459.56, 584.97 461.54 C 588.56 463.52, 592.14 465.54, 595.62 467.65 C 599.10 469.76, 602.54 471.88, 605.86 474.20 C 609.18 476.52, 612.58 479.00, 615.54 481.56 C 618.50 484.12, 621.26 486.74, 623.62 489.57 C 625.98 492.40, 628.08 495.40, 629.67 498.54 C 631.25 501.68, 632.44 505.00, 633.13 508.40 C 633.82 511.79, 634.00 515.35, 633.83 518.91 C 633.67 522.47, 632.96 526.13, 632.14 529.78 C 631.32 533.43, 630.06 537.12, 628.93 540.82 C 627.80 544.52, 626.42 548.24, 625.34 551.99 C 624.26 555.74, 623.17 559.47, 622.43 563.33 C 621.69 567.20, 621.14 571.25, 620.91 575.18 C 620.68 579.11, 620.79 582.98, 621.07 586.90 C 621.35 590.82, 621.97 594.75, 622.60 598.68 C 623.23 602.61, 624.11 606.55, 624.85 610.49 C 625.59 614.43, 626.44 618.38, 627.03 622.32 C 627.62 626.26, 628.16 630.21, 628.37 634.13 C 628.58 638.05, 628.60 641.99, 628.26 645.85 C 627.92 649.71, 627.30 653.56, 626.34 657.29 C 625.38 661.01, 624.13 664.66, 622.52 668.20 C 620.91 671.74, 618.90 675.31, 616.71 678.52 C 614.52 681.73, 612.05 684.71, 609.36 687.46 C 606.67 690.21, 603.71 692.76, 600.59 695.02 C 597.47 697.28, 594.10 699.30, 590.63 701.04 C 587.16 702.78, 583.49 704.23, 579.76 705.44 C 576.03 706.65, 572.16 707.58, 568.26 708.32 C 564.36 709.06, 560.35 709.53, 556.34 709.89 C 552.33 710.25, 548.26 710.38, 544.19 710.46 C 540.12 710.54, 536.07 710.47, 531.92 710.39 C 527.77 710.31, 523.45 710.13, 519.29 709.97 C 515.13 709.82, 511.07 709.63, 506.96 709.46 C 502.85 709.29, 498.74 709.12, 494.62 708.97 C 490.50 708.82, 486.38 708.69, 482.27 708.58 C 478.15 708.47, 474.05 708.38, 469.93 708.29 C 465.81 708.20, 461.70 708.13, 457.58 708.07 C 453.46 708.01, 449.34 707.95, 445.22 707.90 C 441.10 707.85, 437.04 707.79, 432.87 707.74 C 428.70 707.69, 424.37 707.65, 420.20 707.60 Z"/>
+
+    <!-- Símbolo: pneu (top-down) usado no carro -->
+    <symbol id="tire" viewBox="0 0 40 80">
+      <rect x="2" y="4" width="36" height="72" rx="6" ry="6"
+            fill="#1A1D24" stroke="#3A3D44" stroke-width="1"/>
+      <rect x="6" y="10" width="28" height="60" rx="3" ry="3"
+            fill="none" stroke="#0A0C12" stroke-width="0.6" stroke-dasharray="2 3" opacity="0.6"/>
+    </symbol>
+  </defs>
+
+  <!-- ════════════════ BACKGROUND ════════════════ -->
+  <rect x="0" y="0" width="1920" height="1080" fill="url(#bgBase)"/>
+  <rect x="0" y="0" width="1920" height="1080" fill="url(#bloomWarm)"/>
+  <rect x="0" y="0" width="1920" height="1080" fill="url(#bloomCool)"/>
+
+  <!-- ════════════════ HEADER CHROME ════════════════ -->
+  <g font-family="'Helvetica Neue', -apple-system, sans-serif" fill="#F5F0E0">
+    <text x="60" y="46" font-size="9" font-weight="500" letter-spacing="6"
+          fill-opacity="0.55" fill="#D4AF37">P 1 · F A S T   ·   C O M M A N D   B O X</text>
+    <text x="60" y="78" font-size="40" font-weight="200" letter-spacing="14"
+          fill-opacity="0.96">B R A S Í L I A</text>
+    <text x="60" y="100" font-size="9" font-weight="400" letter-spacing="4"
+          fill-opacity="0.50">AUTÓDROMO INTERNACIONAL NELSON PIQUET   ·   TRACK DAY 12 MAI 2026</text>
+  </g>
+
+  <!-- Metadata direita (mono) -->
+  <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#F5F0E0" text-anchor="end">
+    <text x="1860" y="46" font-size="8"  letter-spacing="3" fill-opacity="0.45">EVENTO · STINT · VOLTA · CARRO · PILOTO</text>
+    <text x="1860" y="74" font-size="14" font-weight="300" letter-spacing="2.5" fill-opacity="0.88">BRASÍLIA · 03 · 08/12 · #14 · BRUNO M.</text>
+    <text x="1860" y="98" font-size="8"  letter-spacing="3" fill-opacity="0.45">TEMPO DE STINT · TEMP PISTA · TEMP AR · VENTO</text>
+  </g>
+  <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#F5F0E0" text-anchor="end">
+    <text x="1860" y="120" font-size="11" letter-spacing="2" fill-opacity="0.72">14:23 · 38°C · 26°C · NW 3km/h</text>
+  </g>
+
+  <!-- Hairline divider sob título -->
+  <line x1="60" y1="112" x2="1860" y2="112" stroke="url(#champagne)" stroke-width="0.6" stroke-opacity="0.45"/>
+
+  <!-- ════════════════ ZONA 1 · PIP VIDEO (40% — reduzido) ════════════════ -->
+  <ellipse cx="420" cy="380" rx="460" ry="260" fill="url(#bloomZone)"/>
+
+  <g transform="translate(60, 140)">
+    <rect x="0" y="0" width="720" height="480" fill="#04060C" fill-opacity="0.55"/>
+    <line x1="0"   y1="0"   x2="720" y2="0"   stroke="url(#champagne)"  stroke-width="0.6" stroke-opacity="0.55"/>
+    <line x1="0"   y1="480" x2="720" y2="480" stroke="url(#champagne)"  stroke-width="0.6" stroke-opacity="0.30"/>
+    <line x1="0"   y1="0"   x2="0"   y2="480" stroke="url(#champagneV)" stroke-width="0.6" stroke-opacity="0.40"/>
+    <line x1="720" y1="0"   x2="720" y2="480" stroke="url(#champagneV)" stroke-width="0.6" stroke-opacity="0.40"/>
+
+    <defs>
+      <linearGradient id="videoSky" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%"   stop-color="#1B2840" stop-opacity="0.85"/>
+        <stop offset="55%"  stop-color="#0C121E" stop-opacity="0.7"/>
+        <stop offset="55%"  stop-color="#1A1410" stop-opacity="0.6"/>
+        <stop offset="100%" stop-color="#0A0806" stop-opacity="0.85"/>
+      </linearGradient>
+    </defs>
+    <rect x="2" y="2" width="716" height="476" fill="url(#videoSky)" opacity="0.85"/>
+
+    <!-- horizonte + perspectiva (vanishing point recentrado em x=360) -->
+    <line x1="2" y1="266" x2="718" y2="266" stroke="#2A2218" stroke-width="0.8" stroke-opacity="0.55"/>
+    <path d="M 314 266 L 183 478" fill="none" stroke="#222428" stroke-width="2" stroke-opacity="0.7"/>
+    <path d="M 406 266 L 537 478" fill="none" stroke="#222428" stroke-width="2" stroke-opacity="0.7"/>
+    <path d="M 336 266 L 304 478" fill="none" stroke="#FFFFFF" stroke-width="0.5" stroke-opacity="0.10" stroke-dasharray="6 12"/>
+    <path d="M 384 266 L 416 478" fill="none" stroke="#FFFFFF" stroke-width="0.5" stroke-opacity="0.10" stroke-dasharray="6 12"/>
+
+    <g stroke="#F5F0E0" stroke-opacity="0.12" stroke-width="0.5" fill="none">
+      <line x1="350" y1="240" x2="370" y2="240"/>
+      <line x1="360" y1="230" x2="360" y2="250"/>
+      <circle cx="360" cy="240" r="8"/>
+    </g>
+
+    <g transform="translate(20, 24)">
+      <circle cx="6" cy="-4" r="10" fill="url(#recDot)"/>
+      <circle cx="6" cy="-4" r="3.2" fill="#FF5A4E">
+        <animate attributeName="fill-opacity" values="0.95;0.35;0.95" dur="1.6s" repeatCount="indefinite"/>
+      </circle>
+      <text x="22" y="0" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+            font-size="10" letter-spacing="3" fill="#FF5A4E" fill-opacity="0.95">REC · LIVE</text>
+    </g>
+
+    <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#F5F0E0" text-anchor="end">
+      <text x="700" y="34" font-size="9"  letter-spacing="2.5" fill-opacity="0.70">DAILY.CO · 1080p · 184ms</text>
+      <text x="700" y="52" font-size="8"  letter-spacing="2"   fill-opacity="0.40">02:14 / STINT 14:23</text>
+    </g>
+
+    <line x1="0" y1="436" x2="720" y2="436" stroke="url(#champagne)" stroke-width="0.4" stroke-opacity="0.30"/>
+    <g font-family="'Helvetica Neue', -apple-system, sans-serif" fill="#F5F0E0">
+      <text x="20" y="462" font-size="8"  letter-spacing="3" fill-opacity="0.45" fill="#D4AF37">PILOTO · CARRO · CÂMERA</text>
+      <text x="20" y="476" font-size="11" letter-spacing="2"  fill-opacity="0.85">BRUNO M. · #14 · ONBOARD POV</text>
+    </g>
+    <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#F5F0E0" text-anchor="end">
+      <text x="700" y="462" font-size="8"  letter-spacing="3" fill-opacity="0.45">VEL · MARCHA · RPM</text>
+      <text x="700" y="476" font-size="13" letter-spacing="2"  fill-opacity="0.92">186 km/h · 4 · 6 820</text>
+    </g>
+  </g>
+
+  <!-- ════════════════ ZONA 1B · TRECHO ATUAL (sequência canônica) ════════════════ -->
+  <!-- Halo de zona, levemente cyan-warm pra distinguir do PIP -->
+  <ellipse cx="980" cy="380" rx="240" ry="260" fill="url(#bloomZone)" opacity="0.65"/>
+
+  <g transform="translate(800, 140)">
+    <rect x="0" y="0" width="360" height="480" fill="#04060C" fill-opacity="0.45"/>
+    <line x1="0"   y1="0"   x2="360" y2="0"   stroke="url(#champagne)"  stroke-width="0.6" stroke-opacity="0.55"/>
+    <line x1="0"   y1="480" x2="360" y2="480" stroke="url(#champagne)"  stroke-width="0.6" stroke-opacity="0.30"/>
+    <line x1="0"   y1="0"   x2="0"   y2="480" stroke="url(#champagneV)" stroke-width="0.6" stroke-opacity="0.40"/>
+    <line x1="360" y1="0"   x2="360" y2="480" stroke="url(#champagneV)" stroke-width="0.6" stroke-opacity="0.40"/>
+
+    <!-- HEADER · curva atual + classificação -->
+    <g font-family="'Helvetica Neue', -apple-system, sans-serif" fill="#F5F0E0">
+      <text x="20" y="22" font-size="8"  letter-spacing="4" fill-opacity="0.55" fill="#D4AF37">TRECHO ATUAL · CURVA 3</text>
+      <text x="20" y="44" font-size="16" font-weight="200" letter-spacing="3" fill-opacity="0.96">MERGULHO BRUXA</text>
+      <text x="20" y="60" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+            font-size="7" letter-spacing="2.5" fill-opacity="0.45">RÁPIDA · NEUTRO · CCW · 320m até saída</text>
+    </g>
+    <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#F5F0E0" text-anchor="end">
+      <text x="340" y="22" font-size="7" letter-spacing="2.5" fill="#FF7A1A" fill-opacity="0.85">EXEC. ATUAL · v8</text>
+      <circle cx="346" cy="18" r="3" fill="#FF7A1A">
+        <animate attributeName="fill-opacity" values="0.95;0.35;0.95" dur="1.6s" repeatCount="indefinite"/>
+      </circle>
+    </g>
+
+    <!-- Hairline divider sob header -->
+    <line x1="20" y1="76" x2="340" y2="76" stroke="url(#champagne)" stroke-width="0.4" stroke-opacity="0.30"/>
+
+    <!-- SPINE vertical (champagne) -->
+    <line x1="44" y1="100" x2="44" y2="424" stroke="url(#champagneV)" stroke-width="0.5" stroke-opacity="0.55"/>
+
+    <!-- ═══ FASE 1 · ENTRADA (verde · BOM) ═══ y=110 -->
+    <g transform="translate(0, 110)">
+      <circle cx="44" cy="0" r="7" fill="none" stroke="#86EFAC" stroke-width="1" stroke-opacity="0.85"/>
+      <circle cx="44" cy="0" r="3" fill="#86EFAC" fill-opacity="0.95"/>
+      <g font-family="'Helvetica Neue', -apple-system, sans-serif" fill="#F5F0E0">
+        <text x="68" y="-2" font-size="9" font-weight="500" letter-spacing="3" fill-opacity="0.85" fill="#86EFAC">ENTRADA</text>
+        <text x="68" y="22" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+              font-size="20" font-weight="300" letter-spacing="1.5" fill-opacity="0.96">188</text>
+        <text x="118" y="22" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+              font-size="9" letter-spacing="2" fill-opacity="0.55">km/h</text>
+        <text x="68" y="40" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+              font-size="8" letter-spacing="2" fill-opacity="0.45">REF 186 · <tspan fill="#86EFAC" fill-opacity="0.85">+2 km/h</tspan></text>
+      </g>
+    </g>
+
+    <!-- ═══ FASE 2 · FRENAGEM (amarelo · ATENÇÃO) ═══ y=180 -->
+    <g transform="translate(0, 180)">
+      <circle cx="44" cy="0" r="7" fill="none" stroke="#FBBF24" stroke-width="1" stroke-opacity="0.85"/>
+      <circle cx="44" cy="0" r="3" fill="#FBBF24" fill-opacity="0.95"/>
+      <g font-family="'Helvetica Neue', -apple-system, sans-serif" fill="#F5F0E0">
+        <text x="68" y="-2" font-size="9" font-weight="500" letter-spacing="3" fill-opacity="0.85" fill="#FBBF24">FRENAGEM</text>
+        <text x="68" y="22" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+              font-size="20" font-weight="300" letter-spacing="1.5" fill="#FBBF24" fill-opacity="0.96">−2.4m</text>
+        <text x="68" y="40" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+              font-size="8" letter-spacing="2" fill-opacity="0.55">FREOU TARDE · CHEGADA <tspan fill="#F5F0E0" fill-opacity="0.85">178 km/h</tspan></text>
+      </g>
+    </g>
+
+    <!-- ═══ FASE 3 · APEX (vermelho · ERRO) ═══ y=250 -->
+    <g transform="translate(0, 250)">
+      <circle cx="44" cy="0" r="9" fill="#FF5A4E" fill-opacity="0.18">
+        <animate attributeName="r" values="7;11;7" dur="1.8s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="44" cy="0" r="7" fill="none" stroke="#FF5A4E" stroke-width="1" stroke-opacity="0.95"/>
+      <circle cx="44" cy="0" r="3" fill="#FF5A4E" fill-opacity="0.95"/>
+      <g font-family="'Helvetica Neue', -apple-system, sans-serif" fill="#F5F0E0">
+        <text x="68" y="-2" font-size="9" font-weight="500" letter-spacing="3" fill-opacity="0.95" fill="#FF5A4E">APEX</text>
+        <text x="68" y="22" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+              font-size="20" font-weight="300" letter-spacing="1.5" fill="#FF5A4E" fill-opacity="0.96">−6m</text>
+        <text x="68" y="40" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+              font-size="8" letter-spacing="2" fill-opacity="0.65" fill="#FF5A4E">APEX ANTECIPADO · CLASSE 2/12</text>
+      </g>
+    </g>
+
+    <!-- ═══ FASE 4 · V MIN (amarelo) ═══ y=320 -->
+    <g transform="translate(0, 320)">
+      <circle cx="44" cy="0" r="7" fill="none" stroke="#FBBF24" stroke-width="1" stroke-opacity="0.85"/>
+      <circle cx="44" cy="0" r="3" fill="#FBBF24" fill-opacity="0.95"/>
+      <g font-family="'Helvetica Neue', -apple-system, sans-serif" fill="#F5F0E0">
+        <text x="68" y="-2" font-size="9" font-weight="500" letter-spacing="3" fill-opacity="0.85" fill="#FBBF24">V MIN</text>
+        <text x="68" y="22" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+              font-size="20" font-weight="300" letter-spacing="1.5" fill-opacity="0.96">90</text>
+        <text x="118" y="22" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+              font-size="9" letter-spacing="2" fill-opacity="0.55">km/h</text>
+        <text x="68" y="40" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+              font-size="8" letter-spacing="2" fill-opacity="0.55">BEST 94 · <tspan fill="#FBBF24" fill-opacity="0.85">−4 km/h</tspan></text>
+      </g>
+    </g>
+
+    <!-- ═══ FASE 5 · SAÍDA (verde) ═══ y=390 -->
+    <g transform="translate(0, 390)">
+      <circle cx="44" cy="0" r="7" fill="none" stroke="#86EFAC" stroke-width="1" stroke-opacity="0.85"/>
+      <circle cx="44" cy="0" r="3" fill="#86EFAC" fill-opacity="0.95"/>
+      <g font-family="'Helvetica Neue', -apple-system, sans-serif" fill="#F5F0E0">
+        <text x="68" y="-2" font-size="9" font-weight="500" letter-spacing="3" fill-opacity="0.85" fill="#86EFAC">SAÍDA</text>
+        <text x="68" y="22" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+              font-size="20" font-weight="300" letter-spacing="1.5" fill-opacity="0.96">142</text>
+        <text x="118" y="22" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+              font-size="9" letter-spacing="2" fill-opacity="0.55">km/h</text>
+        <text x="68" y="40" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+              font-size="8" letter-spacing="2" fill-opacity="0.55">REF 145 · <tspan fill="#86EFAC" fill-opacity="0.85">−3 (na tolerância)</tspan></text>
+      </g>
+    </g>
+
+    <!-- FOOTER · próximo trecho -->
+    <line x1="20" y1="442" x2="340" y2="442" stroke="url(#champagne)" stroke-width="0.4" stroke-opacity="0.30"/>
+    <g transform="translate(20, 462)" font-family="ui-monospace, 'SF Mono', Menlo, monospace">
+      <text font-size="7" letter-spacing="3" fill="#D4AF37" fill-opacity="0.55">PRÓXIMO</text>
+      <text x="50" font-size="9" letter-spacing="2" fill="#F5F0E0" fill-opacity="0.75">CURVA DA BRUXA · 8s · 320m</text>
+    </g>
+  </g>
+
+  <!-- ════════════════ ZONA 2 · MAPA PILOTO ════════════════ -->
+  <g transform="translate(60, 660)">
+    <!-- Halo radial de zona -->
+    <ellipse cx="265" cy="200" rx="320" ry="220" fill="url(#haloGold)" opacity="0.25"/>
+
+    <!-- Hairline frame -->
+    <line x1="0"   y1="0"   x2="530" y2="0"   stroke="url(#champagne)"  stroke-width="0.6" stroke-opacity="0.55"/>
+    <line x1="0"   y1="400" x2="530" y2="400" stroke="url(#champagne)"  stroke-width="0.6" stroke-opacity="0.20"/>
+    <line x1="0"   y1="0"   x2="0"   y2="400" stroke="url(#champagneV)" stroke-width="0.6" stroke-opacity="0.30"/>
+    <line x1="530" y1="0"   x2="530" y2="400" stroke="url(#champagneV)" stroke-width="0.6" stroke-opacity="0.30"/>
+
+    <!-- Eyebrow + título -->
+    <g font-family="'Helvetica Neue', -apple-system, sans-serif" fill="#F5F0E0">
+      <text x="14" y="22" font-size="8"  letter-spacing="4" fill-opacity="0.50" fill="#D4AF37">VISÃO · PILOTO</text>
+      <text x="14" y="40" font-size="14" font-weight="300" letter-spacing="3" fill-opacity="0.92">LINHA &amp; APEX</text>
+    </g>
+    <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#F5F0E0" text-anchor="end">
+      <text x="516" y="22" font-size="7"  letter-spacing="2.5" fill-opacity="0.45">VOLTA ATUAL · GHOST</text>
+      <text x="516" y="40" font-size="11" letter-spacing="2"   fill-opacity="0.85">2:53.4   ·   2:51.038</text>
+    </g>
+
+    <!-- Track no scale 0.52 -->
+    <g transform="translate(45, 50) scale(0.52)">
+      <use href="#track" fill="none" stroke="#E8C97A" stroke-width="120" stroke-opacity="0.025" filter="url(#blurLg)"/>
+      <use href="#track" fill="none" stroke="#E8C97A" stroke-width="80"  stroke-opacity="0.045" filter="url(#blurLg)"/>
+      <use href="#track" fill="none" stroke="#E8C97A" stroke-width="56"  stroke-opacity="0.075" filter="url(#blurMd)"/>
+      <use href="#track" fill="none" stroke="#E8C97A" stroke-width="38"  stroke-opacity="0.110"/>
+      <use href="#track" fill="none" stroke="url(#runoff)"  stroke-width="28"/>
+      <use href="#track" fill="none" stroke="url(#asphalt)" stroke-width="20"/>
+      <use href="#track" fill="none" stroke="#E8C97A" stroke-width="1.6" stroke-opacity="0.85"/>
+      <use href="#track" fill="none" stroke="#FFFFFF" stroke-width="0.4" stroke-dasharray="3 9" stroke-opacity="0.10"/>
+    </g>
+
+    <!-- Ghost trail (cyan dots, simulado) -->
+    <g fill="#7DD3FC">
+      <circle cx="120" cy="320" r="1.5" opacity="0.40"/>
+      <circle cx="135" cy="305" r="1.5" opacity="0.45"/>
+      <circle cx="150" cy="290" r="1.5" opacity="0.50"/>
+      <circle cx="165" cy="276" r="1.5" opacity="0.55"/>
+      <circle cx="180" cy="263" r="1.5" opacity="0.60"/>
+      <circle cx="195" cy="252" r="1.5" opacity="0.65"/>
+      <circle cx="210" cy="244" r="1.5" opacity="0.70"/>
+    </g>
+
+    <!-- Live marker (laranja) -->
+    <g transform="translate(220, 240)">
+      <circle r="14" fill="url(#liveGlow)">
+        <animate attributeName="r" values="12;18;12" dur="1.6s" repeatCount="indefinite"/>
+      </circle>
+      <circle r="3.5" fill="#FF7A1A"/>
+      <text x="18" y="4" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+            font-size="8" letter-spacing="2" fill="#FF7A1A" fill-opacity="0.95">LIVE</text>
+    </g>
+
+    <!-- Apex marker da curva atual (gold ring) -->
+    <g transform="translate(178, 196)">
+      <circle r="6.5" fill="none" stroke="#D4AF37" stroke-width="0.8" stroke-opacity="0.85"/>
+      <circle r="2"   fill="#D4AF37"/>
+      <text x="11" y="3" font-family="'Helvetica Neue', -apple-system, sans-serif"
+            font-size="8" font-weight="500" letter-spacing="2" fill="#D4AF37" fill-opacity="0.85">APEX REF</text>
+    </g>
+
+    <!-- Vmin georef widget (best-of-trecho) -->
+    <g transform="translate(140, 270)">
+      <line x1="0" y1="0" x2="-30" y2="42" stroke="#D4AF37" stroke-width="0.5" stroke-opacity="0.45"/>
+      <circle r="2.6" fill="#F0DCA0"/>
+      <g transform="translate(-150, 38)" font-family="'Helvetica Neue', -apple-system, sans-serif" fill="#F5F0E0">
+        <text font-size="7" letter-spacing="2" fill="#D4AF37" fill-opacity="0.65">V MIN · TRECHO BEST</text>
+        <text y="14" font-size="13" font-weight="300" letter-spacing="2" fill-opacity="0.92">94 km/h</text>
+        <text y="26" font-size="7" letter-spacing="1.5" fill-opacity="0.45">CURVA DA BRUXA · v8 · BRUNO M.</text>
+      </g>
+    </g>
+
+    <!-- Mensagem curta da curva atual (canto inf-esq) -->
+    <g transform="translate(14, 380)" font-family="ui-monospace, 'SF Mono', Menlo, monospace">
+      <text font-size="8" letter-spacing="2" fill="#D4AF37" fill-opacity="0.55">CURVA 3 · MERGULHO BRUXA</text>
+      <text x="180" font-size="8" letter-spacing="2" fill="#FBBF24" fill-opacity="0.85">apex cedo · –6m</text>
+    </g>
+  </g>
+
+  <!-- ════════════════ ZONA 3 · MAPA ENGENHARIA ════════════════ -->
+  <g transform="translate(630, 660)">
+    <ellipse cx="265" cy="200" rx="320" ry="220" fill="url(#haloGold)" opacity="0.20"/>
+
+    <line x1="0"   y1="0"   x2="530" y2="0"   stroke="url(#champagne)"  stroke-width="0.6" stroke-opacity="0.55"/>
+    <line x1="0"   y1="400" x2="530" y2="400" stroke="url(#champagne)"  stroke-width="0.6" stroke-opacity="0.20"/>
+    <line x1="0"   y1="0"   x2="0"   y2="400" stroke="url(#champagneV)" stroke-width="0.6" stroke-opacity="0.30"/>
+    <line x1="530" y1="0"   x2="530" y2="400" stroke="url(#champagneV)" stroke-width="0.6" stroke-opacity="0.30"/>
+
+    <g font-family="'Helvetica Neue', -apple-system, sans-serif" fill="#F5F0E0">
+      <text x="14" y="22" font-size="8"  letter-spacing="4" fill-opacity="0.50" fill="#D4AF37">VISÃO · ENGENHARIA</text>
+      <text x="14" y="40" font-size="14" font-weight="300" letter-spacing="3" fill-opacity="0.92">TEMP PNEU · BRAKE · THROTTLE</text>
+    </g>
+    <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#F5F0E0" text-anchor="end">
+      <text x="516" y="22" font-size="7" letter-spacing="2.5" fill-opacity="0.45">OVERLAY ATIVO</text>
+      <text x="516" y="40" font-size="11" letter-spacing="2" fill-opacity="0.85">TEMP PNEU DIANT.</text>
+    </g>
+
+    <!-- Track base (mais cool, atmosfera de engenharia) -->
+    <g transform="translate(45, 50) scale(0.52)">
+      <use href="#track" fill="none" stroke="#3B82F6" stroke-width="120" stroke-opacity="0.020" filter="url(#blurLg)"/>
+      <use href="#track" fill="none" stroke="#3B82F6" stroke-width="80"  stroke-opacity="0.035" filter="url(#blurLg)"/>
+      <use href="#track" fill="none" stroke="#3B82F6" stroke-width="56"  stroke-opacity="0.055" filter="url(#blurMd)"/>
+      <use href="#track" fill="none" stroke="#222428" stroke-width="22"/>
+      <!-- TRACE TÉRMICO sobreposto -->
+      <use href="#track" fill="none" stroke="url(#thermal)" stroke-width="14" stroke-opacity="0.85"/>
+      <use href="#track" fill="none" stroke="#E8C97A" stroke-width="0.8" stroke-opacity="0.45"/>
+    </g>
+
+    <!-- Marcadores de zonas críticas -->
+    <g transform="translate(178, 196)">
+      <circle r="9" fill="#FF5A4E" fill-opacity="0.20"/>
+      <circle r="3.5" fill="#FF5A4E" fill-opacity="0.95">
+        <animate attributeName="fill-opacity" values="0.95;0.45;0.95" dur="2.0s" repeatCount="indefinite"/>
+      </circle>
+      <text x="14" y="3" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+            font-size="8" letter-spacing="2" fill="#FF5A4E" fill-opacity="0.95">+12°C JANELA</text>
+    </g>
+    <g transform="translate(310, 162)">
+      <circle r="6" fill="#FBBF24" fill-opacity="0.20"/>
+      <circle r="2.6" fill="#FBBF24" fill-opacity="0.85"/>
+      <text x="11" y="3" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+            font-size="8" letter-spacing="2" fill="#FBBF24" fill-opacity="0.75">+5°C</text>
+    </g>
+
+    <!-- Legenda da escala térmica -->
+    <g transform="translate(14, 360)">
+      <text font-family="'Helvetica Neue', -apple-system, sans-serif" font-size="7"
+            letter-spacing="2" fill="#D4AF37" fill-opacity="0.55">ESCALA · TEMP DIANT. ESQ</text>
+      <rect x="0" y="8" width="220" height="6" fill="url(#thermal)" opacity="0.85"/>
+      <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="8"
+         letter-spacing="1.5" fill="#F5F0E0" fill-opacity="0.65">
+        <text x="0"   y="28">70°</text>
+        <text x="100" y="28" text-anchor="middle">82°</text>
+        <text x="220" y="28" text-anchor="end">98°</text>
+      </g>
+    </g>
+
+    <!-- Toggles overlay (chips) -->
+    <g transform="translate(280, 360)" font-family="'Helvetica Neue', -apple-system, sans-serif"
+       font-size="8" letter-spacing="2.5">
+      <g>
+        <rect x="0" y="0" width="60" height="18" fill="#D4AF37" fill-opacity="0.12"
+              stroke="#D4AF37" stroke-width="0.5" stroke-opacity="0.85"/>
+        <text x="30" y="12" text-anchor="middle" fill="#F0DCA0" fill-opacity="0.95">PNEU</text>
+      </g>
+      <g transform="translate(64, 0)">
+        <rect x="0" y="0" width="60" height="18" fill="none" stroke="#F5F0E0" stroke-width="0.4" stroke-opacity="0.30"/>
+        <text x="30" y="12" text-anchor="middle" fill="#F5F0E0" fill-opacity="0.55">BRAKE</text>
+      </g>
+      <g transform="translate(128, 0)">
+        <rect x="0" y="0" width="76" height="18" fill="none" stroke="#F5F0E0" stroke-width="0.4" stroke-opacity="0.30"/>
+        <text x="38" y="12" text-anchor="middle" fill="#F5F0E0" fill-opacity="0.55">THROTTLE</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ════════════════ ZONA 4 · DELTA & VOLTA (right top) ════════════════ -->
+  <g transform="translate(1200, 140)">
+    <!-- Halo zona -->
+    <ellipse cx="330" cy="80" rx="380" ry="120" fill="url(#bloomZone)" opacity="0.85"/>
+
+    <line x1="0"   y1="0"   x2="660" y2="0"   stroke="url(#champagne)"  stroke-width="0.6" stroke-opacity="0.55"/>
+    <line x1="0"   y1="160" x2="660" y2="160" stroke="url(#champagne)"  stroke-width="0.6" stroke-opacity="0.20"/>
+    <line x1="0"   y1="0"   x2="0"   y2="160" stroke="url(#champagneV)" stroke-width="0.6" stroke-opacity="0.30"/>
+    <line x1="660" y1="0"   x2="660" y2="160" stroke="url(#champagneV)" stroke-width="0.6" stroke-opacity="0.30"/>
+
+    <g font-family="'Helvetica Neue', -apple-system, sans-serif" fill="#F5F0E0">
+      <text x="20" y="24" font-size="8" letter-spacing="4" fill-opacity="0.50" fill="#D4AF37">DELTA · LIVE vs TEAM BEST</text>
+      <text x="20" y="100" font-size="64" font-weight="200" letter-spacing="2" fill="#FF5A4E" fill-opacity="0.96">
+        +0.42<animate attributeName="fill-opacity" values="0.96;0.65;0.96" dur="2.4s" repeatCount="indefinite"/>
+      </text>
+      <text x="20" y="124" font-size="8" letter-spacing="3" fill="#FF5A4E" fill-opacity="0.85">ATRÁS DO TEAM BEST · 2:51.038 (BRUNO v8)</text>
+    </g>
+
+    <!-- Sub-blocos: melhor stint, last lap, projection -->
+    <g transform="translate(360, 16)" font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#F5F0E0">
+      <text font-size="7" letter-spacing="3" fill-opacity="0.45" fill="#D4AF37">VOLTA ATUAL</text>
+      <text y="22" font-size="22" font-weight="300" letter-spacing="2" fill-opacity="0.92">2:53.4</text>
+      <text y="40" font-size="7" letter-spacing="2" fill-opacity="0.40">PROJETADA · S1✓ S2✗ S3—</text>
+
+      <text y="68" font-size="7" letter-spacing="3" fill-opacity="0.45" fill="#D4AF37">MELHOR STINT</text>
+      <text y="90" font-size="16" font-weight="300" letter-spacing="2" fill-opacity="0.85">2:52.106</text>
+      <text y="106" font-size="7" letter-spacing="2" fill-opacity="0.40">v6 · Δ +1.07s vs TEAM BEST</text>
+
+      <text y="130" font-size="7" letter-spacing="3" fill-opacity="0.45" fill="#D4AF37">RIVAL DO TIME</text>
+      <text x="0" y="142" font-size="9" letter-spacing="1.5" fill-opacity="0.75">LUIZ M. · v11 · 2:51.928</text>
+    </g>
+  </g>
+
+  <!-- ════════════════ ZONA 5 · CARRO #14 (top-down) ════════════════ -->
+  <g transform="translate(1200, 320)">
+    <ellipse cx="330" cy="200" rx="380" ry="240" fill="url(#bloomZone)" opacity="0.7"/>
+
+    <line x1="0"   y1="0"   x2="660" y2="0"   stroke="url(#champagne)"  stroke-width="0.6" stroke-opacity="0.55"/>
+    <line x1="0"   y1="400" x2="660" y2="400" stroke="url(#champagne)"  stroke-width="0.6" stroke-opacity="0.20"/>
+    <line x1="0"   y1="0"   x2="0"   y2="400" stroke="url(#champagneV)" stroke-width="0.6" stroke-opacity="0.30"/>
+    <line x1="660" y1="0"   x2="660" y2="400" stroke="url(#champagneV)" stroke-width="0.6" stroke-opacity="0.30"/>
+
+    <g font-family="'Helvetica Neue', -apple-system, sans-serif" fill="#F5F0E0">
+      <text x="20" y="24" font-size="8"  letter-spacing="4" fill-opacity="0.50" fill="#D4AF37">CARRO · #14 · BRUNO M.</text>
+      <text x="20" y="42" font-size="14" font-weight="300" letter-spacing="3" fill-opacity="0.92">ESTADO DO CARRO</text>
+    </g>
+    <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#F5F0E0" text-anchor="end">
+      <text x="640" y="24" font-size="7"  letter-spacing="2.5" fill-opacity="0.45">SOURCE · INJEPRO T4000 BLE</text>
+      <text x="640" y="40" font-size="9"  letter-spacing="2" fill-opacity="0.75">TIER 1 · 12Hz · 184ms</text>
+    </g>
+
+    <!-- Silhueta do carro: corpo central -->
+    <g transform="translate(330, 230)">
+      <!-- Body shape (top-down formula-ish) -->
+      <path d="M -50,-150 L 50,-150 L 60,-100 L 70,-30 L 70,80 L 60,140 L 50,170 L -50,170 L -60,140 L -70,80 L -70,-30 L -60,-100 Z"
+            fill="#0A0C12" fill-opacity="0.85" stroke="#3A3D44" stroke-width="0.8" stroke-opacity="0.85"/>
+      <!-- Rim light champagne -->
+      <path d="M -50,-150 L 50,-150 L 60,-100 L 70,-30 L 70,80 L 60,140 L 50,170 L -50,170 L -60,140 L -70,80 L -70,-30 L -60,-100 Z"
+            fill="none" stroke="url(#champagne)" stroke-width="0.5" stroke-opacity="0.40"/>
+
+      <!-- Cockpit oval -->
+      <ellipse cx="0" cy="20" rx="28" ry="60" fill="#1A1D24" stroke="#222428" stroke-width="0.6"/>
+      <line x1="-22" y1="0" x2="22" y2="0" stroke="#3A3D44" stroke-width="0.5"/>
+      <text y="58" text-anchor="middle" font-family="'Helvetica Neue', -apple-system, sans-serif"
+            font-size="8" letter-spacing="3" fill="#D4AF37" fill-opacity="0.55">14</text>
+
+      <!-- Engine block (dianteira/traseira — assume rear engine, no sul do corpo) -->
+      <rect x="-30" y="80" width="60" height="50" rx="4" ry="4"
+            fill="#181C24" stroke="#3A3D44" stroke-width="0.6" stroke-opacity="0.85"/>
+      <text x="0" y="110" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+            font-size="8" letter-spacing="2.5" fill="#F5F0E0" fill-opacity="0.45">MOTOR</text>
+
+      <!-- Pneus (4 cantos, fora do corpo) -->
+      <g>
+        <!-- FL -->
+        <use href="#tire" x="-100" y="-130"/>
+        <circle cx="-80" cy="-90" r="22" fill="none" stroke="#86EFAC" stroke-width="0.8" stroke-opacity="0.55"/>
+        <!-- FR -->
+        <use href="#tire" x="60" y="-130"/>
+        <circle cx="80" cy="-90" r="22" fill="none" stroke="#86EFAC" stroke-width="0.8" stroke-opacity="0.55"/>
+        <!-- RL -->
+        <use href="#tire" x="-100" y="100"/>
+        <circle cx="-80" cy="140" r="22" fill="none" stroke="#86EFAC" stroke-width="0.8" stroke-opacity="0.55"/>
+        <!-- RR — alerta amber -->
+        <use href="#tire" x="60" y="100"/>
+        <circle cx="80" cy="140" r="22" fill="none" stroke="#FBBF24" stroke-width="0.9" stroke-opacity="0.85">
+          <animate attributeName="stroke-opacity" values="0.85;0.40;0.85" dur="2.4s" repeatCount="indefinite"/>
+        </circle>
+      </g>
+    </g>
+
+    <!-- Labels dos pneus (4 cantos do panel) -->
+    <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#F5F0E0">
+      <!-- FL -->
+      <g transform="translate(20, 80)">
+        <text font-size="7" letter-spacing="2.5" fill="#86EFAC" fill-opacity="0.65">PNEU FL</text>
+        <text y="20" font-size="20" font-weight="300" letter-spacing="2" fill-opacity="0.92">28.4</text>
+        <text x="56" y="20" font-size="9" letter-spacing="2" fill-opacity="0.55">psi</text>
+        <text y="38" font-size="11" font-weight="300" letter-spacing="2" fill-opacity="0.85">84°C</text>
+      </g>
+      <!-- FR -->
+      <g transform="translate(540, 80)" text-anchor="end">
+        <text x="80" font-size="7" letter-spacing="2.5" fill="#86EFAC" fill-opacity="0.65">PNEU FR</text>
+        <text x="80" y="20" font-size="20" font-weight="300" letter-spacing="2" fill-opacity="0.92">28.5</text>
+        <text x="80" y="38" font-size="11" font-weight="300" letter-spacing="2" fill-opacity="0.85">86°C</text>
+      </g>
+      <!-- RL -->
+      <g transform="translate(20, 320)">
+        <text font-size="7" letter-spacing="2.5" fill="#86EFAC" fill-opacity="0.65">PNEU RL</text>
+        <text y="20" font-size="20" font-weight="300" letter-spacing="2" fill-opacity="0.92">29.1</text>
+        <text x="56" y="20" font-size="9" letter-spacing="2" fill-opacity="0.55">psi</text>
+        <text y="38" font-size="11" font-weight="300" letter-spacing="2" fill-opacity="0.85">91°C</text>
+      </g>
+      <!-- RR — alerta -->
+      <g transform="translate(540, 320)" text-anchor="end">
+        <text x="80" font-size="7" letter-spacing="2.5" fill="#FBBF24" fill-opacity="0.85">PNEU RR · ATENÇÃO</text>
+        <text x="80" y="20" font-size="20" font-weight="300" letter-spacing="2" fill="#FBBF24" fill-opacity="0.95">29.0</text>
+        <text x="80" y="38" font-size="11" font-weight="300" letter-spacing="2" fill="#FBBF24" fill-opacity="0.95">98°C  +6</text>
+      </g>
+    </g>
+
+    <!-- Engine vitals (centro inferior do panel) -->
+    <g transform="translate(330, 360)" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+       fill="#F5F0E0" text-anchor="middle">
+      <line x1="-180" y1="-12" x2="180" y2="-12" stroke="url(#champagne)" stroke-width="0.4" stroke-opacity="0.30"/>
+      <g transform="translate(-130, 0)">
+        <text font-size="7" letter-spacing="2.5" fill="#D4AF37" fill-opacity="0.55">P. ÓLEO</text>
+        <text y="18" font-size="14" font-weight="300" letter-spacing="2" fill-opacity="0.92">4.2</text>
+        <text x="22" y="18" font-size="8" letter-spacing="2" fill-opacity="0.55" text-anchor="start">bar</text>
+      </g>
+      <g transform="translate(0, 0)">
+        <text font-size="7" letter-spacing="2.5" fill="#D4AF37" fill-opacity="0.55">T. ÓLEO</text>
+        <text y="18" font-size="14" font-weight="300" letter-spacing="2" fill-opacity="0.92">108</text>
+        <text x="22" y="18" font-size="8" letter-spacing="2" fill-opacity="0.55" text-anchor="start">°C</text>
+      </g>
+      <g transform="translate(130, 0)">
+        <text font-size="7" letter-spacing="2.5" fill="#D4AF37" fill-opacity="0.55">T. MOTOR</text>
+        <text y="18" font-size="14" font-weight="300" letter-spacing="2" fill-opacity="0.92">92</text>
+        <text x="20" y="18" font-size="8" letter-spacing="2" fill-opacity="0.55" text-anchor="start">°C</text>
+      </g>
+    </g>
+
+    <!-- Tanque (barra esquerda vertical) -->
+    <g transform="translate(20, 160)">
+      <text font-family="'Helvetica Neue', -apple-system, sans-serif" font-size="7"
+            letter-spacing="2.5" fill="#D4AF37" fill-opacity="0.55">TANQUE EST.</text>
+      <rect x="0" y="10" width="10" height="120" fill="none" stroke="#3A3D44" stroke-width="0.6"/>
+      <rect x="0" y="64" width="10" height="66" fill="url(#champagneV)" fill-opacity="0.85"/>
+      <text y="148" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+            font-size="13" font-weight="300" letter-spacing="2" fill="#F5F0E0" fill-opacity="0.92">45%</text>
+      <text y="162" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+            font-size="7" letter-spacing="2" fill="#F5F0E0" fill-opacity="0.45">~21L · ~12 voltas</text>
+    </g>
+  </g>
+
+  <!-- ════════════════ ZONA 6 · ANÁLISE DO BOX ════════════════ -->
+  <g transform="translate(1200, 740)">
+    <line x1="0"   y1="0"   x2="660" y2="0"   stroke="url(#champagne)"  stroke-width="0.6" stroke-opacity="0.55"/>
+    <line x1="0"   y1="140" x2="660" y2="140" stroke="url(#champagne)"  stroke-width="0.6" stroke-opacity="0.15"/>
+    <line x1="0"   y1="0"   x2="0"   y2="140" stroke="url(#champagneV)" stroke-width="0.6" stroke-opacity="0.30"/>
+    <line x1="660" y1="0"   x2="660" y2="140" stroke="url(#champagneV)" stroke-width="0.6" stroke-opacity="0.30"/>
+
+    <g font-family="'Helvetica Neue', -apple-system, sans-serif" fill="#F5F0E0">
+      <text x="20" y="22" font-size="8" letter-spacing="4" fill-opacity="0.50" fill="#D4AF37">ANÁLISE · ERROR-CLASSIFIER</text>
+      <text x="20" y="40" font-size="12" font-weight="300" letter-spacing="2.5" fill-opacity="0.85">PADRÕES RECORRENTES · ÚLTIMAS 6 VOLTAS</text>
+    </g>
+
+    <g font-family="'Helvetica Neue', -apple-system, sans-serif" fill="#F5F0E0">
+      <g transform="translate(20, 64)">
+        <circle cx="-10" cy="-3" r="2.4" fill="#FF5A4E"/>
+        <text font-size="11" letter-spacing="1" fill-opacity="0.92">Antecipa apex em média 7m na <tspan fill="#D4AF37">Curva 3</tspan> — abertura precoce, atraso de aceleração de 0.4s.</text>
+      </g>
+      <g transform="translate(20, 90)">
+        <circle cx="-10" cy="-3" r="2.4" fill="#FBBF24"/>
+        <text font-size="11" letter-spacing="1" fill-opacity="0.85">V min vindo 4 km/h abaixo do best na <tspan fill="#D4AF37">Curva da Bruxa</tspan> — sinal de hesitação no turn-in.</text>
+      </g>
+      <g transform="translate(20, 116)">
+        <circle cx="-10" cy="-3" r="2.4" fill="#86EFAC"/>
+        <text font-size="11" letter-spacing="1" fill-opacity="0.85">Saída do <tspan fill="#D4AF37">S do Piquet</tspan> consistentemente boa — entregue em todas as 6 voltas.</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ════════════════ ZONA 7 · MENSAGENS (telegramas) ════════════════ -->
+  <g transform="translate(1200, 900)">
+    <line x1="0"   y1="0"   x2="660" y2="0"   stroke="url(#champagne)"  stroke-width="0.6" stroke-opacity="0.55"/>
+    <line x1="0"   y1="150" x2="660" y2="150" stroke="url(#champagne)"  stroke-width="0.6" stroke-opacity="0.20"/>
+    <line x1="0"   y1="0"   x2="0"   y2="150" stroke="url(#champagneV)" stroke-width="0.6" stroke-opacity="0.30"/>
+    <line x1="660" y1="0"   x2="660" y2="150" stroke="url(#champagneV)" stroke-width="0.6" stroke-opacity="0.30"/>
+
+    <g font-family="'Helvetica Neue', -apple-system, sans-serif" fill="#F5F0E0">
+      <text x="20" y="22" font-size="8" letter-spacing="4" fill-opacity="0.50" fill="#D4AF37">MENSAGENS · BOX ↔ PILOTO</text>
+    </g>
+    <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#F5F0E0" text-anchor="end">
+      <text x="640" y="22" font-size="7" letter-spacing="2.5" fill-opacity="0.45">SUPABASE REALTIME · 6 ATIVAS</text>
+    </g>
+
+    <!-- Stream (3 mensagens visíveis) -->
+    <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#F5F0E0">
+      <g transform="translate(20, 50)">
+        <line x1="0" y1="-8" x2="620" y2="-8" stroke="url(#champagne)" stroke-width="0.3" stroke-opacity="0.20"/>
+        <text font-size="7" letter-spacing="2.5" fill="#D4AF37" fill-opacity="0.55">14:21:08 · BOX → PILOTO · TV ✓</text>
+        <text y="14" font-size="11" letter-spacing="1.5" fill-opacity="0.92">freio antes da placa na 3 — você tá entrando 2m cedo</text>
+      </g>
+      <g transform="translate(20, 88)">
+        <line x1="0" y1="-8" x2="620" y2="-8" stroke="url(#champagne)" stroke-width="0.3" stroke-opacity="0.15"/>
+        <text font-size="7" letter-spacing="2.5" fill="#7DD3FC" fill-opacity="0.65">14:21:14 · PILOTO → BOX</text>
+        <text y="14" font-size="11" letter-spacing="1.5" fill-opacity="0.85">ok, copy</text>
+      </g>
+      <g transform="translate(20, 122)">
+        <line x1="0" y1="-8" x2="620" y2="-8" stroke="url(#champagne)" stroke-width="0.3" stroke-opacity="0.15"/>
+        <text font-size="7" letter-spacing="2.5" fill="#D4AF37" fill-opacity="0.40">14:22:02 · ENG → PROF · TV ✗ (privada)</text>
+        <text y="14" font-size="11" letter-spacing="1.5" fill-opacity="0.55">RR subindo +1°C/volta — 3 voltas até janela máx</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ════════════════ STINT-BAR (footer) ════════════════ -->
+  <g transform="translate(60, 1058)">
+    <text font-family="'Helvetica Neue', -apple-system, sans-serif" font-size="7"
+          letter-spacing="3" fill="#D4AF37" fill-opacity="0.55">STINT 03 · VOLTAS</text>
+    <g transform="translate(140, -8)">
+      <!-- 12 segmentos -->
+      <g>
+        <rect x="0"   y="0" width="60" height="6" fill="#86EFAC" fill-opacity="0.55"/>
+        <rect x="65"  y="0" width="60" height="6" fill="#86EFAC" fill-opacity="0.55"/>
+        <rect x="130" y="0" width="60" height="6" fill="#86EFAC" fill-opacity="0.55"/>
+        <rect x="195" y="0" width="60" height="6" fill="#FBBF24" fill-opacity="0.65"/>
+        <rect x="260" y="0" width="60" height="6" fill="#86EFAC" fill-opacity="0.55"/>
+        <rect x="325" y="0" width="60" height="6" fill="#D4AF37" fill-opacity="0.95"/>
+        <rect x="390" y="0" width="60" height="6" fill="#86EFAC" fill-opacity="0.55"/>
+        <!-- ATIVA (live) -->
+        <rect x="455" y="-2" width="60" height="10" fill="#FF7A1A" fill-opacity="0.85">
+          <animate attributeName="fill-opacity" values="0.85;0.45;0.85" dur="1.6s" repeatCount="indefinite"/>
+        </rect>
+        <rect x="520" y="0" width="60" height="6" fill="#3A3D44" fill-opacity="0.55"/>
+        <rect x="585" y="0" width="60" height="6" fill="#3A3D44" fill-opacity="0.55"/>
+        <rect x="650" y="0" width="60" height="6" fill="#3A3D44" fill-opacity="0.55"/>
+        <rect x="715" y="0" width="60" height="6" fill="#3A3D44" fill-opacity="0.55"/>
+      </g>
+    </g>
+    <text x="940" y="4" font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+          font-size="9" letter-spacing="2" fill="#F5F0E0" fill-opacity="0.65">v8 / 12   ·   BEST v6 (gold) · WORST v4</text>
+  </g>
+
+  <!-- ════════════════ VIGNETTE FINAL (atmosfera) ════════════════ -->
+  <rect x="0" y="0" width="1920" height="1080" fill="url(#vignette)"/>
+</svg>
