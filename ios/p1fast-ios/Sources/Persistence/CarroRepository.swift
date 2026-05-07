@@ -81,7 +81,7 @@ final class CarroRepository: ObservableObject {
         let configId = UUID().uuidString
         let now = DB.nowMs()
         try await queue.write { db in
-            try Carro(
+            let carro = Carro(
                 id: carroId,
                 timeId: teamId,
                 apelido: apelido,
@@ -92,8 +92,11 @@ final class CarroRepository: ObservableObject {
                 createdAt: now,
                 updatedAt: now,
                 syncedAt: nil
-            ).insert(db)
-            try Configuracao(
+            )
+            try carro.insert(db)
+            try SyncQueue.enqueueRecord(db, tableName: "carros", rowId: carroId, op: .insert, record: carro)
+
+            let config = Configuracao(
                 id: configId,
                 timeId: teamId,
                 carroId: carroId,
@@ -104,7 +107,9 @@ final class CarroRepository: ObservableObject {
                 createdAt: now,
                 updatedAt: now,
                 syncedAt: nil
-            ).insert(db)
+            )
+            try config.insert(db)
+            try SyncQueue.enqueueRecord(db, tableName: "configuracoes", rowId: configId, op: .insert, record: config)
         }
         try await reload()
         return carroId
@@ -116,6 +121,7 @@ final class CarroRepository: ObservableObject {
         copy.syncedAt = nil
         try await queue.write { db in
             try copy.update(db)
+            try SyncQueue.enqueueRecord(db, tableName: "carros", rowId: copy.id, op: .update, record: copy)
         }
         try await reload()
     }
@@ -123,6 +129,7 @@ final class CarroRepository: ObservableObject {
     func delete(carroId: String) async throws {
         try await queue.write { db in
             _ = try Carro.deleteOne(db, key: carroId)
+            try SyncQueue.enqueueRecord(db, tableName: "carros", rowId: carroId, op: .delete, record: Carro?.none)
         }
         try await reload()
     }
@@ -152,8 +159,9 @@ final class CarroRepository: ObservableObject {
                 c.updatedAt = DB.nowMs()
                 c.syncedAt = nil
                 try c.update(db)
+                try SyncQueue.enqueueRecord(db, tableName: "configuracoes", rowId: c.id, op: .update, record: c)
             } else {
-                try Configuracao(
+                let novo = Configuracao(
                     id: UUID().uuidString,
                     timeId: teamId,
                     carroId: carroId,
@@ -161,7 +169,9 @@ final class CarroRepository: ObservableObject {
                     dataAplicacao: DB.nowMs(),
                     overrides: overridesJSON,
                     temperaturaIdealRange: nil
-                ).insert(db)
+                )
+                try novo.insert(db)
+                try SyncQueue.enqueueRecord(db, tableName: "configuracoes", rowId: novo.id, op: .insert, record: novo)
             }
         }
     }

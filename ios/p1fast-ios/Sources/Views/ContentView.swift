@@ -236,6 +236,23 @@ private struct ReadyRoot: View {
                 await trackRepo.bootstrap()
                 await licaoRepo.bootstrap()
                 await pendenciaRepo.bootstrap()
+                // Sprint E.1: enfileira retroativamente rows com
+                // synced_at IS NULL que vieram de versões anteriores
+                // (carros/eventos criados antes do fix de enqueue nos
+                // repos). Idempotente — confere existência prévia em
+                // sync_queue antes de inserir. Roda em background pra
+                // não atrasar UI.
+                let q = queue
+                Task.detached(priority: .background) {
+                    do {
+                        let total = try SyncBackfill.run(q)
+                        if total > 0 {
+                            print("SyncBackfill: enfileiradas \(total) rows pendentes")
+                        }
+                    } catch {
+                        print("SyncBackfill error: \(error)")
+                    }
+                }
             }
     }
 
