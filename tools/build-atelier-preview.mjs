@@ -49,6 +49,68 @@ async function loadCanonical() {
   return { svgPath: m[1], points: ref.points, totalM: ref.totalLengthMeters };
 }
 
+// ─── Helpers de fluidez ──────────────────────────────────────
+function parsePolyline(d) {
+  const tokens = d.match(/[MLZ][^MLZ]*/gi) || [];
+  const pts = [];
+  for (const t of tokens) {
+    const cmd = t[0].toUpperCase();
+    const nums = t.slice(1).trim().split(/[\s,]+/).filter(Boolean).map(Number);
+    if (cmd === 'M' || cmd === 'L') {
+      for (let i = 0; i < nums.length; i += 2) pts.push({ x: nums[i], y: nums[i + 1] });
+    }
+  }
+  if (pts.length > 1 && pts[0].x === pts[pts.length - 1].x && pts[0].y === pts[pts.length - 1].y) pts.pop();
+  return pts;
+}
+
+function decimateUniform(pts, n) {
+  const out = [];
+  const step = pts.length / n;
+  for (let i = 0; i < n; i++) out.push(pts[Math.floor(i * step)]);
+  return out;
+}
+
+// Catmull-Rom (tensão 0.5) → Cubic Bezier. Polígono fechado (closed=true).
+// Resultado: path C2-contínuo passando por todos os pontos de controle.
+function catmullRomToBezier(pts, closed = true) {
+  const n = pts.length;
+  let d = `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`;
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[(i - 1 + n) % n];
+    const p1 = pts[i];
+    const p2 = pts[(i + 1) % n];
+    const p3 = pts[(i + 2) % n];
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C ${c1x.toFixed(2)} ${c1y.toFixed(2)}, ${c2x.toFixed(2)} ${c2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+  }
+  if (closed) d += ' Z';
+  return d;
+}
+
+// Densifica array de pontos por interpolação linear (factor=5 → 5x mais pontos)
+function densifyPoints(pts, factor) {
+  if (factor <= 1) return pts;
+  const out = [];
+  const n = pts.length;
+  for (let i = 0; i < n; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % n];
+    for (let k = 0; k < factor; k++) {
+      const t = k / factor;
+      out.push({
+        x: a.x + (b.x - a.x) * t,
+        y: a.y + (b.y - a.y) * t,
+        sMeters: a.sMeters + ((b.sMeters - a.sMeters) || 0) * t,
+      });
+    }
+  }
+  return out;
+}
+
 function leader(corner) {
   // Calcula posição do label e da leader line conforme dir
   const padApex = 18;     // distância do círculo do apex
@@ -115,13 +177,30 @@ function smil(values, sampleEvery = 1) {
 }
 
 function buildAtelier({ svgPath, points, totalM }) {
-  // Sample posições para os marcadores live + ghost + rastro
-  const liveIdx = Math.floor(points.length * 0.42);          // ~42% da volta
-  const ghostIdx = Math.floor(points.length * 0.46);         // 4% à frente do live (ghost mais rápido)
-  const trailLen = 80;                                       // 80 pontos de rastro
+  // ─── FLUIDEZ DO TRAÇADO ──────────────────────────────────
+  // Converte polyline ~6900 vértices em Bezier C2-contínuo com 280 pontos
+  // de controle. A pista renderiza como CURVA matemática real, não como
+  // sequência de retinhas.
+  const polyPts = parsePolyline(svgPath);
+  const ctrlPts = decimateUniform(polyPts, 280);
+  const bezierPath = catmullRomToBezier(ctrlPts, true);
+
+  // ─── FLUIDEZ DO RASTRO ───────────────────────────────────
+  // Densifica os pontos da reference (2.5m → 0.5m via interpolação 5x).
+  // O rastro vira fita contínua de luz em vez de sequência de pontos.
+  const densePts = densifyPoints(points, 5); // 2190 → 10950 pontos a ~0.5m
+  const denseLiveIdx = Math.floor(densePts.length * 0.42);
+  const denseGhostIdx = Math.floor(densePts.length * 0.46);
+
+  // Mantemos os índices originais (sobre points) pra animação SMIL e telemetria
+  const liveIdx = Math.floor(points.length * 0.42);
+  const ghostIdx = Math.floor(points.length * 0.46);
   const live = points[liveIdx];
   const ghost = points[ghostIdx];
-  const ghostTrailLen = 60;
+
+  // Trail densificado: 400 pontos a 0.5m = 200m de rastro contínuo
+  const trailLen = 400;
+  const ghostTrailLen = 320;
   const tele = deriveTelemetry(points);
   const cumDelta = deriveCumDelta(points.length, 0.42);
 
@@ -141,18 +220,18 @@ function buildAtelier({ svgPath, points, totalM }) {
 
   const liveTrail = [];
   for (let i = 1; i <= trailLen; i++) {
-    const idx = (liveIdx - i + points.length) % points.length;
-    // piso de opacidade 0.20 (não some) + decaimento exponencial pra dar densidade no início do rastro
+    const idx = (denseLiveIdx - i + densePts.length) % densePts.length;
+    // piso de opacidade 0.20 + decaimento exponencial — vira fita contínua, não pontilhado
     const t = i / trailLen;
     const opacity = 0.20 + (1 - t) * (1 - t) * 0.80;
-    liveTrail.push({ p: points[idx], opacity });
+    liveTrail.push({ p: densePts[idx], opacity });
   }
   const ghostTrail = [];
   for (let i = 1; i <= ghostTrailLen; i++) {
-    const idx = (ghostIdx - i + points.length) % points.length;
+    const idx = (denseGhostIdx - i + densePts.length) % densePts.length;
     const t = i / ghostTrailLen;
     const opacity = 0.12 + (1 - t) * (1 - t) * 0.55;
-    ghostTrail.push({ p: points[idx], opacity });
+    ghostTrail.push({ p: densePts[idx], opacity });
   }
 
   // Animação: durações em segundos. Live = volta atual mais lenta, ghost mais rápido.
@@ -251,7 +330,7 @@ function buildAtelier({ svgPath, points, totalM }) {
       <feGaussianBlur stdDeviation="2.2"/>
     </filter>
 
-    <path id="track" d="${svgPath}"/>
+    <path id="track" d="${bezierPath}"/>
   </defs>
 
   <!-- ════════════════ ELEMENTO 2: BACKGROUND ════════════════ -->
@@ -328,19 +407,19 @@ function buildAtelier({ svgPath, points, totalM }) {
     </g>
 
     <!-- ════════════════ ELEMENTO 4: VOLTA (live + ghost + rastros) ════════════════ -->
-    <!-- Rastro do ghost: glow ciano amplo embaixo + dots sólidos por cima -->
+    <!-- Rastro do ghost: glow ciano amplo embaixo + dots densos por cima (fita contínua) -->
     <g fill="#7DD3FC" filter="url(#trailGlow)">
-      ${ghostTrail.map(t => `<circle cx="${t.p.x.toFixed(2)}" cy="${t.p.y.toFixed(2)}" r="2.6" fill-opacity="${(t.opacity * 0.55).toFixed(3)}"/>`).join('')}
+      ${ghostTrail.map(t => `<circle cx="${t.p.x.toFixed(2)}" cy="${t.p.y.toFixed(2)}" r="2.0" fill-opacity="${(t.opacity * 0.50).toFixed(3)}"/>`).join('')}
     </g>
     <g fill="#7DD3FC">
-      ${ghostTrail.map(t => `<circle cx="${t.p.x.toFixed(2)}" cy="${t.p.y.toFixed(2)}" r="2.2" fill-opacity="${t.opacity.toFixed(3)}"/>`).join('')}
+      ${ghostTrail.map(t => `<circle cx="${t.p.x.toFixed(2)}" cy="${t.p.y.toFixed(2)}" r="1.4" fill-opacity="${t.opacity.toFixed(3)}"/>`).join('')}
     </g>
-    <!-- Rastro do live: glow laranja amplo embaixo + dots sólidos por cima -->
+    <!-- Rastro do live: glow laranja amplo embaixo + dots densos por cima (fita contínua) -->
     <g fill="#FF7A1A" filter="url(#trailGlow)">
-      ${liveTrail.map(t => `<circle cx="${t.p.x.toFixed(2)}" cy="${t.p.y.toFixed(2)}" r="2.8" fill-opacity="${(t.opacity * 0.55).toFixed(3)}"/>`).join('')}
+      ${liveTrail.map(t => `<circle cx="${t.p.x.toFixed(2)}" cy="${t.p.y.toFixed(2)}" r="2.4" fill-opacity="${(t.opacity * 0.50).toFixed(3)}"/>`).join('')}
     </g>
     <g fill="#FF7A1A">
-      ${liveTrail.map(t => `<circle cx="${t.p.x.toFixed(2)}" cy="${t.p.y.toFixed(2)}" r="2.4" fill-opacity="${t.opacity.toFixed(3)}"/>`).join('')}
+      ${liveTrail.map(t => `<circle cx="${t.p.x.toFixed(2)}" cy="${t.p.y.toFixed(2)}" r="1.6" fill-opacity="${t.opacity.toFixed(3)}"/>`).join('')}
     </g>
 
     <!-- Ghost marker — ANIMADO ao longo do path, fase adiantada -->
