@@ -263,10 +263,11 @@ function buildReferenceJson({ apelido, nomeOficial, viewBox, resampled }) {
 
 async function generateTrack(track) {
   const rawPath = await extractPathFromSeed(track.pathConst);
-  // Suavização Gaussiana com σ=18m: mata wobbles até ~36m (FWHM).
-  // Curvas reais de Brasília (raio 30-100m) ficam suavizadas mas
-  // reconhecíveis. Sem decimação no path final pra preservar fluidez.
-  const svgPath = smoothPathGaussian(rawPath, 18, track.extensaoMetros);
+  // Suavização Gaussiana agressiva: σ=30m (FWHM 60m). Linha fica
+  // totalmente homogênea — curvas reais começam a ser arredondadas
+  // (Curva 1 perde um pouco do "fechamento") mas o traçado geral fica
+  // fluido sem nenhum wobble visível. Sem decimação no path final.
+  const svgPath = smoothPathGaussian(rawPath, 30, track.extensaoMetros);
   const resampled = resampleByDistance(svgPath, track.extensaoMetros, track.spacingMeters);
 
   const baseSvg = buildBaseSvg({ viewBox: track.viewBox, svgPath });
