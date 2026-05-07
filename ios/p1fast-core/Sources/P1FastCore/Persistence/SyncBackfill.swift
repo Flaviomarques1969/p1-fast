@@ -57,6 +57,23 @@ public enum SyncBackfill {
         return totalEnfileirado
     }
 
+    /// Sentinela do time mock local. Rows com esse `time_id` vêm de
+    /// seeds locais (Flavio/Bruno mocks, Etanol/V-Power mocks, eventos
+    /// mock) e NÃO devem ir pro servidor — o user pode nem ter acesso
+    /// a esse time. Filtro explícito no backfill evita poluir a fila
+    /// com rows que sempre serão rejeitadas com `not-member-of-time`.
+    public static let LOCAL_DEFAULT_TEAM = "local-default-team"
+
+    /// Tabelas que TÊM coluna `time_id` direto. Pra essas, filtramos
+    /// rows com `time_id = LOCAL_DEFAULT_TEAM` no backfill. Tabelas
+    /// sem `time_id` direto (evento_pendencias, sessoes, voltas,
+    /// segment_executions) não precisam — herdam membership via FK e
+    /// só vão pra fila se o parent já não for mock.
+    private static let tablesWithTimeId: Set<String> = [
+        "carros", "configuracoes", "pilotos", "passageiros",
+        "combustiveis", "pneus", "eventos",
+    ]
+
     private static func backfillTable(
         _ queue: DatabaseQueue,
         tableName: String
@@ -65,9 +82,13 @@ public enum SyncBackfill {
             // SELECT id da tabela onde synced_at é NULL e ainda não há
             // row equivalente em sync_queue. JSON encoding via SELECT *
             // (PostgREST aceita o shape literal das colunas).
+            let mockFilter = tablesWithTimeId.contains(tableName)
+                ? "AND time_id != '\(LOCAL_DEFAULT_TEAM)'"
+                : ""
             let pending = try Row.fetchAll(db, sql: """
                 SELECT * FROM \(tableName)
                 WHERE synced_at IS NULL
+                  \(mockFilter)
                   AND NOT EXISTS (
                     SELECT 1 FROM sync_queue
                     WHERE sync_queue.table_name = ?

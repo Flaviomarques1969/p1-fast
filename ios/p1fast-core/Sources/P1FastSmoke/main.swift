@@ -4138,9 +4138,34 @@ step("BACKFILL-01: times NÃO entra na fila (sobe via RPC ensure_personal_team)"
     let count = try SyncBackfill.run(q)
     let queued = try q.read { db in try SyncQueueItem.fetchAll(db) }
     try assertEq(queued.filter { $0.tableName == "times" }.count, 0, "times NÃO foi enfileirado")
-    // count pode incluir outras tabelas-seed dependendo do schema, mas
-    // o relevante é que times está fora.
     try assertTrue(count >= 0, "backfill rodou sem erro")
+}
+
+step("BACKFILL-02: rows com time_id=local-default-team NÃO entram na fila") {
+    let q = try makeTestDB()
+    let now = DB.nowMs()
+    try q.write { db in
+        // Times pais (mock + real) + 1 carro de cada
+        try db.execute(sql: """
+            INSERT INTO times (id, nome, created_at, updated_at)
+            VALUES (?, ?, ?, ?), (?, ?, ?, ?)
+        """, arguments: [
+            SyncBackfill.LOCAL_DEFAULT_TEAM, "Time local", now, now,
+            "team-real", "Real", now, now,
+        ])
+        try db.execute(sql: """
+            INSERT INTO carros (id, time_id, apelido, fonte_temperatura, created_at, updated_at)
+            VALUES (?, ?, ?, 'motor', ?, ?), (?, ?, ?, 'motor', ?, ?)
+        """, arguments: [
+            "carro-real", "team-real", "Celta", now, now,
+            "carro-mock", SyncBackfill.LOCAL_DEFAULT_TEAM, "Mock", now, now,
+        ])
+    }
+    _ = try SyncBackfill.run(q)
+    let queued = try q.read { db in try SyncQueueItem.fetchAll(db) }
+    let carrosFila = queued.filter { $0.tableName == "carros" }
+    try assertEq(carrosFila.count, 1, "só 1 carro entrou na fila — o real")
+    try assertEq(carrosFila.first?.rowId, "carro-real")
 }
 
 // ─── BACKOFF (Sprint 1A.6 — primitive) ───────────────────────
