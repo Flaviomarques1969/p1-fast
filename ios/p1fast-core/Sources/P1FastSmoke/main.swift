@@ -4124,6 +4124,25 @@ step("DRAIN-09: accepted com UUID lowercase casa item local uppercase (Postgres 
     try assertEq(remaining.count, 0, "row drenada da fila mesmo com case mismatch")
 }
 
+step("BACKFILL-01: times NÃO entra na fila (sobe via RPC ensure_personal_team)") {
+    let q = try makeTestDB()
+    try q.write { db in
+        // Insert um time real com synced_at NULL — backfill anteriormente
+        // enfileirava, mas times está fora da ALLOWED_TABLES da Edge
+        // Function (E3 — vai por RPC, não por sync genérico).
+        try db.execute(sql: """
+            INSERT INTO times (id, nome, criado_por, created_at, updated_at, synced_at)
+            VALUES ('team-test', 'Equipe teste', NULL, ?, ?, NULL)
+        """, arguments: [DB.nowMs(), DB.nowMs()])
+    }
+    let count = try SyncBackfill.run(q)
+    let queued = try q.read { db in try SyncQueueItem.fetchAll(db) }
+    try assertEq(queued.filter { $0.tableName == "times" }.count, 0, "times NÃO foi enfileirado")
+    // count pode incluir outras tabelas-seed dependendo do schema, mas
+    // o relevante é que times está fora.
+    try assertTrue(count >= 0, "backfill rodou sem erro")
+}
+
 // ─── BACKOFF (Sprint 1A.6 — primitive) ───────────────────────
 step("BACKOFF-01: default policy tem 4 attempts (0, 30, 120, 600s)") {
     let p = BackoffPolicy.default

@@ -20,8 +20,13 @@ public enum SyncBackfill {
     /// primeiro pra que o servidor não rejeite por FK quando o drainer
     /// processar em ordem de `created_at`). Usa só o nome — o backfill
     /// serializa a row via `Row.fetchAll` direto, sem precisar do tipo.
+    // `times` NÃO entra: criação/atualização do time só pelo RPC
+    // `ensure_personal_team` (MS-10 C.1) — bypass via sync genérico
+    // bate em `table-nao-permitida` por design da Edge Function. Local
+    // tem 2 rows (mock + time real), ambas com synced_at NULL — nunca
+    // serão preenchidas, mas o backfill checa `NOT EXISTS sync_queue`
+    // e ignora.
     private static let supportedTables: [String] = [
-        "times",
         "carros",
         "configuracoes",
         "eventos",
