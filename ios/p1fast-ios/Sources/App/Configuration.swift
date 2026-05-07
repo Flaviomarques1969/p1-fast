@@ -54,10 +54,6 @@ public enum Configuration {
         return URL(string: trimmed)
     }
 
-    /// Default time_id usado em V1 (single-tenant). Sprint posterior
-    /// troca por valor vindo de Supabase Auth + RPC create_team.
-    public static let localTimeId = "local-default-team"
-
     private static func infoString(_ key: String) -> String? {
         Bundle.main.object(forInfoDictionaryKey: key) as? String
     }

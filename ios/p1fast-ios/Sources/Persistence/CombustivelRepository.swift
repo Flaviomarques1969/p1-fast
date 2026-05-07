@@ -17,6 +17,9 @@
 //
 // IDs estáveis dos seeds são úteis pra tests/screenshots determinís-
 // ticos e pra acoplar futuro seletor de stint (Prompt #11/#16).
+//
+// MS-10 C.3: time_id vem de TeamContext.currentTeamId. Sem login,
+// reload retorna lista vazia, mutações lançam erro orientador.
 
 import Foundation
 import GRDB
@@ -24,9 +27,6 @@ import P1FastCore
 
 @MainActor
 final class CombustivelRepository: ObservableObject {
-    /// Mesmo ID dos outros repos (single-tenant até 1A.6).
-    static let localTimeId = "local-default-team"
-
     /// IDs estáveis dos combustíveis seedados — úteis pra screenshots
     /// determinísticos e pra futuro seletor "Tipo abastecido" do
     /// stint (mockup-combustivel-lista é stint-selector na origem).
@@ -56,9 +56,13 @@ final class CombustivelRepository: ObservableObject {
     /// Recarrega a lista a partir do GRDB. Ordenado por nome
     /// (mockup-combustivel-lista mostra alfabeticamente).
     func reload() async throws {
+        guard let teamId = TeamContext.currentTeamId else {
+            self.combustiveis = []
+            return
+        }
         let rows = try await queue.read { db in
             try Combustivel
-                .filter(Column("time_id") == Self.localTimeId)
+                .filter(Column("time_id") == teamId)
                 .order(Column("nome").asc)
                 .fetchAll(db)
         }
@@ -68,13 +72,16 @@ final class CombustivelRepository: ObservableObject {
     /// Cria combustível novo. Retorna o ID gerado.
     @discardableResult
     func create(nome: String, observacao: String? = nil) async throws -> String {
+        guard let teamId = TeamContext.currentTeamId else {
+            throw NSError(domain: "CombustivelRepository", code: -1, userInfo: [NSLocalizedDescriptionKey: "Sem equipe associada — faça login antes de cadastrar combustíveis."])
+        }
         let id = UUID().uuidString
         let now = DB.nowMs()
         let tipo = observacao?.trimmingCharacters(in: .whitespacesAndNewlines)
         try await queue.write { db in
             try Combustivel(
                 id: id,
-                timeId: Self.localTimeId,
+                timeId: teamId,
                 nome: nome,
                 tipo: (tipo?.isEmpty ?? true) ? nil : tipo,
                 octanagem: nil,
@@ -111,34 +118,36 @@ final class CombustivelRepository: ObservableObject {
     // MARK: - Internas
 
     private func ensureLocalTime() async throws {
+        guard let teamId = TeamContext.currentTeamId else { return }
         try await queue.write { db in
-            let exists = try Time.fetchOne(db, key: Self.localTimeId) != nil
+            let exists = try Time.fetchOne(db, key: teamId) != nil
             guard !exists else { return }
             try Time(
-                id: Self.localTimeId,
-                nome: "Time local",
+                id: teamId,
+                nome: "Equipe pessoal",
                 criadoPor: nil
             ).insert(db)
         }
     }
 
     /// Insere os 2 combustíveis canônicos se a tabela estiver vazia
-    /// (mesmo padrão dos pilotos). O segundo carrega `tipo` como
-    /// observação pra exercitar o campo.
+    /// pro time atual (mesmo padrão dos pilotos). O segundo carrega
+    /// `tipo` como observação pra exercitar o campo.
     private func seedCanonicalIfEmpty() async throws {
+        guard let teamId = TeamContext.currentTeamId else { return }
         try await queue.write { db in
             let total = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM combustiveis WHERE time_id = ?",
-                                          arguments: [Self.localTimeId]) ?? 0
+                                          arguments: [teamId]) ?? 0
             guard total == 0 else { return }
             try Combustivel(
                 id: Self.etanolId,
-                timeId: Self.localTimeId,
+                timeId: teamId,
                 nome: "Etanol comum",
                 tipo: nil
             ).insert(db)
             try Combustivel(
                 id: Self.gasolinaId,
-                timeId: Self.localTimeId,
+                timeId: teamId,
                 nome: "Gasolina aditivada Shell V-Power",
                 tipo: "Quando o etanol não está disponível"
             ).insert(db)

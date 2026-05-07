@@ -48,15 +48,19 @@ struct TelemetriaView: View {
         self.queue = queue
         let id = "telemetria-demo-\(Int(Date().timeIntervalSince1970))"
         _sessaoId = State(initialValue: id)
+        // MS-10 C.3: time_id é lido do storage compartilhado com
+        // SessionManager. Quando user não está logado, fica vazio —
+        // ensureSessao aborta e UI mostra erro.
+        let resolvedTeamId = TeamContext.currentTeamId ?? ""
         _recorder = StateObject(wrappedValue: LiveTelemetryRecorder(
             queue: queue,
             sessaoId: id,
-            timeId: "local-default-team"
+            timeId: resolvedTeamId
         ))
         _processor = StateObject(wrappedValue: LiveKalmanProcessor(
             queue: queue,
             sessaoId: id,
-            timeId: "local-default-team"
+            timeId: resolvedTeamId
         ))
         // MS-2.6.c: caller (ContentView) passa o bundle vindo de
         // TrackRepository.currentTrack quando disponível. Se nil (ex.: repo
@@ -242,24 +246,25 @@ struct TelemetriaView: View {
         }
     }
 
-    /// Cria a sessao demo idempotente. Garante o Time canônico
-    /// `local-default-team` antes da Sessao — TelemetriaView pode rodar
-    /// independente de qual repo bootstrapa o team primeiro (race com
-    /// `.task` do ContentView). Mesmo padrão do
-    /// PilotoRepository/PassageiroRepository: Time idempotente local.
+    /// Cria a sessao demo idempotente. Garante o Time pessoal do user
+    /// (lido de TeamContext.currentTeamId — mesmo padrão dos repos pós
+    /// MS-10 C.3) antes da Sessao. Sem login, sai com erro orientador.
     ///
     /// FB-02: erro vai pro estado `sessaoErro` que renderiza banner
     /// vermelho e desabilita INICIAR. Engolir silenciosamente fazia o
     /// debugging ficar confuso (FK violation no flush mascarava raiz).
     private func ensureSessao() async {
+        guard let timeId = TeamContext.currentTeamId, !timeId.isEmpty else {
+            sessaoErro = "Sem equipe associada — faça login antes de gravar telemetria."
+            return
+        }
         do {
             try await queue.write { db in
-                // 1) Time canônico — idempotente.
-                let timeId = "local-default-team"
+                // 1) Time pessoal — idempotente.
                 if try Time.fetchOne(db, key: timeId) == nil {
                     try Time(
                         id: timeId,
-                        nome: "Time local",
+                        nome: "Equipe pessoal",
                         criadoPor: nil
                     ).insert(db)
                 }

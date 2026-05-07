@@ -337,7 +337,7 @@ struct InlineErro: View {
     let repo = PilotoRepository(queue: queue)
     let mock = Piloto(
         id: "preview-piloto",
-        timeId: PilotoRepository.localTimeId,
+        timeId: "preview-team",
         nome: "Flavio Marx",
         alturaCm: 178,
         pesoKg: 75.5,

@@ -6,9 +6,9 @@
 // Sprint 1A.6 (sync drainer já implementado em p1fast-core, falta
 // HTTP transport — sub-prompt C).
 //
-// Time-tenancy: usa o mesmo `local-default-team` do CarroRepository.
-// `bootstrap()` é idempotente — pode ser chamado em paralelo com
-// CarroRepository.bootstrap() sem race.
+// Time-tenancy: time_id vem de TeamContext.currentTeamId (MS-10 C.3).
+// Sem login, reload deixa lista vazia. `bootstrap()` é idempotente —
+// pode ser chamado em paralelo com CarroRepository.bootstrap() sem race.
 //
 // "Stints" hoje = sessoes. O fluxo de criação chega no Sprint 1A.3
 // (mockup-stint.html, ver docs/SPRINT_1A3_DESIGN.md). Pra essa Sprint
@@ -26,9 +26,6 @@ import P1FastCore
 
 @MainActor
 final class EventoRepository: ObservableObject {
-    /// Mesmo ID do CarroRepository (single-tenant até 1A.6).
-    static let localTimeId = "local-default-team"
-
     /// ID estável da pista padrão "Brasília" — único traçado catalogado
     /// hoje no produto. Alinha com `SeedBrasilia.trk_brasilia` em
     /// P1FastCore (mas a Repo só insere a linha na tabela `tracks`,
@@ -69,6 +66,11 @@ final class EventoRepository: ObservableObject {
     }
 
     func reload() async throws {
+        guard let teamId = TeamContext.currentTeamId else {
+            self.eventos = []
+            self.sumarioPorEvento = [:]
+            return
+        }
         let rows: [(Evento, String?, String?)] = try await queue.read { db in
             // LEFT JOIN tracks pra trazer apelido + nome_oficial sem
             // segundo round-trip. Lista costuma ter <50 eventos — overhead
@@ -81,7 +83,7 @@ final class EventoRepository: ObservableObject {
                 WHERE e.time_id = ?
                 ORDER BY e.data_evento DESC
             """
-            return try Row.fetchAll(db, sql: sql, arguments: [Self.localTimeId]).map { row in
+            return try Row.fetchAll(db, sql: sql, arguments: [teamId]).map { row in
                 let evento = Evento(
                     id: row["id"],
                     timeId: row["time_id"],
@@ -128,12 +130,15 @@ final class EventoRepository: ObservableObject {
     @discardableResult
     func create(trackId: String?, tipo: String?, dataEvento: Int64,
                 status: String? = "planejado") async throws -> String {
+        guard let teamId = TeamContext.currentTeamId else {
+            throw NSError(domain: "EventoRepository", code: -1, userInfo: [NSLocalizedDescriptionKey: "Sem equipe associada — faça login antes de criar eventos."])
+        }
         let eventoId = UUID().uuidString
         let now = DB.nowMs()
         try await queue.write { db in
             try Evento(
                 id: eventoId,
-                timeId: Self.localTimeId,
+                timeId: teamId,
                 trackId: trackId,
                 tipo: tipo,
                 dataEvento: dataEvento,
@@ -206,12 +211,13 @@ final class EventoRepository: ObservableObject {
     // MARK: - Internas (idempotentes)
 
     private func ensureLocalTime() async throws {
+        guard let teamId = TeamContext.currentTeamId else { return }
         try await queue.write { db in
-            let exists = try Time.fetchOne(db, key: Self.localTimeId) != nil
+            let exists = try Time.fetchOne(db, key: teamId) != nil
             guard !exists else { return }
             try Time(
-                id: Self.localTimeId,
-                nome: "Time local",
+                id: teamId,
+                nome: "Equipe pessoal",
                 criadoPor: nil
             ).insert(db)
         }
@@ -237,9 +243,10 @@ final class EventoRepository: ObservableObject {
     /// 2 passados) se a tabela `eventos` estiver vazia. Datas batem 1:1
     /// com `_design-reference/mockup-eventos-lista.html`.
     private func seedMockEventosIfEmpty() async throws {
+        guard let teamId = TeamContext.currentTeamId else { return }
         try await queue.write { db in
             let total = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM eventos WHERE time_id = ?",
-                                          arguments: [Self.localTimeId]) ?? 0
+                                          arguments: [teamId]) ?? 0
             guard total == 0 else { return }
             let now = DB.nowMs()
             let entries: [(String, String, String?)] = [
@@ -251,7 +258,7 @@ final class EventoRepository: ObservableObject {
                 let dataMs = EventoRepository.isoToMs(dataISO)
                 try Evento(
                     id: id,
-                    timeId: Self.localTimeId,
+                    timeId: teamId,
                     trackId: Self.brasiliaTrackId,
                     tipo: tipo,
                     dataEvento: dataMs,

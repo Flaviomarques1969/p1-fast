@@ -282,7 +282,7 @@ struct PassageiroCadastroView: View {
     let repo = PassageiroRepository(queue: queue)
     let mock = Passageiro(
         id: "preview-passageiro",
-        timeId: PassageiroRepository.localTimeId,
+        timeId: "preview-team",
         nome: "Alain Mesquita",
         alturaCm: 182,
         pesoKg: 80.0,
