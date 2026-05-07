@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Celta · Schematic Telemetry · Phase D</title>
+<style>
+  :root {
+    --bg: #0F1216; --tile: #171C25; --border: #1F252E;
+    --text: #E8EBF0; --text-dim: #6E7681; --accent: #FFCC1A;
+
+    /* Cor base de cada peça (azul = normal, cyan = frio, vermelho = quente).
+       JS interpola estes valores conforme a telemetria. Transição suave. */
+    --tire-FL: #2A2F38;   /* preto-azulado, cor de borracha em repouso */
+    --tire-FR: #2A2F38;
+    --tire-RL: #2A2F38;
+    --tire-RR: #2A2F38;
+    --engine:  #5DD18C;   /* verde = motor saudável */
+    --gearbox: #5DD18C;
+    --shock-FL: #1B5BFF;  /* azul = amortecedor em estado normal */
+    --shock-FR: #1B5BFF;
+    --shock-RL: #1B5BFF;
+    --shock-RR: #1B5BFF;
+    --coil-FL:  #1B5BFF;  /* mola só vai pra vermelho se houver problema */
+    --coil-FR:  #1B5BFF;
+    --coil-RL:  #1B5BFF;
+    --coil-RR:  #1B5BFF;
+    --radiator: #5DD18C;
+    --body:     #FFCC1A;  /* mantém amarelo do carro */
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text);
+    font-family: Inter, -apple-system, system-ui, sans-serif;
+    min-height: 100vh; padding: 24px;
+    display: grid; grid-template-columns: 1fr 360px; gap: 24px; }
+  .header { grid-column: 1 / -1; display: flex;
+    justify-content: space-between; align-items: baseline;
+    padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .header h1 { font-size: 17px; font-weight: 500; }
+  .header h1 span { color: var(--accent); }
+  .header .meta { color: var(--text-dim); font-size: 11px;
+    letter-spacing: 1.5px; text-transform: uppercase; }
+
+  .car-stage { background: var(--tile); border: 1px solid var(--border);
+    border-radius: 4px; padding: 24px; display: flex;
+    align-items: center; justify-content: center; min-height: 600px;
+    position: sticky; top: 24px; max-height: calc(100vh - 48px); }
+  .car-stage svg { max-width: 100%; max-height: 760px; }
+
+  /* All recolorable shapes get a smooth transition for the fill change.
+     This is the gradient Flávio wants — no BAM-BAM-BAM jumps. */
+  .car-stage svg [data-part] {
+    transition: fill 350ms ease, stroke 350ms ease;
+  }
+
+  .controls { display: flex; flex-direction: column; gap: 12px; }
+  .group { background: var(--tile); border: 1px solid var(--border);
+    border-radius: 4px; padding: 12px 14px; }
+  .group h2 { font-size: 10px; font-weight: 700; letter-spacing: 2px;
+    color: var(--accent); text-transform: uppercase;
+    margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .slider-row { display: grid; grid-template-columns: 80px 1fr 60px;
+    align-items: center; gap: 10px; margin: 8px 0; font-size: 11px; }
+  .slider-row .lbl { font-weight: 500; }
+  .slider-row .val { font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; text-align: right; font-weight: 600; }
+  .slider-row input[type=range] { width: 100%; -webkit-appearance: none;
+    appearance: none; height: 4px; border-radius: 2px;
+    background: linear-gradient(to right, #1B5BFF 0%, #5DD18C 35%, #FFCC1A 65%, #FF5A1F 100%); }
+  .slider-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 13px; height: 13px;
+    border-radius: 50%; background: #fff; cursor: pointer;
+    border: 2px solid #0F1216; }
+
+  .legend { background: var(--tile); border: 1px dashed var(--border);
+    border-radius: 4px; padding: 10px 12px; font-size: 11px;
+    color: var(--text-dim); line-height: 1.55; }
+  .legend code { font-family: 'JetBrains Mono', monospace;
+    background: rgba(255,204,26,0.08); padding: 1px 5px;
+    color: var(--accent); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Celta &middot; <span>Schematic Telemetry</span> &middot; Phase D</h1>
+  <div class="meta">P1 FAST · objects-as-vector-elements (no mask, no polygon overlay)</div>
+</div>
+
+<div class="car-stage">
+  <!-- Top-down schematic. Cada peça é um path/group próprio.
+       Recolor = mudar var(--part-name) via JS. Transição CSS suave. -->
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 1000" width="600" height="1000">
+
+    <!-- ground guides (sutil) -->
+    <rect x="0" y="0" width="600" height="1000" fill="none"/>
+
+    <!-- BODY silhouette (top-down, hatch shape) -->
+    <g id="body">
+      <path data-part="body" fill="var(--body)" stroke="#0d0d0d" stroke-width="2"
+            d="M 240 60
+               Q 300 40 360 60
+               L 380 130 L 405 200 L 415 280
+               L 420 410 L 425 540
+               L 425 700 L 420 800
+               L 405 870 L 380 920
+               L 360 950 Q 300 970 240 950
+               L 220 920 L 195 870 L 180 800
+               L 175 700 L 175 540
+               L 180 410 L 185 280 L 195 200 L 220 130 Z"/>
+      <!-- windshield -->
+      <path fill="rgba(15, 18, 22, 0.65)" stroke="none"
+            d="M 235 200 L 250 240 L 350 240 L 365 200 Z"/>
+      <!-- rear window -->
+      <path fill="rgba(15, 18, 22, 0.65)" stroke="none"
+            d="M 235 800 L 250 760 L 350 760 L 365 800 Z"/>
+      <!-- roof split (green/yellow stylized line) -->
+      <line x1="190" y1="280" x2="410" y2="280" stroke="#2D8A4F" stroke-width="3" opacity="0.5"/>
+      <line x1="190" y1="720" x2="410" y2="720" stroke="#2D8A4F" stroke-width="3" opacity="0.5"/>
+      <!-- numero -->
+      <text x="300" y="510" font-family="Impact, sans-serif" font-size="78"
+            fill="#0d0d0d" text-anchor="middle" opacity="0.42">16</text>
+    </g>
+
+    <!-- Engine bay (front of car = top of schematic) -->
+    <g id="engine-bay" transform="translate(300, 130)">
+      <!-- Block silhouette -->
+      <rect data-part="engine"
+            x="-78" y="-30" width="156" height="118"
+            rx="8" ry="8"
+            fill="var(--engine)"
+            stroke="#0d0d0d" stroke-width="2"/>
+      <!-- Detail strokes for the intake manifold/valve cover -->
+      <line x1="-60" y1="0"  x2="60" y2="0"  stroke="#0d0d0d" stroke-width="2" opacity="0.55"/>
+      <line x1="-60" y1="22" x2="60" y2="22" stroke="#0d0d0d" stroke-width="2" opacity="0.55"/>
+      <line x1="-60" y1="44" x2="60" y2="44" stroke="#0d0d0d" stroke-width="2" opacity="0.55"/>
+      <line x1="-60" y1="66" x2="60" y2="66" stroke="#0d0d0d" stroke-width="2" opacity="0.55"/>
+      <!-- Throttle body / dot -->
+      <circle cx="0" cy="-12" r="9" fill="#0d0d0d" opacity="0.85"/>
+      <text x="0" y="-50" font-family="monospace" font-size="11"
+            fill="#E8EBF0" text-anchor="middle" letter-spacing="1.5">MOTOR</text>
+    </g>
+
+    <!-- Radiator (front face) -->
+    <g id="radiator-bay" transform="translate(300, 80)">
+      <rect data-part="radiator"
+            x="-72" y="-12" width="144" height="22"
+            rx="3" fill="var(--radiator)" stroke="#0d0d0d" stroke-width="2"/>
+      <!-- vertical fins -->
+      <g stroke="#0d0d0d" stroke-width="1" opacity="0.55">
+        <line x1="-60" y1="-8" x2="-60" y2="6"/>
+        <line x1="-44" y1="-8" x2="-44" y2="6"/>
+        <line x1="-28" y1="-8" x2="-28" y2="6"/>
+        <line x1="-12" y1="-8" x2="-12" y2="6"/>
+        <line x1="4"   y1="-8" x2="4"   y2="6"/>
+        <line x1="20"  y1="-8" x2="20"  y2="6"/>
+        <line x1="36"  y1="-8" x2="36"  y2="6"/>
+        <line x1="52"  y1="-8" x2="52"  y2="6"/>
+      </g>
+    </g>
+
+    <!-- Gearbox (transaxle, integrated com motor lado-direito) -->
+    <g id="gearbox-pos" transform="translate(380, 200)">
+      <ellipse data-part="gearbox" cx="0" cy="0" rx="32" ry="18"
+               fill="var(--gearbox)" stroke="#0d0d0d" stroke-width="2"/>
+      <text x="0" y="-26" font-family="monospace" font-size="9"
+            fill="#E8EBF0" text-anchor="middle" letter-spacing="1.2">CÂMBIO</text>
+    </g>
+
+    <!-- TIRE + COILOVER + COIL — one corner is a sub-group (FL/FR/RL/RR) -->
+    <!-- Componente reutilizável-como-template: tire (oval + tread bands),
+         shock body (cilindro lateral), coil (helix de 3 voltas).         -->
+
+    <!-- TIRE FL — front-left -->
+    <g id="corner-FL" transform="translate(155, 180)">
+      <!-- tire base (oval seen from above) -->
+      <ellipse data-part="tire-FL" cx="0" cy="0" rx="30" ry="55"
+               fill="var(--tire-FL)" stroke="#0d0d0d" stroke-width="2"/>
+      <!-- tread bands -->
+      <g stroke="#000" stroke-width="1.4" opacity="0.5">
+        <line x1="-22" y1="-38" x2="22" y2="-38"/>
+        <line x1="-26" y1="-19" x2="26" y2="-19"/>
+        <line x1="-28" y1="0"   x2="28" y2="0"/>
+        <line x1="-26" y1="19"  x2="26" y2="19"/>
+        <line x1="-22" y1="38"  x2="22" y2="38"/>
+      </g>
+      <!-- shock body (lateral) -->
+      <rect data-part="shock-FL" x="36" y="-8" width="14" height="48"
+            rx="2" fill="var(--shock-FL)" stroke="#0d0d0d" stroke-width="1.5"/>
+      <!-- spring coil (above shock body) -->
+      <g data-part="coil-FL" stroke="var(--coil-FL)" stroke-width="3" fill="none">
+        <path d="M 36 -28 q 7 -5 14 0 q -7 5 -14 0"/>
+        <path d="M 36 -22 q 7 -5 14 0 q -7 5 -14 0"/>
+        <path d="M 36 -16 q 7 -5 14 0 q -7 5 -14 0"/>
+        <path d="M 36 -10 q 7 -5 14 0 q -7 5 -14 0"/>
+      </g>
+      <text x="0" y="-65" font-family="monospace" font-size="10"
+            fill="#E8EBF0" text-anchor="middle" letter-spacing="1.2">FL</text>
+    </g>
+
+    <!-- TIRE FR — front-right (mirror) -->
+    <g id="corner-FR" transform="translate(445, 180)">
+      <ellipse data-part="tire-FR" cx="0" cy="0" rx="30" ry="55"
+               fill="var(--tire-FR)" stroke="#0d0d0d" stroke-width="2"/>
+      <g stroke="#000" stroke-width="1.4" opacity="0.5">
+        <line x1="-22" y1="-38" x2="22" y2="-38"/>
+        <line x1="-26" y1="-19" x2="26" y2="-19"/>
+        <line x1="-28" y1="0"   x2="28" y2="0"/>
+        <line x1="-26" y1="19"  x2="26" y2="19"/>
+        <line x1="-22" y1="38"  x2="22" y2="38"/>
+      </g>
+      <rect data-part="shock-FR" x="-50" y="-8" width="14" height="48"
+            rx="2" fill="var(--shock-FR)" stroke="#0d0d0d" stroke-width="1.5"/>
+      <g data-part="coil-FR" stroke="var(--coil-FR)" stroke-width="3" fill="none">
+        <path d="M -50 -28 q 7 -5 14 0 q -7 5 -14 0"/>
+        <path d="M -50 -22 q 7 -5 14 0 q -7 5 -14 0"/>
+        <path d="M -50 -16 q 7 -5 14 0 q -7 5 -14 0"/>
+        <path d="M -50 -10 q 7 -5 14 0 q -7 5 -14 0"/>
+      </g>
+      <text x="0" y="-65" font-family="monospace" font-size="10"
+            fill="#E8EBF0" text-anchor="middle" letter-spacing="1.2">FR</text>
+    </g>
+
+    <!-- TIRE RL — rear-left -->
+    <g id="corner-RL" transform="translate(155, 820)">
+      <ellipse data-part="tire-RL" cx="0" cy="0" rx="30" ry="55"
+               fill="var(--tire-RL)" stroke="#0d0d0d" stroke-width="2"/>
+      <g stroke="#000" stroke-width="1.4" opacity="0.5">
+        <line x1="-22" y1="-38" x2="22" y2="-38"/>
+        <line x1="-26" y1="-19" x2="26" y2="-19"/>
+        <line x1="-28" y1="0"   x2="28" y2="0"/>
+        <line x1="-26" y1="19"  x2="26" y2="19"/>
+        <line x1="-22" y1="38"  x2="22" y2="38"/>
+      </g>
+      <rect data-part="shock-RL" x="36" y="-8" width="14" height="48"
+            rx="2" fill="var(--shock-RL)" stroke="#0d0d0d" stroke-width="1.5"/>
+      <g data-part="coil-RL" stroke="var(--coil-RL)" stroke-width="3" fill="none">
+        <path d="M 36 -28 q 7 -5 14 0 q -7 5 -14 0"/>
+        <path d="M 36 -22 q 7 -5 14 0 q -7 5 -14 0"/>
+        <path d="M 36 -16 q 7 -5 14 0 q -7 5 -14 0"/>
+        <path d="M 36 -10 q 7 -5 14 0 q -7 5 -14 0"/>
+      </g>
+      <text x="0" y="80" font-family="monospace" font-size="10"
+            fill="#E8EBF0" text-anchor="middle" letter-spacing="1.2">RL</text>
+    </g>
+
+    <!-- TIRE RR — rear-right -->
+    <g id="corner-RR" transform="translate(445, 820)">
+      <ellipse data-part="tire-RR" cx="0" cy="0" rx="30" ry="55"
+               fill="var(--tire-RR)" stroke="#0d0d0d" stroke-width="2"/>
+      <g stroke="#000" stroke-width="1.4" opacity="0.5">
+        <line x1="-22" y1="-38" x2="22" y2="-38"/>
+        <line x1="-26" y1="-19" x2="26" y2="-19"/>
+        <line x1="-28" y1="0"   x2="28" y2="0"/>
+        <line x1="-26" y1="19"  x2="26" y2="19"/>
+        <line x1="-22" y1="38"  x2="22" y2="38"/>
+      </g>
+      <rect data-part="shock-RR" x="-50" y="-8" width="14" height="48"
+            rx="2" fill="var(--shock-RR)" stroke="#0d0d0d" stroke-width="1.5"/>
+      <g data-part="coil-RR" stroke="var(--coil-RR)" stroke-width="3" fill="none">
+        <path d="M -50 -28 q 7 -5 14 0 q -7 5 -14 0"/>
+        <path d="M -50 -22 q 7 -5 14 0 q -7 5 -14 0"/>
+        <path d="M -50 -16 q 7 -5 14 0 q -7 5 -14 0"/>
+        <path d="M -50 -10 q 7 -5 14 0 q -7 5 -14 0"/>
+      </g>
+      <text x="0" y="80" font-family="monospace" font-size="10"
+            fill="#E8EBF0" text-anchor="middle" letter-spacing="1.2">RR</text>
+    </g>
+
+    <!-- Direction indicator (front of car) -->
+    <text x="300" y="35" font-family="monospace" font-size="11"
+          fill="#6E7681" text-anchor="middle" letter-spacing="3">FRENTE ▲</text>
+    <text x="300" y="990" font-family="monospace" font-size="11"
+          fill="#6E7681" text-anchor="middle" letter-spacing="3">▼ TRASEIRA</text>
+  </svg>
+</div>
+
+<div class="controls">
+  <div class="group">
+    <h2>Pneus · temp <button onclick="resetGroup('tire')">RESET</button></h2>
+    <div class="slider-row"><span class="lbl">FL</span>
+      <input type="range" id="s-tire-FL" min="0" max="100" value="50"><span class="val" id="v-tire-FL">--</span></div>
+    <div class="slider-row"><span class="lbl">FR</span>
+      <input type="range" id="s-tire-FR" min="0" max="100" value="50"><span class="val" id="v-tire-FR">--</span></div>
+    <div class="slider-row"><span class="lbl">RL</span>
+      <input type="range" id="s-tire-RL" min="0" max="100" value="50"><span class="val" id="v-tire-RL">--</span></div>
+    <div class="slider-row"><span class="lbl">RR</span>
+      <input type="range" id="s-tire-RR" min="0" max="100" value="50"><span class="val" id="v-tire-RR">--</span></div>
+  </div>
+
+  <div class="group">
+    <h2>Suspensão (carga estimada via IMU) <button onclick="resetGroup('shock')">RESET</button></h2>
+    <div class="slider-row"><span class="lbl">Shock FL</span>
+      <input type="range" id="s-shock-FL" min="0" max="100" value="50"><span class="val" id="v-shock-FL">--</span></div>
+    <div class="slider-row"><span class="lbl">Shock FR</span>
+      <input type="range" id="s-shock-FR" min="0" max="100" value="50"><span class="val" id="v-shock-FR">--</span></div>
+    <div class="slider-row"><span class="lbl">Shock RL</span>
+      <input type="range" id="s-shock-RL" min="0" max="100" value="50"><span class="val" id="v-shock-RL">--</span></div>
+    <div class="slider-row"><span class="lbl">Shock RR</span>
+      <input type="range" id="s-shock-RR" min="0" max="100" value="50"><span class="val" id="v-shock-RR">--</span></div>
+    <div class="slider-row"><span class="lbl">Coil FL</span>
+      <input type="range" id="s-coil-FL" min="0" max="100" value="50"><span class="val" id="v-coil-FL">--</span></div>
+    <div class="slider-row"><span class="lbl">Coil FR</span>
+      <input type="range" id="s-coil-FR" min="0" max="100" value="50"><span class="val" id="v-coil-FR">--</span></div>
+    <div class="slider-row"><span class="lbl">Coil RL</span>
+      <input type="range" id="s-coil-RL" min="0" max="100" value="50"><span class="val" id="v-coil-RL">--</span></div>
+    <div class="slider-row"><span class="lbl">Coil RR</span>
+      <input type="range" id="s-coil-RR" min="0" max="100" value="50"><span class="val" id="v-coil-RR">--</span></div>
+  </div>
+
+  <div class="group">
+    <h2>Powertrain <button onclick="resetGroup('engine')">RESET</button></h2>
+    <div class="slider-row"><span class="lbl">Motor</span>
+      <input type="range" id="s-engine" min="0" max="100" value="50"><span class="val" id="v-engine">--</span></div>
+    <div class="slider-row"><span class="lbl">Câmbio</span>
+      <input type="range" id="s-gearbox" min="0" max="100" value="50"><span class="val" id="v-gearbox">--</span></div>
+    <div class="slider-row"><span class="lbl">Radiator</span>
+      <input type="range" id="s-radiator" min="0" max="100" value="50"><span class="val" id="v-radiator">--</span></div>
+  </div>
+
+  <div class="legend">
+    Cada peça é um <code>&lt;path&gt;</code> próprio com fill <code>var(--xxx)</code>.
+    O slider muda o valor da CSS variable; o navegador anima a transição em
+    350 ms (ease). Sem máscara, sem polígono em cima de foto — a peça
+    desenhada vetorialmente vira o dado.
+  </div>
+</div>
+
+<script>
+const PARTS_TIRE   = ['tire-FL','tire-FR','tire-RL','tire-RR'];
+const PARTS_SHOCK  = ['shock-FL','shock-FR','shock-RL','shock-RR'];
+const PARTS_COIL   = ['coil-FL','coil-FR','coil-RL','coil-RR'];
+const PARTS_POWER  = ['engine','gearbox','radiator'];
+const ALL_PARTS    = [...PARTS_TIRE, ...PARTS_SHOCK, ...PARTS_COIL, ...PARTS_POWER];
+
+// linear color interp in sRGB (good enough for UI)
+function lerpHex(a, b, t) {
+  const ah = parseInt(a.slice(1), 16), bh = parseInt(b.slice(1), 16);
+  const ar = (ah>>16)&0xff, ag = (ah>>8)&0xff, ab = ah&0xff;
+  const br = (bh>>16)&0xff, bg = (bh>>8)&0xff, bb = bh&0xff;
+  const r = Math.round(ar + (br-ar)*t);
+  const g = Math.round(ag + (bg-ag)*t);
+  const bb2 = Math.round(ab + (bb-ab)*t);
+  return '#' + ((r<<16)|(g<<8)|bb2).toString(16).padStart(6,'0');
+}
+
+// Color ramp (cold blue → green → yellow → red), continuously
+function tempColor(t) {
+  if (t < 0.30) return lerpHex('#1B5BFF', '#5DD18C', t/0.30);
+  if (t < 0.60) return lerpHex('#5DD18C', '#FFCC1A', (t-0.30)/0.30);
+  return lerpHex('#FFCC1A', '#FF5A1F', (t-0.60)/0.40);
+}
+
+// Tire: cor de borracha em repouso é #2A2F38 (preto-azulado).
+// Quando esquenta vai pra vermelho, quando esfria vai pra azul claro.
+// O ramp acima retorna verde no neutro — pra pneu eu quero MANTER preto
+// no neutro e ir pra cor SÓ quando se afasta. Uso uma rampa diferente:
+function tireColor(t) {
+  const base = '#2A2F38';
+  if (t < 0.10) return lerpHex(base, '#1B5BFF', (0.10 - t) / 0.10);
+  if (t > 0.90) return lerpHex(base, '#FF5A1F', (t - 0.90) / 0.10);
+  if (t > 0.65) return lerpHex(base, '#FFCC1A', (t - 0.65) / 0.25);
+  if (t < 0.35) return lerpHex(base, '#1B5BFF', (0.35 - t) / 0.25);
+  return base;
+}
+
+// Shock body: estado normal = AZUL (não cor original do photo).
+// Esquenta vai pra vermelho. Frio vai pra cyan claro.
+function shockColor(t) {
+  if (t < 0.40) return lerpHex('#1B5BFF', '#5DEAFF', (0.40 - t) / 0.40);
+  if (t > 0.60) return lerpHex('#1B5BFF', '#FF5A1F', (t - 0.60) / 0.40);
+  return '#1B5BFF';
+}
+
+// Coil: igual shock, mas só vai pra vermelho se realmente alarmar (>0.75)
+function coilColor(t) {
+  if (t < 0.75) return '#1B5BFF';
+  return lerpHex('#1B5BFF', '#FF5A1F', (t - 0.75) / 0.25);
+}
+
+// Engine, gearbox, radiator: usam o ramp temp normal
+function powerColor(t) { return tempColor(t); }
+
+const RULES = {
+  'tire-FL': tireColor, 'tire-FR': tireColor,
+  'tire-RL': tireColor, 'tire-RR': tireColor,
+  'shock-FL': shockColor, 'shock-FR': shockColor,
+  'shock-RL': shockColor, 'shock-RR': shockColor,
+  'coil-FL':  coilColor,  'coil-FR':  coilColor,
+  'coil-RL':  coilColor,  'coil-RR':  coilColor,
+  'engine': powerColor, 'gearbox': powerColor, 'radiator': powerColor,
+};
+
+const FORMATS = {
+  tire:   t => Math.round(60 + t*70) + '°C',
+  shock:  t => Math.round(t*100) + '%',
+  coil:   t => Math.round(t*100) + '%',
+  engine: t => Math.round(70 + t*50) + '°C',
+  gearbox:t => Math.round(60 + t*50) + '°C',
+  radiator:t => Math.round(60 + t*50) + '°C',
+};
+
+function fmtFor(partId) {
+  for (const k of Object.keys(FORMATS))
+    if (partId.startsWith(k)) return FORMATS[k];
+  return t => t.toFixed(2);
+}
+
+function applyPart(partId, t) {
+  const color = RULES[partId](t);
+  document.documentElement.style.setProperty('--' + partId, color);
+  const valEl = document.getElementById('v-' + partId);
+  if (valEl) {
+    valEl.textContent = fmtFor(partId)(t);
+    valEl.style.color = color;
+  }
+}
+
+function setupSlider(partId) {
+  const sl = document.getElementById('s-' + partId);
+  if (!sl) return;
+  const update = () => applyPart(partId, sl.value / 100);
+  sl.addEventListener('input', update);
+  update();
+}
+
+ALL_PARTS.forEach(setupSlider);
+
+function resetGroup(g) {
+  const map = {
+    tire: PARTS_TIRE, shock: PARTS_SHOCK, coil: PARTS_COIL,
+    engine: PARTS_POWER,
+  };
+  (map[g] || []).forEach(p => {
+    const sl = document.getElementById('s-' + p);
+    sl.value = 50;
+    sl.dispatchEvent(new Event('input'));
+  });
+}
+</script>
+</body>
+</html>
