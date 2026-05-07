@@ -62,6 +62,31 @@ export interface RowValidation {
   reason?: string;
 }
 
+/**
+ * Normaliza colunas de timestamp do payload. Cliente Swift serializa
+ * `created_at`/`updated_at`/`data_evento`/etc como ms epoch (Int64), mas
+ * Postgres `timestamptz`/`date` exige string ISO 8601 — passar inteiro
+ * faz `to_timestamp` interpretar como segundos e gerar "out of range"
+ * (1.778e12 → ano 56371). Convertido in-place: `1778164744000` →
+ * `"2026-05-07T14:39:04.000Z"`. Idempotente — se já vem string, ignora.
+ *
+ * Whitelist de nomes (todos os campos timestamp/date no schema atual):
+ *   - termina em `_at` (created_at, updated_at, synced_at, ...)
+ *   - começa com `data_` (data_evento, data_aplicacao, data_inicio, ...)
+ *   - exatamente `nascimento`
+ */
+export function coerceTimestamps(payload: Record<string, unknown> | undefined): void {
+  if (!payload) return;
+  for (const k of Object.keys(payload)) {
+    const isTs = k.endsWith("_at") || k.startsWith("data_") || k === "nascimento";
+    if (!isTs) continue;
+    const v = payload[k];
+    if (typeof v === "number" && Number.isFinite(v)) {
+      payload[k] = new Date(v).toISOString();
+    }
+  }
+}
+
 export function validateRow(r: any): RowValidation {
   if (typeof r !== "object" || r === null) return { ok: false, reason: "row-nao-objeto" };
   if (typeof r.table_name !== "string" || !ALLOWED_TABLES.has(r.table_name)) {
@@ -213,6 +238,12 @@ serve(async (req) => {
     if (!timeId || !(await isMember(timeId))) {
       rejected.push({ row_id: r.row_id, table_name: r.table_name, reason: "not-member-of-time" });
       continue;
+    }
+
+    // Normaliza ms epoch → ISO 8601 nas colunas de timestamp (cliente
+    // Swift envia Int64 ms; Postgres `timestamptz` quebra com inteiro).
+    if (r.op === "insert" || r.op === "update") {
+      coerceTimestamps(r.payload as Record<string, unknown> | undefined);
     }
 
     // Executa a mutation
