@@ -14,9 +14,12 @@
 //   - `state == .restoring`: carregando session do storage no boot.
 //     UI mostra splash (não login flicker).
 //
-// Decisão A.1: NÃO injetar JWT em transport ainda (B faz isso). Aqui
-// só estabelece a fonte da verdade. Repos seguem usando anon key até
-// B mergear.
+// Sprint B (#127): JWT do user vai no Authorization do transport.
+// Sprint C.2 (esta): após login OK, chama RPC `ensure_personal_team`
+// e cacheia o time_id retornado em UserDefaults (key
+// `p1fast.currentTeamId`). Repos vão consumir esse `currentTeamId`
+// na Sprint C.3 — por enquanto seguem usando o constante
+// `Configuration.localTimeId`.
 
 import Foundation
 import Supabase
@@ -33,11 +36,18 @@ final class SessionManager: ObservableObject {
     @Published private(set) var state: State = .restoring
     @Published private(set) var lastError: String?
     @Published private(set) var isWorking: Bool = false
+    /// UUID do time pessoal do user logado, populado pela RPC
+    /// `ensure_personal_team` após cada applySession. Persistido em
+    /// UserDefaults pra sobreviver a relaunches offline (último valor
+    /// conhecido vale até nova confirmação online).
+    @Published private(set) var currentTeamId: String?
 
     private let client: SupabaseClient?
+    private let teamIdStorageKey = "p1fast.currentTeamId"
 
     init(client: SupabaseClient? = SupabaseManager.shared) {
         self.client = client
+        self.currentTeamId = UserDefaults.standard.string(forKey: teamIdStorageKey)
     }
 
     /// `true` quando há session válida. Atalho pra @ViewBuilder.
@@ -111,6 +121,8 @@ final class SessionManager: ObservableObject {
         try? await client.auth.signOut()
         state = .unauthenticated
         lastError = nil
+        currentTeamId = nil
+        UserDefaults.standard.removeObject(forKey: teamIdStorageKey)
     }
 
     /// Token atual pra Sprint B usar no Authorization header. nil
@@ -124,6 +136,32 @@ final class SessionManager: ObservableObject {
         let user = session.user
         let email = user.email
         state = .authenticated(userId: user.id.uuidString, email: email)
+        // Bootstrap do time pessoal em paralelo — não bloqueia UI.
+        // Se falhar (offline, RPC indisponível) o currentTeamId em
+        // cache vale até a próxima tentativa.
+        Task { await self.ensurePersonalTeam() }
+    }
+
+    /// Chama `ensure_personal_team()` no servidor, persiste o UUID
+    /// retornado em UserDefaults e atualiza `currentTeamId`. RPC é
+    /// idempotente (migration 0011): se o user já é admin de algum
+    /// time, devolve esse mesmo UUID. Erros são silenciados — usuário
+    /// não tem ação útil; sync vai sinalizar no Sprint C.3.
+    private func ensurePersonalTeam() async {
+        guard let client else { return }
+        do {
+            let response = try await client.rpc("ensure_personal_team").execute()
+            // RPC retorna uuid JSON-encoded como string ("\"uuid\"").
+            let raw = String(data: response.data, encoding: .utf8) ?? ""
+            let teamId = raw.trimmingCharacters(
+                in: CharacterSet(charactersIn: "\"\n\r ")
+            )
+            guard !teamId.isEmpty else { return }
+            currentTeamId = teamId
+            UserDefaults.standard.set(teamId, forKey: teamIdStorageKey)
+        } catch {
+            // Não-fatal. Mantém último valor cacheado.
+        }
     }
 
     private func describeError(_ error: Error) -> String {
