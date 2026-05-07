@@ -81,6 +81,26 @@ function buildAtelier({ svgPath, points, totalM }) {
     ghostTrail.push({ p: points[idx], opacity: (1 - i / ghostTrailLen) * 0.5 });
   }
 
+  // Animação: durações em segundos. Live = volta atual mais lenta, ghost mais rápido.
+  // Fase do ghost desloca pra ele aparecer adiante do live.
+  const LIVE_DUR = 12;     // segundos (pra preview ficar agradável; na prática 171s)
+  const GHOST_DUR = 11.5;  // ghost completa volta um pouco mais rápido
+  const GHOST_PHASE = -0.04 * GHOST_DUR; // começa adiantado em 4% da volta
+
+  // Delta entre live e ghost (exemplo estático: ghost à frente em 0.42s)
+  const DELTA_S = +0.42; // positivo = live atrás do ghost
+  const DELTA_LABEL = (DELTA_S >= 0 ? '+' : '−') + Math.abs(DELTA_S).toFixed(2);
+  const DELTA_COLOR = DELTA_S >= 0 ? '#FF5A4E' : '#5BE07A';
+  const DELTA_TEXT = DELTA_S >= 0 ? 'ATRÁS DO GHOST' : 'À FRENTE DO GHOST';
+
+  // Setores: 4 parciais com delta exemplo (positivo = perdeu tempo nesse setor)
+  const SECTORS = [
+    { id: 'P1', name: 'BOX → C2',     delta: +0.14 },
+    { id: 'P2', name: 'JUNÇÃO',       delta: -0.08 },
+    { id: 'P3', name: 'BRUXA',        delta: +0.21 },
+    { id: 'P4', name: 'PLACAR → END', delta: +0.15 },
+  ];
+
   // Chrome metrics
   const titleX = 60, titleY = 64;
 
@@ -148,6 +168,18 @@ function buildAtelier({ svgPath, points, totalM }) {
     <filter id="blurSm" x="-20%" y="-20%" width="140%" height="140%">
       <feGaussianBlur stdDeviation="3"/>
     </filter>
+    <!-- Terreno: turbulência fractal monocromática, low contrast, dá sensação aérea -->
+    <filter id="terrain" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.012 0.018" numOctaves="3" seed="7" stitchTiles="stitch"/>
+      <feColorMatrix values="0 0 0 0 0.42
+                              0 0 0 0 0.36
+                              0 0 0 0 0.22
+                              0 0 0 0.08 0"/>
+    </filter>
+    <!-- Cintilação sutil para o glow do live marker (pulse) -->
+    <filter id="markerGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
 
     <path id="track" d="${svgPath}"/>
   </defs>
@@ -156,9 +188,11 @@ function buildAtelier({ svgPath, points, totalM }) {
   <rect x="0" y="0" width="${FRAME_W}" height="${FRAME_H}" fill="url(#bgBase)"/>
   <rect x="0" y="0" width="${FRAME_W}" height="${FRAME_H}" fill="url(#bloomWarm)"/>
   <rect x="0" y="0" width="${FRAME_W}" height="${FRAME_H}" fill="url(#bloomCool)"/>
+  <!-- terreno aéreo (turbulência fractal) — não é elevação real, dá quality de foto aérea -->
+  <rect x="0" y="0" width="${FRAME_W}" height="${FRAME_H}" filter="url(#terrain)" opacity="0.55"/>
 
   <!-- topographic concentric rings (decoração sutil) -->
-  <g stroke="#1A2438" stroke-opacity="0.18" fill="none" stroke-width="0.6">
+  <g stroke="#1A2438" stroke-opacity="0.20" fill="none" stroke-width="0.6">
     <circle cx="550" cy="450" r="120"/>
     <circle cx="550" cy="450" r="190"/>
     <circle cx="550" cy="450" r="270"/>
@@ -178,14 +212,32 @@ function buildAtelier({ svgPath, points, totalM }) {
     <line x1="${titleX}" y1="${titleY + 42}" x2="${FRAME_W - 60}" y2="${titleY + 42}" stroke="url(#champagne)" stroke-width="0.6" stroke-opacity="0.45"/>
   </g>
 
-  <!-- Data block (right of title) -->
-  <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#D4AF37" text-anchor="end">
-    <text x="${FRAME_W - 60}" y="${titleY - 14}" font-size="9"  letter-spacing="2" fill-opacity="0.55" fill="#F5F0E0">EXTENSÃO   ·   CURVAS   ·   VOLTA REF.   ·   SENTIDO</text>
-    <text x="${FRAME_W - 60}" y="${titleY + 8}"  font-size="22" font-weight="300" letter-spacing="3" fill-opacity="0.95">${(totalM/1000).toFixed(3).replace('.',',')} KM   ·   8   ·   2:51.038   ·   CCW</text>
+  <!-- Bloco metadata (esquerda do delta) -->
+  <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#F5F0E0" text-anchor="end">
+    <text x="${FRAME_W - 240}" y="${titleY - 14}" font-size="8"  letter-spacing="2" fill-opacity="0.45">EXTENSÃO · CURVAS · VOLTA REF · SENTIDO</text>
+    <text x="${FRAME_W - 240}" y="${titleY + 8}"  font-size="14" font-weight="300" letter-spacing="2" fill-opacity="0.85">${(totalM/1000).toFixed(3).replace('.',',')} KM · 8 · 2:51.038 · CCW</text>
+  </g>
+
+  <!-- ════════════════ DELTA BADGE (canto superior direito) ════════════════ -->
+  <g transform="translate(${FRAME_W - 60}, ${titleY - 6})" text-anchor="end" font-family="'Helvetica Neue', -apple-system, sans-serif">
+    <text font-size="9" letter-spacing="3" fill="#F5F0E0" fill-opacity="0.50" y="-22">DELTA · LIVE vs GHOST</text>
+    <text font-size="46" font-weight="200" letter-spacing="1" fill="${DELTA_COLOR}" y="14">
+      ${DELTA_LABEL}<animate attributeName="fill-opacity" values="0.95;0.65;0.95" dur="2.4s" repeatCount="indefinite"/>
+    </text>
+    <text font-size="8" letter-spacing="3" fill="${DELTA_COLOR}" fill-opacity="0.85" y="30">${DELTA_TEXT}</text>
   </g>
 
   <!-- ════════════════ ELEMENTO 3: PISTA ════════════════ -->
   <g transform="translate(${TRACK_OX},${TRACK_OY})">
+    <!-- ANÉIS DE ELEVAÇÃO (4 níveis topográficos sutis em volta da pista) -->
+    <g fill="none" stroke="#3A4055" stroke-linejoin="round" stroke-linecap="round" stroke-opacity="0.22">
+      <use href="#track" stroke-width="200" stroke-opacity="0.04"/>
+      <use href="#track" stroke-width="150" stroke-opacity="0.06"/>
+      <use href="#track" stroke-width="110" stroke-opacity="0.08"/>
+      <use href="#track" stroke-width="78"  stroke-opacity="0.11"/>
+      <use href="#track" stroke-width="56"  stroke-opacity="0.16"/>
+    </g>
+
     <!-- halo dourado (atmosfera) -->
     <use href="#track" fill="none" stroke="#E8C97A" stroke-width="80" stroke-opacity="0.06" stroke-linejoin="round" stroke-linecap="round" filter="url(#blurLg)"/>
     <use href="#track" fill="none" stroke="#E8C97A" stroke-width="46" stroke-opacity="0.08" stroke-linejoin="round" stroke-linecap="round" filter="url(#blurMd)"/>
@@ -234,17 +286,43 @@ function buildAtelier({ svgPath, points, totalM }) {
       ${liveTrail.map(t => `<circle cx="${t.p.x.toFixed(2)}" cy="${t.p.y.toFixed(2)}" r="1.8" fill-opacity="${t.opacity.toFixed(3)}"/>`).join('')}
     </g>
 
-    <!-- Ghost marker (à frente do live, indica que está ganhando tempo) -->
-    <g transform="translate(${ghost.x.toFixed(2)},${ghost.y.toFixed(2)})">
-      <circle r="22" fill="url(#ghostGlow)" filter="url(#blurSm)"/>
-      <circle r="5.5" fill="none" stroke="#7DD3FC" stroke-width="1.2" stroke-opacity="0.95"/>
-      <circle r="2" fill="#E0F7FF"/>
+    <!-- Ghost marker — ANIMADO ao longo do path, fase adiantada -->
+    <g>
+      <circle r="22" fill="url(#ghostGlow)" filter="url(#blurSm)">
+        <animateMotion dur="${GHOST_DUR}s" repeatCount="indefinite" begin="${GHOST_PHASE}s" rotate="0">
+          <mpath href="#track"/>
+        </animateMotion>
+      </circle>
+      <circle r="5.5" fill="none" stroke="#7DD3FC" stroke-width="1.2" stroke-opacity="0.95">
+        <animateMotion dur="${GHOST_DUR}s" repeatCount="indefinite" begin="${GHOST_PHASE}s" rotate="0">
+          <mpath href="#track"/>
+        </animateMotion>
+      </circle>
+      <circle r="2" fill="#E0F7FF">
+        <animateMotion dur="${GHOST_DUR}s" repeatCount="indefinite" begin="${GHOST_PHASE}s" rotate="0">
+          <mpath href="#track"/>
+        </animateMotion>
+      </circle>
     </g>
-    <!-- Live marker (protagonista) -->
-    <g transform="translate(${live.x.toFixed(2)},${live.y.toFixed(2)})">
-      <circle r="26" fill="url(#liveGlow)" filter="url(#blurSm)"/>
-      <circle r="6"   fill="none" stroke="#FF7A1A" stroke-width="1.5"/>
-      <circle r="2.5" fill="#FFE5C9"/>
+
+    <!-- Live marker — ANIMADO ao longo do path, fase 0 -->
+    <g>
+      <circle r="26" fill="url(#liveGlow)" filter="url(#blurSm)">
+        <animateMotion dur="${LIVE_DUR}s" repeatCount="indefinite" rotate="0">
+          <mpath href="#track"/>
+        </animateMotion>
+        <animate attributeName="r" values="26;30;26" dur="1.6s" repeatCount="indefinite"/>
+      </circle>
+      <circle r="6" fill="none" stroke="#FF7A1A" stroke-width="1.5">
+        <animateMotion dur="${LIVE_DUR}s" repeatCount="indefinite" rotate="0">
+          <mpath href="#track"/>
+        </animateMotion>
+      </circle>
+      <circle r="2.5" fill="#FFE5C9">
+        <animateMotion dur="${LIVE_DUR}s" repeatCount="indefinite" rotate="0">
+          <mpath href="#track"/>
+        </animateMotion>
+      </circle>
     </g>
   </g>
 
@@ -253,7 +331,29 @@ function buildAtelier({ svgPath, points, totalM }) {
 
   <!-- ════════════════ FOOTER ════════════════ -->
   <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#F5F0E0">
-    <line x1="60" y1="${FRAME_H - 60}" x2="${FRAME_W - 60}" y2="${FRAME_H - 60}" stroke="url(#champagne)" stroke-width="0.5" stroke-opacity="0.30"/>
+    <line x1="60" y1="${FRAME_H - 110}" x2="${FRAME_W - 60}" y2="${FRAME_H - 110}" stroke="url(#champagne)" stroke-width="0.5" stroke-opacity="0.30"/>
+
+    <!-- BARRAS POR SETOR (centro do footer) -->
+    <g transform="translate(${FRAME_W / 2 - 360}, ${FRAME_H - 92})">
+      <text x="0" y="0" font-size="8" letter-spacing="3" fill="#F5F0E0" fill-opacity="0.45">DELTA POR SETOR (s)</text>
+      ${SECTORS.map((s, i) => {
+        const cellW = 180;
+        const x = i * cellW;
+        const max = 0.30; // escala máx ±0.30s
+        const w = Math.min(Math.abs(s.delta) / max, 1) * 60;
+        const color = s.delta >= 0 ? '#FF5A4E' : '#5BE07A';
+        const sign = s.delta >= 0 ? '+' : '−';
+        const center = x + 100; // baseline da barra
+        return `
+      <g transform="translate(0,12)">
+        <text x="${x}" y="6" font-size="8" letter-spacing="2" fill-opacity="0.55">${s.id} · ${s.name}</text>
+        <line x1="${x}" y1="20" x2="${x + 165}" y2="20" stroke="#F5F0E0" stroke-opacity="0.10" stroke-width="0.6"/>
+        <line x1="${center}" y1="14" x2="${center}" y2="26" stroke="#F5F0E0" stroke-opacity="0.30" stroke-width="0.6"/>
+        <rect x="${s.delta >= 0 ? center : center - w}" y="16" width="${w}" height="8" fill="${color}" fill-opacity="0.85"/>
+        <text x="${x + 165}" y="22" text-anchor="end" font-size="10" font-weight="500" fill="${color}" fill-opacity="0.95">${sign}${Math.abs(s.delta).toFixed(2)}</text>
+      </g>`;
+      }).join('')}
+    </g>
 
     <!-- bottom-left: coordenadas -->
     <text x="60" y="${FRAME_H - 38}" font-size="9" letter-spacing="2" fill-opacity="0.45">15°46′28″ S    ·    47°53′59″ W    ·    ALT 1.130 m</text>
