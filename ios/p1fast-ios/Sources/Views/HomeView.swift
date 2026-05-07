@@ -20,6 +20,19 @@ enum HomeState {
     case empty
 }
 
+/// Destinos navegáveis a partir da Home — alimentam o `NavigationPath`
+/// quando o usuário toca BottomNav, FAB ou CTAs do estado vazio.
+/// MS-10 Sprint D: cabeação mínima da Home pra desbloquear cadastro
+/// de carro / criação de evento via iPhone real (antes só via launch
+/// args do simulador).
+enum HomeNavTarget: Hashable {
+    case eventos
+    case eventosNovo
+    case cadastros
+    case garagem
+    case garagemNovo
+}
+
 /// Dados necessários para renderizar o estado cheio. Por enquanto vêm
 /// como mock — Sprint 1A.6 troca pelo Repository real (GRDB +
 /// sync drainer Supabase).
@@ -63,6 +76,7 @@ struct HomeView: View {
     var syncCoordinator: SyncCoordinator? = nil
     @State private var navSelection: BottomNavItem.ID?
     @State private var showSyncSheet = false
+    @State private var navPath = NavigationPath()
     private let navItems: [BottomNavItem] = [
         BottomNavItem("Home"),
         BottomNavItem("Eventos"),
@@ -71,6 +85,15 @@ struct HomeView: View {
     ]
 
     var body: some View {
+        NavigationStack(path: $navPath) {
+            shell
+                .navigationDestination(for: HomeNavTarget.self) { target in
+                    destinationView(for: target)
+                }
+        }
+    }
+
+    private var shell: some View {
         ZStack(alignment: .bottom) {
             ScrollView {
                 content
@@ -81,11 +104,11 @@ struct HomeView: View {
             }
             .background(Color.surface)
 
-            BottomNav(items: navItems, selection: $navSelection)
+            BottomNav(items: navItems, selection: $navSelection, onSelect: handleNavSelect)
         }
         .overlay(alignment: .bottomTrailing) {
             if case .filled = state {
-                FAB("Novo evento")
+                FAB("Novo evento", action: { navPath.append(HomeNavTarget.eventosNovo) })
                     .padding(.trailing, Spacing.md)
                     .padding(.bottom, 90)
             }
@@ -117,8 +140,49 @@ struct HomeView: View {
         case .filled(let data):
             FilledContent(data: data)
         case .empty:
-            EmptyContent()
+            EmptyContent(
+                onCadastrarCarro: { navPath.append(HomeNavTarget.garagemNovo) },
+                onCriarEvento: { navPath.append(HomeNavTarget.eventosNovo) }
+            )
         }
+    }
+
+    @ViewBuilder
+    private func destinationView(for target: HomeNavTarget) -> some View {
+        switch target {
+        case .eventos:
+            EventosListaView()
+        case .eventosNovo:
+            EventosListaView(initialSheet: .novo)
+        case .cadastros:
+            PessoasView()
+        case .garagem:
+            GaragemView()
+        case .garagemNovo:
+            GaragemView(initialSheet: .novo)
+        }
+    }
+
+    /// BottomNav é tab-like visualmente, mas comportamento é push de
+    /// NavigationStack — sub-views ganham back button do sistema. Home
+    /// é a única raiz; tocar "Home" volta pra raiz.
+    private func handleNavSelect(_ item: BottomNavItem) {
+        switch item.label {
+        case "Home":
+            if !navPath.isEmpty { navPath = NavigationPath() }
+        case "Eventos":
+            navPath.append(HomeNavTarget.eventos)
+        case "Cadastros":
+            navPath.append(HomeNavTarget.cadastros)
+        case "Garagem":
+            navPath.append(HomeNavTarget.garagem)
+        default:
+            break
+        }
+        // Reset selection pro item Home assim que voltar pra raiz —
+        // BottomNav só aparece na Home, então sub-views não precisam
+        // do estado.
+        navSelection = navItems.first?.id
     }
 }
 
@@ -391,6 +455,9 @@ struct EventTag: View {
 // MARK: - Estado vazio
 
 private struct EmptyContent: View {
+    let onCadastrarCarro: () -> Void
+    let onCriarEvento: () -> Void
+
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
             Text("P1 FAST")
@@ -423,8 +490,8 @@ private struct EmptyContent: View {
                 .padding(.top, 6)
 
                 VStack(spacing: 10) {
-                    PrimaryCTAButton(label: "Cadastrar primeiro carro", action: {})
-                    SecondaryCTAButton(label: "Criar primeiro evento", action: {})
+                    PrimaryCTAButton(label: "Cadastrar primeiro carro", action: onCadastrarCarro)
+                    SecondaryCTAButton(label: "Criar primeiro evento", action: onCriarEvento)
                 }
                 .padding(.top, 6)
             }
@@ -628,4 +695,11 @@ extension HomeData {
 
 #Preview("Home — vazio") {
     HomeView(state: .empty)
+}
+
+#Preview("EmptyContent — taps") {
+    EmptyContent(onCadastrarCarro: {}, onCriarEvento: {})
+        .padding(Spacing.lg)
+        .background(Color.surface)
+        .preferredColorScheme(.dark)
 }
