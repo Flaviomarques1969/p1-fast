@@ -1,6 +1,7 @@
 # Celta Telemetria-Cor · STATUS & CONTINUIDADE
 
 **Data:** 2026-05-07 · **Branch:** `claude/clear-session-fRVm4`
+**Estado:** Phase B v3 — contornos refinados + translucidez para hidden parts
 
 Doc para retomar trabalho após `/clear`. Leia este arquivo PRIMEIRO antes de mexer.
 
@@ -8,14 +9,7 @@ Doc para retomar trabalho após `/clear`. Leia este arquivo PRIMEIRO antes de me
 
 ## O que estamos fazendo
 
-Construindo um **visual recolorível de telemetria** do Celta #16 (carro do Flávio, fam RACING). A imagem mostra o carro em **exploded view** (body em cima, chassis embaixo). Cada peça monitorada (pneus, motor, câmbio, suspensão, radiador) **muda de cor sutilmente** conforme a telemetria ao vivo:
-
-- **Frio (~60°C):** tint azul
-- **Ideal (~90°C):** sem tint (foto pura)
-- **Atenção (~110°C):** tint amarelo
-- **Quente (~130°C):** tint vermelho/laranja
-
-Princípio crítico do Flávio: **"o objeto vira o dado, não bolinha em cima"**. A peça em si muda de cor, preservando o look fotográfico.
+Visual recolorível de telemetria do Celta #16. A imagem mostra o carro em **exploded view** (body + chassis). Cada peça monitorada **muda de cor sutilmente** conforme telemetria ao vivo. Princípio do Flávio: *"o objeto vira o dado, não bolinha em cima"*. A peça em si tinta — preserva o look fotográfico.
 
 ---
 
@@ -23,144 +17,167 @@ Princípio crítico do Flávio: **"o objeto vira o dado, não bolinha em cima"**
 
 ```
 assets/
-  celta_exploded.png                       # foto original do exploded view (Gemini, 6.3 MB)
-  celta_exploded_partmap.svg               # SVG: foto base + 14 polígonos por peça (8.7 MB, photo embedded base64)
+  celta_exploded.png                           foto original (Gemini, 6.3 MB)
+  celta_exploded_partmap.svg                   foto + 13 contornos por peça (8.3 MB, photo embutida base64)
   _previews/
-    AUDIT-parts.png                        # grid 4×4 — cada peça destacada em magenta para verificação
-    celta-phase-b-COMPARISON.png           # primeira comparação (6 cenários)
-    celta-phase-b-COMPARISON-FULL.png      # comparação 9 cenários cobrindo todas métricas
+    AUDIT-parts.png                            grid 4×4: cada peça destacada (magenta=visível, ciano=oculta)
+    celta-phase-b-COMPARISON.png               6 cenários (frio, ideal, hot tires, hot motor, hot oculta)
 
 _design-reference/
-  celta-telemetria-cor-phase-b.html        # demo interativo com sliders por peça (8.7 MB com SVG inline)
-  celta-telemetria-cor-STATUS.md           # ESTE arquivo
+  celta-telemetria-cor-phase-b.html            demo interativo com sliders por peça (8.3 MB)
+  celta-telemetria-cor-STATUS.md               este arquivo
+
+scripts/
+  refine_celta_partmap.py                      gera o partmap SVG (OpenCV mask + contour por peça)
+  render_audit_grid.py                         gera AUDIT-parts.png a partir do SVG
+  render_comparison.py                         gera o COMPARISON.png (cenários telemétricos)
+  build_phase_b_demo.py                        gera o HTML demo a partir do SVG
+```
+
+Reprodução completa do pipeline:
+```bash
+python3 scripts/refine_celta_partmap.py
+python3 scripts/render_audit_grid.py
+python3 scripts/build_phase_b_demo.py
+python3 scripts/render_comparison.py
 ```
 
 ---
 
-## Estado das 14 peças mapeadas
+## Estado das 13 peças mapeadas
 
-| Peça | Status | Posição | Observação |
-|------|--------|---------|------------|
-| `tire-FL` | ✅ correto | chassis lower-left, auto-detected blob preto | Pneu dianteiro-esquerdo claramente visível |
-| `tire-FR` | ⚠️ aproximado | ellipse manual em (560, 1410), atrás do motor | **Hidden** pelo motor — não há pneu visível ali. Próximo passo: translucidez |
-| `tire-RL` | ⚠️ aproximado | ellipse manual em (1290, 1530) | Parcialmente visível atrás dos bancos |
-| `tire-RR` | ✅ correto | chassis far-right, auto-detected | Pneu traseiro-direito visível |
-| `spring-FL` | ⚠️ aproximado | polígono em (540-680, 1320-1530) | Strut dianteiro-esquerdo **hidden** pelo motor |
-| `spring-FR` | ⚠️ aproximado | polígono em (680-840, 1300-1500) | Strut dianteiro-direito **hidden** |
-| `spring-RL` | ✅ correto | polígono em (1075-1240, 970-1245) | Coilover traseiro-esquerdo claramente visível |
-| `spring-RR` | ✅ correto | polígono em (1280-1450, 990-1235) | Coilover traseiro-direito claramente visível |
-| `engine` | ✅ correto | combinação de blobs prata em chassis upper-left | Bloco do motor visível |
-| `gearbox` | ✅ refinado | polígono em (770-920, 1380-1620) | Transaxle ao lado do motor (FWD = câmbio integrado, fica perto do motor, NÃO no traseiro) |
-| `radiator` | ✅ correto | polígono em (380-920, 1820-1990) | Front bumper / mesh prata visível |
-| `body-paint` | ✅ correto | auto-detected blob amarelo grande | Parte amarela frente body |
-| `body-paint-2` | ✅ correto | auto-detected blob amarelo médio | Parte amarela traseira body |
-| `body-roof` | ✅ correto | auto-detected blob verde | Teto verde + laterais |
+**Visíveis (8) — contornos extraídos por OpenCV de máscaras de cor:**
 
-**Peças hidden (4 de 14):** tire-FR, spring-FL, spring-FR, e parcialmente tire-RL. Estas precisam da próxima etapa.
+| Peça | Máscara | Resultado |
+|---|---|---|
+| `tire-FL` | preto + baixa saturação | ótimo |
+| `tire-RR` | preto + baixa saturação | ótimo |
+| `spring-RL` | vermelho HSV alargado + close 35×35 | ótimo (cobre coilover inteiro) |
+| `spring-RR` | vermelho HSV alargado + close 35×35 | ótimo |
+| `engine` | silver+dark combinado | ótimo |
+| `radiator` | polígono manual (front bumper) | ótimo |
+| `body-paint` | amarelo HSV | ótimo (frente + rocker) |
+| `body-roof` | verde HSV | ótimo (teto + laterais) |
+
+**Ocultas (5) — silhuetas hand-tuned com translucidez:**
+
+| Peça | Posição | Tratamento |
+|---|---|---|
+| `tire-FR` | atrás do motor | contorno tracejado branco (op 0.30), glow cresce com alarme |
+| `tire-RL` | atrás dos bancos | idem |
+| `spring-FL` | strut dianteiro esquerdo | idem |
+| `spring-FR` | strut dianteiro direito | idem |
+| `gearbox` | transaxle abaixo do motor | idem |
+
+(`body-paint-2` foi removido — auto-detect do v2 não cobria área visualmente útil.)
+
+---
+
+## Como a translucidez funciona
+
+Cada peça oculta tem:
+
+1. **Sempre visível:** `<path>` com `stroke="#FFFFFF" stroke-opacity="0.30" stroke-dasharray="14 9"` — contorno fantasma sutil
+2. **Em alarme:** o stroke ganha cor da temperatura (`tempColor(t)`), opacidade do stroke sobe pra ~0.95, fill ganha alpha até 0.30, e o filtro `<filter id="glow-${id}">` recebe `feGaussianBlur stdDeviation` proporcional ao desvio do ideal (até 22 px)
+3. **`mix-blend-mode: screen`** no grupo das peças hidden — o glow ilumina através da obstrução em vez de escurecer (multiply seria errado pra peça hidden)
+4. **Contorno tracejado** ciano sutil no background pra usuário sempre saber "tem peça aqui atrás"
+
+Demo HTML drive todos os atributos via JS (`applyPart` em `_design-reference/celta-telemetria-cor-phase-b.html`).
 
 ---
 
 ## Decisões já fechadas (NÃO reabrir)
 
-1. **NÃO vetorizar a imagem inteira em paths fragmentados.** Phase A fez isso (vtracer stacked mode), virou blocos sólidos quando recoloria — Flávio reprovou ("absolutamente péssimo"). A abordagem certa é foto base + overlays por peça (multiply blend).
-
-2. **NÃO usar `var(--xxx)` em fill/opacity de SVG** — cairosvg não engole. Usar atributos `fill=` e `opacity=` diretos, modificados via JS no demo HTML.
-
-3. **NÃO depender de raw.githack.com / htmlpreview.github.io** — repo é privado, retornam 403/404. Usuário tem que baixar HTML local OU eu mando PNG estático.
-
-4. **Photo está EMBUTIDA no SVG como base64 data URI** — torna o partmap self-contained (8.7 MB), mas garante render em qualquer lugar sem path resolution.
-
-5. **Body do mockup principal (Direction D Command Box) já está pronto** em `assets/command-box/premium-styles/direction-D-live.svg`. Esse trabalho de telemetria-cor é **paralelo**, não substitui o command box.
-
-6. **Repo é PRIVADO** (`flaviomarques1969/p1-fast`). Não tente CDN público. Para previews, sempre PNG via GitHub blob URL (que renderiza imagens nativamente).
+1. **NÃO vetorizar foto inteira** — Phase A reprovado pelo Flávio.
+2. **NÃO usar `var(--xxx)` em fill/opacity de SVG** — cairosvg não engole. Atributos diretos modificados via JS.
+3. **NÃO depender de raw.githack.com / htmlpreview.github.io** — repo é privado.
+4. **Photo está EMBUTIDA no SVG como base64** — self-contained.
+5. **Repo é PRIVADO** (`flaviomarques1969/p1-fast`). Pra previews use PNG via blob URL do GitHub.
+6. **Indicadores que pilotam cor** — confirmados em `docs/hardware/T4000_CAN_SPEC.md` (15 canais via CAN 0x7FB) + TPMS (4 temp + 4 pressão) + RaceBox-derived nas molas (carga estimada por transferência de peso, ver §"Molas" abaixo).
+7. **Sem barras antitorção no desenho** — citação do Flávio era só contexto sobre dinâmica, não escopo do mockup.
 
 ---
 
-## Próximo passo imediato: TRANSLUCIDEZ ELEGANTE
+## Mapeamento peça → indicador (lock)
 
-**Pedido literal do Flávio:** *"para a questão da limitação do pneu que está escondido no FR, assim como nos outros, as outras parções, cria uma abordagem de transparência, de translucidez elegante."*
+| Peça | Indicador principal (cor) | Indicador secundário (label/badge futuro) |
+|---|---|---|
+| `engine` | Temp óleo · Temp água · Pressão óleo (mín) | RPM · MAP · TPS · Lambda · EGT |
+| `radiator` | Temp água · Temp ar | — |
+| `gearbox` | Temp óleo (compartilhada) | Marcha |
+| `tire-FL/FR/RL/RR` | Temp pneu (TPMS) | Pressão pneu |
+| `spring-FL/FR/RL/RR` | Carga vertical estimada via accLong + accLat (RaceBox) | — |
+| `body-paint`, `body-roof` | Tensão bateria (tint sutil) ou Erro ECU (pulso) | — |
 
-### O problema
-4 das 14 peças (tire-FR, spring-FL, spring-FR, e tire-RL parcial) estão **fisicamente escondidas** atrás do motor/bancos no exploded view 3D. Não dá pra "tintar" algo que não está visível.
+### Molas (suspensão) — fórmula
 
-### A solução elegante
-Tipo **raio-X** ou **frosted glass**: a peça hidden tem indicador SUTIL sempre presente mostrando "tem peça aqui atrás", e quando há alarme de telemetria, **glow translúcido** emana do local através da obstrução.
+RaceBox tem `accLong`, `accLat`, `accVert`, `gyroX`, `gyroY` a 100 Hz. A cor de cada mola usa carga vertical estimada por transferência de peso clássica:
 
-### Implementação proposta
-
-**Para peças hidden (`data-hidden="true"`):**
-1. **Sempre visível:** outline pontilhado/tracejado branco a 25% opacity, mostrando "a peça está aqui (oculta)"
-2. **Em alarme:** o polígono interno ganha fill translúcido (opacity max ~40% em vez dos 55% das peças visíveis), com `mix-blend-mode: screen` em vez de `multiply` para "iluminar através" do obstáculo
-3. **Glow externo:** filter `drop-shadow` com a cor do alarme + blur ~15px, dá sensação de "vazamento" do alarme através da obstrução
-4. **Tag textual sutil:** label tipo "FR · oculto" ao lado do polígono, fonte pequena monospace, opacity ~50%
-
-**Para peças visíveis:** mantém abordagem atual (multiply blend, opacity proporcional ao desvio do ideal).
-
-### Mudanças no SVG
-```svg
-<path id="tire-FR" data-part="tire-FR" data-hidden="true"
-      d="..." fill="#000" opacity="0"
-      stroke="#FFFFFF" stroke-opacity="0.25" stroke-width="3" stroke-dasharray="20 12"
-      filter="url(#hidden-glow)"/>
+```
+load_FL = +0.5·accLong  -0.5·accLat
+load_FR = +0.5·accLong  +0.5·accLat
+load_RL = -0.5·accLong  -0.5·accLat
+load_RR = -0.5·accLong  +0.5·accLat
 ```
 
-E no `<defs>`:
-```svg
-<filter id="hidden-glow" x="-50%" y="-50%" width="200%" height="200%">
-  <feGaussianBlur stdDeviation="0" result="blur"/>
-  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-</filter>
-```
+É **inferência**, não medição direta. 3 camadas conceituais sobre os mesmos sensores:
 
-(O `stdDeviation` muda dinamicamente via JS quando há alarme.)
+1. **Estado instantâneo** — cor da mola agora (camada implementada no demo)
+2. **Comparação com baseline** — desvio vs assinatura "carro novo" (snapshot pós-oficina) → tela de tendência (não implementada)
+3. **Coach de setup** — recomendação pós-stint ("apertar traseira") → texto/voz (não implementada)
 
-### Visual esperado
-- **Default (sem alarme):** peças hidden mostram contorno tracejado fantasma sutil — usuário sabe "tem peça aqui atrás"
-- **Alarme leve:** o contorno ganha cor + glow leve
-- **Alarme forte:** glow intenso "vazando" através da obstrução, label "FR · OCULTO" mais visível
+Camadas 2 e 3 ficam como roadmap, não entram no mockup atual.
 
 ---
 
-## Preferências do Flávio (estilo de comunicação)
+## Próximo passo (próxima sessão)
 
-- **Conciso.** Detesta paredes de texto e múltiplas perguntas. Prefere "faço X, ok?" → execução.
-- **NÃO oferecer múltiplos caminhos.** Decida e execute. Ele corrige se errar.
+Phase B v3 entrega o visual base. Próximo bloco lógico:
+
+- **Etiquetas/badges** mostrando o valor numérico ao lado de cada peça quando alarmar (ex: "TF · 132°C" ao lado de tire-FR oculto)
+- **Pulso animado** no body inteiro pra Erro ECU (bitfield != 0)
+- **UX de baseline** pra suspensão (camada 2 de molas) — registro do snapshot pós-oficina
+- **Port nativo Swift** do detector ao vivo (ADR confirmou JS aposentado)
+
+---
+
+## Preferências do Flávio (estilo)
+
+- **Conciso.** Detesta paredes de texto. Prefere "faço X, ok?" → execução.
+- **NÃO oferecer múltiplos caminhos.** Decida e execute.
 - **Mostre resultado, não processo.** PNG renderizado > diagrama ASCII > descrição.
 - **Um link só, ele clica.** Não dar 5 URLs alternativos.
-- **Evitar pedidos de "qual abordagem você quer?"** — ele quer que eu use meu poder pra fazer certo, não delegar decisão.
-- **Erros frustram, mas tudo bem rodar de novo.** "Ficou péssimo" = refazer com outra abordagem, não pedir desculpas longas.
-- **Alguns clears no caminho.** Ele vai limpar contexto pra reorganizar.
+- **"Ficou péssimo" = refazer.** Sem desculpas longas.
+- **Alguns clears no caminho.**
 
 ---
 
-## Comandos rápidos para retomar
+## Comandos rápidos
 
 ```bash
-# Ver o estado atual
-cat _design-reference/celta-telemetria-cor-STATUS.md
-
-# Auditoria visual
+# Auditoria visual (grid das 13 peças)
 open https://github.com/flaviomarques1969/p1-fast/blob/claude/clear-session-fRVm4/assets/_previews/AUDIT-parts.png
 
-# Comparação completa atual
-open https://github.com/flaviomarques1969/p1-fast/blob/claude/clear-session-fRVm4/assets/_previews/celta-phase-b-COMPARISON-FULL.png
+# Comparação cenários telemétricos
+open https://github.com/flaviomarques1969/p1-fast/blob/claude/clear-session-fRVm4/assets/_previews/celta-phase-b-COMPARISON.png
 
-# Reabrir o partmap pra editar
-$EDITOR assets/celta_exploded_partmap.svg
+# Demo interativo (baixar e abrir no browser)
+git show claude/clear-session-fRVm4:_design-reference/celta-telemetria-cor-phase-b.html > /tmp/demo.html
+open /tmp/demo.html
 
-# Ver os IDs das 14 peças
+# IDs das peças
 grep 'id=' assets/celta_exploded_partmap.svg | grep -oE 'id="[^"]+"'
 ```
 
 ---
 
-## Histórico das fases (resumo)
+## Histórico das fases
 
 - **Phase A** (descartado): vetorização inteira em paths fragmentados → blocos sólidos coloridos. Reprovado.
-- **Phase B v1**: foto base + overlays auto-detectados por OpenCV (color masks + connected components). Funcionou, mas mapeamento ruim em 4 peças.
-- **Phase B v2**: refinamento manual com polígonos custom para tire-FR, gearbox, springs, radiator. Estado atual.
-- **Phase B v3 (PRÓXIMO):** translucidez elegante para hidden parts.
+- **Phase B v1**: foto base + overlays auto-detectados por OpenCV. Funcionou pra 10 peças, ruim em 4.
+- **Phase B v2**: refinamento manual com polígonos custom. Estado intermediário.
+- **Phase B v3 (ATUAL):** pipeline OpenCV reformulado com máscaras de cor + morph close por peça, ROIs ajustados. Translucidez SVG + JS pra hidden parts.
 
 ---
 
-**FIM DO STATUS.** Quando retomar: leia este doc, abra o `AUDIT-parts.png` no GitHub, depois ataque o Phase B v3.
+**FIM DO STATUS.** Quando retomar: leia este doc, abra o COMPARISON.png no GitHub, e ataque o próximo passo da seção acima.
