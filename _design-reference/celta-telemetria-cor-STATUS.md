@@ -1,9 +1,121 @@
 # Celta Telemetria-Cor · STATUS & CONTINUIDADE
 
 **Data:** 2026-05-07 · **Branch:** `claude/clear-session-fRVm4`
-**Estado:** Phase B v3 — contornos refinados + translucidez para hidden parts
+**Estado:** PIVOT CONCEITUAL — Phase B (polígonos) descartado pelo Flávio.
+Próximo passo é Phase C: paint per-pixel via máscaras binárias.
 
 Doc para retomar trabalho após `/clear`. Leia este arquivo PRIMEIRO antes de mexer.
+
+---
+
+## ⚠️ PIVOT decidido em 2026-05-07 (sessão `claude/clear-session-fRVm4`)
+
+**O que o Flávio rejeitou (Phase B inteira, todas as variantes A/B v1/v2/v3/v3.1):**
+"a peça TEM de ser a peça, não um polígono, não um quadrado. Há um erro conceitual."
+
+Polígono SVG por cima da foto + mix-blend-mode multiply = sempre vai parecer overlay
+pintado. Não é o que ele quer.
+
+**O que ele quer (Phase C):** *"vc deve mapear o objeto e criar a capacidade de
+pintá-los conforme padrão de informação. Os amortecedores estão em vermelho e
+preto... eles poderiam ficar azuis em situação normal... e somente as molas em
+vermelho se tiverem problemas... os pneus ficariam na cor que estão... se super
+aquecerem ficariam vermelhos... mas tem de ser a peça."*
+
+**Tradução técnica:**
+
+1. **Granularidade muito maior.** Cada coilover não é uma peça — é duas:
+   - corpo do amortecedor (cilindro metálico)
+   - espiral da mola (wrap)
+   Cada uma pinta independente. Ex: amortecedor azul ok, mola vermelha alarme.
+
+2. **Mapa de pixels, não polígono.** Cada sub-peça vira uma máscara binária
+   PNG do mesmo tamanho da foto. Branco = pixel pertence à peça, preto = não.
+
+3. **Recolor por HSL shift dos pixels da máscara**, preservando luminância
+   da foto (textura, highlights, sombras). Não substituir por cor sólida.
+
+4. **Renderização em `<canvas>`** no demo HTML:
+   - desenha a foto
+   - pra cada sub-peça em alarme, lê os pixels da máscara, aplica HSL shift
+     no destino, escreve de volta
+   - resultado: a peça em si muda de cor, foto intacta no resto
+
+5. **Sub-peças prováveis (a confirmar com o Flávio):**
+   - 4 borrachas (tire-FL/FR/RL/RR)
+   - 4 rodas/cubos (rim-FL/FR/RL/RR)  ← talvez separar
+   - 4 corpos de amortecedor (shock-FL/FR/RL/RR)
+   - 4 espirais (coil-FL/FR/RL/RR)
+   - bloco do motor + intake + escapamento (3 sub-peças)
+   - body amarelo (lower) + body verde (upper) + faróis + grade
+   Total ~ 22 sub-peças. Algumas hidden (mesmas que antes: front shocks,
+   front coils, far-side tires, gearbox).
+
+---
+
+## Por que Phase B falhou (notas pro próximo Claude)
+
+- Polígono é geometria, não fotografia. Mesmo apertando contorno
+  (Phase B v3.1: tire-FL 213x151, springs ~76x200), continuou parecendo
+  overlay porque a tinta é uniforme dentro do polígono.
+- Mix-blend-mode multiply em yellow body + blue alarm = dark olive,
+  não yellow-com-tint-azul. Esticar opacity baixa não resolve, vira muito
+  sutil sem ler como informação.
+- Hidden parts via stroke tracejado + glow ficou OK conceitualmente
+  mas é workaround pro fato de que polígono não consegue mostrar a peça
+  física. Phase C resolve naturalmente: se peça está hidden, ela não
+  tem máscara → não pinta. Pode ter glow auxiliar separado.
+- Flávio ficou frustrado em 4+ iterações. NÃO insistir em variações da
+  abordagem polygon — ele já decidiu que é conceitualmente errado.
+
+---
+
+## Plano Phase C (próxima sessão deve começar daqui)
+
+### Passo 1: validar sub-peças com o Flávio
+Listar as ~22 sub-peças propostas, confirmar se é o nível certo de granularidade.
+Pode ser que ele queira mais (separar farol esquerdo do direito) ou menos.
+
+### Passo 2: gerar máscaras
+Pra cada sub-peça visível, pipeline:
+- abrir foto, criar máscara binária 2048x2048 PNG
+- usar combinação de: cor (HSV), região (ROI), e contour refinement
+- salvar em `assets/masks/<part-id>.png`
+
+Sub-peças hidden ficam sem máscara (ou com máscara vazia).
+
+### Passo 3: renderer canvas no demo
+- canvas 2048x2048 (ou redimensionado)
+- `getImageData` da foto
+- pra cada peça em alarme, leia `getImageData` da máscara, mescle:
+  ```
+  if mask[i] > 0:
+    photo[i] = hsl_shift(photo[i], target_hue, sat_factor)
+  ```
+- `putImageData` de volta
+
+### Passo 4: estática (PNG comparison)
+Mesma lógica em Python + PIL: aplica HSL shift por máscara, gera
+PNG de cada cenário.
+
+---
+
+## O que foi feito antes do pivot (vai pra `_archive/`)
+
+Arquivos a arquivar quando começar Phase C:
+- `assets/celta_exploded_partmap.svg`
+- `_design-reference/celta-telemetria-cor-phase-b.html`
+- `scripts/refine_celta_partmap.py`
+- `scripts/render_audit_grid.py`
+- `scripts/render_comparison.py`
+- `scripts/build_phase_b_demo.py`
+- `assets/_previews/AUDIT-parts.png`
+- `assets/_previews/celta-phase-b-COMPARISON.png`
+
+Mover pra `_archive/phase-b-polygon-approach/` pra preservar histórico
+sem confundir.
+
+---
 
 ---
 
