@@ -9,7 +9,7 @@
 // Pesos validados:
 //   - SVG válido (root <svg>, viewBox 823×799)
 //   - reference.json bate com extensão real (5476m ± erro de quantização)
-//   - 1095 pontos a 5m de espaçamento (5476 / 5 ≈ 1095)
+//   - 2190 pontos a 2.5m de espaçamento (5476 / 2.5 ≈ 2190)
 //   - heading e curvatura presentes em todos os pontos
 
 import { readFile } from 'node:fs/promises';
@@ -39,9 +39,9 @@ t('brasilia.svg sem texto (pré-requisito de base layer)', () => {
   if (/<text[\s>]/.test(baseSvg)) throw new Error('SVG não pode conter <text>');
 });
 
-t('brasilia-points.svg tem ~1095 circles', () => {
+t('brasilia-points.svg tem ~2190 circles', () => {
   const m = pointsSvg.match(/<circle /g) || [];
-  if (Math.abs(m.length - 1095) > 2) throw new Error(`circles=${m.length} (esperado 1095)`);
+  if (Math.abs(m.length - 2190) > 2) throw new Error(`circles=${m.length} (esperado 2190)`);
 });
 
 t('reference.json: viewBox e extensão batem com seed', () => {
@@ -49,9 +49,9 @@ t('reference.json: viewBox e extensão batem com seed', () => {
   if (ref.totalLengthMeters !== 5476) throw new Error('extensaoMetros divergente');
 });
 
-t('reference.json: 1095 pontos a 5m', () => {
-  if (ref.spacingMeters !== 5) throw new Error('spacing != 5');
-  if (ref.points.length !== 1095) throw new Error(`pontos=${ref.points.length}`);
+t('reference.json: 2190 pontos a 2.5m', () => {
+  if (ref.spacingMeters !== 2.5) throw new Error('spacing != 2.5');
+  if (ref.points.length !== 2190) throw new Error(`pontos=${ref.points.length}`);
 });
 
 t('reference.json: todos pontos têm x/y/sMeters/heading/curvature', () => {
@@ -59,7 +59,7 @@ t('reference.json: todos pontos têm x/y/sMeters/heading/curvature', () => {
     if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) throw new Error(`ponto ${p.idx} xy inválido`);
     if (!Number.isFinite(p.heading)) throw new Error(`ponto ${p.idx} sem heading`);
     if (!Number.isFinite(p.curvature)) throw new Error(`ponto ${p.idx} sem curvature`);
-    if (p.sMeters % 5 !== 0) throw new Error(`ponto ${p.idx} sMeters não múltiplo de 5`);
+    if (Math.abs(p.sMeters - p.idx * ref.spacingMeters) > 1e-9) throw new Error(`ponto ${p.idx} sMeters fora da grade`);
   }
 });
 

@@ -59,7 +59,7 @@ const TRACKS = [
     apelido: 'brasilia',
     nomeOficial: 'Autódromo Internacional Nelson Piquet',
     extensaoMetros: 5476,
-    spacingMeters: 5,
+    spacingMeters: 2.5,
     pathConst: 'BRASILIA_PATH',
     viewBox: { w: 823, h: 799 },
   },
