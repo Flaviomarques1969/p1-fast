@@ -1,0 +1,679 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  COMMAND BOX — DIRECTION D · PIT WALL OPS · ANÁLISE DO STINT
+  Canvas: 1920×1080  ·  TV 32" via AirPlay
+  Mesmo DNA do direction-D-live.svg (charcoal warm + race yellow)
+
+  Aba ANÁLISE DO STINT — visão cumulativa do que aconteceu nas voltas do stint
+  (entre voltas no box, ou pós-stint).
+  Layout 2×3:
+    LAPS DO STINT          HEATMAP DE CURVAS       TÉRMICO (sparklines)
+    ERROS RECORRENTES      VMIN POR TRECHO          PENDÊNCIAS
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#12161D"/>
+      <stop offset="100%" stop-color="#0A0D12"/>
+    </linearGradient>
+    <linearGradient id="tile" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#171C25" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#10141B" stop-opacity="0.85"/>
+    </linearGradient>
+    <linearGradient id="thermal" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#5BD0FF"/>
+      <stop offset="35%"  stop-color="#5DD18C"/>
+      <stop offset="65%"  stop-color="#FFCC1A"/>
+      <stop offset="100%" stop-color="#FF5A1F"/>
+    </linearGradient>
+    <linearGradient id="heatErr" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#5DD18C"/>
+      <stop offset="50%"  stop-color="#FFCC1A"/>
+      <stop offset="100%" stop-color="#FF5A1F"/>
+    </linearGradient>
+
+    <!-- track simplificado pra heatmap (mesma geometria do live, ajustada) -->
+    <path id="trackMini" d="M 220 360 C 216 360, 212 360, 207 360 C 191 360, 175 358, 162 351 C 149 344, 138 333, 132 319 C 126 305, 124 289, 126 274 C 128 259, 134 244, 144 232 C 154 220, 167 211, 181 207 C 195 203, 210 203, 224 207 C 238 211, 251 219, 261 230 C 271 241, 277 254, 280 268 C 283 282, 282 297, 277 311 C 272 325, 263 338, 251 348 C 246 352, 241 355, 235 358 Z"/>
+  </defs>
+
+  <!-- BACKGROUND -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- HEADER (idêntico ao live) -->
+  <g font-family="Inter, -apple-system, system-ui, sans-serif" fill="#E8EBF0">
+    <g transform="translate(40, 32)">
+      <rect width="3" height="20" fill="#FFCC1A"/>
+      <text x="14" y="15" font-size="12" font-weight="700" letter-spacing="1.5" fill="#E8EBF0">P1·FAST</text>
+      <text x="92" y="15" font-size="11" font-weight="400" letter-spacing="1" fill="#6E7681">COMMAND BOX</text>
+    </g>
+    <g transform="translate(280, 32)">
+      <text y="15" font-size="13" font-weight="500" letter-spacing="0.5" fill="#E8EBF0">Brasília · Autódromo Nelson Piquet</text>
+      <text y="32" font-size="11" font-weight="400" fill="#6E7681" font-family="'JetBrains Mono', ui-monospace, 'SF Mono', monospace">TRACK DAY · 12 MAI 2026 · 14:23 BRT</text>
+    </g>
+    <g transform="translate(1880, 32)" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, 'SF Mono', monospace">
+      <text y="15" font-size="11" font-weight="500" fill="#E8EBF0">CELTA #16 · BRUNO M.  ·  STINT 03 · v08/12  ·  T 38°C · AR 26°C · NW 3km/h</text>
+      <text y="32" font-size="10" font-weight="400" fill="#6E7681">INJEPRO T4000 · BLE · 12Hz · 184ms</text>
+    </g>
+  </g>
+
+  <!-- TABS (ANÁLISE DO STINT ativa) -->
+  <g transform="translate(40, 78)" font-family="Inter, -apple-system, sans-serif">
+    <g>
+      <text y="18" font-size="13" font-weight="500" letter-spacing="1" fill="#6E7681">LIVE</text>
+    </g>
+    <g transform="translate(80, 0)">
+      <text y="18" font-size="13" font-weight="600" letter-spacing="1" fill="#FFCC1A">ANÁLISE DO STINT</text>
+      <rect x="-4" y="28" width="180" height="2" fill="#FFCC1A"/>
+    </g>
+    <g transform="translate(280, 0)">
+      <text y="18" font-size="13" font-weight="500" letter-spacing="1" fill="#6E7681">VISÃO GERAL</text>
+    </g>
+  </g>
+  <line x1="40" y1="118" x2="1880" y2="118" stroke="#1F252E" stroke-width="1"/>
+
+  <!-- ════════════════ ROW 1 ════════════════ -->
+
+  <!-- TILE 1 (LAPS DO STINT) — x=40 y=138 w=600 h=460 -->
+  <g transform="translate(40, 138)">
+    <rect width="600" height="460" rx="2" ry="2" fill="url(#tile)" stroke="#1F252E" stroke-width="1"/>
+    <g font-family="Inter, sans-serif" fill="#E8EBF0">
+      <text x="20" y="28" font-size="10" font-weight="700" letter-spacing="2" fill="#6E7681">LAPS DO STINT · 8 / 12</text>
+      <text x="20" y="50" font-size="14" font-weight="500" fill="#E8EBF0">Sequência de voltas</text>
+    </g>
+    <!-- meta direita -->
+    <g transform="translate(580, 28)" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, monospace">
+      <text font-size="10" fill="#6E7681">MELHOR · v6</text>
+      <text y="18" font-size="13" font-weight="600" fill="#FFCC1A">2:51.038</text>
+    </g>
+    <line x1="20" y1="68" x2="580" y2="68" stroke="#1F252E" stroke-width="1" stroke-opacity="0.6"/>
+
+    <!-- column headers -->
+    <g transform="translate(20, 88)" font-family="Inter, sans-serif" font-size="9" font-weight="700" letter-spacing="1.5" fill="#6E7681">
+      <text x="0">VOLTA</text>
+      <text x="80">TEMPO</text>
+      <text x="220">Δ MELHOR</text>
+      <text x="340">SETOR 1</text>
+      <text x="430">SETOR 2</text>
+      <text x="520">SETOR 3</text>
+    </g>
+
+    <!-- 8 lap rows -->
+    <g transform="translate(20, 110)" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="13" fill="#E8EBF0">
+      <!-- v1 -->
+      <g transform="translate(0, 0)">
+        <text font-weight="500" fill="#6E7681">v1</text>
+        <text x="80">2:58.412</text>
+        <text x="220" fill="#6E7681">+7.374</text>
+        <text x="340" fill="#6E7681" font-size="11">58.220</text>
+        <text x="430" fill="#6E7681" font-size="11">62.108</text>
+        <text x="520" fill="#6E7681" font-size="11">58.084</text>
+      </g>
+      <!-- v2 -->
+      <g transform="translate(0, 36)">
+        <text font-weight="500" fill="#9DA3AC">v2</text>
+        <text x="80">2:54.220</text>
+        <text x="220" fill="#FFCC1A">+3.182</text>
+        <text x="340" fill="#9DA3AC" font-size="11">56.420</text>
+        <text x="430" fill="#9DA3AC" font-size="11">60.310</text>
+        <text x="520" fill="#9DA3AC" font-size="11">57.490</text>
+      </g>
+      <!-- v3 -->
+      <g transform="translate(0, 72)">
+        <text font-weight="500" fill="#E8EBF0">v3</text>
+        <text x="80">2:52.890</text>
+        <text x="220" fill="#FFCC1A">+1.852</text>
+        <text x="340" font-size="11">55.880</text>
+        <text x="430" font-size="11">59.620</text>
+        <text x="520" font-size="11">57.390</text>
+      </g>
+      <!-- v4 -->
+      <g transform="translate(0, 108)">
+        <text font-weight="500" fill="#E8EBF0">v4</text>
+        <text x="80">2:51.940</text>
+        <text x="220" fill="#FFCC1A">+0.902</text>
+        <text x="340" font-size="11">55.620</text>
+        <text x="430" font-size="11">59.110</text>
+        <text x="520" font-size="11">57.210</text>
+      </g>
+      <!-- v5 -->
+      <g transform="translate(0, 144)">
+        <text font-weight="500" fill="#E8EBF0">v5</text>
+        <text x="80">2:51.310</text>
+        <text x="220" fill="#FFCC1A">+0.272</text>
+        <text x="340" font-size="11">55.490</text>
+        <text x="430" font-size="11">58.870</text>
+        <text x="520" font-size="11" fill="#FFCC1A" font-weight="600">56.950</text>
+      </g>
+      <!-- v6 — BEST -->
+      <g transform="translate(0, 180)">
+        <rect x="-12" y="-16" width="584" height="32" fill="#FFCC1A" fill-opacity="0.06" stroke="#FFCC1A" stroke-width="0.5" stroke-opacity="0.4"/>
+        <text font-weight="700" fill="#FFCC1A">v6</text>
+        <text x="32" y="0" font-size="9" fill="#FFCC1A" font-weight="700" letter-spacing="1.5">★ BEST</text>
+        <text x="80" font-weight="700" fill="#FFCC1A">2:51.038</text>
+        <text x="220" fill="#FFCC1A">—</text>
+        <text x="340" font-size="11" fill="#FFCC1A" font-weight="600">55.410</text>
+        <text x="430" font-size="11" fill="#FFCC1A" font-weight="600">58.620</text>
+        <text x="520" font-size="11" fill="#FFCC1A" font-weight="600">57.008</text>
+      </g>
+      <!-- v7 -->
+      <g transform="translate(0, 216)">
+        <text font-weight="500" fill="#E8EBF0">v7</text>
+        <text x="80">2:51.890</text>
+        <text x="220" fill="#FFCC1A">+0.852</text>
+        <text x="340" font-size="11">55.580</text>
+        <text x="430" font-size="11">59.020</text>
+        <text x="520" font-size="11">57.290</text>
+      </g>
+      <!-- v8 — atual em curso -->
+      <g transform="translate(0, 252)">
+        <rect x="-12" y="-16" width="584" height="32" fill="#5DD18C" fill-opacity="0.04" stroke="#5DD18C" stroke-width="0.5" stroke-opacity="0.3"/>
+        <text font-weight="600" fill="#5DD18C">v8</text>
+        <text x="32" y="0" font-size="9" fill="#5DD18C" font-weight="700" letter-spacing="1.5">EM CURSO</text>
+        <text x="80" fill="#9DA3AC">—:—.—</text>
+        <text x="220" fill="#6E7681">PARCIAL</text>
+        <text x="340" font-size="11" fill="#5DD18C" font-weight="600">55.640</text>
+        <text x="430" font-size="11" fill="#9DA3AC">··</text>
+        <text x="520" font-size="11" fill="#9DA3AC">··</text>
+      </g>
+    </g>
+
+    <!-- footer: agregados -->
+    <line x1="20" y1="420" x2="580" y2="420" stroke="#1F252E" stroke-width="1" stroke-opacity="0.6"/>
+    <g transform="translate(20, 442)" font-family="Inter, sans-serif" font-size="10" fill="#6E7681">
+      <text>PACE MÉDIO</text>
+      <text x="100" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="12" font-weight="500" fill="#E8EBF0">2:53.21</text>
+      <text x="200">CONSISTÊNCIA</text>
+      <text x="320" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="12" font-weight="500" fill="#5DD18C">σ 0.4s</text>
+      <text x="420">TENDÊNCIA</text>
+      <text x="510" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="12" font-weight="500" fill="#FFCC1A">▼ −2.1s</text>
+    </g>
+  </g>
+
+  <!-- TILE 2 (HEATMAP DE CURVAS) — x=660 y=138 w=600 h=460 -->
+  <g transform="translate(660, 138)">
+    <rect width="600" height="460" rx="2" ry="2" fill="url(#tile)" stroke="#1F252E" stroke-width="1"/>
+    <g font-family="Inter, sans-serif" fill="#E8EBF0">
+      <text x="20" y="28" font-size="10" font-weight="700" letter-spacing="2" fill="#6E7681">HEATMAP DE CURVAS · 8 voltas</text>
+      <text x="20" y="50" font-size="14" font-weight="500" fill="#E8EBF0">Onde mais errou no stint</text>
+    </g>
+    <g transform="translate(580, 28)" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, monospace">
+      <text font-size="10" fill="#6E7681">MÉTRICA</text>
+      <text y="18" font-size="11" font-weight="500" fill="#E8EBF0">erros classificados</text>
+    </g>
+    <line x1="20" y1="68" x2="580" y2="68" stroke="#1F252E" stroke-width="1" stroke-opacity="0.6"/>
+
+    <!-- mapa: traço base apagado + zonas coloridas por curva -->
+    <g transform="translate(50, 80)">
+      <!-- track ghost -->
+      <use href="#trackMini" fill="none" stroke="#2A3140" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+      <use href="#trackMini" fill="none" stroke="#3A4150" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="2,4"/>
+
+      <!-- markers de curvas com cor por incidência -->
+      <!-- C1 verde (1/8) -->
+      <g transform="translate(140, 222)">
+        <circle r="14" fill="#5DD18C" fill-opacity="0.18" stroke="#5DD18C" stroke-width="1.5"/>
+        <text y="4" text-anchor="middle" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" font-weight="600" fill="#5DD18C">C1</text>
+      </g>
+      <!-- C2 yellow (4/8) -->
+      <g transform="translate(160, 280)">
+        <circle r="16" fill="#FFCC1A" fill-opacity="0.22" stroke="#FFCC1A" stroke-width="1.5"/>
+        <text y="4" text-anchor="middle" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" font-weight="700" fill="#FFCC1A">C2</text>
+      </g>
+      <!-- C3 LARANJA (7/8) — maior -->
+      <g transform="translate(220, 318)">
+        <circle r="22" fill="#FF5A1F" fill-opacity="0.30" stroke="#FF5A1F" stroke-width="2">
+          <animate attributeName="r" values="22;24;22" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <text y="5" text-anchor="middle" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="13" font-weight="700" fill="#FF5A1F">C3</text>
+      </g>
+      <!-- C4 yellow (3/8) -->
+      <g transform="translate(312, 290)">
+        <circle r="14" fill="#FFCC1A" fill-opacity="0.18" stroke="#FFCC1A" stroke-width="1.5"/>
+        <text y="4" text-anchor="middle" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" font-weight="600" fill="#FFCC1A">C4</text>
+      </g>
+      <!-- C5 verde (1/8) -->
+      <g transform="translate(380, 220)">
+        <circle r="13" fill="#5DD18C" fill-opacity="0.18" stroke="#5DD18C" stroke-width="1.5"/>
+        <text y="4" text-anchor="middle" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" font-weight="600" fill="#5DD18C">C5</text>
+      </g>
+      <!-- C6 yellow (2/8) -->
+      <g transform="translate(290, 232)">
+        <circle r="13" fill="#FFCC1A" fill-opacity="0.18" stroke="#FFCC1A" stroke-width="1.5"/>
+        <text y="4" text-anchor="middle" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" font-weight="600" fill="#FFCC1A">C6</text>
+      </g>
+    </g>
+
+    <!-- ranking lateral: top-3 ofensoras -->
+    <g transform="translate(20, 312)" font-family="Inter, sans-serif">
+      <text font-size="9" font-weight="700" letter-spacing="1.5" fill="#6E7681">TOP OFENSORAS</text>
+      <g transform="translate(0, 22)">
+        <text font-family="'JetBrains Mono', ui-monospace, monospace" font-size="13" font-weight="700" fill="#FF5A1F">C3</text>
+        <text x="36" font-size="13" fill="#E8EBF0" font-weight="500">Mergulho Bruxa</text>
+        <text x="320" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="13" font-weight="600" fill="#FF5A1F" text-anchor="end">7/8</text>
+        <text x="340" font-size="11" fill="#6E7681">apex antecipado · −6m</text>
+      </g>
+      <g transform="translate(0, 50)">
+        <text font-family="'JetBrains Mono', ui-monospace, monospace" font-size="13" font-weight="700" fill="#FFCC1A">C2</text>
+        <text x="36" font-size="13" fill="#E8EBF0" font-weight="500">Curva do Sol</text>
+        <text x="320" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="13" font-weight="600" fill="#FFCC1A" text-anchor="end">4/8</text>
+        <text x="340" font-size="11" fill="#6E7681">freio tarde · −2.4m</text>
+      </g>
+      <g transform="translate(0, 78)">
+        <text font-family="'JetBrains Mono', ui-monospace, monospace" font-size="13" font-weight="700" fill="#FFCC1A">C4</text>
+        <text x="36" font-size="13" fill="#E8EBF0" font-weight="500">Curva da Bruxa</text>
+        <text x="320" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="13" font-weight="600" fill="#FFCC1A" text-anchor="end">3/8</text>
+        <text x="340" font-size="11" fill="#6E7681">saída tímida · −5 km/h</text>
+      </g>
+    </g>
+
+    <!-- escala -->
+    <g transform="translate(20, 422)" font-family="Inter, sans-serif" fill="#6E7681">
+      <text font-size="9" font-weight="600" letter-spacing="1.5">ESCALA · INCIDÊNCIA</text>
+      <rect x="160" y="-8" width="220" height="6" fill="url(#heatErr)" opacity="0.9"/>
+      <g font-family="'JetBrains Mono', ui-monospace, monospace" font-size="9">
+        <text x="160" y="14">0/8</text>
+        <text x="270" y="14" text-anchor="middle">4/8</text>
+        <text x="380" y="14" text-anchor="end">8/8</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- TILE 3 (TÉRMICO) — x=1280 y=138 w=600 h=460 -->
+  <g transform="translate(1280, 138)">
+    <rect width="600" height="460" rx="2" ry="2" fill="url(#tile)" stroke="#1F252E" stroke-width="1"/>
+    <g font-family="Inter, sans-serif" fill="#E8EBF0">
+      <text x="20" y="28" font-size="10" font-weight="700" letter-spacing="2" fill="#6E7681">TÉRMICO · STINT 03</text>
+      <text x="20" y="50" font-size="14" font-weight="500" fill="#E8EBF0">Evolução por volta</text>
+    </g>
+    <g transform="translate(580, 28)" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, monospace">
+      <text font-size="10" fill="#5DD18C">DENTRO DA JANELA</text>
+      <text y="18" font-size="11" fill="#6E7681">5/6 sensores</text>
+    </g>
+    <line x1="20" y1="68" x2="580" y2="68" stroke="#1F252E" stroke-width="1" stroke-opacity="0.6"/>
+
+    <!-- 4 sparklines empilhadas: motor, óleo, pneu RR, pneu RL -->
+    <!-- linha base + range alvo + atual -->
+
+    <!-- T.MOTOR -->
+    <g transform="translate(20, 92)">
+      <text font-family="Inter, sans-serif" font-size="9" font-weight="700" letter-spacing="2" fill="#5DD18C">T.MOTOR</text>
+      <text x="100" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="9" fill="#6E7681">faixa 85–95°C</text>
+      <text x="560" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" font-weight="500" fill="#E8EBF0">92<tspan font-size="10" fill="#6E7681" dx="2">°C</tspan></text>
+      <!-- sparkline area -->
+      <rect x="0" y="14" width="540" height="42" fill="#0E1218" stroke="#1F252E" stroke-width="0.5"/>
+      <!-- range alvo -->
+      <rect x="0" y="22" width="540" height="22" fill="#5DD18C" fill-opacity="0.06"/>
+      <!-- linha -->
+      <polyline points="0,42 67,40 135,38 202,36 270,35 337,33 405,32 472,32 540,32" fill="none" stroke="#5DD18C" stroke-width="1.5"/>
+      <!-- pontos de volta -->
+      <g fill="#5DD18C">
+        <circle cx="0" cy="42" r="2"/>
+        <circle cx="67" cy="40" r="2"/>
+        <circle cx="135" cy="38" r="2"/>
+        <circle cx="202" cy="36" r="2"/>
+        <circle cx="270" cy="35" r="2"/>
+        <circle cx="337" cy="33" r="2"/>
+        <circle cx="405" cy="32" r="2"/>
+        <circle cx="472" cy="32" r="2"/>
+        <circle cx="540" cy="32" r="3" stroke="#0E1218" stroke-width="1"/>
+      </g>
+    </g>
+
+    <!-- T.ÓLEO -->
+    <g transform="translate(20, 178)">
+      <text font-family="Inter, sans-serif" font-size="9" font-weight="700" letter-spacing="2" fill="#5DD18C">T.ÓLEO</text>
+      <text x="100" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="9" fill="#6E7681">faixa 95–115°C</text>
+      <text x="560" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" font-weight="500" fill="#E8EBF0">108<tspan font-size="10" fill="#6E7681" dx="2">°C</tspan></text>
+      <rect x="0" y="14" width="540" height="42" fill="#0E1218" stroke="#1F252E" stroke-width="0.5"/>
+      <rect x="0" y="20" width="540" height="28" fill="#5DD18C" fill-opacity="0.06"/>
+      <polyline points="0,46 67,44 135,40 202,36 270,32 337,28 405,24 472,22 540,22" fill="none" stroke="#5DD18C" stroke-width="1.5"/>
+      <g fill="#5DD18C">
+        <circle cx="540" cy="22" r="3" stroke="#0E1218" stroke-width="1"/>
+      </g>
+    </g>
+
+    <!-- PNEU RL -->
+    <g transform="translate(20, 264)">
+      <text font-family="Inter, sans-serif" font-size="9" font-weight="700" letter-spacing="2" fill="#5DD18C">PNEU RL</text>
+      <text x="100" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="9" fill="#6E7681">faixa 78–95°C</text>
+      <text x="560" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" font-weight="500" fill="#E8EBF0">91<tspan font-size="10" fill="#6E7681" dx="2">°C</tspan></text>
+      <rect x="0" y="14" width="540" height="42" fill="#0E1218" stroke="#1F252E" stroke-width="0.5"/>
+      <rect x="0" y="22" width="540" height="22" fill="#5DD18C" fill-opacity="0.06"/>
+      <polyline points="0,52 67,46 135,40 202,36 270,32 337,30 405,28 472,28 540,28" fill="none" stroke="#5DD18C" stroke-width="1.5"/>
+      <g fill="#5DD18C">
+        <circle cx="540" cy="28" r="3" stroke="#0E1218" stroke-width="1"/>
+      </g>
+    </g>
+
+    <!-- PNEU RR (alerta) -->
+    <g transform="translate(20, 350)">
+      <text font-family="Inter, sans-serif" font-size="9" font-weight="700" letter-spacing="2" fill="#FFCC1A">PNEU RR · ATENÇÃO</text>
+      <text x="160" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="9" fill="#6E7681">faixa 78–95°C</text>
+      <text x="560" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" font-weight="600" fill="#FFCC1A">98<tspan font-size="10" fill="#6E7681" dx="2">°C</tspan> <tspan font-size="11">+3</tspan></text>
+      <rect x="0" y="14" width="540" height="42" fill="#0E1218" stroke="#1F252E" stroke-width="0.5"/>
+      <rect x="0" y="22" width="540" height="22" fill="#5DD18C" fill-opacity="0.06"/>
+      <polyline points="0,50 67,44 135,38 202,32 270,26 337,20 405,14 472,10 540,6" fill="none" stroke="#FFCC1A" stroke-width="1.5"/>
+      <g fill="#FFCC1A">
+        <circle cx="540" cy="6" r="3" stroke="#0E1218" stroke-width="1"/>
+      </g>
+      <!-- linha "fora da janela" -->
+      <line x1="0" y1="12" x2="540" y2="12" stroke="#FF5A1F" stroke-width="0.5" stroke-dasharray="2,2" stroke-opacity="0.6"/>
+      <text x="546" y="14" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="8" fill="#FF5A1F">95°C limite</text>
+    </g>
+
+    <!-- footer eixo X -->
+    <g transform="translate(20, 432)" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="9" fill="#6E7681">
+      <text>v1</text>
+      <text x="135" text-anchor="middle">v3</text>
+      <text x="270" text-anchor="middle">v5</text>
+      <text x="405" text-anchor="middle">v7</text>
+      <text x="540" text-anchor="end">v8</text>
+    </g>
+  </g>
+
+  <!-- ════════════════ ROW 2 ════════════════ -->
+
+  <!-- TILE 4 (ERROS RECORRENTES) — x=40 y=618 w=600 h=440 -->
+  <g transform="translate(40, 618)">
+    <rect width="600" height="440" rx="2" ry="2" fill="url(#tile)" stroke="#1F252E" stroke-width="1"/>
+    <g font-family="Inter, sans-serif" fill="#E8EBF0">
+      <text x="20" y="28" font-size="10" font-weight="700" letter-spacing="2" fill="#6E7681">ERROS RECORRENTES · TIMELINE</text>
+      <text x="20" y="50" font-size="14" font-weight="500" fill="#E8EBF0">Padrão por volta</text>
+    </g>
+    <g transform="translate(580, 28)" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, monospace">
+      <text font-size="10" fill="#6E7681">CLASSIFICADOS</text>
+      <text y="18" font-size="13" font-weight="600" fill="#FFCC1A">22 eventos</text>
+    </g>
+    <line x1="20" y1="68" x2="580" y2="68" stroke="#1F252E" stroke-width="1" stroke-opacity="0.6"/>
+
+    <!-- legenda -->
+    <g transform="translate(20, 90)" font-family="Inter, sans-serif" font-size="9" fill="#6E7681" letter-spacing="1.5">
+      <g><circle cx="6" cy="-3" r="4" fill="#FF5A1F"/><text x="16">CRÍTICO</text></g>
+      <g transform="translate(90, 0)"><circle cx="6" cy="-3" r="4" fill="#FFCC1A"/><text x="16">ATENÇÃO</text></g>
+      <g transform="translate(180, 0)"><circle cx="6" cy="-3" r="4" fill="#5DD18C"/><text x="16">OK</text></g>
+      <g transform="translate(240, 0)"><circle cx="6" cy="-3" r="4" fill="#3A4150"/><text x="16">SEM EVENTO</text></g>
+    </g>
+
+    <!-- grid: linhas = curvas (C1..C6), colunas = voltas (v1..v8) -->
+    <!-- header columns -->
+    <g transform="translate(120, 120)" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="10" fill="#6E7681">
+      <text x="0" text-anchor="middle">v1</text>
+      <text x="56" text-anchor="middle">v2</text>
+      <text x="112" text-anchor="middle">v3</text>
+      <text x="168" text-anchor="middle">v4</text>
+      <text x="224" text-anchor="middle">v5</text>
+      <text x="280" text-anchor="middle">v6</text>
+      <text x="336" text-anchor="middle">v7</text>
+      <text x="392" text-anchor="middle">v8</text>
+    </g>
+
+    <!-- rows: cada curva -->
+    <g transform="translate(20, 140)" font-family="Inter, sans-serif" font-size="11" fill="#E8EBF0">
+      <!-- C1 — quase sempre OK -->
+      <g transform="translate(0, 24)">
+        <text y="4" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" font-weight="600" fill="#5DD18C">C1</text>
+        <text x="22" y="4" fill="#9DA3AC">Curva 1</text>
+        <g transform="translate(100, 0)">
+          <circle cx="0" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="56" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="112" cy="0" r="6" fill="#FFCC1A" fill-opacity="0.85"/>
+          <circle cx="168" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="224" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="280" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="336" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="392" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+        </g>
+      </g>
+      <!-- C2 -->
+      <g transform="translate(0, 56)">
+        <text y="4" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" font-weight="600" fill="#FFCC1A">C2</text>
+        <text x="22" y="4" fill="#9DA3AC">Curva do Sol</text>
+        <g transform="translate(100, 0)">
+          <circle cx="0" cy="0" r="6" fill="#FF5A1F" fill-opacity="0.85"/>
+          <circle cx="56" cy="0" r="6" fill="#FFCC1A" fill-opacity="0.85"/>
+          <circle cx="112" cy="0" r="6" fill="#FFCC1A" fill-opacity="0.85"/>
+          <circle cx="168" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="224" cy="0" r="6" fill="#FFCC1A" fill-opacity="0.85"/>
+          <circle cx="280" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="336" cy="0" r="6" fill="#FFCC1A" fill-opacity="0.85"/>
+          <circle cx="392" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+        </g>
+      </g>
+      <!-- C3 — ofensora -->
+      <g transform="translate(0, 88)">
+        <text y="4" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" font-weight="700" fill="#FF5A1F">C3</text>
+        <text x="22" y="4" fill="#E8EBF0" font-weight="500">Mergulho Bruxa</text>
+        <g transform="translate(100, 0)">
+          <circle cx="0" cy="0" r="6" fill="#FFCC1A" fill-opacity="0.85"/>
+          <circle cx="56" cy="0" r="6" fill="#FF5A1F" fill-opacity="0.85"/>
+          <circle cx="112" cy="0" r="6" fill="#FF5A1F" fill-opacity="0.85"/>
+          <circle cx="168" cy="0" r="6" fill="#FF5A1F" fill-opacity="0.85"/>
+          <circle cx="224" cy="0" r="6" fill="#FF5A1F" fill-opacity="0.85"/>
+          <circle cx="280" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="336" cy="0" r="6" fill="#FF5A1F" fill-opacity="0.85"/>
+          <circle cx="392" cy="0" r="6" fill="#FF5A1F" fill-opacity="0.85">
+            <animate attributeName="fill-opacity" values="0.85;0.4;0.85" dur="1.6s" repeatCount="indefinite"/>
+          </circle>
+        </g>
+      </g>
+      <!-- C4 -->
+      <g transform="translate(0, 120)">
+        <text y="4" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" font-weight="600" fill="#FFCC1A">C4</text>
+        <text x="22" y="4" fill="#9DA3AC">Curva da Bruxa</text>
+        <g transform="translate(100, 0)">
+          <circle cx="0" cy="0" r="6" fill="#FFCC1A" fill-opacity="0.85"/>
+          <circle cx="56" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="112" cy="0" r="6" fill="#FFCC1A" fill-opacity="0.85"/>
+          <circle cx="168" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="224" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="280" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="336" cy="0" r="6" fill="#FFCC1A" fill-opacity="0.85"/>
+          <circle cx="392" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+        </g>
+      </g>
+      <!-- C5 -->
+      <g transform="translate(0, 152)">
+        <text y="4" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" font-weight="600" fill="#5DD18C">C5</text>
+        <text x="22" y="4" fill="#9DA3AC">Reta dos Boxes</text>
+        <g transform="translate(100, 0)">
+          <circle cx="0" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="56" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="112" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="168" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="224" cy="0" r="6" fill="#FFCC1A" fill-opacity="0.85"/>
+          <circle cx="280" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="336" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="392" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+        </g>
+      </g>
+      <!-- C6 -->
+      <g transform="translate(0, 184)">
+        <text y="4" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" font-weight="600" fill="#FFCC1A">C6</text>
+        <text x="22" y="4" fill="#9DA3AC">Carrossel</text>
+        <g transform="translate(100, 0)">
+          <circle cx="0" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="56" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="112" cy="0" r="6" fill="#FFCC1A" fill-opacity="0.85"/>
+          <circle cx="168" cy="0" r="6" fill="#FFCC1A" fill-opacity="0.85"/>
+          <circle cx="224" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="280" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="336" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+          <circle cx="392" cy="0" r="6" fill="#5DD18C" fill-opacity="0.85"/>
+        </g>
+      </g>
+    </g>
+
+    <!-- footer: insight -->
+    <line x1="20" y1="386" x2="580" y2="386" stroke="#1F252E" stroke-width="1" stroke-opacity="0.6"/>
+    <g transform="translate(20, 408)" font-family="Inter, sans-serif">
+      <text font-size="9" font-weight="700" letter-spacing="1.5" fill="#FF5A1F">INSIGHT</text>
+      <text x="68" font-size="12" fill="#E8EBF0">C3 piorou nas últimas 4 voltas — pneu RR sobreaquecendo afeta confiança</text>
+    </g>
+  </g>
+
+  <!-- TILE 5 (VMIN POR TRECHO) — x=660 y=618 w=600 h=440 -->
+  <g transform="translate(660, 618)">
+    <rect width="600" height="440" rx="2" ry="2" fill="url(#tile)" stroke="#1F252E" stroke-width="1"/>
+    <g font-family="Inter, sans-serif" fill="#E8EBF0">
+      <text x="20" y="28" font-size="10" font-weight="700" letter-spacing="2" fill="#6E7681">VMIN POR TRECHO · BEST vs REF</text>
+      <text x="20" y="50" font-size="14" font-weight="500" fill="#E8EBF0">Velocidade mínima georef</text>
+    </g>
+    <g transform="translate(580, 28)" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, monospace">
+      <text font-size="10" fill="#6E7681">DESVIO MÉDIO</text>
+      <text y="18" font-size="13" font-weight="600" fill="#FFCC1A">−2.4 km/h</text>
+    </g>
+    <line x1="20" y1="68" x2="580" y2="68" stroke="#1F252E" stroke-width="1" stroke-opacity="0.6"/>
+
+    <!-- column headers -->
+    <g transform="translate(20, 96)" font-family="Inter, sans-serif" font-size="9" font-weight="700" letter-spacing="1.5" fill="#6E7681">
+      <text>TRECHO</text>
+      <text x="240">REF</text>
+      <text x="320">BEST</text>
+      <text x="400">v8 ATUAL</text>
+      <text x="500">Δ</text>
+    </g>
+
+    <!-- 6 rows -->
+    <g transform="translate(20, 124)" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="13" fill="#E8EBF0">
+      <!-- C1 -->
+      <g transform="translate(0, 0)">
+        <text font-weight="600" fill="#5DD18C">C1</text>
+        <text x="32" font-size="13" font-family="Inter, sans-serif" fill="#E8EBF0">Curva 1</text>
+        <text x="240" fill="#9DA3AC">125</text>
+        <text x="320" fill="#E8EBF0">126</text>
+        <text x="400" fill="#5DD18C" font-weight="600">126</text>
+        <text x="500" fill="#5DD18C">+1</text>
+      </g>
+      <g transform="translate(0, 38)">
+        <text font-weight="600" fill="#FFCC1A">C2</text>
+        <text x="32" font-size="13" font-family="Inter, sans-serif" fill="#E8EBF0">Curva do Sol</text>
+        <text x="240" fill="#9DA3AC">102</text>
+        <text x="320" fill="#E8EBF0">100</text>
+        <text x="400" fill="#FFCC1A" font-weight="600">98</text>
+        <text x="500" fill="#FFCC1A">−4</text>
+      </g>
+      <g transform="translate(0, 76)">
+        <rect x="-12" y="-18" width="584" height="36" fill="#FF5A1F" fill-opacity="0.06" stroke="#FF5A1F" stroke-width="0.5" stroke-opacity="0.4"/>
+        <text font-weight="700" fill="#FF5A1F">C3</text>
+        <text x="32" font-size="13" font-family="Inter, sans-serif" fill="#E8EBF0" font-weight="500">Mergulho Bruxa</text>
+        <text x="240" fill="#9DA3AC">94</text>
+        <text x="320" fill="#E8EBF0">94</text>
+        <text x="400" fill="#FF5A1F" font-weight="700">90</text>
+        <text x="500" fill="#FF5A1F" font-weight="700">−4</text>
+      </g>
+      <g transform="translate(0, 114)">
+        <text font-weight="600" fill="#FFCC1A">C4</text>
+        <text x="32" font-size="13" font-family="Inter, sans-serif" fill="#E8EBF0">Curva da Bruxa</text>
+        <text x="240" fill="#9DA3AC">88</text>
+        <text x="320" fill="#E8EBF0">86</text>
+        <text x="400" fill="#FFCC1A" font-weight="600">85</text>
+        <text x="500" fill="#FFCC1A">−3</text>
+      </g>
+      <g transform="translate(0, 152)">
+        <text font-weight="600" fill="#5DD18C">C5</text>
+        <text x="32" font-size="13" font-family="Inter, sans-serif" fill="#E8EBF0">Reta Boxes (saída)</text>
+        <text x="240" fill="#9DA3AC">145</text>
+        <text x="320" fill="#E8EBF0">146</text>
+        <text x="400" fill="#5DD18C" font-weight="600">145</text>
+        <text x="500" fill="#5DD18C">±0</text>
+      </g>
+      <g transform="translate(0, 190)">
+        <text font-weight="600" fill="#FFCC1A">C6</text>
+        <text x="32" font-size="13" font-family="Inter, sans-serif" fill="#E8EBF0">Carrossel</text>
+        <text x="240" fill="#9DA3AC">112</text>
+        <text x="320" fill="#E8EBF0">110</text>
+        <text x="400" fill="#FFCC1A" font-weight="600">109</text>
+        <text x="500" fill="#FFCC1A">−3</text>
+      </g>
+    </g>
+
+    <!-- footer: oportunidade -->
+    <line x1="20" y1="386" x2="580" y2="386" stroke="#1F252E" stroke-width="1" stroke-opacity="0.6"/>
+    <g transform="translate(20, 408)" font-family="Inter, sans-serif">
+      <text font-size="9" font-weight="700" letter-spacing="1.5" fill="#FFCC1A">OPORTUNIDADE</text>
+      <text x="98" font-size="12" fill="#E8EBF0">recuperar +4 km/h em C3 = ~0.3s na volta</text>
+    </g>
+  </g>
+
+  <!-- TILE 6 (PENDÊNCIAS) — x=1280 y=618 w=600 h=440 -->
+  <g transform="translate(1280, 618)">
+    <rect width="600" height="440" rx="2" ry="2" fill="url(#tile)" stroke="#1F252E" stroke-width="1"/>
+    <g font-family="Inter, sans-serif" fill="#E8EBF0">
+      <text x="20" y="28" font-size="10" font-weight="700" letter-spacing="2" fill="#6E7681">PENDÊNCIAS · CARRO+EVENTO</text>
+      <text x="20" y="50" font-size="14" font-weight="500" fill="#E8EBF0">Vivas, por carro · #16</text>
+    </g>
+    <g transform="translate(580, 28)" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, monospace">
+      <text font-size="10" fill="#6E7681">CONCLUÍDAS</text>
+      <text y="18" font-size="13" font-weight="600" fill="#5DD18C">5 / 9</text>
+    </g>
+    <line x1="20" y1="68" x2="580" y2="68" stroke="#1F252E" stroke-width="1" stroke-opacity="0.6"/>
+
+    <!-- OBRIGATÓRIO -->
+    <g transform="translate(20, 96)" font-family="Inter, sans-serif">
+      <text font-size="9" font-weight="700" letter-spacing="2" fill="#FF5A1F">OBRIGATÓRIO · 4</text>
+      <g transform="translate(0, 24)">
+        <!-- check 1 -->
+        <g>
+          <rect x="0" y="-10" width="14" height="14" fill="#5DD18C" fill-opacity="0.18" stroke="#5DD18C" stroke-width="1.5"/>
+          <path d="M 3 -3 L 6 0 L 11 -7" stroke="#5DD18C" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <text x="22" y="0" font-size="13" fill="#9DA3AC" text-decoration="line-through">Pressão dos pneus 28 psi</text>
+          <text x="540" y="0" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="10" fill="#6E7681">13:42</text>
+        </g>
+        <g transform="translate(0, 28)">
+          <rect x="0" y="-10" width="14" height="14" fill="#5DD18C" fill-opacity="0.18" stroke="#5DD18C" stroke-width="1.5"/>
+          <path d="M 3 -3 L 6 0 L 11 -7" stroke="#5DD18C" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <text x="22" y="0" font-size="13" fill="#9DA3AC" text-decoration="line-through">Verificar nível óleo</text>
+          <text x="540" y="0" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="10" fill="#6E7681">13:44</text>
+        </g>
+        <g transform="translate(0, 56)">
+          <rect x="0" y="-10" width="14" height="14" fill="none" stroke="#FF5A1F" stroke-width="1.5"/>
+          <text x="22" y="0" font-size="13" fill="#E8EBF0" font-weight="500">Trocar pastilhas dianteiras (50% restante)</text>
+          <text x="540" y="0" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="10" font-weight="600" fill="#FF5A1F">PRÓX. STINT</text>
+        </g>
+        <g transform="translate(0, 84)">
+          <rect x="0" y="-10" width="14" height="14" fill="none" stroke="#FFCC1A" stroke-width="1.5"/>
+          <text x="22" y="0" font-size="13" fill="#E8EBF0" font-weight="500">Sangrar freios após o stint</text>
+          <text x="540" y="0" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="10" font-weight="600" fill="#FFCC1A">FIM DO DIA</text>
+        </g>
+      </g>
+    </g>
+
+    <!-- ADICIONAL -->
+    <g transform="translate(20, 240)" font-family="Inter, sans-serif">
+      <text font-size="9" font-weight="700" letter-spacing="2" fill="#5BD0FF">ADICIONAL · 5</text>
+      <g transform="translate(0, 24)">
+        <g>
+          <rect x="0" y="-10" width="14" height="14" fill="#5DD18C" fill-opacity="0.18" stroke="#5DD18C" stroke-width="1.5"/>
+          <path d="M 3 -3 L 6 0 L 11 -7" stroke="#5DD18C" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <text x="22" y="0" font-size="13" fill="#9DA3AC" text-decoration="line-through">Limpar viseira do capacete</text>
+        </g>
+        <g transform="translate(0, 28)">
+          <rect x="0" y="-10" width="14" height="14" fill="#5DD18C" fill-opacity="0.18" stroke="#5DD18C" stroke-width="1.5"/>
+          <path d="M 3 -3 L 6 0 L 11 -7" stroke="#5DD18C" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <text x="22" y="0" font-size="13" fill="#9DA3AC" text-decoration="line-through">Hidratar piloto</text>
+        </g>
+        <g transform="translate(0, 56)">
+          <rect x="0" y="-10" width="14" height="14" fill="#5DD18C" fill-opacity="0.18" stroke="#5DD18C" stroke-width="1.5"/>
+          <path d="M 3 -3 L 6 0 L 11 -7" stroke="#5DD18C" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <text x="22" y="0" font-size="13" fill="#9DA3AC" text-decoration="line-through">Foto do carro pré-stint</text>
+        </g>
+        <g transform="translate(0, 84)">
+          <rect x="0" y="-10" width="14" height="14" fill="none" stroke="#6E7681" stroke-width="1.5"/>
+          <text x="22" y="0" font-size="13" fill="#E8EBF0">Conferir torque de roda (RR)</text>
+        </g>
+        <g transform="translate(0, 112)">
+          <rect x="0" y="-10" width="14" height="14" fill="none" stroke="#6E7681" stroke-width="1.5"/>
+          <text x="22" y="0" font-size="13" fill="#E8EBF0">Reabastecer (45% → 100%)</text>
+          <text x="540" y="0" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="10" fill="#6E7681">~21L</text>
+        </g>
+      </g>
+    </g>
+
+    <!-- footer: source-of-truth -->
+    <line x1="20" y1="402" x2="580" y2="402" stroke="#1F252E" stroke-width="1" stroke-opacity="0.6"/>
+    <g transform="translate(20, 422)" font-family="Inter, sans-serif" font-size="10" fill="#6E7681">
+      <text>Origem: lista viva do mecânico · sync 14:22:51 · Supabase Realtime</text>
+    </g>
+  </g>
+
+</svg>
