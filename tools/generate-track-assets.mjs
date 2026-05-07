@@ -136,6 +136,38 @@ function buildPointsSvg({ viewBox, points }) {
 `;
 }
 
+function buildPreviewSvg({ viewBox, svgPath, points }) {
+  const { w, h } = viewBox;
+  const strokeAsphalt = 22;
+  const strokeRunoff = 38;
+  const strokeKerb = 24.4;
+  const dots = points
+    .map(p => `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="1.8"/>`)
+    .join('\n    ');
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="Autódromo de Brasília — preview combinado (base + pontos)">
+  <title>Preview — base estilizada + 1095 pontos a 5m</title>
+  <desc>Visualização para humanos. Combina brasilia.svg + brasilia-points.svg num único arquivo, com pontos em cor visível. NÃO usar este arquivo no app — o app empilha os dois originais.</desc>
+  <defs>
+    <style>
+      .bg      { fill: ${PALETTE.bgFar}; }
+      .runoff  { fill: none; stroke: ${PALETTE.runoff};  stroke-width: ${strokeRunoff}; stroke-linejoin: round; stroke-linecap: round; opacity: 0.55; }
+      .kerb    { fill: none; stroke: ${PALETTE.asphaltLight}; stroke-width: ${strokeKerb}; stroke-linejoin: round; stroke-linecap: round; opacity: 0.40; }
+      .asphalt { fill: none; stroke: ${PALETTE.asphalt}; stroke-width: ${strokeAsphalt}; stroke-linejoin: round; stroke-linecap: round; }
+      .dots    { fill: #FF7A1A; }
+    </style>
+  </defs>
+  <rect class="bg" x="0" y="0" width="${w}" height="${h}"/>
+  <path class="runoff"  d="${svgPath}"/>
+  <path class="kerb"    d="${svgPath}"/>
+  <path class="asphalt" d="${svgPath}"/>
+  <g class="dots">
+    ${dots}
+  </g>
+</svg>
+`;
+}
+
 function buildReferenceJson({ apelido, nomeOficial, viewBox, resampled }) {
   return {
     trackApelido: apelido,
@@ -165,6 +197,7 @@ async function generateTrack(track) {
 
   const baseSvg = buildBaseSvg({ viewBox: track.viewBox, svgPath });
   const pointsSvg = buildPointsSvg({ viewBox: track.viewBox, points: resampled.points });
+  const previewSvg = buildPreviewSvg({ viewBox: track.viewBox, svgPath, points: resampled.points });
   const refJson = buildReferenceJson({
     apelido: track.apelido,
     nomeOficial: track.nomeOficial,
@@ -176,6 +209,7 @@ async function generateTrack(track) {
   await mkdir(dir, { recursive: true });
   await writeFile(resolve(dir, `${track.apelido}.svg`), baseSvg);
   await writeFile(resolve(dir, `${track.apelido}-points.svg`), pointsSvg);
+  await writeFile(resolve(dir, `${track.apelido}-preview.svg`), previewSvg);
   await writeFile(resolve(dir, `${track.apelido}-reference.json`), JSON.stringify(refJson, null, 2));
 
   return {
