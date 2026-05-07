@@ -4043,7 +4043,7 @@ step("CURSOR-05: PullCursor.resetAll zera todos os cursors") {
     try assertEq(stillCarros, 0)
 }
 
-step("DRAIN-06: SyncRequestRow shape — insert sem row_id, update com client_updated_at") {
+step("DRAIN-06: SyncRequestRow shape — todas as ops mandam row_id (Edge Function ecoa em rejected)") {
     let q = try makeTestDB()
     try q.write { db in
         try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-i", op: .insert, payload: "{\"x\":1}")
@@ -4055,7 +4055,7 @@ step("DRAIN-06: SyncRequestRow shape — insert sem row_id, update com client_up
     _ = try SyncDrainer.drainBatch(q, transport: mock)
 
     let insertRow = mock.lastSent.first(where: { $0.op == "insert" })!
-    try assertTrue(insertRow.row_id == nil, "insert não deve mandar row_id")
+    try assertTrue(insertRow.row_id == "c-i", "insert manda row_id (Edge Function ecoa em rejected → drainer associa pra incrementar attempts)")
     try assertTrue(insertRow.payload != nil, "insert deve mandar payload")
     try assertTrue(insertRow.client_updated_at == nil, "insert não usa LWW")
 
@@ -4067,6 +4067,61 @@ step("DRAIN-06: SyncRequestRow shape — insert sem row_id, update com client_up
     let deleteRow = mock.lastSent.first(where: { $0.op == "delete" })!
     try assertTrue(deleteRow.row_id == "c-d", "delete precisa de row_id")
     try assertTrue(deleteRow.payload == nil, "delete não deve mandar payload")
+}
+
+step("DRAIN-07: rejected COM row_id — incrementa attempts no item certo") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-1", op: .insert, payload: "{\"id\":\"c-1\"}")
+        try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-2", op: .insert, payload: "{\"id\":\"c-2\"}")
+    }
+    let mock = MockSyncTransport()
+    mock.nextResult = SyncResult(
+        accepted: [],
+        rejected: [SyncRejected(row_id: "c-2", table_name: "carros", reason: "db-error")]
+    )
+    let outcome = try SyncDrainer.drainBatch(q, transport: mock)
+    try assertEq(outcome.rejectedCount, 1)
+    let after = try q.read { db in try SyncQueueItem.order(Column("row_id").asc).fetchAll(db) }
+    try assertEq(after.count, 2)
+    try assertEq(after[0].rowId, "c-1")
+    try assertEq(after[0].attempts, 0, "c-1 não foi rejeitado, attempts continua 0")
+    try assertEq(after[1].rowId, "c-2")
+    try assertEq(after[1].attempts, 1, "c-2 foi rejeitado, attempts incrementou")
+}
+
+step("DRAIN-08: rejected SEM row_id (server legacy/parse fail) — fallback associa pela primeira pendente da tabela") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-1", op: .insert, payload: "{\"id\":\"c-1\"}")
+    }
+    let mock = MockSyncTransport()
+    mock.nextResult = SyncResult(
+        accepted: [],
+        rejected: [SyncRejected(row_id: nil, table_name: "carros", reason: "parse-error")]
+    )
+    let outcome = try SyncDrainer.drainBatch(q, transport: mock)
+    try assertEq(outcome.rejectedCount, 1, "rejected sem row_id ainda conta — não pode travar a fila")
+    let after = try q.read { db in try SyncQueueItem.fetchAll(db) }
+    try assertEq(after.first?.attempts, 1, "fallback incrementou attempts da única pendente da tabela")
+}
+
+step("DRAIN-09: accepted com UUID lowercase casa item local uppercase (Postgres normaliza, Swift gera UPPER)") {
+    // Reproduz o cenário real do iPhone: Swift `UUID().uuidString` gera
+    // `"067135BB-..."`, mas Postgres devolve `"067135bb-..."` no select.
+    // Strict `==` falhava → drainer "sucedia" sem drenar nada.
+    let q = try makeTestDB()
+    let upperUUID = "067135BB-C2B2-4BE0-8625-B1AEA608F2D3"
+    let lowerUUID = upperUUID.lowercased()
+    try q.write { db in
+        try SyncQueue.enqueue(db, tableName: "carros", rowId: upperUUID, op: .insert, payload: "{\"id\":\"\(upperUUID)\"}")
+    }
+    let mock = MockSyncTransport()
+    mock.nextResult = SyncResult(accepted: [lowerUUID], rejected: [])
+    let outcome = try SyncDrainer.drainBatch(q, transport: mock)
+    try assertEq(outcome.acceptedCount, 1, "lookup case-insensitive resolveu o match")
+    let remaining = try q.read { db in try SyncQueueItem.fetchAll(db) }
+    try assertEq(remaining.count, 0, "row drenada da fila mesmo com case mismatch")
 }
 
 // ─── BACKOFF (Sprint 1A.6 — primitive) ───────────────────────
