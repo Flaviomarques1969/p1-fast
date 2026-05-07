@@ -24,6 +24,7 @@ struct LoginView: View {
 
     @State private var email: String = ""
     @State private var password: String = ""
+    @State private var showPassword: Bool = false
     @State private var showEmailFields: Bool = false
     /// Mensagem temporária quando o user toca num provider ainda não
     /// implementado (Apple/Google). SessionManager.lastError fica
@@ -135,7 +136,7 @@ struct LoginView: View {
     private var emailFields: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             inputField(label: "Email", text: $email, isSecure: false, keyboardType: .emailAddress)
-            inputField(label: "Senha", text: $password, isSecure: true, keyboardType: .default)
+            passwordField
             Button(action: signInTap) {
                 Text(session.isWorking ? "Entrando…" : "Entrar")
                     .font(Font.bodyP1)
@@ -147,6 +148,54 @@ struct LoginView: View {
             }
             .buttonStyle(.plain)
             .disabled(!canSignIn)
+        }
+    }
+
+    /// Campo de senha com toggle visual (olhinho). Quando `showPassword`
+    /// estiver ligado, mostra TextField — não SecureField — pra que o
+    /// caractere apareça em claro. autocapitalization/autocorrect/
+    /// textContentType ficam desligados pra evitar interferência do iOS
+    /// (sugestão de senha forte, capitalização do primeiro char etc.)
+    /// que faria o user "achar que digitou certo" sem ter digitado.
+    private var passwordField: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("SENHA")
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(0.66)
+                .foregroundStyle(Color.textFaint)
+            HStack(spacing: 8) {
+                Group {
+                    if showPassword {
+                        TextField("", text: $password)
+                            .keyboardType(.default)
+                            .textContentType(.password)
+                            .autocapitalization(.none)
+                            .disableAutocorrection(true)
+                    } else {
+                        SecureField("", text: $password)
+                            .textContentType(.password)
+                    }
+                }
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(Color.text)
+                Button(action: { showPassword.toggle() }) {
+                    Image(systemName: showPassword ? "eye.slash" : "eye")
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundStyle(Color.textMuted)
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(showPassword ? "Ocultar senha" : "Mostrar senha")
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 13)
+            .background(Color.surfaceRaised)
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .stroke(Color.border, lineWidth: 1)
+            )
+            .cornerRadius(Radius.md)
         }
     }
 
@@ -197,10 +246,22 @@ struct LoginView: View {
     // MARK: - Erro inline
 
     private func erroLine(_ msg: String) -> some View {
-        Text(msg)
-            .font(Font.captionP1)
-            .foregroundStyle(Color.rec)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Não consegui entrar")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.rec)
+            Text(msg)
+                .font(Font.bodyP1)
+                .foregroundStyle(Color.text)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Spacing.md)
+        .background(Color.surfaceRaised)
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .stroke(Color.rec.opacity(0.4), lineWidth: 1)
+        )
+        .cornerRadius(Radius.md)
     }
 
     private func infoLine(_ msg: String) -> some View {
