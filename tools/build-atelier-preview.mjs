@@ -21,8 +21,10 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 
-const FRAME_W = 1100, FRAME_H = 900;
+const FRAME_W = 1280, FRAME_H = 920;
 const TRACK_OX = 138, TRACK_OY = 60; // offset onde o track 823×799 começa
+const HUD_X = 1010;                   // coluna da direita pra HUD telemetria
+const HUD_W = 230;
 
 // Curvas a rotular (do seed-tracks.js, ehTrecho=true) com posição e direção
 // preferida do label (l/r/t/b) pra evitar choque com o traçado.
@@ -61,6 +63,57 @@ function leader(corner) {
   return { lx, ly, anchor, ax: corner.x, ay: corner.y };
 }
 
+// Telemetria sintética derivada da curvatura real (vem da reference.json).
+// Modelo simplificado: na reta v alta + RPM alto + G baixo, na curva inverso.
+//   v(km/h)  = clamp(290 - 9500·|κ|, 60, 290)
+//   rpm     = clamp(2400 + v · 22, 4000, 9000)  (engrenamento médio)
+//   gLat(g) = ±(v_ms² · κ) / 9.81  (sinal preserva direção da curva)
+function deriveTelemetry(points) {
+  const out = [];
+  for (let i = 0; i < points.length; i++) {
+    const k = Math.abs(points[i].curvature);
+    const v = Math.max(60, Math.min(290, 290 - 9500 * k));
+    const rpm = Math.max(4000, Math.min(9000, 2400 + v * 22));
+    const vms = v / 3.6;
+    const gLat = (vms * vms * points[i].curvature) / 9.81;
+    out.push({ v: Math.round(v), rpm: Math.round(rpm), gLat: Number(gLat.toFixed(2)) });
+  }
+  // Suaviza por janela 7 (frenagens/acelerações não são instantâneas)
+  const n = out.length;
+  const sm = out.map((_, i) => {
+    let sv = 0, sr = 0, sg = 0;
+    const W = 7;
+    for (let k = -W; k <= W; k++) {
+      const j = ((i + k) % n + n) % n;
+      sv += out[j].v; sr += out[j].rpm; sg += out[j].gLat;
+    }
+    return { v: Math.round(sv / (2 * W + 1)), rpm: Math.round(sr / (2 * W + 1)), gLat: Number((sg / (2 * W + 1)).toFixed(2)) };
+  });
+  return sm;
+}
+
+// Delta acumulado sintético: começa em 0, ganha em P2, perde em P3, fecha +0.42s
+function deriveCumDelta(n, finalDeltaS) {
+  const profile = i => {
+    const t = i / n;
+    // 4 setores: P1 (+0.14), P2 (-0.08), P3 (+0.21), P4 (+0.15) — soma = +0.42
+    if (t < 0.25) return (t / 0.25) * 0.14;
+    if (t < 0.50) return 0.14 + ((t - 0.25) / 0.25) * (-0.08);
+    if (t < 0.75) return 0.06 + ((t - 0.50) / 0.25) * 0.21;
+    return 0.27 + ((t - 0.75) / 0.25) * 0.15;
+  };
+  return Array.from({ length: n }, (_, i) => profile(i));
+}
+
+// Helper: serializa valores em formato SMIL "v0;v1;v2;..."
+function smil(values, sampleEvery = 1) {
+  const sampled = [];
+  for (let i = 0; i < values.length; i += sampleEvery) sampled.push(values[i]);
+  // garante fechar o ciclo
+  sampled.push(values[0]);
+  return sampled.join(';');
+}
+
 function buildAtelier({ svgPath, points, totalM }) {
   // Sample posições para os marcadores live + ghost + rastro
   const liveIdx = Math.floor(points.length * 0.42);          // ~42% da volta
@@ -69,6 +122,22 @@ function buildAtelier({ svgPath, points, totalM }) {
   const live = points[liveIdx];
   const ghost = points[ghostIdx];
   const ghostTrailLen = 60;
+  const tele = deriveTelemetry(points);
+  const cumDelta = deriveCumDelta(points.length, 0.42);
+
+  // Sub-amostragem pra animação SMIL (evita arquivo gigante)
+  const FRAMES = 110;
+  const stride = Math.max(1, Math.floor(points.length / FRAMES));
+  const speedSeq = []; const rpmSeq = []; const gLatSeq = [];
+  const speedTextSeq = [];
+  for (let i = 0; i < points.length; i += stride) {
+    speedSeq.push(tele[i].v);
+    rpmSeq.push(tele[i].rpm);
+    gLatSeq.push(tele[i].gLat);
+    speedTextSeq.push(tele[i].v.toString());
+  }
+  speedSeq.push(tele[0].v); rpmSeq.push(tele[0].rpm); gLatSeq.push(tele[0].gLat);
+  speedTextSeq.push(tele[0].v.toString());
 
   const liveTrail = [];
   for (let i = 1; i <= trailLen; i++) {
@@ -324,6 +393,121 @@ function buildAtelier({ svgPath, points, totalM }) {
         </animateMotion>
       </circle>
     </g>
+
+    <!-- Speed badge flutuante seguindo o live marker -->
+    <g font-family="ui-monospace, 'SF Mono', Menlo, monospace">
+      <g>
+        <animateMotion dur="${LIVE_DUR}s" repeatCount="indefinite" rotate="0">
+          <mpath href="#track"/>
+        </animateMotion>
+        <rect x="14" y="-22" width="58" height="22" rx="2" fill="#0E1322" fill-opacity="0.85" stroke="#FF7A1A" stroke-width="0.6" stroke-opacity="0.85"/>
+        <text x="43" y="-7" text-anchor="middle" font-size="14" font-weight="600" fill="#FFE5C9" letter-spacing="1">
+          <tspan>${tele[liveIdx].v}</tspan>
+          <animate attributeName="textContent" values="${speedTextSeq.join(';')}" dur="${LIVE_DUR}s" repeatCount="indefinite"/>
+        </text>
+        <text x="68" y="-7" text-anchor="end" font-size="6" fill="#FF7A1A" fill-opacity="0.85" letter-spacing="1.5" dx="10">km/h</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ════════════════ HUD TELEMETRIA (right column) ════════════════ -->
+  <g transform="translate(${HUD_X}, 110)" font-family="ui-monospace, 'SF Mono', Menlo, monospace">
+    <!-- Painel base -->
+    <rect x="0" y="0" width="${HUD_W}" height="640" fill="#0A0E18" fill-opacity="0.55" stroke="#D4AF37" stroke-width="0.5" stroke-opacity="0.25" rx="3"/>
+
+    <!-- VELOCIDADE (gigante) -->
+    <g transform="translate(0, 30)">
+      <text x="${HUD_W / 2}" y="0" text-anchor="middle" font-size="9" letter-spacing="4" fill="#F5F0E0" fill-opacity="0.55">VELOCIDADE</text>
+      <text x="${HUD_W / 2}" y="68" text-anchor="middle" font-family="'Helvetica Neue', sans-serif" font-size="76" font-weight="100" letter-spacing="-2" fill="#F5F0E0">
+        <tspan>${tele[liveIdx].v}</tspan>
+        <animate attributeName="textContent" values="${speedTextSeq.join(';')}" dur="${LIVE_DUR}s" repeatCount="indefinite"/>
+      </text>
+      <text x="${HUD_W / 2}" y="86" text-anchor="middle" font-size="9" letter-spacing="3" fill="#D4AF37" fill-opacity="0.85">km/h</text>
+    </g>
+
+    <!-- divider -->
+    <line x1="20" y1="148" x2="${HUD_W - 20}" y2="148" stroke="url(#champagne)" stroke-opacity="0.20" stroke-width="0.5"/>
+
+    <!-- RPM (semicírculo gauge) -->
+    <g transform="translate(${HUD_W / 2}, 230)">
+      <text x="0" y="-50" text-anchor="middle" font-size="9" letter-spacing="4" fill="#F5F0E0" fill-opacity="0.55">RPM</text>
+
+      <!-- Trilha do gauge (0-9000 RPM mapeado a 270°: -135° a +135°) -->
+      <!-- Verde: 0-6300 (-135° a +54°), Amarelo: 6300-7900 (+54° a +123°), Vermelho: 7900-9000 (+123° a +135°) -->
+      <path d="M -70 49.5 A 86 86 0 0 1 70 49.5" fill="none" stroke="#22C55E" stroke-width="6" stroke-opacity="0.40" stroke-linecap="butt"/>
+      <path d="M 70 49.5 A 86 86 0 0 1 81 -19" fill="none" stroke="#FACC15" stroke-width="6" stroke-opacity="0.50" stroke-linecap="butt"/>
+      <path d="M 81 -19 A 86 86 0 0 1 70 -49.5" fill="none" stroke="#EF4444" stroke-width="6" stroke-opacity="0.65" stroke-linecap="butt"/>
+
+      <!-- Marcadores de RPM (3, 6, 9) -->
+      <g font-size="7" letter-spacing="1" fill="#F5F0E0" fill-opacity="0.45" text-anchor="middle">
+        <text x="-95" y="58">3</text>
+        <text x="0" y="-78">6</text>
+        <text x="95" y="58">9</text>
+      </g>
+
+      <!-- Ponteiro animado: rotaciona -135° a +135° = 270° pra rpm 0 a 9000 -->
+      <g>
+        <line x1="0" y1="0" x2="0" y2="-78" stroke="#F5F0E0" stroke-width="2" stroke-linecap="round" transform="rotate(${(tele[liveIdx].rpm / 9000) * 270 - 135})">
+          <animateTransform attributeName="transform" type="rotate" values="${rpmSeq.map(r => ((r / 9000) * 270 - 135).toFixed(1)).join(';')}" dur="${LIVE_DUR}s" repeatCount="indefinite"/>
+        </line>
+        <circle r="5" fill="#0A0E18" stroke="#D4AF37" stroke-width="0.8" stroke-opacity="0.85"/>
+        <circle r="2" fill="#D4AF37"/>
+      </g>
+
+      <!-- Valor numérico do RPM -->
+      <text x="0" y="42" text-anchor="middle" font-size="14" font-weight="500" fill="#F5F0E0" letter-spacing="1">
+        <tspan>${tele[liveIdx].rpm.toLocaleString('pt-BR')}</tspan>
+        <animate attributeName="textContent" values="${rpmSeq.map(r => r.toLocaleString('pt-BR')).join(';')}" dur="${LIVE_DUR}s" repeatCount="indefinite"/>
+      </text>
+    </g>
+
+    <!-- divider -->
+    <line x1="20" y1="358" x2="${HUD_W - 20}" y2="358" stroke="url(#champagne)" stroke-opacity="0.20" stroke-width="0.5"/>
+
+    <!-- G LATERAL (barra horizontal com origem no centro) -->
+    <g transform="translate(0, 388)">
+      <text x="${HUD_W / 2}" y="0" text-anchor="middle" font-size="9" letter-spacing="4" fill="#F5F0E0" fill-opacity="0.55">G LATERAL</text>
+
+      <!-- Trilha da barra -->
+      <line x1="20" y1="36" x2="${HUD_W - 20}" y2="36" stroke="#F5F0E0" stroke-opacity="0.10" stroke-width="6" stroke-linecap="round"/>
+      <!-- Centro -->
+      <line x1="${HUD_W / 2}" y1="28" x2="${HUD_W / 2}" y2="44" stroke="#F5F0E0" stroke-opacity="0.35" stroke-width="0.8"/>
+      <!-- Marcadores ±2g -->
+      <g font-size="7" fill="#F5F0E0" fill-opacity="0.40" letter-spacing="1">
+        <text x="20" y="56" text-anchor="start">−2g</text>
+        <text x="${HUD_W / 2}" y="56" text-anchor="middle">0</text>
+        <text x="${HUD_W - 20}" y="56" text-anchor="end">+2g</text>
+      </g>
+
+      <!-- Barra animada (largura cresce do centro pra direção do g) -->
+      <rect x="${HUD_W / 2}" y="32" width="0" height="8" fill="#FF7A1A" fill-opacity="0.85" rx="1">
+        <animate attributeName="x"     values="${gLatSeq.map(g => (HUD_W / 2 + (g < 0 ? (g / 2) * (HUD_W / 2 - 20) : 0)).toFixed(1)).join(';')}" dur="${LIVE_DUR}s" repeatCount="indefinite"/>
+        <animate attributeName="width" values="${gLatSeq.map(g => (Math.min(Math.abs(g) / 2, 1) * (HUD_W / 2 - 20)).toFixed(1)).join(';')}" dur="${LIVE_DUR}s" repeatCount="indefinite"/>
+      </rect>
+
+      <!-- Valor numérico do G -->
+      <text x="${HUD_W / 2}" y="86" text-anchor="middle" font-size="22" font-weight="200" fill="#F5F0E0" letter-spacing="1">
+        <tspan>${tele[liveIdx].gLat.toFixed(2)}</tspan>
+        <animate attributeName="textContent" values="${gLatSeq.map(g => g.toFixed(2)).join(';')}" dur="${LIVE_DUR}s" repeatCount="indefinite"/>
+      </text>
+      <text x="${HUD_W / 2}" y="100" text-anchor="middle" font-size="8" letter-spacing="3" fill="#D4AF37" fill-opacity="0.85">G</text>
+    </g>
+
+    <!-- divider -->
+    <line x1="20" y1="514" x2="${HUD_W - 20}" y2="514" stroke="url(#champagne)" stroke-opacity="0.20" stroke-width="0.5"/>
+
+    <!-- Posição na volta (s/total) -->
+    <g transform="translate(0, 540)">
+      <text x="${HUD_W / 2}" y="0" text-anchor="middle" font-size="8" letter-spacing="3" fill="#F5F0E0" fill-opacity="0.45">POSIÇÃO NA VOLTA</text>
+      <text x="${HUD_W / 2}" y="32" text-anchor="middle" font-size="22" font-weight="300" fill="#F5F0E0" letter-spacing="2">
+        <tspan>${(points[liveIdx].sMeters).toFixed(0)}</tspan>
+        <animate attributeName="textContent" values="${Array.from({length: speedSeq.length}, (_, i) => points[Math.min(i * stride, points.length - 1)].sMeters.toFixed(0)).join(';')}" dur="${LIVE_DUR}s" repeatCount="indefinite"/>
+      </text>
+      <text x="${HUD_W / 2}" y="50" text-anchor="middle" font-size="8" letter-spacing="2" fill="#D4AF37" fill-opacity="0.85">m / ${totalM}</text>
+    </g>
+
+    <!-- Brand assinatura -->
+    <text x="${HUD_W / 2}" y="618" text-anchor="middle" font-size="7" letter-spacing="4" fill="#D4AF37" fill-opacity="0.40">P 1 · F A S T   ·   ATELIER</text>
   </g>
 
   <!-- vinheta sobre tudo -->
@@ -333,24 +517,86 @@ function buildAtelier({ svgPath, points, totalM }) {
   <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#F5F0E0">
     <line x1="60" y1="${FRAME_H - 110}" x2="${FRAME_W - 60}" y2="${FRAME_H - 110}" stroke="url(#champagne)" stroke-width="0.5" stroke-opacity="0.30"/>
 
-    <!-- BARRAS POR SETOR (centro do footer) -->
-    <g transform="translate(${FRAME_W / 2 - 360}, ${FRAME_H - 92})">
+    <!-- DELTA CUMULATIVO (gráfico de linha sobre toda a volta) -->
+    <g transform="translate(60, ${FRAME_H - 100})">
+      <text x="0" y="0" font-size="8" letter-spacing="3" fill="#F5F0E0" fill-opacity="0.45">DELTA CUMULATIVO AO LONGO DA VOLTA (s)</text>
+
+      ${(() => {
+        const W = 600, H = 56;
+        const dx = W / (cumDelta.length - 1);
+        const ymax = 0.5; // ±0.5s escala
+        const yMid = H / 2;
+        // baseline + grid
+        const grid = `
+          <line x1="0" y1="${yMid}" x2="${W}" y2="${yMid}" stroke="#F5F0E0" stroke-opacity="0.20" stroke-width="0.5"/>
+          <line x1="0" y1="0"        x2="${W}" y2="0"        stroke="#F5F0E0" stroke-opacity="0.08" stroke-width="0.5" stroke-dasharray="2 4"/>
+          <line x1="0" y1="${H}"     x2="${W}" y2="${H}"     stroke="#F5F0E0" stroke-opacity="0.08" stroke-width="0.5" stroke-dasharray="2 4"/>
+        `;
+        // separadores de setor (P1/P2/P3/P4 a cada 25%)
+        const dividers = [0.25, 0.50, 0.75].map(t => `<line x1="${t * W}" y1="-2" x2="${t * W}" y2="${H + 2}" stroke="#D4AF37" stroke-opacity="0.20" stroke-width="0.5" stroke-dasharray="3 5"/>`).join('');
+        // labels de setor
+        const sectorLabels = ['P1', 'P2', 'P3', 'P4'].map((s, i) => `<text x="${(i + 0.5) * (W / 4)}" y="${H + 14}" text-anchor="middle" font-size="7" letter-spacing="2" fill="#D4AF37" fill-opacity="0.55">${s}</text>`).join('');
+        // path do delta (positive = vermelho, fica acima da linha; negative = verde, abaixo)
+        let pathPos = '', pathNeg = '';
+        for (let i = 0; i < cumDelta.length; i++) {
+          const x = i * dx;
+          const y = yMid - (cumDelta[i] / ymax) * yMid;
+          const cmd = i === 0 ? 'M' : 'L';
+          if (cumDelta[i] >= 0) pathPos += `${cmd} ${x.toFixed(1)} ${y.toFixed(1)} `;
+          else pathNeg += `${cmd} ${x.toFixed(1)} ${y.toFixed(1)} `;
+        }
+        // area filled under (positive)
+        const areaPath = `M 0 ${yMid} ` + cumDelta.map((d, i) => `L ${(i * dx).toFixed(1)} ${(yMid - (d / ymax) * yMid).toFixed(1)}`).join(' ') + ` L ${W} ${yMid} Z`;
+
+        // Marcador da posição atual (segue o liveIdx)
+        const cursorXAt = idx => ((idx / points.length) * W).toFixed(1);
+        const cursorXSeq = Array.from({length: speedSeq.length + 1}, (_, i) => cursorXAt(Math.min(i * stride, points.length - 1)));
+
+        return `
+          ${grid}
+          ${dividers}
+          <!-- area gradient bg -->
+          <defs>
+            <linearGradient id="deltaArea" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#FF5A4E" stop-opacity="0.45"/>
+              <stop offset="50%" stop-color="#FF5A4E" stop-opacity="0.05"/>
+              <stop offset="100%" stop-color="#5BE07A" stop-opacity="0.30"/>
+            </linearGradient>
+          </defs>
+          <path d="${areaPath}" fill="url(#deltaArea)"/>
+          <path d="${cumDelta.map((d, i) => `${i === 0 ? 'M' : 'L'} ${(i * dx).toFixed(1)} ${(yMid - (d / ymax) * yMid).toFixed(1)}`).join(' ')}" fill="none" stroke="#F5F0E0" stroke-width="1.4" stroke-opacity="0.95"/>
+          ${sectorLabels}
+          <!-- cursor que segue o live marker -->
+          <line x1="${cursorXAt(liveIdx)}" y1="-4" x2="${cursorXAt(liveIdx)}" y2="${H + 4}" stroke="#FF7A1A" stroke-width="1" stroke-opacity="0.85">
+            <animate attributeName="x1" values="${cursorXSeq.join(';')}" dur="${LIVE_DUR}s" repeatCount="indefinite"/>
+            <animate attributeName="x2" values="${cursorXSeq.join(';')}" dur="${LIVE_DUR}s" repeatCount="indefinite"/>
+          </line>
+          <!-- escala Y -->
+          <g font-size="7" fill="#F5F0E0" fill-opacity="0.40" letter-spacing="1">
+            <text x="-6" y="3" text-anchor="end">+${ymax.toFixed(1)}s</text>
+            <text x="-6" y="${yMid + 3}" text-anchor="end">0</text>
+            <text x="-6" y="${H + 3}" text-anchor="end">−${ymax.toFixed(1)}s</text>
+          </g>
+        `;
+      })()}
+    </g>
+
+    <!-- BARRAS POR SETOR (lado direito do delta cumulativo) -->
+    <g transform="translate(720, ${FRAME_H - 100})">
       <text x="0" y="0" font-size="8" letter-spacing="3" fill="#F5F0E0" fill-opacity="0.45">DELTA POR SETOR (s)</text>
       ${SECTORS.map((s, i) => {
-        const cellW = 180;
-        const x = i * cellW;
-        const max = 0.30; // escala máx ±0.30s
-        const w = Math.min(Math.abs(s.delta) / max, 1) * 60;
+        const max = 0.30;
+        const w = Math.min(Math.abs(s.delta) / max, 1) * 50;
         const color = s.delta >= 0 ? '#FF5A4E' : '#5BE07A';
         const sign = s.delta >= 0 ? '+' : '−';
-        const center = x + 100; // baseline da barra
+        const cx = 130; // baseline central
         return `
-      <g transform="translate(0,12)">
-        <text x="${x}" y="6" font-size="8" letter-spacing="2" fill-opacity="0.55">${s.id} · ${s.name}</text>
-        <line x1="${x}" y1="20" x2="${x + 165}" y2="20" stroke="#F5F0E0" stroke-opacity="0.10" stroke-width="0.6"/>
-        <line x1="${center}" y1="14" x2="${center}" y2="26" stroke="#F5F0E0" stroke-opacity="0.30" stroke-width="0.6"/>
-        <rect x="${s.delta >= 0 ? center : center - w}" y="16" width="${w}" height="8" fill="${color}" fill-opacity="0.85"/>
-        <text x="${x + 165}" y="22" text-anchor="end" font-size="10" font-weight="500" fill="${color}" fill-opacity="0.95">${sign}${Math.abs(s.delta).toFixed(2)}</text>
+      <g transform="translate(0,${14 + i * 16})">
+        <text x="0" y="6" font-size="8" letter-spacing="1.5" fill-opacity="0.65">${s.id}</text>
+        <line x1="35" y1="2" x2="245" y2="2" stroke="#F5F0E0" stroke-opacity="0.08" stroke-width="0.5"/>
+        <line x1="${cx}" y1="-3" x2="${cx}" y2="7" stroke="#F5F0E0" stroke-opacity="0.30" stroke-width="0.5"/>
+        <rect x="${s.delta >= 0 ? cx : cx - w}" y="-2" width="${w}" height="8" fill="${color}" fill-opacity="0.85"/>
+        <text x="245" y="6" text-anchor="end" font-size="9" font-weight="500" fill="${color}" fill-opacity="0.95">${sign}${Math.abs(s.delta).toFixed(2)}</text>
       </g>`;
       }).join('')}
     </g>
