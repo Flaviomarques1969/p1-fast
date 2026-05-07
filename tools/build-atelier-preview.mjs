@@ -367,19 +367,25 @@ function buildAtelier({ svgPath, points, totalM }) {
 
   <!-- ════════════════ ELEMENTO 3: PISTA ════════════════ -->
   <g transform="translate(${TRACK_OX},${TRACK_OY})">
-    <!-- halo atmosférico amplo (pra dar peso/presença ao traçado, não é elevação) -->
-    <use href="#track" fill="none" stroke="#E8C97A" stroke-width="120" stroke-opacity="0.045" stroke-linejoin="round" stroke-linecap="round" filter="url(#blurLg)"/>
-    <use href="#track" fill="none" stroke="#E8C97A" stroke-width="80"  stroke-opacity="0.07" stroke-linejoin="round" stroke-linecap="round" filter="url(#blurLg)"/>
-    <use href="#track" fill="none" stroke="#E8C97A" stroke-width="46"  stroke-opacity="0.10" stroke-linejoin="round" stroke-linecap="round" filter="url(#blurMd)"/>
+    <!-- HALO ATMOSFÉRICO em camadas (ondas concêntricas de luz dourada,
+         dão corpo/peso ao traçado sem sugerir terreno). 6 camadas:
+         outermost wide+soft+blurred → innermost narrow+sharp+denso -->
+    <use href="#track" fill="none" stroke="#E8C97A" stroke-width="140" stroke-opacity="0.025" stroke-linejoin="round" stroke-linecap="round" filter="url(#blurLg)"/>
+    <use href="#track" fill="none" stroke="#E8C97A" stroke-width="100" stroke-opacity="0.040" stroke-linejoin="round" stroke-linecap="round" filter="url(#blurLg)"/>
+    <use href="#track" fill="none" stroke="#E8C97A" stroke-width="76"  stroke-opacity="0.055" stroke-linejoin="round" stroke-linecap="round" filter="url(#blurMd)"/>
+    <use href="#track" fill="none" stroke="#E8C97A" stroke-width="56"  stroke-opacity="0.075" stroke-linejoin="round" stroke-linecap="round"/>
+    <use href="#track" fill="none" stroke="#E8C97A" stroke-width="42"  stroke-opacity="0.105" stroke-linejoin="round" stroke-linecap="round"/>
+    <use href="#track" fill="none" stroke="#E8C97A" stroke-width="32"  stroke-opacity="0.140" stroke-linejoin="round" stroke-linecap="round"/>
 
     <!-- runoff (escape, gradiente warm) -->
-    <use href="#track" fill="none" stroke="url(#runoff)" stroke-width="36" stroke-linejoin="round" stroke-linecap="round" stroke-opacity="0.85"/>
+    <use href="#track" fill="none" stroke="url(#runoff)" stroke-width="30" stroke-linejoin="round" stroke-linecap="round" stroke-opacity="0.85"/>
 
     <!-- asfalto (gradiente vertical = camber) -->
     <use href="#track" fill="none" stroke="url(#asphalt)" stroke-width="22" stroke-linejoin="round" stroke-linecap="round"/>
 
-    <!-- filete dourado na borda interna — cor SÓLIDA pra ficar uniforme em toda a pista -->
-    <use href="#track" fill="none" stroke="#E8C97A" stroke-width="1.2" stroke-opacity="0.70"/>
+    <!-- filete dourado externo (rim light na borda do asfalto) -->
+    <use href="#track" fill="none" stroke="#E8C97A" stroke-width="2.0" stroke-opacity="0.85"/>
+    <use href="#track" fill="none" stroke="#F0DCA0" stroke-width="0.8" stroke-opacity="0.95"/>
 
     <!-- centerline pontilhada muito sutil -->
     <use href="#track" fill="none" stroke="#FFFFFF" stroke-width="0.4" stroke-dasharray="3 9" stroke-opacity="0.10"/>
