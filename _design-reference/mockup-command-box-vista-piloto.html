@@ -2090,16 +2090,31 @@ html,body{
     var prev = (cur - 1 + n) % n;
     var next = (cur + 1) % n;
 
-    // Segmentos: contexto (3 curvas) plenos, distantes (5) skeleton
+    // Identifica o segmento ESPECÍFICO em que o live está agora (curveIdx + segmentType)
+    var here = null;
+    for(var ci=0; ci<CURVES.length && !here; ci++){
+      for(var si=0; si<SEGMENT_DEFS.length; si++){
+        var seg = SEGMENT_DEFS[si];
+        var s = frac(CURVES[ci].center + seg.start);
+        var e = frac(CURVES[ci].center + seg.end);
+        var inside = (s < e) ? (liveT >= s && liveT < e) : (liveT >= s || liveT < e);
+        if(inside){ here = { ci: ci, type: seg.type }; break; }
+      }
+    }
+
+    // Segmentos: contexto (3 curvas) plenos, distantes (5) skeleton, atual `is-here`
     var segs = document.querySelectorAll('.seg');
     for(var i=0; i<segs.length; i++){
-      var s = segs[i];
-      var ci = parseInt(s.getAttribute('data-curve'), 10);
-      s.classList.remove('is-context','is-skeleton');
-      if(ci === prev || ci === cur || ci === next){
-        s.classList.add('is-context');
+      var sgEl = segs[i];
+      var sci = parseInt(sgEl.getAttribute('data-curve'), 10);
+      var stype = sgEl.getAttribute('data-type');
+      sgEl.classList.remove('is-context','is-skeleton','is-here');
+      if(here && sci === here.ci && stype === here.type){
+        sgEl.classList.add('is-here');
+      } else if(sci === prev || sci === cur || sci === next){
+        sgEl.classList.add('is-context');
       } else {
-        s.classList.add('is-skeleton');
+        sgEl.classList.add('is-skeleton');
       }
     }
 
@@ -2107,8 +2122,8 @@ html,body{
     var signs = document.querySelectorAll('.sign');
     for(var j=0; j<signs.length; j++){
       var sg = signs[j];
-      var sci = parseInt(sg.getAttribute('data-curve'), 10);
-      sg.classList.toggle('is-active', sci === cur);
+      var sgci = parseInt(sg.getAttribute('data-curve'), 10);
+      sg.classList.toggle('is-active', sgci === cur);
     }
   }
 
