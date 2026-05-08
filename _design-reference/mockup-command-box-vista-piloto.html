@@ -1907,6 +1907,7 @@ html,body{
     blocks().forEach(bindBlock);
     blocks().forEach(updateTag);
     if(restored) showStatus('restaurado', 2000);
+    startShiftLightAnimation();
 
     document.getElementById('btn-edit-toggle').addEventListener('click', toggleEdit);
     document.getElementById('btn-edit-add').addEventListener('click', function(){
