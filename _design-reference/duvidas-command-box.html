@@ -304,18 +304,18 @@ code{
   </ul>
 </div>
 
-<section id="nome">
+<section id="nome" class="section-done">
   <h2><span class="num">1</span>Naming e escopo do nome</h2>
-  <p>Você renomeou de "Box Cockpit" / "Cockpit do Box" para <strong>Command Box</strong>. Isso muda só o nome ou também o escopo (mais ênfase em comando/controle, menos em "cockpit duplicado da TV")?</p>
+  <p>Você renomeou de "Box Cockpit" / "Cockpit do Box" para <strong>Command Box</strong>. Isso muda só o nome ou também o escopo?</p>
 
-  <div class="q">
+  <div class="q answered">
     <div class="qhead"><span class="qid">1.1</span><span class="qtitle">É só rename ou virou conceito novo?</span></div>
     <div class="qbody">
       Se for só rename, atualizo <code>PLANO_FASE_1.md</code> §2/§MS-12, <code>STATUS.md</code> e ADRs num PR docs-only. Se mudou escopo, vale conversa antes de eu trocar tudo.
     </div>
   </div>
 
-  <div class="q">
+  <div class="q answered">
     <div class="qhead"><span class="qid">1.2</span><span class="qtitle">Em PT na UI fica "Command Box" mesmo?</span></div>
     <div class="qbody">
       O resto da UI é PT-BR estrito ("você", sem ícones). "Command Box" como anglicismo de produto bate com o tom, ou prefere alternativa em PT (ex.: "Comando", "Painel do Box")?
@@ -325,7 +325,7 @@ code{
   <div class="q">
     <div class="qhead"><span class="qid">1.3</span><span class="qtitle">"Comando" como verbo no produto</span></div>
     <div class="qbody">
-      Já existe <code>CommandResolver</code> (port de <code>p1-coach.js</code>) que vira o "comando ativo" no cockpit do piloto (frase pedagógica). O Command Box <strong>edita/acompanha</strong> esses comandos do CommandResolver, ou é outra coisa (mensagens livres do operador)? São dois canais distintos ou um só?
+      Já existe um cálculo de "comando ativo" no cockpit do piloto — uma frase curta de orientação ("freie mais cedo na 3", "abra o volante na saída da 5") que o detector emite enquanto o piloto está pilotando. O Command Box vai <strong>acompanhar/editar</strong> esses comandos automáticos, ou é outra coisa (mensagens livres do operador)? São dois canais distintos ou um só?
     </div>
   </div>
 </section>
