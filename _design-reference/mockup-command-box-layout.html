@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup arrastável — Command Box (P1 Fast)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(20% 0.005 240);
+  --bg-2: oklch(15% 0.005 240);
+  --surface: oklch(24% 0.005 240);
+  --hairline: oklch(33% 0.005 240);
+  --text: oklch(95% 0.003 240);
+  --text-2: oklch(75% 0.01 240);
+  --text-3: oklch(58% 0.012 240);
+  --accent: oklch(78% 0.13 235);
+  --accent-soft: oklch(82% 0.10 235 / .15);
+  --good: oklch(72% 0.12 155);
+  --gold: #D4AF37;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{
+  min-height:100dvh;
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  font-weight:400;line-height:1.4;
+  user-select:none;
+}
+
+.toolbar{
+  position:sticky;top:0;z-index:50;
+  background:rgba(15,17,24,0.94);
+  border-bottom:1px solid var(--hairline);
+  padding:14px 24px;
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+.toolbar h1{
+  font-size:14px;font-weight:600;letter-spacing:.04em;
+  margin-right:auto;
+}
+.toolbar .meta{
+  font-size:11px;color:var(--text-3);
+  letter-spacing:.1em;text-transform:uppercase;
+  margin-right:14px;
+}
+.toolbar button{
+  background:var(--accent);color:var(--bg);
+  border:none;border-radius:6px;padding:8px 14px;
+  font-family:inherit;font-size:13px;font-weight:600;
+  letter-spacing:.04em;cursor:pointer;
+  transition:filter .15s;
+}
+.toolbar button:hover{filter:brightness(1.08);}
+.toolbar button.secondary{
+  background:transparent;color:var(--text-2);
+  border:1px solid var(--hairline);
+}
+.toolbar button.secondary:hover{
+  border-color:var(--text-3);color:var(--text);
+}
+.toolbar label{
+  font-size:12px;color:var(--text-2);
+  display:flex;align-items:center;gap:6px;
+  cursor:pointer;
+}
+.toolbar input[type="checkbox"]{
+  appearance:none;-webkit-appearance:none;
+  width:14px;height:14px;
+  border:1.5px solid var(--text-3);
+  border-radius:3px;background:transparent;cursor:pointer;
+}
+.toolbar input[type="checkbox"]:checked{
+  border-color:var(--accent);background:var(--accent);
+  box-shadow:inset 0 0 0 2px var(--bg-2);
+}
+
+.status{
+  font-size:11px;color:var(--good);
+  letter-spacing:.05em;text-transform:uppercase;
+  opacity:0;transition:opacity .2s;
+}
+.status.visible{opacity:1;}
+
+.lead{
+  padding:18px 24px 14px;
+  color:var(--text-2);font-size:13px;
+  border-bottom:1px solid var(--hairline);
+  background:var(--bg-2);
+}
+.lead strong{color:var(--text);font-weight:500;}
+
+.stage-wrap{
+  padding:32px 24px;
+  display:flex;justify-content:center;
+  background:
+    linear-gradient(var(--bg-2) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bg-2) 1px, transparent 1px);
+  background-size:40px 40px;
+  background-position:-1px -1px;
+  min-height:calc(100vh - 200px);
+}
+
+.stage{
+  position:relative;
+  width:min(1280px, 100%);
+  aspect-ratio:16/9;
+  background:#000;
+  border:1px solid var(--hairline);
+  box-shadow:0 24px 60px -20px rgba(0,0,0,0.7);
+  overflow:hidden;
+}
+
+.stage-label{
+  position:absolute;top:-22px;left:0;
+  font-size:10px;color:var(--text-3);
+  letter-spacing:.16em;text-transform:uppercase;
+}
+.stage-label-r{
+  position:absolute;top:-22px;right:0;
+  font-size:10px;color:var(--text-3);
+  letter-spacing:.16em;text-transform:uppercase;
+  font-variant-numeric:tabular-nums;
+}
+
+.block{
+  position:absolute;
+  background:rgba(120,150,200,0.06);
+  border:1.5px dashed oklch(60% 0.08 235);
+  border-radius:6px;
+  cursor:move;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  transition:border-color .15s, background .15s;
+}
+.block:hover{
+  border-color:var(--accent);
+  background:rgba(120,150,200,0.12);
+}
+.block.dragging{
+  border-style:solid;
+  border-color:var(--gold);
+  background:rgba(212,175,55,0.10);
+  box-shadow:0 6px 20px rgba(0,0,0,0.4);
+}
+.block.resizing{
+  border-style:solid;
+  border-color:var(--good);
+  background:rgba(120,200,140,0.08);
+}
+
+.block-label{
+  flex:1;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;
+  padding:8px;
+}
+.block-label .name{
+  font-size:13px;font-weight:600;
+  color:var(--text);
+  letter-spacing:.04em;text-transform:uppercase;
+  margin-bottom:4px;
+}
+.block-label .dim{
+  font-size:10px;color:var(--text-3);
+  font-variant-numeric:tabular-nums;
+  letter-spacing:.05em;
+}
+
+.handle{
+  position:absolute;right:-1px;bottom:-1px;
+  width:14px;height:14px;
+  background:var(--accent);
+  cursor:nwse-resize;
+  clip-path:polygon(100% 0, 100% 100%, 0 100%);
+  opacity:.6;
+}
+.block:hover .handle, .block.resizing .handle{opacity:1;}
+
+.coord-overlay{
+  position:absolute;top:4px;left:6px;
+  font-size:9px;color:var(--text-3);
+  font-variant-numeric:tabular-nums;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  pointer-events:none;
+  background:rgba(0,0,0,0.6);
+  padding:2px 5px;border-radius:2px;
+}
+
+.block[data-id="header"]{ border-color:oklch(70% 0.13 60); background:rgba(220,180,80,0.06); }
+.block[data-id="video"]{ border-color:oklch(70% 0.15 350); background:rgba(220,120,180,0.06); }
+.block[data-id="mapa"]{ border-color:oklch(70% 0.13 200); background:rgba(120,200,220,0.06); }
+.block[data-id="hud"]{ border-color:oklch(78% 0.13 235); background:rgba(120,150,220,0.08); }
+.block[data-id="mensagens"]{ border-color:oklch(72% 0.12 155); background:rgba(120,200,140,0.06); }
+.block[data-id="checklist"]{ border-color:oklch(70% 0.13 30); background:rgba(220,140,100,0.06); }
+.block[data-id="vista-toggle"]{ border-color:oklch(60% 0.05 240); background:rgba(140,160,200,0.04); }
+
+.export-output{
+  position:fixed;bottom:0;left:0;right:0;
+  max-height:40vh;overflow:auto;
+  background:var(--bg-2);
+  border-top:1px solid var(--accent);
+  padding:16px 24px;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:12px;color:var(--text-2);
+  display:none;
+  z-index:100;
+}
+.export-output.visible{display:block;}
+.export-output pre{white-space:pre-wrap;word-break:break-all;}
+.export-output .close{
+  position:absolute;top:12px;right:16px;
+  background:transparent;color:var(--text-3);
+  border:1px solid var(--hairline);
+  border-radius:4px;
+  padding:4px 10px;cursor:pointer;font-size:11px;
+}
+
+.legend{
+  padding:18px 24px 32px;
+  font-size:12px;color:var(--text-3);
+  border-top:1px solid var(--hairline);
+  background:var(--bg-2);
+}
+.legend strong{color:var(--text-2);}
+.legend kbd{
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:3px;padding:1px 6px;
+  font-family:inherit;font-size:11px;
+  color:var(--text);
+}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1>Mockup arrastável — Command Box</h1>
+  <span class="meta">TV 32" · 16:9</span>
+  <span id="save-status" class="status">salvo</span>
+  <label><input type="checkbox" id="snap-toggle" checked> snap 1%</label>
+  <button type="button" class="secondary" id="btn-reset">resetar layout</button>
+  <button type="button" class="secondary" id="btn-add">+ adicionar bloco</button>
+  <button type="button" id="btn-export">exportar layout</button>
+</div>
+
+<div class="lead">
+  <strong>Como usar:</strong> arraste cada bloco pra mover, puxe o canto inferior direito pra redimensionar. Tamanhos e posições salvam automaticamente. Quando terminar, aperta <strong>exportar layout</strong> e cola o JSON aqui no chat — daí eu uso essas proporções pra desenhar o mockup polido. Os blocos iniciais são chute meu — mexa à vontade.
+</div>
+
+<div class="stage-wrap">
+  <div class="stage" id="stage">
+    <span class="stage-label">canto superior esquerdo · 0,0</span>
+    <span class="stage-label-r" id="stage-dim">1280 × 720</span>
+
+    <div class="block" data-id="header" data-label="Header (shift light + branding)" style="left:0%;top:0%;width:100%;height:8%;">
+      <span class="coord-overlay">x:0% y:0%</span>
+      <div class="block-label">
+        <span class="name">Header</span>
+        <span class="dim">shift light + branding</span>
+      </div>
+      <span class="handle"></span>
+    </div>
+
+    <div class="block" data-id="video" data-label="Vídeo (1 ou 2 câmeras)" style="left:0%;top:8%;width:40%;height:46%;">
+      <span class="coord-overlay">x:0% y:8%</span>
+      <div class="block-label">
+        <span class="name">Vídeo</span>
+        <span class="dim">1 ou 2 câmeras (escolha no stint)</span>
+      </div>
+      <span class="handle"></span>
+    </div>
+
+    <div class="block" data-id="mapa" data-label="Mapa (atelier)" style="left:0%;top:54%;width:40%;height:46%;">
+      <span class="coord-overlay">x:0% y:54%</span>
+      <div class="block-label">
+        <span class="name">Mapa</span>
+        <span class="dim">atelier · pista + apex + Vmin + ghost</span>
+      </div>
+      <span class="handle"></span>
+    </div>
+
+    <div class="block" data-id="hud" data-label="HUD telemetria" style="left:40%;top:8%;width:60%;height:62%;">
+      <span class="coord-overlay">x:40% y:8%</span>
+      <div class="block-label">
+        <span class="name">HUD telemetria</span>
+        <span class="dim">vel hero · delta · volta · parcial · RPM · marcha · temp · lambda</span>
+      </div>
+      <span class="handle"></span>
+    </div>
+
+    <div class="block" data-id="mensagens" data-label="Mensagens" style="left:40%;top:70%;width:60%;height:10%;">
+      <span class="coord-overlay">x:40% y:70%</span>
+      <div class="block-label">
+        <span class="name">Mensagens</span>
+        <span class="dim">só a última mensagem ativa</span>
+      </div>
+      <span class="handle"></span>
+    </div>
+
+    <div class="block" data-id="checklist" data-label="Checklist do stint" style="left:40%;top:80%;width:60%;height:20%;">
+      <span class="coord-overlay">x:40% y:80%</span>
+      <div class="block-label">
+        <span class="name">Checklist</span>
+        <span class="dim">itens em aberto · some quando todos marcam</span>
+      </div>
+      <span class="handle"></span>
+    </div>
+
+    <div class="block" data-id="vista-toggle" data-label="Toggle Visão Piloto/Engenheiro" style="left:85%;top:1%;width:14%;height:6%;">
+      <span class="coord-overlay">x:85% y:1%</span>
+      <div class="block-label">
+        <span class="name">Vista Piloto / Engenheiro</span>
+        <span class="dim">2 botões de visão</span>
+      </div>
+      <span class="handle"></span>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <strong>Atalhos:</strong>
+  arrasta bloco com o mouse no corpo · puxa o triângulo do canto pra redimensionar · <kbd>e</kbd> exporta · <kbd>r</kbd> reseta · <kbd>g</kbd> liga/desliga snap a 1%
+  <br><br>
+  <strong>Coordenadas:</strong> tudo em % do palco (1280×720). Snap a 1% mantém os números redondos. Quando você exportar, vai sair em % e em px.
+</div>
+
+<div class="export-output" id="export-output">
+  <button class="close" id="btn-close-export">fechar</button>
+  <pre id="export-text"></pre>
+</div>
+
+<script>
+(function(){
+  var KEY = 'p1fast-command-box-layout-v1';
+  var STAGE_W = 1280, STAGE_H = 720;
+  var statusEl = document.getElementById('save-status');
+  var statusTimeout;
+  var snapEl = document.getElementById('snap-toggle');
+  var stage = document.getElementById('stage');
+
+  function showStatus(msg, ms){
+    statusEl.textContent = msg;
+    statusEl.classList.add('visible');
+    clearTimeout(statusTimeout);
+    statusTimeout = setTimeout(function(){ statusEl.classList.remove('visible'); }, ms || 1200);
+  }
+
+  function snap(v){
+    if(!snapEl.checked) return v;
+    return Math.round(v);
+  }
+
+  function getBlocks(){
+    return Array.prototype.slice.call(document.querySelectorAll('.block'));
+  }
+
+  function readBlock(el){
+    return {
+      id: el.dataset.id,
+      label: el.dataset.label,
+      x: parseFloat(el.style.left) || 0,
+      y: parseFloat(el.style.top) || 0,
+      w: parseFloat(el.style.width) || 0,
+      h: parseFloat(el.style.height) || 0
+    };
+  }
+
+  function applyBlock(el, data){
+    el.style.left = data.x + '%';
+    el.style.top = data.y + '%';
+    el.style.width = data.w + '%';
+    el.style.height = data.h + '%';
+    updateOverlay(el);
+  }
+
+  function updateOverlay(el){
+    var d = readBlock(el);
+    var overlay = el.querySelector('.coord-overlay');
+    var px_w = Math.round(d.w * STAGE_W / 100);
+    var px_h = Math.round(d.h * STAGE_H / 100);
+    if(overlay) overlay.textContent = 'x:'+d.x.toFixed(0)+'% y:'+d.y.toFixed(0)+'% · '+px_w+'×'+px_h+'px';
+  }
+
+  function save(){
+    var data = {};
+    getBlocks().forEach(function(el){
+      data[el.dataset.id] = readBlock(el);
+    });
+    try{
+      localStorage.setItem(KEY, JSON.stringify({ ts: Date.now(), blocks: data }));
+      showStatus('salvo');
+    }catch(e){ showStatus('erro ao salvar', 2500); }
+  }
+
+  function restore(){
+    var raw = localStorage.getItem(KEY);
+    if(!raw) return false;
+    try{
+      var data = JSON.parse(raw);
+      if(!data.blocks) return false;
+      getBlocks().forEach(function(el){
+        var b = data.blocks[el.dataset.id];
+        if(b) applyBlock(el, b);
+      });
+      return true;
+    }catch(e){ return false; }
+  }
+
+  function reset(){
+    if(!confirm('Resetar layout pros valores iniciais? Não tem volta.')) return;
+    localStorage.removeItem(KEY);
+    location.reload();
+  }
+
+  function getRect(){ return stage.getBoundingClientRect(); }
+
+  function startDrag(el, ev){
+    if(ev.target.classList.contains('handle')) return;
+    ev.preventDefault();
+    el.classList.add('dragging');
+    var rect = getRect();
+    var d = readBlock(el);
+    var startX = ev.clientX, startY = ev.clientY;
+    var origX = d.x, origY = d.y;
+    var maxX = 100 - d.w, maxY = 100 - d.h;
+
+    function onMove(e){
+      var dx = (e.clientX - startX) / rect.width * 100;
+      var dy = (e.clientY - startY) / rect.height * 100;
+      var nx = Math.max(0, Math.min(maxX, snap(origX + dx)));
+      var ny = Math.max(0, Math.min(maxY, snap(origY + dy)));
+      el.style.left = nx + '%';
+      el.style.top = ny + '%';
+      updateOverlay(el);
+    }
+    function onUp(){
+      el.classList.remove('dragging');
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      save();
+    }
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }
+
+  function startResize(el, ev){
+    ev.preventDefault();
+    ev.stopPropagation();
+    el.classList.add('resizing');
+    var rect = getRect();
+    var d = readBlock(el);
+    var startX = ev.clientX, startY = ev.clientY;
+    var origW = d.w, origH = d.h;
+    var maxW = 100 - d.x, maxH = 100 - d.y;
+
+    function onMove(e){
+      var dw = (e.clientX - startX) / rect.width * 100;
+      var dh = (e.clientY - startY) / rect.height * 100;
+      var nw = Math.max(3, Math.min(maxW, snap(origW + dw)));
+      var nh = Math.max(3, Math.min(maxH, snap(origH + dh)));
+      el.style.width = nw + '%';
+      el.style.height = nh + '%';
+      updateOverlay(el);
+    }
+    function onUp(){
+      el.classList.remove('resizing');
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      save();
+    }
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }
+
+  function bindBlock(el){
+    el.addEventListener('pointerdown', function(ev){
+      if(ev.target.classList.contains('handle')) return;
+      startDrag(el, ev);
+    });
+    var handle = el.querySelector('.handle');
+    if(handle) handle.addEventListener('pointerdown', function(ev){ startResize(el, ev); });
+    updateOverlay(el);
+  }
+
+  function addBlock(){
+    var name = prompt('Nome do novo bloco:', 'Novo bloco');
+    if(!name) return;
+    var id = 'custom-' + Date.now();
+    var el = document.createElement('div');
+    el.className = 'block';
+    el.dataset.id = id;
+    el.dataset.label = name;
+    el.style.left = '30%'; el.style.top = '30%';
+    el.style.width = '20%'; el.style.height = '15%';
+    el.innerHTML = '<span class="coord-overlay">x:30% y:30%</span>'+
+                   '<div class="block-label"><span class="name">'+escapeHtml(name)+'</span><span class="dim">custom</span></div>'+
+                   '<span class="handle"></span>';
+    stage.appendChild(el);
+    bindBlock(el);
+    save();
+  }
+
+  function escapeHtml(s){ return s.replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
+
+  function exportar(){
+    var blocks = getBlocks().map(readBlock);
+    var json = {
+      device: 'TV 32" landscape',
+      stage_px: { w: STAGE_W, h: STAGE_H },
+      ts: new Date().toISOString(),
+      blocks: blocks.map(function(b){
+        return {
+          id: b.id,
+          label: getBlocks().find(function(el){ return el.dataset.id === b.id; }).dataset.label,
+          pct: { x: +b.x.toFixed(2), y: +b.y.toFixed(2), w: +b.w.toFixed(2), h: +b.h.toFixed(2) },
+          px:  { x: Math.round(b.x*STAGE_W/100), y: Math.round(b.y*STAGE_H/100), w: Math.round(b.w*STAGE_W/100), h: Math.round(b.h*STAGE_H/100) }
+        };
+      })
+    };
+    var text = JSON.stringify(json, null, 2);
+    document.getElementById('export-text').textContent = text;
+    document.getElementById('export-output').classList.add('visible');
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ showStatus('layout copiado pro clipboard', 3000); });
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    getBlocks().forEach(bindBlock);
+    var restored = restore();
+    if(restored) showStatus('layout restaurado', 2500);
+
+    document.getElementById('btn-export').addEventListener('click', exportar);
+    document.getElementById('btn-reset').addEventListener('click', reset);
+    document.getElementById('btn-add').addEventListener('click', addBlock);
+    document.getElementById('btn-close-export').addEventListener('click', function(){
+      document.getElementById('export-output').classList.remove('visible');
+    });
+
+    document.addEventListener('keydown', function(e){
+      if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+      if(e.metaKey || e.ctrlKey || e.altKey) return;
+      if(e.key === 'e') exportar();
+      if(e.key === 'r') reset();
+      if(e.key === 'g'){ snapEl.checked = !snapEl.checked; showStatus(snapEl.checked ? 'snap on' : 'snap off', 1200); }
+    });
+  });
+})();
+</script>
+</body>
+</html>
