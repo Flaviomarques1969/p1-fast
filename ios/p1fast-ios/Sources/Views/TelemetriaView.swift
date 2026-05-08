@@ -227,6 +227,7 @@ struct TelemetriaView: View {
                 lastEnrichedCount = processor.enrichedCount
                 startedAt = nil
                 elapsedS = 0
+                await finalizeSessao()
             }
         } else {
             Task {
