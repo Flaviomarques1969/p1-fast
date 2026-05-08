@@ -764,14 +764,52 @@ html,body{
   position:relative;
 }
 .stint-lap.warmup{
-  background:linear-gradient(180deg, rgba(125,211,252,0.14), rgba(125,211,252,0.06));
-  border-color:rgba(125,211,252,0.48);
-  color:rgba(125,211,252,0.88);
+  background-color:rgba(125,211,252,0.10);
+  background-image:
+    linear-gradient(180deg, rgba(125,211,252,0.20), rgba(125,211,252,0.08)),
+    repeating-linear-gradient(
+      45deg,
+      transparent 0,
+      transparent 4px,
+      rgba(125,211,252,0.55) 4px,
+      rgba(125,211,252,0.55) 5px,
+      transparent 5px,
+      transparent 11px
+    );
+  background-size: auto, 22px 22px;
+  border-color:rgba(125,211,252,0.62);
+  color:rgba(220,240,255,0.95);
+  font-size:7px;letter-spacing:.18em;text-transform:uppercase;font-weight:600;
+  text-shadow:0 0 4px rgba(125,211,252,0.55);
+  animation: stint-rain-warm 1.6s linear infinite;
+}
+@keyframes stint-rain-warm{
+  0%   { background-position: 0 0, 0 0; }
+  100% { background-position: 0 0, 22px 22px; }
 }
 .stint-lap.cooldown{
-  background:linear-gradient(180deg, rgba(255,90,80,0.10), rgba(255,90,80,0.04));
-  border-color:rgba(255,90,80,0.42);
-  color:rgba(255,90,80,0.85);
+  background-color:rgba(255,90,80,0.08);
+  background-image:
+    linear-gradient(180deg, rgba(255,90,80,0.18), rgba(255,90,80,0.08)),
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0,
+      transparent 4px,
+      rgba(255,90,80,0.55) 4px,
+      rgba(255,90,80,0.55) 5px,
+      transparent 5px,
+      transparent 11px
+    );
+  background-size: auto, 22px 22px;
+  border-color:rgba(255,90,80,0.62);
+  color:rgba(255,200,195,0.95);
+  font-size:7px;letter-spacing:.18em;text-transform:uppercase;font-weight:600;
+  text-shadow:0 0 4px rgba(255,90,80,0.55);
+  animation: stint-rain-cool 1.6s linear infinite;
+}
+@keyframes stint-rain-cool{
+  0%   { background-position: 0 0, 0 0; }
+  100% { background-position: 0 0, -22px 22px; }
 }
 .stint-lap.done{
   background:linear-gradient(180deg, rgba(212,175,55,0.20), rgba(212,175,55,0.08));
