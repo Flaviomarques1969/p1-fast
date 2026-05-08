@@ -1,0 +1,987 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup polido — Command Box · Vista Piloto (P1 Fast)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gold-1: #F0DCA0;
+  --gold-2: #D4AF37;
+  --gold-3: #C9A961;
+  --warm: #C9A961;
+  --cool: #3B82F6;
+  --live: #FF7A1A;
+  --ghost: #7DD3FC;
+  --good: #6BCF6B;
+  --warn: #FFB347;
+  --bad: #FF5555;
+  --text-1: #F5F0E0;
+  --text-2: rgba(245,240,224,0.62);
+  --text-3: rgba(245,240,224,0.38);
+  --hairline: rgba(212,175,55,0.18);
+  --surface: rgba(10,14,24,0.55);
+  --surface-2: rgba(10,14,24,0.35);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{
+  min-height:100dvh;
+  background:#0A0E18;
+  color:var(--text-1);
+  font-family:'Helvetica Neue', -apple-system, sans-serif;
+  font-weight:300;
+  -webkit-font-smoothing:antialiased;
+  user-select:none;
+}
+
+.page-wrap{
+  padding:24px;
+  display:flex;flex-direction:column;align-items:center;gap:16px;
+  min-height:100vh;
+  background:
+    radial-gradient(ellipse at top left, rgba(201,169,97,0.04), transparent 60%),
+    radial-gradient(ellipse at bottom right, rgba(59,130,246,0.03), transparent 60%),
+    #0A0E18;
+}
+
+.page-meta{
+  width:min(1280px, 100%);
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  font-family:'Inter',sans-serif;
+  font-size:11px;color:var(--text-3);
+  letter-spacing:.16em;text-transform:uppercase;
+}
+.page-meta .pill{
+  background:rgba(212,175,55,0.08);
+  border:1px solid var(--hairline);
+  color:var(--gold-1);
+  padding:4px 10px;border-radius:999px;
+  letter-spacing:.1em;
+}
+
+.stage{
+  position:relative;
+  width:min(1280px, 100%);
+  aspect-ratio:1280/720;
+  background:
+    radial-gradient(ellipse at 22% 25%, rgba(201,169,97,0.10), transparent 50%),
+    radial-gradient(ellipse at 78% 78%, rgba(59,130,246,0.06), transparent 50%),
+    radial-gradient(ellipse at 50% 42%, #0E1322, #02030A 100%);
+  border:1px solid rgba(212,175,55,0.20);
+  box-shadow:
+    0 0 1px rgba(212,175,55,0.2) inset,
+    0 30px 80px -30px rgba(0,0,0,0.8),
+    0 0 80px rgba(201,169,97,0.04);
+  overflow:hidden;
+  font-size:13px;
+}
+
+/* ───── HEADER (0-8%) ───── */
+.b-header{
+  position:absolute;left:0;top:0;width:100%;height:8%;
+  display:flex;align-items:stretch;
+  border-bottom:1px solid var(--hairline);
+}
+.b-header > div{padding:0 14px;display:flex;align-items:center;}
+
+.brand{
+  width:19%;
+  flex-direction:column;align-items:flex-start;justify-content:center;
+  border-right:1px solid var(--hairline);
+}
+.brand .b-mark{
+  font-size:9px;font-weight:500;letter-spacing:.45em;
+  color:var(--gold-2);opacity:.7;
+}
+.brand .b-name{
+  font-size:14px;font-weight:200;letter-spacing:.34em;
+  color:var(--text-1);
+  line-height:1.1;margin-top:1px;
+}
+
+.messages{
+  width:15%;
+  border-right:1px solid var(--hairline);
+}
+.messages .msg-card{
+  width:100%;
+  display:flex;flex-direction:column;
+  padding:0 4px;
+}
+.messages .msg-meta{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:8px;color:var(--text-3);
+  letter-spacing:.1em;margin-bottom:2px;
+}
+.messages .msg-text{
+  font-size:13px;color:var(--text-1);
+  font-weight:400;letter-spacing:.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+.gap-fill{ flex:1; }
+
+.health{
+  width:29%;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  border-right:1px solid var(--hairline);
+  display:grid;
+  grid-template-columns:repeat(5, 1fr);
+  align-items:center;
+  gap:6px;padding:0 12px;
+}
+.h-cell{
+  display:flex;flex-direction:column;align-items:flex-start;
+  font-size:9px;
+}
+.h-cell .h-key{color:var(--text-3);letter-spacing:.08em;font-size:7px;text-transform:uppercase;}
+.h-cell .h-val{color:var(--text-1);font-weight:500;letter-spacing:.04em;}
+.h-cell.ok .h-val{color:var(--good);}
+.h-cell.warn .h-val{color:var(--warn);}
+
+.vista-toggle{
+  width:14%;
+  margin-left:auto;
+  border-left:1px solid var(--hairline);
+  display:flex;align-items:center;
+  gap:0;padding:0 6px;
+}
+.vista-btn{
+  flex:1;
+  font-family:'Helvetica Neue',sans-serif;
+  font-size:9px;font-weight:600;
+  color:var(--text-3);letter-spacing:.18em;text-transform:uppercase;
+  padding:6px 4px;
+  background:transparent;border:none;cursor:pointer;
+  text-align:center;
+}
+.vista-btn.active{color:var(--gold-1);}
+.vista-btn.active::after{
+  content:"";display:block;
+  height:1px;background:var(--gold-2);
+  margin-top:4px;width:60%;margin-left:auto;margin-right:auto;
+}
+
+/* ───── COLUNA ESQUERDA (0-40%) ───── */
+
+/* VÍDEO 0-40%, 8-54% */
+.b-video{
+  position:absolute;left:0;top:8%;width:40%;height:46%;
+  border-right:1px solid var(--hairline);
+  border-bottom:1px solid var(--hairline);
+  background:
+    radial-gradient(ellipse at center, rgba(20,30,50,0.6), rgba(0,0,0,0.8));
+  overflow:hidden;
+}
+.video-frame{
+  position:absolute;inset:6%;
+  background:linear-gradient(180deg, #0a1018 0%, #030508 100%);
+  border:1px solid rgba(255,255,255,0.05);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  color:var(--text-3);
+  overflow:hidden;
+}
+.video-frame::before{
+  content:"";position:absolute;inset:0;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 4px);
+  pointer-events:none;
+}
+.video-frame .v-stamp{
+  font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-2);
+}
+.video-frame .v-rec{
+  position:absolute;top:10px;left:14px;
+  font-size:9px;letter-spacing:.2em;color:var(--bad);
+  display:flex;align-items:center;gap:6px;
+}
+.video-frame .v-rec::before{
+  content:"";width:7px;height:7px;border-radius:50%;background:var(--bad);
+  animation:pulse 1.5s ease-in-out infinite;
+}
+.video-frame .v-pip{
+  position:absolute;bottom:14px;right:14px;
+  width:80px;height:48px;
+  background:#0a0d14;border:1px solid rgba(255,255,255,0.08);
+  display:flex;align-items:center;justify-content:center;
+  font-size:8px;color:var(--text-3);letter-spacing:.16em;
+}
+.v-time{
+  position:absolute;bottom:12px;left:14px;
+  font-size:11px;color:var(--gold-1);
+}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+/* MAPA 0-40%, 54-100% */
+.b-map{
+  position:absolute;left:0;top:54%;width:40%;height:46%;
+  border-right:1px solid var(--hairline);
+  overflow:hidden;
+}
+.b-map svg{
+  width:100%;height:100%;display:block;
+}
+.map-overlay{
+  position:absolute;top:14px;left:18px;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:9px;letter-spacing:.16em;color:var(--text-3);
+  text-transform:uppercase;
+}
+.map-overlay strong{color:var(--gold-1);font-weight:500;}
+.map-vmin-label{
+  position:absolute;
+  font-family:'Helvetica Neue',sans-serif;
+  font-size:10px;letter-spacing:.05em;color:var(--gold-1);
+  background:rgba(10,14,24,0.7);
+  padding:3px 7px;border:1px solid var(--hairline);border-radius:2px;
+}
+
+/* ───── COLUNA MEIO-ESQUERDA (40-62%) ───── */
+
+/* HUD TELEMETRIA 40-62%, 8-54% */
+.b-hud{
+  position:absolute;left:40%;top:8%;width:22%;height:46%;
+  border-right:1px solid var(--hairline);
+  border-bottom:1px solid var(--hairline);
+  padding:18px 16px;
+  display:flex;flex-direction:column;
+  gap:10px;
+  background:rgba(10,14,24,0.30);
+}
+.hud-block-title{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:9px;letter-spacing:.22em;color:var(--text-3);
+  text-transform:uppercase;
+  margin-bottom:4px;
+}
+
+.hero-vel{
+  text-align:center;margin-top:4px;
+}
+.hero-vel .v-num{
+  font-size:64px;font-weight:100;letter-spacing:-2px;
+  color:var(--text-1);line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+.hero-vel .v-unit{
+  font-size:9px;letter-spacing:.3em;color:var(--gold-2);
+  margin-top:2px;
+}
+
+.delta-row{
+  text-align:center;
+  margin-top:4px;
+}
+.delta-row .d-num{
+  font-family:'Helvetica Neue',sans-serif;
+  font-size:30px;font-weight:200;letter-spacing:-.5px;
+  color:var(--good);
+  font-variant-numeric:tabular-nums;
+}
+.delta-row .d-num.pos{color:var(--bad);}
+.delta-row .d-label{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:8px;letter-spacing:.18em;color:var(--text-3);
+  text-transform:uppercase;margin-top:1px;
+}
+
+.hud-divider{
+  height:1px;background:var(--hairline);margin:6px 0;
+}
+
+.hud-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+}
+.hud-item{display:flex;flex-direction:column;}
+.hud-item .h-key{
+  font-size:8px;color:var(--text-3);letter-spacing:.14em;text-transform:uppercase;
+}
+.hud-item .h-val{
+  font-size:18px;font-weight:300;letter-spacing:-.2px;color:var(--text-1);
+  font-variant-numeric:tabular-nums;line-height:1.1;
+}
+.hud-item .h-val small{font-size:9px;color:var(--gold-2);margin-left:3px;}
+
+.rpm-bar-wrap{
+  margin-top:4px;
+  display:flex;flex-direction:column;gap:4px;
+}
+.rpm-bar{
+  height:6px;background:rgba(255,255,255,0.06);
+  border:1px solid var(--hairline);border-radius:1px;
+  position:relative;overflow:hidden;
+}
+.rpm-bar-fill{
+  position:absolute;left:0;top:0;bottom:0;
+  background:linear-gradient(90deg, var(--good) 0%, var(--warn) 70%, var(--bad) 95%);
+  width:62%;
+}
+.rpm-bar-redline{
+  position:absolute;right:8%;top:-2px;bottom:-2px;width:1px;background:var(--bad);
+}
+.rpm-vals{
+  display:flex;justify-content:space-between;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:8px;color:var(--text-3);letter-spacing:.1em;
+}
+
+/* HUD TRECHO 40-62%, 54-94% */
+.b-hud-trecho{
+  position:absolute;left:40%;top:54%;width:22%;height:40%;
+  border-right:1px solid var(--hairline);
+  border-bottom:1px solid var(--hairline);
+  padding:14px 16px;
+  display:flex;flex-direction:column;gap:8px;
+  background:rgba(10,14,24,0.30);
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+}
+.trecho-title{
+  font-size:9px;letter-spacing:.22em;color:var(--gold-2);
+  text-transform:uppercase;
+  display:flex;justify-content:space-between;align-items:baseline;
+}
+.trecho-title .t-which{
+  color:var(--gold-1);font-weight:500;letter-spacing:.04em;
+}
+
+.trecho-mini{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;
+}
+.trecho-mini .tm-item{display:flex;flex-direction:column;}
+.tm-item .tm-key{
+  font-size:7px;color:var(--text-3);letter-spacing:.16em;text-transform:uppercase;
+}
+.tm-item .tm-val{
+  font-size:14px;color:var(--text-1);font-weight:300;letter-spacing:-.2px;
+  font-variant-numeric:tabular-nums;line-height:1.1;
+}
+.tm-item.compare .tm-val{color:var(--ghost);}
+.tm-item.live .tm-val{color:var(--live);}
+.tm-item.bad .tm-val{color:var(--bad);}
+.tm-item.good .tm-val{color:var(--good);}
+
+.apex-class{
+  margin-top:auto;
+  padding:6px 10px;
+  background:rgba(255,255,255,0.04);
+  border-left:2px solid var(--bad);
+  font-family:'Helvetica Neue',sans-serif;
+}
+.apex-class .ac-key{
+  font-size:8px;color:var(--text-3);letter-spacing:.16em;text-transform:uppercase;
+}
+.apex-class .ac-val{
+  font-size:13px;color:var(--bad);font-weight:500;letter-spacing:.02em;
+  margin-top:1px;
+}
+
+/* ───── COLUNA MEIO-DIREITA (62-85%) ───── */
+
+/* P1 COACH 62-85%, 8-54% */
+.b-coach{
+  position:absolute;left:62%;top:8%;width:23%;height:46%;
+  border-right:1px solid var(--hairline);
+  border-bottom:1px solid var(--hairline);
+  padding:18px 16px;
+  display:flex;flex-direction:column;gap:10px;
+  background:rgba(10,14,24,0.30);
+}
+.coach-eyebrow{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:9px;letter-spacing:.22em;color:var(--gold-2);text-transform:uppercase;
+}
+.coach-frase{
+  font-family:'Helvetica Neue',sans-serif;
+  font-size:24px;font-weight:200;letter-spacing:-.3px;
+  line-height:1.15;color:var(--text-1);
+}
+.coach-frase em{
+  color:var(--gold-1);font-style:normal;font-weight:300;
+}
+.coach-meta{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:9px;letter-spacing:.14em;color:var(--text-3);
+  text-transform:uppercase;
+}
+.coach-licao{
+  font-family:'Helvetica Neue',sans-serif;
+  font-size:11px;color:var(--text-2);letter-spacing:.04em;
+  padding-top:6px;border-top:1px solid var(--hairline);
+}
+.coach-licao .l-tag{
+  font-size:8px;letter-spacing:.2em;color:var(--gold-2);text-transform:uppercase;
+  display:block;margin-bottom:2px;
+}
+.coach-licao strong{color:var(--text-1);font-weight:500;}
+
+.coach-progresso{
+  display:flex;align-items:center;gap:10px;
+  margin-top:auto;
+  padding-top:6px;border-top:1px solid var(--hairline);
+}
+.coach-progresso .cp-bar{
+  flex:1;height:3px;background:rgba(255,255,255,0.06);
+  border-radius:1px;overflow:hidden;
+}
+.coach-progresso .cp-fill{height:100%;background:var(--gold-2);width:78%;}
+.coach-progresso .cp-num{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:11px;color:var(--gold-1);letter-spacing:.04em;
+}
+
+.coach-pontuacao{
+  font-family:'Helvetica Neue',sans-serif;
+  display:flex;align-items:baseline;gap:10px;
+}
+.coach-pontuacao .pt-num{
+  font-size:36px;font-weight:100;letter-spacing:-1px;color:var(--text-1);
+  font-variant-numeric:tabular-nums;line-height:1;
+}
+.coach-pontuacao .pt-tot{
+  font-size:13px;color:var(--text-3);font-weight:300;
+}
+.coach-pontuacao .pt-key{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:8px;letter-spacing:.18em;color:var(--text-3);text-transform:uppercase;
+  margin-left:auto;
+}
+
+.coach-analise{
+  font-family:'Helvetica Neue',sans-serif;
+  font-size:10px;line-height:1.4;color:var(--text-2);
+  font-style:italic;
+}
+
+/* STINT 62-85%, 54-94% */
+.b-stint{
+  position:absolute;left:62%;top:54%;width:23%;height:40%;
+  border-right:1px solid var(--hairline);
+  border-bottom:1px solid var(--hairline);
+  padding:14px 16px;
+  display:flex;flex-direction:column;gap:7px;
+  background:rgba(10,14,24,0.30);
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+}
+.stint-title{
+  display:flex;justify-content:space-between;align-items:baseline;
+}
+.stint-title .st-key{
+  font-size:9px;letter-spacing:.22em;color:var(--text-3);text-transform:uppercase;
+}
+.stint-title .st-num{
+  font-family:'Helvetica Neue',sans-serif;
+  font-size:18px;font-weight:200;color:var(--gold-1);
+  font-variant-numeric:tabular-nums;
+}
+
+.stint-vol-row{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:4px 0;border-bottom:1px solid var(--hairline);
+}
+.stint-vol-row .v-volta{
+  font-family:'Helvetica Neue',sans-serif;
+  font-size:14px;font-weight:300;color:var(--text-1);
+  font-variant-numeric:tabular-nums;
+}
+.stint-vol-row .v-tempo{
+  font-size:10px;color:var(--text-2);letter-spacing:.04em;
+  font-variant-numeric:tabular-nums;
+}
+
+.stint-plano{
+  margin-top:4px;
+  font-family:'Helvetica Neue',sans-serif;
+}
+.stint-plano .sp-key{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:7px;letter-spacing:.18em;color:var(--text-3);text-transform:uppercase;
+  margin-bottom:1px;
+}
+.stint-plano .sp-val{
+  font-size:11px;color:var(--text-1);letter-spacing:.02em;
+  margin-bottom:6px;
+}
+
+.stint-info-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;
+  margin-top:auto;padding-top:6px;border-top:1px solid var(--hairline);
+}
+.stint-info-grid .si-item{display:flex;flex-direction:column;}
+.si-item .si-key{
+  font-size:7px;letter-spacing:.16em;color:var(--text-3);text-transform:uppercase;
+}
+.si-item .si-val{
+  font-size:11px;color:var(--text-1);font-weight:500;letter-spacing:.02em;
+  font-variant-numeric:tabular-nums;
+}
+
+/* TÉRMICA */
+.termica-row{
+  display:flex;align-items:center;gap:6px;
+  font-family:'Helvetica Neue',sans-serif;
+}
+.termica-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--good);
+  box-shadow:0 0 6px var(--good);
+}
+.termica-row .t-text{
+  font-size:11px;color:var(--text-1);letter-spacing:.04em;
+  text-transform:uppercase;font-weight:500;
+}
+
+/* ───── COLUNA DIREITA (85-100%) — CHECKLIST ───── */
+.b-checklist{
+  position:absolute;left:85%;top:8%;width:15%;height:92%;
+  padding:14px 14px;
+  display:flex;flex-direction:column;gap:10px;
+  background:rgba(10,14,24,0.30);
+  font-family:'Helvetica Neue',sans-serif;
+}
+.cl-title{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:9px;letter-spacing:.22em;color:var(--gold-2);text-transform:uppercase;
+  display:flex;justify-content:space-between;align-items:baseline;
+}
+.cl-title .cl-count{
+  font-family:'Helvetica Neue',sans-serif;
+  font-size:13px;font-weight:200;color:var(--gold-1);letter-spacing:.04em;
+  font-variant-numeric:tabular-nums;
+}
+.cl-list{
+  display:flex;flex-direction:column;gap:6px;
+}
+.cl-item{
+  background:rgba(255,255,255,0.03);
+  border-left:2px solid var(--hairline);
+  padding:8px 10px;
+  font-size:11px;
+  display:flex;flex-direction:column;gap:2px;
+}
+.cl-item .cl-text{color:var(--text-1);font-weight:400;letter-spacing:.02em;}
+.cl-item .cl-who{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:8px;letter-spacing:.14em;color:var(--text-3);text-transform:uppercase;
+}
+.cl-item.pending{border-left-color:var(--warn);}
+.cl-item.waiting{border-left-color:var(--gold-2);}
+.cl-item.checked{
+  border-left-color:var(--good);opacity:.5;
+}
+.cl-item.checked .cl-text{text-decoration:line-through;}
+
+/* ───── DELTA ACUMULADO (40-85%, 94-100%) ───── */
+.b-delta-acum{
+  position:absolute;left:40%;top:94%;width:45%;height:6%;
+  border-top:1px solid var(--hairline);
+  display:flex;align-items:center;
+  padding:0 16px;gap:14px;
+  background:rgba(10,14,24,0.40);
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+}
+.da-eyebrow{
+  font-size:8px;letter-spacing:.22em;color:var(--text-3);text-transform:uppercase;
+  white-space:nowrap;
+}
+.da-eyebrow strong{color:var(--gold-1);font-weight:500;}
+.da-spark{
+  flex:1;height:100%;
+  position:relative;
+  display:flex;align-items:center;
+}
+.da-spark svg{display:block;width:100%;height:60%;}
+.da-current{
+  font-family:'Helvetica Neue',sans-serif;
+  font-size:14px;font-weight:200;color:var(--good);
+  font-variant-numeric:tabular-nums;letter-spacing:-.2px;
+  white-space:nowrap;
+}
+
+/* ───── HOVER LEGEND ───── */
+.legend{
+  width:min(1280px, 100%);
+  font-family:'Inter',sans-serif;
+  font-size:11px;color:var(--text-3);
+  display:flex;flex-wrap:wrap;gap:14px;
+  padding-top:8px;
+}
+.legend strong{color:var(--text-2);}
+.legend .lg-block{
+  background:rgba(212,175,55,0.06);
+  border:1px solid var(--hairline);
+  padding:4px 10px;border-radius:3px;
+  letter-spacing:.04em;
+}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+<div class="page-meta">
+  <span class="pill">Mockup polido v1</span>
+  <span>Vista Piloto · TV 32" · 16:9 · estilo atelier</span>
+  <span style="margin-left:auto;font-variant-numeric:tabular-nums;">1280 × 720</span>
+</div>
+
+<div class="stage">
+
+  <!-- HEADER -->
+  <div class="b-header">
+    <div class="brand">
+      <span class="b-mark">P 1 · F A S T</span>
+      <span class="b-name">B R A S Í L I A</span>
+    </div>
+
+    <div class="messages">
+      <div class="msg-card">
+        <div class="msg-meta">FLÁVIO · 14:32 · BOX</div>
+        <div class="msg-text">Atenção tempo de volta · volta voadora</div>
+      </div>
+    </div>
+
+    <div class="health">
+      <div class="h-cell ok"><span class="h-key">BAT</span><span class="h-val">87%</span></div>
+      <div class="h-cell ok"><span class="h-key">GPS</span><span class="h-val">12sat</span></div>
+      <div class="h-cell ok"><span class="h-key">T4000</span><span class="h-val">OK</span></div>
+      <div class="h-cell ok"><span class="h-key">5G</span><span class="h-val">18ms</span></div>
+      <div class="h-cell ok"><span class="h-key">RT</span><span class="h-val">1.2s</span></div>
+      <div class="h-cell"><span class="h-key">TEMP</span><span class="h-val">24°C</span></div>
+      <div class="h-cell"><span class="h-key">ALT</span><span class="h-val">1124m</span></div>
+      <div class="h-cell"><span class="h-key">HPa</span><span class="h-val">880</span></div>
+      <div class="h-cell ok"><span class="h-key">REC</span><span class="h-val">●</span></div>
+      <div class="h-cell"><span class="h-key">TIER</span><span class="h-val">1</span></div>
+    </div>
+
+    <div class="vista-toggle">
+      <button class="vista-btn active">Piloto</button>
+      <button class="vista-btn">Engenheiro</button>
+    </div>
+  </div>
+
+  <!-- VÍDEO -->
+  <div class="b-video">
+    <div class="video-frame">
+      <span class="v-rec">● REC · CAM ONBOARD</span>
+      <span class="v-stamp">vídeo ao vivo</span>
+      <span class="v-time">02:48.215</span>
+      <div class="v-pip">CAM 2 · cockpit</div>
+    </div>
+  </div>
+
+  <!-- MAPA ATELIER -->
+  <div class="b-map">
+    <svg viewBox="0 0 800 380" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <linearGradient id="asphalt" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#3A3D44"/>
+          <stop offset="50%" stop-color="#222428"/>
+          <stop offset="100%" stop-color="#15171B"/>
+        </linearGradient>
+        <radialGradient id="haloGold" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stop-color="#E8C97A" stop-opacity="0.45"/>
+          <stop offset="100%" stop-color="#E8C97A" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="liveGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#FF7A1A" stop-opacity="0.95"/>
+          <stop offset="60%" stop-color="#FF7A1A" stop-opacity="0.30"/>
+          <stop offset="100%" stop-color="#FF7A1A" stop-opacity="0"/>
+        </radialGradient>
+        <filter id="blurMd"><feGaussianBlur stdDeviation="6"/></filter>
+      </defs>
+
+      <!-- Halo dourado -->
+      <ellipse cx="400" cy="200" rx="320" ry="140" fill="url(#haloGold)" filter="url(#blurMd)"/>
+
+      <!-- Pista (esquemático Brasília simplificado) -->
+      <path d="M 100 280 C 100 260, 120 240, 160 240
+               L 320 240
+               C 360 240, 380 220, 380 180
+               L 380 130
+               C 380 90, 410 70, 460 75
+               L 580 90
+               C 620 95, 650 120, 645 165
+               L 635 220
+               C 630 250, 600 270, 560 268
+               L 460 263
+               C 420 261, 400 280, 400 300
+               L 380 320
+               C 360 340, 320 340, 290 320
+               L 220 290
+               C 180 270, 130 290, 100 280 Z"
+            fill="none" stroke="url(#asphalt)" stroke-width="22" stroke-linejoin="round"/>
+      <!-- Bordas -->
+      <path d="M 100 280 C 100 260, 120 240, 160 240
+               L 320 240
+               C 360 240, 380 220, 380 180
+               L 380 130
+               C 380 90, 410 70, 460 75
+               L 580 90
+               C 620 95, 650 120, 645 165
+               L 635 220
+               C 630 250, 600 270, 560 268
+               L 460 263
+               C 420 261, 400 280, 400 300
+               L 380 320
+               C 360 340, 320 340, 290 320
+               L 220 290
+               C 180 270, 130 290, 100 280 Z"
+            fill="none" stroke="#D4AF37" stroke-width="0.8" stroke-opacity="0.4"/>
+
+      <!-- Ghost line (cyan) -->
+      <path d="M 110 275 C 115 255, 130 238, 165 235
+               L 322 235
+               C 358 234, 374 215, 374 178
+               L 374 132
+               C 374 92, 412 75, 458 80
+               L 578 95
+               C 615 100, 644 122, 640 165
+               L 630 218
+               C 626 247, 600 264, 560 263
+               L 462 258
+               C 425 256, 405 274, 405 295
+               L 384 316
+               C 360 334, 322 334, 295 316
+               L 226 287
+               C 184 268, 132 286, 110 275 Z"
+            fill="none" stroke="#7DD3FC" stroke-width="1.2" stroke-opacity="0.6" stroke-dasharray="2 3"/>
+
+      <!-- Apex markers (cruzes ouro) -->
+      <g stroke="#D4AF37" stroke-width="1.5" stroke-opacity="0.8">
+        <line x1="378" y1="140" x2="386" y2="148"/><line x1="386" y1="140" x2="378" y2="148"/>
+        <line x1="643" y1="170" x2="651" y2="178"/><line x1="651" y1="170" x2="643" y2="178"/>
+        <line x1="396" y1="305" x2="404" y2="313"/><line x1="404" y1="305" x2="396" y2="313"/>
+      </g>
+
+      <!-- Vmin georef labels (fora da pista) -->
+      <g font-family="ui-monospace, monospace" fill="#F0DCA0">
+        <line x1="380" y1="140" x2="340" y2="105" stroke="#D4AF37" stroke-width="0.4" stroke-opacity="0.6"/>
+        <text x="335" y="100" text-anchor="end" font-size="9" letter-spacing="1">Vmin C2</text>
+        <text x="335" y="111" text-anchor="end" font-size="11" letter-spacing="0">87 km/h</text>
+
+        <line x1="647" y1="170" x2="700" y2="135" stroke="#D4AF37" stroke-width="0.4" stroke-opacity="0.6"/>
+        <text x="705" y="130" font-size="9" letter-spacing="1">Vmin C5</text>
+        <text x="705" y="141" font-size="11" letter-spacing="0">112 km/h</text>
+      </g>
+
+      <!-- Trail laranja (live position) -->
+      <g fill="#FF7A1A">
+        <circle cx="200" cy="245" r="2" fill-opacity="0.2"/>
+        <circle cx="240" cy="240" r="2.5" fill-opacity="0.4"/>
+        <circle cx="280" cy="238" r="3" fill-opacity="0.6"/>
+        <circle cx="320" cy="237" r="3.5" fill-opacity="0.8"/>
+      </g>
+      <!-- Live marker -->
+      <circle cx="335" cy="237" r="14" fill="url(#liveGlow)"/>
+      <circle cx="335" cy="237" r="5" fill="#FF7A1A"/>
+      <circle cx="335" cy="237" r="2" fill="#FFFFFF"/>
+
+      <!-- Linha de partida -->
+      <line x1="100" y1="282" x2="100" y2="265" stroke="#F0DCA0" stroke-width="1.5"/>
+      <line x1="98" y1="265" x2="102" y2="265" stroke="#F0DCA0" stroke-width="1.5"/>
+    </svg>
+
+    <div class="map-overlay">
+      <strong>brasília</strong> · 5,476 km · 8 curvas · CCW
+    </div>
+  </div>
+
+  <!-- HUD TELEMETRIA -->
+  <div class="b-hud">
+    <span class="hud-block-title">telemetria</span>
+
+    <div class="hero-vel">
+      <div class="v-num">287</div>
+      <div class="v-unit">km/h</div>
+    </div>
+
+    <div class="delta-row">
+      <div class="d-num">−0.342</div>
+      <div class="d-label">delta vs PB do dia</div>
+    </div>
+
+    <div class="hud-divider"></div>
+
+    <div class="hud-grid">
+      <div class="hud-item"><span class="h-key">marcha</span><span class="h-val">4</span></div>
+      <div class="hud-item"><span class="h-key">temp</span><span class="h-val">92<small>°C</small></span></div>
+      <div class="hud-item"><span class="h-key">parcial</span><span class="h-val">T2/4</span></div>
+      <div class="hud-item"><span class="h-key">λ</span><span class="h-val">0.92</span></div>
+    </div>
+
+    <div class="rpm-bar-wrap">
+      <div class="rpm-vals">
+        <span>RPM</span><span>6800 / 11000</span>
+      </div>
+      <div class="rpm-bar">
+        <div class="rpm-bar-fill"></div>
+        <div class="rpm-bar-redline"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HUD TRECHO -->
+  <div class="b-hud-trecho">
+    <div class="trecho-title">
+      <span>trecho atual</span>
+      <span class="t-which">C3 · entrada</span>
+    </div>
+
+    <div class="trecho-mini">
+      <div class="tm-item live"><span class="tm-key">tempo</span><span class="tm-val">14.842</span></div>
+      <div class="tm-item bad"><span class="tm-key">delta trecho</span><span class="tm-val">+0.118</span></div>
+      <div class="tm-item live"><span class="tm-key">vmin atual</span><span class="tm-val">—</span></div>
+      <div class="tm-item compare"><span class="tm-key">vmin ref</span><span class="tm-val">87 <small>km/h</small></span></div>
+      <div class="tm-item"><span class="tm-key">v saída</span><span class="tm-val">152</span></div>
+      <div class="tm-item"><span class="tm-key">freio</span><span class="tm-val">1.84s</span></div>
+      <div class="tm-item"><span class="tm-key">trail</span><span class="tm-val">23%</span></div>
+      <div class="tm-item compare"><span class="tm-key">linha vs ideal</span><span class="tm-val">+0.8m</span></div>
+    </div>
+
+    <div class="apex-class">
+      <div class="ac-key">classificação ápice</div>
+      <div class="ac-val">cedo · −0.6m</div>
+    </div>
+  </div>
+
+  <!-- P1 COACH -->
+  <div class="b-coach">
+    <span class="coach-eyebrow">p1 coach</span>
+
+    <div class="coach-frase">freie <em>mais cedo</em> na 3</div>
+
+    <div class="coach-meta">comando ativo · curva 3</div>
+
+    <div class="coach-licao">
+      <span class="l-tag">lição focada do stint</span>
+      <strong>trail braking suave</strong> · saída comprometida quando há ápice cedo
+    </div>
+
+    <div class="coach-pontuacao">
+      <span class="pt-num">87</span><span class="pt-tot">/100</span>
+      <span class="pt-key">volta atual</span>
+    </div>
+
+    <div class="coach-progresso">
+      <span class="cp-num">78%</span>
+      <div class="cp-bar"><div class="cp-fill"></div></div>
+      <span class="coach-eyebrow" style="font-size:8px;">lição</span>
+    </div>
+
+    <div class="coach-analise">
+      "ápice cedo na 2 — saída comprometida, perdeu 0.18s"
+    </div>
+  </div>
+
+  <!-- STINT -->
+  <div class="b-stint">
+    <div class="stint-title">
+      <span class="st-key">stint</span>
+      <span class="st-num">3 / 5</span>
+    </div>
+
+    <div class="stint-vol-row">
+      <span class="v-volta">volta 8 / 12</span>
+      <span class="v-tempo">02:48.215 decorrido</span>
+    </div>
+
+    <div class="stint-plano">
+      <div class="sp-key">meta</div>
+      <div class="sp-val">consistência sub 1:32</div>
+      <div class="sp-key">trecho-foco</div>
+      <div class="sp-val">curva 3 · entrada e ápice</div>
+      <div class="sp-key">lição focada</div>
+      <div class="sp-val">trail braking suave</div>
+    </div>
+
+    <div class="termica-row">
+      <span class="termica-dot"></span>
+      <span class="t-text">aquecido</span>
+    </div>
+
+    <div class="stint-info-grid">
+      <div class="si-item"><span class="si-key">combustível</span><span class="si-val">32 L</span></div>
+      <div class="si-item"><span class="si-key">pneu</span><span class="si-val">M · 3v</span></div>
+      <div class="si-item"><span class="si-key">restante</span><span class="si-val">18:32</span></div>
+      <div class="si-item"><span class="si-key">até PB dia</span><span class="si-val">−2v</span></div>
+    </div>
+  </div>
+
+  <!-- CHECKLIST -->
+  <div class="b-checklist">
+    <div class="cl-title">
+      <span>checklist</span>
+      <span class="cl-count">3</span>
+    </div>
+    <div class="cl-list">
+      <div class="cl-item pending">
+        <span class="cl-text">Pneu calibrado</span>
+        <span class="cl-who">mecânico</span>
+      </div>
+      <div class="cl-item waiting">
+        <span class="cl-text">Cinto regulado</span>
+        <span class="cl-who">piloto</span>
+      </div>
+      <div class="cl-item pending">
+        <span class="cl-text">Combustível conferido</span>
+        <span class="cl-who">chefe</span>
+      </div>
+      <div class="cl-item checked">
+        <span class="cl-text">Freios sangrados</span>
+        <span class="cl-who">mecânico · ok</span>
+      </div>
+      <div class="cl-item checked">
+        <span class="cl-text">Pressão de óleo</span>
+        <span class="cl-who">chefe · ok</span>
+      </div>
+      <div class="cl-item checked">
+        <span class="cl-text">Capacete travado</span>
+        <span class="cl-who">piloto · ok</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELTA ACUMULADO -->
+  <div class="b-delta-acum">
+    <span class="da-eyebrow"><strong>Δ acumulado</strong> · vs PB all-time</span>
+    <div class="da-spark">
+      <svg viewBox="0 0 600 30" preserveAspectRatio="none">
+        <line x1="0" y1="15" x2="600" y2="15" stroke="rgba(245,240,224,0.12)" stroke-width="0.5" stroke-dasharray="2 4"/>
+        <polyline points="0,18 60,16 120,21 180,12 240,11 300,9 360,12 420,7 480,8 540,5 600,4"
+                  fill="none" stroke="#D4AF37" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+        <g fill="#F0DCA0">
+          <circle cx="0" cy="18" r="1.5"/>
+          <circle cx="60" cy="16" r="1.5"/>
+          <circle cx="120" cy="21" r="1.5"/>
+          <circle cx="180" cy="12" r="1.5"/>
+          <circle cx="240" cy="11" r="1.5"/>
+          <circle cx="300" cy="9" r="1.5"/>
+          <circle cx="360" cy="12" r="1.5"/>
+          <circle cx="420" cy="7" r="1.5"/>
+          <circle cx="480" cy="8" r="1.5"/>
+          <circle cx="540" cy="5" r="1.5"/>
+        </g>
+        <circle cx="600" cy="4" r="3" fill="#FF7A1A"/>
+      </svg>
+    </div>
+    <span class="da-current">−0.342s</span>
+  </div>
+
+</div>
+
+<div class="legend">
+  <span class="lg-block"><strong>Layout</strong> 12 blocos · proporções do mockup arrastável</span>
+  <span class="lg-block"><strong>Estilo</strong> atelier · champagne/ouro · fundo radial</span>
+  <span class="lg-block"><strong>Vista</strong> Piloto (default)</span>
+  <span class="lg-block"><strong>Mock data</strong> stint 3/5 · volta 8/12 · v=287 · Δ=−0.342</span>
+  <span class="lg-block" style="margin-left:auto;">tudo isto é apenas visual — me diz o que muda</span>
+</div>
+
+</div>
+</body>
+</html>
