@@ -1329,21 +1329,27 @@ html,body{
         <text x="708" y="372" font-size="13" letter-spacing="0" fill-opacity="0.95">142 km/h</text>
       </g>
 
-      <!-- Trail laranja (live) -->
-      <g fill="#FF7A1A">
-        <circle cx="380" cy="707" r="2" fill-opacity="0.18"/>
-        <circle cx="355" cy="707" r="2.4" fill-opacity="0.32"/>
-        <circle cx="332" cy="707" r="2.8" fill-opacity="0.50"/>
-        <circle cx="312" cy="707" r="3.2" fill-opacity="0.72"/>
-      </g>
-      <!-- Live marker (carro agora) -->
-      <circle cx="295" cy="707" r="20" fill="url(#liveGlow)"/>
-      <circle cx="295" cy="707" r="6" fill="#FF7A1A"/>
-      <circle cx="295" cy="707" r="2.5" fill="#FFFFFF"/>
     </svg>
 
     <div class="map-overlay">
-      <strong>brasília</strong> · 5,476 km · 8 curvas · CCW
+      <div class="mo-left">
+        <span class="mo-name">brasília</span>
+        <span class="mo-meta">5,476 km · 8 curvas · CCW · v3 1:13.621</span>
+      </div>
+      <div class="mo-laps">
+        <div class="mo-lap live">
+          <span class="lk">live</span>
+          <span class="lv" data-overlay-live>0:00.000</span>
+        </div>
+        <div class="mo-lap ghost">
+          <span class="lk">ghost</span>
+          <span class="lv" data-overlay-ghost>0:00.000</span>
+        </div>
+        <div class="mo-lap delta">
+          <span class="lk">delta</span>
+          <span class="lv" data-overlay-delta>+0.000</span>
+        </div>
+      </div>
     </div>
   </div>
 
