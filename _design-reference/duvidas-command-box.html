@@ -32,70 +32,46 @@ html,body{
   -webkit-font-smoothing:antialiased;font-weight:400;line-height:1.55;
 }
 body{padding:0 0 96px;}
-
 .wrap{max-width:920px;margin:0 auto;padding:0 28px;}
 
-/* EXPORT BAR — sticky topo */
 .export-bar{
   position:sticky;top:0;z-index:50;
   background:rgba(18,20,28,0.92);
   border-bottom:1px solid var(--hairline);
-  padding:14px 28px;
-  margin:0 -28px 28px;
+  padding:14px 28px;margin:0 -28px 28px;
   display:flex;align-items:center;gap:14px;flex-wrap:wrap;
   backdrop-filter:saturate(140%) blur(10px);
   -webkit-backdrop-filter:saturate(140%) blur(10px);
 }
 .export-bar .progress{
   font-size:13px;color:var(--text-2);
-  font-variant-numeric:tabular-nums;
-  margin-right:auto;
+  font-variant-numeric:tabular-nums;margin-right:auto;
   display:flex;align-items:center;gap:10px;
 }
-.export-bar .progress strong{
-  color:var(--text);font-weight:600;
-}
-.progress-bar{
-  width:120px;height:4px;background:var(--hairline);
-  border-radius:2px;overflow:hidden;
-}
-.progress-bar-fill{
-  height:100%;background:var(--accent);
-  width:0;transition:width .3s;
-}
+.export-bar .progress strong{color:var(--text);font-weight:600;}
+.progress-bar{width:120px;height:4px;background:var(--hairline);border-radius:2px;overflow:hidden;}
+.progress-bar-fill{height:100%;background:var(--accent);width:0;transition:width .3s;}
 .export-bar button{
   background:var(--accent);color:var(--bg);
-  border:none;border-radius:6px;
-  padding:10px 16px;
+  border:none;border-radius:6px;padding:10px 16px;
   font-family:inherit;font-size:13px;font-weight:600;
-  letter-spacing:.04em;cursor:pointer;
-  transition:filter .15s;
+  letter-spacing:.04em;cursor:pointer;transition:filter .15s;
 }
 .export-bar button:hover{filter:brightness(1.08);}
 .export-bar button.secondary{
   background:transparent;color:var(--text-2);
   border:1px solid var(--hairline);
 }
-.export-bar button.secondary:hover{
-  border-color:var(--text-3);color:var(--text);
-}
+.export-bar button.secondary:hover{border-color:var(--text-3);color:var(--text);}
 .save-status{
-  font-size:11px;color:var(--good);
-  opacity:0;transition:opacity .2s;
-  font-variant-numeric:tabular-nums;
+  font-size:11px;color:var(--good);opacity:0;
+  transition:opacity .2s;font-variant-numeric:tabular-nums;
   letter-spacing:.05em;text-transform:uppercase;
 }
 .save-status.visible{opacity:1;}
 
-header.head{
-  border-bottom:1px solid var(--hairline);
-  padding:32px 0 28px;margin-bottom:28px;
-}
-.eyebrow{
-  font-size:11px;font-weight:600;
-  letter-spacing:.18em;color:var(--text-3);
-  text-transform:uppercase;margin-bottom:14px;
-}
+header.head{border-bottom:1px solid var(--hairline);padding:32px 0 28px;margin-bottom:28px;}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.18em;color:var(--text-3);text-transform:uppercase;margin-bottom:14px;}
 h1{font-size:30px;line-height:1.15;font-weight:600;letter-spacing:-.01em;margin-bottom:12px;}
 .lead{color:var(--text-2);font-size:15px;max-width:660px;}
 .lead strong{color:var(--text);font-weight:500;}
@@ -103,20 +79,13 @@ h1{font-size:30px;line-height:1.15;font-weight:600;letter-spacing:-.01em;margin-
 section{margin-bottom:36px;scroll-margin-top:80px;}
 h2{
   font-size:20px;font-weight:600;color:var(--text);
-  margin-bottom:14px;padding-bottom:8px;
-  border-bottom:1px solid var(--hairline);
+  margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--hairline);
   display:flex;align-items:baseline;gap:12px;
 }
-h2 .num{
-  color:var(--accent);font-variant-numeric:tabular-nums;
-  font-weight:500;
-}
+h2 .num{color:var(--accent);font-variant-numeric:tabular-nums;font-weight:500;}
 h2 .section-count{
-  font-size:11px;color:var(--text-3);
-  letter-spacing:.04em;
-  margin-left:auto;
-  font-variant-numeric:tabular-nums;
-  font-weight:400;
+  font-size:11px;color:var(--text-3);letter-spacing:.04em;
+  margin-left:auto;font-variant-numeric:tabular-nums;font-weight:400;
 }
 
 p{margin-bottom:12px;color:var(--text-2);}
@@ -125,57 +94,39 @@ ul{margin:8px 0 16px 0;padding:0;list-style:none;}
 ul li{position:relative;padding:0 0 8px 22px;color:var(--text-2);font-size:14px;}
 ul li::before{content:"";position:absolute;left:6px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--text-3);}
 
-/* PERGUNTA */
 .q{
   background:var(--surface);
   border:1px solid var(--hairline);
   border-radius:var(--radius);
-  padding:18px 20px;
-  margin-bottom:14px;
-  scroll-margin-top:80px;
-  position:relative;
+  padding:18px 20px;margin-bottom:14px;
+  scroll-margin-top:80px;position:relative;
   transition:border-color .2s, background .2s;
 }
-.q.answered{
-  border-color:oklch(40% 0.04 155);
-}
+.q.answered{border-color:oklch(40% 0.04 155);}
 .q.answered::before{
-  content:"";
-  position:absolute;left:-1px;top:18px;bottom:18px;
-  width:3px;background:var(--good);
-  border-radius:2px;
+  content:"";position:absolute;left:-1px;top:18px;bottom:18px;
+  width:3px;background:var(--good);border-radius:2px;
 }
 .q .qhead{display:flex;gap:12px;align-items:baseline;margin-bottom:6px;}
-.q .qid{
-  font-variant-numeric:tabular-nums;font-weight:600;
-  color:var(--accent);font-size:13px;letter-spacing:.04em;
-}
+.q .qid{font-variant-numeric:tabular-nums;font-weight:600;color:var(--accent);font-size:13px;letter-spacing:.04em;}
 .q.answered .qid{color:var(--good);}
 .q .qtitle{font-weight:500;color:var(--text);font-size:15px;}
 .q .qcontext{color:var(--text-2);font-size:13px;margin:6px 0 14px;line-height:1.5;}
 
-/* CARDS */
-.cards{
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-  gap:10px;margin-bottom:14px;
-}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:14px;}
 .card{
   position:relative;display:block;cursor:pointer;
-  background:var(--bg-2);
-  border:1px solid var(--hairline);
-  border-radius:8px;
-  padding:14px 14px 14px 38px;
+  background:var(--bg-2);border:1px solid var(--hairline);
+  border-radius:8px;padding:14px 14px 14px 38px;
   font-size:14px;color:var(--text-2);
-  transition:border-color .15s, background .15s;
-  user-select:none;
+  transition:border-color .15s, background .15s;user-select:none;
 }
 .card input{
   position:absolute;left:14px;top:16px;
   appearance:none;-webkit-appearance:none;
   width:14px;height:14px;
   border:1.5px solid var(--text-3);
-  border-radius:50%;background:transparent;
-  cursor:pointer;margin:0;
+  border-radius:50%;background:transparent;cursor:pointer;margin:0;
 }
 .card input[type="checkbox"]{border-radius:3px;}
 .card input:checked{
@@ -184,35 +135,38 @@ ul li::before{content:"";position:absolute;left:6px;top:9px;width:5px;height:5px
 }
 .card input[type="checkbox"]:checked{box-shadow:inset 0 0 0 2px var(--bg-2);}
 .card:hover{border-color:var(--accent);background:var(--surface);}
-.card:has(input:checked){
-  border-color:var(--accent);
-  background:var(--accent-soft);color:var(--text);
-}
-.card .opt-label{
-  font-weight:500;color:var(--text);
-  display:block;margin-bottom:3px;
-}
+.card:has(input:checked){border-color:var(--accent);background:var(--accent-soft);color:var(--text);}
+.card .opt-label{font-weight:500;color:var(--text);display:block;margin-bottom:3px;}
 .card .opt-desc{font-size:13px;color:var(--text-2);line-height:1.5;}
 
 .card.recommended{border-color:var(--accent);background:var(--accent-soft);}
 .card.recommended::after{
-  content:"recomendação";
-  position:absolute;top:-9px;right:12px;
-  font-size:10px;font-weight:600;
-  letter-spacing:.08em;text-transform:uppercase;
+  content:"recomendação";position:absolute;top:-9px;right:12px;
+  font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
   background:var(--accent);color:var(--bg);
   padding:3px 8px;border-radius:3px;
 }
 
+.card.none-option{
+  background:transparent;border-style:dashed;
+  border-color:oklch(40% 0.005 240);
+  grid-column:1 / -1;
+}
+.card.none-option:hover{border-style:solid;}
+.card.none-option .opt-label{color:var(--text-2);}
+.card.none-option:has(input:checked){
+  border-color:oklch(75% 0.13 25);
+  background:oklch(35% 0.05 25 / .25);
+  border-style:solid;
+}
+.card.none-option:has(input:checked) .opt-label{color:oklch(85% 0.08 25);}
+
 .outros{margin-top:6px;display:flex;flex-direction:column;gap:6px;}
 .outros label{
-  font-size:11px;font-weight:600;
-  letter-spacing:.1em;text-transform:uppercase;
-  color:var(--text-3);
+  font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);
 }
 .outros textarea{
-  background:var(--bg-2);
-  border:1px solid var(--hairline);
+  background:var(--bg-2);border:1px solid var(--hairline);
   border-radius:6px;padding:10px 12px;
   color:var(--text);font-family:inherit;font-size:14px;
   resize:vertical;min-height:54px;outline:none;width:100%;
@@ -220,28 +174,20 @@ ul li::before{content:"";position:absolute;left:6px;top:9px;width:5px;height:5px
 .outros textarea:focus{border-color:var(--accent);}
 .outros textarea::placeholder{color:var(--text-3);}
 
-/* DECIDED + OOS */
 .box-decided{
-  background:var(--surface-2);
-  border-left:3px solid var(--accent);
+  background:var(--surface-2);border-left:3px solid var(--accent);
   border-radius:6px;padding:14px 18px;margin:0 0 24px;
 }
 .box-decided h3{margin:0 0 10px;color:var(--accent);font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;}
 .box-decided ul li{padding-bottom:5px;font-size:13px;}
 
 .box-out-of-scope{
-  background:var(--surface-2);
-  border-left:3px solid var(--text-3);
+  background:var(--surface-2);border-left:3px solid var(--text-3);
   border-radius:6px;padding:14px 18px;margin:24px 0 8px;
 }
 .box-out-of-scope h3{margin-top:0;color:var(--text-2);font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;}
 
-footer.foot{
-  margin-top:48px;padding:24px 0;
-  border-top:1px solid var(--hairline);
-  color:var(--text-3);font-size:12px;
-}
-
+footer.foot{margin-top:48px;padding:24px 0;border-top:1px solid var(--hairline);color:var(--text-3);font-size:12px;}
 code{
   font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
   background:var(--surface-2);border:1px solid var(--hairline);
@@ -249,10 +195,8 @@ code{
 }
 
 .toc{
-  background:var(--surface);
-  border:1px solid var(--hairline);
-  border-radius:var(--radius);
-  padding:16px 20px;margin-bottom:32px;
+  background:var(--surface);border:1px solid var(--hairline);
+  border-radius:var(--radius);padding:16px 20px;margin-bottom:32px;
 }
 .toc h3{margin:0 0 10px;color:var(--text-2);font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;}
 .toc ol{
@@ -260,10 +204,8 @@ code{
   display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;
 }
 .toc ol li{
-  counter-increment:toc;
-  font-size:14px;color:var(--text-2);
-  padding-left:26px;position:relative;
-  display:flex;align-items:baseline;gap:8px;
+  counter-increment:toc;font-size:14px;color:var(--text-2);
+  padding-left:26px;position:relative;display:flex;align-items:baseline;gap:8px;
 }
 .toc ol li::before{
   content:counter(toc,decimal-leading-zero);
@@ -272,10 +214,7 @@ code{
 }
 .toc ol li a{color:inherit;text-decoration:none;flex:1;}
 .toc ol li a:hover{color:var(--accent);}
-.toc-count{
-  font-size:11px;color:var(--text-3);
-  font-variant-numeric:tabular-nums;
-}
+.toc-count{font-size:11px;color:var(--text-3);font-variant-numeric:tabular-nums;}
 .toc-count.full{color:var(--good);}
 
 .bottom-actions{
@@ -285,15 +224,11 @@ code{
 }
 .bottom-actions button{
   background:var(--accent);color:var(--bg);
-  border:none;border-radius:6px;
-  padding:14px 22px;
+  border:none;border-radius:6px;padding:14px 22px;
   font-family:inherit;font-size:14px;font-weight:600;
   letter-spacing:.04em;cursor:pointer;
 }
-.bottom-actions button.secondary{
-  background:transparent;color:var(--text-2);
-  border:1px solid var(--hairline);
-}
+.bottom-actions button.secondary{background:transparent;color:var(--text-2);border:1px solid var(--hairline);}
 </style>
 </head>
 <body>
@@ -311,10 +246,10 @@ code{
 </div>
 
 <header class="head">
-  <div class="eyebrow">P1 Fast · Command Box · 2026-05-08 · v3</div>
+  <div class="eyebrow">P1 Fast · Command Box · 2026-05-08 · v4</div>
   <h1>Dúvidas sobre o Command Box</h1>
   <p class="lead">
-    Cada pergunta tem cards clicáveis. O card com badge "recomendação" é o que eu sugiro — já vem pré-selecionado. Se nenhum servir, escreve em "outros". <strong>O estado é salvo automaticamente neste navegador</strong> a cada clique. Quando terminar (ou em qualquer ponto), aperta <strong>copiar respostas</strong> e cola aqui no chat.
+    Cada pergunta tem cards clicáveis. O card com badge "recomendação" é o que eu sugiro — já vem pré-selecionado. Se nenhuma opção servir, marque <strong>"Nenhuma das anteriores"</strong> e/ou escreva em "outros". Estado salvo automaticamente neste navegador. Aperta <strong>copiar respostas</strong> quando quiser exportar.
   </p>
 </header>
 
@@ -328,12 +263,13 @@ code{
     <li>Telemetria via Realtime = eventos agregados, não samples</li>
     <li>Vmin georef vem persistido por trecho</li>
   </ul>
-  <h3 style="margin-top:16px;">Decidido em 2026-05-08 · rodada 1</h3>
+  <h3 style="margin-top:16px;">Decidido em 2026-05-08</h3>
   <ul>
     <li><strong>Nome</strong> — "Command Box" (em PT, sem mudança de escopo)</li>
     <li><strong>Estilo visual</strong> — <code>assets/pistas/premium-styles/atelier.svg</code> (champagne/ouro, fundo radial, broadcast TV)</li>
     <li><strong>Internet em Brasília</strong> — 5G cobre o autódromo</li>
-    <li><strong>Modelo de tier mantido</strong> — Tier 0 (só celular) e Tier 1 (celular + T4000). Você pessoalmente sempre roda Tier 1.</li>
+    <li><strong>Tier 0</strong> — só celular (qualquer cliente). App funciona completo, RPM/marcha/temp ocultos.</li>
+    <li><strong>Tier 1</strong> — celular + <strong>T4000 BLE como hardware opcional</strong>. Você no Celta sempre roda Tier 1; outros usuários podem ficar em Tier 0.</li>
   </ul>
 </div>
 
@@ -369,8 +305,9 @@ code{
       <label class="card"><input type="radio" name="q1_3" value="A"><span class="opt-label">A · Mesmo canal</span><span class="opt-desc">Tudo no mesmo widget. Simples mas confunde origem.</span></label>
       <label class="card recommended"><input type="radio" name="q1_3" value="B" checked><span class="opt-label">B · Canais separados</span><span class="opt-desc">Comando automático no slot dele. Mensagem do operador em widget próprio com nome de quem mandou.</span></label>
       <label class="card"><input type="radio" name="q1_3" value="C"><span class="opt-label">C · Mesmo widget, etiqueta de origem</span><span class="opt-desc">Um canal só, com tag "AUTO" vs "BOX".</span></label>
+      <label class="card none-option"><input type="radio" name="q1_3" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q1_3_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q1_3_outros"></textarea></div>
   </div>
 </section>
 
@@ -384,8 +321,9 @@ code{
       <label class="card"><input type="radio" name="q2_1" value="A"><span class="opt-label">A · 1920×1080 FHD</span><span class="opt-desc">Baseline da maioria das TVs 32".</span></label>
       <label class="card"><input type="radio" name="q2_1" value="B"><span class="opt-label">B · 3840×2160 4K</span><span class="opt-desc">Apple TV 4K entrega.</span></label>
       <label class="card recommended"><input type="radio" name="q2_1" value="C" checked><span class="opt-label">C · SVG vetorial escalável</span><span class="opt-desc">Igual o atelier (1280×920). Escala em qualquer TV.</span></label>
+      <label class="card none-option"><input type="radio" name="q2_1" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q2_1_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q2_1_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="2.2">
@@ -396,8 +334,9 @@ code{
       <label class="card"><input type="radio" name="q2_2" value="B"><span class="opt-label">B · Vídeo dominante 70%</span><span class="opt-desc">Onboard ocupa quase tudo. Vira "TV de F1".</span></label>
       <label class="card"><input type="radio" name="q2_2" value="C"><span class="opt-label">C · 4 quadrantes iguais</span></label>
       <label class="card"><input type="radio" name="q2_2" value="D"><span class="opt-label">D · Layout escolhido pelo operador</span><span class="opt-desc">Modos pré-definidos (treino, corrida, debrief).</span></label>
+      <label class="card none-option"><input type="radio" name="q2_2" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q2_2_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q2_2_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="2.3">
@@ -406,8 +345,9 @@ code{
       <label class="card recommended"><input type="radio" name="q2_3" value="A" checked><span class="opt-label">A · Escuro fixo</span><span class="opt-desc">Atelier é cinematográfico escuro.</span></label>
       <label class="card"><input type="radio" name="q2_3" value="B"><span class="opt-label">B · Auto (segue iPhone)</span></label>
       <label class="card"><input type="radio" name="q2_3" value="C"><span class="opt-label">C · Toggle manual</span></label>
+      <label class="card none-option"><input type="radio" name="q2_3" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q2_3_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q2_3_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="2.4">
@@ -415,8 +355,9 @@ code{
     <div class="cards">
       <label class="card recommended"><input type="radio" name="q2_4" value="A" checked><span class="opt-label">A · Landscape fixa</span></label>
       <label class="card"><input type="radio" name="q2_4" value="B"><span class="opt-label">B · Suporta portrait</span></label>
+      <label class="card none-option"><input type="radio" name="q2_4" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q2_4_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q2_4_outros"></textarea></div>
   </div>
 </section>
 
@@ -430,8 +371,9 @@ code{
       <label class="card"><input type="radio" name="q3_2" value="A"><span class="opt-label">A · GPS bruto a 1Hz</span><span class="opt-desc">Carro "pula" 1× por segundo.</span></label>
       <label class="card recommended"><input type="radio" name="q3_2" value="B" checked><span class="opt-label">B · Interpolada a 10Hz (IMU + GPS)</span><span class="opt-desc">Movimento suave. Reusa o Kalman INS-GPS já feito.</span></label>
       <label class="card"><input type="radio" name="q3_2" value="C"><span class="opt-label">C · Não mostrar carro ao vivo</span></label>
+      <label class="card none-option"><input type="radio" name="q3_2" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q3_2_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q3_2_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="3.3">
@@ -440,8 +382,9 @@ code{
       <label class="card"><input type="radio" name="q3_3" value="A"><span class="opt-label">A · Verde / amarelo / vermelho</span><span class="opt-desc">Imediato, mas destrói a estética champagne.</span></label>
       <label class="card recommended"><input type="radio" name="q3_3" value="B" checked><span class="opt-label">B · Mapa sóbrio + desempenho em widget</span><span class="opt-desc">Mantém atelier. Delta vai nos números.</span></label>
       <label class="card"><input type="radio" name="q3_3" value="C"><span class="opt-label">C · Heatmap em camada toggleável</span></label>
+      <label class="card none-option"><input type="radio" name="q3_3" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q3_3_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q3_3_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="3.4">
@@ -450,8 +393,9 @@ code{
       <label class="card"><input type="radio" name="q3_4" value="A"><span class="opt-label">A · Sempre marcados (todos)</span></label>
       <label class="card"><input type="radio" name="q3_4" value="B"><span class="opt-label">B · Só apex e Vmin</span></label>
       <label class="card recommended"><input type="radio" name="q3_4" value="C" checked><span class="opt-label">C · Toggle por camada</span><span class="opt-desc">Mapa limpo por padrão. Operador liga camada quando precisa.</span></label>
+      <label class="card none-option"><input type="radio" name="q3_4" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q3_4_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q3_4_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="3.5">
@@ -460,8 +404,9 @@ code{
       <label class="card recommended"><input type="radio" name="q3_5" value="A" checked><span class="opt-label">A · Sempre visível (cyan do atelier)</span><span class="opt-desc">Faz parte do DNA do atelier.</span></label>
       <label class="card"><input type="radio" name="q3_5" value="B"><span class="opt-label">B · Toggle pelo operador</span></label>
       <label class="card"><input type="radio" name="q3_5" value="C"><span class="opt-label">C · Não mostrar no Command Box</span></label>
+      <label class="card none-option"><input type="radio" name="q3_5" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q3_5_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q3_5_outros"></textarea></div>
   </div>
 </section>
 
@@ -471,29 +416,33 @@ code{
 
   <div class="q" data-qid="4.1">
     <div class="qhead"><span class="qid">4.1</span><span class="qtitle">Quais valores aparecem na HUD (multi-seleção)</span></div>
+    <p class="qcontext">"Tier 1" = quando T4000 BLE está conectado. Em Tier 0, esses valores não chegam ao app.</p>
     <div class="cards">
       <label class="card recommended"><input type="checkbox" name="q4_1_vel" checked><span class="opt-label">Velocidade atual (hero 76px)</span></label>
       <label class="card recommended"><input type="checkbox" name="q4_1_delta" checked><span class="opt-label">Delta vs ref</span></label>
       <label class="card recommended"><input type="checkbox" name="q4_1_volta" checked><span class="opt-label">Volta atual + tempo</span></label>
       <label class="card recommended"><input type="checkbox" name="q4_1_parcial" checked><span class="opt-label">Parcial atual</span></label>
-      <label class="card recommended"><input type="checkbox" name="q4_1_rpm" checked><span class="opt-label">RPM (Tier 1)</span></label>
-      <label class="card recommended"><input type="checkbox" name="q4_1_marcha" checked><span class="opt-label">Marcha (Tier 1)</span></label>
-      <label class="card"><input type="checkbox" name="q4_1_temp"><span class="opt-label">Temp motor (Tier 1)</span></label>
+      <label class="card recommended"><input type="checkbox" name="q4_1_rpm" checked><span class="opt-label">RPM (Tier 1 — T4000)</span></label>
+      <label class="card recommended"><input type="checkbox" name="q4_1_marcha" checked><span class="opt-label">Marcha (Tier 1 — T4000)</span></label>
+      <label class="card"><input type="checkbox" name="q4_1_temp"><span class="opt-label">Temp motor (Tier 1 — T4000)</span></label>
       <label class="card"><input type="checkbox" name="q4_1_gl"><span class="opt-label">G lateral</span></label>
       <label class="card"><input type="checkbox" name="q4_1_glong"><span class="opt-label">G longitudinal</span></label>
-      <label class="card"><input type="checkbox" name="q4_1_lambda"><span class="opt-label">Lambda (Tier 1)</span></label>
+      <label class="card"><input type="checkbox" name="q4_1_lambda"><span class="opt-label">Lambda (Tier 1 — T4000)</span></label>
+      <label class="card none-option"><input type="checkbox" name="q4_1_nenhuma"><span class="opt-label">Nenhuma das anteriores</span><span class="opt-desc">Marca esta se rejeita TODAS as opções acima.</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q4_1_outros" placeholder="ex.: pressão de óleo, temperatura ambiente, vento..."></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q4_1_outros" placeholder="ex.: pressão de óleo, temperatura ambiente, vento..."></textarea></div>
   </div>
 
   <div class="q" data-qid="4.2">
-    <div class="qhead"><span class="qid">4.2</span><span class="qtitle">Tier 0 (sem T4000) — RPM, marcha, temp</span></div>
+    <div class="qhead"><span class="qid">4.2</span><span class="qtitle">Em Tier 0 (cliente sem T4000) — RPM, marcha, temp</span></div>
+    <p class="qcontext">Você sempre roda Tier 1 (T4000 conectado), mas o app suporta clientes sem T4000. Como tratar nesses casos?</p>
     <div class="cards">
       <label class="card"><input type="radio" name="q4_2" value="A"><span class="opt-label">A · Mostra "—"</span></label>
       <label class="card recommended"><input type="radio" name="q4_2" value="B" checked><span class="opt-label">B · Oculta widgets, layout reflowa</span><span class="opt-desc">Velocidade fica ainda maior. Atelier limpo em Tier 0.</span></label>
       <label class="card"><input type="radio" name="q4_2" value="C"><span class="opt-label">C · Estimativa via GPS + relação de marcha</span></label>
+      <label class="card none-option"><input type="radio" name="q4_2" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q4_2_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q4_2_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="4.3">
@@ -502,8 +451,9 @@ code{
       <label class="card"><input type="radio" name="q4_3" value="A"><span class="opt-label">A · Replica os 12 LEDs igual cockpit</span></label>
       <label class="card recommended"><input type="radio" name="q4_3" value="B" checked><span class="opt-label">B · Não tem shift light no box</span><span class="opt-desc">Decisão é em ms — quem está no box não age.</span></label>
       <label class="card"><input type="radio" name="q4_3" value="C"><span class="opt-label">C · Versão simplificada (barra de RPM)</span></label>
+      <label class="card none-option"><input type="radio" name="q4_3" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q4_3_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q4_3_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="4.4">
@@ -512,8 +462,9 @@ code{
       <label class="card"><input type="radio" name="q4_4" value="A"><span class="opt-label">A · Mesmo halo do cockpit (mesmas cores)</span></label>
       <label class="card recommended"><input type="radio" name="q4_4" value="B" checked><span class="opt-label">B · Halo adaptado ao DNA atelier</span><span class="opt-desc">Mesma ideia, paleta champagne/ouro.</span></label>
       <label class="card"><input type="radio" name="q4_4" value="C"><span class="opt-label">C · Sem halo, só números</span></label>
+      <label class="card none-option"><input type="radio" name="q4_4" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q4_4_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q4_4_outros"></textarea></div>
   </div>
 </section>
 
@@ -527,8 +478,9 @@ code{
       <label class="card recommended"><input type="radio" name="q5_1" value="A" checked><span class="opt-label">A · Só no iPhone do operador</span><span class="opt-desc">TV mostra só histórico. Operador digitando ao vivo na TV é constrangedor.</span></label>
       <label class="card"><input type="radio" name="q5_1" value="B"><span class="opt-label">B · Espelhado na TV</span><span class="opt-desc">Como é AirPlay, todos veem digitando.</span></label>
       <label class="card"><input type="radio" name="q5_1" value="C"><span class="opt-label">C · Híbrido (overlay no envio)</span></label>
+      <label class="card none-option"><input type="radio" name="q5_1" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q5_1_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q5_1_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="5.2">
@@ -540,8 +492,9 @@ code{
       <label class="card recommended"><input type="checkbox" name="q5_2_mec" checked><span class="opt-label">Mecânico</span></label>
       <label class="card"><input type="checkbox" name="q5_2_readonly"><span class="opt-label">Read-only (mãe / amigos)</span></label>
       <label class="card recommended"><input type="checkbox" name="q5_2_piloto_carro" checked><span class="opt-label">Piloto no carro — só ACK</span><span class="opt-desc">Não digita, só confirma recebimento.</span></label>
+      <label class="card none-option"><input type="checkbox" name="q5_2_nenhuma"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q5_2_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q5_2_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="5.3">
@@ -550,8 +503,9 @@ code{
       <label class="card"><input type="radio" name="q5_3" value="A"><span class="opt-label">A · Toast curto no cockpit</span></label>
       <label class="card"><input type="radio" name="q5_3" value="B"><span class="opt-label">B · Voz lendo (TTS)</span></label>
       <label class="card recommended"><input type="radio" name="q5_3" value="C" checked><span class="opt-label">C · Toast obrigatório + TTS opt-in</span></label>
+      <label class="card none-option"><input type="radio" name="q5_3" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q5_3_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q5_3_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="5.4">
@@ -560,8 +514,9 @@ code{
       <label class="card"><input type="radio" name="q5_4" value="A"><span class="opt-label">A · Padrão privada, marcar pra ser pública</span></label>
       <label class="card recommended"><input type="radio" name="q5_4" value="B" checked><span class="opt-label">B · Padrão visível, privada como exceção</span><span class="opt-desc">Box é compartilhado. Transparência é o normal.</span></label>
       <label class="card"><input type="radio" name="q5_4" value="C"><span class="opt-label">C · Tudo público sempre</span></label>
+      <label class="card none-option"><input type="radio" name="q5_4" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q5_4_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q5_4_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="5.5">
@@ -570,8 +525,9 @@ code{
       <label class="card"><input type="radio" name="q5_5" value="A"><span class="opt-label">A · Lista das últimas 5, com scroll</span></label>
       <label class="card recommended"><input type="radio" name="q5_5" value="B" checked><span class="opt-label">B · Última em destaque, anteriores em rodapé fino</span></label>
       <label class="card"><input type="radio" name="q5_5" value="C"><span class="opt-label">C · Histórico completo do stint, com timestamp</span></label>
+      <label class="card none-option"><input type="radio" name="q5_5" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q5_5_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q5_5_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="5.6">
@@ -586,8 +542,9 @@ code{
       <label class="card recommended"><input type="checkbox" name="q5_6_voltas" checked><span class="opt-label">"Faltam X voltas"</span></label>
       <label class="card"><input type="checkbox" name="q5_6_combustivel"><span class="opt-label">"Atenção combustível"</span></label>
       <label class="card"><input type="checkbox" name="q5_6_chuva"><span class="opt-label">"Vem chuva"</span></label>
+      <label class="card none-option"><input type="checkbox" name="q5_6_nenhuma"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q5_6_outros" placeholder="outras mensagens rápidas que você quer no catálogo inicial"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q5_6_outros" placeholder="outras mensagens rápidas que você quer no catálogo inicial"></textarea></div>
   </div>
 
   <div class="q" data-qid="5.7">
@@ -596,8 +553,9 @@ code{
       <label class="card"><input type="radio" name="q5_7" value="A"><span class="opt-label">A · Sem ACK</span></label>
       <label class="card recommended"><input type="radio" name="q5_7" value="B" checked><span class="opt-label">B · ACK manual (botão grande no cockpit)</span><span class="opt-desc">Crítico em mensagens de segurança.</span></label>
       <label class="card"><input type="radio" name="q5_7" value="C"><span class="opt-label">C · ACK automático ao cruzar parcial</span></label>
+      <label class="card none-option"><input type="radio" name="q5_7" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q5_7_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q5_7_outros"></textarea></div>
   </div>
 </section>
 
@@ -612,8 +570,9 @@ code{
       <label class="card recommended"><input type="radio" name="q6_1" value="B" checked><span class="opt-label">B · Picture-in-picture no canto</span></label>
       <label class="card"><input type="radio" name="q6_1" value="C"><span class="opt-label">C · Toggle (esconde quando quer mapa cheio)</span></label>
       <label class="card"><input type="radio" name="q6_1" value="D"><span class="opt-label">D · Sem vídeo no box</span></label>
+      <label class="card none-option"><input type="radio" name="q6_1" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q6_1_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q6_1_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="6.2">
@@ -622,8 +581,9 @@ code{
       <label class="card recommended"><input type="radio" name="q6_2" value="A" checked><span class="opt-label">A · Mute fixo</span><span class="opt-desc">Box é coletivo.</span></label>
       <label class="card"><input type="radio" name="q6_2" value="B"><span class="opt-label">B · Áudio carro on, voz off</span></label>
       <label class="card"><input type="radio" name="q6_2" value="C"><span class="opt-label">C · Tudo on, controle por toggle</span></label>
+      <label class="card none-option"><input type="radio" name="q6_2" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q6_2_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q6_2_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="6.3">
@@ -632,8 +592,9 @@ code{
       <label class="card recommended"><input type="radio" name="q6_3" value="A" checked><span class="opt-label">A · Command Box primeiro (sem vídeo), vídeo depois</span><span class="opt-desc">Espaço de vídeo já reservado no layout. Permite testar Command Box em pista antes.</span></label>
       <label class="card"><input type="radio" name="q6_3" value="B"><span class="opt-label">B · Vídeo primeiro, Command Box depois</span></label>
       <label class="card"><input type="radio" name="q6_3" value="C"><span class="opt-label">C · Em paralelo, integra quando os dois estiverem prontos</span></label>
+      <label class="card none-option"><input type="radio" name="q6_3" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q6_3_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q6_3_outros"></textarea></div>
   </div>
 </section>
 
@@ -647,8 +608,9 @@ code{
       <label class="card"><input type="radio" name="q7_1" value="A"><span class="opt-label">A · Cronológica</span></label>
       <label class="card"><input type="radio" name="q7_1" value="B"><span class="opt-label">B · Por tempo (melhor primeiro)</span></label>
       <label class="card recommended"><input type="radio" name="q7_1" value="C" checked><span class="opt-label">C · Toggle (default cronológica)</span></label>
+      <label class="card none-option"><input type="radio" name="q7_1" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q7_1_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q7_1_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="7.2">
@@ -657,8 +619,9 @@ code{
       <label class="card"><input type="radio" name="q7_2" value="A"><span class="opt-label">A · Sempre visível na tela ao vivo</span></label>
       <label class="card recommended"><input type="radio" name="q7_2" value="B" checked><span class="opt-label">B · Vista separada (operador navega)</span></label>
       <label class="card"><input type="radio" name="q7_2" value="C"><span class="opt-label">C · Não tem heatmap</span></label>
+      <label class="card none-option"><input type="radio" name="q7_2" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q7_2_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q7_2_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="7.3">
@@ -667,8 +630,9 @@ code{
       <label class="card"><input type="radio" name="q7_3" value="A"><span class="opt-label">A · Quadro fixo na tela ao vivo</span></label>
       <label class="card recommended"><input type="radio" name="q7_3" value="B" checked><span class="opt-label">B · Notificação flash quando ganha</span></label>
       <label class="card"><input type="radio" name="q7_3" value="C"><span class="opt-label">C · Só pós-stint</span></label>
+      <label class="card none-option"><input type="radio" name="q7_3" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q7_3_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q7_3_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="7.4">
@@ -677,8 +641,9 @@ code{
       <label class="card"><input type="radio" name="q7_4" value="A"><span class="opt-label">A · As 3 sempre visíveis (PB dia, all-time, ghost)</span></label>
       <label class="card"><input type="radio" name="q7_4" value="B"><span class="opt-label">B · Operador escolhe 1</span></label>
       <label class="card recommended"><input type="radio" name="q7_4" value="C" checked><span class="opt-label">C · PB do dia padrão, outras 2 via toggle</span></label>
+      <label class="card none-option"><input type="radio" name="q7_4" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q7_4_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q7_4_outros"></textarea></div>
   </div>
 </section>
 
@@ -692,8 +657,9 @@ code{
       <label class="card"><input type="radio" name="q8_1" value="A"><span class="opt-label">A · Auto pela autenticação</span></label>
       <label class="card"><input type="radio" name="q8_1" value="B"><span class="opt-label">B · Operador seleciona manualmente</span></label>
       <label class="card recommended"><input type="radio" name="q8_1" value="C" checked><span class="opt-label">C · Auto + operador confirma</span></label>
+      <label class="card none-option"><input type="radio" name="q8_1" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q8_1_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q8_1_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="8.2">
@@ -702,8 +668,9 @@ code{
       <label class="card"><input type="radio" name="q8_2" value="A"><span class="opt-label">A · Por carro</span></label>
       <label class="card"><input type="radio" name="q8_2" value="B"><span class="opt-label">B · Por piloto</span></label>
       <label class="card recommended"><input type="radio" name="q8_2" value="C" checked><span class="opt-label">C · Toggle, default por carro</span></label>
+      <label class="card none-option"><input type="radio" name="q8_2" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q8_2_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q8_2_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="8.3">
@@ -712,8 +679,9 @@ code{
       <label class="card"><input type="radio" name="q8_3" value="A"><span class="opt-label">A · Só 1 carro na tela</span></label>
       <label class="card"><input type="radio" name="q8_3" value="B"><span class="opt-label">B · Split tela (2 carros)</span></label>
       <label class="card recommended"><input type="radio" name="q8_3" value="C" checked><span class="opt-label">C · Seletor — 1 por vez</span></label>
+      <label class="card none-option"><input type="radio" name="q8_3" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q8_3_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q8_3_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="8.4">
@@ -722,8 +690,9 @@ code{
       <label class="card"><input type="radio" name="q8_4" value="A"><span class="opt-label">A · Suportado, cada box é instância independente</span></label>
       <label class="card recommended"><input type="radio" name="q8_4" value="B" checked><span class="opt-label">B · 1 box por time inicial</span></label>
       <label class="card"><input type="radio" name="q8_4" value="C"><span class="opt-label">C · Múltiplos boxes mas todos veem o mesmo</span></label>
+      <label class="card none-option"><input type="radio" name="q8_4" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q8_4_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q8_4_outros"></textarea></div>
   </div>
 </section>
 
@@ -737,8 +706,9 @@ code{
       <label class="card"><input type="radio" name="q9_1" value="A"><span class="opt-label">A · Menor que 1s</span></label>
       <label class="card recommended"><input type="radio" name="q9_1" value="B" checked><span class="opt-label">B · 1-3s (Realtime padrão)</span></label>
       <label class="card"><input type="radio" name="q9_1" value="C"><span class="opt-label">C · 3-5s (aceita batches)</span></label>
+      <label class="card none-option"><input type="radio" name="q9_1" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q9_1_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q9_1_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="9.2">
@@ -748,12 +718,13 @@ code{
       <label class="card recommended"><input type="checkbox" name="q9_2_seg" checked><span class="opt-label">Fim de trecho (com Vmin georef)</span></label>
       <label class="card recommended"><input type="checkbox" name="q9_2_pb" checked><span class="opt-label">Quebra de PB</span></label>
       <label class="card recommended"><input type="checkbox" name="q9_2_warm" checked><span class="opt-label">Fim de warmup térmico</span></label>
-      <label class="card recommended"><input type="checkbox" name="q9_2_shift" checked><span class="opt-label">Shift correto / cedo / tarde</span></label>
+      <label class="card recommended"><input type="checkbox" name="q9_2_shift" checked><span class="opt-label">Shift correto / cedo / tarde (Tier 1 — T4000)</span></label>
       <label class="card recommended"><input type="checkbox" name="q9_2_pos" checked><span class="opt-label">Posição GPS a 1Hz (pra mapa)</span></label>
       <label class="card recommended"><input type="checkbox" name="q9_2_bat" checked><span class="opt-label">Bateria do iPhone do piloto</span></label>
       <label class="card"><input type="checkbox" name="q9_2_temp"><span class="opt-label">Temperatura ambiente</span></label>
+      <label class="card none-option"><input type="checkbox" name="q9_2_nenhuma"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q9_2_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q9_2_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="9.3">
@@ -762,8 +733,9 @@ code{
       <label class="card recommended"><input type="radio" name="q9_3" value="A" checked><span class="opt-label">A · Banner "OFFLINE há 18s" piscando, último estado visível</span></label>
       <label class="card"><input type="radio" name="q9_3" value="B"><span class="opt-label">B · Tela escurece + banner</span></label>
       <label class="card"><input type="radio" name="q9_3" value="C"><span class="opt-label">C · Só badge silencioso</span></label>
+      <label class="card none-option"><input type="radio" name="q9_3" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q9_3_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q9_3_outros"></textarea></div>
   </div>
 </section>
 
@@ -777,18 +749,20 @@ code{
       <label class="card"><input type="radio" name="q10_1" value="A"><span class="opt-label">A · Sim, mecânico marca direto na TV</span></label>
       <label class="card recommended"><input type="radio" name="q10_1" value="B" checked><span class="opt-label">B · Vista separada (não na tela ao vivo)</span></label>
       <label class="card"><input type="radio" name="q10_1" value="C"><span class="opt-label">C · Não tem, fica só no app</span></label>
+      <label class="card none-option"><input type="radio" name="q10_1" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q10_1_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q10_1_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="10.2">
-    <div class="qhead"><span class="qid">10.2</span><span class="qtitle">Alertas críticos (overheat, baixa pressão)</span></div>
+    <div class="qhead"><span class="qid">10.2</span><span class="qtitle">Alertas críticos (overheat, baixa pressão — Tier 1 com T4000)</span></div>
     <div class="cards">
       <label class="card recommended"><input type="radio" name="q10_2" value="A" checked><span class="opt-label">A · Banner vermelho fullscreen + som</span></label>
       <label class="card"><input type="radio" name="q10_2" value="B"><span class="opt-label">B · Toast lateral grande + som</span></label>
       <label class="card"><input type="radio" name="q10_2" value="C"><span class="opt-label">C · Só visual, sem som</span></label>
+      <label class="card none-option"><input type="radio" name="q10_2" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q10_2_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q10_2_outros"></textarea></div>
   </div>
 </section>
 
@@ -802,8 +776,9 @@ code{
       <label class="card"><input type="radio" name="q11_1" value="A"><span class="opt-label">A · Auto exibe debrief na TV</span></label>
       <label class="card"><input type="radio" name="q11_1" value="B"><span class="opt-label">B · Continua na vista ao vivo, debrief num botão</span></label>
       <label class="card recommended"><input type="radio" name="q11_1" value="C" checked><span class="opt-label">C · Notificação "stint encerrado" + 1 toque pra abrir</span></label>
+      <label class="card none-option"><input type="radio" name="q11_1" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q11_1_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q11_1_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="11.2">
@@ -812,8 +787,9 @@ code{
       <label class="card recommended"><input type="radio" name="q11_2" value="A" checked><span class="opt-label">A · Vinculada à sessão, visível no debrief de todos</span></label>
       <label class="card"><input type="radio" name="q11_2" value="B"><span class="opt-label">B · Notas privadas do operador</span></label>
       <label class="card"><input type="radio" name="q11_2" value="C"><span class="opt-label">C · Não tem anotação</span></label>
+      <label class="card none-option"><input type="radio" name="q11_2" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q11_2_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q11_2_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="11.3">
@@ -821,8 +797,9 @@ code{
     <div class="cards">
       <label class="card recommended"><input type="radio" name="q11_3" value="A" checked><span class="opt-label">A · Sim, player na TV grande</span></label>
       <label class="card"><input type="radio" name="q11_3" value="B"><span class="opt-label">B · Não, só no iPhone</span></label>
+      <label class="card none-option"><input type="radio" name="q11_3" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q11_3_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q11_3_outros"></textarea></div>
   </div>
 </section>
 
@@ -836,8 +813,9 @@ code{
       <label class="card"><input type="radio" name="q12_1" value="A"><span class="opt-label">A · iPhone do admin</span></label>
       <label class="card"><input type="radio" name="q12_1" value="B"><span class="opt-label">B · iPhone dedicado do time</span></label>
       <label class="card recommended"><input type="radio" name="q12_1" value="C" checked><span class="opt-label">C · Qualquer iPhone autenticado entra em modo BOX</span></label>
+      <label class="card none-option"><input type="radio" name="q12_1" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q12_1_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q12_1_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="12.2">
@@ -846,8 +824,9 @@ code{
       <label class="card recommended"><input type="radio" name="q12_2" value="A" checked><span class="opt-label">A · Apple TV 4K (qualquer geração)</span></label>
       <label class="card"><input type="radio" name="q12_2" value="B"><span class="opt-label">B · Apple TV HD aceita</span></label>
       <label class="card"><input type="radio" name="q12_2" value="C"><span class="opt-label">C · Verifica geração no setup</span></label>
+      <label class="card none-option"><input type="radio" name="q12_2" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q12_2_outros" placeholder="Qual Apple TV você já tem?"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q12_2_outros" placeholder="Qual Apple TV você já tem?"></textarea></div>
   </div>
 
   <div class="q" data-qid="12.4">
@@ -855,8 +834,9 @@ code{
     <div class="cards">
       <label class="card recommended"><input type="radio" name="q12_4" value="A" checked><span class="opt-label">A · Layout fluido (24-55")</span></label>
       <label class="card"><input type="radio" name="q12_4" value="B"><span class="opt-label">B · Trava em 32"</span></label>
+      <label class="card none-option"><input type="radio" name="q12_4" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q12_4_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q12_4_outros"></textarea></div>
   </div>
 </section>
 
@@ -870,8 +850,9 @@ code{
       <label class="card"><input type="radio" name="q13_1" value="A"><span class="opt-label">A · Toggle na home</span></label>
       <label class="card recommended"><input type="radio" name="q13_1" value="B" checked><span class="opt-label">B · Tela dedicada "Modo Command Box"</span></label>
       <label class="card"><input type="radio" name="q13_1" value="C"><span class="opt-label">C · Atalho na tela inicial do iOS</span></label>
+      <label class="card none-option"><input type="radio" name="q13_1" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q13_1_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q13_1_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="13.2">
@@ -880,8 +861,9 @@ code{
       <label class="card"><input type="radio" name="q13_2" value="A"><span class="opt-label">A · Continua, sem relogin</span></label>
       <label class="card"><input type="radio" name="q13_2" value="B"><span class="opt-label">B · Exige relogin completo</span></label>
       <label class="card recommended"><input type="radio" name="q13_2" value="C" checked><span class="opt-label">C · Ack rápido "agora é fulano operando"</span></label>
+      <label class="card none-option"><input type="radio" name="q13_2" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q13_2_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q13_2_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="13.3">
@@ -892,8 +874,9 @@ code{
       <label class="card recommended"><input type="checkbox" name="q13_3_encerrar" checked><span class="opt-label">Encerrar stint do box</span></label>
       <label class="card recommended"><input type="checkbox" name="q13_3_amarela" checked><span class="opt-label">Bandeira amarela broadcast</span></label>
       <label class="card"><input type="checkbox" name="q13_3_chamar"><span class="opt-label">Chamar piloto pro box</span></label>
+      <label class="card none-option"><input type="checkbox" name="q13_3_nenhuma"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q13_3_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q13_3_outros"></textarea></div>
   </div>
 </section>
 
@@ -902,13 +885,14 @@ code{
   <h2><span class="num">14</span>Tier 0 vs Tier 1<span class="section-count" data-section-h="tier"></span></h2>
 
   <div class="q" data-qid="14.1">
-    <div class="qhead"><span class="qid">14.1</span><span class="qtitle">Em Tier 0 (sem T4000), o que aparece no espaço de RPM/marcha/temp?</span></div>
+    <div class="qhead"><span class="qid">14.1</span><span class="qtitle">Em Tier 0 (cliente sem T4000), o que aparece no espaço de RPM/marcha/temp?</span></div>
     <div class="cards">
       <label class="card"><input type="radio" name="q14_1" value="A"><span class="opt-label">A · Widgets ocultos (= 4.2)</span></label>
       <label class="card"><input type="radio" name="q14_1" value="B"><span class="opt-label">B · Visíveis com "—"</span></label>
       <label class="card recommended"><input type="radio" name="q14_1" value="C" checked><span class="opt-label">C · Substituídos por widgets Tier 0 (G lateral, vel pura, %brake)</span></label>
+      <label class="card none-option"><input type="radio" name="q14_1" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q14_1_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q14_1_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="14.2">
@@ -916,8 +900,9 @@ code{
     <div class="cards">
       <label class="card"><input type="radio" name="q14_2" value="A"><span class="opt-label">A · Versão grande no box</span></label>
       <label class="card recommended"><input type="radio" name="q14_2" value="B" checked><span class="opt-label">B · Só no iPhone do piloto</span></label>
+      <label class="card none-option"><input type="radio" name="q14_2" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q14_2_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q14_2_outros"></textarea></div>
   </div>
 </section>
 
@@ -931,8 +916,9 @@ code{
       <label class="card recommended"><input type="radio" name="q15_2" value="A" checked><span class="opt-label">A · Seguir o atelier (Helvetica Neue 100/200, hero 76px)</span></label>
       <label class="card"><input type="radio" name="q15_2" value="B"><span class="opt-label">B · Subir mínimos (corpo 18px, hero 64px)</span></label>
       <label class="card"><input type="radio" name="q15_2" value="C"><span class="opt-label">C · Inter (mesmo do hub)</span></label>
+      <label class="card none-option"><input type="radio" name="q15_2" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q15_2_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q15_2_outros"></textarea></div>
   </div>
 </section>
 
@@ -946,8 +932,9 @@ code{
       <label class="card recommended"><input type="radio" name="q16_1" value="A" checked><span class="opt-label">A · Só o destinatário</span></label>
       <label class="card"><input type="radio" name="q16_1" value="B"><span class="opt-label">B · Destinatário + Admin</span></label>
       <label class="card"><input type="radio" name="q16_1" value="C"><span class="opt-label">C · Todos do time autenticados (só some da TV)</span></label>
+      <label class="card none-option"><input type="radio" name="q16_1" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q16_1_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q16_1_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="16.2">
@@ -956,8 +943,9 @@ code{
       <label class="card"><input type="radio" name="q16_2" value="A"><span class="opt-label">A · Lê todas (públicas e privadas)</span></label>
       <label class="card recommended"><input type="radio" name="q16_2" value="B" checked><span class="opt-label">B · Lê só mensagens visíveis-no-box</span></label>
       <label class="card"><input type="radio" name="q16_2" value="C"><span class="opt-label">C · Não tem acesso a mensagens</span></label>
+      <label class="card none-option"><input type="radio" name="q16_2" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q16_2_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q16_2_outros"></textarea></div>
   </div>
 
   <div class="q" data-qid="16.3">
@@ -966,8 +954,9 @@ code{
       <label class="card recommended"><input type="radio" name="q16_3" value="A" checked><span class="opt-label">A · Broadcast (todos do time)</span></label>
       <label class="card"><input type="radio" name="q16_3" value="B"><span class="opt-label">B · 1:1 (escolhe destinatário)</span></label>
       <label class="card"><input type="radio" name="q16_3" value="C"><span class="opt-label">C · 1:N (subgrupos)</span></label>
+      <label class="card none-option"><input type="radio" name="q16_3" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
     </div>
-    <div class="outros"><label>outros / comentário</label><textarea name="q16_3_outros"></textarea></div>
+    <div class="outros"><label>outros / explicar</label><textarea name="q16_3_outros"></textarea></div>
   </div>
 </section>
 
@@ -983,17 +972,16 @@ code{
 </div>
 
 <footer class="foot">
-  v3 · 2026-05-08 · auto-save em localStorage · 51 perguntas em 16 áreas
+  v4 · 2026-05-08 · auto-save em localStorage · 51 perguntas em 16 áreas · "Nenhuma das anteriores" disponível em todas
 </footer>
 
 </div>
 
 <script>
 (function(){
-  var KEY = 'p1fast-command-box-respostas-v3';
+  var KEY = 'p1fast-command-box-respostas-v4';
   var statusEl = document.getElementById('save-status');
   var statusTimeout;
-  var dirty = false;
 
   function showStatus(msg, ms){
     if(!statusEl) return;
@@ -1025,7 +1013,6 @@ code{
     try{
       localStorage.setItem(KEY, JSON.stringify(data));
       showStatus('salvo');
-      dirty = false;
     }catch(e){ showStatus('erro ao salvar', 2500); }
     updateProgress();
   }
@@ -1038,11 +1025,9 @@ code{
       Object.keys(data.radio || {}).forEach(function(name){
         var inputs = document.querySelectorAll('input[type="radio"][name="'+name+'"]');
         var idx = data.radio[name];
-        // primeiro desmarca todos
         inputs.forEach(function(i){ i.checked = false; });
         if(inputs[idx]) inputs[idx].checked = true;
       });
-      // checkboxes precisam ser tratados explicitamente (true/false vs default)
       Object.keys(data.checkbox || {}).forEach(function(name){
         var inp = document.querySelector('input[type="checkbox"][name="'+name+'"]');
         if(inp) inp.checked = data.checkbox[name];
@@ -1077,7 +1062,6 @@ code{
     document.getElementById('total-count').textContent = total;
     var pct = total > 0 ? Math.round((answered/total)*100) : 0;
     document.getElementById('progress-bar-fill').style.width = pct + '%';
-    // Counts por seção (TOC + h2)
     Object.keys(bySection).forEach(function(sec){
       var d = bySection[sec];
       var label = d.a + '/' + d.t;
@@ -1155,11 +1139,8 @@ code{
     var blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
-    a.href = url;
-    a.download = 'command-box-respostas.md';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    a.href = url; a.download = 'command-box-respostas.md';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
     showStatus('arquivo baixado', 2500);
   }
@@ -1172,13 +1153,12 @@ code{
 
   document.addEventListener('DOMContentLoaded', function(){
     var restored = restore();
-    // Salva os defaults na primeira visita pra estado ficar consistente
     if(!restored) save(); else showStatus('restaurado da última sessão', 2500);
     updateProgress();
 
-    document.addEventListener('change', function(){ dirty = true; save(); });
+    document.addEventListener('change', save);
     document.addEventListener('input', function(e){
-      if(e.target && e.target.tagName === 'TEXTAREA'){ dirty = true; save(); }
+      if(e.target && e.target.tagName === 'TEXTAREA') save();
     });
 
     ['btn-export','btn-export-2'].forEach(function(id){
@@ -1192,7 +1172,6 @@ code{
     var btnClear = document.getElementById('btn-clear');
     if(btnClear) btnClear.addEventListener('click', limpar);
 
-    // Teclado: 'e' exporta, 'd' baixa
     document.addEventListener('keydown', function(e){
       if(e.target && (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT')) return;
       if(e.metaKey || e.ctrlKey || e.altKey) return;
