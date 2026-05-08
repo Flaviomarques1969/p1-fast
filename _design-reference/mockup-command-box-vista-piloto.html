@@ -1893,15 +1893,20 @@ html,body{
     return { rpm: ph[0].rpm, gear: ph[0].gear };
   }
 
-  // ───────── Map animation: live (vermelho) + ghost (azul) ─────────
+  // ───────── Map animation: live (vermelho/verde) + ghost (azul) ─────────
   var MAP_CFG = {
     lapMs: 14000,
     liveLapSec: 74.382,
     ghostLapSec: 74.000,
     ghostLeadSec: 0.382,
     trailCount: 6,
-    trailSpacing: 0.014
+    trailSpacing: 0.014,
+    fps: 30
   };
+
+  // 8 trechos da volta — delta de cada vs ghost (s). Soma = +0.382 (delta total)
+  var SEGMENT_DELTAS = [0.050, -0.080, 0.120, -0.040, 0.180, 0.060, 0.040, 0.052];
+  var SEGMENT_COUNT  = SEGMENT_DELTAS.length;
 
   function fmtLap(sec){
     if(sec < 0) sec = 0;
@@ -1912,12 +1917,24 @@ html,body{
   }
 
   function setMarkerPos(prefix, x, y){
-    var glow = document.querySelector('[data-marker="'+prefix+'-glow"]');
-    var core = document.querySelector('[data-marker="'+prefix+'-core"]');
-    var dot  = document.querySelector('[data-marker="'+prefix+'-dot"]');
-    if(glow){ glow.setAttribute('cx', x); glow.setAttribute('cy', y); }
-    if(core){ core.setAttribute('cx', x); core.setAttribute('cy', y); }
-    if(dot){  dot.setAttribute('cx', x);  dot.setAttribute('cy', y); }
+    var els = document.querySelectorAll('[data-marker^="'+prefix+'-"]');
+    for(var i=0;i<els.length;i++){
+      els[i].setAttribute('cx', x);
+      els[i].setAttribute('cy', y);
+    }
+  }
+
+  function setLiveColor(faster){
+    var glow = document.querySelector('[data-marker="live-glow"]');
+    var core = document.querySelector('[data-marker="live-core"]');
+    if(!glow || !core) return;
+    if(faster){
+      glow.setAttribute('fill', 'url(#liveGlowGreen)');
+      core.setAttribute('fill', '#3FE08C');
+    } else {
+      glow.setAttribute('fill', 'url(#liveGlow)');
+      core.setAttribute('fill', '#FF2A2A');
+    }
   }
 
   function buildTrail(group, path, totalLen, baseT, baseR, color, alphaStart){
@@ -1942,17 +1959,18 @@ html,body{
     var path = document.getElementById('track');
     if(!path) return;
 
-    var totalLen = path.getTotalLength();
+    var totalLen      = path.getTotalLength();
     var ghostLeadFrac = MAP_CFG.ghostLeadSec / (MAP_CFG.lapMs / 1000);
-    var liveTrail  = document.querySelector('[data-trail="live"]');
-    var ghostTrail = document.querySelector('[data-trail="ghost"]');
-    var liveOv  = document.querySelector('[data-overlay-live]');
-    var ghostOv = document.querySelector('[data-overlay-ghost]');
-    var deltaOv = document.querySelector('[data-overlay-delta]');
+    var liveTrail     = document.querySelector('[data-trail="live"]');
+    var ghostTrail    = document.querySelector('[data-trail="ghost"]');
+    var liveOv        = document.querySelector('[data-overlay-live]');
+    var ghostOv       = document.querySelector('[data-overlay-ghost]');
+    var deltaOv       = document.querySelector('[data-overlay-delta]');
 
     var tStart = performance.now();
-    function tick(now){
-      var elapsed = (now - tStart);
+    function tick(){
+      var now = performance.now();
+      var elapsed = now - tStart;
       var liveT  = (elapsed % MAP_CFG.lapMs) / MAP_CFG.lapMs;
       var ghostT = liveT + ghostLeadFrac;
       if(ghostT >= 1) ghostT -= 1;
@@ -1962,6 +1980,11 @@ html,body{
 
       setMarkerPos('live',  liveP.x,  liveP.y);
       setMarkerPos('ghost', ghostP.x, ghostP.y);
+
+      // Cor do live = resultado do ÚLTIMO trecho fechado (verde se ganhou, vermelho se perdeu)
+      var segIdx     = Math.floor(liveT * SEGMENT_COUNT);
+      var lastClosed = (segIdx - 1 + SEGMENT_COUNT) % SEGMENT_COUNT;
+      setLiveColor(SEGMENT_DELTAS[lastClosed] < 0);
 
       if(liveTrail)  buildTrail(liveTrail,  path, totalLen, liveT,  3.4, '#FF2A2A', 0.85);
       if(ghostTrail) buildTrail(ghostTrail, path, totalLen, ghostT, 2.6, '#38BCFF', 0.55);
@@ -1977,10 +2000,9 @@ html,body{
         deltaOv.classList.toggle('pos', delta > 0);
         deltaOv.classList.toggle('neg', delta < 0);
       }
-
-      mapAnimId = requestAnimationFrame(tick);
     }
-    mapAnimId = requestAnimationFrame(tick);
+    mapAnimId = setInterval(tick, Math.round(1000 / MAP_CFG.fps));
+    tick();
   }
 
   var shiftLightAnimId = null;
