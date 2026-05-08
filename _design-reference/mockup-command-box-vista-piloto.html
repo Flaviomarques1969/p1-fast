@@ -1640,8 +1640,7 @@ html,body{
     if(n === 'stint'){
       el.classList.add('is-stint-bar');
       el.innerHTML = '<button class="b-custom-remove" type="button">remover</button>'+
-                     '<div class="stint-bar-title">stint 3/5</div>'+
-                     buildStintBar({total:12, current:8, warmupLaps:1, cooldownLaps:1});
+                     buildStintBar({laps:8, current:3, warmupLaps:1, cooldownLaps:1});
     } else if(n === 'carro'){
       el.classList.add('is-carro');
       el.innerHTML = '<button class="b-custom-remove" type="button">remover</button>'+
