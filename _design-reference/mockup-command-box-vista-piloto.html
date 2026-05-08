@@ -287,34 +287,57 @@ html,body{
   transform-box: view-box;
 }
 
-/* Segmentos coloridos do path por tipo (pinta o trecho da pista inteiro) */
-.seg{
+/* Trechos coloridos (4 por curva) — só win/lose, aparecem DEPOIS do carro cruzar */
+.trecho{
   fill:none;
-  stroke-linecap:butt;
   stroke-width:8;
+  stroke-linecap:round;
   pathLength:1;
   opacity:0;
-  transition:opacity .30s cubic-bezier(0.45,0,0.15,1);
+  transition:opacity .35s cubic-bezier(0.45,0,0.15,1);
 }
-/* Acabamento premium: arredondamento só nas pontas externas (entry start e exit end) */
-.seg.is-entry{ stroke-linecap:round; }
-.seg.is-exit{  stroke-linecap:round; }
-.seg.is-context{  opacity:0.92; }
-.seg.is-skeleton{ opacity:0.18; }
-.seg.is-here{
-  opacity:1;
-  stroke-width:11;
+.trecho.is-revealed{ opacity:0.92; }
+.trecho.is-win{
+  stroke:#3FE08C;
+  filter:drop-shadow(0 0 7px rgba(63,224,140,0.55));
 }
-.seg.is-here.is-entry{ filter:drop-shadow(0 0 8px rgba(168,174,184,0.55)); }
-.seg.is-here.is-brake{ filter:drop-shadow(0 0 9px rgba(255,106,61,0.85)); }
-.seg.is-here.is-vmin{  filter:drop-shadow(0 0 9px rgba(255,179,71,0.80)); }
-.seg.is-here.is-apex{  filter:drop-shadow(0 0 11px rgba(240,220,160,0.90)); }
-.seg.is-here.is-exit{  filter:drop-shadow(0 0 9px rgba(63,224,140,0.75)); }
-.seg.is-entry{ stroke:#A8AEB8; }
-.seg.is-brake{ stroke:#FF6A3D; filter:drop-shadow(0 0 5px rgba(255,106,61,0.45)); }
-.seg.is-vmin{  stroke:#FFB347; }
-.seg.is-apex{  stroke:#F0DCA0; filter:drop-shadow(0 0 6px rgba(240,220,160,0.55)); }
-.seg.is-exit{  stroke:#3FE08C; filter:drop-shadow(0 0 5px rgba(63,224,140,0.40)); }
+.trecho.is-lose{
+  stroke:#FF5A4E;
+  filter:drop-shadow(0 0 7px rgba(255,90,80,0.55));
+}
+
+/* Pontos chave (5 por curva — entry, brake, vmin, apex, exit) */
+.pt{
+  opacity:0;
+  transition:opacity .25s cubic-bezier(0.45,0,0.15,1);
+  pointer-events:none;
+}
+.pt.is-revealed{ opacity:1; }
+.pt circle.pt-fill{
+  fill:#F5F0E0;
+  stroke:rgba(212,175,55,0.55);
+  stroke-width:0.8;
+}
+
+/* Apex é PONTO, não trecho — sempre visível, herói atelier, pulsa */
+.pt.is-apex{ opacity:1; }
+.pt.is-apex .pt-fill{
+  fill:#F0DCA0;
+  stroke:#E8C97A;
+  stroke-width:1.2;
+}
+.pt.is-apex .pt-pulse{
+  fill:none;
+  stroke:#E8C97A;
+  stroke-width:1.2;
+  transform-box:fill-box;
+  transform-origin:center;
+  animation:apex-pulse 1800ms ease-in-out infinite;
+}
+@keyframes apex-pulse{
+  0%, 100% { transform:scale(1);   stroke-opacity:0.85; }
+  50%      { transform:scale(1.45); stroke-opacity:0.25; }
+}
 
 /* Plaquinhas (signs) — só na curva ATUAL */
 .sign{
