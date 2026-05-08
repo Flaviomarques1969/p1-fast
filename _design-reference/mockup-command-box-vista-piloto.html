@@ -2038,9 +2038,9 @@ html,body{
         }
         host.classList.toggle('shift-now', s.rpm >= SHIFT_LIGHT_CFG.shiftPoint);
       }
-      shiftLightAnimId = requestAnimationFrame(tick);
     }
-    shiftLightAnimId = requestAnimationFrame(tick);
+    shiftLightAnimId = setInterval(tick, 33);
+    tick();
   }
 
   function buildStintBar(cfg){
