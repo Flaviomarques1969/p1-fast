@@ -1872,5 +1872,151 @@ code{
 </footer>
 
 </div>
+
+<script>
+(function(){
+  var KEY = 'p1fast-command-box-respostas-v3';
+  var statusEl = document.getElementById('save-status');
+  var statusTimeout;
+
+  function showStatus(msg, ms){
+    if(!statusEl) return;
+    statusEl.textContent = msg;
+    statusEl.classList.add('visible');
+    clearTimeout(statusTimeout);
+    statusTimeout = setTimeout(function(){
+      statusEl.classList.remove('visible');
+    }, ms || 1400);
+  }
+
+  function save(){
+    var data = { radio:{}, checkbox:{}, textarea:{}, ts: Date.now() };
+    var radioNames = {};
+    document.querySelectorAll('input[type="radio"]').forEach(function(i){ radioNames[i.name] = true; });
+    Object.keys(radioNames).forEach(function(name){
+      var inputs = Array.prototype.slice.call(document.querySelectorAll('input[type="radio"][name="'+name+'"]'));
+      var idx = inputs.findIndex(function(i){ return i.checked; });
+      if(idx >= 0) data.radio[name] = idx;
+    });
+    document.querySelectorAll('input[type="checkbox"]').forEach(function(i){
+      data.checkbox[i.name] = i.checked;
+    });
+    document.querySelectorAll('textarea').forEach(function(t){
+      if(t.value.trim()) data.textarea[t.name] = t.value;
+    });
+    try{
+      localStorage.setItem(KEY, JSON.stringify(data));
+      showStatus('salvo');
+    }catch(e){
+      showStatus('erro ao salvar', 2500);
+    }
+  }
+
+  function restore(){
+    var raw = localStorage.getItem(KEY);
+    if(!raw) return false;
+    try{
+      var data = JSON.parse(raw);
+      Object.keys(data.radio || {}).forEach(function(name){
+        var inputs = document.querySelectorAll('input[type="radio"][name="'+name+'"]');
+        var idx = data.radio[name];
+        if(inputs[idx]) inputs[idx].checked = true;
+      });
+      Object.keys(data.checkbox || {}).forEach(function(name){
+        var inp = document.querySelector('input[type="checkbox"][name="'+name+'"]');
+        if(inp) inp.checked = data.checkbox[name];
+      });
+      Object.keys(data.textarea || {}).forEach(function(name){
+        var t = document.querySelector('textarea[name="'+name+'"]');
+        if(t) t.value = data.textarea[name];
+      });
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+
+  function exportar(){
+    var lines = [];
+    lines.push('# Respostas Command Box · ' + new Date().toLocaleString('pt-BR'));
+    lines.push('');
+
+    // Agrupa por seção (1.x, 2.x, etc.)
+    var entries = [];
+    document.querySelectorAll('.q').forEach(function(qEl){
+      var qid = qEl.querySelector('.qid')?.textContent?.trim();
+      var qtitle = qEl.querySelector('.qtitle')?.textContent?.trim();
+      if(!qid) return;
+      var selecionados = [];
+      qEl.querySelectorAll('input:checked').forEach(function(i){
+        var lbl = i.closest('label')?.querySelector('.opt-label')?.textContent?.trim();
+        if(lbl) selecionados.push(lbl);
+      });
+      var outros = qEl.querySelector('textarea')?.value?.trim();
+      entries.push({ qid: qid, qtitle: qtitle, selecionados: selecionados, outros: outros });
+    });
+
+    entries.forEach(function(e){
+      if(e.selecionados.length === 0 && !e.outros) return;
+      lines.push('## ' + e.qid + ' — ' + e.qtitle);
+      e.selecionados.forEach(function(s){ lines.push('  - ' + s); });
+      if(e.outros) lines.push('  outros: ' + e.outros);
+      lines.push('');
+    });
+
+    var text = lines.join('\n');
+
+    // Tenta clipboard moderno; fallback pra textarea+execCommand
+    var copied = false;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        showStatus('copiado — cole no chat', 3000);
+      }).catch(function(){
+        fallbackCopy(text);
+      });
+    }else{
+      fallbackCopy(text);
+    }
+  }
+
+  function fallbackCopy(text){
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try{
+      document.execCommand('copy');
+      showStatus('copiado — cole no chat', 3000);
+    }catch(e){
+      showStatus('erro ao copiar — selecione e copie manualmente', 4000);
+    }
+    document.body.removeChild(ta);
+  }
+
+  function limpar(){
+    if(!confirm('Limpar todas as respostas? Isso não tem volta.')) return;
+    localStorage.removeItem(KEY);
+    location.reload();
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    var restored = restore();
+    if(restored) showStatus('restaurado da última sessão', 2500);
+
+    document.addEventListener('change', save);
+    document.addEventListener('input', function(e){
+      if(e.target && e.target.tagName === 'TEXTAREA') save();
+    });
+
+    var btnExport = document.getElementById('btn-export');
+    if(btnExport) btnExport.addEventListener('click', exportar);
+    var btnClear = document.getElementById('btn-clear');
+    if(btnClear) btnClear.addEventListener('click', limpar);
+  });
+})();
+</script>
+
 </body>
 </html>
