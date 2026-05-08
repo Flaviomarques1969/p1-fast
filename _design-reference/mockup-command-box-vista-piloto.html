@@ -2193,7 +2193,11 @@ html,body{
       // Cor do live = resultado do ÚLTIMO trecho fechado (verde se ganhou, vermelho se perdeu)
       var segIdx     = Math.floor(liveT * SEGMENT_COUNT);
       var lastClosed = (segIdx - 1 + SEGMENT_COUNT) % SEGMENT_COUNT;
-      setLiveColor(SEGMENT_DELTAS[lastClosed] < 0);
+      var lastDelta  = SEGMENT_DELTAS[lastClosed];
+      setLiveColor(lastDelta < 0);
+
+      updateWaypointsContext(liveT);
+      checkWaypointCrossings(liveT, lastDelta);
 
       var liveSec  = MAP_CFG.liveLapSec  * liveT;
       var ghostSec = MAP_CFG.ghostLapSec * liveT;
