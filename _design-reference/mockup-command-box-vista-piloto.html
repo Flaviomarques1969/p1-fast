@@ -684,6 +684,40 @@ html,body{
   z-index:31;
 }
 
+/* Bloco custom (criado pelo botão adicionar) */
+.b-custom{
+  position:absolute;
+  background:rgba(212,175,55,0.04);
+  border:1.5px dashed var(--gold-2);
+  border-radius:6px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:10px;
+  font-family:'Helvetica Neue',sans-serif;
+  text-align:center;
+  z-index:5;
+}
+.b-custom .b-custom-name{
+  font-size:13px;font-weight:600;
+  color:var(--gold-1);
+  letter-spacing:.04em;text-transform:uppercase;
+  margin-bottom:3px;
+}
+.b-custom .b-custom-hint{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:9px;color:var(--text-3);letter-spacing:.1em;
+}
+.b-custom .b-custom-remove{
+  display:none;
+  position:absolute;top:2px;left:2px;
+  background:rgba(255,90,80,0.85);color:#000;
+  border:none;border-radius:2px;
+  padding:2px 6px;
+  font-family:inherit;font-size:9px;font-weight:700;
+  cursor:pointer;letter-spacing:.04em;
+  z-index:33;
+}
+.stage.edit-mode .b-custom .b-custom-remove{display:block;}
+
 /* Coord overlay em cada bloco em edit-mode */
 .coord-tag{
   display:none;
@@ -727,6 +761,7 @@ html,body{
   <h2>Modo edição — arraste e redimensione os blocos</h2>
   <span id="edit-save-status" class="save-status">salvo</span>
   <button type="button" id="btn-edit-toggle" class="primary">Modo edição</button>
+  <button type="button" id="btn-edit-add">+ adicionar bloco</button>
   <button type="button" id="btn-edit-reset">resetar</button>
   <button type="button" id="btn-edit-export">copiar layout</button>
 </div>
@@ -1068,9 +1103,10 @@ html,body{
   var stage = document.querySelector('.stage');
   var statusEl = document.getElementById('edit-save-status');
   var statusTimeout;
-  var blocks = Array.prototype.slice.call(document.querySelectorAll('[data-block-id]'));
   var initialState = {};
   var editMode = false;
+
+  function blocks(){ return Array.prototype.slice.call(stage.querySelectorAll('[data-block-id]')); }
 
   function showStatus(msg, ms){
     if(!statusEl) return;
@@ -1080,25 +1116,27 @@ html,body{
     statusTimeout = setTimeout(function(){ statusEl.classList.remove('visible'); }, ms || 1200);
   }
 
-  // Captura estado inicial dos blocos lendo CSS computado
   function captureInitial(){
-    blocks.forEach(function(el){
+    blocks().forEach(function(el){
+      if(el.dataset.custom === '1') return;
       var s = el.style;
-      // Lê do style inline; se não tem, usa o computado
-      var rect = el.getBoundingClientRect();
-      var stageRect = stage.getBoundingClientRect();
       initialState[el.dataset.blockId] = {
-        left: parseFloat(s.left) || (rect.left - stageRect.left)/stageRect.width*100,
-        top: parseFloat(s.top) || (rect.top - stageRect.top)/stageRect.height*100,
-        width: parseFloat(s.width) || rect.width/stageRect.width*100,
-        height: parseFloat(s.height) || rect.height/stageRect.height*100
+        left: parseFloat(s.left) || 0,
+        top: parseFloat(s.top) || 0,
+        width: parseFloat(s.width) || 0,
+        height: parseFloat(s.height) || 0
       };
-      // Adiciona coord-tag em cada bloco
-      var tag = document.createElement('span');
-      tag.className = 'coord-tag';
-      el.appendChild(tag);
-      el.__coordTag = tag;
+      ensureTag(el);
     });
+  }
+
+  function ensureTag(el){
+    if(el.__coordTag) return;
+    var tag = document.createElement('span');
+    tag.className = 'coord-tag';
+    el.appendChild(tag);
+    el.__coordTag = tag;
+    updateTag(el);
   }
 
   function readBlock(el){
@@ -1126,15 +1164,21 @@ html,body{
   }
 
   function save(){
-    var data = {};
-    blocks.forEach(function(el){
-      data[el.dataset.blockId] = readBlock(el);
+    var data = { positions:{}, customs:[] };
+    blocks().forEach(function(el){
+      data.positions[el.dataset.blockId] = readBlock(el);
+      if(el.dataset.custom === '1'){
+        data.customs.push({
+          id: el.dataset.blockId,
+          name: el.dataset.blockName
+        });
+      }
     });
     try{
       localStorage.setItem(KEY, JSON.stringify(data));
       showStatus('salvo');
     }catch(e){ showStatus('erro', 2500); }
-    blocks.forEach(updateTag);
+    blocks().forEach(updateTag);
   }
 
   function restore(){
@@ -1142,18 +1186,67 @@ html,body{
     if(!raw) return false;
     try{
       var data = JSON.parse(raw);
-      blocks.forEach(function(el){
-        var d = data[el.dataset.blockId];
-        if(d) applyBlock(el, d);
+      if(data.customs && data.customs.length){
+        data.customs.forEach(function(c){
+          if(!stage.querySelector('[data-block-id="'+c.id+'"]')){
+            createCustomBlock(c.id, c.name, 30, 30, 18, 12);
+          }
+        });
+      }
+      Object.keys(data.positions || {}).forEach(function(id){
+        var el = stage.querySelector('[data-block-id="'+id+'"]');
+        var d = data.positions[id];
+        if(el && d) applyBlock(el, d);
       });
       return true;
     }catch(e){ return false; }
   }
 
+  function createCustomBlock(id, name, x, y, w, h){
+    var el = document.createElement('div');
+    el.className = 'b-custom';
+    el.dataset.blockId = id;
+    el.dataset.blockName = name;
+    el.dataset.custom = '1';
+    el.style.left = x + '%';
+    el.style.top = y + '%';
+    el.style.width = w + '%';
+    el.style.height = h + '%';
+    el.innerHTML = '<button class="b-custom-remove" type="button">remover</button>'+
+                   '<span class="b-custom-name">'+escapeHtml(name)+'</span>'+
+                   '<span class="b-custom-hint">bloco custom</span>';
+    stage.appendChild(el);
+    bindBlock(el);
+    el.querySelector('.b-custom-remove').addEventListener('click', function(ev){
+      ev.stopPropagation();
+      if(confirm('Remover bloco "'+name+'"?')){
+        el.remove();
+        save();
+      }
+    });
+    return el;
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"]/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c];
+    });
+  }
+
+  function addBlock(){
+    var name = prompt('Nome do novo bloco:');
+    if(!name || !name.trim()) return;
+    name = name.trim();
+    var id = 'custom-' + Date.now();
+    createCustomBlock(id, name, 30, 30, 18, 12);
+    save();
+  }
+
   function reset(){
-    if(!confirm('Resetar layout pros valores iniciais?')) return;
+    if(!confirm('Resetar layout pros valores iniciais? Blocos custom serão removidos.')) return;
     localStorage.removeItem(KEY);
-    blocks.forEach(function(el){
+    blocks().forEach(function(el){
+      if(el.dataset.custom === '1'){ el.remove(); return; }
       var d = initialState[el.dataset.blockId];
       if(d){
         el.style.left = d.left + '%';
@@ -1167,11 +1260,12 @@ html,body{
   }
 
   function exportar(){
-    var data = blocks.map(function(el){
+    var data = blocks().map(function(el){
       var d = readBlock(el);
       return {
         id: el.dataset.blockId,
         name: el.dataset.blockName,
+        custom: el.dataset.custom === '1',
         pct: { x: +d.x.toFixed(2), y: +d.y.toFixed(2), w: +d.w.toFixed(2), h: +d.h.toFixed(2) },
         px: { x: Math.round(d.x*1280/100), y: Math.round(d.y*720/100), w: Math.round(d.w*1280/100), h: Math.round(d.h*720/100) }
       };
@@ -1185,11 +1279,10 @@ html,body{
     }
   }
 
-  // Drag/Resize
   function startDrag(el, ev){
     if(!editMode) return;
+    if(ev.target.classList && ev.target.classList.contains('b-custom-remove')) return;
     if(ev.offsetX > el.clientWidth - 16 && ev.offsetY > el.clientHeight - 16){
-      // Canto SE = resize
       return startResize(el, ev);
     }
     ev.preventDefault();
@@ -1249,6 +1342,11 @@ html,body{
     window.addEventListener('pointerup', onUp);
   }
 
+  function bindBlock(el){
+    ensureTag(el);
+    el.addEventListener('pointerdown', function(ev){ startDrag(el, ev); });
+  }
+
   function toggleEdit(){
     editMode = !editMode;
     stage.classList.toggle('edit-mode', editMode);
@@ -1263,14 +1361,15 @@ html,body{
   document.addEventListener('DOMContentLoaded', function(){
     captureInitial();
     var restored = restore();
-    blocks.forEach(updateTag);
+    blocks().forEach(bindBlock);
+    blocks().forEach(updateTag);
     if(restored) showStatus('restaurado', 2000);
 
-    blocks.forEach(function(el){
-      el.addEventListener('pointerdown', function(ev){ startDrag(el, ev); });
-    });
-
     document.getElementById('btn-edit-toggle').addEventListener('click', toggleEdit);
+    document.getElementById('btn-edit-add').addEventListener('click', function(){
+      if(!editMode) toggleEdit();
+      addBlock();
+    });
     document.getElementById('btn-edit-reset').addEventListener('click', reset);
     document.getElementById('btn-edit-export').addEventListener('click', exportar);
     document.getElementById('btn-export-close').addEventListener('click', function(){
@@ -1281,6 +1380,7 @@ html,body{
       if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
       if(e.metaKey || e.ctrlKey || e.altKey) return;
       if(e.key === 'e') toggleEdit();
+      if(e.key === 'a' && editMode) addBlock();
     });
   });
 })();
