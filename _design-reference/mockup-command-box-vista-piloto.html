@@ -2310,7 +2310,7 @@ html,body{
       var lastDelta  = SEGMENT_DELTAS[lastClosed];
       setLiveColor(lastDelta < 0);
 
-      updateContextAndSigns(liveT);
+      updateReveal(liveT);
 
       var liveSec  = MAP_CFG.liveLapSec  * liveT;
       var ghostSec = MAP_CFG.ghostLapSec * liveT;
