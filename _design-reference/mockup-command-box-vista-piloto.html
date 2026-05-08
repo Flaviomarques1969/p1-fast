@@ -296,6 +296,9 @@ html,body{
   opacity:0;
   transition:opacity .30s cubic-bezier(0.45,0,0.15,1);
 }
+/* Acabamento premium: arredondamento só nas pontas externas (entry start e exit end) */
+.seg.is-entry{ stroke-linecap:round; }
+.seg.is-exit{  stroke-linecap:round; }
 .seg.is-context{  opacity:0.92; }
 .seg.is-skeleton{ opacity:0.18; }
 .seg.is-here{
