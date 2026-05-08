@@ -1984,33 +1984,54 @@ html,body{
     return { rpm: ph[0].rpm, gear: ph[0].gear };
   }
 
-  // ───────── Segmentos coloridos + plaquinhas (5 trechos × 8 curvas) ─────────
-  // Centros reais das curvas — extraídos por análise de curvatura do path SVG
+  // ───────── Pontos chave + Trechos win/lose (8 curvas × 5 pontos × 4 trechos) ─────────
+  // Apex é PONTO (não trecho). Trechos só verde (win) ou vermelho (lose).
   var CURVES = [
-    { name:'C1', center:0.0733, entryKmh:172, brakeM: 84, vminKmh: 68, exitKmh:142 },
-    { name:'C2', center:0.2383, entryKmh:158, brakeM: 72, vminKmh: 87, exitKmh:148 },
-    { name:'C3', center:0.3783, entryKmh:166, brakeM: 92, vminKmh: 78, exitKmh:138 },
-    { name:'C4', center:0.5517, entryKmh:182, brakeM: 76, vminKmh: 96, exitKmh:158 },
-    { name:'C5', center:0.6567, entryKmh:174, brakeM: 88, vminKmh: 84, exitKmh:148 },
-    { name:'C6', center:0.7633, entryKmh:148, brakeM:104, vminKmh: 62, exitKmh:128 },
-    { name:'C7', center:0.8833, entryKmh:166, brakeM: 72, vminKmh: 95, exitKmh:152 },
-    { name:'C8', center:0.9450, entryKmh:178, brakeM: 56, vminKmh:118, exitKmh:172 }
+    { name:'C1', center:0.0733,
+      pilot:{entryKmh:172,brakeM: 84,vminKmh: 68,exitKmh:142}, results:['w','w','w','l'] },
+    { name:'C2', center:0.2383,
+      pilot:{entryKmh:158,brakeM: 72,vminKmh: 87,exitKmh:148}, results:['l','w','w','l'] },
+    { name:'C3', center:0.3783,
+      pilot:{entryKmh:166,brakeM: 92,vminKmh: 78,exitKmh:138}, results:['w','l','w','w'] },
+    { name:'C4', center:0.5517,
+      pilot:{entryKmh:182,brakeM: 76,vminKmh: 96,exitKmh:158}, results:['l','l','l','w'] },
+    { name:'C5', center:0.6567,
+      pilot:{entryKmh:174,brakeM: 88,vminKmh: 84,exitKmh:148}, results:['w','w','l','l'] },
+    { name:'C6', center:0.7633,
+      pilot:{entryKmh:148,brakeM:104,vminKmh: 62,exitKmh:128}, results:['l','w','w','w'] },
+    { name:'C7', center:0.8833,
+      pilot:{entryKmh:166,brakeM: 72,vminKmh: 95,exitKmh:152}, results:['w','w','w','w'] },
+    { name:'C8', center:0.9450,
+      pilot:{entryKmh:178,brakeM: 56,vminKmh:118,exitKmh:172}, results:['l','l','w','l'] }
   ];
-  // Trechos COMPACTOS — só dentro/perto da curva, sem invadir reta
-  var SEGMENT_DEFS = [
-    { type:'entry', start:-0.026, end:-0.012 },
-    { type:'brake', start:-0.012, end:-0.004 },
-    { type:'vmin',  start:-0.004, end: 0.004 },
-    { type:'apex',  start: 0.004, end: 0.016 },
-    { type:'exit',  start: 0.016, end: 0.030 }
+
+  // Pontos chave (offset em fração do path relativo ao center da curva)
+  var POINT_DEFS = [
+    { type:'entry', off:-0.022 },
+    { type:'brake', off:-0.011 },
+    { type:'vmin',  off:-0.002 },
+    { type:'apex',  off: 0.005 },
+    { type:'exit',  off: 0.018 }
+  ];
+  // 4 trechos entre pontos consecutivos
+  var TRECHO_DEFS = [
+    { from:'entry', to:'brake', resultIdx:0 },
+    { from:'brake', to:'vmin',  resultIdx:1 },
+    { from:'vmin',  to:'apex',  resultIdx:2 },
+    { from:'apex',  to:'exit',  resultIdx:3 }
   ];
   var SIGN_LABELS = {
-    entry: ['entrada', function(c){ return c.entryKmh + ' km/h'; }],
-    brake: ['freio',   function(c){ return c.brakeM   + ' m';    }],
-    vmin:  ['vmin',    function(c){ return c.vminKmh  + ' km/h'; }],
-    apex:  ['ápice',   function(c){ return c.name;                }],
-    exit:  ['saída',   function(c){ return c.exitKmh  + ' km/h'; }]
+    entry: ['entrada', function(c){ return c.pilot.entryKmh + ' km/h'; }],
+    brake: ['freio',   function(c){ return c.pilot.brakeM   + ' m';    }],
+    vmin:  ['vmin',    function(c){ return c.pilot.vminKmh  + ' km/h'; }],
+    apex:  ['ápice',   function(c){ return c.name;                     }],
+    exit:  ['saída',   function(c){ return c.pilot.exitKmh  + ' km/h'; }]
   };
+
+  function offFor(type){
+    for(var i=0; i<POINT_DEFS.length; i++) if(POINT_DEFS[i].type === type) return POINT_DEFS[i].off;
+    return 0;
+  }
 
   function pointAndAngle(path, len, total){
     var d = 0.5;
@@ -2023,28 +2044,71 @@ html,body{
 
   function frac(x){ return ((x % 1) + 1) % 1; }
 
-  function buildSegments(){
-    var container = document.querySelector('[data-segments]');
+  function buildTrechos(){
+    var container = document.querySelector('[data-trechos]');
     if(!container) return;
     while(container.firstChild) container.removeChild(container.firstChild);
     var NS = 'http://www.w3.org/2000/svg';
 
     CURVES.forEach(function(curve, ci){
-      SEGMENT_DEFS.forEach(function(seg){
-        var s = frac(curve.center + seg.start);
-        var e = frac(curve.center + seg.end);
+      TRECHO_DEFS.forEach(function(tr, ti){
+        var s = frac(curve.center + offFor(tr.from));
+        var e = frac(curve.center + offFor(tr.to));
         var len = (e - s + 1) % 1;
         if(len <= 0) len += 1;
+        var resCls = curve.results[tr.resultIdx] === 'w' ? 'is-win' : 'is-lose';
 
         var u = document.createElementNS(NS, 'use');
         u.setAttribute('href', '#track');
-        u.setAttribute('class', 'seg is-' + seg.type);
+        u.setAttribute('class', 'trecho ' + resCls);
         u.setAttribute('data-curve', ci);
-        u.setAttribute('data-type', seg.type);
+        u.setAttribute('data-trecho-idx', ti);
+        u.setAttribute('data-end-t', frac(curve.center + offFor(tr.to)).toFixed(5));
         u.setAttribute('pathLength', '1');
         u.setAttribute('stroke-dasharray', len.toFixed(5) + ' ' + (1 - len).toFixed(5));
         u.setAttribute('stroke-dashoffset', (-s).toFixed(5));
         container.appendChild(u);
+      });
+    });
+  }
+
+  function buildPoints(){
+    var path = document.getElementById('track');
+    if(!path) return;
+    var totalLen = path.getTotalLength();
+    var container = document.querySelector('[data-points]');
+    if(!container) return;
+    while(container.firstChild) container.removeChild(container.firstChild);
+    var NS = 'http://www.w3.org/2000/svg';
+
+    CURVES.forEach(function(curve, ci){
+      POINT_DEFS.forEach(function(pd){
+        var t = frac(curve.center + pd.off);
+        var pa = pointAndAngle(path, t * totalLen, totalLen);
+
+        var g = document.createElementNS(NS, 'g');
+        g.setAttribute('class', 'pt is-' + pd.type);
+        g.setAttribute('data-curve', ci);
+        g.setAttribute('data-type', pd.type);
+        g.setAttribute('data-id', ci + '-' + pd.type);
+        g.setAttribute('data-t', t.toFixed(5));
+
+        if(pd.type === 'apex'){
+          var pulse = document.createElementNS(NS, 'circle');
+          pulse.setAttribute('class', 'pt-pulse');
+          pulse.setAttribute('cx', pa.x); pulse.setAttribute('cy', pa.y); pulse.setAttribute('r', 5);
+          g.appendChild(pulse);
+          var fill = document.createElementNS(NS, 'circle');
+          fill.setAttribute('class', 'pt-fill');
+          fill.setAttribute('cx', pa.x); fill.setAttribute('cy', pa.y); fill.setAttribute('r', 2.4);
+          g.appendChild(fill);
+        } else {
+          var fill = document.createElementNS(NS, 'circle');
+          fill.setAttribute('class', 'pt-fill');
+          fill.setAttribute('cx', pa.x); fill.setAttribute('cy', pa.y); fill.setAttribute('r', 2.0);
+          g.appendChild(fill);
+        }
+        container.appendChild(g);
       });
     });
   }
@@ -2059,52 +2123,45 @@ html,body{
     var NS = 'http://www.w3.org/2000/svg';
 
     CURVES.forEach(function(curve, ci){
-      SEGMENT_DEFS.forEach(function(seg){
-        var t = frac(curve.center + seg.start);
+      POINT_DEFS.forEach(function(pd){
+        var t = frac(curve.center + pd.off);
         var pa = pointAndAngle(path, t * totalLen, totalLen);
-        // Deslocar plaquinha perpendicular ao path
         var perpRad = (pa.angle + 90) * Math.PI / 180;
         var off = 22;
         var sx = pa.x + Math.cos(perpRad) * off;
         var sy = pa.y + Math.sin(perpRad) * off;
 
         var g = document.createElementNS(NS, 'g');
-        g.setAttribute('class', 'sign is-' + seg.type);
+        g.setAttribute('class', 'sign is-' + pd.type);
+        g.setAttribute('data-id', ci + '-' + pd.type);
         g.setAttribute('data-curve', ci);
-        g.setAttribute('data-type', seg.type);
+        g.setAttribute('data-type', pd.type);
 
-        // Linha conectora (do path até a plaquinha)
         var line = document.createElementNS(NS, 'line');
         line.setAttribute('class', 'sign-line');
         line.setAttribute('x1', pa.x); line.setAttribute('y1', pa.y);
         line.setAttribute('x2', sx);   line.setAttribute('y2', sy);
         g.appendChild(line);
 
-        // Caixa da plaquinha
         var box = document.createElementNS(NS, 'rect');
         box.setAttribute('class', 'sign-bg');
         var bw = 28, bh = 16;
         box.setAttribute('x', sx - bw/2);
         box.setAttribute('y', sy - bh/2);
-        box.setAttribute('width', bw);
-        box.setAttribute('height', bh);
-        box.setAttribute('rx', 2);
-        box.setAttribute('ry', 2);
+        box.setAttribute('width', bw); box.setAttribute('height', bh);
+        box.setAttribute('rx', 2); box.setAttribute('ry', 2);
         g.appendChild(box);
 
-        // Label superior + valor inferior
-        var meta = SIGN_LABELS[seg.type];
+        var meta = SIGN_LABELS[pd.type];
         var tLabel = document.createElementNS(NS, 'text');
         tLabel.setAttribute('class', 'sign-label');
-        tLabel.setAttribute('x', sx);
-        tLabel.setAttribute('y', sy - 3.5);
+        tLabel.setAttribute('x', sx); tLabel.setAttribute('y', sy - 3.5);
         tLabel.textContent = meta[0];
         g.appendChild(tLabel);
 
         var tValue = document.createElementNS(NS, 'text');
         tValue.setAttribute('class', 'sign-value');
-        tValue.setAttribute('x', sx);
-        tValue.setAttribute('y', sy + 3.5);
+        tValue.setAttribute('x', sx); tValue.setAttribute('y', sy + 3.5);
         tValue.textContent = meta[1](curve);
         g.appendChild(tValue);
 
@@ -2113,46 +2170,50 @@ html,body{
     });
   }
 
-  function updateContextAndSigns(liveT){
-    var n = CURVES.length;
-    var cur  = Math.floor(liveT * n) % n;
-    var prev = (cur - 1 + n) % n;
-    var next = (cur + 1) % n;
+  // Reveal: pontos + plaquinhas + trechos aparecem DEPOIS do carro cruzar.
+  // Apex é exceção (sempre visível). Wrap de volta = reset tudo.
+  var _lapStartT = -1;
+  function resetReveal(){
+    document.querySelectorAll('.pt:not(.is-apex)').forEach(function(p){ p.classList.remove('is-revealed'); });
+    document.querySelectorAll('.sign').forEach(function(s){ s.classList.remove('is-revealed'); });
+    document.querySelectorAll('.trecho').forEach(function(t){ t.classList.remove('is-revealed'); });
+  }
 
-    // Identifica o segmento ESPECÍFICO em que o live está agora (curveIdx + segmentType)
-    var here = null;
-    for(var ci=0; ci<CURVES.length && !here; ci++){
-      for(var si=0; si<SEGMENT_DEFS.length; si++){
-        var seg = SEGMENT_DEFS[si];
-        var s = frac(CURVES[ci].center + seg.start);
-        var e = frac(CURVES[ci].center + seg.end);
-        var inside = (s < e) ? (liveT >= s && liveT < e) : (liveT >= s || liveT < e);
-        if(inside){ here = { ci: ci, type: seg.type }; break; }
-      }
+  function updateReveal(liveT){
+    if(_lapStartT < 0){ _lapStartT = liveT; return; }
+    var wrapped = liveT < _lapStartT;
+    if(wrapped){
+      // nova volta — reseta tudo e reaplica reveal a partir do início
+      resetReveal();
+      // aplica reveal pra pontos com t entre [_lapStartT, 1) e [0, liveT]
+      revealPointsInRange(_lapStartT, 1.001);
+      revealPointsInRange(0, liveT);
+    } else {
+      revealPointsInRange(_lapStartT, liveT);
     }
+    _lapStartT = liveT;
+  }
 
-    // Segmentos: contexto (3 curvas) plenos, distantes (5) skeleton, atual `is-here`
-    var segs = document.querySelectorAll('.seg');
-    for(var i=0; i<segs.length; i++){
-      var sgEl = segs[i];
-      var sci = parseInt(sgEl.getAttribute('data-curve'), 10);
-      var stype = sgEl.getAttribute('data-type');
-      sgEl.classList.remove('is-context','is-skeleton','is-here');
-      if(here && sci === here.ci && stype === here.type){
-        sgEl.classList.add('is-here');
-      } else if(sci === prev || sci === cur || sci === next){
-        sgEl.classList.add('is-context');
-      } else {
-        sgEl.classList.add('is-skeleton');
+  function revealPointsInRange(fromT, toT){
+    var pts = document.querySelectorAll('.pt');
+    for(var i=0; i<pts.length; i++){
+      var p = pts[i];
+      var t = parseFloat(p.getAttribute('data-t'));
+      if(t > fromT && t <= toT){
+        p.classList.add('is-revealed');
+        var id = p.getAttribute('data-id');
+        var sign = document.querySelector('.sign[data-id="' + id + '"]');
+        if(sign) sign.classList.add('is-revealed');
+        // Reveal trecho que TERMINA neste ponto
+        var trechos = document.querySelectorAll('.trecho[data-curve="' + p.getAttribute('data-curve') + '"]');
+        for(var j=0; j<trechos.length; j++){
+          var tr = trechos[j];
+          var endT = parseFloat(tr.getAttribute('data-end-t'));
+          if(Math.abs(endT - t) < 0.0005){
+            tr.classList.add('is-revealed');
+          }
+        }
       }
-    }
-
-    // Plaquinhas: SÓ na curva atual
-    var signs = document.querySelectorAll('.sign');
-    for(var j=0; j<signs.length; j++){
-      var sg = signs[j];
-      var sgci = parseInt(sg.getAttribute('data-curve'), 10);
-      sg.classList.toggle('is-active', sgci === cur);
     }
   }
 
