@@ -2167,7 +2167,8 @@ html,body{
     var path = document.getElementById('track');
     if(!path) return;
 
-    buildWaypoints();
+    buildSegments();
+    buildSigns();
     var totalLen      = path.getTotalLength();
     var ghostLeadFrac = MAP_CFG.ghostLeadSec / (MAP_CFG.lapMs / 1000);
     var liveOv        = document.querySelector('[data-overlay-live]');
