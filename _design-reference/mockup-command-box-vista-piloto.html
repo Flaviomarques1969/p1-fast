@@ -287,6 +287,10 @@ html,body{
   transform-box: view-box;
 }
 
+/* OVERLAY OFF — trechos/pontos/plaquinhas escondidos pra pista canônica respirar.
+   Sistema permanece construído (DOM íntegro). Reativar removendo este bloco. */
+.trecho, .pt:not(.is-apex), .sign{ display:none !important; }
+
 /* Trechos coloridos (4 por curva) — só win/lose, aparecem DEPOIS do carro cruzar */
 .trecho{
   fill:none;
