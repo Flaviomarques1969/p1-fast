@@ -1888,6 +1888,96 @@ html,body{
     return { rpm: ph[0].rpm, gear: ph[0].gear };
   }
 
+  // ───────── Map animation: live (vermelho) + ghost (azul) ─────────
+  var MAP_CFG = {
+    lapMs: 14000,
+    liveLapSec: 74.382,
+    ghostLapSec: 74.000,
+    ghostLeadSec: 0.382,
+    trailCount: 6,
+    trailSpacing: 0.014
+  };
+
+  function fmtLap(sec){
+    if(sec < 0) sec = 0;
+    var m = Math.floor(sec / 60);
+    var s = sec - m*60;
+    var pad = s < 10 ? '0' : '';
+    return m + ':' + pad + s.toFixed(3);
+  }
+
+  function setMarkerPos(prefix, x, y){
+    var glow = document.querySelector('[data-marker="'+prefix+'-glow"]');
+    var core = document.querySelector('[data-marker="'+prefix+'-core"]');
+    var dot  = document.querySelector('[data-marker="'+prefix+'-dot"]');
+    if(glow){ glow.setAttribute('cx', x); glow.setAttribute('cy', y); }
+    if(core){ core.setAttribute('cx', x); core.setAttribute('cy', y); }
+    if(dot){  dot.setAttribute('cx', x);  dot.setAttribute('cy', y); }
+  }
+
+  function buildTrail(group, path, totalLen, baseT, baseR, color, alphaStart){
+    while(group.firstChild) group.removeChild(group.firstChild);
+    for(var i=1; i<=MAP_CFG.trailCount; i++){
+      var t = baseT - i * MAP_CFG.trailSpacing;
+      t = ((t % 1) + 1) % 1;
+      var pt = path.getPointAtLength(t * totalLen);
+      var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c.setAttribute('cx', pt.x);
+      c.setAttribute('cy', pt.y);
+      c.setAttribute('r', baseR * (1 - i / (MAP_CFG.trailCount + 1.5)));
+      c.setAttribute('fill', color);
+      c.setAttribute('fill-opacity', alphaStart * (1 - i / (MAP_CFG.trailCount + 1)));
+      group.appendChild(c);
+    }
+  }
+
+  var mapAnimId = null;
+  function startMapAnimation(){
+    if(mapAnimId !== null) return;
+    var path = document.getElementById('track');
+    if(!path) return;
+
+    var totalLen = path.getTotalLength();
+    var ghostLeadFrac = MAP_CFG.ghostLeadSec / (MAP_CFG.lapMs / 1000);
+    var liveTrail  = document.querySelector('[data-trail="live"]');
+    var ghostTrail = document.querySelector('[data-trail="ghost"]');
+    var liveOv  = document.querySelector('[data-overlay-live]');
+    var ghostOv = document.querySelector('[data-overlay-ghost]');
+    var deltaOv = document.querySelector('[data-overlay-delta]');
+
+    var tStart = performance.now();
+    function tick(now){
+      var elapsed = (now - tStart);
+      var liveT  = (elapsed % MAP_CFG.lapMs) / MAP_CFG.lapMs;
+      var ghostT = liveT + ghostLeadFrac;
+      if(ghostT >= 1) ghostT -= 1;
+
+      var liveP  = path.getPointAtLength(liveT  * totalLen);
+      var ghostP = path.getPointAtLength(ghostT * totalLen);
+
+      setMarkerPos('live',  liveP.x,  liveP.y);
+      setMarkerPos('ghost', ghostP.x, ghostP.y);
+
+      if(liveTrail)  buildTrail(liveTrail,  path, totalLen, liveT,  3.4, '#FF2A2A', 0.85);
+      if(ghostTrail) buildTrail(ghostTrail, path, totalLen, ghostT, 2.6, '#38BCFF', 0.55);
+
+      var liveSec  = MAP_CFG.liveLapSec  * liveT;
+      var ghostSec = MAP_CFG.ghostLapSec * liveT;
+      var delta    = liveSec - ghostSec;
+      if(liveOv)  liveOv.textContent  = fmtLap(liveSec);
+      if(ghostOv) ghostOv.textContent = fmtLap(ghostSec);
+      if(deltaOv){
+        var sign = delta >= 0 ? '+' : '−';
+        deltaOv.textContent = sign + Math.abs(delta).toFixed(3);
+        deltaOv.classList.toggle('pos', delta > 0);
+        deltaOv.classList.toggle('neg', delta < 0);
+      }
+
+      mapAnimId = requestAnimationFrame(tick);
+    }
+    mapAnimId = requestAnimationFrame(tick);
+  }
+
   var shiftLightAnimId = null;
   function startShiftLightAnimation(){
     if(shiftLightAnimId !== null) return;
