@@ -1958,6 +1958,153 @@ html,body{
     return { rpm: ph[0].rpm, gear: ph[0].gear };
   }
 
+  // ───────── Waypoints (5 pontos × 8 curvas) ─────────
+  var CURVES = [
+    { name:'c1', center:0.07, vminKmh: 68 },
+    { name:'c2', center:0.19, vminKmh: 87 },
+    { name:'c3', center:0.31, vminKmh: 92 },
+    { name:'c4', center:0.43, vminKmh:104 },
+    { name:'c5', center:0.55, vminKmh: 76 },
+    { name:'c6', center:0.66, vminKmh:142 },
+    { name:'c7', center:0.78, vminKmh: 95 },
+    { name:'c8', center:0.90, vminKmh: 82 }
+  ];
+  var WP_OFFSETS    = { entry:-0.030, brake:-0.018, vmin:-0.005, apex:0.000, exit:0.025 };
+  var WP_TYPE_ORDER = ['entry','brake','vmin','apex','exit'];
+
+  function pointAndAngle(path, len, total){
+    var d = 0.5;
+    var p1 = path.getPointAtLength(Math.max(0, len - d));
+    var p2 = path.getPointAtLength(Math.min(total, len + d));
+    var pt = path.getPointAtLength(len);
+    var ang = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
+    return { x: pt.x, y: pt.y, angle: ang };
+  }
+
+  function buildWaypoints(){
+    var path = document.getElementById('track');
+    if(!path) return;
+    var totalLen = path.getTotalLength();
+    var container = document.querySelector('[data-waypoints]');
+    if(!container) return;
+    while(container.firstChild) container.removeChild(container.firstChild);
+    var NS = 'http://www.w3.org/2000/svg';
+
+    CURVES.forEach(function(curve, ci){
+      WP_TYPE_ORDER.forEach(function(type){
+        var t = ((curve.center + WP_OFFSETS[type]) % 1 + 1) % 1;
+        var pa = pointAndAngle(path, t * totalLen, totalLen);
+
+        var g = document.createElementNS(NS, 'g');
+        g.setAttribute('class', 'wp is-' + type);
+        g.setAttribute('data-curve', ci);
+        g.setAttribute('data-type', type);
+        g.setAttribute('data-t', t.toFixed(5));
+        g.setAttribute('data-cx', pa.x.toFixed(2));
+        g.setAttribute('data-cy', pa.y.toFixed(2));
+        var rotate = (type === 'brake' || type === 'exit');
+        var tr = 'translate(' + pa.x.toFixed(2) + ',' + pa.y.toFixed(2) + ')';
+        if(rotate) tr += ' rotate(' + pa.angle.toFixed(2) + ')';
+        g.setAttribute('transform', tr);
+
+        if(type === 'entry'){
+          var s = document.createElementNS(NS, 'circle');
+          s.setAttribute('cx', 0); s.setAttribute('cy', 0); s.setAttribute('r', 2.5);
+          g.appendChild(s);
+        } else if(type === 'brake'){
+          var r = document.createElementNS(NS, 'rect');
+          r.setAttribute('x', -1); r.setAttribute('y', -4.2);
+          r.setAttribute('width', 2); r.setAttribute('height', 8.4);
+          r.setAttribute('rx', 1);
+          g.appendChild(r);
+        } else if(type === 'vmin'){
+          var r = document.createElementNS(NS, 'rect');
+          r.setAttribute('x', -2.2); r.setAttribute('y', -2.2);
+          r.setAttribute('width', 4.4); r.setAttribute('height', 4.4);
+          r.setAttribute('transform', 'rotate(45)');
+          g.appendChild(r);
+        } else if(type === 'apex'){
+          var co = document.createElementNS(NS, 'circle');
+          co.setAttribute('class', 'apex-outer');
+          co.setAttribute('cx', 0); co.setAttribute('cy', 0); co.setAttribute('r', 5);
+          g.appendChild(co);
+          var ci2 = document.createElementNS(NS, 'circle');
+          ci2.setAttribute('class', 'apex-inner');
+          ci2.setAttribute('cx', 0); ci2.setAttribute('cy', 0); ci2.setAttribute('r', 1.8);
+          g.appendChild(ci2);
+        } else if(type === 'exit'){
+          var pl = document.createElementNS(NS, 'polyline');
+          pl.setAttribute('points', '-3.4,-2.7 0,0 -3.4,2.7');
+          g.appendChild(pl);
+        }
+        container.appendChild(g);
+      });
+    });
+  }
+
+  function updateWaypointsContext(liveT){
+    var n = CURVES.length;
+    var cur  = Math.floor(liveT * n) % n;
+    var prev = (cur - 1 + n) % n;
+    var next = (cur + 1) % n;
+    var wps = document.querySelectorAll('.wp');
+    for(var i=0; i<wps.length; i++){
+      var wp = wps[i];
+      var ci = parseInt(wp.getAttribute('data-curve'), 10);
+      var type = wp.getAttribute('data-type');
+      wp.classList.remove('is-context','is-skeleton');
+      if(ci === prev || ci === cur || ci === next){
+        wp.classList.add('is-context');
+      } else if(type === 'apex'){
+        wp.classList.add('is-skeleton');
+      }
+    }
+  }
+
+  var _wpLastT = -1;
+  function checkWaypointCrossings(liveT, deltaSec){
+    if(_wpLastT < 0){ _wpLastT = liveT; return; }
+    var wrapped = liveT < _wpLastT;
+    var wps = document.querySelectorAll('.wp');
+    for(var i=0; i<wps.length; i++){
+      var wp = wps[i];
+      var t = parseFloat(wp.getAttribute('data-t'));
+      var crossed = wrapped
+        ? (t > _wpLastT || t <= liveT)
+        : (t > _wpLastT && t <= liveT);
+      if(crossed) emitRipple(wp, deltaSec);
+    }
+    _wpLastT = liveT;
+  }
+
+  function emitRipple(wp, deltaSec){
+    var x = parseFloat(wp.getAttribute('data-cx'));
+    var y = parseFloat(wp.getAttribute('data-cy'));
+    if(isNaN(x) || isNaN(y)) return;
+    var container = document.querySelector('[data-ripples]');
+    if(!container) return;
+
+    var color = deltaSec < 0 ? '#3FE08C' : '#FFB347';
+    var NS = 'http://www.w3.org/2000/svg';
+    var c = document.createElementNS(NS, 'circle');
+    c.setAttribute('class', 'wp-ripple');
+    c.setAttribute('cx', x); c.setAttribute('cy', y);
+    c.setAttribute('r', 4);
+    c.setAttribute('stroke', color);
+    c.setAttribute('stroke-opacity', 0.92);
+    container.appendChild(c);
+
+    var rStart = 4, rEnd = 15, dur = 480, t0 = performance.now();
+    (function step(){
+      var k = Math.min(1, (performance.now() - t0) / dur);
+      var eased = 1 - Math.pow(1 - k, 3);
+      c.setAttribute('r', (rStart + (rEnd - rStart) * eased).toFixed(2));
+      c.setAttribute('stroke-opacity', (0.92 * (1 - eased)).toFixed(3));
+      if(k < 1) setTimeout(step, 33);
+      else if(c.parentNode) c.parentNode.removeChild(c);
+    })();
+  }
+
   // ───────── Map animation: live (vermelho/verde) + ghost (azul) ─────────
   var MAP_CFG = {
     lapMs: 19500,
