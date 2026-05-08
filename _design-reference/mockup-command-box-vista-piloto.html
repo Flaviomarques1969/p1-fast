@@ -1831,20 +1831,28 @@ html,body{
   }
 
   function buildStintBar(cfg){
-    var html = '<div class="stint-bar-stack">';
-    var total = cfg.total || 12;
-    var current = cfg.current || 1;
-    var warmup = cfg.warmupLaps || 1;
-    var cooldown = cfg.cooldownLaps || 1;
-    for(var i=1; i<=total; i++){
+    var laps         = cfg.laps         || 8;
+    var current      = cfg.current      || 1;
+    var warmupLaps   = cfg.warmupLaps   || 1;
+    var cooldownLaps = cfg.cooldownLaps || 1;
+
+    var html = '<div class="stint-bar-title">stint '+current+'/'+laps+'</div>';
+    html += '<div class="stint-bar-stack">';
+
+    for(var w=0; w<warmupLaps; w++){
+      html += '<div class="stint-lap warmup">aquece</div>';
+    }
+    for(var i=1; i<=laps; i++){
       var cls = 'stint-lap';
-      if(i <= warmup) cls += ' warmup';
-      else if(i > total - cooldown) cls += ' cooldown';
-      else if(i < current) cls += ' done';
+      if(i < current) cls += ' done';
       else if(i === current) cls += ' current';
       else cls += ' future';
       html += '<div class="'+cls+'">'+i+'</div>';
     }
+    for(var c=0; c<cooldownLaps; c++){
+      html += '<div class="stint-lap cooldown">resfria</div>';
+    }
+
     html += '</div>';
     return html;
   }
