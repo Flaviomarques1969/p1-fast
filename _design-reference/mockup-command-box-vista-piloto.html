@@ -73,13 +73,12 @@ html,body{
 /* ───── HEADER (0-8%) ───── */
 .b-header{
   position:absolute;left:0;top:0;width:100%;height:8%;
-  display:flex;align-items:stretch;
   border-bottom:1px solid var(--hairline);
 }
-.b-header > div{padding:0 14px;display:flex;align-items:center;}
+.b-header > div{padding:0 14px;display:flex;align-items:center;position:absolute;top:0;height:100%;}
 
 .brand{
-  width:19%;
+  left:0%;width:19%;
   flex-direction:column;align-items:flex-start;justify-content:center;
   border-right:1px solid var(--hairline);
 }
@@ -94,7 +93,7 @@ html,body{
 }
 
 .messages{
-  width:15%;
+  left:19%;width:15%;
   border-right:1px solid var(--hairline);
 }
 .messages .msg-card{
@@ -116,7 +115,7 @@ html,body{
 .gap-fill{ flex:1; }
 
 .health{
-  width:29%;
+  left:45%;width:29%;
   font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
   border-right:1px solid var(--hairline);
   display:grid;
@@ -134,8 +133,7 @@ html,body{
 .h-cell.warn .h-val{color:var(--warn);}
 
 .vista-toggle{
-  width:14%;
-  margin-left:auto;
+  left:85%;width:15%;
   border-left:1px solid var(--hairline);
   display:flex;align-items:center;
   gap:0;padding:0 6px;
@@ -163,14 +161,11 @@ html,body{
   position:absolute;left:0;top:8%;width:40%;height:46%;
   border-right:1px solid var(--hairline);
   border-bottom:1px solid var(--hairline);
-  background:
-    radial-gradient(ellipse at center, rgba(20,30,50,0.6), rgba(0,0,0,0.8));
   overflow:hidden;
 }
 .video-frame{
-  position:absolute;inset:6%;
+  position:absolute;inset:0;
   background:linear-gradient(180deg, #0a1018 0%, #030508 100%);
-  border:1px solid rgba(255,255,255,0.05);
   display:flex;align-items:center;justify-content:center;
   flex-direction:column;
   font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
@@ -781,19 +776,19 @@ html,body{
 
   <!-- HEADER -->
   <div class="b-header" data-block-id="header" data-block-name="Header (shift light + branding)">
-    <div class="brand">
+    <div class="brand" data-block-id="brand" data-block-name="Branding (P1 Fast · Brasília)">
       <span class="b-mark">P 1 · F A S T</span>
       <span class="b-name">B R A S Í L I A</span>
     </div>
 
-    <div class="messages">
+    <div class="messages" data-block-id="messages" data-block-name="Mensagens">
       <div class="msg-card">
         <div class="msg-meta">FLÁVIO · 14:32 · BOX</div>
         <div class="msg-text">Atenção tempo de volta · volta voadora</div>
       </div>
     </div>
 
-    <div class="health">
+    <div class="health" data-block-id="health" data-block-name="Saúde Sinais">
       <div class="h-cell ok"><span class="h-key">BAT</span><span class="h-val">87%</span></div>
       <div class="h-cell ok"><span class="h-key">GPS</span><span class="h-val">12sat</span></div>
       <div class="h-cell ok"><span class="h-key">T4000</span><span class="h-val">OK</span></div>
@@ -806,7 +801,7 @@ html,body{
       <div class="h-cell"><span class="h-key">TIER</span><span class="h-val">1</span></div>
     </div>
 
-    <div class="vista-toggle">
+    <div class="vista-toggle" data-block-id="vista-toggle" data-block-name="Toggle Vista Piloto/Engenheiro">
       <button class="vista-btn active">Piloto</button>
       <button class="vista-btn">Engenheiro</button>
     </div>
@@ -1296,7 +1291,7 @@ html,body{
     }
     ev.preventDefault();
     el.classList.add('dragging');
-    var rect = stage.getBoundingClientRect();
+    var rect = (el.parentElement || stage).getBoundingClientRect();
     var d = readBlock(el);
     var startX = ev.clientX, startY = ev.clientY;
     var origX = d.x, origY = d.y;
@@ -1326,7 +1321,7 @@ html,body{
     ev.preventDefault();
     ev.stopPropagation();
     el.classList.add('resizing');
-    var rect = stage.getBoundingClientRect();
+    var rect = (el.parentElement || stage).getBoundingClientRect();
     var d = readBlock(el);
     var startX = ev.clientX, startY = ev.clientY;
     var origW = d.w, origH = d.h;
