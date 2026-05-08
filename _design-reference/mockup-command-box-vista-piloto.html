@@ -1957,23 +1957,24 @@ html,body{
   }
 
   // ───────── Segmentos coloridos + plaquinhas (5 trechos × 8 curvas) ─────────
+  // Centros reais das curvas — extraídos por análise de curvatura do path SVG
   var CURVES = [
-    { name:'C1', center:0.07, entryKmh:172, brakeM: 84, vminKmh: 68, exitKmh:142 },
-    { name:'C2', center:0.19, entryKmh:158, brakeM: 72, vminKmh: 87, exitKmh:148 },
-    { name:'C3', center:0.31, entryKmh:166, brakeM: 78, vminKmh: 92, exitKmh:152 },
-    { name:'C4', center:0.43, entryKmh:182, brakeM: 96, vminKmh:104, exitKmh:168 },
-    { name:'C5', center:0.55, entryKmh:148, brakeM: 65, vminKmh: 76, exitKmh:138 },
-    { name:'C6', center:0.66, entryKmh:212, brakeM: 48, vminKmh:142, exitKmh:198 },
-    { name:'C7', center:0.78, entryKmh:174, brakeM: 82, vminKmh: 95, exitKmh:158 },
-    { name:'C8', center:0.90, entryKmh:160, brakeM: 76, vminKmh: 82, exitKmh:146 }
+    { name:'C1', center:0.0733, entryKmh:172, brakeM: 84, vminKmh: 68, exitKmh:142 },
+    { name:'C2', center:0.2383, entryKmh:158, brakeM: 72, vminKmh: 87, exitKmh:148 },
+    { name:'C3', center:0.3783, entryKmh:166, brakeM: 92, vminKmh: 78, exitKmh:138 },
+    { name:'C4', center:0.5517, entryKmh:182, brakeM: 76, vminKmh: 96, exitKmh:158 },
+    { name:'C5', center:0.6567, entryKmh:174, brakeM: 88, vminKmh: 84, exitKmh:148 },
+    { name:'C6', center:0.7633, entryKmh:148, brakeM:104, vminKmh: 62, exitKmh:128 },
+    { name:'C7', center:0.8833, entryKmh:166, brakeM: 72, vminKmh: 95, exitKmh:152 },
+    { name:'C8', center:0.9450, entryKmh:178, brakeM: 56, vminKmh:118, exitKmh:172 }
   ];
-  // Trechos como [start, end] em fração do path (relativos ao center da curva)
+  // Trechos COMPACTOS — só dentro/perto da curva, sem invadir reta
   var SEGMENT_DEFS = [
-    { type:'entry', start:-0.040, end:-0.018 },
-    { type:'brake', start:-0.018, end:-0.005 },
-    { type:'vmin',  start:-0.005, end: 0.005 },
-    { type:'apex',  start: 0.005, end: 0.025 },
-    { type:'exit',  start: 0.025, end: 0.045 }
+    { type:'entry', start:-0.026, end:-0.012 },
+    { type:'brake', start:-0.012, end:-0.004 },
+    { type:'vmin',  start:-0.004, end: 0.004 },
+    { type:'apex',  start: 0.004, end: 0.016 },
+    { type:'exit',  start: 0.016, end: 0.030 }
   ];
   var SIGN_LABELS = {
     entry: ['entrada', function(c){ return c.entryKmh + ' km/h'; }],
