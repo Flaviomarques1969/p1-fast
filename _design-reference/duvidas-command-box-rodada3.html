@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dúvidas — Command Box rodada 3 (P1 Fast)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(20% 0.005 240);
+  --bg-2: oklch(18% 0.005 240);
+  --surface: oklch(24% 0.005 240);
+  --surface-2: oklch(28% 0.005 240);
+  --hairline: oklch(33% 0.005 240);
+  --text: oklch(95% 0.003 240);
+  --text-2: oklch(75% 0.01 240);
+  --text-3: oklch(58% 0.012 240);
+  --accent: oklch(78% 0.13 235);
+  --accent-soft: oklch(82% 0.10 235 / .15);
+  --good: oklch(72% 0.12 155);
+  --radius: 12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{
+  min-height:100dvh;
+  background:linear-gradient(160deg, oklch(22% 0.005 240) 0%, oklch(18% 0.005 240) 100%);
+  color:var(--text);font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;font-weight:400;line-height:1.55;
+}
+body{padding:0 0 96px;}
+.wrap{max-width:920px;margin:0 auto;padding:0 28px;}
+
+.export-bar{
+  position:sticky;top:0;z-index:50;
+  background:rgba(18,20,28,0.92);
+  border-bottom:1px solid var(--hairline);
+  padding:14px 28px;margin:0 -28px 28px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  backdrop-filter:saturate(140%) blur(10px);
+}
+.export-bar .progress{
+  font-size:13px;color:var(--text-2);
+  font-variant-numeric:tabular-nums;margin-right:auto;
+  display:flex;align-items:center;gap:10px;
+}
+.export-bar .progress strong{color:var(--text);font-weight:600;}
+.progress-bar{width:120px;height:4px;background:var(--hairline);border-radius:2px;overflow:hidden;}
+.progress-bar-fill{height:100%;background:var(--accent);width:0;transition:width .3s;}
+.export-bar button{
+  background:var(--accent);color:var(--bg);
+  border:none;border-radius:6px;padding:10px 16px;
+  font-family:inherit;font-size:13px;font-weight:600;
+  letter-spacing:.04em;cursor:pointer;transition:filter .15s;
+}
+.export-bar button:hover{filter:brightness(1.08);}
+.export-bar button.secondary{background:transparent;color:var(--text-2);border:1px solid var(--hairline);}
+.export-bar button.secondary:hover{border-color:var(--text-3);color:var(--text);}
+.save-status{
+  font-size:11px;color:var(--good);opacity:0;
+  transition:opacity .2s;font-variant-numeric:tabular-nums;
+  letter-spacing:.05em;text-transform:uppercase;
+}
+.save-status.visible{opacity:1;}
+
+header.head{border-bottom:1px solid var(--hairline);padding:32px 0 28px;margin-bottom:28px;}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.18em;color:var(--text-3);text-transform:uppercase;margin-bottom:14px;}
+h1{font-size:30px;line-height:1.15;font-weight:600;letter-spacing:-.01em;margin-bottom:12px;}
+.lead{color:var(--text-2);font-size:15px;max-width:680px;}
+.lead strong{color:var(--text);font-weight:500;}
+
+section{margin-bottom:36px;scroll-margin-top:80px;}
+h2{
+  font-size:20px;font-weight:600;color:var(--text);
+  margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--hairline);
+  display:flex;align-items:baseline;gap:12px;
+}
+h2 .num{color:var(--accent);font-variant-numeric:tabular-nums;font-weight:500;}
+
+.q{
+  background:var(--surface);border:1px solid var(--hairline);
+  border-radius:var(--radius);padding:18px 20px;margin-bottom:14px;
+  position:relative;transition:border-color .2s, background .2s;
+}
+.q.answered{border-color:oklch(40% 0.04 155);}
+.q.answered::before{content:"";position:absolute;left:-1px;top:18px;bottom:18px;width:3px;background:var(--good);border-radius:2px;}
+.q .qhead{display:flex;gap:12px;align-items:baseline;margin-bottom:6px;}
+.q .qid{font-variant-numeric:tabular-nums;font-weight:600;color:var(--accent);font-size:13px;letter-spacing:.04em;}
+.q.answered .qid{color:var(--good);}
+.q .qtitle{font-weight:500;color:var(--text);font-size:15px;}
+.q .qcontext{color:var(--text-2);font-size:13px;margin:6px 0 14px;line-height:1.5;}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:14px;}
+.card{
+  position:relative;display:block;cursor:pointer;
+  background:var(--bg-2);border:1px solid var(--hairline);
+  border-radius:8px;padding:14px 14px 14px 38px;
+  font-size:14px;color:var(--text-2);
+  transition:border-color .15s, background .15s;user-select:none;
+}
+.card input{
+  position:absolute;left:14px;top:16px;
+  appearance:none;-webkit-appearance:none;
+  width:14px;height:14px;
+  border:1.5px solid var(--text-3);
+  border-radius:50%;background:transparent;cursor:pointer;margin:0;
+}
+.card input[type="checkbox"]{border-radius:3px;}
+.card input:checked{
+  border-color:var(--accent);background:var(--accent);
+  box-shadow:inset 0 0 0 3px var(--bg-2);
+}
+.card input[type="checkbox"]:checked{box-shadow:inset 0 0 0 2px var(--bg-2);}
+.card:hover{border-color:var(--accent);background:var(--surface);}
+.card:has(input:checked){border-color:var(--accent);background:var(--accent-soft);color:var(--text);}
+.card .opt-label{font-weight:500;color:var(--text);display:block;margin-bottom:3px;}
+.card .opt-desc{font-size:13px;color:var(--text-2);line-height:1.5;}
+
+.card.recommended{border-color:var(--accent);background:var(--accent-soft);}
+.card.recommended::after{
+  content:"recomendação";position:absolute;top:-9px;right:12px;
+  font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  background:var(--accent);color:var(--bg);
+  padding:3px 8px;border-radius:3px;
+}
+
+.card.none-option{
+  background:transparent;border-style:dashed;
+  border-color:oklch(40% 0.005 240);
+  grid-column:1 / -1;
+}
+.card.none-option:hover{border-style:solid;}
+.card.none-option .opt-label{color:var(--text-2);}
+.card.none-option:has(input:checked){
+  border-color:oklch(75% 0.13 25);
+  background:oklch(35% 0.05 25 / .25);
+  border-style:solid;
+}
+.card.none-option:has(input:checked) .opt-label{color:oklch(85% 0.08 25);}
+
+.outros{margin-top:6px;display:flex;flex-direction:column;gap:6px;}
+.outros label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);}
+.outros textarea{
+  background:var(--bg-2);border:1px solid var(--hairline);
+  border-radius:6px;padding:10px 12px;
+  color:var(--text);font-family:inherit;font-size:14px;
+  resize:vertical;min-height:54px;outline:none;width:100%;
+}
+.outros textarea:focus{border-color:var(--accent);}
+.outros textarea::placeholder{color:var(--text-3);}
+
+.bottom-actions{
+  margin:48px 0 0;padding:24px 0;
+  border-top:1px solid var(--hairline);
+  display:flex;flex-wrap:wrap;gap:12px;align-items:center;
+}
+.bottom-actions button{
+  background:var(--accent);color:var(--bg);
+  border:none;border-radius:6px;padding:14px 22px;
+  font-family:inherit;font-size:14px;font-weight:600;
+  letter-spacing:.04em;cursor:pointer;
+}
+.bottom-actions button.secondary{background:transparent;color:var(--text-2);border:1px solid var(--hairline);}
+
+.context-box{
+  background:var(--surface-2);
+  border-left:3px solid var(--accent);
+  border-radius:6px;padding:14px 18px;margin:0 0 24px;
+}
+.context-box h3{margin:0 0 10px;color:var(--accent);font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;}
+.context-box ul{margin:8px 0 0 0;padding:0;list-style:none;}
+.context-box ul li{position:relative;padding:0 0 6px 22px;color:var(--text-2);font-size:13px;}
+.context-box ul li::before{content:"";position:absolute;left:6px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--text-3);}
+
+footer.foot{margin-top:48px;padding:24px 0;border-top:1px solid var(--hairline);color:var(--text-3);font-size:12px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="export-bar">
+  <div class="progress">
+    <strong id="answered-count">0</strong> de <strong id="total-count">0</strong> respondidas
+    <div class="progress-bar"><div class="progress-bar-fill" id="progress-bar-fill"></div></div>
+  </div>
+  <span id="save-status" class="save-status">salvo</span>
+  <button type="button" class="secondary" id="btn-clear">limpar</button>
+  <button type="button" class="secondary" id="btn-download">baixar .md</button>
+  <button type="button" id="btn-export">copiar respostas</button>
+</div>
+
+<header class="head">
+  <div class="eyebrow">P1 Fast · Command Box · rodada 3 · 2026-05-08</div>
+  <h1>O que cada bloco novo mostra</h1>
+  <p class="lead">
+    Você definiu o layout com 12 blocos no mockup arrastável. <strong>5 deles eu não tinha previsto</strong> — Saúde Sinais, P1 Coach, HUD Trecho, Stint e Delta Acumulado de Voltas. Preciso confirmar o conteúdo de cada um e o comportamento do toggle Vista Piloto/Engenheiro antes de desenhar o mockup polido. Multi-seleção quando faz sentido. Auto-save em localStorage. Quando terminar, aperta <strong>copiar respostas</strong>.
+  </p>
+</header>
+
+<div class="context-box">
+  <h3>Contexto do layout exportado (2026-05-08 14:36)</h3>
+  <ul>
+    <li><strong>Header (8% topo)</strong> — branding | mensagens | saúde sinais | toggle vista</li>
+    <li><strong>Coluna esquerda (40%)</strong> — vídeo (cima) + mapa atelier (baixo)</li>
+    <li><strong>Coluna meio-esquerda (22%)</strong> — HUD telemetria (cima) + HUD Trecho (baixo)</li>
+    <li><strong>Coluna meio-direita (23%)</strong> — P1 Coach (cima) + Stint (baixo)</li>
+    <li><strong>Coluna direita (15%)</strong> — Checklist do stint (full height)</li>
+    <li><strong>Faixa inferior central (45%)</strong> — Delta Acumulado de Voltas</li>
+  </ul>
+</div>
+
+<!-- 1 SAÚDE SINAIS -->
+<section>
+  <h2><span class="num">1</span>Saúde Sinais — o que mostra</h2>
+  <div class="q" data-qid="saude">
+    <div class="qhead"><span class="qid">SS</span><span class="qtitle">Quais informações entram no painel de Saúde Sinais (header) — multi-seleção</span></div>
+    <p class="qcontext">Painel de status técnico no header pra operador saber se o que está vendo é confiável. Marque o que deve aparecer.</p>
+    <div class="cards">
+      <label class="card recommended"><input type="checkbox" name="ss_bateria" checked><span class="opt-label">Bateria do iPhone do piloto</span><span class="opt-desc">% restante.</span></label>
+      <label class="card recommended"><input type="checkbox" name="ss_gps" checked><span class="opt-label">GPS lock</span><span class="opt-desc">Status + nº de satélites.</span></label>
+      <label class="card recommended"><input type="checkbox" name="ss_t4000" checked><span class="opt-label">T4000 conectado</span><span class="opt-desc">Status BLE.</span></label>
+      <label class="card recommended"><input type="checkbox" name="ss_internet" checked><span class="opt-label">Internet (ping)</span><span class="opt-desc">5G do iPhone do piloto.</span></label>
+      <label class="card recommended"><input type="checkbox" name="ss_latencia" checked><span class="opt-label">Latência Realtime</span><span class="opt-desc">Quanto tempo leva carro→TV.</span></label>
+      <label class="card"><input type="checkbox" name="ss_cpu"><span class="opt-label">CPU/memória do iPhone</span><span class="opt-desc">Pra detectar overheat.</span></label>
+      <label class="card"><input type="checkbox" name="ss_temp_amb"><span class="opt-label">Temperatura ambiente</span></label>
+      <label class="card"><input type="checkbox" name="ss_altitude"><span class="opt-label">Altitude/pressão</span></label>
+      <label class="card"><input type="checkbox" name="ss_captura"><span class="opt-label">Status de captura ativa</span><span class="opt-desc">Gravando / pausado.</span></label>
+      <label class="card"><input type="checkbox" name="ss_tier"><span class="opt-label">Tier ativo (com/sem T4000)</span></label>
+      <label class="card none-option"><input type="checkbox" name="ss_nenhuma"><span class="opt-label">Nenhuma das anteriores</span></label>
+    </div>
+    <div class="outros"><label>outros / explicar</label><textarea name="ss_outros" placeholder="ex.: outro indicador, prioridade entre eles..."></textarea></div>
+  </div>
+</section>
+
+<!-- 2 P1 COACH -->
+<section>
+  <h2><span class="num">2</span>P1 Coach — o que mostra</h2>
+  <div class="q" data-qid="coach">
+    <div class="qhead"><span class="qid">PC</span><span class="qtitle">O que aparece no bloco P1 Coach — multi-seleção</span></div>
+    <p class="qcontext">Bloco de 23% à direita do HUD telemetria. Mostra o que a IA está dizendo pro piloto.</p>
+    <div class="cards">
+      <label class="card recommended"><input type="checkbox" name="pc_frase" checked><span class="opt-label">Frase pedagógica do momento</span><span class="opt-desc">Ex.: "freie mais cedo na 3", gerada pelo detector.</span></label>
+      <label class="card recommended"><input type="checkbox" name="pc_comando" checked><span class="opt-label">Comando ativo</span><span class="opt-desc">A lição focada do stint atual.</span></label>
+      <label class="card recommended"><input type="checkbox" name="pc_licao_focada" checked><span class="opt-label">Lição focada do stint</span><span class="opt-desc">Definida no plano do stint.</span></label>
+      <label class="card"><input type="checkbox" name="pc_historico"><span class="opt-label">Histórico das últimas 3 dicas</span><span class="opt-desc">Tipo log curto de coaching.</span></label>
+      <label class="card"><input type="checkbox" name="pc_pontuacao"><span class="opt-label">Pontuação da volta atual</span></label>
+      <label class="card"><input type="checkbox" name="pc_resumo"><span class="opt-label">Resumo da lição praticada (% executado)</span></label>
+      <label class="card"><input type="checkbox" name="pc_pos_trecho"><span class="opt-label">Análise pós-trecho</span><span class="opt-desc">Ex.: "subviragem detectada na curva 3".</span></label>
+      <label class="card none-option"><input type="checkbox" name="pc_nenhuma"><span class="opt-label">Nenhuma das anteriores</span></label>
+    </div>
+    <div class="outros"><label>outros / explicar</label><textarea name="pc_outros"></textarea></div>
+  </div>
+</section>
+
+<!-- 3 HUD TRECHO -->
+<section>
+  <h2><span class="num">3</span>HUD Trecho — o que mostra</h2>
+  <div class="q" data-qid="hud-trecho">
+    <div class="qhead"><span class="qid">HT</span><span class="qtitle">O que aparece no HUD Trecho — multi-seleção</span></div>
+    <p class="qcontext">Bloco de 22% abaixo do HUD telemetria. Análise focada do trecho atual em isolado.</p>
+    <div class="cards">
+      <label class="card recommended"><input type="checkbox" name="ht_tempo" checked><span class="opt-label">Tempo do trecho atual</span></label>
+      <label class="card recommended"><input type="checkbox" name="ht_delta_trecho" checked><span class="opt-label">Delta vs ref do trecho</span><span class="opt-desc">PB do dia ou ghost.</span></label>
+      <label class="card recommended"><input type="checkbox" name="ht_vmin_atual" checked><span class="opt-label">Vmin do trecho atual</span></label>
+      <label class="card recommended"><input type="checkbox" name="ht_vmin_ref" checked><span class="opt-label">Vmin georef de referência</span><span class="opt-desc">Vmin da melhor volta + ponto.</span></label>
+      <label class="card recommended"><input type="checkbox" name="ht_apex_class" checked><span class="opt-label">Classificação do apex</span><span class="opt-desc">Cedo / tarde / correto / 1 das 12 classes.</span></label>
+      <label class="card"><input type="checkbox" name="ht_vsaida"><span class="opt-label">Velocidade de saída</span></label>
+      <label class="card"><input type="checkbox" name="ht_g_lateral"><span class="opt-label">G máx lateral no trecho</span></label>
+      <label class="card"><input type="checkbox" name="ht_linha_ideal"><span class="opt-label">Comparação com linha ideal</span></label>
+      <label class="card"><input type="checkbox" name="ht_freio"><span class="opt-label">Tempo / distância de frenagem</span></label>
+      <label class="card"><input type="checkbox" name="ht_trail"><span class="opt-label">% trail braking</span></label>
+      <label class="card none-option"><input type="checkbox" name="ht_nenhuma"><span class="opt-label">Nenhuma das anteriores</span></label>
+    </div>
+    <div class="outros"><label>outros / explicar</label><textarea name="ht_outros"></textarea></div>
+  </div>
+</section>
+
+<!-- 4 STINT -->
+<section>
+  <h2><span class="num">4</span>Stint — o que mostra</h2>
+  <div class="q" data-qid="stint">
+    <div class="qhead"><span class="qid">ST</span><span class="qtitle">O que aparece no bloco Stint — multi-seleção</span></div>
+    <p class="qcontext">Bloco de 23% abaixo do P1 Coach. Info operacional do stint atual.</p>
+    <div class="cards">
+      <label class="card recommended"><input type="checkbox" name="st_numero" checked><span class="opt-label">Número do stint</span><span class="opt-desc">Stint 3 de 5.</span></label>
+      <label class="card recommended"><input type="checkbox" name="st_voltas" checked><span class="opt-label">Volta atual / total previsto</span></label>
+      <label class="card recommended"><input type="checkbox" name="st_decorrido" checked><span class="opt-label">Tempo decorrido</span></label>
+      <label class="card recommended"><input type="checkbox" name="st_meta" checked><span class="opt-label">Plano: meta do stint</span></label>
+      <label class="card recommended"><input type="checkbox" name="st_trecho_foco" checked><span class="opt-label">Plano: trecho-foco</span></label>
+      <label class="card recommended"><input type="checkbox" name="st_licao" checked><span class="opt-label">Plano: lição focada</span></label>
+      <label class="card recommended"><input type="checkbox" name="st_termico" checked><span class="opt-label">Status térmico</span><span class="opt-desc">Aquecendo / aquecido / resfriando (chuva azul/vermelha).</span></label>
+      <label class="card"><input type="checkbox" name="st_combustivel"><span class="opt-label">Combustível restante</span></label>
+      <label class="card"><input type="checkbox" name="st_pneu"><span class="opt-label">Pneu (compound, idade)</span></label>
+      <label class="card"><input type="checkbox" name="st_restante"><span class="opt-label">Tempo restante estimado</span></label>
+      <label class="card"><input type="checkbox" name="st_voltas_pb"><span class="opt-label">Voltas até PB do dia</span></label>
+      <label class="card none-option"><input type="checkbox" name="st_nenhuma"><span class="opt-label">Nenhuma das anteriores</span></label>
+    </div>
+    <div class="outros"><label>outros / explicar</label><textarea name="st_outros"></textarea></div>
+  </div>
+</section>
+
+<!-- 5 DELTA ACUMULADO -->
+<section>
+  <h2><span class="num">5</span>Delta Acumulado de Voltas — visualização</h2>
+  <div class="q" data-qid="delta">
+    <div class="qhead"><span class="qid">DA</span><span class="qtitle">Como visualizar o delta acumulado volta a volta</span></div>
+    <p class="qcontext">Faixa horizontal embaixo (45% × 6%). Mostra histórico do gap por volta no stint.</p>
+    <div class="cards">
+      <label class="card recommended"><input type="radio" name="da_visual" value="A" checked><span class="opt-label">A · Sparkline (linha contínua)</span><span class="opt-desc">Cada volta é ponto, eixo Y é gap. Mostra tendência clara. Combina com atelier.</span></label>
+      <label class="card"><input type="radio" name="da_visual" value="B"><span class="opt-label">B · Barras verticais por volta</span><span class="opt-desc">Cresce/decresce vs PB.</span></label>
+      <label class="card"><input type="radio" name="da_visual" value="C"><span class="opt-label">C · Pontos coloridos sobre eixo zero</span><span class="opt-desc">Verde acima, vermelho abaixo.</span></label>
+      <label class="card"><input type="radio" name="da_visual" value="D"><span class="opt-label">D · Histograma cumulativo (área)</span><span class="opt-desc">Soma do gap acumulada.</span></label>
+      <label class="card"><input type="radio" name="da_visual" value="E"><span class="opt-label">E · Tabela numérica (volta + tempo + delta)</span></label>
+      <label class="card none-option"><input type="radio" name="da_visual" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
+    </div>
+    <div class="outros"><label>outros / explicar</label><textarea name="da_outros"></textarea></div>
+  </div>
+
+  <div class="q" data-qid="delta-ref">
+    <div class="qhead"><span class="qid">DA·ref</span><span class="qtitle">Referência pro delta acumulado é qual?</span></div>
+    <div class="cards">
+      <label class="card recommended"><input type="radio" name="da_ref" value="A" checked><span class="opt-label">A · PB do stint atual</span><span class="opt-desc">Como você está vs sua melhor volta deste stint.</span></label>
+      <label class="card"><input type="radio" name="da_ref" value="B"><span class="opt-label">B · PB do dia</span></label>
+      <label class="card"><input type="radio" name="da_ref" value="C"><span class="opt-label">C · PB all-time</span></label>
+      <label class="card"><input type="radio" name="da_ref" value="D"><span class="opt-label">D · Ghost selecionado</span></label>
+      <label class="card"><input type="radio" name="da_ref" value="E"><span class="opt-label">E · Operador escolhe</span></label>
+      <label class="card none-option"><input type="radio" name="da_ref" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
+    </div>
+    <div class="outros"><label>outros / explicar</label><textarea name="da_ref_outros"></textarea></div>
+  </div>
+</section>
+
+<!-- 6 TOGGLE VISTA -->
+<section>
+  <h2><span class="num">6</span>Toggle Vista Piloto/Engenheiro — comportamento</h2>
+  <div class="q" data-qid="toggle">
+    <div class="qhead"><span class="qid">TV</span><span class="qtitle">Quando alterna Vista Piloto ↔ Vista Engenheiro, o que acontece?</span></div>
+    <div class="cards">
+      <label class="card recommended"><input type="radio" name="tv_modo" value="A" checked><span class="opt-label">A · Mesmo layout, conteúdo dos blocos muda</span><span class="opt-desc">Layout não rearranja. HUD Trecho vira G-G diagram, P1 Coach vira análise de comportamento, etc. Operador alterna sem perder contexto espacial.</span></label>
+      <label class="card"><input type="radio" name="tv_modo" value="B"><span class="opt-label">B · Layout rearranja inteiro</span><span class="opt-desc">Engenheiro tem layout próprio, blocos diferentes.</span></label>
+      <label class="card"><input type="radio" name="tv_modo" value="C"><span class="opt-label">C · Abre tela separada (segunda página)</span></label>
+      <label class="card"><input type="radio" name="tv_modo" value="D"><span class="opt-label">D · Toggle por bloco individual</span><span class="opt-desc">Cada bloco tem seu próprio switch piloto/engenheiro.</span></label>
+      <label class="card none-option"><input type="radio" name="tv_modo" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
+    </div>
+    <div class="outros"><label>outros / explicar</label><textarea name="tv_outros"></textarea></div>
+  </div>
+
+  <div class="q" data-qid="toggle-quem">
+    <div class="qhead"><span class="qid">TV·op</span><span class="qtitle">Quem pode alternar a vista?</span></div>
+    <div class="cards">
+      <label class="card recommended"><input type="radio" name="tv_quem" value="A" checked><span class="opt-label">A · Qualquer operador no Command Box</span></label>
+      <label class="card"><input type="radio" name="tv_quem" value="B"><span class="opt-label">B · Só admin / chefe da equipe</span></label>
+      <label class="card"><input type="radio" name="tv_quem" value="C"><span class="opt-label">C · Cada papel tem sua vista (engenheiro vê Engenheiro, piloto-fora vê Piloto)</span></label>
+      <label class="card none-option"><input type="radio" name="tv_quem" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
+    </div>
+    <div class="outros"><label>outros / explicar</label><textarea name="tv_quem_outros"></textarea></div>
+  </div>
+
+  <div class="q" data-qid="toggle-default">
+    <div class="qhead"><span class="qid">TV·def</span><span class="qtitle">Qual é a vista padrão ao abrir o Command Box?</span></div>
+    <div class="cards">
+      <label class="card recommended"><input type="radio" name="tv_default" value="A" checked><span class="opt-label">A · Vista Piloto</span><span class="opt-desc">Foco no piloto, mais ação, mais usado.</span></label>
+      <label class="card"><input type="radio" name="tv_default" value="B"><span class="opt-label">B · Vista Engenheiro</span></label>
+      <label class="card"><input type="radio" name="tv_default" value="C"><span class="opt-label">C · Última vista usada (lembra)</span></label>
+      <label class="card none-option"><input type="radio" name="tv_default" value="N"><span class="opt-label">Nenhuma das anteriores</span></label>
+    </div>
+    <div class="outros"><label>outros / explicar</label><textarea name="tv_default_outros"></textarea></div>
+  </div>
+</section>
+
+<div class="bottom-actions">
+  <span style="color:var(--text-3);font-size:13px;margin-right:auto;">Quando terminar (ou em qualquer ponto), aperta:</span>
+  <button type="button" class="secondary" id="btn-download-2">baixar .md</button>
+  <button type="button" id="btn-export-2">copiar respostas</button>
+</div>
+
+<footer class="foot">
+  v1 rodada 3 · 2026-05-08 · auto-save em localStorage · 8 perguntas em 6 áreas · "Nenhuma das anteriores" em todas
+</footer>
+
+</div>
+
+<script>
+(function(){
+  var KEY = 'p1fast-command-box-rodada3-v1';
+  var statusEl = document.getElementById('save-status');
+  var statusTimeout;
+
+  function showStatus(msg, ms){
+    statusEl.textContent = msg;
+    statusEl.classList.add('visible');
+    clearTimeout(statusTimeout);
+    statusTimeout = setTimeout(function(){ statusEl.classList.remove('visible'); }, ms || 1400);
+  }
+
+  function radioNames(){
+    var names = {};
+    document.querySelectorAll('input[type="radio"]').forEach(function(i){ names[i.name] = true; });
+    return Object.keys(names);
+  }
+
+  function save(){
+    var data = { radio:{}, checkbox:{}, textarea:{}, ts: Date.now() };
+    radioNames().forEach(function(name){
+      var inputs = Array.prototype.slice.call(document.querySelectorAll('input[type="radio"][name="'+name+'"]'));
+      var idx = inputs.findIndex(function(i){ return i.checked; });
+      if(idx >= 0) data.radio[name] = idx;
+    });
+    document.querySelectorAll('input[type="checkbox"]').forEach(function(i){
+      data.checkbox[i.name] = i.checked;
+    });
+    document.querySelectorAll('textarea').forEach(function(t){
+      if(t.value.trim()) data.textarea[t.name] = t.value;
+    });
+    try{ localStorage.setItem(KEY, JSON.stringify(data)); showStatus('salvo'); }
+    catch(e){ showStatus('erro ao salvar', 2500); }
+    updateProgress();
+  }
+
+  function restore(){
+    var raw = localStorage.getItem(KEY);
+    if(!raw) return false;
+    try{
+      var data = JSON.parse(raw);
+      Object.keys(data.radio || {}).forEach(function(name){
+        var inputs = document.querySelectorAll('input[type="radio"][name="'+name+'"]');
+        var idx = data.radio[name];
+        inputs.forEach(function(i){ i.checked = false; });
+        if(inputs[idx]) inputs[idx].checked = true;
+      });
+      Object.keys(data.checkbox || {}).forEach(function(name){
+        var inp = document.querySelector('input[type="checkbox"][name="'+name+'"]');
+        if(inp) inp.checked = data.checkbox[name];
+      });
+      Object.keys(data.textarea || {}).forEach(function(name){
+        var t = document.querySelector('textarea[name="'+name+'"]');
+        if(t) t.value = data.textarea[name];
+      });
+      return true;
+    }catch(e){ return false; }
+  }
+
+  function updateProgress(){
+    var total = 0, answered = 0;
+    document.querySelectorAll('.q').forEach(function(qEl){
+      total++;
+      var hasChecked = qEl.querySelector('input:checked');
+      var hasText = qEl.querySelector('textarea')?.value?.trim();
+      if(hasChecked || hasText){ answered++; qEl.classList.add('answered'); }
+      else qEl.classList.remove('answered');
+    });
+    document.getElementById('answered-count').textContent = answered;
+    document.getElementById('total-count').textContent = total;
+    var pct = total > 0 ? Math.round((answered/total)*100) : 0;
+    document.getElementById('progress-bar-fill').style.width = pct + '%';
+  }
+
+  function buildExportText(){
+    var lines = [];
+    lines.push('# Respostas Command Box rodada 3 · ' + new Date().toLocaleString('pt-BR'));
+    lines.push('');
+    document.querySelectorAll('section').forEach(function(secEl){
+      var h2 = secEl.querySelector('h2');
+      if(!h2) return;
+      var sectionTitle = h2.textContent.replace(/\s+/g,' ').trim();
+      var qs = secEl.querySelectorAll('.q');
+      var sectionLines = [];
+      qs.forEach(function(qEl){
+        var qid = qEl.querySelector('.qid')?.textContent?.trim();
+        var qtitle = qEl.querySelector('.qtitle')?.textContent?.trim();
+        if(!qid) return;
+        var selecionados = [];
+        qEl.querySelectorAll('input:checked').forEach(function(i){
+          var lbl = i.closest('label')?.querySelector('.opt-label')?.textContent?.trim();
+          if(lbl) selecionados.push(lbl);
+        });
+        var outros = qEl.querySelector('textarea')?.value?.trim();
+        if(selecionados.length === 0 && !outros) return;
+        sectionLines.push('### ' + qid + ' — ' + qtitle);
+        selecionados.forEach(function(s){ sectionLines.push('  - ' + s); });
+        if(outros) sectionLines.push('  outros: ' + outros);
+        sectionLines.push('');
+      });
+      if(sectionLines.length > 0){
+        lines.push('## ' + sectionTitle);
+        lines.push('');
+        lines = lines.concat(sectionLines);
+      }
+    });
+    return lines.join('\n');
+  }
+
+  function exportar(){
+    var text = buildExportText();
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ showStatus('copiado — cole no chat', 3000); })
+        .catch(function(){ fallbackCopy(text); });
+    } else fallbackCopy(text);
+  }
+
+  function fallbackCopy(text){
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); showStatus('copiado — cole no chat', 3000); }
+    catch(e){ showStatus('erro ao copiar', 4000); }
+    document.body.removeChild(ta);
+  }
+
+  function baixarMd(){
+    var text = buildExportText();
+    var blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'command-box-rodada3.md';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showStatus('arquivo baixado', 2500);
+  }
+
+  function limpar(){
+    if(!confirm('Limpar todas as respostas? Não tem volta.')) return;
+    localStorage.removeItem(KEY);
+    location.reload();
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    var restored = restore();
+    if(!restored) save(); else showStatus('restaurado da última sessão', 2500);
+    updateProgress();
+
+    document.addEventListener('change', save);
+    document.addEventListener('input', function(e){
+      if(e.target && e.target.tagName === 'TEXTAREA') save();
+    });
+
+    ['btn-export','btn-export-2'].forEach(function(id){
+      var b = document.getElementById(id);
+      if(b) b.addEventListener('click', exportar);
+    });
+    ['btn-download','btn-download-2'].forEach(function(id){
+      var b = document.getElementById(id);
+      if(b) b.addEventListener('click', baixarMd);
+    });
+    var btnClear = document.getElementById('btn-clear');
+    if(btnClear) btnClear.addEventListener('click', limpar);
+
+    document.addEventListener('keydown', function(e){
+      if(e.target && (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT')) return;
+      if(e.metaKey || e.ctrlKey || e.altKey) return;
+      if(e.key === 'e') exportar();
+      if(e.key === 'd') baixarMd();
+    });
+  });
+})();
+</script>
+</body>
+</html>
