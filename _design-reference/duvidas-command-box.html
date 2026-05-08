@@ -171,6 +171,32 @@ ul li::before{
 }
 .box-out-of-scope h3{margin-top:0;color:var(--text-2);}
 
+.answered{
+  opacity:.42;
+  position:relative;
+}
+.answered .qhead::after{
+  content:"respondido";
+  font-size:10px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;
+  color:var(--good);
+  margin-left:auto;
+  padding:2px 8px;
+  border:1px solid var(--good);
+  border-radius:3px;
+  align-self:center;
+  opacity:.7;
+}
+.answered .qhead{display:flex;align-items:center;}
+.answered .qbody{text-decoration:line-through;text-decoration-color:var(--text-3);text-decoration-thickness:1px;}
+
+.section-done h2{
+  color:var(--text-3);
+}
+.section-done h2 .num{
+  color:var(--good);
+}
+
 footer.foot{
   margin-top:48px;
   padding:24px 0;
