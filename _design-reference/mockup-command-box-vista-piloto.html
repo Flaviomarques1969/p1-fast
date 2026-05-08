@@ -2014,6 +2014,21 @@ html,body{
     blocks().forEach(bindBlock);
     blocks().forEach(updateTag);
     if(restored) showStatus('restaurado', 2000);
+
+    var SL_MIGRATED = 'p1fast-shift-light-fit-v1';
+    if(!localStorage.getItem(SL_MIGRATED)){
+      var sl = document.querySelector('.b-custom.is-shift-light');
+      if(sl){
+        sl.style.left   = '28%';
+        sl.style.top    = '0%';
+        sl.style.width  = '28%';
+        sl.style.height = '7.98%';
+        updateTag(sl);
+        save();
+      }
+      localStorage.setItem(SL_MIGRATED, '1');
+    }
+
     startShiftLightAnimation();
 
     document.getElementById('btn-edit-toggle').addEventListener('click', toggleEdit);
