@@ -1979,9 +1979,6 @@ html,body{
       var lastClosed = (segIdx - 1 + SEGMENT_COUNT) % SEGMENT_COUNT;
       setLiveColor(SEGMENT_DELTAS[lastClosed] < 0);
 
-      if(liveTrail)  buildTrail(liveTrail,  path, totalLen, liveT,  3.4, '#FF2A2A', 0.85);
-      if(ghostTrail) buildTrail(ghostTrail, path, totalLen, ghostT, 2.6, '#38BCFF', 0.55);
-
       var liveSec  = MAP_CFG.liveLapSec  * liveT;
       var ghostSec = MAP_CFG.ghostLapSec * liveT;
       var delta    = liveSec - ghostSec;
