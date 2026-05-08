@@ -295,6 +295,28 @@ struct TelemetriaView: View {
         }
     }
 
+    /// PARAR finaliza a sessão demo: status='finalizada' + dataFim
+    /// + reenfileira como UPDATE pra subir pro servidor. Sem isso a
+    /// row fica eternamente 'ativa' e o drainer/Edge Function rejeita.
+    /// (Field test 2026-05-08 deixou 2 sessões órfãs por essa falta.)
+    /// Não gera voltas/segment_executions — esse fluxo é do StintRepo.
+    private func finalizeSessao() async {
+        do {
+            try await queue.write { db in
+                guard var sessao = try Sessao.fetchOne(db, key: sessaoId) else { return }
+                let now = DB.nowMs()
+                sessao.status = "finalizada"
+                sessao.dataFim = now
+                sessao.updatedAt = now
+                sessao.syncedAt = nil
+                try sessao.update(db)
+                try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: sessaoId, op: .update, record: sessao)
+            }
+        } catch {
+            sessaoErro = "Falha ao encerrar sessão: \(error.localizedDescription)"
+        }
+    }
+
     private func format(_ s: TimeInterval) -> String {
         String(format: "%.1f", s)
     }
