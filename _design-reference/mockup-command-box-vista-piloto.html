@@ -218,7 +218,7 @@ html,body{
   width:100%;height:100%;display:block;
 }
 .track-transformed{
-  transform: rotate(-105deg) scale(1.140) translate(266px, 66px);
+  transform: rotate(-106deg) scale(1.140) translate(300px, -73px);
   transform-origin: 426px 430px;
   transform-box: fill-box;
 }
@@ -614,10 +614,127 @@ html,body{
   padding:4px 10px;border-radius:3px;
   letter-spacing:.04em;
 }
+
+/* MODO EDIÇÃO */
+.edit-toolbar{
+  width:min(1280px, 100%);
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:14px 0;
+  border-bottom:1px solid var(--hairline);
+  margin-bottom:8px;
+  font-family:'Inter', sans-serif;
+}
+.edit-toolbar h2{
+  font-size:13px;font-weight:600;letter-spacing:.04em;
+  color:var(--text-1);
+  margin-right:auto;
+}
+.edit-toolbar button{
+  background:transparent;color:var(--text-2);
+  border:1px solid var(--hairline);border-radius:6px;
+  padding:8px 14px;
+  font-family:inherit;font-size:12px;font-weight:600;
+  letter-spacing:.04em;cursor:pointer;
+  transition:all .15s;
+}
+.edit-toolbar button:hover{
+  border-color:var(--gold-2);color:var(--gold-1);
+}
+.edit-toolbar button.active{
+  background:var(--gold-2);color:var(--bg);border-color:var(--gold-2);
+}
+.edit-toolbar button.primary{
+  background:var(--gold-2);color:var(--bg);border-color:var(--gold-2);
+}
+.edit-toolbar .save-status{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:11px;color:var(--good);
+  letter-spacing:.05em;text-transform:uppercase;
+  opacity:0;transition:opacity .2s;
+}
+.edit-toolbar .save-status.visible{opacity:1;}
+
+/* Quando .stage tem .edit-mode, blocos viram editáveis */
+.stage.edit-mode [data-block-id]{
+  cursor:move;
+  outline:1px dashed rgba(212,175,55,0.4);
+  outline-offset:-1px;
+}
+.stage.edit-mode [data-block-id]:hover{
+  outline:1.5px solid var(--gold-2);
+  outline-offset:-1px;
+}
+.stage.edit-mode [data-block-id].dragging{
+  outline:2px solid var(--gold-1);
+  z-index:30;
+}
+.stage.edit-mode [data-block-id].resizing{
+  outline:2px solid var(--good);
+  z-index:30;
+}
+
+/* Resize handle (visível só em edit-mode) */
+.stage.edit-mode [data-block-id]::after{
+  content:"";
+  position:absolute;right:0;bottom:0;
+  width:14px;height:14px;
+  background:var(--gold-2);
+  cursor:nwse-resize;
+  clip-path:polygon(100% 0, 100% 100%, 0 100%);
+  z-index:31;
+}
+
+/* Coord overlay em cada bloco em edit-mode */
+.coord-tag{
+  display:none;
+  position:absolute;top:2px;right:2px;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:9px;color:#000;
+  background:var(--gold-2);
+  padding:2px 5px;border-radius:2px;
+  pointer-events:none;z-index:32;
+  letter-spacing:.04em;
+}
+.stage.edit-mode .coord-tag{display:block;}
+
+/* Painel export */
+.export-panel{
+  width:min(1280px, 100%);
+  background:var(--surface);
+  border:1px solid var(--gold-2);
+  border-radius:8px;
+  padding:14px 18px;margin-top:12px;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:12px;
+  display:none;
+  position:relative;
+}
+.export-panel.visible{display:block;}
+.export-panel pre{white-space:pre-wrap;word-break:break-all;color:var(--text-2);}
+.export-panel .close{
+  position:absolute;top:10px;right:14px;
+  background:transparent;color:var(--text-3);
+  border:1px solid var(--hairline);
+  border-radius:4px;padding:3px 9px;cursor:pointer;font-size:11px;
+}
+
 </style>
 </head>
 <body>
 <div class="page-wrap">
+
+<div class="edit-toolbar">
+  <h2>Modo edição — arraste e redimensione os blocos</h2>
+  <span id="edit-save-status" class="save-status">salvo</span>
+  <button type="button" id="btn-edit-toggle" class="primary">Modo edição</button>
+  <button type="button" id="btn-edit-reset">resetar</button>
+  <button type="button" id="btn-edit-export">copiar layout</button>
+</div>
+
+<div class="export-panel" id="export-panel">
+  <button class="close" id="btn-export-close">fechar</button>
+  <pre id="export-text"></pre>
+</div>
 
 <div class="page-meta">
   <span class="pill">Mockup polido v1</span>
@@ -628,7 +745,7 @@ html,body{
 <div class="stage">
 
   <!-- HEADER -->
-  <div class="b-header">
+  <div class="b-header" data-block-id="header" data-block-name="Header (shift light + branding)">
     <div class="brand">
       <span class="b-mark">P 1 · F A S T</span>
       <span class="b-name">B R A S Í L I A</span>
@@ -661,7 +778,7 @@ html,body{
   </div>
 
   <!-- VÍDEO -->
-  <div class="b-video">
+  <div class="b-video" data-block-id="video" data-block-name="Vídeo (1 ou 2 câmeras)">
     <div class="video-frame">
       <span class="v-rec">● REC · CAM ONBOARD</span>
       <span class="v-stamp">vídeo ao vivo</span>
@@ -671,7 +788,7 @@ html,body{
   </div>
 
   <!-- MAPA ATELIER -->
-  <div class="b-map">
+  <div class="b-map" data-block-id="mapa" data-block-name="Mapa (atelier)">
     <svg viewBox="130 110 580 660" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
       <defs>
         <linearGradient id="runoff" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -753,7 +870,7 @@ html,body{
   </div>
 
   <!-- HUD TELEMETRIA -->
-  <div class="b-hud">
+  <div class="b-hud" data-block-id="hud" data-block-name="HUD telemetria">
     <span class="hud-block-title">telemetria</span>
 
     <div class="hero-vel">
@@ -787,7 +904,7 @@ html,body{
   </div>
 
   <!-- HUD TRECHO -->
-  <div class="b-hud-trecho">
+  <div class="b-hud-trecho" data-block-id="hud-trecho" data-block-name="HUD Trecho">
     <div class="trecho-title">
       <span>trecho atual</span>
       <span class="t-which">C3 · entrada</span>
@@ -811,7 +928,7 @@ html,body{
   </div>
 
   <!-- P1 COACH -->
-  <div class="b-coach">
+  <div class="b-coach" data-block-id="coach" data-block-name="P1 Coach">
     <span class="coach-eyebrow">p1 coach</span>
 
     <div class="coach-frase">freie <em>mais cedo</em> na 3</div>
@@ -840,7 +957,7 @@ html,body{
   </div>
 
   <!-- STINT -->
-  <div class="b-stint">
+  <div class="b-stint" data-block-id="stint" data-block-name="Stint">
     <div class="stint-title">
       <span class="st-key">stint</span>
       <span class="st-num">3 / 5</span>
@@ -874,7 +991,7 @@ html,body{
   </div>
 
   <!-- CHECKLIST -->
-  <div class="b-checklist">
+  <div class="b-checklist" data-block-id="checklist" data-block-name="Checklist do stint">
     <div class="cl-title">
       <span>checklist</span>
       <span class="cl-count">3</span>
@@ -908,7 +1025,7 @@ html,body{
   </div>
 
   <!-- DELTA ACUMULADO -->
-  <div class="b-delta-acum">
+  <div class="b-delta-acum" data-block-id="delta-acum" data-block-name="Delta Acumulado de Voltas">
     <span class="da-eyebrow"><strong>Δ acumulado</strong> · vs PB all-time</span>
     <div class="da-spark">
       <svg viewBox="0 0 600 30" preserveAspectRatio="none">
@@ -944,5 +1061,229 @@ html,body{
 </div>
 
 </div>
+
+<script>
+(function(){
+  var KEY = 'p1fast-vista-piloto-layout-v1';
+  var stage = document.querySelector('.stage');
+  var statusEl = document.getElementById('edit-save-status');
+  var statusTimeout;
+  var blocks = Array.prototype.slice.call(document.querySelectorAll('[data-block-id]'));
+  var initialState = {};
+  var editMode = false;
+
+  function showStatus(msg, ms){
+    if(!statusEl) return;
+    statusEl.textContent = msg;
+    statusEl.classList.add('visible');
+    clearTimeout(statusTimeout);
+    statusTimeout = setTimeout(function(){ statusEl.classList.remove('visible'); }, ms || 1200);
+  }
+
+  // Captura estado inicial dos blocos lendo CSS computado
+  function captureInitial(){
+    blocks.forEach(function(el){
+      var s = el.style;
+      // Lê do style inline; se não tem, usa o computado
+      var rect = el.getBoundingClientRect();
+      var stageRect = stage.getBoundingClientRect();
+      initialState[el.dataset.blockId] = {
+        left: parseFloat(s.left) || (rect.left - stageRect.left)/stageRect.width*100,
+        top: parseFloat(s.top) || (rect.top - stageRect.top)/stageRect.height*100,
+        width: parseFloat(s.width) || rect.width/stageRect.width*100,
+        height: parseFloat(s.height) || rect.height/stageRect.height*100
+      };
+      // Adiciona coord-tag em cada bloco
+      var tag = document.createElement('span');
+      tag.className = 'coord-tag';
+      el.appendChild(tag);
+      el.__coordTag = tag;
+    });
+  }
+
+  function readBlock(el){
+    return {
+      x: parseFloat(el.style.left) || 0,
+      y: parseFloat(el.style.top) || 0,
+      w: parseFloat(el.style.width) || 0,
+      h: parseFloat(el.style.height) || 0
+    };
+  }
+
+  function applyBlock(el, data){
+    el.style.left = data.x + '%';
+    el.style.top = data.y + '%';
+    el.style.width = data.w + '%';
+    el.style.height = data.h + '%';
+    updateTag(el);
+  }
+
+  function updateTag(el){
+    var d = readBlock(el);
+    if(el.__coordTag){
+      el.__coordTag.textContent = d.x.toFixed(0)+'/'+d.y.toFixed(0)+' · '+d.w.toFixed(0)+'×'+d.h.toFixed(0);
+    }
+  }
+
+  function save(){
+    var data = {};
+    blocks.forEach(function(el){
+      data[el.dataset.blockId] = readBlock(el);
+    });
+    try{
+      localStorage.setItem(KEY, JSON.stringify(data));
+      showStatus('salvo');
+    }catch(e){ showStatus('erro', 2500); }
+    blocks.forEach(updateTag);
+  }
+
+  function restore(){
+    var raw = localStorage.getItem(KEY);
+    if(!raw) return false;
+    try{
+      var data = JSON.parse(raw);
+      blocks.forEach(function(el){
+        var d = data[el.dataset.blockId];
+        if(d) applyBlock(el, d);
+      });
+      return true;
+    }catch(e){ return false; }
+  }
+
+  function reset(){
+    if(!confirm('Resetar layout pros valores iniciais?')) return;
+    localStorage.removeItem(KEY);
+    blocks.forEach(function(el){
+      var d = initialState[el.dataset.blockId];
+      if(d){
+        el.style.left = d.left + '%';
+        el.style.top = d.top + '%';
+        el.style.width = d.width + '%';
+        el.style.height = d.height + '%';
+        updateTag(el);
+      }
+    });
+    showStatus('resetado', 2000);
+  }
+
+  function exportar(){
+    var data = blocks.map(function(el){
+      var d = readBlock(el);
+      return {
+        id: el.dataset.blockId,
+        name: el.dataset.blockName,
+        pct: { x: +d.x.toFixed(2), y: +d.y.toFixed(2), w: +d.w.toFixed(2), h: +d.h.toFixed(2) },
+        px: { x: Math.round(d.x*1280/100), y: Math.round(d.y*720/100), w: Math.round(d.w*1280/100), h: Math.round(d.h*720/100) }
+      };
+    });
+    var json = { device: 'TV 32" landscape · Vista Piloto', stage_px: {w:1280, h:720}, ts: new Date().toISOString(), blocks: data };
+    var text = JSON.stringify(json, null, 2);
+    document.getElementById('export-text').textContent = text;
+    document.getElementById('export-panel').classList.add('visible');
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ showStatus('copiado', 2500); });
+    }
+  }
+
+  // Drag/Resize
+  function startDrag(el, ev){
+    if(!editMode) return;
+    if(ev.offsetX > el.clientWidth - 16 && ev.offsetY > el.clientHeight - 16){
+      // Canto SE = resize
+      return startResize(el, ev);
+    }
+    ev.preventDefault();
+    el.classList.add('dragging');
+    var rect = stage.getBoundingClientRect();
+    var d = readBlock(el);
+    var startX = ev.clientX, startY = ev.clientY;
+    var origX = d.x, origY = d.y;
+    var maxX = 100 - d.w, maxY = 100 - d.h;
+
+    function onMove(e){
+      var dx = (e.clientX - startX) / rect.width * 100;
+      var dy = (e.clientY - startY) / rect.height * 100;
+      var nx = Math.max(0, Math.min(maxX, Math.round(origX + dx)));
+      var ny = Math.max(0, Math.min(maxY, Math.round(origY + dy)));
+      el.style.left = nx + '%';
+      el.style.top = ny + '%';
+      updateTag(el);
+    }
+    function onUp(){
+      el.classList.remove('dragging');
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      save();
+    }
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }
+
+  function startResize(el, ev){
+    if(!editMode) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    el.classList.add('resizing');
+    var rect = stage.getBoundingClientRect();
+    var d = readBlock(el);
+    var startX = ev.clientX, startY = ev.clientY;
+    var origW = d.w, origH = d.h;
+    var maxW = 100 - d.x, maxH = 100 - d.y;
+
+    function onMove(e){
+      var dw = (e.clientX - startX) / rect.width * 100;
+      var dh = (e.clientY - startY) / rect.height * 100;
+      var nw = Math.max(3, Math.min(maxW, Math.round(origW + dw)));
+      var nh = Math.max(3, Math.min(maxH, Math.round(origH + dh)));
+      el.style.width = nw + '%';
+      el.style.height = nh + '%';
+      updateTag(el);
+    }
+    function onUp(){
+      el.classList.remove('resizing');
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      save();
+    }
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }
+
+  function toggleEdit(){
+    editMode = !editMode;
+    stage.classList.toggle('edit-mode', editMode);
+    var btn = document.getElementById('btn-edit-toggle');
+    if(btn){
+      btn.classList.toggle('active', editMode);
+      btn.textContent = editMode ? 'Sair da edição' : 'Modo edição';
+    }
+    showStatus(editMode ? 'edição on' : 'edição off', 1500);
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    captureInitial();
+    var restored = restore();
+    blocks.forEach(updateTag);
+    if(restored) showStatus('restaurado', 2000);
+
+    blocks.forEach(function(el){
+      el.addEventListener('pointerdown', function(ev){ startDrag(el, ev); });
+    });
+
+    document.getElementById('btn-edit-toggle').addEventListener('click', toggleEdit);
+    document.getElementById('btn-edit-reset').addEventListener('click', reset);
+    document.getElementById('btn-edit-export').addEventListener('click', exportar);
+    document.getElementById('btn-export-close').addEventListener('click', function(){
+      document.getElementById('export-panel').classList.remove('visible');
+    });
+
+    document.addEventListener('keydown', function(e){
+      if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+      if(e.metaKey || e.ctrlKey || e.altKey) return;
+      if(e.key === 'e') toggleEdit();
+    });
+  });
+})();
+</script>
 </body>
 </html>
