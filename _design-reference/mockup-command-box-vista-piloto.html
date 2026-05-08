@@ -882,6 +882,129 @@ html,body{
 .t-cell.warn{ border-color:rgba(255,179,71,0.45); }
 .t-cell.warn .t-val{ color:var(--warn); }
 
+/* Shift Light — 12 LEDs progressivos + Gear + RPM */
+.b-custom.is-shift-light{
+  background:rgba(10,14,24,0.55);
+  border:1px solid var(--hairline);
+  border-radius:8px;
+  padding:0 12px;
+  display:grid;
+  grid-template-columns: 42px 1fr 78px;
+  align-items:center;
+  gap:12px;
+  font-family:'Helvetica Neue', sans-serif;
+  overflow:hidden;
+}
+.b-custom.is-shift-light .b-custom-name,
+.b-custom.is-shift-light .b-custom-hint{ display:none; }
+
+.sl-gear{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border-right:0.5px solid rgba(212,175,55,0.22);
+  padding-right:10px;height:70%;
+}
+.sl-gear-num{
+  font-family:'Helvetica Neue', sans-serif;
+  font-weight:200;
+  font-size:30px;
+  line-height:1;
+  color:var(--text-1);
+  letter-spacing:-1.2px;
+  font-variant-numeric:tabular-nums;
+}
+.sl-gear-label{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:6px;
+  letter-spacing:.24em;
+  color:var(--gold-2);
+  text-transform:uppercase;
+  margin-top:2px;
+  font-weight:500;
+}
+
+.sl-leds{
+  display:flex;
+  gap:4px;
+  align-items:center;
+  height:22px;
+}
+.sl-led{
+  flex:1;
+  height:100%;
+  border-radius:2.5px;
+  background:rgba(245,240,224,0.025);
+  border:0.5px solid rgba(212,175,55,0.10);
+  transition:background .07s ease, box-shadow .07s ease, border-color .07s ease;
+}
+.sl-led.lit-green{
+  background:linear-gradient(180deg, #6BF098 0%, #2BA85A 80%);
+  border-color:rgba(107,240,152,0.75);
+  box-shadow:0 0 6px rgba(107,240,152,0.55), inset 0 1px 1px rgba(255,255,255,0.35);
+}
+.sl-led.lit-champagne{
+  background:linear-gradient(180deg, #F4DEA0 0%, #C99A2C 80%);
+  border-color:rgba(212,175,55,0.80);
+  box-shadow:0 0 7px rgba(212,175,55,0.70), inset 0 1px 1px rgba(255,255,255,0.40);
+}
+.sl-led.lit-amber{
+  background:linear-gradient(180deg, #FFCB6E 0%, #E48A1A 80%);
+  border-color:rgba(255,179,71,0.85);
+  box-shadow:0 0 8px rgba(255,179,71,0.75), inset 0 1px 1px rgba(255,255,255,0.40);
+}
+.sl-led.lit-red{
+  background:linear-gradient(180deg, #FF7164 0%, #C92414 80%);
+  border-color:rgba(255,90,80,0.95);
+  box-shadow:0 0 9px rgba(255,90,80,0.85), inset 0 1px 1px rgba(255,255,255,0.30);
+}
+.sl-led.lit-blue{
+  background:linear-gradient(180deg, #FFFFFF 0%, #BDE6FF 60%, #6FBCFF 100%);
+  border-color:rgba(255,255,255,0.95);
+  box-shadow:0 0 14px rgba(189,230,255,0.95), 0 0 5px #FFFFFF, inset 0 1px 2px rgba(255,255,255,0.65);
+}
+
+.b-custom.is-shift-light.shift-now .sl-led.lit-green,
+.b-custom.is-shift-light.shift-now .sl-led.lit-champagne,
+.b-custom.is-shift-light.shift-now .sl-led.lit-amber,
+.b-custom.is-shift-light.shift-now .sl-led.lit-red,
+.b-custom.is-shift-light.shift-now .sl-led.lit-blue{
+  animation: sl-flash 0.10s steps(2,end) infinite;
+}
+@keyframes sl-flash{
+  0%, 49%   { opacity:1; }
+  50%, 100% { opacity:0.18; }
+}
+
+.sl-rpm{
+  display:flex;flex-direction:column;align-items:flex-end;justify-content:center;
+  border-left:0.5px solid rgba(212,175,55,0.22);
+  padding-left:10px;height:70%;
+}
+.sl-rpm-num{
+  font-family:'Helvetica Neue', sans-serif;
+  font-weight:200;
+  font-size:24px;
+  line-height:1;
+  color:var(--text-1);
+  letter-spacing:-.6px;
+  font-variant-numeric:tabular-nums;
+  transition:color .12s ease, text-shadow .12s ease;
+}
+.sl-rpm.zone-champagne .sl-rpm-num{ color:#F0DCA0; }
+.sl-rpm.zone-amber .sl-rpm-num{ color:#FFB347; }
+.sl-rpm.zone-red .sl-rpm-num{
+  color:#FF5A4E;
+  text-shadow:0 0 8px rgba(255,90,80,0.55);
+}
+.sl-rpm-label{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:6px;
+  letter-spacing:.26em;
+  color:var(--gold-2);
+  text-transform:uppercase;
+  margin-top:3px;
+  font-weight:500;
+}
+
 /* Bloco custom (criado pelo botão adicionar) */
 .b-custom{
   position:absolute;
