@@ -260,14 +260,21 @@ code{
 <div class="box-decided">
   <h3>O que já está decidido (não vou reabrir)</h3>
   <ul>
-    <li>App iOS modo "BOX" → AirPlay → Apple TV → TV 32" (PLANO_FASE_1 §2)</li>
-    <li>Tela <strong>diferente</strong> do cockpit do piloto (visão histórica + interação) — MS-12.1</li>
-    <li>Canal de mensagens via Supabase Realtime — MS-12.3</li>
-    <li>Flag <code>visivelNoBox</code> por mensagem (visível ou privada) — MS-12.4</li>
+    <li>App iOS modo "BOX" → AirPlay → Apple TV → TV 32"</li>
+    <li>Tela <strong>diferente</strong> do cockpit do piloto (visão histórica + interação)</li>
+    <li>Canal de mensagens via Supabase Realtime, com flag visível-no-box vs privada</li>
     <li>"Box TV" não tem login extra: reflete o celular do operador</li>
     <li>Telemetria via Realtime = <strong>eventos agregados</strong>, não samples (ADR-014)</li>
-    <li>Vmin georef já vem persistido em <code>segment_executions.vmin_*</code> (MS-2.5)</li>
+    <li>Vmin georef já vem persistido em <code>segment_executions.vmin_*</code></li>
     <li>Cockpits NÃO seguem padrão B — DNA próprio (preto, accents, halo)</li>
+  </ul>
+
+  <h3 style="margin-top:18px;">Decidido nesta rodada (Flávio · 2026-05-08)</h3>
+  <ul>
+    <li><strong>Nome:</strong> "Command Box" é o nome novo (substitui "Box Cockpit" / "Cockpit do Box"). Sem mudança de escopo — feature em desenvolvimento.</li>
+    <li><strong>Língua da UI:</strong> português (mesmo padrão do resto do app, "você").</li>
+    <li><strong>Estilo do mapa:</strong> usar o SVG <code>assets/pistas/premium-styles/atelier.svg</code> como referência canônica. É o "atelier premium" — terceiro DNA visual: fundo radial escuro com gradientes warm/cool, paleta champagne/ouro (#D4AF37), trail/glow do live (laranja #FF7A1A), ghost (cyan #7DD3FC), HUD lateral com velocidade hero 76px, RPM em gauge, branding fino. <strong>Não é padrão B, não é cockpit do piloto — é a identidade do Command Box.</strong></li>
+    <li><strong>Internet:</strong> em Brasília, sinal 5G cobre o autódromo todo — hotspot 5G do iPhone do operador resolve.</li>
   </ul>
 </div>
 
