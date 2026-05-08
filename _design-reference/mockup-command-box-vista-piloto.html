@@ -1441,29 +1441,10 @@ html,body{
         <circle data-marker="live-dot"  cx="295" cy="707" r="2.2" fill="#FFFFFF"/>
       </g>
 
-      <!-- Apex markers + Vmin labels georef -->
-      <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#F0DCA0">
-        <!-- Curva 1 (parte baixa-esquerda) -->
-        <circle cx="180" cy="630" r="3.5" fill="none" stroke="#D4AF37" stroke-width="0.8"/>
-        <circle cx="180" cy="630" r="1.2" fill="#D4AF37"/>
-        <line x1="180" y1="630" x2="148" y2="612" stroke="#D4AF37" stroke-width="0.5" stroke-opacity="0.55"/>
-        <text x="143" y="608" text-anchor="end" font-size="10" letter-spacing="1.5" fill-opacity="0.85">Vmin C1</text>
-        <text x="143" y="622" text-anchor="end" font-size="13" letter-spacing="0" fill-opacity="0.95">68 km/h</text>
-
-        <!-- Curva 2 (topo) -->
-        <circle cx="328" cy="155" r="3.5" fill="none" stroke="#D4AF37" stroke-width="0.8"/>
-        <circle cx="328" cy="155" r="1.2" fill="#D4AF37"/>
-        <line x1="328" y1="155" x2="328" y2="128" stroke="#D4AF37" stroke-width="0.5" stroke-opacity="0.55"/>
-        <text x="328" y="120" text-anchor="middle" font-size="10" letter-spacing="1.5" fill-opacity="0.85">Vmin C2</text>
-        <text x="328" y="134" text-anchor="middle" font-size="13" letter-spacing="0" fill-opacity="0.95">87 km/h</text>
-
-        <!-- Junção (direita) -->
-        <circle cx="678" cy="380" r="3.5" fill="none" stroke="#D4AF37" stroke-width="0.8"/>
-        <circle cx="678" cy="380" r="1.2" fill="#D4AF37"/>
-        <line x1="678" y1="380" x2="703" y2="362" stroke="#D4AF37" stroke-width="0.5" stroke-opacity="0.55"/>
-        <text x="708" y="358" font-size="10" letter-spacing="1.5" fill-opacity="0.85">Vmin Junção</text>
-        <text x="708" y="372" font-size="13" letter-spacing="0" fill-opacity="0.95">142 km/h</text>
-      </g>
+      <!-- Container dos 40 waypoints (5 pontos × 8 curvas) — populado via JS -->
+      <g class="markers-transformed" data-waypoints></g>
+      <!-- Container dos ripples disparados quando live cruza waypoint -->
+      <g class="markers-transformed" data-ripples></g>
 
     </svg>
 
