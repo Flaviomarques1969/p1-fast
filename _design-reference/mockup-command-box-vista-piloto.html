@@ -117,15 +117,21 @@ html,body{
 .gap-fill{ flex:1; }
 
 .health{
-  width:32%;
+  position:absolute !important;
+  top:0; bottom:0;
+  left:56%;
+  right:10%;
+  width:auto !important;
   font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
   border-right:1px solid var(--hairline);
-  display:grid;
+  border-left:1px solid var(--hairline);
+  display:grid !important;
   grid-template-columns:repeat(5, 1fr);
   grid-template-rows:1fr 1fr;
-  gap:5px 5px;
-  padding:6px 6px;
+  gap:3px 3px;
+  padding:3px 4px !important;
   align-items:stretch;
+  z-index:2;
 }
 .h-cell{
   display:flex;flex-direction:column;
@@ -133,14 +139,15 @@ html,body{
   background:rgba(245,240,224,0.035);
   border:0.5px solid rgba(212,175,55,0.14);
   border-radius:3px;
-  padding:3px 7px 4px;
+  padding:0 5px;
   position:relative;
   min-width:0;
+  overflow:hidden;
   transition:background .15s ease, border-color .15s ease;
 }
 .h-cell .h-key{
   color:var(--text-3);
-  letter-spacing:.18em;
+  letter-spacing:.14em;
   font-size:7px;
   text-transform:uppercase;
   font-weight:500;
@@ -150,7 +157,7 @@ html,body{
   color:var(--text-1);
   font-weight:600;
   letter-spacing:0;
-  font-size:13px;
+  font-size:11px;
   font-variant-numeric:tabular-nums;
   line-height:1;
   white-space:nowrap;
