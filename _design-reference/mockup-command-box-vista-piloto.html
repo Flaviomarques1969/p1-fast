@@ -2009,7 +2009,8 @@ html,body{
   function startShiftLightAnimation(){
     if(shiftLightAnimId !== null) return;
     var tStart = performance.now();
-    function tick(now){
+    function tick(){
+      var now = performance.now();
       var dt = ((now - tStart) / 1000) % SHIFT_LIGHT_CFG.totalT;
       var s = shiftLightSample(dt);
       var pct = (s.rpm - SHIFT_LIGHT_CFG.rpmMin) / (SHIFT_LIGHT_CFG.rpmMax - SHIFT_LIGHT_CFG.rpmMin);
