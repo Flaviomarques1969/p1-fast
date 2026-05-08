@@ -287,74 +287,62 @@ html,body{
   transform-box: view-box;
 }
 
-/* Racing line dotted (atelier) */
-.race-line-dotted{
+/* Segmentos coloridos do path por tipo (pinta o trecho da pista inteiro) */
+.seg{
   fill:none;
-  stroke:#E8C97A;
-  stroke-width:1.4;
-  stroke-linecap:round;
-  stroke-dasharray:0 6;
-  stroke-opacity:0.22;
-}
-
-/* Waypoints — base */
-.wp{
+  stroke-linecap:butt;
+  stroke-width:8;
+  pathLength:1;
   opacity:0;
-  transition:opacity .22s cubic-bezier(0.45,0,0.15,1);
+  transition:opacity .30s cubic-bezier(0.45,0,0.15,1);
+}
+.seg.is-context{  opacity:0.92; }
+.seg.is-skeleton{ opacity:0.18; }
+.seg.is-entry{ stroke:#A8AEB8; }
+.seg.is-brake{ stroke:#FF6A3D; filter:drop-shadow(0 0 5px rgba(255,106,61,0.45)); }
+.seg.is-vmin{  stroke:#FFB347; }
+.seg.is-apex{  stroke:#F0DCA0; filter:drop-shadow(0 0 6px rgba(240,220,160,0.55)); }
+.seg.is-exit{  stroke:#3FE08C; filter:drop-shadow(0 0 5px rgba(63,224,140,0.40)); }
+
+/* Plaquinhas (signs) — só na curva ATUAL */
+.sign{
+  opacity:0;
+  transition:opacity .30s cubic-bezier(0.45,0,0.15,1);
   pointer-events:none;
 }
-.wp.is-skeleton{ opacity:0.28; }
-.wp.is-context{  opacity:1; }
-
-/* Entry — círculo vazado discreto */
-.wp.is-entry circle{
+.sign.is-active{ opacity:1; }
+.sign-line{
+  stroke:rgba(212,175,55,0.42);
+  stroke-width:0.5;
   fill:none;
-  stroke:#9DA4B0;
-  stroke-width:1;
-  stroke-opacity:0.85;
 }
-/* Brake — barra perpendicular vermelha quente */
-.wp.is-brake rect{
-  fill:#FF6A3D;
-  filter:drop-shadow(0 0 4px rgba(255,106,61,0.55));
+.sign-bg{
+  fill:rgba(2,3,10,0.94);
+  stroke:rgba(212,175,55,0.42);
+  stroke-width:0.5;
 }
-/* Vmin — losango neutro frio */
-.wp.is-vmin rect{
-  fill:#02030A;
-  stroke:#9DA4B0;
-  stroke-width:1;
-  stroke-opacity:0.85;
+.sign-label{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:5px;
+  letter-spacing:.22em;
+  fill:rgba(212,175,55,0.62);
+  text-anchor:middle;
+  dominant-baseline:middle;
 }
-/* Apex — círculo concêntrico que pulsa, herói do mapa */
-.wp.is-apex .apex-outer{
-  fill:none;
-  stroke:#E8C97A;
-  stroke-width:1.4;
-  transform-box:fill-box;
-  transform-origin:center;
-  animation:apex-pulse 1800ms ease-in-out infinite;
+.sign-value{
+  font-family:'Helvetica Neue', sans-serif;
+  font-size:8px;
+  font-weight:400;
+  fill:#F5F0E0;
+  text-anchor:middle;
+  dominant-baseline:middle;
+  letter-spacing:0;
 }
-.wp.is-apex .apex-inner{ fill:#F0DCA0; }
-@keyframes apex-pulse{
-  0%, 100% { transform:scale(1);   stroke-opacity:0.95; }
-  50%      { transform:scale(1.30); stroke-opacity:0.45; }
-}
-/* Exit — chevron verde "throttle on" */
-.wp.is-exit polyline{
-  fill:none;
-  stroke:#3FE08C;
-  stroke-width:1.4;
-  stroke-linecap:round;
-  stroke-linejoin:round;
-  stroke-opacity:0.92;
-}
-
-/* Ripple — pulso quando o live cruza waypoint */
-.wp-ripple{
-  fill:none;
-  stroke-width:1.4;
-  pointer-events:none;
-}
+.sign.is-entry .sign-value{ fill:#C0C6CE; }
+.sign.is-brake .sign-value{ fill:#FF8C66; font-weight:500; }
+.sign.is-vmin  .sign-value{ fill:#FFB347; font-weight:500; }
+.sign.is-apex  .sign-value{ fill:#F0DCA0; font-weight:600; }
+.sign.is-exit  .sign-value{ fill:#3FE08C; font-weight:500; }
 
 .race-disclaimer{
   position:absolute;
