@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dúvidas — Command Box (P1 Fast)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(20% 0.005 240);
+  --bg-2: oklch(18% 0.005 240);
+  --surface: oklch(24% 0.005 240);
+  --surface-2: oklch(28% 0.005 240);
+  --hairline: oklch(33% 0.005 240);
+  --text: oklch(95% 0.003 240);
+  --text-2: oklch(75% 0.01 240);
+  --text-3: oklch(58% 0.012 240);
+  --accent: oklch(78% 0.13 235);
+  --accent-soft: oklch(82% 0.10 235 / .15);
+  --good: oklch(72% 0.12 155);
+  --warn: oklch(78% 0.13 75);
+  --bad: oklch(68% 0.18 25);
+  --radius: 12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{
+  min-height:100dvh;
+  background:linear-gradient(160deg, oklch(22% 0.005 240) 0%, oklch(18% 0.005 240) 100%);
+  color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  font-weight:400;
+  line-height:1.55;
+}
+body{padding:0 0 96px;}
+
+.wrap{
+  max-width:880px;
+  margin:0 auto;
+  padding:48px 28px 0;
+}
+
+header.head{
+  border-bottom:1px solid var(--hairline);
+  padding-bottom:28px;
+  margin-bottom:36px;
+}
+.eyebrow{
+  font-size:11px;font-weight:600;
+  letter-spacing:.18em;color:var(--text-3);
+  text-transform:uppercase;
+  margin-bottom:14px;
+}
+h1{
+  font-size:32px;line-height:1.15;
+  font-weight:600;letter-spacing:-.01em;
+  margin-bottom:12px;
+}
+.lead{
+  color:var(--text-2);font-size:16px;
+  max-width:640px;
+}
+.lead strong{color:var(--text);font-weight:500;}
+
+.meta{
+  display:flex;flex-wrap:wrap;gap:8px;
+  margin-top:20px;
+}
+.chip{
+  font-size:11px;font-weight:500;
+  letter-spacing:.04em;
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  color:var(--text-2);
+  padding:5px 10px;border-radius:999px;
+}
+
+section{
+  margin-bottom:40px;
+}
+h2{
+  font-size:20px;font-weight:600;
+  letter-spacing:-.005em;
+  color:var(--text);
+  margin-bottom:14px;
+  padding-bottom:8px;
+  border-bottom:1px solid var(--hairline);
+}
+h2 .num{
+  color:var(--accent);
+  font-variant-numeric:tabular-nums;
+  font-weight:500;
+  margin-right:10px;
+}
+h3{
+  font-size:14px;font-weight:600;
+  color:var(--text-2);
+  letter-spacing:.02em;
+  text-transform:uppercase;
+  margin:24px 0 10px;
+}
+
+p{margin-bottom:12px;color:var(--text-2);}
+p strong{color:var(--text);font-weight:500;}
+
+ul{margin:8px 0 16px 0;padding:0;list-style:none;}
+ul li{
+  position:relative;
+  padding:0 0 10px 22px;
+  color:var(--text-2);
+}
+ul li::before{
+  content:"";
+  position:absolute;left:6px;top:10px;
+  width:5px;height:5px;border-radius:50%;
+  background:var(--text-3);
+}
+
+.q{
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
+  padding:16px 18px;
+  margin-bottom:12px;
+}
+.q .qhead{
+  display:flex;gap:12px;align-items:baseline;
+  margin-bottom:6px;
+}
+.q .qid{
+  font-variant-numeric:tabular-nums;
+  font-weight:600;
+  color:var(--accent);
+  font-size:13px;
+  letter-spacing:.04em;
+}
+.q .qtitle{
+  font-weight:500;
+  color:var(--text);
+  font-size:15px;
+}
+.q .qbody{
+  color:var(--text-2);
+  font-size:14px;
+  line-height:1.55;
+  padding-left:0;
+}
+.q .qbody ul{margin-top:8px;}
+
+.box-decided{
+  background:var(--surface-2);
+  border-left:3px solid var(--accent);
+  border-radius:6px;
+  padding:14px 18px;
+  margin:0 0 28px;
+}
+.box-decided h3{
+  margin-top:0;
+  color:var(--accent);
+}
+.box-decided ul li{padding-bottom:6px;}
+
+.box-out-of-scope{
+  background:var(--surface-2);
+  border-left:3px solid var(--text-3);
+  border-radius:6px;
+  padding:14px 18px;
+  margin:24px 0 8px;
+}
+.box-out-of-scope h3{margin-top:0;color:var(--text-2);}
+
+footer.foot{
+  margin-top:48px;
+  padding:24px 0;
+  border-top:1px solid var(--hairline);
+  color:var(--text-3);
+  font-size:13px;
+}
+footer.foot a{color:var(--accent);text-decoration:none;}
+
+code{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  background:var(--surface-2);
+  border:1px solid var(--hairline);
+  padding:1px 6px;border-radius:4px;
+  font-size:.86em;
+  color:var(--text);
+}
+
+.toc{
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
+  padding:18px 22px;
+  margin-bottom:36px;
+}
+.toc h3{margin:0 0 10px;color:var(--text-2);}
+.toc ol{
+  list-style:none;counter-reset:toc;
+  display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;
+}
+.toc ol li{
+  counter-increment:toc;
+  font-size:14px;color:var(--text-2);
+  padding-left:26px;position:relative;
+}
+.toc ol li::before{
+  content:counter(toc,decimal-leading-zero);
+  position:absolute;left:0;
+  color:var(--text-3);
+  font-variant-numeric:tabular-nums;
+  font-size:12px;
+  font-weight:500;
+}
+.toc ol li a{color:inherit;text-decoration:none;}
+.toc ol li a:hover{color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="head">
+  <div class="eyebrow">P1 Fast · MS-12 · 2026-05-08</div>
+  <h1>Dúvidas sobre o Command Box</h1>
+  <p class="lead">
+    Antes de fechar o mockup do circuito de Brasília e começar a desenhar a tela do Command Box, preciso alinhar com você um conjunto de definições. Listei abaixo o que já está decidido (do <code>PLANO_FASE_1.md</code>) e o que ainda está em aberto, agrupado por área. Quanto mais preciso aqui, menos retrabalho lá na frente.
+  </p>
+  <div class="meta">
+    <span class="chip">MS-12</span>
+    <span class="chip">depende de MS-10 + MS-11</span>
+    <span class="chip">consome MS-2.5 (Vmin georef)</span>
+    <span class="chip">DNA próprio (não padrão B)</span>
+  </div>
+</header>
+
+<div class="toc">
+  <h3>Sumário</h3>
+  <ol>
+    <li><a href="#nome">Naming e escopo do nome</a></li>
+    <li><a href="#layout">Layout da TV 32"</a></li>
+    <li><a href="#mapa">Mapa do circuito</a></li>
+    <li><a href="#telemetria">Telemetria ao vivo</a></li>
+    <li><a href="#mensagens">Mensagens (núcleo do Command Box)</a></li>
+    <li><a href="#video">Vídeo (Daily.co)</a></li>
+    <li><a href="#historico">Histórico do dia</a></li>
+    <li><a href="#multi">Multi-piloto / multi-carro</a></li>
+    <li><a href="#realtime">Realtime e latência</a></li>
+    <li><a href="#pendencias">Pendências e alertas</a></li>
+    <li><a href="#pos-stint">Pós-stint e debrief</a></li>
+    <li><a href="#hw">Hardware no box</a></li>
+    <li><a href="#operacao">Operação e ergonomia</a></li>
+    <li><a href="#tier">Tier 0 vs Tier 1</a></li>
+    <li><a href="#identidade">Identidade visual</a></li>
+    <li><a href="#privacidade">Privacidade das mensagens</a></li>
+  </ol>
+</div>
+
+<div class="box-decided">
+  <h3>O que já está decidido (não vou reabrir)</h3>
+  <ul>
+    <li>App iOS modo "BOX" → AirPlay → Apple TV → TV 32" (PLANO_FASE_1 §2)</li>
+    <li>Tela <strong>diferente</strong> do cockpit do piloto (visão histórica + interação) — MS-12.1</li>
+    <li>Canal de mensagens via Supabase Realtime — MS-12.3</li>
+    <li>Flag <code>visivelNoBox</code> por mensagem (visível ou privada) — MS-12.4</li>
+    <li>"Box TV" não tem login extra: reflete o celular do operador</li>
+    <li>Telemetria via Realtime = <strong>eventos agregados</strong>, não samples (ADR-014)</li>
+    <li>Vmin georef já vem persistido em <code>segment_executions.vmin_*</code> (MS-2.5)</li>
+    <li>Cockpits NÃO seguem padrão B — DNA próprio (preto, accents, halo)</li>
+  </ul>
+</div>
+
+<section id="nome">
+  <h2><span class="num">1</span>Naming e escopo do nome</h2>
+  <p>Você renomeou de "Box Cockpit" / "Cockpit do Box" para <strong>Command Box</strong>. Isso muda só o nome ou também o escopo (mais ênfase em comando/controle, menos em "cockpit duplicado da TV")?</p>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">1.1</span><span class="qtitle">É só rename ou virou conceito novo?</span></div>
+    <div class="qbody">
+      Se for só rename, atualizo <code>PLANO_FASE_1.md</code> §2/§MS-12, <code>STATUS.md</code> e ADRs num PR docs-only. Se mudou escopo, vale conversa antes de eu trocar tudo.
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">1.2</span><span class="qtitle">Em PT na UI fica "Command Box" mesmo?</span></div>
+    <div class="qbody">
+      O resto da UI é PT-BR estrito ("você", sem ícones). "Command Box" como anglicismo de produto bate com o tom, ou prefere alternativa em PT (ex.: "Comando", "Painel do Box")?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">1.3</span><span class="qtitle">"Comando" como verbo no produto</span></div>
+    <div class="qbody">
+      Já existe <code>CommandResolver</code> (port de <code>p1-coach.js</code>) que vira o "comando ativo" no cockpit do piloto (frase pedagógica). O Command Box <strong>edita/acompanha</strong> esses comandos do CommandResolver, ou é outra coisa (mensagens livres do operador)? São dois canais distintos ou um só?
+    </div>
+  </div>
+</section>
+
+<section id="layout">
+  <h2><span class="num">2</span>Layout da TV 32"</h2>
+  <p>O cockpit do piloto é 956×440 (iPhone landscape). A TV é 1920×1080 ou 4K — a área disponível é muito maior. Preciso saber como você quer dividir.</p>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">2.1</span><span class="qtitle">Resolução-alvo do mockup</span></div>
+    <div class="qbody">
+      Desenho em 1920×1080 (FHD) ou 3840×2160 (4K)? Apple TV 4K + AirPlay 2 entrega 4K, mas TV 32" comum é FHD. Qual baseline?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">2.2</span><span class="qtitle">Quais zonas e em que proporção?</span></div>
+    <div class="qbody">
+      Hipóteses de divisão pra você escolher (ou propor outra):
+      <ul>
+        <li><strong>A — Mapa central + cards laterais:</strong> mapa grande no centro, telemetria ao vivo direita, mensagens esquerda, vídeo embaixo.</li>
+        <li><strong>B — Vídeo dominante:</strong> vídeo onboard 70% da tela, telemetria + mapa em barra lateral, mensagens em rodapé.</li>
+        <li><strong>C — Grade igualitária:</strong> 4 quadrantes (mapa / vídeo / telemetria / mensagens).</li>
+        <li><strong>D — Modo configurável:</strong> operador escolhe layout (debrief / corrida / treino).</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">2.3</span><span class="qtitle">Modo claro/escuro</span></div>
+    <div class="qbody">
+      Box pode ser barraca aberta (sol forte) ou garagem (sombra). Escuro fixo (consistente com cockpit) ou auto-ajusta? Box em sol forte com tela escura é difícil de ler.
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">2.4</span><span class="qtitle">Orientação fixa</span></div>
+    <div class="qbody">
+      Landscape fixa (TV 32" sempre deitada) ou prevê portrait pra TVs verticais?
+    </div>
+  </div>
+</section>
+
+<section id="mapa">
+  <h2><span class="num">3</span>Mapa do circuito</h2>
+  <p>Esta é a próxima decisão pendente (do checkpoint 2026-05-07: "vamos decidir mapa — mockup do circuito de Brasília"). Preciso fechar antes de desenhar.</p>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">3.1</span><span class="qtitle">Estilo visual da pista</span></div>
+    <div class="qbody">
+      Opções:
+      <ul>
+        <li><strong>Top-down geométrico</strong> (linha grossa do traçado, fundo escuro, sem terreno) — fica abstrato, escala bem.</li>
+        <li><strong>Mapa real</strong> (Mapbox / Apple Maps com overlay) — fica realista mas pesa.</li>
+        <li><strong>Esquemático com curvas numeradas</strong> (estilo F1) — bonito, exige cadastro de cada curva.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">3.2</span><span class="qtitle">Posição do carro ao vivo</span></div>
+    <div class="qbody">
+      Mostro a posição do carro no mapa em tempo real? A 1Hz (GPS bruto) ou interpolada com IMU pra 10Hz? ADR-014 diz que samples não vão por Realtime — então essa posição vem de qual canal?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">3.3</span><span class="qtitle">Cor por desempenho do trecho</span></div>
+    <div class="qbody">
+      Cada trecho colorido por delta vs PB do dia? Verde/amarelo/vermelho? Ou sóbrio (cinza claro/escuro) e o desempenho aparece em widgets numéricos?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">3.4</span><span class="qtitle">Apex e Vmin sobrepostos</span></div>
+    <div class="qbody">
+      Marco no mapa os 4 pontos canônicos (entry/braking/apex/exit) cadastrados pelo configurador, e o Vmin georef da melhor volta? Sobrecarrega o mapa? Talvez toggle.
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">3.5</span><span class="qtitle">Ghost line</span></div>
+    <div class="qbody">
+      Linha fantasma da melhor volta do dia ou all-time sobre o traçado, igual MS-14 (cockpit ghost)? Box mostra ou só o cockpit do piloto?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">3.6</span><span class="qtitle">Mockup de referência da pista de Brasília</span></div>
+    <div class="qbody">
+      Você tem um traçado que prefere (foto Wikipedia, exportação Track Editor, OSM)? Ou eu proponho top-down esquemático com os 8 trechos cadastrados?
+    </div>
+  </div>
+</section>
+
+<section id="telemetria">
+  <h2><span class="num">4</span>Telemetria ao vivo</h2>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">4.1</span><span class="qtitle">Quais valores aparecem?</span></div>
+    <div class="qbody">
+      Lista provável: velocidade atual, RPM, marcha, temp motor, delta vs ref, parcial atual, lap atual, número da volta, tempo da volta. Algum a mais (G lateral/long, λ, pressão óleo)? Algum a menos?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">4.2</span><span class="qtitle">Tier 0 sem T4000 — RPM/marcha</span></div>
+    <div class="qbody">
+      Quando não tem T4000 conectado, esses widgets:
+      <ul>
+        <li>Mostram <code>—</code> (placeholder explícito)?</li>
+        <li>Ficam ocultos (layout reflowa)?</li>
+        <li>Mostram estimativa via GPS+gear ratios + aviso "estimado"?</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">4.3</span><span class="qtitle">Shift light no box</span></div>
+    <div class="qbody">
+      O cockpit do piloto tem 12 LEDs Premium (MS-8). Replica isso na TV do box ou box não tem shift light (só piloto vê)?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">4.4</span><span class="qtitle">Halo radial</span></div>
+    <div class="qbody">
+      Halo do cockpit (recorde-stint laranja, best-alltime ouro, pior-stint roxo) aparece também na TV do box? Faz sentido — mostra pro mecânico/professor o "estado" da volta sem precisar olhar números.
+    </div>
+  </div>
+</section>
+
+<section id="mensagens">
+  <h2><span class="num">5</span>Mensagens — núcleo do Command Box</h2>
+  <p>Se "Command Box" enfatiza comando, mensagens viram a feature central. Preciso fechar bem.</p>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">5.1</span><span class="qtitle">Onde fica o composer</span></div>
+    <div class="qbody">
+      A TV é só reflexo do iPhone do operador (AirPlay). A caixa de envio:
+      <ul>
+        <li><strong>Só no iPhone</strong> (operador digita lá, TV mostra histórico)?</li>
+        <li><strong>Refletida na TV</strong> (todos veem o que o operador tá digitando)?</li>
+        <li>Ambas, com toggle?</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">5.2</span><span class="qtitle">Quem pode enviar</span></div>
+    <div class="qbody">
+      Pelo modelo de papéis: Admin sim, Piloto-fora-do-carro sim, Professor sim, Mecânico sim, Read-only não. Confere? E o piloto-no-carro: ele só recebe ou pode mandar curtinho (push-to-talk)?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">5.3</span><span class="qtitle">Como o piloto recebe</span></div>
+    <div class="qbody">
+      Cockpit do piloto já tem widget de mensagem (do JS antigo)? Ou MS-12 cria? Aparece como toast curto? TTS lê? Áudio pode atrapalhar — opt-in?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">5.4</span><span class="qtitle">Visível no box vs privada</span></div>
+    <div class="qbody">
+      Quem decide a flag <code>visivelNoBox</code>:
+      <ul>
+        <li>O <strong>remetente</strong> (toggle ao mandar)?</li>
+        <li>O <strong>destinatário</strong> (filtro do que aparece na TV)?</li>
+        <li>Padrão "visível" e exceção privada, ou o contrário?</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">5.5</span><span class="qtitle">Histórico</span></div>
+    <div class="qbody">
+      Quantas mensagens visíveis na TV (últimas 5? scroll? reset por stint?)? Mensagem some sozinha após N segundos ou fica até substituída?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">5.6</span><span class="qtitle">Quick-replies</span></div>
+    <div class="qbody">
+      Botões pré-definidos pra acelerar:
+      <ul>
+        <li>"Entrar no box"</li>
+        <li>"Atenção tempo de volta"</li>
+        <li>"Volta voadora"</li>
+        <li>"Levantar pedal"</li>
+        <li>"Bandeira amarela"</li>
+        <li>Outras?</li>
+      </ul>
+      Configurável por time, ou catálogo fixo?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">5.7</span><span class="qtitle">Ack / leitura</span></div>
+    <div class="qbody">
+      Piloto confirma que viu (botão único no cockpit)? Operador vê "lida"? Sem ack, mensagem fica pulsando até quando?
+    </div>
+  </div>
+</section>
+
+<section id="video">
+  <h2><span class="num">6</span>Vídeo (Daily.co)</h2>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">6.1</span><span class="qtitle">Vídeo aparece no Command Box?</span></div>
+    <div class="qbody">
+      MS-11 monta 2 câmeras simultâneas no iPhone do piloto (cockpit + onboard). Esse vídeo ao vivo aparece também no Command Box? Layout: split, picture-in-picture, full + thumb, toggle?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">6.2</span><span class="qtitle">Áudio</span></div>
+    <div class="qbody">
+      Áudio do carro vai pra TV do box (operador ouve motor)? Tem pickup do piloto via mic do iPhone? Mute por padrão (TV do box é ambiente coletivo — qualquer áudio incomoda)?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">6.3</span><span class="qtitle">Sem vídeo (Tier 0 antes de MS-11)</span></div>
+    <div class="qbody">
+      MS-12 é antes ou depois de MS-11? Se Command Box for entregue antes, o espaço de vídeo vira o quê (mapa maior, telemetria expandida, vazio)?
+    </div>
+  </div>
+</section>
+
+<section id="historico">
+  <h2><span class="num">7</span>Histórico do dia</h2>
+  <p>"Visão histórica + interação" é o que diz MS-12.1. Histórico de quê, exatamente?</p>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">7.1</span><span class="qtitle">Lista de voltas</span></div>
+    <div class="qbody">
+      Lista de todas as voltas do dia com tempo, delta vs PB, troféu? Ordenada por nº ou por tempo? Filtro por piloto?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">7.2</span><span class="qtitle">Heatmap por trecho</span></div>
+    <div class="qbody">
+      Tabela trecho × volta com cores (verde melhor, vermelho pior)? Útil pra ver onde o piloto evolui ou regride.
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">7.3</span><span class="qtitle">Troféus do dia</span></div>
+    <div class="qbody">
+      Quadro com 4 troféus (recorde-stint, melhor-trecho, regularidade, lição-cumprida) atualizando ao vivo? Ou só pós-stint?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">7.4</span><span class="qtitle">Comparações</span></div>
+    <div class="qbody">
+      Compara volta atual com PB do dia, PB all-time, ghost selecionado? Os 3 ao mesmo tempo? Ou um só (escolha do operador)?
+    </div>
+  </div>
+</section>
+
+<section id="multi">
+  <h2><span class="num">8</span>Multi-piloto / multi-carro</h2>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">8.1</span><span class="qtitle">Troca de piloto no carro</span></div>
+    <div class="qbody">
+      Quando piloto B substitui piloto A no mesmo carro, Command Box detecta automaticamente (auth do iPhone que entra no carro) ou operador seleciona manualmente?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">8.2</span><span class="qtitle">Histórico aglutinado</span></div>
+    <div class="qbody">
+      Lista de voltas é por <strong>carro</strong> (todas as voltas do Celta hoje, qualquer piloto) ou por <strong>piloto</strong> (todas as voltas do Flávio hoje, qualquer carro)? PB all-time considera o quê?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">8.3</span><span class="qtitle">Múltiplos carros simultâneos</span></div>
+    <div class="qbody">
+      Time pode ter 2 carros na pista ao mesmo tempo? Box mostra os 2 (split) ou só 1 (com seletor)?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">8.4</span><span class="qtitle">Múltiplos boxes</span></div>
+    <div class="qbody">
+      Time pode ter 2 boxes ao mesmo tempo (operador A + operador B em iPhones diferentes, AirPlays em TVs diferentes)? Cada um vê o quê?
+    </div>
+  </div>
+</section>
+
+<section id="realtime">
+  <h2><span class="num">9</span>Realtime e latência</h2>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">9.1</span><span class="qtitle">Latência tolerável</span></div>
+    <div class="qbody">
+      Carro → Command Box: 1s aceitável? 3s? 5s? Mensagem de operador → cockpit do piloto: precisa ser &lt;500ms ou 2s tá ok?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">9.2</span><span class="qtitle">O que é evento agregado</span></div>
+    <div class="qbody">
+      ADR-014 diz "eventos agregados, não samples". Lista provável: <code>onLapEnd</code>, <code>onSegmentEnd</code> (com Vmin), <code>onPbBeat</code>, <code>onWarmupDone</code>, <code>onShiftCorrect/Late/Early</code>, posição GPS 1Hz. Confere? Falta algum?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">9.3</span><span class="qtitle">Carro offline</span></div>
+    <div class="qbody">
+      Piloto perde 4G no autódromo (acontece). UI mostra "OFFLINE — última atualização há 18s" piscando? Continua exibindo último estado conhecido ou apaga?
+    </div>
+  </div>
+</section>
+
+<section id="pendencias">
+  <h2><span class="num">10</span>Pendências e alertas</h2>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">10.1</span><span class="qtitle">Pendências do evento</span></div>
+    <div class="qbody">
+      A lista de pendências do evento (MS-5 — obrigatórias × adicionais por carro) aparece no Command Box pro mecânico marcar em tempo real (troquei pneu, calibrei pressão)?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">10.2</span><span class="qtitle">Alertas críticos</span></div>
+    <div class="qbody">
+      Em Tier 1 (T4000 conectado), overheat / pressão óleo baixa / λ pobre dispara banner vermelho fullscreen no box? Som? Notificação push em todos os iPhones do time?
+    </div>
+  </div>
+</section>
+
+<section id="pos-stint">
+  <h2><span class="num">11</span>Pós-stint e debrief</h2>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">11.1</span><span class="qtitle">Auto-debrief</span></div>
+    <div class="qbody">
+      Piloto entra no box e finaliza stint. Command Box automaticamente exibe debrief (PosStintView equivalente, em landscape grande), ou continua na vista ao vivo (pra próximo stint)?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">11.2</span><span class="qtitle">Anotações do operador</span></div>
+    <div class="qbody">
+      Professor / mecânico podem anotar comentários do stint pelo Command Box, vinculado à sessão? Onde aparece (debrief? lista?)?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">11.3</span><span class="qtitle">Replay de volta</span></div>
+    <div class="qbody">
+      Player de replay (telemetria + ghost map sincronizados) acessível pelo Command Box ou só na pós-stint do iPhone?
+    </div>
+  </div>
+</section>
+
+<section id="hw">
+  <h2><span class="num">12</span>Hardware no box</h2>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">12.1</span><span class="qtitle">Qual iPhone opera o box?</span></div>
+    <div class="qbody">
+      Se o piloto-no-carro está usando o iPhone dele, o Command Box opera no iPhone de quem? Outro membro do time (Flávio admin, professor, mecânico)? Premissa: pelo menos 1 iPhone livre no box. Confere?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">12.2</span><span class="qtitle">Apple TV — modelo mínimo</span></div>
+    <div class="qbody">
+      Apple TV 4K (qualquer geração) ou Apple TV HD aceita? AirPlay 2 obrigatório (sim). Você já tem qual?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">12.3</span><span class="qtitle">Internet no box</span></div>
+    <div class="qbody">
+      No autódromo: Wi-Fi do circuito não dá. Hipótese: hotspot 4G/5G do iPhone do operador. Apple TV conecta nesse hotspot? AirPlay funciona offline (peer-to-peer Wi-Fi direto)? Realtime do Supabase exige internet — então o iPhone-BOX precisa de dados móveis sempre.
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">12.4</span><span class="qtitle">TV 32" — outras dimensões</span></div>
+    <div class="qbody">
+      Layout dimensiona pra 24"/40"/55" também? Ou trava em 32" e quem tiver outra TV se vira?
+    </div>
+  </div>
+</section>
+
+<section id="operacao">
+  <h2><span class="num">13</span>Operação e ergonomia</h2>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">13.1</span><span class="qtitle">Modo BOX no app</span></div>
+    <div class="qbody">
+      Como o iPhone entra em "modo BOX"? Toggle na home? Tela dedicada? Switch deve ser óbvio (operador apressado).
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">13.2</span><span class="qtitle">Troca de operador</span></div>
+    <div class="qbody">
+      Operador A passa o iPhone pro operador B no meio do stint. App continua no modo BOX do A ou exige logout/login? Confunde se aparece nome de quem mandou que já não está mais lá.
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">13.3</span><span class="qtitle">Botões de ação rápida</span></div>
+    <div class="qbody">
+      Além das quick-replies de mensagem, ações:
+      <ul>
+        <li>"Marcar este stint como crítico" (etiqueta sessão pra debrief)</li>
+        <li>"Pausar captura" (perdemos GPS, vamos descartar samples ruins)</li>
+        <li>"Encerrar stint do box" (piloto sem mãos pra mexer no iPhone)</li>
+      </ul>
+      Faz sentido? Outras?
+    </div>
+  </div>
+</section>
+
+<section id="tier">
+  <h2><span class="num">14</span>Tier 0 vs Tier 1</h2>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">14.1</span><span class="qtitle">Graceful degradation no Command Box</span></div>
+    <div class="qbody">
+      Em Tier 0 (sem T4000), os widgets de RPM/marcha/temp ficam:
+      <ul>
+        <li>Ocultos (layout reflowa, sobra espaço pra outras coisas)</li>
+        <li>Visíveis com <code>—</code> e badge "Tier 1"</li>
+        <li>Substituídos por widgets Tier 0 (G lateral, vel pura, etc)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">14.2</span><span class="qtitle">Aprendizado shift light no box</span></div>
+    <div class="qbody">
+      Tela "Reações aprendidas" (MS-8.5) tem versão grande pro box, ou é só no iPhone do piloto?
+    </div>
+  </div>
+</section>
+
+<section id="identidade">
+  <h2><span class="num">15</span>Identidade visual</h2>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">15.1</span><span class="qtitle">DNA visual</span></div>
+    <div class="qbody">
+      Princípio 4: "Cockpits não seguem padrão B — DNA próprio (preto, accents, halo, slide 3D)". Command Box:
+      <ul>
+        <li>Adota o mesmo DNA do cockpit (preto + accents + halo)</li>
+        <li>Tem terceiro DNA (mais "broadcast TV" — verde escuro tipo cabine F1, azul Le Mans)</li>
+        <li>Híbrido: chrome do cockpit + tipografia mais legível pra TV (tamanhos maiores, contraste forte)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">15.2</span><span class="qtitle">Tipografia em TV 32"</span></div>
+    <div class="qbody">
+      O que se lê confortável a 3-4 metros de distância? Inter ainda funciona? Tamanhos mínimos (proponho 18px corpo / 32px destaques / 64px hero)?
+    </div>
+  </div>
+</section>
+
+<section id="privacidade">
+  <h2><span class="num">16</span>Privacidade das mensagens</h2>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">16.1</span><span class="qtitle">Quem vê privado</span></div>
+    <div class="qbody">
+      Mensagem com <code>visivelNoBox=false</code>: aparece no iPhone do destinatário, mas <strong>não aparece na TV do box</strong>. Confere? Aparece no histórico do iPhone de quem mais (Admin sempre, todos os operadores autenticados, ninguém)?
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">16.2</span><span class="qtitle">Read-only (mãe, amigos)</span></div>
+    <div class="qbody">
+      Read-only "só lê, não escreve, não convida" (PLANO §3). Lê mensagens privadas também ou só visíveis-no-box? Mãe vendo mensagem do mecânico falando "freio do seu filho tá ruim, vou trocar" pode dar problema.
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qid">16.3</span><span class="qtitle">Direcionamento</span></div>
+    <div class="qbody">
+      Mensagens hoje são broadcast (todos do time recebem) ou tem destinatário (1:1, 1:N)? Se for 1:N, UI escolhe destinatário no envio?
+    </div>
+  </div>
+</section>
+
+<div class="box-out-of-scope">
+  <h3>Fora desta página (futuro)</h3>
+  <p>Não estou perguntando sobre, nem decidindo aqui:</p>
+  <ul>
+    <li>Wireframes detalhados — vou propor depois que você responder o conjunto acima</li>
+    <li>Schema de novas tabelas (mensagens, ack, layouts salvos) — vem como parte do PR de MS-12</li>
+    <li>Tela de configuração de quick-replies — assume catálogo fixo até você dizer o contrário</li>
+    <li>Reprodução em CarPlay / Apple Watch / Android — fora de escopo (ADR-018)</li>
+  </ul>
+</div>
+
+<footer class="foot">
+  Lista derivada de <code>docs/PLANO_FASE_1.md</code> §MS-12 + §3 + checkpoints 2026-05-04 e 2026-05-07. Quando você responder, atualizo o plano mestre + ADRs num PR docs-only antes do mockup começar. — Claude
+</footer>
+
+</div>
+</body>
+</html>
