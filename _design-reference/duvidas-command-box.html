@@ -22,6 +22,7 @@
   --good: oklch(72% 0.12 155);
   --warn: oklch(78% 0.13 75);
   --bad: oklch(68% 0.18 25);
+  --gold: #D4AF37;
   --radius: 12px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -37,7 +38,7 @@ html,body{
 body{padding:0 0 96px;}
 
 .wrap{
-  max-width:880px;
+  max-width:920px;
   margin:0 auto;
   padding:48px 28px 0;
 }
@@ -77,9 +78,7 @@ h1{
   padding:5px 10px;border-radius:999px;
 }
 
-section{
-  margin-bottom:40px;
-}
+section{margin-bottom:40px;}
 h2{
   font-size:20px;font-weight:600;
   letter-spacing:-.005em;
@@ -93,13 +92,6 @@ h2 .num{
   font-variant-numeric:tabular-nums;
   font-weight:500;
   margin-right:10px;
-}
-h3{
-  font-size:14px;font-weight:600;
-  color:var(--text-2);
-  letter-spacing:.02em;
-  text-transform:uppercase;
-  margin:24px 0 10px;
 }
 
 p{margin-bottom:12px;color:var(--text-2);}
@@ -118,12 +110,13 @@ ul li::before{
   background:var(--text-3);
 }
 
+/* PERGUNTA */
 .q{
   background:var(--surface);
   border:1px solid var(--hairline);
   border-radius:var(--radius);
-  padding:16px 18px;
-  margin-bottom:12px;
+  padding:18px 20px;
+  margin-bottom:16px;
 }
 .q .qhead{
   display:flex;gap:12px;align-items:baseline;
@@ -141,14 +134,117 @@ ul li::before{
   color:var(--text);
   font-size:15px;
 }
-.q .qbody{
+.q .qcontext{
   color:var(--text-2);
   font-size:14px;
-  line-height:1.55;
-  padding-left:0;
+  margin:6px 0 14px;
 }
-.q .qbody ul{margin-top:8px;}
 
+/* CARDS DE OPÇÕES */
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:10px;
+  margin-bottom:14px;
+}
+.cards.single-col{grid-template-columns:1fr;}
+
+.card{
+  position:relative;
+  display:block;
+  cursor:pointer;
+  background:var(--bg-2);
+  border:1px solid var(--hairline);
+  border-radius:8px;
+  padding:14px 14px 14px 38px;
+  font-size:14px;
+  color:var(--text-2);
+  transition:border-color .15s, background .15s;
+  user-select:none;
+}
+.card input{
+  position:absolute;left:14px;top:16px;
+  appearance:none;-webkit-appearance:none;
+  width:14px;height:14px;
+  border:1.5px solid var(--text-3);
+  border-radius:50%;
+  background:transparent;
+  cursor:pointer;
+  margin:0;
+}
+.card input[type="checkbox"]{border-radius:3px;}
+.card input:checked{
+  border-color:var(--accent);
+  background:var(--accent);
+  box-shadow:inset 0 0 0 3px var(--bg-2);
+}
+.card input[type="checkbox"]:checked{
+  box-shadow:inset 0 0 0 2px var(--bg-2);
+}
+.card:hover{
+  border-color:var(--accent);
+  background:var(--surface);
+}
+.card:has(input:checked){
+  border-color:var(--accent);
+  background:var(--accent-soft);
+  color:var(--text);
+}
+.card .opt-label{
+  font-weight:500;
+  color:var(--text);
+  display:block;
+  margin-bottom:3px;
+}
+.card .opt-desc{
+  font-size:13px;
+  color:var(--text-2);
+  line-height:1.5;
+}
+
+.card.recommended{
+  border-color:var(--accent);
+  background:var(--accent-soft);
+}
+.card.recommended::after{
+  content:"minha recomendação";
+  position:absolute;
+  top:-9px;right:12px;
+  font-size:10px;font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;
+  background:var(--accent);
+  color:var(--bg);
+  padding:3px 8px;
+  border-radius:3px;
+}
+
+/* CAMPO OUTROS */
+.outros{
+  margin-top:6px;
+  display:flex;flex-direction:column;gap:6px;
+}
+.outros label{
+  font-size:11px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-3);
+}
+.outros textarea{
+  background:var(--bg-2);
+  border:1px solid var(--hairline);
+  border-radius:6px;
+  padding:10px 12px;
+  color:var(--text);
+  font-family:inherit;
+  font-size:14px;
+  resize:vertical;
+  min-height:60px;
+  outline:none;
+  width:100%;
+}
+.outros textarea:focus{border-color:var(--accent);}
+.outros textarea::placeholder{color:var(--text-3);}
+
+/* DECIDED + OOS */
 .box-decided{
   background:var(--surface-2);
   border-left:3px solid var(--accent);
@@ -156,10 +252,7 @@ ul li::before{
   padding:14px 18px;
   margin:0 0 28px;
 }
-.box-decided h3{
-  margin-top:0;
-  color:var(--accent);
-}
+.box-decided h3{margin:0 0 10px;color:var(--accent);font-size:14px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;}
 .box-decided ul li{padding-bottom:6px;}
 
 .box-out-of-scope{
@@ -169,33 +262,7 @@ ul li::before{
   padding:14px 18px;
   margin:24px 0 8px;
 }
-.box-out-of-scope h3{margin-top:0;color:var(--text-2);}
-
-.answered{
-  opacity:.42;
-  position:relative;
-}
-.answered .qhead::after{
-  content:"respondido";
-  font-size:10px;font-weight:600;
-  letter-spacing:.1em;text-transform:uppercase;
-  color:var(--good);
-  margin-left:auto;
-  padding:2px 8px;
-  border:1px solid var(--good);
-  border-radius:3px;
-  align-self:center;
-  opacity:.7;
-}
-.answered .qhead{display:flex;align-items:center;}
-.answered .qbody{text-decoration:line-through;text-decoration-color:var(--text-3);text-decoration-thickness:1px;}
-
-.section-done h2{
-  color:var(--text-3);
-}
-.section-done h2 .num{
-  color:var(--good);
-}
+.box-out-of-scope h3{margin-top:0;color:var(--text-2);font-size:14px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;}
 
 footer.foot{
   margin-top:48px;
@@ -222,7 +289,7 @@ code{
   padding:18px 22px;
   margin-bottom:36px;
 }
-.toc h3{margin:0 0 10px;color:var(--text-2);}
+.toc h3{margin:0 0 10px;color:var(--text-2);font-size:14px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;}
 .toc ol{
   list-style:none;counter-reset:toc;
   display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;
@@ -248,596 +315,1507 @@ code{
 <div class="wrap">
 
 <header class="head">
-  <div class="eyebrow">P1 Fast · MS-12 · 2026-05-08</div>
+  <div class="eyebrow">P1 Fast · Command Box · 2026-05-08 · v2</div>
   <h1>Dúvidas sobre o Command Box</h1>
   <p class="lead">
-    Antes de fechar o mockup do circuito de Brasília e começar a desenhar a tela do Command Box, preciso alinhar com você um conjunto de definições. Listei abaixo o que já está decidido (do <code>PLANO_FASE_1.md</code>) e o que ainda está em aberto, agrupado por área. Quanto mais preciso aqui, menos retrabalho lá na frente.
+    Cada pergunta agora vem em cards clicáveis. O card com borda destacada e badge "minha recomendação" é o que eu sugiro — já vem pré-selecionado. Se nenhuma opção servir, escreve no campo "outros" no fim de cada pergunta.
   </p>
   <div class="meta">
-    <span class="chip">MS-12</span>
-    <span class="chip">depende de MS-10 + MS-11</span>
-    <span class="chip">consome MS-2.5 (Vmin georef)</span>
-    <span class="chip">DNA próprio (não padrão B)</span>
+    <span class="chip">estilo atelier</span>
+    <span class="chip">PT-BR</span>
+    <span class="chip">5G Brasília</span>
+    <span class="chip">cards clicáveis</span>
   </div>
 </header>
 
+<div class="box-decided">
+  <h3>Já decidido (não reabro)</h3>
+  <ul>
+    <li>App iOS modo "BOX" → AirPlay → Apple TV → TV 32"</li>
+    <li>Tela diferente do cockpit do piloto (visão histórica + interação)</li>
+    <li>Mensagens via Supabase Realtime, com flag visível-no-box vs privada</li>
+    <li>"Box TV" não tem login extra: reflete o celular do operador</li>
+    <li>Telemetria via Realtime = eventos agregados, não samples</li>
+    <li>Vmin georef vem persistido por trecho</li>
+  </ul>
+
+  <h3 style="margin-top:18px;">Decidido em 2026-05-08 rodada 1</h3>
+  <ul>
+    <li><strong>Nome</strong> — "Command Box" (sem mudança de escopo, em PT)</li>
+    <li><strong>Estilo visual canônico</strong> — <code>assets/pistas/premium-styles/atelier.svg</code> (champagne/ouro, fundo radial escuro, broadcast TV)</li>
+    <li><strong>Internet em Brasília</strong> — 5G cobre o autódromo todo</li>
+  </ul>
+</div>
+
 <div class="toc">
-  <h3>Sumário</h3>
+  <h3>Sumário das perguntas em aberto</h3>
   <ol>
-    <li><a href="#nome">Naming e escopo do nome</a></li>
-    <li><a href="#layout">Layout da TV 32"</a></li>
+    <li><a href="#nome">Naming — canal de comando</a></li>
+    <li><a href="#layout">Layout TV 32"</a></li>
     <li><a href="#mapa">Mapa do circuito</a></li>
     <li><a href="#telemetria">Telemetria ao vivo</a></li>
-    <li><a href="#mensagens">Mensagens (núcleo do Command Box)</a></li>
-    <li><a href="#video">Vídeo (Daily.co)</a></li>
+    <li><a href="#mensagens">Mensagens</a></li>
+    <li><a href="#video">Vídeo (2 câmeras)</a></li>
     <li><a href="#historico">Histórico do dia</a></li>
     <li><a href="#multi">Multi-piloto / multi-carro</a></li>
     <li><a href="#realtime">Realtime e latência</a></li>
-    <li><a href="#pendencias">Pendências e alertas</a></li>
-    <li><a href="#pos-stint">Pós-stint e debrief</a></li>
+    <li><a href="#alertas">Pendências e alertas</a></li>
+    <li><a href="#pos-stint">Pós-stint</a></li>
     <li><a href="#hw">Hardware no box</a></li>
-    <li><a href="#operacao">Operação e ergonomia</a></li>
+    <li><a href="#operacao">Operação</a></li>
     <li><a href="#tier">Tier 0 vs Tier 1</a></li>
-    <li><a href="#identidade">Identidade visual</a></li>
-    <li><a href="#privacidade">Privacidade das mensagens</a></li>
+    <li><a href="#identidade">Tipografia</a></li>
+    <li><a href="#privacidade">Privacidade</a></li>
   </ol>
 </div>
 
-<div class="box-decided">
-  <h3>O que já está decidido (não vou reabrir)</h3>
-  <ul>
-    <li>App iOS modo "BOX" → AirPlay → Apple TV → TV 32"</li>
-    <li>Tela <strong>diferente</strong> do cockpit do piloto (visão histórica + interação)</li>
-    <li>Canal de mensagens via Supabase Realtime, com flag visível-no-box vs privada</li>
-    <li>"Box TV" não tem login extra: reflete o celular do operador</li>
-    <li>Telemetria via Realtime = <strong>eventos agregados</strong>, não samples (ADR-014)</li>
-    <li>Vmin georef já vem persistido em <code>segment_executions.vmin_*</code></li>
-    <li>Cockpits NÃO seguem padrão B — DNA próprio (preto, accents, halo)</li>
-  </ul>
-
-  <h3 style="margin-top:18px;">Decidido nesta rodada (Flávio · 2026-05-08)</h3>
-  <ul>
-    <li><strong>Nome:</strong> "Command Box" é o nome novo (substitui "Box Cockpit" / "Cockpit do Box"). Sem mudança de escopo — feature em desenvolvimento.</li>
-    <li><strong>Língua da UI:</strong> português (mesmo padrão do resto do app, "você").</li>
-    <li><strong>Estilo do mapa:</strong> usar o SVG <code>assets/pistas/premium-styles/atelier.svg</code> como referência canônica. É o "atelier premium" — terceiro DNA visual: fundo radial escuro com gradientes warm/cool, paleta champagne/ouro (#D4AF37), trail/glow do live (laranja #FF7A1A), ghost (cyan #7DD3FC), HUD lateral com velocidade hero 76px, RPM em gauge, branding fino. <strong>Não é padrão B, não é cockpit do piloto — é a identidade do Command Box.</strong></li>
-    <li><strong>Internet:</strong> em Brasília, sinal 5G cobre o autódromo todo — hotspot 5G do iPhone do operador resolve.</li>
-  </ul>
-</div>
-
-<section id="nome" class="section-done">
-  <h2><span class="num">1</span>Naming e escopo do nome</h2>
-  <p>Você renomeou de "Box Cockpit" / "Cockpit do Box" para <strong>Command Box</strong>. Isso muda só o nome ou também o escopo?</p>
-
-  <div class="q answered">
-    <div class="qhead"><span class="qid">1.1</span><span class="qtitle">É só rename ou virou conceito novo?</span></div>
-    <div class="qbody">
-      Se for só rename, atualizo <code>PLANO_FASE_1.md</code> §2/§MS-12, <code>STATUS.md</code> e ADRs num PR docs-only. Se mudou escopo, vale conversa antes de eu trocar tudo.
-    </div>
-  </div>
-
-  <div class="q answered">
-    <div class="qhead"><span class="qid">1.2</span><span class="qtitle">Em PT na UI fica "Command Box" mesmo?</span></div>
-    <div class="qbody">
-      O resto da UI é PT-BR estrito ("você", sem ícones). "Command Box" como anglicismo de produto bate com o tom, ou prefere alternativa em PT (ex.: "Comando", "Painel do Box")?
-    </div>
-  </div>
+<!-- ════════════════ 1. NAMING ════════════════ -->
+<section id="nome">
+  <h2><span class="num">1</span>Naming — canal de comando</h2>
 
   <div class="q">
-    <div class="qhead"><span class="qid">1.3</span><span class="qtitle">"Comando" como verbo no produto</span></div>
-    <div class="qbody">
-      Já existe um cálculo de "comando ativo" no cockpit do piloto — uma frase curta de orientação ("freie mais cedo na 3", "abra o volante na saída da 5") que o detector emite enquanto o piloto está pilotando. O Command Box vai <strong>acompanhar/editar</strong> esses comandos automáticos, ou é outra coisa (mensagens livres do operador)? São dois canais distintos ou um só?
+    <div class="qhead"><span class="qid">1.3</span><span class="qtitle">Comando automático e mensagem do operador são o mesmo canal?</span></div>
+    <p class="qcontext">No cockpit do piloto, o app já calcula um "comando ativo" — uma frase pedagógica curta gerada automaticamente pelo detector ("freie mais cedo", "abra o volante na saída"). Quando o operador no box mandar uma mensagem livre, ela vai aparecer no mesmo lugar do comando automático ou em lugar separado?</p>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q1_3">
+        <span class="opt-label">A · Mesmo canal</span>
+        <span class="opt-desc">Tudo aparece no widget de comando, num lugar só. Mais simples mas pode confundir piloto sobre origem (algoritmo ou pessoa).</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q1_3" checked>
+        <span class="opt-label">B · Canais separados</span>
+        <span class="opt-desc">Comando automático fica no slot dele (frase pedagógica). Mensagem do operador vira widget próprio, com nome de quem mandou. Piloto sabe origem.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q1_3">
+        <span class="opt-label">C · Mesmo widget, origem distinta</span>
+        <span class="opt-desc">Um canal só, mas com etiqueta visual ("AUTO" vs "BOX"). Compromisso entre A e B.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q1_3_outros" placeholder="ou outra coisa que você queira propor"></textarea>
     </div>
   </div>
 </section>
 
+<!-- ════════════════ 2. LAYOUT ════════════════ -->
 <section id="layout">
   <h2><span class="num">2</span>Layout da TV 32"</h2>
-  <p>O cockpit do piloto é 956×440 (iPhone landscape). A TV é 1920×1080 ou 4K — a área disponível é muito maior. Preciso saber como você quer dividir.</p>
 
   <div class="q">
     <div class="qhead"><span class="qid">2.1</span><span class="qtitle">Resolução-alvo do mockup</span></div>
-    <div class="qbody">
-      Desenho em 1920×1080 (FHD) ou 3840×2160 (4K)? Apple TV 4K + AirPlay 2 entrega 4K, mas TV 32" comum é FHD. Qual baseline?
+    <p class="qcontext">Apple TV 4K + AirPlay 2 entrega 4K, mas TV 32" comum é FHD. Em qual resolução desenho o mockup canônico?</p>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q2_1">
+        <span class="opt-label">A · 1920×1080 FHD</span>
+        <span class="opt-desc">Baseline mínimo da maioria das TVs 32".</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q2_1">
+        <span class="opt-label">B · 3840×2160 4K</span>
+        <span class="opt-desc">Apple TV 4K entrega. TV 32" 4K é raro mas existe.</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q2_1" checked>
+        <span class="opt-label">C · SVG vetorial escalável</span>
+        <span class="opt-desc">Igual o atelier.svg (1280×920). Escala sozinho. Tipografia calibrada pra leitura a 3-4m em qualquer TV.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q2_1_outros" placeholder=""></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">2.2</span><span class="qtitle">Quais zonas e em que proporção?</span></div>
-    <div class="qbody">
-      Hipóteses de divisão pra você escolher (ou propor outra):
-      <ul>
-        <li><strong>A — Mapa central + cards laterais:</strong> mapa grande no centro, telemetria ao vivo direita, mensagens esquerda, vídeo embaixo.</li>
-        <li><strong>B — Vídeo dominante:</strong> vídeo onboard 70% da tela, telemetria + mapa em barra lateral, mensagens em rodapé.</li>
-        <li><strong>C — Grade igualitária:</strong> 4 quadrantes (mapa / vídeo / telemetria / mensagens).</li>
-        <li><strong>D — Modo configurável:</strong> operador escolhe layout (debrief / corrida / treino).</li>
-      </ul>
+    <div class="qhead"><span class="qid">2.2</span><span class="qtitle">Como divide a tela em zonas</span></div>
+    <p class="qcontext">A TV grande tem espaço pra mapa, telemetria, mensagens e vídeo. O atelier.svg já mostra um padrão: pista no centro com HUD lateral à direita. Confirma essa divisão ou prefere outra?</p>
+    <div class="cards">
+      <label class="card recommended">
+        <input type="radio" name="q2_2" checked>
+        <span class="opt-label">A · Mapa 60% + HUD direita 25% + mensagens esquerda 15%</span>
+        <span class="opt-desc">Vai com o atelier — mapa domina, HUD lateral com velocidade/RPM/delta, faixa fina à esquerda com mensagens. Vídeo entra como overlay opcional.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q2_2">
+        <span class="opt-label">B · Vídeo dominante 70%</span>
+        <span class="opt-desc">Onboard ocupa quase tudo, mapa+telemetria viram barra lateral fina. Box vira "TV de F1".</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q2_2">
+        <span class="opt-label">C · 4 quadrantes iguais</span>
+        <span class="opt-desc">Mapa / vídeo / telemetria / mensagens com mesmo peso.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q2_2">
+        <span class="opt-label">D · Layout escolhido pelo operador</span>
+        <span class="opt-desc">Modos pré-definidos (treino, corrida, debrief) — operador alterna pelo iPhone.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q2_2_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">2.3</span><span class="qtitle">Modo claro/escuro</span></div>
-    <div class="qbody">
-      Box pode ser barraca aberta (sol forte) ou garagem (sombra). Escuro fixo (consistente com cockpit) ou auto-ajusta? Box em sol forte com tela escura é difícil de ler.
+    <div class="qhead"><span class="qid">2.3</span><span class="qtitle">Modo claro / escuro</span></div>
+    <p class="qcontext">O box pode estar em garagem fechada ou barraca aberta com sol. Tela escura em sol forte é difícil de ler.</p>
+    <div class="cards">
+      <label class="card recommended">
+        <input type="radio" name="q2_3" checked>
+        <span class="opt-label">A · Escuro fixo</span>
+        <span class="opt-desc">Atelier é cinematográfico escuro. Brilho da TV resolve sol forte.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q2_3">
+        <span class="opt-label">B · Auto (segue iPhone do operador)</span>
+        <span class="opt-desc">Quebra estética atelier ao mudar pra claro.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q2_3">
+        <span class="opt-label">C · Toggle manual no operador</span>
+        <span class="opt-desc">Operador escolhe.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q2_3_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">2.4</span><span class="qtitle">Orientação fixa</span></div>
-    <div class="qbody">
-      Landscape fixa (TV 32" sempre deitada) ou prevê portrait pra TVs verticais?
+    <div class="qhead"><span class="qid">2.4</span><span class="qtitle">Orientação da TV</span></div>
+    <div class="cards">
+      <label class="card recommended">
+        <input type="radio" name="q2_4" checked>
+        <span class="opt-label">A · Landscape fixa</span>
+        <span class="opt-desc">TV 32" sempre deitada.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q2_4">
+        <span class="opt-label">B · Suporta portrait</span>
+        <span class="opt-desc">Pra TVs verticais montadas em pé.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q2_4_outros"></textarea>
     </div>
   </div>
 </section>
 
+<!-- ════════════════ 3. MAPA ════════════════ -->
 <section id="mapa">
   <h2><span class="num">3</span>Mapa do circuito</h2>
-  <p>Esta é a próxima decisão pendente (do checkpoint 2026-05-07: "vamos decidir mapa — mockup do circuito de Brasília"). Preciso fechar antes de desenhar.</p>
-
-  <div class="q answered">
-    <div class="qhead"><span class="qid">3.1</span><span class="qtitle">Estilo visual da pista</span></div>
-    <div class="qbody">
-      Opções:
-      <ul>
-        <li><strong>Top-down geométrico</strong> (linha grossa do traçado, fundo escuro, sem terreno) — fica abstrato, escala bem.</li>
-        <li><strong>Mapa real</strong> (Mapbox / Apple Maps com overlay) — fica realista mas pesa.</li>
-        <li><strong>Esquemático com curvas numeradas</strong> (estilo F1) — bonito, exige cadastro de cada curva.</li>
-      </ul>
-    </div>
-  </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">3.2</span><span class="qtitle">Posição do carro ao vivo</span></div>
-    <div class="qbody">
-      Mostro a posição do carro no mapa em tempo real? A 1Hz (GPS bruto) ou interpolada com IMU pra 10Hz? ADR-014 diz que samples não vão por Realtime — então essa posição vem de qual canal?
+    <div class="qhead"><span class="qid">3.2</span><span class="qtitle">Posição do carro ao vivo no mapa</span></div>
+    <p class="qcontext">O mapa pode mostrar onde o carro está agora, atualizando em tempo real. A 1Hz (GPS bruto) ou a 10Hz (suave, com IMU)?</p>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q3_2">
+        <span class="opt-label">A · GPS bruto a 1Hz</span>
+        <span class="opt-desc">Simples. Carro "pula" 1× por segundo no mapa.</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q3_2" checked>
+        <span class="opt-label">B · Interpolada a 10Hz (IMU + GPS)</span>
+        <span class="opt-desc">Movimento suave. A interpolação Kalman INS-GPS já existe (foi feita pro cockpit do piloto), reusa. Combina com o atelier.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q3_2">
+        <span class="opt-label">C · Não mostrar carro ao vivo</span>
+        <span class="opt-desc">Mapa só com traçado e marcadores históricos.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q3_2_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
     <div class="qhead"><span class="qid">3.3</span><span class="qtitle">Cor por desempenho do trecho</span></div>
-    <div class="qbody">
-      Cada trecho colorido por delta vs PB do dia? Verde/amarelo/vermelho? Ou sóbrio (cinza claro/escuro) e o desempenho aparece em widgets numéricos?
+    <p class="qcontext">Cada trecho do mapa pode mudar de cor de acordo com o desempenho (verde melhorou, vermelho piorou) ou ficar sóbrio.</p>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q3_3">
+        <span class="opt-label">A · Verde / amarelo / vermelho por delta</span>
+        <span class="opt-desc">Imediato pra ver onde piloto evolui. Mas semáforo destrói a estética champagne do atelier.</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q3_3" checked>
+        <span class="opt-label">B · Mapa sóbrio + desempenho em widget separado</span>
+        <span class="opt-desc">Mapa em ouro/champagne fixo. Delta e desempenho aparecem em widgets numéricos. Mantém atelier.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q3_3">
+        <span class="opt-label">C · Heatmap em camada toggleável</span>
+        <span class="opt-desc">Sóbrio por padrão, operador liga camada de cor quando quer ver.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q3_3_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">3.4</span><span class="qtitle">Apex e Vmin sobrepostos</span></div>
-    <div class="qbody">
-      Marco no mapa os 4 pontos canônicos (entry/braking/apex/exit) cadastrados pelo configurador, e o Vmin georef da melhor volta? Sobrecarrega o mapa? Talvez toggle.
+    <div class="qhead"><span class="qid">3.4</span><span class="qtitle">Apex e Vmin sobrepostos no mapa</span></div>
+    <p class="qcontext">Os 4 pontos canônicos por trecho (entrada, frenagem, ápice, saída) e o ponto de Vmin georef da melhor volta podem ser marcados no mapa. Pode poluir.</p>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q3_4">
+        <span class="opt-label">A · Sempre marcados (todos)</span>
+        <span class="opt-desc">Visão completa, mas mapa fica cheio.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q3_4">
+        <span class="opt-label">B · Só apex e Vmin</span>
+        <span class="opt-desc">Mais limpo. Entry/braking/exit ofuscam.</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q3_4" checked>
+        <span class="opt-label">C · Toggle por camada</span>
+        <span class="opt-desc">Mapa limpo por padrão (atelier puro). Operador liga "mostrar apex", "mostrar Vmin" quando precisa analisar.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q3_4_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">3.5</span><span class="qtitle">Ghost line</span></div>
-    <div class="qbody">
-      Linha fantasma da melhor volta do dia ou all-time sobre o traçado, igual MS-14 (cockpit ghost)? Box mostra ou só o cockpit do piloto?
+    <div class="qhead"><span class="qid">3.5</span><span class="qtitle">Linha fantasma (volta de referência)</span></div>
+    <p class="qcontext">O atelier.svg já tem a estética de ghost (cyan #7DD3FC) prevista. Manter sempre visível ou virar opcional?</p>
+    <div class="cards">
+      <label class="card recommended">
+        <input type="radio" name="q3_5" checked>
+        <span class="opt-label">A · Sempre visível (cyan do atelier)</span>
+        <span class="opt-desc">Faz parte do DNA do atelier. Tirar deixa o mapa sem identidade.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q3_5">
+        <span class="opt-label">B · Toggle pelo operador</span>
+        <span class="opt-desc">Aparece quando operador quer comparar.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q3_5">
+        <span class="opt-label">C · Não mostrar no Command Box</span>
+        <span class="opt-desc">Linha fantasma fica só no cockpit do piloto.</span>
+      </label>
     </div>
-  </div>
-
-  <div class="q answered">
-    <div class="qhead"><span class="qid">3.6</span><span class="qtitle">Mockup de referência da pista de Brasília</span></div>
-    <div class="qbody">
-      Você tem um traçado que prefere (foto Wikipedia, exportação Track Editor, OSM)? Ou eu proponho top-down esquemático com os 8 trechos cadastrados?
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q3_5_outros"></textarea>
     </div>
   </div>
 </section>
 
+<!-- ════════════════ 4. TELEMETRIA ════════════════ -->
 <section id="telemetria">
   <h2><span class="num">4</span>Telemetria ao vivo</h2>
 
   <div class="q">
-    <div class="qhead"><span class="qid">4.1</span><span class="qtitle">Quais valores aparecem?</span></div>
-    <div class="qbody">
-      Lista provável: velocidade atual, RPM, marcha, temp motor, delta vs ref, parcial atual, lap atual, número da volta, tempo da volta. Algum a mais (G lateral/long, λ, pressão óleo)? Algum a menos?
+    <div class="qhead"><span class="qid">4.1</span><span class="qtitle">Quais valores aparecem na HUD</span></div>
+    <p class="qcontext">O atelier.svg sugere velocidade hero + RPM em gauge. Marque os valores que devem aparecer na vista principal (multi-seleção).</p>
+    <div class="cards">
+      <label class="card recommended">
+        <input type="checkbox" name="q4_1_vel" checked>
+        <span class="opt-label">Velocidade atual (hero 76px)</span>
+        <span class="opt-desc">Já vem destacado no atelier.</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q4_1_delta" checked>
+        <span class="opt-label">Delta vs ref</span>
+        <span class="opt-desc">±s vs PB do dia / ghost.</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q4_1_volta" checked>
+        <span class="opt-label">Volta atual + tempo</span>
+        <span class="opt-desc">Nº da volta e cronômetro.</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q4_1_parcial" checked>
+        <span class="opt-label">Parcial atual</span>
+        <span class="opt-desc">Tempo do trecho atual.</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q4_1_rpm" checked>
+        <span class="opt-label">RPM (Tier 1)</span>
+        <span class="opt-desc">Gauge semicircular do atelier. Aparece quando T4000 conectado.</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q4_1_marcha" checked>
+        <span class="opt-label">Marcha (Tier 1)</span>
+      </label>
+      <label class="card">
+        <input type="checkbox" name="q4_1_temp">
+        <span class="opt-label">Temp motor (Tier 1)</span>
+      </label>
+      <label class="card">
+        <input type="checkbox" name="q4_1_gl">
+        <span class="opt-label">G lateral</span>
+      </label>
+      <label class="card">
+        <input type="checkbox" name="q4_1_glong">
+        <span class="opt-label">G longitudinal</span>
+      </label>
+      <label class="card">
+        <input type="checkbox" name="q4_1_lambda">
+        <span class="opt-label">Lambda (Tier 1)</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q4_1_outros" placeholder="ex.: pressão de óleo, temperatura ambiente, vento..."></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">4.2</span><span class="qtitle">Tier 0 sem T4000 — RPM/marcha</span></div>
-    <div class="qbody">
-      Quando não tem T4000 conectado, esses widgets:
-      <ul>
-        <li>Mostram <code>—</code> (placeholder explícito)?</li>
-        <li>Ficam ocultos (layout reflowa)?</li>
-        <li>Mostram estimativa via GPS+gear ratios + aviso "estimado"?</li>
-      </ul>
+    <div class="qhead"><span class="qid">4.2</span><span class="qtitle">Tier 0 (sem T4000) — RPM, marcha, temp</span></div>
+    <p class="qcontext">Se o carro não tem T4000 BLE conectado, esses valores não chegam ao app. Como tratar?</p>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q4_2">
+        <span class="opt-label">A · Mostra "—" (placeholder explícito)</span>
+        <span class="opt-desc">Espaço fica reservado, gauge vazia.</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q4_2" checked>
+        <span class="opt-label">B · Oculta widgets, layout reflowa</span>
+        <span class="opt-desc">Velocidade fica ainda maior, sobra espaço pra delta e mapa. Atelier limpo em Tier 0.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q4_2">
+        <span class="opt-label">C · Estimativa via GPS + relação de marcha</span>
+        <span class="opt-desc">Calcula RPM aproximado. Mostra com badge "estimado". Risco: número errado engana operador.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q4_2_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">4.3</span><span class="qtitle">Shift light no box</span></div>
-    <div class="qbody">
-      O cockpit do piloto tem 12 LEDs Premium (MS-8). Replica isso na TV do box ou box não tem shift light (só piloto vê)?
+    <div class="qhead"><span class="qid">4.3</span><span class="qtitle">Shift light (12 LEDs Premium) no Command Box</span></div>
+    <p class="qcontext">O cockpit do piloto vai ter 12 LEDs de shift light (build-up verde→amarelo→vermelho). Replica isso na TV?</p>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q4_3">
+        <span class="opt-label">A · Replica os 12 LEDs igual</span>
+        <span class="opt-desc">TV mostra o mesmo que o piloto vê.</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q4_3" checked>
+        <span class="opt-label">B · Não tem shift light no box</span>
+        <span class="opt-desc">Shift light é decisão de pilotagem em milissegundos. Quem está no box não tem ação. Replicar só polui a tela.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q4_3">
+        <span class="opt-label">C · Versão simplificada (barra de RPM)</span>
+        <span class="opt-desc">Sem fire/overrev, só uma barra mostrando proximidade do redline.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q4_3_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">4.4</span><span class="qtitle">Halo radial</span></div>
-    <div class="qbody">
-      Halo do cockpit (recorde-stint laranja, best-alltime ouro, pior-stint roxo) aparece também na TV do box? Faz sentido — mostra pro mecânico/professor o "estado" da volta sem precisar olhar números.
+    <div class="qhead"><span class="qid">4.4</span><span class="qtitle">Halo (anel ao redor do delta) no box</span></div>
+    <p class="qcontext">No cockpit do piloto, um anel ao redor do delta muda de cor: laranja se bateu recorde no stint, ouro se bateu PB all-time, roxo se piorou. Replica no Command Box?</p>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q4_4">
+        <span class="opt-label">A · Mesmo halo do cockpit (mesmas cores)</span>
+        <span class="opt-desc">Consistência visual entre cockpit e box.</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q4_4" checked>
+        <span class="opt-label">B · Halo adaptado ao DNA atelier</span>
+        <span class="opt-desc">Mesma ideia (anel colorido sinaliza recorde / PB / pior), mas paleta champagne/ouro do atelier. Não copia tokens do cockpit.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q4_4">
+        <span class="opt-label">C · Sem halo, só números</span>
+        <span class="opt-desc">Atelier puro, sem ornamentos circulares.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q4_4_outros"></textarea>
     </div>
   </div>
 </section>
 
+<!-- ════════════════ 5. MENSAGENS ════════════════ -->
 <section id="mensagens">
-  <h2><span class="num">5</span>Mensagens — núcleo do Command Box</h2>
-  <p>Se "Command Box" enfatiza comando, mensagens viram a feature central. Preciso fechar bem.</p>
+  <h2><span class="num">5</span>Mensagens</h2>
 
   <div class="q">
     <div class="qhead"><span class="qid">5.1</span><span class="qtitle">Onde fica o campo de digitar a mensagem</span></div>
-    <div class="qbody">
-      A TV é só reflexo do iPhone do operador (AirPlay). Quando alguém vai mandar uma mensagem pro piloto, o campo onde digita o texto fica:
-      <ul>
-        <li><strong>Só no iPhone</strong> — operador digita no celular dele, e na TV aparece só o histórico de mensagens já enviadas. (Quem está no box vê a mensagem só depois de enviada.)</li>
-        <li><strong>Espelhado na TV</strong> — como o iPhone está em AirPlay, todos no box veem o operador digitando em tempo real, letra por letra.</li>
-        <li>Híbrido — TV mostra histórico em destaque, mas no momento de enviar abre teclado em overlay refletido.</li>
-      </ul>
+    <p class="qcontext">A TV é só reflexo do iPhone do operador via AirPlay. Quando alguém vai mandar mensagem pro piloto, o campo onde digita aparece como?</p>
+    <div class="cards">
+      <label class="card recommended">
+        <input type="radio" name="q5_1" checked>
+        <span class="opt-label">A · Só no iPhone do operador</span>
+        <span class="opt-desc">TV mostra só o histórico das mensagens enviadas. Operador digitando "atenção freio" letra por letra na TV é constrangedor e estraga a estética broadcast.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q5_1">
+        <span class="opt-label">B · Espelhado na TV</span>
+        <span class="opt-desc">Como o iPhone está em AirPlay, todos no box veem o operador digitando ao vivo.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q5_1">
+        <span class="opt-label">C · Híbrido</span>
+        <span class="opt-desc">TV mostra histórico em destaque. No momento de enviar, abre overlay refletido com teclado e campo.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q5_1_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">5.2</span><span class="qtitle">Quem pode enviar</span></div>
-    <div class="qbody">
-      Pelo modelo de papéis: Admin sim, Piloto-fora-do-carro sim, Professor sim, Mecânico sim, Read-only não. Confere? E o piloto-no-carro: ele só recebe ou pode mandar curtinho (push-to-talk)?
+    <div class="qhead"><span class="qid">5.2</span><span class="qtitle">Quem pode enviar mensagem</span></div>
+    <p class="qcontext">Por papel (multi-seleção). Read-only é mãe / amigos.</p>
+    <div class="cards">
+      <label class="card recommended">
+        <input type="checkbox" name="q5_2_admin" checked>
+        <span class="opt-label">Admin</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q5_2_piloto_fora" checked>
+        <span class="opt-label">Piloto fora do carro</span>
+        <span class="opt-desc">Os 2-3 que revezam — quando estão no box, podem mandar.</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q5_2_prof" checked>
+        <span class="opt-label">Professor</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q5_2_mec" checked>
+        <span class="opt-label">Mecânico</span>
+      </label>
+      <label class="card">
+        <input type="checkbox" name="q5_2_readonly">
+        <span class="opt-label">Read-only (mãe / amigos)</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q5_2_piloto_carro" checked>
+        <span class="opt-label">Piloto no carro — só ACK</span>
+        <span class="opt-desc">Não digita (mãos no volante), mas confirma recebimento via botão grande no cockpit.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q5_2_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">5.3</span><span class="qtitle">Como o piloto recebe</span></div>
-    <div class="qbody">
-      Cockpit do piloto já tem widget de mensagem (do JS antigo)? Ou MS-12 cria? Aparece como toast curto? TTS lê? Áudio pode atrapalhar — opt-in?
+    <div class="qhead"><span class="qid">5.3</span><span class="qtitle">Como o piloto recebe a mensagem</span></div>
+    <p class="qcontext">Piloto está no carro. Áudio pode atrapalhar, visual também tem limite.</p>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q5_3">
+        <span class="opt-label">A · Toast curto no cockpit</span>
+        <span class="opt-desc">Banner no topo do cockpit por N segundos.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q5_3">
+        <span class="opt-label">B · Voz lendo (TTS)</span>
+        <span class="opt-desc">Piloto não tira olhos da pista.</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q5_3" checked>
+        <span class="opt-label">C · Toast obrigatório + TTS opt-in</span>
+        <span class="opt-desc">Visual sempre. Voz é configurável (piloto liga se quer).</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q5_3_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">5.4</span><span class="qtitle">Visível no box vs privada</span></div>
-    <div class="qbody">
-      Quem decide a flag <code>visivelNoBox</code>:
-      <ul>
-        <li>O <strong>remetente</strong> (toggle ao mandar)?</li>
-        <li>O <strong>destinatário</strong> (filtro do que aparece na TV)?</li>
-        <li>Padrão "visível" e exceção privada, ou o contrário?</li>
-      </ul>
+    <div class="qhead"><span class="qid">5.4</span><span class="qtitle">Visível no box vs privada — quem decide e qual é o padrão</span></div>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q5_4">
+        <span class="opt-label">A · Padrão privada, marcar pra ser pública</span>
+        <span class="opt-desc">Conservador. Operador escolhe ativamente "mostrar no box".</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q5_4" checked>
+        <span class="opt-label">B · Padrão visível, marcar privada como exceção</span>
+        <span class="opt-desc">Box é compartilhado. Transparência é o normal. Privada vira escolha consciente.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q5_4">
+        <span class="opt-label">C · Sem opção, tudo público</span>
+        <span class="opt-desc">Não tem privada. Tudo aparece no box.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q5_4_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">5.5</span><span class="qtitle">Histórico</span></div>
-    <div class="qbody">
-      Quantas mensagens visíveis na TV (últimas 5? scroll? reset por stint?)? Mensagem some sozinha após N segundos ou fica até substituída?
+    <div class="qhead"><span class="qid">5.5</span><span class="qtitle">Histórico das mensagens na TV</span></div>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q5_5">
+        <span class="opt-label">A · Lista das últimas 5, com scroll</span>
+        <span class="opt-desc">Vê várias de uma vez.</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q5_5" checked>
+        <span class="opt-label">B · Última em destaque, anteriores em rodapé fino</span>
+        <span class="opt-desc">Atelier valoriza minimalismo. Foco na mensagem ativa.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q5_5">
+        <span class="opt-label">C · Histórico completo do stint, com timestamp</span>
+        <span class="opt-desc">Mais informação. Estética perde.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q5_5_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">5.6</span><span class="qtitle">Quick-replies</span></div>
-    <div class="qbody">
-      Botões pré-definidos pra acelerar:
-      <ul>
-        <li>"Entrar no box"</li>
-        <li>"Atenção tempo de volta"</li>
-        <li>"Volta voadora"</li>
-        <li>"Levantar pedal"</li>
-        <li>"Bandeira amarela"</li>
-        <li>Outras?</li>
-      </ul>
-      Configurável por time, ou catálogo fixo?
+    <div class="qhead"><span class="qid">5.6</span><span class="qtitle">Mensagens rápidas pré-definidas (catálogo inicial)</span></div>
+    <p class="qcontext">Marque as que devem vir prontas no app (multi-seleção). Time pode adicionar outras depois.</p>
+    <div class="cards">
+      <label class="card recommended">
+        <input type="checkbox" name="q5_6_box" checked>
+        <span class="opt-label">"Entrar no box"</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q5_6_tempo" checked>
+        <span class="opt-label">"Atenção tempo de volta"</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q5_6_voadora" checked>
+        <span class="opt-label">"Volta voadora"</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q5_6_pedal" checked>
+        <span class="opt-label">"Levantar pedal"</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q5_6_amarela" checked>
+        <span class="opt-label">"Bandeira amarela"</span>
+      </label>
+      <label class="card">
+        <input type="checkbox" name="q5_6_azul">
+        <span class="opt-label">"Bandeira azul (mais rápido vem)"</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q5_6_voltas" checked>
+        <span class="opt-label">"Faltam X voltas"</span>
+        <span class="opt-desc">Template com campo numérico.</span>
+      </label>
+      <label class="card">
+        <input type="checkbox" name="q5_6_combustivel">
+        <span class="opt-label">"Atenção combustível"</span>
+      </label>
+      <label class="card">
+        <input type="checkbox" name="q5_6_chuva">
+        <span class="opt-label">"Vem chuva"</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q5_6_outros" placeholder="ex.: outras mensagens rápidas que você quer no catálogo inicial"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">5.7</span><span class="qtitle">Ack / leitura</span></div>
-    <div class="qbody">
-      Piloto confirma que viu (botão único no cockpit)? Operador vê "lida"? Sem ack, mensagem fica pulsando até quando?
+    <div class="qhead"><span class="qid">5.7</span><span class="qtitle">Confirmação de leitura (ACK)</span></div>
+    <p class="qcontext">Operador precisa saber se piloto viu a mensagem (especialmente bandeira amarela).</p>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q5_7">
+        <span class="opt-label">A · Sem ACK (mensagem some sozinha em N segundos)</span>
+        <span class="opt-desc">Simples. Não dá certeza de leitura.</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q5_7" checked>
+        <span class="opt-label">B · ACK manual (botão grande no cockpit)</span>
+        <span class="opt-desc">Piloto aperta um botão pra confirmar. Operador vê "lida". Crítico em mensagens de segurança.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q5_7">
+        <span class="opt-label">C · ACK automático ao cruzar parcial</span>
+        <span class="opt-desc">Se piloto cruzou parcial após mensagem, considera lida. Não exige ação dele.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q5_7_outros"></textarea>
     </div>
   </div>
 </section>
 
+<!-- ════════════════ 6. VÍDEO ════════════════ -->
 <section id="video">
-  <h2><span class="num">6</span>Vídeo (Daily.co)</h2>
+  <h2><span class="num">6</span>Vídeo (2 câmeras)</h2>
 
   <div class="q">
     <div class="qhead"><span class="qid">6.1</span><span class="qtitle">Vídeo aparece no Command Box?</span></div>
-    <div class="qbody">
-      MS-11 monta 2 câmeras simultâneas no iPhone do piloto (cockpit + onboard). Esse vídeo ao vivo aparece também no Command Box? Layout: split, picture-in-picture, full + thumb, toggle?
+    <p class="qcontext">As 2 câmeras do iPhone do piloto (cockpit + onboard) vão ao vivo. Box mostra ou não?</p>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q6_1">
+        <span class="opt-label">A · Sempre visível (split com mapa)</span>
+        <span class="opt-desc">Vídeo divide tela com mapa.</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q6_1" checked>
+        <span class="opt-label">B · Picture-in-picture no canto</span>
+        <span class="opt-desc">Vídeo pequeno, mapa domina. Operador expande quando quer.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q6_1">
+        <span class="opt-label">C · Toggle (esconde quando quer mapa cheio)</span>
+        <span class="opt-desc">Operador escolhe visível ou não.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q6_1">
+        <span class="opt-label">D · Sem vídeo no box</span>
+        <span class="opt-desc">Vídeo só no cockpit do piloto.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q6_1_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">6.2</span><span class="qtitle">Áudio</span></div>
-    <div class="qbody">
-      Áudio do carro vai pra TV do box (operador ouve motor)? Tem pickup do piloto via mic do iPhone? Mute por padrão (TV do box é ambiente coletivo — qualquer áudio incomoda)?
+    <div class="qhead"><span class="qid">6.2</span><span class="qtitle">Áudio do vídeo</span></div>
+    <p class="qcontext">Box é ambiente coletivo. Áudio incomoda quem está conversando.</p>
+    <div class="cards">
+      <label class="card recommended">
+        <input type="radio" name="q6_2" checked>
+        <span class="opt-label">A · Mute fixo</span>
+        <span class="opt-desc">Vídeo sempre sem som. Box é coletivo.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q6_2">
+        <span class="opt-label">B · Áudio carro on, voz off</span>
+        <span class="opt-desc">Som do motor sim, mic do cockpit não.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q6_2">
+        <span class="opt-label">C · Tudo on, controle por toggle</span>
+        <span class="opt-desc">Operador escolhe.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q6_2_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">6.3</span><span class="qtitle">Ordem de entrega: vídeo antes ou depois do Command Box?</span></div>
-    <div class="qbody">
-      O Command Box e o vídeo de duas câmeras (Daily.co) são duas frentes diferentes. Pergunta: você quer entregar primeiro o Command Box <strong>sem vídeo</strong> (mapa + telemetria + mensagens), e o vídeo entra depois? Ou prefere segurar o Command Box até o vídeo estar pronto, pra desenhar a tela já com vídeo no lugar?
-      <br><br>
-      Se for entregar sem vídeo primeiro, a área que ficaria reservada pras câmeras vira o quê na tela (mapa maior? telemetria expandida? área vazia esperando o vídeo)?
+    <div class="qhead"><span class="qid">6.3</span><span class="qtitle">Ordem de entrega: Command Box antes ou depois do vídeo?</span></div>
+    <p class="qcontext">Command Box e o vídeo de 2 câmeras são duas frentes diferentes. Preciso saber em que ordem entregar pra desenhar a tela apropriadamente.</p>
+    <div class="cards">
+      <label class="card recommended">
+        <input type="radio" name="q6_3" checked>
+        <span class="opt-label">A · Command Box primeiro (sem vídeo), vídeo entra depois</span>
+        <span class="opt-desc">Espaço de vídeo já reservado no layout, com placeholder ("vídeo aparece aqui"). Vídeo vira camada quando estiver pronto. Permite testar Command Box em pista antes.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q6_3">
+        <span class="opt-label">B · Vídeo primeiro, Command Box depois (já com vídeo)</span>
+        <span class="opt-desc">Atrasa Command Box mas a tela nasce completa.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q6_3">
+        <span class="opt-label">C · Em paralelo, integra quando os dois estiverem prontos</span>
+        <span class="opt-desc">Mais arriscado de cronograma.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q6_3_outros"></textarea>
     </div>
   </div>
 </section>
 
+<!-- ════════════════ 7. HISTÓRICO ════════════════ -->
 <section id="historico">
   <h2><span class="num">7</span>Histórico do dia</h2>
-  <p>"Visão histórica + interação" é o que diz MS-12.1. Histórico de quê, exatamente?</p>
 
   <div class="q">
-    <div class="qhead"><span class="qid">7.1</span><span class="qtitle">Lista de voltas</span></div>
-    <div class="qbody">
-      Lista de todas as voltas do dia com tempo, delta vs PB, troféu? Ordenada por nº ou por tempo? Filtro por piloto?
+    <div class="qhead"><span class="qid">7.1</span><span class="qtitle">Lista de voltas — ordenação</span></div>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q7_1">
+        <span class="opt-label">A · Cronológica (volta 1, 2, 3...)</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q7_1">
+        <span class="opt-label">B · Por tempo (melhor primeiro)</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q7_1" checked>
+        <span class="opt-label">C · Toggle (default cronológica)</span>
+        <span class="opt-desc">Operador alterna entre as duas.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q7_1_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">7.2</span><span class="qtitle">Heatmap por trecho</span></div>
-    <div class="qbody">
-      Tabela trecho × volta com cores (verde melhor, vermelho pior)? Útil pra ver onde o piloto evolui ou regride.
+    <div class="qhead"><span class="qid">7.2</span><span class="qtitle">Heatmap volta × trecho</span></div>
+    <p class="qcontext">Tabela com voltas como linhas, trechos como colunas, cor por desempenho.</p>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q7_2">
+        <span class="opt-label">A · Sempre visível na tela ao vivo</span>
+        <span class="opt-desc">Mais informação. Atelier perde.</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q7_2" checked>
+        <span class="opt-label">B · Vista separada (operador navega)</span>
+        <span class="opt-desc">Mantém tela ao vivo limpa. Heatmap fica acessível em outra aba/tela.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q7_2">
+        <span class="opt-label">C · Não tem heatmap</span>
+        <span class="opt-desc">Análise fica só pra debrief pós-stint.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q7_2_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">7.3</span><span class="qtitle">Troféus do dia</span></div>
-    <div class="qbody">
-      Quadro com 4 troféus (recorde-stint, melhor-trecho, regularidade, lição-cumprida) atualizando ao vivo? Ou só pós-stint?
+    <div class="qhead"><span class="qid">7.3</span><span class="qtitle">Troféus do dia (recorde, regularidade etc.)</span></div>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q7_3">
+        <span class="opt-label">A · Quadro fixo na tela ao vivo</span>
+        <span class="opt-desc">Troféus sempre visíveis, atualizam.</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q7_3" checked>
+        <span class="opt-label">B · Notificação flash quando ganha</span>
+        <span class="opt-desc">Atelier valoriza momento. Troféu vira animação celebratória rápida na tela.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q7_3">
+        <span class="opt-label">C · Só pós-stint</span>
+        <span class="opt-desc">Troféus aparecem só no debrief.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q7_3_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">7.4</span><span class="qtitle">Comparações</span></div>
-    <div class="qbody">
-      Compara volta atual com PB do dia, PB all-time, ghost selecionado? Os 3 ao mesmo tempo? Ou um só (escolha do operador)?
+    <div class="qhead"><span class="qid">7.4</span><span class="qtitle">Comparações simultâneas</span></div>
+    <p class="qcontext">Volta atual pode ser comparada com PB do dia, PB all-time e/ou ghost selecionado.</p>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q7_4">
+        <span class="opt-label">A · As 3 sempre visíveis</span>
+        <span class="opt-desc">Mais informação, mais ruído.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q7_4">
+        <span class="opt-label">B · Operador escolhe 1 na hora</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q7_4" checked>
+        <span class="opt-label">C · PB do dia padrão, outras 2 via toggle</span>
+        <span class="opt-desc">Default razoável (PB do dia é o mais relevante), expansão sob demanda.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q7_4_outros"></textarea>
     </div>
   </div>
 </section>
 
+<!-- ════════════════ 8. MULTI ════════════════ -->
 <section id="multi">
   <h2><span class="num">8</span>Multi-piloto / multi-carro</h2>
 
   <div class="q">
     <div class="qhead"><span class="qid">8.1</span><span class="qtitle">Troca de piloto no carro</span></div>
-    <div class="qbody">
-      Quando piloto B substitui piloto A no mesmo carro, Command Box detecta automaticamente (auth do iPhone que entra no carro) ou operador seleciona manualmente?
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q8_1">
+        <span class="opt-label">A · Auto pela autenticação do iPhone que entra no carro</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q8_1">
+        <span class="opt-label">B · Operador seleciona manualmente</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q8_1" checked>
+        <span class="opt-label">C · Auto + operador confirma</span>
+        <span class="opt-desc">Sistema detecta troca, operador valida com 1 toque. Evita troca errada.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q8_1_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">8.2</span><span class="qtitle">Histórico aglutinado</span></div>
-    <div class="qbody">
-      Lista de voltas é por <strong>carro</strong> (todas as voltas do Celta hoje, qualquer piloto) ou por <strong>piloto</strong> (todas as voltas do Flávio hoje, qualquer carro)? PB all-time considera o quê?
+    <div class="qhead"><span class="qid">8.2</span><span class="qtitle">Histórico aglutinado: por carro ou por piloto?</span></div>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q8_2">
+        <span class="opt-label">A · Por carro (todas as voltas do Celta hoje)</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q8_2">
+        <span class="opt-label">B · Por piloto (todas as voltas do Flávio hoje)</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q8_2" checked>
+        <span class="opt-label">C · Toggle, default por carro</span>
+        <span class="opt-desc">No box, foco é o carro. Mas operador alterna pra ver progresso individual.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q8_2_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">8.3</span><span class="qtitle">Múltiplos carros simultâneos</span></div>
-    <div class="qbody">
-      Time pode ter 2 carros na pista ao mesmo tempo? Box mostra os 2 (split) ou só 1 (com seletor)?
+    <div class="qhead"><span class="qid">8.3</span><span class="qtitle">Múltiplos carros simultâneos do mesmo time</span></div>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q8_3">
+        <span class="opt-label">A · Só 1 carro na tela</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q8_3">
+        <span class="opt-label">B · Split tela (2 carros lado a lado)</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q8_3" checked>
+        <span class="opt-label">C · Seletor — 1 por vez, alterna</span>
+        <span class="opt-desc">Time com 2 carros é raro. Seletor resolve sem complicar layout.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q8_3_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">8.4</span><span class="qtitle">Múltiplos boxes</span></div>
-    <div class="qbody">
-      Time pode ter 2 boxes ao mesmo tempo (operador A + operador B em iPhones diferentes, AirPlays em TVs diferentes)? Cada um vê o quê?
+    <div class="qhead"><span class="qid">8.4</span><span class="qtitle">Múltiplos boxes simultâneos no mesmo time</span></div>
+    <p class="qcontext">Ex.: dois operadores em dois boxes (TV A com mapa, TV B com vídeo).</p>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q8_4">
+        <span class="opt-label">A · Suportado, cada box é instância independente</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q8_4" checked>
+        <span class="opt-label">B · 1 box por time inicial</span>
+        <span class="opt-desc">Multi-box é complexidade pra pouco caso de uso. Adia.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q8_4">
+        <span class="opt-label">C · Múltiplos boxes mas todos veem o mesmo</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q8_4_outros"></textarea>
     </div>
   </div>
 </section>
 
+<!-- ════════════════ 9. REALTIME ════════════════ -->
 <section id="realtime">
   <h2><span class="num">9</span>Realtime e latência</h2>
 
   <div class="q">
-    <div class="qhead"><span class="qid">9.1</span><span class="qtitle">Latência tolerável</span></div>
-    <div class="qbody">
-      Carro → Command Box: 1s aceitável? 3s? 5s? Mensagem de operador → cockpit do piloto: precisa ser &lt;500ms ou 2s tá ok?
+    <div class="qhead"><span class="qid">9.1</span><span class="qtitle">Latência aceitável carro → TV</span></div>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q9_1">
+        <span class="opt-label">A · Menor que 1s</span>
+        <span class="opt-desc">Caro, exige WebSocket dedicado.</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q9_1" checked>
+        <span class="opt-label">B · 1-3s (Realtime padrão)</span>
+        <span class="opt-desc">Sweet spot do Supabase Realtime. Satisfaz 99% dos casos.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q9_1">
+        <span class="opt-label">C · 3-5s (aceita batches)</span>
+        <span class="opt-desc">Mais barato em rede, perde sensação ao vivo.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q9_1_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">9.2</span><span class="qtitle">O que é evento agregado</span></div>
-    <div class="qbody">
-      ADR-014 diz "eventos agregados, não samples". Lista provável: <code>onLapEnd</code>, <code>onSegmentEnd</code> (com Vmin), <code>onPbBeat</code>, <code>onWarmupDone</code>, <code>onShiftCorrect/Late/Early</code>, posição GPS 1Hz. Confere? Falta algum?
+    <div class="qhead"><span class="qid">9.2</span><span class="qtitle">Quais eventos vão pelo Realtime (multi-seleção)</span></div>
+    <p class="qcontext">Decisão fechada: samples brutos não passam pelo canal ao vivo. Só eventos agregados. Marque os que devem trafegar.</p>
+    <div class="cards">
+      <label class="card recommended">
+        <input type="checkbox" name="q9_2_lap" checked>
+        <span class="opt-label">Fim de volta (com tempo)</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q9_2_seg" checked>
+        <span class="opt-label">Fim de trecho (com Vmin georef)</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q9_2_pb" checked>
+        <span class="opt-label">Quebra de PB (do dia / all-time)</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q9_2_warm" checked>
+        <span class="opt-label">Fim de warmup térmico</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q9_2_shift" checked>
+        <span class="opt-label">Shift correto / cedo / tarde</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q9_2_pos" checked>
+        <span class="opt-label">Posição GPS a 1Hz</span>
+        <span class="opt-desc">Pra mapa.</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q9_2_bat" checked>
+        <span class="opt-label">Bateria do iPhone do piloto</span>
+        <span class="opt-desc">Operador precisa saber se vai ter que parar pra recarregar.</span>
+      </label>
+      <label class="card">
+        <input type="checkbox" name="q9_2_temp">
+        <span class="opt-label">Temperatura ambiente (se houver sensor)</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q9_2_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">9.3</span><span class="qtitle">Carro offline</span></div>
-    <div class="qbody">
-      Piloto perde 4G no autódromo (acontece). UI mostra "OFFLINE — última atualização há 18s" piscando? Continua exibindo último estado conhecido ou apaga?
+    <div class="qhead"><span class="qid">9.3</span><span class="qtitle">Carro perde sinal — comportamento</span></div>
+    <div class="cards">
+      <label class="card recommended">
+        <input type="radio" name="q9_3" checked>
+        <span class="opt-label">A · Banner "OFFLINE há 18s" piscando, último estado conhecido visível</span>
+        <span class="opt-desc">Operador sabe na hora. Estado anterior continua visível pra contexto.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q9_3">
+        <span class="opt-label">B · Tela escurece + banner</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q9_3">
+        <span class="opt-label">C · Só badge silencioso no canto</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q9_3_outros"></textarea>
     </div>
   </div>
 </section>
 
-<section id="pendencias">
+<!-- ════════════════ 10. PENDÊNCIAS / ALERTAS ════════════════ -->
+<section id="alertas">
   <h2><span class="num">10</span>Pendências e alertas</h2>
 
   <div class="q">
-    <div class="qhead"><span class="qid">10.1</span><span class="qtitle">Pendências do evento</span></div>
-    <div class="qbody">
-      A lista de pendências do evento (MS-5 — obrigatórias × adicionais por carro) aparece no Command Box pro mecânico marcar em tempo real (troquei pneu, calibrei pressão)?
+    <div class="qhead"><span class="qid">10.1</span><span class="qtitle">Pendências do evento (lista do mecânico) no Command Box</span></div>
+    <p class="qcontext">A lista de pendências por carro+evento (troquei pneu, calibrei, etc.) — aparece no Command Box?</p>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q10_1">
+        <span class="opt-label">A · Sim, mecânico marca direto na TV</span>
+        <span class="opt-desc">Lista visível na tela ao vivo, mecânico interage.</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q10_1" checked>
+        <span class="opt-label">B · Vista separada (não na tela ao vivo)</span>
+        <span class="opt-desc">Tela ao vivo foca pilotagem. Pendências viram aba acessível pelo iPhone do mecânico.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q10_1">
+        <span class="opt-label">C · Não tem, fica só no app do iPhone</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q10_1_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">10.2</span><span class="qtitle">Alertas críticos</span></div>
-    <div class="qbody">
-      Em Tier 1 (T4000 conectado), overheat / pressão óleo baixa / λ pobre dispara banner vermelho fullscreen no box? Som? Notificação push em todos os iPhones do time?
+    <div class="qhead"><span class="qid">10.2</span><span class="qtitle">Alertas críticos (overheat, baixa pressão de óleo)</span></div>
+    <p class="qcontext">Em Tier 1 (T4000 conectado), o app pode detectar sinais críticos.</p>
+    <div class="cards">
+      <label class="card recommended">
+        <input type="radio" name="q10_2" checked>
+        <span class="opt-label">A · Banner vermelho fullscreen + som</span>
+        <span class="opt-desc">Crítico exige atenção total. Operador / mecânico precisa ver de longe.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q10_2">
+        <span class="opt-label">B · Toast lateral grande + som</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q10_2">
+        <span class="opt-label">C · Só visual, sem som</span>
+        <span class="opt-desc">Box é coletivo, som incomoda.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q10_2_outros"></textarea>
     </div>
   </div>
 </section>
 
+<!-- ════════════════ 11. PÓS-STINT ════════════════ -->
 <section id="pos-stint">
-  <h2><span class="num">11</span>Pós-stint e debrief</h2>
+  <h2><span class="num">11</span>Pós-stint</h2>
 
   <div class="q">
-    <div class="qhead"><span class="qid">11.1</span><span class="qtitle">Auto-debrief</span></div>
-    <div class="qbody">
-      Piloto entra no box e finaliza stint. Command Box automaticamente exibe debrief (PosStintView equivalente, em landscape grande), ou continua na vista ao vivo (pra próximo stint)?
+    <div class="qhead"><span class="qid">11.1</span><span class="qtitle">Auto-debrief ao finalizar stint</span></div>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q11_1">
+        <span class="opt-label">A · Auto exibe debrief na TV</span>
+        <span class="opt-desc">Tela muda automaticamente quando stint encerra.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q11_1">
+        <span class="opt-label">B · Continua na vista ao vivo, debrief num botão</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q11_1" checked>
+        <span class="opt-label">C · Notificação "stint encerrado" + 1 toque pra abrir</span>
+        <span class="opt-desc">Operador escolhe quando ver. Não interrompe se está conversando com piloto.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q11_1_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">11.2</span><span class="qtitle">Anotações do operador</span></div>
-    <div class="qbody">
-      Professor / mecânico podem anotar comentários do stint pelo Command Box, vinculado à sessão? Onde aparece (debrief? lista?)?
+    <div class="qhead"><span class="qid">11.2</span><span class="qtitle">Anotações do operador no stint</span></div>
+    <p class="qcontext">Professor/mecânico observa coisas durante o stint. Onde anota?</p>
+    <div class="cards">
+      <label class="card recommended">
+        <input type="radio" name="q11_2" checked>
+        <span class="opt-label">A · Anotação vinculada à sessão, visível no debrief de todos</span>
+        <span class="opt-desc">Útil pro pós-track-day. Compartilhado com piloto.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q11_2">
+        <span class="opt-label">B · Notas privadas do operador (não compartilha)</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q11_2">
+        <span class="opt-label">C · Não tem anotação no Command Box</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q11_2_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">11.3</span><span class="qtitle">Replay de volta</span></div>
-    <div class="qbody">
-      Player de replay (telemetria + ghost map sincronizados) acessível pelo Command Box ou só na pós-stint do iPhone?
+    <div class="qhead"><span class="qid">11.3</span><span class="qtitle">Replay de volta no Command Box</span></div>
+    <div class="cards">
+      <label class="card recommended">
+        <input type="radio" name="q11_3" checked>
+        <span class="opt-label">A · Sim, player na TV grande</span>
+        <span class="opt-desc">TV é melhor que iPhone pra ver replay. Telemetria + ghost map sincronizados.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q11_3">
+        <span class="opt-label">B · Não, só no iPhone</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q11_3_outros"></textarea>
     </div>
   </div>
 </section>
 
+<!-- ════════════════ 12. HARDWARE ════════════════ -->
 <section id="hw">
   <h2><span class="num">12</span>Hardware no box</h2>
 
   <div class="q">
-    <div class="qhead"><span class="qid">12.1</span><span class="qtitle">Qual iPhone opera o box?</span></div>
-    <div class="qbody">
-      Se o piloto-no-carro está usando o iPhone dele, o Command Box opera no iPhone de quem? Outro membro do time (Flávio admin, professor, mecânico)? Premissa: pelo menos 1 iPhone livre no box. Confere?
+    <div class="qhead"><span class="qid">12.1</span><span class="qtitle">Qual iPhone opera o Command Box</span></div>
+    <p class="qcontext">O iPhone do piloto está no carro com ele. Box opera em qual iPhone?</p>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q12_1">
+        <span class="opt-label">A · iPhone do admin (Flávio)</span>
+        <span class="opt-desc">Sempre o admin opera.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q12_1">
+        <span class="opt-label">B · iPhone dedicado do time</span>
+        <span class="opt-desc">Time tem 1 iPhone só pra box, compartilhado.</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q12_1" checked>
+        <span class="opt-label">C · Qualquer iPhone autenticado entra em modo BOX</span>
+        <span class="opt-desc">Flexível. Quem está no box pega o iPhone dele e ativa.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q12_1_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
     <div class="qhead"><span class="qid">12.2</span><span class="qtitle">Apple TV — modelo mínimo</span></div>
-    <div class="qbody">
-      Apple TV 4K (qualquer geração) ou Apple TV HD aceita? AirPlay 2 obrigatório (sim). Você já tem qual?
+    <div class="cards">
+      <label class="card recommended">
+        <input type="radio" name="q12_2" checked>
+        <span class="opt-label">A · Apple TV 4K (qualquer geração)</span>
+        <span class="opt-desc">AirPlay 2 + 4K. Modelos antigos têm latência maior.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q12_2">
+        <span class="opt-label">B · Apple TV HD aceita</span>
+        <span class="opt-desc">Mais barato, mas latência maior e sem 4K.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q12_2">
+        <span class="opt-label">C · Verifica geração no setup, avisa se incompatível</span>
+      </label>
     </div>
-  </div>
-
-  <div class="q answered">
-    <div class="qhead"><span class="qid">12.3</span><span class="qtitle">Internet no box</span></div>
-    <div class="qbody">
-      No autódromo: Wi-Fi do circuito não dá. Hipótese: hotspot 4G/5G do iPhone do operador. Apple TV conecta nesse hotspot? AirPlay funciona offline (peer-to-peer Wi-Fi direto)? Realtime do Supabase exige internet — então o iPhone-BOX precisa de dados móveis sempre.
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q12_2_outros" placeholder="Qual Apple TV você já tem?"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">12.4</span><span class="qtitle">TV 32" — outras dimensões</span></div>
-    <div class="qbody">
-      Layout dimensiona pra 24"/40"/55" também? Ou trava em 32" e quem tiver outra TV se vira?
+    <div class="qhead"><span class="qid">12.4</span><span class="qtitle">Suporta TVs de outros tamanhos?</span></div>
+    <div class="cards">
+      <label class="card recommended">
+        <input type="radio" name="q12_4" checked>
+        <span class="opt-label">A · Layout fluido (24-55")</span>
+        <span class="opt-desc">SVG vetorial escala. Funciona em qualquer TV razoável.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q12_4">
+        <span class="opt-label">B · Trava em 32"</span>
+        <span class="opt-desc">Outras dimensões ficam quebradas.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q12_4_outros"></textarea>
     </div>
   </div>
 </section>
 
+<!-- ════════════════ 13. OPERAÇÃO ════════════════ -->
 <section id="operacao">
-  <h2><span class="num">13</span>Operação e ergonomia</h2>
+  <h2><span class="num">13</span>Operação</h2>
 
   <div class="q">
-    <div class="qhead"><span class="qid">13.1</span><span class="qtitle">Modo BOX no app</span></div>
-    <div class="qbody">
-      Como o iPhone entra em "modo BOX"? Toggle na home? Tela dedicada? Switch deve ser óbvio (operador apressado).
+    <div class="qhead"><span class="qid">13.1</span><span class="qtitle">Como o iPhone entra em modo BOX</span></div>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q13_1">
+        <span class="opt-label">A · Toggle na home</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q13_1" checked>
+        <span class="opt-label">B · Tela dedicada "Modo Command Box"</span>
+        <span class="opt-desc">Switch óbvio, operador apressado entra direto.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q13_1">
+        <span class="opt-label">C · Atalho na tela inicial do iOS</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q13_1_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">13.2</span><span class="qtitle">Troca de operador</span></div>
-    <div class="qbody">
-      Operador A passa o iPhone pro operador B no meio do stint. App continua no modo BOX do A ou exige logout/login? Confunde se aparece nome de quem mandou que já não está mais lá.
+    <div class="qhead"><span class="qid">13.2</span><span class="qtitle">Troca de operador no meio do stint</span></div>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q13_2">
+        <span class="opt-label">A · Continua no modo BOX, sem relogin</span>
+        <span class="opt-desc">Mais simples. Mas mensagens podem aparecer com nome do operador anterior.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q13_2">
+        <span class="opt-label">B · Exige relogin completo</span>
+        <span class="opt-desc">Seguro, mas mais fricção.</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q13_2" checked>
+        <span class="opt-label">C · Ack rápido "agora é fulano operando"</span>
+        <span class="opt-desc">1 toque pra trocar identidade, sem perder o estado da sessão.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q13_2_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">13.3</span><span class="qtitle">Botões de ação rápida</span></div>
-    <div class="qbody">
-      Além das quick-replies de mensagem, ações:
-      <ul>
-        <li>"Marcar este stint como crítico" (etiqueta sessão pra debrief)</li>
-        <li>"Pausar captura" (perdemos GPS, vamos descartar samples ruins)</li>
-        <li>"Encerrar stint do box" (piloto sem mãos pra mexer no iPhone)</li>
-      </ul>
-      Faz sentido? Outras?
+    <div class="qhead"><span class="qid">13.3</span><span class="qtitle">Botões de ação rápida (multi-seleção)</span></div>
+    <p class="qcontext">Além de mensagens, operador pode disparar ações no Command Box. Marque as que devem ter botão.</p>
+    <div class="cards">
+      <label class="card recommended">
+        <input type="checkbox" name="q13_3_critico" checked>
+        <span class="opt-label">Marcar stint como crítico</span>
+        <span class="opt-desc">Etiqueta a sessão pra revisar no debrief.</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q13_3_pause" checked>
+        <span class="opt-label">Pausar captura</span>
+        <span class="opt-desc">Quando GPS está ruim, evita poluir samples.</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q13_3_encerrar" checked>
+        <span class="opt-label">Encerrar stint do box</span>
+        <span class="opt-desc">Quando piloto não consegue mexer no iPhone (ex.: emergência).</span>
+      </label>
+      <label class="card recommended">
+        <input type="checkbox" name="q13_3_amarela" checked>
+        <span class="opt-label">Bandeira amarela broadcast</span>
+        <span class="opt-desc">Mensagem prioritária + som no cockpit do piloto.</span>
+      </label>
+      <label class="card">
+        <input type="checkbox" name="q13_3_chamar">
+        <span class="opt-label">Chamar piloto pro box</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q13_3_outros"></textarea>
     </div>
   </div>
 </section>
 
+<!-- ════════════════ 14. TIER ════════════════ -->
 <section id="tier">
   <h2><span class="num">14</span>Tier 0 vs Tier 1</h2>
 
   <div class="q">
-    <div class="qhead"><span class="qid">14.1</span><span class="qtitle">Graceful degradation no Command Box</span></div>
-    <div class="qbody">
-      Em Tier 0 (sem T4000), os widgets de RPM/marcha/temp ficam:
-      <ul>
-        <li>Ocultos (layout reflowa, sobra espaço pra outras coisas)</li>
-        <li>Visíveis com <code>—</code> e badge "Tier 1"</li>
-        <li>Substituídos por widgets Tier 0 (G lateral, vel pura, etc)</li>
-      </ul>
+    <div class="qhead"><span class="qid">14.1</span><span class="qtitle">Em Tier 0 (sem T4000), o que aparece no espaço de RPM/marcha/temp?</span></div>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q14_1">
+        <span class="opt-label">A · Widgets ocultos, layout reflowa</span>
+        <span class="opt-desc">Já é a recomendação da 4.2.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q14_1">
+        <span class="opt-label">B · Visíveis com "—"</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q14_1" checked>
+        <span class="opt-label">C · Substituídos por widgets Tier 0 (G lateral, vel pura, %brake)</span>
+        <span class="opt-desc">Espaço vira informação útil de Tier 0 em vez de ficar vazio. Aproveita IMU do iPhone.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q14_1_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">14.2</span><span class="qtitle">Aprendizado shift light no box</span></div>
-    <div class="qbody">
-      Tela "Reações aprendidas" (MS-8.5) tem versão grande pro box, ou é só no iPhone do piloto?
+    <div class="qhead"><span class="qid">14.2</span><span class="qtitle">Tela "Reações aprendidas" (shift light) no Command Box?</span></div>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q14_2">
+        <span class="opt-label">A · Versão grande no box</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q14_2" checked>
+        <span class="opt-label">B · Só no iPhone do piloto</span>
+        <span class="opt-desc">Box é tempo real. Análise pessoal de reação fica no app do piloto.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q14_2_outros"></textarea>
     </div>
   </div>
 </section>
 
+<!-- ════════════════ 15. TIPOGRAFIA ════════════════ -->
 <section id="identidade">
-  <h2><span class="num">15</span>Identidade visual</h2>
-
-  <div class="q answered">
-    <div class="qhead"><span class="qid">15.1</span><span class="qtitle">DNA visual</span></div>
-    <div class="qbody">
-      Princípio 4: "Cockpits não seguem padrão B — DNA próprio (preto, accents, halo, slide 3D)". Command Box:
-      <ul>
-        <li>Adota o mesmo DNA do cockpit (preto + accents + halo)</li>
-        <li>Tem terceiro DNA (mais "broadcast TV" — verde escuro tipo cabine F1, azul Le Mans)</li>
-        <li>Híbrido: chrome do cockpit + tipografia mais legível pra TV (tamanhos maiores, contraste forte)</li>
-      </ul>
-    </div>
-  </div>
+  <h2><span class="num">15</span>Tipografia em TV 32"</h2>
 
   <div class="q">
-    <div class="qhead"><span class="qid">15.2</span><span class="qtitle">Tipografia em TV 32"</span></div>
-    <div class="qbody">
-      O que se lê confortável a 3-4 metros de distância? Inter ainda funciona? Tamanhos mínimos (proponho 18px corpo / 32px destaques / 64px hero)?
+    <div class="qhead"><span class="qid">15.2</span><span class="qtitle">Escala tipográfica</span></div>
+    <p class="qcontext">A 3-4m de distância, fontes pequenas viram embaçadas. O atelier.svg usa Helvetica Neue light com escala generosa.</p>
+    <div class="cards">
+      <label class="card recommended">
+        <input type="radio" name="q15_2" checked>
+        <span class="opt-label">A · Seguir o atelier (Helvetica Neue 100/200, hero 76px, display 42px, metadata 14px, eyebrow 9px)</span>
+        <span class="opt-desc">Mantém DNA. Hero da velocidade já calibrado pra 3m.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q15_2">
+        <span class="opt-label">B · Subir mínimos (corpo 18px, destaque 32px, hero 64px)</span>
+        <span class="opt-desc">Mais legível em TV menor (24"), mas perde refinamento atelier.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q15_2">
+        <span class="opt-label">C · Inter (mesmo do hub) em vez de Helvetica Neue</span>
+        <span class="opt-desc">Consistência com resto do app, perde DNA atelier.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q15_2_outros"></textarea>
     </div>
   </div>
 </section>
 
+<!-- ════════════════ 16. PRIVACIDADE ════════════════ -->
 <section id="privacidade">
   <h2><span class="num">16</span>Privacidade das mensagens</h2>
 
   <div class="q">
-    <div class="qhead"><span class="qid">16.1</span><span class="qtitle">Quem vê privado</span></div>
-    <div class="qbody">
-      Mensagem com <code>visivelNoBox=false</code>: aparece no iPhone do destinatário, mas <strong>não aparece na TV do box</strong>. Confere? Aparece no histórico do iPhone de quem mais (Admin sempre, todos os operadores autenticados, ninguém)?
+    <div class="qhead"><span class="qid">16.1</span><span class="qtitle">Quem vê uma mensagem marcada como privada</span></div>
+    <p class="qcontext">Mensagem com flag "privada" não aparece na TV do box. Mas no iPhone de quem ela aparece?</p>
+    <div class="cards">
+      <label class="card recommended">
+        <input type="radio" name="q16_1" checked>
+        <span class="opt-label">A · Só o destinatário</span>
+        <span class="opt-desc">Privada é privada. Bate com expectativa.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q16_1">
+        <span class="opt-label">B · Destinatário + Admin</span>
+        <span class="opt-desc">Admin sempre vê tudo (modelo de admin com poder total).</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q16_1">
+        <span class="opt-label">C · Todos do time autenticados (só some da TV)</span>
+        <span class="opt-desc">"Privada" significa só "fora da TV". No app, todos veem.</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q16_1_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">16.2</span><span class="qtitle">Read-only (mãe, amigos)</span></div>
-    <div class="qbody">
-      Read-only "só lê, não escreve, não convida" (PLANO §3). Lê mensagens privadas também ou só visíveis-no-box? Mãe vendo mensagem do mecânico falando "freio do seu filho tá ruim, vou trocar" pode dar problema.
+    <div class="qhead"><span class="qid">16.2</span><span class="qtitle">Read-only (mãe, amigos) — o que enxerga</span></div>
+    <div class="cards">
+      <label class="card">
+        <input type="radio" name="q16_2">
+        <span class="opt-label">A · Lê todas (públicas e privadas)</span>
+        <span class="opt-desc">Risco: mãe vê mensagem do mecânico falando de problema do carro.</span>
+      </label>
+      <label class="card recommended">
+        <input type="radio" name="q16_2" checked>
+        <span class="opt-label">B · Lê só mensagens visíveis-no-box</span>
+        <span class="opt-desc">Read-only vê o que está na TV. Mensagens privadas ficam só pro time operacional.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q16_2">
+        <span class="opt-label">C · Não tem acesso a mensagens, só dados de pista</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q16_2_outros"></textarea>
     </div>
   </div>
 
   <div class="q">
-    <div class="qhead"><span class="qid">16.3</span><span class="qtitle">Direcionamento</span></div>
-    <div class="qbody">
-      Mensagens hoje são broadcast (todos do time recebem) ou tem destinatário (1:1, 1:N)? Se for 1:N, UI escolhe destinatário no envio?
+    <div class="qhead"><span class="qid">16.3</span><span class="qtitle">Direcionamento — broadcast, 1:1 ou grupo?</span></div>
+    <div class="cards">
+      <label class="card recommended">
+        <input type="radio" name="q16_3" checked>
+        <span class="opt-label">A · Broadcast (todos do time recebem)</span>
+        <span class="opt-desc">Simples. Time é workspace aberto. 1:1 vira complexidade pra pouco caso de uso.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q16_3">
+        <span class="opt-label">B · 1:1 (escolhe destinatário)</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="q16_3">
+        <span class="opt-label">C · 1:N (subgrupos)</span>
+      </label>
+    </div>
+    <div class="outros">
+      <label>outros / comentário</label>
+      <textarea name="q16_3_outros"></textarea>
     </div>
   </div>
 </section>
 
 <div class="box-out-of-scope">
   <h3>Fora desta página (futuro)</h3>
-  <p>Não estou perguntando sobre, nem decidindo aqui:</p>
-  <ul>
-    <li>Wireframes detalhados — vou propor depois que você responder o conjunto acima</li>
-    <li>Schema de novas tabelas (mensagens, ack, layouts salvos) — vem como parte do PR de MS-12</li>
-    <li>Tela de configuração de quick-replies — assume catálogo fixo até você dizer o contrário</li>
-    <li>Reprodução em CarPlay / Apple Watch / Android — fora de escopo (ADR-018)</li>
-  </ul>
+  <p>Wireframes detalhados, schema de tabelas novas (mensagens, ack, layouts), tela de configuração de quick-replies, suporte CarPlay/Watch/Android (fora de escopo, ADR-018).</p>
 </div>
 
 <footer class="foot">
-  Lista derivada de <code>docs/PLANO_FASE_1.md</code> §MS-12 + §3 + checkpoints 2026-05-04 e 2026-05-07. Quando você responder, atualizo o plano mestre + ADRs num PR docs-only antes do mockup começar. — Claude
+  Cards selecionados (radio + checkbox) ficam em estado :checked no DOM — operador pode clicar pra mudar. As recomendações vêm pré-selecionadas. Quando responder, basta dizer os IDs (ex.: "1.3 fica B, 2.2 fica D + outros: bla bla bla"). — Claude · 2026-05-08 · v2
 </footer>
 
 </div>
