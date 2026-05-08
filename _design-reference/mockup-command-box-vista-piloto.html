@@ -1186,16 +1186,25 @@ html,body{
     if(!raw) return false;
     try{
       var data = JSON.parse(raw);
-      if(data.customs && data.customs.length){
-        data.customs.forEach(function(c){
-          if(!stage.querySelector('[data-block-id="'+c.id+'"]')){
-            createCustomBlock(c.id, c.name, 30, 30, 18, 12);
-          }
+      // Backwards compat: formato antigo era { blockId: {x,y,w,h} } plano
+      var positions = data.positions;
+      var customs = data.customs || [];
+      if(!positions){
+        // Detecta formato antigo — todas as chaves apontam pra objetos com x/y/w/h
+        positions = {};
+        Object.keys(data).forEach(function(k){
+          var v = data[k];
+          if(v && typeof v === 'object' && 'x' in v && 'w' in v) positions[k] = v;
         });
       }
-      Object.keys(data.positions || {}).forEach(function(id){
+      customs.forEach(function(c){
+        if(!stage.querySelector('[data-block-id="'+c.id+'"]')){
+          createCustomBlock(c.id, c.name, 30, 30, 18, 12);
+        }
+      });
+      Object.keys(positions).forEach(function(id){
         var el = stage.querySelector('[data-block-id="'+id+'"]');
-        var d = data.positions[id];
+        var d = positions[id];
         if(el && d) applyBlock(el, d);
       });
       return true;
