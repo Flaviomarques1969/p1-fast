@@ -1567,6 +1567,10 @@ html,body{
       el.classList.add('is-carro');
       el.innerHTML = '<button class="b-custom-remove" type="button">remover</button>'+
                      buildCarroPanel();
+    } else if(n.indexOf('shift') >= 0){
+      el.classList.add('is-shift-light');
+      el.innerHTML = '<button class="b-custom-remove" type="button">remover</button>'+
+                     buildShiftLight();
     } else {
       el.innerHTML = '<button class="b-custom-remove" type="button">remover</button>'+
                      '<span class="b-custom-name">'+escapeHtml(name)+'</span>'+
