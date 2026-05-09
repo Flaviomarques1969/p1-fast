@@ -46,7 +46,10 @@ struct TelemetriaView: View {
         trackBundle: (track: P1FastCore.Track, layout: P1FastCore.TrackLayout, segments: [P1FastCore.TrackSegment])? = nil
     ) {
         self.queue = queue
-        let id = "telemetria-demo-\(Int(Date().timeIntervalSince1970))"
+        // sessoes.id é UUID no Postgres. ID custom (ex.: "telemetria-demo-<ts>")
+        // passa no SQLite (TEXT) mas o servidor recusa com "invalid input syntax
+        // for type uuid". Field test 2026-05-08 deixou 2 sessões presas por isso.
+        let id = UUID().uuidString
         _sessaoId = State(initialValue: id)
         // MS-10 C.3: time_id é lido do storage compartilhado com
         // SessionManager. Quando user não está logado, fica vazio —
