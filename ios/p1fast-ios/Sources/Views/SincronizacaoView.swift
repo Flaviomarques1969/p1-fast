@@ -294,6 +294,13 @@ private struct QueueItemRow: View {
                 Text("\(ageString) · \(item.attempts) tentativa\(item.attempts == 1 ? "" : "s")")
                     .font(.system(size: 12, weight: .regular))
                     .foregroundStyle(Color.textFaint)
+                if let err = item.lastError, !err.isEmpty {
+                    Text(err)
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundStyle(Color.erro)
+                        .lineLimit(2)
+                        .padding(.top, 2)
+                }
             }
             Spacer()
             if isDeadLetter {

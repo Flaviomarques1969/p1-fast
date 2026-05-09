@@ -193,7 +193,7 @@ struct PilotoCadastroView: View {
         pesoText = p.pesoKg.map { Self.formatPeso($0) } ?? ""
         if let nasc = p.nascimento {
             temNascimento = true
-            nascimentoDate = Date(timeIntervalSince1970: TimeInterval(nasc))
+            nascimentoDate = Date(timeIntervalSince1970: TimeInterval(nasc) / 1000)
         } else {
             temNascimento = false
         }
@@ -225,14 +225,17 @@ struct PilotoCadastroView: View {
         return (altura, peso, nascimento)
     }
 
-    /// Converte uma `Date` em segundos epoch desde 1970-01-01 00:00:00 UTC,
+    /// Converte uma `Date` em ms epoch desde 1970-01-01 00:00:00 UTC,
     /// truncando pro início do dia em UTC. Spec do schema: nascimento é o
-    /// dia, não o instante — sem hora, sem timezone do device.
+    /// dia, não o instante — sem hora, sem timezone do device. ms (não
+    /// segundos) pra bater com o resto dos timestamps do app, e pra Edge
+    /// Function `coerceTimestamps` interpretar corretamente em
+    /// `new Date(v).toISOString()`.
     private static func toEpochUtcMidnight(_ date: Date) -> Int64 {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC") ?? TimeZone(secondsFromGMT: 0)!
         let utcMidnight = calendar.startOfDay(for: date)
-        return Int64(utcMidnight.timeIntervalSince1970)
+        return Int64(utcMidnight.timeIntervalSince1970 * 1000)
     }
 
     // MARK: - Ações
@@ -341,7 +344,7 @@ struct InlineErro: View {
         nome: "Flavio Marx",
         alturaCm: 178,
         pesoKg: 75.5,
-        nascimento: Int64(Date(timeIntervalSince1970: -915148800).timeIntervalSince1970)  // 1941-01-01 plausível
+        nascimento: Int64(Date(timeIntervalSince1970: -915148800).timeIntervalSince1970 * 1000)  // 1941-01-01 plausível (ms)
     )
     return PilotoCadastroView(pilotoToEdit: mock, onClose: {})
         .environmentObject(repo)

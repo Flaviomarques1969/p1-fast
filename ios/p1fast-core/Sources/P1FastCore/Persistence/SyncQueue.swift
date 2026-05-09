@@ -20,6 +20,10 @@ public struct SyncQueueItem: Codable, FetchableRecord, PersistableRecord {
     public var payload: String?
     public var attempts: Int
     public var createdAt: Int64
+    /// Motivo da última rejeição do servidor (ou erro de transport).
+    /// Sobrescrito a cada `incrementAttempts`. Local-only — nunca vai pro
+    /// payload de sync. Default nil = ainda não falhou.
+    public var lastError: String?
 
     public static let databaseTableName = "sync_queue"
     enum CodingKeys: String, CodingKey {
@@ -28,12 +32,15 @@ public struct SyncQueueItem: Codable, FetchableRecord, PersistableRecord {
         case rowId = "row_id"
         case op, payload, attempts
         case createdAt = "created_at"
+        case lastError = "last_error"
     }
 
     public init(id: Int64? = nil, tableName: String, rowId: String, op: SyncOp,
-                payload: String? = nil, attempts: Int = 0, createdAt: Int64 = DB.nowMs()) {
+                payload: String? = nil, attempts: Int = 0, createdAt: Int64 = DB.nowMs(),
+                lastError: String? = nil) {
         self.id = id; self.tableName = tableName; self.rowId = rowId; self.op = op
         self.payload = payload; self.attempts = attempts; self.createdAt = createdAt
+        self.lastError = lastError
     }
 
     public mutating func didInsert(_ inserted: InsertionSuccess) {
@@ -79,9 +86,13 @@ public enum SyncQueue {
     }
 
     /// Incrementa attempts num item da fila — usado quando o drainer falha temporário.
-    public static func incrementAttempts(_ db: Database, id: Int64) throws {
-        try db.execute(sql: "UPDATE sync_queue SET attempts = attempts + 1 WHERE id = ?",
-                       arguments: [id])
+    /// `error` é o motivo da rejeição (do server) ou erro de transport — gravado
+    /// em `last_error` pra UI exibir; sobrescreve o valor anterior.
+    public static func incrementAttempts(_ db: Database, id: Int64, error: String? = nil) throws {
+        try db.execute(
+            sql: "UPDATE sync_queue SET attempts = attempts + 1, last_error = ? WHERE id = ?",
+            arguments: [error, id]
+        )
     }
 
     /// Serializa um GRDB record (Codable) em JSON e enfileira como

@@ -182,7 +182,7 @@ struct PassageiroCadastroView: View {
         pesoText = p.pesoKg.map { Self.formatPeso($0) } ?? ""
         if let nasc = p.nascimento {
             temNascimento = true
-            nascimentoDate = Date(timeIntervalSince1970: TimeInterval(nasc))
+            nascimentoDate = Date(timeIntervalSince1970: TimeInterval(nasc) / 1000)
         } else {
             temNascimento = false
         }
@@ -212,11 +212,16 @@ struct PassageiroCadastroView: View {
         return (altura, peso, nascimento)
     }
 
+    /// ms (não segundos) — bate com Edge Function `coerceTimestamps`
+    /// que assume ms em `new Date(v).toISOString()`. Mismatch antes
+    /// causou nascimento "1970-01-15" salvo no servidor (1265673600
+    /// segundos = 2010-02-09, mas interpretado como ms = 14.6 dias
+    /// após epoch).
     private static func toEpochUtcMidnight(_ date: Date) -> Int64 {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC") ?? TimeZone(secondsFromGMT: 0)!
         let utcMidnight = calendar.startOfDay(for: date)
-        return Int64(utcMidnight.timeIntervalSince1970)
+        return Int64(utcMidnight.timeIntervalSince1970 * 1000)
     }
 
     // MARK: - Ações
@@ -286,7 +291,7 @@ struct PassageiroCadastroView: View {
         nome: "Alain Mesquita",
         alturaCm: 182,
         pesoKg: 80.0,
-        nascimento: Int64(Date(timeIntervalSince1970: -315619200).timeIntervalSince1970)
+        nascimento: Int64(Date(timeIntervalSince1970: -315619200).timeIntervalSince1970 * 1000)
     )
     return PassageiroCadastroView(passageiroToEdit: mock, onClose: {})
         .environmentObject(repo)

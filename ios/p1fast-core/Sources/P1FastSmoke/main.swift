@@ -3930,11 +3930,74 @@ step("DRAIN-02: 2 itens enfileirados, ambos accepted → drained + markSynced") 
     try assertTrue(syncedAt != nil && syncedAt! > 0, "synced_at não foi setado")
 }
 
-step("DRAIN-03: rejected (stale-write) incrementa attempts, mantém na fila") {
+step("DRAIN-03: rejected (db-error) incrementa attempts, grava last_error, mantém na fila") {
     let q = try makeTestDB()
     try q.write { db in
+        try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-err", op: .update, payload: "{}")
+    }
+    let mock = MockSyncTransport()
+    mock.nextResult = SyncResult(
+        accepted: [],
+        rejected: [SyncRejected(row_id: "c-err", table_name: "carros", reason: "db-error")]
+    )
+
+    let out = try SyncDrainer.drainBatch(q, transport: mock)
+    try assertEq(out.processedCount, 1)
+    try assertEq(out.rejectedCount, 1)
+    try assertEq(out.acceptedCount, 0)
+    try assertEq(out.staleDroppedCount, 0)
+
+    let row = try q.read { db -> (Int, String?) in
+        let item = try SyncQueueItem.filter(Column("row_id") == "c-err").fetchOne(db)
+        return (item?.attempts ?? -1, item?.lastError)
+    }
+    try assertEq(row.0, 1, "attempts incrementa")
+    try assertEq(row.1, "db-error", "last_error grava motivo da Edge Function")
+}
+
+step("DRAIN-03b: rejected sobrescreve last_error a cada tentativa") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-evolve", op: .update, payload: "{}")
+    }
+    let mock = MockSyncTransport()
+
+    // 1ª rejeição: db-error
+    mock.nextResult = SyncResult(
+        accepted: [],
+        rejected: [SyncRejected(row_id: "c-evolve", table_name: "carros", reason: "db-error")]
+    )
+    _ = try SyncDrainer.drainBatch(q, transport: mock)
+
+    // 2ª rejeição: row-not-found (cenário plausível depois de delete remoto)
+    mock.nextResult = SyncResult(
+        accepted: [],
+        rejected: [SyncRejected(row_id: "c-evolve", table_name: "carros", reason: "row-not-found")]
+    )
+    _ = try SyncDrainer.drainBatch(q, transport: mock)
+
+    let row = try q.read { db -> (Int, String?) in
+        let item = try SyncQueueItem.filter(Column("row_id") == "c-evolve").fetchOne(db)
+        return (item?.attempts ?? -1, item?.lastError)
+    }
+    try assertEq(row.0, 2, "attempts cumulativo")
+    try assertEq(row.1, "row-not-found", "last_error reflete a tentativa MAIS RECENTE, não a primeira")
+}
+
+step("DRAIN-03c: stale-write é DRAIN local (não retry) — LWW canônico") {
+    // Pré-condição: row local existe com synced_at NULL (espelha
+    // EventoRepository/PilotoRepository/etc — sempre nullable após mutate).
+    let q = try makeTestDB()
+    try q.write { db in
+        // Time primeiro pra FK
+        try db.execute(sql: "INSERT INTO times (id, nome, created_at, updated_at) VALUES ('t1', 'time', 0, 0)")
+        try db.execute(sql: """
+            INSERT INTO carros (id, time_id, apelido, fonte_temperatura, created_at, updated_at)
+            VALUES ('c-stale', 't1', 'Teste', 'motor', 100, 100)
+        """)
         try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-stale", op: .update, payload: "{}")
     }
+
     let mock = MockSyncTransport()
     mock.nextResult = SyncResult(
         accepted: [],
@@ -3943,13 +4006,21 @@ step("DRAIN-03: rejected (stale-write) incrementa attempts, mantém na fila") {
 
     let out = try SyncDrainer.drainBatch(q, transport: mock)
     try assertEq(out.processedCount, 1)
-    try assertEq(out.rejectedCount, 1)
-    try assertEq(out.acceptedCount, 0)
+    try assertEq(out.staleDroppedCount, 1, "stale-write conta separado")
+    try assertEq(out.rejectedCount, 0, "stale-write NÃO conta como rejected")
+    try assertEq(out.deadLetteredCount, 0, "stale-write nunca vira dead-letter")
 
-    let attempts = try q.read { db in
-        try Int.fetchOne(db, sql: "SELECT attempts FROM sync_queue WHERE row_id = 'c-stale'")
+    // Queue: row drenada
+    let stillQueued = try q.read { db in
+        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sync_queue WHERE row_id = 'c-stale'")
     }
-    try assertEq(attempts, 1)
+    try assertEq(stillQueued, 0, "queue row removida (não acumula attempts)")
+
+    // Carros: synced_at preenchido (não fica em estado "nunca sincronizada")
+    let syncedAt = try q.read { db in
+        try Int64.fetchOne(db, sql: "SELECT synced_at FROM carros WHERE id = 'c-stale'")
+    }
+    try assertTrue(syncedAt != nil && syncedAt! > 0, "synced_at setado pra evitar re-enfileirar")
 }
 
 step("DRAIN-04: maxAttempts excluí dead-letters do próximo batch") {
