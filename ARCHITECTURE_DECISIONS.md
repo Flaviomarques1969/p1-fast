@@ -130,6 +130,7 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 
 **Stack do cockpit Windows**:
 - Cockpit = **web app** baseado no `_design-reference/mockup-cockpit-piloto.html` (já é HTML/CSS/JS pronto, contrato visual fechado).
+- **Mockup é congelado byte-for-byte (Flávio 2026-05-09):** DOM, classes CSS, tokens `:root`, `@keyframes`, data-attrs e comportamento de todos os elementos (shift-light 12 LEDs + tiers + fire/overrev, apex header 4 pontos, info-bloco delta+ação+slide, alert-bloco z-axis, halo radial 4 estados, stint-bar 12 blocos com shimmer/bloom, fire-overlay, telemetria-chip, notch) NÃO são tocados. MS-13 só embala em arquivos de produção, ajusta viewport pro notebook 10,5", e substitui o demo cycle por live data — sem redesenho.
 - Container de execução no Windows: a decidir entre browser puro (Edge/Chrome) ou Electron com driver T4000 embutido. Ver MS-9 / MS-13 reescritos.
 - Driver T4000: USB traseiro do T4000 (CDC-ACM serial) ou adaptador CAN-USB. Spec do frame fechada em `docs/hardware/T4000_CAN_SPEC.md` (5 pacotes, big-endian, checksum validado matematicamente, 3 dúvidas residuais não-bloqueantes).
 

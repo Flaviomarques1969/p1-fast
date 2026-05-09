@@ -294,6 +294,8 @@ Depende de MS-2 + MS-2.8 (live data publish) + MS-9 reescrito (driver T4000 no W
 
 Princípio: o `_design-reference/mockup-cockpit-piloto.html` JÁ é o produto. Esta sprint adapta dimensão, pluga dado vivo (Supabase Realtime + T4000 local) e empacota pro Windows. Sem reescrever do zero.
 
+> **REGRA DURA (Flávio 2026-05-09):** DOM, classes CSS, tokens (`:root` variables), animações (`@keyframes`), data-attrs e comportamento de TODOS os elementos do mockup canônico — shift-light (12 LEDs + tiers + fire-strobe + overrev), apex header (4 pontos), info-bloco (delta + ação + slide left), alert-bloco (z-axis blur + scale), halo radial (4 estados), stint-bar (12 blocos + bestStint shimmer + bestAlltime bloom), fire-overlay, telemetria-chip, notch — **ficam congelados, byte-for-byte.** Esta sprint **não redesenha nada visual**. Só (1) embala/desentrela o HTML em arquivos de produção, (2) ajusta meta viewport/wrapper externo pra dimensão do notebook 10,5", (3) substitui as funções `setShiftLevel`/`setMessage`/`startAutoLoop` que hoje rodam o demo cycle por chamadas vindas de live data. Mockup é contrato imutável (§9.1) e o Flávio reforçou em 2026-05-09.
+
 | # | Task | Onde |
 |---|---|---|
 | 13.1 | Validar dimensão alvo: medir área visível do notebook 10,5" do Flávio (resolução nativa, DPR, espaço útil descontando barra de tarefas). Ajustar viewport do mockup canônico (atual 956×440) pra encaixar landscape no notebook. Decisão de produto: full-bleed kiosk vs janela com bordas. | Aqui (Flávio + Claude) |
