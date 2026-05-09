@@ -4564,6 +4564,73 @@ step("PULLEX-07: cursor NÃO retrocede mesmo se max_updated_at vier menor") {
     try assertEq(cursor, 5000)
 }
 
+step("PULLEX-08: timestamps ISO strings (PostgREST) viram ms epoch Int64 no SQLite") {
+    // Reproduz o shape REAL que vem do servidor — Edge Function `pull` faz
+    // `select("*")` e PostgREST serializa timestamptz como ISO 8601 string
+    // e date como ISO date string. Antes do fix, PullRow.init armazenava
+    // como String AnyCodable e upsert inseria TEXT em coluna INTEGER do
+    // SQLite — leituras seguintes via GRDB falhavam no decode pra Int64.
+
+    let q = try makeTestDB()
+
+    // Decoda exatamente como vem da Edge Function: JSON com strings ISO.
+    let json = #"""
+    {
+      "id": "0BCF68EA-1898-474F-AE18-A51002E937C2",
+      "time_id": "team-1",
+      "nome": "Bubi Marques",
+      "altura_cm": 176,
+      "peso_kg": 65.0,
+      "nascimento": "2010-02-09",
+      "created_at": "2026-05-09T13:09:06.153Z",
+      "updated_at": "2026-05-09T13:09:14.884Z"
+    }
+    """#
+    let row = try JSONDecoder().decode(PullRow.self, from: json.data(using: .utf8)!)
+
+    let mock = MockPullTransport()
+    mock.nextResponse = PullResponse(
+        rows: ["pilotos": [row]],
+        max_updated_at: ["pilotos": 1778332154884]
+    )
+    // makeTestDB já seedou time-1 no boot
+
+    _ = try PullExecutor.runOnce(q, tables: ["pilotos"], transport: mock)
+
+    // Tipos no SQLite: nascimento/created_at/updated_at devem ser INTEGER,
+    // não TEXT. Sem o fix, `typeof` retorna "text".
+    let types = try q.read { db -> (String?, String?, String?) in
+        let r = try Row.fetchOne(
+            db,
+            sql: "SELECT typeof(nascimento), typeof(created_at), typeof(updated_at) FROM pilotos WHERE id = ?",
+            arguments: ["0BCF68EA-1898-474F-AE18-A51002E937C2"]
+        )
+        return (r?[0] as String?, r?[1] as String?, r?[2] as String?)
+    }
+    try assertEq(types.0, "integer", "nascimento deveria ser integer (ms epoch), está \(types.0 ?? "nil")")
+    try assertEq(types.1, "integer", "created_at deveria ser integer (ms epoch)")
+    try assertEq(types.2, "integer", "updated_at deveria ser integer (ms epoch)")
+
+    // Valores devem bater com os ms epoch das ISOs originais.
+    let values = try q.read { db -> (Int64?, Int64?, Int64?) in
+        let r = try Row.fetchOne(
+            db,
+            sql: "SELECT nascimento, created_at, updated_at FROM pilotos WHERE id = ?",
+            arguments: ["0BCF68EA-1898-474F-AE18-A51002E937C2"]
+        )
+        return (r?[0] as Int64?, r?[1] as Int64?, r?[2] as Int64?)
+    }
+    try assertEq(values.0, 1265673600000, "nascimento 2010-02-09 = 1265673600000 ms")
+    try assertEq(values.1, 1778332146153, "created_at 13:09:06.153Z = 1778332146153 ms")
+    try assertEq(values.2, 1778332154884, "updated_at 13:09:14.884Z = 1778332154884 ms")
+
+    // Decode round-trip via GRDB Piloto não pode falhar.
+    let piloto = try q.read { db in try Piloto.fetchOne(db, key: "0BCF68EA-1898-474F-AE18-A51002E937C2") }
+    try assertTrue(piloto != nil, "Piloto.fetchOne falhou — sinal de TEXT em coluna Int64")
+    try assertEq(piloto?.nome, "Bubi Marques")
+    try assertEq(piloto?.nascimento, 1265673600000)
+}
+
 // ════════════════════════════════════════════════════════════
 // Detector — DET-01 .. DET-12 (paridade JS telemetry/detector.js)
 // ════════════════════════════════════════════════════════════

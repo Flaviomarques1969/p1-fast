@@ -60,25 +60,49 @@ public struct PullRow: Codable, Equatable {
     }
 
     /// Decodifica de uma row crua do Postgres (com `id` + `updated_at` ISO + outros campos).
+    /// Server (PostgREST) serializa `timestamptz` como ISO 8601 e `date` como ISO date —
+    /// SQLite local guarda tudo em INTEGER (ms epoch). Convertemos no decode pra
+    /// evitar inserir TEXT em coluna INTEGER (loose typing aceita silenciosamente
+    /// e quebra leituras seguintes via GRDB).
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: DynamicCodingKey.self)
         var idStr: String?
-        var updatedAtIso: String?
+        var updatedAtMs: Int64?
         var fields: [String: AnyCodable] = [:]
 
         for key in c.allKeys {
-            if key.stringValue == "id" {
+            let name = key.stringValue
+            if name == "id" {
                 idStr = try c.decode(String.self, forKey: key)
-            } else if key.stringValue == "updated_at" {
-                updatedAtIso = try c.decode(String.self, forKey: key)
-            } else if let v = try? c.decode(String.self, forKey: key) {
-                fields[key.stringValue] = AnyCodable(v)
+                continue
+            }
+            // Campos timestamp/date: ISO string → Int64 ms. Mesma whitelist
+            // do Edge Function `coerceTimestamps` (sufixo `_at`, prefixo
+            // `data_`, exato `nascimento`).
+            if Self.isTimestampField(name) {
+                if let s = try? c.decode(String.self, forKey: key), let ms = Self.parseIsoMs(s) {
+                    fields[name] = AnyCodable(ms)
+                    if name == "updated_at" { updatedAtMs = ms }
+                    continue
+                }
+                // Fallback: server pode mandar Int direto em testes ou se o
+                // shape mudar. Mantém como Int64 sem conversão.
+                if let v = try? c.decode(Int64.self, forKey: key) {
+                    fields[name] = AnyCodable(v)
+                    if name == "updated_at" { updatedAtMs = v }
+                    continue
+                }
+                // Não reconheceu — pula (não vale gravar string inválida).
+                continue
+            }
+            if let v = try? c.decode(String.self, forKey: key) {
+                fields[name] = AnyCodable(v)
             } else if let v = try? c.decode(Int64.self, forKey: key) {
-                fields[key.stringValue] = AnyCodable(v)
+                fields[name] = AnyCodable(v)
             } else if let v = try? c.decode(Double.self, forKey: key) {
-                fields[key.stringValue] = AnyCodable(v)
+                fields[name] = AnyCodable(v)
             } else if let v = try? c.decode(Bool.self, forKey: key) {
-                fields[key.stringValue] = AnyCodable(v)
+                fields[name] = AnyCodable(v)
             }
             // Demais tipos (objetos JSON aninhados) ignorados — repositório
             // re-decodifica a row inteira pelo seu próprio modelo se precisar.
@@ -87,10 +111,13 @@ public struct PullRow: Codable, Equatable {
         guard let id = idStr else {
             throw DecodingError.dataCorrupted(.init(codingPath: c.codingPath, debugDescription: "row sem id"))
         }
-        let updatedMs: Int64 = updatedAtIso.flatMap { Self.parseIsoMs($0) } ?? 0
         self.id = id
-        self.updatedAtMs = updatedMs
+        self.updatedAtMs = updatedAtMs ?? 0
         self.payload = fields
+    }
+
+    static func isTimestampField(_ name: String) -> Bool {
+        return name.hasSuffix("_at") || name.hasPrefix("data_") || name == "nascimento"
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -116,6 +143,14 @@ public struct PullRow: Codable, Equatable {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime]
         if let d = f.date(from: iso) {
+            return Int64(d.timeIntervalSince1970 * 1000)
+        }
+        // Date-only (postgres `date` → "2010-02-09"). Interpretado como
+        // meia-noite UTC pra bater com toEpochUtcMidnight do iOS.
+        let dateOnly = ISO8601DateFormatter()
+        dateOnly.formatOptions = [.withFullDate]
+        dateOnly.timeZone = TimeZone(secondsFromGMT: 0)
+        if let d = dateOnly.date(from: iso) {
             return Int64(d.timeIntervalSince1970 * 1000)
         }
         return nil
