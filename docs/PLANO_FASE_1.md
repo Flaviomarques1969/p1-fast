@@ -35,16 +35,19 @@ porque é exatamente isso que o produto entrega ao piloto.
 
 | Camada | Tecnologia | ADR / fonte |
 |---|---|---|
-| App piloto | iOS Swift nativo (SwiftUI) | ADR-018 |
+| Hub do piloto (HOME, Eventos, Garagem, Pendências, cadastros) | iOS Swift nativo (SwiftUI) | ADR-018 |
+| Captura IMU 100 Hz + GPS 1 Hz + câmera onboard | iOS Swift (CoreMotion + CoreLocation + Daily.co) | ADR-018 |
+| **Cockpit-display ao vivo** | **Web app (HTML/CSS/JS) rodando em notebook Windows 10,5"** no painel do carro | **ADR-023** |
+| **Driver Injepro T4000 (RPM, marcha, temp, λ, MAP, EGT, etc.)** | **Windows (USB CDC-ACM serial ou adaptador CAN-USB) — JS sobre Node/Electron** | **ADR-023 + `docs/hardware/T4000_CAN_SPEC.md`** |
 | Persistência local iOS | GRDB (SQLite) | ADR-003 + ADR-020 |
 | Persistência local web | Dexie / IndexedDB | ADR-002 (legado, modo referência) |
 | Backend nuvem | Supabase (projeto isolado do CDAI) | — |
 | Auth | Supabase Auth (Apple ID + email/senha) | — |
-| Vídeo ao vivo | Daily.co (2 câmeras simultâneas iPhone) | — |
-| Telemetria ao vivo | Supabase Realtime (eventos agregados, NÃO samples) | ADR-014 |
+| Vídeo ao vivo | Daily.co (câmera onboard frontal do iPhone) | — |
+| Telemetria ao vivo | Supabase Realtime (eventos agregados ≤10 Hz, NÃO samples raw) | ADR-014 |
+| **Transporte iPhone ↔ notebook Windows** | **Supabase Realtime** (ambos publicam e assinam canais contrários — sem cabo de dados, sem Wi-Fi local na v1) | **ADR-023** |
 | Histórico | Supabase Postgres | — |
 | Box Cockpit | App iOS modo "BOX" → AirPlay → Apple TV → TV 32" | — |
-| RPM / marcha (opcional) | ECU Injepro **T4000** via BLE | tier 1 — graceful degradation |
 | Convite usuário | Link gerado pelo app → share sheet iOS → WhatsApp manual | — |
 
 ---
@@ -165,7 +168,8 @@ Sem captura, debrief é mock. Tier 0 puro.
 | 2.2 | Wake lock (`isIdleTimerDisabled`) + Background mode em Info.plist (location + processing) + `LowPowerModeMonitor` | Cloud |
 | 2.3 | Botão Iniciar/Encerrar stint dispara captura; Hook fim de stint chama pipeline | Aqui |
 | 2.4 | Migration `segment_executions` ganha `vmin_kmh`, `vmin_x`, `vmin_y` — ponto georef onde a velocidade mínima aconteceu (Detector já calcula em `DetectorSegmentEndEvent.velMinima` + `apexActual`). Decisão Flávio 2026-05-04. | Cloud |
-| 2.5 | `StintRepository.finalize` consome `Detector.onSegmentEnd` real (sai do mock atual de geração de voltas) e grava o trio Vmin por segment_execution. Pré-req do widget Vmin no cockpit (MS-13.6) e do Command Box futuro (MS-12). | Cloud |
+| 2.5 | `StintRepository.finalize` consome `Detector.onSegmentEnd` real (sai do mock atual de geração de voltas) e grava o trio Vmin por segment_execution. Pré-req do widget Vmin no cockpit (MS-13) e do Command Box futuro (MS-12). | Cloud |
+| **2.8** | **Publish IMU/GPS agregado a 10 Hz no canal Supabase Realtime `live-stint-{stintId}`** — payload `{ tMono, x, y, accLong, accLat, speedKmh, heading, gapDurationMs }`. Consumidor: notebook Windows (cockpit ao vivo, MS-13). Não confundir com sample raw 100 Hz que continua local-only (ADR-014). Decisão Flávio 2026-05-09 (ADR-023). | Cloud |
 
 ### MS-3 — Edge Function pipeline + smoke E2E
 
@@ -237,16 +241,20 @@ Independe de hardware. Dorme até MS-9 acoplar T4000.
 | 8.5 | Tela "Reações aprendidas" (port de `src/ui/reaction-profiles-view.js`) | Cloud |
 | 8.6 | Em Tier 0: cockpit chama `idle()` na inicialização (só tier 1 verde nas pontas) | Cloud |
 
-### MS-9 — Tier 1: adapter BLE T4000 (RPM/marcha/temp)
+### MS-9 — Tier 1: driver Injepro T4000 no notebook Windows (REESCRITO 2026-05-09 — ADR-023)
 
-Liga o shift light. Liga overlay chuva e vista resfriamento "real".
+Liga o shift light, MAP, λ, EGT, temp, marcha, erro ECU. Pré-req do MS-13 (cockpit). Não é mais BLE iOS — virou USB/CAN no notebook Windows que vai rodar o cockpit. Spec do frame está em `docs/hardware/T4000_CAN_SPEC.md`.
 
 | # | Task | Onde |
 |---|---|---|
-| 9.1 | `createBleRpmSource` em Swift (Manual / Mock / BLE — adapter pattern) | Cloud |
-| 9.2 | Cadastro `gear_signatures` + `gear_ratios` + `dyno_curve` por carro (tabelas Supabase + telas de cadastro) | Cloud |
-| 9.3 | Wire-up cockpit: troca `idle()` por `update({rpm, visualRpm, redline})` quando T4000 conectado | Cloud |
-| 9.4 | Validação em bancada com T4000 conectado | Aqui (Flávio) |
+| 9.0 | Decidir container Windows: browser puro (Edge/Chrome com WebSerial pra USB CDC-ACM) vs Electron (Node + biblioteca CAN/serial). Critérios: facilidade de empacotamento, reuso do JS de domínio, distribuição pro Flávio. | Aqui (Flávio + Claude) |
+| 9.1 | Captura real do barramento CAN do T4000 conectado ao notebook Windows — resolve as 3 dúvidas residuais do `T4000_CAN_SPEC.md` (diferenciação dos 5 pacotes, bytes 2-6 do pacote 5, range max EGT). | Aqui (Flávio) |
+| 9.2 | Port `T4000PacketParser` (JS) — decodifica os 5 pacotes, valida checksum, ordem, range. Fixture obrigatória: exemplo do PDF (`0x91`). | Cloud |
+| 9.3 | `T4000Reader` (JS) — driver da interface escolhida em 9.0 (WebSerial CDC-ACM ou node-can / serialport). | Cloud |
+| 9.4 | `T4000Provider` — herda contrato `TelemetryProvider`, `source: 't4000-can'`, emite samples normalizados (RPM, marcha, MAP, λ, etc.). | Cloud |
+| 9.5 | Publisher Supabase Realtime — Windows publica T4000 agregado a 10 Hz no canal `live-stint-{stintId}` payload `{ tMono, rpm, marcha, mapBar, lambda, oilTempC, waterTempC, oilPressBar, batteryV, tps, ... }`. Consumidores: iPhone (agrega pro storage de longo prazo) e Box Cockpit. | Cloud |
+| 9.6 | Cadastro `gear_signatures` + `gear_ratios` + `dyno_curve` por carro (tabelas Supabase + telas de cadastro). UI de cadastro fica no hub iOS. | Cloud |
+| 9.7 | Validação em bancada com T4000 conectado ao notebook Windows. | Aqui (Flávio) |
 
 ### MS-10 — Multi-usuário + RLS time + convites
 
@@ -280,18 +288,22 @@ Depende de MS-10 + MS-11.
 | 12.3 | Canal de mensagens via Supabase Realtime | Cloud |
 | 12.4 | Flag `visivelNoBox` por mensagem | Cloud |
 
-### MS-13 — Cockpit ao vivo (era Sprint 1B mestre)
+### MS-13 — Cockpit-display ao vivo no notebook Windows (REESCRITO 2026-05-09 — ADR-023)
 
-Depende de MS-2 (live data) + MS-8 (shift light já portado).
+Depende de MS-2 + MS-2.8 (live data publish) + MS-9 reescrito (driver T4000 no Windows). **Não é mais SwiftUI** — vira web app rodando no notebook Windows 10,5" no painel.
+
+Princípio: o `_design-reference/mockup-cockpit-piloto.html` JÁ é o produto. Esta sprint adapta dimensão, pluga dado vivo (Supabase Realtime + T4000 local) e empacota pro Windows. Sem reescrever do zero.
 
 | # | Task | Onde |
 |---|---|---|
-| 13.1 | `CockpitDevice.swift` 956×440 — apex header + info-bloco + stint-bar + halo + slot direito Z-axis | Cloud |
-| 13.2 | Sistema data-attrs → State SwiftUI | Cloud |
-| 13.3 | Halo radial 4 estados (neutro / laranja recorde-stint / ouro best-alltime / roxo pior-stint) | Cloud |
-| 13.4 | Wireup live: detector → cockpit (`CockpitState`, `LapDetector`, `DeltaCalculator`, `CommandResolver`, `HaloController`) | Cloud |
-| 13.5 | Validação visual contra `mockup-cockpit-piloto.html` | Aqui |
-| 13.6 | Widget Vmin georef por trecho — exibe Vmin (km/h) + ponto (x/y) da **melhor volta** por trecho. Consome `segment_executions.vmin_*` (MS-2.4/2.5). Decisão Flávio 2026-05-04. | Cloud |
+| 13.1 | Validar dimensão alvo: medir área visível do notebook 10,5" do Flávio (resolução nativa, DPR, espaço útil descontando barra de tarefas). Ajustar viewport do mockup canônico (atual 956×440) pra encaixar landscape no notebook. Decisão de produto: full-bleed kiosk vs janela com bordas. | Aqui (Flávio + Claude) |
+| 13.2 | Reorganizar mockup canônico em estrutura de produção (`web/cockpit/index.html` + `web/cockpit/cockpit.css` + `web/cockpit/cockpit.js`) preservando 1:1 todos os tokens, animações e DOM. Não é refactor — é só desentrelaçar. | Cloud |
+| 13.3 | `CockpitState` (JS) — espelha os 4 data-attrs (`data-trecho-status`, `data-shift-fire`, `data-msg-state`, `data-state` do shift-light). Modelo único alimentado por live data. | Cloud |
+| 13.4 | `LiveDataBridge` (JS) — assina canal Supabase Realtime `live-stint-{stintId}` (IMU/GPS do iPhone publicado em MS-2.8) E recebe T4000 local do MS-9 reescrito. Funde os dois streams num `CockpitState` consistente. | Cloud |
+| 13.5 | `LapDetector` + `DeltaCalculator` + `CommandResolver` + `HaloController` (JS) — port do que estava planejado em SwiftUI. Pode reutilizar parte do `src/telemetry/detector.js` ou Edge Function. | Cloud |
+| 13.6 | Widget Vmin georef por trecho — consome `segment_executions.vmin_*` (MS-2.4/2.5) via Supabase REST. Exibe Vmin (km/h) + ponto (x/y) da melhor volta por trecho. Decisão Flávio 2026-05-04 preservada. | Cloud |
+| 13.7 | Empacotamento Windows: instalador simples (atalho na área de trabalho que abre Edge/Chrome em modo kiosk apontando pro app local — OU Electron build se 9.0 escolheu Electron). Tier 0: cockpit funciona com mock data sem T4000 conectado. | Cloud |
+| 13.8 | Validação visual side-by-side: notebook Windows mostrando o cockpit ao vivo vs `mockup-cockpit-piloto.html` no Mac, ambos com mesmo CYCLE de cenas. Diff visual ≤2%. | Aqui |
 
 ### MS-14 — Vista de volta + ghost map de trecho + reference line
 
@@ -366,18 +378,21 @@ Depende de MS-9 (T4000 fornece temp motor real) — em Tier 0 usa estimativa.
 
 ## 10 — Decisões já fechadas — não reabrir
 
-- **Vídeo ao vivo:** Daily.co (2 câmeras simultâneas iPhone) — §2 deste plano
+- **Vídeo ao vivo:** Daily.co (câmera onboard frontal do iPhone) — §2 deste plano
 - **Box cockpit:** App iOS modo BOX → AirPlay → Apple TV → TV 32" — §2
-- **Plataforma:** iOS Swift nativo, iPhone único. Sem CarPlay, Apple Watch, Android, PWA — ADR-018
-- **Detector ao vivo:** Port nativo Swift, JS aposentado — decidido 2026-05-03
-- **Cockpit landscape:** forçado via override só na CockpitView — decidido 2026-05-03
+- **Cockpit-display ao vivo migra pra Windows** (notebook 10,5" no painel, web app, web=produto a partir do mockup canônico) — **ADR-023**, decisão Flávio 2026-05-09
+- **Driver T4000 fica no Windows** (USB CDC-ACM ou CAN, JS sobre Node/Electron) — **ADR-023**, substitui o plano original BLE iOS
+- **Transporte iPhone ↔ Windows = Supabase Realtime** (publish 10 Hz IMU/GPS pelo iPhone, publish 10 Hz T4000 pelo Windows). Cabo USB iPhone↔notebook só pra carga. — **ADR-023**
+- **Captura iOS Swift nativa preservada** (CoreMotion 100 Hz + CoreLocation 1 Hz + Daily.co), hub iOS preservado (HOME, Eventos, Garagem, etc.) — ADR-018 (com amendment 2026-05-09)
+- **Plataforma do hub e da captura:** iOS Swift nativo, iPhone único. Sem CarPlay, Apple Watch, Android, PWA pra hub — ADR-018
+- **Detector ao vivo:** Port nativo Swift no iPhone, JS no Windows a partir do mesmo domínio — decidido 2026-05-03 / revisitado 2026-05-09 com a nova arquitetura
+- **Cockpit landscape:** forçado no notebook Windows (kiosk fullscreen) — revisitado 2026-05-09
 - **SQLite local = source of truth durante sessão** — ADR-003
 - **Telemetria append-only, NÃO passa por syncQueue** — ADR-004 + ADR-014
 - **Worktree mandatório pra Cloud Code** — ADR-021
 - **Package.resolved é tracked, não deletar** — ADR-022
-- **Tier 1 = T4000 via BLE** — §4 deste plano. Outras ECUs ficam pra Tier 2+ (futuro).
 - **Pendências obrigatório × adicional, vivas, por carro+evento** — §6 MS-5 (decisão Flávio 2026-05-03, corrige "simples × completo")
-- **Apex ≠ Vmin ≠ ponto mais interno geométrico** (decisão Flávio 2026-05-04). Apex = referência de tangência da linha de corrida (organiza rotação e saída — métrica de linha). Vmin = dado dinâmico em runtime (onde o carro foi mais devagar — métrica de velocidade). Saída = métrica dominante quando há reta relevante depois. Configurador (MS-1.4) cadastra apex; Vmin é capturado e persistido em runtime (MS-2.4/2.5) e consumido pelo cockpit do piloto (MS-13.6) e Command Box futuro (MS-12).
+- **Apex ≠ Vmin ≠ ponto mais interno geométrico** (decisão Flávio 2026-05-04). Apex = referência de tangência da linha de corrida (organiza rotação e saída — métrica de linha). Vmin = dado dinâmico em runtime (onde o carro foi mais devagar — métrica de velocidade). Saída = métrica dominante quando há reta relevante depois. Configurador (MS-1.4) cadastra apex; Vmin é capturado e persistido em runtime (MS-2.4/2.5) e consumido pelo cockpit (MS-13.6) e Command Box futuro (MS-12).
 
 ---
 

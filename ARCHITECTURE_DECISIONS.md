@@ -70,6 +70,8 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 ## ADR-018 — App do celular é iOS nativo (Swift). PWA descartado.
 **Decisão (Flavio 2026-05-01)**: o app do celular do P1 Fast — cockpit do piloto + hub (HOME, Eventos, Garagem, Pendências, cadastros) — é **iOS nativo em Swift/SwiftUI**. PWA / web no celular é descartado completamente.
 **Motivo**: Safari iOS não garante captura DeviceMotion a 10 Hz consistentes. Throttling em background, low-power mode, contexto cross-origin e perda de wake lock degradam a frequência abaixo do necessário pra IMU motorsports. Captura GPS+IMU confiável só com CoreMotion / CoreLocation acessados nativamente.
+
+> **AMENDMENT 2026-05-09 (Flavio):** o **cockpit-display ao vivo** sai do iOS e migra pra Windows (notebook 10,5" no painel). iPhone preserva captura IMU/GPS + câmera onboard + papel de uploader pra Supabase Realtime. Hub iOS (HOME, Eventos, Garagem, Pendências, cadastros) e Box Cockpit continuam SwiftUI. Detalhes em **ADR-023**.
 **Escopo afetado**:
 - Mockups B em `_design-reference/*.html` permanecem como **contrato visual** — copiar 1:1 pra SwiftUI, sem inventar tokens. Não são código rodável no celular.
 - `src/pipeline/mobile-telemetry.js` (DeviceMotionEvent + Geolocation API) deixa de ser código de runtime do celular — vira **referência de contrato** (Sample shape, freshness por canal, métricas Hz/jitter). Captura real fica em Swift CoreMotion + CoreLocation.
@@ -110,4 +112,41 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 3. Se foi deletado e build seguinte regenerou, autosave recupera — verificar com `git ls-tree HEAD ios/p1fast-core/Package.resolved` vs `git ls-tree main` (blob hashes batem = OK).
 4. Se não auto-recuperou: `git checkout main -- ios/p1fast-core/Package.resolved && git add . && git commit -m "fix: restore Package.resolved" && git push`.
 **Aplica-se a**: todo PR que toca `ios/p1fast-core/`. Memória `feedback_package_resolved_gotcha.md` tem o procedimento operacional.
+
+## ADR-023 — Cockpit-display ao vivo migra pra Windows; T4000 deixa de ser BLE iOS
+**Decisão (Flavio 2026-05-09)**: a tela viva do cockpit do piloto deixa de ser SwiftUI no iPhone e passa a rodar num **notebook Windows 10,5"** montado no painel. O iPhone continua presente, mas com papel diferente.
+
+**Por que mudou**: o piloto vai ter uma tela maior melhor posicionada no painel (notebook 10,5" landscape, montagem no carro). Fica mais legível em ambiente de pista que a tela do iPhone presa em algum suporte. Decisão de produto, não técnica.
+
+**Papéis na nova arquitetura**:
+
+| Aparelho | Função |
+|---|---|
+| **Notebook Windows 10,5"** | Cockpit-display ao vivo (web app), driver T4000 (USB/CAN), processamento ao vivo (delta, halo, shift light, apex) com dados próprios + IMU/GPS recebidos do iPhone via Supabase. |
+| **iPhone 16 Pro Max** | Captura IMU 100 Hz + GPS 1 Hz (CoreMotion / CoreLocation), câmera onboard frontal (Daily.co), agregador de tudo (sensores próprios + T4000 lido do canal Realtime do Windows) e uploader pro mundo externo. **Sem cockpit-display ativo durante a pilotagem.** |
+| **Apple TV (Box Cockpit)** | Inalterado — espelha o cockpit via Supabase Realtime, AirPlay do iPhone do operador do box. |
+
+**Transporte entre Windows e iPhone**: ambos publicam no **Supabase Realtime** e ambos assinam o canal contrário. Sem cabo de dados entre eles. O cabo USB iPhone↔notebook serve só pra manter a bateria do iPhone. Latência típica 150-500 ms — aceita pra primeiro field test, pode migrar pra Wi-Fi local (iPhone hotspot + WebSocket) se virar dor.
+
+**Stack do cockpit Windows**:
+- Cockpit = **web app** baseado no `_design-reference/mockup-cockpit-piloto.html` (já é HTML/CSS/JS pronto, contrato visual fechado).
+- Container de execução no Windows: a decidir entre browser puro (Edge/Chrome) ou Electron com driver T4000 embutido. Ver MS-9 / MS-13 reescritos.
+- Driver T4000: USB traseiro do T4000 (CDC-ACM serial) ou adaptador CAN-USB. Spec do frame fechada em `docs/hardware/T4000_CAN_SPEC.md` (5 pacotes, big-endian, checksum validado matematicamente, 3 dúvidas residuais não-bloqueantes).
+
+**Stack do iPhone**:
+- Captura iOS Swift continua mandatória (ADR-018 segue valendo pra essa parte).
+- `LiveTelemetryRecorder` ganha consumidor novo: publish em canal Realtime `live-stint-{stintId}` a 10 Hz (IMU/GPS agregados — não 100 Hz raw, isso fica só no SQLite local conforme ADR-014).
+- Daily.co continua planejado pra câmera onboard (MS-11).
+- Hub iOS (HOME, Eventos, Garagem, Pendências, cadastros) **NÃO migra** — segue SwiftUI.
+
+**Consequências**:
+- **MS-9 reescrito**: deixa de ser "BLE T4000 via CoreBluetooth" e vira "driver T4000 USB/CAN no Windows + publish em Supabase Realtime". Move pra antes de MS-13.
+- **MS-13 reescrito**: deixa de ser "CockpitDevice 956×440 SwiftUI" e vira "cockpit web app rodando em Windows 10,5" (e em iOS WKWebView no Box, se vier a fazer sentido)". O mockup canônico vira o produto, com tweaks pra dimensão alvo 10,5" (área visível ~954×517 a ~1280×692 dependendo de DPR).
+- **MS-2 ganha 2.8**: publish IMU/GPS agregado a 10 Hz em canal Realtime.
+- **MS-12 Box Cockpit**: inalterado. Continua iOS + AirPlay + Apple TV.
+- **MS-11 Daily.co**: papel da câmera onboard fica mais explícito (frente do carro, pra Supabase pra ver no Box).
+
+**ADR-018 NÃO é revogado** — recebe amendment apontando pra cá. iOS continua mandatório pra captura, hub e Box. PWA continua descartado **pra captura**. O cockpit-display web no Windows é caso novo (não cabe no escopo original do ADR-018, que é específico do celular).
+
+**Aplica-se a**: PLANO_FASE_1.md §2 (stack), §6 (mini-sprints MS-2/9/13), §10 (decisões fechadas); STATUS.md; CLAUDE.md (decisões fechadas).
 
