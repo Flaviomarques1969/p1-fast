@@ -299,9 +299,10 @@ struct TelemetriaView: View {
     }
 
     /// PARAR finaliza a sessão demo: status='finalizada' + dataFim
-    /// + reenfileira como UPDATE pra subir pro servidor. Sem isso a
-    /// row fica eternamente 'ativa' e o drainer/Edge Function rejeita.
-    /// (Field test 2026-05-08 deixou 2 sessões órfãs por essa falta.)
+    /// + enfileira como INSERT pra subir pro servidor. Insert (não
+    /// update) porque ensureSessao só cria a sessão local — o servidor
+    /// nunca recebeu antes, então update retorna row-not-found.
+    /// (Field test 2026-05-08 deixou 3 sessões órfãs por essa falta.)
     /// Não gera voltas/segment_executions — esse fluxo é do StintRepo.
     private func finalizeSessao() async {
         do {
@@ -313,7 +314,7 @@ struct TelemetriaView: View {
                 sessao.updatedAt = now
                 sessao.syncedAt = nil
                 try sessao.update(db)
-                try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: sessaoId, op: .update, record: sessao)
+                try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: sessaoId, op: .insert, record: sessao)
             }
         } catch {
             sessaoErro = "Falha ao encerrar sessão: \(error.localizedDescription)"
