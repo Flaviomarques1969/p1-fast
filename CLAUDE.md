@@ -10,6 +10,10 @@
 
 `PLANO_FASE_1.md` vence. Sub-docs (`SPRINT_*.md`, `HANDOFF_*.md`, `READY_PROMPTS/*`, `IMPLEMENTATION_COVERAGE.md`, `STATUS.md`) são derivados e podem estar desatualizados. Se achar contradição, **alertar o Flávio**, não escolher silenciosamente.
 
+## Tratamento — REGRA DURA
+
+**Sempre "você". NUNCA "tu/te/ti/teu/tua/contigo".** Vale para mensagens no chat, prompts pro Cloud Code, comentários em PR, commits, qualquer texto. Esta regra é §9.2 de `PLANO_FASE_1.md` e o Flávio reforçou em 2026-05-09.
+
 ## Decisões já fechadas — NÃO reabrir
 
 - **Não há mais Fase 2** — tudo entra em Fase 1 — `PLANO_FASE_1.md` §1 (decisão Flávio 2026-05-03)
