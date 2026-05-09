@@ -46,7 +46,10 @@ struct TelemetriaView: View {
         trackBundle: (track: P1FastCore.Track, layout: P1FastCore.TrackLayout, segments: [P1FastCore.TrackSegment])? = nil
     ) {
         self.queue = queue
-        let id = "telemetria-demo-\(Int(Date().timeIntervalSince1970))"
+        // sessoes.id é UUID no Postgres. ID custom (ex.: "telemetria-demo-<ts>")
+        // passa no SQLite (TEXT) mas o servidor recusa com "invalid input syntax
+        // for type uuid". Field test 2026-05-08 deixou 2 sessões presas por isso.
+        let id = UUID().uuidString
         _sessaoId = State(initialValue: id)
         // MS-10 C.3: time_id é lido do storage compartilhado com
         // SessionManager. Quando user não está logado, fica vazio —
@@ -227,6 +230,7 @@ struct TelemetriaView: View {
                 lastEnrichedCount = processor.enrichedCount
                 startedAt = nil
                 elapsedS = 0
+                await finalizeSessao()
             }
         } else {
             Task {
@@ -291,6 +295,28 @@ struct TelemetriaView: View {
             sessaoErro = nil
         } catch {
             sessaoErro = error.localizedDescription
+        }
+    }
+
+    /// PARAR finaliza a sessão demo: status='finalizada' + dataFim
+    /// + reenfileira como UPDATE pra subir pro servidor. Sem isso a
+    /// row fica eternamente 'ativa' e o drainer/Edge Function rejeita.
+    /// (Field test 2026-05-08 deixou 2 sessões órfãs por essa falta.)
+    /// Não gera voltas/segment_executions — esse fluxo é do StintRepo.
+    private func finalizeSessao() async {
+        do {
+            try await queue.write { db in
+                guard var sessao = try Sessao.fetchOne(db, key: sessaoId) else { return }
+                let now = DB.nowMs()
+                sessao.status = "finalizada"
+                sessao.dataFim = now
+                sessao.updatedAt = now
+                sessao.syncedAt = nil
+                try sessao.update(db)
+                try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: sessaoId, op: .update, record: sessao)
+            }
+        } catch {
+            sessaoErro = "Falha ao encerrar sessão: \(error.localizedDescription)"
         }
     }
 
