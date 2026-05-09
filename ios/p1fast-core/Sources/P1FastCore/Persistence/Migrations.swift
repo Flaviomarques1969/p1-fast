@@ -207,6 +207,55 @@ enum Migrations {
             // marcos tem `track_id` direto, mas isso é coberto pelo
             // catálogo (track_layouts.track_id já aponta pro novo UUID).
         }
+
+        // ═══ v11_sync_queue_last_error ═════════════════════════
+        // Sem isso, o motivo de rejeição da Edge Function `sync` (stale-write,
+        // not-member-of-time, db-error, row-not-found, ...) era descartado em
+        // `incrementAttempts`. Field test 2026-05-09: row de pilotos·update
+        // bateu attempts=5 sem o usuário (nem o Claude) saber o porquê — só
+        // dava pra adivinhar. last_error é local-only (não vai pro servidor),
+        // sobrescrito a cada nova tentativa rejeitada.
+        m.registerMigration("v11_sync_queue_last_error") { db in
+            try db.execute(sql: "ALTER TABLE sync_queue ADD COLUMN last_error TEXT;")
+        }
+
+        // ═══ v12_reset_legacy_dead_letters ═════════════════════
+        // Rows que viraram dead-letter ANTES da v11 não têm last_error
+        // gravado — perderam o motivo da falha. Bug raiz (trigger Postgres
+        // sobrescrevendo updated_at + drainer não tratando stale-write)
+        // foi resolvido em paralelo: trigger fixed em
+        // 0013_set_updated_at_respects_client.sql, drainer trata
+        // stale-write como drain canônico LWW. Reset zera só rows legacy
+        // (last_error IS NULL) — novos dead-letters preservam state.
+        m.registerMigration("v12_reset_legacy_dead_letters") { db in
+            try db.execute(sql: """
+                UPDATE sync_queue SET attempts = 0
+                WHERE attempts >= 5 AND last_error IS NULL;
+            """)
+        }
+
+        // ═══ v13_nascimento_seconds_to_ms ══════════════════════
+        // PilotoCadastroView/PassageiroCadastroView gravavam nascimento
+        // em SEGUNDOS desde epoch (`Int64(date.timeIntervalSince1970)`).
+        // Edge Function `coerceTimestamps` faz `new Date(v).toISOString()`
+        // assumindo MS — então 1265673600 (2010-02-09 em segundos) virava
+        // 1970-01-15 em ms (14.6 dias após epoch). Field test 2026-05-09:
+        // server tinha Bubi com nascimento="1970-01-15", correto seria
+        // "2010-02-09". Conversão 1× pra alinhar com o resto do app
+        // (created_at, updated_at, data_aplicacao já são ms).
+        // Filtro `< 100000000000` (1e11) protege contra dupla aplicação:
+        // valores em ms já estão acima dessa threshold (10^12 pra
+        // datas pós-2001), em segundos abaixo (10^9 pra datas pós-2001).
+        m.registerMigration("v13_nascimento_seconds_to_ms") { db in
+            try db.execute(sql: """
+                UPDATE pilotos SET nascimento = nascimento * 1000
+                WHERE nascimento IS NOT NULL AND nascimento < 100000000000;
+            """)
+            try db.execute(sql: """
+                UPDATE passageiros SET nascimento = nascimento * 1000
+                WHERE nascimento IS NOT NULL AND nascimento < 100000000000;
+            """)
+        }
     }
 
     // swiftlint:disable:next function_body_length

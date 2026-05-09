@@ -3930,11 +3930,74 @@ step("DRAIN-02: 2 itens enfileirados, ambos accepted → drained + markSynced") 
     try assertTrue(syncedAt != nil && syncedAt! > 0, "synced_at não foi setado")
 }
 
-step("DRAIN-03: rejected (stale-write) incrementa attempts, mantém na fila") {
+step("DRAIN-03: rejected (db-error) incrementa attempts, grava last_error, mantém na fila") {
     let q = try makeTestDB()
     try q.write { db in
+        try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-err", op: .update, payload: "{}")
+    }
+    let mock = MockSyncTransport()
+    mock.nextResult = SyncResult(
+        accepted: [],
+        rejected: [SyncRejected(row_id: "c-err", table_name: "carros", reason: "db-error")]
+    )
+
+    let out = try SyncDrainer.drainBatch(q, transport: mock)
+    try assertEq(out.processedCount, 1)
+    try assertEq(out.rejectedCount, 1)
+    try assertEq(out.acceptedCount, 0)
+    try assertEq(out.staleDroppedCount, 0)
+
+    let row = try q.read { db -> (Int, String?) in
+        let item = try SyncQueueItem.filter(Column("row_id") == "c-err").fetchOne(db)
+        return (item?.attempts ?? -1, item?.lastError)
+    }
+    try assertEq(row.0, 1, "attempts incrementa")
+    try assertEq(row.1, "db-error", "last_error grava motivo da Edge Function")
+}
+
+step("DRAIN-03b: rejected sobrescreve last_error a cada tentativa") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-evolve", op: .update, payload: "{}")
+    }
+    let mock = MockSyncTransport()
+
+    // 1ª rejeição: db-error
+    mock.nextResult = SyncResult(
+        accepted: [],
+        rejected: [SyncRejected(row_id: "c-evolve", table_name: "carros", reason: "db-error")]
+    )
+    _ = try SyncDrainer.drainBatch(q, transport: mock)
+
+    // 2ª rejeição: row-not-found (cenário plausível depois de delete remoto)
+    mock.nextResult = SyncResult(
+        accepted: [],
+        rejected: [SyncRejected(row_id: "c-evolve", table_name: "carros", reason: "row-not-found")]
+    )
+    _ = try SyncDrainer.drainBatch(q, transport: mock)
+
+    let row = try q.read { db -> (Int, String?) in
+        let item = try SyncQueueItem.filter(Column("row_id") == "c-evolve").fetchOne(db)
+        return (item?.attempts ?? -1, item?.lastError)
+    }
+    try assertEq(row.0, 2, "attempts cumulativo")
+    try assertEq(row.1, "row-not-found", "last_error reflete a tentativa MAIS RECENTE, não a primeira")
+}
+
+step("DRAIN-03c: stale-write é DRAIN local (não retry) — LWW canônico") {
+    // Pré-condição: row local existe com synced_at NULL (espelha
+    // EventoRepository/PilotoRepository/etc — sempre nullable após mutate).
+    let q = try makeTestDB()
+    try q.write { db in
+        // Time primeiro pra FK
+        try db.execute(sql: "INSERT INTO times (id, nome, created_at, updated_at) VALUES ('t1', 'time', 0, 0)")
+        try db.execute(sql: """
+            INSERT INTO carros (id, time_id, apelido, fonte_temperatura, created_at, updated_at)
+            VALUES ('c-stale', 't1', 'Teste', 'motor', 100, 100)
+        """)
         try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-stale", op: .update, payload: "{}")
     }
+
     let mock = MockSyncTransport()
     mock.nextResult = SyncResult(
         accepted: [],
@@ -3943,13 +4006,21 @@ step("DRAIN-03: rejected (stale-write) incrementa attempts, mantém na fila") {
 
     let out = try SyncDrainer.drainBatch(q, transport: mock)
     try assertEq(out.processedCount, 1)
-    try assertEq(out.rejectedCount, 1)
-    try assertEq(out.acceptedCount, 0)
+    try assertEq(out.staleDroppedCount, 1, "stale-write conta separado")
+    try assertEq(out.rejectedCount, 0, "stale-write NÃO conta como rejected")
+    try assertEq(out.deadLetteredCount, 0, "stale-write nunca vira dead-letter")
 
-    let attempts = try q.read { db in
-        try Int.fetchOne(db, sql: "SELECT attempts FROM sync_queue WHERE row_id = 'c-stale'")
+    // Queue: row drenada
+    let stillQueued = try q.read { db in
+        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sync_queue WHERE row_id = 'c-stale'")
     }
-    try assertEq(attempts, 1)
+    try assertEq(stillQueued, 0, "queue row removida (não acumula attempts)")
+
+    // Carros: synced_at preenchido (não fica em estado "nunca sincronizada")
+    let syncedAt = try q.read { db in
+        try Int64.fetchOne(db, sql: "SELECT synced_at FROM carros WHERE id = 'c-stale'")
+    }
+    try assertTrue(syncedAt != nil && syncedAt! > 0, "synced_at setado pra evitar re-enfileirar")
 }
 
 step("DRAIN-04: maxAttempts excluí dead-letters do próximo batch") {
@@ -4491,6 +4562,73 @@ step("PULLEX-07: cursor NÃO retrocede mesmo se max_updated_at vier menor") {
     try assertEq(out.cursorsAdvanced, 0)
     let cursor = try q.read { db in try PullCursor.get(db, tableName: "carros") }
     try assertEq(cursor, 5000)
+}
+
+step("PULLEX-08: timestamps ISO strings (PostgREST) viram ms epoch Int64 no SQLite") {
+    // Reproduz o shape REAL que vem do servidor — Edge Function `pull` faz
+    // `select("*")` e PostgREST serializa timestamptz como ISO 8601 string
+    // e date como ISO date string. Antes do fix, PullRow.init armazenava
+    // como String AnyCodable e upsert inseria TEXT em coluna INTEGER do
+    // SQLite — leituras seguintes via GRDB falhavam no decode pra Int64.
+
+    let q = try makeTestDB()
+
+    // Decoda exatamente como vem da Edge Function: JSON com strings ISO.
+    let json = #"""
+    {
+      "id": "0BCF68EA-1898-474F-AE18-A51002E937C2",
+      "time_id": "team-1",
+      "nome": "Bubi Marques",
+      "altura_cm": 176,
+      "peso_kg": 65.0,
+      "nascimento": "2010-02-09",
+      "created_at": "2026-05-09T13:09:06.153Z",
+      "updated_at": "2026-05-09T13:09:14.884Z"
+    }
+    """#
+    let row = try JSONDecoder().decode(PullRow.self, from: json.data(using: .utf8)!)
+
+    let mock = MockPullTransport()
+    mock.nextResponse = PullResponse(
+        rows: ["pilotos": [row]],
+        max_updated_at: ["pilotos": 1778332154884]
+    )
+    // makeTestDB já seedou time-1 no boot
+
+    _ = try PullExecutor.runOnce(q, tables: ["pilotos"], transport: mock)
+
+    // Tipos no SQLite: nascimento/created_at/updated_at devem ser INTEGER,
+    // não TEXT. Sem o fix, `typeof` retorna "text".
+    let types = try q.read { db -> (String?, String?, String?) in
+        let r = try Row.fetchOne(
+            db,
+            sql: "SELECT typeof(nascimento), typeof(created_at), typeof(updated_at) FROM pilotos WHERE id = ?",
+            arguments: ["0BCF68EA-1898-474F-AE18-A51002E937C2"]
+        )
+        return (r?[0] as String?, r?[1] as String?, r?[2] as String?)
+    }
+    try assertEq(types.0, "integer", "nascimento deveria ser integer (ms epoch), está \(types.0 ?? "nil")")
+    try assertEq(types.1, "integer", "created_at deveria ser integer (ms epoch)")
+    try assertEq(types.2, "integer", "updated_at deveria ser integer (ms epoch)")
+
+    // Valores devem bater com os ms epoch das ISOs originais.
+    let values = try q.read { db -> (Int64?, Int64?, Int64?) in
+        let r = try Row.fetchOne(
+            db,
+            sql: "SELECT nascimento, created_at, updated_at FROM pilotos WHERE id = ?",
+            arguments: ["0BCF68EA-1898-474F-AE18-A51002E937C2"]
+        )
+        return (r?[0] as Int64?, r?[1] as Int64?, r?[2] as Int64?)
+    }
+    try assertEq(values.0, 1265673600000, "nascimento 2010-02-09 = 1265673600000 ms")
+    try assertEq(values.1, 1778332146153, "created_at 13:09:06.153Z = 1778332146153 ms")
+    try assertEq(values.2, 1778332154884, "updated_at 13:09:14.884Z = 1778332154884 ms")
+
+    // Decode round-trip via GRDB Piloto não pode falhar.
+    let piloto = try q.read { db in try Piloto.fetchOne(db, key: "0BCF68EA-1898-474F-AE18-A51002E937C2") }
+    try assertTrue(piloto != nil, "Piloto.fetchOne falhou — sinal de TEXT em coluna Int64")
+    try assertEq(piloto?.nome, "Bubi Marques")
+    try assertEq(piloto?.nascimento, 1265673600000)
 }
 
 // ════════════════════════════════════════════════════════════

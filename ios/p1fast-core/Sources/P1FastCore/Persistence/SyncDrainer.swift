@@ -108,12 +108,18 @@ public struct DrainOutcome: Equatable {
     public let acceptedCount: Int
     public let rejectedCount: Int
     public let deadLetteredCount: Int
+    /// Quantas rows foram drenadas porque o servidor tem versão mais nova
+    /// (`stale-write`). Não conta como rejected — LWW canônico diz pra
+    /// abandonar a tentativa local; pull eventual reconcilia.
+    public let staleDroppedCount: Int
 
-    public init(processedCount: Int, acceptedCount: Int, rejectedCount: Int, deadLetteredCount: Int) {
+    public init(processedCount: Int, acceptedCount: Int, rejectedCount: Int,
+                deadLetteredCount: Int, staleDroppedCount: Int = 0) {
         self.processedCount = processedCount
         self.acceptedCount = acceptedCount
         self.rejectedCount = rejectedCount
         self.deadLetteredCount = deadLetteredCount
+        self.staleDroppedCount = staleDroppedCount
     }
 }
 
@@ -171,6 +177,7 @@ public enum SyncDrainer {
         var acceptedCount = 0
         var rejectedCount = 0
         var deadLetteredCount = 0
+        var staleDroppedCount = 0
 
         try queue.write { db in
             for row_id in result.accepted {
@@ -204,7 +211,23 @@ public enum SyncDrainer {
                     item = pendentes.first(where: { $0.tableName == rej.table_name })
                 }
                 guard let item, let id = item.id else { continue }
-                try SyncQueue.incrementAttempts(db, id: id)
+
+                // `stale-write`: servidor tem versão >= cliente. LWW canônico
+                // manda abandonar a tentativa local — não adianta retentar
+                // (server.updated_at não vai voltar). Drena queue + markSynced
+                // pra row local; pull catch-up cobre o caso de divergência
+                // real de conteúdo. Sem isso, lost-ACK trava a fila pra
+                // sempre (field test 2026-05-09).
+                if rej.reason == "stale-write" {
+                    if item.op != .delete {
+                        try? SyncQueue.markSynced(db, tableName: item.tableName, rowId: item.rowId)
+                    }
+                    try SyncQueue.drain(db, id: id)
+                    staleDroppedCount += 1
+                    continue
+                }
+
+                try SyncQueue.incrementAttempts(db, id: id, error: rej.reason)
                 rejectedCount += 1
                 // Verifica se virou dead-letter (próxima tentativa atingiria maxAttempts)
                 let updated = try SyncQueueItem
@@ -219,7 +242,8 @@ public enum SyncDrainer {
             processedCount: pendentes.count,
             acceptedCount: acceptedCount,
             rejectedCount: rejectedCount,
-            deadLetteredCount: deadLetteredCount
+            deadLetteredCount: deadLetteredCount,
+            staleDroppedCount: staleDroppedCount
         )
     }
 

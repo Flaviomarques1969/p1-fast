@@ -101,12 +101,14 @@ public final class SyncCoordinator: ObservableObject {
         await refreshCounters()
     }
 
-    /// Re-tenta um item dead-letter (zera attempts, próximo drain pega).
+    /// Re-tenta um item dead-letter (zera attempts e last_error, próximo drain pega).
     public func retryItem(_ id: Int64) async {
         do {
             try await queue.write { db in
-                try db.execute(sql: "UPDATE sync_queue SET attempts = 0 WHERE id = ?",
-                               arguments: [id])
+                try db.execute(
+                    sql: "UPDATE sync_queue SET attempts = 0, last_error = NULL WHERE id = ?",
+                    arguments: [id]
+                )
             }
             await refreshCounters()
             // Tenta drenar imediatamente — feedback visual rápido pra UI.
@@ -171,6 +173,11 @@ public final class SyncCoordinator: ObservableObject {
                 self.status = .hasFailures
             } else {
                 self.status = reachability.isReachable ? .idle : .offline
+            }
+            // `lastSuccessAt` só atualiza se NADA foi rejeitado neste ciclo —
+            // antes estava marcando "OK há 11s" enquanto rows iam acumulando
+            // attempts em silêncio. Honestidade é precondição da UX.
+            if outcome.rejectedCount == 0 && outcome.deadLetteredCount == 0 {
                 self.lastSuccessAt = Date()
             }
             self.nextAttemptAt = Date().addingTimeInterval(30)
