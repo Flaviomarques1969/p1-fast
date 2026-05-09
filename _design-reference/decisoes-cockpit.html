@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cockpit · decisões de Flávio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:        oklch(0% 0 0);
+  --surface:   oklch(11% 0 0);
+  --surface-2: oklch(15% 0 0);
+  --border:    oklch(22% 0 0);
+  --hairline:  oklch(28% 0 0);
+  --ink:       oklch(100% 0 0);
+  --muted:     oklch(58% 0 0);
+  --faint:     oklch(36% 0 0);
+  --bom:       oklch(80% 0.22 145);
+  --erro:      oklch(68% 0.26 27);
+  --sistema:   oklch(78% 0.16 225);
+  --foco:      oklch(82% 0.19 70);
+  --ouro:      oklch(74% 0.16 73);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0a0a0a;color:var(--ink);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+body{padding:48px 24px 96px;min-height:100vh;}
+.wrap{max-width:880px;margin:0 auto;}
+
+header{margin-bottom:48px;}
+.eyebrow{
+  font-size:11px;letter-spacing:.35em;text-transform:uppercase;
+  color:var(--muted);font-weight:700;margin-bottom:14px;
+}
+h1{
+  font-size:42px;font-weight:900;letter-spacing:-0.025em;line-height:1;
+  margin-bottom:18px;
+}
+.lead{
+  font-size:17px;color:var(--muted);font-weight:500;
+  max-width:680px;line-height:1.5;
+}
+
+.fechado{
+  margin-top:28px;padding:18px 22px;
+  background:var(--surface);border:1px solid var(--border);
+  border-left:3px solid var(--bom);border-radius:6px;
+  display:flex;gap:14px;align-items:flex-start;
+}
+.fechado__check{
+  flex:none;width:24px;height:24px;border-radius:50%;
+  background:var(--bom);display:flex;align-items:center;justify-content:center;
+  font-weight:900;color:#000;font-size:14px;
+}
+.fechado__txt{flex:1;}
+.fechado__lbl{
+  font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--bom);font-weight:800;margin-bottom:4px;
+}
+.fechado__val{font-size:15px;font-weight:600;color:var(--ink);}
+.fechado__nota{font-size:13px;color:var(--muted);margin-top:4px;font-weight:500;}
+
+.q{
+  margin-top:54px;padding-top:32px;border-top:1px solid var(--border);
+}
+.q__num{
+  display:inline-block;
+  font-size:11px;letter-spacing:.35em;text-transform:uppercase;
+  color:var(--foco);font-weight:800;margin-bottom:12px;
+}
+.q__title{
+  font-size:26px;font-weight:800;letter-spacing:-0.015em;line-height:1.2;
+  margin-bottom:10px;
+}
+.q__help{
+  font-size:15px;color:var(--muted);font-weight:500;line-height:1.5;
+  max-width:680px;margin-bottom:24px;
+}
+
+.opts{display:grid;gap:12px;}
+.opt{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:18px 20px;cursor:pointer;
+  transition:background 160ms ease, border-color 160ms ease, transform 160ms ease;
+  display:flex;gap:16px;align-items:flex-start;
+}
+.opt:hover{background:var(--surface-2);border-color:var(--hairline);}
+.opt.is-on{
+  background:oklch(20% 0.04 230);border-color:var(--sistema);
+  box-shadow:0 0 0 1px var(--sistema), 0 8px 24px oklch(0% 0 0 / .4);
+}
+.opt__radio{
+  flex:none;width:22px;height:22px;border-radius:50%;
+  border:2px solid var(--faint);margin-top:2px;
+  transition:border-color 160ms ease, background 160ms ease;
+  position:relative;
+}
+.opt.is-on .opt__radio{border-color:var(--sistema);background:var(--sistema);}
+.opt.is-on .opt__radio::after{
+  content:'';position:absolute;left:50%;top:50%;width:8px;height:8px;
+  background:#000;border-radius:50%;transform:translate(-50%,-50%);
+}
+.opt__body{flex:1;}
+.opt__title{
+  font-size:16px;font-weight:700;color:var(--ink);margin-bottom:4px;
+}
+.opt__desc{
+  font-size:14px;color:var(--muted);font-weight:500;line-height:1.5;
+}
+.opt__tag{
+  display:inline-block;font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  font-weight:800;padding:3px 7px;border-radius:3px;margin-left:8px;vertical-align:1px;
+}
+.opt__tag.bom{background:oklch(30% 0.08 145);color:var(--bom);}
+.opt__tag.alerta{background:oklch(30% 0.08 70);color:var(--foco);}
+.opt__tag.cuidado{background:oklch(30% 0.08 27);color:var(--erro);}
+
+.outro{
+  margin-top:14px;padding:16px 20px;
+  background:var(--surface);border:1px dashed var(--hairline);border-radius:8px;
+}
+.outro__lbl{
+  font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--muted);font-weight:700;margin-bottom:8px;
+}
+.outro textarea{
+  width:100%;min-height:54px;background:var(--bg);
+  border:1px solid var(--border);border-radius:6px;
+  color:var(--ink);font-family:inherit;font-size:14px;font-weight:500;
+  padding:10px 12px;resize:vertical;
+}
+.outro textarea:focus{outline:none;border-color:var(--sistema);}
+
+footer{
+  margin-top:80px;padding-top:32px;border-top:1px solid var(--border);
+  display:flex;flex-direction:column;gap:18px;align-items:center;
+}
+.btn-copy{
+  background:var(--sistema);color:#000;border:none;
+  font-family:inherit;font-size:14px;font-weight:800;letter-spacing:.06em;
+  text-transform:uppercase;padding:16px 32px;border-radius:6px;cursor:pointer;
+  transition:transform 160ms ease, background 160ms ease;
+}
+.btn-copy:hover{background:oklch(86% 0.16 225);transform:translateY(-1px);}
+.btn-copy.is-copied{background:var(--bom);}
+.copy-hint{
+  font-size:13px;color:var(--muted);font-weight:500;text-align:center;
+  max-width:520px;line-height:1.5;
+}
+.preview{
+  width:100%;max-width:680px;background:var(--surface);
+  border:1px solid var(--border);border-radius:6px;
+  padding:18px 20px;font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-size:12px;color:var(--muted);line-height:1.6;
+  white-space:pre-wrap;display:none;
+}
+.preview.is-visible{display:block;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">P1 Fast · cockpit do piloto · 2026-05-09</div>
+    <h1>Algumas decisões antes de eu começar a programar</h1>
+    <p class="lead">
+      Você falou que o cockpit vai rodar em duas telas: o iPhone 16 Pro Max e um notebook
+      Windows com tela de 10,5". Isso muda o desenho original (que era só iPhone). Pra eu não
+      adivinhar, marque o que faz sentido em cada pergunta. No final tem um botão pra copiar
+      suas respostas e colar no chat.
+    </p>
+
+    <div class="fechado">
+      <div class="fechado__check">✓</div>
+      <div class="fechado__txt">
+        <div class="fechado__lbl">Já decidido por você</div>
+        <div class="fechado__val">O notebook vai ficar conectado ao iPhone por cabo.</div>
+        <div class="fechado__nota">
+          Não pergunto mais sobre Wi-Fi/Bluetooth/4G. Vou assumir cabo como ponto de partida.
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="q" data-qid="cabo-tipo">
+    <div class="q__num">Pergunta 1 de 4</div>
+    <h2 class="q__title">O cabo serve pra quê?</h2>
+    <p class="q__help">
+      Existem duas formas bem diferentes de usar um cabo entre o iPhone e o notebook —
+      e cada uma muda o que eu preciso construir.
+    </p>
+    <div class="opts">
+      <div class="opt" data-val="video">
+        <div class="opt__radio"></div>
+        <div class="opt__body">
+          <div class="opt__title">
+            Espelhar a tela do iPhone no notebook (vídeo)
+            <span class="opt__tag bom">menos trabalho</span>
+          </div>
+          <div class="opt__desc">
+            O notebook é só uma "TV maior" do iPhone — mostra exatamente o que o iPhone mostra,
+            só que numa tela de 10,5" em vez de 6,9". Não preciso fazer um programa pra Windows.
+            Cabo provável: USB-C → HDMI ou USB-C → USB-C com app de captura.
+          </div>
+        </div>
+      </div>
+      <div class="opt" data-val="dado">
+        <div class="opt__radio"></div>
+        <div class="opt__body">
+          <div class="opt__title">
+            Mandar dados do iPhone pro notebook, e o notebook desenha sua própria tela
+            <span class="opt__tag alerta">trabalho dobrado</span>
+          </div>
+          <div class="opt__desc">
+            Os dois aparelhos rodam programas diferentes. O iPhone captura sensores e envia
+            "pacotinhos" pelo cabo (tipo USB ethernet). O notebook recebe e desenha o cockpit
+            com seu próprio motor. Permite layouts diferentes em cada tela, mas dobra o
+            código pra manter.
+          </div>
+        </div>
+      </div>
+      <div class="opt" data-val="indeciso">
+        <div class="opt__radio"></div>
+        <div class="opt__body">
+          <div class="opt__title">Não sei — me explica melhor a diferença prática</div>
+          <div class="opt__desc">
+            Marca aqui se quer que eu detalhe a diferença na próxima resposta antes de você fechar.
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="outro">
+      <div class="outro__lbl">Observação livre (opcional)</div>
+      <textarea data-out="cabo-tipo" placeholder="Ex: já comprei o cabo X, tenho restrição Y..."></textarea>
+    </div>
+  </section>
+
+  <section class="q" data-qid="conteudo-telas">
+    <div class="q__num">Pergunta 2 de 4</div>
+    <h2 class="q__title">As duas telas mostram a mesma coisa?</h2>
+    <p class="q__help">
+      Quando o piloto olha pro iPhone e quando olha pro notebook,
+      ele vê informações iguais ou diferentes?
+    </p>
+    <div class="opts">
+      <div class="opt" data-val="espelho">
+        <div class="opt__radio"></div>
+        <div class="opt__body">
+          <div class="opt__title">
+            Espelho exato — as duas mostram a mesma coisa
+            <span class="opt__tag bom">simples</span>
+          </div>
+          <div class="opt__desc">
+            iPhone e notebook desenham idêntico. O notebook serve só pra ver maior, com mais
+            conforto visual. Bate com a opção "vídeo" da pergunta 1.
+          </div>
+        </div>
+      </div>
+      <div class="opt" data-val="complementar">
+        <div class="opt__radio"></div>
+        <div class="opt__body">
+          <div class="opt__title">
+            Complementares — cada tela tem um foco diferente
+            <span class="opt__tag alerta">layout extra</span>
+          </div>
+          <div class="opt__desc">
+            Ex: iPhone mostra o cockpit-essencial (delta, shift light, ação), notebook
+            aproveita o espaço maior pra mostrar o ghost map, comparações de volta,
+            histórico do stint. Útil mas dobra o desenho de tela.
+          </div>
+        </div>
+      </div>
+      <div class="opt" data-val="ainda-decidir">
+        <div class="opt__radio"></div>
+        <div class="opt__body">
+          <div class="opt__title">Não decidi ainda — começa com espelho e depois a gente vê</div>
+          <div class="opt__desc">
+            Marque se você quer começar simples (espelho) e só explorar a opção complementar
+            depois que tiver o básico funcionando.
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="outro">
+      <div class="outro__lbl">Observação livre (opcional)</div>
+      <textarea data-out="conteudo-telas" placeholder="Ex: na tela maior eu queria ver Z..."></textarea>
+    </div>
+  </section>
+
+  <section class="q" data-qid="posicao-fisica">
+    <div class="q__num">Pergunta 3 de 4</div>
+    <h2 class="q__title">Onde cada aparelho fica fisicamente no carro?</h2>
+    <p class="q__help">
+      Isso muda a ergonomia (qual tela o piloto olha mais) e a robustez
+      (qual aguenta mais vibração e calor).
+    </p>
+    <div class="opts">
+      <div class="opt" data-val="ambos-painel">
+        <div class="opt__radio"></div>
+        <div class="opt__body">
+          <div class="opt__title">Os dois no painel — iPhone fixo + notebook montado ao lado</div>
+          <div class="opt__desc">
+            Notebook 10,5" no painel é compacto mas ocupa espaço de copiloto.
+            Cabo curto entre eles, sem folga.
+          </div>
+        </div>
+      </div>
+      <div class="opt" data-val="notebook-painel">
+        <div class="opt__radio"></div>
+        <div class="opt__body">
+          <div class="opt__title">Só notebook no painel; iPhone fica escondido (bolso/cinta)</div>
+          <div class="opt__desc">
+            Piloto olha só o notebook na pista. iPhone trabalha "invisível" capturando sensores.
+            Cabo precisa correr do bolso até o painel.
+          </div>
+        </div>
+      </div>
+      <div class="opt" data-val="iphone-painel">
+        <div class="opt__radio"></div>
+        <div class="opt__body">
+          <div class="opt__title">Só iPhone no painel; notebook fica na carona / mochila</div>
+          <div class="opt__desc">
+            Notebook nem vai ser olhado durante a volta — fica acordado mas o piloto não olha.
+            Provavelmente combinado com a opção "espelho" pra revisar depois.
+          </div>
+        </div>
+      </div>
+      <div class="opt" data-val="indeciso2">
+        <div class="opt__radio"></div>
+        <div class="opt__body">
+          <div class="opt__title">Outra configuração — explico no campo abaixo</div>
+          <div class="opt__desc"></div>
+        </div>
+      </div>
+    </div>
+    <div class="outro">
+      <div class="outro__lbl">Observação livre (opcional)</div>
+      <textarea data-out="posicao-fisica" placeholder="Ex: o notebook fica fixado em..."></textarea>
+    </div>
+  </section>
+
+  <section class="q" data-qid="falha">
+    <div class="q__num">Pergunta 4 de 4</div>
+    <h2 class="q__title">Se o cabo desconectar no meio de uma volta…</h2>
+    <p class="q__help">
+      Cabo balança. Conector solta. Acontece. Como o sistema deve reagir?
+    </p>
+    <div class="opts">
+      <div class="opt" data-val="iphone-segue">
+        <div class="opt__radio"></div>
+        <div class="opt__body">
+          <div class="opt__title">
+            iPhone continua sozinho gravando tudo; notebook só "perde a tela maior"
+            <span class="opt__tag bom">segurança alta</span>
+          </div>
+          <div class="opt__desc">
+            Esta é a base do que já está pronto: o iPhone é auto-suficiente. Notebook é bônus.
+            Quando o cabo voltar, ele "encaixa" de novo.
+          </div>
+        </div>
+      </div>
+      <div class="opt" data-val="notebook-tenta">
+        <div class="opt__radio"></div>
+        <div class="opt__body">
+          <div class="opt__title">
+            Notebook tenta sobreviver com sensores próprios (GPS USB, etc.)
+            <span class="opt__tag cuidado">muita engenharia</span>
+          </div>
+          <div class="opt__desc">
+            Exige hardware extra no notebook (GPS USB, placa de aquisição). Sai do escopo do
+            que está construído. Não recomendo agora.
+          </div>
+        </div>
+      </div>
+      <div class="opt" data-val="alerta-grande">
+        <div class="opt__radio"></div>
+        <div class="opt__body">
+          <div class="opt__title">Notebook congela e mostra um aviso enorme "CABO DESCONECTADO"</div>
+          <div class="opt__desc">
+            Comportamento mais simples e legível pro piloto. Volta a funcionar quando o cabo
+            voltar a comunicar. Combina com qualquer escolha da pergunta 1.
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="outro">
+      <div class="outro__lbl">Observação livre (opcional)</div>
+      <textarea data-out="falha" placeholder="Ex: o piloto avisa via rádio o box, etc."></textarea>
+    </div>
+  </section>
+
+  <footer>
+    <button class="btn-copy" id="btnCopy">Copiar minhas respostas pra colar no chat</button>
+    <p class="copy-hint">
+      Depois de marcar tudo, clica no botão. As respostas vão pra área de transferência
+      no formato texto. Cola direto na conversa com o Claude.
+    </p>
+    <pre class="preview" id="preview"></pre>
+  </footer>
+
+</div>
+
+<script>
+const state = {};
+
+document.querySelectorAll('.q').forEach(q => {
+  const qid = q.dataset.qid;
+  state[qid] = null;
+  q.querySelectorAll('.opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      q.querySelectorAll('.opt').forEach(x => x.classList.remove('is-on'));
+      opt.classList.add('is-on');
+      state[qid] = opt.dataset.val;
+    });
+  });
+});
+
+function buildSummary(){
+  const labels = {
+    'cabo-tipo': '1. O cabo serve pra:',
+    'conteudo-telas': '2. As duas telas mostram:',
+    'posicao-fisica': '3. Posição física:',
+    'falha': '4. Se o cabo desconectar:',
+  };
+  const valTxt = {
+    'video': 'espelhar tela do iPhone no notebook (vídeo)',
+    'dado': 'mandar dados do iPhone pro notebook (cada um desenha sua tela)',
+    'indeciso': 'ainda em dúvida — quer mais explicação',
+    'espelho': 'espelho exato (as duas iguais)',
+    'complementar': 'complementares (cada tela com foco diferente)',
+    'ainda-decidir': 'começar com espelho, decidir o resto depois',
+    'ambos-painel': 'os dois no painel',
+    'notebook-painel': 'só notebook no painel, iPhone escondido',
+    'iphone-painel': 'só iPhone no painel, notebook fora do alcance',
+    'indeciso2': 'outra configuração (ver observação)',
+    'iphone-segue': 'iPhone continua sozinho; notebook perde a tela maior',
+    'notebook-tenta': 'notebook tenta sobreviver com sensores próprios',
+    'alerta-grande': 'notebook congela e mostra aviso "CABO DESCONECTADO"',
+  };
+  const lines = ['## Respostas — cockpit em 2 plataformas', ''];
+  lines.push('Decisão já fechada: notebook conectado ao iPhone por cabo.');
+  lines.push('');
+  for (const qid of Object.keys(labels)){
+    const v = state[qid];
+    const obs = (document.querySelector(`textarea[data-out="${qid}"]`)?.value || '').trim();
+    lines.push(labels[qid] + ' ' + (v ? valTxt[v] : '(não respondeu)'));
+    if (obs) lines.push('   obs: ' + obs);
+  }
+  return lines.join('\n');
+}
+
+document.getElementById('btnCopy').addEventListener('click', async () => {
+  const text = buildSummary();
+  const preview = document.getElementById('preview');
+  preview.textContent = text;
+  preview.classList.add('is-visible');
+  try {
+    await navigator.clipboard.writeText(text);
+    const btn = document.getElementById('btnCopy');
+    btn.textContent = 'Copiado! Cola no chat agora';
+    btn.classList.add('is-copied');
+    setTimeout(() => {
+      btn.textContent = 'Copiar minhas respostas pra colar no chat';
+      btn.classList.remove('is-copied');
+    }, 4000);
+  } catch(e) {
+    // fallback: deixa o preview visível pra copiar manual
+  }
+});
+</script>
+</body>
+</html>
