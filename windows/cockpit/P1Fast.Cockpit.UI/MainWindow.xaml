@@ -26,12 +26,9 @@
                     </Rectangle>
 
                     <!--
-                        Shift light — 12 LEDs horizontais centralizados no topo,
-                        tiers 1,2,3,4,5,6,6,5,4,3,2,1 (espelhado).
-                        Cores: 1-2 verde, 3-4 amarelo, 5-6 vermelho.
-                        Visual simplificado nesta iteração (sem bloom multi-layer
-                        nem animação ledIgnite — vai ser adicionado depois quando
-                        confirmar a sintaxe de DropShadow + Storyboard no WinUI 3).
+                        Shift light — 12 LEDs no topo. Container Border arredondado
+                        com Padding 26,9 e Spacing 18 (mesmas dimensões do mockup
+                        .shift-light).
                     -->
                     <Border HorizontalAlignment="Center"
                             VerticalAlignment="Top"
@@ -57,22 +54,129 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Status text (placeholder; substituído pelos próximos elementos) -->
+                    <!--
+                        Apex header — 4 pontos (entrada, freio, ápice, saída) em
+                        linha. No mockup é position:absolute top:46 left:60 right:36
+                        com display:flex justify-content:space-between. Em XAML:
+                        Grid com 4 colunas iguais, ancorado ao topo com Margin.
+                    -->
+                    <Grid Margin="60,46,36,0"
+                          VerticalAlignment="Top"
+                          Height="60">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Entrada -->
+                        <StackPanel Grid.Column="0"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Left"
+                                    Spacing="14"
+                                    VerticalAlignment="Bottom">
+                            <TextBlock Text="ENTRADA"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       Foreground="White"
+                                       VerticalAlignment="Bottom"/>
+                            <TextBlock x:Name="ApexEntradaValor"
+                                       Text="—"
+                                       FontSize="32"
+                                       FontWeight="ExtraBold"
+                                       Foreground="#A0A0A0"
+                                       VerticalAlignment="Bottom"/>
+                        </StackPanel>
+
+                        <!-- Freio -->
+                        <StackPanel Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Center"
+                                    Spacing="14"
+                                    VerticalAlignment="Bottom">
+                            <TextBlock Text="FREIO"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       Foreground="White"
+                                       VerticalAlignment="Bottom"/>
+                            <TextBlock x:Name="ApexFreioValor"
+                                       Text="—"
+                                       FontSize="32"
+                                       FontWeight="ExtraBold"
+                                       Foreground="#A0A0A0"
+                                       VerticalAlignment="Bottom"/>
+                        </StackPanel>
+
+                        <!-- Ápice -->
+                        <StackPanel Grid.Column="2"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Center"
+                                    Spacing="14"
+                                    VerticalAlignment="Bottom">
+                            <TextBlock Text="ÁPICE"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       Foreground="White"
+                                       VerticalAlignment="Bottom"/>
+                            <TextBlock x:Name="ApexApiceValor"
+                                       Text="—"
+                                       FontSize="32"
+                                       FontWeight="ExtraBold"
+                                       Foreground="#A0A0A0"
+                                       VerticalAlignment="Bottom"/>
+                        </StackPanel>
+
+                        <!-- Saída -->
+                        <StackPanel Grid.Column="3"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    Spacing="14"
+                                    VerticalAlignment="Bottom">
+                            <TextBlock Text="SAÍDA"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       Foreground="White"
+                                       VerticalAlignment="Bottom"/>
+                            <TextBlock x:Name="ApexSaidaValor"
+                                       Text="—"
+                                       FontSize="32"
+                                       FontWeight="ExtraBold"
+                                       Foreground="#A0A0A0"
+                                       VerticalAlignment="Bottom"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!--
+                        Info bloco — delta gigante no centro + ação abaixo.
+                        Mockup: position:absolute left/top 50% translate(-50%, -50%).
+                        Em XAML: StackPanel centralizado com VerticalAlignment Center.
+                    -->
                     <StackPanel HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
-                                Spacing="8">
-                        <TextBlock Text="P1 FAST"
-                                   Foreground="White"
+                                Spacing="14">
+                        <TextBlock x:Name="DeltaText"
+                                   Text="0.00"
+                                   FontSize="180"
+                                   FontWeight="ExtraBold"
+                                   Foreground="#A0A0A0"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="AcaoText"
+                                   Text=""
                                    FontSize="32"
-                                   FontWeight="Bold"
-                                   HorizontalAlignment="Center"
-                                   Opacity="0.7"/>
-                        <TextBlock x:Name="StatusText"
-                                   Text="—"
-                                   Foreground="#a0a0a0"
-                                   FontSize="20"
+                                   FontWeight="ExtraBold"
+                                   Foreground="#F0C040"
                                    HorizontalAlignment="Center"/>
                     </StackPanel>
+
+                    <!-- Status text (debug, no rodapé) -->
+                    <TextBlock x:Name="StatusText"
+                               Text="—"
+                               Foreground="#606060"
+                               FontSize="11"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Bottom"
+                               Margin="0,0,0,8"/>
 
                 </Grid>
             </Border>
