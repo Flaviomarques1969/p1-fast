@@ -9,7 +9,6 @@ using P1Fast.Cockpit.Domain;
 using System.IO;
 using System.Text.Json;
 using Windows.Graphics;
-using Windows.System;
 using Windows.UI;
 using WinRT.Interop;
 
@@ -108,7 +107,6 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         ApplyDisplayPlacement();
         ApplyInitialRotation();
-        WireRotationShortcut();
 
         _leds = new[] { Led01, Led02, Led03, Led04, Led05, Led06, Led07, Led08, Led09, Led10, Led11, Led12 };
         _stintBlocks = new[]
@@ -723,17 +721,7 @@ public sealed partial class MainWindow : Window
         RootRotation.Angle = angle;
     }
 
-    private void WireRotationShortcut()
-    {
-        var accel = new KeyboardAccelerator
-        {
-            Key = VirtualKey.R,
-            Modifiers = VirtualKeyModifiers.Control,
-        };
-        accel.Invoked += OnRotateToggleInvoked;
-        RootGrid.KeyboardAccelerators.Add(accel);
-    }
-
+    // Atalho registrado em MainWindow.xaml: <KeyboardAccelerator Key="R" Modifiers="Control" .../>
     private void OnRotateToggleInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         var next = RootRotation.Angle >= Rotation180 ? RotationNone : Rotation180;

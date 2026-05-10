@@ -15,6 +15,9 @@
         <Grid.RenderTransform>
             <RotateTransform x:Name="RootRotation" Angle="0"/>
         </Grid.RenderTransform>
+        <Grid.KeyboardAccelerators>
+            <KeyboardAccelerator Key="R" Modifiers="Control" Invoked="OnRotateToggleInvoked"/>
+        </Grid.KeyboardAccelerators>
         <Viewbox HorizontalAlignment="Center"
                  VerticalAlignment="Center"
                  StretchDirection="Both">
