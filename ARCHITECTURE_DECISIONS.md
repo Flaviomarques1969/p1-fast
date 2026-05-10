@@ -71,7 +71,7 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 **Decisão (Flavio 2026-05-01)**: o app do celular do P1 Fast — cockpit do piloto + hub (HOME, Eventos, Garagem, Pendências, cadastros) — é **iOS nativo em Swift/SwiftUI**. PWA / web no celular é descartado completamente.
 **Motivo**: Safari iOS não garante captura DeviceMotion a 10 Hz consistentes. Throttling em background, low-power mode, contexto cross-origin e perda de wake lock degradam a frequência abaixo do necessário pra IMU motorsports. Captura GPS+IMU confiável só com CoreMotion / CoreLocation acessados nativamente.
 
-> **AMENDMENT 2026-05-09 (Flavio):** o **cockpit-display ao vivo** sai do iOS e migra pra Windows (notebook 10,5" no painel). iPhone preserva captura IMU/GPS + câmera onboard + papel de uploader pra Supabase Realtime. Hub iOS (HOME, Eventos, Garagem, Pendências, cadastros) e Box Cockpit continuam SwiftUI. Detalhes em **ADR-023**.
+> **AMENDMENT 2026-05-09 (Flavio):** o **cockpit-display ao vivo** sai do iOS e migra pra Windows (notebook hospeda o app + tela 10,5" externa invertida no painel — ver ADR-023 amendment 5 de 2026-05-10). iPhone preserva captura IMU/GPS + câmera onboard + papel de uploader pra Supabase Realtime. Hub iOS (HOME, Eventos, Garagem, Pendências, cadastros) e Box Cockpit continuam SwiftUI. Detalhes em **ADR-023**.
 **Escopo afetado**:
 - Mockups B em `_design-reference/*.html` permanecem como **contrato visual** — copiar 1:1 pra SwiftUI, sem inventar tokens. Não são código rodável no celular.
 - `src/pipeline/mobile-telemetry.js` (DeviceMotionEvent + Geolocation API) deixa de ser código de runtime do celular — vira **referência de contrato** (Sample shape, freshness por canal, métricas Hz/jitter). Captura real fica em Swift CoreMotion + CoreLocation.
@@ -114,15 +114,16 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 **Aplica-se a**: todo PR que toca `ios/p1fast-core/`. Memória `feedback_package_resolved_gotcha.md` tem o procedimento operacional.
 
 ## ADR-023 — Cockpit-display ao vivo migra pra Windows; T4000 deixa de ser BLE iOS
-**Decisão (Flavio 2026-05-09)**: a tela viva do cockpit do piloto deixa de ser SwiftUI no iPhone e passa a rodar num **notebook Windows 10,5"** montado no painel. O iPhone continua presente, mas com papel diferente.
+**Decisão (Flavio 2026-05-09, refinada 2026-05-10 amendment 5)**: a tela viva do cockpit do piloto deixa de ser SwiftUI no iPhone e passa a rodar num **notebook Windows** com **tela 10,5" externa** plugada nele e montada no painel do carro **de cabeça pra baixo** (rotação 180° via Windows Display Settings). O iPhone continua presente, mas com papel diferente.
 
-**Por que mudou**: o piloto vai ter uma tela maior melhor posicionada no painel (notebook 10,5" landscape, montagem no carro). Fica mais legível em ambiente de pista que a tela do iPhone presa em algum suporte. Decisão de produto, não técnica.
+**Por que mudou**: o piloto vai ter uma tela maior melhor posicionada no painel (10,5" landscape externa, montagem no carro). Fica mais legível em ambiente de pista que a tela do iPhone presa em algum suporte. Decisão de produto, não técnica.
 
 **Papéis na nova arquitetura**:
 
 | Aparelho | Função |
 |---|---|
-| **Notebook Windows 10,5"** | Cockpit-display ao vivo (web app), driver T4000 (USB/CAN), processamento ao vivo (delta, halo, shift light, apex) com dados próprios + IMU/GPS recebidos do iPhone via Supabase. |
+| **Notebook Windows** (host) | Hospeda o app cockpit (WinUI 3 + C# .NET 8), driver T4000 (USB/CAN), processamento ao vivo (delta, halo, shift light, apex) com dados próprios + IMU/GPS recebidos do iPhone via cabo USB / Supabase Realtime. Display interno do notebook fica com a área de trabalho normal pra engenheiro/instalador. |
+| **Tela 10,5" externa** (target visual do piloto) | Plugada no notebook (HDMI/USB-C/DisplayPort), montada **invertida** no painel, rotação 180° via Windows Display Settings. Recebe a janela cockpit fullscreen (`--display-index 2`). É a tela cuja resolução nativa define o viewport alvo do mockup canônico (MS-13.1). |
 | **iPhone 16 Pro Max** | Captura IMU 100 Hz + GPS 1 Hz (CoreMotion / CoreLocation), câmera onboard frontal (Daily.co), agregador de tudo (sensores próprios + T4000 lido do canal Realtime do Windows) e uploader pro mundo externo. **Sem cockpit-display ativo durante a pilotagem.** |
 | **Apple TV (Box Cockpit)** | Inalterado — espelha o cockpit via Supabase Realtime, AirPlay do iPhone do operador do box. |
 
@@ -159,6 +160,25 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 > - **Stores compatível:** se um dia portar partes pra Microsoft Store, MSIX nativo. (Mobile iOS/Android continua decisão separada — ADR-018 segue valendo).
 >
 > **Trade-off aceito:** não é "padrão automotivo igual Tesla/BMW" (que usam Qt). Pra P1 Fast esse selo não importa — não é certificação industrial, é cockpit pra carro de track day.
+
+> **AMENDMENT 5 (Flávio 2026-05-10):** correção de entendimento sobre o hardware de display. **Quem roda o app é o notebook Windows; quem o piloto OLHA é uma tela 10,5" externa**, plugada nesse notebook (HDMI / USB-C / DisplayPort), montada no painel do carro. **A tela é instalada de cabeça pra baixo**, então a imagem precisa estar **rotacionada 180°** pra ficar legível pelo piloto.
+>
+> **Como a rotação é feita:** via **Windows Display Settings → Orientação do monitor 2 = 180°**. NÃO no código do app. Razões:
+> 1. Custo zero pra desenvolvimento (sem `RotateTransform 180` no XAML, sem código de mapeamento de input).
+> 2. Aplica também ao mouse/touch quando o piloto ou mecânico precisar interagir com a tela.
+> 3. É uma config que o instalador faz uma vez e fica permanente.
+>
+> **Implicações pra o app cockpit:**
+> 1. **Multi-monitor:** o app precisa abrir fullscreen no **monitor 2** (a tela 10,5" externa), não no display interno do notebook. Configurável via argumento (`--display-index N`) ou auto-detecção (escolhe o de maior área quando há ≥2 monitores).
+> 2. **Notebook (display 1):** fica com a área de trabalho normal pra o engenheiro/instalador interagir. App não toma o display 1.
+> 3. **Dimensão alvo do mockup:** continua sendo definida pela **tela 10,5"** (não pelo notebook). Resolução nativa, DPR e área útil dessa tela são o que importa pro `viewport` (MS-13.1).
+>
+> **Checklist de instalação no carro (criar quando MS-13 fechar):**
+> 1. Plugar tela 10,5" no notebook (HDMI/USB-C).
+> 2. Windows Display Settings → "Estender estes monitores".
+> 3. Identificar a 10,5" como display 2 e marcar **Orientação = 180°**.
+> 4. Posicionar a tela 10,5" "à direita" do display 1 nas configurações (independente do físico, importa pra cursor mapping).
+> 5. Rodar `P1Fast.Cockpit.UI.exe --display-index 2` (ou shortcut equivalente).
 >
 > **Próximos passos práticos** (gated, requer Windows + Visual Studio):
 > 1. Criar `windows/cockpit/` com solution C# (.NET 8 + Windows App SDK / WinUI 3).
