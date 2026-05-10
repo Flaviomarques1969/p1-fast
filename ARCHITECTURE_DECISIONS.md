@@ -147,8 +147,29 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 - Driver T4000: USB traseiro do T4000 (CDC-ACM serial) ou adaptador CAN-USB. Spec do frame fechada em `docs/hardware/T4000_CAN_SPEC.md` (5 pacotes, big-endian, checksum validado matematicamente, 3 dúvidas residuais não-bloqueantes).
 
 > **AMENDMENT 3 (Flávio 2026-05-09):** o **produto final** do cockpit Windows e do hub iPhone é **NATIVO**, não web/PWA. O conteúdo do diretório `web/cockpit/` é **referência executável + protótipo de validação** — serve pra (1) demonstrar visualmente o mockup canônico no notebook hoje, (2) provar a lógica de domínio (`CockpitState`, `TransportSelector`, `LiveDataBridge`, `T4000PacketParser`, regras de RPM→shift e alertas críticos) com smokes verdes em JS e (3) servir de espec executável pra ser portada pro app nativo Windows quando ele for construído. Os smokes JS viram o **contrato de teste** do app nativo (cada caso JS deve ter um equivalente C# / .NET / outra stack que escolheremos). O `cockpit-renderer.js` é o único módulo descartável (DOM-bindings específicos de HTML); todo o resto da lógica é portável.
+
+> **AMENDMENT 4 (Flávio 2026-05-09):** stack do cockpit Windows nativo é **WinUI 3 + C# (.NET 8+)**. Decisão final.
 >
-> **Stack Windows nativa:** a decidir. Critérios do Flávio: **robustez + alto desempenho + qualidade gráfica extrema**. Opções a apresentar antes da decisão.
+> **Por quê:**
+> - **Performance:** Composition API roda animações em thread dedicada da GPU. Latência estado→pixel ~16-17 ms. GC pause raro <3 ms. Suficiente pra cockpit de pista (reação humana treinada ~100 ms).
+> - **Qualidade gráfica:** atende 100% do mockup canônico — OKlch (via conversão pra RGB), 8 keyframes complexos (Composition.AnimationGroup), `mix-blend-mode: screen` (BlendMode.Screen), `backdrop-filter: blur` (AcrylicBrush), perspective 3D + translateZ (Transform3D + PlaneProjection), box-shadow multilayer (DropShadow stack), radial gradients (RadialGradientBrush). Sem comprometer um efeito sequer.
+> - **Robustez:** Microsoft mantém oficialmente, suporte 20+ anos garantido. Stack atual recomendada da Microsoft pra apps Windows nativos.
+> - **Custo:** zero licença, sem restrição comercial em qualquer store.
+> - **Velocidade de desenvolvimento:** C# 1,5-2x mais rápido que C++/Qt. Hot reload XAML no Visual Studio. Compilação em segundos. Mercado de devs C# = oceano.
+> - **Stores compatível:** se um dia portar partes pra Microsoft Store, MSIX nativo. (Mobile iOS/Android continua decisão separada — ADR-018 segue valendo).
+>
+> **Trade-off aceito:** não é "padrão automotivo igual Tesla/BMW" (que usam Qt). Pra P1 Fast esse selo não importa — não é certificação industrial, é cockpit pra carro de track day.
+>
+> **Próximos passos práticos** (gated, requer Windows + Visual Studio):
+> 1. Criar `windows/cockpit/` com solution C# (.NET 8 + Windows App SDK / WinUI 3).
+> 2. Portar `CockpitState` JS → C# (puro, testável com xUnit). Cada smoke JS vira fato xUnit equivalente.
+> 3. Portar `T4000PacketParser` + fixture do PDF (`0x91`).
+> 4. Portar `TransportSelector` + `LiveDataBridge` + regras de RPM/alertas.
+> 5. Implementar `CockpitView.xaml` em XAML 1:1 com `_design-reference/mockup-cockpit-piloto.html` — DOM web vira árvore visual XAML, CSS vira Style/Resource, @keyframes vira Storyboard / Composition Animation.
+> 6. Driver T4000 USB (Windows.Devices.SerialCommunication) e cliente `iproxy` pra cabo iPhone.
+> 7. Empacotamento MSIX + atalho kiosk fullscreen no notebook 10,5".
+>
+> **Trabalho JS continua valendo** como spec executável até cada peça ser portada pra C# com smokes equivalentes verdes.
 
 **Stack do iPhone**:
 - Captura iOS Swift continua mandatória (ADR-018 segue valendo pra essa parte).

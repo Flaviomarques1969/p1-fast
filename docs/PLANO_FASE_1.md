@@ -37,8 +37,9 @@ porque é exatamente isso que o produto entrega ao piloto.
 |---|---|---|
 | Hub do piloto (HOME, Eventos, Garagem, Pendências, cadastros) | iOS Swift nativo (SwiftUI) | ADR-018 |
 | Captura IMU 100 Hz + GPS 1 Hz + câmera onboard | iOS Swift (CoreMotion + CoreLocation + Daily.co) | ADR-018 |
-| **Cockpit-display ao vivo** | **Web app (HTML/CSS/JS) rodando em notebook Windows 10,5"** no painel do carro | **ADR-023** |
-| **Driver Injepro T4000 (RPM, marcha, temp, λ, MAP, EGT, etc.)** | **Windows (USB CDC-ACM serial ou adaptador CAN-USB) — JS sobre Node/Electron** | **ADR-023 + `docs/hardware/T4000_CAN_SPEC.md`** |
+| **Cockpit-display ao vivo (PRODUTO FINAL)** | **WinUI 3 + C# (.NET 8) nativo Windows**, rodando em notebook 10,5" no painel | **ADR-023 amendment 4 (2026-05-09)** |
+| Cockpit-display (REFERÊNCIA EXECUTÁVEL) | Web app (HTML/CSS/JS) em `web/cockpit/` — protótipo + spec dos smokes; descartado quando port C# fechar | ADR-023 amendment 3 |
+| **Driver Injepro T4000 (RPM, marcha, temp, λ, MAP, EGT, etc.)** | **Windows.Devices.SerialCommunication (USB CDC-ACM)** ou adaptador CAN-USB com bindings nativos | **ADR-023 amendment 4 + `docs/hardware/T4000_CAN_SPEC.md`** |
 | Persistência local iOS | GRDB (SQLite) | ADR-003 + ADR-020 |
 | Persistência local web | Dexie / IndexedDB | ADR-002 (legado, modo referência) |
 | Backend nuvem | Supabase (projeto isolado do CDAI) | — |
@@ -382,7 +383,7 @@ Depende de MS-9 (T4000 fornece temp motor real) — em Tier 0 usa estimativa.
 
 - **Vídeo ao vivo:** Daily.co (câmera onboard frontal do iPhone) — §2 deste plano
 - **Box cockpit:** App iOS modo BOX → AirPlay → Apple TV → TV 32" — §2
-- **Cockpit-display ao vivo migra pra Windows** (notebook 10,5" no painel, web app, web=produto a partir do mockup canônico) — **ADR-023**, decisão Flávio 2026-05-09
+- **Cockpit-display ao vivo migra pra Windows nativo (WinUI 3 + C#)** (notebook 10,5" no painel) — **ADR-023 + amendment 4**, decisão Flávio 2026-05-09. O `web/cockpit/` em HTML é referência executável + spec dos smokes, não produto final.
 - **Driver T4000 fica no Windows** (USB CDC-ACM ou CAN, JS sobre Node/Electron) — **ADR-023**, substitui o plano original BLE iOS
 - **Transporte iPhone ↔ Windows = redundante: cabo USB primário (TCP-over-USB via `iproxy`/`usbmuxd`, 5-15 ms) + Supabase Realtime fallback automático.** Notebook escolhe via `TransportSelector` (heartbeat 1 Hz, switch em 3 s, recovery com debounce 1 s). Cabo USB iPhone↔notebook agora carrega **dado + carga**. — **ADR-023 + amendment 2 de 2026-05-09**
 - **Captura iOS Swift nativa preservada** (CoreMotion 100 Hz + CoreLocation 1 Hz + Daily.co), hub iOS preservado (HOME, Eventos, Garagem, etc.) — ADR-018 (com amendment 2026-05-09)

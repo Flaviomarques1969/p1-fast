@@ -167,7 +167,9 @@ Sem código nesta sessão — só docs. Flávio decidiu que o cockpit-display ao
 - MS-13.4 parte 4 — `web/cockpit/main.js` + `web/cockpit/index-live.html` (bootstrap + entry point com mock data) + 7 smokes.
 - **134 smokes novos** verdes em cima de 404 → **538 verdes** total.
 
-**ADR-023 amendment 3 (Flávio 2026-05-09):** **produto final do cockpit Windows e do hub iPhone é NATIVO** (não web/PWA). O conteúdo de `web/cockpit/` é referência executável + protótipo: serve pra demonstrar visualmente o mockup hoje, provar a lógica de domínio com smokes verdes, e ser portado pra app nativo Windows quando ele for construído. Stack Windows nativa **a decidir** — critérios do Flávio: robustez + alto desempenho + qualidade gráfica extrema.
+**ADR-023 amendment 3 (Flávio 2026-05-09):** **produto final do cockpit Windows e do hub iPhone é NATIVO** (não web/PWA). O conteúdo de `web/cockpit/` é referência executável + protótipo: serve pra demonstrar visualmente o mockup hoje, provar a lógica de domínio com smokes verdes, e ser portado pra app nativo Windows quando ele for construído.
+
+**ADR-023 amendment 4 (Flávio 2026-05-09):** stack Windows nativa = **WinUI 3 + C# (.NET 8)**. Decisão final. Atende 100% do mockup canônico (OKlch, 8 keyframes, blend modes, perspective 3D, blur), latência estado→pixel ~16-17 ms, zero licença, sem restrição comercial em stores. Próximo passo prático: criar `windows/cockpit/` solution C# e portar `CockpitState` JS → C# com xUnit equivalente aos smokes JS.
 
 **Gates pra próxima etapa:**
 - **MS-9.0** — decisão container Windows (browser+WebSerial vs Electron). Sua decisão.
