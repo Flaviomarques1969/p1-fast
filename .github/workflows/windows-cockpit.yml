@@ -148,6 +148,7 @@ jobs:
       - name: Show env
         shell: pwsh
         run: |
+          New-Item -ItemType Directory -Force -Path logs | Out-Null
           dotnet --info | Out-File -FilePath logs/dotnet-info.txt -Encoding utf8
           dotnet workload list | Out-File -FilePath logs/dotnet-workload-list.txt -Encoding utf8
         env:
