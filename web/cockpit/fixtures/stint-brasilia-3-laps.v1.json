@@ -1,0 +1,689 @@
+{
+  "schemaVersion": "1.0.0",
+  "fixtureId": "stint-brasilia-3-laps",
+  "description": "Stint de 12 voltas em Brasília com narrativa explícita em V5 (out-lap aquecimento), V6 (média), V7 (ruim — atacou demais, motor/câmbio estourados), V8 (boa — PB ever, fim de stint com combustível crítico). Voltas 1-4 são histórico simulado (rampa de aquecimento), V9-V12 são futuras. Fixture criada pra exercitar todos os blocos do Command Box Vista Piloto e validar lógica equivalente em qualquer plataforma (Swift, C#/WinUI, JS).",
+  "createdAt": "2026-05-10",
+  "sourceMockup": "_design-reference/mockup-command-box-vista-piloto.html (worktree exciting-ardinghelli-572eec, 2026-05-09)",
+  "track": {
+    "id": "brasilia",
+    "name": "Brasília",
+    "viewBox": { "width": 823, "height": 799 },
+    "lapBaselineSec": 92.0,
+    "pbEverSec": 91.95,
+    "curves": [
+      { "name": "C1", "centerT": 0.0733, "ideal": { "entryKmh": 172, "brakeM": 84,  "vminKmh": 68,  "exitKmh": 142 } },
+      { "name": "C2", "centerT": 0.2383, "ideal": { "entryKmh": 158, "brakeM": 72,  "vminKmh": 87,  "exitKmh": 148 } },
+      { "name": "C3", "centerT": 0.3783, "ideal": { "entryKmh": 166, "brakeM": 92,  "vminKmh": 78,  "exitKmh": 138 } },
+      { "name": "C4", "centerT": 0.5517, "ideal": { "entryKmh": 182, "brakeM": 76,  "vminKmh": 96,  "exitKmh": 158 } },
+      { "name": "C5", "centerT": 0.6567, "ideal": { "entryKmh": 174, "brakeM": 88,  "vminKmh": 84,  "exitKmh": 148 } },
+      { "name": "C6", "centerT": 0.7633, "ideal": { "entryKmh": 148, "brakeM": 104, "vminKmh": 62,  "exitKmh": 128 } },
+      { "name": "C7", "centerT": 0.8833, "ideal": { "entryKmh": 166, "brakeM": 72,  "vminKmh": 95,  "exitKmh": 152 } },
+      { "name": "C8", "centerT": 0.9450, "ideal": { "entryKmh": 178, "brakeM": 56,  "vminKmh": 118, "exitKmh": 172 } }
+    ],
+    "pointDefs": [
+      { "type": "entry", "offsetFromCenter": -0.022 },
+      { "type": "apex",  "offsetFromCenter":  0.005 },
+      { "type": "exit",  "offsetFromCenter":  0.018 }
+    ]
+  },
+  "stintHistory": {
+    "totalLaps": 12,
+    "pbBaseSec": 92.0,
+    "entries": [
+      { "lapNumber": 1,  "deltaSec":  0.62, "timeSec": 92.62, "label": "outlap-fria",  "richLapIdx": null },
+      { "lapNumber": 2,  "deltaSec":  0.34, "timeSec": 92.34, "label": "warmup",       "richLapIdx": null },
+      { "lapNumber": 3,  "deltaSec":  0.18, "timeSec": 92.18, "label": "warmup",       "richLapIdx": null },
+      { "lapNumber": 4,  "deltaSec":  0.08, "timeSec": 92.08, "label": "warmup",       "richLapIdx": null },
+      { "lapNumber": 5,  "deltaSec":  0.05, "timeSec": 92.05, "label": "out-lap-rico", "richLapIdx": 3 },
+      { "lapNumber": 6,  "deltaSec":  0.78, "timeSec": 92.78, "label": "media",        "richLapIdx": 0 },
+      { "lapNumber": 7,  "deltaSec":  1.85, "timeSec": 93.85, "label": "ruim",         "richLapIdx": 1 },
+      { "lapNumber": 8,  "deltaSec": -0.11, "timeSec": 91.89, "label": "boa-pb-ever",  "richLapIdx": 2 },
+      { "lapNumber": 9,  "deltaSec": null,  "timeSec": null,  "label": "futura",       "richLapIdx": null },
+      { "lapNumber": 10, "deltaSec": null,  "timeSec": null,  "label": "futura",       "richLapIdx": null },
+      { "lapNumber": 11, "deltaSec": null,  "timeSec": null,  "label": "futura",       "richLapIdx": null },
+      { "lapNumber": 12, "deltaSec": null,  "timeSec": null,  "label": "futura",       "richLapIdx": null }
+    ]
+  },
+  "limits": {
+    "sourceHierarchyNote": "T4000 firmware vence pra canais que ela monitora (tempMotor, pressOleo, pressComb, rpm, bateriaV). Cadastro do carro preenche os demais (tempCambio, pressCambio, tempPneu, pressPneu).",
+    "zonesNote": "Cada faixa tem 6 níveis: min, cold, lowOk, highOk, hot, max. Regras: <= min ou >= max = critical (pisca shift-light wash branco); < cold = fria/azul; cold..lowOk = subindo; lowOk..highOk = verde ideal; highOk..hot = amarela atenção; > hot = vermelha crítica.",
+    "channels": {
+      "tempMotor":   { "min": 60.0, "cold": 70.0, "lowOk": 85.0, "highOk": 100.0, "hot": 110.0, "max": 120.0, "unit": "celsius",  "source": "T4000" },
+      "pressOleo":   { "min": 1.0,  "cold": 2.0,  "lowOk": 3.0,  "highOk": 5.5,   "hot": 6.5,   "max": 7.5,   "unit": "bar",      "source": "T4000" },
+      "tempCambio":  { "min": 60.0, "cold": 75.0, "lowOk": 90.0, "highOk": 115.0, "hot": 125.0, "max": 140.0, "unit": "celsius",  "source": "cadastro" },
+      "pressCambio": { "min": 1.0,  "cold": 1.8,  "lowOk": 2.5,  "highOk": 5.0,   "hot": 6.0,   "max": 7.0,   "unit": "bar",      "source": "cadastro" },
+      "tempPneu":    { "min": 50.0, "cold": 65.0, "lowOk": 75.0, "highOk": 90.0,  "hot": 100.0, "max": 115.0, "unit": "celsius",  "source": "cadastro" },
+      "pressPneu":   { "min": 1.6,  "cold": 1.8,  "lowOk": 2.0,  "highOk": 2.3,   "hot": 2.5,   "max": 2.8,   "unit": "bar",      "source": "cadastro" }
+    }
+  },
+  "fuel": {
+    "tankMaxL": 40,
+    "marginPct": 0.20,
+    "fallbackConsumptionLPerLap": 0.82,
+    "criticalPct": 0.15,
+    "criticalNote": "Quando combustivel/tankMaxL <= criticalPct, o gauge entra em alerta crítico (pisca shift-light wash branco)."
+  },
+  "laps": [
+    {
+      "label": "volta 6",
+      "type": "media",
+      "lapNumber": 6,
+      "totalLaps": 12,
+      "tirePhase": "corrida",
+      "timeStr": "1:32.78",
+      "deltaTotalStr": "+0.78",
+      "elapsedStr": "09:18.30",
+      "tireCompound": "M",
+      "tireLives": 3,
+      "remainingTimeStr": "18:32",
+      "fuelStartL": 32.78,
+      "fuelEndL": 32.0,
+      "fuelConsumedThisLapL": 0.78,
+      "score": 74,
+      "tireWearPct": 11,
+      "narrativeNote": "V6 média: mistura de no-ponto + alguns erros (timido na C3, cedo na C5, tarde na C7). +0.78s vs PB. Carro nominal subindo.",
+      "plan": {
+        "goal": "consistência sub 1:32",
+        "focusSegment": "curva 3 · entrada e ápice",
+        "lapsUntilPbStr": "−2v"
+      },
+      "ai": {
+        "phrase": "freie <em>mais cedo</em> na 3",
+        "targetCurveIdx": 3,
+        "command": "comando ativo",
+        "lessonTitle": "trail braking suave",
+        "lessonDescription": "saída comprometida quando há ápice cedo",
+        "progressPct": 62,
+        "analysis": "tímido na 3 — perdeu 0.18s. respira no apex"
+      },
+      "hero": { "speedKmh": 287, "gear": 4, "rpm": 6800, "tempMotorC": 90, "sectorStr": "T2/4", "lambda": 0.92 },
+      "trajectory": { "erratic": 0.55, "widen": 0.18, "cleanRatio": 0.65, "demoOffTrack": false },
+      "carStart": { "tempMotorC": 84, "tempCambioC": 96,  "pressOleoB": 4.5,  "pressCambioB": 4.0  },
+      "carEnd":   { "tempMotorC": 90, "tempCambioC": 105, "pressOleoB": 4.4,  "pressCambioB": 3.9  },
+      "tiresStart": [
+        { "pos": "DE", "tempC": 72, "pressB": 2.0,  "lifePct": 96 },
+        { "pos": "DD", "tempC": 73, "pressB": 2.0,  "lifePct": 96 },
+        { "pos": "TE", "tempC": 80, "pressB": 1.95, "lifePct": 95 },
+        { "pos": "TD", "tempC": 75, "pressB": 1.95, "lifePct": 95 }
+      ],
+      "tiresEnd": [
+        { "pos": "DE", "tempC": 78, "pressB": 2.1,  "lifePct": 92 },
+        { "pos": "DD", "tempC": 79, "pressB": 2.1,  "lifePct": 93 },
+        { "pos": "TE", "tempC": 88, "pressB": 2.0,  "lifePct": 88 },
+        { "pos": "TD", "tempC": 81, "pressB": 2.0,  "lifePct": 89 }
+      ],
+      "corners": [
+        {
+          "curveIdx": 0, "name": "C1", "narrativeNote": "no ritmo · tudo no-ponto",
+          "entry": { "speedKmh": 172, "deltaKmhStr": "+1", "tone": "good", "gear": 4 },
+          "apex":  { "speedKmh": 68,  "deltaKmhStr": "+1", "tone": "good", "gear": 2, "offsetM": 0.1 },
+          "exit":  { "speedKmh": 142, "deltaKmhStr": "+2", "tone": "good", "gear": 3 },
+          "verdicts": {
+            "brakingId": "no-ponto",
+            "vminId": "no-ponto",
+            "passage": { "label": "no ritmo", "tone": "good", "deltaSecStr": "−0.05s" }
+          },
+          "speedSeries": [172, 118, 68, 108, 142],
+          "deltaSeries": [-0.01, -0.02, -0.03, -0.04, -0.05]
+        },
+        {
+          "curveIdx": 1, "name": "C2", "narrativeNote": "freou cedo + vmin alto — perdeu entrada",
+          "entry": { "speedKmh": 158, "deltaKmhStr": "−2", "tone": "bad",  "gear": 3 },
+          "apex":  { "speedKmh": 87,  "deltaKmhStr": "+3", "tone": "bad",  "gear": 2, "offsetM": -0.3 },
+          "exit":  { "speedKmh": 148, "deltaKmhStr": "+1", "tone": "good", "gear": 3 },
+          "verdicts": {
+            "brakingId": "cedo",
+            "vminId": "alto",
+            "passage": { "label": "perdeu na entrada", "tone": "bad", "deltaSecStr": "+0.12s" }
+          },
+          "speedSeries": [158, 118, 87, 118, 148],
+          "deltaSeries": [0.02, 0.06, 0.09, 0.11, 0.12]
+        },
+        {
+          "curveIdx": 2, "name": "C3", "narrativeNote": "tímido + vmin baixo — corner inteiro lento",
+          "entry": { "speedKmh": 166, "deltaKmhStr": "+0", "tone": "good", "gear": 4 },
+          "apex":  { "speedKmh": 78,  "deltaKmhStr": "−2", "tone": "bad",  "gear": 2, "offsetM": 0.2 },
+          "exit":  { "speedKmh": 138, "deltaKmhStr": "−1", "tone": "bad",  "gear": 3 },
+          "verdicts": {
+            "brakingId": "timido",
+            "vminId": "baixo",
+            "passage": { "label": "tímido na 3", "tone": "bad", "deltaSecStr": "+0.18s" }
+          },
+          "speedSeries": [166, 120, 78, 108, 138],
+          "deltaSeries": [0.03, 0.08, 0.13, 0.16, 0.18]
+        },
+        {
+          "curveIdx": 3, "name": "C4", "narrativeNote": "limpa",
+          "entry": { "speedKmh": 182, "deltaKmhStr": "+1", "tone": "good", "gear": 4 },
+          "apex":  { "speedKmh": 96,  "deltaKmhStr": "+0", "tone": "good", "gear": 3, "offsetM": 0.0 },
+          "exit":  { "speedKmh": 158, "deltaKmhStr": "+1", "tone": "good", "gear": 4 },
+          "verdicts": {
+            "brakingId": "no-ponto",
+            "vminId": "no-ponto",
+            "passage": { "label": "no ritmo", "tone": "good", "deltaSecStr": "−0.04s" }
+          },
+          "speedSeries": [182, 138, 96, 128, 158],
+          "deltaSeries": [-0.01, -0.02, -0.02, -0.03, -0.04]
+        },
+        {
+          "curveIdx": 4, "name": "C5", "narrativeNote": "cedo + antecipou — saída fraca",
+          "entry": { "speedKmh": 174, "deltaKmhStr": "−1", "tone": "bad",  "gear": 4 },
+          "apex":  { "speedKmh": 84,  "deltaKmhStr": "−1", "tone": "bad",  "gear": 2, "offsetM": -0.4 },
+          "exit":  { "speedKmh": 148, "deltaKmhStr": "−2", "tone": "bad",  "gear": 3 },
+          "verdicts": {
+            "brakingId": "cedo",
+            "vminId": "antecipou",
+            "passage": { "label": "perdeu na saída", "tone": "bad", "deltaSecStr": "+0.21s" }
+          },
+          "speedSeries": [174, 128, 84, 116, 148],
+          "deltaSeries": [0.04, 0.10, 0.15, 0.19, 0.21]
+        },
+        {
+          "curveIdx": 5, "name": "C6", "narrativeNote": "limpa (curva lenta)",
+          "entry": { "speedKmh": 148, "deltaKmhStr": "+0", "tone": "good", "gear": 3 },
+          "apex":  { "speedKmh": 62,  "deltaKmhStr": "+0", "tone": "good", "gear": 2, "offsetM": 0.1 },
+          "exit":  { "speedKmh": 128, "deltaKmhStr": "+1", "tone": "good", "gear": 3 },
+          "verdicts": {
+            "brakingId": "no-ponto",
+            "vminId": "no-ponto",
+            "passage": { "label": "no ritmo", "tone": "good", "deltaSecStr": "−0.02s" }
+          },
+          "speedSeries": [148, 105, 62, 95, 128],
+          "deltaSeries": [0.0, -0.01, -0.01, -0.02, -0.02]
+        },
+        {
+          "curveIdx": 6, "name": "C7", "narrativeNote": "freou tarde + atrasou apex",
+          "entry": { "speedKmh": 166, "deltaKmhStr": "−1", "tone": "bad",  "gear": 4 },
+          "apex":  { "speedKmh": 95,  "deltaKmhStr": "+2", "tone": "bad",  "gear": 3, "offsetM": 0.5 },
+          "exit":  { "speedKmh": 152, "deltaKmhStr": "−2", "tone": "bad",  "gear": 4 },
+          "verdicts": {
+            "brakingId": "tarde",
+            "vminId": "atrasou",
+            "passage": { "label": "perdeu na saída", "tone": "bad", "deltaSecStr": "+0.23s" }
+          },
+          "speedSeries": [166, 132, 95, 124, 152],
+          "deltaSeries": [0.05, 0.11, 0.16, 0.20, 0.23]
+        },
+        {
+          "curveIdx": 7, "name": "C8", "narrativeNote": "limpa (rápida)",
+          "entry": { "speedKmh": 178, "deltaKmhStr": "+0", "tone": "good", "gear": 4 },
+          "apex":  { "speedKmh": 118, "deltaKmhStr": "+1", "tone": "good", "gear": 3, "offsetM": 0.2 },
+          "exit":  { "speedKmh": 172, "deltaKmhStr": "+1", "tone": "good", "gear": 4 },
+          "verdicts": {
+            "brakingId": "no-ponto",
+            "vminId": "no-ponto",
+            "passage": { "label": "no ritmo", "tone": "good", "deltaSecStr": "−0.03s" }
+          },
+          "speedSeries": [178, 148, 118, 145, 172],
+          "deltaSeries": [-0.01, -0.01, -0.02, -0.02, -0.03]
+        }
+      ]
+    },
+    {
+      "label": "volta 7",
+      "type": "ruim",
+      "lapNumber": 7,
+      "totalLaps": 12,
+      "tirePhase": "corrida",
+      "timeStr": "1:33.85",
+      "deltaTotalStr": "+1.85",
+      "elapsedStr": "10:52.15",
+      "tireCompound": "M",
+      "tireLives": 3,
+      "remainingTimeStr": "16:58",
+      "fuelStartL": 28.92,
+      "fuelEndL": 28.0,
+      "fuelConsumedThisLapL": 0.92,
+      "score": 52,
+      "tireWearPct": 19,
+      "narrativeNote": "V7 ruim: atacou demais. Carro entra na volta com motor (121°C >max=120) e câmbio (138°C ~max=140) já estourados — pisca vermelho desde o início. TE cozinhou (>115°C max), TD perdeu pressão (<1.6 min). Combustivel +18% sobre média. C5 piloto travou roda + DEMO off-track. C4/C6 únicas boas.",
+      "plan": {
+        "goal": "consistência sub 1:32",
+        "focusSegment": "curva 5 · saída + freio",
+        "lapsUntilPbStr": "+1v"
+      },
+      "ai": {
+        "phrase": "<em>respira</em> — você atacou demais",
+        "targetCurveIdx": 5,
+        "command": "alerta · pneu travou",
+        "lessonTitle": "gestão de aderência",
+        "lessonDescription": "forçar com pneu fora da janela = perdeu 0.45s na 5",
+        "progressPct": 28,
+        "analysis": "travou na 5 + violento na 1 e 8 — pneu superaqueceu"
+      },
+      "hero": { "speedKmh": 294, "gear": 4, "rpm": 8100, "tempMotorC": 92, "sectorStr": "T3/4", "lambda": 0.88 },
+      "trajectory": { "erratic": 1.35, "widen": 0.55, "cleanRatio": 0.20, "demoOffTrack": true },
+      "carStart": { "tempMotorC": 121, "tempCambioC": 138, "pressOleoB": 4.35, "pressCambioB": 3.9  },
+      "carEnd":   { "tempMotorC": 128, "tempCambioC": 144, "pressOleoB": 4.2,  "pressCambioB": 3.8  },
+      "tiresStart": [
+        { "pos": "DE", "tempC": 82,  "pressB": 2.05, "lifePct": 91 },
+        { "pos": "DD", "tempC": 83,  "pressB": 2.05, "lifePct": 91 },
+        { "pos": "TE", "tempC": 116, "pressB": 1.95, "lifePct": 88 },
+        { "pos": "TD", "tempC": 88,  "pressB": 1.55, "lifePct": 89 }
+      ],
+      "tiresEnd": [
+        { "pos": "DE", "tempC": 88,  "pressB": 2.10, "lifePct": 84 },
+        { "pos": "DD", "tempC": 89,  "pressB": 2.10, "lifePct": 85 },
+        { "pos": "TE", "tempC": 122, "pressB": 2.00, "lifePct": 78 },
+        { "pos": "TD", "tempC": 92,  "pressB": 1.45, "lifePct": 80 }
+      ],
+      "corners": [
+        {
+          "curveIdx": 0, "name": "C1", "narrativeNote": "violento + vmin baixo",
+          "entry": { "speedKmh": 174, "deltaKmhStr": "+3", "tone": "good", "gear": 4 },
+          "apex":  { "speedKmh": 62,  "deltaKmhStr": "−6", "tone": "bad",  "gear": 2, "offsetM": 0.1 },
+          "exit":  { "speedKmh": 138, "deltaKmhStr": "−4", "tone": "bad",  "gear": 3 },
+          "verdicts": {
+            "brakingId": "violento",
+            "vminId": "baixo",
+            "passage": { "label": "perdeu na saída", "tone": "bad", "deltaSecStr": "+0.14s" }
+          },
+          "speedSeries": [174, 128, 62, 110, 138],
+          "deltaSeries": [0.03, 0.07, 0.10, 0.12, 0.14]
+        },
+        {
+          "curveIdx": 1, "name": "C2", "narrativeNote": "aliviou cedo + vmin alto",
+          "entry": { "speedKmh": 160, "deltaKmhStr": "+0", "tone": "good", "gear": 3 },
+          "apex":  { "speedKmh": 84,  "deltaKmhStr": "−3", "tone": "bad",  "gear": 2, "offsetM": 0.4 },
+          "exit":  { "speedKmh": 148, "deltaKmhStr": "+1", "tone": "good", "gear": 3 },
+          "verdicts": {
+            "brakingId": "aliviou",
+            "vminId": "alto",
+            "passage": { "label": "perdeu no ápice", "tone": "bad", "deltaSecStr": "+0.20s" }
+          },
+          "speedSeries": [160, 120, 84, 118, 148],
+          "deltaSeries": [0.05, 0.11, 0.16, 0.18, 0.20]
+        },
+        {
+          "curveIdx": 2, "name": "C3", "narrativeNote": "cedo + antecipou",
+          "entry": { "speedKmh": 168, "deltaKmhStr": "+2", "tone": "good", "gear": 4 },
+          "apex":  { "speedKmh": 75,  "deltaKmhStr": "−3", "tone": "bad",  "gear": 2, "offsetM": 0.6 },
+          "exit":  { "speedKmh": 138, "deltaKmhStr": "−1", "tone": "bad",  "gear": 3 },
+          "verdicts": {
+            "brakingId": "cedo",
+            "vminId": "antecipou",
+            "passage": { "label": "perdeu na saída", "tone": "bad", "deltaSecStr": "+0.18s" }
+          },
+          "speedSeries": [168, 118, 75, 108, 138],
+          "deltaSeries": [0.04, 0.09, 0.13, 0.16, 0.18]
+        },
+        {
+          "curveIdx": 3, "name": "C4", "narrativeNote": "única boa da volta",
+          "entry": { "speedKmh": 184, "deltaKmhStr": "+2", "tone": "good", "gear": 4 },
+          "apex":  { "speedKmh": 96,  "deltaKmhStr": "+0", "tone": "good", "gear": 3, "offsetM": 0.0 },
+          "exit":  { "speedKmh": 158, "deltaKmhStr": "+1", "tone": "good", "gear": 4 },
+          "verdicts": {
+            "brakingId": "no-ponto",
+            "vminId": "no-ponto",
+            "passage": { "label": "no ritmo", "tone": "good", "deltaSecStr": "−0.04s" }
+          },
+          "speedSeries": [184, 138, 96, 128, 158],
+          "deltaSeries": [-0.01, -0.02, -0.03, -0.03, -0.04]
+        },
+        {
+          "curveIdx": 4, "name": "C5", "narrativeNote": "TRAVOU roda + DEMO off-track — pior corner",
+          "entry": { "speedKmh": 176, "deltaKmhStr": "+1", "tone": "good", "gear": 4 },
+          "apex":  { "speedKmh": 80,  "deltaKmhStr": "−5", "tone": "bad",  "gear": 2, "offsetM": 0.3 },
+          "exit":  { "speedKmh": 144, "deltaKmhStr": "−4", "tone": "bad",  "gear": 3 },
+          "verdicts": {
+            "brakingId": "travou",
+            "vminId": "baixo",
+            "passage": { "label": "travou roda", "tone": "bad", "deltaSecStr": "+0.45s" }
+          },
+          "speedSeries": [176, 138, 80, 118, 144],
+          "deltaSeries": [0.10, 0.22, 0.32, 0.40, 0.45]
+        },
+        {
+          "curveIdx": 5, "name": "C6", "narrativeNote": "salvou (pista lenta)",
+          "entry": { "speedKmh": 150, "deltaKmhStr": "+1", "tone": "good", "gear": 3 },
+          "apex":  { "speedKmh": 62,  "deltaKmhStr": "+0", "tone": "good", "gear": 2, "offsetM": 0.0 },
+          "exit":  { "speedKmh": 130, "deltaKmhStr": "+2", "tone": "good", "gear": 3 },
+          "verdicts": {
+            "brakingId": "no-ponto",
+            "vminId": "no-ponto",
+            "passage": { "label": "no ritmo", "tone": "good", "deltaSecStr": "−0.02s" }
+          },
+          "speedSeries": [150, 105, 62, 96, 130],
+          "deltaSeries": [0.0, -0.01, -0.01, -0.02, -0.02]
+        },
+        {
+          "curveIdx": 6, "name": "C7", "narrativeNote": "tarde + atrasou",
+          "entry": { "speedKmh": 168, "deltaKmhStr": "+1", "tone": "good", "gear": 4 },
+          "apex":  { "speedKmh": 92,  "deltaKmhStr": "+1", "tone": "bad",  "gear": 3, "offsetM": 0.5 },
+          "exit":  { "speedKmh": 152, "deltaKmhStr": "−2", "tone": "bad",  "gear": 4 },
+          "verdicts": {
+            "brakingId": "tarde",
+            "vminId": "atrasou",
+            "passage": { "label": "perdeu na saída", "tone": "bad", "deltaSecStr": "+0.22s" }
+          },
+          "speedSeries": [168, 132, 92, 124, 152],
+          "deltaSeries": [0.05, 0.11, 0.16, 0.19, 0.22]
+        },
+        {
+          "curveIdx": 7, "name": "C8", "narrativeNote": "violento + vmin baixo",
+          "entry": { "speedKmh": 178, "deltaKmhStr": "+0", "tone": "good", "gear": 4 },
+          "apex":  { "speedKmh": 115, "deltaKmhStr": "−3", "tone": "bad",  "gear": 3, "offsetM": 0.4 },
+          "exit":  { "speedKmh": 168, "deltaKmhStr": "−4", "tone": "bad",  "gear": 4 },
+          "verdicts": {
+            "brakingId": "violento",
+            "vminId": "baixo",
+            "passage": { "label": "perdeu na saída", "tone": "bad", "deltaSecStr": "+0.14s" }
+          },
+          "speedSeries": [178, 148, 115, 142, 168],
+          "deltaSeries": [0.03, 0.07, 0.10, 0.12, 0.14]
+        }
+      ]
+    },
+    {
+      "label": "volta 8",
+      "type": "boa",
+      "lapNumber": 8,
+      "totalLaps": 12,
+      "tirePhase": "corrida",
+      "timeStr": "1:31.89",
+      "deltaTotalStr": "−0.11",
+      "elapsedStr": "12:24.04",
+      "tireCompound": "M",
+      "tireLives": 3,
+      "remainingTimeStr": "15:05",
+      "fuelStartL": 5.74,
+      "fuelEndL": 5.0,
+      "fuelConsumedThisLapL": 0.74,
+      "score": 91,
+      "tireWearPct": 28,
+      "narrativeNote": "V8 boa — ritmo limpo, PB ever (1:31.89 < PB 1:31.95). 4 ápices PERFEITOS (C1/C4/C8 + linha colada no ghost). Combustivel ENTROU em alerta crítico (5L = 12.5% < 15% do tanque). Pneus mais frescos que V7 (carro recuperou). Fim de stint — atenção.",
+      "plan": {
+        "goal": "consistência sub 1:32",
+        "focusSegment": "manter ritmo · ápices C1/C4/C8",
+        "lapsUntilPbStr": "−2v"
+      },
+      "ai": {
+        "phrase": "ritmo bom — <em>repete</em>",
+        "targetCurveIdx": 4,
+        "command": "volta consistente",
+        "lessonTitle": "consistência no ápice",
+        "lessonDescription": "4 ápices perfeitos · linha colada no ghost",
+        "progressPct": 92,
+        "analysis": "ritmo limpo · −0.11s vs PB. atenção fim de stint"
+      },
+      "hero": { "speedKmh": 289, "gear": 4, "rpm": 7400, "tempMotorC": 91, "sectorStr": "T2/4", "lambda": 0.94 },
+      "trajectory": { "erratic": 0.30, "widen": 0.05, "cleanRatio": 0.92, "demoOffTrack": false },
+      "carStart": { "tempMotorC": 88, "tempCambioC": 103, "pressOleoB": 4.4, "pressCambioB": 3.95 },
+      "carEnd":   { "tempMotorC": 91, "tempCambioC": 112, "pressOleoB": 4.3, "pressCambioB": 3.85 },
+      "tiresStart": [
+        { "pos": "DE", "tempC": 82, "pressB": 2.05, "lifePct": 83 },
+        { "pos": "DD", "tempC": 83, "pressB": 2.05, "lifePct": 84 },
+        { "pos": "TE", "tempC": 92, "pressB": 1.95, "lifePct": 75 },
+        { "pos": "TD", "tempC": 86, "pressB": 1.95, "lifePct": 77 }
+      ],
+      "tiresEnd": [
+        { "pos": "DE", "tempC": 80, "pressB": 2.1, "lifePct": 78 },
+        { "pos": "DD", "tempC": 81, "pressB": 2.1, "lifePct": 79 },
+        { "pos": "TE", "tempC": 90, "pressB": 2.0, "lifePct": 70 },
+        { "pos": "TD", "tempC": 84, "pressB": 2.0, "lifePct": 72 }
+      ],
+      "corners": [
+        {
+          "curveIdx": 0, "name": "C1", "narrativeNote": "PERFEITO",
+          "entry": { "speedKmh": 173, "deltaKmhStr": "+2", "tone": "good", "gear": 4 },
+          "apex":  { "speedKmh": 70,  "deltaKmhStr": "+2", "tone": "good", "gear": 2, "offsetM": 0.0 },
+          "exit":  { "speedKmh": 144, "deltaKmhStr": "+3", "tone": "good", "gear": 3 },
+          "verdicts": {
+            "brakingId": "perfeito",
+            "vminId": "no-ponto",
+            "passage": { "label": "no ritmo", "tone": "good", "deltaSecStr": "−0.08s" }
+          },
+          "speedSeries": [173, 118, 70, 108, 144],
+          "deltaSeries": [-0.02, -0.04, -0.06, -0.07, -0.08]
+        },
+        {
+          "curveIdx": 1, "name": "C2", "narrativeNote": "no-ponto",
+          "entry": { "speedKmh": 161, "deltaKmhStr": "+1", "tone": "good", "gear": 3 },
+          "apex":  { "speedKmh": 88,  "deltaKmhStr": "+1", "tone": "good", "gear": 2, "offsetM": 0.1 },
+          "exit":  { "speedKmh": 150, "deltaKmhStr": "+2", "tone": "good", "gear": 3 },
+          "verdicts": {
+            "brakingId": "no-ponto",
+            "vminId": "no-ponto",
+            "passage": { "label": "no ritmo", "tone": "good", "deltaSecStr": "−0.04s" }
+          },
+          "speedSeries": [161, 122, 88, 118, 150],
+          "deltaSeries": [-0.01, -0.02, -0.03, -0.03, -0.04]
+        },
+        {
+          "curveIdx": 2, "name": "C3", "narrativeNote": "no-ponto",
+          "entry": { "speedKmh": 169, "deltaKmhStr": "+1", "tone": "good", "gear": 4 },
+          "apex":  { "speedKmh": 79,  "deltaKmhStr": "+0", "tone": "good", "gear": 2, "offsetM": 0.0 },
+          "exit":  { "speedKmh": 140, "deltaKmhStr": "+1", "tone": "good", "gear": 3 },
+          "verdicts": {
+            "brakingId": "no-ponto",
+            "vminId": "no-ponto",
+            "passage": { "label": "no ritmo", "tone": "good", "deltaSecStr": "−0.02s" }
+          },
+          "speedSeries": [169, 122, 79, 108, 140],
+          "deltaSeries": [0.0, -0.01, -0.01, -0.02, -0.02]
+        },
+        {
+          "curveIdx": 3, "name": "C4", "narrativeNote": "PERFEITO",
+          "entry": { "speedKmh": 184, "deltaKmhStr": "+2", "tone": "good", "gear": 4 },
+          "apex":  { "speedKmh": 97,  "deltaKmhStr": "+1", "tone": "good", "gear": 3, "offsetM": 0.0 },
+          "exit":  { "speedKmh": 160, "deltaKmhStr": "+2", "tone": "good", "gear": 4 },
+          "verdicts": {
+            "brakingId": "perfeito",
+            "vminId": "no-ponto",
+            "passage": { "label": "no ritmo", "tone": "good", "deltaSecStr": "−0.07s" }
+          },
+          "speedSeries": [184, 140, 97, 130, 160],
+          "deltaSeries": [-0.02, -0.03, -0.05, -0.06, -0.07]
+        },
+        {
+          "curveIdx": 4, "name": "C5", "narrativeNote": "no-ponto (saiu da fase ruim de V7)",
+          "entry": { "speedKmh": 175, "deltaKmhStr": "+1", "tone": "good", "gear": 4 },
+          "apex":  { "speedKmh": 86,  "deltaKmhStr": "+2", "tone": "good", "gear": 2, "offsetM": 0.1 },
+          "exit":  { "speedKmh": 152, "deltaKmhStr": "+3", "tone": "good", "gear": 3 },
+          "verdicts": {
+            "brakingId": "no-ponto",
+            "vminId": "no-ponto",
+            "passage": { "label": "no ritmo", "tone": "good", "deltaSecStr": "−0.03s" }
+          },
+          "speedSeries": [175, 128, 86, 118, 152],
+          "deltaSeries": [-0.01, -0.01, -0.02, -0.02, -0.03]
+        },
+        {
+          "curveIdx": 5, "name": "C6", "narrativeNote": "no-ponto",
+          "entry": { "speedKmh": 149, "deltaKmhStr": "+1", "tone": "good", "gear": 3 },
+          "apex":  { "speedKmh": 64,  "deltaKmhStr": "+2", "tone": "good", "gear": 2, "offsetM": 0.0 },
+          "exit":  { "speedKmh": 132, "deltaKmhStr": "+3", "tone": "good", "gear": 3 },
+          "verdicts": {
+            "brakingId": "no-ponto",
+            "vminId": "no-ponto",
+            "passage": { "label": "no ritmo", "tone": "good", "deltaSecStr": "−0.04s" }
+          },
+          "speedSeries": [149, 108, 64, 98, 132],
+          "deltaSeries": [-0.01, -0.02, -0.03, -0.03, -0.04]
+        },
+        {
+          "curveIdx": 6, "name": "C7", "narrativeNote": "no-ponto",
+          "entry": { "speedKmh": 168, "deltaKmhStr": "+2", "tone": "good", "gear": 4 },
+          "apex":  { "speedKmh": 96,  "deltaKmhStr": "+1", "tone": "good", "gear": 3, "offsetM": 0.0 },
+          "exit":  { "speedKmh": 156, "deltaKmhStr": "+3", "tone": "good", "gear": 4 },
+          "verdicts": {
+            "brakingId": "no-ponto",
+            "vminId": "no-ponto",
+            "passage": { "label": "no ritmo", "tone": "good", "deltaSecStr": "−0.03s" }
+          },
+          "speedSeries": [168, 132, 96, 128, 156],
+          "deltaSeries": [-0.01, -0.01, -0.02, -0.02, -0.03]
+        },
+        {
+          "curveIdx": 7, "name": "C8", "narrativeNote": "PERFEITO",
+          "entry": { "speedKmh": 180, "deltaKmhStr": "+2", "tone": "good", "gear": 4 },
+          "apex":  { "speedKmh": 119, "deltaKmhStr": "+1", "tone": "good", "gear": 3, "offsetM": 0.0 },
+          "exit":  { "speedKmh": 174, "deltaKmhStr": "+2", "tone": "good", "gear": 4 },
+          "verdicts": {
+            "brakingId": "perfeito",
+            "vminId": "no-ponto",
+            "passage": { "label": "no ritmo", "tone": "good", "deltaSecStr": "−0.05s" }
+          },
+          "speedSeries": [180, 150, 119, 148, 174],
+          "deltaSeries": [-0.01, -0.02, -0.03, -0.04, -0.05]
+        }
+      ]
+    },
+    {
+      "label": "volta 5",
+      "type": "aquecimento",
+      "lapNumber": 5,
+      "totalLaps": 12,
+      "tirePhase": "aquecimento",
+      "timeStr": "1:48.50",
+      "deltaTotalStr": "+16.50",
+      "elapsedStr": "07:46.20",
+      "tireCompound": "M",
+      "tireLives": 3,
+      "remainingTimeStr": "19:50",
+      "fuelStartL": 34.50,
+      "fuelEndL": 34.0,
+      "fuelConsumedThisLapL": 0.50,
+      "score": 0,
+      "tireWearPct": 0,
+      "narrativeNote": "V5 out-lap aquecimento. Pneus saem da garagem a ~35°C (frio). Sobem até ~58°C ao fim da volta. tirePhase='aquecimento' suprime alerta critical-cold de temperatura: pneu frio é esperado nesta fase. Corners reusam V6 (out-lap não tem narrativa de corner própria — duplicados aqui pra não obrigar cliente a resolver referência cruzada).",
+      "plan": {
+        "goal": "aquecer pneus · sub progressivo",
+        "focusSegment": "sub linear até C8 · sem ataque",
+        "lapsUntilPbStr": "−3v"
+      },
+      "ai": {
+        "phrase": "aquecendo · <em>sobe ritmo</em> na C4",
+        "targetCurveIdx": 4,
+        "command": "comando ativo",
+        "lessonTitle": "aquecer pneus uniformemente",
+        "lessonDescription": "serpentear leve em retas longas distribui temp",
+        "progressPct": 35,
+        "analysis": "out-lap controlada — pneus a 58°C, alvo 78°C"
+      },
+      "hero": { "speedKmh": 198, "gear": 3, "rpm": 5400, "tempMotorC": 78, "sectorStr": "T1/4", "lambda": 0.95 },
+      "trajectory": { "erratic": 0.20, "widen": 0.10, "cleanRatio": 0.85, "demoOffTrack": false },
+      "carStart": { "tempMotorC": 62, "tempCambioC": 78, "pressOleoB": 4.6, "pressCambioB": 4.1  },
+      "carEnd":   { "tempMotorC": 78, "tempCambioC": 92, "pressOleoB": 4.5, "pressCambioB": 4.05 },
+      "tiresStart": [
+        { "pos": "DE", "tempC": 35, "pressB": 1.55, "lifePct": 100 },
+        { "pos": "DD", "tempC": 34, "pressB": 1.55, "lifePct": 100 },
+        { "pos": "TE", "tempC": 38, "pressB": 1.50, "lifePct": 100 },
+        { "pos": "TD", "tempC": 36, "pressB": 1.50, "lifePct": 100 }
+      ],
+      "tiresEnd": [
+        { "pos": "DE", "tempC": 58, "pressB": 1.78, "lifePct": 100 },
+        { "pos": "DD", "tempC": 56, "pressB": 1.78, "lifePct": 100 },
+        { "pos": "TE", "tempC": 62, "pressB": 1.72, "lifePct": 100 },
+        { "pos": "TD", "tempC": 60, "pressB": 1.72, "lifePct": 100 }
+      ],
+      "cornersOriginNote": "Corners duplicados de laps[0] (V6 média). Out-lap não tem narrativa de corner própria.",
+      "corners": [
+        {
+          "curveIdx": 0, "name": "C1", "narrativeNote": "no ritmo · tudo no-ponto",
+          "entry": { "speedKmh": 172, "deltaKmhStr": "+1", "tone": "good", "gear": 4 },
+          "apex":  { "speedKmh": 68,  "deltaKmhStr": "+1", "tone": "good", "gear": 2, "offsetM": 0.1 },
+          "exit":  { "speedKmh": 142, "deltaKmhStr": "+2", "tone": "good", "gear": 3 },
+          "verdicts": {
+            "brakingId": "no-ponto",
+            "vminId": "no-ponto",
+            "passage": { "label": "no ritmo", "tone": "good", "deltaSecStr": "−0.05s" }
+          },
+          "speedSeries": [172, 118, 68, 108, 142],
+          "deltaSeries": [-0.01, -0.02, -0.03, -0.04, -0.05]
+        },
+        {
+          "curveIdx": 1, "name": "C2", "narrativeNote": "freou cedo + vmin alto — perdeu entrada",
+          "entry": { "speedKmh": 158, "deltaKmhStr": "−2", "tone": "bad",  "gear": 3 },
+          "apex":  { "speedKmh": 87,  "deltaKmhStr": "+3", "tone": "bad",  "gear": 2, "offsetM": -0.3 },
+          "exit":  { "speedKmh": 148, "deltaKmhStr": "+1", "tone": "good", "gear": 3 },
+          "verdicts": {
+            "brakingId": "cedo",
+            "vminId": "alto",
+            "passage": { "label": "perdeu na entrada", "tone": "bad", "deltaSecStr": "+0.12s" }
+          },
+          "speedSeries": [158, 118, 87, 118, 148],
+          "deltaSeries": [0.02, 0.06, 0.09, 0.11, 0.12]
+        },
+        {
+          "curveIdx": 2, "name": "C3", "narrativeNote": "tímido + vmin baixo — corner inteiro lento",
+          "entry": { "speedKmh": 166, "deltaKmhStr": "+0", "tone": "good", "gear": 4 },
+          "apex":  { "speedKmh": 78,  "deltaKmhStr": "−2", "tone": "bad",  "gear": 2, "offsetM": 0.2 },
+          "exit":  { "speedKmh": 138, "deltaKmhStr": "−1", "tone": "bad",  "gear": 3 },
+          "verdicts": {
+            "brakingId": "timido",
+            "vminId": "baixo",
+            "passage": { "label": "tímido na 3", "tone": "bad", "deltaSecStr": "+0.18s" }
+          },
+          "speedSeries": [166, 120, 78, 108, 138],
+          "deltaSeries": [0.03, 0.08, 0.13, 0.16, 0.18]
+        },
+        {
+          "curveIdx": 3, "name": "C4", "narrativeNote": "limpa",
+          "entry": { "speedKmh": 182, "deltaKmhStr": "+1", "tone": "good", "gear": 4 },
+          "apex":  { "speedKmh": 96,  "deltaKmhStr": "+0", "tone": "good", "gear": 3, "offsetM": 0.0 },
+          "exit":  { "speedKmh": 158, "deltaKmhStr": "+1", "tone": "good", "gear": 4 },
+          "verdicts": {
+            "brakingId": "no-ponto",
+            "vminId": "no-ponto",
+            "passage": { "label": "no ritmo", "tone": "good", "deltaSecStr": "−0.04s" }
+          },
+          "speedSeries": [182, 138, 96, 128, 158],
+          "deltaSeries": [-0.01, -0.02, -0.02, -0.03, -0.04]
+        },
+        {
+          "curveIdx": 4, "name": "C5", "narrativeNote": "cedo + antecipou — saída fraca",
+          "entry": { "speedKmh": 174, "deltaKmhStr": "−1", "tone": "bad",  "gear": 4 },
+          "apex":  { "speedKmh": 84,  "deltaKmhStr": "−1", "tone": "bad",  "gear": 2, "offsetM": -0.4 },
+          "exit":  { "speedKmh": 148, "deltaKmhStr": "−2", "tone": "bad",  "gear": 3 },
+          "verdicts": {
+            "brakingId": "cedo",
+            "vminId": "antecipou",
+            "passage": { "label": "perdeu na saída", "tone": "bad", "deltaSecStr": "+0.21s" }
+          },
+          "speedSeries": [174, 128, 84, 116, 148],
+          "deltaSeries": [0.04, 0.10, 0.15, 0.19, 0.21]
+        },
+        {
+          "curveIdx": 5, "name": "C6", "narrativeNote": "limpa (curva lenta)",
+          "entry": { "speedKmh": 148, "deltaKmhStr": "+0", "tone": "good", "gear": 3 },
+          "apex":  { "speedKmh": 62,  "deltaKmhStr": "+0", "tone": "good", "gear": 2, "offsetM": 0.1 },
+          "exit":  { "speedKmh": 128, "deltaKmhStr": "+1", "tone": "good", "gear": 3 },
+          "verdicts": {
+            "brakingId": "no-ponto",
+            "vminId": "no-ponto",
+            "passage": { "label": "no ritmo", "tone": "good", "deltaSecStr": "−0.02s" }
+          },
+          "speedSeries": [148, 105, 62, 95, 128],
+          "deltaSeries": [0.0, -0.01, -0.01, -0.02, -0.02]
+        },
+        {
+          "curveIdx": 6, "name": "C7", "narrativeNote": "freou tarde + atrasou apex",
+          "entry": { "speedKmh": 166, "deltaKmhStr": "−1", "tone": "bad",  "gear": 4 },
+          "apex":  { "speedKmh": 95,  "deltaKmhStr": "+2", "tone": "bad",  "gear": 3, "offsetM": 0.5 },
+          "exit":  { "speedKmh": 152, "deltaKmhStr": "−2", "tone": "bad",  "gear": 4 },
+          "verdicts": {
+            "brakingId": "tarde",
+            "vminId": "atrasou",
+            "passage": { "label": "perdeu na saída", "tone": "bad", "deltaSecStr": "+0.23s" }
+          },
+          "speedSeries": [166, 132, 95, 124, 152],
+          "deltaSeries": [0.05, 0.11, 0.16, 0.20, 0.23]
+        },
+        {
+          "curveIdx": 7, "name": "C8", "narrativeNote": "limpa (rápida)",
+          "entry": { "speedKmh": 178, "deltaKmhStr": "+0", "tone": "good", "gear": 4 },
+          "apex":  { "speedKmh": 118, "deltaKmhStr": "+1", "tone": "good", "gear": 3, "offsetM": 0.2 },
+          "exit":  { "speedKmh": 172, "deltaKmhStr": "+1", "tone": "good", "gear": 4 },
+          "verdicts": {
+            "brakingId": "no-ponto",
+            "vminId": "no-ponto",
+            "passage": { "label": "no ritmo", "tone": "good", "deltaSecStr": "−0.03s" }
+          },
+          "speedSeries": [178, 148, 118, 145, 172],
+          "deltaSeries": [-0.01, -0.01, -0.02, -0.02, -0.03]
+        }
+      ]
+    }
+  ]
+}
