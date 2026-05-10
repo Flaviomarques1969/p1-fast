@@ -48,6 +48,16 @@ public sealed partial class MainWindow : Window
 
     private static readonly int[] LedTierByPosition = { 1, 2, 3, 4, 5, 6, 6, 5, 4, 3, 2, 1 };
 
+    // ── Shift light flash (troca de marcha) ───────────────────
+    // Detecta upshift = RPM caiu de patamar alto (>=5) — proxy do "shift up"
+    // do volante real. Quando dispara, todos os 12 LEDs viram brancos por
+    // ~140 ms e depois voltam pro patamar atual. Espelha o flash de strobe
+    // que o piloto vê quando a transmissão troca.
+    private int _previousShiftLevel = 0;
+    private ShiftMode _previousShiftMode = ShiftMode.Off;
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer? _shiftFlashTimer;
+    private ShiftState? _flashRestoreState;
+
     private Ellipse[] _leds = Array.Empty<Ellipse>();
     private Microsoft.UI.Xaml.Controls.Border[] _stintBlocks = Array.Empty<Microsoft.UI.Xaml.Controls.Border>();
 
@@ -369,6 +379,63 @@ public sealed partial class MainWindow : Window
     private void ApplyShift(ShiftState shift)
     {
         if (_leds.Length != 12) return;
+
+        // Upshift = vinha em RPM alto (level>=5) e caiu — em modo Lit nos dois
+        // lados. Em real racing equivale a "trocou pra marcha mais alta, RPM
+        // despencou". Off→Lit ou Lit→Off (boxes / fim de volta) não conta.
+        var isUpshift =
+            _previousShiftMode == ShiftMode.Lit &&
+            shift.Mode == ShiftMode.Lit &&
+            _previousShiftLevel >= 5 &&
+            shift.Level < _previousShiftLevel;
+
+        _previousShiftLevel = shift.Level;
+        _previousShiftMode = shift.Mode;
+
+        if (isUpshift)
+        {
+            BeginShiftFlash(shift);
+            return;
+        }
+
+        // Se um flash está em curso, segura o próximo render — restaura sozinho
+        // quando o timer terminar. Evita que o branco seja sobrescrito antes
+        // de ser percebido.
+        if (_shiftFlashTimer is { IsRunning: true })
+        {
+            _flashRestoreState = shift;
+            return;
+        }
+
+        RenderShiftLeds(shift);
+    }
+
+    private void BeginShiftFlash(ShiftState restoreAfter)
+    {
+        foreach (var led in _leds) ((SolidColorBrush)led.Fill).Color = LedFireWhite;
+        _flashRestoreState = restoreAfter;
+
+        if (_shiftFlashTimer is null)
+        {
+            _shiftFlashTimer = DispatcherQueue.CreateTimer();
+            _shiftFlashTimer.IsRepeating = false;
+            _shiftFlashTimer.Interval = TimeSpan.FromMilliseconds(140);
+            _shiftFlashTimer.Tick += EndShiftFlash;
+        }
+        _shiftFlashTimer.Stop();
+        _shiftFlashTimer.Start();
+    }
+
+    private void EndShiftFlash(Microsoft.UI.Dispatching.DispatcherQueueTimer sender, object args)
+    {
+        sender.Stop();
+        var restore = _flashRestoreState ?? _cockpitState.Get().Shift;
+        _flashRestoreState = null;
+        RenderShiftLeds(restore);
+    }
+
+    private void RenderShiftLeds(ShiftState shift)
+    {
         if (shift.Mode == ShiftMode.Fire)
         {
             foreach (var led in _leds) ((SolidColorBrush)led.Fill).Color = LedFireWhite;
