@@ -7,7 +7,6 @@ using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Shapes;
 using P1Fast.Cockpit.Domain;
 using System.IO;
-using System.Text.Json;
 using Windows.Graphics;
 using Windows.UI;
 using WinRT.Interop;
@@ -23,6 +22,19 @@ public sealed partial class MainWindow : Window
     private readonly CockpitState _cockpitState = new();
     private readonly LaunchOptions _options;
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _demoTimer;
+
+    // True quando --display-index foi passado mas o display alvo não existia
+    // (race USB-C/dock no cold start) e o app caiu pro fallback janelado.
+    // Usado por EffectiveDisplayIndex pra escrever a rotação na chave certa
+    // do rotation.json — senão escreveríamos na chave do display ausente
+    // e na próxima sessão o display real subiria invertido.
+    private readonly bool _isWindowedFallback;
+
+    // Índice efetivo do display que o app está OCUPANDO de fato. null quando
+    // janelado (intencional ou fallback). Esta é a fonte de verdade pra
+    // qualquer estado per-display (rotação hoje; outras prefs amanhã).
+    private int? EffectiveDisplayIndex =>
+        _isWindowedFallback ? null : _options.DisplayIndex;
 
     // ── Cores ──────────────────────────────────────────────
 
@@ -105,7 +117,7 @@ public sealed partial class MainWindow : Window
     {
         _options = options;
         InitializeComponent();
-        ApplyDisplayPlacement();
+        _isWindowedFallback = ApplyDisplayPlacement();
         ApplyInitialRotation();
 
         _leds = new[] { Led01, Led02, Led03, Led04, Led05, Led06, Led07, Led08, Led09, Led10, Led11, Led12 };
@@ -676,14 +688,22 @@ public sealed partial class MainWindow : Window
     private void UpdateStatusText()
     {
         var s = _cockpitState.Get();
-        var displayInfo = _options.DisplayIndex is { } idx
+        var displayInfo = EffectiveDisplayIndex is { } idx
             ? $"display {idx} fullscreen"
-            : "janelado (primário)";
+            : _options.DisplayIndex is { } requested
+                ? $"janelado (display {requested} ausente)"
+                : "janelado (primário)";
         var rotInfo = RootRotation.Angle >= 180 ? "rot180" : "rot0";
         StatusText.Text = $"{displayInfo} {rotInfo}  •  trecho={s.TrechoStatus}  •  shift={s.Shift.Mode} L{s.Shift.Level}  •  Δ={s.Delta.Value}";
     }
 
-    private void ApplyDisplayPlacement()
+    /// <summary>
+    /// Posiciona a janela. Retorna <c>true</c> quando <c>--display-index</c>
+    /// foi passado mas o display escolhido não existe — sinalizando que o
+    /// app caiu pro fallback janelado e quem persiste estado per-display
+    /// (rotação) deve usar a chave "default", não a do índice ausente.
+    /// </summary>
+    private bool ApplyDisplayPlacement()
     {
         var hwnd = WindowNative.GetWindowHandle(this);
         var windowId = Win32Interop.GetWindowIdFromWindow(hwnd);
@@ -698,33 +718,38 @@ public sealed partial class MainWindow : Window
                 var area = areas[zeroIndexed];
                 appWindow.MoveAndResize(area.OuterBounds);
                 appWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
-                return;
+                return false;
             }
         }
 
         var size = new SizeInt32 { Width = 1280, Height = 800 };
         appWindow.Resize(size);
+        // Fallback só vale quando o usuário pediu um display específico — sem
+        // --display-index o estado "janelado" é o intencional, não fallback.
+        return _options.DisplayIndex is not null;
     }
 
     // ── Rotação do conteúdo (ADR-023 amendment 6) ──────────────
     // Toggle Ctrl+R alterna 0° ↔ 180°. Persistido por display em
     // %LOCALAPPDATA%\P1Fast.Cockpit\rotation.json. Atalho registrado em
-    // MainWindow.xaml via <Grid.KeyboardAccelerators>.
-
-    private const double RotationNone = 0.0;
-    private const double Rotation180  = 180.0;
+    // MainWindow.xaml via <Grid.KeyboardAccelerators>. Lógica de chave
+    // e merge do JSON vive em P1Fast.Cockpit.Domain.RotationConfig pra
+    // ficar testável sem WinUI.
 
     private void ApplyInitialRotation()
     {
-        var angle = LoadRotationForDisplay(_options.DisplayIndex);
+        var angle = LoadRotationForDisplay(EffectiveDisplayIndex);
         RootRotation.Angle = angle;
     }
 
     private void OnRotateToggleInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
-        var next = RootRotation.Angle >= Rotation180 ? RotationNone : Rotation180;
+        var next = RootRotation.Angle >= RotationConfig.Rotation180
+            ? RotationConfig.RotationNone
+            : RotationConfig.Rotation180;
         RootRotation.Angle = next;
-        SaveRotationForDisplay(_options.DisplayIndex, next);
+        SaveRotationForDisplay(EffectiveDisplayIndex, next);
+        UpdateStatusText();
         args.Handled = true;
     }
 
@@ -737,22 +762,17 @@ public sealed partial class MainWindow : Window
         return Path.Combine(dir, "rotation.json");
     }
 
-    private static string RotationKey(int? displayIndex) =>
-        displayIndex?.ToString() ?? "default";
-
     private static double LoadRotationForDisplay(int? displayIndex)
     {
         try
         {
             var path = GetRotationConfigPath();
-            if (!File.Exists(path)) return RotationNone;
-            var dict = JsonSerializer.Deserialize<Dictionary<string, int>>(File.ReadAllText(path))
-                       ?? new Dictionary<string, int>();
-            return dict.TryGetValue(RotationKey(displayIndex), out var angle) ? angle : RotationNone;
+            if (!File.Exists(path)) return RotationConfig.RotationNone;
+            return RotationConfig.LoadAngleFromJson(File.ReadAllText(path), displayIndex);
         }
         catch
         {
-            return RotationNone;
+            return RotationConfig.RotationNone;
         }
     }
 
@@ -761,12 +781,8 @@ public sealed partial class MainWindow : Window
         try
         {
             var path = GetRotationConfigPath();
-            var dict = File.Exists(path)
-                ? (JsonSerializer.Deserialize<Dictionary<string, int>>(File.ReadAllText(path))
-                   ?? new Dictionary<string, int>())
-                : new Dictionary<string, int>();
-            dict[RotationKey(displayIndex)] = (int)Math.Round(angle);
-            File.WriteAllText(path, JsonSerializer.Serialize(dict));
+            var existingJson = File.Exists(path) ? File.ReadAllText(path) : null;
+            File.WriteAllText(path, RotationConfig.SaveAngleToJson(existingJson, displayIndex, angle));
         }
         catch
         {
