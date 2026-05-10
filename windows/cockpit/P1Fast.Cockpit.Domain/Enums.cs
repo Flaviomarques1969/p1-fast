@@ -116,4 +116,45 @@ public static class EnumMapping
         ApexEstado.OkPior   => "ok-pior",
         _ => throw new ArgumentOutOfRangeException(nameof(v)),
     };
+
+    // ── Reverso: string canônica → enum ──
+
+    public static TrechoStatus TrechoStatusFromString(string s) => s switch
+    {
+        "neutro"           => TrechoStatus.Neutro,
+        "recorde-stint"    => TrechoStatus.RecordeStint,
+        "melhor-historico" => TrechoStatus.MelhorHistorico,
+        "pior-stint"       => TrechoStatus.PiorStint,
+        _ => throw new ArgumentException($"trechoStatus=\"{s}\" inválido", nameof(s)),
+    };
+
+    public static ShiftMode ShiftModeFromString(string s) => s switch
+    {
+        "off"     => ShiftMode.Off,
+        "lit"     => ShiftMode.Lit,
+        "fire"    => ShiftMode.Fire,
+        "overrev" => ShiftMode.Overrev,
+        _ => throw new ArgumentException($"shift.mode=\"{s}\" inválido", nameof(s)),
+    };
+
+    public static ShiftFire ShiftFireFromString(string s) => s switch
+    {
+        "idle"   => ShiftFire.Idle,
+        "active" => ShiftFire.Active,
+        _ => throw new ArgumentException($"shift.fire=\"{s}\" inválido", nameof(s)),
+    };
+
+    public static MsgTipo MsgTipoFromString(string s) => s switch
+    {
+        "comunicacao" => MsgTipo.Comunicacao,
+        "grave"       => MsgTipo.Grave,
+        _ => throw new ArgumentException($"message.tipo=\"{s}\" inválido", nameof(s)),
+    };
+
+    public static ApexEstado ApexEstadoFromString(string s) => s switch
+    {
+        "ok-melhor" => ApexEstado.OkMelhor,
+        "ok-pior"   => ApexEstado.OkPior,
+        _ => throw new ArgumentException($"apex.estado=\"{s}\" inválido", nameof(s)),
+    };
 }

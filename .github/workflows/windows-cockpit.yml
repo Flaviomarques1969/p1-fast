@@ -1,0 +1,72 @@
+name: windows-cockpit
+
+# CI do port C# do cockpit Windows (WinUI 3 + .NET 8 — ADR-023 amendment 4).
+# Por enquanto só roda o projeto Domain (puro .NET 8, multi-OS) — quando a
+# camada XAML/WinUI 3 entrar (próxima fase), aí sim precisa runner
+# windows-latest. Roda em ubuntu-latest pra economizar minutos.
+#
+# Trigger: PRs que tocam em windows/cockpit/** ou no próprio workflow.
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: windows-cockpit-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      cockpit: ${{ steps.filter.outputs.cockpit }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: false
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            cockpit:
+              - 'windows/cockpit/**'
+              - '.github/workflows/windows-cockpit.yml'
+
+  domain-test:
+    needs: changes
+    if: needs.changes.outputs.cockpit == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: false
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('windows/cockpit/**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Restore
+        working-directory: windows/cockpit
+        run: dotnet restore P1Fast.Cockpit.sln
+
+      - name: Build (Release, warnings as errors via csproj)
+        working-directory: windows/cockpit
+        run: dotnet build P1Fast.Cockpit.sln --configuration Release --no-restore
+
+      - name: Test (xUnit)
+        working-directory: windows/cockpit
+        run: dotnet test P1Fast.Cockpit.sln --configuration Release --no-build --verbosity normal
