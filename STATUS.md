@@ -295,6 +295,16 @@ Esses precisam de Xcode pra build/validar. Domínio Swift puro pode continuar at
 
 ---
 
+**Próximo passo concreto pós-/clear (atualizado 2026-05-09):**
+
+Sessão pausada no meio do port C# do CockpitState. **Próxima sessão deve ler primeiro `docs/SESSION_HANDOFF_2026-05-09_pre-clear.md`** que tem o checkpoint exato + sequência completa do port (5 módulos C# + CI workflow) + onde retomar.
+
+**Pendências externas aguardando Flávio:**
+- Captura real do barramento T4000 (resolve as 3 dúvidas residuais do `T4000_CAN_SPEC.md`).
+- Base de 3 voltas (path enviado é worktree local; precisa push ou outra entrega).
+
+---
+
 ## Próximo passo concreto pós-/compact (atualizado 2026-05-09)
 
 **Virada arquitetural 2026-05-09 (ADR-023):** cockpit migra pra Windows. MS-9 reescrito (Windows USB/CAN), MS-13 reescrito (web app), MS-2.8 nova (publish Realtime).
