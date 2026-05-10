@@ -155,50 +155,77 @@ public sealed partial class MainWindow : Window
     private static readonly StintBlockState BA = StintBlockState.BestAlltime;
     private static readonly StintBlockState C = StintBlockState.Current;
 
+    /// <summary>
+    /// Pattern do stint bar enquanto rodamos V6 (8 corners). 4 voltas
+    /// warmup neutras + V5 out-lap-rico (neutral) + V6 em curso (Current)
+    /// + V7..V12 pendente. Quando V6 termina e mostramos o resultado da
+    /// volta, V6 fecha como Slower (deltaTotal +0.78).
+    /// </summary>
+    private static readonly StintBlockState[] StintDuringV6     = { N, N, N, N, N, C,  P, P, P, P, P, P };
+    private static readonly StintBlockState[] StintAfterV6Slower = { N, N, N, N, N, S,  C, P, P, P, P, P };
+
+    /// <summary>
+    /// V6 da fixture web/cockpit/fixtures/stint-brasilia-3-laps.v1.json
+    /// (volta média +0.78s). 8 corners portados a mão pra DemoScene record.
+    /// Quando ui-publish funcionar e CI gerar o .exe, eu valido visualmente
+    /// o cockpit rodando esses dados antes de portar V7 (ruim) + V8 (boa).
+    /// </summary>
     private static readonly IReadOnlyList<DemoScene> DemoScenes = new List<DemoScene>
     {
-        // Cena 1: começo de stint — primeiro trecho em curso, resto pendente
-        new(TrechoStatus.Neutro,       ShiftMode.Off,  0,
-            "0.00", Tone.Neutro, "—", Tone.Neutro,
-            ApexEstado.OkPior, 0,    ApexEstado.OkPior, 0,  0,    ApexEstado.OkPior, 0,
+        // C1 — no ritmo, tudo no-ponto. Acumulado: -0.05s (verde).
+        new(TrechoStatus.Neutro,       ShiftMode.Lit, 3,
+            "-0.05", Tone.Bom, "C1 — NO RITMO", Tone.Bom,
+            ApexEstado.OkMelhor, 172, ApexEstado.OkMelhor, 84, 84, ApexEstado.OkMelhor, 68,
             null, "",
-            new[] { C, P, P, P, P, P, P, P, P, P, P, P }),
-        // Cena 2: subindo RPM, primeiro trecho fechou faster
-        new(TrechoStatus.Neutro,       ShiftMode.Lit,  2,
-            "-0.08", Tone.Bom, "MANTÉM LINHA", Tone.Neutro,
-            ApexEstado.OkMelhor, 92, ApexEstado.OkMelhor, 18, 16, ApexEstado.OkMelhor, 73,
+            StintDuringV6),
+        // C2 — freou cedo + vmin alto. Acumulado: +0.12s (vermelho).
+        new(TrechoStatus.Neutro,       ShiftMode.Lit, 4,
+            "+0.12", Tone.Erro, "C2 — PERDEU NA ENTRADA", Tone.Erro,
+            ApexEstado.OkPior, 158, ApexEstado.OkPior, 72, 72, ApexEstado.OkPior, 87,
             null, "",
-            new[] { F, C, P, P, P, P, P, P, P, P, P, P }),
-        // Cena 3: tier 4 amarelo, recorde, mensagem comunicacao chega
-        new(TrechoStatus.RecordeStint, ShiftMode.Lit,  4,
-            "-0.27", Tone.Bom, "ÁPICE TARDE", Tone.Neutro,
-            ApexEstado.OkMelhor, 95, ApexEstado.OkMelhor, 15, 16, ApexEstado.OkMelhor, 75,
-            P1Fast.Cockpit.Domain.MsgTipo.Comunicacao, "Pneu DD acima da janela",
-            new[] { F, F, BS, C, P, P, P, P, P, P, P, P }),
-        // Cena 4: peak vermelho, troca de marcha
-        new(TrechoStatus.RecordeStint, ShiftMode.Lit,  6,
-            "-0.27", Tone.Bom, "TROCAR AGORA", Tone.Neutro,
-            ApexEstado.OkMelhor, 95, ApexEstado.OkMelhor, 15, 16, ApexEstado.OkMelhor, 75,
+            StintDuringV6),
+        // C3 — tímido + vmin baixo. Acumulado: +0.18s.
+        new(TrechoStatus.Neutro,       ShiftMode.Lit, 4,
+            "+0.18", Tone.Erro, "C3 — TÍMIDO NA 3", Tone.Erro,
+            ApexEstado.OkMelhor, 166, ApexEstado.OkPior, 92, 92, ApexEstado.OkPior, 78,
             null, "",
-            new[] { F, F, BS, BA, C, P, P, P, P, P, P, P }),
-        // Cena 5: fire — flash
-        new(TrechoStatus.RecordeStint, ShiftMode.Fire, 0,
-            "-0.27", Tone.Bom, "TROCAR AGORA", Tone.Neutro,
-            ApexEstado.OkMelhor, 95, ApexEstado.OkMelhor, 15, 16, ApexEstado.OkMelhor, 75,
+            StintDuringV6),
+        // C4 — limpa, no ritmo. Acumulado: +0.14s (-0.04 ganho).
+        new(TrechoStatus.Neutro,       ShiftMode.Lit, 5,
+            "+0.14", Tone.Bom, "C4 — NO RITMO", Tone.Bom,
+            ApexEstado.OkMelhor, 182, ApexEstado.OkMelhor, 76, 76, ApexEstado.OkMelhor, 96,
             null, "",
-            new[] { F, F, BS, BA, C, P, P, P, P, P, P, P }),
-        // Cena 6: errou — pior stint, alerta GRAVE
-        new(TrechoStatus.PiorStint,    ShiftMode.Lit,  3,
-            "+0.42", Tone.Erro, "FREIE TARDE", Tone.Erro,
-            ApexEstado.OkPior, 88,   ApexEstado.OkPior, 22, 16, ApexEstado.OkPior, 68,
-            P1Fast.Cockpit.Domain.MsgTipo.Grave, "Temperatura óleo crítica",
-            new[] { F, F, BS, BA, S, S, C, P, P, P, P, P }),
-        // Cena 7: overrev — alarme
-        new(TrechoStatus.PiorStint,    ShiftMode.Overrev, 0,
-            "+0.42", Tone.Erro, "OVERREV!", Tone.Erro,
-            ApexEstado.OkPior, 88,   ApexEstado.OkPior, 22, 16, ApexEstado.OkPior, 68,
-            P1Fast.Cockpit.Domain.MsgTipo.Grave, "Temperatura óleo crítica",
-            new[] { F, F, BS, BA, S, S, S, C, P, P, P, P }),
+            StintDuringV6),
+        // C5 — cedo + antecipou. Acumulado: +0.35s.
+        new(TrechoStatus.Neutro,       ShiftMode.Lit, 4,
+            "+0.35", Tone.Erro, "C5 — PERDEU NA SAÍDA", Tone.Erro,
+            ApexEstado.OkPior, 174, ApexEstado.OkPior, 88, 88, ApexEstado.OkPior, 84,
+            null, "",
+            StintDuringV6),
+        // C6 — limpa curva lenta, no ritmo. Acumulado: +0.33s.
+        new(TrechoStatus.Neutro,       ShiftMode.Lit, 2,
+            "+0.33", Tone.Bom, "C6 — NO RITMO", Tone.Bom,
+            ApexEstado.OkMelhor, 148, ApexEstado.OkMelhor, 104, 104, ApexEstado.OkMelhor, 62,
+            null, "",
+            StintDuringV6),
+        // C7 — freou tarde + atrasou apex. Acumulado: +0.56s.
+        new(TrechoStatus.Neutro,       ShiftMode.Lit, 4,
+            "+0.56", Tone.Erro, "C7 — PERDEU NA SAÍDA", Tone.Erro,
+            ApexEstado.OkPior, 166, ApexEstado.OkPior, 72, 72, ApexEstado.OkPior, 95,
+            null, "",
+            StintDuringV6),
+        // C8 — limpa rápida. Acumulado final: +0.78s (perdeu 0.03 a menos no fim).
+        new(TrechoStatus.Neutro,       ShiftMode.Lit, 6,
+            "+0.78", Tone.Bom, "C8 — NO RITMO", Tone.Bom,
+            ApexEstado.OkMelhor, 178, ApexEstado.OkMelhor, 56, 56, ApexEstado.OkMelhor, 118,
+            null, "",
+            StintDuringV6),
+        // FIM DA VOLTA 6 — fechou +0.78s, halo PiorStint, mensagem grave de coach
+        new(TrechoStatus.PiorStint,    ShiftMode.Off, 0,
+            "+0.78", Tone.Erro, "VOLTA FECHOU +0,78", Tone.Erro,
+            ApexEstado.OkMelhor, 178, ApexEstado.OkMelhor, 56, 56, ApexEstado.OkMelhor, 118,
+            P1Fast.Cockpit.Domain.MsgTipo.Comunicacao, "Foco: freie mais cedo na 3",
+            StintAfterV6Slower),
     };
 
     private void ApplyScene(int index)
