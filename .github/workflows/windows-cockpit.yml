@@ -5,11 +5,19 @@ name: windows-cockpit
 # camada XAML/WinUI 3 entrar (próxima fase), aí sim precisa runner
 # windows-latest. Roda em ubuntu-latest pra economizar minutos.
 #
-# Trigger: PRs que tocam em windows/cockpit/** ou no próprio workflow.
+# Trigger:
+#   - PRs que tocam em windows/cockpit/** ou no próprio workflow (CI normal).
+#   - Push pra main (necessário pro job t4000-capture-release publicar
+#     rolling release pública com link estável).
 
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - 'windows/cockpit/**'
+      - '.github/workflows/windows-cockpit.yml'
 
 concurrency:
   group: windows-cockpit-${{ github.ref }}
@@ -249,3 +257,54 @@ jobs:
           name: p1fast-t4000-capture-${{ github.sha }}
           path: dist/t4000-capture/
           retention-days: 14
+
+  # ── Capture tool rolling release ──
+  # Quando merge em main, atualiza GitHub Release com tag rolante
+  # "t4000-capture-latest" anexando o p1fast-t4000-capture.exe. Dá ao
+  # Flávio um link público estável pra baixar no Edge do notebook sem
+  # precisar fazer login no GitHub Actions:
+  #
+  #   https://github.com/Flaviomarques1969/p1-fast/releases/download/
+  #     t4000-capture-latest/p1fast-t4000-capture.exe
+  #
+  # Roda só em push pra main (não em PR), só quando o código de captura
+  # mudou. O .exe NÃO é assinado — Windows SmartScreen vai pedir
+  # confirmação no primeiro uso.
+  t4000-capture-release:
+    needs: [changes, t4000-capture-publish]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.capture == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: p1fast-t4000-capture-${{ github.sha }}
+          path: dist/t4000-capture
+
+      - name: Update rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: t4000-capture-latest
+          name: T4000 Capture — Latest build
+          body: |
+            Single-file Windows `.exe` pra capturar o stream raw da central
+            Injepro T4000 via USB serial no notebook do carro.
+
+            **Como usar:**
+            1. Liga o carro com chave em ON (central T4000 alimentada).
+            2. Pluga cabo USB da T4000 no notebook.
+            3. Baixa e executa `p1fast-t4000-capture.exe`.
+            4. Roda 5-10 min com motor em vários regimes.
+            5. Aperta Q ou Esc pra parar.
+            6. Os arquivos `.bin` + `.timing.csv` ficam no diretório atual.
+
+            **Windows SmartScreen vai avisar** que o `.exe` não é
+            reconhecido (não é assinado digitalmente). Clica em "Mais
+            informações" → "Executar assim mesmo".
+
+            Build automatizado de cada merge em `main` que toca o código
+            de captura. Commit: `${{ github.sha }}`.
+          files: dist/t4000-capture/p1fast-t4000-capture.exe
+          make_latest: false
