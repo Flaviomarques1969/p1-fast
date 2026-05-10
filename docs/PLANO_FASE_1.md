@@ -45,7 +45,7 @@ porque é exatamente isso que o produto entrega ao piloto.
 | Auth | Supabase Auth (Apple ID + email/senha) | — |
 | Vídeo ao vivo | Daily.co (câmera onboard frontal do iPhone) | — |
 | Telemetria ao vivo | Supabase Realtime (eventos agregados ≤10 Hz, NÃO samples raw) | ADR-014 |
-| **Transporte iPhone ↔ notebook Windows** | **Supabase Realtime** (ambos publicam e assinam canais contrários — sem cabo de dados, sem Wi-Fi local na v1) | **ADR-023** |
+| **Transporte iPhone ↔ notebook Windows** | **Cabo USB primário (TCP-over-USB via `usbmuxd`/`iproxy`, latência 5-15 ms) + Supabase Realtime como fallback automático.** Notebook escolhe via `TransportSelector` baseado em heartbeat 1 Hz. | **ADR-023 (amendment 2 — 2026-05-09)** |
 | Histórico | Supabase Postgres | — |
 | Box Cockpit | App iOS modo "BOX" → AirPlay → Apple TV → TV 32" | — |
 | Convite usuário | Link gerado pelo app → share sheet iOS → WhatsApp manual | — |
@@ -169,7 +169,7 @@ Sem captura, debrief é mock. Tier 0 puro.
 | 2.3 | Botão Iniciar/Encerrar stint dispara captura; Hook fim de stint chama pipeline | Aqui |
 | 2.4 | Migration `segment_executions` ganha `vmin_kmh`, `vmin_x`, `vmin_y` — ponto georef onde a velocidade mínima aconteceu (Detector já calcula em `DetectorSegmentEndEvent.velMinima` + `apexActual`). Decisão Flávio 2026-05-04. | Cloud |
 | 2.5 | `StintRepository.finalize` consome `Detector.onSegmentEnd` real (sai do mock atual de geração de voltas) e grava o trio Vmin por segment_execution. Pré-req do widget Vmin no cockpit (MS-13) e do Command Box futuro (MS-12). | Cloud |
-| **2.8** | **Publish IMU/GPS agregado a 10 Hz no canal Supabase Realtime `live-stint-{stintId}`** — payload `{ tMono, x, y, accLong, accLat, speedKmh, heading, gapDurationMs }`. Consumidor: notebook Windows (cockpit ao vivo, MS-13). Não confundir com sample raw 100 Hz que continua local-only (ADR-014). Decisão Flávio 2026-05-09 (ADR-023). | Cloud |
+| **2.8** | **Publish IMU/GPS agregado a 10 Hz em DOIS canais simultâneos** (decisão Flávio 2026-05-09 amendment 2): (a) **TCP socket local `127.0.0.1:5050`** via `NWListener` em iOS — primário, consumido pelo cockpit no notebook Windows via cabo USB (`iproxy`); (b) **Supabase Realtime canal `live-stint-{stintId}`** — fallback do cockpit + canal único do Box Cockpit (MS-12). Payload: `{ tMono, x, y, accLong, accLat, speedKmh, heading, gapDurationMs }`. Inclui heartbeat 1 Hz `{ tMono, source: 'iphone-imu' }` em ambos canais (notebook usa pra detectar queda do cabo). Não confundir com sample raw 100 Hz que continua local-only (ADR-014). | Cloud |
 
 ### MS-3 — Edge Function pipeline + smoke E2E
 
@@ -301,7 +301,7 @@ Princípio: o `_design-reference/mockup-cockpit-piloto.html` JÁ é o produto. E
 | 13.1 | Validar dimensão alvo: medir área visível do notebook 10,5" do Flávio (resolução nativa, DPR, espaço útil descontando barra de tarefas). Ajustar viewport do mockup canônico (atual 956×440) pra encaixar landscape no notebook. Decisão de produto: full-bleed kiosk vs janela com bordas. | Aqui (Flávio + Claude) |
 | 13.2 | Reorganizar mockup canônico em estrutura de produção (`web/cockpit/index.html` + `web/cockpit/cockpit.css` + `web/cockpit/cockpit.js`) preservando 1:1 todos os tokens, animações e DOM. Não é refactor — é só desentrelaçar. | Cloud |
 | 13.3 | `CockpitState` (JS) — espelha os 4 data-attrs (`data-trecho-status`, `data-shift-fire`, `data-msg-state`, `data-state` do shift-light). Modelo único alimentado por live data. | Cloud |
-| 13.4 | `LiveDataBridge` (JS) — assina canal Supabase Realtime `live-stint-{stintId}` (IMU/GPS do iPhone publicado em MS-2.8) E recebe T4000 local do MS-9 reescrito. Funde os dois streams num `CockpitState` consistente. | Cloud |
+| 13.4 | `LiveDataBridge` (JS) usa `TransportSelector` (web/cockpit/transport.js) que escolhe entre **cabo USB (primário)** e **Supabase Realtime (fallback)** com healthcheck por heartbeat 1 Hz, switch em 3 s de silêncio do primário, recovery com debounce 1 s. Recebe IMU/GPS do iPhone (MS-2.8 dual-publish) + T4000 local do MS-9.4 e funde tudo no `CockpitState` (MS-13.3). | Cloud |
 | 13.5 | `LapDetector` + `DeltaCalculator` + `CommandResolver` + `HaloController` (JS) — port do que estava planejado em SwiftUI. Pode reutilizar parte do `src/telemetry/detector.js` ou Edge Function. | Cloud |
 | 13.6 | Widget Vmin georef por trecho — consome `segment_executions.vmin_*` (MS-2.4/2.5) via Supabase REST. Exibe Vmin (km/h) + ponto (x/y) da melhor volta por trecho. Decisão Flávio 2026-05-04 preservada. | Cloud |
 | 13.7 | Empacotamento Windows: instalador simples (atalho na área de trabalho que abre Edge/Chrome em modo kiosk apontando pro app local — OU Electron build se 9.0 escolheu Electron). Tier 0: cockpit funciona com mock data sem T4000 conectado. | Cloud |
@@ -384,7 +384,7 @@ Depende de MS-9 (T4000 fornece temp motor real) — em Tier 0 usa estimativa.
 - **Box cockpit:** App iOS modo BOX → AirPlay → Apple TV → TV 32" — §2
 - **Cockpit-display ao vivo migra pra Windows** (notebook 10,5" no painel, web app, web=produto a partir do mockup canônico) — **ADR-023**, decisão Flávio 2026-05-09
 - **Driver T4000 fica no Windows** (USB CDC-ACM ou CAN, JS sobre Node/Electron) — **ADR-023**, substitui o plano original BLE iOS
-- **Transporte iPhone ↔ Windows = Supabase Realtime** (publish 10 Hz IMU/GPS pelo iPhone, publish 10 Hz T4000 pelo Windows). Cabo USB iPhone↔notebook só pra carga. — **ADR-023**
+- **Transporte iPhone ↔ Windows = redundante: cabo USB primário (TCP-over-USB via `iproxy`/`usbmuxd`, 5-15 ms) + Supabase Realtime fallback automático.** Notebook escolhe via `TransportSelector` (heartbeat 1 Hz, switch em 3 s, recovery com debounce 1 s). Cabo USB iPhone↔notebook agora carrega **dado + carga**. — **ADR-023 + amendment 2 de 2026-05-09**
 - **Captura iOS Swift nativa preservada** (CoreMotion 100 Hz + CoreLocation 1 Hz + Daily.co), hub iOS preservado (HOME, Eventos, Garagem, etc.) — ADR-018 (com amendment 2026-05-09)
 - **Plataforma do hub e da captura:** iOS Swift nativo, iPhone único. Sem CarPlay, Apple Watch, Android, PWA pra hub — ADR-018
 - **Detector ao vivo:** Port nativo Swift no iPhone, JS no Windows a partir do mesmo domínio — decidido 2026-05-03 / revisitado 2026-05-09 com a nova arquitetura

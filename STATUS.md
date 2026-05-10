@@ -142,16 +142,34 @@ Sem código nesta sessão — só docs. Flávio decidiu que o cockpit-display ao
 | iPhone 16 Pro Max | Captura IMU 100Hz + GPS 1Hz, câmera onboard frontal (Daily.co), agregador, uploader pra Supabase. **Sem cockpit-display ativo durante a pilotagem.** |
 | Apple TV (Box Cockpit) | Inalterado. |
 
-**Transporte iPhone↔Windows:** Supabase Realtime (ambos publicam e assinam canais contrários, latência típica 150-500 ms aceita pra v1). Cabo USB iPhone↔notebook é só pra carga.
+**Transporte iPhone↔Windows:** **redundante (decisão 2 — 2026-05-09)**: cabo USB primário (TCP-over-USB via `iproxy`/`usbmuxd`, latência 5-15 ms) + Supabase Realtime fallback automático. Notebook escolhe via `TransportSelector` (heartbeat 1 Hz, switch em 3 s de silêncio, recovery com debounce 1 s). Cabo USB iPhone↔notebook agora carrega **dado + carga** (não só carga).
 
 **Mudanças no plano:**
 - **ADR-023 nova** — Windows como plataforma de cockpit-display + driver T4000.
+- **ADR-023 amendment 2** — transporte iPhone↔Windows passa pra **redundante: cabo USB primário (TCP-over-USB via `iproxy`/`usbmuxd`, 5-15 ms) + Supabase Realtime fallback** (decisão 2 do Flávio em 2026-05-09).
 - **ADR-018 amendment** — captura iOS continua mandatória; cockpit-display saiu pra Windows.
 - **MS-9 reescrito** — deixa de ser BLE iOS, vira driver T4000 USB/CAN no Windows + publish Realtime. Move pra antes de MS-13.
 - **MS-13 reescrito** — deixa de ser SwiftUI 956×440, vira web app no Windows 10,5" baseado no `mockup-cockpit-piloto.html`.
-- **MS-2.8 nova** — publish IMU/GPS agregado a 10 Hz no canal Realtime `live-stint-{stintId}`.
+- **MS-2.8 reescrito** — publish IMU/GPS agregado a 10 Hz em **dois canais simultâneos** (TCP socket local `127.0.0.1:5050` via cabo + Supabase Realtime). Heartbeat 1 Hz em ambos pra healthcheck.
+- **MS-13.4 reescrito** — `LiveDataBridge` usa `TransportSelector` pra escolher cabo↔Realtime.
 - **MS-12 Box Cockpit** — inalterado.
 - **MS-11 Daily.co** — papel da câmera onboard fica explícito (frente do carro).
+
+**Entregue nesta sessão (PR #148, branch `claude/develop-pilot-cockpit-ZxMLY`):**
+- Docs: ADR-023 + amendment 2; PLANO §2/§6/§10; STATUS; CLAUDE.md.
+- MS-9.2 — `src/telemetry/t4000-packet-parser.js` (parser CAN canônico, fixture `0x91`) + 27 smokes.
+- MS-9.4 — `src/telemetry/t4000-provider.js` (adapter standalone) coberto pelos mesmos 27 smokes.
+- MS-13.2 — `web/cockpit/{index.html, cockpit.css, cockpit.js}` extraídos byte-for-byte do mockup canônico + 16 smokes de paridade.
+- MS-13.3 — `web/cockpit/cockpit-state.js` (modelo puro JS) + 24 smokes.
+- MS-13.4 (parte 1) — `web/cockpit/transport.js` (TransportSelector com healthcheck + failover) + 17 smokes.
+- **84 smokes novos** verdes em cima de 404 → **488 verdes** total.
+
+**Gates pra próxima etapa:**
+- **MS-9.0** — decisão container Windows (browser+WebSerial vs Electron). Sua decisão.
+- **MS-9.1** — captura real do barramento T4000. Você mencionou que faz hoje.
+- **MS-13.4 (parte 2)** — `LiveDataBridge` pluga TransportSelector + T4000Provider no CockpitState. Faz a seguir.
+- **CockpitRenderer** — observa CockpitState, escreve nos data-attrs do `web/cockpit/index.html`. Próximo passo natural.
+- **MockSource** — alimenta o cockpit em desenvolvimento. Espera a base de 3 voltas que você mencionou.
 
 **Spec do T4000 já estava pronta:** `docs/hardware/T4000_CAN_SPEC.md` (264 linhas) confirmou frame 5 pacotes, big-endian, 1 Mbit/s, checksum validado matematicamente. T4000 do Celta tem USB traseiro nativo + CAN bus + Bluetooth. 3 dúvidas residuais não-bloqueantes (diferenciação dos 5 pacotes, bytes 2-6 do pacote 5, range max EGT) ficam pra captura real.
 

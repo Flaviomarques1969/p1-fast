@@ -128,6 +128,18 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 
 **Transporte entre Windows e iPhone**: ambos publicam no **Supabase Realtime** e ambos assinam o canal contrário. Sem cabo de dados entre eles. O cabo USB iPhone↔notebook serve só pra manter a bateria do iPhone. Latência típica 150-500 ms — aceita pra primeiro field test, pode migrar pra Wi-Fi local (iPhone hotspot + WebSocket) se virar dor.
 
+> **AMENDMENT 2026-05-09 (Flávio, decisão 2):** transporte iPhone↔Windows passa a ser **redundante** — **cabo USB primário (TCP-over-USB via `usbmuxd`/`iproxy`)** com **Supabase Realtime como fallback automático**.
+>
+> - **Cabo USB (primário)**: app iOS abre `NWListener` em `127.0.0.1:5050`; no Windows, daemon `iproxy` (libimobiledevice) expõe `127.0.0.1:5050` pareado com a porta do iPhone via USB; cockpit web conecta no socket local. Latência típica 5-15 ms. Não usa plano de dados, não precisa Personal Hotspot, não compete com 4G/5G.
+> - **Supabase Realtime (fallback)**: iPhone publica no canal `live-stint-{stintId}` em paralelo (mesmo payload, mesma cadência 10 Hz). Já é o canal que o **Box Cockpit** consome de qualquer jeito — então não há custo extra de manter o publisher Realtime ligado.
+> - **Selector no Windows**: `TransportSelector` com healthcheck por heartbeat de 1 Hz; se cabo silencia por 3 s, troca pra Realtime; quando cabo volta a heartbeatar, volta pro cabo (debounce 1 s).
+> - **Setup no notebook**: instalar **Apple Devices** (Microsoft Store, gratuito) + empacotar `iproxy` no cockpit. `Apple Mobile Device Service` cuida do enxoval USB; sem MFi certification.
+> - **Cabo USB iPhone↔notebook**: agora é cabo de **dados + carga** — mesmo cabo USB-C que ia ser usado pra carga.
+>
+> **Restrição inalterada (já documentada):** iOS bloqueia TCP socket + CoreMotion 100 Hz em background. App iOS precisa estar em foreground durante o stint — mesma constraint do MS-2 atual. Mitigação (banner "captura interrompida" + gap recovery do A-07) cobre cabo e Realtime igual.
+>
+> **Implicações no plano**: MS-2.8 reescrito (publicar nos dois canais simultâneos), MS-13.4 ganha `TransportSelector` (web/cockpit/transport.js).
+
 **Stack do cockpit Windows**:
 - Cockpit = **web app** baseado no `_design-reference/mockup-cockpit-piloto.html` (já é HTML/CSS/JS pronto, contrato visual fechado).
 - **Mockup é congelado byte-for-byte (Flávio 2026-05-09):** DOM, classes CSS, tokens `:root`, `@keyframes`, data-attrs e comportamento de todos os elementos (shift-light 12 LEDs + tiers + fire/overrev, apex header 4 pontos, info-bloco delta+ação+slide, alert-bloco z-axis, halo radial 4 estados, stint-bar 12 blocos com shimmer/bloom, fire-overlay, telemetria-chip, notch) NÃO são tocados. MS-13 só embala em arquivos de produção, ajusta viewport pro notebook 10,5", e substitui o demo cycle por live data — sem redesenho.
