@@ -67,3 +67,10 @@ p1fast-t4000-capture --port=COM4 --out=meu-log.bin
 - `--out=path` define nome do arquivo (default:
   `t4000-capture-<yyyyMMdd-HHmmss>.bin`).
 - `--help` mostra ajuda.
+
+## Última verificação automatizada
+
+2026-05-10 — build limpo (0 erro, 0 warning), `--help` exibido corretamente,
+fallback "porta serial não encontrada" com mensagem amigável, 33 testes do
+parser T4000 verdes. Validação de captura real com a central T4000 plugada
+continua pendente (depende do Flávio rodar no carro).
