@@ -1,7 +1,7 @@
 # P1 Fast — STATUS
 
-**Data deste checkpoint:** 2026-05-06 (sessão 5 — field test em movimento, A-05/A-07, Edge Function deploy)
-**Estado:** Plano `docs/PLANO_FASE_1.md` em execução. **MS-2 + MS-3 fechados em main.** Field test E2E em movimento andando na rua exposed iOS pausa CoreMotion em background (4 janelas, IMU médio 14 Hz, pos_sigma divergiu pra 1e+55) — A-07 gap recovery + visibilidade de background entregues nesta sessão. PRs totais até **#120** mergeados, **404 smoke tests verdes**. Migrations 0007 + 0008 + 0009 + **0010** todas aplicadas em prod. Edge Function `detector` **deployed** em `fvhwltzhytpnhlqbttmd.supabase.co/functions/v1/detector`.
+**Data deste checkpoint:** 2026-05-09 (sessão 6 — virada arquitetural cockpit Windows + ADR-023)
+**Estado:** Plano `docs/PLANO_FASE_1.md` em execução. **MS-2 + MS-3 fechados em main.** Virada arquitetural 2026-05-09: cockpit-display do piloto migra de SwiftUI iPhone pra **web app no notebook Windows 10,5"**, T4000 deixa de ser BLE iOS e vira USB/CAN no Windows, transporte entre as duas plataformas via Supabase Realtime. Detalhes em **ADR-023**. PRs totais até **#120** mergeados, **404 smoke tests verdes**.
 
 > **Se você é Claude abrindo esta sessão pela primeira vez:**
 > Leia este arquivo primeiro, depois `docs/PLANO_FASE_1.md` (doc mestre), depois `~/.claude/projects/-Users-imac/memory/MEMORY.md` (memória global) + `~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/MEMORY.md` (memória do projeto).
@@ -130,6 +130,62 @@ Verificadas via REST: HTTP 200 + `[]` em todas (RLS OK, colunas existentes — s
 
 ---
 
+## Sessão 2026-05-09 — virada arquitetural cockpit pra Windows (ADR-023)
+
+Sem código nesta sessão — só docs. Flávio decidiu que o cockpit-display ao vivo do piloto migra do iPhone (SwiftUI, MS-13 antigo) pra um **notebook Windows 10,5"** montado no painel do carro. Motivo é de produto: tela maior melhor posicionada, mais legível na pista que o iPhone preso em suporte.
+
+**Papéis na nova arquitetura:**
+
+| Aparelho | Função |
+|---|---|
+| Notebook Windows 10,5" | Cockpit-display ao vivo (web app), driver T4000 (USB/CAN), processamento ao vivo. |
+| iPhone 16 Pro Max | Captura IMU 100Hz + GPS 1Hz, câmera onboard frontal (Daily.co), agregador, uploader pra Supabase. **Sem cockpit-display ativo durante a pilotagem.** |
+| Apple TV (Box Cockpit) | Inalterado. |
+
+**Transporte iPhone↔Windows:** **redundante (decisão 2 — 2026-05-09)**: cabo USB primário (TCP-over-USB via `iproxy`/`usbmuxd`, latência 5-15 ms) + Supabase Realtime fallback automático. Notebook escolhe via `TransportSelector` (heartbeat 1 Hz, switch em 3 s de silêncio, recovery com debounce 1 s). Cabo USB iPhone↔notebook agora carrega **dado + carga** (não só carga).
+
+**Mudanças no plano:**
+- **ADR-023 nova** — Windows como plataforma de cockpit-display + driver T4000.
+- **ADR-023 amendment 2** — transporte iPhone↔Windows passa pra **redundante: cabo USB primário (TCP-over-USB via `iproxy`/`usbmuxd`, 5-15 ms) + Supabase Realtime fallback** (decisão 2 do Flávio em 2026-05-09).
+- **ADR-018 amendment** — captura iOS continua mandatória; cockpit-display saiu pra Windows.
+- **MS-9 reescrito** — deixa de ser BLE iOS, vira driver T4000 USB/CAN no Windows + publish Realtime. Move pra antes de MS-13.
+- **MS-13 reescrito** — deixa de ser SwiftUI 956×440, vira web app no Windows 10,5" baseado no `mockup-cockpit-piloto.html`.
+- **MS-2.8 reescrito** — publish IMU/GPS agregado a 10 Hz em **dois canais simultâneos** (TCP socket local `127.0.0.1:5050` via cabo + Supabase Realtime). Heartbeat 1 Hz em ambos pra healthcheck.
+- **MS-13.4 reescrito** — `LiveDataBridge` usa `TransportSelector` pra escolher cabo↔Realtime.
+- **MS-12 Box Cockpit** — inalterado.
+- **MS-11 Daily.co** — papel da câmera onboard fica explícito (frente do carro).
+
+**Entregue nesta sessão (PR #148, branch `claude/develop-pilot-cockpit-ZxMLY`):**
+- Docs: ADR-023 + amendments 2 e 3; PLANO §2/§6/§10; STATUS; CLAUDE.md.
+- MS-9.2 — `src/telemetry/t4000-packet-parser.js` (parser CAN canônico, fixture `0x91`) + 27 smokes.
+- MS-9.4 — `src/telemetry/t4000-provider.js` (adapter standalone) coberto pelos mesmos 27 smokes.
+- MS-13.2 — `web/cockpit/{index.html, cockpit.css, cockpit.js}` extraídos byte-for-byte do mockup canônico + 16 smokes de paridade.
+- MS-13.3 — `web/cockpit/cockpit-state.js` (modelo puro JS) + 24 smokes.
+- MS-13.4 parte 1 — `web/cockpit/transport.js` (TransportSelector com healthcheck + failover) + 17 smokes.
+- MS-13.4 parte 2 — `web/cockpit/live-data-bridge.js` (T4000 → CockpitState com regras RPM→shift e alertas críticos) + 26 smokes.
+- MS-13.4 parte 3 — `web/cockpit/cockpit-renderer.js` (observer CockpitState→DOM canônico) + 17 smokes.
+- MS-13.4 parte 4 — `web/cockpit/main.js` + `web/cockpit/index-live.html` (bootstrap + entry point com mock data) + 7 smokes.
+- **134 smokes novos** verdes em cima de 404 → **538 verdes** total.
+
+**ADR-023 amendment 3 (Flávio 2026-05-09):** **produto final do cockpit Windows e do hub iPhone é NATIVO** (não web/PWA). O conteúdo de `web/cockpit/` é referência executável + protótipo: serve pra demonstrar visualmente o mockup hoje, provar a lógica de domínio com smokes verdes, e ser portado pra app nativo Windows quando ele for construído.
+
+**ADR-023 amendment 4 (Flávio 2026-05-09):** stack Windows nativa = **WinUI 3 + C# (.NET 8)**. Decisão final. Atende 100% do mockup canônico (OKlch, 8 keyframes, blend modes, perspective 3D, blur), latência estado→pixel ~16-17 ms, zero licença, sem restrição comercial em stores. Próximo passo prático: criar `windows/cockpit/` solution C# e portar `CockpitState` JS → C# com xUnit equivalente aos smokes JS.
+
+**Gates pra próxima etapa:**
+- **MS-9.0** — decisão container Windows (browser+WebSerial vs Electron). Sua decisão.
+- **MS-9.1** — captura real do barramento T4000. Você mencionou que faz hoje.
+- **MS-13.4 (parte 2)** — `LiveDataBridge` pluga TransportSelector + T4000Provider no CockpitState. Faz a seguir.
+- **CockpitRenderer** — observa CockpitState, escreve nos data-attrs do `web/cockpit/index.html`. Próximo passo natural.
+- **MockSource** — alimenta o cockpit em desenvolvimento. Espera a base de 3 voltas que você mencionou.
+
+**Spec do T4000 já estava pronta:** `docs/hardware/T4000_CAN_SPEC.md` (264 linhas) confirmou frame 5 pacotes, big-endian, 1 Mbit/s, checksum validado matematicamente. T4000 do Celta tem USB traseiro nativo + CAN bus + Bluetooth. 3 dúvidas residuais não-bloqueantes (diferenciação dos 5 pacotes, bytes 2-6 do pacote 5, range max EGT) ficam pra captura real.
+
+**Tarefa do Flávio aberta nesta sessão:** integração T4000↔Windows hoje. Captura real do barramento resolve as 3 dúvidas residuais.
+
+**Próximo passo concreto:** decidir container Windows (browser puro com WebSerial vs Electron) — MS-9.0. Depende de captura real (9.1) pra fechar o parser (9.2-9.4).
+
+---
+
 ## Sessão 2026-05-06 (tarde) — field test em movimento, A-05/A-07, Edge Function
 
 `swift run p1fast-smoke` final: **404 ok / 0 fail**. 7 PRs entregues, todos mergeados em main.
@@ -239,20 +295,37 @@ Esses precisam de Xcode pra build/validar. Domínio Swift puro pode continuar at
 
 ---
 
-## Próximo passo concreto pós-/compact
+**Próximo passo concreto pós-/clear (atualizado 2026-05-10):**
 
-**MS-2 + MS-3 fechados em main e prod.** Field test em movimento andando confirmou GPS 1 Hz e expôs iOS-bg-kill. Mitigation entregue (#117/#118/#119).
+**Port C# da camada Domain do cockpit Windows ENTREGUE em 2026-05-10** (PR #148, branch `claude/develop-pilot-cockpit-ZxMLY`). Os 5 módulos do `SESSION_HANDOFF_2026-05-09_pre-clear.md` estão fechados, com **94 testes automáticos verdes** rodando em CI nova `windows-cockpit.yml` (ubuntu-latest, .NET 8 puro):
 
-**Pendência crítica antes de qualquer feature nova: refazer field test** com build da main pós-#119 (Always location + bg row visível). Validar:
-- pos_sigma fica bounded mesmo após app voltar de background (#117)
-- coluna `gap_duration_ms` recebe valor != NULL nos samples pós-foreground (#118)
-- row "Background" da TelemetriaView mostra contador + duração ao reabrir (#119)
-- banner amarelo "captura interrompida X s" aparece na StintCaptureView durante stint real (#114 + #118)
+| Módulo | Arquivo C# | Equivalente JS | Testes verdes |
+|---|---|---|---|
+| 1 | `CockpitState` + records | `web/cockpit/cockpit-state.js` | 24 (CST-01..24) |
+| 2 | `T4000PacketParser` + `T4000PacketFeeder` | `src/telemetry/t4000-packet-parser.js` | 23 (T4K-01..23) |
+| 3 | `T4000Provider` | `src/telemetry/t4000-provider.js` | 4 (T4K-24..27) |
+| 4 | `TransportSelector` + `MockTransport` + `ITransport` | `web/cockpit/transport.js` | 17 (TRP-01..17) |
+| 5 | `LiveDataBridge` (RpmToShift, CheckCriticalAlerts) | `web/cockpit/live-data-bridge.js` | 26 (LDB-01..26) |
 
-Opções pra próxima sessão (decisão Flávio):
+Próxima fase do cockpit Windows = camada XAML/WinUI 3 (consome o Domain via observer do `CockpitState`). Quando entrar, a CI passa a precisar de runner `windows-latest`.
 
-1. **Refazer field test** (Flávio, físico) — gate dos próximos passos
-2. **MS-4** `StintPlan` portado pro iOS — schema + repo + UI. Sprint maior; vai precisar quebrar em sub-sprints.
-3. **MS-13** CockpitDevice 956×440 — UI grande, precisa Xcode + simulator.
-4. **MS-9 BLE T4000** — precisa hardware Injepro real.
-5. **MS-10 Auth Supabase** — pré-req pra Edge Function `detector` ser usada com user-token real.
+**Pendências externas aguardando Flávio:**
+- Captura real do barramento T4000 (resolve as 3 dúvidas residuais do `T4000_CAN_SPEC.md`).
+- Base de 3 voltas (path enviado é worktree local; precisa push ou outra entrega).
+
+---
+
+## Próximo passo concreto pós-/compact (atualizado 2026-05-09)
+
+**Virada arquitetural 2026-05-09 (ADR-023):** cockpit migra pra Windows. MS-9 reescrito (Windows USB/CAN), MS-13 reescrito (web app), MS-2.8 nova (publish Realtime).
+
+**Caminho crítico:**
+
+1. **Captura real do barramento T4000 no notebook Windows** (Flávio, MS-9.1) — destrava as 3 dúvidas residuais do `T4000_CAN_SPEC.md` e libera o parser. Flávio mencionou que faz hoje.
+2. **Decisão container Windows** (MS-9.0) — browser puro com WebSerial vs Electron. Critérios: facilidade de empacotamento, reuso do JS de domínio, distribuição.
+3. **MS-9.2-9.5 sequencial no Cloud Code** — parser, reader, provider, publisher Supabase Realtime.
+4. **MS-13.1 medir notebook real** (Flávio, físico) — resolução nativa, DPR, área útil descontando barra de tarefas. Define dimensão alvo do cockpit.
+5. **MS-13.2-13.7 cockpit web app no Windows** — adapta o mockup canônico pro produto.
+6. **MS-2.8 publish IMU/GPS Realtime** — pode entrar em paralelo com MS-9, depende só do canal Realtime estar configurado no Supabase.
+
+**Pendência iOS aberta de antes (não bloqueia o cockpit Windows):** refazer field test com build da main pós-#119 — validar `pos_sigma` bounded, `gap_duration_ms`, row Background, banner "captura interrompida". Vira gate só pra mexer em `LiveTelemetryRecorder`/`LiveKalmanProcessor` de novo.

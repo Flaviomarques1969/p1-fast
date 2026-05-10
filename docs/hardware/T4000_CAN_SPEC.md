@@ -181,6 +181,8 @@ Já discutida na seção acima. Bloqueia parser robusto.
 
 **Confiança para implementar mesmo assim:** Média. Hipóteses (a)+(b) cobrem maioria dos casos. Validar com captura real do barramento.
 
+**Diretriz Flávio 2026-05-10:** valido na captura real do barramento (entrega do Flávio pendente, MS-9.1). Roda parser contra log de 5-10 min e confere se a heurística sentinela+ordem temporal aguenta sem ressincronização excessiva.
+
 ### Dúvida #2 — Layout dos bytes 2-6 do pacote 5
 
 Pacote 5 tem 8 bytes; PDF documenta apenas 3 (`0xFB 0xFA` + checksum). Os 5 bytes intermediários são:
@@ -191,6 +193,8 @@ c) Canais não-documentados que podem conter dado útil.
 
 **Ação:** capturar barramento real para confirmar. Se zero-padding, aceitar como tal e ignorar. Se canais novos, mapear.
 
+**Diretriz Flávio 2026-05-10:** valido na captura real do barramento (mesmo log da Dúvida #1). Inspeciono os 5 bytes em N ciclos diferentes; se variarem com cenário (RPM, temperatura), tem dado útil ali e mapeio.
+
 ### Dúvida #3 — Range físico máximo do EGT
 
 EGT = `÷1` (valor direto em °C). uint16 → range técnico 0..65535. Range físico real?
@@ -200,6 +204,10 @@ Plausível para escape de motor de competição: 0..1500 °C. Acima disso, derre
 **Ação:** confirmar com Injepro qual é o teto (`OUT_OF_RANGE` se ultrapassar).
 
 **Mitigação imediata:** usar `OUT_OF_RANGE` se EGT > 1500 °C — flagrar como erro de leitura ou falha catastrófica.
+
+**Diretriz Flávio 2026-05-10:** quando chegar o momento de instalar a tela no carro do cliente, abro o Injepro T Software via USB e checo se a T4000 já tem um parâmetro de "EGT máximo / over-temp threshold" configurado.
+- **Se já estiver configurado:** uso o valor da T4000 como teto canônico (`limits.egtMaxC` no LiveDataBridge), em vez do default 1500 °C hard-coded.
+- **Se NÃO estiver configurado:** entra como **informação opcional** no setup — a gente passa pro cliente quando der oportunidade, sem virar gate obrigatório. Até o cliente configurar, o cockpit segue com o default `1500 °C`.
 
 ### Dúvidas adicionais (não bloqueantes)
 

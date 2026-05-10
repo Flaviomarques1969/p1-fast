@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="pt-BR" data-mobile="true">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=956, initial-scale=1">
+<title>Mockup Cockpit · dinâmica de mensagem</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="cockpit.css">
+</head>
+<body>
+<div style="display:flex;flex-direction:column;gap:12px;align-items:center;">
+
+  <!-- data-msg-state: oculta | ativa
+       data-msg-tipo:  comunicacao | grave (define cor + comportamento de saída) -->
+  <div class="device" id="device" data-trecho-status="neutro" data-msg-state="oculta" data-shift-fire="idle">
+    <div class="notch"></div>
+    <!-- overlay do FIRE — flash do device inteiro sincronizado com os 3 pulsos dos LEDs -->
+    <div class="fire-overlay"></div>
+
+    <div class="telemetria-chip">
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot warn"></span>
+      <span class="telemetria-chip__dot ok"></span>
+    </div>
+
+    <!-- SMART SHIFT LIGHT PREMIUM — 12 LEDs, acendem DAS PONTAS PRO CENTRO.
+         Tier 1 = pontas (dots 1,12, 1° a acender); tier 6 = par central (dots 6,7, último).
+         Cor por tier: 1-2 verde · 3-4 amarelo · 5-6 vermelho. -->
+    <div class="shift-light" id="shiftLight" data-state="off">
+      <span class="shift-light__dot" data-tier="1"></span>
+      <span class="shift-light__dot" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="1"></span>
+    </div>
+
+    <section class="apex">
+      <div class="apex__ponto" data-estado="ok-pior">
+        <span class="apex__label">Entrada</span>
+        <span class="apex__valor">88<small>km/h</small></span>
+      </div>
+      <div class="apex__ponto" data-estado="ok-pior" data-papel="freio">
+        <span class="apex__label">Freio</span>
+        <span class="apex__valor">18<span class="apex__valor__sep">/</span>16<small>m</small></span>
+      </div>
+      <div class="apex__ponto" data-estado="ativo">
+        <span class="apex__label">Ápice</span>
+        <span class="apex__valor">71<small>km/h</small></span>
+      </div>
+      <div class="apex__ponto" data-estado="pendente">
+        <span class="apex__label">Saída</span>
+        <span class="apex__valor">—</span>
+      </div>
+    </section>
+
+    <!-- bloco central (default centralizado): delta + frase pedagógica.
+         Quando msg ativa, desliza pra ESQUERDA. -->
+    <div class="info-bloco">
+      <span class="info__delta erro">0.42</span>
+      <div class="info__acao erro">FREIE TARDE</div>
+    </div>
+
+    <!-- bloco direito (oculto default): mensagem que vem do fundo -->
+    <aside class="alert-bloco" id="alertBloco" data-tipo="comunicacao">
+      <div class="alert__msg" id="alertMsg">Pneu DD acima da janela</div>
+    </aside>
+
+    <div class="stint-bar">
+      <div class="stint-bar__block is-neutral"></div>
+      <div class="stint-bar__block is-faster"></div>
+      <div class="stint-bar__block is-slower"></div>
+      <div class="stint-bar__block is-faster"></div>
+      <div class="stint-bar__block is-slower"></div>
+      <div class="stint-bar__block is-best-stint"></div>
+      <div class="stint-bar__block is-best-alltime"></div>
+      <div class="stint-bar__block is-current"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <span class="controls__lbl">Shift Light ·</span>
+    <button class="controls__btn is-active" data-shift="auto">Auto-cycle</button>
+    <button class="controls__btn" data-shift="0">0 · off</button>
+    <button class="controls__btn" data-shift="1">1</button>
+    <button class="controls__btn" data-shift="2">2</button>
+    <button class="controls__btn" data-shift="3">3</button>
+    <button class="controls__btn" data-shift="4">4</button>
+    <button class="controls__btn" data-shift="5">5</button>
+    <button class="controls__btn" data-shift="6">6</button>
+    <button class="controls__btn" data-shift="fire">Fire (strobe)</button>
+    <button class="controls__btn" data-shift="overrev">Overrev</button>
+  </div>
+
+  <div class="controls">
+    <span class="controls__lbl">Halo ·</span>
+    <button class="controls__btn is-active" data-halo="neutro">Normal</button>
+    <button class="controls__btn" data-halo="recorde-stint">Recorde stint (laranja)</button>
+    <button class="controls__btn" data-halo="pior-stint">Pior stint (roxo)</button>
+  </div>
+  <div class="controls">
+    <span class="controls__lbl">Disparar mensagem ·</span>
+    <button class="controls__btn" id="btnAuto" data-action="auto">Auto-loop (4s)</button>
+    <button class="controls__btn" id="btnComm" data-action="comunicacao">Comunicação · sai em 4s</button>
+    <button class="controls__btn" id="btnGrave" data-action="grave">Grave · fica até resolver</button>
+    <button class="controls__btn" id="btnHide" data-action="ocultar">Ocultar</button>
+  </div>
+
+</div>
+
+<div class="legend">
+  <b>Smart Shift Light · visual-only</b><br>
+  <i>·</i> 0→6 = subida (verde→amarelo→vermelho, pontas→centro)<br>
+  <i>·</i> <b>FIRE</b> = strobe 3 pulsos branco-azul a 10Hz, 300ms<br>
+  <i>·</i> FIRE flasha LEDs + device INTEIRO (rim+halo top)<br>
+  <i>·</i> 10Hz = sweet spot da visão periférica (capacete OK)<br>
+  <i>·</i> overrev = pisca vermelho (você passou)<br>
+  <br>
+  <b>Apex · cor por comparação no trecho</b><br>
+  <i>·</i> label sempre branco<br>
+  <i>·</i> número verde = melhor que a última passada<br>
+  <i>·</i> número vermelho = pior que a última passada<br>
+  <i>·</i> número branco = ainda em curso (ativo)<br>
+  <i>·</i> "—" = ainda não passou (pendente, opacity .4)<br>
+  <br>
+  <b>Halo de fundo · só em estados extremos</b><br>
+  <i>·</i> normal = fundo escuro puro (a maior parte do tempo)<br>
+  <i>·</i> laranja = recorde do trecho neste stint<br>
+  <i>·</i> roxo = pior trecho deste stint<br>
+  <br>
+  <b>Dinâmica de mensagem</b><br>
+  <i>·</i> Default = silêncio<br>
+  <i>·</i> Chega: delta+frase → esquerda; msg vem do fundo → direita<br>
+  <i>·</i> Transição 1200ms expo-out muito suave<br>
+</div>
+
+<script src="cockpit.js"></script>
+</body>
+</html>
