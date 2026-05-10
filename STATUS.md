@@ -295,9 +295,19 @@ Esses precisam de Xcode pra build/validar. Domínio Swift puro pode continuar at
 
 ---
 
-**Próximo passo concreto pós-/clear (atualizado 2026-05-09):**
+**Próximo passo concreto pós-/clear (atualizado 2026-05-10):**
 
-Sessão pausada no meio do port C# do CockpitState. **Próxima sessão deve ler primeiro `docs/SESSION_HANDOFF_2026-05-09_pre-clear.md`** que tem o checkpoint exato + sequência completa do port (5 módulos C# + CI workflow) + onde retomar.
+**Port C# da camada Domain do cockpit Windows ENTREGUE em 2026-05-10** (PR #148, branch `claude/develop-pilot-cockpit-ZxMLY`). Os 5 módulos do `SESSION_HANDOFF_2026-05-09_pre-clear.md` estão fechados, com **94 testes automáticos verdes** rodando em CI nova `windows-cockpit.yml` (ubuntu-latest, .NET 8 puro):
+
+| Módulo | Arquivo C# | Equivalente JS | Testes verdes |
+|---|---|---|---|
+| 1 | `CockpitState` + records | `web/cockpit/cockpit-state.js` | 24 (CST-01..24) |
+| 2 | `T4000PacketParser` + `T4000PacketFeeder` | `src/telemetry/t4000-packet-parser.js` | 23 (T4K-01..23) |
+| 3 | `T4000Provider` | `src/telemetry/t4000-provider.js` | 4 (T4K-24..27) |
+| 4 | `TransportSelector` + `MockTransport` + `ITransport` | `web/cockpit/transport.js` | 17 (TRP-01..17) |
+| 5 | `LiveDataBridge` (RpmToShift, CheckCriticalAlerts) | `web/cockpit/live-data-bridge.js` | 26 (LDB-01..26) |
+
+Próxima fase do cockpit Windows = camada XAML/WinUI 3 (consome o Domain via observer do `CockpitState`). Quando entrar, a CI passa a precisar de runner `windows-latest`.
 
 **Pendências externas aguardando Flávio:**
 - Captura real do barramento T4000 (resolve as 3 dúvidas residuais do `T4000_CAN_SPEC.md`).
