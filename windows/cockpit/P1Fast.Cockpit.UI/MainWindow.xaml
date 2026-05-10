@@ -18,10 +18,22 @@
                     BorderBrush="#262626">
                 <Grid>
 
-                    <!-- Halo (placeholder SolidColorBrush; radial fica pra próxima) -->
-                    <Rectangle IsHitTestVisible="False" Opacity="0.5">
+                    <!--
+                        Halo radial gradiente — espelha o web/cockpit.css:
+                        radial-gradient(ellipse 65% 75% at 50% 55%, cor 0%, transparent 65%).
+                        Estados RecordeStint/MelhorHistorico pulsam via Storyboard
+                        em ApplyHalo (PiorStint fica fixo, alerta sem fadiga visual).
+                    -->
+                    <Rectangle x:Name="HaloRect" IsHitTestVisible="False" Opacity="1.0">
                         <Rectangle.Fill>
-                            <SolidColorBrush x:Name="HaloBrush" Color="Transparent"/>
+                            <RadialGradientBrush x:Name="HaloBrush"
+                                                 Center="0.5,0.55"
+                                                 GradientOrigin="0.5,0.55"
+                                                 RadiusX="0.65"
+                                                 RadiusY="0.75">
+                                <GradientStop x:Name="HaloStopCenter" Offset="0.0" Color="Transparent"/>
+                                <GradientStop x:Name="HaloStopEdge"   Offset="0.65" Color="Transparent"/>
+                            </RadialGradientBrush>
                         </Rectangle.Fill>
                     </Rectangle>
 
