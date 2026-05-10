@@ -5,7 +5,17 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="P1 Fast — Cockpit Piloto">
 
-    <Grid Background="#0a0a0a">
+    <Grid x:Name="RootGrid" Background="#0a0a0a" RenderTransformOrigin="0.5,0.5">
+        <Grid.RenderTransform>
+            <!--
+                Rotação do conteúdo do cockpit dentro do app. Persistida por
+                display em %LOCALAPPDATA%\P1Fast.Cockpit\rotation.json.
+                Toggle: Ctrl+R alterna 0° ↔ 180°. Coexiste com Display Settings
+                do Windows (ADR-023 amendment 6). Telas 10,5" invertidas no
+                painel ficam em 180°; telas em posição normal ficam em 0°.
+            -->
+            <RotateTransform x:Name="RootRotation" Angle="0"/>
+        </Grid.RenderTransform>
         <Viewbox HorizontalAlignment="Center"
                  VerticalAlignment="Center"
                  StretchDirection="Both">

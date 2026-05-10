@@ -191,6 +191,21 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 >
 > **Trabalho JS continua valendo** como spec executável até cada peça ser portada pra C# com smokes equivalentes verdes.
 
+> **AMENDMENT 6 (Flávio 2026-05-10):** rotação 180° passa a ser **função do app**, em coexistência com Display Settings do Windows. Motivo: nem toda tela é montada invertida — algumas instalações terão a tela 10,5" em posição normal (0°), outras invertidas (180°), e a configuração precisa ser por display, sem mexer no Windows toda vez.
+>
+> **Como é feito:**
+> 1. **App** rotaciona o conteúdo via `RotateTransform` na raiz do XAML (`RootGrid.RenderTransform`). Sem custo de performance — Composition aplica o transform direto na GPU.
+> 2. **Toggle**: `Ctrl+R` alterna 0° ↔ 180° em runtime.
+> 3. **Persistência**: por display em `%LOCALAPPDATA%\P1Fast.Cockpit\rotation.json` (chave = `--display-index` ou `default` quando janelado). Cada tela lembra a sua orientação no próximo boot.
+>
+> **Coexistência com amendment 5 (Display Settings):**
+> - Default agora é **Windows em 0°** em todas as telas.
+> - Rotação fica do lado do app — quem decide é o operador via Ctrl+R.
+> - Amendment 5 fica como **fallback documentado** (caso o operador prefira fazer no Windows e deixar o app em 0°). Não é mais o caminho recomendado.
+> - Trade-off aceito: input de mouse/touch numa tela em 180° vai sair invertido (porque o Windows entrega coords não rotacionadas). Pra cockpit-piloto não importa: o piloto não toca na tela durante a sessão. Se vier a importar, mapeamento de input fica como sub-amendment futuro.
+>
+> **Implicação prática:** o checklist de instalação no carro (item por item do amendment 5) muda: passos 3 e 4 ("Orientação = 180°" e "posicionar à direita") deixam de ser obrigatórios. Em vez deles: depois do primeiro boot do app na tela 10,5", o operador faz Ctrl+R uma vez e a config persiste.
+
 **Stack do iPhone**:
 - Captura iOS Swift continua mandatória (ADR-018 segue valendo pra essa parte).
 - `LiveTelemetryRecorder` ganha consumidor novo: publish em canal Realtime `live-stint-{stintId}` a 10 Hz (IMU/GPS agregados — não 100 Hz raw, isso fica só no SQLite local conforme ADR-014).
