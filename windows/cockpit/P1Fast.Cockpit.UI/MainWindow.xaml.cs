@@ -1,7 +1,6 @@
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Media;
 using P1Fast.Cockpit.Domain;
 using Windows.Graphics;
 using Windows.UI;
@@ -88,7 +87,7 @@ public sealed partial class MainWindow : Window
     {
         if (HaloColors.TryGetValue(status, out var color))
         {
-            HaloColorStop.Color = color;
+            HaloBrush.Color = color;
         }
     }
 
