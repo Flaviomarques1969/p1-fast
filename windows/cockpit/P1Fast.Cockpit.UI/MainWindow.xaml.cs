@@ -60,11 +60,8 @@ public sealed partial class MainWindow : Window
             if (zeroIndexed >= 0 && zeroIndexed < areas.Count)
             {
                 var area = areas[zeroIndexed];
-                appWindow.MoveAndResize(new RectInt32(
-                    X:      area.OuterBounds.X,
-                    Y:      area.OuterBounds.Y,
-                    Width:  area.OuterBounds.Width,
-                    Height: area.OuterBounds.Height));
+                // OuterBounds já é RectInt32 — passa direto.
+                appWindow.MoveAndResize(area.OuterBounds);
                 appWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
                 return;
             }
@@ -72,6 +69,7 @@ public sealed partial class MainWindow : Window
         }
 
         // Default: janelado, tamanho confortável pra dev no primário.
-        appWindow.Resize(new SizeInt32(1280, 800));
+        var size = new SizeInt32 { Width = 1280, Height = 800 };
+        appWindow.Resize(size);
     }
 }
