@@ -114,7 +114,7 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 **Aplica-se a**: todo PR que toca `ios/p1fast-core/`. Memória `feedback_package_resolved_gotcha.md` tem o procedimento operacional.
 
 ## ADR-023 — Cockpit-display ao vivo migra pra Windows; T4000 deixa de ser BLE iOS
-**Decisão (Flavio 2026-05-09, refinada 2026-05-10 amendment 5)**: a tela viva do cockpit do piloto deixa de ser SwiftUI no iPhone e passa a rodar num **notebook Windows** com **tela 10,5" externa** plugada nele e montada no painel do carro **de cabeça pra baixo** (rotação 180° via Windows Display Settings). O iPhone continua presente, mas com papel diferente.
+**Decisão (Flavio 2026-05-09, refinada 2026-05-10 amendments 5 e 6)**: a tela viva do cockpit do piloto deixa de ser SwiftUI no iPhone e passa a rodar num **notebook Windows** com **tela 10,5" externa** plugada nele e montada no painel do carro (em alguns carros invertida, em outros normal — rotação 180° configurável pelo app via Ctrl+R, persistida por display, **amendment 6** abaixo). O iPhone continua presente, mas com papel diferente.
 
 **Por que mudou**: o piloto vai ter uma tela maior melhor posicionada no painel (10,5" landscape externa, montagem no carro). Fica mais legível em ambiente de pista que a tela do iPhone presa em algum suporte. Decisão de produto, não técnica.
 
@@ -123,7 +123,7 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 | Aparelho | Função |
 |---|---|
 | **Notebook Windows** (host) | Hospeda o app cockpit (WinUI 3 + C# .NET 8), driver T4000 (USB/CAN), processamento ao vivo (delta, halo, shift light, apex) com dados próprios + IMU/GPS recebidos do iPhone via cabo USB / Supabase Realtime. Display interno do notebook fica com a área de trabalho normal pra engenheiro/instalador. |
-| **Tela 10,5" externa** (target visual do piloto) | Plugada no notebook (HDMI/USB-C/DisplayPort), montada **invertida** no painel, rotação 180° via Windows Display Settings. Recebe a janela cockpit fullscreen (`--display-index 2`). É a tela cuja resolução nativa define o viewport alvo do mockup canônico (MS-13.1). |
+| **Tela 10,5" externa** (target visual do piloto) | Plugada no notebook (HDMI/USB-C/DisplayPort), montagem no painel pode ser normal ou invertida — rotação 180° aplicada pelo próprio app (toggle Ctrl+R, persistida por display em `rotation.json` — ver **amendment 6**). Recebe a janela cockpit fullscreen (`--display-index 2`). É a tela cuja resolução nativa define o viewport alvo do mockup canônico (MS-13.1). |
 | **iPhone 16 Pro Max** | Captura IMU 100 Hz + GPS 1 Hz (CoreMotion / CoreLocation), câmera onboard frontal (Daily.co), agregador de tudo (sensores próprios + T4000 lido do canal Realtime do Windows) e uploader pro mundo externo. **Sem cockpit-display ativo durante a pilotagem.** |
 | **Apple TV (Box Cockpit)** | Inalterado — espelha o cockpit via Supabase Realtime, AirPlay do iPhone do operador do box. |
 
@@ -163,7 +163,9 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 
 > **AMENDMENT 5 (Flávio 2026-05-10):** correção de entendimento sobre o hardware de display. **Quem roda o app é o notebook Windows; quem o piloto OLHA é uma tela 10,5" externa**, plugada nesse notebook (HDMI / USB-C / DisplayPort), montada no painel do carro. **A tela é instalada de cabeça pra baixo**, então a imagem precisa estar **rotacionada 180°** pra ficar legível pelo piloto.
 >
-> **Como a rotação é feita:** via **Windows Display Settings → Orientação do monitor 2 = 180°**. NÃO no código do app. Razões:
+> ⚠️ **PARCIALMENTE SUPERADO PELO AMENDMENT 6 ABAIXO** — a partir de 2026-05-10, a rotação 180° é função do app (toggle Ctrl+R, persistida por display). Esta seção descreve a abordagem original (Display Settings do Windows). O amendment 6 explica por que mudou: nem toda tela é montada invertida, e a config precisa ser por display sem mexer no Windows. O caminho via Display Settings descrito abaixo continua **válido como fallback documentado** — não é mais o recomendado.
+>
+> **Como a rotação ERA feita** (caminho original, hoje fallback): via **Windows Display Settings → Orientação do monitor 2 = 180°**. NÃO no código do app. Razões:
 > 1. Custo zero pra desenvolvimento (sem `RotateTransform 180` no XAML, sem código de mapeamento de input).
 > 2. Aplica também ao mouse/touch quando o piloto ou mecânico precisar interagir com a tela.
 > 3. É uma config que o instalador faz uma vez e fica permanente.
