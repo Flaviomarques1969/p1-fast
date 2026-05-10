@@ -85,8 +85,10 @@ jobs:
 
   # ── UI build (WinUI 3 + .NET 8) ──
   # Camada XAML precisa de Windows pra restore/build (Windows App SDK + WinRT
-  # projections). Runner windows-latest custa 2× o ubuntu, mas só roda quando
-  # P1Fast.Cockpit.UI/** ou Domain/** mudam (UI ref direto do Domain).
+  # projections). Roda em windows-latest mas só quando UI/Domain mudam.
+  # Publish self-contained com artifact .exe está em iteração separada
+  # (3 tentativas falharam nesta PR — ver PR #153 histórico). Por enquanto
+  # esta job só valida que o XAML compila.
   ui-build:
     needs: changes
     if: needs.changes.outputs.ui == 'true'
