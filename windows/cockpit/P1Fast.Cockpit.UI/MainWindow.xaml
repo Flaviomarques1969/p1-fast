@@ -169,6 +169,54 @@
                                    HorizontalAlignment="Center"/>
                     </StackPanel>
 
+                    <!--
+                        Alert bloco — mensagem que vem do fundo (z-axis simulado
+                        via ScaleTransform). Posicionada à direita (left:100%-240).
+                        No mockup tem blur 12px → 0 + scale 0.35 → 1 + opacity 0 → 1
+                        em transition 1200 ms ease-msg. Por enquanto sem animação;
+                        Visibility liga/desliga.
+                    -->
+                    <Border x:Name="AlertBlocoRoot"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Margin="0,0,40,0"
+                            MaxWidth="380"
+                            Visibility="Collapsed">
+                        <TextBlock x:Name="AlertText"
+                                   Text=""
+                                   FontSize="34"
+                                   FontWeight="ExtraBold"
+                                   Foreground="#82C8FF"
+                                   TextAlignment="Center"
+                                   TextWrapping="Wrap"/>
+                    </Border>
+
+                    <!--
+                        Stint bar — 12 blocos ao longo do bottom mostrando
+                        o histórico de trechos do stint atual.
+                        Mockup: position:absolute left:60 right:8 bottom:4 height:14.
+                        Estados: neutral, faster, slower, best-stint (shimmer),
+                        best-alltime (bloom dourado), current (foco amarelo).
+                    -->
+                    <Grid Margin="60,0,8,4"
+                          VerticalAlignment="Bottom"
+                          Height="14">
+                        <StackPanel Orientation="Horizontal" Spacing="3">
+                            <Border x:Name="StintBlock01" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
+                            <Border x:Name="StintBlock02" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
+                            <Border x:Name="StintBlock03" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
+                            <Border x:Name="StintBlock04" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
+                            <Border x:Name="StintBlock05" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
+                            <Border x:Name="StintBlock06" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
+                            <Border x:Name="StintBlock07" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
+                            <Border x:Name="StintBlock08" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
+                            <Border x:Name="StintBlock09" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
+                            <Border x:Name="StintBlock10" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
+                            <Border x:Name="StintBlock11" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
+                            <Border x:Name="StintBlock12" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
+                        </StackPanel>
+                    </Grid>
+
                     <!-- Status text (debug, no rodapé) -->
                     <TextBlock x:Name="StatusText"
                                Text="—"
@@ -176,7 +224,7 @@
                                FontSize="11"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Bottom"
-                               Margin="0,0,0,8"/>
+                               Margin="0,0,0,24"/>
 
                 </Grid>
             </Border>

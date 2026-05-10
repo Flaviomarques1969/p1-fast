@@ -28,6 +28,8 @@ public sealed partial class MainWindow : Window
     private static readonly Color Bom         = Color.FromArgb(0xFF, 0x4F, 0xE0, 0x60);
     private static readonly Color Erro        = Color.FromArgb(0xFF, 0xE0, 0x40, 0x40);
     private static readonly Color Foco        = Color.FromArgb(0xFF, 0xF0, 0xC0, 0x40);
+    private static readonly Color Sistema     = Color.FromArgb(0xFF, 0x82, 0xC8, 0xFF);
+    private static readonly Color Ouro        = Color.FromArgb(0xFF, 0xE0, 0xC0, 0x60);
 
     private static readonly Dictionary<TrechoStatus, Color> HaloColors = new()
     {
@@ -47,6 +49,30 @@ public sealed partial class MainWindow : Window
     private static readonly int[] LedTierByPosition = { 1, 2, 3, 4, 5, 6, 6, 5, 4, 3, 2, 1 };
 
     private Ellipse[] _leds = Array.Empty<Ellipse>();
+    private Microsoft.UI.Xaml.Controls.Border[] _stintBlocks = Array.Empty<Microsoft.UI.Xaml.Controls.Border>();
+
+    /// <summary>Estados visuais de cada bloco da stint bar.</summary>
+    public enum StintBlockState
+    {
+        Pending,      // ainda não rodou — cinza faint
+        Neutral,      // sem comparação clara — branco
+        Faster,       // mais rápido que a melhor anterior — verde
+        Slower,       // mais devagar — vermelho
+        BestStint,    // melhor do stint atual — verde com shimmer
+        BestAlltime,  // melhor de todos os tempos — dourado bloom
+        Current,      // trecho em curso — amarelo (foco)
+    }
+
+    private static readonly Dictionary<StintBlockState, Color> StintColors = new()
+    {
+        [StintBlockState.Pending]     = Color.FromArgb(0xFF, 0x60, 0x60, 0x60),
+        [StintBlockState.Neutral]     = Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF),
+        [StintBlockState.Faster]      = Bom,
+        [StintBlockState.Slower]      = Erro,
+        [StintBlockState.BestStint]   = Bom,
+        [StintBlockState.BestAlltime] = Ouro,
+        [StintBlockState.Current]     = Foco,
+    };
 
     public MainWindow() : this(new LaunchOptions(DisplayIndex: null)) { }
 
@@ -57,6 +83,12 @@ public sealed partial class MainWindow : Window
         ApplyDisplayPlacement();
 
         _leds = new[] { Led01, Led02, Led03, Led04, Led05, Led06, Led07, Led08, Led09, Led10, Led11, Led12 };
+        _stintBlocks = new[]
+        {
+            StintBlock01, StintBlock02, StintBlock03, StintBlock04,
+            StintBlock05, StintBlock06, StintBlock07, StintBlock08,
+            StintBlock09, StintBlock10, StintBlock11, StintBlock12,
+        };
 
         _cockpitState.OnChange((cur, _, keys) =>
         {
@@ -67,6 +99,7 @@ public sealed partial class MainWindow : Window
                 if (keys.Contains("delta"))        ApplyDelta(cur.Delta);
                 if (keys.Contains("acao"))         ApplyAcao(cur.Acao);
                 if (keys.Contains("apex"))         ApplyApex(cur.Apex);
+                if (keys.Contains("message"))      ApplyMessage(cur.Message);
                 UpdateStatusText();
             });
         });
@@ -77,6 +110,7 @@ public sealed partial class MainWindow : Window
         ApplyDelta(initial.Delta);
         ApplyAcao(initial.Acao);
         ApplyApex(initial.Apex);
+        ApplyMessage(initial.Message);
         UpdateStatusText();
 
         _demoTimer = DispatcherQueue.CreateTimer();
@@ -107,39 +141,64 @@ public sealed partial class MainWindow : Window
         double FreioAtualM,
         double FreioRefM,
         ApexEstado ApiceEstado,
-        double ApiceKmh
+        double ApiceKmh,
+        MsgTipo? MsgTipo,
+        string MsgTexto,
+        StintBlockState[]? StintPattern
     );
+
+    private static readonly StintBlockState P = StintBlockState.Pending;
+    private static readonly StintBlockState N = StintBlockState.Neutral;
+    private static readonly StintBlockState F = StintBlockState.Faster;
+    private static readonly StintBlockState S = StintBlockState.Slower;
+    private static readonly StintBlockState BS = StintBlockState.BestStint;
+    private static readonly StintBlockState BA = StintBlockState.BestAlltime;
+    private static readonly StintBlockState C = StintBlockState.Current;
 
     private static readonly IReadOnlyList<DemoScene> DemoScenes = new List<DemoScene>
     {
-        // Cena 1: corrida limpa, sem comparações ainda
+        // Cena 1: começo de stint — primeiro trecho em curso, resto pendente
         new(TrechoStatus.Neutro,       ShiftMode.Off,  0,
             "0.00", Tone.Neutro, "—", Tone.Neutro,
-            ApexEstado.OkPior, 0,    ApexEstado.OkPior, 0,  0,    ApexEstado.OkPior, 0),
-        // Cena 2: subindo RPM, melhor que a anterior
+            ApexEstado.OkPior, 0,    ApexEstado.OkPior, 0,  0,    ApexEstado.OkPior, 0,
+            null, "",
+            new[] { C, P, P, P, P, P, P, P, P, P, P, P }),
+        // Cena 2: subindo RPM, primeiro trecho fechou faster
         new(TrechoStatus.Neutro,       ShiftMode.Lit,  2,
             "-0.08", Tone.Bom, "MANTÉM LINHA", Tone.Neutro,
-            ApexEstado.OkMelhor, 92, ApexEstado.OkMelhor, 18, 16, ApexEstado.OkMelhor, 73),
-        // Cena 3: tier 4 (amarelo), recorde
+            ApexEstado.OkMelhor, 92, ApexEstado.OkMelhor, 18, 16, ApexEstado.OkMelhor, 73,
+            null, "",
+            new[] { F, C, P, P, P, P, P, P, P, P, P, P }),
+        // Cena 3: tier 4 amarelo, recorde, mensagem comunicacao chega
         new(TrechoStatus.RecordeStint, ShiftMode.Lit,  4,
             "-0.27", Tone.Bom, "ÁPICE TARDE", Tone.Neutro,
-            ApexEstado.OkMelhor, 95, ApexEstado.OkMelhor, 15, 16, ApexEstado.OkMelhor, 75),
+            ApexEstado.OkMelhor, 95, ApexEstado.OkMelhor, 15, 16, ApexEstado.OkMelhor, 75,
+            P1Fast.Cockpit.Domain.MsgTipo.Comunicacao, "Pneu DD acima da janela",
+            new[] { F, F, BS, C, P, P, P, P, P, P, P, P }),
         // Cena 4: peak vermelho, troca de marcha
         new(TrechoStatus.RecordeStint, ShiftMode.Lit,  6,
             "-0.27", Tone.Bom, "TROCAR AGORA", Tone.Neutro,
-            ApexEstado.OkMelhor, 95, ApexEstado.OkMelhor, 15, 16, ApexEstado.OkMelhor, 75),
+            ApexEstado.OkMelhor, 95, ApexEstado.OkMelhor, 15, 16, ApexEstado.OkMelhor, 75,
+            null, "",
+            new[] { F, F, BS, BA, C, P, P, P, P, P, P, P }),
         // Cena 5: fire — flash
         new(TrechoStatus.RecordeStint, ShiftMode.Fire, 0,
             "-0.27", Tone.Bom, "TROCAR AGORA", Tone.Neutro,
-            ApexEstado.OkMelhor, 95, ApexEstado.OkMelhor, 15, 16, ApexEstado.OkMelhor, 75),
-        // Cena 6: errou — pior stint
+            ApexEstado.OkMelhor, 95, ApexEstado.OkMelhor, 15, 16, ApexEstado.OkMelhor, 75,
+            null, "",
+            new[] { F, F, BS, BA, C, P, P, P, P, P, P, P }),
+        // Cena 6: errou — pior stint, alerta GRAVE
         new(TrechoStatus.PiorStint,    ShiftMode.Lit,  3,
             "+0.42", Tone.Erro, "FREIE TARDE", Tone.Erro,
-            ApexEstado.OkPior, 88,   ApexEstado.OkPior, 22, 16, ApexEstado.OkPior, 68),
+            ApexEstado.OkPior, 88,   ApexEstado.OkPior, 22, 16, ApexEstado.OkPior, 68,
+            P1Fast.Cockpit.Domain.MsgTipo.Grave, "Temperatura óleo crítica",
+            new[] { F, F, BS, BA, S, S, C, P, P, P, P, P }),
         // Cena 7: overrev — alarme
         new(TrechoStatus.PiorStint,    ShiftMode.Overrev, 0,
             "+0.42", Tone.Erro, "OVERREV!", Tone.Erro,
-            ApexEstado.OkPior, 88,   ApexEstado.OkPior, 22, 16, ApexEstado.OkPior, 68),
+            ApexEstado.OkPior, 88,   ApexEstado.OkPior, 22, 16, ApexEstado.OkPior, 68,
+            P1Fast.Cockpit.Domain.MsgTipo.Grave, "Temperatura óleo crítica",
+            new[] { F, F, BS, BA, S, S, S, C, P, P, P, P }),
     };
 
     private void ApplyScene(int index)
@@ -156,6 +215,14 @@ public sealed partial class MainWindow : Window
             _cockpitState.SetApexPonto("freio", estado: s.FreioEstado, atualM: s.FreioAtualM, refM: s.FreioRefM);
         if (s.ApiceKmh > 0)
             _cockpitState.SetApexPonto("apice", estado: s.ApiceEstado, valorKmh: s.ApiceKmh);
+
+        if (s.MsgTipo is { } tipo && !string.IsNullOrEmpty(s.MsgTexto))
+            _cockpitState.ShowMessage(tipo, s.MsgTexto);
+        else
+            _cockpitState.HideMessage();
+
+        if (s.StintPattern is not null)
+            ApplyStintPattern(s.StintPattern);
     }
 
     // ── Apply* ─────────────────────────────────────────────
@@ -266,6 +333,29 @@ public sealed partial class MainWindow : Window
         ApexEstado.OkPior   => Erro,
         _                   => Muted,
     };
+
+    private void ApplyMessage(P1Fast.Cockpit.Domain.Message? msg)
+    {
+        if (msg is null)
+        {
+            AlertBlocoRoot.Visibility = Visibility.Collapsed;
+            return;
+        }
+        AlertText.Text = msg.Texto;
+        AlertText.Foreground = new SolidColorBrush(
+            msg.Tipo == P1Fast.Cockpit.Domain.MsgTipo.Grave ? Erro : Sistema);
+        AlertBlocoRoot.Visibility = Visibility.Visible;
+    }
+
+    private void ApplyStintPattern(StintBlockState[] pattern)
+    {
+        if (_stintBlocks.Length != 12) return;
+        for (var i = 0; i < _stintBlocks.Length && i < pattern.Length; i++)
+        {
+            if (StintColors.TryGetValue(pattern[i], out var color))
+                _stintBlocks[i].Background = new SolidColorBrush(color);
+        }
+    }
 
     private void UpdateStatusText()
     {
