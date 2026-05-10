@@ -4,19 +4,78 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="P1 Fast — Cockpit Piloto">
-    <Grid Background="Black">
-        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
-            <TextBlock
-                Text="Cockpit Piloto"
-                Foreground="White"
-                FontSize="48"
-                HorizontalAlignment="Center"/>
-            <TextBlock
-                x:Name="StatusText"
-                Text="Carregando…"
-                Foreground="#A0A0A0"
-                FontSize="20"
-                HorizontalAlignment="Center"/>
-        </StackPanel>
+
+    <Grid Background="#0a0a0a">
+        <Viewbox HorizontalAlignment="Center"
+                 VerticalAlignment="Center"
+                 StretchDirection="Both">
+
+            <!-- Device 956×440 do mockup canônico -->
+            <Border Width="956" Height="440"
+                    Background="#171717"
+                    CornerRadius="48"
+                    BorderThickness="1"
+                    BorderBrush="#262626">
+                <Grid>
+
+                    <!-- Halo (placeholder SolidColorBrush; radial fica pra próxima) -->
+                    <Rectangle IsHitTestVisible="False" Opacity="0.5">
+                        <Rectangle.Fill>
+                            <SolidColorBrush x:Name="HaloBrush" Color="Transparent"/>
+                        </Rectangle.Fill>
+                    </Rectangle>
+
+                    <!--
+                        Shift light — 12 LEDs horizontais centralizados no topo,
+                        tiers 1,2,3,4,5,6,6,5,4,3,2,1 (espelhado).
+                        Cores: 1-2 verde, 3-4 amarelo, 5-6 vermelho.
+                        Visual simplificado nesta iteração (sem bloom multi-layer
+                        nem animação ledIgnite — vai ser adicionado depois quando
+                        confirmar a sintaxe de DropShadow + Storyboard no WinUI 3).
+                    -->
+                    <Border HorizontalAlignment="Center"
+                            VerticalAlignment="Top"
+                            Margin="0,10,0,0"
+                            Padding="26,9"
+                            CornerRadius="999"
+                            Background="#0F0F0F"
+                            BorderBrush="#1F1F1F"
+                            BorderThickness="1">
+                        <StackPanel Orientation="Horizontal" Spacing="18">
+                            <Ellipse x:Name="Led01" Width="13" Height="13" Fill="#1A1A1A"/>
+                            <Ellipse x:Name="Led02" Width="13" Height="13" Fill="#1A1A1A"/>
+                            <Ellipse x:Name="Led03" Width="13" Height="13" Fill="#1A1A1A"/>
+                            <Ellipse x:Name="Led04" Width="13" Height="13" Fill="#1A1A1A"/>
+                            <Ellipse x:Name="Led05" Width="13" Height="13" Fill="#1A1A1A"/>
+                            <Ellipse x:Name="Led06" Width="13" Height="13" Fill="#1A1A1A"/>
+                            <Ellipse x:Name="Led07" Width="13" Height="13" Fill="#1A1A1A"/>
+                            <Ellipse x:Name="Led08" Width="13" Height="13" Fill="#1A1A1A"/>
+                            <Ellipse x:Name="Led09" Width="13" Height="13" Fill="#1A1A1A"/>
+                            <Ellipse x:Name="Led10" Width="13" Height="13" Fill="#1A1A1A"/>
+                            <Ellipse x:Name="Led11" Width="13" Height="13" Fill="#1A1A1A"/>
+                            <Ellipse x:Name="Led12" Width="13" Height="13" Fill="#1A1A1A"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Status text (placeholder; substituído pelos próximos elementos) -->
+                    <StackPanel HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Spacing="8">
+                        <TextBlock Text="P1 FAST"
+                                   Foreground="White"
+                                   FontSize="32"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center"
+                                   Opacity="0.7"/>
+                        <TextBlock x:Name="StatusText"
+                                   Text="—"
+                                   Foreground="#a0a0a0"
+                                   FontSize="20"
+                                   HorizontalAlignment="Center"/>
+                    </StackPanel>
+
+                </Grid>
+            </Border>
+        </Viewbox>
     </Grid>
 </Window>
