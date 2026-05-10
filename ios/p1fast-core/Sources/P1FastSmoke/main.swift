@@ -6315,20 +6315,28 @@ step("TGA-04: ViewBox e [GeoAncora] decodam JSON canônico (formato escrito pela
 //  TR-01..02: MockCockpitTransport contabiliza send/start/stop
 //  PUB-01..06: publisher consome raw + enriched, publica em todos transports
 
-func runAsync<T>(_ body: @escaping @Sendable () async throws -> T) throws -> T {
+// Helper Box pra contornar strict concurrency: a captura por referência
+// (Result num class) é compatível com Swift 6, ao contrário de capturar
+// um `var` por valor.
+final class _SmokeBox<T>: @unchecked Sendable {
+    var value: T
+    init(_ value: T) { self.value = value }
+}
+
+func runAsync<T: Sendable>(_ body: @escaping @Sendable () async throws -> T) throws -> T {
     let sem = DispatchSemaphore(value: 0)
-    var result: Result<T, Error>!
+    let box = _SmokeBox<Result<T, Error>?>(nil)
     Task {
         do {
             let v = try await body()
-            result = .success(v)
+            box.value = .success(v)
         } catch {
-            result = .failure(error)
+            box.value = .failure(error)
         }
         sem.signal()
     }
     sem.wait()
-    return try result.get()
+    return try box.value!.get()
 }
 
 func _encodeJSON(_ env: CockpitEnvelope) throws -> String {
