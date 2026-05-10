@@ -112,6 +112,13 @@ jobs:
           restore-keys: |
             nuget-${{ runner.os }}-
 
+      - name: Restore (UI, win-x64)
+        shell: pwsh
+        run: |
+          dotnet restore windows/cockpit/P1Fast.Cockpit.UI/P1Fast.Cockpit.UI.csproj `
+            -r win-x64 `
+            -p:Platform=x64
+
       - name: Publish (win-x64, self-contained, Windows App SDK bundled)
         shell: pwsh
         run: |
@@ -119,10 +126,24 @@ jobs:
             --configuration Release `
             --runtime win-x64 `
             --self-contained true `
-            /p:Platform=x64 `
-            /p:WindowsAppSDKSelfContained=true `
-            /p:WindowsPackageType=None `
-            --output dist/cockpit-ui
+            --no-restore `
+            -p:Platform=x64 `
+            -p:WindowsAppSDKSelfContained=true `
+            -p:WindowsPackageType=None `
+            -p:PublishReadyToRun=false `
+            -p:EnableMsixTooling=false `
+            -o dist/cockpit-ui
+
+      - name: List published files (debug)
+        shell: pwsh
+        run: |
+          if (Test-Path dist/cockpit-ui) {
+            Get-ChildItem dist/cockpit-ui -Recurse | Select-Object FullName, Length | Format-Table -AutoSize | Out-String
+            $exe = Get-ChildItem dist/cockpit-ui -Filter "P1Fast.Cockpit.UI.exe" -Recurse
+            if (-not $exe) { Write-Error "exe nao foi gerado" }
+          } else {
+            Write-Error "diretorio dist/cockpit-ui nao existe"
+          }
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
