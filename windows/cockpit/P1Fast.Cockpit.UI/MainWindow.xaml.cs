@@ -1,13 +1,10 @@
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Shapes;
 using P1Fast.Cockpit.Domain;
-using System.IO;
-using System.Text.Json;
 using Windows.Graphics;
 using Windows.UI;
 using WinRT.Interop;
@@ -106,7 +103,6 @@ public sealed partial class MainWindow : Window
         _options = options;
         InitializeComponent();
         ApplyDisplayPlacement();
-        ApplyInitialRotation();
 
         _leds = new[] { Led01, Led02, Led03, Led04, Led05, Led06, Led07, Led08, Led09, Led10, Led11, Led12 };
         _stintBlocks = new[]
@@ -679,8 +675,7 @@ public sealed partial class MainWindow : Window
         var displayInfo = _options.DisplayIndex is { } idx
             ? $"display {idx} fullscreen"
             : "janelado (primário)";
-        var rotInfo = RootRotation.Angle >= 180 ? "rot180" : "rot0";
-        StatusText.Text = $"{displayInfo} {rotInfo}  •  trecho={s.TrechoStatus}  •  shift={s.Shift.Mode} L{s.Shift.Level}  •  Δ={s.Delta.Value}";
+        StatusText.Text = $"{displayInfo}  •  trecho={s.TrechoStatus}  •  shift={s.Shift.Mode} L{s.Shift.Level}  •  Δ={s.Delta.Value}";
     }
 
     private void ApplyDisplayPlacement()
@@ -704,76 +699,5 @@ public sealed partial class MainWindow : Window
 
         var size = new SizeInt32 { Width = 1280, Height = 800 };
         appWindow.Resize(size);
-    }
-
-    // ── Rotação do conteúdo (ADR-023 amendment 6) ──────────────
-    // Toggle Ctrl+R alterna 0° ↔ 180°. Persistido por display em
-    // %LOCALAPPDATA%\P1Fast.Cockpit\rotation.json. Coexiste com Display
-    // Settings do Windows: o Windows fica em 0° (default), o app rotaciona
-    // o conteúdo via RenderTransform na raiz do XAML.
-
-    private const double RotationNone = 0.0;
-    private const double Rotation180  = 180.0;
-
-    private void ApplyInitialRotation()
-    {
-        var angle = LoadRotationForDisplay(_options.DisplayIndex);
-        RootRotation.Angle = angle;
-    }
-
-    // Atalho registrado em MainWindow.xaml: <KeyboardAccelerator Key="R" Modifiers="Control" .../>
-    private void OnRotateToggleInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        var next = RootRotation.Angle >= Rotation180 ? RotationNone : Rotation180;
-        RootRotation.Angle = next;
-        SaveRotationForDisplay(_options.DisplayIndex, next);
-        args.Handled = true;
-    }
-
-    private static string GetRotationConfigPath()
-    {
-        var dir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "P1Fast.Cockpit");
-        Directory.CreateDirectory(dir);
-        return Path.Combine(dir, "rotation.json");
-    }
-
-    private static string RotationKey(int? displayIndex) =>
-        displayIndex?.ToString() ?? "default";
-
-    private static double LoadRotationForDisplay(int? displayIndex)
-    {
-        try
-        {
-            var path = GetRotationConfigPath();
-            if (!File.Exists(path)) return RotationNone;
-            var dict = JsonSerializer.Deserialize<Dictionary<string, int>>(File.ReadAllText(path))
-                       ?? new Dictionary<string, int>();
-            return dict.TryGetValue(RotationKey(displayIndex), out var angle) ? angle : RotationNone;
-        }
-        catch
-        {
-            // Best-effort: corrupted config não derruba o app. Default = 0°.
-            return RotationNone;
-        }
-    }
-
-    private static void SaveRotationForDisplay(int? displayIndex, double angle)
-    {
-        try
-        {
-            var path = GetRotationConfigPath();
-            var dict = File.Exists(path)
-                ? (JsonSerializer.Deserialize<Dictionary<string, int>>(File.ReadAllText(path))
-                   ?? new Dictionary<string, int>())
-                : new Dictionary<string, int>();
-            dict[RotationKey(displayIndex)] = (int)Math.Round(angle);
-            File.WriteAllText(path, JsonSerializer.Serialize(dict));
-        }
-        catch
-        {
-            // Best-effort. Falha de I/O não derruba o app — só perde a persistência.
-        }
     }
 }
