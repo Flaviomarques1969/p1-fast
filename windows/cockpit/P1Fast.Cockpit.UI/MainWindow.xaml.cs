@@ -755,11 +755,15 @@ public sealed partial class MainWindow : Window
 
     private static string GetRotationConfigPath()
     {
-        var dir = Path.Combine(
+        // System.IO.Path qualificado: Microsoft.UI.Xaml.Shapes.Path (do using
+        // Microsoft.UI.Xaml.Shapes da linha 7) torna 'Path' ambíguo no
+        // compilador. Era erro CS0104 silenciado pelo "ui-build vermelho 3x"
+        // que motivou o revert b3b84c8.
+        var dir = System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "P1Fast.Cockpit");
         Directory.CreateDirectory(dir);
-        return Path.Combine(dir, "rotation.json");
+        return System.IO.Path.Combine(dir, "rotation.json");
     }
 
     private static double LoadRotationForDisplay(int? displayIndex)
