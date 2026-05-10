@@ -26,6 +26,35 @@
                     </Rectangle>
 
                     <!--
+                        Notch — decoração à esquerda do device (mockup .notch:
+                        position:absolute left:18 top:50% width:36 height:128).
+                        Visualmente é um retângulo preto arredondado.
+                    -->
+                    <Border HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Margin="18,0,0,0"
+                            Width="36"
+                            Height="128"
+                            CornerRadius="20"
+                            Background="Black"
+                            BorderBrush="#0E0E0E"
+                            BorderThickness="1"/>
+
+                    <!--
+                        Telemetria chip — coluna de 3 dots à direita (mockup
+                        .telemetria-chip: position:absolute right:10 top:50%).
+                        Cores: faint default; ok=verde; warn=amarelo.
+                    -->
+                    <StackPanel HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Margin="0,0,10,0"
+                                Spacing="6">
+                        <Ellipse x:Name="TelemetriaDot01" Width="6" Height="6" Fill="#4FE060"/>
+                        <Ellipse x:Name="TelemetriaDot02" Width="6" Height="6" Fill="#4FE060"/>
+                        <Ellipse x:Name="TelemetriaDot03" Width="6" Height="6" Fill="#606060"/>
+                    </StackPanel>
+
+                    <!--
                         Shift light — 12 LEDs no topo. Container Border arredondado
                         com Padding 26,9 e Spacing 18 (mesmas dimensões do mockup
                         .shift-light).
