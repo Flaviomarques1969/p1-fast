@@ -1,8 +1,10 @@
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
 using P1Fast.Cockpit.Domain;
 using Windows.Graphics;
+using Windows.UI;
 using WinRT.Interop;
 
 namespace P1Fast.Cockpit.UI;
@@ -13,14 +15,43 @@ namespace P1Fast.Cockpit.UI;
 /// tela 10,5" externa invertida no painel (ADR-023 amendment 5). Sem
 /// essa flag, abre janelado no primário pra desenvolvimento.
 ///
-/// O port do mockup canônico (DOM, classes OKlch, keyframes, halo radial,
-/// shift light, apex pontos, mensagem, delta, ação) entra em iterações
-/// seguintes consumindo o <see cref="CockpitState"/>.
+/// Esta iteração (PR-B) traz o **halo radial** (4 estados do mockup
+/// canônico: neutro, recorde-stint, melhor-historico, pior-stint) +
+/// um demo loop sintético que cicla pelos 4 estados a cada 5 s. Próximas
+/// iterações trazem shift light, apex pontos, info bloco, alerta, etc.
 /// </summary>
 public sealed partial class MainWindow : Window
 {
     private readonly CockpitState _cockpitState = new();
     private readonly LaunchOptions _options;
+    private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _demoTimer;
+
+    /// <summary>
+    /// Cores do halo radial — conversão aproximada das tokens OKlch do
+    /// mockup canônico (linhas 24-25, 77-78). Refinar quando o Flávio
+    /// vir o resultado na tela 10,5" real e comparar com o navegador.
+    ///
+    /// CSS: oklch(78% 0.18 65 / .42) = laranja quente translúcido
+    /// CSS: oklch(56% 0.22 305 / .42) = roxo translúcido
+    /// </summary>
+    private static readonly Dictionary<TrechoStatus, Color> HaloColors = new()
+    {
+        [TrechoStatus.Neutro]          = Color.FromArgb(0x00, 0x00, 0x00, 0x00),
+        [TrechoStatus.RecordeStint]    = Color.FromArgb(0x6B, 0xF0, 0xA0, 0x60),
+        // Mockup canônico não define halo pra MelhorHistorico — fica
+        // transparente até spec virar. (TODO: pedir cor pro Flávio.)
+        [TrechoStatus.MelhorHistorico] = Color.FromArgb(0x00, 0x00, 0x00, 0x00),
+        [TrechoStatus.PiorStint]       = Color.FromArgb(0x6B, 0x92, 0x52, 0xC8),
+    };
+
+    /// <summary>Demo loop: cicla pelos 4 estados a cada 5 segundos.</summary>
+    private static readonly TrechoStatus[] DemoCycle = new[]
+    {
+        TrechoStatus.Neutro,
+        TrechoStatus.RecordeStint,
+        TrechoStatus.MelhorHistorico,
+        TrechoStatus.PiorStint,
+    };
 
     public MainWindow() : this(new LaunchOptions(DisplayIndex: null)) { }
 
@@ -29,13 +60,36 @@ public sealed partial class MainWindow : Window
         _options = options;
         InitializeComponent();
         ApplyDisplayPlacement();
+
+        _cockpitState.OnChange((cur, _, keys) =>
+        {
+            if (keys.Contains("trechoStatus"))
+            {
+                DispatcherQueue.TryEnqueue(() => ApplyHalo(cur.TrechoStatus));
+            }
+            DispatcherQueue.TryEnqueue(UpdateStatusText);
+        });
+
+        ApplyHalo(_cockpitState.Get().TrechoStatus);
         UpdateStatusText();
 
-        _cockpitState.OnChange((_, _, _) =>
+        _demoTimer = DispatcherQueue.CreateTimer();
+        _demoTimer.Interval = TimeSpan.FromSeconds(5);
+        var demoIndex = 0;
+        _demoTimer.Tick += (_, _) =>
         {
-            // Próxima iteração: aplicar mudanças nos elementos XAML aqui.
-            UpdateStatusText();
-        });
+            _cockpitState.SetTrechoStatus(DemoCycle[demoIndex % DemoCycle.Length]);
+            demoIndex++;
+        };
+        _demoTimer.Start();
+    }
+
+    private void ApplyHalo(TrechoStatus status)
+    {
+        if (HaloColors.TryGetValue(status, out var color))
+        {
+            HaloColorStop.Color = color;
+        }
     }
 
     private void UpdateStatusText()
@@ -44,7 +98,7 @@ public sealed partial class MainWindow : Window
         var displayInfo = _options.DisplayIndex is { } idx
             ? $"display {idx} fullscreen"
             : "janelado (primário)";
-        StatusText.Text = $"{displayInfo} • shift {s.Shift.Mode}";
+        StatusText.Text = $"{displayInfo}  •  trechoStatus = {s.TrechoStatus}";
     }
 
     private void ApplyDisplayPlacement()
@@ -60,7 +114,6 @@ public sealed partial class MainWindow : Window
             if (zeroIndexed >= 0 && zeroIndexed < areas.Count)
             {
                 var area = areas[zeroIndexed];
-                // OuterBounds já é RectInt32 — passa direto.
                 appWindow.MoveAndResize(area.OuterBounds);
                 appWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
                 return;

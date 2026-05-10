@@ -4,19 +4,68 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="P1 Fast — Cockpit Piloto">
-    <Grid Background="Black">
-        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
-            <TextBlock
-                Text="Cockpit Piloto"
-                Foreground="White"
-                FontSize="48"
-                HorizontalAlignment="Center"/>
-            <TextBlock
-                x:Name="StatusText"
-                Text="Carregando…"
-                Foreground="#A0A0A0"
-                FontSize="20"
-                HorizontalAlignment="Center"/>
-        </StackPanel>
+
+    <!-- Fundo preto fora do device (como o body do mockup canônico) -->
+    <Grid Background="#0a0a0a">
+
+        <!--
+            Wrapper externo: Viewbox escala o device (956×440 do mockup) pro
+            tamanho disponível mantendo proporções (mockup canônico congelado
+            byte-for-byte). Na tela 10,5" 1920×1280 vai dar ~1912×880 com
+            letterbox vertical preto.
+        -->
+        <Viewbox HorizontalAlignment="Center"
+                 VerticalAlignment="Center"
+                 StretchDirection="Both">
+
+            <!-- Device — 956×440 conforme mockup canônico (.device) -->
+            <Border x:Name="DeviceRoot"
+                    Width="956" Height="440"
+                    Background="#171717"
+                    CornerRadius="48"
+                    BorderThickness="1"
+                    BorderBrush="#262626">
+                <Grid>
+
+                    <!--
+                        Halo radial — overlay que muda de cor por TrechoStatus.
+                        No mockup é o ::before do .device com radial-gradient
+                        (ellipse 65% 75% at 50% 55%, var(--halo-cor) 0%, transparent 65%).
+                        Reproduzido aqui como Rectangle preenchido por RadialGradientBrush.
+                    -->
+                    <Rectangle IsHitTestVisible="False">
+                        <Rectangle.Fill>
+                            <RadialGradientBrush Center="0.5,0.55"
+                                                 GradientOrigin="0.5,0.55"
+                                                 RadiusX="0.65"
+                                                 RadiusY="0.75">
+                                <GradientStop x:Name="HaloColorStop"
+                                              Offset="0"
+                                              Color="Transparent"/>
+                                <GradientStop Offset="0.65" Color="Transparent"/>
+                            </RadialGradientBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+
+                    <!-- Status text (placeholder; substituído pelos próximos elementos) -->
+                    <StackPanel HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Spacing="8">
+                        <TextBlock Text="P1 FAST"
+                                   Foreground="White"
+                                   FontSize="32"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center"
+                                   Opacity="0.7"/>
+                        <TextBlock x:Name="StatusText"
+                                   Text="—"
+                                   Foreground="#a0a0a0"
+                                   FontSize="20"
+                                   HorizontalAlignment="Center"/>
+                    </StackPanel>
+
+                </Grid>
+            </Border>
+        </Viewbox>
     </Grid>
 </Window>
