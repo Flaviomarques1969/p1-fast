@@ -83,13 +83,13 @@ jobs:
         working-directory: windows/cockpit
         run: dotnet test P1Fast.Cockpit.sln --configuration Release --no-build --verbosity normal
 
-  # ── UI publish (WinUI 3 + .NET 8) ──
-  # Empacota o cockpit (self-contained win-x64 + Windows App SDK self-contained)
-  # e sobe como artifact pra Flávio baixar e rodar no notebook a cada iteração.
-  # Validação de compilação acontece de graça dentro do próprio publish.
-  # Single-file não é viável pra WinUI 3 (precisa dos nativos do App SDK
-  # extraídos), então o artifact é uma pasta com o .exe + DLLs.
-  ui-publish:
+  # ── UI build (WinUI 3 + .NET 8) ──
+  # Camada XAML precisa de Windows pra restore/build (Windows App SDK + WinRT
+  # projections). Roda em windows-latest mas só quando UI/Domain mudam.
+  # Publish self-contained com artifact .exe está em iteração separada
+  # (3 tentativas falharam nesta PR — ver PR #153 histórico). Por enquanto
+  # esta job só valida que o XAML compila.
+  ui-build:
     needs: changes
     if: needs.changes.outputs.ui == 'true'
     runs-on: windows-latest
@@ -112,49 +112,13 @@ jobs:
           restore-keys: |
             nuget-${{ runner.os }}-
 
-      - name: Install windowsappsdk workload
-        shell: pwsh
-        run: dotnet workload install windowsappsdk
+      - name: Restore (UI)
+        working-directory: windows/cockpit
+        run: dotnet restore P1Fast.Cockpit.UI/P1Fast.Cockpit.UI.csproj /p:Platform=x64
 
-      - name: Add MSBuild to PATH
-        uses: microsoft/setup-msbuild@v2
-
-      - name: Restore
-        shell: pwsh
-        run: msbuild windows/cockpit/P1Fast.Cockpit.UI/P1Fast.Cockpit.UI.csproj /t:Restore /p:Configuration=Release /p:Platform=x64 /p:RuntimeIdentifier=win-x64
-
-      - name: Publish (msbuild direto, target Publish)
-        shell: pwsh
-        run: |
-          msbuild windows/cockpit/P1Fast.Cockpit.UI/P1Fast.Cockpit.UI.csproj `
-            /t:Publish `
-            /p:Configuration=Release `
-            /p:Platform=x64 `
-            /p:RuntimeIdentifier=win-x64 `
-            /p:SelfContained=true `
-            /p:WindowsAppSDKSelfContained=true `
-            /p:WindowsPackageType=None `
-            /p:PublishReadyToRun=false `
-            /p:EnableMsixTooling=false `
-            /p:PublishDir=dist\cockpit-ui\
-
-      - name: List published files (debug)
-        shell: pwsh
-        run: |
-          if (Test-Path dist/cockpit-ui) {
-            Get-ChildItem dist/cockpit-ui | Select-Object Name, Length | Format-Table -AutoSize | Out-String
-            $exe = Get-ChildItem dist/cockpit-ui -Filter "P1Fast.Cockpit.UI.exe" -Recurse
-            if (-not $exe) { Write-Error "exe nao foi gerado" } else { Write-Host "OK exe: $($exe.FullName)" }
-          } else {
-            Write-Error "diretorio dist/cockpit-ui nao existe"
-          }
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: p1fast-cockpit-ui-${{ github.sha }}
-          path: dist/cockpit-ui/
-          retention-days: 14
+      - name: Build (UI Release x64)
+        working-directory: windows/cockpit
+        run: dotnet build P1Fast.Cockpit.UI/P1Fast.Cockpit.UI.csproj --configuration Release --no-restore /p:Platform=x64
 
   # ── Capture tool publish ──
   # Empacota o p1fast-t4000-capture.exe (single-file, self-contained) e

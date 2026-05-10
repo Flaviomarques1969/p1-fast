@@ -10,26 +10,11 @@
     <Platforms>x64;arm64</Platforms>
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
     <UseWinUI>true</UseWinUI>
-    <!--
-      EnableMsixTooling=false: este projeto e unpackaged
-      (WindowsPackageType=None). Habilitar MSIX tooling junto causa
-      conflito no dotnet publish self-contained.
-    -->
-    <EnableMsixTooling>false</EnableMsixTooling>
+    <EnableMsixTooling>true</EnableMsixTooling>
     <WindowsPackageType>None</WindowsPackageType>
-    <!-- Bundle Windows App SDK runtime no proprio app pra distribuir self-contained -->
-    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
-    <SelfContained>true</SelfContained>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>12.0</LangVersion>
-    <!--
-      ReadyToRun off: e o default, mas as vezes WinUI 3 falha em
-      publish com R2R porque alguns assemblies do App SDK nao tem
-      suporte. Forca off pra evitar surpresa.
-    -->
-    <PublishReadyToRun>false</PublishReadyToRun>
   </PropertyGroup>
 
   <ItemGroup>
