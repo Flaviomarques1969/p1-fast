@@ -6307,6 +6307,243 @@ step("TGA-04: ViewBox e [GeoAncora] decodam JSON canônico (formato escrito pela
     try assertClose(gas[1].x, 630)
 }
 
+// ════════════════════════════════════════════════════════════
+// MS-2.8 — CockpitEnvelope + LiveTelemetryPublisher
+// ════════════════════════════════════════════════════════════
+// Cobertura:
+//  ENV-01..03: shape do envelope JSON (heartbeat + iphone-imu)
+//  TR-01..02: MockCockpitTransport contabiliza send/start/stop
+//  PUB-01..06: publisher consome raw + enriched, publica em todos transports
+
+func runAsync<T>(_ body: @escaping @Sendable () async throws -> T) throws -> T {
+    let sem = DispatchSemaphore(value: 0)
+    var result: Result<T, Error>!
+    Task {
+        do {
+            let v = try await body()
+            result = .success(v)
+        } catch {
+            result = .failure(error)
+        }
+        sem.signal()
+    }
+    sem.wait()
+    return try result.get()
+}
+
+func _encodeJSON(_ env: CockpitEnvelope) throws -> String {
+    let enc = JSONEncoder()
+    enc.outputFormatting = [.sortedKeys]
+    let data = try enc.encode(env)
+    return String(data: data, encoding: .utf8) ?? ""
+}
+
+func _decodeJSON(_ json: String) throws -> CockpitEnvelope {
+    let dec = JSONDecoder()
+    return try dec.decode(CockpitEnvelope.self, from: Data(json.utf8))
+}
+
+step("ENV-01: heartbeat encoda com payload null explícito + source string canônica") {
+    let env = CockpitEnvelope.heartbeat(tMono: 12345.678)
+    let s = try _encodeJSON(env)
+    try assertEq(s, "{\"payload\":null,\"source\":\"heartbeat\",\"tMono\":12345.678}")
+}
+
+step("ENV-02: iphone-imu encoda payload completo na ordem alfabética") {
+    let payload = CockpitImuGpsPayload(
+        x: 410, y: 220, accLong: 0.3, accLat: -0.5,
+        speedKmh: 92.5, heading: 187.4, gapDurationMs: 0
+    )
+    let env = CockpitEnvelope.imuGps(tMono: 5000, payload: payload)
+    let s = try _encodeJSON(env)
+    let expected = "{\"payload\":{\"accLat\":-0.5,\"accLong\":0.3,\"gapDurationMs\":0,\"heading\":187.4,\"speedKmh\":92.5,\"x\":410,\"y\":220},\"source\":\"iphone-imu\",\"tMono\":5000}"
+    try assertEq(s, expected)
+}
+
+step("ENV-03: round-trip Codable preserva valores e diferencia heartbeat de imu") {
+    let hb = CockpitEnvelope.heartbeat(tMono: 1.5)
+    let hbJson = try _encodeJSON(hb)
+    let hbBack = try _decodeJSON(hbJson)
+    try assertEq(hbBack.source, .heartbeat)
+    try assertTrue(hbBack.payload == nil)
+
+    let p = CockpitImuGpsPayload(
+        x: 1, y: 2, accLong: 3, accLat: 4,
+        speedKmh: 5, heading: 6, gapDurationMs: 7
+    )
+    let imu = CockpitEnvelope.imuGps(tMono: 100, payload: p)
+    let imuJson = try _encodeJSON(imu)
+    let imuBack = try _decodeJSON(imuJson)
+    try assertEq(imuBack.source, .iphoneImu)
+    try assertEq(imuBack.payload, p)
+}
+
+step("TR-01: MockCockpitTransport contabiliza start/stop/send em ordem") {
+    try runAsync {
+        let t = MockCockpitTransport(name: "test")
+        await t.start()
+        await t.send(.heartbeat(tMono: 1))
+        await t.send(.heartbeat(tMono: 2))
+        await t.stop()
+        try assertEq(await t.startedCount, 1)
+        try assertEq(await t.stoppedCount, 1)
+        let snap = await t.snapshot()
+        try assertEq(snap.count, 2)
+        try assertClose(snap[0].tMono, 1)
+        try assertClose(snap[1].tMono, 2)
+    }
+}
+
+step("TR-02: start/stop são idempotentes nos contadores (mock não trava)") {
+    try runAsync {
+        let t = MockCockpitTransport()
+        await t.start(); await t.start()
+        await t.stop(); await t.stop()
+        try assertEq(await t.startedCount, 2)
+        try assertEq(await t.stoppedCount, 2)
+    }
+}
+
+func _track2Anchors() -> Track {
+    let anchors = [
+        GeoAncora(lat: -15.77,    lng: -47.90,    x: 410, y: 707),
+        GeoAncora(lat: -15.7718,  lng: -47.898,   x: 630, y: 400)
+    ]
+    return Track(
+        id: "trk-test",
+        nome: "Test",
+        apelido: "TST",
+        pais: "BR",
+        viewBox: ViewBox(w: 823, h: 799),
+        geoAncoras: anchors
+    )
+}
+func _gpsAt(lat: Double, lng: Double, tMono: Double = 100) -> Sample {
+    var s = Sample(t: 1_700_000_000_000, tMono: tMono, source: SourceTags.gps)
+    s.lat = lat; s.lng = lng; s.acc = 3
+    return s
+}
+func _imuAt(accLong: Double, accLat: Double, tMono: Double = 100) -> Sample {
+    var s = Sample(t: 1_700_000_000_000, tMono: tMono, source: SourceTags.imu)
+    s.accLong = accLong
+    s.accLat = accLat
+    return s
+}
+func _enriched(tMono: Double, xM: Double = 0, yM: Double = 0,
+               vx: Double = 10, vy: Double = 0, heading: Double = 0,
+               gapMs: Double? = nil) -> EnrichedSample {
+    EnrichedSample(
+        t: 1_700_000_000_000, tMono: tMono,
+        xM: xM, yM: yM, vxMps: vx, vyMps: vy,
+        headingDeg: heading, posSigmaM: 5,
+        sourceKalman: true, gapDurationMs: gapMs
+    )
+}
+
+step("PUB-01: enriched é dropado antes da primeira fix GPS") {
+    try runAsync {
+        let mock = MockCockpitTransport()
+        let pub = LiveTelemetryPublisher(
+            transports: [mock], track: _track2Anchors(), stintId: "s1"
+        )
+        await pub.start()
+        await pub.ingestEnriched(_enriched(tMono: 1))
+        await pub.ingestEnriched(_enriched(tMono: 2))
+        try assertEq(await mock.snapshot().count, 0)
+        try assertEq(await pub.imuGpsPublished, 0)
+        try assertEq(await pub.enrichedDroppedNoFix, 2)
+    }
+}
+
+step("PUB-02: depois da primeira fix, cada enriched vira um envelope iphone-imu") {
+    try runAsync {
+        let mock = MockCockpitTransport()
+        let pub = LiveTelemetryPublisher(
+            transports: [mock], track: _track2Anchors(), stintId: "s1"
+        )
+        await pub.start()
+        await pub.ingestRawSample(_gpsAt(lat: -15.77, lng: -47.90))
+        await pub.ingestRawSample(_imuAt(accLong: 0.5, accLat: -0.2))
+        await pub.ingestEnriched(_enriched(tMono: 100, vx: 25, vy: 0, heading: 90))
+        await pub.ingestEnriched(_enriched(tMono: 200, vx: 30, vy: 0, heading: 95))
+        let snap = await mock.snapshot()
+        try assertEq(snap.count, 2)
+        try assertEq(await pub.imuGpsPublished, 2)
+        try assertEq(snap[0].source, .iphoneImu)
+        try assertClose(snap[0].tMono, 100)
+        let p0 = snap[0].payload!
+        try assertClose(p0.speedKmh, 25 * 3.6, tol: 0.01)
+        try assertClose(p0.accLong, 0.5)
+        try assertClose(p0.accLat, -0.2)
+        try assertClose(p0.heading, 90)
+        try assertClose(p0.gapDurationMs, 0)
+    }
+}
+
+step("PUB-03: gapDurationMs do enriched aparece no payload (5500ms)") {
+    try runAsync {
+        let mock = MockCockpitTransport()
+        let pub = LiveTelemetryPublisher(
+            transports: [mock], track: _track2Anchors(), stintId: "s1"
+        )
+        await pub.start()
+        await pub.ingestRawSample(_gpsAt(lat: -15.77, lng: -47.90))
+        await pub.ingestEnriched(_enriched(tMono: 100, gapMs: 5500))
+        let p = await mock.snapshot()[0].payload!
+        try assertClose(p.gapDurationMs, 5500)
+    }
+}
+
+step("PUB-04: heartbeat envia envelope nos N transports independente de fix") {
+    try runAsync {
+        let m1 = MockCockpitTransport(name: "primary")
+        let m2 = MockCockpitTransport(name: "fallback")
+        let pub = LiveTelemetryPublisher(
+            transports: [m1, m2], track: _track2Anchors(), stintId: "s1"
+        )
+        await pub.start()
+        await pub.sendHeartbeat(tMono: 1000)
+        await pub.sendHeartbeat(tMono: 2000)
+        let s1 = await m1.snapshot()
+        let s2 = await m2.snapshot()
+        try assertEq(s1.count, 2)
+        try assertEq(s2.count, 2)
+        try assertEq(s1[0].source, .heartbeat)
+        try assertEq(s2[1].source, .heartbeat)
+        try assertEq(await pub.heartbeatsPublished, 2)
+    }
+}
+
+step("PUB-05: enriched/heartbeat NÃO publicam quando publisher não foi iniciado") {
+    try runAsync {
+        let mock = MockCockpitTransport()
+        let pub = LiveTelemetryPublisher(
+            transports: [mock], track: _track2Anchors(), stintId: "s1"
+        )
+        await pub.ingestRawSample(_gpsAt(lat: -15.77, lng: -47.90))
+        await pub.ingestEnriched(_enriched(tMono: 100))
+        await pub.sendHeartbeat()
+        try assertEq(await mock.snapshot().count, 0)
+    }
+}
+
+step("PUB-06: stop encerra transports + suprime publish posterior") {
+    try runAsync {
+        let mock = MockCockpitTransport()
+        let pub = LiveTelemetryPublisher(
+            transports: [mock], track: _track2Anchors(), stintId: "s1"
+        )
+        await pub.start()
+        await pub.ingestRawSample(_gpsAt(lat: -15.77, lng: -47.90))
+        await pub.ingestEnriched(_enriched(tMono: 100))
+        await pub.stop()
+        await pub.ingestEnriched(_enriched(tMono: 200))
+        await pub.sendHeartbeat()
+        try assertEq(await mock.snapshot().count, 1)
+        try assertEq(await mock.stoppedCount, 1)
+    }
+}
+
 // ── relatório ────────────────────────────────────────────────
 print("\n═══ RESULTADO ═══")
 print("\(ok) ok / \(fail) fail")
