@@ -112,16 +112,31 @@ jobs:
           restore-keys: |
             nuget-${{ runner.os }}-
 
+      - name: Install windowsappsdk workload
+        shell: pwsh
+        run: dotnet workload install windowsappsdk
+
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
-      - name: Publish (canonical pattern; tudo do csproj)
+      - name: Restore
+        shell: pwsh
+        run: msbuild windows/cockpit/P1Fast.Cockpit.UI/P1Fast.Cockpit.UI.csproj /t:Restore /p:Configuration=Release /p:Platform=x64 /p:RuntimeIdentifier=win-x64
+
+      - name: Publish (msbuild direto, target Publish)
         shell: pwsh
         run: |
-          dotnet publish windows/cockpit/P1Fast.Cockpit.UI/P1Fast.Cockpit.UI.csproj `
-            -c Release `
-            -p:Platform=x64 `
-            -o dist/cockpit-ui
+          msbuild windows/cockpit/P1Fast.Cockpit.UI/P1Fast.Cockpit.UI.csproj `
+            /t:Publish `
+            /p:Configuration=Release `
+            /p:Platform=x64 `
+            /p:RuntimeIdentifier=win-x64 `
+            /p:SelfContained=true `
+            /p:WindowsAppSDKSelfContained=true `
+            /p:WindowsPackageType=None `
+            /p:PublishReadyToRun=false `
+            /p:EnableMsixTooling=false `
+            /p:PublishDir=dist\cockpit-ui\
 
       - name: List published files (debug)
         shell: pwsh
