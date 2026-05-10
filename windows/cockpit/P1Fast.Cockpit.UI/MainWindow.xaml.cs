@@ -68,6 +68,11 @@ public sealed partial class MainWindow : Window
     private Ellipse[] _leds = Array.Empty<Ellipse>();
     private Microsoft.UI.Xaml.Controls.Border[] _stintBlocks = Array.Empty<Microsoft.UI.Xaml.Controls.Border>();
 
+    // Pulso da mensagem GRAVE: opacidade + leve escala (1.0↔1.06) num
+    // Storyboard sine, autoreverse forever. Comunicação fica fixa (sem
+    // pulso — não é alerta, é informação).
+    private Storyboard? _alertPulse;
+
     /// <summary>Estados visuais de cada bloco da stint bar.</summary>
     public enum StintBlockState
     {
@@ -579,6 +584,7 @@ public sealed partial class MainWindow : Window
     {
         if (msg is null)
         {
+            StopAlertPulse();
             AlertBlocoRoot.Visibility = Visibility.Collapsed;
             return;
         }
@@ -586,6 +592,71 @@ public sealed partial class MainWindow : Window
         AlertText.Foreground = new SolidColorBrush(
             msg.Tipo == P1Fast.Cockpit.Domain.MsgTipo.Grave ? Erro : Sistema);
         AlertBlocoRoot.Visibility = Visibility.Visible;
+
+        if (msg.Tipo == P1Fast.Cockpit.Domain.MsgTipo.Grave)
+            StartAlertPulse();
+        else
+            StopAlertPulse();
+    }
+
+    private void StartAlertPulse()
+    {
+        if (_alertPulse is not null) return;
+
+        var ease = new SineEase { EasingMode = EasingMode.EaseInOut };
+        var dur = new Duration(TimeSpan.FromMilliseconds(700));
+
+        var opacity = new DoubleAnimation
+        {
+            From = 0.6,
+            To = 1.0,
+            Duration = dur,
+            AutoReverse = true,
+            RepeatBehavior = RepeatBehavior.Forever,
+            EasingFunction = ease,
+        };
+        Storyboard.SetTarget(opacity, AlertBlocoRoot);
+        Storyboard.SetTargetProperty(opacity, "Opacity");
+
+        var scaleX = new DoubleAnimation
+        {
+            From = 1.0,
+            To = 1.06,
+            Duration = dur,
+            AutoReverse = true,
+            RepeatBehavior = RepeatBehavior.Forever,
+            EasingFunction = ease,
+        };
+        Storyboard.SetTarget(scaleX, AlertScale);
+        Storyboard.SetTargetProperty(scaleX, "ScaleX");
+
+        var scaleY = new DoubleAnimation
+        {
+            From = 1.0,
+            To = 1.06,
+            Duration = dur,
+            AutoReverse = true,
+            RepeatBehavior = RepeatBehavior.Forever,
+            EasingFunction = ease,
+        };
+        Storyboard.SetTarget(scaleY, AlertScale);
+        Storyboard.SetTargetProperty(scaleY, "ScaleY");
+
+        _alertPulse = new Storyboard();
+        _alertPulse.Children.Add(opacity);
+        _alertPulse.Children.Add(scaleX);
+        _alertPulse.Children.Add(scaleY);
+        _alertPulse.Begin();
+    }
+
+    private void StopAlertPulse()
+    {
+        if (_alertPulse is null) return;
+        _alertPulse.Stop();
+        _alertPulse = null;
+        AlertBlocoRoot.Opacity = 1.0;
+        AlertScale.ScaleX = 1.0;
+        AlertScale.ScaleY = 1.0;
     }
 
     private void ApplyStintPattern(StintBlockState[] pattern)
