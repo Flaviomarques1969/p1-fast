@@ -681,8 +681,7 @@ public sealed partial class MainWindow : Window
         var displayInfo = _options.DisplayIndex is { } idx
             ? $"display {idx} fullscreen"
             : "janelado (primário)";
-        var rot = RootRotation?.Angle ?? 0;
-        var rotInfo = rot >= 180 ? "rot180" : "rot0";
+        var rotInfo = RootRotation.Angle >= 180 ? "rot180" : "rot0";
         StatusText.Text = $"{displayInfo} {rotInfo}  •  trecho={s.TrechoStatus}  •  shift={s.Shift.Mode} L{s.Shift.Level}  •  Δ={s.Delta.Value}";
     }
 
