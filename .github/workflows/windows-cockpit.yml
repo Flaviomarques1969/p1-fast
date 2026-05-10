@@ -120,6 +120,89 @@ jobs:
         working-directory: windows/cockpit
         run: dotnet build P1Fast.Cockpit.UI/P1Fast.Cockpit.UI.csproj --configuration Release --no-restore /p:Platform=x64
 
+  # ── UI publish DIAGNOSTIC ──
+  # Tentativa de publish .exe self-contained com captura agressiva de log.
+  # Sai TUDO em arquivo + binlog do MSBuild + listing dos artefatos
+  # gerados. Sobe como artifact mesmo quando falha (continue-on-error +
+  # always upload), pra Flavio baixar e mandar pro Claude analisar.
+  # Quando publish funcionar, troca por job real ui-publish.
+  ui-publish-diagnostic:
+    needs: changes
+    if: needs.changes.outputs.ui == 'true'
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: false
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Show env
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path logs | Out-Null
+          dotnet --info | Out-File -FilePath logs/dotnet-info.txt -Encoding utf8
+          dotnet workload list | Out-File -FilePath logs/dotnet-workload-list.txt -Encoding utf8
+        env:
+          DOTNET_NOLOGO: 'true'
+
+      - name: Try publish (verbose, capture everything, never fail step)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          New-Item -ItemType Directory -Force -Path logs | Out-Null
+          $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+          dotnet publish windows/cockpit/P1Fast.Cockpit.UI/P1Fast.Cockpit.UI.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            -p:Platform=x64 `
+            -p:WindowsAppSDKSelfContained=true `
+            -p:WindowsPackageType=None `
+            -p:PublishReadyToRun=false `
+            -p:EnableMsixTooling=false `
+            -bl:logs/msbuild-publish.binlog `
+            --verbosity diagnostic `
+            -o dist/cockpit-ui *>&1 | Tee-Object -FilePath logs/publish-output.txt
+
+      - name: List dist content (mesmo se vazio)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          if (Test-Path dist/cockpit-ui) {
+            Get-ChildItem dist/cockpit-ui -Recurse | Select-Object FullName, Length |
+              Out-File -FilePath logs/dist-listing.txt -Encoding utf8
+          } else {
+            "dist/cockpit-ui NAO FOI CRIADO" | Out-File -FilePath logs/dist-listing.txt -Encoding utf8
+          }
+
+      - name: Tail of publish output (preview no console do CI)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          if (Test-Path logs/publish-output.txt) {
+            Get-Content logs/publish-output.txt -Tail 80
+          }
+
+      - name: Upload diagnostic logs (sempre, mesmo se publish falhou)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-publish-diagnostic-${{ github.sha }}
+          path: |
+            logs/
+            dist/cockpit-ui/
+          retention-days: 7
+          if-no-files-found: warn
+
   # ── Capture tool publish ──
   # Empacota o p1fast-t4000-capture.exe (single-file, self-contained) e
   # sobe como artifact pra Flávio baixar e rodar no notebook. Usa
