@@ -17,7 +17,7 @@
 ## Decisões já fechadas — NÃO reabrir
 
 - **Não há mais Fase 2** — tudo entra em Fase 1 — `PLANO_FASE_1.md` §1 (decisão Flávio 2026-05-03)
-- **Cockpit-display ao vivo migra pra Windows nativo (WinUI 3 + C# .NET 8)** no notebook 10,5" — **ADR-023 + amendment 4** (decisão Flávio 2026-05-09). O `web/cockpit/` em HTML/JS é referência executável + protótipo + spec dos smokes, NÃO produto final.
+- **Cockpit-display ao vivo migra pra Windows nativo (WinUI 3 + C# .NET 8)** rodando em notebook + **tela 10,5" externa invertida** no painel — **ADR-023 + amendments 4 e 5** (decisões Flávio 2026-05-09 e 2026-05-10). Notebook hospeda o app, tela 10,5" externa é o que o piloto vê (rotação 180° via Windows Display Settings, NÃO no código do app). O `web/cockpit/` em HTML/JS é referência executável + protótipo + spec dos smokes, NÃO produto final.
 - **Driver T4000 fica no Windows** (USB CDC-ACM ou CAN, JS sobre Node/Electron) — **ADR-023**, substitui o plano original BLE iOS
 - **Transporte iPhone↔Windows = redundante: cabo USB primário (TCP-over-USB via `iproxy`/`usbmuxd`, 5-15 ms) + Supabase Realtime fallback automático.** Notebook escolhe via `TransportSelector` (heartbeat 1 Hz, switch em 3 s, recovery com debounce 1 s). Cabo carrega **dado + carga** (não só carga). — **ADR-023 + amendment 2 de 2026-05-09**
 - **Captura iOS Swift nativa preservada** (CoreMotion + CoreLocation + Daily.co), hub iOS preservado — ADR-018 com amendment 2026-05-09
