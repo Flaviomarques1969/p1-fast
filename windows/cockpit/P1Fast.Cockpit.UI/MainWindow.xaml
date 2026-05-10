@@ -5,7 +5,19 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="P1 Fast — Cockpit Piloto">
 
-    <Grid Background="#0a0a0a">
+    <!--
+        RootGrid: raiz visual da janela. RenderTransform = RotateTransform
+        controlada pelo app (ADR-023 amendment 6). Toggle Ctrl+R alterna
+        0° ↔ 180° e persiste em %LOCALAPPDATA%\P1Fast.Cockpit\rotation.json
+        por display.
+    -->
+    <Grid x:Name="RootGrid" Background="#0a0a0a" RenderTransformOrigin="0.5,0.5">
+        <Grid.RenderTransform>
+            <RotateTransform x:Name="RootRotation" Angle="0"/>
+        </Grid.RenderTransform>
+        <Grid.KeyboardAccelerators>
+            <KeyboardAccelerator Key="R" Modifiers="Control" Invoked="OnRotateToggleInvoked"/>
+        </Grid.KeyboardAccelerators>
         <Viewbox HorizontalAlignment="Center"
                  VerticalAlignment="Center"
                  StretchDirection="Both">
