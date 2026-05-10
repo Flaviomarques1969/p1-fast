@@ -309,6 +309,11 @@ Esses precisam de Xcode pra build/validar. Domínio Swift puro pode continuar at
 
 Próxima fase do cockpit Windows = camada XAML/WinUI 3 (consome o Domain via observer do `CockpitState`). Quando entrar, a CI passa a precisar de runner `windows-latest`.
 
+**Sessão 2026-05-10 (tarde) — logo + rotação:**
+
+- **PR #167 merged** (logo P1 Fast no `.exe`, Caminho A do diagnóstico): `Assets/P1Fast.ico` multi-resolução (256→16 px) gerado de `ios/p1fast-ios/Resources/Assets.xcassets/AppIcon.appiconset/icon-1024.png` via ImageMagick + `<ApplicationIcon>` no `.csproj`. Mantém `WindowsPackageType=None` (sem MSIX). Caminho B (MSIX completo, item 5 do roadmap) fica pra outro PR.
+- **PR #166 aberta — rotação 180° controlada pelo app (ADR-023 amendment 6):** `RotateTransform` na raiz do XAML + Ctrl+R toggle, persiste por display em `%LOCALAPPDATA%\P1Fast.Cockpit\rotation.json`. CI `ui-build` vermelho — 3 tentativas às cegas falharam. **Bloqueada aguardando `/ultrareview 166` rodado da sessão local do Mac** (não roda na web do Claude Code) pra ver o erro real do compilador.
+
 **Pendências externas aguardando Flávio:**
 - Captura real do barramento T4000 (resolve as 3 dúvidas residuais do `T4000_CAN_SPEC.md`).
 - Base de 3 voltas (path enviado é worktree local; precisa push ou outra entrega).
