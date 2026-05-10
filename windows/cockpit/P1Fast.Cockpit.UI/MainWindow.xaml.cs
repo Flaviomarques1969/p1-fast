@@ -2,6 +2,7 @@ using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Shapes;
 using P1Fast.Cockpit.Domain;
 using Windows.Graphics;
@@ -31,13 +32,19 @@ public sealed partial class MainWindow : Window
     private static readonly Color Sistema     = Color.FromArgb(0xFF, 0x82, 0xC8, 0xFF);
     private static readonly Color Ouro        = Color.FromArgb(0xFF, 0xE0, 0xC0, 0x60);
 
+    // Cor central do halo radial. A borda continua transparente (offset 0.65).
+    // RecordeStint: laranja (oklch 78% 0.18 65 / .42 do mockup web).
+    // MelhorHistorico: ouro mais brilhante (alpha 0x80) — pulsa pra evidenciar PB ever.
+    // PiorStint: roxo (oklch 56% 0.22 305 / .42) — fixo, alerta sem fadiga visual.
     private static readonly Dictionary<TrechoStatus, Color> HaloColors = new()
     {
         [TrechoStatus.Neutro]          = Color.FromArgb(0x00, 0x00, 0x00, 0x00),
         [TrechoStatus.RecordeStint]    = Color.FromArgb(0x6B, 0xF0, 0xA0, 0x60),
-        [TrechoStatus.MelhorHistorico] = Color.FromArgb(0x00, 0x00, 0x00, 0x00),
+        [TrechoStatus.MelhorHistorico] = Color.FromArgb(0x80, 0xE0, 0xC0, 0x60),
         [TrechoStatus.PiorStint]       = Color.FromArgb(0x6B, 0x92, 0x52, 0xC8),
     };
+
+    private Storyboard? _haloPulse;
 
     private static readonly Color LedOff         = Color.FromArgb(0xFF, 0x1A, 0x1A, 0x1A);
     private static readonly Color LedTier1Green  = Color.FromArgb(0xFF, 0x4F, 0xE0, 0x60);
@@ -363,7 +370,40 @@ public sealed partial class MainWindow : Window
 
     private void ApplyHalo(TrechoStatus status)
     {
-        if (HaloColors.TryGetValue(status, out var color)) HaloBrush.Color = color;
+        if (!HaloColors.TryGetValue(status, out var color)) return;
+        HaloStopCenter.Color = color;
+
+        // Pulsa só nos estados de glória (recorde do stint e PB ever).
+        // Pior fica fixo: pulso seria fadiga visual em cima de alerta vermelho.
+        var shouldPulse = status is TrechoStatus.RecordeStint or TrechoStatus.MelhorHistorico;
+        if (shouldPulse) StartHaloPulse(); else StopHaloPulse();
+    }
+
+    private void StartHaloPulse()
+    {
+        if (_haloPulse is not null) return;
+        var anim = new DoubleAnimation
+        {
+            From = 0.55,
+            To = 1.0,
+            Duration = new Duration(TimeSpan.FromMilliseconds(900)),
+            AutoReverse = true,
+            RepeatBehavior = RepeatBehavior.Forever,
+            EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut },
+        };
+        Storyboard.SetTarget(anim, HaloRect);
+        Storyboard.SetTargetProperty(anim, "Opacity");
+        _haloPulse = new Storyboard();
+        _haloPulse.Children.Add(anim);
+        _haloPulse.Begin();
+    }
+
+    private void StopHaloPulse()
+    {
+        if (_haloPulse is null) return;
+        _haloPulse.Stop();
+        _haloPulse = null;
+        HaloRect.Opacity = 1.0;
     }
 
     private void ApplyShift(ShiftState shift)
