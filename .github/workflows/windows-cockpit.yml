@@ -23,7 +23,9 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      cockpit: ${{ steps.filter.outputs.cockpit }}
+      domain: ${{ steps.filter.outputs.domain }}
+      ui: ${{ steps.filter.outputs.ui }}
+      capture: ${{ steps.filter.outputs.capture }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -32,13 +34,23 @@ jobs:
         id: filter
         with:
           filters: |
-            cockpit:
-              - 'windows/cockpit/**'
+            domain:
+              - 'windows/cockpit/P1Fast.Cockpit.Domain/**'
+              - 'windows/cockpit/P1Fast.Cockpit.Domain.Tests/**'
+              - 'windows/cockpit/P1Fast.Cockpit.sln'
+              - '.github/workflows/windows-cockpit.yml'
+            ui:
+              - 'windows/cockpit/P1Fast.Cockpit.UI/**'
+              - 'windows/cockpit/P1Fast.Cockpit.Domain/**'
+              - '.github/workflows/windows-cockpit.yml'
+            capture:
+              - 'windows/cockpit/P1Fast.Cockpit.T4000Capture/**'
+              - 'windows/cockpit/P1Fast.Cockpit.Domain/**'
               - '.github/workflows/windows-cockpit.yml'
 
   domain-test:
     needs: changes
-    if: needs.changes.outputs.cockpit == 'true'
+    if: needs.changes.outputs.domain == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -71,14 +83,49 @@ jobs:
         working-directory: windows/cockpit
         run: dotnet test P1Fast.Cockpit.sln --configuration Release --no-build --verbosity normal
 
+  # ── UI build (WinUI 3 + .NET 8) ──
+  # Camada XAML precisa de Windows pra restore/build (Windows App SDK + WinRT
+  # projections). Runner windows-latest custa 2× o ubuntu, mas só roda quando
+  # P1Fast.Cockpit.UI/** ou Domain/** mudam (UI ref direto do Domain).
+  ui-build:
+    needs: changes
+    if: needs.changes.outputs.ui == 'true'
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: false
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('windows/cockpit/**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Restore (UI)
+        working-directory: windows/cockpit
+        run: dotnet restore P1Fast.Cockpit.UI/P1Fast.Cockpit.UI.csproj /p:Platform=x64
+
+      - name: Build (UI Release x64)
+        working-directory: windows/cockpit
+        run: dotnet build P1Fast.Cockpit.UI/P1Fast.Cockpit.UI.csproj --configuration Release --no-restore /p:Platform=x64
+
   # ── Capture tool publish ──
   # Empacota o p1fast-t4000-capture.exe (single-file, self-contained) e
   # sobe como artifact pra Flávio baixar e rodar no notebook. Usa
   # windows-latest porque precisa do runtime win-x64 + System.IO.Ports.
-  # Só dispara quando o projeto da capture tool ou o workflow mudam.
+  # Só dispara quando o projeto da capture tool ou o Domain mudam.
   t4000-capture-publish:
     needs: changes
-    if: needs.changes.outputs.cockpit == 'true'
+    if: needs.changes.outputs.capture == 'true'
     runs-on: windows-latest
     steps:
       - name: Checkout
