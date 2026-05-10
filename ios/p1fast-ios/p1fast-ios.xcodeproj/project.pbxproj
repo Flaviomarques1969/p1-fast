@@ -22,6 +22,8 @@
 		356C87BA35F17C3FAF721842 /* CombustivelCadastroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9082B3C66C9740F0278E7748 /* CombustivelCadastroView.swift */; };
 		371297CC0EF2BC90433A9605 /* PneuCadastroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C23230F8FAB0C22F1FCF7969 /* PneuCadastroView.swift */; };
 		37378AACF9D7083E28281461 /* LiveDetectorBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47338A7791A1070397DBB87C /* LiveDetectorBridge.swift */; };
+		5CBE1D9A72234BA686D91FC2 /* LocalSocketCockpitTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7760050F2387452F91FAD163 /* LocalSocketCockpitTransport.swift */; };
+		758EBD75779045E3A9BBB30C /* RealtimeCockpitTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02FD37A3882647C6A610AFBA /* RealtimeCockpitTransport.swift */; };
 		3C723CF342C94B20D9DDC593 /* PilotoRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E4DC20BF1F609324F2C9EE9 /* PilotoRepository.swift */; };
 		3C8251E2BB2C8FB4CECCC2AA /* Reachability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91CA204B86C9BBCF364316F9 /* Reachability.swift */; };
 		3EA4182833C07B9ADF3BDBED /* ConfiguradorTrechoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E650BB555CE33EF937913221 /* ConfiguradorTrechoView.swift */; };
@@ -98,6 +100,8 @@
 		4657F1C12D473CEBB9B300D5 /* AppDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDatabase.swift; sourceTree = "<group>"; };
 		46BE3B245CF0DD85E14B841F /* BottomNav.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomNav.swift; sourceTree = "<group>"; };
 		47338A7791A1070397DBB87C /* LiveDetectorBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveDetectorBridge.swift; sourceTree = "<group>"; };
+		7760050F2387452F91FAD163 /* LocalSocketCockpitTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalSocketCockpitTransport.swift; sourceTree = "<group>"; };
+		02FD37A3882647C6A610AFBA /* RealtimeCockpitTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeCockpitTransport.swift; sourceTree = "<group>"; };
 		4BA50367740870D4FAE7DC8F /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		4D475C80F681ED1F05FC53B5 /* EventoRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventoRepository.swift; sourceTree = "<group>"; };
 		51F80368C51E99D970C07974 /* EyebrowHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EyebrowHeader.swift; sourceTree = "<group>"; };
@@ -174,6 +178,8 @@
 			isa = PBXGroup;
 			children = (
 				47338A7791A1070397DBB87C /* LiveDetectorBridge.swift */,
+				7760050F2387452F91FAD163 /* LocalSocketCockpitTransport.swift */,
+				02FD37A3882647C6A610AFBA /* RealtimeCockpitTransport.swift */,
 				5CFB1764FEF40BC9C2356501 /* LiveKalmanProcessor.swift */,
 				053AA78D342F7B78C9FFC17E /* LiveTelemetryRecorder.swift */,
 				12D3CA77D8F9695EEC42D36E /* LowPowerModeMonitor.swift */,
@@ -449,6 +455,8 @@
 				3FA48650CF026367DF94E0C0 /* LicaoListaView.swift in Sources */,
 				99A8671050630E34B1F457EA /* LicaoRepository.swift in Sources */,
 				37378AACF9D7083E28281461 /* LiveDetectorBridge.swift in Sources */,
+				5CBE1D9A72234BA686D91FC2 /* LocalSocketCockpitTransport.swift in Sources */,
+				758EBD75779045E3A9BBB30C /* RealtimeCockpitTransport.swift in Sources */,
 				DC2DC3AACC3A5F929DA5BDFD /* LiveKalmanProcessor.swift in Sources */,
 				91C3521B7A7A4CC1C6B0E4DA /* LiveTelemetryRecorder.swift in Sources */,
 				7DEE37DA3AE91D671C006B0D /* LoginView.swift in Sources */,

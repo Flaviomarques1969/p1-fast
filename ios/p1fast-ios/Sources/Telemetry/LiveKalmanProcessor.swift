@@ -56,6 +56,11 @@ final class LiveKalmanProcessor: ObservableObject {
     private weak var recorder: LiveTelemetryRecorder?
     private var sampleHandlerCancel: (() -> Void)?
 
+    // MS-2.8 — fan-out de EnrichedSample pra LiveTelemetryPublisher
+    // (e qualquer outro consumidor live). Análogo ao addSampleHandler do
+    // recorder, idempotente, retorna closure pra desregistrar.
+    private var enrichedHandlers: [UUID: (EnrichedSample) -> Void] = [:]
+
     init(
         queue: DatabaseQueue,
         sessaoId: String,
@@ -121,8 +126,23 @@ final class LiveKalmanProcessor: ObservableObject {
         if let gap = enriched.gapDurationMs { lastGapDurationMs = gap }
         buffer.append(enriched)
         enrichedCount += 1
+        // Fan-out pra consumidores live (publisher, etc.) ANTES do flush
+        // — assim publish sai imediato (~µs) e não fica preso na fila do
+        // batch async pro DB.
+        for cb in enrichedHandlers.values { cb(enriched) }
         if buffer.count >= flushBatchSize {
             Task { await flush() }
+        }
+    }
+
+    /// Registra callback que recebe cada EnrichedSample no momento que é
+    /// produzido (síncrono, MainActor). Retorna closure pra desregistrar.
+    /// Usado pelo LiveTelemetryPublisher (MS-2.8).
+    func addEnrichedHandler(_ cb: @escaping (EnrichedSample) -> Void) -> () -> Void {
+        let id = UUID()
+        enrichedHandlers[id] = cb
+        return { [weak self] in
+            Task { @MainActor in self?.enrichedHandlers.removeValue(forKey: id) }
         }
     }
 

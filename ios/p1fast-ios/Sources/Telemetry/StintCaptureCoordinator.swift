@@ -62,6 +62,12 @@ final class StintCaptureCoordinator: ObservableObject {
     private var lapCancel: (() -> Void)?
     private var segEndCancel: (() -> Void)?
 
+    // MS-2.8 — publish IMU/GPS pro cockpit Windows (cabo + Realtime)
+    private var publisher: LiveTelemetryPublisher?
+    private var rawHandlerCancel: (() -> Void)?
+    private var enrichedHandlerCancel: (() -> Void)?
+    private var heartbeatTimer: Timer?
+
     init(queue: DatabaseQueue, timeId: String? = nil) {
         self.queue = queue
         // MS-10 C.3: caller pode passar timeId explícito; default puxa
@@ -130,6 +136,37 @@ final class StintCaptureCoordinator: ObservableObject {
 
         recorder = rec
         processor = proc
+
+        // MS-2.8: liga publisher se temos track (sem track, viewBox não
+        // existe → publish não faz sentido; o cockpit ficaria mostrando
+        // posição em coordenadas inválidas).
+        if let bundle = trackBundle {
+            var transports: [any CockpitTransport] = [LocalSocketCockpitTransport()]
+            if let client = SupabaseManager.shared {
+                transports.append(RealtimeCockpitTransport(client: client, stintId: stintId))
+            }
+            let pub = LiveTelemetryPublisher(
+                transports: transports,
+                track: bundle.track,
+                stintId: stintId
+            )
+            publisher = pub
+            Task { await pub.start() }
+
+            // raw → publisher mantém último GPS/IMU
+            rawHandlerCancel = rec.addSampleHandler { [weak pub] sample in
+                Task { await pub?.ingestRawSample(sample) }
+            }
+            // enriched → publisher dispara envelope iphone-imu (10 Hz)
+            enrichedHandlerCancel = proc.addEnrichedHandler { [weak pub] enriched in
+                Task { await pub?.ingestEnriched(enriched) }
+            }
+            // heartbeat 1 Hz — Timer no MainActor agendado em RunLoop
+            heartbeatTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak pub] _ in
+                Task { await pub?.sendHeartbeat() }
+            }
+        }
+
         rec.start()
         running = true
     }
@@ -149,6 +186,15 @@ final class StintCaptureCoordinator: ObservableObject {
         await recorder?.stop()
         await processor?.detach()
         bridge?.detach()
+
+        // MS-2.8 cleanup
+        heartbeatTimer?.invalidate(); heartbeatTimer = nil
+        rawHandlerCancel?(); rawHandlerCancel = nil
+        enrichedHandlerCancel?(); enrichedHandlerCancel = nil
+        if let pub = publisher {
+            await pub.stop()
+        }
+        publisher = nil
 
         lapCancel?(); lapCancel = nil
         segEndCancel?(); segEndCancel = nil
