@@ -207,7 +207,7 @@ Plausível para escape de motor de competição: 0..1500 °C. Acima disso, derre
 
 **Diretriz Flávio 2026-05-10:** quando chegar o momento de instalar a tela no carro do cliente, abro o Injepro T Software via USB e checo se a T4000 já tem um parâmetro de "EGT máximo / over-temp threshold" configurado.
 - **Se já estiver configurado:** uso o valor da T4000 como teto canônico (`limits.egtMaxC` no LiveDataBridge), em vez do default 1500 °C hard-coded.
-- **Se NÃO estiver configurado:** essa configuração entra na lista de **setup obrigatório do cliente** que a gente cobra como parte da instalação. Documenta no checklist de pré-instalação que o piloto/equipe tem que rodar uma vez antes da primeira sessão.
+- **Se NÃO estiver configurado:** entra como **informação opcional** no setup — a gente passa pro cliente quando der oportunidade, sem virar gate obrigatório. Até o cliente configurar, o cockpit segue com o default `1500 °C`.
 
 ### Dúvidas adicionais (não bloqueantes)
 
