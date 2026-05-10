@@ -146,6 +146,10 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 - Container de execução no Windows: a decidir entre browser puro (Edge/Chrome) ou Electron com driver T4000 embutido. Ver MS-9 / MS-13 reescritos.
 - Driver T4000: USB traseiro do T4000 (CDC-ACM serial) ou adaptador CAN-USB. Spec do frame fechada em `docs/hardware/T4000_CAN_SPEC.md` (5 pacotes, big-endian, checksum validado matematicamente, 3 dúvidas residuais não-bloqueantes).
 
+> **AMENDMENT 3 (Flávio 2026-05-09):** o **produto final** do cockpit Windows e do hub iPhone é **NATIVO**, não web/PWA. O conteúdo do diretório `web/cockpit/` é **referência executável + protótipo de validação** — serve pra (1) demonstrar visualmente o mockup canônico no notebook hoje, (2) provar a lógica de domínio (`CockpitState`, `TransportSelector`, `LiveDataBridge`, `T4000PacketParser`, regras de RPM→shift e alertas críticos) com smokes verdes em JS e (3) servir de espec executável pra ser portada pro app nativo Windows quando ele for construído. Os smokes JS viram o **contrato de teste** do app nativo (cada caso JS deve ter um equivalente C# / .NET / outra stack que escolheremos). O `cockpit-renderer.js` é o único módulo descartável (DOM-bindings específicos de HTML); todo o resto da lógica é portável.
+>
+> **Stack Windows nativa:** a decidir. Critérios do Flávio: **robustez + alto desempenho + qualidade gráfica extrema**. Opções a apresentar antes da decisão.
+
 **Stack do iPhone**:
 - Captura iOS Swift continua mandatória (ADR-018 segue valendo pra essa parte).
 - `LiveTelemetryRecorder` ganha consumidor novo: publish em canal Realtime `live-stint-{stintId}` a 10 Hz (IMU/GPS agregados — não 100 Hz raw, isso fica só no SQLite local conforme ADR-014).

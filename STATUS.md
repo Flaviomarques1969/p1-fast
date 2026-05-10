@@ -156,13 +156,18 @@ Sem código nesta sessão — só docs. Flávio decidiu que o cockpit-display ao
 - **MS-11 Daily.co** — papel da câmera onboard fica explícito (frente do carro).
 
 **Entregue nesta sessão (PR #148, branch `claude/develop-pilot-cockpit-ZxMLY`):**
-- Docs: ADR-023 + amendment 2; PLANO §2/§6/§10; STATUS; CLAUDE.md.
+- Docs: ADR-023 + amendments 2 e 3; PLANO §2/§6/§10; STATUS; CLAUDE.md.
 - MS-9.2 — `src/telemetry/t4000-packet-parser.js` (parser CAN canônico, fixture `0x91`) + 27 smokes.
 - MS-9.4 — `src/telemetry/t4000-provider.js` (adapter standalone) coberto pelos mesmos 27 smokes.
 - MS-13.2 — `web/cockpit/{index.html, cockpit.css, cockpit.js}` extraídos byte-for-byte do mockup canônico + 16 smokes de paridade.
 - MS-13.3 — `web/cockpit/cockpit-state.js` (modelo puro JS) + 24 smokes.
-- MS-13.4 (parte 1) — `web/cockpit/transport.js` (TransportSelector com healthcheck + failover) + 17 smokes.
-- **84 smokes novos** verdes em cima de 404 → **488 verdes** total.
+- MS-13.4 parte 1 — `web/cockpit/transport.js` (TransportSelector com healthcheck + failover) + 17 smokes.
+- MS-13.4 parte 2 — `web/cockpit/live-data-bridge.js` (T4000 → CockpitState com regras RPM→shift e alertas críticos) + 26 smokes.
+- MS-13.4 parte 3 — `web/cockpit/cockpit-renderer.js` (observer CockpitState→DOM canônico) + 17 smokes.
+- MS-13.4 parte 4 — `web/cockpit/main.js` + `web/cockpit/index-live.html` (bootstrap + entry point com mock data) + 7 smokes.
+- **134 smokes novos** verdes em cima de 404 → **538 verdes** total.
+
+**ADR-023 amendment 3 (Flávio 2026-05-09):** **produto final do cockpit Windows e do hub iPhone é NATIVO** (não web/PWA). O conteúdo de `web/cockpit/` é referência executável + protótipo: serve pra demonstrar visualmente o mockup hoje, provar a lógica de domínio com smokes verdes, e ser portado pra app nativo Windows quando ele for construído. Stack Windows nativa **a decidir** — critérios do Flávio: robustez + alto desempenho + qualidade gráfica extrema.
 
 **Gates pra próxima etapa:**
 - **MS-9.0** — decisão container Windows (browser+WebSerial vs Electron). Sua decisão.
