@@ -83,11 +83,13 @@ jobs:
         working-directory: windows/cockpit
         run: dotnet test P1Fast.Cockpit.sln --configuration Release --no-build --verbosity normal
 
-  # ── UI build (WinUI 3 + .NET 8) ──
-  # Camada XAML precisa de Windows pra restore/build (Windows App SDK + WinRT
-  # projections). Runner windows-latest custa 2× o ubuntu, mas só roda quando
-  # P1Fast.Cockpit.UI/** ou Domain/** mudam (UI ref direto do Domain).
-  ui-build:
+  # ── UI publish (WinUI 3 + .NET 8) ──
+  # Empacota o cockpit (self-contained win-x64 + Windows App SDK self-contained)
+  # e sobe como artifact pra Flávio baixar e rodar no notebook a cada iteração.
+  # Validação de compilação acontece de graça dentro do próprio publish.
+  # Single-file não é viável pra WinUI 3 (precisa dos nativos do App SDK
+  # extraídos), então o artifact é uma pasta com o .exe + DLLs.
+  ui-publish:
     needs: changes
     if: needs.changes.outputs.ui == 'true'
     runs-on: windows-latest
@@ -110,13 +112,24 @@ jobs:
           restore-keys: |
             nuget-${{ runner.os }}-
 
-      - name: Restore (UI)
-        working-directory: windows/cockpit
-        run: dotnet restore P1Fast.Cockpit.UI/P1Fast.Cockpit.UI.csproj /p:Platform=x64
+      - name: Publish (win-x64, self-contained, Windows App SDK bundled)
+        shell: pwsh
+        run: |
+          dotnet publish windows/cockpit/P1Fast.Cockpit.UI/P1Fast.Cockpit.UI.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            /p:Platform=x64 `
+            /p:WindowsAppSDKSelfContained=true `
+            /p:WindowsPackageType=None `
+            --output dist/cockpit-ui
 
-      - name: Build (UI Release x64)
-        working-directory: windows/cockpit
-        run: dotnet build P1Fast.Cockpit.UI/P1Fast.Cockpit.UI.csproj --configuration Release --no-restore /p:Platform=x64
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: p1fast-cockpit-ui-${{ github.sha }}
+          path: dist/cockpit-ui/
+          retention-days: 14
 
   # ── Capture tool publish ──
   # Empacota o p1fast-t4000-capture.exe (single-file, self-contained) e
