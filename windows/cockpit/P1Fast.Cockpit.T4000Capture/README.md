@@ -16,20 +16,26 @@ Destrava as **3 dúvidas residuais** do `docs/hardware/T4000_CAN_SPEC.md`:
 
 ## Como o Flávio usa
 
-1. Liga o carro com chave em ON (não só Acessórios — central T4000
-   precisa estar alimentada).
-2. Pluga cabo USB da T4000 no notebook.
-3. Roda `p1fast-t4000-capture.exe` (single-file, sem instalação).
-4. App detecta a porta serial automaticamente. Mostra `total: N bytes`
-   aumentando a cada segundo + contagem de sentinelas P4/P5.
-5. Roda 5-10 minutos com o motor em vários regimes (idle, marcha-lenta,
-   aceleração, frenagem). Quanto mais variado, melhor.
-6. Aperta **Q** ou **Esc** pra parar.
-7. Manda os 3 arquivos pro Claude:
-   - `t4000-capture-<timestamp>.bin` (no diretório onde rodou o .exe)
+1. Roda `p1fast-t4000-capture.exe` (single-file, sem instalação) no
+   notebook. **Não precisa estar com a T4000 plugada ainda** — o app
+   abre em "modo aguardar" e fica esperando.
+2. Pluga o cabo USB da T4000 no notebook e liga a central (carro com
+   chave em ON, não só Acessórios). O app detecta a porta nova em até
+   2 s, abre sozinho e começa a captura.
+3. Mostra status a cada segundo (`total: N bytes`, velocidade B/s,
+   contagem de sentinelas P4/P5).
+4. Roda 5-10 minutos com o motor em vários regimes (idle, aceleração,
+   frenagem). Quanto mais variado, melhor.
+5. Aperta **Q**, **Esc** ou **Ctrl+C** pra parar.
+6. Se a T4000 desconectar no meio (cabo, central desligada), o app
+   **volta sozinho pro modo aguardar** sem fechar — quando reconectar,
+   começa uma nova captura com timestamp novo.
+7. Manda os arquivos pro Claude:
+   - `t4000-capture-<timestamp>.bin` (no diretório onde rodou o .exe —
+     pode haver vários se houve reconexão)
    - `t4000-capture-<timestamp>.timing.csv` (idem)
    - `session-<timestamp>.log` (em `%LOCALAPPDATA%\P1Fast.Cockpit.T4000Capture\logs\` —
-     o app imprime o caminho exato no fim de cada execução)
+     o app imprime o caminho exato no fim)
 
 ## Onde baixar o `.exe`
 
