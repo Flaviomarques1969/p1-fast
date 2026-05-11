@@ -19,6 +19,9 @@ Destrava as **3 dúvidas residuais** do `docs/hardware/T4000_CAN_SPEC.md`:
 1. Roda `p1fast-t4000-capture.exe` (single-file, sem instalação) no
    notebook. **Não precisa estar com a T4000 plugada ainda** — o app
    abre em "modo aguardar" e fica esperando.
+   - Ao iniciar, **apaga sozinho cópias antigas com sufixo `(1)`,
+     `(2)`, etc.** na mesma pasta (que o browser cria quando você baixa
+     de novo). O nome canônico é preservado pra próxima execução.
 2. Pluga o cabo USB da T4000 no notebook e liga a central (carro com
    chave em ON, não só Acessórios). O app detecta a porta nova em até
    2 s, abre sozinho e começa a captura.

@@ -56,6 +56,7 @@ internal static class Program
         using var log = new SessionLogger();
         log.WriteHeader(args);
 
+        CleanupOldCopies(log);
         PrintBanner(log, portName);
 
         var captureCount = 0;
@@ -96,6 +97,73 @@ internal static class Program
         log.TeeConsole($"Encerrado: {(string.IsNullOrEmpty(s_stopReason) ? "fim normal" : s_stopReason)}");
         PrintLogPathFooter(log);
         return 0;
+    }
+
+    // ── Cleanup de cópias antigas ───────────────────────────────────
+    //
+    // Quando o Flávio baixa o app de novo, o browser salva como
+    // "p1fast-t4000-capture (1).exe", "(2).exe", etc — porque o nome
+    // canônico já existe. Resultado: monte de cópias antigas na pasta
+    // Downloads e dúvida de qual rodar.
+    //
+    // Ao iniciar, o app NOVO apaga as cópias com sufixo "(N)" na MESMA
+    // pasta dele. Preserva o nome canônico. Nunca tenta se auto-deletar
+    // (file lock impede). Best-effort: erro de I/O é só logado, não
+    // derruba a captura.
+
+    private static void CleanupOldCopies(SessionLogger log)
+    {
+        try
+        {
+            var current = Environment.ProcessPath;
+            if (string.IsNullOrEmpty(current)) return;
+
+            var folder = System.IO.Path.GetDirectoryName(current);
+            if (string.IsNullOrEmpty(folder)) return;
+
+            var currentFull = System.IO.Path.GetFullPath(current);
+            var allCopies = Directory.GetFiles(folder, "p1fast-t4000-capture*.exe");
+
+            var toDelete = new List<string>();
+            foreach (var f in allCopies)
+            {
+                var fullPath = System.IO.Path.GetFullPath(f);
+                if (string.Equals(fullPath, currentFull, StringComparison.OrdinalIgnoreCase))
+                    continue; // não tenta apagar a si mesmo (file lock)
+
+                // Apaga só cópias com sufixo "(N)" — preserva o canônico
+                // pra ser o "candidato a versão limpa" pra próxima execução.
+                var name = System.IO.Path.GetFileNameWithoutExtension(f);
+                if (name.Contains('(') && name.Contains(')'))
+                    toDelete.Add(f);
+            }
+
+            if (toDelete.Count == 0)
+            {
+                log.Info($"Cleanup: nenhuma cópia '(N)' do app na pasta {folder}");
+                return;
+            }
+
+            log.TeeConsole($"Limpando {toDelete.Count} cópia(s) antiga(s) do app em {folder}:");
+            foreach (var f in toDelete)
+            {
+                try
+                {
+                    File.Delete(f);
+                    log.TeeConsole($"  ✓ Apagado: {System.IO.Path.GetFileName(f)}");
+                }
+                catch (Exception ex)
+                {
+                    log.TeeConsoleError($"  ✗ Não consegui apagar {System.IO.Path.GetFileName(f)}: {ex.Message}");
+                    log.Error($"   ({ex.GetType().Name})");
+                }
+            }
+            log.TeeConsole("");
+        }
+        catch (Exception ex)
+        {
+            log.Warn($"Cleanup de versões antigas falhou: {ex.GetType().Name} — {ex.Message}");
+        }
     }
 
     // ── Banner inicial ──────────────────────────────────────────────
