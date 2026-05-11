@@ -1,23 +1,21 @@
 // P1 Fast — T4000 capture tool
 //
-// Console que aguarda a Injepro T4000 ficar disponível na USB e captura
-// tudo que chega do barramento. Saída por execução: .bin (bytes crus) +
-// .timing.csv (índice de tempo) + .log (diagnóstico no LocalAppData).
+// Console pequeno que captura tudo o que chega da Injepro T4000 quando ela
+// está plugada no notebook via USB. Saída: um arquivo binário cru
+// (.bin) + um índice CSV de tempo (.timing.csv) que registra "no segundo X
+// já tinha lido Y bytes" pra reconstruir o tempo depois.
 //
-// Fluxo (Flávio 2026-05-10, refeito pra notebook longe da pista):
-// 1. Roda o .exe — abre console com banner e fica em "modo aguardar".
-// 2. Pluga o cabo USB da T4000 e liga a central — app detecta a porta
-//    nova em até 2 s e tenta abrir.
-// 3. Quando abre OK, vai pra captura: imprime status a cada segundo
-//    (total de bytes, B/s, sentinelas FIXED do CAN).
-// 4. Se a conexão cai (cabo desplugado, central desligada), volta pro
-//    "modo aguardar" sem fechar o console.
-// 5. Q, Esc ou Ctrl+C encerra.
+// Uso esperado pelo Flávio (2026-05-10):
+// 1. Liga o carro + a central T4000.
+// 2. Pluga cabo USB da T4000 no notebook.
+// 3. Roda este .exe. Ele detecta a porta serial sozinho.
+// 4. Quando achar que capturou o suficiente (5-10 min com o motor em
+//    diferentes regimes), aperta Q ou Esc.
+// 5. Manda os arquivos `.bin` + `.timing.csv` pra mim.
 //
-// Não interpreta nada — só grava o stream cru. Análise (parse, detecção
+// Não interpreta nada — só grava o stream cru. A análise (parse, detecção
 // de pacotes, validação de checksum) acontece offline depois.
 
-using System.Diagnostics;
 using System.Globalization;
 using System.IO.Ports;
 using P1Fast.Cockpit.Domain;
@@ -26,245 +24,73 @@ namespace P1Fast.Cockpit.T4000Capture;
 
 internal static class Program
 {
-    private const int ReadBufferBytes      = 4096;
-    private const int ReadTimeoutMs        = 200;
-    private const int DiscoveryPollMs      = 500;   // quão rápido percebe porta nova
-    private const int DiscoveryHeartbeatS  = 30;    // tick "ainda esperando" no log
-
-    // Compartilhado entre Main e o handler do Ctrl+C — handler precisa de campo,
-    // não dá pra ref bool dentro de lambda registrada uma vez.
-    private static volatile bool s_stopRequested;
-    private static string s_stopReason = "";
+    private const int ReadBufferBytes = 4096;
+    private const int ReadTimeoutMs   = 200;
 
     private static int Main(string[] args)
     {
-        var portName  = ParseArg(args, "--port");
-        var outBase   = ParseArg(args, "--out");
-        var help      = args.Any(a => a is "--help" or "-h" or "/?");
-        var openLogs  = args.Any(a => a is "--open-logs");
+        var portName = ParseArg(args, "--port");
+        var outPath  = ParseArg(args, "--out");
+        var help     = args.Any(a => a is "--help" or "-h" or "/?");
+        var diagOnly = args.Any(a => a is "--diag" or "--diagnose");
 
-        if (help)     { PrintHelp(); return 0; }
-        if (openLogs) return OpenLogsFolder();
-
-        Console.CancelKeyPress += (_, e) =>
+        if (help)
         {
-            e.Cancel = true;
-            s_stopRequested = true;
-            s_stopReason = "Ctrl+C";
-        };
-
-        using var log = new SessionLogger();
-        log.WriteHeader(args);
-
-        CleanupOldCopies(log);
-        PrintBanner(log, portName);
-
-        var captureCount = 0;
-        while (!s_stopRequested)
-        {
-            // 1. Espera porta serial aparecer (ou usa a forçada se já existir).
-            var sp = WaitForPort(portName, log);
-            if (sp is null) break; // s_stopRequested foi setado
-
-            // 2. Captura. Cada captura tem .bin + .timing.csv com timestamp próprio
-            //    pra não sobrescrever quando reconecta no meio do dia.
-            captureCount++;
-            var outPath = outBase is not null && captureCount == 1
-                ? outBase
-                : $"t4000-capture-{DateTime.Now:yyyyMMdd-HHmmss}.bin";
-            var timingPath = System.IO.Path.ChangeExtension(outPath, ".timing.csv");
-            log.Info($"Captura #{captureCount} — saída: {outPath} + {timingPath}");
-
-            log.TeeConsole("");
-            log.TeeConsole($"Capturando pra {outPath}");
-            log.TeeConsole($"Índice de tempo:    {timingPath}");
-            log.TeeConsole("Aperte Q ou Esc pra parar (ou Ctrl+C). Se a T4000 desconectar,");
-            log.TeeConsole("o app volta sozinho pro modo aguardar.");
-            log.TeeConsole("");
-
-            var totals = RunCaptureLoop(sp, outPath, timingPath, log);
-            log.Footer(totals.TotalBytes, totals.P4Sentinels, totals.P5Sentinels, totals.ExitReason);
-
-            if (s_stopRequested) break;
-
-            // Saiu por erro de leitura/conexão — volta pra modo aguardar.
-            log.TeeConsole("");
-            log.TeeConsole($"⚠ Captura interrompida ({totals.ExitReason}). Voltando pra modo aguardar...");
-            log.TeeConsole("");
+            PrintHelp();
+            return 0;
         }
 
-        log.TeeConsole("");
-        log.TeeConsole($"Encerrado: {(string.IsNullOrEmpty(s_stopReason) ? "fim normal" : s_stopReason)}");
-        PrintLogPathFooter(log);
-        return 0;
-    }
+        // Sempre roda o diagnóstico USB antes de qualquer coisa. Mostra TODOS
+        // os cabos USB conectados, identifica candidatos a T4000, e aponta
+        // quando falta driver. Se --diag, sai depois do relatório.
+        var devices = UsbScanner.ScanAll();
+        UsbScanner.PrintReport(devices);
 
-    // ── Cleanup de cópias antigas ───────────────────────────────────
-    //
-    // Quando o Flávio baixa o app de novo, o browser salva como
-    // "p1fast-t4000-capture (1).exe", "(2).exe", etc — porque o nome
-    // canônico já existe. Resultado: monte de cópias antigas na pasta
-    // Downloads e dúvida de qual rodar.
-    //
-    // Ao iniciar, o app NOVO apaga as cópias com sufixo "(N)" na MESMA
-    // pasta dele. Preserva o nome canônico. Nunca tenta se auto-deletar
-    // (file lock impede). Best-effort: erro de I/O é só logado, não
-    // derruba a captura.
+        if (diagOnly)
+        {
+            Console.WriteLine("Modo --diag: relatório acima. Saindo sem capturar.");
+            return 0;
+        }
 
-    private static void CleanupOldCopies(SessionLogger log)
-    {
+        if (portName is null)
+        {
+            // 1ª tentativa: usar o melhor candidato detectado pelo diagnóstico WMI.
+            portName = UsbScanner.FindBestComPort(devices);
+
+            // 2ª tentativa: fallback pra enumeração tradicional de portas COM.
+            if (portName is null)
+            {
+                var ports = SerialPort.GetPortNames().OrderBy(x => x, StringComparer.Ordinal).ToArray();
+                if (ports.Length > 0)
+                {
+                    portName = ports[^1];
+                    Console.WriteLine($"Sem candidato USB-Serial óbvio. Usando porta: {portName}");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Candidato T4000 identificado automaticamente: {portName}");
+            }
+
+            if (portName is null)
+            {
+                Console.Error.WriteLine();
+                Console.Error.WriteLine("Não consegui encontrar uma porta serial pra abrir.");
+                Console.Error.WriteLine("Veja o diagnóstico USB acima — provavelmente um destes:");
+                Console.Error.WriteLine("  1. Cabo USB da T4000 não está plugado (relatório lista 0 dispositivos)");
+                Console.Error.WriteLine("  2. Cabo plugado mas Windows não tem o driver do chip (relatório mostra 'SEM DRIVER')");
+                Console.Error.WriteLine("  3. Use --port=COMx pra forçar uma porta específica");
+                return 1;
+            }
+        }
+
+        outPath ??= $"t4000-capture-{DateTime.Now:yyyyMMdd-HHmmss}.bin";
+        var timingPath = Path.ChangeExtension(outPath, ".timing.csv");
+
+        SerialPort sp;
         try
         {
-            var current = Environment.ProcessPath;
-            if (string.IsNullOrEmpty(current)) return;
-
-            var folder = System.IO.Path.GetDirectoryName(current);
-            if (string.IsNullOrEmpty(folder)) return;
-
-            var currentFull = System.IO.Path.GetFullPath(current);
-            var allCopies = Directory.GetFiles(folder, "p1fast-t4000-capture*.exe");
-
-            var toDelete = new List<string>();
-            foreach (var f in allCopies)
-            {
-                var fullPath = System.IO.Path.GetFullPath(f);
-                if (string.Equals(fullPath, currentFull, StringComparison.OrdinalIgnoreCase))
-                    continue; // não tenta apagar a si mesmo (file lock)
-
-                // Apaga só cópias com sufixo "(N)" — preserva o canônico
-                // pra ser o "candidato a versão limpa" pra próxima execução.
-                var name = System.IO.Path.GetFileNameWithoutExtension(f);
-                if (name.Contains('(') && name.Contains(')'))
-                    toDelete.Add(f);
-            }
-
-            if (toDelete.Count == 0)
-            {
-                log.Info($"Cleanup: nenhuma cópia '(N)' do app na pasta {folder}");
-                return;
-            }
-
-            log.TeeConsole($"Limpando {toDelete.Count} cópia(s) antiga(s) do app em {folder}:");
-            foreach (var f in toDelete)
-            {
-                try
-                {
-                    File.Delete(f);
-                    log.TeeConsole($"  ✓ Apagado: {System.IO.Path.GetFileName(f)}");
-                }
-                catch (Exception ex)
-                {
-                    log.TeeConsoleError($"  ✗ Não consegui apagar {System.IO.Path.GetFileName(f)}: {ex.Message}");
-                    log.Error($"   ({ex.GetType().Name})");
-                }
-            }
-            log.TeeConsole("");
-        }
-        catch (Exception ex)
-        {
-            log.Warn($"Cleanup de versões antigas falhou: {ex.GetType().Name} — {ex.Message}");
-        }
-    }
-
-    // ── Banner inicial ──────────────────────────────────────────────
-
-    private static void PrintBanner(SessionLogger log, string? forcedPort)
-    {
-        log.TeeConsole("════════════════════════════════════════════════════════════");
-        log.TeeConsole("  p1fast-t4000-capture — modo aguardar T4000");
-        log.TeeConsole("════════════════════════════════════════════════════════════");
-        log.TeeConsole("");
-        if (forcedPort is not null)
-        {
-            log.TeeConsole($"Porta forçada: {forcedPort} (vou abrir só essa quando aparecer)");
-        }
-        else
-        {
-            log.TeeConsole("Porta: auto-detect (uso a de número mais alto que aparecer)");
-        }
-        log.TeeConsole("");
-        log.TeeConsole("Pra começar: pluga o cabo USB da T4000 e liga a central");
-        log.TeeConsole("(carro com chave em ON, não só Acessórios).");
-        log.TeeConsole("");
-        log.TeeConsole("Pra sair: aperte Q, Esc ou Ctrl+C a qualquer momento.");
-        log.TeeConsole("");
-    }
-
-    // ── Discovery loop (aguarda T4000) ──────────────────────────────
-
-    /// <summary>
-    /// Bloqueia até conseguir abrir uma porta serial. Retorna null se o
-    /// usuário pediu pra sair antes de uma porta funcional aparecer.
-    /// </summary>
-    private static SerialPort? WaitForPort(string? forcedPort, SessionLogger log)
-    {
-        log.TeeConsole($"[{DateTime.Now:HH:mm:ss}] Aguardando T4000...");
-        var lastSeen = new HashSet<string>();
-        var lastHeartbeat = DateTime.UtcNow;
-
-        while (!s_stopRequested)
-        {
-            var ports = SerialPort.GetPortNames()
-                .OrderBy(x => x, StringComparer.Ordinal)
-                .ToHashSet();
-
-            var newOnes  = ports.Except(lastSeen).ToList();
-            var goneOnes = lastSeen.Except(ports).ToList();
-
-            foreach (var p in goneOnes)
-                log.TeeConsole($"[{DateTime.Now:HH:mm:ss}] - porta desconectada: {p}");
-            foreach (var p in newOnes)
-                log.TeeConsole($"[{DateTime.Now:HH:mm:ss}] + porta detectada:    {p}");
-
-            // Decide qual tentar
-            string? candidate = null;
-            if (forcedPort is not null)
-            {
-                if (ports.Contains(forcedPort)) candidate = forcedPort;
-            }
-            else if (ports.Count > 0)
-            {
-                // Porta de número mais alto = costuma ser a USB recém-plugada.
-                candidate = ports.Last();
-            }
-
-            if (candidate is not null)
-            {
-                log.TeeConsole($"[{DateTime.Now:HH:mm:ss}] Tentando abrir {candidate}...");
-                var sp = TryOpen(candidate, log);
-                if (sp is not null)
-                {
-                    log.TeeConsole($"[{DateTime.Now:HH:mm:ss}] ✓ Conectado em {candidate}");
-                    return sp;
-                }
-                // Não abriu — log já registrou o erro. Espera um pouco mais
-                // pra evitar loop apertado de retry no mesmo problema.
-                Thread.Sleep(2000);
-            }
-
-            // Heartbeat a cada DiscoveryHeartbeatS segundos pra não dar
-            // sensação de "travado" se nada mudar.
-            if ((DateTime.UtcNow - lastHeartbeat).TotalSeconds >= DiscoveryHeartbeatS)
-            {
-                var portsTxt = ports.Count == 0 ? "nenhuma" : string.Join(", ", ports);
-                log.TeeConsole(
-                    $"[{DateTime.Now:HH:mm:ss}] ainda aguardando... " +
-                    $"(portas atuais: {portsTxt})");
-                lastHeartbeat = DateTime.UtcNow;
-            }
-
-            lastSeen = ports;
-            SleepResponsive(DiscoveryPollMs);
-        }
-
-        return null;
-    }
-
-    private static SerialPort? TryOpen(string portName, SessionLogger log)
-    {
-        try
-        {
-            var sp = new SerialPort(portName)
+            sp = new SerialPort(portName)
             {
                 BaudRate     = 1_000_000, // T4000 CAN bus 1 Mbit/s; USB CDC-ACM ignora baud rate
                 DataBits     = 8,
@@ -273,80 +99,54 @@ internal static class Program
                 ReadTimeout  = ReadTimeoutMs,
                 WriteTimeout = 1000,
             };
-            log.Info($"SerialPort configurado: BaudRate=1000000, 8N1, ReadTimeout={ReadTimeoutMs}ms");
             sp.Open();
-            log.Info($"SerialPort.Open() OK em {portName}");
-            return sp;
         }
         catch (Exception ex)
         {
-            log.TeeConsoleError($"[{DateTime.Now:HH:mm:ss}] ✗ Falha ao abrir {portName}: {ex.Message}");
-            log.Error($"Tipo da exceção: {ex.GetType().FullName}");
-            log.Error($"Stack: {ex.StackTrace}");
-            log.TeeConsoleError("   Possíveis causas: outro programa usando a porta (Injepro T Software?),");
-            log.TeeConsoleError("   driver USB CDC ausente, cabo ruim, central T4000 desligada.");
-            log.TeeConsoleError("   Vou continuar tentando — desconecte e reconecte se persistir.");
-            return null;
+            Console.Error.WriteLine($"Falha ao abrir {portName}: {ex.Message}");
+            Console.Error.WriteLine();
+            Console.Error.WriteLine("Possíveis causas:");
+            Console.Error.WriteLine("  - Outro programa (Injepro T Software?) já está usando a porta.");
+            Console.Error.WriteLine("  - Driver USB CDC da T4000 não está instalado.");
+            Console.Error.WriteLine("  - Cabo USB ruim ou central T4000 desligada.");
+            return 2;
         }
+
+        Console.WriteLine();
+        Console.WriteLine($"Capturando de {portName} pra {outPath}");
+        Console.WriteLine($"Índice de tempo:        {timingPath}");
+        Console.WriteLine("Aperte Q ou Esc pra parar (ou Ctrl+C).");
+        Console.WriteLine();
+
+        return RunCaptureLoop(sp, outPath, timingPath);
     }
 
-    /// <summary>
-    /// Sleep que escuta tecla Q/Esc — assim o usuário não precisa esperar
-    /// o tick inteiro pra sair do modo aguardar.
-    /// </summary>
-    private static void SleepResponsive(int totalMs)
-    {
-        var deadline = DateTime.UtcNow.AddMilliseconds(totalMs);
-        while (DateTime.UtcNow < deadline && !s_stopRequested)
-        {
-            if (Console.KeyAvailable)
-            {
-                var key = Console.ReadKey(intercept: true).Key;
-                if (key is ConsoleKey.Q or ConsoleKey.Escape)
-                {
-                    s_stopRequested = true;
-                    s_stopReason = $"tecla {key}";
-                    return;
-                }
-            }
-            Thread.Sleep(50);
-        }
-    }
-
-    // ── Capture loop (lê serial até erro/parar) ─────────────────────
-
-    private record CaptureTotals(int TotalBytes, int P4Sentinels, int P5Sentinels, string ExitReason);
-
-    private static CaptureTotals RunCaptureLoop(
-        SerialPort sp, string outPath, string timingPath, SessionLogger log)
+    private static int RunCaptureLoop(SerialPort sp, string outPath, string timingPath)
     {
         using var binStream    = File.Create(outPath);
         using var timingStream = new StreamWriter(timingPath);
         timingStream.WriteLine("timestamp_unix_ms,total_bytes,bytes_per_sec,p4_sentinels,p5_sentinels");
 
-        var localExitReason = "";
+        var stopRequested = false;
+        Console.CancelKeyPress += (_, e) => { e.Cancel = true; stopRequested = true; };
 
-        var buffer            = new byte[ReadBufferBytes];
-        var totalBytes        = 0L;
-        var p4Sentinels       = 0; // ocorrências de 0x1E 0xFC consecutivos (cauda do pacote 4)
-        var p5Sentinels       = 0; // ocorrências de 0xFB 0xFA consecutivos (cabeça do pacote 5)
+        var buffer        = new byte[ReadBufferBytes];
+        var totalBytes    = 0L;
+        var p4Sentinels   = 0; // ocorrências de 0x1E 0xFC consecutivos (cauda do pacote 4)
+        var p5Sentinels   = 0; // ocorrências de 0xFB 0xFA consecutivos (cabeça do pacote 5)
         var bytesAtLastReport = 0L;
-        var stopwatch         = Stopwatch.StartNew();
-        var lastReportMs      = 0L;
-        var readErrorCount    = 0;
-        byte? prevByte        = null;
+        var stopwatch     = System.Diagnostics.Stopwatch.StartNew();
+        var lastReportMs  = 0L;
+        byte? prevByte    = null;
 
-        while (!s_stopRequested && string.IsNullOrEmpty(localExitReason))
+        while (!stopRequested)
         {
             int n;
             try { n = sp.Read(buffer, 0, buffer.Length); }
             catch (TimeoutException) { n = 0; }
             catch (Exception ex)
             {
-                readErrorCount++;
-                log.Error($"Erro de leitura serial: {ex.GetType().Name} — {ex.Message}");
-                Console.Error.WriteLine($"[{DateTime.Now:HH:mm:ss}] Erro de leitura: {ex.Message}");
-                localExitReason = $"erro de leitura: {ex.Message}";
+                Console.Error.WriteLine($"Erro de leitura: {ex.Message}");
                 break;
             }
 
@@ -380,7 +180,7 @@ internal static class Program
                     $"{unixMs},{totalBytes},{bytesThisSec},{p4Sentinels},{p5Sentinels}"));
                 timingStream.Flush();
 
-                log.TeeConsole(
+                Console.WriteLine(
                     $"[{DateTime.Now:HH:mm:ss}]  total: {totalBytes,12:N0} bytes   " +
                     $"velocidade: {bytesThisSec,7:N0} B/s   " +
                     $"sentinelas P4/P5: {p4Sentinels}/{p5Sentinels}");
@@ -392,84 +192,35 @@ internal static class Program
             if (Console.KeyAvailable)
             {
                 var key = Console.ReadKey(intercept: true).Key;
-                if (key is ConsoleKey.Q or ConsoleKey.Escape)
-                {
-                    s_stopRequested = true;
-                    s_stopReason = $"tecla {key}";
-                }
+                if (key is ConsoleKey.Q or ConsoleKey.Escape) stopRequested = true;
             }
         }
 
-        try { sp.Close(); } catch (Exception ex) { log.Warn($"Erro ao fechar SerialPort: {ex.Message}"); }
-        sp.Dispose();
+        try { sp.Close(); } catch { /* swallow on shutdown */ }
         binStream.Flush();
         timingStream.Flush();
 
-        log.TeeConsole("");
-        log.TeeConsole($"Capturado: {totalBytes:N0} bytes em {outPath}");
-        log.TeeConsole($"Sentinelas vistas — P4 (cauda 0x1E 0xFC): {p4Sentinels}, P5 (cabeça 0xFB 0xFA): {p5Sentinels}");
-
-        if (readErrorCount > 0)
-            log.Warn($"Total de erros de leitura serial durante a sessão: {readErrorCount}");
-
-        var exitReason = !string.IsNullOrEmpty(localExitReason)
-            ? localExitReason
-            : (s_stopReason.Length > 0 ? s_stopReason : "fim normal");
-
-        if (totalBytes == 0 && !s_stopRequested)
-        {
-            log.TeeConsole("");
-            log.TeeConsole("AVISO: zero bytes recebidos. Possíveis causas:");
-            log.TeeConsole("  - A USB da T4000 é só pro Injepro T Software e NÃO transmite CAN — vai precisar de adaptador USB-CAN.");
-            log.TeeConsole("  - A central T4000 não está alimentada (carro precisa estar com chave em ON, não só em Acessórios).");
-            log.TeeConsole("  - Driver da T4000 não negociou o stream — testa fechar e abrir o app, e/ou testa o cabo no Injepro T Software primeiro.");
-        }
-        if (totalBytes > 0 && p4Sentinels == 0 && p5Sentinels == 0)
-        {
-            log.TeeConsole("");
-            log.TeeConsole("AVISO: bytes recebidos, mas zero sentinelas FIXED do T4000.");
-            log.TeeConsole("Pode ser um stream diferente do CAN documentado no PDF (ou a USB usa outro protocolo).");
-            log.TeeConsole("Mande o .bin pro Claude analisar mesmo assim.");
-        }
-
-        return new CaptureTotals(checked((int)totalBytes), p4Sentinels, p5Sentinels, exitReason);
-    }
-
-    // ── Helpers ─────────────────────────────────────────────────────
-
-    private static void PrintLogPathFooter(SessionLogger log)
-    {
         Console.WriteLine();
-        Console.WriteLine($"📋 Log da sessão: {log.LogPath}");
-        Console.WriteLine($"   Pasta de logs:  {log.LogsFolder}  (use --open-logs pra abrir)");
-        Console.WriteLine($"   Pra mandar pro Claude: cole o conteúdo do .log no chat (se pequeno),");
-        Console.WriteLine($"   ou suba em https://gist.github.com / paste service e me passe a URL.");
-    }
+        Console.WriteLine($"Capturado: {totalBytes:N0} bytes em {outPath}");
+        Console.WriteLine($"Sentinelas vistas — P4 (cauda 0x1E 0xFC): {p4Sentinels}, P5 (cabeça 0xFB 0xFA): {p5Sentinels}");
 
-    private static int OpenLogsFolder()
-    {
-        var folder = System.IO.Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "P1Fast.Cockpit.T4000Capture",
-            "logs");
-
-        try
+        if (totalBytes == 0)
         {
-            Directory.CreateDirectory(folder);
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = folder,
-                UseShellExecute = true,
-            });
-            Console.WriteLine($"Aberto: {folder}");
-            return 0;
+            Console.WriteLine();
+            Console.WriteLine("AVISO: zero bytes recebidos. Possíveis causas:");
+            Console.WriteLine("  - A USB da T4000 é só pro Injepro T Software e NÃO transmite CAN — vai precisar de adaptador USB-CAN.");
+            Console.WriteLine("  - A central T4000 não está alimentada (carro precisa estar com chave em ON, não só em Acessórios).");
+            Console.WriteLine("  - Driver da T4000 não negociou o stream — testa fechar e abrir o app, e/ou testa o cabo no Injepro T Software primeiro.");
+            return 3;
         }
-        catch (Exception ex)
+        if (p4Sentinels == 0 && p5Sentinels == 0)
         {
-            Console.Error.WriteLine($"Não consegui abrir {folder}: {ex.Message}");
-            Console.Error.WriteLine($"Abra manualmente no Explorer, copia o caminho aí.");
-            return 1;
+            Console.WriteLine();
+            Console.WriteLine("AVISO: bytes recebidos, mas zero sentinelas FIXED do T4000.");
+            Console.WriteLine("Pode ser um stream diferente do CAN documentado no PDF (ou a USB usa outro protocolo).");
+            Console.WriteLine("Mande o .bin pro Claude analisar mesmo assim.");
         }
+        return 0;
     }
 
     private static string? ParseArg(string[] args, string name)
@@ -489,23 +240,19 @@ internal static class Program
         Console.WriteLine("p1fast-t4000-capture — captura raw do barramento T4000 via USB serial.");
         Console.WriteLine();
         Console.WriteLine("Uso:");
-        Console.WriteLine("  p1fast-t4000-capture                 (auto-detect, modo aguardar T4000)");
-        Console.WriteLine("  p1fast-t4000-capture --port=COM4");
-        Console.WriteLine("  p1fast-t4000-capture --open-logs     (abre pasta de logs no Explorer)");
+        Console.WriteLine("  p1fast-t4000-capture [--port=COMx] [--out=arquivo.bin] [--diag]");
         Console.WriteLine();
         Console.WriteLine("Opções:");
+        Console.WriteLine("  --diag        só roda o diagnóstico USB (lista todos os cabos plugados,");
+        Console.WriteLine("                identifica candidatos a T4000, aponta drivers faltando) — não captura");
         Console.WriteLine("  --port=COMx   força uma porta serial específica (default: detecta automaticamente)");
-        Console.WriteLine("  --out=path    primeira captura usa esse nome (reconexões geram timestamp novo)");
-        Console.WriteLine("  --open-logs   abre %LOCALAPPDATA%\\P1Fast.Cockpit.T4000Capture\\logs no Explorer");
+        Console.WriteLine("  --out=path    arquivo de saída (default: t4000-capture-<timestamp>.bin)");
         Console.WriteLine("  --help        mostra esta ajuda");
         Console.WriteLine();
-        Console.WriteLine("Comportamento: o app entra em \"modo aguardar\" — fica polling pelas portas");
-        Console.WriteLine("seriais e abre captura sozinho quando a T4000 aparece. Se a conexão cai,");
-        Console.WriteLine("volta sozinho pro modo aguardar (uma nova captura é gravada com timestamp");
-        Console.WriteLine("novo). Pra parar: Q, Esc ou Ctrl+C.");
+        Console.WriteLine("Pra parar a captura: aperte Q, Esc, ou Ctrl+C.");
         Console.WriteLine();
-        Console.WriteLine("Cada execução grava um log em");
-        Console.WriteLine("  %LOCALAPPDATA%\\P1Fast.Cockpit.T4000Capture\\logs\\session-YYYYMMDD-HHMMSS.log");
-        Console.WriteLine("Mande esse .log + os arquivos .bin/.timing.csv pra análise.");
+        Console.WriteLine("Observação: o diagnóstico USB roda automaticamente toda vez antes da captura.");
+        Console.WriteLine("Mostra TODOS os cabos USB plugados (mesmo sem driver instalado), identifica");
+        Console.WriteLine("o chip de comunicação pelo VID (FTDI / CH340 / Silicon Labs / Prolific).");
     }
 }
