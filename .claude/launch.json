@@ -4,9 +4,8 @@
     {
       "name": "mockup-piloto",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8766"],
+      "runtimeArgs": ["-m", "http.server", "8766", "--directory", "../exciting-ardinghelli-572eec/_design-reference"],
       "port": 8766,
-      "cwd": "/Users/imac/Projetos/P1 Fast/.claude/worktrees/exciting-ardinghelli-572eec/_design-reference",
       "path": "/mockup-command-box-vista-piloto.html"
     }
   ]
