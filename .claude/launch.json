@@ -1,0 +1,13 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mockup-piloto",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8766"],
+      "port": 8766,
+      "cwd": "/Users/imac/Projetos/P1 Fast/.claude/worktrees/exciting-ardinghelli-572eec/_design-reference",
+      "path": "/mockup-command-box-vista-piloto.html"
+    }
+  ]
+}
