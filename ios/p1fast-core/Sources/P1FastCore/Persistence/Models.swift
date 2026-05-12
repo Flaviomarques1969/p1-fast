@@ -462,6 +462,10 @@ public struct Evento: Codable, FetchableRecord, PersistableRecord {
     public var tipo: String?
     public var dataEvento: Int64
     public var status: String?
+    /// MS-11.1: token único pra link público de vídeo. Vale o dia inteiro
+    /// do evento (Q2.4). Quem tem o link consegue ver todos os streams
+    /// do evento sem login.
+    public var linkPublicoVideoToken: String?
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -474,6 +478,7 @@ public struct Evento: Codable, FetchableRecord, PersistableRecord {
         case tipo
         case dataEvento = "data_evento"
         case status
+        case linkPublicoVideoToken = "link_publico_video_token"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
@@ -481,11 +486,91 @@ public struct Evento: Codable, FetchableRecord, PersistableRecord {
 
     public init(id: String, timeId: String, trackId: String? = nil, tipo: String? = nil,
                 dataEvento: Int64, status: String? = "planejado",
+                linkPublicoVideoToken: String? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.timeId = timeId; self.trackId = trackId; self.tipo = tipo
         self.dataEvento = dataEvento; self.status = status
+        self.linkPublicoVideoToken = linkPublicoVideoToken
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}
+
+// MARK: - video_streams (MS-11.1)
+
+/// Status canônico do stream de vídeo. Espelha o CHECK no Postgres.
+public enum VideoStreamStatus: String, Codable, Sendable {
+    case iniciando
+    case aoVivo = "ao_vivo"
+    case semSinal = "sem_sinal"
+    case encerrado
+    case falha
+}
+
+/// Transmissão de vídeo de um stint via Daily.co (1:1 com sessoes).
+/// Persistido em `video_streams`. Decisões em rodadas 1+2 de 2026-05-11.
+/// ADR-024 escolheu Daily.co como serviço.
+public struct VideoStream: Codable, FetchableRecord, PersistableRecord {
+    public var id: String
+    public var timeId: String
+    public var sessaoId: String
+    public var dailyRoomUrl: String
+    public var dailyRoomName: String
+    public var status: String
+    public var startedAt: Int64?
+    public var endedAt: Int64?
+    public var ultimaHeartbeat: Int64?
+    public var bateriaInicio: Int?
+    public var bateriaFim: Int?
+    public var motivoEncerramento: String?
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "video_streams"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case sessaoId = "sessao_id"
+        case dailyRoomUrl = "daily_room_url"
+        case dailyRoomName = "daily_room_name"
+        case status
+        case startedAt = "started_at"
+        case endedAt = "ended_at"
+        case ultimaHeartbeat = "ultima_heartbeat"
+        case bateriaInicio = "bateria_inicio"
+        case bateriaFim = "bateria_fim"
+        case motivoEncerramento = "motivo_encerramento"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, timeId: String, sessaoId: String,
+                dailyRoomUrl: String, dailyRoomName: String,
+                status: String = VideoStreamStatus.iniciando.rawValue,
+                startedAt: Int64? = nil, endedAt: Int64? = nil,
+                ultimaHeartbeat: Int64? = nil,
+                bateriaInicio: Int? = nil, bateriaFim: Int? = nil,
+                motivoEncerramento: String? = nil,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.sessaoId = sessaoId
+        self.dailyRoomUrl = dailyRoomUrl; self.dailyRoomName = dailyRoomName
+        self.status = status
+        self.startedAt = startedAt; self.endedAt = endedAt
+        self.ultimaHeartbeat = ultimaHeartbeat
+        self.bateriaInicio = bateriaInicio; self.bateriaFim = bateriaFim
+        self.motivoEncerramento = motivoEncerramento
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+
+    /// Indica que o stream parou de receber heartbeat há mais de N segundos.
+    /// Caller passa now; helper retorna se há sinal recente. Útil pra UI
+    /// do Command Box decidir se mostra última imagem congelada (Q16).
+    public func hasSinalRecente(now: Int64 = DB.nowMs(), thresholdMs: Int64 = 10_000) -> Bool {
+        guard let hb = ultimaHeartbeat else { return false }
+        return (now - hb) < thresholdMs
     }
 }
 

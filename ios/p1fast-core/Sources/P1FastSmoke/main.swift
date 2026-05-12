@@ -3639,7 +3639,7 @@ func makeTestDB() throws -> DatabaseQueue {
     return q
 }
 
-step("PERSIST-01: makeMemoryQueue + migrations v1..v7 cria 26 tabelas") {
+step("PERSIST-01: makeMemoryQueue + migrations v1..v15 cria 27 tabelas") {
     let q = try DB.makeMemoryQueue()
     let names = try q.read { db in
         try String.fetchAll(db, sql:
@@ -3647,11 +3647,12 @@ step("PERSIST-01: makeMemoryQueue + migrations v1..v7 cria 26 tabelas") {
         )
     }
     // 20 do Postgres + sync_queue + sync_meta (v2) + licoes (v4) + pendencias_template + evento_pendencias (v5)
-    // + telemetry_samples_enriched (v7) = 26
-    try assertEq(names.count, 26, "esperava 26 tabelas")
+    // + telemetry_samples_enriched (v7) + video_streams (v15) = 27
+    try assertEq(names.count, 27, "esperava 27 tabelas")
     for expected in ["times", "carros", "configuracoes", "sessoes", "voltas",
                      "marcos", "retas_especiais", "telemetry_samples",
-                     "telemetry_samples_enriched", "sync_queue", "sync_meta"] {
+                     "telemetry_samples_enriched", "sync_queue", "sync_meta",
+                     "video_streams"] {
         try assertTrue(names.contains(expected), "tabela \(expected) ausente")
     }
 }
@@ -4061,6 +4062,113 @@ step("PERM-06: nil/vazio retornam false") {
         pilotosRevezamento: nil
     )
     try assertEq(ok, false)
+}
+
+// ─── MS-11.1: tabela video_streams + token público ───────────
+
+step("VID-01: v15 cria tabela video_streams") {
+    let q = try DB.makeMemoryQueue()
+    let exists = try q.read { db in
+        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='video_streams'") ?? 0
+    }
+    try assertEq(exists, 1, "esperava tabela video_streams existir")
+}
+
+step("VID-02: v15 adiciona link_publico_video_token em eventos") {
+    let q = try DB.makeMemoryQueue()
+    let cols = try q.read { db in
+        try Row.fetchAll(db, sql: "PRAGMA table_info(eventos)").map { $0["name"] as String }
+    }
+    try assertTrue(cols.contains("link_publico_video_token"))
+}
+
+step("VID-03: VideoStream round-trip GRDB") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var ev = Evento(id: "ev-vid-1", timeId: "team-1", dataEvento: DB.nowMs())
+        try ev.insert(db)
+        var s = Sessao(id: "ses-vid-1", timeId: "team-1", eventoId: "ev-vid-1")
+        try s.insert(db)
+    }
+    let now = DB.nowMs()
+    var vs = VideoStream(
+        id: "vid-1", timeId: "team-1", sessaoId: "ses-vid-1",
+        dailyRoomUrl: "https://p1fast.daily.co/abc", dailyRoomName: "abc",
+        status: VideoStreamStatus.aoVivo.rawValue,
+        startedAt: now, bateriaInicio: 87
+    )
+    try q.write { db in try vs.insert(db) }
+    let fetched: VideoStream = try q.read { db in try VideoStream.fetchOne(db, key: "vid-1")! }
+    try assertEq(fetched.dailyRoomUrl, "https://p1fast.daily.co/abc")
+    try assertEq(fetched.status, "ao_vivo")
+    try assertEq(fetched.bateriaInicio, 87)
+}
+
+step("VID-04: unique index — 1 stream por sessao") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var ev = Evento(id: "ev-vid-2", timeId: "team-1", dataEvento: DB.nowMs())
+        try ev.insert(db)
+        var s = Sessao(id: "ses-vid-2", timeId: "team-1", eventoId: "ev-vid-2")
+        try s.insert(db)
+    }
+    var vs1 = VideoStream(id: "vid-2a", timeId: "team-1", sessaoId: "ses-vid-2",
+                          dailyRoomUrl: "u1", dailyRoomName: "n1")
+    try q.write { db in try vs1.insert(db) }
+
+    var vs2 = VideoStream(id: "vid-2b", timeId: "team-1", sessaoId: "ses-vid-2",
+                          dailyRoomUrl: "u2", dailyRoomName: "n2")
+    var caiu = false
+    do { try q.write { db in try vs2.insert(db) } } catch { caiu = true }
+    try assertTrue(caiu, "deve falhar — só 1 stream por sessao")
+}
+
+step("VID-05: hasSinalRecente — dentro/fora threshold") {
+    let now: Int64 = 1_000_000
+    let vsR = VideoStream(id: "v", timeId: "t", sessaoId: "s",
+                          dailyRoomUrl: "u", dailyRoomName: "n",
+                          ultimaHeartbeat: now - 3000)
+    try assertTrue(vsR.hasSinalRecente(now: now, thresholdMs: 10_000))
+    let vsA = VideoStream(id: "v2", timeId: "t", sessaoId: "s",
+                          dailyRoomUrl: "u", dailyRoomName: "n",
+                          ultimaHeartbeat: now - 15_000)
+    try assertEq(vsA.hasSinalRecente(now: now, thresholdMs: 10_000), false)
+    let vsN = VideoStream(id: "v3", timeId: "t", sessaoId: "s",
+                          dailyRoomUrl: "u", dailyRoomName: "n",
+                          ultimaHeartbeat: nil)
+    try assertEq(vsN.hasSinalRecente(now: now), false)
+}
+
+step("VID-06: status canônico — todos os 5 valores aceitos") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var ev = Evento(id: "ev-vid-3", timeId: "team-1", dataEvento: DB.nowMs())
+        try ev.insert(db)
+    }
+    for (i, status) in ["iniciando","ao_vivo","sem_sinal","encerrado","falha"].enumerated() {
+        try q.write { db in
+            var s = Sessao(id: "ses-vid-3-\(i)", timeId: "team-1", eventoId: "ev-vid-3")
+            try s.insert(db)
+            var vs = VideoStream(id: "vid-3-\(i)", timeId: "team-1", sessaoId: "ses-vid-3-\(i)",
+                                 dailyRoomUrl: "u", dailyRoomName: "n", status: status)
+            try vs.insert(db)
+        }
+    }
+}
+
+step("VID-07: status fora do enum é rejeitado pelo CHECK") {
+    let q = try makeTestDB()
+    try q.write { db in
+        var ev = Evento(id: "ev-vid-4", timeId: "team-1", dataEvento: DB.nowMs())
+        try ev.insert(db)
+        var s = Sessao(id: "ses-vid-4", timeId: "team-1", eventoId: "ev-vid-4")
+        try s.insert(db)
+    }
+    var vsRuim = VideoStream(id: "vid-4", timeId: "team-1", sessaoId: "ses-vid-4",
+                              dailyRoomUrl: "u", dailyRoomName: "n", status: "rodando")
+    var caiu = false
+    do { try q.write { db in try vsRuim.insert(db) } } catch { caiu = true }
+    try assertTrue(caiu, "status 'rodando' deve ser rejeitado pelo CHECK")
 }
 
 // ─── DRAINER (Sprint 1A.6 sub-prompt B) ──────────────────────
