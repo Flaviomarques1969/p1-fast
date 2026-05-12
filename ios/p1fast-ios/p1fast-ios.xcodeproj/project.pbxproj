@@ -44,6 +44,7 @@
 		878C19864476206B162D941B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9AF697E035B2E094B09108F9 /* Assets.xcassets */; };
 		8E31E4CDC675BA24DA6E323C /* StintCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 771504D0E86F29E7E1F615E2 /* StintCaptureView.swift */; };
 		8E3DAF8B6F3BE8E346213A37 /* StintRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52184FDD398B02FA4752681B /* StintRepository.swift */; };
+		AAA111000B1100110011000B /* StreamCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB222000B1100110011000B /* StreamCoordinator.swift */; };
 		8FB6DBD08681434559524D83 /* CarroModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0390017441A8A36F834BDC25 /* CarroModalView.swift */; };
 		91C3521B7A7A4CC1C6B0E4DA /* LiveTelemetryRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 053AA78D342F7B78C9FFC17E /* LiveTelemetryRecorder.swift */; };
 		95A022ADA0074FA202C414F5 /* ThemeShowcaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6589CA76112B0192B9A53BD8 /* ThemeShowcaseView.swift */; };
@@ -106,6 +107,7 @@
 		4D475C80F681ED1F05FC53B5 /* EventoRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventoRepository.swift; sourceTree = "<group>"; };
 		51F80368C51E99D970C07974 /* EyebrowHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EyebrowHeader.swift; sourceTree = "<group>"; };
 		52184FDD398B02FA4752681B /* StintRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StintRepository.swift; sourceTree = "<group>"; };
+		BBB222000B1100110011000B /* StreamCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamCoordinator.swift; sourceTree = "<group>"; };
 		55E3E4C195A44DEF074CDBA4 /* PendenciaRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendenciaRepository.swift; sourceTree = "<group>"; };
 		5A2A5CD812FBBD663E27ECE1 /* GaragemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GaragemView.swift; sourceTree = "<group>"; };
 		5CFB1764FEF40BC9C2356501 /* LiveKalmanProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveKalmanProcessor.swift; sourceTree = "<group>"; };
@@ -283,6 +285,7 @@
 			isa = PBXGroup;
 			children = (
 				91CA204B86C9BBCF364316F9 /* Reachability.swift */,
+				BBB222000B1100110011000B /* StreamCoordinator.swift */,
 				96D7C90709E3E3EF698E6047 /* SyncCoordinator.swift */,
 				CEF3C03E3CAAE9097BE43C56 /* URLSessionTransports.swift */,
 			);
@@ -481,6 +484,7 @@
 				8E31E4CDC675BA24DA6E323C /* StintCaptureView.swift in Sources */,
 				D5156CC89A714F94B6DDCB60 /* StintModalView.swift in Sources */,
 				8E3DAF8B6F3BE8E346213A37 /* StintRepository.swift in Sources */,
+				AAA111000B1100110011000B /* StreamCoordinator.swift in Sources */,
 				82318A9F1DB6BFFD6D20BB07 /* SummaryStats.swift in Sources */,
 				2C67A010E1492394FB16EDAA /* SupabaseManager.swift in Sources */,
 				2114E39350EB63E1FFABAD27 /* SyncCoordinator.swift in Sources */,
