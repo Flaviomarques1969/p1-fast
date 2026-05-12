@@ -238,7 +238,8 @@ final class EventoRepository: ObservableObject {
             try TrackRow(
                 id: Self.brasiliaTrackId,
                 apelido: "Brasília",
-                nomeOficial: "Auto. Int. Nelson Piquet"
+                nomeOficial: "Auto. Int. Nelson Piquet",
+                cidade: "Brasília" // S4 rodada 1
             ).insert(db)
         }
     }

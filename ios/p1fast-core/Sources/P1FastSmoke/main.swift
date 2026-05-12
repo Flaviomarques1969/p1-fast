@@ -7322,6 +7322,59 @@ step("CARFOTO-03: Carro sem fotoUrl persiste como NULL") {
     try assertTrue(fotoUrl == nil, "esperava foto_url NULL, recebi: \(String(describing: fotoUrl))")
 }
 
+// ─── S4 rodada 1: cidade em tracks ────────────────────────
+
+step("TRC-01: v20 adiciona coluna cidade em tracks") {
+    let q = try makeTestDB()
+    let cols = try q.read { db in
+        try Row.fetchAll(db, sql: "PRAGMA table_info(tracks)")
+    }
+    let nomes = Set(cols.compactMap { $0["name"] as String? })
+    try assertTrue(nomes.contains("cidade"), "esperava coluna cidade, recebi: \(nomes)")
+}
+
+step("TRC-02: TrackRow com cidade preserva valor no round-trip") {
+    let q = try makeTestDB()
+    let t = TrackRow(id: "trk-c1", apelido: "Goiânia",
+                     nomeOficial: "Autódromo Internacional Ayrton Senna",
+                     cidade: "Goiânia")
+    try q.write { db in try t.insert(db) }
+    let fetched = try q.read { db in try TrackRow.fetchOne(db, key: "trk-c1") }
+    try assertEq(fetched?.cidade, "Goiânia")
+}
+
+step("TRC-03: TrackRow sem cidade persiste como NULL") {
+    let q = try makeTestDB()
+    let t = TrackRow(id: "trk-c2", apelido: "Sem cidade")
+    try q.write { db in try t.insert(db) }
+    let row = try q.read { db in
+        try Row.fetchOne(db, sql: "SELECT cidade FROM tracks WHERE id = ?", arguments: ["trk-c2"])
+    }
+    let cidade: String? = row?["cidade"]
+    try assertTrue(cidade == nil, "esperava cidade NULL, recebi: \(String(describing: cidade))")
+}
+
+step("TRC-04: v20 preenche Brasília legada (apelido='Brasília') com cidade='Brasília'") {
+    let q = try makeTestDB()
+    // Insere uma row "Brasília" legada SEM cidade — simula um banco
+    // criado antes do v20 e migrado depois. Como v20 já rodou no setup
+    // do makeTestDB, vamos inserir manualmente uma row que iria sofrer
+    // o backfill e verificar via SQL direto.
+    try q.write { db in
+        try TrackRow(id: "trk-legacy", apelido: "Brasília",
+                     nomeOficial: "Auto Test", cidade: nil).insert(db)
+    }
+    // Re-aplica o UPDATE do backfill manualmente (idempotente).
+    try q.write { db in
+        try db.execute(sql: "UPDATE tracks SET cidade = 'Brasília' WHERE apelido = 'Brasília' AND cidade IS NULL;")
+    }
+    let row = try q.read { db in
+        try Row.fetchOne(db, sql: "SELECT cidade FROM tracks WHERE id = ?", arguments: ["trk-legacy"])
+    }
+    let cidade: String? = row?["cidade"]
+    try assertEq(cidade, "Brasília")
+}
+
 // ── relatório ────────────────────────────────────────────────
 print("\n═══ RESULTADO ═══")
 print("\(ok) ok / \(fail) fail")

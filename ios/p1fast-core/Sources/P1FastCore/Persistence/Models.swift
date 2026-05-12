@@ -59,6 +59,11 @@ public struct TrackRow: Codable, FetchableRecord, PersistableRecord {
     /// pra `Track.geoAncoras` no domínio. Pode ser nil — pista cadastrada sem
     /// âncoras geo opera só em frame SVG.
     public var geoAncoras: String?
+    /// S4 da rodada 1 (2026-05-12): cidade onde o autódromo fica.
+    /// Usada pra agrupar autódromos por cidade na tela de seleção do
+    /// cadastro de evento. Pode ser nil em pistas legadas sem cidade
+    /// preenchida — UI mostra como "Sem cidade" nesse caso.
+    public var cidade: String?
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -68,6 +73,7 @@ public struct TrackRow: Codable, FetchableRecord, PersistableRecord {
         case id, apelido
         case nomeOficial = "nome_oficial"
         case geoAncoras = "geo_ancoras"
+        case cidade
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
@@ -75,10 +81,12 @@ public struct TrackRow: Codable, FetchableRecord, PersistableRecord {
 
     public init(id: String, apelido: String, nomeOficial: String? = nil,
                 geoAncoras: String? = nil,
+                cidade: String? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.apelido = apelido; self.nomeOficial = nomeOficial
         self.geoAncoras = geoAncoras
+        self.cidade = cidade
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }

@@ -407,6 +407,17 @@ enum Migrations {
         m.registerMigration("v19_carros_foto_url") { db in
             try db.execute(sql: "ALTER TABLE carros ADD COLUMN foto_url TEXT;")
         }
+
+        // ═══ v20_tracks_cidade ═════════════════════════════════
+        // S4 da rodada 1 (2026-05-12). Espelha
+        // supabase/migrations/0021_tracks_cidade.sql.
+        // Adiciona coluna `cidade` em `tracks`. Usada pra agrupar
+        // autódromos na tela de seleção do cadastro de evento.
+        // Atualiza Brasília legada (apelido='Brasília') pra cidade='Brasília'.
+        m.registerMigration("v20_tracks_cidade") { db in
+            try db.execute(sql: "ALTER TABLE tracks ADD COLUMN cidade TEXT;")
+            try db.execute(sql: "UPDATE tracks SET cidade = 'Brasília' WHERE apelido = 'Brasília' AND cidade IS NULL;")
+        }
     }
 
     // swiftlint:disable:next function_body_length
