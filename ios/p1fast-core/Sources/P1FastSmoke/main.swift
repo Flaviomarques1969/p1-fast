@@ -3977,6 +3977,27 @@ step("PERSIST-23: cancelamento marca cancelado_em sem deletar (Q24)") {
     try assertEq(fetched.status, "cancelada")
 }
 
+// ─── MS-4.2: detecção de endurance (lógica pura) ─────────────
+
+step("END-01: tipo 'Endurance 4h' permite revezamento") {
+    try assertEq(EnduranceDetection.tipoPermiteRevezamento("Endurance 4h"), true)
+}
+
+step("END-02: tipo case-insensitive — 'ENDURANCE 12h' também") {
+    try assertEq(EnduranceDetection.tipoPermiteRevezamento("ENDURANCE 12h"), true)
+    try assertEq(EnduranceDetection.tipoPermiteRevezamento("Endurance Mil Milhas"), true)
+}
+
+step("END-03: 'Track Day Planal' NÃO permite revezamento") {
+    try assertEq(EnduranceDetection.tipoPermiteRevezamento("Track Day Planal"), false)
+    try assertEq(EnduranceDetection.tipoPermiteRevezamento("Treino livre"), false)
+}
+
+step("END-04: nil e vazio retornam false") {
+    try assertEq(EnduranceDetection.tipoPermiteRevezamento(nil), false)
+    try assertEq(EnduranceDetection.tipoPermiteRevezamento(""), false)
+}
+
 // ─── DRAINER (Sprint 1A.6 sub-prompt B) ──────────────────────
 // Mock transport: configurado por teste pra retornar o que quisermos.
 final class MockSyncTransport: SyncTransport {
