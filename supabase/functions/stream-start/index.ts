@@ -10,6 +10,11 @@
 //   Q14: SEM áudio (room.properties.start_audio_off = true)
 //   Q18: gravação ativa (room.properties.enable_recording)
 //
+// F4 (Triagem volta-por-volta) consome esta gravação. Ver
+// `docs/F4_OPERACIONAL.md` pra checklist de ativação da gravação
+// na conta Daily.co. O `enable_recording: "cloud"` aqui só pega
+// efeito se a conta tem o plano que permite cloud recording.
+//
 // Segurança:
 //   - DAILY_API_KEY só no servidor (variável de ambiente Supabase)
 //   - User precisa estar autenticado (JWT no Authorization header)
