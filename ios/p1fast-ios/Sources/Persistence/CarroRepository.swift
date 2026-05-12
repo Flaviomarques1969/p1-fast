@@ -19,10 +19,29 @@ import Foundation
 import GRDB
 import P1FastCore
 
+// MARK: - CarroMetricas (S2 — rodada 1, 2026-05-12)
+
+/// Métricas agregadas exibidas no card do carro:
+/// - `kmRodada` é uma ESTIMATIVA, calculada por
+///   Σ((vmin + vmax)/2 × tempo) sobre `segment_executions` do carro.
+///   Nil quando não há nenhuma execução de trecho registrada.
+/// - `vmaxKmh` é a maior `segment_executions.velocidade_max` do carro
+///   (já gravada em km/h pelo `SegmentExecutionMapper`). Nil sem dado.
+/// - `autodromosCount` = nº de `eventos.track_id` distintos onde o
+///   carro participou. 0 se nunca foi a evento ligado a autódromo.
+struct CarroMetricas: Equatable {
+    let kmRodada: Double?
+    let vmaxKmh: Double?
+    let autodromosCount: Int
+
+    static let vazio = CarroMetricas(kmRodada: nil, vmaxKmh: nil, autodromosCount: 0)
+}
+
 @MainActor
 final class CarroRepository: ObservableObject {
     @Published private(set) var carros: [Carro] = []
     @Published private(set) var stintsPorCarro: [String: Int] = [:]
+    @Published private(set) var metricasPorCarro: [String: CarroMetricas] = [:]
 
     private let queue: DatabaseQueue
 
@@ -46,6 +65,7 @@ final class CarroRepository: ObservableObject {
         guard let teamId = TeamContext.currentTeamId else {
             self.carros = []
             self.stintsPorCarro = [:]
+            self.metricasPorCarro = [:]
             return
         }
         let rows = try await queue.read { db in
@@ -68,6 +88,62 @@ final class CarroRepository: ObservableObject {
         }
         self.carros = rows
         self.stintsPorCarro = counts
+        try await loadMetricas(teamId: teamId)
+    }
+
+    /// S2 — agrega as 3 métricas exibidas no card (km estimada, vmax km/h,
+    /// nº de autódromos visitados). Roda 3 consultas por carro. Volume
+    /// esperado é baixo (≤10 carros, ≤100 eventos por carro) — sem cache.
+    private func loadMetricas(teamId: String) async throws {
+        guard !carros.isEmpty else {
+            self.metricasPorCarro = [:]
+            return
+        }
+        let carroIds = carros.map(\.id)
+        let result = try await queue.read { db -> [String: CarroMetricas] in
+            var acc: [String: CarroMetricas] = [:]
+            for carroId in carroIds {
+                let vmaxRow = try Row.fetchOne(db, sql: """
+                    SELECT MAX(se.velocidade_max) AS v
+                    FROM segment_executions se
+                    JOIN sessoes s ON s.id = se.sessao_id
+                    WHERE s.carro_id = ? AND s.time_id = ?
+                    """, arguments: [carroId, teamId])
+                let vmax: Double? = vmaxRow?["v"]
+
+                let autoRow = try Row.fetchOne(db, sql: """
+                    SELECT COUNT(DISTINCT e.track_id) AS n
+                    FROM eventos e
+                    JOIN sessoes s ON s.evento_id = e.id
+                    WHERE s.carro_id = ? AND s.time_id = ? AND e.track_id IS NOT NULL
+                    """, arguments: [carroId, teamId])
+                let autodromos: Int = (autoRow?["n"] as Int?) ?? 0
+
+                // Estimativa: somatório de ((vmin + vmax)/2) × tempo_h por trecho.
+                // Quando vmin é NULL (execuções pré-MS-2.5), usa 60% de vmax como
+                // proxy (fator típico de uso em pista). É APROXIMAÇÃO — não tem
+                // odômetro real. Quando o T4000 chegar, substituir por valor exato.
+                let kmRow = try Row.fetchOne(db, sql: """
+                    SELECT SUM(
+                        ((COALESCE(se.vmin_kmh, se.velocidade_max * 0.6) + se.velocidade_max) / 2.0)
+                        * (se.tempo_ms / 3600000.0)
+                    ) AS km
+                    FROM segment_executions se
+                    JOIN sessoes s ON s.id = se.sessao_id
+                    WHERE s.carro_id = ? AND s.time_id = ?
+                      AND se.velocidade_max IS NOT NULL AND se.tempo_ms IS NOT NULL
+                    """, arguments: [carroId, teamId])
+                let km: Double? = kmRow?["km"]
+
+                acc[carroId] = CarroMetricas(
+                    kmRodada: km,
+                    vmaxKmh: vmax,
+                    autodromosCount: autodromos
+                )
+            }
+            return acc
+        }
+        self.metricasPorCarro = result
     }
 
     /// Cria um carro novo + uma `Configuracao` vazia (placeholder de

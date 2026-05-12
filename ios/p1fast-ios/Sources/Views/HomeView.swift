@@ -70,6 +70,13 @@ struct CarroMock: Identifiable, Equatable {
     /// Cor do swatch (token Color).
     let cor: Color
     let stints: Int
+    // S2 — Conceito 1: 3 números no card do carro.
+    /// Quilometragem estimada rodada dentro do app (nil → "—").
+    let kmRodada: Double?
+    /// Velocidade máxima (km/h) já atingida pelo carro (nil → "—").
+    let vmaxKmh: Double?
+    /// Quantos autódromos diferentes o carro já visitou.
+    let autodromosCount: Int
 }
 
 // MARK: - View raiz
@@ -362,51 +369,42 @@ private struct ProximoEventoCard: View {
     }
 }
 
-// MARK: - Carros recentes
+// MARK: - Carros recentes (S2 — Conceito 1)
 
-/// Linha de carro — espelha `.event` do mockup-home-cheio (mesma estrutura
-/// flex: avatar/swatch + body com nome + sub + meta tags + chev).
+/// Linha de carro com avatar grande de 84pt à esquerda e 3 números embaixo
+/// (km no app · velocidade máxima · autódromos). Espelha o mesmo padrão
+/// do `CarroCard` da Garagem — conceito 1 aprovado por Flávio em 2026-05-12.
 private struct CarroRow: View {
     let carro: CarroMock
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+        HStack(alignment: .center, spacing: 16) {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(carro.cor)
-                .frame(width: 52, height: 52)
+                .frame(width: 84, height: 84)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 10)
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .stroke(Color.border, lineWidth: 1)
                 )
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(carro.apelido)
-                    .font(.system(size: 16, weight: .semibold))
-                    .tracking(-0.08) // -0.005em em 16pt
+                    .font(.system(size: 19, weight: .semibold))
+                    .tracking(-0.285) // -0.015em em 19pt
                     .foregroundStyle(Color.text)
+                    .lineLimit(1)
                 Text(carro.modeloCategoria)
                     .font(.system(size: 12, weight: .regular))
                     .foregroundStyle(Color.textFaint)
-                HStack(spacing: 6) {
-                    EventTag(text: "\(carro.stints) stints")
-                }
-                .padding(.top, Spacing.sm)
+                    .lineLimit(1)
+                numerosRow
+                    .padding(.top, 10)
             }
 
             Spacer(minLength: 0)
-
-            Text("›")
-                .font(.system(size: 14, weight: .regular))
-                .foregroundStyle(Color.textMuted)
-                .frame(width: 24, height: 24)
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color.surfaceHover)
-                )
-                .padding(.top, 14)
         }
         .padding(.horizontal, Spacing.md)
-        .padding(.vertical, 14)
+        .padding(.vertical, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
@@ -416,6 +414,46 @@ private struct CarroRow: View {
             RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
                 .stroke(Color.border, lineWidth: 1)
         )
+    }
+
+    private var numerosRow: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 14) {
+            metricaCol(valor: formatKm(carro.kmRodada), unidade: "km", rotulo: "no app")
+            metricaCol(valor: formatVmax(carro.vmaxKmh), unidade: "km/h", rotulo: "vel. máxima")
+            metricaCol(valor: "\(carro.autodromosCount)", unidade: nil, rotulo: "autódromos")
+        }
+    }
+
+    private func metricaCol(valor: String, unidade: String?, rotulo: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(valor)
+                    .font(.system(size: 18, weight: .semibold))
+                    .monospacedDigit()
+                    .tracking(-0.27)
+                    .foregroundStyle(Color.text)
+                    .lineLimit(1)
+                if let unidade = unidade {
+                    Text(unidade)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.textMuted)
+                }
+            }
+            Text(rotulo.uppercased())
+                .font(.system(size: 9, weight: .medium))
+                .tracking(0.72)
+                .foregroundStyle(Color.textFaint)
+        }
+    }
+
+    private func formatKm(_ km: Double?) -> String {
+        guard let km = km, km > 0 else { return "—" }
+        return String(format: "%.0f", km)
+    }
+
+    private func formatVmax(_ kmh: Double?) -> String {
+        guard let kmh = kmh, kmh > 0 else { return "—" }
+        return String(format: "%.0f", kmh)
     }
 }
 
@@ -700,13 +738,19 @@ extension HomeData {
                 apelido: "Celta 1.4",
                 modeloCategoria: "Chevrolet · Turismo",
                 cor: Color(red: 30.0/255, green: 100.0/255, blue: 180.0/255), // azul Chevrolet
-                stints: 31
+                stints: 31,
+                kmRodada: 245,
+                vmaxKmh: 187,
+                autodromosCount: 3
             ),
             CarroMock(
                 apelido: "Honda Civic",
                 modeloCategoria: "Honda · Sedã",
                 cor: Color(red: 130.0/255, green: 130.0/255, blue: 138.0/255), // cinza
-                stints: 16
+                stints: 16,
+                kmRodada: 128,
+                vmaxKmh: 174,
+                autodromosCount: 2
             ),
         ]
     )

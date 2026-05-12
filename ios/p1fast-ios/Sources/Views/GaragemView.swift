@@ -85,6 +85,7 @@ struct GaragemView: View {
                     CarroCard(
                         carro: carro,
                         stints: repo.stintsPorCarro[carro.id] ?? 0,
+                        metricas: repo.metricasPorCarro[carro.id] ?? .vazio,
                         isAtivo: idx == 0
                     ) {
                         sheet = .editar(carroId: carro.id)
@@ -212,39 +213,40 @@ enum GaragemSheet: Identifiable, Equatable {
     }
 }
 
-// MARK: - CarroCard
+// MARK: - CarroCard (S2 — Conceito 1: avatar grande à esquerda, 3 números embaixo)
 
 private struct CarroCard: View {
     let carro: Carro
     let stints: Int
+    let metricas: CarroMetricas
     let isAtivo: Bool
     let onTap: () -> Void
 
     var body: some View {
         Button(action: onTap) {
-            HStack(alignment: .top, spacing: 14) {
-                swatch
+            HStack(alignment: .center, spacing: 16) {
+                fotoOuSwatch
                 VStack(alignment: .leading, spacing: 3) {
                     Text(carro.apelido)
-                        .font(.system(size: 17, weight: .semibold))
-                        .tracking(-0.085)
+                        .font(.system(size: 19, weight: .semibold))
+                        .tracking(-0.285) // -0.015em em 19pt
                         .foregroundStyle(Color.text)
+                        .lineLimit(1)
                     Text(modelLine)
-                        .font(.system(size: 13, weight: .regular))
+                        .font(.system(size: 12, weight: .regular))
                         .foregroundStyle(Color.textMuted)
-                    HStack(spacing: 6) {
-                        if isAtivo {
-                            EventTag(text: "Próximo evento", kind: .accent)
-                        }
-                        EventTag(text: "\(stints) stints", kind: .neutral)
+                        .lineLimit(1)
+                    numerosRow
+                        .padding(.top, 10)
+                    if isAtivo {
+                        EventTag(text: "Próximo evento", kind: .accent)
+                            .padding(.top, 8)
                     }
-                    .padding(.top, Spacing.sm)
                 }
                 Spacer(minLength: 0)
-                chev
             }
             .padding(.horizontal, Spacing.md)
-            .padding(.vertical, 14)
+            .padding(.vertical, 16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
@@ -258,21 +260,17 @@ private struct CarroCard: View {
         .buttonStyle(.plain)
     }
 
-    private var swatch: some View {
-        ZStack {
-            Circle()
-                .stroke(isAtivo ? Color.accent.opacity(0.35) : Color.border, lineWidth: 2)
-                .frame(width: 48, height: 48)
-            Circle()
-                .fill(swatchColor)
-                .frame(width: 34, height: 34)
-        }
-        .frame(width: 48, height: 48)
-        .overlay(
-            isAtivo
-            ? Circle().stroke(Color.accent.opacity(0.14), lineWidth: 3).frame(width: 54, height: 54)
-            : nil
-        )
+    /// Quadrado de 84pt com cantos arredondados. Na Parte A do S2 mostra
+    /// só a cor de fundo do carro (placeholder). Na Parte C (próximo passo)
+    /// passa a exibir a foto real do servidor quando o carro tiver `foto_url`.
+    private var fotoOuSwatch: some View {
+        RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .fill(swatchColor)
+            .frame(width: 84, height: 84)
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(isAtivo ? Color.accent.opacity(0.55) : Color.border, lineWidth: 1)
+            )
     }
 
     private var swatchColor: Color {
@@ -280,6 +278,51 @@ private struct CarroCard: View {
             return Color.surfaceHover
         }
         return parsed
+    }
+
+    /// Linha dos 3 números (Conceito 1 aprovado pelo Flávio em 2026-05-12):
+    /// km no app · velocidade máxima · autódromos. Valores ausentes viram "—".
+    private var numerosRow: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 14) {
+            metricaCol(valor: formatKm(metricas.kmRodada), unidade: "km", rotulo: "no app")
+            metricaCol(valor: formatVmax(metricas.vmaxKmh), unidade: "km/h", rotulo: "vel. máxima")
+            metricaCol(valor: "\(metricas.autodromosCount)", unidade: nil, rotulo: "autódromos")
+        }
+    }
+
+    private func metricaCol(valor: String, unidade: String?, rotulo: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(valor)
+                    .font(.system(size: 18, weight: .semibold))
+                    .monospacedDigit()
+                    .tracking(-0.27) // -0.015em em 18pt
+                    .foregroundStyle(Color.text)
+                    .lineLimit(1)
+                if let unidade = unidade {
+                    Text(unidade)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.textMuted)
+                }
+            }
+            Text(rotulo.uppercased())
+                .font(.system(size: 9, weight: .medium))
+                .tracking(0.72) // 0.08em em 9pt
+                .foregroundStyle(Color.textFaint)
+        }
+    }
+
+    private func formatKm(_ km: Double?) -> String {
+        guard let km = km, km > 0 else { return "—" }
+        if km >= 1000 {
+            return String(format: "%.0f", km)
+        }
+        return String(format: "%.0f", km)
+    }
+
+    private func formatVmax(_ kmh: Double?) -> String {
+        guard let kmh = kmh, kmh > 0 else { return "—" }
+        return String(format: "%.0f", kmh)
     }
 
     private var modelLine: String {
@@ -295,18 +338,6 @@ private struct CarroCard: View {
         default:
             return "Sem modelo cadastrado"
         }
-    }
-
-    private var chev: some View {
-        Text("›")
-            .font(.system(size: 14, weight: .regular))
-            .foregroundStyle(Color.textMuted)
-            .frame(width: 24, height: 24)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color.surfaceHover)
-            )
-            .padding(.top, 12)
     }
 }
 
