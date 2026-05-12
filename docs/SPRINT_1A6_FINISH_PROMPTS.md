@@ -1,3 +1,13 @@
+> ⚠️ **DOCUMENTO OBSOLETO** — preservado pra histórico (auditoria 2026-05-12).
+>
+> A nomenclatura "Sprint 1A.X" foi substituída em 2026-05-03 pelo esquema
+> "MS-X" do `docs/PLANO_FASE_1.md`. O escopo descrito aqui foi entregue e
+> mergeado faz tempo. Não usar como guia pra trabalho novo.
+>
+> Referência canônica vigente: `STATUS.md` + `docs/PLANO_FASE_1.md`.
+
+---
+
 # Sprint 1A.6 — Prompts finais (C + D)
 
 > Design completo em `docs/SPRINT_1A6_SYNC_DRAINER_DESIGN.md` (227 linhas).

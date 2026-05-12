@@ -1,3 +1,13 @@
+> ⚠️ **DOCUMENTO OBSOLETO** — preservado pra histórico (auditoria 2026-05-12).
+>
+> A nomenclatura "Sprint 1A.X" foi substituída em 2026-05-03 pelo esquema
+> "MS-X" do `docs/PLANO_FASE_1.md`. O escopo descrito aqui foi entregue e
+> mergeado faz tempo. Não usar como guia pra trabalho novo.
+>
+> Referência canônica vigente: `STATUS.md` + `docs/PLANO_FASE_1.md`.
+
+---
+
 # Sprint 1A.4 — Stint Selectors + Schema v2 + Cleanup
 
 > Status: **proposta**, baked após Sprint 1A.3 (#11-#15). Documento pré-prompt

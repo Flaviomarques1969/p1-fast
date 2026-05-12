@@ -62,20 +62,28 @@ const PG_TABLES   = pgTables(pg);
 const GRDB_TABLES = grdbTables(grdb);
 
 // ─── Tests ────────────────────────────────────────────────
-t('PG tem 24 tabelas em public (20 do 0001 + licoes 0004 + pendencias_template/evento_pendencias 0005 + telemetry_samples_enriched 0008)', () => {
-  if (PG_TABLES.size !== 24) throw new Error('size=' + PG_TABLES.size);
+// Contagem atualizada conforme migrations vão entrando.
+// PG: 20 do 0001 + licoes (0004) + pendencias_template + evento_pendencias
+//     (0005) + telemetry_samples_enriched (0008) + video_streams (0015)
+//     + volta_video (0016) = 25. (0014 só estende sessoes; 0017 só ajusta
+//     policies RLS, sem criar tabela.)
+const PG_TABLE_COUNT_ESPERADO = 26;
+const GRDB_TABLE_COUNT_ESPERADO = PG_TABLE_COUNT_ESPERADO + 2; // + sync_queue + sync_meta
+
+t(`PG tem ${PG_TABLE_COUNT_ESPERADO} tabelas em public`, () => {
+  if (PG_TABLES.size !== PG_TABLE_COUNT_ESPERADO) throw new Error('size=' + PG_TABLES.size);
 });
 
-t('GRDB tem 26 tabelas (24 PG + sync_queue + sync_meta local-only)', () => {
-  if (GRDB_TABLES.size !== 26) throw new Error('size=' + GRDB_TABLES.size);
+t(`GRDB tem ${GRDB_TABLE_COUNT_ESPERADO} tabelas (${PG_TABLE_COUNT_ESPERADO} PG + sync_queue + sync_meta local-only)`, () => {
+  if (GRDB_TABLES.size !== GRDB_TABLE_COUNT_ESPERADO) throw new Error('size=' + GRDB_TABLES.size);
 });
 
-t('GRDB cobre TODAS as 24 tabelas do PG', () => {
+t(`GRDB cobre TODAS as ${PG_TABLE_COUNT_ESPERADO} tabelas do PG`, () => {
   const missing = [...PG_TABLES].filter(x => !GRDB_TABLES.has(x));
   if (missing.length) throw new Error('faltam no GRDB: ' + missing.join(', '));
 });
 
-t('GRDB tem só sync_queue + sync_meta além das 24 do PG', () => {
+t(`GRDB tem só sync_queue + sync_meta além das ${PG_TABLE_COUNT_ESPERADO} do PG`, () => {
   const extras = [...GRDB_TABLES].filter(x => !PG_TABLES.has(x)).sort();
   const expected = ['sync_meta', 'sync_queue'];
   if (extras.length !== 2 || extras[0] !== expected[0] || extras[1] !== expected[1]) {
@@ -153,12 +161,12 @@ t('ADR-014: PG telemetry_samples NÃO tem policy UPDATE/DELETE', () => {
 });
 
 // ─── RLS coverage ─────────────────────────────────────────
-t('RLS habilitada em todas as 24 tabelas do PG', () => {
+t(`RLS habilitada em todas as ${PG_TABLE_COUNT_ESPERADO} tabelas do PG`, () => {
   const rlsRe = /alter table public\.([a-z_]+)\s+enable row level security/g;
   const rlsTables = new Set();
   let m;
   while ((m = rlsRe.exec(pg)) !== null) rlsTables.add(m[1]);
-  if (rlsTables.size !== 24) throw new Error('RLS em ' + rlsTables.size + ' tabelas');
+  if (rlsTables.size !== PG_TABLE_COUNT_ESPERADO) throw new Error('RLS em ' + rlsTables.size + ' tabelas');
   const missing = [...PG_TABLES].filter(x => !rlsTables.has(x));
   if (missing.length) throw new Error('sem RLS: ' + missing.join(', '));
 });
