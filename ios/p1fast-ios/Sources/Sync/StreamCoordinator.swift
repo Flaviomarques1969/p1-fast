@@ -26,8 +26,12 @@ import P1FastCore
 import UIKit
 #endif
 
+#if canImport(Daily)
+import Daily
+#endif
+
 /// Erros do StreamCoordinator.
-public enum StreamCoordinatorError: Error, LocalizedError {
+public enum StreamCoordinatorError: Swift.Error, LocalizedError {
     case naoConfigurado
     case sessaoSemTime
     case startFalhou(String)
@@ -118,6 +122,13 @@ public final class StreamCoordinator: ObservableObject {
     /// falhas seguidas (~15s), marca status=semSinal pra UI reagir.
     private var falhasConsecutivas: Int = 0
     private let falhasParaSemSinal: Int = 3
+
+    /// MS-11.3b: cliente Daily.co que gerencia a conexão de vídeo/áudio.
+    /// Lazy — inicializa só quando o stream começa pra economizar memória
+    /// quando aplicativo está aberto fora de stint ativo.
+    #if canImport(Daily)
+    private var callClient: CallClient?
+    #endif
 
     public init() {
         #if canImport(UIKit)
@@ -238,22 +249,50 @@ public final class StreamCoordinator: ObservableObject {
         }
     }
 
-    // MARK: - Daily.co SDK (MS-11.3b — stub que vai ser preenchido)
+    // MARK: - Daily.co SDK (MS-11.3b — implementação real)
 
-    /// Conecta o Daily.co CallClient à room. MS-11.3b vai trocar este
-    /// stub por uma implementação real. Hoje é no-op — o stream existe
-    /// no servidor (Edge Function criou room) mas o vídeo do iPhone
-    /// ainda não está ligado.
+    /// Conecta o Daily.co CallClient à room recebida do servidor.
+    /// Q14: áudio desligado. Q11/Q13: vídeo automático com adaptação
+    /// de qualidade pela rede (Daily.co default).
     private func connectToCall(url: String) async throws {
-        // TODO MS-11.3b: instanciar Daily.CallClient, conectar à URL com:
-        //   - audio_disabled = true (Q14)
-        //   - video_enabled = true (câmera frontal)
-        //   - preferredCamera = .front
-        // Por enquanto, só guarda a URL pra Command Box poder abrir direto.
+        #if canImport(Daily)
+        guard let dailyUrl = URL(string: url) else {
+            throw StreamCoordinatorError.enderecoInvalido
+        }
+        if callClient == nil {
+            callClient = CallClient()
+        }
+        guard let client = callClient else {
+            throw StreamCoordinatorError.startFalhou("CallClient nil")
+        }
+
+        // ClientSettingsUpdate.inputs vazio = defaults Daily.co
+        // (vídeo frontal habilitado, áudio desabilitado já vem do
+        // start_audio_off=true que o servidor configurou na room
+        // — ver supabase/functions/stream-start).
+        var settings = ClientSettingsUpdate()
+        settings.inputs = .set(InputSettingsUpdate(
+            camera: .set(CameraInputSettingsUpdate(isEnabled: .set(true))),
+            microphone: .set(MicrophoneInputSettingsUpdate(isEnabled: .set(false)))
+        ))
+
+        do {
+            _ = try await client.join(url: dailyUrl, token: nil, settings: settings)
+        } catch {
+            throw StreamCoordinatorError.startFalhou(error.localizedDescription)
+        }
+        #else
+        // Plataforma sem Daily SDK (macOS dev) — no-op
+        _ = url
+        #endif
     }
 
     private func disconnectFromCall() async {
-        // TODO MS-11.3b: desconectar CallClient. Por enquanto no-op.
+        #if canImport(Daily)
+        guard let client = callClient else { return }
+        try? await client.leave()
+        callClient = nil
+        #endif
     }
 
     // MARK: - Helpers
