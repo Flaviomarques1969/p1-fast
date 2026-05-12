@@ -20,6 +20,7 @@
   --accent-2: oklch(82% 0.10 235 / .15);
   --bom: oklch(78% 0.16 150);
   --atencao: oklch(82% 0.16 80);
+  --ouro: oklch(74% 0.16 73);
   --radius: 12px;
   --radius-sm: 10px;
 }
@@ -158,6 +159,67 @@ body{padding:0 0 96px;}
   border-color:oklch(78% 0.16 150 / .45);
   background:oklch(78% 0.16 150 / .12);
 }
+.tag--tipo{
+  color:var(--accent);
+  border-color:oklch(78% 0.13 235 / .45);
+  background:oklch(78% 0.13 235 / .10);
+  letter-spacing:.04em;
+}
+.tag--ouro{
+  color:var(--ouro);
+  border-color:oklch(74% 0.16 73 / .45);
+  background:oklch(74% 0.16 73 / .12);
+}
+
+/* TOP TEMPOS DO TIPO (ranking dourado no topo) */
+.top-tipo{
+  background:linear-gradient(155deg, oklch(74% 0.16 73 / .14), oklch(74% 0.16 73 / .04));
+  border:1px solid oklch(74% 0.16 73 / .35);
+  border-radius:var(--radius);
+  padding:14px 16px 12px;
+  margin-bottom:12px;
+}
+.top-tipo__head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;
+}
+.top-tipo__label{
+  font-size:10px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ouro);
+  display:inline-flex;align-items:center;gap:7px;
+}
+.top-tipo__label__dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+.top-tipo__name{
+  font-size:13px;font-weight:600;color:var(--text);
+  letter-spacing:-.005em;
+}
+.top-tipo__rows{
+  display:flex;flex-direction:column;gap:6px;
+}
+.top-tipo__row{
+  display:grid;grid-template-columns:18px 1fr auto;
+  align-items:center;gap:10px;
+  font-size:13px;
+  font-variant-numeric:tabular-nums;
+}
+.top-tipo__pos{
+  font-size:11px;font-weight:600;
+  color:var(--ouro);
+  text-align:center;
+}
+.top-tipo__who{
+  color:var(--text-2);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.top-tipo__who strong{
+  color:var(--text);font-weight:600;
+}
+.top-tipo__time{
+  color:var(--text);font-weight:600;
+  letter-spacing:-.01em;
+}
+.top-tipo__row[data-self="true"] .top-tipo__who strong{color:var(--accent);}
 
 .event__chev{
   flex:0 0 auto;
@@ -221,6 +283,30 @@ body{padding:0 0 96px;}
     <p class="context-head__when">Próximo: <strong>Brasília · 02/05</strong></p>
   </header>
 
+  <div class="top-tipo" aria-label="Top tempos do tipo Track Day Planal">
+    <div class="top-tipo__head">
+      <span class="top-tipo__label"><span class="top-tipo__label__dot"></span>Top tempos · tipo</span>
+      <span class="top-tipo__name">Track Day Planal</span>
+    </div>
+    <div class="top-tipo__rows">
+      <div class="top-tipo__row" data-self="true">
+        <span class="top-tipo__pos">1º</span>
+        <span class="top-tipo__who"><strong>Flavio Marx</strong> · 25/04</span>
+        <span class="top-tipo__time">1:42.318</span>
+      </div>
+      <div class="top-tipo__row">
+        <span class="top-tipo__pos">2º</span>
+        <span class="top-tipo__who">Flavio Marx · 28/03</span>
+        <span class="top-tipo__time">1:43.847</span>
+      </div>
+      <div class="top-tipo__row">
+        <span class="top-tipo__pos">3º</span>
+        <span class="top-tipo__who">Bruno Marx · 25/04</span>
+        <span class="top-tipo__time">1:43.521</span>
+      </div>
+    </div>
+  </div>
+
   <div class="group__head">
     <span>Próximo</span>
     <strong>1</strong>
@@ -235,6 +321,7 @@ body{padding:0 0 96px;}
       <span class="event__name">Brasília</span>
       <span class="event__sub">Sábado · Nelson Piquet</span>
       <div class="event__meta">
+        <span class="tag tag--tipo">Track Day Planal</span>
         <span class="tag tag--proximo">Falta 1 dia</span>
         <span class="tag">64% pronto</span>
       </div>
@@ -256,9 +343,10 @@ body{padding:0 0 96px;}
       <span class="event__name">Brasília</span>
       <span class="event__sub">Nelson Piquet</span>
       <div class="event__meta">
+        <span class="tag tag--tipo">Track Day Planal</span>
         <span class="tag">4 stints</span>
         <span class="tag">47 voltas</span>
-        <span class="tag tag--bom">1:42.318</span>
+        <span class="tag tag--ouro">1:42.318 · PB tipo</span>
       </div>
     </div>
     <span class="event__chev">›</span>
@@ -273,6 +361,7 @@ body{padding:0 0 96px;}
       <span class="event__name">Brasília</span>
       <span class="event__sub">Nelson Piquet</span>
       <div class="event__meta">
+        <span class="tag tag--tipo">Track Day Planal</span>
         <span class="tag">3 stints</span>
         <span class="tag">32 voltas</span>
         <span class="tag tag--bom">1:43.847</span>

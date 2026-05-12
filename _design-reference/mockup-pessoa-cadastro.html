@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=430,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Mockup — Cadastrar pessoa — P1 Fast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(20% 0.005 240);
+  --surface: oklch(24% 0.005 240);
+  --surface-2: oklch(28% 0.005 240);
+  --hairline: oklch(33% 0.005 240);
+  --text: oklch(95% 0.003 240);
+  --text-2: oklch(75% 0.01 240);
+  --text-3: oklch(58% 0.012 240);
+  --accent: oklch(78% 0.13 235);
+  --accent-2: oklch(82% 0.10 235 / .15);
+  --radius: 12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{
+  min-height:100dvh;width:100vw;
+  background:linear-gradient(160deg, oklch(22% 0.005 240) 0%, oklch(18% 0.005 240) 100%);
+  color:var(--text);font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;font-weight:400;
+}
+body{padding:0 0 110px;}
+.app{max-width:430px;margin:0 auto;padding:16px 20px 0;}
+
+.context-head{padding:14px 4px 16px;}
+.context-head__eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:5px 12px;background:var(--accent-2);
+  border:1px solid oklch(78% 0.13 235 / .35);border-radius:999px;
+  font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:12px;
+}
+.context-head__eyebrow__dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+.context-head__title{font-size:24px;font-weight:600;letter-spacing:-.025em;line-height:1.15;color:var(--text);margin-bottom:4px;}
+.context-head__sub{font-size:13px;color:var(--text-2);}
+
+.field{margin-bottom:16px;}
+.field__lbl{
+  font-size:13px;font-weight:500;color:var(--text-2);
+  margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;
+  letter-spacing:.005em;
+}
+.field__lbl small{color:var(--text-3);font-weight:400;font-size:12px;}
+
+.input{
+  width:100%;background:var(--surface);border:1px solid var(--hairline);
+  color:var(--text);font-family:inherit;
+  font-size:16px;font-weight:500;letter-spacing:-.005em;
+  padding:13px 14px;border-radius:var(--radius);
+  outline:none;transition:border-color .18s, box-shadow .18s, background .18s;
+}
+.input:focus, .input.is-focus{
+  border-color:var(--accent);background:oklch(26% 0.01 235);
+  box-shadow:0 0 0 4px oklch(78% 0.13 235 / .14);
+}
+.input--num{font-variant-numeric:tabular-nums;}
+
+/* Papéis — chips multi-select */
+.role-grid{
+  display:flex;flex-wrap:wrap;gap:8px;
+}
+.role-chip{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:9px 14px;border-radius:999px;
+  font-family:inherit;font-size:13px;font-weight:600;letter-spacing:-.005em;
+  background:var(--surface);
+  color:var(--text-2);
+  border:1px solid var(--hairline);cursor:pointer;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s, color .18s, border-color .18s;
+}
+.role-chip:active{transform:scale(.97);}
+.role-chip[data-on="true"]{
+  background:var(--accent-2);
+  color:var(--accent);
+  border-color:oklch(78% 0.13 235 / .55);
+}
+.role-chip__check{
+  width:14px;height:14px;border-radius:50%;
+  border:1.5px solid currentColor;
+  display:inline-grid;place-items:center;
+  opacity:.5;flex:0 0 auto;
+}
+.role-chip[data-on="true"] .role-chip__check{
+  background:var(--accent);border-color:var(--accent);
+  opacity:1;
+}
+.role-chip[data-on="true"] .role-chip__check::after{
+  content:'';
+  width:6px;height:6px;border-radius:50%;
+  background:oklch(12% 0.005 240);
+}
+.field__hint{
+  margin-top:8px;font-size:12px;color:var(--text-3);line-height:1.4;
+}
+
+.foot{
+  position:fixed;bottom:0;left:0;right:0;z-index:40;
+  background:oklch(18% 0.005 240 / .92);
+  -webkit-backdrop-filter:blur(20px) saturate(140%);
+  backdrop-filter:blur(20px) saturate(140%);
+  border-top:1px solid var(--hairline);padding:14px 20px 28px;
+}
+.foot__inner{max-width:430px;margin:0 auto;display:grid;grid-template-columns:auto 1fr;gap:10px;}
+.btn{
+  padding:14px 18px;border-radius:var(--radius);cursor:pointer;
+  font-family:inherit;font-size:15px;font-weight:600;letter-spacing:-.005em;
+  outline:none;border:1px solid transparent;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s, color .18s;
+}
+.btn:active{transform:scale(.97);}
+.btn--ghost{background:transparent;color:var(--text-2);border-color:var(--hairline);}
+.btn--ghost:hover{background:var(--surface);color:var(--text);}
+.btn--primary{background:var(--accent);color:oklch(12% 0.005 240);border-color:var(--accent);}
+.btn--primary:hover{background:oklch(82% 0.14 235);}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="context-head">
+    <span class="context-head__eyebrow"><span class="context-head__eyebrow__dot"></span>Nova pessoa</span>
+    <h1 class="context-head__title">Cadastrar pessoa</h1>
+    <p class="context-head__sub">Fica salva e pode ter um ou mais papéis no time.</p>
+  </header>
+
+  <div class="field">
+    <div class="field__lbl">Nome</div>
+    <input class="input is-focus" placeholder="Nome completo">
+  </div>
+
+  <div class="field">
+    <div class="field__lbl">
+      Papéis no time
+      <small>marque um ou mais</small>
+    </div>
+    <div class="role-grid">
+      <button class="role-chip" type="button" data-on="true"><span class="role-chip__check"></span>Piloto</button>
+      <button class="role-chip" type="button" data-on="false"><span class="role-chip__check"></span>Engenheiro</button>
+      <button class="role-chip" type="button" data-on="false"><span class="role-chip__check"></span>Mecânico</button>
+      <button class="role-chip" type="button" data-on="false"><span class="role-chip__check"></span>Professor</button>
+      <button class="role-chip" type="button" data-on="true"><span class="role-chip__check"></span>Chefe de equipe</button>
+      <button class="role-chip" type="button" data-on="false"><span class="role-chip__check"></span>Visitante</button>
+    </div>
+    <p class="field__hint">A mesma pessoa pode dirigir e ser chefe — sem precisar duplicar cadastro.</p>
+  </div>
+
+  <div class="field">
+    <div class="field__lbl">
+      Altura
+      <small>opcional</small>
+    </div>
+    <input class="input input--num" type="text" placeholder="1,75 m">
+  </div>
+
+  <div class="field">
+    <div class="field__lbl">
+      Peso
+      <small>opcional</small>
+    </div>
+    <input class="input input--num" type="text" placeholder="78 kg">
+  </div>
+
+  <div class="field">
+    <div class="field__lbl">
+      Idade
+      <small>opcional</small>
+    </div>
+    <input class="input input--num" type="number" placeholder="45">
+  </div>
+</div>
+
+<div class="foot">
+  <div class="foot__inner">
+    <button class="btn btn--ghost" type="button">Cancelar</button>
+    <button class="btn btn--primary" type="button">Salvar pessoa</button>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.role-chip').forEach(function(chip){
+  chip.addEventListener('click', function(){
+    var on = chip.getAttribute('data-on') === 'true';
+    chip.setAttribute('data-on', on ? 'false' : 'true');
+  });
+});
+</script>
+</body>
+</html>
