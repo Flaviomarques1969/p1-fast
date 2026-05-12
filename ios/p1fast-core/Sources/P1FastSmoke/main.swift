@@ -4301,6 +4301,59 @@ step("VV-08: cascade delete — stream removido apaga voltas indexadas") {
     try assertEq(restante, 0, "delete cascade não removeu volta_video")
 }
 
+// ─── F4.3: VoltaVideoOffsetCalculator (lógica pura do indexador) ────
+
+step("VVO-01: caso comum — volta de 1m38s 30s depois do start do stream") {
+    let (ini, fim) = VoltaVideoOffsetCalculator.compute(
+        streamStartedAtMs: 1_000_000,
+        evInicioAtMs: 1_030_000,
+        evFimAtMs: 1_128_000
+    )
+    try assertEq(ini, 30_000, "tInicioMs = 30s depois do start")
+    try assertEq(fim, 128_000, "tFimMs = 128s depois do start")
+}
+
+step("VVO-02: evento começou antes do stream → clamp em 0") {
+    let (ini, fim) = VoltaVideoOffsetCalculator.compute(
+        streamStartedAtMs: 1_000_000,
+        evInicioAtMs: 999_500,
+        evFimAtMs: 1_002_000
+    )
+    try assertEq(ini, 0, "tInicioMs deve ser clampado em 0")
+    try assertTrue(fim > ini, "tFimMs precisa ser maior que tInicioMs")
+}
+
+step("VVO-03: fimAt == inicioAt → tFimMs = tInicioMs + 1 (CHECK do banco)") {
+    let (ini, fim) = VoltaVideoOffsetCalculator.compute(
+        streamStartedAtMs: 1_000_000,
+        evInicioAtMs: 1_050_000,
+        evFimAtMs: 1_050_000
+    )
+    try assertEq(ini, 50_000)
+    try assertEq(fim, 50_001, "tFimMs deve ser pelo menos 1 ms maior que tInicioMs")
+}
+
+step("VVO-04: fimAt < inicioAt (ruído de relógio) → tFimMs = tInicioMs + 1") {
+    let (ini, fim) = VoltaVideoOffsetCalculator.compute(
+        streamStartedAtMs: 1_000_000,
+        evInicioAtMs: 1_050_000,
+        evFimAtMs: 1_049_500
+    )
+    try assertEq(ini, 50_000)
+    try assertEq(fim, 50_001, "tFimMs deve ser ajustado pra ficar acima de tInicioMs")
+}
+
+step("VVO-05: timestamps grandes (sessão longa) sem overflow") {
+    // Stream de 8 horas — 8h = 28_800_000 ms. Garante que Int absorve.
+    let (ini, fim) = VoltaVideoOffsetCalculator.compute(
+        streamStartedAtMs: 1_777_000_000_000,
+        evInicioAtMs: 1_777_000_028_700_000,
+        evFimAtMs: 1_777_000_028_798_000
+    )
+    try assertTrue(ini > 28_000_000_000, "tInicioMs deve sobreviver a stream de horas")
+    try assertTrue(fim > ini, "tFimMs > tInicioMs ainda válido")
+}
+
 // ─── DRAINER (Sprint 1A.6 sub-prompt B) ──────────────────────
 // Mock transport: configurado por teste pra retornar o que quisermos.
 final class MockSyncTransport: SyncTransport {
