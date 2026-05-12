@@ -4354,6 +4354,109 @@ step("VVO-05: timestamps grandes (sessão longa) sem overflow") {
     try assertTrue(fim > ini, "tFimMs > tInicioMs ainda válido")
 }
 
+// ─── F4.5: TriagemPolicy (lógica pura de bloqueio do próximo stint) ───
+
+/// Helper pra construir Date com offset em ms desde Unix epoch.
+func dateFromEpochMs(_ ms: Int64) -> Date {
+    Date(timeIntervalSince1970: Double(ms) / 1000.0)
+}
+
+step("TP-01: lista vazia → .ok") {
+    let r = TriagemPolicy.avaliar(pendentes: [], hoje: Date())
+    try assertEq(r, .ok)
+}
+
+step("TP-02: stint pendente do mesmo dia → bloqueado com afetados") {
+    // hoje fixo: 2026-05-12 14:00 (timezone do device)
+    let calendar = Calendar(identifier: .gregorian)
+    var comps = DateComponents(year: 2026, month: 5, day: 12, hour: 14, minute: 0)
+    let hoje = calendar.date(from: comps)!
+    // stint criado hoje cedo (10:00 do mesmo dia)
+    comps.hour = 10
+    let criadoEm = calendar.date(from: comps)!
+    let stint = StintComPendentes(stintId: "s1",
+                                   criadoEmMs: Int64(criadoEm.timeIntervalSince1970 * 1000),
+                                   voltasPendentes: 3)
+    let r = TriagemPolicy.avaliar(pendentes: [stint], hoje: hoje, calendar: calendar)
+    switch r {
+    case .ok:
+        try assertTrue(false, "esperava bloqueado")
+    case .bloqueado(_, let afetados, let auto):
+        try assertEq(afetados.count, 1, "stint do mesmo dia entra em afetados")
+        try assertEq(auto.count, 0, "nenhum stint pra auto-descartar")
+        try assertEq(afetados[0].voltasPendentes, 3)
+    }
+}
+
+step("TP-03: stint pendente do dia anterior → bloqueado vazio + autoDescartar") {
+    let calendar = Calendar(identifier: .gregorian)
+    var comps = DateComponents(year: 2026, month: 5, day: 12, hour: 14, minute: 0)
+    let hoje = calendar.date(from: comps)!
+    // stint criado ontem (2026-05-11 20:00)
+    comps.day = 11
+    comps.hour = 20
+    let ontem = calendar.date(from: comps)!
+    let stint = StintComPendentes(stintId: "s2",
+                                   criadoEmMs: Int64(ontem.timeIntervalSince1970 * 1000),
+                                   voltasPendentes: 5)
+    let r = TriagemPolicy.avaliar(pendentes: [stint], hoje: hoje, calendar: calendar)
+    switch r {
+    case .ok:
+        try assertTrue(false, "esperava bloqueado (auto-descarte fica nele)")
+    case .bloqueado(_, let afetados, let auto):
+        try assertEq(afetados.count, 0, "stint de ontem não vai pra afetados")
+        try assertEq(auto.count, 1, "stint de ontem vai pra autoDescartar")
+        try assertEq(auto[0].stintId, "s2")
+    }
+}
+
+step("TP-04: mix — 1 stint hoje + 1 ontem → ambas listas populadas") {
+    let calendar = Calendar(identifier: .gregorian)
+    var comps = DateComponents(year: 2026, month: 5, day: 12, hour: 14, minute: 0)
+    let hoje = calendar.date(from: comps)!
+    comps.hour = 11
+    let hojeCedo = calendar.date(from: comps)!
+    comps.day = 11
+    comps.hour = 20
+    let ontem = calendar.date(from: comps)!
+
+    let stintHoje = StintComPendentes(stintId: "s-hoje",
+                                       criadoEmMs: Int64(hojeCedo.timeIntervalSince1970 * 1000),
+                                       voltasPendentes: 2)
+    let stintOntem = StintComPendentes(stintId: "s-ontem",
+                                        criadoEmMs: Int64(ontem.timeIntervalSince1970 * 1000),
+                                        voltasPendentes: 4)
+    let r = TriagemPolicy.avaliar(pendentes: [stintHoje, stintOntem], hoje: hoje, calendar: calendar)
+    switch r {
+    case .ok:
+        try assertTrue(false, "esperava bloqueado")
+    case .bloqueado(_, let afetados, let auto):
+        try assertEq(afetados.count, 1, "apenas o de hoje em afetados")
+        try assertEq(afetados[0].stintId, "s-hoje")
+        try assertEq(auto.count, 1, "apenas o de ontem em autoDescartar")
+        try assertEq(auto[0].stintId, "s-ontem")
+    }
+}
+
+step("TP-05: bloqueio total de voltas no texto da razão") {
+    let calendar = Calendar(identifier: .gregorian)
+    var comps = DateComponents(year: 2026, month: 5, day: 12, hour: 14, minute: 0)
+    let hoje = calendar.date(from: comps)!
+    comps.hour = 10
+    let inicio = calendar.date(from: comps)!
+
+    let s1 = StintComPendentes(stintId: "a", criadoEmMs: Int64(inicio.timeIntervalSince1970 * 1000), voltasPendentes: 3)
+    let s2 = StintComPendentes(stintId: "b", criadoEmMs: Int64(inicio.timeIntervalSince1970 * 1000), voltasPendentes: 5)
+    let r = TriagemPolicy.avaliar(pendentes: [s1, s2], hoje: hoje, calendar: calendar)
+    switch r {
+    case .bloqueado(let razao, _, _):
+        try assertTrue(razao.contains("2"), "razão deve mencionar 2 stints — texto: \(razao)")
+        try assertTrue(razao.contains("8 volta"), "razão deve mencionar 8 voltas total — texto: \(razao)")
+    case .ok:
+        try assertTrue(false, "esperava bloqueado")
+    }
+}
+
 // ─── DRAINER (Sprint 1A.6 sub-prompt B) ──────────────────────
 // Mock transport: configurado por teste pra retornar o que quisermos.
 final class MockSyncTransport: SyncTransport {

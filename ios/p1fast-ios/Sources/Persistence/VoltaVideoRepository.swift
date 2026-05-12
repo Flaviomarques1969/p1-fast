@@ -137,4 +137,95 @@ final class VoltaVideoRepository: ObservableObject {
                 .fetchCount(db) > 0
         }
     }
+
+    // MARK: - F4.5: bloqueio do próximo stint
+
+    /// Coleta o estado de pendentes por stint anterior do evento (usado
+    /// pela TriagemPolicy). Cada row do retorno representa um stint que
+    /// ainda tem voltas pendentes de triagem.
+    func pendentesPorStint(eventoId: String) async throws -> [StintComPendentes] {
+        guard let teamId = TeamContext.currentTeamId else { return [] }
+        return try await queue.read { db in
+            let sql = """
+                SELECT s.id AS stint_id,
+                       s.created_at AS criado_em_ms,
+                       COUNT(vv.id) AS pendentes
+                FROM volta_video vv
+                JOIN video_streams vs ON vs.id = vv.video_stream_id
+                JOIN sessoes s ON s.id = vs.sessao_id
+                WHERE s.evento_id = ?
+                  AND vv.time_id = ?
+                  AND vv.triagem_status = 'pendente'
+                GROUP BY s.id
+                HAVING pendentes > 0
+                ORDER BY s.created_at ASC
+            """
+            return try Row.fetchAll(db, sql: sql, arguments: [eventoId, teamId]).map { row in
+                StintComPendentes(
+                    stintId: row["stint_id"],
+                    criadoEmMs: row["criado_em_ms"] ?? 0,
+                    voltasPendentes: row["pendentes"] ?? 0
+                )
+            }
+        }
+    }
+
+    /// Avalia se o usuário pode iniciar um stint novo neste evento.
+    /// Aplica TriagemPolicy. `hoje` permite injetar pra teste.
+    func avaliarBloqueio(eventoId: String, hoje: Date = Date()) async throws -> BloqueioTriagemResultado {
+        let pendentes = try await pendentesPorStint(eventoId: eventoId)
+        return TriagemPolicy.avaliar(pendentes: pendentes, hoje: hoje)
+    }
+
+    /// Marca todas as voltas pendentes de uma lista de stints como
+    /// descartadas. Usado pela rotina de auto-descarte (stints de dias
+    /// anteriores) e pelo botão "marcar todas como descartadas" da UI
+    /// quando a pessoa decide passar batido.
+    @discardableResult
+    func autoDescartarPendentes(stintIds: [String]) async throws -> Int {
+        guard !stintIds.isEmpty, let teamId = TeamContext.currentTeamId else { return 0 }
+        let now = DB.nowMs()
+        let placeholders = stintIds.map { _ in "?" }.joined(separator: ",")
+        var affected = 0
+        try await queue.write { db in
+            let sql = """
+                UPDATE volta_video
+                SET triagem_status = 'descartada',
+                    triada_em = ?,
+                    updated_at = ?,
+                    synced_at = NULL
+                WHERE triagem_status = 'pendente'
+                  AND time_id = ?
+                  AND video_stream_id IN (
+                      SELECT vs.id FROM video_streams vs
+                      WHERE vs.sessao_id IN (\(placeholders))
+                  )
+            """
+            var args: [DatabaseValueConvertible] = [now, now, teamId]
+            args.append(contentsOf: stintIds.map { $0 as DatabaseValueConvertible })
+            try db.execute(sql: sql, arguments: StatementArguments(args))
+            affected = db.changesCount
+            // Enfileira sync drainer pra cada row alterada — query lista
+            // os ids afetados pra enfileirar individualmente.
+            if affected > 0 {
+                let rowsSql = """
+                    SELECT vv.id FROM volta_video vv
+                    JOIN video_streams vs ON vs.id = vv.video_stream_id
+                    WHERE vv.triagem_status = 'descartada'
+                      AND vv.triada_em = ?
+                      AND vv.time_id = ?
+                      AND vs.sessao_id IN (\(placeholders))
+                """
+                var qargs: [DatabaseValueConvertible] = [now, teamId]
+                qargs.append(contentsOf: stintIds.map { $0 as DatabaseValueConvertible })
+                let ids = try String.fetchAll(db, sql: rowsSql, arguments: StatementArguments(qargs))
+                for id in ids {
+                    if let row = try VoltaVideo.fetchOne(db, key: id) {
+                        try SyncQueue.enqueueRecord(db, tableName: "volta_video", rowId: id, op: .update, record: row)
+                    }
+                }
+            }
+        }
+        return affected
+    }
 }
