@@ -277,6 +277,43 @@ enum Migrations {
             try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_sessoes_licao ON sessoes(licao_id);")
             try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_sessoes_convidado ON sessoes(convidado_id);")
         }
+
+        // ═══ v15_ms11_video_streams ════════════════════════════
+        // MS-11 etapa 1. Espelha supabase/migrations/0015_ms11_video_streams.sql.
+        // Tabela video_streams (1:1 com sessoes) registra cada transmissão
+        // de vídeo ao vivo via Daily.co. ADR-024 escolheu Daily.co como
+        // serviço de stream do MVP. Decisões registradas em respostas
+        // do Flávio em 2026-05-11 (rodadas 1+2).
+        //
+        // RLS local não tem equivalente — sandbox do device é por usuário.
+        // Apenas member do time vê streams no servidor (RLS Postgres).
+        m.registerMigration("v15_ms11_video_streams") { db in
+            try db.execute(sql: """
+                CREATE TABLE video_streams (
+                    id                   TEXT PRIMARY KEY,
+                    time_id              TEXT NOT NULL REFERENCES times(id) ON DELETE CASCADE,
+                    sessao_id            TEXT NOT NULL REFERENCES sessoes(id) ON DELETE CASCADE,
+                    daily_room_url       TEXT NOT NULL,
+                    daily_room_name      TEXT NOT NULL,
+                    status               TEXT NOT NULL DEFAULT 'iniciando'
+                                         CHECK (status IN ('iniciando','ao_vivo','sem_sinal','encerrado','falha')),
+                    started_at           INTEGER,
+                    ended_at             INTEGER,
+                    ultima_heartbeat     INTEGER,
+                    bateria_inicio       INTEGER CHECK (bateria_inicio IS NULL OR (bateria_inicio BETWEEN 0 AND 100)),
+                    bateria_fim          INTEGER CHECK (bateria_fim IS NULL OR (bateria_fim BETWEEN 0 AND 100)),
+                    motivo_encerramento  TEXT,
+                    created_at           INTEGER NOT NULL,
+                    updated_at           INTEGER NOT NULL,
+                    synced_at            INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE UNIQUE INDEX idx_video_streams_sessao ON video_streams(sessao_id);")
+            try db.execute(sql: "CREATE INDEX idx_video_streams_time_started ON video_streams(time_id, started_at DESC);")
+            // Link público por evento (Q2.4) — vale o dia inteiro
+            try db.execute(sql: "ALTER TABLE eventos ADD COLUMN link_publico_video_token TEXT;")
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_eventos_link_publico ON eventos(link_publico_video_token);")
+        }
     }
 
     // swiftlint:disable:next function_body_length
