@@ -3647,12 +3647,12 @@ step("PERSIST-01: makeMemoryQueue + migrations v1..v15 cria 27 tabelas") {
         )
     }
     // 20 do Postgres + sync_queue + sync_meta (v2) + licoes (v4) + pendencias_template + evento_pendencias (v5)
-    // + telemetry_samples_enriched (v7) + video_streams (v15) = 27
-    try assertEq(names.count, 27, "esperava 27 tabelas")
+    // + telemetry_samples_enriched (v7) + video_streams (v15) + volta_video (v16) = 28
+    try assertEq(names.count, 28, "esperava 28 tabelas")
     for expected in ["times", "carros", "configuracoes", "sessoes", "voltas",
                      "marcos", "retas_especiais", "telemetry_samples",
                      "telemetry_samples_enriched", "sync_queue", "sync_meta",
-                     "video_streams"] {
+                     "video_streams", "volta_video"] {
         try assertTrue(names.contains(expected), "tabela \(expected) ausente")
     }
 }
@@ -4169,6 +4169,332 @@ step("VID-07: status fora do enum é rejeitado pelo CHECK") {
     var caiu = false
     do { try q.write { db in try vsRuim.insert(db) } } catch { caiu = true }
     try assertTrue(caiu, "status 'rodando' deve ser rejeitado pelo CHECK")
+}
+
+// ─── F4.2: tabela volta_video + Model VoltaVideo ─────────────
+
+/// Helper: cria evento + sessao + stream + volta canônicos pros testes VV-*.
+/// Retorna (sessaoId, streamId, voltaId) prontos pra usar.
+func seedStreamWithVolta(_ q: DatabaseQueue, suffix: String) throws -> (String, String, String) {
+    let sessaoId = "ses-vv-\(suffix)"
+    let streamId = "vid-vv-\(suffix)"
+    let voltaId = "volta-vv-\(suffix)"
+    try q.write { db in
+        let ev = Evento(id: "ev-vv-\(suffix)", timeId: "team-1", dataEvento: DB.nowMs())
+        try ev.insert(db)
+        let s = Sessao(id: sessaoId, timeId: "team-1", eventoId: "ev-vv-\(suffix)")
+        try s.insert(db)
+        let vs = VideoStream(id: streamId, timeId: "team-1", sessaoId: sessaoId,
+                             dailyRoomUrl: "u", dailyRoomName: "n",
+                             status: VideoStreamStatus.aoVivo.rawValue)
+        try vs.insert(db)
+        let lap = Volta(id: voltaId, timeId: "team-1", sessaoId: sessaoId, numero: 1, tempoMs: 95_000)
+        try lap.insert(db)
+    }
+    return (sessaoId, streamId, voltaId)
+}
+
+step("VV-01: v16 cria tabela volta_video") {
+    let q = try makeTestDB()
+    let exists = try q.read { db in
+        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='volta_video'") ?? 0
+    }
+    try assertEq(exists, 1, "esperava tabela volta_video existir")
+}
+
+step("VV-02: VoltaVideo round-trip GRDB") {
+    let q = try makeTestDB()
+    let (_, streamId, voltaId) = try seedStreamWithVolta(q, suffix: "rt")
+    var row = VoltaVideo(id: "vv-1", timeId: "team-1",
+                         videoStreamId: streamId, voltaId: voltaId,
+                         tInicioMs: 0, tFimMs: 95_000)
+    try q.write { db in try row.insert(db) }
+    let fetched: VoltaVideo = try q.read { db in try VoltaVideo.fetchOne(db, key: "vv-1")! }
+    try assertEq(fetched.tInicioMs, 0)
+    try assertEq(fetched.tFimMs, 95_000)
+    try assertEq(fetched.triagemStatus, TriagemStatus.pendente.rawValue, "default triagem = pendente")
+    try assertEq(fetched.duracaoMs, 95_000)
+}
+
+step("VV-03: UNIQUE volta_id — 1 row por volta") {
+    let q = try makeTestDB()
+    let (_, streamId, voltaId) = try seedStreamWithVolta(q, suffix: "unique")
+    var a = VoltaVideo(id: "vv-a", timeId: "team-1",
+                      videoStreamId: streamId, voltaId: voltaId,
+                      tInicioMs: 0, tFimMs: 95_000)
+    try q.write { db in try a.insert(db) }
+    var b = VoltaVideo(id: "vv-b", timeId: "team-1",
+                      videoStreamId: streamId, voltaId: voltaId,
+                      tInicioMs: 0, tFimMs: 95_000)
+    var caiu = false
+    do { try q.write { db in try b.insert(db) } } catch { caiu = true }
+    try assertTrue(caiu, "duplicar volta_id deve ser rejeitado pelo UNIQUE")
+}
+
+step("VV-04: CHECK t_fim_ms > t_inicio_ms rejeita inválidos") {
+    let q = try makeTestDB()
+    let (_, streamId, voltaId) = try seedStreamWithVolta(q, suffix: "check")
+    var row = VoltaVideo(id: "vv-bad", timeId: "team-1",
+                        videoStreamId: streamId, voltaId: voltaId,
+                        tInicioMs: 5_000, tFimMs: 5_000)
+    var caiu = false
+    do { try q.write { db in try row.insert(db) } } catch { caiu = true }
+    try assertTrue(caiu, "t_fim_ms == t_inicio_ms deve ser rejeitado pelo CHECK")
+}
+
+step("VV-05: triagem_status fora do enum é rejeitado") {
+    let q = try makeTestDB()
+    let (_, streamId, voltaId) = try seedStreamWithVolta(q, suffix: "status")
+    var ruim = VoltaVideo(id: "vv-ruim", timeId: "team-1",
+                         videoStreamId: streamId, voltaId: voltaId,
+                         tInicioMs: 0, tFimMs: 1_000,
+                         triagemStatus: "talvez")
+    var caiu = false
+    do { try q.write { db in try ruim.insert(db) } } catch { caiu = true }
+    try assertTrue(caiu, "triagem_status 'talvez' deve ser rejeitado pelo CHECK")
+}
+
+step("VV-06: TriagemStatus helper expõe enum-safe + precisaTriagem") {
+    var pendente = VoltaVideo(id: "p", timeId: "t",
+                              videoStreamId: "s", voltaId: "v",
+                              tInicioMs: 0, tFimMs: 1_000)
+    try assertEq(pendente.status, TriagemStatus.pendente)
+    try assertTrue(pendente.precisaTriagem, "pendente deve precisar triagem")
+
+    var mantida = VoltaVideo(id: "m", timeId: "t",
+                             videoStreamId: "s", voltaId: "v",
+                             tInicioMs: 0, tFimMs: 1_000,
+                             triagemStatus: TriagemStatus.mantida.rawValue)
+    try assertEq(mantida.status, TriagemStatus.mantida)
+    try assertTrue(!mantida.precisaTriagem, "mantida não precisa triagem")
+
+    var descartada = VoltaVideo(id: "d", timeId: "t",
+                                videoStreamId: "s", voltaId: "v",
+                                tInicioMs: 0, tFimMs: 1_000,
+                                triagemStatus: TriagemStatus.descartada.rawValue)
+    try assertEq(descartada.status, TriagemStatus.descartada)
+    try assertTrue(!descartada.precisaTriagem, "descartada não precisa triagem")
+}
+
+step("VV-07: status raw inválido cai pra .pendente no enum helper") {
+    var corrompido = VoltaVideo(id: "x", timeId: "t",
+                                videoStreamId: "s", voltaId: "v",
+                                tInicioMs: 0, tFimMs: 1_000,
+                                triagemStatus: "??")
+    // helper retorna .pendente quando rawValue não bate (paranoia)
+    try assertEq(corrompido.status, TriagemStatus.pendente)
+}
+
+step("VV-08: cascade delete — stream removido apaga voltas indexadas") {
+    let q = try makeTestDB()
+    let (_, streamId, voltaId) = try seedStreamWithVolta(q, suffix: "cascade")
+    var row = VoltaVideo(id: "vv-cas", timeId: "team-1",
+                       videoStreamId: streamId, voltaId: voltaId,
+                       tInicioMs: 0, tFimMs: 1_000)
+    try q.write { db in try row.insert(db) }
+    try q.write { db in
+        try db.execute(sql: "DELETE FROM video_streams WHERE id = ?", arguments: [streamId])
+    }
+    let restante = try q.read { db in
+        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM volta_video WHERE id = ?", arguments: ["vv-cas"]) ?? -1
+    }
+    try assertEq(restante, 0, "delete cascade não removeu volta_video")
+}
+
+// ─── F4.3: VoltaVideoOffsetCalculator (lógica pura do indexador) ────
+
+step("VVO-01: caso comum — volta de 1m38s 30s depois do start do stream") {
+    let (ini, fim) = VoltaVideoOffsetCalculator.compute(
+        streamStartedAtMs: 1_000_000,
+        evInicioAtMs: 1_030_000,
+        evFimAtMs: 1_128_000
+    )
+    try assertEq(ini, 30_000, "tInicioMs = 30s depois do start")
+    try assertEq(fim, 128_000, "tFimMs = 128s depois do start")
+}
+
+step("VVO-02: evento começou antes do stream → clamp em 0") {
+    let (ini, fim) = VoltaVideoOffsetCalculator.compute(
+        streamStartedAtMs: 1_000_000,
+        evInicioAtMs: 999_500,
+        evFimAtMs: 1_002_000
+    )
+    try assertEq(ini, 0, "tInicioMs deve ser clampado em 0")
+    try assertTrue(fim > ini, "tFimMs precisa ser maior que tInicioMs")
+}
+
+step("VVO-03: fimAt == inicioAt → tFimMs = tInicioMs + 1 (CHECK do banco)") {
+    let (ini, fim) = VoltaVideoOffsetCalculator.compute(
+        streamStartedAtMs: 1_000_000,
+        evInicioAtMs: 1_050_000,
+        evFimAtMs: 1_050_000
+    )
+    try assertEq(ini, 50_000)
+    try assertEq(fim, 50_001, "tFimMs deve ser pelo menos 1 ms maior que tInicioMs")
+}
+
+step("VVO-04: fimAt < inicioAt (ruído de relógio) → tFimMs = tInicioMs + 1") {
+    let (ini, fim) = VoltaVideoOffsetCalculator.compute(
+        streamStartedAtMs: 1_000_000,
+        evInicioAtMs: 1_050_000,
+        evFimAtMs: 1_049_500
+    )
+    try assertEq(ini, 50_000)
+    try assertEq(fim, 50_001, "tFimMs deve ser ajustado pra ficar acima de tInicioMs")
+}
+
+step("VVO-05: timestamps grandes (sessão longa) sem overflow") {
+    // Stream de 8 horas — 8h = 28_800_000 ms. Garante que Int absorve.
+    let (ini, fim) = VoltaVideoOffsetCalculator.compute(
+        streamStartedAtMs: 1_777_000_000_000,
+        evInicioAtMs: 1_777_000_028_700_000,
+        evFimAtMs: 1_777_000_028_798_000
+    )
+    try assertTrue(ini > 28_000_000_000, "tInicioMs deve sobreviver a stream de horas")
+    try assertTrue(fim > ini, "tFimMs > tInicioMs ainda válido")
+}
+
+// ─── F4.5: TriagemPolicy (lógica pura de bloqueio do próximo stint) ───
+
+/// Helper pra construir Date com offset em ms desde Unix epoch.
+func dateFromEpochMs(_ ms: Int64) -> Date {
+    Date(timeIntervalSince1970: Double(ms) / 1000.0)
+}
+
+step("TP-01: lista vazia → .ok") {
+    let r = TriagemPolicy.avaliar(pendentes: [], hoje: Date())
+    try assertEq(r, .ok)
+}
+
+step("TP-02: stint pendente do mesmo dia → bloqueado com afetados") {
+    // hoje fixo: 2026-05-12 14:00 (timezone do device)
+    let calendar = Calendar(identifier: .gregorian)
+    var comps = DateComponents(year: 2026, month: 5, day: 12, hour: 14, minute: 0)
+    let hoje = calendar.date(from: comps)!
+    // stint criado hoje cedo (10:00 do mesmo dia)
+    comps.hour = 10
+    let criadoEm = calendar.date(from: comps)!
+    let stint = StintComPendentes(stintId: "s1",
+                                   criadoEmMs: Int64(criadoEm.timeIntervalSince1970 * 1000),
+                                   voltasPendentes: 3)
+    let r = TriagemPolicy.avaliar(pendentes: [stint], hoje: hoje, calendar: calendar)
+    switch r {
+    case .ok:
+        try assertTrue(false, "esperava bloqueado")
+    case .bloqueado(_, let afetados, let auto):
+        try assertEq(afetados.count, 1, "stint do mesmo dia entra em afetados")
+        try assertEq(auto.count, 0, "nenhum stint pra auto-descartar")
+        try assertEq(afetados[0].voltasPendentes, 3)
+    }
+}
+
+step("TP-03: stint pendente do dia anterior → bloqueado vazio + autoDescartar") {
+    let calendar = Calendar(identifier: .gregorian)
+    var comps = DateComponents(year: 2026, month: 5, day: 12, hour: 14, minute: 0)
+    let hoje = calendar.date(from: comps)!
+    // stint criado ontem (2026-05-11 20:00)
+    comps.day = 11
+    comps.hour = 20
+    let ontem = calendar.date(from: comps)!
+    let stint = StintComPendentes(stintId: "s2",
+                                   criadoEmMs: Int64(ontem.timeIntervalSince1970 * 1000),
+                                   voltasPendentes: 5)
+    let r = TriagemPolicy.avaliar(pendentes: [stint], hoje: hoje, calendar: calendar)
+    switch r {
+    case .ok:
+        try assertTrue(false, "esperava bloqueado (auto-descarte fica nele)")
+    case .bloqueado(_, let afetados, let auto):
+        try assertEq(afetados.count, 0, "stint de ontem não vai pra afetados")
+        try assertEq(auto.count, 1, "stint de ontem vai pra autoDescartar")
+        try assertEq(auto[0].stintId, "s2")
+    }
+}
+
+step("TP-04: mix — 1 stint hoje + 1 ontem → ambas listas populadas") {
+    let calendar = Calendar(identifier: .gregorian)
+    var comps = DateComponents(year: 2026, month: 5, day: 12, hour: 14, minute: 0)
+    let hoje = calendar.date(from: comps)!
+    comps.hour = 11
+    let hojeCedo = calendar.date(from: comps)!
+    comps.day = 11
+    comps.hour = 20
+    let ontem = calendar.date(from: comps)!
+
+    let stintHoje = StintComPendentes(stintId: "s-hoje",
+                                       criadoEmMs: Int64(hojeCedo.timeIntervalSince1970 * 1000),
+                                       voltasPendentes: 2)
+    let stintOntem = StintComPendentes(stintId: "s-ontem",
+                                        criadoEmMs: Int64(ontem.timeIntervalSince1970 * 1000),
+                                        voltasPendentes: 4)
+    let r = TriagemPolicy.avaliar(pendentes: [stintHoje, stintOntem], hoje: hoje, calendar: calendar)
+    switch r {
+    case .ok:
+        try assertTrue(false, "esperava bloqueado")
+    case .bloqueado(_, let afetados, let auto):
+        try assertEq(afetados.count, 1, "apenas o de hoje em afetados")
+        try assertEq(afetados[0].stintId, "s-hoje")
+        try assertEq(auto.count, 1, "apenas o de ontem em autoDescartar")
+        try assertEq(auto[0].stintId, "s-ontem")
+    }
+}
+
+step("TP-05: bloqueio total de voltas no texto da razão") {
+    let calendar = Calendar(identifier: .gregorian)
+    var comps = DateComponents(year: 2026, month: 5, day: 12, hour: 14, minute: 0)
+    let hoje = calendar.date(from: comps)!
+    comps.hour = 10
+    let inicio = calendar.date(from: comps)!
+
+    let s1 = StintComPendentes(stintId: "a", criadoEmMs: Int64(inicio.timeIntervalSince1970 * 1000), voltasPendentes: 3)
+    let s2 = StintComPendentes(stintId: "b", criadoEmMs: Int64(inicio.timeIntervalSince1970 * 1000), voltasPendentes: 5)
+    let r = TriagemPolicy.avaliar(pendentes: [s1, s2], hoje: hoje, calendar: calendar)
+    switch r {
+    case .bloqueado(let razao, _, _):
+        try assertTrue(razao.contains("2"), "razão deve mencionar 2 stints — texto: \(razao)")
+        try assertTrue(razao.contains("8 volta"), "razão deve mencionar 8 voltas total — texto: \(razao)")
+    case .ok:
+        try assertTrue(false, "esperava bloqueado")
+    }
+}
+
+// ─── F4.6: TriagemPermissao (piloto + chefe + admin) ─────────
+
+step("PER-01: admin sempre pode triar") {
+    let admin = UsuarioContexto(userId: "user-admin", isAdmin: true, isChefeEquipe: false)
+    try assertTrue(TriagemPermissao.podeTriar(usuario: admin, pilotoUserIdDaSessao: nil))
+    try assertTrue(TriagemPermissao.podeTriar(usuario: admin, pilotoUserIdDaSessao: "outro-user"))
+}
+
+step("PER-02: chefe da equipe sempre pode triar") {
+    let chefe = UsuarioContexto(userId: "user-chefe", isAdmin: false, isChefeEquipe: true)
+    try assertTrue(TriagemPermissao.podeTriar(usuario: chefe, pilotoUserIdDaSessao: nil))
+    try assertTrue(TriagemPermissao.podeTriar(usuario: chefe, pilotoUserIdDaSessao: "outro-user"))
+}
+
+step("PER-03: piloto da sessão pode triar suas próprias voltas") {
+    let piloto = UsuarioContexto(userId: "user-piloto-x", isAdmin: false, isChefeEquipe: false)
+    try assertTrue(TriagemPermissao.podeTriar(usuario: piloto, pilotoUserIdDaSessao: "user-piloto-x"))
+}
+
+step("PER-04: piloto NÃO pode triar voltas de outro piloto") {
+    let piloto = UsuarioContexto(userId: "user-piloto-x", isAdmin: false, isChefeEquipe: false)
+    try assertTrue(!TriagemPermissao.podeTriar(usuario: piloto, pilotoUserIdDaSessao: "user-piloto-y"))
+    let razao = TriagemPermissao.razaoBloqueio(usuario: piloto, pilotoUserIdDaSessao: "user-piloto-y")
+    try assertTrue(razao != nil && razao!.contains("piloto"), "razão deve mencionar piloto")
+}
+
+step("PER-05: usuário sem login NÃO pode triar") {
+    let semLogin = UsuarioContexto(userId: nil, isAdmin: false, isChefeEquipe: false)
+    try assertTrue(!TriagemPermissao.podeTriar(usuario: semLogin, pilotoUserIdDaSessao: "user-x"))
+    let razao = TriagemPermissao.razaoBloqueio(usuario: semLogin, pilotoUserIdDaSessao: "user-x")
+    try assertTrue(razao != nil && razao!.lowercased().contains("login"))
+}
+
+step("PER-06: piloto da sessão sem conta vinculada → só admin/chefe pode") {
+    let piloto = UsuarioContexto(userId: "user-x", isAdmin: false, isChefeEquipe: false)
+    try assertTrue(!TriagemPermissao.podeTriar(usuario: piloto, pilotoUserIdDaSessao: nil))
+    let admin = UsuarioContexto(userId: "user-y", isAdmin: true, isChefeEquipe: false)
+    try assertTrue(TriagemPermissao.podeTriar(usuario: admin, pilotoUserIdDaSessao: nil))
 }
 
 // ─── DRAINER (Sprint 1A.6 sub-prompt B) ──────────────────────
