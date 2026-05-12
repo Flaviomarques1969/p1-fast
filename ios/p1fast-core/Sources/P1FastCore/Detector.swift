@@ -1,6 +1,15 @@
 // ═══════════════════════════════════════════════════════════
 // Detector — port Swift de src/telemetry/detector.js
 // ═══════════════════════════════════════════════════════════
+//
+// ✅  FONTE DA VERDADE DO DETECTOR AO VIVO (ADR-025, 2026-05-12)
+//
+// Mudanças no algoritmo de detecção entram primeiro aqui, com smoke novo.
+// `src/telemetry/detector.js` é referência legada. `supabase/functions/
+// detector/index.ts` é reprocessamento pós-stint — atualizado manualmente
+// se este mudar. Detalhes em ARCHITECTURE_DECISIONS.md §ADR-025.
+//
+// ═══════════════════════════════════════════════════════════
 // Engine ao vivo: stream de samples → eventos lap / segmentStart /
 // segmentEnd. Stateful, classe (referência) — listener pattern com
 // closure de unsubscribe (paridade com JS Set<cb>).

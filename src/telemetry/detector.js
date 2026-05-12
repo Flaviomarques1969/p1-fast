@@ -1,6 +1,25 @@
 // ═══════════════════════════════════════════════════════════
 // Detector — volta + parcial + segmento
 // ═══════════════════════════════════════════════════════════
+//
+// ⚠️  REFERÊNCIA LEGADA — NÃO É MAIS A FONTE DA VERDADE (ADR-025, 2026-05-12)
+//
+// A fonte da verdade do Detector ao vivo passou a ser o porte Swift em
+// `ios/p1fast-core/Sources/P1FastCore/Detector.swift`, que roda dentro do
+// app real do iPhone durante a captura.
+//
+// Este arquivo permanece como referência histórica e leitura comparativa
+// do algoritmo. Mudanças no algoritmo de detecção entram primeiro no Swift.
+// Quando o Swift divergir deste JS, o JS fica para trás — não é mantido em
+// paridade automática.
+//
+// Reprocessamento pós-stint (batch contra fixtures, regerar debrief antigo)
+// roda na Edge Function em `supabase/functions/detector/index.ts` (também
+// derivada — vai precisar de atualização manual se o algoritmo Swift mudar).
+//
+// Detalhes em ARCHITECTURE_DECISIONS.md §ADR-025.
+//
+// ═══════════════════════════════════════════════════════════
 // Entrada: stream de samples com { x, y, t, speed } (já em coords do viewBox)
 // Saída:
 //   - onLap(lap)       quando cruza linha de chegada. Lap.temposPorParcial

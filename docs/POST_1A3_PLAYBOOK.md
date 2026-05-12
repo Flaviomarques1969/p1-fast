@@ -1,3 +1,14 @@
+> ⚠️ **DOCUMENTO OBSOLETO** — preservado pra histórico (auditoria 2026-05-12).
+>
+> A nomenclatura "Sprint 1A.X" foi substituída em 2026-05-03 pelo esquema
+> "MS-X" do `docs/PLANO_FASE_1.md` (decisão Flávio — "não há mais Fase 2,
+> tudo entra em Fase 1 única"). Os PRs descritos aqui já foram mergeados
+> faz tempo. Não usar como guia pra trabalho novo.
+>
+> Referência canônica vigente: `STATUS.md` + `docs/PLANO_FASE_1.md`.
+
+---
+
 # Post-Sprint 1A.3 Playbook
 
 > Sequência exata pra fechar Sprint 1A.3 dos 3 PRs em flight + fix CRUD-affordances.

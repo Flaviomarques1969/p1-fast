@@ -128,6 +128,20 @@ SQL pulled via `xcrun devicectl device copy from --domain-type appDataContainer`
 
 Verificadas via REST: HTTP 200 + `[]` em todas (RLS OK, colunas existentes — se não existissem, retornaria 400).
 
+**Estado consolidado das migrations em prod (auditoria 2026-05-12):** todas as 15 migrations (0001 a 0015) estão aplicadas em produção. Conferência via REST anon contra `fvhwltzhytpnhlqbttmd.supabase.co`:
+- `0006_v2_schema_columns.sql` — `sessoes.pneu_id`, `sessoes.combustivel_id`, `pilotos.altura_cm` retornam 200.
+- `0007_vmin_georef.sql` — `segment_executions.vmin_kmh` retorna 200.
+- `0008_telemetry_samples_enriched.sql` — tabela `telemetry_samples_enriched` retorna 200.
+- `0009_track_geo_anchors_view_box.sql` — `tracks.geo_ancoras` + `track_layouts.view_box` retornam 200.
+- `0010_kalman_gap_duration.sql` — `telemetry_samples_enriched.gap_duration_ms` retorna 200.
+- `0011_ensure_personal_team.sql` — RPC retorna 401 com mensagem "requires authenticated user" (função existe; se não existisse, retornaria 404).
+- `0012_seed_brasilia.sql` — row tracks com UUID `e8335412-…` retorna 200.
+- `0013_set_updated_at_respects_client.sql` — implícito (0015 depende e está aplicada).
+- `0014_ms4_sessoes_extensions.sql` — `sessoes.paradas_box`, `ia_ligada`, `licao_id`, `cancelado_em` retornam 200.
+- `0015_ms11_video_streams.sql` — tabela `video_streams` + `eventos.link_publico_video_token` retornam 200.
+
+A nota "aplicar manualmente após merge" que aparece em algumas migrations e em PENDENCIAS_GATE.md está desatualizada: o ciclo manual já foi feito. Não há migrations pendentes de aplicação em produção a partir de 2026-05-12.
+
 ---
 
 ## Sessão 2026-05-09 — virada arquitetural cockpit pra Windows (ADR-023)

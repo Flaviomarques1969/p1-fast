@@ -1,6 +1,20 @@
 // ═══════════════════════════════════════════════════════════
 // supabase/functions/detector — pipeline de análise pós-stint
 // ═══════════════════════════════════════════════════════════
+//
+// ⚠️  IMPLEMENTAÇÃO DERIVADA — NÃO É A FONTE DA VERDADE (ADR-025, 2026-05-12)
+//
+// A fonte da verdade do Detector ao vivo é o porte Swift em
+// `ios/p1fast-core/Sources/P1FastCore/Detector.swift`. Esta Edge Function
+// é uso específico de REPROCESSAMENTO PÓS-STINT (batch contra fixtures,
+// regerar debrief antigo, análise offline) — não corre no caminho ao vivo.
+//
+// Se o algoritmo Swift mudar, esta função precisa ser atualizada
+// manualmente. Quando o caso de uso "reprocessar sessão antiga" virar
+// rotina real, avaliar consolidação. Detalhes em
+// ARCHITECTURE_DECISIONS.md §ADR-025.
+//
+// ═══════════════════════════════════════════════════════════
 // Edge Function (Deno) que recebe um stream de samples (já em coords
 // do viewBox) + config de pista, instancia o Detector portado
 // (path-mapper.ts + detector.ts), drena os eventos e devolve um
