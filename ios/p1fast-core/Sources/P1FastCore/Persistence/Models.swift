@@ -644,6 +644,102 @@ public struct VoltaVideo: Codable, FetchableRecord, PersistableRecord {
     public var precisaTriagem: Bool { status == .pendente }
 }
 
+// MARK: - pessoas + pessoa_papeis (F1 Fase A)
+
+/// Papel canônico de uma Pessoa. Espelha o CHECK do Postgres.
+/// Cada Pessoa pode ter N papéis simultâneos via `pessoa_papeis`.
+public enum PapelPessoa: String, Codable, Sendable, CaseIterable {
+    case piloto
+    case passageiro
+    case engenheiro
+    case mecanico
+    case coach
+    case convidado
+    case chefeEquipe = "chefe_equipe"
+
+    /// Texto legível em português pra UI.
+    public var legivel: String {
+        switch self {
+        case .piloto:       return "Piloto"
+        case .passageiro:   return "Passageiro"
+        case .engenheiro:   return "Engenheiro"
+        case .mecanico:     return "Mecânico"
+        case .coach:        return "Coach"
+        case .convidado:    return "Convidado"
+        case .chefeEquipe:  return "Chefe da equipe"
+        }
+    }
+}
+
+/// Entidade unificada de pessoa multi-papel (F1 Fase A — ainda vazia).
+/// Substitui pilotos+passageiros na Fase B (futura migração de dados).
+public struct Pessoa: Codable, FetchableRecord, PersistableRecord {
+    public var id: String
+    public var timeId: String
+    public var nome: String
+    public var userId: String?
+    public var alturaCm: Int?
+    public var pesoKg: Double?
+    public var nascimento: Int64?
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "pessoas"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case nome
+        case userId = "user_id"
+        case alturaCm = "altura_cm"
+        case pesoKg = "peso_kg"
+        case nascimento
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, timeId: String, nome: String,
+                userId: String? = nil,
+                alturaCm: Int? = nil, pesoKg: Double? = nil,
+                nascimento: Int64? = nil,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.nome = nome
+        self.userId = userId
+        self.alturaCm = alturaCm; self.pesoKg = pesoKg
+        self.nascimento = nascimento
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}
+
+/// Liga uma Pessoa a um Papel. Cada par (pessoa_id, papel) é único.
+public struct PessoaPapel: Codable, FetchableRecord, PersistableRecord {
+    public var pessoaId: String
+    public var papel: String
+    public var createdAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "pessoa_papeis"
+    enum CodingKeys: String, CodingKey {
+        case pessoaId = "pessoa_id"
+        case papel
+        case createdAt = "created_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(pessoaId: String, papel: PapelPessoa,
+                createdAt: Int64 = DB.nowMs(), syncedAt: Int64? = nil) {
+        self.pessoaId = pessoaId
+        self.papel = papel.rawValue
+        self.createdAt = createdAt
+        self.syncedAt = syncedAt
+    }
+
+    /// Helper enum-safe pra ler o papel sem string comparison no caller.
+    public var papelEnum: PapelPessoa? { PapelPessoa(rawValue: papel) }
+}
+
 // MARK: - paradas e revezamento (auxiliares de Sessao)
 
 /// Parada planejada no box dentro do StintPlan (MS-4.1).

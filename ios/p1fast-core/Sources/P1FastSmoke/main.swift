@@ -3639,7 +3639,7 @@ func makeTestDB() throws -> DatabaseQueue {
     return q
 }
 
-step("PERSIST-01: makeMemoryQueue + migrations v1..v15 cria 27 tabelas") {
+step("PERSIST-01: makeMemoryQueue + migrations v1..v18 cria 30 tabelas") {
     let q = try DB.makeMemoryQueue()
     let names = try q.read { db in
         try String.fetchAll(db, sql:
@@ -3647,12 +3647,13 @@ step("PERSIST-01: makeMemoryQueue + migrations v1..v15 cria 27 tabelas") {
         )
     }
     // 20 do Postgres + sync_queue + sync_meta (v2) + licoes (v4) + pendencias_template + evento_pendencias (v5)
-    // + telemetry_samples_enriched (v7) + video_streams (v15) + volta_video (v16) = 28
-    try assertEq(names.count, 28, "esperava 28 tabelas")
+    // + telemetry_samples_enriched (v7) + video_streams (v15) + volta_video (v16)
+    // + pessoas (v17) + pessoa_papeis (v18) = 30
+    try assertEq(names.count, 30, "esperava 30 tabelas")
     for expected in ["times", "carros", "configuracoes", "sessoes", "voltas",
                      "marcos", "retas_especiais", "telemetry_samples",
                      "telemetry_samples_enriched", "sync_queue", "sync_meta",
-                     "video_streams", "volta_video"] {
+                     "video_streams", "volta_video", "pessoas", "pessoa_papeis"] {
         try assertTrue(names.contains(expected), "tabela \(expected) ausente")
     }
 }
@@ -4495,6 +4496,119 @@ step("PER-06: piloto da sessão sem conta vinculada → só admin/chefe pode") {
     try assertTrue(!TriagemPermissao.podeTriar(usuario: piloto, pilotoUserIdDaSessao: nil))
     let admin = UsuarioContexto(userId: "user-y", isAdmin: true, isChefeEquipe: false)
     try assertTrue(TriagemPermissao.podeTriar(usuario: admin, pilotoUserIdDaSessao: nil))
+}
+
+// ─── F1 Fase A: pessoas + pessoa_papeis ──────────────────────
+
+step("PSS-01: v17 cria tabela pessoas") {
+    let q = try makeTestDB()
+    let exists = try q.read { db in
+        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='pessoas'") ?? 0
+    }
+    try assertEq(exists, 1, "esperava tabela pessoas existir")
+}
+
+step("PSS-02: v18 cria tabela pessoa_papeis") {
+    let q = try makeTestDB()
+    let exists = try q.read { db in
+        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='pessoa_papeis'") ?? 0
+    }
+    try assertEq(exists, 1, "esperava tabela pessoa_papeis existir")
+}
+
+step("PSS-03: Pessoa round-trip GRDB") {
+    let q = try makeTestDB()
+    let row = Pessoa(id: "p-1", timeId: "team-1", nome: "Flávio",
+                     alturaCm: 175, pesoKg: 78.5, nascimento: 1_265_673_600_000)
+    try q.write { db in try row.insert(db) }
+    let fetched: Pessoa = try q.read { db in try Pessoa.fetchOne(db, key: "p-1")! }
+    try assertEq(fetched.nome, "Flávio")
+    try assertEq(fetched.alturaCm, 175)
+    try assertEq(fetched.pesoKg, 78.5)
+}
+
+step("PSS-04: CHECK nome não-vazio rejeita string em branco") {
+    let q = try makeTestDB()
+    var ruim = Pessoa(id: "p-bad", timeId: "team-1", nome: "   ")
+    var caiu = false
+    do { try q.write { db in try ruim.insert(db) } } catch { caiu = true }
+    try assertTrue(caiu, "nome em branco deve ser rejeitado pelo CHECK")
+}
+
+step("PSS-05: CHECK altura_cm fora do range rejeita") {
+    let q = try makeTestDB()
+    var ruim = Pessoa(id: "p-h", timeId: "team-1", nome: "Alto", alturaCm: 300)
+    var caiu = false
+    do { try q.write { db in try ruim.insert(db) } } catch { caiu = true }
+    try assertTrue(caiu, "altura_cm=300 deve ser rejeitado (max 250)")
+}
+
+step("PSS-06: PessoaPapel — 1 pessoa pode ter múltiplos papéis") {
+    let q = try makeTestDB()
+    let p = Pessoa(id: "p-multi", timeId: "team-1", nome: "Multi")
+    try q.write { db in try p.insert(db) }
+    let papel1 = PessoaPapel(pessoaId: "p-multi", papel: .piloto)
+    let papel2 = PessoaPapel(pessoaId: "p-multi", papel: .engenheiro)
+    let papel3 = PessoaPapel(pessoaId: "p-multi", papel: .chefeEquipe)
+    try q.write { db in
+        try papel1.insert(db)
+        try papel2.insert(db)
+        try papel3.insert(db)
+    }
+    let count = try q.read { db in
+        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM pessoa_papeis WHERE pessoa_id = ?", arguments: ["p-multi"]) ?? 0
+    }
+    try assertEq(count, 3, "esperava 3 papéis pra mesma pessoa")
+}
+
+step("PSS-07: PK composta rejeita duplicar (pessoa, papel)") {
+    let q = try makeTestDB()
+    let p = Pessoa(id: "p-dup", timeId: "team-1", nome: "Dup")
+    try q.write { db in try p.insert(db) }
+    let papel1 = PessoaPapel(pessoaId: "p-dup", papel: .piloto)
+    try q.write { db in try papel1.insert(db) }
+    let papel2 = PessoaPapel(pessoaId: "p-dup", papel: .piloto)
+    var caiu = false
+    do { try q.write { db in try papel2.insert(db) } } catch { caiu = true }
+    try assertTrue(caiu, "duplicar (pessoa, papel) deve ser rejeitado pela PK composta")
+}
+
+step("PSS-08: CHECK papel fora do enum rejeita") {
+    let q = try makeTestDB()
+    let p = Pessoa(id: "p-bad-papel", timeId: "team-1", nome: "BadPapel")
+    try q.write { db in try p.insert(db) }
+    var caiu = false
+    do {
+        try q.write { db in
+            try db.execute(sql: "INSERT INTO pessoa_papeis (pessoa_id, papel, created_at) VALUES (?, ?, ?)",
+                           arguments: ["p-bad-papel", "presidente", DB.nowMs()])
+        }
+    } catch { caiu = true }
+    try assertTrue(caiu, "papel 'presidente' deve ser rejeitado pelo CHECK")
+}
+
+step("PSS-09: cascade delete — apagar pessoa apaga papéis") {
+    let q = try makeTestDB()
+    let p = Pessoa(id: "p-cas", timeId: "team-1", nome: "Cas")
+    try q.write { db in try p.insert(db) }
+    let papel = PessoaPapel(pessoaId: "p-cas", papel: .piloto)
+    try q.write { db in try papel.insert(db) }
+    try q.write { db in
+        try db.execute(sql: "DELETE FROM pessoas WHERE id = ?", arguments: ["p-cas"])
+    }
+    let count = try q.read { db in
+        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM pessoa_papeis WHERE pessoa_id = ?", arguments: ["p-cas"]) ?? -1
+    }
+    try assertEq(count, 0, "cascade delete deve ter removido o papel")
+}
+
+step("PSS-10: PapelPessoa.legivel cobre todos os 7 casos") {
+    for papel in PapelPessoa.allCases {
+        let l = papel.legivel
+        try assertTrue(!l.isEmpty, "legivel vazio pra \(papel.rawValue)")
+    }
+    try assertEq(PapelPessoa.allCases.count, 7, "esperava 7 papéis canônicos")
+    try assertEq(PapelPessoa.chefeEquipe.rawValue, "chefe_equipe", "rawValue deve ser snake_case do banco")
 }
 
 // ─── DRAINER (Sprint 1A.6 sub-prompt B) ──────────────────────

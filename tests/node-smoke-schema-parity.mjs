@@ -65,9 +65,9 @@ const GRDB_TABLES = grdbTables(grdb);
 // Contagem atualizada conforme migrations vão entrando.
 // PG: 20 do 0001 + licoes (0004) + pendencias_template + evento_pendencias
 //     (0005) + telemetry_samples_enriched (0008) + video_streams (0015)
-//     + volta_video (0016) = 25. (0014 só estende sessoes; 0017 só ajusta
-//     policies RLS, sem criar tabela.)
-const PG_TABLE_COUNT_ESPERADO = 26;
+//     + volta_video (0016) + pessoas (0018) + pessoa_papeis (0019) = 28.
+//     (0014 só estende sessoes; 0017 só ajusta policies RLS, sem criar tabela.)
+const PG_TABLE_COUNT_ESPERADO = 28;
 const GRDB_TABLE_COUNT_ESPERADO = PG_TABLE_COUNT_ESPERADO + 2; // + sync_queue + sync_meta
 
 t(`PG tem ${PG_TABLE_COUNT_ESPERADO} tabelas em public`, () => {

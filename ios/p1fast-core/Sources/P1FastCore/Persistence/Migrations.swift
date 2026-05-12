@@ -346,6 +346,56 @@ enum Migrations {
             try db.execute(sql: "CREATE INDEX idx_volta_video_stream ON volta_video(video_stream_id);")
             try db.execute(sql: "CREATE INDEX idx_volta_video_time_status ON volta_video(time_id, triagem_status);")
         }
+
+        // ═══ v17_pessoas ═══════════════════════════════════════
+        // F1 etapa A.1 (Unificação de pessoas multi-papel). Espelha
+        // supabase/migrations/0018_pessoas.sql. Tabela `pessoas`
+        // unifica pilotos + passageiros + papéis novos (engenheiro,
+        // mecanico, coach, convidado, chefe_equipe) numa entidade só.
+        //
+        // Fase A: cria tabela vazia. Fase B (futura) migra dados de
+        // pilotos+passageiros, atualiza sessoes, reescreve repos e UIs.
+        //
+        // Mockups Onda 1 (PR #174) + decisão Flávio: uma única entidade
+        // Pessoa com múltiplos papéis selecionáveis.
+        m.registerMigration("v17_pessoas") { db in
+            try db.execute(sql: """
+                CREATE TABLE pessoas (
+                    id          TEXT PRIMARY KEY,
+                    time_id     TEXT NOT NULL REFERENCES times(id) ON DELETE CASCADE,
+                    nome        TEXT NOT NULL CHECK (LENGTH(TRIM(nome)) > 0),
+                    user_id     TEXT,
+                    altura_cm   INTEGER CHECK (altura_cm IS NULL OR (altura_cm BETWEEN 50 AND 250)),
+                    peso_kg     REAL CHECK (peso_kg IS NULL OR (peso_kg BETWEEN 20 AND 250)),
+                    nascimento  INTEGER,
+                    created_at  INTEGER NOT NULL,
+                    updated_at  INTEGER NOT NULL,
+                    synced_at   INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX idx_pessoas_time ON pessoas(time_id);")
+            try db.execute(sql: "CREATE INDEX idx_pessoas_user ON pessoas(user_id) WHERE user_id IS NOT NULL;")
+        }
+
+        // ═══ v18_pessoa_papeis ═════════════════════════════════
+        // F1 etapa A.2. Espelha supabase/migrations/0019_pessoa_papeis.sql.
+        // Relação 1:N — cada pessoa pode ter N papéis simultâneos.
+        // PK composta (pessoa_id, papel) impede duplicata silenciosa.
+        m.registerMigration("v18_pessoa_papeis") { db in
+            try db.execute(sql: """
+                CREATE TABLE pessoa_papeis (
+                    pessoa_id   TEXT NOT NULL REFERENCES pessoas(id) ON DELETE CASCADE,
+                    papel       TEXT NOT NULL CHECK (papel IN (
+                                  'piloto','passageiro','engenheiro',
+                                  'mecanico','coach','convidado','chefe_equipe'
+                                )),
+                    created_at  INTEGER NOT NULL,
+                    synced_at   INTEGER,
+                    PRIMARY KEY (pessoa_id, papel)
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX idx_pessoa_papeis_papel ON pessoa_papeis(papel);")
+        }
     }
 
     // swiftlint:disable:next function_body_length
