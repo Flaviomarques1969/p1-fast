@@ -216,9 +216,9 @@ Reservada pra documentar a decisão arquitetural do MS-11 (stream MVP = câmera 
 
 ---
 
-## ADR-025 — Fonte da verdade do Detector ao vivo (PROPOSTA — aguarda confirmação Flávio)
+## ADR-025 — Fonte da verdade do Detector ao vivo
 
-**Status:** proposta gerada na auditoria estrutural de 2026-05-12. Aguarda confirmação explícita do Flávio antes de virar decisão fechada.
+**Status:** decisão fechada. Aprovada pelo Flávio em 2026-05-12 via página de decisões F4 (`.claude-perguntas/respostas/p1-fast/20260512-130000-f4-decisoes.json`, campo `d5_adr025_detector: SWIFT`).
 
 **Contexto:** a lógica de detecção de trechos (Detector — identifica entry, braking, apex, exit, fim de volta) hoje vive em 3 lugares:
 
