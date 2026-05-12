@@ -40,6 +40,16 @@ struct EventoDetalheView: View {
     @State private var sheet: EventoDetalheSheet?
     @State private var finalizingStintId: String?
 
+    /// Evento "passado" — data anterior ao dia de hoje (decisão Flávio
+    /// rodada 1, escolha "Data anterior ao dia de hoje"). Passado é só
+    /// histórico — esconde botões de mutação (Novo stint, Editar).
+    private var isEventoPassado: Bool {
+        guard let ms = repo.find(id: eventoId)?.evento.dataEvento else { return false }
+        let dataEvento = Date(timeIntervalSince1970: TimeInterval(ms) / 1000)
+        let inicioDeHoje = Calendar(identifier: .gregorian).startOfDay(for: Date())
+        return dataEvento < inicioDeHoje
+    }
+
     var body: some View {
         ZStack(alignment: .top) {
             Color.surface.ignoresSafeArea()
@@ -200,6 +210,18 @@ struct EventoDetalheView: View {
 
     // MARK: - Seção pendências (CTA pra abrir o checklist completo)
 
+    /// #24 — Contagem de pendências do evento (abertas × resolvidas).
+    /// Lê o estado atual do PendenciaRepository (que carrega assíncrono
+    /// no bootstrap). Quando ainda não carregou, retorna 0/0 e o sub-text
+    /// fica "Carregando…".
+    private var pendenciasContagem: (abertas: Int, resolvidas: Int)? {
+        let instancias = pendenciaRepo.instanciasPorEvento[eventoId]
+        guard let instancias = instancias else { return nil }
+        let resolvidas = instancias.filter { $0.checado }.count
+        let abertas = instancias.count - resolvidas
+        return (abertas, resolvidas)
+    }
+
     private var pendenciasSection: some View {
         Button {
             sheet = .pendencias
@@ -210,18 +232,27 @@ struct EventoDetalheView: View {
                         .font(.system(size: 13, weight: .semibold))
                         .tracking(0.06 * 13)
                         .foregroundStyle(Color.text)
-                    Text("Checklist 6 grupos · ~45 itens")
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundStyle(Color.textMuted)
+                    // #24 — Contadores no lugar do texto fixo antigo.
+                    if let c = pendenciasContagem {
+                        Text("\(c.abertas) abertas · \(c.resolvidas) resolvidas")
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundStyle(c.abertas > 0 ? Color.accent : Color.textMuted)
+                    } else {
+                        Text("Carregando…")
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundStyle(Color.textMuted)
+                    }
                 }
                 Spacer(minLength: 0)
-                Text("Ver ›")
-                    .font(.system(size: 13, weight: .medium))
+                // #24 — Removida palavra "Ver". Só a setinha (›) decorativa.
+                Text("›")
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(Color.accent)
             }
             .padding(.horizontal, Spacing.md)
             .padding(.vertical, 14)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle()) // #24 — garante linha inteira clicável
             .background(
                 RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
                     .fill(Color.surfaceRaised)
@@ -247,18 +278,21 @@ struct EventoDetalheView: View {
             }
             .buttonStyle(.plain)
             Spacer()
-            Button(action: { /* Edit fica pro Sprint 1A.3 */ }) {
-                Text("Editar")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(Color.textMuted)
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(Color.clear)
-                    )
+            // #16 — Botão "Editar" escondido em evento passado (histórico só).
+            if !isEventoPassado {
+                Button(action: { /* Edit fica pro Sprint 1A.3 */ }) {
+                    Text("Editar")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color.textMuted)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(Color.clear)
+                        )
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
     }
 
@@ -366,7 +400,10 @@ struct EventoDetalheView: View {
                         StintCardMock(stint: stint)
                     }
                 }
-                AddStintCTA(onTap: { sheet = .novoStint })
+                // #8 — Botão "Novo stint" escondido em evento passado.
+                if !isEventoPassado {
+                    AddStintCTA(onTap: { sheet = .novoStint })
+                }
             }
         }
     }
