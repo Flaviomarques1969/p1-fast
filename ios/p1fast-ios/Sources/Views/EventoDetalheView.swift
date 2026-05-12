@@ -331,7 +331,7 @@ struct EventoDetalheView: View {
                             stint: stint,
                             isFinalizing: finalizingStintId == stint.id,
                             onTap: { abrirStintReal(stint) },
-                            onCancel: stint.podeCancelar ? {
+                            onCancel: (stint.podeCancelar && podeEditarStint(stint)) ? {
                                 Task {
                                     try? await stintRepo.cancel(stintId: stint.id)
                                     await loadStintsReais()
@@ -385,6 +385,19 @@ struct EventoDetalheView: View {
 
     private func stintsFor(_ ev: EventoView) -> [StintMock] {
         EventoMockSummary.canon(eventoId: ev.id)?.stintsDetalhados ?? []
+    }
+
+    // MS-4.6 — Permissão de editar/cancelar stint. Consume função pura
+    // StintEditPermission.podeEditar (testada em PERM-01..06). Hoje,
+    // sem F1 (Pessoas multi-papel), o owner do time é sempre 'admin' →
+    // todo o app permite. Quando F1 chegar, papéis refinados restringem.
+    private func podeEditarStint(_ stint: Stint) -> Bool {
+        StintEditPermission.podeEditar(
+            currentUserId: TeamContext.currentPilotoId,
+            currentRole: TeamContext.currentRole,
+            pilotoId: stint.sessao.pilotoId,
+            pilotosRevezamento: stint.sessao.pilotosRevezamento
+        )
     }
 }
 

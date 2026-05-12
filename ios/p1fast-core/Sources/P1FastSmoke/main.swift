@@ -3998,6 +3998,71 @@ step("END-04: nil e vazio retornam false") {
     try assertEq(EnduranceDetection.tipoPermiteRevezamento(""), false)
 }
 
+// ─── MS-4.6: permissões de edição (lógica pura) ──────────────
+
+step("PERM-01: admin do time pode editar qualquer stint") {
+    let ok = StintEditPermission.podeEditar(
+        currentUserId: "outro-user",
+        currentRole: "admin",
+        pilotoId: "piloto-x",
+        pilotosRevezamento: nil
+    )
+    try assertTrue(ok, "admin deve poder editar mesmo não sendo piloto")
+}
+
+step("PERM-02: chefe_equipe pode editar qualquer stint") {
+    let ok = StintEditPermission.podeEditar(
+        currentUserId: "outro-user",
+        currentRole: "chefe_equipe",
+        pilotoId: "piloto-x",
+        pilotosRevezamento: nil
+    )
+    try assertTrue(ok, "chefe_equipe deve poder editar")
+}
+
+step("PERM-03: membro comum NÃO pode editar stint de outro piloto") {
+    let ok = StintEditPermission.podeEditar(
+        currentUserId: "membro-y",
+        currentRole: "membro",
+        pilotoId: "piloto-x",
+        pilotosRevezamento: nil
+    )
+    try assertEq(ok, false)
+}
+
+step("PERM-04: piloto principal pode editar próprio stint") {
+    let ok = StintEditPermission.podeEditar(
+        currentUserId: "piloto-x",
+        currentRole: "membro",
+        pilotoId: "piloto-x",
+        pilotosRevezamento: nil
+    )
+    try assertTrue(ok)
+}
+
+step("PERM-05: piloto em revezamento (endurance) pode editar") {
+    let ok = StintEditPermission.podeEditar(
+        currentUserId: "piloto-b",
+        currentRole: "membro",
+        pilotoId: "piloto-a",  // principal é A
+        pilotosRevezamento: [
+            PilotoTurno(pilotoId: "piloto-a", voltaInicio: 1, voltaFim: 10),
+            PilotoTurno(pilotoId: "piloto-b", voltaInicio: 11, voltaFim: 20)
+        ]
+    )
+    try assertTrue(ok, "piloto B em revezamento deve poder editar")
+}
+
+step("PERM-06: nil/vazio retornam false") {
+    let ok = StintEditPermission.podeEditar(
+        currentUserId: nil,
+        currentRole: nil,
+        pilotoId: "piloto-x",
+        pilotosRevezamento: nil
+    )
+    try assertEq(ok, false)
+}
+
 // ─── DRAINER (Sprint 1A.6 sub-prompt B) ──────────────────────
 // Mock transport: configurado por teste pra retornar o que quisermos.
 final class MockSyncTransport: SyncTransport {
