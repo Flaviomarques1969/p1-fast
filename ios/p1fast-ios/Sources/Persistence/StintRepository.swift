@@ -105,6 +105,9 @@ final class StintRepository: ObservableObject {
                     dataFim: row["data_fim"],
                     voltasPlanejadas: row["voltas_planejadas"],
                     objetivo: row["objetivo"],
+                    // MS-4.5: cancelado_em vem do SELECT s.* — usamos pra
+                    // mostrar tag "cancelado" e cor opaca na listagem.
+                    canceladoEm: row["cancelado_em"],
                     createdAt: row["created_at"],
                     updatedAt: row["updated_at"],
                     syncedAt: row["synced_at"]
@@ -497,11 +500,17 @@ struct Stint: Identifiable, Equatable {
             && lhs.sessao.updatedAt == rhs.sessao.updatedAt
     }
 
-    /// Status canônico — "ativa", "finalizada", "planejada".
+    /// Status canônico — "ativa", "finalizada", "planejada", "cancelada".
     var status: String { sessao.status ?? "planejada" }
 
     var isFinalizado: Bool { status == "finalizada" }
     var isAtivo: Bool { status == "ativa" }
+    /// MS-4.5: stint cancelado tem `cancelado_em` preenchido e
+    /// `status='cancelada'`. NÃO some da listagem (decisão Q24).
+    var isCancelado: Bool { sessao.canceladoEm != nil }
+    /// Permite cancelar somente stints ativos (status='ativa').
+    /// Stints já finalizados ou cancelados não podem voltar atrás.
+    var podeCancelar: Bool { isAtivo && !isCancelado }
 
     /// Decompose `objetivo` que foi gravado como `<tipo> · <licao>`.
     /// Retorna ("Ataque", "V-Min · apex") por exemplo. Quando não tem
