@@ -29,6 +29,7 @@ struct StintModalView: View {
     @EnvironmentObject private var carroRepo: CarroRepository
     @EnvironmentObject private var pneuRepo: PneuRepository
     @EnvironmentObject private var combustivelRepo: CombustivelRepository
+    @EnvironmentObject private var licaoRepo: LicaoRepository
     let eventoId: String
     let proximoNumero: Int
     let contextoLinha: String
@@ -38,7 +39,7 @@ struct StintModalView: View {
     @State private var pilotoId: String?
     @State private var objetivoTipo: String = "Aquecimento"
     @State private var voltasPlanejadas: Int = 10
-    @State private var licaoFocada: String = ""
+    @State private var licaoIdSelecionada: String?
     @State private var savingError: String?
     @State private var isSaving = false
 
@@ -51,6 +52,15 @@ struct StintModalView: View {
     @State private var combustivelIdSelecionado: String?
     @State private var qtCombustivelTexto: String = ""
     @State private var sheet: StintModalSheet?
+
+    // MS-4.3: campos novos do StintPlan estendido (v14). Estado local
+    // persistido via setStintExtensions após o create da sessao. Toggles
+    // ia_ligada e mapa_ghost_ligado são flags only — comportamento real
+    // vive em F2/F3/F4 (ver docs/FRENTES_POS_MS4.md).
+    @State private var paradas: [ParadaBox] = []
+    @State private var iaLigada: Bool = false
+    @State private var mapaGhostLigado: Bool = false
+    @State private var paradaEditando: ParadaBox?
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -105,6 +115,24 @@ struct StintModalView: View {
                 }
             )
             .environmentObject(combustivelRepo)
+        case .paradaEditor:
+            ParadaBoxEditorSheet(
+                inicial: paradaEditando,
+                maxVoltas: voltasPlanejadas,
+                onCancel: { sheet = nil; paradaEditando = nil },
+                onSalvar: { parada in
+                    aplicarParada(parada)
+                    sheet = nil
+                    paradaEditando = nil
+                },
+                onRemover: paradaEditando == nil ? nil : {
+                    if let editando = paradaEditando {
+                        paradas.removeAll(where: { $0.volta == editando.volta })
+                    }
+                    sheet = nil
+                    paradaEditando = nil
+                }
+            )
         }
     }
 
@@ -142,7 +170,9 @@ struct StintModalView: View {
             sectionConfiguracao
             sectionObjetivo
             sectionVoltas
+            sectionParadas
             sectionLicao
+            sectionAssistencia
 
             if let erro = savingError {
                 Text(erro)
@@ -150,9 +180,6 @@ struct StintModalView: View {
                     .foregroundStyle(Color.erro)
                     .padding(.horizontal, Spacing.xs)
             }
-
-            HelperNote(text: "Combustível, pneus, setup do dia e P1 Coach você cadastra no Sprint 1A.3+ — esse modal mantém só o essencial pra abrir o stint.")
-                .padding(.top, Spacing.sm)
         }
     }
 
@@ -344,12 +371,168 @@ struct StintModalView: View {
     private var sectionLicao: some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionHead("Lição focada")
-            FormField(label: "Lição praticada", small: "opcional · texto livre") {
-                FormInput(text: $licaoFocada, placeholder: "Ex: V-Min · apex")
+            FormField(label: "Lição praticada", small: "opcional · do catálogo") {
+                licaoPicker
             }
-            // Sugestões 1:1 com o mockup canônico (chips na seção objetivo).
-            chipsSugestoes
         }
+    }
+
+    // MS-4.3 — Paradas no box (decisão Q7 + Q2.1). Aparece como lista
+    // de chips com volta + motivo, mais um "+" pra adicionar.
+    private var sectionParadas: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionHead("Paradas no box")
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(paradas.sorted(by: { $0.volta < $1.volta }), id: \.volta) { parada in
+                        paradaChip(parada)
+                    }
+                    addParadaChip
+                }
+                .padding(.horizontal, 1)
+            }
+        }
+    }
+
+    private func paradaChip(_ parada: ParadaBox) -> some View {
+        Button(action: {
+            paradaEditando = parada
+            sheet = .paradaEditor
+        }) {
+            HStack(spacing: 4) {
+                Text("Volta \(parada.volta)")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.text)
+                Text("· \(parada.motivo)")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(Color.textMuted)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(Capsule().fill(Color.surfaceRaised))
+            .overlay(Capsule().stroke(Color.border, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var addParadaChip: some View {
+        Button(action: {
+            paradaEditando = nil
+            sheet = .paradaEditor
+        }) {
+            HStack(spacing: 4) {
+                Text("+")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.textMuted)
+                Text("adicionar")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Color.textMuted)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(Capsule().fill(Color.clear))
+            .overlay(Capsule().stroke(Color.border.opacity(0.6), style: StrokeStyle(lineWidth: 1, dash: [3, 3])))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func aplicarParada(_ nova: ParadaBox) {
+        // Se já existe parada na mesma volta, substitui. Senão adiciona.
+        paradas.removeAll(where: { $0.volta == nova.volta })
+        paradas.append(nova)
+    }
+
+    // MS-4.3 — Picker de lição substituiu texto livre (Q1.1: lições vêm do
+    // catálogo já existente em `licoes`, populado por LicaoRepository).
+    private var licaoPicker: some View {
+        Menu {
+            Button("Sem lição focada") { licaoIdSelecionada = nil }
+            ForEach(licaoRepo.ativas, id: \.id) { licao in
+                Button(licao.titulo) { licaoIdSelecionada = licao.id }
+            }
+        } label: {
+            HStack {
+                Text(licaoLabelAtual)
+                    .font(.system(size: 15, weight: .medium))
+                    .tracking(-0.075)
+                    .foregroundStyle(licaoIdSelecionada == nil ? Color.textFaint : Color.text)
+                Spacer()
+                Text("›")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(Color.textMuted)
+                    .frame(width: 20, height: 20)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(Color.surfaceHover)
+                    )
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .fill(Color.surfaceRaised)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .stroke(Color.border, lineWidth: 1)
+            )
+        }
+        .menuStyle(.button)
+    }
+
+    private var licaoLabelAtual: String {
+        guard let id = licaoIdSelecionada,
+              let licao = licaoRepo.find(id: id) else {
+            return "Sem lição focada"
+        }
+        return licao.titulo
+    }
+
+    // MS-4.3 — Toggles de assistência. Comportamento real fica pras frentes
+    // pós-MS-4 (F2 = IA, F3 = ghost UI). Aqui só persiste a preferência
+    // do piloto pra cada stint.
+    private var sectionAssistencia: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionHead("Assistência durante o stint")
+            assistenciaToggle(
+                titulo: "Ativar IA",
+                descricao: "Orienta antes da curva e resume depois (chega em fase futura)",
+                isOn: $iaLigada
+            )
+            assistenciaToggle(
+                titulo: "Mostrar mapa do ghost",
+                descricao: "Sobrepõe traçado da sua melhor volta",
+                isOn: $mapaGhostLigado
+            )
+        }
+    }
+
+    private func assistenciaToggle(titulo: String, descricao: String, isOn: Binding<Bool>) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(titulo)
+                    .font(.system(size: 15, weight: .medium))
+                    .tracking(-0.075)
+                    .foregroundStyle(Color.text)
+                Text(descricao)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(Color.textFaint)
+            }
+            Spacer()
+            Toggle("", isOn: isOn)
+                .labelsHidden()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .fill(Color.surfaceRaised)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .stroke(Color.border, lineWidth: 1)
+        )
     }
 
     private func sectionHead(_ title: String) -> some View {
@@ -359,31 +542,6 @@ struct StintModalView: View {
             .foregroundStyle(Color.textFaint)
             .padding(.horizontal, Spacing.xs)
             .padding(.bottom, 2)
-    }
-
-    private var chipsSugestoes: some View {
-        let sugestoes = ["V-Min · apex", "Referência Fixa", "Acelerador Progressivo", "Sem Coach", "Treinar largada", "Treinar trecho"]
-        return ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                ForEach(sugestoes, id: \.self) { sug in
-                    chipSug(sug)
-                }
-            }
-            .padding(.horizontal, 1)
-        }
-    }
-
-    private func chipSug(_ texto: String) -> some View {
-        Button(action: { licaoFocada = texto }) {
-            Text(texto)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Color.textMuted)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 7)
-                .background(Capsule().fill(Color.clear))
-                .overlay(Capsule().stroke(Color.border, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Picker piloto
@@ -451,13 +609,22 @@ struct StintModalView: View {
         let pneuParaSalvar = pneuIdSelecionado
         let combustivelParaSalvar = combustivelIdSelecionado
         let litrosParaSalvar = parseLitros(qtCombustivelTexto)
+        // MS-4.3: snapshot dos campos novos pra persistir após o create.
+        // Lição focada = texto livre antes do MS-4.3; agora só guarda o
+        // título da lição escolhida como "<tipo> · <título>" pra compat
+        // com o campo objetivo legado. O ID estruturado vai em licao_id.
+        let licaoSnapshot = licaoIdSelecionada
+        let licaoTitulo = licaoIdSelecionada.flatMap { licaoRepo.find(id: $0)?.titulo } ?? ""
+        let paradasSnapshot = paradas
+        let iaSnapshot = iaLigada
+        let ghostSnapshot = mapaGhostLigado
         Task {
             do {
                 let stintId = try await repo.create(
                     eventoId: eventoId,
                     pilotoId: pid,
                     objetivoTipo: objetivoTipo,
-                    licaoFocada: licaoFocada,
+                    licaoFocada: licaoTitulo,
                     voltasPlanejadas: voltasPlanejadas
                 )
                 if pneuParaSalvar != nil {
@@ -470,6 +637,14 @@ struct StintModalView: View {
                         litros: litrosParaSalvar
                     )
                 }
+                // MS-4.3: persiste campos novos do StintPlan (v14).
+                try await repo.setStintExtensions(
+                    stintId: stintId,
+                    paradas: paradasSnapshot,
+                    iaLigada: iaSnapshot,
+                    mapaGhostLigado: ghostSnapshot,
+                    licaoId: .some(licaoSnapshot)
+                )
                 isSaving = false
                 onCreated(stintId)
             } catch {
@@ -582,12 +757,144 @@ private struct VoltasStepper: View {
 enum StintModalSheet: Identifiable, Equatable {
     case pneuPicker
     case combustivelPicker
+    case paradaEditor  // MS-4.3 — abre o ParadaBoxEditorSheet
 
     var id: String {
         switch self {
         case .pneuPicker: return "pneu-picker"
         case .combustivelPicker: return "combustivel-picker"
+        case .paradaEditor: return "parada-editor"
         }
+    }
+}
+
+// MARK: - ParadaBoxEditorSheet (MS-4.3)
+
+/// Sheet pra adicionar ou editar uma parada no box dentro do StintPlan.
+/// Recebe `inicial` nil pra criar nova; com valor pra editar/remover.
+struct ParadaBoxEditorSheet: View {
+    let inicial: ParadaBox?
+    let maxVoltas: Int
+    let onCancel: () -> Void
+    let onSalvar: (ParadaBox) -> Void
+    let onRemover: (() -> Void)?
+
+    @State private var volta: Int
+    @State private var motivo: String
+
+    init(inicial: ParadaBox?,
+         maxVoltas: Int,
+         onCancel: @escaping () -> Void,
+         onSalvar: @escaping (ParadaBox) -> Void,
+         onRemover: (() -> Void)?) {
+        self.inicial = inicial
+        self.maxVoltas = max(maxVoltas, 1)
+        self.onCancel = onCancel
+        self.onSalvar = onSalvar
+        self.onRemover = onRemover
+        let v = inicial?.volta ?? min(5, self.maxVoltas)
+        let m = inicial?.motivo ?? ""
+        _volta = State(initialValue: max(1, min(v, self.maxVoltas)))
+        _motivo = State(initialValue: m)
+    }
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Spacing.md) {
+                    Eyebrow(text: inicial == nil ? "Nova parada" : "Editar parada")
+                    Text(inicial == nil ? "Adicionar parada no box" : "Parada na volta \(inicial!.volta)")
+                        .font(.system(size: 22, weight: .semibold))
+                        .tracking(-0.44)
+                        .foregroundStyle(Color.text)
+                        .padding(.bottom, Spacing.sm)
+
+                    FormField(label: "Volta da parada", small: "1 a \(maxVoltas)") {
+                        VoltaStepperEditor(value: $volta, maxValue: maxVoltas)
+                    }
+                    FormField(label: "Motivo", small: "aparece no Command Box") {
+                        FormInput(text: $motivo, placeholder: "Ex: trocar pneu")
+                    }
+                    if let onRemover = onRemover {
+                        Button(action: onRemover) {
+                            Text("Remover parada")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(Color.erro)
+                                .padding(.vertical, 10)
+                                .frame(maxWidth: .infinity)
+                                .background(
+                                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                                        .stroke(Color.erro.opacity(0.5), lineWidth: 1)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, Spacing.md)
+                    }
+                }
+                .padding(.horizontal, Spacing.lg)
+                .padding(.top, Spacing.md)
+                .padding(.bottom, 140)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(Color.surface)
+
+            FootBar(
+                onCancel: onCancel,
+                onSave: {
+                    let trimmed = motivo.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmed.isEmpty else { return }
+                    onSalvar(ParadaBox(volta: volta, motivo: trimmed))
+                },
+                saveLabel: inicial == nil ? "Adicionar" : "Salvar",
+                canSave: !motivo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                       && volta >= 1 && volta <= maxVoltas
+            )
+        }
+        .preferredColorScheme(.dark)
+    }
+}
+
+private struct VoltaStepperEditor: View {
+    @Binding var value: Int
+    let maxValue: Int
+
+    var body: some View {
+        HStack(spacing: 0) {
+            stepperButton(symbol: "−", action: { if value > 1 { value -= 1 } }, isEnabled: value > 1)
+            Spacer(minLength: 0)
+            Text("\(value)")
+                .font(.system(size: 22, weight: .semibold))
+                .monospacedDigit()
+                .tracking(-0.44)
+                .foregroundStyle(Color.text)
+            Spacer(minLength: 0)
+            stepperButton(symbol: "+", action: { if value < maxValue { value += 1 } }, isEnabled: value < maxValue)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .fill(Color.surfaceRaised)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .stroke(Color.border, lineWidth: 1)
+        )
+    }
+
+    private func stepperButton(symbol: String, action: @escaping () -> Void, isEnabled: Bool) -> some View {
+        Button(action: action) {
+            Text(symbol)
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(isEnabled ? Color.text : Color.textFaint)
+                .frame(width: 46, height: 38)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color.surfaceHover)
+                )
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
     }
 }
 
@@ -603,6 +910,7 @@ private extension String {
     let carroRepo = CarroRepository(queue: queue)
     let pneuRepo = PneuRepository(queue: queue)
     let combustivelRepo = CombustivelRepository(queue: queue)
+    let licaoRepo = LicaoRepository(queue: queue)
     return StintModalView(
         eventoId: "preview",
         proximoNumero: 1,
@@ -614,10 +922,12 @@ private extension String {
     .environmentObject(carroRepo)
     .environmentObject(pneuRepo)
     .environmentObject(combustivelRepo)
+    .environmentObject(licaoRepo)
     .task {
         await stintRepo.bootstrap()
         await carroRepo.bootstrap()
         await pneuRepo.bootstrap()
         await combustivelRepo.bootstrap()
+        await licaoRepo.bootstrap()
     }
 }
