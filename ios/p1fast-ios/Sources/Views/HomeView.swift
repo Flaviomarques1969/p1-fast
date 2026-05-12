@@ -48,6 +48,18 @@ struct HomeData {
     let eventoAtivoHoje: EventoMock?
     let proximoEvento: EventoMock?
     let carrosRecentes: [CarroMock]
+    // S3 da rodada 1 (2026-05-12): nome do piloto + 3 estatísticas novas
+    // pros 6 cards clicáveis da tela inicial.
+    /// Primeiro nome do piloto logado (pilotos.user_id == auth.uid()).
+    /// Nil quando não há login ou quando o cadastro do piloto ainda não
+    /// foi feito — a saudação cai pra versão sem nome.
+    let pilotoPrimeiroNome: String?
+    /// Quantos autódromos diferentes onde o time já correu.
+    let autodromosTotal: Int
+    /// Quantos trechos onde o piloto tem o tempo recorde dele (PB).
+    let recordesTotal: Int
+    /// Total de voltas registradas em todos os stints encerrados.
+    let voltasTotal: Int
 }
 
 struct EventoMock: Identifiable, Equatable {
@@ -155,7 +167,10 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
             switch state {
             case .filled(let data):
-                FilledContent(data: data)
+                FilledContent(
+                    data: data,
+                    onTapCard: { destino in handleNavSelect(destino) }
+                )
             case .empty:
                 EmptyContent(
                     onCadastrarCarro: { navPath.append(HomeNavTarget.garagemNovo) },
@@ -216,12 +231,36 @@ struct HomeView: View {
         // do estado.
         navSelection = navItems.first?.id
     }
+
+    /// S3 rodada 1: navegação dos 6 cards de estatística. Decisão P3 #2.3
+    /// — os 4 cards novos (Stints/Autódromos/Recordes/Voltas) redirecionam
+    /// pra Eventos. Carros vai pra Garagem. Eventos vai pra Eventos.
+    /// Quando filtros chegarem em sprints futuras, a tela de Eventos
+    /// pode receber parâmetro pra abrir já filtrada.
+    private func handleNavSelect(_ destino: HomeStatDestino) {
+        switch destino {
+        case .carros:
+            navPath.append(HomeNavTarget.garagem)
+        case .eventos, .stints, .autodromos, .recordes, .voltas:
+            navPath.append(HomeNavTarget.eventos)
+        }
+    }
+}
+
+/// Destinos de toque dos 6 cards de estatística da Home. P3 #2.3:
+/// Stints/Autódromos/Recordes/Voltas redirecionam pra Eventos com filtro
+/// (filtro fica pra sprint futura — hoje só abre Eventos).
+enum HomeStatDestino {
+    case carros, eventos, stints, autodromos, recordes, voltas
 }
 
 // MARK: - Estado cheio
 
 private struct FilledContent: View {
     let data: HomeData
+    /// S3 da rodada 1 (2026-05-12): callback de toque nos 6 cards de
+    /// estatística. HomeView passa pra cá pra navegar via NavigationStack.
+    let onTapCard: (HomeStatDestino) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
@@ -239,11 +278,21 @@ private struct FilledContent: View {
             .padding(.horizontal, Spacing.xs)
             .padding(.vertical, Spacing.sm)
 
+            // S3 #2 — 6 cards clicáveis em grid 3x2.
             SummaryStats([
-                StatItem(value: "\(data.carrosTotal)", label: "Carros"),
-                StatItem(value: "\(data.eventosTotal)", label: "Eventos"),
-                StatItem(value: "\(data.stintsTotal)", label: "Stints"),
-            ])
+                StatItem(value: "\(data.carrosTotal)", label: "Carros",
+                         onTap: { onTapCard(.carros) }),
+                StatItem(value: "\(data.eventosTotal)", label: "Eventos",
+                         onTap: { onTapCard(.eventos) }),
+                StatItem(value: "\(data.stintsTotal)", label: "Stints",
+                         onTap: { onTapCard(.stints) }),
+                StatItem(value: "\(data.autodromosTotal)", label: "Autódromos",
+                         onTap: { onTapCard(.autodromos) }),
+                StatItem(value: "\(data.recordesTotal)", label: "Recordes",
+                         onTap: { onTapCard(.recordes) }),
+                StatItem(value: "\(data.voltasTotal)", label: "Voltas",
+                         onTap: { onTapCard(.voltas) }),
+            ], columns: 3)
 
             if let evento = data.eventoAtivoHoje {
                 EventoAtivoHojeCard(evento: evento)
@@ -253,28 +302,55 @@ private struct FilledContent: View {
                 ProximoEventoCard(evento: proximo, hojeISO: data.eventoAtivoHoje?.dataISO ?? todayISO())
             }
 
+            // S3 #3 — bloco "Garagem" substitui "Carros recentes" e mostra
+            // TODOS os carros (não só 3). Toque no cabeçalho ou em qualquer
+            // carro leva pra Garagem completa.
             if !data.carrosRecentes.isEmpty {
-                Text("Carros recentes".uppercased())
-                    .font(.system(size: 11, weight: .semibold))
-                    .tracking(1.54) // 0.14em em 11pt
-                    .foregroundStyle(Color.textFaint)
+                Button(action: { onTapCard(.carros) }) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Garagem".uppercased())
+                            .font(.system(size: 11, weight: .semibold))
+                            .tracking(1.54)
+                            .foregroundStyle(Color.textFaint)
+                        Text(data.carrosTotal == 1 ? "1 carro" : "\(data.carrosTotal) carros")
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundStyle(Color.textFaint)
+                        Spacer()
+                        Text("Ver todos ›")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Color.accent)
+                    }
                     .padding(.horizontal, Spacing.xs)
                     .padding(.top, Spacing.sm)
+                }
+                .buttonStyle(.plain)
 
                 VStack(spacing: Spacing.sm) {
-                    ForEach(Array(data.carrosRecentes.prefix(3))) { carro in
-                        CarroRow(carro: carro)
+                    ForEach(data.carrosRecentes) { carro in
+                        Button(action: { onTapCard(.carros) }) {
+                            CarroRow(carro: carro)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
         }
     }
 
-    /// "Hoje em Brasília" se há evento ativo, senão "Próximo evento em N dias",
-    /// senão "Pronto pra primeira pedalada".
+    /// S3 da rodada 1 (2026-05-12): adiciona ", <PrimeiroNome>" ao fim
+    /// de qualquer um dos 3 estados quando há piloto logado (decisão
+    /// Flávio: aplica nos 3 estados, recomendação P3 #1).
+    /// "Hoje em Brasília, Flávio" / "Próximo evento em 3 dias, Flávio"
+    /// / "Sem eventos planejados, Flávio".
     private func headerStatusLine(data: HomeData) -> AttributedString {
+        let nomeSufixo: String = {
+            guard let n = data.pilotoPrimeiroNome,
+                  !n.trimmingCharacters(in: .whitespaces).isEmpty else { return "" }
+            return ", \(n)"
+        }()
+
         if let ativo = data.eventoAtivoHoje {
-            var s = AttributedString("Hoje em \(ativo.pista)")
+            var s = AttributedString("Hoje em \(ativo.pista)\(nomeSufixo)")
             if let range = s.range(of: ativo.pista) {
                 s[range].foregroundColor = Color.accent
             }
@@ -283,13 +359,13 @@ private struct FilledContent: View {
         if let proximo = data.proximoEvento {
             let dias = daysFromTodayToISO(proximo.dataISO)
             let label = dias == 1 ? "amanhã" : "em \(dias) dias"
-            var s = AttributedString("Próximo evento \(label)")
+            var s = AttributedString("Próximo evento \(label)\(nomeSufixo)")
             if let range = s.range(of: label) {
                 s[range].foregroundColor = Color.accent
             }
             return s
         }
-        return AttributedString("Sem eventos planejados")
+        return AttributedString("Sem eventos planejados\(nomeSufixo)")
     }
 }
 
@@ -752,7 +828,12 @@ extension HomeData {
                 vmaxKmh: 174,
                 autodromosCount: 2
             ),
-        ]
+        ],
+        // S3 rodada 1
+        pilotoPrimeiroNome: "Flávio",
+        autodromosTotal: 3,
+        recordesTotal: 8,
+        voltasTotal: 412
     )
 }
 
