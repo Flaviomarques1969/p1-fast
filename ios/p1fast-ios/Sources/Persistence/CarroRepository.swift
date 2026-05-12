@@ -18,6 +18,7 @@
 import Foundation
 import GRDB
 import P1FastCore
+import Supabase
 
 // MARK: - CarroMetricas (S2 — rodada 1, 2026-05-12)
 
@@ -250,6 +251,80 @@ final class CarroRepository: ObservableObject {
                 try SyncQueue.enqueueRecord(db, tableName: "configuracoes", rowId: novo.id, op: .insert, record: novo)
             }
         }
+    }
+
+    // MARK: - S2 Parte B — Foto do carro (Supabase Storage)
+
+    /// Sobe a foto do carro pro bucket `carro-fotos` do Supabase Storage.
+    /// - Parameters:
+    ///   - carroId: id do carro alvo.
+    ///   - imageData: bytes da imagem JÁ comprimida (caller cuida da compressão,
+    ///     normalmente via `UIImage.jpegData(compressionQuality: 0.6)`).
+    ///     Alvo recomendado ≤ 500KB. Hard cap do bucket é 1MB.
+    ///   - contentType: "image/jpeg" ou "image/png".
+    /// - Returns: o `key` salvo em `carros.foto_url` (path dentro do bucket).
+    ///
+    /// Estrutura do path no bucket: `{time_id}/{carro_id}.jpg|png`.
+    /// Policies do bucket (migration 0020) garantem que só membros do
+    /// time podem escrever na pasta do próprio time.
+    @discardableResult
+    func uploadFoto(carroId: String, imageData: Data, contentType: String = "image/jpeg") async throws -> String {
+        guard let teamId = TeamContext.currentTeamId else {
+            throw NSError(domain: "CarroRepository", code: -1, userInfo: [NSLocalizedDescriptionKey: "Sem equipe associada — faça login antes de subir foto."])
+        }
+        guard let client = SupabaseManager.shared else {
+            throw NSError(domain: "CarroRepository", code: -2, userInfo: [NSLocalizedDescriptionKey: "Servidor não configurado — não é possível subir foto."])
+        }
+        let ext = contentType.lowercased().contains("png") ? "png" : "jpg"
+        let key = "\(teamId)/\(carroId).\(ext)"
+        _ = try await client.storage
+            .from("carro-fotos")
+            .upload(
+                key,
+                data: imageData,
+                options: FileOptions(contentType: contentType, upsert: true)
+            )
+        try await queue.write { db in
+            guard var carro = try Carro.fetchOne(db, key: carroId) else { return }
+            carro.fotoUrl = key
+            carro.updatedAt = DB.nowMs()
+            carro.syncedAt = nil
+            try carro.update(db)
+            try SyncQueue.enqueueRecord(db, tableName: "carros", rowId: carroId, op: .update, record: carro)
+        }
+        try await reload()
+        return key
+    }
+
+    /// Apaga a foto do carro do bucket + zera `foto_url` no banco local.
+    /// No-op se o carro não tinha foto.
+    func removeFoto(carroId: String) async throws {
+        guard let client = SupabaseManager.shared else {
+            throw NSError(domain: "CarroRepository", code: -2, userInfo: [NSLocalizedDescriptionKey: "Servidor não configurado."])
+        }
+        let key = try await queue.read { db in
+            try Carro.fetchOne(db, key: carroId)?.fotoUrl
+        }
+        guard let key = key, !key.isEmpty else { return }
+        _ = try await client.storage.from("carro-fotos").remove(paths: [key])
+        try await queue.write { db in
+            guard var carro = try Carro.fetchOne(db, key: carroId) else { return }
+            carro.fotoUrl = nil
+            carro.updatedAt = DB.nowMs()
+            carro.syncedAt = nil
+            try carro.update(db)
+            try SyncQueue.enqueueRecord(db, tableName: "carros", rowId: carroId, op: .update, record: carro)
+        }
+        try await reload()
+    }
+
+    /// URL pública pra exibir a foto via `AsyncImage`. Nil quando a foto
+    /// não existe ou o cliente Supabase não foi configurado.
+    /// Como o bucket é `public=true`, a URL serve direta — sem signed URL.
+    nonisolated func fotoPublicURL(_ fotoUrl: String?) -> URL? {
+        guard let fotoUrl = fotoUrl, !fotoUrl.isEmpty else { return nil }
+        guard let client = SupabaseManager.shared else { return nil }
+        return try? client.storage.from("carro-fotos").getPublicURL(path: fotoUrl)
     }
 
     private func ensureLocalTime() async throws {

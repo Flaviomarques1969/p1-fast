@@ -7287,6 +7287,41 @@ step("PUB-06: stop encerra transports + suprime publish posterior") {
     }
 }
 
+// ─── S2 rodada 1: foto_url em carros ───────────────────────
+
+step("CARFOTO-01: v19 adiciona coluna foto_url em carros") {
+    let q = try makeTestDB()
+    let cols = try q.read { db in
+        try Row.fetchAll(db, sql: "PRAGMA table_info(carros)")
+    }
+    let nomes = Set(cols.compactMap { $0["name"] as String? })
+    try assertTrue(nomes.contains("foto_url"), "esperava coluna foto_url, recebi: \(nomes)")
+}
+
+step("CARFOTO-02: Carro com fotoUrl preserva valor no round-trip") {
+    let q = try makeTestDB()
+    let c = Carro(
+        id: "carro-foto",
+        timeId: "team-1",
+        apelido: "Celta com foto",
+        fotoUrl: "team-1/carro-foto.jpg"
+    )
+    try q.write { db in try c.insert(db) }
+    let fetched = try q.read { db in try Carro.fetchOne(db, key: "carro-foto") }
+    try assertEq(fetched?.fotoUrl, "team-1/carro-foto.jpg")
+}
+
+step("CARFOTO-03: Carro sem fotoUrl persiste como NULL") {
+    let q = try makeTestDB()
+    let c = Carro(id: "carro-sem-foto", timeId: "team-1", apelido: "Sem foto")
+    try q.write { db in try c.insert(db) }
+    let row = try q.read { db in
+        try Row.fetchOne(db, sql: "SELECT foto_url FROM carros WHERE id = ?", arguments: ["carro-sem-foto"])
+    }
+    let fotoUrl: String? = row?["foto_url"]
+    try assertTrue(fotoUrl == nil, "esperava foto_url NULL, recebi: \(String(describing: fotoUrl))")
+}
+
 // ── relatório ────────────────────────────────────────────────
 print("\n═══ RESULTADO ═══")
 print("\(ok) ok / \(fail) fail")

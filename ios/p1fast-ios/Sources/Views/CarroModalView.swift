@@ -71,6 +71,9 @@ struct CarroModalView: View {
     @State private var savingError: String?
     @State private var isSaving = false
     @State private var setupAvancadoOpen = false
+    // S2 rodada 1 — foto: trocar/remover.
+    @State private var fotoSelecionada: Data?
+    @State private var pedidoRemoverFoto = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -216,6 +219,12 @@ struct CarroModalView: View {
             FormField(label: "Cor") {
                 CorPicker(selection: $corHex)
             }
+
+            FotoCarroSection(
+                fotoUrlAtual: repo.fotoPublicURL(carro?.fotoUrl),
+                selectedJpeg: $fotoSelecionada,
+                pedidoRemover: $pedidoRemoverFoto
+            )
         }
     }
 
@@ -365,10 +374,28 @@ struct CarroModalView: View {
         current.categoria = categoria
         current.cor = corHex
         let json = setup.encodedJSON()
+        let jpegPraSubir = fotoSelecionada
+        let querRemoverFoto = pedidoRemoverFoto
         Task {
             do {
                 try await repo.update(carro: current)
                 try await repo.saveOverrides(carroId: carroId, overridesJSON: json)
+                // S2 — foto: remoção primeiro, upload depois (caso o usuário
+                // tenha clicado remover e em seguida escolhido outra).
+                if querRemoverFoto && jpegPraSubir == nil {
+                    do { try await repo.removeFoto(carroId: carroId) } catch {
+                        savingError = "Setup salvo, mas não removi a foto: \(error.localizedDescription)"
+                        isSaving = false
+                        return
+                    }
+                }
+                if let jpeg = jpegPraSubir {
+                    do { try await repo.uploadFoto(carroId: carroId, imageData: jpeg) } catch {
+                        savingError = "Setup salvo, mas não subi a nova foto: \(error.localizedDescription)"
+                        isSaving = false
+                        return
+                    }
+                }
                 isSaving = false
                 onClose()
             } catch {

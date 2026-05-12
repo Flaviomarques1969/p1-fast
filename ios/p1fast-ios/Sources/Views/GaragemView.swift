@@ -86,6 +86,7 @@ struct GaragemView: View {
                         carro: carro,
                         stints: repo.stintsPorCarro[carro.id] ?? 0,
                         metricas: repo.metricasPorCarro[carro.id] ?? .vazio,
+                        fotoUrl: repo.fotoPublicURL(carro.fotoUrl),
                         isAtivo: idx == 0
                     ) {
                         sheet = .editar(carroId: carro.id)
@@ -219,6 +220,7 @@ private struct CarroCard: View {
     let carro: Carro
     let stints: Int
     let metricas: CarroMetricas
+    let fotoUrl: URL?
     let isAtivo: Bool
     let onTap: () -> Void
 
@@ -260,17 +262,36 @@ private struct CarroCard: View {
         .buttonStyle(.plain)
     }
 
-    /// Quadrado de 84pt com cantos arredondados. Na Parte A do S2 mostra
-    /// só a cor de fundo do carro (placeholder). Na Parte C (próximo passo)
-    /// passa a exibir a foto real do servidor quando o carro tiver `foto_url`.
+    /// Quadrado de 84pt com cantos arredondados. Mostra a foto principal
+    /// do carro (via AsyncImage) quando há `fotoUrl`. Sem foto, usa a cor
+    /// do carro como placeholder colorido — mesmo padrão visual antes/depois.
     private var fotoOuSwatch: some View {
-        RoundedRectangle(cornerRadius: 18, style: .continuous)
-            .fill(swatchColor)
-            .frame(width: 84, height: 84)
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(isAtivo ? Color.accent.opacity(0.55) : Color.border, lineWidth: 1)
-            )
+        ZStack {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(swatchColor)
+
+            if let url = fotoUrl {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .empty:
+                        ProgressView().tint(Color.textFaint)
+                    case .success(let img):
+                        img.resizable().scaledToFill()
+                    case .failure:
+                        // Mantém o swatch colorido em caso de falha de rede.
+                        EmptyView()
+                    @unknown default:
+                        EmptyView()
+                    }
+                }
+            }
+        }
+        .frame(width: 84, height: 84)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(isAtivo ? Color.accent.opacity(0.55) : Color.border, lineWidth: 1)
+        )
     }
 
     private var swatchColor: Color {

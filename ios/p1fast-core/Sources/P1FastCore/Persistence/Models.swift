@@ -244,6 +244,11 @@ public struct Carro: Codable, FetchableRecord, PersistableRecord {
     public var categoria: String?
     public var cor: String?
     public var fonteTemperatura: FonteTemperatura
+    /// S2 da rodada 1: caminho (key) da foto principal do carro no bucket
+    /// `carro-fotos` do Supabase Storage. Nil → card usa o placeholder
+    /// colorido (cor de fundo). Compressão acontece no upload em
+    /// `CarroRepository.uploadFoto` (~500 KB alvo). Uma foto por carro.
+    public var fotoUrl: String?
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -254,6 +259,7 @@ public struct Carro: Codable, FetchableRecord, PersistableRecord {
         case timeId = "time_id"
         case apelido, modelo, categoria, cor
         case fonteTemperatura = "fonte_temperatura"
+        case fotoUrl = "foto_url"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
@@ -262,11 +268,13 @@ public struct Carro: Codable, FetchableRecord, PersistableRecord {
     public init(id: String, timeId: String, apelido: String, modelo: String? = nil,
                 categoria: String? = nil, cor: String? = nil,
                 fonteTemperatura: FonteTemperatura = .motor,
+                fotoUrl: String? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.timeId = timeId; self.apelido = apelido
         self.modelo = modelo; self.categoria = categoria; self.cor = cor
         self.fonteTemperatura = fonteTemperatura
+        self.fotoUrl = fotoUrl
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }

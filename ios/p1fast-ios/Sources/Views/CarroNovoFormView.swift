@@ -20,6 +20,9 @@ struct CarroNovoFormView: View {
     @State private var corHex: String = CarroPalette.opcoes[1].hex // amarelo (default mockup)
     @State private var savingError: String?
     @State private var isSaving = false
+    // S2 rodada 1: foto opcional do carro novo.
+    @State private var fotoSelecionada: Data?
+    @State private var pedidoRemoverFoto = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -74,6 +77,12 @@ struct CarroNovoFormView: View {
                 CorPicker(selection: $corHex)
             }
 
+            FotoCarroSection(
+                fotoUrlAtual: nil,
+                selectedJpeg: $fotoSelecionada,
+                pedidoRemover: $pedidoRemoverFoto
+            )
+
             if let erro = savingError {
                 Text(erro)
                     .font(.captionP1)
@@ -92,12 +101,23 @@ struct CarroNovoFormView: View {
         savingError = nil
         Task {
             do {
-                try await repo.create(
+                let carroId = try await repo.create(
                     apelido: apelido.trimmingCharacters(in: .whitespaces),
                     modelo: trimmedOrNil(modelo),
                     categoria: categoria,
                     cor: corHex
                 )
+                if let jpeg = fotoSelecionada {
+                    // Subida da foto é melhor-esforço: falhou? mostra erro mas
+                    // não desfaz o carro criado. Usuário pode tentar pela edição.
+                    do {
+                        try await repo.uploadFoto(carroId: carroId, imageData: jpeg)
+                    } catch {
+                        savingError = "Carro criado, mas não subi a foto: \(error.localizedDescription)"
+                        isSaving = false
+                        return
+                    }
+                }
                 isSaving = false
                 onClose()
             } catch {

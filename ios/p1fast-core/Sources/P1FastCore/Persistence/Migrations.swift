@@ -396,6 +396,17 @@ enum Migrations {
             """)
             try db.execute(sql: "CREATE INDEX idx_pessoa_papeis_papel ON pessoa_papeis(papel);")
         }
+
+        // ═══ v19_carros_foto_url ════════════════════════════════
+        // S2 da rodada 1 (2026-05-12). Espelha
+        // supabase/migrations/0020_carros_foto_url.sql.
+        // Adiciona o campo opcional `foto_url` em `carros` — caminho
+        // (key) do arquivo no bucket `carro-fotos` do Supabase Storage.
+        // A leitura/exibição usa AsyncImage, o upload é feito pelo
+        // CarroRepository.uploadFoto com compressão automática (≤ 500KB).
+        m.registerMigration("v19_carros_foto_url") { db in
+            try db.execute(sql: "ALTER TABLE carros ADD COLUMN foto_url TEXT;")
+        }
     }
 
     // swiftlint:disable:next function_body_length
