@@ -256,6 +256,27 @@ enum Migrations {
                 WHERE nascimento IS NOT NULL AND nascimento < 100000000000;
             """)
         }
+
+        // ═══ v14_ms4_sessoes_extensions ════════════════════════
+        // MS-4 etapa 1. Espelha supabase/migrations/0014_ms4_sessoes_extensions.sql.
+        // Campos novos pra StintPlan estendido — paradas_box, ia_ligada,
+        // mapa_ghost_ligado, licao_id, cancelado_em, pilotos_revezamento,
+        // convidado_id. Decisões em docs/FRENTES_POS_MS4.md (PR #175).
+        //
+        // Papel 'chefe_equipe' (Q23) é só servidor — tabela usuarios_time
+        // não existe em SQLite local (sandbox por usuário, sem multi-user
+        // local). Permissões consumem auth.role via TeamContext.
+        m.registerMigration("v14_ms4_sessoes_extensions") { db in
+            try db.execute(sql: "ALTER TABLE sessoes ADD COLUMN paradas_box TEXT NOT NULL DEFAULT '[]';")
+            try db.execute(sql: "ALTER TABLE sessoes ADD COLUMN ia_ligada INTEGER NOT NULL DEFAULT 0;")
+            try db.execute(sql: "ALTER TABLE sessoes ADD COLUMN mapa_ghost_ligado INTEGER NOT NULL DEFAULT 0;")
+            try db.execute(sql: "ALTER TABLE sessoes ADD COLUMN licao_id TEXT REFERENCES licoes(id) ON DELETE SET NULL;")
+            try db.execute(sql: "ALTER TABLE sessoes ADD COLUMN cancelado_em INTEGER;")
+            try db.execute(sql: "ALTER TABLE sessoes ADD COLUMN pilotos_revezamento TEXT;")
+            try db.execute(sql: "ALTER TABLE sessoes ADD COLUMN convidado_id TEXT REFERENCES pilotos(id) ON DELETE SET NULL;")
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_sessoes_licao ON sessoes(licao_id);")
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_sessoes_convidado ON sessoes(convidado_id);")
+        }
     }
 
     // swiftlint:disable:next function_body_length
