@@ -574,6 +574,76 @@ public struct VideoStream: Codable, FetchableRecord, PersistableRecord {
     }
 }
 
+// MARK: - volta_video (F4 etapa 2)
+
+/// Status canônico da triagem da volta gravada. Espelha o CHECK no Postgres.
+public enum TriagemStatus: String, Codable, Sendable {
+    case pendente
+    case mantida
+    case descartada
+}
+
+/// Volta indexada dentro da gravação Daily.co do stream.
+/// Persistido em `volta_video`. F4 (registro em `docs/FRENTES_POS_MS4.md`).
+/// 1:1 com `voltas` — cada volta vira uma row aqui via indexador
+/// (F4.3) ao cruzar a linha de chegada durante o stream.
+public struct VoltaVideo: Codable, FetchableRecord, PersistableRecord {
+    public var id: String
+    public var timeId: String
+    public var videoStreamId: String
+    public var voltaId: String
+    /// Offset desde `video_streams.started_at` (ms) — onde a volta começa
+    /// na gravação contínua.
+    public var tInicioMs: Int
+    /// Offset onde a volta termina (ms). Sempre > tInicioMs (CHECK no PG).
+    public var tFimMs: Int
+    public var triagemStatus: String
+    public var triadaPor: String?
+    public var triadaEm: Int64?
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "volta_video"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case videoStreamId = "video_stream_id"
+        case voltaId = "volta_id"
+        case tInicioMs = "t_inicio_ms"
+        case tFimMs = "t_fim_ms"
+        case triagemStatus = "triagem_status"
+        case triadaPor = "triada_por"
+        case triadaEm = "triada_em"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, timeId: String, videoStreamId: String,
+                voltaId: String, tInicioMs: Int, tFimMs: Int,
+                triagemStatus: String = TriagemStatus.pendente.rawValue,
+                triadaPor: String? = nil, triadaEm: Int64? = nil,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId
+        self.videoStreamId = videoStreamId; self.voltaId = voltaId
+        self.tInicioMs = tInicioMs; self.tFimMs = tFimMs
+        self.triagemStatus = triagemStatus
+        self.triadaPor = triadaPor; self.triadaEm = triadaEm
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+
+    /// Duração da volta dentro da gravação (ms). Sempre > 0.
+    public var duracaoMs: Int { tFimMs - tInicioMs }
+
+    /// Helper enum-safe pra ler o status sem string comparison no caller.
+    public var status: TriagemStatus { TriagemStatus(rawValue: triagemStatus) ?? .pendente }
+
+    /// True quando ainda precisa de decisão da triagem.
+    public var precisaTriagem: Bool { status == .pendente }
+}
+
 // MARK: - paradas e revezamento (auxiliares de Sessao)
 
 /// Parada planejada no box dentro do StintPlan (MS-4.1).
