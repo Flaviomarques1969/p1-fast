@@ -3876,6 +3876,107 @@ step("PERSIST-16: migrator é idempotente (rodar de novo não falha)") {
     try assertEq(count, 1)
 }
 
+// ─── MS-4.1: extensão sessoes (v14) ──────────────────────────
+
+step("PERSIST-17: v14 adiciona 7 colunas novas em sessoes") {
+    let q = try DB.makeMemoryQueue()
+    let cols = try q.read { db in
+        try Row.fetchAll(db, sql: "PRAGMA table_info(sessoes)").map { $0["name"] as String }
+    }
+    let novas = ["paradas_box", "ia_ligada", "mapa_ghost_ligado",
+                 "licao_id", "cancelado_em", "pilotos_revezamento", "convidado_id"]
+    for col in novas {
+        try assertTrue(cols.contains(col), "sessoes deve ter coluna \(col) após v14")
+    }
+}
+
+step("PERSIST-18: Sessao salva paradas_box e recupera round-trip JSON") {
+    let q = try makeTestDB()
+    var s = Sessao(id: "s-1", timeId: "team-1")
+    s.setParadasBox([
+        ParadaBox(volta: 5, motivo: "trocar pneu"),
+        ParadaBox(volta: 9, motivo: "abastecer")
+    ])
+    try q.write { db in try s.insert(db) }
+
+    let fetched: Sessao = try q.read { db in
+        try Sessao.fetchOne(db, key: "s-1")!
+    }
+    try assertEq(fetched.paradasBox.count, 2)
+    try assertEq(fetched.paradasBox[0].volta, 5)
+    try assertEq(fetched.paradasBox[0].motivo, "trocar pneu")
+    try assertEq(fetched.paradasBox[1].volta, 9)
+    try assertEq(fetched.paradasBox[1].motivo, "abastecer")
+}
+
+step("PERSIST-19: Sessao com paradas vazias retorna lista vazia") {
+    let q = try makeTestDB()
+    var s = Sessao(id: "s-2", timeId: "team-1")
+    try q.write { db in try s.insert(db) }
+    let fetched: Sessao = try q.read { db in try Sessao.fetchOne(db, key: "s-2")! }
+    try assertEq(fetched.paradasBox.count, 0)
+    try assertEq(fetched.paradasBoxJson, "[]")
+}
+
+step("PERSIST-20: Sessao salva pilotos_revezamento (endurance)") {
+    let q = try makeTestDB()
+    var s = Sessao(id: "s-3", timeId: "team-1", voltasPlanejadas: 20)
+    s.setPilotosRevezamento([
+        PilotoTurno(pilotoId: "p-a", voltaInicio: 1, voltaFim: 10),
+        PilotoTurno(pilotoId: "p-b", voltaInicio: 11, voltaFim: 20)
+    ])
+    try q.write { db in try s.insert(db) }
+
+    let fetched: Sessao = try q.read { db in try Sessao.fetchOne(db, key: "s-3")! }
+    let turnos = fetched.pilotosRevezamento
+    try assertTrue(turnos != nil, "pilotosRevezamento não deve ser nil")
+    try assertEq(turnos!.count, 2)
+    try assertEq(turnos![0].pilotoId, "p-a")
+    try assertEq(turnos![0].voltaInicio, 1)
+    try assertEq(turnos![0].voltaFim, 10)
+    try assertEq(turnos![1].pilotoId, "p-b")
+}
+
+step("PERSIST-21: Sessao sem revezamento retorna nil (não endurance)") {
+    let q = try makeTestDB()
+    var s = Sessao(id: "s-4", timeId: "team-1")
+    try q.write { db in try s.insert(db) }
+    let fetched: Sessao = try q.read { db in try Sessao.fetchOne(db, key: "s-4")! }
+    try assertTrue(fetched.pilotosRevezamento == nil)
+}
+
+step("PERSIST-22: flags ia_ligada e mapa_ghost_ligado defaults false") {
+    let q = try makeTestDB()
+    var s = Sessao(id: "s-5", timeId: "team-1")
+    try q.write { db in try s.insert(db) }
+    let fetched: Sessao = try q.read { db in try Sessao.fetchOne(db, key: "s-5")! }
+    try assertEq(fetched.iaLigada, false)
+    try assertEq(fetched.mapaGhostLigado, false)
+}
+
+step("PERSIST-23: cancelamento marca cancelado_em sem deletar (Q24)") {
+    let q = try makeTestDB()
+    var s = Sessao(id: "s-6", timeId: "team-1")
+    try q.write { db in try s.insert(db) }
+
+    // Marca cancelado
+    let agora = DB.nowMs()
+    try q.write { db in
+        try db.execute(sql: "UPDATE sessoes SET cancelado_em = ?, status = 'cancelada' WHERE id = ?",
+                       arguments: [agora, "s-6"])
+    }
+
+    // Row continua existindo
+    let count = try q.read { db in
+        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sessoes WHERE id = 's-6'") ?? 0
+    }
+    try assertEq(count, 1, "stint cancelado NÃO deve ser deletado")
+
+    let fetched: Sessao = try q.read { db in try Sessao.fetchOne(db, key: "s-6")! }
+    try assertEq(fetched.canceladoEm, agora)
+    try assertEq(fetched.status, "cancelada")
+}
+
 // ─── DRAINER (Sprint 1A.6 sub-prompt B) ──────────────────────
 // Mock transport: configurado por teste pra retornar o que quisermos.
 final class MockSyncTransport: SyncTransport {

@@ -489,6 +489,42 @@ public struct Evento: Codable, FetchableRecord, PersistableRecord {
     }
 }
 
+// MARK: - paradas e revezamento (auxiliares de Sessao)
+
+/// Parada planejada no box dentro do StintPlan (MS-4.1).
+/// Persistido como JSON em `sessoes.paradas_box`. Motivo aparece no Command Box
+/// e na lista de checklist piscando na volta anterior (decisão Q7 + Q2.1).
+public struct ParadaBox: Codable, Equatable, Hashable, Sendable {
+    public let volta: Int
+    public let motivo: String
+
+    public init(volta: Int, motivo: String) {
+        self.volta = volta
+        self.motivo = motivo
+    }
+}
+
+/// Turno de revezamento em eventos endurance (MS-4.4).
+/// Persistido como JSON em `sessoes.pilotos_revezamento`. Nulo quando
+/// o evento não é endurance (decisão Q8 + Q2.2).
+public struct PilotoTurno: Codable, Equatable, Hashable, Sendable {
+    public let pilotoId: String
+    public let voltaInicio: Int
+    public let voltaFim: Int
+
+    public init(pilotoId: String, voltaInicio: Int, voltaFim: Int) {
+        self.pilotoId = pilotoId
+        self.voltaInicio = voltaInicio
+        self.voltaFim = voltaFim
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case pilotoId = "piloto_id"
+        case voltaInicio = "volta_inicio"
+        case voltaFim = "volta_fim"
+    }
+}
+
 // MARK: - sessoes
 public struct Sessao: Codable, FetchableRecord, PersistableRecord {
     public var id: String
@@ -505,6 +541,17 @@ public struct Sessao: Codable, FetchableRecord, PersistableRecord {
     public var pneuId: String?
     public var combustivelId: String?
     public var qtCombustivelLitros: Double?
+    // ── MS-4.1 (v14) — novos campos pra StintPlan ──────────
+    /// JSON serializado de `[ParadaBox]`. Use `paradasBox` getter pra decodificar.
+    public var paradasBoxJson: String
+    public var iaLigada: Bool
+    public var mapaGhostLigado: Bool
+    public var licaoId: String?
+    public var canceladoEm: Int64?
+    /// JSON serializado de `[PilotoTurno]?` (nil quando não é endurance).
+    public var pilotosRevezamentoJson: String?
+    public var convidadoId: String?
+    // ───────────────────────────────────────────────────────
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -525,6 +572,13 @@ public struct Sessao: Codable, FetchableRecord, PersistableRecord {
         case pneuId = "pneu_id"
         case combustivelId = "combustivel_id"
         case qtCombustivelLitros = "qt_combustivel_litros"
+        case paradasBoxJson = "paradas_box"
+        case iaLigada = "ia_ligada"
+        case mapaGhostLigado = "mapa_ghost_ligado"
+        case licaoId = "licao_id"
+        case canceladoEm = "cancelado_em"
+        case pilotosRevezamentoJson = "pilotos_revezamento"
+        case convidadoId = "convidado_id"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
@@ -536,6 +590,13 @@ public struct Sessao: Codable, FetchableRecord, PersistableRecord {
                 voltasPlanejadas: Int? = nil, objetivo: String? = nil,
                 pneuId: String? = nil, combustivelId: String? = nil,
                 qtCombustivelLitros: Double? = nil,
+                paradasBoxJson: String = "[]",
+                iaLigada: Bool = false,
+                mapaGhostLigado: Bool = false,
+                licaoId: String? = nil,
+                canceladoEm: Int64? = nil,
+                pilotosRevezamentoJson: String? = nil,
+                convidadoId: String? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.timeId = timeId; self.eventoId = eventoId
@@ -544,7 +605,62 @@ public struct Sessao: Codable, FetchableRecord, PersistableRecord {
         self.voltasPlanejadas = voltasPlanejadas; self.objetivo = objetivo
         self.pneuId = pneuId; self.combustivelId = combustivelId
         self.qtCombustivelLitros = qtCombustivelLitros
+        self.paradasBoxJson = paradasBoxJson
+        self.iaLigada = iaLigada
+        self.mapaGhostLigado = mapaGhostLigado
+        self.licaoId = licaoId
+        self.canceladoEm = canceladoEm
+        self.pilotosRevezamentoJson = pilotosRevezamentoJson
+        self.convidadoId = convidadoId
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+
+    // MARK: - JSON helpers (MS-4.1)
+
+    /// Decodifica `paradasBoxJson` para `[ParadaBox]`. Retorna lista vazia se
+    /// o JSON for inválido ou ausente (campo NOT NULL DEFAULT '[]').
+    public var paradasBox: [ParadaBox] {
+        guard let data = paradasBoxJson.data(using: .utf8),
+              let lista = try? JSONDecoder().decode([ParadaBox].self, from: data) else {
+            return []
+        }
+        return lista
+    }
+
+    /// Decodifica `pilotosRevezamentoJson` para `[PilotoTurno]?`. Retorna nil
+    /// se o campo estiver nil ou se o JSON for inválido.
+    public var pilotosRevezamento: [PilotoTurno]? {
+        guard let json = pilotosRevezamentoJson,
+              let data = json.data(using: .utf8),
+              let lista = try? JSONDecoder().decode([PilotoTurno].self, from: data) else {
+            return nil
+        }
+        return lista
+    }
+
+    /// Substitui a lista de paradas no campo JSON. Use no Repository
+    /// antes de persistir.
+    public mutating func setParadasBox(_ paradas: [ParadaBox]) {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        if let data = try? encoder.encode(paradas),
+           let json = String(data: data, encoding: .utf8) {
+            self.paradasBoxJson = json
+        }
+    }
+
+    /// Substitui a lista de turnos no campo JSON. Passar nil limpa o campo.
+    public mutating func setPilotosRevezamento(_ turnos: [PilotoTurno]?) {
+        guard let turnos = turnos else {
+            self.pilotosRevezamentoJson = nil
+            return
+        }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        if let data = try? encoder.encode(turnos),
+           let json = String(data: data, encoding: .utf8) {
+            self.pilotosRevezamentoJson = json
+        }
     }
 }
 
