@@ -114,6 +114,10 @@ public final class StreamCoordinator: ObservableObject {
 
     private var heartbeatTask: Task<Void, Never>?
     private let heartbeatIntervalo: TimeInterval = 5.0
+    /// MS-11.7: contador de heartbeats falhados em sequência. Após 3
+    /// falhas seguidas (~15s), marca status=semSinal pra UI reagir.
+    private var falhasConsecutivas: Int = 0
+    private let falhasParaSemSinal: Int = 3
 
     public init() {
         #if canImport(UIKit)
@@ -214,11 +218,23 @@ public final class StreamCoordinator: ObservableObject {
             } else {
                 ultimaMensagem = nil
             }
+            // Sucesso — zera contador de falhas e volta pra aoVivo se estava semSinal
+            falhasConsecutivas = 0
+            if status == .semSinal {
+                status = .aoVivo
+                ultimaMensagem = nil
+            }
         } catch {
-            // Heartbeat falhou — tenta de novo no próximo tick. Se cair 3×
-            // seguidas (~15s), o backend não vai marcar como ao_vivo e o
-            // Command Box exibe "sem sinal" (consumindo ultima_heartbeat).
-            ultimaMensagem = "Sinal instável: \(error.localizedDescription)"
+            // MS-11.7: heartbeat falhou. Após 3 falhas seguidas (~15s),
+            // marca status=semSinal — Command Box mostra última imagem
+            // congelada com aviso (Q16).
+            falhasConsecutivas += 1
+            if falhasConsecutivas >= falhasParaSemSinal && status == .aoVivo {
+                status = .semSinal
+                ultimaMensagem = "Sem sinal — verifique a conexão"
+            } else if falhasConsecutivas < falhasParaSemSinal {
+                ultimaMensagem = "Sinal instável: \(error.localizedDescription)"
+            }
         }
     }
 
