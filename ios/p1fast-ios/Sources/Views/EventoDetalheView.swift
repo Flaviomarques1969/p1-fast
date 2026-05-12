@@ -33,6 +33,7 @@ struct EventoDetalheView: View {
     @EnvironmentObject private var pneuRepo: PneuRepository
     @EnvironmentObject private var combustivelRepo: CombustivelRepository
     @EnvironmentObject private var pendenciaRepo: PendenciaRepository
+    @EnvironmentObject private var voltaVideoRepo: VoltaVideoRepository
     let eventoId: String
     let onClose: () -> Void
 
@@ -92,10 +93,30 @@ struct EventoDetalheView: View {
                     stintId: stintId,
                     contextoLinha: contextoStintModal(ev: ev),
                     onFinalized: { id in
-                        sheet = .posStint(stintId: id)
+                        // F4-glue: passo intermediário pra triagem do vídeo.
+                        // Se não houver gravação Daily.co OU nenhuma volta
+                        // foi indexada, a TriagemVideoView mostra empty state
+                        // e a pessoa avança pro PosStint normalmente.
+                        sheet = .triagemVideo(stintId: id)
                     },
                     onCancel: { sheet = nil }
                 )
+            } else {
+                EmptyView()
+            }
+        case .triagemVideo(let stintId):
+            if let ev = repo.find(id: eventoId) {
+                TriagemVideoView(
+                    sessaoId: stintId,
+                    contextoLinha: contextoStintModal(ev: ev),
+                    onClose: {
+                        // Sempre encaminha pro PosStint depois da triagem
+                        // (ou do "Pular"). PosStint é o destino final do
+                        // fluxo.
+                        sheet = .posStint(stintId: stintId)
+                    }
+                )
+                .environmentObject(voltaVideoRepo)
             } else {
                 EmptyView()
             }
@@ -406,6 +427,7 @@ struct EventoDetalheView: View {
 enum EventoDetalheSheet: Identifiable, Equatable {
     case novoStint
     case captureAtivo(stintId: String)
+    case triagemVideo(stintId: String)
     case posStint(stintId: String)
     case pendencias
 
@@ -413,6 +435,7 @@ enum EventoDetalheSheet: Identifiable, Equatable {
         switch self {
         case .novoStint: return "novo-stint"
         case .captureAtivo(let id): return "capture-\(id)"
+        case .triagemVideo(let id): return "triagem-\(id)"
         case .posStint(let id): return "pos-\(id)"
         case .pendencias: return "pendencias"
         }

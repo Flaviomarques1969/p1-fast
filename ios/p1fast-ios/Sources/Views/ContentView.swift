@@ -182,6 +182,7 @@ private struct ReadyRoot: View {
     @StateObject private var reachability: Reachability
     @StateObject private var syncCoordinator: SyncCoordinator
     @StateObject private var stintCaptureCoordinator: StintCaptureCoordinator
+    @StateObject private var voltaVideoRepo: VoltaVideoRepository
 
     init(queue: DatabaseQueue) {
         self.queue = queue
@@ -195,6 +196,7 @@ private struct ReadyRoot: View {
         _trackRepo = StateObject(wrappedValue: TrackRepository(queue: queue))
         _licaoRepo = StateObject(wrappedValue: LicaoRepository(queue: queue))
         _pendenciaRepo = StateObject(wrappedValue: PendenciaRepository(queue: queue))
+        _voltaVideoRepo = StateObject(wrappedValue: VoltaVideoRepository(queue: queue))
         let reach = Reachability()
         _reachability = StateObject(wrappedValue: reach)
         _syncCoordinator = StateObject(
@@ -220,6 +222,7 @@ private struct ReadyRoot: View {
             .environmentObject(reachability)
             .environmentObject(syncCoordinator)
             .environmentObject(stintCaptureCoordinator)
+            .environmentObject(voltaVideoRepo)
             .task {
                 await carroRepo.bootstrap()
                 // EventoRepo seeda o TrackRow brasília — TrackRepo
