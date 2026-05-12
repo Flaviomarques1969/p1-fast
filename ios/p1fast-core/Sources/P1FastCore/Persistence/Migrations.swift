@@ -314,6 +314,38 @@ enum Migrations {
             try db.execute(sql: "ALTER TABLE eventos ADD COLUMN link_publico_video_token TEXT;")
             try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_eventos_link_publico ON eventos(link_publico_video_token);")
         }
+
+        // ═══ v16_volta_video ═══════════════════════════════════
+        // F4 etapa 2. Espelha supabase/migrations/0016_volta_video.sql.
+        // Tabela volta_video indexa cada volta dentro da gravação Daily.co
+        // (1 gravação por stream, 1 stream por sessão). Cada row marca
+        // onde a volta começa/termina dentro do vídeo + status de triagem.
+        //
+        // Decisões registradas (rodada 1+2 de 2026-05-11):
+        //   Q18+Q2.5: gravação cobre todo stream; triagem volta-a-volta = F4
+        //   Q2.5: triagem por piloto + chefe da equipe (refinada em F4.6)
+        m.registerMigration("v16_volta_video") { db in
+            try db.execute(sql: """
+                CREATE TABLE volta_video (
+                    id               TEXT PRIMARY KEY,
+                    time_id          TEXT NOT NULL REFERENCES times(id) ON DELETE CASCADE,
+                    video_stream_id  TEXT NOT NULL REFERENCES video_streams(id) ON DELETE CASCADE,
+                    volta_id         TEXT NOT NULL REFERENCES voltas(id) ON DELETE CASCADE,
+                    t_inicio_ms      INTEGER NOT NULL CHECK (t_inicio_ms >= 0),
+                    t_fim_ms         INTEGER NOT NULL CHECK (t_fim_ms > t_inicio_ms),
+                    triagem_status   TEXT NOT NULL DEFAULT 'pendente'
+                                     CHECK (triagem_status IN ('pendente','mantida','descartada')),
+                    triada_por       TEXT,
+                    triada_em        INTEGER,
+                    created_at       INTEGER NOT NULL,
+                    updated_at       INTEGER NOT NULL,
+                    synced_at        INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE UNIQUE INDEX idx_volta_video_volta ON volta_video(volta_id);")
+            try db.execute(sql: "CREATE INDEX idx_volta_video_stream ON volta_video(video_stream_id);")
+            try db.execute(sql: "CREATE INDEX idx_volta_video_time_status ON volta_video(time_id, triagem_status);")
+        }
     }
 
     // swiftlint:disable:next function_body_length
