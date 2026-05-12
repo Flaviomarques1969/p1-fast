@@ -330,7 +330,13 @@ struct EventoDetalheView: View {
                         StintCardReal(
                             stint: stint,
                             isFinalizing: finalizingStintId == stint.id,
-                            onTap: { abrirStintReal(stint) }
+                            onTap: { abrirStintReal(stint) },
+                            onCancel: stint.podeCancelar ? {
+                                Task {
+                                    try? await stintRepo.cancel(stintId: stint.id)
+                                    await loadStintsReais()
+                                }
+                            } : nil
                         )
                     }
                 } else {
@@ -497,6 +503,10 @@ private struct StintCardReal: View {
     let stint: Stint
     let isFinalizing: Bool
     let onTap: () -> Void
+    /// MS-4.5: opcional. Quando presente, long-press oferece "Cancelar stint".
+    let onCancel: (() -> Void)?
+
+    @State private var confirmandoCancelamento: Bool = false
 
     var body: some View {
         Button(action: onTap) {
@@ -511,15 +521,49 @@ private struct StintCardReal: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .fill(stint.isAtivo ? Color.accentDim.opacity(0.15) : Color.surfaceRaised)
+                    .fill(backgroundColor)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .stroke(stint.isAtivo ? Color.accent.opacity(0.55) : Color.border, lineWidth: 1)
+                    .stroke(borderColor, lineWidth: 1)
             )
+            .opacity(stint.isCancelado ? 0.55 : 1.0)
         }
         .buttonStyle(.plain)
-        .disabled(isFinalizing)
+        .disabled(isFinalizing || stint.isCancelado)
+        .contextMenu {
+            if onCancel != nil {
+                Button(role: .destructive, action: {
+                    confirmandoCancelamento = true
+                }) {
+                    Label("Cancelar stint", systemImage: "xmark.circle")
+                }
+            }
+        }
+        .confirmationDialog(
+            "Cancelar este stint?",
+            isPresented: $confirmandoCancelamento,
+            titleVisibility: .visible
+        ) {
+            Button("Cancelar stint", role: .destructive) {
+                onCancel?()
+            }
+            Button("Voltar", role: .cancel) {}
+        } message: {
+            Text("O stint não some — fica marcado como cancelado no histórico.")
+        }
+    }
+
+    private var backgroundColor: Color {
+        if stint.isCancelado { return Color.surfaceRaised }
+        if stint.isAtivo { return Color.accentDim.opacity(0.15) }
+        return Color.surfaceRaised
+    }
+
+    private var borderColor: Color {
+        if stint.isCancelado { return Color.border.opacity(0.6) }
+        if stint.isAtivo { return Color.accent.opacity(0.55) }
+        return Color.border
     }
 
     private var numCircle: some View {
@@ -563,6 +607,9 @@ private struct StintCardReal: View {
                 }
                 if stint.isAtivo {
                     EventTag(text: isFinalizing ? "Finalizando…" : "Ativo", kind: .accent)
+                }
+                if stint.isCancelado {
+                    EventTag(text: "Cancelado", kind: .neutral)
                 }
             }
             .padding(.top, 7)
