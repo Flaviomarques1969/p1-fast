@@ -62,6 +62,15 @@ struct StintModalView: View {
     @State private var mapaGhostLigado: Bool = false
     @State private var paradaEditando: ParadaBox?
 
+    // MS-4.4: revezamento (endurance) + convidado (não-endurance).
+    // permiteRevezamento é carregado em .task() lendo evento.tipo
+    // via StintRepository.eventoPermiteRevezamento (lógica pura em
+    // EnduranceDetection.tipoPermiteRevezamento).
+    @State private var permiteRevezamento: Bool = false
+    @State private var turnos: [PilotoTurno] = []
+    @State private var turnoEditandoIndex: Int? = nil
+    @State private var convidadoId: String? = nil
+
     var body: some View {
         ZStack(alignment: .bottom) {
             ScrollView {
@@ -82,6 +91,10 @@ struct StintModalView: View {
         }
         .preferredColorScheme(.dark)
         .onAppear { hidratarPilotoDefault() }
+        .task {
+            // MS-4.4: detecta se evento é endurance pra liberar revezamento.
+            permiteRevezamento = await repo.eventoPermiteRevezamento(eventoId: eventoId)
+        }
         .sheet(item: $sheet) { which in
             sheetView(for: which)
         }
@@ -133,6 +146,23 @@ struct StintModalView: View {
                     paradaEditando = nil
                 }
             )
+        case .turnoEditor:
+            TurnoEditorSheet(
+                inicial: turnoEditandoIndex.flatMap { turnos.indices.contains($0) ? turnos[$0] : nil },
+                pilotos: repo.pilotos,
+                maxVoltas: voltasPlanejadas,
+                onCancel: { sheet = nil; turnoEditandoIndex = nil },
+                onSalvar: { novo in
+                    aplicarTurno(novo, index: turnoEditandoIndex)
+                    sheet = nil
+                    turnoEditandoIndex = nil
+                },
+                onRemover: turnoEditandoIndex == nil ? nil : {
+                    if let idx = turnoEditandoIndex { removerTurno(index: idx) }
+                    sheet = nil
+                    turnoEditandoIndex = nil
+                }
+            )
         }
     }
 
@@ -142,10 +172,16 @@ struct StintModalView: View {
 
     private var canSave: Bool {
         guard !isSaving else { return false }
-        guard pilotoId != nil else { return false }
         guard !objetivoTipo.isEmpty else { return false }
         guard voltasPlanejadas >= 1 else { return false }
-        return true
+        // MS-4.4: validação muda conforme tipo do evento
+        if permiteRevezamento {
+            // Endurance — precisa de pelo menos 1 turno cobrindo todas as voltas
+            return !turnos.isEmpty && turnosCobremTodasVoltas
+        } else {
+            // Track day / treino livre — só piloto principal obrigatório
+            return pilotoId != nil
+        }
     }
 
     @ViewBuilder
@@ -188,7 +224,16 @@ struct StintModalView: View {
     private var sectionConfiguracao: some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionHead("Configuração")
-            FormField(label: "Piloto") { pilotoPicker }
+            if permiteRevezamento {
+                FormField(label: "Pilotos com troca por volta", small: "endurance · obrigatório cobrir todas as voltas") {
+                    turnosSection
+                }
+            } else {
+                FormField(label: "Piloto") { pilotoPicker }
+                FormField(label: "Convidado", small: "opcional · piloto adicional") {
+                    convidadoPicker
+                }
+            }
             FormField(label: "Combustível abastecido", small: "opcional") {
                 combustivelRow
             }
@@ -196,6 +241,165 @@ struct StintModalView: View {
                 pneuRow
             }
         }
+    }
+
+    // MS-4.4 — Revezamento (lista de turnos pra endurance)
+
+    private var turnosSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if turnos.isEmpty {
+                Text("Nenhum turno cadastrado. Toque em '+ adicionar turno'.")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(Color.textFaint)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                            .fill(Color.surfaceRaised)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                            .stroke(Color.border, lineWidth: 1)
+                    )
+            } else {
+                ForEach(Array(turnos.enumerated()), id: \.offset) { idx, turno in
+                    turnoRow(idx: idx, turno: turno)
+                }
+            }
+            Button(action: {
+                turnoEditandoIndex = nil
+                sheet = .turnoEditor
+            }) {
+                HStack(spacing: 6) {
+                    Text("+")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.textMuted)
+                    Text("adicionar turno")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.textMuted)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .stroke(Color.border.opacity(0.6), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                )
+            }
+            .buttonStyle(.plain)
+            // Aviso de cobertura
+            if !turnos.isEmpty && !turnosCobremTodasVoltas {
+                Text("Atenção: turnos não cobrem todas as \(voltasPlanejadas) voltas planejadas.")
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(Color.atencao)
+                    .padding(.horizontal, 4)
+            }
+        }
+    }
+
+    private func turnoRow(idx: Int, turno: PilotoTurno) -> some View {
+        Button(action: {
+            turnoEditandoIndex = idx
+            sheet = .turnoEditor
+        }) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(repo.pilotos.first(where: { $0.id == turno.pilotoId })?.nome ?? "Piloto")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Color.text)
+                    Text("Voltas \(turno.voltaInicio)–\(turno.voltaFim)")
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundStyle(Color.textMuted)
+                }
+                Spacer()
+                Text("›")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(Color.textMuted)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .fill(Color.surfaceRaised)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .stroke(Color.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Verifica se os turnos cobrem todas as voltas planejadas sem gap.
+    /// Vazia ou um único turno (1..voltasPlanejadas) = ok. Sobrepostos = false.
+    private var turnosCobremTodasVoltas: Bool {
+        guard !turnos.isEmpty, voltasPlanejadas >= 1 else { return turnos.isEmpty }
+        let ordenados = turnos.sorted(by: { $0.voltaInicio < $1.voltaInicio })
+        guard ordenados.first?.voltaInicio == 1 else { return false }
+        guard ordenados.last?.voltaFim == voltasPlanejadas else { return false }
+        for i in 0..<(ordenados.count - 1) {
+            if ordenados[i].voltaFim + 1 != ordenados[i+1].voltaInicio { return false }
+        }
+        return true
+    }
+
+    /// Aplica um turno (novo ou edição). Se índice nil, adiciona; senão substitui.
+    func aplicarTurno(_ novo: PilotoTurno, index: Int?) {
+        if let idx = index, idx >= 0, idx < turnos.count {
+            turnos[idx] = novo
+        } else {
+            turnos.append(novo)
+        }
+        turnos.sort(by: { $0.voltaInicio < $1.voltaInicio })
+    }
+
+    func removerTurno(index: Int) {
+        guard index >= 0, index < turnos.count else { return }
+        turnos.remove(at: index)
+    }
+
+    // MS-4.4 — Convidado picker (não-endurance)
+
+    private var convidadoPicker: some View {
+        Menu {
+            Button("Sem convidado") { convidadoId = nil }
+            ForEach(repo.pilotos.filter { $0.id != pilotoId }, id: \.id) { p in
+                Button(p.nome) { convidadoId = p.id }
+            }
+        } label: {
+            HStack {
+                Text(convidadoNomeAtual ?? "Sem convidado")
+                    .font(.system(size: 15, weight: .medium))
+                    .tracking(-0.075)
+                    .foregroundStyle(convidadoId == nil ? Color.textFaint : Color.text)
+                Spacer()
+                Text("›")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(Color.textMuted)
+                    .frame(width: 20, height: 20)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(Color.surfaceHover)
+                    )
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .fill(Color.surfaceRaised)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .stroke(Color.border, lineWidth: 1)
+            )
+        }
+        .menuStyle(.button)
+    }
+
+    private var convidadoNomeAtual: String? {
+        guard let id = convidadoId else { return nil }
+        return repo.pilotos.first(where: { $0.id == id })?.nome
     }
 
     // MARK: - Combustível abastecido (qty + picker)
@@ -603,21 +807,25 @@ struct StintModalView: View {
     // MARK: - Salvar
 
     private func salvar() {
-        guard let pid = pilotoId else { return }
+        // MS-4.4: piloto principal vem do `pilotoId` em modo normal, ou
+        // do primeiro turno em modo endurance.
+        let pidPrincipal: String? = permiteRevezamento
+            ? turnos.sorted(by: { $0.voltaInicio < $1.voltaInicio }).first?.pilotoId
+            : pilotoId
+        guard let pid = pidPrincipal else { return }
         isSaving = true
         savingError = nil
         let pneuParaSalvar = pneuIdSelecionado
         let combustivelParaSalvar = combustivelIdSelecionado
         let litrosParaSalvar = parseLitros(qtCombustivelTexto)
-        // MS-4.3: snapshot dos campos novos pra persistir após o create.
-        // Lição focada = texto livre antes do MS-4.3; agora só guarda o
-        // título da lição escolhida como "<tipo> · <título>" pra compat
-        // com o campo objetivo legado. O ID estruturado vai em licao_id.
+        // Snapshots dos campos novos pra persistir após o create.
         let licaoSnapshot = licaoIdSelecionada
         let licaoTitulo = licaoIdSelecionada.flatMap { licaoRepo.find(id: $0)?.titulo } ?? ""
         let paradasSnapshot = paradas
         let iaSnapshot = iaLigada
         let ghostSnapshot = mapaGhostLigado
+        let turnosSnapshot: [PilotoTurno]? = permiteRevezamento ? turnos : nil
+        let convidadoSnapshot: String? = permiteRevezamento ? nil : convidadoId
         Task {
             do {
                 let stintId = try await repo.create(
@@ -637,13 +845,15 @@ struct StintModalView: View {
                         litros: litrosParaSalvar
                     )
                 }
-                // MS-4.3: persiste campos novos do StintPlan (v14).
+                // MS-4.3 + MS-4.4: persiste campos novos do StintPlan (v14).
                 try await repo.setStintExtensions(
                     stintId: stintId,
                     paradas: paradasSnapshot,
                     iaLigada: iaSnapshot,
                     mapaGhostLigado: ghostSnapshot,
-                    licaoId: .some(licaoSnapshot)
+                    licaoId: .some(licaoSnapshot),
+                    pilotosRevezamento: .some(turnosSnapshot),
+                    convidadoId: .some(convidadoSnapshot)
                 )
                 isSaving = false
                 onCreated(stintId)
@@ -758,12 +968,14 @@ enum StintModalSheet: Identifiable, Equatable {
     case pneuPicker
     case combustivelPicker
     case paradaEditor  // MS-4.3 — abre o ParadaBoxEditorSheet
+    case turnoEditor   // MS-4.4 — abre o TurnoEditorSheet (endurance)
 
     var id: String {
         switch self {
         case .pneuPicker: return "pneu-picker"
         case .combustivelPicker: return "combustivel-picker"
         case .paradaEditor: return "parada-editor"
+        case .turnoEditor: return "turno-editor"
         }
     }
 }
@@ -848,6 +1060,116 @@ struct ParadaBoxEditorSheet: View {
                 saveLabel: inicial == nil ? "Adicionar" : "Salvar",
                 canSave: !motivo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                        && volta >= 1 && volta <= maxVoltas
+            )
+        }
+        .preferredColorScheme(.dark)
+    }
+}
+
+// MARK: - TurnoEditorSheet (MS-4.4)
+
+/// Sheet pra adicionar ou editar um turno de piloto em revezamento (endurance).
+/// Cada turno = piloto + volta início + volta fim.
+struct TurnoEditorSheet: View {
+    let inicial: PilotoTurno?
+    let pilotos: [Piloto]
+    let maxVoltas: Int
+    let onCancel: () -> Void
+    let onSalvar: (PilotoTurno) -> Void
+    let onRemover: (() -> Void)?
+
+    @State private var pilotoId: String?
+    @State private var voltaInicio: Int
+    @State private var voltaFim: Int
+
+    init(inicial: PilotoTurno?,
+         pilotos: [Piloto],
+         maxVoltas: Int,
+         onCancel: @escaping () -> Void,
+         onSalvar: @escaping (PilotoTurno) -> Void,
+         onRemover: (() -> Void)?) {
+        self.inicial = inicial
+        self.pilotos = pilotos
+        self.maxVoltas = max(maxVoltas, 1)
+        self.onCancel = onCancel
+        self.onSalvar = onSalvar
+        self.onRemover = onRemover
+        _pilotoId = State(initialValue: inicial?.pilotoId ?? pilotos.first?.id)
+        let inicio = inicial?.voltaInicio ?? 1
+        let fim = inicial?.voltaFim ?? self.maxVoltas
+        _voltaInicio = State(initialValue: max(1, min(inicio, self.maxVoltas)))
+        _voltaFim = State(initialValue: max(inicio, min(fim, self.maxVoltas)))
+    }
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Spacing.md) {
+                    Eyebrow(text: inicial == nil ? "Novo turno" : "Editar turno")
+                    Text(inicial == nil ? "Adicionar turno de revezamento" : "Turno")
+                        .font(.system(size: 22, weight: .semibold))
+                        .tracking(-0.44)
+                        .foregroundStyle(Color.text)
+                        .padding(.bottom, Spacing.sm)
+
+                    FormField(label: "Piloto", small: "obrigatório") {
+                        Menu {
+                            ForEach(pilotos, id: \.id) { p in
+                                Button(p.nome) { pilotoId = p.id }
+                            }
+                        } label: {
+                            HStack {
+                                Text(pilotos.first(where: { $0.id == pilotoId })?.nome ?? "Escolher piloto")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundStyle(pilotoId == nil ? Color.textFaint : Color.text)
+                                Spacer()
+                                Text("›").foregroundStyle(Color.textMuted)
+                            }
+                            .padding(.horizontal, 14).padding(.vertical, 12)
+                            .background(RoundedRectangle(cornerRadius: Radius.md).fill(Color.surfaceRaised))
+                            .overlay(RoundedRectangle(cornerRadius: Radius.md).stroke(Color.border, lineWidth: 1))
+                        }
+                        .menuStyle(.button)
+                    }
+                    FormField(label: "Volta início", small: "1 a \(maxVoltas)") {
+                        VoltaStepperEditor(value: $voltaInicio, maxValue: maxVoltas)
+                    }
+                    FormField(label: "Volta fim", small: "≥ início") {
+                        VoltaStepperEditor(value: $voltaFim, maxValue: maxVoltas)
+                    }
+                    if let onRemover = onRemover {
+                        Button(action: onRemover) {
+                            Text("Remover turno")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(Color.erro)
+                                .padding(.vertical, 10)
+                                .frame(maxWidth: .infinity)
+                                .background(
+                                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                                        .stroke(Color.erro.opacity(0.5), lineWidth: 1)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, Spacing.md)
+                    }
+                }
+                .padding(.horizontal, Spacing.lg)
+                .padding(.top, Spacing.md)
+                .padding(.bottom, 140)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(Color.surface)
+
+            FootBar(
+                onCancel: onCancel,
+                onSave: {
+                    guard let pid = pilotoId else { return }
+                    guard voltaFim >= voltaInicio else { return }
+                    onSalvar(PilotoTurno(pilotoId: pid, voltaInicio: voltaInicio, voltaFim: voltaFim))
+                },
+                saveLabel: inicial == nil ? "Adicionar" : "Salvar",
+                canSave: pilotoId != nil && voltaFim >= voltaInicio
+                       && voltaInicio >= 1 && voltaFim <= maxVoltas
             )
         }
         .preferredColorScheme(.dark)
