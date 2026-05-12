@@ -359,6 +359,84 @@ final class StintRepository: ObservableObject {
         }
     }
 
+    // MARK: - MS-4 (StintPlan estendido)
+
+    /// Lê um Sessao completo (com todos os campos novos do MS-4.1).
+    /// Usado pela UI quando precisa dos campos extendidos (paradas_box,
+    /// ia_ligada, mapa_ghost_ligado, licao_id, etc.). Os métodos
+    /// `loadByEvento` e `fetchStint` continuam usando SQL manual sem os
+    /// novos campos pra não quebrar a Stint legado.
+    func fetchSessaoCompleta(id: String) async throws -> Sessao? {
+        try await queue.read { db in
+            try Sessao.fetchOne(db, key: id)
+        }
+    }
+
+    /// Atualiza os campos novos do StintPlan (MS-4.1). Passar `nil` em
+    /// qualquer parâmetro preserva o valor atual. Use `setStintParadas` /
+    /// `setStintLicao` etc. se quiser mais explícito.
+    ///
+    /// Convenção: paradas vazias = `[]`, revezamento vazio = nil.
+    func setStintExtensions(
+        stintId: String,
+        paradas: [ParadaBox]? = nil,
+        iaLigada: Bool? = nil,
+        mapaGhostLigado: Bool? = nil,
+        licaoId: String?? = nil,
+        pilotosRevezamento: [PilotoTurno]?? = nil,
+        convidadoId: String?? = nil
+    ) async throws {
+        let now = DB.nowMs()
+        try await queue.write { db in
+            guard var sessao = try Sessao.fetchOne(db, key: stintId) else { return }
+            if let paradas = paradas { sessao.setParadasBox(paradas) }
+            if let v = iaLigada { sessao.iaLigada = v }
+            if let v = mapaGhostLigado { sessao.mapaGhostLigado = v }
+            if case .some(let v) = licaoId { sessao.licaoId = v }
+            if case .some(let v) = pilotosRevezamento { sessao.setPilotosRevezamento(v) }
+            if case .some(let v) = convidadoId { sessao.convidadoId = v }
+            sessao.updatedAt = now
+            sessao.syncedAt = nil
+            try sessao.update(db)
+            try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: sessao.id, op: .update, record: sessao)
+        }
+    }
+
+    /// Cancela um stint marcando `cancelado_em = now()` + `status = 'cancelada'`.
+    /// NÃO deleta a row (Q24 da rodada 1 — Flávio quer histórico preservado).
+    /// No-op se o stint não existir.
+    func cancel(stintId: String) async throws {
+        let now = DB.nowMs()
+        try await queue.write { db in
+            guard var sessao = try Sessao.fetchOne(db, key: stintId) else { return }
+            sessao.canceladoEm = now
+            sessao.status = "cancelada"
+            sessao.updatedAt = now
+            sessao.syncedAt = nil
+            try sessao.update(db)
+            try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: sessao.id, op: .update, record: sessao)
+        }
+    }
+
+    /// Detecta se o evento permite revezamento de pilotos (endurance).
+    /// Regra (Q2.2): se `eventos.tipo` contém "endurance" (case-insensitive),
+    /// retorna true. Em outros tipos (Track Day, Treino livre), retorna false.
+    /// Usado pela `StintModalView` em MS-4.4 pra mostrar UI de revezamento.
+    /// Lógica pura em `EnduranceDetection.tipoPermiteRevezamento` (testada
+    /// em P1FastSmoke END-01..04).
+    func eventoPermiteRevezamento(eventoId: String) async -> Bool {
+        do {
+            return try await queue.read { db in
+                guard let evento = try Evento.fetchOne(db, key: eventoId) else { return false }
+                return EnduranceDetection.tipoPermiteRevezamento(evento.tipo)
+            }
+        } catch {
+            return false
+        }
+    }
+
+    // MARK: - Sync legacy (mantido pra finalize compat)
+
     /// Soma `voltas` em `pneus.ciclos`. Chamado automaticamente pelo
     /// `finalize(...)` quando o stint tem pneu_id != nil. Idempotência fica
     /// pro caller — chamar duas vezes vai dobrar `ciclos`. No-op quando
