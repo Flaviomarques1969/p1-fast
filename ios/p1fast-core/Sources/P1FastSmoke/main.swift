@@ -4457,6 +4457,46 @@ step("TP-05: bloqueio total de voltas no texto da razão") {
     }
 }
 
+// ─── F4.6: TriagemPermissao (piloto + chefe + admin) ─────────
+
+step("PER-01: admin sempre pode triar") {
+    let admin = UsuarioContexto(userId: "user-admin", isAdmin: true, isChefeEquipe: false)
+    try assertTrue(TriagemPermissao.podeTriar(usuario: admin, pilotoUserIdDaSessao: nil))
+    try assertTrue(TriagemPermissao.podeTriar(usuario: admin, pilotoUserIdDaSessao: "outro-user"))
+}
+
+step("PER-02: chefe da equipe sempre pode triar") {
+    let chefe = UsuarioContexto(userId: "user-chefe", isAdmin: false, isChefeEquipe: true)
+    try assertTrue(TriagemPermissao.podeTriar(usuario: chefe, pilotoUserIdDaSessao: nil))
+    try assertTrue(TriagemPermissao.podeTriar(usuario: chefe, pilotoUserIdDaSessao: "outro-user"))
+}
+
+step("PER-03: piloto da sessão pode triar suas próprias voltas") {
+    let piloto = UsuarioContexto(userId: "user-piloto-x", isAdmin: false, isChefeEquipe: false)
+    try assertTrue(TriagemPermissao.podeTriar(usuario: piloto, pilotoUserIdDaSessao: "user-piloto-x"))
+}
+
+step("PER-04: piloto NÃO pode triar voltas de outro piloto") {
+    let piloto = UsuarioContexto(userId: "user-piloto-x", isAdmin: false, isChefeEquipe: false)
+    try assertTrue(!TriagemPermissao.podeTriar(usuario: piloto, pilotoUserIdDaSessao: "user-piloto-y"))
+    let razao = TriagemPermissao.razaoBloqueio(usuario: piloto, pilotoUserIdDaSessao: "user-piloto-y")
+    try assertTrue(razao != nil && razao!.contains("piloto"), "razão deve mencionar piloto")
+}
+
+step("PER-05: usuário sem login NÃO pode triar") {
+    let semLogin = UsuarioContexto(userId: nil, isAdmin: false, isChefeEquipe: false)
+    try assertTrue(!TriagemPermissao.podeTriar(usuario: semLogin, pilotoUserIdDaSessao: "user-x"))
+    let razao = TriagemPermissao.razaoBloqueio(usuario: semLogin, pilotoUserIdDaSessao: "user-x")
+    try assertTrue(razao != nil && razao!.lowercased().contains("login"))
+}
+
+step("PER-06: piloto da sessão sem conta vinculada → só admin/chefe pode") {
+    let piloto = UsuarioContexto(userId: "user-x", isAdmin: false, isChefeEquipe: false)
+    try assertTrue(!TriagemPermissao.podeTriar(usuario: piloto, pilotoUserIdDaSessao: nil))
+    let admin = UsuarioContexto(userId: "user-y", isAdmin: true, isChefeEquipe: false)
+    try assertTrue(TriagemPermissao.podeTriar(usuario: admin, pilotoUserIdDaSessao: nil))
+}
+
 // ─── DRAINER (Sprint 1A.6 sub-prompt B) ──────────────────────
 // Mock transport: configurado por teste pra retornar o que quisermos.
 final class MockSyncTransport: SyncTransport {
