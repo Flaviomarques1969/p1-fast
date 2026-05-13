@@ -1,10 +1,43 @@
 # P1 Fast — STATUS
 
-**Data deste checkpoint:** 2026-05-09 (sessão 6 — virada arquitetural cockpit Windows + ADR-023)
-**Estado:** Plano `docs/PLANO_FASE_1.md` em execução. **MS-2 + MS-3 fechados em main.** Virada arquitetural 2026-05-09: cockpit-display do piloto migra de SwiftUI iPhone pra **web app no notebook Windows 10,5"**, T4000 deixa de ser BLE iOS e vira USB/CAN no Windows, transporte entre as duas plataformas via Supabase Realtime. Detalhes em **ADR-023**. PRs totais até **#120** mergeados, **404 smoke tests verdes**.
+**Data deste checkpoint:** 2026-05-13 (sessão MS-16 — Command Box Engenharia entregue ponta-a-ponta em domain layer)
+**Estado:** Plano `docs/PLANO_FASE_1.md` em execução. **MS-2 + MS-3 + MS-16.1..16.5a fechados em main.** Mini-sprint novo **MS-16 (Command Box Engenharia)** entregue em 6 PRs (#194..#199): auditoria + 3 camadas (Engine Core + Calibration Engine + Senior Advisor IA) + Tab Engenharia domain (gating D17/D18 fechadas). **UI SwiftUI fica pra MS-16.5b** quando Xcode pegar (camada domain pura toda em main, smoke verde). Detalhes em `docs/COMMAND_BOX_ENGENHARIA.md` + `docs/SESSION_HANDOFF_2026-05-13_pre-clear.md`.
 
 > **Se você é Claude abrindo esta sessão pela primeira vez:**
-> Leia este arquivo primeiro, depois `docs/PLANO_FASE_1.md` (doc mestre), depois `~/.claude/projects/-Users-imac/memory/MEMORY.md` (memória global) + `~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/MEMORY.md` (memória do projeto).
+> Leia este arquivo primeiro, depois `docs/PLANO_FASE_1.md` (doc mestre), depois `docs/SESSION_HANDOFF_2026-05-13_pre-clear.md` se vier do "voltei" do Flávio, depois `~/.claude/projects/-Users-imac/memory/MEMORY.md` (memória global) + `~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/MEMORY.md` (memória do projeto).
+
+---
+
+## Sessão 2026-05-13 — MS-16 Command Box Engenharia (auditoria + Camadas 1/2/3 + UI domain)
+
+`swift run p1fast-smoke` em CI macos-14 verde em todos os PRs. Tab Engenharia domain pronto pra Views SwiftUI consumirem.
+
+| # | PR | Sub-sprint | Conteúdo |
+|---|---|---|---|
+| 194 | docs | **MS-16.0** | `docs/COMMAND_BOX_ENGENHARIA.md` (~970 linhas) — auditoria profunda do sistema existente + arquitetura aprovada em 3 camadas. Refinada por 4 clarificações do Flávio. 7 decisões fechadas (D1, D2+D3, D6, D14, D17, D18). Bloco MS-16 em `PLANO_FASE_1.md` §6. |
+| 195 | feat | **MS-16.1** | `TelemetryTimebase.swift` (porte 1:1 de `timebase.js`) — sincronização multi-fonte, freshness, LATE/MISSING. Smokes TB-01..12 (Swift) + TPB-01..12 (Node parity). Resolve gap G1. |
+| 196 | feat | **MS-16.2** | `VehicleContextAggregator.swift` — modelo contextual evolutivo (lap window + stint history + thermal phase + Vmin trend). Helpers `waterTempDriftPerMinute()` + `vminTrend()`. Smokes VCA-01..10. Resolve gap G2. Fix lateral: `public init` em `DetectorLapEvent` + `DetectorSegmentStartEvent`. |
+| 197 | feat | **MS-16.3** | `CalibrationEngine` + 3 rules MVP (`fuel-lean-sustained-load`, `water-temp-drift-no-cooling`, `vmin-progressive-loss-segment`) + tipos `EngineeringFinding`/`EngineeringRecommendation` + migrations 0020/0021 Supabase (RLS por time, insert-only findings). Smokes CE-01..15. Resolve gaps G3 + G4. |
+| 198 | feat | **MS-16.4** | `/api/advisor.js` aceita `findings[]` opcional. System prompt ganha §"FINDINGS CODIFICADOS" (governança IA: priorizar, explicar, validar, não contradizer). Smokes node AF-01..09. Schema-parity atualizado pra 30 tabelas PG com `PG_ONLY_TABLES` set excluindo as 2 novas da cobertura GRDB. |
+| 199 | feat | **MS-16.5a** | `EngControlModel` + `EngineeringDecisionPolicy` (domain puro, sem UIKit). Slider/knob/toggle com clamp + snap + permission gating (D17 fechada). Transitions pendente→aprovada/editada/rejeitada com regras D8. Smokes ECM-01..12. **Views SwiftUI ficam pra MS-16.5b** (precisa Xcode). |
+
+**Totais nesta sessão:** ~4.600 linhas Swift + JS novas. 67 testes automáticos novos verdes. 6 PRs (1 docs + 5 código), todos squash-merged em sequência (#194 → 0bdafd9, #195 → b84a2a9, #196 → 639ec1e, #197 → 57c552a, #198 → 430d151, #199 → 2ee12a3).
+
+**Decisões fechadas 2026-05-13 (7):**
+- **D1** — Aprovar MS-16 como novo mini-sprint
+- **D2+D3** — UI = iOS Box Mode → AirPlay → Apple TV → TV 32" + Cockpit Pilot 10,5" como canal contextual. Notebook fica kiosk; operação só pelos iPhones (chefe + engenheiro + piloto, cada um no seu)
+- **D6** — Catálogo MVP = 3 rules (fuel-lean, water-drift, vmin-loss)
+- **D14** — Heurística carro parado/andando absorvida por D18
+- **D17** — Piloto edita/simula no celular só com carro parado; chefe + engenheiro livres a qualquer momento
+- **D18** — Switch padrão piloto ↔ engenharia no Cockpit Pilot é **automático** via `cockpitModeResolver`: `(modulo_engenharia_ativado) AND (carro_parado)` → padrão ENGENHARIA; resto → padrão PILOTO; voltar a andar força PILOTO imediato
+
+**Decisões abertas (13):** D4 (granularidade célula), D5 (mapa ECU upload — pular no MVP), D7 (confiança mínima recommendation — default `Média` no código), D8 (RLS UPDATE refinado por papel), D9 (Realtime cross-device decisão), D10 (pilotagem×mecânica), D11 (IA→piloto), D12 (calibração Celta), D13 (simulação sem mapa real), D15 (catálogo overlays Cockpit Pilot), D16 (publishers canal), D19 (latência ~250ms slider→propagação), D20 (onde persistir flag módulo engenharia). Nenhuma bloqueia o caminho.
+
+**Pendências do Flávio (fora do escopo do Claude):**
+- Aplicar migrations `0020_engineering_findings.sql` + `0021_engineering_recommendations.sql` em prod via `supabase db push`. Versionadas em main mas NÃO aplicadas.
+- MS-16.5b (Views SwiftUI) quando Xcode aberto — toda lógica de domain já em main.
+
+**Próximo passo concreto (pós-/clear):** Ver `docs/SESSION_HANDOFF_2026-05-13_pre-clear.md`.
 
 ---
 
