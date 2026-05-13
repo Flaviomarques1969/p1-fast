@@ -253,6 +253,14 @@ private struct ReadyRoot: View {
                 await trackRepo.bootstrap()
                 await licaoRepo.bootstrap()
                 await pendenciaRepo.bootstrap()
+                // S3-ajuste 2026-05-12: cria massa de teste fictícia
+                // pra alimentar as 4 telas novas (Stints/Voltas/Autódromos
+                // /Recordes). Idempotente — só cria na 1ª vez. Pra
+                // limpar quando entrar em produção real:
+                //   SeedMassaTestes.limparMassaTestes(queue:)
+                await SeedMassaTestes.criarSeFaltar(queue: queue)
+                // Recarrega caches pra que carros novos apareçam.
+                await carroRepo.bootstrap()
                 // Sprint E.1: enfileira retroativamente rows com
                 // synced_at IS NULL que vieram de versões anteriores
                 // (carros/eventos criados antes do fix de enqueue nos

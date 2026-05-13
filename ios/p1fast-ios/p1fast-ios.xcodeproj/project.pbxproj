@@ -33,6 +33,7 @@
 		6CB8E27D9F45A1234B5D6789 /* VoltaDetalheView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AC1ED9F8B26D3FE45CF12AB /* VoltaDetalheView.swift */; };
 		9DA2F1B3C4E5678901234567 /* EventoExtraRepositories.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B6E789012345ABCDEF01234 /* EventoExtraRepositories.swift */; };
 		B1F3CD9876543210FEDCBA12 /* RelatoriosViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9D8C7B6A5432109876543A1 /* RelatoriosViews.swift */; };
+		C2A4DE9876543210FED1234B /* SeedMassaTestes.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0C9D8E7B6A54321FEDCBA34 /* SeedMassaTestes.swift */; };
 		5CBE1D9A72234BA686D91FC2 /* LocalSocketCockpitTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7760050F2387452F91FAD163 /* LocalSocketCockpitTransport.swift */; };
 		5E4293E8007960583EF0C9F6 /* PassageiroCadastroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 929E850CB75095F3CADEF4B6 /* PassageiroCadastroView.swift */; };
 		5F5D9D3E8629E83D6CD0E261 /* EventoRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D475C80F681ED1F05FC53B5 /* EventoRepository.swift */; };
@@ -108,6 +109,7 @@
 		7AC1ED9F8B26D3FE45CF12AB /* VoltaDetalheView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoltaDetalheView.swift; sourceTree = "<group>"; };
 		4B6E789012345ABCDEF01234 /* EventoExtraRepositories.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventoExtraRepositories.swift; sourceTree = "<group>"; };
 		E9D8C7B6A5432109876543A1 /* RelatoriosViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelatoriosViews.swift; sourceTree = "<group>"; };
+		F0C9D8E7B6A54321FEDCBA34 /* SeedMassaTestes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeedMassaTestes.swift; sourceTree = "<group>"; };
 		334E323E30AB4D759B43CCD6 /* CombustivelListaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombustivelListaView.swift; sourceTree = "<group>"; };
 		3FBA0DEE7AB4736707796F45 /* LicaoRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicaoRepository.swift; sourceTree = "<group>"; };
 		4251545DEF1F73BD4CF7690E /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -338,6 +340,7 @@
 			children = (
 				2285A445626E15C137E07CCA /* CarroRepository.swift */,
 				4B6E789012345ABCDEF01234 /* EventoExtraRepositories.swift */,
+				F0C9D8E7B6A54321FEDCBA34 /* SeedMassaTestes.swift */,
 				C76C98240888EE064C4D2EC5 /* CarroSetupOverrides.swift */,
 				EC43A445C874747C1D6C3A8D /* CombustivelRepository.swift */,
 				4D475C80F681ED1F05FC53B5 /* EventoRepository.swift */,
@@ -465,6 +468,7 @@
 				BF1BC3D206E1BFE771A190FE /* CarroRepository.swift in Sources */,
 				9DA2F1B3C4E5678901234567 /* EventoExtraRepositories.swift in Sources */,
 				B1F3CD9876543210FEDCBA12 /* RelatoriosViews.swift in Sources */,
+				C2A4DE9876543210FED1234B /* SeedMassaTestes.swift in Sources */,
 				4A50FE8B113FA568C5955E0A /* CarroSetupOverrides.swift in Sources */,
 				9E8DC084A44D5CF5DEFDB5AA /* Chip.swift in Sources */,
 				356C87BA35F17C3FAF721842 /* CombustivelCadastroView.swift in Sources */,
