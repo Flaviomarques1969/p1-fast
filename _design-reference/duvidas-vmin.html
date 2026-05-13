@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vmin — gráfico, número, indicador (P1 Fast)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(20% 0.005 240);
+  --bg-2: oklch(18% 0.005 240);
+  --surface: oklch(24% 0.005 240);
+  --surface-2: oklch(28% 0.005 240);
+  --hairline: oklch(33% 0.005 240);
+  --text: oklch(95% 0.003 240);
+  --text-2: oklch(75% 0.01 240);
+  --text-3: oklch(58% 0.012 240);
+  --accent: oklch(78% 0.13 235);
+  --accent-soft: oklch(82% 0.10 235 / .15);
+  --gold: oklch(78% 0.12 80);
+  --good: oklch(72% 0.12 155);
+  --bad: oklch(68% 0.18 25);
+  --orange: oklch(75% 0.15 60);
+  --radius: 12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{
+  min-height:100dvh;
+  background:linear-gradient(160deg, oklch(22% 0.005 240) 0%, oklch(18% 0.005 240) 100%);
+  color:var(--text);font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;font-weight:400;line-height:1.55;
+}
+body{padding:0 0 96px;}
+.wrap{max-width:1040px;margin:0 auto;padding:0 28px;}
+
+.export-bar{
+  position:sticky;top:0;z-index:50;
+  background:rgba(18,20,28,0.92);
+  border-bottom:1px solid var(--hairline);
+  padding:14px 28px;margin:0 -28px 28px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  backdrop-filter:saturate(140%) blur(10px);
+}
+.progress{
+  font-size:13px;color:var(--text-2);
+  font-variant-numeric:tabular-nums;margin-right:auto;
+  display:flex;align-items:center;gap:10px;
+}
+.progress strong{color:var(--text);font-weight:600;}
+.progress-bar{width:120px;height:4px;background:var(--hairline);border-radius:2px;overflow:hidden;}
+.progress-bar-fill{height:100%;background:var(--good);width:0;transition:width .3s;}
+.export-bar button{
+  background:var(--accent);color:var(--bg);
+  border:none;border-radius:6px;padding:10px 16px;
+  font-family:inherit;font-size:13px;font-weight:600;
+  letter-spacing:.04em;cursor:pointer;transition:filter .15s;
+}
+.export-bar button:hover{filter:brightness(1.08);}
+.export-bar button.secondary{
+  background:transparent;color:var(--text-2);
+  border:1px solid var(--hairline);
+}
+.export-bar button.secondary:hover{border-color:var(--text-3);color:var(--text);}
+.save-status{
+  font-size:11px;color:var(--good);opacity:0;
+  transition:opacity .2s;font-variant-numeric:tabular-nums;
+  letter-spacing:.05em;text-transform:uppercase;
+}
+.save-status.visible{opacity:1;}
+
+header.head{
+  border-bottom:1px solid var(--hairline);
+  padding:32px 0 28px;margin-bottom:28px;
+}
+.eyebrow{
+  font-size:11px;font-weight:600;letter-spacing:.18em;
+  color:var(--text-3);text-transform:uppercase;margin-bottom:14px;
+}
+h1{font-size:30px;line-height:1.15;font-weight:600;letter-spacing:-.01em;margin-bottom:12px;}
+.lead{color:var(--text-2);font-size:15px;max-width:780px;}
+.lead strong{color:var(--text);font-weight:500;}
+.lead em{color:var(--gold);font-style:normal;}
+
+section{margin-bottom:36px;scroll-margin-top:80px;}
+section h2{
+  font-size:18px;font-weight:600;color:var(--text);
+  margin-bottom:6px;
+  display:flex;align-items:baseline;gap:12px;
+}
+section h2 .qid{color:var(--accent);font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;letter-spacing:.04em;}
+section .subtitle{
+  color:var(--text-2);font-size:14px;margin-bottom:18px;line-height:1.55;
+}
+
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:14px;
+  margin-bottom:14px;
+}
+.card{
+  position:relative;
+  background:var(--surface);border:1px solid var(--hairline);
+  border-radius:var(--radius);padding:18px 20px 16px;
+  cursor:pointer;
+  transition:border-color .15s, background .15s;
+  user-select:none;
+  display:flex;flex-direction:column;gap:10px;
+}
+.card:hover{ border-color:var(--text-3); background:var(--surface-2); }
+.card.selected{
+  border-color:var(--accent);
+  background:linear-gradient(180deg, var(--accent-soft), var(--surface-2));
+}
+.card.selected::before{
+  content:"";position:absolute;left:-1px;top:18px;bottom:18px;width:3px;
+  background:var(--accent);border-radius:2px;
+}
+.card .opt-letter{
+  font-size:11px;font-weight:600;letter-spacing:.18em;
+  color:var(--text-3);text-transform:uppercase;
+}
+.card.selected .opt-letter{ color:var(--accent); }
+.card .opt-title{
+  font-size:16px;font-weight:600;color:var(--text);
+  letter-spacing:-.01em;
+}
+.card .opt-desc{
+  font-size:13px;color:var(--text-2);line-height:1.55;
+}
+.card .opt-pros{
+  font-size:12px;color:var(--good);
+  display:flex;align-items:flex-start;gap:6px;
+}
+.card .opt-cons{
+  font-size:12px;color:var(--bad);
+  display:flex;align-items:flex-start;gap:6px;
+}
+.card .opt-pros::before{ content:"+"; font-weight:700; }
+.card .opt-cons::before{ content:"−"; font-weight:700; }
+
+.preview{
+  background:var(--bg-2);border:1px solid var(--hairline);
+  border-radius:8px;padding:10px;
+  height:120px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:4px;
+}
+.preview svg{ display:block;width:100%;height:100%; }
+
+.explica{
+  margin-top:12px;
+}
+.explica textarea{
+  width:100%;min-height:60px;
+  background:var(--bg-2);border:1px solid var(--hairline);
+  color:var(--text);padding:10px 12px;border-radius:8px;
+  font:inherit;font-size:13px;line-height:1.5;
+  resize:vertical;
+}
+.explica textarea:focus{ outline:none;border-color:var(--accent); }
+.explica label{
+  font-size:11px;color:var(--text-3);
+  letter-spacing:.10em;text-transform:uppercase;
+  margin-bottom:6px;display:block;
+}
+
+.help{
+  background:var(--bg-2);border:1px solid var(--hairline);
+  border-radius:8px;padding:14px 18px;margin-bottom:24px;
+  font-size:13px;color:var(--text-2);
+}
+.help strong{color:var(--text);}
+
+</style>
+</head>
+<body>
+
+<div class="export-bar">
+  <div class="wrap" style="display:flex;align-items:center;gap:14px;flex:1;flex-wrap:wrap;padding:0;">
+    <div class="progress">
+      <strong id="progressTxt">0/3</strong> respondidos
+      <div class="progress-bar"><div class="progress-bar-fill" id="progressFill"></div></div>
+    </div>
+    <span class="save-status" id="saveStatus">salvo</span>
+    <button class="secondary" onclick="resetAll()">resetar</button>
+    <button onclick="copyAnswers()">copiar respostas</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header class="head">
+  <div class="eyebrow">P1 Fast · vista piloto · command box · vmin</div>
+  <h1>Vmin — gráfico, número, indicador</h1>
+  <p class="lead">
+    3 decisões pra fechar o bloco de Vmin. <strong>Clique no card</strong> pra escolher a opção
+    de cada pergunta. Pode escrever explicação livre se nenhuma servir.
+  </p>
+</header>
+
+<div class="help">
+  <strong>Cada pergunta tem uma resposta só.</strong> Click outra opção pra trocar. Auto-salvo no localStorage. Quando fechar, clica <em>copiar respostas</em>.
+</div>
+
+<!-- ─────────── PERGUNTA 1 — GRÁFICO ─────────── -->
+<section data-q="grafico">
+  <h2><span class="qid">Q1</span> Qual gráfico melhor representa o Vmin?</h2>
+  <p class="subtitle">
+    O gráfico ocupa o espaço central do bloco. Tem que ser legível na TV de longe e capturar o
+    que importa: valor, posição (relativa ao apex) e shape (rapidinho ou prolongado).
+  </p>
+  <div class="cards" data-cards>
+
+    <div class="card" data-val="A">
+      <div class="preview">
+        <svg viewBox="0 0 240 100" preserveAspectRatio="none">
+          <line x1="20" y1="80" x2="220" y2="80" stroke="rgba(212,175,55,0.15)" stroke-width="0.6"/>
+          <line x1="120" y1="20" x2="120" y2="85" stroke="rgba(212,175,55,0.10)" stroke-width="0.4" stroke-dasharray="2 2"/>
+          <text x="120" y="95" text-anchor="middle" fill="rgba(212,175,55,0.55)" font-size="7">apex</text>
+          <path d="M 20 30 Q 60 35 90 50 T 120 70 Q 140 60 170 45 T 220 25" fill="none" stroke="oklch(78% 0.13 60)" stroke-width="2" stroke-linecap="round"/>
+          <path d="M 20 32 Q 65 38 95 55 T 125 75 Q 145 65 175 50 T 220 28" fill="none" stroke="oklch(78% 0.13 235)" stroke-width="1.4" stroke-dasharray="3 3" opacity="0.75"/>
+          <circle cx="120" cy="70" r="2.5" fill="oklch(78% 0.13 60)"/>
+          <text x="225" y="22" fill="oklch(78% 0.13 60)" font-size="6">vc</text>
+          <text x="225" y="32" fill="oklch(78% 0.13 235)" font-size="6">ideal</text>
+        </svg>
+      </div>
+      <div class="opt-letter">opção A</div>
+      <div class="opt-title">Curva de velocidade pelo corner</div>
+      <div class="opt-desc">U-shape mostrando velocidade da entrada à saída. Bottom da curva = Vmin. Posição-x do bottom = posição relativa ao apex.</div>
+      <div class="opt-pros">captura valor + posição + shape em 1 visual</div>
+      <div class="opt-cons">parcialmente redundante com brake graph</div>
+    </div>
+
+    <div class="card" data-val="B">
+      <div class="preview">
+        <svg viewBox="0 0 240 100" preserveAspectRatio="none">
+          <rect x="20" y="42" width="60" height="16" fill="oklch(68% 0.18 25 / 0.30)" stroke="oklch(68% 0.18 25 / 0.50)" stroke-width="0.5"/>
+          <rect x="80" y="42" width="80" height="16" fill="oklch(72% 0.12 155 / 0.30)" stroke="oklch(72% 0.12 155 / 0.50)" stroke-width="0.5"/>
+          <rect x="160" y="42" width="60" height="16" fill="oklch(68% 0.18 25 / 0.30)" stroke="oklch(68% 0.18 25 / 0.50)" stroke-width="0.5"/>
+          <text x="50" y="35" text-anchor="middle" fill="oklch(68% 0.18 25)" font-size="7">baixo</text>
+          <text x="120" y="35" text-anchor="middle" fill="oklch(72% 0.12 155)" font-size="7">no ponto</text>
+          <text x="190" y="35" text-anchor="middle" fill="oklch(68% 0.18 25)" font-size="7">alto</text>
+          <line x1="120" y1="38" x2="120" y2="62" stroke="oklch(78% 0.13 235)" stroke-width="1" stroke-dasharray="2 2"/>
+          <text x="120" y="72" text-anchor="middle" fill="oklch(78% 0.13 235)" font-size="6">ideal</text>
+          <circle cx="148" cy="50" r="4" fill="oklch(78% 0.13 60)" stroke="white" stroke-width="0.6"/>
+          <text x="148" y="89" text-anchor="middle" fill="oklch(78% 0.13 60)" font-size="7">87 km/h</text>
+        </svg>
+      </div>
+      <div class="opt-letter">opção B</div>
+      <div class="opt-title">Bullet chart horizontal</div>
+      <div class="opt-desc">Barra com zonas BAIXO | NO PONTO | ALTO + dot do live + ghost de referência. Glanceable em 1 olhada.</div>
+      <div class="opt-pros">super simples, 0 ambiguidade</div>
+      <div class="opt-cons">perde posição no corner e shape</div>
+    </div>
+
+    <div class="card" data-val="C">
+      <div class="preview">
+        <svg viewBox="0 0 240 100" preserveAspectRatio="none">
+          <line x1="20" y1="50" x2="220" y2="50" stroke="rgba(212,175,55,0.30)" stroke-width="0.8"/>
+          <line x1="120" y1="20" x2="120" y2="80" stroke="rgba(212,175,55,0.30)" stroke-width="1"/>
+          <text x="120" y="92" text-anchor="middle" fill="rgba(212,175,55,0.55)" font-size="8" font-weight="600">apex</text>
+          <text x="20" y="92" text-anchor="start" fill="rgba(212,175,55,0.40)" font-size="6">−10m</text>
+          <text x="220" y="92" text-anchor="end" fill="rgba(212,175,55,0.40)" font-size="6">+10m</text>
+          <line x1="120" y1="44" x2="120" y2="56" stroke="rgba(212,175,55,0.50)" stroke-width="0.6"/>
+          <circle cx="120" cy="50" r="3.5" fill="oklch(78% 0.13 235)" stroke="oklch(78% 0.13 235)" stroke-dasharray="2 2" stroke-width="0.6" fill-opacity="0.5"/>
+          <circle cx="155" cy="50" r="4.5" fill="oklch(78% 0.13 60)"/>
+          <text x="155" y="38" text-anchor="middle" fill="oklch(78% 0.13 60)" font-size="7">+3m</text>
+          <text x="155" y="68" text-anchor="middle" fill="oklch(78% 0.13 60)" font-size="6">vc</text>
+          <text x="120" y="38" text-anchor="middle" fill="oklch(78% 0.13 235)" font-size="6">ideal</text>
+        </svg>
+      </div>
+      <div class="opt-letter">opção C</div>
+      <div class="opt-title">Offset do apex (1D)</div>
+      <div class="opt-desc">Mostra só onde o Vmin caiu relativo ao apex (em metros). Live (laranja) vs Ghost (azul).</div>
+      <div class="opt-pros">específico pra posição (que B perde)</div>
+      <div class="opt-cons">perde valor absoluto e shape</div>
+    </div>
+
+    <div class="card" data-val="other">
+      <div class="opt-letter">opção D</div>
+      <div class="opt-title">Outro / nenhuma das anteriores</div>
+      <div class="opt-desc">Se você imagina algo diferente, escreve no campo abaixo.</div>
+    </div>
+
+  </div>
+  <div class="explica">
+    <label>Explicar (opcional)</label>
+    <textarea data-explica="grafico" placeholder="Comentário, ressalvas, ou outro tipo de gráfico que prefere."></textarea>
+  </div>
+</section>
+
+<!-- ─────────── PERGUNTA 2 — NÚMERO PRIMÁRIO ─────────── -->
+<section data-q="numero">
+  <h2><span class="qid">Q2</span> Qual o número primário (o "hero number")?</h2>
+  <p class="subtitle">
+    Aquele número grande que o piloto bate o olho e entende. Tem que dizer mais com 1 olhada.
+  </p>
+  <div class="cards" data-cards>
+
+    <div class="card" data-val="absoluto">
+      <div class="preview">
+        <svg viewBox="0 0 240 100" preserveAspectRatio="none">
+          <text x="120" y="55" text-anchor="middle" fill="oklch(95% 0.003 240)" font-size="36" font-weight="200">87</text>
+          <text x="180" y="55" text-anchor="start" fill="oklch(75% 0.01 240)" font-size="14">km/h</text>
+          <text x="120" y="80" text-anchor="middle" fill="oklch(58% 0.012 240)" font-size="9" letter-spacing="0.1em">ALVO 89</text>
+        </svg>
+      </div>
+      <div class="opt-letter">opção A</div>
+      <div class="opt-title">Vmin absoluto</div>
+      <div class="opt-desc">"87 km/h" grande + alvo do ghost pequenininho. Direto: mostra o valor, deixa o piloto comparar mentalmente.</div>
+      <div class="opt-pros">tangível, mesmo sem referência funciona</div>
+      <div class="opt-cons">comparação fica na cabeça do piloto</div>
+    </div>
+
+    <div class="card" data-val="delta">
+      <div class="preview">
+        <svg viewBox="0 0 240 100" preserveAspectRatio="none">
+          <text x="120" y="55" text-anchor="middle" fill="oklch(68% 0.18 25)" font-size="36" font-weight="300">+2</text>
+          <text x="170" y="55" text-anchor="start" fill="oklch(75% 0.01 240)" font-size="14">km/h</text>
+          <text x="120" y="80" text-anchor="middle" fill="oklch(58% 0.012 240)" font-size="9" letter-spacing="0.1em">87 · GH 89</text>
+        </svg>
+      </div>
+      <div class="opt-letter">opção B</div>
+      <div class="opt-title">Delta vs ghost (com sinal)</div>
+      <div class="opt-desc">"+2 km/h" grande, colorido (vermelho = ALTO, verde = BAIXO ou IGUAL). Vmin absoluto + ghost no subtítulo.</div>
+      <div class="opt-pros">comparação imediata, sem fazer conta</div>
+      <div class="opt-cons">"+2 km/h" pode confundir (alto = pior, contraintuitivo)</div>
+    </div>
+
+    <div class="card" data-val="ambos">
+      <div class="preview">
+        <svg viewBox="0 0 240 100" preserveAspectRatio="none">
+          <text x="80" y="55" text-anchor="middle" fill="oklch(95% 0.003 240)" font-size="32" font-weight="200">87</text>
+          <text x="125" y="55" text-anchor="start" fill="oklch(75% 0.01 240)" font-size="11">km/h</text>
+          <text x="180" y="46" text-anchor="middle" fill="oklch(68% 0.18 25)" font-size="16" font-weight="400">+2</text>
+          <text x="180" y="62" text-anchor="middle" fill="oklch(58% 0.012 240)" font-size="8" letter-spacing="0.1em">vs gh</text>
+          <text x="120" y="86" text-anchor="middle" fill="oklch(58% 0.012 240)" font-size="9" letter-spacing="0.1em">ALVO 89</text>
+        </svg>
+      </div>
+      <div class="opt-letter">opção C</div>
+      <div class="opt-title">Vmin grande + delta lateral</div>
+      <div class="opt-desc">Vmin absoluto domina, delta aparece como secundário lateral colorido. Tem o melhor dos dois mundos.</div>
+      <div class="opt-pros">tudo visível, sem trade-off</div>
+      <div class="opt-cons">2 elementos = mais complexo (foge da regra "1 número")</div>
+    </div>
+
+    <div class="card" data-val="other">
+      <div class="opt-letter">opção D</div>
+      <div class="opt-title">Outro / nenhuma das anteriores</div>
+      <div class="opt-desc">Se você imagina outro formato, escreve abaixo.</div>
+    </div>
+
+  </div>
+  <div class="explica">
+    <label>Explicar (opcional)</label>
+    <textarea data-explica="numero" placeholder="Comentário ou outra forma do número."></textarea>
+  </div>
+</section>
+
+<!-- ─────────── PERGUNTA 3 — VEREDICTOS ─────────── -->
+<section data-q="veredictos">
+  <h2><span class="qid">Q3</span> Quantos veredictos pro indicador?</h2>
+  <p class="subtitle">
+    O badge que aparece embaixo do gráfico. Quantas categorias bastam pra cobrir os casos sem virar enciclopédia?
+  </p>
+  <div class="cards" data-cards>
+
+    <div class="card" data-val="4">
+      <div class="opt-letter">opção A</div>
+      <div class="opt-title">4 essenciais</div>
+      <div class="opt-desc">
+        <strong style="color:oklch(72% 0.12 155)">NO PONTO</strong> · <strong style="color:oklch(68% 0.18 25)">ALTO</strong> · <strong style="color:oklch(68% 0.18 25)">BAIXO</strong> · <strong style="color:oklch(75% 0.15 60)">FORA DO APEX</strong>
+        <br><br>
+        FORA DO APEX agrupa tanto antecipou quanto atrasou — é só "Vmin não caiu no lugar certo".
+      </div>
+      <div class="opt-pros">simples, fácil de absorver no cockpit</div>
+      <div class="opt-cons">FORA DO APEX é genérico (não diz qual lado)</div>
+    </div>
+
+    <div class="card" data-val="6">
+      <div class="opt-letter">opção B</div>
+      <div class="opt-title">6 completo</div>
+      <div class="opt-desc">
+        <strong style="color:oklch(72% 0.12 155)">NO PONTO</strong> · <strong style="color:oklch(72% 0.12 155)">PERFEITO</strong> · <strong style="color:oklch(68% 0.18 25)">ALTO</strong> · <strong style="color:oklch(68% 0.18 25)">BAIXO</strong> · <strong style="color:oklch(75% 0.15 60)">ANTECIPOU</strong> · <strong style="color:oklch(75% 0.15 60)">ATRASOU</strong>
+        <br><br>
+        Separa antecipou (Vmin antes do apex) de atrasou (depois) e adiciona PERFEITO (Vmin igual ou melhor que ghost).
+      </div>
+      <div class="opt-pros">mais preciso, dá direção certa pro coach</div>
+      <div class="opt-cons">mais palavra na cabeça do piloto ao vivo</div>
+    </div>
+
+    <div class="card" data-val="5">
+      <div class="opt-letter">opção C</div>
+      <div class="opt-title">5 (drop "PERFEITO")</div>
+      <div class="opt-desc">
+        <strong style="color:oklch(72% 0.12 155)">NO PONTO</strong> · <strong style="color:oklch(68% 0.18 25)">ALTO</strong> · <strong style="color:oklch(68% 0.18 25)">BAIXO</strong> · <strong style="color:oklch(75% 0.15 60)">ANTECIPOU</strong> · <strong style="color:oklch(75% 0.15 60)">ATRASOU</strong>
+        <br><br>
+        Mantém a separação antecipou/atrasou mas une "no ponto" e "perfeito" em um só (Vmin no ritmo).
+      </div>
+      <div class="opt-pros">balanceado, posição é informativa</div>
+      <div class="opt-cons">média termo</div>
+    </div>
+
+    <div class="card" data-val="other">
+      <div class="opt-letter">opção D</div>
+      <div class="opt-title">Outra combinação</div>
+      <div class="opt-desc">Se prefere outro conjunto, escreve abaixo.</div>
+    </div>
+
+  </div>
+  <div class="explica">
+    <label>Explicar (opcional)</label>
+    <textarea data-explica="veredictos" placeholder="Lista alternativa, ou comentário sobre as opções."></textarea>
+  </div>
+</section>
+
+</div>
+
+<script>
+var QUESTIONS = ['grafico','numero','veredictos'];
+var KEY = 'p1fast.duvidas.vmin.v1';
+var state = loadState();
+var saveStatus = document.getElementById('saveStatus');
+var progressTxt = document.getElementById('progressTxt');
+var progressFill = document.getElementById('progressFill');
+var saveTimeout = null;
+
+function loadState(){
+  try{
+    var raw = localStorage.getItem(KEY);
+    if(!raw) return defaultState();
+    var s = JSON.parse(raw);
+    QUESTIONS.forEach(function(q){
+      if(!s[q]) s[q] = { val:null, explica:'' };
+    });
+    return s;
+  }catch(e){ return defaultState(); }
+}
+function defaultState(){
+  var s = {};
+  QUESTIONS.forEach(function(q){ s[q] = { val:null, explica:'' }; });
+  return s;
+}
+function save(){
+  try{
+    localStorage.setItem(KEY, JSON.stringify(state));
+    saveStatus.textContent = 'salvo';
+    saveStatus.classList.add('visible');
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(function(){ saveStatus.classList.remove('visible'); }, 1500);
+  }catch(e){}
+  updateProgress();
+}
+function updateProgress(){
+  var done = 0;
+  QUESTIONS.forEach(function(q){
+    if(state[q] && state[q].val) done++;
+  });
+  progressTxt.innerHTML = '<strong>'+done+'/'+QUESTIONS.length+'</strong>';
+  progressFill.style.width = (done/QUESTIONS.length*100)+'%';
+}
+
+function render(){
+  QUESTIONS.forEach(function(q){
+    var section = document.querySelector('section[data-q="'+q+'"]');
+    if(!section) return;
+    var cards = section.querySelectorAll('[data-val]');
+    cards.forEach(function(c){
+      c.classList.toggle('selected', state[q].val === c.dataset.val);
+    });
+    var ta = section.querySelector('textarea[data-explica="'+q+'"]');
+    if(ta) ta.value = state[q].explica || '';
+  });
+  updateProgress();
+}
+
+document.querySelectorAll('section[data-q]').forEach(function(section){
+  var q = section.dataset.q;
+  section.addEventListener('click', function(e){
+    var card = e.target.closest('[data-val]');
+    if(!card) return;
+    if(e.target.closest('textarea')) return;
+    state[q].val = card.dataset.val;
+    save();
+    render();
+  });
+  var ta = section.querySelector('textarea[data-explica="'+q+'"]');
+  if(ta){
+    ta.addEventListener('input', function(){
+      state[q].explica = ta.value;
+      save();
+    });
+  }
+});
+
+function resetAll(){
+  if(!confirm('Resetar todas as respostas?')) return;
+  state = defaultState();
+  save();
+  render();
+}
+
+function copyAnswers(){
+  var labels = {
+    grafico: {
+      A:'Curva de velocidade pelo corner',
+      B:'Bullet chart horizontal',
+      C:'Offset do apex (1D)',
+      other:'Outro'
+    },
+    numero: {
+      absoluto:'Vmin absoluto',
+      delta:'Delta vs ghost',
+      ambos:'Vmin grande + delta lateral',
+      other:'Outro'
+    },
+    veredictos: {
+      '4':'4 essenciais (NO PONTO / ALTO / BAIXO / FORA DO APEX)',
+      '6':'6 completo (NO PONTO / PERFEITO / ALTO / BAIXO / ANTECIPOU / ATRASOU)',
+      '5':'5 sem PERFEITO (NO PONTO / ALTO / BAIXO / ANTECIPOU / ATRASOU)',
+      other:'Outro'
+    }
+  };
+  var out = {
+    versao: 'duvidas-vmin-v1',
+    data: new Date().toISOString(),
+    respostas: {}
+  };
+  QUESTIONS.forEach(function(q){
+    var s = state[q];
+    out.respostas[q] = {
+      escolha: s.val,
+      escolha_label: s.val ? labels[q][s.val] : null,
+      explica: s.explica || ''
+    };
+  });
+  var txt = JSON.stringify(out, null, 2);
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){
+      saveStatus.textContent = 'copiado';
+      saveStatus.classList.add('visible');
+      setTimeout(function(){ saveStatus.classList.remove('visible'); }, 2500);
+    });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = txt; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    saveStatus.textContent = 'copiado';
+    saveStatus.classList.add('visible');
+    setTimeout(function(){ saveStatus.classList.remove('visible'); }, 2500);
+  }
+}
+
+render();
+</script>
+
+</body>
+</html>

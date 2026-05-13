@@ -566,6 +566,55 @@ body{
 .stint-bar__block.is-current{
   background:var(--foco);box-shadow:0 0 12px 0 oklch(82% 0.19 70 / .6);
 }
+
+/* PARADA NO BOX planejada (decisão Flávio 2026-05-10) — slot inserido
+   entre voltas indicando que após volta i o piloto volta ao box.
+   Estado padrão: cinza neutro · is-pit-now: piscando branco quando current === parada
+   is-pit-done: parada já passou (opacity reduzida). */
+.stint-bar__block.is-pit{
+  flex:0 0 22px;
+  background:linear-gradient(180deg, oklch(78% 0.005 240 / .35), oklch(50% 0.005 240 / .25));
+  border:1px solid oklch(85% 0.005 240 / .45);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--ff-mono);font-size:7px;font-weight:700;
+  letter-spacing:.10em;color:oklch(98% 0.005 240 / .85);
+  text-transform:uppercase;height:14px;
+  text-shadow:0 0 3px oklch(0% 0 0 / .85);
+}
+.stint-bar__block.is-pit-done{
+  opacity:.45;
+  filter:grayscale(.35);
+}
+.stint-bar__block.is-pit-now{
+  border:1.5px solid #FFFFFF;
+  animation: pit-flash 700ms ease-in-out infinite;
+  z-index:6;
+}
+@keyframes pit-flash{
+  0%,100%{
+    background:linear-gradient(180deg, oklch(80% 0.005 240 / .50), oklch(55% 0.005 240 / .35));
+    color:oklch(98% 0.005 240 / .95);
+    box-shadow:0 0 0 0 oklch(98% 0 0 / 0);
+  }
+  50%{
+    background:#FFFFFF;
+    color:#0E1116;
+    box-shadow:0 0 14px 3px oklch(98% 0 0 / .65),
+               inset 0 0 6px oklch(98% 0 0 / .40);
+  }
+}
+
+/* Tipo "box" da mensagem (alert-bloco) — fundo cinza/branco com glyph alerta. */
+.alert-bloco[data-tipo="box"]{
+  background:linear-gradient(135deg, oklch(85% 0.005 240 / .25), oklch(60% 0.005 240 / .35));
+  border:1.5px solid oklch(95% 0 0 / .85);
+  color:oklch(98% 0 0 / .95);
+}
+.alert-bloco[data-tipo="box"] .alert__msg{
+  color:oklch(98% 0 0 / .95);
+  text-shadow:0 0 8px oklch(98% 0 0 / .50);
+  letter-spacing:.10em;
+}
 @keyframes alltimeBloom{
   0%,100%{box-shadow:
     0 0 18px 0 oklch(74% 0.16 73 / .8),
@@ -682,15 +731,20 @@ body{
       <div class="alert__msg" id="alertMsg">Pneu DD acima da janela</div>
     </aside>
 
+    <!-- Stint bar: 12 voltas + 3 paradas planejadas no box (após 3, 6 e 8).
+         Volta atual = 8 → parada após 8 está piscando (is-pit-now). -->
     <div class="stint-bar">
       <div class="stint-bar__block is-neutral"></div>
       <div class="stint-bar__block is-faster"></div>
       <div class="stint-bar__block is-slower"></div>
+      <div class="stint-bar__block is-pit is-pit-done">box</div>
       <div class="stint-bar__block is-faster"></div>
       <div class="stint-bar__block is-slower"></div>
       <div class="stint-bar__block is-best-stint"></div>
+      <div class="stint-bar__block is-pit is-pit-done">box</div>
       <div class="stint-bar__block is-best-alltime"></div>
       <div class="stint-bar__block is-current"></div>
+      <div class="stint-bar__block is-pit is-pit-now">box</div>
       <div class="stint-bar__block"></div>
       <div class="stint-bar__block"></div>
       <div class="stint-bar__block"></div>
@@ -723,6 +777,7 @@ body{
     <button class="controls__btn" id="btnAuto" data-action="auto">Auto-loop (4s)</button>
     <button class="controls__btn" id="btnComm" data-action="comunicacao">Comunicação · sai em 4s</button>
     <button class="controls__btn" id="btnGrave" data-action="grave">Grave · fica até resolver</button>
+    <button class="controls__btn" id="btnBox" data-action="box">Box · volta agora</button>
     <button class="controls__btn" id="btnHide" data-action="ocultar">Ocultar</button>
   </div>
 
@@ -761,6 +816,7 @@ const alertMsg = document.getElementById('alertMsg');
 const btnAuto = document.getElementById('btnAuto');
 const btnComm = document.getElementById('btnComm');
 const btnGrave = document.getElementById('btnGrave');
+const btnBox = document.getElementById('btnBox');
 const btnHide = document.getElementById('btnHide');
 
 let autoTimer = null;
@@ -772,6 +828,8 @@ function setMessage(tipo){
     alertMsg.textContent = 'Pneu DD acima da janela';
   } else if(tipo === 'grave'){
     alertMsg.textContent = 'Pressão óleo crítica';
+  } else if(tipo === 'box'){
+    alertMsg.textContent = 'VOLTAR AO BOX AGORA';
   }
   device.dataset.msgState = 'ativa';
   if(commTimer) clearTimeout(commTimer);
@@ -786,7 +844,7 @@ function hideMessage(){
   device.dataset.msgState = 'oculta';
 }
 function clearActive(){
-  [btnAuto, btnComm, btnGrave, btnHide].forEach(b => b.classList.remove('is-active'));
+  [btnAuto, btnComm, btnGrave, btnBox, btnHide].forEach(b => b.classList.remove('is-active'));
 }
 function startAutoLoop(){
   if(autoTimer) clearInterval(autoTimer);
@@ -826,6 +884,12 @@ btnGrave.addEventListener('click', () => {
   clearActive();
   btnGrave.classList.add('is-active');
   setMessage('grave');
+});
+btnBox.addEventListener('click', () => {
+  stopAutoLoop();
+  clearActive();
+  btnBox.classList.add('is-active');
+  setMessage('box');
 });
 btnHide.addEventListener('click', () => {
   stopAutoLoop();

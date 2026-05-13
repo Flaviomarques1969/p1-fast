@@ -227,6 +227,55 @@ body{padding:0 0 110px;}
   font-family:inherit;color:inherit;text-align:left;
 }
 .setup-adv:hover{background:var(--surface-2);}
+
+/* PARADAS NO BOX — chips com volta planejada */
+.pit-bar{display:flex;gap:8px;flex-wrap:wrap;}
+.pit-chip{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:9px 14px;border-radius:var(--radius-sm);
+  background:var(--surface);color:var(--text);
+  border:1px solid var(--hairline);
+  font-family:inherit;font-size:13px;font-weight:500;
+  cursor:pointer;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1),background .18s,border-color .18s;
+}
+.pit-chip:hover{background:var(--surface-2);}
+.pit-chip:active{transform:scale(.97);}
+.pit-chip__num{
+  font-size:14px;font-weight:700;color:var(--text);
+  font-variant-numeric:tabular-nums;
+}
+.pit-chip__lbl{
+  font-size:10px;color:var(--text-3);
+  letter-spacing:.06em;text-transform:uppercase;font-weight:600;
+}
+.pit-chip__close{
+  font-size:14px;color:var(--text-3);
+  line-height:1;font-weight:300;margin-left:2px;
+}
+.pit-chip--add{
+  border-style:dashed;color:var(--text-3);
+}
+.pit-chip--add:hover{border-color:var(--accent);color:var(--accent);}
+.field__hint{
+  margin-top:8px;font-size:12px;color:var(--text-3);line-height:1.4;
+}
+
+/* META DO PILOTO — 2 cells lado a lado: tempo alvo + voltas seguidas */
+.meta-row{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;
+}
+.meta-cell{
+  display:flex;flex-direction:column;gap:5px;
+}
+.meta-cell .mc-key{
+  font-size:11px;font-weight:500;color:var(--text-2);
+  letter-spacing:.005em;
+}
+.meta-cell .mc-hint{
+  font-size:11px;color:var(--text-3);font-weight:400;
+  letter-spacing:.005em;
+}
 .setup-adv__title{
   font-size:15px;font-weight:500;color:var(--text);
 }
@@ -353,6 +402,24 @@ body{padding:0 0 110px;}
         <div class="setup-adv__chev">›</div>
       </button>
     </div>
+
+    <div class="field">
+      <div class="field__lbl">Paradas no box <small>opcional · marca onde voltar</small></div>
+      <div class="pit-bar">
+        <button class="pit-chip" type="button">
+          <span class="pit-chip__num">5</span>
+          <span class="pit-chip__lbl">após volta</span>
+          <span class="pit-chip__close">×</span>
+        </button>
+        <button class="pit-chip" type="button">
+          <span class="pit-chip__num">9</span>
+          <span class="pit-chip__lbl">após volta</span>
+          <span class="pit-chip__close">×</span>
+        </button>
+        <button class="pit-chip pit-chip--add" type="button">+ adicionar parada</button>
+      </div>
+      <p class="field__hint">Quando chegar na volta marcada, o cockpit avisa o piloto e o box fica preparado.</p>
+    </div>
   </section>
 
   <!-- ── OBJETIVO ── -->
@@ -370,6 +437,25 @@ body{padding:0 0 110px;}
         <button class="chip-sug" type="button">Treinar trecho</button>
         <button class="chip-sug" type="button">Validar setup</button>
       </div>
+    </div>
+
+    <!-- META DO PILOTO — quantitativa, vincula com o widget "atingida/total"
+         que aparece no Plano do Stint do Command Box ao vivo. -->
+    <div class="field">
+      <div class="field__lbl">Meta do piloto <small>quantitativa</small></div>
+      <div class="meta-row">
+        <div class="meta-cell">
+          <span class="mc-key">Tempo alvo</span>
+          <input class="input input--num" type="text" value="1:32" placeholder="1:32">
+          <span class="mc-hint">sub esse tempo</span>
+        </div>
+        <div class="meta-cell">
+          <span class="mc-key">Em voltas seguidas</span>
+          <input class="input input--num" type="number" value="8" placeholder="8">
+          <span class="mc-hint">consecutivas</span>
+        </div>
+      </div>
+      <p class="field__hint">No cockpit aparece "X/Y atingidas" enquanto a meta corre. Verde = no caminho · âmbar = atrasado · vermelho = falhou.</p>
     </div>
   </section>
 
