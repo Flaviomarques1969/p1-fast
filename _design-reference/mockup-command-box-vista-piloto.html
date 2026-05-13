@@ -248,7 +248,7 @@ html,body{
 
 /* VÍDEO 0-40%, 8-54% */
 .b-video{
-  position:absolute;left:0.08%;top:8.12%;width:40%;height:45%;
+  position:absolute;left:4.5%;top:8.12%;width:30%;height:45%;
   border-right:1px solid var(--hairline);
   border-bottom:1px solid var(--hairline);
   overflow:hidden;
@@ -295,7 +295,7 @@ html,body{
 
 /* MAPA 0-40%, 54-100% */
 .b-map{
-  position:absolute;left:0;top:53%;width:29%;height:47%;
+  position:absolute;left:4.5%;top:53%;width:25%;height:36%;
   border-right:1px solid var(--hairline);
   overflow:hidden;
 }
@@ -580,7 +580,7 @@ html,body{
    e ser dimensionado sem estar preso numa caixa visual.
    Padding-top alto pra dar respiro à curva superior do bezel. */
 .b-hud{
-  position:absolute;left:36%;top:4%;width:27%;height:58%;
+  position:absolute;left:36%;top:8.5%;width:27%;height:45%;
   /* Padding reduzido pra dar mais área pro velocímetro (Flávio 2026-05-11):
      era 32px 8px 6px e estava sobrando moldura em cima/lados. */
   padding:4px 0 2px;
@@ -989,7 +989,7 @@ html,body{
 
 /* STINT 62-85%, 54-94% */
 .b-stint{
-  position:absolute;left:64%;top:53%;width:21%;height:37%;
+  position:absolute;left:64%;top:55%;width:21%;height:20%;
   border-right:1px solid var(--hairline);
   border-bottom:1px solid var(--hairline);
   padding:14px 18px;
@@ -1406,17 +1406,49 @@ html,body{
 }
 
 /* ───── COMBUSTÍVEL — gauge à esquerda · painel à direita ───── */
-/* CARRO — temperaturas e pressões (motor/câmbio/óleo). Posição abaixo do velocímetro. */
+/* STINT BAR (vertical) — extrema esquerda, voltas numeradas com cores semânticas */
+.b-stintbar-fixed{
+  position:absolute;left:0%;top:8.5%;width:4%;height:81%;
+  background:transparent;
+  border:none;
+  padding:2px;
+  z-index:5;
+}
+/* CARRO — temperaturas e pressões (motor/câmbio/óleo). Centro-baixo. */
 .b-carro-fixed{
-  position:absolute;left:36%;top:64%;width:13%;height:25%;
+  position:absolute;left:46%;top:55%;width:9%;height:34%;
   background:rgba(10,14,24,0.55);
   border:1px solid var(--hairline);
   padding:0;
   z-index:5;
 }
-/* PNEUS — 4 pneus com temperatura e pressão. Ao lado direito do Carro. */
+/* PASSAGEM (entrada/apice/saída) — esquerda do Carro */
+.b-passagem-fixed{
+  position:absolute;left:36%;top:55%;width:9%;height:17%;
+  background:rgba(10,14,24,0.55);
+  border:1px solid var(--hairline);
+  padding:0;
+  z-index:5;
+}
+/* FRENAGEM (gráfico) — abaixo da Passagem */
+.b-frenagem-fixed{
+  position:absolute;left:36%;top:73%;width:9%;height:16%;
+  background:rgba(10,14,24,0.55);
+  border:1px solid var(--hairline);
+  padding:0;
+  z-index:5;
+}
+/* VMIN (gráfico) — direita do Carro */
+.b-vmin-fixed{
+  position:absolute;left:56%;top:55%;width:8%;height:17%;
+  background:rgba(10,14,24,0.55);
+  border:1px solid var(--hairline);
+  padding:0;
+  z-index:5;
+}
+/* PNEUS — 4 pneus com temperatura e pressão. Canto inferior direito, abaixo do Plano Stint. */
 .b-pneus-fixed{
-  position:absolute;left:50%;top:64%;width:13%;height:25%;
+  position:absolute;left:64%;top:76%;width:21%;height:13%;
   background:rgba(10,14,24,0.55);
   border:1px solid var(--hairline);
   padding:0;
@@ -3648,11 +3680,24 @@ html,body{
     </div>
   </div>
 
-  <!-- CARRO (motor/câmbio/óleo/combustível — temperaturas e pressões) — fixo no HTML (Flávio 2026-05-13) -->
+  <!-- Blocos custom convertidos em FIXOS (Flávio 2026-05-13) -->
+  <!-- Carro vivo (motor/câmbio/óleo — temperaturas e pressões) -->
   <div class="b-custom is-carro b-carro-fixed" data-block-id="carro" data-block-name="Carro"></div>
 
-  <!-- PNEUS (4 pneus com temp e pressão) — fixo no HTML (Flávio 2026-05-13) -->
+  <!-- Pneus (4 pneus com temp e pressão) -->
   <div class="b-custom is-pneus b-pneus-fixed" data-block-id="pneus" data-block-name="Pneus"></div>
+
+  <!-- Stint Bar (vertical à esquerda — voltas numeradas com cores semânticas) -->
+  <div class="b-custom is-stint-bar b-stintbar-fixed" data-block-id="stint-bar" data-block-name="Stint"></div>
+
+  <!-- Passagem na curva atual (entrada / apice / saída) -->
+  <div class="b-custom is-passagem b-passagem-fixed" data-block-id="passagem" data-block-name="Passagem"></div>
+
+  <!-- Frenagem na curva atual (gráfico) -->
+  <div class="b-custom is-frenagem b-frenagem-fixed" data-block-id="frenagem" data-block-name="Frenagem"></div>
+
+  <!-- Velocidade mínima na curva atual (gráfico) -->
+  <div class="b-custom is-vmin b-vmin-fixed" data-block-id="vmin" data-block-name="Vmin"></div>
 
 </div>
 
@@ -4828,6 +4873,9 @@ html,body{
     _lastTermicaState = '';
       rebuildCarro();
       rebuildPneus();
+      rebuildPassagem();
+      rebuildFrenagem();
+      rebuildVmin();
       rebuildHUD();
       rebuildStint();
       rebuildCoach();
@@ -5203,6 +5251,25 @@ html,body{
     if(!els.length) return;
     var html = '<button class="b-custom-remove" type="button">remover</button>' +
                buildStintBar({ laps:8, current:lap.numero || 8, warmupLaps:1, cooldownLaps:1 });
+    els.forEach(function(el){ el.innerHTML = html; });
+  }
+  // Rebuilders para Passagem, Frenagem e Vmin (blocos fixos no HTML — Flávio 2026-05-13).
+  function rebuildPassagem(){
+    var els = document.querySelectorAll('.b-custom.is-passagem');
+    if(!els.length) return;
+    var html = '<button class="b-custom-remove" type="button">remover</button>' + buildPassagemPanel();
+    els.forEach(function(el){ el.innerHTML = html; });
+  }
+  function rebuildFrenagem(){
+    var els = document.querySelectorAll('.b-custom.is-frenagem');
+    if(!els.length) return;
+    var html = '<button class="b-custom-remove" type="button">remover</button>' + buildFrenagemPanel(0);
+    els.forEach(function(el){ el.innerHTML = html; });
+  }
+  function rebuildVmin(){
+    var els = document.querySelectorAll('.b-custom.is-vmin');
+    if(!els.length) return;
+    var html = '<button class="b-custom-remove" type="button">remover</button>' + buildVminPanel(0);
     els.forEach(function(el){ el.innerHTML = html; });
   }
 
@@ -6818,6 +6885,11 @@ html,body{
       localStorage.setItem(SL_MIGRATED, '1');
     }
 
+    rebuildCarro();
+    rebuildPneus();
+    rebuildPassagem();
+    rebuildFrenagem();
+    rebuildVmin();
     rebuildHUD();
     rebuildStint();
     rebuildCoach();
@@ -6874,6 +6946,9 @@ html,body{
     _lastTermicaState = '';
     rebuildCarro();
     rebuildPneus();
+    rebuildPassagem();
+    rebuildFrenagem();
+    rebuildVmin();
     rebuildHUD();
     rebuildStint();
     rebuildCoach();
