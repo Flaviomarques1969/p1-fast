@@ -414,18 +414,37 @@ O system prompt já mantém a governança correta. Adicionar instrução: **"As 
 
 ADR-008 continua valendo: **alertas críticos NÃO passam pela IA**.
 
-### 5.2 Onde cada camada roda
+### 5.2 Onde cada camada roda — arquitetura de superfície revisada 2026-05-13
 
-| Camada | Roda em | Motivo |
+**Decisão Flávio 2026-05-13 (D2 + clarificação):** existem **duas telas físicas de saída simultâneas**, ambas mostrando informação ao mesmo tempo; **toda a operação é feita pelos iPhones** (o notebook **não é operado** — é só display + processador).
+
+| Tela | Conteúdo | Driver |
 |---|---|---|
-| Engine Core (Timebase + Snapshot + CriticalRules + CrossValidation + VehicleContext) | iPhone (canal autoritativo para IMU+GPS) **+** notebook Windows (canal autoritativo para T4000) | Cada plataforma processa o que tem em latência local; o resultado consolidado vai pra Realtime |
-| Calibration Engine | **Notebook Windows** (consumidor principal, tem ambos os canais via TransportSelector) | Único lugar onde os dois fluxos se cruzam ao vivo. iOS hub recebe via Realtime |
-| Senior Advisor IA | **Vercel Serverless** (já está) | Chamada HTTP; sem latência crítica; cache opcional |
-| UI engenheiro live | **Notebook Windows display 1** (cockpit do piloto fica em display 2) | Mesma máquina, sem disputa. Pode haver port iOS depois |
-| UI engenheiro post | **iOS hub** (tab Engenharia) | Engenheiro revisa em mobilidade, em qualquer momento entre stints |
-| Histórico / replay | Supabase + Edge Function | Já tem `/functions/v1/detector` para reprocessar |
+| **Command Box** (TV 32") | Vista do engenheiro + chefe-de-equipe: live, findings, recommendations, simulações | iPhone do box em Box Mode → AirPlay → Apple TV → TV 32" (mesma cadeia de MS-12) |
+| **Cockpit Pilot** (10,5" externa invertida no painel) | Vista do piloto: cockpit canônico (mockup `mockup-cockpit-piloto.html`) + modo simulação quando carro parado | Notebook Windows WinUI 3 → display 2 invertido (já em produção via MS-13) |
 
-**Decisão importante para o Flávio**: o Command Box Engenharia ao vivo é uma **segunda janela nativa C# (WinUI 3)** no notebook, ou web embarcada (Edge/Chrome no display 1) consumindo Realtime? Os dois funcionam — vide ADR-023 amendment 4 já escolheu C# nativo para o cockpit, então **proponho C# também para a versão live do Engenharia** (mesma stack, hot reload XAML, reuso 100% do `P1Fast.Cockpit.Domain`). Mas custa Visual Studio.
+**Operação:**
+
+| Surface de entrada | Quem usa | O que controla |
+|---|---|---|
+| **iPhone do box em Box Mode** | Engenheiro / chefe-de-equipe | Tab Engenharia: lista findings, abre cards, [Aprovar] / [Editar] / [Rejeitar] / [Simular] |
+| **iPhone do time fora do Box Mode** (iOS hub) | Engenheiro / chefe-de-equipe / mecânico (mobilidade) | Tab Engenharia pós-stint: histórico, decisões cross-stint |
+| **iPhone do carro** | Piloto (mãos ocupadas na maior parte) | Captura ativa via `LiveTelemetryRecorder`; pode receber mensagens; não controla UI durante stint |
+| **Notebook Windows** | Ninguém (kiosk) | Apenas roda o Cockpit Pilot em display 2 + processa T4000 + publica Realtime |
+
+**Tabela final de camadas × superfície:**
+
+| Camada | Onde roda | Onde aparece |
+|---|---|---|
+| Engine Core (Timebase + Snapshot + CriticalRules + CrossValidation + VehicleContext) | iPhone do carro (IMU/GPS) + notebook Windows (T4000) | Não tem UI direta — alimenta as duas telas |
+| Calibration Engine | Notebook Windows (consumidor que cruza T4000 + IMU/GPS) e/ou Edge Function Supabase (cobertura sem notebook) | Findings/recommendations vão pra Realtime, consumidos por Box Cockpit (32") e por iOS hub |
+| Senior Advisor IA | Vercel Serverless (`/api/advisor`, `/api/post-stint`) | Mesma rota: findings enriquecidos chegam pelo Realtime |
+| **Command Box Engenharia (live + post)** | iPhone Box Mode | Renderiza na TV 32" |
+| **Cockpit Pilot + modo simulação** | Notebook WinUI 3 | Renderiza no 10,5" invertido (mesmo MS-13 existente, ganha layer de simulação) |
+| iOS hub Tab Engenharia (pós-stint mobile) | iPhones do time | iPhone/iPad nas mãos do engenheiro entre stints |
+| Histórico / replay | Supabase + Edge Function `/functions/v1/detector` | Cross-stint, cross-evento |
+
+**Implicação prática**: o esforço de UI nova é **iOS only** para o Engenharia (Tab + Box Mode). O Cockpit Pilot existente recebe apenas um **modo simulação adicional** (overlay/painel sincronizado por Realtime quando carro parado). **Nada de janela nova no Windows.** Notebook fica intocado como produto.
 
 ### 5.3 Persistência (gap G4)
 
@@ -528,16 +547,27 @@ Cada uma com fixture de teste sintética. Migrations `0020_engineering_findings.
 ### MS-16.4 — Senior Advisor enrichment (1 PR)
 Resolve camada 3. `/api/advisor.js` aceita campo opcional `findings[]` no payload. System prompt ganha §"Findings codificadas" explicando o contrato. Persiste decisão em `engineering_recommendations`. Smoke contra Claude API real (Flávio roda 1x manual).
 
-### MS-16.5 — UI Engenheiro pós-stint no iOS hub (2-3 PRs)
-**Primeiro UI**. Tab "Engenharia" no hub iOS ao lado de "Piloto". Lista de stints recentes → findings → recommendations com cards { sugestão, racional, evidência, ajustes, não-mexer, como-validar, confiança }. Botões aprovar / editar / rejeitar. **Sem versão live nesta sprint.** Validação visual em simulator.
+### MS-16.5 — Tab Engenharia no iOS hub: pós-stint (2-3 PRs)
+**Primeiro UI**. Tab "Engenharia" no hub iOS, **fora do Box Mode** (acesso por qualquer iPad/iPhone do time entre stints). Lista de stints recentes → findings → recommendations com cards { sugestão, racional, evidência, ajustes, não-mexer, como-validar, confiança }. Botões aprovar / editar / rejeitar. **Sem versão live nesta sprint.** Validação visual em simulator iOS. Reaproveita o BottomNav existente (`Components/BottomNav.swift`).
 
-### MS-16.6 — UI Engenheiro live no notebook Windows (3-5 PRs, gate aberto)
-WinUI 3 + C# nativo. Janela em display 1 (cockpit do piloto fica em display 2). Reaproveita `P1Fast.Cockpit.Domain`. Mostra ao vivo: Snapshot bruto → CriticalAlerts → CrossValidation events → findings → última recommendation. **Gate**: depende de MS-9 fechar (driver T4000 real no Windows). Sem MS-9, fica em Tier 0 (mock data).
+### MS-16.6 — Box Mode Engenharia: live na TV 32" (3-4 PRs)
+**Segunda UI, ao vivo**. iOS Box Mode ganha aba/visão Engenharia que renderiza para AirPlay → Apple TV → TV 32" (mesma cadeia de MS-12). Subscribe Supabase Realtime no canal `live-stint-{id}` para receber:
+- Snapshots agregados a 10 Hz (T4000 + IMU/GPS — vindos do notebook Windows que cruza os dois fluxos)
+- Stream de findings/recommendations em tempo real
+- Stream de alertas determinísticos da Camada 1
 
-### MS-16.7 — Engine cells (RPM × MAP histogram) `[gate, OPCIONAL]`
-Reabre só se análise de mapa for confirmada como prioridade. Migration `0022_engine_cells.sql` + agregador + 2 rules extras (`fuel-rich-light-load`, `lambda-vs-target-deviation` precisa do mapa carregado — G5).
+Layout otimizado para 32" landscape (alta legibilidade, distância de visão 2-3 m). Operação por toque no iPhone do box (não na TV). **Não compete com cockpit do piloto** — produto totalmente separado, consumidor diferente da mesma fonte (Realtime). **Gate principal**: MS-9 (T4000 publica no Realtime) precisa estar fechado para o live ser real; sem ele, fica em mock data.
 
-**Tamanho total honesto**: 11-17 PRs em ~5-7 dias de Cloud Code sequencial. Dá pra fechar antes do próximo track day se Flávio aprovar e priorizar.
+### MS-16.7 — Modo simulação no Cockpit Pilot (overlay no 10,5") (1-2 PRs)
+**Aproveita o cockpit WinUI 3 existente** sem mudar layout principal. Quando o canal Realtime `engineering-{stintId}` empurra um `SimulationProposal` E o carro está parado (`vehicle.speed_fused < 5 km/h` sustentado por > 3 s), o Cockpit Pilot 10,5" mostra um **overlay/painel adicional** sincronizado com o que o engenheiro está propondo na TV 32" (ex.: "Acelere até 5 800 rpm na 3ª marcha para validar a célula" + λ atual × projetado). Quando o engenheiro encerra a simulação OU o carro volta a se mover, o overlay desaparece. **Sem display switching no notebook** — display 1 fica área de trabalho normal sempre; só o conteúdo do 10,5" muda.
+
+### MS-16.8 — Simulação de ajuste (TV 32" + iPhone Box Mode) (2-3 PRs)
+Funcionalidade nova baseada na descrição do Flávio 2026-05-13 ("fazer simulações"). Permite ao engenheiro **previsualizar** o efeito de uma recommendation antes de aprovar — ex.: "se aplicar +4% combustível na célula RPM 5200-6000, λ esperado cai de 1.07 para 0.92, accel_long projetado sobe X m/s²". Usa modelo determinístico simples (extrapolação linear na célula). Publica `SimulationProposal` no canal `engineering-{stintId}` para o Cockpit Pilot consumir (MS-16.7). Engenheiro decide aprovar / editar / rejeitar via toque no iPhone do box. **Tier 1 inicial** (sem mudar mapa real); evolução pra "aplicar agora via Injepro T Software" depende de G5 (leitura/escrita do mapa).
+
+### MS-16.9 — Engine cells (RPM × MAP histogram) `[gate, OPCIONAL]`
+Reabre só se análise de mapa for confirmada como prioridade (D5 do Flávio = pular no MVP). Migration `0022_engine_cells.sql` + agregador + 2 rules extras (`fuel-rich-light-load`, `lambda-vs-target-deviation` precisa do mapa carregado — G5).
+
+**Tamanho total honesto**: 13-19 PRs em ~6-8 dias de Cloud Code sequencial. Dá pra fechar antes do próximo track day se priorizar A→B→C→D→E. MS-16.6/16.7/16.8/16.9 ficam pra fase 2 do MS-16, gate-by-gate.
 
 ---
 
@@ -579,33 +609,62 @@ Cores:
 - 🔵 azul = oportunidade pedagógica/performance (deltas grandes)
 - 🟢 verde = consistente, manter (reforço positivo)
 
-### 7.2 Engenheiro live (notebook Windows display 1, MS-16.6)
+### 7.2 Engenheiro live no Box Cockpit (iOS Box Mode → AirPlay → TV 32", MS-16.6)
 
-Layout proposto (mockup verbal, sem desenhar):
+Layout otimizado para 32" landscape, distância de visão 2-3 m, **alta legibilidade** (font ≥ 32 pt, contraste forte). Operado pelo iPhone do box (Box Mode), navegação por toque no iPhone — TV é só projeção.
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│  BRASÍLIA · STINT #4 · CELTA · 02:14 · v3 em curso                      │
+├────────────────────┬─────────────────────────────────────────────────────┤
+│  MOTOR             │  EVENTOS AO VIVO                                    │
+│  RPM   5 840       │                                                     │
+│  MAP   0.92 bar    │  [00:42] 🟡 V-007 λ pobre · v3 setor 2 · TPS 84%    │
+│  λ     1.06        │  [00:38] 🔴 V-006 pressão óleo · 7 200 rpm           │
+│  Hₐ    102 °C      │  [00:31] 🟡 IAT subiu 12 °C nesta volta             │
+│  Hₒ    118 °C      │  [00:21] ⚪ apex tardio na Bruxa (v3)                │
+│  IAT    54 °C      │                                                     │
+│  EGT   780 °C      │                                                     │
+│  Press comb 4.1bar │                                                     │
+├────────────────────┴─────────────────────────────────────────────────────┤
+│  TRECHO ATUAL: Bruxa (v3)                                                │
+│  Vmin esperada 78 km/h · medida 76 km/h (Δ −2)                           │
+│  Apex actual: 4 m antes da ref (antecipado)                              │
+├──────────────────────────────────────────────────────────────────────────┤
+│  FINDINGS PENDENTES (3)                          [Aprovar] [Simular]     │
+│  • fuel-lean-sustained-load · Bruxa · confiança Alta · risco Médio       │
+│  • water-temp-drift-no-cooling · sessão · confiança Média · risco Médio  │
+│  • vmin-progressive-loss-segment · Bruxa · confiança Média · risco Baixo │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+**Não compete com cockpit do piloto** — produto separado, consumidor diferente do mesmo canal Realtime. O piloto vê a sua tela (display 2 invertida), o engenheiro/chefe-de-equipe vê a TV 32". Ambos a partir da mesma origem de dados.
+
+### 7.3 Modo simulação no Cockpit Pilot 10,5" (MS-16.7)
+
+Quando o engenheiro inicia uma simulação na TV 32" E o carro está parado, o Cockpit Pilot 10,5" do piloto ganha um **overlay de simulação** sobre o cockpit canônico (não substitui o layout, **adiciona um painel**):
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ Stint: Brasília #4 · v3 em curso · 02:14                   │
-├─────────────┬───────────────────────────────────────────────┤
-│ MOTOR       │  EVENTOS AO VIVO (descendente, últimos 30 s)  │
-│ RPM   5840  │                                                │
-│ MAP   0.92  │  [00:42] 🟡 V-007 lambda pobre v3 setor 2     │
-│ λ     1.06  │  [00:38] 🔴 V-006 oil press baixa @ 7200 RPM  │
-│ Hₐ    102°C │  [00:31] 🟡 IAT subiu 12°C nesta volta        │
-│ Hₒ    118°C │  [00:21] ⚪ apex tardio na Bruxa (v3)         │
-│ IAT    54°C │                                                │
-│ EGT   780°C │                                                │
-│ Press combustível 4.1 bar                                   │
-├─────────────┴───────────────────────────────────────────────┤
-│ TRECHO ATUAL: Bruxa (v3)                                    │
-│ Vmin esperada 78 km/h · medida 76 km/h (Δ -2)               │
-│ Apex actual: 4 m antes da ref (antecipado)                  │
-├─────────────────────────────────────────────────────────────┤
-│ FINDINGS PENDENTES (3)              [Ver no hub iOS]        │
+│ COCKPIT PILOT (mockup canônico — shift light, apex, halo)   │
+│                                                             │
+│  ┌─[ SIMULAÇÃO ATIVA ]────────────────────────────────────┐ │
+│  │ Engenheiro propõe: +4% combustível RPM 5200-6000       │ │
+│  │ Acelere até 5 800 rpm em 3ª pra validar a célula       │ │
+│  │ λ atual: 1.07   λ projetado: 0.92                      │ │
+│  │                                                        │ │
+│  │  [esperando célula-alvo]                               │ │
+│  └────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-Não compete com cockpit do piloto (display 2 invertido). Display 1 é onde engenheiro/mecânico interagem.
+Quando o piloto pressiona o acelerador e a célula RPM×MAP-alvo é atingida, sistema mostra **dado real × projetado lado a lado** no mesmo painel. Engenheiro decide na TV 32" (toca [Aprovar] no iPhone do box). Pré-requisito: G5 (mapa carregado) **NÃO é obrigatório** nessa primeira versão — projeção por extrapolação linear nos samples atuais da célula. Aplicar ajuste real no mapa fica para depois de G5 fechar.
+
+### 7.4 Operação (entrada) é só pelos iPhones
+
+- **iPhone do box em Box Mode**: engenheiro toca cards na TV 32" via espelho no próprio iPhone (Box Mode = iPhone sendo "mouse" + AirPlay sendo "monitor"). Botões `[Aprovar]` `[Editar]` `[Rejeitar]` `[Simular]` ficam acessíveis no iPhone (mesmo na TV o foco visual está nos cards). Ergonomicamente igual ao box do MS-12 já planejado.
+- **iPhone do time mobilidade**: iOS hub Tab Engenharia, fora do Box Mode. Engenheiro/chefe revisa histórico, decisões cross-stint, edição offline (sincroniza por Realtime).
+- **Notebook**: zero operação. Só roda o cockpit pilot em display 2 (kiosk fullscreen) + driver T4000 + publisher Realtime. Nem teclado nem mouse no fluxo normal.
 
 ### 7.3 Rastreabilidade
 
@@ -659,7 +718,7 @@ Reaproveita o smoke harness JS já existente (`tests/node-smoke-*.mjs`, 6.481 li
 
 ---
 
-## 10 — Plano de implementação por fases (resumo)
+## 10 — Plano de implementação por fases (atualizado 2026-05-13)
 
 | Fase | Sprints | Saídas | Pré-req |
 |---|---|---|---|
@@ -667,32 +726,33 @@ Reaproveita o smoke harness JS já existente (`tests/node-smoke-*.mjs`, 6.481 li
 | **B — Modelo contextual** | MS-16.2 | VehicleContextAggregator + smoke de fixture Brasília | A |
 | **C — Engenharia codificada** | MS-16.3 | 3 CalibrationRule + persistência Supabase | B |
 | **D — IA enriquecida** | MS-16.4 | `/api/advisor` aceita findings + decisão persistida | C |
-| **E — UI engenheiro pós-stint** | MS-16.5 | Tab Engenharia no iOS hub, lista + decisão | C |
-| **F — UI engenheiro live** | MS-16.6 | Janela WinUI 3 nativa em display 1 | C + MS-9 fechado |
-| **G — Análise de mapa (opcional)** | MS-16.7 | Histograma de células, 2 rules extras | C + decisão G5 |
+| **E — UI engenheiro pós-stint mobile** | MS-16.5 | Tab Engenharia no iOS hub, lista + decisão | C |
+| **F — Box Mode Engenharia (live TV 32")** | MS-16.6 | iOS Box Mode subscreve Realtime, renderiza na 32" | C + MS-9 + MS-12 fechados |
+| **G — Modo simulação no Cockpit Pilot 10,5"** | MS-16.7 | Overlay XAML sincronizado pelo canal `engineering-{stintId}` | F |
+| **H — Simulação de ajuste** | MS-16.8 | Projeção visual e validação interativa | F + G |
+| **I — Engine cells (opcional)** | MS-16.9 | Histograma de células, 2 rules extras | C + decisão G5 |
 
-**Ordem dura: A → B → C → (D + E em paralelo) → F → G.** Cada uma é mergeavel sozinha; cada uma agrega valor sozinha.
+**Ordem dura: A → B → C → (D + E em paralelo) → F → (G + H em paralelo) → I.** Cada fase é mergeavel sozinha; cada uma agrega valor sozinha. Fase F precisa de MS-12 (AirPlay → Apple TV → TV 32") já fechado em produção — ainda não está; é gate adicional ao MS-9.
 
 ---
 
-## 11 — Decisões pendentes para o Flávio (12)
+## 11 — Decisões — 3 fechadas 2026-05-13, 9 abertas
 
-Cada uma trava ou redireciona algo no plano. NÃO escolhi silenciosamente — está aqui para você decidir.
-
-| # | Decisão | Default proposto | Impacto |
+| # | Decisão | Status | Resposta / default |
 |---|---|---|---|
-| D1 | Aprovar o nome "MS-16 — Command Box Engenharia" como novo mini-sprint no `PLANO_FASE_1.md`? | Sim | Doc PR |
-| D2 | Onde mora o **UI engenheiro pós-stint**? iOS hub (tab "Engenharia"), Windows, ou ambos? | iOS hub primeiro, Windows depois (MS-16.6) | Stack + esforço |
-| D3 | Onde mora o **UI engenheiro live**? Janela WinUI 3 em display 1 do notebook (proposto) ou web embedded (Edge/Chrome)? | WinUI 3 nativo (consistente com ADR-023 amendment 4) | Empacotamento |
-| D4 | Granularidade de **célula RPM × MAP** no histograma (MS-16.7)? Proponho 250 RPM × 0.05 bar. | 250 RPM × 0.05 bar | Volume de dados |
-| D5 | **Mapa atual da ECU** (G5): aceitar upload de CSV/foto exportada do Injepro T Software, ou pular esse caminho no MVP? | Pular no MVP. Reabrir após track day 1 com Command Box. | Escopo |
-| D6 | Catálogo inicial de **CalibrationRule** — começar com 3 (proposto) ou os 10 do brief? | 3 (MVP) e validar antes de generalizar | Tempo |
-| D7 | Confiança mínima para **publicar uma recommendation** vs ficar como finding cru? | Recommendation só se confianca ≥ Média; findings sempre | Ruído UI |
-| D8 | **Permissão de aprovar/rejeitar** recommendation — só admin do time, chefe_equipe, ou todos os membros? | Admin + chefe_equipe | RLS |
-| D9 | **Sincronização da decisão (aprovada/editada/rejeitada) atravessa dispositivos?** Engenheiro decide no iPad, vê no notebook? | Sim, via Supabase Realtime no canal `engineering-{stintId}` | Infra Realtime extra |
-| D10 | **Análise de pilotagem vs análise mecânica** no mesmo Command Box ou separadas? | Mesmo (Tab Engenharia agrupa). Mecânico filtra. | UX |
-| D11 | **Mensagens da Camada 3 IA chegam ao piloto** durante o stint? | Não. Piloto só recebe mensagens via P1 Coach. Advisor é caixa-postal do engenheiro. | ADR-008 |
-| D12 | **Limites do Celta calibrados** (NEEDS_CALIBRATION das `CRITICAL_RULES`) — você quer calibrar antes de MS-16 entrar, ou MS-16 entra com defaults conservadores e calibra na track day? | Defaults conservadores + calibração em pista | Risco operacional |
+| **D1** | Aprovar "MS-16 — Command Box Engenharia" como novo mini-sprint | **✅ FECHADA 2026-05-13** | Aprovado. PR do doc + edit do `PLANO_FASE_1.md` §6 com bloco MS-16 |
+| **D2 + D3** | Onde mora UI engenheiro (live + post)? | **✅ FECHADA 2026-05-13** | **Command Box Engenharia = iOS Box Mode → AirPlay → Apple TV → TV 32"** (engenheiro + chefe-de-equipe). **Cockpit Pilot = notebook WinUI 3 → display 2 10,5" invertida** (piloto, igual MS-13). **Operação só pelos iPhones** — notebook não é operado, fica kiosk. Quando carro parado, Cockpit Pilot ganha **overlay de simulação** sincronizado por Realtime com o que o engenheiro está propondo na TV 32" (sem display switching). |
+| **D6** | Catálogo inicial de CalibrationRule | **✅ FECHADA 2026-05-13** | 3 rules MVP: `fuel-lean-sustained-load`, `water-temp-drift-no-cooling`, `vmin-progressive-loss-segment`. Generalização para 10 rules depois do primeiro track day |
+| D4 | Granularidade de célula RPM × MAP (MS-16.9) | aberta | Default: 250 RPM × 0.05 bar |
+| D5 | Mapa atual da ECU — upload Injepro T Software no MVP? | aberta | Default: pular no MVP. Reabrir após track day 1 |
+| D7 | Confiança mínima para publicar recommendation | aberta | Default: recommendation se confianca ≥ Média; findings sempre |
+| D8 | Permissão de aprovar/rejeitar recommendation | aberta | Default: admin + chefe_equipe |
+| D9 | Sincronização da decisão entre dispositivos via Realtime? | aberta | Default: sim, canal `engineering-{stintId}` |
+| D10 | Análise de pilotagem × mecânica no mesmo Command Box? | aberta | Default: mesmo (Tab Engenharia agrupa, mecânico filtra) |
+| D11 | Mensagens da Camada 3 IA chegam ao piloto durante stint? | aberta | Default: não. Piloto só via P1 Coach. ADR-008 |
+| D12 | Limites do Celta calibrados antes ou na track day? | aberta | Default: defaults conservadores + calibração em pista |
+| **D13** | **(NOVA)** Simulação de ajuste (MS-16.8) sem mexer no mapa real — aceita? | aberta | Default: sim. Projeção por extrapolação linear na célula. Aplicar no mapa real só após G5 fechar |
+| **D14** | **(NOVA)** Heurística "carro no box" para ativar overlay de simulação no Cockpit Pilot (MS-16.7) — `speed_fused < 5 km/h` por > 3 s entra; `> 10 km/h` por > 2 s sai. OK? | aberta | Default: sim |
 
 ---
 
@@ -758,8 +818,33 @@ Pra não criar expectativa errada:
 - **Não implementei `VehicleContextAggregator`** — descrito em prosa.
 - **Não escrevi nenhum XAML/SwiftUI/HTML novo de UI** — descrito verbalmente.
 - **Não chamei Claude API para validar** — system prompt proposto é evolução do existente.
-- **Não modifiquei `CLAUDE.md` nem `PLANO_FASE_1.md`** — alterações neles dependem de você aprovar este plano e me dar mandato.
+- **Modifiquei `PLANO_FASE_1.md` §6** — adicionei bloco MS-16 (Command Box Engenharia) referenciando este doc. CLAUDE.md fica inalterado.
 
 ---
 
-**Pronto para discussão.** Aguardo suas 12 decisões (§11) e seu sinal verde (ou redireção) sobre o plano de fases (§10).
+## 15 — Decisões registradas 2026-05-13 (sessão Flávio)
+
+3 perguntas respondidas em formato cards; respostas reproduzidas literalmente para audit:
+
+**D1 — Aprovar criação do MS-16?** → "Aprovar e abrir PR do doc (Recommended)"
+
+**D2 + D3 — Onde mora UI engenheiro?** → resposta literal Flávio:
+> "vai ser no command box que foca na tela de 32 polegadas operada por um iphone na nuvem. podendo também mudar a tela do notebook para o piloto quando estiver parado no box acompanhar as midanças e tambêm participar acelerando ou maniseando o carro enquanto o command box é usado pelo engenheiro, chefe de equipe para analisar o contexo, as oportunidades e fazer simulacoes."
+
+**Clarificação Flávio 2026-05-13 (após primeira leitura):**
+> "vc entendeu que mostramos as informaçoes no command box e também na tela de 10.5 do piloto que chamamos de cockpit pilot, mas operamos a partir sos celulares."
+
+Interpretação aplicada ao doc (após clarificação):
+- **Duas telas físicas simultâneas de saída**: Command Box (TV 32") e Cockpit Pilot (10,5" externa invertida no painel, mesma de MS-13). Ambas mostram informação ao mesmo tempo, conteúdo diferente.
+- **Operação é só pelos iPhones**. Notebook não é operado — só roda o cockpit pilot em display 2 (kiosk fullscreen) + driver T4000 + publisher Realtime.
+- **Sem display switching no notebook**. A ideia anterior de "comutar display 1 do notebook para piloto-no-box" caiu — o que muda é o conteúdo do Cockpit Pilot 10,5" (ganha overlay de simulação por Realtime quando carro parado), não a tela onde aparece.
+- **Nova funcionalidade**: simulação de ajuste (MS-16.8) ganha tração explícita; Cockpit Pilot ganha modo simulação overlay (MS-16.7) sincronizado por Realtime.
+
+**D6 — Catálogo MVP de CalibrationRule?** → "3 rules MVP — fuel-lean, water-drift, vmin-loss (Recommended)"
+
+---
+
+**Próximo passo (aguarda OK do Flávio):**
+- PR aberto na branch `claude/audit-engineering-module-Ael3m` com este doc + bloco MS-16 em `PLANO_FASE_1.md` §6.
+- Depois do merge: emitir prompt MS-16.1 isolado para Cloud Code (port `TelemetryTimebase` Swift, sem UI, sem produção).
+- Decisões D4, D5, D7..D14 ficam abertas mas **não bloqueiam** A→B→C→D→E. Podem ser respondidas no caminho.

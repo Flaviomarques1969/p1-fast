@@ -337,6 +337,26 @@ Depende de MS-9 (T4000 fornece temp motor real) — em Tier 0 usa estimativa.
 | 15.2 | Overlay chuva (3 camadas) | Cloud |
 | 15.3 | Vista resfriamento (lap-data + troféus pós-volta) | Cloud |
 
+### MS-16 — Command Box Engenharia (aprovado Flávio 2026-05-13)
+
+Núcleo lógico do sistema. Engenharia codificada + IA contextual. Operado pelos iPhones; mostrado na **TV 32" do box** (engenheiro/chefe-de-equipe) e no **Cockpit Pilot 10,5"** (piloto, com overlay de simulação quando parado). Notebook fica kiosk, não é operado. Detalhes completos em `docs/COMMAND_BOX_ENGENHARIA.md` (§1..§15) — auditoria + arquitetura aprovada.
+
+3 decisões fechadas em 2026-05-13: D1 (criar MS-16), D2+D3 (TV 32" via Box Mode iOS + overlay simulação no Cockpit Pilot 10,5"; notebook não é operado), D6 (3 rules MVP: fuel-lean, water-drift, vmin-loss). 11 decisões abertas listadas em §11 do doc — nenhuma bloqueia A→B→C→D→E.
+
+| # | Task | Onde | Status |
+|---|---|---|---|
+| 16.1 | Port `src/telemetry/timebase.js` → `ios/p1fast-core/Sources/P1FastCore/TelemetryTimebase.swift` + paridade JS↔Swift via fixture sintética | Cloud | ❌ |
+| 16.2 | `VehicleContextAggregator.swift` — lap/stint/segment/thermal sem células. Fixture canônica sessão Brasília 2026-05-06 | Cloud | ❌ |
+| 16.3 | `CalibrationEngine.swift` + 3 rules MVP (`fuel-lean-sustained-load`, `water-temp-drift-no-cooling`, `vmin-progressive-loss-segment`) + migrations 0020_engineering_findings + 0021_engineering_recommendations | Cloud | ❌ |
+| 16.4 | `/api/advisor.js` aceita campo `findings[]`; system prompt ganha §"Findings codificadas"; persiste decisão em `engineering_recommendations` | Cloud | ❌ |
+| 16.5 | Tab Engenharia no iOS hub (pós-stint mobile) — lista findings + recommendations + decisão aprovar/editar/rejeitar | Cloud | ❌ |
+| 16.6 | iOS Box Mode ganha visão Engenharia — subscribe canal Realtime `live-stint-{id}`, renderiza na TV 32" via AirPlay → Apple TV. Gate: MS-9 + MS-12 fechados | Cloud | ❌ gate |
+| 16.7 | Cockpit Pilot 10,5" ganha overlay de simulação (XAML adicional) sincronizado pelo canal `engineering-{stintId}` quando carro parado | Cloud | ❌ |
+| 16.8 | Simulação de ajuste (engenheiro pré-visualiza efeito antes de aprovar; projeção por extrapolação linear nos samples atuais da célula) | Cloud | ❌ |
+| 16.9 | (Opcional, gate D5) Engine cells RPM × MAP histogram + 2 rules extras (fuel-rich-light, lambda-vs-target) — só se mapa real for carregado | Cloud | ❌ gate |
+
+**Ordem dura:** 16.1 → 16.2 → 16.3 → (16.4 + 16.5 em paralelo) → 16.6 → (16.7 + 16.8 em paralelo) → 16.9.
+
 ---
 
 ## 7 — Critério de divisão Aqui × Cloud
@@ -405,6 +425,7 @@ Depende de MS-9 (T4000 fornece temp motor real) — em Tier 0 usa estimativa.
 - **Package.resolved é tracked, não deletar** — ADR-022
 - **Pendências obrigatório × adicional, vivas, por carro+evento** — §6 MS-5 (decisão Flávio 2026-05-03, corrige "simples × completo")
 - **Apex ≠ Vmin ≠ ponto mais interno geométrico** (decisão Flávio 2026-05-04). Apex = referência de tangência da linha de corrida (organiza rotação e saída — métrica de linha). Vmin = dado dinâmico em runtime (onde o carro foi mais devagar — métrica de velocidade). Saída = métrica dominante quando há reta relevante depois. Configurador (MS-1.4) cadastra apex; Vmin é capturado e persistido em runtime (MS-2.4/2.5) e consumido pelo cockpit (MS-13.6) e Command Box futuro (MS-12).
+- **Command Box Engenharia = produto iOS Box Mode → TV 32" + overlay no Cockpit Pilot 10,5"** (decisão Flávio 2026-05-13). Engenheiro e chefe-de-equipe operam pelos iPhones (Box Mode + Tab Engenharia no hub); notebook Windows fica kiosk (não é operado). Cockpit Pilot 10,5" ganha overlay de simulação sincronizado por Realtime quando carro parado. Arquitetura completa em `docs/COMMAND_BOX_ENGENHARIA.md` (auditoria + 8 gaps + 3 camadas + 9 sub-sprints). 3 rules MVP: `fuel-lean-sustained-load`, `water-temp-drift-no-cooling`, `vmin-progressive-loss-segment`.
 
 ---
 
