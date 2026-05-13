@@ -7287,6 +7287,220 @@ step("PUB-06: stop encerra transports + suprime publish posterior") {
     }
 }
 
+// ════════════════════════════════════════════════════════════
+// TelemetryTimebase — TB-01..TB-12 (paridade JS timebase.js)
+// MS-16.1 (Command Box Engenharia — Camada 1 Engine Core).
+// docs/COMMAND_BOX_ENGENHARIA.md §1.1 e §5.1.
+//
+// Constantes numéricas inline IDÊNTICAS às do node-smoke-timebase-swift-
+// parity.mjs — cada caso deve produzir o mesmo resultado em ambas as
+// implementações (Swift + JS). Paridade é verificável por code review +
+// saída numérica.
+// ════════════════════════════════════════════════════════════
+
+// Helpers de fixture pra timebase smoke.
+func _tbT4000Sample(tMono: Double, t: Int64 = 1_700_000_000_000) -> Sample {
+    var s = Sample(t: t, tMono: tMono, source: SourceTags.t4000)
+    s.rpm = 5800
+    s.tps = 60
+    s.map = 0.92
+    s.lambda = 1.06
+    s.waterTemp = 102
+    s.oilTemp = 118
+    s.oilPressure = 4.0
+    s.batteryVoltage = 13.8
+    return s
+}
+
+func _tbGpsSample(tMono: Double, acc: Double = 3) -> Sample {
+    var s = Sample(
+        t: 1_700_000_000_000,
+        tMono: tMono,
+        source: SourceTags.gps,
+        signalQuality: "GOOD"
+    )
+    s.lat = -15.77
+    s.lng = -47.90
+    s.speed = 23.0
+    s.kmh = 82.8
+    s.acc = acc
+    return s
+}
+
+func _tbImuSample(tMono: Double, signalQuality: String = "GOOD") -> Sample {
+    var s = Sample(
+        t: 1_700_000_000_000,
+        tMono: tMono,
+        source: SourceTags.imu,
+        signalQuality: signalQuality
+    )
+    s.accLong = 1.2
+    s.accLat = 0.3
+    s.accVert = 0.0
+    s.gyroAlpha = 0.0
+    return s
+}
+
+step("TB-01: attach + ingest single sample → snapshot reflete fonte") {
+    let tb = TelemetryTimebase(now: { 1000 })
+    tb.attachSource(source: SourceTags.t4000)
+    let res = tb.ingest(_tbT4000Sample(tMono: 1000))
+    try assertEq(res?.quality, .ok)
+    try assertEq(res?.accepted, true)
+    let snap = tb.snapshotAt(tMono: 1000)
+    try assertClose(snap.engine.rpm, 5800)
+    try assertClose(snap.engine.map, 0.92)
+    try assertClose(snap.engine.lambda, 1.06)
+    try assertEq(snap.quality.t4000, .ok)
+}
+
+step("TB-02: multi-source — t4000 + cockpit-mobile + iphone-imu consolidam") {
+    let tb = TelemetryTimebase(now: { 1200 })
+    tb.attachSource(source: SourceTags.t4000)
+    tb.attachSource(source: SourceTags.gps)
+    tb.attachSource(source: SourceTags.imu)
+    // Timings escolhidos pra todas as 3 fontes ficarem dentro da freshness:
+    // t4000 (50ms) @1190 → delta 10; cockpit (1500ms) @1100 → delta 100;
+    // imu (200ms) @1180 → delta 20. Todas OK → sync OK → Alta.
+    tb.ingest(_tbT4000Sample(tMono: 1190))
+    tb.ingest(_tbGpsSample(tMono: 1100))
+    tb.ingest(_tbImuSample(tMono: 1180))
+    let snap = tb.snapshotAt(tMono: 1200)
+    try assertClose(snap.engine.rpm, 5800)
+    try assertClose(snap.position.lat, -15.77)
+    try assertClose(snap.dynamics.accelLongitudinal, 1.2)
+    try assertEq(snap.quality.sync, .ok)
+    try assertEq(snap.quality.confidence, "Alta")
+}
+
+step("TB-03: out-of-order — segundo tMono retroativo aceito + marcado") {
+    let tb = TelemetryTimebase()
+    tb.attachSource(source: SourceTags.t4000)
+    let r1 = tb.ingest(_tbT4000Sample(tMono: 2000))
+    try assertEq(r1?.quality, .ok)
+    let r2 = tb.ingest(_tbT4000Sample(tMono: 1500))
+    try assertEq(r2?.quality, .outOfOrder)
+    try assertEq(r2?.accepted, true)
+    let s = tb.stats()[SourceTags.t4000]
+    try assertEq(s?.discardedOutOfOrder, 1)
+}
+
+step("TB-04: duplicate — mesmo tMono descartado, accepted=false") {
+    let tb = TelemetryTimebase()
+    tb.attachSource(source: SourceTags.t4000)
+    tb.ingest(_tbT4000Sample(tMono: 2000))
+    let r2 = tb.ingest(_tbT4000Sample(tMono: 2000))
+    try assertEq(r2?.quality, .duplicate)
+    try assertEq(r2?.accepted, false)
+    let s = tb.stats()[SourceTags.t4000]
+    try assertEq(s?.discardedDuplicate, 1)
+}
+
+step("TB-05: late — idade entre freshness e 3×freshness → LATE") {
+    let tb = TelemetryTimebase(now: { 1080 })  // 1080 - 1000 = 80ms idade
+    // t4000 freshness default = 50 → LATE quando 50 < idade ≤ 150
+    tb.attachSource(source: SourceTags.t4000)
+    tb.ingest(_tbT4000Sample(tMono: 1000))
+    let snap = tb.snapshotAt(tMono: 1080)
+    try assertEq(snap.quality.t4000, .late)
+    let s = tb.stats()[SourceTags.t4000]
+    try assertEq(s?.quality, .late)
+}
+
+step("TB-06: missing — idade > 3×freshness → MISSING") {
+    let tb = TelemetryTimebase(now: { 1200 })  // 1200 - 1000 = 200ms idade
+    // t4000 freshness default = 50 → MISSING quando idade > 150
+    tb.attachSource(source: SourceTags.t4000)
+    tb.ingest(_tbT4000Sample(tMono: 1000))
+    let snap = tb.snapshotAt(tMono: 1200)
+    try assertEq(snap.quality.t4000, .missing)
+    let s = tb.stats()[SourceTags.t4000]
+    try assertEq(s?.quality, .missing)
+}
+
+step("TB-07: mock source — auto-attach quando ingere sem attach prévio") {
+    let tb = TelemetryTimebase()
+    try assertEq(tb.sourceCount, 0)
+    tb.ingest(_tbT4000Sample(tMono: 1000))
+    try assertEq(tb.sourceCount, 1)
+    // freshness default deve ter sido aplicada (t4000 = 50)
+    let s = tb.stats()[SourceTags.t4000]
+    try assertTrue(s != nil, "stats deve incluir auto-attach")
+}
+
+step("TB-08: stats — counters discardedOutOfOrder + discardedDuplicate") {
+    let tb = TelemetryTimebase()
+    tb.attachSource(source: SourceTags.t4000)
+    tb.ingest(_tbT4000Sample(tMono: 1000))
+    tb.ingest(_tbT4000Sample(tMono: 800))   // out-of-order
+    tb.ingest(_tbT4000Sample(tMono: 600))   // out-of-order
+    tb.ingest(_tbT4000Sample(tMono: 1000))  // duplicate
+    let s = tb.stats()[SourceTags.t4000]
+    try assertEq(s?.discardedOutOfOrder, 2)
+    try assertEq(s?.discardedDuplicate, 1)
+}
+
+step("TB-09: buffer GC — amostras > 10000ms são descartadas") {
+    let tb = TelemetryTimebase()
+    tb.attachSource(source: SourceTags.mock)
+    var s1 = Sample(t: 0, tMono: 1000, source: SourceTags.mock)
+    s1.accLong = 0.5
+    tb.ingest(s1)
+    var s2 = Sample(t: 0, tMono: 5000, source: SourceTags.mock)
+    s2.accLong = 0.7
+    tb.ingest(s2)
+    var s3 = Sample(t: 0, tMono: 15000, source: SourceTags.mock)
+    s3.accLong = 0.9
+    tb.ingest(s3)
+    // cutoff = 15000 - 10000 = 5000; amostra 1 (1000) eliminada; 2 (5000) eliminada (< cutoff = false, 5000 < 5000 = false). Aguarda.
+    // Re-leitura JS: while buf[0].tMono < cutoff → 1000 < 5000 yes drop; 5000 < 5000 no stop.
+    // Resultado: 2 amostras (5000 e 15000).
+    let stats = tb.stats()[SourceTags.mock]
+    try assertEq(stats?.bufferSize, 2)
+}
+
+step("TB-10: snapshot quality consolidada — worstOf de fontes") {
+    let tb = TelemetryTimebase(now: { 1200 })
+    tb.attachSource(source: SourceTags.t4000)   // freshness 50
+    tb.attachSource(source: SourceTags.gps)     // freshness 1500
+    tb.ingest(_tbT4000Sample(tMono: 1000))      // delta 200 → MISSING
+    tb.ingest(_tbGpsSample(tMono: 1180))        // delta 20 → OK
+    let snap = tb.snapshotAt(tMono: 1200)
+    try assertEq(snap.quality.t4000, .missing)
+    try assertEq(snap.quality.iphone, .ok)      // cockpit-mobile vai pra `iphone` (Snapshot.swift)
+    try assertEq(snap.quality.sync, .missing)   // worstOf
+    try assertEq(snap.quality.confidence, "Baixa")
+}
+
+step("TB-11: detach remove fonte do snapshot") {
+    let tb = TelemetryTimebase(now: { 1100 })
+    tb.attachSource(source: SourceTags.t4000)
+    tb.attachSource(source: SourceTags.gps)
+    tb.ingest(_tbT4000Sample(tMono: 1050))
+    tb.ingest(_tbGpsSample(tMono: 1050))
+    tb.detachSource(SourceTags.t4000)
+    try assertEq(tb.sourceCount, 1)
+    let snap = tb.snapshotAt(tMono: 1100)
+    try assertEq(snap.engine.rpm, nil)          // t4000 detached
+    try assertClose(snap.position.lat, -15.77)
+}
+
+step("TB-12: jitter e latencyMedian — janela LATENCY_WINDOW") {
+    let tb = TelemetryTimebase()
+    tb.attachSource(source: SourceTags.t4000)
+    // Intervalos: 10, 10, 10 → jitter ≈ 0
+    tb.ingest(_tbT4000Sample(tMono: 1000))
+    tb.ingest(_tbT4000Sample(tMono: 1010))
+    tb.ingest(_tbT4000Sample(tMono: 1020))
+    tb.ingest(_tbT4000Sample(tMono: 1030))
+    let s1 = tb.stats()[SourceTags.t4000]
+    try assertClose(s1?.jitter ?? 999, 0, tol: 0.001)
+    // Intervalos: 10,10,10,100 — jitter > 0
+    tb.ingest(_tbT4000Sample(tMono: 1130))
+    let s2 = tb.stats()[SourceTags.t4000]
+    try assertTrue((s2?.jitter ?? 0) > 10, "jitter deve refletir intervalo anômalo")
+}
+
 // ── relatório ────────────────────────────────────────────────
 print("\n═══ RESULTADO ═══")
 print("\(ok) ok / \(fail) fail")
