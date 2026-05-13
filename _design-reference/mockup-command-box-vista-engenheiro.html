@@ -7,6 +7,17 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Mockup polido — Command Box · Vista Engenheiro (P1 Fast)</title>
+<script>
+// Auto-reset agressivo: ?reset=1 na URL zera a memória do navegador antes
+// de qualquer coisa rodar — garante volta ao layout inicial sem clique.
+(function(){
+  if(location.search.indexOf('reset=1') >= 0){
+    try{
+      localStorage.removeItem('p1fast-vista-engenheiro-layout-v1');
+    }catch(e){}
+  }
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -4089,11 +4100,22 @@ html,body{
   }
 
   function applyBlock(el, data){
+    // Validação: rejeita dimensões absurdas que zeram visualmente o bloco
+    // (layout salvo corrompido causa "tela em branco" — Flávio 2026-05-13).
+    if(!data || typeof data.x !== 'number' || typeof data.y !== 'number' ||
+       typeof data.w !== 'number' || typeof data.h !== 'number' ||
+       isNaN(data.x) || isNaN(data.y) || isNaN(data.w) || isNaN(data.h) ||
+       data.w < 3 || data.h < 3 ||
+       data.x < -5 || data.y < -5 ||
+       data.x > 95 || data.y > 95){
+      return false;
+    }
     el.style.left = data.x + '%';
     el.style.top = data.y + '%';
     el.style.width = data.w + '%';
     el.style.height = data.h + '%';
     updateTag(el);
+    return true;
   }
 
   function updateTag(el){
@@ -4147,6 +4169,24 @@ html,body{
           var v = data[k];
           if(v && typeof v === 'object' && 'x' in v && 'w' in v) positions[k] = v;
         });
+      }
+      // Auto-cura: se >30% dos blocos têm dimensão absurda, descarta o layout salvo.
+      // Evita "tela em branco" após salvar layout ruim (Flávio 2026-05-13).
+      var ids = Object.keys(positions);
+      if(ids.length > 0){
+        var ruim = 0;
+        ids.forEach(function(id){
+          var d = positions[id];
+          if(!d || typeof d.w !== 'number' || typeof d.h !== 'number' ||
+             d.w < 3 || d.h < 3 || isNaN(d.w) || isNaN(d.h)){
+            ruim++;
+          }
+        });
+        if(ruim / ids.length > 0.3){
+          console.warn('[vista-engenheiro] layout salvo descartado (' + ruim + '/' + ids.length + ' blocos com dimensão absurda) — usando layout inicial.');
+          localStorage.removeItem(KEY);
+          return false;
+        }
       }
       customs.forEach(function(c){
         if(!stage.querySelector('[data-block-id="'+c.id+'"]')){

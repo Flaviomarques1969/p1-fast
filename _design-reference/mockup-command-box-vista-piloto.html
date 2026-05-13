@@ -7,6 +7,18 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Mockup polido — Command Box · Vista Piloto (P1 Fast)</title>
+<script>
+// Auto-reset agressivo: ?reset=1 na URL zera a memória do navegador antes
+// de qualquer coisa rodar — garante volta ao layout inicial sem clique.
+(function(){
+  if(location.search.indexOf('reset=1') >= 0){
+    try{
+      localStorage.removeItem('p1fast-vista-piloto-layout-v1');
+      localStorage.removeItem('p1fast-shift-light-fit-v1');
+    }catch(e){}
+  }
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -568,7 +580,7 @@ html,body{
    e ser dimensionado sem estar preso numa caixa visual.
    Padding-top alto pra dar respiro à curva superior do bezel. */
 .b-hud{
-  position:absolute;left:36%;top:4%;width:35%;height:75%;
+  position:absolute;left:36%;top:4%;width:27%;height:58%;
   /* Padding reduzido pra dar mais área pro velocímetro (Flávio 2026-05-11):
      era 32px 8px 6px e estava sobrando moldura em cima/lados. */
   padding:4px 0 2px;
@@ -1394,6 +1406,23 @@ html,body{
 }
 
 /* ───── COMBUSTÍVEL — gauge à esquerda · painel à direita ───── */
+/* CARRO — temperaturas e pressões (motor/câmbio/óleo). Posição abaixo do velocímetro. */
+.b-carro-fixed{
+  position:absolute;left:36%;top:64%;width:13%;height:25%;
+  background:rgba(10,14,24,0.55);
+  border:1px solid var(--hairline);
+  padding:0;
+  z-index:5;
+}
+/* PNEUS — 4 pneus com temperatura e pressão. Ao lado direito do Carro. */
+.b-pneus-fixed{
+  position:absolute;left:50%;top:64%;width:13%;height:25%;
+  background:rgba(10,14,24,0.55);
+  border:1px solid var(--hairline);
+  padding:0;
+  z-index:5;
+}
+
 .b-fuel-gauge{
   position:absolute;left:65%;top:90%;width:15%;height:10%;
   border-top:1px solid var(--hairline);
@@ -1505,7 +1534,7 @@ html,body{
 
 /* ───── DELTA ACUMULADO DE TEMPO ───── */
 .b-delta-acum{
-  position:absolute;left:43%;top:90%;width:42%;height:10%;
+  position:absolute;left:36%;top:90%;width:27%;height:10%;
   border-top:1px solid var(--hairline);
   display:flex;flex-direction:column;
   padding:4px 10px 5px;gap:2px;
@@ -3619,6 +3648,12 @@ html,body{
     </div>
   </div>
 
+  <!-- CARRO (motor/câmbio/óleo/combustível — temperaturas e pressões) — fixo no HTML (Flávio 2026-05-13) -->
+  <div class="b-custom is-carro b-carro-fixed" data-block-id="carro" data-block-name="Carro"></div>
+
+  <!-- PNEUS (4 pneus com temp e pressão) — fixo no HTML (Flávio 2026-05-13) -->
+  <div class="b-custom is-pneus b-pneus-fixed" data-block-id="pneus" data-block-name="Pneus"></div>
+
 </div>
 
 <div class="legend">
@@ -3683,11 +3718,22 @@ html,body{
   }
 
   function applyBlock(el, data){
+    // Validação: rejeita dimensões absurdas que zeram visualmente o bloco
+    // (layout salvo corrompido causa "tela em branco" — Flávio 2026-05-13).
+    if(!data || typeof data.x !== 'number' || typeof data.y !== 'number' ||
+       typeof data.w !== 'number' || typeof data.h !== 'number' ||
+       isNaN(data.x) || isNaN(data.y) || isNaN(data.w) || isNaN(data.h) ||
+       data.w < 3 || data.h < 3 ||
+       data.x < -5 || data.y < -5 ||
+       data.x > 95 || data.y > 95){
+      return false;
+    }
     el.style.left = data.x + '%';
     el.style.top = data.y + '%';
     el.style.width = data.w + '%';
     el.style.height = data.h + '%';
     updateTag(el);
+    return true;
   }
 
   function updateTag(el){
@@ -3741,6 +3787,25 @@ html,body{
           var v = data[k];
           if(v && typeof v === 'object' && 'x' in v && 'w' in v) positions[k] = v;
         });
+      }
+      // Auto-cura: se >20% dos blocos têm dimensão absurda, descarta o layout salvo.
+      // Evita "tela em branco" ou layout bagunçado herdado (Flávio 2026-05-13).
+      var ids = Object.keys(positions);
+      if(ids.length > 0){
+        var ruim = 0;
+        ids.forEach(function(id){
+          var d = positions[id];
+          if(!d || typeof d.w !== 'number' || typeof d.h !== 'number' ||
+             d.w < 3 || d.h < 3 || isNaN(d.w) || isNaN(d.h) ||
+             d.x < -5 || d.y < -5 || d.x > 95 || d.y > 95){
+            ruim++;
+          }
+        });
+        if(ruim / ids.length > 0.2){
+          console.warn('[vista-piloto] layout salvo descartado (' + ruim + '/' + ids.length + ' blocos suspeitos) — usando layout inicial.');
+          localStorage.removeItem(KEY);
+          return false;
+        }
       }
       customs.forEach(function(c){
         if(!stage.querySelector('[data-block-id="'+c.id+'"]')){
@@ -6961,8 +7026,8 @@ html,body{
   }
 })();
 
-// Cache-bust no toggle Piloto↔Engenheiro — força browser a buscar
-// versão nova mesmo se o usuário tiver cache antigo.
+// Cache-bust no toggle Piloto↔Engenheiro — força o navegador a buscar
+// versão nova mesmo se houver cache antigo. (Flávio 2026-05-13)
 (function(){
   function wireToggle(){
     document.querySelectorAll('a.vista-btn').forEach(function(a){
