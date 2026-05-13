@@ -349,10 +349,10 @@ Núcleo lógico do sistema. Engenharia codificada + IA contextual. Operado pelos
 | 16.2 | `VehicleContextAggregator.swift` — lap/stint/segment/thermal sem células. Fixture canônica sessão Brasília 2026-05-06 | Cloud | ❌ |
 | 16.3 | `CalibrationEngine.swift` + 3 rules MVP (`fuel-lean-sustained-load`, `water-temp-drift-no-cooling`, `vmin-progressive-loss-segment`) + migrations 0020_engineering_findings + 0021_engineering_recommendations | Cloud | ❌ |
 | 16.4 | `/api/advisor.js` aceita campo `findings[]`; system prompt ganha §"Findings codificadas"; persiste decisão em `engineering_recommendations` | Cloud | ❌ |
-| 16.5 | Tab Engenharia no iOS hub (pós-stint mobile) — lista findings + recommendations + decisão aprovar/editar/rejeitar | Cloud | ❌ |
+| 16.5 | Tab Engenharia no iOS hub (chefe + engenheiro + piloto) — lista findings + recommendations + **controles táteis** (`EngControl.swift`: sliders + knobs rotativos) pra editar parâmetros e disparar simulações no próprio iPhone | Cloud | ❌ |
 | 16.6 | iOS Box Mode ganha visão Engenharia — subscribe canal Realtime `live-stint-{id}`, renderiza na TV 32" via AirPlay → Apple TV. Gate: MS-9 + MS-12 fechados | Cloud | ❌ gate |
-| 16.7 | Cockpit Pilot 10,5" vira **canal contextual da engenharia** — overlay dirigido pelo canal `engineering-{stintId}` com tipos `ENGINEERING_INACTIVE` / `SIMULATION_INSTRUCTION` / `MECHANIC_DIAGNOSTIC` / `PILOT_FOCUS_PROMPT` / `ALERTA_OPERACIONAL`. Quem está no carro pode ser piloto OU mecânico — conteúdo é escolhido pela engenharia, não pela velocidade do carro | Cloud | ❌ |
-| 16.8 | Simulação de ajuste (engenheiro pré-visualiza efeito antes de aprovar; projeção por extrapolação linear nos samples atuais da célula) | Cloud | ❌ |
+| 16.7 | Cockpit Pilot 10,5" vira **canal contextual da engenharia** — overlay dirigido pelo canal `engineering-{stintId}` com tipos `ENGINEERING_INACTIVE` / `SIMULATION_INSTRUCTION` / `MECHANIC_DIAGNOSTIC` / `PILOT_FOCUS_PROMPT` / `ALERTA_OPERACIONAL` + **switch padrão piloto ↔ padrão engenharia** comandado pela engenharia (mensagem `COCKPIT_MODE_SWITCH`), funciona com carro andando | Cloud | ❌ |
+| 16.8 | **Simulação distribuída** — qualquer membro autorizado (chefe + engenheiro + piloto, D17) roda simulação no seu iPhone via sliders/knobs; projeção determinística publicada em tempo real no canal Realtime; TV 32" + Cockpit Pilot 10,5" sincronizam em ~250 ms. Funciona com **carro andando** ou parado | Cloud | ❌ |
 | 16.9 | (Opcional, gate D5) Engine cells RPM × MAP histogram + 2 rules extras (fuel-rich-light, lambda-vs-target) — só se mapa real for carregado | Cloud | ❌ gate |
 
 **Ordem dura:** 16.1 → 16.2 → 16.3 → (16.4 + 16.5 em paralelo) → 16.6 → (16.7 + 16.8 em paralelo) → 16.9.
