@@ -38,6 +38,13 @@ GOVERNANÇA (Diretor Técnico — docs/raceops/):
 - Curva é avaliada pela sequência: entrada → frenagem → turn-in → apex → retomada do acelerador → saída → reta seguinte. Nunca só por velocidade de entrada. Apex é entidade central: classificar (correto / antecipado / tardio / perdido por fora / interno demais / sacrificado).
 - "O que NÃO mexer" é tão importante quanto "o que mexer". Sempre listar.
 
+FINDINGS CODIFICADOS (Camada 2 — quando presentes no payload):
+- O payload pode trazer um campo "findings": array de achados determinísticos emitidos pela Camada 2 (CalibrationEngine) do Command Box Engenharia (MS-16.3). Cada finding tem id, ruleId, severidade, confiança, escopo, evidência objetiva.
+- Findings são HIPÓTESES PRÉ-VALIDADAS pela camada determinística. NÃO inventar causalidade contra eles.
+- Sua tarefa quando há findings: (a) PRIORIZAR — qual atacar primeiro e por quê, (b) EXPLICAR pro engenheiro/chefe a evidência em linguagem técnica de pista, (c) SUGERIR como validar no próximo stint, (d) DETECTAR CONFLITO se dois findings se contradizem (ex: λ pobre + Vmin caindo no mesmo trecho podem ser causa comum ou independentes), (e) REDUZIR CONFIANÇA quando evidência for fraca ou stint tiver poucas voltas.
+- NÃO contradizer findings determinísticos sem motivo explícito (cite o motivo se contradizer).
+- Findings com confiança "Baixa" merecem investigação extra antes de virar recomendação — vale dizer "precisa de mais voltas".
+
 FILOSOFIA:
 - Brevidade brutal. Frase única de sugestão (máx 14 palavras).
 - Ajustes concretos (campo, de, para, motivo curto).
@@ -62,7 +69,7 @@ FORMATO DE RESPOSTA — JSON ESTRITO, sem markdown, sem texto fora do JSON:
 Se faltar dado pra análise responsável, retorne:
 { "sugestao": "Mais voltas válidas antes de ajustar setup.", "racional": "…", "prioridade": "—", "ajustes": [], "nao_mexer": ["nada — sem dado para sustentar mudança"], "como_validar": "rodar mais 5 voltas válidas em condição estável", "confianca": 0.2, "confianca_texto": "Baixa", "evidencias": ["…"] }`;
 
-function buildUserPrompt({ stint, env, objetivo, contexto }) {
+function buildUserPrompt({ stint, env, objetivo, contexto, findings }) {
   const lines = [];
   lines.push(`# CONTEXTO`);
   lines.push(`Pista: ${contexto?.pistaApelido || '—'}`);
@@ -100,8 +107,25 @@ function buildUserPrompt({ stint, env, objetivo, contexto }) {
     }
   }
 
+  // MS-16.4 — findings codificados (Camada 2 CalibrationEngine)
+  if (Array.isArray(findings) && findings.length > 0) {
+    lines.push(`\n# FINDINGS CODIFICADOS (Camada 2 determinística)`);
+    lines.push(`São ${findings.length} achado(s) pré-validados. Priorize, explique, sugira validação. NÃO contradiga sem motivo explícito.`);
+    for (const f of findings) {
+      const escopoTxt = f.segmentId ? `${f.escopo || 'segment'} ${f.segmentId}`
+                        : (f.lapNumero ? `${f.escopo || 'lap'} v${f.lapNumero}` : (f.escopo || 'stint'));
+      lines.push(`\n## ${f.titulo} (${f.ruleId})`);
+      lines.push(`Severidade: ${f.severidade} · Confiança: ${f.confianca} · Escopo: ${escopoTxt}`);
+      if (f.descricao) lines.push(`${f.descricao}`);
+    }
+  }
+
   lines.push(`\n# TAREFA`);
-  lines.push(`Analise os dados acima e responda no JSON estrito. Se faltar evidência, diga.`);
+  if (Array.isArray(findings) && findings.length > 0) {
+    lines.push(`Priorize os findings codificados em "FINDINGS CODIFICADOS" acima e produza recomendação(ões) acionáveis no JSON estrito. Liste "nao_mexer" explicitamente. Se findings se contradizem ou parecem dependentes, mencione isso no campo "racional".`);
+  } else {
+    lines.push(`Analise os dados acima e responda no JSON estrito. Se faltar evidência, diga.`);
+  }
   return lines.join('\n');
 }
 
