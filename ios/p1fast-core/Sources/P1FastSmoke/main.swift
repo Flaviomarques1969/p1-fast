@@ -7903,6 +7903,132 @@ step("CE-15: reset limpa cooldowns") {
     try assertEq(f3.count, 1)
 }
 
+// ════════════════════════════════════════════════════════════
+// EngControlModel + EngineeringDecisionPolicy — ECM-01..ECM-12 (MS-16.5)
+// docs/COMMAND_BOX_ENGENHARIA.md §6 MS-16.5 + §11 D17.
+// ════════════════════════════════════════════════════════════
+
+step("ECM-01: slider de combustível clampa range [-10, +10]") {
+    let s = EngControlModel.fuelAdjustmentSlider(value: 4)
+    try assertClose(s.value, 4)
+    let r = s.tryChange(to: 15, papel: .engenheiro, carroParado: false)
+    try assertEq(r.accepted, true)
+    try assertClose(r.value, 10)   // clamp
+    let r2 = s.tryChange(to: -20, papel: .engenheiro, carroParado: false)
+    try assertEq(r2.accepted, true)
+    try assertClose(r2.value, -10)
+}
+
+step("ECM-02: slider snap em step=0.5") {
+    let s = EngControlModel.fuelAdjustmentSlider(value: 0)
+    let r = s.tryChange(to: 3.7, papel: .engenheiro, carroParado: false)
+    try assertEq(r.accepted, true)
+    try assertClose(r.value, 3.5)  // snap pra 0.5 mais próximo
+}
+
+step("ECM-03: knob RPM step=100") {
+    let k = EngControlModel.rpmTargetKnob(value: 5800)
+    let r = k.tryChange(to: 5850, papel: .engenheiro, carroParado: false)
+    try assertEq(r.accepted, true)
+    try assertClose(r.value, 5900) // 5850 → 5900 (round-half-up)
+    let r2 = k.tryChange(to: 5849, papel: .engenheiro, carroParado: false)
+    try assertEq(r2.accepted, true)
+    try assertClose(r2.value, 5800)
+}
+
+step("ECM-04: piloto SÓ opera com carro parado (D17)") {
+    let s = EngControlModel.fuelAdjustmentSlider(value: 0)
+    let rAndando = s.tryChange(to: 4, papel: .piloto, carroParado: false)
+    try assertEq(rAndando.accepted, false)
+    try assertTrue(rAndando.motivo?.contains("D17") ?? false)
+    let rParado = s.tryChange(to: 4, papel: .piloto, carroParado: true)
+    try assertEq(rParado.accepted, true)
+    try assertClose(rParado.value, 4)
+}
+
+step("ECM-05: chefe + engenheiro operam a qualquer momento") {
+    let s = EngControlModel.fuelAdjustmentSlider(value: 0)
+    try assertEq(s.tryChange(to: 4, papel: .chefe, carroParado: false).accepted, true)
+    try assertEq(s.tryChange(to: 4, papel: .engenheiro, carroParado: false).accepted, true)
+    try assertEq(s.tryChange(to: 4, papel: .chefe, carroParado: true).accepted, true)
+}
+
+step("ECM-06: readonly NUNCA opera") {
+    let s = EngControlModel.fuelAdjustmentSlider(value: 0)
+    try assertEq(s.tryChange(to: 4, papel: .readonly, carroParado: true).accepted, false)
+    try assertEq(s.tryChange(to: 4, papel: .readonly, carroParado: false).accepted, false)
+}
+
+step("ECM-07: valor não-finito rejeitado") {
+    let s = EngControlModel.fuelAdjustmentSlider(value: 0)
+    try assertEq(s.tryChange(to: .nan, papel: .chefe, carroParado: true).accepted, false)
+    try assertEq(s.tryChange(to: .infinity, papel: .chefe, carroParado: true).accepted, false)
+}
+
+step("ECM-08: withValue cria nova instância imutável") {
+    let s = EngControlModel.fuelAdjustmentSlider(value: 4)
+    let s2 = s.withValue(2)
+    try assertClose(s.value, 4)    // original preservado
+    try assertClose(s2.value, 2)
+    try assertEq(s.id, s2.id)
+}
+
+step("ECM-09: toggle moduloEngenhariaToggle binário") {
+    let off = EngControlModel.moduloEngenhariaToggle(value: false)
+    try assertClose(off.value, 0)
+    let on = EngControlModel.moduloEngenhariaToggle(value: true)
+    try assertClose(on.value, 1)
+}
+
+step("ECM-10: DecisionPolicy — piloto não rejeita (só aprova/edita)") {
+    let r1 = EngineeringDecisionPolicy.canDecide(papel: .piloto, carroParado: true, para: .aprovada)
+    if case .success = r1 {} else { throw Bad(msg: "piloto deve poder aprovar parado") }
+    let r2 = EngineeringDecisionPolicy.canDecide(papel: .piloto, carroParado: true, para: .rejeitada)
+    if case .failure = r2 {} else { throw Bad(msg: "piloto NÃO rejeita") }
+}
+
+step("ECM-11: DecisionPolicy — transitionAllowed só de pendente") {
+    let r1 = EngineeringDecisionPolicy.transitionAllowed(from: .pendente, to: .aprovada)
+    if case .success = r1 {} else { throw Bad(msg: "pendente → aprovada deve passar") }
+    let r2 = EngineeringDecisionPolicy.transitionAllowed(from: .aprovada, to: .rejeitada)
+    if case .failure(let err) = r2 {
+        try assertEq(err, .decisaoFinalizada)
+    } else {
+        throw Bad(msg: "aprovada → rejeitada deve falhar")
+    }
+}
+
+step("ECM-12: DecisionPolicy.authorize integra ambos checks") {
+    // Chefe aprovando pendente com carro andando — OK
+    let r1 = EngineeringDecisionPolicy.authorize(
+        papel: .chefe, carroParado: false,
+        from: .pendente, to: .aprovada
+    )
+    if case .success = r1 {} else { throw Bad(msg: "chefe deve aprovar mesmo com carro andando") }
+
+    // Piloto aprovando pendente com carro andando — bloqueio D17
+    let r2 = EngineeringDecisionPolicy.authorize(
+        papel: .piloto, carroParado: false,
+        from: .pendente, to: .aprovada
+    )
+    if case .failure(let err) = r2 {
+        try assertEq(err, .carroAndando)
+    } else {
+        throw Bad(msg: "piloto andando não deve aprovar")
+    }
+
+    // Chefe tentando re-decidir aprovada — bloqueio decisaoFinalizada
+    let r3 = EngineeringDecisionPolicy.authorize(
+        papel: .chefe, carroParado: true,
+        from: .aprovada, to: .rejeitada
+    )
+    if case .failure(let err) = r3 {
+        try assertEq(err, .decisaoFinalizada)
+    } else {
+        throw Bad(msg: "decisão já finalizada não deve mudar")
+    }
+}
+
 // ── relatório ────────────────────────────────────────────────
 print("\n═══ RESULTADO ═══")
 print("\(ok) ok / \(fail) fail")
