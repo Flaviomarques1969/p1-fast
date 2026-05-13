@@ -157,6 +157,20 @@ export const advisorPayload = schema({
     pistaApelido: optional(field('string', { max: 64 })),
     carro:        optional(field('string', { max: 64 })),
   }),
+  // MS-16.4 — findings codificados emitidos pela Camada 2 (CalibrationEngine).
+  // Quando presentes, IA prioriza/explica/valida em vez de tentar inferir
+  // hipóteses do zero. Cada finding já tem evidência objetiva + confiança.
+  findings: optional(arrayOf({
+    id:         field('string', { max: 64 }),
+    ruleId:     field('string', { max: 64 }),
+    titulo:     field('string', { max: 200 }),
+    descricao:  optional(field('string', { max: 1000 })),
+    severidade: field('string', { regex: /^(info|atencao|alta)$/ }),
+    confianca:  field('string', { regex: /^(Alta|Média|Baixa)$/ }),
+    escopo:     optional(field('string', { regex: /^(stint|lap|segment|cell)$/ })),
+    segmentId:  optional(field('string', { max: 128 })),
+    lapNumero:  optional(field('number', { min: 0, max: 999, int: true })),
+  }, { min: 0, max: 50 })),
 });
 
 // POST /api/post-stint — análise pós-stint completa
