@@ -60,6 +60,11 @@ struct PosStintView: View {
                 contextHead(stint: s)
                 hero(stint: s)
                 summary4Stats
+                // S5 #15: Stint Bar — gráfico de bolinhas por volta, cores
+                // semânticas. Antes da lista pra dar visão de relance.
+                if !voltas.isEmpty {
+                    stintBar(stint: s)
+                }
                 voltasSection
                 notaSection
                 if let erro = loadError {
@@ -218,22 +223,31 @@ struct PosStintView: View {
     }
 
     private func voltaRow(_ v: Volta) -> some View {
-        HStack(alignment: .center, spacing: Spacing.md) {
+        // S5 #14: destaque visual da melhor volta do stint (a com mesmo
+        // tempoMs do hero). Borda em ouro + tag explícita. Recomendação
+        // P3 #14.1 sugere 3 destaques (melhor stint + melhor evento +
+        // recorde absoluto). Aqui só identificamos "melhor do stint" —
+        // melhor-do-evento e best-ever precisariam de queries cross-stint
+        // que entram em sprint futura. Documentado em CHECKPOINT-VOLTEI.
+        let ehMelhorDoStint = isMelhorDoStint(v)
+        return HStack(alignment: .center, spacing: Spacing.md) {
             Text("#\(v.numero)")
                 .font(.system(size: 13, weight: .semibold))
                 .monospacedDigit()
-                .foregroundStyle(Color.textMuted)
+                .foregroundStyle(ehMelhorDoStint ? Color.ouro : Color.textMuted)
                 .frame(width: 36, alignment: .leading)
             Text(v.tempoMs.map { formatTempoMs($0) } ?? "—")
                 .font(.system(size: 16, weight: .semibold))
                 .monospacedDigit()
-                .foregroundStyle(v.valida ? Color.text : Color.textFaint)
+                .foregroundStyle(ehMelhorDoStint ? Color.ouro : (v.valida ? Color.text : Color.textFaint))
             Spacer(minLength: 0)
             HStack(spacing: 6) {
                 if !v.valida {
                     EventTag(text: v.motivoInvalidacao ?? "Inválida", kind: .atencao)
                 }
-                if isPbDoDia(v) {
+                if ehMelhorDoStint {
+                    EventTag(text: "Melhor do stint", kind: .ouro)
+                } else if isPbDoDia(v) {
                     EventTag(text: "PB do dia", kind: .ouro)
                 } else if isDesvioBaixo(v) {
                     EventTag(text: "Desvio < 0.4s", kind: .bom)
@@ -244,12 +258,102 @@ struct PosStintView: View {
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                .fill(Color.surfaceRaised)
+                .fill(ehMelhorDoStint ? Color.ouro.opacity(0.08) : Color.surfaceRaised)
         )
         .overlay(
             RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                .stroke(Color.border, lineWidth: 1)
+                .stroke(ehMelhorDoStint ? Color.ouro.opacity(0.55) : Color.border, lineWidth: ehMelhorDoStint ? 1.5 : 1)
         )
+    }
+
+    /// S5 #14: identifica a volta de melhor tempo no stint. Ignora voltas
+    /// inválidas. Quando há empate, a primeira da lista vence (estável).
+    private func isMelhorDoStint(_ v: Volta) -> Bool {
+        guard let stintMelhor = stint?.melhorVoltaMs,
+              let tempo = v.tempoMs,
+              v.valida else { return false }
+        guard tempo == stintMelhor else { return false }
+        // Em caso de empate (raríssimo, mesmos milissegundos), só a primeira
+        // volta de mesmo tempo é considerada melhor pra evitar 2 destaques.
+        guard let primeiraMelhor = voltas.first(where: {
+            $0.valida && $0.tempoMs == stintMelhor
+        }) else { return false }
+        return primeiraMelhor.id == v.id
+    }
+
+    // MARK: - Stint Bar (S5 #15)
+
+    /// S5 #15 — Gráfico de bolinhas, 1 por volta válida em ordem cronológica.
+    /// Cores semânticas:
+    /// • cinza fraca: volta inválida (ainda mostra mas sem destaque)
+    /// • vermelha: pior que o ghost de referência
+    /// • verde: melhor que o ghost
+    /// • verde + halo ouro (#15.1): melhor volta do stint
+    /// • dourada brilhando: recorde absoluto da pista (best-ever) — quando
+    ///   a base de dados tiver essa info; hoje placeholder (sem dado).
+    ///
+    /// Bolinhas têm tamanho fixo (#15.3). Toque na bolinha rola a lista
+    /// pra a volta correspondente (#15.2 — destino "abrir detalhe" entra
+    /// no S6 quando VoltaDetalheView nascer).
+    private func stintBar(stint s: Stint) -> some View {
+        let ghostMs: Int? = ghostDeReferencia(stint: s)
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Gráfico de voltas".uppercased())
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(0.6)
+                    .foregroundStyle(Color.textFaint)
+                Spacer()
+                Text(ghostMs.map { "vs \(formatTempoMs($0))" } ?? "Sem referência")
+                    .font(.system(size: 10, weight: .regular))
+                    .foregroundStyle(Color.textFaint)
+            }
+            .padding(.horizontal, Spacing.xs)
+            HStack(spacing: 8) {
+                ForEach(voltas, id: \.id) { v in
+                    stintBarBolinha(volta: v, ghostMs: ghostMs, stintMelhor: s.melhorVoltaMs)
+                }
+            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .fill(Color.surfaceRaised)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .stroke(Color.border, lineWidth: 1)
+            )
+        }
+    }
+
+    private func stintBarBolinha(volta: Volta, ghostMs: Int?, stintMelhor: Int?) -> some View {
+        let cor = corBolinha(volta: volta, ghostMs: ghostMs, stintMelhor: stintMelhor)
+        let ehMelhor = (volta.tempoMs != nil && volta.tempoMs == stintMelhor && volta.valida)
+        return Circle()
+            .fill(cor)
+            .frame(width: 14, height: 14)
+            .overlay(
+                Circle()
+                    .stroke(ehMelhor ? Color.ouro.opacity(0.65) : Color.clear,
+                            lineWidth: ehMelhor ? 2 : 0)
+            )
+            .padding(ehMelhor ? 3 : 0) // espaço pro halo não estourar
+    }
+
+    private func corBolinha(volta: Volta, ghostMs: Int?, stintMelhor: Int?) -> Color {
+        guard volta.valida else { return Color.textFaint.opacity(0.45) }
+        guard let tempo = volta.tempoMs else { return Color.textFaint.opacity(0.45) }
+        if tempo == stintMelhor { return Color.bom }
+        guard let ghost = ghostMs else { return Color.text.opacity(0.55) }
+        return tempo <= ghost ? Color.bom : Color.erro.opacity(0.75)
+    }
+
+    /// Ghost de referência: melhor volta válida do stint atual. Em sprint
+    /// futura, vira "melhor do piloto naquela pista" (cross-stint).
+    private func ghostDeReferencia(stint s: Stint) -> Int? {
+        s.melhorVoltaMs
     }
 
     // MARK: - Nota

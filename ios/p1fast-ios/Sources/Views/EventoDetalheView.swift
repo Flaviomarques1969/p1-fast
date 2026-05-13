@@ -190,10 +190,23 @@ struct EventoDetalheView: View {
                 topbar
                 eventHead(ev: ev)
                     .padding(.top, 14)
-                summaryCard(ev: ev)
-                    .padding(.top, 18)
+                // S5 #10: evento passado ganha resumo expandido (5 stats).
+                // Evento futuro mantém o summary card 4-cells.
+                if isEventoPassado {
+                    resumoEventoPassadoCard(ev: ev)
+                        .padding(.top, 18)
+                } else {
+                    summaryCard(ev: ev)
+                        .padding(.top, 18)
+                }
                 pendenciasSection
                     .padding(.top, 18)
+                // S5 #9: histórico de pendências (concluídas × não concluídas)
+                // visível em evento passado.
+                if isEventoPassado, let inst = pendenciaRepo.instanciasPorEvento[eventoId], !inst.isEmpty {
+                    historicoPendenciasSection(instancias: inst)
+                        .padding(.top, 18)
+                }
                 stintsSection(ev: ev)
                     .padding(.top, 18)
             }
@@ -314,6 +327,140 @@ struct EventoDetalheView: View {
         .padding(.bottom, 4)
     }
 
+    // MARK: - Resumo do evento passado (S5 rodada 1)
+
+    /// S5 #10 — Quadro de resultados visíveis SÓ em evento passado:
+    /// melhor volta + total voltas + total stints + velocidade máxima + km
+    /// rodada (estimada). Mantém o estilo visual do summary 4-cells
+    /// (Spacing.md + Radius.md + surfaceRaised), só com 5 colunas em
+    /// vez de 4 e ordem priorizando o ouro da melhor volta.
+    private func resumoEventoPassadoCard(ev: EventoView) -> some View {
+        let s = summaryFor(ev)
+        return VStack(alignment: .leading, spacing: 10) {
+            Text("Resumo do evento")
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(0.06 * 11)
+                .foregroundStyle(Color.textFaint)
+                .padding(.horizontal, 4)
+            HStack(spacing: 6) {
+                statCell(value: s.melhorVoltaCurto ?? "—", label: "Melhor", isOuro: true)
+                statCell(value: "\(s.voltas)", label: "Voltas", isOuro: false)
+                statCell(value: "\(s.stints)", label: "Stints", isOuro: false)
+                statCell(value: formatVmax(s.vmaxKmh), label: "Vel. máx.", isOuro: false)
+                statCell(value: formatKm(s.kmTotal), label: "km rodada", isOuro: false)
+            }
+        }
+        .padding(Spacing.md)
+        .background(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .fill(Color.surfaceRaised)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .stroke(Color.border, lineWidth: 1)
+        )
+    }
+
+    private func formatVmax(_ kmh: Double?) -> String {
+        guard let kmh = kmh, kmh > 0 else { return "—" }
+        return String(format: "%.0f km/h", kmh)
+    }
+
+    private func formatKm(_ km: Double?) -> String {
+        guard let km = km, km > 0 else { return "—" }
+        return String(format: "%.0f km", km)
+    }
+
+    // MARK: - Histórico de pendências (S5 rodada 1)
+
+    /// S5 #9 — Em evento passado, mostra as pendências feitas e as não
+    /// feitas em 2 sub-listas inline. Recomendação P3 aplicada (#9: mostra
+    /// em futuros + passados — implementação prioriza passado, futuro fica
+    /// no fluxo de pendências aberto pelo botão da seção #24).
+    private func historicoPendenciasSection(instancias: [EventoPendencia]) -> some View {
+        let concluidas = instancias.filter { $0.checado }
+        let naoConcluidas = instancias.filter { !$0.checado }
+        return VStack(alignment: .leading, spacing: 14) {
+            Text("Histórico de pendências")
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(0.06 * 11)
+                .foregroundStyle(Color.textFaint)
+                .padding(.horizontal, 4)
+
+            if !concluidas.isEmpty {
+                historicoBloco(
+                    titulo: "Concluídas",
+                    contagem: concluidas.count,
+                    cor: Color.bom,
+                    instancias: concluidas
+                )
+            }
+            if !naoConcluidas.isEmpty {
+                historicoBloco(
+                    titulo: "Não concluídas",
+                    contagem: naoConcluidas.count,
+                    cor: Color.atencao,
+                    instancias: naoConcluidas
+                )
+            }
+        }
+    }
+
+    private func historicoBloco(titulo: String, contagem: Int, cor: Color, instancias: [EventoPendencia]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Circle().fill(cor).frame(width: 6, height: 6)
+                Text(titulo)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.text)
+                Text("\(contagem)")
+                    .font(.system(size: 12, weight: .regular))
+                    .monospacedDigit()
+                    .foregroundStyle(Color.textFaint)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 4)
+
+            VStack(spacing: 6) {
+                ForEach(instancias, id: \.id) { inst in
+                    historicoLinha(inst: inst, cor: cor)
+                }
+            }
+        }
+    }
+
+    private func historicoLinha(inst: EventoPendencia, cor: Color) -> some View {
+        let nome = pendenciaRepo.nomeTemplate(inst.templateId) ?? inst.templateId
+        return HStack(alignment: .center, spacing: 10) {
+            Image(systemName: inst.checado ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(inst.checado ? cor : Color.textFaint)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(nome)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(inst.checado ? Color.textMuted : Color.text)
+                    .strikethrough(inst.checado, color: Color.textFaint)
+                if let nota = inst.nota?.trimmingCharacters(in: .whitespaces), !nota.isEmpty {
+                    Text(nota)
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundStyle(Color.textFaint)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .fill(Color.surfaceRaised)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .stroke(Color.border, lineWidth: 1)
+        )
+    }
+
     // MARK: - Summary 4-stats
 
     private func summaryCard(ev: EventoView) -> some View {
@@ -415,6 +562,10 @@ struct EventoDetalheView: View {
         let voltas: Int
         let melhorVoltaCurto: String?
         let pctPronto: Int
+        /// S5 rodada 1: velocidade máxima do evento, nil quando não há dado.
+        let vmaxKmh: Double?
+        /// S5 rodada 1: km estimada do evento, nil quando não há dado.
+        let kmTotal: Double?
     }
 
     private func summaryFor(_ ev: EventoView) -> DetalheSummary {
@@ -423,7 +574,9 @@ struct EventoDetalheView: View {
                 stints: mock.stintsCount,
                 voltas: mock.voltasCount,
                 melhorVoltaCurto: mock.melhorVoltaCurto(),
-                pctPronto: mock.pctPronto
+                pctPronto: mock.pctPronto,
+                vmaxKmh: mock.vmaxKmh,
+                kmTotal: mock.kmTotal
             )
         }
         let real = repo.sumarioPorEvento[ev.id]
@@ -437,7 +590,12 @@ struct EventoDetalheView: View {
                 let decimo = (ms % 1000) / 100
                 return String(format: "%d:%02d.%d", minutos, segundos, decimo)
             },
-            pctPronto: 0
+            pctPronto: 0,
+            // S5: vmax e km de eventos reais ainda não são agregados no
+            // sumarioPorEvento. Por enquanto nil — UI mostra "—". Adicionar
+            // queries no EventoRepository em sprint futura.
+            vmaxKmh: nil,
+            kmTotal: nil
         )
     }
 
