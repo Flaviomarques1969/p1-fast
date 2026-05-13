@@ -418,6 +418,84 @@ enum Migrations {
             try db.execute(sql: "ALTER TABLE tracks ADD COLUMN cidade TEXT;")
             try db.execute(sql: "UPDATE tracks SET cidade = 'Brasília' WHERE apelido = 'Brasília' AND cidade IS NULL;")
         }
+
+        // ═══ v21_pendencias_consumiveis ════════════════════════
+        // S8 #21 da rodada 1 (2026-05-12). Espelha
+        // supabase/migrations/0022_pendencias_consumiveis.sql.
+        // Templates de pendência ganham flag `eh_consumivel` (1 quando
+        // o item é consumível tipo óleo/combustível) e `unidade` (texto:
+        // "L" pra litros, "mL" pra mililitros). evento_pendencias ganha
+        // `quantidade` (numérica). UI condiciona o campo: só pendências
+        // consumíveis pedem quantidade ao marcar como feita.
+        m.registerMigration("v21_pendencias_consumiveis") { db in
+            try db.execute(sql: "ALTER TABLE pendencias_template ADD COLUMN eh_consumivel INTEGER NOT NULL DEFAULT 0;")
+            try db.execute(sql: "ALTER TABLE pendencias_template ADD COLUMN unidade TEXT;")
+            try db.execute(sql: "ALTER TABLE evento_pendencias ADD COLUMN quantidade REAL;")
+            // Backfill heurístico: marca consumíveis pela palavra-chave
+            // no título. Lista canônica do Flávio quando ele passar.
+            try db.execute(sql: """
+                UPDATE pendencias_template
+                SET eh_consumivel = 1,
+                    unidade = 'L'
+                WHERE LOWER(titulo) LIKE '%óleo%'
+                   OR LOWER(titulo) LIKE '%oleo%'
+                   OR LOWER(titulo) LIKE '%combustível%'
+                   OR LOWER(titulo) LIKE '%combustivel%'
+                   OR LOWER(titulo) LIKE '%aditivo%'
+                   OR LOWER(titulo) LIKE '%fluido%';
+            """)
+        }
+
+        // ═══ v22_pneus_serie_evento ════════════════════════════
+        // S8 #23 da rodada 1 (2026-05-12). Espelha
+        // supabase/migrations/0023_pneus_serie_evento.sql.
+        // Pneus ganham `numero_serie` (identificador físico). Nova
+        // tabela `evento_pneus` liga pneus aos eventos onde foram usados.
+        // Estrutura preparatória pra TPMS (campos pressão/temperatura
+        // atual já presentes — UI futura plumba quando hardware chegar).
+        m.registerMigration("v22_pneus_serie_evento") { db in
+            try db.execute(sql: "ALTER TABLE pneus ADD COLUMN numero_serie TEXT;")
+            try db.execute(sql: """
+                CREATE TABLE evento_pneus (
+                    id              TEXT PRIMARY KEY,
+                    time_id         TEXT NOT NULL,
+                    evento_id       TEXT NOT NULL REFERENCES eventos(id) ON DELETE CASCADE,
+                    pneu_id         TEXT NOT NULL REFERENCES pneus(id) ON DELETE CASCADE,
+                    pressao_atual_psi    REAL,
+                    temperatura_atual_c  REAL,
+                    ultima_leitura_em    INTEGER,
+                    created_at      INTEGER NOT NULL,
+                    updated_at      INTEGER NOT NULL,
+                    synced_at       INTEGER,
+                    UNIQUE(evento_id, pneu_id)
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX idx_evento_pneus_evento ON evento_pneus(evento_id);")
+            try db.execute(sql: "CREATE INDEX idx_evento_pneus_pneu ON evento_pneus(pneu_id);")
+        }
+
+        // ═══ v23_acoes_a_fazer ═════════════════════════════════
+        // S8 #22 da rodada 1 (2026-05-12). Espelha
+        // supabase/migrations/0024_acoes_a_fazer.sql.
+        // Lista pessoal e livre de ações a fazer, separada de pendências
+        // canônicas. Per-evento (decisão Flávio P3 #22). Some na próxima
+        // abertura ao marcar feita — implementação filtra `feita_em IS NULL`.
+        m.registerMigration("v23_acoes_a_fazer") { db in
+            try db.execute(sql: """
+                CREATE TABLE acoes_a_fazer (
+                    id          TEXT PRIMARY KEY,
+                    time_id     TEXT NOT NULL,
+                    evento_id   TEXT NOT NULL REFERENCES eventos(id) ON DELETE CASCADE,
+                    piloto_id   TEXT,
+                    descricao   TEXT NOT NULL,
+                    feita_em    INTEGER,
+                    created_at  INTEGER NOT NULL,
+                    updated_at  INTEGER NOT NULL,
+                    synced_at   INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX idx_acoes_a_fazer_evento ON acoes_a_fazer(evento_id);")
+        }
     }
 
     // swiftlint:disable:next function_body_length

@@ -126,6 +126,108 @@ final class EventoRepository: ObservableObject {
         self.sumarioPorEvento = sumarios
     }
 
+    // MARK: - S8 #18 — Histórico do piloto naquela pista por carro
+
+    /// Resumo de uso de um carro do time numa pista específica, do ponto
+    /// de vista do piloto logado. Usado no detalhe de evento futuro pra
+    /// mostrar "No Celta — sua melhor volta foi 1:38.142 (15/03)".
+    struct CarroPistaResumo: Identifiable, Equatable {
+        var id: String { carroId }
+        let carroId: String
+        let carroApelido: String
+        /// Nº de voltas válidas que esse carro já deu nessa pista, pelo piloto.
+        let voltasValidas: Int
+        /// Melhor volta em ms (nil → "Primeira vez nesse autódromo").
+        let melhorVoltaMs: Int?
+        /// Quando rolou a melhor volta (ms). Nil quando não há voltas.
+        let melhorVoltaQuandoMs: Int64?
+        /// Velocidade máxima em km/h (vmax registrada nas execuções). Nil
+        /// quando não há dado.
+        let vmaxKmh: Double?
+    }
+
+    /// S8 #18 — Carrega o histórico do piloto atual em uma pista, separado
+    /// por carro. Inclui TODOS os carros do time (recomendação P3 #18:
+    /// mostrar todos, mesmo os que nunca correram ali — caem como
+    /// "Primeira vez nesse autódromo").
+    func loadHistoricoPilotoNaPista(trackId: String) async throws -> [CarroPistaResumo] {
+        guard let teamId = TeamContext.currentTeamId else { return [] }
+        let pilotoId = TeamContext.currentPilotoId
+        return try await queue.read { db -> [CarroPistaResumo] in
+            // 1) Todos os carros do time.
+            let carros = try Carro
+                .filter(Column("time_id") == teamId)
+                .order(Column("created_at").desc)
+                .fetchAll(db)
+
+            // 2) Pra cada carro, agrega voltas válidas + melhor volta +
+            //    vmax em sessões do mesmo carro vinculadas a eventos da
+            //    pista alvo e do piloto logado (quando há piloto).
+            var resultado: [CarroPistaResumo] = []
+            for c in carros {
+                let pilotoFiltro = pilotoId != nil ? "AND s.piloto_id = ?" : ""
+                var args: [DatabaseValueConvertible] = [c.id, trackId, teamId]
+                if let pid = pilotoId { args.append(pid) }
+
+                let voltasRow = try Row.fetchOne(db, sql: """
+                    SELECT COUNT(*) AS voltas, MIN(v.tempo_ms) AS melhor,
+                           MIN(v.inicio_at) AS quando_min
+                    FROM voltas v
+                    JOIN sessoes s ON s.id = v.sessao_id
+                    JOIN eventos e ON e.id = s.evento_id
+                    WHERE s.carro_id = ?
+                      AND e.track_id = ?
+                      AND v.time_id = ?
+                      AND v.valida = 1
+                      AND v.tempo_ms IS NOT NULL
+                      \(pilotoFiltro)
+                    """, arguments: StatementArguments(args))
+                let voltas = (voltasRow?["voltas"] as Int?) ?? 0
+                let melhor = voltasRow?["melhor"] as Int?
+                // Quando da melhor volta (usa inicio_at da volta com tempo mínimo)
+                let quandoArgs = StatementArguments([c.id, trackId, teamId] + (pilotoId.map { [$0] } ?? []))
+                let quando: Int64? = melhor != nil
+                    ? try Int64.fetchOne(db, sql: """
+                        SELECT v.inicio_at
+                        FROM voltas v
+                        JOIN sessoes s ON s.id = v.sessao_id
+                        JOIN eventos e ON e.id = s.evento_id
+                        WHERE s.carro_id = ?
+                          AND e.track_id = ?
+                          AND v.time_id = ?
+                          AND v.valida = 1
+                          AND v.tempo_ms = \(melhor!)
+                          \(pilotoFiltro)
+                        ORDER BY v.inicio_at DESC LIMIT 1
+                        """, arguments: quandoArgs)
+                    : nil
+
+                let vmaxArgs = StatementArguments([c.id, trackId, teamId] + (pilotoId.map { [$0] } ?? []))
+                let vmaxRow = try Row.fetchOne(db, sql: """
+                    SELECT MAX(se.velocidade_max) AS vmax
+                    FROM segment_executions se
+                    JOIN sessoes s ON s.id = se.sessao_id
+                    JOIN eventos e ON e.id = s.evento_id
+                    WHERE s.carro_id = ?
+                      AND e.track_id = ?
+                      AND s.time_id = ?
+                      \(pilotoFiltro)
+                    """, arguments: vmaxArgs)
+                let vmax: Double? = vmaxRow?["vmax"]
+
+                resultado.append(CarroPistaResumo(
+                    carroId: c.id,
+                    carroApelido: c.apelido,
+                    voltasValidas: voltas,
+                    melhorVoltaMs: melhor,
+                    melhorVoltaQuandoMs: quando,
+                    vmaxKmh: vmax
+                ))
+            }
+            return resultado
+        }
+    }
+
     /// Cria um evento novo. Retorna o ID gerado.
     @discardableResult
     func create(trackId: String?, tipo: String?, dataEvento: Int64,

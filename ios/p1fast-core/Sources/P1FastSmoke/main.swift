@@ -3639,7 +3639,7 @@ func makeTestDB() throws -> DatabaseQueue {
     return q
 }
 
-step("PERSIST-01: makeMemoryQueue + migrations v1..v18 cria 30 tabelas") {
+step("PERSIST-01: makeMemoryQueue + migrations v1..v23 cria 32 tabelas") {
     let q = try DB.makeMemoryQueue()
     let names = try q.read { db in
         try String.fetchAll(db, sql:
@@ -3648,12 +3648,13 @@ step("PERSIST-01: makeMemoryQueue + migrations v1..v18 cria 30 tabelas") {
     }
     // 20 do Postgres + sync_queue + sync_meta (v2) + licoes (v4) + pendencias_template + evento_pendencias (v5)
     // + telemetry_samples_enriched (v7) + video_streams (v15) + volta_video (v16)
-    // + pessoas (v17) + pessoa_papeis (v18) = 30
-    try assertEq(names.count, 30, "esperava 30 tabelas")
+    // + pessoas (v17) + pessoa_papeis (v18) + evento_pneus (v22) + acoes_a_fazer (v23) = 32
+    try assertEq(names.count, 32, "esperava 32 tabelas")
     for expected in ["times", "carros", "configuracoes", "sessoes", "voltas",
                      "marcos", "retas_especiais", "telemetry_samples",
                      "telemetry_samples_enriched", "sync_queue", "sync_meta",
-                     "video_streams", "volta_video", "pessoas", "pessoa_papeis"] {
+                     "video_streams", "volta_video", "pessoas", "pessoa_papeis",
+                     "evento_pneus", "acoes_a_fazer"] {
         try assertTrue(names.contains(expected), "tabela \(expected) ausente")
     }
 }
@@ -7373,6 +7374,89 @@ step("TRC-04: v20 preenche Brasília legada (apelido='Brasília') com cidade='Br
     }
     let cidade: String? = row?["cidade"]
     try assertEq(cidade, "Brasília")
+}
+
+// ─── S8 rodada 1: pendências consumíveis + pneus série + ações a fazer ──
+
+step("S8-01: v21 adiciona eh_consumivel + unidade em pendencias_template") {
+    let q = try makeTestDB()
+    let cols = try q.read { db in
+        try Row.fetchAll(db, sql: "PRAGMA table_info(pendencias_template)")
+    }
+    let nomes = Set(cols.compactMap { $0["name"] as String? })
+    try assertTrue(nomes.contains("eh_consumivel"), "esperava eh_consumivel; recebi: \(nomes)")
+    try assertTrue(nomes.contains("unidade"), "esperava unidade")
+}
+
+step("S8-02: v21 adiciona quantidade em evento_pendencias") {
+    let q = try makeTestDB()
+    let cols = try q.read { db in
+        try Row.fetchAll(db, sql: "PRAGMA table_info(evento_pendencias)")
+    }
+    let nomes = Set(cols.compactMap { $0["name"] as String? })
+    try assertTrue(nomes.contains("quantidade"), "esperava quantidade; recebi: \(nomes)")
+}
+
+step("S8-03: v22 adiciona numero_serie em pneus") {
+    let q = try makeTestDB()
+    let cols = try q.read { db in
+        try Row.fetchAll(db, sql: "PRAGMA table_info(pneus)")
+    }
+    let nomes = Set(cols.compactMap { $0["name"] as String? })
+    try assertTrue(nomes.contains("numero_serie"), "esperava numero_serie")
+}
+
+step("S8-04: v22 cria tabela evento_pneus com UNIQUE(evento_id, pneu_id)") {
+    let q = try makeTestDB()
+    let exists = try q.read { db in
+        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='evento_pneus'") ?? 0
+    }
+    try assertEq(exists, 1, "esperava tabela evento_pneus")
+}
+
+step("S8-05: v23 cria tabela acoes_a_fazer com CHECK descricao não-vazia") {
+    let q = try makeTestDB()
+    let exists = try q.read { db in
+        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='acoes_a_fazer'") ?? 0
+    }
+    try assertEq(exists, 1, "esperava tabela acoes_a_fazer")
+}
+
+step("S8-06: AcaoAFazer round-trip GRDB preserva campos") {
+    let q = try makeTestDB()
+    // Insere evento pra satisfazer FK.
+    try q.write { db in
+        try Time(id: "team-acao", nome: "Time Ação", criadoPor: nil).insert(db)
+        try Evento(id: "ev-acao", timeId: "team-acao", trackId: nil,
+                   tipo: "track-day", dataEvento: 1_700_000_000_000).insert(db)
+    }
+    let row = AcaoAFazer(
+        id: "ac-1", timeId: "team-acao", eventoId: "ev-acao",
+        pilotoId: nil, descricao: "Comprar combustível extra"
+    )
+    try q.write { db in try row.insert(db) }
+    let fetched = try q.read { db in try AcaoAFazer.fetchOne(db, key: "ac-1") }
+    try assertEq(fetched?.descricao, "Comprar combustível extra")
+    try assertTrue(fetched?.feitaEm == nil)
+}
+
+step("S8-07: EventoPneu UNIQUE(evento_id, pneu_id) bloqueia duplicata") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try Time(id: "team-p", nome: "Team P", criadoPor: nil).insert(db)
+        try Carro(id: "c-p", timeId: "team-p", apelido: "C-P").insert(db)
+        try Evento(id: "ev-p", timeId: "team-p", trackId: nil,
+                   tipo: "track-day", dataEvento: 1_700_000_000_000).insert(db)
+        try Pneu(id: "pn-1", timeId: "team-p", carroId: "c-p", numeroSerie: "PN01").insert(db)
+        try EventoPneu(id: "ep-1", timeId: "team-p", eventoId: "ev-p", pneuId: "pn-1").insert(db)
+    }
+    var caiu = false
+    do {
+        try q.write { db in
+            try EventoPneu(id: "ep-dup", timeId: "team-p", eventoId: "ev-p", pneuId: "pn-1").insert(db)
+        }
+    } catch { caiu = true }
+    try assertTrue(caiu, "esperava UNIQUE constraint barrar duplicata")
 }
 
 // ── relatório ────────────────────────────────────────────────

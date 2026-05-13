@@ -443,6 +443,10 @@ public struct Pneu: Codable, FetchableRecord, PersistableRecord {
     public var medida: String?
     public var composto: Composto?
     public var ciclos: Int
+    /// S8 #23 da rodada 1 (2026-05-12): identificador físico do pneu
+    /// (etiqueta colada pelo piloto, ex: "Pneu 01"). Usado pelo TPMS
+    /// futuro pra rastrear leituras por pneu individual.
+    public var numeroSerie: String?
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -453,6 +457,7 @@ public struct Pneu: Codable, FetchableRecord, PersistableRecord {
         case timeId = "time_id"
         case carroId = "carro_id"
         case marca, modelo, medida, composto, ciclos
+        case numeroSerie = "numero_serie"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
@@ -461,11 +466,13 @@ public struct Pneu: Codable, FetchableRecord, PersistableRecord {
     public init(id: String, timeId: String, carroId: String,
                 marca: String? = nil, modelo: String? = nil, medida: String? = nil,
                 composto: Composto? = nil, ciclos: Int = 0,
+                numeroSerie: String? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.timeId = timeId; self.carroId = carroId
         self.marca = marca; self.modelo = modelo; self.medida = medida
         self.composto = composto; self.ciclos = ciclos
+        self.numeroSerie = numeroSerie
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }
@@ -1174,6 +1181,12 @@ public struct PendenciaTemplate: Codable, FetchableRecord, PersistableRecord, Eq
     public var observacao: String?
     public var obrigatorio: Bool
     public var ordem: Int
+    /// S8 #21 da rodada 1 (2026-05-12): true quando o item exige
+    /// quantidade ao marcar como feita (óleo, combustível, aditivo).
+    public var ehConsumivel: Bool
+    /// S8 #21: unidade fixa do consumível ("L", "mL"). Nil pra
+    /// não-consumíveis.
+    public var unidade: String?
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -1185,6 +1198,8 @@ public struct PendenciaTemplate: Codable, FetchableRecord, PersistableRecord, Eq
         case grupoTitulo = "grupo_titulo"
         case grupoNum = "grupo_num"
         case titulo, observacao, obrigatorio, ordem
+        case ehConsumivel = "eh_consumivel"
+        case unidade
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
@@ -1193,12 +1208,14 @@ public struct PendenciaTemplate: Codable, FetchableRecord, PersistableRecord, Eq
     public init(id: String, grupoId: String, grupoTitulo: String, grupoNum: String,
                 titulo: String, observacao: String? = nil,
                 obrigatorio: Bool = false, ordem: Int,
+                ehConsumivel: Bool = false, unidade: String? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id
         self.grupoId = grupoId; self.grupoTitulo = grupoTitulo; self.grupoNum = grupoNum
         self.titulo = titulo; self.observacao = observacao
         self.obrigatorio = obrigatorio; self.ordem = ordem
+        self.ehConsumivel = ehConsumivel; self.unidade = unidade
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }
@@ -1211,6 +1228,10 @@ public struct EventoPendencia: Codable, FetchableRecord, PersistableRecord, Equa
     public var checado: Bool
     public var checadoAt: Int64?
     public var nota: String?
+    /// S8 #21 da rodada 1 (2026-05-12): quantidade aplicada quando o
+    /// template é consumível (litros de óleo, combustível…). Nil pra
+    /// itens não-consumíveis.
+    public var quantidade: Double?
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -1223,6 +1244,7 @@ public struct EventoPendencia: Codable, FetchableRecord, PersistableRecord, Equa
         case checado
         case checadoAt = "checado_at"
         case nota
+        case quantidade
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
@@ -1230,10 +1252,98 @@ public struct EventoPendencia: Codable, FetchableRecord, PersistableRecord, Equa
 
     public init(id: String, eventoId: String, templateId: String,
                 checado: Bool = false, checadoAt: Int64? = nil, nota: String? = nil,
+                quantidade: Double? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.eventoId = eventoId; self.templateId = templateId
         self.checado = checado; self.checadoAt = checadoAt; self.nota = nota
+        self.quantidade = quantidade
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}
+
+// MARK: - evento_pneus (S8 #23, rodada 1)
+
+/// S8 #23 da rodada 1 (2026-05-12). Liga pneus a eventos onde foram
+/// usados. Estrutura preparatória pra TPMS — pressao_atual e temp_atual
+/// já no schema, leitura via hardware entra quando o sensor chegar.
+public struct EventoPneu: Codable, FetchableRecord, PersistableRecord, Equatable {
+    public var id: String
+    public var timeId: String
+    public var eventoId: String
+    public var pneuId: String
+    public var pressaoAtualPsi: Double?
+    public var temperaturaAtualC: Double?
+    public var ultimaLeituraEm: Int64?
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "evento_pneus"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case eventoId = "evento_id"
+        case pneuId = "pneu_id"
+        case pressaoAtualPsi = "pressao_atual_psi"
+        case temperaturaAtualC = "temperatura_atual_c"
+        case ultimaLeituraEm = "ultima_leitura_em"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, timeId: String, eventoId: String, pneuId: String,
+                pressaoAtualPsi: Double? = nil, temperaturaAtualC: Double? = nil,
+                ultimaLeituraEm: Int64? = nil,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.eventoId = eventoId
+        self.pneuId = pneuId
+        self.pressaoAtualPsi = pressaoAtualPsi
+        self.temperaturaAtualC = temperaturaAtualC
+        self.ultimaLeituraEm = ultimaLeituraEm
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}
+
+// MARK: - acoes_a_fazer (S8 #22, rodada 1)
+
+/// S8 #22 da rodada 1 (2026-05-12). Lista pessoal livre de ações a
+/// fazer no evento. Separada das pendências canônicas curadas.
+/// UI filtra `feita_em IS NULL` (some na próxima abertura — P3 #22).
+public struct AcaoAFazer: Codable, FetchableRecord, PersistableRecord, Equatable {
+    public var id: String
+    public var timeId: String
+    public var eventoId: String
+    public var pilotoId: String?
+    public var descricao: String
+    public var feitaEm: Int64?
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "acoes_a_fazer"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case eventoId = "evento_id"
+        case pilotoId = "piloto_id"
+        case descricao
+        case feitaEm = "feita_em"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, timeId: String, eventoId: String,
+                pilotoId: String? = nil, descricao: String,
+                feitaEm: Int64? = nil,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.eventoId = eventoId
+        self.pilotoId = pilotoId; self.descricao = descricao
+        self.feitaEm = feitaEm
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }

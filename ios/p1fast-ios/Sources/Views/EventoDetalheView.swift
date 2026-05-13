@@ -34,11 +34,18 @@ struct EventoDetalheView: View {
     @EnvironmentObject private var combustivelRepo: CombustivelRepository
     @EnvironmentObject private var pendenciaRepo: PendenciaRepository
     @EnvironmentObject private var voltaVideoRepo: VoltaVideoRepository
+    @EnvironmentObject private var acaoFazerRepo: AcaoFazerRepository
+    @EnvironmentObject private var eventoPneuRepo: EventoPneuRepository
     let eventoId: String
     let onClose: () -> Void
 
     @State private var sheet: EventoDetalheSheet?
     @State private var finalizingStintId: String?
+    // S8 #18: histórico do piloto na pista por carro (evento futuro).
+    @State private var historicoCarros: [EventoRepository.CarroPistaResumo] = []
+    @State private var historicoCarregando = true
+    // S8 #22: ações a fazer — texto sendo digitado pra adicionar.
+    @State private var novaAcaoTexto: String = ""
 
     /// Evento "passado" — data anterior ao dia de hoje (decisão Flávio
     /// rodada 1, escolha "Data anterior ao dia de hoje"). Passado é só
@@ -63,7 +70,10 @@ struct EventoDetalheView: View {
             }
         }
         .preferredColorScheme(.dark)
-        .task { await loadStintsReais() }
+        .task {
+            await loadStintsReais()
+            await loadHistoricoSeFuturo()
+        }
         .sheet(item: $sheet, onDismiss: {
             // Recarrega após criar/encerrar stint.
             Task { await loadStintsReais() }
@@ -165,6 +175,29 @@ struct EventoDetalheView: View {
         do { try await stintRepo.loadByEvento(eventoId: eventoId) } catch {
             print("loadByEvento failed: \(error)")
         }
+        // S8 #22 + #23: carrega ações a fazer e pneus do evento.
+        do { try await acaoFazerRepo.loadPendentes(eventoId: eventoId) } catch {
+            print("acaoFazerRepo.loadPendentes failed: \(error)")
+        }
+        do { try await eventoPneuRepo.load(eventoId: eventoId) } catch {
+            print("eventoPneuRepo.load failed: \(error)")
+        }
+    }
+
+    /// S8 #18 — carrega histórico do piloto na pista por carro. Só roda
+    /// quando o evento ainda não passou e tem track_id; senão fica vazio.
+    private func loadHistoricoSeFuturo() async {
+        guard !isEventoPassado,
+              let trackId = repo.find(id: eventoId)?.evento.trackId else {
+            historicoCarregando = false
+            return
+        }
+        do {
+            historicoCarros = try await repo.loadHistoricoPilotoNaPista(trackId: trackId)
+        } catch {
+            print("loadHistoricoPilotoNaPista failed: \(error)")
+        }
+        historicoCarregando = false
     }
 
     private func abrirStintReal(_ stint: Stint) {
@@ -199,12 +232,25 @@ struct EventoDetalheView: View {
                     summaryCard(ev: ev)
                         .padding(.top, 18)
                 }
+                // S8 #18: histórico do piloto na pista por carro,
+                // visível só em evento FUTURO.
+                if !isEventoPassado, let trackId = ev.evento.trackId {
+                    historicoPistaSection(trackId: trackId)
+                        .padding(.top, 18)
+                }
                 pendenciasSection
                     .padding(.top, 18)
                 // S5 #9: histórico de pendências (concluídas × não concluídas)
                 // visível em evento passado.
                 if isEventoPassado, let inst = pendenciaRepo.instanciasPorEvento[eventoId], !inst.isEmpty {
                     historicoPendenciasSection(instancias: inst)
+                        .padding(.top, 18)
+                }
+                // S8 #22 e #23 — só em evento futuro (planejamento).
+                if !isEventoPassado {
+                    acoesFazerSection
+                        .padding(.top, 18)
+                    pneusEventoSection
                         .padding(.top, 18)
                 }
                 stintsSection(ev: ev)
@@ -325,6 +371,286 @@ struct EventoDetalheView: View {
         }
         .padding(.horizontal, Spacing.xs)
         .padding(.bottom, 4)
+    }
+
+    // MARK: - Ações a fazer (S8 #22, rodada 1)
+
+    /// S8 #22 — Lista pessoal livre. Mostrado só em evento futuro.
+    /// "Some na próxima abertura" (P3 #22): UI filtra `feita_em IS NULL`
+    /// no Repository — checkmark NÃO esconde imediatamente, só some quando
+    /// loadPendentes() rodar de novo (próxima abertura do evento).
+    private var acoesFazerSection: some View {
+        let acoes = acaoFazerRepo.pendentesPorEvento[eventoId] ?? []
+        return VStack(alignment: .leading, spacing: 14) {
+            Text("Ações a fazer")
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(0.06 * 11)
+                .foregroundStyle(Color.textFaint)
+                .padding(.horizontal, 4)
+
+            // Adicionar nova ação
+            HStack(spacing: 8) {
+                TextField("Anote uma ação livre", text: $novaAcaoTexto,
+                          prompt: Text("Anote uma ação livre").foregroundStyle(Color.textFaint))
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Color.text)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                            .fill(Color.surfaceRaised)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                            .stroke(Color.border, lineWidth: 1)
+                    )
+                Button(action: adicionarAcao) {
+                    Text("Adicionar")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(novaAcaoTexto.trimmingCharacters(in: .whitespaces).isEmpty ? Color.textFaint : Color.accent)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                        .background(
+                            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                                .stroke(Color.border, lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+                .disabled(novaAcaoTexto.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+
+            if acoes.isEmpty {
+                Text("Nada anotado por enquanto. Vai anotando coisas que precisa fazer fora das pendências oficiais.")
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(Color.textFaint)
+                    .padding(.horizontal, 4)
+            } else {
+                VStack(spacing: 6) {
+                    ForEach(acoes, id: \.id) { acao in
+                        acaoLinha(acao: acao)
+                    }
+                }
+            }
+        }
+    }
+
+    private func acaoLinha(acao: AcaoAFazer) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            Button(action: { Task { try? await acaoFazerRepo.marcarFeita(acao.id, eventoId: eventoId) } }) {
+                Image(systemName: "circle")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(Color.textFaint)
+            }
+            .buttonStyle(.plain)
+            Text(acao.descricao)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Color.text)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .fill(Color.surfaceRaised)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .stroke(Color.border, lineWidth: 1)
+        )
+    }
+
+    private func adicionarAcao() {
+        let texto = novaAcaoTexto.trimmingCharacters(in: .whitespaces)
+        guard !texto.isEmpty else { return }
+        Task {
+            do {
+                try await acaoFazerRepo.adicionar(eventoId: eventoId, descricao: texto)
+                novaAcaoTexto = ""
+            } catch {
+                print("acaoFazerRepo.adicionar failed: \(error)")
+            }
+        }
+    }
+
+    // MARK: - Pneus do evento (S8 #23, rodada 1)
+
+    /// S8 #23 — Lista pneus alocados ao evento. UI mínima nesta entrega:
+    /// mostra os pneus já vinculados (carro_id + número de série + composto).
+    /// Vínculo de novos pneus vai entrar pela tela de pneus do carro em
+    /// sprint futura — fluxo "marcar pneu como destinado a evento X".
+    /// Estrutura preparada pra receber TPMS (campos pressao_atual + temp).
+    private var pneusEventoSection: some View {
+        let pneusEvento = eventoPneuRepo.pneusPorEvento[eventoId] ?? []
+        return VStack(alignment: .leading, spacing: 14) {
+            Text("Pneus do evento")
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(0.06 * 11)
+                .foregroundStyle(Color.textFaint)
+                .padding(.horizontal, 4)
+
+            if pneusEvento.isEmpty {
+                Text("Nenhum pneu vinculado a este evento ainda. Cadastre pneus na tela do carro e marque pra evento na próxima sprint.")
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(Color.textFaint)
+                    .padding(.horizontal, 4)
+            } else {
+                VStack(spacing: 6) {
+                    ForEach(pneusEvento, id: \.id) { ep in
+                        pneuEventoLinha(eventoPneu: ep)
+                    }
+                }
+            }
+        }
+    }
+
+    private func pneuEventoLinha(eventoPneu: EventoPneu) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            Image(systemName: "circle.grid.cross.fill")
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(Color.textMuted)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Pneu vinculado")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Color.text)
+                Text("ID interno: \(String(eventoPneu.pneuId.prefix(8)))…")
+                    .font(.system(size: 10, weight: .regular))
+                    .foregroundStyle(Color.textFaint)
+            }
+            Spacer(minLength: 0)
+            if let p = eventoPneu.pressaoAtualPsi {
+                Text(String(format: "%.0f psi", p))
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(Color.textFaint)
+            }
+            if let t = eventoPneu.temperaturaAtualC {
+                Text(String(format: "%.0f°C", t))
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(Color.textFaint)
+            }
+        }
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .fill(Color.surfaceRaised)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .stroke(Color.border, lineWidth: 1)
+        )
+    }
+
+    // MARK: - Histórico do piloto na pista (S8 #18, rodada 1)
+
+    /// S8 #18 — Mostra, em evento futuro, como o piloto se sai naquela
+    /// pista com cada carro do time. Carros que nunca correram ali
+    /// caem como "Primeira vez nesse autódromo" (P3 #18).
+    @ViewBuilder
+    private func historicoPistaSection(trackId: String) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Seu histórico nessa pista")
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(0.06 * 11)
+                .foregroundStyle(Color.textFaint)
+                .padding(.horizontal, 4)
+
+            if historicoCarregando {
+                Text("Carregando histórico…")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(Color.textFaint)
+                    .padding(.horizontal, Spacing.md)
+                    .padding(.vertical, 14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                            .fill(Color.surfaceRaised)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                            .stroke(Color.border, lineWidth: 1)
+                    )
+            } else if historicoCarros.isEmpty {
+                Text("Nenhum carro cadastrado pra cruzar com este evento.")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(Color.textFaint)
+                    .padding(.horizontal, 4)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(historicoCarros) { item in
+                        historicoLinhaCarro(item: item)
+                    }
+                }
+            }
+        }
+    }
+
+    private func historicoLinhaCarro(item: EventoRepository.CarroPistaResumo) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(item.carroApelido)
+                    .font(.system(size: 15, weight: .semibold))
+                    .tracking(-0.075)
+                    .foregroundStyle(Color.text)
+                Spacer()
+                if item.melhorVoltaMs == nil {
+                    EventTag(text: "Primeira vez", kind: .accent)
+                }
+            }
+            if let melhor = item.melhorVoltaMs {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("Melhor:")
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundStyle(Color.textMuted)
+                    Text(formatTempoMs(melhor))
+                        .font(.system(size: 16, weight: .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(Color.ouro)
+                    if let quando = item.melhorVoltaQuandoMs {
+                        Text("· \(formatDataCurta(ms: quando))")
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundStyle(Color.textFaint)
+                    }
+                    Spacer()
+                }
+                HStack(spacing: 12) {
+                    Text("\(item.voltasValidas) volta\(item.voltasValidas == 1 ? "" : "s") aqui")
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundStyle(Color.textFaint)
+                    if let vmax = item.vmaxKmh, vmax > 0 {
+                        Text("· vel. máx. \(Int(vmax.rounded())) km/h")
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundStyle(Color.textFaint)
+                    }
+                    Spacer()
+                }
+            } else {
+                Text("Você ainda não correu nessa pista com esse carro.")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(Color.textMuted)
+            }
+        }
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .fill(item.melhorVoltaMs == nil ? Color.surfaceRaised.opacity(0.6) : Color.surfaceRaised)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .stroke(Color.border, lineWidth: 1)
+        )
+    }
+
+    private func formatDataCurta(ms: Int64) -> String {
+        let date = Date(timeIntervalSince1970: TimeInterval(ms) / 1000)
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "pt_BR")
+        f.dateFormat = "dd/MM/yy"
+        return f.string(from: date)
     }
 
     // MARK: - Resumo do evento passado (S5 rodada 1)

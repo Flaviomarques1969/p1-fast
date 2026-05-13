@@ -183,6 +183,9 @@ private struct ReadyRoot: View {
     @StateObject private var syncCoordinator: SyncCoordinator
     @StateObject private var stintCaptureCoordinator: StintCaptureCoordinator
     @StateObject private var voltaVideoRepo: VoltaVideoRepository
+    // S8 rodada 1 — Ações a fazer (#22) + Pneus do evento (#23).
+    @StateObject private var acaoFazerRepo: AcaoFazerRepository
+    @StateObject private var eventoPneuRepo: EventoPneuRepository
 
     init(queue: DatabaseQueue) {
         self.queue = queue
@@ -197,6 +200,8 @@ private struct ReadyRoot: View {
         _licaoRepo = StateObject(wrappedValue: LicaoRepository(queue: queue))
         _pendenciaRepo = StateObject(wrappedValue: PendenciaRepository(queue: queue))
         _voltaVideoRepo = StateObject(wrappedValue: VoltaVideoRepository(queue: queue))
+        _acaoFazerRepo = StateObject(wrappedValue: AcaoFazerRepository(queue: queue))
+        _eventoPneuRepo = StateObject(wrappedValue: EventoPneuRepository(queue: queue))
         let reach = Reachability()
         _reachability = StateObject(wrappedValue: reach)
         _syncCoordinator = StateObject(
@@ -223,6 +228,8 @@ private struct ReadyRoot: View {
             .environmentObject(syncCoordinator)
             .environmentObject(stintCaptureCoordinator)
             .environmentObject(voltaVideoRepo)
+            .environmentObject(acaoFazerRepo)
+            .environmentObject(eventoPneuRepo)
             .task {
                 await carroRepo.bootstrap()
                 // EventoRepo seeda o TrackRow brasília — TrackRepo
