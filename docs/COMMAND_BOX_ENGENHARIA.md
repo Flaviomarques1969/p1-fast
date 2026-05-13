@@ -561,10 +561,16 @@ Resolve camada 3. `/api/advisor.js` aceita campo opcional `findings[]` no payloa
 **Controles táteis para edição e simulação** (núcleo da operação distribuída):
 - **Sliders lineares** — ajustes percentuais (ex.: +X% combustível na célula), limites contínuos, snap em incrementos relevantes
 - **Knobs rotativos (botões giratórios)** — varreduras de célula RPM × MAP, alvo de marcha, ângulo de avanço, threshold de regra
-- **Toggles** — ativar/desativar regra, mostrar/ocultar overlay no Cockpit Pilot
-- **Switch padrão piloto ↔ padrão engenharia** no Cockpit Pilot 10,5" (controle direto do conteúdo da tela do carro — D18 trata permissão)
+- **Toggles** — ativar/desativar regra; **toggle do "módulo engenharia"** (D20) que dispara o switch automático do Cockpit Pilot 10,5" (combinado com velocidade do carro — D18)
 
-Ações sobre findings/recommendations: [Aprovar] [Editar via slider/knob] [Rejeitar] [Simular]. Todos publicam no canal Realtime `engineering-{stintId}`; outros dispositivos do time sincronizam em ~150 ms. Reaproveita `Components/BottomNav.swift`. Componente novo: `EngControl.swift` (slider/knob universais com animação tátil + haptic feedback).
+Ações sobre findings/recommendations: [Aprovar] [Editar via slider/knob] [Rejeitar] [Simular]. Todos publicam no canal Realtime `engineering-{stintId}`; outros dispositivos do time sincronizam em ~150 ms.
+
+**Permissões (D17)**:
+- **Chefe + engenheiro**: edição/simulação livre a qualquer momento (não dirigem)
+- **Piloto**: edição/simulação **só quando carro parado** (`speed_fused < 5 km/h` por > 3 s). Em movimento, sliders/knobs ficam disabled na UI dele com mensagem "carro andando — operação bloqueada". Outros membros do time veem normal.
+- **Mecânico**: acesso de leitura + execução de procedimentos `MECHANIC_DIAGNOSTIC` (decide D17 estendido se quiser)
+
+Reaproveita `Components/BottomNav.swift`. Componente novo: `EngControl.swift` (slider/knob universais com animação tátil + haptic feedback + gating por papel × velocidade).
 
 **Sem versão live nesta sprint** — toda a interação fica disponível, mas o stream live de samples a 10 Hz só chega no Box Mode (MS-16.6). Validação visual em simulator iOS.
 
@@ -576,20 +582,32 @@ Ações sobre findings/recommendations: [Aprovar] [Editar via slider/knob] [Reje
 
 Layout otimizado para 32" landscape (alta legibilidade, distância de visão 2-3 m). Operação por toque no iPhone do box (não na TV). **Não compete com cockpit do piloto** — produto totalmente separado, consumidor diferente da mesma fonte (Realtime). **Gate principal**: MS-9 (T4000 publica no Realtime) precisa estar fechado para o live ser real; sem ele, fica em mock data.
 
-### MS-16.7 — Modo contextual no Cockpit Pilot 10,5" + switch padrão (2-3 PRs)
+### MS-16.7 — Modo contextual no Cockpit Pilot 10,5" + switch automático (2-3 PRs)
 **Aproveita o cockpit WinUI 3 existente** e adiciona uma camada de **conteúdo dirigido pela engenharia**. O 10,5" deixa de ser estritamente "vista do piloto cockpit canônico" e vira **canal de retorno do Command Box pra dentro do carro**, controlado por mensagens no canal Realtime `engineering-{stintId}`.
 
-Conteúdos que o canal pode empurrar (catálogo inicial, expandível):
-- `ENGINEERING_INACTIVE` — render padrão (cockpit canônico do mockup `mockup-cockpit-piloto.html`)
-- `SIMULATION_INSTRUCTION { texto, rpmAlvo, marchaAlvo, mapaAlvo, lambdaAtual, lambdaProjetado }` — instrução de validação durante simulação. Pode ser publicada com carro andando (simulação ao vivo) ou parado (validação na bancada).
+**Switch padrão piloto ↔ padrão engenharia = automático (D18)**. O Cockpit Pilot decide sozinho qual modo render usando duas entradas:
+- **`modulo_engenharia_ativado`** — flag no estado do stint, controlado por toggle no iPhone do chefe/engenheiro (D20)
+- **`vehicle.speed_fused`** — velocidade do carro, atualizada pelo stream Realtime
+
+Regra (`cockpitModeResolver`):
+```
+SE !modulo_engenharia_ativado    → padrão PILOTO
+SENÃO SE carro_andando            → padrão PILOTO  (auto-protect anti-distração)
+SENÃO                             → padrão ENGENHARIA
+```
+- `carro_andando` = `speed_fused > 10 km/h` por > 2 s (debounce de saída)
+- `carro_parado` = `speed_fused < 5 km/h` por > 3 s (debounce de entrada)
+- Volta a andar **sempre** força padrão piloto imediatamente (sem debounce na transição out-of-engineering, segurança).
+
+Conteúdos que o canal pode empurrar quando padrão = ENGENHARIA (catálogo inicial, expandível):
+- `SIMULATION_INSTRUCTION { texto, rpmAlvo, marchaAlvo, mapaAlvo, lambdaAtual, lambdaProjetado }` — instrução de validação durante simulação. **Só renderiza com carro parado** (D17 + auto-protect)
 - `MECHANIC_DIAGNOSTIC { passos[], canaisRelevantes[], estadoEsperado }` — mecânico sentado no carro em diagnóstico (ex.: "1. Pedal a 50% sustentado; 2. Aguarde RPM estável; 3. Confirme λ em 0.92 ± 0.03")
-- `PILOT_FOCUS_PROMPT { trecho, foco }` — destaque pré-stint (ex.: "Foco próximo stint: turn-in da Bruxa — entrar 5 km/h mais lento")
-- `ALERTA_OPERACIONAL { texto, urgencia }` — comunicação fora dos alertas críticos da Camada 1 (ex.: "Fim de stint em 2 voltas")
-- `COCKPIT_MODE_SWITCH { mode: 'piloto' | 'engenharia' }` — comando direto da engenharia para alternar a tela entre cockpit canônico (`piloto`) e overlays contextuais (`engenharia`). Funciona **com carro andando** ou parado.
+- `PILOT_FOCUS_PROMPT { trecho, foco }` — destaque pré-stint, visto pelo piloto ANTES de sair do box (carro parado, módulo ativado)
+- `ALERTA_OPERACIONAL { texto, urgencia }` — comunicação fora dos alertas críticos da Camada 1
 
-Implementação: `CockpitState` (já existente no domínio C#) ganha campo `engineeringOverlay: EngineeringOverlay?` + `cockpitMode: PILOTO | ENGENHARIA` (default PILOTO). Quando `engenharia` + overlay não-nulo, o renderer XAML mostra o painel definido pelo tipo. Quando `piloto`, renderização canônica do mockup sempre — ignora overlays do canal.
+Implementação: `CockpitState` (já existente no domínio C#) ganha campo `engineeringOverlay: EngineeringOverlay?` + `cockpitMode: PILOTO | ENGENHARIA` (resolvido por `cockpitModeResolver`). Quando `engenharia` + overlay não-nulo, o renderer XAML mostra o painel. Quando `piloto`, renderização canônica do mockup — ignora overlays.
 
-**Quem decide ativar/desativar**: a engenharia (via canal). Quem pode publicar `COCKPIT_MODE_SWITCH` = decisão D18 (default chefe-de-equipe + engenheiro; piloto pode reverter para `piloto` mas não pode forçar `engenharia` no próprio cockpit). **Sem display switching no notebook** — display 1 fica área de trabalho normal sempre; só o conteúdo do 10,5" muda.
+**Sem comando manual de switch** — engenharia toggla flag, sistema decide o modo. **Sem display switching no notebook** — display 1 fica área de trabalho normal sempre; só o conteúdo do 10,5" muda.
 
 ### MS-16.8 — Simulação de ajuste distribuída (TV 32" + qualquer iPhone do time) (3-4 PRs)
 Funcionalidade nova baseada nas clarificações Flávio 2026-05-13. Permite a qualquer membro autorizado (chefe-de-equipe, engenheiro, piloto — D17) **previsualizar** o efeito de um ajuste antes de aprovar, **operando sliders e knobs no próprio iPhone**.
@@ -840,9 +858,11 @@ Reaproveita o smoke harness JS já existente (`tests/node-smoke-*.mjs`, 6.481 li
 | **D14** | **REVISADA 2026-05-13** Gatilho do overlay no Cockpit Pilot 10,5" — agora NÃO é mais velocidade do carro, e sim **mensagem explícita no canal `engineering-{stintId}`** publicada pela engenharia. Heurística de speed só serve como **hint adicional** pra UI (ex.: render variante). OK? | aberta | Default: gatilho = canal; speed só hint |
 | **D15** | **(NOVA)** Catálogo inicial de tipos de overlay no Cockpit Pilot 10,5" — proponho 4 (`ENGINEERING_INACTIVE`, `SIMULATION_INSTRUCTION`, `MECHANIC_DIAGNOSTIC`, `PILOT_FOCUS_PROMPT`, `ALERTA_OPERACIONAL`). Cobrem o uso descrito? Faltam categorias? | aberta | Default: 4 + ALERTA_OPERACIONAL = 5 |
 | **D16** | **(NOVA)** Quem **dispara** cada tipo de overlay (engenheiro pelo Box Mode? chefe-de-equipe pelo iOS hub? mecânico pelo iPad? automático por findings de severidade alta?) — define as permissões de publicação no canal `engineering-{stintId}` | aberta | Default: qualquer membro com papel admin/chefe_equipe; auto-publish só para alertas operacionais e fim do stint |
-| **D17** | **(NOVA 2026-05-13)** Permissão de **editar configurações + rodar simulações** nos iPhones — chefe-de-equipe, engenheiro, **piloto** todos podem? Ou piloto fica restrito a "ver" e "aprovar mensagens dirigidas a ele"? | aberta | Default: chefe + engenheiro = edit/simular livre; piloto = pode rodar simulações + aprovar recommendations dirigidas a ele; rejeitar fica com chefe |
-| **D18** | **(NOVA 2026-05-13)** Quem pode **comandar o switch padrão piloto ↔ engenharia** no Cockpit Pilot 10,5" (mensagem `COCKPIT_MODE_SWITCH`)? Pode rodar com carro em movimento? | aberta | Default: chefe + engenheiro forçam `engenharia`; piloto pode voltar para `piloto` a qualquer momento (auto-protect); funciona com carro andando |
+| **D17** | **✅ FECHADA 2026-05-13** Permissão de **editar configurações + rodar simulações** nos iPhones | **Piloto**: SÓ com carro parado (mesma heurística do D14: `speed_fused < 5 km/h` por > 3 s). **Chefe + engenheiro**: a qualquer momento (não estão dirigindo). |
+| **D18** | **✅ FECHADA 2026-05-13** Switch padrão piloto ↔ padrão engenharia no Cockpit Pilot 10,5" | **Automático**, sem comando manual. Regra: `(modulo_engenharia_ativado) AND (carro_parado)` → padrão engenharia; qualquer outra combinação → padrão piloto. Carro voltando a andar **sempre** força padrão piloto (auto-protect anti-distração). |
+| ~~D14~~ | ~~(NOVA) Heurística "carro no box"~~ | **✅ ABSORVIDA por D18** Heurística `speed_fused < 5 km/h` sustentado por > 3 s = "parado"; `speed > 10 km/h` por > 2 s = "andando". Usada também por D17 para gating do piloto. |
 | **D19** | **(NOVA 2026-05-13)** Latência aceitável para o ciclo **slider/knob → projeção visual → canal Realtime → outros dispositivos verem** durante simulação distribuída? Proponho debounce 100 ms + propagação Realtime ~150 ms = ~250 ms ponta-a-ponta. | aberta | Default: 250 ms p99 |
+| **D20** | **(NOVA 2026-05-13)** Como o **chefe/engenheiro ativa/desativa o "módulo engenharia"** (flag que D18 lê)? Toggle persistente por stint na Tab Engenharia? Ativação automática quando há finding pendente? | aberta | Default: toggle manual na Tab Engenharia (qualquer membro com papel chefe/engenheiro), persistido em `engineering_recommendations.modulo_ativo` ou em estado de stint |
 
 ---
 
@@ -930,15 +950,22 @@ Pra não criar expectativa errada:
 **Clarificação Flávio 2026-05-13 (terceira):**
 > "e nos celulares o chefe, engenheiro e piloto pode mexer nas configuracões e também fazer simulações em seus celulares deslizando botões ou girando botões. pode ser com o carro andando. a tela do piloto pode ou não ser alterada para o padrão engenharia ou para o padrão piloto."
 
-Interpretação consolidada aplicada ao doc:
+**Clarificação Flávio 2026-05-13 (quarta — fecha D17 e D18):**
+> "1. se estiver parado pode. 2. se estiver andando não entra no modo engenharia. mas se parar e o módulo engenharia estiver ativado entra automaticamente em modo de engenharia. se voltar a andar volta para o padrao piloto."
+
+Interpretação consolidada aplicada ao doc (após 4 clarificações):
 - **Duas telas físicas simultâneas de saída**: Command Box (TV 32") e Cockpit Pilot (10,5" externa invertida no painel, mesma de MS-13).
-- **Operação distribuída pelos iPhones de chefe + engenheiro + piloto** — cada um no seu celular, **edita configurações** e **roda simulações** com sliders (deslizar) e knobs/dials (girar). Notebook continua kiosk (não é operado).
-- **Simulação pode rodar com carro andando** — não há gate de velocidade. Simulação é projeção determinística (Camada 2); não muda mapa real, só visualiza efeito esperado vs comportamento atual.
-- **Cockpit Pilot 10,5" não é fixo no cockpit canônico**. É um **canal de retorno do Command Box pra dentro do carro**, com **switch padrão piloto ↔ padrão engenharia** comandado pela engenharia via mensagem `COCKPIT_MODE_SWITCH` no canal Realtime. O switch funciona inclusive com **carro andando**.
-- **Default**: cockpit canônico (mockup `mockup-cockpit-piloto.html`) = padrão piloto. **Engenharia ativada + comando explícito**: render contextual = padrão engenharia. Quem dispara o switch e em que condições = D18.
-- **Quem está no carro** pode ser piloto (mãos no volante, durante stint) ou mecânico (sentado no carro em diagnóstico). Engenharia define qual overlay mostrar pra cada caso.
-- **Sem display switching no notebook**. Display 1 = área de trabalho normal sempre. Display 2 = Cockpit Pilot 10,5", conteúdo dirigido por canal.
-- Funcionalidades novas: MS-16.7 (modo contextual + switch padrão), MS-16.8 (simulação distribuída via sliders/knobs nos iPhones de todos), MS-16.5 ganha componente `EngControl.swift` (sliders/knobs táteis universais).
+- **Operação distribuída pelos iPhones**: chefe + engenheiro **a qualquer momento**; piloto **só com carro parado** (D17 fechada). Cada um no seu celular, edita configurações e roda simulações com sliders e knobs. Notebook continua kiosk (não é operado).
+- **Simulação rodada por chefe/engenheiro pode acontecer com carro andando** — projeção determinística (Camada 2); não muda mapa real. Simulação rodada pelo piloto é gated por velocidade (D17 — só com carro parado).
+- **Cockpit Pilot 10,5" tem switch automático (D18)** — sem comando manual. Regra:
+  - `modulo_engenharia_ativado = false` → padrão piloto sempre
+  - `modulo_engenharia_ativado = true` + `carro parado` → entra padrão engenharia automaticamente
+  - `modulo_engenharia_ativado = true` + `carro andando` → padrão piloto (auto-protect anti-distração)
+  - Voltar a andar **sempre** força padrão piloto imediato, sem debounce (segurança)
+- **Flag `modulo_engenharia_ativado`**: toggle no iPhone do chefe/engenheiro (D20 aberta — onde persistir). Default OFF; ON quando engenharia decide trabalhar contextualmente.
+- **Quem está no carro** pode ser piloto (mãos no volante, durante stint) ou mecânico (sentado no carro em diagnóstico).
+- **Sem display switching no notebook**. Display 1 = área de trabalho normal sempre. Display 2 = Cockpit Pilot 10,5", conteúdo decidido pelo `cockpitModeResolver`.
+- Funcionalidades novas: MS-16.7 (modo contextual + switch automático), MS-16.8 (simulação distribuída por sliders/knobs), MS-16.5 ganha componente `EngControl.swift` com gating de velocidade pra piloto.
 
 **D6 — Catálogo MVP de CalibrationRule?** → "3 rules MVP — fuel-lean, water-drift, vmin-loss (Recommended)"
 
