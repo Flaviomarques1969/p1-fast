@@ -7501,6 +7501,186 @@ step("TB-12: jitter e latencyMedian — janela LATENCY_WINDOW") {
     try assertTrue((s2?.jitter ?? 0) > 10, "jitter deve refletir intervalo anômalo")
 }
 
+// ════════════════════════════════════════════════════════════
+// VehicleContextAggregator — VCA-01..VCA-10 (MS-16.2)
+// docs/COMMAND_BOX_ENGENHARIA.md §4 (Vehicle Context Model).
+// Constantes idênticas ao node-smoke-vehicle-context-parity.mjs.
+// ════════════════════════════════════════════════════════════
+
+// Helpers de fixture pra VCA smoke.
+func _vcaT4000(tMono: Double, rpm: Double, map: Double, lambda: Double,
+               tps: Double, waterTemp: Double, accLong: Double = 0) -> Snapshot {
+    let engine = EngineSnap(
+        rpm: rpm, tps: tps, map: map, lambda: lambda,
+        oilPressure: 4.0, oilTemp: 92, waterTemp: waterTemp,
+        batteryVoltage: 13.8, fuelPressure: 4.0, gear: 3
+    )
+    let position = PositionSnap()
+    let dynamics = DynamicsSnap(accelLongitudinal: accLong)
+    let vehicle = VehicleSnap(speedCan: 28.0)
+    let quality = SnapshotQuality(t4000: .ok, racebox: .ok, iphone: .ok,
+                                  sync: .ok, confidence: "Alta")
+    return Snapshot(t: 1_700_000_000_000, tMono: tMono,
+                    engine: engine, position: position,
+                    dynamics: dynamics, vehicle: vehicle, quality: quality)
+}
+
+func _vcaLapEnd(numero: Int, tempoMs: Double) -> DetectorLapEvent {
+    DetectorLapEvent(numero: numero, inicioAt: 0, fimAt: tempoMs,
+                     tempoMs: tempoMs, temposPorParcial: [:], temposPorTrecho: [:])
+}
+
+func _vcaSegEnd(segmentId: String, lapNumero: Int, velMinima: Double) -> DetectorSegmentEndEvent {
+    DetectorSegmentEndEvent(
+        segmentId: segmentId, lapNumero: lapNumero,
+        entradaAt: 0, saidaAt: 5000, tempoMs: 5000,
+        velEntrada: 28.0, velMinima: velMinima, velSaida: 26.0,
+        pontoFrenagem: nil, apexT: nil, apexOffset: nil, apexActual: nil
+    )
+}
+
+step("VCA-01: ingest snapshot incrementa contadores básicos") {
+    let agg = VehicleContextAggregator()
+    agg.ingestSnapshot(_vcaT4000(tMono: 1000, rpm: 5000, map: 0.7, lambda: 0.92,
+                                  tps: 50, waterTemp: 95))
+    let ctx = agg.currentContext()
+    try assertEq(ctx.snapshotsConsumed, 1)
+    try assertEq(ctx.lap.samplesCount, 1)
+    try assertEq(ctx.lap.leanLoadSamples, 0)   // λ 0.92 não é lean
+    try assertClose(ctx.lap.waterTempStart, 95)
+    try assertClose(ctx.lap.rpmMax, 5000)
+}
+
+step("VCA-02: lean-load criteria — sample atendendo TPS+MAP+RPM+λ conta") {
+    let agg = VehicleContextAggregator()
+    // 5 samples atendendo critério: TPS>70, MAP>0.8, RPM>4000, λ>1.0
+    for i in 0..<5 {
+        agg.ingestSnapshot(_vcaT4000(
+            tMono: 1000 + Double(i) * 10,
+            rpm: 5800, map: 0.92, lambda: 1.06, tps: 84, waterTemp: 102
+        ))
+    }
+    // 3 samples NÃO atendendo (TPS baixo)
+    for i in 5..<8 {
+        agg.ingestSnapshot(_vcaT4000(
+            tMono: 1000 + Double(i) * 10,
+            rpm: 5800, map: 0.92, lambda: 1.06, tps: 40, waterTemp: 102
+        ))
+    }
+    let ctx = agg.currentContext()
+    try assertEq(ctx.lap.samplesCount, 8)
+    try assertEq(ctx.lap.leanLoadSamples, 5)
+}
+
+step("VCA-03: lean-load NÃO conta com quality.t4000 != .ok (DATA_QUALITY Regra 4)") {
+    let agg = VehicleContextAggregator()
+    // Engine ok mas quality.t4000 = .late → não conta lean
+    let engine = EngineSnap(rpm: 5800, tps: 84, map: 0.92, lambda: 1.06,
+                            oilPressure: 4.0, oilTemp: 92, waterTemp: 102)
+    let quality = SnapshotQuality(t4000: .late, racebox: .ok, iphone: .ok,
+                                  sync: .late, confidence: "Média")
+    let snap = Snapshot(
+        t: 1_700_000_000_000, tMono: 1000,
+        engine: engine, position: PositionSnap(),
+        dynamics: DynamicsSnap(), vehicle: VehicleSnap(),
+        quality: quality
+    )
+    agg.ingestSnapshot(snap)
+    try assertEq(agg.currentContext().lap.leanLoadSamples, 0)
+}
+
+step("VCA-04: onLapEnd arquiva LapWindow + atualiza bestLapMs") {
+    let agg = VehicleContextAggregator()
+    agg.ingestSnapshot(_vcaT4000(tMono: 1000, rpm: 5000, map: 0.7, lambda: 0.92,
+                                  tps: 50, waterTemp: 95))
+    agg.onLapEnd(_vcaLapEnd(numero: 1, tempoMs: 95_000))
+    agg.ingestSnapshot(_vcaT4000(tMono: 2000, rpm: 5100, map: 0.7, lambda: 0.92,
+                                  tps: 50, waterTemp: 96))
+    agg.onLapEnd(_vcaLapEnd(numero: 2, tempoMs: 92_000))
+    let ctx = agg.currentContext()
+    try assertEq(ctx.stint.lapHistory.count, 2)
+    try assertClose(ctx.stint.bestLapMs, 92_000)
+    try assertEq(ctx.stint.lastNLapTimesMs.count, 2)
+}
+
+step("VCA-05: lap reset após onLapEnd — contadores zerados") {
+    let agg = VehicleContextAggregator()
+    agg.ingestSnapshot(_vcaT4000(tMono: 1000, rpm: 5800, map: 0.92, lambda: 1.06,
+                                  tps: 84, waterTemp: 102))
+    agg.ingestSnapshot(_vcaT4000(tMono: 1010, rpm: 5800, map: 0.92, lambda: 1.06,
+                                  tps: 84, waterTemp: 102))
+    agg.onLapEnd(_vcaLapEnd(numero: 1, tempoMs: 95_000))
+    let ctx = agg.currentContext()
+    try assertEq(ctx.lap.samplesCount, 0)
+    try assertEq(ctx.lap.leanLoadSamples, 0)
+    try assertEq(ctx.lap.waterTempStart, nil)
+}
+
+step("VCA-06: onSegmentEnd grava Vmin georef em vminBySegmentLap") {
+    let agg = VehicleContextAggregator()
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 2, velMinima: 21.5))
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 3, velMinima: 21.0))
+    let ctx = agg.currentContext()
+    try assertEq(ctx.stint.vminBySegmentLap["bruxa"]?.count, 3)
+    try assertClose(ctx.stint.vminBySegmentLap["bruxa"]?[0].vminKmh, 22.0 * 3.6)
+}
+
+step("VCA-07: vminTrend detecta queda progressiva de Vmin") {
+    let agg = VehicleContextAggregator()
+    // 22 → 21 → 20 m/s = 79.2 → 75.6 → 72 km/h (queda de 3.6 km/h em 2 voltas)
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 2, velMinima: 21.0))
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 3, velMinima: 20.0))
+    let trend = agg.vminTrend(lastNLaps: 3)
+    try assertTrue((trend["bruxa"] ?? 0) < -1.0,
+                   "deve detectar queda > 1 km/h/lap (recebeu \(trend["bruxa"] ?? 0))")
+}
+
+step("VCA-08: waterTempSeries — drift detection °C/min") {
+    let agg = VehicleContextAggregator()
+    // Sobe 6°C em 60s → drift 6°C/min
+    agg.ingestSnapshot(_vcaT4000(tMono: 1000, rpm: 5000, map: 0.7, lambda: 0.92,
+                                  tps: 50, waterTemp: 95))
+    agg.ingestSnapshot(_vcaT4000(tMono: 30_000, rpm: 5000, map: 0.7, lambda: 0.92,
+                                  tps: 50, waterTemp: 98))
+    agg.ingestSnapshot(_vcaT4000(tMono: 61_000, rpm: 5000, map: 0.7, lambda: 0.92,
+                                  tps: 50, waterTemp: 101))
+    let drift = agg.waterTempDriftPerMinute()
+    try assertTrue((drift ?? 0) > 5.5 && (drift ?? 0) < 6.5,
+                   "drift ~6 °C/min, recebeu \(drift ?? 0)")
+}
+
+step("VCA-09: thermalPhase — state machine COLD→WARMING→AT_TEMP→OVERHEAT") {
+    let agg = VehicleContextAggregator()
+    agg.ingestSnapshot(_vcaT4000(tMono: 1000, rpm: 1000, map: 0.5, lambda: 0.95,
+                                  tps: 10, waterTemp: 45))
+    try assertEq(agg.currentContext().thermalPhase, .cold)
+    agg.ingestSnapshot(_vcaT4000(tMono: 5000, rpm: 3000, map: 0.6, lambda: 0.95,
+                                  tps: 30, waterTemp: 80))
+    try assertEq(agg.currentContext().thermalPhase, .warming)
+    agg.ingestSnapshot(_vcaT4000(tMono: 10_000, rpm: 5000, map: 0.7, lambda: 0.92,
+                                  tps: 50, waterTemp: 100))
+    try assertEq(agg.currentContext().thermalPhase, .atTemp)
+    agg.ingestSnapshot(_vcaT4000(tMono: 15_000, rpm: 6000, map: 0.9, lambda: 1.06,
+                                  tps: 85, waterTemp: 108))
+    try assertEq(agg.currentContext().thermalPhase, .overheat)
+}
+
+step("VCA-10: reset zera tudo") {
+    let agg = VehicleContextAggregator()
+    agg.ingestSnapshot(_vcaT4000(tMono: 1000, rpm: 5800, map: 0.92, lambda: 1.06,
+                                  tps: 84, waterTemp: 102))
+    agg.onLapEnd(_vcaLapEnd(numero: 1, tempoMs: 95_000))
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
+    agg.reset()
+    let ctx = agg.currentContext()
+    try assertEq(ctx.snapshotsConsumed, 0)
+    try assertEq(ctx.stint.lapHistory.count, 0)
+    try assertEq(ctx.stint.vminBySegmentLap.count, 0)
+    try assertEq(ctx.thermalPhase, .cold)
+}
+
 // ── relatório ────────────────────────────────────────────────
 print("\n═══ RESULTADO ═══")
 print("\(ok) ok / \(fail) fail")
