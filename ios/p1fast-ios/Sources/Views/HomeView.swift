@@ -36,6 +36,11 @@ enum HomeNavTarget: Hashable {
     /// Stint. Botão fica embaixo do conteúdo da Home, marcado como
     /// "(dev)" pra não ser confundido com fluxo canônico.
     case telemetriaDemo
+    // S3-ajuste 2026-05-12: telas próprias dos 4 cards de estatística.
+    case stints
+    case voltas
+    case autodromos
+    case recordes
 }
 
 /// Dados necessários para renderizar o estado cheio. Por enquanto vêm
@@ -207,6 +212,14 @@ struct HomeView: View {
             } else {
                 EmptyView()
             }
+        case .stints:
+            StintsView(onClose: { if !navPath.isEmpty { navPath.removeLast() } })
+        case .voltas:
+            VoltasView(onClose: { if !navPath.isEmpty { navPath.removeLast() } })
+        case .autodromos:
+            AutodromosView(onClose: { if !navPath.isEmpty { navPath.removeLast() } })
+        case .recordes:
+            RecordesView(onClose: { if !navPath.isEmpty { navPath.removeLast() } })
         }
     }
 
@@ -232,17 +245,22 @@ struct HomeView: View {
         navSelection = navItems.first?.id
     }
 
-    /// S3 rodada 1: navegação dos 6 cards de estatística. Decisão P3 #2.3
-    /// — os 4 cards novos (Stints/Autódromos/Recordes/Voltas) redirecionam
-    /// pra Eventos. Carros vai pra Garagem. Eventos vai pra Eventos.
-    /// Quando filtros chegarem em sprints futuras, a tela de Eventos
-    /// pode receber parâmetro pra abrir já filtrada.
+    /// S3 rodada 1 — S3-ajuste 2026-05-12: cada card abre uma tela própria.
+    /// Decisão P3 #2.3 (redirecionar pra Eventos) foi REVOGADA por Flávio.
     private func handleNavSelect(_ destino: HomeStatDestino) {
         switch destino {
         case .carros:
             navPath.append(HomeNavTarget.garagem)
-        case .eventos, .stints, .autodromos, .recordes, .voltas:
+        case .eventos:
             navPath.append(HomeNavTarget.eventos)
+        case .stints:
+            navPath.append(HomeNavTarget.stints)
+        case .autodromos:
+            navPath.append(HomeNavTarget.autodromos)
+        case .recordes:
+            navPath.append(HomeNavTarget.recordes)
+        case .voltas:
+            navPath.append(HomeNavTarget.voltas)
         }
     }
 }

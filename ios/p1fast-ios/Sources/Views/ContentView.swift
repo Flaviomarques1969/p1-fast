@@ -187,6 +187,8 @@ private struct ReadyRoot: View {
     @StateObject private var acaoFazerRepo: AcaoFazerRepository
     @StateObject private var eventoPneuRepo: EventoPneuRepository
     @StateObject private var setupReplicadoRepo: EventoSetupReplicadoRepository
+    // S3-ajuste 2026-05-12: 4 telas próprias dos cards da Home.
+    @StateObject private var relatoriosRepo: RelatoriosRepository
 
     init(queue: DatabaseQueue) {
         self.queue = queue
@@ -204,6 +206,7 @@ private struct ReadyRoot: View {
         _acaoFazerRepo = StateObject(wrappedValue: AcaoFazerRepository(queue: queue))
         _eventoPneuRepo = StateObject(wrappedValue: EventoPneuRepository(queue: queue))
         _setupReplicadoRepo = StateObject(wrappedValue: EventoSetupReplicadoRepository(queue: queue))
+        _relatoriosRepo = StateObject(wrappedValue: RelatoriosRepository(queue: queue))
         let reach = Reachability()
         _reachability = StateObject(wrappedValue: reach)
         _syncCoordinator = StateObject(
@@ -233,6 +236,7 @@ private struct ReadyRoot: View {
             .environmentObject(acaoFazerRepo)
             .environmentObject(eventoPneuRepo)
             .environmentObject(setupReplicadoRepo)
+            .environmentObject(relatoriosRepo)
             .task {
                 await carroRepo.bootstrap()
                 // EventoRepo seeda o TrackRow brasília — TrackRepo
