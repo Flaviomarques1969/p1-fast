@@ -14,6 +14,16 @@
 
 **Sempre "você". NUNCA "tu/te/ti/teu/tua/contigo".** Vale para mensagens no chat, prompts pro Cloud Code, comentários em PR, commits, qualquer texto. Esta regra é §9.2 de `PLANO_FASE_1.md` e o Flávio reforçou em 2026-05-09.
 
+## Quem testa, valida e diagnostica — REGRA DURA
+
+**Eu (Claude) testo. O Flávio não.** Reforçado 2026-05-13.
+
+- Quando algo precisa ser validado (UI, link, rota, render, build, smoke), **eu abro, testo, capturo screenshot/log, e mostro o resultado pra ele**. Não peço pra ele rodar `curl`, `find`, `ps`, abrir browser, copiar URL, fazer hard refresh, abrir DevTools, ou qualquer outra ação técnica de diagnóstico.
+- Se eu não tenho acesso a algo (ex.: laptop dele, browser específico, servidor que não é o desta sandbox), eu digo isso explicitamente — não disfarço empurrando a tarefa pra ele.
+- Quando dou um link/URL, **eu já testei o link antes** (curl + Playwright/Chromium headless quando aplicável). Não dou link sem ter aberto.
+- Quando uma sessão Chromium é necessária, **eu lanço o Chromium aqui** (Playwright disponível em `/opt/node22/lib/node_modules/playwright`) e mostro screenshots no resultado.
+- O Flávio é o decisor de produto. Ele não é diagnosticador de bug. Trabalho técnico de validação é meu.
+
 ## Decisões já fechadas — NÃO reabrir
 
 - **Não há mais Fase 2** — tudo entra em Fase 1 — `PLANO_FASE_1.md` §1 (decisão Flávio 2026-05-03)
