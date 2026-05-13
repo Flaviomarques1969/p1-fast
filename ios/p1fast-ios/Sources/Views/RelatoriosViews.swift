@@ -52,6 +52,17 @@ struct AutodromoListaItem: Identifiable, Equatable {
     let voltasCount: Int
     let kmEstimado: Double
     let vmaxKmh: Double?
+    /// SVG path do layout principal (Conceito do Command Box). Nil quando
+    /// o layout não foi seedado ainda.
+    let svgPath: String?
+    /// ViewBox JSON do layout: `{"w":..., "h":...}`. Nil quando ausente.
+    let viewBox: String?
+}
+
+struct TrechoListaItem: Identifiable, Equatable {
+    let id: String  // segmentId
+    let nome: String
+    let ehTrecho: Bool
 }
 
 struct RecordeListaItem: Identifiable, Equatable {
@@ -170,7 +181,9 @@ final class RelatoriosRepository: ObservableObject {
                        COUNT(v.id) AS voltas_count,
                        MAX(se.velocidade_max) AS vmax,
                        SUM(((COALESCE(se.vmin_kmh, se.velocidade_max * 0.6) + se.velocidade_max) / 2.0)
-                           * (se.tempo_ms / 3600000.0)) AS km_estimado
+                           * (se.tempo_ms / 3600000.0)) AS km_estimado,
+                       (SELECT tl.svg_path FROM track_layouts tl WHERE tl.track_id = t.id LIMIT 1) AS svg_path,
+                       (SELECT tl.view_box FROM track_layouts tl WHERE tl.track_id = t.id LIMIT 1) AS view_box
                 FROM tracks t
                 JOIN eventos e ON e.track_id = t.id
                 LEFT JOIN sessoes s ON s.evento_id = e.id AND s.cancelado_em IS NULL
@@ -191,11 +204,34 @@ final class RelatoriosRepository: ObservableObject {
                     stintsCount: (row["stints_count"] as Int?) ?? 0,
                     voltasCount: (row["voltas_count"] as Int?) ?? 0,
                     kmEstimado: (row["km_estimado"] as Double?) ?? 0,
-                    vmaxKmh: row["vmax"]
+                    vmaxKmh: row["vmax"],
+                    svgPath: row["svg_path"],
+                    viewBox: row["view_box"]
                 )
             }
         }
         self.autodromos = rows
+    }
+
+    /// Carrega trechos (pedagógicos) de um autódromo pra mostrar quando o
+    /// usuário expande o card. Lê via track_segments do primeiro layout.
+    func trechosDoAutodromo(trackId: String) async throws -> [TrechoListaItem] {
+        try await queue.read { db -> [TrechoListaItem] in
+            let sql = """
+                SELECT ts.id, ts.nome, ts.eh_trecho
+                FROM track_segments ts
+                JOIN track_layouts tl ON tl.id = ts.layout_id
+                WHERE tl.track_id = ?
+                ORDER BY ts.ordem ASC
+            """
+            return try Row.fetchAll(db, sql: sql, arguments: [trackId]).map { row in
+                TrechoListaItem(
+                    id: row["id"],
+                    nome: (row["nome"] as String?) ?? "Trecho",
+                    ehTrecho: (row["eh_trecho"] as Int?) == 1
+                )
+            }
+        }
     }
 
     func loadRecordes() async throws {
@@ -246,6 +282,108 @@ final class RelatoriosRepository: ObservableObject {
     }
 }
 
+// MARK: - Mini-mapa do circuito (Conceito Command Box, S3-ajuste 2)
+
+/// SwiftUI Shape que renderiza o SVG path do layout principal do autódromo
+/// dentro do viewBox. Suporta os comandos M (moveTo), L (lineTo) e Z
+/// (closePath) — suficiente pro padrão do `SeedBrasilia.svgPath`.
+struct CircuitoShape: Shape {
+    let svgPath: String
+    let viewBoxW: CGFloat
+    let viewBoxH: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let scaleX = rect.width / viewBoxW
+        let scaleY = rect.height / viewBoxH
+        // Mantém proporção — pega o menor.
+        let scale = min(scaleX, scaleY)
+        // Centraliza no rect.
+        let offsetX = (rect.width - viewBoxW * scale) / 2.0
+        let offsetY = (rect.height - viewBoxH * scale) / 2.0
+
+        var tokens = svgPath.split(whereSeparator: { $0 == " " || $0 == "," }).map(String.init)
+        var i = 0
+        var ultimoComando: Character = "M"
+        while i < tokens.count {
+            let t = tokens[i]
+            let primeiro = t.first ?? Character("?")
+            if "MLZmlz".contains(primeiro) {
+                ultimoComando = primeiro
+                if primeiro == "Z" || primeiro == "z" {
+                    path.closeSubpath()
+                    i += 1
+                    continue
+                }
+                // Comando seguido de coordenadas no mesmo token? (ex: "M420.20"). Não temos isso aqui, mas trata defensivamente.
+                let resto = String(t.dropFirst())
+                if !resto.isEmpty, let x = Double(resto), i + 1 < tokens.count, let y = Double(tokens[i + 1]) {
+                    let p = CGPoint(x: offsetX + CGFloat(x) * scale, y: offsetY + CGFloat(y) * scale)
+                    if ultimoComando == "M" || ultimoComando == "m" { path.move(to: p) }
+                    else { path.addLine(to: p) }
+                    i += 2
+                    continue
+                }
+                i += 1
+            } else if let x = Double(t), i + 1 < tokens.count, let y = Double(tokens[i + 1]) {
+                let p = CGPoint(x: offsetX + CGFloat(x) * scale, y: offsetY + CGFloat(y) * scale)
+                if ultimoComando == "M" {
+                    path.move(to: p)
+                    ultimoComando = "L" // próximos pares de M implícitos viram L (padrão SVG).
+                } else if ultimoComando == "m" {
+                    path.move(to: p)
+                    ultimoComando = "l"
+                } else {
+                    path.addLine(to: p)
+                }
+                i += 2
+            } else {
+                i += 1
+            }
+        }
+        return path
+    }
+}
+
+/// Wrapper visual: quadrado com fundo preto (igual ao Command Box) +
+/// path do circuito em traço claro. Usado no card de autódromo no lugar
+/// do círculo decorativo.
+struct CircuitoMiniMapa: View {
+    let svgPath: String?
+    let viewBox: String?
+    var size: CGFloat = 56
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.black.opacity(0.85))
+            if let path = svgPath, let dims = parseViewBox(viewBox) {
+                CircuitoShape(svgPath: path, viewBoxW: dims.w, viewBoxH: dims.h)
+                    .stroke(Color.accent.opacity(0.85), style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
+                    .padding(6)
+            } else {
+                Image(systemName: "map")
+                    .font(.system(size: 18, weight: .light))
+                    .foregroundStyle(Color.textFaint)
+            }
+        }
+        .frame(width: size, height: size)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.border, lineWidth: 1)
+        )
+    }
+
+    private func parseViewBox(_ json: String?) -> (w: CGFloat, h: CGFloat)? {
+        guard let json = json, let data = json.data(using: .utf8) else { return nil }
+        struct V: Decodable { let w: Double; let h: Double }
+        if let v = try? JSONDecoder().decode(V.self, from: data) {
+            return (CGFloat(v.w), CGFloat(v.h))
+        }
+        return nil
+    }
+}
+
 // MARK: - Tela: Stints
 
 enum StintsAgrupador: String, CaseIterable, Identifiable {
@@ -262,10 +400,16 @@ enum StintsAgrupador: String, CaseIterable, Identifiable {
 
 struct StintsView: View {
     @EnvironmentObject private var repo: RelatoriosRepository
+    @EnvironmentObject private var stintRepo: StintRepository
+    @EnvironmentObject private var voltaVideoRepo: VoltaVideoRepository
+    @EnvironmentObject private var carroRepo: CarroRepository
+    @EnvironmentObject private var eventoRepo: EventoRepository
+    @EnvironmentObject private var setupReplicadoRepo: EventoSetupReplicadoRepository
     let onClose: () -> Void
 
     @State private var agrupador: StintsAgrupador = .data
     @State private var carregando = true
+    @State private var stintAbertoId: String?
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -280,6 +424,32 @@ struct StintsView: View {
         }
         .preferredColorScheme(.dark)
         .task { await carregar() }
+        .sheet(isPresented: Binding(
+            get: { stintAbertoId != nil },
+            set: { if !$0 { stintAbertoId = nil } }
+        )) {
+            if let sid = stintAbertoId,
+               let item = repo.stints.first(where: { $0.id == sid }) {
+                NavigationStack {
+                    PosStintView(
+                        stintId: sid,
+                        contextoLinha: contextoStint(item),
+                        onClose: { stintAbertoId = nil }
+                    )
+                    .environmentObject(stintRepo)
+                    .environmentObject(voltaVideoRepo)
+                    .environmentObject(carroRepo)
+                    .environmentObject(eventoRepo)
+                    .environmentObject(setupReplicadoRepo)
+                }
+            }
+        }
+    }
+
+    private func contextoStint(_ item: StintListaItem) -> String {
+        let pista = item.pistaApelido ?? "—"
+        guard let ms = item.dataInicio else { return pista }
+        return "\(pista) · \(formatDataCurta(ms: ms))"
     }
 
     private var content: some View {
@@ -417,46 +587,54 @@ struct StintsView: View {
     }
 
     private func stintCard(_ stint: StintListaItem) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(stint.pistaApelido ?? "Sem pista")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.text)
-                Spacer()
-                if let ms = stint.dataInicio {
-                    Text(formatDataCurta(ms: ms))
+        Button(action: { stintAbertoId = stint.id }) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(stint.pistaApelido ?? "Sem pista")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.text)
+                    Spacer()
+                    if let ms = stint.dataInicio {
+                        Text(formatDataCurta(ms: ms))
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundStyle(Color.textFaint)
+                    }
+                    Text("›")
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundStyle(Color.textMuted)
+                        .padding(.leading, 4)
+                }
+                HStack(spacing: 14) {
+                    infoPar(rotulo: "Carro", valor: stint.carroApelido ?? "—")
+                    infoPar(rotulo: "Voltas", valor: "\(stint.voltasCount)")
+                    if let m = stint.melhorVoltaMs {
+                        infoPar(rotulo: "Melhor", valor: formatTempoMs(m), ouro: true)
+                    }
+                    if let v = stint.vmaxKmh, v > 0 {
+                        infoPar(rotulo: "Vel. máx", valor: "\(Int(v.rounded())) km/h")
+                    }
+                    Spacer(minLength: 0)
+                }
+                if let piloto = stint.pilotoNome, !piloto.isEmpty {
+                    Text("Piloto: \(piloto)")
                         .font(.system(size: 11, weight: .regular))
                         .foregroundStyle(Color.textFaint)
                 }
             }
-            HStack(spacing: 14) {
-                infoPar(rotulo: "Carro", valor: stint.carroApelido ?? "—")
-                infoPar(rotulo: "Voltas", valor: "\(stint.voltasCount)")
-                if let m = stint.melhorVoltaMs {
-                    infoPar(rotulo: "Melhor", valor: formatTempoMs(m), ouro: true)
-                }
-                if let v = stint.vmaxKmh, v > 0 {
-                    infoPar(rotulo: "Vel. máx", valor: "\(Int(v.rounded())) km/h")
-                }
-                Spacer(minLength: 0)
-            }
-            if let piloto = stint.pilotoNome, !piloto.isEmpty {
-                Text("Piloto: \(piloto)")
-                    .font(.system(size: 11, weight: .regular))
-                    .foregroundStyle(Color.textFaint)
-            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .background(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .fill(Color.surfaceRaised)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .stroke(Color.border, lineWidth: 1)
+            )
         }
-        .padding(.horizontal, Spacing.md)
-        .padding(.vertical, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                .fill(Color.surfaceRaised)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                .stroke(Color.border, lineWidth: 1)
-        )
+        .buttonStyle(.plain)
     }
 
     private func carregar() async {
@@ -583,6 +761,7 @@ struct AutodromosView: View {
     let onClose: () -> Void
     @State private var carregando = true
     @State private var expandidos: Set<String> = []
+    @State private var trechosPorAutodromo: [String: [TrechoListaItem]] = [:]
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -648,9 +827,17 @@ struct AutodromosView: View {
         let estaExpandido = expandidos.contains(a.id)
         return VStack(alignment: .leading, spacing: 0) {
             Button(action: {
-                if estaExpandido { expandidos.remove(a.id) } else { expandidos.insert(a.id) }
+                if estaExpandido {
+                    expandidos.remove(a.id)
+                } else {
+                    expandidos.insert(a.id)
+                    Task { await carregarTrechos(trackId: a.id) }
+                }
             }) {
-                HStack(alignment: .firstTextBaseline) {
+                HStack(alignment: .center, spacing: 12) {
+                    // Mini-mapa do circuito (Conceito Command Box) — substitui
+                    // o círculo decorativo, semelhante ao card do carro.
+                    CircuitoMiniMapa(svgPath: a.svgPath, viewBox: a.viewBox, size: 56)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(a.apelido)
                             .font(.system(size: 16, weight: .semibold))
@@ -660,15 +847,14 @@ struct AutodromosView: View {
                                 .font(.system(size: 11, weight: .regular))
                                 .foregroundStyle(Color.textMuted)
                         }
+                        Text("\(a.eventosCount) evento\(a.eventosCount == 1 ? "" : "s")")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Color.accent)
                     }
                     Spacer()
-                    Text("\(a.eventosCount) evento\(a.eventosCount == 1 ? "" : "s")")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color.accent)
                     Text(estaExpandido ? "˅" : "›")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(Color.textMuted)
-                        .padding(.leading, 8)
                 }
                 .padding(.horizontal, Spacing.md)
                 .padding(.vertical, 12)
@@ -688,6 +874,31 @@ struct AutodromosView: View {
                     detalheLinha(rotulo: "Voltas válidas", valor: "\(a.voltasCount)")
                     detalheLinha(rotulo: "Km rodada (estimada)", valor: a.kmEstimado > 0 ? String(format: "%.0f km", a.kmEstimado) : "—")
                     detalheLinha(rotulo: "Vel. máxima", valor: a.vmaxKmh.map { String(format: "%.0f km/h", $0) } ?? "—")
+                    // S3-ajuste 3: lista de trechos do autódromo. Mostra
+                    // só os pedagógicos (eh_trecho=1). Retas aparecem
+                    // intercaladas conforme a ordem do layout.
+                    let trechos = trechosPorAutodromo[a.id] ?? []
+                    if !trechos.isEmpty {
+                        Text("TRECHOS DA PISTA")
+                            .font(.system(size: 9, weight: .semibold))
+                            .tracking(0.6)
+                            .foregroundStyle(Color.textFaint)
+                            .padding(.top, 8)
+                        VStack(spacing: 4) {
+                            ForEach(trechos) { t in
+                                HStack(spacing: 8) {
+                                    Image(systemName: t.ehTrecho ? "circle.fill" : "minus")
+                                        .font(.system(size: 8, weight: .bold))
+                                        .foregroundStyle(t.ehTrecho ? Color.accent : Color.textFaint)
+                                    Text(t.nome)
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundStyle(t.ehTrecho ? Color.text : Color.textMuted)
+                                    Spacer(minLength: 0)
+                                }
+                                .padding(.vertical, 3)
+                            }
+                        }
+                    }
                 }
                 .padding(.horizontal, Spacing.md)
                 .padding(.bottom, 12)
@@ -702,6 +913,15 @@ struct AutodromosView: View {
             RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
                 .stroke(estaExpandido ? Color.accent.opacity(0.45) : Color.border, lineWidth: 1)
         )
+    }
+
+    private func carregarTrechos(trackId: String) async {
+        guard trechosPorAutodromo[trackId] == nil else { return }
+        do {
+            trechosPorAutodromo[trackId] = try await repo.trechosDoAutodromo(trackId: trackId)
+        } catch {
+            print("AutodromosView.carregarTrechos erro: \(error)")
+        }
     }
 
     private func detalheLinha(rotulo: String, valor: String) -> some View {
