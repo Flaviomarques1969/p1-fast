@@ -15,16 +15,19 @@ public struct EngineSnap: Codable, Sendable, Equatable {
     public var oilPressure: Double?
     public var oilTemp: Double?
     public var waterTemp: Double?
+    public var iat: Double?            // Intake Air Temperature (°C). T4000 OBD-II PID 0x0F.
     public var batteryVoltage: Double?
     public var fuelPressure: Double?
     public var gear: Int?
     public init(
         rpm: Double? = nil, tps: Double? = nil, map: Double? = nil, lambda: Double? = nil,
         oilPressure: Double? = nil, oilTemp: Double? = nil, waterTemp: Double? = nil,
+        iat: Double? = nil,
         batteryVoltage: Double? = nil, fuelPressure: Double? = nil, gear: Int? = nil
     ) {
         self.rpm = rpm; self.tps = tps; self.map = map; self.lambda = lambda
         self.oilPressure = oilPressure; self.oilTemp = oilTemp; self.waterTemp = waterTemp
+        self.iat = iat
         self.batteryVoltage = batteryVoltage; self.fuelPressure = fuelPressure; self.gear = gear
     }
 }
@@ -177,6 +180,7 @@ public enum SnapshotBuilder {
             oilPressure: s.oilPressure,
             oilTemp: s.oilTemp,
             waterTemp: s.waterTemp,
+            iat: s.iat,
             batteryVoltage: s.batteryVoltage,
             fuelPressure: nil,
             gear: s.gear

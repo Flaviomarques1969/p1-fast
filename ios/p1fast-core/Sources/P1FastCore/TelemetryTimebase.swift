@@ -23,6 +23,8 @@
 //   • Detecção DUPLICATE (tMono igual): descarta, accepted=false.
 //   • Sinal LATE: idade > freshness e ≤ 3×freshness.
 //   • Sinal MISSING: idade > 3×freshness.
+//   • `onTick(rateHz, callback)` — subscribe em ticks consolidados, 1 timer
+//     compartilhado por rateHz, retorna closure de unsubscribe (paridade JS).
 
 import Foundation
 
@@ -236,8 +238,10 @@ private final class TimebaseSource {
 /// Paridade JS `class TelemetryTimebase`.
 public final class TelemetryTimebase {
     public typealias SnapshotBuilderFn = (Double, [String: SourcePacket]) -> Snapshot
+    public typealias TickCallback = (Snapshot) -> Void
 
     private var sources: [String: TimebaseSource] = [:]
+    private var tickers: [Double: TimebaseTicker] = [:]
     private let nowProvider: () -> Double
     private let snapshotBuilder: SnapshotBuilderFn
 
@@ -320,13 +324,128 @@ public final class TelemetryTimebase {
         return out
     }
 
-    /// Limpa estado — útil em testes.
+    /// Subscreve em ticks consolidados a uma taxa fixa (paridade JS
+    /// `onTick(rateHz, callback)`). Cada rateHz tem 1 timer compartilhado
+    /// entre N callbacks. Retorna closure de unsubscribe — chama pra
+    /// remover este callback (último callback fecha o timer).
+    ///
+    /// O ticker usa `DispatchSourceTimer` numa queue interna; callbacks
+    /// disparam na mesma queue. Caller que precisa main-thread deve
+    /// re-dispatch.
+    @discardableResult
+    public func onTick(rateHz: Double, _ callback: @escaping TickCallback) -> () -> Void {
+        precondition(rateHz > 0 && rateHz.isFinite, "rateHz deve ser > 0 e finito")
+        let key = rateHz
+        let ticker: TimebaseTicker
+        if let existing = tickers[key] {
+            ticker = existing
+        } else {
+            ticker = TimebaseTicker(rateHz: rateHz,
+                                     snapshotProvider: { [weak self] in
+                                         self?.snapshotNow()
+                                     })
+            tickers[key] = ticker
+            ticker.start()
+        }
+        let token = ticker.addCallback(callback)
+        return { [weak self] in
+            guard let self = self else { return }
+            guard let t = self.tickers[key] else { return }
+            t.removeCallback(token)
+            if t.isEmpty {
+                t.stop()
+                self.tickers.removeValue(forKey: key)
+            }
+        }
+    }
+
+    /// Força um tick síncrono para todos os callbacks registrados nessa
+    /// taxa. Não-bloqueante. Útil pra smokes determinísticos sem precisar
+    /// esperar timer real. Em produção, prefira `onTick` (timer assíncrono).
+    public func dispatchTickForTesting(rateHz: Double) {
+        tickers[rateHz]?.tickOnce()
+    }
+
+    /// Quantidade de tickers ativos.
+    public var tickerCount: Int { tickers.count }
+
+    /// Quantidade de callbacks registrados numa taxa.
+    public func callbackCount(rateHz: Double) -> Int {
+        tickers[rateHz]?.callbackCount ?? 0
+    }
+
+    /// Limpa estado — útil em testes. Também desliga todos os tickers.
     public func reset() {
+        for t in tickers.values { t.stop() }
+        tickers.removeAll()
         sources.removeAll()
     }
 
     /// Quantidade de fontes registradas.
     public var sourceCount: Int { sources.count }
+}
+
+/// Ticker interno por rateHz. Compartilha 1 timer entre N callbacks.
+/// Thread-safety via `NSLock` no dict de callbacks — `tickOnce` lê snapshot
+/// + chama callbacks sob lock pra evitar race com (un)subscribe concorrente.
+private final class TimebaseTicker {
+    let rateHz: Double
+    private let snapshotProvider: () -> Snapshot?
+    private var callbacks: [UUID: (Snapshot) -> Void] = [:]
+    private var timer: DispatchSourceTimer?
+    private let lock = NSLock()
+    private let queue: DispatchQueue
+
+    init(rateHz: Double, snapshotProvider: @escaping () -> Snapshot?) {
+        self.rateHz = rateHz
+        self.snapshotProvider = snapshotProvider
+        self.queue = DispatchQueue(label: "p1fast.timebase.ticker.\(rateHz)")
+    }
+
+    func addCallback(_ cb: @escaping (Snapshot) -> Void) -> UUID {
+        lock.lock(); defer { lock.unlock() }
+        let id = UUID()
+        callbacks[id] = cb
+        return id
+    }
+
+    func removeCallback(_ id: UUID) {
+        lock.lock(); defer { lock.unlock() }
+        callbacks.removeValue(forKey: id)
+    }
+
+    var isEmpty: Bool {
+        lock.lock(); defer { lock.unlock() }
+        return callbacks.isEmpty
+    }
+
+    var callbackCount: Int {
+        lock.lock(); defer { lock.unlock() }
+        return callbacks.count
+    }
+
+    func tickOnce() {
+        guard let snap = snapshotProvider() else { return }
+        lock.lock()
+        let snapshot = Array(callbacks.values)
+        lock.unlock()
+        for cb in snapshot { cb(snap) }
+    }
+
+    func start() {
+        let t = DispatchSource.makeTimerSource(queue: queue)
+        let intervalNs = Int(1_000_000_000.0 / rateHz)
+        t.schedule(deadline: .now() + .nanoseconds(intervalNs),
+                   repeating: .nanoseconds(intervalNs))
+        t.setEventHandler { [weak self] in self?.tickOnce() }
+        t.resume()
+        timer = t
+    }
+
+    func stop() {
+        timer?.cancel()
+        timer = nil
+    }
 }
 
 // ─── Helpers numéricos ──────────────────────────────────────

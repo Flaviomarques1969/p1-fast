@@ -6,8 +6,15 @@
 //
 // Dispara quando: drift sustentado > 3°C/min na janela rolling 5 min
 // (waterTempSeries do VehicleContextAggregator) E motor não está em
-// padrão de carga alta (RPM mid-range, MAP médio). Indica problema
-// de arrefecimento (ventoinha, radiador, bomba) e NÃO sintoma de uso.
+// padrão de carga alta (TPS>70 + MAP>0.8 + RPM>4000 dominando a lap
+// corrente — mesmo critério da rule fuel-lean). Indica problema de
+// arrefecimento (ventoinha, radiador, bomba) e NÃO sintoma de uso.
+//
+// Gate 1 — fase térmica .warming (motor ainda aquecendo da partida)
+// nunca dispara: drift natural.
+// Gate 2 — proporção `leanLoadSamples/samplesCount > 0.5` na lap
+// corrente: motor passou a maior parte do tempo em alta carga, drift
+// é atribuível a uso, não falha mecânica.
 //
 // Quality.t4000=.ok é pré-requisito (gating no VehicleContextAggregator).
 //
@@ -25,14 +32,20 @@ public struct WaterTempDriftNoCoolingRule: CalibrationRule {
     /// Janela mínima de tempo (ms) com drift sustentado — paridade V-005.
     public let minWindowMs: Double
 
+    /// Razão `leanLoadSamples/samplesCount` que caracteriza lap dominada
+    /// por alta carga (acima → drift é atribuível a uso, não falha mecânica).
+    public let maxHighLoadRatio: Double
+
     public init(
         cooldownMs: Double = 120_000,
         minDriftCPerMin: Double = 3.0,
-        minWindowMs: Double = 60_000
+        minWindowMs: Double = 60_000,
+        maxHighLoadRatio: Double = 0.5
     ) {
         self.cooldownMs = cooldownMs
         self.minDriftCPerMin = minDriftCPerMin
         self.minWindowMs = minWindowMs
+        self.maxHighLoadRatio = maxHighLoadRatio
     }
 
     public func evaluate(context: VehicleContext, now: () -> Double) -> EngineeringFinding? {
@@ -46,6 +59,15 @@ public struct WaterTempDriftNoCoolingRule: CalibrationRule {
         let dT = last.tempC - first.tempC
         let driftPerMin = dT / (windowMs / 60_000)
         if driftPerMin < minDriftCPerMin { return nil }
+
+        // Gate 1 — fase warming: motor ainda aquecendo da partida, drift natural.
+        if context.thermalPhase == .warming { return nil }
+
+        // Gate 2 — alta carga dominando a lap corrente → drift é uso, não falha.
+        if context.lap.samplesCount > 0 {
+            let highLoadRatio = Double(context.lap.leanLoadSamples) / Double(context.lap.samplesCount)
+            if highLoadRatio > maxHighLoadRatio { return nil }
+        }
 
         // Estado térmico mostrando atTemp ou overheat torna o achado
         // mais grave; warming inicial é benigno (motor aquecendo normal).

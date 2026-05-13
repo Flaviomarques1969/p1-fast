@@ -55,6 +55,7 @@ public struct Sample: Codable, Sendable {
     public var oilPressure: Double?
     public var oilTemp: Double?
     public var waterTemp: Double?
+    public var iat: Double?           // Intake Air Temperature (°C). OBD-II PID 0x0F.
     public var lambda: Double?
     public var tps: Double?
     public var map: Double?

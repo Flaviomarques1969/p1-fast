@@ -256,8 +256,15 @@ public final class VehicleContextAggregator {
         lapSamplesCount += 1
         if lapWaterTempStart == nil, let w = e.waterTemp { lapWaterTempStart = w }
         if let w = e.waterTemp { lapWaterTempEnd = w }
-        // IAT lives em snap.engine não tem campo dedicado — virá do T4000 mais tarde.
-        // Por enquanto deixamos vazio; caller pode estender. (Documentado em MS-16.3.)
+
+        // IAT — alimenta a correlação Vmin × IAT da CR3 (vmin-progressive-loss-segment).
+        // Gating quality.t4000=.ok pra evitar contaminar com leitura ruim do CAN.
+        if let iat = e.iat, snap.quality.t4000 == .ok {
+            if lapIatStart == nil { lapIatStart = iat }
+            lapIatEnd = iat
+            lapIatSum += iat
+            lapIatCount += 1
+        }
 
         if let r = e.rpm {
             lapRpmMax = max(lapRpmMax ?? -Double.infinity, r)

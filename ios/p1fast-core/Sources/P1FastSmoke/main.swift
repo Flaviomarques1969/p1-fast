@@ -7501,6 +7501,52 @@ step("TB-12: jitter e latencyMedian — janela LATENCY_WINDOW") {
     try assertTrue((s2?.jitter ?? 0) > 10, "jitter deve refletir intervalo anômalo")
 }
 
+// ── MS-16.6 (P3) — onTick: paridade JS subscribe/dispatch/unsubscribe ──
+step("TB-13: onTick dispara callback síncrono via dispatchTickForTesting") {
+    let tb = TelemetryTimebase(now: { 1000 })
+    tb.attachSource(source: SourceTags.t4000)
+    tb.ingest(_tbT4000Sample(tMono: 990))
+
+    var received = 0
+    let unsub = tb.onTick(rateHz: 10) { _ in received += 1 }
+    try assertEq(tb.tickerCount, 1)
+    try assertEq(tb.callbackCount(rateHz: 10), 1)
+
+    tb.dispatchTickForTesting(rateHz: 10)
+    tb.dispatchTickForTesting(rateHz: 10)
+    try assertEq(received, 2)
+
+    unsub()
+    try assertEq(tb.tickerCount, 0)   // último callback fecha o ticker
+}
+
+step("TB-14: onTick — N callbacks na mesma taxa compartilham 1 timer; unsub independente") {
+    let tb = TelemetryTimebase(now: { 1000 })
+    tb.attachSource(source: SourceTags.t4000)
+    tb.ingest(_tbT4000Sample(tMono: 990))
+
+    var a = 0, b = 0
+    let unsubA = tb.onTick(rateHz: 10) { _ in a += 1 }
+    let unsubB = tb.onTick(rateHz: 10) { _ in b += 1 }
+    try assertEq(tb.tickerCount, 1)
+    try assertEq(tb.callbackCount(rateHz: 10), 2)
+
+    tb.dispatchTickForTesting(rateHz: 10)
+    try assertEq(a, 1)
+    try assertEq(b, 1)
+
+    unsubA()
+    try assertEq(tb.callbackCount(rateHz: 10), 1)
+    try assertEq(tb.tickerCount, 1)   // ainda tem B
+
+    tb.dispatchTickForTesting(rateHz: 10)
+    try assertEq(a, 1)               // A não dispara mais
+    try assertEq(b, 2)
+
+    unsubB()
+    try assertEq(tb.tickerCount, 0)
+}
+
 // ════════════════════════════════════════════════════════════
 // VehicleContextAggregator — VCA-01..VCA-10 (MS-16.2)
 // docs/COMMAND_BOX_ENGENHARIA.md §4 (Vehicle Context Model).
@@ -7509,10 +7555,12 @@ step("TB-12: jitter e latencyMedian — janela LATENCY_WINDOW") {
 
 // Helpers de fixture pra VCA smoke.
 func _vcaT4000(tMono: Double, rpm: Double, map: Double, lambda: Double,
-               tps: Double, waterTemp: Double, accLong: Double = 0) -> Snapshot {
+               tps: Double, waterTemp: Double, accLong: Double = 0,
+               iat: Double? = nil) -> Snapshot {
     let engine = EngineSnap(
         rpm: rpm, tps: tps, map: map, lambda: lambda,
         oilPressure: 4.0, oilTemp: 92, waterTemp: waterTemp,
+        iat: iat,
         batteryVoltage: 13.8, fuelPressure: 4.0, gear: 3
     )
     let position = PositionSnap()
@@ -7679,6 +7727,54 @@ step("VCA-10: reset zera tudo") {
     try assertEq(ctx.stint.lapHistory.count, 0)
     try assertEq(ctx.stint.vminBySegmentLap.count, 0)
     try assertEq(ctx.thermalPhase, .cold)
+}
+
+// ── MS-16.6 (P1) — IAT alimentado no aggregator ─────────────
+step("VCA-11: IAT alimenta lapIatStart/End/Sum quando snap.engine.iat presente") {
+    let agg = VehicleContextAggregator()
+    agg.ingestSnapshot(_vcaT4000(tMono: 1000, rpm: 5800, map: 0.92, lambda: 1.06,
+                                  tps: 84, waterTemp: 102, iat: 38))
+    agg.ingestSnapshot(_vcaT4000(tMono: 1010, rpm: 5800, map: 0.92, lambda: 1.06,
+                                  tps: 84, waterTemp: 102, iat: 40))
+    agg.ingestSnapshot(_vcaT4000(tMono: 1020, rpm: 5800, map: 0.92, lambda: 1.06,
+                                  tps: 84, waterTemp: 102, iat: 42))
+    let ctx = agg.currentContext()
+    try assertClose(ctx.lap.iatStart, 38)
+    try assertClose(ctx.lap.iatEnd, 42)
+}
+
+step("VCA-12: IAT NÃO conta com quality.t4000 != .ok") {
+    let agg = VehicleContextAggregator()
+    let engine = EngineSnap(rpm: 5800, tps: 84, map: 0.92, lambda: 1.06,
+                            oilPressure: 4.0, oilTemp: 92, waterTemp: 102, iat: 45)
+    let quality = SnapshotQuality(t4000: .late, racebox: .ok, iphone: .ok,
+                                  sync: .late, confidence: "Média")
+    let snap = Snapshot(
+        t: 1_700_000_000_000, tMono: 1000,
+        engine: engine, position: PositionSnap(),
+        dynamics: DynamicsSnap(), vehicle: VehicleSnap(),
+        quality: quality
+    )
+    agg.ingestSnapshot(snap)
+    try assertEq(agg.currentContext().lap.iatStart, nil)
+    try assertEq(agg.currentContext().lap.iatEnd, nil)
+}
+
+step("VCA-13: onLapEnd retro-fill iatAvgC nos SegmentVminRecord da volta") {
+    let agg = VehicleContextAggregator()
+    // 3 segments na volta 1 com IAT médio ~40°C
+    agg.ingestSnapshot(_vcaT4000(tMono: 1000, rpm: 5800, map: 0.92, lambda: 1.06,
+                                  tps: 84, waterTemp: 102, iat: 38))
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
+    agg.ingestSnapshot(_vcaT4000(tMono: 2000, rpm: 5800, map: 0.92, lambda: 1.06,
+                                  tps: 84, waterTemp: 102, iat: 42))
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "esses", lapNumero: 1, velMinima: 18.0))
+    agg.onLapEnd(_vcaLapEnd(numero: 1, tempoMs: 95_000))
+    let ctx = agg.currentContext()
+    let bruxaRec = ctx.stint.vminBySegmentLap["bruxa"]?[0]
+    let essesRec = ctx.stint.vminBySegmentLap["esses"]?[0]
+    try assertClose(bruxaRec?.iatAvgC, 40)
+    try assertClose(essesRec?.iatAvgC, 40)
 }
 
 // ════════════════════════════════════════════════════════════
@@ -7901,6 +7997,83 @@ step("CE-15: reset limpa cooldowns") {
     engine.reset()
     let f3 = engine.evaluate(context: agg.currentContext(), now: { 2000 })
     try assertEq(f3.count, 1)
+}
+
+// ── MS-16.6 (P2) — WaterTempDriftNoCooling filtra carga e warming ──
+step("CE-17: WaterTempDrift NÃO dispara com fase warming (drift natural)") {
+    let agg = VehicleContextAggregator()
+    // drift > 3°C/min mas thermalPhase = .warming (temp inicial 65, final 71 em 60s)
+    agg.ingestSnapshot(_vcaT4000(tMono: 0,      rpm: 3000, map: 0.5, lambda: 0.92,
+                                  tps: 30, waterTemp: 65))
+    agg.ingestSnapshot(_vcaT4000(tMono: 30_000, rpm: 3000, map: 0.5, lambda: 0.92,
+                                  tps: 30, waterTemp: 68))
+    agg.ingestSnapshot(_vcaT4000(tMono: 61_000, rpm: 3000, map: 0.5, lambda: 0.92,
+                                  tps: 30, waterTemp: 71))
+    try assertEq(agg.currentContext().thermalPhase, .warming)
+    let engine = CalibrationEngine(rules: [WaterTempDriftNoCoolingRule()])
+    let findings = engine.evaluate(context: agg.currentContext(), now: { 100_000 })
+    try assertEq(findings.count, 0)
+}
+
+step("CE-18: WaterTempDrift NÃO dispara quando alta carga domina (drift = uso)") {
+    let agg = VehicleContextAggregator()
+    // 41 samples em alta carga (TPS>70, MAP>0.8, RPM>4000, λ>1.0) + drift > 3°C/min
+    // → highLoadRatio = 100% > 0.5 limite, NÃO deve disparar.
+    // windowMs = 40*1500 = 60_000 ms (limite minWindowMs — não falha).
+    for i in 0...40 {
+        let tMono = Double(i) * 1500
+        let temp  = 95.0 + Double(i) * 0.15   // sobe 6°C em 60s = 6°C/min
+        agg.ingestSnapshot(_vcaT4000(
+            tMono: tMono, rpm: 5800, map: 0.92, lambda: 1.06,
+            tps: 84, waterTemp: temp
+        ))
+    }
+    let ctx = agg.currentContext()
+    try assertTrue(ctx.lap.leanLoadSamples > 30, "deve ter >30 samples alta carga")
+    let engine = CalibrationEngine(rules: [WaterTempDriftNoCoolingRule()])
+    let findings = engine.evaluate(context: ctx, now: { 100_000 })
+    try assertEq(findings.count, 0)
+}
+
+step("CE-19: WaterTempDrift dispara quando baixa carga + atTemp + drift sustentado") {
+    let agg = VehicleContextAggregator()
+    // Drift 6°C/min em baixa carga, fase atTemp — dispara normalmente.
+    agg.ingestSnapshot(_vcaT4000(tMono: 0,       rpm: 3500, map: 0.5, lambda: 0.92,
+                                  tps: 30, waterTemp: 99))
+    agg.ingestSnapshot(_vcaT4000(tMono: 30_000,  rpm: 3500, map: 0.5, lambda: 0.92,
+                                  tps: 30, waterTemp: 102))
+    agg.ingestSnapshot(_vcaT4000(tMono: 60_000,  rpm: 3500, map: 0.5, lambda: 0.92,
+                                  tps: 30, waterTemp: 105))
+    try assertEq(agg.currentContext().lap.leanLoadSamples, 0)
+    let engine = CalibrationEngine(rules: [WaterTempDriftNoCoolingRule()])
+    let findings = engine.evaluate(context: agg.currentContext(), now: { 100_000 })
+    try assertEq(findings.count, 1)
+    try assertEq(findings[0].ruleId, "water-temp-drift-no-cooling")
+}
+
+// ── MS-16.6 (P1) — CR3 carrega IAT no evidenciaTexto quando disponível ─
+step("CE-16: VminProgressiveLoss inclui IAT no evidenciaTexto quando alimentado") {
+    let agg = VehicleContextAggregator()
+    // 3 voltas com Vmin decrescente + IAT crescente
+    let vmins: [Double] = [22.0, 21.0, 20.0]   // m/s — vira 79.2, 75.6, 72.0 km/h
+    let iats: [Double]  = [38.0, 41.0, 44.0]
+    for (i, vmin) in vmins.enumerated() {
+        agg.ingestSnapshot(_vcaT4000(
+            tMono: Double(i + 1) * 60_000,
+            rpm: 5800, map: 0.92, lambda: 1.06,
+            tps: 84, waterTemp: 102, iat: iats[i]
+        ))
+        agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa",
+                                     lapNumero: i + 1, velMinima: vmin))
+        agg.onLapEnd(_vcaLapEnd(numero: i + 1, tempoMs: 95_000))
+    }
+    let engine = CalibrationEngine(rules: [VminProgressiveLossSegmentRule()])
+    let findings = engine.evaluate(context: agg.currentContext(),
+                                    now: { 1_000_000 })
+    try assertEq(findings.count, 1)
+    let texto = findings[0].evidenciaTexto.joined(separator: " | ")
+    try assertTrue(texto.contains("IAT"),
+                   "evidenciaTexto deve conter 'IAT' quando alimentado (recebeu: \(texto))")
 }
 
 // ════════════════════════════════════════════════════════════
