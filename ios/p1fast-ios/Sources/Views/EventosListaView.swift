@@ -43,9 +43,14 @@ struct EventosListaView: View {
     /// launch args `--p1-eventos-novo` / `--p1-evento-detalhe` pra
     /// screenshot rápida das modais.
     var initialSheet: EventosSheet?
+    /// Handler do menu inferior — injetado pela HomeView pra permitir
+    /// pular pra outra aba direto desta sub-view (fix tab-bar 2026-05-12).
+    var onNavSelect: (BottomNavItem) -> Void = { _ in }
 
-    init(initialSheet: EventosSheet? = nil) {
+    init(initialSheet: EventosSheet? = nil,
+         onNavSelect: @escaping (BottomNavItem) -> Void = { _ in }) {
         self.initialSheet = initialSheet
+        self.onNavSelect = onNavSelect
     }
 
     var body: some View {
@@ -59,7 +64,7 @@ struct EventosListaView: View {
             }
             .background(Color.surface)
 
-            BottomNav(items: navItems, selection: $navSelection)
+            BottomNav(items: navItems, selection: $navSelection, onSelect: onNavSelect)
         }
         .overlay(alignment: .bottomTrailing) {
             FAB("Novo evento") { sheet = .novo }
