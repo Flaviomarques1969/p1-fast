@@ -421,7 +421,13 @@ ADR-008 continua valendo: **alertas críticos NÃO passam pela IA**.
 | Tela | Conteúdo | Driver |
 |---|---|---|
 | **Command Box** (TV 32") | Vista do engenheiro + chefe-de-equipe: live, findings, recommendations, simulações | iPhone do box em Box Mode → AirPlay → Apple TV → TV 32" (mesma cadeia de MS-12) |
-| **Cockpit Pilot** (10,5" externa invertida no painel) | Vista do piloto: cockpit canônico (mockup `mockup-cockpit-piloto.html`) + modo simulação quando carro parado | Notebook Windows WinUI 3 → display 2 invertido (já em produção via MS-13) |
+| **Cockpit Pilot** (10,5" externa invertida no painel) | Conteúdo **dirigido pela atividade da engenharia**: quando engenharia inativa = cockpit canônico (mockup `mockup-cockpit-piloto.html`); quando engenharia ativada = informações que **a engenharia decide que são importantes** para quem estiver no carro **naquele momento** (piloto na pista, ou mecânico sentado no carro durante diagnóstico no box) | Notebook Windows WinUI 3 → display 2 invertido (já em produção via MS-13) |
+
+**Clarificação Flávio 2026-05-13 (segunda):** o Cockpit Pilot 10,5" **não é fixo** no cockpit canônico. O que ele mostra depende de **dois eixos**:
+- **Estado da engenharia**: inativa (stint normal) × ativada ("contexto de corrida" — engenheiro está analisando, simulando, propondo)
+- **Quem está no carro**: piloto (mãos no volante) × mecânico (sentado no carro, motor parado ou em diagnóstico de box)
+
+Quem decide **o que** aparece em cada combinação é a engenharia (canal `engineering-{stintId}` empurra o conteúdo). A 10,5" no painel é o **canal de retorno do Command Box pra dentro do carro** — não importa se quem está lá é piloto ou mecânico naquele momento.
 
 **Operação:**
 
@@ -558,8 +564,19 @@ Resolve camada 3. `/api/advisor.js` aceita campo opcional `findings[]` no payloa
 
 Layout otimizado para 32" landscape (alta legibilidade, distância de visão 2-3 m). Operação por toque no iPhone do box (não na TV). **Não compete com cockpit do piloto** — produto totalmente separado, consumidor diferente da mesma fonte (Realtime). **Gate principal**: MS-9 (T4000 publica no Realtime) precisa estar fechado para o live ser real; sem ele, fica em mock data.
 
-### MS-16.7 — Modo simulação no Cockpit Pilot (overlay no 10,5") (1-2 PRs)
-**Aproveita o cockpit WinUI 3 existente** sem mudar layout principal. Quando o canal Realtime `engineering-{stintId}` empurra um `SimulationProposal` E o carro está parado (`vehicle.speed_fused < 5 km/h` sustentado por > 3 s), o Cockpit Pilot 10,5" mostra um **overlay/painel adicional** sincronizado com o que o engenheiro está propondo na TV 32" (ex.: "Acelere até 5 800 rpm na 3ª marcha para validar a célula" + λ atual × projetado). Quando o engenheiro encerra a simulação OU o carro volta a se mover, o overlay desaparece. **Sem display switching no notebook** — display 1 fica área de trabalho normal sempre; só o conteúdo do 10,5" muda.
+### MS-16.7 — Modo contextual no Cockpit Pilot 10,5" (2-3 PRs)
+**Aproveita o cockpit WinUI 3 existente** e adiciona uma camada de **conteúdo dirigido pela engenharia**. O 10,5" deixa de ser estritamente "vista do piloto cockpit canônico" e vira **canal de retorno do Command Box pra dentro do carro**, controlado por mensagens no canal Realtime `engineering-{stintId}`.
+
+Conteúdos que o canal pode empurrar (catálogo inicial, expandível):
+- `ENGINEERING_INACTIVE` — render padrão (cockpit canônico do mockup `mockup-cockpit-piloto.html`)
+- `SIMULATION_INSTRUCTION { texto, rpmAlvo, marchaAlvo, mapaAlvo, lambdaAtual, lambdaProjetado }` — instrução de validação durante simulação (ex.: "Acelere até 5 800 rpm em 3ª pra validar a célula"). Engenheiro publica via TV 32"; piloto/mecânico no carro lê.
+- `MECHANIC_DIAGNOSTIC { passos[], canaisRelevantes[], estadoEsperado }` — quando há mecânico sentado no carro fazendo procedimento (ex.: "1. Pedal a 50% sustentado; 2. Aguarde RPM estável; 3. Confirme λ em 0.92 ± 0.03")
+- `PILOT_FOCUS_PROMPT { trecho, foco }` — quando engenharia quer destacar pra o piloto antes de sair do box (ex.: "Foco próximo stint: turn-in da Bruxa — entrar 5 km/h mais lento")
+- `ALERTA_OPERACIONAL { texto, urgencia }` — comunicação operacional fora dos alertas críticos da Camada 1 (ex.: "Fim de stint em 2 voltas")
+
+Implementação: `CockpitState` (já existente no domínio C#) ganha campo `engineeringOverlay: EngineeringOverlay?`. Quando não-nulo, o renderer XAML mostra o painel definido pelo tipo. Quando nulo, render padrão. Mudança visual binária; engenheiro tem controle full pelo canal.
+
+**Quem decide ativar/desativar**: a engenharia. **Gatilho não é velocidade** — é mensagem explícita no canal `engineering-{stintId}`. Pode haver casos com carro parado + engenharia inativa (overlay = nulo, render canônico) e casos com carro rolando + engenharia ativa (`PILOT_FOCUS_PROMPT` durante volta de aquecimento, por exemplo). O Cockpit Pilot **obedece o canal**, não decide sozinho. **Sem display switching no notebook** — display 1 fica área de trabalho normal sempre; só o conteúdo do 10,5" muda.
 
 ### MS-16.8 — Simulação de ajuste (TV 32" + iPhone Box Mode) (2-3 PRs)
 Funcionalidade nova baseada na descrição do Flávio 2026-05-13 ("fazer simulações"). Permite ao engenheiro **previsualizar** o efeito de uma recommendation antes de aprovar — ex.: "se aplicar +4% combustível na célula RPM 5200-6000, λ esperado cai de 1.07 para 0.92, accel_long projetado sobe X m/s²". Usa modelo determinístico simples (extrapolação linear na célula). Publica `SimulationProposal` no canal `engineering-{stintId}` para o Cockpit Pilot consumir (MS-16.7). Engenheiro decide aprovar / editar / rejeitar via toque no iPhone do box. **Tier 1 inicial** (sem mudar mapa real); evolução pra "aplicar agora via Injepro T Software" depende de G5 (leitura/escrita do mapa).
@@ -640,25 +657,69 @@ Layout otimizado para 32" landscape, distância de visão 2-3 m, **alta legibili
 
 **Não compete com cockpit do piloto** — produto separado, consumidor diferente do mesmo canal Realtime. O piloto vê a sua tela (display 2 invertida), o engenheiro/chefe-de-equipe vê a TV 32". Ambos a partir da mesma origem de dados.
 
-### 7.3 Modo simulação no Cockpit Pilot 10,5" (MS-16.7)
+### 7.3 Modo contextual no Cockpit Pilot 10,5" (MS-16.7)
 
-Quando o engenheiro inicia uma simulação na TV 32" E o carro está parado, o Cockpit Pilot 10,5" do piloto ganha um **overlay de simulação** sobre o cockpit canônico (não substitui o layout, **adiciona um painel**):
+O 10,5" é **canal de retorno do Command Box para dentro do carro**. Quem decide o que aparece é a engenharia, publicando no canal Realtime `engineering-{stintId}`. Render é binário: overlay nulo = cockpit canônico; overlay ativo = painel específico do tipo de mensagem.
+
+**Exemplo 1 — simulação em andamento (mecânico ou piloto sentado no carro parado):**
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ COCKPIT PILOT (mockup canônico — shift light, apex, halo)   │
+│ COCKPIT PILOT — modo SIMULATION_INSTRUCTION                 │
 │                                                             │
-│  ┌─[ SIMULAÇÃO ATIVA ]────────────────────────────────────┐ │
-│  │ Engenheiro propõe: +4% combustível RPM 5200-6000       │ │
-│  │ Acelere até 5 800 rpm em 3ª pra validar a célula       │ │
-│  │ λ atual: 1.07   λ projetado: 0.92                      │ │
-│  │                                                        │ │
-│  │  [esperando célula-alvo]                               │ │
-│  └────────────────────────────────────────────────────────┘ │
+│  Engenheiro propõe: +4% combustível RPM 5200-6000           │
+│  Acelere até 5 800 rpm em 3ª pra validar a célula           │
+│                                                             │
+│  λ atual: 1.07         λ projetado: 0.92                    │
+│  RPM atual: 1 280      RPM alvo: 5 800                      │
+│                                                             │
+│  [esperando célula-alvo · 4 segundos]                       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-Quando o piloto pressiona o acelerador e a célula RPM×MAP-alvo é atingida, sistema mostra **dado real × projetado lado a lado** no mesmo painel. Engenheiro decide na TV 32" (toca [Aprovar] no iPhone do box). Pré-requisito: G5 (mapa carregado) **NÃO é obrigatório** nessa primeira versão — projeção por extrapolação linear nos samples atuais da célula. Aplicar ajuste real no mapa fica para depois de G5 fechar.
+**Exemplo 2 — diagnóstico mecânico (mecânico sentado, carro parado):**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ COCKPIT PILOT — modo MECHANIC_DIAGNOSTIC                    │
+│                                                             │
+│  Procedimento de teste de pressão de combustível            │
+│                                                             │
+│  1. ✅ Motor em marcha lenta (cumprido)                     │
+│  2. ⏳ Pedal a 50% sustentado por 5 s (em andamento)         │
+│  3. ⬜ Confirmar λ em 0.92 ± 0.03                            │
+│                                                             │
+│  Press. combustível atual: 4.1 bar                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Exemplo 3 — foco pré-stint (piloto no carro, prestes a sair):**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ COCKPIT PILOT — modo PILOT_FOCUS_PROMPT                     │
+│                                                             │
+│  Foco deste stint:                                          │
+│  Turn-in da Bruxa — entrar 5 km/h mais lento                │
+│                                                             │
+│  Lição praticada: L007 (Trail Braking)                      │
+│  Como vou medir: Vmin georef + apex actual                  │
+│                                                             │
+│  [continuar pro cockpit padrão →]                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Exemplo 4 — engenharia inativa (default):**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ COCKPIT PILOT — modo ENGINEERING_INACTIVE                   │
+│ (cockpit canônico — mockup-cockpit-piloto.html)             │
+│  Shift light · Apex 4 pontos · Halo · Stint bar · Notch     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Quem decide o tipo de overlay**: a engenharia, pelo canal Realtime. O Cockpit Pilot é **passivo** — obedece o canal, não decide sozinho. Cockpit canônico = default; overlay = exceção sob comando.
 
 ### 7.4 Operação (entrada) é só pelos iPhones
 
@@ -752,7 +813,9 @@ Reaproveita o smoke harness JS já existente (`tests/node-smoke-*.mjs`, 6.481 li
 | D11 | Mensagens da Camada 3 IA chegam ao piloto durante stint? | aberta | Default: não. Piloto só via P1 Coach. ADR-008 |
 | D12 | Limites do Celta calibrados antes ou na track day? | aberta | Default: defaults conservadores + calibração em pista |
 | **D13** | **(NOVA)** Simulação de ajuste (MS-16.8) sem mexer no mapa real — aceita? | aberta | Default: sim. Projeção por extrapolação linear na célula. Aplicar no mapa real só após G5 fechar |
-| **D14** | **(NOVA)** Heurística "carro no box" para ativar overlay de simulação no Cockpit Pilot (MS-16.7) — `speed_fused < 5 km/h` por > 3 s entra; `> 10 km/h` por > 2 s sai. OK? | aberta | Default: sim |
+| **D14** | **REVISADA 2026-05-13** Gatilho do overlay no Cockpit Pilot 10,5" — agora NÃO é mais velocidade do carro, e sim **mensagem explícita no canal `engineering-{stintId}`** publicada pela engenharia. Heurística de speed só serve como **hint adicional** pra UI (ex.: render variante). OK? | aberta | Default: gatilho = canal; speed só hint |
+| **D15** | **(NOVA)** Catálogo inicial de tipos de overlay no Cockpit Pilot 10,5" — proponho 4 (`ENGINEERING_INACTIVE`, `SIMULATION_INSTRUCTION`, `MECHANIC_DIAGNOSTIC`, `PILOT_FOCUS_PROMPT`, `ALERTA_OPERACIONAL`). Cobrem o uso descrito? Faltam categorias? | aberta | Default: 4 + ALERTA_OPERACIONAL = 5 |
+| **D16** | **(NOVA)** Quem **dispara** cada tipo de overlay (engenheiro pelo Box Mode? chefe-de-equipe pelo iOS hub? mecânico pelo iPad? automático por findings de severidade alta?) — define as permissões de publicação no canal `engineering-{stintId}` | aberta | Default: qualquer membro com papel admin/chefe_equipe; auto-publish só para alertas operacionais e fim do stint |
 
 ---
 
@@ -834,11 +897,18 @@ Pra não criar expectativa errada:
 **Clarificação Flávio 2026-05-13 (após primeira leitura):**
 > "vc entendeu que mostramos as informaçoes no command box e também na tela de 10.5 do piloto que chamamos de cockpit pilot, mas operamos a partir sos celulares."
 
-Interpretação aplicada ao doc (após clarificação):
-- **Duas telas físicas simultâneas de saída**: Command Box (TV 32") e Cockpit Pilot (10,5" externa invertida no painel, mesma de MS-13). Ambas mostram informação ao mesmo tempo, conteúdo diferente.
+**Clarificação Flávio 2026-05-13 (segunda):**
+> "na verdade o modo piloto no carro mostra as informacoes importante que definirmos para ele saber ou oara um mecanico que estiver sentado no csrro caso a atividade de contexto de corrida que é a engenharia esteja ativada."
+
+Interpretação consolidada aplicada ao doc:
+- **Duas telas físicas simultâneas de saída**: Command Box (TV 32") e Cockpit Pilot (10,5" externa invertida no painel, mesma de MS-13).
 - **Operação é só pelos iPhones**. Notebook não é operado — só roda o cockpit pilot em display 2 (kiosk fullscreen) + driver T4000 + publisher Realtime.
-- **Sem display switching no notebook**. A ideia anterior de "comutar display 1 do notebook para piloto-no-box" caiu — o que muda é o conteúdo do Cockpit Pilot 10,5" (ganha overlay de simulação por Realtime quando carro parado), não a tela onde aparece.
-- **Nova funcionalidade**: simulação de ajuste (MS-16.8) ganha tração explícita; Cockpit Pilot ganha modo simulação overlay (MS-16.7) sincronizado por Realtime.
+- **Cockpit Pilot 10,5" não é fixo no cockpit canônico**. É um **canal de retorno do Command Box pra dentro do carro**, controlado pela engenharia via mensagens no canal Realtime `engineering-{stintId}`. Mostra:
+  - **default** (engenharia inativa): cockpit canônico do mockup
+  - **engenharia ativada**: o que a engenharia decidiu que é importante para **quem estiver no carro naquele momento** — piloto (mãos no volante) ou mecânico (sentado no carro, motor parado/em diagnóstico)
+- **Gatilho não é velocidade do carro**. É decisão da engenharia, publicada no canal Realtime. Velocidade pode entrar como hint adicional pra escolher variante do render, mas não decide ligar/desligar overlay.
+- **Sem display switching no notebook**. Display 1 = área de trabalho normal sempre. Display 2 = Cockpit Pilot 10,5", conteúdo dirigido por canal.
+- Funcionalidades novas: MS-16.7 (modo contextual no Cockpit Pilot com 5 tipos de overlay) e MS-16.8 (simulação de ajuste com projeção visual).
 
 **D6 — Catálogo MVP de CalibrationRule?** → "3 rules MVP — fuel-lean, water-drift, vmin-loss (Recommended)"
 
