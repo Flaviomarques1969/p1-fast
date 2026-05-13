@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mockup polido — Command Box · Vista Piloto (P1 Fast)</title>
+<title>Mockup polido — Command Box · Vista Engenheiro (P1 Fast)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -574,6 +574,77 @@ html,body{
   background:transparent;
   overflow:visible;
 }
+
+/* ── Painel de Canais T4000 — vista Engenheiro ─────────── */
+.b-eng-painel{padding:14px 18px 10px;}
+.eng-painel-head{
+  display:flex;align-items:baseline;justify-content:space-between;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  margin-bottom:10px;
+}
+.ep-eyebrow{
+  font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--text-3);
+}
+.ep-status{
+  font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--good);
+}
+.eng-painel-grid{
+  display:grid;grid-template-columns:repeat(3, 1fr);
+  grid-template-rows:1.6fr 1fr;
+  gap:8px;
+  flex:1;
+}
+.ep-cell{
+  position:relative;
+  background:rgba(10,14,24,0.45);
+  border:1px solid rgba(212,175,55,0.10);
+  border-radius:4px;
+  padding:8px 10px 6px;
+  display:flex;flex-direction:column;justify-content:space-between;
+}
+.ep-cell--big{
+  grid-row:span 1;
+  background:rgba(10,14,24,0.7);
+  border-color:rgba(212,175,55,0.22);
+}
+.ep-key{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:9.5px;letter-spacing:.20em;text-transform:uppercase;
+  color:var(--text-3);
+}
+.ep-val{
+  font-family:'Helvetica Neue',sans-serif;
+  font-weight:200;font-size:28px;
+  color:var(--text-1);
+  line-height:1;letter-spacing:-0.02em;
+  font-variant-numeric:tabular-nums;
+  margin-top:4px;
+}
+.ep-val--big{font-size:42px;font-weight:200;color:var(--gold-1);}
+.ep-val.warn{color:var(--warn);}
+.ep-val.bad{color:var(--bad);}
+.ep-unit{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:9px;letter-spacing:.10em;
+  color:var(--text-2);
+  margin-top:2px;
+}
+.ep-dot{
+  position:absolute;top:8px;right:8px;
+  width:6px;height:6px;border-radius:50%;
+  background:var(--text-3);
+}
+.ep-dot.ok{background:var(--good);box-shadow:0 0 6px rgba(107,207,107,0.45);}
+.ep-dot.warn{background:var(--warn);box-shadow:0 0 6px rgba(255,179,71,0.45);}
+.ep-dot.bad{background:var(--bad);box-shadow:0 0 6px rgba(255,85,85,0.45);}
+.eng-painel-foot{
+  margin-top:8px;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:9.5px;letter-spacing:.14em;color:var(--text-3);
+  text-align:left;
+}
 .hud-block-title{
   font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
   font-size:10.8px;letter-spacing:.22em;color:var(--text-3);
@@ -880,6 +951,104 @@ html,body{
   overflow:hidden;
   contain:layout paint;
 }
+
+/* ── Senior Advisor IA · Camada 3 — vista Engenheiro ────── */
+.b-advisor{gap:9px;}
+.adv-head{
+  display:flex;align-items:baseline;justify-content:space-between;
+}
+.adv-eyebrow{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:10px;letter-spacing:.22em;color:var(--gold-2);text-transform:uppercase;
+}
+.adv-conf{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:9.5px;letter-spacing:.14em;color:var(--good);
+}
+.adv-conf strong{font-weight:600;}
+.adv-message-area{
+  border-left:2px solid var(--gold-2);
+  padding-left:10px;
+  margin-top:2px;
+}
+.adv-frase{
+  font-family:'Helvetica Neue',sans-serif;
+  font-weight:300;font-size:18px;line-height:1.2;
+  color:var(--text-1);
+}
+.adv-frase em{font-style:normal;color:var(--gold-1);font-weight:500;}
+.adv-meta{
+  margin-top:4px;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:9.5px;letter-spacing:.14em;color:var(--text-2);
+  text-transform:uppercase;
+}
+.adv-racional{
+  font-family:'Helvetica Neue',sans-serif;
+  font-size:11.5px;line-height:1.4;color:var(--text-2);
+  padding-top:4px;
+}
+.adv-racional strong{color:var(--text-1);font-weight:500;}
+.adv-tag{
+  display:inline-block;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--text-3);margin-right:6px;
+}
+.adv-ajuste{
+  background:rgba(212,175,55,0.06);
+  border:1px solid rgba(212,175,55,0.18);
+  border-radius:3px;
+  padding:8px 10px;
+}
+.adv-ajuste-row{
+  display:flex;align-items:baseline;gap:8px;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:11px;
+}
+.adv-ajuste-campo{
+  flex:1;text-transform:uppercase;letter-spacing:.16em;
+  font-size:9.5px;color:var(--text-3);
+}
+.adv-ajuste-de{color:var(--text-2);}
+.adv-ajuste-seta{color:var(--gold-2);}
+.adv-ajuste-para{color:var(--gold-1);font-weight:600;font-size:13px;}
+.adv-risco{
+  margin-top:4px;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:9px;letter-spacing:.12em;
+  color:var(--warn);
+  text-transform:uppercase;
+}
+.adv-risco strong{color:var(--warn);font-weight:600;}
+.adv-nao-mexer{
+  font-family:'Helvetica Neue',sans-serif;
+  font-size:10.5px;color:var(--text-2);line-height:1.45;
+}
+.adv-nm-eyebrow{
+  display:block;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--text-3);margin-bottom:2px;
+}
+.adv-nao-mexer ul{list-style:none;padding:0;margin:0;}
+.adv-nao-mexer li{padding-left:9px;position:relative;}
+.adv-nao-mexer li::before{
+  content:"·";position:absolute;left:0;color:var(--text-3);
+}
+.adv-validar{
+  font-family:'Helvetica Neue',sans-serif;
+  font-size:10.5px;color:var(--text-2);line-height:1.4;
+  padding-top:4px;
+  border-top:1px dashed rgba(212,175,55,0.10);
+}
+.adv-vl-eyebrow{
+  display:block;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--text-3);margin-bottom:2px;
+}
+.adv-validar strong{color:var(--gold-1);font-weight:600;}
 .coach-eyebrow{
   font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
   font-size:11px;letter-spacing:.22em;color:var(--gold-2);text-transform:uppercase;
@@ -983,6 +1152,109 @@ html,body{
   font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
   overflow:hidden;             /* não invade o bloco abaixo se o conteúdo crescer */
   contain:layout paint;
+}
+
+/* ── Controles · D17 — vista Engenheiro ───────────────── */
+.b-controls{gap:8px;padding:10px 14px;}
+.ctrl-title{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding-bottom:4px;
+  border-bottom:1px solid var(--hairline);
+}
+.ctrl-state-tag{
+  font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;
+  padding:2px 6px;border-radius:2px;
+  background:rgba(107,207,107,0.10);color:var(--good);
+}
+.ctrl-block{padding-top:4px;}
+.ctrl-head{
+  display:flex;justify-content:space-between;align-items:baseline;
+  margin-bottom:6px;
+}
+.ctrl-eyebrow{
+  font-size:9px;letter-spacing:.22em;color:var(--text-3);
+  text-transform:uppercase;
+}
+.ctrl-val{
+  font-family:'Helvetica Neue',sans-serif;
+  font-weight:300;font-size:16px;color:var(--gold-1);
+  letter-spacing:-0.02em;
+}
+.ctrl-val small{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:9px;letter-spacing:.10em;color:var(--text-2);
+  margin-left:2px;
+}
+.ctrl-slider{}
+.cs-track{
+  position:relative;
+  height:8px;background:rgba(10,14,24,0.7);
+  border:1px solid rgba(212,175,55,0.20);
+  border-radius:999px;
+  margin-bottom:4px;
+}
+.cs-zero{
+  position:absolute;top:-3px;bottom:-3px;left:50%;width:1px;
+  background:rgba(245,240,224,0.30);
+}
+.cs-range{
+  position:absolute;top:1px;bottom:1px;
+  background:rgba(212,175,55,0.40);border-radius:999px;
+}
+.cs-handle{
+  position:absolute;top:-3px;width:14px;height:14px;
+  background:var(--gold-1);border-radius:50%;
+  transform:translateX(-7px);
+  box-shadow:0 0 8px rgba(212,175,55,0.45);
+}
+.cs-foot{
+  display:flex;justify-content:space-between;
+  font-size:9px;letter-spacing:.12em;color:var(--text-3);
+}
+.cs-center{color:var(--text-2);}
+.ctrl-knob-row{
+  display:flex;align-items:center;gap:12px;
+}
+.ctrl-knob{width:52px;height:52px;flex:0 0 auto;}
+.ctrl-knob-scale{flex:1;display:flex;flex-direction:column;gap:2px;}
+.ck-row{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:9px;letter-spacing:.10em;color:var(--text-3);
+}
+.ck-tick{
+  width:18px;height:1px;background:var(--text-3);opacity:.5;
+}
+.ck-tick--active{background:var(--gold-1);opacity:1;height:2px;width:24px;}
+.ctrl-block--toggle{
+  border-top:1px dashed rgba(212,175,55,0.10);padding-top:8px;
+}
+.ctrl-toggle-row{
+  display:flex;align-items:center;justify-content:space-between;
+}
+.ct-label{
+  font-size:11px;letter-spacing:.12em;color:var(--text-1);text-transform:uppercase;
+}
+.ct-switch{
+  position:relative;
+  width:36px;height:18px;
+  background:rgba(10,14,24,0.7);
+  border:1px solid rgba(212,175,55,0.20);
+  border-radius:999px;
+}
+.ct-switch-thumb{
+  position:absolute;top:1px;left:1px;
+  width:14px;height:14px;border-radius:50%;
+  background:var(--text-3);
+  transition:left 200ms ease, background 200ms ease;
+}
+.ct-switch--on{background:rgba(107,207,107,0.18);border-color:var(--good);}
+.ct-switch--on .ct-switch-thumb{
+  left:19px;background:var(--good);
+  box-shadow:0 0 6px rgba(107,207,107,0.55);
+}
+.ctrl-toggle-hint{
+  margin-top:6px;
+  font-size:8.5px;letter-spacing:.14em;color:var(--text-3);
 }
 .stint-title{
   display:flex;justify-content:space-between;align-items:baseline;
@@ -1313,6 +1585,56 @@ html,body{
   overflow:hidden;
   contain:layout paint;
 }
+
+/* ── Findings · Camada 2 — vista Engenheiro ─────────── */
+.b-findings{padding:12px 12px;}
+.fnd-head{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding-bottom:6px;border-bottom:1px solid var(--hairline);
+}
+.fnd-eyebrow{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:9.5px;letter-spacing:.20em;color:var(--gold-2);text-transform:uppercase;
+}
+.fnd-count{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:9px;letter-spacing:.14em;color:var(--text-3);
+}
+.fnd-list{display:flex;flex-direction:column;gap:8px;}
+.fnd-item{
+  position:relative;
+  padding:8px 10px 9px;
+  background:rgba(10,14,24,0.4);
+  border:1px solid rgba(212,175,55,0.10);
+  border-left-width:2px;
+  border-radius:3px;
+  display:flex;flex-direction:column;gap:3px;
+}
+.fnd-item--info{border-left-color:var(--cool);}
+.fnd-item--atencao{border-left-color:var(--warn);}
+.fnd-item--alta{border-left-color:var(--bad);}
+.fnd-rule{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:8.5px;letter-spacing:.10em;color:var(--text-3);
+  text-transform:uppercase;
+}
+.fnd-titulo{
+  font-family:'Helvetica Neue',sans-serif;
+  font-weight:300;font-size:12.5px;line-height:1.2;
+  color:var(--text-1);
+}
+.fnd-meta{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:9px;letter-spacing:.12em;color:var(--text-2);
+}
+.fnd-conf{
+  position:absolute;top:8px;right:10px;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--text-3);
+  padding:2px 6px;border-radius:2px;
+  background:rgba(212,175,55,0.06);
+}
 .cl-title{
   font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
   font-size:9px;letter-spacing:.22em;color:var(--gold-2);text-transform:uppercase;
@@ -1510,6 +1832,47 @@ html,body{
   font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
   overflow:hidden;
 }
+
+/* ── Trend Vmin × IAT — vista Engenheiro ──────────────── */
+.b-trend{}
+.tr-title{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:8.5px;letter-spacing:.22em;color:var(--text-3);text-transform:uppercase;
+  white-space:nowrap;
+}
+.tr-title strong{color:var(--gold-1);font-weight:500;}
+.tr-body{
+  display:flex;align-items:center;gap:14px;flex:1;
+}
+.tr-chart{flex:1;max-width:300px;}
+.tr-chart svg{width:100%;height:100%;display:block;}
+.tr-current-wrap{
+  display:flex;flex-direction:column;gap:2px;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+}
+.tr-pair{
+  display:flex;align-items:baseline;gap:6px;
+  font-size:10px;
+}
+.tr-pair-key{
+  font-size:9px;letter-spacing:.16em;text-transform:uppercase;
+  font-weight:600;min-width:34px;
+}
+.tr-pair-val{
+  font-family:'Helvetica Neue',sans-serif;font-weight:300;
+  font-size:14px;color:var(--text-1);min-width:54px;
+  letter-spacing:-0.01em;
+}
+.tr-pair-val small{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:8px;letter-spacing:.10em;color:var(--text-2);
+  margin-left:2px;
+}
+.tr-pair-delta{
+  font-size:9px;letter-spacing:.12em;
+}
+.tr-pair-delta--neg{color:var(--bad);}
+.tr-pair-delta--pos{color:var(--warn);}
 .da-title{
   font-size:7px;letter-spacing:.22em;color:var(--text-3);text-transform:uppercase;
   white-space:nowrap;
@@ -3201,7 +3564,7 @@ html,body{
 
 <div class="page-meta">
   <span class="pill">Mockup polido v1</span>
-  <span>Vista Piloto · TV 32" · 16:9 · estilo atelier</span>
+  <span>Vista Engenheiro · TV 32" · 16:9 · estilo atelier</span>
   <span style="margin-left:auto;font-variant-numeric:tabular-nums;">1280 × 720</span>
 </div>
 
@@ -3238,8 +3601,8 @@ html,body{
     </div>
 
     <div class="vista-toggle">
-      <a class="vista-btn active" href="mockup-command-box-vista-piloto.html">Piloto</a>
-      <a class="vista-btn" href="mockup-command-box-vista-engenheiro.html">Engenheiro</a>
+      <a class="vista-btn" href="mockup-command-box-vista-piloto.html">Piloto</a>
+      <a class="vista-btn active" href="mockup-command-box-vista-engenheiro.html">Engenheiro</a>
     </div>
   </div>
 
@@ -3367,191 +3730,206 @@ html,body{
     </div>
   </div>
 
-  <!-- VELOCIDADE — gauge de ponteiro grande ocupando todo o bloco
-       (decisão Flávio 2026-05-10). Range 0-200 km/h, arco 270°
-       (de 7:30 a 4:30 passando pelo topo). Hub central removido,
-       fontes aumentadas 20% (Flávio 2026-05-10). Ponteiro vermelho fino
-       direto sobre o dial. Pra aumentar o tamanho aparente do gauge,
-       redimensiona o bloco via Modo Edição (drag) — scale CSS estoura
-       pra fora do bloco e cobre vizinhos.
-       Delta da volta foi pro b-delta-acum como leitura ao vivo. -->
-  <div class="b-hud" data-block-id="hud" data-block-name="Velocidade (gauge)">
-    <span class="hud-block-title">velocidade</span>
-    <div class="speed-gauge-wrap">
-      <!-- viewBox 28 28 144 144 = zoom interno ~1.39x (Flávio 2026-05-11).
-           Conteúdo principal vive em CX=CY=100 com raios ≤ 75; ponteiro vai
-           até x=178 (3 unidades fora) — corte cosmético na ponta. -->
-      <svg viewBox="28 28 144 144" class="speed-gauge" preserveAspectRatio="xMidYMid meet">
-        <defs>
-          <!-- Bezel metálico: gradient simulando metal escovado (escuro→dourado→escuro) -->
-          <linearGradient id="sgBezelGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stop-color="#3A3A40"/>
-            <stop offset="22%"  stop-color="#8B7A4E"/>
-            <stop offset="45%"  stop-color="#D4AF37"/>
-            <stop offset="65%"  stop-color="#8B7A4E"/>
-            <stop offset="100%" stop-color="#2A2A30"/>
-          </linearGradient>
-          <!-- Dial: fundo escuro com radial gradient leve pra simular profundidade -->
-          <radialGradient id="sgDialGrad" cx="50%" cy="50%" r="50%">
-            <stop offset="0%"   stop-color="#1A1D26"/>
-            <stop offset="70%"  stop-color="#0E1116"/>
-            <stop offset="100%" stop-color="#070A0F"/>
-          </radialGradient>
-          <!-- Hub: gradient dourado (anel) -->
-          <radialGradient id="sgHubGrad" cx="40%" cy="35%" r="65%">
-            <stop offset="0%"  stop-color="#F5E6A8"/>
-            <stop offset="60%" stop-color="#D4AF37"/>
-            <stop offset="100%" stop-color="#8B7A4E"/>
-          </radialGradient>
-        </defs>
+  <!-- PAINEL DE CANAIS T4000 — visão engenheiro: motor sob a lente.
+       Substitui o velocímetro do piloto. Layout em grid 3×2 com 6 canais
+       críticos: RPM (grande, esquerda topo), MAP, λ, IAT, Water Temp,
+       Oil Pressure. Cada canal tem dot de quality (ok/late/missing) +
+       valor numérico + unidade. Cores: verde no padrão, âmbar se
+       borderline, vermelho se fora. Espelha snap.engine + snap.quality
+       do TelemetryTimebase (MS-16.1 + MS-16.6 com IAT alimentado). -->
+  <div class="b-hud b-eng-painel" data-block-id="hud" data-block-name="Painel canais T4000 (engenharia)">
+    <div class="eng-painel-head">
+      <span class="ep-eyebrow">painel canais · t4000</span>
+      <span class="ep-status">10 Hz · sync alta</span>
+    </div>
+    <div class="eng-painel-grid">
+      <div class="ep-cell ep-cell--big">
+        <span class="ep-key">RPM</span>
+        <span class="ep-val ep-val--big">5 800</span>
+        <span class="ep-unit">rpm</span>
+        <span class="ep-dot ok"></span>
+      </div>
+      <div class="ep-cell">
+        <span class="ep-key">MAP</span>
+        <span class="ep-val">0.92</span>
+        <span class="ep-unit">bar</span>
+        <span class="ep-dot ok"></span>
+      </div>
+      <div class="ep-cell">
+        <span class="ep-key">λ</span>
+        <span class="ep-val warn">1.07</span>
+        <span class="ep-unit">alvo 0.88</span>
+        <span class="ep-dot warn"></span>
+      </div>
+      <div class="ep-cell">
+        <span class="ep-key">IAT</span>
+        <span class="ep-val">42</span>
+        <span class="ep-unit">°C · +4 vs v.1</span>
+        <span class="ep-dot ok"></span>
+      </div>
+      <div class="ep-cell">
+        <span class="ep-key">H₂O</span>
+        <span class="ep-val warn">104</span>
+        <span class="ep-unit">°C · +6/min</span>
+        <span class="ep-dot warn"></span>
+      </div>
+      <div class="ep-cell">
+        <span class="ep-key">Óleo</span>
+        <span class="ep-val">4.1</span>
+        <span class="ep-unit">bar · 92°C</span>
+        <span class="ep-dot ok"></span>
+      </div>
+    </div>
+    <div class="eng-painel-foot">
+      <span>TPS 84% · gear 3 · accel +1.4G · vel 143 km/h</span>
+    </div>
+  </div>
 
-        <!-- Bezel arco dourado removido (Flávio 2026-05-10) — visual mais
-             clean, sem o "anel amarelo" envolvendo o dial. -->
+  <!-- SENIOR ADVISOR IA — Camada 3 (MS-16.4). Consome findings da Camada 2
+       (CalibrationEngine) e produz recomendação narrativa: prioriza,
+       explica, sugere como validar. ADR-008: NÃO decide alerta crítico,
+       só prioriza/explica. Governança no system prompt do api/advisor.js. -->
+  <div class="b-coach b-advisor" data-block-id="coach" data-block-name="Senior Advisor IA (Camada 3)">
+    <div class="adv-head">
+      <span class="adv-eyebrow">senior advisor · camada 3</span>
+      <span class="adv-conf">confiança <strong>Alta</strong></span>
+    </div>
 
-        <!-- Redline estética: arco vermelho discreto nos últimos 30 km/h
-             (170-200) pra reforçar leitura "zona perigosa" sem precisar
-             do anel completo. -->
-        <path class="sg-redline-arc" d="M 168.30 130.00 A 75 75 0 0 1 153.03 153.03"/>
+    <div class="adv-message-area">
+      <div class="adv-frase">adicionar <em>+4%</em> combustível na célula alta carga</div>
+      <div class="adv-meta">prioridade · RPM 5200-6000 · MAP &gt;0.85</div>
+    </div>
 
-        <!-- Ticks gerados via JS (cada 10 km/h = minor · cada 50 = major) -->
-        <g class="sg-minor"  data-sg-minor></g>
-        <g class="sg-major"  data-sg-major></g>
-        <g class="sg-labels" data-sg-labels></g>
+    <div class="adv-racional">
+      <span class="adv-tag">racional</span>
+      λ médio <strong>1.07</strong> sustentado em <strong>3 voltas</strong> consecutivas
+      sob alta carga (TPS&gt;70). Mapa pobre na célula correspondente.
+    </div>
 
-        <!-- Marca P1 FAST no topo do gauge (entre as numerações) -->
-        <text class="sg-brand" x="100" y="78">P1 FAST</text>
+    <div class="adv-ajuste">
+      <div class="adv-ajuste-row">
+        <span class="adv-ajuste-campo">combustível</span>
+        <span class="adv-ajuste-de">0%</span>
+        <span class="adv-ajuste-seta">→</span>
+        <span class="adv-ajuste-para">+4%</span>
+      </div>
+      <div class="adv-risco">risco · <strong>médio</strong> · detonação se atrasar muito junto</div>
+    </div>
 
-        <!-- Ponteiro vermelho clássico, sem hub central (Flávio 2026-05-10).
-             Demo: 143 km/h em range 0-200 → SVG rotate(-32.85 100 100).
-             Hardcode garante posição inicial mesmo sem JS. -->
-        <g class="sg-needle-group" transform="rotate(-32.85 100 100)">
-          <path class="sg-needle-shadow" d="M 92.9 104.2 L 178.9 101.2 L 92.9 98.2 Z"/>
-          <rect class="sg-needle-tail" x="80" y="96.5" width="14" height="7" rx="1.4"/>
-          <path class="sg-needle" d="M 92 103 L 178 100 L 92 97 Z"/>
-        </g>
-      </svg>
+    <div class="adv-nao-mexer">
+      <span class="adv-nm-eyebrow">não mexer</span>
+      <ul>
+        <li>ignição (sem evidência de avanço inadequado)</li>
+        <li>pressão combustível (estável nesta janela)</li>
+      </ul>
+    </div>
 
-      <!-- Display digital — sai do dial pra ficar limpo (Flávio 2026-05-10).
-           Fica na base do bloco, separado do mostrador analógico. -->
-      <div class="sg-readout">
-        <span class="sgr-num" data-hud="velocidade">143</span>
-        <span class="sgr-unit">km/h</span>
+    <div class="adv-validar">
+      <span class="adv-vl-eyebrow">como validar</span>
+      λ cai pra <strong>0.90-0.95</strong> no mesmo trecho próximo stint.
+      Acompanhar accel_long e H₂O.
+    </div>
+  </div>
+
+  <!-- CONTROLES · D17 — paridade com EngControlModel.swift (MS-16.5a).
+       Slider combustível ±10% + knob RPM alvo + toggle módulo engenharia.
+       Estado D18 (carro_parado/andando) governa quem pode operar:
+       chefe/engenheiro livres · piloto/mecânico só com carro parado. -->
+  <div class="b-stint b-controls" data-block-id="stint" data-block-name="Controles · D17">
+    <div class="ctrl-title">
+      <span class="st-key">controles · engenharia</span>
+      <span class="ctrl-state-tag ctrl-state-tag--ok">carro parado · operação livre</span>
+    </div>
+
+    <!-- Slider combustível ±10% -->
+    <div class="ctrl-block">
+      <div class="ctrl-head">
+        <span class="ctrl-eyebrow">slider · combustível</span>
+        <span class="ctrl-val">+4.0<small>%</small></span>
+      </div>
+      <div class="ctrl-slider">
+        <div class="cs-track">
+          <div class="cs-zero"></div>
+          <div class="cs-range" style="left:50%;width:20%;"></div>
+          <div class="cs-handle" style="left:70%;"></div>
+        </div>
+        <div class="cs-foot">
+          <span>−10%</span>
+          <span class="cs-center">0</span>
+          <span>+10%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Knob RPM alvo -->
+    <div class="ctrl-block">
+      <div class="ctrl-head">
+        <span class="ctrl-eyebrow">knob · rpm alvo</span>
+        <span class="ctrl-val">5 800<small>rpm</small></span>
+      </div>
+      <div class="ctrl-knob-row">
+        <svg class="ctrl-knob" viewBox="0 0 60 60">
+          <circle cx="30" cy="30" r="26" fill="rgba(10,14,24,0.6)"
+                  stroke="rgba(212,175,55,0.30)" stroke-width="1"/>
+          <line x1="30" y1="30" x2="30" y2="10"
+                stroke="var(--gold-1)" stroke-width="2" stroke-linecap="round"
+                transform="rotate(48 30 30)"/>
+          <circle cx="30" cy="30" r="3" fill="var(--gold-2)"/>
+        </svg>
+        <div class="ctrl-knob-scale">
+          <div class="ck-row"><span>1000</span><span class="ck-tick"></span></div>
+          <div class="ck-row"><span>5800</span><span class="ck-tick ck-tick--active"></span></div>
+          <div class="ck-row"><span>7500</span><span class="ck-tick"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toggle módulo engenharia -->
+    <div class="ctrl-block ctrl-block--toggle">
+      <div class="ctrl-head">
+        <span class="ctrl-eyebrow">toggle · módulo engenharia</span>
+      </div>
+      <div class="ctrl-toggle-row">
+        <span class="ct-label">ativado</span>
+        <div class="ct-switch ct-switch--on">
+          <div class="ct-switch-thumb"></div>
+        </div>
+      </div>
+      <div class="ctrl-toggle-hint">
+        D18 · switch automático Piloto↔Engenharia se carro parado
       </div>
     </div>
   </div>
 
-  <!-- HUD TRECHO removido — substituído pelos blocos Frenagem + Vmin + Passagem -->
-
-  <!-- P1 COACH -->
-  <div class="b-coach" data-block-id="coach" data-block-name="P1 Coach">
-    <span class="coach-eyebrow">p1 coach</span>
-
-    <!-- Mensagem do coach: espaço reservado pra caber frase de até 3 linhas
-         (mensagens longas) + meta. Tudo abaixo (lição focada, pontuação,
-         progresso, análise, preditivo) entra DEPOIS dessa área fixa,
-         sem empurrar nada além dos limites do b-coach (overflow:hidden). -->
-    <div class="coach-message-area">
-      <div class="coach-frase" data-coach="frase">freie <em>mais cedo</em> na 3</div>
-      <div class="coach-meta" data-coach="meta">comando ativo · curva 3</div>
+  <!-- FINDINGS · Camada 2 (MS-16.3 CalibrationEngine) — 3 rules MVP.
+       Cada finding tem ruleId, severidade, confiança, escopo + evidência
+       objetiva. Carro mostrado em ordem de severidade decrescente. -->
+  <div class="b-checklist b-findings" data-block-id="checklist" data-block-name="Findings · Camada 2" data-mode="findings">
+    <div class="fnd-head">
+      <span class="fnd-eyebrow">findings · camada 2</span>
+      <span class="fnd-count">3 ativos</span>
     </div>
-
-    <div class="coach-licao">
-      <span class="l-tag">aprendizado contínuo · <strong>Stint</strong></span>
-      <strong data-coach="licao">trail braking suave</strong> · <span data-coach="licaoDesc">saída comprometida quando há ápice cedo</span>
-    </div>
-
-    <div class="coach-pontuacao">
-      <span class="pt-num" data-coach="pontuacao">87</span><span class="pt-tot">/100</span>
-      <span class="pt-key">volta atual</span>
-    </div>
-
-    <div class="coach-progresso">
-      <span class="cp-num" data-coach="progressoNum">78%</span>
-      <div class="cp-bar"><div class="cp-fill" data-coach="progressoFill"></div></div>
-      <span class="coach-eyebrow" style="font-size:10px;">lição</span>
-    </div>
-
-    <div class="coach-analise" data-coach="analise">
-      "ápice cedo na 2 — saída comprometida, perdeu 0.18s"
-    </div>
-
-    <!-- PREDITIVO — 3ª camada do P1 Coach: aponta o que está FORA do padrão
-         observado nas voltas anteriores e antecipa quando vira crítico.
-         Cor âmbar = atenção · vermelho (--alert) = problema iminente. -->
-    <div class="coach-preditivo" data-coach-preditivo>
-      <div class="cpr-head">
-        <span class="cpr-eyebrow">preditivo</span>
-        <span class="cpr-eta" data-coach="preditEta">crítico em ~6 voltas</span>
+    <div class="fnd-list">
+      <div class="fnd-item fnd-item--atencao">
+        <span class="fnd-rule">fuel-lean-sustained-load</span>
+        <span class="fnd-titulo">Mistura pobre sob carga</span>
+        <span class="fnd-meta">stint · 3 voltas · λ 1.07</span>
+        <span class="fnd-conf">Alta</span>
       </div>
-      <div class="cpr-frase" data-coach="preditFrase">
-        temp motor <em>+8°C</em> vs padrão na C5
+      <div class="fnd-item fnd-item--atencao">
+        <span class="fnd-rule">water-temp-drift-no-cooling</span>
+        <span class="fnd-titulo">H₂O subindo 6.0 °C/min</span>
+        <span class="fnd-meta">stint · janela 90s · 104°C</span>
+        <span class="fnd-conf">Média</span>
       </div>
-      <div class="cpr-detail" data-coach="preditDetail">
-        subindo 1,3°C/volta — vai bater max=120°C antes do fim do stint
+      <div class="fnd-item fnd-item--atencao">
+        <span class="fnd-rule">vmin-progressive-loss-segment</span>
+        <span class="fnd-titulo">Vmin caindo · Curva 8</span>
+        <span class="fnd-meta">segment · 3 voltas · −1.4 km/h/v</span>
+        <span class="fnd-conf">Alta</span>
       </div>
     </div>
   </div>
-
-  <!-- STINT — versão BÁSICA (Flávio 2026-05-10): apenas o essencial pra
-       o piloto saber em qual volta está, qual a meta e se tá no ritmo.
-       Trecho-foco vai pro P1 Coach, próxima parada PIT vira bloco próprio
-       futuro, térmica/óleo/pneu vão pro bloco Carro. -->
-  <div class="b-stint" data-block-id="stint" data-block-name="Plano do stint">
-    <div class="stint-title">
-      <span class="st-key">plano · stint</span>
-      <span class="st-num">3 / 5</span>
-    </div>
-
-    <!-- VOLTAS — número grande + barra de progresso + tempo decorrido/restante -->
-    <div class="stint-progress">
-      <div class="stp-row">
-        <span class="stp-eyebrow">volta</span>
-        <span class="stp-big"><strong data-stint="voltaN">8</strong><span class="stp-tot">/ 12</span></span>
-        <span class="stp-pct" data-stint="voltaPct">67%</span>
-      </div>
-      <div class="stp-bar"><div class="stp-bar-fill" data-stint="voltaFill" style="width:67%"></div></div>
-      <div class="stp-foot">
-        <span data-stint="decorrido">02:48 decorrido</span>
-        <span data-stint="restante">18:32 restante</span>
-      </div>
-    </div>
-
-    <!-- META DO PILOTO — quantitativa, com status de atingimento -->
-    <div class="stint-meta">
-      <div class="stm-head">
-        <span class="stm-eyebrow">meta do piloto</span>
-        <span class="stm-tag stm-tag--ok" data-stint="metaTag">no caminho</span>
-      </div>
-      <div class="stm-text">
-        sub <strong data-stint="metaTempo">1:32</strong> em
-        <strong data-stint="metaVoltas">8</strong> voltas seguidas
-      </div>
-      <div class="stm-progress">
-        <div class="stm-bar"><div class="stm-bar-fill" data-stint="metaFill" style="width:75%"></div></div>
-        <span class="stm-num"><strong data-stint="metaAtingidas">6</strong> / <span data-stint="metaTotal">8</span> atingidas</span>
-      </div>
-    </div>
-
-    <!-- RITMO vs PLANO · barra centro-zero -->
-    <div class="stint-ritmo">
-      <div class="sr-head">
-        <span class="sr-eyebrow">ritmo vs plano</span>
-        <span class="sr-tag sr-tag--good" data-stint="ritmoTag">à frente · −0.34 / volta</span>
-      </div>
-      <div class="sr-bar">
-        <div class="sr-bar-zero"></div>
-        <div class="sr-bar-fill sr-bar-fill--good" data-stint="ritmoFill" style="width:64%;"></div>
-      </div>
-      <div class="sr-foot">
-        <span data-stint="ritmoFootL">PB 1:31.95</span>
-        <span data-stint="ritmoFootR">stint 1:31.61</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- CHECKLIST — preenchido dinamicamente por buildChecklist() conforme STINT_PHASE.
-       pre-saida → lista de saída · pista → oculto (ou flash se obrigatório pendente) · resfriamento → lista de chegada -->
-  <div class="b-checklist" data-block-id="checklist" data-block-name="Checklist do stint" data-mode="saida"></div>
 
   <!-- COMBUSTÍVEL — gauge à esquerda · painel à direita -->
   <div class="b-fuel-gauge" data-block-id="fuel-gauge" data-block-name="Combustível (gauge)">
@@ -3581,37 +3959,65 @@ html,body{
     </div>
   </div>
 
-  <!-- DELTA ACUMULADO DE TEMPO -->
-  <div class="b-delta-acum" data-block-id="delta-acum" data-block-name="Delta Acumulado de Voltas">
-    <span class="da-title"><strong>Δ acumulado de tempo</strong> · vs PB all-time</span>
-    <div class="da-body">
-      <div class="da-chart">
-        <svg viewBox="0 0 300 60" preserveAspectRatio="none" data-da-svg>
+  <!-- TREND Vmin × IAT por trecho — vista Engenheiro.
+       Mostra correlação entre queda progressiva de Vmin nos últimos N laps
+       e crescimento de IAT (admissão aquecendo). Alimenta a CR3
+       (vmin-progressive-loss-segment) com IAT alimentado pelo MS-16.6. -->
+  <div class="b-delta-acum b-trend" data-block-id="delta-acum" data-block-name="Trend Vmin × IAT por trecho">
+    <span class="tr-title">
+      <strong>Vmin × IAT</strong> · Curva 8 · 3 voltas
+    </span>
+    <div class="tr-body">
+      <div class="tr-chart">
+        <svg viewBox="0 0 300 60" preserveAspectRatio="none">
           <defs>
-            <!-- Gradient vertical fixo no SVG (userSpaceOnUse): verde topo / transp. zero / vermelho base -->
-            <linearGradient id="daAreaGrad" x1="0" y1="0" x2="0" y2="60" gradientUnits="userSpaceOnUse">
-              <stop offset="0%"   stop-color="#3FE08C" stop-opacity="0.55"/>
-              <stop offset="50%"  stop-color="#FFFFFF" stop-opacity="0"/>
-              <stop offset="100%" stop-color="#FF5A4E" stop-opacity="0.55"/>
+            <linearGradient id="trVminGrad" x1="0" y1="0" x2="0" y2="60" gradientUnits="userSpaceOnUse">
+              <stop offset="0%"   stop-color="#3FE08C" stop-opacity="0.40"/>
+              <stop offset="100%" stop-color="#3FE08C" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="trIatGrad" x1="0" y1="0" x2="0" y2="60" gradientUnits="userSpaceOnUse">
+              <stop offset="0%"   stop-color="#FF5A4E" stop-opacity="0"/>
+              <stop offset="100%" stop-color="#FF5A4E" stop-opacity="0.32"/>
             </linearGradient>
           </defs>
-          <!-- Área preenchida (envelope linha → zero) -->
-          <path data-da-area fill="url(#daAreaGrad)" d=""/>
-          <!-- Baseline zero (PB all-time) -->
-          <line data-da-zero x1="0" x2="300" y1="30" y2="30" stroke="rgba(245,240,224,0.30)" stroke-width="0.8" stroke-dasharray="4 3"/>
-          <!-- Linha principal do cumulativo -->
-          <polyline data-da-line points="" fill="none" stroke="#D4AF37" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
-          <!-- Dots das voltas anteriores -->
-          <g data-da-dots fill="#F0DCA0"></g>
-          <!-- Glow do marker corrente (renderizado antes do dot pra ficar ATRÁS) -->
-          <circle data-da-current-glow cx="0" cy="30" r="6" fill="#FF7A1A" fill-opacity="0.25"/>
-          <!-- Marker laranja da volta corrente -->
-          <circle data-da-current cx="0" cy="30" r="3.5" fill="#FF7A1A" stroke="rgba(255,255,255,0.6)" stroke-width="0.6"/>
+          <!-- Eixo zero implícito -->
+          <line x1="0" x2="300" y1="30" y2="30" stroke="rgba(245,240,224,0.18)" stroke-width="0.8" stroke-dasharray="3 3"/>
+
+          <!-- Vmin line (cai: 79.2 → 76.8 → 75.4 km/h em 3 voltas) -->
+          <path d="M 30,18 L 150,28 L 270,36" fill="none"
+                stroke="#3FE08C" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="30"  cy="18" r="3" fill="#3FE08C"/>
+          <circle cx="150" cy="28" r="3" fill="#3FE08C"/>
+          <circle cx="270" cy="36" r="3.5" fill="#3FE08C"
+                  stroke="rgba(255,255,255,0.5)" stroke-width="0.6"/>
+
+          <!-- IAT line (sobe: 38°C → 41 → 44 — espelhado: maior IAT = mais embaixo) -->
+          <path d="M 30,42 L 150,36 L 270,28" fill="none"
+                stroke="#FF7A1A" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round"
+                stroke-dasharray="4 2"/>
+          <circle cx="30"  cy="42" r="2.5" fill="#FF7A1A"/>
+          <circle cx="150" cy="36" r="2.5" fill="#FF7A1A"/>
+          <circle cx="270" cy="28" r="3"   fill="#FF7A1A"/>
+
+          <!-- Labels das voltas no eixo -->
+          <text x="30"  y="58" font-size="7" fill="#888" text-anchor="middle">v6</text>
+          <text x="150" y="58" font-size="7" fill="#888" text-anchor="middle">v7</text>
+          <text x="270" y="58" font-size="7" fill="#888" text-anchor="middle">v8</text>
         </svg>
       </div>
-      <div class="da-current-wrap">
-        <span class="dac-label">Δ volta</span>
-        <span class="da-current" data-da-num>−0.342<small>s</small></span>
+      <div class="tr-current-wrap">
+        <div class="tr-pair">
+          <span class="tr-pair-key" style="color:#3FE08C;">Vmin</span>
+          <span class="tr-pair-val">75.4<small>km/h</small></span>
+          <span class="tr-pair-delta tr-pair-delta--neg">−1.4/v</span>
+        </div>
+        <div class="tr-pair">
+          <span class="tr-pair-key" style="color:#FF7A1A;">IAT</span>
+          <span class="tr-pair-val">44<small>°C</small></span>
+          <span class="tr-pair-delta tr-pair-delta--pos">+3/v</span>
+        </div>
       </div>
     </div>
   </div>
@@ -3621,7 +4027,7 @@ html,body{
 <div class="legend">
   <span class="lg-block"><strong>Layout</strong> 12 blocos · proporções do mockup arrastável</span>
   <span class="lg-block"><strong>Estilo</strong> atelier · champagne/ouro · fundo radial</span>
-  <span class="lg-block"><strong>Vista</strong> Piloto (default)</span>
+  <span class="lg-block"><strong>Vista</strong> Engenheiro · MS-16 Camadas 1/2/3</span>
   <span class="lg-block"><strong>Mock data</strong> stint <span data-legend="stint">3/5</span> · volta <span data-legend="volta">8/12</span> · v=<span data-legend="vel">287</span> · Δ=<span data-legend="delta">−0.342</span></span>
   <span class="lg-block" style="margin-left:auto;">tudo isto é apenas visual — me diz o que muda</span>
 </div>
@@ -3630,7 +4036,7 @@ html,body{
 
 <script>
 (function(){
-  var KEY = 'p1fast-vista-piloto-layout-v1';
+  var KEY = 'p1fast-vista-engenheiro-layout-v1';
   var stage = document.querySelector('.stage');
   var statusEl = document.getElementById('edit-save-status');
   var statusTimeout;
@@ -5092,6 +5498,9 @@ html,body{
   function rebuildChecklist(){
     var el = document.querySelector('.b-checklist');
     if(!el) return;
+    // Vista Engenheiro: o bloco vira "Findings · Camada 2", populado por HTML
+    // estático no markup. Não sobrescreve.
+    if(el.dataset.mode === 'findings') return;
     var phase = STINT_PHASE;
 
     // Pré-saída → mostra lista de saída inteira
@@ -6641,7 +7050,7 @@ html,body{
         px: { x: Math.round(d.x*1280/100), y: Math.round(d.y*720/100), w: Math.round(d.w*1280/100), h: Math.round(d.h*720/100) }
       };
     });
-    var json = { device: 'TV 32" landscape · Vista Piloto', stage_px: {w:1280, h:720}, ts: new Date().toISOString(), blocks: data };
+    var json = { device: 'TV 32" landscape · Vista Engenheiro', stage_px: {w:1280, h:720}, ts: new Date().toISOString(), blocks: data };
     var text = JSON.stringify(json, null, 2);
     document.getElementById('export-text').textContent = text;
     document.getElementById('export-panel').classList.add('visible');
