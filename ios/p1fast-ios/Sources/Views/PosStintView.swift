@@ -21,6 +21,11 @@ import P1FastCore
 
 struct PosStintView: View {
     @EnvironmentObject private var repo: StintRepository
+    // S6 rodada 1: VoltaVideoRepository + CarroRepository + EventoRepository
+    // pra alimentar VoltaDetalheView no detalhe da volta.
+    @EnvironmentObject private var voltaVideoRepo: VoltaVideoRepository
+    @EnvironmentObject private var carroRepo: CarroRepository
+    @EnvironmentObject private var eventoRepo: EventoRepository
     let stintId: String
     let contextoLinha: String
     let onClose: () -> Void
@@ -30,6 +35,10 @@ struct PosStintView: View {
     @State private var nota: String = ""
     @State private var savingNote = false
     @State private var loadError: String?
+    // S6 rodada 1: mapa de voltas com vídeo mantido (pra indicador) e
+    // volta selecionada pra abrir VoltaDetalheView em sheet.
+    @State private var voltasComVideo: [String: VoltaVideo] = [:]
+    @State private var voltaDetalheId: String?
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -51,6 +60,25 @@ struct PosStintView: View {
         }
         .preferredColorScheme(.dark)
         .task { await carregar() }
+        .sheet(isPresented: Binding(
+            get: { voltaDetalheId != nil },
+            set: { if !$0 { voltaDetalheId = nil } }
+        )) {
+            if let id = voltaDetalheId,
+               let v = voltas.first(where: { $0.id == id }),
+               let s = stint {
+                VoltaDetalheView(
+                    volta: v,
+                    stint: s,
+                    contextoLinha: contextoLinha,
+                    melhorVoltaMs: s.melhorVoltaMs,
+                    onClose: { voltaDetalheId = nil }
+                )
+                .environmentObject(voltaVideoRepo)
+                .environmentObject(carroRepo)
+                .environmentObject(eventoRepo)
+            }
+        }
     }
 
     @ViewBuilder
@@ -230,40 +258,55 @@ struct PosStintView: View {
         // melhor-do-evento e best-ever precisariam de queries cross-stint
         // que entram em sprint futura. Documentado em CHECKPOINT-VOLTEI.
         let ehMelhorDoStint = isMelhorDoStint(v)
-        return HStack(alignment: .center, spacing: Spacing.md) {
-            Text("#\(v.numero)")
-                .font(.system(size: 13, weight: .semibold))
-                .monospacedDigit()
-                .foregroundStyle(ehMelhorDoStint ? Color.ouro : Color.textMuted)
-                .frame(width: 36, alignment: .leading)
-            Text(v.tempoMs.map { formatTempoMs($0) } ?? "—")
-                .font(.system(size: 16, weight: .semibold))
-                .monospacedDigit()
-                .foregroundStyle(ehMelhorDoStint ? Color.ouro : (v.valida ? Color.text : Color.textFaint))
-            Spacer(minLength: 0)
-            HStack(spacing: 6) {
-                if !v.valida {
-                    EventTag(text: v.motivoInvalidacao ?? "Inválida", kind: .atencao)
-                }
-                if ehMelhorDoStint {
-                    EventTag(text: "Melhor do stint", kind: .ouro)
-                } else if isPbDoDia(v) {
-                    EventTag(text: "PB do dia", kind: .ouro)
-                } else if isDesvioBaixo(v) {
-                    EventTag(text: "Desvio < 0.4s", kind: .bom)
+        let temVideo = voltasComVideo[v.id] != nil  // S6 #12
+        return Button(action: { voltaDetalheId = v.id }) {
+            HStack(alignment: .center, spacing: Spacing.md) {
+                Text("#\(v.numero)")
+                    .font(.system(size: 13, weight: .semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(ehMelhorDoStint ? Color.ouro : Color.textMuted)
+                    .frame(width: 36, alignment: .leading)
+                Text(v.tempoMs.map { formatTempoMs($0) } ?? "—")
+                    .font(.system(size: 16, weight: .semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(ehMelhorDoStint ? Color.ouro : (v.valida ? Color.text : Color.textFaint))
+                Spacer(minLength: 0)
+                HStack(spacing: 6) {
+                    if temVideo {
+                        // S6 #12 — indicador de vídeo associado à volta.
+                        Image(systemName: "play.rectangle.fill")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundStyle(Color.accent)
+                    }
+                    if !v.valida {
+                        EventTag(text: v.motivoInvalidacao ?? "Inválida", kind: .atencao)
+                    }
+                    if ehMelhorDoStint {
+                        EventTag(text: "Melhor do stint", kind: .ouro)
+                    } else if isPbDoDia(v) {
+                        EventTag(text: "PB do dia", kind: .ouro)
+                    } else if isDesvioBaixo(v) {
+                        EventTag(text: "Desvio < 0.4s", kind: .bom)
+                    }
+                    Text("›")
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundStyle(Color.textFaint)
+                        .padding(.leading, 4)
                 }
             }
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+            .background(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .fill(ehMelhorDoStint ? Color.ouro.opacity(0.08) : Color.surfaceRaised)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .stroke(ehMelhorDoStint ? Color.ouro.opacity(0.55) : Color.border, lineWidth: ehMelhorDoStint ? 1.5 : 1)
+            )
         }
-        .padding(.horizontal, Spacing.md)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                .fill(ehMelhorDoStint ? Color.ouro.opacity(0.08) : Color.surfaceRaised)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                .stroke(ehMelhorDoStint ? Color.ouro.opacity(0.55) : Color.border, lineWidth: ehMelhorDoStint ? 1.5 : 1)
-        )
+        .buttonStyle(.plain)
     }
 
     /// S5 #14: identifica a volta de melhor tempo no stint. Ignora voltas
@@ -443,6 +486,14 @@ struct PosStintView: View {
             self.stint = s
             self.voltas = vs
             self.nota = s.nota
+            // S6 rodada 1: lê voltas com vídeo mantido pra mostrar o
+            // indicador no lado direito da linha. Falha é não-fatal —
+            // sem o mapa, o indicador simplesmente não aparece.
+            do {
+                self.voltasComVideo = try await voltaVideoRepo.mapaMantidasPorStint(sessaoId: stintId)
+            } catch {
+                print("PosStintView: mapaMantidasPorStint falhou: \(error)")
+            }
         } catch {
             self.loadError = "Não consegui carregar: \(error.localizedDescription)"
         }
