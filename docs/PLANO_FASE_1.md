@@ -341,21 +341,27 @@ Depende de MS-9 (T4000 fornece temp motor real) — em Tier 0 usa estimativa.
 
 Núcleo lógico do sistema. Engenharia codificada + IA contextual. Operado pelos iPhones; mostrado na **TV 32" do box** (engenheiro/chefe-de-equipe) e no **Cockpit Pilot 10,5"** (piloto, com overlay de simulação quando parado). Notebook fica kiosk, não é operado. Detalhes completos em `docs/COMMAND_BOX_ENGENHARIA.md` (§1..§15) — auditoria + arquitetura aprovada.
 
-3 decisões fechadas em 2026-05-13: D1 (criar MS-16), D2+D3 (TV 32" via Box Mode iOS + overlay simulação no Cockpit Pilot 10,5"; notebook não é operado), D6 (3 rules MVP: fuel-lean, water-drift, vmin-loss). 11 decisões abertas listadas em §11 do doc — nenhuma bloqueia A→B→C→D→E.
+**7 decisões fechadas em 2026-05-13:** D1 (criar MS-16), D2+D3 (TV 32" via Box Mode iOS + overlay simulação no Cockpit Pilot 10,5"; notebook não é operado), D6 (3 rules MVP: fuel-lean, water-drift, vmin-loss), D14 (heurística carro parado/andando absorvida por D18), D17 (piloto edita/simula só com carro parado; chefe + engenheiro livres), D18 (switch padrão piloto ↔ engenharia automático via `cockpitModeResolver`: `modulo_ativado AND carro_parado` → ENGENHARIA; resto → PILOTO; voltar a andar força PILOTO imediato). 13 decisões abertas listadas em §11 do doc — nenhuma bloqueia.
+
+**Camada domain entregue ponta-a-ponta em 2026-05-13 — 6 PRs (#194..#199), ~4 600 linhas, 67 testes verdes.**
 
 | # | Task | Onde | Status |
 |---|---|---|---|
-| 16.1 | Port `src/telemetry/timebase.js` → `ios/p1fast-core/Sources/P1FastCore/TelemetryTimebase.swift` + paridade JS↔Swift via fixture sintética | Cloud | ❌ |
-| 16.2 | `VehicleContextAggregator.swift` — lap/stint/segment/thermal sem células. Fixture canônica sessão Brasília 2026-05-06 | Cloud | ❌ |
-| 16.3 | `CalibrationEngine.swift` + 3 rules MVP (`fuel-lean-sustained-load`, `water-temp-drift-no-cooling`, `vmin-progressive-loss-segment`) + migrations 0020_engineering_findings + 0021_engineering_recommendations | Cloud | ❌ |
-| 16.4 | `/api/advisor.js` aceita campo `findings[]`; system prompt ganha §"Findings codificadas"; persiste decisão em `engineering_recommendations` | Cloud | ❌ |
-| 16.5 | Tab Engenharia no iOS hub (chefe + engenheiro + piloto) — lista findings + recommendations + **controles táteis** (`EngControl.swift`: sliders + knobs rotativos) pra editar parâmetros e disparar simulações no próprio iPhone | Cloud | ❌ |
+| 16.0 | Auditoria + arquitetura aprovada (`docs/COMMAND_BOX_ENGENHARIA.md` ~970 linhas) + bloco MS-16 no plano | Aqui | ✅ #194 (`0bdafd9`) |
+| 16.1 | Port `src/telemetry/timebase.js` → `ios/p1fast-core/Sources/P1FastCore/TelemetryTimebase.swift` + paridade JS↔Swift via fixture sintética + TB-01..12 + TPB-01..12 | Cloud | ✅ #195 (`b84a2a9`) |
+| 16.2 | `VehicleContextAggregator.swift` — lap/stint/segment/thermal sem células + helpers `waterTempDriftPerMinute()` + `vminTrend()` + VCA-01..10 | Cloud | ✅ #196 (`639ec1e`) |
+| 16.3 | `CalibrationEngine.swift` + 3 rules MVP (`fuel-lean-sustained-load`, `water-temp-drift-no-cooling`, `vmin-progressive-loss-segment`) + migrations 0020_engineering_findings + 0021_engineering_recommendations (NÃO aplicadas em prod) + CE-01..15 | Cloud | ✅ #197 (`57c552a`) |
+| 16.4 | `/api/advisor.js` aceita campo `findings[]`; system prompt ganha §"FINDINGS CODIFICADOS" (governança IA: priorizar, explicar, validar, não contradizer); AF-01..09 | Cloud | ✅ #198 (`430d151`) |
+| 16.5a | **Domain pure** da Tab Engenharia — `EngControlModel` + `EngineeringDecisionPolicy` (slider/knob/toggle + gating D17 + transitions D8) + ECM-01..12 | Cloud | ✅ #199 (`2ee12a3`) |
+| 16.5b | **SwiftUI Views** — `EngenhariaView` + `FindingCardView` + `RecommendationCardView` + `EngControlSlider` + `EngControlKnob` + `EngenhariaRepository` (Supabase REST → migrations 0020/0021) + `BottomNav` tab Engenharia. Precisa Xcode local pra validar simulator. | Cloud (com Xcode) | ❌ |
 | 16.6 | iOS Box Mode ganha visão Engenharia — subscribe canal Realtime `live-stint-{id}`, renderiza na TV 32" via AirPlay → Apple TV. Gate: MS-9 + MS-12 fechados | Cloud | ❌ gate |
 | 16.7 | Cockpit Pilot 10,5" vira **canal contextual da engenharia** — overlay dirigido pelo canal `engineering-{stintId}` (`SIMULATION_INSTRUCTION` / `MECHANIC_DIAGNOSTIC` / `PILOT_FOCUS_PROMPT` / `ALERTA_OPERACIONAL`) + **switch automático padrão piloto ↔ padrão engenharia** (`cockpitModeResolver`: `modulo_ativado AND carro_parado` → engenharia; resto → piloto; voltar a andar força piloto imediato) | Cloud | ❌ |
 | 16.8 | **Simulação distribuída** — chefe + engenheiro rodam simulação no iPhone deles a qualquer momento (sliders/knobs); piloto roda **só com carro parado** (D17). Projeção determinística no canal Realtime; TV 32" + Cockpit Pilot 10,5" sincronizam em ~250 ms. Não muda mapa real | Cloud | ❌ |
 | 16.9 | (Opcional, gate D5) Engine cells RPM × MAP histogram + 2 rules extras (fuel-rich-light, lambda-vs-target) — só se mapa real for carregado | Cloud | ❌ gate |
 
-**Ordem dura:** 16.1 → 16.2 → 16.3 → (16.4 + 16.5 em paralelo) → 16.6 → (16.7 + 16.8 em paralelo) → 16.9.
+**Ordem dura:** 16.0 ✅ → 16.1 ✅ → 16.2 ✅ → 16.3 ✅ → (16.4 ✅ + 16.5a ✅ em paralelo) → 16.5b → 16.6 → (16.7 + 16.8 em paralelo) → 16.9.
+
+**Pendência Flávio:** aplicar migrations `0020_engineering_findings.sql` + `0021_engineering_recommendations.sql` em prod via `supabase db push`. Detalhes do estado pós-clear em `docs/SESSION_HANDOFF_2026-05-13_pre-clear.md`.
 
 ---
 
