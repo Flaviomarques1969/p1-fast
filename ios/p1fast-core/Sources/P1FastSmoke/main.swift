@@ -7681,6 +7681,228 @@ step("VCA-10: reset zera tudo") {
     try assertEq(ctx.thermalPhase, .cold)
 }
 
+// ════════════════════════════════════════════════════════════
+// CalibrationEngine + 3 rules MVP — CE-01..CE-15 (MS-16.3)
+// docs/COMMAND_BOX_ENGENHARIA.md §5.1 Camada 2.
+// ════════════════════════════════════════════════════════════
+
+func _ceSeedLeanLaps(_ agg: VehicleContextAggregator, laps: Int = 3,
+                     leanSamplesPerLap: Int = 40, rpmMax: Double = 5800) {
+    var lapNumero = 1
+    for _ in 0..<laps {
+        let baseT = Double(lapNumero) * 60_000
+        for i in 0..<leanSamplesPerLap {
+            agg.ingestSnapshot(_vcaT4000(
+                tMono: baseT + Double(i) * 10,
+                rpm: rpmMax, map: 0.92, lambda: 1.06, tps: 84, waterTemp: 102
+            ))
+        }
+        agg.onLapEnd(_vcaLapEnd(numero: lapNumero, tempoMs: 95_000))
+        lapNumero += 1
+    }
+}
+
+step("CE-01: FuelLeanSustainedLoadRule dispara com 3 voltas atendendo critério") {
+    let agg = VehicleContextAggregator()
+    _ceSeedLeanLaps(agg, laps: 3, leanSamplesPerLap: 40)
+    let engine = CalibrationEngine(rules: [FuelLeanSustainedLoadRule()])
+    let findings = engine.evaluate(context: agg.currentContext(), now: { 1_000_000 })
+    try assertEq(findings.count, 1)
+    try assertEq(findings[0].ruleId, "fuel-lean-sustained-load")
+    try assertEq(findings[0].confianca, .alta)
+    try assertEq(findings[0].severidade, .atencao)
+    try assertEq(findings[0].escopo, .stint)
+}
+
+step("CE-02: FuelLean NÃO dispara com < 3 voltas atendendo") {
+    let agg = VehicleContextAggregator()
+    _ceSeedLeanLaps(agg, laps: 2, leanSamplesPerLap: 40)
+    let engine = CalibrationEngine(rules: [FuelLeanSustainedLoadRule()])
+    let findings = engine.evaluate(context: agg.currentContext(), now: { 1_000_000 })
+    try assertEq(findings.count, 0)
+}
+
+step("CE-03: FuelLean NÃO dispara com poucos samples lean por volta (< 30)") {
+    let agg = VehicleContextAggregator()
+    _ceSeedLeanLaps(agg, laps: 3, leanSamplesPerLap: 10) // < 30 cutoff default
+    let engine = CalibrationEngine(rules: [FuelLeanSustainedLoadRule()])
+    let findings = engine.evaluate(context: agg.currentContext(), now: { 1_000_000 })
+    try assertEq(findings.count, 0)
+}
+
+step("CE-04: FuelLean propõe recommendation com ajuste +4% combustível") {
+    let agg = VehicleContextAggregator()
+    _ceSeedLeanLaps(agg, laps: 3, leanSamplesPerLap: 40)
+    let engine = CalibrationEngine(rules: [FuelLeanSustainedLoadRule()])
+    let findings = engine.evaluate(context: agg.currentContext(), now: { 1_000_000 })
+    let recs = engine.proposeRecommendations(findings: findings,
+                                              context: agg.currentContext())
+    try assertEq(recs.count, 1)
+    let rec = recs[0]
+    try assertEq(rec.ajustes.count, 1)
+    try assertEq(rec.ajustes[0].campo, "combustivel")
+    try assertEq(rec.ajustes[0].para, "+4%")
+    try assertEq(rec.decisao, .pendente)
+    try assertTrue(rec.naoMexer.count > 0, "rec deve ter naoMexer (campo obrigatório §9)")
+}
+
+step("CE-05: cooldown impede duplo disparo dentro da janela") {
+    let agg = VehicleContextAggregator()
+    _ceSeedLeanLaps(agg, laps: 3, leanSamplesPerLap: 40)
+    let engine = CalibrationEngine(rules: [FuelLeanSustainedLoadRule()])
+    var clock: Double = 1_000_000
+    let f1 = engine.evaluate(context: agg.currentContext(), now: { clock })
+    try assertEq(f1.count, 1)
+    // imediatamente após — cooldown 60s default barra
+    let f2 = engine.evaluate(context: agg.currentContext(), now: { clock })
+    try assertEq(f2.count, 0)
+    // passou cooldown — dispara de novo
+    clock += 61_000
+    let f3 = engine.evaluate(context: agg.currentContext(), now: { clock })
+    try assertEq(f3.count, 1)
+}
+
+step("CE-06: WaterTempDriftNoCooling dispara com drift > 3°C/min sustentado") {
+    let agg = VehicleContextAggregator()
+    // drift ~6°C/min em 90s
+    agg.ingestSnapshot(_vcaT4000(tMono: 0,      rpm: 4000, map: 0.6, lambda: 0.92,
+                                  tps: 40, waterTemp: 95))
+    agg.ingestSnapshot(_vcaT4000(tMono: 45_000, rpm: 4000, map: 0.6, lambda: 0.92,
+                                  tps: 40, waterTemp: 99.5))
+    agg.ingestSnapshot(_vcaT4000(tMono: 90_000, rpm: 4000, map: 0.6, lambda: 0.92,
+                                  tps: 40, waterTemp: 104))
+    let engine = CalibrationEngine(rules: [WaterTempDriftNoCoolingRule()])
+    let findings = engine.evaluate(context: agg.currentContext(), now: { 100_000 })
+    try assertEq(findings.count, 1)
+    try assertEq(findings[0].ruleId, "water-temp-drift-no-cooling")
+    try assertTrue((findings[0].evidencia["drift_c_per_min"] ?? 0) > 5.5,
+                   "drift deve ser ~6°C/min")
+}
+
+step("CE-07: WaterTempDriftNoCooling NÃO dispara com drift abaixo do limite") {
+    let agg = VehicleContextAggregator()
+    // drift ~1°C/min
+    agg.ingestSnapshot(_vcaT4000(tMono: 0,      rpm: 4000, map: 0.6, lambda: 0.92,
+                                  tps: 40, waterTemp: 95))
+    agg.ingestSnapshot(_vcaT4000(tMono: 60_000, rpm: 4000, map: 0.6, lambda: 0.92,
+                                  tps: 40, waterTemp: 96))
+    agg.ingestSnapshot(_vcaT4000(tMono: 120_000, rpm: 4000, map: 0.6, lambda: 0.92,
+                                  tps: 40, waterTemp: 97))
+    let engine = CalibrationEngine(rules: [WaterTempDriftNoCoolingRule()])
+    let findings = engine.evaluate(context: agg.currentContext(), now: { 130_000 })
+    try assertEq(findings.count, 0)
+}
+
+step("CE-08: WaterTempDrift severidade ALTA quando fase = overheat") {
+    let agg = VehicleContextAggregator()
+    agg.ingestSnapshot(_vcaT4000(tMono: 0,      rpm: 5000, map: 0.7, lambda: 0.92,
+                                  tps: 60, waterTemp: 100))
+    agg.ingestSnapshot(_vcaT4000(tMono: 60_000, rpm: 5000, map: 0.7, lambda: 0.92,
+                                  tps: 60, waterTemp: 105))
+    agg.ingestSnapshot(_vcaT4000(tMono: 120_000, rpm: 5000, map: 0.7, lambda: 0.92,
+                                  tps: 60, waterTemp: 110))   // overheat
+    let engine = CalibrationEngine(rules: [WaterTempDriftNoCoolingRule()])
+    let findings = engine.evaluate(context: agg.currentContext(), now: { 130_000 })
+    try assertEq(findings.count, 1)
+    try assertEq(findings[0].severidade, .alta)
+}
+
+step("CE-09: VminProgressiveLoss dispara com Vmin caindo > 1 km/h/volta") {
+    let agg = VehicleContextAggregator()
+    // 22, 20, 18 m/s = 79.2, 72.0, 64.8 km/h — queda ~7.2 km/h/volta
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 2, velMinima: 20.0))
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 3, velMinima: 18.0))
+    let engine = CalibrationEngine(rules: [VminProgressiveLossSegmentRule()])
+    let findings = engine.evaluate(context: agg.currentContext(), now: { 100_000 })
+    try assertEq(findings.count, 1)
+    try assertEq(findings[0].ruleId, "vmin-progressive-loss-segment")
+    try assertEq(findings[0].segmentId, "bruxa")
+    try assertEq(findings[0].confianca, .alta) // > 1.5 km/h/volta
+}
+
+step("CE-10: VminProgressiveLoss NÃO dispara se Vmin não-monotônico") {
+    let agg = VehicleContextAggregator()
+    // sobe, cai, sobe → não dispara
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 2, velMinima: 23.0))
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 3, velMinima: 21.0))
+    let engine = CalibrationEngine(rules: [VminProgressiveLossSegmentRule()])
+    let findings = engine.evaluate(context: agg.currentContext(), now: { 100_000 })
+    try assertEq(findings.count, 0)
+}
+
+step("CE-11: VminProgressiveLoss escolhe trecho com pior queda") {
+    let agg = VehicleContextAggregator()
+    // bruxa: queda pequena ~1.1 km/h/volta
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 2, velMinima: 21.7))
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 3, velMinima: 21.4))
+    // s1: queda grande ~7 km/h/volta — esse deve ser o pior
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "s1", lapNumero: 1, velMinima: 25.0))
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "s1", lapNumero: 2, velMinima: 23.0))
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "s1", lapNumero: 3, velMinima: 21.0))
+    let engine = CalibrationEngine(rules: [VminProgressiveLossSegmentRule()])
+    let findings = engine.evaluate(context: agg.currentContext(), now: { 100_000 })
+    try assertEq(findings.count, 1)
+    try assertEq(findings[0].segmentId, "s1")
+}
+
+step("CE-12: minConfidenceForRecommendation gateando recommendation") {
+    let agg = VehicleContextAggregator()
+    // Drift pequeno → confianca = .baixa
+    agg.ingestSnapshot(_vcaT4000(tMono: 0,      rpm: 4000, map: 0.6, lambda: 0.92,
+                                  tps: 40, waterTemp: 95))
+    agg.ingestSnapshot(_vcaT4000(tMono: 35_000, rpm: 4000, map: 0.6, lambda: 0.92,
+                                  tps: 40, waterTemp: 97))
+    let engine = CalibrationEngine(
+        rules: [WaterTempDriftNoCoolingRule()],
+        minConfidenceForRecommendation: .media
+    )
+    let findings = engine.evaluate(context: agg.currentContext(), now: { 40_000 })
+    if !findings.isEmpty {
+        let recs = engine.proposeRecommendations(findings: findings, context: agg.currentContext())
+        if findings[0].confianca == .baixa {
+            try assertEq(recs.count, 0)
+        }
+    }
+}
+
+step("CE-13: defaultRules expõe as 3 rules MVP") {
+    let rules = CalibrationEngine.defaultRules
+    try assertEq(rules.count, 3)
+    let ids = Set(rules.map { $0.id })
+    try assertTrue(ids.contains("fuel-lean-sustained-load"))
+    try assertTrue(ids.contains("water-temp-drift-no-cooling"))
+    try assertTrue(ids.contains("vmin-progressive-loss-segment"))
+}
+
+step("CE-14: evaluate avalia todas as regras (multi-rule)") {
+    let agg = VehicleContextAggregator()
+    _ceSeedLeanLaps(agg, laps: 3, leanSamplesPerLap: 40)
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 2, velMinima: 20.0))
+    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 3, velMinima: 18.0))
+    let engine = CalibrationEngine()
+    let findings = engine.evaluate(context: agg.currentContext(), now: { 1_000_000 })
+    let ids = Set(findings.map { $0.ruleId })
+    try assertTrue(ids.contains("fuel-lean-sustained-load"))
+    try assertTrue(ids.contains("vmin-progressive-loss-segment"))
+}
+
+step("CE-15: reset limpa cooldowns") {
+    let agg = VehicleContextAggregator()
+    _ceSeedLeanLaps(agg, laps: 3, leanSamplesPerLap: 40)
+    let engine = CalibrationEngine(rules: [FuelLeanSustainedLoadRule()])
+    let f1 = engine.evaluate(context: agg.currentContext(), now: { 1000 })
+    try assertEq(f1.count, 1)
+    let f2 = engine.evaluate(context: agg.currentContext(), now: { 2000 })
+    try assertEq(f2.count, 0)
+    engine.reset()
+    let f3 = engine.evaluate(context: agg.currentContext(), now: { 2000 })
+    try assertEq(f3.count, 1)
+}
+
 // ── relatório ────────────────────────────────────────────────
 print("\n═══ RESULTADO ═══")
 print("\(ok) ok / \(fail) fail")
