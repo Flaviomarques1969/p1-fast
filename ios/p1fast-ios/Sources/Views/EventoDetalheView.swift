@@ -36,6 +36,7 @@ struct EventoDetalheView: View {
     @EnvironmentObject private var voltaVideoRepo: VoltaVideoRepository
     @EnvironmentObject private var acaoFazerRepo: AcaoFazerRepository
     @EnvironmentObject private var eventoPneuRepo: EventoPneuRepository
+    @EnvironmentObject private var setupReplicadoRepo: EventoSetupReplicadoRepository
     let eventoId: String
     let onClose: () -> Void
 
@@ -182,6 +183,10 @@ struct EventoDetalheView: View {
         do { try await eventoPneuRepo.load(eventoId: eventoId) } catch {
             print("eventoPneuRepo.load failed: \(error)")
         }
+        // S7 #17: carrega setups replicados de voltas passadas.
+        do { try await setupReplicadoRepo.load(eventoId: eventoId) } catch {
+            print("setupReplicadoRepo.load failed: \(error)")
+        }
     }
 
     /// S8 #18 — carrega histórico do piloto na pista por carro. Só roda
@@ -251,6 +256,9 @@ struct EventoDetalheView: View {
                     acoesFazerSection
                         .padding(.top, 18)
                     pneusEventoSection
+                        .padding(.top, 18)
+                    // S7 #17 — Setups replicados de voltas passadas.
+                    setupsReplicadosSection
                         .padding(.top, 18)
                 }
                 stintsSection(ev: ev)
@@ -371,6 +379,114 @@ struct EventoDetalheView: View {
         }
         .padding(.horizontal, Spacing.xs)
         .padding(.bottom, 4)
+    }
+
+    // MARK: - Setups replicados (S7 #17, rodada 1)
+
+    /// S7 #17 — Mostra os snapshots de setup copiados de voltas passadas
+    /// neste evento futuro. Mais recente primeiro. Em conflito (mais de 1
+    /// replicação), todos aparecem ordenados; o mecânico decide qual
+    /// considerar. Recomendação P3 #17: "último vence + banner explicativo"
+    /// — UI mostra todas + indicador visual no mais recente.
+    @ViewBuilder
+    private var setupsReplicadosSection: some View {
+        let replicados = setupReplicadoRepo.replicadosPorEvento[eventoId] ?? []
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Setup replicado de eventos passados")
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(0.06 * 11)
+                .foregroundStyle(Color.textFaint)
+                .padding(.horizontal, 4)
+
+            if replicados.isEmpty {
+                Text("Nenhum setup replicado pra este evento ainda. Replicação acontece abrindo uma volta de evento passado e tocando em 'Replicar essa configuração'.")
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(Color.textFaint)
+                    .padding(.horizontal, 4)
+            } else {
+                if replicados.count > 1 {
+                    Text("Mais de uma replicação foi feita pra esse evento. A mais recente está no topo — use ela como referência principal.")
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundStyle(Color.atencao)
+                        .padding(.horizontal, Spacing.md)
+                        .padding(.vertical, 8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                                .fill(Color.atencao.opacity(0.08))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                                .stroke(Color.atencao.opacity(0.45), lineWidth: 1)
+                        )
+                }
+                VStack(spacing: 8) {
+                    ForEach(Array(replicados.enumerated()), id: \.element.id) { idx, rep in
+                        replicadoLinha(rep: rep, isMaisRecente: idx == 0)
+                    }
+                }
+            }
+        }
+    }
+
+    private func replicadoLinha(rep: EventoSetupReplicado, isMaisRecente: Bool) -> some View {
+        let carroNome: String = {
+            guard let cId = rep.carroId,
+                  let c = carroRepo.carros.first(where: { $0.id == cId }) else { return "Carro removido" }
+            return c.apelido
+        }()
+        let origemNome: String = {
+            guard let origemEv = rep.origemEventoId,
+                  let ev = repo.find(id: origemEv) else { return "Evento anterior" }
+            return ev.pistaDisplay
+        }()
+        return HStack(alignment: .center, spacing: 10) {
+            Image(systemName: "arrow.triangle.2.circlepath")
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(isMaisRecente ? Color.accent : Color.textMuted)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text(carroNome)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.text)
+                    if isMaisRecente {
+                        EventTag(text: "Mais recente", kind: .accent)
+                    }
+                }
+                Text("De: \(origemNome) · \(formatDataCurta(ms: rep.createdAt))")
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(Color.textFaint)
+                if let overrides = rep.overridesJson, !overrides.isEmpty {
+                    Text("Setup salvo (\(overrides.count) caracteres)")
+                        .font(.system(size: 10, weight: .regular))
+                        .foregroundStyle(Color.textFaint)
+                } else {
+                    Text("Sem detalhes de setup salvos.")
+                        .font(.system(size: 10, weight: .regular))
+                        .foregroundStyle(Color.textFaint)
+                }
+            }
+            Spacer(minLength: 0)
+            Button(action: {
+                Task { try? await setupReplicadoRepo.remover(rep.id, eventoId: eventoId) }
+            }) {
+                Image(systemName: "xmark.circle")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(Color.textMuted)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .fill(isMaisRecente ? Color.accentDim.opacity(0.10) : Color.surfaceRaised)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .stroke(isMaisRecente ? Color.accent.opacity(0.45) : Color.border, lineWidth: 1)
+        )
     }
 
     // MARK: - Ações a fazer (S8 #22, rodada 1)

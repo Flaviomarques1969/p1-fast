@@ -3639,7 +3639,7 @@ func makeTestDB() throws -> DatabaseQueue {
     return q
 }
 
-step("PERSIST-01: makeMemoryQueue + migrations v1..v23 cria 32 tabelas") {
+step("PERSIST-01: makeMemoryQueue + migrations v1..v24 cria 33 tabelas") {
     let q = try DB.makeMemoryQueue()
     let names = try q.read { db in
         try String.fetchAll(db, sql:
@@ -3648,13 +3648,13 @@ step("PERSIST-01: makeMemoryQueue + migrations v1..v23 cria 32 tabelas") {
     }
     // 20 do Postgres + sync_queue + sync_meta (v2) + licoes (v4) + pendencias_template + evento_pendencias (v5)
     // + telemetry_samples_enriched (v7) + video_streams (v15) + volta_video (v16)
-    // + pessoas (v17) + pessoa_papeis (v18) + evento_pneus (v22) + acoes_a_fazer (v23) = 32
-    try assertEq(names.count, 32, "esperava 32 tabelas")
+    // + pessoas (v17) + pessoa_papeis (v18) + evento_pneus (v22) + acoes_a_fazer (v23) + evento_setup_replicado (v24) = 33
+    try assertEq(names.count, 33, "esperava 33 tabelas")
     for expected in ["times", "carros", "configuracoes", "sessoes", "voltas",
                      "marcos", "retas_especiais", "telemetry_samples",
                      "telemetry_samples_enriched", "sync_queue", "sync_meta",
                      "video_streams", "volta_video", "pessoas", "pessoa_papeis",
-                     "evento_pneus", "acoes_a_fazer"] {
+                     "evento_pneus", "acoes_a_fazer", "evento_setup_replicado"] {
         try assertTrue(names.contains(expected), "tabela \(expected) ausente")
     }
 }
@@ -7457,6 +7457,62 @@ step("S8-07: EventoPneu UNIQUE(evento_id, pneu_id) bloqueia duplicata") {
         }
     } catch { caiu = true }
     try assertTrue(caiu, "esperava UNIQUE constraint barrar duplicata")
+}
+
+// ─── S7 rodada 1: replicação de setup ──────────────────────
+
+step("S7-01: v24 cria tabela evento_setup_replicado") {
+    let q = try makeTestDB()
+    let exists = try q.read { db in
+        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='evento_setup_replicado'") ?? 0
+    }
+    try assertEq(exists, 1, "esperava tabela evento_setup_replicado")
+}
+
+step("S7-02: EventoSetupReplicado round-trip preserva overrides_json") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try Time(id: "team-s7", nome: "Time S7", criadoPor: nil).insert(db)
+        try Evento(id: "ev-s7", timeId: "team-s7", trackId: nil,
+                   tipo: "track-day", dataEvento: 1_700_000_000_000).insert(db)
+    }
+    let json = "{\"pneu\":\"24psi\",\"amortecedor\":\"4\"}"
+    let row = EventoSetupReplicado(
+        id: "rep-1", timeId: "team-s7", eventoId: "ev-s7",
+        origemVoltaId: "vol-x", origemEventoId: nil, carroId: nil,
+        overridesJson: json
+    )
+    try q.write { db in try row.insert(db) }
+    let fetched = try q.read { db in try EventoSetupReplicado.fetchOne(db, key: "rep-1") }
+    try assertEq(fetched?.overridesJson, json)
+    try assertEq(fetched?.origemVoltaId, "vol-x")
+}
+
+step("S7-03: 2 replicações pro mesmo evento são permitidas (ordem por created_at)") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try Time(id: "team-s7b", nome: "Time", criadoPor: nil).insert(db)
+        try Evento(id: "ev-s7b", timeId: "team-s7b", trackId: nil,
+                   tipo: "track-day", dataEvento: 1_700_000_000_000).insert(db)
+        try EventoSetupReplicado(
+            id: "rep-a", timeId: "team-s7b", eventoId: "ev-s7b",
+            origemVoltaId: "vol-1", overridesJson: "v1",
+            createdAt: 100
+        ).insert(db)
+        try EventoSetupReplicado(
+            id: "rep-b", timeId: "team-s7b", eventoId: "ev-s7b",
+            origemVoltaId: "vol-2", overridesJson: "v2",
+            createdAt: 200
+        ).insert(db)
+    }
+    let rows = try q.read { db in
+        try EventoSetupReplicado
+            .filter(Column("evento_id") == "ev-s7b")
+            .order(Column("created_at").desc)
+            .fetchAll(db)
+    }
+    try assertEq(rows.count, 2)
+    try assertEq(rows.first?.id, "rep-b", "esperava rep-b (mais recente) primeiro")
 }
 
 // ── relatório ────────────────────────────────────────────────

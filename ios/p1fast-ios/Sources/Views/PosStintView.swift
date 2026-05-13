@@ -26,6 +26,7 @@ struct PosStintView: View {
     @EnvironmentObject private var voltaVideoRepo: VoltaVideoRepository
     @EnvironmentObject private var carroRepo: CarroRepository
     @EnvironmentObject private var eventoRepo: EventoRepository
+    @EnvironmentObject private var setupReplicadoRepo: EventoSetupReplicadoRepository
     let stintId: String
     let contextoLinha: String
     let onClose: () -> Void
@@ -77,6 +78,7 @@ struct PosStintView: View {
                 .environmentObject(voltaVideoRepo)
                 .environmentObject(carroRepo)
                 .environmentObject(eventoRepo)
+                .environmentObject(setupReplicadoRepo)
             }
         }
     }

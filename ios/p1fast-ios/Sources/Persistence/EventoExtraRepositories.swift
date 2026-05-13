@@ -146,3 +146,72 @@ final class EventoPneuRepository: ObservableObject {
         try await load(eventoId: eventoId)
     }
 }
+
+// MARK: - S7 #17 — Replicação de setup
+
+@MainActor
+final class EventoSetupReplicadoRepository: ObservableObject {
+    /// Map: eventoId destino → setups replicados (mais recente primeiro).
+    @Published private(set) var replicadosPorEvento: [String: [EventoSetupReplicado]] = [:]
+
+    private let queue: DatabaseQueue
+
+    init(queue: DatabaseQueue) {
+        self.queue = queue
+    }
+
+    func load(eventoId: String) async throws {
+        guard let teamId = TeamContext.currentTeamId else {
+            replicadosPorEvento[eventoId] = []
+            return
+        }
+        let rows = try await queue.read { db in
+            try EventoSetupReplicado
+                .filter(Column("evento_id") == eventoId)
+                .filter(Column("time_id") == teamId)
+                .order(Column("created_at").desc)
+                .fetchAll(db)
+        }
+        replicadosPorEvento[eventoId] = rows
+    }
+
+    /// Replica a configuração (overrides) da sessão de origem pro evento
+    /// destino. P3 #17: "último vence" em conflito — sobrescreve o anterior
+    /// pra mesmo (evento destino, origem volta).
+    @discardableResult
+    func replicar(
+        eventoDestinoId: String,
+        origemVoltaId: String,
+        origemEventoId: String?,
+        carroId: String?,
+        overridesJson: String?
+    ) async throws -> String {
+        guard let teamId = TeamContext.currentTeamId else {
+            throw NSError(domain: "EventoSetupReplicadoRepository", code: -1,
+                          userInfo: [NSLocalizedDescriptionKey: "Sem equipe associada."])
+        }
+        let id = UUID().uuidString
+        let row = EventoSetupReplicado(
+            id: id, timeId: teamId, eventoId: eventoDestinoId,
+            origemVoltaId: origemVoltaId, origemEventoId: origemEventoId,
+            carroId: carroId, overridesJson: overridesJson
+        )
+        try await queue.write { db in
+            try row.insert(db)
+            try SyncQueue.enqueueRecord(db, tableName: "evento_setup_replicado",
+                                        rowId: id, op: .insert, record: row)
+        }
+        try await load(eventoId: eventoDestinoId)
+        return id
+    }
+
+    func remover(_ replicadoId: String, eventoId: String) async throws {
+        try await queue.write { db in
+            _ = try EventoSetupReplicado.deleteOne(db, key: replicadoId)
+            try SyncQueue.enqueueRecord(db, tableName: "evento_setup_replicado",
+                                        rowId: replicadoId, op: .delete,
+                                        record: EventoSetupReplicado?.none)
+        }
+        try await load(eventoId: eventoId)
+    }
+}

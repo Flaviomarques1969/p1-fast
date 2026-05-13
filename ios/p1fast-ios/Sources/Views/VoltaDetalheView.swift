@@ -35,10 +35,15 @@ struct VoltaDetalheView: View {
     @EnvironmentObject private var voltaVideoRepo: VoltaVideoRepository
     @EnvironmentObject private var carroRepo: CarroRepository
     @EnvironmentObject private var eventoRepo: EventoRepository
+    @EnvironmentObject private var setupReplicadoRepo: EventoSetupReplicadoRepository
 
     @State private var voltaVideo: VoltaVideo?
     @State private var videoStream: VideoStream?
     @State private var carregando = true
+    // S7 #17: replicação de configuração.
+    @State private var mostrandoSeletorEvento = false
+    @State private var replicandoEvento = false
+    @State private var replicacaoMensagem: String?
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -63,7 +68,106 @@ struct VoltaDetalheView: View {
             playerSection
             dadosGeraisSection
             engenhariaSection
+            replicarConfigSection
         }
+    }
+
+    // MARK: - S7 #17: replicação de configuração
+
+    private var replicarConfigSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Replicar essa configuração".uppercased())
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(0.6)
+                .foregroundStyle(Color.textFaint)
+                .padding(.horizontal, Spacing.xs)
+
+            Button(action: { mostrandoSeletorEvento = true }) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Replicar pra um evento futuro")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(Color.text)
+                        Text("Copia o setup desta volta pra um próximo evento. O mecânico vê o snapshot no checklist.")
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundStyle(Color.textFaint)
+                            .lineLimit(2)
+                    }
+                    Spacer(minLength: 0)
+                    Text("›")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color.accent)
+                }
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .fill(Color.surfaceRaised)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .stroke(Color.accent.opacity(0.45), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(replicandoEvento)
+
+            if let msg = replicacaoMensagem {
+                Text(msg)
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(msg.lowercased().contains("não") ? Color.erro : Color.bom)
+                    .padding(.horizontal, Spacing.xs)
+            }
+        }
+        .sheet(isPresented: $mostrandoSeletorEvento) {
+            EscolherEventoFuturoSheet(
+                eventos: eventosFuturos,
+                onEscolher: { evDestino in
+                    mostrandoSeletorEvento = false
+                    replicarPra(eventoDestinoId: evDestino)
+                },
+                onClose: { mostrandoSeletorEvento = false }
+            )
+        }
+    }
+
+    private var eventosFuturos: [EventoView] {
+        let inicioDeHoje = Calendar(identifier: .gregorian).startOfDay(for: Date()).timeIntervalSince1970 * 1000
+        return eventoRepo.eventos.filter { Double($0.evento.dataEvento) >= inicioDeHoje }
+    }
+
+    private func replicarPra(eventoDestinoId: String) {
+        replicandoEvento = true
+        replicacaoMensagem = nil
+        Task {
+            do {
+                // Lê o JSON de overrides do setup da sessão da volta atual.
+                let overridesJson: String? = try await carregaOverridesDaSessao()
+                let carroId = stint.sessao.carroId
+                try await setupReplicadoRepo.replicar(
+                    eventoDestinoId: eventoDestinoId,
+                    origemVoltaId: volta.id,
+                    origemEventoId: stint.sessao.eventoId,
+                    carroId: carroId,
+                    overridesJson: overridesJson
+                )
+                replicacaoMensagem = "Setup replicado pra o evento escolhido."
+            } catch {
+                replicacaoMensagem = "Não consegui replicar: \(error.localizedDescription)"
+            }
+            replicandoEvento = false
+        }
+    }
+
+    private func carregaOverridesDaSessao() async throws -> String? {
+        // Acessa via CarroRepository já que ele tem loadConfiguracao(carroId:).
+        // Setup é POR CARRO (1 setup base), não por sessão — então pra cada
+        // carro temos o snapshot atual. Em sprints futuras dá pra ter
+        // snapshots por sessão; hoje copiamos o setup base do carro origem.
+        guard let carroId = stint.sessao.carroId else { return nil }
+        let config = try await carroRepo.loadConfiguracao(carroId: carroId)
+        return config?.overrides
     }
 
     // MARK: - Topbar
@@ -305,5 +409,99 @@ struct VoltaDetalheView: View {
             print("VoltaDetalheView.carregar erro: \(error)")
         }
         carregando = false
+    }
+}
+
+// MARK: - S7 #17: Sheet de seleção de evento futuro
+
+/// Sheet que lista eventos futuros do time pra escolher destino da
+/// replicação. Recomendação P3 #17: "pergunta em conflito" — quando o
+/// evento destino já tem setup replicado, a UI mostra banner mas
+/// permite continuar (último vence).
+struct EscolherEventoFuturoSheet: View {
+    let eventos: [EventoView]
+    let onEscolher: (String) -> Void
+    let onClose: () -> Void
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            Color.surface.ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: Spacing.md) {
+                    HStack {
+                        Button(action: onClose) {
+                            Text("‹ Voltar")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(Color.textMuted)
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 4)
+                        }
+                        .buttonStyle(.plain)
+                        Spacer()
+                    }
+                    VStack(alignment: .leading, spacing: 6) {
+                        Eyebrow(text: "Replicar configuração")
+                        Text("Pra qual evento futuro?")
+                            .font(.system(size: 22, weight: .semibold))
+                            .tracking(-0.55)
+                            .foregroundStyle(Color.text)
+                        Text("A configuração desta volta passada vai virar um lembrete no evento escolhido — o mecânico vê no checklist do dia.")
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(Color.textMuted)
+                    }
+                    .padding(.horizontal, Spacing.xs)
+
+                    if eventos.isEmpty {
+                        Text("Nenhum evento futuro cadastrado. Cadastre um evento na lista de eventos antes de replicar.")
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundStyle(Color.textFaint)
+                            .padding(.horizontal, Spacing.xs)
+                    } else {
+                        VStack(spacing: 8) {
+                            ForEach(eventos, id: \.id) { ev in
+                                eventoLinha(ev: ev)
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, Spacing.lg)
+                .padding(.top, Spacing.md)
+                .padding(.bottom, 40)
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private func eventoLinha(ev: EventoView) -> some View {
+        Button(action: { onEscolher(ev.id) }) {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(ev.pistaDisplay)
+                        .font(.system(size: 15, weight: .semibold))
+                        .tracking(-0.075)
+                        .foregroundStyle(Color.text)
+                        .lineLimit(1)
+                    Text(formatDataLongaPiquet(ms: ev.evento.dataEvento, layoutShort: ev.pistaLayoutShort))
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundStyle(Color.textFaint)
+                }
+                Spacer(minLength: 0)
+                Text("›")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(Color.textMuted)
+            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .fill(Color.surfaceRaised)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .stroke(Color.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }

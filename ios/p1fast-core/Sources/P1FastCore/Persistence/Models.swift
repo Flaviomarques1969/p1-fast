@@ -1307,6 +1307,56 @@ public struct EventoPneu: Codable, FetchableRecord, PersistableRecord, Equatable
     }
 }
 
+// MARK: - evento_setup_replicado (S7 #17, rodada 1)
+
+/// S7 #17 da rodada 1 (2026-05-12). Snapshot do setup de uma volta
+/// passada copiado pra um evento futuro. Quando o piloto toca em
+/// "Replicar essa configuração" numa VoltaDetalheView, criamos uma
+/// row aqui. EventoDetalheView do evento futuro mostra como lembrete.
+public struct EventoSetupReplicado: Codable, FetchableRecord, PersistableRecord, Equatable {
+    public var id: String
+    public var timeId: String
+    public var eventoId: String
+    public var origemVoltaId: String
+    public var origemEventoId: String?
+    public var carroId: String?
+    public var overridesJson: String?
+    public var nota: String?
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "evento_setup_replicado"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case eventoId = "evento_id"
+        case origemVoltaId = "origem_volta_id"
+        case origemEventoId = "origem_evento_id"
+        case carroId = "carro_id"
+        case overridesJson = "overrides_json"
+        case nota
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, timeId: String, eventoId: String,
+                origemVoltaId: String, origemEventoId: String? = nil,
+                carroId: String? = nil, overridesJson: String? = nil,
+                nota: String? = nil,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.eventoId = eventoId
+        self.origemVoltaId = origemVoltaId
+        self.origemEventoId = origemEventoId
+        self.carroId = carroId
+        self.overridesJson = overridesJson
+        self.nota = nota
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}
+
 // MARK: - acoes_a_fazer (S8 #22, rodada 1)
 
 /// S8 #22 da rodada 1 (2026-05-12). Lista pessoal livre de ações a

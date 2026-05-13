@@ -496,6 +496,36 @@ enum Migrations {
             """)
             try db.execute(sql: "CREATE INDEX idx_acoes_a_fazer_evento ON acoes_a_fazer(evento_id);")
         }
+
+        // ═══ v24_evento_setup_replicado ═══════════════════════
+        // S7 #17 da rodada 1 (2026-05-12). Espelha
+        // supabase/migrations/0025_evento_setup_replicado.sql.
+        // Quando o piloto toca em "Replicar essa configuração" numa volta
+        // passada (VoltaDetalheView), criamos uma row aqui apontando pro
+        // evento futuro de destino. O EventoDetalheView do evento futuro
+        // lê e mostra "Setup replicado de [evento origem]".
+        //
+        // overrides_json carrega o JSON da configuracoes.overrides da
+        // sessão de origem — preserva snapshot mesmo se o setup do
+        // carro mudar depois.
+        m.registerMigration("v24_evento_setup_replicado") { db in
+            try db.execute(sql: """
+                CREATE TABLE evento_setup_replicado (
+                    id              TEXT PRIMARY KEY,
+                    time_id         TEXT NOT NULL,
+                    evento_id       TEXT NOT NULL REFERENCES eventos(id) ON DELETE CASCADE,
+                    origem_volta_id TEXT NOT NULL,
+                    origem_evento_id TEXT,
+                    carro_id        TEXT,
+                    overrides_json  TEXT,
+                    nota            TEXT,
+                    created_at      INTEGER NOT NULL,
+                    updated_at      INTEGER NOT NULL,
+                    synced_at       INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX idx_evento_setup_replicado_evento ON evento_setup_replicado(evento_id);")
+        }
     }
 
     // swiftlint:disable:next function_body_length
