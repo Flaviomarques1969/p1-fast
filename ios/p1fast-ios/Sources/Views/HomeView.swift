@@ -492,11 +492,20 @@ private struct CarroRow: View {
         )
     }
 
+    /// ViewThatFits: tenta 3 colunas; se a fonte grande do iOS quebrar,
+    /// cai pra layout vertical com cada métrica numa linha completa.
     private var numerosRow: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 14) {
-            metricaCol(valor: formatKm(carro.kmRodada), unidade: "km", rotulo: "no app")
-            metricaCol(valor: formatVmax(carro.vmaxKmh), unidade: "km/h", rotulo: "vel. máxima")
-            metricaCol(valor: "\(carro.autodromosCount)", unidade: nil, rotulo: "autódromos")
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline, spacing: 14) {
+                metricaCol(valor: formatKm(carro.kmRodada), unidade: "km", rotulo: "no app")
+                metricaCol(valor: formatVmax(carro.vmaxKmh), unidade: "km/h", rotulo: "vel. máxima")
+                metricaCol(valor: "\(carro.autodromosCount)", unidade: nil, rotulo: "autódromos")
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                metricaLinha(valor: formatKm(carro.kmRodada), unidade: "km", rotulo: "no app")
+                metricaLinha(valor: formatVmax(carro.vmaxKmh), unidade: "km/h", rotulo: "vel. máxima")
+                metricaLinha(valor: "\(carro.autodromosCount)", unidade: nil, rotulo: "autódromos")
+            }
         }
     }
 
@@ -509,16 +518,40 @@ private struct CarroRow: View {
                     .tracking(-0.27)
                     .foregroundStyle(Color.text)
                     .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
                 if let unidade = unidade {
                     Text(unidade)
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(Color.textMuted)
+                        .fixedSize(horizontal: true, vertical: false)
                 }
             }
             Text(rotulo.uppercased())
                 .font(.system(size: 9, weight: .medium))
                 .tracking(0.72)
                 .foregroundStyle(Color.textFaint)
+                .fixedSize(horizontal: true, vertical: false)
+        }
+    }
+
+    private func metricaLinha(valor: String, unidade: String?, rotulo: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 5) {
+            Text(valor)
+                .font(.system(size: 16, weight: .semibold))
+                .monospacedDigit()
+                .foregroundStyle(Color.text)
+            if let unidade = unidade {
+                Text(unidade)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.textMuted)
+            }
+            Text("·")
+                .font(.system(size: 11, weight: .regular))
+                .foregroundStyle(Color.textFaint)
+            Text(rotulo)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Color.textFaint)
+            Spacer(minLength: 0)
         }
     }
 
