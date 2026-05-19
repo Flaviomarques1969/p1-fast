@@ -5,6 +5,7 @@
 1. **`STATUS.md`** (raiz) — onde o projeto está agora
 2. **`docs/PLANO_FASE_1.md`** — DOC MESTRE, aprovado pelo Flávio 2026-05-03. Vence todos os outros. (O antigo `PLANO_FASE_1A_1B.md` foi arquivado em `docs/_archive/`.)
 3. **`ARCHITECTURE_DECISIONS.md`** (raiz) — 22 ADRs vigentes, não reabrir sem ordem
+4. **`docs/SESSION_HANDOFF_*.md`** mais recente (`ls -1t docs/SESSION_HANDOFF_*.md | head -1`) — ponto de retomada da última sessão. O SessionStart hook (`.claude/hooks/session-start.sh`) já imprime esse caminho automaticamente.
 
 ## Em caso de contradição entre docs
 
@@ -32,11 +33,20 @@
 - **Worktree mandatório pra Cloud Code** — ADR-021
 - **Package.resolved é tracked, não deletar** — ADR-022
 
-## Memória do Claude — DOIS caminhos
+## Memória do Claude — DOIS caminhos (sessões locais macOS)
 
 Sempre verificar **os dois**:
 - `~/.claude/projects/-Users-imac/memory/` — global (lista pessoal)
 - `~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/` — específica deste projeto
+
+**Em sessão cloud (Claude Code on the web / container Linux):** esses caminhos NÃO existem. Use só docs in-repo (`docs/`, `STATUS.md`, `BLOCKERS.md`) + o handoff mais recente impresso pelo SessionStart hook.
+
+## Automação local (`.claude/`)
+
+- **`.claude/settings.json`** — allowlist read-only (git/npm/swift/dotnet/gh) + hooks
+- **`.claude/hooks/session-start.sh`** — imprime branch, status, último handoff, leitura canônica
+- **`.claude/hooks/pre-commit-pronoun-check.sh`** — bloqueia `git commit` com mensagem em tu/te/ti/teu/tua/contigo (regra dura acima)
+- **`.claude/agents/`** — `shift-light-auditor`, `pr-auditor`, `smoke-runner`, `handoff-writer`, `doc-contradiction-checker`
 
 ## Pastas a inventariar antes de propor escopo
 

@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+
+  "permissions": {
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git show:*)",
+      "Bash(git blame:*)",
+      "Bash(git stash list:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git remote -v)",
+      "Bash(git fetch origin:*)",
+
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(wc:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(uname:*)",
+      "Bash(which:*)",
+      "Bash(command -v:*)",
+
+      "Bash(npm run smoke:*)",
+      "Bash(npm test:*)",
+      "Bash(npm ls:*)",
+      "Bash(node tests/*:*)",
+
+      "Bash(swift run p1fast-smoke:*)",
+      "Bash(swift test:*)",
+      "Bash(swift build:*)",
+
+      "Bash(dotnet test:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet restore:*)",
+
+      "Bash(gh pr list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "Bash(git reset --hard:*)"
+    ]
+  },
+
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PROJECT_DIR}/.claude/hooks/pre-commit-pronoun-check.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

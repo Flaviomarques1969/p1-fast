@@ -22,7 +22,7 @@
     "smoke:cross-validation": "node tests/node-smoke-cross-validation.mjs",
     "smoke:perna1": "node tests/node-smoke-perna1-iphone.mjs",
     "smoke:detector": "node tests/node-smoke-detector.mjs",
-    "smoke:cross-validation": "node tests/node-smoke-telemetry-p0.mjs",
+    "smoke:telemetry-p0": "node tests/node-smoke-telemetry-p0.mjs",
     "test:shift-light": "node tests/domain/gear-estimation.spec.js && node tests/domain/shift-target.spec.js && node tests/pipeline/shift-event-detector.spec.js && node tests/domain/shift-analysis.spec.js && node tests/domain/pilot-reaction.spec.js && node tests/domain/dyno-target-calculator.spec.js && node tests/pipeline/shift-event-trecho-integration.spec.js && node tests/pipeline/shift-light-bridge.spec.js && node tests/pipeline/shift-light-e2e.spec.js && node tests/pipeline/rpm-source.spec.js && node tests/ui/shift-light-cockpit.spec.js && node tests/ui/reaction-profiles-view.spec.js"
   },
   "engines": {
