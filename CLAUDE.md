@@ -5,7 +5,7 @@
 1. **`STATUS.md`** (raiz) — onde o projeto está agora
 2. **`docs/PLANO_FASE_1.md`** — DOC MESTRE, aprovado pelo Flávio 2026-05-03. Vence todos os outros. (O antigo `PLANO_FASE_1A_1B.md` foi arquivado em `docs/_archive/`.)
 3. **`ARCHITECTURE_DECISIONS.md`** (raiz) — 22 ADRs vigentes, não reabrir sem ordem
-4. **`docs/SESSION_HANDOFF_*.md`** mais recente (`ls -1t docs/SESSION_HANDOFF_*.md | head -1`) — ponto de retomada da última sessão. O SessionStart hook (`.claude/hooks/session-start.sh`) já imprime esse caminho automaticamente.
+4. **`docs/SESSION_HANDOFF_*.md`** mais recente (`ls -1 docs/SESSION_HANDOFF_*.md | sort -r | head -1`) — ponto de retomada da última sessão. O SessionStart hook (`.claude/hooks/session-start.sh`) já imprime esse caminho automaticamente.
 
 ## Em caso de contradição entre docs
 

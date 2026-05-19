@@ -27,7 +27,9 @@ git log --oneline -5 2>/dev/null || echo "(repo vazio)"
 echo
 
 echo "── handoff mais recente ──"
-latest_handoff=$(ls -1t docs/SESSION_HANDOFF_*.md 2>/dev/null | head -1)
+# Sort por NOME (filename encoda data), não por mtime: em container clonado
+# o mtime corresponde à ordem de checkout do git, não à data real do arquivo.
+latest_handoff=$(ls -1 docs/SESSION_HANDOFF_*.md 2>/dev/null | sort -r | head -1)
 if [ -n "$latest_handoff" ]; then
   echo "$latest_handoff"
 else

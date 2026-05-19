@@ -12,9 +12,10 @@ Gerar `docs/SESSION_HANDOFF_YYYY-MM-DD_pre-clear.md` que a próxima sessão Clau
 
 ## Templates de referência
 
-Leia o handoff mais recente antes de escrever:
+Leia o handoff mais recente antes de escrever (sort por nome, não mtime —
+o filename encoda a data e o mtime no container é da ordem de checkout):
 ```bash
-ls -1t docs/SESSION_HANDOFF_*.md | head -2
+ls -1 docs/SESSION_HANDOFF_*.md | sort -r | head -2
 ```
 
 Templates conhecidos:
