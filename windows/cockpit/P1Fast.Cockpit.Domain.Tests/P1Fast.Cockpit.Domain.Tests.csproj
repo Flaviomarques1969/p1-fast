@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\P1Fast.Cockpit.Domain\P1Fast.Cockpit.Domain.csproj" />
+    <ProjectReference Include="..\P1Fast.Cockpit.T4000LiveDemo\P1Fast.Cockpit.T4000LiveDemo.csproj" />
   </ItemGroup>
 
 </Project>
