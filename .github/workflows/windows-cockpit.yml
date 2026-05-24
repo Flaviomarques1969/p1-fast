@@ -5,19 +5,11 @@ name: windows-cockpit
 # camada XAML/WinUI 3 entrar (próxima fase), aí sim precisa runner
 # windows-latest. Roda em ubuntu-latest pra economizar minutos.
 #
-# Trigger:
-#   - PRs que tocam em windows/cockpit/** ou no próprio workflow (CI normal).
-#   - Push pra main (necessário pro job t4000-capture-release publicar
-#     rolling release pública com link estável).
+# Trigger: PRs que tocam em windows/cockpit/** ou no próprio workflow.
 
 on:
   pull_request:
     branches: [main]
-  push:
-    branches: [main]
-    paths:
-      - 'windows/cockpit/**'
-      - '.github/workflows/windows-cockpit.yml'
 
 concurrency:
   group: windows-cockpit-${{ github.ref }}
@@ -34,6 +26,7 @@ jobs:
       domain: ${{ steps.filter.outputs.domain }}
       ui: ${{ steps.filter.outputs.ui }}
       capture: ${{ steps.filter.outputs.capture }}
+      livedemo: ${{ steps.filter.outputs.livedemo }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -53,6 +46,10 @@ jobs:
               - '.github/workflows/windows-cockpit.yml'
             capture:
               - 'windows/cockpit/P1Fast.Cockpit.T4000Capture/**'
+              - 'windows/cockpit/P1Fast.Cockpit.Domain/**'
+              - '.github/workflows/windows-cockpit.yml'
+            livedemo:
+              - 'windows/cockpit/P1Fast.Cockpit.T4000LiveDemo/**'
               - 'windows/cockpit/P1Fast.Cockpit.Domain/**'
               - '.github/workflows/windows-cockpit.yml'
 
@@ -258,53 +255,49 @@ jobs:
           path: dist/t4000-capture/
           retention-days: 14
 
-  # ── Capture tool rolling release ──
-  # Quando merge em main, atualiza GitHub Release com tag rolante
-  # "t4000-capture-latest" anexando o p1fast-t4000-capture.exe. Dá ao
-  # Flávio um link público estável pra baixar no Edge do notebook sem
-  # precisar fazer login no GitHub Actions:
-  #
-  #   https://github.com/Flaviomarques1969/p1-fast/releases/download/
-  #     t4000-capture-latest/p1fast-t4000-capture.exe
-  #
-  # Roda só em push pra main (não em PR), só quando o código de captura
-  # mudou. O .exe NÃO é assinado — Windows SmartScreen vai pedir
-  # confirmação no primeiro uso.
-  t4000-capture-release:
-    needs: [changes, t4000-capture-publish]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.capture == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
+  # ── Live demo publish ──
+  # Empacota o p1fast-t4000-live-demo.exe (single-file, self-contained):
+  # programinha que roda no notebook, simula a Injepro T4000 cospindo dados
+  # e mostra o painel reagindo em tempo real — sem precisar plugar no carro.
+  # Mesmo padrão da capture tool (win-x64, self-contained, artifact 14d).
+  t4000-live-demo-publish:
+    needs: changes
+    if: needs.changes.outputs.livedemo == 'true'
+    runs-on: windows-latest
     steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
+      - name: Checkout
+        uses: actions/checkout@v5
         with:
-          name: p1fast-t4000-capture-${{ github.sha }}
-          path: dist/t4000-capture
+          submodules: false
 
-      - name: Update rolling release
-        uses: softprops/action-gh-release@v2
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
         with:
-          tag_name: t4000-capture-latest
-          name: T4000 Capture — Latest build
-          body: |
-            Single-file Windows `.exe` pra capturar o stream raw da central
-            Injepro T4000 via USB serial no notebook do carro.
+          dotnet-version: '8.0.x'
 
-            **Como usar:**
-            1. Liga o carro com chave em ON (central T4000 alimentada).
-            2. Pluga cabo USB da T4000 no notebook.
-            3. Baixa e executa `p1fast-t4000-capture.exe`.
-            4. Roda 5-10 min com motor em vários regimes.
-            5. Aperta Q ou Esc pra parar.
-            6. Os arquivos `.bin` + `.timing.csv` ficam no diretório atual.
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('windows/cockpit/**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
 
-            **Windows SmartScreen vai avisar** que o `.exe` não é
-            reconhecido (não é assinado digitalmente). Clica em "Mais
-            informações" → "Executar assim mesmo".
+      - name: Publish (single-file, win-x64, self-contained)
+        shell: pwsh
+        run: |
+          dotnet publish windows/cockpit/P1Fast.Cockpit.T4000LiveDemo/P1Fast.Cockpit.T4000LiveDemo.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:DebugType=embedded `
+            --output dist/t4000-live-demo
 
-            Build automatizado de cada merge em `main` que toca o código
-            de captura. Commit: `${{ github.sha }}`.
-          files: dist/t4000-capture/p1fast-t4000-capture.exe
-          make_latest: false
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: p1fast-t4000-live-demo-${{ github.sha }}
+          path: dist/t4000-live-demo/
+          retention-days: 14
