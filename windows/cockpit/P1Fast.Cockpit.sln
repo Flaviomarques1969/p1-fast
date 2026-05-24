@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "P1Fast.Cockpit.Domain", "P1
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "P1Fast.Cockpit.Domain.Tests", "P1Fast.Cockpit.Domain.Tests\P1Fast.Cockpit.Domain.Tests.csproj", "{1E1A3D31-1A11-4F0A-9C5A-1A0C0C0C0002}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "P1Fast.Cockpit.T4000LiveDemo", "P1Fast.Cockpit.T4000LiveDemo\P1Fast.Cockpit.T4000LiveDemo.csproj", "{1E1A3D31-1A11-4F0A-9C5A-1A0C0C0C0003}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,5 +22,9 @@ Global
 		{1E1A3D31-1A11-4F0A-9C5A-1A0C0C0C0002}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1E1A3D31-1A11-4F0A-9C5A-1A0C0C0C0002}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1E1A3D31-1A11-4F0A-9C5A-1A0C0C0C0002}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E1A3D31-1A11-4F0A-9C5A-1A0C0C0C0003}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E1A3D31-1A11-4F0A-9C5A-1A0C0C0C0003}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E1A3D31-1A11-4F0A-9C5A-1A0C0C0C0003}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E1A3D31-1A11-4F0A-9C5A-1A0C0C0C0003}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
