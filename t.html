@@ -1,645 +1,317 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>P1 Fast — Teste USB Injepro T4000</title>
+<meta charset="utf-8">
+<title>P1 Fast — Driver T4000 (USB proprietário)</title>
 <style>
-  :root {
-    --bg: #0b0f14;
-    --panel: #131a23;
-    --panel2: #1a232e;
-    --border: #2a3645;
-    --txt: #e8eef5;
-    --txt-dim: #8a99a8;
-    --ok: #4ade80;
-    --warn: #fbbf24;
-    --bad: #ef4444;
-    --accent: #38bdf8;
-    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--txt);
-    min-height: 100vh;
-    padding: 20px;
-  }
-  header {
-    max-width: 1100px;
-    margin: 0 auto 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-  h1 { font-size: 22px; margin: 0; font-weight: 600; }
-  .subtitle { color: var(--txt-dim); font-size: 13px; }
-  .container { max-width: 1100px; margin: 0 auto; }
-  .toolbar {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 18px;
-    flex-wrap: wrap;
-  }
-  button {
-    background: var(--panel2);
-    color: var(--txt);
-    border: 1px solid var(--border);
-    padding: 12px 20px;
-    font-size: 15px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.15s;
-  }
-  button:hover:not(:disabled) { background: #243140; border-color: var(--accent); }
-  button:disabled { opacity: 0.4; cursor: not-allowed; }
-  button.primary {
-    background: var(--accent);
-    color: #001724;
-    border-color: var(--accent);
-    font-weight: 600;
-  }
-  button.primary:hover:not(:disabled) { background: #5dccf8; }
-  button.danger { border-color: var(--bad); color: var(--bad); }
-  .status {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 18px;
-    margin-bottom: 18px;
-    display: flex;
-    gap: 14px;
-    align-items: center;
-    font-size: 14px;
-  }
-  .status-dot {
-    width: 12px; height: 12px; border-radius: 50%;
-    background: var(--txt-dim);
-    flex-shrink: 0;
-  }
-  .status.connected .status-dot { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
-  .status.error .status-dot { background: var(--bad); box-shadow: 0 0 8px var(--bad); }
-  .status.warn .status-dot { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 16px;
-    margin-bottom: 16px;
-  }
-  .card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px 18px;
-  }
-  .card h2 {
-    margin: 0 0 12px;
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--txt-dim);
-    font-weight: 600;
-  }
-  .row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    padding: 6px 0;
-    font-family: var(--mono);
-    font-size: 14px;
-    border-bottom: 1px dashed #1f2937;
-  }
-  .row:last-child { border-bottom: none; }
-  .label { color: var(--txt-dim); }
-  .value { color: var(--txt); font-weight: 600; }
-  .value.big { font-size: 22px; color: var(--accent); }
-  .value.ok { color: var(--ok); }
-  .value.warn { color: var(--warn); }
-  .value.bad { color: var(--bad); }
-  .log {
-    background: #04080c;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--txt-dim);
-    max-height: 220px;
-    overflow-y: auto;
-    white-space: pre-wrap;
-    line-height: 1.5;
-  }
-  .log .ok { color: var(--ok); }
-  .log .warn { color: var(--warn); }
-  .log .bad { color: var(--bad); }
-  .alert {
-    background: #2d1a1a;
-    border: 1px solid var(--bad);
-    border-radius: 8px;
-    padding: 12px 16px;
-    margin-bottom: 16px;
-    color: #fee2e2;
-    font-size: 14px;
-    line-height: 1.5;
-  }
-  .alert.warn { background: #2d2a1a; border-color: var(--warn); color: #fef3c7; }
-  .alert.info { background: #0e1f2c; border-color: var(--accent); color: #cae9f7; }
-  .alert strong { display: block; margin-bottom: 4px; }
-  code { font-family: var(--mono); background: #1f2937; padding: 2px 6px; border-radius: 4px; }
+  body { font-family: -apple-system, "Segoe UI", sans-serif; background:#0b0f14; color:#e8eef5; margin:0; padding:20px; font-size:15px; }
+  h1 { font-size:20px; margin:0 0 6px; }
+  .sub { color:#8a99a8; font-size:13px; margin-bottom:18px; }
+  .toolbar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+  button { background:#1a232e; color:#e8eef5; border:1px solid #2a3645; padding:12px 18px; font-size:15px; border-radius:8px; cursor:pointer; font-weight:500; }
+  button:hover:not(:disabled) { background:#243140; }
+  button:disabled { opacity:0.4; cursor:not-allowed; }
+  button.primary { background:#38bdf8; color:#001724; border-color:#38bdf8; font-weight:700; }
+  .card { background:#131a23; border:1px solid #2a3645; border-radius:10px; padding:16px 18px; margin-bottom:14px; }
+  .card h2 { font-size:13px; text-transform:uppercase; letter-spacing:0.5px; color:#8a99a8; margin:0 0 12px; font-weight:600; }
+  .row { display:flex; justify-content:space-between; padding:5px 0; font-family:ui-monospace,Consolas,monospace; font-size:14px; border-bottom:1px dashed #1f2937; }
+  .row:last-child { border-bottom:none; }
+  .lbl { color:#8a99a8; }
+  .val { font-weight:600; }
+  .ok { color:#4ade80; }
+  .warn { color:#fbbf24; }
+  .bad { color:#ef4444; }
+  .log { background:#04080c; border:1px solid #2a3645; border-radius:8px; padding:12px; font-family:ui-monospace,Consolas,monospace; font-size:12px; max-height:280px; overflow-y:auto; white-space:pre-wrap; line-height:1.5; color:#cbd5e1; }
+  .log .ok { color:#4ade80; }
+  .log .warn { color:#fbbf24; }
+  .log .bad { color:#ef4444; }
+  .log .info { color:#67e8f9; }
+  .hex { font-family:ui-monospace,Consolas,monospace; word-break:break-all; }
+  .pill { display:inline-block; background:#1f2937; padding:2px 8px; border-radius:10px; font-size:12px; margin-right:6px; }
+  .pill.ok { background:#0f3a23; color:#86efac; }
+  .pill.bad { background:#3a0f0f; color:#fca5a5; }
+  .ver { color:#fbbf24; font-size:11px; }
 </style>
 </head>
 <body>
 
-<header>
-  <div>
-    <h1>P1 Fast — Teste USB Injepro T4000</h1>
-    <div class="subtitle">Diagnóstico ao vivo do barramento CAN via porta USB do notebook</div>
-  </div>
-  <div class="subtitle" id="clock">--:--:--</div>
-</header>
+<h1>P1 Fast — Driver T4000 (USB proprietário)</h1>
+<div class="sub">
+  Web Serial não funciona porque o cabo da T4000 não expõe porta COM. Esta página usa <b>WebUSB</b> e <b>WebHID</b>, que falam direto com dispositivos USB custom.
+  <span class="ver">v2 — 2026-05-24</span>
+</div>
 
-<div class="container">
+<div class="card">
+  <h2>Suporte do browser</h2>
+  <div class="row"><span class="lbl">WebUSB (<code>navigator.usb</code>)</span><span class="val" id="supUsb">—</span></div>
+  <div class="row"><span class="lbl">WebHID (<code>navigator.hid</code>)</span><span class="val" id="supHid">—</span></div>
+</div>
 
-  <div id="alertBrowser" class="alert" style="display:none;">
-    <strong>Browser não compatível</strong>
-    Este teste usa <code>Web Serial API</code>, disponível só no <strong>Chrome</strong> ou <strong>Edge</strong> (versão 89 ou mais nova) no Windows.
-    Safari e Firefox não suportam. Se você está no Edge ou Chrome e mesmo assim aparece este aviso, abra <code>chrome://flags/#enable-experimental-web-platform-features</code> e ative.
-  </div>
+<div class="toolbar">
+  <button id="btnUsb" class="primary">1) Conectar via WebUSB</button>
+  <button id="btnHid">2) Conectar via WebHID</button>
+  <button id="btnDisc" disabled>Desconectar</button>
+  <button id="btnDl" disabled>Baixar log .bin</button>
+</div>
 
-  <div class="alert info" id="alertHelp">
-    <strong>Como usar</strong>
-    1. Liga o carro com chave em <strong>ON</strong> (a central T4000 precisa estar alimentada — não basta "Acessórios").<br>
-    2. Confirma que o cabo USB da T4000 está plugado no notebook.<br>
-    3. Clica em <strong>Conectar à T4000</strong>, escolhe a porta na janela do Chrome e autoriza.<br>
-    4. Olha os números abaixo. Se ficarem mexendo, a USB transmite o protocolo CAN. Se ficarem em zero, a USB é só pra o software Injepro T (configuração) — vai precisar de adaptador USB→CAN.
-  </div>
+<div class="card">
+  <h2>Dispositivo conectado</h2>
+  <div class="row"><span class="lbl">Status</span><span class="val" id="dStatus">aguardando</span></div>
+  <div class="row"><span class="lbl">VID:PID</span><span class="val" id="dVidPid">—</span></div>
+  <div class="row"><span class="lbl">Fabricante</span><span class="val" id="dMfg">—</span></div>
+  <div class="row"><span class="lbl">Produto</span><span class="val" id="dProd">—</span></div>
+  <div class="row"><span class="lbl">Serial</span><span class="val" id="dSer">—</span></div>
+  <div class="row"><span class="lbl">Classe USB</span><span class="val" id="dClass">—</span></div>
+  <div class="row"><span class="lbl">API usada</span><span class="val" id="dApi">—</span></div>
+</div>
 
-  <div class="toolbar">
-    <button id="btnConnect" class="primary">Conectar à T4000</button>
-    <button id="btnDisconnect" class="danger" disabled>Desconectar</button>
-    <button id="btnDownload" disabled>Baixar log .bin</button>
-    <button id="btnClear">Limpar log</button>
-  </div>
+<div class="card">
+  <h2>Tráfego de dados</h2>
+  <div class="row"><span class="lbl">Bytes recebidos (total)</span><span class="val" id="bytesTot">0</span></div>
+  <div class="row"><span class="lbl">Bytes/segundo (atual)</span><span class="val ok" id="bytesSec">0</span></div>
+  <div class="row"><span class="lbl">Últimos 32 bytes (hex)</span><span class="val hex" id="lastHex">—</span></div>
+  <div class="row"><span class="lbl">Sentinelas Injepro P4/P5</span><span class="val" id="sentinels">0 / 0</span></div>
+</div>
 
-  <div id="status" class="status">
-    <div class="status-dot"></div>
-    <div id="statusText">Desconectado — clique em "Conectar à T4000" pra começar.</div>
-  </div>
-
-  <div class="grid">
-    <div class="card">
-      <h2>Motor</h2>
-      <div class="row"><span class="label">RPM</span><span class="value big" id="vRpm">—</span></div>
-      <div class="row"><span class="label">Marcha</span><span class="value" id="vMarcha">—</span></div>
-      <div class="row"><span class="label">TPS</span><span class="value" id="vTps">—</span></div>
-      <div class="row"><span class="label">MAP</span><span class="value" id="vMap">—</span></div>
-      <div class="row"><span class="label">Lambda (λ)</span><span class="value" id="vLambda">—</span></div>
-    </div>
-
-    <div class="card">
-      <h2>Temperaturas</h2>
-      <div class="row"><span class="label">Água</span><span class="value" id="vWaterTemp">—</span></div>
-      <div class="row"><span class="label">Óleo</span><span class="value" id="vOilTemp">—</span></div>
-      <div class="row"><span class="label">Ar admissão</span><span class="value" id="vAirTemp">—</span></div>
-      <div class="row"><span class="label">Combustível</span><span class="value" id="vFuelTemp">—</span></div>
-      <div class="row"><span class="label">EGT (escape)</span><span class="value" id="vEgt">—</span></div>
-    </div>
-
-    <div class="card">
-      <h2>Pressões & Elétrica</h2>
-      <div class="row"><span class="label">Pressão óleo</span><span class="value" id="vOilPress">—</span></div>
-      <div class="row"><span class="label">Pressão combustível</span><span class="value" id="vFuelPress">—</span></div>
-      <div class="row"><span class="label">Bateria</span><span class="value" id="vBattery">—</span></div>
-      <div class="row"><span class="label">Velocidade</span><span class="value" id="vSpeed">—</span></div>
-      <div class="row"><span class="label">Erro ECU (bits)</span><span class="value" id="vEcuError">—</span></div>
-    </div>
-
-    <div class="card">
-      <h2>Saúde da conexão</h2>
-      <div class="row"><span class="label">Bytes recebidos</span><span class="value" id="vBytes">0</span></div>
-      <div class="row"><span class="label">Taxa (bytes/s)</span><span class="value" id="vBps">0</span></div>
-      <div class="row"><span class="label">Ciclos OK</span><span class="value ok" id="vCyclesOk">0</span></div>
-      <div class="row"><span class="label">Ciclos com erro</span><span class="value bad" id="vCyclesBad">0</span></div>
-      <div class="row"><span class="label">Sentinelas P4 / P5</span><span class="value" id="vSentinels">0 / 0</span></div>
-    </div>
-  </div>
-
-  <div class="card" style="margin-bottom:16px;">
-    <h2>Diagnóstico</h2>
-    <div id="logArea" class="log">(aguardando conexão…)</div>
-  </div>
-
-  <div class="alert warn">
-    <strong>Se zero bytes chegarem por 30 segundos</strong>
-    A porta USB da T4000 provavelmente é só pra o <em>Injepro T Software</em> (programa de configuração da Injepro) e não transmite o stream CAN ao vivo. Nesse caso, você precisa de um adaptador <strong>USB→CAN</strong> ligado no chicote do carro (PCAN-USB, Kvaser, CANable, etc.). Manda print desta tela pro Claude e a gente vê o próximo passo.
-  </div>
-
+<div class="card">
+  <h2>Log</h2>
+  <div class="log" id="log">(aguardando ação…)</div>
 </div>
 
 <script>
 'use strict';
 
-// ─── Parser do protocolo CAN da Injepro T4000 ───
-// Cópia byte-for-byte de src/telemetry/t4000-packet-parser.js
-// Spec: docs/hardware/T4000_CAN_SPEC.md (validada contra PDF oficial 2026-04-24)
+const $ = id => document.getElementById(id);
 
-const T4000_BYTES_PER_PACKET = 8;
-const T4000_P4_FIXED_TAIL = [0x1E, 0xFC];
-const T4000_P5_FIXED_HEAD = [0xFB, 0xFA];
-const T4000_EGT_MAX_C = 1500;
-
-function u16BE(b0, b1) { return ((b0 & 0xFF) << 8) | (b1 & 0xFF); }
-
-function bytesEq(arr, expected) {
-  if (arr.length !== expected.length) return false;
-  for (let i = 0; i < expected.length; i++) {
-    if ((arr[i] & 0xFF) !== expected[i]) return false;
-  }
-  return true;
-}
-
-function parsePacket1(b) { return {
-  rpm: u16BE(b[0], b[1]),
-  speedKmh: u16BE(b[2], b[3]) / 10,
-  oilPressBar: u16BE(b[4], b[5]) / 10,
-  oilTempC: u16BE(b[6], b[7]) / 10,
-}; }
-function parsePacket2(b) { return {
-  waterTempC: u16BE(b[0], b[1]) / 10,
-  fuelPressBar: u16BE(b[2], b[3]) / 10,
-  batteryV: u16BE(b[4], b[5]) / 10,
-  tpsPct: u16BE(b[6], b[7]) / 10,
-}; }
-function parsePacket3(b) {
-  const egtRaw = u16BE(b[4], b[5]);
-  return {
-    mapBar: u16BE(b[0], b[1]) / 100,
-    airTempC: u16BE(b[2], b[3]) / 10,
-    egtC: egtRaw,
-    egtOutOfRange: egtRaw > T4000_EGT_MAX_C,
-    lambda: u16BE(b[6], b[7]) / 100,
-  };
-}
-function parsePacket4(b) {
-  if (!bytesEq([b[6], b[7]], T4000_P4_FIXED_TAIL)) {
-    throw new Error('p4 cauda fixa errada');
-  }
-  return {
-    fuelTempC: u16BE(b[0], b[1]) / 10,
-    marcha: u16BE(b[2], b[3]),
-    ecuErrorBits: u16BE(b[4], b[5]),
-  };
-}
-function parsePacket5(b) {
-  if (!bytesEq([b[0], b[1]], T4000_P5_FIXED_HEAD)) {
-    throw new Error('p5 cabeça fixa errada');
-  }
-  return { checksum: b[7] & 0xFF };
-}
-
-function identifyPacketType(b) {
-  if (bytesEq([b[6], b[7]], T4000_P4_FIXED_TAIL)) return 4;
-  if (bytesEq([b[0], b[1]], T4000_P5_FIXED_HEAD)) return 5;
-  return null;
-}
-
-function computeChecksum(p1, p2, p3, p4, p5) {
-  let sum = 0;
-  for (const pkt of [p1, p2, p3, p4]) {
-    for (let i = 0; i < T4000_BYTES_PER_PACKET; i++) sum += pkt[i] & 0xFF;
-  }
-  for (let i = 0; i < T4000_BYTES_PER_PACKET - 1; i++) sum += p5[i] & 0xFF;
-  return sum % 256;
-}
-
-function parseCycle(p1, p2, p3, p4, p5) {
-  const f1 = parsePacket1(p1);
-  const f2 = parsePacket2(p2);
-  const f3 = parsePacket3(p3);
-  const f4 = parsePacket4(p4);
-  parsePacket5(p5);
-  const expected = computeChecksum(p1, p2, p3, p4, p5);
-  const got = p5[7] & 0xFF;
-  return { ok: expected === got, sample: { ...f1, ...f2, ...f3, ...f4 } };
-}
-
-function createPacketFeeder(onCycle, onResync) {
-  let buf = [null, null, null, null, null];
-  let nextSlot = 0;
-  function reset(reason) {
-    buf = [null, null, null, null, null];
-    nextSlot = 0;
-    if (reason && onResync) onResync(reason);
-  }
-  function feed(bytes) {
-    const t = identifyPacketType(bytes);
-    if (t === 4) {
-      if (nextSlot !== 3) { reset('P4 chegou em slot ' + nextSlot); return; }
-      buf[3] = bytes; nextSlot = 4; return;
-    }
-    if (t === 5) {
-      if (nextSlot !== 4) { reset('P5 chegou em slot ' + nextSlot); return; }
-      buf[4] = bytes; nextSlot = 5;
-      try {
-        const result = parseCycle(buf[0], buf[1], buf[2], buf[3], buf[4]);
-        onCycle(result);
-      } catch (e) {
-        onCycle({ ok: false, sample: null, error: e.message });
-      }
-      reset();
-      return;
-    }
-    if (nextSlot >= 3) { reset('pacote ambíguo em slot ' + nextSlot); return; }
-    buf[nextSlot] = bytes; nextSlot++;
-  }
-  return { feed, reset };
-}
-
-// ─── Estado da app ───
-
-const state = {
-  port: null,
-  reader: null,
-  reading: false,
-  pending: [],
-  capturedBytes: [],
-  feeder: null,
-  bytesTotal: 0,
-  bytesLastSec: 0,
-  bytesAtLastTick: 0,
-  cyclesOk: 0,
-  cyclesBad: 0,
-  sentinelsP4: 0,
-  sentinelsP5: 0,
-  lastByte: null,
-  lastSample: null,
-  lastByteTime: 0,
-  startedAt: 0,
-};
-
-const $ = (id) => document.getElementById(id);
-
-// ─── UI helpers ───
-
-function logLine(msg, cls) {
-  const el = $('logArea');
-  const time = new Date().toLocaleTimeString('pt-BR');
+function log(msg, cls='') {
+  const el = $('log');
+  const t = new Date().toLocaleTimeString();
   const line = document.createElement('div');
   if (cls) line.className = cls;
-  line.textContent = `[${time}] ${msg}`;
-  if (el.firstChild && el.firstChild.textContent === '(aguardando conexão…)') {
-    el.innerHTML = '';
-  }
+  line.textContent = `[${t}] ${msg}`;
+  if (el.textContent.startsWith('(')) el.innerHTML = '';
   el.appendChild(line);
   el.scrollTop = el.scrollHeight;
 }
 
-function setStatus(text, cls) {
-  $('status').className = 'status' + (cls ? ' ' + cls : '');
-  $('statusText').textContent = text;
+function hex(v, w=2) {
+  return v.toString(16).toUpperCase().padStart(w, '0');
 }
 
-function fmt(v, dec, suffix) {
-  if (v === null || v === undefined || Number.isNaN(v)) return '—';
-  const n = typeof v === 'number' ? v.toFixed(dec ?? 0) : v;
-  return n + (suffix || '');
+function bytesToHex(arr) {
+  return Array.from(arr).map(b => hex(b)).join(' ');
 }
 
-function renderSample(s) {
-  if (!s) return;
-  $('vRpm').textContent = fmt(s.rpm);
-  $('vMarcha').textContent = fmt(s.marcha);
-  $('vTps').textContent = fmt(s.tpsPct, 1, ' %');
-  $('vMap').textContent = fmt(s.mapBar, 2, ' bar');
-  $('vLambda').textContent = fmt(s.lambda, 2);
-  $('vWaterTemp').textContent = fmt(s.waterTempC, 1, ' °C');
-  $('vOilTemp').textContent = fmt(s.oilTempC, 1, ' °C');
-  $('vAirTemp').textContent = fmt(s.airTempC, 1, ' °C');
-  $('vFuelTemp').textContent = fmt(s.fuelTempC, 1, ' °C');
-  $('vEgt').textContent = s.egtOutOfRange ? `${s.egtC} °C (fora de range)` : fmt(s.egtC, 0, ' °C');
-  $('vOilPress').textContent = fmt(s.oilPressBar, 2, ' bar');
-  $('vFuelPress').textContent = fmt(s.fuelPressBar, 2, ' bar');
-  $('vBattery').textContent = fmt(s.batteryV, 1, ' V');
-  $('vSpeed').textContent = fmt(s.speedKmh, 1, ' km/h');
-  const errEl = $('vEcuError');
-  errEl.textContent = '0x' + (s.ecuErrorBits || 0).toString(16).padStart(4, '0');
-  errEl.className = 'value ' + ((s.ecuErrorBits || 0) === 0 ? 'ok' : 'bad');
-}
+// ─── Estado ───────────────────────────────────
+const state = {
+  device: null,
+  api: null,         // 'usb' | 'hid'
+  reading: false,
+  bytesTotal: 0,
+  bytesAtTick: 0,
+  bytesSec: 0,
+  last32: [],
+  capture: [],
+  lastByte: null,
+  s4: 0,
+  s5: 0,
+  iface: null,
+  epIn: null,
+};
 
-function renderHealth() {
-  $('vBytes').textContent = state.bytesTotal.toLocaleString('pt-BR');
-  $('vBps').textContent = state.bytesLastSec.toLocaleString('pt-BR');
-  $('vCyclesOk').textContent = state.cyclesOk.toLocaleString('pt-BR');
-  $('vCyclesBad').textContent = state.cyclesBad.toLocaleString('pt-BR');
-  $('vSentinels').textContent = `${state.sentinelsP4} / ${state.sentinelsP5}`;
-}
+// ─── Suporte ──────────────────────────────────
+$('supUsb').textContent = ('usb' in navigator) ? '✓ disponível' : '✗ não disponível';
+$('supUsb').className = 'val ' + (('usb' in navigator) ? 'ok' : 'bad');
+$('supHid').textContent = ('hid' in navigator) ? '✓ disponível' : '✗ não disponível';
+$('supHid').className = 'val ' + (('hid' in navigator) ? 'ok' : 'bad');
 
-// ─── Loop de leitura ───
+if (!('usb' in navigator)) $('btnUsb').disabled = true;
+if (!('hid' in navigator)) $('btnHid').disabled = true;
 
-function processBytes(bytes) {
-  // Conta sentinelas P4/P5 (mostra sinal de vida mesmo sem ciclo válido)
-  for (let i = 0; i < bytes.length; i++) {
-    const b = bytes[i];
+// ─── Processamento de bytes ───────────────────
+function ingest(bytes) {
+  state.bytesTotal += bytes.length;
+  for (const b of bytes) {
     if (state.lastByte !== null) {
-      if (state.lastByte === T4000_P4_FIXED_TAIL[0] && b === T4000_P4_FIXED_TAIL[1]) state.sentinelsP4++;
-      if (state.lastByte === T4000_P5_FIXED_HEAD[0] && b === T4000_P5_FIXED_HEAD[1]) state.sentinelsP5++;
+      if (state.lastByte === 0x1E && b === 0xFC) state.s4++;
+      if (state.lastByte === 0xFB && b === 0xFA) state.s5++;
     }
     state.lastByte = b;
-    state.capturedBytes.push(b);
-  }
-
-  // Acumula e fatia em pacotes de 8 bytes pro feeder.
-  // NOTA: pela natureza do CAN sobre USB, esperamos pacotes alinhados. Se o stream
-  // for outro protocolo (não-CAN), o feeder ressincroniza por sentinelas.
-  for (let i = 0; i < bytes.length; i++) state.pending.push(bytes[i]);
-
-  while (state.pending.length >= T4000_BYTES_PER_PACKET) {
-    const packet = state.pending.splice(0, T4000_BYTES_PER_PACKET);
-    state.feeder.feed(packet);
+    state.last32.push(b);
+    if (state.last32.length > 32) state.last32.shift();
+    state.capture.push(b);
   }
 }
 
-async function readLoop() {
-  state.reading = true;
+setInterval(() => {
+  state.bytesSec = state.bytesTotal - state.bytesAtTick;
+  state.bytesAtTick = state.bytesTotal;
+  $('bytesTot').textContent = state.bytesTotal.toLocaleString('pt-BR');
+  $('bytesSec').textContent = state.bytesSec.toLocaleString('pt-BR');
+  $('lastHex').textContent = state.last32.length ? bytesToHex(state.last32) : '—';
+  $('sentinels').textContent = `${state.s4} / ${state.s5}`;
+}, 1000);
+
+// ─── WebUSB ───────────────────────────────────
+$('btnUsb').onclick = async () => {
+  if (!('usb' in navigator)) { log('WebUSB não suportado', 'bad'); return; }
+
   try {
-    while (state.reading && state.port && state.port.readable) {
-      state.reader = state.port.readable.getReader();
-      try {
-        while (state.reading) {
-          const { value, done } = await state.reader.read();
-          if (done) { break; }
-          if (value && value.length) {
-            state.bytesTotal += value.length;
-            state.lastByteTime = Date.now();
-            processBytes(value);
+    log('Abrindo janela de seleção USB…', 'info');
+    // Filtros vazios = mostra TUDO. Usuário escolhe.
+    const device = await navigator.usb.requestDevice({ filters: [] });
+
+    log(`Selecionado: VID=${hex(device.vendorId, 4)} PID=${hex(device.productId, 4)}`, 'ok');
+    $('dVidPid').textContent = `${hex(device.vendorId, 4)}:${hex(device.productId, 4)}`;
+    $('dMfg').textContent = device.manufacturerName || '(sem manufacturer)';
+    $('dProd').textContent = device.productName || '(sem product)';
+    $('dSer').textContent = device.serialNumber || '(sem serial)';
+    $('dApi').textContent = 'WebUSB';
+
+    await device.open();
+    log('device.open() OK', 'ok');
+
+    if (device.configuration === null) {
+      log('Sem configuração ativa — selecionando configuração 1…', 'info');
+      await device.selectConfiguration(1);
+    }
+
+    log(`Configuração ${device.configuration.configurationValue} ativa`, 'ok');
+    log(`Interfaces: ${device.configuration.interfaces.length}`, 'info');
+
+    // Mostra TODAS as interfaces/endpoints pra diagnóstico
+    let classInfo = [];
+    let ifaceIdx = -1, epInAddr = null;
+    for (const it of device.configuration.interfaces) {
+      for (const alt of it.alternates) {
+        const cls = `iface ${it.interfaceNumber} alt ${alt.alternateSetting} → class=0x${hex(alt.interfaceClass)} subclass=0x${hex(alt.interfaceSubclass)} protocol=0x${hex(alt.interfaceProtocol)}`;
+        classInfo.push(`0x${hex(alt.interfaceClass)}`);
+        log(cls, 'info');
+        for (const ep of alt.endpoints) {
+          log(`  endpoint addr=0x${hex(ep.endpointNumber|((ep.direction==='in')?0x80:0))} dir=${ep.direction} type=${ep.type} packet=${ep.packetSize}`, 'info');
+          if (ep.direction === 'in' && epInAddr === null) {
+            ifaceIdx = it.interfaceNumber;
+            epInAddr = ep.endpointNumber;
           }
         }
-      } catch (e) {
-        logLine('Erro na leitura: ' + e.message, 'bad');
-      } finally {
-        try { state.reader.releaseLock(); } catch (_) {}
-        state.reader = null;
       }
-      if (!state.reading) break;
     }
-  } catch (e) {
-    logLine('Erro fatal no loop: ' + e.message, 'bad');
-  }
-}
+    $('dClass').textContent = [...new Set(classInfo)].join(', ');
 
-// ─── Eventos ───
-
-async function connect() {
-  try {
-    if (!('serial' in navigator)) {
-      logLine('Browser não suporta Web Serial API.', 'bad');
-      $('alertBrowser').style.display = 'block';
+    if (ifaceIdx < 0 || epInAddr === null) {
+      log('Nenhum endpoint IN encontrado — não dá pra ler', 'bad');
+      $('dStatus').textContent = 'sem endpoint IN'; $('dStatus').className = 'val bad';
       return;
     }
 
-    setStatus('Aguardando seleção de porta…');
-    const port = await navigator.serial.requestPort({});
-
-    setStatus('Abrindo porta…');
-    await port.open({
-      baudRate: 1000000,
-      dataBits: 8,
-      parity: 'none',
-      stopBits: 1,
-      flowControl: 'none',
-    });
-
-    state.port = port;
-    state.startedAt = Date.now();
-    state.bytesTotal = 0;
-    state.bytesLastSec = 0;
-    state.bytesAtLastTick = 0;
-    state.cyclesOk = 0;
-    state.cyclesBad = 0;
-    state.sentinelsP4 = 0;
-    state.sentinelsP5 = 0;
-    state.pending = [];
-    state.capturedBytes = [];
-    state.lastByte = null;
-    state.lastSample = null;
-
-    state.feeder = createPacketFeeder(
-      (cycle) => {
-        if (cycle.ok && cycle.sample) {
-          state.cyclesOk++;
-          state.lastSample = cycle.sample;
-          renderSample(cycle.sample);
-        } else {
-          state.cyclesBad++;
-        }
-      },
-      (reason) => {
-        // resync silencioso — não floodar o log
-      }
-    );
-
-    setStatus('✓ Conectado — lendo da porta USB', 'connected');
-    logLine('Porta aberta. Aguardando bytes…', 'ok');
-    $('btnConnect').disabled = true;
-    $('btnDisconnect').disabled = false;
-    $('btnDownload').disabled = false;
-
-    readLoop();
-  } catch (e) {
-    if (e.name === 'NotFoundError') {
-      setStatus('Nenhuma porta selecionada.', 'warn');
-      logLine('Você cancelou a janela de seleção de porta.', 'warn');
-    } else {
-      setStatus('Erro: ' + e.message, 'error');
-      logLine('Falha ao conectar: ' + e.message, 'bad');
+    log(`Tentando claim da interface ${ifaceIdx} e leitura no endpoint 0x${hex(epInAddr|0x80)}…`, 'info');
+    try {
+      await device.claimInterface(ifaceIdx);
+      log(`claimInterface(${ifaceIdx}) OK`, 'ok');
+    } catch (e) {
+      log(`claimInterface falhou: ${e.message}`, 'bad');
+      $('dStatus').textContent = `claim falhou: ${e.message}`;
+      $('dStatus').className = 'val bad';
+      log('💡 No Windows, dispositivos com driver da Injepro travam a interface. WebUSB precisa do driver WinUSB (via Zadig) ou que o dispositivo seja desconectado do driver original.', 'warn');
+      return;
     }
-  }
-}
 
-async function disconnect() {
+    state.device = device;
+    state.api = 'usb';
+    state.iface = ifaceIdx;
+    state.epIn = epInAddr;
+    $('dStatus').textContent = '✓ lendo via WebUSB'; $('dStatus').className = 'val ok';
+    $('btnUsb').disabled = true; $('btnHid').disabled = true;
+    $('btnDisc').disabled = false; $('btnDl').disabled = false;
+
+    state.reading = true;
+    while (state.reading) {
+      try {
+        const r = await device.transferIn(epInAddr, 256);
+        if (r.status === 'ok' && r.data && r.data.byteLength) {
+          ingest(new Uint8Array(r.data.buffer));
+        } else if (r.status === 'stall') {
+          await device.clearHalt('in', epInAddr);
+          log('endpoint stall — clearHalt', 'warn');
+        }
+      } catch (e) {
+        log(`leitura falhou: ${e.message}`, 'bad');
+        break;
+      }
+    }
+  } catch (e) {
+    if (e.name === 'NotFoundError') log('Você cancelou a seleção', 'warn');
+    else log(`WebUSB erro: ${e.message}`, 'bad');
+  }
+};
+
+// ─── WebHID ───────────────────────────────────
+$('btnHid').onclick = async () => {
+  if (!('hid' in navigator)) { log('WebHID não suportado', 'bad'); return; }
+
+  try {
+    log('Abrindo janela de seleção HID…', 'info');
+    const devices = await navigator.hid.requestDevice({ filters: [] });
+    if (!devices.length) { log('Você cancelou a seleção', 'warn'); return; }
+    const device = devices[0];
+
+    log(`Selecionado: VID=${hex(device.vendorId, 4)} PID=${hex(device.productId, 4)} — ${device.productName}`, 'ok');
+    $('dVidPid').textContent = `${hex(device.vendorId, 4)}:${hex(device.productId, 4)}`;
+    $('dProd').textContent = device.productName || '(sem product)';
+    $('dApi').textContent = 'WebHID';
+    $('dClass').textContent = 'HID';
+
+    await device.open();
+    log('device.open() OK', 'ok');
+
+    state.device = device;
+    state.api = 'hid';
+    $('dStatus').textContent = '✓ lendo via WebHID'; $('dStatus').className = 'val ok';
+    $('btnUsb').disabled = true; $('btnHid').disabled = true;
+    $('btnDisc').disabled = false; $('btnDl').disabled = false;
+
+    device.addEventListener('inputreport', (e) => {
+      const data = new Uint8Array(e.data.buffer);
+      ingest(data);
+    });
+    log('Listener inputreport ligado', 'ok');
+  } catch (e) {
+    log(`WebHID erro: ${e.message}`, 'bad');
+  }
+};
+
+// ─── Desconectar ──────────────────────────────
+$('btnDisc').onclick = async () => {
   state.reading = false;
   try {
-    if (state.reader) {
-      await state.reader.cancel().catch(() => {});
+    if (state.api === 'usb' && state.device) {
+      if (state.iface !== null) await state.device.releaseInterface(state.iface).catch(()=>{});
+      await state.device.close();
+    } else if (state.api === 'hid' && state.device) {
+      await state.device.close();
     }
-  } catch (_) {}
-  try {
-    if (state.port) {
-      await state.port.close();
-    }
-  } catch (e) {
-    logLine('Erro ao fechar: ' + e.message, 'warn');
-  }
-  state.port = null;
-  state.reader = null;
-  setStatus('Desconectado.');
-  logLine('Porta fechada.', 'warn');
-  $('btnConnect').disabled = false;
-  $('btnDisconnect').disabled = true;
-}
+  } catch (e) { log(`close erro: ${e.message}`, 'warn'); }
+  state.device = null; state.api = null;
+  $('dStatus').textContent = 'desconectado'; $('dStatus').className = 'val';
+  $('btnUsb').disabled = !('usb' in navigator);
+  $('btnHid').disabled = !('hid' in navigator);
+  $('btnDisc').disabled = true;
+  log('desconectado', 'warn');
+};
 
-function downloadCapture() {
-  if (!state.capturedBytes.length) {
-    logLine('Nada capturado ainda.', 'warn');
-    return;
-  }
-  const arr = new Uint8Array(state.capturedBytes);
-  const blob = new Blob([arr], { type: 'application/octet-stream' });
+// ─── Baixar log .bin ──────────────────────────
+$('btnDl').onclick = () => {
+  if (!state.capture.length) { log('Nada capturado', 'warn'); return; }
+  const blob = new Blob([new Uint8Array(state.capture)], { type:'application/octet-stream' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  a.href = url;
-  a.download = `t4000-capture-${ts}.bin`;
-  a.click();
-  URL.revokeObjectURL(url);
-  logLine(`Baixado: ${state.capturedBytes.length} bytes`, 'ok');
-}
+  const ts = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+  a.href = url; a.download = `t4000-usb-${ts}.bin`;
+  a.click(); URL.revokeObjectURL(url);
+  log(`baixado: ${state.capture.length} bytes`, 'ok');
+};
 
-function clearLog() {
-  $('logArea').innerHTML = '(log limpo)';
-}
-
-// ─── Tick de 1s ───
-
-setInterval(() => {
-  const now = Date.now();
-  $('clock').textContent = new Date().toLocaleTimeString('pt-BR');
-
-  if (state.port) {
-    state.bytesLastSec = state.bytesTotal - state.bytesAtLastTick;
-    state.bytesAtLastTick = state.bytesTotal;
-    renderHealth();
-
-    // Alerta de "USB silenciosa"
-    const elapsed = (now - state.startedAt) / 1000;
-    if (elapsed > 15 && state.bytesTotal === 0) {
-      setStatus('⚠ 15s sem nenhum byte — USB pode não transmitir o stream CAN', 'warn');
-    } else if (elapsed > 10 && state.bytesTotal > 0 && state.sentinelsP4 === 0 && state.sentinelsP5 === 0) {
-      setStatus('⚠ Bytes chegando, mas sem sentinelas do protocolo CAN da Injepro', 'warn');
-    } else if (state.cyclesOk > 0) {
-      setStatus(`✓ Lendo da T4000 — ${state.cyclesOk} ciclos OK / ${state.cyclesBad} com erro`, 'connected');
-    }
-  }
-}, 1000);
-
-// ─── Wire ───
-
-$('btnConnect').addEventListener('click', connect);
-$('btnDisconnect').addEventListener('click', disconnect);
-$('btnDownload').addEventListener('click', downloadCapture);
-$('btnClear').addEventListener('click', clearLog);
-
-// Check de browser na abertura
-if (!('serial' in navigator)) {
-  $('alertBrowser').style.display = 'block';
-  $('btnConnect').disabled = true;
-}
-
+log('Pronto. Clica em "1) Conectar via WebUSB" primeiro. Se falhar, tenta "2) Conectar via WebHID".', 'info');
 </script>
 </body>
 </html>
