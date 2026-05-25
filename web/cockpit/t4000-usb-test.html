@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>P1 Fast — Driver T4000 (USB proprietário)</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", sans-serif; background:#0b0f14; color:#e8eef5; margin:0; padding:20px; font-size:15px; }
+  h1 { font-size:20px; margin:0 0 6px; }
+  .sub { color:#8a99a8; font-size:13px; margin-bottom:18px; }
+  .toolbar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+  button { background:#1a232e; color:#e8eef5; border:1px solid #2a3645; padding:12px 18px; font-size:15px; border-radius:8px; cursor:pointer; font-weight:500; }
+  button:hover:not(:disabled) { background:#243140; }
+  button:disabled { opacity:0.4; cursor:not-allowed; }
+  button.primary { background:#38bdf8; color:#001724; border-color:#38bdf8; font-weight:700; }
+  .card { background:#131a23; border:1px solid #2a3645; border-radius:10px; padding:16px 18px; margin-bottom:14px; }
+  .card h2 { font-size:13px; text-transform:uppercase; letter-spacing:0.5px; color:#8a99a8; margin:0 0 12px; font-weight:600; }
+  .row { display:flex; justify-content:space-between; padding:5px 0; font-family:ui-monospace,Consolas,monospace; font-size:14px; border-bottom:1px dashed #1f2937; }
+  .row:last-child { border-bottom:none; }
+  .lbl { color:#8a99a8; }
+  .val { font-weight:600; }
+  .ok { color:#4ade80; }
+  .warn { color:#fbbf24; }
+  .bad { color:#ef4444; }
+  .log { background:#04080c; border:1px solid #2a3645; border-radius:8px; padding:12px; font-family:ui-monospace,Consolas,monospace; font-size:12px; max-height:280px; overflow-y:auto; white-space:pre-wrap; line-height:1.5; color:#cbd5e1; }
+  .log .ok { color:#4ade80; }
+  .log .warn { color:#fbbf24; }
+  .log .bad { color:#ef4444; }
+  .log .info { color:#67e8f9; }
+  .hex { font-family:ui-monospace,Consolas,monospace; word-break:break-all; }
+  .pill { display:inline-block; background:#1f2937; padding:2px 8px; border-radius:10px; font-size:12px; margin-right:6px; }
+  .pill.ok { background:#0f3a23; color:#86efac; }
+  .pill.bad { background:#3a0f0f; color:#fca5a5; }
+  .ver { color:#fbbf24; font-size:11px; }
+</style>
+</head>
+<body>
+
+<h1>P1 Fast — Driver T4000 (USB proprietário)</h1>
+<div class="sub">
+  Web Serial não funciona porque o cabo da T4000 não expõe porta COM. Esta página usa <b>WebUSB</b> e <b>WebHID</b>, que falam direto com dispositivos USB custom.
+  <span class="ver">v2 — 2026-05-24</span>
+</div>
+
+<div class="card">
+  <h2>Suporte do browser</h2>
+  <div class="row"><span class="lbl">WebUSB (<code>navigator.usb</code>)</span><span class="val" id="supUsb">—</span></div>
+  <div class="row"><span class="lbl">WebHID (<code>navigator.hid</code>)</span><span class="val" id="supHid">—</span></div>
+</div>
+
+<div class="toolbar">
+  <button id="btnUsb" class="primary">1) Conectar via WebUSB</button>
+  <button id="btnHid">2) Conectar via WebHID</button>
+  <button id="btnDisc" disabled>Desconectar</button>
+  <button id="btnDl" disabled>Baixar log .bin</button>
+</div>
+
+<div class="card">
+  <h2>Dispositivo conectado</h2>
+  <div class="row"><span class="lbl">Status</span><span class="val" id="dStatus">aguardando</span></div>
+  <div class="row"><span class="lbl">VID:PID</span><span class="val" id="dVidPid">—</span></div>
+  <div class="row"><span class="lbl">Fabricante</span><span class="val" id="dMfg">—</span></div>
+  <div class="row"><span class="lbl">Produto</span><span class="val" id="dProd">—</span></div>
+  <div class="row"><span class="lbl">Serial</span><span class="val" id="dSer">—</span></div>
+  <div class="row"><span class="lbl">Classe USB</span><span class="val" id="dClass">—</span></div>
+  <div class="row"><span class="lbl">API usada</span><span class="val" id="dApi">—</span></div>
+</div>
+
+<div class="card">
+  <h2>Tráfego de dados</h2>
+  <div class="row"><span class="lbl">Bytes recebidos (total)</span><span class="val" id="bytesTot">0</span></div>
+  <div class="row"><span class="lbl">Bytes/segundo (atual)</span><span class="val ok" id="bytesSec">0</span></div>
+  <div class="row"><span class="lbl">Últimos 32 bytes (hex)</span><span class="val hex" id="lastHex">—</span></div>
+  <div class="row"><span class="lbl">Sentinelas Injepro P4/P5</span><span class="val" id="sentinels">0 / 0</span></div>
+</div>
+
+<div class="card">
+  <h2>Log</h2>
+  <div class="log" id="log">(aguardando ação…)</div>
+</div>
+
+<script>
+'use strict';
+
+const $ = id => document.getElementById(id);
+
+function log(msg, cls='') {
+  const el = $('log');
+  const t = new Date().toLocaleTimeString();
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = `[${t}] ${msg}`;
+  if (el.textContent.startsWith('(')) el.innerHTML = '';
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+function hex(v, w=2) {
+  return v.toString(16).toUpperCase().padStart(w, '0');
+}
+
+function bytesToHex(arr) {
+  return Array.from(arr).map(b => hex(b)).join(' ');
+}
+
+// ─── Estado ───────────────────────────────────
+const state = {
+  device: null,
+  api: null,         // 'usb' | 'hid'
+  reading: false,
+  bytesTotal: 0,
+  bytesAtTick: 0,
+  bytesSec: 0,
+  last32: [],
+  capture: [],
+  lastByte: null,
+  s4: 0,
+  s5: 0,
+  iface: null,
+  epIn: null,
+};
+
+// ─── Suporte ──────────────────────────────────
+$('supUsb').textContent = ('usb' in navigator) ? '✓ disponível' : '✗ não disponível';
+$('supUsb').className = 'val ' + (('usb' in navigator) ? 'ok' : 'bad');
+$('supHid').textContent = ('hid' in navigator) ? '✓ disponível' : '✗ não disponível';
+$('supHid').className = 'val ' + (('hid' in navigator) ? 'ok' : 'bad');
+
+if (!('usb' in navigator)) $('btnUsb').disabled = true;
+if (!('hid' in navigator)) $('btnHid').disabled = true;
+
+// ─── Processamento de bytes ───────────────────
+function ingest(bytes) {
+  state.bytesTotal += bytes.length;
+  for (const b of bytes) {
+    if (state.lastByte !== null) {
+      if (state.lastByte === 0x1E && b === 0xFC) state.s4++;
+      if (state.lastByte === 0xFB && b === 0xFA) state.s5++;
+    }
+    state.lastByte = b;
+    state.last32.push(b);
+    if (state.last32.length > 32) state.last32.shift();
+    state.capture.push(b);
+  }
+}
+
+setInterval(() => {
+  state.bytesSec = state.bytesTotal - state.bytesAtTick;
+  state.bytesAtTick = state.bytesTotal;
+  $('bytesTot').textContent = state.bytesTotal.toLocaleString('pt-BR');
+  $('bytesSec').textContent = state.bytesSec.toLocaleString('pt-BR');
+  $('lastHex').textContent = state.last32.length ? bytesToHex(state.last32) : '—';
+  $('sentinels').textContent = `${state.s4} / ${state.s5}`;
+}, 1000);
+
+// ─── WebUSB ───────────────────────────────────
+$('btnUsb').onclick = async () => {
+  if (!('usb' in navigator)) { log('WebUSB não suportado', 'bad'); return; }
+
+  try {
+    log('Abrindo janela de seleção USB…', 'info');
+    // Filtros vazios = mostra TUDO. Usuário escolhe.
+    const device = await navigator.usb.requestDevice({ filters: [] });
+
+    log(`Selecionado: VID=${hex(device.vendorId, 4)} PID=${hex(device.productId, 4)}`, 'ok');
+    $('dVidPid').textContent = `${hex(device.vendorId, 4)}:${hex(device.productId, 4)}`;
+    $('dMfg').textContent = device.manufacturerName || '(sem manufacturer)';
+    $('dProd').textContent = device.productName || '(sem product)';
+    $('dSer').textContent = device.serialNumber || '(sem serial)';
+    $('dApi').textContent = 'WebUSB';
+
+    await device.open();
+    log('device.open() OK', 'ok');
+
+    if (device.configuration === null) {
+      log('Sem configuração ativa — selecionando configuração 1…', 'info');
+      await device.selectConfiguration(1);
+    }
+
+    log(`Configuração ${device.configuration.configurationValue} ativa`, 'ok');
+    log(`Interfaces: ${device.configuration.interfaces.length}`, 'info');
+
+    // Mostra TODAS as interfaces/endpoints pra diagnóstico
+    let classInfo = [];
+    let ifaceIdx = -1, epInAddr = null;
+    for (const it of device.configuration.interfaces) {
+      for (const alt of it.alternates) {
+        const cls = `iface ${it.interfaceNumber} alt ${alt.alternateSetting} → class=0x${hex(alt.interfaceClass)} subclass=0x${hex(alt.interfaceSubclass)} protocol=0x${hex(alt.interfaceProtocol)}`;
+        classInfo.push(`0x${hex(alt.interfaceClass)}`);
+        log(cls, 'info');
+        for (const ep of alt.endpoints) {
+          log(`  endpoint addr=0x${hex(ep.endpointNumber|((ep.direction==='in')?0x80:0))} dir=${ep.direction} type=${ep.type} packet=${ep.packetSize}`, 'info');
+          if (ep.direction === 'in' && epInAddr === null) {
+            ifaceIdx = it.interfaceNumber;
+            epInAddr = ep.endpointNumber;
+          }
+        }
+      }
+    }
+    $('dClass').textContent = [...new Set(classInfo)].join(', ');
+
+    if (ifaceIdx < 0 || epInAddr === null) {
+      log('Nenhum endpoint IN encontrado — não dá pra ler', 'bad');
+      $('dStatus').textContent = 'sem endpoint IN'; $('dStatus').className = 'val bad';
+      return;
+    }
+
+    log(`Tentando claim da interface ${ifaceIdx} e leitura no endpoint 0x${hex(epInAddr|0x80)}…`, 'info');
+    try {
+      await device.claimInterface(ifaceIdx);
+      log(`claimInterface(${ifaceIdx}) OK`, 'ok');
+    } catch (e) {
+      log(`claimInterface falhou: ${e.message}`, 'bad');
+      $('dStatus').textContent = `claim falhou: ${e.message}`;
+      $('dStatus').className = 'val bad';
+      log('💡 No Windows, dispositivos com driver da Injepro travam a interface. WebUSB precisa do driver WinUSB (via Zadig) ou que o dispositivo seja desconectado do driver original.', 'warn');
+      return;
+    }
+
+    state.device = device;
+    state.api = 'usb';
+    state.iface = ifaceIdx;
+    state.epIn = epInAddr;
+    $('dStatus').textContent = '✓ lendo via WebUSB'; $('dStatus').className = 'val ok';
+    $('btnUsb').disabled = true; $('btnHid').disabled = true;
+    $('btnDisc').disabled = false; $('btnDl').disabled = false;
+
+    state.reading = true;
+    while (state.reading) {
+      try {
+        const r = await device.transferIn(epInAddr, 256);
+        if (r.status === 'ok' && r.data && r.data.byteLength) {
+          ingest(new Uint8Array(r.data.buffer));
+        } else if (r.status === 'stall') {
+          await device.clearHalt('in', epInAddr);
+          log('endpoint stall — clearHalt', 'warn');
+        }
+      } catch (e) {
+        log(`leitura falhou: ${e.message}`, 'bad');
+        break;
+      }
+    }
+  } catch (e) {
+    if (e.name === 'NotFoundError') log('Você cancelou a seleção', 'warn');
+    else log(`WebUSB erro: ${e.message}`, 'bad');
+  }
+};
+
+// ─── WebHID ───────────────────────────────────
+$('btnHid').onclick = async () => {
+  if (!('hid' in navigator)) { log('WebHID não suportado', 'bad'); return; }
+
+  try {
+    log('Abrindo janela de seleção HID…', 'info');
+    const devices = await navigator.hid.requestDevice({ filters: [] });
+    if (!devices.length) { log('Você cancelou a seleção', 'warn'); return; }
+    const device = devices[0];
+
+    log(`Selecionado: VID=${hex(device.vendorId, 4)} PID=${hex(device.productId, 4)} — ${device.productName}`, 'ok');
+    $('dVidPid').textContent = `${hex(device.vendorId, 4)}:${hex(device.productId, 4)}`;
+    $('dProd').textContent = device.productName || '(sem product)';
+    $('dApi').textContent = 'WebHID';
+    $('dClass').textContent = 'HID';
+
+    await device.open();
+    log('device.open() OK', 'ok');
+
+    state.device = device;
+    state.api = 'hid';
+    $('dStatus').textContent = '✓ lendo via WebHID'; $('dStatus').className = 'val ok';
+    $('btnUsb').disabled = true; $('btnHid').disabled = true;
+    $('btnDisc').disabled = false; $('btnDl').disabled = false;
+
+    device.addEventListener('inputreport', (e) => {
+      const data = new Uint8Array(e.data.buffer);
+      ingest(data);
+    });
+    log('Listener inputreport ligado', 'ok');
+  } catch (e) {
+    log(`WebHID erro: ${e.message}`, 'bad');
+  }
+};
+
+// ─── Desconectar ──────────────────────────────
+$('btnDisc').onclick = async () => {
+  state.reading = false;
+  try {
+    if (state.api === 'usb' && state.device) {
+      if (state.iface !== null) await state.device.releaseInterface(state.iface).catch(()=>{});
+      await state.device.close();
+    } else if (state.api === 'hid' && state.device) {
+      await state.device.close();
+    }
+  } catch (e) { log(`close erro: ${e.message}`, 'warn'); }
+  state.device = null; state.api = null;
+  $('dStatus').textContent = 'desconectado'; $('dStatus').className = 'val';
+  $('btnUsb').disabled = !('usb' in navigator);
+  $('btnHid').disabled = !('hid' in navigator);
+  $('btnDisc').disabled = true;
+  log('desconectado', 'warn');
+};
+
+// ─── Baixar log .bin ──────────────────────────
+$('btnDl').onclick = () => {
+  if (!state.capture.length) { log('Nada capturado', 'warn'); return; }
+  const blob = new Blob([new Uint8Array(state.capture)], { type:'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const ts = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+  a.href = url; a.download = `t4000-usb-${ts}.bin`;
+  a.click(); URL.revokeObjectURL(url);
+  log(`baixado: ${state.capture.length} bytes`, 'ok');
+};
+
+log('Pronto. Clica em "1) Conectar via WebUSB" primeiro. Se falhar, tenta "2) Conectar via WebHID".', 'info');
+</script>
+</body>
+</html>
