@@ -1,94 +1,102 @@
-# Continuidade — ligar a T4000 no notebook (handoff pro celular)
+# Continuidade — integrar T4000 no carro (handoff atualizado 2026-05-25 noite)
 
-> **Pra mim, Claude, em qualquer canal (celular Claude Code, iMac, novo /clear):**
-> Este documento existe pra continuar UMA tarefa específica: fazer o software
-> do P1 Fast efetivamente ler a Injepro T4000 quando o Flávio plugar o
-> notebook Samsung Windows no carro. Leia este documento PRIMEIRO. Depois
-> `STATUS.md`. Depois execute. Não pergunte ao Flávio coisa que está aqui.
+> **Para qualquer Claude que continuar esta tarefa (celular, novo iMac, novo /clear):**
+> Este documento é a fonte da verdade. Leia ele PRIMEIRO. Depois `STATUS.md`. Não pergunte ao Flávio o que está escrito aqui. Não proponha caminhos já descartados (veja seção "Caminhos JÁ descartados — não reabrir").
 
-## Contexto que já está fechado (não reabrir)
+## Estado atual (25/05 noite)
 
-- **Notebook**: Samsung com Windows. Já é do Flávio. Confirmado em `docs/audit-2026-05-10/respostas-flavio.json` linha "sync".
-- **Carro**: Celta "Bubi", motor Onix 1.4 preparado, central Injepro T4000 com USB traseiro nativo + saída CAN 1 Mbit/s + Bluetooth.
-- **Plataforma do painel do piloto na pista**: Windows nativo, .NET 8 + WinUI 3 (ADR-023 amendments 4 e 5). Decidido. Não reabrir.
-- **Estado do "cérebro"** (`windows/cockpit/P1Fast.Cockpit.Domain/`): pronto, 129 testes automáticos verdes em sistema de checagem contínua (GitHub Actions). Parser dos 5 pacotes, validação de soma de verificação, simulador, leitor com porta abstrata, ponte com painel, alertas críticos.
-- **Programa de captura crua** (`windows/cockpit/P1Fast.Cockpit.T4000Capture/`): pronto. Abre porta USB real do notebook, detecta porta sozinho, lê bytes da T4000 e salva em arquivo `.bin` + índice de tempo. SÓ grava bytes, não interpreta.
-- **Demonstração com painel ao vivo** (`windows/cockpit/P1Fast.Cockpit.T4000LiveDemo/`): pronto. Roda no notebook com simulador no lugar da T4000, mostra painel de console reagindo a cenários. Útil pra ver visualmente sem hardware.
+Flávio está no notebook Samsung Windows, com a T4000 plugada via USB. Acabou de confirmar que:
+- A página de teste `https://p1t4000.vercel.app` carrega corretamente no navegador (Edge/Chrome).
+- A T4000 funciona (testado com o aplicativo proprietário da Injepro no mesmo notebook).
+- Engenharia da Injepro afirmou: "via Windows nós conseguimos" ler os dados.
 
-## O gap real que falta executar
+**Próximo passo concreto:** o Flávio vai conectar a T4000 dentro dessa página (botão "1) Conectar via WebUSB", se não der, "2) Conectar via WebHID") e reportar o resultado.
 
-**Existe exatamente UMA peça faltando** entre o que está pronto e "ligar o notebook no carro e ver o painel reagindo aos dados da T4000 real":
+## Objetivo final (não esquecer)
 
-Um adaptador (peça de ligação) em C# que pluga a porta serial real do Windows (`System.IO.Ports.SerialPort`) na interface abstrata `ISerialBytePort` que o leitor do cérebro espera. Hoje só existe a implementação de mentira (`InMemorySerialBytePort`, usada nos testes automáticos).
+Aquisição de dados dos sensores e dados do carro vindos da Injepro T4000, pra mostrar no painel do piloto durante a pilotagem. **Esta tarefa é só a parte de aquisição.** Painel já existe e está pronto pra consumir os dados.
 
-**Onde colocar**: novo arquivo `windows/cockpit/P1Fast.Cockpit.T4000LiveDemo/SystemIoPortsSerialBytePort.cs` (ou projeto novo `P1Fast.Cockpit.Hardware/` se ficar mais limpo).
+## Caminhos JÁ descartados — não reabrir
 
-**O que o adaptador faz** (50 linhas mais ou menos):
+| Caminho | Por que descartado |
+|---|---|
+| Adaptador C# em cima de `System.IO.Ports.SerialPort` | Testado em campo 25/05. Zero bytes. A USB da T4000 NÃO expõe porta serial COM padrão. É USB proprietária. |
+| Programa `T4000Capture` no notebook Windows (single-file .exe) | Mesmo motivo. Não chega a abrir porta serial nenhuma porque a Injepro não aparece como COM. |
+| Adaptador USB-CAN externo (CANable v2.0) | Continua sendo plano B viável, mas só recorrer se WebUSB e WebHID **ambos** falharem. Custo R$ 200-400, exige conhecer pinout do chicote da T4000. |
+| Bluetooth da T4000 | Spec proprietária, não temos. Telefonar pra Injepro pode levar semanas. Última opção. |
 
-```csharp
-public sealed class SystemIoPortsSerialBytePort : ISerialBytePort, IDisposable
-{
-    private readonly SerialPort _sp;
-    public SystemIoPortsSerialBytePort(string portName)
-    {
-        _sp = new SerialPort(portName) {
-            BaudRate = 1_000_000, DataBits = 8, Parity = Parity.None,
-            StopBits = StopBits.One, ReadTimeout = 200, WriteTimeout = 1000,
-        };
-        _sp.Open();
-    }
-    public ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct)
-    {
-        // System.IO.Ports.SerialPort.BaseStream.ReadAsync respeita ct
-        return _sp.BaseStream.ReadAsync(buffer, ct);
-    }
-    public void Close() => _sp.Close();
-    public void Dispose() => _sp.Dispose();
-}
+## Caminho atual em uso
+
+**Página HTML pública usando WebUSB / WebHID** (tecnologias do navegador moderno que falam direto com aparelhos USB proprietários, sem precisar de driver de porta COM).
+
+- **Endereço público:** `https://p1t4000.vercel.app` (HTTPS válido, sem trava de login).
+- **Código-fonte na versão oficial:** `web/cockpit/t4000-usb-test.html` (submissão #211 incorporada 25/05 noite).
+- **Hospedagem:** Vercel, projeto `p1t4000` do escopo `flaviomarques-6007s-projects`.
+- **Como atualizar a página:** alterar o arquivo, registrar e enviar pra versão oficial, depois rodar `cd /tmp/p1-t4000 && cp /Users/imac/Projetos/P1\ Fast/web/cockpit/t4000-usb-test.html /tmp/p1-t4000/index.html && npx vercel deploy --prod --yes --scope=flaviomarques-6007s-projects` pra publicar o novo conteúdo.
+
+## Fluxo no carro (o que o Flávio está fazendo agora)
+
+1. ✅ Notebook ligado na internet.
+2. ✅ T4000 plugada via USB.
+3. ✅ Página `p1t4000.vercel.app` aberta no Edge/Chrome.
+4. ⏳ **Clicar "1) Conectar via WebUSB"** → diálogo do navegador lista os USB conectados → escolher a T4000 (provavelmente listada como "Injepro" ou parecido) → "Conectar".
+5. ⏳ Olhar o quadro "Tráfego de dados":
+   - **"Bytes recebidos (total)" subindo** → DEU CERTO. Manda print pro Claude.
+   - **Bytes em 0** → clica em "2) Conectar via WebHID" e repete passo 4.
+   - **Ainda bytes em 0 nas duas tentativas** → manda print do quadro "Dispositivo conectado" (VID:PID, Fabricante, Produto, Serial, Classe USB).
+6. ⏳ Quando bytes estiverem subindo, esperar 30s+ e clicar "Baixar log .bin". Mandar o arquivo pro Claude.
+
+## O que o Claude do celular precisa fazer em cada caso
+
+### Caso A — bytes subindo + sentinelas Injepro P4 e P5 detectadas (>0)
+
+**Significa:** WebUSB/WebHID conectou e a T4000 está enviando o protocolo CAN exatamente como o PDF documenta (sentinelas `0x1E 0xFC` no fim do pacote 4 e `0xFB 0xFA` no início do pacote 5).
+
+**Próxima ação:**
+1. Pedir ao Flávio o arquivo `.bin` baixado.
+2. Validar o checksum dos primeiros 10 ciclos (deve bater com `T4000PacketParser` em `windows/cockpit/P1Fast.Cockpit.Domain/`).
+3. Atualizar `STATUS.md` marcando MS-9.1 (captura real do barramento) como ✅.
+4. Sprint seguinte: estender a página `p1t4000.vercel.app` pra **mostrar o painel canônico do piloto** consumindo os dados ao vivo (pra Flávio ver no notebook como se já fosse o produto final). Base já pronta em `web/cockpit/index-live.html` + `cockpit-renderer.js` + `live-data-bridge.js`.
+
+### Caso B — bytes subindo mas sentinelas P4/P5 em 0
+
+**Significa:** A USB cospe dados, mas em formato diferente do CAN. Provavelmente um protocolo proprietário Injepro (sobre USB CDC, USB HID, ou USB raw).
+
+**Próxima ação:**
+1. Pedir o `.bin` ao Flávio.
+2. Analisar o conteúdo: olhar repetições, períodos, valores constantes vs variáveis.
+3. Comparar com captura USB do programa proprietário Injepro rodando (Flávio pode capturar com Wireshark + USBPcap se topar — instalar 1 programa novo, gravar 30s rodando o app da Injepro, mandar o arquivo).
+4. Engenharia reversa do protocolo: identificar cabeçalho, payload, checksum próprio.
+5. Construir decodificador novo em JS dentro da própria página.
+
+### Caso C — zero bytes em WebUSB E WebHID
+
+**Significa:** O aparelho USB da Injepro não responde a comandos genéricos de leitura — exige handshake específico (sequência inicial de bytes que o software da Injepro envia pra "destravar" o stream).
+
+**Próxima ação:**
+1. Capturar o tráfego USB com Wireshark + USBPcap enquanto o software da Injepro está rodando (Flávio precisa instalar + gravar).
+2. Identificar o handshake nos primeiros bytes que vão do PC pra T4000.
+3. Replicar esse handshake na página WebUSB (`navigator.usb.controlTransferOut` ou `navigator.hid.sendReport`).
+4. Se não conseguir, recorrer ao plano B (adaptador USB-CAN externo) — comprar CANable v2.0 (R$ 200-400) e conectar ao chicote CAN do conector de 34 vias da T4000.
+
+## Linha de trabalho
+
+Estamos em `main`. Submissões mais recentes incorporadas à versão oficial:
+- #210 (25/05 noite) — handoff anterior (descartado pelo caminho do .exe que não funcionou).
+- #211 (25/05 noite) — página WebUSB/WebHID em produção em `p1t4000.vercel.app`.
+
+Próxima submissão deve partir de `origin/main` em ambiente isolado de trabalho novo.
+
+## Memória do projeto a atualizar pós-sucesso
+
+Quando o caso A ou B fechar com bytes confirmados, criar memória de projeto:
+- `~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/p1-fast-t4000-webusb-2026-05-XX.md`
+- Conteúdo: USB da Injepro T4000 NÃO é serial COM. Caminho confirmado em campo: WebUSB / WebHID via navegador moderno. Endereço de produção: `p1t4000.vercel.app`. Código em `web/cockpit/t4000-usb-test.html`.
+
+## Prompt copia-e-cola pro Claude Code do celular
+
 ```
+Estou no carro com o notebook Samsung Windows e a T4000 plugada. Acabei de abrir a página https://p1t4000.vercel.app no Edge.
 
-Referência: copiar a abertura da porta + tratamento de erro do `P1Fast.Cockpit.T4000Capture/Program.cs` linhas 62-85 (já testada em campo pela própria ferramenta de captura crua).
-
-**Depois disso, plugar no demo**: adicionar flag `--real --port=COMx` no `T4000LiveDemo/Program.cs` que troca `InMemorySerialBytePort` por `SystemIoPortsSerialBytePort(portName)` e NÃO roda o simulador. Tudo o mais (leitor, provider, ponte, painel) já funciona — é só trocar a porta.
-
-**Empacotamento (criar instalador)**: o sistema de checagem contínua já tem job `t4000-live-demo-publish` (em `.github/workflows/windows-cockpit.yml`) que gera um único arquivo `.exe` Windows 64-bit autocontido (não precisa instalar .NET no notebook). Cada alteração nova gera esse arquivo automaticamente — fica disponível pra baixar por 14 dias.
-
-## Plano de execução (≤ 5 passos)
-
-1. **Criar ambiente isolado de trabalho** (worktree) a partir da versão oficial atual: `git worktree add -b feat/t4000-serial-real /tmp/p1fast-t4000-real origin/main`.
-2. **Escrever o adaptador** `SystemIoPortsSerialBytePort.cs` no projeto `T4000LiveDemo`. Adicionar 2-3 testes automáticos simples (abrir porta inexistente → erro humano; abrir porta válida → não trava).
-3. **Plugar no demo**: adicionar flag `--real --port=COMx` no `T4000LiveDemo/Program.cs`. Modo simulador continua existindo (default).
-4. **Rodar os 129 testes automáticos** localmente via Docker .NET 8 pra garantir que nada quebrou: `docker run --rm -v $PWD:/src -w /src mcr.microsoft.com/dotnet/sdk:8.0 dotnet test windows/cockpit/P1Fast.Cockpit.sln`.
-5. **Registrar e enviar pra versão oficial** (commit + push). Submeter pra aprovação formal (PR no GitHub). Após aprovação, sistema de checagem contínua gera o `.exe` final que o Flávio baixa no notebook.
-
-## Como o Flávio testa quando o ambiente isolado virar versão oficial
-
-1. Baixa o arquivo `p1fast-t4000-live-demo.exe` do GitHub Actions (último job verde, artifact "t4000-live-demo-publish-win-x64"). Coloca em qualquer pasta do notebook.
-2. Liga o carro com chave em ON (não só Acessórios — a Injepro precisa de alimentação plena).
-3. Pluga cabo USB da traseira da T4000 numa porta USB do notebook.
-4. Abre Prompt de Comando, vai na pasta do `.exe`, digita: `p1fast-t4000-live-demo.exe --real`. O programa detecta a porta sozinho. Se quiser forçar: `--real --port=COM3`.
-5. Painel de console começa a reagir. Tira foto da tela e manda no WhatsApp pra documentar o primeiro teste fim-a-fim.
-
-Se aparecer "Nenhuma porta serial encontrada" → driver USB da Injepro não instalou. Solução: instalar o "Injepro T Software" primeiro (driver vem junto) e fechar antes de rodar nosso programa (senão a porta fica ocupada).
-
-Se aparecer bytes mas zero sentinelas → a USB traseira da T4000 fala um formato diferente do CAN documentado. Nesse caso, é necessário um adaptador USB-CAN externo plugado no chicote CAN da Injepro. Cabo: ~R$ 150-300, modelo CANable v2.0 ou equivalente. Esse passo entra como passo 6 (não bloqueia o adaptador C# atual — só posterga a validação).
-
-## Estado do registro de tarefa do projeto
-
-- Documento `.claude-exec/ultima-tarefa.md` da sessão atual (2026-05-25) iniciado no iMac, ainda em estado "iniciado" — NÃO foi enviado pra versão oficial porque o iMac tem alterações de tarefas antigas misturadas. Este documento aqui (`HANDOFF_T4000_NOTEBOOK_2026-05-25.md`) é o registro oficial pra continuar no celular.
-
-## Prompt pra colar no Claude Code do celular
-
-Quando o Flávio abrir o Claude Code no celular, na pasta do projeto P1 Fast (precisa estar atualizada via `git pull origin main` se estiver desatualizada), basta colar isto:
-
+Lê docs/HANDOFF_T4000_NOTEBOOK_2026-05-25.md PRIMEIRO antes de me responder. Não me peça pra fazer coisa que já está respondida lá. Sigo as instruções da seção "Fluxo no carro" e te mando print do que aparecer. Você reage conforme as seções "Caso A / B / C" do mesmo documento.
 ```
-Vou continuar a tarefa de ligar a T4000 no notebook. Lê docs/HANDOFF_T4000_NOTEBOOK_2026-05-25.md primeiro, depois executa os 5 passos do plano. Sem perguntar. Quando o ambiente isolado estiver pronto e os 129 testes automáticos passarem, me avisa que eu autorizo enviar pra versão oficial.
-```
-
-Quando o Flávio responder "manda" / "envia" / "vai pra versão oficial": registra + envia + abre submissão pra aprovação formal (PR) com auto-merge se possível, conforme regra contínua de aprovação de submissões auditadas do P1 Fast (memória `feedback_deploy_rules`).
-
-## Quando esta tarefa estiver concluída
-
-- Atualizar `STATUS.md` marcando MS-9.3 como completamente fechada (não mais "Falta só a implementação real").
-- Atualizar este documento com a data e o resultado fim-a-fim no carro.
-- Quando Flávio mandar a foto do painel no notebook com a T4000 real, salvar no projeto em `docs/hardware/fotos-t4000-notebook/` (criar pasta) pra ficar registrado.
