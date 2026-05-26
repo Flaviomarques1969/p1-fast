@@ -219,6 +219,14 @@ loadDynoCurve(BUBI_CARRO_ID).then(curva => {
   $('dynoBadge').textContent = 'curva: erro ' + e.message;
 });
 
+// Estado de alarmes simulados (cada botão ativa/desativa um bit)
+const alarmesAtivos = {
+  excessoRotacao: false, excessoPressao: false, excessoTempMotor: false,
+  excessoAberturaInjetor: false, baixaPressaoOleo: false,
+  wbMinimo: false, wbMaximo: false, nbMinimo: false, nbMaximo: false,
+  baixaPressaoCombustivel: false, alertaNivelCombustivel: false,
+};
+
 // Aplicar uma amostra com RPM X
 function applyRpm(rpm) {
   bridge.ingestT4000({
@@ -228,6 +236,7 @@ function applyRpm(rpm) {
     checksumOk: true,
     bytesLen: 0,
     rpm,
+    alarmes: { ...alarmesAtivos },
   });
   $('rpmValue').textContent = String(rpm);
   $('rpmSlider').value = String(rpm);
