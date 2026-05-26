@@ -105,6 +105,19 @@ async function connectAndRun() {
       log('canal ao vivo na nuvem: ' + s);
     }).catch(e => log('canal ao vivo falhou: ' + e.message));
 
+    // carrega a curva do dinamômetro da nuvem (não-bloqueante)
+    loadDynoCurve(BUBI_CARRO_ID).then(curva => {
+      if (curva) {
+        bridge.setLimits({
+          peakTorqueRpm: curva.peakTorqueRpm,
+          redlineRpm: curva.redlineRpm ?? BUBI_LIMITS.redlineRpm,
+        });
+        log(`curva ${curva.apelido}: pico de torque ${curva.peakTorqueNm.toFixed(2)} Nm @ ${curva.peakTorqueRpm} rpm (${curva.pointsCount} pontos)`);
+      } else {
+        log(`curva da nuvem indisponível, usando default (pico em ${BUBI_LIMITS.peakTorqueRpm} rpm)`);
+      }
+    }).catch(e => log('curva: erro ' + e.message));
+
     // loop principal: pede medidores a cada 100ms, decodifica, alimenta painel
     t3.reading = true;
     $('btnConnect').disabled = true;
