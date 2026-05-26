@@ -69,6 +69,22 @@
   </div>
 </div>
 
+<div class="alarms-bar" id="alarmsBar">
+  <strong>Alarmes da central:</strong>
+  <button class="btn alarm grave" data-alarme="baixaPressaoOleo">⚠ Pressão óleo</button>
+  <button class="btn alarm grave" data-alarme="excessoTempMotor">⚠ Temp. motor</button>
+  <button class="btn alarm grave" data-alarme="excessoRotacao">⚠ Excesso rotação</button>
+  <button class="btn alarm grave" data-alarme="baixaPressaoCombustivel">⚠ Pressão combustível</button>
+  <button class="btn alarm grave" data-alarme="excessoPressao">⚠ Pressão coletor</button>
+  <button class="btn alarm grave" data-alarme="excessoAberturaInjetor">⚠ Injetor aberto</button>
+  <button class="btn alarm aviso" data-alarme="wbMinimo">• Mistura pobre</button>
+  <button class="btn alarm aviso" data-alarme="wbMaximo">• Mistura rica</button>
+  <button class="btn alarm aviso" data-alarme="alertaNivelCombustivel">• Combustível baixo</button>
+  <button class="btn alarm aviso" data-alarme="nbMinimo">• NB mín</button>
+  <button class="btn alarm aviso" data-alarme="nbMaximo">• NB máx</button>
+  <button class="btn" id="btnLimparAlarmes">Limpar</button>
+</div>
+
 <div class="badges" style="position:fixed; top:90px; right:20px; z-index:1000;">
   <span class="badge warn" id="modeBadge">modo: aguardando</span>
   <span class="badge ok" id="dynoBadge">curva: carregando…</span>
