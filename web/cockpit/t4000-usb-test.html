@@ -21,16 +21,19 @@
   .ok { color:#4ade80; }
   .warn { color:#fbbf24; }
   .bad { color:#ef4444; }
+  .stale { color:#475569; }
   .log { background:#04080c; border:1px solid #2a3645; border-radius:8px; padding:12px; font-family:ui-monospace,Consolas,monospace; font-size:12px; max-height:280px; overflow-y:auto; white-space:pre-wrap; line-height:1.5; color:#cbd5e1; }
   .log .ok { color:#4ade80; }
   .log .warn { color:#fbbf24; }
   .log .bad { color:#ef4444; }
   .log .info { color:#67e8f9; }
+  .log .start { color:#c084fc; }
   .hex { font-family:ui-monospace,Consolas,monospace; word-break:break-all; }
   .pill { display:inline-block; background:#1f2937; padding:2px 8px; border-radius:10px; font-size:12px; margin-right:6px; }
   .pill.ok { background:#0f3a23; color:#86efac; }
   .pill.bad { background:#3a0f0f; color:#fca5a5; }
   .ver { color:#fbbf24; font-size:11px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 24px; }
 </style>
 </head>
 <body>
@@ -38,7 +41,7 @@
 <h1>P1 Fast — Driver T4000 (USB proprietário)</h1>
 <div class="sub">
   Web Serial não funciona porque o cabo da T4000 não expõe porta COM. Esta página usa <b>WebUSB</b> e <b>WebHID</b>, que falam direto com dispositivos USB custom.
-  <span class="ver">v2 — 2026-05-24</span>
+  <span class="ver">v3.1 — 2026-05-26 — sequência START + decodificador ao vivo + relay ntfy.sh</span>
 </div>
 
 <div class="card">
@@ -50,6 +53,7 @@
 <div class="toolbar">
   <button id="btnUsb" class="primary">1) Conectar via WebUSB</button>
   <button id="btnHid">2) Conectar via WebHID</button>
+  <button id="btnStart" disabled>↻ Re-tentar START</button>
   <button id="btnDisc" disabled>Desconectar</button>
   <button id="btnDl" disabled>Baixar log .bin</button>
 </div>
@@ -62,6 +66,7 @@
   <div class="row"><span class="lbl">Produto</span><span class="val" id="dProd">—</span></div>
   <div class="row"><span class="lbl">Serial</span><span class="val" id="dSer">—</span></div>
   <div class="row"><span class="lbl">Classe USB</span><span class="val" id="dClass">—</span></div>
+  <div class="row"><span class="lbl">Endpoint IN / OUT</span><span class="val" id="dEps">— / —</span></div>
   <div class="row"><span class="lbl">API usada</span><span class="val" id="dApi">—</span></div>
 </div>
 
@@ -71,6 +76,39 @@
   <div class="row"><span class="lbl">Bytes/segundo (atual)</span><span class="val ok" id="bytesSec">0</span></div>
   <div class="row"><span class="lbl">Últimos 32 bytes (hex)</span><span class="val hex" id="lastHex">—</span></div>
   <div class="row"><span class="lbl">Sentinelas Injepro P4/P5</span><span class="val" id="sentinels">0 / 0</span></div>
+  <div class="row"><span class="lbl">Comando START vencedor</span><span class="val" id="startWin">—</span></div>
+</div>
+
+<div class="card">
+  <h2>Canais decodificados (Injepro T4000)</h2>
+  <div class="row"><span class="lbl">Ciclos OK / falhos (checksum)</span><span class="val" id="cycStat">0 / 0</span></div>
+  <div class="row"><span class="lbl">Último ciclo OK</span><span class="val" id="cycLast">—</span></div>
+  <div class="grid2" style="margin-top:8px;">
+    <div class="row"><span class="lbl">RPM</span><span class="val stale" id="cRpm">—</span></div>
+    <div class="row"><span class="lbl">Velocidade (km/h)</span><span class="val stale" id="cSpd">—</span></div>
+    <div class="row"><span class="lbl">MAP (bar)</span><span class="val stale" id="cMap">—</span></div>
+    <div class="row"><span class="lbl">Lambda (λ)</span><span class="val stale" id="cLam">—</span></div>
+    <div class="row"><span class="lbl">TPS (%)</span><span class="val stale" id="cTps">—</span></div>
+    <div class="row"><span class="lbl">Marcha</span><span class="val stale" id="cGear">—</span></div>
+    <div class="row"><span class="lbl">Temp água (°C)</span><span class="val stale" id="cWat">—</span></div>
+    <div class="row"><span class="lbl">Temp óleo (°C)</span><span class="val stale" id="cOil">—</span></div>
+    <div class="row"><span class="lbl">Press óleo (bar)</span><span class="val stale" id="cOilP">—</span></div>
+    <div class="row"><span class="lbl">Press comb (bar)</span><span class="val stale" id="cFuP">—</span></div>
+    <div class="row"><span class="lbl">Temp ar (°C)</span><span class="val stale" id="cAir">—</span></div>
+    <div class="row"><span class="lbl">Temp comb (°C)</span><span class="val stale" id="cFuT">—</span></div>
+    <div class="row"><span class="lbl">EGT (°C)</span><span class="val stale" id="cEgt">—</span></div>
+    <div class="row"><span class="lbl">Bateria (V)</span><span class="val stale" id="cBat">—</span></div>
+    <div class="row"><span class="lbl">Erro ECU (bits)</span><span class="val stale" id="cErr">—</span></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Relay (canal Claude ↔ página via ntfy.sh)</h2>
+  <div class="row"><span class="lbl">Tópico de eventos (página → Claude)</span><span class="val hex" id="relayEvt">—</span></div>
+  <div class="row"><span class="lbl">Tópico de comandos (Claude → página)</span><span class="val hex" id="relayCmd">—</span></div>
+  <div class="row"><span class="lbl">Status do relay</span><span class="val" id="relayStat">desligado</span></div>
+  <div class="row"><span class="lbl">Último comando recebido</span><span class="val" id="relayLast">—</span></div>
+  <div class="row"><span class="lbl">Eventos enviados / falhos</span><span class="val" id="relayTx">0 / 0</span></div>
 </div>
 
 <div class="card">
@@ -83,6 +121,158 @@
 
 const $ = id => document.getElementById(id);
 
+// ─── Relay (canal Claude ↔ página via ntfy.sh) ────────────────
+// Sem login, sem CORS quebrado, sem servidor próprio. Tópico pode ser sobrescrito
+// via #topic=XXX na URL (#hash). Default fixo pra Flávio.
+//
+// Eventos página → Claude  : POST  https://ntfy.sh/<topic>-evt
+// Comandos Claude → página : long-poll GET https://ntfy.sh/<topic>-cmd/json
+//
+// Comandos suportados (JSON no body do POST que o Claude faz):
+//   { "cmd":"bulk",     "hex":"AA 55 01" }
+//   { "cmd":"ctrl",     "reqType":"vendor", "recipient":"interface", "request":160, "value":0, "index":0, "data":[1,2] }
+//   { "cmd":"ctrl-in",  "reqType":"vendor", "recipient":"device",    "request":1,   "value":0, "index":0, "length":64 }
+//   { "cmd":"reset-stats" }
+//   { "cmd":"run-start-seq" }
+//   { "cmd":"ping" }
+
+const RELAY_BASE = 'https://ntfy.sh';
+const _hash = new URLSearchParams(location.hash.slice(1));
+const RELAY_TOPIC = _hash.get('topic') || 'p1fast-t4000-flavio-2026';
+const RELAY_EVT = RELAY_TOPIC + '-evt';
+const RELAY_CMD = RELAY_TOPIC + '-cmd';
+let relayLastCmdId = null;
+let relayTxOk = 0, relayTxFail = 0;
+let relayEnabled = true;
+
+async function relaySend(payload) {
+  if (!relayEnabled) return;
+  try {
+    const r = await fetch(`${RELAY_BASE}/${RELAY_EVT}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload, ts: new Date().toISOString() }),
+    });
+    if (r.ok) relayTxOk++; else relayTxFail++;
+  } catch (e) {
+    relayTxFail++;
+  }
+}
+
+async function relayPoll() {
+  if (!relayEnabled) return;
+  try {
+    const url = `${RELAY_BASE}/${RELAY_CMD}/json?poll=1`;
+    const r = await fetch(url);
+    if (!r.ok) return;
+    const text = await r.text();
+    const lines = text.trim().split('\n').filter(Boolean);
+    for (const line of lines) {
+      let msg;
+      try { msg = JSON.parse(line); } catch { continue; }
+      if (msg.event !== 'message') continue;
+      if (msg.id === relayLastCmdId) continue;
+      relayLastCmdId = msg.id;
+      let cmd;
+      try { cmd = JSON.parse(msg.message); } catch {
+        log(`relay: comando inválido (não-JSON): ${msg.message}`, 'warn');
+        continue;
+      }
+      $('relayLast').textContent = `${new Date().toLocaleTimeString()} — ${cmd.cmd}`;
+      await handleRelayCommand(cmd);
+    }
+  } catch (e) {
+    // ignora — long-poll falha é normal
+  }
+}
+
+async function handleRelayCommand(cmd) {
+  log(`← relay cmd: ${JSON.stringify(cmd).slice(0, 200)}`, 'start');
+  if (cmd.cmd === 'ping') {
+    relaySend({ type: 'cmd-ack', cmd: 'ping', alive: true });
+    return;
+  }
+  if (cmd.cmd === 'reset-stats') {
+    state.bytesTotal = 0; state.bytesAtTick = 0; state.s4 = 0; state.s5 = 0;
+    state.cycOk = 0; state.cycBad = 0; state.scanBuf = []; state.last32 = [];
+    relaySend({ type: 'cmd-ack', cmd: 'reset-stats' });
+    return;
+  }
+  if (cmd.cmd === 'run-start-seq') {
+    if (!state.device || state.api !== 'usb') {
+      relaySend({ type: 'cmd-err', cmd: cmd.cmd, error: 'sem USB conectado' });
+      return;
+    }
+    state.startWinner = null; $('startWin').textContent = '—'; $('startWin').className = 'val';
+    runStartSequence(state.device).catch(e => relaySend({ type:'cmd-err', cmd:cmd.cmd, error:e.message }));
+    return;
+  }
+  if (!state.device || state.api !== 'usb') {
+    relaySend({ type: 'cmd-err', cmd: cmd.cmd, error: 'sem USB conectado' });
+    return;
+  }
+  try {
+    if (cmd.cmd === 'bulk') {
+      if (state.epOut === null) throw new Error('sem endpoint OUT');
+      const bytes = cmd.hex.replace(/\s+/g, '').match(/.{2}/g).map(b => parseInt(b, 16));
+      const r = await state.device.transferOut(state.epOut, new Uint8Array(bytes));
+      relaySend({ type: 'cmd-ack', cmd: 'bulk', hex: cmd.hex, status: r.status, bytesWritten: r.bytesWritten });
+    } else if (cmd.cmd === 'ctrl') {
+      const setup = {
+        requestType: cmd.reqType || 'vendor',
+        recipient:   cmd.recipient || 'interface',
+        request:     cmd.request,
+        value:       cmd.value || 0,
+        index:       cmd.index || 0,
+      };
+      const data = cmd.data ? new Uint8Array(cmd.data) : undefined;
+      const r = await state.device.controlTransferOut(setup, data);
+      relaySend({ type: 'cmd-ack', cmd: 'ctrl', request: cmd.request, status: r.status, bytesWritten: r.bytesWritten });
+    } else if (cmd.cmd === 'ctrl-in') {
+      const setup = {
+        requestType: cmd.reqType || 'vendor',
+        recipient:   cmd.recipient || 'device',
+        request:     cmd.request,
+        value:       cmd.value || 0,
+        index:       cmd.index || 0,
+      };
+      const r = await state.device.controlTransferIn(setup, cmd.length || 64);
+      const hexOut = r.data ? Array.from(new Uint8Array(r.data.buffer)).map(b => hex(b)).join(' ') : '';
+      relaySend({ type: 'cmd-ack', cmd: 'ctrl-in', request: cmd.request, status: r.status, hex: hexOut, len: r.data?.byteLength || 0 });
+    } else {
+      relaySend({ type: 'cmd-err', cmd: cmd.cmd, error: 'comando desconhecido' });
+    }
+  } catch (e) {
+    log(`relay cmd erro: ${e.message}`, 'bad');
+    relaySend({ type: 'cmd-err', cmd: cmd.cmd, error: e.message });
+  }
+}
+
+// Inicializa UI do relay e dispara loops
+$('relayEvt').textContent = `ntfy.sh/${RELAY_EVT}`;
+$('relayCmd').textContent = `ntfy.sh/${RELAY_CMD}`;
+$('relayStat').textContent = 'ativo (polling 2s)';
+$('relayStat').className = 'val ok';
+setInterval(relayPoll, 2000);
+setInterval(() => {
+  $('relayTx').textContent = `${relayTxOk} / ${relayTxFail}`;
+}, 1000);
+setInterval(() => {
+  relaySend({
+    type: 'status',
+    api: state.api,
+    vidPid: $('dVidPid').textContent,
+    bytesTotal: state.bytesTotal,
+    bytesSec: state.bytesSec,
+    s4: state.s4, s5: state.s5,
+    cycOk: state.cycOk, cycBad: state.cycBad,
+    startWinner: state.startWinner,
+    last32hex: bytesToHex(state.last32),
+  });
+}, 5000);
+// Anúncio de boot
+relaySend({ type: 'boot', userAgent: navigator.userAgent.slice(0, 200), url: location.href });
+
 function log(msg, cls='') {
   const el = $('log');
   const t = new Date().toLocaleTimeString();
@@ -92,6 +282,7 @@ function log(msg, cls='') {
   if (el.textContent.startsWith('(')) el.innerHTML = '';
   el.appendChild(line);
   el.scrollTop = el.scrollHeight;
+  relaySend({ type: 'log', level: cls || 'plain', msg });
 }
 
 function hex(v, w=2) {
@@ -117,6 +308,12 @@ const state = {
   s5: 0,
   iface: null,
   epIn: null,
+  epOut: null,
+  scanBuf: [],       // janela de varredura pra decodificador
+  cycOk: 0,
+  cycBad: 0,
+  startWinner: null,
+  startInProgress: false,
 };
 
 // ─── Suporte ──────────────────────────────────
@@ -127,6 +324,93 @@ $('supHid').className = 'val ' + (('hid' in navigator) ? 'ok' : 'bad');
 
 if (!('usb' in navigator)) $('btnUsb').disabled = true;
 if (!('hid' in navigator)) $('btnHid').disabled = true;
+
+// ─── Decodificador Injepro T4000 (spec docs/hardware/T4000_CAN_SPEC.md) ──
+// Ciclo = 5 pacotes × 8 bytes = 40 bytes.
+// Sentinela forte: P4 termina 0x1E 0xFC, P5 começa 0xFB 0xFA → âncora 4 bytes
+// 0x1E 0xFC 0xFB 0xFA no offset 30..33 do ciclo. Checksum byte 39 = soma mod 256.
+
+const SCAN_MAX = 4096;
+const ANCHOR = [0x1E, 0xFC, 0xFB, 0xFA];
+
+function u16BE(b0, b1) { return ((b0 & 0xFF) << 8) | (b1 & 0xFF); }
+
+function findAnchor(buf, fromIdx) {
+  for (let i = fromIdx; i <= buf.length - 4; i++) {
+    if (buf[i]===ANCHOR[0] && buf[i+1]===ANCHOR[1] && buf[i+2]===ANCHOR[2] && buf[i+3]===ANCHOR[3]) return i;
+  }
+  return -1;
+}
+
+function decodeCycle(c) {
+  // c = 40 bytes, índice 0..39
+  const sum = c.slice(0, 39).reduce((a,b)=>a+(b&0xFF), 0) % 256;
+  const csOk = sum === (c[39] & 0xFF);
+  return {
+    csOk,
+    rpm:           u16BE(c[0], c[1]),
+    speedKmh:      u16BE(c[2], c[3]) / 10,
+    oilPressBar:   u16BE(c[4], c[5]) / 10,
+    oilTempC:      u16BE(c[6], c[7]) / 10,
+    waterTempC:    u16BE(c[8], c[9]) / 10,
+    fuelPressBar:  u16BE(c[10], c[11]) / 10,
+    batteryV:      u16BE(c[12], c[13]) / 10,
+    tpsPct:        u16BE(c[14], c[15]) / 10,
+    mapBar:        u16BE(c[16], c[17]) / 100,
+    airTempC:      u16BE(c[18], c[19]) / 10,
+    egtC:          u16BE(c[20], c[21]),
+    lambda:        u16BE(c[22], c[23]) / 100,
+    fuelTempC:     u16BE(c[24], c[25]) / 10,
+    marcha:        u16BE(c[26], c[27]),
+    ecuErrBits:    u16BE(c[28], c[29]),
+  };
+}
+
+function applyDecoded(d) {
+  const cls = d.csOk ? 'val ok' : 'val warn';
+  $('cRpm').textContent  = d.rpm;                   $('cRpm').className  = cls;
+  $('cSpd').textContent  = d.speedKmh.toFixed(1);   $('cSpd').className  = cls;
+  $('cMap').textContent  = d.mapBar.toFixed(2);     $('cMap').className  = cls;
+  $('cLam').textContent  = d.lambda.toFixed(2);     $('cLam').className  = cls;
+  $('cTps').textContent  = d.tpsPct.toFixed(1);     $('cTps').className  = cls;
+  $('cGear').textContent = d.marcha;                $('cGear').className = cls;
+  $('cWat').textContent  = d.waterTempC.toFixed(1); $('cWat').className  = cls;
+  $('cOil').textContent  = d.oilTempC.toFixed(1);   $('cOil').className  = cls;
+  $('cOilP').textContent = d.oilPressBar.toFixed(1);$('cOilP').className = cls;
+  $('cFuP').textContent  = d.fuelPressBar.toFixed(1);$('cFuP').className = cls;
+  $('cAir').textContent  = d.airTempC.toFixed(1);   $('cAir').className  = cls;
+  $('cFuT').textContent  = d.fuelTempC.toFixed(1);  $('cFuT').className  = cls;
+  $('cEgt').textContent  = d.egtC;                  $('cEgt').className  = cls;
+  $('cBat').textContent  = d.batteryV.toFixed(1);   $('cBat').className  = cls;
+  $('cErr').textContent  = '0x' + hex(d.ecuErrBits, 4);
+  $('cErr').className    = d.ecuErrBits === 0 ? 'val ok' : 'val bad';
+}
+
+function tryDecodeFromScan() {
+  // Procura âncora; se achar com 30 bytes antes e 6 depois, decodifica.
+  let i = 0;
+  while (i <= state.scanBuf.length - 4) {
+    const a = findAnchor(state.scanBuf, i);
+    if (a < 0) break;
+    if (a < 30 || a + 4 + 6 > state.scanBuf.length) { i = a + 1; continue; }
+    const cycle = state.scanBuf.slice(a - 30, a - 30 + 40);
+    const d = decodeCycle(cycle);
+    if (d.csOk) {
+      state.cycOk++;
+      applyDecoded(d);
+      $('cycLast').textContent = new Date().toLocaleTimeString();
+      relaySend({ type: 'cycle', decoded: d, cycleHex: bytesToHex(cycle) });
+      state.scanBuf = state.scanBuf.slice(a - 30 + 40);
+      i = 0;
+    } else {
+      state.cycBad++;
+      state.scanBuf = state.scanBuf.slice(a + 1);
+      i = 0;
+    }
+  }
+  if (state.scanBuf.length > SCAN_MAX) state.scanBuf = state.scanBuf.slice(-SCAN_MAX);
+  $('cycStat').textContent = `${state.cycOk} / ${state.cycBad}`;
+}
 
 // ─── Processamento de bytes ───────────────────
 function ingest(bytes) {
@@ -140,7 +424,9 @@ function ingest(bytes) {
     state.last32.push(b);
     if (state.last32.length > 32) state.last32.shift();
     state.capture.push(b);
+    state.scanBuf.push(b);
   }
+  tryDecodeFromScan();
 }
 
 setInterval(() => {
@@ -152,13 +438,96 @@ setInterval(() => {
   $('sentinels').textContent = `${state.s4} / ${state.s5}`;
 }, 1000);
 
+// ─── Sequência START — candidatos pra destravar o stream ─────
+// Cada candidato é testado por 3s. Se bytesTotal aumentar nesse período, ele "venceu".
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+const START_CANDIDATES = [
+  // Bulk writes simples
+  { kind: 'bulk', name: 'bulk [0x00]',          data: [0x00] },
+  { kind: 'bulk', name: 'bulk [0x01]',          data: [0x01] },
+  { kind: 'bulk', name: 'bulk [0xAA]',          data: [0xAA] },
+  { kind: 'bulk', name: 'bulk [0x55]',          data: [0x55] },
+  { kind: 'bulk', name: 'bulk [0xFF]',          data: [0xFF] },
+  { kind: 'bulk', name: 'bulk ASCII "START\\r\\n"', data: [0x53,0x54,0x41,0x52,0x54,0x0D,0x0A] },
+  { kind: 'bulk', name: 'bulk ASCII "S\\r"',    data: [0x53,0x0D] },
+  { kind: 'bulk', name: 'bulk ASCII "GO\\r"',   data: [0x47,0x4F,0x0D] },
+  { kind: 'bulk', name: 'bulk [0xFB 0xFA] (P5 sentinel)', data: [0xFB,0xFA] },
+  { kind: 'bulk', name: 'bulk [0x07 0xFB] (CAN ID hint)', data: [0x07,0xFB] },
+  { kind: 'bulk', name: 'bulk [0x01 0x00]',     data: [0x01,0x00] },
+  { kind: 'bulk', name: 'bulk [0xC0]',          data: [0xC0] },
+  { kind: 'bulk', name: 'bulk Injepro probe [0xAA 0x55 0x01]', data: [0xAA,0x55,0x01] },
+  // Control transfers vendor-specific (out)
+  { kind: 'ctrl', name: 'ctrl vendor/iface req=0x01 val=0',  reqType:'vendor', recipient:'interface', request:0x01, value:0, index:0 },
+  { kind: 'ctrl', name: 'ctrl vendor/iface req=0x02 val=1',  reqType:'vendor', recipient:'interface', request:0x02, value:1, index:0 },
+  { kind: 'ctrl', name: 'ctrl vendor/iface req=0xA0 val=0',  reqType:'vendor', recipient:'interface', request:0xA0, value:0, index:0 },
+  { kind: 'ctrl', name: 'ctrl vendor/device req=0x01 val=0', reqType:'vendor', recipient:'device',    request:0x01, value:0, index:0 },
+  { kind: 'ctrl', name: 'ctrl vendor/device req=0xC0 val=0', reqType:'vendor', recipient:'device',    request:0xC0, value:0, index:0 },
+];
+
+async function sendCandidate(device, cand) {
+  if (cand.kind === 'bulk') {
+    if (state.epOut === null) throw new Error('sem endpoint OUT');
+    const buf = new Uint8Array(cand.data);
+    return device.transferOut(state.epOut, buf);
+  }
+  if (cand.kind === 'ctrl') {
+    return device.controlTransferOut({
+      requestType: cand.reqType,
+      recipient:   cand.recipient,
+      request:     cand.request,
+      value:       cand.value,
+      index:       cand.index,
+    });
+  }
+  throw new Error('candidato inválido');
+}
+
+async function runStartSequence(device) {
+  if (state.startInProgress) { log('Sequência START já em andamento', 'warn'); return; }
+  state.startInProgress = true;
+  $('btnStart').disabled = true;
+  log(`Iniciando sequência START — ${START_CANDIDATES.length} candidatos × 3s cada (~${START_CANDIDATES.length*3}s total)`, 'start');
+  const baselineBytes = state.bytesTotal;
+  let baseline = baselineBytes;
+  for (const cand of START_CANDIDATES) {
+    if (!state.reading) break;
+    if (state.startWinner) break;
+    try {
+      log(`→ ${cand.name}`, 'start');
+      await sendCandidate(device, cand);
+    } catch (e) {
+      log(`  falhou: ${e.message}`, 'warn');
+      continue;
+    }
+    // espera 3s e mede se o IN começou a produzir
+    await sleep(3000);
+    const delta = state.bytesTotal - baseline;
+    if (delta > 0) {
+      state.startWinner = cand.name;
+      $('startWin').textContent = cand.name;
+      $('startWin').className = 'val ok';
+      log(`✓ COMANDO START VENCEDOR: ${cand.name} (${delta} bytes em 3s)`, 'ok');
+      break;
+    }
+    baseline = state.bytesTotal;
+  }
+  if (!state.startWinner) {
+    log('Nenhum candidato fez a T4000 transmitir. Próximo passo: capturar tráfego USB do app oficial Injepro (Wireshark+USBPcap) — fora do alcance desta página.', 'bad');
+    $('startWin').textContent = 'nenhum funcionou';
+    $('startWin').className = 'val bad';
+  }
+  state.startInProgress = false;
+  $('btnStart').disabled = !state.reading;
+}
+
 // ─── WebUSB ───────────────────────────────────
 $('btnUsb').onclick = async () => {
   if (!('usb' in navigator)) { log('WebUSB não suportado', 'bad'); return; }
 
   try {
     log('Abrindo janela de seleção USB…', 'info');
-    // Filtros vazios = mostra TUDO. Usuário escolhe.
     const device = await navigator.usb.requestDevice({ filters: [] });
 
     log(`Selecionado: VID=${hex(device.vendorId, 4)} PID=${hex(device.productId, 4)}`, 'ok');
@@ -179,9 +548,8 @@ $('btnUsb').onclick = async () => {
     log(`Configuração ${device.configuration.configurationValue} ativa`, 'ok');
     log(`Interfaces: ${device.configuration.interfaces.length}`, 'info');
 
-    // Mostra TODAS as interfaces/endpoints pra diagnóstico
     let classInfo = [];
-    let ifaceIdx = -1, epInAddr = null;
+    let ifaceIdx = -1, epInAddr = null, epOutAddr = null;
     for (const it of device.configuration.interfaces) {
       for (const alt of it.alternates) {
         const cls = `iface ${it.interfaceNumber} alt ${alt.alternateSetting} → class=0x${hex(alt.interfaceClass)} subclass=0x${hex(alt.interfaceSubclass)} protocol=0x${hex(alt.interfaceProtocol)}`;
@@ -193,10 +561,15 @@ $('btnUsb').onclick = async () => {
             ifaceIdx = it.interfaceNumber;
             epInAddr = ep.endpointNumber;
           }
+          if (ep.direction === 'out' && epOutAddr === null) {
+            if (ifaceIdx < 0) ifaceIdx = it.interfaceNumber;
+            epOutAddr = ep.endpointNumber;
+          }
         }
       }
     }
     $('dClass').textContent = [...new Set(classInfo)].join(', ');
+    $('dEps').textContent = `${epInAddr !== null ? '0x'+hex(epInAddr|0x80) : '—'} / ${epOutAddr !== null ? '0x'+hex(epOutAddr) : '—'}`;
 
     if (ifaceIdx < 0 || epInAddr === null) {
       log('Nenhum endpoint IN encontrado — não dá pra ler', 'bad');
@@ -220,11 +593,21 @@ $('btnUsb').onclick = async () => {
     state.api = 'usb';
     state.iface = ifaceIdx;
     state.epIn = epInAddr;
+    state.epOut = epOutAddr;
     $('dStatus').textContent = '✓ lendo via WebUSB'; $('dStatus').className = 'val ok';
     $('btnUsb').disabled = true; $('btnHid').disabled = true;
     $('btnDisc').disabled = false; $('btnDl').disabled = false;
+    $('btnStart').disabled = false;
 
     state.reading = true;
+
+    // Dispara a sequência START em paralelo com a leitura
+    if (epOutAddr !== null) {
+      runStartSequence(device).catch(e => log(`START sequência erro: ${e.message}`, 'bad'));
+    } else {
+      log('Sem endpoint OUT — não dá pra mandar START. Esperando stream autônomo.', 'warn');
+    }
+
     while (state.reading) {
       try {
         const r = await device.transferIn(epInAddr, 256);
@@ -243,6 +626,15 @@ $('btnUsb').onclick = async () => {
     if (e.name === 'NotFoundError') log('Você cancelou a seleção', 'warn');
     else log(`WebUSB erro: ${e.message}`, 'bad');
   }
+};
+
+// ─── Re-tentar START ───────────────────────────
+$('btnStart').onclick = () => {
+  if (!state.device || state.api !== 'usb') { log('Conecta via WebUSB primeiro', 'warn'); return; }
+  state.startWinner = null;
+  $('startWin').textContent = '—';
+  $('startWin').className = 'val';
+  runStartSequence(state.device).catch(e => log(`START sequência erro: ${e.message}`, 'bad'));
 };
 
 // ─── WebHID ───────────────────────────────────
@@ -296,6 +688,7 @@ $('btnDisc').onclick = async () => {
   $('btnUsb').disabled = !('usb' in navigator);
   $('btnHid').disabled = !('hid' in navigator);
   $('btnDisc').disabled = true;
+  $('btnStart').disabled = true;
   log('desconectado', 'warn');
 };
 
@@ -311,7 +704,7 @@ $('btnDl').onclick = () => {
   log(`baixado: ${state.capture.length} bytes`, 'ok');
 };
 
-log('Pronto. Clica em "1) Conectar via WebUSB" primeiro. Se falhar, tenta "2) Conectar via WebHID".', 'info');
+log('v3 pronta. Clica em "1) Conectar via WebUSB". Sequência START dispara automática depois do claim.', 'info');
 </script>
 </body>
 </html>
