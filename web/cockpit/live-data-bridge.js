@@ -28,8 +28,15 @@ import {
 
 export const DEFAULT_LIMITS = Object.freeze({
   redlineRpm:           7500,
-  fireThresholdRatio:   0.95, // ≥95% redline → FIRE strobe
+  fireThresholdRatio:   0.95, // ≥95% redline → FIRE strobe (modo legado, baseado em redline)
   litStartRatio:        0.50, // <50% redline → LEDs apagados
+  // Modo NOVO baseado em torque (preferido quando informado):
+  //   peakTorqueRpm — rpm do pico de torque (vem do dinamômetro).
+  //   torqueLitOffsetRpm — quantos rpm antes do pico começa o LIT progressivo.
+  // Quando peakTorqueRpm está definido, rpmToShift IGNORA fireThresholdRatio +
+  // litStartRatio e usa janela (peak-offset, peak, redline).
+  peakTorqueRpm:        null,
+  torqueLitOffsetRpm:   300,
   oilPressMinBar:       0.5,
   oilPressMinAtRpm:     2000, // só dispara alerta abaixo do mínimo se RPM > este
   oilTempMaxC:          130,
