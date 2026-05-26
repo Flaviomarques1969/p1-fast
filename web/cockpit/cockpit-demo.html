@@ -436,6 +436,11 @@ loadTrackSegments(BRASILIA_TRACK_ID).then(segments => {
     onCruzarEntrada: gravarEntradaPorCurva,
     onCruzarSaida: gravarSaidaPorCurva,
   });
+  // carrega melhores passagens já registradas do Bubi
+  loadMelhoresPassagens('641a81e7-3192-4e68-8183-b8401f105574').then(mapa => {
+    _melhores = mapa;
+    console.log('[demo] melhores passagens carregadas:', mapa.size);
+  });
   $('curvesButtons').innerHTML = '';
   for (const c of curvas) {
     const btn = document.createElement('button');
