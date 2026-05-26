@@ -86,11 +86,42 @@ export function rpmToShift(rpm, limits = DEFAULT_LIMITS) {
 }
 
 /**
+ * 11 alarmes do bitfield da T3000 (offset 288 do bloco RI), em ordem de
+ * gravidade — o mais grave vence quando há múltiplos ativos. Mensagens em
+ * PT-BR, prontas pra mostrar no alert-bloco do painel canônico.
+ */
+export const ALARM_PRIORITY = Object.freeze([
+  ['baixaPressaoOleo',         MsgTipo.GRAVE,       'Pressão de óleo baixa'],
+  ['excessoTempMotor',         MsgTipo.GRAVE,       'Temperatura do motor crítica'],
+  ['excessoRotacao',           MsgTipo.GRAVE,       'Excesso de rotação'],
+  ['baixaPressaoCombustivel',  MsgTipo.GRAVE,       'Pressão de combustível baixa'],
+  ['excessoPressao',           MsgTipo.GRAVE,       'Pressão excessiva no coletor'],
+  ['excessoAberturaInjetor',   MsgTipo.GRAVE,       'Abertura excessiva do injetor'],
+  ['wbMinimo',                 MsgTipo.COMUNICACAO, 'Mistura pobre demais'],
+  ['wbMaximo',                 MsgTipo.COMUNICACAO, 'Mistura rica demais'],
+  ['alertaNivelCombustivel',   MsgTipo.COMUNICACAO, 'Nível de combustível baixo'],
+  ['nbMinimo',                 MsgTipo.COMUNICACAO, 'Sonda estreita no mínimo'],
+  ['nbMaximo',                 MsgTipo.COMUNICACAO, 'Sonda estreita no máximo'],
+]);
+
+/**
+ * Inspeciona o objeto sample.alarmes (vindo do parser T3000) e retorna o
+ * alarme MAIS GRAVE ativo, no formato { tipo, texto }. Null quando nenhum.
+ */
+export function checkAlarmesBitfield(sample) {
+  if (!sample || !sample.alarmes) return null;
+  for (const [chave, tipo, texto] of ALARM_PRIORITY) {
+    if (sample.alarmes[chave] === true) return { tipo, texto };
+  }
+  return null;
+}
+
+/**
  * Avalia condições críticas do T4000. Retorna { tipo, texto } se há alerta;
  * null se está tudo OK ou se o sample tem checksum quebrado.
  *
  * Ordem de prioridade (mais grave primeiro):
- * 1. erro ECU != 0 (bitfield)
+ * 1. alarme do bitfield da central (vence quando ativo)
  * 2. água > limite
  * 3. óleo > limite
  * 4. pressão óleo < limite com RPM > limite (motor sob carga)
@@ -99,9 +130,9 @@ export function rpmToShift(rpm, limits = DEFAULT_LIMITS) {
 export function checkCriticalAlerts(sample, limits = DEFAULT_LIMITS) {
   if (!sample || sample.checksumOk === false) return null;
 
-  if (sample.ecuErrorBits !== undefined && sample.ecuErrorBits !== 0) {
-    return { tipo: MsgTipo.GRAVE, texto: 'Erro ECU' };
-  }
+  const alarmeBitfield = checkAlarmesBitfield(sample);
+  if (alarmeBitfield) return alarmeBitfield;
+
   if (typeof sample.waterTempC === 'number' && sample.waterTempC > limits.waterTempMaxC) {
     return { tipo: MsgTipo.GRAVE, texto: 'Temperatura água crítica' };
   }
