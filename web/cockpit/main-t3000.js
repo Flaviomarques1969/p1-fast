@@ -12,12 +12,16 @@ import { attachRendererToDocument } from './cockpit-renderer.js';
 import { LiveDataBridge, DEFAULT_LIMITS } from './live-data-bridge.js';
 import { parseT3000RIBlock, ACK_BYTES, RI_BYTES, isAckOk } from './t3000-usb-parser.js';
 import { startCloudBridge, publishSample, onStatusChange, getStats } from './cloud-bridge.js';
+import { loadDynoCurve, BUBI_CARRO_ID } from './dyno-loader.js';
 
-// ── Calibração Bubi (dinamômetro Lenza Powerchips 2026-05-18) ──
-const BUBI_LIMITS = Object.freeze({
+// ── Calibração inicial Bubi (dinamômetro Lenza Powerchips 2026-05-18) ──
+// Valores DEFAULT — sobrescritos pela curva da nuvem quando carregar.
+const BUBI_LIMITS = {
   ...DEFAULT_LIMITS,
-  redlineRpm: 6300, // regra: NÃO passar de 6.350 (queda abrupta após)
-});
+  redlineRpm: 6300,      // regra: NÃO passar de 6.350 (queda abrupta após)
+  peakTorqueRpm: 5200,   // pico de torque conhecido do dinamômetro (default seguro)
+  torqueLitOffsetRpm: 300, // acende a 300 rpm antes do pico
+};
 
 // ── Setup do painel ───────────────────────────────────────────
 const cockpitState = new CockpitState();
