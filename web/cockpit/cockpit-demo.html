@@ -443,13 +443,7 @@ loadTrackSegments(BRASILIA_TRACK_ID).then(segments => {
     btn.textContent = shortLabel(c.nome);
     btn.title = `Toca pra registrar ${modoRegistro} de ${c.nome}`;
     btn.addEventListener('click', () => {
-      const rpm = Number($('rpmSlider').value) || 900;
-      const velKmh = Math.round((rpm / 3000) * 50);
-      cockpitState.setApexPonto(modoRegistro, {
-        estado: ApexEstado.OK_PIOR,
-        valorKmh: velKmh,
-        nomeCurva: shortLabel(c.nome),
-      });
+      registrarPassagem(modoRegistro, c);
     });
     $('curvesButtons').appendChild(btn);
   }
