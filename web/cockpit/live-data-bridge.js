@@ -161,6 +161,12 @@ export class LiveDataBridge {
   getLastImuGps()  { return this._lastImuGps; }
   getLastT4000()   { return this._lastT4000; }
   getStats()       { return { ...this._stats }; }
+  getLimits()      { return this._limits; }
+
+  /** Atualiza limites em runtime (ex.: quando a curva do dinamômetro carrega da nuvem). */
+  setLimits(nextLimits) {
+    this._limits = { ...DEFAULT_LIMITS, ...this._limits, ...nextLimits };
+  }
 
   // ── interno ─────────────────────────────────────────
 
