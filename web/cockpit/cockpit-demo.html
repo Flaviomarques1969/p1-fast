@@ -208,6 +208,7 @@ import { LiveDataBridge, DEFAULT_LIMITS } from './live-data-bridge.js';
 import { loadDynoCurve, BUBI_CARRO_ID } from './dyno-loader.js';
 import { loadTrackSegments, onlyCurves, shortLabel, BRASILIA_TRACK_ID } from './track-loader.js';
 import { createDetector } from './track-detector.js';
+import { loadMelhoresPassagens, salvarPassagemSeMelhor } from './melhores-loader.js';
 
 // Defaults pro Bubi (sobrescritos pela curva da nuvem quando carregar)
 const BUBI_LIMITS = {
