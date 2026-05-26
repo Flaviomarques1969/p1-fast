@@ -138,11 +138,24 @@ async function runReadLoop() {
 function updateHud(sample) {
   const hud = $('hud');
   if (!hud) return;
-  const balOk = sample.fuelInjectionBalanced;
+  const fmt = (v, d=1) => (typeof v === 'number' && Number.isFinite(v)) ? v.toFixed(d) : '—';
+  const cilOk = sample.fuelInjectionBalanced;
+  const alarmes = sample.alarmes || {};
+  const alarmesAtivos = Object.entries(alarmes).filter(([,v]) => v).map(([k]) => k);
   hud.innerHTML = `
     <span><b>RPM</b> ${sample.rpm}</span>
-    <span><b>Bateria</b> ${sample.batteryV.toFixed(1)}V</span>
-    <span><b>Injeção</b> ${balOk ? '✓ balanceada' : `⚠ desbalanceada (Δ${sample.fuelInjectionSpread})`}</span>
+    <span><b>Bat</b> ${fmt(sample.batteryV)}V</span>
+    <span><b>Água</b> ${sample.waterTempC !== null ? sample.waterTempC + '°C' : '—'}</span>
+    <span><b>Ar</b> ${sample.airTempC !== null ? sample.airTempC + '°C' : '—'}</span>
+    <span><b>λ</b> ${fmt(sample.lambda, 2)}</span>
+    <span><b>MAP</b> ${fmt(sample.mapBar, 2)}b</span>
+    <span><b>TPS</b> ${fmt(sample.tpsPct, 0)}%</span>
+    <span><b>Acel</b> ${fmt(sample.pedalAceleradorPct, 0)}%</span>
+    <span><b>Freio</b> ${fmt(sample.pressaoFreioBar, 1)}b</span>
+    <span><b>Vel</b> ${fmt(sample.speedKmh, 0)}km/h</span>
+    <span><b>Gx</b> ${fmt(sample.accelXg, 2)}g</span>
+    <span><b>Cil</b> ${cilOk ? '✓' : `⚠Δ${sample.fuelInjectionSpread}`}</span>
+    ${alarmesAtivos.length ? `<span style="color:#fca5a5"><b>⚠ ${alarmesAtivos.join(', ')}</b></span>` : ''}
   `;
 }
 
