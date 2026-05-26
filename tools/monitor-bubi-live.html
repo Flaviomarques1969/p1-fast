@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>P1 Fast — Monitor ao vivo Bubi (T3000)</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin:0; padding:0; background:#0b1220; color:#e8eef5; font:14px/1.4 ui-monospace, "SF Mono", Consolas, monospace; }
+  .topbar { padding:10px 16px; background:#000; border-bottom:1px solid #1e293b; display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  .badge { padding:4px 10px; border-radius:5px; font-weight:700; font-size:12px; }
+  .badge.ok   { background:#0f3a23; color:#86efac; }
+  .badge.warn { background:#3a2a0f; color:#fcd34d; }
+  .badge.bad  { background:#3a0f0f; color:#fca5a5; }
+  h1 { margin:0; font-size:14px; font-weight:800; color:#cbd5e1; }
+  .grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; padding:16px; }
+  .card { background:#0f1729; border:1px solid #1e293b; border-radius:8px; padding:10px 12px; }
+  .card h2 { margin:0 0 8px 0; font-size:11px; font-weight:700; color:#7c8aa0; text-transform:uppercase; letter-spacing:0.05em; }
+  .row { display:flex; justify-content:space-between; padding:2px 0; }
+  .row b { color:#9aa9bd; font-weight:500; }
+  .row span { color:#e8eef5; font-weight:700; font-variant-numeric: tabular-nums; }
+  .row.alarm span { color:#fca5a5; }
+  .log { padding:10px 16px; background:#080d18; border-top:1px solid #1e293b; max-height:200px; overflow-y:auto; font-size:11px; color:#94a3b8; }
+  .log .err { color:#fca5a5; }
+  .log .ok  { color:#86efac; }
+  .pulse { display:inline-block; width:8px; height:8px; border-radius:50%; background:#475569; }
+  .pulse.live { background:#22c55e; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>📡 Monitor ao vivo — Bubi (T3000)</h1>
+  <span class="pulse" id="pulse"></span>
+  <span class="badge warn" id="status">conectando…</span>
+  <span class="badge warn" id="stats">0 amostras</span>
+  <span class="badge warn" id="rate">— Hz</span>
+  <span style="color:#64748b; font-size:11px;">canal: cockpit-bubi-live</span>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>Motor</h2>
+    <div class="row"><b>RPM</b><span id="rpm">—</span></div>
+    <div class="row"><b>Bateria</b><span id="battery">—</span></div>
+    <div class="row"><b>MAP</b><span id="map">—</span></div>
+    <div class="row"><b>TPS</b><span id="tps">—</span></div>
+    <div class="row"><b>TPS alvo</b><span id="tpsTarget">—</span></div>
+    <div class="row"><b>λ</b><span id="lambda">—</span></div>
+    <div class="row"><b>Mapa atual</b><span id="mapaAtual">—</span></div>
+  </div>
+
+  <div class="card">
+    <h2>Temperaturas</h2>
+    <div class="row"><b>Água (motor)</b><span id="waterTemp">—</span></div>
+    <div class="row"><b>Ar (admissão)</b><span id="airTemp">—</span></div>
+    <div class="row"><b>Consumo</b><span id="consumo">—</span></div>
+  </div>
+
+  <div class="card">
+    <h2>Pilotagem</h2>
+    <div class="row"><b>Acelerador</b><span id="pedalAcel">—</span></div>
+    <div class="row"><b>Freio (pedal)</b><span id="pedalFreio">—</span></div>
+    <div class="row"><b>Pressão freio</b><span id="pressaoFreio">—</span></div>
+    <div class="row"><b>Velocidade</b><span id="speed">—</span></div>
+    <div class="row"><b>Aceleração X</b><span id="accelX">—</span></div>
+    <div class="row"><b>Aceleração Y</b><span id="accelY">—</span></div>
+    <div class="row"><b>Aceleração Z</b><span id="accelZ">—</span></div>
+  </div>
+
+  <div class="card">
+    <h2>Saúde injeção</h2>
+    <div class="row"><b>Cilindros OK?</b><span id="cilOk">—</span></div>
+    <div class="row"><b>Diferença máx</b><span id="cilSpread">—</span></div>
+    <div class="row"><b>Tempo cil 1</b><span id="cil1">—</span></div>
+    <div class="row"><b>Tempo cil 2</b><span id="cil2">—</span></div>
+    <div class="row"><b>Tempo cil 3</b><span id="cil3">—</span></div>
+    <div class="row"><b>Tempo cil 4</b><span id="cil4">—</span></div>
+  </div>
+
+  <div class="card" id="alarmesCard">
+    <h2>Alarmes</h2>
+    <div id="alarmesList" style="color:#64748b; font-size:12px;">nenhum alarme</div>
+  </div>
+
+  <div class="card">
+    <h2>Status do motor</h2>
+    <div id="statusList" style="color:#64748b; font-size:12px;">nenhum sinal especial</div>
+  </div>
+
+  <div class="card">
+    <h2>Cronômetros</h2>
+    <div class="row"><b>Parcial</b><span id="cronoParcial">—</span></div>
+    <div class="row"><b>Total</b><span id="cronoTotal">—</span></div>
+  </div>
+
+  <div class="card">
+    <h2>Recepção</h2>
+    <div class="row"><b>Última amostra</b><span id="lastSample">—</span></div>
+    <div class="row"><b>Atraso</b><span id="lag">—</span></div>
+    <div class="row"><b>Bytes/amostra</b><span id="bytesLen">—</span></div>
+    <div class="row"><b>Versão decodif.</b><span id="parserVer">—</span></div>
+  </div>
+</div>
+
+<div class="log" id="log"></div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+
+const SUPABASE_URL  = 'https://fvhwltzhytpnhlqbttmd.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2aHdsdHpoeXRwbmhscWJ0dG1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTExNDAsImV4cCI6MjA5MzM4NzE0MH0._ZpxksUnuVFhLzCB5x7bBiZ_VLQQR5cH4A1T-0-mvrA';
+const CHANNEL = 'cockpit-bubi-live';
+
+const $ = id => document.getElementById(id);
+const log = (msg, cls='') => {
+  const el = $('log');
+  const line = document.createElement('div');
+  line.className = cls;
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  el.appendChild(line);
+  while (el.children.length > 60) el.removeChild(el.firstChild);
+  el.scrollTop = el.scrollHeight;
+};
+const setBadge = (id, cls, text) => {
+  const el = $(id); el.className = 'badge ' + cls; el.textContent = text;
+};
+const fmt = (v, suffix='', dec=1) =>
+  (v === null || v === undefined || (typeof v === 'number' && !Number.isFinite(v))) ? '—'
+  : (typeof v === 'number' ? v.toFixed(dec) + suffix : String(v));
+
+let total = 0;
+let last10 = [];
+let lastSampleTs = 0;
+
+setInterval(() => {
+  const now = Date.now();
+  last10 = last10.filter(t => now - t < 2000);
+  const hz = last10.length / 2;
+  setBadge('rate', hz > 0 ? 'ok' : 'warn', hz.toFixed(1) + ' Hz');
+  if (lastSampleTs > 0) {
+    const lag = now - lastSampleTs;
+    $('lag').textContent = lag < 1000 ? lag + ' ms' : (lag/1000).toFixed(1) + ' s';
+    $('pulse').className = (lag < 2000) ? 'pulse live' : 'pulse';
+  }
+}, 250);
+
+function render(s) {
+  total += 1;
+  last10.push(Date.now());
+  lastSampleTs = Date.now();
+  setBadge('stats', 'ok', total + ' amostras');
+
+  $('rpm').textContent = fmt(s.rpm, ' rpm', 0);
+  $('battery').textContent = fmt(s.batteryV, ' V', 1);
+  $('map').textContent = fmt(s.mapBar, ' bar', 2);
+  $('tps').textContent = fmt(s.tpsPct, '%', 0);
+  $('tpsTarget').textContent = fmt(s.tpsTargetPct, '%', 0);
+  $('lambda').textContent = fmt(s.lambda, '', 2);
+  $('mapaAtual').textContent = fmt(s.mapaAtual, '', 0);
+
+  $('waterTemp').textContent = s.waterTempC !== null && s.waterTempC !== undefined ? s.waterTempC + ' °C' : '—';
+  $('airTemp').textContent   = s.airTempC   !== null && s.airTempC   !== undefined ? s.airTempC   + ' °C' : '—';
+  $('consumo').textContent   = fmt(s.consumoBorboleta, '', 2);
+
+  $('pedalAcel').textContent   = fmt(s.pedalAceleradorPct, '%', 0);
+  $('pedalFreio').textContent  = fmt(s.pedalFreioPct, '%', 0);
+  $('pressaoFreio').textContent = fmt(s.pressaoFreioBar, ' bar', 2);
+  $('speed').textContent       = fmt(s.speedKmh, ' km/h', 0);
+  $('accelX').textContent      = fmt(s.accelXg, ' g', 2);
+  $('accelY').textContent      = fmt(s.accelYg, ' g', 2);
+  $('accelZ').textContent      = fmt(s.accelZg, ' g', 2);
+
+  $('cilOk').textContent     = s.fuelInjectionBalanced ? '✓ sim' : '⚠ não';
+  $('cilSpread').textContent = fmt(s.fuelInjectionSpread, '', 0);
+  if (Array.isArray(s.fuelTimeA)) {
+    $('cil1').textContent = fmt(s.fuelTimeA[0], '', 0);
+    $('cil2').textContent = fmt(s.fuelTimeA[1], '', 0);
+    $('cil3').textContent = fmt(s.fuelTimeA[2], '', 0);
+    $('cil4').textContent = fmt(s.fuelTimeA[3], '', 0);
+  }
+
+  const alarmesAtivos = Object.entries(s.alarmes||{}).filter(([,v])=>v).map(([k])=>k);
+  if (alarmesAtivos.length) {
+    $('alarmesList').innerHTML = alarmesAtivos.map(a=>`<div style="color:#fca5a5">⚠ ${a}</div>`).join('');
+    $('alarmesCard').style.borderColor = '#7f1d1d';
+  } else {
+    $('alarmesList').innerHTML = '<span style="color:#86efac">nenhum alarme ativo</span>';
+    $('alarmesCard').style.borderColor = '#1e293b';
+  }
+
+  const statusAtivos = Object.entries(s.statusSinais||{}).filter(([,v])=>v).map(([k])=>k);
+  $('statusList').innerHTML = statusAtivos.length
+    ? statusAtivos.map(a=>`<div style="color:#fcd34d">● ${a}</div>`).join('')
+    : '<span>nenhum sinal especial</span>';
+
+  $('cronoParcial').textContent = fmt(s.cronometroParcialS, ' s', 1);
+  $('cronoTotal').textContent   = fmt(s.cronometroTotalS,   ' s', 1);
+
+  $('lastSample').textContent = new Date().toLocaleTimeString();
+  $('bytesLen').textContent = s.bytesLen + ' bytes';
+  $('parserVer').textContent = s.parserVersion || '—';
+}
+
+log('iniciando — assinando canal ' + CHANNEL);
+const client = createClient(SUPABASE_URL, SUPABASE_ANON, {
+  realtime: { params: { eventsPerSecond: 20 } }
+});
+const channel = client.channel(CHANNEL, { config: { broadcast: { ack: false, self: false } } });
+
+channel.on('broadcast', { event: 'sample' }, (msg) => {
+  if (msg && msg.payload) render(msg.payload);
+});
+
+channel.subscribe((status) => {
+  log('status do canal: ' + status, status === 'SUBSCRIBED' ? 'ok' : status.includes('ERROR') ? 'err' : '');
+  if (status === 'SUBSCRIBED') setBadge('status', 'ok', '● ao vivo');
+  else if (status === 'CHANNEL_ERROR') setBadge('status', 'bad', 'erro no canal');
+  else if (status === 'TIMED_OUT')     setBadge('status', 'bad', 'tempo esgotado');
+  else if (status === 'CLOSED')         setBadge('status', 'warn', 'desconectado');
+  else                                   setBadge('status', 'warn', status);
+});
+
+window.__monitor = { client, channel };
+</script>
+
+</body>
+</html>

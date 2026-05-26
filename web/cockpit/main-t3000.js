@@ -11,6 +11,7 @@ import { CockpitState } from './cockpit-state.js';
 import { attachRendererToDocument } from './cockpit-renderer.js';
 import { LiveDataBridge, DEFAULT_LIMITS } from './live-data-bridge.js';
 import { parseT3000RIBlock, ACK_BYTES, RI_BYTES, isAckOk } from './t3000-usb-parser.js';
+import { startCloudBridge, publishSample, onStatusChange, getStats } from './cloud-bridge.js';
 
 // ── Calibração Bubi (dinamômetro Lenza Powerchips 2026-05-18) ──
 const BUBI_LIMITS = Object.freeze({
@@ -30,6 +31,14 @@ function setStatus(text, cls) {
   el.textContent = text;
   el.className = 'conn-status ' + (cls||'');
 }
+function setCloudStatus(s) {
+  const el = $('cloudStatus'); if (!el) return;
+  const labels = { off:'nuvem: desligado', connecting:'nuvem: conectando…', online:'nuvem: ao vivo', error:'nuvem: erro' };
+  const cls    = { off:'warn', connecting:'warn', online:'ok', error:'bad' };
+  el.textContent = labels[s] || ('nuvem: ' + s);
+  el.className = 'conn-status ' + (cls[s] || 'warn');
+}
+onStatusChange(setCloudStatus);
 function log(msg) {
   console.log('[t3000]', msg);
   const el = $('connLog'); if (!el) return;
@@ -86,6 +95,12 @@ async function connectAndRun() {
     log('central respondeu OK — handshake confirmado');
     setStatus('conectado — lendo a T3000', 'ok');
 
+    // assina canal ao vivo na nuvem (sem bloquear painel se falhar)
+    setCloudStatus('connecting');
+    startCloudBridge().then(s => {
+      log('canal ao vivo na nuvem: ' + s);
+    }).catch(e => log('canal ao vivo falhou: ' + e.message));
+
     // loop principal: pede medidores a cada 100ms, decodifica, alimenta painel
     t3.reading = true;
     $('btnConnect').disabled = true;
@@ -120,6 +135,7 @@ async function runReadLoop() {
       const sample = parseT3000RIBlock(merged, { tMono: performance.now() });
       if (sample) {
         bridge.ingestT4000(sample); // bridge é agnóstico de fonte; aceita t3000
+        publishSample(sample);      // espelha pra nuvem (não-bloqueante; throttle interno)
         t3.lastSampleTs = performance.now();
         // atualiza HUD curto
         updateHud(sample);

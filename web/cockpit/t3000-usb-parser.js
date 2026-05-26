@@ -93,8 +93,10 @@ export function parseT3000RIBlock(buf, opts = {}) {
   const pedal2Raw = u16le(buf, 54);
   const tempArRaw = i16le(buf, 56);
   const tempMotorRaw = i16le(buf, 58);
-  const lambdaRaw = u16le(buf, 60);
-  const wbRaw = u16le(buf, 62);
+  const lambdaNBRaw = u16le(buf, 60);   // Sonda NB (estreita) — geralmente em mV
+  const lambdaWBRaw = u16le(buf, 62);   // Sonda WB Int. (banda larga) ÷1000 → λ
+  // No Bubi (confirmado contra software oficial 2026-05-26): NB desligada,
+  // WB ativa marcando ~0,77 λ. Logo, "lambda" exposto = WB.
   // offset 64-67: int32 reservado
 
   const fuelInjDutyA = [];
@@ -156,8 +158,9 @@ export function parseT3000RIBlock(buf, opts = {}) {
     tpsTargetPct: tpsAlvoRaw / 10,
     airTempC,
     waterTempC,                          // LiveDataBridge consome
-    lambda: lambdaRaw / 1000,
-    lambdaWBRaw: wbRaw,
+    lambda: lambdaWBRaw / 1000,         // banda larga (sensor ativo no Bubi)
+    lambdaNB: lambdaNBRaw,              // banda estreita raw (em mV no oficial)
+    lambdaWBRaw,
     mapaAtual,
     anguloInjecao: anguloInjecaoRaw,
     consumoBorboleta: consumoRaw / 100,
