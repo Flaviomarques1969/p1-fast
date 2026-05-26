@@ -57,14 +57,30 @@ export function rpmToShift(rpm, limits = DEFAULT_LIMITS) {
   if (typeof rpm !== 'number' || !Number.isFinite(rpm) || rpm < 0) {
     return { mode: ShiftMode.OFF, level: 0 };
   }
-  const { redlineRpm, fireThresholdRatio, litStartRatio } = limits;
+  const { redlineRpm, peakTorqueRpm, torqueLitOffsetRpm } = limits;
+
+  // ── Modo TORQUE (preferido) ────────────────────────────────
+  // Acende progressivamente nos N rpm antes do pico de torque, dispara
+  // FIRE no pico, e OVERREV acima do redline. Pedido Flávio 2026-05-26:
+  // "quando o carro chegar no máximo do torque, ele aciona o shift light".
+  if (typeof peakTorqueRpm === 'number' && peakTorqueRpm > 0) {
+    if (rpm > redlineRpm) return { mode: ShiftMode.OVERREV, level: 0 };
+    if (rpm >= peakTorqueRpm) return { mode: ShiftMode.FIRE, level: 0 };
+    const start = peakTorqueRpm - (torqueLitOffsetRpm ?? 300);
+    if (rpm < start) return { mode: ShiftMode.OFF, level: 0 };
+    const norm = (rpm - start) / (peakTorqueRpm - start); // 0..<1
+    const level = Math.max(1, Math.min(SHIFT_LEVEL_MAX, Math.round(norm * SHIFT_LEVEL_MAX) || 1));
+    return { mode: ShiftMode.LIT, level };
+  }
+
+  // ── Modo legado (fallback baseado em redline %) ────────────
+  const { fireThresholdRatio, litStartRatio } = limits;
   if (rpm > redlineRpm) return { mode: ShiftMode.OVERREV, level: 0 };
   const ratio = rpm / redlineRpm;
   if (ratio >= fireThresholdRatio) return { mode: ShiftMode.FIRE, level: 0 };
   if (ratio < litStartRatio) return { mode: ShiftMode.OFF, level: 0 };
-  // mapeia [litStart..fireThreshold) → [1..SHIFT_LEVEL_MAX]
   const span = fireThresholdRatio - litStartRatio;
-  const norm = (ratio - litStartRatio) / span; // 0..<1
+  const norm = (ratio - litStartRatio) / span;
   const level = Math.max(1, Math.min(SHIFT_LEVEL_MAX, Math.round(norm * SHIFT_LEVEL_MAX) || 1));
   return { mode: ShiftMode.LIT, level };
 }
