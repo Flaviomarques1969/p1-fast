@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=956, initial-scale=1">
+<title>P1 Fast — Demo Cockpit Piloto (shift light no pico de torque)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="cockpit.css">
+<style>
+  body { margin: 0; background: #050a14; }
+  .controls {
+    position: fixed; top: 0; left: 0; right: 0;
+    background: rgba(0,0,0,0.92); color: #e8eef5;
+    padding: 14px 20px;
+    font: 13px/1.4 -apple-system, "Segoe UI", sans-serif;
+    z-index: 1000; border-bottom: 2px solid #1e293b;
+    display: grid; grid-template-columns: 1fr auto auto; gap: 16px; align-items: center;
+  }
+  .controls h1 { margin: 0; font-size: 16px; font-weight: 800; color: #38bdf8; }
+  .controls h1 small { font-weight: 500; color: #94a3b8; font-size: 12px; display: block; margin-top: 2px; }
+  .slider-wrap { display: flex; flex-direction: column; gap: 4px; min-width: 320px; }
+  .slider-wrap label { color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .rpm-row { display: flex; gap: 12px; align-items: center; }
+  .rpm-display { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 800; color: #38bdf8; min-width: 90px; text-align: right; }
+  .rpm-display .unit { color: #475569; font-size: 12px; font-weight: 500; margin-left: 4px; }
+  input[type=range] { flex: 1; height: 36px; }
+  .btn-row { display: flex; gap: 8px; }
+  .btn { background: #1e293b; color: #e8eef5; border: 1px solid #334155;
+         padding: 8px 14px; font-size: 12px; font-weight: 700; border-radius: 6px; cursor: pointer; }
+  .btn:hover { background: #334155; }
+  .btn.primary { background: #38bdf8; color: #001724; border: none; }
+  .badges { display: flex; gap: 10px; align-items: center; }
+  .badge { padding: 5px 11px; border-radius: 5px; font-weight: 700; font-size: 11px; }
+  .badge.ok { background: #0f3a23; color: #86efac; }
+  .badge.warn { background: #3a2a0f; color: #fcd34d; }
+  .badge.bad  { background: #3a0f0f; color: #fca5a5; }
+  .legend {
+    position: fixed; bottom: 12px; left: 12px; max-width: 380px;
+    background: rgba(0,0,0,0.7); color: #cbd5e1;
+    font: 11px/1.5 -apple-system, "Segoe UI", sans-serif;
+    padding: 10px 12px; border-radius: 6px; z-index: 999;
+  }
+  .legend h3 { margin: 0 0 6px 0; font-size: 12px; color: #38bdf8; }
+  .legend table { border-collapse: collapse; width: 100%; }
+  .legend td { padding: 2px 6px 2px 0; }
+  .legend td:first-child { color: #94a3b8; }
+  .legend .marker { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .stage { padding-top: 86px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <h1>P1 Fast — Demonstração do Cockpit Piloto
+    <small>Mexe na rotação aqui pra ver o shift light reagir, sem precisar do carro plugado</small>
+  </h1>
+  <div class="slider-wrap">
+    <label>Rotação simulada</label>
+    <div class="rpm-row">
+      <input type="range" id="rpmSlider" min="0" max="7000" step="50" value="900">
+      <div class="rpm-display"><span id="rpmValue">900</span><span class="unit">rpm</span></div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn primary" id="btnPuxada">Simular puxada</button>
+    <button class="btn" id="btnParar">Parar</button>
+  </div>
+</div>
+
+<div class="badges" style="position:fixed; top:90px; right:20px; z-index:1000;">
+  <span class="badge warn" id="modeBadge">modo: aguardando</span>
+  <span class="badge ok" id="dynoBadge">curva: carregando…</span>
+</div>
+
+<div class="stage">
+  <div class="device" id="device" data-trecho-status="neutro" data-msg-state="oculta" data-shift-fire="idle">
+    <div class="notch"></div>
+    <div class="fire-overlay"></div>
+
+    <div class="telemetria-chip">
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+    </div>
+
+    <div class="shift-light" id="shiftLight" data-state="off">
+      <span class="shift-light__dot" data-tier="1"></span>
+      <span class="shift-light__dot" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="1"></span>
+    </div>
+
+    <section class="apex">
+      <div class="apex__ponto" data-estado="pendente">
+        <span class="apex__label">Entrada</span><span class="apex__valor">—</span>
+      </div>
+      <div class="apex__ponto" data-estado="pendente" data-papel="freio">
+        <span class="apex__label">Freio</span><span class="apex__valor">—</span>
+      </div>
+      <div class="apex__ponto" data-estado="pendente">
+        <span class="apex__label">Ápice</span><span class="apex__valor">—</span>
+      </div>
+      <div class="apex__ponto" data-estado="pendente">
+        <span class="apex__label">Saída</span><span class="apex__valor">—</span>
+      </div>
+    </section>
+
+    <div class="info-bloco">
+      <span class="info__delta">0.00</span>
+      <div class="info__acao"></div>
+    </div>
+
+    <aside class="alert-bloco" id="alertBloco" data-tipo="comunicacao">
+      <div class="alert__msg" id="alertMsg"></div>
+    </aside>
+
+    <div class="stint-bar">
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <h3>Como interpretar as luzes</h3>
+  <table>
+    <tr><td><span class="marker" style="background:#475569"></span>Apagadas</td><td>rotação abaixo de 4.900 rpm</td></tr>
+    <tr><td><span class="marker" style="background:#22c55e"></span>Verdes (1-4)</td><td>4.900 a 5.100 rpm — começou o aviso</td></tr>
+    <tr><td><span class="marker" style="background:#eab308"></span>Amarelas (5-8)</td><td>5.100 a 5.200 rpm — quase no pico</td></tr>
+    <tr><td><span class="marker" style="background:#ef4444"></span>TODAS vermelhas + brilho</td><td><b>5.200 rpm = troca AGORA</b> (pico de torque)</td></tr>
+    <tr><td><span class="marker" style="background:#7f1d1d"></span>Halo vermelho fixo</td><td>acima de 6.300 (passou do limite)</td></tr>
+  </table>
+</div>
+
+<script type="module">
+import { CockpitState } from './cockpit-state.js';
+import { attachRendererToDocument } from './cockpit-renderer.js';
+import { LiveDataBridge, DEFAULT_LIMITS } from './live-data-bridge.js';
+import { loadDynoCurve, BUBI_CARRO_ID } from './dyno-loader.js';
+
+// Defaults pro Bubi (sobrescritos pela curva da nuvem quando carregar)
+const BUBI_LIMITS = {
+  ...DEFAULT_LIMITS,
+  redlineRpm: 6300,
+  peakTorqueRpm: 5200,
+  torqueLitOffsetRpm: 300,
+};
+
+const cockpitState = new CockpitState();
+attachRendererToDocument(cockpitState, document);
+const bridge = new LiveDataBridge({ cockpitState, limits: BUBI_LIMITS });
+
+const $ = id => document.getElementById(id);
+
+// Carregar curva da nuvem
+loadDynoCurve(BUBI_CARRO_ID).then(curva => {
+  if (curva) {
+    bridge.setLimits({
+      peakTorqueRpm: curva.peakTorqueRpm,
+      redlineRpm: curva.redlineRpm ?? BUBI_LIMITS.redlineRpm,
+    });
+    $('dynoBadge').className = 'badge ok';
+    $('dynoBadge').textContent = `curva ${curva.apelido}: pico ${curva.peakTorqueNm.toFixed(0)} Nm @ ${curva.peakTorqueRpm} rpm`;
+  } else {
+    $('dynoBadge').className = 'badge warn';
+    $('dynoBadge').textContent = `curva: usando default (pico ${BUBI_LIMITS.peakTorqueRpm} rpm)`;
+  }
+}).catch(e => {
+  $('dynoBadge').className = 'badge bad';
+  $('dynoBadge').textContent = 'curva: erro ' + e.message;
+});
+
+// Aplicar uma amostra com RPM X
+function applyRpm(rpm) {
+  bridge.ingestT4000({
+    source: 'demo',
+    parserVersion: 'demo',
+    tMono: performance.now(),
+    checksumOk: true,
+    bytesLen: 0,
+    rpm,
+  });
+  $('rpmValue').textContent = String(rpm);
+  $('rpmSlider').value = String(rpm);
+}
+
+// Slider manual
+$('rpmSlider').addEventListener('input', (e) => {
+  const rpm = Number(e.target.value);
+  $('modeBadge').className = 'badge warn';
+  $('modeBadge').textContent = 'modo: manual';
+  cancelarPuxada();
+  applyRpm(rpm);
+});
+
+// Puxada automática (1.000 → 6.500 → 1.000)
+let puxadaTimer = null;
+function cancelarPuxada() {
+  if (puxadaTimer) { clearInterval(puxadaTimer); puxadaTimer = null; }
+}
+
+$('btnPuxada').addEventListener('click', () => {
+  cancelarPuxada();
+  $('modeBadge').className = 'badge ok';
+  $('modeBadge').textContent = 'modo: puxada automática';
+  let rpm = 1000;
+  let direcao = 1;
+  applyRpm(rpm);
+  puxadaTimer = setInterval(() => {
+    rpm += 50 * direcao;
+    if (rpm >= 6500) { direcao = -1; }
+    if (rpm <= 1000) {
+      cancelarPuxada();
+      $('modeBadge').className = 'badge warn';
+      $('modeBadge').textContent = 'modo: parado';
+    }
+    applyRpm(rpm);
+  }, 60); // 1 segundo até passar pelo pico, depois desce
+});
+
+$('btnParar').addEventListener('click', () => {
+  cancelarPuxada();
+  $('modeBadge').className = 'badge warn';
+  $('modeBadge').textContent = 'modo: parado';
+});
+
+// Boot inicial
+applyRpm(900);
+$('modeBadge').className = 'badge warn';
+$('modeBadge').textContent = 'modo: pronto — clica em "Simular puxada" ou mexe o slider';
+
+window.__demo = { cockpitState, bridge, applyRpm };
+</script>
+
+</body>
+</html>
