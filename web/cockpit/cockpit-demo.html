@@ -339,23 +339,40 @@ $('btnModeSaida').addEventListener('click', () => {
 // (e, no futuro, pelo iPhone publicando GPS no canal Realtime).
 let _detector = null;
 let _curvasGlobal = [];
+let _melhores = new Map(); // "segmentoId|momento" → velocidade_kmh
 
-function gravarEntradaPorCurva(curva) {
-  const velKmh = Number($('rpmSlider').value) ? Math.round((Number($('rpmSlider').value) / 3000) * 50) : 0;
-  cockpitState.setApexPonto('entrada', {
-    estado: ApexEstado.OK_PIOR,
-    valorKmh: velKmh,
+function velocidadeAtual() {
+  const rpm = Number($('rpmSlider').value) || 900;
+  return Math.round((rpm / 3000) * 50);
+}
+
+async function registrarPassagem(papel, curva) {
+  const vel = velocidadeAtual();
+  const chave = `${curva.id}|${papel}`;
+  const ref = _melhores.get(chave);
+  const foiMelhor = ref === undefined || vel > ref;
+  // pinta verde se foi a melhor já registrada; vermelho caso contrário
+  cockpitState.setApexPonto(papel, {
+    estado: foiMelhor ? ApexEstado.OK_MELHOR : ApexEstado.OK_PIOR,
+    valorKmh: vel,
     nomeCurva: shortLabel(curva.nome),
   });
+  // salva no banco se nova for melhor (mantém a melhor de sempre por trecho/carro)
+  if (foiMelhor) {
+    _melhores.set(chave, vel);
+    try {
+      await salvarPassagemSeMelhor({
+        carroId: '641a81e7-3192-4e68-8183-b8401f105574',  // Bolinha (Bubi)
+        segmentoId: curva.id,
+        momento: papel,
+        velocidadeKmh: vel,
+      });
+    } catch (e) { console.warn('[demo] erro salvar:', e.message); }
+  }
 }
-function gravarSaidaPorCurva(curva) {
-  const velKmh = Number($('rpmSlider').value) ? Math.round((Number($('rpmSlider').value) / 3000) * 50) : 0;
-  cockpitState.setApexPonto('saida', {
-    estado: ApexEstado.OK_PIOR,
-    valorKmh: velKmh,
-    nomeCurva: shortLabel(curva.nome),
-  });
-}
+
+function gravarEntradaPorCurva(curva) { registrarPassagem('entrada', curva); }
+function gravarSaidaPorCurva(curva) { registrarPassagem('saida', curva); }
 
 // Simulador de volta no GPS: percorre os apex em sequência com pequenas variações.
 // Usa as âncoras de Brasília pra converter SVG → lat/lng e alimentar o detector
