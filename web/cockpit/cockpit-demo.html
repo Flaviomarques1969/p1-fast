@@ -282,12 +282,28 @@ $('btnParar').addEventListener('click', () => {
   $('modeBadge').textContent = 'modo: parado';
 });
 
+// Botões de alarmes — ligam/desligam um bit por vez (toggle)
+const rpmAtual = () => Number($('rpmSlider').value) || 900;
+document.querySelectorAll('.alarms-bar .btn.alarm[data-alarme]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const chave = btn.dataset.alarme;
+    alarmesAtivos[chave] = !alarmesAtivos[chave];
+    btn.classList.toggle('is-on', alarmesAtivos[chave]);
+    applyRpm(rpmAtual());
+  });
+});
+$('btnLimparAlarmes').addEventListener('click', () => {
+  for (const k of Object.keys(alarmesAtivos)) alarmesAtivos[k] = false;
+  document.querySelectorAll('.alarms-bar .btn.alarm.is-on').forEach(b => b.classList.remove('is-on'));
+  applyRpm(rpmAtual());
+});
+
 // Boot inicial
 applyRpm(900);
 $('modeBadge').className = 'badge warn';
 $('modeBadge').textContent = 'modo: pronto — clica em "Simular puxada" ou mexe o slider';
 
-window.__demo = { cockpitState, bridge, applyRpm };
+window.__demo = { cockpitState, bridge, applyRpm, alarmesAtivos };
 </script>
 
 </body>
