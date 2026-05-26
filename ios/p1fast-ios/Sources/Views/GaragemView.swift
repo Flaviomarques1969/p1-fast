@@ -32,9 +32,14 @@ struct GaragemView: View {
     /// launch args `--p1-garagem-novo` / `--p1-garagem-carro` pra
     /// screenshot dos modais.
     var initialSheet: GaragemSheet?
+    /// Handler do menu inferior — injetado pela HomeView pra permitir
+    /// pular pra outra aba direto desta sub-view (fix tab-bar 2026-05-12).
+    var onNavSelect: (BottomNavItem) -> Void = { _ in }
 
-    init(initialSheet: GaragemSheet? = nil) {
+    init(initialSheet: GaragemSheet? = nil,
+         onNavSelect: @escaping (BottomNavItem) -> Void = { _ in }) {
         self.initialSheet = initialSheet
+        self.onNavSelect = onNavSelect
     }
 
     var body: some View {
@@ -48,7 +53,7 @@ struct GaragemView: View {
             }
             .background(Color.surface)
 
-            BottomNav(items: navItems, selection: $navSelection)
+            BottomNav(items: navItems, selection: $navSelection, onSelect: onNavSelect)
         }
         .overlay(alignment: .bottomTrailing) {
             FAB("Novo carro") { sheet = .novo }

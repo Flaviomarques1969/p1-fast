@@ -168,23 +168,49 @@ struct HomeView: View {
 
     @ViewBuilder
     private func destinationView(for target: HomeNavTarget) -> some View {
+        // Fix tab-bar: cada sub-view recebe o handler do menu de baixo
+        // pra que o usuário possa pular pra outra aba sem precisar
+        // voltar manualmente pra Home antes. Quando a sub-view chama
+        // este handler, navPath é resetado e o novo destino empilhado.
+        let nav: (BottomNavItem) -> Void = { item in
+            navigateFromSubView(to: item)
+        }
         switch target {
         case .eventos:
-            EventosListaView()
+            EventosListaView(onNavSelect: nav)
         case .eventosNovo:
-            EventosListaView(initialSheet: .novo)
+            EventosListaView(initialSheet: .novo, onNavSelect: nav)
         case .cadastros:
-            PessoasView()
+            PessoasView(onNavSelect: nav)
         case .garagem:
-            GaragemView()
+            GaragemView(onNavSelect: nav)
         case .garagemNovo:
-            GaragemView(initialSheet: .novo)
+            GaragemView(initialSheet: .novo, onNavSelect: nav)
         case .telemetriaDemo:
             if let builder = telemetriaDevView {
                 builder()
             } else {
                 EmptyView()
             }
+        }
+    }
+
+    /// Handler usado pelas sub-views quando o usuário toca em outro
+    /// item do menu inferior. Reset do navPath + push do novo destino.
+    /// "Home" só limpa o stack (volta pra raiz).
+    private func navigateFromSubView(to item: BottomNavItem) {
+        navPath = NavigationPath()
+        switch item.label {
+        case "Home":
+            break
+        case "Eventos":
+            navPath.append(HomeNavTarget.eventos)
+        case "Cadastros":
+            navPath.append(HomeNavTarget.cadastros)
+        case "Garagem":
+            navPath.append(HomeNavTarget.garagem)
+        default:
+            break
         }
     }
 
@@ -238,14 +264,6 @@ private struct FilledContent: View {
                 StatItem(value: "\(data.stintsTotal)", label: "Stints"),
             ])
 
-            if let evento = data.eventoAtivoHoje {
-                EventoAtivoHojeCard(evento: evento)
-            }
-
-            if let proximo = data.proximoEvento {
-                ProximoEventoCard(evento: proximo, hojeISO: data.eventoAtivoHoje?.dataISO ?? todayISO())
-            }
-
             if !data.carrosRecentes.isEmpty {
                 Text("Carros recentes".uppercased())
                     .font(.system(size: 11, weight: .semibold))
@@ -259,6 +277,27 @@ private struct FilledContent: View {
                         CarroRow(carro: carro)
                     }
                 }
+            }
+
+            // Próximos eventos no fim da página (decisão Flávio 2026-05-12).
+            // Antes ficava logo após o header — agora carros vêm primeiro.
+            // O bloco DevShortcuts (atalhos dev) é renderizado depois deste
+            // FilledContent pelo parent.
+            if data.eventoAtivoHoje != nil || data.proximoEvento != nil {
+                Text("Próximos eventos".uppercased())
+                    .font(.system(size: 11, weight: .semibold))
+                    .tracking(1.54)
+                    .foregroundStyle(Color.textFaint)
+                    .padding(.horizontal, Spacing.xs)
+                    .padding(.top, Spacing.sm)
+            }
+
+            if let evento = data.eventoAtivoHoje {
+                EventoAtivoHojeCard(evento: evento)
+            }
+
+            if let proximo = data.proximoEvento {
+                ProximoEventoCard(evento: proximo, hojeISO: data.eventoAtivoHoje?.dataISO ?? todayISO())
             }
         }
     }

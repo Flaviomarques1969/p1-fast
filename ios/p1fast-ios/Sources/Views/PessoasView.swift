@@ -94,10 +94,16 @@ struct PessoasView: View {
 
     var initialSheet: PessoasSheet?
     var initialSubTab: PessoasSubTab?
+    /// Handler do menu inferior — injetado pela HomeView pra permitir
+    /// pular pra outra aba direto desta sub-view (fix tab-bar 2026-05-12).
+    var onNavSelect: (BottomNavItem) -> Void = { _ in }
 
-    init(initialSheet: PessoasSheet? = nil, initialSubTab: PessoasSubTab? = nil) {
+    init(initialSheet: PessoasSheet? = nil,
+         initialSubTab: PessoasSubTab? = nil,
+         onNavSelect: @escaping (BottomNavItem) -> Void = { _ in }) {
         self.initialSheet = initialSheet
         self.initialSubTab = initialSubTab
+        self.onNavSelect = onNavSelect
     }
 
     var body: some View {
@@ -133,7 +139,7 @@ struct PessoasView: View {
             .background(Color.surface)
             .environment(\.defaultMinListRowHeight, 0)
 
-            BottomNav(items: navItems, selection: $navSelection)
+            BottomNav(items: navItems, selection: $navSelection, onSelect: onNavSelect)
         }
         .preferredColorScheme(.dark)
         .onAppear {
