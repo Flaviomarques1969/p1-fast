@@ -79,10 +79,10 @@ export function defaultCockpitState() {
     delta: { value: '0.00', tone: Tone.NEUTRO },
     acao:  { texto: '',     tone: Tone.NEUTRO },
     apex: {
-      entrada: { estado: ApexEstado.PENDENTE, valorKmh: null },
+      entrada: { estado: ApexEstado.PENDENTE, valorKmh: null, nomeCurva: null },
       freio:   { estado: ApexEstado.PENDENTE, atualM: null, refM: null },
-      apice:   { estado: ApexEstado.PENDENTE, valorKmh: null },
-      saida:   { estado: ApexEstado.PENDENTE, valorKmh: null },
+      apice:   { estado: ApexEstado.PENDENTE, valorKmh: null, nomeCurva: null },
+      saida:   { estado: ApexEstado.PENDENTE, valorKmh: null, nomeCurva: null },
     },
   };
 }

@@ -47,7 +47,20 @@
   .legend td { padding: 2px 6px 2px 0; }
   .legend td:first-child { color: #94a3b8; }
   .legend .marker { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
-  .stage { padding-top: 140px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .stage { padding-top: 188px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .curves-bar {
+    position: fixed; top: 134px; left: 0; right: 0;
+    background: rgba(15,23,42,0.95); color: #e8eef5;
+    padding: 8px 20px;
+    display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+    z-index: 999; border-bottom: 1px solid #1e293b;
+    font: 11px/1.3 -apple-system, "Segoe UI", sans-serif;
+  }
+  .curves-bar strong { color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 8px; }
+  .btn.curve { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; font-size: 11px; padding: 5px 10px; }
+  .btn.curve:hover { background: #334155; color: #fff; }
+  .btn.mode-btn { background: #1e293b; color: #94a3b8; border: 1px solid #334155; font-size: 11px; padding: 5px 10px; }
+  .btn.mode-btn.is-on { background: #38bdf8; color: #001724; border-color: #38bdf8; font-weight: 800; }
   .alarms-bar {
     position: fixed; top: 86px; left: 0; right: 0;
     background: rgba(15,23,42,0.95); color: #e8eef5;
@@ -81,24 +94,31 @@
   </div>
   <div class="btn-row">
     <button class="btn primary" id="btnPuxada">Simular puxada</button>
+    <button class="btn primary" id="btnVoltaGps">Simular volta no GPS</button>
     <button class="btn" id="btnParar">Parar</button>
   </div>
 </div>
 
 <div class="alarms-bar" id="alarmsBar">
   <strong>Alarmes da central:</strong>
-  <button class="btn alarm grave" data-alarme="baixaPressaoOleo">⚠ Pressão óleo</button>
-  <button class="btn alarm grave" data-alarme="excessoTempMotor">⚠ Temp. motor</button>
-  <button class="btn alarm grave" data-alarme="excessoRotacao">⚠ Excesso rotação</button>
-  <button class="btn alarm grave" data-alarme="baixaPressaoCombustivel">⚠ Pressão combustível</button>
-  <button class="btn alarm grave" data-alarme="excessoPressao">⚠ Pressão coletor</button>
-  <button class="btn alarm grave" data-alarme="excessoAberturaInjetor">⚠ Injetor aberto</button>
+  <button class="btn alarm grave" data-alarme="baixaPressaoOleo">⚠ Óleo</button>
+  <button class="btn alarm grave" data-alarme="excessoTempMotor">⚠ Motor quente</button>
+  <button class="btn alarm grave" data-alarme="baixaPressaoCombustivel">⚠ Combustível</button>
+  <button class="btn alarm grave" data-alarme="excessoRotacao">⚠ Rotação alta</button>
+  <button class="btn alarm grave" data-alarme="excessoPressao">⚠ Pressão alta</button>
   <button class="btn alarm aviso" data-alarme="wbMinimo">• Mistura pobre</button>
   <button class="btn alarm aviso" data-alarme="wbMaximo">• Mistura rica</button>
-  <button class="btn alarm aviso" data-alarme="alertaNivelCombustivel">• Combustível baixo</button>
-  <button class="btn alarm aviso" data-alarme="nbMinimo">• NB mín</button>
-  <button class="btn alarm aviso" data-alarme="nbMaximo">• NB máx</button>
+  <button class="btn alarm aviso" data-alarme="alertaNivelCombustivel">• Pouco combustível</button>
   <button class="btn" id="btnLimparAlarmes">Limpar</button>
+</div>
+
+<div class="curves-bar" id="curvesBar">
+  <strong>Curvas de Brasília:</strong>
+  <span style="display:flex; gap:4px; margin-right:8px;">
+    <button class="btn mode-btn is-on" id="btnModeEntrada">registrar entrada</button>
+    <button class="btn mode-btn" id="btnModeSaida">registrar saída</button>
+  </span>
+  <span id="curvesButtons" style="display:flex; gap:6px; flex-wrap:wrap;">carregando…</span>
 </div>
 
 <div class="badges" style="position:fixed; top:90px; right:20px; z-index:1000;">
@@ -136,16 +156,16 @@
     </div>
 
     <section class="apex">
-      <div class="apex__ponto" data-estado="pendente">
+      <div class="apex__ponto" data-estado="pendente" data-papel="entrada">
         <span class="apex__label">Entrada</span><span class="apex__valor">—</span>
       </div>
       <div class="apex__ponto" data-estado="pendente" data-papel="freio">
         <span class="apex__label">Freio</span><span class="apex__valor">—</span>
       </div>
-      <div class="apex__ponto" data-estado="pendente">
+      <div class="apex__ponto" data-estado="pendente" data-papel="apice">
         <span class="apex__label">Ápice</span><span class="apex__valor">—</span>
       </div>
-      <div class="apex__ponto" data-estado="pendente">
+      <div class="apex__ponto" data-estado="pendente" data-papel="saida">
         <span class="apex__label">Saída</span><span class="apex__valor">—</span>
       </div>
     </section>
@@ -182,10 +202,12 @@
 </div>
 
 <script type="module">
-import { CockpitState } from './cockpit-state.js';
+import { CockpitState, ApexEstado } from './cockpit-state.js';
 import { attachRendererToDocument } from './cockpit-renderer.js';
 import { LiveDataBridge, DEFAULT_LIMITS } from './live-data-bridge.js';
 import { loadDynoCurve, BUBI_CARRO_ID } from './dyno-loader.js';
+import { loadTrackSegments, onlyCurves, shortLabel, BRASILIA_TRACK_ID } from './track-loader.js';
+import { createDetector } from './track-detector.js';
 
 // Defaults pro Bubi (sobrescritos pela curva da nuvem quando carregar)
 const BUBI_LIMITS = {
@@ -278,6 +300,7 @@ $('btnPuxada').addEventListener('click', () => {
 
 $('btnParar').addEventListener('click', () => {
   cancelarPuxada();
+  pararVoltaSimulada();
   $('modeBadge').className = 'badge warn';
   $('modeBadge').textContent = 'modo: parado';
 });
@@ -296,6 +319,137 @@ $('btnLimparAlarmes').addEventListener('click', () => {
   for (const k of Object.keys(alarmesAtivos)) alarmesAtivos[k] = false;
   document.querySelectorAll('.alarms-bar .btn.alarm.is-on').forEach(b => b.classList.remove('is-on'));
   applyRpm(rpmAtual());
+});
+
+// Modo de registro: 'entrada' (padrão) ou 'saida'
+let modoRegistro = 'entrada';
+$('btnModeEntrada').addEventListener('click', () => {
+  modoRegistro = 'entrada';
+  $('btnModeEntrada').classList.add('is-on');
+  $('btnModeSaida').classList.remove('is-on');
+});
+$('btnModeSaida').addEventListener('click', () => {
+  modoRegistro = 'saida';
+  $('btnModeSaida').classList.add('is-on');
+  $('btnModeEntrada').classList.remove('is-on');
+});
+
+// Detector automático via GPS — alimentado pelo simulador de volta abaixo
+// (e, no futuro, pelo iPhone publicando GPS no canal Realtime).
+let _detector = null;
+let _curvasGlobal = [];
+
+function gravarEntradaPorCurva(curva) {
+  const velKmh = Number($('rpmSlider').value) ? Math.round((Number($('rpmSlider').value) / 3000) * 50) : 0;
+  cockpitState.setApexPonto('entrada', {
+    estado: ApexEstado.OK_PIOR,
+    valorKmh: velKmh,
+    nomeCurva: shortLabel(curva.nome),
+  });
+}
+function gravarSaidaPorCurva(curva) {
+  const velKmh = Number($('rpmSlider').value) ? Math.round((Number($('rpmSlider').value) / 3000) * 50) : 0;
+  cockpitState.setApexPonto('saida', {
+    estado: ApexEstado.OK_PIOR,
+    valorKmh: velKmh,
+    nomeCurva: shortLabel(curva.nome),
+  });
+}
+
+// Simulador de volta no GPS: percorre os apex em sequência com pequenas variações.
+// Usa as âncoras de Brasília pra converter SVG → lat/lng e alimentar o detector
+// (o caminho real é o inverso, mas pra simular invertemos).
+const ANCORA_A = { lat: -15.77000, lng: -47.90000, x: 410, y: 707 };
+const ANCORA_B = { lat: -15.77180, lng: -47.89800, x: 630, y: 400 };
+
+function svgToLatLng(x, y) {
+  const tX = (x - ANCORA_A.x) / (ANCORA_B.x - ANCORA_A.x);
+  const tY = (y - ANCORA_A.y) / (ANCORA_B.y - ANCORA_A.y);
+  return {
+    lat: ANCORA_A.lat + (ANCORA_B.lat - ANCORA_A.lat) * tY,
+    lng: ANCORA_A.lng + (ANCORA_B.lng - ANCORA_A.lng) * tX,
+  };
+}
+
+let _voltaTimer = null;
+function pararVoltaSimulada() {
+  if (_voltaTimer) { clearInterval(_voltaTimer); _voltaTimer = null; }
+}
+$('btnVoltaGps').addEventListener('click', () => {
+  pararVoltaSimulada();
+  if (!_detector || _curvasGlobal.length === 0) return;
+  $('modeBadge').className = 'badge ok';
+  $('modeBadge').textContent = 'modo: volta GPS simulada';
+  _detector.resetVolta();
+  let i = 0;
+  let interpStep = 0;
+  const stepsPorTrecho = 12; // 12 pontos GPS entre 1 apex e o próximo
+  _voltaTimer = setInterval(() => {
+    const cur = _curvasGlobal[i];
+    const next = _curvasGlobal[(i + 1) % _curvasGlobal.length];
+    const t = interpStep / stepsPorTrecho;
+    const x = cur.apex_x + (next.apex_x - cur.apex_x) * t;
+    const y = cur.apex_y + (next.apex_y - cur.apex_y) * t;
+    const { lat, lng } = svgToLatLng(x, y);
+    _detector.ingestGps(lat, lng);
+    interpStep += 1;
+    if (interpStep > stepsPorTrecho) { interpStep = 0; i = (i + 1) % _curvasGlobal.length; }
+    // ajusta o rpm pra "simular" velocidade variando entre curvas
+    const rpmSim = cur.corner_type === 'rapida' ? 5500 : cur.corner_type === 'media' ? 4500 : 3500;
+    applyRpm(rpmSim + Math.round(Math.random() * 200 - 100));
+  }, 200);
+});
+
+// Carregar curvas da Brasília e criar 1 botão pra cada
+loadTrackSegments(BRASILIA_TRACK_ID).then(segments => {
+  if (!segments) {
+    $('curvesButtons').textContent = 'erro ao carregar curvas';
+    return;
+  }
+  const curvas = onlyCurves(segments);
+  if (curvas.length === 0) {
+    $('curvesButtons').textContent = 'nenhuma curva cadastrada';
+    return;
+  }
+  // armazena globalmente pro simulador de volta + cria detector
+  _curvasGlobal = curvas;
+  _detector = createDetector({
+    curvas,
+    onCruzarEntrada: gravarEntradaPorCurva,
+    onCruzarSaida: gravarSaidaPorCurva,
+  });
+  $('curvesButtons').innerHTML = '';
+  for (const c of curvas) {
+    const btn = document.createElement('button');
+    btn.className = 'btn curve';
+    btn.textContent = shortLabel(c.nome);
+    btn.title = `Toca pra registrar ${modoRegistro} de ${c.nome}`;
+    btn.addEventListener('click', () => {
+      const rpm = Number($('rpmSlider').value) || 900;
+      const velKmh = Math.round((rpm / 3000) * 50);
+      cockpitState.setApexPonto(modoRegistro, {
+        estado: ApexEstado.OK_PIOR,
+        valorKmh: velKmh,
+        nomeCurva: shortLabel(c.nome),
+      });
+    });
+    $('curvesButtons').appendChild(btn);
+  }
+  const limpar = document.createElement('button');
+  limpar.className = 'btn';
+  limpar.textContent = 'Limpar';
+  limpar.addEventListener('click', () => {
+    for (const papel of ['entrada','saida']) {
+      cockpitState.setApexPonto(papel, {
+        estado: ApexEstado.PENDENTE,
+        valorKmh: null,
+        nomeCurva: null,
+      });
+    }
+  });
+  $('curvesButtons').appendChild(limpar);
+}).catch(e => {
+  $('curvesButtons').textContent = 'erro: ' + e.message;
 });
 
 // Boot inicial

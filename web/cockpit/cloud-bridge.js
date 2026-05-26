@@ -24,6 +24,7 @@ let _status = 'off';
 let _lastPublishTs = 0;
 let _stats = { sent: 0, dropped: 0, errors: 0, lastError: null };
 let _onStatusChange = () => {};
+let _onGpsPoint = null;
 
 export function getStatus() { return _status; }
 export function getStats()  { return { ..._stats }; }
@@ -38,6 +39,11 @@ export function onStatusChange(fn) {
   _onStatusChange = typeof fn === 'function' ? fn : (() => {});
 }
 
+/** Registrar callback pra eventos GPS recebidos do iPhone (lat, lng, speedKmh, tWall). */
+export function onGpsPoint(fn) {
+  _onGpsPoint = typeof fn === 'function' ? fn : null;
+}
+
 export async function startCloudBridge() {
   if (_channel) return _status;
   setStatus('connecting');
@@ -47,6 +53,12 @@ export async function startCloudBridge() {
     });
     _channel = _client.channel(CHANNEL_NAME, {
       config: { broadcast: { ack: false, self: false } },
+    });
+    // Listener pra pontos GPS publicados pelo iPhone
+    _channel.on('broadcast', { event: 'gps' }, (msg) => {
+      if (_onGpsPoint && msg && msg.payload) {
+        try { _onGpsPoint(msg.payload); } catch (e) { /* não derruba canal */ }
+      }
     });
     await new Promise((resolve, reject) => {
       _channel.subscribe((status, err) => {

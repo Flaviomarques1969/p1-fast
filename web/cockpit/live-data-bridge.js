@@ -86,22 +86,23 @@ export function rpmToShift(rpm, limits = DEFAULT_LIMITS) {
 }
 
 /**
- * 11 alarmes do bitfield da T3000 (offset 288 do bloco RI), em ordem de
- * gravidade — o mais grave vence quando há múltiplos ativos. Mensagens em
- * PT-BR, prontas pra mostrar no alert-bloco do painel canônico.
+ * Alarmes do bitfield da T3000 que o piloto consegue agir enquanto pilota,
+ * em ordem de gravidade — o mais grave vence quando há múltiplos ativos.
+ * Mensagens curtas e práticas em PT-BR.
+ *
+ * REMOVIDOS deliberadamente (piloto não pode fazer nada pilotando):
+ *   - excessoAberturaInjetor — questão de mapeamento, decisão de engenheiro
+ *   - nbMinimo / nbMaximo — sonda auxiliar (Bubi nem tem); duplica WB
  */
 export const ALARM_PRIORITY = Object.freeze([
-  ['baixaPressaoOleo',         MsgTipo.GRAVE,       'Pressão de óleo baixa'],
-  ['excessoTempMotor',         MsgTipo.GRAVE,       'Temperatura do motor crítica'],
-  ['excessoRotacao',           MsgTipo.GRAVE,       'Excesso de rotação'],
-  ['baixaPressaoCombustivel',  MsgTipo.GRAVE,       'Pressão de combustível baixa'],
-  ['excessoPressao',           MsgTipo.GRAVE,       'Pressão excessiva no coletor'],
-  ['excessoAberturaInjetor',   MsgTipo.GRAVE,       'Abertura excessiva do injetor'],
-  ['wbMinimo',                 MsgTipo.COMUNICACAO, 'Mistura pobre demais'],
-  ['wbMaximo',                 MsgTipo.COMUNICACAO, 'Mistura rica demais'],
-  ['alertaNivelCombustivel',   MsgTipo.COMUNICACAO, 'Nível de combustível baixo'],
-  ['nbMinimo',                 MsgTipo.COMUNICACAO, 'Sonda estreita no mínimo'],
-  ['nbMaximo',                 MsgTipo.COMUNICACAO, 'Sonda estreita no máximo'],
+  ['baixaPressaoOleo',         MsgTipo.GRAVE,       'ÓLEO BAIXO'],
+  ['excessoTempMotor',         MsgTipo.GRAVE,       'MOTOR QUENTE'],
+  ['baixaPressaoCombustivel',  MsgTipo.GRAVE,       'COMBUSTÍVEL BAIXO'],
+  ['excessoRotacao',           MsgTipo.GRAVE,       'ROTAÇÃO ALTA'],
+  ['excessoPressao',           MsgTipo.GRAVE,       'PRESSÃO ALTA'],
+  ['wbMinimo',                 MsgTipo.COMUNICACAO, 'Alivie'],
+  ['wbMaximo',                 MsgTipo.COMUNICACAO, 'Pra box'],
+  ['alertaNivelCombustivel',   MsgTipo.COMUNICACAO, 'Abasteça'],
 ]);
 
 /**
