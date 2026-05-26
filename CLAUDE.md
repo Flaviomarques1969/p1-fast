@@ -14,6 +14,15 @@
 
 **Sempre "você". NUNCA "tu/te/ti/teu/tua/contigo".** Vale para mensagens no chat, prompts pro Cloud Code, comentários em PR, commits, qualquer texto. Esta regra é §9.2 de `PLANO_FASE_1.md` e o Flávio reforçou em 2026-05-09.
 
+## Flávio NÃO é dev — REGRA DURA
+
+Flávio não é desenvolvedor e não tem background técnico. Reforçou em 2026-05-26 durante o teste da T4000 no carro.
+
+- **Nunca** mande ele abrir Gerenciador de Tarefas, finalizar processo, parar serviço, mexer no Registro do Windows, instalar programa técnico (Zadig, Wireshark, USBPcap), abrir terminal/PowerShell, rodar comando, ler log de console, ou qualquer ação que exija conhecimento de TI.
+- Comandos pra ele devem ser do tipo: "Aperta o botão X. Tira o cabo. Coloca de novo. Me manda foto."
+- Se a única solução exige passo técnico no Windows/iMac, **Claude faz** (ajustando código da página, mudando deploy, etc.) ou **diz que está fora do alcance do Flávio sozinho** e propõe quem faz (Cloud Code no iMac, suporte da Injepro, etc.) — não empurra a complexidade pra ele.
+- Quando precisar de informação técnica do notebook (descritores USB, lista de interfaces, processos abertos, etc.), **a página `p1t4000.vercel.app` é quem expõe na tela**. Se faltar info ali, Claude estende a página e republica, não pede ação manual no Windows.
+
 ## Decisões já fechadas — NÃO reabrir
 
 - **Não há mais Fase 2** — tudo entra em Fase 1 — `PLANO_FASE_1.md` §1 (decisão Flávio 2026-05-03)
