@@ -5,6 +5,20 @@
 
 > **Se você é Claude abrindo esta sessão pela primeira vez:**
 > Leia este arquivo primeiro, depois `docs/PLANO_FASE_1.md` (doc mestre), depois `docs/SESSION_HANDOFF_2026-05-13_pre-clear.md` se vier do "voltei" do Flávio, depois `~/.claude/projects/-Users-imac/memory/MEMORY.md` (memória global) + `~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/MEMORY.md` (memória do projeto).
+>
+> **Coração da fonte de dados:** `docs/FONTE_DADOS_AO_VIVO.md` — ponte T3000 → Supabase Realtime, validada em campo 2026-05-26. Painel em `p1t4000.vercel.app`. NÃO substituir sem decisão explícita.
+
+---
+
+## Sessão 2026-05-26 — fonte de dados ao vivo entregue
+
+Painel T3000 do Bubi agora **espelha cada amostra em tempo real num canal de broadcast da nuvem (Supabase Realtime)**. Coração da fonte de dados de pilotagem do projeto. Validado em campo: 2.901 amostras com motor parado/ligado, sensores conferidos contra software oficial INJEPRO T LINE v3.3.5 via foto.
+
+- PR #216 incorporada à versão oficial.
+- Conserto: sonda lambda agora lê banda larga (WB) em vez de estreita (NB).
+- 5 sensores verificados (RPM, TPS, bateria, água, lambda WB). MAP confere com oficial (-0,02 bar — pendência mecânica, não software).
+- Detalhes técnicos completos em `docs/FONTE_DADOS_AO_VIVO.md`.
+- Amostras brutas da sessão arquivadas em `docs/research/t3000-sessao-2026-05-26/`.
 
 ---
 
