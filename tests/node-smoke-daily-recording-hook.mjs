@@ -1,4 +1,4 @@
-// Smoke da Edge Function `daily-recording-ready`. Testa:
+// Smoke da Edge Function `daily-recording-hook`. Testa:
 //   - Validação HMAC SHA-256
 //   - Replay protection (timestamp fora da janela)
 //   - Parse de payload aninhado (Daily.co às vezes aninha `payload.payload`)
@@ -11,7 +11,7 @@
 import { readFile } from 'node:fs/promises';
 import { createHmac, randomBytes } from 'node:crypto';
 
-const src = await readFile('supabase/functions/daily-recording-ready/index.ts', 'utf8');
+const src = await readFile('supabase/functions/daily-recording-hook/index.ts', 'utf8');
 
 let ok = 0, fail = 0;
 function t(name, fn) {
@@ -197,14 +197,14 @@ t('DW-13: extrairPayload retorna undefined sem payload', () => {
 
 // ─── Asserções estruturais sobre o source TS ──────────────
 
-t('DW-14: source TS importa decodeBase64 do Deno std', () => {
-  if (!/decodeBase64/.test(src)) {
-    throw new Error('source não importa decodeBase64');
+t('DW-14: source TS decodifica base64 do segredo (atob nativo)', () => {
+  if (!/atob\(SEC\)/.test(src)) {
+    throw new Error('source não usa atob pra decodificar segredo');
   }
 });
 
-t('DW-15: source TS usa MAX_TIMESTAMP_SKEW_SECONDS = 5 * 60', () => {
-  if (!/MAX_TIMESTAMP_SKEW_SECONDS\s*=\s*5\s*\*\s*60/.test(src)) {
+t('DW-15: source TS usa MAX_SKEW_S = 5 * 60 (replay protection 5 min)', () => {
+  if (!/MAX_SKEW_S\s*=\s*5\s*\*\s*60/.test(src)) {
     throw new Error('constante de janela de tempo não encontrada');
   }
 });
@@ -221,15 +221,15 @@ t('DW-17: source TS filtra type recording.ready-to-download', () => {
   }
 });
 
-t('DW-18: source TS atualiza tabela video_streams', () => {
-  if (!/from\(["']video_streams["']\)/.test(src)) {
-    throw new Error('source não atualiza video_streams');
+t('DW-18: source TS atualiza tabela video_streams via REST', () => {
+  if (!/video_streams\?id=eq/.test(src)) {
+    throw new Error('source não atualiza video_streams via REST PATCH');
   }
 });
 
-t('DW-19: source TS rejeita método != POST', () => {
-  if (!/method-not-allowed/.test(src)) {
-    throw new Error('source não rejeita métodos não-POST');
+t('DW-19: source TS rejeita métodos não-POST (exceto GET/HEAD handshake)', () => {
+  if (!/method-not-allowed/.test(src) || !/req\.method === "GET"/.test(src)) {
+    throw new Error('source não trata GET handshake nem rejeita métodos não-POST');
   }
 });
 
