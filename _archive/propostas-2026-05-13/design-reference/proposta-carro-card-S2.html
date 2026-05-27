@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=430,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Proposta — Card do carro (S2) — P1 Fast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(20% 0.005 240);
+  --surface: oklch(24% 0.005 240);
+  --surface-2: oklch(28% 0.005 240);
+  --hairline: oklch(33% 0.005 240);
+  --text: oklch(95% 0.003 240);
+  --text-2: oklch(75% 0.01 240);
+  --text-3: oklch(58% 0.012 240);
+  --accent: oklch(78% 0.13 235);
+  --accent-2: oklch(82% 0.10 235 / .15);
+  --bom: oklch(78% 0.16 150);
+  --atencao: oklch(82% 0.16 80);
+  --erro: oklch(70% 0.20 25);
+  --radius: 14px;
+  --radius-sm: 10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{
+  min-height:100dvh;width:100vw;
+  background:linear-gradient(160deg, oklch(22% 0.005 240) 0%, oklch(18% 0.005 240) 100%);
+  color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  font-weight:400;
+}
+body{padding:0 0 24px;}
+
+.app{
+  max-width:480px;margin:0 auto;
+  padding:24px 20px 0;
+}
+
+/* HEADER */
+.head{
+  padding:8px 4px 24px;
+}
+.head__eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:5px 12px;
+  background:var(--accent-2);
+  border:1px solid oklch(78% 0.13 235 / .35);
+  border-radius:999px;
+  font-size:10px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);
+  margin-bottom:14px;
+}
+.head__eyebrow__dot{
+  width:5px;height:5px;border-radius:50%;
+  background:currentColor;
+}
+.head__title{
+  font-size:24px;font-weight:600;
+  letter-spacing:-.025em;line-height:1.15;
+  color:var(--text);margin-bottom:8px;
+}
+.head__sub{
+  font-size:14px;color:var(--text-2);line-height:1.5;
+}
+
+/* CONCEITO */
+.conceito{
+  margin-top:32px;
+  padding-top:24px;
+  border-top:1px solid var(--hairline);
+}
+.conceito__nome{
+  font-size:11px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);
+  margin-bottom:6px;
+}
+.conceito__titulo{
+  font-size:19px;font-weight:600;
+  color:var(--text);
+  letter-spacing:-.015em;
+  margin-bottom:10px;
+  line-height:1.25;
+}
+.conceito__desc{
+  font-size:13px;color:var(--text-2);
+  line-height:1.5;
+  margin-bottom:18px;
+}
+.conceito__exemplo{
+  background:transparent;
+  border:1px dashed oklch(33% 0.005 240);
+  border-radius:var(--radius);
+  padding:18px 14px;
+  display:flex;justify-content:center;
+  margin-bottom:18px;
+}
+
+/* === CONCEITO 1: AVATAR GRANDE === */
+.c1{
+  width:100%;
+  display:flex;align-items:center;gap:16px;
+  padding:18px;
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
+  text-align:left;cursor:pointer;
+}
+.c1__foto{
+  flex:0 0 auto;
+  width:84px;height:84px;border-radius:18px;
+  background:var(--surface-2);
+  overflow:hidden;
+  position:relative;
+  border:1px solid var(--hairline);
+}
+.c1__foto img{width:100%;height:100%;object-fit:cover;display:block;}
+.c1__body{flex:1 1 auto;min-width:0;}
+.c1__nome{
+  font-size:19px;font-weight:600;color:var(--text);
+  letter-spacing:-.015em;line-height:1.15;
+}
+.c1__modelo{
+  font-size:12px;color:var(--text-2);
+  margin-top:3px;line-height:1.3;
+}
+.c1__nums{
+  display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;
+  margin-top:10px;
+}
+.c1__num{display:flex;flex-direction:column;align-items:flex-start;}
+.c1__num__valor{
+  font-size:22px;font-weight:600;color:var(--text);
+  font-variant-numeric:tabular-nums;line-height:1;
+  letter-spacing:-.015em;
+}
+.c1__num__valor__unidade{
+  font-size:11px;font-weight:500;color:var(--text-3);
+  margin-left:3px;
+}
+.c1__num__rotulo{
+  font-size:10px;font-weight:500;
+  color:var(--text-3);
+  letter-spacing:.08em;text-transform:uppercase;
+  margin-top:5px;
+}
+
+/* === CONCEITO 2: FOTO BANNER NO TOPO === */
+.c2{
+  width:100%;
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
+  overflow:hidden;
+  text-align:left;cursor:pointer;
+  display:block;
+}
+.c2__foto{
+  width:100%;height:128px;
+  background:var(--surface-2);
+  overflow:hidden;position:relative;
+}
+.c2__foto img{width:100%;height:100%;object-fit:cover;display:block;}
+.c2__foto::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg, transparent 50%, oklch(20% 0.005 240 / .55) 100%);
+}
+.c2__corpo{padding:14px 16px 16px;}
+.c2__nome{
+  font-size:19px;font-weight:600;color:var(--text);
+  letter-spacing:-.015em;line-height:1.2;
+}
+.c2__modelo{
+  font-size:12px;color:var(--text-2);
+  margin-top:3px;line-height:1.3;
+}
+.c2__nums{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;
+  margin-top:12px;
+  padding-top:12px;border-top:1px solid var(--hairline);
+}
+.c2__num{display:flex;flex-direction:column;}
+.c2__num__valor{
+  font-size:18px;font-weight:600;color:var(--text);
+  font-variant-numeric:tabular-nums;
+  letter-spacing:-.01em;
+}
+.c2__num__valor span{
+  font-size:11px;font-weight:500;color:var(--text-3);
+  margin-left:3px;
+}
+.c2__num__rotulo{
+  font-size:10px;font-weight:500;color:var(--text-3);
+  letter-spacing:.08em;text-transform:uppercase;
+  margin-top:3px;
+}
+
+/* === CONCEITO 3: FOTO COMO FUNDO === */
+.c3{
+  position:relative;
+  width:100%;height:160px;
+  border-radius:var(--radius);
+  overflow:hidden;
+  cursor:pointer;
+  border:1px solid var(--hairline);
+  background:var(--surface);
+  text-align:left;
+}
+.c3__bg{
+  position:absolute;inset:0;
+  background-size:cover;background-position:center;
+}
+.c3__overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(180deg,
+    oklch(20% 0.005 240 / .45) 0%,
+    oklch(15% 0.005 240 / .55) 50%,
+    oklch(12% 0.005 240 / .92) 100%);
+}
+.c3__conteudo{
+  position:absolute;inset:0;
+  padding:16px;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  color:var(--text);
+}
+.c3__nome{
+  font-size:22px;font-weight:600;
+  letter-spacing:-.02em;line-height:1.1;
+  text-shadow:0 1px 8px oklch(12% 0.005 240 / .6);
+}
+.c3__modelo{
+  font-size:12px;
+  color:oklch(85% 0.005 240);
+  margin-top:3px;
+  text-shadow:0 1px 4px oklch(12% 0.005 240 / .6);
+}
+.c3__nums{
+  display:flex;gap:14px;flex-wrap:wrap;
+  margin-top:10px;
+}
+.c3__num{display:flex;flex-direction:column;}
+.c3__num__valor{
+  font-size:20px;font-weight:600;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:-.01em;
+  text-shadow:0 1px 6px oklch(12% 0.005 240 / .8);
+}
+.c3__num__valor span{
+  font-size:11px;color:oklch(80% 0.005 240);
+  font-weight:500;margin-left:3px;
+}
+.c3__num__rotulo{
+  font-size:10px;font-weight:500;
+  color:oklch(78% 0.005 240);
+  letter-spacing:.1em;text-transform:uppercase;
+  margin-top:2px;
+}
+
+/* === CONCEITO 4: FOTO VERTICAL LATERAL === */
+.c4{
+  display:flex;align-items:stretch;
+  width:100%;min-height:128px;
+  border-radius:var(--radius);overflow:hidden;
+  border:1px solid var(--hairline);
+  background:var(--surface);
+  text-align:left;cursor:pointer;
+}
+.c4__foto{
+  flex:0 0 132px;
+  background:var(--surface-2);
+  position:relative;
+}
+.c4__foto img{
+  width:100%;height:100%;object-fit:cover;display:block;
+}
+.c4__corpo{
+  flex:1 1 auto;
+  padding:14px 16px;
+  display:flex;flex-direction:column;justify-content:space-between;
+  min-width:0;
+}
+.c4__topo .c4__nome{
+  font-size:18px;font-weight:600;color:var(--text);
+  letter-spacing:-.015em;line-height:1.15;
+}
+.c4__topo .c4__modelo{
+  font-size:12px;color:var(--text-2);
+  margin-top:3px;line-height:1.3;
+}
+.c4__nums{
+  display:flex;flex-direction:column;gap:8px;
+  margin-top:12px;
+}
+.c4__num{
+  display:flex;align-items:baseline;justify-content:space-between;
+  gap:8px;padding-bottom:6px;
+  border-bottom:1px dashed oklch(33% 0.005 240 / .55);
+}
+.c4__num:last-child{border-bottom:0;padding-bottom:0;}
+.c4__num__rotulo{
+  font-size:10px;font-weight:500;color:var(--text-3);
+  letter-spacing:.08em;text-transform:uppercase;
+}
+.c4__num__valor{
+  font-size:15px;font-weight:600;color:var(--text);
+  font-variant-numeric:tabular-nums;
+  letter-spacing:-.01em;
+}
+.c4__num__valor span{
+  font-size:10px;color:var(--text-3);font-weight:500;
+  margin-left:2px;
+}
+
+/* === CAIXA DE DECISÃO === */
+.decisao{
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
+  padding:14px 16px;
+  margin-bottom:8px;
+}
+.decisao[data-status="aprovado"]{
+  border-color:oklch(78% 0.16 150 / .65);
+  background:oklch(78% 0.16 150 / .07);
+}
+.decisao__head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;
+}
+.decisao__rotulo{
+  font-size:10px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:var(--text-3);
+}
+.decisao__selo{
+  font-size:10px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  color:var(--bom);
+  padding:3px 10px;border-radius:999px;
+  background:oklch(78% 0.16 150 / .15);
+  border:1px solid oklch(78% 0.16 150 / .45);
+  display:none;
+}
+.decisao[data-status="aprovado"] .decisao__selo{display:inline-flex;}
+.decisao__textarea{
+  width:100%;min-height:60px;
+  font-family:inherit;font-size:13px;
+  color:var(--text);background:var(--surface-2);
+  border:1px solid var(--hairline);border-radius:var(--radius-sm);
+  padding:10px 12px;resize:vertical;
+  line-height:1.45;
+  margin-bottom:10px;
+}
+.decisao__textarea:focus{
+  outline:none;border-color:oklch(78% 0.13 235 / .55);
+  background:oklch(78% 0.13 235 / .05);
+}
+.decisao__textarea::placeholder{color:var(--text-3);}
+.decisao__linha{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.btn-aprovar{
+  padding:9px 18px;border-radius:999px;
+  background:var(--accent);color:oklch(12% 0.005 240);
+  border:0;cursor:pointer;
+  font-family:inherit;font-size:13px;font-weight:600;
+  transition:transform .12s ease, background .12s;
+}
+.btn-aprovar:hover{background:oklch(82% 0.14 235);}
+.btn-aprovar:active{transform:scale(.97);}
+.decisao[data-status="aprovado"] .btn-aprovar{
+  background:var(--bom);color:oklch(12% 0.005 240);
+}
+.btn-desfazer{
+  padding:9px 16px;border-radius:999px;
+  background:transparent;color:var(--text-2);
+  border:1px solid var(--hairline);cursor:pointer;
+  font-family:inherit;font-size:12px;font-weight:500;
+  display:none;
+}
+.decisao[data-status="aprovado"] .btn-desfazer{display:inline-flex;}
+.decisao__hint{
+  font-size:10px;color:var(--text-3);
+  letter-spacing:.04em;margin-left:auto;font-style:italic;
+}
+
+/* === PAINEL RESUMO === */
+.resumo{
+  position:sticky;bottom:0;
+  margin-top:32px;
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
+  padding:18px;
+  box-shadow:0 -10px 28px oklch(18% 0.005 240 / .55);
+}
+.resumo__titulo{
+  font-size:11px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:var(--text-3);
+  margin-bottom:10px;
+}
+.resumo__status{
+  font-size:15px;color:var(--text);font-weight:500;
+  margin-bottom:14px;line-height:1.4;
+}
+.resumo__status strong{color:var(--accent);}
+.resumo__acoes{
+  display:flex;gap:10px;flex-wrap:wrap;
+}
+.btn-copiar{
+  flex:1 1 auto;
+  padding:11px 18px;border-radius:999px;
+  background:var(--accent);color:oklch(12% 0.005 240);
+  border:0;cursor:pointer;
+  font-family:inherit;font-size:13px;font-weight:600;
+}
+.btn-copiar:hover{background:oklch(82% 0.14 235);}
+.btn-limpar{
+  padding:11px 16px;border-radius:999px;
+  background:transparent;color:var(--text-2);
+  border:1px solid var(--hairline);cursor:pointer;
+  font-family:inherit;font-size:12px;font-weight:500;
+}
+.copy-fb{
+  display:none;
+  margin-top:10px;
+  font-size:11px;color:var(--bom);font-weight:600;
+  letter-spacing:.04em;text-align:center;
+}
+.copy-fb[data-on="true"]{display:block;}
+
+/* opção: nenhuma das anteriores */
+.nenhuma{
+  margin-top:24px;
+  padding:14px 16px;
+  background:transparent;
+  border:1px dashed oklch(33% 0.005 240);
+  border-radius:var(--radius);
+}
+.nenhuma__rotulo{
+  font-size:10px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:var(--text-3);
+  margin-bottom:8px;
+}
+.nenhuma__desc{
+  font-size:12px;color:var(--text-2);
+  margin-bottom:10px;line-height:1.5;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="head">
+    <span class="head__eyebrow">
+      <span class="head__eyebrow__dot"></span>
+      Proposta visual — S2
+    </span>
+    <h1 class="head__title">Como o card do carro vai mostrar foto + km rodada + velocidade máxima + autódromos visitados</h1>
+    <p class="head__sub">4 conceitos visualmente diferentes. Em cada um a foto ocupa um lugar diferente do card. Os 3 números são os mesmos em todos: quilometragem rodada no app, velocidade máxima do carro, e quantos autódromos diferentes ele já visitou. Embaixo de cada exemplo tem campo de orientação e botão de aprovação. Só uma variante fica aprovada por vez.</p>
+  </header>
+
+  <!-- CONCEITO 1 -->
+  <section class="conceito">
+    <p class="conceito__nome">Conceito 1</p>
+    <h2 class="conceito__titulo">Foto avatar grande à esquerda, números empilhados no corpo</h2>
+    <p class="conceito__desc">Foto quadrada com cantos arredondados, do lado esquerdo. Nome do carro grande. Os 3 números aparecem em destaque embaixo do modelo, com etiqueta "km no app", "velocidade máxima" e "autódromos".</p>
+
+    <div class="conceito__exemplo">
+      <button class="c1" type="button">
+        <span class="c1__foto">
+          <img alt="Foto do Celta" src="data:image/svg+xml;utf8,&#60;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 84 84'&#62;&#60;defs&#62;&#60;linearGradient id='g' x1='0' x2='1' y1='0' y2='1'&#62;&#60;stop offset='0' stop-color='%23e8c200'/&#62;&#60;stop offset='1' stop-color='%23a07700'/&#62;&#60;/linearGradient&#62;&#60;/defs&#62;&#60;rect width='84' height='84' fill='url(%23g)'/&#62;&#60;path d='M10 56 Q42 26 74 56 L74 66 L10 66 Z' fill='%23191919' opacity='.55'/&#62;&#60;circle cx='24' cy='66' r='7' fill='%23191919'/&#62;&#60;circle cx='60' cy='66' r='7' fill='%23191919'/&#62;&#60;rect x='20' y='38' width='44' height='10' rx='2' fill='%23ffffff' opacity='.18'/&#62;&#60;/svg&#62;"/>
+        </span>
+        <span class="c1__body">
+          <span class="c1__nome">Celta 1.4</span>
+          <span class="c1__modelo">Chevrolet · Turismo</span>
+          <span class="c1__nums">
+            <span class="c1__num">
+              <span class="c1__num__valor">245<span class="c1__num__valor__unidade">km</span></span>
+              <span class="c1__num__rotulo">no app</span>
+            </span>
+            <span class="c1__num">
+              <span class="c1__num__valor">187<span class="c1__num__valor__unidade">km/h</span></span>
+              <span class="c1__num__rotulo">vel. máxima</span>
+            </span>
+            <span class="c1__num">
+              <span class="c1__num__valor">3</span>
+              <span class="c1__num__rotulo">autódromos</span>
+            </span>
+          </span>
+        </span>
+      </button>
+    </div>
+
+    <div class="decisao" data-variant="1">
+      <div class="decisao__head">
+        <span class="decisao__rotulo">Conceito 1 — sua decisão</span>
+        <span class="decisao__selo">Aprovado</span>
+      </div>
+      <textarea class="decisao__textarea" data-variant="1"
+                placeholder="Comentário ou orientação sobre este conceito (opcional)…"></textarea>
+      <div class="decisao__linha">
+        <button type="button" class="btn-aprovar" data-variant="1">Aprovar conceito 1</button>
+        <button type="button" class="btn-desfazer" data-variant="1">Desfazer</button>
+        <span class="decisao__hint" data-hint="1"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONCEITO 2 -->
+  <section class="conceito">
+    <p class="conceito__nome">Conceito 2</p>
+    <h2 class="conceito__titulo">Foto-banner no topo, dados em grid embaixo</h2>
+    <p class="conceito__desc">A foto ocupa toda a largura do topo do card (cerca de 128px de altura). Embaixo: nome + modelo. Mais embaixo: os 3 números lado a lado em 3 colunas iguais, com linha separadora. Sensação "vitrine".</p>
+
+    <div class="conceito__exemplo">
+      <button class="c2" type="button">
+        <span class="c2__foto">
+          <img alt="Foto banner do Celta" src="data:image/svg+xml;utf8,&#60;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 128' preserveAspectRatio='xMidYMid slice'&#62;&#60;defs&#62;&#60;linearGradient id='g' x1='0' x2='1' y1='0' y2='1'&#62;&#60;stop offset='0' stop-color='%23e8c200'/&#62;&#60;stop offset='.5' stop-color='%23c89800'/&#62;&#60;stop offset='1' stop-color='%237a5800'/&#62;&#60;/linearGradient&#62;&#60;/defs&#62;&#60;rect width='400' height='128' fill='url(%23g)'/&#62;&#60;path d='M60 90 Q200 50 340 90 L340 110 L60 110 Z' fill='%23191919' opacity='.6'/&#62;&#60;circle cx='110' cy='110' r='12' fill='%23191919'/&#62;&#60;circle cx='290' cy='110' r='12' fill='%23191919'/&#62;&#60;rect x='120' y='66' width='160' height='20' rx='4' fill='%23ffffff' opacity='.15'/&#62;&#60;path d='M0 100 L400 100' stroke='%23000' stroke-opacity='.15' stroke-width='1'/&#62;&#60;/svg&#62;"/>
+        </span>
+        <span class="c2__corpo">
+          <span class="c2__nome">Celta 1.4</span>
+          <span class="c2__modelo">Chevrolet · Turismo</span>
+          <span class="c2__nums">
+            <span class="c2__num">
+              <span class="c2__num__valor">245<span>km</span></span>
+              <span class="c2__num__rotulo">no app</span>
+            </span>
+            <span class="c2__num">
+              <span class="c2__num__valor">187<span>km/h</span></span>
+              <span class="c2__num__rotulo">vel. máxima</span>
+            </span>
+            <span class="c2__num">
+              <span class="c2__num__valor">3</span>
+              <span class="c2__num__rotulo">autódromos</span>
+            </span>
+          </span>
+        </span>
+      </button>
+    </div>
+
+    <div class="decisao" data-variant="2">
+      <div class="decisao__head">
+        <span class="decisao__rotulo">Conceito 2 — sua decisão</span>
+        <span class="decisao__selo">Aprovado</span>
+      </div>
+      <textarea class="decisao__textarea" data-variant="2"
+                placeholder="Comentário ou orientação sobre este conceito (opcional)…"></textarea>
+      <div class="decisao__linha">
+        <button type="button" class="btn-aprovar" data-variant="2">Aprovar conceito 2</button>
+        <button type="button" class="btn-desfazer" data-variant="2">Desfazer</button>
+        <span class="decisao__hint" data-hint="2"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONCEITO 3 -->
+  <section class="conceito">
+    <p class="conceito__nome">Conceito 3</p>
+    <h2 class="conceito__titulo">Foto preenche o card inteiro, textos sobrepostos no rodapé</h2>
+    <p class="conceito__desc">A foto vira o fundo total do card. Sobre ela, um escurecimento gradual de cima pra baixo. Nome, modelo e os 3 números aparecem em cima da foto, alinhados na parte de baixo. Visual mais ousado e "premium" — exige que a foto tenha qualidade.</p>
+
+    <div class="conceito__exemplo">
+      <button class="c3" type="button">
+        <span class="c3__bg" style="background-image:url(&quot;data:image/svg+xml;utf8,&#60;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 480 160' preserveAspectRatio='xMidYMid slice'&#62;&#60;defs&#62;&#60;linearGradient id='g' x1='0' x2='1' y1='0' y2='1'&#62;&#60;stop offset='0' stop-color='%23f4cc00'/&#62;&#60;stop offset='.4' stop-color='%23c89800'/&#62;&#60;stop offset='1' stop-color='%23583e00'/&#62;&#60;/linearGradient&#62;&#60;/defs&#62;&#60;rect width='480' height='160' fill='url(%23g)'/&#62;&#60;path d='M80 120 Q240 78 400 120 L400 142 L80 142 Z' fill='%23131313' opacity='.65'/&#62;&#60;circle cx='130' cy='142' r='14' fill='%23131313'/&#62;&#60;circle cx='350' cy='142' r='14' fill='%23131313'/&#62;&#60;rect x='140' y='92' width='200' height='22' rx='4' fill='%23ffffff' opacity='.16'/&#62;&#60;/svg&#62;&quot;);"></span>
+        <span class="c3__overlay"></span>
+        <span class="c3__conteudo">
+          <span class="c3__nome">Celta 1.4</span>
+          <span class="c3__modelo">Chevrolet · Turismo</span>
+          <span class="c3__nums">
+            <span class="c3__num">
+              <span class="c3__num__valor">245<span>km</span></span>
+              <span class="c3__num__rotulo">no app</span>
+            </span>
+            <span class="c3__num">
+              <span class="c3__num__valor">187<span>km/h</span></span>
+              <span class="c3__num__rotulo">vel. máxima</span>
+            </span>
+            <span class="c3__num">
+              <span class="c3__num__valor">3</span>
+              <span class="c3__num__rotulo">autódromos</span>
+            </span>
+          </span>
+        </span>
+      </button>
+    </div>
+
+    <div class="decisao" data-variant="3">
+      <div class="decisao__head">
+        <span class="decisao__rotulo">Conceito 3 — sua decisão</span>
+        <span class="decisao__selo">Aprovado</span>
+      </div>
+      <textarea class="decisao__textarea" data-variant="3"
+                placeholder="Comentário ou orientação sobre este conceito (opcional)…"></textarea>
+      <div class="decisao__linha">
+        <button type="button" class="btn-aprovar" data-variant="3">Aprovar conceito 3</button>
+        <button type="button" class="btn-desfazer" data-variant="3">Desfazer</button>
+        <span class="decisao__hint" data-hint="3"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONCEITO 4 -->
+  <section class="conceito">
+    <p class="conceito__nome">Conceito 4</p>
+    <h2 class="conceito__titulo">Foto vertical à esquerda ocupando altura total, dados estilo ficha técnica</h2>
+    <p class="conceito__desc">Foto vertical (132px de largura) à esquerda, do topo até embaixo do card. À direita, lista estilo "ficha": cada número numa linha com etiqueta à esquerda e valor à direita. 3 linhas: km no app, velocidade máxima, autódromos. Sensação documental e organizada, escala bem se mais números forem adicionados depois.</p>
+
+    <div class="conceito__exemplo">
+      <button class="c4" type="button">
+        <span class="c4__foto">
+          <img alt="Foto vertical do Celta" src="data:image/svg+xml;utf8,&#60;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 132 132' preserveAspectRatio='xMidYMid slice'&#62;&#60;defs&#62;&#60;linearGradient id='g' x1='0' x2='1' y1='0' y2='1'&#62;&#60;stop offset='0' stop-color='%23f0c800'/&#62;&#60;stop offset='1' stop-color='%23805e00'/&#62;&#60;/linearGradient&#62;&#60;/defs&#62;&#60;rect width='132' height='132' fill='url(%23g)'/&#62;&#60;path d='M14 92 Q66 56 118 92 L118 106 L14 106 Z' fill='%23131313' opacity='.6'/&#62;&#60;circle cx='34' cy='108' r='9' fill='%23131313'/&#62;&#60;circle cx='98' cy='108' r='9' fill='%23131313'/&#62;&#60;rect x='28' y='68' width='76' height='14' rx='3' fill='%23ffffff' opacity='.16'/&#62;&#60;/svg&#62;"/>
+        </span>
+        <span class="c4__corpo">
+          <span class="c4__topo">
+            <span class="c4__nome">Celta 1.4</span>
+            <span class="c4__modelo">Chevrolet · Turismo</span>
+          </span>
+          <span class="c4__nums">
+            <span class="c4__num">
+              <span class="c4__num__rotulo">No app</span>
+              <span class="c4__num__valor">245<span>km</span></span>
+            </span>
+            <span class="c4__num">
+              <span class="c4__num__rotulo">Velocidade máxima</span>
+              <span class="c4__num__valor">187<span>km/h</span></span>
+            </span>
+            <span class="c4__num">
+              <span class="c4__num__rotulo">Autódromos</span>
+              <span class="c4__num__valor">3</span>
+            </span>
+          </span>
+        </span>
+      </button>
+    </div>
+
+    <div class="decisao" data-variant="4">
+      <div class="decisao__head">
+        <span class="decisao__rotulo">Conceito 4 — sua decisão</span>
+        <span class="decisao__selo">Aprovado</span>
+      </div>
+      <textarea class="decisao__textarea" data-variant="4"
+                placeholder="Comentário ou orientação sobre este conceito (opcional)…"></textarea>
+      <div class="decisao__linha">
+        <button type="button" class="btn-aprovar" data-variant="4">Aprovar conceito 4</button>
+        <button type="button" class="btn-desfazer" data-variant="4">Desfazer</button>
+        <span class="decisao__hint" data-hint="4"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- NENHUMA DAS ANTERIORES -->
+  <section class="nenhuma">
+    <p class="nenhuma__rotulo">Nenhuma das anteriores</p>
+    <p class="nenhuma__desc">Se nenhum dos 4 conceitos te agrada, descreve aqui o que você imagina e eu monto uma 5ª proposta com base no que você descrever.</p>
+    <textarea class="decisao__textarea" data-variant="0"
+              placeholder="Como você imagina o card do carro? (cores, hierarquia, tamanho da foto, posição dos números…)"></textarea>
+    <div class="decisao__linha">
+      <span class="decisao__hint" data-hint="0"></span>
+    </div>
+  </section>
+
+  <aside class="resumo">
+    <p class="resumo__titulo">Resumo das suas decisões</p>
+    <p class="resumo__status" id="status">Nenhum conceito aprovado ainda.</p>
+    <div class="resumo__acoes">
+      <button type="button" class="btn-copiar" id="copiar">Copiar decisão pra área de transferência</button>
+      <button type="button" class="btn-limpar" id="limpar">Limpar tudo</button>
+    </div>
+    <p class="copy-fb" id="fb">Copiado!</p>
+  </aside>
+
+</div>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'p1fast-s2-carro-card-decisoes-v2';
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return {comentarios:{'1':'','2':'','3':'','4':'','0':''}, aprovado:null};
+      const parsed = JSON.parse(raw);
+      return {
+        comentarios: Object.assign({'1':'','2':'','3':'','4':'','0':''}, parsed.comentarios || {}),
+        aprovado: parsed.aprovado || null
+      };
+    }catch(e){
+      return {comentarios:{'1':'','2':'','3':'','4':'','0':''}, aprovado:null};
+    }
+  }
+  function save(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+
+  const state = load();
+
+  // Hidrata textareas
+  ['1','2','3','4','0'].forEach(v => {
+    const ta = document.querySelector('textarea[data-variant="'+v+'"]');
+    if(ta) ta.value = state.comentarios[v] || '';
+  });
+
+  function refresh(){
+    ['1','2','3','4'].forEach(v => {
+      const box = document.querySelector('.decisao[data-variant="'+v+'"]');
+      if(!box) return;
+      if(state.aprovado === v) box.setAttribute('data-status','aprovado');
+      else box.removeAttribute('data-status');
+    });
+    const status = document.getElementById('status');
+    const nomes = {'1':'Conceito 1 (avatar grande)','2':'Conceito 2 (banner no topo)','3':'Conceito 3 (foto como fundo)','4':'Conceito 4 (foto vertical lateral)'};
+    if(state.aprovado){
+      const c = (state.comentarios[state.aprovado]||'').trim();
+      status.innerHTML = 'Você aprovou: <strong>'+nomes[state.aprovado]+'</strong>' +
+        (c ? '. Comentário: <em>"'+esc(c)+'"</em>' : '.');
+    }else{
+      const c0 = (state.comentarios['0']||'').trim();
+      if(c0){
+        status.innerHTML = 'Nenhum conceito aprovado. Você descreveu uma 5ª opção: <em>"'+esc(c0)+'"</em>';
+      }else{
+        status.textContent = 'Nenhum conceito aprovado ainda.';
+      }
+    }
+  }
+  function esc(s){return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);}
+
+  refresh();
+
+  // Auto-save textareas
+  document.querySelectorAll('textarea[data-variant]').forEach(ta => {
+    const v = ta.getAttribute('data-variant');
+    let timer = null;
+    ta.addEventListener('input', () => {
+      state.comentarios[v] = ta.value;
+      save(state);
+      const hint = document.querySelector('.decisao__hint[data-hint="'+v+'"]');
+      if(hint){
+        hint.textContent = 'Salvo';
+        clearTimeout(timer);
+        timer = setTimeout(()=>{ hint.textContent=''; }, 1500);
+      }
+      refresh();
+    });
+  });
+
+  // Aprovar
+  document.querySelectorAll('.btn-aprovar').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.aprovado = btn.getAttribute('data-variant');
+      save(state);
+      refresh();
+      document.getElementById('status').scrollIntoView({behavior:'smooth', block:'center'});
+    });
+  });
+
+  // Desfazer
+  document.querySelectorAll('.btn-desfazer').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.aprovado = null;
+      save(state);
+      refresh();
+    });
+  });
+
+  // Copiar
+  document.getElementById('copiar').addEventListener('click', async () => {
+    const nomes = {'1':'Conceito 1 (avatar grande)','2':'Conceito 2 (banner no topo)','3':'Conceito 3 (foto como fundo)','4':'Conceito 4 (foto vertical lateral)'};
+    const linhas = ['=== Decisão S2 — Card do carro ==='];
+    linhas.push('Aprovado: ' + (state.aprovado ? nomes[state.aprovado] : 'nenhum'));
+    ['1','2','3','4'].forEach(v => {
+      const c = (state.comentarios[v]||'').trim();
+      if(c) linhas.push('Comentário ' + nomes[v] + ': ' + c);
+    });
+    const c0 = (state.comentarios['0']||'').trim();
+    if(c0) linhas.push('5ª opção descrita: ' + c0);
+    const texto = linhas.join('\n');
+    try{
+      await navigator.clipboard.writeText(texto);
+      const fb = document.getElementById('fb');
+      fb.setAttribute('data-on','true');
+      setTimeout(()=>fb.removeAttribute('data-on'), 1800);
+    }catch(e){ alert(texto); }
+  });
+
+  // Limpar
+  document.getElementById('limpar').addEventListener('click', () => {
+    if(!confirm('Apaga aprovação e todos os comentários?')) return;
+    state.comentarios = {'1':'','2':'','3':'','4':'','0':''};
+    state.aprovado = null;
+    save(state);
+    document.querySelectorAll('textarea[data-variant]').forEach(ta => ta.value = '');
+    refresh();
+  });
+})();
+</script>
+
+</body>
+</html>
