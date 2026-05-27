@@ -1,3 +1,4 @@
+<!-- TODO [CLAUDE 2026-05-26 noite] obsoleto — confirmar com Flávio -->
 # Session handoff — 2026-05-13 (pré-`/clear` MS-16)
 
 > **Se você é Claude abrindo após o Flávio digitar "voltei":**
