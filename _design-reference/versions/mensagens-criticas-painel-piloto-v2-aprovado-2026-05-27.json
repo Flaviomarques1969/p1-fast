@@ -1,0 +1,250 @@
+{
+  "momento": "2026-05-27T18:20:07.196Z",
+  "titulo": "P1 Fast — Catálogo v2 de mensagens críticas · decisões",
+  "versao": "v2",
+  "total": 20,
+  "aprovadas": 14,
+  "editadas": 2,
+  "recusadas": 1,
+  "decisoes": [
+    {
+      "numero": "01",
+      "grupo": "super",
+      "situacao": "Temperatura do motor 20% acima do padrão histórico daquela combinação (carro + autódromo + pneu) OU acima de 70°C absoluto.",
+      "tags": [
+        "Sensor hoje",
+        "Preditivo",
+        "+ Limite 70°C"
+      ],
+      "texto_proposto": "MOTOR AQUECENDO",
+      "texto_final": "MOTOR AQUECENDO",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "02",
+      "grupo": "super",
+      "situacao": "Temperatura do motor passou de 80°C absoluto — risco real de quebra.",
+      "tags": [
+        "Sensor hoje",
+        "Limite 80°C"
+      ],
+      "texto_proposto": "MOTOR QUENTE",
+      "texto_final": "MOTOR QUENTE",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "03",
+      "grupo": "super",
+      "situacao": "Pressão de óleo abaixo do mínimo seguro com motor acima de 2000 rpm. Quebra do motor em segundos.",
+      "tags": [
+        "Sensor hoje",
+        "Bit T3000"
+      ],
+      "texto_proposto": "ÓLEO BAIXO",
+      "texto_final": "ÓLEO BAIXO",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "04",
+      "grupo": "super",
+      "situacao": "Combustível em nível crítico (~5%). Risco de parar na pista a qualquer instante.",
+      "tags": [
+        "Sensor hoje",
+        "Bit T3000"
+      ],
+      "texto_proposto": "COMBUSTÍVEL BAIXO",
+      "texto_final": "COMBUSTÍVEL BAIXO",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "05",
+      "grupo": "super",
+      "situacao": "Temperatura de algum pneu 20% acima do padrão histórico — risco de degradação acelerada ou pegar fogo.",
+      "tags": [
+        "Sensor a instalar",
+        "Preditivo"
+      ],
+      "texto_proposto": "PNEU AQUECENDO",
+      "texto_final": "PNEU AQUECENDO",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "06",
+      "grupo": "super",
+      "situacao": "Pressão de algum pneu 20% abaixo do padrão histórico — possível vazamento ou furo.",
+      "tags": [
+        "Sensor a instalar",
+        "Preditivo"
+      ],
+      "texto_proposto": "PRESSÃO PNEU",
+      "texto_final": "PRESSÃO PNEU",
+      "decisao": "editou"
+    },
+    {
+      "numero": "07",
+      "grupo": "super",
+      "situacao": "Pressão de algum pneu abaixo de 1.2 bar absoluto — pneu vazio ou furo grande.",
+      "tags": [
+        "Sensor a instalar",
+        "Limite 1.2 bar"
+      ],
+      "texto_proposto": "PNEU VAZIO",
+      "texto_final": "PNEU VAZIO",
+      "decisao": "recusou"
+    },
+    {
+      "numero": "08",
+      "grupo": "super",
+      "situacao": "Temperatura do câmbio 20% acima do padrão histórico — pode danificar engrenagens.",
+      "tags": [
+        "Sensor a instalar",
+        "Preditivo"
+      ],
+      "texto_proposto": "CÂMBIO AQUECENDO",
+      "texto_final": "CÂMBIO AQUECENDO",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "09",
+      "grupo": "super",
+      "situacao": "Temperatura do câmbio acima de 140°C absoluto — risco imediato.",
+      "tags": [
+        "Sensor a instalar",
+        "Limite 140°C"
+      ],
+      "texto_proposto": "CÂMBIO QUENTE",
+      "texto_final": "CÂMBIO QUENTE",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "10",
+      "grupo": "critico",
+      "situacao": "Temperatura do motor 20% abaixo do padrão histórico — possível trinca de radiador ou perda de líquido.",
+      "tags": [
+        "Sensor hoje",
+        "Preditivo"
+      ],
+      "texto_proposto": "MOTOR ESFRIANDO",
+      "texto_final": "MOTOR ESFRIANDO",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "11",
+      "grupo": "critico",
+      "situacao": "Mistura ar-combustível muito pobre (lambda alto). Risco de detonação e queima de pistão se persistir.",
+      "tags": [
+        "Sensor hoje",
+        "Lambda WB"
+      ],
+      "texto_proposto": "MISTURA POBRE",
+      "texto_final": "MISTURA POBRE",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "12",
+      "grupo": "critico",
+      "situacao": "Datalogger T3000 perdeu comunicação com o computador. Sistema cego pra todos os dados do motor.",
+      "tags": [
+        "Sensor hoje",
+        "Timeout"
+      ],
+      "texto_proposto": "SEM DADOS",
+      "texto_final": "SEM DADOS",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "13",
+      "grupo": "atencao",
+      "situacao": "Combustível abaixo de 15% — planejar próxima parada. Ainda dá pra rodar algumas voltas.",
+      "tags": [
+        "Sensor hoje",
+        "Bit T3000"
+      ],
+      "texto_proposto": "COMBUSTÍVEL BAIXO",
+      "texto_final": "COMBUSTÍVEL BAIXO",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "14",
+      "grupo": "atencao",
+      "situacao": "Mistura ar-combustível muito rica (lambda baixo). Motor afoga, perde potência.",
+      "tags": [
+        "Sensor hoje",
+        "Lambda WB"
+      ],
+      "texto_proposto": "MISTURA RICA",
+      "texto_final": "MISTURA RICA",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "15",
+      "grupo": "atencao",
+      "situacao": "Tempo de injeção desbalanceado entre cilindros — falha de ignição parcial. Perda de potência.",
+      "tags": [
+        "Sensor hoje",
+        "Derivado de cilindros"
+      ],
+      "texto_proposto": "FALHANDO",
+      "texto_final": "FALHANDO",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "16",
+      "grupo": "atencao",
+      "situacao": "Tensão da bateria abaixo do mínimo. Sistema elétrico pode falhar.",
+      "tags": [
+        "Sensor hoje",
+        "batteryV"
+      ],
+      "texto_proposto": "BATERIA",
+      "texto_final": "BATERIA",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "17",
+      "grupo": "atencao",
+      "situacao": "Temperatura de algum pneu acima da janela ideal (~95°C semi-slick). Desempenho cai.",
+      "tags": [
+        "Sensor a instalar",
+        "Limite janela"
+      ],
+      "texto_proposto": "PNEU QUENTE",
+      "texto_final": "PNEU QUENTE",
+      "decisao": "editou"
+    },
+    {
+      "numero": "18",
+      "grupo": "info",
+      "situacao": "Equipe pediu retorno imediato ao box.",
+      "tags": [
+        "Manual"
+      ],
+      "texto_proposto": "BOX",
+      "texto_final": "BOX",
+      "decisao": "sem-decisao"
+    },
+    {
+      "numero": "19",
+      "grupo": "info",
+      "situacao": "Última volta planejada da sessão.",
+      "tags": [
+        "Manual"
+      ],
+      "texto_proposto": "ÚLTIMA VOLTA",
+      "texto_final": "ÚLTIMA VOLTA",
+      "decisao": "sem-decisao"
+    },
+    {
+      "numero": "20",
+      "grupo": "info",
+      "situacao": "Sinal do GPS do iPhone falhou ou perdeu precisão (accuracy > 30m). Sistema não consegue posicionar o carro na pista.",
+      "tags": [
+        "Sensor hoje",
+        "Accuracy"
+      ],
+      "texto_proposto": "SEM GPS",
+      "texto_final": "SEM GPS",
+      "decisao": "sem-decisao"
+    }
+  ]
+}

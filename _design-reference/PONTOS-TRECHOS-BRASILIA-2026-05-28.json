@@ -1,0 +1,269 @@
+{
+  "_meta": {
+    "titulo": "8 trechos de Brasília — barras derivadas do trajeto GPS real",
+    "metodo": "Ápice = passagem mais próxima do trajeto. Entrada = 30m antes. Saída = 30m depois. Barra perpendicular, 12m largura.",
+    "gerado_em": "2026-05-28 (refatoração após rollback)"
+  },
+  "pista": {
+    "track_id": "e8335412-3312-54fe-b634-db2d02c7fa81",
+    "apelido": "Brasília"
+  },
+  "trechos": [
+    {
+      "ordem": 0,
+      "id": "seg_brasilia_0",
+      "nome": "CURVA 01",
+      "apice_gps": {
+        "lat": -15.7720235,
+        "lng": -47.8965953
+      },
+      "idx_apice": 246,
+      "entrada_line_gps": {
+        "a": {
+          "lat": -15.7718974,
+          "lng": -47.8968895
+        },
+        "b": {
+          "lat": -15.7718022,
+          "lng": -47.8968365
+        }
+      },
+      "idx_entrada": 245,
+      "saida_line_gps": {
+        "a": {
+          "lat": -15.7723494,
+          "lng": -47.8964373
+        },
+        "b": {
+          "lat": -15.7722799,
+          "lng": -47.8963515
+        }
+      },
+      "idx_saida": 247
+    },
+    {
+      "ordem": 2,
+      "id": "seg_brasilia_2",
+      "nome": "CURVA DA RETA OPOSTA",
+      "apice_gps": {
+        "lat": -15.7739802,
+        "lng": -47.9019389
+      },
+      "idx_apice": 693,
+      "entrada_line_gps": {
+        "a": {
+          "lat": -15.7737308,
+          "lng": -47.9016232
+        },
+        "b": {
+          "lat": -15.7738099,
+          "lng": -47.9015469
+        }
+      },
+      "idx_entrada": 691,
+      "saida_line_gps": {
+        "a": {
+          "lat": -15.7744337,
+          "lng": -47.9020574
+        },
+        "b": {
+          "lat": -15.7744059,
+          "lng": -47.9019492
+        }
+      },
+      "idx_saida": 695
+    },
+    {
+      "ordem": 3,
+      "id": "seg_brasilia_3",
+      "nome": "CURVA 2",
+      "apice_gps": {
+        "lat": -15.7797165,
+        "lng": -47.8959049
+      },
+      "idx_apice": 607,
+      "entrada_line_gps": {
+        "a": {
+          "lat": -15.779359,
+          "lng": -47.8956944
+        },
+        "b": {
+          "lat": -15.7794201,
+          "lng": -47.895602
+        }
+      },
+      "idx_entrada": 605,
+      "saida_line_gps": {
+        "a": {
+          "lat": -15.7797676,
+          "lng": -47.8963753
+        },
+        "b": {
+          "lat": -15.7798752,
+          "lng": -47.8963661
+        }
+      },
+      "idx_saida": 609
+    },
+    {
+      "ordem": 4,
+      "id": "seg_brasilia_4",
+      "nome": "CURVA DA JUNÇÃO",
+      "apice_gps": {
+        "lat": -15.7782949,
+        "lng": -47.9022903
+      },
+      "idx_apice": 292,
+      "entrada_line_gps": {
+        "a": {
+          "lat": -15.7785617,
+          "lng": -47.9021793
+        },
+        "b": {
+          "lat": -15.7786039,
+          "lng": -47.9022824
+        }
+      },
+      "idx_entrada": 291,
+      "saida_line_gps": {
+        "a": {
+          "lat": -15.7780433,
+          "lng": -47.9022014
+        },
+        "b": {
+          "lat": -15.7779946,
+          "lng": -47.9023014
+        }
+      },
+      "idx_saida": 293
+    },
+    {
+      "ordem": 6,
+      "id": "seg_brasilia_6",
+      "nome": "CURVA DA BRUXA",
+      "apice_gps": {
+        "lat": -15.7736283,
+        "lng": -47.8970424
+      },
+      "idx_apice": 482,
+      "entrada_line_gps": {
+        "a": {
+          "lat": -15.7739502,
+          "lng": -47.8967773
+        },
+        "b": {
+          "lat": -15.7739913,
+          "lng": -47.8968809
+        }
+      },
+      "idx_entrada": 480,
+      "saida_line_gps": {
+        "a": {
+          "lat": -15.773389,
+          "lng": -47.897528
+        },
+        "b": {
+          "lat": -15.7734898,
+          "lng": -47.8975681
+        }
+      },
+      "idx_saida": 484
+    },
+    {
+      "ordem": 8,
+      "id": "seg_brasilia_8",
+      "nome": "CURVA DO PLACAR",
+      "apice_gps": {
+        "lat": -15.7745527,
+        "lng": -47.8974684
+      },
+      "idx_apice": 715,
+      "entrada_line_gps": {
+        "a": {
+          "lat": -15.7743272,
+          "lng": -47.8978085
+        },
+        "b": {
+          "lat": -15.7742238,
+          "lng": -47.8977763
+        }
+      },
+      "idx_entrada": 713,
+      "saida_line_gps": {
+        "a": {
+          "lat": -15.7750071,
+          "lng": -47.897522
+        },
+        "b": {
+          "lat": -15.7750278,
+          "lng": -47.897412
+        }
+      },
+      "idx_saida": 717
+    },
+    {
+      "ordem": 9,
+      "id": "seg_brasilia_9",
+      "nome": "CURVA \"S\"",
+      "apice_gps": {
+        "lat": -15.7765917,
+        "lng": -47.9022435
+      },
+      "idx_apice": 216,
+      "entrada_line_gps": {
+        "a": {
+          "lat": -15.7767131,
+          "lng": -47.901862
+        },
+        "b": {
+          "lat": -15.7768059,
+          "lng": -47.9019193
+        }
+      },
+      "idx_entrada": 214,
+      "saida_line_gps": {
+        "a": {
+          "lat": -15.7760989,
+          "lng": -47.9022644
+        },
+        "b": {
+          "lat": -15.7761588,
+          "lng": -47.9023576
+        }
+      },
+      "idx_saida": 218
+    },
+    {
+      "ordem": 10,
+      "id": "seg_brasilia_10",
+      "nome": "CURVA DA VITÓRIA",
+      "apice_gps": {
+        "lat": -15.7742604,
+        "lng": -47.9026401
+      },
+      "idx_apice": 752,
+      "entrada_line_gps": {
+        "a": {
+          "lat": -15.7745418,
+          "lng": -47.9025176
+        },
+        "b": {
+          "lat": -15.7745636,
+          "lng": -47.9026273
+        }
+      },
+      "idx_entrada": 749,
+      "saida_line_gps": {
+        "a": {
+          "lat": -15.7740177,
+          "lng": -47.9025206
+        },
+        "b": {
+          "lat": -15.7739752,
+          "lng": -47.9026236
+        }
+      },
+      "idx_saida": 755
+    }
+  ]
+}

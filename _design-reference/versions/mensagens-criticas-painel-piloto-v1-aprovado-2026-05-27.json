@@ -1,0 +1,170 @@
+{
+  "momento": "2026-05-27T15:28:09.906Z",
+  "titulo": "P1 Fast — Mensagens CRÍTICAS do painel piloto · decisões",
+  "total": 20,
+  "aprovadas": 20,
+  "editadas": 0,
+  "recusadas": 0,
+  "decisoes": [
+    {
+      "numero": "01",
+      "situacao": "Temperatura da água passou do limite seguro (acima de ~105°C no Bubi). Risco de fundir junta ou trincar bloco.",
+      "categoria": "Motor",
+      "texto_proposto": "ÁGUA QUENTE",
+      "texto_final": "ÁGUA QUENTE",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "02",
+      "situacao": "Temperatura do óleo passou do limite (acima de ~130°C). Lubrificação compromete, risco de desgaste acelerado.",
+      "categoria": "Motor",
+      "texto_proposto": "ÓLEO QUENTE",
+      "texto_final": "ÓLEO QUENTE",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "03",
+      "situacao": "Pressão de óleo abaixo do mínimo seguro com motor acima de 2000 rpm. Risco IMEDIATO de quebra.",
+      "categoria": "Motor",
+      "texto_proposto": "ÓLEO BAIXO",
+      "texto_final": "ÓLEO BAIXO",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "04",
+      "situacao": "Temperatura dos gases de escape (EGT) acima do limite (~1500°C). Mistura pobre, risco de queimar válvula.",
+      "categoria": "Motor",
+      "texto_proposto": "ESCAPE QUENTE",
+      "texto_final": "ESCAPE QUENTE",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "05",
+      "situacao": "Mistura ar-combustível muito pobre (lambda alto). Risco de detonação e queima de pistão.",
+      "categoria": "Motor",
+      "texto_proposto": "MISTURA POBRE",
+      "texto_final": "MISTURA POBRE",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "06",
+      "situacao": "Mistura ar-combustível muito rica (lambda baixo). Motor afoga, perde potência e lava cilindro.",
+      "categoria": "Motor",
+      "texto_proposto": "MISTURA RICA",
+      "texto_final": "MISTURA RICA",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "07",
+      "situacao": "Sensor de detonação acionou — combustão fora do tempo. Pode quebrar pistão se persistir.",
+      "categoria": "Motor",
+      "texto_proposto": "DETONAÇÃO",
+      "texto_final": "DETONAÇÃO",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "08",
+      "situacao": "Falha de ignição detectada (misfire) — um ou mais cilindros falhando. Perda de potência + risco no escapamento.",
+      "categoria": "Motor",
+      "texto_proposto": "FALHANDO",
+      "texto_final": "FALHANDO",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "09",
+      "situacao": "Tensão da bateria abaixo do mínimo (geralmente 12V). Sistema elétrico pode falhar.",
+      "categoria": "Motor",
+      "texto_proposto": "BATERIA",
+      "texto_final": "BATERIA",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "10",
+      "situacao": "Combustível abaixo de 15% — ainda dá pra rodar mas precisa planejar a próxima parada.",
+      "categoria": "Combustível",
+      "texto_proposto": "COMBUSTÍVEL",
+      "texto_final": "COMBUSTÍVEL",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "11",
+      "situacao": "Combustível em nível crítico (abaixo de 5%). Risco de parar na pista.",
+      "categoria": "Combustível",
+      "texto_proposto": "ENCHE AGORA",
+      "texto_final": "ENCHE AGORA",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "12",
+      "situacao": "Pneu acima da temperatura ideal — desempenho cai e degrada acelerado.",
+      "categoria": "Pneu",
+      "texto_proposto": "PNEU QUENTE",
+      "texto_final": "PNEU QUENTE",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "13",
+      "situacao": "Pressão de um pneu caiu rápido — possível furo ou vazamento.",
+      "categoria": "Pneu",
+      "texto_proposto": "PNEU MURCHO",
+      "texto_final": "PNEU MURCHO",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "14",
+      "situacao": "Travamento de roda detectado durante a freada (slip ratio extremo).",
+      "categoria": "Freio",
+      "texto_proposto": "RODA TRAVOU",
+      "texto_final": "RODA TRAVOU",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "15",
+      "situacao": "Temperatura dos discos de freio acima do limite — risco de fade (perda de eficiência).",
+      "categoria": "Freio",
+      "texto_proposto": "FREIO QUENTE",
+      "texto_final": "FREIO QUENTE",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "16",
+      "situacao": "Sequência repetida de derrapagem em um mesmo trecho — pista pode estar molhada, com óleo ou sujeira.",
+      "categoria": "Pista",
+      "texto_proposto": "PISTA SUJA",
+      "texto_final": "PISTA SUJA",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "17",
+      "situacao": "Equipe de box pediu retorno imediato.",
+      "categoria": "Box",
+      "texto_proposto": "BOX",
+      "texto_final": "BOX",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "18",
+      "situacao": "Sinal do GPS do iPhone falhou ou está com qualidade muito baixa — sistema não consegue medir nada.",
+      "categoria": "Sistema",
+      "texto_proposto": "SEM GPS",
+      "texto_final": "SEM GPS",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "19",
+      "situacao": "Última volta planejada da sessão (de acordo com tempo total ou nº de voltas combinado).",
+      "categoria": "Sessão",
+      "texto_proposto": "ÚLTIMA VOLTA",
+      "texto_final": "ÚLTIMA VOLTA",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "20",
+      "situacao": "Datalogger T4000/T3000 perdeu comunicação com o computador. Sistema cego pra dados do motor.",
+      "categoria": "Sistema",
+      "texto_proposto": "SEM DADOS",
+      "texto_final": "SEM DADOS",
+      "decisao": "aprovou"
+    }
+  ]
+}

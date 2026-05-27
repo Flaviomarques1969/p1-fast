@@ -1,0 +1,146 @@
+{
+  "momento": "2026-05-27T14:51:23.607Z",
+  "titulo": "P1 Fast — Mensagens do painel piloto · decisões",
+  "total": 17,
+  "aprovadas": 17,
+  "editadas": 0,
+  "recusadas": 0,
+  "decisoes": [
+    {
+      "numero": "01",
+      "situacao": "Freou cedo demais — distância da linha de entrada até a freada está bem abaixo da referência (delta negativo).",
+      "controle": "Freio",
+      "texto_proposto": "FREOU CEDO",
+      "texto_final": "FREOU CEDO",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "02",
+      "situacao": "Freou tarde demais — atropelou a curva, distância acima da referência e velocidade no ápice caiu.",
+      "controle": "Freio",
+      "texto_proposto": "FREOU TARDE",
+      "texto_final": "FREOU TARDE",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "03",
+      "situacao": "Ápice aberto (foi externo demais). O piloto não girou o volante o suficiente. Bolinha do Ápice aponta pra dentro da curva.",
+      "controle": "Volante",
+      "texto_proposto": "VIROU POUCO",
+      "texto_final": "VIROU POUCO",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "04",
+      "situacao": "Ápice cortado (foi interno demais, raspou pista interna). O piloto girou o volante demais. Bolinha aponta pra fora.",
+      "controle": "Volante",
+      "texto_proposto": "VIROU MUITO",
+      "texto_final": "VIROU MUITO",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "05",
+      "situacao": "Saída lenta — velocidade ao cruzar a linha de saída ficou abaixo da referência. O piloto demorou pra abrir o acelerador.",
+      "controle": "Acelerador",
+      "texto_proposto": "ACELEROU TARDE",
+      "texto_final": "ACELEROU TARDE",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "06",
+      "situacao": "Atrasou o ápice — girou o volante depois da hora. Bolinha do Ápice aponta pra trás (ápice ficou atrás do piloto).",
+      "controle": "Volante",
+      "texto_proposto": "VIROU TARDE",
+      "texto_final": "VIROU TARDE",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "07",
+      "situacao": "Antecipou o ápice — girou o volante antes da hora. Bolinha do Ápice aponta pra frente.",
+      "controle": "Volante",
+      "texto_proposto": "VIROU CEDO",
+      "texto_final": "VIROU CEDO",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "08",
+      "situacao": "Entrada lenta — velocidade ao cruzar a linha de entrada ficou abaixo da referência. O piloto não pisou o suficiente no acelerador na reta anterior.",
+      "controle": "Acelerador",
+      "texto_proposto": "PISOU POUCO",
+      "texto_final": "PISOU POUCO",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "09",
+      "situacao": "Bateu o recorde DE SEMPRE no trecho (delta verde grande). Atual está acima do histórico do carro+pneu.",
+      "controle": "Resultado",
+      "texto_proposto": "RECORDE",
+      "texto_final": "RECORDE",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "10",
+      "situacao": "Está ganhando, mas com margem. Pode refinar mais.",
+      "controle": "Resultado",
+      "texto_proposto": "MANTEVE LINHA",
+      "texto_final": "MANTEVE LINHA",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "11",
+      "situacao": "Bateu a melhor do turno mas longe ainda do recorde absoluto. Tem espaço pra atacar mais.",
+      "controle": "Resultado",
+      "texto_proposto": "MELHOR STINT",
+      "texto_final": "MELHOR STINT",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "12",
+      "situacao": "Delta praticamente zero — está repetindo o que já fez. Pode buscar mais.",
+      "controle": "Sugestão",
+      "texto_proposto": "BUSCAR LIMITE",
+      "texto_final": "BUSCAR LIMITE",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "13",
+      "situacao": "Primeira volta dessa combinação (carro + autódromo + pneu) ou primeira passagem no trecho. Sem referência ainda.",
+      "controle": "Sistema",
+      "texto_proposto": "REGISTRANDO",
+      "texto_final": "REGISTRANDO",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "14",
+      "situacao": "Motor passou do giro máximo. Risco de quebra. Piloto precisa aliviar o pé do acelerador AGORA.",
+      "controle": "Acelerador",
+      "texto_proposto": "ALIVIA PÉ",
+      "texto_final": "ALIVIA PÉ",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "15",
+      "situacao": "Pneu chegou ou passou da temperatura ideal de trabalho — risco de cair desempenho ou degradar rápido.",
+      "controle": "Alerta",
+      "texto_proposto": "PNEU QUENTE",
+      "texto_final": "PNEU QUENTE",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "16",
+      "situacao": "Detectou perda de aderência repetida em um trecho — pista pode estar com água ou óleo.",
+      "controle": "Alerta",
+      "texto_proposto": "PISTA SUJA",
+      "texto_final": "PISTA SUJA",
+      "decisao": "aprovou"
+    },
+    {
+      "numero": "17",
+      "situacao": "Mecânico ou engenheiro do box pediu volta ao box agora.",
+      "controle": "Box",
+      "texto_proposto": "BOX",
+      "texto_final": "BOX",
+      "decisao": "aprovou"
+    }
+  ]
+}
