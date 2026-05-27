@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vocabulário de veredictos — frenagem (P1 Fast)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(20% 0.005 240);
+  --bg-2: oklch(18% 0.005 240);
+  --surface: oklch(24% 0.005 240);
+  --surface-2: oklch(28% 0.005 240);
+  --hairline: oklch(33% 0.005 240);
+  --text: oklch(95% 0.003 240);
+  --text-2: oklch(75% 0.01 240);
+  --text-3: oklch(58% 0.012 240);
+  --accent: oklch(78% 0.13 235);
+  --accent-soft: oklch(82% 0.10 235 / .15);
+  --gold: oklch(78% 0.12 80);
+  --good: oklch(72% 0.12 155);
+  --bad: oklch(68% 0.18 25);
+  --radius: 12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{
+  min-height:100dvh;
+  background:linear-gradient(160deg, oklch(22% 0.005 240) 0%, oklch(18% 0.005 240) 100%);
+  color:var(--text);font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;font-weight:400;line-height:1.55;
+}
+body{padding:0 0 96px;}
+.wrap{max-width:1040px;margin:0 auto;padding:0 28px;}
+
+.export-bar{
+  position:sticky;top:0;z-index:50;
+  background:rgba(18,20,28,0.92);
+  border-bottom:1px solid var(--hairline);
+  padding:14px 28px;margin:0 -28px 28px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  backdrop-filter:saturate(140%) blur(10px);
+}
+.progress{
+  font-size:13px;color:var(--text-2);
+  font-variant-numeric:tabular-nums;margin-right:auto;
+  display:flex;align-items:center;gap:10px;
+}
+.progress strong{color:var(--text);font-weight:600;}
+.progress-bar{width:120px;height:4px;background:var(--hairline);border-radius:2px;overflow:hidden;}
+.progress-bar-fill{height:100%;background:var(--good);width:0;transition:width .3s;}
+.export-bar button{
+  background:var(--accent);color:var(--bg);
+  border:none;border-radius:6px;padding:10px 16px;
+  font-family:inherit;font-size:13px;font-weight:600;
+  letter-spacing:.04em;cursor:pointer;transition:filter .15s;
+}
+.export-bar button:hover{filter:brightness(1.08);}
+.export-bar button.secondary{
+  background:transparent;color:var(--text-2);
+  border:1px solid var(--hairline);
+}
+.export-bar button.secondary:hover{border-color:var(--text-3);color:var(--text);}
+.save-status{
+  font-size:11px;color:var(--good);opacity:0;
+  transition:opacity .2s;font-variant-numeric:tabular-nums;
+  letter-spacing:.05em;text-transform:uppercase;
+}
+.save-status.visible{opacity:1;}
+
+header.head{
+  border-bottom:1px solid var(--hairline);
+  padding:32px 0 28px;margin-bottom:28px;
+}
+.eyebrow{
+  font-size:11px;font-weight:600;letter-spacing:.18em;
+  color:var(--text-3);text-transform:uppercase;margin-bottom:14px;
+}
+h1{font-size:30px;line-height:1.15;font-weight:600;letter-spacing:-.01em;margin-bottom:12px;}
+.lead{color:var(--text-2);font-size:15px;max-width:780px;}
+.lead strong{color:var(--text);font-weight:500;}
+.lead em{color:var(--gold);font-style:normal;}
+
+section{margin-bottom:36px;scroll-margin-top:80px;}
+h2{
+  font-size:18px;font-weight:600;color:var(--text);
+  margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--hairline);
+}
+
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:14px;
+}
+.card{
+  position:relative;
+  background:var(--surface);border:1px solid var(--hairline);
+  border-radius:var(--radius);padding:18px 20px 16px;
+  cursor:pointer;
+  transition:border-color .15s, background .15s, transform .15s;
+  user-select:none;
+}
+.card:hover{ border-color:var(--text-3); background:var(--surface-2); }
+.card.selected{
+  border-color:var(--good);
+  background:linear-gradient(180deg, oklch(32% 0.05 155 / .25), var(--surface-2));
+}
+.card.rejected{
+  border-color:var(--bad);
+  background:linear-gradient(180deg, oklch(32% 0.06 25 / .15), var(--surface));
+  opacity:0.55;
+}
+.card .term{
+  font-size:18px;font-weight:600;color:var(--text);
+  letter-spacing:.06em;text-transform:uppercase;
+  margin-bottom:6px;
+  font-variant-numeric:tabular-nums;
+}
+.card.selected .term{ color:var(--good); }
+.card.rejected .term{ color:var(--bad); text-decoration:line-through; }
+.card .desc{
+  font-size:13px;color:var(--text-2);line-height:1.5;
+  margin-bottom:10px;
+}
+.card .signal{
+  font-size:11px;color:var(--text-3);
+  font-family:ui-monospace,Menlo,monospace;
+  background:var(--bg-2);border:1px solid var(--hairline);
+  padding:6px 9px;border-radius:6px;
+  letter-spacing:.02em;
+  margin-bottom:12px;
+}
+.card .controls{
+  display:flex;flex-direction:column;gap:8px;
+  border-top:1px solid var(--hairline);padding-top:10px;
+}
+.card .rename-row{
+  display:flex;align-items:center;gap:8px;
+}
+.card .rename-row label{
+  font-size:11px;color:var(--text-3);
+  letter-spacing:.10em;text-transform:uppercase;
+  white-space:nowrap;
+}
+.card .rename-row input{
+  flex:1;background:var(--bg-2);
+  border:1px solid var(--hairline);color:var(--text);
+  padding:6px 8px;border-radius:5px;
+  font:inherit;font-size:12px;
+  letter-spacing:.04em;
+}
+.card .rename-row input:focus{ outline:none;border-color:var(--accent); }
+
+.card .verdict-pills{
+  display:flex;gap:6px;
+}
+.pill{
+  flex:1;
+  padding:6px 10px;border-radius:5px;
+  font-size:11px;font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;
+  text-align:center;
+  background:var(--bg-2);
+  border:1px solid var(--hairline);
+  color:var(--text-3);
+  cursor:pointer;
+  transition:all .15s;
+}
+.pill:hover{ color:var(--text); border-color:var(--text-3); }
+.card.selected .pill.use{
+  background:var(--good);
+  border-color:var(--good);
+  color:var(--bg);
+}
+.card.rejected .pill.skip{
+  background:var(--bad);
+  border-color:var(--bad);
+  color:var(--bg);
+}
+
+.audience{
+  display:flex;gap:6px;margin-top:6px;
+}
+.audience .a-pill{
+  flex:1;
+  padding:5px 8px;border-radius:4px;
+  font-size:10px;font-weight:500;
+  letter-spacing:.08em;text-transform:uppercase;
+  text-align:center;
+  background:var(--bg-2);
+  border:1px solid var(--hairline);
+  color:var(--text-3);
+  cursor:pointer;
+  transition:all .15s;
+}
+.audience .a-pill:hover{ color:var(--text); border-color:var(--text-3); }
+.audience .a-pill.active{
+  background:var(--accent-soft);
+  border-color:var(--accent);
+  color:var(--accent);
+}
+
+.outros{
+  margin-top:28px;padding-top:24px;
+  border-top:1px solid var(--hairline);
+}
+.outros h2{ border:none;padding:0;margin-bottom:8px; }
+.outros .hint{
+  font-size:13px;color:var(--text-2);margin-bottom:12px;
+  line-height:1.55;
+}
+.outros textarea{
+  width:100%;min-height:120px;
+  background:var(--surface);border:1px solid var(--hairline);
+  color:var(--text);padding:12px 14px;border-radius:8px;
+  font:inherit;font-size:14px;line-height:1.5;
+  resize:vertical;
+}
+.outros textarea:focus{ outline:none;border-color:var(--accent); }
+
+.help{
+  background:var(--bg-2);border:1px solid var(--hairline);
+  border-radius:8px;padding:14px 18px;margin-bottom:24px;
+  font-size:13px;color:var(--text-2);
+}
+.help strong{color:var(--text);}
+.help .legend{
+  display:flex;gap:18px;flex-wrap:wrap;margin-top:8px;
+  font-size:12px;color:var(--text-3);
+}
+.help .legend span{ display:inline-flex;align-items:center;gap:6px; }
+.help .legend i{
+  display:inline-block;width:10px;height:10px;border-radius:2px;
+}
+.help .legend .l-good{ background:var(--good); }
+.help .legend .l-bad{ background:var(--bad); }
+.help .legend .l-none{
+  background:transparent;border:1px solid var(--hairline);
+}
+
+</style>
+</head>
+<body>
+
+<div class="export-bar">
+  <div class="wrap" style="display:flex;align-items:center;gap:14px;flex:1;flex-wrap:wrap;padding:0;">
+    <div class="progress">
+      <strong id="progressTxt">0/10</strong> respondidos
+      <div class="progress-bar"><div class="progress-bar-fill" id="progressFill"></div></div>
+    </div>
+    <span class="save-status" id="saveStatus">salvo</span>
+    <button class="secondary" onclick="resetAll()">resetar</button>
+    <button onclick="copyAnswers()">copiar respostas</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header class="head">
+  <div class="eyebrow">P1 Fast · vista piloto · command box</div>
+  <h1>Vocabulário de veredictos — frenagem</h1>
+  <p class="lead">
+    Lista de candidatos pra classificar a frenagem do piloto. <strong>Clique no card pra alternar
+    entre <em>usar</em> / <em>não usar</em></strong>. Cada card mostra a descrição e o sinal técnico
+    (IMU + giro + T4000) que dispararia o veredicto. Pode renomear o termo se preferir outra palavra,
+    e marcar quem deve ver: piloto, engenheiro ou ambos.
+  </p>
+</header>
+
+<div class="help">
+  <strong>Como usar:</strong> primeiro clique = card vira <em>usar</em> (verde). Segundo clique = <em>não usar</em> (vermelho riscado). Terceiro = volta a neutro. No final, clica <em>copiar respostas</em>.
+  <div class="legend">
+    <span><i class="l-good"></i> usar</span>
+    <span><i class="l-bad"></i> não usar</span>
+    <span><i class="l-none"></i> ainda não decidi</span>
+  </div>
+</div>
+
+<section>
+  <h2>10 termos candidatos</h2>
+  <div class="cards" id="cards"></div>
+</section>
+
+<section class="outros">
+  <h2>Outros termos que faltam</h2>
+  <p class="hint">
+    Tem alguma palavra que você usa no box que descreve um tipo de frenagem que não cobri acima?
+    Ex.: "FORÇOU", "RESPEITOU CARRO", "DEU CHANCE", etc. Lista livre.
+  </p>
+  <textarea id="outros" placeholder="Um por linha. Pode ser termo + breve descrição."></textarea>
+</section>
+
+</div>
+
+<script>
+var TERMS = [
+  {
+    id: 'no-ponto',
+    term: 'NO PONTO',
+    desc: 'Frenou no momento certo, com força certa, soltou bem. Resultado igual ou melhor que o ghost.',
+    signal: 'onset ≈ ghost · pico ≥ ghost · trail bem modulado · Δ ≤ 0'
+  },
+  {
+    id: 'cedo',
+    term: 'CEDO',
+    desc: 'Frenou antes do ponto ideal. Perdeu tempo de aceleração antes da curva.',
+    signal: 'onset_live < onset_ghost por > 1.5m · pico similar · Δ > 0'
+  },
+  {
+    id: 'tarde',
+    term: 'TARDE',
+    desc: 'Passou do ponto. Pode ser overshooting ruim ou ataque profundo bom (raro).',
+    signal: 'onset_live > onset_ghost por > 1.5m · jerk muito alto · pode ter overshoot do apex'
+  },
+  {
+    id: 'medroso',
+    term: 'MEDROSO',
+    desc: 'Frenou de menos. Sobrou margem de aderência. Vmin alto demais.',
+    signal: 'pico_live < 70% pico_ghost · tempo no pedal alto · vmin > vmin_ref'
+  },
+  {
+    id: 'violento',
+    term: 'VIOLENTO',
+    desc: 'Pisou tudo de uma vez sem modular. Travou ou quase. Carro reagiu bruscamente.',
+    signal: 'jerk_onset > 25g/s · pitch máximo · yaw zero (carro reto)'
+  },
+  {
+    id: 'travou',
+    term: 'TRAVOU',
+    desc: 'Travou as rodas. Perdeu controle direcional momentâneo.',
+    signal: 'decel atinge limite + jerk reverso quando solta · velocidade GPS estagna'
+  },
+  {
+    id: 'largou-cedo',
+    term: 'LARGOU CEDO',
+    desc: 'Tirou o freio antes da curva. Não completou trail braking. Comprometeu apex.',
+    signal: 'decel cai a zero antes do apex · yaw começa subir sem decel residual'
+  },
+  {
+    id: 'trail-fraco',
+    term: 'TRAIL FRACO',
+    desc: 'Trail braking sem modulação. Soltou de uma vez no meio da curva.',
+    signal: 'decel cai em degrau (não rampa) · yaw e decel mal correlacionados'
+  },
+  {
+    id: 'na-trava',
+    term: 'NA TRAVA',
+    desc: 'Extraiu tudo do carro. Limite máximo, sem travar. Perfeito.',
+    signal: 'decel ≥ ghost · trail otimizado (decel↓ + yaw↑) · vmin ≈ vmin_ref · sem locks'
+  },
+  {
+    id: 'sobrou',
+    term: 'SOBROU',
+    desc: 'Tinha mais pra dar. Cauteloso demais. Usou metade da capacidade do freio.',
+    signal: 'decel < 60% pico_ghost · brake distance > 130% ghost · vmin > 110% vmin_ref'
+  }
+];
+
+var KEY = 'p1fast.veredictos.frenagem.v1';
+var state = loadState();
+var cardsEl = document.getElementById('cards');
+var outrosEl = document.getElementById('outros');
+var progressTxt = document.getElementById('progressTxt');
+var progressFill = document.getElementById('progressFill');
+var saveStatus = document.getElementById('saveStatus');
+var saveTimeout = null;
+
+function loadState(){
+  try{
+    var raw = localStorage.getItem(KEY);
+    if(!raw) return defaultState();
+    var s = JSON.parse(raw);
+    if(!s.cards) s.cards = {};
+    if(!s.outros) s.outros = '';
+    return s;
+  }catch(e){ return defaultState(); }
+}
+function defaultState(){
+  var s = { cards:{}, outros:'' };
+  TERMS.forEach(function(t){
+    s.cards[t.id] = { decision:'none', rename:'', audience:[] };
+  });
+  return s;
+}
+function save(){
+  try{
+    localStorage.setItem(KEY, JSON.stringify(state));
+    saveStatus.textContent = 'salvo';
+    saveStatus.classList.add('visible');
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(function(){ saveStatus.classList.remove('visible'); }, 1500);
+  }catch(e){}
+  updateProgress();
+}
+function updateProgress(){
+  var done = 0;
+  TERMS.forEach(function(t){
+    if(state.cards[t.id] && state.cards[t.id].decision !== 'none') done++;
+  });
+  progressTxt.innerHTML = '<strong>'+done+'/'+TERMS.length+'</strong>';
+  progressFill.style.width = (done/TERMS.length*100)+'%';
+}
+
+function render(){
+  cardsEl.innerHTML = '';
+  TERMS.forEach(function(t){
+    var entry = state.cards[t.id] || { decision:'none', rename:'', audience:[] };
+    var div = document.createElement('div');
+    div.className = 'card';
+    if(entry.decision === 'use')  div.classList.add('selected');
+    if(entry.decision === 'skip') div.classList.add('rejected');
+    div.dataset.id = t.id;
+
+    var aud = entry.audience || [];
+    div.innerHTML =
+      '<div class="term">'+escapeHtml(entry.rename || t.term)+'</div>' +
+      '<div class="desc">'+escapeHtml(t.desc)+'</div>' +
+      '<div class="signal"><strong>sinal:</strong> '+escapeHtml(t.signal)+'</div>' +
+      '<div class="controls" onclick="event.stopPropagation()">' +
+        '<div class="rename-row">' +
+          '<label>renomear</label>' +
+          '<input type="text" placeholder="'+t.term.toLowerCase()+'" value="'+escapeHtml(entry.rename||'')+'" data-id="'+t.id+'" data-field="rename"/>' +
+        '</div>' +
+        '<div class="audience" data-id="'+t.id+'">' +
+          '<span class="a-pill'+(aud.indexOf('piloto')>=0?' active':'')+'" data-aud="piloto">piloto</span>' +
+          '<span class="a-pill'+(aud.indexOf('engenheiro')>=0?' active':'')+'" data-aud="engenheiro">engenheiro</span>' +
+          '<span class="a-pill'+(aud.indexOf('coach')>=0?' active':'')+'" data-aud="coach">coach</span>' +
+        '</div>' +
+      '</div>';
+    cardsEl.appendChild(div);
+  });
+  outrosEl.value = state.outros || '';
+  updateProgress();
+}
+
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, function(c){
+    return ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c];
+  });
+}
+
+cardsEl.addEventListener('click', function(e){
+  var card = e.target.closest('.card');
+  if(!card) return;
+  if(e.target.closest('.controls')) return;
+  var id = card.dataset.id;
+  if(!state.cards[id]) state.cards[id] = { decision:'none', rename:'', audience:[] };
+  var d = state.cards[id].decision;
+  state.cards[id].decision = d === 'none' ? 'use' : d === 'use' ? 'skip' : 'none';
+  save();
+  render();
+});
+
+cardsEl.addEventListener('input', function(e){
+  if(e.target.matches('input[data-field="rename"]')){
+    var id = e.target.dataset.id;
+    if(!state.cards[id]) state.cards[id] = { decision:'none', rename:'', audience:[] };
+    state.cards[id].rename = e.target.value;
+    save();
+    var card = e.target.closest('.card');
+    if(card){
+      var termEl = card.querySelector('.term');
+      var src = TERMS.filter(function(t){return t.id===id;})[0];
+      termEl.textContent = (e.target.value || (src?src.term:'')).toUpperCase();
+    }
+  }
+});
+
+cardsEl.addEventListener('click', function(e){
+  if(e.target.matches('.a-pill')){
+    e.stopPropagation();
+    var aud = e.target.dataset.aud;
+    var id = e.target.parentElement.dataset.id;
+    if(!state.cards[id]) state.cards[id] = { decision:'none', rename:'', audience:[] };
+    var arr = state.cards[id].audience || [];
+    var idx = arr.indexOf(aud);
+    if(idx >= 0) arr.splice(idx,1); else arr.push(aud);
+    state.cards[id].audience = arr;
+    save();
+    e.target.classList.toggle('active');
+  }
+});
+
+outrosEl.addEventListener('input', function(){
+  state.outros = outrosEl.value;
+  save();
+});
+
+function resetAll(){
+  if(!confirm('Resetar todas as respostas?')) return;
+  state = defaultState();
+  save();
+  render();
+}
+
+function copyAnswers(){
+  var out = {
+    versao: 'veredictos-frenagem-v1',
+    data: new Date().toISOString(),
+    decididos: { usar:[], naoUsar:[], indecisos:[] },
+    detalhes: {},
+    outros: state.outros || ''
+  };
+  TERMS.forEach(function(t){
+    var entry = state.cards[t.id] || { decision:'none', rename:'', audience:[] };
+    var nome = entry.rename || t.term;
+    if(entry.decision === 'use') out.decididos.usar.push(nome);
+    else if(entry.decision === 'skip') out.decididos.naoUsar.push(t.term);
+    else out.decididos.indecisos.push(t.term);
+    out.detalhes[t.id] = {
+      original: t.term,
+      escolhido: nome,
+      decisao: entry.decision,
+      audiencia: entry.audience || []
+    };
+  });
+  var txt = JSON.stringify(out, null, 2);
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){
+      saveStatus.textContent = 'copiado';
+      saveStatus.classList.add('visible');
+      setTimeout(function(){ saveStatus.classList.remove('visible'); }, 2500);
+    });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = txt; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    saveStatus.textContent = 'copiado';
+    saveStatus.classList.add('visible');
+    setTimeout(function(){ saveStatus.classList.remove('visible'); }, 2500);
+  }
+}
+
+render();
+</script>
+
+</body>
+</html>
