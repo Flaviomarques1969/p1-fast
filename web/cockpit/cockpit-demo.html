@@ -96,6 +96,9 @@
     <button class="btn primary" id="btnPuxada">Simular puxada</button>
     <button class="btn primary" id="btnVoltaGps">Simular volta no GPS</button>
     <button class="btn" id="btnParar">Parar</button>
+    <span style="margin-left:14px; color:#94a3b8; font-size:11px;">Pneu:</span>
+    <button class="btn mode-btn is-on" id="btnPneuSemiSlick">Semi-slick</button>
+    <button class="btn mode-btn" id="btnPneuRadial">Radial</button>
   </div>
 </div>
 
@@ -115,8 +118,11 @@
 <div class="curves-bar" id="curvesBar">
   <strong>Curvas de Brasília:</strong>
   <span style="display:flex; gap:4px; margin-right:8px;">
-    <button class="btn mode-btn is-on" id="btnModeEntrada">registrar entrada</button>
-    <button class="btn mode-btn" id="btnModeSaida">registrar saída</button>
+    <button class="btn mode-btn is-on" id="btnModePassagem">passagem completa</button>
+    <button class="btn mode-btn" id="btnModeEntrada">só entrada</button>
+    <button class="btn mode-btn" id="btnModeFreio">só freio</button>
+    <button class="btn mode-btn" id="btnModeApice">só ápice</button>
+    <button class="btn mode-btn" id="btnModeSaida">só saída</button>
   </span>
   <span id="curvesButtons" style="display:flex; gap:6px; flex-wrap:wrap;">carregando…</span>
 </div>
@@ -169,6 +175,10 @@
         <span class="apex__label">Saída</span><span class="apex__valor">—</span>
       </div>
     </section>
+    <!-- nota: o widget freio mostra "+/-N m" = distância adiantada/atrasada
+         em relação ao ponto da melhor passagem. + (verde) = freou mais tarde
+         (próximo do apex) = melhor. - (vermelho) = freou antes = pior. -->
+
 
     <div class="info-bloco">
       <span class="info__delta">0.00</span>
@@ -208,7 +218,7 @@ import { LiveDataBridge, DEFAULT_LIMITS } from './live-data-bridge.js';
 import { loadDynoCurve, BUBI_CARRO_ID } from './dyno-loader.js';
 import { loadTrackSegments, onlyCurves, shortLabel, BRASILIA_TRACK_ID } from './track-loader.js';
 import { createDetector } from './track-detector.js';
-import { loadMelhoresPassagens, salvarPassagemSeMelhor } from './melhores-loader.js';
+import { loadMelhoresPassagens, salvarPassagemSeMelhor, distanciaMetros } from './melhores-loader.js';
 
 // Defaults pro Bubi (sobrescritos pela curva da nuvem quando carregar)
 const BUBI_LIMITS = {
@@ -306,6 +316,25 @@ $('btnParar').addEventListener('click', () => {
   $('modeBadge').textContent = 'modo: parado';
 });
 
+// Seletor de tipo de pneu — troca a referência de comparação
+$('btnPneuSemiSlick').addEventListener('click', async () => {
+  _tipoPneu = 'semi-slick';
+  $('btnPneuSemiSlick').classList.add('is-on');
+  $('btnPneuRadial').classList.remove('is-on');
+  await recarregarMelhores();
+  // limpa o painel pra forçar nova comparação
+  cockpitState.setApexPonto('entrada', { estado: ApexEstado.PENDENTE, valorKmh: null, nomeCurva: null });
+  cockpitState.setApexPonto('saida',   { estado: ApexEstado.PENDENTE, valorKmh: null, nomeCurva: null });
+});
+$('btnPneuRadial').addEventListener('click', async () => {
+  _tipoPneu = 'radial';
+  $('btnPneuRadial').classList.add('is-on');
+  $('btnPneuSemiSlick').classList.remove('is-on');
+  await recarregarMelhores();
+  cockpitState.setApexPonto('entrada', { estado: ApexEstado.PENDENTE, valorKmh: null, nomeCurva: null });
+  cockpitState.setApexPonto('saida',   { estado: ApexEstado.PENDENTE, valorKmh: null, nomeCurva: null });
+});
+
 // Botões de alarmes — ligam/desligam um bit por vez (toggle)
 const rpmAtual = () => Number($('rpmSlider').value) || 900;
 document.querySelectorAll('.alarms-bar .btn.alarm[data-alarme]').forEach(btn => {
@@ -322,57 +351,137 @@ $('btnLimparAlarmes').addEventListener('click', () => {
   applyRpm(rpmAtual());
 });
 
-// Modo de registro: 'entrada' (padrão) ou 'saida'
-let modoRegistro = 'entrada';
-$('btnModeEntrada').addEventListener('click', () => {
-  modoRegistro = 'entrada';
-  $('btnModeEntrada').classList.add('is-on');
-  $('btnModeSaida').classList.remove('is-on');
-});
-$('btnModeSaida').addEventListener('click', () => {
-  modoRegistro = 'saida';
-  $('btnModeSaida').classList.add('is-on');
-  $('btnModeEntrada').classList.remove('is-on');
-});
+// Modo de registro: passagem (todos os 4 em sequência) | entrada | freio | apice | saida (individuais pra debug)
+let modoRegistro = 'passagem';
+const modoBtns = { passagem:'btnModePassagem', entrada:'btnModeEntrada', freio:'btnModeFreio', apice:'btnModeApice', saida:'btnModeSaida' };
+function escolherModo(m) {
+  modoRegistro = m;
+  for (const [k, id] of Object.entries(modoBtns)) {
+    $(id).classList.toggle('is-on', k === m);
+  }
+}
+$('btnModePassagem').addEventListener('click', () => escolherModo('passagem'));
+$('btnModeEntrada').addEventListener('click', () => escolherModo('entrada'));
+$('btnModeFreio').addEventListener('click', () => escolherModo('freio'));
+$('btnModeApice').addEventListener('click', () => escolherModo('apice'));
+$('btnModeSaida').addEventListener('click', () => escolherModo('saida'));
 
 // Detector automático via GPS — alimentado pelo simulador de volta abaixo
 // (e, no futuro, pelo iPhone publicando GPS no canal Realtime).
 let _detector = null;
 let _curvasGlobal = [];
 let _melhores = new Map(); // "segmentoId|momento" → velocidade_kmh
+let _tipoPneu = 'semi-slick'; // padrão; usuário escolhe nos botões "Pneu"
+const CARRO_BUBI_ID = '641a81e7-3192-4e68-8183-b8401f105574';
+
+async function recarregarMelhores() {
+  _melhores = await loadMelhoresPassagens(CARRO_BUBI_ID, _tipoPneu);
+  console.log(`[demo] melhores ${_tipoPneu}:`, _melhores.size);
+}
 
 function velocidadeAtual() {
   const rpm = Number($('rpmSlider').value) || 900;
   return Math.round((rpm / 3000) * 50);
 }
 
+// Converte coordenada SVG da pista pra lat/lng simulada (usa âncoras de Brasília).
+// Na pista real, GPS chega direto do iPhone; aqui na demo simulamos a partir do
+// apex da curva escolhida + pequeno offset aleatório.
+function gpsSimuladoNaCurva(curva, offsetSvg = 0) {
+  const dx = (Math.random() - 0.5) * offsetSvg;
+  const dy = (Math.random() - 0.5) * offsetSvg;
+  return svgToLatLng(curva.apex_x + dx, curva.apex_y + dy);
+}
+
 async function registrarPassagem(papel, curva) {
   const vel = velocidadeAtual();
   const chave = `${curva.id}|${papel}`;
-  const ref = _melhores.get(chave);
-  const foiMelhor = ref === undefined || vel > ref;
-  // pinta verde se foi a melhor já registrada; vermelho caso contrário
-  cockpitState.setApexPonto(papel, {
-    estado: foiMelhor ? ApexEstado.OK_MELHOR : ApexEstado.OK_PIOR,
-    valorKmh: vel,
-    nomeCurva: shortLabel(curva.nome),
-  });
-  // salva no banco se nova for melhor (mantém a melhor de sempre por trecho/carro)
+  const ref = _melhores.get(chave); // { velocidadeKmh, lat, lng } ou undefined
+  let foiMelhor;
+  let deltaM = null;
+  // GPS simulado do momento (na pista real virá do iPhone)
+  const offset = (papel === 'freio') ? 40 : (papel === 'apice') ? 8 : 20;
+  const { lat, lng } = gpsSimuladoNaCurva(curva, offset);
+
+  if (papel === 'freio') {
+    // freio: melhor = freou MAIS PRÓXIMO do apex
+    const distAtualAoApex = distanciaMetros(lat, lng, ...svgToLatLngXY(curva.apex_x, curva.apex_y));
+    if (!ref || !ref.lat) {
+      foiMelhor = true;
+      deltaM = 0;
+    } else {
+      const distRefAoApex = distanciaMetros(ref.lat, ref.lng, ...svgToLatLngXY(curva.apex_x, curva.apex_y));
+      deltaM = (distRefAoApex !== null && distAtualAoApex !== null) ? (distRefAoApex - distAtualAoApex) : null;
+      foiMelhor = deltaM !== null && deltaM > 0;
+    }
+    cockpitState.setApexPonto('freio', {
+      estado: foiMelhor ? ApexEstado.OK_MELHOR : ApexEstado.OK_PIOR,
+      deltaM: deltaM !== null ? deltaM : null,
+      lat, lng,
+    });
+  } else if (papel === 'apice') {
+    // ápice: mostra a DISTÂNCIA do Vmin (este ponto) ao ápice geométrico.
+    // Sinal: estimamos pelo offset SVG simulado — negativo (antes) vs positivo (depois).
+    // Na pista real, isso virá de comparar a ordem temporal do GPS com a linha do ápice.
+    const distAtual = distanciaMetros(lat, lng, ...svgToLatLngXY(curva.apex_x, curva.apex_y));
+    // sinal pseudo-aleatório pra simular antes/depois do ápice
+    const sinal = Math.random() > 0.5 ? 1 : -1;
+    const deltaAtual = distAtual !== null ? sinal * distAtual : null;
+    if (!ref || ref.deltaM === undefined || ref.deltaM === null) {
+      foiMelhor = true;
+      deltaM = deltaAtual;
+    } else {
+      // melhor = menor valor absoluto (mais próximo do ápice geométrico)
+      foiMelhor = Math.abs(deltaAtual) < Math.abs(ref.deltaM);
+      deltaM = deltaAtual;
+    }
+    cockpitState.setApexPonto('apice', {
+      estado: foiMelhor ? ApexEstado.OK_MELHOR : ApexEstado.OK_PIOR,
+      deltaM,
+      valorKmh: vel,  // armazena pro Comando Box, mas não mostra no painel piloto
+      lat, lng,
+      nomeCurva: shortLabel(curva.nome),
+    });
+  } else {
+    // entrada/saida: comparação por velocidade (maior = melhor)
+    foiMelhor = !ref || vel > ref.velocidadeKmh;
+    cockpitState.setApexPonto(papel, {
+      estado: foiMelhor ? ApexEstado.OK_MELHOR : ApexEstado.OK_PIOR,
+      valorKmh: vel,
+      nomeCurva: shortLabel(curva.nome),
+    });
+  }
+
   if (foiMelhor) {
-    _melhores.set(chave, vel);
+    _melhores.set(chave, { velocidadeKmh: vel, lat, lng, deltaM });
     try {
       await salvarPassagemSeMelhor({
-        carroId: '641a81e7-3192-4e68-8183-b8401f105574',  // Bolinha (Bubi)
+        carroId: CARRO_BUBI_ID,
+        tipoPneu: _tipoPneu,
         segmentoId: curva.id,
         momento: papel,
         velocidadeKmh: vel,
+        lat, lng,
       });
     } catch (e) { console.warn('[demo] erro salvar:', e.message); }
   }
 }
 
+// Helper local: converte (x_svg, y_svg) em [lat, lng] como array
+function svgToLatLngXY(x, y) {
+  const { lat, lng } = svgToLatLng(x, y);
+  return [lat, lng];
+}
+
 function gravarEntradaPorCurva(curva) { registrarPassagem('entrada', curva); }
-function gravarSaidaPorCurva(curva) { registrarPassagem('saida', curva); }
+function gravarSaidaPorCurva(curva)   {
+  // ao sair da curva, registramos os 3 momentos pendentes (freio, ápice, saída).
+  // No detector real, esses 3 viriam de gatilhos GPS distintos durante a curva;
+  // por enquanto disparamos juntos ao final pra que a coloração apareça completa.
+  registrarPassagem('freio', curva);
+  registrarPassagem('apice', curva);
+  registrarPassagem('saida', curva);
+}
 
 // Simulador de volta no GPS: percorre os apex em sequência com pequenas variações.
 // Usa as âncoras de Brasília pra converter SVG → lat/lng e alimentar o detector
@@ -436,19 +545,40 @@ loadTrackSegments(BRASILIA_TRACK_ID).then(segments => {
     onCruzarEntrada: gravarEntradaPorCurva,
     onCruzarSaida: gravarSaidaPorCurva,
   });
-  // carrega melhores passagens já registradas do Bubi
-  loadMelhoresPassagens('641a81e7-3192-4e68-8183-b8401f105574').then(mapa => {
-    _melhores = mapa;
-    console.log('[demo] melhores passagens carregadas:', mapa.size);
-  });
+  // carrega melhores passagens já registradas do Bubi pro pneu atual
+  recarregarMelhores();
   $('curvesButtons').innerHTML = '';
   for (const c of curvas) {
     const btn = document.createElement('button');
     btn.className = 'btn curve';
     btn.textContent = shortLabel(c.nome);
     btn.title = `Toca pra registrar ${modoRegistro} de ${c.nome}`;
-    btn.addEventListener('click', () => {
-      registrarPassagem(modoRegistro, c);
+    btn.addEventListener('click', async () => {
+      if (modoRegistro === 'passagem') {
+        // Sequência natural de uma curva: entrada → freio → ápice → saída
+        // Cada momento tem velocidade característica diferente; usamos a rotação
+        // atual como base e variamos pra simular a queda na frenagem/ápice e
+        // retomada na saída (na pista real cada momento captura velocidade real
+        // do sensor de roda naquele instante).
+        const rpmBase = Number($('rpmSlider').value) || 4000;
+        const baseVel = Math.round((rpmBase / 3000) * 50);
+        // entrada — velocidade chegando antes de frear
+        applyRpm(rpmBase);
+        await registrarPassagem('entrada', c);
+        // freio — momento de máxima desaceleração (velocidade cai)
+        applyRpm(Math.max(1500, rpmBase - 1500));
+        await registrarPassagem('freio', c);
+        // ápice — velocidade mínima da curva
+        applyRpm(Math.max(1200, rpmBase - 2000));
+        await registrarPassagem('apice', c);
+        // saída — começa retomando velocidade
+        applyRpm(Math.max(2000, rpmBase - 1200));
+        await registrarPassagem('saida', c);
+        // volta ao rpm que estava antes
+        applyRpm(rpmBase);
+      } else {
+        await registrarPassagem(modoRegistro, c);
+      }
     });
     $('curvesButtons').appendChild(btn);
   }

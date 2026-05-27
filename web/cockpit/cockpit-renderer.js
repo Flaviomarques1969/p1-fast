@@ -133,8 +133,8 @@ export class CockpitRenderer {
   _renderApex(s) {
     this._renderApexEntrada(s);
     this._renderApexFreio(s);
+    this._renderApexApice(s);
     this._renderApexSaida(s);
-    // ápice ainda fica pra MS-13.5 (detector preenche)
   }
 
   _renderApexEntrada(s) {
@@ -158,8 +158,33 @@ export class CockpitRenderer {
     if (!ponto) return;
     const f = s.apex.freio;
     if (f.estado) ponto.dataset.estado = f.estado;
-    if (val && typeof f.atualM === 'number' && typeof f.refM === 'number') {
-      val.innerHTML = f.atualM + '<span class="apex__valor__sep">/</span>' + f.refM + '<small>m</small>';
+    if (val) {
+      if (typeof f.deltaM === 'number') {
+        // diferença em metros do ponto da melhor passagem (+ = mais tarde, - = antes)
+        const sinal = f.deltaM > 0 ? '+' : '';
+        val.innerHTML = sinal + f.deltaM + '<small>m</small>';
+      } else if (typeof f.atualM === 'number' && typeof f.refM === 'number') {
+        val.innerHTML = f.atualM + '<span class="apex__valor__sep">/</span>' + f.refM + '<small>m</small>';
+      } else {
+        val.innerHTML = '—';
+      }
+    }
+  }
+
+  _renderApexApice(s) {
+    const ponto = this._b.apexApice;
+    const val = this._b.apexApiceVal;
+    if (!ponto) return;
+    const a = s.apex.apice;
+    if (a.estado) ponto.dataset.estado = a.estado;
+    if (val) {
+      if (typeof a.deltaM === 'number') {
+        // distância do Vmin ao ápice geométrico (+ = depois, - = antes, 0 = perfeito)
+        const sinal = a.deltaM > 0 ? '+' : '';
+        val.innerHTML = sinal + a.deltaM + '<small>m</small>';
+      } else {
+        val.innerHTML = '—';
+      }
     }
   }
 
@@ -186,6 +211,7 @@ export function attachRendererToDocument(cockpitState, document) {
   const apexEntrada = document.querySelector('.apex__ponto[data-papel="entrada"]')
                     || document.querySelector('.apex__ponto:first-child');
   const apexFreio = document.querySelector('.apex__ponto[data-papel="freio"]');
+  const apexApice = document.querySelector('.apex__ponto[data-papel="apice"]');
   const apexSaida = document.querySelector('.apex__ponto[data-papel="saida"]');
   const bindings = {
     device:       document.getElementById('device'),
@@ -198,6 +224,8 @@ export function attachRendererToDocument(cockpitState, document) {
     apexEntradaLabel: apexEntrada ? apexEntrada.querySelector('.apex__label') : null,
     apexFreio,
     apexFreioVal: apexFreio ? apexFreio.querySelector('.apex__valor') : null,
+    apexApice,
+    apexApiceVal: apexApice ? apexApice.querySelector('.apex__valor') : null,
     apexSaida,
     apexSaidaVal: apexSaida ? apexSaida.querySelector('.apex__valor') : null,
     alertBloco:   document.getElementById('alertBloco'),
