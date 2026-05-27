@@ -1,4 +1,4 @@
--- 0025_padroes_telemetria_por_volta.sql
+-- 0026_padroes_telemetria_por_volta.sql (renumerada de 0025 — 0025 já estava em uso)
 --
 -- Tabela do padrão histórico aprendido por combinação (carro + autódromo +
 -- tipo de pneu). Decisão Flávio 27/05/2026: 3 voltas estabelecem padrão;

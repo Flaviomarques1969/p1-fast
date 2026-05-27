@@ -1,4 +1,4 @@
--- 0026_melhores_passagens_trecho.sql
+-- 0027_melhores_passagens_trecho.sql (renumerada de 0026)
 --
 -- Tabela das melhores passagens históricas por trecho (segmento de pista).
 -- O módulo web/cockpit/melhores-loader.js já espera esta estrutura.

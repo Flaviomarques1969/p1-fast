@@ -1,4 +1,4 @@
--- 0027_seed_brasilia_track_segments.sql
+-- 0028_seed_brasilia_track_segments.sql (renumerada de 0027)
 -- Seed das 8 curvas de Brasília com barras de entrada/saída/ápice em GPS.
 -- Marcação visual do Flávio em 2026-05-24, calibrada via stint EDA3DA6B.
 -- Barras perpendiculares ao trajeto, 12m de largura.
