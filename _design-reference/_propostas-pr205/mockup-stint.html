@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=430,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Mockup Stint — configuração + objetivo + coach — P1 Fast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* tokens 1:1 com mockup-eventos-lista.html · padrão B */
+:root{
+  --bg: oklch(20% 0.005 240);
+  --surface: oklch(24% 0.005 240);
+  --surface-2: oklch(28% 0.005 240);
+  --hairline: oklch(33% 0.005 240);
+  --text: oklch(95% 0.003 240);
+  --text-2: oklch(75% 0.01 240);
+  --text-3: oklch(58% 0.012 240);
+  --accent: oklch(78% 0.13 235);
+  --accent-2: oklch(82% 0.10 235 / .15);
+  --bom: oklch(78% 0.16 150);
+  --radius: 12px;
+  --radius-sm: 10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{
+  min-height:100dvh;width:100vw;
+  background:linear-gradient(160deg, oklch(22% 0.005 240) 0%, oklch(18% 0.005 240) 100%);
+  color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  font-weight:400;
+}
+body{padding:0 0 110px;}
+
+.app{
+  max-width:430px;margin:0 auto;
+  padding:16px 20px 0;
+}
+
+/* CONTEXT HEAD — 1:1 com padrão B */
+.context-head{padding:14px 4px 16px;}
+.context-head__eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:5px 12px;
+  background:var(--accent-2);
+  border:1px solid oklch(78% 0.13 235 / .35);
+  border-radius:999px;
+  font-size:10px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);
+  margin-bottom:12px;
+}
+.context-head__eyebrow__dot{
+  width:5px;height:5px;border-radius:50%;
+  background:currentColor;
+}
+.context-head__title{
+  font-size:24px;font-weight:600;
+  letter-spacing:-.025em;line-height:1.15;
+  color:var(--text);
+  margin-bottom:4px;
+}
+.context-head__sub{
+  font-size:13px;color:var(--text-2);
+  font-variant-numeric:tabular-nums;
+}
+
+/* SECTION */
+.section{margin-bottom:22px;}
+.section:last-child{margin-bottom:0;}
+.section__head{
+  padding:0 4px 10px;
+  font-size:11px;font-weight:600;
+  letter-spacing:.12em;color:var(--text-3);
+  text-transform:uppercase;
+}
+
+/* FIELD */
+.field{margin-bottom:14px;}
+.field:last-child{margin-bottom:0;}
+.field__lbl{
+  font-size:13px;font-weight:500;color:var(--text-2);
+  margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;
+  letter-spacing:.005em;
+}
+.field__lbl small{color:var(--text-3);font-weight:400;font-size:12px;}
+
+/* INPUT */
+.input{
+  width:100%;background:var(--surface);border:1px solid var(--hairline);
+  color:var(--text);font-family:inherit;
+  font-size:16px;font-weight:500;letter-spacing:-.005em;
+  padding:13px 14px;border-radius:var(--radius);
+  outline:none;transition:border-color .18s, box-shadow .18s, background .18s;
+}
+.input:focus{
+  border-color:var(--accent);
+  background:oklch(26% 0.01 235);
+  box-shadow:0 0 0 4px oklch(78% 0.13 235 / .14);
+}
+.input--num{font-variant-numeric:tabular-nums;text-align:center;}
+
+/* PICKER */
+.picker{
+  width:100%;background:var(--surface);border:1px solid var(--hairline);
+  padding:13px 14px;border-radius:var(--radius);
+  display:flex;align-items:center;justify-content:space-between;cursor:pointer;
+  transition:border-color .18s, background .18s;
+  font-family:inherit;color:inherit;text-align:left;
+}
+.picker:hover{background:var(--surface-2);}
+.picker__val{
+  font-size:15px;font-weight:500;letter-spacing:-.005em;color:var(--text);
+}
+.picker__val.is-empty{color:var(--text-3);}
+.picker__hint{font-size:12px;color:var(--text-3);margin-top:2px;font-weight:400;}
+.picker__chev{
+  width:20px;height:20px;border-radius:6px;background:var(--surface-2);
+  display:flex;align-items:center;justify-content:center;color:var(--text-2);font-size:12px;
+}
+
+/* TOGGLE ROW */
+.toggle-row{
+  width:100%;background:var(--surface);
+  border:1px solid var(--hairline);
+  padding:14px 16px;border-radius:var(--radius);
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  cursor:pointer;font-family:inherit;color:inherit;
+  transition:border-color .18s, background .18s;
+}
+.toggle-row:hover{background:var(--surface-2);}
+.toggle-row[data-on="true"]{
+  border-color:oklch(78% 0.13 235 / .45);
+  background:oklch(26% 0.012 235);
+}
+.toggle-row__title{
+  font-size:15px;font-weight:600;letter-spacing:-.005em;
+  color:var(--text);text-align:left;
+}
+.toggle-row__sub{
+  font-size:12px;color:var(--text-3);font-weight:400;
+  margin-top:3px;text-align:left;
+}
+.toggle-switch{
+  flex:0 0 auto;
+  width:44px;height:26px;
+  background:oklch(36% 0.005 240);
+  border-radius:999px;
+  position:relative;transition:background .22s;
+}
+.toggle-switch[data-on="true"]{background:var(--accent);}
+.toggle-switch__knob{
+  position:absolute;top:3px;left:3px;
+  width:20px;height:20px;border-radius:50%;
+  background:oklch(96% 0 0);
+  transition:transform .22s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 1px 3px oklch(0% 0 0 / .2);
+}
+.toggle-switch[data-on="true"] .toggle-switch__knob{transform:translateX(18px);}
+
+/* GRID 2-COL pra inputs combinados (combustível: qt + tipo) */
+.grid-2col-input{display:grid;grid-template-columns:1fr 1.6fr;gap:8px;}
+
+/* GRID 2x2 (rodas) */
+.grid-2x2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.wheel{display:flex;flex-direction:column;gap:5px;}
+.wheel__lbl{
+  font-size:10px;font-weight:600;color:var(--text-3);
+  letter-spacing:.08em;text-transform:uppercase;text-align:center;
+}
+
+/* COACH-OPTIONS (sub-escolhas, visíveis só com toggle on) */
+.coach-options{
+  border-left:2px solid oklch(78% 0.13 235 / .4);
+  padding-left:14px;margin-left:2px;
+  margin-top:14px;
+}
+
+/* PHASE-RAIL */
+.phase-rail{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;
+}
+.phase{
+  padding:14px 8px;
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
+  font-family:inherit;font-size:14px;font-weight:600;
+  letter-spacing:-.005em;color:var(--text-2);
+  cursor:pointer;text-align:center;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s, border-color .18s, color .18s;
+}
+.phase:hover{background:var(--surface-2);color:var(--text);}
+.phase.is-active{
+  background:var(--accent);color:oklch(15% 0.01 235);
+  border-color:var(--accent);
+}
+
+/* CHIPS-SUG */
+.chips-sug{
+  display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;
+}
+.chip-sug{
+  padding:7px 12px;
+  background:transparent;
+  border:1px solid var(--hairline);
+  border-radius:999px;
+  font-size:12px;font-weight:500;color:var(--text-3);
+  cursor:pointer;font-family:inherit;
+  transition:background .18s, color .18s, border-color .18s;
+}
+.chip-sug:hover{
+  background:var(--surface);
+  color:var(--text-2);
+  border-color:oklch(40% 0.005 240);
+}
+
+/* SETUP AVANÇADO accordion */
+.setup-adv{
+  width:100%;background:var(--surface);
+  border:1px solid var(--hairline);
+  padding:13px 14px;border-radius:var(--radius);
+  display:flex;align-items:center;justify-content:space-between;cursor:pointer;
+  transition:border-color .18s, background .18s;
+  font-family:inherit;color:inherit;text-align:left;
+}
+.setup-adv:hover{background:var(--surface-2);}
+
+/* PARADAS NO BOX — chips com volta planejada */
+.pit-bar{display:flex;gap:8px;flex-wrap:wrap;}
+.pit-chip{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:9px 14px;border-radius:var(--radius-sm);
+  background:var(--surface);color:var(--text);
+  border:1px solid var(--hairline);
+  font-family:inherit;font-size:13px;font-weight:500;
+  cursor:pointer;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1),background .18s,border-color .18s;
+}
+.pit-chip:hover{background:var(--surface-2);}
+.pit-chip:active{transform:scale(.97);}
+.pit-chip__num{
+  font-size:14px;font-weight:700;color:var(--text);
+  font-variant-numeric:tabular-nums;
+}
+.pit-chip__lbl{
+  font-size:10px;color:var(--text-3);
+  letter-spacing:.06em;text-transform:uppercase;font-weight:600;
+}
+.pit-chip__close{
+  font-size:14px;color:var(--text-3);
+  line-height:1;font-weight:300;margin-left:2px;
+}
+.pit-chip--add{
+  border-style:dashed;color:var(--text-3);
+}
+.pit-chip--add:hover{border-color:var(--accent);color:var(--accent);}
+.field__hint{
+  margin-top:8px;font-size:12px;color:var(--text-3);line-height:1.4;
+}
+
+/* META DO PILOTO — 2 cells lado a lado: tempo alvo + voltas seguidas */
+.meta-row{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;
+}
+.meta-cell{
+  display:flex;flex-direction:column;gap:5px;
+}
+.meta-cell .mc-key{
+  font-size:11px;font-weight:500;color:var(--text-2);
+  letter-spacing:.005em;
+}
+.meta-cell .mc-hint{
+  font-size:11px;color:var(--text-3);font-weight:400;
+  letter-spacing:.005em;
+}
+.setup-adv__title{
+  font-size:15px;font-weight:500;color:var(--text);
+}
+.setup-adv__hint{
+  font-size:12px;color:var(--text-3);margin-top:2px;
+}
+.setup-adv__chev{
+  width:20px;height:20px;border-radius:6px;background:var(--surface-2);
+  display:flex;align-items:center;justify-content:center;color:var(--text-2);font-size:12px;
+}
+
+/* FOOT FIXED */
+.foot{
+  position:fixed;bottom:0;left:0;right:0;z-index:40;
+  background:oklch(18% 0.005 240 / .92);
+  -webkit-backdrop-filter:blur(20px) saturate(140%);
+  backdrop-filter:blur(20px) saturate(140%);
+  border-top:1px solid var(--hairline);
+  padding:14px 20px 28px;
+}
+.foot__inner{
+  max-width:430px;margin:0 auto;
+  display:grid;grid-template-columns:auto 1fr;gap:10px;
+}
+.btn{
+  padding:14px 18px;border-radius:var(--radius);cursor:pointer;
+  font-family:inherit;font-size:15px;font-weight:600;letter-spacing:-.005em;
+  outline:none;border:1px solid transparent;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .18s, color .18s;
+}
+.btn:active{transform:scale(.97);}
+.btn--ghost{background:transparent;color:var(--text-2);border-color:var(--hairline);}
+.btn--ghost:hover{background:var(--surface);color:var(--text);}
+.btn--primary{background:var(--accent);color:oklch(12% 0.005 240);border-color:var(--accent);}
+.btn--primary:hover{background:oklch(82% 0.14 235);}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="context-head">
+    <span class="context-head__eyebrow"><span class="context-head__eyebrow__dot"></span>Novo stint</span>
+    <h1 class="context-head__title">Stint #3</h1>
+    <p class="context-head__sub">Brasília · sábado 02/05 · 14:32 · Celta 1.4</p>
+  </header>
+
+  <!-- ── CONFIGURAÇÃO ── -->
+  <section class="section">
+    <div class="section__head">Configuração</div>
+
+    <div class="field">
+      <div class="field__lbl">Piloto</div>
+      <button class="picker" type="button">
+        <div>
+          <div class="picker__val">Flavio Marx</div>
+          <div class="picker__hint">Você · 1,75 m · 78 kg</div>
+        </div>
+        <div class="picker__chev">›</div>
+      </button>
+    </div>
+
+    <div class="field">
+      <button class="toggle-row" data-on="false" type="button">
+        <div>
+          <div class="toggle-row__title">Levar passageiro</div>
+          <div class="toggle-row__sub">Stint solo</div>
+        </div>
+        <span class="toggle-switch" data-on="false">
+          <span class="toggle-switch__knob"></span>
+        </span>
+      </button>
+    </div>
+
+    <div class="field">
+      <div class="field__lbl">Combustível abastecido</div>
+      <div class="grid-2col-input">
+        <input class="input input--num" type="number" value="25" placeholder="L">
+        <button class="picker" type="button">
+          <span class="picker__val">Álcool</span>
+          <span class="picker__chev">›</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field__lbl">Pneu montado</div>
+      <button class="picker" type="button">
+        <div>
+          <div class="picker__val">Pirelli P1 — radial</div>
+          <div class="picker__hint">Cadastrado na garagem · 4ª saída</div>
+        </div>
+        <div class="picker__chev">›</div>
+      </button>
+    </div>
+
+    <div class="field">
+      <div class="field__lbl">Calibragem (saída box, PSI)</div>
+      <div class="grid-2x2">
+        <div class="wheel">
+          <span class="wheel__lbl">Diant. esq.</span>
+          <input class="input input--num" type="number" value="35" step="0.5">
+        </div>
+        <div class="wheel">
+          <span class="wheel__lbl">Diant. dir.</span>
+          <input class="input input--num" type="number" value="35" step="0.5">
+        </div>
+        <div class="wheel">
+          <span class="wheel__lbl">Tras. esq.</span>
+          <input class="input input--num" type="number" value="50" step="0.5">
+        </div>
+        <div class="wheel">
+          <span class="wheel__lbl">Tras. dir.</span>
+          <input class="input input--num" type="number" value="50" step="0.5">
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <button class="setup-adv" type="button">
+        <div>
+          <div class="setup-adv__title">Setup avançado</div>
+          <div class="setup-adv__hint">11 ajustes herdados da base</div>
+        </div>
+        <div class="setup-adv__chev">›</div>
+      </button>
+    </div>
+
+    <div class="field">
+      <div class="field__lbl">Paradas no box <small>opcional · marca onde voltar</small></div>
+      <div class="pit-bar">
+        <button class="pit-chip" type="button">
+          <span class="pit-chip__num">5</span>
+          <span class="pit-chip__lbl">após volta</span>
+          <span class="pit-chip__close">×</span>
+        </button>
+        <button class="pit-chip" type="button">
+          <span class="pit-chip__num">9</span>
+          <span class="pit-chip__lbl">após volta</span>
+          <span class="pit-chip__close">×</span>
+        </button>
+        <button class="pit-chip pit-chip--add" type="button">+ adicionar parada</button>
+      </div>
+      <p class="field__hint">Quando chegar na volta marcada, o cockpit avisa o piloto e o box fica preparado.</p>
+    </div>
+  </section>
+
+  <!-- ── OBJETIVO ── -->
+  <section class="section">
+    <div class="section__head">Objetivo</div>
+
+    <div class="field">
+      <div class="field__lbl">Objetivo deste stint <small>opcional</small></div>
+      <input class="input" value="Atacar tempo na Curva da Junção">
+      <div class="chips-sug">
+        <button class="chip-sug" type="button">Aquecer</button>
+        <button class="chip-sug" type="button">Atacar tempo</button>
+        <button class="chip-sug" type="button">Consistência</button>
+        <button class="chip-sug" type="button">Treinar largada</button>
+        <button class="chip-sug" type="button">Treinar trecho</button>
+        <button class="chip-sug" type="button">Validar setup</button>
+      </div>
+    </div>
+
+    <!-- META DO PILOTO — quantitativa, vincula com o widget "atingida/total"
+         que aparece no Plano do Stint do Command Box ao vivo. -->
+    <div class="field">
+      <div class="field__lbl">Meta do piloto <small>quantitativa</small></div>
+      <div class="meta-row">
+        <div class="meta-cell">
+          <span class="mc-key">Tempo alvo</span>
+          <input class="input input--num" type="text" value="1:32" placeholder="1:32">
+          <span class="mc-hint">sub esse tempo</span>
+        </div>
+        <div class="meta-cell">
+          <span class="mc-key">Em voltas seguidas</span>
+          <input class="input input--num" type="number" value="8" placeholder="8">
+          <span class="mc-hint">consecutivas</span>
+        </div>
+      </div>
+      <p class="field__hint">No cockpit aparece "X/Y atingidas" enquanto a meta corre. Verde = no caminho · âmbar = atrasado · vermelho = falhou.</p>
+    </div>
+  </section>
+
+  <!-- ── APRENDIZADO COM IA ── -->
+  <section class="section">
+    <div class="section__head">Aprendizado com IA</div>
+
+    <div class="field">
+      <button class="toggle-row" data-on="true" type="button">
+        <div>
+          <div class="toggle-row__title">P1 Coach</div>
+          <div class="toggle-row__sub">Orienta no cockpit · 7 lições disponíveis</div>
+        </div>
+        <span class="toggle-switch" data-on="true">
+          <span class="toggle-switch__knob"></span>
+        </span>
+      </button>
+    </div>
+
+    <div class="coach-options">
+
+      <div class="field">
+        <div class="field__lbl">Área de foco <small>obrigatório</small></div>
+        <div class="phase-rail">
+          <button class="phase" type="button">Entrada</button>
+          <button class="phase is-active" type="button">Apex</button>
+          <button class="phase" type="button">Saída</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field__lbl">Lição específica <small>opcional · trava em 1 lição</small></div>
+        <button class="picker" type="button">
+          <div>
+            <div class="picker__val">V-Min</div>
+            <div class="picker__hint">L002 · velocidade · alta confiança</div>
+          </div>
+          <div class="picker__chev">›</div>
+        </button>
+      </div>
+
+      <div class="field">
+        <div class="field__lbl">Trecho específico <small>opcional · trava em 1 trecho</small></div>
+        <button class="picker" type="button">
+          <div>
+            <div class="picker__val">Curva da Junção</div>
+            <div class="picker__hint">Parcial 2 · curva média · apex neutro</div>
+          </div>
+          <div class="picker__chev">›</div>
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+</div>
+
+<div class="foot">
+  <div class="foot__inner">
+    <button class="btn btn--ghost" type="button">Cancelar</button>
+    <button class="btn btn--primary" type="button">Salvar e ir pro cockpit</button>
+  </div>
+</div>
+</body>
+</html>
