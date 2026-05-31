@@ -251,3 +251,41 @@ Sem fonte da verdade declarada, a lógica pode divergir entre as 3 implementaç�
 
 **Aplica-se a:** `src/telemetry/detector.js` (cabeçalho), `supabase/functions/detector/index.ts` (cabeçalho), `docs/PLANO_FASE_1.md` §6 (MS-13.5 que ainda fala em "reutilizar parte do `src/telemetry/detector.js` ou Edge Function").
 
+---
+
+## ADR-026 — Duas configurações de operação: iPhone-solo × Notebook-hub completo
+
+**Decisão (Flávio 2026-05-31):** o sistema opera em **duas configurações intercambiáveis, ambas sempre disponíveis** — não é migração, é escolha por sessão. O carro só anda na pista.
+
+### Configuração A — iPhone-solo (kit mínimo / portátil)
+- iPhone captura IMU 100 Hz + GPS 1 Hz (CoreMotion/CoreLocation), câmera frontal onboard (Daily.co), e faz uplink pra Supabase. Governada por **ADR-018** + MS-11.
+- Sem notebook, sem leitura T4000, sem RaceBox.
+- Uso: sessão rápida, sem montar o kit completo, ou fallback.
+
+### Configuração B — Notebook-hub completo (kit completo)
+O notebook Windows no carro é o hub autônomo:
+| Recurso | Fonte na Config B |
+|---|---|
+| Display cockpit | notebook (WinUI 3, ADR-023) |
+| Telemetria de motor | T4000 USB/CAN → notebook |
+| GNSS + IMU | **RaceBox Mini S** (BLE, GNSS 25 Hz + IMU ±8g), pareado ao notebook |
+| Câmera onboard | **câmera integrada ao notebook**, que **publica o stream via modem 5G** |
+| Uplink pra nuvem | **modem 5G no notebook** (uplink próprio) |
+
+- **Nesta configuração o iPhone NÃO é necessário** — RaceBox cobre GNSS+IMU com mais qualidade que o iPhone, a câmera saiu pro notebook, e o 5G dá uplink independente.
+
+### Consequências
+- **ADR-018 NÃO é revogada** — ela governa a Configuração A. Captura iOS segue mandatória *naquele modo*. Recebe amendment apontando pra cá (pendente de aprovação pra propagar).
+- **RaceBox reativado** — reverte o arquivamento de 2026-05-01. É a fonte primária de GNSS+IMU na Config B (`source: 'racebox'`, já previsto em `src/telemetry/provider.js`). Atualizar `BLOCKERS.md §E4`, `PENDENCIAS_GATE.md` P2, `RACEBOX_INTEGRATION_SPEC.md` (status), `docs/RUNBOOK_RETOMAR.md` (pendente de aprovação).
+- **Câmera/vídeo:** Config B → câmera do notebook captura e o notebook publica o stream via 5G (Daily.co ou equivalente). Config A → câmera frontal do iPhone (MS-11). MS-11 passa a ter dois caminhos.
+- **5G:** dá ao notebook uplink autônomo — reforça ADR-023. O transporte cabo/hotspot do iPhone (ADR-023 amendment 2) governa só o elo iPhone↔notebook quando ambos estão presentes; na Config B puro, o 5G substitui.
+- **Timebase:** `TelemetryTimebase` já foi desenhado pra alinhar T4000 + RaceBox + iPhone numa timeline única — suporta a Config B multi-fonte sem mudança estrutural.
+
+### Não revoga
+- ADR-018 (Config A), ADR-023 (cockpit no notebook — Config B agrega RaceBox + 5G + câmera), ADR-003/004/014 (telemetria).
+
+### Pendente de aprovação antes de propagar
+Atualizar em conjunto, após o Flávio aprovar este ADR: amendment no ADR-018, ADR-023, MS-11 (§2/§6 do PLANO), `BLOCKERS.md §E4`, `PENDENCIAS_GATE.md` P2, `RACEBOX_INTEGRATION_SPEC.md`, `RUNBOOK_RETOMAR.md`.
+
+**Aplica-se a:** `docs/GARAGEM_CONSUMIVEIS.md` (nível de automação por configuração), pipeline de telemetria (`provider.js`, `TelemetryTimebase`), ADR-018, ADR-023, MS-11.
+

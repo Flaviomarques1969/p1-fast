@@ -123,6 +123,18 @@ Observações de projeto:
 - Reusa o gancho que o `tire-wear.js` já provou (`registrarStint`): a função roda no fim do stint, lê o horímetro/distância, atualiza os contadores.
 - Edição manual permitida como fallback (corrigir leitura, carro novo). Igual hodômetro de banca.
 
+**Automação depende da configuração (ADR-026):**
+
+| Âncora | Config A (iPhone-solo) | Config B (notebook-hub) |
+|---|---|---|
+| `horas_motor` | ❌ sem T4000 → manual | ✅ horímetro da T4000 |
+| `km_pista` | ⚠️ GPS iPhone 1 Hz (menos preciso) | ✅ RaceBox 25 Hz |
+| `sessoes` | ✅ | ✅ |
+| `ciclos_termicos` | ❌ sem T4000 → manual | ✅ temp água T4000 |
+| calendário (freio, correia) | ✅ | ✅ |
+
+Tier 0 (calendário + sessões) **funciona nas duas configurações** — alinha o princípio "Tier 0 sempre funciona" (STATUS.md). A automação plena (horímetro + km preciso + ciclos térmicos) é da Config B.
+
 ---
 
 ## 6. Estado do item (verde / amarelo / vermelho)
