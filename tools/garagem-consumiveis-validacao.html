@@ -3,85 +3,62 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Validação — Consumíveis do Celta 1.4</title>
+<title>Consumíveis do Celta 1.4 — catálogo completo</title>
 <style>
-  :root{
-    --bg:#0d1016; --card:#161b24; --card2:#1c222d; --line:#2a323f;
-    --txt:#e7ecf3; --mut:#94a3b8; --accent:#ffd23f;
-    --verde:#2ecc71; --teal:#27c0a8; --amarelo:#f4b942; --vermelho:#e05a4f; --azul:#4aa3ff;
-  }
+  :root{--bg:#0d1016;--card:#161b24;--card2:#1c222d;--line:#2a323f;--txt:#e7ecf3;--mut:#94a3b8;--accent:#ffd23f;--verde:#2ecc71;--amarelo:#f4b942;--vermelho:#e05a4f;--azul:#4aa3ff}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-  header{padding:22px 20px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(13,16,22,.95);backdrop-filter:blur(8px);z-index:10}
+  header{padding:20px 18px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(13,16,22,.96);backdrop-filter:blur(8px);z-index:10}
   h1{margin:0 0 4px;font-size:20px}
   .sub{color:var(--mut);font-size:13px;margin:0}
-  .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;font-size:12px}
-  .pill{padding:3px 9px;border-radius:99px;border:1px solid var(--line);color:var(--mut)}
-  .pill b{color:var(--txt)}
-  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
   .bar{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
   button{cursor:pointer;border:1px solid var(--line);background:var(--card2);color:var(--txt);padding:8px 13px;border-radius:8px;font-size:13px;font-weight:600}
   button:hover{border-color:var(--accent)}
   button.primary{background:var(--accent);color:#1a1300;border-color:var(--accent)}
-  main{max-width:1180px;margin:0 auto;padding:18px 16px 80px}
   .saved{color:var(--verde);font-size:12px;align-self:center}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:16px;margin-bottom:14px}
+  main{max-width:1180px;margin:0 auto;padding:16px 14px 80px}
+  .grp{margin:26px 0 6px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:800;border-bottom:1px solid var(--line);padding-bottom:6px}
+  .grp:first-child{margin-top:6px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px}
   .card.crit{border-left:4px solid var(--vermelho)}
   .card.decApr{outline:1px solid rgba(46,204,113,.4)}
   .card.decAjt{outline:1px solid rgba(244,185,66,.5)}
-  .card.decRmv{opacity:.55}
-  .top{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
-  .num{font-size:13px;color:var(--mut);font-weight:700;min-width:24px}
+  .card.decRmv{opacity:.5}
+  .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .num{font-size:12px;color:var(--mut);font-weight:700;min-width:22px}
   .nome{flex:1;min-width:200px}
-  .nome input{font-size:16px;font-weight:700}
-  .grupo{font-size:12px;color:var(--mut);margin-top:2px}
-  .badges{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .nome input{font-size:15px;font-weight:700}
   .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
-  .b-auto-alta{background:rgba(46,204,113,.15);color:var(--verde)}
-  .b-auto-mediaalta{background:rgba(39,192,168,.15);color:var(--teal)}
-  .b-auto-media{background:rgba(244,185,66,.15);color:var(--amarelo)}
-  .b-auto-baixa{background:rgba(224,90,79,.15);color:var(--vermelho)}
-  .b-auto-pronto{background:rgba(74,163,255,.15);color:var(--azul)}
   .b-crit{background:rgba(224,90,79,.2);color:var(--vermelho)}
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:14px}
-  label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);margin-bottom:4px;font-weight:700}
-  input,select,textarea{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:7px;padding:7px 9px;font-size:14px;font-family:inherit}
-  textarea{resize:vertical;min-height:46px}
-  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
-  .porque{background:var(--card2);border:1px dashed var(--line);border-radius:8px;padding:10px 12px;margin-top:12px;font-size:13px;color:var(--mut)}
+  .grid{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:10px;margin-top:10px}
+  @media(max-width:680px){.grid{grid-template-columns:1fr}}
+  label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);margin-bottom:3px;font-weight:700}
+  input,textarea{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:7px;padding:6px 9px;font-size:14px;font-family:inherit}
+  textarea{resize:vertical;min-height:42px}
+  input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+  .porque{background:var(--card2);border:1px dashed var(--line);border-radius:7px;padding:8px 11px;margin-top:10px;font-size:12.5px;color:var(--mut)}
   .porque b{color:var(--txt)}
-  .full{grid-column:1/-1}
-  .orient textarea{min-height:60px;border-color:#3a4757}
-  .dec{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
-  .dec button{flex:0 0 auto;padding:6px 11px;font-size:12px;opacity:.6}
+  .orient{margin-top:10px}
+  .dec{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center}
+  .dec button{padding:5px 10px;font-size:12px;opacity:.55}
   .dec button.on{opacity:1}
   .dec .apr.on{background:rgba(46,204,113,.18);border-color:var(--verde);color:var(--verde)}
   .dec .ajt.on{background:rgba(244,185,66,.18);border-color:var(--amarelo);color:var(--amarelo)}
   .dec .rmv.on{background:rgba(224,90,79,.18);border-color:var(--vermelho);color:var(--vermelho)}
+  .del{margin-left:auto;font-size:11px;color:var(--mut);padding:4px 9px}
   dialog{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:12px;max-width:760px;width:92%;padding:18px}
   dialog::backdrop{background:rgba(0,0,0,.6)}
   dialog textarea{min-height:320px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
-  .delrow{margin-top:10px;text-align:right}
-  .delrow button{font-size:11px;color:var(--mut);padding:4px 9px}
   .foot{color:var(--mut);font-size:12px;margin-top:24px;text-align:center}
 </style>
 </head>
 <body>
 <header>
-  <h1>🔧 Consumíveis do Celta 1.4 — validação</h1>
-  <p class="sub">Cada item mostra o <b>método (relógio)</b> que propus, <b>por que</b> escolhi ele e o <b>prazo</b>. Edite o que quiser, escreva sua orientação em cada um e marque a decisão. No fim, exporte e me devolva.</p>
-  <div class="legend">
-    <span class="pill">Relógio = critério de troca</span>
-    <span class="pill"><span class="dot" style="background:var(--verde)"></span>Automação <b>Alta</b></span>
-    <span class="pill"><span class="dot" style="background:var(--teal)"></span><b>Média-alta</b></span>
-    <span class="pill"><span class="dot" style="background:var(--amarelo)"></span><b>Média</b></span>
-    <span class="pill"><span class="dot" style="background:var(--vermelho)"></span><b>Baixa / manual</b></span>
-    <span class="pill"><span class="dot" style="background:var(--azul)"></span><b>Já existe</b></span>
-    <span class="pill">⚠️ = segurança crítica</span>
-  </div>
+  <h1>🔧 Consumíveis do Celta 1.4 — catálogo completo</h1>
+  <p class="sub">~30 itens por sistema. Cada um: <b>método de aferição</b>, <b>por que</b> e <b>intervalo</b>. Edite tudo, escreva sua orientação e marque Aprovado / Ajustar / Não se aplica. Exporte e me devolva.</p>
   <div class="bar">
-    <button class="primary" onclick="exportar()">⬇︎ Exportar / copiar pra devolver</button>
-    <button onclick="addItem()">+ Novo consumível</button>
+    <button class="primary" onclick="exportar()">⬇︎ Exportar / copiar</button>
+    <button onclick="addItem()">+ Item</button>
     <button onclick="salvar()">💾 Salvar</button>
     <button onclick="resetar()">↺ Restaurar padrão</button>
     <span class="saved" id="savedMsg"></span>
@@ -90,182 +67,98 @@
 <main id="app"></main>
 
 <dialog id="dlg">
-  <h3 style="margin-top:0">Seus dados — copie e me devolva (ou baixe o arquivo)</h3>
-  <p class="sub">O bloco abaixo tem suas edições e orientações. Cole de volta pra mim no chat, ou baixe o JSON.</p>
+  <h3 style="margin-top:0">Copie e me devolva no chat (ou baixe o JSON)</h3>
   <textarea id="dlgTxt" readonly></textarea>
   <div class="bar">
-    <button class="primary" onclick="copiar()">📋 Copiar tudo</button>
+    <button class="primary" onclick="copiar()">📋 Copiar</button>
     <button onclick="baixar()">⬇︎ Baixar JSON</button>
     <button onclick="document.getElementById('dlg').close()">Fechar</button>
   </div>
 </dialog>
 
 <script>
-const RELOGIOS = [
-  "Horas de motor","Km de pista","Calendário","Sessões / voltas",
-  "Voltas (pneu)","Horas OU calendário (o que vier antes)",
-  "Condição medida","Inspeção visual","Por sessão (consumo)"
-];
-const AUTOS = ["Alta","Média-alta","Média","Baixa","Já implementado","Já existe"];
-
-// Catálogo proposto — fonte: docs/GARAGEM_CONSUMIVEIS.md §4
 const PADRAO = [
- {n:"Óleo de motor + filtro de óleo",g:"G1 Mecânica",rp:"Horas de motor",lp:"15 h",rs:"Calendário 6 meses",fonte:"T4000 (horímetro)",auto:"Alta",crit:false,
-  porque:"Pista castiga óleo (temperatura + cisalhamento) muito mais que rua. Em track car o relógio real é hora de motor, não km. O horímetro nativo da T4000 dá o número autoritativo."},
- {n:"Filtro de ar",g:"G1 Mecânica",rp:"Horas de motor",lp:"20 h",rs:"nº de sessões (poeira)",fonte:"T4000 (horímetro)",auto:"Alta",crit:false,
-  porque:"Entope por exposição a poeira de box/pista. Horas de motor + nº de sessões capturam bem o uso."},
- {n:"Filtro de combustível",g:"G2 Combustível",rp:"Calendário",lp:"12 meses",rs:"Horas ~40 h",fonte:"relógio + T4000",auto:"Alta",crit:false,
-  porque:"Degrada por tempo e por vazão de combustível. Calendário manda, horas de motor reforçam."},
- {n:"Velas de ignição",g:"G1 Mecânica",rp:"Horas de motor",lp:"30 h",rs:"λ errático sob carga",fonte:"T4000 (RPM, λ)",auto:"Média-alta",crit:false,
-  porque:"Eletrodo desgasta por horas de queima. A sonda lambda WB (que já lemos) denuncia mistura errática sob carga sustentada antes da hora cheia."},
- {n:"Fluido de freio (DOT4)",g:"G3 Pneus & Suspensão",rp:"Calendário",lp:"12 meses",rs:"nº de sessões pesadas",fonte:"relógio",auto:"Alta",crit:true,
-  porque:"Higroscópico — absorve água do ar com o tempo e baixa o ponto de fervura. Frenagem de pista ferve fluido velho (fade/pedal no fundo). Calendário anual manda. Gatilho determinístico (ADR-008), nunca IA."},
- {n:"Pastilhas de freio (D/T)",g:"G3 Pneus & Suspensão",rp:"Sessões / voltas",lp:"a aprender por histórico",rs:"inspeção visual de espessura",fonte:"GPS / sessoes",auto:"Média",crit:false,
-  porque:"Desgaste por uso/frenagem. O carro não tem sensor de espessura → uso voltas/sessões desde a troca como proxy e o sistema lembra de inspecionar. Aprende o ritmo de desgaste com o histórico."},
- {n:"Discos de freio",g:"G3 Pneus & Suspensão",rp:"Inspeção visual",lp:"manual (espessura/empenamento)",rs:"nº de jogos de pastilha",fonte:"—",auto:"Baixa",crit:false,
-  porque:"Só se mede inspecionando (espessura mínima, empenamento, trincas). Dá pra estimar por quantos jogos de pastilha já passaram, mas a troca é decisão visual/manual."},
- {n:"Líquido de arrefecimento / aditivo",g:"G1 Mecânica",rp:"Calendário",lp:"24 meses",rs:"tendência térmica subindo",fonte:"relógio + T4000 (água)",auto:"Média-alta",crit:false,
-  porque:"O aditivo perde proteção anticorrosão/anticongelante por tempo. A temp de água subindo entre sessões iguais (que a T4000 lê) é sintoma de eficiência caindo."},
- {n:"Correia dentada + tensor",g:"G1 Mecânica",rp:"Horas OU calendário (o que vier antes)",lp:"150 h ou 48 meses",rs:"—",fonte:"T4000 + relógio",auto:"Alta",crit:true,
-  porque:"Item de MAIOR consequência: motor de interferência — se a correia rompe, dobra válvula e destrói o motor. Alerta vermelho antecipado e ruidoso. O que estourar primeiro entre horas e calendário vence. Gatilho determinístico (ADR-008)."},
- {n:"Correia de acessórios (alternador)",g:"G1 Mecânica",rp:"Inspeção visual",lp:"manual",rs:"tensão de bateria caindo",fonte:"T4000 (bateria)",auto:"Média",crit:false,
-  porque:"Inspeção de tensão/trincas. Bateria caindo (o Bubi já mostra ~13,2 V) pode indicar correia frouxa/alternador fraco — sintoma que a T4000 entrega."},
- {n:"Pneus",g:"G3 Pneus & Suspensão",rp:"Voltas (pneu)",lp:"já existe (tire-wear.js)",rs:"nível visual 0..3",fonte:"GPS / voltas",auto:"Já implementado",crit:false,
-  porque:"Já coberto pelo tire-wear.js: conta voltas por composto e estima vida útil após 3+ instalações. Só plugar nesse painel."},
- {n:"Óleo de câmbio",g:"G1 Mecânica",rp:"Horas de motor",lp:"60 h",rs:"Calendário 24 meses",fonte:"T4000 + relógio",auto:"Alta",crit:false,
-  porque:"Menos crítico que o de motor, mas aquece e cisalha em pista. Horas de motor + calendário de segurança."},
- {n:"Embreagem (disco/platô/rolamento)",g:"G1 Mecânica",rp:"Horas de motor",lp:"a aprender",rs:"inspeção (patinação)",fonte:"T4000 (horímetro)",auto:"Baixa",crit:false,
-  porque:"Desgaste por uso/abuso (largadas, troca de marcha agressiva). Difícil medir sem sensor → proxy por horas + inspeção quando patinar."},
- {n:"Bateria",g:"G4 Elétrica",rp:"Calendário",lp:"24 meses",rs:"tensão de carga sob RPM",fonte:"T4000 (bateria)",auto:"Média",crit:false,
-  porque:"Envelhece por tempo e ciclos. A tensão sob RPM que a T4000 lê denuncia bateria/alternador fracos (Bubi ~13,2 V já é sintoma a investigar)."},
- {n:"Combustível",g:"G2 Combustível",rp:"Por sessão (consumo)",lp:"n/a — é consumo, não troca",rs:"—",fonte:"cálculo (fuel-calc.js)",auto:"Já existe",crit:false,
-  porque:"Não é 'troca' e sim consumo por sessão. Já calculado em voltas restantes pelo fuel-calc.js. Listado aqui só pra completar o panorama."}
+ {s:"Motor",n:"Óleo de motor + filtro de óleo",m:"Horímetro",iv:"15 h ou 6 meses",c:false,p:"Pista castiga óleo por calor e cisalhamento; o relógio real é hora de motor, não km. Horímetro da T4000 dá o número autoritativo."},
+ {s:"Motor",n:"Filtro de ar",m:"Horímetro / sessões",iv:"20 h ou por temporada",c:false,p:"Entope por poeira de box/pista — uso por exposição."},
+ {s:"Motor",n:"Filtro de combustível",m:"Calendário + horímetro",iv:"12 meses ou 40 h",c:false,p:"Degrada por tempo e por vazão."},
+ {s:"Motor",n:"Velas de ignição",m:"Horímetro + λ (sonda WB)",iv:"30 h",c:false,p:"Eletrodo desgasta por horas de queima; a lambda WB denuncia mistura errática antes da hora."},
+ {s:"Motor",n:"Cabos de vela / bobina",m:"Calendário + condição (falha)",iv:"24 meses ou sintoma",c:false,p:"Isolamento resseca com tempo/calor; falha de ignição denuncia."},
+ {s:"Motor",n:"Correia dentada + tensor + rolamento do tensor",m:"Horímetro OU calendário (o que vier 1º)",iv:"150 h ou 48 meses",c:true,p:"MAIOR consequência: motor de interferência — se rompe, dobra válvula e destrói o motor. Alerta antecipado, gatilho determinístico (ADR-008)."},
+ {s:"Motor",n:"Bomba d'água",m:"Junto da correia dentada",iv:"mesmo intervalo da correia",c:false,p:"Padrão de oficina: troca junto com a correia dentada porque o acesso é o mesmo."},
+ {s:"Motor",n:"Correia de acessórios (alternador)",m:"Inspeção + tensão de bateria",iv:"24 meses ou frouxa",c:false,p:"Inspeção de tensão/trincas; bateria caindo denuncia correia frouxa."},
+ {s:"Motor",n:"Coxins de motor / câmbio",m:"Inspeção + condição (vibração)",iv:"por temporada / condição",c:false,p:"Borracha cansa com vibração e óleo; vibração excessiva denuncia."},
+ {s:"Motor",n:"Sonda lambda WB",m:"Horímetro alto + condição",iv:"~100 h ou resposta lenta",c:false,p:"O sensor envelhece e fica preguiçoso; resposta lenta da leitura denuncia."},
+ {s:"Motor",n:"Mangueiras (água / combustível)",m:"Inspeção + calendário",iv:"36 meses ou ressecadas",c:false,p:"Borracha resseca e estufa com calor e tempo."},
+
+ {s:"Arrefecimento",n:"Líquido de arrefecimento / aditivo",m:"Calendário + ciclos térmicos",iv:"24 meses",c:false,p:"O aditivo perde proteção anticorrosão/fervura por tempo; temp d'água subindo entre sessões iguais é sintoma."},
+ {s:"Arrefecimento",n:"Válvula termostática",m:"Condição (temp não estabiliza)",iv:"por sintoma",c:false,p:"Falha quando a temperatura não sobe/estabiliza como esperado."},
+
+ {s:"Transmissão",n:"Óleo de câmbio",m:"Horímetro",iv:"60 h ou 24 meses",c:false,p:"Aquece e cisalha em pista, menos crítico que o do motor."},
+ {s:"Transmissão",n:"Kit de embreagem (disco / platô / rolamento)",m:"Horímetro + condição (patinação)",iv:"por desgaste / patina sob carga",c:false,p:"Desgaste por uso/abuso (largadas, trocas agressivas). Patinação sob carga denuncia."},
+ {s:"Transmissão",n:"Coifas / juntas homocinéticas",m:"Inspeção (graxa / trinca)",iv:"condição",c:false,p:"Coifa rasga, perde graxa e a junta morre — inspeção visual pega cedo."},
+
+ {s:"Freios",n:"Fluido de freio (DOT4)",m:"Calendário",iv:"12 meses",c:true,p:"Higroscópico — absorve água do ar e baixa o ponto de fervura; frenagem de pista ferve fluido velho (fade). Gatilho determinístico."},
+ {s:"Freios",n:"Pastilhas de freio (diant. / tras.)",m:"Voltas-sessões + inspeção de espessura",iv:"por desgaste (sistema aprende)",c:false,p:"Sem sensor de espessura → voltas/sessões como proxy + inspeção; aprende o ritmo pelo histórico."},
+ {s:"Freios",n:"Discos de freio",m:"Inspeção (espessura / empenamento)",iv:"a cada 2–3 jogos de pastilha",c:false,p:"Só medindo; estimável por quantos jogos de pastilha já passaram."},
+ {s:"Freios",n:"Flexíveis de freio (mangueiras)",m:"Calendário + inspeção",iv:"48 meses ou estufando",c:false,p:"Borracha sob pressão cansa; estufar é perigoso (perda de pedal)."},
+
+ {s:"Suspensão / Direção / Rolamentos",n:"Rolamentos de roda (diant. / tras.)",m:"Km de pista + inspeção (folga / ruído)",iv:"por temporada / folga ou ronco",c:false,p:"Pista castiga rolamento (carga lateral). Folga ou ronco na roda denuncia."},
+ {s:"Suspensão / Direção / Rolamentos",n:"Amortecedores",m:"Horímetro/km + condição (vazamento)",iv:"por temporada / vazando",c:false,p:"Perdem retorno com uso; vazamento de óleo denuncia."},
+ {s:"Suspensão / Direção / Rolamentos",n:"Buchas, bieletas, terminais, pivôs",m:"Inspeção (folga)",iv:"por temporada / com folga",c:false,p:"Folga aparece com o uso; inspeção de folga pega."},
+ {s:"Suspensão / Direção / Rolamentos",n:"Alinhamento + balanceamento",m:"Por evento / após impacto",iv:"ajuste, não troca",c:false,p:"Não é peça de troca — é ajuste após zebrada/impacto ou troca de pneu."},
+
+ {s:"Rodas / Pneus",n:"Pneus",m:"Voltas por composto (tire-wear.js, pronto)",iv:"vida útil aprendida",c:false,p:"Já coberto pelo tire-wear.js: conta voltas por composto e estima a vida."},
+ {s:"Rodas / Pneus",n:"Calibragem / válvulas",m:"Pressão por sessão",iv:"ajuste por sessão",c:false,p:"Pressão a frio/quente por sessão — ajuste, não troca."},
+
+ {s:"Elétrica",n:"Bateria",m:"Calendário + tensão de carga sob RPM",iv:"24 meses ou tensão baixa",c:false,p:"Envelhece por tempo/ciclos; tensão sob RPM que a T4000 lê denuncia bateria/alternador fracos."},
+
+ {s:"Segurança",n:"Cintos / arnês (homologação FIA)",m:"Validade impressa",iv:"data de validade FIA",c:true,p:"Cinto homologado tem validade FIA impressa; vencido perde a homologação e a segurança."},
+ {s:"Segurança",n:"Extintor",m:"Validade / carga",iv:"data de validade",c:true,p:"Carga e validade datadas; vencido não cobre o regulamento nem protege."}
 ];
-
-const KEY = "garagem-consumiveis-validacao-v1";
-let dados = carregar();
-
-function carregar(){
-  try{ const s = localStorage.getItem(KEY); if(s) return JSON.parse(s); }catch(e){}
-  return PADRAO.map(x=>({...x, orient:"", dec:"Pendente"}));
-}
-function salvar(){
-  localStorage.setItem(KEY, JSON.stringify(dados));
-  const m=document.getElementById('savedMsg'); m.textContent="✓ salvo no navegador "+new Date().toLocaleTimeString();
-  setTimeout(()=>m.textContent="",3000);
-}
-function resetar(){
-  if(!confirm("Restaurar o catálogo proposto e apagar suas edições?")) return;
-  localStorage.removeItem(KEY); dados = carregar(); render();
-}
-function autoClass(a){
-  return {"Alta":"b-auto-alta","Média-alta":"b-auto-mediaalta","Média":"b-auto-media",
-    "Baixa":"b-auto-baixa","Já implementado":"b-auto-pronto","Já existe":"b-auto-pronto"}[a]||"b-auto-media";
-}
-function opt(arr,sel){return arr.map(o=>`<option ${o===sel?'selected':''}>${o}</option>`).join('')}
-
+const KEY="garagem-consumiveis-v2";
+let dados=carregar();
+function carregar(){try{const s=localStorage.getItem(KEY);if(s)return JSON.parse(s);}catch(e){}return PADRAO.map(x=>({...x,orient:"",dec:"Pendente"}));}
+function salvar(){localStorage.setItem(KEY,JSON.stringify(dados));const m=document.getElementById('savedMsg');m.textContent="✓ salvo "+new Date().toLocaleTimeString();setTimeout(()=>m.textContent="",3000);}
+function resetar(){if(!confirm("Restaurar o catálogo proposto e apagar suas edições?"))return;localStorage.removeItem(KEY);dados=carregar();render();}
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function render(){
-  const app=document.getElementById('app');
-  app.innerHTML = dados.map((it,i)=>{
-    const decClass = it.dec==="Aprovado"?"decApr":it.dec==="Ajustar"?"decAjt":it.dec==="Remover"?"decRmv":"";
-    return `
-    <div class="card ${it.crit?'crit':''} ${decClass}">
+  const app=document.getElementById('app');let html='',grpAtual='';
+  dados.forEach((it,i)=>{
+    if(it.s!==grpAtual){grpAtual=it.s;html+=`<div class="grp">${esc(grpAtual)}</div>`;}
+    const dc=it.dec==="Aprovado"?"decApr":it.dec==="Ajustar"?"decAjt":it.dec==="Remover"?"decRmv":"";
+    html+=`<div class="card ${it.c?'crit':''} ${dc}">
       <div class="top">
-        <div class="num">${String(i+1).padStart(2,'0')}</div>
-        <div class="nome">
-          <input value="${esc(it.n)}" data-i="${i}" data-f="n" />
-          <div class="grupo"><input style="font-size:12px;padding:3px 7px" value="${esc(it.g)}" data-i="${i}" data-f="g" /></div>
-        </div>
-        <div class="badges">
-          ${it.crit?'<span class="badge b-crit">⚠️ crítico</span>':''}
-          <span class="badge ${autoClass(it.auto)}">automação: ${esc(it.auto)}</span>
-        </div>
+        <span class="num">${String(i+1).padStart(2,'0')}</span>
+        <span class="nome"><input value="${esc(it.n)}" data-i="${i}" data-f="n"></span>
+        ${it.c?'<span class="badge b-crit">⚠️ crítico</span>':''}
       </div>
-
       <div class="grid">
-        <div>
-          <label>Método / relógio primário</label>
-          <select data-i="${i}" data-f="rp">${opt(RELOGIOS,it.rp)}</select>
-        </div>
-        <div>
-          <label>Prazo proposto</label>
-          <input value="${esc(it.lp)}" data-i="${i}" data-f="lp" />
-        </div>
-        <div>
-          <label>Gatilho secundário</label>
-          <input value="${esc(it.rs)}" data-i="${i}" data-f="rs" />
-        </div>
-        <div>
-          <label>Fonte do dado</label>
-          <input value="${esc(it.fonte)}" data-i="${i}" data-f="fonte" />
-        </div>
-        <div>
-          <label>Nível de automação</label>
-          <select data-i="${i}" data-f="auto">${opt(AUTOS,it.auto)}</select>
-        </div>
-        <div>
-          <label>Segurança crítica?</label>
-          <select data-i="${i}" data-f="crit"><option value="false" ${!it.crit?'selected':''}>Não</option><option value="true" ${it.crit?'selected':''}>Sim ⚠️</option></select>
-        </div>
+        <div><label>Método de aferição</label><input value="${esc(it.m)}" data-i="${i}" data-f="m"></div>
+        <div><label>Intervalo proposto</label><input value="${esc(it.iv)}" data-i="${i}" data-f="iv"></div>
+        <div><label>Sistema</label><input value="${esc(it.s)}" data-i="${i}" data-f="s"></div>
       </div>
-
-      <div class="porque"><b>Por que escolhi este método:</b> ${esc(it.porque)}</div>
-
-      <div class="orient" style="margin-top:12px">
-        <label>✍️ Sua orientação / ajuste neste item</label>
-        <textarea data-i="${i}" data-f="orient" placeholder="Ex.: 'óleo é a cada 10h, não 15' · 'esse não se aplica ao Bubi' · 'quero alerta 2 sessões antes'...">${esc(it.orient)}</textarea>
-      </div>
-
+      <div class="porque"><b>Por quê:</b> ${esc(it.p)}</div>
+      <div class="orient"><label>✍️ Sua orientação / ajuste</label><textarea data-i="${i}" data-f="orient" placeholder="ex.: 'óleo é a cada 10h' · 'esse não se aplica' · 'quero alerta 2 sessões antes'">${esc(it.orient)}</textarea></div>
       <div class="dec">
         <button class="apr ${it.dec==='Aprovado'?'on':''}" onclick="setDec(${i},'Aprovado')">✓ Aprovado</button>
         <button class="ajt ${it.dec==='Ajustar'?'on':''}" onclick="setDec(${i},'Ajustar')">✎ Ajustar</button>
         <button class="rmv ${it.dec==='Remover'?'on':''}" onclick="setDec(${i},'Remover')">✕ Não se aplica</button>
+        <button class="del" onclick="delItem(${i})">apagar</button>
       </div>
-      <div class="delrow"><button onclick="delItem(${i})">apagar este item</button></div>
     </div>`;
-  }).join('');
-
-  app.querySelectorAll('input,select,textarea').forEach(el=>{
-    if(!el.dataset.f) return;
-    el.addEventListener('input',e=>{
-      const i=+e.target.dataset.i, f=e.target.dataset.f;
-      let v=e.target.value;
-      if(f==='crit') v=(v==='true');
-      dados[i][f]=v; salvar();
-      if(f==='crit'||f==='auto') render();
-    });
   });
+  app.innerHTML=html;
+  app.querySelectorAll('input,textarea').forEach(el=>{if(!el.dataset.f)return;el.addEventListener('input',e=>{const i=+e.target.dataset.i,f=e.target.dataset.f;dados[i][f]=e.target.value;salvar();if(f==='s')clearTimeout(window._rt),window._rt=setTimeout(render,800);});});
 }
-function setDec(i,d){ dados[i].dec=(dados[i].dec===d?'Pendente':d); salvar(); render(); }
-function addItem(){
-  dados.push({n:"Novo consumível",g:"G1 Mecânica",rp:"Horas de motor",lp:"",rs:"",fonte:"",auto:"Média",crit:false,porque:"(item adicionado por você)",orient:"",dec:"Ajustar"});
-  salvar(); render(); window.scrollTo(0,document.body.scrollHeight);
-}
-function delItem(i){ if(confirm("Apagar este item da lista?")){ dados.splice(i,1); salvar(); render(); } }
-function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-function resumoTexto(){
-  const linhas = dados.map((it,i)=>
-    `${i+1}. [${it.dec}] ${it.n} (${it.g})\n   método: ${it.rp} · prazo: ${it.lp} · 2º: ${it.rs||'—'} · automação: ${it.auto}${it.crit?' · ⚠️CRÍTICO':''}`+
-    (it.orient?`\n   ➤ orientação: ${it.orient}`:''));
-  return "VALIDAÇÃO CONSUMÍVEIS CELTA 1.4 — "+new Date().toLocaleString()+"\n\n"+linhas.join('\n\n');
-}
-function exportar(){
-  const payload = { gerado_em:new Date().toISOString(), itens:dados };
-  document.getElementById('dlgTxt').value = resumoTexto() + "\n\n--- JSON ---\n" + JSON.stringify(payload,null,2);
-  document.getElementById('dlg').showModal();
-}
-function copiar(){
-  const t=document.getElementById('dlgTxt'); t.select();
-  navigator.clipboard.writeText(t.value).then(()=>{ const b=event.target; const o=b.textContent; b.textContent="✓ copiado"; setTimeout(()=>b.textContent=o,2000); });
-}
-function baixar(){
-  const blob=new Blob([JSON.stringify({gerado_em:new Date().toISOString(),itens:dados},null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download="consumiveis-celta-validado.json"; a.click();
-}
+function setDec(i,d){dados[i].dec=(dados[i].dec===d?'Pendente':d);salvar();render();}
+function addItem(){dados.push({s:"Motor",n:"Novo item",m:"",iv:"",c:false,p:"(adicionado por você)",orient:"",dec:"Ajustar"});salvar();render();window.scrollTo(0,document.body.scrollHeight);}
+function delItem(i){if(confirm("Apagar este item?")){dados.splice(i,1);salvar();render();}}
+function resumo(){return "CONSUMÍVEIS CELTA 1.4 — "+new Date().toLocaleString()+"\n\n"+dados.map((it,i)=>`${i+1}. [${it.dec}] ${it.n} (${it.s})\n   método: ${it.m} · intervalo: ${it.iv}${it.c?' · ⚠️CRÍTICO':''}`+(it.orient?`\n   ➤ ${it.orient}`:'')).join('\n\n');}
+function exportar(){document.getElementById('dlgTxt').value=resumo()+"\n\n--- JSON ---\n"+JSON.stringify({gerado_em:new Date().toISOString(),itens:dados},null,2);document.getElementById('dlg').showModal();}
+function copiar(){const t=document.getElementById('dlgTxt');t.select();navigator.clipboard.writeText(t.value).then(()=>{const b=event.target,o=b.textContent;b.textContent="✓ copiado";setTimeout(()=>b.textContent=o,2000);});}
+function baixar(){const blob=new Blob([JSON.stringify({gerado_em:new Date().toISOString(),itens:dados},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download="consumiveis-celta.json";a.click();}
 render();
 </script>
-<div class="foot">P1 Fast · protótipo de validação · espelha <code>docs/GARAGEM_CONSUMIVEIS.md</code> §4 · seus dados ficam só no seu navegador até você exportar</div>
+<div class="foot">P1 Fast · catálogo de consumíveis · espelha <code>docs/GARAGEM_CONSUMIVEIS.md</code> · dados ficam no seu navegador até exportar</div>
 </body>
 </html>
