@@ -34,7 +34,7 @@ Antes do catálogo, três fatos do repositório que limitam a automação. São 
 **Porém, as duas âncoras certas existem no hardware** (atualização Flávio 2026-05-31):
 
 - **Horas de motor → a T4000 tem horímetro nativo.** A ECU mantém um contador de horas de motor autoritativo (inclusive horas de **antes** do sistema existir). Não preciso derivar integrando RPM. **Pendência conhecida:** o parser atual (`web/cockpit/t3000-usb-parser.js`) lê 30+ sensores mas **não extrai o horímetro** — ele tem `cronometroParcialS`/`cronometroTotalS` (cronômetro de volta), que **não é** horímetro de motor. Falta localizar o offset do horímetro no bloco de ~460 bytes (engenharia reversa, igual ao conserto da sonda lambda 2026-05-26) ou lê-lo via o software oficial INJEPRO. É o único trabalho de descoberta do item zero.
-- **Km → GPS fixo instalado no carro** (a instalar, Flávio 2026-05-31). Hardware dedicado, independente do iPhone estar em foreground — resolve o problema de o iOS matar a captura em background (STATUS.md). E como **o carro só anda na pista** (não roda em rua), todo km medido é km de pista: não há mais a distinção rua×pista.
+- **Km → RaceBox Mini S** (decisão Flávio 2026-05-31). GNSS 25 Hz (precisão até ~10 cm) + IMU, pareado com o notebook/Mini PC que fica no carro (`RACEBOX_INTEGRATION_SPEC.md`) — hardware dedicado, independente do iPhone estar em foreground, resolve o problema de o iOS matar a captura em background (STATUS.md). E como **o carro só anda na pista** (não roda em rua), todo km medido é km de pista: não há mais a distinção rua×pista. **Nota:** isto reverte o arquivamento do RaceBox de 2026-05-01 (`BLOCKERS.md §E4`, `PENDENCIAS_GATE.md` P2) — ver §10.
 
 **Conclusão:** o "item zero" deixa de ser "construir um acumulador derivado do zero" e vira "**ler o horímetro autoritativo da T4000 + integrar a distância do GPS fixo**". Mais simples e mais confiável. Detalhe em §5.
 
@@ -51,7 +51,7 @@ Antes do catálogo, três fatos do repositório que limitam a automação. São 
 A T4000 **nunca** dá GPS, posição, aceleração, pressão/temperatura real de pneu (anti-catálogo da spec). Esses vêm do **iPhone** (CoreLocation 1 Hz + CoreMotion 100 Hz, já no pipeline de telemetria, ADR-018).
 
 - **Horas de motor** = **horímetro nativo da T4000** (autoritativo; só falta extrair o offset do stream). Não é mais derivado de RPM.
-- **Km de pista** = ∫ velocidade · dt → **GPS fixo do carro** (a instalar). Como o carro só anda na pista, é tudo km de pista. A velocidade da T4000 valida cruzado.
+- **Km de pista** = ∫ velocidade · dt → **RaceBox Mini S** (GNSS 25 Hz, pareado com o Mini PC no carro, `source: 'racebox'`). Como o carro só anda na pista, é tudo km de pista. A velocidade da T4000 valida cruzado.
 - **Ciclos térmicos** = stints em que a água cruzou o limiar quente → **T4000** (temp água).
 
 ---
@@ -61,7 +61,7 @@ A T4000 **nunca** dá GPS, posição, aceleração, pressão/temperatura real de
 | Relógio | Como se mede | Automação | Fonte |
 |---|---|---|---|
 | **Horas de motor** | horímetro nativo da ECU (autoritativo) | **Automático** (após extrair offset) | T4000 (horímetro) |
-| **Km de pista** | Σ ∫velocidade·dt por stint | **Automático** | GPS fixo do carro |
+| **Km de pista** | Σ ∫velocidade·dt por stint | **Automático** | RaceBox Mini S (GNSS 25 Hz) |
 | **Sessões / voltas** | contagem (já existe) | **Automático** | GPS / `sessoes` |
 | **Ciclos térmicos** | nº stints em que água passou ~85 °C e esfriou | **Automático** | T4000 (água) |
 | **Calendário** | hoje − data da última troca | **Automático** (só data) | relógio |
@@ -112,14 +112,14 @@ Sem isto, o resto é só checklist manual com data. É a fundação. As duas ân
 | Âncora | Origem | Natureza |
 |---|---|---|
 | `horas_motor` | **horímetro nativo da T4000** | Valor absoluto lido da ECU (snapshot por stint). Cobre inclusive horas anteriores ao sistema. |
-| `km_pista` | **GPS fixo do carro** — Σ ∫velocidade·dt | Acumulado por stint. Carro só anda na pista → 100% do uso. |
+| `km_pista` | **RaceBox Mini S** (GNSS 25 Hz) — Σ ∫velocidade·dt | Acumulado por stint. Carro só anda na pista → 100% do uso. |
 | `sessoes` | já existe (`stintsPorCarro`) | += 1 por stint |
 | `ciclos_termicos` | T4000 (temp água) | += 1 se a água cruzou ~85 °C e esfriou |
 
 Observações de projeto:
 
 - **Horímetro é leitura, não cálculo.** O sistema guarda o valor do horímetro da ECU no momento de cada troca e compara com o valor atual. Isso é mais robusto que integrar RPM (não acumula erro, sobrevive a stints não capturados). **Bloqueio único:** extrair o offset do horímetro no stream da T4000 (engenharia reversa do bloco de bytes ou leitura via software oficial INJEPRO). É o item de pesquisa do F1.
-- **Km é append-only friendly** — cada stint contribui um delta de distância GPS; o total é soma, recomputável a partir dos stints (alinha ADR-004/014). O GPS fixo, por ser hardware dedicado, captura mesmo quando o app iOS está em background.
+- **Km é append-only friendly** — cada stint contribui um delta de distância GNSS; o total é soma, recomputável a partir dos stints (alinha ADR-004/014). O RaceBox, por ficar pareado com o Mini PC do carro, captura mesmo quando o app iOS está em background. Dependência: parser do protocolo BLE do RaceBox (módulos `racebox-ble-reader` / `racebox-packet-parser` / `racebox-provider` ainda não existem — `RACEBOX_INTEGRATION_SPEC.md` §Implementação; precisa do PDF do protocolo oficial).
 - Reusa o gancho que o `tire-wear.js` já provou (`registrarStint`): a função roda no fim do stint, lê o horímetro/distância, atualiza os contadores.
 - Edição manual permitida como fallback (corrigir leitura, carro novo). Igual hodômetro de banca.
 
@@ -182,13 +182,13 @@ Camada de domínio pura (cálculo de estado verde/amarelo/vermelho) portável JS
 | Fase | Entrega | Depende de |
 |---|---|---|
 | **F0** | **Este doc aprovado + limites calibrados com o Flávio** | — |
-| **F0.1** | **Extrair o horímetro da T4000** (achar o offset no stream ou ler via software oficial) + **instalar o GPS fixo** | hardware do Flávio |
+| **F0.1** | **Extrair o horímetro da T4000** (offset no stream ou via software oficial) + **integrar o RaceBox Mini S** (reader/parser/provider BLE, `source: 'racebox'`) | hardware do Flávio + PDF do protocolo RaceBox |
 | **F1** | Âncoras de uso por carro (horas/km/sessões/ciclos) + integração no fim do stint | F0.1 |
 | **F2** | Catálogo `consumivel_tipo` + `consumivel_instalacao` + domínio puro de estado (com smokes) | F1 |
 | **F3** | Painel "Consumíveis" na Garagem (SwiftUI) — fonte da verdade | F2 + Xcode |
 | **F4** | Espelho em pendências obrigatórias (MS-5 + migration arquivada 0022) | F2 + MS-5 |
 
-F0.1 é a única dependência de hardware: o horímetro precisa ser extraído do stream da T4000 e o GPS fixo precisa ser instalado. Mas o **calendário (fluido de freio, correia, arrefecimento) e sessões já funcionam sem nada disso** — então o domínio puro (F2), o painel (F3) e o espelho em pendências (F4) podem entregar valor com os relógios de calendário/sessões enquanto horas e km não chegam. Quando o horímetro e o GPS fixo entrarem, os itens mecânicos ganham seu relógio sem mudar a arquitetura.
+F0.1 é a única dependência de hardware: o horímetro precisa ser extraído do stream da T4000 e o RaceBox Mini S precisa ser integrado (reativado — ver §10). Mas o **calendário (fluido de freio, correia, arrefecimento) e sessões já funcionam sem nada disso** — então o domínio puro (F2), o painel (F3) e o espelho em pendências (F4) podem entregar valor com os relógios de calendário/sessões enquanto horas e km não chegam. Quando o horímetro e o GPS fixo entrarem, os itens mecânicos ganham seu relógio sem mudar a arquitetura.
 
 ---
 
@@ -196,7 +196,7 @@ F0.1 é a única dependência de hardware: o horímetro precisa ser extraído do
 
 1. **Calibrar os limites** da tabela §4 (horas/meses de cada item) — os valores são chute conservador de engenharia, não verdade.
 2. **Horímetro da T4000:** o valor está no stream USB (precisa achar o offset, engenharia reversa) ou só no software oficial INJEPRO? Isso define se a leitura é ao vivo ou um snapshot manual por sessão. — *pesquisa de F0.1*
-3. **GPS fixo:** qual módulo, e ele publica no mesmo canal/transporte do iPhone ou é fonte separada? Define como o `km_pista` entra no pipeline.
+3. **Reativação do RaceBox (decisão de projeto, não só desta função):** usar o RaceBox Mini S reverte o arquivamento de 2026-05-01. Outros docs ainda o tratam como arquivado e precisam ser atualizados em conjunto: `BLOCKERS.md §E4`, `PENDENCIAS_GATE.md` P2, `RACEBOX_INTEGRATION_SPEC.md` (status no topo), `docs/RUNBOOK_RETOMAR.md`, e a memória `p1-fast-racebox-rebaixado-2026-05-01.md`. Confirma que quer que eu propague a reativação por esses docs? (Não toquei neles ainda — alerto em vez de escolher sozinho, conforme `CLAUDE.md`.) Definir também: o RaceBox publica no mesmo transporte/canal do cockpit (notebook → Realtime) ou é fonte separada no pipeline?
 4. **Acumulador em `carros` ou tabela separada** `carro_uso` (recomendo separada, recomputável).
 5. **Catálogo de consumíveis global curado vs por time** desde o início (sugiro nascer curado, virar editável como MS-5 fez com pendências).
 6. **Itens que valem para outros carros** além do Celta (a tabela §4 é Celta-específica nos limites; a estrutura é genérica).
