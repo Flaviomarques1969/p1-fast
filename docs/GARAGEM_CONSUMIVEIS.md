@@ -23,21 +23,26 @@ Decisão do Flávio (2026-05-31): **cada item usa o melhor relógio para ele** (
 
 Antes do catálogo, três fatos do repositório que limitam a automação. São honestos, não pessimistas.
 
-### Fato 1 — não existe hodômetro nem horímetro hoje
+### Fato 1 — o software não acumula uso, MAS as duas fontes autoritativas existem no hardware
 
-`carros` (migrations `0001_initial.sql:147` e `0022_carros_gears_dyno.sql`) tem `apelido, modelo, categoria, cor, redline, gear_ratios, dyno_curve`. **Nenhum acumulador de uso.** O que existe de "uso":
+`carros` (migrations `0001_initial.sql:147` e `0022_carros_gears_dyno.sql`) tem `apelido, modelo, categoria, cor, redline, gear_ratios, dyno_curve`. **Nenhum acumulador de uso no banco.** O que existe de "uso" hoje no software:
 
 - `stintsPorCarro` — contagem de sessões por carro (`CarroRepository.swift:57`).
 - `Pneu.ciclos` + `tire-wear.js` — voltas no pneu por composto.
 - `Volta` por sessão.
 
-**Conclusão:** sem um acumulador de **horas de motor** e **km de pista** por carro, qualquer critério "trocar a cada X" não tem âncora. Esse acumulador é o **item zero** desta função (§5).
+**Porém, as duas âncoras certas existem no hardware** (atualização Flávio 2026-05-31):
+
+- **Horas de motor → a T4000 tem horímetro nativo.** A ECU mantém um contador de horas de motor autoritativo (inclusive horas de **antes** do sistema existir). Não preciso derivar integrando RPM. **Pendência conhecida:** o parser atual (`web/cockpit/t3000-usb-parser.js`) lê 30+ sensores mas **não extrai o horímetro** — ele tem `cronometroParcialS`/`cronometroTotalS` (cronômetro de volta), que **não é** horímetro de motor. Falta localizar o offset do horímetro no bloco de ~460 bytes (engenharia reversa, igual ao conserto da sonda lambda 2026-05-26) ou lê-lo via o software oficial INJEPRO. É o único trabalho de descoberta do item zero.
+- **Km → GPS fixo instalado no carro** (a instalar, Flávio 2026-05-31). Hardware dedicado, independente do iPhone estar em foreground — resolve o problema de o iOS matar a captura em background (STATUS.md). E como **o carro só anda na pista** (não roda em rua), todo km medido é km de pista: não há mais a distinção rua×pista.
+
+**Conclusão:** o "item zero" deixa de ser "construir um acumulador derivado do zero" e vira "**ler o horímetro autoritativo da T4000 + integrar a distância do GPS fixo**". Mais simples e mais confiável. Detalhe em §5.
 
 ### Fato 2 — o Celta real tem metade dos sensores que o protocolo T4000 prevê
 
 `T4000_CAN_SPEC.md` cataloga pressão de óleo, pressão de combustível, temp do ar, EGT, etc. Mas `FONTE_DADOS_AO_VIVO.md` (validado em campo 2026-05-26 contra o software oficial INJEPRO T LINE) registra que **no Bubi NÃO estão instalados**: pressão de óleo, pressão de combustível, temp de ar, sonda NB. Pedal e freio são mecânicos.
 
-**Chega de fato hoje:** `RPM, TPS, tensão de bateria, temp de água, lambda WB, MAP`.
+**Chega de fato hoje** (stream USB ao vivo): `RPM, TPS, tensão de bateria, temp de água, lambda WB, MAP` + acelerômetro, velocidade, pedal/pressão de freio e bitfield de alarmes. O **horímetro de motor existe na ECU mas ainda não é extraído** pelo parser (ver Fato 1).
 
 **Conclusão:** critérios baseados em pressão de óleo são teóricos no Bubi (sensor ausente). Ficam documentados como "se um dia instalar", nunca como gate ativo.
 
@@ -45,8 +50,8 @@ Antes do catálogo, três fatos do repositório que limitam a automação. São 
 
 A T4000 **nunca** dá GPS, posição, aceleração, pressão/temperatura real de pneu (anti-catálogo da spec). Esses vêm do **iPhone** (CoreLocation 1 Hz + CoreMotion 100 Hz, já no pipeline de telemetria, ADR-018).
 
-- **Horas de motor** = tempo de stint com `RPM > limiar` → **T4000**.
-- **Km de pista** = ∫ velocidade · dt por stint → **GPS iPhone** (a velocidade da T4000 valida cruzado, mas distância é GPS).
+- **Horas de motor** = **horímetro nativo da T4000** (autoritativo; só falta extrair o offset do stream). Não é mais derivado de RPM.
+- **Km de pista** = ∫ velocidade · dt → **GPS fixo do carro** (a instalar). Como o carro só anda na pista, é tudo km de pista. A velocidade da T4000 valida cruzado.
 - **Ciclos térmicos** = stints em que a água cruzou o limiar quente → **T4000** (temp água).
 
 ---
@@ -55,8 +60,8 @@ A T4000 **nunca** dá GPS, posição, aceleração, pressão/temperatura real de
 
 | Relógio | Como se mede | Automação | Fonte |
 |---|---|---|---|
-| **Horas de motor** | Σ tempo de stint com RPM > ~500 | **Automático** | T4000 (RPM) |
-| **Km de pista** | Σ ∫velocidade·dt por stint | **Automático** | GPS iPhone |
+| **Horas de motor** | horímetro nativo da ECU (autoritativo) | **Automático** (após extrair offset) | T4000 (horímetro) |
+| **Km de pista** | Σ ∫velocidade·dt por stint | **Automático** | GPS fixo do carro |
 | **Sessões / voltas** | contagem (já existe) | **Automático** | GPS / `sessoes` |
 | **Ciclos térmicos** | nº stints em que água passou ~85 °C e esfriou | **Automático** | T4000 (água) |
 | **Calendário** | hoje − data da última troca | **Automático** (só data) | relógio |
@@ -73,7 +78,7 @@ Valores de limite abaixo são **ponto de partida de engenharia para track car** 
 
 | # | Item | Grupo | Relógio primário | Limite inicial (a calibrar) | Gatilho secundário | Indicador automatizável | Fonte | Automação |
 |---|---|---|---|---|---|---|---|---|
-| 1 | **Óleo de motor + filtro de óleo** | G1 Mecânica | Horas de motor | ~15 h | Calendário 6 meses | horas acumuladas; tendência de temp de óleo *(se sensor)* | T4000 (RPM) | **Alta** |
+| 1 | **Óleo de motor + filtro de óleo** | G1 Mecânica | Horas de motor | ~15 h | Calendário 6 meses | horímetro acumulado; tendência de temp de óleo *(se sensor)* | T4000 (horímetro) | **Alta** |
 | 2 | **Filtro de ar** | G1 | Horas de motor | ~20 h | nº sessões (poeira) | horas / sessões | T4000 | Alta |
 | 3 | **Filtro de combustível** | G2 Combustível | Calendário | 12 meses | Horas ~40 h | data + horas | relógio + T4000 | Alta |
 | 4 | **Velas de ignição** | G1 | Horas de motor | ~30 h | λ errático sob carga | horas; lambda WB fora de faixa sustentada | T4000 (RPM, λ) | **Média-alta** |
@@ -95,28 +100,28 @@ Valores de limite abaixo são **ponto de partida de engenharia para track car** 
 
 - Espessura de pastilha/disco, folga de válvula, estado de coxim/rolamento, nível visual de fluido → **inspeção manual**. O sistema lembra *quando olhar*, não mede.
 - Pressão de óleo como gatilho → **sensor ausente no Bubi**. Documentado, inativo.
-- Km de **rua** (deslocamento fora de pista) → não capturado. Só km de **pista** (GPS durante stint).
+
+(O carro só anda na pista, então não há km de rua a perder — o GPS fixo cobre 100% do uso real.)
 
 ---
 
-## 5. Item zero — o acumulador de uso por carro
+## 5. Item zero — as âncoras de uso por carro
 
-Sem isto, o resto é só checklist manual com data. É a fundação.
+Sem isto, o resto é só checklist manual com data. É a fundação. As duas âncoras principais vêm do hardware (não são mais derivadas):
 
-Por **stint encerrado**, o sistema acumula, por carro:
-
-| Acumulador | Fórmula | Origem |
+| Âncora | Origem | Natureza |
 |---|---|---|
-| `horas_motor` | += duração do stint com `RPM > 500` / 3600 | T4000 (RPM) — ADR-025 / timebase |
-| `km_pista` | += ∫ velocidade GPS · dt | GPS iPhone (telemetry_samples_enriched) |
-| `sessoes` | += 1 | já existe (`stintsPorCarro`) |
-| `ciclos_termicos` | += 1 se água cruzou ~85 °C e esfriou | T4000 (temp água) |
+| `horas_motor` | **horímetro nativo da T4000** | Valor absoluto lido da ECU (snapshot por stint). Cobre inclusive horas anteriores ao sistema. |
+| `km_pista` | **GPS fixo do carro** — Σ ∫velocidade·dt | Acumulado por stint. Carro só anda na pista → 100% do uso. |
+| `sessoes` | já existe (`stintsPorCarro`) | += 1 por stint |
+| `ciclos_termicos` | T4000 (temp água) | += 1 se a água cruzou ~85 °C e esfriou |
 
 Observações de projeto:
 
-- **Append-only friendly** — cada stint contribui um delta; o total é soma. Alinha com a filosofia de telemetria append-only (ADR-004/014) sem violar nada: estes são **agregados derivados**, recomputáveis a partir dos stints.
-- Reusa o gancho que o `tire-wear.js` já provou (`registrarStint`): a função roda no fim do stint, lê voltas/telemetria, incrementa contadores.
-- Edição manual permitida (carro chega com horas de antes do sistema; mecânico corrige). Igual hodômetro de banca.
+- **Horímetro é leitura, não cálculo.** O sistema guarda o valor do horímetro da ECU no momento de cada troca e compara com o valor atual. Isso é mais robusto que integrar RPM (não acumula erro, sobrevive a stints não capturados). **Bloqueio único:** extrair o offset do horímetro no stream da T4000 (engenharia reversa do bloco de bytes ou leitura via software oficial INJEPRO). É o item de pesquisa do F1.
+- **Km é append-only friendly** — cada stint contribui um delta de distância GPS; o total é soma, recomputável a partir dos stints (alinha ADR-004/014). O GPS fixo, por ser hardware dedicado, captura mesmo quando o app iOS está em background.
+- Reusa o gancho que o `tire-wear.js` já provou (`registrarStint`): a função roda no fim do stint, lê o horímetro/distância, atualiza os contadores.
+- Edição manual permitida como fallback (corrigir leitura, carro novo). Igual hodômetro de banca.
 
 ---
 
@@ -177,22 +182,24 @@ Camada de domínio pura (cálculo de estado verde/amarelo/vermelho) portável JS
 | Fase | Entrega | Depende de |
 |---|---|---|
 | **F0** | **Este doc aprovado + limites calibrados com o Flávio** | — |
-| **F1** | Acumulador de uso por carro (horas/km/sessões/ciclos) + integração no fim do stint | F0 + captura T4000 real (MS-9.1) |
+| **F0.1** | **Extrair o horímetro da T4000** (achar o offset no stream ou ler via software oficial) + **instalar o GPS fixo** | hardware do Flávio |
+| **F1** | Âncoras de uso por carro (horas/km/sessões/ciclos) + integração no fim do stint | F0.1 |
 | **F2** | Catálogo `consumivel_tipo` + `consumivel_instalacao` + domínio puro de estado (com smokes) | F1 |
 | **F3** | Painel "Consumíveis" na Garagem (SwiftUI) — fonte da verdade | F2 + Xcode |
 | **F4** | Espelho em pendências obrigatórias (MS-5 + migration arquivada 0022) | F2 + MS-5 |
 
-F1 tem dependência real de hardware: o acumulador de **horas de motor** precisa do stream T4000 chegando (pendência aberta do Flávio — captura real do barramento, STATUS.md). Até lá, **km de pista (GPS) e sessões já funcionam** e o calendário (freio, correia) **funciona desde já** — então F2→F4 podem entregar valor mesmo antes da T4000 fechar.
+F0.1 é a única dependência de hardware: o horímetro precisa ser extraído do stream da T4000 e o GPS fixo precisa ser instalado. Mas o **calendário (fluido de freio, correia, arrefecimento) e sessões já funcionam sem nada disso** — então o domínio puro (F2), o painel (F3) e o espelho em pendências (F4) podem entregar valor com os relógios de calendário/sessões enquanto horas e km não chegam. Quando o horímetro e o GPS fixo entrarem, os itens mecânicos ganham seu relógio sem mudar a arquitetura.
 
 ---
 
 ## 10. Decisões abertas para o Flávio
 
 1. **Calibrar os limites** da tabela §4 (horas/meses de cada item) — os valores são chute conservador de engenharia, não verdade.
-2. **Limiar de "motor ligado"** para horas de motor: RPM > 500? > 800 (acima da marcha lenta)?
-3. **Acumulador em `carros` ou tabela separada** `carro_uso` (recomendo separada).
-4. **Catálogo de consumíveis global curado vs por time** desde o início (sugiro nascer curado, virar editável como MS-5 fez com pendências).
-5. **Itens que valem para outros carros** além do Celta (a tabela §4 é Celta-específica nos limites; a estrutura é genérica).
+2. **Horímetro da T4000:** o valor está no stream USB (precisa achar o offset, engenharia reversa) ou só no software oficial INJEPRO? Isso define se a leitura é ao vivo ou um snapshot manual por sessão. — *pesquisa de F0.1*
+3. **GPS fixo:** qual módulo, e ele publica no mesmo canal/transporte do iPhone ou é fonte separada? Define como o `km_pista` entra no pipeline.
+4. **Acumulador em `carros` ou tabela separada** `carro_uso` (recomendo separada, recomputável).
+5. **Catálogo de consumíveis global curado vs por time** desde o início (sugiro nascer curado, virar editável como MS-5 fez com pendências).
+6. **Itens que valem para outros carros** além do Celta (a tabela §4 é Celta-específica nos limites; a estrutura é genérica).
 
 ---
 
