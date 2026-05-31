@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Validação — Consumíveis do Celta 1.4</title>
+<style>
+  :root{
+    --bg:#0d1016; --card:#161b24; --card2:#1c222d; --line:#2a323f;
+    --txt:#e7ecf3; --mut:#94a3b8; --accent:#ffd23f;
+    --verde:#2ecc71; --teal:#27c0a8; --amarelo:#f4b942; --vermelho:#e05a4f; --azul:#4aa3ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  header{padding:22px 20px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(13,16,22,.95);backdrop-filter:blur(8px);z-index:10}
+  h1{margin:0 0 4px;font-size:20px}
+  .sub{color:var(--mut);font-size:13px;margin:0}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;font-size:12px}
+  .pill{padding:3px 9px;border-radius:99px;border:1px solid var(--line);color:var(--mut)}
+  .pill b{color:var(--txt)}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  .bar{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  button{cursor:pointer;border:1px solid var(--line);background:var(--card2);color:var(--txt);padding:8px 13px;border-radius:8px;font-size:13px;font-weight:600}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);color:#1a1300;border-color:var(--accent)}
+  main{max-width:1180px;margin:0 auto;padding:18px 16px 80px}
+  .saved{color:var(--verde);font-size:12px;align-self:center}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:16px;margin-bottom:14px}
+  .card.crit{border-left:4px solid var(--vermelho)}
+  .card.decApr{outline:1px solid rgba(46,204,113,.4)}
+  .card.decAjt{outline:1px solid rgba(244,185,66,.5)}
+  .card.decRmv{opacity:.55}
+  .top{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .num{font-size:13px;color:var(--mut);font-weight:700;min-width:24px}
+  .nome{flex:1;min-width:200px}
+  .nome input{font-size:16px;font-weight:700}
+  .grupo{font-size:12px;color:var(--mut);margin-top:2px}
+  .badges{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
+  .b-auto-alta{background:rgba(46,204,113,.15);color:var(--verde)}
+  .b-auto-mediaalta{background:rgba(39,192,168,.15);color:var(--teal)}
+  .b-auto-media{background:rgba(244,185,66,.15);color:var(--amarelo)}
+  .b-auto-baixa{background:rgba(224,90,79,.15);color:var(--vermelho)}
+  .b-auto-pronto{background:rgba(74,163,255,.15);color:var(--azul)}
+  .b-crit{background:rgba(224,90,79,.2);color:var(--vermelho)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:14px}
+  label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);margin-bottom:4px;font-weight:700}
+  input,select,textarea{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:7px;padding:7px 9px;font-size:14px;font-family:inherit}
+  textarea{resize:vertical;min-height:46px}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+  .porque{background:var(--card2);border:1px dashed var(--line);border-radius:8px;padding:10px 12px;margin-top:12px;font-size:13px;color:var(--mut)}
+  .porque b{color:var(--txt)}
+  .full{grid-column:1/-1}
+  .orient textarea{min-height:60px;border-color:#3a4757}
+  .dec{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+  .dec button{flex:0 0 auto;padding:6px 11px;font-size:12px;opacity:.6}
+  .dec button.on{opacity:1}
+  .dec .apr.on{background:rgba(46,204,113,.18);border-color:var(--verde);color:var(--verde)}
+  .dec .ajt.on{background:rgba(244,185,66,.18);border-color:var(--amarelo);color:var(--amarelo)}
+  .dec .rmv.on{background:rgba(224,90,79,.18);border-color:var(--vermelho);color:var(--vermelho)}
+  dialog{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:12px;max-width:760px;width:92%;padding:18px}
+  dialog::backdrop{background:rgba(0,0,0,.6)}
+  dialog textarea{min-height:320px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+  .delrow{margin-top:10px;text-align:right}
+  .delrow button{font-size:11px;color:var(--mut);padding:4px 9px}
+  .foot{color:var(--mut);font-size:12px;margin-top:24px;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <h1>🔧 Consumíveis do Celta 1.4 — validação</h1>
+  <p class="sub">Cada item mostra o <b>método (relógio)</b> que propus, <b>por que</b> escolhi ele e o <b>prazo</b>. Edite o que quiser, escreva sua orientação em cada um e marque a decisão. No fim, exporte e me devolva.</p>
+  <div class="legend">
+    <span class="pill">Relógio = critério de troca</span>
+    <span class="pill"><span class="dot" style="background:var(--verde)"></span>Automação <b>Alta</b></span>
+    <span class="pill"><span class="dot" style="background:var(--teal)"></span><b>Média-alta</b></span>
+    <span class="pill"><span class="dot" style="background:var(--amarelo)"></span><b>Média</b></span>
+    <span class="pill"><span class="dot" style="background:var(--vermelho)"></span><b>Baixa / manual</b></span>
+    <span class="pill"><span class="dot" style="background:var(--azul)"></span><b>Já existe</b></span>
+    <span class="pill">⚠️ = segurança crítica</span>
+  </div>
+  <div class="bar">
+    <button class="primary" onclick="exportar()">⬇︎ Exportar / copiar pra devolver</button>
+    <button onclick="addItem()">+ Novo consumível</button>
+    <button onclick="salvar()">💾 Salvar</button>
+    <button onclick="resetar()">↺ Restaurar padrão</button>
+    <span class="saved" id="savedMsg"></span>
+  </div>
+</header>
+<main id="app"></main>
+
+<dialog id="dlg">
+  <h3 style="margin-top:0">Seus dados — copie e me devolva (ou baixe o arquivo)</h3>
+  <p class="sub">O bloco abaixo tem suas edições e orientações. Cole de volta pra mim no chat, ou baixe o JSON.</p>
+  <textarea id="dlgTxt" readonly></textarea>
+  <div class="bar">
+    <button class="primary" onclick="copiar()">📋 Copiar tudo</button>
+    <button onclick="baixar()">⬇︎ Baixar JSON</button>
+    <button onclick="document.getElementById('dlg').close()">Fechar</button>
+  </div>
+</dialog>
+
+<script>
+const RELOGIOS = [
+  "Horas de motor","Km de pista","Calendário","Sessões / voltas",
+  "Voltas (pneu)","Horas OU calendário (o que vier antes)",
+  "Condição medida","Inspeção visual","Por sessão (consumo)"
+];
+const AUTOS = ["Alta","Média-alta","Média","Baixa","Já implementado","Já existe"];
+
+// Catálogo proposto — fonte: docs/GARAGEM_CONSUMIVEIS.md §4
+const PADRAO = [
+ {n:"Óleo de motor + filtro de óleo",g:"G1 Mecânica",rp:"Horas de motor",lp:"15 h",rs:"Calendário 6 meses",fonte:"T4000 (horímetro)",auto:"Alta",crit:false,
+  porque:"Pista castiga óleo (temperatura + cisalhamento) muito mais que rua. Em track car o relógio real é hora de motor, não km. O horímetro nativo da T4000 dá o número autoritativo."},
+ {n:"Filtro de ar",g:"G1 Mecânica",rp:"Horas de motor",lp:"20 h",rs:"nº de sessões (poeira)",fonte:"T4000 (horímetro)",auto:"Alta",crit:false,
+  porque:"Entope por exposição a poeira de box/pista. Horas de motor + nº de sessões capturam bem o uso."},
+ {n:"Filtro de combustível",g:"G2 Combustível",rp:"Calendário",lp:"12 meses",rs:"Horas ~40 h",fonte:"relógio + T4000",auto:"Alta",crit:false,
+  porque:"Degrada por tempo e por vazão de combustível. Calendário manda, horas de motor reforçam."},
+ {n:"Velas de ignição",g:"G1 Mecânica",rp:"Horas de motor",lp:"30 h",rs:"λ errático sob carga",fonte:"T4000 (RPM, λ)",auto:"Média-alta",crit:false,
+  porque:"Eletrodo desgasta por horas de queima. A sonda lambda WB (que já lemos) denuncia mistura errática sob carga sustentada antes da hora cheia."},
+ {n:"Fluido de freio (DOT4)",g:"G3 Pneus & Suspensão",rp:"Calendário",lp:"12 meses",rs:"nº de sessões pesadas",fonte:"relógio",auto:"Alta",crit:true,
+  porque:"Higroscópico — absorve água do ar com o tempo e baixa o ponto de fervura. Frenagem de pista ferve fluido velho (fade/pedal no fundo). Calendário anual manda. Gatilho determinístico (ADR-008), nunca IA."},
+ {n:"Pastilhas de freio (D/T)",g:"G3 Pneus & Suspensão",rp:"Sessões / voltas",lp:"a aprender por histórico",rs:"inspeção visual de espessura",fonte:"GPS / sessoes",auto:"Média",crit:false,
+  porque:"Desgaste por uso/frenagem. O carro não tem sensor de espessura → uso voltas/sessões desde a troca como proxy e o sistema lembra de inspecionar. Aprende o ritmo de desgaste com o histórico."},
+ {n:"Discos de freio",g:"G3 Pneus & Suspensão",rp:"Inspeção visual",lp:"manual (espessura/empenamento)",rs:"nº de jogos de pastilha",fonte:"—",auto:"Baixa",crit:false,
+  porque:"Só se mede inspecionando (espessura mínima, empenamento, trincas). Dá pra estimar por quantos jogos de pastilha já passaram, mas a troca é decisão visual/manual."},
+ {n:"Líquido de arrefecimento / aditivo",g:"G1 Mecânica",rp:"Calendário",lp:"24 meses",rs:"tendência térmica subindo",fonte:"relógio + T4000 (água)",auto:"Média-alta",crit:false,
+  porque:"O aditivo perde proteção anticorrosão/anticongelante por tempo. A temp de água subindo entre sessões iguais (que a T4000 lê) é sintoma de eficiência caindo."},
+ {n:"Correia dentada + tensor",g:"G1 Mecânica",rp:"Horas OU calendário (o que vier antes)",lp:"150 h ou 48 meses",rs:"—",fonte:"T4000 + relógio",auto:"Alta",crit:true,
+  porque:"Item de MAIOR consequência: motor de interferência — se a correia rompe, dobra válvula e destrói o motor. Alerta vermelho antecipado e ruidoso. O que estourar primeiro entre horas e calendário vence. Gatilho determinístico (ADR-008)."},
+ {n:"Correia de acessórios (alternador)",g:"G1 Mecânica",rp:"Inspeção visual",lp:"manual",rs:"tensão de bateria caindo",fonte:"T4000 (bateria)",auto:"Média",crit:false,
+  porque:"Inspeção de tensão/trincas. Bateria caindo (o Bubi já mostra ~13,2 V) pode indicar correia frouxa/alternador fraco — sintoma que a T4000 entrega."},
+ {n:"Pneus",g:"G3 Pneus & Suspensão",rp:"Voltas (pneu)",lp:"já existe (tire-wear.js)",rs:"nível visual 0..3",fonte:"GPS / voltas",auto:"Já implementado",crit:false,
+  porque:"Já coberto pelo tire-wear.js: conta voltas por composto e estima vida útil após 3+ instalações. Só plugar nesse painel."},
+ {n:"Óleo de câmbio",g:"G1 Mecânica",rp:"Horas de motor",lp:"60 h",rs:"Calendário 24 meses",fonte:"T4000 + relógio",auto:"Alta",crit:false,
+  porque:"Menos crítico que o de motor, mas aquece e cisalha em pista. Horas de motor + calendário de segurança."},
+ {n:"Embreagem (disco/platô/rolamento)",g:"G1 Mecânica",rp:"Horas de motor",lp:"a aprender",rs:"inspeção (patinação)",fonte:"T4000 (horímetro)",auto:"Baixa",crit:false,
+  porque:"Desgaste por uso/abuso (largadas, troca de marcha agressiva). Difícil medir sem sensor → proxy por horas + inspeção quando patinar."},
+ {n:"Bateria",g:"G4 Elétrica",rp:"Calendário",lp:"24 meses",rs:"tensão de carga sob RPM",fonte:"T4000 (bateria)",auto:"Média",crit:false,
+  porque:"Envelhece por tempo e ciclos. A tensão sob RPM que a T4000 lê denuncia bateria/alternador fracos (Bubi ~13,2 V já é sintoma a investigar)."},
+ {n:"Combustível",g:"G2 Combustível",rp:"Por sessão (consumo)",lp:"n/a — é consumo, não troca",rs:"—",fonte:"cálculo (fuel-calc.js)",auto:"Já existe",crit:false,
+  porque:"Não é 'troca' e sim consumo por sessão. Já calculado em voltas restantes pelo fuel-calc.js. Listado aqui só pra completar o panorama."}
+];
+
+const KEY = "garagem-consumiveis-validacao-v1";
+let dados = carregar();
+
+function carregar(){
+  try{ const s = localStorage.getItem(KEY); if(s) return JSON.parse(s); }catch(e){}
+  return PADRAO.map(x=>({...x, orient:"", dec:"Pendente"}));
+}
+function salvar(){
+  localStorage.setItem(KEY, JSON.stringify(dados));
+  const m=document.getElementById('savedMsg'); m.textContent="✓ salvo no navegador "+new Date().toLocaleTimeString();
+  setTimeout(()=>m.textContent="",3000);
+}
+function resetar(){
+  if(!confirm("Restaurar o catálogo proposto e apagar suas edições?")) return;
+  localStorage.removeItem(KEY); dados = carregar(); render();
+}
+function autoClass(a){
+  return {"Alta":"b-auto-alta","Média-alta":"b-auto-mediaalta","Média":"b-auto-media",
+    "Baixa":"b-auto-baixa","Já implementado":"b-auto-pronto","Já existe":"b-auto-pronto"}[a]||"b-auto-media";
+}
+function opt(arr,sel){return arr.map(o=>`<option ${o===sel?'selected':''}>${o}</option>`).join('')}
+
+function render(){
+  const app=document.getElementById('app');
+  app.innerHTML = dados.map((it,i)=>{
+    const decClass = it.dec==="Aprovado"?"decApr":it.dec==="Ajustar"?"decAjt":it.dec==="Remover"?"decRmv":"";
+    return `
+    <div class="card ${it.crit?'crit':''} ${decClass}">
+      <div class="top">
+        <div class="num">${String(i+1).padStart(2,'0')}</div>
+        <div class="nome">
+          <input value="${esc(it.n)}" data-i="${i}" data-f="n" />
+          <div class="grupo"><input style="font-size:12px;padding:3px 7px" value="${esc(it.g)}" data-i="${i}" data-f="g" /></div>
+        </div>
+        <div class="badges">
+          ${it.crit?'<span class="badge b-crit">⚠️ crítico</span>':''}
+          <span class="badge ${autoClass(it.auto)}">automação: ${esc(it.auto)}</span>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label>Método / relógio primário</label>
+          <select data-i="${i}" data-f="rp">${opt(RELOGIOS,it.rp)}</select>
+        </div>
+        <div>
+          <label>Prazo proposto</label>
+          <input value="${esc(it.lp)}" data-i="${i}" data-f="lp" />
+        </div>
+        <div>
+          <label>Gatilho secundário</label>
+          <input value="${esc(it.rs)}" data-i="${i}" data-f="rs" />
+        </div>
+        <div>
+          <label>Fonte do dado</label>
+          <input value="${esc(it.fonte)}" data-i="${i}" data-f="fonte" />
+        </div>
+        <div>
+          <label>Nível de automação</label>
+          <select data-i="${i}" data-f="auto">${opt(AUTOS,it.auto)}</select>
+        </div>
+        <div>
+          <label>Segurança crítica?</label>
+          <select data-i="${i}" data-f="crit"><option value="false" ${!it.crit?'selected':''}>Não</option><option value="true" ${it.crit?'selected':''}>Sim ⚠️</option></select>
+        </div>
+      </div>
+
+      <div class="porque"><b>Por que escolhi este método:</b> ${esc(it.porque)}</div>
+
+      <div class="orient" style="margin-top:12px">
+        <label>✍️ Sua orientação / ajuste neste item</label>
+        <textarea data-i="${i}" data-f="orient" placeholder="Ex.: 'óleo é a cada 10h, não 15' · 'esse não se aplica ao Bubi' · 'quero alerta 2 sessões antes'...">${esc(it.orient)}</textarea>
+      </div>
+
+      <div class="dec">
+        <button class="apr ${it.dec==='Aprovado'?'on':''}" onclick="setDec(${i},'Aprovado')">✓ Aprovado</button>
+        <button class="ajt ${it.dec==='Ajustar'?'on':''}" onclick="setDec(${i},'Ajustar')">✎ Ajustar</button>
+        <button class="rmv ${it.dec==='Remover'?'on':''}" onclick="setDec(${i},'Remover')">✕ Não se aplica</button>
+      </div>
+      <div class="delrow"><button onclick="delItem(${i})">apagar este item</button></div>
+    </div>`;
+  }).join('');
+
+  app.querySelectorAll('input,select,textarea').forEach(el=>{
+    if(!el.dataset.f) return;
+    el.addEventListener('input',e=>{
+      const i=+e.target.dataset.i, f=e.target.dataset.f;
+      let v=e.target.value;
+      if(f==='crit') v=(v==='true');
+      dados[i][f]=v; salvar();
+      if(f==='crit'||f==='auto') render();
+    });
+  });
+}
+function setDec(i,d){ dados[i].dec=(dados[i].dec===d?'Pendente':d); salvar(); render(); }
+function addItem(){
+  dados.push({n:"Novo consumível",g:"G1 Mecânica",rp:"Horas de motor",lp:"",rs:"",fonte:"",auto:"Média",crit:false,porque:"(item adicionado por você)",orient:"",dec:"Ajustar"});
+  salvar(); render(); window.scrollTo(0,document.body.scrollHeight);
+}
+function delItem(i){ if(confirm("Apagar este item da lista?")){ dados.splice(i,1); salvar(); render(); } }
+function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function resumoTexto(){
+  const linhas = dados.map((it,i)=>
+    `${i+1}. [${it.dec}] ${it.n} (${it.g})\n   método: ${it.rp} · prazo: ${it.lp} · 2º: ${it.rs||'—'} · automação: ${it.auto}${it.crit?' · ⚠️CRÍTICO':''}`+
+    (it.orient?`\n   ➤ orientação: ${it.orient}`:''));
+  return "VALIDAÇÃO CONSUMÍVEIS CELTA 1.4 — "+new Date().toLocaleString()+"\n\n"+linhas.join('\n\n');
+}
+function exportar(){
+  const payload = { gerado_em:new Date().toISOString(), itens:dados };
+  document.getElementById('dlgTxt').value = resumoTexto() + "\n\n--- JSON ---\n" + JSON.stringify(payload,null,2);
+  document.getElementById('dlg').showModal();
+}
+function copiar(){
+  const t=document.getElementById('dlgTxt'); t.select();
+  navigator.clipboard.writeText(t.value).then(()=>{ const b=event.target; const o=b.textContent; b.textContent="✓ copiado"; setTimeout(()=>b.textContent=o,2000); });
+}
+function baixar(){
+  const blob=new Blob([JSON.stringify({gerado_em:new Date().toISOString(),itens:dados},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download="consumiveis-celta-validado.json"; a.click();
+}
+render();
+</script>
+<div class="foot">P1 Fast · protótipo de validação · espelha <code>docs/GARAGEM_CONSUMIVEIS.md</code> §4 · seus dados ficam só no seu navegador até você exportar</div>
+</body>
+</html>
