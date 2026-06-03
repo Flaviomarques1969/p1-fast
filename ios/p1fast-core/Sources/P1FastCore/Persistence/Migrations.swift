@@ -396,6 +396,110 @@ enum Migrations {
             """)
             try db.execute(sql: "CREATE INDEX idx_pessoa_papeis_papel ON pessoa_papeis(papel);")
         }
+
+        // ═══ v19_manutencao_consumiveis ════════════════════════
+        // Reforma 2026-05-31: histórico de trocas de consumíveis
+        // (modelo CHECAGEM ≠ TROCA). O catálogo dos 30 itens vive no
+        // domínio (CatalogoConsumiveisCelta); aqui guardamos só as
+        // TROCAS feitas, pra calcular a vida real e o aprendizado
+        // preditivo. Tabela local — sync pra nuvem fica pra depois.
+        m.registerMigration("v19_manutencao_consumiveis") { db in
+            // Bancos que já receberam a função Manutenção órfã de 18/05
+            // têm uma tabela `manutencoes` com esquema ANTIGO e
+            // incompatível. Preserva renomeando antes de criar a nova —
+            // não perde dados e não colide (idempotente em device usado).
+            if try db.tableExists("manutencoes") {
+                try db.execute(sql: "ALTER TABLE manutencoes RENAME TO manutencoes_legado_2026_05_18;")
+            }
+            try db.execute(sql: """
+                CREATE TABLE manutencoes (
+                    id                TEXT PRIMARY KEY,
+                    time_id           TEXT NOT NULL REFERENCES times(id) ON DELETE CASCADE,
+                    carro_id          TEXT NOT NULL REFERENCES carros(id) ON DELETE CASCADE,
+                    item_codigo       TEXT NOT NULL,
+                    ocorrido_em       INTEGER NOT NULL,
+                    marca             TEXT,
+                    modelo            TEXT,
+                    especificacao     TEXT,
+                    observacao        TEXT,
+                    foto_url          TEXT,
+                    validade_etiqueta INTEGER,
+                    created_at        INTEGER NOT NULL,
+                    updated_at        INTEGER NOT NULL,
+                    synced_at         INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_manutencoes_v19_carro_item ON manutencoes(carro_id, item_codigo);")
+        }
+
+        // ═══ v26_pecas — função Estoque (peças por carro, 2026-05-17) ══
+        // Trazida pra versão oficial em 2026-05-31. MESMO NOME da migration
+        // original: bancos que já receberam a função (iPhone 18/05) têm a
+        // migration registrada e o GRDB pula. IF NOT EXISTS protege o caso
+        // de a tabela existir sem a migration registrada (lição manutencoes).
+        m.registerMigration("v26_pecas") { db in
+            try db.execute(sql: """
+                CREATE TABLE IF NOT EXISTS pecas_locais (
+                    id          TEXT PRIMARY KEY,
+                    time_id     TEXT NOT NULL,
+                    nome        TEXT NOT NULL,
+                    descricao   TEXT,
+                    ordem       INTEGER NOT NULL DEFAULT 0,
+                    created_at  INTEGER NOT NULL,
+                    updated_at  INTEGER NOT NULL,
+                    synced_at   INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_locais_time ON pecas_locais(time_id);")
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_locais_ordem ON pecas_locais(ordem);")
+
+            try db.execute(sql: """
+                CREATE TABLE IF NOT EXISTS pecas (
+                    id              TEXT PRIMARY KEY,
+                    time_id         TEXT NOT NULL,
+                    carro_id        TEXT NOT NULL REFERENCES carros(id) ON DELETE CASCADE,
+                    nome            TEXT NOT NULL,
+                    codigo          TEXT,
+                    area            TEXT NOT NULL,
+                    tipo            TEXT NOT NULL DEFAULT 'componente',
+                    especificacao   TEXT,
+                    foto_url        TEXT,
+                    quantidade      INTEGER NOT NULL DEFAULT 0,
+                    local_id        TEXT REFERENCES pecas_locais(id) ON DELETE SET NULL,
+                    observacoes     TEXT,
+                    created_at      INTEGER NOT NULL,
+                    updated_at      INTEGER NOT NULL,
+                    synced_at       INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_carro ON pecas(carro_id);")
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_area ON pecas(area);")
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_tipo ON pecas(tipo);")
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_local ON pecas(local_id);")
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_time ON pecas(time_id);")
+
+            try db.execute(sql: """
+                CREATE TABLE IF NOT EXISTS pecas_movimentacoes (
+                    id              TEXT PRIMARY KEY,
+                    time_id         TEXT NOT NULL,
+                    peca_id         TEXT NOT NULL REFERENCES pecas(id) ON DELETE CASCADE,
+                    delta           INTEGER NOT NULL,
+                    observacao      TEXT,
+                    ocorrido_em     INTEGER NOT NULL,
+                    created_at      INTEGER NOT NULL,
+                    synced_at       INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_mov_peca ON pecas_movimentacoes(peca_id);")
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_mov_ocorrido ON pecas_movimentacoes(ocorrido_em);")
+        }
+
+        // v27 — preço unitário opcional (centavos). SQLite não tem ADD
+        // COLUMN IF NOT EXISTS; o try? cobre o caso da coluna já existir
+        // (device com v27 aplicada o GRDB pula pelo nome de qualquer forma).
+        m.registerMigration("v27_pecas_preco") { db in
+            try? db.execute(sql: "ALTER TABLE pecas ADD COLUMN preco_unitario_cents INTEGER;")
+        }
     }
 
     // swiftlint:disable:next function_body_length

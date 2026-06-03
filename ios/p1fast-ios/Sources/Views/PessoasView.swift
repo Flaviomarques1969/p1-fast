@@ -107,8 +107,7 @@ struct PessoasView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            List {
+        List {
                 contextHeadRow
                 subTabBarRow
                 switch subTab {
@@ -138,12 +137,8 @@ struct PessoasView: View {
             .scrollContentBackground(.hidden)
             .background(Color.surface)
             .environment(\.defaultMinListRowHeight, 0)
-
-            BottomNav(items: navItems, selection: $navSelection, onSelect: onNavSelect)
-        }
         .preferredColorScheme(.dark)
         .onAppear {
-            if navSelection == nil { navSelection = navItems[2].id }
             if let s = initialSubTab { subTab = s }
             if let sh = initialSheet, sheet == nil { sheet = sh }
         }

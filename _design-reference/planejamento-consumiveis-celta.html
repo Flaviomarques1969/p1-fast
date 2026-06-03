@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planejamento de Consumíveis — Celta 1.4 Corrida · P1 Fast</title>
+<style>
+  :root{
+    --bg:#0e1116; --bg2:#11151c; --card:#161b24; --card2:#1b212c;
+    --line:#272f3d; --txt:#e8eaed; --dim:#9aa4b2; --gold:#d8b25a; --gold2:#e8c372;
+    --verde:#3fb27f; --amarelo:#e0b341; --vermelho:#e0584b; --azul:#5b9bd5; --roxo:#8a7fd5;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:linear-gradient(180deg,#0c0f14,#0e1116 220px);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.45;padding-bottom:120px;}
+  header{padding:26px 28px 18px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#12161d,#0e1116);}
+  header h1{margin:0 0 4px;font-size:22px;} header h1 b{color:var(--gold2);}
+  header .sub{color:var(--dim);font-size:13.5px;}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 22px;}
+  .ctx{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:18px 0;font-size:13.5px;color:#cdd5e0;}
+  .ctx h3{margin:0 0 8px;font-size:14px;color:var(--gold2);}
+  .ctx ul{margin:6px 0 0;padding-left:18px;} .ctx li{margin:3px 0;}
+  .ctx b.c{color:var(--amarelo);} .ctx b.t{color:var(--gold2);}
+
+  .legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:14px 0 4px;}
+  .legend .m{background:var(--card2);border:1px solid var(--line);border-left-width:4px;border-radius:9px;padding:9px 12px;font-size:12.5px;}
+  .legend .m b{display:block;font-size:13px;margin-bottom:2px;} .legend .m small{color:var(--dim);}
+  .m-limite{border-left-color:var(--gold);} .m-resultado{border-left-color:var(--amarelo);}
+  .m-preditivo{border-left-color:var(--roxo);} .m-rec{border-left-color:#4a5365;}
+
+  .toolbar{position:sticky;top:0;z-index:30;display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 0;margin:6px 0 14px;background:linear-gradient(180deg,#0e1116 70%,rgba(14,17,22,0));}
+  .btn{background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:9px;padding:9px 15px;font-size:13.5px;cursor:pointer;font-weight:600;transition:.12s;}
+  .btn:hover{border-color:var(--gold);color:var(--gold2);}
+  .btn.primary{background:linear-gradient(180deg,#caa44e,#a8842f);color:#1a1205;border-color:#caa44e;}
+  .btn.primary:hover{filter:brightness(1.08);color:#1a1205;}
+  .btn.ghost{background:transparent;} .count{margin-left:auto;color:var(--dim);font-size:13px;}
+
+  .blocohdr{margin:20px 0 8px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);border-bottom:1px solid var(--line);padding-bottom:6px;}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:11px 0;}
+  .card .top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .card .top input.nome{flex:1;min-width:180px;font-size:16px;font-weight:700;color:var(--txt);background:transparent;border:none;border-bottom:1px dashed transparent;padding:3px 2px;}
+  .card .top input.nome:focus{outline:none;border-bottom-color:var(--gold);}
+  .card .area{font-size:11.5px;color:var(--dim);background:#0c1219;border:1px solid var(--line);border-radius:20px;padding:3px 10px;}
+  .badge{font-size:10.5px;font-weight:700;letter-spacing:.5px;padding:2px 8px;border-radius:6px;text-transform:uppercase;}
+  .badge.catalogo{background:#15321f;color:#74d39e;border:1px solid #2c6b46;}
+  .badge.novo{background:#332015;color:#e0a574;border:1px solid #6b4a2c;}
+  .rm{margin-left:auto;background:transparent;border:none;color:#6b7585;font-size:20px;cursor:pointer;line-height:1;padding:0 4px;} .rm:hover{color:var(--vermelho);}
+
+  .sec{margin-top:12px;background:#10141b;border:1px solid var(--line);border-radius:10px;padding:10px 12px;}
+  .seclbl{display:flex;align-items:center;gap:10px;font-size:11.5px;font-weight:700;letter-spacing:.3px;margin-bottom:8px;}
+  .seclbl.chec{color:var(--azul);} .seclbl.troca{color:var(--gold2);}
+  .tgl{margin-left:auto;font-size:11.5px;color:var(--dim);font-weight:500;display:flex;align-items:center;gap:5px;cursor:pointer;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{padding:5px 11px;border-radius:18px;border:1px solid var(--line);background:#0c1219;color:var(--dim);cursor:pointer;font-size:12px;user-select:none;transition:.1s;}
+  .chip:hover{border-color:var(--gold);color:var(--txt);}
+  .chip.sel{background:linear-gradient(180deg,#caa44e,#a8842f);color:#1a1205;border-color:#caa44e;font-weight:700;}
+  .chip.selb{background:linear-gradient(180deg,#5b9bd5,#3f72a8);color:#06121d;border-color:#5b9bd5;font-weight:700;}
+  .subrow{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);margin-top:8px;flex-wrap:wrap;}
+  .subrow b{color:var(--txt);font-weight:600;} .subrow.hide{display:none;}
+  .subrow input{width:74px;background:#0c1219;border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:6px 8px;font-size:13px;}
+  .subrow select{background:#0c1219;border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:6px 8px;font-size:13px;}
+  .subrow input:focus,.subrow select:focus{outline:none;border-color:var(--gold);}
+  .hintia{margin-top:8px;font-size:12px;color:var(--roxo);background:#191629;border:1px solid #332c52;border-radius:8px;padding:7px 10px;}
+  .hintia.hide{display:none;}
+
+  .just,.orient{margin-top:11px;}
+  .just label,.orient label{display:block;font-size:11px;color:var(--dim);margin-bottom:4px;}
+  .orient label{color:var(--gold2);font-weight:600;}
+  textarea{width:100%;background:#0c1219;border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:9px 11px;font-size:13.5px;font-family:inherit;resize:vertical;min-height:42px;line-height:1.4;}
+  textarea:focus{outline:none;border-color:var(--gold);}
+  .orient textarea{background:#13110a;border-color:#3a3320;min-height:48px;} .orient textarea:focus{border-color:var(--gold2);}
+
+  .card[data-modo="limite"]{border-left:4px solid var(--gold);}
+  .card[data-modo="resultado"]{border-left:4px solid var(--amarelo);}
+  .card[data-modo="preditivo"]{border-left:4px solid var(--roxo);}
+  .card[data-modo="rec"]{border-left:4px solid #4a5365;}
+
+  .overlay{position:fixed;inset:0;background:rgba(5,7,10,.78);z-index:100;display:none;align-items:flex-start;justify-content:center;padding:40px 18px;overflow:auto;}
+  .overlay.on{display:flex;}
+  .modal{background:var(--bg2);border:1px solid var(--gold);border-radius:14px;max-width:940px;width:100%;padding:20px 22px;}
+  .modal h2{margin:0 0 4px;font-size:18px;color:var(--gold2);} .modal p{color:var(--dim);font-size:13px;margin:0 0 12px;}
+  .modal pre{background:#0c1219;border:1px solid var(--line);border-radius:10px;padding:16px;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#d7dde6;max-height:55vh;overflow:auto;}
+  .modal .acts{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#15321f;color:#9fe6bf;border:1px solid #2c6b46;border-radius:10px;padding:11px 20px;font-size:13.5px;z-index:200;opacity:0;transition:.2s;pointer-events:none;} .toast.on{opacity:1;}
+  footer{color:#5a6675;font-size:12px;text-align:center;padding:30px 12px 0;}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Planejamento de Consumíveis — <b>Celta 1.4 de corrida</b></h1>
+    <div class="sub">P1 Fast · Garagem → Manutenção · motor Onix 1.4 (Celta "Bubi") · modelo CHECAGEM + TROCA · base: 1 corrida/mês</div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="ctx">
+    <h3>O modelo: Checagem ≠ Troca</h3>
+    Cada item tem até duas atividades separadas, do jeito que você definiu:
+    <ul>
+      <li><b class="c">① Checagem</b> — a inspeção recorrente (todo evento, antes/depois, ou a cada X horas). Entra no checklist do dia de pista.</li>
+      <li><b class="t">② Troca</b> — a reposição, que dispara de 3 jeitos: <b>pelo resultado da checagem</b> · <b>limite máximo fixo</b> (ex.: 24 meses) · <b>preditivo (o app aprende as horas de vida e avisa antes)</b>.</li>
+    </ul>
+    Já preenchi tudo com as suas orientações. Ajuste clicando — a sua orientação fica guardada em cada item.
+  </div>
+
+  <div class="ctx" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <b style="color:var(--gold2);white-space:nowrap">Cadência de uso do carro:</b>
+    <input id="cadencia" placeholder="ex.: ~1 evento por mês" style="flex:1;min-width:220px;background:#0c1219;border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:8px 11px;font-size:14px;font-family:inherit" oninput="salvarCadencia(this.value)">
+    <small style="color:var(--dim);flex-basis:100%">Base pra traduzir horas/eventos em meses. Entra no prompt.</small>
+  </div>
+
+  <div class="legend">
+    <div class="m m-resultado"><b>Troca pelo resultado</b><small>Só troca quando a checagem apontar. A maioria dos itens mecânicos.</small></div>
+    <div class="m m-limite"><b>Troca por limite máximo</b><small>Prazo obrigatório, troca mesmo sem desgaste: mangueira, correia, validades.</small></div>
+    <div class="m m-preditivo"><b>Troca preditiva (IA)</b><small>App registra novo, conta horas, aprende a média e avisa antes: pneu, pastilha, embreagem.</small></div>
+    <div class="m m-rec"><b>Só recomendação</b><small>Lembrete sem alerta automático (ex.: análise de óleo).</small></div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn primary" onclick="gerarPrompt()">⚙︎ Gerar prompt de planejamento</button>
+    <button class="btn" onclick="addItem()">+ Adicionar consumível</button>
+    <button class="btn ghost" onclick="exportar()">Exportar dados (JSON)</button>
+    <button class="btn ghost" onclick="restaurar()">↺ Restaurar proposta</button>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div id="lista"></div>
+  <footer>P1 Fast — instrumento de planejamento. Nada altera o aplicativo ainda; só vira prompt quando você mandar.</footer>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2>Prompt de planejamento gerado</h2>
+    <p>Texto consolidado com as suas decisões. Me diga <b>"fiz"</b> que eu leio direto da tela, ou copie pra mim.</p>
+    <pre id="promptOut"></pre>
+    <div class="acts">
+      <button class="btn primary" onclick="copiar()">📋 Copiar prompt</button>
+      <button class="btn" onclick="fecharModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// Modelo CHECAGEM + TROCA. Cada item:
+//  chec: {ativa, quando, valor, acao}  — inspeção recorrente
+//  troca:{modo, valor, unidade}        — modo: resultado | limite | preditivo | rec
+const Q_OPTS = ["Antes do evento","Depois do evento","Todo evento","A cada X horas","A cada X eventos"];
+const A_OPTS = ["Inspecionar","Medir","Lavar","Reapertar","Testar","Conferir","Ler vela"];
+const M_OPTS = ["Pelo resultado da checagem","Limite máximo","Preditivo (IA por horas)","Só recomendação"];
+const U_OPTS = ["Horas de uso","Eventos","Meses","Validade (etiqueta)"];
+function modoTok(m){ if(m==="Limite máximo")return "limite"; if(m==="Preditivo (IA por horas)")return "preditivo"; if(m==="Só recomendação")return "rec"; return "resultado"; }
+
+const PROPOSTA = [
+ {bloco:"Motor — lubrificação", nome:"Óleo do motor", area:"Motor", origem:"catalogo",
+  chec:{ativa:false,quando:"Todo evento",valor:"",acao:"Conferir"}, troca:{modo:"Limite máximo",valor:"2",unidade:"Horas de uso"},
+  just:"A 6.000+ rpm e 110–130 °C o óleo cisalha e perde película. Troca preventiva curta protege bronzina e comando — barato perto de uma retífica. Spec: sintético de competição (10W50/15W50).", orient:""},
+ {bloco:"Motor — lubrificação", nome:"Filtro de óleo", area:"Motor", origem:"catalogo",
+  chec:{ativa:false,quando:"Todo evento",valor:"",acao:"Inspecionar"}, troca:{modo:"Limite máximo",valor:"2",unidade:"Horas de uso"},
+  just:"Troca sempre junto do óleo. Cortar o filtro usado às vezes revela limalha — alerta de desgaste interno.", orient:""},
+ {bloco:"Motor — lubrificação", nome:"Análise de óleo (laboratório)", area:"Motor", origem:"novo",
+  chec:{ativa:false,quando:"Todo evento",valor:"",acao:"Inspecionar"}, troca:{modo:"Só recomendação",valor:"",unidade:""},
+  just:"Análise espectrométrica do óleo usado detecta metal de bronzina/anel antes da quebra. Fica como recomendação, sem alerta — conforme você pediu.", orient:""},
+
+ {bloco:"Arrefecimento", nome:"Líquido de arrefecimento + aditivo", area:"Refrigeração", origem:"catalogo",
+  chec:{ativa:false,quando:"Todo evento",valor:"",acao:"Conferir"}, troca:{modo:"Limite máximo",valor:"12",unidade:"Horas de uso"},
+  just:"Água desmineralizada + aditivo de alto ponto de ebulição. O aditivo perde proteção; trocar por uso. Checar concentração e abraçadeiras.", orient:""},
+ {bloco:"Arrefecimento", nome:"Mangueiras e abraçadeiras", area:"Refrigeração", origem:"novo",
+  chec:{ativa:true,quando:"Todo evento",valor:"",acao:"Inspecionar"}, troca:{modo:"Limite máximo",valor:"24",unidade:"Meses"},
+  just:"Mangueira ressecada estoura e funde o motor. Revisar (apalpar/reapertar) todo evento; trocar no máximo em 24 meses mesmo sem falha.",
+  orient:"Mas além de trocar, nós precisamos também revisar as mangueiras e as braçadeiras. Então nós vamos ter uma atividade que é de revisão das mangueiras e as braçadeiras. E aqui a troca é no máximo em 24 meses."},
+
+ {bloco:"Ignição e combustível", nome:"Velas de ignição", area:"Motor", origem:"catalogo",
+  chec:{ativa:true,quando:"Todo evento",valor:"",acao:"Ler vela"}, troca:{modo:"Limite máximo",valor:"24",unidade:"Horas de uso"},
+  just:"Grau térmico tem que casar com a preparação. Ler a cor do eletrodo após cada corrida diagnostica mistura/avanço. Troca preventiva por horas.", orient:""},
+ {bloco:"Ignição e combustível", nome:"Filtro de ar (lavável)", area:"Motor", origem:"catalogo",
+  chec:{ativa:true,quando:"Depois do evento",valor:"",acao:"Lavar"}, troca:{modo:"Pelo resultado da checagem",valor:"",unidade:""},
+  just:"Filtro lavável: lavar e re-olear logo após cada evento (poeira de Brasília entope rápido). Troca só quando a lavagem não recupera.",
+  orient:"Essa atividade é depois do evento. Nós temos que lavar o filtro de ar logo após o final dos eventos."},
+ {bloco:"Ignição e combustível", nome:"Filtro de combustível (lavável)", area:"Motor", origem:"catalogo",
+  chec:{ativa:true,quando:"Depois do evento",valor:"",acao:"Lavar"}, troca:{modo:"Pelo resultado da checagem",valor:"",unidade:""},
+  just:"Filtro lavável: lavar ao final de cada evento. Troca só pelo resultado (queda de pressão/sujeira que não sai).",
+  orient:"O filtro de combustível que nós vamos usar é lavável, então temos que colocar a função de lavar o filtro ao final de cada evento."},
+
+ {bloco:"Freios (segurança)", nome:"Fluido de freio (DOT 5.1)", area:"Freios", origem:"catalogo",
+  chec:{ativa:false,quando:"Todo evento",valor:"",acao:"Inspecionar"}, troca:{modo:"Limite máximo",valor:"2",unidade:"Horas de uso"},
+  just:"DOT 5.1 ferve nas frenagens fortes e puxa umidade. Sangrar = trocar: por uso (horas), purgando cada pinça até sair fluido limpo.",
+  orient:"Especificação do carro: DOT 5.1."},
+ {bloco:"Freios (segurança)", nome:"Pastilhas de freio", area:"Freios", origem:"catalogo",
+  chec:{ativa:true,quando:"Todo evento",valor:"",acao:"Medir"}, troca:{modo:"Preditivo (IA por horas)",valor:"",unidade:""},
+  just:"Composto de competição gasta rápido (dianteira muito mais). Medir a espessura todo evento; o app aprende o consumo e prevê a troca.",
+  orient:"Pastilha de freio deve ser checada em todo evento, e é o resultado da checagem que dispara a troca (usando a IA preditiva)."},
+ {bloco:"Freios (segurança)", nome:"Discos de freio", area:"Freios", origem:"catalogo",
+  chec:{ativa:true,quando:"Antes do evento",valor:"",acao:"Medir"}, troca:{modo:"Preditivo (IA por horas)",valor:"",unidade:""},
+  just:"Ciclo térmico trinca/empena. Medir espessura antes de todo evento; vincular às horas e prever a troca. Trepidação no pedal = empenado.",
+  orient:"Essa checagem tem que ser feita antes de todo evento. Vincule com a quantidade de horas e faça um preditivo pra nos avisar. Além da checagem, a gente faz essa contra-checagem."},
+ {bloco:"Freios (segurança)", nome:"Linhas / flexíveis de freio", area:"Freios", origem:"novo",
+  chec:{ativa:true,quando:"Todo evento",valor:"",acao:"Inspecionar"}, troca:{modo:"Limite máximo",valor:"24",unidade:"Meses"},
+  just:"Flexível estufa/racha com pressão e calor. Checar todo evento; trocar no máximo em 24 meses, e antes se a checagem apontar.",
+  orient:"Deve ser feita uma checagem em todo evento. A troca a gente bota no máximo em 24 meses, mas a cada checagem a gente tem esse resultado."},
+
+ {bloco:"Pneus, rodas e geometria", nome:"Pneus", area:"Pneus", origem:"novo",
+  chec:{ativa:true,quando:"Todo evento",valor:"",acao:"Medir"}, troca:{modo:"Preditivo (IA por horas)",valor:"",unidade:""},
+  just:"Maior fator de tempo de volta. Medir todo evento; o app registra o pneu novo, conta as HORAS de uso, aprende quanto durou e passa a avisar. A troca sai do resultado da checagem.",
+  orient:"Quero medir o pneu em quantidade de horas de uso: informamos o pneu novo, você registra o tempo até a troca e passa a controlar por horas pra nos avisar. É tarefa de checagem (todo evento), não de troca; o resultado é que pode gerar a troca."},
+ {bloco:"Pneus, rodas e geometria", nome:"Geometria (alinhamento/cambagem/convergência)", area:"Suspensão", origem:"catalogo",
+  chec:{ativa:true,quando:"Todo evento",valor:"",acao:"Conferir"}, troca:{modo:"Pelo resultado da checagem",valor:"",unidade:""},
+  just:"Setup de pista; zebra e toque desregulam. Conferir todo evento e após impacto. Não é consumível — é ajuste pelo resultado.",
+  orient:"Aqui é checagem, não é troca de consumível. A checagem da geometria deve ser feita em todo evento."},
+ {bloco:"Pneus, rodas e geometria", nome:"Rolamentos de roda", area:"Rodas", origem:"novo",
+  chec:{ativa:true,quando:"A cada X horas",valor:"8",acao:"Inspecionar"}, troca:{modo:"Pelo resultado da checagem",valor:"",unidade:""},
+  just:"Carga lateral mata rolamento (dianteiro sofre mais). Checar folga/ruído a cada 8 horas de uso; trocar pelo resultado.",
+  orient:"Faça a recomendação pra olhar a cada 8 horas de uso. Não é troca, é checagem. A troca é o resultado da checagem."},
+ {bloco:"Pneus, rodas e geometria", nome:"Reaperto de rodas (torque)", area:"Rodas", origem:"novo",
+  chec:{ativa:true,quando:"Todo evento",valor:"",acao:"Reapertar"}, troca:{modo:"Pelo resultado da checagem",valor:"",unidade:""},
+  just:"Procedimento em 2 etapas: apertar, dar ~3 voltas, voltar ao box e reapertar no torque correto (~95 N·m — confirmar no manual do Celta). Roda solta é acidente grave.",
+  orient:"O reaperto se divide em duas etapas: primeiro com uma pressão específica, dá três voltas, volta pro box e aperta a ~95 Nm. Cheque esse valor e ajuste."},
+
+ {bloco:"Suspensão e direção", nome:"Amortecedores", area:"Suspensão", origem:"catalogo",
+  chec:{ativa:true,quando:"A cada X horas",valor:"6",acao:"Testar"}, troca:{modo:"Pelo resultado da checagem",valor:"",unidade:""},
+  just:"Amortecedor de pista perde gás e vaza. Testar a cada 6 horas de uso; trocar depende da condição (varia muito).",
+  orient:"O amortecedor precisa ser testado. Faça a checagem a cada 6 horas, mas trocar depende da situação do amortecedor, varia muito."},
+ {bloco:"Suspensão e direção", nome:"Articulações (terminais, pivôs, bieletas, buchas, barra estab.)", area:"Suspensão", origem:"novo",
+  chec:{ativa:true,quando:"A cada X eventos",valor:"1",acao:"Inspecionar"}, troca:{modo:"Pelo resultado da checagem",valor:"",unidade:""},
+  just:"Folga aqui bagunça a geometria. Checar folga a cada evento; trocar quando a checagem apontar.",
+  orient:"Checagem a cada 1 evento. É o conceito de checagem, não de troca. A troca é quando a checagem apontar que precisa."},
+ {bloco:"Suspensão e direção", nome:"Coxins de motor e câmbio", area:"Motor", origem:"novo",
+  chec:{ativa:true,quando:"A cada X eventos",valor:"3",acao:"Inspecionar"}, troca:{modo:"Pelo resultado da checagem",valor:"",unidade:""},
+  just:"Vibração racha coxim; solto, o motor 'pula' e desalinha as marchas. Checar a cada 3 eventos; trocar pelo resultado.",
+  orient:"Faça a checagem dos coxins de motor e câmbio a cada três eventos, mas a troca deve ser feita em função do resultado da checagem."},
+
+ {bloco:"Transmissão", nome:"Óleo do câmbio", area:"Câmbio", origem:"catalogo",
+  chec:{ativa:false,quando:"Todo evento",valor:"",acao:"Inspecionar"}, troca:{modo:"Limite máximo",valor:"2",unidade:"Horas de uso"},
+  just:"Câmbio sofre calor e trocas brutas. Troca por horas de uso; olhar cor/cheiro e a limalha no bujão magnético. Spec ~75W90 GL-4.", orient:""},
+ {bloco:"Transmissão", nome:"Embreagem (disco / platô / rolamento)", area:"Embreagem", origem:"catalogo",
+  chec:{ativa:false,quando:"Todo evento",valor:"",acao:"Inspecionar"}, troca:{modo:"Preditivo (IA por horas)",valor:"",unidade:""},
+  just:"Largadas castigam. Informamos quando é nova; o app conta as horas, aprende a média de vida e avisa um pouco antes do problema.",
+  orient:"Use IA: a gente informa quando é nova e você controla as horas rodadas até informarmos a troca. A cada vez você pega a média e nos avisa um pouco antes, a partir desse aprendizado."},
+ {bloco:"Transmissão", nome:"Homocinéticas e coifas", area:"Câmbio", origem:"novo",
+  chec:{ativa:true,quando:"Todo evento",valor:"",acao:"Inspecionar"}, troca:{modo:"Pelo resultado da checagem",valor:"",unidade:""},
+  just:"Tração dianteira: coifa rasgada perde graxa e a junta morre. Checar coifa/graxa todo evento; trocar pelo resultado.",
+  orient:"Duas coisas: a checagem das homocinéticas e das coifas deve ser feita em todo evento, mas a troca depende do resultado da checagem."},
+
+ {bloco:"Distribuição (crítico)", nome:"Kit correia dentada (correia + tensor + polias)", area:"Motor", origem:"catalogo",
+  chec:{ativa:true,quando:"Todo evento",valor:"",acao:"Conferir"}, troca:{modo:"Limite máximo",valor:"12",unidade:"Meses"},
+  just:"Motor de interferência: se arrebenta, destrói o motor. Conferir tensão por evento; trocar o KIT no máximo a cada 12 meses, nunca pelo km de rua.", orient:""},
+ {bloco:"Distribuição (crítico)", nome:"Correia de acessórios", area:"Motor", origem:"novo",
+  chec:{ativa:true,quando:"Todo evento",valor:"",acao:"Inspecionar"}, troca:{modo:"Limite máximo",valor:"8",unidade:"Eventos"},
+  just:"Aciona alternador (e bomba conforme layout). Inspecionar por evento; troca preventiva ~1 temporada. Cuidar do tensor.", orient:""},
+
+ {bloco:"Elétrica", nome:"Bateria", area:"Elétrica", origem:"catalogo",
+  chec:{ativa:false,quando:"Todo evento",valor:"",acao:"Inspecionar"}, troca:{modo:"Limite máximo",valor:"24",unidade:"Meses"},
+  just:"Vibração mata bateria e solta terminal. Fixação reforçada, carregar entre eventos, validade ~2 anos. Conferir o corta-corrente.", orient:""},
+ {bloco:"Elétrica", nome:"Cabos de vela / bobina", area:"Elétrica", origem:"novo",
+  chec:{ativa:true,quando:"Todo evento",valor:"",acao:"Inspecionar"}, troca:{modo:"Limite máximo",valor:"12",unidade:"Eventos"},
+  just:"Isolação rompida → falha de ignição intermitente, difícil de achar. Inspecionar por evento; jogo reserva no box.", orient:""},
+
+ {bloco:"Segurança — validade regulamentar (não negociável)", nome:"Cintos de competição (5/6 pontos)", area:"Acessórios", origem:"novo",
+  chec:{ativa:true,quando:"Todo evento",valor:"",acao:"Inspecionar"}, troca:{modo:"Limite máximo",valor:"",unidade:"Validade (etiqueta)"},
+  just:"Validade legal da etiqueta FIA/CBA (~5 anos). Inspecionar fitas/fivela todo evento; trocar pela validade. (Ponha a data da etiqueta.)", orient:""},
+ {bloco:"Segurança — validade regulamentar (não negociável)", nome:"Extintor / sistema de incêndio", area:"Acessórios", origem:"novo",
+  chec:{ativa:true,quando:"Todo evento",valor:"",acao:"Inspecionar"}, troca:{modo:"Limite máximo",valor:"",unidade:"Validade (etiqueta)"},
+  just:"Carga/pressão vencem. Conferir manômetro todo evento; trocar/recarregar pela validade. Item de vistoria.", orient:""},
+ {bloco:"Segurança — validade regulamentar (não negociável)", nome:"Banco de competição (concha FIA)", area:"Acessórios", origem:"novo",
+  chec:{ativa:false,quando:"Todo evento",valor:"",acao:"Inspecionar"}, troca:{modo:"Limite máximo",valor:"",unidade:"Validade (etiqueta)"},
+  just:"Validade FIA (~5 anos da etiqueta). Junto com o cinto, segura o piloto no impacto. (Confirme a data.)", orient:""},
+ {bloco:"Segurança — validade regulamentar (não negociável)", nome:"Equipamento do piloto (capacete, macacão, luvas, HANS)", area:"Acessórios", origem:"novo",
+  chec:{ativa:false,quando:"Todo evento",valor:"",acao:"Inspecionar"}, troca:{modo:"Limite máximo",valor:"",unidade:"Validade (etiqueta)"},
+  just:"Cada peça tem validade FIA e é item de vistoria. Capacete que levou pancada se descarta mesmo na validade.", orient:""},
+];
+
+const KEY = "p1fast_consumiveis_celta_v4";
+const KEY_CAD = "p1fast_cadencia_celta_v1";
+function salvarCadencia(v){ try{ localStorage.setItem(KEY_CAD, v); }catch(e){} }
+function carregarCadencia(){ try{ return localStorage.getItem(KEY_CAD) || ""; }catch(e){ return ""; } }
+
+let dados = carregar();
+function carregar(){ try{ const s=localStorage.getItem(KEY); if(s) return JSON.parse(s); }catch(e){} return JSON.parse(JSON.stringify(PROPOSTA)); }
+function salvar(){ try{ localStorage.setItem(KEY, JSON.stringify(dados)); }catch(e){} }
+
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+function render(){
+  const lista = document.getElementById("lista"); lista.innerHTML="";
+  let bloco=null;
+  dados.forEach((it,i)=>{
+    if(it.chec===undefined) it.chec={ativa:false,quando:"Todo evento",valor:"",acao:"Inspecionar"};
+    if(it.troca===undefined) it.troca={modo:"Pelo resultado da checagem",valor:"",unidade:""};
+    if(it.bloco!==bloco){ bloco=it.bloco; const h=document.createElement("div"); h.className="blocohdr"; h.textContent=bloco; lista.appendChild(h); }
+    const c=it.chec, tr=it.troca;
+    const qChips = Q_OPTS.map(q=>`<span class="chip ${q===c.quando?'selb':''}" onclick="setChec(${i},'quando','${q}')">${q}</span>`).join("");
+    const aSel = A_OPTS.map(a=>`<option ${a===c.acao?'selected':''}>${a}</option>`).join("");
+    const mChips = M_OPTS.map(m=>`<span class="chip ${m===tr.modo?'sel':''}" onclick="setTroca(${i},'modo','${m}')">${m}</span>`).join("");
+    const uSel = U_OPTS.map(u=>`<option ${u===tr.unidade?'selected':''}>${u}</option>`).join("");
+    const ehXh = c.quando==="A cada X horas", ehXe = c.quando==="A cada X eventos", ehX = ehXh||ehXe;
+    const card=document.createElement("div"); card.className="card"; card.setAttribute("data-modo",modoTok(tr.modo));
+    card.innerHTML=`
+      <div class="top">
+        <input class="nome" value="${esc(it.nome)}" oninput="upd(${i},'nome',this.value)">
+        <input class="area" value="${esc(it.area)}" oninput="upd(${i},'area',this.value)">
+        <span class="badge ${it.origem}">${it.origem==='catalogo'?'já no catálogo':'novo'}</span>
+        <button class="rm" onclick="rm(${i})">×</button>
+      </div>
+      <div class="sec">
+        <div class="seclbl chec">① CHECAGEM — inspeção recorrente
+          <label class="tgl"><input type="checkbox" ${c.ativa?'checked':''} onchange="setChec(${i},'ativa',this.checked)"> tem checagem</label>
+        </div>
+        <div class="${c.ativa?'':'subrow hide'}" ${c.ativa?'':''} id="cb${i}">
+          <div class="chips">${qChips}</div>
+          <div class="subrow ${ehX?'':'hide'}">a cada <input value="${esc(c.valor)}" oninput="setChec(${i},'valor',this.value)"> <b>${ehXh?'horas de uso':(ehXe?'eventos':'')}</b></div>
+          <div class="subrow">O que faz: <select onchange="setChec(${i},'acao',this.value)">${aSel}</select></div>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="seclbl troca">② TROCA — reposição</div>
+        <div class="chips">${mChips}</div>
+        <div class="subrow ${tr.modo==='Limite máximo'?'':'hide'}">no máximo <input value="${esc(tr.valor)}" oninput="setTroca(${i},'valor',this.value)"> <select onchange="setTroca(${i},'unidade',this.value)">${uSel}</select></div>
+        <div class="hintia ${tr.modo==='Preditivo (IA por horas)'?'':'hide'}">O app registra quando o item é novo, conta as horas de uso, aprende a média de vida e avisa você antes da próxima troca.</div>
+      </div>
+      <div class="just"><label>Critério de engenharia (pode editar)</label><textarea oninput="upd(${i},'just',this.value)">${esc(it.just)}</textarea></div>
+      <div class="orient"><label>✎ Sua orientação para este item</label><textarea oninput="upd(${i},'orient',this.value)">${esc(it.orient||"")}</textarea></div>`;
+    lista.appendChild(card);
+  });
+  document.getElementById("count").textContent = dados.length+" consumíveis";
+}
+function upd(i,k,v){ dados[i][k]=v; salvar(); }
+function setChec(i,k,v){ dados[i].chec[k]=v; salvar(); render(); }
+function setTroca(i,k,v){ dados[i].troca[k]=v; salvar(); render(); }
+function rm(i){ if(confirm("Remover \""+dados[i].nome+"\"?")){ dados.splice(i,1); salvar(); render(); } }
+function addItem(){ dados.push({bloco:"Outros (adicionados por você)",nome:"Novo consumível",area:"Motor",origem:"novo",
+  chec:{ativa:true,quando:"Todo evento",valor:"",acao:"Inspecionar"},troca:{modo:"Pelo resultado da checagem",valor:"",unidade:""},just:"",orient:""});
+  salvar(); render(); window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"}); }
+function restaurar(){ if(confirm("Restaurar a proposta? Descarta as suas edições.")){ dados=JSON.parse(JSON.stringify(PROPOSTA)); salvar(); render(); toast("Restaurado"); } }
+
+function gerarPrompt(){
+  const d=new Date().toLocaleDateString("pt-BR");
+  let t="PROMPT DE PLANEJAMENTO — Consumíveis do Celta 1.4 de corrida (Turismo)\n";
+  t+="Função: P1 Fast → Garagem → Manutenção\n";
+  t+="Carro: Celta \"Bubi\" — motor Onix 1.4 (não passar de 6.350 rpm); tração dianteira.\n";
+  t+="Cadência de uso: "+((document.getElementById("cadencia")||{}).value||"(n/d)")+" (1 evento ≈ 1 mês)\nGerado em: "+d+"\n";
+  t+="\n=================================================================\nMODELO: CHECAGEM + TROCA (definido pelo Flávio)\n=================================================================\n";
+  t+="Cada item tem até 2 atividades:\n";
+  t+="① CHECAGEM = inspeção recorrente (quando + o que faz). Vira tarefa no checklist do evento.\n";
+  t+="② TROCA = reposição, em 4 modos:\n";
+  t+="   - Pelo resultado da checagem (troca condicional, sem prazo fixo).\n";
+  t+="   - Limite máximo (prazo obrigatório: horas/eventos/meses/validade).\n";
+  t+="   - Preditivo (IA por horas): registra item novo, conta horas, aprende média de vida e avisa antes. Reaproveita a inteligência da função Manutenção (mediaEntreTrocas + detectarAnomalia).\n";
+  t+="   - Só recomendação (sem alerta).\n";
+  t+="\n=================================================================\nCONTEXTO DE IMPLEMENTAÇÃO (auditoria 2026-05-31)\n=================================================================\n";
+  t+="VEREDITO: APROVEITAR a função Manutenção que já existe e REFORMAR — não refazer do zero.\n";
+  t+="Ela está pronta no ambiente isolado infallible-snyder-198a08 (fora da versão oficial), 4 arquivos: Manutencao.swift (domínio) + ManutencaoInteligencia.swift + ManutencaoRepository.swift + ManutencaoViews.swift.\n";
+  t+="\nJÁ PRONTO (aproveitar quase direto — a parte difícil):\n";
+  t+="  - Cálculo de HORAS reais de uso somando os stints via SQL (sessoes.data_inicio/data_fim) + km de pista (voltas x extensão). É exatamente o que o modelo novo pede (óleo 2h, arrefecimento 12h, velas 24h, fluido 2h).\n";
+  t+="  - Inteligência aprendente: média entre trocas + detecção de anomalia (durou menos de 60% da média) = base da TROCA PREDITIVA (pneu, pastilha, disco, embreagem).\n";
+  t+="  - Persistência local em 3 tabelas + foto + abatimento automático do Estoque quando a troca consome uma peça.\n";
+  t+="  - Telas: Histórico + Especificação padrão + ficha do item com contador vivo + pendências automáticas (amarelo/vermelho) no topo.\n";
+  t+="\nFALTA (reformar/construir — conceito novo):\n";
+  t+="  - CHECAGEM como atividade própria (recorrência: antes/depois/todo evento, a cada X horas/eventos + ação: inspecionar/medir/lavar/reapertar/testar/conferir/ler vela). Hoje a função só modela TROCA.\n";
+  t+="  - Unidade 'evento' (todo evento / a cada X eventos). Hoje só existe km/horas/meses/desgaste.\n";
+  t+="  - Modo 'validade de etiqueta' (cintos, extintor, banco, equipamento do piloto).\n";
+  t+="  - Modo 'só recomendação' sem alerta (análise de óleo).\n";
+  t+="  - Catálogo: 15 -> 30 itens, e trocar os valores de RUA (óleo 5000 km) pelos de CORRIDA (óleo 2 horas). Os 30 itens estão neste documento.\n";
+  t+="  - Preditivo: hoje o critério primário da anomalia é km de rua; passar para HORAS como primário.\n";
+  t+="\nEsforço estimado: reforma ~2-3 dias; refazer do zero ~1 semana+ (jogaria fora a inteligência e o cálculo de uso por SQL, que já estão testados).\n";
+  t+="\n=================================================================\nCONSUMÍVEIS ("+dados.length+")\n=================================================================\n";
+  let bl=null;
+  dados.forEach((it,n)=>{
+    if(it.bloco!==bl){ bl=it.bloco; t+="\n### "+bl+"\n"; }
+    t+="\n"+(n+1)+". "+it.nome+"  ["+it.area+"] ("+(it.origem==='catalogo'?'já no catálogo':'novo')+")\n";
+    if(it.chec && it.chec.ativa){
+      let q=it.chec.quando; if(q==="A cada X horas") q="a cada "+(it.chec.valor||"?")+" horas de uso"; else if(q==="A cada X eventos") q="a cada "+(it.chec.valor||"?")+" eventos";
+      t+="   • CHECAGEM: "+it.chec.acao+" — "+q+"\n";
+    } else { t+="   • CHECAGEM: (não tem)\n"; }
+    const tr=it.troca||{};
+    if(tr.modo==="Limite máximo") t+="   • TROCA: limite máximo de "+(tr.valor!==""?tr.valor+" ":"")+(tr.unidade||"")+"\n";
+    else if(tr.modo==="Preditivo (IA por horas)") t+="   • TROCA: preditiva — app aprende as horas de vida e avisa antes\n";
+    else if(tr.modo==="Só recomendação") t+="   • TROCA: só recomendação (sem alerta)\n";
+    else t+="   • TROCA: pelo resultado da checagem (condicional)\n";
+    if(it.just && it.just.trim()) t+="   • Critério: "+it.just.trim()+"\n";
+    if(it.orient && it.orient.trim()) t+="   • >>> ORIENTAÇÃO DO FLÁVIO: "+it.orient.trim()+"\n";
+  });
+  t+="\n=================================================================\nO QUE IMPLEMENTAR\n=================================================================\n";
+  t+="1. Trazer a função Manutenção do ambiente órfão pra versão oficial e REFORMAR conforme a auditoria acima (NÃO refazer do zero), com este catálogo.\n";
+  t+="2. Modelar CHECAGEM (recorrência + ação) e TROCA (4 modos) como coisas separadas por item.\n";
+  t+="3. Implementar a troca preditiva reaproveitando a inteligência aprendente já existente (média entre trocas + anomalia).\n";
+  t+="4. Gerar tarefa de checagem no checklist do evento + pendência de troca quando o modo disparar.\n";
+  t+="5. Linhas '>>> ORIENTAÇÃO' vencem a proposta.\n";
+  t+="\n[Processo: ambiente isolado; nada vai pra produção sem 'MIGRAR PARA PRODUÇÃO:'.]\n";
+  document.getElementById("promptOut").textContent=t;
+  document.getElementById("overlay").classList.add("on");
+}
+function fecharModal(){ document.getElementById("overlay").classList.remove("on"); }
+function copiar(){ const txt=document.getElementById("promptOut").textContent;
+  navigator.clipboard.writeText(txt).then(()=>toast("Prompt copiado")).catch(()=>{ const r=document.createRange(); r.selectNode(document.getElementById("promptOut")); window.getSelection().removeAllRanges(); window.getSelection().addRange(r); try{document.execCommand("copy");toast("Copiado");}catch(e){toast("Copie manualmente");} }); }
+function exportar(){ const b=new Blob([JSON.stringify(dados,null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="consumiveis-celta-corrida.json"; a.click(); toast("JSON exportado"); }
+function toast(m){ const e=document.getElementById("toast"); e.textContent=m; e.classList.add("on"); setTimeout(()=>e.classList.remove("on"),1900); }
+
+document.getElementById("overlay").addEventListener("click",e=>{ if(e.target.id==="overlay") fecharModal(); });
+(function(){ const el=document.getElementById("cadencia"); if(el){ const s=carregarCadencia(); el.value=s||"~1 evento por mês"; salvarCadencia(el.value); } })();
+render();
+</script>
+</body>
+</html>

@@ -53,6 +53,10 @@ struct EventoDetalheView: View {
             }
         }
         .preferredColorScheme(.dark)
+        // Tem topbar próprio "‹ Eventos": esconde a barra de navegação
+        // nativa pra não duplicar o "voltar" quando vira página empilhada
+        // com o menu fixo embaixo. (2026-05-31 — pedido do Flávio.)
+        .toolbar(.hidden, for: .navigationBar)
         .task { await loadStintsReais() }
         .sheet(item: $sheet, onDismiss: {
             // Recarrega após criar/encerrar stint.

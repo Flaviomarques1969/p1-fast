@@ -1,0 +1,358 @@
+// ═══════════════════════════════════════════════════════════
+// ManutencaoConsumiveisView — telas da função Manutenção (modelo
+// CHECAGEM ≠ TROCA) — reforma 2026-05-31.
+// ═══════════════════════════════════════════════════════════
+// Reescritas no estilo aprovado das telas de 18/05, mas ligadas ao
+// motor novo do núcleo (CatalogoConsumiveisCelta + ManutencaoHistorico
+// + ManutencaoRegistro). Abre do painel do carro (CarroModalView).
+//
+//   • ManutencaoConsumiveisStore     — ponte fina app↔core (GRDB).
+//   • ManutencaoConsumiveisView      — pendências no topo + 30 itens
+//     por bloco, cada um com checagem, modo de troca e status.
+//   • RegistrarTrocaView             — registra uma troca.
+
+import SwiftUI
+import GRDB
+import P1FastCore
+
+// ─────────────────────────────────────────────────────────────
+// MARK: - Store (ponte app↔core)
+// ─────────────────────────────────────────────────────────────
+
+@MainActor
+final class ManutencaoConsumiveisStore: ObservableObject {
+    @Published private(set) var statusPorItem: [String: StatusManutencao] = [:]
+
+    private let queue: DatabaseQueue
+    init(queue: DatabaseQueue) { self.queue = queue }
+
+    enum StoreErro: Error { case semTime }
+
+    /// Recalcula o status dos 30 itens pra um carro (uma transação só).
+    func carregarStatus(carroId: String) async {
+        guard let team = TeamContext.currentTeamId else { statusPorItem = [:]; return }
+        let agora = DB.nowMs()
+        do {
+            let novo = try await queue.read { db -> [String: StatusManutencao] in
+                var m: [String: StatusManutencao] = [:]
+                for item in CatalogoConsumiveisCelta.itens {
+                    m[item.codigo] = try ManutencaoHistorico.status(
+                        db, item: item, carroId: carroId, timeId: team, agoraMs: agora)
+                }
+                return m
+            }
+            statusPorItem = novo
+        } catch {
+            print("ManutencaoConsumiveisStore.carregarStatus falhou: \(error)")
+        }
+    }
+
+    /// Registra uma troca e recalcula o status.
+    func registrarTroca(carroId: String, itemCodigo: String, ocorridoEm: Int64,
+                        validadeEtiqueta: Int64?, observacao: String?) async throws {
+        guard let team = TeamContext.currentTeamId else { throw StoreErro.semTime }
+        let reg = ManutencaoRegistro(
+            id: UUID().uuidString.lowercased(), timeId: team, carroId: carroId,
+            itemCodigo: itemCodigo, ocorridoEm: ocorridoEm,
+            observacao: observacao?.trimmedNilSeVazio, validadeEtiqueta: validadeEtiqueta)
+        try await queue.write { db in try reg.insert(db) }
+        await carregarStatus(carroId: carroId)
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// MARK: - Tela principal
+// ─────────────────────────────────────────────────────────────
+
+struct ManutencaoConsumiveisView: View {
+    @EnvironmentObject private var store: ManutencaoConsumiveisStore
+    @EnvironmentObject private var carroRepo: CarroRepository
+
+    let carroId: String
+    let onClose: () -> Void
+
+    @State private var registrar: ConsumivelDef?
+
+    private var carro: Carro? { carroRepo.carros.first { $0.id == carroId } }
+
+    var body: some View {
+        ZStack(alignment: .bottomTrailing) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Spacing.lg) {
+                    cabecalho
+                    pendencias
+                    listaPorBloco
+                }
+                .padding(.horizontal, Spacing.lg)
+                .padding(.top, Spacing.md)
+                .padding(.bottom, 140)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(Color.surface)
+
+            FAB("Registrar troca") { registrar = CatalogoConsumiveisCelta.itens.first }
+                .padding(.trailing, Spacing.md)
+                .padding(.bottom, 24)
+        }
+        .navigationTitle("Manutenção")
+        .navigationBarTitleDisplayMode(.inline)
+        .preferredColorScheme(.dark)
+        .task { await store.carregarStatus(carroId: carroId) }
+        .sheet(item: $registrar) { item in
+            RegistrarTrocaView(carroId: carroId, itemInicial: item) {
+                registrar = nil
+                Task { await store.carregarStatus(carroId: carroId) }
+            }
+            .environmentObject(store)
+        }
+    }
+
+    private var cabecalho: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Eyebrow(text: "Manutenção")
+            Text(carro?.apelido ?? "Carro")
+                .font(.system(size: 24, weight: .semibold))
+                .tracking(-0.6)
+                .foregroundStyle(Color.text)
+            Text("Consumíveis do carro de corrida · checagem e troca")
+                .font(.system(size: 13))
+                .foregroundStyle(Color.textMuted)
+        }
+    }
+
+    // Itens vencidos/perto (vermelho/amarelo) — sobem pro topo.
+    private var pendencias: some View {
+        let lista = CatalogoConsumiveisCelta.itens.compactMap { item -> (ConsumivelDef, StatusManutencao)? in
+            guard let s = store.statusPorItem[item.codigo],
+                  s.severidade == .vermelho || s.severidade == .amarelo else { return nil }
+            return (item, s)
+        }.sorted { l, r in
+            l.1.severidade == .vermelho && r.1.severidade != .vermelho
+        }
+        return Group {
+            if !lista.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("ATENÇÃO")
+                        .font(.system(size: 11, weight: .semibold)).tracking(1.4)
+                        .foregroundStyle(Color.textFaint)
+                    ForEach(lista, id: \.0.codigo) { item, status in
+                        Button { registrar = item } label: { itemCard(item, status: status, compacto: true) }
+                            .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+
+    private var listaPorBloco: some View {
+        ForEach(CatalogoConsumiveisCelta.porBloco(), id: \.0) { bloco, itens in
+            VStack(alignment: .leading, spacing: 8) {
+                Text(bloco.uppercased())
+                    .font(.system(size: 11, weight: .semibold)).tracking(1.2)
+                    .foregroundStyle(Color.accent)
+                    .padding(.top, 4)
+                ForEach(itens, id: \.codigo) { item in
+                    Button { registrar = item } label: {
+                        itemCard(item, status: store.statusPorItem[item.codigo], compacto: false)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func itemCard(_ item: ConsumivelDef, status: StatusManutencao?, compacto: Bool) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Circle().fill(corStatus(status?.severidade))
+                .frame(width: 10, height: 10).padding(.top, 5)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.nome)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.text)
+                    .fixedSize(horizontal: false, vertical: true)
+                if !compacto {
+                    Text(descricaoChecagem(item) + "  ·  " + descricaoTroca(item))
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(Color.textMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if let s = status {
+                    Text(s.resumo)
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(corStatus(s.severidade))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Spacer(minLength: 0)
+            Text(textoSeveridade(status?.severidade))
+                .font(.system(size: 10, weight: .bold)).tracking(0.4)
+                .padding(.horizontal, 8).padding(.vertical, 3)
+                .background(Capsule().fill(corStatus(status?.severidade).opacity(0.16)))
+                .foregroundStyle(corStatus(status?.severidade))
+        }
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).fill(Color.surfaceRaised))
+        .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(Color.border, lineWidth: 1))
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// MARK: - Registrar troca
+// ─────────────────────────────────────────────────────────────
+
+struct RegistrarTrocaView: View {
+    @EnvironmentObject private var store: ManutencaoConsumiveisStore
+
+    let carroId: String
+    let itemInicial: ConsumivelDef?
+    let onClose: () -> Void
+
+    @State private var itemCodigo: String
+    @State private var data: Date = Date()
+    @State private var temValidade: Bool = false
+    @State private var validade: Date = Date()
+    @State private var observacao: String = ""
+    @State private var salvando = false
+
+    init(carroId: String, itemInicial: ConsumivelDef?, onClose: @escaping () -> Void) {
+        self.carroId = carroId
+        self.itemInicial = itemInicial
+        self.onClose = onClose
+        _itemCodigo = State(initialValue: itemInicial?.codigo ?? CatalogoConsumiveisCelta.itens.first?.codigo ?? "")
+    }
+
+    private var itemDef: ConsumivelDef? { CatalogoConsumiveisCelta.find(itemCodigo) }
+    private var ehValidade: Bool {
+        if case .limiteMaximo(_, .validade) = itemDef?.troca { return true }
+        return false
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Spacing.md) {
+                    secao("Item") {
+                        Picker("Item", selection: $itemCodigo) {
+                            ForEach(CatalogoConsumiveisCelta.itens, id: \.codigo) { it in
+                                Text(it.nome).tag(it.codigo)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .tint(Color.accent)
+                    }
+                    secao("Quando foi a troca") {
+                        DatePicker("Data", selection: $data, in: ...Date(), displayedComponents: .date)
+                            .labelsHidden().datePickerStyle(.compact).colorScheme(.dark).tint(Color.accent)
+                    }
+                    if ehValidade {
+                        secao("Validade da etiqueta (FIA/CBA)") {
+                            DatePicker("Validade", selection: $validade, displayedComponents: .date)
+                                .labelsHidden().datePickerStyle(.compact).colorScheme(.dark).tint(Color.accent)
+                            Text("Pros itens de segurança, o alerta vem pela data da etiqueta.")
+                                .font(.system(size: 11)).foregroundStyle(Color.textFaint)
+                        }
+                    }
+                    secao("Observação (opcional)") {
+                        TextField("Detalhes da troca", text: $observacao, axis: .vertical)
+                            .lineLimit(2...5).font(.system(size: 14)).foregroundStyle(Color.text)
+                            .padding(10)
+                            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.surfaceRaised))
+                    }
+                }
+                .padding(.horizontal, Spacing.lg).padding(.top, Spacing.md).padding(.bottom, 120)
+            }
+            .background(Color.surface)
+            .navigationTitle("Registrar troca")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancelar") { onClose() }.foregroundStyle(Color.text)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Salvar") { Task { await salvar() } }
+                        .foregroundStyle(salvando ? Color.textFaint : Color.accent).disabled(salvando)
+                }
+            }
+            .preferredColorScheme(.dark)
+        }
+    }
+
+    @MainActor
+    private func salvar() async {
+        guard let def = itemDef else { return }
+        salvando = true; defer { salvando = false }
+        let validadeMs: Int64? = (ehValidade) ? Int64(validade.timeIntervalSince1970 * 1000) : nil
+        do {
+            try await store.registrarTroca(
+                carroId: carroId, itemCodigo: def.codigo,
+                ocorridoEm: Int64(data.timeIntervalSince1970 * 1000),
+                validadeEtiqueta: validadeMs,
+                observacao: observacao)
+            onClose()
+        } catch {
+            print("RegistrarTrocaView.salvar falhou: \(error)")
+        }
+    }
+
+    @ViewBuilder
+    private func secao<C: View>(_ titulo: String, @ViewBuilder content: () -> C) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(titulo.uppercased()).font(.system(size: 11, weight: .semibold)).tracking(1.4)
+                .foregroundStyle(Color.textFaint)
+            content()
+        }
+        .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).fill(Color.surfaceRaised.opacity(0.6)))
+        .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(Color.border, lineWidth: 1))
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// MARK: - Helpers de apresentação
+// ─────────────────────────────────────────────────────────────
+
+private func corStatus(_ s: SeveridadeManutencao?) -> Color {
+    switch s {
+    case .verde:        return Color.bom
+    case .amarelo:      return Color.yellow
+    case .vermelho:     return Color.atencao
+    case .condicional:  return Color.accent
+    case .recomendacao, .semHistorico, .none: return Color.textFaint
+    }
+}
+
+private func textoSeveridade(_ s: SeveridadeManutencao?) -> String {
+    switch s {
+    case .verde:        return "EM DIA"
+    case .amarelo:      return "ATENÇÃO"
+    case .vermelho:     return "TROCAR"
+    case .condicional:  return "CHECAR"
+    case .recomendacao: return "OPCIONAL"
+    case .semHistorico, .none: return "SEM DADO"
+    }
+}
+
+private func descricaoChecagem(_ item: ConsumivelDef) -> String {
+    guard item.checagem.ativa else { return "Sem checagem recorrente" }
+    return "Checar: \(item.checagem.acao.rawValue.lowercased()) — \(item.checagem.quando.descricao.lowercased())"
+}
+
+private func descricaoTroca(_ item: ConsumivelDef) -> String {
+    switch item.troca {
+    case .peloResultado:     return "Troca: pelo resultado"
+    case .preditivoPorHoras: return "Troca: preditiva (IA aprende as horas)"
+    case .soRecomendacao:    return "Troca: só recomendação"
+    case .limiteMaximo(let v, let u):
+        if u == .validade { return "Troca: pela validade da etiqueta" }
+        let valor = v.map { $0 == $0.rounded() ? String(Int($0)) : String($0) } ?? "?"
+        return "Troca: limite \(valor) \(u.rawValue.lowercased())"
+    }
+}
+
+private extension String {
+    var trimmedNilSeVazio: String? {
+        let t = trimmingCharacters(in: .whitespacesAndNewlines)
+        return t.isEmpty ? nil : t
+    }
+}

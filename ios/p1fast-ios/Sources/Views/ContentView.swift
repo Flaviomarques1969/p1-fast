@@ -113,14 +113,19 @@ struct ContentView: View {
     @StateObject private var session = SessionManager()
 
     var body: some View {
-        rootView
-            .environmentObject(session)
-            .task {
-                // Restaura sessão do storage do SDK (auto-refresh JWT
-                // expirado). Roda 1× por subida do app — ContentView é
-                // singleton no scene root.
-                await session.bootstrap()
-            }
+        if ProcessInfo.processInfo.arguments.contains("--p1-hub-mock") {
+            // Atalho SÓ-DEV pra validar o hub do carro no simulador sem login.
+            HubMockLauncher()
+        } else {
+            rootView
+                .environmentObject(session)
+                .task {
+                    // Restaura sessão do storage do SDK (auto-refresh JWT
+                    // expirado). Roda 1× por subida do app — ContentView é
+                    // singleton no scene root.
+                    await session.bootstrap()
+                }
+        }
     }
 
     @ViewBuilder
@@ -183,6 +188,8 @@ private struct ReadyRoot: View {
     @StateObject private var syncCoordinator: SyncCoordinator
     @StateObject private var stintCaptureCoordinator: StintCaptureCoordinator
     @StateObject private var voltaVideoRepo: VoltaVideoRepository
+    @StateObject private var manutencaoStore: ManutencaoConsumiveisStore
+    @StateObject private var pecaRepo: PecaRepository
 
     init(queue: DatabaseQueue) {
         self.queue = queue
@@ -197,6 +204,8 @@ private struct ReadyRoot: View {
         _licaoRepo = StateObject(wrappedValue: LicaoRepository(queue: queue))
         _pendenciaRepo = StateObject(wrappedValue: PendenciaRepository(queue: queue))
         _voltaVideoRepo = StateObject(wrappedValue: VoltaVideoRepository(queue: queue))
+        _manutencaoStore = StateObject(wrappedValue: ManutencaoConsumiveisStore(queue: queue))
+        _pecaRepo = StateObject(wrappedValue: PecaRepository(queue: queue))
         let reach = Reachability()
         _reachability = StateObject(wrappedValue: reach)
         _syncCoordinator = StateObject(
@@ -223,6 +232,8 @@ private struct ReadyRoot: View {
             .environmentObject(syncCoordinator)
             .environmentObject(stintCaptureCoordinator)
             .environmentObject(voltaVideoRepo)
+            .environmentObject(manutencaoStore)
+            .environmentObject(pecaRepo)
             .task {
                 await carroRepo.bootstrap()
                 // EventoRepo seeda o TrackRow brasília — TrackRepo
@@ -239,6 +250,7 @@ private struct ReadyRoot: View {
                 await trackRepo.bootstrap()
                 await licaoRepo.bootstrap()
                 await pendenciaRepo.bootstrap()
+                await pecaRepo.bootstrap()
                 // Sprint E.1: enfileira retroativamente rows com
                 // synced_at IS NULL que vieram de versões anteriores
                 // (carros/eventos criados antes do fix de enqueue nos

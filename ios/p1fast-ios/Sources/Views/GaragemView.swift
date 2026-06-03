@@ -15,18 +15,12 @@
 // como sheet; tap em card abre CarroModalView (edição completa).
 
 import SwiftUI
+import UIKit
 import P1FastCore
 
 struct GaragemView: View {
     @EnvironmentObject private var repo: CarroRepository
-    @State private var navSelection: BottomNavItem.ID?
     @State private var sheet: GaragemSheet?
-    private let navItems: [BottomNavItem] = [
-        BottomNavItem("Home"),
-        BottomNavItem("Eventos"),
-        BottomNavItem("Cadastros"),
-        BottomNavItem("Garagem"),
-    ]
 
     /// Permite abrir a tela já com uma sheet visível — usado pelos
     /// launch args `--p1-garagem-novo` / `--p1-garagem-carro` pra
@@ -43,27 +37,21 @@ struct GaragemView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            ScrollView {
-                content
-                    .padding(.horizontal, Spacing.lg)
-                    .padding(.top, Spacing.md)
-                    .padding(.bottom, 140)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .background(Color.surface)
-
-            BottomNav(items: navItems, selection: $navSelection, onSelect: onNavSelect)
+        ScrollView {
+            content
+                .padding(.horizontal, Spacing.lg)
+                .padding(.top, Spacing.md)
+                .padding(.bottom, 32)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .background(Color.surface)
         .overlay(alignment: .bottomTrailing) {
             FAB("Novo carro") { sheet = .novo }
                 .padding(.trailing, Spacing.md)
-                .padding(.bottom, 90)
+                .padding(.bottom, Spacing.md)
         }
         .preferredColorScheme(.dark)
         .onAppear {
-            // BottomNav começa com "Garagem" ativo (4º item).
-            if navSelection == nil { navSelection = navItems.last?.id }
             if let s = initialSheet, sheet == nil { sheet = s }
         }
         .sheet(item: $sheet) { which in
@@ -71,7 +59,7 @@ struct GaragemView: View {
             case .novo:
                 CarroNovoFormView(onClose: { sheet = nil })
             case .editar(let carroId):
-                CarroModalView(carroId: carroId, onClose: { sheet = nil })
+                CarroHubView(carroId: carroId, onClose: { sheet = nil })
             case .trechos:
                 NavigationStack {
                     TrechoListaView(onClose: { sheet = nil })
@@ -87,13 +75,14 @@ struct GaragemView: View {
             summaryCard
             VStack(spacing: 10) {
                 ForEach(Array(repo.carros.enumerated()), id: \.element.id) { idx, carro in
-                    CarroCard(
-                        carro: carro,
-                        stints: repo.stintsPorCarro[carro.id] ?? 0,
-                        isAtivo: idx == 0
-                    ) {
-                        sheet = .editar(carroId: carro.id)
+                    NavigationLink(value: HomeNavTarget.carroHub(carroId: carro.id)) {
+                        CarroCard(
+                            carro: carro,
+                            stints: repo.stintsPorCarro[carro.id] ?? 0,
+                            isAtivo: idx == 0
+                        )
                     }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -223,68 +212,83 @@ private struct CarroCard: View {
     let carro: Carro
     let stints: Int
     let isAtivo: Bool
-    let onTap: () -> Void
+
+    @State private var foto: UIImage?
 
     var body: some View {
-        Button(action: onTap) {
-            HStack(alignment: .top, spacing: 14) {
-                swatch
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(carro.apelido)
-                        .font(.system(size: 17, weight: .semibold))
-                        .tracking(-0.085)
-                        .foregroundStyle(Color.text)
-                    Text(modelLine)
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundStyle(Color.textMuted)
-                    HStack(spacing: 6) {
-                        if isAtivo {
-                            EventTag(text: "Próximo evento", kind: .accent)
-                        }
-                        EventTag(text: "\(stints) stints", kind: .neutral)
+        HStack(alignment: .top, spacing: 14) {
+            swatch
+            VStack(alignment: .leading, spacing: 3) {
+                Text(carro.apelido)
+                    .font(.system(size: 17, weight: .semibold))
+                    .tracking(-0.085)
+                    .foregroundStyle(Color.text)
+                Text(modelLine)
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundStyle(Color.textMuted)
+                HStack(spacing: 6) {
+                    if isAtivo {
+                        EventTag(text: "Próximo evento", kind: .accent)
                     }
-                    .padding(.top, Spacing.sm)
+                    EventTag(text: "\(stints) stints", kind: .neutral)
                 }
-                Spacer(minLength: 0)
-                chev
+                .padding(.top, Spacing.sm)
             }
-            .padding(.horizontal, Spacing.md)
-            .padding(.vertical, 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .fill(isAtivo ? Color.accentDim.opacity(0.15) : Color.surfaceRaised)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .stroke(isAtivo ? Color.accent.opacity(0.55) : Color.border, lineWidth: 1)
-            )
+            Spacer(minLength: 0)
+            chev
         }
-        .buttonStyle(.plain)
-    }
-
-    private var swatch: some View {
-        ZStack {
-            Circle()
-                .stroke(isAtivo ? Color.accent.opacity(0.35) : Color.border, lineWidth: 2)
-                .frame(width: 48, height: 48)
-            Circle()
-                .fill(swatchColor)
-                .frame(width: 34, height: 34)
-        }
-        .frame(width: 48, height: 48)
-        .overlay(
-            isAtivo
-            ? Circle().stroke(Color.accent.opacity(0.14), lineWidth: 3).frame(width: 54, height: 54)
-            : nil
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .fill(isAtivo ? Color.accentDim.opacity(0.15) : Color.surfaceRaised)
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .stroke(isAtivo ? Color.accent.opacity(0.55) : Color.border, lineWidth: 1)
+        )
+        .contentShape(Rectangle())
+        .onAppear { foto = CarroFoto.carregar(carroId: carro.id) }
     }
 
-    private var swatchColor: Color {
-        guard let hex = carro.cor, let parsed = Color(hex: hex) else {
-            return Color.surfaceHover
+    /// Foto do carro em círculo; sem foto, ícone neutro de carro.
+    /// (2026-05-31: a cor saiu — a identidade do carro é a foto.)
+    @ViewBuilder
+    private var swatch: some View {
+        if let foto {
+            Image(uiImage: foto)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 48, height: 48)
+                .clipShape(Circle())
+                .overlay(
+                    Circle().stroke(isAtivo ? Color.accent.opacity(0.55) : Color.border, lineWidth: 2)
+                )
+                .overlay(
+                    isAtivo
+                    ? Circle().stroke(Color.accent.opacity(0.14), lineWidth: 3).frame(width: 54, height: 54)
+                    : nil
+                )
+        } else {
+            ZStack {
+                Circle()
+                    .fill(Color.surfaceRaised)
+                    .frame(width: 48, height: 48)
+                    .overlay(
+                        Circle().stroke(isAtivo ? Color.accent.opacity(0.35) : Color.border, lineWidth: 2)
+                    )
+                Image(systemName: "car.fill")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Color.textFaint)
+            }
+            .frame(width: 48, height: 48)
+            .overlay(
+                isAtivo
+                ? Circle().stroke(Color.accent.opacity(0.14), lineWidth: 3).frame(width: 54, height: 54)
+                : nil
+            )
         }
-        return parsed
     }
 
     private var modelLine: String {

@@ -31,6 +31,13 @@ enum HomeNavTarget: Hashable {
     case cadastros
     case garagem
     case garagemNovo
+    /// Fluxo do carro empilhado (push) em vez de folha modal — assim o
+    /// menu inferior fixo continua visível. 2026-05-31, pedido do Flávio.
+    case carroHub(carroId: String)
+    case carroCadastro(carroId: String)
+    case manutencao(carroId: String)
+    case estoque(carroId: String)
+    case eventoDetalhe(eventoId: String)
     /// Atalho dev — abre TelemetriaView (sessão demo descartável). Usado
     /// pra captura rápida em test drive sem passar pelo fluxo Evento →
     /// Stint. Botão fica embaixo do conteúdo da Home, marcado como
@@ -83,6 +90,9 @@ struct HomeView: View {
     /// TelemetriaView com queue + trackBundle (a Home não tem acesso
     /// direto aos repositórios). Quando nil, o atalho dev fica oculto.
     var telemetriaDevView: (() -> AnyView)? = nil
+    /// SÓ-DEV: rota inicial pré-empilhada — usada pelos launchers de mock
+    /// pra validar telas profundas no simulador sem passar pelo login.
+    var initialRoute: [HomeNavTarget] = []
     @State private var navSelection: BottomNavItem.ID?
     @State private var showSyncSheet = false
     @State private var navPath = NavigationPath()
@@ -94,37 +104,45 @@ struct HomeView: View {
     ]
 
     var body: some View {
-        NavigationStack(path: $navPath) {
-            shell
-                .navigationDestination(for: HomeNavTarget.self) { target in
-                    destinationView(for: target)
-                }
+        VStack(spacing: 0) {
+            NavigationStack(path: $navPath) {
+                shell
+                    .navigationDestination(for: HomeNavTarget.self) { target in
+                        destinationView(for: target)
+                    }
+            }
+            // Menu inferior FIXO: fica FORA do NavigationStack, então
+            // permanece visível em TODA tela empilhada (hub do carro,
+            // cadastro, estoque, detalhe de evento…). 2026-05-31, pedido
+            // do Flávio — antes cada tela desenhava o seu, e as telas de
+            // detalhe (abertas como folha modal) cobriam o menu.
+            BottomNav(items: navItems, selection: $navSelection, onSelect: handleNavSelect)
+        }
+        .background(Color.surface)
+        .preferredColorScheme(.dark)
+        .onAppear {
+            if navSelection == nil { navSelection = navItems.first?.id }
+            if navPath.isEmpty {
+                for r in initialRoute { navPath.append(r) }
+            }
         }
     }
 
     private var shell: some View {
-        ZStack(alignment: .bottom) {
-            ScrollView {
-                content
-                    .padding(.horizontal, Spacing.lg)
-                    .padding(.top, Spacing.md)
-                    .padding(.bottom, 140) // espaço pra FAB/BottomNav fixos
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .background(Color.surface)
-
-            BottomNav(items: navItems, selection: $navSelection, onSelect: handleNavSelect)
+        ScrollView {
+            content
+                .padding(.horizontal, Spacing.lg)
+                .padding(.top, Spacing.md)
+                .padding(.bottom, 32)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .background(Color.surface)
         .overlay(alignment: .bottomTrailing) {
             if case .filled = state {
                 FAB("Novo evento", action: { navPath.append(HomeNavTarget.eventosNovo) })
                     .padding(.trailing, Spacing.md)
-                    .padding(.bottom, 90)
+                    .padding(.bottom, Spacing.md)
             }
-        }
-        .preferredColorScheme(.dark)
-        .onAppear {
-            if navSelection == nil { navSelection = navItems.first?.id }
         }
         .overlay(alignment: .topTrailing) {
             if let coord = syncCoordinator {
@@ -186,6 +204,16 @@ struct HomeView: View {
             GaragemView(onNavSelect: nav)
         case .garagemNovo:
             GaragemView(initialSheet: .novo, onNavSelect: nav)
+        case .carroHub(let id):
+            CarroHubView(carroId: id, onClose: { navPath.removeLast() })
+        case .carroCadastro(let id):
+            CarroModalView(carroId: id, onClose: { navPath.removeLast() })
+        case .manutencao(let id):
+            ManutencaoConsumiveisView(carroId: id, onClose: { navPath.removeLast() })
+        case .estoque(let id):
+            PecaListaView(carroInicial: id, onClose: { navPath.removeLast() })
+        case .eventoDetalhe(let id):
+            EventoDetalheView(eventoId: id, onClose: { navPath.removeLast() })
         case .telemetriaDemo:
             if let builder = telemetriaDevView {
                 builder()
@@ -214,13 +242,15 @@ struct HomeView: View {
         }
     }
 
-    /// BottomNav é tab-like visualmente, mas comportamento é push de
-    /// NavigationStack — sub-views ganham back button do sistema. Home
-    /// é a única raiz; tocar "Home" volta pra raiz.
+    /// Menu inferior fixo: tocar num item SEMPRE volta à raiz daquela aba
+    /// (zera o histórico) e marca a aba ativa. Vale de qualquer
+    /// profundidade — inclusive de dentro do hub/cadastro/estoque.
     private func handleNavSelect(_ item: BottomNavItem) {
+        navSelection = item.id
+        navPath = NavigationPath()
         switch item.label {
         case "Home":
-            if !navPath.isEmpty { navPath = NavigationPath() }
+            break // a raiz do stack já é a Home
         case "Eventos":
             navPath.append(HomeNavTarget.eventos)
         case "Cadastros":
@@ -230,10 +260,6 @@ struct HomeView: View {
         default:
             break
         }
-        // Reset selection pro item Home assim que voltar pra raiz —
-        // BottomNav só aparece na Home, então sub-views não precisam
-        // do estado.
-        navSelection = navItems.first?.id
     }
 }
 

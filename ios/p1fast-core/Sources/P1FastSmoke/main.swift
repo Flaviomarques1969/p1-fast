@@ -3639,7 +3639,7 @@ func makeTestDB() throws -> DatabaseQueue {
     return q
 }
 
-step("PERSIST-01: makeMemoryQueue + migrations v1..v18 cria 30 tabelas") {
+step("PERSIST-01: makeMemoryQueue + migrations v1..v27 cria 34 tabelas") {
     let q = try DB.makeMemoryQueue()
     let names = try q.read { db in
         try String.fetchAll(db, sql:
@@ -3648,8 +3648,9 @@ step("PERSIST-01: makeMemoryQueue + migrations v1..v18 cria 30 tabelas") {
     }
     // 20 do Postgres + sync_queue + sync_meta (v2) + licoes (v4) + pendencias_template + evento_pendencias (v5)
     // + telemetry_samples_enriched (v7) + video_streams (v15) + volta_video (v16)
-    // + pessoas (v17) + pessoa_papeis (v18) = 30
-    try assertEq(names.count, 30, "esperava 30 tabelas")
+    // + pessoas (v17) + pessoa_papeis (v18) + manutencoes (v19) = 31
+    // + pecas + pecas_locais + pecas_movimentacoes (v26) = 34
+    try assertEq(names.count, 34, "esperava 34 tabelas")
     for expected in ["times", "carros", "configuracoes", "sessoes", "voltas",
                      "marcos", "retas_especiais", "telemetry_samples",
                      "telemetry_samples_enriched", "sync_queue", "sync_meta",
@@ -8026,6 +8027,147 @@ step("ECM-12: DecisionPolicy.authorize integra ambos checks") {
         try assertEq(err, .decisaoFinalizada)
     } else {
         throw Bad(msg: "decisão já finalizada não deve mudar")
+    }
+}
+
+// ── Manutenção · Consumíveis (modelo CHECAGEM ≠ TROCA) ───────
+step("consumiveis: catálogo tem 30 itens") {
+    try assertEq(CatalogoConsumiveisCelta.itens.count, 30)
+}
+step("consumiveis: 10 blocos na ordem do catálogo") {
+    try assertEq(CatalogoConsumiveisCelta.porBloco().count, 10)
+}
+step("consumiveis: distribuição por modo de troca (16/9/4/1)") {
+    let it = CatalogoConsumiveisCelta.itens
+    try assertEq(it.filter { $0.troca.token == "limite" }.count, 16)
+    try assertEq(it.filter { $0.troca.token == "resultado" }.count, 9)
+    try assertEq(it.filter { $0.troca.token == "preditivo" }.count, 4)
+    try assertEq(it.filter { $0.troca.token == "rec" }.count, 1)
+}
+step("consumiveis: find acha e devolve nil pro inexistente") {
+    try assertTrue(CatalogoConsumiveisCelta.find("pneus") != nil)
+    try assertTrue(CatalogoConsumiveisCelta.find("nao_existe") == nil)
+}
+step("consumiveis: itens-chave com modo/ação certos") {
+    try assertEq(CatalogoConsumiveisCelta.find("pneus")!.troca.token, "preditivo")
+    try assertEq(CatalogoConsumiveisCelta.find("reaperto_rodas")!.checagem.acao, .reapertar)
+    try assertEq(CatalogoConsumiveisCelta.find("reaperto_rodas")!.troca.token, "resultado")
+    try assertEq(CatalogoConsumiveisCelta.find("velas")!.checagem.acao, .lerVela)
+    try assertEq(CatalogoConsumiveisCelta.find("velas")!.troca, .limiteMaximo(valor: 24, unidade: .horas))
+    try assertEq(CatalogoConsumiveisCelta.find("analise_oleo")!.troca.token, "rec")
+}
+step("troca: peloResultado → condicional, soRecomendacao → recomendacao") {
+    try assertEq(avaliarTroca(troca: .peloResultado, contador: .zero).severidade, .condicional)
+    try assertEq(avaliarTroca(troca: .soRecomendacao, contador: .zero).severidade, .recomendacao)
+}
+step("troca: limite por horas (óleo 2h) verde→amarelo→vermelho") {
+    let t = ModoTroca.limiteMaximo(valor: 2, unidade: .horas)
+    let s1 = avaliarTroca(troca: t, contador: ContadorUso(horas: 1.0))
+    try assertEq(s1.severidade, .verde); try assertClose(s1.fracao, 0.5)
+    try assertEq(avaliarTroca(troca: t, contador: ContadorUso(horas: 1.7)).severidade, .amarelo)
+    try assertEq(avaliarTroca(troca: t, contador: ContadorUso(horas: 2.5)).severidade, .vermelho)
+}
+step("troca: limite por eventos e por meses") {
+    let ev = avaliarTroca(troca: .limiteMaximo(valor: 8, unidade: .eventos), contador: ContadorUso(eventos: 4))
+    try assertEq(ev.severidade, .verde); try assertClose(ev.fracao, 0.5)
+    let me = avaliarTroca(troca: .limiteMaximo(valor: 12, unidade: .meses), contador: ContadorUso(dias: 180))
+    try assertEq(me.severidade, .verde); try assertClose(me.fracao, 0.5)
+}
+step("troca: validade da etiqueta (sem data / vencido / perto / longe)") {
+    let semData = avaliarTroca(troca: .limiteMaximo(valor: nil, unidade: .validade), contador: .zero, diasAteValidade: nil)
+    try assertEq(semData.severidade, .semHistorico)
+    try assertEq(avaliarTroca(troca: .limiteMaximo(valor: nil, unidade: .validade), contador: .zero, diasAteValidade: -5).severidade, .vermelho)
+    try assertEq(avaliarTroca(troca: .limiteMaximo(valor: nil, unidade: .validade), contador: .zero, diasAteValidade: 30).severidade, .amarelo)
+    try assertEq(avaliarTroca(troca: .limiteMaximo(valor: nil, unidade: .validade), contador: .zero, diasAteValidade: 200).severidade, .verde)
+}
+step("troca: preditivo por horas (sem média / com média)") {
+    let semMedia = avaliarTroca(troca: .preditivoPorHoras, contador: ContadorUso(horas: 9), mediaHorasAprendida: nil)
+    try assertEq(semMedia.severidade, .semHistorico)
+    let comMedia = avaliarTroca(troca: .preditivoPorHoras, contador: ContadorUso(horas: 9), mediaHorasAprendida: 10)
+    try assertEq(comMedia.severidade, .amarelo); try assertClose(comMedia.fracao, 0.9)
+}
+step("inteligência: média entre trocas e detecção de anomalia (por horas)") {
+    let m = mediaDuracoes([DuracaoTroca(horas: 10), DuracaoTroca(horas: 20)])
+    try assertClose(m.horas, 15)
+    try assertTrue(detectarAnomalia(atual: DuracaoTroca(horas: 5), media: DuracaoTroca(horas: 15)))   // 5 < 9
+    try assertTrue(!detectarAnomalia(atual: DuracaoTroca(horas: 12), media: DuracaoTroca(horas: 15))) // 12 > 9
+}
+
+step("uso real: soma horas de sessões (cancelada não conta) + eventos distintos") {
+    let q = try makeTestDB()
+    let carro = "carro-uso-1"; let team = "team-1"
+    let base: Int64 = 1_700_000_000_000
+    let h: Int64 = 3_600_000  // 1 hora em ms
+    try q.write { db in
+        try Carro(id: carro, timeId: team, apelido: "Bubi").insert(db)
+        try Evento(id: "evtA", timeId: team, dataEvento: base).insert(db)
+        try Evento(id: "evtB", timeId: team, dataEvento: base + 4*h).insert(db)
+        try Sessao(id: "su1", timeId: team, eventoId: "evtA", carroId: carro,
+                   status: "finalizada", dataInicio: base, dataFim: base + h).insert(db)
+        try Sessao(id: "su2", timeId: team, eventoId: "evtA", carroId: carro,
+                   status: "finalizada", dataInicio: base + 2*h, dataFim: base + 3*h).insert(db)
+        try Sessao(id: "su3", timeId: team, eventoId: "evtB", carroId: carro,
+                   status: "finalizada", dataInicio: base + 4*h, dataFim: base + 4*h + h/2).insert(db)
+        try Sessao(id: "su4", timeId: team, eventoId: "evtB", carroId: carro,
+                   status: "cancelada", dataInicio: base + 5*h, dataFim: base + 7*h,
+                   canceladoEm: base + 5*h).insert(db)
+    }
+    let cont = try q.read { db in
+        try ManutencaoUsoReader.contador(db, carroId: carro, timeId: team,
+                                         deMs: base - 1, ateMs: base + 10*h)
+    }
+    try assertClose(cont.horas, 2.5)   // 1 + 1 + 0.5 (a cancelada fica de fora)
+    try assertEq(cont.eventos, 2)      // evtA + evtB
+}
+
+step("histórico: registra trocas, aprende a vida real e calcula status preditivo") {
+    let q = try makeTestDB()
+    let team = "team-1"; let carro = "carro-hist"
+    let base: Int64 = 1_700_000_000_000
+    let h: Int64 = 3_600_000        // 1 hora
+    let h18: Int64 = 6_480_000      // 1,8 hora
+    try q.write { db in
+        try Carro(id: carro, timeId: team, apelido: "Bubi").insert(db)
+        try Evento(id: "eh1", timeId: team, dataEvento: base).insert(db)
+        try Evento(id: "eh2", timeId: team, dataEvento: base + 10*h).insert(db)
+        try Evento(id: "eh3", timeId: team, dataEvento: base + 20*h).insert(db)
+        // uso: 2h entre troca1→troca2, 2h entre troca2→troca3, 1,8h após troca3
+        try Sessao(id: "sh1", timeId: team, eventoId: "eh1", carroId: carro, status: "finalizada", dataInicio: base + h, dataFim: base + 3*h).insert(db)
+        try Sessao(id: "sh2", timeId: team, eventoId: "eh2", carroId: carro, status: "finalizada", dataInicio: base + 11*h, dataFim: base + 13*h).insert(db)
+        try Sessao(id: "sh3", timeId: team, eventoId: "eh3", carroId: carro, status: "finalizada", dataInicio: base + 20*h, dataFim: base + 20*h + h18).insert(db)
+        // 3 trocas de pneu
+        try ManutencaoRegistro(id: "mh1", timeId: team, carroId: carro, itemCodigo: "pneus", ocorridoEm: base).insert(db)
+        try ManutencaoRegistro(id: "mh2", timeId: team, carroId: carro, itemCodigo: "pneus", ocorridoEm: base + 10*h).insert(db)
+        try ManutencaoRegistro(id: "mh3", timeId: team, carroId: carro, itemCodigo: "pneus", ocorridoEm: base + 20*h).insert(db)
+    }
+    let (n, media, status) = try q.read { db -> (Int, Double?, StatusManutencao) in
+        let hist = try ManutencaoHistorico.historico(db, carroId: carro, timeId: team, itemCodigo: "pneus")
+        let me = try ManutencaoHistorico.mediaHorasAprendida(db, carroId: carro, timeId: team, itemCodigo: "pneus")
+        let st = try ManutencaoHistorico.status(db, item: CatalogoConsumiveisCelta.find("pneus")!,
+                                                carroId: carro, timeId: team, agoraMs: base + 20*h + h18)
+        return (hist.count, me, st)
+    }
+    try assertEq(n, 3)
+    try assertClose(media, 2.0)                 // 2h + 2h → vida média do pneu = 2h
+    try assertEq(status.severidade, .amarelo)   // 1,8h / 2h = 0,9 → amarelo
+    try assertClose(status.fracao, 0.9)
+}
+
+step("migration v19: banco com tabela manutencoes ANTIGA (device 18/05) preserva e não quebra") {
+    let dbq = try DatabaseQueue()  // memória cru, sem migrations
+    try dbq.write { db in
+        // simula a tabela órfã de 18/05 (esquema antigo e incompatível)
+        try db.execute(sql: "CREATE TABLE manutencoes (id TEXT PRIMARY KEY, area TEXT, km_carro REAL, quantidade INTEGER);")
+        try db.execute(sql: "INSERT INTO manutencoes (id, area, km_carro, quantidade) VALUES ('velho-1','Motor',1000,1);")
+    }
+    // aplica TODAS as migrations (v1..v19): a v19 deve renomear a antiga e criar a nova
+    try DB.migrator.migrate(dbq)
+    try dbq.read { db in
+        let cols = try Row.fetchAll(db, sql: "PRAGMA table_info(manutencoes)").map { $0["name"] as String }
+        try assertTrue(cols.contains("validade_etiqueta"), "manutencoes nova deve ter validade_etiqueta")
+        try assertTrue(try db.tableExists("manutencoes_legado_2026_05_18"), "tabela antiga preservada")
+        let n = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM manutencoes_legado_2026_05_18") ?? 0
+        try assertEq(n, 1, "dado antigo preservado (não apagou)")
     }
 }
 
