@@ -40,6 +40,10 @@ export const ALLOWED_TABLES = new Set([
   "mensagens",
   "retas_especiais",
   "evento_pendencias",
+  "pecas_locais",
+  "pecas",
+  "pecas_movimentacoes",
+  "manutencoes",
 ]);
 
 export const ALLOWED_OPS = new Set(["insert", "update", "delete"]);

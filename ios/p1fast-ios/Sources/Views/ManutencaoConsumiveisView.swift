@@ -55,7 +55,10 @@ final class ManutencaoConsumiveisStore: ObservableObject {
             id: UUID().uuidString.lowercased(), timeId: team, carroId: carroId,
             itemCodigo: itemCodigo, ocorridoEm: ocorridoEm,
             observacao: observacao?.trimmedNilSeVazio, validadeEtiqueta: validadeEtiqueta)
-        try await queue.write { db in try reg.insert(db) }
+        try await queue.write { db in
+            try reg.insert(db)
+            try SyncQueue.enqueueRecord(db, tableName: "manutencoes", rowId: reg.id, op: .insert, record: reg)
+        }
         await carregarStatus(carroId: carroId)
     }
 }

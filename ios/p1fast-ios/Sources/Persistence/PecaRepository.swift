@@ -8,8 +8,9 @@
 // PecaArea (decisão E); campo `tipo` distingue componente do carro de
 // ferramenta de manutenção específica (comentário do Flávio).
 //
-// Tudo local no GRDB. Sincronização com servidor oficial fica pra
-// rodada futura (sem migração agora — produção protegida).
+// Tudo local no GRDB + envio pro servidor oficial via SyncQueue
+// (insert/update/delete enfileirados na mesma transação da gravação).
+// Tabelas na nuvem: migration 0039_estoque_manutencao_sync.sql.
 
 import Foundation
 import GRDB
@@ -79,6 +80,7 @@ final class PecaRepository: ObservableObject {
                     updatedAt: agora
                 )
                 try local.insert(db)
+                try SyncQueue.enqueueRecord(db, tableName: "pecas_locais", rowId: local.id, op: .insert, record: local)
             }
         }
     }
@@ -110,6 +112,7 @@ final class PecaRepository: ObservableObject {
         )
         try await queue.write { db in
             try peca.insert(db)
+            try SyncQueue.enqueueRecord(db, tableName: "pecas", rowId: peca.id, op: .insert, record: peca)
             if peca.quantidade > 0 {
                 var mov = PecaMovimentacao(
                     id: UUID().uuidString.lowercased(),
@@ -120,6 +123,7 @@ final class PecaRepository: ObservableObject {
                     ocorridoEm: DB.nowMs()
                 )
                 try mov.insert(db)
+                try SyncQueue.enqueueRecord(db, tableName: "pecas_movimentacoes", rowId: mov.id, op: .insert, record: mov)
             }
         }
         try await reload()
@@ -129,13 +133,17 @@ final class PecaRepository: ObservableObject {
     func atualizarPeca(_ p: Peca) async throws {
         var atual = p
         atual.updatedAt = DB.nowMs()
-        try await queue.write { db in try atual.update(db) }
+        try await queue.write { db in
+            try atual.update(db)
+            try SyncQueue.enqueueRecord(db, tableName: "pecas", rowId: atual.id, op: .update, record: atual)
+        }
         try await reload()
     }
 
     func apagarPeca(_ p: Peca) async throws {
         try await queue.write { db in
             _ = try p.delete(db)
+            try SyncQueue.enqueueRecord(db, tableName: "pecas", rowId: p.id, op: .delete, record: Peca?.none)
         }
         try await reload()
     }
@@ -156,10 +164,16 @@ final class PecaRepository: ObservableObject {
                 ocorridoEm: DB.nowMs()
             )
             try mov.insert(db)
+            try SyncQueue.enqueueRecord(db, tableName: "pecas_movimentacoes", rowId: mov.id, op: .insert, record: mov)
+            let agora = DB.nowMs()
             try db.execute(
                 sql: "UPDATE pecas SET quantidade = ?, updated_at = ? WHERE id = ?",
-                arguments: [novaQuantidade, DB.nowMs(), peca.id]
+                arguments: [novaQuantidade, agora, peca.id]
             )
+            // Enfileira o novo estado da peça (quantidade atualizada) pro servidor.
+            if let atualizada = try Peca.fetchOne(db, key: peca.id) {
+                try SyncQueue.enqueueRecord(db, tableName: "pecas", rowId: atualizada.id, op: .update, record: atualizada)
+            }
         }
         try await reload()
     }
@@ -184,7 +198,10 @@ final class PecaRepository: ObservableObject {
             descricao: descricao?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
             ordem: proximaOrdem
         )
-        try await queue.write { db in try local.insert(db) }
+        try await queue.write { db in
+            try local.insert(db)
+            try SyncQueue.enqueueRecord(db, tableName: "pecas_locais", rowId: local.id, op: .insert, record: local)
+        }
         try await reload()
         return local
     }
@@ -192,14 +209,28 @@ final class PecaRepository: ObservableObject {
     func atualizarLocal(_ l: PecaLocal) async throws {
         var atual = l
         atual.updatedAt = DB.nowMs()
-        try await queue.write { db in try atual.update(db) }
+        try await queue.write { db in
+            try atual.update(db)
+            try SyncQueue.enqueueRecord(db, tableName: "pecas_locais", rowId: atual.id, op: .update, record: atual)
+        }
         try await reload()
     }
 
     func apagarLocal(_ l: PecaLocal) async throws {
         try await queue.write { db in
-            try db.execute(sql: "UPDATE pecas SET local_id = NULL WHERE local_id = ?", arguments: [l.id])
+            let agora = DB.nowMs()
+            // Peças que apontavam pra este local ficam sem local — enfileira cada uma.
+            let afetadas = try Peca.filter(Column("local_id") == l.id).fetchAll(db)
+            try db.execute(sql: "UPDATE pecas SET local_id = NULL, updated_at = ? WHERE local_id = ?",
+                           arguments: [agora, l.id])
+            for pa in afetadas {
+                var atualizada = pa
+                atualizada.localId = nil
+                atualizada.updatedAt = agora
+                try SyncQueue.enqueueRecord(db, tableName: "pecas", rowId: atualizada.id, op: .update, record: atualizada)
+            }
             _ = try l.delete(db)
+            try SyncQueue.enqueueRecord(db, tableName: "pecas_locais", rowId: l.id, op: .delete, record: PecaLocal?.none)
         }
         try await reload()
     }

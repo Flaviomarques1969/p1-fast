@@ -38,6 +38,12 @@ public enum SyncBackfill {
         "sessoes",
         "voltas",
         "segment_executions",
+        // Estoque + Manutenção (parents antes: pecas_locais → pecas →
+        // pecas_movimentacoes; manutencoes depois de carros).
+        "pecas_locais",
+        "pecas",
+        "pecas_movimentacoes",
+        "manutencoes",
     ]
 
     /// Roda o backfill. Retorna o nº total de rows enfileiradas (0 quando
@@ -72,6 +78,7 @@ public enum SyncBackfill {
     private static let tablesWithTimeId: Set<String> = [
         "carros", "configuracoes", "pilotos", "passageiros",
         "combustiveis", "pneus", "eventos",
+        "pecas_locais", "pecas", "pecas_movimentacoes", "manutencoes",
     ]
 
     private static func backfillTable(
