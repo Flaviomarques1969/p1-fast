@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Auditoria das telas do Command Box — 2026-05-24</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      padding: 24px;
+      line-height: 1.4;
+    }
+    h1 {
+      font-size: 24px;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .lead {
+      font-size: 14px;
+      color: #999;
+      margin-bottom: 32px;
+      max-width: 720px;
+    }
+    .grupo {
+      margin-bottom: 48px;
+      border-top: 2px solid #333;
+      padding-top: 20px;
+    }
+    .grupo-titulo {
+      font-size: 18px;
+      color: #ffd700;
+      margin-bottom: 4px;
+    }
+    .grupo-desc {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 16px;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .card-header {
+      padding: 12px 14px;
+      background: #333;
+      border-bottom: 1px solid #444;
+    }
+    .card-letra {
+      font-size: 11px;
+      color: #888;
+      letter-spacing: 1px;
+      margin-bottom: 2px;
+    }
+    .card-titulo {
+      font-size: 14px;
+      color: #fff;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .card-meta {
+      font-size: 11px;
+      color: #aaa;
+    }
+    .preview {
+      background: #fff;
+      height: 280px;
+      position: relative;
+      overflow: hidden;
+    }
+    .preview iframe {
+      width: 1280px;
+      height: 720px;
+      border: 0;
+      transform: scale(0.32);
+      transform-origin: top left;
+      pointer-events: none;
+    }
+    .preview-vazio {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #999;
+      font-size: 13px;
+    }
+    .botoes {
+      padding: 10px 14px;
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #555;
+      background: #333;
+      color: #fff;
+      text-align: center;
+      text-decoration: none;
+      font-size: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn:hover { background: #444; }
+    .btn-primary {
+      background: #0066cc;
+      border-color: #0066cc;
+    }
+    .btn-primary:hover { background: #0077dd; }
+    .recente {
+      border: 2px solid #ffd700;
+      box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+    }
+    .recente .card-header {
+      background: #3d3500;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      background: #ffd700;
+      color: #000;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 3px;
+      margin-left: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Auditoria — Telas do Command Box</h1>
+  <p class="lead">
+    Investigação feita em 2026-05-24 nas 216 linhas de trabalho e 13 ambientes isolados do projeto. Cada cartão é uma versão única e diferente (versões idênticas em outros lugares foram descartadas). As versões marcadas em dourado são as mais recentes em data dentro do grupo. Clique em <strong>"Abrir em tela cheia"</strong> pra ver no tamanho real.
+  </p>
+
+  <!-- 1 VISTA PILOTO -->
+  <section class="grupo">
+    <h2 class="grupo-titulo">1. Command Box · Visão Piloto</h2>
+    <p class="grupo-desc">7 versões diferentes encontradas. A versão F (MELHOR-VERSAO-04 de 15/05) é a mais recente em data e a mais usada (existe igual em 5 ambientes).</p>
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-letra">A</div>
+          <div class="card-titulo">ORIGINAL (pré-simplificação)</div>
+          <div class="card-meta">2026-05-13 · 292 kB · primeiríssima versão</div>
+        </div>
+        <div class="preview"><iframe src="1-vista-piloto/A-2026-05-13__ORIGINAL__292kB.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="1-vista-piloto/A-2026-05-13__ORIGINAL__292kB.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-letra">B</div>
+          <div class="card-titulo">SIMPLIFICADO</div>
+          <div class="card-meta">2026-05-14 · 288 kB · candidato reconstruído (descartado)</div>
+        </div>
+        <div class="preview"><iframe src="1-vista-piloto/B-2026-05-14__SIMPLIFICADO__288kB.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="1-vista-piloto/B-2026-05-14__SIMPLIFICADO__288kB.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-letra">C</div>
+          <div class="card-titulo">BASE-ÚNICA-APROVADA</div>
+          <div class="card-meta">2026-05-14 · 295 kB · você aprovou como base única</div>
+        </div>
+        <div class="preview"><iframe src="1-vista-piloto/C-2026-05-14__BASE-UNICA-APROVADA__295kB.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="1-vista-piloto/C-2026-05-14__BASE-UNICA-APROVADA__295kB.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-letra">D</div>
+          <div class="card-titulo">MELHOR-VERSÃO-02</div>
+          <div class="card-meta">2026-05-14 · 296 kB · rodada 1 de melhorias</div>
+        </div>
+        <div class="preview"><iframe src="1-vista-piloto/D-2026-05-14__MELHOR-VERSAO-02__296kB.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="1-vista-piloto/D-2026-05-14__MELHOR-VERSAO-02__296kB.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-letra">E</div>
+          <div class="card-titulo">MELHOR-VERSÃO-03</div>
+          <div class="card-meta">2026-05-15 · 301 kB · rodada 2 de melhorias</div>
+        </div>
+        <div class="preview"><iframe src="1-vista-piloto/E-2026-05-15__MELHOR-VERSAO-03__301kB.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="1-vista-piloto/E-2026-05-15__MELHOR-VERSAO-03__301kB.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+      <div class="card recente">
+        <div class="card-header">
+          <div class="card-letra">F <span class="badge">MAIS RECENTE</span></div>
+          <div class="card-titulo">MELHOR-VERSÃO-04</div>
+          <div class="card-meta">2026-05-15 · 302 kB · rodada 3 · existe igual em 5 ambientes</div>
+        </div>
+        <div class="preview"><iframe src="1-vista-piloto/F-2026-05-15__MELHOR-VERSAO-04__302kB__MAIS-RECENTE.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="1-vista-piloto/F-2026-05-15__MELHOR-VERSAO-04__302kB__MAIS-RECENTE.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-letra">G</div>
+          <div class="card-titulo">VARIANTE não registrada</div>
+          <div class="card-meta">2026-05-15 · 302 kB · achei em um ambiente isolado órfão (17 bytes a menos que F)</div>
+        </div>
+        <div class="preview"><iframe src="1-vista-piloto/G-2026-05-15__VARIANTE-vista-engenheiro__302kB__NAO-REGISTRADA.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="1-vista-piloto/G-2026-05-15__VARIANTE-vista-engenheiro__302kB__NAO-REGISTRADA.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 VISTA ENGENHEIRO -->
+  <section class="grupo">
+    <h2 class="grupo-titulo">2. Command Box · Visão Engenheiro (tela guarda-chuva)</h2>
+    <p class="grupo-desc">Só 1 versão existe em 3 ambientes — todas idênticas. Cuidado: esta é a tela "guarda-chuva". As telas específicas (Lambda, Saúde, etc.) são arquivos separados.</p>
+    <div class="cards">
+      <div class="card recente">
+        <div class="card-header">
+          <div class="card-letra">A <span class="badge">ÚNICA VERSÃO</span></div>
+          <div class="card-titulo">Versão única atual</div>
+          <div class="card-meta">2026-05-13 · 301 kB · sem evolução posterior</div>
+        </div>
+        <div class="preview"><iframe src="2-vista-engenheiro/A-2026-05-13__VERSAO-UNICA-ATUAL__301kB.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="2-vista-engenheiro/A-2026-05-13__VERSAO-UNICA-ATUAL__301kB.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-letra">B</div>
+          <div class="card-titulo">ORIGINAL pré-simplificação</div>
+          <div class="card-meta">2026-05-13 · 301 kB · cópia idêntica em pasta de histórico</div>
+        </div>
+        <div class="preview"><iframe src="2-vista-engenheiro/B-2026-05-13__ORIGINAL-PRE-SIMPLIFICACAO__301kB.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="2-vista-engenheiro/B-2026-05-13__ORIGINAL-PRE-SIMPLIFICACAO__301kB.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 LAMBDA -->
+  <section class="grupo">
+    <h2 class="grupo-titulo">3. Command Box · Engenharia · Lambda</h2>
+    <p class="grupo-desc">Duas versões diferentes: a A é a aprovada em 15/05 que você fechou na época. A B é uma evolução posterior de 18/05 com 6,6 kB a mais — precisa ver se você quer manter ou reverter.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-letra">A</div>
+          <div class="card-titulo">Versão APROVADA por você</div>
+          <div class="card-meta">2026-05-15 · 140 kB · marcada na memória como "versão final"</div>
+        </div>
+        <div class="preview"><iframe src="3-lambda/A-2026-05-15__VERSAO-APROVADA-MEMORIA__140kB.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="3-lambda/A-2026-05-15__VERSAO-APROVADA-MEMORIA__140kB.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+      <div class="card recente">
+        <div class="card-header">
+          <div class="card-letra">B <span class="badge">MAIS RECENTE</span></div>
+          <div class="card-titulo">Evolução posterior</div>
+          <div class="card-meta">2026-05-18 · 147 kB · +6,6 kB · conferir se é boa</div>
+        </div>
+        <div class="preview"><iframe src="3-lambda/B-2026-05-18__EVOLUCAO-POSTERIOR__147kB__MAIS-RECENTE.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="3-lambda/B-2026-05-18__EVOLUCAO-POSTERIOR__147kB__MAIS-RECENTE.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 SAÚDE / SUSPENSÃO -->
+  <section class="grupo">
+    <h2 class="grupo-titulo">4. Command Box · Engenharia · Saúde do Carro (Suspensão / Amortecedores)</h2>
+    <p class="grupo-desc">Várias versões da evolução desta tela. C (MESA-FINAL de 20/05) é a mais recente em data — é a que você disse que tem amortecedores fora do quadro. F é uma tela menor (60 kB), provavelmente outra coisa.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-letra">D</div>
+          <div class="card-titulo">Pré-redesign suspensão</div>
+          <div class="card-meta">2026-05-19 · 136 kB · antes da reformulação</div>
+        </div>
+        <div class="preview"><iframe src="4-saude-suspensao/D-2026-05-19-pre-redesign-suspensao__136kB.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="4-saude-suspensao/D-2026-05-19-pre-redesign-suspensao__136kB.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-letra">A</div>
+          <div class="card-titulo">Mola curva única APROVADA</div>
+          <div class="card-meta">2026-05-19 · 157 kB · você aprovou a mola helicoidal</div>
+        </div>
+        <div class="preview"><iframe src="4-saude-suspensao/A-2026-05-19__MOLA-CURVA-UNICA-APROVADA__157kB.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="4-saude-suspensao/A-2026-05-19__MOLA-CURVA-UNICA-APROVADA__157kB.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-letra">B</div>
+          <div class="card-titulo">Antes de remover grid antigo</div>
+          <div class="card-meta">2026-05-19 · 163 kB · estágio intermediário</div>
+        </div>
+        <div class="preview"><iframe src="4-saude-suspensao/B-2026-05-19__ANTES-REMOVER-GRID__163kB.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="4-saude-suspensao/B-2026-05-19__ANTES-REMOVER-GRID__163kB.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+      <div class="card recente">
+        <div class="card-header">
+          <div class="card-letra">C <span class="badge">MAIS RECENTE</span></div>
+          <div class="card-titulo">MESA-FINAL</div>
+          <div class="card-meta">2026-05-20 · 255 kB · você disse: amortecedores fora do quadro</div>
+        </div>
+        <div class="preview"><iframe src="4-saude-suspensao/C-2026-05-20__MESA-FINAL__255kB__MAIS-RECENTE.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="4-saude-suspensao/C-2026-05-20__MESA-FINAL__255kB__MAIS-RECENTE.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-letra">E</div>
+          <div class="card-titulo">MESA-FINAL adaptada pra TV 32"</div>
+          <div class="card-meta">2026-05-20 · 259 kB · variante pra TV grande</div>
+        </div>
+        <div class="preview"><iframe src="4-saude-suspensao/E-2026-05-20__MESA-FINAL-PRA-TV32__259kB.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="4-saude-suspensao/E-2026-05-20__MESA-FINAL-PRA-TV32__259kB.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-letra">F</div>
+          <div class="card-titulo">Saúde Carro mini (outra tela)</div>
+          <div class="card-meta">2026-05-18 · 60 kB · tela menor, provavelmente outra coisa</div>
+        </div>
+        <div class="preview"><iframe src="4-saude-suspensao/F-2026-05-18__SAUDE-CARRO-MINI-OUTRA-TELA__60kB.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="4-saude-suspensao/F-2026-05-18__SAUDE-CARRO-MINI-OUTRA-TELA__60kB.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 PACE -->
+  <section class="grupo">
+    <h2 class="grupo-titulo">5. Command Box · Engenharia · PAce (Torque)</h2>
+    <p class="grupo-desc">Apareceu também na varredura. Tem 3 versões: v1 aprovada em 15/05, evolução da mesma noite, e versão mais recente de 18/05.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-letra">A</div>
+          <div class="card-titulo">v1 APROVADO (na memória)</div>
+          <div class="card-meta">2026-05-15 · 101 kB · você aprovou esta versão</div>
+        </div>
+        <div class="preview"><iframe src="5-pace/A-2026-05-15__V1-APROVADO-MEMORIA__101kB.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="5-pace/A-2026-05-15__V1-APROVADO-MEMORIA__101kB.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-letra">B</div>
+          <div class="card-titulo">Evolução da noite</div>
+          <div class="card-meta">2026-05-15 noite · 161 kB · +60 kB</div>
+        </div>
+        <div class="preview"><iframe src="5-pace/B-2026-05-15__NOITE-EVOLUCAO__161kB.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="5-pace/B-2026-05-15__NOITE-EVOLUCAO__161kB.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+      <div class="card recente">
+        <div class="card-header">
+          <div class="card-letra">C <span class="badge">MAIS RECENTE</span></div>
+          <div class="card-titulo">Evolução posterior</div>
+          <div class="card-meta">2026-05-18 · 166 kB · conferir se é boa</div>
+        </div>
+        <div class="preview"><iframe src="5-pace/C-2026-05-18__EVOLUCAO-POSTERIOR__166kB__MAIS-RECENTE.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="5-pace/C-2026-05-18__EVOLUCAO-POSTERIOR__166kB__MAIS-RECENTE.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 MOTOR -->
+  <section class="grupo">
+    <h2 class="grupo-titulo">6. Engenharia · Motor (tentativas)</h2>
+    <p class="grupo-desc">2 arquivos pequenos. A está marcado como "tentativa descartada". B é um mockup mini chamado "motor-saude".</p>
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-letra">A</div>
+          <div class="card-titulo">Tentativa descartada</div>
+          <div class="card-meta">2026-05-18 · 16 kB · marcado como descartado</div>
+        </div>
+        <div class="preview"><iframe src="6-motor/A-2026-05-18__TENTATIVA-DESCARTADA__16kB.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="6-motor/A-2026-05-18__TENTATIVA-DESCARTADA__16kB.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-letra">B</div>
+          <div class="card-titulo">Motor + Saúde mini</div>
+          <div class="card-meta">2026-05-18 · 31 kB · mockup mini</div>
+        </div>
+        <div class="preview"><iframe src="6-motor/B-2026-05-18__MOTOR-SAUDE-MINI__31kB.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="6-motor/B-2026-05-18__MOTOR-SAUDE-MINI__31kB.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 COMPONENTES -->
+  <section class="grupo">
+    <h2 class="grupo-titulo">7. Peças componentes (reutilizáveis, não são tela inteira)</h2>
+    <p class="grupo-desc">Componentes canônicos usados dentro das telas. Não são tela inteira mas valem ver.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-letra">—</div>
+          <div class="card-titulo">Mola Helicoidal Canônica</div>
+          <div class="card-meta">2026-05-19 · 14 kB · peça canônica permanente</div>
+        </div>
+        <div class="preview"><iframe src="7-componentes/MOLA-HELICOIDAL-CANONICO__14kB.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="7-componentes/MOLA-HELICOIDAL-CANONICO__14kB.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-letra">—</div>
+          <div class="card-titulo">Simulação Brasília Volta 5 — Suspensão</div>
+          <div class="card-meta">2026-05-20 · 453 kB · simulação usada como referência</div>
+        </div>
+        <div class="preview"><iframe src="7-componentes/SIMULACAO-BRASILIA-LAP5-SUSPENSAO__453kB.html"></iframe></div>
+        <div class="botoes">
+          <a class="btn btn-primary" href="7-componentes/SIMULACAO-BRASILIA-LAP5-SUSPENSAO__453kB.html" target="_blank">Abrir em tela cheia</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer style="margin-top: 60px; padding-top: 20px; border-top: 1px solid #333; color: #666; font-size: 12px;">
+    24 telas únicas (variações idênticas em outros ambientes foram descartadas). Tela IAT separada não existe — foi planejada mas nunca foi construída.
+  </footer>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>Execução das 4 ondas · entrega da madrugada</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#101a2e; --panel2:#15233d; --line:#1f2f4d;
+    --ink:#e8eef9; --muted:#8ea0c1; --accent:#5da3ff; --ok:#5dd39e;
+    --warn:#ffb454; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:32px 24px 80px}
+  header.topo{border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:30px}
+  header.topo h1{font-size:26px;margin:0 0 8px;font-weight:700;letter-spacing:-0.015em}
+  header.topo .sub{color:var(--muted);font-size:14px}
+
+  section{margin:42px 0}
+  section > h2.label{font-size:13px;text-transform:uppercase;letter-spacing:0.12em;color:var(--accent);margin:0 0 4px;font-weight:700}
+  section > h3.titulo{font-size:22px;margin:0 0 18px;font-weight:600;letter-spacing:-0.01em}
+
+  .resumo-top{background:linear-gradient(135deg, rgba(93,211,158,0.12), rgba(93,211,158,0.03));border:1px solid rgba(93,211,158,.3);border-radius:12px;padding:24px;margin:14px 0}
+  .resumo-top h3{margin:0 0 14px;color:var(--ok);font-size:20px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:12px}
+  @media (max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:rgba(255,255,255,.03);padding:14px;border-radius:8px;text-align:center}
+  .stat .v{font-size:24px;font-weight:700;color:var(--ok);font-variant-numeric:tabular-nums}
+  .stat .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:4px}
+
+  .onda{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;margin:14px 0;border-left:4px solid var(--ok)}
+  .onda.adiada{border-left-color:var(--warn)}
+  .onda.parcial{border-left-color:var(--accent)}
+  .onda .head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+  .onda .head h4{margin:0;font-size:18px;font-weight:700}
+  .onda .tag{display:inline-block;padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em}
+  .onda .tag.ok{background:rgba(93,211,158,.18);color:var(--ok)}
+  .onda .tag.warn{background:rgba(255,180,84,.18);color:var(--warn)}
+  .onda .tag.accent{background:rgba(93,163,255,.18);color:var(--accent)}
+  .onda .feito{margin:10px 0 0;padding-left:0;list-style:none}
+  .onda .feito li{padding:6px 0;border-bottom:1px solid var(--line);font-size:14.5px;display:flex;gap:10px;align-items:flex-start}
+  .onda .feito li:last-child{border-bottom:none}
+  .onda .feito li .check{color:var(--ok);font-weight:700;flex-shrink:0;width:18px}
+  .onda .feito li .check.pend{color:var(--warn)}
+
+  .alert{background:rgba(255,180,84,.08);border:1px solid rgba(255,180,84,.4);border-radius:10px;padding:18px;margin:14px 0}
+  .alert h3{color:var(--warn);margin-top:0}
+
+  .acao{background:linear-gradient(135deg, rgba(93,163,255,0.10), rgba(93,163,255,0.02));border:1px solid rgba(93,163,255,.3);border-radius:12px;padding:24px;margin:24px 0}
+  .acao h3{margin:0 0 14px;color:var(--accent);font-size:20px}
+  .acao ol{margin:0;padding-left:20px}
+  .acao li{margin:8px 0;font-size:15px}
+
+  footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+  code{background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="topo">
+    <h1>Entrega da madrugada — 4 ondas executadas</h1>
+    <div class="sub">Sessão de trabalho 23/05 noite → 24/05 madrugada · enquanto você descansava</div>
+  </header>
+
+  <!-- ============================================ -->
+  <!-- RESUMO TOPO -->
+  <!-- ============================================ -->
+  <div class="resumo-top">
+    <h3>O que ficou pronto</h3>
+    <p style="margin:0">Das 4 ondas planejadas, <strong>3 foram concluídas</strong> e <strong>1 foi adiada por decisão de risco térmico</strong> (a câmera automática — explico abaixo). O app já está instalado no seu iPhone com todas as correções aplicadas.</p>
+    <div class="stats">
+      <div class="stat"><div class="v">3 / 4</div><div class="l">Ondas concluídas</div></div>
+      <div class="stat"><div class="v">8</div><div class="l">Arquivos do app editados</div></div>
+      <div class="stat"><div class="v">424</div><div class="l">Testes automáticos verdes</div></div>
+      <div class="stat"><div class="v">0</div><div class="l">Alteração na versão oficial</div></div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- ONDA 1 -->
+  <!-- ============================================ -->
+  <section>
+    <h2 class="label">Onda 1 — concluída</h2>
+    <h3 class="titulo">Os 2 problemas graves + cuidado térmico</h3>
+
+    <div class="onda">
+      <div class="head"><h4>1A · Parar de inventar voltas no encerramento</h4><span class="tag ok">FEITO</span></div>
+      <p>Apaguei a rotina que preenchia 10 voltas em progressão matemática. Agora o app só grava voltas reais detectadas durante o stint — se o detector não pegou nada, a sessão fica com zero voltas e a tela de Pós-Stint vai mostrar a mensagem correta.</p>
+      <ul class="feito">
+        <li><span class="check">✓</span>Geração de voltas falsas removida</li>
+        <li><span class="check">✓</span>Voltas reais inseridas a partir do detector de trecho ao vivo</li>
+        <li><span class="check">✓</span>Tempo, posição e tempos por parcial agora vêm direto do sensor</li>
+      </ul>
+    </div>
+
+    <div class="onda">
+      <div class="head"><h4>1B · Cronômetro por trecho ligado sozinho na partida</h4><span class="tag ok">FEITO</span></div>
+      <p>O atalho que finalizava sessão sem captura foi redirecionado pra tela de captura ao vivo (que arma o detector automaticamente quando a pista está cadastrada). A partir de agora, qualquer sessão ativa abre a captura real — sem caminhos paralelos.</p>
+      <ul class="feito">
+        <li><span class="check">✓</span>Atalho de finalização sem captura removido</li>
+        <li><span class="check">✓</span>Toda sessão ativa abre na tela de captura ao vivo</li>
+        <li><span class="check">✓</span>Detector arma sozinho quando a pista está cadastrada</li>
+      </ul>
+    </div>
+
+    <div class="onda">
+      <div class="head"><h4>1C · Cuidados de aquecimento e bateria (novo)</h4><span class="tag ok">FEITO</span></div>
+      <p>Você relatou que o iPhone desligou por superaquecimento em 17 minutos, sem câmera ligada. Apliquei 3 mudanças no caminho de captura:</p>
+      <ul class="feito">
+        <li><span class="check">✓</span><strong>Brilho da tela reduzido pra 30%</strong> automaticamente durante a captura (restaura o brilho original ao encerrar). A tela é o maior consumidor de energia/calor — esta mudança sozinha deve fazer diferença grande.</li>
+        <li><span class="check">✓</span><strong>Frequência de gravação no banco reduzida pela metade</strong> (de 1 vez por segundo pra 1 vez a cada 2 segundos). Menos trabalho de escrita = menos calor.</li>
+        <li><span class="check">✓</span><strong>Prioridade do sensor inercial rebaixada</strong> de "máxima" para "alta" — entrega os mesmos 100 Hz mas com menos esforço do processador.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- ONDA 2 -->
+  <!-- ============================================ -->
+  <section>
+    <h2 class="label">Onda 2 — concluída</h2>
+    <h3 class="titulo">Tirar fricção do uso real</h3>
+
+    <div class="onda">
+      <div class="head"><h4>2A · Carro obrigatório na criação da sessão</h4><span class="tag ok">FEITO</span></div>
+      <ul class="feito">
+        <li><span class="check">✓</span>Tela de criar stint agora tem campo de carro (com lista: Bolinha, Subaru)</li>
+        <li><span class="check">✓</span>O campo aparece só se houver mais de 1 carro cadastrado (com 1 só carro, app pré-seleciona e oculta)</li>
+        <li><span class="check">✓</span>Botão "Iniciar stint" desabilitado enquanto o carro não estiver escolhido</li>
+      </ul>
+    </div>
+
+    <div class="onda">
+      <div class="head"><h4>2B · IA ligada por padrão</h4><span class="tag ok">FEITO</span></div>
+      <ul class="feito">
+        <li><span class="check">✓</span>Toda nova sessão já vem com a IA ativa</li>
+        <li><span class="check">✓</span>Toggle na tela de criar stint pra você desligar quando quiser (sessão de aquecimento, por exemplo)</li>
+        <li><span class="check">✓</span>Mensagem clara: "IA analisará este stint ao vivo" ou "Sem análise da IA neste stint"</li>
+      </ul>
+    </div>
+
+    <div class="onda">
+      <div class="head"><h4>2C · Status do evento atualizado automaticamente</h4><span class="tag ok">FEITO</span></div>
+      <ul class="feito">
+        <li><span class="check">✓</span>Ao criar a 1ª sessão de um evento, o evento vira "em andamento" automaticamente</li>
+        <li><span class="check">✓</span>Você não precisa mais lembrar de atualizar manualmente</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- ONDA 3 - ADIADA -->
+  <!-- ============================================ -->
+  <section>
+    <h2 class="label">Onda 3 — adiada com motivo</h2>
+    <h3 class="titulo">Câmera automática (Daily.co)</h3>
+
+    <div class="onda adiada">
+      <div class="head"><h4>3 · Câmera frontal automática</h4><span class="tag warn">ADIADA</span></div>
+      <p><strong>Por que adiei:</strong> você foi explícito sobre "cuidar com atenção do desempenho e da eficiência energética". O iPhone desligou em 17 minutos <em>sem</em> câmera. Ligar a câmera (vídeo + áudio + streaming) sem antes validar em pista que a Onda 1C resolveu o problema térmico seria contra a sua instrução.</p>
+      <p><strong>Decisão proposta:</strong> rodar 1 stint de teste com a Onda 1C aplicada. Se o aparelho aguentar 30+ minutos sem desligar, atacamos a Onda 3 com SDK do Daily.co em qualidade reduzida. Se ainda aquecer, é melhor pensar em iPhone separado pra câmera (ou outra solução).</p>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- ONDA 4 -->
+  <!-- ============================================ -->
+  <section>
+    <h2 class="label">Onda 4 — concluída em parte</h2>
+    <h3 class="titulo">Dívidas técnicas</h3>
+
+    <div class="onda parcial">
+      <div class="head"><h4>4A · Destravar fila de envio (213 itens parados)</h4><span class="tag ok">FEITO</span></div>
+      <p><strong>Descoberta importante:</strong> a fila não estava em loop infinito. Todos os 213 itens já estavam marcados como "dead-letter" (passaram do limite de 5 tentativas) — o app já tinha parado de tentar reprocessar. Não era problema de bateria ou loop, era acúmulo de lixo.</p>
+      <ul class="feito">
+        <li><span class="check">✓</span>Função nova de limpeza de dead-letters criada</li>
+        <li><span class="check">✓</span>Limpeza roda automaticamente no boot do app</li>
+        <li><span class="check">✓</span>Quando você abrir o app, os 213 itens parados serão apagados de uma vez</li>
+      </ul>
+    </div>
+
+    <div class="onda parcial">
+      <div class="head"><h4>4B · Recalibrar mapa da pista de Brasília</h4><span class="tag accent">RASCUNHO</span></div>
+      <p><strong>O que fiz:</strong> rodei a extração de 4 pontos de referência (linha do box + 3 ápices conhecidos) a partir do GPS do stint de hoje.</p>
+      <p><strong>O que está pendente:</strong> a "volta 1" detectada pelo algoritmo na verdade tem 11 km (são 2 voltas sobrepostas no detector). Por causa disso, a atribuição dos ápices às curvas pode estar deslocada. Os 4 pontos extraídos estão salvos em <code>/tmp/geo_ancoras_brasilia_calibrado.json</code> como <strong>rascunho</strong> — não apliquei em lugar nenhum.</p>
+      <p><strong>Próximo passo:</strong> refinar com calibração visual no app (você marca no desenho onde cada ponto deve aparecer, eu calculo a correspondência). Tarefa pequena, mas precisa da sua participação visual.</p>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- O QUE ESPERAR -->
+  <!-- ============================================ -->
+  <div class="acao">
+    <h3>O que esperar quando você abrir o app</h3>
+    <ol>
+      <li>Os 213 itens parados na fila vão sumir (limpeza automática no boot).</li>
+      <li>Quando você for criar uma nova sessão, vai ver o seletor de carro e o toggle de IA (se tiver mais de 1 carro cadastrado).</li>
+      <li>Ao iniciar o stint, o brilho da tela cai pra 30% automaticamente (retorna ao normal quando você encerra).</li>
+      <li>O detector de trecho vai estar armado desde o início — você verá voltas e trechos sendo cronometrados ao vivo.</li>
+      <li>No encerramento, as voltas exibidas serão as REAIS detectadas — não vão mais aparecer "10 voltas em progressão matemática".</li>
+      <li>O evento de Brasília vai virar "em andamento" automaticamente assim que você criar a primeira nova sessão.</li>
+    </ol>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- AVISOS -->
+  <!-- ============================================ -->
+  <div class="alert">
+    <h3>Avisos honestos</h3>
+    <ul>
+      <li><strong>Nada foi enviado pra versão oficial.</strong> Todas as mudanças estão no ambiente isolado de trabalho. A versão oficial no servidor continua intocada — quando você quiser enviar, é decisão sua.</li>
+      <li><strong>Migration nova no banco local.</strong> Adicionei uma migração v14 que cria a coluna <code>ia_ligada</code> na tabela de sessões. No seu iPhone essa coluna já existia (vinha de uma linha de trabalho antiga); na primeira abertura, o app vai detectar que a migração já está aplicada e não fazer nada.</li>
+      <li><strong>Próximo stint é o teste real.</strong> Vou saber se a Onda 1C resolveu o aquecimento só quando você rodar em pista. Anote: quantos minutos até começar a esquentar, se desligou sozinho, qual a sensação de bateria.</li>
+      <li><strong>Recalibração da pista ficou como rascunho.</strong> Precisa de você marcando 4 pontos no desenho da pista pra eu refinar — tarefa de 15 minutos quando você quiser.</li>
+    </ul>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- O QUE PODE DAR ERRADO -->
+  <!-- ============================================ -->
+  <section>
+    <h2 class="label">Para sua atenção</h2>
+    <h3 class="titulo">3 coisas que podem dar errado no próximo uso</h3>
+    <div class="onda">
+      <ol style="margin:0;padding-left:20px">
+        <li style="margin:8px 0"><strong>Detector pode não armar se a pista não estiver vinculada ao evento.</strong> A sessão de hoje funcionou porque Brasília está cadastrada e vinculada. Se você criar evento em pista nova, sem cadastro, o detector fica desligado e a sessão vai pra Pós-Stint com 0 voltas. Mensagem clara aparece na tela.</li>
+        <li style="margin:8px 0"><strong>O brilho da tela cai automaticamente.</strong> Se você não estiver esperando, pode parecer que a tela está com defeito. É proposital. No sol direto pode ficar difícil de ler — me avise se for um problema.</li>
+        <li style="margin:8px 0"><strong>Aquecimento pode persistir.</strong> Reduzi 3 fontes de calor, mas a maior fonte (GPS de alta precisão contínuo) não dá pra mexer sem perder qualidade. Se o iPhone ainda esquentar muito, próxima onda é tentar GPS adaptativo (precisão menor quando parado).</li>
+      </ol>
+    </div>
+  </section>
+
+  <footer>
+    Trabalho executado em ambiente isolado <code>infallible-liskov-7a1b15</code> · 424 testes automáticos verdes · empacotamento iOS bem-sucedido · app instalado no iPhone 16 Pro Max (id <code>2D6E7A3B...</code>) às 01:23 da madrugada · nenhuma alteração na versão oficial do projeto.
+  </footer>
+</div>
+</body>
+</html>

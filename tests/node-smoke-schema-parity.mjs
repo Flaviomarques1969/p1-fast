@@ -62,37 +62,20 @@ const PG_TABLES   = pgTables(pg);
 const GRDB_TABLES = grdbTables(grdb);
 
 // ─── Tests ────────────────────────────────────────────────
-// Contagem atualizada conforme migrations vão entrando.
-// PG: 20 do 0001 + licoes (0004) + pendencias_template + evento_pendencias
-//     (0005) + telemetry_samples_enriched (0008) + video_streams (0015)
-//     + volta_video (0016) + pessoas (0018) + pessoa_papeis (0019)
-//     + engineering_findings (0020) + engineering_recommendations (0021) = 30.
-//     (0014 só estende sessoes; 0017 só ajusta policies RLS, sem criar tabela.)
-const PG_TABLE_COUNT_ESPERADO = 30;
-// MS-16.3 (Command Box Engenharia Camada 2): engineering_findings + engineering_recommendations
-// vivem só em Supabase (Camada 2 emite em memória + persiste via REST direto;
-// cliente lê via REST). GRDB não precisa replicar. Quando MS-16.5 entrar com
-// upload local-first opcional dessas tabelas, mover daqui pra cobertura GRDB.
-const PG_ONLY_TABLES = new Set(['engineering_findings', 'engineering_recommendations']);
-const GRDB_REQUIRED_COUNT = PG_TABLE_COUNT_ESPERADO - PG_ONLY_TABLES.size; // 28
-const GRDB_TABLE_COUNT_ESPERADO = GRDB_REQUIRED_COUNT + 2; // + sync_queue + sync_meta = 30
-
-t(`PG tem ${PG_TABLE_COUNT_ESPERADO} tabelas em public`, () => {
-  if (PG_TABLES.size !== PG_TABLE_COUNT_ESPERADO) throw new Error('size=' + PG_TABLES.size);
+t('PG tem 24 tabelas em public (20 do 0001 + licoes 0004 + pendencias_template/evento_pendencias 0005 + telemetry_samples_enriched 0008)', () => {
+  if (PG_TABLES.size !== 24) throw new Error('size=' + PG_TABLES.size);
 });
 
-t(`GRDB tem ${GRDB_TABLE_COUNT_ESPERADO} tabelas (${GRDB_REQUIRED_COUNT} PG espelhadas + sync_queue + sync_meta local-only)`, () => {
-  if (GRDB_TABLES.size !== GRDB_TABLE_COUNT_ESPERADO) throw new Error('size=' + GRDB_TABLES.size);
+t('GRDB tem 26 tabelas (24 PG + sync_queue + sync_meta local-only)', () => {
+  if (GRDB_TABLES.size !== 26) throw new Error('size=' + GRDB_TABLES.size);
 });
 
-t(`GRDB cobre TODAS as ${GRDB_REQUIRED_COUNT} tabelas do PG espelhadas (excl. ${[...PG_ONLY_TABLES].join('/')})`, () => {
-  const missing = [...PG_TABLES]
-    .filter(x => !PG_ONLY_TABLES.has(x))
-    .filter(x => !GRDB_TABLES.has(x));
+t('GRDB cobre TODAS as 24 tabelas do PG', () => {
+  const missing = [...PG_TABLES].filter(x => !GRDB_TABLES.has(x));
   if (missing.length) throw new Error('faltam no GRDB: ' + missing.join(', '));
 });
 
-t(`GRDB tem só sync_queue + sync_meta além das ${GRDB_REQUIRED_COUNT} do PG espelhadas`, () => {
+t('GRDB tem só sync_queue + sync_meta além das 24 do PG', () => {
   const extras = [...GRDB_TABLES].filter(x => !PG_TABLES.has(x)).sort();
   const expected = ['sync_meta', 'sync_queue'];
   if (extras.length !== 2 || extras[0] !== expected[0] || extras[1] !== expected[1]) {
@@ -170,12 +153,12 @@ t('ADR-014: PG telemetry_samples NÃO tem policy UPDATE/DELETE', () => {
 });
 
 // ─── RLS coverage ─────────────────────────────────────────
-t(`RLS habilitada em todas as ${PG_TABLE_COUNT_ESPERADO} tabelas do PG`, () => {
+t('RLS habilitada em todas as 24 tabelas do PG', () => {
   const rlsRe = /alter table public\.([a-z_]+)\s+enable row level security/g;
   const rlsTables = new Set();
   let m;
   while ((m = rlsRe.exec(pg)) !== null) rlsTables.add(m[1]);
-  if (rlsTables.size !== PG_TABLE_COUNT_ESPERADO) throw new Error('RLS em ' + rlsTables.size + ' tabelas');
+  if (rlsTables.size !== 24) throw new Error('RLS em ' + rlsTables.size + ' tabelas');
   const missing = [...PG_TABLES].filter(x => !rlsTables.has(x));
   if (missing.length) throw new Error('sem RLS: ' + missing.join(', '));
 });

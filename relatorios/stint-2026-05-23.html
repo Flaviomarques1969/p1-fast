@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>Stint 2026-05-23 — primeiro uso real do app no carro</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#101a2e; --panel2:#15233d; --line:#1f2f4d;
+    --ink:#e8eef9; --muted:#8ea0c1; --accent:#5da3ff; --ok:#5dd39e;
+    --warn:#ffb454; --bad:#ff6b6b; --neutral:#7b8ba8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1100px;margin:0 auto;padding:32px 24px 80px}
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:24px}
+  h1{font-size:24px;margin:0 0 6px;font-weight:600;letter-spacing:-0.01em}
+  h2{font-size:18px;margin:36px 0 12px;font-weight:600;letter-spacing:-0.01em;color:var(--accent)}
+  h3{font-size:15px;margin:18px 0 8px;font-weight:600;color:var(--ink)}
+  p{margin:0 0 12px}
+  .sub{color:var(--muted);font-size:13px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;margin:14px 0}
+  .panel.alt{background:var(--panel2)}
+  .grid{display:grid;gap:14px}
+  .grid-2{grid-template-columns:1fr 1fr}
+  .grid-3{grid-template-columns:1fr 1fr 1fr}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+  @media (max-width:760px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .kpi .v{font-size:22px;font-weight:600;letter-spacing:-0.02em;margin-top:2px}
+  .kpi .l{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em}
+  .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em}
+  .tag.ok{background:rgba(93,211,158,.15);color:var(--ok)}
+  .tag.warn{background:rgba(255,180,84,.18);color:var(--warn)}
+  .tag.bad{background:rgba(255,107,107,.18);color:var(--bad)}
+  .tag.neu{background:rgba(123,139,168,.18);color:var(--neutral)}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:14px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:0.06em}
+  tr:hover td{background:rgba(93,163,255,.04)}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .bar{height:8px;background:#1f2f4d;border-radius:99px;overflow:hidden}
+  .bar > div{height:100%;background:var(--accent)}
+  .traj-wrap{position:relative;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px}
+  svg{display:block;width:100%;height:auto}
+  ul{padding-left:22px;margin:0 0 12px}
+  li{margin:4px 0}
+  ul.compact li{margin:2px 0}
+  code{background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:13px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+  .legend span{display:flex;align-items:center;gap:6px}
+  .legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+  footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Relatório — primeiro uso do app no Stint</h1>
+    <div class="sub">Sessão <code>51ADFD3B…777F0</code> · sábado 2026-05-23 · 15:49:04 → 16:06:07 (17 min 03 s) · Autódromo Internacional de Brasília · piloto <strong>Bubi Marques</strong> · carro <strong>Bolinha (Celta 1.4 Chevrolet)</strong></div>
+    <div class="sub" style="margin-top:6px;color:#ffb454">Nota: o carro foi informado pelo gestor depois do stint. No banco gravado o campo de carro saiu em branco — pra ficar amarrado em definitivo na versão oficial do app, ainda precisa ser selecionado dentro da tela da sessão no iPhone.</div>
+  </header>
+
+  <p>Você ligou o app no carro pela primeira vez hoje. Eu puxei o banco local do iPhone (2,4 GB) e li tudo. O que segue é o que <strong>realmente</strong> ficou gravado no aparelho. Separei em três blocos:
+  <strong>(1) o que funcionou e que vale comemorar</strong>,
+  <strong>(2) o que ficou cru ou desligado e prejudicou o stint</strong>,
+  <strong>(3) o que precisa ser corrigido antes do próximo dia de pista</strong>.</p>
+
+  <!-- ===================== INDICADORES DE TOPO ===================== -->
+  <h2>Indicadores de captura</h2>
+  <div class="grid grid-4">
+    <div class="kpi"><div class="l">Duração</div><div class="v">17 min 03 s</div></div>
+    <div class="kpi"><div class="l">Distância percorrida</div><div class="v">28,0 km</div></div>
+    <div class="kpi"><div class="l">Velocidade máxima (GPS)</div><div class="v">159,6 km/h</div></div>
+    <div class="kpi"><div class="l">Velocidade média (em ritmo)</div><div class="v">115 km/h</div></div>
+    <div class="kpi"><div class="l">Frequência do sensor inercial</div><div class="v">101,5 Hz <span class="tag ok">no alvo</span></div></div>
+    <div class="kpi"><div class="l">Frequência do GPS</div><div class="v">1,0 Hz <span class="tag ok">no alvo</span></div></div>
+    <div class="kpi"><div class="l">Amostras gravadas</div><div class="v">102.483</div></div>
+    <div class="kpi"><div class="l">Posição calculada (Kalman)</div><div class="v">102.376</div></div>
+  </div>
+
+  <!-- ===================== O QUE FUNCIONOU ===================== -->
+  <h2>1. O que funcionou — comemora isso</h2>
+  <div class="panel">
+    <ul>
+      <li><strong>O app rodou os 17 minutos inteiros sem cair.</strong> Sessão começou às 15:49:04 e fechou às 16:06:07 com status <code>finalizada</code>. Em nenhum momento o iPhone tirou o app do ar.</li>
+      <li><strong>Sensor inercial cravou 101,5 Hz por todos os 17 minutos.</strong> O alvo é 100 Hz. Em campo, isso é o número que dá a precisão da telemetria por baixo do GPS. Aguentou firme do início ao fim, sem queda.</li>
+      <li><strong>GPS pegou os 1.013 pontos em 1.018 segundos.</strong> Praticamente 1 ponto por segundo, que é o ritmo certo do iPhone em modo de alta precisão. Sem buracos.</li>
+      <li><strong>Filtro Kalman estabilizou em 1 minuto.</strong> Saiu do box com a posição "perdida" (margem de erro estourada), e em ~60 segundos travou em margem média de 5 a 10 metros. Esse é o número que diz se o mapa do piloto vai ficar firme — está OK.</li>
+      <li><strong>A captura confirma Brasília.</strong> Coordenadas batem com o autódromo (-15,7762, -47,8994). Altitude variando 40 m, bounding box 930 m × 810 m. É o autódromo certo.</li>
+      <li><strong>Velocidade máxima 159,6 km/h.</strong> Coerente com o Celta Bubi nessa pista e com piloto em ritmo de aquecimento (objetivo declarado da sessão).</li>
+      <li><strong>100% dos dados crus foram enviados pra nuvem.</strong> As 102.483 linhas do sensor estão marcadas como <code>uploaded</code>. Não tem dado parado.</li>
+    </ul>
+  </div>
+
+  <!-- ===================== O QUE FALHOU ===================== -->
+  <h2>2. O que ficou cru ou desligado — isto comprometeu o stint</h2>
+
+  <div class="panel">
+    <h3>2.1 A sessão saiu sem carro associado <span class="tag warn">corrigido fora do banco</span></h3>
+    <p>Na gravação do app, o campo de carro saiu em branco. Você confirmou depois que o carro do stint foi o <strong>Bolinha (Celta 1.4 Chevrolet · Turismo)</strong>, e isso ficou registrado neste relatório e na minha memória do projeto. <strong>Mas a correção ainda não foi pra dentro do app:</strong> pra ficar amarrada em definitivo, você precisa abrir a sessão de hoje no iPhone e selecionar o Bolinha no campo correspondente. Só assim ela sobe pra versão oficial (no servidor) com o carro certo.</p>
+    <p><strong>Consequência prática que continua valendo:</strong> como na hora do stint o campo estava vazio, a IA (se estivesse ligada) não teria como cruzar a captura com a curva oficial do motor (a do dinamômetro do Celta, gravada em 18/05). Pros próximos stints, esse campo precisa ser preenchido <strong>antes</strong> de "Iniciar" — não depois.</p>
+  </div>
+
+  <div class="panel">
+    <h3>2.2 A IA estava desligada</h3>
+    <p>Campo <code>ia_ligada</code> da sessão = <code>0</code>. Mesmo se o carro estivesse vinculado, a IA não rodaria — o gatilho está em desligado por padrão.</p>
+    <p><strong>Consequência:</strong> nada de Lambda Advisor, nada de PAce Torque Advisor, nada de Coach contextual por curva. O app gravou os dados, mas não os <em>interpretou</em> ao vivo.</p>
+  </div>
+
+  <div class="panel">
+    <h3>2.3 Detector de trecho não rodou — as 10 voltas são sintéticas</h3>
+    <p>A tabela <code>segment_executions</code> está com <strong>zero linhas</strong>. O detector que cruza GPS contra os 12 segmentos cadastrados de Brasília (8 curvas + 4 retas, 5.476 m de extensão) <strong>nunca foi armado</strong>.</p>
+    <p>As 10 voltas que aparecem na tabela <code>voltas</code> têm 3 sinais de que foram criadas artificialmente no fim, não detectadas ao vivo:</p>
+    <ul class="compact">
+      <li>Todas as 10 voltas têm <code>created_at = 16:06:07</code> — o mesmo segundo, no instante do encerramento da sessão.</li>
+      <li>Todas têm <code>inicio_at = NULL</code> — nenhuma traz o horário real de início de volta.</li>
+      <li>Os tempos seguem padrão matemático <strong>−0,559 s</strong> entre voltas consecutivas (com saltos artificiais em V1→V2 e V6→V7). Pilotagem real não produz progressão geométrica perfeita.</li>
+    </ul>
+
+    <table>
+      <thead>
+        <tr><th>Volta</th><th class="num">Tempo</th><th class="num">Diferença</th><th>Observação</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>V1</td><td class="num">1:46,242</td><td class="num">–</td><td>baseline (a pior, por construção)</td></tr>
+        <tr><td>V2</td><td class="num">1:44,183</td><td class="num">−2,059</td><td>quebra do padrão</td></tr>
+        <tr><td>V3</td><td class="num">1:43,624</td><td class="num">−0,559</td><td></td></tr>
+        <tr><td>V4</td><td class="num">1:43,066</td><td class="num">−0,558</td><td></td></tr>
+        <tr><td>V5</td><td class="num">1:42,507</td><td class="num">−0,559</td><td></td></tr>
+        <tr><td>V6</td><td class="num">1:41,948</td><td class="num">−0,559</td><td>"melhor volta" (por construção)</td></tr>
+        <tr><td>V7</td><td class="num">1:45,528</td><td class="num">+3,580</td><td>quebra do padrão</td></tr>
+        <tr><td>V8</td><td class="num">1:44,969</td><td class="num">−0,559</td><td></td></tr>
+        <tr><td>V9</td><td class="num">1:44,410</td><td class="num">−0,559</td><td></td></tr>
+        <tr><td>V10</td><td class="num">1:43,851</td><td class="num">−0,559</td><td></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Prova adicional pelo GPS:</strong> distância total percorrida foi <strong>28 km em 17 minutos</strong>. Dividido por 10 "voltas" dá <strong>2,8 km por volta</strong>. A pista de Brasília tem <strong>5,476 km</strong>. Em outras palavras: o que o app chama de "10 voltas" corresponde, na prática, a aproximadamente 5 voltas reais — você fez algo entre 5 e 6 voltas inteiras no autódromo, mas a contagem é fictícia.</p>
+
+    <p><strong>Consequência:</strong> não dá pra comparar V6 com V1, nem dizer "evoluiu 4 segundos do início ao fim", porque esses números <em>foram inventados pelo encerramento</em>, não medidos.</p>
+  </div>
+
+  <div class="panel">
+    <h3>2.4 Câmera (Daily.co) não foi ligada</h3>
+    <p>Tabela <code>video_streams</code> com zero linhas pra essa sessão. Sem vídeo onboard pra cruzar com a telemetria depois.</p>
+  </div>
+
+  <div class="panel">
+    <h3>2.5 Sem pneu, sem combustível, sem configuração, sem lição</h3>
+    <p>Todos os campos opcionais da sessão (pneu_id, combustivel_id, qt_combustivel_litros, configuracao_id, licao_id) estão vazios. Significa que, na hora de comparar este stint com o próximo, não vai dar pra cruzar com pneu/combustível usado — vira ruído.</p>
+  </div>
+
+  <!-- ===================== O QUE PRECISA SER CORRIGIDO ===================== -->
+  <h2>3. O que precisa ser corrigido antes do próximo dia de pista</h2>
+
+  <div class="grid grid-2">
+    <div class="panel alt">
+      <h3>Operacional (você, no app, antes da sessão)</h3>
+      <ul>
+        <li><strong>Vincular o carro à sessão antes de "Iniciar".</strong> Tela de novo stint precisa ter campo obrigatório de carro. Hoje passou em branco.</li>
+        <li><strong>Ligar a IA na sessão</strong> (campo <code>ia_ligada</code>). Se você quiser que o app analise ao vivo, esse toggle tem que estar em sim antes de sair pra pista.</li>
+        <li><strong>Selecionar pneu e combustível</strong> (mesmo que aproximado) — sem isso, comparação entre stints fica sem âncora.</li>
+        <li><strong>Confirmar Brasília como pista do evento</strong>. Já está marcada no evento <code>821940E7…</code>, mas o evento ainda está como "planejado" — não foi virado pra "em andamento".</li>
+      </ul>
+    </div>
+
+    <div class="panel alt">
+      <h3>Técnico (eu / Cloud Code)</h3>
+      <ul>
+        <li><strong>Detector de trecho precisa rodar ao vivo.</strong> Brasília tem os 12 segmentos cadastrados, o código existe (memória de 18/05 confirma), mas <em>não está sendo armado</em> quando a sessão começa. Tem que ligar o detector na inicialização do stint.</li>
+        <li><strong>Voltas reais só devem ser inseridas quando o detector cruzar a linha de chegada virtual.</strong> Hoje o app preenche as 10 voltas planejadas com tempos sintéticos no encerramento — isso engana quem vê o relatório depois. Tem que parar.</li>
+        <li><strong>Subir as 102.376 linhas de posição calculada (Kalman) pra nuvem.</strong> Estão 100% locais, 0% sincronizadas. Fila <code>sync_queue</code> tem 213 itens pendentes.</li>
+        <li><strong>Ligar a câmera frontal do iPhone (Daily.co) no início da sessão.</strong> Hoje precisa entrar manualmente.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===================== TEMPOS POR TRECHO (RECONSTRUÇÃO) ===================== -->
+  <h2>Tempos por trecho — reconstrução pelo GPS bruto</h2>
+  <div class="panel">
+    <p><strong>Como o detector de trecho do app não foi armado, eu reconstruí os tempos por trás a partir dos 1.013 pontos de GPS que ficaram gravados.</strong> Método: cada vez que o piloto freia até o ponto mais lento de uma curva (o ápice), eu marco esse instante; o tempo "no trecho da Curva X" é o tempo entre o ápice anterior e o ápice da Curva X. Assim consegui isolar 8 trechos por volta, na ordem canônica da pista.</p>
+    <p><strong>Voltas reais reconstruídas: 4 voltas completas</strong> de 5.413 a 5.680 metros cada (bate com Brasília que tem 5.476 m), com tempo entre 2:38 e 2:46. Confirma que as "10 voltas" exibidas no app são sintéticas — o piloto fez, na prática, <strong>4 voltas inteiras</strong> em 17 minutos (mais o aquecimento e o desaquecimento).</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th class="num">#</th>
+          <th>Trecho</th>
+          <th class="num">Melhor passagem</th>
+          <th class="num">Média</th>
+          <th class="num">Pior</th>
+          <th class="num">Delta (média − melhor)</th>
+          <th class="num">Velocidade mínima média</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background:rgba(255,107,107,0.10)">
+          <td class="num">1</td><td><strong>Curva da Reta Oposta</strong> <span class="tag bad">maior delta</span></td>
+          <td class="num">15,00 s</td><td class="num">22,25 s</td><td class="num">26,01 s</td>
+          <td class="num"><strong>+7,25 s</strong></td><td class="num">100,6 km/h</td>
+        </tr>
+        <tr style="background:rgba(255,180,84,0.06)">
+          <td class="num">2</td><td>Curva "S"</td>
+          <td class="num">12,99 s</td><td class="num">19,00 s</td><td class="num">22,00 s</td>
+          <td class="num"><strong>+6,01 s</strong></td><td class="num">86,2 km/h</td>
+        </tr>
+        <tr style="background:rgba(255,180,84,0.06)">
+          <td class="num">3</td><td>Curva 01</td>
+          <td class="num">6,00 s</td><td class="num">10,25 s</td><td class="num">20,00 s</td>
+          <td class="num"><strong>+4,25 s</strong></td><td class="num">113,4 km/h</td>
+        </tr>
+        <tr>
+          <td class="num">4</td><td>Curva 2</td>
+          <td class="num">21,00 s</td><td class="num">22,75 s</td><td class="num">24,01 s</td>
+          <td class="num">+1,76 s</td><td class="num">98,9 km/h</td>
+        </tr>
+        <tr>
+          <td class="num">5</td><td>Curva da Junção</td>
+          <td class="num">25,00 s</td><td class="num">26,25 s</td><td class="num">27,01 s</td>
+          <td class="num">+1,25 s</td><td class="num">96,1 km/h</td>
+        </tr>
+        <tr>
+          <td class="num">6</td><td>Curva da Bruxa</td>
+          <td class="num">16,00 s</td><td class="num">16,75 s</td><td class="num">17,00 s</td>
+          <td class="num">+0,75 s</td><td class="num">90,1 km/h</td>
+        </tr>
+        <tr>
+          <td class="num">7</td><td>Curva do Placar</td>
+          <td class="num">20,00 s</td><td class="num">20,50 s</td><td class="num">22,00 s</td>
+          <td class="num">+0,50 s</td><td class="num">93,3 km/h</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Resposta direta</h3>
+    <p><strong>O trecho com maior diferença entre a melhor passagem e a média é a <span style="color:#ff6b6b">Curva da Reta Oposta</span>, com delta de +7,25 s</strong>. Na melhor volta o piloto fez esse trecho em 15 s; na média das 4 voltas levou 22,25 s. Isso significa que <strong>a Curva da Reta Oposta é onde tem mais tempo "na mesa" pra ganhar</strong> — se ele conseguir repetir a melhor passagem em todas as voltas, ganha cerca de 7 s por volta só nesse pedaço.</p>
+
+    <p>Em segundo e terceiro lugar vêm a <strong>Curva "S"</strong> (+6,01 s) e a <strong>Curva 01</strong> (+4,25 s). As outras 4 curvas tiveram delta abaixo de 2 s — são pontos onde o piloto está consistente.</p>
+
+    <h3>Margem de incerteza — leia isto antes de tirar conclusão</h3>
+    <ul>
+      <li><strong>O GPS gravou só 1 ponto por segundo.</strong> Isso significa que cada tempo de trecho tem margem natural de ±1 s. Pra trechos com delta abaixo de 2 s, essa margem pode estar mascarando o ranking.</li>
+      <li><strong>Em 3 das 4 voltas só consegui detectar 7 dos 8 ápices.</strong> Em algumas curvas o piloto freou pouco e a velocidade não caiu o suficiente pra ser identificada como ápice por trás. Isso pode estar alinhando "Curva K" da volta A com "Curva K+1" da volta B em alguns trechos, inflando o delta aparente.</li>
+      <li><strong>São só 4 voltas reais.</strong> 4 amostras é pouco pra calcular média confiável — qualquer volta atípica puxa a média forte.</li>
+      <li><strong>Os tempos parecem inteiros (15,00 / 22,00 / 26,01) porque o GPS é discreto a 1 ponto/segundo.</strong> Os números reais são frações desses intervalos.</li>
+    </ul>
+
+    <p><strong>O que isso significa na prática:</strong> o ranking dos 3 trechos com maior delta (Curva da Reta Oposta, Curva "S", Curva 01) é provavelmente correto na ordem geral, mas o número absoluto do delta (+7,25 s) tem margem real de ±2 s. Pra trechos menores que 2 s de delta, eu não tiraria conclusão.</p>
+
+    <h3>Como deixar isso preciso no próximo stint</h3>
+    <p>Com o detector de trecho do app armado (que hoje ficou desligado), você teria <strong>cada trecho cronometrado com precisão de centésimo de segundo</strong>, sem depender de reconstrução por trás. É exatamente isso que o módulo "Visão Engenheiro" foi feito pra entregar — mas precisa do carro vinculado e da IA ligada na partida da sessão.</p>
+  </div>
+
+  <!-- ===================== QUALIDADE TÉCNICA EM DETALHE ===================== -->
+  <h2>Qualidade técnica em detalhe (por minuto)</h2>
+  <div class="panel">
+    <table>
+      <thead>
+        <tr>
+          <th>Minuto</th>
+          <th class="num">Velocidade média</th>
+          <th class="num">Velocidade máxima</th>
+          <th class="num">Margem GPS (Kalman)</th>
+          <th>Fase do stint</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>0</td><td class="num">3 km/h</td><td class="num">19 km/h</td><td class="num">336 m médio (estouro)</td><td>Saída do box, GPS fixando</td></tr>
+        <tr><td>1</td><td class="num">44 km/h</td><td class="num">118 km/h</td><td class="num">5,8 m médio <span class="tag ok">OK</span></td><td>Aquecimento</td></tr>
+        <tr><td>2</td><td class="num">120 km/h</td><td class="num">146 km/h</td><td class="num">5,2 m médio <span class="tag ok">OK</span></td><td>Em ritmo</td></tr>
+        <tr><td>3</td><td class="num">111 km/h</td><td class="num">137 km/h</td><td class="num">5,4 m médio <span class="tag ok">OK</span></td><td>Em ritmo</td></tr>
+        <tr><td>4</td><td class="num">126 km/h</td><td class="num">160 km/h</td><td class="num">7,1 m médio <span class="tag ok">OK</span></td><td>Em ritmo · pico de velocidade</td></tr>
+        <tr><td>5</td><td class="num">123 km/h</td><td class="num">153 km/h</td><td class="num">7,3 m médio <span class="tag ok">OK</span></td><td>Em ritmo</td></tr>
+        <tr><td>6</td><td class="num">114 km/h</td><td class="num">144 km/h</td><td class="num">6,5 m médio <span class="tag ok">OK</span></td><td>Em ritmo</td></tr>
+        <tr><td>7</td><td class="num">129 km/h</td><td class="num">159 km/h</td><td class="num">7,3 m médio <span class="tag ok">OK</span></td><td>Em ritmo</td></tr>
+        <tr><td>8</td><td class="num">119 km/h</td><td class="num">154 km/h</td><td class="num">5,7 m médio <span class="tag ok">OK</span></td><td>Em ritmo</td></tr>
+        <tr><td>9</td><td class="num">112 km/h</td><td class="num">158 km/h</td><td class="num">13,3 m médio <span class="tag warn">degradou</span></td><td>Em ritmo</td></tr>
+        <tr><td>10</td><td class="num">130 km/h</td><td class="num">158 km/h</td><td class="num">18,3 m médio <span class="tag warn">degradou</span></td><td>Em ritmo · pico repetido</td></tr>
+        <tr><td>11</td><td class="num">115 km/h</td><td class="num">148 km/h</td><td class="num">18,1 m médio <span class="tag warn">degradou</span></td><td>Em ritmo</td></tr>
+        <tr><td>12</td><td class="num">126 km/h</td><td class="num">160 km/h</td><td class="num">18,2 m médio <span class="tag warn">degradou</span></td><td>Em ritmo · pico</td></tr>
+        <tr><td>13</td><td class="num">113 km/h</td><td class="num">144 km/h</td><td class="num">17,0 m médio <span class="tag warn">degradou</span></td><td>Em ritmo</td></tr>
+        <tr><td>14</td><td class="num">95 km/h</td><td class="num">128 km/h</td><td class="num">6,4 m médio <span class="tag ok">recuperou</span></td><td>Reduzindo ritmo</td></tr>
+        <tr><td>15</td><td class="num">21 km/h</td><td class="num">47 km/h</td><td class="num">4,9 m médio <span class="tag ok">OK</span></td><td>Volta ao box</td></tr>
+        <tr><td>16</td><td class="num">0 km/h</td><td class="num">1 km/h</td><td class="num">6.872 m médio (estouro)</td><td>Parado no box, GPS perdeu fixe</td></tr>
+      </tbody>
+    </table>
+    <p class="sub">Observação técnica: nos minutos 9 a 13 a margem do GPS subiu pra 13–18 m (do patamar normal de 5–7 m). Isso é típico de céu parcialmente obstruído ou multipath em arquibancada/construção — não é problema do app, é característica do local. Voltou ao normal no minuto 14.</p>
+  </div>
+
+  <!-- ===================== TRAJETÓRIA NO MAPA ===================== -->
+  <h2>Trajetória capturada</h2>
+  <div class="traj-wrap">
+    <svg id="traj" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet" aria-label="Trajetória capturada"></svg>
+    <div class="legend">
+      <span><i style="background:#5dd39e"></i>parado / box (&lt; 30 km/h)</span>
+      <span><i style="background:#5da3ff"></i>ritmo médio (30–110 km/h)</span>
+      <span><i style="background:#ffb454"></i>ritmo alto (110–145 km/h)</span>
+      <span><i style="background:#ff6b6b"></i>pico (&gt; 145 km/h)</span>
+    </div>
+    <p class="sub" style="margin-top:8px">1.010 pontos GPS reais, coloridos pela velocidade. O ponto de partida e chegada (box) é o aglomerado verde no canto. As voltas vão pelo perímetro do desenho.</p>
+  </div>
+
+  <!-- ===================== CONTEXTO ===================== -->
+  <h2>Contexto da sessão (do que estava no app)</h2>
+  <div class="grid grid-3">
+    <div class="kpi"><div class="l">Pista</div><div class="v" style="font-size:18px">Autódromo Brasília</div><div class="sub">5,476 km · 8 curvas · 12 segmentos cadastrados</div></div>
+    <div class="kpi"><div class="l">Piloto</div><div class="v" style="font-size:18px">Bubi Marques</div><div class="sub">vinculado corretamente</div></div>
+    <div class="kpi"><div class="l">Evento</div><div class="v" style="font-size:18px">821940E7…</div><div class="sub">status: <strong>planejado</strong> (não virou "em andamento")</div></div>
+    <div class="kpi"><div class="l">Carro</div><div class="v" style="font-size:18px">Bolinha (Celta 1.4)</div><div class="sub" style="color:#ffb454">informado depois pelo gestor · ainda não amarrado no app</div></div>
+    <div class="kpi"><div class="l">IA</div><div class="v" style="font-size:18px;color:var(--bad)">desligada</div><div class="sub">campo <code>ia_ligada = 0</code></div></div>
+    <div class="kpi"><div class="l">Objetivo da sessão</div><div class="v" style="font-size:18px">Aquecimento</div><div class="sub">10 voltas planejadas</div></div>
+  </div>
+
+  <!-- ===================== RESUMO ===================== -->
+  <h2>Resumo em uma linha</h2>
+  <div class="panel">
+    <p><strong>O app aguentou os 17 minutos no carro sem cair e gravou telemetria limpa na frequência certa</strong>
+    — sensor inercial a 101,5 Hz e GPS a 1 Hz, com posição calculada estabilizando em 1 minuto. <strong>Mas a sessão saiu sem carro vinculado (corrigido depois pelo gestor: Bolinha / Celta 1.4), com a IA desligada, sem detector de trecho armado e sem câmera ligada</strong>, então o que ficou gravado é uma corrida de dado cru — não tem interpretação por curva, não tem comparação com a curva do motor, não tem vídeo. <strong>As "10 voltas" exibidas no app são sintéticas: foram materializadas no encerramento com tempos em progressão matemática.</strong> Pra próxima ida à pista, antes de "Iniciar" tem que: (1) selecionar carro, (2) ligar IA, (3) confirmar detector armado, (4) ligar câmera, (5) virar o status do evento pra "em andamento".</p>
+  </div>
+
+  <footer>
+    Banco analisado: <code>Documents/p1fast.sqlite</code> · 2,4 GB · esquema v33 (última migração <code>v33_setup_tecnico</code>) · puxado do iPhone 16 Pro Max (id <code>2D6E7A3B…</code>) via <code>xcrun devicectl device copy from</code>.<br>
+    Relatório gerado em <code>relatorios/stint-2026-05-23.html</code> · 2026-05-23 19:11.
+  </footer>
+</div>
+
+<script>
+(function(){
+  var pts = [[-15.773213, -47.900372, 0.2], [-15.77315, -47.900457, 0.4], [-15.77317, -47.900444, 0.4], [-15.773176, -47.900428, 0.1], [-15.773181, -47.900405, 0.4], [-15.773179, -47.900398, 0.1], [-15.773181, -47.900403, 0.3], [-15.773182, -47.900409, 0.2], [-15.773185, -47.900408, 0.1], [-15.77319, -47.900412, 0.1], [-15.773187, -47.900411, 0.0], [-15.773187, -47.900413, 0.2], [-15.773188, -47.900413, 0.1], [-15.773188, -47.900413, 0.1], [-15.773189, -47.900414, 0.1], [-15.773189, -47.900414, 0.0], [-15.773189, -47.900414, 0.0], [-15.77319, -47.900416, 0.1], [-15.773189, -47.90042, 0.1], [-15.773188, -47.900422, 0.1], [-15.773189, -47.900419, 0.1], [-15.773189, -47.900419, 0.0], [-15.773191, -47.900415, 0.4], [-15.773191, -47.900414, 0.3], [-15.773192, -47.900417, 0.2], [-15.773193, -47.900416, 0.0], [-15.773193, -47.900416, 0.0], [-15.773194, -47.900418, 0.1], [-15.773192, -47.900416, 0.3], [-15.773192, -47.900416, 0.0], [-15.77319, -47.900416, 0.8], [-15.77319, -47.900416, 0.7], [-15.773192, -47.900419, 0.1], [-15.773187, -47.900427, 0.2], [-15.773181, -47.900435, 0.0], [-15.77318, -47.900439, 0.0], [-15.773177, -47.900441, 0.7], [-15.773168, -47.900442, 2.4], [-15.773162, -47.900444, 2.9], [-15.773154, -47.900447, 3.1], [-15.773146, -47.900448, 3.5], [-15.773141, -47.90045, 2.8], [-15.773133, -47.900456, 3.8], [-15.773126, -47.900465, 4.3], [-15.773121, -47.900471, 3.7], [-15.773119, -47.900468, 1.8], [-15.773121, -47.900466, 1.2], [-15.773123, -47.900464, 0.3], [-15.773123, -47.900457, 2.0], [-15.773119, -47.900432, 6.0], [-15.773099, -47.900395, 11.3], [-15.773075, -47.90036, 13.6], [-15.773049, -47.900327, 13.8], [-15.773024, -47.900293, 15.1], [-15.772999, -47.900247, 17.4], [-15.772975, -47.900202, 18.2], [-15.772957, -47.900157, 18.6], [-15.77294, -47.900111, 18.7], [-15.77292, -47.900066, 18.7], [-15.7729, -47.900022, 18.4], [-15.772883, -47.899982, 18.3], [-15.772866, -47.899935, 18.3], [-15.772847, -47.899893, 17.7], [-15.772833, -47.899851, 17.5], [-15.772819, -47.899809, 17.3], [-15.772804, -47.899768, 17.0], [-15.772789, -47.899727, 17.0], [-15.772775, -47.899687, 17.0], [-15.772761, -47.899646, 17.1], [-15.772746, -47.899604, 17.3], [-15.772732, -47.899559, 17.5], [-15.772716, -47.899514, 18.0], [-15.772703, -47.899467, 18.4], [-15.772684, -47.899422, 18.7], [-15.772668, -47.899376, 18.8], [-15.772653, -47.899329, 18.8], [-15.772637, -47.899283, 18.8], [-15.77262, -47.899237, 18.7], [-15.772606, -47.899191, 18.8], [-15.772596, -47.899137, 19.1], [-15.772583, -47.89909, 19.5], [-15.772571, -47.899037, 20.1], [-15.772554, -47.898982, 20.9], [-15.772533, -47.898932, 21.4], [-15.77251, -47.898881, 22.0], [-15.772483, -47.898826, 22.5], [-15.772455, -47.898772, 23.3], [-15.772426, -47.898714, 24.0], [-15.7724, -47.898653, 24.6], [-15.772378, -47.898591, 25.1], [-15.77236, -47.898529, 25.2], [-15.772338, -47.898464, 25.3], [-15.772322, -47.898398, 25.4], [-15.772303, -47.898333, 25.9], [-15.772292, -47.898254, 28.2], [-15.772298, -47.898165, 31.8], [-15.772319, -47.898066, 35.6], [-15.772356, -47.897972, 36.7], [-15.772402, -47.897869, 39.8], [-15.772452, -47.897768, 40.7], [-15.772518, -47.897635, 50.8], [-15.772597, -47.897494, 57.3], [-15.772682, -47.897329, 66.9], [-15.772777, -47.897132, 76.5], [-15.772899, -47.896921, 85.8], [-15.773041, -47.896718, 90.7], [-15.773204, -47.896518, 96.2], [-15.773415, -47.89634, 101.5], [-15.77367, -47.896217, 105.3], [-15.773966, -47.896162, 110.9], [-15.774271, -47.896113, 115.9], [-15.774577, -47.896062, 117.9], [-15.774864, -47.896029, 113.7], [-15.77514, -47.896004, 110.3], [-15.775405, -47.895977, 106.9], [-15.775656, -47.895952, 102.6], [-15.775907, -47.895938, 100.7], [-15.776175, -47.895905, 105.5], [-15.776459, -47.89587, 111.5], [-15.776773, -47.895831, 118.0], [-15.777087, -47.895796, 122.4], [-15.777402, -47.895767, 124.4], [-15.777725, -47.895742, 126.9], [-15.778057, -47.895716, 130.2], [-15.778396, -47.895691, 133.2], [-15.778724, -47.895665, 131.4], [-15.778999, -47.895642, 118.7], [-15.779223, -47.895626, 101.8], [-15.779436, -47.895652, 91.8], [-15.779639, -47.895784, 90.7], [-15.779784, -47.895982, 90.1], [-15.779922, -47.896167, 89.7], [-15.779863, -47.896535, 98.3], [-15.779796, -47.896802, 98.3], [-15.779668, -47.897088, 103.5], [-15.779509, -47.897352, 109.3], [-15.779315, -47.897623, 119.4], [-15.779139, -47.897903, 122.5], [-15.778993, -47.8982, 122.5], [-15.778843, -47.898498, 124.3], [-15.778713, -47.89882, 131.6], [-15.778648, -47.899171, 134.7], [-15.778627, -47.899531, 134.7], [-15.77867, -47.899899, 136.6], [-15.778744, -47.900264, 140.2], [-15.778853, -47.900618, 142.9], [-15.77894, -47.900981, 142.9], [-15.779005, -47.901335, 142.9], [-15.77901, -47.901581, 114.6], [-15.778949, -47.901856, 114.6], [-15.778807, -47.90205, 101.9], [-15.778614, -47.902202, 98.0], [-15.778356, -47.902306, 94.9], [-15.77802, -47.902259, 105.9], [-15.777783, -47.902149, 99.7], [-15.777558, -47.901989, 99.7], [-15.777407, -47.90174, 94.4], [-15.777381, -47.901394, 105.0], [-15.777458, -47.901042, 105.0], [-15.77755, -47.900711, 115.7], [-15.777626, -47.900386, 119.7], [-15.777656, -47.900048, 122.8], [-15.77764, -47.899719, 122.8], [-15.777595, -47.899375, 125.3], [-15.777512, -47.899019, 133.6], [-15.777384, -47.898681, 136.7], [-15.777216, -47.898366, 136.7], [-15.777005, -47.898063, 138.8], [-15.77677, -47.897769, 142.2], [-15.776528, -47.897484, 145.6], [-15.776265, -47.897203, 145.6], [-15.77597, -47.896978, 145.6], [-15.775651, -47.896823, 140.1], [-15.775311, -47.896726, 140.1], [-15.774987, -47.896722, 135.3], [-15.774682, -47.896774, 129.4], [-15.774426, -47.896834, 114.2], [-15.774158, -47.896869, 114.2], [-15.773951, -47.896867, 99.3], [-15.773746, -47.896899, 93.7], [-15.773594, -47.897049, 86.7], [-15.773513, -47.897289, 87.1], [-15.773489, -47.897537, 89.0], [-15.773495, -47.89778, 89.0], [-15.773534, -47.898048, 94.1], [-15.773568, -47.898339, 99.8], [-15.773585, -47.89864, 111.7], [-15.773607, -47.898954, 116.7], [-15.773635, -47.899265, 116.7], [-15.773657, -47.899598, 121.7], [-15.773685, -47.899929, 123.9], [-15.77371, -47.900283, 130.0], [-15.773733, -47.900631, 132.7], [-15.773752, -47.900978, 132.7], [-15.773767, -47.901328, 132.7], [-15.773773, -47.901613, 127.8], [-15.773808, -47.901753, 91.2], [-15.773949, -47.901943, 91.2], [-15.77418, -47.902017, 86.2], [-15.774427, -47.902018, 86.2], [-15.774665, -47.901931, 86.7], [-15.774889, -47.90179, 93.6], [-15.775056, -47.901573, 95.6], [-15.775153, -47.901306, 95.6], [-15.775249, -47.901029, 108.2], [-15.775367, -47.900743, 114.4], [-15.775465, -47.900439, 119.2], [-15.775515, -47.90011, 122.8], [-15.775462, -47.899772, 125.0], [-15.775337, -47.899452, 126.5], [-15.775127, -47.899169, 128.6], [-15.774873, -47.89893, 130.3], [-15.774603, -47.898708, 133.1], [-15.774408, -47.898461, 126.0], [-15.77429, -47.898233, 109.4], [-15.774242, -47.897992, 98.9], [-15.774275, -47.897748, 93.2], [-15.77433, -47.897518, 91.2], [-15.774652, -47.897327, 95.7], [-15.774903, -47.897253, 95.7], [-15.775199, -47.897346, 95.6], [-15.775435, -47.897549, 99.5], [-15.775634, -47.897757, 99.5], [-15.775795, -47.897985, 99.5], [-15.775948, -47.898264, 106.1], [-15.776094, -47.898547, 111.9], [-15.776285, -47.89882, 119.2], [-15.77647, -47.899081, 123.0], [-15.776659, -47.899342, 123.0], [-15.776834, -47.899622, 125.3], [-15.776945, -47.899927, 127.1], [-15.77699, -47.900279, 133.2], [-15.777, -47.900648, 135.5], [-15.776955, -47.901017, 135.5], [-15.776894, -47.901394, 137.2], [-15.776814, -47.90173, 137.2], [-15.776779, -47.901921, 99.7], [-15.776746, -47.90214, 99.7], [-15.776605, -47.902259, 82.6], [-15.776386, -47.902308, 82.6], [-15.776117, -47.902284, 84.8], [-15.775852, -47.902247, 92.5], [-15.775602, -47.902265, 96.9], [-15.775352, -47.902359, 96.9], [-15.775131, -47.902565, 100.4], [-15.774902, -47.902785, 108.2], [-15.774638, -47.902955, 117.6], [-15.774341, -47.90301, 117.6], [-15.774031, -47.902908, 117.6], [-15.77373, -47.902794, 116.6], [-15.773494, -47.902577, 116.6], [-15.773347, -47.902286, 120.8], [-15.773237, -47.901922, 123.4], [-15.773123, -47.901574, 123.4], [-15.773038, -47.901202, 126.9], [-15.772931, -47.900825, 130.9], [-15.772815, -47.900455, 137.6], [-15.772694, -47.900097, 141.3], [-15.772574, -47.899742, 141.3], [-15.772443, -47.899368, 144.6], [-15.772306, -47.898996, 147.4], [-15.772167, -47.898606, 153.5], [-15.772034, -47.898217, 156.5], [-15.771905, -47.897846, 153.5], [-15.771776, -47.897498, 152.8], [-15.771738, -47.897271, 118.4], [-15.771808, -47.896979, 118.4], [-15.771973, -47.896695, 118.1], [-15.772194, -47.896469, 118.1], [-15.772481, -47.896323, 116.6], [-15.772797, -47.896283, 120.7], [-15.773112, -47.896245, 120.7], [-15.773439, -47.896203, 123.8], [-15.773761, -47.896144, 127.9], [-15.774083, -47.89608, 130.6], [-15.774401, -47.896027, 130.6], [-15.774744, -47.895975, 132.7], [-15.775111, -47.895919, 139.5], [-15.775472, -47.89589, 141.5], [-15.775825, -47.895864, 141.5], [-15.776202, -47.895844, 143.9], [-15.776592, -47.895824, 148.8], [-15.776983, -47.895798, 151.3], [-15.777369, -47.895769, 151.3], [-15.777762, -47.895731, 153.5], [-15.778166, -47.895695, 157.7], [-15.778571, -47.895661, 159.6], [-15.77896, -47.895625, 157.7], [-15.779261, -47.895605, 136.7], [-15.779502, -47.895612, 113.9], [-15.779788, -47.895605, 113.9], [-15.779848, -47.896004, 102.6], [-15.779901, -47.896295, 102.4], [-15.779841, -47.896593, 101.8], [-15.779758, -47.896889, 108.7], [-15.779631, -47.897138, 108.7], [-15.779513, -47.897408, 112.3], [-15.77931, -47.897696, 122.8], [-15.779128, -47.89798, 124.0], [-15.778959, -47.898268, 124.0], [-15.778803, -47.898569, 127.4], [-15.778692, -47.898893, 131.4], [-15.778636, -47.899243, 135.9], [-15.778614, -47.899614, 135.9], [-15.778656, -47.899983, 137.9], [-15.778766, -47.900344, 141.1], [-15.778876, -47.900696, 144.2], [-15.778968, -47.901068, 144.2], [-15.77902, -47.901432, 144.2], [-15.779, -47.901681, 110.5], [-15.77895, -47.901943, 110.5], [-15.778792, -47.902169, 103.0], [-15.778582, -47.902312, 99.1], [-15.778323, -47.902315, 98.1], [-15.778024, -47.902301, 100.0], [-15.777765, -47.902186, 98.1], [-15.77758, -47.90197, 98.1], [-15.777475, -47.901713, 99.0], [-15.777422, -47.901421, 107.5], [-15.777452, -47.901107, 107.5], [-15.777497, -47.900754, 115.4], [-15.777574, -47.900356, 122.6], [-15.77767, -47.900001, 123.7], [-15.777669, -47.899635, 123.7], [-15.777589, -47.899305, 125.3], [-15.777488, -47.898949, 134.0], [-15.777345, -47.898619, 137.7], [-15.777166, -47.898304, 137.7], [-15.776966, -47.897999, 139.6], [-15.776715, -47.897691, 146.6], [-15.776452, -47.897391, 150.3], [-15.776197, -47.897103, 150.3], [-15.775867, -47.896888, 150.4], [-15.775505, -47.896745, 151.5], [-15.775112, -47.896697, 152.6], [-15.774714, -47.896746, 152.4], [-15.774342, -47.896824, 152.4], [-15.774085, -47.896839, 122.9], [-15.77382, -47.896859, 122.9], [-15.773627, -47.896941, 105.0], [-15.773519, -47.897151, 94.2], [-15.773429, -47.897416, 97.3], [-15.773435, -47.897702, 98.6], [-15.773482, -47.897976, 98.6], [-15.77354, -47.898279, 106.1], [-15.773559, -47.898595, 114.5], [-15.773593, -47.898912, 120.1], [-15.773631, -47.89923, 120.1], [-15.773661, -47.899566, 123.4], [-15.773684, -47.899912, 127.7], [-15.773712, -47.900258, 130.6], [-15.773739, -47.900603, 130.6], [-15.773765, -47.900964, 133.4], [-15.773776, -47.901301, 129.8], [-15.773773, -47.901599, 129.8], [-15.773804, -47.90179, 108.6], [-15.773971, -47.901931, 94.8], [-15.774189, -47.902011, 86.1], [-15.774419, -47.902065, 86.1], [-15.774676, -47.901914, 86.1], [-15.774893, -47.901743, 90.2], [-15.77506, -47.901496, 99.5], [-15.775161, -47.901227, 103.2], [-15.77527, -47.900962, 103.2], [-15.775374, -47.900685, 108.5], [-15.775469, -47.90035, 119.7], [-15.775488, -47.900048, 124.6], [-15.775441, -47.899715, 125.6], [-15.775307, -47.899395, 127.4], [-15.775109, -47.899116, 127.8], [-15.77481, -47.89891, 130.0], [-15.774558, -47.898675, 132.6], [-15.77438, -47.898417, 125.0], [-15.774272, -47.898189, 109.2], [-15.774212, -47.897953, 99.3], [-15.774171, -47.897709, 96.9], [-15.774452, -47.897445, 96.0], [-15.774692, -47.897306, 98.2], [-15.774969, -47.897273, 98.2], [-15.77523, -47.897404, 96.6], [-15.775459, -47.897566, 96.6], [-15.775665, -47.897766, 100.4], [-15.775845, -47.897994, 106.2], [-15.775949, -47.898289, 106.2], [-15.776116, -47.898577, 113.0], [-15.776312, -47.898843, 118.3], [-15.776506, -47.899106, 124.2], [-15.776709, -47.899369, 127.0], [-15.77684, -47.899669, 127.0], [-15.776924, -47.900012, 128.9], [-15.776966, -47.900378, 133.9], [-15.776992, -47.90072, 135.0], [-15.776918, -47.901083, 135.0], [-15.776862, -47.901453, 136.7], [-15.776798, -47.901781, 125.9], [-15.77675, -47.902062, 125.9], [-15.776678, -47.902235, 113.0], [-15.776526, -47.902308, 88.4], [-15.776283, -47.902335, 81.8], [-15.776041, -47.902304, 83.1], [-15.775825, -47.902286, 83.1], [-15.775544, -47.902276, 94.9], [-15.775259, -47.902408, 104.7], [-15.775063, -47.902652, 109.7], [-15.774851, -47.902847, 109.7], [-15.774584, -47.902991, 114.1], [-15.774242, -47.903006, 120.1], [-15.773918, -47.902949, 120.1], [-15.773663, -47.902707, 116.9], [-15.773473, -47.902431, 116.9], [-15.773326, -47.902105, 124.4], [-15.773252, -47.901741, 124.4], [-15.773169, -47.901392, 124.4], [-15.773057, -47.901042, 127.1], [-15.772908, -47.900675, 137.7], [-15.77279, -47.900321, 141.3], [-15.772664, -47.899978, 141.3], [-15.772527, -47.899617, 144.1], [-15.772389, -47.899237, 150.7], [-15.772255, -47.898856, 153.4], [-15.772122, -47.898475, 153.4], [-15.771994, -47.898073, 156.0], [-15.771871, -47.897713, 147.0], [-15.771771, -47.897398, 147.0], [-15.771754, -47.897176, 121.6], [-15.771816, -47.896921, 109.2], [-15.771982, -47.896633, 117.6], [-15.772254, -47.896412, 119.4], [-15.772551, -47.896247, 117.6], [-15.772883, -47.896204, 119.4], [-15.773238, -47.89618, 123.4], [-15.773545, -47.896143, 125.8], [-15.773848, -47.896092, 125.8], [-15.774178, -47.896042, 130.2], [-15.774519, -47.896004, 135.4], [-15.774868, -47.895947, 137.8], [-15.775216, -47.895907, 137.8], [-15.775586, -47.895882, 141.0], [-15.775968, -47.895853, 146.6], [-15.776344, -47.895826, 148.8], [-15.776722, -47.895799, 148.8], [-15.777115, -47.895771, 150.6], [-15.777514, -47.895738, 155.2], [-15.777919, -47.895697, 157.4], [-15.778313, -47.895661, 157.4], [-15.778718, -47.895631, 158.8], [-15.779075, -47.895609, 147.2], [-15.779394, -47.895596, 147.2], [-15.779622, -47.895648, 122.5], [-15.779776, -47.895847, 105.4], [-15.779873, -47.896111, 101.9], [-15.77993, -47.896391, 101.9], [-15.779857, -47.896685, 101.9], [-15.779759, -47.896989, 107.0], [-15.779632, -47.897297, 115.4], [-15.779434, -47.897572, 121.0], [-15.779268, -47.897863, 121.0], [-15.7791, -47.898139, 122.5], [-15.778918, -47.898427, 128.1], [-15.778758, -47.898739, 131.1], [-15.778664, -47.899072, 131.1], [-15.778614, -47.899427, 134.8], [-15.77864, -47.899807, 137.9], [-15.778716, -47.900163, 140.6], [-15.778821, -47.900515, 140.6], [-15.778905, -47.900881, 142.2], [-15.77897, -47.901235, 138.6], [-15.779013, -47.901578, 138.6], [-15.779031, -47.901806, 121.9], [-15.778933, -47.902005, 105.7], [-15.778717, -47.90217, 99.3], [-15.77847, -47.902304, 99.3], [-15.778206, -47.902373, 96.8], [-15.777905, -47.902287, 96.8], [-15.77765, -47.902131, 99.2], [-15.777483, -47.901851, 109.7], [-15.777448, -47.901524, 107.5], [-15.777483, -47.901224, 109.7], [-15.777529, -47.90088, 115.5], [-15.777591, -47.900526, 121.0], [-15.777631, -47.900168, 121.0], [-15.77765, -47.899832, 123.4], [-15.777609, -47.899456, 129.9], [-15.777535, -47.8991, 133.1], [-15.777423, -47.898757, 133.1], [-15.777252, -47.898431, 135.7], [-15.777056, -47.89811, 141.6], [-15.776814, -47.897816, 144.3], [-15.776567, -47.897529, 144.3], [-15.776325, -47.897217, 148.1], [-15.776012, -47.896956, 152.5], [-15.775644, -47.896791, 152.9], [-15.775276, -47.896689, 152.9], [-15.774854, -47.896729, 154.3], [-15.774465, -47.896788, 152.8], [-15.774091, -47.896826, 152.8], [-15.773859, -47.896832, 131.1], [-15.773684, -47.896885, 106.1], [-15.773566, -47.897103, 92.1], [-15.773477, -47.897375, 95.9], [-15.773468, -47.897645, 95.9], [-15.773512, -47.897923, 99.6], [-15.773561, -47.898218, 109.0], [-15.773587, -47.898518, 115.0], [-15.773608, -47.898829, 115.0], [-15.773638, -47.89916, 119.4], [-15.773656, -47.899515, 127.1], [-15.773675, -47.899856, 129.8], [-15.7737, -47.900206, 132.9], [-15.773726, -47.900564, 135.9], [-15.773753, -47.900929, 138.7], [-15.77377, -47.901276, 134.9], [-15.773783, -47.901543, 116.3], [-15.773814, -47.901759, 98.3], [-15.773962, -47.901938, 90.2], [-15.774187, -47.902043, 89.1], [-15.774447, -47.902057, 91.6], [-15.774699, -47.901976, 93.9], [-15.774912, -47.901816, 95.6], [-15.775064, -47.90158, 97.8], [-15.775152, -47.901313, 100.3], [-15.775238, -47.90104, 105.3], [-15.775358, -47.900745, 114.3], [-15.775457, -47.900442, 118.7], [-15.775488, -47.900123, 120.2], [-15.775463, -47.899789, 123.4], [-15.775382, -47.899466, 124.6], [-15.775161, -47.89919, 125.4], [-15.7749, -47.898957, 129.0], [-15.774649, -47.898729, 130.2], [-15.77445, -47.898496, 122.9], [-15.774319, -47.898287, 107.3], [-15.77426, -47.898049, 98.0], [-15.774277, -47.897784, 97.0], [-15.774388, -47.897546, 95.3], [-15.774498, -47.897336, 92.5], [-15.7748, -47.897284, 93.8], [-15.775041, -47.897252, 89.3], [-15.775244, -47.897355, 83.0], [-15.775397, -47.897606, 96.0], [-15.775541, -47.897871, 98.3], [-15.775712, -47.898121, 98.3], [-15.775896, -47.898403, 99.0], [-15.776082, -47.898661, 106.1], [-15.776253, -47.898896, 106.1], [-15.776424, -47.899126, 105.7], [-15.776575, -47.899337, 103.5], [-15.776692, -47.899491, 87.8], [-15.776818, -47.899657, 87.8], [-15.776886, -47.899813, 78.1], [-15.776944, -47.900005, 78.1], [-15.776995, -47.900241, 87.9], [-15.777014, -47.900493, 92.8], [-15.776973, -47.900752, 92.8], [-15.776932, -47.901038, 99.3], [-15.776875, -47.901353, 110.4], [-15.776817, -47.901641, 110.4], [-15.776762, -47.9019, 109.5], [-15.776722, -47.902094, 97.1], [-15.776653, -47.902224, 74.7], [-15.776515, -47.902368, 74.8], [-15.776436, -47.902533, 71.8], [-15.776232, -47.902643, 78.6], [-15.775854, -47.902514, 79.7], [-15.775627, -47.902558, 84.4], [-15.775436, -47.902684, 86.8], [-15.775246, -47.902818, 98.1], [-15.774845, -47.902838, 110.5], [-15.774593, -47.902991, 111.1], [-15.774237, -47.902962, 111.1], [-15.773903, -47.902816, 116.3], [-15.773621, -47.902589, 123.8], [-15.773432, -47.902288, 124.6], [-15.773313, -47.901985, 124.6], [-15.773201, -47.901653, 126.1], [-15.773103, -47.901301, 130.9], [-15.772988, -47.900951, 133.9], [-15.77287, -47.900615, 133.9], [-15.772744, -47.900267, 137.8], [-15.772618, -47.899896, 144.7], [-15.772492, -47.899527, 149.3], [-15.772353, -47.899162, 149.3], [-15.772209, -47.898781, 152.2], [-15.772074, -47.898389, 156.9], [-15.771944, -47.897999, 157.7], [-15.771815, -47.897614, 156.9], [-15.771705, -47.897311, 148.6], [-15.771694, -47.897102, 112.7], [-15.771756, -47.896818, 112.7], [-15.771852, -47.896558, 112.7], [-15.772026, -47.896311, 115.9], [-15.772212, -47.896073, 114.3], [-15.772558, -47.895946, 116.2], [-15.772909, -47.895887, 116.2], [-15.773302, -47.895832, 123.5], [-15.773669, -47.895809, 127.0], [-15.774042, -47.895787, 130.4], [-15.774439, -47.895792, 130.4], [-15.774827, -47.895806, 132.9], [-15.775242, -47.895831, 138.2], [-15.775633, -47.895838, 141.6], [-15.776029, -47.895835, 141.6], [-15.776413, -47.89583, 144.1], [-15.776803, -47.895806, 149.4], [-15.777189, -47.895775, 151.7], [-15.777574, -47.895742, 151.7], [-15.777968, -47.895709, 153.7], [-15.778374, -47.895671, 158.4], [-15.778771, -47.895637, 158.4], [-15.779129, -47.895608, 156.4], [-15.779387, -47.895589, 140.5], [-15.779559, -47.895624, 102.0], [-15.779775, -47.895797, 102.0], [-15.779891, -47.896079, 99.6], [-15.779912, -47.896368, 99.6], [-15.779861, -47.896673, 106.0], [-15.779774, -47.897037, 121.4], [-15.779649, -47.897327, 121.4], [-15.779478, -47.897598, 122.8], [-15.779295, -47.897861, 125.8], [-15.779114, -47.898134, 126.6], [-15.778923, -47.898447, 126.6], [-15.778768, -47.898748, 128.4], [-15.778679, -47.899108, 134.1], [-15.778637, -47.899475, 136.2], [-15.778648, -47.899815, 136.2], [-15.778717, -47.900189, 140.4], [-15.778794, -47.900554, 140.8], [-15.778898, -47.900921, 144.5], [-15.778973, -47.901275, 140.8], [-15.779019, -47.90161, 139.1], [-15.778982, -47.901819, 105.6], [-15.778852, -47.902052, 105.6], [-15.778661, -47.902228, 100.4], [-15.778402, -47.902353, 100.4], [-15.778115, -47.902364, 97.7], [-15.777825, -47.902316, 100.5], [-15.777574, -47.90215, 100.5], [-15.777487, -47.90182, 100.0], [-15.777449, -47.901505, 100.0], [-15.777506, -47.90115, 109.2], [-15.777567, -47.90081, 114.7], [-15.777594, -47.900462, 114.7], [-15.777618, -47.900108, 119.2], [-15.777636, -47.899752, 125.2], [-15.777602, -47.899407, 130.3], [-15.777523, -47.899064, 130.3], [-15.777403, -47.898719, 134.4], [-15.777245, -47.89837, 141.8], [-15.777041, -47.89804, 143.7], [-15.776793, -47.897765, 143.7], [-15.776539, -47.897468, 145.9], [-15.776272, -47.897166, 151.1], [-15.775955, -47.896929, 151.7], [-15.775609, -47.896768, 151.7], [-15.775217, -47.896675, 153.2], [-15.774791, -47.896661, 153.9], [-15.774387, -47.896746, 153.9], [-15.774045, -47.896822, 148.1], [-15.773789, -47.896854, 131.1], [-15.773639, -47.896945, 96.8], [-15.773489, -47.897166, 96.8], [-15.773407, -47.897421, 96.8], [-15.773428, -47.897716, 96.9], [-15.773501, -47.898013, 106.2], [-15.773556, -47.898291, 111.7], [-15.773594, -47.898599, 111.7], [-15.773619, -47.898939, 117.2], [-15.773649, -47.899276, 123.6], [-15.773671, -47.899625, 127.5], [-15.773688, -47.89997, 127.5], [-15.773714, -47.900317, 130.2], [-15.773739, -47.900683, 136.7], [-15.773763, -47.901047, 139.2], [-15.773776, -47.901391, 136.7], [-15.773789, -47.901666, 129.2], [-15.773846, -47.901829, 94.5], [-15.774007, -47.90201, 94.5], [-15.774252, -47.90208, 87.6], [-15.774518, -47.902042, 87.6], [-15.774756, -47.901914, 92.6], [-15.77496, -47.901707, 98.0], [-15.775086, -47.901456, 98.0], [-15.775177, -47.901193, 101.2], [-15.775294, -47.900903, 110.8], [-15.775399, -47.900612, 115.7], [-15.775473, -47.900316, 115.7], [-15.775501, -47.899991, 119.6], [-15.77543, -47.899642, 126.7], [-15.775268, -47.899337, 126.7], [-15.775054, -47.899076, 126.7], [-15.77478, -47.898853, 129.8], [-15.774524, -47.898606, 133.4], [-15.774312, -47.898331, 133.4], [-15.77419, -47.898112, 119.4], [-15.774141, -47.89789, 104.5], [-15.774159, -47.897651, 96.0], [-15.774326, -47.897411, 96.0], [-15.774568, -47.897297, 94.4], [-15.774845, -47.897306, 94.4], [-15.775108, -47.89734, 88.9], [-15.775361, -47.897447, 88.9], [-15.775588, -47.897644, 88.9], [-15.775758, -47.897926, 95.6], [-15.775925, -47.898241, 111.4], [-15.776119, -47.898522, 114.7], [-15.776295, -47.898802, 114.7], [-15.776509, -47.899099, 120.0], [-15.776696, -47.899386, 126.2], [-15.776856, -47.899668, 126.2], [-15.776941, -47.899987, 126.2], [-15.777008, -47.900342, 130.2], [-15.777035, -47.900747, 138.5], [-15.777002, -47.90112, 138.9], [-15.776924, -47.901491, 138.5], [-15.776837, -47.901849, 137.2], [-15.776772, -47.902095, 115.5], [-15.776649, -47.902325, 115.5], [-15.776473, -47.902405, 88.2], [-15.776225, -47.902471, 87.7], [-15.776019, -47.902495, 83.7], [-15.775801, -47.902513, 86.9], [-15.77556, -47.902485, 86.9], [-15.775287, -47.902549, 98.9], [-15.775042, -47.902701, 109.7], [-15.774783, -47.902875, 113.4], [-15.774507, -47.903048, 113.4], [-15.774217, -47.903091, 113.7], [-15.773902, -47.903053, 119.1], [-15.773636, -47.902861, 119.1], [-15.773454, -47.902579, 119.1], [-15.773299, -47.902297, 118.1], [-15.773206, -47.901948, 127.9], [-15.773073, -47.901514, 129.2], [-15.77297, -47.901139, 129.2], [-15.772852, -47.90075, 133.8], [-15.772744, -47.900338, 141.1], [-15.772631, -47.899936, 144.7], [-15.772513, -47.899549, 144.7], [-15.772379, -47.899159, 147.1], [-15.772234, -47.898761, 153.9], [-15.772094, -47.898365, 156.8], [-15.771954, -47.897976, 156.8], [-15.771816, -47.897595, 156.8], [-15.771723, -47.897317, 136.8], [-15.771705, -47.897018, 136.8], [-15.771769, -47.89678, 118.3], [-15.771911, -47.896527, 115.6], [-15.772166, -47.896356, 118.1], [-15.772484, -47.896243, 122.4], [-15.772849, -47.89618, 122.4], [-15.773213, -47.896135, 124.3], [-15.773597, -47.896089, 127.5], [-15.773956, -47.896038, 130.5], [-15.774308, -47.895995, 130.5], [-15.77467, -47.895954, 133.7], [-15.775026, -47.895911, 139.3], [-15.775378, -47.895876, 141.9], [-15.775742, -47.895852, 141.9], [-15.77612, -47.895829, 144.4], [-15.776506, -47.895796, 147.0], [-15.776901, -47.895769, 151.4], [-15.777292, -47.895738, 153.6], [-15.777683, -47.895708, 153.6], [-15.778085, -47.895671, 155.8], [-15.778495, -47.895645, 159.5], [-15.778896, -47.895617, 159.5], [-15.779273, -47.895587, 158.5], [-15.779541, -47.895587, 148.2], [-15.779699, -47.895682, 104.1], [-15.779915, -47.895852, 104.1], [-15.780063, -47.89604, 94.5], [-15.780119, -47.896238, 88.2], [-15.780143, -47.896408, 75.7], [-15.78003, -47.89668, 101.5], [-15.779926, -47.896978, 101.5], [-15.779767, -47.897291, 107.4], [-15.77956, -47.897619, 123.2], [-15.779304, -47.89797, 126.6], [-15.779058, -47.89832, 126.6], [-15.77886, -47.898682, 127.0], [-15.778724, -47.899086, 135.5], [-15.778649, -47.899472, 136.7], [-15.77865, -47.899858, 136.7], [-15.778728, -47.900256, 138.9], [-15.778851, -47.900646, 143.7], [-15.778937, -47.900992, 143.7], [-15.778995, -47.901355, 143.4], [-15.779011, -47.901639, 131.6], [-15.778993, -47.901841, 101.2], [-15.778899, -47.902058, 101.2], [-15.778709, -47.9022, 96.2], [-15.778478, -47.902325, 96.2], [-15.778179, -47.902367, 96.0], [-15.77785, -47.902346, 99.1], [-15.777578, -47.902233, 97.4], [-15.777356, -47.902089, 97.4], [-15.777278, -47.901907, 74.4], [-15.777179, -47.901721, 78.2], [-15.777273, -47.901474, 78.2], [-15.777304, -47.901217, 83.4], [-15.777342, -47.900884, 92.5], [-15.777427, -47.900537, 97.2], [-15.777519, -47.900143, 97.2], [-15.777565, -47.899768, 104.3], [-15.777563, -47.899385, 112.2], [-15.777482, -47.899045, 117.2], [-15.777364, -47.898745, 117.2], [-15.777222, -47.89843, 120.8], [-15.777034, -47.898133, 128.7], [-15.776826, -47.89786, 132.0], [-15.776625, -47.897584, 132.0], [-15.77641, -47.897301, 135.0], [-15.77617, -47.897061, 133.2], [-15.775902, -47.896867, 133.2], [-15.775574, -47.896752, 133.2], [-15.775223, -47.896705, 133.3], [-15.774875, -47.896714, 132.8], [-15.774532, -47.896767, 132.8], [-15.774229, -47.896796, 127.4], [-15.773978, -47.896809, 119.3], [-15.773822, -47.896827, 90.2], [-15.773634, -47.896941, 90.2], [-15.773548, -47.897112, 78.0], [-15.773477, -47.897355, 78.0], [-15.77345, -47.897631, 93.2], [-15.773508, -47.897905, 95.8], [-15.773562, -47.898167, 95.8], [-15.773584, -47.898457, 100.8], [-15.773596, -47.898758, 106.9], [-15.773617, -47.899036, 108.5], [-15.773654, -47.899335, 111.6], [-15.773684, -47.899636, 114.5], [-15.773707, -47.899945, 117.4], [-15.773729, -47.900259, 119.7], [-15.773744, -47.900581, 122.4], [-15.773759, -47.900904, 123.5], [-15.773771, -47.901194, 116.3], [-15.773775, -47.901423, 99.9], [-15.773784, -47.901618, 85.8], [-15.77385, -47.901808, 80.7], [-15.774011, -47.901935, 76.7], [-15.774227, -47.902014, 80.4], [-15.774469, -47.902012, 85.0], [-15.7747, -47.901914, 88.4], [-15.774895, -47.901744, 91.8], [-15.775039, -47.901517, 95.4], [-15.775143, -47.901255, 100.9], [-15.775229, -47.90097, 107.8], [-15.775332, -47.900672, 115.3], [-15.775445, -47.900422, 112.3], [-15.77549, -47.900117, 115.7], [-15.775464, -47.899799, 118.2], [-15.775394, -47.899502, 117.1], [-15.775315, -47.899214, 115.9], [-15.774911, -47.898944, 126.0], [-15.774653, -47.898724, 128.4], [-15.774426, -47.898485, 126.9], [-15.774281, -47.898231, 126.9], [-15.774167, -47.898028, 108.8], [-15.774165, -47.897769, 100.4], [-15.774283, -47.897524, 96.0], [-15.774505, -47.897365, 96.0], [-15.77476, -47.897311, 90.1], [-15.775027, -47.897347, 90.1], [-15.775271, -47.897502, 93.3], [-15.77549, -47.897685, 98.4], [-15.775662, -47.897902, 98.4], [-15.775822, -47.898157, 102.1], [-15.775975, -47.89837, 101.8], [-15.776094, -47.898585, 101.8], [-15.776234, -47.898779, 98.8], [-15.776397, -47.898978, 98.8], [-15.776583, -47.899185, 105.0], [-15.776743, -47.899407, 106.8], [-15.776853, -47.89967, 106.8], [-15.77693, -47.899959, 109.4], [-15.776982, -47.900245, 109.1], [-15.776989, -47.900556, 111.8], [-15.776986, -47.900849, 111.8], [-15.776923, -47.901142, 111.8], [-15.77687, -47.901391, 101.9], [-15.776839, -47.901632, 101.9], [-15.776802, -47.901813, 91.7], [-15.776758, -47.901985, 82.7], [-15.77671, -47.902178, 72.3], [-15.776587, -47.902314, 70.4], [-15.776449, -47.902423, 68.4], [-15.776302, -47.902505, 65.0], [-15.776091, -47.902499, 68.3], [-15.775853, -47.902417, 76.5], [-15.775549, -47.902262, 78.0], [-15.775351, -47.902294, 77.9], [-15.77518, -47.902351, 74.9], [-15.775044, -47.902383, 65.5], [-15.774902, -47.902431, 65.5], [-15.774774, -47.902465, 61.6], [-15.77466, -47.902504, 57.1], [-15.774567, -47.902539, 47.3], [-15.77447, -47.90258, 47.3], [-15.774378, -47.902604, 44.4], [-15.774281, -47.90262, 40.9], [-15.774182, -47.902605, 39.7], [-15.774079, -47.902583, 39.9], [-15.773986, -47.902549, 39.9], [-15.77389, -47.902497, 39.9], [-15.7738, -47.902432, 40.7], [-15.773723, -47.902348, 41.2], [-15.773668, -47.90224, 41.1], [-15.773636, -47.902133, 41.2], [-15.773612, -47.902033, 42.5], [-15.773561, -47.901953, 43.2], [-15.773527, -47.901836, 43.4], [-15.773497, -47.901724, 43.5], [-15.77346, -47.901631, 41.4], [-15.773427, -47.90154, 38.9], [-15.773397, -47.901456, 36.4], [-15.773368, -47.901373, 34.8], [-15.773341, -47.901293, 33.4], [-15.773315, -47.901221, 31.3], [-15.773291, -47.901153, 29.2], [-15.773267, -47.901089, 27.5], [-15.773244, -47.901028, 25.7], [-15.773224, -47.900975, 23.6], [-15.773205, -47.900924, 22.0], [-15.773188, -47.900875, 20.9], [-15.773171, -47.900824, 20.5], [-15.773155, -47.900775, 20.1], [-15.773141, -47.90073, 19.0], [-15.773127, -47.900687, 17.9], [-15.773115, -47.900649, 16.6], [-15.773104, -47.900614, 15.6], [-15.77309, -47.900579, 15.1], [-15.773078, -47.900544, 14.7], [-15.773069, -47.90051, 14.1], [-15.773069, -47.90048, 12.5], [-15.77308, -47.900453, 11.1], [-15.773094, -47.900439, 8.7], [-15.773111, -47.900429, 7.4], [-15.773125, -47.900421, 6.5], [-15.773134, -47.900419, 4.8], [-15.773141, -47.900419, 3.6], [-15.773153, -47.900416, 4.1], [-15.773167, -47.900413, 4.5], [-15.773167, -47.900414, 1.0], [-15.773168, -47.900414, 0.3], [-15.773169, -47.900416, 0.2], [-15.773169, -47.900416, 0.1], [-15.77317, -47.900416, 0.1], [-15.773171, -47.900416, 0.2], [-15.773174, -47.900417, 0.9], [-15.773172, -47.900417, 0.2], [-15.773177, -47.900417, 0.7], [-15.773182, -47.900414, 2.4], [-15.773182, -47.900415, 1.0], [-15.773179, -47.900408, 0.4], [-15.773178, -47.900408, 0.6], [-15.773175, -47.90041, 0.1], [-15.773177, -47.90041, 0.3], [-15.773175, -47.900412, 0.1], [-15.773176, -47.900412, 0.6], [-15.773174, -47.900412, 0.1], [-15.773176, -47.900408, 0.5], [-15.773174, -47.900409, 0.2], [-15.773174, -47.900409, 0.0], [-15.773177, -47.900407, 0.3], [-15.773178, -47.900408, 0.3], [-15.773178, -47.900408, 0.1], [-15.773178, -47.900408, 0.2], [-15.77318, -47.900409, 0.8], [-15.773179, -47.900408, 0.4], [-15.773177, -47.90041, 0.2], [-15.773179, -47.900408, 0.0], [-15.773177, -47.900409, 0.0], [-15.773178, -47.900409, 0.4], [-15.773178, -47.90041, 0.1], [-15.773179, -47.90041, 0.2], [-15.773179, -47.90041, 0.0], [-15.77318, -47.900409, 0.1], [-15.77318, -47.900408, 0.0], [-15.773179, -47.900408, 0.0], [-15.773179, -47.900409, 0.1], [-15.773179, -47.900408, 0.4], [-15.773178, -47.900409, 0.1], [-15.77318, -47.90041, 0.2], [-15.773169, -47.900399, 0.3], [-15.773185, -47.900417, 0.6], [-15.773182, -47.90041, 0.4], [-15.773182, -47.90041, 0.5], [-15.773181, -47.900411, 0.3], [-15.77318, -47.900412, 0.0], [-15.77318, -47.900412, 0.0], [-15.77318, -47.900412, 0.0], [-15.77318, -47.900412, 0.1], [-15.773181, -47.900413, 0.2], [-15.77318, -47.900413, 0.2], [-15.77318, -47.900413, 0.1], [-15.773179, -47.900411, 0.1], [-15.773179, -47.90041, 0.2], [-15.77318, -47.90041, 0.1], [-15.77318, -47.900409, 0.1], [-15.773178, -47.900409, 0.1], [-15.77317, -47.900406, 0.2], [-15.773167, -47.900402, 0.5], [-15.773168, -47.900404, 0.4], [-15.773166, -47.900401, 1.0], [-15.773163, -47.9004, 0.2], [-15.773162, -47.900401, 0.3], [-15.773154, -47.900393, 0.2], [-15.773166, -47.900402, 1.2]]
+;
+  if (!pts || !pts.length) return;
+  var svg = document.getElementById('traj');
+  var W = 800, H = 600, pad = 30;
+  var lats = pts.map(function(p){return p[0]});
+  var lngs = pts.map(function(p){return p[1]});
+  var latMin = Math.min.apply(null, lats), latMax = Math.max.apply(null, lats);
+  var lngMin = Math.min.apply(null, lngs), lngMax = Math.max.apply(null, lngs);
+  var dLat = latMax - latMin, dLng = lngMax - lngMin;
+  // Latitude: maior valor (norte) deve ficar em y menor (topo). Longitude: maior valor (leste) → x maior.
+  // Compensa razão de aspecto pra não esticar (lat ~111 km/grau, lng ~107 km/grau em Brasília)
+  var aspect = Math.cos(((latMin+latMax)/2) * Math.PI/180);
+  var scaleLng = dLng * aspect;
+  var scale = Math.min((W - 2*pad)/scaleLng, (H - 2*pad)/dLat);
+  function px(lat, lng){
+    var x = pad + (lng - lngMin) * aspect * scale;
+    var y = pad + (latMax - lat) * scale;
+    return [x, y];
+  }
+  function color(kmh){
+    if (kmh < 30) return '#5dd39e';
+    if (kmh < 110) return '#5da3ff';
+    if (kmh < 145) return '#ffb454';
+    return '#ff6b6b';
+  }
+  // Fundo do svg
+  var bg = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  bg.setAttribute('width', W); bg.setAttribute('height', H);
+  bg.setAttribute('fill', '#0e1830');
+  svg.appendChild(bg);
+  // Desenha pontos
+  for (var i = 0; i < pts.length; i++){
+    var p = pts[i];
+    var xy = px(p[0], p[1]);
+    var c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx', xy[0].toFixed(1));
+    c.setAttribute('cy', xy[1].toFixed(1));
+    c.setAttribute('r', '2');
+    c.setAttribute('fill', color(p[2]));
+    c.setAttribute('fill-opacity', '0.85');
+    svg.appendChild(c);
+  }
+  // Marcador de início (primeiro ponto)
+  var p0 = px(pts[0][0], pts[0][1]);
+  var start = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  start.setAttribute('cx', p0[0]); start.setAttribute('cy', p0[1]);
+  start.setAttribute('r', 8); start.setAttribute('fill', 'none');
+  start.setAttribute('stroke', '#e8eef9'); start.setAttribute('stroke-width', '2');
+  svg.appendChild(start);
+  var lbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+  lbl.setAttribute('x', p0[0]+12); lbl.setAttribute('y', p0[1]+4);
+  lbl.setAttribute('fill','#e8eef9'); lbl.setAttribute('font-size','12');
+  lbl.textContent = 'box';
+  svg.appendChild(lbl);
+})();
+</script>
+</body>
+</html>

@@ -30,6 +30,10 @@ struct PosStintView: View {
     @State private var nota: String = ""
     @State private var savingNote = false
     @State private var loadError: String?
+    /// Execuções dos trechos cronometrados nesse stint (Comando GO 2026-05-24).
+    /// Carregadas em paralelo com voltas; podem ficar vazias quando o detector
+    /// não estava armado.
+    @State private var segmentExecutions: [SegmentExecution] = []
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -61,6 +65,7 @@ struct PosStintView: View {
                 hero(stint: s)
                 summary4Stats
                 voltasSection
+                seisIndicadoresSection
                 notaSection
                 if let erro = loadError {
                     Text(erro)
@@ -252,6 +257,93 @@ struct PosStintView: View {
         )
     }
 
+    // MARK: - 6 indicadores por trecho (Comando GO 2026-05-24)
+
+    /// Mostra UMA tabela por trecho que apareceu nesse stint, com todas
+    /// as passagens do piloto + linha "melhor". Conselho de IA (entrega 3)
+    /// é gerado pelo `TrechoAdvisor` e injetado por trecho.
+    @ViewBuilder
+    private var seisIndicadoresSection: some View {
+        let agrupado = trechosAgrupados()
+        if !agrupado.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("Trechos · 6 indicadores")
+                        .font(.system(size: 11, weight: .semibold))
+                        .tracking(1.32)
+                        .foregroundStyle(Color.textFaint)
+                    Spacer()
+                    Text("\(agrupado.count) \(agrupado.count == 1 ? "trecho" : "trechos")")
+                        .font(.system(size: 11, weight: .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(Color.accent)
+                }
+                .padding(.horizontal, Spacing.xs)
+                VStack(spacing: 10) {
+                    ForEach(agrupado, id: \.segmentId) { grupo in
+                        SeisIndicadoresTrecho(
+                            tituloTrecho: grupo.titulo,
+                            execucoes: grupo.execucoes,
+                            voltaNumeroById: voltaNumeroById,
+                            conselhoIA: TrechoAdvisor.conselho(
+                                trechoNome: grupo.titulo,
+                                execucoes: grupo.execucoes,
+                                voltaNumeroById: voltaNumeroById
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private struct TrechoGrupo {
+        let segmentId: String
+        let titulo: String
+        let execucoes: [SegmentExecution]
+    }
+
+    /// voltaId → numero (cache pra label "V2"/"V3"…).
+    private var voltaNumeroById: [String: Int] {
+        Dictionary(uniqueKeysWithValues: voltas.map { ($0.id, $0.numero) })
+    }
+
+    private func trechosAgrupados() -> [TrechoGrupo] {
+        let porSegmento = Dictionary(grouping: segmentExecutions, by: { $0.segmentId ?? "—" })
+        let chaves = porSegmento.keys.sorted()
+        return chaves.compactMap { sid in
+            guard let lista = porSegmento[sid], !lista.isEmpty else { return nil }
+            // Ordena por número de volta (não por created_at) pra ficar
+            // V2 → V3 → V4 no relatório.
+            let ordenada = lista.sorted { a, b in
+                let na = voltaNumeroById[a.voltaId] ?? 0
+                let nb = voltaNumeroById[b.voltaId] ?? 0
+                return na < nb
+            }
+            return TrechoGrupo(
+                segmentId: sid,
+                titulo: nomeAmigavel(segmentId: sid),
+                execucoes: ordenada
+            )
+        }
+    }
+
+    /// Resolve nome amigável do segmento. Catálogo Brasília está em
+    /// `MAPA-BRASILIA-DEFINITIVO.json`; aqui fazemos lookup mínimo pelos
+    /// IDs canônicos. Sem match, mostra o ID cru.
+    private func nomeAmigavel(segmentId: String) -> String {
+        let catalogo: [String: String] = [
+            "seg_brasilia_0": "Curva 01",
+            "seg_brasilia_2": "Curva da Reta Oposta",
+            "seg_brasilia_3": "Curva \"S\"",
+            "seg_brasilia_4": "Junção",
+            "seg_brasilia_5": "Curva da Bruxa",
+            "seg_brasilia_6": "Placar",
+            "seg_brasilia_7": "Chicane",
+        ]
+        return catalogo[segmentId] ?? segmentId
+    }
+
     // MARK: - Nota
 
     private var notaSection: some View {
@@ -336,8 +428,10 @@ struct PosStintView: View {
         do {
             let s = try await repo.fetchStint(id: stintId)
             let vs = try await repo.voltas(stintId: stintId)
+            let segs = (try? await repo.segmentExecutions(stintId: stintId)) ?? []
             self.stint = s
             self.voltas = vs
+            self.segmentExecutions = segs
             self.nota = s.nota
         } catch {
             self.loadError = "Não consegui carregar: \(error.localizedDescription)"

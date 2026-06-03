@@ -1,0 +1,8 @@
+{
+  "pergunta_id": "20260515-003754-p1-fast-maior-tarefa-noite",
+  "pergunta": "Qual frente o Claude vai pegar essa noite no P1 Fast? Todas cabem numa noite, todas são em desenvolvimento (produção não é tocada), todas geram entregáveis testados.",
+  "escolha": "Eu vou te enviar uma especificação da primeira tela de engenharia que nós vamos ter, que é a tela do Lambda Advisor. nós vamos ter as abas na tela de engenharia de IAT, Lambda e uma outra de Saúde do Carro. vou te enviar o prompt para a lambda para vc fazer uma proposta.",
+  "outra_opcao_usada": true,
+  "comentario": "",
+  "respondido_em": "2026-05-15T03:43:43.966Z"
+}

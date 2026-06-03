@@ -1,14 +1,3 @@
-> ⚠️ **DOCUMENTO OBSOLETO** — contradito por ADR-023 (2026-05-09) + amendments (auditoria 2026-05-12).
->
-> Este design assumia cockpit ao vivo em SwiftUI no iPhone. Decisão arquitetural
-> ADR-023 + amendments 3/4/5 migrou pra app nativo Windows (WinUI 3 + C# .NET 8)
-> rodando no notebook montado no painel — o iPhone deixou de hospedar o display.
->
-> Referência canônica vigente: `ARCHITECTURE_DECISIONS.md` §ADR-023 e
-> `docs/PLANO_FASE_1.md` §6 MS-13 (REESCRITO 2026-05-09/10).
-
----
-
 # Sprint 1B — Cockpit ao vivo (design)
 
 > Status: **proposta**, não implementado. Documento pré-prompt pra travar

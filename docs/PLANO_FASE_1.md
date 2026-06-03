@@ -181,22 +181,16 @@ Fecha o loop captura → análise. Roda sem track day real.
 | 3.1 | Edge Function que recebe samples e roda pipeline (port mínimo de `src/telemetry/detector.js` + segmentação) | Cloud |
 | 3.2 | Smoke E2E (simulator → endpoint → debrief JSON) com fixture Brasília | Cloud |
 
-### MS-4 — StintPlan portado pro iOS ✅ FECHADO 2026-05-11 (arquitetura ≠ original)
+### MS-4 — StintPlan portado pro iOS
 
-Pré-req do debrief ("objetivo cumprido?"). **Entregue como extensão da tabela `sessoes` em vez de uma tabela `stint_plans` separada — decisão tomada via 37 respostas do Flávio em 2 rodadas de cards** (rodada 1 = 27 perguntas sobre escopo, rodada 2 = 10 perguntas sobre detalhes). Detalhes em `.claude-perguntas/respostas/p1-fast/`.
+Pré-req do debrief ("objetivo cumprido?").
 
-Escopo entregue cobriu 6 etapas (4 do plano original + 2 bônus). Migration servidor `0014_ms4_sessoes_extensions.sql` e migration local `v14_ms4_sessoes_extensions` adicionaram 7 colunas em `sessoes` (`paradas_box`, `ia_ligada`, `mapa_ghost_ligado`, `licao_id`, `cancelado_em`, `pilotos_revezamento`, `convidado_id`) + papel `chefe_equipe` em `usuarios_time`.
-
-| # | Task | Onde | Submissão |
-|---|---|---|---|
-| 4.1 | Schema GRDB + migration Supabase com extensões em `sessoes` (não criou tabela `stint_plans` separada). Inclui `paradas_box`, `ia_ligada`, `mapa_ghost_ligado`, `licao_id` (FK pra `licoes`), `cancelado_em`, `pilotos_revezamento` (endurance), `convidado_id` (não-endurance) | Cloud | ✅ PR #176 |
-| 4.2 | `StintRepository.swift` ganha métodos `setStintExtensions`, `cancel`, `eventoPermiteRevezamento`, `fetchSessaoCompleta` (não criou `StintPlanRepository` separado) | Cloud | ✅ PR #177 |
-| 4.3 | `StintModalView.swift` estendida com paradas no box (chips arrastáveis), picker de lição (do catálogo `licoes`), toggles IA + ghost-map | Cloud | ✅ PR #178 |
-| 4.4 | Multi-piloto endurance (lista de turnos cobrindo todas as voltas) + convidado em não-endurance — lógica `EnduranceDetection.tipoPermiteRevezamento` testada com END-01..04 | Cloud | ✅ PR #179 |
-| 4.5 | **Bônus além do plano** — cancelamento marcado (long-press + tag visual; `cancelado_em` preserva histórico, não deleta) | Cloud | ✅ PR #180 |
-| 4.6 | **Bônus além do plano** — permissões: só piloto + chefe da equipe editam stint. Helper RLS `is_chefe_equipe()` | Cloud | ✅ PR #181 |
-
-**Frentes que ficaram fora do MS-4** (registradas em `docs/FRENTES_POS_MS4.md`, PR #175): F1 Pessoas (cadastro mais rico, papéis múltiplos) · F2 IA durante o stint (P1 Coach ao vivo) · F3 Checklist (separar pendência × obrigatório por carro) · F4 Triagem de vídeo.
+| # | Task | Onde |
+|---|---|---|
+| 4.1 | Schema GRDB + migration Supabase `stint_plans` (meta, abordagem, trechosFoco[], focusModeOrigem, nVoltasAlvo, licaoFocoId) | Cloud |
+| 4.2 | `StintPlanRepository.swift` (em `p1fast-ios/Persistence/`) | Cloud |
+| 4.3 | Refatorar `StintModalView.swift` pra persistir StintPlan (hoje só shell visual) | Cloud |
+| 4.4 | Lista de pendências/objetivos dentro do stint (separadas das do evento) | Cloud |
 
 ### MS-5 — Pendências vivas (obrigatório × adicional, por carro+evento)
 
@@ -295,27 +289,24 @@ Depende de MS-10 + MS-11.
 | 12.3 | Canal de mensagens via Supabase Realtime | Cloud |
 | 12.4 | Flag `visivelNoBox` por mensagem | Cloud |
 
-### MS-13 — Cockpit-display ao vivo no notebook Windows (REESCRITO 2026-05-09/10 — ADR-023 + amendments 3/4/5)
+### MS-13 — Cockpit-display ao vivo no notebook Windows (REESCRITO 2026-05-09 — ADR-023)
 
-Depende de MS-2 + MS-2.8 (live data publish) + MS-9 reescrito (driver T4000 no Windows). **Não é mais SwiftUI** e **não é app web rodando em navegador** — virou **app nativo Windows em WinUI 3 + C# (.NET 8)**, alvo de produção final (ADR-023 amendment 4, decisão Flávio 2026-05-09).
+Depende de MS-2 + MS-2.8 (live data publish) + MS-9 reescrito (driver T4000 no Windows). **Não é mais SwiftUI** — vira web app rodando no notebook Windows 10,5" no painel.
 
-Princípio: o `_design-reference/mockup-cockpit-piloto.html` JÁ é o contrato visual + comportamental. O `web/cockpit/` (HTML/JS) é **referência executável + protótipo** que prova a lógica de domínio com testes verdes — **não é produto final**. Ele serve como spec pra portar pra C# nativo (ADR-023 amendment 3, decisão Flávio 2026-05-09).
+Princípio: o `_design-reference/mockup-cockpit-piloto.html` JÁ é o produto. Esta sprint adapta dimensão, pluga dado vivo (Supabase Realtime + T4000 local) e empacota pro Windows. Sem reescrever do zero.
 
-> **REGRA DURA (Flávio 2026-05-09):** DOM, classes CSS, tokens (`:root` variables), animações (`@keyframes`), data-attrs e comportamento de TODOS os elementos do mockup canônico — shift-light (12 LEDs + tiers + fire-strobe + overrev), apex header (4 pontos), info-bloco (delta + ação + slide left), alert-bloco (z-axis blur + scale), halo radial (4 estados), stint-bar (12 blocos + bestStint shimmer + bestAlltime bloom), fire-overlay, telemetria-chip, notch — **ficam congelados, byte-for-byte** na versão nativa C#/XAML também. Esta sprint **não redesenha nada visual**. Mockup é contrato imutável (§9.1) e o Flávio reforçou em 2026-05-09.
+> **REGRA DURA (Flávio 2026-05-09):** DOM, classes CSS, tokens (`:root` variables), animações (`@keyframes`), data-attrs e comportamento de TODOS os elementos do mockup canônico — shift-light (12 LEDs + tiers + fire-strobe + overrev), apex header (4 pontos), info-bloco (delta + ação + slide left), alert-bloco (z-axis blur + scale), halo radial (4 estados), stint-bar (12 blocos + bestStint shimmer + bestAlltime bloom), fire-overlay, telemetria-chip, notch — **ficam congelados, byte-for-byte.** Esta sprint **não redesenha nada visual**. Só (1) embala/desentrela o HTML em arquivos de produção, (2) ajusta meta viewport/wrapper externo pra dimensão da **tela 10,5" externa** (não do notebook — ver ADR-023 amendment 5), (3) substitui as funções `setShiftLevel`/`setMessage`/`startAutoLoop` que hoje rodam o demo cycle por chamadas vindas de live data. Mockup é contrato imutável (§9.1) e o Flávio reforçou em 2026-05-09.
 
-**Status atual (2026-05-12):** camada de domínio C# portada do JS está fechada em produção via PR #148 (94 testes automáticos em xUnit — 5 módulos: `CockpitState`, `T4000PacketParser`, `T4000Provider`, `TransportSelector`, `LiveDataBridge`). Falta a tela XAML.
-
-| # | Task | Onde | Status |
-|---|---|---|---|
-| 13.1 | Tela = **PDM-10.5T**, 1920×1280 (3:2), 500 cd/m², USB-C/HDMI. Specs em `docs/hardware/COCKPIT_DISPLAY_PDM-10.5T.md`. Viewport alvo do mockup canônico (atual 956×440) escala 2× pra 1912×880, com letterbox vertical ~200 px topo + base. Rotação 180° via Windows Display Settings. | Aqui (Flávio) | ✅ Fechado 2026-05-10 |
-| 13.2 | Referência executável `web/cockpit/` — `index.html` + `cockpit.css` + `cockpit.js` extraídos byte-for-byte do mockup canônico, mais 16 testes automáticos de paridade. | Cloud | ✅ PR #148 (parte) |
-| 13.3 | Camada Domain C# — port do `CockpitState` (JS → C#), modelo único alimentado por dado ao vivo. 24 testes (CST-01..24). | Cloud | ✅ PR #148 |
-| 13.4 | Camada Domain C# — `LiveDataBridge` + `TransportSelector` + driver T4000 (parser + provider). Escolhe entre cabo USB (primário) e Supabase Realtime (fallback) com heartbeat 1 Hz. 67 testes (T4K-01..27, TRP-01..17, LDB-01..26). | Cloud | ✅ PR #148 |
-| 13.5 | Camada Domain C# — `LapDetector` + `DeltaCalculator` + `CommandResolver` + `HaloController` (port do JS). Pode reutilizar parte do `src/telemetry/detector.js` ou da Edge Function. | Cloud | ❌ Não feito |
-| 13.6 | Widget Vmin georef por trecho — consome `segment_executions.vmin_*` (MS-2.4/2.5) via Supabase REST. Exibe Vmin (km/h) + ponto (x/y) da melhor volta por trecho. Decisão Flávio 2026-05-04 preservada. | Cloud | ❌ Não feito |
-| 13.7 | **Camada UI XAML** — porte fiel do mockup canônico em WinUI 3 + C# (.NET 8), consumindo `CockpitState` via observer. Animações via `Storyboard`, blend modes via `CompositionBrush`/`Visual Layer`, perspectiva 3D via `PerspectiveTransform`. Solution já existe em `windows/cockpit/P1Fast.Cockpit.UI`. | Cloud | ❌ Não feito |
-| 13.8 | Empacotamento Windows nativo: instalador `.msix` ou self-contained `.exe` (.NET 8 publish single-file). Tier 0: cockpit funciona com mock data sem T4000 conectado. | Cloud | ❌ Não feito |
-| 13.9 | Validação visual side-by-side: notebook Windows com cockpit nativo ao vivo vs `mockup-cockpit-piloto.html` no Mac, ambos com mesmo CYCLE de cenas. Diff visual ≤ 2%. | Aqui | ❌ Não feito |
+| # | Task | Onde |
+|---|---|---|
+| 13.1 | **FECHADO 2026-05-10:** tela é a **PDM-10.5T**, **1920×1280 (3:2), 500 cd/m², USB-C/HDMI**. Specs e checklist de instalação completos em `docs/hardware/COCKPIT_DISPLAY_PDM-10.5T.md`. Viewport alvo do mockup canônico (atual 956×440) escala 2× pra 1912×880, com letterbox vertical de ~200 px topo + base, ou decisão de produto em MS-13.2 sobre stretch pra 1920×1280. Rotação 180° via Windows Display Settings. | Aqui (Flávio + Claude) |
+| 13.2 | Reorganizar mockup canônico em estrutura de produção (`web/cockpit/index.html` + `web/cockpit/cockpit.css` + `web/cockpit/cockpit.js`) preservando 1:1 todos os tokens, animações e DOM. Não é refactor — é só desentrelaçar. | Cloud |
+| 13.3 | `CockpitState` (JS) — espelha os 4 data-attrs (`data-trecho-status`, `data-shift-fire`, `data-msg-state`, `data-state` do shift-light). Modelo único alimentado por live data. | Cloud |
+| 13.4 | `LiveDataBridge` (JS) usa `TransportSelector` (web/cockpit/transport.js) que escolhe entre **cabo USB (primário)** e **Supabase Realtime (fallback)** com healthcheck por heartbeat 1 Hz, switch em 3 s de silêncio do primário, recovery com debounce 1 s. Recebe IMU/GPS do iPhone (MS-2.8 dual-publish) + T4000 local do MS-9.4 e funde tudo no `CockpitState` (MS-13.3). | Cloud |
+| 13.5 | `LapDetector` + `DeltaCalculator` + `CommandResolver` + `HaloController` (JS) — port do que estava planejado em SwiftUI. Pode reutilizar parte do `src/telemetry/detector.js` ou Edge Function. | Cloud |
+| 13.6 | Widget Vmin georef por trecho — consome `segment_executions.vmin_*` (MS-2.4/2.5) via Supabase REST. Exibe Vmin (km/h) + ponto (x/y) da melhor volta por trecho. Decisão Flávio 2026-05-04 preservada. | Cloud |
+| 13.7 | Empacotamento Windows: instalador simples (atalho na área de trabalho que abre Edge/Chrome em modo kiosk apontando pro app local — OU Electron build se 9.0 escolheu Electron). Tier 0: cockpit funciona com mock data sem T4000 conectado. | Cloud |
+| 13.8 | Validação visual side-by-side: notebook Windows mostrando o cockpit ao vivo vs `mockup-cockpit-piloto.html` no Mac, ambos com mesmo CYCLE de cenas. Diff visual ≤2%. | Aqui |
 
 ### MS-14 — Vista de volta + ghost map de trecho + reference line
 
@@ -336,32 +327,6 @@ Depende de MS-9 (T4000 fornece temp motor real) — em Tier 0 usa estimativa.
 | 15.1 | Detecção fase aquecimento/resfriamento por temp real (T4000) ou estimativa IMU/GPS (Tier 0) | Cloud |
 | 15.2 | Overlay chuva (3 camadas) | Cloud |
 | 15.3 | Vista resfriamento (lap-data + troféus pós-volta) | Cloud |
-
-### MS-16 — Command Box Engenharia (aprovado Flávio 2026-05-13)
-
-Núcleo lógico do sistema. Engenharia codificada + IA contextual. Operado pelos iPhones; mostrado na **TV 32" do box** (engenheiro/chefe-de-equipe) e no **Cockpit Pilot 10,5"** (piloto, com overlay de simulação quando parado). Notebook fica kiosk, não é operado. Detalhes completos em `docs/COMMAND_BOX_ENGENHARIA.md` (§1..§15) — auditoria + arquitetura aprovada.
-
-**7 decisões fechadas em 2026-05-13:** D1 (criar MS-16), D2+D3 (TV 32" via Box Mode iOS + overlay simulação no Cockpit Pilot 10,5"; notebook não é operado), D6 (3 rules MVP: fuel-lean, water-drift, vmin-loss), D14 (heurística carro parado/andando absorvida por D18), D17 (piloto edita/simula só com carro parado; chefe + engenheiro livres), D18 (switch padrão piloto ↔ engenharia automático via `cockpitModeResolver`: `modulo_ativado AND carro_parado` → ENGENHARIA; resto → PILOTO; voltar a andar força PILOTO imediato). 13 decisões abertas listadas em §11 do doc — nenhuma bloqueia.
-
-**Camada domain entregue ponta-a-ponta em 2026-05-13 — 6 PRs (#194..#199), ~4 600 linhas, 67 testes verdes.**
-
-| # | Task | Onde | Status |
-|---|---|---|---|
-| 16.0 | Auditoria + arquitetura aprovada (`docs/COMMAND_BOX_ENGENHARIA.md` ~970 linhas) + bloco MS-16 no plano | Aqui | ✅ #194 (`0bdafd9`) |
-| 16.1 | Port `src/telemetry/timebase.js` → `ios/p1fast-core/Sources/P1FastCore/TelemetryTimebase.swift` + paridade JS↔Swift via fixture sintética + TB-01..12 + TPB-01..12 | Cloud | ✅ #195 (`b84a2a9`) |
-| 16.2 | `VehicleContextAggregator.swift` — lap/stint/segment/thermal sem células + helpers `waterTempDriftPerMinute()` + `vminTrend()` + VCA-01..10 | Cloud | ✅ #196 (`639ec1e`) |
-| 16.3 | `CalibrationEngine.swift` + 3 rules MVP (`fuel-lean-sustained-load`, `water-temp-drift-no-cooling`, `vmin-progressive-loss-segment`) + migrations 0020_engineering_findings + 0021_engineering_recommendations (NÃO aplicadas em prod) + CE-01..15 | Cloud | ✅ #197 (`57c552a`) |
-| 16.4 | `/api/advisor.js` aceita campo `findings[]`; system prompt ganha §"FINDINGS CODIFICADOS" (governança IA: priorizar, explicar, validar, não contradizer); AF-01..09 | Cloud | ✅ #198 (`430d151`) |
-| 16.5a | **Domain pure** da Tab Engenharia — `EngControlModel` + `EngineeringDecisionPolicy` (slider/knob/toggle + gating D17 + transitions D8) + ECM-01..12 | Cloud | ✅ #199 (`2ee12a3`) |
-| 16.5b | **SwiftUI Views** — `EngenhariaView` + `FindingCardView` + `RecommendationCardView` + `EngControlSlider` + `EngControlKnob` + `EngenhariaRepository` (Supabase REST → migrations 0020/0021) + `BottomNav` tab Engenharia. Precisa Xcode local pra validar simulator. | Cloud (com Xcode) | ❌ |
-| 16.6 | iOS Box Mode ganha visão Engenharia — subscribe canal Realtime `live-stint-{id}`, renderiza na TV 32" via AirPlay → Apple TV. Gate: MS-9 + MS-12 fechados | Cloud | ❌ gate |
-| 16.7 | Cockpit Pilot 10,5" vira **canal contextual da engenharia** — overlay dirigido pelo canal `engineering-{stintId}` (`SIMULATION_INSTRUCTION` / `MECHANIC_DIAGNOSTIC` / `PILOT_FOCUS_PROMPT` / `ALERTA_OPERACIONAL`) + **switch automático padrão piloto ↔ padrão engenharia** (`cockpitModeResolver`: `modulo_ativado AND carro_parado` → engenharia; resto → piloto; voltar a andar força piloto imediato) | Cloud | ❌ |
-| 16.8 | **Simulação distribuída** — chefe + engenheiro rodam simulação no iPhone deles a qualquer momento (sliders/knobs); piloto roda **só com carro parado** (D17). Projeção determinística no canal Realtime; TV 32" + Cockpit Pilot 10,5" sincronizam em ~250 ms. Não muda mapa real | Cloud | ❌ |
-| 16.9 | (Opcional, gate D5) Engine cells RPM × MAP histogram + 2 rules extras (fuel-rich-light, lambda-vs-target) — só se mapa real for carregado | Cloud | ❌ gate |
-
-**Ordem dura:** 16.0 ✅ → 16.1 ✅ → 16.2 ✅ → 16.3 ✅ → (16.4 ✅ + 16.5a ✅ em paralelo) → 16.5b → 16.6 → (16.7 + 16.8 em paralelo) → 16.9.
-
-**Pendência Flávio:** aplicar migrations `0020_engineering_findings.sql` + `0021_engineering_recommendations.sql` em prod via `supabase db push`. Detalhes do estado pós-clear em `docs/SESSION_HANDOFF_2026-05-13_pre-clear.md`.
 
 ---
 
@@ -431,7 +396,6 @@ Núcleo lógico do sistema. Engenharia codificada + IA contextual. Operado pelos
 - **Package.resolved é tracked, não deletar** — ADR-022
 - **Pendências obrigatório × adicional, vivas, por carro+evento** — §6 MS-5 (decisão Flávio 2026-05-03, corrige "simples × completo")
 - **Apex ≠ Vmin ≠ ponto mais interno geométrico** (decisão Flávio 2026-05-04). Apex = referência de tangência da linha de corrida (organiza rotação e saída — métrica de linha). Vmin = dado dinâmico em runtime (onde o carro foi mais devagar — métrica de velocidade). Saída = métrica dominante quando há reta relevante depois. Configurador (MS-1.4) cadastra apex; Vmin é capturado e persistido em runtime (MS-2.4/2.5) e consumido pelo cockpit (MS-13.6) e Command Box futuro (MS-12).
-- **Command Box Engenharia = produto iOS Box Mode → TV 32" + Cockpit Pilot 10,5" virando canal contextual da engenharia** (decisão Flávio 2026-05-13, **quatro clarificações**). Engenheiro e chefe-de-equipe operam pelos iPhones (Box Mode + Tab Engenharia no hub); notebook Windows fica kiosk (não é operado). Operação distribuída via **sliders e knobs táteis** nos celulares de chefe, engenheiro e piloto — chefe/engenheiro a qualquer momento, **piloto só com carro parado** (D17). O Cockpit Pilot 10,5" **não é fixo** no cockpit canônico — switch é **automático** (D18): `modulo_engenharia_ativado AND carro_parado` → padrão engenharia; resto → padrão piloto; voltar a andar força padrão piloto imediato. Arquitetura completa em `docs/COMMAND_BOX_ENGENHARIA.md`. 3 rules MVP: `fuel-lean-sustained-load`, `water-temp-drift-no-cooling`, `vmin-progressive-loss-segment`.
 
 ---
 

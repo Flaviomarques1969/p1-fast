@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, initial-scale=1">
+<title>P1 Fast — Command Box Engenharia · Motor Health Advisor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════════════════════════
+   Motor Health Advisor — terceiro irmão da família
+   2026-05-18. Linguagem visual herdada do Lambda Advisor (15/05).
+   ════════════════════════════════════════════════════════════ */
+:root{
+  --bg:#0B0E13;
+  --card:#131820;
+  --card-2:#1A2029;
+  --hairline:#232934;
+  --hairline-soft:#1A1F28;
+  --fg:#E8EAEC;
+  --fg-soft:#C5C9D0;
+  --muted:#8B919B;
+  --muted-2:#5A6068;
+  --accent:#4F8CFF;
+  --gold:#D4AF37;
+
+  /* motor health states (mesmas cores do Lambda, semantica diferente) */
+  --verde:#3FE08C;       /* motor saudável neste trecho */
+  --amarelo:#F1C24A;     /* perda leve / atenção */
+  --vermelho:#FF5A4E;    /* motor caindo / pendência */
+  --semdados:#5A6068;    /* sem T4000 */
+  --banda-ideal:#3FE08C;
+}
+
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+body{
+  background:var(--bg); color:var(--fg);
+  font-family:'Helvetica Neue', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size:13px; line-height:1.35; min-height:100vh; padding:16px 16px 24px;
+}
+
+/* Header sticky */
+.toolbar{
+  display:flex; align-items:center; gap:12px;
+  padding:10px 14px; margin-bottom:14px;
+  background:var(--card); border:1px solid var(--hairline); border-radius:6px;
+  position:sticky; top:8px; z-index:60;
+}
+.toolbar h1{ margin:0; font-size:13px; letter-spacing:0.10em; color:var(--gold); font-weight:700; text-transform:uppercase; }
+.toolbar .sub{ margin-left:8px; font-size:11px; color:var(--muted); }
+.toolbar .kpi{ margin-left:auto; display:flex; gap:18px; font-size:11px; }
+.toolbar .kpi .k{ color:var(--muted); margin-right:6px; }
+.toolbar .kpi .v{ color:var(--fg); font-weight:600; }
+.toolbar .kpi .v.warn{ color:var(--amarelo); }
+.toolbar .kpi .v.bad{ color:var(--vermelho); }
+
+/* Layout dos blocos */
+.stage{
+  display:grid;
+  grid-template-columns: 1.3fr 1fr;
+  grid-template-rows: auto auto auto;
+  gap:14px;
+}
+.cb-block{
+  background:var(--card); border:1px solid var(--hairline); border-radius:8px;
+  padding:14px 16px; min-height:0;
+}
+.cb-block .h{ font-size:11px; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); font-weight:700; margin-bottom:6px; }
+.cb-block .t{ font-size:15px; font-weight:700; color:var(--fg); margin-bottom:10px; }
+
+.b-map { grid-column:1; grid-row:1 / span 2; }
+.b-detail { grid-column:2; grid-row:1; }
+.b-hist { grid-column:2; grid-row:2; }
+.b-pend { grid-column:1; grid-row:3; }
+.b-cadeia { grid-column:2; grid-row:3; }
+
+/* ── Mapa ── */
+.map-shell{ position:relative; width:100%; aspect-ratio: 823/799; max-height: 560px; }
+.map-svg{ width:100%; height:100%; }
+.map-track{ fill:none; stroke:#1F2530; stroke-width:30; stroke-linecap:round; stroke-linejoin:round; }
+.map-asphalt{ fill:none; stroke:#2A3140; stroke-width:22; stroke-linecap:round; stroke-linejoin:round; }
+.map-trecho-marker{ stroke:#0B0E13; stroke-width:2.5; cursor:pointer; transition: r 0.15s, filter 0.15s; }
+.map-trecho-marker:hover{ filter: drop-shadow(0 0 6px currentColor); }
+.map-trecho-marker.sel{ r:18; filter: drop-shadow(0 0 12px currentColor); }
+.map-leg{ display:flex; gap:14px; margin-top:10px; font-size:11px; color:var(--muted); flex-wrap:wrap; }
+.map-leg .chip{ display:inline-flex; align-items:center; gap:6px; }
+.map-leg .dot{ width:10px; height:10px; border-radius:50%; }
+
+/* ── Detalhe ── */
+.detalhe-pill{ display:inline-flex; gap:8px; align-items:center; padding:4px 10px; background:var(--card-2); border:1px solid var(--hairline); border-radius:14px; font-size:11px; color:var(--muted); }
+.detalhe-pill b{ color:var(--fg); font-weight:700; }
+.detalhe-num{ font-family:'JetBrains Mono', monospace; font-size:18px; font-weight:700; }
+.detalhe-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:12px; }
+.detalhe-cel{ background:var(--card-2); padding:10px 12px; border-radius:6px; }
+.detalhe-cel .lbl{ font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); }
+.detalhe-cel .val{ font-family:'JetBrains Mono', monospace; font-size:16px; font-weight:700; margin-top:3px; }
+.detalhe-frase{ margin-top:14px; padding:10px 12px; background:var(--card-2); border-radius:6px; font-size:12px; color:var(--fg-soft); line-height:1.5; border-left:3px solid var(--accent); }
+
+/* ── Histograma ── */
+.hist-area{ display:flex; align-items:flex-end; gap:3px; height:200px; padding:0 4px; border-bottom:1px solid var(--hairline); margin-top:8px; }
+.hist-col{ flex:1; display:flex; flex-direction:column; align-items:center; min-width:0; }
+.hist-bar{ width:100%; background:#2A3140; border-radius:2px 2px 0 0; transition: background 0.2s; min-height:1px; }
+.hist-bar.ideal{ background:var(--banda-ideal); }
+.hist-bar.alerta{ background:var(--vermelho); }
+.hist-val{ font-size:9px; color:var(--fg-soft); font-family:'JetBrains Mono', monospace; margin-bottom:3px; }
+.hist-lbl{ font-size:9px; color:var(--muted); font-family:'JetBrains Mono', monospace; margin-top:5px; }
+.hist-banda{ font-size:11px; color:var(--banda-ideal); margin-top:10px; font-weight:600; }
+.hist-resumo{ display:flex; gap:10px; margin-top:10px; }
+.hist-card{ flex:1; background:var(--card-2); padding:8px 10px; border-radius:6px; }
+.hist-card .l{ font-size:9px; text-transform:uppercase; color:var(--muted); letter-spacing:0.08em; }
+.hist-card .v{ font-family:'JetBrains Mono', monospace; font-size:15px; font-weight:700; margin-top:2px; }
+
+/* ── Pendências automáticas ── */
+.pend-auto{ background:rgba(255,90,78,0.10); border:1px solid rgba(255,90,78,0.35); border-left:3px solid var(--vermelho); padding:12px 14px; border-radius:6px; margin-bottom:10px; }
+.pend-auto .tit{ font-size:13px; font-weight:700; color:var(--vermelho); display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+.pend-auto .desc{ font-size:12px; color:var(--fg-soft); line-height:1.45; }
+.pend-auto .meta{ font-size:10px; color:var(--muted); font-family:'JetBrains Mono', monospace; margin-top:6px; }
+.matriz-titulo{ font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); font-weight:700; margin: 14px 0 8px; }
+.matriz-row{ display:flex; align-items:center; gap:10px; padding:8px 10px; background:var(--card-2); border-radius:6px; margin-bottom:6px; }
+.matriz-rank{ font-size:14px; font-weight:800; color:var(--gold); width:22px; text-align:center; }
+.matriz-rank.r2{ color:#9AA1AA; } .matriz-rank.r3{ color:#7A5C2B; }
+.matriz-corpo{ flex:1; }
+.matriz-corpo .id{ font-size:11px; color:var(--muted); font-family:'JetBrains Mono', monospace; }
+.matriz-corpo .nome{ font-size:13px; font-weight:600; color:var(--fg); }
+.matriz-num{ font-family:'JetBrains Mono', monospace; font-size:13px; font-weight:700; color:var(--vermelho); }
+
+/* ── Cadeia 3 etapas ── */
+.cadeia{ display:flex; gap:8px; align-items:stretch; }
+.cadeia-step{ flex:1; background:var(--card-2); border:1px solid var(--hairline); border-radius:6px; padding:10px 12px; position:relative; }
+.cadeia-step .num{ position:absolute; top:8px; right:10px; width:22px; height:22px; border-radius:50%; background:var(--card); color:var(--muted); font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.cadeia-step.ativo .num{ background:var(--gold); color:#0B0E13; }
+.cadeia-step .role{ font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); font-weight:700; }
+.cadeia-step .nome{ font-size:13px; font-weight:700; margin-top:2px; }
+.cadeia-step .qty{ font-family:'JetBrains Mono', monospace; font-size:18px; font-weight:700; color:var(--gold); margin-top:4px; }
+.cadeia-step.zero .qty{ color:var(--muted-2); }
+.cadeia-info{ margin-top:10px; font-size:11px; color:var(--muted); padding:8px 10px; background:var(--card-2); border-radius:6px; line-height:1.5; }
+.cadeia-info b{ color:var(--fg); }
+
+/* Chip de fonte de dados */
+#fonte-dados-chip{
+  display:flex; align-items:center; gap:8px;
+  padding:5px 12px; border-radius:999px;
+  font:600 11px/1 'JetBrains Mono', monospace; letter-spacing:0.04em;
+  background:#0F141B; border:1px solid var(--hairline); color:var(--muted);
+}
+#fonte-dados-chip .dot{ width:8px; height:8px; border-radius:50%; background:var(--muted-2); }
+#fonte-dados-chip.live{ color:var(--verde); border-color: rgba(63,224,140,0.35); }
+#fonte-dados-chip.live .dot{ background:var(--verde); animation: pulso 1.6s infinite; }
+#fonte-dados-chip.mock{ color:var(--gold); border-color: rgba(212,175,55,0.35); }
+#fonte-dados-chip.mock .dot{ background:var(--gold); }
+@keyframes pulso { 0%,100%{opacity:1} 50%{opacity:.35} }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1>Command Box · Engenharia · Motor Health Advisor</h1>
+  <span class="sub">Celta Bubi · Brasília · Stint 3</span>
+  <div class="kpi">
+    <div class="kpi"><span class="k">Status motor:</span> <span class="v" id="header-status">Apurando</span></div>
+    <div class="kpi"><span class="k">% banda ideal:</span> <span class="v" id="header-banda">—</span></div>
+    <div class="kpi"><span class="k">Pendências:</span> <span class="v" id="header-pend">0</span></div>
+  </div>
+  <div id="fonte-dados-chip" class="mock"><span class="dot"></span><span id="fonte-dados-txt">Fonte: dados de exemplo</span></div>
+</div>
+
+<div class="stage">
+
+  <!-- ═══════════════ MAPA ═══════════════ -->
+  <section class="cb-block b-map">
+    <div class="h">Painel A</div>
+    <div class="t">Saúde do motor por trecho · Autódromo de Brasília</div>
+    <div class="map-shell">
+      <svg class="map-svg" viewBox="0 0 823 799" preserveAspectRatio="xMidYMid meet">
+        <g transform="rotate(-106 415 400) scale(1.14) translate(0 0)">
+          <!-- Path canônico Brasília oficial (PISTA-OFICIAL-brasilia.txt). NÃO redesenhar. -->
+          <path id="track-bg" class="map-track" d=""/>
+          <path id="track-fg" class="map-asphalt" d=""/>
+          <g id="trechos-marcadores"></g>
+          <line x1="415" y1="695" x2="415" y2="720" stroke="#fff" stroke-width="3"/>
+        </g>
+      </svg>
+    </div>
+    <div class="map-leg">
+      <span class="chip"><span class="dot" style="background:var(--verde)"></span>Motor saudável neste trecho</span>
+      <span class="chip"><span class="dot" style="background:var(--amarelo)"></span>Perda leve · atenção</span>
+      <span class="chip"><span class="dot" style="background:var(--vermelho)"></span>Motor caindo · pendência sugerida</span>
+      <span class="chip"><span class="dot" style="background:var(--semdados)"></span>Sem T4000 · sem dado pra avaliar</span>
+    </div>
+  </section>
+
+  <!-- ═══════════════ DETALHE DO TRECHO ═══════════════ -->
+  <section class="cb-block b-detail">
+    <div class="h">Painel B</div>
+    <div class="t">Detalhe do trecho · <span id="d-name">selecione um trecho</span></div>
+    <div class="detalhe-pill">trecho <b id="d-id">—</b> · tipo <b id="d-tipo">—</b></div>
+    <div class="detalhe-grid">
+      <div class="detalhe-cel"><div class="lbl">RPM médio</div><div class="val" id="d-rpm">—</div></div>
+      <div class="detalhe-cel"><div class="lbl">Tempo na banda ideal</div><div class="val" id="d-banda">—</div></div>
+      <div class="detalhe-cel"><div class="lbl">Delta acumulado</div><div class="val" id="d-delta">—</div></div>
+      <div class="detalhe-cel"><div class="lbl">Causa provável</div><div class="val" id="d-causa">—</div></div>
+    </div>
+    <div class="detalhe-frase" id="d-frase">Clique em um marcador no mapa pra ver os números do trecho.</div>
+  </section>
+
+  <!-- ═══════════════ HISTOGRAMA RPM ═══════════════ -->
+  <section class="cb-block b-hist">
+    <div class="h">Painel C</div>
+    <div class="t">Tempo em cada faixa de RPM</div>
+    <div class="hist-area" id="hist"></div>
+    <div class="hist-banda">Banda ideal · 4.500–6.300 RPM (HP ≥ 100 da curva oficial)</div>
+    <div class="hist-resumo">
+      <div class="hist-card"><div class="l">RPM médio</div><div class="v" id="h-rpm-medio">—</div></div>
+      <div class="hist-card"><div class="l">% banda ideal</div><div class="v" id="h-banda-pct">—</div></div>
+      <div class="hist-card"><div class="l">Picos &gt; 6.350</div><div class="v" id="h-picos">—</div></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ PENDÊNCIAS AUTOMÁTICAS + MATRIZ ═══════════════ -->
+  <section class="cb-block b-pend">
+    <div class="h">Painel D</div>
+    <div class="t">Pendências sugeridas pela IA · Matriz de oportunidades</div>
+    <div id="pendencias-area"></div>
+    <div class="matriz-titulo">Top 3 trechos com maior perda</div>
+    <div id="matriz-area"></div>
+  </section>
+
+  <!-- ═══════════════ CADEIA DE APROVAÇÃO ═══════════════ -->
+  <section class="cb-block b-cadeia">
+    <div class="h">Painel E</div>
+    <div class="t">Cadeia de aprovação · 3 etapas</div>
+    <div class="cadeia">
+      <div class="cadeia-step zero" id="ce-engenheiro">
+        <div class="num" id="ce-engenheiro-num">1</div>
+        <div class="role">Etapa 1</div>
+        <div class="nome">Engenheiro</div>
+        <div class="qty"><span id="ce-engenheiro-qty">0</span> pendente</div>
+      </div>
+      <div class="cadeia-step zero" id="ce-equipe">
+        <div class="num">2</div>
+        <div class="role">Etapa 2</div>
+        <div class="nome">Equipe</div>
+        <div class="qty"><span id="ce-equipe-qty">0</span> pendente</div>
+      </div>
+      <div class="cadeia-step zero" id="ce-injecao">
+        <div class="num">3</div>
+        <div class="role">Etapa 3</div>
+        <div class="nome">Injeção</div>
+        <div class="qty"><span id="ce-injecao-qty">0</span> pendente</div>
+      </div>
+    </div>
+    <div class="cadeia-info">
+      <b>Command Box é só visualização</b> — não tem botão Aplicar. Cada item percorre as 3 etapas no aplicativo do mecânico antes de virar ação real. O contador aqui é informativo.
+    </div>
+  </section>
+
+</div>
+
+<script>
+"use strict";
+
+/* ──────────────────────────────────────────────────────────────
+ * 0) Massa de dados — espelha o Lambda Advisor pros 14 trechos
+ *    Estados de saúde do motor (mock até T4000 entrar):
+ *      cor: "verde" | "amarelo" | "vermelho" | "sem_dado"
+ * ────────────────────────────────────────────────────────────── */
+
+var TRECHOS = [
+  { id:'T01', name:'Reta dos boxes',        type:'Reta',        ts:0.9750, te:0.0533 },
+  { id:'T02', name:'Curva 1 — Bicão',       type:'Curva',       ts:0.0533, te:0.0933 },
+  { id:'T03', name:'Saída C1 / Reta C1→C2', type:'Aceleração',  ts:0.0933, te:0.2183 },
+  { id:'T04', name:'Curva 2',               type:'Curva',       ts:0.2183, te:0.2583 },
+  { id:'T05', name:'Transição C2→C3',       type:'Reta',        ts:0.2583, te:0.3583 },
+  { id:'T06', name:'Curva 3',               type:'Curva',       ts:0.3583, te:0.3983 },
+  { id:'T07', name:'Reta longa C3→C4',      type:'Plena carga', ts:0.3983, te:0.5317 },
+  { id:'T08', name:'Curva 4 — caracol',     type:'Curva',       ts:0.5317, te:0.5717 },
+  { id:'T09', name:'Curva 5',               type:'Curva',       ts:0.6367, te:0.6767 },
+  { id:'T10', name:'Curva 6 — laço',        type:'Curva',       ts:0.7433, te:0.7833 },
+  { id:'T11', name:'Saída C6 / Reta C6→C7', type:'Aceleração',  ts:0.7833, te:0.8633 },
+  { id:'T12', name:'Curva 7',               type:'Curva',       ts:0.8633, te:0.9033 },
+  { id:'T13', name:'Saída Curva 7',         type:'Aceleração',  ts:0.9033, te:0.9250 },
+  { id:'T14', name:'Curva 8 — Pinheirinho', type:'Curva',       ts:0.9250, te:0.9650 }
+];
+
+/* Mock de saúde por trecho. Quando o Tradutor responder, sobrescreve. */
+var SAUDE = {
+  T01:{ cor:"verde",    deltaMs2:0.2, rpmMedio:5600, fracaoBanda:0.78, causa:"indeterminado" },
+  T02:{ cor:"amarelo",  deltaMs2:1.1, rpmMedio:4900, fracaoBanda:0.62, causa:"motor_abaixo" },
+  T03:{ cor:"verde",    deltaMs2:0.3, rpmMedio:5300, fracaoBanda:0.71, causa:"indeterminado" },
+  T04:{ cor:"verde",    deltaMs2:0.4, rpmMedio:5100, fracaoBanda:0.65, causa:"indeterminado" },
+  T05:{ cor:"amarelo",  deltaMs2:0.9, rpmMedio:5800, fracaoBanda:0.81, causa:"pedal_parcial" },
+  T06:{ cor:"verde",    deltaMs2:0.1, rpmMedio:5200, fracaoBanda:0.69, causa:"indeterminado" },
+  T07:{ cor:"verde",    deltaMs2:0.2, rpmMedio:6000, fracaoBanda:0.88, causa:"indeterminado" },
+  T08:{ cor:"amarelo",  deltaMs2:1.4, rpmMedio:4700, fracaoBanda:0.58, causa:"marcha_baixa" },
+  T09:{ cor:"verde",    deltaMs2:0.3, rpmMedio:5100, fracaoBanda:0.67, causa:"indeterminado" },
+  T10:{ cor:"vermelho", deltaMs2:2.1, rpmMedio:4500, fracaoBanda:0.42, causa:"motor_abaixo" },
+  T11:{ cor:"amarelo",  deltaMs2:0.8, rpmMedio:5400, fracaoBanda:0.73, causa:"pedal_parcial" },
+  T12:{ cor:"verde",    deltaMs2:0.2, rpmMedio:5000, fracaoBanda:0.66, causa:"indeterminado" },
+  T13:{ cor:"amarelo",  deltaMs2:1.0, rpmMedio:5700, fracaoBanda:0.79, causa:"pedal_parcial" },
+  T14:{ cor:"vermelho", deltaMs2:1.9, rpmMedio:4400, fracaoBanda:0.38, causa:"motor_abaixo" }
+};
+
+/* Distribuição global de RPM da volta (mock). 11 faixas de 500 RPM (1500..7000). */
+var HISTOGRAMA_RPM = [3, 8, 14, 21, 18, 22, 38, 52, 48, 32, 4];
+
+/* Pendências automáticas (geradas pelo motor caindo em 3 stints). */
+var PENDENCIAS = [
+  { trechoId:"T10", titulo:"Motor caindo na Curva 6 — Laço",
+    descricao:"Delta cresceu 56% em 3 stints (1.3 → 1.8 → 2.1 m/s²). Vela suja ou filtro de ar entupido. Severidade alta.",
+    meta:"detectado pelo Tradutor · 18/05 17h20" }
+];
+
+/* Cadeia de aprovação (vem do banco — contadores reais). */
+var CADEIA = { engenheiro: 1, equipe: 0, injecao: 0 };
+
+var FRASES_POR_CAUSA = {
+  motor_abaixo: "Motor entregou menos do que deveria — vela, filtro ou óleo.",
+  marcha_baixa: "Marcha curta demais — RPM abaixo da banda ideal.",
+  pedal_parcial: "Pedal não foi até o fundo no acelerador.",
+  cambio_escorregando: "Câmbio ou embreagem escorregou.",
+  indeterminado: "Trecho dentro do esperado."
+};
+
+/* ──────────────────────────────────────────────────────────────
+ * 1) Marcadores no mapa
+ * ────────────────────────────────────────────────────────────── */
+var trackPath;
+var SELECTED = "T10";
+
+function corDoEstado(cor){
+  if (cor === "verde")    return "#3FE08C";
+  if (cor === "amarelo")  return "#F1C24A";
+  if (cor === "vermelho") return "#FF5A4E";
+  return "#5A6068";
+}
+
+function carregarPath(){
+  return fetch("PISTA-OFICIAL-brasilia.txt").then(function(r){ return r.text(); });
+}
+
+function montarMapa(d){
+  document.getElementById("track-bg").setAttribute("d", d);
+  document.getElementById("track-fg").setAttribute("d", d);
+  trackPath = document.getElementById("track-fg");
+  desenharMarcadores();
+}
+
+function desenharMarcadores(){
+  var g = document.getElementById("trechos-marcadores");
+  g.innerHTML = "";
+  if (!trackPath) return;
+  var L = trackPath.getTotalLength();
+  TRECHOS.forEach(function(t){
+    var fracao = (t.ts + t.te) / 2;
+    if (t.id === "T01") fracao = 0; // largada
+    var p = trackPath.getPointAtLength(L * (fracao % 1));
+    var saude = SAUDE[t.id] || { cor:"sem_dado" };
+    var ns = "http://www.w3.org/2000/svg";
+    var c = document.createElementNS(ns, "circle");
+    c.setAttribute("cx", p.x);
+    c.setAttribute("cy", p.y);
+    c.setAttribute("r", saude.cor === "vermelho" ? 14 : 11);
+    c.setAttribute("fill", corDoEstado(saude.cor));
+    c.setAttribute("class", "map-trecho-marker" + (t.id === SELECTED ? " sel" : ""));
+    c.setAttribute("data-trecho", t.id);
+    c.addEventListener("click", function(){ selectTrecho(t.id); });
+    g.appendChild(c);
+  });
+}
+
+function selectTrecho(id){
+  SELECTED = id;
+  Array.prototype.forEach.call(document.querySelectorAll(".map-trecho-marker"), function(el){
+    el.classList.toggle("sel", el.getAttribute("data-trecho") === id);
+  });
+  renderDetalhe();
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * 2) Render dos blocos
+ * ────────────────────────────────────────────────────────────── */
+function renderDetalhe(){
+  var t = TRECHOS.find(function(x){ return x.id === SELECTED; });
+  var s = SAUDE[SELECTED] || { cor:"sem_dado" };
+  if (!t) return;
+  document.getElementById("d-name").textContent = t.name;
+  document.getElementById("d-id").textContent = t.id;
+  document.getElementById("d-tipo").textContent = t.type;
+  document.getElementById("d-rpm").textContent = s.rpmMedio != null ? s.rpmMedio + " RPM" : "— sem T4000";
+  document.getElementById("d-banda").textContent = s.fracaoBanda != null ? Math.round(s.fracaoBanda * 100) + "%" : "—";
+  document.getElementById("d-delta").textContent = s.deltaMs2 != null ? s.deltaMs2.toFixed(1) + " m/s²" : "—";
+  document.getElementById("d-causa").textContent = s.causa || "—";
+  var corPx = corDoEstado(s.cor);
+  var frase = FRASES_POR_CAUSA[s.causa] || "Trecho dentro do esperado.";
+  if (s.cor === "vermelho")      frase = "Trecho crítico. " + frase;
+  else if (s.cor === "amarelo")  frase = "Atenção. " + frase;
+  var box = document.getElementById("d-frase");
+  box.textContent = frase;
+  box.style.borderLeftColor = corPx;
+}
+
+function renderHistograma(){
+  var faixas = [
+    {min:1500, max:2000, label:"1.5k"}, {min:2000, max:2500, label:"2.0k"},
+    {min:2500, max:3000, label:"2.5k"}, {min:3000, max:3500, label:"3.0k"},
+    {min:3500, max:4000, label:"3.5k"}, {min:4000, max:4500, label:"4.0k"},
+    {min:4500, max:5000, label:"4.5k"}, {min:5000, max:5500, label:"5.0k"},
+    {min:5500, max:6000, label:"5.5k"}, {min:6000, max:6500, label:"6.0k"},
+    {min:6500, max:7000, label:"6.5k"}
+  ];
+  var hist = document.getElementById("hist");
+  hist.innerHTML = "";
+  var maxV = Math.max.apply(null, HISTOGRAMA_RPM);
+  var totalAmostras = HISTOGRAMA_RPM.reduce(function(s, v){ return s + v; }, 0);
+  var amostrasNaBanda = 0;
+  var soma = 0;
+  var picosAcima = 0;
+  faixas.forEach(function(f, i){
+    var v = HISTOGRAMA_RPM[i] || 0;
+    var ideal = f.min >= 4500 && f.max <= 6300;
+    var alerta = f.min >= 6500;
+    if (ideal) amostrasNaBanda += v;
+    if (alerta) picosAcima += v;
+    soma += v * ((f.min + f.max) / 2);
+    var col = document.createElement("div");
+    col.className = "hist-col";
+    col.innerHTML = ''
+      + '<div class="hist-val">' + v + '</div>'
+      + '<div class="hist-bar ' + (ideal ? "ideal" : "") + (alerta ? " alerta" : "") + '" style="height: ' + ((v / maxV) * 170) + 'px;"></div>'
+      + '<div class="hist-lbl">' + f.label + '</div>';
+    hist.appendChild(col);
+  });
+  var rpmMedio = totalAmostras > 0 ? Math.round(soma / totalAmostras) : 0;
+  var bandaPct = totalAmostras > 0 ? Math.round((amostrasNaBanda / totalAmostras) * 100) : 0;
+  document.getElementById("h-rpm-medio").textContent = rpmMedio.toLocaleString("pt-BR");
+  document.getElementById("h-banda-pct").textContent = bandaPct + "%";
+  document.getElementById("h-picos").textContent = picosAcima;
+  document.getElementById("header-banda").textContent = bandaPct + "%";
+}
+
+function renderPendencias(){
+  var area = document.getElementById("pendencias-area");
+  area.innerHTML = "";
+  PENDENCIAS.forEach(function(p){
+    var t = TRECHOS.find(function(x){ return x.id === p.trechoId; });
+    var nomeTrecho = t ? t.name : p.trechoId;
+    var div = document.createElement("div");
+    div.className = "pend-auto";
+    div.innerHTML = ''
+      + '<div class="tit">⚠ ' + p.titulo + '</div>'
+      + '<div class="desc">' + p.descricao + '</div>'
+      + '<div class="meta">' + p.meta + ' · trecho: ' + nomeTrecho + '</div>';
+    area.appendChild(div);
+  });
+  document.getElementById("header-pend").textContent = PENDENCIAS.length;
+
+  // Matriz top 3
+  var matriz = TRECHOS.map(function(t){
+    var s = SAUDE[t.id] || { deltaMs2: 0 };
+    return { id: t.id, nome: t.name, delta: s.deltaMs2 };
+  }).sort(function(a, b){ return b.delta - a.delta; }).slice(0, 3);
+
+  var matrizArea = document.getElementById("matriz-area");
+  matrizArea.innerHTML = "";
+  matriz.forEach(function(m, i){
+    var div = document.createElement("div");
+    div.className = "matriz-row";
+    div.innerHTML = ''
+      + '<div class="matriz-rank' + (i === 1 ? " r2" : i === 2 ? " r3" : "") + '">' + (i + 1) + '</div>'
+      + '<div class="matriz-corpo">'
+      + '  <div class="id">' + m.id + '</div>'
+      + '  <div class="nome">' + m.nome + '</div>'
+      + '</div>'
+      + '<div class="matriz-num">' + m.delta.toFixed(1) + ' m/s²</div>';
+    matrizArea.appendChild(div);
+  });
+}
+
+function renderCadeia(){
+  document.getElementById("ce-engenheiro-qty").textContent = CADEIA.engenheiro;
+  document.getElementById("ce-equipe-qty").textContent = CADEIA.equipe;
+  document.getElementById("ce-injecao-qty").textContent = CADEIA.injecao;
+  ["engenheiro", "equipe", "injecao"].forEach(function(role){
+    var step = document.getElementById("ce-" + role);
+    if (CADEIA[role] > 0) { step.classList.remove("zero"); step.classList.add("ativo"); }
+    else { step.classList.add("zero"); step.classList.remove("ativo"); }
+  });
+}
+
+function renderHeaderStatus(){
+  var temVermelho = Object.keys(SAUDE).some(function(k){ return SAUDE[k].cor === "vermelho"; });
+  var temAmarelo = Object.keys(SAUDE).some(function(k){ return SAUDE[k].cor === "amarelo"; });
+  var st = document.getElementById("header-status");
+  st.classList.remove("warn", "bad");
+  if (temVermelho){ st.textContent = "Motor caindo · pendência ativa"; st.classList.add("bad"); }
+  else if (temAmarelo){ st.textContent = "Atenção pontual"; st.classList.add("warn"); }
+  else { st.textContent = "Motor saudável"; }
+}
+
+function rebuildVivo(){
+  desenharMarcadores();
+  renderDetalhe();
+  renderHistograma();
+  renderPendencias();
+  renderCadeia();
+  renderHeaderStatus();
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * 3) Boot + integração com Tradutor
+ * ────────────────────────────────────────────────────────────── */
+function setChipFonte(estado, texto){
+  var el = document.getElementById("fonte-dados-chip");
+  var tx = document.getElementById("fonte-dados-txt");
+  if (!el || !tx) return;
+  el.classList.remove("mock", "live");
+  el.classList.add(estado);
+  tx.textContent = texto;
+}
+
+window.P1_TRADUTOR_URL = window.P1_TRADUTOR_URL || "http://localhost:8765";
+
+var CARRO_PADRAO = {
+  relacoesMarcha: [3.92, 2.05, 1.36, 0.95, 0.76],
+  relacaoFinal: 4.27, raioPneuM: 0.289, massaKg: 908,
+  curva: { label: "celta-bubi-2026-05-18", samples: [] }
+};
+
+function pacoteSinteticoDoTrecho(t){
+  var amostras = [];
+  for (var i = 0; i < 5; i++){
+    amostras.push({
+      t: i * 0.1, velocidadeKmh: 90, pedalPct: 95,
+      rpm: 0, marcha: 0, aceleracaoRealMs2: 4
+    });
+  }
+  return {
+    trechoId: t.id, amostras: amostras,
+    identificacao: { carroId:"celta-bubi", configId:"cfg-1", pilotoId:"flavio", eventoId:"bsb-demo" },
+    carro: CARRO_PADRAO, tipoTrecho: t.type
+  };
+}
+
+async function tentarCarregarDoTradutor(){
+  setChipFonte("mock", "Fonte: tentando Tradutor…");
+  try {
+    var respostas = await Promise.all(TRECHOS.map(function(t){
+      return fetch(window.P1_TRADUTOR_URL, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(pacoteSinteticoDoTrecho(t))
+      }).then(function(r){
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      });
+    }));
+    var ndist = null;
+    var atualizou = 0;
+    respostas.forEach(function(resp){
+      var mh = resp.motorHealth || {};
+      var atual = SAUDE[resp.trechoId] || {};
+      SAUDE[resp.trechoId] = {
+        cor: resp.cor || atual.cor || "sem_dado",
+        deltaMs2: resp.deltaAcumuladoMs2 != null ? resp.deltaAcumuladoMs2 : atual.deltaMs2,
+        rpmMedio: mh.rpmMedio != null ? mh.rpmMedio : atual.rpmMedio,
+        fracaoBanda: mh.fracaoNaBandaIdeal != null ? mh.fracaoNaBandaIdeal : atual.fracaoBanda,
+        causa: resp.causaProvavel || atual.causa
+      };
+      if (mh.distribuicaoFaixasRpm) ndist = mh.distribuicaoFaixasRpm; // pega o último válido
+      atualizou++;
+      // Atualiza cadeia + pendências do último resp processado
+      if (resp.cadeia) CADEIA = resp.cadeia;
+    });
+    if (ndist) HISTOGRAMA_RPM = ndist;
+    rebuildVivo();
+    var temReal = respostas.some(function(r){ return r.motorHealth && r.motorHealth.rpmMedio != null; });
+    if (temReal) setChipFonte("live", "Fonte: Tradutor (dados reais · T4000 ativo)");
+    else setChipFonte("live", "Fonte: Tradutor (sem T4000 — usando mocks pra histograma)");
+    console.info("[motor-health-advisor] Tradutor atualizou " + atualizou + " trechos.");
+  } catch(e){
+    setChipFonte("mock", "Fonte: dados de exemplo");
+    console.warn("[motor-health-advisor] Tradutor offline — mantendo mocks. (" + e.message + ")");
+  }
+}
+
+function boot(){
+  carregarPath().then(montarMapa).then(function(){
+    rebuildVivo();
+    tentarCarregarDoTradutor();
+  }).catch(function(e){
+    console.warn("[motor-health-advisor] path da pista não carregou:", e.message);
+    rebuildVivo();
+  });
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", boot);
+} else {
+  boot();
+}
+
+window.MotorHealthAdvisor = {
+  TRECHOS: TRECHOS, SAUDE: SAUDE, PENDENCIAS: PENDENCIAS, CADEIA: CADEIA,
+  rebuildVivo: rebuildVivo, selectTrecho: selectTrecho
+};
+</script>
+
+</body>
+</html>

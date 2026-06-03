@@ -59,8 +59,13 @@ final class StintCaptureCoordinator: ObservableObject {
     private let timeId: String
 
     private var capturedEvents: [DetectorSegmentEndEvent] = []
+    private var capturedLaps: [DetectorLapEvent] = []
+    /// Eventos de "pico pós-saída" — Comando GO 2026-05-24. Chegam ~2.4 s
+    /// após cada segmentEnd. Pareados em finalize() pelo `(segmentId, lapNumero)`.
+    private var capturedPostBursts: [DetectorSegmentPostBurstEvent] = []
     private var lapCancel: (() -> Void)?
     private var segEndCancel: (() -> Void)?
+    private var segPostBurstCancel: (() -> Void)?
 
     // MS-2.8 — publish IMU/GPS pro cockpit Windows (cabo + Realtime)
     private var publisher: LiveTelemetryPublisher?
@@ -97,6 +102,8 @@ final class StintCaptureCoordinator: ObservableObject {
 
         activeStintId = stintId
         capturedEvents = []
+        capturedLaps = []
+        capturedPostBursts = []
         capturedSegmentCount = 0
         lapCount = 0
         lastLapMs = nil
@@ -123,9 +130,16 @@ final class StintCaptureCoordinator: ObservableObject {
                     self.capturedSegmentCount = self.capturedEvents.count
                 }
             }
+            segPostBurstCancel = detector.onSegmentPostBurst { [weak self] ev in
+                Task { @MainActor in
+                    guard let self else { return }
+                    self.capturedPostBursts.append(ev)
+                }
+            }
             lapCancel = detector.onLap { [weak self] ev in
                 Task { @MainActor in
                     guard let self else { return }
+                    self.capturedLaps.append(ev)
                     self.lapCount = ev.numero
                     self.lastLapMs = ev.tempoMs
                 }
@@ -171,17 +185,21 @@ final class StintCaptureCoordinator: ObservableObject {
         running = true
     }
 
-    /// Para a captura, drena o buffer de DetectorSegmentEndEvents e
-    /// devolve pra que o caller passe pro `StintRepository.finalize(
-    /// stintId:, segmentEvents:)`. Chamadas repetidas após parar
-    /// retornam `[]`.
+    /// Para a captura, drena os buffers de eventos do Detector e
+    /// devolve `(laps, segments, postBursts)` pra que o caller passe pro
+    /// `StintRepository.finalize(stintId:, lapEvents:, segmentEvents:, postBurstEvents:)`.
+    /// Chamadas repetidas após parar retornam buffers vazios.
     @discardableResult
-    func stop() async -> [DetectorSegmentEndEvent] {
-        guard running else { return [] }
+    func stop() async -> (laps: [DetectorLapEvent], segments: [DetectorSegmentEndEvent], postBursts: [DetectorSegmentPostBurstEvent]) {
+        guard running else { return ([], [], []) }
         running = false
 
         let events = capturedEvents
+        let laps = capturedLaps
+        let postBursts = capturedPostBursts
         capturedEvents = []
+        capturedLaps = []
+        capturedPostBursts = []
 
         await recorder?.stop()
         await processor?.detach()
@@ -198,6 +216,7 @@ final class StintCaptureCoordinator: ObservableObject {
 
         lapCancel?(); lapCancel = nil
         segEndCancel?(); segEndCancel = nil
+        segPostBurstCancel?(); segPostBurstCancel = nil
 
         recorder = nil
         processor = nil
@@ -205,6 +224,6 @@ final class StintCaptureCoordinator: ObservableObject {
         activeStintId = nil
         hasTrackBundle = false
 
-        return events
+        return (laps, events, postBursts)
     }
 }

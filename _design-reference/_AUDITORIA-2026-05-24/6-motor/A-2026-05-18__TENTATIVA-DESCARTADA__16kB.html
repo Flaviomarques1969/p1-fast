@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, initial-scale=1">
+<title>Command Box · Visão Engenheiro · aba Motor — P1 Fast (Bloco 5)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(0% 0 0);
+  --surface: oklch(11% 0 0);
+  --surface-2: oklch(14% 0 0);
+  --border: oklch(22% 0 0);
+  --hairline: oklch(28% 0 0);
+  --ink: oklch(100% 0 0);
+  --muted: oklch(58% 0 0);
+  --dim: oklch(72% 0 0);
+  --bom: oklch(80% 0.22 145);
+  --erro: oklch(68% 0.26 27);
+  --foco: oklch(82% 0.19 70);
+  --sistema: oklch(78% 0.16 225);
+  --ouro: oklch(78% 0.16 73);
+}
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: 'Inter', system-ui, sans-serif; }
+body { padding: 24px; }
+
+/* Header */
+.header { display: flex; align-items: center; gap: 24px; margin-bottom: 18px; }
+.header-title { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+.header-meta { color: var(--muted); font-size: 13px; }
+.tabs { display: flex; gap: 4px; margin-left: auto; }
+.tab { padding: 8px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--dim); font-size: 13px; font-weight: 600; cursor: default; }
+.tab.active { background: var(--surface-2); border-color: var(--hairline); color: var(--ink); }
+
+.subtabs { display: flex; gap: 4px; margin-bottom: 18px; }
+.subtab { padding: 6px 12px; background: transparent; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); font-size: 12px; font-weight: 500; cursor: default; }
+.subtab.active { background: var(--surface); color: var(--ink); border-color: var(--hairline); }
+
+/* Grid de 3 painéis */
+.engenheiro-grid { display: grid; grid-template-columns: 1.2fr 1fr 1.2fr; gap: 18px; }
+.painel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; min-height: 540px; }
+.painel-titulo { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
+.painel-subtitulo { font-size: 16px; font-weight: 700; margin-bottom: 14px; }
+
+/* Painel A — mapa */
+.mapa-svg { width: 100%; height: 360px; }
+.mapa-leg { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; font-size: 11px; color: var(--dim); }
+.mapa-leg .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; }
+.mapa-trecho-info { margin-top: 14px; background: var(--surface-2); padding: 10px 12px; border-radius: 8px; font-size: 12px; }
+.mapa-trecho-info b { color: var(--ink); font-weight: 700; }
+
+/* Painel B — histograma */
+.hist { display: flex; align-items: flex-end; gap: 4px; height: 280px; padding: 0 4px; border-bottom: 1px solid var(--hairline); margin-top: 4px; }
+.hist-col { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.hist-bar { width: 100%; background: var(--surface-2); border-radius: 3px 3px 0 0; min-height: 1px; transition: background 0.2s; }
+.hist-bar.ideal { background: var(--bom); }
+.hist-bar.alerta { background: var(--erro); }
+.hist-lbl { font-size: 9px; color: var(--muted); margin-top: 6px; font-family: 'JetBrains Mono', monospace; }
+.hist-val { font-size: 10px; color: var(--dim); font-weight: 600; margin-bottom: 4px; font-family: 'JetBrains Mono', monospace; }
+.hist-banda { font-size: 12px; color: var(--bom); margin-top: 16px; font-weight: 600; }
+.hist-resumo { display: flex; gap: 18px; margin-top: 14px; }
+.hist-card { flex: 1; background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
+.hist-card-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.hist-card-val { font-size: 20px; font-weight: 700; margin-top: 2px; }
+
+/* Painel C — sugestões */
+.sug { background: var(--surface-2); border-left: 3px solid var(--foco); padding: 12px 14px; border-radius: 6px; margin-bottom: 12px; }
+.sug.alta { border-left-color: var(--erro); }
+.sug-h { display: flex; gap: 8px; align-items: baseline; margin-bottom: 4px; }
+.sug-trecho { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+.sug-tit { font-size: 13px; font-weight: 700; }
+.sug-desc { font-size: 12px; color: var(--dim); margin-bottom: 10px; line-height: 1.4; }
+.cadeia { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cadeia-step { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 14px; background: var(--surface); font-size: 10px; font-weight: 600; }
+.cadeia-step .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.cadeia-step.done .dot { background: var(--bom); }
+.cadeia-step.now { background: var(--foco); color: var(--bg); }
+.cadeia-step.now .dot { background: var(--bg); }
+.cadeia-arrow { color: var(--muted); font-size: 11px; }
+.aviso-imutavel { margin-top: 14px; padding: 10px 12px; background: oklch(14% 0 0); border-radius: 8px; font-size: 11px; color: var(--muted); border: 1px dashed var(--hairline); }
+.aviso-imutavel b { color: var(--ink); font-weight: 700; }
+
+/* Pendência destacada (vermelho — vinda do Bloco 3) */
+.pendencia-auto { background: oklch(20% 0.08 27); border-left: 3px solid var(--erro); padding: 14px; border-radius: 6px; margin-bottom: 14px; }
+.pendencia-auto-tit { font-size: 14px; font-weight: 800; color: var(--erro); margin-bottom: 4px; display: flex; gap: 8px; align-items: center; }
+.pendencia-auto-bd { font-size: 12px; color: var(--dim); line-height: 1.4; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">Command Box · Visão Engenheiro · aba Motor</div>
+    <div class="header-meta">Celta Bubi · Brasília · Stint 3 · Volta 7 (1:42.1)</div>
+  </div>
+  <div class="tabs">
+    <div class="tab">Vista Piloto</div>
+    <div class="tab active">Visão Engenheiro</div>
+  </div>
+</div>
+
+<div class="subtabs">
+  <div class="subtab active">Motor</div>
+  <div class="subtab">Lambda</div>
+  <div class="subtab">PAce</div>
+  <div class="subtab">Suspensão</div>
+</div>
+
+<div class="engenheiro-grid">
+
+  <!-- ═══════════════════════════ Painel A — Saúde do motor por trecho ═══════════════════════════ -->
+  <div class="painel">
+    <div class="painel-titulo">Painel A</div>
+    <div class="painel-subtitulo">Saúde do motor por trecho · Brasília</div>
+
+    <svg class="mapa-svg" viewBox="0 0 823 799" preserveAspectRatio="xMidYMid meet">
+      <!-- Path canônico Brasília virá do JS abaixo (reusa PISTA-OFICIAL-brasilia.txt) -->
+      <path id="track" d="" fill="none" stroke="oklch(28% 0 0)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+      <path id="track-fill" d="" fill="none" stroke="oklch(48% 0 0)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Marcadores pontuais nas retas serão injetados em JS (regra dura: marcador, não pintar trecho) -->
+      <g id="trechos-marcadores"></g>
+      <!-- Linha de chegada -->
+      <line x1="415" y1="695" x2="415" y2="720" stroke="oklch(100% 0 0)" stroke-width="3"/>
+    </svg>
+
+    <div class="mapa-leg">
+      <span><span class="dot" style="background:var(--bom)"></span>Verde · motor dentro da banda</span>
+      <span><span class="dot" style="background:var(--foco)"></span>Amarelo · perda leve</span>
+      <span><span class="dot" style="background:var(--erro)"></span>Vermelho · motor caindo</span>
+    </div>
+
+    <div class="mapa-trecho-info">
+      <b>Trecho mais crítico: Curva 6 (Bruxa)</b> · Δ acumulado <b>2,1 m/s²</b> em pleno acelerador. RPM saiu da banda (entrou em 4.100, deveria entrar acima de 4.500). Sugerir checar vela e regulagem do bico 2.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════ Painel B — Histograma RPM ═══════════════════════════ -->
+  <div class="painel">
+    <div class="painel-titulo">Painel B</div>
+    <div class="painel-subtitulo">Tempo em cada faixa de RPM</div>
+
+    <div class="hist" id="hist"></div>
+    <div class="hist-banda">Faixa ideal: 4.500–6.300 RPM (HP ≥ 100)</div>
+
+    <div class="hist-resumo">
+      <div class="hist-card"><div class="hist-card-lbl">% na banda ideal</div><div class="hist-card-val">42%</div></div>
+      <div class="hist-card"><div class="hist-card-lbl">RPM médio</div><div class="hist-card-val">4 880</div></div>
+      <div class="hist-card"><div class="hist-card-lbl">Picos &gt; 6.350</div><div class="hist-card-val">3</div></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════ Painel C — Sugestões e cadeia ═══════════════════════════ -->
+  <div class="painel">
+    <div class="painel-titulo">Painel C</div>
+    <div class="painel-subtitulo">Sugestões IA · cadeia de validação</div>
+
+    <!-- Pendência automática vinda do Bloco 3 (motor caindo) -->
+    <div class="pendencia-auto">
+      <div class="pendencia-auto-tit">PENDÊNCIA AUTOMÁTICA · Motor caindo na Curva 6</div>
+      <div class="pendencia-auto-bd">
+        Delta cresceu <b>56%</b> nos 3 últimos stints (1,3 → 1,8 → 2,1 m/s²). Vela ou filtro de ar provável.
+        <b>Severidade: alta</b>. Já lançada na lista de pendências do carro.
+      </div>
+    </div>
+
+    <div class="sug">
+      <div class="sug-h"><span class="sug-trecho">CURVA 06</span><div class="sug-tit">Trocar vela + checar filtro de ar</div></div>
+      <div class="sug-desc">Maior delta acumulado do stint. Ganho estimado: <b>0,42 s/volta</b> se motor voltar a entregar SAE J1349.</div>
+      <div class="cadeia">
+        <div class="cadeia-step done"><span class="dot"></span>Proposta IA</div>
+        <span class="cadeia-arrow">›</span>
+        <div class="cadeia-step now"><span class="dot"></span>Engenheiro</div>
+        <span class="cadeia-arrow">›</span>
+        <div class="cadeia-step"><span class="dot"></span>Chefe</div>
+        <span class="cadeia-arrow">›</span>
+        <div class="cadeia-step"><span class="dot"></span>Sistema</div>
+        <span class="cadeia-arrow">›</span>
+        <div class="cadeia-step"><span class="dot"></span>Central</div>
+      </div>
+    </div>
+
+    <div class="sug">
+      <div class="sug-h"><span class="sug-trecho">CURVA 03</span><div class="sug-tit">Subir 1 marcha na saída (3ª em vez de 2ª)</div></div>
+      <div class="sug-desc">Pedal alto + RPM 3.200 (abaixo da banda). Sair em 3ª põe o motor em 4.700 RPM. Ganho estimado: <b>0,18 s/volta</b>.</div>
+      <div class="cadeia">
+        <div class="cadeia-step done"><span class="dot"></span>Proposta IA</div>
+        <span class="cadeia-arrow">›</span>
+        <div class="cadeia-step done"><span class="dot"></span>Engenheiro</div>
+        <span class="cadeia-arrow">›</span>
+        <div class="cadeia-step now"><span class="dot"></span>Chefe</div>
+        <span class="cadeia-arrow">›</span>
+        <div class="cadeia-step"><span class="dot"></span>Sistema</div>
+        <span class="cadeia-arrow">›</span>
+        <div class="cadeia-step"><span class="dot"></span>Central</div>
+      </div>
+    </div>
+
+    <div class="sug alta">
+      <div class="sug-h"><span class="sug-trecho">RETA 7→8</span><div class="sug-tit">Pedal fundo a partir do apex da 7</div></div>
+      <div class="sug-desc">Pedal 82% por 0,6s na saída da 7. Ganho estimado: <b>0,12 s/volta</b>. Pedido do piloto: confirmação técnica do limite do carro nesse ponto.</div>
+      <div class="cadeia">
+        <div class="cadeia-step done"><span class="dot"></span>Proposta IA</div>
+        <span class="cadeia-arrow">›</span>
+        <div class="cadeia-step done"><span class="dot"></span>Engenheiro</div>
+        <span class="cadeia-arrow">›</span>
+        <div class="cadeia-step done"><span class="dot"></span>Chefe</div>
+        <span class="cadeia-arrow">›</span>
+        <div class="cadeia-step done"><span class="dot"></span>Sistema</div>
+        <span class="cadeia-arrow">›</span>
+        <div class="cadeia-step now"><span class="dot"></span>Central</div>
+      </div>
+    </div>
+
+    <div class="aviso-imutavel">
+      <b>Command Box é só visualização</b> — não tem botão Aplicar/Aprovar.
+      Para aplicar uma sugestão, o caminho é: app do mecânico aceita → chefe valida → central
+      aplica → IA reavalia próximo stint. O Command Box só mostra em qual etapa cada item está.
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   Massa de dados (fixture) — espelha um stint sintético em Brasília.
+   Espelhada também no smoke do core (ME-01..ME-10).
+   ════════════════════════════════════════════════════════════ */
+
+const HISTOGRAMA_RPM = {
+  faixas: [
+    {min: 1500, max: 2000, label: "1.5k"},
+    {min: 2000, max: 2500, label: "2.0k"},
+    {min: 2500, max: 3000, label: "2.5k"},
+    {min: 3000, max: 3500, label: "3.0k"},
+    {min: 3500, max: 4000, label: "3.5k"},
+    {min: 4000, max: 4500, label: "4.0k"},
+    {min: 4500, max: 5000, label: "4.5k"},
+    {min: 5000, max: 5500, label: "5.0k"},
+    {min: 5500, max: 6000, label: "5.5k"},
+    {min: 6000, max: 6500, label: "6.0k"},
+    {min: 6500, max: 7000, label: "6.5k"},
+  ],
+  contagem: [3, 8, 14, 21, 18, 22, 38, 52, 48, 32, 4],
+};
+
+const TRECHOS_MOTOR = [
+  {ord: 0,  ponto:{x:415, y:710}, cor: "var(--bom)",  label:"Largada/T1"},
+  {ord: 1,  ponto:{x:520, y:660}, cor: "var(--bom)",  label:"C1"},
+  {ord: 2,  ponto:{x:610, y:580}, cor: "var(--foco)", label:"C2"},
+  {ord: 3,  ponto:{x:670, y:490}, cor: "var(--bom)",  label:"C3"},
+  {ord: 4,  ponto:{x:700, y:400}, cor: "var(--bom)",  label:"C4"},
+  {ord: 5,  ponto:{x:660, y:320}, cor: "var(--foco)", label:"C5"},
+  {ord: 6,  ponto:{x:580, y:260}, cor: "var(--erro)", label:"C6 Bruxa"},
+  {ord: 7,  ponto:{x:480, y:240}, cor: "var(--foco)", label:"C7"},
+  {ord: 8,  ponto:{x:390, y:270}, cor: "var(--bom)",  label:"C8"},
+  {ord: 9,  ponto:{x:310, y:340}, cor: "var(--bom)",  label:"C9"},
+  {ord:10,  ponto:{x:240, y:430}, cor: "var(--bom)",  label:"C10"},
+  {ord:11,  ponto:{x:210, y:520}, cor: "var(--bom)",  label:"C11"},
+  {ord:12,  ponto:{x:260, y:620}, cor: "var(--foco)", label:"C12"},
+  {ord:13,  ponto:{x:340, y:680}, cor: "var(--bom)",  label:"C13 placar"},
+];
+
+/* Carrega o path da pista oficial (TXT). Em caso de falha, mostra placeholder. */
+fetch("PISTA-OFICIAL-brasilia.txt")
+  .then(r => r.text())
+  .then(txt => {
+    document.getElementById("track").setAttribute("d", txt);
+    document.getElementById("track-fill").setAttribute("d", txt);
+  })
+  .catch(() => {
+    /* offline: mantém placeholder vazio */
+  });
+
+/* Marcadores coloridos por trecho */
+const g = document.getElementById("trechos-marcadores");
+for (const t of TRECHOS_MOTOR) {
+  const ns = "http://www.w3.org/2000/svg";
+  const c = document.createElementNS(ns, "circle");
+  c.setAttribute("cx", t.ponto.x);
+  c.setAttribute("cy", t.ponto.y);
+  c.setAttribute("r", t.cor === "var(--erro)" ? 12 : 9);
+  c.setAttribute("fill", t.cor);
+  c.setAttribute("stroke", "#000");
+  c.setAttribute("stroke-width", "2");
+  g.appendChild(c);
+}
+
+/* Histograma — calcula maxAlt automaticamente */
+const histEl = document.getElementById("hist");
+const maxCount = Math.max(...HISTOGRAMA_RPM.contagem);
+HISTOGRAMA_RPM.faixas.forEach((f, i) => {
+  const v = HISTOGRAMA_RPM.contagem[i];
+  const dentroBanda = f.min >= 4500 && f.max <= 6300;
+  const acimaTeto = f.min >= 6500;
+  const col = document.createElement("div");
+  col.className = "hist-col";
+  col.innerHTML = `
+    <div class="hist-val">${v}</div>
+    <div class="hist-bar ${dentroBanda ? "ideal" : ""} ${acimaTeto ? "alerta" : ""}" style="height: ${(v / maxCount) * 230}px;"></div>
+    <div class="hist-lbl">${f.label}</div>
+  `;
+  histEl.appendChild(col);
+});
+</script>
+</body>
+</html>

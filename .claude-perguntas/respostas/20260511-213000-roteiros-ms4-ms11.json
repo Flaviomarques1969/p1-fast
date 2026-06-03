@@ -1,0 +1,119 @@
+{
+  "pergunta_id": "20260511-213000-roteiros-ms4-ms11",
+  "tipo": "reconstrucao-roteiros",
+  "frentes": [
+    "MS-4 StintPlan",
+    "MS-11 Video ao vivo"
+  ],
+  "respostas": {
+    "ordem": {
+      "escolha": "ms4-primeiro",
+      "livre": ""
+    },
+    "granularidade": {
+      "escolha": "por-etapa",
+      "livre": ""
+    },
+    "quando-parar": {
+      "escolha": "card",
+      "livre": ""
+    },
+    "ms4-campos": {
+      "escolha": "outra",
+      "livre": "O planejamento do Stint ele também considera outras coisas, como por exemplo o tipo de lição que ele quer desenvolver, o tipo de treino que ele quer fazer. Se ele quer ativar a IA, e se ele quer colocar o mapa do ghost na tela. Além disso, ele escolhe também no check list antes de sair depois, se vai colocar os itens obrigatórios ou os obrigató rios mais adicionais ou quais adicionais ele vai colocar, além dos obrigatórios."
+    },
+    "ms4-objetivos": {
+      "escolha": "4mockup",
+      "livre": ""
+    },
+    "ms4-evento": {
+      "escolha": "sempre-evento",
+      "livre": ""
+    },
+    "ms4-paradas": {
+      "escolha": "outra",
+      "livre": "ele descreve, ele fala onde volta que ele quer a parada e também diz qual é o motivo da parada para que esse motivo apareça no Command Box, para que o Box saiba quando ele vai parar e por que ele está parando ali, para que as pessoas se preparem Aparece onde é a lista de Checklist, aparece essa atividade lá, piscando quando ele tiver na volta anterior a volta da parada"
+    },
+    "ms4-multi-piloto": {
+      "escolha": "outra",
+      "livre": "Se o evento for um Durace, quando for criar o evento, aí você tem lista de pilotos com troca por volta Mas se for um evento de track day ou outro tipo de evento que não seja um Durace, é um piloto por instinteMas no evento pode ter um piloto convidado também"
+    },
+    "ms4-edicao": {
+      "escolha": "livre-ate-fim",
+      "livre": ""
+    },
+    "ms4-validacao": {
+      "escolha": "testes-mock",
+      "livre": ""
+    },
+    "ms11-quando-comeca": {
+      "escolha": "automatico",
+      "livre": ""
+    },
+    "ms11-quem-ve": {
+      "escolha": "outra",
+      "livre": "são todas as opções, né? O box vê, e as pessoas que estão que têm acesso ao aplicativo conseguem ver, público, mas quem está acessando o aplicativo pode ver. Pode criar o link pro produto também."
+    },
+    "ms11-qualidade": {
+      "escolha": "adaptativo",
+      "livre": ""
+    },
+    "ms11-audio": {
+      "escolha": "sem-audio",
+      "livre": ""
+    },
+    "ms11-heartbeat": {
+      "escolha": "5s",
+      "livre": ""
+    },
+    "ms11-falha-internet": {
+      "escolha": "ultima-imagem",
+      "livre": ""
+    },
+    "ms11-airplay": {
+      "escolha": "detecta",
+      "livre": ""
+    },
+    "ms11-gravacao": {
+      "escolha": "outra",
+      "livre": "No final do stint, é uma das coisas que deixa que lixa, que o piloto decide se vai manter ou não aquela volta."
+    },
+    "ms11-validacao": {
+      "escolha": "real",
+      "livre": ""
+    },
+    "sync": {
+      "escolha": "local-primeiro",
+      "livre": ""
+    },
+    "ms4-onde-botao": {
+      "escolha": "evento",
+      "livre": ""
+    },
+    "ms4-encerramento": {
+      "escolha": "automatico-box",
+      "livre": ""
+    },
+    "ms4-quem-edita": {
+      "escolha": "outra",
+      "livre": "só o piloto e o chefe da equipe."
+    },
+    "ms4-cancelamento": {
+      "escolha": "marca",
+      "livre": ""
+    },
+    "ms11-custo": {
+      "escolha": "ate-50mes",
+      "livre": ""
+    },
+    "ms11-bateria": {
+      "escolha": "aviso-20",
+      "livre": ""
+    },
+    "ms11-pausa-box": {
+      "escolha": "continua",
+      "livre": ""
+    }
+  },
+  "respondido_em": "2026-05-12T02:16:02.198Z"
+}

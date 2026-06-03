@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>6 indicadores dos 3 trechos prioritários — Stint 2026-05-23</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#101a2e; --panel2:#15233d; --line:#1f2f4d;
+    --ink:#e8eef9; --muted:#8ea0c1; --accent:#5da3ff; --ok:#5dd39e;
+    --warn:#ffb454; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1200px;margin:0 auto;padding:32px 24px 80px}
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:24px}
+  h1{font-size:24px;margin:0 0 6px;font-weight:600;letter-spacing:-0.01em}
+  h2{font-size:18px;margin:36px 0 12px;font-weight:600;letter-spacing:-0.01em;color:var(--accent)}
+  h3{font-size:15px;margin:18px 0 8px;font-weight:600;color:var(--ink)}
+  p{margin:0 0 12px}
+  .sub{color:var(--muted);font-size:13px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;margin:14px 0}
+
+  /* O que sao os 6 indicadores */
+  .indic-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:14px 0}
+  @media (max-width:900px){.indic-grid{grid-template-columns:repeat(3,1fr)}}
+  @media (max-width:600px){.indic-grid{grid-template-columns:repeat(2,1fr)}}
+  .indic{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:12px}
+  .indic .num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#0b1220;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;margin-bottom:8px}
+  .indic .nome{font-weight:600;font-size:14px;margin-bottom:4px}
+  .indic .desc{font-size:11px;color:var(--muted);line-height:1.45}
+
+  /* Header do trecho */
+  .trecho-header{background:var(--panel2);border:1px solid var(--line);border-left:5px solid var(--bad);border-radius:10px;padding:20px;margin:14px 0}
+  .trecho-header.r2{border-left-color:var(--warn)}
+  .trecho-header.r3{border-left-color:var(--warn);opacity:.96}
+  .trecho-header .rank{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)}
+  .trecho-header .nome{font-size:22px;font-weight:700;letter-spacing:-0.01em;margin:4px 0 8px}
+  .trecho-header .resumo{display:flex;gap:24px;flex-wrap:wrap;font-size:14px;margin-top:8px}
+  .trecho-header .resumo div{display:flex;flex-direction:column}
+  .trecho-header .resumo .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em}
+  .trecho-header .resumo .v{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px}
+
+  /* Tabela */
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+  th,td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
+  th{color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:0.06em;background:rgba(93,163,255,.04)}
+  th:first-child,td:first-child{text-align:left}
+  th.grupo-freada{background:rgba(255,180,84,.12);color:var(--warn)}
+  th.grupo-curva{background:rgba(255,107,107,.12);color:var(--bad)}
+  th.grupo-saida{background:rgba(93,211,158,.12);color:var(--ok)}
+  td.grupo-freada{background:rgba(255,180,84,.04)}
+  td.grupo-curva{background:rgba(255,107,107,.04)}
+  td.grupo-saida{background:rgba(93,211,158,.04)}
+  tr.v-melhor{background:rgba(93,211,158,.08)}
+  tr.v-melhor td:first-child{font-weight:700;color:var(--ok)}
+  tr.v-pior td:first-child{font-weight:700;color:var(--bad)}
+  tr.v-atipica td{opacity:.7}
+  tr.v-atipica td:first-child{color:var(--warn);font-style:italic}
+
+  /* Analise */
+  .analise{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;margin:10px 0}
+  .analise h4{margin:0 0 8px;color:var(--accent);font-size:14px}
+  .analise ul{margin:0;padding-left:20px}
+  .analise li{margin:4px 0;font-size:14px}
+  .analise li strong{color:var(--ink)}
+
+  /* Alerta */
+  .alert{background:rgba(255,180,84,.08);border:1px solid rgba(255,180,84,.4);border-radius:10px;padding:16px;margin:14px 0}
+  .alert h3{color:var(--warn);margin-top:0}
+
+  .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em}
+  .tag.bad{background:rgba(255,107,107,.18);color:var(--bad)}
+  .tag.warn{background:rgba(255,180,84,.18);color:var(--warn)}
+  .tag.ok{background:rgba(93,211,158,.15);color:var(--ok)}
+
+  footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+  code{background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Os 6 indicadores nos 3 trechos prioritários</h1>
+    <div class="sub">Análise por trecho da Curva da Reta Oposta, Curva "S" e Curva 01 · stint 2026-05-23 · Brasília · Bubi · Bolinha (Celta 1.4)</div>
+  </header>
+
+  <!-- ===================== O QUE SÃO OS 6 INDICADORES ===================== -->
+  <h2>O que cada indicador significa</h2>
+  <div class="indic-grid">
+    <div class="indic"><div class="num">1</div><div class="nome">Entrada</div><div class="desc">Onde o piloto começou a sentir a curva — velocidade já caiu cerca de 30% do pico até o ápice</div></div>
+    <div class="indic"><div class="num">2</div><div class="nome">Ponto de frenagem</div><div class="desc">Onde a velocidade começou a cair forte — primeiro ponto onde tirou pé do acelerador / pisou no freio</div></div>
+    <div class="indic"><div class="num">3</div><div class="nome">V mínima</div><div class="desc">A velocidade mais baixa atingida na curva (geograficamente coincide com o ápice)</div></div>
+    <div class="indic"><div class="num">4</div><div class="nome">Pace</div><div class="desc">Ponto pós-ápice onde voltou a acelerar com força — momento em que o pé pisou no acelerador a fundo</div></div>
+    <div class="indic"><div class="num">5</div><div class="nome">Ápice</div><div class="desc">Coordenada geográfica do ponto mais lento da curva</div></div>
+    <div class="indic"><div class="num">6</div><div class="nome">Saída</div><div class="desc">Onde a velocidade voltou a 90% do pico da reta seguinte — fim do trecho de curva, início da reta</div></div>
+  </div>
+
+  <!-- ===================== AVISO IMPORTANTE: VOLTA 1 ATIPICA ===================== -->
+  <div class="alert">
+    <h3>Antes de começar — observação sobre a Volta 1</h3>
+    <p>Olhando os 6 indicadores de cada volta, a <strong>Volta 1 tem padrão claramente diferente das outras 3</strong>: nas retas antes das curvas, ela chegou a velocidades muito mais baixas (113-136 km/h contra 154-156 km/h nas voltas 2, 3 e 4).</p>
+    <p>Isso indica que a <strong>Volta 1 é uma volta de abertura</strong> (o piloto ainda estava colocando o carro no ritmo, vindo do aquecimento). Por isso ela aparece com "melhor tempo no trecho" em algumas curvas — mas não é uma volta comparável às outras 3.</p>
+    <p><strong>Conclusão:</strong> a comparação justa é entre as voltas 2, 3 e 4. A Volta 1 está mantida na tabela pra honestidade, mas marcada como "atípica" (em itálico) — não usar como referência de melhor passagem.</p>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- =========== TRECHO 1 ======================= -->
+  <!-- ============================================ -->
+  <div class="trecho-header">
+    <div class="rank">1º Trecho prioritário · Maior delta no stint</div>
+    <div class="nome">Curva da Reta Oposta</div>
+    <div class="sub">Curva rápida depois da reta principal · cornerType "rápida" no cadastro · trecho em que o piloto perde mais tempo</div>
+    <div class="resumo">
+      <div><span class="l">Melhor passagem (V2-V4)</span><span class="v">24,00 s</span></div>
+      <div><span class="l">Média (V2-V4)</span><span class="v">24,67 s</span></div>
+      <div><span class="l">Pior (V2-V4)</span><span class="v">26,01 s</span></div>
+      <div><span class="l">Delta real (V2-V4)</span><span class="v" style="color:#ffb454">+2,01 s</span></div>
+      <div><span class="l">Delta antes (com V1)</span><span class="v" style="color:#ff6b6b">+7,25 s</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Os 6 indicadores na Curva da Reta Oposta — volta por volta</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Volta</th>
+          <th class="grupo-freada">V chegada (km/h)</th>
+          <th class="grupo-freada">2. Freada (km/h)</th>
+          <th class="grupo-freada">1. Entrada (km/h)</th>
+          <th class="grupo-curva">3. Vmin (km/h)</th>
+          <th class="grupo-saida">4. Pace (km/h)</th>
+          <th class="grupo-saida">V saída pico (km/h)</th>
+          <th class="grupo-saida">6. Saída (km/h)</th>
+          <th>Freada → ápice (m)</th>
+          <th>Ápice → saída (m)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="v-atipica">
+          <td>V1 (atípica)</td>
+          <td class="grupo-freada">129,2</td>
+          <td class="grupo-freada">128,1</td>
+          <td class="grupo-freada">115,4</td>
+          <td class="grupo-curva">92,1</td>
+          <td class="grupo-saida">93,4</td>
+          <td class="grupo-saida">141,1</td>
+          <td class="grupo-saida">137,8</td>
+          <td>169</td>
+          <td>459</td>
+        </tr>
+        <tr class="v-pior">
+          <td>V2 (pior)</td>
+          <td class="grupo-freada">156,0</td>
+          <td class="grupo-freada">153,1</td>
+          <td class="grupo-freada">136,4</td>
+          <td class="grupo-curva">104,8</td>
+          <td class="grupo-saida">106,8</td>
+          <td class="grupo-saida">142,3</td>
+          <td class="grupo-saida">139,0</td>
+          <td>243</td>
+          <td>397</td>
+        </tr>
+        <tr class="v-melhor">
+          <td>V3 (melhor)</td>
+          <td class="grupo-freada">155,9</td>
+          <td class="grupo-freada">153,6</td>
+          <td class="grupo-freada">136,2</td>
+          <td class="grupo-curva">103,6</td>
+          <td class="grupo-saida">105,6</td>
+          <td class="grupo-saida">140,2</td>
+          <td class="grupo-saida">137,0</td>
+          <td>189</td>
+          <td>402</td>
+        </tr>
+        <tr class="v-melhor">
+          <td>V4 (melhor)</td>
+          <td class="grupo-freada">155,7</td>
+          <td class="grupo-freada">153,5</td>
+          <td class="grupo-freada">131,9</td>
+          <td class="grupo-curva">101,8</td>
+          <td class="grupo-saida">105,7</td>
+          <td class="grupo-saida">141,1</td>
+          <td class="grupo-saida">137,6</td>
+          <td>151</td>
+          <td>435</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="analise">
+    <h4>Leitura técnica da Curva da Reta Oposta (comparando V2-V4)</h4>
+    <ul>
+      <li><strong>Velocidade de chegada estável (155-156 km/h):</strong> o piloto chegou com mesma velocidade nas 3 voltas — a reta anterior está consistente.</li>
+      <li><strong>Diferença na freada e entrada:</strong> V4 freou mais cedo (151 m do ponto de frenagem ao ápice, contra 243 m da V2) e entrou na curva mais lenta (131,9 km/h contra 136,4 km/h). Isso explica em parte a melhora — entrou mais comportado.</li>
+      <li><strong>Vmin parecida (101-105 km/h):</strong> o piloto perdeu velocidade mínima similar nas 3 voltas. Não tem ganho enorme aqui — o limite da curva está bem cravado.</li>
+      <li><strong>Saída idêntica (137-139 km/h):</strong> a velocidade final do trecho é a mesma. O ganho da V3/V4 sobre a V2 está na <strong>fase de freada</strong>, não na saída.</li>
+      <li><strong>Conclusão tática:</strong> nessa curva, o ganho real entre V2 e V4 é de cerca de 2 segundos por volta, e vem de freada mais curta + entrada mais comportada. Pace e saída estão consistentes.</li>
+    </ul>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- =========== TRECHO 2: CURVA "S" ============ -->
+  <!-- ============================================ -->
+  <div class="trecho-header r2">
+    <div class="rank">2º Trecho prioritário</div>
+    <div class="nome">Curva "S"</div>
+    <div class="sub">Curva rápida com ápice duplo no cadastro · cornerType "rapida" · seguida de reta curta de 60 m</div>
+    <div class="resumo">
+      <div><span class="l">Melhor passagem (V2 e V4)</span><span class="v">19,00 s</span></div>
+      <div><span class="l">Média (V2-V4)</span><span class="v">19,33 s</span></div>
+      <div><span class="l">Pior (V2-V4)</span><span class="v">20,00 s</span></div>
+      <div><span class="l">Delta real (V2-V4)</span><span class="v" style="color:#5dd39e">+1,00 s</span></div>
+      <div><span class="l">Delta antes (com V1)</span><span class="v" style="color:#ff6b6b">+6,01 s</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Os 6 indicadores na Curva "S" — volta por volta</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Volta</th>
+          <th class="grupo-freada">V chegada (km/h)</th>
+          <th class="grupo-freada">2. Freada (km/h)</th>
+          <th class="grupo-freada">1. Entrada (km/h)</th>
+          <th class="grupo-curva">3. Vmin (km/h)</th>
+          <th class="grupo-saida">4. Pace (km/h)</th>
+          <th class="grupo-saida">V saída pico (km/h)</th>
+          <th class="grupo-saida">6. Saída (km/h)</th>
+          <th>Freada → ápice (m)</th>
+          <th>Ápice → saída (m)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="v-atipica">
+          <td>V1 (atípica)</td>
+          <td class="grupo-freada">135,7</td>
+          <td class="grupo-freada">135,7</td>
+          <td class="grupo-freada">111,3</td>
+          <td class="grupo-curva">87,9</td>
+          <td class="grupo-saida">90,8</td>
+          <td class="grupo-saida">148,5</td>
+          <td class="grupo-saida">142,4</td>
+          <td>198</td>
+          <td>651</td>
+        </tr>
+        <tr class="v-melhor">
+          <td>V2 (melhor)</td>
+          <td class="grupo-freada">133,9</td>
+          <td class="grupo-freada">131,7</td>
+          <td class="grupo-freada">118,0</td>
+          <td class="grupo-curva">86,3</td>
+          <td class="grupo-saida">89,5</td>
+          <td class="grupo-saida">149,4</td>
+          <td class="grupo-saida">146,2</td>
+          <td>159</td>
+          <td>658</td>
+        </tr>
+        <tr class="v-pior">
+          <td>V3 (pior)</td>
+          <td class="grupo-freada">104,1</td>
+          <td class="grupo-freada">101,8</td>
+          <td class="grupo-freada">92,6</td>
+          <td class="grupo-curva">83,9</td>
+          <td class="grupo-saida">86,0</td>
+          <td class="grupo-saida">105,3</td>
+          <td class="grupo-saida">104,5</td>
+          <td>90</td>
+          <td>168</td>
+        </tr>
+        <tr class="v-melhor">
+          <td>V4 (melhor)</td>
+          <td class="grupo-freada">136,7</td>
+          <td class="grupo-freada">133,7</td>
+          <td class="grupo-freada">119,0</td>
+          <td class="grupo-curva">86,7</td>
+          <td class="grupo-saida">88,8</td>
+          <td class="grupo-saida">148,6</td>
+          <td class="grupo-saida">146,3</td>
+          <td>168</td>
+          <td>666</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="analise">
+    <h4>Leitura técnica da Curva "S" (comparando V2 e V4 contra V3)</h4>
+    <ul>
+      <li><strong>V3 é a anomalia aqui</strong> — chegou a apenas 104 km/h (contra 133-136 km/h das outras). Provavelmente o piloto teve algum problema antes dessa curva nessa volta (tráfego? hesitação? erro na curva anterior?). Vale conversar com o Bubi se ele lembra o que aconteceu na volta 3.</li>
+      <li><strong>V2 e V4 são praticamente idênticas em todos os 6 indicadores</strong> — chegada 134 vs 137 km/h, freada igual, entrada igual, vmin igual, pace igual, saída igual. O piloto está extremamente consistente nessa curva nas voltas em ritmo.</li>
+      <li><strong>Curva "S" é o ponto mais consistente do stint</strong> — delta real de apenas 1 s entre V2 e V4. O ganho de +6 s reportado antes foi inflado pela V3 atípica.</li>
+      <li><strong>Conclusão tática:</strong> essa curva o piloto domina. O foco deve ser entender o que aconteceu na V3, não tentar melhorar técnica nas voltas em ritmo.</li>
+    </ul>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- =========== TRECHO 3: CURVA 01 ============= -->
+  <!-- ============================================ -->
+  <div class="trecho-header r3">
+    <div class="rank">3º Trecho prioritário</div>
+    <div class="nome">Curva 01</div>
+    <div class="sub">Primeira curva depois da reta principal · cornerType "lenta" no cadastro · seguida de reta de 280 m</div>
+    <div class="resumo">
+      <div><span class="l">Melhor passagem (V2-V4)</span><span class="v">10,25 s</span></div>
+      <div><span class="l">Média (V2-V4)</span><span class="v">11,67 s</span></div>
+      <div><span class="l">Pior (V2-V4)</span><span class="v">20,00 s</span></div>
+      <div><span class="l">Delta real (V2-V4)</span><span class="v" style="color:#ff6b6b">+1,42 s</span></div>
+      <div><span class="l">Delta antes (com V1)</span><span class="v" style="color:#ff6b6b">+4,25 s</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Os 6 indicadores na Curva 01 — volta por volta</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Volta</th>
+          <th class="grupo-freada">V chegada (km/h)</th>
+          <th class="grupo-freada">2. Freada (km/h)</th>
+          <th class="grupo-freada">1. Entrada (km/h)</th>
+          <th class="grupo-curva">3. Vmin (km/h)</th>
+          <th class="grupo-saida">4. Pace (km/h)</th>
+          <th class="grupo-saida">V saída pico (km/h)</th>
+          <th class="grupo-saida">6. Saída (km/h)</th>
+          <th>Freada → ápice (m)</th>
+          <th>Ápice → saída (m)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="v-atipica">
+          <td>V1 (atípica)</td>
+          <td class="grupo-freada">113,7</td>
+          <td class="grupo-freada">110,3</td>
+          <td class="grupo-freada">110,3</td>
+          <td class="grupo-curva">105,2</td>
+          <td class="grupo-saida">105,4</td>
+          <td class="grupo-saida">129,2</td>
+          <td class="grupo-saida">127,4</td>
+          <td>58</td>
+          <td>231</td>
+        </tr>
+        <tr class="v-melhor">
+          <td>V2 (melhor)</td>
+          <td class="grupo-freada">154,5</td>
+          <td class="grupo-freada">154,1</td>
+          <td class="grupo-freada">139,9</td>
+          <td class="grupo-curva">117,9</td>
+          <td class="grupo-saida">121,9</td>
+          <td class="grupo-saida">156,0</td>
+          <td class="grupo-saida">152,5</td>
+          <td>174</td>
+          <td>617</td>
+        </tr>
+        <tr>
+          <td>V3</td>
+          <td class="grupo-freada">154,3</td>
+          <td class="grupo-freada">151,4</td>
+          <td class="grupo-freada">136,2</td>
+          <td class="grupo-curva">116,6</td>
+          <td class="grupo-saida">122,4</td>
+          <td class="grupo-saida">155,9</td>
+          <td class="grupo-saida">152,2</td>
+          <td>203</td>
+          <td>548</td>
+        </tr>
+        <tr class="v-pior">
+          <td>V4 (pior)</td>
+          <td class="grupo-freada">155,9</td>
+          <td class="grupo-freada">154,5</td>
+          <td class="grupo-freada">137,8</td>
+          <td class="grupo-curva">113,7</td>
+          <td class="grupo-saida">115,1</td>
+          <td class="grupo-saida">155,7</td>
+          <td class="grupo-saida">153,0</td>
+          <td>162</td>
+          <td>666</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="analise">
+    <h4>Leitura técnica da Curva 01 (comparando V2-V4)</h4>
+    <ul>
+      <li><strong>Chegada consistente (154-156 km/h):</strong> a reta principal está dominada.</li>
+      <li><strong>V4 freou mais e perdeu mais velocidade no ápice</strong> (Vmin 113,7 contra 117,9 da V2). Diferença de 4 km/h no ponto mais lento — significa que freou demais ou entrou errada nessa volta.</li>
+      <li><strong>O pace da V4 demorou mais a aparecer</strong> (115,1 km/h contra 121,9 da V2) — quando o piloto pisou no acelerador a fundo, o carro estava ainda 6 km/h mais lento. Isso acumula segundos perdidos na reta de 280 m que vem depois.</li>
+      <li><strong>Saída idêntica nas 3 voltas em ritmo (152-153 km/h):</strong> o problema da V4 foi totalmente na entrada/ápice, não na saída.</li>
+      <li><strong>Conclusão tática:</strong> a Curva 01 tem ganho real de cerca de 1,5 s por volta, e o foco é segurar o Vmin acima de 117 km/h (que é o que ele consegue na V2 e V3). Se entrar muito devagar (como na V4), perde tempo no pace e na reta seguinte.</li>
+    </ul>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- ====== CONCLUSAO GERAL ===================== -->
+  <!-- ============================================ -->
+  <h2>Conclusão da análise dos 6 indicadores</h2>
+  <div class="panel">
+    <h3>O que mudou com a análise detalhada</h3>
+    <p>Quando olhei só "tempo total no trecho", a Curva da Reta Oposta apareceu com delta de <strong>+7,25 s</strong> (parecia o trecho com muito tempo a ganhar). Mas olhando os 6 indicadores volta por volta, dois ajustes importantes:</p>
+    <ul>
+      <li><strong>A Volta 1 distorceu os números.</strong> Ela foi uma volta de abertura com velocidades de chegada bem menores — quando comparada com as voltas em ritmo, fica fora do padrão. Removendo a V1, os deltas reais são:
+        <ul>
+          <li>Curva da Reta Oposta: <strong>+2,0 s</strong> (era +7,25 s)</li>
+          <li>Curva "S": <strong>+1,0 s</strong> (era +6,01 s) — e ainda inflado pela V3 atípica</li>
+          <li>Curva 01: <strong>+1,4 s</strong> (era +4,25 s)</li>
+        </ul>
+      </li>
+      <li><strong>O potencial real de ganho do stint é de cerca de 4-5 s por volta</strong>, não 17,5 s. Ainda é relevante, mas é um número honesto.</li>
+    </ul>
+
+    <h3>Onde está o ganho real (por trecho)</h3>
+    <ul>
+      <li><strong>Curva da Reta Oposta (+2,0 s):</strong> ganhar na <strong>freada</strong> — entrar mais comportado e curto. Vmin e saída já estão estáveis.</li>
+      <li><strong>Curva "S" (+1,0 s):</strong> o piloto domina essa curva. O foco aqui é entender o que aconteceu na V3 (chegou a 104 km/h em vez de 134 km/h) — pode ser tráfego, hesitação ou um erro anterior.</li>
+      <li><strong>Curva 01 (+1,4 s):</strong> ganhar segurando <strong>Vmin acima de 117 km/h</strong>. Se entrar muito devagar (como na V4 com Vmin 113,7), perde no Pace e na reta seguinte.</li>
+    </ul>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- ====== LIMITACOES HONESTAS ================= -->
+  <!-- ============================================ -->
+  <div class="alert">
+    <h3>Limitações desta análise (precisa entender antes de agir)</h3>
+    <ul>
+      <li><strong>GPS gravou 1 ponto por segundo.</strong> Pontos como "freada" e "entrada" têm margem de ±1 s — não dá pra cravar o instante exato da pisada no freio.</li>
+      <li><strong>"Pace" técnico precisa de dado de motor (RPM, torque, lambda).</strong> Como o T4000 (controlador eletrônico do motor) não estava conectado nesse stint, usei como aproximação o ponto onde a velocidade voltou a subir forte após o ápice. É a melhor proxy possível, mas não é o Pace pleno do app.</li>
+      <li><strong>São só 4 voltas (e 1 delas atípica).</strong> 3 voltas em ritmo é pouco — qualquer comportamento isolado puxa a média.</li>
+      <li><strong>Sem aceleração lateral real do carro,</strong> não dá pra medir "agressividade" na curva. O sensor inercial do iPhone está dentro do carro mas mede o aparelho, não o chassi propriamente.</li>
+    </ul>
+    <p style="margin-bottom:0"><strong>O que muda no próximo stint com o app armado corretamente:</strong> esses 6 indicadores ficariam todos cronometrados em centésimo de segundo, com Pace real calculado pela curva oficial do motor do Celta, aceleração lateral do carro e cruzamento ao vivo com a referência. O potencial dos +4-5 s por volta sobe pra leitura precisa, e o app sugere o ajuste na hora.</p>
+  </div>
+
+  <footer>
+    Análise feita em 2026-05-23 19:55 · banco local <code>p1fast.sqlite</code> (2,4 GB) puxado do iPhone via cabo · 1.010 pontos de GPS · 4 voltas reais · script reprodutível em <code>/tmp/p1-6-indicadores.py</code>.<br>
+    Relatórios irmãos: <code>stint-2026-05-23.html</code> (visão geral) e <code>trechos-delta-2026-05-23.html</code> (ranking dos 7 trechos).
+  </footer>
+</div>
+</body>
+</html>

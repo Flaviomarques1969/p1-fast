@@ -94,20 +94,15 @@ struct PessoasView: View {
 
     var initialSheet: PessoasSheet?
     var initialSubTab: PessoasSubTab?
-    /// Handler do menu inferior — injetado pela HomeView pra permitir
-    /// pular pra outra aba direto desta sub-view (fix tab-bar 2026-05-12).
-    var onNavSelect: (BottomNavItem) -> Void = { _ in }
 
-    init(initialSheet: PessoasSheet? = nil,
-         initialSubTab: PessoasSubTab? = nil,
-         onNavSelect: @escaping (BottomNavItem) -> Void = { _ in }) {
+    init(initialSheet: PessoasSheet? = nil, initialSubTab: PessoasSubTab? = nil) {
         self.initialSheet = initialSheet
         self.initialSubTab = initialSubTab
-        self.onNavSelect = onNavSelect
     }
 
     var body: some View {
-        List {
+        ZStack(alignment: .bottom) {
+            List {
                 contextHeadRow
                 subTabBarRow
                 switch subTab {
@@ -137,8 +132,12 @@ struct PessoasView: View {
             .scrollContentBackground(.hidden)
             .background(Color.surface)
             .environment(\.defaultMinListRowHeight, 0)
+
+            BottomNav(items: navItems, selection: $navSelection)
+        }
         .preferredColorScheme(.dark)
         .onAppear {
+            if navSelection == nil { navSelection = navItems[2].id }
             if let s = initialSubTab { subTab = s }
             if let sh = initialSheet, sheet == nil { sheet = sh }
         }

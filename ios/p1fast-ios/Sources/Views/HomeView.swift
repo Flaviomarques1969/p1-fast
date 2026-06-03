@@ -31,13 +31,6 @@ enum HomeNavTarget: Hashable {
     case cadastros
     case garagem
     case garagemNovo
-    /// Fluxo do carro empilhado (push) em vez de folha modal — assim o
-    /// menu inferior fixo continua visível. 2026-05-31, pedido do Flávio.
-    case carroHub(carroId: String)
-    case carroCadastro(carroId: String)
-    case manutencao(carroId: String)
-    case estoque(carroId: String)
-    case eventoDetalhe(eventoId: String)
     /// Atalho dev — abre TelemetriaView (sessão demo descartável). Usado
     /// pra captura rápida em test drive sem passar pelo fluxo Evento →
     /// Stint. Botão fica embaixo do conteúdo da Home, marcado como
@@ -90,9 +83,6 @@ struct HomeView: View {
     /// TelemetriaView com queue + trackBundle (a Home não tem acesso
     /// direto aos repositórios). Quando nil, o atalho dev fica oculto.
     var telemetriaDevView: (() -> AnyView)? = nil
-    /// SÓ-DEV: rota inicial pré-empilhada — usada pelos launchers de mock
-    /// pra validar telas profundas no simulador sem passar pelo login.
-    var initialRoute: [HomeNavTarget] = []
     @State private var navSelection: BottomNavItem.ID?
     @State private var showSyncSheet = false
     @State private var navPath = NavigationPath()
@@ -104,45 +94,37 @@ struct HomeView: View {
     ]
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavigationStack(path: $navPath) {
-                shell
-                    .navigationDestination(for: HomeNavTarget.self) { target in
-                        destinationView(for: target)
-                    }
-            }
-            // Menu inferior FIXO: fica FORA do NavigationStack, então
-            // permanece visível em TODA tela empilhada (hub do carro,
-            // cadastro, estoque, detalhe de evento…). 2026-05-31, pedido
-            // do Flávio — antes cada tela desenhava o seu, e as telas de
-            // detalhe (abertas como folha modal) cobriam o menu.
-            BottomNav(items: navItems, selection: $navSelection, onSelect: handleNavSelect)
-        }
-        .background(Color.surface)
-        .preferredColorScheme(.dark)
-        .onAppear {
-            if navSelection == nil { navSelection = navItems.first?.id }
-            if navPath.isEmpty {
-                for r in initialRoute { navPath.append(r) }
-            }
+        NavigationStack(path: $navPath) {
+            shell
+                .navigationDestination(for: HomeNavTarget.self) { target in
+                    destinationView(for: target)
+                }
         }
     }
 
     private var shell: some View {
-        ScrollView {
-            content
-                .padding(.horizontal, Spacing.lg)
-                .padding(.top, Spacing.md)
-                .padding(.bottom, 32)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                content
+                    .padding(.horizontal, Spacing.lg)
+                    .padding(.top, Spacing.md)
+                    .padding(.bottom, 140) // espaço pra FAB/BottomNav fixos
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(Color.surface)
+
+            BottomNav(items: navItems, selection: $navSelection, onSelect: handleNavSelect)
         }
-        .background(Color.surface)
         .overlay(alignment: .bottomTrailing) {
             if case .filled = state {
                 FAB("Novo evento", action: { navPath.append(HomeNavTarget.eventosNovo) })
                     .padding(.trailing, Spacing.md)
-                    .padding(.bottom, Spacing.md)
+                    .padding(.bottom, 90)
             }
+        }
+        .preferredColorScheme(.dark)
+        .onAppear {
+            if navSelection == nil { navSelection = navItems.first?.id }
         }
         .overlay(alignment: .topTrailing) {
             if let coord = syncCoordinator {
@@ -186,34 +168,17 @@ struct HomeView: View {
 
     @ViewBuilder
     private func destinationView(for target: HomeNavTarget) -> some View {
-        // Fix tab-bar: cada sub-view recebe o handler do menu de baixo
-        // pra que o usuário possa pular pra outra aba sem precisar
-        // voltar manualmente pra Home antes. Quando a sub-view chama
-        // este handler, navPath é resetado e o novo destino empilhado.
-        let nav: (BottomNavItem) -> Void = { item in
-            navigateFromSubView(to: item)
-        }
         switch target {
         case .eventos:
-            EventosListaView(onNavSelect: nav)
+            EventosListaView()
         case .eventosNovo:
-            EventosListaView(initialSheet: .novo, onNavSelect: nav)
+            EventosListaView(initialSheet: .novo)
         case .cadastros:
-            PessoasView(onNavSelect: nav)
+            PessoasView()
         case .garagem:
-            GaragemView(onNavSelect: nav)
+            GaragemView()
         case .garagemNovo:
-            GaragemView(initialSheet: .novo, onNavSelect: nav)
-        case .carroHub(let id):
-            CarroHubView(carroId: id, onClose: { navPath.removeLast() })
-        case .carroCadastro(let id):
-            CarroModalView(carroId: id, onClose: { navPath.removeLast() })
-        case .manutencao(let id):
-            ManutencaoConsumiveisView(carroId: id, onClose: { navPath.removeLast() })
-        case .estoque(let id):
-            PecaListaView(carroInicial: id, onClose: { navPath.removeLast() })
-        case .eventoDetalhe(let id):
-            EventoDetalheView(eventoId: id, onClose: { navPath.removeLast() })
+            GaragemView(initialSheet: .novo)
         case .telemetriaDemo:
             if let builder = telemetriaDevView {
                 builder()
@@ -223,34 +188,13 @@ struct HomeView: View {
         }
     }
 
-    /// Handler usado pelas sub-views quando o usuário toca em outro
-    /// item do menu inferior. Reset do navPath + push do novo destino.
-    /// "Home" só limpa o stack (volta pra raiz).
-    private func navigateFromSubView(to item: BottomNavItem) {
-        navPath = NavigationPath()
-        switch item.label {
-        case "Home":
-            break
-        case "Eventos":
-            navPath.append(HomeNavTarget.eventos)
-        case "Cadastros":
-            navPath.append(HomeNavTarget.cadastros)
-        case "Garagem":
-            navPath.append(HomeNavTarget.garagem)
-        default:
-            break
-        }
-    }
-
-    /// Menu inferior fixo: tocar num item SEMPRE volta à raiz daquela aba
-    /// (zera o histórico) e marca a aba ativa. Vale de qualquer
-    /// profundidade — inclusive de dentro do hub/cadastro/estoque.
+    /// BottomNav é tab-like visualmente, mas comportamento é push de
+    /// NavigationStack — sub-views ganham back button do sistema. Home
+    /// é a única raiz; tocar "Home" volta pra raiz.
     private func handleNavSelect(_ item: BottomNavItem) {
-        navSelection = item.id
-        navPath = NavigationPath()
         switch item.label {
         case "Home":
-            break // a raiz do stack já é a Home
+            if !navPath.isEmpty { navPath = NavigationPath() }
         case "Eventos":
             navPath.append(HomeNavTarget.eventos)
         case "Cadastros":
@@ -260,6 +204,10 @@ struct HomeView: View {
         default:
             break
         }
+        // Reset selection pro item Home assim que voltar pra raiz —
+        // BottomNav só aparece na Home, então sub-views não precisam
+        // do estado.
+        navSelection = navItems.first?.id
     }
 }
 
@@ -290,6 +238,14 @@ private struct FilledContent: View {
                 StatItem(value: "\(data.stintsTotal)", label: "Stints"),
             ])
 
+            if let evento = data.eventoAtivoHoje {
+                EventoAtivoHojeCard(evento: evento)
+            }
+
+            if let proximo = data.proximoEvento {
+                ProximoEventoCard(evento: proximo, hojeISO: data.eventoAtivoHoje?.dataISO ?? todayISO())
+            }
+
             if !data.carrosRecentes.isEmpty {
                 Text("Carros recentes".uppercased())
                     .font(.system(size: 11, weight: .semibold))
@@ -303,27 +259,6 @@ private struct FilledContent: View {
                         CarroRow(carro: carro)
                     }
                 }
-            }
-
-            // Próximos eventos no fim da página (decisão Flávio 2026-05-12).
-            // Antes ficava logo após o header — agora carros vêm primeiro.
-            // O bloco DevShortcuts (atalhos dev) é renderizado depois deste
-            // FilledContent pelo parent.
-            if data.eventoAtivoHoje != nil || data.proximoEvento != nil {
-                Text("Próximos eventos".uppercased())
-                    .font(.system(size: 11, weight: .semibold))
-                    .tracking(1.54)
-                    .foregroundStyle(Color.textFaint)
-                    .padding(.horizontal, Spacing.xs)
-                    .padding(.top, Spacing.sm)
-            }
-
-            if let evento = data.eventoAtivoHoje {
-                EventoAtivoHojeCard(evento: evento)
-            }
-
-            if let proximo = data.proximoEvento {
-                ProximoEventoCard(evento: proximo, hojeISO: data.eventoAtivoHoje?.dataISO ?? todayISO())
             }
         }
     }

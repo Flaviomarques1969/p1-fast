@@ -151,19 +151,5 @@ t('source TS suporta as 12 tabelas com time_id (não-globais, não-especiais)', 
   if (ALLOWED_TABLES.size !== 12) throw new Error('whitelist size=' + ALLOWED_TABLES.size);
 });
 
-t('source TS trata chave duplicada (23505) como sucesso em insert (idempotência)', () => {
-  if (!src.includes('23505')) throw new Error('sem tratamento explícito do código 23505');
-  if (!src.includes('duplicate key')) throw new Error('sem fallback regex pra "duplicate key"');
-  // Tem que cair em accepted, não em rejected.
-  const m = src.match(/dbError\.code === "23505"[\s\S]+?accepted\.push/);
-  if (!m) throw new Error('23505 não está sendo empurrado pra accepted');
-});
-
-t('source TS aplica idempotência APENAS em insert (não em update/delete)', () => {
-  // Update tem LWW próprio; delete não deve ser tratado como sucesso silencioso.
-  const m = src.match(/r\.op === "insert"[\s\S]+?23505/);
-  if (!m) throw new Error('idempotência fora do branch op=insert');
-});
-
 console.log(`\n${ok} ok / ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);

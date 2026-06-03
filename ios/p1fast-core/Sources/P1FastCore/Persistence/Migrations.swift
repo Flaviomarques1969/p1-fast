@@ -258,247 +258,38 @@ enum Migrations {
         }
 
         // ═══ v14_ms4_sessoes_extensions ════════════════════════
-        // MS-4 etapa 1. Espelha supabase/migrations/0014_ms4_sessoes_extensions.sql.
-        // Campos novos pra StintPlan estendido — paradas_box, ia_ligada,
+        // Onda 2 (2026-05-24): adiciona coluna `ia_ligada` em sessoes.
+        // Identifier mantido para ser igual ao já registrado no iPhone
+        // do Flávio (que rodou migrations v14-v33 numa linha de trabalho
+        // antiga). GRDB pula se identifier já está em grdb_migrations.
+        //
+        // Cobertura mínima: só ia_ligada (suficiente pra Onda 2). As
+        // outras colunas dessa migration original (paradas_box,
         // mapa_ghost_ligado, licao_id, cancelado_em, pilotos_revezamento,
-        // convidado_id. Decisões em docs/FRENTES_POS_MS4.md (PR #175).
-        //
-        // Papel 'chefe_equipe' (Q23) é só servidor — tabela usuarios_time
-        // não existe em SQLite local (sandbox por usuário, sem multi-user
-        // local). Permissões consumem auth.role via TeamContext.
+        // convidado_id, evento_dia_id) ficam pra quando forem usadas.
+        // No iPhone existem; em banco novo só ia_ligada será criada —
+        // tudo bem porque ninguém usa as outras ainda neste ambiente.
         m.registerMigration("v14_ms4_sessoes_extensions") { db in
-            try db.execute(sql: "ALTER TABLE sessoes ADD COLUMN paradas_box TEXT NOT NULL DEFAULT '[]';")
-            try db.execute(sql: "ALTER TABLE sessoes ADD COLUMN ia_ligada INTEGER NOT NULL DEFAULT 0;")
-            try db.execute(sql: "ALTER TABLE sessoes ADD COLUMN mapa_ghost_ligado INTEGER NOT NULL DEFAULT 0;")
-            try db.execute(sql: "ALTER TABLE sessoes ADD COLUMN licao_id TEXT REFERENCES licoes(id) ON DELETE SET NULL;")
-            try db.execute(sql: "ALTER TABLE sessoes ADD COLUMN cancelado_em INTEGER;")
-            try db.execute(sql: "ALTER TABLE sessoes ADD COLUMN pilotos_revezamento TEXT;")
-            try db.execute(sql: "ALTER TABLE sessoes ADD COLUMN convidado_id TEXT REFERENCES pilotos(id) ON DELETE SET NULL;")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_sessoes_licao ON sessoes(licao_id);")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_sessoes_convidado ON sessoes(convidado_id);")
+            try db.execute(sql: """
+                ALTER TABLE sessoes
+                ADD COLUMN ia_ligada INTEGER NOT NULL DEFAULT 1;
+            """)
         }
-
-        // ═══ v15_ms11_video_streams ════════════════════════════
-        // MS-11 etapa 1. Espelha supabase/migrations/0015_ms11_video_streams.sql.
-        // Tabela video_streams (1:1 com sessoes) registra cada transmissão
-        // de vídeo ao vivo via Daily.co. ADR-024 escolheu Daily.co como
-        // serviço de stream do MVP. Decisões registradas em respostas
-        // do Flávio em 2026-05-11 (rodadas 1+2).
-        //
-        // RLS local não tem equivalente — sandbox do device é por usuário.
-        // Apenas member do time vê streams no servidor (RLS Postgres).
-        m.registerMigration("v15_ms11_video_streams") { db in
-            try db.execute(sql: """
-                CREATE TABLE video_streams (
-                    id                   TEXT PRIMARY KEY,
-                    time_id              TEXT NOT NULL REFERENCES times(id) ON DELETE CASCADE,
-                    sessao_id            TEXT NOT NULL REFERENCES sessoes(id) ON DELETE CASCADE,
-                    daily_room_url       TEXT NOT NULL,
-                    daily_room_name      TEXT NOT NULL,
-                    status               TEXT NOT NULL DEFAULT 'iniciando'
-                                         CHECK (status IN ('iniciando','ao_vivo','sem_sinal','encerrado','falha')),
-                    started_at           INTEGER,
-                    ended_at             INTEGER,
-                    ultima_heartbeat     INTEGER,
-                    bateria_inicio       INTEGER CHECK (bateria_inicio IS NULL OR (bateria_inicio BETWEEN 0 AND 100)),
-                    bateria_fim          INTEGER CHECK (bateria_fim IS NULL OR (bateria_fim BETWEEN 0 AND 100)),
-                    motivo_encerramento  TEXT,
-                    created_at           INTEGER NOT NULL,
-                    updated_at           INTEGER NOT NULL,
-                    synced_at            INTEGER
-                );
-            """)
-            try db.execute(sql: "CREATE UNIQUE INDEX idx_video_streams_sessao ON video_streams(sessao_id);")
-            try db.execute(sql: "CREATE INDEX idx_video_streams_time_started ON video_streams(time_id, started_at DESC);")
-            // Link público por evento (Q2.4) — vale o dia inteiro
-            try db.execute(sql: "ALTER TABLE eventos ADD COLUMN link_publico_video_token TEXT;")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_eventos_link_publico ON eventos(link_publico_video_token);")
-        }
-
-        // ═══ v16_volta_video ═══════════════════════════════════
-        // F4 etapa 2. Espelha supabase/migrations/0016_volta_video.sql.
-        // Tabela volta_video indexa cada volta dentro da gravação Daily.co
-        // (1 gravação por stream, 1 stream por sessão). Cada row marca
-        // onde a volta começa/termina dentro do vídeo + status de triagem.
-        //
-        // Decisões registradas (rodada 1+2 de 2026-05-11):
-        //   Q18+Q2.5: gravação cobre todo stream; triagem volta-a-volta = F4
-        //   Q2.5: triagem por piloto + chefe da equipe (refinada em F4.6)
-        m.registerMigration("v16_volta_video") { db in
-            try db.execute(sql: """
-                CREATE TABLE volta_video (
-                    id               TEXT PRIMARY KEY,
-                    time_id          TEXT NOT NULL REFERENCES times(id) ON DELETE CASCADE,
-                    video_stream_id  TEXT NOT NULL REFERENCES video_streams(id) ON DELETE CASCADE,
-                    volta_id         TEXT NOT NULL REFERENCES voltas(id) ON DELETE CASCADE,
-                    t_inicio_ms      INTEGER NOT NULL CHECK (t_inicio_ms >= 0),
-                    t_fim_ms         INTEGER NOT NULL CHECK (t_fim_ms > t_inicio_ms),
-                    triagem_status   TEXT NOT NULL DEFAULT 'pendente'
-                                     CHECK (triagem_status IN ('pendente','mantida','descartada')),
-                    triada_por       TEXT,
-                    triada_em        INTEGER,
-                    created_at       INTEGER NOT NULL,
-                    updated_at       INTEGER NOT NULL,
-                    synced_at        INTEGER
-                );
-            """)
-            try db.execute(sql: "CREATE UNIQUE INDEX idx_volta_video_volta ON volta_video(volta_id);")
-            try db.execute(sql: "CREATE INDEX idx_volta_video_stream ON volta_video(video_stream_id);")
-            try db.execute(sql: "CREATE INDEX idx_volta_video_time_status ON volta_video(time_id, triagem_status);")
-        }
-
-        // ═══ v17_pessoas ═══════════════════════════════════════
-        // F1 etapa A.1 (Unificação de pessoas multi-papel). Espelha
-        // supabase/migrations/0018_pessoas.sql. Tabela `pessoas`
-        // unifica pilotos + passageiros + papéis novos (engenheiro,
-        // mecanico, coach, convidado, chefe_equipe) numa entidade só.
-        //
-        // Fase A: cria tabela vazia. Fase B (futura) migra dados de
-        // pilotos+passageiros, atualiza sessoes, reescreve repos e UIs.
-        //
-        // Mockups Onda 1 (PR #174) + decisão Flávio: uma única entidade
-        // Pessoa com múltiplos papéis selecionáveis.
-        m.registerMigration("v17_pessoas") { db in
-            try db.execute(sql: """
-                CREATE TABLE pessoas (
-                    id          TEXT PRIMARY KEY,
-                    time_id     TEXT NOT NULL REFERENCES times(id) ON DELETE CASCADE,
-                    nome        TEXT NOT NULL CHECK (LENGTH(TRIM(nome)) > 0),
-                    user_id     TEXT,
-                    altura_cm   INTEGER CHECK (altura_cm IS NULL OR (altura_cm BETWEEN 50 AND 250)),
-                    peso_kg     REAL CHECK (peso_kg IS NULL OR (peso_kg BETWEEN 20 AND 250)),
-                    nascimento  INTEGER,
-                    created_at  INTEGER NOT NULL,
-                    updated_at  INTEGER NOT NULL,
-                    synced_at   INTEGER
-                );
-            """)
-            try db.execute(sql: "CREATE INDEX idx_pessoas_time ON pessoas(time_id);")
-            try db.execute(sql: "CREATE INDEX idx_pessoas_user ON pessoas(user_id) WHERE user_id IS NOT NULL;")
-        }
-
-        // ═══ v18_pessoa_papeis ═════════════════════════════════
-        // F1 etapa A.2. Espelha supabase/migrations/0019_pessoa_papeis.sql.
-        // Relação 1:N — cada pessoa pode ter N papéis simultâneos.
-        // PK composta (pessoa_id, papel) impede duplicata silenciosa.
-        m.registerMigration("v18_pessoa_papeis") { db in
-            try db.execute(sql: """
-                CREATE TABLE pessoa_papeis (
-                    pessoa_id   TEXT NOT NULL REFERENCES pessoas(id) ON DELETE CASCADE,
-                    papel       TEXT NOT NULL CHECK (papel IN (
-                                  'piloto','passageiro','engenheiro',
-                                  'mecanico','coach','convidado','chefe_equipe'
-                                )),
-                    created_at  INTEGER NOT NULL,
-                    synced_at   INTEGER,
-                    PRIMARY KEY (pessoa_id, papel)
-                );
-            """)
-            try db.execute(sql: "CREATE INDEX idx_pessoa_papeis_papel ON pessoa_papeis(papel);")
-        }
-
-        // ═══ v19_manutencao_consumiveis ════════════════════════
-        // Reforma 2026-05-31: histórico de trocas de consumíveis
-        // (modelo CHECAGEM ≠ TROCA). O catálogo dos 30 itens vive no
-        // domínio (CatalogoConsumiveisCelta); aqui guardamos só as
-        // TROCAS feitas, pra calcular a vida real e o aprendizado
-        // preditivo. Tabela local — sync pra nuvem fica pra depois.
-        m.registerMigration("v19_manutencao_consumiveis") { db in
-            // Bancos que já receberam a função Manutenção órfã de 18/05
-            // têm uma tabela `manutencoes` com esquema ANTIGO e
-            // incompatível. Preserva renomeando antes de criar a nova —
-            // não perde dados e não colide (idempotente em device usado).
-            if try db.tableExists("manutencoes") {
-                try db.execute(sql: "ALTER TABLE manutencoes RENAME TO manutencoes_legado_2026_05_18;")
-            }
-            try db.execute(sql: """
-                CREATE TABLE manutencoes (
-                    id                TEXT PRIMARY KEY,
-                    time_id           TEXT NOT NULL REFERENCES times(id) ON DELETE CASCADE,
-                    carro_id          TEXT NOT NULL REFERENCES carros(id) ON DELETE CASCADE,
-                    item_codigo       TEXT NOT NULL,
-                    ocorrido_em       INTEGER NOT NULL,
-                    marca             TEXT,
-                    modelo            TEXT,
-                    especificacao     TEXT,
-                    observacao        TEXT,
-                    foto_url          TEXT,
-                    validade_etiqueta INTEGER,
-                    created_at        INTEGER NOT NULL,
-                    updated_at        INTEGER NOT NULL,
-                    synced_at         INTEGER
-                );
-            """)
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_manutencoes_v19_carro_item ON manutencoes(carro_id, item_codigo);")
-        }
-
-        // ═══ v26_pecas — função Estoque (peças por carro, 2026-05-17) ══
-        // Trazida pra versão oficial em 2026-05-31. MESMO NOME da migration
-        // original: bancos que já receberam a função (iPhone 18/05) têm a
-        // migration registrada e o GRDB pula. IF NOT EXISTS protege o caso
-        // de a tabela existir sem a migration registrada (lição manutencoes).
-        m.registerMigration("v26_pecas") { db in
-            try db.execute(sql: """
-                CREATE TABLE IF NOT EXISTS pecas_locais (
-                    id          TEXT PRIMARY KEY,
-                    time_id     TEXT NOT NULL,
-                    nome        TEXT NOT NULL,
-                    descricao   TEXT,
-                    ordem       INTEGER NOT NULL DEFAULT 0,
-                    created_at  INTEGER NOT NULL,
-                    updated_at  INTEGER NOT NULL,
-                    synced_at   INTEGER
-                );
-            """)
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_locais_time ON pecas_locais(time_id);")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_locais_ordem ON pecas_locais(ordem);")
-
-            try db.execute(sql: """
-                CREATE TABLE IF NOT EXISTS pecas (
-                    id              TEXT PRIMARY KEY,
-                    time_id         TEXT NOT NULL,
-                    carro_id        TEXT NOT NULL REFERENCES carros(id) ON DELETE CASCADE,
-                    nome            TEXT NOT NULL,
-                    codigo          TEXT,
-                    area            TEXT NOT NULL,
-                    tipo            TEXT NOT NULL DEFAULT 'componente',
-                    especificacao   TEXT,
-                    foto_url        TEXT,
-                    quantidade      INTEGER NOT NULL DEFAULT 0,
-                    local_id        TEXT REFERENCES pecas_locais(id) ON DELETE SET NULL,
-                    observacoes     TEXT,
-                    created_at      INTEGER NOT NULL,
-                    updated_at      INTEGER NOT NULL,
-                    synced_at       INTEGER
-                );
-            """)
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_carro ON pecas(carro_id);")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_area ON pecas(area);")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_tipo ON pecas(tipo);")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_local ON pecas(local_id);")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_time ON pecas(time_id);")
-
-            try db.execute(sql: """
-                CREATE TABLE IF NOT EXISTS pecas_movimentacoes (
-                    id              TEXT PRIMARY KEY,
-                    time_id         TEXT NOT NULL,
-                    peca_id         TEXT NOT NULL REFERENCES pecas(id) ON DELETE CASCADE,
-                    delta           INTEGER NOT NULL,
-                    observacao      TEXT,
-                    ocorrido_em     INTEGER NOT NULL,
-                    created_at      INTEGER NOT NULL,
-                    synced_at       INTEGER
-                );
-            """)
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_mov_peca ON pecas_movimentacoes(peca_id);")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_mov_ocorrido ON pecas_movimentacoes(ocorrido_em);")
-        }
-
-        // v27 — preço unitário opcional (centavos). SQLite não tem ADD
-        // COLUMN IF NOT EXISTS; o try? cobre o caso da coluna já existir
-        // (device com v27 aplicada o GRDB pula pelo nome de qualquer forma).
-        m.registerMigration("v27_pecas_preco") { db in
-            try? db.execute(sql: "ALTER TABLE pecas ADD COLUMN preco_unitario_cents INTEGER;")
+        // ═══ v15_segment_six_indicators ════════════════════════
+        // Comando GO 2026-05-24 — segment_executions ganha as 7
+        // colunas dos 6 indicadores canônicos por trecho (vChegada,
+        // vEntrada, vFreada, vPace, vSaidaPico) + 2 tempos auxiliares
+        // (Freada→ápice, Ápice→saída). Vmin e Ápice (vmin_kmh / vmin_x /
+        // vmin_y) já existem desde v6. Todas NULLABLE — execuções
+        // pré-v15 ficam sem os campos.
+        m.registerMigration("v15_segment_six_indicators") { db in
+            try db.execute(sql: "ALTER TABLE segment_executions ADD COLUMN v_chegada_kmh REAL;")
+            try db.execute(sql: "ALTER TABLE segment_executions ADD COLUMN v_entrada_kmh REAL;")
+            try db.execute(sql: "ALTER TABLE segment_executions ADD COLUMN v_freada_kmh REAL;")
+            try db.execute(sql: "ALTER TABLE segment_executions ADD COLUMN v_pace_kmh REAL;")
+            try db.execute(sql: "ALTER TABLE segment_executions ADD COLUMN v_saida_pico_kmh REAL;")
+            try db.execute(sql: "ALTER TABLE segment_executions ADD COLUMN tempo_freada_apice_ms INTEGER;")
+            try db.execute(sql: "ALTER TABLE segment_executions ADD COLUMN tempo_apice_saida_ms INTEGER;")
         }
     }
 

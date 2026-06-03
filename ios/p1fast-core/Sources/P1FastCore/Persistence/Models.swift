@@ -462,10 +462,6 @@ public struct Evento: Codable, FetchableRecord, PersistableRecord {
     public var tipo: String?
     public var dataEvento: Int64
     public var status: String?
-    /// MS-11.1: token único pra link público de vídeo. Vale o dia inteiro
-    /// do evento (Q2.4). Quem tem o link consegue ver todos os streams
-    /// do evento sem login.
-    public var linkPublicoVideoToken: String?
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -478,7 +474,6 @@ public struct Evento: Codable, FetchableRecord, PersistableRecord {
         case tipo
         case dataEvento = "data_evento"
         case status
-        case linkPublicoVideoToken = "link_publico_video_token"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
@@ -486,293 +481,11 @@ public struct Evento: Codable, FetchableRecord, PersistableRecord {
 
     public init(id: String, timeId: String, trackId: String? = nil, tipo: String? = nil,
                 dataEvento: Int64, status: String? = "planejado",
-                linkPublicoVideoToken: String? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.timeId = timeId; self.trackId = trackId; self.tipo = tipo
         self.dataEvento = dataEvento; self.status = status
-        self.linkPublicoVideoToken = linkPublicoVideoToken
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
-    }
-}
-
-// MARK: - video_streams (MS-11.1)
-
-/// Status canônico do stream de vídeo. Espelha o CHECK no Postgres.
-public enum VideoStreamStatus: String, Codable, Sendable {
-    case iniciando
-    case aoVivo = "ao_vivo"
-    case semSinal = "sem_sinal"
-    case encerrado
-    case falha
-}
-
-/// Transmissão de vídeo de um stint via Daily.co (1:1 com sessoes).
-/// Persistido em `video_streams`. Decisões em rodadas 1+2 de 2026-05-11.
-/// ADR-024 escolheu Daily.co como serviço.
-public struct VideoStream: Codable, FetchableRecord, PersistableRecord {
-    public var id: String
-    public var timeId: String
-    public var sessaoId: String
-    public var dailyRoomUrl: String
-    public var dailyRoomName: String
-    public var status: String
-    public var startedAt: Int64?
-    public var endedAt: Int64?
-    public var ultimaHeartbeat: Int64?
-    public var bateriaInicio: Int?
-    public var bateriaFim: Int?
-    public var motivoEncerramento: String?
-    public var createdAt: Int64
-    public var updatedAt: Int64
-    public var syncedAt: Int64?
-
-    public static let databaseTableName = "video_streams"
-    enum CodingKeys: String, CodingKey {
-        case id
-        case timeId = "time_id"
-        case sessaoId = "sessao_id"
-        case dailyRoomUrl = "daily_room_url"
-        case dailyRoomName = "daily_room_name"
-        case status
-        case startedAt = "started_at"
-        case endedAt = "ended_at"
-        case ultimaHeartbeat = "ultima_heartbeat"
-        case bateriaInicio = "bateria_inicio"
-        case bateriaFim = "bateria_fim"
-        case motivoEncerramento = "motivo_encerramento"
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
-        case syncedAt = "synced_at"
-    }
-
-    public init(id: String, timeId: String, sessaoId: String,
-                dailyRoomUrl: String, dailyRoomName: String,
-                status: String = VideoStreamStatus.iniciando.rawValue,
-                startedAt: Int64? = nil, endedAt: Int64? = nil,
-                ultimaHeartbeat: Int64? = nil,
-                bateriaInicio: Int? = nil, bateriaFim: Int? = nil,
-                motivoEncerramento: String? = nil,
-                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
-                syncedAt: Int64? = nil) {
-        self.id = id; self.timeId = timeId; self.sessaoId = sessaoId
-        self.dailyRoomUrl = dailyRoomUrl; self.dailyRoomName = dailyRoomName
-        self.status = status
-        self.startedAt = startedAt; self.endedAt = endedAt
-        self.ultimaHeartbeat = ultimaHeartbeat
-        self.bateriaInicio = bateriaInicio; self.bateriaFim = bateriaFim
-        self.motivoEncerramento = motivoEncerramento
-        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
-    }
-
-    /// Indica que o stream parou de receber heartbeat há mais de N segundos.
-    /// Caller passa now; helper retorna se há sinal recente. Útil pra UI
-    /// do Command Box decidir se mostra última imagem congelada (Q16).
-    public func hasSinalRecente(now: Int64 = DB.nowMs(), thresholdMs: Int64 = 10_000) -> Bool {
-        guard let hb = ultimaHeartbeat else { return false }
-        return (now - hb) < thresholdMs
-    }
-}
-
-// MARK: - volta_video (F4 etapa 2)
-
-/// Status canônico da triagem da volta gravada. Espelha o CHECK no Postgres.
-public enum TriagemStatus: String, Codable, Sendable {
-    case pendente
-    case mantida
-    case descartada
-}
-
-/// Volta indexada dentro da gravação Daily.co do stream.
-/// Persistido em `volta_video`. F4 (registro em `docs/FRENTES_POS_MS4.md`).
-/// 1:1 com `voltas` — cada volta vira uma row aqui via indexador
-/// (F4.3) ao cruzar a linha de chegada durante o stream.
-public struct VoltaVideo: Codable, FetchableRecord, PersistableRecord {
-    public var id: String
-    public var timeId: String
-    public var videoStreamId: String
-    public var voltaId: String
-    /// Offset desde `video_streams.started_at` (ms) — onde a volta começa
-    /// na gravação contínua.
-    public var tInicioMs: Int
-    /// Offset onde a volta termina (ms). Sempre > tInicioMs (CHECK no PG).
-    public var tFimMs: Int
-    public var triagemStatus: String
-    public var triadaPor: String?
-    public var triadaEm: Int64?
-    public var createdAt: Int64
-    public var updatedAt: Int64
-    public var syncedAt: Int64?
-
-    public static let databaseTableName = "volta_video"
-    enum CodingKeys: String, CodingKey {
-        case id
-        case timeId = "time_id"
-        case videoStreamId = "video_stream_id"
-        case voltaId = "volta_id"
-        case tInicioMs = "t_inicio_ms"
-        case tFimMs = "t_fim_ms"
-        case triagemStatus = "triagem_status"
-        case triadaPor = "triada_por"
-        case triadaEm = "triada_em"
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
-        case syncedAt = "synced_at"
-    }
-
-    public init(id: String, timeId: String, videoStreamId: String,
-                voltaId: String, tInicioMs: Int, tFimMs: Int,
-                triagemStatus: String = TriagemStatus.pendente.rawValue,
-                triadaPor: String? = nil, triadaEm: Int64? = nil,
-                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
-                syncedAt: Int64? = nil) {
-        self.id = id; self.timeId = timeId
-        self.videoStreamId = videoStreamId; self.voltaId = voltaId
-        self.tInicioMs = tInicioMs; self.tFimMs = tFimMs
-        self.triagemStatus = triagemStatus
-        self.triadaPor = triadaPor; self.triadaEm = triadaEm
-        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
-    }
-
-    /// Duração da volta dentro da gravação (ms). Sempre > 0.
-    public var duracaoMs: Int { tFimMs - tInicioMs }
-
-    /// Helper enum-safe pra ler o status sem string comparison no caller.
-    public var status: TriagemStatus { TriagemStatus(rawValue: triagemStatus) ?? .pendente }
-
-    /// True quando ainda precisa de decisão da triagem.
-    public var precisaTriagem: Bool { status == .pendente }
-}
-
-// MARK: - pessoas + pessoa_papeis (F1 Fase A)
-
-/// Papel canônico de uma Pessoa. Espelha o CHECK do Postgres.
-/// Cada Pessoa pode ter N papéis simultâneos via `pessoa_papeis`.
-public enum PapelPessoa: String, Codable, Sendable, CaseIterable {
-    case piloto
-    case passageiro
-    case engenheiro
-    case mecanico
-    case coach
-    case convidado
-    case chefeEquipe = "chefe_equipe"
-
-    /// Texto legível em português pra UI.
-    public var legivel: String {
-        switch self {
-        case .piloto:       return "Piloto"
-        case .passageiro:   return "Passageiro"
-        case .engenheiro:   return "Engenheiro"
-        case .mecanico:     return "Mecânico"
-        case .coach:        return "Coach"
-        case .convidado:    return "Convidado"
-        case .chefeEquipe:  return "Chefe da equipe"
-        }
-    }
-}
-
-/// Entidade unificada de pessoa multi-papel (F1 Fase A — ainda vazia).
-/// Substitui pilotos+passageiros na Fase B (futura migração de dados).
-public struct Pessoa: Codable, FetchableRecord, PersistableRecord {
-    public var id: String
-    public var timeId: String
-    public var nome: String
-    public var userId: String?
-    public var alturaCm: Int?
-    public var pesoKg: Double?
-    public var nascimento: Int64?
-    public var createdAt: Int64
-    public var updatedAt: Int64
-    public var syncedAt: Int64?
-
-    public static let databaseTableName = "pessoas"
-    enum CodingKeys: String, CodingKey {
-        case id
-        case timeId = "time_id"
-        case nome
-        case userId = "user_id"
-        case alturaCm = "altura_cm"
-        case pesoKg = "peso_kg"
-        case nascimento
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
-        case syncedAt = "synced_at"
-    }
-
-    public init(id: String, timeId: String, nome: String,
-                userId: String? = nil,
-                alturaCm: Int? = nil, pesoKg: Double? = nil,
-                nascimento: Int64? = nil,
-                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
-                syncedAt: Int64? = nil) {
-        self.id = id; self.timeId = timeId; self.nome = nome
-        self.userId = userId
-        self.alturaCm = alturaCm; self.pesoKg = pesoKg
-        self.nascimento = nascimento
-        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
-    }
-}
-
-/// Liga uma Pessoa a um Papel. Cada par (pessoa_id, papel) é único.
-public struct PessoaPapel: Codable, FetchableRecord, PersistableRecord {
-    public var pessoaId: String
-    public var papel: String
-    public var createdAt: Int64
-    public var syncedAt: Int64?
-
-    public static let databaseTableName = "pessoa_papeis"
-    enum CodingKeys: String, CodingKey {
-        case pessoaId = "pessoa_id"
-        case papel
-        case createdAt = "created_at"
-        case syncedAt = "synced_at"
-    }
-
-    public init(pessoaId: String, papel: PapelPessoa,
-                createdAt: Int64 = DB.nowMs(), syncedAt: Int64? = nil) {
-        self.pessoaId = pessoaId
-        self.papel = papel.rawValue
-        self.createdAt = createdAt
-        self.syncedAt = syncedAt
-    }
-
-    /// Helper enum-safe pra ler o papel sem string comparison no caller.
-    public var papelEnum: PapelPessoa? { PapelPessoa(rawValue: papel) }
-}
-
-// MARK: - paradas e revezamento (auxiliares de Sessao)
-
-/// Parada planejada no box dentro do StintPlan (MS-4.1).
-/// Persistido como JSON em `sessoes.paradas_box`. Motivo aparece no Command Box
-/// e na lista de checklist piscando na volta anterior (decisão Q7 + Q2.1).
-public struct ParadaBox: Codable, Equatable, Hashable, Sendable {
-    public let volta: Int
-    public let motivo: String
-
-    public init(volta: Int, motivo: String) {
-        self.volta = volta
-        self.motivo = motivo
-    }
-}
-
-/// Turno de revezamento em eventos endurance (MS-4.4).
-/// Persistido como JSON em `sessoes.pilotos_revezamento`. Nulo quando
-/// o evento não é endurance (decisão Q8 + Q2.2).
-public struct PilotoTurno: Codable, Equatable, Hashable, Sendable {
-    public let pilotoId: String
-    public let voltaInicio: Int
-    public let voltaFim: Int
-
-    public init(pilotoId: String, voltaInicio: Int, voltaFim: Int) {
-        self.pilotoId = pilotoId
-        self.voltaInicio = voltaInicio
-        self.voltaFim = voltaFim
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case pilotoId = "piloto_id"
-        case voltaInicio = "volta_inicio"
-        case voltaFim = "volta_fim"
     }
 }
 
@@ -792,17 +505,10 @@ public struct Sessao: Codable, FetchableRecord, PersistableRecord {
     public var pneuId: String?
     public var combustivelId: String?
     public var qtCombustivelLitros: Double?
-    // ── MS-4.1 (v14) — novos campos pra StintPlan ──────────
-    /// JSON serializado de `[ParadaBox]`. Use `paradasBox` getter pra decodificar.
-    public var paradasBoxJson: String
+    // Onda 2 (2026-05-24): iaLigada agora mapeado no model Swift. Coluna
+    // existe no banco desde v14 (default 0 no SQL) — antes era ignorada
+    // pelo Swift e ficava sempre 0 mesmo quando o piloto queria ligar.
     public var iaLigada: Bool
-    public var mapaGhostLigado: Bool
-    public var licaoId: String?
-    public var canceladoEm: Int64?
-    /// JSON serializado de `[PilotoTurno]?` (nil quando não é endurance).
-    public var pilotosRevezamentoJson: String?
-    public var convidadoId: String?
-    // ───────────────────────────────────────────────────────
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -823,13 +529,7 @@ public struct Sessao: Codable, FetchableRecord, PersistableRecord {
         case pneuId = "pneu_id"
         case combustivelId = "combustivel_id"
         case qtCombustivelLitros = "qt_combustivel_litros"
-        case paradasBoxJson = "paradas_box"
         case iaLigada = "ia_ligada"
-        case mapaGhostLigado = "mapa_ghost_ligado"
-        case licaoId = "licao_id"
-        case canceladoEm = "cancelado_em"
-        case pilotosRevezamentoJson = "pilotos_revezamento"
-        case convidadoId = "convidado_id"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
@@ -841,13 +541,7 @@ public struct Sessao: Codable, FetchableRecord, PersistableRecord {
                 voltasPlanejadas: Int? = nil, objetivo: String? = nil,
                 pneuId: String? = nil, combustivelId: String? = nil,
                 qtCombustivelLitros: Double? = nil,
-                paradasBoxJson: String = "[]",
-                iaLigada: Bool = false,
-                mapaGhostLigado: Bool = false,
-                licaoId: String? = nil,
-                canceladoEm: Int64? = nil,
-                pilotosRevezamentoJson: String? = nil,
-                convidadoId: String? = nil,
+                iaLigada: Bool = true,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.timeId = timeId; self.eventoId = eventoId
@@ -856,62 +550,8 @@ public struct Sessao: Codable, FetchableRecord, PersistableRecord {
         self.voltasPlanejadas = voltasPlanejadas; self.objetivo = objetivo
         self.pneuId = pneuId; self.combustivelId = combustivelId
         self.qtCombustivelLitros = qtCombustivelLitros
-        self.paradasBoxJson = paradasBoxJson
         self.iaLigada = iaLigada
-        self.mapaGhostLigado = mapaGhostLigado
-        self.licaoId = licaoId
-        self.canceladoEm = canceladoEm
-        self.pilotosRevezamentoJson = pilotosRevezamentoJson
-        self.convidadoId = convidadoId
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
-    }
-
-    // MARK: - JSON helpers (MS-4.1)
-
-    /// Decodifica `paradasBoxJson` para `[ParadaBox]`. Retorna lista vazia se
-    /// o JSON for inválido ou ausente (campo NOT NULL DEFAULT '[]').
-    public var paradasBox: [ParadaBox] {
-        guard let data = paradasBoxJson.data(using: .utf8),
-              let lista = try? JSONDecoder().decode([ParadaBox].self, from: data) else {
-            return []
-        }
-        return lista
-    }
-
-    /// Decodifica `pilotosRevezamentoJson` para `[PilotoTurno]?`. Retorna nil
-    /// se o campo estiver nil ou se o JSON for inválido.
-    public var pilotosRevezamento: [PilotoTurno]? {
-        guard let json = pilotosRevezamentoJson,
-              let data = json.data(using: .utf8),
-              let lista = try? JSONDecoder().decode([PilotoTurno].self, from: data) else {
-            return nil
-        }
-        return lista
-    }
-
-    /// Substitui a lista de paradas no campo JSON. Use no Repository
-    /// antes de persistir.
-    public mutating func setParadasBox(_ paradas: [ParadaBox]) {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        if let data = try? encoder.encode(paradas),
-           let json = String(data: data, encoding: .utf8) {
-            self.paradasBoxJson = json
-        }
-    }
-
-    /// Substitui a lista de turnos no campo JSON. Passar nil limpa o campo.
-    public mutating func setPilotosRevezamento(_ turnos: [PilotoTurno]?) {
-        guard let turnos = turnos else {
-            self.pilotosRevezamentoJson = nil
-            return
-        }
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        if let data = try? encoder.encode(turnos),
-           let json = String(data: data, encoding: .utf8) {
-            self.pilotosRevezamentoJson = json
-        }
     }
 }
 
@@ -974,6 +614,17 @@ public struct SegmentExecution: Codable, FetchableRecord, PersistableRecord {
     public var vminKmh: Double?
     public var vminX: Double?
     public var vminY: Double?
+    /// 6 indicadores canônicos (Comando GO 2026-05-24):
+    /// vChegada → vEntrada → vFreada → vMin → vPace → vSaidaPico
+    /// Mais 2 tempos auxiliares (Freada→ápice / ápice→Pace).
+    /// Todos opcionais — execuções pré-v15 ficam sem.
+    public var vChegadaKmh: Double?
+    public var vEntradaKmh: Double?
+    public var vFreadaKmh: Double?
+    public var vPaceKmh: Double?
+    public var vSaidaPicoKmh: Double?
+    public var tempoFreadaApiceMs: Int?
+    public var tempoApiceSaidaMs: Int?
     public var createdAt: Int64
     public var syncedAt: Int64?
 
@@ -989,6 +640,13 @@ public struct SegmentExecution: Codable, FetchableRecord, PersistableRecord {
         case vminKmh = "vmin_kmh"
         case vminX = "vmin_x"
         case vminY = "vmin_y"
+        case vChegadaKmh = "v_chegada_kmh"
+        case vEntradaKmh = "v_entrada_kmh"
+        case vFreadaKmh = "v_freada_kmh"
+        case vPaceKmh = "v_pace_kmh"
+        case vSaidaPicoKmh = "v_saida_pico_kmh"
+        case tempoFreadaApiceMs = "tempo_freada_apice_ms"
+        case tempoApiceSaidaMs = "tempo_apice_saida_ms"
         case createdAt = "created_at"
         case syncedAt = "synced_at"
     }
@@ -996,10 +654,18 @@ public struct SegmentExecution: Codable, FetchableRecord, PersistableRecord {
     public init(id: String, timeId: String, sessaoId: String, voltaId: String,
                 segmentId: String? = nil, tempoMs: Int? = nil, velocidadeMax: Double? = nil,
                 vminKmh: Double? = nil, vminX: Double? = nil, vminY: Double? = nil,
+                vChegadaKmh: Double? = nil, vEntradaKmh: Double? = nil,
+                vFreadaKmh: Double? = nil, vPaceKmh: Double? = nil,
+                vSaidaPicoKmh: Double? = nil,
+                tempoFreadaApiceMs: Int? = nil, tempoApiceSaidaMs: Int? = nil,
                 createdAt: Int64 = DB.nowMs(), syncedAt: Int64? = nil) {
         self.id = id; self.timeId = timeId; self.sessaoId = sessaoId; self.voltaId = voltaId
         self.segmentId = segmentId; self.tempoMs = tempoMs; self.velocidadeMax = velocidadeMax
         self.vminKmh = vminKmh; self.vminX = vminX; self.vminY = vminY
+        self.vChegadaKmh = vChegadaKmh; self.vEntradaKmh = vEntradaKmh
+        self.vFreadaKmh = vFreadaKmh; self.vPaceKmh = vPaceKmh
+        self.vSaidaPicoKmh = vSaidaPicoKmh
+        self.tempoFreadaApiceMs = tempoFreadaApiceMs; self.tempoApiceSaidaMs = tempoApiceSaidaMs
         self.createdAt = createdAt; self.syncedAt = syncedAt
     }
 }

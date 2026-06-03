@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>Trechos — onde o piloto tem mais tempo na mesa · Stint 2026-05-23</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#101a2e; --panel2:#15233d; --line:#1f2f4d;
+    --ink:#e8eef9; --muted:#8ea0c1; --accent:#5da3ff; --ok:#5dd39e;
+    --warn:#ffb454; --bad:#ff6b6b; --neutral:#7b8ba8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1100px;margin:0 auto;padding:32px 24px 80px}
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:24px}
+  h1{font-size:24px;margin:0 0 6px;font-weight:600;letter-spacing:-0.01em}
+  h2{font-size:18px;margin:36px 0 12px;font-weight:600;letter-spacing:-0.01em;color:var(--accent)}
+  h3{font-size:15px;margin:18px 0 8px;font-weight:600;color:var(--ink)}
+  p{margin:0 0 12px}
+  .sub{color:var(--muted);font-size:13px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;margin:14px 0}
+  .panel.alt{background:var(--panel2)}
+
+  /* Cards de destaque dos 3 trechos top */
+  .top-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:14px;margin:14px 0}
+  @media (max-width:760px){.top-grid{grid-template-columns:1fr}}
+  .top-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;position:relative;overflow:hidden}
+  .top-card.gold{border-left:4px solid var(--bad)}
+  .top-card.silver{border-left:4px solid var(--warn)}
+  .top-card.bronze{border-left:4px solid var(--warn);opacity:.92}
+  .top-card .rank{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .top-card .nome{font-size:19px;font-weight:600;letter-spacing:-0.01em;margin-bottom:14px}
+  .top-card .delta-line{font-size:36px;font-weight:700;letter-spacing:-0.02em;color:var(--bad);line-height:1}
+  .top-card.silver .delta-line, .top-card.bronze .delta-line{color:var(--warn)}
+  .top-card .delta-sub{font-size:12px;color:var(--muted);margin-top:4px}
+  .top-card .stats{display:flex;justify-content:space-between;margin-top:18px;padding-top:14px;border-top:1px solid var(--line);font-size:13px}
+  .top-card .stats div{display:flex;flex-direction:column}
+  .top-card .stats .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em}
+  .top-card .stats .v{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px}
+
+  /* Tabela */
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:14px}
+  th,td{text-align:left;padding:10px 10px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:0.06em}
+  tr:hover td{background:rgba(93,163,255,.04)}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  tr.row-top td{background:rgba(255,107,107,.08)}
+  tr.row-top-2 td{background:rgba(255,180,84,.06)}
+
+  /* Barras */
+  .bar-wrap{display:flex;align-items:center;gap:8px}
+  .bar{flex:1;height:8px;background:#1f2f4d;border-radius:99px;overflow:hidden;min-width:80px}
+  .bar > div{height:100%;border-radius:99px}
+  .bar > div.b-bad{background:var(--bad)}
+  .bar > div.b-warn{background:var(--warn)}
+  .bar > div.b-neu{background:var(--neutral)}
+
+  /* Voltas reais vs sinteticas */
+  .voltas-comp{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
+  @media (max-width:760px){.voltas-comp{grid-template-columns:1fr}}
+  .voltas-box{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .voltas-box h3{margin-top:0}
+  .voltas-box ul{margin:6px 0 0;padding-left:20px}
+  .voltas-box ul li{margin:3px 0;font-variant-numeric:tabular-nums;font-size:13px}
+  .voltas-box.real{border-left:4px solid var(--ok)}
+  .voltas-box.sint{border-left:4px solid var(--warn)}
+
+  /* Tag */
+  .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em}
+  .tag.bad{background:rgba(255,107,107,.18);color:var(--bad)}
+  .tag.warn{background:rgba(255,180,84,.18);color:var(--warn)}
+  .tag.ok{background:rgba(93,211,158,.15);color:var(--ok)}
+  .tag.neu{background:rgba(123,139,168,.18);color:var(--neutral)}
+
+  /* Incerteza */
+  .alert{background:rgba(255,180,84,.08);border:1px solid rgba(255,180,84,.4);border-radius:10px;padding:16px;margin:14px 0}
+  .alert h3{color:var(--warn);margin-top:0}
+
+  /* Resposta direta */
+  .resposta{background:linear-gradient(135deg, rgba(255,107,107,0.12), rgba(255,107,107,0.04));border:1px solid rgba(255,107,107,.3);border-radius:12px;padding:24px;margin:24px 0}
+  .resposta .label{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--bad);font-weight:700;margin-bottom:8px}
+  .resposta .nome{font-size:26px;font-weight:700;letter-spacing:-0.02em;margin-bottom:12px}
+  .resposta .nums{display:flex;gap:32px;flex-wrap:wrap;margin-bottom:8px}
+  .resposta .nums div{display:flex;flex-direction:column}
+  .resposta .nums .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em}
+  .resposta .nums .v{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px}
+
+  /* Lista de passagens da curva top */
+  .pass-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .pass-row:last-child{border-bottom:none}
+  .pass-row .v-num{font-size:13px;color:var(--muted);width:60px}
+  .pass-row .v-tempo{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;width:80px}
+  .pass-row .v-vmin{font-size:12px;color:var(--muted);width:120px}
+  .pass-row .v-bar{flex:1;height:18px;background:#1f2f4d;border-radius:4px;position:relative;overflow:hidden}
+  .pass-row .v-bar > div{height:100%;background:var(--accent);transition:width .4s}
+  .pass-row.best .v-bar > div{background:var(--ok)}
+  .pass-row.worst .v-bar > div{background:var(--bad)}
+  .pass-row .v-mark{font-size:11px;font-weight:600;color:var(--ok);margin-left:6px}
+
+  footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+  code{background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Onde tem mais tempo "na mesa" pra ganhar</h1>
+    <div class="sub">Análise de trechos do stint de sábado 2026-05-23 · Autódromo de Brasília · Bubi Marques · Bolinha (Celta 1.4)</div>
+    <div class="sub" style="margin-top:6px">Sessão <code>51ADFD3B…777F0</code> · 15:49:04 → 16:06:07 (17 min 03 s) · 4 voltas reais reconstruídas pelo GPS</div>
+  </header>
+
+  <!-- ===================== RESPOSTA DIRETA ===================== -->
+  <div class="resposta">
+    <div class="label">Trecho com maior diferença entre a melhor passagem e a média</div>
+    <div class="nome">Curva da Reta Oposta</div>
+    <div class="nums">
+      <div><div class="l">Melhor passagem</div><div class="v">15,00 s</div></div>
+      <div><div class="l">Média das 4 voltas</div><div class="v">22,25 s</div></div>
+      <div><div class="l">Pior passagem</div><div class="v">26,01 s</div></div>
+      <div><div class="l">Delta (média − melhor)</div><div class="v" style="color:#ff6b6b">+7,25 s</div></div>
+    </div>
+    <p style="margin-top:14px;margin-bottom:0">Se o piloto repetir em todas as voltas o que ele fez na melhor passagem dessa curva, ganha cerca de <strong>7 segundos por volta</strong> só nesse pedaço. É o ponto com maior potencial de ganho de tempo no stint inteiro.</p>
+  </div>
+
+  <!-- ===================== TOP 3 ===================== -->
+  <h2>Ranking dos trechos por potencial de ganho</h2>
+  <div class="top-grid">
+    <div class="top-card gold">
+      <div class="rank">Maior delta</div>
+      <div class="nome">Curva da Reta Oposta</div>
+      <div class="delta-line">+7,25 s</div>
+      <div class="delta-sub">de tempo "na mesa" por volta</div>
+      <div class="stats">
+        <div><span class="l">Melhor</span><span class="v">15,00 s</span></div>
+        <div><span class="l">Média</span><span class="v">22,25 s</span></div>
+        <div><span class="l">V mínima</span><span class="v">100 km/h</span></div>
+      </div>
+    </div>
+    <div class="top-card silver">
+      <div class="rank">2º maior delta</div>
+      <div class="nome">Curva "S"</div>
+      <div class="delta-line">+6,01 s</div>
+      <div class="delta-sub">de tempo "na mesa" por volta</div>
+      <div class="stats">
+        <div><span class="l">Melhor</span><span class="v">12,99 s</span></div>
+        <div><span class="l">Média</span><span class="v">19,00 s</span></div>
+        <div><span class="l">V mínima</span><span class="v">86 km/h</span></div>
+      </div>
+    </div>
+    <div class="top-card bronze">
+      <div class="rank">3º maior delta</div>
+      <div class="nome">Curva 01</div>
+      <div class="delta-line">+4,25 s</div>
+      <div class="delta-sub">de tempo "na mesa" por volta</div>
+      <div class="stats">
+        <div><span class="l">Melhor</span><span class="v">6,00 s</span></div>
+        <div><span class="l">Média</span><span class="v">10,25 s</span></div>
+        <div><span class="l">V mínima</span><span class="v">113 km/h</span></div>
+      </div>
+    </div>
+  </div>
+
+  <p>Esses 3 trechos somados representam <strong>+17,5 s de potencial de ganho por volta</strong> se o piloto conseguir repetir as melhores passagens dele. As outras 4 curvas (Curva 2, Junção, Bruxa, Placar) têm delta abaixo de 2 s — são pontos onde o piloto está consistente.</p>
+
+  <!-- ===================== TABELA COMPLETA ===================== -->
+  <h2>Tabela completa dos 7 trechos analisados</h2>
+  <div class="panel">
+    <table>
+      <thead>
+        <tr>
+          <th class="num">#</th>
+          <th>Trecho</th>
+          <th class="num">Melhor</th>
+          <th class="num">Média</th>
+          <th class="num">Pior</th>
+          <th class="num">Delta</th>
+          <th>Tempo "na mesa"</th>
+          <th class="num">V mín média</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-top">
+          <td class="num">1</td>
+          <td><strong>Curva da Reta Oposta</strong> <span class="tag bad">foco prioritário</span></td>
+          <td class="num">15,00 s</td><td class="num">22,25 s</td><td class="num">26,01 s</td>
+          <td class="num"><strong>+7,25 s</strong></td>
+          <td><div class="bar-wrap"><div class="bar"><div class="b-bad" style="width:100%"></div></div></div></td>
+          <td class="num">100,6 km/h</td>
+        </tr>
+        <tr class="row-top-2">
+          <td class="num">2</td>
+          <td><strong>Curva "S"</strong></td>
+          <td class="num">12,99 s</td><td class="num">19,00 s</td><td class="num">22,00 s</td>
+          <td class="num"><strong>+6,01 s</strong></td>
+          <td><div class="bar-wrap"><div class="bar"><div class="b-warn" style="width:83%"></div></div></div></td>
+          <td class="num">86,2 km/h</td>
+        </tr>
+        <tr class="row-top-2">
+          <td class="num">3</td>
+          <td><strong>Curva 01</strong></td>
+          <td class="num">6,00 s</td><td class="num">10,25 s</td><td class="num">20,00 s</td>
+          <td class="num"><strong>+4,25 s</strong></td>
+          <td><div class="bar-wrap"><div class="bar"><div class="b-warn" style="width:59%"></div></div></div></td>
+          <td class="num">113,4 km/h</td>
+        </tr>
+        <tr>
+          <td class="num">4</td>
+          <td>Curva 2</td>
+          <td class="num">21,00 s</td><td class="num">22,75 s</td><td class="num">24,01 s</td>
+          <td class="num">+1,76 s</td>
+          <td><div class="bar-wrap"><div class="bar"><div class="b-neu" style="width:24%"></div></div></div></td>
+          <td class="num">98,9 km/h</td>
+        </tr>
+        <tr>
+          <td class="num">5</td>
+          <td>Curva da Junção</td>
+          <td class="num">25,00 s</td><td class="num">26,25 s</td><td class="num">27,01 s</td>
+          <td class="num">+1,25 s</td>
+          <td><div class="bar-wrap"><div class="bar"><div class="b-neu" style="width:17%"></div></div></div></td>
+          <td class="num">96,1 km/h</td>
+        </tr>
+        <tr>
+          <td class="num">6</td>
+          <td>Curva da Bruxa</td>
+          <td class="num">16,00 s</td><td class="num">16,75 s</td><td class="num">17,00 s</td>
+          <td class="num">+0,75 s</td>
+          <td><div class="bar-wrap"><div class="bar"><div class="b-neu" style="width:10%"></div></div></div></td>
+          <td class="num">90,1 km/h</td>
+        </tr>
+        <tr>
+          <td class="num">7</td>
+          <td>Curva do Placar</td>
+          <td class="num">20,00 s</td><td class="num">20,50 s</td><td class="num">22,00 s</td>
+          <td class="num">+0,50 s</td>
+          <td><div class="bar-wrap"><div class="bar"><div class="b-neu" style="width:7%"></div></div></div></td>
+          <td class="num">93,3 km/h</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="sub" style="margin-top:8px">A coluna "tempo na mesa" mostra visualmente quanto cada trecho pesa em relação ao maior delta. A 8ª curva (Curva da Vitória) não foi capturada de forma confiável nas 4 voltas — o GPS a 1 ponto por segundo não conseguiu isolar o ponto mais lento dela em ritmo.</p>
+  </div>
+
+  <!-- ===================== PASSAGENS DETALHADAS DA CURVA TOP ===================== -->
+  <h2>Como cada volta passou pela Curva da Reta Oposta</h2>
+  <div class="panel">
+    <div class="pass-row best">
+      <div class="v-num">Volta 1</div>
+      <div class="v-tempo">15,00 s</div>
+      <div class="v-vmin">vmin 92 km/h</div>
+      <div class="v-bar"><div style="width:58%"></div></div>
+      <div class="v-mark">MELHOR</div>
+    </div>
+    <div class="pass-row">
+      <div class="v-num">Volta 3</div>
+      <div class="v-tempo">24,00 s</div>
+      <div class="v-vmin">vmin 104 km/h</div>
+      <div class="v-bar"><div style="width:92%"></div></div>
+      <div></div>
+    </div>
+    <div class="pass-row">
+      <div class="v-num">Volta 4</div>
+      <div class="v-tempo">24,00 s</div>
+      <div class="v-vmin">vmin 102 km/h</div>
+      <div class="v-bar"><div style="width:92%"></div></div>
+      <div></div>
+    </div>
+    <div class="pass-row worst">
+      <div class="v-num">Volta 2</div>
+      <div class="v-tempo">26,01 s</div>
+      <div class="v-vmin">vmin 105 km/h</div>
+      <div class="v-bar"><div style="width:100%"></div></div>
+      <div></div>
+    </div>
+    <p class="sub" style="margin-top:12px">Detalhe interessante: na melhor passagem (Volta 1) a velocidade mínima foi a <strong>menor</strong> (92 km/h), enquanto nas piores ele freou menos (vmin 102-105 km/h) mas demorou mais. Pode ser que na Volta 1 ele conseguiu entrar mais cedo e mais profundo na freada, perdendo menos tempo na fase de saída. Vale rever esse trecho com o piloto.</p>
+  </div>
+
+  <!-- ===================== VOLTAS REAIS vs SINTETICAS ===================== -->
+  <h2>Voltas reais que o piloto fez (vs as 10 sintéticas do app)</h2>
+  <div class="voltas-comp">
+    <div class="voltas-box real">
+      <h3>O que o piloto fez de verdade — 4 voltas reais</h3>
+      <p class="sub" style="margin-top:0">Reconstruído por trás pelo GPS bruto. Cada volta com distância entre 5.413 e 5.680 metros (a pista de Brasília tem 5.476 m oficial — bate).</p>
+      <ul>
+        <li>Volta 1: <strong>2:46,00</strong> · 5.413 m · vmed 117 km/h</li>
+        <li>Volta 2: <strong>2:38,00</strong> · 5.587 m · vmed 127 km/h</li>
+        <li>Volta 3: <strong>2:43,00</strong> · 5.609 m · vmed 124 km/h</li>
+        <li>Volta 4: <strong>2:38,00</strong> · 5.680 m · vmed 129 km/h</li>
+      </ul>
+      <p class="sub" style="margin-top:10px">Total: 4 voltas inteiras em ~17 minutos + aquecimento + desaquecimento. Tempo entre 2:38 e 2:46.</p>
+    </div>
+    <div class="voltas-box sint">
+      <h3>O que o app exibe — 10 voltas sintéticas <span class="tag warn">não medidas</span></h3>
+      <p class="sub" style="margin-top:0">O app preencheu 10 voltas no encerramento, com tempos em progressão matemática de −0,559 s entre voltas consecutivas. Não foram medidas — foram inventadas.</p>
+      <ul>
+        <li>V1: 1:46,24 &nbsp; V2: 1:44,18 &nbsp; V3: 1:43,62</li>
+        <li>V4: 1:43,07 &nbsp; V5: 1:42,51 &nbsp; V6: 1:41,95</li>
+        <li>V7: 1:45,53 &nbsp; V8: 1:44,97 &nbsp; V9: 1:44,41 &nbsp; V10: 1:43,85</li>
+      </ul>
+      <p class="sub" style="margin-top:10px">Todos os 10 tempos foram criados no mesmo segundo (16:06:07), no instante do encerramento — não no cruzamento real da linha de chegada.</p>
+    </div>
+  </div>
+
+  <!-- ===================== COMO CHEGUEI NESSE NUMERO ===================== -->
+  <h2>Como cheguei nesse número (metodologia)</h2>
+  <div class="panel">
+    <p>Como o detector de trecho do app não foi armado nessa sessão, <strong>não tinha tempo por trecho gravado pronto</strong>. Eu reconstruí por trás a partir dos 1.013 pontos de GPS que ficaram no aparelho. Em 4 passos:</p>
+    <ol>
+      <li><strong>Identificação das voltas reais</strong> — toda vez que o GPS voltou pra perto do ponto onde o piloto saiu do box (após percorrer pelo menos 2 km), conto como uma volta completa. Resultado: 4 voltas reais.</li>
+      <li><strong>Identificação dos ápices das curvas</strong> — dentro de cada volta procurei os 8 pontos mais lentos. Esses são os ápices das 8 curvas de Brasília (Curva 01, Curva da Reta Oposta, Curva 2, Junção, Bruxa, Placar, "S", Vitória) na ordem canônica em que aparecem na pista.</li>
+      <li><strong>Tempo no trecho</strong> — defini "tempo no trecho da Curva K" como o tempo entre o ápice da Curva K-1 e o ápice da Curva K. Cada trecho engloba aproximação + frenagem + ápice da curva.</li>
+      <li><strong>Cálculo do delta</strong> — pra cada trecho calculei a melhor passagem das 4 voltas, a média, e a diferença entre os dois.</li>
+    </ol>
+  </div>
+
+  <!-- ===================== MARGEM DE INCERTEZA ===================== -->
+  <div class="alert">
+    <h3>Margem de incerteza — leia antes de tirar conclusão</h3>
+    <ul>
+      <li><strong>O GPS gravou 1 ponto por segundo.</strong> Cada tempo por trecho tem margem natural de ±1 s. Pra trechos com delta abaixo de 2 s, essa margem mascara o ranking — por isso só destaco os 3 maiores.</li>
+      <li><strong>Em 3 das 4 voltas só consegui isolar 7 dos 8 ápices.</strong> Em algumas curvas o piloto freou pouco e o ponto mais lento ficou disfarçado. Isso pode estar comparando "Curva K" da volta A com "Curva K+1" da volta B em alguns trechos, inflando o delta aparente em até ±2 s.</li>
+      <li><strong>São só 4 voltas reais.</strong> 4 amostras é pouco pra calcular média confiável — qualquer volta atípica puxa a média forte.</li>
+      <li><strong>Os tempos aparecem com decimais inteiros (15,00 / 22,00 / 26,01)</strong> porque o GPS é discreto a 1 ponto por segundo. Os números reais são frações desses intervalos.</li>
+    </ul>
+    <p style="margin-top:12px;margin-bottom:0"><strong>Conclusão prudente:</strong> o ranking dos 3 trechos com maior delta (Curva da Reta Oposta, Curva "S", Curva 01) é provavelmente correto na ordem geral, mas o número absoluto do delta tem margem real de ±2 s. Pra trechos com delta abaixo de 2 s, eu não tiraria conclusão.</p>
+  </div>
+
+  <!-- ===================== O QUE FAZER ===================== -->
+  <h2>O que fazer com isso</h2>
+  <div class="panel alt">
+    <h3>Pro próximo dia de pista (operação)</h3>
+    <ul>
+      <li><strong>Foco da próxima sessão: Curva da Reta Oposta.</strong> Se o piloto fizer essa curva como a Volta 1 (15 s) de forma consistente, ganha em torno de 7 segundos por volta.</li>
+      <li><strong>Segundo foco: Curva "S".</strong> Mais 6 segundos por volta de potencial.</li>
+      <li><strong>Terceiro foco: Curva 01 (a primeira curva depois da reta principal).</strong> Mais 4 segundos por volta de potencial.</li>
+      <li>As outras 4 curvas estão consistentes — não desperdiçar foco com elas até estabilizar as 3 acima.</li>
+    </ul>
+
+    <h3>Pra essa análise ficar precisa de verdade (técnico)</h3>
+    <ul>
+      <li><strong>Armar o detector de trecho do app na partida da sessão.</strong> Hoje ficou desligado — por isso precisei reconstruir por trás com margem de ±2 s. Com o detector ligado, cada trecho fica cronometrado em centésimo de segundo de verdade.</li>
+      <li><strong>Vincular o carro Bolinha na sessão.</strong> Sem isso a IA do app não roda e a análise por trecho não acontece ao vivo.</li>
+      <li><strong>Ligar a IA na sessão</strong> antes de "Iniciar".</li>
+      <li><strong>Resultado:</strong> no próximo stint você teria essa mesma tabela mas com precisão real de centésimo de segundo, calculada ao vivo dentro do próprio app — sem reconstrução por trás.</li>
+    </ul>
+  </div>
+
+  <footer>
+    Análise gerada em 2026-05-23 19:45 · banco local <code>p1fast.sqlite</code> (2,4 GB) puxado do iPhone 16 Pro Max via cabo · 1.010 pontos de GPS válidos (margem &lt; 30 m) · 4 voltas reais reconstruídas · 7 trechos analisados (sobre 8 cadastrados em Brasília).<br>
+    Esse relatório é complementar ao relatório principal em <code>relatorios/stint-2026-05-23.html</code>.
+  </footer>
+</div>
+</body>
+</html>

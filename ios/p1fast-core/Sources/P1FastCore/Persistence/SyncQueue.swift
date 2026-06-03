@@ -85,6 +85,28 @@ public enum SyncQueue {
         try db.execute(sql: "DELETE FROM sync_queue WHERE id = ?", arguments: [id])
     }
 
+    /// Onda 4 (2026-05-24): apaga entradas dead-letter (attempts >= 5).
+    /// Itens com 5+ tentativas falharam de forma persistente (erro do
+    /// servidor, schema fora de sincronia, FK quebrada). O drainer já
+    /// para de tentar — mas eles ficam acumulando no banco indefinidamente.
+    /// Esta função limpa esses itens, retornando quantos foram apagados.
+    /// Caller típico: chamar uma vez no boot do app pra higienizar.
+    @discardableResult
+    public static func purgeDeadLetters(_ db: Database, maxAttempts: Int = 5) throws -> Int {
+        let n = try Int.fetchOne(
+            db,
+            sql: "SELECT COUNT(*) FROM sync_queue WHERE attempts >= ?",
+            arguments: [maxAttempts]
+        ) ?? 0
+        if n > 0 {
+            try db.execute(
+                sql: "DELETE FROM sync_queue WHERE attempts >= ?",
+                arguments: [maxAttempts]
+            )
+        }
+        return n
+    }
+
     /// Incrementa attempts num item da fila — usado quando o drainer falha temporário.
     /// `error` é o motivo da rejeição (do server) ou erro de transport — gravado
     /// em `last_error` pra UI exibir; sobrescreve o valor anterior.

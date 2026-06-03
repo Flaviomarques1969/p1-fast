@@ -70,6 +70,10 @@ struct CarroNovoFormView: View {
                 CategoriaPicker(selection: $categoria)
             }
 
+            FormField(label: "Cor") {
+                CorPicker(selection: $corHex)
+            }
+
             if let erro = savingError {
                 Text(erro)
                     .font(.captionP1)
@@ -92,7 +96,7 @@ struct CarroNovoFormView: View {
                     apelido: apelido.trimmingCharacters(in: .whitespaces),
                     modelo: trimmedOrNil(modelo),
                     categoria: categoria,
-                    cor: nil
+                    cor: corHex
                 )
                 isSaving = false
                 onClose()

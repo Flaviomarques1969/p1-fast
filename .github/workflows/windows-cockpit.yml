@@ -26,7 +26,6 @@ jobs:
       domain: ${{ steps.filter.outputs.domain }}
       ui: ${{ steps.filter.outputs.ui }}
       capture: ${{ steps.filter.outputs.capture }}
-      livedemo: ${{ steps.filter.outputs.livedemo }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -46,10 +45,6 @@ jobs:
               - '.github/workflows/windows-cockpit.yml'
             capture:
               - 'windows/cockpit/P1Fast.Cockpit.T4000Capture/**'
-              - 'windows/cockpit/P1Fast.Cockpit.Domain/**'
-              - '.github/workflows/windows-cockpit.yml'
-            livedemo:
-              - 'windows/cockpit/P1Fast.Cockpit.T4000LiveDemo/**'
               - 'windows/cockpit/P1Fast.Cockpit.Domain/**'
               - '.github/workflows/windows-cockpit.yml'
 
@@ -253,51 +248,4 @@ jobs:
         with:
           name: p1fast-t4000-capture-${{ github.sha }}
           path: dist/t4000-capture/
-          retention-days: 14
-
-  # ── Live demo publish ──
-  # Empacota o p1fast-t4000-live-demo.exe (single-file, self-contained):
-  # programinha que roda no notebook, simula a Injepro T4000 cospindo dados
-  # e mostra o painel reagindo em tempo real — sem precisar plugar no carro.
-  # Mesmo padrão da capture tool (win-x64, self-contained, artifact 14d).
-  t4000-live-demo-publish:
-    needs: changes
-    if: needs.changes.outputs.livedemo == 'true'
-    runs-on: windows-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          submodules: false
-
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Cache NuGet
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('windows/cockpit/**/*.csproj') }}
-          restore-keys: |
-            nuget-${{ runner.os }}-
-
-      - name: Publish (single-file, win-x64, self-contained)
-        shell: pwsh
-        run: |
-          dotnet publish windows/cockpit/P1Fast.Cockpit.T4000LiveDemo/P1Fast.Cockpit.T4000LiveDemo.csproj `
-            --configuration Release `
-            --runtime win-x64 `
-            --self-contained true `
-            -p:PublishSingleFile=true `
-            -p:IncludeNativeLibrariesForSelfExtract=true `
-            -p:DebugType=embedded `
-            --output dist/t4000-live-demo
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: p1fast-t4000-live-demo-${{ github.sha }}
-          path: dist/t4000-live-demo/
           retention-days: 14

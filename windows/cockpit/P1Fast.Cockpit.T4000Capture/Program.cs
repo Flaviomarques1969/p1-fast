@@ -32,7 +32,6 @@ internal static class Program
         var portName = ParseArg(args, "--port");
         var outPath  = ParseArg(args, "--out");
         var help     = args.Any(a => a is "--help" or "-h" or "/?");
-        var diagOnly = args.Any(a => a is "--diag" or "--diagnose");
 
         if (help)
         {
@@ -40,48 +39,21 @@ internal static class Program
             return 0;
         }
 
-        // Sempre roda o diagnóstico USB antes de qualquer coisa. Mostra TODOS
-        // os cabos USB conectados, identifica candidatos a T4000, e aponta
-        // quando falta driver. Se --diag, sai depois do relatório.
-        var devices = UsbScanner.ScanAll();
-        UsbScanner.PrintReport(devices);
-
-        if (diagOnly)
-        {
-            Console.WriteLine("Modo --diag: relatório acima. Saindo sem capturar.");
-            return 0;
-        }
-
         if (portName is null)
         {
-            // 1ª tentativa: usar o melhor candidato detectado pelo diagnóstico WMI.
-            portName = UsbScanner.FindBestComPort(devices);
-
-            // 2ª tentativa: fallback pra enumeração tradicional de portas COM.
-            if (portName is null)
+            var ports = SerialPort.GetPortNames().OrderBy(x => x, StringComparer.Ordinal).ToArray();
+            if (ports.Length == 0)
             {
-                var ports = SerialPort.GetPortNames().OrderBy(x => x, StringComparer.Ordinal).ToArray();
-                if (ports.Length > 0)
-                {
-                    portName = ports[^1];
-                    Console.WriteLine($"Sem candidato USB-Serial óbvio. Usando porta: {portName}");
-                }
-            }
-            else
-            {
-                Console.WriteLine($"Candidato T4000 identificado automaticamente: {portName}");
-            }
-
-            if (portName is null)
-            {
+                Console.Error.WriteLine("Nenhuma porta serial encontrada.");
+                Console.Error.WriteLine("Verifique se o cabo USB da T4000 está plugado e a central está ligada.");
                 Console.Error.WriteLine();
-                Console.Error.WriteLine("Não consegui encontrar uma porta serial pra abrir.");
-                Console.Error.WriteLine("Veja o diagnóstico USB acima — provavelmente um destes:");
-                Console.Error.WriteLine("  1. Cabo USB da T4000 não está plugado (relatório lista 0 dispositivos)");
-                Console.Error.WriteLine("  2. Cabo plugado mas Windows não tem o driver do chip (relatório mostra 'SEM DRIVER')");
-                Console.Error.WriteLine("  3. Use --port=COMx pra forçar uma porta específica");
+                Console.Error.WriteLine("No Windows, geralmente aparece como COM3, COM4, etc. Use --port=COMx pra forçar.");
                 return 1;
             }
+            Console.WriteLine($"Portas disponíveis: {string.Join(", ", ports)}");
+            // Usa a porta de número mais alto — costuma ser a USB recém-plugada.
+            portName = ports[^1];
+            Console.WriteLine($"Selecionado automaticamente: {portName}  (use --port=COMx pra escolher outra)");
         }
 
         outPath ??= $"t4000-capture-{DateTime.Now:yyyyMMdd-HHmmss}.bin";
@@ -240,19 +212,13 @@ internal static class Program
         Console.WriteLine("p1fast-t4000-capture — captura raw do barramento T4000 via USB serial.");
         Console.WriteLine();
         Console.WriteLine("Uso:");
-        Console.WriteLine("  p1fast-t4000-capture [--port=COMx] [--out=arquivo.bin] [--diag]");
+        Console.WriteLine("  p1fast-t4000-capture [--port=COMx] [--out=arquivo.bin]");
         Console.WriteLine();
         Console.WriteLine("Opções:");
-        Console.WriteLine("  --diag        só roda o diagnóstico USB (lista todos os cabos plugados,");
-        Console.WriteLine("                identifica candidatos a T4000, aponta drivers faltando) — não captura");
         Console.WriteLine("  --port=COMx   força uma porta serial específica (default: detecta automaticamente)");
         Console.WriteLine("  --out=path    arquivo de saída (default: t4000-capture-<timestamp>.bin)");
         Console.WriteLine("  --help        mostra esta ajuda");
         Console.WriteLine();
         Console.WriteLine("Pra parar a captura: aperte Q, Esc, ou Ctrl+C.");
-        Console.WriteLine();
-        Console.WriteLine("Observação: o diagnóstico USB roda automaticamente toda vez antes da captura.");
-        Console.WriteLine("Mostra TODOS os cabos USB plugados (mesmo sem driver instalado), identifica");
-        Console.WriteLine("o chip de comunicação pelo VID (FTDI / CH340 / Silicon Labs / Prolific).");
     }
 }

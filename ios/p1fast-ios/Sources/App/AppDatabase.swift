@@ -36,6 +36,13 @@ final class AppDatabase: ObservableObject {
                       AND name != 'grdb_migrations';
                 """) ?? 0
             }
+            // Onda 4 (2026-05-24): apaga itens dead-letter da fila de envio
+            // (>=5 tentativas) no boot. O drainer já para de tentar, mas os
+            // itens ficam acumulando. Hoje há ~213 itens parados desde stints
+            // antigos com voltas sintéticas que o servidor rejeita.
+            try await q.write { db in
+                _ = try P1FastCore.SyncQueue.purgeDeadLetters(db)
+            }
             self.queue = q
             self.status = .ok(tables: count)
         } catch {

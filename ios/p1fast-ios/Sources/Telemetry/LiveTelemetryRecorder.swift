@@ -63,22 +63,30 @@ final class LiveTelemetryRecorder: NSObject, ObservableObject {
     private let queue: DatabaseQueue
     private let sessaoId: String
     private let timeId: String
-    private let flushBatchSize: Int = 100
-    private let flushIntervalS: TimeInterval = 1.0
+    // Onda 1C (2026-05-24): batch maior reduz frequência de escrita no
+    // SQLite (era 1×/s; agora 2×/s). Em 17 min de captura: 1.020 flushes
+    // viraram 510 — metade do trabalho de I/O do banco, com perda de no
+    // máximo 2s de buffer em caso de crash (aceitável dada a queda de
+    // calor + bateria).
+    private let flushBatchSize: Int = 200
+    private let flushIntervalS: TimeInterval = 2.0
+
+    // Onda 1C: brilho da tela durante captura é o maior consumidor de
+    // energia/calor no iPhone. Reduzir pra ~30% mantém o aparelho legível
+    // num apoio dentro do carro (sem sol direto) e dispensa ~50% do
+    // consumo da tela. Brilho original é restaurado no stop.
+    private static let captureBrightness: CGFloat = 0.3
+    private var brightnessAntesCaptura: CGFloat?
 
     // MARK: - Internals
     private let motion = CMMotionManager()
     private let location = CLLocationManager()
-    /// Publisher GPS pro canal Realtime cockpit-bubi-live (consumido pelo
-    /// painel do piloto pra detecção automática de entrada/saída de curva).
-    /// Opcional — só ativa quando SupabaseManager.shared está disponível.
-    private let cockpitGpsPublisher: CockpitGpsPublisher? = {
-        guard let client = SupabaseManager.shared else { return nil }
-        return CockpitGpsPublisher(client: client)
-    }()
     private let opQueue: OperationQueue = {
         let q = OperationQueue()
-        q.qualityOfService = .userInteractive
+        // Onda 1C: .userInteractive é o QoS mais alto e gera mais calor.
+        // .userInitiated entrega 100 Hz com folga e libera o processador
+        // pra otimizar consumo térmico.
+        q.qualityOfService = .userInitiated
         q.maxConcurrentOperationCount = 1
         return q
     }()
@@ -162,8 +170,12 @@ final class LiveTelemetryRecorder: NSObject, ObservableObject {
         for o in bgObservers { NotificationCenter.default.removeObserver(o) }
         // UIApplication.shared.isIdleTimerDisabled é UIApplication-only
         // → marshalling pra main. Ignora se app já tá saindo.
+        let bRestaurar = brightnessAntesCaptura
         Task { @MainActor in
             UIApplication.shared.isIdleTimerDisabled = false
+            // Onda 1C: garante que brilho da tela seja restaurado mesmo
+            // em teardown abrupto (view desmontou sem chamar stop()).
+            if let b = bRestaurar { UIScreen.main.brightness = b }
         }
     }
 
@@ -183,6 +195,12 @@ final class LiveTelemetryRecorder: NSObject, ObservableObject {
         backgroundEnteredAt = nil
         // MS-2.2: tela não dorme durante captura.
         UIApplication.shared.isIdleTimerDisabled = true
+        // Onda 1C: reduz brilho da tela pra ~30% durante a captura — o
+        // iPhone fica num apoio dentro do carro e não precisa estar com
+        // brilho máximo. Brilho original é salvo pra restaurar no stop.
+        // Maior fonte de calor + bateria do app é a tela ligada full.
+        brightnessAntesCaptura = UIScreen.main.brightness
+        UIScreen.main.brightness = Self.captureBrightness
         // MS-2.2: GPS continua em background (Info.plist tem
         // UIBackgroundModes.location). CoreLocation exige setar APÓS
         // já ter authorization — então sempre setamos no start.
@@ -190,10 +208,6 @@ final class LiveTelemetryRecorder: NSObject, ObservableObject {
         startGps()
         startImu()
         scheduleFlushTimer()
-        // inscreve no canal Realtime do cockpit (não-bloqueante)
-        if let pub = cockpitGpsPublisher {
-            Task.detached { [pub] in await pub.start() }
-        }
     }
 
     func stop() async {
@@ -206,11 +220,12 @@ final class LiveTelemetryRecorder: NSObject, ObservableObject {
         // MS-2.2: libera wake lock + background updates.
         location.allowsBackgroundLocationUpdates = false
         UIApplication.shared.isIdleTimerDisabled = false
-        await flush()
-        // desinscreve do canal Realtime do cockpit
-        if let pub = cockpitGpsPublisher {
-            await pub.stop()
+        // Onda 1C: restaura brilho original da tela.
+        if let bAntes = brightnessAntesCaptura {
+            UIScreen.main.brightness = bAntes
+            brightnessAntesCaptura = nil
         }
+        await flush()
     }
 
     // MARK: - IMU
@@ -420,18 +435,6 @@ extension LiveTelemetryRecorder: CLLocationManagerDelegate {
                 let sample = Self.makeGpsSample(location: loc, tMono: tMono)
                 self.append(sample)
                 self.trackRate(.gps, tMono: tMono / 1000.0)
-                // Publica ao vivo no canal Realtime do cockpit pra detector
-                // automático de cruzamento de curvas (registro de velocidade
-                // entrada/saída no painel p1t4000.vercel.app). Não-bloqueante.
-                if let pub = self.cockpitGpsPublisher {
-                    let lat = loc.coordinate.latitude
-                    let lng = loc.coordinate.longitude
-                    let speedKmh = max(0, loc.speed) * 3.6 // m/s → km/h
-                    let tWall = Date().timeIntervalSince1970 * 1000.0
-                    Task.detached { [pub] in
-                        await pub.publish(lat: lat, lng: lng, speedKmh: speedKmh, tWallMs: tWall)
-                    }
-                }
             }
         }
     }

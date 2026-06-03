@@ -240,9 +240,14 @@ struct StintCaptureView: View {
         encerrando = true
         encerrarErro = nil
         Task {
-            let events = await coordinator.stop()
+            let (laps, segments, postBursts) = await coordinator.stop()
             do {
-                _ = try await stintRepo.finalize(stintId: stintId, segmentEvents: events)
+                _ = try await stintRepo.finalize(
+                    stintId: stintId,
+                    lapEvents: laps,
+                    segmentEvents: segments,
+                    postBurstEvents: postBursts
+                )
                 encerrando = false
                 onFinalized(stintId)
             } catch {
@@ -254,7 +259,7 @@ struct StintCaptureView: View {
 
     private func cancelar() {
         Task {
-            _ = await coordinator.stop()
+            _ = await coordinator.stop()  // descarta tupla (laps, segments, postBursts)
             onCancel()
         }
     }

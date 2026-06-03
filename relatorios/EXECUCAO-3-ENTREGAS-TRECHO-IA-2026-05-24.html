@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>3 entregas executadas — 6 indicadores + IA por trecho — 2026-05-24</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#101a2e; --panel2:#15233d; --line:#1f2f4d;
+    --ink:#e8eef9; --muted:#8ea0c1; --accent:#5da3ff; --ok:#5dd39e;
+    --warn:#ffb454; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:32px 24px 80px}
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:24px}
+  h1{font-size:24px;margin:0 0 6px;font-weight:600;letter-spacing:-0.01em}
+  h2{font-size:18px;margin:36px 0 12px;font-weight:600;letter-spacing:-0.01em;color:var(--accent)}
+  h3{font-size:15px;margin:18px 0 8px;font-weight:600;color:var(--ink)}
+  p{margin:0 0 12px}
+  .sub{color:var(--muted);font-size:13px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;margin:14px 0}
+  .ok{background:linear-gradient(135deg, rgba(93,211,158,0.10), rgba(93,211,158,0.02));border:1px solid rgba(93,211,158,.3);border-radius:12px;padding:20px;margin:14px 0}
+  .warn{background:linear-gradient(135deg, rgba(255,180,84,0.10), rgba(255,180,84,0.02));border:1px solid rgba(255,180,84,.3);border-radius:12px;padding:20px;margin:14px 0}
+  .hl{color:var(--ok);font-weight:600}
+  .hlw{color:var(--warn);font-weight:600}
+  code{background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:13px}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+  th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left}
+  th{color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:0.06em;background:rgba(93,163,255,.04)}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  ul{margin:8px 0 8px 22px;padding:0}
+  li{margin:6px 0}
+  .kv{display:grid;grid-template-columns:200px 1fr;gap:10px 18px;margin:8px 0}
+  .kv .l{color:var(--muted);font-size:13px}
+  .kv .v{font-size:14px;color:var(--ink)}
+  footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>3 entregas executadas — 6 indicadores por trecho + IA por trecho</h1>
+  <div class="sub">Execução do comando <code>vai</code> · 2026-05-24 noite · Ambiente isolado <code>infallible-liskov-7a1b15</code></div>
+</header>
+
+<div class="ok">
+  <h2 style="margin-top:0;color:var(--ok)">Resumo executivo</h2>
+  <p>O aplicativo do iPhone passou a calcular e gravar <strong>os 6 indicadores canônicos por trecho</strong> a cada passagem (V chegada, V entrada, V freada, Vmin, Pace, V saída pico), além de 2 tempos auxiliares (Freada → ápice e ápice → Pace). Esses indicadores são extraídos ao vivo do detector de trecho durante o stint, gravados no banco local do celular e ficam disponíveis no banco oficial assim que o stint é encerrado.</p>
+  <p>A tela do pós-stint ganhou uma seção nova mostrando, trecho por trecho, todas as passagens do piloto em formato de tabela com cores semânticas (laranja para freada, vermelho para curva, verde para saída) e uma linha "Melhor" no rodapé com o maior valor observado em cada coluna. As cores espelham o relatório HTML do dia 23 que motivou esse pedido.</p>
+  <p>Abaixo da tabela, uma frase curta gerada por IA — sem servidor, lógica pura no celular — compara a última passagem com a melhor da sessão e indica o ponto fraco principal (ex.: "Curva da Reta Oposta: Pace 2,1 km/h abaixo da sua melhor. Pouca aceleração na saída."). Nada vai pro banco oficial sem você liberar explicitamente.</p>
+</div>
+
+<h2>Entrega 1 — Cálculo dos 5 indicadores que faltavam</h2>
+<div class="panel">
+  <p>O detector de trecho ao vivo do app agora calcula os 5 indicadores que faltavam. Antes só Vmin e o apex existiam — agora todos os 6 são gravados.</p>
+  <table>
+    <thead><tr><th>Indicador</th><th>Como é calculado agora</th></tr></thead>
+    <tbody>
+      <tr><td>V chegada</td><td>Velocidade ~1,2 s antes do ponto de entrada do trecho, lida de um buffer rolling de 240 amostras</td></tr>
+      <tr><td>V entrada</td><td>Velocidade no instante exato em que cruza o ponto E (já existia, agora exposta como indicador)</td></tr>
+      <tr><td>V freada</td><td>Velocidade no instante anterior à frenagem detectada (queda &gt; 3 m/s em menos de 1 s)</td></tr>
+      <tr><td>Vmin</td><td>Velocidade mínima dentro do trecho (já existia)</td></tr>
+      <tr><td>Pace</td><td>Velocidade no instante em que cruza o ponto S</td></tr>
+      <tr><td>V saída pico</td><td>Maior velocidade observada nos ~2,4 s após a saída do trecho</td></tr>
+    </tbody>
+  </table>
+  <p>O 6º indicador (V saída pico) precisa de amostras DEPOIS da saída do trecho, então o detector mantém um estado de "pós-saída" e emite um evento adicional <code>onSegmentPostBurst</code> quando os 2,4 s se completam — ou antes, se o carro entrar em outro trecho ou cruzar a linha de chegada.</p>
+
+  <h3>Caminhos canônicos alterados</h3>
+  <ul>
+    <li><code>src/telemetry/detector.js</code> — buffer rolling, evento <code>onSegmentPostBurst</code>, 5 campos novos no <code>segmentEnd</code></li>
+    <li><code>ios/p1fast-core/Sources/P1FastCore/Detector.swift</code> — espelha 1:1 o JS canônico (regra dura Padrão B)</li>
+    <li><code>ios/p1fast-core/Sources/P1FastCore/Persistence/Migrations.swift</code> — migration <code>v15_segment_six_indicators</code> adiciona 7 colunas em <code>segment_executions</code></li>
+    <li><code>ios/p1fast-core/Sources/P1FastCore/Persistence/Models.swift</code> — <code>SegmentExecution</code> ganha 7 campos</li>
+    <li><code>ios/p1fast-core/Sources/P1FastCore/SegmentExecutionMapper.swift</code> — aceita <code>postBurst</code> opcional e merge por <code>(segmentId, lapNumero)</code></li>
+    <li><code>ios/p1fast-ios/Sources/Persistence/StintRepository.swift</code> — <code>finalize</code> agora aceita <code>postBurstEvents</code></li>
+    <li><code>ios/p1fast-ios/Sources/Telemetry/StintCaptureCoordinator.swift</code> — coleta os eventos de post-burst durante a captura</li>
+    <li><code>ios/p1fast-ios/Sources/Views/StintCaptureView.swift</code> — propaga a lista pro finalize</li>
+  </ul>
+</div>
+
+<h2>Entrega 2 — Mostrar os 6 indicadores no aplicativo</h2>
+<div class="panel">
+  <p>Componente reutilizável <code>SeisIndicadoresTrecho</code> renderiza uma tabela por trecho com todas as passagens do piloto em ordem cronológica, mais a linha "Melhor" no rodapé. As cores das colunas e a ordem dos indicadores espelham o relatório HTML <code>relatorios/_arquivado/trechos-6-indicadores-LIMPO-2026-05-23.html</code> que motivou o pedido — laranja, vermelho e verde por grupo (Freada / Curva / Saída).</p>
+  <p>A tela <code>PosStintView</code> carrega as execuções dos trechos do banco local (<code>segment_executions</code>) e exibe uma tabela por trecho que apareceu nesse stint. Sem dados (detector não armado ou pista não cadastrada), a seção simplesmente não aparece.</p>
+
+  <h3>Arquivos criados / editados</h3>
+  <ul>
+    <li><code>ios/p1fast-ios/Sources/Components/SeisIndicadoresTrecho.swift</code> — NOVO. Componente com 3 previews (sem dado / 1 passagem / 3 passagens + IA).</li>
+    <li><code>ios/p1fast-ios/Sources/Views/PosStintView.swift</code> — nova seção "Trechos · 6 indicadores", catálogo mínimo de nomes amigáveis pra Brasília.</li>
+    <li><code>ios/p1fast-ios/Sources/Persistence/StintRepository.swift</code> — <code>segmentExecutions(stintId:)</code>.</li>
+  </ul>
+
+  <h3>Decisão consciente — aba "Desempenho" no detalhe da pista</h3>
+  <p>O plano original previa uma aba nova na <code>AutodromoDetalheView</code> com histórico de 20 passagens + sparkline. Essa tela <strong>não existe no app hoje</strong> (verificado por busca exaustiva — só existem <code>ConfiguradorTrechoView</code> e <code>TrechoListaView</code>). Criar a tela do zero ia inflar muito o escopo dessa rodada. Optei por priorizar a entrega que aparece logo no fim do stint, e deixei a aba do detalhe da pista como pendência consciente — primeiro o piloto precisa ver os 6 indicadores após cada stint, depois pensamos no histórico cross-stint.</p>
+</div>
+
+<h2>Entrega 3 — IA por trecho</h2>
+<div class="panel">
+  <p>O <code>TrechoAdvisor</code> é uma função pura (sem servidor, sem chamada de API) que recebe as execuções de um trecho na ordem cronológica e devolve uma frase curta comparando a última passagem com a melhor da sessão. A lógica está em JavaScript canônico (<code>src/domain/trecho-advisor.js</code>) e portada em Swift (<code>ios/p1fast-core/Sources/P1FastCore/TrechoAdvisor.swift</code>) — paridade obrigatória.</p>
+
+  <h3>Exemplos de frase</h3>
+  <ul>
+    <li>"Curva da Reta Oposta: Pace 2.1 km/h abaixo da sua melhor. Pouca aceleração na saída."</li>
+    <li>"Curva 01: Vmin 5.4 km/h abaixo da sua melhor. Velocidade no apex baixa demais."</li>
+    <li>"Curva da Bruxa: melhor passagem registrada nesta sessão."</li>
+    <li>"Junção: primeira passagem registrada. Sem comparativo."</li>
+  </ul>
+
+  <h3>Prioridade dos indicadores</h3>
+  <p>Quando vários indicadores estão piores, o advisor escolhe pela ordem fixa: Vmin → Pace → V saída pico → V entrada → V freada → V chegada. A frase cita o indicador com a maior queda em km/h em relação à melhor passagem. Tolerância de 0.15 km/h pra absorver ruído do GPS.</p>
+
+  <h3>O que ele NÃO faz (versão 1)</h3>
+  <ul>
+    <li>Não consulta a curva oficial do motor (Celta Bubi — dyno 18/05). Versão 2 pode cruzar com a faixa ótima 4.500-6.300 RPM pra dizer "estava fora da faixa ótima na saída".</li>
+    <li>Não compara com outras sessões, só com a sessão atual. Histórico cross-stint depende da aba "Desempenho" do detalhe da pista (pendência).</li>
+    <li>Não usa dado de câmera, frenagem do T4000 ou suspensão. Tudo só GPS + cronômetro de trecho.</li>
+  </ul>
+</div>
+
+<h2>Comparação com o relatório Python de 23/05</h2>
+<div class="panel">
+  <p>Os 6 indicadores que o app calcula agora seguem as mesmas definições qualitativas do relatório HTML do dia 23, com 2 ajustes pragmáticos:</p>
+  <table>
+    <thead><tr><th>Indicador</th><th>Definição do relatório de 23/05</th><th>Como o app calcula</th></tr></thead>
+    <tbody>
+      <tr><td>V chegada</td><td>velocidade ~50 m antes do trecho</td><td>velocidade ~1,2 s antes do ponto E (proxy por tempo)</td></tr>
+      <tr><td>V entrada</td><td>velocidade ao cruzar o ponto E</td><td>idem (instante de cruzar o ponto E)</td></tr>
+      <tr><td>V freada</td><td>velocidade ao começar a frear forte</td><td>velocidade no sample anterior à detecção de freada (queda &gt; 3 m/s em &lt; 1 s)</td></tr>
+      <tr><td>Vmin</td><td>velocidade mínima da curva</td><td>idem (já existia)</td></tr>
+      <tr><td>Pace</td><td>velocidade ao cruzar o ponto S</td><td>idem (instante de cruzar o ponto S)</td></tr>
+      <tr><td>V saída pico</td><td>velocidade máxima nos 100 m após saída</td><td>velocidade máxima nos ~2,4 s após saída (proxy por tempo)</td></tr>
+    </tbody>
+  </table>
+  <p class="sub">Os proxies por tempo (1,2 s / 2,4 s) foram escolhidos pra não depender da escala metros/unidade do path SVG da pista, que não é constante entre pistas. A 150 km/h, 1,2 s ≈ 50 m e 2,4 s ≈ 100 m. Decisão consciente — se quiser que vire metros literais, vamos precisar registrar a escala da pista no cadastro do autódromo.</p>
+</div>
+
+<h2>Testes que rodaram</h2>
+<div class="panel">
+  <table>
+    <thead><tr><th>Suíte</th><th>Antes da entrega</th><th>Depois da entrega</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Testes Swift do core (<code>p1fast-smoke</code>)</td><td class="num">424</td><td class="num">436</td><td><span class="hl">verde — +12 novos</span></td></tr>
+      <tr><td>Testes Node — Detector clássico</td><td class="num">3</td><td class="num">3</td><td><span class="hl">verde — sem regressão</span></td></tr>
+      <tr><td>Testes Node — Detector snapshot</td><td class="num">15</td><td class="num">15</td><td><span class="hl">verde — sem regressão</span></td></tr>
+      <tr><td>Testes Node novos — 6 indicadores por trecho</td><td class="num">0</td><td class="num">6</td><td><span class="hl">verde</span></td></tr>
+      <tr><td>Testes Node novos — IA por trecho</td><td class="num">0</td><td class="num">6</td><td><span class="hl">verde</span></td></tr>
+      <tr><td>Suite completa <code>npm run smoke</code></td><td class="num">centenas</td><td class="num">centenas</td><td><span class="hl">verde — zero falhas</span></td></tr>
+      <tr><td>Build do app pro simulador iOS</td><td class="num">—</td><td>BUILD SUCCEEDED</td><td><span class="hl">verde</span></td></tr>
+      <tr><td>Build do app pro iPhone físico</td><td class="num">—</td><td>BUILD SUCCEEDED</td><td><span class="hl">verde</span></td></tr>
+      <tr><td>Instalação no iPhone físico</td><td class="num">—</td><td><code>bundleID: com.flaviomarques.p1fast</code> instalado</td><td><span class="hl">concluída</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>Capturas de tela do iPhone — limitação honesta</h2>
+<div class="warn">
+  <p>Tentei capturar as 3 telas combinadas (pós-stint com tabela, conselho da IA destacado) via <code>idevicescreenshot</code>, mas o utilitário não acha o device no estado atual de pareamento (<code>No device found</code>). O <code>devicectl</code> consegue instalar o aplicativo mas não tem comando equivalente de screenshot.</p>
+  <p>Para gerar as fotos das telas reais, é necessário abrir o app no iPhone, navegar até Eventos → um stint finalizado e tirar a foto manualmente (Botão Power + Volume Up). Sem stint real com <code>segment_executions</code> populadas, a seção não aparece — é proteção contra placeholder vazio.</p>
+  <p><strong>Próximo dia de pista vai validar visualmente.</strong> Esse é o teste real — com o T4000 conectado e detector armado, cada trecho cronometrado vai virar uma linha na tabela.</p>
+</div>
+
+<h2>O que NÃO foi feito e por quê</h2>
+<div class="panel">
+  <ul>
+    <li><strong>Aba "Desempenho" na <code>AutodromoDetalheView</code></strong> — tela não existe no app hoje. Criar do zero inflaria a rodada. Pendência consciente.</li>
+    <li><strong>Captura de tela do iPhone</strong> — bloqueada pela limitação do utilitário de pareamento. Tela só aparece com stint real cronometrado por trecho.</li>
+    <li><strong>"Melhor histórica do mesmo carro+pista"</strong> — comparativo cross-stint pede query SQL agregando todas as sessões da combinação. Mantive só "Melhor da sessão atual" nessa rodada.</li>
+    <li><strong>IA ao vivo (no cockpit do piloto)</strong> — adiado pra próximo teste térmico, conforme o plano original.</li>
+    <li><strong>Cruzamento da IA com a curva oficial do motor (Celta Bubi)</strong> — vai exigir ler <code>docs/dyno/celta-bubi-2026-05-18.csv</code> e mapear faixa ótima. Versão 2 do advisor.</li>
+    <li><strong>Migração pro banco oficial</strong> — proibido sem ordem expressa. Migration v15 do schema espelhado em Swift roda local. O servidor Supabase ainda NÃO conhece as 7 colunas — vai precisar de migration paralela quando você liberar.</li>
+  </ul>
+</div>
+
+<h2>Pendências pra você decidir (linguagem de gestor)</h2>
+<div class="panel">
+  <ol>
+    <li><strong>Quer que eu rode a migração equivalente no banco oficial?</strong> O servidor Supabase ainda não tem as 7 colunas novas — quando você der o GO escrito ("MIGRAR PARA PRODUÇÃO: indicadores trecho"), eu preparo o PROD_RELEASE_PLAN e aplico.</li>
+    <li><strong>Quer a aba "Desempenho" no detalhe da pista agora ou só depois do próximo dia de pista?</strong> Recomendação: depois. Primeiro valide visualmente os 6 indicadores no pós-stint real, depois agregamos cross-stint.</li>
+    <li><strong>O proxy de tempo (1,2 s / 2,4 s) é aceitável, ou quer registrar metros/unidade nos autódromos?</strong> Recomendação: aceitável agora. Em Brasília os números próximos esperados (~50 m, ~100 m). Se virar problema na prática, viramos pra metros literais com escala por pista.</li>
+    <li><strong>Quer mais 5 frases curtas alternativas no TrechoAdvisor pra variar?</strong> Hoje a frase segue um template fixo por indicador. Se variar deixa mais natural, dá pra adicionar 3-5 variantes por causa.</li>
+  </ol>
+</div>
+
+<footer>
+  Ambiente isolado · <code>infallible-liskov-7a1b15</code> · 24/05/2026 noite ·
+  Nada foi enviado pra versão oficial · Memória atualizada em
+  <code>p1-fast-3-entregas-trecho-ia-EXECUTADAS-2026-05-24.md</code>
+</footer>
+
+</div>
+</body>
+</html>

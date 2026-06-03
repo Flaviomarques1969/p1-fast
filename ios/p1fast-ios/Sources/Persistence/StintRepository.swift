@@ -105,9 +105,6 @@ final class StintRepository: ObservableObject {
                     dataFim: row["data_fim"],
                     voltasPlanejadas: row["voltas_planejadas"],
                     objetivo: row["objetivo"],
-                    // MS-4.5: cancelado_em vem do SELECT s.* — usamos pra
-                    // mostrar tag "cancelado" e cor opaca na listagem.
-                    canceladoEm: row["cancelado_em"],
                     createdAt: row["created_at"],
                     updatedAt: row["updated_at"],
                     syncedAt: row["synced_at"]
@@ -126,9 +123,15 @@ final class StintRepository: ObservableObject {
     /// Ataque, Consistência, Teste, Livre). `licaoFocada` é texto livre
     /// armazenado no mesmo campo `objetivo` separado por " · " — não
     /// temos coluna dedicada ainda (Sprint 1A.3 #16 entrega catálogo).
+    ///
+    /// Onda 2 (2026-05-24): `carroId` agora obrigatório. `iaLigada` é
+    /// `true` por padrão — caller pode passar `false` pra sessão de
+    /// aquecimento ou shake-down. Cria também marca o evento como
+    /// "em andamento" se ele ainda estiver "planejado".
     @discardableResult
-    func create(eventoId: String, pilotoId: String, objetivoTipo: String,
-                licaoFocada: String, voltasPlanejadas: Int) async throws -> String {
+    func create(eventoId: String, carroId: String, pilotoId: String,
+                objetivoTipo: String, licaoFocada: String,
+                voltasPlanejadas: Int, iaLigada: Bool = true) async throws -> String {
         guard let teamId = TeamContext.currentTeamId else {
             throw NSError(domain: "StintRepository", code: -1, userInfo: [NSLocalizedDescriptionKey: "Sem equipe associada — faça login antes de criar stints."])
         }
@@ -140,7 +143,7 @@ final class StintRepository: ObservableObject {
                 id: stintId,
                 timeId: teamId,
                 eventoId: eventoId,
-                carroId: nil,
+                carroId: carroId,
                 pilotoId: pilotoId,
                 configuracaoId: nil,
                 status: "ativa",
@@ -148,12 +151,24 @@ final class StintRepository: ObservableObject {
                 dataFim: nil,
                 voltasPlanejadas: voltasPlanejadas,
                 objetivo: objetivoComposto,
+                iaLigada: iaLigada,
                 createdAt: now,
                 updatedAt: now,
                 syncedAt: nil
             )
             try sessao.insert(db)
             try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: stintId, op: .insert, record: sessao)
+
+            // Onda 2: marca o evento como "em andamento" se ainda
+            // estiver "planejado". Evita o piloto rodar e o evento ficar
+            // sempre marcado como planejado no servidor.
+            if var evento = try Evento.fetchOne(db, key: eventoId), evento.status == "planejado" {
+                evento.status = "em_andamento"
+                evento.updatedAt = now
+                evento.syncedAt = nil
+                try evento.update(db)
+                try SyncQueue.enqueueRecord(db, tableName: "eventos", rowId: eventoId, op: .update, record: evento)
+            }
         }
         return stintId
     }
@@ -162,19 +177,24 @@ final class StintRepository: ObservableObject {
     /// 1A.3 — random determinístico em torno de uma média), atualiza
     /// `sessao.dataFim` e marca status='finalizada'.
     ///
-    /// MS-2.5 (#?): aceita `segmentEvents` opcional vindo do `Detector`
-    /// ao vivo. Cada evento vira uma row em `segment_executions` com o
-    /// trio Vmin georef (`vmin_kmh = velMinima * 3.6`, `vmin_x/y` do
-    /// `apexActual`). Schema PG/GRDB já tem as 3 colunas (#92, migration
-    /// 0007 aplicada em prod 2026-05-06). Sem eventos, `finalize`
-    /// continua compatível com chamadas antigas.
+    /// 2026-05-23 (Onda 1A): a geração de voltas sintéticas foi APAGADA.
+    /// Voltas agora só são criadas a partir de `DetectorLapEvent` reais
+    /// emitidos pelo `Detector` ao vivo. Se o detector não estava armado,
+    /// a sessão é finalizada com ZERO voltas — a tela de Pós-Stint deve
+    /// mostrar mensagem clara ("detector não armado").
+    ///
+    /// MS-2.5 (#?): cada `DetectorSegmentEndEvent` vira uma row em
+    /// `segment_executions` com o trio Vmin georef (`vmin_kmh = velMinima
+    /// * 3.6`, `vmin_x/y` do `apexActual`). Schema PG/GRDB já tem as 3
+    /// colunas (#92, migration 0007 aplicada em prod 2026-05-06).
     ///
     /// Retorna o stint atualizado (com voltas reais já contadas).
     @discardableResult
     func finalize(
         stintId: String,
-        mediaVoltaMs: Int = 103_500,
-        segmentEvents: [DetectorSegmentEndEvent] = []
+        lapEvents: [DetectorLapEvent] = [],
+        segmentEvents: [DetectorSegmentEndEvent] = [],
+        postBurstEvents: [DetectorSegmentPostBurstEvent] = []
     ) async throws -> Stint {
         guard let teamId = TeamContext.currentTeamId else {
             throw NSError(domain: "StintRepository", code: -1, userInfo: [NSLocalizedDescriptionKey: "Sem equipe associada — faça login antes de finalizar stints."])
@@ -184,50 +204,56 @@ final class StintRepository: ObservableObject {
         // commit da escrita — incrementarCiclos abre transação própria.
         let (pneuIdMontado, voltasGeradas): (String?, Int) = try await queue.write { db in
             guard var sessao = try Sessao.fetchOne(db, key: stintId) else { return (nil, 0) }
-            let planejadas = sessao.voltasPlanejadas ?? 0
 
-            // Gera N voltas com tempos plausíveis em torno da média (±5%).
-            // Deterministic-ish: usa stintId hash como seed pra mesma sessao
-            // dar sempre os mesmos tempos no preview.
-            // Mantém um índice numero→voltaId pra mapear segmentEvents abaixo.
+            // Onda 1A: insere voltas REAIS a partir de DetectorLapEvent.
+            // Sem eventos => zero voltas no banco. Tela do Pós-Stint deve
+            // mostrar "detector não armado / nenhuma volta cronometrada".
             var voltaIdByNumero: [Int: String] = [:]
-            let seed = abs(stintId.hashValue)
-            for i in 0..<planejadas {
-                let jitter = Int(((seed &+ i &* 9973) % 200) - 100) * mediaVoltaMs / 5_000
-                // Volta 1 = aquecimento (mais lenta); volta 2+ = perto da média.
-                let base = (i == 0) ? mediaVoltaMs + 1500 : mediaVoltaMs
-                let tempoMs = base + jitter
+            for lap in lapEvents {
                 let voltaId = UUID().uuidString
-                let numero = i + 1
+                // temposPorParcial vira JSON pra preservar info do detector
+                let parciaisJson: String? = lap.temposPorParcial.isEmpty
+                    ? nil
+                    : (try? JSONSerialization.data(withJSONObject: lap.temposPorParcial))
+                        .flatMap { String(data: $0, encoding: .utf8) }
                 let volta = Volta(
                     id: voltaId,
                     timeId: teamId,
                     sessaoId: stintId,
-                    numero: numero,
-                    tempoMs: tempoMs,
-                    temposPorParcial: nil,
+                    numero: lap.numero,
+                    tempoMs: Int(lap.tempoMs.rounded()),
+                    temposPorParcial: parciaisJson,
                     valida: true,
                     motivoInvalidacao: nil,
-                    inicioAt: nil
+                    inicioAt: Int64(lap.inicioAt.rounded())
                 )
                 try volta.insert(db)
                 try SyncQueue.enqueueRecord(db, tableName: "voltas", rowId: voltaId, op: .insert, record: volta)
-                voltaIdByNumero[numero] = voltaId
+                voltaIdByNumero[lap.numero] = voltaId
             }
 
-            // MS-2.5: persiste 1 SegmentExecution por DetectorSegmentEndEvent.
-            // Lógica de mapeamento (m/s → km/h, vmin trio, velocidadeMax) vive
-            // em `SegmentExecutionMapper` (core, testado via smoke). Aqui só
-            // associa lapNumero → voltaId e insere.
+            // MS-2.5 + Comando GO 2026-05-24: persiste 1 SegmentExecution
+            // por DetectorSegmentEndEvent, com os 6 indicadores canônicos.
+            // O 6º (vSaidaPico) só chega no DetectorSegmentPostBurstEvent
+            // (emitido ~2.4 s depois) — pareamos por (segmentId, lapNumero)
+            // via SegmentExecutionMapper.mergePostBursts. Lógica de
+            // mapeamento (m/s → km/h, 6 indicadores) vive em
+            // `SegmentExecutionMapper` (core, testado via smoke).
             //
             // Eventos sem lapNumero conhecido OU com lapNumero fora da gama
             // de voltas geradas são silenciosamente ignorados — não há
             // contrato de banco pra associá-los a uma volta.
-            for ev in segmentEvents {
+            let pares = SegmentExecutionMapper.mergePostBursts(
+                ends: segmentEvents,
+                postBursts: postBurstEvents
+            )
+            for par in pares {
+                let ev = par.end
                 guard let lapNumero = ev.lapNumero,
                       let voltaId = voltaIdByNumero[lapNumero] else { continue }
                 let segExec = SegmentExecutionMapper.fromEvent(
                     ev,
+                    postBurst: par.postBurst,
                     timeId: teamId,
                     sessaoId: stintId,
                     voltaId: voltaId
@@ -243,7 +269,7 @@ final class StintRepository: ObservableObject {
             sessao.syncedAt = nil
             try sessao.update(db)
             try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: stintId, op: .update, record: sessao)
-            return (pid, planejadas)
+            return (pid, lapEvents.count)
         }
 
         // Sprint 1A.4 — auto-incrementa pneus.ciclos quando o stint tem
@@ -307,6 +333,18 @@ final class StintRepository: ObservableObject {
         }
     }
 
+    /// Lista todas as execuções de trecho de um stint (Comando GO 2026-05-24).
+    /// Usado pela PosStintView pra mostrar os 6 indicadores por trecho.
+    /// Ordem: por volta_id (mantém ordem cronológica) → por segment_id.
+    func segmentExecutions(stintId: String) async throws -> [SegmentExecution] {
+        try await queue.read { db in
+            try SegmentExecution
+                .filter(Column("sessao_id") == stintId)
+                .order(Column("volta_id").asc, Column("segment_id").asc)
+                .fetchAll(db)
+        }
+    }
+
     /// Atualiza só a nota do stint (campo `objetivo` — extender depois).
     /// Concatena com o objetivo+lição existente preservando o prefixo.
     func saveNota(stintId: String, nota: String) async throws {
@@ -361,84 +399,6 @@ final class StintRepository: ObservableObject {
             try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: sessao.id, op: .update, record: sessao)
         }
     }
-
-    // MARK: - MS-4 (StintPlan estendido)
-
-    /// Lê um Sessao completo (com todos os campos novos do MS-4.1).
-    /// Usado pela UI quando precisa dos campos extendidos (paradas_box,
-    /// ia_ligada, mapa_ghost_ligado, licao_id, etc.). Os métodos
-    /// `loadByEvento` e `fetchStint` continuam usando SQL manual sem os
-    /// novos campos pra não quebrar a Stint legado.
-    func fetchSessaoCompleta(id: String) async throws -> Sessao? {
-        try await queue.read { db in
-            try Sessao.fetchOne(db, key: id)
-        }
-    }
-
-    /// Atualiza os campos novos do StintPlan (MS-4.1). Passar `nil` em
-    /// qualquer parâmetro preserva o valor atual. Use `setStintParadas` /
-    /// `setStintLicao` etc. se quiser mais explícito.
-    ///
-    /// Convenção: paradas vazias = `[]`, revezamento vazio = nil.
-    func setStintExtensions(
-        stintId: String,
-        paradas: [ParadaBox]? = nil,
-        iaLigada: Bool? = nil,
-        mapaGhostLigado: Bool? = nil,
-        licaoId: String?? = nil,
-        pilotosRevezamento: [PilotoTurno]?? = nil,
-        convidadoId: String?? = nil
-    ) async throws {
-        let now = DB.nowMs()
-        try await queue.write { db in
-            guard var sessao = try Sessao.fetchOne(db, key: stintId) else { return }
-            if let paradas = paradas { sessao.setParadasBox(paradas) }
-            if let v = iaLigada { sessao.iaLigada = v }
-            if let v = mapaGhostLigado { sessao.mapaGhostLigado = v }
-            if case .some(let v) = licaoId { sessao.licaoId = v }
-            if case .some(let v) = pilotosRevezamento { sessao.setPilotosRevezamento(v) }
-            if case .some(let v) = convidadoId { sessao.convidadoId = v }
-            sessao.updatedAt = now
-            sessao.syncedAt = nil
-            try sessao.update(db)
-            try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: sessao.id, op: .update, record: sessao)
-        }
-    }
-
-    /// Cancela um stint marcando `cancelado_em = now()` + `status = 'cancelada'`.
-    /// NÃO deleta a row (Q24 da rodada 1 — Flávio quer histórico preservado).
-    /// No-op se o stint não existir.
-    func cancel(stintId: String) async throws {
-        let now = DB.nowMs()
-        try await queue.write { db in
-            guard var sessao = try Sessao.fetchOne(db, key: stintId) else { return }
-            sessao.canceladoEm = now
-            sessao.status = "cancelada"
-            sessao.updatedAt = now
-            sessao.syncedAt = nil
-            try sessao.update(db)
-            try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: sessao.id, op: .update, record: sessao)
-        }
-    }
-
-    /// Detecta se o evento permite revezamento de pilotos (endurance).
-    /// Regra (Q2.2): se `eventos.tipo` contém "endurance" (case-insensitive),
-    /// retorna true. Em outros tipos (Track Day, Treino livre), retorna false.
-    /// Usado pela `StintModalView` em MS-4.4 pra mostrar UI de revezamento.
-    /// Lógica pura em `EnduranceDetection.tipoPermiteRevezamento` (testada
-    /// em P1FastSmoke END-01..04).
-    func eventoPermiteRevezamento(eventoId: String) async -> Bool {
-        do {
-            return try await queue.read { db in
-                guard let evento = try Evento.fetchOne(db, key: eventoId) else { return false }
-                return EnduranceDetection.tipoPermiteRevezamento(evento.tipo)
-            }
-        } catch {
-            return false
-        }
-    }
-
-    // MARK: - Sync legacy (mantido pra finalize compat)
 
     /// Soma `voltas` em `pneus.ciclos`. Chamado automaticamente pelo
     /// `finalize(...)` quando o stint tem pneu_id != nil. Idempotência fica
@@ -500,17 +460,11 @@ struct Stint: Identifiable, Equatable {
             && lhs.sessao.updatedAt == rhs.sessao.updatedAt
     }
 
-    /// Status canônico — "ativa", "finalizada", "planejada", "cancelada".
+    /// Status canônico — "ativa", "finalizada", "planejada".
     var status: String { sessao.status ?? "planejada" }
 
     var isFinalizado: Bool { status == "finalizada" }
     var isAtivo: Bool { status == "ativa" }
-    /// MS-4.5: stint cancelado tem `cancelado_em` preenchido e
-    /// `status='cancelada'`. NÃO some da listagem (decisão Q24).
-    var isCancelado: Bool { sessao.canceladoEm != nil }
-    /// Permite cancelar somente stints ativos (status='ativa').
-    /// Stints já finalizados ou cancelados não podem voltar atrás.
-    var podeCancelar: Bool { isAtivo && !isCancelado }
 
     /// Decompose `objetivo` que foi gravado como `<tipo> · <licao>`.
     /// Retorna ("Ataque", "V-Min · apex") por exemplo. Quando não tem

@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>Plano de melhorias no app · linguagem prática</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#101a2e; --panel2:#15233d; --line:#1f2f4d;
+    --ink:#e8eef9; --muted:#8ea0c1; --accent:#5da3ff; --ok:#5dd39e;
+    --warn:#ffb454; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 24px 80px}
+  header.topo{border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:30px}
+  header.topo h1{font-size:26px;margin:0 0 8px;font-weight:700;letter-spacing:-0.015em}
+  header.topo .sub{color:var(--muted);font-size:14px}
+
+  section{margin:48px 0}
+  section > h2.label{font-size:13px;text-transform:uppercase;letter-spacing:0.12em;color:var(--accent);margin:0 0 4px;font-weight:700}
+  section > h3.titulo{font-size:22px;margin:0 0 18px;font-weight:600;letter-spacing:-0.01em}
+  p{margin:0 0 14px}
+
+  /* Bandeira de prioridade */
+  .pri-bar{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin:18px 0}
+  .pri-bar .step{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 6px;text-align:center}
+  .pri-bar .step.urgente{border-color:var(--bad);background:rgba(255,107,107,.08)}
+  .pri-bar .step.imp{border-color:var(--warn);background:rgba(255,180,84,.06)}
+  .pri-bar .step .n{font-size:18px;font-weight:700}
+  .pri-bar .step .nome{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-top:2px;line-height:1.2}
+
+  /* Card de melhoria */
+  .item{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px;margin:20px 0;border-left:5px solid var(--bad)}
+  .item.imp{border-left-color:var(--warn)}
+  .item.div{border-left-color:var(--accent)}
+
+  .item .top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+  .item .top .left{display:flex;gap:14px;align-items:center;flex:1}
+  .item .top .num{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:var(--bad);color:#0b1220;font-weight:700;font-size:18px;flex-shrink:0}
+  .item.imp .top .num{background:var(--warn)}
+  .item.div .top .num{background:var(--accent)}
+  .item .top h3{margin:0;font-size:19px;font-weight:700;letter-spacing:-0.01em;line-height:1.3}
+
+  .tag{display:inline-block;padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em}
+  .tag.bad{background:rgba(255,107,107,.18);color:var(--bad)}
+  .tag.warn{background:rgba(255,180,84,.18);color:var(--warn)}
+  .tag.neu{background:rgba(123,139,168,.18);color:#7b8ba8}
+
+  .item .secao{margin:14px 0 0}
+  .item .secao .l{font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);font-weight:600;margin-bottom:4px}
+  .item .secao p{margin:0;font-size:15px}
+
+  .meta-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+  @media (max-width:600px){.meta-row{grid-template-columns:1fr}}
+  .meta-row .m{background:var(--panel2);padding:10px 12px;border-radius:6px}
+  .meta-row .m .l{font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);font-weight:600;margin-bottom:2px}
+  .meta-row .m .v{font-size:15px;font-weight:600}
+  .meta-row .m .v.bad{color:var(--bad)}
+  .meta-row .m .v.warn{color:var(--warn)}
+  .meta-row .m .v.ok{color:var(--ok)}
+
+  /* Onda */
+  .onda{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;margin:14px 0;border-left:4px solid var(--accent)}
+  .onda .head{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+  .onda .head .num-onda{background:var(--accent);color:#0b1220;border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px}
+  .onda .head h4{margin:0;font-size:17px}
+  .onda .head .prazo{margin-left:auto;color:var(--muted);font-size:13px}
+  .onda .itens{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .onda .itens span{background:var(--panel2);padding:4px 12px;border-radius:99px;font-size:13px}
+  .onda p.por-que{margin:6px 0 0;font-size:14px;color:var(--ink)}
+
+  /* Resumo decisão */
+  .decisao{background:linear-gradient(135deg, rgba(93,211,158,0.10), rgba(93,211,158,0.02));border:1px solid rgba(93,211,158,.3);border-radius:12px;padding:24px;margin:24px 0}
+  .decisao h3{margin:0 0 14px;color:var(--ok);font-size:20px}
+  .opcao{background:rgba(255,255,255,.03);border-radius:8px;padding:14px;margin:8px 0}
+  .opcao .titulo{font-weight:600;font-size:15px;margin-bottom:4px}
+  .opcao .desc{color:var(--muted);font-size:13px}
+
+  footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="topo">
+    <h1>Plano de melhorias no app · linguagem prática</h1>
+    <div class="sub">8 ajustes pro app funcionar direito · sem jargão técnico · do mais urgente ao menos urgente</div>
+  </header>
+
+  <p>Cada melhoria abaixo responde 3 coisas: <strong>o que está errado hoje</strong>, <strong>o que vai mudar no seu uso depois do ajuste</strong>, e <strong>quanto tempo leva</strong>.</p>
+
+  <!-- Bandeira de prioridade -->
+  <section>
+    <h2 class="label">Visão geral das 8 melhorias</h2>
+    <h3 class="titulo">2 problemas graves · 4 ajustes de tela · 2 dívidas técnicas</h3>
+    <div class="pri-bar">
+      <div class="step urgente"><div class="n">1</div><div class="nome">Voltas falsas</div></div>
+      <div class="step urgente"><div class="n">2</div><div class="nome">Cronômetro auto</div></div>
+      <div class="step imp"><div class="n">3</div><div class="nome">Carro obrig.</div></div>
+      <div class="step imp"><div class="n">4</div><div class="nome">IA padrão</div></div>
+      <div class="step imp"><div class="n">5</div><div class="nome">Câmera auto</div></div>
+      <div class="step imp"><div class="n">6</div><div class="nome">Evento auto</div></div>
+      <div class="step"><div class="n">7</div><div class="nome">Mapa pista</div></div>
+      <div class="step"><div class="n">8</div><div class="nome">Envio servidor</div></div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- 1. VOLTAS FALSAS -->
+  <!-- ============================================ -->
+  <div class="item">
+    <div class="top">
+      <div class="left">
+        <div class="num">1</div>
+        <h3>Parar de inventar voltas no fim do stint</h3>
+      </div>
+      <div><span class="tag bad">URGENTE · problema grave</span></div>
+    </div>
+
+    <div class="secao">
+      <div class="l">O que está errado hoje</div>
+      <p>Quando você encerra o stint, o app preenche 10 voltas inventadas com tempos calculados por uma fórmula. As 4 voltas reais que o piloto fez ficam apagadas. É como se a planilha estivesse mentindo pra você.</p>
+    </div>
+    <div class="secao">
+      <div class="l">Como você vai perceber depois do ajuste</div>
+      <p>Quando o stint encerra, o app vai mostrar só as voltas que o piloto realmente cronometrou. Se por algum motivo o cronômetro não funcionou, você vai ver uma mensagem clara dizendo "nenhuma volta cronometrada nesta sessão" — em vez de números inventados.</p>
+    </div>
+    <div class="secao">
+      <div class="l">Por que isso é prioridade máxima</div>
+      <p>Sem essa correção, qualquer análise que você fizer no app vai ser baseada em dado mentiroso. É o problema mais grave do app hoje.</p>
+    </div>
+
+    <div class="meta-row">
+      <div class="m"><div class="l">Esforço</div><div class="v ok">Pequeno (algumas horas)</div></div>
+      <div class="m"><div class="l">Risco</div><div class="v warn">Médio</div></div>
+      <div class="m"><div class="l">Dependência</div><div class="v">Precisa fazer junto com a #2</div></div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 2. CRONOMETRO AUTOMATICO -->
+  <!-- ============================================ -->
+  <div class="item">
+    <div class="top">
+      <div class="left">
+        <div class="num">2</div>
+        <h3>Ligar o cronômetro por curva sozinho quando o stint começa</h3>
+      </div>
+      <div><span class="tag bad">URGENTE · problema grave</span></div>
+    </div>
+
+    <div class="secao">
+      <div class="l">O que está errado hoje</div>
+      <p>O cronômetro por curva (que mede o tempo do piloto na Curva 1, na Curva da Reta Oposta, etc.) <strong>existe no app e está pronto pra funcionar</strong>. Mas hoje ele não liga sozinho quando você inicia o stint — fica desligado.</p>
+      <p style="margin-top:8px">Por isso, no stint de hoje precisamos reconstruir os tempos por curva por trás, depois, com margem de erro de ±2 segundos.</p>
+    </div>
+    <div class="secao">
+      <div class="l">Como você vai perceber depois do ajuste</div>
+      <p>Quando você cria a sessão e seleciona a pista (Brasília, por exemplo), o cronômetro por curva liga sozinho. Você vê o tempo de cada curva ao vivo dentro do app — com precisão de centésimo de segundo, sem precisar reconstruir nada depois.</p>
+    </div>
+    <div class="secao">
+      <div class="l">Por que isso é prioridade máxima</div>
+      <p>Sem isso, a promessa central do app — análise por curva ao vivo — não acontece. É o que faz o app deixar de ser "gravador de dado" e virar "treinador do piloto".</p>
+    </div>
+
+    <div class="meta-row">
+      <div class="m"><div class="l">Esforço</div><div class="v warn">Médio (1 dia)</div></div>
+      <div class="m"><div class="l">Risco</div><div class="v warn">Médio</div></div>
+      <div class="m"><div class="l">Dependência</div><div class="v">Nenhuma</div></div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 3. CARRO OBRIGATORIO -->
+  <!-- ============================================ -->
+  <div class="item imp">
+    <div class="top">
+      <div class="left">
+        <div class="num">3</div>
+        <h3>Obrigar a escolha do carro na tela de criar sessão</h3>
+      </div>
+      <div><span class="tag warn">IMPORTANTE · ajuste de tela</span></div>
+    </div>
+
+    <div class="secao">
+      <div class="l">O que está errado hoje</div>
+      <p>A tela de criar sessão <strong>não tem um campo de carro</strong>. O app tenta adivinhar pegando o primeiro carro cadastrado — e quando não consegue (como hoje), salva a sessão com o campo em branco. É o que aconteceu no stint do Bubi no Bolinha: ficou registrado sem o carro.</p>
+    </div>
+    <div class="secao">
+      <div class="l">Como você vai perceber depois do ajuste</div>
+      <p>Na tela de criar sessão, vai aparecer um campo "Carro" obrigatório com uma lista (Bolinha, Subaru). O botão "Iniciar" só fica disponível depois que você escolhe o carro.</p>
+      <p style="margin-top:8px">Se só houver 1 carro cadastrado, o app seleciona automaticamente e não te faz escolher entre 1 opção só.</p>
+    </div>
+
+    <div class="meta-row">
+      <div class="m"><div class="l">Esforço</div><div class="v ok">Pequeno (algumas horas)</div></div>
+      <div class="m"><div class="l">Risco</div><div class="v ok">Baixo</div></div>
+      <div class="m"><div class="l">Dependência</div><div class="v">Nenhuma</div></div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 4. IA PADRAO -->
+  <!-- ============================================ -->
+  <div class="item imp">
+    <div class="top">
+      <div class="left">
+        <div class="num">4</div>
+        <h3>Deixar a IA ligada por padrão</h3>
+      </div>
+      <div><span class="tag warn">IMPORTANTE · ajuste de configuração</span></div>
+    </div>
+
+    <div class="secao">
+      <div class="l">O que está errado hoje</div>
+      <p>A IA do app começa <strong>desligada</strong>. Você tem que se lembrar de ligar manualmente em cada sessão. Hoje você esqueceu — então a IA não rodou.</p>
+    </div>
+    <div class="secao">
+      <div class="l">Como você vai perceber depois do ajuste</div>
+      <p>Toda nova sessão já vem com a IA ligada. Se você quiser desligar para uma sessão específica (um aquecimento, por exemplo), tem um botão pra isso na tela de criar sessão.</p>
+      <p style="margin-top:8px">Dentro do stint, o app mostra na tela se a IA está ativa ou não, pra você nunca ficar na dúvida.</p>
+    </div>
+    <div class="secao">
+      <div class="l">Observação importante</div>
+      <p>A IA só roda de verdade quando o T4000 (a "caixa preta" do motor) está conectado, porque ela precisa dos dados de RPM e injeção. Sem T4000, ligar a IA é silencioso — não faz nada, mas também não atrapalha. Quando o T4000 chegar, vira automático.</p>
+    </div>
+
+    <div class="meta-row">
+      <div class="m"><div class="l">Esforço</div><div class="v ok">Pequeno (algumas horas)</div></div>
+      <div class="m"><div class="l">Risco</div><div class="v ok">Baixo</div></div>
+      <div class="m"><div class="l">Dependência</div><div class="v">Nenhuma</div></div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 5. CAMERA -->
+  <!-- ============================================ -->
+  <div class="item imp">
+    <div class="top">
+      <div class="left">
+        <div class="num">5</div>
+        <h3>Ligar a câmera do iPhone automaticamente quando o stint começa</h3>
+      </div>
+      <div><span class="tag warn">IMPORTANTE · automação que falta</span></div>
+    </div>
+
+    <div class="secao">
+      <div class="l">O que está errado hoje</div>
+      <p>O serviço de câmera onboard (Daily.co) está <strong>configurado, mas não é ligado automaticamente</strong>. Hoje você teria que abrir manualmente em paralelo com o stint — não rolou e ficamos sem vídeo da sessão.</p>
+    </div>
+    <div class="secao">
+      <div class="l">Como você vai perceber depois do ajuste</div>
+      <p>Quando você toca em "Iniciar" pra começar o stint, o app já liga a câmera frontal do iPhone sozinho. O vídeo fica gravado e atrelado à sessão — depois você consegue ver o vídeo lado a lado com a análise por curva.</p>
+      <p style="margin-top:8px">Se a permissão de câmera estiver negada, o app avisa mas continua gravando a telemetria normalmente — não trava nada.</p>
+    </div>
+
+    <div class="meta-row">
+      <div class="m"><div class="l">Esforço</div><div class="v bad">Grande (2 a 3 dias)</div></div>
+      <div class="m"><div class="l">Risco</div><div class="v warn">Médio</div></div>
+      <div class="m"><div class="l">Dependência</div><div class="v">Precisa da #2 primeiro</div></div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 6. STATUS EVENTO -->
+  <!-- ============================================ -->
+  <div class="item imp">
+    <div class="top">
+      <div class="left">
+        <div class="num">6</div>
+        <h3>Atualizar o status do evento sozinho conforme as sessões acontecem</h3>
+      </div>
+      <div><span class="tag warn">IMPORTANTE · automação que falta</span></div>
+    </div>
+
+    <div class="secao">
+      <div class="l">O que está errado hoje</div>
+      <p>O evento de Brasília continua marcado como "planejado" mesmo depois que você rodou hoje. O app não atualiza esse status sozinho — só você editando manualmente.</p>
+    </div>
+    <div class="secao">
+      <div class="l">Como você vai perceber depois do ajuste</div>
+      <p>Quando você cria a primeira sessão de um evento, ele vira automaticamente de "planejado" pra "em andamento". Quando o último dia do evento passou e todas as sessões foram encerradas, vira "concluído". Você nunca mais precisa lembrar de atualizar.</p>
+    </div>
+
+    <div class="meta-row">
+      <div class="m"><div class="l">Esforço</div><div class="v ok">Pequeno (algumas horas)</div></div>
+      <div class="m"><div class="l">Risco</div><div class="v ok">Baixo</div></div>
+      <div class="m"><div class="l">Dependência</div><div class="v">Nenhuma</div></div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 7. PISTA -->
+  <!-- ============================================ -->
+  <div class="item div">
+    <div class="top">
+      <div class="left">
+        <div class="num">7</div>
+        <h3>Acertar a posição do carro no mapa esquemático da pista de Brasília</h3>
+      </div>
+      <div><span class="tag neu">DÍVIDA · qualidade de dado</span></div>
+    </div>
+
+    <div class="secao">
+      <div class="l">O que está errado hoje</div>
+      <p>A pista de Brasília tem só 2 pontos de referência cadastrados, e eles estão calibrados pra um pedaço pequeno da pista. Por isso, quando o app tenta desenhar o carro em movimento sobre o mapa esquemático (o desenho da pista), o carro fica fora do lugar.</p>
+      <p style="margin-top:8px">Isso afeta o Command Box (o painel grande que fica no box) e a Vista Piloto.</p>
+    </div>
+    <div class="secao">
+      <div class="l">Como você vai perceber depois do ajuste</div>
+      <p>Quando o piloto andar na pista, o ponto que representa o carro vai aparecer exatamente em cima do desenho da pista — em cada curva, em cada reta. Hoje ele fica em algum lugar errado.</p>
+    </div>
+    <div class="secao">
+      <div class="l">Observação importante</div>
+      <p>Esse é o único ajuste que precisa ir pra <strong>versão oficial</strong> (no servidor) pra valer pra qualquer pessoa que usar o app, não só você. Por isso precisa sua autorização explícita antes de subir.</p>
+    </div>
+
+    <div class="meta-row">
+      <div class="m"><div class="l">Esforço</div><div class="v ok">Pequeno (algumas horas)</div></div>
+      <div class="m"><div class="l">Risco</div><div class="v warn">Médio (vai pro servidor)</div></div>
+      <div class="m"><div class="l">Dependência</div><div class="v">Sua autorização</div></div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 8. FILA -->
+  <!-- ============================================ -->
+  <div class="item div">
+    <div class="top">
+      <div class="left">
+        <div class="num">8</div>
+        <h3>Destravar o envio de dados do iPhone pro servidor</h3>
+      </div>
+      <div><span class="tag neu">DÍVIDA · técnico</span></div>
+    </div>
+
+    <div class="secao">
+      <div class="l">O que está errado hoje</div>
+      <p>O iPhone tem uma "fila de saída" que envia os dados gravados pro servidor central. Essa fila está com 213 itens parados — entre eles, todas as 102 mil linhas de posição do carro calculadas hoje. Tudo está no aparelho, mas nada subiu.</p>
+    </div>
+    <div class="secao">
+      <div class="l">Como você vai perceber depois do ajuste</div>
+      <p>Quando você terminar um stint, os dados começam a subir pro servidor em poucos minutos. No painel do app você vê uma marca verde dizendo "tudo sincronizado".</p>
+      <p style="margin-top:8px">Sem isso, os dados ficam só no iPhone — se o aparelho der problema, perdemos histórico.</p>
+    </div>
+    <div class="secao">
+      <div class="l">Observação importante</div>
+      <p>Ainda não sei <strong>por quê</strong> a fila travou. Pode ser uma coisa simples (token de login vencido, por exemplo) ou complicada (problema no servidor). Antes de mexer, preciso investigar — pode levar de 1 hora a 1 dia, depende do que aparecer.</p>
+    </div>
+
+    <div class="meta-row">
+      <div class="m"><div class="l">Esforço</div><div class="v warn">Médio (depende da causa)</div></div>
+      <div class="m"><div class="l">Risco</div><div class="v warn">Médio</div></div>
+      <div class="m"><div class="l">Dependência</div><div class="v">Diagnóstico primeiro</div></div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- SEQUENCIA -->
+  <!-- ============================================ -->
+  <section>
+    <h2 class="label">Como atacar</h2>
+    <h3 class="titulo">Em 4 ondas — cada uma já entrega valor sozinha</h3>
+
+    <div class="onda">
+      <div class="head">
+        <div class="num-onda">1</div>
+        <h4>Onda 1 — Os 2 problemas graves</h4>
+        <span class="prazo">1 a 2 dias</span>
+      </div>
+      <p class="por-que">Resolve o problema central do stint de hoje: o app deixa de inventar voltas e passa a cronometrar de verdade, por curva, ao vivo. <strong>Sozinha, essa onda já transforma o uso do app.</strong></p>
+      <div class="itens">
+        <span>1 · Parar de inventar voltas</span>
+        <span>2 · Cronômetro por curva automático</span>
+      </div>
+    </div>
+
+    <div class="onda">
+      <div class="head">
+        <div class="num-onda">2</div>
+        <h4>Onda 2 — Tirar fricção do dia a dia</h4>
+        <span class="prazo">1 dia</span>
+      </div>
+      <p class="por-que">Os 3 ajustes pequenos juntos: carro obrigatório, IA ligada por padrão, status do evento automático. Você para de precisar lembrar de 3 coisas antes de cada stint.</p>
+      <div class="itens">
+        <span>3 · Carro obrigatório</span>
+        <span>4 · IA ligada por padrão</span>
+        <span>6 · Status do evento automático</span>
+      </div>
+    </div>
+
+    <div class="onda">
+      <div class="head">
+        <div class="num-onda">3</div>
+        <h4>Onda 3 — Câmera automática</h4>
+        <span class="prazo">2 a 3 dias</span>
+      </div>
+      <p class="por-que">A câmera onboard liga sozinha quando o stint começa. É o ajuste de maior esforço técnico — entrega separada, em uma onda própria, pra dar tempo de testar bem.</p>
+      <div class="itens">
+        <span>5 · Câmera automática</span>
+      </div>
+    </div>
+
+    <div class="onda">
+      <div class="head">
+        <div class="num-onda">4</div>
+        <h4>Onda 4 — Dívidas técnicas</h4>
+        <span class="prazo">1 a 2 dias</span>
+      </div>
+      <p class="por-que">Mapa da pista calibrado certo e fila de envio destravada. Podem ser feitos em paralelo. A correção do mapa precisa da sua autorização pra subir pro servidor.</p>
+      <div class="itens">
+        <span>7 · Mapa da pista</span>
+        <span>8 · Envio destravado</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- DECISAO -->
+  <!-- ============================================ -->
+  <section>
+    <h2 class="label">Decisão</h2>
+    <h3 class="titulo">O que você precisa decidir agora</h3>
+    <div class="decisao">
+      <h3>3 opções</h3>
+
+      <div class="opcao">
+        <div class="titulo">A) Atacar a Onda 1 agora (recomendado)</div>
+        <div class="desc">Resolvo os 2 problemas graves em 1-2 dias. No próximo stint o app já mostra voltas reais e cronometra por curva. Depois eu te chamo pra você testar antes de seguir.</div>
+      </div>
+
+      <div class="opcao">
+        <div class="titulo">B) Atacar tudo de uma vez nas 4 ondas seguidas</div>
+        <div class="desc">Resolvo as 8 melhorias em ordem, te chamando entre cada onda pra testar. Leva cerca de 1 semana de trabalho efetivo.</div>
+      </div>
+
+      <div class="opcao">
+        <div class="titulo">C) Não fazer agora — guardar como referência</div>
+        <div class="desc">O plano fica registrado, mas o próximo stint vai ter os mesmos problemas (voltas falsas, sem cronômetro por curva). Só atacar depois de definir prioridade junto com outras frentes.</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Plano gerado em 2026-05-23 20:30 · refeito em linguagem prática (sem jargão técnico) · baseado em inspeção do código atual do app e da análise do stint de hoje no Autódromo de Brasília.
+  </footer>
+</div>
+</body>
+</html>

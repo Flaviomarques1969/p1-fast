@@ -21,21 +21,4 @@ enum TeamContext {
     static var currentTeamId: String? {
         UserDefaults.standard.string(forKey: storageKey)
     }
-
-    // MS-4.6: papel do user atual no time, usado pra permissões de edição
-    // de stint. Hoje, sem F1 (Pessoas multi-papel), o owner do time é
-    // sempre 'admin'. Quando F1 chegar, este valor passa a refletir o
-    // papel real cadastrado (admin / chefe_equipe / membro).
-    static let roleStorageKey = "p1fast.currentRole"
-    static var currentRole: String? {
-        UserDefaults.standard.string(forKey: roleStorageKey) ?? "admin"
-    }
-
-    // MS-4.6: identifica o piloto que corresponde ao user logado.
-    // Pré-F1, é o id do piloto canônico Flávio em PilotoRepository.
-    // Pós-F1, vira o id da Pessoa logada.
-    static let pilotoStorageKey = "p1fast.currentPilotoId"
-    static var currentPilotoId: String? {
-        UserDefaults.standard.string(forKey: pilotoStorageKey)
-    }
 }

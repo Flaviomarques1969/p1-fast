@@ -133,8 +133,7 @@ export class CockpitRenderer {
   _renderApex(s) {
     this._renderApexEntrada(s);
     this._renderApexFreio(s);
-    this._renderApexApice(s);
-    this._renderApexSaida(s);
+    // ápice e saída ficam pra MS-13.5 (detector os preenche)
   }
 
   _renderApexEntrada(s) {
@@ -145,11 +144,7 @@ export class CockpitRenderer {
     if (e.estado) ponto.dataset.estado = e.estado;
     if (val && typeof e.valorKmh === 'number') {
       val.innerHTML = e.valorKmh + '<small>km/h</small>';
-    } else if (val && e.valorKmh === null) {
-      val.innerHTML = '—';
     }
-    // nomeCurva fica no state pra debug/log/comparação, mas NÃO desenha no painel —
-    // piloto sabe em qual curva está, esse texto não agrega valor pra ele.
   }
 
   _renderApexFreio(s) {
@@ -158,46 +153,8 @@ export class CockpitRenderer {
     if (!ponto) return;
     const f = s.apex.freio;
     if (f.estado) ponto.dataset.estado = f.estado;
-    if (val) {
-      if (typeof f.deltaM === 'number') {
-        // diferença em metros do ponto da melhor passagem (+ = mais tarde, - = antes)
-        const sinal = f.deltaM > 0 ? '+' : '';
-        val.innerHTML = sinal + f.deltaM + '<small>m</small>';
-      } else if (typeof f.atualM === 'number' && typeof f.refM === 'number') {
-        val.innerHTML = f.atualM + '<span class="apex__valor__sep">/</span>' + f.refM + '<small>m</small>';
-      } else {
-        val.innerHTML = '—';
-      }
-    }
-  }
-
-  _renderApexApice(s) {
-    const ponto = this._b.apexApice;
-    const val = this._b.apexApiceVal;
-    if (!ponto) return;
-    const a = s.apex.apice;
-    if (a.estado) ponto.dataset.estado = a.estado;
-    if (val) {
-      if (typeof a.deltaM === 'number') {
-        // distância do Vmin ao ápice geométrico (+ = depois, - = antes, 0 = perfeito)
-        const sinal = a.deltaM > 0 ? '+' : '';
-        val.innerHTML = sinal + a.deltaM + '<small>m</small>';
-      } else {
-        val.innerHTML = '—';
-      }
-    }
-  }
-
-  _renderApexSaida(s) {
-    const ponto = this._b.apexSaida;
-    const val = this._b.apexSaidaVal;
-    if (!ponto) return;
-    const e = s.apex.saida;
-    if (e.estado) ponto.dataset.estado = e.estado;
-    if (val && typeof e.valorKmh === 'number') {
-      val.innerHTML = e.valorKmh + '<small>km/h</small>';
-    } else if (val && e.valorKmh === null) {
-      val.innerHTML = '—';
+    if (val && typeof f.atualM === 'number' && typeof f.refM === 'number') {
+      val.innerHTML = f.atualM + '<span class="apex__valor__sep">/</span>' + f.refM + '<small>m</small>';
     }
   }
 }
@@ -206,13 +163,8 @@ export class CockpitRenderer {
 
 export function attachRendererToDocument(cockpitState, document) {
   const shiftLight = document.getElementById('shiftLight');
-  // Prefere selector explícito data-papel="entrada"; cai pra :first-child como fallback
-  // pra compatibilidade com index-t3000.html (que ainda não tem o atributo).
-  const apexEntrada = document.querySelector('.apex__ponto[data-papel="entrada"]')
-                    || document.querySelector('.apex__ponto:first-child');
+  const apexEntrada = document.querySelector('.apex__ponto:nth-child(1)');
   const apexFreio = document.querySelector('.apex__ponto[data-papel="freio"]');
-  const apexApice = document.querySelector('.apex__ponto[data-papel="apice"]');
-  const apexSaida = document.querySelector('.apex__ponto[data-papel="saida"]');
   const bindings = {
     device:       document.getElementById('device'),
     shiftLight,
@@ -220,14 +172,9 @@ export function attachRendererToDocument(cockpitState, document) {
     infoDelta:    document.querySelector('.info__delta'),
     infoAcao:     document.querySelector('.info__acao'),
     apexEntrada,
-    apexEntradaVal:   apexEntrada ? apexEntrada.querySelector('.apex__valor') : null,
-    apexEntradaLabel: apexEntrada ? apexEntrada.querySelector('.apex__label') : null,
+    apexEntradaVal: apexEntrada ? apexEntrada.querySelector('.apex__valor') : null,
     apexFreio,
     apexFreioVal: apexFreio ? apexFreio.querySelector('.apex__valor') : null,
-    apexApice,
-    apexApiceVal: apexApice ? apexApice.querySelector('.apex__valor') : null,
-    apexSaida,
-    apexSaidaVal: apexSaida ? apexSaida.querySelector('.apex__valor') : null,
     alertBloco:   document.getElementById('alertBloco'),
     alertMsg:     document.getElementById('alertMsg'),
   };

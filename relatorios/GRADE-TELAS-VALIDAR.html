@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>Command Box — validar versão final aprovada</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#101a2e; --panel2:#15233d; --line:#1f2f4d;
+    --ink:#e8eef9; --muted:#8ea0c1; --accent:#5da3ff; --ok:#5dd39e;
+    --warn:#ffb454; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:1600px;margin:0 auto;padding:24px 20px 80px}
+  header{border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:24px;position:sticky;top:0;background:var(--bg);z-index:100}
+  h1{margin:0 0 4px;font-size:22px;font-weight:700}
+  .sub{color:var(--muted);font-size:13px}
+
+  .cat{margin:36px 0 12px}
+  .cat h2{font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:var(--accent);margin:0 0 4px;font-weight:700}
+  .cat h3{font-size:18px;margin:0 0 4px;font-weight:600}
+  .cat p{margin:0;color:var(--muted);font-size:13px}
+
+  .resumo{margin:14px 0;padding:14px 18px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  .resumo .n{font-size:14px;font-weight:600}
+  .resumo .n .v{color:var(--accent);font-variant-numeric:tabular-nums}
+  .resumo button{background:var(--accent);color:#0b1220;border:0;border-radius:6px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:13px}
+
+  .grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+  .card.canonical{border:2px solid var(--ok)}
+  .card.recente{border:2px solid var(--accent)}
+  .card .titulo{padding:12px 16px;border-bottom:1px solid var(--line)}
+  .card .titulo .nome{font-weight:600;font-size:15px;margin-bottom:2px}
+  .card .titulo .meta{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .card .tag-data{background:rgba(93,163,255,.18);color:var(--accent);padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:6px}
+  .card .tag-data.maisrec{background:rgba(93,211,158,.18);color:var(--ok)}
+  .card .tag-data.canon{background:rgba(93,211,158,.18);color:var(--ok)}
+  .card .tag-data.aprov{background:rgba(255,180,84,.18);color:var(--warn)}
+  .card .preview{height:480px;background:#000;overflow:hidden;position:relative;cursor:pointer}
+  .card .preview iframe{width:1400px;height:1400px;border:0;transform:scale(0.30);transform-origin:top left;pointer-events:none}
+  .card .preview .overlay{position:absolute;inset:0;background:rgba(0,0,0,0);transition:.2s}
+  .card .preview:hover .overlay{background:rgba(93,163,255,0.12)}
+  .card .preview .abrir{position:absolute;bottom:8px;right:8px;background:var(--accent);color:#0b1220;padding:6px 12px;border-radius:5px;font-size:12px;font-weight:700;opacity:0;transition:.2s}
+  .card .preview:hover .abrir{opacity:1}
+
+  .aval{padding:14px 16px;border-top:1px solid var(--line);background:var(--panel2)}
+  .aval .opcoes{display:flex;gap:6px;margin-bottom:8px}
+  .aval .opt{flex:1;background:#0b1220;border:1px solid var(--line);border-radius:6px;padding:8px;cursor:pointer;text-align:center;font-size:12px;color:var(--muted);transition:.15s;user-select:none}
+  .aval .opt:hover{border-color:var(--accent);color:var(--ink)}
+  .aval .opt.sel-ok{border-color:var(--ok);background:rgba(93,211,158,.15);color:var(--ok)}
+  .aval .opt.sel-warn{border-color:var(--warn);background:rgba(255,180,84,.15);color:var(--warn)}
+  .aval .opt.sel-bad{border-color:var(--bad);background:rgba(255,107,107,.15);color:var(--bad)}
+  .aval textarea{width:100%;background:#0b1220;border:1px solid var(--line);border-radius:6px;color:var(--ink);font:13px/1.4 inherit;padding:8px;resize:vertical;min-height:60px}
+  .aval textarea:focus{border-color:var(--accent);outline:none}
+  .aval label{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px}
+
+  .card.faltando{border:2px dashed var(--warn);background:rgba(255,180,84,.04)}
+  .card.faltando .preview{display:flex;align-items:center;justify-content:center;color:var(--warn);font-size:14px;cursor:default;height:200px}
+  .card.faltando .preview iframe{display:none}
+
+  .nota{background:rgba(93,163,255,.06);border-left:3px solid var(--accent);padding:12px 14px;border-radius:0 6px 6px 0;margin:16px 0;font-size:13px}
+  .nota strong{color:var(--accent)}
+  .nota.bad{background:rgba(255,107,107,.06);border-left-color:var(--bad)}
+  .nota.bad strong{color:var(--bad)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Telas do Command Box — resgatadas das outras linhas de trabalho</h1>
+    <div class="sub">Cockpit do Piloto (10,5") você já validou. Aqui só Command Box, separado por seção.</div>
+  </header>
+
+  <div class="nota bad">
+    <strong>O que aconteceu antes:</strong> as telas finais que você aprovou estavam todas em <strong>outras linhas de trabalho (branches) e em outros ambientes isolados</strong>. Não estavam neste ambiente onde eu estava operando. Por isso eu estava "perdendo" — toda vez que eu começo um trabalho novo, eu entro num ambiente vazio. Inclusive a tela da MOLA HELICOIDAL CANÔNICA, que eu tinha registro na memória dizendo "não podemos perder isto" — eu não tinha trazido pra cá.
+  </div>
+
+  <div class="resumo">
+    <div class="n">Total: <span class="v" id="tot">0</span></div>
+    <div class="n">✓ Certa: <span class="v" id="ok-n" style="color:#5dd39e">0</span></div>
+    <div class="n">! Quase: <span class="v" id="warn-n" style="color:#ffb454">0</span></div>
+    <div class="n">✗ Errado: <span class="v" id="bad-n" style="color:#ff6b6b">0</span></div>
+    <button onclick="exportarFeedback()">Copiar resumo do feedback</button>
+  </div>
+
+  <!-- ===== SAUDE DO CARRO / SUSPENSAO / AMORTECEDORES ===== -->
+  <div class="cat">
+    <h2>Bloco 1</h2>
+    <h3>Engenharia · Saúde do Carro / Suspensão / Amortecedores</h3>
+    <p>5 versões da branch <code>claude/great-hermann-31ac00</code> em ordem cronológica reversa. A mais recente é a versão atual da pasta principal da branch.</p>
+  </div>
+  <div class="grade">
+
+    <div class="card recente" data-id="saude-principal">
+      <div class="titulo">
+        <div class="nome">Saúde / Suspensão · versão atual da branch <span class="tag-data maisrec">20/05 às 10:05 · mais recente</span></div>
+        <div class="meta">255.853 bytes · <code>_design-reference/PROPOSTA-vista-engenheiro-saude.html</code></div>
+      </div>
+      <div class="preview" onclick="abrir('PROPOSTA-vista-engenheiro-saude.html')"><iframe src="../_design-reference/PROPOSTA-vista-engenheiro-saude.html"></iframe><div class="overlay"></div><div class="abrir">abrir grande →</div></div>
+      <div class="aval">
+        <div class="opcoes">
+          <div class="opt" onclick="marcar(this,'ok')">✓ É essa</div>
+          <div class="opt" onclick="marcar(this,'warn')">! quase, mas tem detalhe</div>
+          <div class="opt" onclick="marcar(this,'bad')">✗ NÃO é essa</div>
+        </div>
+        <label>O que está errado / onde diverge da sua versão final?</label>
+        <textarea placeholder="explica..."></textarea>
+      </div>
+    </div>
+
+    <div class="card recente" data-id="saude-tv32">
+      <div class="titulo">
+        <div class="nome">Saúde / Suspensão · variante TV 32 <span class="tag-data">20/05 às 10:22</span></div>
+        <div class="meta">259.559 bytes · <code>PROPOSTA-vista-engenheiro-saude-TV32.html</code> · ajustado pra TV grande</div>
+      </div>
+      <div class="preview" onclick="abrir('PROPOSTA-vista-engenheiro-saude-TV32.html')"><iframe src="../_design-reference/PROPOSTA-vista-engenheiro-saude-TV32.html"></iframe><div class="overlay"></div><div class="abrir">abrir grande →</div></div>
+      <div class="aval">
+        <div class="opcoes">
+          <div class="opt" onclick="marcar(this,'ok')">✓ É essa</div>
+          <div class="opt" onclick="marcar(this,'warn')">! quase, mas tem detalhe</div>
+          <div class="opt" onclick="marcar(this,'bad')">✗ NÃO é essa</div>
+        </div>
+        <label>O que está errado / onde diverge?</label>
+        <textarea placeholder="..."></textarea>
+      </div>
+    </div>
+
+    <div class="card" data-id="saude-mesa-final">
+      <div class="titulo">
+        <div class="nome">Saúde · versão "MESA FINAL" arquivada <span class="tag-data aprov">20/05 às 10:22 · arquivada</span></div>
+        <div class="meta">157.030 bytes · <code>_history/2026-05-20-engenheiro-saude-versao-MESA-FINAL/</code></div>
+      </div>
+      <div class="preview" onclick="abrir('_history/2026-05-20-engenheiro-saude-versao-MESA-FINAL/PROPOSTA-vista-engenheiro-saude.html')"><iframe src="../_design-reference/_history/2026-05-20-engenheiro-saude-versao-MESA-FINAL/PROPOSTA-vista-engenheiro-saude.html"></iframe><div class="overlay"></div><div class="abrir">abrir grande →</div></div>
+      <div class="aval">
+        <div class="opcoes">
+          <div class="opt" onclick="marcar(this,'ok')">✓ É essa</div>
+          <div class="opt" onclick="marcar(this,'warn')">! quase, mas tem detalhe</div>
+          <div class="opt" onclick="marcar(this,'bad')">✗ NÃO é essa</div>
+        </div>
+        <label>O que está errado / onde diverge?</label>
+        <textarea placeholder="..."></textarea>
+      </div>
+    </div>
+
+    <div class="card" data-id="saude-aprovada">
+      <div class="titulo">
+        <div class="nome">Saúde · versão "APROVADA" arquivada <span class="tag-data aprov">19/05 às 21:36 · você aprovou</span></div>
+        <div class="meta"><code>_history/2026-05-19-saude-mola-curva-unica-APROVADA/</code> · versão mais antiga, foi superada depois</div>
+      </div>
+      <div class="preview" onclick="abrir('_history/2026-05-19-saude-mola-curva-unica-APROVADA/PROPOSTA-vista-engenheiro-saude.html')"><iframe src="../_design-reference/_history/2026-05-19-saude-mola-curva-unica-APROVADA/PROPOSTA-vista-engenheiro-saude.html"></iframe><div class="overlay"></div><div class="abrir">abrir grande →</div></div>
+      <div class="aval">
+        <div class="opcoes">
+          <div class="opt" onclick="marcar(this,'ok')">✓ É essa</div>
+          <div class="opt" onclick="marcar(this,'warn')">! quase, mas tem detalhe</div>
+          <div class="opt" onclick="marcar(this,'bad')">✗ NÃO é essa</div>
+        </div>
+        <label>O que está errado / onde diverge?</label>
+        <textarea placeholder="..."></textarea>
+      </div>
+    </div>
+
+    <div class="card canonical" data-id="mola-canon">
+      <div class="titulo">
+        <div class="nome">Mola Helicoidal · componente CANÔNICO <span class="tag-data canon">19/05 · "não podemos perder isto"</span></div>
+        <div class="meta">14.629 bytes · <code>_canonical/MOLA-HELICOIDAL-CANONICO.html</code> · standalone com gradientes, CSS, função buildSpringSVG, animação física</div>
+      </div>
+      <div class="preview" onclick="abrir('_canonical/MOLA-HELICOIDAL-CANONICO.html')"><iframe src="../_design-reference/_canonical/MOLA-HELICOIDAL-CANONICO.html"></iframe><div class="overlay"></div><div class="abrir">abrir grande →</div></div>
+      <div class="aval">
+        <div class="opcoes">
+          <div class="opt" onclick="marcar(this,'ok')">✓ É essa</div>
+          <div class="opt" onclick="marcar(this,'warn')">! quase, mas tem detalhe</div>
+          <div class="opt" onclick="marcar(this,'bad')">✗ NÃO é essa</div>
+        </div>
+        <label>O que está errado / onde diverge?</label>
+        <textarea placeholder="..."></textarea>
+      </div>
+    </div>
+
+    <div class="card canonical" data-id="sim-brasilia">
+      <div class="titulo">
+        <div class="nome">Simulação Brasília Volta 5 (suspensão) · CANÔNICO <span class="tag-data canon">20/05 às 09:53 · arquivo canônico</span></div>
+        <div class="meta">453.747 bytes · <code>_canonical/SIMULACAO-BRASILIA-LAP5-SUSPENSAO.html</code></div>
+      </div>
+      <div class="preview" onclick="abrir('_canonical/SIMULACAO-BRASILIA-LAP5-SUSPENSAO.html')"><iframe src="../_design-reference/_canonical/SIMULACAO-BRASILIA-LAP5-SUSPENSAO.html"></iframe><div class="overlay"></div><div class="abrir">abrir grande →</div></div>
+      <div class="aval">
+        <div class="opcoes">
+          <div class="opt" onclick="marcar(this,'ok')">✓ É essa</div>
+          <div class="opt" onclick="marcar(this,'warn')">! quase, mas tem detalhe</div>
+          <div class="opt" onclick="marcar(this,'bad')">✗ NÃO é essa</div>
+        </div>
+        <label>O que está errado / onde diverge?</label>
+        <textarea placeholder="..."></textarea>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== VISTA PILOTO + ENGENHARIA ===== -->
+  <div class="cat">
+    <h2>Bloco 2</h2>
+    <h3>Vista Piloto · Engenharia · Lambda · PAce · Motor · Vista Engenheiro</h3>
+    <p>Versões trazidas do ambiente isolado <code>infallible-snyder-198a08</code> (mais recente 18/05).</p>
+  </div>
+  <div class="grade">
+
+    <div class="card" data-id="vista-piloto">
+      <div class="titulo">
+        <div class="nome">Command Box · Vista Piloto</div>
+        <div class="meta">302.335 bytes · v04 (tamanho bate com memória) · de <code>docs/auditorias/.../MELHOR-VERSAO-2026-05-15-04.html</code></div>
+      </div>
+      <div class="preview" onclick="abrir('mockup-command-box-vista-piloto.html')"><iframe src="../_design-reference/mockup-command-box-vista-piloto.html"></iframe><div class="overlay"></div><div class="abrir">abrir grande →</div></div>
+      <div class="aval">
+        <div class="opcoes">
+          <div class="opt" onclick="marcar(this,'ok')">✓ É essa</div>
+          <div class="opt" onclick="marcar(this,'warn')">! quase</div>
+          <div class="opt" onclick="marcar(this,'bad')">✗ NÃO é essa</div>
+        </div>
+        <label>O que está errado?</label>
+        <textarea placeholder="..."></textarea>
+      </div>
+    </div>
+
+    <div class="card" data-id="lambda">
+      <div class="titulo">
+        <div class="nome">Engenharia · Lambda</div>
+        <div class="meta">147.562 bytes · 18/05 · de <code>infallible-snyder-198a08</code></div>
+      </div>
+      <div class="preview" onclick="abrir('mockup-command-box-engenharia-lambda.html')"><iframe src="../_design-reference/mockup-command-box-engenharia-lambda.html"></iframe><div class="overlay"></div><div class="abrir">abrir grande →</div></div>
+      <div class="aval">
+        <div class="opcoes">
+          <div class="opt" onclick="marcar(this,'ok')">✓ É essa</div>
+          <div class="opt" onclick="marcar(this,'warn')">! quase</div>
+          <div class="opt" onclick="marcar(this,'bad')">✗ NÃO é essa</div>
+        </div>
+        <label>O que está errado?</label>
+        <textarea placeholder="..."></textarea>
+      </div>
+    </div>
+
+    <div class="card" data-id="pace">
+      <div class="titulo">
+        <div class="nome">Engenharia · PAce (Torque)</div>
+        <div class="meta">166.464 bytes · 18/05 · de <code>infallible-snyder-198a08</code></div>
+      </div>
+      <div class="preview" onclick="abrir('mockup-command-box-engenharia-pace.html')"><iframe src="../_design-reference/mockup-command-box-engenharia-pace.html"></iframe><div class="overlay"></div><div class="abrir">abrir grande →</div></div>
+      <div class="aval">
+        <div class="opcoes">
+          <div class="opt" onclick="marcar(this,'ok')">✓ É essa</div>
+          <div class="opt" onclick="marcar(this,'warn')">! quase</div>
+          <div class="opt" onclick="marcar(this,'bad')">✗ NÃO é essa</div>
+        </div>
+        <label>O que está errado?</label>
+        <textarea placeholder="..."></textarea>
+      </div>
+    </div>
+
+    <div class="card" data-id="vista-engenheiro">
+      <div class="titulo">
+        <div class="nome">Vista Engenheiro (consolidada)</div>
+        <div class="meta">301.198 bytes · 18/05 · de <code>infallible-snyder-198a08</code></div>
+      </div>
+      <div class="preview" onclick="abrir('mockup-command-box-vista-engenheiro.html')"><iframe src="../_design-reference/mockup-command-box-vista-engenheiro.html"></iframe><div class="overlay"></div><div class="abrir">abrir grande →</div></div>
+      <div class="aval">
+        <div class="opcoes">
+          <div class="opt" onclick="marcar(this,'ok')">✓ É essa</div>
+          <div class="opt" onclick="marcar(this,'warn')">! quase</div>
+          <div class="opt" onclick="marcar(this,'bad')">✗ NÃO é essa</div>
+        </div>
+        <label>O que está errado?</label>
+        <textarea placeholder="..."></textarea>
+      </div>
+    </div>
+
+    <div class="card" data-id="saude-cmdbox">
+      <div class="titulo">
+        <div class="nome">Engenharia · Saúde do Carro (mini, do Command Box)</div>
+        <div class="meta">60.165 bytes · 18/05 · de <code>infallible-snyder-198a08</code> — pode ser substituída pela PROPOSTA-vista-engenheiro-saude do Bloco 1 acima</div>
+      </div>
+      <div class="preview" onclick="abrir('mockup-command-box-engenharia-saude-carro.html')"><iframe src="../_design-reference/mockup-command-box-engenharia-saude-carro.html"></iframe><div class="overlay"></div><div class="abrir">abrir grande →</div></div>
+      <div class="aval">
+        <div class="opcoes">
+          <div class="opt" onclick="marcar(this,'ok')">✓ É essa</div>
+          <div class="opt" onclick="marcar(this,'warn')">! quase</div>
+          <div class="opt" onclick="marcar(this,'bad')">✗ NÃO é essa</div>
+        </div>
+        <label>O que está errado?</label>
+        <textarea placeholder="..."></textarea>
+      </div>
+    </div>
+
+    <div class="card" data-id="motor-saude">
+      <div class="titulo">
+        <div class="nome">Engenharia · Motor + Saúde (consolidada)</div>
+        <div class="meta">31.174 bytes · 18/05 · de <code>infallible-snyder-198a08</code></div>
+      </div>
+      <div class="preview" onclick="abrir('mockup-command-box-engenharia-motor-saude.html')"><iframe src="../_design-reference/mockup-command-box-engenharia-motor-saude.html"></iframe><div class="overlay"></div><div class="abrir">abrir grande →</div></div>
+      <div class="aval">
+        <div class="opcoes">
+          <div class="opt" onclick="marcar(this,'ok')">✓ É essa</div>
+          <div class="opt" onclick="marcar(this,'warn')">! quase</div>
+          <div class="opt" onclick="marcar(this,'bad')">✗ NÃO é essa</div>
+        </div>
+        <label>O que está errado?</label>
+        <textarea placeholder="..."></textarea>
+      </div>
+    </div>
+
+    <div class="card faltando" data-id="iat">
+      <div class="titulo">
+        <div class="nome">Engenharia · IAT</div>
+        <div class="meta">Procurei em todos os ambientes e em todas as linhas de trabalho — não achei tela específica. A memória diz que era "próxima aba prevista" depois da Lambda. Se você fez em algum lugar, me diga onde.</div>
+      </div>
+      <div class="preview">Tela não encontrada · me diga onde está</div>
+      <div class="aval">
+        <div class="opcoes">
+          <div class="opt" onclick="marcar(this,'warn')">! existe — vou te indicar</div>
+          <div class="opt" onclick="marcar(this,'bad')">✗ existe e você perdeu</div>
+        </div>
+        <label>Caminho ou descrição</label>
+        <textarea placeholder="..."></textarea>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+function abrir(arquivo) {
+  window.open('../_design-reference/' + arquivo, '_blank');
+}
+function marcar(el, tipo) {
+  const opcoes = el.parentNode.children;
+  for (const o of opcoes) o.classList.remove('sel-ok','sel-warn','sel-bad');
+  el.classList.add('sel-' + tipo);
+  atualizarResumo();
+}
+function atualizarResumo() {
+  const cards = document.querySelectorAll('.card');
+  document.getElementById('tot').textContent = cards.length;
+  document.getElementById('ok-n').textContent = document.querySelectorAll('.opt.sel-ok').length;
+  document.getElementById('warn-n').textContent = document.querySelectorAll('.opt.sel-warn').length;
+  document.getElementById('bad-n').textContent = document.querySelectorAll('.opt.sel-bad').length;
+}
+function exportarFeedback() {
+  const cards = document.querySelectorAll('.card');
+  let lines = ['# Feedback Command Box — ' + new Date().toLocaleString('pt-BR'), ''];
+  cards.forEach(c => {
+    const nome = c.querySelector('.titulo .nome').textContent.replace(/\s+/g,' ').trim();
+    const sel = c.querySelector('.opt.sel-ok,.opt.sel-warn,.opt.sel-bad');
+    const status = sel ? sel.textContent : 'não marcado';
+    const obs = c.querySelector('textarea').value.trim();
+    lines.push('## ' + nome);
+    lines.push('Status: ' + status);
+    if (obs) lines.push('Obs: ' + obs);
+    lines.push('');
+  });
+  navigator.clipboard.writeText(lines.join('\n')).then(() => alert('Copiado.'));
+}
+atualizarResumo();
+</script>
+</body>
+</html>

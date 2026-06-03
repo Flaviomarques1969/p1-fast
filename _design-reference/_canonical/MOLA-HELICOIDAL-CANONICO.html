@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Mola Helicoidal — Componente Canônico P1 Fast</title>
+<!--
+  ============================================================
+  MOLA HELICOIDAL PREMIUM — COMPONENTE CANÔNICO P1 FAST
+  ============================================================
+  Aprovado por Flávio em 2026-05-19 ("agora sim").
+  Salvo a pedido do Flávio: "não podemos perder isto".
+
+  COMO REUSAR EM OUTRO MOCKUP:
+  1. Copie os <linearGradient>/<radialGradient> do bloco DEFS (gradientes
+     com prefixo spring-/topHat-/perch-/bumpStop-) pro <defs> do seu SVG.
+  2. Copie o bloco CSS da seção "ESTILOS DA MOLA".
+  3. Copie a função JavaScript `buildSpringSVG()`.
+  4. No HTML, crie um <div class="spring-art"></div> onde quiser a mola.
+  5. Injete: `document.querySelector('.spring-art').innerHTML = buildSpringSVG();`
+  6. Pra animar, chame em loop:
+       const k = ... // de 0.45 (comprimida) a 1.20 (estendida), 1.0 = parada
+       const dyTop = (1 - k) * 138;
+       cell.querySelector('[data-spring-top]')
+           .setAttribute('transform', `translate(0,${dyTop})`);
+       cell.querySelector('[data-spring]')
+           .setAttribute('transform', `translate(0,162) scale(1,${k}) translate(0,-162)`);
+  7. Pra mudar a cor por estado: cell.querySelector('[data-spring]')
+       .classList.add('good' | 'warn' | 'bad');
+
+  HISTÓRICO DE DECISÕES:
+  - 2026-05-19 rodada 1: REJEITADA (path 2D parecia cobrinha).
+  - 2026-05-19 rodada 2: REJEITADA (11 anéis paralelos pareciam mola de caderno).
+  - 2026-05-19 rodada 3: APROVADA — curva única serpenteando, frente/trás
+    com renderização cronológica entrelaçada.
+  - 2026-05-19 rodada 4: animação com física de oscilador (rebote natural).
+  ============================================================
+-->
+<style>
+:root{
+  --bg:#0A0A0A;
+  --gold-1:#D4AF37;
+  --good:#3FE08C;
+  --warn:#FFB347;
+  --bad:#FF5A4E;
+  --text-1:#F5F0E0;
+  --text-2:rgba(245,240,224,0.60);
+  --hairline:rgba(212,175,55,0.10);
+}
+body{
+  margin:0;
+  padding:40px;
+  background:radial-gradient(ellipse at 50% 0%, #15110A 0%, #050505 100%);
+  color:var(--text-1);
+  font-family:'Inter',-apple-system,sans-serif;
+}
+h1{
+  font-size:18px;
+  letter-spacing:.28em;
+  color:var(--gold-1);
+  text-transform:uppercase;
+  font-weight:300;
+  margin:0 0 8px;
+}
+.subtitle{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;
+  letter-spacing:.15em;
+  color:var(--text-2);
+  text-transform:uppercase;
+  margin-bottom:30px;
+}
+.demo-row{
+  display:flex;
+  gap:30px;
+  align-items:flex-end;
+  justify-content:center;
+  padding:30px;
+  background:linear-gradient(180deg, rgba(20,16,10,0.55) 0%, rgba(8,7,5,0.78) 100%);
+  border:1px solid var(--hairline);
+  border-radius:8px;
+  margin-bottom:24px;
+}
+.demo-cell{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+}
+.demo-cell .label{
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;
+  letter-spacing:.20em;
+  color:var(--gold-1);
+  text-transform:uppercase;
+}
+
+/* ============================================================
+   ESTILOS DA MOLA — copie este bloco inteiro pra reusar
+   ============================================================ */
+.spring-art{
+  position:relative;
+  width:86px;
+  height:180px;
+}
+.spring-art-svg{
+  width:100%;
+  height:100%;
+  display:block;
+  overflow:visible;
+}
+.spring-coils.good .spring-main{stroke:url(#springPaintGood);}
+.spring-coils.warn .spring-main{stroke:url(#springPaintWarn);}
+.spring-coils.bad  .spring-main{stroke:url(#springPaintBad);}
+.spring-coils.good{filter:drop-shadow(0 0 3px rgba(125,211,252,0.40));}
+.spring-coils.warn{filter:drop-shadow(0 0 4px rgba(255,201,130,0.55));}
+.spring-coils.bad {filter:drop-shadow(0 0 5px rgba(255,130,120,0.65));}
+.spring-main{transition:stroke .35s ease;}
+.spring-back{stroke:#08090C; opacity:0.78;}
+.spring-shine{stroke:rgba(255,255,255,0.55);}
+
+.notes{
+  margin-top:30px;
+  padding:18px 22px;
+  background:rgba(212,175,55,0.04);
+  border-left:3px solid var(--gold-1);
+  font-size:13px;
+  line-height:1.6;
+}
+.notes strong{color:var(--gold-1);}
+.notes code{
+  font-family:'JetBrains Mono',monospace;
+  background:rgba(0,0,0,0.5);
+  padding:1px 6px;
+  border-radius:3px;
+  font-size:11px;
+  color:var(--text-1);
+}
+</style>
+</head>
+<body>
+
+<h1>MOLA HELICOIDAL · COMPONENTE CANÔNICO</h1>
+<div class="subtitle">P1 Fast · aprovado 2026-05-19 · não substituir sem autorização</div>
+
+<!-- GRADIENTES — copie estes <linearGradient>/<radialGradient> pro <defs> do seu SVG -->
+<svg width="0" height="0" style="position:absolute;" aria-hidden="true">
+  <defs>
+    <!-- Pintura colorida das espirais por estado (good/warn/bad) -->
+    <linearGradient id="springPaintGood" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0"    stop-color="#0E2E48"/>
+      <stop offset="0.18" stop-color="#1E5C8C"/>
+      <stop offset="0.42" stop-color="#8FCDFF"/>
+      <stop offset="0.58" stop-color="#8FCDFF"/>
+      <stop offset="0.82" stop-color="#1E5C8C"/>
+      <stop offset="1"    stop-color="#0E2E48"/>
+    </linearGradient>
+    <linearGradient id="springPaintWarn" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0"    stop-color="#4A2900"/>
+      <stop offset="0.18" stop-color="#A05900"/>
+      <stop offset="0.42" stop-color="#FFC982"/>
+      <stop offset="0.58" stop-color="#FFC982"/>
+      <stop offset="0.82" stop-color="#A05900"/>
+      <stop offset="1"    stop-color="#4A2900"/>
+    </linearGradient>
+    <linearGradient id="springPaintBad" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0"    stop-color="#3A0808"/>
+      <stop offset="0.18" stop-color="#8A1410"/>
+      <stop offset="0.42" stop-color="#FF8278"/>
+      <stop offset="0.58" stop-color="#FF8278"/>
+      <stop offset="0.82" stop-color="#8A1410"/>
+      <stop offset="1"    stop-color="#3A0808"/>
+    </linearGradient>
+    <!-- Top hat dourado (anel de pré-carga roscável) -->
+    <radialGradient id="topHatGold" cx="0.5" cy="0.30" r="0.7">
+      <stop offset="0"    stop-color="#FFEFB8"/>
+      <stop offset="0.35" stop-color="#D4AF37"/>
+      <stop offset="0.75" stop-color="#7A621E"/>
+      <stop offset="1"    stop-color="#3A2D0D"/>
+    </radialGradient>
+    <linearGradient id="topHatRim" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#FFE89A"/>
+      <stop offset="0.5" stop-color="#B58F26"/>
+      <stop offset="1" stop-color="#3A2D0D"/>
+    </linearGradient>
+    <!-- Perch base (alumínio escovado) -->
+    <linearGradient id="perchAlu" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0"   stop-color="#A6B0BE"/>
+      <stop offset="0.5" stop-color="#5A6270"/>
+      <stop offset="1"   stop-color="#1F242C"/>
+    </linearGradient>
+    <!-- Batente de borracha (bump stop) -->
+    <linearGradient id="bumpStop" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0"   stop-color="#FF6650"/>
+      <stop offset="0.4" stop-color="#B82A1E"/>
+      <stop offset="1"   stop-color="#5A0E08"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<!-- DEMO ao vivo — 3 molas mostrando: parada (good), comprimindo no ritmo (warn),
+     batente (bad). Cada uma usa a mesma função buildSpringSVG. -->
+<div class="demo-row">
+  <div class="demo-cell">
+    <div class="label">PARADA · 0 mm</div>
+    <div class="spring-art" id="demo-1"></div>
+  </div>
+  <div class="demo-cell">
+    <div class="label">ANIMANDO · −5 a −18 mm</div>
+    <div class="spring-art" id="demo-2"></div>
+  </div>
+  <div class="demo-cell">
+    <div class="label">BATENTE · −24 mm</div>
+    <div class="spring-art" id="demo-3"></div>
+  </div>
+</div>
+
+<div class="notes">
+  <strong>Como reusar este componente em outro mockup:</strong><br>
+  1. Copie todos os <code>&lt;linearGradient&gt;</code> e <code>&lt;radialGradient&gt;</code> com prefixo <code>spring</code>/<code>topHat</code>/<code>perch</code>/<code>bumpStop</code> pro <code>&lt;defs&gt;</code> do seu SVG global.<br>
+  2. Copie o bloco CSS marcado "ESTILOS DA MOLA".<br>
+  3. Copie a função <code>buildSpringSVG()</code> abaixo (script no fim do arquivo).<br>
+  4. Crie um <code>&lt;div class="spring-art"&gt;&lt;/div&gt;</code> onde quiser a mola.<br>
+  5. Injete: <code>el.innerHTML = buildSpringSVG();</code><br>
+  6. Anime aplicando <code>transform</code> nos dois grupos internos (<code>[data-spring-top]</code> e <code>[data-spring]</code>) — fórmula completa no comentário do topo deste arquivo.
+</div>
+
+<script>
+// ============================================================
+// FUNÇÃO buildSpringSVG() — copie esta função pro seu mockup
+// ============================================================
+// Gera o SVG da mola helicoidal premium. Aprovada por Flávio em 2026-05-19.
+// REGRA DURA: nunca substituir por anéis paralelos ou path 2D serpenteando —
+// tem que ser ESPIRAL CONTÍNUA com renderização cronológica frente/trás.
+function buildSpringSVG(){
+  const cx     = 43;     // eixo da mola
+  const yTop   = 24;     // onde começa a primeira espira
+  const yBot   = 162;    // onde termina a última espira
+  const rx     = 30;     // raio horizontal da espira (projeção)
+  const ry     = 9;      // ondulação vertical (perspectiva forte → espiras se entrelaçam)
+  const nCoils = 6;      // número de espiras visíveis
+  const samples = 360;   // pontos por curva (resolução)
+  const totalAngle = nCoils * 2 * Math.PI;
+
+  // Quebra a hélice em segmentos cronológicos (frente/trás alternados).
+  // Renderiza CADA segmento como um <path> separado, na ordem em que aparecem
+  // de cima pra baixo. A frente de uma espira sempre cobre o trás da espira
+  // de baixo — igual mola real entrelaçada vista de perfil.
+  const segs = []; let curSeg = []; let lastSign = null;
+
+  for (let i = 0; i <= samples; i++){
+    const u = i / samples;
+    const t = u * totalAngle;
+    const x = cx + rx * Math.cos(t);
+    const y = yTop + u * (yBot - yTop) + ry * Math.sin(t);
+    const sign = Math.sin(t) >= 0 ? 1 : -1;
+
+    if (lastSign === null){
+      curSeg.push([x,y]); lastSign = sign;
+    } else if (sign !== lastSign){
+      curSeg.push([x,y]);
+      segs.push({points:curSeg, isFront:lastSign===1});
+      curSeg = [[x,y]];
+      lastSign = sign;
+    } else {
+      curSeg.push([x,y]);
+    }
+  }
+  if (curSeg.length) segs.push({points:curSeg, isFront:lastSign===1});
+
+  function segToD(seg){
+    return 'M ' + seg.map(p => p[0].toFixed(2)+','+p[1].toFixed(2)).join(' L ');
+  }
+
+  const paths = segs.map(s => {
+    const d = segToD(s.points);
+    if (s.isFront){
+      return `<path class="spring-main" d="${d}" stroke-width="3.0"/>`
+           + `<path class="spring-shine" d="${d}" stroke="rgba(255,255,255,0.55)" stroke-width="0.7" stroke-dasharray="3 16"/>`;
+    } else {
+      return `<path class="spring-back" d="${d}" stroke="#08090C" stroke-width="2.0" opacity="0.78"/>`;
+    }
+  }).join('');
+
+  return `
+    <svg class="spring-art-svg" viewBox="0 0 86 180" preserveAspectRatio="xMidYMid meet">
+      <g class="spring-top-assy" data-spring-top>
+        <ellipse cx="43" cy="16" rx="36" ry="3" fill="#000" opacity="0.55"/>
+        <ellipse cx="43" cy="14" rx="36" ry="4" fill="url(#topHatGold)" stroke="rgba(0,0,0,0.5)" stroke-width="0.4"/>
+        <ellipse cx="43" cy="13" rx="36" ry="0.6" fill="url(#topHatRim)" opacity="0.85"/>
+        <line x1="14" y1="13" x2="14" y2="17" stroke="rgba(0,0,0,0.65)" stroke-width="0.5"/>
+        <line x1="22" y1="12" x2="22" y2="17" stroke="rgba(0,0,0,0.65)" stroke-width="0.5"/>
+        <line x1="30" y1="11.5" x2="30" y2="17" stroke="rgba(0,0,0,0.65)" stroke-width="0.5"/>
+        <line x1="43" y1="11.2" x2="43" y2="17" stroke="rgba(0,0,0,0.65)" stroke-width="0.5"/>
+        <line x1="56" y1="11.5" x2="56" y2="17" stroke="rgba(0,0,0,0.65)" stroke-width="0.5"/>
+        <line x1="64" y1="12" x2="64" y2="17" stroke="rgba(0,0,0,0.65)" stroke-width="0.5"/>
+        <line x1="72" y1="13" x2="72" y2="17" stroke="rgba(0,0,0,0.65)" stroke-width="0.5"/>
+        <rect x="11" y="18" width="64" height="3.5" rx="1" fill="#2A2A2A" opacity="0.85"/>
+      </g>
+      <g class="spring-coils good" data-spring fill="none" stroke-linecap="round" stroke-linejoin="round">
+        ${paths}
+      </g>
+      <rect x="11" y="163" width="64" height="3.5" rx="1" fill="#2A2A2A" opacity="0.85"/>
+      <rect x="14" y="167" width="58" height="7" rx="2" fill="url(#bumpStop)" stroke="rgba(0,0,0,0.55)" stroke-width="0.4"/>
+      <line x1="18" y1="168.8" x2="68" y2="168.8" stroke="rgba(0,0,0,0.35)" stroke-width="0.4"/>
+      <line x1="18" y1="171"   x2="68" y2="171"   stroke="rgba(0,0,0,0.35)" stroke-width="0.4"/>
+      <line x1="18" y1="173"   x2="68" y2="173"   stroke="rgba(0,0,0,0.35)" stroke-width="0.4"/>
+      <ellipse cx="43" cy="178" rx="40" ry="1.8" fill="url(#perchAlu)" stroke="rgba(0,0,0,0.6)" stroke-width="0.4"/>
+    </svg>
+  `;
+}
+
+// ============================================================
+// ANIMAÇÃO FÍSICA da mola (oscilador de 2ª ordem com rebote)
+// Use este loop ou substitua pelo seu próprio simulador.
+// ============================================================
+
+// Injeta os 3 demos
+['demo-1','demo-2','demo-3'].forEach(id => {
+  document.getElementById(id).innerHTML = buildSpringSVG();
+});
+
+// Demo-1 fica parada
+// Demo-2 oscila entre -5 e -18 (warn)
+// Demo-3 fica colada no batente (bad)
+
+const demos = [
+  {el: document.getElementById('demo-1'), getTarget: () => 0, sevByLoad: 'good'},
+  {el: document.getElementById('demo-2'), getTarget: (t) => -11.5 + Math.sin(t*0.8)*6.5, sevByLoad: 'warn'},
+  {el: document.getElementById('demo-3'), getTarget: () => -24, sevByLoad: 'bad'},
+];
+
+demos.forEach(d => {
+  d.springPos = 0;
+  d.springVel = 0;
+  d.springEl  = d.el.querySelector('[data-spring]');
+  d.topEl     = d.el.querySelector('[data-spring-top]');
+  d.springEl.classList.remove('good','warn','bad');
+  d.springEl.classList.add(d.sevByLoad);
+});
+
+const SPRING_K = 0.22, SPRING_D = 0.78;
+let tStart = performance.now();
+function step(now){
+  const tSec = (now - tStart) / 1000;
+  demos.forEach(d => {
+    const target = d.getTarget(tSec);
+    d.springVel += (target - d.springPos) * SPRING_K;
+    d.springVel *= SPRING_D;
+    d.springPos += d.springVel;
+    const rmm = d.springPos;
+    let k;
+    if (rmm >= 0) k = 1.0 + (rmm / 5) * 0.15;
+    else          k = 1.0 + (rmm / 24) * 0.55;
+    k = Math.max(0.45, Math.min(1.20, k));
+    const dyTop = (1 - k) * 138;
+    d.topEl.setAttribute('transform', `translate(0,${dyTop.toFixed(2)})`);
+    d.springEl.setAttribute('transform', `translate(0,162) scale(1,${k.toFixed(3)}) translate(0,-162)`);
+  });
+  requestAnimationFrame(step);
+}
+requestAnimationFrame(step);
+</script>
+
+</body>
+</html>

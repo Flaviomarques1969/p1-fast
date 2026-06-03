@@ -113,19 +113,14 @@ struct ContentView: View {
     @StateObject private var session = SessionManager()
 
     var body: some View {
-        if ProcessInfo.processInfo.arguments.contains("--p1-hub-mock") {
-            // Atalho SÓ-DEV pra validar o hub do carro no simulador sem login.
-            HubMockLauncher()
-        } else {
-            rootView
-                .environmentObject(session)
-                .task {
-                    // Restaura sessão do storage do SDK (auto-refresh JWT
-                    // expirado). Roda 1× por subida do app — ContentView é
-                    // singleton no scene root.
-                    await session.bootstrap()
-                }
-        }
+        rootView
+            .environmentObject(session)
+            .task {
+                // Restaura sessão do storage do SDK (auto-refresh JWT
+                // expirado). Roda 1× por subida do app — ContentView é
+                // singleton no scene root.
+                await session.bootstrap()
+            }
     }
 
     @ViewBuilder
@@ -187,9 +182,6 @@ private struct ReadyRoot: View {
     @StateObject private var reachability: Reachability
     @StateObject private var syncCoordinator: SyncCoordinator
     @StateObject private var stintCaptureCoordinator: StintCaptureCoordinator
-    @StateObject private var voltaVideoRepo: VoltaVideoRepository
-    @StateObject private var manutencaoStore: ManutencaoConsumiveisStore
-    @StateObject private var pecaRepo: PecaRepository
 
     init(queue: DatabaseQueue) {
         self.queue = queue
@@ -203,9 +195,6 @@ private struct ReadyRoot: View {
         _trackRepo = StateObject(wrappedValue: TrackRepository(queue: queue))
         _licaoRepo = StateObject(wrappedValue: LicaoRepository(queue: queue))
         _pendenciaRepo = StateObject(wrappedValue: PendenciaRepository(queue: queue))
-        _voltaVideoRepo = StateObject(wrappedValue: VoltaVideoRepository(queue: queue))
-        _manutencaoStore = StateObject(wrappedValue: ManutencaoConsumiveisStore(queue: queue))
-        _pecaRepo = StateObject(wrappedValue: PecaRepository(queue: queue))
         let reach = Reachability()
         _reachability = StateObject(wrappedValue: reach)
         _syncCoordinator = StateObject(
@@ -231,9 +220,6 @@ private struct ReadyRoot: View {
             .environmentObject(reachability)
             .environmentObject(syncCoordinator)
             .environmentObject(stintCaptureCoordinator)
-            .environmentObject(voltaVideoRepo)
-            .environmentObject(manutencaoStore)
-            .environmentObject(pecaRepo)
             .task {
                 await carroRepo.bootstrap()
                 // EventoRepo seeda o TrackRow brasília — TrackRepo
@@ -250,7 +236,6 @@ private struct ReadyRoot: View {
                 await trackRepo.bootstrap()
                 await licaoRepo.bootstrap()
                 await pendenciaRepo.bootstrap()
-                await pecaRepo.bootstrap()
                 // Sprint E.1: enfileira retroativamente rows com
                 // synced_at IS NULL que vieram de versões anteriores
                 // (carros/eventos criados antes do fix de enqueue nos
@@ -413,6 +398,7 @@ private struct StintNovoLauncher: View {
 private struct PosStintLauncher: View {
     @EnvironmentObject private var eventoRepo: EventoRepository
     @EnvironmentObject private var stintRepo: StintRepository
+    @EnvironmentObject private var carroRepo: CarroRepository
     @State private var stintId: String?
     @State private var prepared = false
 
@@ -442,18 +428,22 @@ private struct PosStintLauncher: View {
             try? await Task.sleep(nanoseconds: 100_000_000)
         }
         guard let evento = eventoRepo.find(id: EventoRepository.seedAtivoId) ?? eventoRepo.eventos.first,
-              let piloto = stintRepo.pilotos.first(where: { $0.id == PilotoRepository.pilotoFlavioId }) ?? stintRepo.pilotos.first else {
+              let piloto = stintRepo.pilotos.first(where: { $0.id == PilotoRepository.pilotoFlavioId }) ?? stintRepo.pilotos.first,
+              let carro = carroRepo.carros.first else {
             return
         }
         do {
             let id = try await stintRepo.create(
                 eventoId: evento.id,
+                carroId: carro.id,
                 pilotoId: piloto.id,
                 objetivoTipo: "Ataque",
                 licaoFocada: "V-Min · apex",
                 voltasPlanejadas: 12
             )
-            _ = try await stintRepo.finalize(stintId: id, mediaVoltaMs: 102_500)
+            // Onda 1A: prepararStintDemo é só preview/screenshot. Finaliza
+            // sem eventos do Detector => zero voltas. Pós-Stint mostra msg.
+            _ = try await stintRepo.finalize(stintId: id)
             self.stintId = id
         } catch {
             print("PosStintLauncher: prepare failed — \(error)")

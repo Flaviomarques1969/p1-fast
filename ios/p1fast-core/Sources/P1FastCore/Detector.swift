@@ -1,15 +1,6 @@
 // ═══════════════════════════════════════════════════════════
 // Detector — port Swift de src/telemetry/detector.js
 // ═══════════════════════════════════════════════════════════
-//
-// ✅  FONTE DA VERDADE DO DETECTOR AO VIVO (ADR-025, 2026-05-12)
-//
-// Mudanças no algoritmo de detecção entram primeiro aqui, com smoke novo.
-// `src/telemetry/detector.js` é referência legada. `supabase/functions/
-// detector/index.ts` é reprocessamento pós-stint — atualizado manualmente
-// se este mudar. Detalhes em ARCHITECTURE_DECISIONS.md §ADR-025.
-//
-// ═══════════════════════════════════════════════════════════
 // Engine ao vivo: stream de samples → eventos lap / segmentStart /
 // segmentEnd. Stateful, classe (referência) — listener pattern com
 // closure de unsubscribe (paridade com JS Set<cb>).
@@ -55,22 +46,6 @@ public struct DetectorLapEvent: Sendable {
     public let tempoMs: Double
     public let temposPorParcial: [String: Double]
     public let temposPorTrecho: [String: Double]
-
-    public init(
-        numero: Int,
-        inicioAt: Double,
-        fimAt: Double,
-        tempoMs: Double,
-        temposPorParcial: [String: Double],
-        temposPorTrecho: [String: Double]
-    ) {
-        self.numero = numero
-        self.inicioAt = inicioAt
-        self.fimAt = fimAt
-        self.tempoMs = tempoMs
-        self.temposPorParcial = temposPorParcial
-        self.temposPorTrecho = temposPorTrecho
-    }
 }
 
 public struct DetectorSegmentStartEvent: Sendable {
@@ -79,20 +54,6 @@ public struct DetectorSegmentStartEvent: Sendable {
     public let entradaAt: Double
     public let velEntrada: Double?
     public let offset: Double
-
-    public init(
-        segmentId: String,
-        lapNumero: Int?,
-        entradaAt: Double,
-        velEntrada: Double?,
-        offset: Double
-    ) {
-        self.segmentId = segmentId
-        self.lapNumero = lapNumero
-        self.entradaAt = entradaAt
-        self.velEntrada = velEntrada
-        self.offset = offset
-    }
 }
 
 public struct DetectorSegmentEndEvent: Sendable {
@@ -108,6 +69,16 @@ public struct DetectorSegmentEndEvent: Sendable {
     public let apexT: Double?
     public let apexOffset: Double?
     public let apexActual: PathMapper.Point?
+    /// 6 indicadores (Comando GO 2026-05-24) — espelha JS canônico.
+    /// vChegada: velocidade ~1.2 s antes do instante de entrada
+    /// (proxy de "50 m antes" — usa buffer rolling).
+    public let vChegada: Double?
+    /// vFreada / tFreada: derivados de `pontoFrenagem`.
+    public let vFreada: Double?
+    public let tFreada: Double?
+    /// Intervalos auxiliares: ms entre Freada→ápice e ápice→saída.
+    public let tempoFreadaApiceMs: Double?
+    public let tempoApiceSaidaMs: Double?
 
     public init(
         segmentId: String,
@@ -121,7 +92,12 @@ public struct DetectorSegmentEndEvent: Sendable {
         pontoFrenagem: DetectorBrakingPoint?,
         apexT: Double?,
         apexOffset: Double?,
-        apexActual: PathMapper.Point?
+        apexActual: PathMapper.Point?,
+        vChegada: Double? = nil,
+        vFreada: Double? = nil,
+        tFreada: Double? = nil,
+        tempoFreadaApiceMs: Double? = nil,
+        tempoApiceSaidaMs: Double? = nil
     ) {
         self.segmentId = segmentId
         self.lapNumero = lapNumero
@@ -135,6 +111,31 @@ public struct DetectorSegmentEndEvent: Sendable {
         self.apexT = apexT
         self.apexOffset = apexOffset
         self.apexActual = apexActual
+        self.vChegada = vChegada
+        self.vFreada = vFreada
+        self.tFreada = tFreada
+        self.tempoFreadaApiceMs = tempoFreadaApiceMs
+        self.tempoApiceSaidaMs = tempoApiceSaidaMs
+    }
+}
+
+/// Evento emitido após ~2.4 s do fim do segmento (proxy de "100 m
+/// após saída") OU quando o carro entra em outro segmento OU cruza
+/// linha de chegada. Carrega a V saída pico — completa o 6º indicador
+/// (Comando GO 2026-05-24).
+public struct DetectorSegmentPostBurstEvent: Sendable {
+    public let segmentId: String
+    public let lapNumero: Int?
+    public let vSaidaPico: Double?
+    public let tSaidaPico: Double?
+    public let reason: String
+
+    public init(segmentId: String, lapNumero: Int?, vSaidaPico: Double?, tSaidaPico: Double?, reason: String) {
+        self.segmentId = segmentId
+        self.lapNumero = lapNumero
+        self.vSaidaPico = vSaidaPico
+        self.tSaidaPico = tSaidaPico
+        self.reason = reason
     }
 }
 
@@ -151,15 +152,20 @@ public final class Detector {
     private let linhaChegada: LinhaChegada?
     private let segments: [TrackSegment]
     private let snapMaxDist: Double
+    private let vChegadaLookbackMs: Double
+    private let vSaidaPicoTrackMs: Double
+    private let bufferMaxSamples: Int
 
     // Listeners
     public typealias LapHandler = @Sendable (DetectorLapEvent) -> Void
     public typealias SegmentStartHandler = @Sendable (DetectorSegmentStartEvent) -> Void
     public typealias SegmentEndHandler = @Sendable (DetectorSegmentEndEvent) -> Void
+    public typealias SegmentPostBurstHandler = @Sendable (DetectorSegmentPostBurstEvent) -> Void
 
     private var lapListeners: [UUID: LapHandler] = [:]
     private var segStartListeners: [UUID: SegmentStartHandler] = [:]
     private var segEndListeners: [UUID: SegmentEndHandler] = [:]
+    private var segPostBurstListeners: [UUID: SegmentPostBurstHandler] = [:]
 
     // Estado interno
     public private(set) var lapCount: Int = 0
@@ -192,22 +198,51 @@ public final class Detector {
         var apexT: Double?
         var apexOffset: Double?
         var apexActual: PathMapper.Point?
+        /// vChegada: velocidade ~1.2 s antes da entrada (do buffer rolling).
+        var vChegada: Double?
     }
     private var segmentoAtual: SegmentoAtual?
 
     private var parcialTimestamps: [String: Double] = [:]
     private var currentParcial: String?
 
+    /// Buffer rolling pré-segmento (último ~bufferMaxSamples points).
+    /// Usado pra calcular `vChegada` quando entra em um segmento.
+    private struct BufferSample {
+        let t: Double
+        let speed: Double?
+        let offset: Double
+    }
+    private var bufferRolling: [BufferSample] = []
+
+    /// Estado de tracking pós-saída de segmento — alimenta o evento
+    /// `onSegmentPostBurst` com a V saída pico observada nos ~2.4 s
+    /// (ou ~100 m) seguintes ao fim do segmento.
+    private struct PostBurst {
+        let segmentId: String
+        let lapNumero: Int?
+        let tSaida: Double
+        var vMax: Double?
+        var tMax: Double?
+    }
+    private var postBurst: PostBurst?
+
     public init(
         svgPath: String,
         linhaChegada: LinhaChegada?,
         segments: [TrackSegment] = [],
-        snapMaxDist: Double = 80
+        snapMaxDist: Double = 80,
+        vChegadaLookbackMs: Double = 1200,
+        vSaidaPicoTrackMs: Double = 2400,
+        bufferMaxSamples: Int = 240
     ) {
         self.lookup = PathMapper.buildLookup(svgPath, samples: 2000)
         self.linhaChegada = linhaChegada
         self.segments = segments
         self.snapMaxDist = snapMaxDist
+        self.vChegadaLookbackMs = vChegadaLookbackMs
+        self.vSaidaPicoTrackMs = vSaidaPicoTrackMs
+        self.bufferMaxSamples = bufferMaxSamples
     }
 
     // MARK: - Listeners
@@ -233,9 +268,60 @@ public final class Detector {
         return { [weak self] in self?.segEndListeners.removeValue(forKey: id) }
     }
 
+    @discardableResult
+    public func onSegmentPostBurst(_ cb: @escaping SegmentPostBurstHandler) -> () -> Void {
+        let id = UUID()
+        segPostBurstListeners[id] = cb
+        return { [weak self] in self?.segPostBurstListeners.removeValue(forKey: id) }
+    }
+
     private func emitLap(_ ev: DetectorLapEvent) { for cb in lapListeners.values { cb(ev) } }
     private func emitSegStart(_ ev: DetectorSegmentStartEvent) { for cb in segStartListeners.values { cb(ev) } }
     private func emitSegEnd(_ ev: DetectorSegmentEndEvent) { for cb in segEndListeners.values { cb(ev) } }
+    private func emitPostBurst(_ ev: DetectorSegmentPostBurstEvent) { for cb in segPostBurstListeners.values { cb(ev) } }
+
+    // ───────── helpers privados — 6 indicadores ─────────
+
+    private func vChegadaFromBuffer(tEntrada: Double) -> Double? {
+        guard !bufferRolling.isEmpty else { return nil }
+        let limite = tEntrada - vChegadaLookbackMs
+        var melhor: BufferSample?
+        for sample in bufferRolling.reversed() {
+            if sample.t <= limite {
+                melhor = sample
+                break
+            }
+        }
+        if melhor == nil {
+            melhor = bufferRolling.first
+        }
+        return melhor?.speed
+    }
+
+    private func updatePostBurst(_ point: UltimoPonto, forceFlush: Bool) {
+        guard var pb = postBurst else { return }
+        if let sp = point.speed, (pb.vMax == nil || sp > (pb.vMax ?? -.infinity)) {
+            pb.vMax = sp
+            pb.tMax = point.t
+        }
+        let elapsed = point.t - pb.tSaida
+        postBurst = pb
+        if forceFlush || elapsed >= vSaidaPicoTrackMs {
+            flushPostBurst(reason: forceFlush ? "force" : "lookback")
+        }
+    }
+
+    private func flushPostBurst(reason: String) {
+        guard let pb = postBurst else { return }
+        postBurst = nil
+        emitPostBurst(DetectorSegmentPostBurstEvent(
+            segmentId: pb.segmentId,
+            lapNumero: pb.lapNumero,
+            vSaidaPico: pb.vMax,
+            tSaidaPico: pb.tMax,
+            reason: reason
+        ))
+    }
 
     // MARK: - Consumo
 
@@ -264,6 +350,15 @@ public final class Detector {
             offset: snapped.offset
         )
 
+        // Buffer rolling pra vChegada
+        bufferRolling.append(BufferSample(t: point.t, speed: point.speed, offset: point.offset))
+        if bufferRolling.count > bufferMaxSamples {
+            bufferRolling.removeFirst(bufferRolling.count - bufferMaxSamples)
+        }
+
+        // Atualiza tracking pós-saída (V saída pico).
+        updatePostBurst(point, forceFlush: false)
+
         if let last = ultimoPonto, let lc = linhaChegada {
             let cruzou = PathMapper.segmentsIntersect(
                 PathMapper.Point(x: last.x, y: last.y),
@@ -271,7 +366,10 @@ public final class Detector {
                 PathMapper.Point(x: lc.x1, y: lc.y1),
                 PathMapper.Point(x: lc.x2, y: lc.y2)
             )
-            if cruzou { onLineCross(point) }
+            if cruzou {
+                flushPostBurst(reason: "line_cross")
+                onLineCross(point)
+            }
         }
 
         updateSegment(point)
@@ -339,6 +437,9 @@ public final class Detector {
         let fechaSegmentoAtual: (UltimoPonto) -> Void = { [weak self] saidaPoint in
             guard let self, let seg = self.segmentoAtual else { return }
             let tempoMs = saidaPoint.t - seg.entradaAt
+            let pf = seg.pontoFrenagem
+            let tempoFreadaApice: Double? = (pf != nil && seg.apexT != nil) ? (seg.apexT! - pf!.t) : nil
+            let tempoApiceSaida: Double? = (seg.apexT != nil) ? (saidaPoint.t - seg.apexT!) : nil
             let ev = DetectorSegmentEndEvent(
                 segmentId: seg.segmentId,
                 lapNumero: self.voltaAtual?.numero,
@@ -348,18 +449,34 @@ public final class Detector {
                 velEntrada: seg.velEntrada,
                 velMinima: seg.velMinima,
                 velSaida: self.ultimoPonto?.speed,
-                pontoFrenagem: seg.pontoFrenagem,
+                pontoFrenagem: pf,
                 apexT: seg.apexT,
                 apexOffset: seg.apexOffset,
-                apexActual: seg.apexActual
+                apexActual: seg.apexActual,
+                vChegada: seg.vChegada,
+                vFreada: pf?.velPre,
+                tFreada: pf?.t,
+                tempoFreadaApiceMs: tempoFreadaApice,
+                tempoApiceSaidaMs: tempoApiceSaida
             )
             self.voltaAtual?.temposPorTrecho[seg.segmentId] = tempoMs
             self.emitSegEnd(ev)
+            // Inicia tracking pós-saída. Se já havia um pendente, flush antes
+            // pra não perder o evento anterior (chegada rápida em outro segment).
+            self.flushPostBurst(reason: "new_segment")
+            self.postBurst = PostBurst(
+                segmentId: seg.segmentId,
+                lapNumero: self.voltaAtual?.numero,
+                tSaida: saidaPoint.t,
+                vMax: saidaPoint.speed,
+                tMax: saidaPoint.speed != nil ? saidaPoint.t : nil
+            )
         }
 
         if let f = found, segmentoAtual?.segmentId != f.id {
             // Entrada num novo segmento — fechar atual se houver
             if segmentoAtual != nil { fechaSegmentoAtual(point) }
+            let vChegada = vChegadaFromBuffer(tEntrada: point.t)
             segmentoAtual = SegmentoAtual(
                 segmentId: f.id,
                 entradaAt: point.t,
@@ -368,7 +485,8 @@ public final class Detector {
                 pontoFrenagem: nil,
                 apexT: point.t,
                 apexOffset: point.offset,
-                apexActual: PathMapper.Point(x: point.x, y: point.y)
+                apexActual: PathMapper.Point(x: point.x, y: point.y),
+                vChegada: vChegada
             )
             emitSegStart(DetectorSegmentStartEvent(
                 segmentId: f.id,

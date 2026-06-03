@@ -33,7 +33,6 @@ struct EventoDetalheView: View {
     @EnvironmentObject private var pneuRepo: PneuRepository
     @EnvironmentObject private var combustivelRepo: CombustivelRepository
     @EnvironmentObject private var pendenciaRepo: PendenciaRepository
-    @EnvironmentObject private var voltaVideoRepo: VoltaVideoRepository
     let eventoId: String
     let onClose: () -> Void
 
@@ -53,10 +52,6 @@ struct EventoDetalheView: View {
             }
         }
         .preferredColorScheme(.dark)
-        // Tem topbar próprio "‹ Eventos": esconde a barra de navegação
-        // nativa pra não duplicar o "voltar" quando vira página empilhada
-        // com o menu fixo embaixo. (2026-05-31 — pedido do Flávio.)
-        .toolbar(.hidden, for: .navigationBar)
         .task { await loadStintsReais() }
         .sheet(item: $sheet, onDismiss: {
             // Recarrega após criar/encerrar stint.
@@ -97,30 +92,10 @@ struct EventoDetalheView: View {
                     stintId: stintId,
                     contextoLinha: contextoStintModal(ev: ev),
                     onFinalized: { id in
-                        // F4-glue: passo intermediário pra triagem do vídeo.
-                        // Se não houver gravação Daily.co OU nenhuma volta
-                        // foi indexada, a TriagemVideoView mostra empty state
-                        // e a pessoa avança pro PosStint normalmente.
-                        sheet = .triagemVideo(stintId: id)
+                        sheet = .posStint(stintId: id)
                     },
                     onCancel: { sheet = nil }
                 )
-            } else {
-                EmptyView()
-            }
-        case .triagemVideo(let stintId):
-            if let ev = repo.find(id: eventoId) {
-                TriagemVideoView(
-                    sessaoId: stintId,
-                    contextoLinha: contextoStintModal(ev: ev),
-                    onClose: {
-                        // Sempre encaminha pro PosStint depois da triagem
-                        // (ou do "Pular"). PosStint é o destino final do
-                        // fluxo.
-                        sheet = .posStint(stintId: stintId)
-                    }
-                )
-                .environmentObject(voltaVideoRepo)
             } else {
                 EmptyView()
             }
@@ -162,16 +137,15 @@ struct EventoDetalheView: View {
     }
 
     private func abrirStintReal(_ stint: Stint) {
-        // Se ainda está ativo, finalizamos antes (gerador determinístico
-        // mockado — Sprint 1B troca pelo dado real). Atalho do MVP pra
-        // poder visualizar o PosStint sem cockpit ao vivo.
+        // Onda 1B (2026-05-24): se o stint ainda está ativo, abre o
+        // StintCaptureView — onde o coordinator arma o Detector (cronômetro
+        // por trecho) e LiveTelemetryRecorder (IMU+GPS). O caminho antigo
+        // (finalize direto sem captura) gerava voltas falsas e zero
+        // segment_executions — removido na Onda 1A.
+        //
+        // Se o stint já está finalizado, vai direto pro Pós-Stint.
         if stint.isAtivo {
-            finalizingStintId = stint.id
-            Task {
-                _ = try? await stintRepo.finalize(stintId: stint.id)
-                finalizingStintId = nil
-                sheet = .posStint(stintId: stint.id)
-            }
+            sheet = .captureAtivo(stintId: stint.id)
         } else {
             sheet = .posStint(stintId: stint.id)
         }
@@ -355,13 +329,7 @@ struct EventoDetalheView: View {
                         StintCardReal(
                             stint: stint,
                             isFinalizing: finalizingStintId == stint.id,
-                            onTap: { abrirStintReal(stint) },
-                            onCancel: (stint.podeCancelar && podeEditarStint(stint)) ? {
-                                Task {
-                                    try? await stintRepo.cancel(stintId: stint.id)
-                                    await loadStintsReais()
-                                }
-                            } : nil
+                            onTap: { abrirStintReal(stint) }
                         )
                     }
                 } else {
@@ -411,19 +379,6 @@ struct EventoDetalheView: View {
     private func stintsFor(_ ev: EventoView) -> [StintMock] {
         EventoMockSummary.canon(eventoId: ev.id)?.stintsDetalhados ?? []
     }
-
-    // MS-4.6 — Permissão de editar/cancelar stint. Consume função pura
-    // StintEditPermission.podeEditar (testada em PERM-01..06). Hoje,
-    // sem F1 (Pessoas multi-papel), o owner do time é sempre 'admin' →
-    // todo o app permite. Quando F1 chegar, papéis refinados restringem.
-    private func podeEditarStint(_ stint: Stint) -> Bool {
-        StintEditPermission.podeEditar(
-            currentUserId: TeamContext.currentPilotoId,
-            currentRole: TeamContext.currentRole,
-            pilotoId: stint.sessao.pilotoId,
-            pilotosRevezamento: stint.sessao.pilotosRevezamento
-        )
-    }
 }
 
 // MARK: - Sheet enum
@@ -431,7 +386,6 @@ struct EventoDetalheView: View {
 enum EventoDetalheSheet: Identifiable, Equatable {
     case novoStint
     case captureAtivo(stintId: String)
-    case triagemVideo(stintId: String)
     case posStint(stintId: String)
     case pendencias
 
@@ -439,7 +393,6 @@ enum EventoDetalheSheet: Identifiable, Equatable {
         switch self {
         case .novoStint: return "novo-stint"
         case .captureAtivo(let id): return "capture-\(id)"
-        case .triagemVideo(let id): return "triagem-\(id)"
         case .posStint(let id): return "pos-\(id)"
         case .pendencias: return "pendencias"
         }
@@ -543,10 +496,6 @@ private struct StintCardReal: View {
     let stint: Stint
     let isFinalizing: Bool
     let onTap: () -> Void
-    /// MS-4.5: opcional. Quando presente, long-press oferece "Cancelar stint".
-    let onCancel: (() -> Void)?
-
-    @State private var confirmandoCancelamento: Bool = false
 
     var body: some View {
         Button(action: onTap) {
@@ -561,49 +510,15 @@ private struct StintCardReal: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .fill(backgroundColor)
+                    .fill(stint.isAtivo ? Color.accentDim.opacity(0.15) : Color.surfaceRaised)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .stroke(borderColor, lineWidth: 1)
+                    .stroke(stint.isAtivo ? Color.accent.opacity(0.55) : Color.border, lineWidth: 1)
             )
-            .opacity(stint.isCancelado ? 0.55 : 1.0)
         }
         .buttonStyle(.plain)
-        .disabled(isFinalizing || stint.isCancelado)
-        .contextMenu {
-            if onCancel != nil {
-                Button(role: .destructive, action: {
-                    confirmandoCancelamento = true
-                }) {
-                    Label("Cancelar stint", systemImage: "xmark.circle")
-                }
-            }
-        }
-        .confirmationDialog(
-            "Cancelar este stint?",
-            isPresented: $confirmandoCancelamento,
-            titleVisibility: .visible
-        ) {
-            Button("Cancelar stint", role: .destructive) {
-                onCancel?()
-            }
-            Button("Voltar", role: .cancel) {}
-        } message: {
-            Text("O stint não some — fica marcado como cancelado no histórico.")
-        }
-    }
-
-    private var backgroundColor: Color {
-        if stint.isCancelado { return Color.surfaceRaised }
-        if stint.isAtivo { return Color.accentDim.opacity(0.15) }
-        return Color.surfaceRaised
-    }
-
-    private var borderColor: Color {
-        if stint.isCancelado { return Color.border.opacity(0.6) }
-        if stint.isAtivo { return Color.accent.opacity(0.55) }
-        return Color.border
+        .disabled(isFinalizing)
     }
 
     private var numCircle: some View {
@@ -647,9 +562,6 @@ private struct StintCardReal: View {
                 }
                 if stint.isAtivo {
                     EventTag(text: isFinalizing ? "Finalizando…" : "Ativo", kind: .accent)
-                }
-                if stint.isCancelado {
-                    EventTag(text: "Cancelado", kind: .neutral)
                 }
             }
             .padding(.top, 7)

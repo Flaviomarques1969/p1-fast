@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>Plano — cockpit do piloto ao vivo</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#101a2e; --panel2:#15233d; --line:#1f2f4d;
+    --ink:#e8eef9; --muted:#8ea0c1; --accent:#5da3ff; --ok:#5dd39e;
+    --warn:#ffb454; --bad:#ff6b6b; --ouro:#e79800;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:1180px;margin:0 auto;padding:32px 24px 80px}
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:24px}
+  h1{font-size:26px;margin:0 0 6px;font-weight:600;letter-spacing:-0.01em}
+  h2{font-size:18px;margin:32px 0 12px;color:var(--accent)}
+  h3{font-size:15px;margin:14px 0 6px;font-weight:600}
+  p{margin:0 0 10px}
+  .sub{color:var(--muted);font-size:13px}
+  .frente{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;margin:18px 0}
+  .frente-head{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:14px}
+  .frente-num{width:36px;height:36px;border-radius:50%;background:var(--accent);color:var(--bg);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex-shrink:0}
+  .frente-num.critica{background:var(--bad)}
+  .frente-num.media{background:var(--warn)}
+  .frente-titulo{font-size:18px;font-weight:600;letter-spacing:-0.01em}
+  .meta{display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;margin:12px 0}
+  .meta-item{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .meta-item .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px}
+  .meta-item .val{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+  .meta-item .val.alto{color:var(--bad)}
+  .meta-item .val.medio{color:var(--warn)}
+  .meta-item .val.baixo{color:var(--ok)}
+  ul.passos{margin:6px 0;padding-left:22px}
+  ul.passos li{margin:5px 0}
+  .decisao{background:rgba(255,180,84,.08);border-left:3px solid var(--warn);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0}
+  .decisao strong{color:var(--warn)}
+  code{background:rgba(255,255,255,.06);padding:1px 6px;border-radius:4px;font-size:12px}
+  table{width:100%;border-collapse:collapse;margin:8px 0;font-size:13px}
+  th,td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left}
+  th{color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.06em;background:rgba(93,163,255,.04)}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .sumario-final{background:linear-gradient(135deg, rgba(93,211,158,0.10), rgba(93,211,158,0.02));border:1px solid rgba(93,211,158,.3);border-radius:12px;padding:22px;margin:24px 0}
+  .sumario-final h2{margin-top:0;color:var(--ok)}
+  footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:11px}
+  .legenda{display:flex;gap:18px;flex-wrap:wrap;margin:8px 0;font-size:12px}
+  .legenda span{display:inline-flex;align-items:center;gap:6px}
+  .pin{display:inline-block;width:12px;height:12px;border-radius:50%}
+  .pin-c{background:var(--bad)} .pin-m{background:var(--warn)} .pin-b{background:var(--ok)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Plano detalhado — cockpit do piloto ao vivo</h1>
+  <div class="sub">7 frentes de trabalho · estimativas · decisões que dependem de você · 2026-05-24</div>
+</header>
+
+<div class="frente">
+  <p>Esse plano cobre o que falta pro cockpit do piloto funcionar como no desenho aprovado: delta ao vivo no centro da tela, indicação da fase da curva (entrada/freada/ápice/saída) acendendo conforme o carro passa pelos pontos, e barra colorida embaixo marcando o desempenho de cada volta. Cada frente abaixo tem o que vai mudar, quanto tempo leva, o que precisa antes, como vai ser testado, e o que precisa da sua aprovação antes de começar.</p>
+  <div class="legenda">
+    <span><span class="pin pin-c"></span> Crítica — bloqueia o resto</span>
+    <span><span class="pin pin-m"></span> Média — peça grande mas independente</span>
+    <span><span class="pin pin-b"></span> Pequena — peça curta, complementar</span>
+  </div>
+</div>
+
+<h2>Sequência recomendada</h2>
+<div class="frente">
+  <p style="margin:0 0 10px"><strong>Antes do próximo dia de pista — itens críticos (sem eles nada funciona corretamente)</strong></p>
+  <ul class="passos">
+    <li>Frente 6 — Recalibrar as âncoras geográficas de Brasília (1 hora · sua decisão)</li>
+    <li>Frente 5 — Garantir vínculo automático da pista no stint (4 horas)</li>
+  </ul>
+  <p style="margin:14px 0 10px"><strong>Pra ter o cockpit visualmente funcionando ao vivo</strong></p>
+  <ul class="passos">
+    <li>Frente 1 — Montar a tela do cockpit do piloto (1-2 dias)</li>
+    <li>Frente 3 — Acender os blocos da fase da curva ao vivo (4 horas — peça pronta, só ligar)</li>
+    <li>Frente 2 — Delta ao vivo com volta fantasma (1 dia)</li>
+    <li>Frente 4 — Barra colorida das voltas (4 horas)</li>
+  </ul>
+  <p style="margin:14px 0 0"><strong>Refinamento pós-validação na pista</strong></p>
+  <ul class="passos">
+    <li>Frente 7 — Forçar paisagem + bloquear rotação + medir aquecimento (2 horas + medição)</li>
+  </ul>
+  <p style="margin-top:14px;font-size:13px;color:var(--muted)">Total estimado: <strong style="color:var(--ink)">~4 dias de trabalho efetivo</strong>, espalhado em janelas conforme seu calendário.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Frente 6 — Recalibrar âncoras geográficas de Brasília</h2>
+
+<div class="frente">
+  <div class="frente-head">
+    <div class="frente-num critica">6</div>
+    <div class="frente-titulo">Recalibrar âncoras geográficas de Brasília</div>
+  </div>
+
+  <h3>Por que é crítica</h3>
+  <p>Descoberta de hoje: o cadastro atual das duas referências geográficas do circuito (latitude/longitude de dois pontos amarrados a duas coordenadas no desenho da pista) está errado. Quando coloco o GPS real em cima do desenho, só 3,5% dos pontos caem dentro. Sem corrigir, mesmo se tudo o mais estivesse pronto, o detector vai marcar posições erradas e nada funcionaria.</p>
+
+  <h3>O que vai mudar</h3>
+  <p>Dois números no cadastro do circuito: latitude e longitude dos pontos âncora. Tudo o mais permanece igual.</p>
+
+  <h3>Como vai funcionar</h3>
+  <ul class="passos">
+    <li>Você (ou alguém da equipe) abre o Google Earth no circuito de Brasília</li>
+    <li>Marca dois pontos canônicos do circuito que apareçam claramente no desenho da pista — por exemplo, vértice da curva 1 e vértice da curva da Bruxa</li>
+    <li>Anota latitude e longitude de cada um</li>
+    <li>Eu atualizo o cadastro com esses dois pares de número</li>
+    <li>Rodo o relatório de hoje de novo com os números novos — se passar de 95% dos pontos GPS caindo dentro do desenho, está calibrado</li>
+  </ul>
+
+  <div class="meta">
+    <div class="meta-item"><div class="lbl">Tamanho</div><div class="val baixo">1 hora</div></div>
+    <div class="meta-item"><div class="lbl">Dependências</div><div class="val">Nenhuma</div></div>
+    <div class="meta-item"><div class="lbl">Risco</div><div class="val baixo">Baixo</div></div>
+    <div class="meta-item"><div class="lbl">Reversível</div><div class="val baixo">Total</div></div>
+  </div>
+
+  <div class="decisao">
+    <strong>Decisão sua antes de eu encostar:</strong> Quais dois pontos do circuito viram âncoras? Sugestão minha: ponto de freada da curva 1 e ápice da curva da Bruxa (são os dois mais identificáveis no Google Earth, em pontas opostas da pista, dão boa precisão).
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Frente 5 — Vincular pista ao stint automaticamente</h2>
+
+<div class="frente">
+  <div class="frente-head">
+    <div class="frente-num critica">5</div>
+    <div class="frente-titulo">Vincular pista ao stint automaticamente</div>
+  </div>
+
+  <h3>Por que é crítica</h3>
+  <p>O que aconteceu hoje: você criou o stint no Subaru sem amarrar a pista de Brasília. Resultado — o detector de trecho não armou e zero indicadores foram gravados, apesar das 4 voltas completas terem sido feitas. Aconteceu uma vez, vai acontecer de novo a menos que o aplicativo bloqueie.</p>
+
+  <h3>O que vai mudar</h3>
+  <p>Quando você for criar um stint, o aplicativo verifica:</p>
+  <ul class="passos">
+    <li>Se o carro escolhido tem uma pista vinculada — usa essa</li>
+    <li>Se não tem mas o GPS já está dentro de um circuito cadastrado — sugere essa pista e pede confirmação</li>
+    <li>Se nada disso — avisa que vai gravar telemetria mas sem cronômetro de trecho, e pergunta se você quer prosseguir mesmo assim</li>
+  </ul>
+
+  <div class="meta">
+    <div class="meta-item"><div class="lbl">Tamanho</div><div class="val medio">4 horas</div></div>
+    <div class="meta-item"><div class="lbl">Dependências</div><div class="val">Nenhuma</div></div>
+    <div class="meta-item"><div class="lbl">Risco</div><div class="val medio">Médio</div></div>
+    <div class="meta-item"><div class="lbl">Onde mexer</div><div class="val">Tela de novo stint</div></div>
+  </div>
+
+  <h3>Como vai ser testado</h3>
+  <ul class="passos">
+    <li>Criar stint em casa (longe da pista) — deve avisar e pedir confirmação</li>
+    <li>Criar stint no autódromo — deve sugerir Brasília automaticamente</li>
+    <li>Criar stint com carro que já tem pista vinculada — direto sem perguntar</li>
+  </ul>
+
+  <div class="decisao">
+    <strong>Decisão sua:</strong> Quando o GPS está longe de qualquer pista cadastrada, prefere bloquear (não deixa começar) ou só avisar (deixa começar sem cronômetro de trecho)? Recomendação minha: avisar e deixar começar — você pode estar fazendo um teste de rua ou um shakedown.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Frente 1 — Tela do cockpit do piloto no aplicativo</h2>
+
+<div class="frente">
+  <div class="frente-head">
+    <div class="frente-num media">1</div>
+    <div class="frente-titulo">Construir a tela do cockpit do piloto</div>
+  </div>
+
+  <h3>O que existe hoje</h3>
+  <p>Durante o stint, a tela do celular mostra: GRAVANDO + alguns contadores (quantos sinais capturados, quantas voltas) + botão ENCERRAR. O próprio código tem comentário dizendo que isso é provisório e que a versão final é o desenho do cockpit que está nos arquivos de referência.</p>
+
+  <h3>O que vai mudar</h3>
+  <p>A tela do stint vira o cockpit canônico aprovado, em paisagem, com:</p>
+  <ul class="passos">
+    <li>Velocímetro grande no centro-esquerda</li>
+    <li>Bloco central: delta (segundos perdidos ou ganhos) em destaque + frase pedagógica</li>
+    <li>Indicador da fase atual da curva (ENTRADA / FREADA / ÁPICE / SAÍDA) acendendo o bloco correspondente</li>
+    <li>Barra colorida embaixo: uma fileira de blocos, um por volta, com cor indicando desempenho</li>
+    <li>Halo (brilho ao redor da tela) trocando de cor em recorde do stint ou recorde absoluto</li>
+    <li>Botão ENCERRAR pequeno num canto (intencionalmente difícil de tocar acidentalmente)</li>
+  </ul>
+
+  <div class="meta">
+    <div class="meta-item"><div class="lbl">Tamanho</div><div class="val medio">1-2 dias</div></div>
+    <div class="meta-item"><div class="lbl">Dependências</div><div class="val">Nenhuma estrutural</div></div>
+    <div class="meta-item"><div class="lbl">Risco</div><div class="val medio">Médio</div></div>
+    <div class="meta-item"><div class="lbl">Onde mexer</div><div class="val">Tela nova SwiftUI</div></div>
+  </div>
+
+  <h3>Como vai ser testado</h3>
+  <ul class="passos">
+    <li>Pré-visualizações de cada estado (parado / em curva / fim de volta com recorde)</li>
+    <li>Instalar no iPhone físico e testar legibilidade em luz forte</li>
+    <li>Validar tempo de resposta (não pode "travar" durante a corrida)</li>
+  </ul>
+
+  <div class="decisao">
+    <strong>Decisão sua:</strong> A tela do cockpit do piloto vai usar EXATAMENTE o desenho do mockup aprovado de referência (arquivo <code>_design-reference/mockup-cockpit-piloto.html</code>, versão 04 aprovada em 15/05)? Ou tem alguma coisa que você quer ajustar antes?
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Frente 3 — Indicador da fase da curva ao vivo</h2>
+
+<div class="frente">
+  <div class="frente-head">
+    <div class="frente-num">3</div>
+    <div class="frente-titulo">Acender ENTRADA / FREADA / ÁPICE / SAÍDA conforme o carro passa</div>
+  </div>
+
+  <h3>Por que é a peça mais barata</h3>
+  <p>A lógica que decide "o carro está na fase X da curva" JÁ EXISTE no projeto (arquivo <code>FaseCurva.swift</code>) — foi portada do código de referência há semanas. Só não está ligada à tela. Falta apenas plugar a saída dela na tela do cockpit pra acender o bloco certo.</p>
+
+  <h3>Como vai funcionar</h3>
+  <ul class="passos">
+    <li>A cada sinal de GPS que chega (10 vezes por segundo), a função classifica em qual fase da curva o carro está agora</li>
+    <li>Se mudou de fase (por exemplo, passou de FREADA pra ÁPICE), a tela atualiza qual bloco está aceso</li>
+    <li>Quando o carro está numa reta entre curvas, nenhum bloco fica aceso</li>
+  </ul>
+
+  <div class="meta">
+    <div class="meta-item"><div class="lbl">Tamanho</div><div class="val baixo">4 horas</div></div>
+    <div class="meta-item"><div class="lbl">Dependências</div><div class="val">Frente 1 (tela)</div></div>
+    <div class="meta-item"><div class="lbl">Risco</div><div class="val baixo">Baixo</div></div>
+    <div class="meta-item"><div class="lbl">Decisão sua</div><div class="val baixo">Nenhuma</div></div>
+  </div>
+
+  <p class="sub" style="margin-top:8px">Sem decisão pendente — a lógica está pronta e já foi aprovada na data em que foi portada (2026-04-24, regra de análise de ápice).</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Frente 2 — Delta ao vivo (volta fantasma)</h2>
+
+<div class="frente">
+  <div class="frente-head">
+    <div class="frente-num media">2</div>
+    <div class="frente-titulo">Delta ao vivo no centro da tela</div>
+  </div>
+
+  <h3>O que precisa ser feito</h3>
+  <p>O número grande no centro da tela (<code>-0.42s</code> ou <code>+0.27s</code>) é a comparação entre a volta que o piloto está fazendo agora e a melhor volta de referência ("fantasma" — uma trilha de pontos da melhor volta carregada do banco).</p>
+  <ul class="passos">
+    <li>Quando o stint começa, o aplicativo carrega a melhor volta histórica daquele carro + pista do banco — uma sequência de pontos com posição na pista e tempo decorrido em cada ponto</li>
+    <li>Durante o stint, a cada instante, compara onde o carro está agora vs onde ele estava na melhor volta no MESMO ponto da pista</li>
+    <li>A diferença é o delta — verde se está ganhando tempo, vermelho se está perdendo</li>
+    <li>Se ainda não tem uma volta de referência (primeiro dia de pista com aquele carro), mostra um traço "—" e a frase "sem fantasma, fazendo voltas pra criar referência"</li>
+  </ul>
+
+  <div class="meta">
+    <div class="meta-item"><div class="lbl">Tamanho</div><div class="val medio">1 dia</div></div>
+    <div class="meta-item"><div class="lbl">Dependências</div><div class="val">Frente 1 + ter pelo menos 1 volta cronometrada no banco</div></div>
+    <div class="meta-item"><div class="lbl">Risco</div><div class="val medio">Médio</div></div>
+    <div class="meta-item"><div class="lbl">Onde mexer</div><div class="val">Núcleo + tela</div></div>
+  </div>
+
+  <h3>Como vai ser testado</h3>
+  <ul class="passos">
+    <li>Massa de dados sintética: rodar uma volta "fantasma" + uma volta "atual" e verificar se o delta calculado bate com a conta manual</li>
+    <li>Replay do stint de hoje contra ele mesmo (delta deve ficar próximo de zero)</li>
+  </ul>
+
+  <div class="decisao">
+    <strong>Decisão sua:</strong> O fantasma é a melhor volta do MESMO STINT em curso (ataque na vida do dia), a melhor do DIA INTEIRO (ataque ao melhor do dia), ou a melhor de TODA A HISTÓRIA do carro + pista (ataque ao recorde)? Recomendação minha: começar com "melhor do dia" — mais motivador no início, ataca o recorde absoluto depois.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Frente 4 — Barra colorida das voltas</h2>
+
+<div class="frente">
+  <div class="frente-head">
+    <div class="frente-num">4</div>
+    <div class="frente-titulo">Barra de blocos coloridos embaixo da tela</div>
+  </div>
+
+  <h3>O que vai aparecer</h3>
+  <p>Uma fileira de blocos, um por volta completada nesse stint. Cada bloco pintado com uma cor que mostra como foi aquela volta:</p>
+  <ul class="passos">
+    <li><strong style="color:var(--muted)">Cinza neutro</strong> — primeira volta (sem comparativo) ou diferença pequena demais pra cor</li>
+    <li><strong style="color:var(--ok)">Verde</strong> — mais rápida que a volta anterior</li>
+    <li><strong style="color:var(--bad)">Vermelho</strong> — mais lenta que a volta anterior</li>
+    <li><strong style="color:var(--warn)">Laranja</strong> — melhor volta do stint atual (com efeito brilhante)</li>
+    <li><strong style="color:var(--ouro)">Dourado</strong> — recorde absoluto do carro + pista (com efeito ainda mais intenso)</li>
+    <li><strong>Pulsando</strong> — a volta que está acontecendo agora (qualquer cor + animação)</li>
+  </ul>
+
+  <div class="meta">
+    <div class="meta-item"><div class="lbl">Tamanho</div><div class="val baixo">4 horas</div></div>
+    <div class="meta-item"><div class="lbl">Dependências</div><div class="val">Frente 1 (tela)</div></div>
+    <div class="meta-item"><div class="lbl">Risco</div><div class="val baixo">Baixo</div></div>
+    <div class="meta-item"><div class="lbl">Decisão sua</div><div class="val baixo">Nenhuma</div></div>
+  </div>
+
+  <p class="sub" style="margin-top:8px">Sem decisão pendente — as 5 cores e regras já estão definidas no desenho aprovado.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Frente 7 — Paisagem forçada + bloqueio de rotação + medir aquecimento</h2>
+
+<div class="frente">
+  <div class="frente-head">
+    <div class="frente-num">7</div>
+    <div class="frente-titulo">Refinamento físico</div>
+  </div>
+
+  <h3>O que vai mudar</h3>
+  <ul class="passos">
+    <li>Durante o stint, o aplicativo trava em orientação paisagem — não importa como o celular está apoiado, a tela fica deitada (do jeito do desenho)</li>
+    <li>Bloqueia rotação automática — a tela não vira sozinha durante a volta</li>
+    <li>Monitora temperatura interna do iPhone — se passar de um limite, reduz brilho automaticamente e mostra um aviso discreto pro piloto saber que está esquentando</li>
+  </ul>
+
+  <h3>Por que deixei pra depois</h3>
+  <p>Aquecimento é difícil de prever sem medir na pista real. Faz mais sentido validar primeiro o cockpit funcionando, e DEPOIS otimizar o que esquentar. A madrugada de hoje já mostrou que o iPhone desliga em 17 minutos sem câmera no estado atual — a medição real precisa acontecer com o cockpit completo rodando.</p>
+
+  <div class="meta">
+    <div class="meta-item"><div class="lbl">Tamanho</div><div class="val baixo">2 horas + medição</div></div>
+    <div class="meta-item"><div class="lbl">Dependências</div><div class="val">Frente 1 (tela)</div></div>
+    <div class="meta-item"><div class="lbl">Risco</div><div class="val medio">Médio</div></div>
+    <div class="meta-item"><div class="lbl">Decisão sua</div><div class="val baixo">Nenhuma</div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="sumario-final">
+  <h2>Resumo executivo</h2>
+  <table>
+    <thead><tr><th>#</th><th>Frente</th><th>Tamanho</th><th>Tipo</th><th>Decisão sua</th></tr></thead>
+    <tbody>
+      <tr><td>6</td><td>Recalibrar âncoras de Brasília</td><td>1 h</td><td><span class="pin pin-c"></span> Crítica</td><td>2 pontos âncora</td></tr>
+      <tr><td>5</td><td>Vincular pista ao stint automaticamente</td><td>4 h</td><td><span class="pin pin-c"></span> Crítica</td><td>Bloquear ou avisar quando longe?</td></tr>
+      <tr><td>1</td><td>Tela do cockpit do piloto</td><td>1-2 dias</td><td><span class="pin pin-m"></span> Média</td><td>Usar mockup v04 sem ajuste?</td></tr>
+      <tr><td>3</td><td>Fase da curva ao vivo</td><td>4 h</td><td><span class="pin pin-b"></span> Pequena</td><td>Nenhuma</td></tr>
+      <tr><td>2</td><td>Delta ao vivo (fantasma)</td><td>1 dia</td><td><span class="pin pin-m"></span> Média</td><td>Qual fantasma? (stint / dia / recorde)</td></tr>
+      <tr><td>4</td><td>Barra colorida das voltas</td><td>4 h</td><td><span class="pin pin-b"></span> Pequena</td><td>Nenhuma</td></tr>
+      <tr><td>7</td><td>Paisagem + aquecimento</td><td>2 h + medição</td><td><span class="pin pin-b"></span> Pequena</td><td>Nenhuma</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Total estimado: aproximadamente 4 dias de trabalho efetivo</h3>
+  <p style="margin-top:8px">Distribuído em janelas conforme seu calendário. As frentes pequenas (3, 4, 7) podem ser feitas em qualquer noite depois que as frentes 1 e 2 estiverem prontas.</p>
+
+  <h3>Próximo passo</h3>
+  <p>Pra eu começar, preciso de você apenas duas coisas:</p>
+  <ul class="passos">
+    <li><strong>Frente 6:</strong> Os dois pontos do circuito de Brasília que viram âncoras (latitude + longitude). Sugestão: pode ser hoje à noite mesmo, abrindo o Google Earth e marcando.</li>
+    <li><strong>Decisões das frentes 5, 1, 2:</strong> as 3 perguntas no resumo executivo acima.</li>
+  </ul>
+  <p>Com isso eu sigo a ordem: Frente 6 → Frente 5 → Frente 1 → Frente 3 → Frente 2 → Frente 4 → Frente 7. Cada frente termina com testes + relatório do que mudou antes de eu encostar na próxima.</p>
+</div>
+
+<footer>
+  Plano gerado em 2026-05-24 noite · Ambiente isolado <code>infallible-liskov-7a1b15</code> · Nada será executado sem sua aprovação explícita pra cada frente.
+</footer>
+
+</div>
+</body>
+</html>

@@ -26,14 +26,11 @@
 // padrão das demais listas do Sprint 1A.3.
 
 import SwiftUI
-import PhotosUI
-import UIKit
 import P1FastCore
 
 struct CarroModalView: View {
     @EnvironmentObject private var repo: CarroRepository
     @EnvironmentObject private var pneuRepo: PneuRepository
-    @EnvironmentObject private var manutencaoStore: ManutencaoConsumiveisStore
     let carroId: String
     let initialPneuSheet: Bool
     let onClose: () -> Void
@@ -66,8 +63,6 @@ struct CarroModalView: View {
     @State private var modelo: String = ""
     @State private var categoria: String? = nil
     @State private var corHex: String = CarroPalette.opcoes[1].hex
-    @State private var photoItem: PhotosPickerItem? = nil
-    @State private var fotoCarro: UIImage? = nil
 
     // Setup overrides (14 campos)
     @State private var setup = CarroSetupOverrides.empty
@@ -76,7 +71,6 @@ struct CarroModalView: View {
     @State private var savingError: String?
     @State private var isSaving = false
     @State private var setupAvancadoOpen = false
-    @State private var manutencaoOpen = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -97,19 +91,7 @@ struct CarroModalView: View {
             )
         }
         .preferredColorScheme(.dark)
-        .task {
-            await load()
-            fotoCarro = CarroFoto.carregar(carroId: carroId)
-        }
-        .onChange(of: photoItem) { _, novo in
-            Task {
-                if let novo, let data = try? await novo.loadTransferable(type: Data.self),
-                   let img = UIImage(data: data) {
-                    fotoCarro = img
-                    CarroFoto.salvar(carroId: carroId, imagem: img)
-                }
-            }
-        }
+        .task { await load() }
         .alert(
             "Apagar pneu?",
             isPresented: Binding(
@@ -148,13 +130,6 @@ struct CarroModalView: View {
             SetupAvancadoView(carroId: carroId, onClose: { setupAvancadoOpen = false })
                 .environmentObject(repo)
         }
-        .sheet(isPresented: $manutencaoOpen) {
-            NavigationStack {
-                ManutencaoConsumiveisView(carroId: carroId, onClose: { manutencaoOpen = false })
-            }
-            .environmentObject(manutencaoStore)
-            .environmentObject(repo)
-        }
     }
 
     @ViewBuilder
@@ -177,33 +152,6 @@ struct CarroModalView: View {
                     .padding(.horizontal, Spacing.xs)
             }
         }
-    }
-
-    /// Seção que abre a função Manutenção (consumíveis · modelo
-    /// Checagem ≠ Troca) do carro, em sheet própria.
-    private var sectionManutencao: some View {
-        Button { manutencaoOpen = true } label: {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Manutenção · consumíveis")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Color.text)
-                    Text("Checagem e troca dos 30 itens · pendências e vida das peças")
-                        .font(.system(size: 12))
-                        .foregroundStyle(Color.textMuted)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 0)
-                Text("›")
-                    .font(.system(size: 16, weight: .regular))
-                    .foregroundStyle(Color.textMuted)
-            }
-            .padding(.horizontal, Spacing.md).padding(.vertical, 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).fill(Color.surfaceRaised))
-            .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(Color.border, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
     }
 
     private var header: some View {
@@ -265,36 +213,10 @@ struct CarroModalView: View {
             FormField(label: "Categoria") {
                 CategoriaPicker(selection: $categoria)
             }
-            FormField(label: "Foto do carro", small: "opcional") {
-                HStack(spacing: 12) {
-                    fotoPreview
-                    PhotosPicker(selection: $photoItem, matching: .images) {
-                        Text(fotoCarro == nil ? "Escolher foto" : "Trocar foto")
-                            .font(.system(size: 13, weight: .semibold))
-                            .padding(.horizontal, 14).padding(.vertical, 9)
-                            .foregroundStyle(Color.onAccent)
-                            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.accent))
-                    }
-                    Spacer(minLength: 0)
-                }
+            FormField(label: "Cor") {
+                CorPicker(selection: $corHex)
             }
         }
-    }
-
-    private var fotoPreview: some View {
-        Group {
-            if let img = fotoCarro {
-                Image(uiImage: img).resizable().scaledToFill()
-            } else {
-                ZStack {
-                    Rectangle().fill(Color.surfaceHover)
-                    Image(systemName: "car.fill").font(.system(size: 18)).foregroundStyle(Color.textFaint)
-                }
-            }
-        }
-        .frame(width: 64, height: 48)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.border, lineWidth: 1))
     }
 
     private var sectionPneus: some View {

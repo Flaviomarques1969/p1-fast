@@ -3639,7 +3639,7 @@ func makeTestDB() throws -> DatabaseQueue {
     return q
 }
 
-step("PERSIST-01: makeMemoryQueue + migrations v1..v27 cria 34 tabelas") {
+step("PERSIST-01: makeMemoryQueue + migrations v1..v7 cria 26 tabelas") {
     let q = try DB.makeMemoryQueue()
     let names = try q.read { db in
         try String.fetchAll(db, sql:
@@ -3647,14 +3647,11 @@ step("PERSIST-01: makeMemoryQueue + migrations v1..v27 cria 34 tabelas") {
         )
     }
     // 20 do Postgres + sync_queue + sync_meta (v2) + licoes (v4) + pendencias_template + evento_pendencias (v5)
-    // + telemetry_samples_enriched (v7) + video_streams (v15) + volta_video (v16)
-    // + pessoas (v17) + pessoa_papeis (v18) + manutencoes (v19) = 31
-    // + pecas + pecas_locais + pecas_movimentacoes (v26) = 34
-    try assertEq(names.count, 34, "esperava 34 tabelas")
+    // + telemetry_samples_enriched (v7) = 26
+    try assertEq(names.count, 26, "esperava 26 tabelas")
     for expected in ["times", "carros", "configuracoes", "sessoes", "voltas",
                      "marcos", "retas_especiais", "telemetry_samples",
-                     "telemetry_samples_enriched", "sync_queue", "sync_meta",
-                     "video_streams", "volta_video", "pessoas", "pessoa_papeis"] {
+                     "telemetry_samples_enriched", "sync_queue", "sync_meta"] {
         try assertTrue(names.contains(expected), "tabela \(expected) ausente")
     }
 }
@@ -3877,739 +3874,6 @@ step("PERSIST-16: migrator é idempotente (rodar de novo não falha)") {
         ) ?? 0
     }
     try assertEq(count, 1)
-}
-
-// ─── MS-4.1: extensão sessoes (v14) ──────────────────────────
-
-step("PERSIST-17: v14 adiciona 7 colunas novas em sessoes") {
-    let q = try DB.makeMemoryQueue()
-    let cols = try q.read { db in
-        try Row.fetchAll(db, sql: "PRAGMA table_info(sessoes)").map { $0["name"] as String }
-    }
-    let novas = ["paradas_box", "ia_ligada", "mapa_ghost_ligado",
-                 "licao_id", "cancelado_em", "pilotos_revezamento", "convidado_id"]
-    for col in novas {
-        try assertTrue(cols.contains(col), "sessoes deve ter coluna \(col) após v14")
-    }
-}
-
-step("PERSIST-18: Sessao salva paradas_box e recupera round-trip JSON") {
-    let q = try makeTestDB()
-    var s = Sessao(id: "s-1", timeId: "team-1")
-    s.setParadasBox([
-        ParadaBox(volta: 5, motivo: "trocar pneu"),
-        ParadaBox(volta: 9, motivo: "abastecer")
-    ])
-    try q.write { db in try s.insert(db) }
-
-    let fetched: Sessao = try q.read { db in
-        try Sessao.fetchOne(db, key: "s-1")!
-    }
-    try assertEq(fetched.paradasBox.count, 2)
-    try assertEq(fetched.paradasBox[0].volta, 5)
-    try assertEq(fetched.paradasBox[0].motivo, "trocar pneu")
-    try assertEq(fetched.paradasBox[1].volta, 9)
-    try assertEq(fetched.paradasBox[1].motivo, "abastecer")
-}
-
-step("PERSIST-19: Sessao com paradas vazias retorna lista vazia") {
-    let q = try makeTestDB()
-    var s = Sessao(id: "s-2", timeId: "team-1")
-    try q.write { db in try s.insert(db) }
-    let fetched: Sessao = try q.read { db in try Sessao.fetchOne(db, key: "s-2")! }
-    try assertEq(fetched.paradasBox.count, 0)
-    try assertEq(fetched.paradasBoxJson, "[]")
-}
-
-step("PERSIST-20: Sessao salva pilotos_revezamento (endurance)") {
-    let q = try makeTestDB()
-    var s = Sessao(id: "s-3", timeId: "team-1", voltasPlanejadas: 20)
-    s.setPilotosRevezamento([
-        PilotoTurno(pilotoId: "p-a", voltaInicio: 1, voltaFim: 10),
-        PilotoTurno(pilotoId: "p-b", voltaInicio: 11, voltaFim: 20)
-    ])
-    try q.write { db in try s.insert(db) }
-
-    let fetched: Sessao = try q.read { db in try Sessao.fetchOne(db, key: "s-3")! }
-    let turnos = fetched.pilotosRevezamento
-    try assertTrue(turnos != nil, "pilotosRevezamento não deve ser nil")
-    try assertEq(turnos!.count, 2)
-    try assertEq(turnos![0].pilotoId, "p-a")
-    try assertEq(turnos![0].voltaInicio, 1)
-    try assertEq(turnos![0].voltaFim, 10)
-    try assertEq(turnos![1].pilotoId, "p-b")
-}
-
-step("PERSIST-21: Sessao sem revezamento retorna nil (não endurance)") {
-    let q = try makeTestDB()
-    var s = Sessao(id: "s-4", timeId: "team-1")
-    try q.write { db in try s.insert(db) }
-    let fetched: Sessao = try q.read { db in try Sessao.fetchOne(db, key: "s-4")! }
-    try assertTrue(fetched.pilotosRevezamento == nil)
-}
-
-step("PERSIST-22: flags ia_ligada e mapa_ghost_ligado defaults false") {
-    let q = try makeTestDB()
-    var s = Sessao(id: "s-5", timeId: "team-1")
-    try q.write { db in try s.insert(db) }
-    let fetched: Sessao = try q.read { db in try Sessao.fetchOne(db, key: "s-5")! }
-    try assertEq(fetched.iaLigada, false)
-    try assertEq(fetched.mapaGhostLigado, false)
-}
-
-step("PERSIST-23: cancelamento marca cancelado_em sem deletar (Q24)") {
-    let q = try makeTestDB()
-    var s = Sessao(id: "s-6", timeId: "team-1")
-    try q.write { db in try s.insert(db) }
-
-    // Marca cancelado
-    let agora = DB.nowMs()
-    try q.write { db in
-        try db.execute(sql: "UPDATE sessoes SET cancelado_em = ?, status = 'cancelada' WHERE id = ?",
-                       arguments: [agora, "s-6"])
-    }
-
-    // Row continua existindo
-    let count = try q.read { db in
-        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sessoes WHERE id = 's-6'") ?? 0
-    }
-    try assertEq(count, 1, "stint cancelado NÃO deve ser deletado")
-
-    let fetched: Sessao = try q.read { db in try Sessao.fetchOne(db, key: "s-6")! }
-    try assertEq(fetched.canceladoEm, agora)
-    try assertEq(fetched.status, "cancelada")
-}
-
-// ─── MS-4.2: detecção de endurance (lógica pura) ─────────────
-
-step("END-01: tipo 'Endurance 4h' permite revezamento") {
-    try assertEq(EnduranceDetection.tipoPermiteRevezamento("Endurance 4h"), true)
-}
-
-step("END-02: tipo case-insensitive — 'ENDURANCE 12h' também") {
-    try assertEq(EnduranceDetection.tipoPermiteRevezamento("ENDURANCE 12h"), true)
-    try assertEq(EnduranceDetection.tipoPermiteRevezamento("Endurance Mil Milhas"), true)
-}
-
-step("END-03: 'Track Day Planal' NÃO permite revezamento") {
-    try assertEq(EnduranceDetection.tipoPermiteRevezamento("Track Day Planal"), false)
-    try assertEq(EnduranceDetection.tipoPermiteRevezamento("Treino livre"), false)
-}
-
-step("END-04: nil e vazio retornam false") {
-    try assertEq(EnduranceDetection.tipoPermiteRevezamento(nil), false)
-    try assertEq(EnduranceDetection.tipoPermiteRevezamento(""), false)
-}
-
-// ─── MS-4.6: permissões de edição (lógica pura) ──────────────
-
-step("PERM-01: admin do time pode editar qualquer stint") {
-    let ok = StintEditPermission.podeEditar(
-        currentUserId: "outro-user",
-        currentRole: "admin",
-        pilotoId: "piloto-x",
-        pilotosRevezamento: nil
-    )
-    try assertTrue(ok, "admin deve poder editar mesmo não sendo piloto")
-}
-
-step("PERM-02: chefe_equipe pode editar qualquer stint") {
-    let ok = StintEditPermission.podeEditar(
-        currentUserId: "outro-user",
-        currentRole: "chefe_equipe",
-        pilotoId: "piloto-x",
-        pilotosRevezamento: nil
-    )
-    try assertTrue(ok, "chefe_equipe deve poder editar")
-}
-
-step("PERM-03: membro comum NÃO pode editar stint de outro piloto") {
-    let ok = StintEditPermission.podeEditar(
-        currentUserId: "membro-y",
-        currentRole: "membro",
-        pilotoId: "piloto-x",
-        pilotosRevezamento: nil
-    )
-    try assertEq(ok, false)
-}
-
-step("PERM-04: piloto principal pode editar próprio stint") {
-    let ok = StintEditPermission.podeEditar(
-        currentUserId: "piloto-x",
-        currentRole: "membro",
-        pilotoId: "piloto-x",
-        pilotosRevezamento: nil
-    )
-    try assertTrue(ok)
-}
-
-step("PERM-05: piloto em revezamento (endurance) pode editar") {
-    let ok = StintEditPermission.podeEditar(
-        currentUserId: "piloto-b",
-        currentRole: "membro",
-        pilotoId: "piloto-a",  // principal é A
-        pilotosRevezamento: [
-            PilotoTurno(pilotoId: "piloto-a", voltaInicio: 1, voltaFim: 10),
-            PilotoTurno(pilotoId: "piloto-b", voltaInicio: 11, voltaFim: 20)
-        ]
-    )
-    try assertTrue(ok, "piloto B em revezamento deve poder editar")
-}
-
-step("PERM-06: nil/vazio retornam false") {
-    let ok = StintEditPermission.podeEditar(
-        currentUserId: nil,
-        currentRole: nil,
-        pilotoId: "piloto-x",
-        pilotosRevezamento: nil
-    )
-    try assertEq(ok, false)
-}
-
-// ─── MS-11.1: tabela video_streams + token público ───────────
-
-step("VID-01: v15 cria tabela video_streams") {
-    let q = try DB.makeMemoryQueue()
-    let exists = try q.read { db in
-        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='video_streams'") ?? 0
-    }
-    try assertEq(exists, 1, "esperava tabela video_streams existir")
-}
-
-step("VID-02: v15 adiciona link_publico_video_token em eventos") {
-    let q = try DB.makeMemoryQueue()
-    let cols = try q.read { db in
-        try Row.fetchAll(db, sql: "PRAGMA table_info(eventos)").map { $0["name"] as String }
-    }
-    try assertTrue(cols.contains("link_publico_video_token"))
-}
-
-step("VID-03: VideoStream round-trip GRDB") {
-    let q = try makeTestDB()
-    try q.write { db in
-        var ev = Evento(id: "ev-vid-1", timeId: "team-1", dataEvento: DB.nowMs())
-        try ev.insert(db)
-        var s = Sessao(id: "ses-vid-1", timeId: "team-1", eventoId: "ev-vid-1")
-        try s.insert(db)
-    }
-    let now = DB.nowMs()
-    var vs = VideoStream(
-        id: "vid-1", timeId: "team-1", sessaoId: "ses-vid-1",
-        dailyRoomUrl: "https://p1fast.daily.co/abc", dailyRoomName: "abc",
-        status: VideoStreamStatus.aoVivo.rawValue,
-        startedAt: now, bateriaInicio: 87
-    )
-    try q.write { db in try vs.insert(db) }
-    let fetched: VideoStream = try q.read { db in try VideoStream.fetchOne(db, key: "vid-1")! }
-    try assertEq(fetched.dailyRoomUrl, "https://p1fast.daily.co/abc")
-    try assertEq(fetched.status, "ao_vivo")
-    try assertEq(fetched.bateriaInicio, 87)
-}
-
-step("VID-04: unique index — 1 stream por sessao") {
-    let q = try makeTestDB()
-    try q.write { db in
-        var ev = Evento(id: "ev-vid-2", timeId: "team-1", dataEvento: DB.nowMs())
-        try ev.insert(db)
-        var s = Sessao(id: "ses-vid-2", timeId: "team-1", eventoId: "ev-vid-2")
-        try s.insert(db)
-    }
-    var vs1 = VideoStream(id: "vid-2a", timeId: "team-1", sessaoId: "ses-vid-2",
-                          dailyRoomUrl: "u1", dailyRoomName: "n1")
-    try q.write { db in try vs1.insert(db) }
-
-    var vs2 = VideoStream(id: "vid-2b", timeId: "team-1", sessaoId: "ses-vid-2",
-                          dailyRoomUrl: "u2", dailyRoomName: "n2")
-    var caiu = false
-    do { try q.write { db in try vs2.insert(db) } } catch { caiu = true }
-    try assertTrue(caiu, "deve falhar — só 1 stream por sessao")
-}
-
-step("VID-05: hasSinalRecente — dentro/fora threshold") {
-    let now: Int64 = 1_000_000
-    let vsR = VideoStream(id: "v", timeId: "t", sessaoId: "s",
-                          dailyRoomUrl: "u", dailyRoomName: "n",
-                          ultimaHeartbeat: now - 3000)
-    try assertTrue(vsR.hasSinalRecente(now: now, thresholdMs: 10_000))
-    let vsA = VideoStream(id: "v2", timeId: "t", sessaoId: "s",
-                          dailyRoomUrl: "u", dailyRoomName: "n",
-                          ultimaHeartbeat: now - 15_000)
-    try assertEq(vsA.hasSinalRecente(now: now, thresholdMs: 10_000), false)
-    let vsN = VideoStream(id: "v3", timeId: "t", sessaoId: "s",
-                          dailyRoomUrl: "u", dailyRoomName: "n",
-                          ultimaHeartbeat: nil)
-    try assertEq(vsN.hasSinalRecente(now: now), false)
-}
-
-step("VID-06: status canônico — todos os 5 valores aceitos") {
-    let q = try makeTestDB()
-    try q.write { db in
-        var ev = Evento(id: "ev-vid-3", timeId: "team-1", dataEvento: DB.nowMs())
-        try ev.insert(db)
-    }
-    for (i, status) in ["iniciando","ao_vivo","sem_sinal","encerrado","falha"].enumerated() {
-        try q.write { db in
-            var s = Sessao(id: "ses-vid-3-\(i)", timeId: "team-1", eventoId: "ev-vid-3")
-            try s.insert(db)
-            var vs = VideoStream(id: "vid-3-\(i)", timeId: "team-1", sessaoId: "ses-vid-3-\(i)",
-                                 dailyRoomUrl: "u", dailyRoomName: "n", status: status)
-            try vs.insert(db)
-        }
-    }
-}
-
-step("VID-07: status fora do enum é rejeitado pelo CHECK") {
-    let q = try makeTestDB()
-    try q.write { db in
-        var ev = Evento(id: "ev-vid-4", timeId: "team-1", dataEvento: DB.nowMs())
-        try ev.insert(db)
-        var s = Sessao(id: "ses-vid-4", timeId: "team-1", eventoId: "ev-vid-4")
-        try s.insert(db)
-    }
-    var vsRuim = VideoStream(id: "vid-4", timeId: "team-1", sessaoId: "ses-vid-4",
-                              dailyRoomUrl: "u", dailyRoomName: "n", status: "rodando")
-    var caiu = false
-    do { try q.write { db in try vsRuim.insert(db) } } catch { caiu = true }
-    try assertTrue(caiu, "status 'rodando' deve ser rejeitado pelo CHECK")
-}
-
-// ─── F4.2: tabela volta_video + Model VoltaVideo ─────────────
-
-/// Helper: cria evento + sessao + stream + volta canônicos pros testes VV-*.
-/// Retorna (sessaoId, streamId, voltaId) prontos pra usar.
-func seedStreamWithVolta(_ q: DatabaseQueue, suffix: String) throws -> (String, String, String) {
-    let sessaoId = "ses-vv-\(suffix)"
-    let streamId = "vid-vv-\(suffix)"
-    let voltaId = "volta-vv-\(suffix)"
-    try q.write { db in
-        let ev = Evento(id: "ev-vv-\(suffix)", timeId: "team-1", dataEvento: DB.nowMs())
-        try ev.insert(db)
-        let s = Sessao(id: sessaoId, timeId: "team-1", eventoId: "ev-vv-\(suffix)")
-        try s.insert(db)
-        let vs = VideoStream(id: streamId, timeId: "team-1", sessaoId: sessaoId,
-                             dailyRoomUrl: "u", dailyRoomName: "n",
-                             status: VideoStreamStatus.aoVivo.rawValue)
-        try vs.insert(db)
-        let lap = Volta(id: voltaId, timeId: "team-1", sessaoId: sessaoId, numero: 1, tempoMs: 95_000)
-        try lap.insert(db)
-    }
-    return (sessaoId, streamId, voltaId)
-}
-
-step("VV-01: v16 cria tabela volta_video") {
-    let q = try makeTestDB()
-    let exists = try q.read { db in
-        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='volta_video'") ?? 0
-    }
-    try assertEq(exists, 1, "esperava tabela volta_video existir")
-}
-
-step("VV-02: VoltaVideo round-trip GRDB") {
-    let q = try makeTestDB()
-    let (_, streamId, voltaId) = try seedStreamWithVolta(q, suffix: "rt")
-    var row = VoltaVideo(id: "vv-1", timeId: "team-1",
-                         videoStreamId: streamId, voltaId: voltaId,
-                         tInicioMs: 0, tFimMs: 95_000)
-    try q.write { db in try row.insert(db) }
-    let fetched: VoltaVideo = try q.read { db in try VoltaVideo.fetchOne(db, key: "vv-1")! }
-    try assertEq(fetched.tInicioMs, 0)
-    try assertEq(fetched.tFimMs, 95_000)
-    try assertEq(fetched.triagemStatus, TriagemStatus.pendente.rawValue, "default triagem = pendente")
-    try assertEq(fetched.duracaoMs, 95_000)
-}
-
-step("VV-03: UNIQUE volta_id — 1 row por volta") {
-    let q = try makeTestDB()
-    let (_, streamId, voltaId) = try seedStreamWithVolta(q, suffix: "unique")
-    var a = VoltaVideo(id: "vv-a", timeId: "team-1",
-                      videoStreamId: streamId, voltaId: voltaId,
-                      tInicioMs: 0, tFimMs: 95_000)
-    try q.write { db in try a.insert(db) }
-    var b = VoltaVideo(id: "vv-b", timeId: "team-1",
-                      videoStreamId: streamId, voltaId: voltaId,
-                      tInicioMs: 0, tFimMs: 95_000)
-    var caiu = false
-    do { try q.write { db in try b.insert(db) } } catch { caiu = true }
-    try assertTrue(caiu, "duplicar volta_id deve ser rejeitado pelo UNIQUE")
-}
-
-step("VV-04: CHECK t_fim_ms > t_inicio_ms rejeita inválidos") {
-    let q = try makeTestDB()
-    let (_, streamId, voltaId) = try seedStreamWithVolta(q, suffix: "check")
-    var row = VoltaVideo(id: "vv-bad", timeId: "team-1",
-                        videoStreamId: streamId, voltaId: voltaId,
-                        tInicioMs: 5_000, tFimMs: 5_000)
-    var caiu = false
-    do { try q.write { db in try row.insert(db) } } catch { caiu = true }
-    try assertTrue(caiu, "t_fim_ms == t_inicio_ms deve ser rejeitado pelo CHECK")
-}
-
-step("VV-05: triagem_status fora do enum é rejeitado") {
-    let q = try makeTestDB()
-    let (_, streamId, voltaId) = try seedStreamWithVolta(q, suffix: "status")
-    var ruim = VoltaVideo(id: "vv-ruim", timeId: "team-1",
-                         videoStreamId: streamId, voltaId: voltaId,
-                         tInicioMs: 0, tFimMs: 1_000,
-                         triagemStatus: "talvez")
-    var caiu = false
-    do { try q.write { db in try ruim.insert(db) } } catch { caiu = true }
-    try assertTrue(caiu, "triagem_status 'talvez' deve ser rejeitado pelo CHECK")
-}
-
-step("VV-06: TriagemStatus helper expõe enum-safe + precisaTriagem") {
-    var pendente = VoltaVideo(id: "p", timeId: "t",
-                              videoStreamId: "s", voltaId: "v",
-                              tInicioMs: 0, tFimMs: 1_000)
-    try assertEq(pendente.status, TriagemStatus.pendente)
-    try assertTrue(pendente.precisaTriagem, "pendente deve precisar triagem")
-
-    var mantida = VoltaVideo(id: "m", timeId: "t",
-                             videoStreamId: "s", voltaId: "v",
-                             tInicioMs: 0, tFimMs: 1_000,
-                             triagemStatus: TriagemStatus.mantida.rawValue)
-    try assertEq(mantida.status, TriagemStatus.mantida)
-    try assertTrue(!mantida.precisaTriagem, "mantida não precisa triagem")
-
-    var descartada = VoltaVideo(id: "d", timeId: "t",
-                                videoStreamId: "s", voltaId: "v",
-                                tInicioMs: 0, tFimMs: 1_000,
-                                triagemStatus: TriagemStatus.descartada.rawValue)
-    try assertEq(descartada.status, TriagemStatus.descartada)
-    try assertTrue(!descartada.precisaTriagem, "descartada não precisa triagem")
-}
-
-step("VV-07: status raw inválido cai pra .pendente no enum helper") {
-    var corrompido = VoltaVideo(id: "x", timeId: "t",
-                                videoStreamId: "s", voltaId: "v",
-                                tInicioMs: 0, tFimMs: 1_000,
-                                triagemStatus: "??")
-    // helper retorna .pendente quando rawValue não bate (paranoia)
-    try assertEq(corrompido.status, TriagemStatus.pendente)
-}
-
-step("VV-08: cascade delete — stream removido apaga voltas indexadas") {
-    let q = try makeTestDB()
-    let (_, streamId, voltaId) = try seedStreamWithVolta(q, suffix: "cascade")
-    var row = VoltaVideo(id: "vv-cas", timeId: "team-1",
-                       videoStreamId: streamId, voltaId: voltaId,
-                       tInicioMs: 0, tFimMs: 1_000)
-    try q.write { db in try row.insert(db) }
-    try q.write { db in
-        try db.execute(sql: "DELETE FROM video_streams WHERE id = ?", arguments: [streamId])
-    }
-    let restante = try q.read { db in
-        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM volta_video WHERE id = ?", arguments: ["vv-cas"]) ?? -1
-    }
-    try assertEq(restante, 0, "delete cascade não removeu volta_video")
-}
-
-// ─── F4.3: VoltaVideoOffsetCalculator (lógica pura do indexador) ────
-
-step("VVO-01: caso comum — volta de 1m38s 30s depois do start do stream") {
-    let (ini, fim) = VoltaVideoOffsetCalculator.compute(
-        streamStartedAtMs: 1_000_000,
-        evInicioAtMs: 1_030_000,
-        evFimAtMs: 1_128_000
-    )
-    try assertEq(ini, 30_000, "tInicioMs = 30s depois do start")
-    try assertEq(fim, 128_000, "tFimMs = 128s depois do start")
-}
-
-step("VVO-02: evento começou antes do stream → clamp em 0") {
-    let (ini, fim) = VoltaVideoOffsetCalculator.compute(
-        streamStartedAtMs: 1_000_000,
-        evInicioAtMs: 999_500,
-        evFimAtMs: 1_002_000
-    )
-    try assertEq(ini, 0, "tInicioMs deve ser clampado em 0")
-    try assertTrue(fim > ini, "tFimMs precisa ser maior que tInicioMs")
-}
-
-step("VVO-03: fimAt == inicioAt → tFimMs = tInicioMs + 1 (CHECK do banco)") {
-    let (ini, fim) = VoltaVideoOffsetCalculator.compute(
-        streamStartedAtMs: 1_000_000,
-        evInicioAtMs: 1_050_000,
-        evFimAtMs: 1_050_000
-    )
-    try assertEq(ini, 50_000)
-    try assertEq(fim, 50_001, "tFimMs deve ser pelo menos 1 ms maior que tInicioMs")
-}
-
-step("VVO-04: fimAt < inicioAt (ruído de relógio) → tFimMs = tInicioMs + 1") {
-    let (ini, fim) = VoltaVideoOffsetCalculator.compute(
-        streamStartedAtMs: 1_000_000,
-        evInicioAtMs: 1_050_000,
-        evFimAtMs: 1_049_500
-    )
-    try assertEq(ini, 50_000)
-    try assertEq(fim, 50_001, "tFimMs deve ser ajustado pra ficar acima de tInicioMs")
-}
-
-step("VVO-05: timestamps grandes (sessão longa) sem overflow") {
-    // Stream de 8 horas — 8h = 28_800_000 ms. Garante que Int absorve.
-    let (ini, fim) = VoltaVideoOffsetCalculator.compute(
-        streamStartedAtMs: 1_777_000_000_000,
-        evInicioAtMs: 1_777_000_028_700_000,
-        evFimAtMs: 1_777_000_028_798_000
-    )
-    try assertTrue(ini > 28_000_000_000, "tInicioMs deve sobreviver a stream de horas")
-    try assertTrue(fim > ini, "tFimMs > tInicioMs ainda válido")
-}
-
-// ─── F4.5: TriagemPolicy (lógica pura de bloqueio do próximo stint) ───
-
-/// Helper pra construir Date com offset em ms desde Unix epoch.
-func dateFromEpochMs(_ ms: Int64) -> Date {
-    Date(timeIntervalSince1970: Double(ms) / 1000.0)
-}
-
-step("TP-01: lista vazia → .ok") {
-    let r = TriagemPolicy.avaliar(pendentes: [], hoje: Date())
-    try assertEq(r, .ok)
-}
-
-step("TP-02: stint pendente do mesmo dia → bloqueado com afetados") {
-    // hoje fixo: 2026-05-12 14:00 (timezone do device)
-    let calendar = Calendar(identifier: .gregorian)
-    var comps = DateComponents(year: 2026, month: 5, day: 12, hour: 14, minute: 0)
-    let hoje = calendar.date(from: comps)!
-    // stint criado hoje cedo (10:00 do mesmo dia)
-    comps.hour = 10
-    let criadoEm = calendar.date(from: comps)!
-    let stint = StintComPendentes(stintId: "s1",
-                                   criadoEmMs: Int64(criadoEm.timeIntervalSince1970 * 1000),
-                                   voltasPendentes: 3)
-    let r = TriagemPolicy.avaliar(pendentes: [stint], hoje: hoje, calendar: calendar)
-    switch r {
-    case .ok:
-        try assertTrue(false, "esperava bloqueado")
-    case .bloqueado(_, let afetados, let auto):
-        try assertEq(afetados.count, 1, "stint do mesmo dia entra em afetados")
-        try assertEq(auto.count, 0, "nenhum stint pra auto-descartar")
-        try assertEq(afetados[0].voltasPendentes, 3)
-    }
-}
-
-step("TP-03: stint pendente do dia anterior → bloqueado vazio + autoDescartar") {
-    let calendar = Calendar(identifier: .gregorian)
-    var comps = DateComponents(year: 2026, month: 5, day: 12, hour: 14, minute: 0)
-    let hoje = calendar.date(from: comps)!
-    // stint criado ontem (2026-05-11 20:00)
-    comps.day = 11
-    comps.hour = 20
-    let ontem = calendar.date(from: comps)!
-    let stint = StintComPendentes(stintId: "s2",
-                                   criadoEmMs: Int64(ontem.timeIntervalSince1970 * 1000),
-                                   voltasPendentes: 5)
-    let r = TriagemPolicy.avaliar(pendentes: [stint], hoje: hoje, calendar: calendar)
-    switch r {
-    case .ok:
-        try assertTrue(false, "esperava bloqueado (auto-descarte fica nele)")
-    case .bloqueado(_, let afetados, let auto):
-        try assertEq(afetados.count, 0, "stint de ontem não vai pra afetados")
-        try assertEq(auto.count, 1, "stint de ontem vai pra autoDescartar")
-        try assertEq(auto[0].stintId, "s2")
-    }
-}
-
-step("TP-04: mix — 1 stint hoje + 1 ontem → ambas listas populadas") {
-    let calendar = Calendar(identifier: .gregorian)
-    var comps = DateComponents(year: 2026, month: 5, day: 12, hour: 14, minute: 0)
-    let hoje = calendar.date(from: comps)!
-    comps.hour = 11
-    let hojeCedo = calendar.date(from: comps)!
-    comps.day = 11
-    comps.hour = 20
-    let ontem = calendar.date(from: comps)!
-
-    let stintHoje = StintComPendentes(stintId: "s-hoje",
-                                       criadoEmMs: Int64(hojeCedo.timeIntervalSince1970 * 1000),
-                                       voltasPendentes: 2)
-    let stintOntem = StintComPendentes(stintId: "s-ontem",
-                                        criadoEmMs: Int64(ontem.timeIntervalSince1970 * 1000),
-                                        voltasPendentes: 4)
-    let r = TriagemPolicy.avaliar(pendentes: [stintHoje, stintOntem], hoje: hoje, calendar: calendar)
-    switch r {
-    case .ok:
-        try assertTrue(false, "esperava bloqueado")
-    case .bloqueado(_, let afetados, let auto):
-        try assertEq(afetados.count, 1, "apenas o de hoje em afetados")
-        try assertEq(afetados[0].stintId, "s-hoje")
-        try assertEq(auto.count, 1, "apenas o de ontem em autoDescartar")
-        try assertEq(auto[0].stintId, "s-ontem")
-    }
-}
-
-step("TP-05: bloqueio total de voltas no texto da razão") {
-    let calendar = Calendar(identifier: .gregorian)
-    var comps = DateComponents(year: 2026, month: 5, day: 12, hour: 14, minute: 0)
-    let hoje = calendar.date(from: comps)!
-    comps.hour = 10
-    let inicio = calendar.date(from: comps)!
-
-    let s1 = StintComPendentes(stintId: "a", criadoEmMs: Int64(inicio.timeIntervalSince1970 * 1000), voltasPendentes: 3)
-    let s2 = StintComPendentes(stintId: "b", criadoEmMs: Int64(inicio.timeIntervalSince1970 * 1000), voltasPendentes: 5)
-    let r = TriagemPolicy.avaliar(pendentes: [s1, s2], hoje: hoje, calendar: calendar)
-    switch r {
-    case .bloqueado(let razao, _, _):
-        try assertTrue(razao.contains("2"), "razão deve mencionar 2 stints — texto: \(razao)")
-        try assertTrue(razao.contains("8 volta"), "razão deve mencionar 8 voltas total — texto: \(razao)")
-    case .ok:
-        try assertTrue(false, "esperava bloqueado")
-    }
-}
-
-// ─── F4.6: TriagemPermissao (piloto + chefe + admin) ─────────
-
-step("PER-01: admin sempre pode triar") {
-    let admin = UsuarioContexto(userId: "user-admin", isAdmin: true, isChefeEquipe: false)
-    try assertTrue(TriagemPermissao.podeTriar(usuario: admin, pilotoUserIdDaSessao: nil))
-    try assertTrue(TriagemPermissao.podeTriar(usuario: admin, pilotoUserIdDaSessao: "outro-user"))
-}
-
-step("PER-02: chefe da equipe sempre pode triar") {
-    let chefe = UsuarioContexto(userId: "user-chefe", isAdmin: false, isChefeEquipe: true)
-    try assertTrue(TriagemPermissao.podeTriar(usuario: chefe, pilotoUserIdDaSessao: nil))
-    try assertTrue(TriagemPermissao.podeTriar(usuario: chefe, pilotoUserIdDaSessao: "outro-user"))
-}
-
-step("PER-03: piloto da sessão pode triar suas próprias voltas") {
-    let piloto = UsuarioContexto(userId: "user-piloto-x", isAdmin: false, isChefeEquipe: false)
-    try assertTrue(TriagemPermissao.podeTriar(usuario: piloto, pilotoUserIdDaSessao: "user-piloto-x"))
-}
-
-step("PER-04: piloto NÃO pode triar voltas de outro piloto") {
-    let piloto = UsuarioContexto(userId: "user-piloto-x", isAdmin: false, isChefeEquipe: false)
-    try assertTrue(!TriagemPermissao.podeTriar(usuario: piloto, pilotoUserIdDaSessao: "user-piloto-y"))
-    let razao = TriagemPermissao.razaoBloqueio(usuario: piloto, pilotoUserIdDaSessao: "user-piloto-y")
-    try assertTrue(razao != nil && razao!.contains("piloto"), "razão deve mencionar piloto")
-}
-
-step("PER-05: usuário sem login NÃO pode triar") {
-    let semLogin = UsuarioContexto(userId: nil, isAdmin: false, isChefeEquipe: false)
-    try assertTrue(!TriagemPermissao.podeTriar(usuario: semLogin, pilotoUserIdDaSessao: "user-x"))
-    let razao = TriagemPermissao.razaoBloqueio(usuario: semLogin, pilotoUserIdDaSessao: "user-x")
-    try assertTrue(razao != nil && razao!.lowercased().contains("login"))
-}
-
-step("PER-06: piloto da sessão sem conta vinculada → só admin/chefe pode") {
-    let piloto = UsuarioContexto(userId: "user-x", isAdmin: false, isChefeEquipe: false)
-    try assertTrue(!TriagemPermissao.podeTriar(usuario: piloto, pilotoUserIdDaSessao: nil))
-    let admin = UsuarioContexto(userId: "user-y", isAdmin: true, isChefeEquipe: false)
-    try assertTrue(TriagemPermissao.podeTriar(usuario: admin, pilotoUserIdDaSessao: nil))
-}
-
-// ─── F1 Fase A: pessoas + pessoa_papeis ──────────────────────
-
-step("PSS-01: v17 cria tabela pessoas") {
-    let q = try makeTestDB()
-    let exists = try q.read { db in
-        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='pessoas'") ?? 0
-    }
-    try assertEq(exists, 1, "esperava tabela pessoas existir")
-}
-
-step("PSS-02: v18 cria tabela pessoa_papeis") {
-    let q = try makeTestDB()
-    let exists = try q.read { db in
-        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='pessoa_papeis'") ?? 0
-    }
-    try assertEq(exists, 1, "esperava tabela pessoa_papeis existir")
-}
-
-step("PSS-03: Pessoa round-trip GRDB") {
-    let q = try makeTestDB()
-    let row = Pessoa(id: "p-1", timeId: "team-1", nome: "Flávio",
-                     alturaCm: 175, pesoKg: 78.5, nascimento: 1_265_673_600_000)
-    try q.write { db in try row.insert(db) }
-    let fetched: Pessoa = try q.read { db in try Pessoa.fetchOne(db, key: "p-1")! }
-    try assertEq(fetched.nome, "Flávio")
-    try assertEq(fetched.alturaCm, 175)
-    try assertEq(fetched.pesoKg, 78.5)
-}
-
-step("PSS-04: CHECK nome não-vazio rejeita string em branco") {
-    let q = try makeTestDB()
-    var ruim = Pessoa(id: "p-bad", timeId: "team-1", nome: "   ")
-    var caiu = false
-    do { try q.write { db in try ruim.insert(db) } } catch { caiu = true }
-    try assertTrue(caiu, "nome em branco deve ser rejeitado pelo CHECK")
-}
-
-step("PSS-05: CHECK altura_cm fora do range rejeita") {
-    let q = try makeTestDB()
-    var ruim = Pessoa(id: "p-h", timeId: "team-1", nome: "Alto", alturaCm: 300)
-    var caiu = false
-    do { try q.write { db in try ruim.insert(db) } } catch { caiu = true }
-    try assertTrue(caiu, "altura_cm=300 deve ser rejeitado (max 250)")
-}
-
-step("PSS-06: PessoaPapel — 1 pessoa pode ter múltiplos papéis") {
-    let q = try makeTestDB()
-    let p = Pessoa(id: "p-multi", timeId: "team-1", nome: "Multi")
-    try q.write { db in try p.insert(db) }
-    let papel1 = PessoaPapel(pessoaId: "p-multi", papel: .piloto)
-    let papel2 = PessoaPapel(pessoaId: "p-multi", papel: .engenheiro)
-    let papel3 = PessoaPapel(pessoaId: "p-multi", papel: .chefeEquipe)
-    try q.write { db in
-        try papel1.insert(db)
-        try papel2.insert(db)
-        try papel3.insert(db)
-    }
-    let count = try q.read { db in
-        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM pessoa_papeis WHERE pessoa_id = ?", arguments: ["p-multi"]) ?? 0
-    }
-    try assertEq(count, 3, "esperava 3 papéis pra mesma pessoa")
-}
-
-step("PSS-07: PK composta rejeita duplicar (pessoa, papel)") {
-    let q = try makeTestDB()
-    let p = Pessoa(id: "p-dup", timeId: "team-1", nome: "Dup")
-    try q.write { db in try p.insert(db) }
-    let papel1 = PessoaPapel(pessoaId: "p-dup", papel: .piloto)
-    try q.write { db in try papel1.insert(db) }
-    let papel2 = PessoaPapel(pessoaId: "p-dup", papel: .piloto)
-    var caiu = false
-    do { try q.write { db in try papel2.insert(db) } } catch { caiu = true }
-    try assertTrue(caiu, "duplicar (pessoa, papel) deve ser rejeitado pela PK composta")
-}
-
-step("PSS-08: CHECK papel fora do enum rejeita") {
-    let q = try makeTestDB()
-    let p = Pessoa(id: "p-bad-papel", timeId: "team-1", nome: "BadPapel")
-    try q.write { db in try p.insert(db) }
-    var caiu = false
-    do {
-        try q.write { db in
-            try db.execute(sql: "INSERT INTO pessoa_papeis (pessoa_id, papel, created_at) VALUES (?, ?, ?)",
-                           arguments: ["p-bad-papel", "presidente", DB.nowMs()])
-        }
-    } catch { caiu = true }
-    try assertTrue(caiu, "papel 'presidente' deve ser rejeitado pelo CHECK")
-}
-
-step("PSS-09: cascade delete — apagar pessoa apaga papéis") {
-    let q = try makeTestDB()
-    let p = Pessoa(id: "p-cas", timeId: "team-1", nome: "Cas")
-    try q.write { db in try p.insert(db) }
-    let papel = PessoaPapel(pessoaId: "p-cas", papel: .piloto)
-    try q.write { db in try papel.insert(db) }
-    try q.write { db in
-        try db.execute(sql: "DELETE FROM pessoas WHERE id = ?", arguments: ["p-cas"])
-    }
-    let count = try q.read { db in
-        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM pessoa_papeis WHERE pessoa_id = ?", arguments: ["p-cas"]) ?? -1
-    }
-    try assertEq(count, 0, "cascade delete deve ter removido o papel")
-}
-
-step("PSS-10: PapelPessoa.legivel cobre todos os 7 casos") {
-    for papel in PapelPessoa.allCases {
-        let l = papel.legivel
-        try assertTrue(!l.isEmpty, "legivel vazio pra \(papel.rawValue)")
-    }
-    try assertEq(PapelPessoa.allCases.count, 7, "esperava 7 papéis canônicos")
-    try assertEq(PapelPessoa.chefeEquipe.rawValue, "chefe_equipe", "rawValue deve ser snake_case do banco")
 }
 
 // ─── DRAINER (Sprint 1A.6 sub-prompt B) ──────────────────────
@@ -6980,6 +6244,208 @@ step("SE-06: velEntrada e velSaida ambos nil → velocidadeMax nil; vminKmh nil 
 }
 
 // ════════════════════════════════════════════════════════════
+// SE6-01..06 — Comando GO 2026-05-24: 6 indicadores por trecho
+// ════════════════════════════════════════════════════════════
+// Cobre o mapper estendido (vChegada, vEntrada, vFreada, vPace,
+// vSaidaPico) + os 2 tempos auxiliares + o pareamento com o
+// DetectorSegmentPostBurstEvent.
+
+func se6Event(
+    vChegada: Double? = nil,
+    velEntrada: Double? = nil,
+    vFreada: Double? = nil,
+    velMinima: Double? = nil,
+    velSaida: Double? = nil,
+    tFreada: Double? = nil,
+    apexT: Double? = nil,
+    tempoFreadaApiceMs: Double? = nil,
+    tempoApiceSaidaMs: Double? = nil,
+    segmentId: String = "seg-A",
+    lapNumero: Int? = 1
+) -> DetectorSegmentEndEvent {
+    DetectorSegmentEndEvent(
+        segmentId: segmentId,
+        lapNumero: lapNumero,
+        entradaAt: 0, saidaAt: 1000, tempoMs: 1000,
+        velEntrada: velEntrada,
+        velMinima: velMinima,
+        velSaida: velSaida,
+        pontoFrenagem: vFreada.map { DetectorBrakingPoint(offset: 0, t: tFreada ?? 0, velPre: $0) },
+        apexT: apexT, apexOffset: nil, apexActual: nil,
+        vChegada: vChegada,
+        vFreada: vFreada,
+        tFreada: tFreada,
+        tempoFreadaApiceMs: tempoFreadaApiceMs,
+        tempoApiceSaidaMs: tempoApiceSaidaMs
+    )
+}
+
+step("SE6-01: vChegadaKmh, vEntradaKmh, vFreadaKmh, vPaceKmh em km/h (m/s * 3.6)") {
+    let ev = se6Event(
+        vChegada: 43.3,    // 155.88 km/h
+        velEntrada: 38.0,  // 136.80
+        vFreada: 42.5,     // 153.00
+        velSaida: 29.7     // 106.92
+    )
+    let row = SegmentExecutionMapper.fromEvent(ev, timeId: "t", sessaoId: "s", voltaId: "v")
+    try assertClose(row.vChegadaKmh ?? .nan, 155.88, tol: 0.01)
+    try assertClose(row.vEntradaKmh ?? .nan, 136.80, tol: 0.01)
+    try assertClose(row.vFreadaKmh ?? .nan, 153.00, tol: 0.01)
+    try assertClose(row.vPaceKmh ?? .nan, 106.92, tol: 0.01)
+}
+
+step("SE6-02: vSaidaPicoKmh vem do postBurst pareado (m/s * 3.6)") {
+    let ev = se6Event(segmentId: "seg-A", lapNumero: 2)
+    let pb = DetectorSegmentPostBurstEvent(
+        segmentId: "seg-A", lapNumero: 2,
+        vSaidaPico: 39.5, tSaidaPico: 12_000, reason: "lookback"
+    )
+    let row = SegmentExecutionMapper.fromEvent(ev, postBurst: pb, timeId: "t", sessaoId: "s", voltaId: "v")
+    try assertClose(row.vSaidaPicoKmh ?? .nan, 142.20, tol: 0.01)
+}
+
+step("SE6-03: sem postBurst → vSaidaPicoKmh fica nil (não falha)") {
+    let ev = se6Event(vChegada: 40)
+    let row = SegmentExecutionMapper.fromEvent(ev, timeId: "t", sessaoId: "s", voltaId: "v")
+    try assertTrue(row.vSaidaPicoKmh == nil, "vSaidaPicoKmh deveria ser nil sem postBurst")
+    try assertTrue(row.vChegadaKmh != nil, "vChegadaKmh ainda existe")
+}
+
+step("SE6-04: tempos Freada→ápice e Ápice→saída convertidos ms → Int (round)") {
+    let ev = se6Event(tempoFreadaApiceMs: 1234.7, tempoApiceSaidaMs: 567.2)
+    let row = SegmentExecutionMapper.fromEvent(ev, timeId: "t", sessaoId: "s", voltaId: "v")
+    try assertEq(row.tempoFreadaApiceMs ?? -1, 1235)
+    try assertEq(row.tempoApiceSaidaMs ?? -1, 567)
+}
+
+step("SE6-05: mergePostBursts pareia por (segmentId, lapNumero)") {
+    let ends = [
+        se6Event(segmentId: "A", lapNumero: 1),
+        se6Event(segmentId: "B", lapNumero: 1),
+        se6Event(segmentId: "A", lapNumero: 2),
+    ]
+    let pbs = [
+        DetectorSegmentPostBurstEvent(segmentId: "A", lapNumero: 1, vSaidaPico: 40, tSaidaPico: 0, reason: "x"),
+        DetectorSegmentPostBurstEvent(segmentId: "A", lapNumero: 2, vSaidaPico: 42, tSaidaPico: 0, reason: "x"),
+    ]
+    let pares = SegmentExecutionMapper.mergePostBursts(ends: ends, postBursts: pbs)
+    try assertEq(pares.count, 3)
+    try assertTrue(pares[0].postBurst?.vSaidaPico == 40, "par 0 esperava 40")
+    try assertTrue(pares[1].postBurst == nil, "par 1 (B/1) sem post-burst")
+    try assertTrue(pares[2].postBurst?.vSaidaPico == 42, "par 2 esperava 42")
+}
+
+// ════════════════════════════════════════════════════════════
+// TA-01..06 — TrechoAdvisor (Comando GO 2026-05-24)
+// ════════════════════════════════════════════════════════════
+// Paridade Padrão B com `src/domain/trecho-advisor.js`.
+
+func taExec(
+    voltaId: String,
+    vChegada: Double? = 156, vEntrada: Double? = 136, vFreada: Double? = 153,
+    vmin: Double? = 104, vPace: Double? = 106, vSaidaPico: Double? = 142
+) -> SegmentExecution {
+    SegmentExecution(
+        id: "ex-\(voltaId)", timeId: "", sessaoId: "", voltaId: voltaId,
+        vminKmh: vmin,
+        vChegadaKmh: vChegada, vEntradaKmh: vEntrada, vFreadaKmh: vFreada,
+        vPaceKmh: vPace, vSaidaPicoKmh: vSaidaPico
+    )
+}
+
+step("TA-01: única passagem → 'primeira passagem'") {
+    let r = TrechoAdvisor.conselho(trechoNome: "Curva 1", execucoes: [taExec(voltaId: "a")])
+    try assertTrue(r != nil && r!.contains("primeira passagem"), "frase errada: \(r ?? "nil")")
+}
+
+step("TA-02: última = melhor em tudo → 'melhor passagem registrada'") {
+    let r = TrechoAdvisor.conselho(trechoNome: "Bruxa", execucoes: [
+        taExec(voltaId: "a", vmin: 102),
+        taExec(voltaId: "b", vmin: 103),
+        taExec(voltaId: "c", vmin: 104), // melhor
+    ])
+    try assertTrue(r != nil && r!.contains("melhor passagem"), "frase errada: \(r ?? "nil")")
+}
+
+step("TA-03: Freada baixa → menciona 'Freada' com delta 8.0") {
+    let r = TrechoAdvisor.conselho(trechoNome: "Curva 1", execucoes: [
+        taExec(voltaId: "a", vFreada: 153),
+        taExec(voltaId: "b", vFreada: 145),
+    ])
+    try assertTrue(r != nil && r!.contains("Freada"), "esperava Freada: \(r ?? "nil")")
+    try assertTrue(r!.contains("8.0 km/h"), "delta errado: \(r ?? "nil")")
+}
+
+step("TA-04: Vmin baixo → prioridade sobre Pace") {
+    let r = TrechoAdvisor.conselho(trechoNome: "Junção", execucoes: [
+        taExec(voltaId: "a", vmin: 110, vPace: 113),
+        taExec(voltaId: "b", vmin: 102, vPace: 108), // perdeu Vmin (-8) e Pace (-5)
+    ])
+    try assertTrue(r != nil && r!.contains("Vmin"), "esperava Vmin: \(r ?? "nil")")
+}
+
+step("TA-05: Pace baixo isolado → menciona 'Pace'") {
+    let r = TrechoAdvisor.conselho(trechoNome: "Bruxa", execucoes: [
+        taExec(voltaId: "a", vPace: 110),
+        taExec(voltaId: "b", vPace: 104),
+    ])
+    try assertTrue(r != nil && r!.contains("Pace"), "esperava Pace: \(r ?? "nil")")
+}
+
+step("TA-06: tolerância 0.15 km/h conta como melhor passagem") {
+    let r = TrechoAdvisor.conselho(trechoNome: "Curva 1", execucoes: [
+        taExec(voltaId: "a", vChegada: 156.0, vmin: 104.0, vPace: 106.0),
+        taExec(voltaId: "b", vChegada: 155.95, vmin: 103.95, vPace: 105.95),
+    ])
+    try assertTrue(r != nil && r!.contains("melhor passagem"), "esperava melhor passagem: \(r ?? "nil")")
+}
+
+step("SE6-06: Detector emite os 6 indicadores num stint sintético (smoke ponta-a-ponta)") {
+    let segS = TrackSegment(
+        id: "S", layoutId: "L", ordem: 0, nome: "S",
+        tipo: .curva, ehTrecho: true, parcialId: "P1",
+        x: 0, y: 0, pathStart: 25, pathEnd: 50
+    )
+    let d = Detector(
+        svgPath: "M 0 0 L 1000 0",
+        linhaChegada: LinhaChegada(x1: -5, y1: -5, x2: -5, y2: 5),
+        segments: [segS]
+    )
+    var ends: [DetectorSegmentEndEvent] = []
+    var pbs: [DetectorSegmentPostBurstEvent] = []
+    _ = d.onSegmentEnd { ev in ends.append(ev) }
+    _ = d.onSegmentPostBurst { ev in pbs.append(ev) }
+    var t: Double = 10_000
+    // Pré-segmento
+    for i in 0..<6 {
+        d.consume(DetectorSample(x: Double(i) * 40, y: 0, t: t, speed: 60))
+        t += 500
+    }
+    // Dentro do segmento
+    d.consume(DetectorSample(x: 260, y: 0, t: t, speed: 50)); t += 200
+    d.consume(DetectorSample(x: 310, y: 0, t: t, speed: 42)); t += 200
+    d.consume(DetectorSample(x: 360, y: 0, t: t, speed: 30)); t += 200
+    d.consume(DetectorSample(x: 410, y: 0, t: t, speed: 35)); t += 200
+    d.consume(DetectorSample(x: 490, y: 0, t: t, speed: 40)); t += 200
+    // Saída + pós-saída
+    d.consume(DetectorSample(x: 510, y: 0, t: t, speed: 30)); t += 500
+    d.consume(DetectorSample(x: 560, y: 0, t: t, speed: 39.5)); t += 500
+    d.consume(DetectorSample(x: 610, y: 0, t: t, speed: 37.5)); t += 1500
+    d.consume(DetectorSample(x: 760, y: 0, t: t, speed: 34.5))
+
+    try assertEq(ends.count, 1)
+    let ev = ends[0]
+    try assertTrue(ev.vChegada != nil, "vChegada não foi calculado")
+    try assertClose(ev.vChegada ?? .nan, 60, tol: 0.01)
+    try assertTrue(ev.vFreada != nil, "vFreada não detectado")
+    try assertClose(ev.vFreada ?? .nan, 50, tol: 0.01)
+    try assertTrue(ev.tempoFreadaApiceMs != nil)
+    try assertTrue(ev.tempoApiceSaidaMs != nil)
+    try assertEq(pbs.count, 1)
+    try assertClose(pbs[0].vSaidaPico ?? .nan, 39.5, tol: 0.01)
+}
+
+// ════════════════════════════════════════════════════════════
 // MS-2.6.c — geo_ancoras + view_box (TGA-01..04)
 // ════════════════════════════════════════════════════════════
 
@@ -7285,889 +6751,6 @@ step("PUB-06: stop encerra transports + suprime publish posterior") {
         await pub.sendHeartbeat()
         try assertEq(await mock.snapshot().count, 1)
         try assertEq(await mock.stoppedCount, 1)
-    }
-}
-
-// ════════════════════════════════════════════════════════════
-// TelemetryTimebase — TB-01..TB-12 (paridade JS timebase.js)
-// MS-16.1 (Command Box Engenharia — Camada 1 Engine Core).
-// docs/COMMAND_BOX_ENGENHARIA.md §1.1 e §5.1.
-//
-// Constantes numéricas inline IDÊNTICAS às do node-smoke-timebase-swift-
-// parity.mjs — cada caso deve produzir o mesmo resultado em ambas as
-// implementações (Swift + JS). Paridade é verificável por code review +
-// saída numérica.
-// ════════════════════════════════════════════════════════════
-
-// Helpers de fixture pra timebase smoke.
-func _tbT4000Sample(tMono: Double, t: Int64 = 1_700_000_000_000) -> Sample {
-    var s = Sample(t: t, tMono: tMono, source: SourceTags.t4000)
-    s.rpm = 5800
-    s.tps = 60
-    s.map = 0.92
-    s.lambda = 1.06
-    s.waterTemp = 102
-    s.oilTemp = 118
-    s.oilPressure = 4.0
-    s.batteryVoltage = 13.8
-    return s
-}
-
-func _tbGpsSample(tMono: Double, acc: Double = 3) -> Sample {
-    var s = Sample(
-        t: 1_700_000_000_000,
-        tMono: tMono,
-        source: SourceTags.gps,
-        signalQuality: "GOOD"
-    )
-    s.lat = -15.77
-    s.lng = -47.90
-    s.speed = 23.0
-    s.kmh = 82.8
-    s.acc = acc
-    return s
-}
-
-func _tbImuSample(tMono: Double, signalQuality: String = "GOOD") -> Sample {
-    var s = Sample(
-        t: 1_700_000_000_000,
-        tMono: tMono,
-        source: SourceTags.imu,
-        signalQuality: signalQuality
-    )
-    s.accLong = 1.2
-    s.accLat = 0.3
-    s.accVert = 0.0
-    s.gyroAlpha = 0.0
-    return s
-}
-
-step("TB-01: attach + ingest single sample → snapshot reflete fonte") {
-    let tb = TelemetryTimebase(now: { 1000 })
-    tb.attachSource(source: SourceTags.t4000)
-    let res = tb.ingest(_tbT4000Sample(tMono: 1000))
-    try assertEq(res?.quality, .ok)
-    try assertEq(res?.accepted, true)
-    let snap = tb.snapshotAt(tMono: 1000)
-    try assertClose(snap.engine.rpm, 5800)
-    try assertClose(snap.engine.map, 0.92)
-    try assertClose(snap.engine.lambda, 1.06)
-    try assertEq(snap.quality.t4000, .ok)
-}
-
-step("TB-02: multi-source — t4000 + cockpit-mobile + iphone-imu consolidam") {
-    let tb = TelemetryTimebase(now: { 1200 })
-    tb.attachSource(source: SourceTags.t4000)
-    tb.attachSource(source: SourceTags.gps)
-    tb.attachSource(source: SourceTags.imu)
-    // Timings escolhidos pra todas as 3 fontes ficarem dentro da freshness:
-    // t4000 (50ms) @1190 → delta 10; cockpit (1500ms) @1100 → delta 100;
-    // imu (200ms) @1180 → delta 20. Todas OK → sync OK → Alta.
-    tb.ingest(_tbT4000Sample(tMono: 1190))
-    tb.ingest(_tbGpsSample(tMono: 1100))
-    tb.ingest(_tbImuSample(tMono: 1180))
-    let snap = tb.snapshotAt(tMono: 1200)
-    try assertClose(snap.engine.rpm, 5800)
-    try assertClose(snap.position.lat, -15.77)
-    try assertClose(snap.dynamics.accelLongitudinal, 1.2)
-    try assertEq(snap.quality.sync, .ok)
-    try assertEq(snap.quality.confidence, "Alta")
-}
-
-step("TB-03: out-of-order — segundo tMono retroativo aceito + marcado") {
-    let tb = TelemetryTimebase()
-    tb.attachSource(source: SourceTags.t4000)
-    let r1 = tb.ingest(_tbT4000Sample(tMono: 2000))
-    try assertEq(r1?.quality, .ok)
-    let r2 = tb.ingest(_tbT4000Sample(tMono: 1500))
-    try assertEq(r2?.quality, .outOfOrder)
-    try assertEq(r2?.accepted, true)
-    let s = tb.stats()[SourceTags.t4000]
-    try assertEq(s?.discardedOutOfOrder, 1)
-}
-
-step("TB-04: duplicate — mesmo tMono descartado, accepted=false") {
-    let tb = TelemetryTimebase()
-    tb.attachSource(source: SourceTags.t4000)
-    tb.ingest(_tbT4000Sample(tMono: 2000))
-    let r2 = tb.ingest(_tbT4000Sample(tMono: 2000))
-    try assertEq(r2?.quality, .duplicate)
-    try assertEq(r2?.accepted, false)
-    let s = tb.stats()[SourceTags.t4000]
-    try assertEq(s?.discardedDuplicate, 1)
-}
-
-step("TB-05: late — idade entre freshness e 3×freshness → LATE") {
-    let tb = TelemetryTimebase(now: { 1080 })  // 1080 - 1000 = 80ms idade
-    // t4000 freshness default = 50 → LATE quando 50 < idade ≤ 150
-    tb.attachSource(source: SourceTags.t4000)
-    tb.ingest(_tbT4000Sample(tMono: 1000))
-    let snap = tb.snapshotAt(tMono: 1080)
-    try assertEq(snap.quality.t4000, .late)
-    let s = tb.stats()[SourceTags.t4000]
-    try assertEq(s?.quality, .late)
-}
-
-step("TB-06: missing — idade > 3×freshness → MISSING") {
-    let tb = TelemetryTimebase(now: { 1200 })  // 1200 - 1000 = 200ms idade
-    // t4000 freshness default = 50 → MISSING quando idade > 150
-    tb.attachSource(source: SourceTags.t4000)
-    tb.ingest(_tbT4000Sample(tMono: 1000))
-    let snap = tb.snapshotAt(tMono: 1200)
-    try assertEq(snap.quality.t4000, .missing)
-    let s = tb.stats()[SourceTags.t4000]
-    try assertEq(s?.quality, .missing)
-}
-
-step("TB-07: mock source — auto-attach quando ingere sem attach prévio") {
-    let tb = TelemetryTimebase()
-    try assertEq(tb.sourceCount, 0)
-    tb.ingest(_tbT4000Sample(tMono: 1000))
-    try assertEq(tb.sourceCount, 1)
-    // freshness default deve ter sido aplicada (t4000 = 50)
-    let s = tb.stats()[SourceTags.t4000]
-    try assertTrue(s != nil, "stats deve incluir auto-attach")
-}
-
-step("TB-08: stats — counters discardedOutOfOrder + discardedDuplicate") {
-    let tb = TelemetryTimebase()
-    tb.attachSource(source: SourceTags.t4000)
-    tb.ingest(_tbT4000Sample(tMono: 1000))
-    tb.ingest(_tbT4000Sample(tMono: 800))   // out-of-order
-    tb.ingest(_tbT4000Sample(tMono: 600))   // out-of-order
-    tb.ingest(_tbT4000Sample(tMono: 1000))  // duplicate
-    let s = tb.stats()[SourceTags.t4000]
-    try assertEq(s?.discardedOutOfOrder, 2)
-    try assertEq(s?.discardedDuplicate, 1)
-}
-
-step("TB-09: buffer GC — amostras > 10000ms são descartadas") {
-    let tb = TelemetryTimebase()
-    tb.attachSource(source: SourceTags.mock)
-    var s1 = Sample(t: 0, tMono: 1000, source: SourceTags.mock)
-    s1.accLong = 0.5
-    tb.ingest(s1)
-    var s2 = Sample(t: 0, tMono: 5000, source: SourceTags.mock)
-    s2.accLong = 0.7
-    tb.ingest(s2)
-    var s3 = Sample(t: 0, tMono: 15000, source: SourceTags.mock)
-    s3.accLong = 0.9
-    tb.ingest(s3)
-    // cutoff = 15000 - 10000 = 5000; amostra 1 (1000) eliminada; 2 (5000) eliminada (< cutoff = false, 5000 < 5000 = false). Aguarda.
-    // Re-leitura JS: while buf[0].tMono < cutoff → 1000 < 5000 yes drop; 5000 < 5000 no stop.
-    // Resultado: 2 amostras (5000 e 15000).
-    let stats = tb.stats()[SourceTags.mock]
-    try assertEq(stats?.bufferSize, 2)
-}
-
-step("TB-10: snapshot quality consolidada — worstOf de fontes") {
-    let tb = TelemetryTimebase(now: { 1200 })
-    tb.attachSource(source: SourceTags.t4000)   // freshness 50
-    tb.attachSource(source: SourceTags.gps)     // freshness 1500
-    tb.ingest(_tbT4000Sample(tMono: 1000))      // delta 200 → MISSING
-    tb.ingest(_tbGpsSample(tMono: 1180))        // delta 20 → OK
-    let snap = tb.snapshotAt(tMono: 1200)
-    try assertEq(snap.quality.t4000, .missing)
-    try assertEq(snap.quality.iphone, .ok)      // cockpit-mobile vai pra `iphone` (Snapshot.swift)
-    try assertEq(snap.quality.sync, .missing)   // worstOf
-    try assertEq(snap.quality.confidence, "Baixa")
-}
-
-step("TB-11: detach remove fonte do snapshot") {
-    let tb = TelemetryTimebase(now: { 1100 })
-    tb.attachSource(source: SourceTags.t4000)
-    tb.attachSource(source: SourceTags.gps)
-    tb.ingest(_tbT4000Sample(tMono: 1050))
-    tb.ingest(_tbGpsSample(tMono: 1050))
-    tb.detachSource(SourceTags.t4000)
-    try assertEq(tb.sourceCount, 1)
-    let snap = tb.snapshotAt(tMono: 1100)
-    try assertEq(snap.engine.rpm, nil)          // t4000 detached
-    try assertClose(snap.position.lat, -15.77)
-}
-
-step("TB-12: jitter e latencyMedian — janela LATENCY_WINDOW") {
-    let tb = TelemetryTimebase()
-    tb.attachSource(source: SourceTags.t4000)
-    // Intervalos: 10, 10, 10 → jitter ≈ 0
-    tb.ingest(_tbT4000Sample(tMono: 1000))
-    tb.ingest(_tbT4000Sample(tMono: 1010))
-    tb.ingest(_tbT4000Sample(tMono: 1020))
-    tb.ingest(_tbT4000Sample(tMono: 1030))
-    let s1 = tb.stats()[SourceTags.t4000]
-    try assertClose(s1?.jitter ?? 999, 0, tol: 0.001)
-    // Intervalos: 10,10,10,100 — jitter > 0
-    tb.ingest(_tbT4000Sample(tMono: 1130))
-    let s2 = tb.stats()[SourceTags.t4000]
-    try assertTrue((s2?.jitter ?? 0) > 10, "jitter deve refletir intervalo anômalo")
-}
-
-// ════════════════════════════════════════════════════════════
-// VehicleContextAggregator — VCA-01..VCA-10 (MS-16.2)
-// docs/COMMAND_BOX_ENGENHARIA.md §4 (Vehicle Context Model).
-// Constantes idênticas ao node-smoke-vehicle-context-parity.mjs.
-// ════════════════════════════════════════════════════════════
-
-// Helpers de fixture pra VCA smoke.
-func _vcaT4000(tMono: Double, rpm: Double, map: Double, lambda: Double,
-               tps: Double, waterTemp: Double, accLong: Double = 0) -> Snapshot {
-    let engine = EngineSnap(
-        rpm: rpm, tps: tps, map: map, lambda: lambda,
-        oilPressure: 4.0, oilTemp: 92, waterTemp: waterTemp,
-        batteryVoltage: 13.8, fuelPressure: 4.0, gear: 3
-    )
-    let position = PositionSnap()
-    let dynamics = DynamicsSnap(accelLongitudinal: accLong)
-    let vehicle = VehicleSnap(speedCan: 28.0)
-    let quality = SnapshotQuality(t4000: .ok, racebox: .ok, iphone: .ok,
-                                  sync: .ok, confidence: "Alta")
-    return Snapshot(t: 1_700_000_000_000, tMono: tMono,
-                    engine: engine, position: position,
-                    dynamics: dynamics, vehicle: vehicle, quality: quality)
-}
-
-func _vcaLapEnd(numero: Int, tempoMs: Double) -> DetectorLapEvent {
-    DetectorLapEvent(numero: numero, inicioAt: 0, fimAt: tempoMs,
-                     tempoMs: tempoMs, temposPorParcial: [:], temposPorTrecho: [:])
-}
-
-func _vcaSegEnd(segmentId: String, lapNumero: Int, velMinima: Double) -> DetectorSegmentEndEvent {
-    DetectorSegmentEndEvent(
-        segmentId: segmentId, lapNumero: lapNumero,
-        entradaAt: 0, saidaAt: 5000, tempoMs: 5000,
-        velEntrada: 28.0, velMinima: velMinima, velSaida: 26.0,
-        pontoFrenagem: nil, apexT: nil, apexOffset: nil, apexActual: nil
-    )
-}
-
-step("VCA-01: ingest snapshot incrementa contadores básicos") {
-    let agg = VehicleContextAggregator()
-    agg.ingestSnapshot(_vcaT4000(tMono: 1000, rpm: 5000, map: 0.7, lambda: 0.92,
-                                  tps: 50, waterTemp: 95))
-    let ctx = agg.currentContext()
-    try assertEq(ctx.snapshotsConsumed, 1)
-    try assertEq(ctx.lap.samplesCount, 1)
-    try assertEq(ctx.lap.leanLoadSamples, 0)   // λ 0.92 não é lean
-    try assertClose(ctx.lap.waterTempStart, 95)
-    try assertClose(ctx.lap.rpmMax, 5000)
-}
-
-step("VCA-02: lean-load criteria — sample atendendo TPS+MAP+RPM+λ conta") {
-    let agg = VehicleContextAggregator()
-    // 5 samples atendendo critério: TPS>70, MAP>0.8, RPM>4000, λ>1.0
-    for i in 0..<5 {
-        agg.ingestSnapshot(_vcaT4000(
-            tMono: 1000 + Double(i) * 10,
-            rpm: 5800, map: 0.92, lambda: 1.06, tps: 84, waterTemp: 102
-        ))
-    }
-    // 3 samples NÃO atendendo (TPS baixo)
-    for i in 5..<8 {
-        agg.ingestSnapshot(_vcaT4000(
-            tMono: 1000 + Double(i) * 10,
-            rpm: 5800, map: 0.92, lambda: 1.06, tps: 40, waterTemp: 102
-        ))
-    }
-    let ctx = agg.currentContext()
-    try assertEq(ctx.lap.samplesCount, 8)
-    try assertEq(ctx.lap.leanLoadSamples, 5)
-}
-
-step("VCA-03: lean-load NÃO conta com quality.t4000 != .ok (DATA_QUALITY Regra 4)") {
-    let agg = VehicleContextAggregator()
-    // Engine ok mas quality.t4000 = .late → não conta lean
-    let engine = EngineSnap(rpm: 5800, tps: 84, map: 0.92, lambda: 1.06,
-                            oilPressure: 4.0, oilTemp: 92, waterTemp: 102)
-    let quality = SnapshotQuality(t4000: .late, racebox: .ok, iphone: .ok,
-                                  sync: .late, confidence: "Média")
-    let snap = Snapshot(
-        t: 1_700_000_000_000, tMono: 1000,
-        engine: engine, position: PositionSnap(),
-        dynamics: DynamicsSnap(), vehicle: VehicleSnap(),
-        quality: quality
-    )
-    agg.ingestSnapshot(snap)
-    try assertEq(agg.currentContext().lap.leanLoadSamples, 0)
-}
-
-step("VCA-04: onLapEnd arquiva LapWindow + atualiza bestLapMs") {
-    let agg = VehicleContextAggregator()
-    agg.ingestSnapshot(_vcaT4000(tMono: 1000, rpm: 5000, map: 0.7, lambda: 0.92,
-                                  tps: 50, waterTemp: 95))
-    agg.onLapEnd(_vcaLapEnd(numero: 1, tempoMs: 95_000))
-    agg.ingestSnapshot(_vcaT4000(tMono: 2000, rpm: 5100, map: 0.7, lambda: 0.92,
-                                  tps: 50, waterTemp: 96))
-    agg.onLapEnd(_vcaLapEnd(numero: 2, tempoMs: 92_000))
-    let ctx = agg.currentContext()
-    try assertEq(ctx.stint.lapHistory.count, 2)
-    try assertClose(ctx.stint.bestLapMs, 92_000)
-    try assertEq(ctx.stint.lastNLapTimesMs.count, 2)
-}
-
-step("VCA-05: lap reset após onLapEnd — contadores zerados") {
-    let agg = VehicleContextAggregator()
-    agg.ingestSnapshot(_vcaT4000(tMono: 1000, rpm: 5800, map: 0.92, lambda: 1.06,
-                                  tps: 84, waterTemp: 102))
-    agg.ingestSnapshot(_vcaT4000(tMono: 1010, rpm: 5800, map: 0.92, lambda: 1.06,
-                                  tps: 84, waterTemp: 102))
-    agg.onLapEnd(_vcaLapEnd(numero: 1, tempoMs: 95_000))
-    let ctx = agg.currentContext()
-    try assertEq(ctx.lap.samplesCount, 0)
-    try assertEq(ctx.lap.leanLoadSamples, 0)
-    try assertEq(ctx.lap.waterTempStart, nil)
-}
-
-step("VCA-06: onSegmentEnd grava Vmin georef em vminBySegmentLap") {
-    let agg = VehicleContextAggregator()
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 2, velMinima: 21.5))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 3, velMinima: 21.0))
-    let ctx = agg.currentContext()
-    try assertEq(ctx.stint.vminBySegmentLap["bruxa"]?.count, 3)
-    try assertClose(ctx.stint.vminBySegmentLap["bruxa"]?[0].vminKmh, 22.0 * 3.6)
-}
-
-step("VCA-07: vminTrend detecta queda progressiva de Vmin") {
-    let agg = VehicleContextAggregator()
-    // 22 → 21 → 20 m/s = 79.2 → 75.6 → 72 km/h (queda de 3.6 km/h em 2 voltas)
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 2, velMinima: 21.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 3, velMinima: 20.0))
-    let trend = agg.vminTrend(lastNLaps: 3)
-    try assertTrue((trend["bruxa"] ?? 0) < -1.0,
-                   "deve detectar queda > 1 km/h/lap (recebeu \(trend["bruxa"] ?? 0))")
-}
-
-step("VCA-08: waterTempSeries — drift detection °C/min") {
-    let agg = VehicleContextAggregator()
-    // Sobe 6°C em 60s → drift 6°C/min
-    agg.ingestSnapshot(_vcaT4000(tMono: 1000, rpm: 5000, map: 0.7, lambda: 0.92,
-                                  tps: 50, waterTemp: 95))
-    agg.ingestSnapshot(_vcaT4000(tMono: 30_000, rpm: 5000, map: 0.7, lambda: 0.92,
-                                  tps: 50, waterTemp: 98))
-    agg.ingestSnapshot(_vcaT4000(tMono: 61_000, rpm: 5000, map: 0.7, lambda: 0.92,
-                                  tps: 50, waterTemp: 101))
-    let drift = agg.waterTempDriftPerMinute()
-    try assertTrue((drift ?? 0) > 5.5 && (drift ?? 0) < 6.5,
-                   "drift ~6 °C/min, recebeu \(drift ?? 0)")
-}
-
-step("VCA-09: thermalPhase — state machine COLD→WARMING→AT_TEMP→OVERHEAT") {
-    let agg = VehicleContextAggregator()
-    agg.ingestSnapshot(_vcaT4000(tMono: 1000, rpm: 1000, map: 0.5, lambda: 0.95,
-                                  tps: 10, waterTemp: 45))
-    try assertEq(agg.currentContext().thermalPhase, .cold)
-    agg.ingestSnapshot(_vcaT4000(tMono: 5000, rpm: 3000, map: 0.6, lambda: 0.95,
-                                  tps: 30, waterTemp: 80))
-    try assertEq(agg.currentContext().thermalPhase, .warming)
-    agg.ingestSnapshot(_vcaT4000(tMono: 10_000, rpm: 5000, map: 0.7, lambda: 0.92,
-                                  tps: 50, waterTemp: 100))
-    try assertEq(agg.currentContext().thermalPhase, .atTemp)
-    agg.ingestSnapshot(_vcaT4000(tMono: 15_000, rpm: 6000, map: 0.9, lambda: 1.06,
-                                  tps: 85, waterTemp: 108))
-    try assertEq(agg.currentContext().thermalPhase, .overheat)
-}
-
-step("VCA-10: reset zera tudo") {
-    let agg = VehicleContextAggregator()
-    agg.ingestSnapshot(_vcaT4000(tMono: 1000, rpm: 5800, map: 0.92, lambda: 1.06,
-                                  tps: 84, waterTemp: 102))
-    agg.onLapEnd(_vcaLapEnd(numero: 1, tempoMs: 95_000))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
-    agg.reset()
-    let ctx = agg.currentContext()
-    try assertEq(ctx.snapshotsConsumed, 0)
-    try assertEq(ctx.stint.lapHistory.count, 0)
-    try assertEq(ctx.stint.vminBySegmentLap.count, 0)
-    try assertEq(ctx.thermalPhase, .cold)
-}
-
-// ════════════════════════════════════════════════════════════
-// CalibrationEngine + 3 rules MVP — CE-01..CE-15 (MS-16.3)
-// docs/COMMAND_BOX_ENGENHARIA.md §5.1 Camada 2.
-// ════════════════════════════════════════════════════════════
-
-func _ceSeedLeanLaps(_ agg: VehicleContextAggregator, laps: Int = 3,
-                     leanSamplesPerLap: Int = 40, rpmMax: Double = 5800) {
-    var lapNumero = 1
-    for _ in 0..<laps {
-        let baseT = Double(lapNumero) * 60_000
-        for i in 0..<leanSamplesPerLap {
-            agg.ingestSnapshot(_vcaT4000(
-                tMono: baseT + Double(i) * 10,
-                rpm: rpmMax, map: 0.92, lambda: 1.06, tps: 84, waterTemp: 102
-            ))
-        }
-        agg.onLapEnd(_vcaLapEnd(numero: lapNumero, tempoMs: 95_000))
-        lapNumero += 1
-    }
-}
-
-step("CE-01: FuelLeanSustainedLoadRule dispara com 3 voltas atendendo critério") {
-    let agg = VehicleContextAggregator()
-    _ceSeedLeanLaps(agg, laps: 3, leanSamplesPerLap: 40)
-    let engine = CalibrationEngine(rules: [FuelLeanSustainedLoadRule()])
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 1_000_000 })
-    try assertEq(findings.count, 1)
-    try assertEq(findings[0].ruleId, "fuel-lean-sustained-load")
-    try assertEq(findings[0].confianca, .alta)
-    try assertEq(findings[0].severidade, .atencao)
-    try assertEq(findings[0].escopo, .stint)
-}
-
-step("CE-02: FuelLean NÃO dispara com < 3 voltas atendendo") {
-    let agg = VehicleContextAggregator()
-    _ceSeedLeanLaps(agg, laps: 2, leanSamplesPerLap: 40)
-    let engine = CalibrationEngine(rules: [FuelLeanSustainedLoadRule()])
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 1_000_000 })
-    try assertEq(findings.count, 0)
-}
-
-step("CE-03: FuelLean NÃO dispara com poucos samples lean por volta (< 30)") {
-    let agg = VehicleContextAggregator()
-    _ceSeedLeanLaps(agg, laps: 3, leanSamplesPerLap: 10) // < 30 cutoff default
-    let engine = CalibrationEngine(rules: [FuelLeanSustainedLoadRule()])
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 1_000_000 })
-    try assertEq(findings.count, 0)
-}
-
-step("CE-04: FuelLean propõe recommendation com ajuste +4% combustível") {
-    let agg = VehicleContextAggregator()
-    _ceSeedLeanLaps(agg, laps: 3, leanSamplesPerLap: 40)
-    let engine = CalibrationEngine(rules: [FuelLeanSustainedLoadRule()])
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 1_000_000 })
-    let recs = engine.proposeRecommendations(findings: findings,
-                                              context: agg.currentContext())
-    try assertEq(recs.count, 1)
-    let rec = recs[0]
-    try assertEq(rec.ajustes.count, 1)
-    try assertEq(rec.ajustes[0].campo, "combustivel")
-    try assertEq(rec.ajustes[0].para, "+4%")
-    try assertEq(rec.decisao, .pendente)
-    try assertTrue(rec.naoMexer.count > 0, "rec deve ter naoMexer (campo obrigatório §9)")
-}
-
-step("CE-05: cooldown impede duplo disparo dentro da janela") {
-    let agg = VehicleContextAggregator()
-    _ceSeedLeanLaps(agg, laps: 3, leanSamplesPerLap: 40)
-    let engine = CalibrationEngine(rules: [FuelLeanSustainedLoadRule()])
-    var clock: Double = 1_000_000
-    let f1 = engine.evaluate(context: agg.currentContext(), now: { clock })
-    try assertEq(f1.count, 1)
-    // imediatamente após — cooldown 60s default barra
-    let f2 = engine.evaluate(context: agg.currentContext(), now: { clock })
-    try assertEq(f2.count, 0)
-    // passou cooldown — dispara de novo
-    clock += 61_000
-    let f3 = engine.evaluate(context: agg.currentContext(), now: { clock })
-    try assertEq(f3.count, 1)
-}
-
-step("CE-06: WaterTempDriftNoCooling dispara com drift > 3°C/min sustentado") {
-    let agg = VehicleContextAggregator()
-    // drift ~6°C/min em 90s
-    agg.ingestSnapshot(_vcaT4000(tMono: 0,      rpm: 4000, map: 0.6, lambda: 0.92,
-                                  tps: 40, waterTemp: 95))
-    agg.ingestSnapshot(_vcaT4000(tMono: 45_000, rpm: 4000, map: 0.6, lambda: 0.92,
-                                  tps: 40, waterTemp: 99.5))
-    agg.ingestSnapshot(_vcaT4000(tMono: 90_000, rpm: 4000, map: 0.6, lambda: 0.92,
-                                  tps: 40, waterTemp: 104))
-    let engine = CalibrationEngine(rules: [WaterTempDriftNoCoolingRule()])
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 100_000 })
-    try assertEq(findings.count, 1)
-    try assertEq(findings[0].ruleId, "water-temp-drift-no-cooling")
-    try assertTrue((findings[0].evidencia["drift_c_per_min"] ?? 0) > 5.5,
-                   "drift deve ser ~6°C/min")
-}
-
-step("CE-07: WaterTempDriftNoCooling NÃO dispara com drift abaixo do limite") {
-    let agg = VehicleContextAggregator()
-    // drift ~1°C/min
-    agg.ingestSnapshot(_vcaT4000(tMono: 0,      rpm: 4000, map: 0.6, lambda: 0.92,
-                                  tps: 40, waterTemp: 95))
-    agg.ingestSnapshot(_vcaT4000(tMono: 60_000, rpm: 4000, map: 0.6, lambda: 0.92,
-                                  tps: 40, waterTemp: 96))
-    agg.ingestSnapshot(_vcaT4000(tMono: 120_000, rpm: 4000, map: 0.6, lambda: 0.92,
-                                  tps: 40, waterTemp: 97))
-    let engine = CalibrationEngine(rules: [WaterTempDriftNoCoolingRule()])
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 130_000 })
-    try assertEq(findings.count, 0)
-}
-
-step("CE-08: WaterTempDrift severidade ALTA quando fase = overheat") {
-    let agg = VehicleContextAggregator()
-    agg.ingestSnapshot(_vcaT4000(tMono: 0,      rpm: 5000, map: 0.7, lambda: 0.92,
-                                  tps: 60, waterTemp: 100))
-    agg.ingestSnapshot(_vcaT4000(tMono: 60_000, rpm: 5000, map: 0.7, lambda: 0.92,
-                                  tps: 60, waterTemp: 105))
-    agg.ingestSnapshot(_vcaT4000(tMono: 120_000, rpm: 5000, map: 0.7, lambda: 0.92,
-                                  tps: 60, waterTemp: 110))   // overheat
-    let engine = CalibrationEngine(rules: [WaterTempDriftNoCoolingRule()])
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 130_000 })
-    try assertEq(findings.count, 1)
-    try assertEq(findings[0].severidade, .alta)
-}
-
-step("CE-09: VminProgressiveLoss dispara com Vmin caindo > 1 km/h/volta") {
-    let agg = VehicleContextAggregator()
-    // 22, 20, 18 m/s = 79.2, 72.0, 64.8 km/h — queda ~7.2 km/h/volta
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 2, velMinima: 20.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 3, velMinima: 18.0))
-    let engine = CalibrationEngine(rules: [VminProgressiveLossSegmentRule()])
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 100_000 })
-    try assertEq(findings.count, 1)
-    try assertEq(findings[0].ruleId, "vmin-progressive-loss-segment")
-    try assertEq(findings[0].segmentId, "bruxa")
-    try assertEq(findings[0].confianca, .alta) // > 1.5 km/h/volta
-}
-
-step("CE-10: VminProgressiveLoss NÃO dispara se Vmin não-monotônico") {
-    let agg = VehicleContextAggregator()
-    // sobe, cai, sobe → não dispara
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 2, velMinima: 23.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 3, velMinima: 21.0))
-    let engine = CalibrationEngine(rules: [VminProgressiveLossSegmentRule()])
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 100_000 })
-    try assertEq(findings.count, 0)
-}
-
-step("CE-11: VminProgressiveLoss escolhe trecho com pior queda") {
-    let agg = VehicleContextAggregator()
-    // bruxa: queda pequena ~1.1 km/h/volta
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 2, velMinima: 21.7))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 3, velMinima: 21.4))
-    // s1: queda grande ~7 km/h/volta — esse deve ser o pior
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "s1", lapNumero: 1, velMinima: 25.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "s1", lapNumero: 2, velMinima: 23.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "s1", lapNumero: 3, velMinima: 21.0))
-    let engine = CalibrationEngine(rules: [VminProgressiveLossSegmentRule()])
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 100_000 })
-    try assertEq(findings.count, 1)
-    try assertEq(findings[0].segmentId, "s1")
-}
-
-step("CE-12: minConfidenceForRecommendation gateando recommendation") {
-    let agg = VehicleContextAggregator()
-    // Drift pequeno → confianca = .baixa
-    agg.ingestSnapshot(_vcaT4000(tMono: 0,      rpm: 4000, map: 0.6, lambda: 0.92,
-                                  tps: 40, waterTemp: 95))
-    agg.ingestSnapshot(_vcaT4000(tMono: 35_000, rpm: 4000, map: 0.6, lambda: 0.92,
-                                  tps: 40, waterTemp: 97))
-    let engine = CalibrationEngine(
-        rules: [WaterTempDriftNoCoolingRule()],
-        minConfidenceForRecommendation: .media
-    )
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 40_000 })
-    if !findings.isEmpty {
-        let recs = engine.proposeRecommendations(findings: findings, context: agg.currentContext())
-        if findings[0].confianca == .baixa {
-            try assertEq(recs.count, 0)
-        }
-    }
-}
-
-step("CE-13: defaultRules expõe as 3 rules MVP") {
-    let rules = CalibrationEngine.defaultRules
-    try assertEq(rules.count, 3)
-    let ids = Set(rules.map { $0.id })
-    try assertTrue(ids.contains("fuel-lean-sustained-load"))
-    try assertTrue(ids.contains("water-temp-drift-no-cooling"))
-    try assertTrue(ids.contains("vmin-progressive-loss-segment"))
-}
-
-step("CE-14: evaluate avalia todas as regras (multi-rule)") {
-    let agg = VehicleContextAggregator()
-    _ceSeedLeanLaps(agg, laps: 3, leanSamplesPerLap: 40)
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 2, velMinima: 20.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 3, velMinima: 18.0))
-    let engine = CalibrationEngine()
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 1_000_000 })
-    let ids = Set(findings.map { $0.ruleId })
-    try assertTrue(ids.contains("fuel-lean-sustained-load"))
-    try assertTrue(ids.contains("vmin-progressive-loss-segment"))
-}
-
-step("CE-15: reset limpa cooldowns") {
-    let agg = VehicleContextAggregator()
-    _ceSeedLeanLaps(agg, laps: 3, leanSamplesPerLap: 40)
-    let engine = CalibrationEngine(rules: [FuelLeanSustainedLoadRule()])
-    let f1 = engine.evaluate(context: agg.currentContext(), now: { 1000 })
-    try assertEq(f1.count, 1)
-    let f2 = engine.evaluate(context: agg.currentContext(), now: { 2000 })
-    try assertEq(f2.count, 0)
-    engine.reset()
-    let f3 = engine.evaluate(context: agg.currentContext(), now: { 2000 })
-    try assertEq(f3.count, 1)
-}
-
-// ════════════════════════════════════════════════════════════
-// EngControlModel + EngineeringDecisionPolicy — ECM-01..ECM-12 (MS-16.5)
-// docs/COMMAND_BOX_ENGENHARIA.md §6 MS-16.5 + §11 D17.
-// ════════════════════════════════════════════════════════════
-
-step("ECM-01: slider de combustível clampa range [-10, +10]") {
-    let s = EngControlModel.fuelAdjustmentSlider(value: 4)
-    try assertClose(s.value, 4)
-    let r = s.tryChange(to: 15, papel: .engenheiro, carroParado: false)
-    try assertEq(r.accepted, true)
-    try assertClose(r.value, 10)   // clamp
-    let r2 = s.tryChange(to: -20, papel: .engenheiro, carroParado: false)
-    try assertEq(r2.accepted, true)
-    try assertClose(r2.value, -10)
-}
-
-step("ECM-02: slider snap em step=0.5") {
-    let s = EngControlModel.fuelAdjustmentSlider(value: 0)
-    let r = s.tryChange(to: 3.7, papel: .engenheiro, carroParado: false)
-    try assertEq(r.accepted, true)
-    try assertClose(r.value, 3.5)  // snap pra 0.5 mais próximo
-}
-
-step("ECM-03: knob RPM step=100") {
-    let k = EngControlModel.rpmTargetKnob(value: 5800)
-    let r = k.tryChange(to: 5850, papel: .engenheiro, carroParado: false)
-    try assertEq(r.accepted, true)
-    try assertClose(r.value, 5900) // 5850 → 5900 (round-half-up)
-    let r2 = k.tryChange(to: 5849, papel: .engenheiro, carroParado: false)
-    try assertEq(r2.accepted, true)
-    try assertClose(r2.value, 5800)
-}
-
-step("ECM-04: piloto SÓ opera com carro parado (D17)") {
-    let s = EngControlModel.fuelAdjustmentSlider(value: 0)
-    let rAndando = s.tryChange(to: 4, papel: .piloto, carroParado: false)
-    try assertEq(rAndando.accepted, false)
-    try assertTrue(rAndando.motivo?.contains("D17") ?? false)
-    let rParado = s.tryChange(to: 4, papel: .piloto, carroParado: true)
-    try assertEq(rParado.accepted, true)
-    try assertClose(rParado.value, 4)
-}
-
-step("ECM-05: chefe + engenheiro operam a qualquer momento") {
-    let s = EngControlModel.fuelAdjustmentSlider(value: 0)
-    try assertEq(s.tryChange(to: 4, papel: .chefe, carroParado: false).accepted, true)
-    try assertEq(s.tryChange(to: 4, papel: .engenheiro, carroParado: false).accepted, true)
-    try assertEq(s.tryChange(to: 4, papel: .chefe, carroParado: true).accepted, true)
-}
-
-step("ECM-06: readonly NUNCA opera") {
-    let s = EngControlModel.fuelAdjustmentSlider(value: 0)
-    try assertEq(s.tryChange(to: 4, papel: .readonly, carroParado: true).accepted, false)
-    try assertEq(s.tryChange(to: 4, papel: .readonly, carroParado: false).accepted, false)
-}
-
-step("ECM-07: valor não-finito rejeitado") {
-    let s = EngControlModel.fuelAdjustmentSlider(value: 0)
-    try assertEq(s.tryChange(to: .nan, papel: .chefe, carroParado: true).accepted, false)
-    try assertEq(s.tryChange(to: .infinity, papel: .chefe, carroParado: true).accepted, false)
-}
-
-step("ECM-08: withValue cria nova instância imutável") {
-    let s = EngControlModel.fuelAdjustmentSlider(value: 4)
-    let s2 = s.withValue(2)
-    try assertClose(s.value, 4)    // original preservado
-    try assertClose(s2.value, 2)
-    try assertEq(s.id, s2.id)
-}
-
-step("ECM-09: toggle moduloEngenhariaToggle binário") {
-    let off = EngControlModel.moduloEngenhariaToggle(value: false)
-    try assertClose(off.value, 0)
-    let on = EngControlModel.moduloEngenhariaToggle(value: true)
-    try assertClose(on.value, 1)
-}
-
-step("ECM-10: DecisionPolicy — piloto não rejeita (só aprova/edita)") {
-    let r1 = EngineeringDecisionPolicy.canDecide(papel: .piloto, carroParado: true, para: .aprovada)
-    if case .success = r1 {} else { throw Bad(msg: "piloto deve poder aprovar parado") }
-    let r2 = EngineeringDecisionPolicy.canDecide(papel: .piloto, carroParado: true, para: .rejeitada)
-    if case .failure = r2 {} else { throw Bad(msg: "piloto NÃO rejeita") }
-}
-
-step("ECM-11: DecisionPolicy — transitionAllowed só de pendente") {
-    let r1 = EngineeringDecisionPolicy.transitionAllowed(from: .pendente, to: .aprovada)
-    if case .success = r1 {} else { throw Bad(msg: "pendente → aprovada deve passar") }
-    let r2 = EngineeringDecisionPolicy.transitionAllowed(from: .aprovada, to: .rejeitada)
-    if case .failure(let err) = r2 {
-        try assertEq(err, .decisaoFinalizada)
-    } else {
-        throw Bad(msg: "aprovada → rejeitada deve falhar")
-    }
-}
-
-step("ECM-12: DecisionPolicy.authorize integra ambos checks") {
-    // Chefe aprovando pendente com carro andando — OK
-    let r1 = EngineeringDecisionPolicy.authorize(
-        papel: .chefe, carroParado: false,
-        from: .pendente, to: .aprovada
-    )
-    if case .success = r1 {} else { throw Bad(msg: "chefe deve aprovar mesmo com carro andando") }
-
-    // Piloto aprovando pendente com carro andando — bloqueio D17
-    let r2 = EngineeringDecisionPolicy.authorize(
-        papel: .piloto, carroParado: false,
-        from: .pendente, to: .aprovada
-    )
-    if case .failure(let err) = r2 {
-        try assertEq(err, .carroAndando)
-    } else {
-        throw Bad(msg: "piloto andando não deve aprovar")
-    }
-
-    // Chefe tentando re-decidir aprovada — bloqueio decisaoFinalizada
-    let r3 = EngineeringDecisionPolicy.authorize(
-        papel: .chefe, carroParado: true,
-        from: .aprovada, to: .rejeitada
-    )
-    if case .failure(let err) = r3 {
-        try assertEq(err, .decisaoFinalizada)
-    } else {
-        throw Bad(msg: "decisão já finalizada não deve mudar")
-    }
-}
-
-// ── Manutenção · Consumíveis (modelo CHECAGEM ≠ TROCA) ───────
-step("consumiveis: catálogo tem 30 itens") {
-    try assertEq(CatalogoConsumiveisCelta.itens.count, 30)
-}
-step("consumiveis: 10 blocos na ordem do catálogo") {
-    try assertEq(CatalogoConsumiveisCelta.porBloco().count, 10)
-}
-step("consumiveis: distribuição por modo de troca (16/9/4/1)") {
-    let it = CatalogoConsumiveisCelta.itens
-    try assertEq(it.filter { $0.troca.token == "limite" }.count, 16)
-    try assertEq(it.filter { $0.troca.token == "resultado" }.count, 9)
-    try assertEq(it.filter { $0.troca.token == "preditivo" }.count, 4)
-    try assertEq(it.filter { $0.troca.token == "rec" }.count, 1)
-}
-step("consumiveis: find acha e devolve nil pro inexistente") {
-    try assertTrue(CatalogoConsumiveisCelta.find("pneus") != nil)
-    try assertTrue(CatalogoConsumiveisCelta.find("nao_existe") == nil)
-}
-step("consumiveis: itens-chave com modo/ação certos") {
-    try assertEq(CatalogoConsumiveisCelta.find("pneus")!.troca.token, "preditivo")
-    try assertEq(CatalogoConsumiveisCelta.find("reaperto_rodas")!.checagem.acao, .reapertar)
-    try assertEq(CatalogoConsumiveisCelta.find("reaperto_rodas")!.troca.token, "resultado")
-    try assertEq(CatalogoConsumiveisCelta.find("velas")!.checagem.acao, .lerVela)
-    try assertEq(CatalogoConsumiveisCelta.find("velas")!.troca, .limiteMaximo(valor: 24, unidade: .horas))
-    try assertEq(CatalogoConsumiveisCelta.find("analise_oleo")!.troca.token, "rec")
-}
-step("troca: peloResultado → condicional, soRecomendacao → recomendacao") {
-    try assertEq(avaliarTroca(troca: .peloResultado, contador: .zero).severidade, .condicional)
-    try assertEq(avaliarTroca(troca: .soRecomendacao, contador: .zero).severidade, .recomendacao)
-}
-step("troca: limite por horas (óleo 2h) verde→amarelo→vermelho") {
-    let t = ModoTroca.limiteMaximo(valor: 2, unidade: .horas)
-    let s1 = avaliarTroca(troca: t, contador: ContadorUso(horas: 1.0))
-    try assertEq(s1.severidade, .verde); try assertClose(s1.fracao, 0.5)
-    try assertEq(avaliarTroca(troca: t, contador: ContadorUso(horas: 1.7)).severidade, .amarelo)
-    try assertEq(avaliarTroca(troca: t, contador: ContadorUso(horas: 2.5)).severidade, .vermelho)
-}
-step("troca: limite por eventos e por meses") {
-    let ev = avaliarTroca(troca: .limiteMaximo(valor: 8, unidade: .eventos), contador: ContadorUso(eventos: 4))
-    try assertEq(ev.severidade, .verde); try assertClose(ev.fracao, 0.5)
-    let me = avaliarTroca(troca: .limiteMaximo(valor: 12, unidade: .meses), contador: ContadorUso(dias: 180))
-    try assertEq(me.severidade, .verde); try assertClose(me.fracao, 0.5)
-}
-step("troca: validade da etiqueta (sem data / vencido / perto / longe)") {
-    let semData = avaliarTroca(troca: .limiteMaximo(valor: nil, unidade: .validade), contador: .zero, diasAteValidade: nil)
-    try assertEq(semData.severidade, .semHistorico)
-    try assertEq(avaliarTroca(troca: .limiteMaximo(valor: nil, unidade: .validade), contador: .zero, diasAteValidade: -5).severidade, .vermelho)
-    try assertEq(avaliarTroca(troca: .limiteMaximo(valor: nil, unidade: .validade), contador: .zero, diasAteValidade: 30).severidade, .amarelo)
-    try assertEq(avaliarTroca(troca: .limiteMaximo(valor: nil, unidade: .validade), contador: .zero, diasAteValidade: 200).severidade, .verde)
-}
-step("troca: preditivo por horas (sem média / com média)") {
-    let semMedia = avaliarTroca(troca: .preditivoPorHoras, contador: ContadorUso(horas: 9), mediaHorasAprendida: nil)
-    try assertEq(semMedia.severidade, .semHistorico)
-    let comMedia = avaliarTroca(troca: .preditivoPorHoras, contador: ContadorUso(horas: 9), mediaHorasAprendida: 10)
-    try assertEq(comMedia.severidade, .amarelo); try assertClose(comMedia.fracao, 0.9)
-}
-step("inteligência: média entre trocas e detecção de anomalia (por horas)") {
-    let m = mediaDuracoes([DuracaoTroca(horas: 10), DuracaoTroca(horas: 20)])
-    try assertClose(m.horas, 15)
-    try assertTrue(detectarAnomalia(atual: DuracaoTroca(horas: 5), media: DuracaoTroca(horas: 15)))   // 5 < 9
-    try assertTrue(!detectarAnomalia(atual: DuracaoTroca(horas: 12), media: DuracaoTroca(horas: 15))) // 12 > 9
-}
-
-step("uso real: soma horas de sessões (cancelada não conta) + eventos distintos") {
-    let q = try makeTestDB()
-    let carro = "carro-uso-1"; let team = "team-1"
-    let base: Int64 = 1_700_000_000_000
-    let h: Int64 = 3_600_000  // 1 hora em ms
-    try q.write { db in
-        try Carro(id: carro, timeId: team, apelido: "Bubi").insert(db)
-        try Evento(id: "evtA", timeId: team, dataEvento: base).insert(db)
-        try Evento(id: "evtB", timeId: team, dataEvento: base + 4*h).insert(db)
-        try Sessao(id: "su1", timeId: team, eventoId: "evtA", carroId: carro,
-                   status: "finalizada", dataInicio: base, dataFim: base + h).insert(db)
-        try Sessao(id: "su2", timeId: team, eventoId: "evtA", carroId: carro,
-                   status: "finalizada", dataInicio: base + 2*h, dataFim: base + 3*h).insert(db)
-        try Sessao(id: "su3", timeId: team, eventoId: "evtB", carroId: carro,
-                   status: "finalizada", dataInicio: base + 4*h, dataFim: base + 4*h + h/2).insert(db)
-        try Sessao(id: "su4", timeId: team, eventoId: "evtB", carroId: carro,
-                   status: "cancelada", dataInicio: base + 5*h, dataFim: base + 7*h,
-                   canceladoEm: base + 5*h).insert(db)
-    }
-    let cont = try q.read { db in
-        try ManutencaoUsoReader.contador(db, carroId: carro, timeId: team,
-                                         deMs: base - 1, ateMs: base + 10*h)
-    }
-    try assertClose(cont.horas, 2.5)   // 1 + 1 + 0.5 (a cancelada fica de fora)
-    try assertEq(cont.eventos, 2)      // evtA + evtB
-}
-
-step("histórico: registra trocas, aprende a vida real e calcula status preditivo") {
-    let q = try makeTestDB()
-    let team = "team-1"; let carro = "carro-hist"
-    let base: Int64 = 1_700_000_000_000
-    let h: Int64 = 3_600_000        // 1 hora
-    let h18: Int64 = 6_480_000      // 1,8 hora
-    try q.write { db in
-        try Carro(id: carro, timeId: team, apelido: "Bubi").insert(db)
-        try Evento(id: "eh1", timeId: team, dataEvento: base).insert(db)
-        try Evento(id: "eh2", timeId: team, dataEvento: base + 10*h).insert(db)
-        try Evento(id: "eh3", timeId: team, dataEvento: base + 20*h).insert(db)
-        // uso: 2h entre troca1→troca2, 2h entre troca2→troca3, 1,8h após troca3
-        try Sessao(id: "sh1", timeId: team, eventoId: "eh1", carroId: carro, status: "finalizada", dataInicio: base + h, dataFim: base + 3*h).insert(db)
-        try Sessao(id: "sh2", timeId: team, eventoId: "eh2", carroId: carro, status: "finalizada", dataInicio: base + 11*h, dataFim: base + 13*h).insert(db)
-        try Sessao(id: "sh3", timeId: team, eventoId: "eh3", carroId: carro, status: "finalizada", dataInicio: base + 20*h, dataFim: base + 20*h + h18).insert(db)
-        // 3 trocas de pneu
-        try ManutencaoRegistro(id: "mh1", timeId: team, carroId: carro, itemCodigo: "pneus", ocorridoEm: base).insert(db)
-        try ManutencaoRegistro(id: "mh2", timeId: team, carroId: carro, itemCodigo: "pneus", ocorridoEm: base + 10*h).insert(db)
-        try ManutencaoRegistro(id: "mh3", timeId: team, carroId: carro, itemCodigo: "pneus", ocorridoEm: base + 20*h).insert(db)
-    }
-    let (n, media, status) = try q.read { db -> (Int, Double?, StatusManutencao) in
-        let hist = try ManutencaoHistorico.historico(db, carroId: carro, timeId: team, itemCodigo: "pneus")
-        let me = try ManutencaoHistorico.mediaHorasAprendida(db, carroId: carro, timeId: team, itemCodigo: "pneus")
-        let st = try ManutencaoHistorico.status(db, item: CatalogoConsumiveisCelta.find("pneus")!,
-                                                carroId: carro, timeId: team, agoraMs: base + 20*h + h18)
-        return (hist.count, me, st)
-    }
-    try assertEq(n, 3)
-    try assertClose(media, 2.0)                 // 2h + 2h → vida média do pneu = 2h
-    try assertEq(status.severidade, .amarelo)   // 1,8h / 2h = 0,9 → amarelo
-    try assertClose(status.fracao, 0.9)
-}
-
-step("migration v19: banco com tabela manutencoes ANTIGA (device 18/05) preserva e não quebra") {
-    let dbq = try DatabaseQueue()  // memória cru, sem migrations
-    try dbq.write { db in
-        // simula a tabela órfã de 18/05 (esquema antigo e incompatível)
-        try db.execute(sql: "CREATE TABLE manutencoes (id TEXT PRIMARY KEY, area TEXT, km_carro REAL, quantidade INTEGER);")
-        try db.execute(sql: "INSERT INTO manutencoes (id, area, km_carro, quantidade) VALUES ('velho-1','Motor',1000,1);")
-    }
-    // aplica TODAS as migrations (v1..v19): a v19 deve renomear a antiga e criar a nova
-    try DB.migrator.migrate(dbq)
-    try dbq.read { db in
-        let cols = try Row.fetchAll(db, sql: "PRAGMA table_info(manutencoes)").map { $0["name"] as String }
-        try assertTrue(cols.contains("validade_etiqueta"), "manutencoes nova deve ter validade_etiqueta")
-        try assertTrue(try db.tableExists("manutencoes_legado_2026_05_18"), "tabela antiga preservada")
-        let n = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM manutencoes_legado_2026_05_18") ?? 0
-        try assertEq(n, 1, "dado antigo preservado (não apagou)")
     }
 }
 

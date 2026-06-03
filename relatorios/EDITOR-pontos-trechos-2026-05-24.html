@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>Editor de pontos · Brasília</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#101a2e; --panel2:#15233d; --line:#1f2f4d;
+    --ink:#e8eef9; --muted:#8ea0c1; --accent:#5da3ff; --ok:#5dd39e;
+    --warn:#ffb454; --bad:#ff6b6b; --ouro:#e79800;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+  .wrap{display:grid;grid-template-columns:1fr 340px;height:100vh}
+  .map-area{background:var(--bg);position:relative;overflow:hidden}
+  .map-area svg{width:100%;height:100%;display:block;cursor:grab}
+  .map-area svg.dragging{cursor:grabbing}
+  .toolbar{position:absolute;top:14px;left:14px;display:flex;gap:8px;z-index:10;align-items:center;background:rgba(11,18,32,.85);padding:8px 12px;border-radius:8px;border:1px solid var(--line);backdrop-filter:blur(8px)}
+  .toolbar .btn{padding:6px 10px;font-size:11px}
+  .toolbar .info{color:var(--muted);font-size:11px;margin-left:8px}
+  .side{background:var(--panel);border-left:1px solid var(--line);overflow-y:auto;padding:18px}
+  .side h1{font-size:16px;margin:0 0 4px}
+  .side .sub{font-size:11px;color:var(--muted);margin-bottom:14px}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
+  .card h3{margin:0 0 8px;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.06em}
+  .help{background:rgba(93,163,255,.06);border-left:3px solid var(--accent);padding:8px 10px;border-radius:0 6px 6px 0;font-size:11px;line-height:1.5;margin-bottom:12px}
+  .btn{background:var(--accent);color:var(--bg);border:none;border-radius:6px;padding:8px 12px;font-weight:600;cursor:pointer;font-size:12px}
+  .btn:hover{filter:brightness(1.1)}
+  .btn-sec{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+  .btn-ok{background:var(--ok);color:var(--bg)}
+  .btn-row{display:flex;gap:6px;flex-wrap:wrap}
+  .trecho-row{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;padding:8px;border-radius:6px;margin-bottom:4px;cursor:pointer;background:var(--panel2);border:1px solid var(--line)}
+  .trecho-row:hover{background:#1a2a4a}
+  .trecho-row.ativo{background:rgba(231,152,0,.15);border-color:var(--ouro)}
+  .trecho-row .nome{font-size:12px;font-weight:600}
+  .trecho-row .par{font-size:10px;color:var(--muted)}
+  .trecho-row .ir{background:var(--accent);color:var(--bg);padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700}
+  .ponto-info{background:var(--panel2);border-radius:6px;padding:8px;margin-top:8px;font-size:11px;font-family:"SF Mono",ui-monospace,monospace;color:var(--ouro)}
+  .resultado{background:rgba(93,211,158,.08);border-left:3px solid var(--ok);padding:10px 12px;border-radius:0 6px 6px 0;font-size:11px;line-height:1.5;font-family:"SF Mono",ui-monospace,monospace;max-height:200px;overflow:auto;margin-top:8px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ouro);color:var(--bg);padding:10px 18px;border-radius:8px;font-weight:600;opacity:0;transition:opacity .25s;pointer-events:none;z-index:99}
+  .toast.show{opacity:1}
+  .ponto{cursor:grab}
+  .ponto:hover{filter:brightness(1.3)}
+  .ponto.arrastando{cursor:grabbing}
+  text{user-select:none;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="map-area">
+<svg id="mapa" viewBox="0 0 823 799" preserveAspectRatio="xMidYMid meet">
+  <!-- Trajeto verde do GPS (REFERÊNCIA FIXA, fora do grupo transformado) -->
+  <polyline points="351.7,279 414.6,237.7 414.8,237.3 370.7,361.1 330.1,277.9 331.1,276.6 326.7,277.6 324.2,276.6 323.2,276.2 322.1,277.6 321,277.9 319.6,277.2 318.3,276.5 316.5,275.2 314.5,273.9 313.2,271.5 312.1,269.5 311.9,266.7 312.9,264.3 314.9,262.7 316.6,261.4 319.4,260.2 322,259.5 326.3,257.7 328.9,256.6 331.8,255.7 334.7,254.6 337.6,253.6 340.7,252.4 343.5,251.1 346.8,250.1 349.7,248.7 352.6,247.6 355.8,246.7 358.9,245.7 362,244.6 363.8,242.3 367.2,241.1 370.2,239.9 373.2,238.7 376.4,237.6 379.4,236.6 382.1,235.7 384.9,234.7 388,233.8 391.3,233.1 394.6,232.4 397.6,231.2 400.8,229.7 403.9,228.4 406.8,227.3 409.9,226.1 413,225.1 416.5,224.1 420,222.9 423.2,221.7 426.8,220.5 430.5,219.5 434.1,218.2 437.6,217 441.3,215.8 444.9,214.7 448.7,213.7 452.3,212.2 456.1,210.8 459.9,209.4 463.7,208 467.4,206.7 471.1,205.4 474.9,204.2 478.6,203 482.5,201.5 486.5,200.2 491.2,199.1 497.2,199 504,200.3 512.9,203.3 522.7,207.5 532.6,212.3 543.9,218.1 557.1,223.9 571.1,231.1 584.9,239 598.3,248.2 610.8,259.8 621.2,273.9 626.9,291.5 629.6,310.3 632.8,329 636.2,347.5 638.9,366.3 640.5,385.4 642.4,405.1 644.4,425.1 646.2,445.2 648.3,465.5 650.6,486 653,506.5 655.2,527 657.3,547.8 659.3,568.7 660.6,589.3 662.3,606.3 663.6,620.4 664.1,633.8 661.1,647.3 652.2,660 640.9,670.4 621.9,674 603.9,672.7 585.7,668.3 568.2,660.1 551.3,651.6 535.7,641.8 519.4,632.3 502,622 483.9,613 465.7,605 445.6,598.9 423.8,596 402.6,595.9 380.9,599.6 359.6,605.7 337.1,610.9 314.9,614.8 294.5,617.5 276.9,618.8 263.7,617.1 249.2,608.7 234.5,601.9 224.8,589.3 218.8,576.8 215,564.9 256.1,534.3 268.5,522 289.3,520.1 312.3,526.7 331.8,529.6 351.3,533.3 372,536.4 393.7,537.2 414.7,534.3 435.9,527.9 457.9,520.5 478.5,510.5 499.5,498.8 518.4,484.5 536.8,470.5 555.3,455.9 571.5,437.9 583.4,416.7 591.2,394.5 593,371 590.8,348.1 587,326.2 586.3,311.6 585.1,295.7 579.4,284.5 565.1,276.9 547.2,272.6 527.6,273.4 509.8,275.1 491.7,276.9 472.1,279.1 451.9,281.3 430.5,283.3 409.8,285.1 389.2,285.8 366.9,286.8 344.8,287.8 322.3,289.1 300.7,290.8 284.2,291.2 271.4,291.9 261.3,298.5 253,312.2 246.9,325.6 252.2,342.6 259.7,357.6 272.5,369.8 287.7,378.6 304.9,385.5 324.4,391.9 343.3,397.6 363.1,398.8 384.7,397.4 405.6,392.3 425,382.6 441.4,368.1 455.7,351.7 471,337.7 485.4,327.1 499.7,320.2 516.8,319.8 533.4,325.6 548.5,339.9 553.2,356.5 551.8,372.5 543.6,387.8 533.1,401.8 520.2,413.1 503.3,420.9 486.6,430.6 470.1,440.9 454.3,452.5 437.6,464.5 420.5,475.9 401.3,485.2 380.9,489.5 357.9,492 334.7,492.4 311.8,489.5 289.7,485 269.2,481.4 259,479.3 245.1,476.3 236.2,468.8 229.4,457.2 231.8,439.9 236.3,424.4 237.5,410 230.7,395.1 218.5,379.5 204.9,366.7 194.2,351.9 190.7,333.2 194.4,313.8 203.4,295.5 218.5,280.3 237.6,269.7 258.3,262.9 279.1,256.7 300.2,250.1 321.8,243.2 343.7,235.9 366.2,228.6 389,220.8 412.1,212.5 435.6,204 459.5,195.6 484,187.3 508.1,179 528.8,171.9 546.2,166.9 564.8,166.8 584.1,172.4 601.4,183.2 614.4,201.4 619.7,222.5 623.1,242.1 627.3,262.1 631.6,281.7 635.1,302 638.6,323.6 640.8,345.2 642.8,367.2 645.3,389.1 647.4,411.5 649.3,434.7 651.5,457.9 653.3,480.7 655.1,504.2 657.2,528.2 659.1,552.4 661.1,577 662.9,600.9 664.9,623.1 667.2,637.1 666.7,651.3 661.8,666.5 638.2,671 618.6,672.5 599.8,671.4 581.6,668.3 563.6,659.8 546.4,649.7 528.9,638.1 511.3,628 492.1,616.4 472.7,607.4 452,600.3 429.8,595.8 406.5,595.5 383.9,598.1 361.4,604 338.9,609.8 315.9,615.2 293.5,618.5 274.3,619.8 260.8,616.5 247.9,607.4 237,593.3 233.1,575.3 235.6,558 246,543.5 261,531.1 279.7,524.4 299.9,524.2 319.4,528.3 339.8,533 359.9,535.8 380.4,536 402.3,534.7 423.8,531 445.4,524.9 466.6,516.8 487.3,506 506.7,489.6 526.2,475.6 545.2,460.8 563,444 577.5,424.7 587,401.6 591.2,377.6 590.6,353.1 587.2,330.6 584.9,313.3 583.3,299.1 577,287.3 564.8,277.2 547.4,272.8 529.6,273 512,276.9 496.4,281.8 481.3,284.7 465.4,286.3 448.7,287.3 431.9,287.9 415.1,288.7 399.2,289.5 384.2,290.3 368.8,291 352.2,290.7 334.6,289.2 316.1,289.1 297.5,290 282.6,290.1 269.9,292.7 259.3,300.8 251.4,313.4 250.5,329 253.8,344.1 262.9,357.9 274.8,369.7 290.7,378.2 307.9,385.1 326.2,391.1 345.9,395.9 366.4,398.5 388.2,396.8 409.7,391 428.9,380.1 445.4,365.8 459.8,349 475.5,334.3 490.7,325.5 505.5,319.4 521.8,314.9 539.7,330.6 551.2,344 555.2,360.8 551.1,377.1 542.2,392.3 530.9,405.8 517.3,417.9 499.6,424.1 483.3,432.8 466.1,444.1 450.1,455.7 433.5,467.5 416.7,478.9 395.2,486.2 373.2,489.9 350.8,492 327.9,492.3 304.9,488.9 282.2,484.8 260.8,481.2 247.4,477.1 242.7,473.8 234.1,461.8 232,445.9 232.7,431.4 236.8,416.7 234.7,401.2 225,387.7 210.9,374.2 197.8,360.4 189.3,345.3 190.3,325 196.2,304.7 211.7,286.3 230.3,274.3 250.1,265.7 271.4,259.6 292.5,252.9 313.4,246.7 335.7,239.7 357.6,232.3 379.4,224.9 402.1,216.9 425.9,209.1 450.7,200.9 474.9,192.4 498.7,184 522.8,175.9 539.5,170.2 558.1,166.8 575.6,170.6 594,179.1 608.3,195.2 617.3,214.4 622.6,233.9 627.8,253.9 631.5,274.8 634.8,295.5 637.8,315.8 640.5,337.1 643.5,358.9 646.4,381.6 648.1,403 649.5,426.2 651.3,449.6 653.1,472.4 654.7,495.7 657,519.6 659,543.9 661.1,568.1 663,592.6 665.2,616.7 666.6,634.2 666.5,650.3 659.4,662.1 646,673 633,683.6 617.7,690.2 598.3,681.2 576.1,669.8 555.1,658.1 537.1,645.1 519.8,634.7 500.9,624.3 481.6,614.2 461.1,605.3 439.2,599.1 416,596.6 392.8,598 370.2,602.4 348.3,608.4 325.8,613.8 303.1,617.5 282.9,620.7 267.1,619.8 252.2,611.3 239.5,597.5 228.6,582.9 234,563.6 242.4,547.4 251.4,534.1 271.6,529.7 290.2,526.8 311.2,527.3 331.8,530.6 351.7,534.1 372.3,534.5 394,535.3 416.2,533.2 437.9,528.2 458.5,520.8 480.2,511.2 500.8,498.6 519.9,484.8 538.4,470.1 557.4,455.4 574.6,437.4 585.5,415.6 592.4,392.4 593,367.4 589.7,343.1 586,321.3 586.3,305 582.4,294.3 572.5,283.6 557.9,275 539.8,271.7 521,273.4 503,275.5 484,278.3 464.5,280.4 444.1,282.1 423.3,283.7 401.9,284.9 380.6,286.1 358.9,287.4 336.9,288.9 314.6,290.3 294.5,290.9 279.4,290.7 266.7,294 256.3,304.1 249.9,318.7 250,334.6 256.3,349.7 266.7,363.3 280.5,373.8 297.5,381.2 315.8,387.5 334.4,393.9 354.6,398.5 375.8,399.2 397.5,394.9 417.9,386.5 435.8,373.8 451.4,358.2 466.5,342.1 482.9,330.4 498,322.9 512.4,318.6 528.7,322.6 544.3,333.5 556.2,344.2 559.4,361.5 553.3,376.6 540.9,394.2 527.9,409 513,421.9 495.1,430.3 477.9,439 461.4,450.2 444.3,461.9 427.1,472.9 409,483 387,488.6 364.6,491.5 341.1,492.8 317.7,491.1 295.7,487.2 276,483 258.4,480.3 247.1,478 237.8,471.3 231.1,457.1 233.9,439.4 236.4,424.5 236.9,408.6 229.6,393 217.1,379.1 203,367.1 192.2,351.6 187.8,332.4 191.3,311.8 204.3,293.3 222.8,276.9 242.9,266.2 264,261.7 281.5,256 298.8,251.8 315.1,246.7 332.3,241.4 348.8,235.7 365,230.8 380,225.7 395.9,220.3 412,214.3 430.9,207.2 451.4,200.8 471.6,193.7 491.8,186.5 512.4,179.2 529.6,173.6 547.4,167.9 564.2,167.6 582.5,173.1 598.2,184.6 608.4,201 616,218.7 620.5,235.6 623.9,255.2 627.8,275 631.9,293.8 635.4,312.1 638.6,329.7 640.6,347 642.1,363.3 643.4,378.9 644.3,393.4 645,406.2 645.6,418.8 645.8,432.9 646.1,447.1 646.4,460.7 646.8,473.1 647.9,485.5 649.4,498.5 650.6,510.6 651.8,521.7 653,532.1 654.3,542.1 655.7,552.6 657.3,564.4 658.8,577 660.3,590.2 662.1,604 663.8,618 664.3,631.1 662.7,643.7 656.8,655.3 646.1,664.1 631.7,669 616,670.7 599.9,668.5 584,663.8 568.1,657.1 552.7,647.3 537.1,637.6 521.6,628.9 505.1,620.2 487,612.3 469.7,605.1 451,599.4 430.8,596 410.3,595 392,596.2 376.1,598.4 362.1,601.2 348.6,604.3 333.7,608.4 317.6,613 300.5,616.8 283.9,618.7 268.4,617.4 254.4,610.7 242.8,599 236.1,583.9 235.1,567.5 240.8,550.9 251.9,537.3 267.8,527.9 286.5,524.5 306.3,525.4 325.4,529 344.5,532.2 363.6,534.3 382.6,534.8 401.5,534 419.5,531.6 437,527.5 454.6,521.2 471.8,513.1 488.6,503.2 505.3,491.5 522.3,479.2 539.7,466.2 555.9,453.4 568.3,439 577.4,423.2 583.8,406.5 587.8,389.5 589.8,373.1 589.9,357.2 588.7,342 586.9,327.6 584.9,313.9 582.3,299.9 577.4,287 569.3,276.7 559.5,268.9 548.5,263.8 536.9,261.8 525.9,261.8 514.8,263.5 504.3,266 494.8,268.2 485.9,269.8 476.6,272.2 466,275.6 454.1,278.8 441.4,282 427.8,285.9 413.4,289.4 399,291 385.9,291.7 373.9,292 362.9,292.3 352.4,292.8 342.5,293.8 333,294.6 323.6,295.2 314,295.5 303.4,294.5 291.5,292.5 278.7,292.4 266.4,297.1 255.8,305.5 251.1,318.8 251.7,333 257.4,346.8 267.3,358.9 280.5,368.4 295.8,376 312.4,382.7 330.2,388.3 349.2,393 369.2,395.8 389.3,396.1 407.8,392.6 423.4,382.5 437.4,369.5 450.7,355.8 465,343.9 479.3,333.8 494.5,326.5 509.7,322.5 524,324 536.4,330.4 545,341.3 548,355.5 545.1,370.4 537.2,384.1 526.3,394.4 512.9,403.2 499,412 485.5,422.2 472.1,433 458.2,443.8 443.8,454.7 428.5,465.5 412.8,475.9 394.8,483.9 375.1,488.4 353.7,488.8 332.5,487.7 313,485.1 294.8,482.5 278.3,480.6 263.9,478.4 252.3,474.9 242.1,468.3 236.7,457.8 235.3,445.4 236.6,432.7 237.2,419.4 236.4,405.9 234,392.9 230.5,381.5 226.8,371.6 223.2,363.1 220.1,355.7 217.3,348.3 214.9,341.3 212.7,334.8 211,328.8 210.5,323.1 211.1,317.5 212.5,311.9 214.9,306.6 218.1,301.6 221.3,296.8 225.5,292.4 230.4,288.6 235.8,285.4 241.6,283.1 247.6,280.9 253.5,278.9 259.5,276.9 265.6,274.9 271.6,273 277.6,271 283.5,268.8 289.2,266.8 295,264.9 300.6,263.1 306.1,261.2 311.5,259.4 316.8,257.6 321.9,255.8 326.7,254.1 331.1,252.6 335.1,251.3 338.6,250.1 341.6,249.2 344.1,248.4 346.3,247.7 348.3,247.5 350.2,247.9 351.6,249 352.7,249.8 353.4,250.6 353.9,251.3 354.2,252.1 354.3,252.7 354.4,253.1 354.4,253.1 354.4,253.1 354.4,253.2 354.4,253.3 354.4,253.3 354.4,253.3 354.4,253.3 354.4,253.2 354.3,253.2 354.3,253.5 354.2,253.4 354.2,253.4 354.2,253.3 354.4,253.3 354.2,253.2 354.3,253.4 354.3,253.3 354.3,253.2 354.3,253.3 354.4,253.4 354.4,253.3 354.5,253.4 354.6,253.4 354.7,253.4 354.7,253.4 354.7,253.4 354.7,253.5 354.6,253.5 354.7,253.5 354.6,253.6 354.5,253.5 354.1,253.7 354.2,253.6 354.2,253.6 354.4,253.5 354.4,253.7 354.4,253.5 354.5,253.5 354.5,253.6 354.4,253.4 354.4,253.4 354.2,253.4 354.9,253.8 354.7,254.5 354.4,255.4 354.2,255.6 354.5,255.6 354.5,256.2 354.3,256.3 354.3,256 354.6,255.5 354.8,254.9 354.9,254.4 355.1,254 355.2,253.4 355,253.1 355,252.8 354.6,252.7 354.8,252.8 355,252.8 354.7,252.2 355.1,252.5 354.9,252.7 354.9,252.9 354.8,252.9 354.4,253 354.5,253 354.5,253.1 354.5,253.1 354.4,253 354.4,252.9 354.5,252.9 354.4,252.8 354.4,252.8 354.4,252.7 354.5,252.9 354.5,253 354.6,253 354.6,252.9 354.6,252.9 354.6,252.8 354.7,252.9 354.7,252.9 354.6,252.8 354.6,252.8 354.6,252.8 354.6,252.8 354.4,252.8 354.4,252.8 354.5,252.8 354.6,252.9 354.6,252.9 354.6,252.9 354.5,252.7 354.6,252.8 354.7,252.8 354.7,252.8 354.7,252.8 354.7,252.8 354.6,252.9 354.6,252.9 354.6,252.8 354.7,252.8 354.6,252.8 354.6,252.8 354.7,252.7 354.7,252.6 354.6,252.6 354.6,252.6 354.7,252.6 354.7,252.6 354.6,252.6 354.6,252.6 354.6,252.6 354.6,252.6 354.6,252.6 354.7,252.7 354.7,252.7 354.7,252.7 354.7,252.7 354.7,252.7 354.8,252.7 354.9,252.7 354.9,252.7 354.9,252.7 354.9,252.7 355.1,252.7 355.2,252.7 355.2,252.7 355.2,252.7 355.2,252.7 355.2,252.7 355.2,252.7 355.2,252.7 355.2,252.7 355.2,252.7 355.1,252.6 355,252.6 354.9,252.6 354.9,252.6 354.9,252.5 354.8,252.5 354.8,252.5 354.8,252.5 354.8,252.5 354.8,252.5 354.8,252.5 354.8,252.5" fill="none" stroke="#5dd39e" stroke-width="2.5" opacity="0.85" />
+  <!-- Grupo do desenho oficial + pontos: este sim recebe transform dos sliders -->
+  <g id="desenho-grupo">
+    <!-- Desenho oficial -->
+    <path d="M 368.03 228.20 L 375.01 225.62 L 381.99 223.05 L 388.97 220.47 L 395.95 217.89 L 402.94 215.32 L 409.92 212.74 L 416.90 210.17 L 423.88 207.59 L 430.87 205.01 L 437.85 202.44 L 444.83 199.86 L 451.82 197.27 L 458.80 194.70 L 465.78 192.12 L 472.77 189.54 L 479.75 186.97 L 486.73 184.39 L 493.71 181.81 L 500.69 179.24 L 507.68 176.66 L 514.66 174.09 L 521.64 171.51 L 528.62 168.93 L 534.48 167.17 L 540.13 165.65 L 545.94 164.13 L 551.79 163.00 L 557.38 162.35 L 562.98 162.09 L 568.83 162.50 L 574.72 163.30 L 580.54 164.64 L 585.99 166.53 L 591.39 168.97 L 596.32 172.15 L 601.53 176.33 L 606.26 181.26 L 611.02 186.19 L 614.61 191.77 L 617.40 197.43 L 618.87 202.71 L 619.85 208.62 L 621.05 214.91 L 622.30 221.73 L 623.22 228.27 L 624.51 233.86 L 625.22 239.57 L 626.51 245.22 L 627.71 251.07 L 628.74 257.12 L 629.66 263.31 L 630.92 269.40 L 632.06 275.45 L 633.15 282.15 L 634.26 288.85 L 635.34 295.55 L 636.45 302.25 L 637.54 308.95 L 638.64 315.65 L 639.42 322.40 L 640.20 329.13 L 640.98 335.88 L 641.37 343.01 L 641.74 350.13 L 642.13 357.25 L 642.66 362.76 L 643.19 368.28 L 643.72 373.80 L 644.26 379.31 L 644.57 386.00 L 644.89 392.69 L 645.20 399.38 L 645.52 406.08 L 645.82 412.77 L 646.14 419.46 L 646.45 426.16 L 646.77 432.85 L 647.08 439.54 L 647.40 446.23 L 647.53 452.03 L 647.66 457.83 L 647.78 463.62 L 647.91 469.42 L 648.39 476.28 L 648.87 483.15 L 649.34 490.01 L 649.82 496.87 L 650.30 503.74 L 650.78 510.61 L 651.25 517.47 L 651.44 523.44 L 651.64 529.42 L 651.83 535.40 L 652.01 541.37 L 652.46 547.87 L 652.92 554.38 L 653.37 560.89 L 653.83 567.39 L 654.28 573.90 L 654.74 580.39 L 655.19 586.90 L 655.65 593.40 L 656.10 599.90 L 656.56 606.41 L 656.56 612.62 L 656.56 618.82 L 656.55 625.02 L 656.56 631.22 L 656.55 637.43 L 655.04 643.14 L 652.28 648.75 L 648.22 653.47 L 643.06 657.51 L 636.76 662.05 L 630.26 664.50 L 624.81 665.42 L 619.35 665.71 L 613.66 666.21 L 608.37 666.10 L 602.87 665.91 L 597.38 665.70 L 591.88 664.91 L 586.37 664.12 L 580.88 663.33 L 575.27 661.68 L 569.67 660.03 L 564.06 658.38 L 558.58 656.02 L 553.10 653.68 L 547.62 651.32 L 542.19 648.09 L 536.77 644.86 L 531.35 641.64 L 525.92 638.41 L 520.50 635.18 L 515.07 631.95 L 509.02 628.87 L 502.96 625.79 L 496.91 622.72 L 490.86 619.64 L 484.80 616.56 L 478.74 613.48 L 472.53 610.65 L 466.32 607.81 L 460.11 604.98 L 453.15 603.35 L 446.19 601.71 L 439.24 600.07 L 431.90 599.32 L 424.56 598.56 L 417.22 597.82 L 409.74 597.85 L 402.25 597.90 L 394.76 597.94 L 389.06 598.86 L 383.37 599.77 L 377.68 600.70 L 371.97 601.62 L 365.47 603.41 L 358.99 605.20 L 352.49 606.98 L 346.00 608.77 L 339.50 610.55 L 333.01 612.34 L 326.51 614.13 L 319.19 615.70 L 311.87 617.29 L 304.55 618.86 L 298.11 619.81 L 291.66 620.77 L 285.21 621.73 L 279.73 621.75 L 274.26 621.77 L 267.72 621.36 L 260.89 620.08 L 254.20 618.28 L 249.95 615.85 L 245.69 613.41 L 241.02 609.98 L 237.08 605.39 L 233.47 600.36 L 231.51 595.02 L 230.28 590.24 L 229.06 585.46 L 229.47 580.53 L 229.87 575.60 L 230.27 570.67 L 232.42 565.83 L 234.57 560.99 L 237.25 556.25 L 240.19 551.89 L 243.69 547.64 L 247.53 543.81 L 252.32 540.31 L 257.46 537.25 L 262.89 534.92 L 268.76 533.05 L 274.91 531.91 L 281.32 531.40 L 287.12 531.62 L 293.17 532.49 L 299.23 533.34 L 305.68 533.89 L 312.12 534.43 L 318.56 534.97 L 325.00 535.52 L 331.44 536.06 L 337.89 536.60 L 344.37 536.99 L 350.84 537.38 L 357.32 537.77 L 364.34 537.75 L 371.37 537.73 L 378.39 537.71 L 385.44 536.97 L 392.50 536.24 L 399.55 535.50 L 405.17 534.05 L 410.80 532.59 L 416.42 531.14 L 422.05 529.69 L 429.26 527.51 L 436.48 525.34 L 443.70 523.16 L 450.59 520.19 L 457.49 517.22 L 464.38 514.24 L 469.71 511.42 L 475.03 508.60 L 480.37 505.78 L 485.70 502.95 L 490.65 499.49 L 495.61 496.02 L 500.57 492.56 L 505.52 489.10 L 510.89 484.93 L 516.25 480.75 L 521.62 476.57 L 526.99 472.39 L 532.35 468.22 L 537.72 464.04 L 543.08 459.87 L 548.51 454.96 L 553.93 450.05 L 559.35 445.15 L 563.75 439.42 L 568.13 433.71 L 572.53 427.98 L 575.77 421.83 L 579.00 415.68 L 582.24 409.53 L 584.31 402.72 L 586.38 395.92 L 588.44 389.11 L 590.51 382.64 L 592.10 375.80 L 593.33 370.02 L 594.22 365.40 L 594.79 360.37 L 595.28 354.86 L 595.81 348.39 L 596.17 340.79 L 596.09 334.38 L 596.14 328.23 L 595.44 321.77 L 594.44 316.93 L 593.25 311.73 L 591.13 306.29 L 588.80 301.30 L 586.99 296.19 L 584.97 291.07 L 582.66 286.38 L 578.83 282.32 L 575.00 278.27 L 569.13 275.06 L 563.26 271.85 L 555.99 270.09 L 548.71 268.34 L 543.24 268.75 L 537.79 269.15 L 532.32 269.56 L 525.09 270.54 L 517.86 271.53 L 510.62 272.51 L 503.39 273.50 L 496.15 274.48 L 488.93 275.46 L 481.69 276.45 L 474.28 277.14 L 466.87 277.84 L 459.47 278.53 L 452.06 279.21 L 444.65 279.91 L 437.24 280.60 L 429.84 281.29 L 422.44 281.99 L 415.03 282.68 L 407.62 283.38 L 400.21 284.06 L 392.81 284.76 L 385.40 285.45 L 377.99 286.14 L 370.58 286.84 L 363.18 287.53 L 355.77 288.22 L 348.36 288.91 L 340.96 289.61 L 333.55 290.30 L 326.15 290.99 L 318.74 291.69 L 311.33 292.38 L 303.92 293.07 L 296.52 293.76 L 289.11 294.45 L 282.05 295.38 L 275.17 296.99 L 268.86 299.15 L 263.07 302.63 L 257.58 307.14 L 253.82 312.17 L 250.70 318.36 L 248.94 324.58 L 248.60 331.52 L 249.86 338.05 L 251.85 344.82 L 255.31 351.00 L 258.85 356.38 L 262.55 360.50 L 266.32 363.84 L 270.29 366.80 L 274.90 369.49 L 279.68 371.82 L 284.47 374.14 L 289.83 375.85 L 295.18 377.56 L 300.55 379.28 L 307.21 382.00 L 313.87 384.70 L 320.54 387.42 L 327.20 390.12 L 333.86 392.84 L 339.99 394.67 L 346.13 396.50 L 352.23 397.91 L 358.94 398.55 L 365.62 398.76 L 372.16 398.45 L 378.92 397.99 L 385.54 397.00 L 391.95 395.57 L 398.63 393.41 L 405.29 390.94 L 411.41 387.95 L 417.50 384.17 L 423.40 380.12 L 428.97 375.88 L 434.55 371.03 L 439.80 365.99 L 445.03 360.95 L 450.27 355.92 L 455.51 350.88 L 460.75 345.83 L 465.66 341.80 L 470.55 337.75 L 475.45 333.71 L 479.85 330.85 L 484.25 327.98 L 489.24 325.19 L 495.10 322.78 L 501.44 320.47 L 508.26 318.96 L 514.67 318.73 L 521.36 319.00 L 527.87 320.86 L 534.33 323.16 L 539.79 327.04 L 544.18 331.73 L 547.43 337.26 L 549.60 343.93 L 550.21 350.70 L 550.01 355.91 L 549.08 360.94 L 547.52 365.93 L 545.39 370.71 L 542.63 375.46 L 539.58 380.19 L 536.07 384.34 L 532.27 388.49 L 528.47 392.63 L 523.93 396.26 L 519.38 399.88 L 514.83 403.50 L 508.79 407.74 L 502.75 411.96 L 496.71 416.20 L 490.67 420.42 L 484.63 424.65 L 478.56 429.20 L 472.49 433.75 L 466.42 438.29 L 460.35 442.84 L 454.28 447.39 L 448.21 451.94 L 442.14 456.48 L 436.07 461.02 L 430.29 464.88 L 424.51 468.75 L 418.72 472.61 L 412.39 475.88 L 406.06 479.15 L 399.39 482.31 L 392.82 484.94 L 385.63 487.42 L 378.66 489.37 L 371.99 490.56 L 364.48 491.33 L 356.97 491.83 L 349.55 491.85 L 342.13 491.86 L 334.71 491.88 L 327.29 491.60 L 319.88 491.32 L 312.47 491.04 L 305.11 490.34 L 297.75 489.65 L 290.39 488.94 L 283.25 487.90 L 276.11 486.86 L 268.96 485.83 L 261.82 484.79 L 255.20 483.48 L 248.78 481.97 L 242.93 479.54 L 237.72 477.06 L 232.81 472.61 L 229.73 467.05 L 228.32 461.26 L 228.13 455.87 L 228.59 450.77 L 229.74 445.48 L 231.27 440.69 L 232.80 435.90 L 233.97 431.17 L 235.02 426.06 L 235.69 421.02 L 235.44 416.07 L 234.74 410.99 L 233.11 405.99 L 231.21 401.21 L 228.41 396.30 L 225.33 391.60 L 221.58 386.91 L 217.98 382.86 L 213.71 378.83 L 209.64 374.58 L 206.11 370.32 L 202.78 365.85 L 199.75 361.20 L 197.65 356.30 L 195.83 351.22 L 194.39 346.23 L 193.19 340.55 L 193.16 335.22 L 193.25 329.80 L 194.52 323.93 L 196.18 318.36 L 198.24 312.23 L 201.31 306.43 L 204.65 300.80 L 208.15 295.45 L 212.15 290.32 L 216.95 285.98 L 222.55 281.54 L 228.49 277.71 L 234.77 274.22 L 241.07 270.96 L 248.27 268.39 L 254.34 266.04 L 261.01 263.99 L 267.64 262.13 L 274.47 260.32 L 281.61 258.41 L 288.55 256.56 L 295.76 254.37 L 302.63 252.04 L 309.89 249.56 L 317.10 246.91 L 324.30 244.27 L 331.50 241.62 L 338.70 238.97 L 345.90 236.32 L 353.10 233.68 L 360.30 231.03 L 367.51 228.38 Z" fill="none" stroke="#5da3ff" stroke-width="6" stroke-linejoin="round" opacity="0.7" />
+    <!-- Linha de chegada -->
+    <line x1="555.76" y1="604.27" x2="569.42" y2="618.82" stroke="#ffb454" stroke-width="3" />
+    <!-- Pontos canônicos -->
+    <g id="pontos">
+      
+        
+        <line class="barrinha" data-trecho="0" data-tipo="entrada" x1="613.6" y1="178.4" x2="641.6" y2="178.4" stroke="#ffb454" stroke-width="4" stroke-linecap="round" opacity="0.85" />
+        <circle class="ponto" data-trecho="0" data-tipo="entrada" cx="627.6" cy="178.4" r="7" fill="#ffb454" stroke="#fff" stroke-width="1.5" />
+        <text x="639.6" y="170.4" fill="#ffb454" font-size="10" font-weight="700">E 01</text>
+        
+        <line class="barrinha" data-trecho="0" data-tipo="saida" x1="710" y1="233.4" x2="738" y2="233.4" stroke="#5dd39e" stroke-width="4" stroke-linecap="round" opacity="0.85" />
+        <circle class="ponto" data-trecho="0" data-tipo="saida" cx="724" cy="233.4" r="7" fill="#5dd39e" stroke="#fff" stroke-width="1.5" />
+        <text x="736" y="225.4" fill="#5dd39e" font-size="10" font-weight="700">S 01</text>
+      
+        
+        <line class="barrinha" data-trecho="1" data-tipo="entrada" x1="387.7" y1="308.5" x2="415.7" y2="308.5" stroke="#ffb454" stroke-width="4" stroke-linecap="round" opacity="0.85" />
+        <circle class="ponto" data-trecho="1" data-tipo="entrada" cx="401.7" cy="308.5" r="7" fill="#ffb454" stroke="#fff" stroke-width="1.5" />
+        <text x="413.7" y="300.5" fill="#ffb454" font-size="10" font-weight="700">E DA RETA OPOSTA</text>
+        
+        <line class="barrinha" data-trecho="1" data-tipo="saida" x1="361.3" y1="396.9" x2="389.3" y2="396.9" stroke="#5dd39e" stroke-width="4" stroke-linecap="round" opacity="0.85" />
+        <circle class="ponto" data-trecho="1" data-tipo="saida" cx="375.3" cy="396.9" r="7" fill="#5dd39e" stroke="#fff" stroke-width="1.5" />
+        <text x="387.3" y="388.9" fill="#5dd39e" font-size="10" font-weight="700">S DA RETA OPOSTA</text>
+      
+        
+        <line class="barrinha" data-trecho="2" data-tipo="entrada" x1="747.3" y1="655.5" x2="775.3" y2="655.5" stroke="#ffb454" stroke-width="4" stroke-linecap="round" opacity="0.85" />
+        <circle class="ponto" data-trecho="2" data-tipo="entrada" cx="761.3" cy="655.5" r="7" fill="#ffb454" stroke="#fff" stroke-width="1.5" />
+        <text x="773.3" y="647.5" fill="#ffb454" font-size="10" font-weight="700">E 2</text>
+        
+        <line class="barrinha" data-trecho="2" data-tipo="saida" x1="661.6" y1="698.8" x2="689.6" y2="698.8" stroke="#5dd39e" stroke-width="4" stroke-linecap="round" opacity="0.85" />
+        <circle class="ponto" data-trecho="2" data-tipo="saida" cx="675.6" cy="698.8" r="7" fill="#5dd39e" stroke="#fff" stroke-width="1.5" />
+        <text x="687.6" y="690.8" fill="#5dd39e" font-size="10" font-weight="700">S 2</text>
+      
+        
+        <line class="barrinha" data-trecho="3" data-tipo="entrada" x1="353.1" y1="656.2" x2="381.1" y2="656.2" stroke="#ffb454" stroke-width="4" stroke-linecap="round" opacity="0.85" />
+        <circle class="ponto" data-trecho="3" data-tipo="entrada" cx="367.1" cy="656.2" r="7" fill="#ffb454" stroke="#fff" stroke-width="1.5" />
+        <text x="379.1" y="648.2" fill="#ffb454" font-size="10" font-weight="700">E DA JUNÇÃO</text>
+        
+        <line class="barrinha" data-trecho="3" data-tipo="saida" x1="380.1" y1="564.1" x2="408.1" y2="564.1" stroke="#5dd39e" stroke-width="4" stroke-linecap="round" opacity="0.85" />
+        <circle class="ponto" data-trecho="3" data-tipo="saida" cx="394.1" cy="564.1" r="7" fill="#5dd39e" stroke="#fff" stroke-width="1.5" />
+        <text x="406.1" y="556.1" fill="#5dd39e" font-size="10" font-weight="700">S DA JUNÇÃO</text>
+      
+        
+        <line class="barrinha" data-trecho="4" data-tipo="entrada" x1="683.1" y1="346.5" x2="711.1" y2="346.5" stroke="#ffb454" stroke-width="4" stroke-linecap="round" opacity="0.85" />
+        <circle class="ponto" data-trecho="4" data-tipo="entrada" cx="697.1" cy="346.5" r="7" fill="#ffb454" stroke="#fff" stroke-width="1.5" />
+        <text x="709.1" y="338.5" fill="#ffb454" font-size="10" font-weight="700">E DA BRUXA</text>
+        
+        <line class="barrinha" data-trecho="4" data-tipo="saida" x1="611.9" y1="284.5" x2="639.9" y2="284.5" stroke="#5dd39e" stroke-width="4" stroke-linecap="round" opacity="0.85" />
+        <circle class="ponto" data-trecho="4" data-tipo="saida" cx="625.9" cy="284.5" r="7" fill="#5dd39e" stroke="#fff" stroke-width="1.5" />
+        <text x="637.9" y="276.5" fill="#5dd39e" font-size="10" font-weight="700">S DA BRUXA</text>
+      
+        
+        <line class="barrinha" data-trecho="5" data-tipo="entrada" x1="551.7" y1="356.9" x2="579.7" y2="356.9" stroke="#ffb454" stroke-width="4" stroke-linecap="round" opacity="0.85" />
+        <circle class="ponto" data-trecho="5" data-tipo="entrada" cx="565.7" cy="356.9" r="7" fill="#ffb454" stroke="#fff" stroke-width="1.5" />
+        <text x="577.7" y="348.9" fill="#ffb454" font-size="10" font-weight="700">E DO PLACAR</text>
+        
+        <line class="barrinha" data-trecho="5" data-tipo="saida" x1="601.8" y1="420.1" x2="629.8" y2="420.1" stroke="#5dd39e" stroke-width="4" stroke-linecap="round" opacity="0.85" />
+        <circle class="ponto" data-trecho="5" data-tipo="saida" cx="615.8" cy="420.1" r="7" fill="#5dd39e" stroke="#fff" stroke-width="1.5" />
+        <text x="627.8" y="412.1" fill="#5dd39e" font-size="10" font-weight="700">S DO PLACAR</text>
+      
+        
+        <line class="barrinha" data-trecho="6" data-tipo="entrada" x1="330.1" y1="511.7" x2="358.1" y2="511.7" stroke="#ffb454" stroke-width="4" stroke-linecap="round" opacity="0.85" />
+        <circle class="ponto" data-trecho="6" data-tipo="entrada" cx="344.1" cy="511.7" r="7" fill="#ffb454" stroke="#fff" stroke-width="1.5" />
+        <text x="356.1" y="503.7" fill="#ffb454" font-size="10" font-weight="700">E "S"</text>
+        
+        <line class="barrinha" data-trecho="6" data-tipo="saida" x1="278.3" y1="397.4" x2="306.3" y2="397.4" stroke="#5dd39e" stroke-width="4" stroke-linecap="round" opacity="0.85" />
+        <circle class="ponto" data-trecho="6" data-tipo="saida" cx="292.3" cy="397.4" r="7" fill="#5dd39e" stroke="#fff" stroke-width="1.5" />
+        <text x="304.3" y="389.4" fill="#5dd39e" font-size="10" font-weight="700">S "S"</text>
+      
+        
+        <line class="barrinha" data-trecho="7" data-tipo="entrada" x1="271.7" y1="392.8" x2="299.7" y2="392.8" stroke="#ffb454" stroke-width="4" stroke-linecap="round" opacity="0.85" />
+        <circle class="ponto" data-trecho="7" data-tipo="entrada" cx="285.7" cy="392.8" r="7" fill="#ffb454" stroke="#fff" stroke-width="1.5" />
+        <text x="297.7" y="384.8" fill="#ffb454" font-size="10" font-weight="700">E DA VITÓRIA</text>
+        
+        <line class="barrinha" data-trecho="7" data-tipo="saida" x1="343.7" y1="273.7" x2="371.7" y2="273.7" stroke="#5dd39e" stroke-width="4" stroke-linecap="round" opacity="0.85" />
+        <circle class="ponto" data-trecho="7" data-tipo="saida" cx="357.7" cy="273.7" r="7" fill="#5dd39e" stroke="#fff" stroke-width="1.5" />
+        <text x="369.7" y="265.7" fill="#5dd39e" font-size="10" font-weight="700">S DA VITÓRIA</text>
+      
+    </g>
+  </g>
+</svg>
+
+<div class="toolbar">
+  <button class="btn btn-sec" id="resetZoom">Voltar ao zoom inicial</button>
+  <button class="btn btn-sec" id="zoomIn">+</button>
+  <button class="btn btn-sec" id="zoomOut">−</button>
+  <span class="info" id="zoomInfo">Zoom: 100%</span>
+  <span class="info">Rolar mouse = zoom · Shift+arrastar = mover · Arrastar ponto = reposicionar</span>
+</div>
+</div>
+
+<div class="side">
+  <h1>Editor de entrada e saída</h1>
+  <div class="sub">Você marca só a barrinha de entrada (laranja) e a de saída (verde) de cada curva. O ápice é descoberto automaticamente pelo aplicativo a partir da melhor passagem do piloto.</div>
+
+  <div class="card">
+    <h3>Como usar</h3>
+    <div class="help">
+      <strong>Rolar mouse</strong>: zoom no ponto onde está o cursor<br>
+      <strong>Shift + arrastar fundo</strong>: mover o mapa<br>
+      <strong>Arrastar ponto colorido</strong>: reposicionar o ponto<br>
+      <strong>Clicar em uma curva da lista abaixo</strong>: ir até ela ampliada
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Ajustes do desenho (azul)</h3>
+    <div class="help" style="margin-bottom:8px">Os pontos coloridos seguem o desenho automaticamente quando você mexe nesses controles.</div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div><label style="font-size:11px;color:var(--muted)">Largura <span style="color:var(--ouro);float:right" id="vScX">100,00%</span></label><input type="range" id="scX" min="50" max="150" step="0.05" value="100" style="width:100%"></div>
+      <div><label style="font-size:11px;color:var(--muted)">Altura <span style="color:var(--ouro);float:right" id="vScY">100,00%</span></label><input type="range" id="scY" min="50" max="150" step="0.05" value="100" style="width:100%"></div>
+      <div><label style="font-size:11px;color:var(--muted)">Girar <span style="color:var(--ouro);float:right" id="vRotD">0,00°</span></label><input type="range" id="rotD" min="-180" max="180" step="0.1" value="0" style="width:100%"></div>
+      <div><label style="font-size:11px;color:var(--muted)">Mover horizontal <span style="color:var(--ouro);float:right" id="vTxD">0</span></label><input type="range" id="txD" min="-200" max="200" step="1" value="0" style="width:100%"></div>
+      <div><label style="font-size:11px;color:var(--muted)">Mover vertical <span style="color:var(--ouro);float:right" id="vTyD">0</span></label><input type="range" id="tyD" min="-200" max="200" step="1" value="0" style="width:100%"></div>
+    </div>
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn btn-sec" id="zerarDesenho">Zerar transformação</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Trechos pedagógicos</h3>
+    <div id="listaTrechos"></div>
+  </div>
+
+  <div class="card">
+    <h3>Último ponto editado</h3>
+    <div class="ponto-info" id="ultimoPonto">Nenhum ainda</div>
+  </div>
+
+  <div class="card">
+    <h3>Salvar alterações</h3>
+    <div class="help">Quando estiver satisfeito com os pontos, clique no botão pra exportar todos. Eu pego os números e gravo no cadastro com cópia de segurança antes.</div>
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn btn-ok" id="exportar">Exportar pontos</button>
+      <button class="btn btn-sec" id="restaurar">Restaurar originais</button>
+    </div>
+    <div class="resultado" id="resultado" style="display:none"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+</div>
+
+<script>
+const trechos = [{"id":"seg_brasilia_0","nome":"CURVA 01","parcial":"P1","entrada":{"x":627.6,"y":178.4},"apice":{"x":704.2,"y":196.6},"saida":{"x":724,"y":233.4}},{"id":"seg_brasilia_2","nome":"CURVA DA RETA OPOSTA","parcial":"P1","entrada":{"x":401.7,"y":308.5},"apice":{"x":344.9,"y":327.4},"saida":{"x":375.3,"y":396.9}},{"id":"seg_brasilia_3","nome":"CURVA 2","parcial":"P1","entrada":{"x":761.3,"y":655.5},"apice":{"x":744.2,"y":689.9},"saida":{"x":675.6,"y":698.8}},{"id":"seg_brasilia_4","nome":"CURVA DA JUNÇÃO","parcial":"P2","entrada":{"x":367.1,"y":656.2},"apice":{"x":316.1,"y":608.1},"saida":{"x":394.1,"y":564.1}},{"id":"seg_brasilia_6","nome":"CURVA DA BRUXA","parcial":"P3","entrada":{"x":697.1,"y":346.5},"apice":{"x":670.6,"y":297.8},"saida":{"x":625.9,"y":284.5}},{"id":"seg_brasilia_8","nome":"CURVA DO PLACAR","parcial":"P4","entrada":{"x":565.7,"y":356.9},"apice":{"x":641.3,"y":362.1},"saida":{"x":615.8,"y":420.1}},{"id":"seg_brasilia_9","nome":"CURVA \"S\"","parcial":"P4","entrada":{"x":344.1,"y":511.7},"apice":{"x":318.4,"y":492.3},"saida":{"x":292.3,"y":397.4}},{"id":"seg_brasilia_10","nome":"CURVA DA VITÓRIA","parcial":"P4","entrada":{"x":285.7,"y":392.8},"apice":{"x":280.3,"y":341.4},"saida":{"x":357.7,"y":273.7}}];
+const trechosOriginais = JSON.parse(JSON.stringify(trechos));
+
+const svg = document.getElementById('mapa');
+const desenhoGrupo = document.getElementById('desenho-grupo');
+const VB_W = 823;
+const VB_H = 799;
+
+// ── Transformação do desenho (sliders) ─────────────────────────
+// Centro pivot do desenho oficial pra rotação/escala
+const PIVOT_CX = 427.5;
+const PIVOT_CY = 428.5;
+function aplicarTransformDesenho() {
+  const sx = (+document.getElementById('scX').value) / 100;
+  const sy = (+document.getElementById('scY').value) / 100;
+  const r = +document.getElementById('rotD').value;
+  const x = +document.getElementById('txD').value;
+  const y = +document.getElementById('tyD').value;
+  desenhoGrupo.setAttribute('transform',
+    `translate(${PIVOT_CX + x},${PIVOT_CY + y}) rotate(${r}) scale(${sx},${sy}) translate(${-PIVOT_CX},${-PIVOT_CY})`);
+  document.getElementById('vScX').textContent = (sx*100).toFixed(2).replace('.', ',') + '%';
+  document.getElementById('vScY').textContent = (sy*100).toFixed(2).replace('.', ',') + '%';
+  document.getElementById('vRotD').textContent = r.toFixed(2).replace('.', ',') + '°';
+  document.getElementById('vTxD').textContent = x;
+  document.getElementById('vTyD').textContent = y;
+}
+
+let view = { x: 0, y: 0, w: VB_W, h: VB_H };
+function aplicarView() {
+  svg.setAttribute('viewBox', view.x + ' ' + view.y + ' ' + view.w + ' ' + view.h);
+  document.getElementById('zoomInfo').textContent = 'Zoom: ' + Math.round(VB_W / view.w * 100) + '%';
+}
+function resetZoom() {
+  view = { x: 0, y: 0, w: VB_W, h: VB_H };
+  aplicarView();
+}
+document.getElementById('resetZoom').onclick = resetZoom;
+document.getElementById('zoomIn').onclick = () => zoomAt(VB_W/2, VB_H/2, 0.7);
+document.getElementById('zoomOut').onclick = () => zoomAt(VB_W/2, VB_H/2, 1/0.7);
+
+// Zoom com rolagem do mouse
+svg.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const pt = svgPoint(e);
+  const fator = e.deltaY > 0 ? 1.15 : 1/1.15;
+  zoomAt(pt.x, pt.y, fator);
+}, { passive: false });
+
+function zoomAt(cx, cy, fator) {
+  const novaW = view.w * fator;
+  const novaH = view.h * fator;
+  // Mantém o ponto (cx, cy) no mesmo lugar visual
+  view.x = cx - (cx - view.x) * fator;
+  view.y = cy - (cy - view.y) * fator;
+  view.w = novaW;
+  view.h = novaH;
+  aplicarView();
+}
+
+// Converte clientX/clientY (pixel da tela) pra coords do viewBox do
+// SVG. Cálculo manual usando o viewBox atual + tamanho do SVG —
+// evita bugs do getScreenCTM em alguns navegadores que retornam
+// matrix em pixels de tela ao invés de coords de viewBox.
+function clientToViewBox(evt) {
+  const rect = svg.getBoundingClientRect();
+  const [vx, vy, vw, vh] = svg.getAttribute('viewBox').split(' ').map(Number);
+  const aspectSvg = rect.width / rect.height;
+  const aspectVb = vw / vh;
+  let scale, offsetX = 0, offsetY = 0;
+  if (aspectSvg > aspectVb) {
+    // SVG mais largo que viewBox — barras (vazio) nas laterais
+    scale = rect.height / vh;
+    offsetX = (rect.width - vw * scale) / 2;
+  } else {
+    scale = rect.width / vw;
+    offsetY = (rect.height - vh * scale) / 2;
+  }
+  return {
+    x: vx + (evt.clientX - rect.left - offsetX) / scale,
+    y: vy + (evt.clientY - rect.top - offsetY) / scale,
+  };
+}
+const svgPoint = clientToViewBox;
+// Quando o grupo do desenho está com transform aplicado (rotação,
+// escala, mover), converter da tela pro espaço interno do grupo
+// precisa inverter o transform também.
+function svgPointInDesenhoGrupo(evt) {
+  const pvb = clientToViewBox(evt);
+  // Aplica inverso do transform atual do grupo:
+  // Estado atual dos sliders → matrix M; queremos inv(M) aplicado em pvb.
+  const sx = (+document.getElementById('scX').value) / 100;
+  const sy = (+document.getElementById('scY').value) / 100;
+  const r = (+document.getElementById('rotD').value) * Math.PI / 180;
+  const tx = +document.getElementById('txD').value;
+  const ty = +document.getElementById('tyD').value;
+  // M = T(PIVOT + tx,ty) · R(r) · S(sx,sy) · T(-PIVOT)
+  // inv(M) = T(PIVOT) · S(1/sx,1/sy) · R(-r) · T(-(PIVOT + tx,ty))
+  let px = pvb.x - (PIVOT_CX + tx);
+  let py = pvb.y - (PIVOT_CY + ty);
+  const cos = Math.cos(-r), sin = Math.sin(-r);
+  let rx = px * cos - py * sin;
+  let ry = px * sin + py * cos;
+  rx = sx === 0 ? 0 : rx / sx;
+  ry = sy === 0 ? 0 : ry / sy;
+  return { x: rx + PIVOT_CX, y: ry + PIVOT_CY };
+}
+
+// Pan com shift+arrastar OU botão do meio
+let panAtivo = false, panInicio = null;
+svg.addEventListener('mousedown', (e) => {
+  if (e.target.classList.contains('ponto')) return; // ponto tem handler próprio
+  if (e.shiftKey || e.button === 1) {
+    panAtivo = true;
+    panInicio = svgPoint(e);
+    svg.classList.add('dragging');
+    e.preventDefault();
+  }
+});
+window.addEventListener('mousemove', (e) => {
+  if (panAtivo) {
+    const p = svgPoint(e);
+    view.x -= (p.x - panInicio.x);
+    view.y -= (p.y - panInicio.y);
+    aplicarView();
+  } else if (pontoArrastado) {
+    const p = svgPointInDesenhoGrupo(e);
+    moverPonto(pontoArrastado, p.x, p.y);
+  }
+});
+window.addEventListener('mouseup', () => {
+  panAtivo = false;
+  svg.classList.remove('dragging');
+  if (pontoArrastado) {
+    pontoArrastado.el.classList.remove('arrastando');
+    pontoArrastado = null;
+  }
+});
+
+// Arrastar pontos
+let pontoArrastado = null;
+svg.addEventListener('mousedown', (e) => {
+  if (!e.target.classList.contains('ponto')) return;
+  if (e.shiftKey) return;
+  pontoArrastado = {
+    el: e.target,
+    trecho: +e.target.dataset.trecho,
+    tipo: e.target.dataset.tipo,
+  };
+  e.target.classList.add('arrastando');
+  e.preventDefault();
+});
+
+function moverPonto(p, x, y) {
+  p.el.setAttribute('cx', x.toFixed(1));
+  p.el.setAttribute('cy', y.toFixed(1));
+  // Move junto a barrinha de entrada/saída (linha perpendicular)
+  if (p.tipo === 'entrada' || p.tipo === 'saida') {
+    const barrinha = svg.querySelector(`line.barrinha[data-trecho="${p.trecho}"][data-tipo="${p.tipo}"]`);
+    if (barrinha) {
+      // Calcula direção tangente à pista no ponto (estimativa simples:
+      // toma 2 pontos do desenho próximos pra calcular a perpendicular)
+      barrinha.setAttribute('x1', (x - 14).toFixed(1));
+      barrinha.setAttribute('y1', y.toFixed(1));
+      barrinha.setAttribute('x2', (x + 14).toFixed(1));
+      barrinha.setAttribute('y2', y.toFixed(1));
+    }
+  }
+  // Atualiza texto da label do ponto — próximo <text> depois do círculo
+  let text = p.el.nextElementSibling;
+  while (text && text.tagName !== 'text') text = text.nextElementSibling;
+  if (text) {
+    const dx = (p.tipo === 'apice') ? 12 : 12;
+    const dy = (p.tipo === 'apice') ? 4 : -8;
+    text.setAttribute('x', (x + dx).toFixed(1));
+    text.setAttribute('y', (y + dy).toFixed(1));
+  }
+  // Atualiza no estado
+  trechos[p.trecho][p.tipo] = { x: +x.toFixed(1), y: +y.toFixed(1) };
+  // Mostra no painel
+  document.getElementById('ultimoPonto').textContent =
+    trechos[p.trecho].nome + ' · ' + p.tipo + '\n' +
+    'x: ' + x.toFixed(1) + ' · y: ' + y.toFixed(1);
+  salvarEstado();
+}
+
+// Lista de trechos
+const lista = document.getElementById('listaTrechos');
+lista.innerHTML = trechos.map((t, i) => `
+  <div class="trecho-row" data-trecho="${i}">
+    <div>
+      <div class="nome">${t.nome}</div>
+      <div class="par">Parcial ${t.parcial}</div>
+    </div>
+    <div class="ir">ir</div>
+  </div>
+`).join('');
+lista.querySelectorAll('.trecho-row').forEach(el => {
+  el.addEventListener('click', () => {
+    const i = +el.dataset.trecho;
+    focar(i);
+    document.querySelectorAll('.trecho-row').forEach(r => r.classList.remove('ativo'));
+    el.classList.add('ativo');
+  });
+});
+
+function focar(i) {
+  const t = trechos[i];
+  const ptsBrutos = [t.entrada, t.saida].filter(Boolean);
+  if (ptsBrutos.length === 0) return;
+  // IMPORTANTE: aplicar a matriz do desenho-grupo pra obter as
+  // coordenadas FINAIS dos pontos (depois de qualquer transformação
+  // que o usuário fez nos sliders). Sem isso, o zoom vai pra posição
+  // antiga do ponto.
+  const matrix = desenhoGrupo.getCTM();
+  const pts = ptsBrutos.map(p => {
+    const pt = svg.createSVGPoint();
+    pt.x = p.x; pt.y = p.y;
+    return pt.matrixTransform(matrix);
+  });
+  const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+  const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+  const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+  // Zoom focado: caixa ~200×200 unidades em volta do trecho
+  view = { x: cx - 100, y: cy - 100, w: 200, h: 200 };
+  aplicarView();
+}
+
+// Sliders do desenho — wire + persistência em localStorage
+const LS_KEY = 'p1fast-editor-pontos-brasilia-v3-coord-corrigida';
+function salvarEstado() {
+  const estado = {
+    sliders: {
+      scX: +document.getElementById('scX').value,
+      scY: +document.getElementById('scY').value,
+      rotD: +document.getElementById('rotD').value,
+      txD: +document.getElementById('txD').value,
+      tyD: +document.getElementById('tyD').value,
+    },
+    trechos: trechos.map(t => ({
+      id: t.id, entrada: t.entrada, apice: t.apice, saida: t.saida,
+    })),
+  };
+  try { localStorage.setItem(LS_KEY, JSON.stringify(estado)); } catch(_) {}
+}
+function carregarEstado() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const est = JSON.parse(raw);
+    if (est.sliders) {
+      document.getElementById('scX').value = est.sliders.scX;
+      document.getElementById('scY').value = est.sliders.scY;
+      document.getElementById('rotD').value = est.sliders.rotD;
+      document.getElementById('txD').value = est.sliders.txD;
+      document.getElementById('tyD').value = est.sliders.tyD;
+    }
+    if (est.trechos) {
+      for (let i = 0; i < trechos.length; i++) {
+        const e = est.trechos[i];
+        if (!e || e.id !== trechos[i].id) continue;
+        if (e.entrada) trechos[i].entrada = e.entrada;
+        if (e.apice) trechos[i].apice = e.apice;
+        if (e.saida) trechos[i].saida = e.saida;
+        // Atualiza posição visual dos círculos
+        document.querySelectorAll(`circle[data-trecho="${i}"]`).forEach(el => {
+          const tipo = el.dataset.tipo;
+          const p = trechos[i][tipo];
+          if (p) {
+            el.setAttribute('cx', p.x);
+            el.setAttribute('cy', p.y);
+            const text = el.nextElementSibling;
+            if (text && text.tagName === 'text') {
+              text.setAttribute('x', (p.x + 10).toFixed(1));
+              text.setAttribute('y', (p.y + 3).toFixed(1));
+            }
+          }
+        });
+      }
+    }
+  } catch (e) { console.warn('Não consegui carregar estado salvo:', e); }
+}
+
+['scX','scY','rotD','txD','tyD'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    aplicarTransformDesenho();
+    salvarEstado();
+  });
+});
+document.getElementById('zerarDesenho').onclick = () => {
+  document.getElementById('scX').value = 100;
+  document.getElementById('scY').value = 100;
+  document.getElementById('rotD').value = 0;
+  document.getElementById('txD').value = 0;
+  document.getElementById('tyD').value = 0;
+  aplicarTransformDesenho();
+};
+
+// Aplica a matriz final do desenho ao ponto pra obter a coord no
+// viewBox da pista. Cálculo MANUAL — não usa getCTM() porque
+// alguns navegadores retornam coords em pixel da tela (bug histórico
+// do WebKit) em vez do viewport SVG.
+function pontoFinal(cxInterno, cyInterno) {
+  const sx = (+document.getElementById('scX').value) / 100;
+  const sy = (+document.getElementById('scY').value) / 100;
+  const r = (+document.getElementById('rotD').value) * Math.PI / 180;
+  const tx = +document.getElementById('txD').value;
+  const ty = +document.getElementById('tyD').value;
+  // M = T(PIVOT + tx,ty) · R(r) · S(sx,sy) · T(-PIVOT)
+  let px = cxInterno - PIVOT_CX;
+  let py = cyInterno - PIVOT_CY;
+  px *= sx; py *= sy;
+  const cos = Math.cos(r), sin = Math.sin(r);
+  const rx = px * cos - py * sin;
+  const ry = px * sin + py * cos;
+  return {
+    x: +(rx + PIVOT_CX + tx).toFixed(1),
+    y: +(ry + PIVOT_CY + ty).toFixed(1),
+  };
+}
+
+document.getElementById('exportar').onclick = () => {
+  // Captura os 5 parâmetros do desenho
+  const transformacao = {
+    largura_pct: +(+document.getElementById('scX').value).toFixed(2),
+    altura_pct: +(+document.getElementById('scY').value).toFixed(2),
+    rotacao_graus: +(+document.getElementById('rotD').value).toFixed(2),
+    mover_horizontal: +document.getElementById('txD').value,
+    mover_vertical: +document.getElementById('tyD').value,
+  };
+  // Calcula a posição FINAL de cada ponto (após transformação).
+  // Só entrada e saída — o ápice é calculado automaticamente pelo
+  // aplicativo a partir da melhor passagem do piloto.
+  const dados = trechos.map(t => ({
+    id: t.id, nome: t.nome,
+    entradas: t.entrada ? [pontoFinal(t.entrada.x, t.entrada.y)] : [],
+    saidas: t.saida ? [pontoFinal(t.saida.x, t.saida.y)] : [],
+  }));
+  const payload = { transformacao_aplicada_no_desenho: transformacao, trechos: dados };
+  const txt = JSON.stringify(payload, null, 2);
+  document.getElementById('resultado').style.display = 'block';
+  document.getElementById('resultado').textContent = txt;
+  navigator.clipboard.writeText(txt);
+  toast('Exportado e copiado! Cole na conversa.');
+};
+
+document.getElementById('restaurar').onclick = () => {
+  if (!confirm('Voltar todos os pontos pras posições originais?')) return;
+  trechos.forEach((t, i) => {
+    t.entrada = trechosOriginais[i].entrada ? {...trechosOriginais[i].entrada} : null;
+    t.apice = trechosOriginais[i].apice ? {...trechosOriginais[i].apice} : null;
+    t.saida = trechosOriginais[i].saida ? {...trechosOriginais[i].saida} : null;
+  });
+  // Recarrega visualmente todos os círculos
+  document.querySelectorAll('.ponto').forEach(el => {
+    const i = +el.dataset.trecho, tipo = el.dataset.tipo;
+    const p = trechosOriginais[i][tipo];
+    if (p) {
+      el.setAttribute('cx', p.x);
+      el.setAttribute('cy', p.y);
+      const text = el.nextElementSibling;
+      if (text && text.tagName === 'text') {
+        text.setAttribute('x', (p.x + 10).toFixed(1));
+        text.setAttribute('y', (p.y + 3).toFixed(1));
+      }
+    }
+  });
+  toast('Pontos restaurados pras posições originais.');
+};
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+carregarEstado();
+resetZoom();
+aplicarTransformDesenho();
+</script>
+</body>
+</html>

@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Editor de pontos da pista — Brasília</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #0c0e12;
+    --panel: #131720;
+    --panel-2: #1a1f2c;
+    --line: #2a3142;
+    --text: #e9ecf3;
+    --muted: #8b94a8;
+    --accent: #4aa3ff;
+    --warn: #ffb547;
+    --ok: #4ade80;
+    --hl: #ff4f6d;
+    --dot: #ffb547;
+    --dot-hover: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Inter", "Helvetica Neue", Arial, sans-serif;
+    overflow: hidden;
+  }
+  .topbar {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .topbar p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .controles {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 10px 18px;
+    background: var(--panel-2);
+    border-bottom: 1px solid var(--line);
+  }
+  .grupo { display: flex; gap: 6px; align-items: center; }
+  .grupo + .grupo {
+    border-left: 1px solid var(--line);
+    padding-left: 10px;
+    margin-left: 4px;
+  }
+  .grupo .label {
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-right: 4px;
+  }
+  .btn {
+    appearance: none;
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--line);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primario {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0c0e12;
+    font-weight: 700;
+  }
+  .btn.aviso {
+    background: var(--warn);
+    border-color: var(--warn);
+    color: #0c0e12;
+    font-weight: 700;
+  }
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .info {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 12px;
+    display: flex;
+    gap: 14px;
+  }
+  .info b { color: var(--text); }
+  .stage {
+    position: absolute;
+    inset: 0;
+    top: 119px;
+    overflow: hidden;
+    background:
+      radial-gradient(1200px 800px at 50% 50%, #11151c 0%, #07090d 70%);
+    cursor: grab;
+  }
+  .stage.dragging-pan { cursor: grabbing; }
+  .stage.dragging-pt { cursor: crosshair; }
+  svg#editor {
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+  }
+  .ponto {
+    fill: var(--dot);
+    stroke: #1a1f2c;
+    stroke-width: 0.5;
+    cursor: grab;
+  }
+  .ponto:hover { fill: var(--dot-hover); }
+  .ponto.arrastando { fill: var(--ok); cursor: grabbing; }
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .modal.aberto { display: flex; }
+  .modal-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px;
+    width: min(720px, 92vw);
+    max-height: 80vh;
+    overflow: auto;
+  }
+  .modal-card h2 { margin: 0 0 6px; font-size: 16px; }
+  .modal-card p { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+  .modal-card textarea {
+    width: 100%;
+    height: 220px;
+    background: #0a0d12;
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    resize: vertical;
+  }
+  .modal-card .row {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    align-items: center;
+  }
+  .modal-card .row .ok-msg {
+    color: var(--ok);
+    font-size: 12px;
+    margin-left: auto;
+  }
+  .legenda-canto {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    background: rgba(19,23,32,0.92);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.7;
+    pointer-events: none;
+  }
+  .legenda-canto b { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Editor de pontos da pista — Brasília</h1>
+  <p>Os pontos amarelos são alças. Clique e arraste qualquer um para mover o desenho da pista. Use o zoom para ir bem perto e acertar nos detalhes (Curva da Bruxa, Curva 01). Quando terminar, clique em <b>Salvar caminho corrigido</b>.</p>
+</div>
+
+<div class="controles">
+  <div class="grupo">
+    <span class="label">Densidade dos pontos</span>
+    <button class="btn" data-dens="alta">Densa (~400 pontos)</button>
+    <button class="btn" data-dens="muito-alta">Muito densa (~700 pontos)</button>
+    <button class="btn ativo-dens" data-dens="media">Triplicada (~400 pontos)</button>
+  </div>
+  <div class="grupo">
+    <span class="label">Zoom</span>
+    <button class="btn" id="btn-zoom-out">−</button>
+    <button class="btn" id="btn-zoom-100">100%</button>
+    <button class="btn" id="btn-zoom-in">+</button>
+  </div>
+  <div class="grupo">
+    <span class="label">Foco rápido</span>
+    <button class="btn" data-foco="bruxa">Curva da Bruxa</button>
+    <button class="btn" data-foco="curva01">Curva 01</button>
+    <button class="btn" data-foco="mergulho">Mergulho da Bruxa</button>
+  </div>
+  <div class="grupo">
+    <button class="btn" id="btn-desfazer" disabled>Desfazer</button>
+    <button class="btn aviso" id="btn-reset">Resetar tudo</button>
+    <button class="btn primario" id="btn-exportar">Salvar caminho corrigido</button>
+  </div>
+  <div class="info">
+    <span>Pontos no desenho: <b id="info-qtd">—</b></span>
+    <span>Zoom: <b id="info-zoom">100%</b></span>
+    <span>Edições: <b id="info-edits">0</b></span>
+  </div>
+</div>
+
+<div class="stage" id="stage">
+  <svg id="editor" viewBox="0 0 823 799" preserveAspectRatio="xMidYMid meet">
+    <!-- camada de referência (cinza) -->
+    <path id="path-ref" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="12" stroke-linejoin="round"/>
+    <!-- camada principal editada (azul) -->
+    <path id="path-edit" fill="none" stroke="#4aa3ff" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+    <!-- marcadores de trecho (números das curvas) -->
+    <g id="trechos"></g>
+    <!-- alvo Curva da Bruxa -->
+    <g id="apex-bruxa"></g>
+    <!-- pontos arrastáveis -->
+    <g id="pontos"></g>
+  </svg>
+  <div class="legenda-canto">
+    <b>Como mover:</b> clique e arraste um ponto amarelo.<br>
+    <b>Zoom:</b> botões + / − ou rolar o mouse sobre o mapa.<br>
+    <b>Mover a vista:</b> clique e arraste em qualquer área vazia.
+  </div>
+</div>
+
+<div class="modal" id="modal-export">
+  <div class="modal-card">
+    <h2>Caminho corrigido</h2>
+    <p>Copie o texto abaixo e cole aqui no Claude. Diga "aplica isso no aplicativo" e eu coloco o novo desenho dentro do aplicativo iOS.</p>
+    <textarea id="export-text" readonly></textarea>
+    <div class="row">
+      <button class="btn primario" id="btn-copiar">Copiar para área de transferência</button>
+      <button class="btn" id="btn-fechar-modal">Fechar</button>
+      <span class="ok-msg" id="copiado-msg" style="display:none">Copiado!</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Desenho v2 (correções manuais do Flávio, SEM suavização) ─────────
+const PATH_SVG = "M 420.20 707.58 L 412.48 707.50 L 404.76 707.42 L 397.04 707.34 L 389.32 707.26 L 381.60 707.18 L 373.88 707.10 L 366.16 707.02 L 358.44 706.94 L 350.72 706.86 L 343.00 706.78 L 335.28 706.70 L 327.55 706.63 L 319.83 706.55 L 312.11 706.47 L 304.39 706.39 L 296.67 706.31 L 288.95 706.23 L 281.23 706.15 L 273.51 706.07 L 265.79 705.99 L 258.07 705.91 L 250.35 705.83 L 242.63 705.75 L 236.30 705.26 L 230.26 704.61 L 224.07 703.88 L 217.98 702.73 L 212.32 701.18 L 206.79 699.22 L 201.27 696.45 L 195.86 693.25 L 190.70 689.52 L 186.12 685.35 L 181.78 680.63 L 178.17 675.31 L 174.66 668.83 L 171.88 661.75 L 169.09 654.66 L 167.66 647.36 L 167.04 640.29 L 167.56 634.15 L 168.79 627.53 L 169.94 620.44 L 171.24 612.76 L 172.76 605.51 L 173.56 599.11 L 174.98 592.82 L 175.81 586.36 L 176.80 579.73 L 178.03 572.95 L 179.42 566.07 L 180.44 559.16 L 181.56 552.34 L 182.97 544.85 L 184.37 537.36 L 185.78 529.88 L 187.18 522.39 L 188.59 514.90 L 189.99 507.41 L 191.72 500.00 L 193.44 492.60 L 195.17 485.19 L 197.42 477.54 L 199.68 469.90 L 201.93 462.25 L 203.44 456.24 L 204.96 450.22 L 206.48 444.20 L 207.99 438.19 L 210.15 431.02 L 212.31 423.86 L 214.47 416.69 L 216.63 409.52 L 218.80 402.36 L 220.96 395.19 L 223.12 388.02 L 225.28 380.85 L 227.44 373.69 L 229.60 366.52 L 231.61 360.37 L 233.62 354.22 L 235.63 348.07 L 237.64 341.92 L 239.71 334.51 L 241.77 327.09 L 243.84 319.68 L 245.90 312.27 L 247.97 304.86 L 250.03 297.44 L 252.10 290.03 L 254.12 283.67 L 256.13 277.30 L 258.15 270.94 L 260.17 264.58 L 262.13 257.56 L 264.08 250.53 L 266.04 243.50 L 267.99 236.48 L 269.95 229.45 L 271.90 222.43 L 273.86 215.41 L 275.81 208.38 L 277.77 201.36 L 279.72 194.33 L 282.01 187.80 L 284.29 181.28 L 286.58 174.75 L 288.86 168.23 L 291.15 161.70 L 294.72 156.29 L 299.47 151.49 L 305.14 148.15 L 311.63 145.96 L 319.42 143.70 L 326.62 143.72 L 332.25 144.93 L 337.65 146.81 L 343.35 148.56 L 348.44 150.79 L 353.70 153.19 L 358.95 155.60 L 363.99 158.63 L 369.04 161.66 L 374.08 164.69 L 378.91 168.67 L 383.73 172.64 L 388.56 176.62 L 393.01 181.29 L 397.46 185.95 L 401.91 190.62 L 405.98 196.19 L 410.05 201.75 L 414.12 207.31 L 418.19 212.88 L 422.26 218.44 L 426.33 224.01 L 431.07 229.67 L 435.81 235.33 L 440.54 240.98 L 445.28 246.64 L 450.02 252.30 L 454.76 257.96 L 459.74 263.42 L 464.72 268.89 L 469.70 274.35 L 475.84 278.85 L 481.99 283.36 L 488.13 287.86 L 494.97 291.58 L 501.81 295.31 L 508.65 299.03 L 515.92 301.98 L 523.20 304.93 L 530.47 307.88 L 536.34 309.19 L 542.20 310.50 L 548.06 311.80 L 553.93 313.11 L 560.89 313.83 L 567.84 314.54 L 574.80 315.26 L 581.75 315.97 L 588.71 316.69 L 595.66 317.40 L 602.62 318.12 L 610.30 319.39 L 617.98 320.65 L 625.66 321.92 L 632.26 323.49 L 638.87 325.06 L 645.47 326.63 L 650.79 328.80 L 656.11 330.97 L 662.30 334.01 L 668.45 338.08 L 674.27 342.65 L 677.50 346.91 L 680.73 351.18 L 684.00 356.65 L 686.13 363.06 L 687.78 369.79 L 687.71 376.19 L 687.14 381.71 L 686.56 387.23 L 684.35 392.26 L 682.15 397.28 L 679.94 402.31 L 676.08 406.54 L 672.21 410.78 L 667.86 414.69 L 663.40 418.10 L 658.44 421.18 L 653.31 423.67 L 647.37 425.44 L 641.26 426.60 L 635.14 426.89 L 628.76 426.51 L 622.37 425.25 L 615.97 423.22 L 610.43 420.67 L 604.88 417.34 L 599.32 414.02 L 593.27 410.87 L 587.22 407.73 L 581.17 404.58 L 575.13 401.43 L 569.08 398.29 L 563.03 395.14 L 556.89 392.14 L 550.76 389.15 L 544.62 386.15 L 537.80 383.36 L 530.98 380.58 L 524.16 377.79 L 517.05 375.75 L 509.94 373.70 L 502.83 371.66 L 496.84 370.94 L 490.85 370.22 L 484.86 369.50 L 478.87 368.78 L 471.07 368.19 L 463.27 367.59 L 455.47 367.00 L 447.69 367.37 L 439.91 367.74 L 432.13 368.11 L 425.92 368.95 L 419.72 369.79 L 413.51 370.63 L 407.30 371.47 L 401.22 373.13 L 395.13 374.80 L 389.05 376.46 L 382.97 378.12 L 376.23 380.37 L 369.49 382.62 L 362.75 384.87 L 356.00 387.12 L 349.26 389.37 L 342.52 391.62 L 335.78 393.87 L 328.71 396.86 L 321.65 399.86 L 314.58 402.85 L 308.21 407.12 L 301.85 411.38 L 295.48 415.65 L 290.07 420.83 L 284.67 426.00 L 279.26 431.18 L 274.75 437.52 L 270.24 443.85 L 265.73 450.19 L 261.34 456.17 L 257.28 462.73 L 253.95 468.32 L 251.39 472.82 L 248.99 477.89 L 246.48 483.49 L 243.58 490.08 L 240.43 497.94 L 238.15 504.71 L 235.84 511.17 L 234.14 518.24 L 233.32 523.73 L 232.56 529.68 L 232.61 536.25 L 233.03 542.43 L 232.91 548.53 L 232.98 554.72 L 233.49 560.58 L 235.71 566.38 L 237.93 572.18 L 242.44 577.90 L 246.95 583.62 L 253.36 588.38 L 259.77 593.13 L 265.22 594.89 L 270.66 596.64 L 276.11 598.40 L 283.49 600.26 L 290.86 602.11 L 298.24 603.97 L 305.62 605.82 L 313.00 607.68 L 320.37 609.53 L 327.75 611.39 L 335.19 613.62 L 342.63 615.85 L 350.06 618.08 L 357.50 620.32 L 364.94 622.55 L 372.38 624.78 L 379.81 627.01 L 387.25 629.24 L 394.69 631.47 L 402.13 633.70 L 409.57 635.94 L 417.00 638.17 L 424.44 640.40 L 431.88 642.63 L 439.32 644.86 L 446.75 647.09 L 454.19 649.33 L 461.63 651.56 L 469.07 653.79 L 476.51 656.02 L 483.94 658.25 L 491.38 660.48 L 498.82 662.71 L 506.26 664.95 L 513.69 667.18 L 521.13 669.41 L 528.32 671.26 L 535.59 672.31 L 542.50 672.56 L 549.40 671.22 L 556.38 668.66 L 561.88 664.88 L 567.19 659.61 L 571.18 653.77 L 574.07 646.60 L 575.25 639.23 L 575.82 631.31 L 574.74 623.43 L 573.29 616.35 L 571.22 610.54 L 568.79 605.51 L 566.03 600.81 L 562.56 596.14 L 558.78 591.78 L 554.99 587.43 L 550.42 583.48 L 545.86 579.54 L 541.29 575.59 L 535.83 570.07 L 530.37 564.56 L 524.90 559.04 L 519.44 553.53 L 513.98 548.01 L 508.71 543.63 L 503.43 539.26 L 498.03 535.33 L 491.76 531.98 L 485.36 529.09 L 478.91 526.80 L 472.18 524.58 L 465.40 522.98 L 458.65 521.92 L 451.38 521.52 L 444.01 521.46 L 436.98 522.16 L 429.68 523.71 L 422.46 525.61 L 415.50 527.84 L 408.30 530.71 L 401.36 533.92 L 394.43 537.13 L 387.49 540.33 L 380.55 543.54 L 373.61 546.75 L 367.37 549.04 L 361.13 551.34 L 354.89 553.63 L 349.57 554.88 L 344.25 556.14 L 338.38 557.09 L 331.81 557.28 L 324.81 557.17 L 317.64 556.04 L 311.34 553.72 L 304.95 550.76 L 299.33 546.20 L 293.91 541.20 L 290.04 534.94 L 287.51 528.25 L 286.40 521.13 L 286.75 513.24 L 288.65 505.88 L 290.77 500.48 L 293.52 495.55 L 296.87 490.93 L 300.70 486.75 L 305.12 482.86 L 309.82 479.10 L 314.76 476.14 L 319.97 473.29 L 325.18 470.45 L 330.92 468.45 L 336.67 466.46 L 342.41 464.46 L 349.83 462.42 L 357.24 460.39 L 364.66 458.35 L 372.07 456.32 L 379.49 454.28 L 387.05 451.92 L 394.61 449.56 L 402.17 447.21 L 409.74 444.85 L 417.30 442.49 L 424.86 440.13 L 432.42 437.78 L 439.98 435.42 L 447.01 433.67 L 454.04 431.91 L 461.07 430.16 L 468.42 429.25 L 475.76 428.35 L 483.39 427.68 L 490.73 427.54 L 498.62 427.81 L 506.09 428.54 L 513.00 429.96 L 520.57 432.15 L 528.04 434.62 L 535.24 437.57 L 542.44 440.52 L 549.64 443.47 L 556.73 446.73 L 563.81 449.98 L 570.90 453.24 L 577.78 456.92 L 584.66 460.59 L 591.54 464.27 L 598.08 468.22 L 604.62 472.17 L 611.17 476.11 L 617.71 480.06 L 623.65 484.08 L 629.32 488.24 L 634.10 493.13 L 638.23 497.82 L 641.35 504.47 L 642.29 511.55 L 641.53 518.20 L 639.73 523.95 L 637.40 529.13 L 634.34 534.24 L 631.09 538.67 L 627.84 543.10 L 624.97 547.60 L 622.07 552.56 L 619.56 557.60 L 617.98 562.91 L 616.78 568.53 L 616.52 574.44 L 616.61 580.23 L 617.51 586.51 L 618.77 592.69 L 620.68 599.13 L 622.68 604.82 L 625.33 610.77 L 627.71 616.87 L 629.57 622.76 L 631.15 628.80 L 632.38 634.90 L 632.61 640.90 L 632.50 646.97 L 632.06 652.79 L 631.13 659.25 L 629.19 664.87 L 627.11 670.53 L 623.72 676.20 L 620.06 681.40 L 615.80 687.02 L 610.69 691.90 L 605.38 696.49 L 600.01 700.72 L 594.24 704.52 L 587.99 707.17 L 580.92 709.60 L 573.75 711.25 L 566.37 712.42 L 559.07 713.33 L 551.14 713.16 L 544.39 713.20 L 537.16 712.69 L 530.05 712.00 L 522.76 711.18 L 515.13 710.33 L 507.72 709.51 L 499.92 708.93 L 492.40 708.63 L 484.44 708.34 L 476.48 708.25 L 468.52 708.15 L 460.56 708.06 L 452.61 707.97 L 444.65 707.88 L 436.69 707.78 L 428.73 707.69 L 420.77 707.60 Z";
+
+// ─── Trechos (curvas com ápice) e marcador da Bruxa ───────────────────────
+const TRECHOS = [
+  { n: 1,  nome: "CURVA 01",          x: 145, y: 645 },
+  { n: 2,  nome: "MERGULHO DA BRUXA", x: 315, y: 305 },
+  { n: 3,  nome: "CURVA 2",           x: 290, y:  85 },
+  { n: 4,  nome: "CURVA DA JUNÇÃO",   x: 600, y: 330 },
+  { n: 5,  nome: "CURVA DA BRUXA",    x: 225, y: 570 },
+  { n: 6,  nome: "CURVA DO PLACAR",   x: 335, y: 475 },
+  { n: 7,  nome: "CURVA S",           x: 630, y: 525 },
+  { n: 8,  nome: "CURVA DA VITÓRIA",  x: 645, y: 650 },
+];
+
+// ─── Parser ──────────────────────────────────────────────────────────────
+function parsePath(d) {
+  const tokens = d.replace(/,/g, " ").split(/\s+/).filter(Boolean);
+  const pts = []; let i = 0; let closed = false;
+  while (i < tokens.length) {
+    const t = tokens[i++];
+    if (t === "M" || t === "L") {
+      pts.push({ x: parseFloat(tokens[i++]), y: parseFloat(tokens[i++]) });
+    } else if (t === "Z" || t === "z") closed = true;
+  }
+  return { pts, closed };
+}
+function resample(points, maxDist, closed) {
+  if (points.length < 2) return points.slice();
+  const out = [points[0]];
+  const last = closed ? points.length : points.length - 1;
+  for (let i = 1; i <= last; i++) {
+    const a = points[(i - 1)];
+    const b = points[i % points.length];
+    const d = Math.hypot(b.x - a.x, b.y - a.y);
+    if (d > maxDist) {
+      const n = Math.ceil(d / maxDist);
+      for (let k = 1; k < n; k++) {
+        const t = k / n;
+        out.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+      }
+    }
+    if (i < points.length) out.push(b);
+  }
+  return out;
+}
+function pontosParaPath(pts, closed) {
+  if (pts.length === 0) return "";
+  let d = `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`;
+  for (let i = 1; i < pts.length; i++) {
+    d += ` L ${pts[i].x.toFixed(2)} ${pts[i].y.toFixed(2)}`;
+  }
+  if (closed) d += " Z";
+  return d;
+}
+
+// ─── Estado ──────────────────────────────────────────────────────────────
+const original = parsePath(PATH_SVG);
+const closed = original.closed;
+
+const PRESETS = {
+  "media":      8,   // ~triplicado (≈400)
+  "alta":       5,   // ~600
+  "muito-alta": 3,   // ~1000
+};
+let densAtiva = "media";
+let pontos = resample(original.pts, PRESETS[densAtiva], closed);
+let edicoes = 0;
+let historico = [];   // stack para desfazer
+
+// viewBox state (x, y, w, h)
+const VIEW_BASE = { x: 0, y: 0, w: 823, h: 799 };
+let view = { ...VIEW_BASE };
+
+// ─── Persistência localStorage ───────────────────────────────────────────
+const STORAGE_KEY = "p1fast-editor-brasilia-pontos-v2-flavio";
+function salvarLocal() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ densAtiva, pontos, edicoes }));
+  } catch (_) {}
+}
+function carregarLocal() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const s = JSON.parse(raw);
+    if (!s || !Array.isArray(s.pontos)) return false;
+    densAtiva = s.densAtiva || "media";
+    pontos = s.pontos;
+    edicoes = s.edicoes || 0;
+    return true;
+  } catch (_) { return false; }
+}
+carregarLocal();
+
+// ─── Referências DOM ─────────────────────────────────────────────────────
+const svg = document.getElementById("editor");
+const pathRef = document.getElementById("path-ref");
+const pathEdit = document.getElementById("path-edit");
+const groupPontos = document.getElementById("pontos");
+const groupTrechos = document.getElementById("trechos");
+const groupApex = document.getElementById("apex-bruxa");
+const stage = document.getElementById("stage");
+const infoQtd = document.getElementById("info-qtd");
+const infoZoom = document.getElementById("info-zoom");
+const infoEdits = document.getElementById("info-edits");
+const btnDesfazer = document.getElementById("btn-desfazer");
+
+// path de referência (cinza) — fixo, desenho oficial
+pathRef.setAttribute("d", pontosParaPath(original.pts, closed));
+
+// ─── Conversão coord tela → coord SVG ─────────────────────────────────────
+function clientToSvg(clientX, clientY) {
+  const pt = svg.createSVGPoint();
+  pt.x = clientX; pt.y = clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+// ─── Render ──────────────────────────────────────────────────────────────
+function aplicarViewBox() {
+  svg.setAttribute("viewBox", `${view.x} ${view.y} ${view.w} ${view.h}`);
+  const zoom = Math.round(VIEW_BASE.w / view.w * 100);
+  infoZoom.textContent = zoom + "%";
+  renderPontos(); // pra ajustar tamanho dos círculos com zoom
+}
+
+function tamanhoCirculo() {
+  // mantém o círculo com tamanho visualmente constante em qualquer zoom
+  const fator = view.w / VIEW_BASE.w; // <1 quando zoom in
+  return Math.max(1.6, 3.2 * fator);
+}
+
+function renderPath() {
+  pathEdit.setAttribute("d", pontosParaPath(pontos, closed));
+  infoQtd.textContent = pontos.length;
+}
+
+function renderPontos() {
+  while (groupPontos.firstChild) groupPontos.removeChild(groupPontos.firstChild);
+  const r = tamanhoCirculo();
+  for (let i = 0; i < pontos.length; i++) {
+    const p = pontos[i];
+    const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    c.setAttribute("cx", p.x);
+    c.setAttribute("cy", p.y);
+    c.setAttribute("r", r);
+    c.setAttribute("class", "ponto");
+    c.dataset.idx = i;
+    groupPontos.appendChild(c);
+  }
+}
+
+function renderTrechos() {
+  while (groupTrechos.firstChild) groupTrechos.removeChild(groupTrechos.firstChild);
+  for (const t of TRECHOS) {
+    const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    c.setAttribute("cx", t.x); c.setAttribute("cy", t.y);
+    c.setAttribute("r", "10");
+    c.setAttribute("fill", "rgba(74,163,255,0.18)");
+    c.setAttribute("stroke", "#4aa3ff");
+    c.setAttribute("stroke-width", "1.2");
+    c.setAttribute("pointer-events", "none");
+    groupTrechos.appendChild(c);
+    const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    txt.setAttribute("x", t.x); txt.setAttribute("y", t.y + 4);
+    txt.setAttribute("text-anchor", "middle");
+    txt.setAttribute("font-size", "10");
+    txt.setAttribute("font-weight", "700");
+    txt.setAttribute("fill", "#e9ecf3");
+    txt.setAttribute("pointer-events", "none");
+    txt.textContent = t.n;
+    groupTrechos.appendChild(txt);
+  }
+
+  // apex Bruxa em rosa, destacado
+  while (groupApex.firstChild) groupApex.removeChild(groupApex.firstChild);
+  const halo = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  halo.setAttribute("cx", 225); halo.setAttribute("cy", 570);
+  halo.setAttribute("r", "16");
+  halo.setAttribute("fill", "rgba(255,79,109,0.18)");
+  halo.setAttribute("pointer-events", "none");
+  groupApex.appendChild(halo);
+}
+
+function renderAll() {
+  aplicarViewBox();
+  renderPath();
+  renderTrechos();
+  renderPontos();
+  infoEdits.textContent = edicoes;
+  btnDesfazer.disabled = historico.length === 0;
+}
+renderAll();
+
+// ─── Drag de ponto com "brush": puxa também os vizinhos laterais ──────────
+// Quando o Flávio arrasta 1 ponto, os 3 pontos vizinhos pra cada lado vêm
+// junto com força decrescente (1.0 / 0.75 / 0.50 / 0.25). Isso alinha
+// naturalmente e evita degraus nos cantos.
+const RAIO_BRUSH = 3;
+const PESOS = [1.0, 0.75, 0.50, 0.25]; // índice 0 = centro
+
+function indiceCircular(i, n) { return ((i % n) + n) % n; }
+
+let dragging = null;
+groupPontos.addEventListener("pointerdown", (e) => {
+  const idx = parseInt(e.target.dataset.idx, 10);
+  if (isNaN(idx)) return;
+  const svgP = clientToSvg(e.clientX, e.clientY);
+  const n = pontos.length;
+  // salva as posições originais dos pontos afetados pra desfazer e calcular delta
+  const afetados = [];
+  for (let k = -RAIO_BRUSH; k <= RAIO_BRUSH; k++) {
+    const i = indiceCircular(idx + k, n);
+    afetados.push({ idx: i, x0: pontos[i].x, y0: pontos[i].y, peso: PESOS[Math.abs(k)] });
+  }
+  historico.push({ tipo: "brush", afetados: afetados.map(a => ({ idx: a.idx, x: a.x0, y: a.y0 })) });
+  if (historico.length > 200) historico.shift();
+  dragging = {
+    idx,
+    offX: svgP.x - pontos[idx].x,
+    offY: svgP.y - pontos[idx].y,
+    afetados
+  };
+  // destaca visualmente os pontos afetados
+  for (const a of afetados) {
+    const c = groupPontos.querySelector(`[data-idx="${a.idx}"]`);
+    if (c) c.classList.add("arrastando");
+  }
+  stage.classList.add("dragging-pt");
+  svg.setPointerCapture(e.pointerId);
+  e.stopPropagation();
+});
+svg.addEventListener("pointermove", (e) => {
+  if (!dragging) return;
+  const svgP = clientToSvg(e.clientX, e.clientY);
+  // posição alvo do ponto central (compensando o offset do clique)
+  const centroAlvoX = svgP.x - dragging.offX;
+  const centroAlvoY = svgP.y - dragging.offY;
+  // delta total que o ponto central precisa fazer (relativo à posição original)
+  const centro = dragging.afetados.find(a => a.idx === dragging.idx);
+  const deltaX = centroAlvoX - centro.x0;
+  const deltaY = centroAlvoY - centro.y0;
+  // aplica delta * peso em cada afetado
+  for (const a of dragging.afetados) {
+    pontos[a.idx] = { x: a.x0 + deltaX * a.peso, y: a.y0 + deltaY * a.peso };
+    const c = groupPontos.querySelector(`[data-idx="${a.idx}"]`);
+    if (c) {
+      c.setAttribute("cx", pontos[a.idx].x);
+      c.setAttribute("cy", pontos[a.idx].y);
+    }
+  }
+  renderPath();
+});
+svg.addEventListener("pointerup", (e) => {
+  if (dragging) {
+    edicoes++;
+    infoEdits.textContent = edicoes;
+    btnDesfazer.disabled = false;
+    for (const a of dragging.afetados) {
+      const c = groupPontos.querySelector(`[data-idx="${a.idx}"]`);
+      if (c) c.classList.remove("arrastando");
+    }
+    dragging = null;
+    stage.classList.remove("dragging-pt");
+    salvarLocal();
+  }
+});
+
+// ─── Pan (arrastar fundo) ────────────────────────────────────────────────
+let panning = null;
+svg.addEventListener("pointerdown", (e) => {
+  if (e.target.classList.contains("ponto")) return; // ponto cuida sozinho
+  const svgP = clientToSvg(e.clientX, e.clientY);
+  panning = { startX: svgP.x, startY: svgP.y, viewX: view.x, viewY: view.y };
+  stage.classList.add("dragging-pan");
+  svg.setPointerCapture(e.pointerId);
+});
+svg.addEventListener("pointermove", (e) => {
+  if (!panning || dragging) return;
+  // recalcula no espaço SVG ANTES do pan já aplicado:
+  // tela → coord SVG mostra a posição atual. Comparar com inicial.
+  const svgP = clientToSvg(e.clientX, e.clientY);
+  const dx = svgP.x - panning.startX;
+  const dy = svgP.y - panning.startY;
+  view.x = panning.viewX - dx;
+  view.y = panning.viewY - dy;
+  aplicarViewBox();
+});
+svg.addEventListener("pointerup", () => {
+  if (panning) { panning = null; stage.classList.remove("dragging-pan"); }
+});
+
+// ─── Zoom (roda do mouse) ────────────────────────────────────────────────
+stage.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const svgP = clientToSvg(e.clientX, e.clientY);
+  const fator = e.deltaY > 0 ? 1.15 : 1 / 1.15;
+  const nw = view.w * fator;
+  const nh = view.h * fator;
+  if (nw < 30 || nw > 4000) return;
+  // mantém o ponto sob o cursor fixo na tela
+  view.x = svgP.x - (svgP.x - view.x) * (nw / view.w);
+  view.y = svgP.y - (svgP.y - view.y) * (nh / view.h);
+  view.w = nw;
+  view.h = nh;
+  aplicarViewBox();
+}, { passive: false });
+
+// ─── Botões zoom ─────────────────────────────────────────────────────────
+function zoomNoCentro(fator) {
+  const cx = view.x + view.w / 2;
+  const cy = view.y + view.h / 2;
+  view.w *= fator; view.h *= fator;
+  view.x = cx - view.w / 2; view.y = cy - view.h / 2;
+  aplicarViewBox();
+}
+document.getElementById("btn-zoom-in").addEventListener("click", () => zoomNoCentro(1 / 1.4));
+document.getElementById("btn-zoom-out").addEventListener("click", () => zoomNoCentro(1.4));
+document.getElementById("btn-zoom-100").addEventListener("click", () => { view = { ...VIEW_BASE }; aplicarViewBox(); });
+
+// ─── Foco rápido em regiões ──────────────────────────────────────────────
+const FOCOS = {
+  "bruxa":     { x: 130, y: 470, w: 250, h: 230 },
+  "curva01":   { x:  20, y: 580, w: 280, h: 200 },
+  "mergulho":  { x: 200, y: 240, w: 250, h: 230 },
+};
+document.querySelectorAll("[data-foco]").forEach(b => {
+  b.addEventListener("click", () => {
+    const f = FOCOS[b.dataset.foco];
+    if (!f) return;
+    view = { ...f };
+    aplicarViewBox();
+  });
+});
+
+// ─── Densidade ───────────────────────────────────────────────────────────
+document.querySelectorAll("[data-dens]").forEach(b => {
+  b.addEventListener("click", () => {
+    if (edicoes > 0) {
+      const ok = confirm(`Você fez ${edicoes} ajuste(s). Mudar a densidade vai REINICIAR o desenho e perder suas correções. Continuar?`);
+      if (!ok) return;
+    }
+    densAtiva = b.dataset.dens;
+    pontos = resample(original.pts, PRESETS[densAtiva], closed);
+    historico = [];
+    edicoes = 0;
+    salvarLocal();
+    renderAll();
+    document.querySelectorAll("[data-dens]").forEach(x => x.classList.remove("primario"));
+    b.classList.add("primario");
+  });
+});
+
+// ─── Desfazer ────────────────────────────────────────────────────────────
+btnDesfazer.addEventListener("click", () => {
+  const h = historico.pop();
+  if (!h) return;
+  if (h.tipo === "ponto") {
+    pontos[h.idx] = { x: h.x, y: h.y };
+    edicoes = Math.max(0, edicoes - 1);
+  } else if (h.tipo === "brush") {
+    for (const a of h.afetados) {
+      pontos[a.idx] = { x: a.x, y: a.y };
+    }
+    edicoes = Math.max(0, edicoes - 1);
+  }
+  renderPath();
+  renderPontos();
+  infoEdits.textContent = edicoes;
+  btnDesfazer.disabled = historico.length === 0;
+  salvarLocal();
+});
+
+// ─── Resetar tudo ────────────────────────────────────────────────────────
+document.getElementById("btn-reset").addEventListener("click", () => {
+  if (edicoes === 0) return;
+  const ok = confirm(`Você fez ${edicoes} ajuste(s). Resetar vai voltar TUDO ao desenho oficial original. Continuar?`);
+  if (!ok) return;
+  pontos = resample(original.pts, PRESETS[densAtiva], closed);
+  historico = [];
+  edicoes = 0;
+  view = { ...VIEW_BASE };
+  salvarLocal();
+  renderAll();
+});
+
+// ─── Exportar ────────────────────────────────────────────────────────────
+const modal = document.getElementById("modal-export");
+const exportText = document.getElementById("export-text");
+document.getElementById("btn-exportar").addEventListener("click", () => {
+  exportText.value = pontosParaPath(pontos, closed);
+  modal.classList.add("aberto");
+});
+document.getElementById("btn-fechar-modal").addEventListener("click", () => modal.classList.remove("aberto"));
+document.getElementById("btn-copiar").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(exportText.value);
+    const msg = document.getElementById("copiado-msg");
+    msg.style.display = "inline";
+    setTimeout(() => msg.style.display = "none", 1800);
+  } catch (_) {
+    exportText.select();
+    document.execCommand("copy");
+  }
+});
+
+// ─── Marca botão de densidade ativo na carga ─────────────────────────────
+document.querySelector(`[data-dens="${densAtiva}"]`).classList.add("primario");
+</script>
+</body>
+</html>

@@ -1,0 +1,2553 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>P1 Fast — Command Box Engenharia · PAce Torque Delivery Advisor</title>
+<style>
+/* ======================================================================
+   PAce Torque Delivery Advisor — Command Box Engenharia
+   Mockup standalone. Diagnóstico de entrega de torque no Ponto de Aceleração.
+   Sem chamada real à Injepro T4000. EngineCalibrationAdapter em modo
+   simulationOnly. Feature flag ENABLE_LIVE_T4000_PATCH_APPLY = false.
+   Sequência do trecho: Entry → Brake → VMIN → Apex → PAce → Exit.
+   Termo banido (proibido em qualquer label): "V-E-R-T-E-X".
+   ====================================================================== */
+
+:root{
+  --bg:#0B0E13;
+  --bg-deep:#070A0F;
+  --card:#131820;
+  --card-2:#1A2029;
+  --card-3:#212834;
+  --hairline:#232934;
+  --hairline-soft:#1A1F28;
+  --fg:#E8EAEC;
+  --fg-soft:#C5C9D0;
+  --muted:#8B919B;
+  --muted-2:#5A6068;
+  --accent:#4F8CFF;
+  --gold:#D4AF37;
+
+  /* paleta semântica deste componente */
+  --torque-esperado:#3FE08C;   /* verde — torque que o motor deveria entregar */
+  --torque-entregue:#38BCFF;   /* azul/ciano — torque estimado na pista */
+  --delta:#FF5A4E;             /* vermelho — perda */
+  --iat:#B47CFF;               /* roxo/lilás — temperatura do ar de admissão */
+  --vmin:#F1C24A;              /* amarelo — VMIN/Ápice/atenção */
+  --apex:#F1C24A;              /* amarelo — mesmo do VMIN */
+  --pace:#3FE08C;              /* verde — PAce */
+  --exit:#38BCFF;              /* azul/ciano — Saída */
+  --ignicao:#FF9F4A;           /* laranja — ignição/alerta térmico */
+  --neutro:#5A6068;            /* cinza */
+
+  --ok:#3FE08C;
+  --warn:#F1C24A;
+  --warn-2:#FF9F4A;
+  --bad:#FF5A4E;
+  --crit:#FF2A2A;
+}
+
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+body{
+  background:var(--bg);
+  color:var(--fg);
+  font-family:'Helvetica Neue', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size:12.5px;
+  line-height:1.35;
+  min-height:100vh;
+  padding:14px 14px 70px;
+}
+
+/* fonte monoespaçada/condensada pra números técnicos */
+.mono{
+  font-family:'SF Mono','Roboto Mono','Menlo','Consolas',monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing:0.01em;
+}
+
+/* badge de mock */
+.mock-badge{
+  display:inline-block;
+  font-size:9px;
+  letter-spacing:0.16em;
+  text-transform:uppercase;
+  padding:1px 7px;
+  border:1px solid var(--gold);
+  color:var(--gold);
+  background:rgba(212,175,55,0.08);
+  border-radius:2px;
+  vertical-align:middle;
+  margin-left:8px;
+}
+
+/* ─── HEADER ─────────────────────────────────────────── */
+.cb-header{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:18px;
+  padding:10px 14px 12px;
+  border-bottom:1px solid var(--hairline);
+  margin-bottom:12px;
+}
+.cb-header .title{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.cb-header h1{
+  margin:0;
+  font-size:11px;
+  letter-spacing:0.22em;
+  color:var(--muted);
+  font-weight:600;
+  text-transform:uppercase;
+}
+.cb-header h1 .brand{
+  color:var(--gold);
+  letter-spacing:0.20em;
+}
+.cb-header h2{
+  margin:0;
+  font-size:22px;
+  letter-spacing:0.04em;
+  color:var(--fg);
+  font-weight:300;
+  text-transform:uppercase;
+}
+.cb-header h2 .em{
+  color:var(--torque-esperado);
+  font-weight:500;
+}
+.cb-header h2 .sep{ color:var(--muted-2); margin:0 6px; }
+.cb-header .subtitle{
+  font-size:11px;
+  color:var(--muted);
+  letter-spacing:0.05em;
+  margin-top:1px;
+}
+.cb-header .meta{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  font-size:11px;
+}
+.cb-header .meta .item{
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+  align-items:flex-end;
+}
+.cb-header .meta .k{
+  font-size:9px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.cb-header .meta .v{
+  font-size:11.5px;
+  color:var(--fg-soft);
+}
+.cb-header .meta .eng-pill{
+  font-size:9px;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  padding:3px 10px;
+  border:1px solid var(--gold);
+  color:var(--gold);
+  background:rgba(212,175,55,0.08);
+  border-radius:2px;
+}
+
+/* ─── KPI STRIPS ─────────────────────────────────────── */
+.kpi-strip{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap:0;
+  background:var(--card);
+  border:1px solid var(--hairline);
+  border-radius:4px;
+  margin-bottom:10px;
+  overflow:hidden;
+}
+.kpi-strip.context .kpi{ padding:7px 12px; }
+.kpi-strip .kpi{
+  padding:9px 12px;
+  border-right:1px solid var(--hairline);
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.kpi-strip .kpi:last-child{ border-right:none; }
+.kpi-strip .kpi .k{
+  font-size:9px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.kpi-strip .kpi .v{
+  font-size:14px;
+  color:var(--fg);
+  font-weight:500;
+}
+.kpi-strip.context .kpi .v{ font-size:11.5px; font-weight:400; }
+.kpi-strip .kpi .v.big{
+  font-size:18px;
+  font-weight:300;
+  letter-spacing:0.01em;
+}
+.kpi-strip .kpi .v.ok{ color:var(--ok); }
+.kpi-strip .kpi .v.warn{ color:var(--warn-2); }
+.kpi-strip .kpi .v.bad{ color:var(--bad); }
+.kpi-strip .kpi .v.expected{ color:var(--torque-esperado); }
+.kpi-strip .kpi .v.delivered{ color:var(--torque-entregue); }
+.kpi-strip .kpi .v.iat{ color:var(--iat); }
+.kpi-strip .kpi .delta{
+  font-size:10px;
+  color:var(--bad);
+  letter-spacing:0.03em;
+}
+.kpi-strip .kpi .delta.up{ color:var(--bad); }
+.kpi-strip .kpi .delta.down{ color:var(--ok); }
+.kpi-strip .kpi .unit{
+  font-size:10px;
+  color:var(--muted);
+  margin-left:2px;
+}
+
+/* ─── GRID PRINCIPAL ─────────────────────────────────── */
+.grid{
+  display:grid;
+  gap:10px;
+  margin-bottom:10px;
+}
+.grid.r1{ grid-template-columns: 1.55fr 1fr; }              /* chart big · mapa */
+.grid.r2{ grid-template-columns: 1fr 1fr 1.2fr; }           /* correlations · médias · motor check */
+.grid.r3{ grid-template-columns: 1fr; }                     /* advisor verdict full */
+.grid.r4{ grid-template-columns: 1.2fr 1fr 1.2fr; }         /* patch · resultado · aplicação */
+
+@media (max-width: 1280px){
+  .grid.r1{ grid-template-columns: 1fr; }
+  .grid.r2{ grid-template-columns: 1fr 1fr; }
+  .grid.r4{ grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 860px){
+  .grid.r2, .grid.r4{ grid-template-columns: 1fr; }
+}
+
+/* ─── CARD/BLOCO ─────────────────────────────────────── */
+.block{
+  background:var(--card);
+  border:1px solid var(--hairline);
+  border-radius:5px;
+  padding:11px 13px 13px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  min-height:0;
+}
+.block > h3{
+  margin:0 0 4px;
+  font-size:10.5px;
+  letter-spacing:0.18em;
+  color:var(--muted);
+  font-weight:600;
+  text-transform:uppercase;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.block > h3 .acc{ color:var(--gold); }
+.block > h3 .sub{
+  color:var(--muted-2);
+  font-weight:400;
+  letter-spacing:0.06em;
+  text-transform:none;
+  font-size:10px;
+}
+.block .hint{
+  font-size:10px;
+  color:var(--muted);
+  letter-spacing:0.04em;
+}
+
+/* ─── TORQUE DELIVERY WINDOW (gráfico) ───────────────── */
+.chart-wrap{
+  position:relative;
+  width:100%;
+  background:var(--bg-deep);
+  border:1px solid var(--hairline-soft);
+  border-radius:4px;
+  padding:8px 6px 4px;
+}
+.chart-wrap svg{
+  display:block;
+  width:100%;
+  height:auto;
+}
+.chart-legend{
+  display:flex;
+  gap:14px;
+  flex-wrap:wrap;
+  font-size:10px;
+  color:var(--fg-soft);
+  padding:6px 4px 0;
+}
+.chart-legend .li{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.chart-legend .sw{
+  display:inline-block;
+  width:18px;
+  height:3px;
+  border-radius:2px;
+}
+.chart-legend .sw.exp{ background:var(--torque-esperado); }
+.chart-legend .sw.del{ background:var(--torque-entregue); }
+.chart-legend .sw.iat{
+  background:transparent;
+  border-top:2px dashed var(--iat);
+  height:0;
+  width:22px;
+  margin-bottom:2px;
+}
+.chart-legend .sw.dlt{
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(255,90,78,0.45),
+      rgba(255,90,78,0.45) 3px,
+      transparent 3px,
+      transparent 6px
+    );
+  border:1px solid rgba(255,90,78,0.45);
+}
+.chart-legend .marker{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  font-size:9.5px;
+  letter-spacing:0.06em;
+  text-transform:uppercase;
+  padding:1px 6px;
+  border-radius:2px;
+}
+.chart-legend .marker.vmin{ color:var(--vmin); border:1px solid rgba(241,194,74,0.45); }
+.chart-legend .marker.apex{ color:var(--apex); border:1px solid rgba(241,194,74,0.45); }
+.chart-legend .marker.pace{ color:var(--pace); border:1px solid rgba(63,224,140,0.45); }
+.chart-legend .marker.exit{ color:var(--exit); border:1px solid rgba(56,188,255,0.45); }
+
+/* ─── MAPA DO TRECHO ─────────────────────────────────── */
+.corner-wrap{
+  position:relative;
+  background:var(--bg-deep);
+  border:1px solid var(--hairline-soft);
+  border-radius:4px;
+  padding:6px;
+}
+.corner-wrap svg{
+  display:block;
+  width:100%;
+  height:auto;
+}
+.corner-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:11px;
+}
+.corner-table th{
+  font-size:9px;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:var(--muted);
+  text-align:left;
+  font-weight:600;
+  padding:5px 6px;
+  border-bottom:1px solid var(--hairline);
+}
+.corner-table td{
+  padding:5px 6px;
+  border-bottom:1px solid var(--hairline-soft);
+}
+.corner-table tr:last-child td{ border-bottom:none; }
+.corner-table .name{ display:inline-flex; align-items:center; gap:6px; }
+.corner-table .dot{
+  display:inline-block;
+  width:8px; height:8px;
+  border-radius:50%;
+}
+.corner-table .dot.entry{ background:#C5C9D0; }
+.corner-table .dot.brake{ background:var(--bad); }
+.corner-table .dot.vmin { background:var(--vmin); }
+.corner-table .dot.apex { background:var(--apex); }
+.corner-table .dot.pace { background:var(--pace); }
+.corner-table .dot.exit { background:var(--exit); }
+
+/* ─── CORRELAÇÕES ────────────────────────────────────── */
+.corr-list{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+.corr-row{
+  display:grid;
+  grid-template-columns: 92px 1fr 56px;
+  align-items:center;
+  gap:8px;
+  font-size:11.5px;
+}
+.corr-row .lbl{
+  color:var(--fg-soft);
+}
+.corr-row .bar{
+  position:relative;
+  height:9px;
+  background:var(--card-2);
+  border:1px solid var(--hairline-soft);
+  border-radius:2px;
+  overflow:hidden;
+}
+.corr-row .bar::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:0; bottom:0;
+  width:1px;
+  background:var(--muted-2);
+  opacity:0.7;
+}
+.corr-row .fill{
+  position:absolute;
+  top:0; bottom:0;
+  background:var(--bad);
+}
+.corr-row .fill.pos{ background:var(--ok); }
+.corr-row .fill.neg{ background:var(--bad); }
+.corr-row .fill.strong{ box-shadow:0 0 6px rgba(255,90,78,0.55); }
+.corr-row .val{
+  text-align:right;
+  font-size:11.5px;
+}
+.corr-row .val.strong{ color:var(--bad); font-weight:600; }
+.corr-row .val.weak{ color:var(--muted); }
+.corr-note{
+  font-size:10px;
+  color:var(--muted);
+  letter-spacing:0.02em;
+  margin-top:3px;
+}
+
+/* ─── MÉDIAS PAce ────────────────────────────────────── */
+.medias-grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:6px 12px;
+}
+.medias-grid .item{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  padding:5px 0;
+  border-bottom:1px solid var(--hairline-soft);
+  font-size:11.5px;
+}
+.medias-grid .item .lbl{
+  color:var(--muted);
+  font-size:10.5px;
+  letter-spacing:0.04em;
+}
+.medias-grid .item .v{ color:var(--fg); }
+.medias-grid .item .v .u{ color:var(--muted); font-size:10px; margin-left:2px; }
+
+/* ─── PACE MOTOR CHECK ──────────────────────────────── */
+.check-grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:5px 14px;
+}
+.check-item{
+  display:grid;
+  grid-template-columns: 1fr auto auto;
+  gap:8px;
+  align-items:baseline;
+  padding:5px 0;
+  border-bottom:1px solid var(--hairline-soft);
+  font-size:11.5px;
+}
+.check-item .lbl{
+  color:var(--fg-soft);
+  font-size:11px;
+  letter-spacing:0.02em;
+}
+.check-item .val{ color:var(--fg); font-size:11.5px; }
+.check-item .val .u{ color:var(--muted); font-size:10px; margin-left:2px; }
+.check-item .pill{
+  font-size:9px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  padding:1px 7px;
+  border-radius:10px;
+  border:1px solid;
+  text-align:center;
+  min-width:54px;
+}
+.check-item .pill.ok    { color:var(--ok);    border-color:rgba(63,224,140,0.45); background:rgba(63,224,140,0.08); }
+.check-item .pill.warn  { color:var(--warn);  border-color:rgba(241,194,74,0.45); background:rgba(241,194,74,0.08); }
+.check-item .pill.warn2 { color:var(--warn-2);border-color:rgba(255,159,74,0.45); background:rgba(255,159,74,0.08); }
+.check-item .pill.bad   { color:var(--bad);   border-color:rgba(255,90,78,0.45);  background:rgba(255,90,78,0.10); }
+.check-item .pill.off   { color:var(--muted-2); border-color:var(--hairline); background:transparent; }
+
+.check-summary{
+  margin-top:8px;
+  padding:8px 10px;
+  border:1px solid var(--bad);
+  background:rgba(255,90,78,0.10);
+  border-radius:3px;
+  font-size:11px;
+  letter-spacing:0.10em;
+  text-transform:uppercase;
+  color:var(--bad);
+  text-align:center;
+  font-weight:600;
+}
+
+/* ─── ADVISOR VERDICT ────────────────────────────────── */
+.advisor{
+  background:linear-gradient(180deg, rgba(255,90,78,0.06) 0%, transparent 60%);
+  border:1px solid rgba(255,90,78,0.35);
+}
+.advisor-head{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  flex-wrap:wrap;
+  padding-bottom:8px;
+  border-bottom:1px solid var(--hairline-soft);
+  margin-bottom:8px;
+}
+.advisor-diag{
+  font-size:14px;
+  letter-spacing:0.06em;
+  color:var(--bad);
+  font-weight:600;
+}
+.advisor-confidence{
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+  margin-left:auto;
+}
+.advisor-confidence .k{
+  font-size:9px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.advisor-confidence .v{
+  font-size:18px;
+  font-weight:300;
+  color:var(--fg);
+}
+.advisor-body{
+  display:grid;
+  grid-template-columns: 1.4fr 0.9fr 0.9fr;
+  gap:14px;
+}
+@media (max-width: 980px){
+  .advisor-body{ grid-template-columns: 1fr; }
+}
+.advisor-section h4{
+  margin:0 0 5px;
+  font-size:9.5px;
+  letter-spacing:0.16em;
+  text-transform:uppercase;
+  color:var(--muted);
+  font-weight:600;
+}
+.advisor-evidence{
+  list-style:none;
+  padding:0;
+  margin:0;
+  font-size:11px;
+}
+.advisor-evidence li{
+  padding:3px 0 3px 14px;
+  position:relative;
+  color:var(--fg-soft);
+}
+.advisor-evidence li::before{
+  content:"";
+  position:absolute;
+  left:0; top:9px;
+  width:6px; height:6px;
+  background:var(--torque-esperado);
+  border-radius:50%;
+}
+.advisor-side{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.advisor-side .row{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  font-size:11.5px;
+}
+.advisor-side .row .k{ color:var(--muted); font-size:10.5px; }
+.advisor-side .row .v{ color:var(--fg); }
+.advisor-side .row .v.gain{ color:var(--ok); }
+.advisor-side .row .v.risk{ color:var(--warn-2); }
+.advisor-side .row .v.bad{ color:var(--bad); }
+.advisor-action{
+  padding:8px 10px;
+  border:1px solid rgba(63,224,140,0.30);
+  background:rgba(63,224,140,0.07);
+  border-radius:3px;
+  font-size:11.5px;
+  color:var(--fg);
+  line-height:1.45;
+}
+.advisor-action b{ color:var(--ok); }
+
+/* ─── PATCH SIMULATION ─────────────────────────────── */
+.patch-list{
+  display:flex;
+  flex-direction:column;
+  gap:11px;
+}
+.patch-slider{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap:4px;
+}
+.patch-slider .head{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  gap:8px;
+}
+.patch-slider .lbl{
+  font-size:10.5px;
+  letter-spacing:0.06em;
+  color:var(--fg-soft);
+  text-transform:uppercase;
+  font-weight:600;
+}
+.patch-slider .lbl .dotc{
+  display:inline-block;
+  width:8px; height:8px;
+  border-radius:50%;
+  margin-right:5px;
+  vertical-align:middle;
+}
+.patch-slider .lbl .dotc.fuel{   background:var(--torque-entregue); }
+.patch-slider .lbl .dotc.ign{    background:var(--ignicao); }
+.patch-slider .lbl .dotc.trans{  background:var(--torque-esperado); }
+.patch-slider .lbl .dotc.thermal{ background:var(--iat); }
+.patch-slider .val{
+  font-size:13px;
+  color:var(--fg);
+  font-weight:500;
+}
+.patch-slider input[type="range"]{
+  -webkit-appearance:none;
+  appearance:none;
+  width:100%;
+  height:5px;
+  background:var(--card-2);
+  border:1px solid var(--hairline);
+  border-radius:3px;
+  outline:none;
+  margin:4px 0 2px;
+}
+.patch-slider input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  appearance:none;
+  width:14px; height:14px;
+  border-radius:50%;
+  background:var(--gold);
+  border:2px solid var(--bg);
+  box-shadow:0 0 6px rgba(212,175,55,0.4);
+  cursor:pointer;
+}
+.patch-slider input[type="range"]::-moz-range-thumb{
+  width:14px; height:14px;
+  border-radius:50%;
+  background:var(--gold);
+  border:2px solid var(--bg);
+  cursor:pointer;
+}
+.patch-slider input[type="range"].fuel::-webkit-slider-thumb{ background:var(--torque-entregue); }
+.patch-slider input[type="range"].ign::-webkit-slider-thumb{ background:var(--ignicao); }
+.patch-slider input[type="range"].trans::-webkit-slider-thumb{ background:var(--torque-esperado); }
+.patch-slider .range-bounds{
+  display:flex;
+  justify-content:space-between;
+  font-size:9.5px;
+  color:var(--muted-2);
+  letter-spacing:0.03em;
+}
+.patch-slider .hint{
+  font-size:10px;
+  color:var(--muted);
+  letter-spacing:0.02em;
+  margin-top:1px;
+}
+
+.thermal-bias{
+  display:grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap:6px;
+  margin-top:6px;
+}
+.thermal-bias button{
+  background:transparent;
+  border:1px solid var(--hairline);
+  color:var(--fg-soft);
+  padding:7px 4px;
+  font-size:10.5px;
+  letter-spacing:0.10em;
+  text-transform:uppercase;
+  cursor:pointer;
+  font-family:inherit;
+  border-radius:3px;
+  transition:all 0.15s ease;
+}
+.thermal-bias button:hover{
+  border-color:var(--iat);
+  color:var(--iat);
+}
+.thermal-bias button.active{
+  background:rgba(180,124,255,0.10);
+  border-color:var(--iat);
+  color:var(--iat);
+}
+
+.patch-disclaimer{
+  font-size:10px;
+  color:var(--muted);
+  margin-top:8px;
+  padding:6px 8px;
+  border:1px dashed var(--hairline);
+  border-radius:3px;
+  background:var(--bg-deep);
+}
+
+/* ─── RESULTADO ESTIMADO ─────────────────────────────── */
+.result-grid{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+.result-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  padding:6px 8px;
+  border:1px solid var(--hairline);
+  background:var(--card-2);
+  border-radius:3px;
+}
+.result-row.highlight{
+  border-color:rgba(63,224,140,0.40);
+  background:rgba(63,224,140,0.05);
+}
+.result-row .k{
+  font-size:10px;
+  letter-spacing:0.10em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.result-row .v{
+  font-size:15px;
+  color:var(--fg);
+  font-weight:400;
+}
+.result-row .v.ok{ color:var(--ok); }
+.result-row .v.warn{ color:var(--warn-2); }
+.result-row .v.bad{ color:var(--bad); }
+
+/* ─── APLICAÇÃO DO PATCH ────────────────────────────── */
+.apply-form{
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+}
+.apply-row{
+  display:grid;
+  grid-template-columns: 90px 1fr;
+  align-items:center;
+  gap:10px;
+}
+.apply-row .lbl{
+  font-size:10px;
+  letter-spacing:0.10em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.apply-row select{
+  background:var(--bg-deep);
+  border:1px solid var(--hairline);
+  color:var(--fg);
+  padding:5px 8px;
+  font-size:11.5px;
+  font-family:inherit;
+  border-radius:3px;
+}
+.apply-timeline{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  height:46px;
+  margin-top:4px;
+  padding:0 14px;
+  background:var(--bg-deep);
+  border:1px solid var(--hairline-soft);
+  border-radius:3px;
+}
+.apply-timeline::before{
+  content:"";
+  position:absolute;
+  left:14px; right:14px;
+  top:50%;
+  height:1px;
+  background:var(--hairline);
+}
+.apply-timeline .patch-area{
+  position:absolute;
+  top:7px; bottom:7px;
+  background:rgba(63,224,140,0.16);
+  border:1px solid rgba(63,224,140,0.50);
+  border-radius:2px;
+}
+.apply-timeline .stop{
+  position:relative;
+  z-index:2;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:3px;
+  background:var(--bg-deep);
+  padding:0 4px;
+}
+.apply-timeline .stop .marker{
+  width:9px; height:9px;
+  border-radius:50%;
+  border:2px solid var(--bg-deep);
+}
+.apply-timeline .stop .name{
+  font-size:8.5px;
+  letter-spacing:0.10em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.apply-timeline .stop.vmin .marker{ background:var(--vmin); }
+.apply-timeline .stop.vmin .name{ color:var(--vmin); }
+.apply-timeline .stop.apex .marker{ background:var(--apex); }
+.apply-timeline .stop.apex .name{ color:var(--apex); }
+.apply-timeline .stop.pace .marker{ background:var(--pace); }
+.apply-timeline .stop.pace .name{ color:var(--pace); }
+.apply-timeline .stop.exit .marker{ background:var(--exit); }
+.apply-timeline .stop.exit .name{ color:var(--exit); }
+
+.apply-buttons{
+  display:flex;
+  gap:8px;
+  margin-top:6px;
+}
+.apply-buttons button{
+  flex:1;
+  padding:9px 10px;
+  font-size:11px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  font-family:inherit;
+  border-radius:3px;
+  cursor:pointer;
+  font-weight:600;
+}
+.apply-buttons .cancel{
+  background:transparent;
+  border:1px solid var(--hairline);
+  color:var(--fg-soft);
+}
+.apply-buttons .cancel:hover{ border-color:var(--muted); color:var(--fg); }
+.apply-buttons .apply{
+  background:rgba(63,224,140,0.10);
+  border:1px solid var(--ok);
+  color:var(--ok);
+}
+.apply-buttons .apply:hover{ background:rgba(63,224,140,0.18); }
+.apply-buttons .apply:disabled{
+  background:transparent;
+  border-color:var(--hairline);
+  color:var(--muted-2);
+  cursor:not-allowed;
+}
+
+.apply-scope-note{
+  margin-top:8px;
+  padding:7px 9px;
+  border-left:3px solid var(--ok);
+  background:rgba(63,224,140,0.06);
+  font-size:10.5px;
+  color:var(--fg-soft);
+  line-height:1.5;
+  border-radius:0 2px 2px 0;
+}
+.apply-scope-note b{ color:var(--ok); }
+
+.apply-result{
+  margin-top:6px;
+  padding:6px 9px;
+  font-size:11px;
+  border-radius:3px;
+  display:none;
+  letter-spacing:0.02em;
+}
+.apply-result.visible{ display:block; }
+.apply-result.ok{ background:rgba(63,224,140,0.10); border:1px solid rgba(63,224,140,0.40); color:var(--ok); }
+.apply-result.blocked{ background:rgba(255,90,78,0.10); border:1px solid rgba(255,90,78,0.40); color:var(--bad); }
+
+/* ─── RODAPÉ TÉCNICO ─────────────────────────────────── */
+.status-bar{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  display:flex;
+  gap:0;
+  align-items:center;
+  background:var(--card);
+  border-top:1px solid var(--hairline);
+  font-size:10px;
+  color:var(--muted);
+  letter-spacing:0.04em;
+  z-index:50;
+}
+.status-bar .seg{
+  padding:7px 12px;
+  border-right:1px solid var(--hairline);
+  display:flex;
+  gap:8px;
+  align-items:baseline;
+}
+.status-bar .seg .k{
+  color:var(--muted-2);
+  font-size:9px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+}
+.status-bar .seg .v{ color:var(--fg-soft); }
+.status-bar .seg .v.ok{ color:var(--ok); }
+.status-bar .seg.spacer{ flex:1; border-right:none; }
+
+/* ─── TEST BAR ──────────────────────────────────────── */
+.test-bar{
+  margin:14px 0 0;
+  padding:8px 12px;
+  font-size:10px;
+  font-family:'SF Mono', monospace;
+  background:var(--card);
+  border:1px solid var(--hairline);
+  border-radius:3px;
+  letter-spacing:0.04em;
+  color:var(--muted);
+}
+.test-bar.ok{
+  border-color:rgba(63,224,140,0.40);
+  color:var(--ok);
+  background:rgba(63,224,140,0.06);
+}
+.test-bar.fail{
+  border-color:var(--bad);
+  color:var(--bad);
+  background:rgba(255,90,78,0.10);
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═════════════════════════════════════════════════════════ -->
+<header class="cb-header">
+  <div class="title">
+    <h1><span class="brand">P1 FAST</span> · COMMAND BOX ENGENHARIA <span class="mock-badge">mock</span></h1>
+    <h2><span class="em">PAce</span> <span class="sep">/</span> Torque Delivery Advisor</h2>
+    <div class="subtitle">Análise de entrega de torque no PAce — janela -1.0 s a +3.0 s relativa ao Ponto de Aceleração</div>
+  </div>
+  <div class="meta">
+    <div class="item"><span class="k">Sessão</span><span class="v">Treino 2</span></div>
+    <div class="item"><span class="k">Box</span><span class="v">BOX</span></div>
+    <div class="item"><span class="k">Pista</span><span class="v">Brasília</span></div>
+    <div class="item"><span class="k">Carro</span><span class="v">Celta 1.4 ASP Onix</span></div>
+    <div class="item"><span class="k">Data</span><span class="v mono">2026-05-15</span></div>
+    <div class="item"><span class="k">Hora</span><span class="v mono">14:32:10</span></div>
+    <div class="item"><span class="eng-pill">ENG</span></div>
+  </div>
+</header>
+
+<!-- ═══ KPI STRIP 1 — CONTEXTO ════════════════════════════════════════ -->
+<section class="kpi-strip context" aria-label="Contexto da análise">
+  <div class="kpi"><span class="k">Carro</span><span class="v">Celta 1.4 ASP Onix</span></div>
+  <div class="kpi"><span class="k">Trecho</span><span class="v">T03 — Curva 8</span></div>
+  <div class="kpi"><span class="k">Volta base</span><span class="v mono">1:23.456 / V6</span></div>
+  <div class="kpi"><span class="k">Volta atual</span><span class="v mono">1:24.012 / V11</span></div>
+  <div class="kpi"><span class="k">Comparar</span><span class="v">Base</span></div>
+  <div class="kpi"><span class="k">Sessão</span><span class="v">Treino 2</span></div>
+  <div class="kpi"><span class="k">Pneu</span><span class="v">Usado</span></div>
+  <div class="kpi"><span class="k">Ar</span><span class="v mono">28.5°C</span></div>
+  <div class="kpi"><span class="k">Pista</span><span class="v mono">36.2°C</span></div>
+</section>
+
+<!-- ═══ KPI STRIP 2 — KPIs PRINCIPAIS ═════════════════════════════════ -->
+<section class="kpi-strip" aria-label="KPIs do PAce">
+  <div class="kpi">
+    <span class="k">TDI</span>
+    <span class="v big mono bad" id="kpi-tdi">82%</span>
+    <span class="delta up mono" id="kpi-tdi-delta">−13% vs base</span>
+  </div>
+  <div class="kpi">
+    <span class="k">Torque esperado · PAce</span>
+    <span class="v big mono expected" id="kpi-exp">131 <span class="unit">Nm</span></span>
+    <span class="delta mono" style="color:var(--muted)">dinamômetro</span>
+  </div>
+  <div class="kpi">
+    <span class="k">Torque entregue · PAce</span>
+    <span class="v big mono delivered" id="kpi-del">108 <span class="unit">Nm</span></span>
+    <span class="delta mono" style="color:var(--muted)">estimado em pista</span>
+  </div>
+  <div class="kpi">
+    <span class="k">Delta · PAce</span>
+    <span class="v big mono bad" id="kpi-delta">−23 <span class="unit">Nm</span></span>
+    <span class="delta up mono" id="kpi-delta-pct">−17% perda</span>
+  </div>
+  <div class="kpi">
+    <span class="k">IAT · PAce</span>
+    <span class="v big mono iat" id="kpi-iat">56.2°C</span>
+    <span class="delta up mono">+11.3°C vs base</span>
+  </div>
+  <div class="kpi">
+    <span class="k">Temp. água</span>
+    <span class="v mono">92°C</span>
+    <span class="delta mono" style="color:var(--muted)">OK</span>
+  </div>
+  <div class="kpi">
+    <span class="k">Temp. óleo</span>
+    <span class="v mono">108°C</span>
+    <span class="delta mono" style="color:var(--muted)">OK</span>
+  </div>
+  <div class="kpi">
+    <span class="k">Press. combustível</span>
+    <span class="v mono">3.6 <span class="unit">bar</span></span>
+    <span class="delta mono" style="color:var(--muted)">estável</span>
+  </div>
+  <div class="kpi">
+    <span class="k">Lambda WB</span>
+    <span class="v mono">0.88 λ</span>
+    <span class="delta mono" style="color:var(--muted)">aceitável</span>
+  </div>
+</section>
+
+<!-- ═══ GRID R1 — CHART + MAPA ═══════════════════════════════════════ -->
+<div class="grid r1">
+
+  <!-- TORQUE DELIVERY WINDOW -->
+  <section class="block" aria-label="Torque Delivery Window">
+    <h3>Torque Delivery Window <span class="sub">· janela -1.0 s a +3.0 s relativa ao PAce</span></h3>
+    <div class="chart-wrap" id="chart-wrap">
+      <svg viewBox="0 0 820 360" xmlns="http://www.w3.org/2000/svg" id="chart-svg" role="img" aria-label="Gráfico Torque Delivery Window">
+        <!-- conteúdo gerado via JS -->
+      </svg>
+    </div>
+    <div class="chart-legend">
+      <span class="li"><span class="sw exp"></span> Torque esperado (Nm)</span>
+      <span class="li"><span class="sw del"></span> Torque entregue (Nm)</span>
+      <span class="li"><span class="sw dlt"></span> Delta torque</span>
+      <span class="li"><span class="sw iat"></span> IAT (°C)</span>
+      <span class="li marker vmin">VMIN</span>
+      <span class="li marker apex">Ápice</span>
+      <span class="li marker pace">PAce</span>
+      <span class="li marker exit">Saída</span>
+    </div>
+  </section>
+
+  <!-- MAPA DO TRECHO -->
+  <section class="block" aria-label="Mapa do trecho">
+    <h3>Mapa do trecho <span class="sub">· T03 — Curva 8</span></h3>
+    <div class="corner-wrap">
+      <svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" id="corner-svg" role="img" aria-label="Mapa da Curva 8">
+        <!-- conteúdo gerado via JS -->
+      </svg>
+    </div>
+    <table class="corner-table">
+      <thead>
+        <tr><th>Ponto</th><th style="text-align:right;">Dist. (m)</th><th style="text-align:right;">Vel. (km/h)</th></tr>
+      </thead>
+      <tbody id="corner-tbody">
+        <!-- gerado via JS -->
+      </tbody>
+    </table>
+  </section>
+</div>
+
+<!-- ═══ GRID R2 — CORRELAÇÕES + MÉDIAS + MOTOR CHECK ════════════════ -->
+<div class="grid r2">
+
+  <!-- CORRELAÇÕES -->
+  <section class="block" aria-label="Correlações-chave com delta torque">
+    <h3>Correlações-chave com delta torque</h3>
+    <div class="corr-list" id="corr-list">
+      <!-- gerado via JS -->
+    </div>
+    <div class="corr-note">|r| > 0.50 = correlação forte · sinal negativo = variável sobe → torque cai</div>
+  </section>
+
+  <!-- MÉDIAS NO PACE -->
+  <section class="block" aria-label="Médias no PAce — últimas 5 voltas">
+    <h3>Médias no PAce <span class="sub">· últimas 5 voltas</span></h3>
+    <div class="medias-grid" id="medias-grid">
+      <!-- gerado via JS -->
+    </div>
+  </section>
+
+  <!-- PACE MOTOR CHECK -->
+  <section class="block" aria-label="PAce Motor Check">
+    <h3>PAce Motor Check</h3>
+    <div class="check-grid" id="check-grid">
+      <!-- gerado via JS -->
+    </div>
+    <div class="check-summary" id="check-summary">IAT LOSS SUSPECTED</div>
+  </section>
+</div>
+
+<!-- ═══ GRID R3 — ADVISOR VERDICT ════════════════════════════════════ -->
+<div class="grid r3">
+  <section class="block advisor" aria-label="Advisor Verdict">
+    <h3>Advisor Verdict</h3>
+    <div class="advisor-head">
+      <div class="advisor-diag" id="advisor-diag">PERDA DE TORQUE NO PAce POR EFEITO TÉRMICO (IAT)</div>
+      <div class="advisor-confidence">
+        <span class="k">Confiança</span>
+        <span class="v mono" id="advisor-confidence">78%</span>
+      </div>
+    </div>
+    <div class="advisor-body">
+      <div class="advisor-section">
+        <h4>Evidências</h4>
+        <ul class="advisor-evidence" id="advisor-evidence">
+          <!-- gerado via JS -->
+        </ul>
+      </div>
+      <div class="advisor-section advisor-side">
+        <h4>Potencial</h4>
+        <div class="row"><span class="k">Ganho na saída</span><span class="v gain mono" id="advisor-gain">+0.18 s a +0.28 s</span></div>
+        <div class="row"><span class="k">Risco aplicado</span><span class="v risk" id="advisor-risk">baixo a médio</span></div>
+        <div class="row"><span class="k">Janela do patch</span><span class="v mono">PAce → Saída</span></div>
+        <div class="row"><span class="k">Atuação</span><span class="v">trecho local</span></div>
+      </div>
+      <div class="advisor-section">
+        <h4>Recomendação</h4>
+        <div class="advisor-action">
+          Aplicar <b>patch térmico localizado</b> no PAce da Curva 8 e <b>retornar ao mapa base</b> na saída.
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ═══ GRID R4 — PATCH SIMULATION + RESULTADO + APLICAÇÃO ═════════ -->
+<div class="grid r4">
+
+  <!-- PATCH SIMULATION -->
+  <section class="block" aria-label="Patch Simulation">
+    <h3>Patch Simulation <span class="sub">· para este trecho</span></h3>
+    <div class="patch-list">
+
+      <div class="patch-slider">
+        <div class="head">
+          <span class="lbl"><span class="dotc fuel"></span>Fuel IAT Correction</span>
+          <span class="val mono" id="ps-fuel-val">+2.5%</span>
+        </div>
+        <input type="range" class="fuel" id="ps-fuel" min="-15" max="15" step="0.5" value="2.5" />
+        <div class="range-bounds"><span>-15%</span><span>0</span><span>+15%</span></div>
+        <div class="hint">Enriquece quando IAT alta prejudica entrega.</div>
+      </div>
+
+      <div class="patch-slider">
+        <div class="head">
+          <span class="lbl"><span class="dotc ign"></span>Ignition IAT Correction</span>
+          <span class="val mono" id="ps-ign-val">+1.0°</span>
+        </div>
+        <input type="range" class="ign" id="ps-ign" min="-6" max="6" step="0.1" value="1.0" />
+        <div class="range-bounds"><span>-6.0°</span><span>0</span><span>+6.0°</span></div>
+        <div class="hint">Recupera avanço perdido por correção térmica, com trava.</div>
+      </div>
+
+      <div class="patch-slider">
+        <div class="head">
+          <span class="lbl"><span class="dotc trans"></span>PAce Transient Fuel</span>
+          <span class="val mono" id="ps-trans-val">+6%</span>
+        </div>
+        <input type="range" class="trans" id="ps-trans" min="-20" max="20" step="0.5" value="6" />
+        <div class="range-bounds"><span>-20%</span><span>0</span><span>+20%</span></div>
+        <div class="hint">Corrige buraco de retomada no PAce.</div>
+      </div>
+
+      <div class="patch-slider">
+        <div class="head">
+          <span class="lbl"><span class="dotc thermal"></span>Thermal Bias</span>
+          <span class="val" id="ps-bias-val">Balanced</span>
+        </div>
+        <div class="thermal-bias" id="ps-bias">
+          <button type="button" data-bias="Safety">Safety</button>
+          <button type="button" data-bias="Balanced" class="active">Balanced</button>
+          <button type="button" data-bias="Performance">Performance</button>
+        </div>
+        <div class="hint">Regula agressividade entre proteção e performance.</div>
+      </div>
+
+    </div>
+    <div class="patch-disclaimer">
+      Simulação. Nenhum valor é escrito na Injepro T4000. Adapter em modo <b>simulationOnly</b>.
+    </div>
+  </section>
+
+  <!-- RESULTADO ESTIMADO -->
+  <section class="block" aria-label="Resultado estimado">
+    <h3>Resultado estimado</h3>
+    <div class="result-grid">
+      <div class="result-row">
+        <span class="k">TDI atual</span>
+        <span class="v mono bad" id="res-tdi-atual">82%</span>
+      </div>
+      <div class="result-row highlight">
+        <span class="k">TDI previsto após patch</span>
+        <span class="v mono ok" id="res-tdi-prev">94%</span>
+      </div>
+      <div class="result-row">
+        <span class="k">Delta atual</span>
+        <span class="v mono bad" id="res-delta-atual">−23 Nm</span>
+      </div>
+      <div class="result-row highlight">
+        <span class="k">Delta previsto</span>
+        <span class="v mono ok" id="res-delta-prev">−6 Nm</span>
+      </div>
+      <div class="result-row highlight">
+        <span class="k">Ganho na saída</span>
+        <span class="v mono ok" id="res-ganho">+0.18 s a +0.28 s</span>
+      </div>
+      <div class="result-row">
+        <span class="k">Risco térmico</span>
+        <span class="v warn" id="res-risco">BAIXO / MÉDIO</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- APLICAÇÃO DO PATCH -->
+  <section class="block" aria-label="Aplicação do Patch">
+    <h3>Aplicação do Patch</h3>
+    <div class="apply-form">
+      <div class="apply-row">
+        <span class="lbl">Início</span>
+        <select id="apply-start">
+          <option value="PAce" selected>PAce (0.00 s)</option>
+          <option value="Apex">Ápice (-0.20 s)</option>
+          <option value="VMIN">VMIN (-0.50 s)</option>
+        </select>
+      </div>
+      <div class="apply-row">
+        <span class="lbl">Fim</span>
+        <select id="apply-end">
+          <option value="Exit" selected>Saída (+2.60 s)</option>
+          <option value="ExitPlus">Saída + 0.5 s</option>
+        </select>
+      </div>
+      <div class="apply-timeline" id="apply-timeline">
+        <div class="patch-area" id="apply-patch-area"></div>
+        <div class="stop vmin" data-stop="VMIN" style="left:0%"><div class="marker"></div><div class="name">VMIN</div></div>
+        <div class="stop apex" data-stop="Apex" style="left:33.33%"><div class="marker"></div><div class="name">Ápice</div></div>
+        <div class="stop pace" data-stop="PAce" style="left:66.66%"><div class="marker"></div><div class="name">PAce</div></div>
+        <div class="stop exit" data-stop="Exit" style="left:100%"><div class="marker"></div><div class="name">Saída</div></div>
+      </div>
+      <div class="apply-buttons">
+        <button type="button" class="cancel" id="btn-cancel">Cancelar</button>
+        <button type="button" class="apply" id="btn-apply">Aplicar Patch</button>
+      </div>
+      <div class="apply-scope-note">
+        <b>Patch local:</b> ativo apenas na Curva 8, do PAce até a Saída. Após a saída, retorna ao mapa base.
+      </div>
+      <div class="apply-result" id="apply-result"></div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ═══ TEST BAR ════════════════════════════════════════════════════ -->
+<div id="test-bar" class="test-bar">testes embutidos: aguardando…</div>
+
+<!-- ═══ RODAPÉ TÉCNICO (status bar fixa) ═══════════════════════════ -->
+<footer class="status-bar" aria-label="Status técnico">
+  <div class="seg"><span class="k">Log</span><span class="v ok">Conectado</span></div>
+  <div class="seg"><span class="k">Sensores</span><span class="v ok">OK</span></div>
+  <div class="seg"><span class="k">Qualidade do dado</span><span class="v ok mono">93%</span></div>
+  <div class="seg"><span class="k">Massa</span><span class="v mono">920 kg</span></div>
+  <div class="seg"><span class="k">Pneu diant.</span><span class="v mono">205/50 R15</span></div>
+  <div class="seg"><span class="k">Pneu tras.</span><span class="v mono">205/50 R15</span></div>
+  <div class="seg"><span class="k">Combustível</span><span class="v mono">32 L · 68%</span></div>
+  <div class="seg spacer"></div>
+  <div class="seg"><span class="k">Adapter</span><span class="v mono" id="status-adapter">simulationOnly</span></div>
+  <div class="seg"><span class="k">Live T4000 Write</span><span class="v mono" id="status-flag">OFF</span></div>
+</footer>
+
+<!-- ═══ LÓGICA ═════════════════════════════════════════════════════ -->
+<script>
+"use strict";
+
+/* ──────────────────────────────────────────────────────────────
+ * 0) FEATURE FLAGS + ADAPTER (sem chamada real à T4000)
+ * ────────────────────────────────────────────────────────────── */
+var ENABLE_LIVE_T4000_PATCH_APPLY = false;
+
+function EngineCalibrationAdapter(mode){
+  this.mode = mode || 'simulationOnly';   // simulationOnly · manualExport · approvedPatchQueue · liveApplyIfSupported
+  this.queue = [];
+}
+EngineCalibrationAdapter.prototype.preparePatch = function(trecho, patch){
+  return {
+    id: 'PATCH-' + trecho.id + '-' + Date.now(),
+    trecho: trecho.id,
+    nome: trecho.name,
+    startPoint: patch.start,    // 'PAce' por padrão
+    endPoint:   patch.end,      // 'Exit'  por padrão
+    fuelIATPct:        patch.fuelIATPct,
+    ignitionIATDeg:    patch.ignitionIATDeg,
+    paceTransientPct:  patch.paceTransientPct,
+    thermalBias:       patch.thermalBias,   // Safety · Balanced · Performance
+    expectedTDIBefore: patch.tdiBefore,
+    expectedTDIAfter:  patch.tdiAfter,
+    ganhoEstimadoS:    patch.ganhoEstimadoS,
+    riscoTermico:      patch.riscoTermico,
+    retornoMapaBase:   true,
+    scope:             'local',
+    rollback:          'auto',
+    createdAt:         new Date().toISOString()
+  };
+};
+EngineCalibrationAdapter.prototype.apply = function(){
+  if (!ENABLE_LIVE_T4000_PATCH_APPLY){
+    return { ok:false, reason:'feature-flag-disabled', mode:this.mode };
+  }
+  return { ok:false, reason:'not-implemented-in-mockup' };
+};
+EngineCalibrationAdapter.prototype.enqueue = function(prepared){
+  if (this.mode === 'simulationOnly') return { ok:false, reason:'simulation-only-mode' };
+  this.queue.push(prepared);
+  return { ok:true, queued:this.queue.length };
+};
+var calibAdapter = new EngineCalibrationAdapter('simulationOnly');
+
+/* ──────────────────────────────────────────────────────────────
+ * 1) MOCKS — coerentes com o pedido
+ * ────────────────────────────────────────────────────────────── */
+var CAR = {
+  name: 'Celta 1.4 ASP Onix',
+  motor: '1.4 aspirado Onix',
+  cambio: 'Celta 1.0',
+  injecao: 'Injepro T4000',
+  massaKg: 920,
+  pneuDiant: '205/50 R15',
+  pneuTras:  '205/50 R15'
+};
+
+var TRECHO = {
+  id: 'T03',
+  name: 'Curva 8',
+  type: 'curva',
+  track: 'Brasília'
+};
+
+// Pontos do trecho com distância relativa ao PAce (m) e velocidade (km/h)
+var POINTS = [
+  { key:'Entry', label:'Entrada',  dist:-120, vel:194, t:-1.00 },
+  { key:'Brake', label:'Freada',   dist: -78, vel:152, t:-0.75 },
+  { key:'VMIN',  label:'VMIN',     dist: -25, vel: 75, t:-0.50 },
+  { key:'Apex',  label:'Ápice',    dist:   0, vel: 76, t:-0.20 },
+  { key:'PAce',  label:'PAce',     dist:  60, vel:127, t: 0.00 },
+  { key:'Exit',  label:'Saída',    dist: 120, vel:168, t: 2.60 }
+];
+
+// Leitura no PAce (volta atual vs base)
+var READING = {
+  tdiPct:           82,
+  tdiBaseDeltaPct: -13,
+  torqueEsperadoNm: 131,
+  torqueEntregueNm: 108,
+  deltaNm:          -23,
+  deltaPct:         -17,
+  iatC:             56.2,
+  iatBaseDeltaC:    11.3,
+  aguaC:            92,
+  oleoC:           108,
+  pCombustivelBar:  3.6,
+  lambdaWB:         0.88,
+  tpsPct:           96,
+  rpm:           4820,
+  gear:             3,
+  mapKpa:           92,
+  ignicaoDeg:       22.0,
+  limiter:          false,
+  fuelPressureStable: true,
+  oilTempCritical:   false,
+  waterTempCritical: false,
+  sensorsValid:     true,
+  gpsQuality:       0.93,
+  amostraVoltas:    5
+};
+
+// Médias últimas 5 voltas no PAce
+var MEDIAS_PACE = {
+  iatC:        54.8,
+  tpsPct:      96,
+  rpm:         4820,
+  mapKpa:      92,
+  lambdaWB:    0.87,
+  ignicaoDeg:  22.0
+};
+
+// Correlações com delta torque
+var CORRELATIONS = [
+  { lbl:'IAT (°C)',         r:-0.78 },
+  { lbl:'Lambda (λ)',       r:-0.63 },
+  { lbl:'Ignição (°)',      r:-0.58 },
+  { lbl:'MAP (kPa)',        r:-0.41 },
+  { lbl:'RPM',              r:+0.22 },
+  { lbl:'Press. Comb. (bar)', r:-0.18 }
+];
+
+/* ──────────────────────────────────────────────────────────────
+ * 2) FUNÇÕES PURAS DE DIAGNÓSTICO
+ * ────────────────────────────────────────────────────────────── */
+
+// 1) TDI — Torque Delivery Index
+function calcularTDI(torqueEntregueNm, torqueEsperadoNm){
+  if (!Number.isFinite(torqueEntregueNm) || !Number.isFinite(torqueEsperadoNm)) return null;
+  if (torqueEsperadoNm <= 0) return null;
+  return torqueEntregueNm / torqueEsperadoNm;
+}
+
+// 2) Delta torque (absoluto e percentual)
+function calcularDeltaTorque(entregueNm, esperadoNm){
+  if (!Number.isFinite(entregueNm) || !Number.isFinite(esperadoNm)) return null;
+  return {
+    deltaNm: entregueNm - esperadoNm,
+    deltaPct: esperadoNm > 0 ? (entregueNm - esperadoNm) / esperadoNm : null
+  };
+}
+
+// 3) Perda relevante de torque (>= 8% abaixo do esperado)
+function perdaRelevante(deltaPct){
+  if (!Number.isFinite(deltaPct)) return false;
+  return deltaPct <= -0.08;
+}
+
+// 4) IAT fora do padrão
+function iatForaDoPadrao(iatC, iatBaselineC){
+  if (!Number.isFinite(iatC) || !Number.isFinite(iatBaselineC)) return false;
+  return (iatC - iatBaselineC) >= 7.0;   // ≥ +7°C acima do padrão = fora
+}
+
+// 5) Correlação |r| forte
+function correlacaoForte(r){
+  return Number.isFinite(r) && Math.abs(r) > 0.50;
+}
+
+// 6a) Avanço de ignição esperado para um Onix 1.4 aspirado naquela condição de
+//     RPM e carga (MAP em kPa). Tabela calibrada para motor de pista, mapa típico.
+//     - MAP alto (>= 85 kPa) = pé fundo: reduz avanço para evitar detonação.
+//     - MAP baixo (< 60 kPa) = carga parcial: aumenta avanço.
+function ignicaoEsperadaParaCondicao(rpm, mapKpa){
+  if (!Number.isFinite(rpm) || !Number.isFinite(mapKpa)) return null;
+  var base;
+  if      (rpm < 2000) base = 10;
+  else if (rpm < 3000) base = 18;
+  else if (rpm < 4000) base = 24;
+  else if (rpm < 5000) base = 28;   // Onix 1.4 ASP em ~4500-5000rpm
+  else if (rpm < 6000) base = 30;
+  else                 base = 32;
+  // ajuste por carga
+  var cargaAdj = mapKpa >= 85 ? -2     // pé fundo: tira 2°
+              : mapKpa >= 70 ?  0     // 3/4 de pedal: neutro
+              : mapKpa >= 60 ? +3     // meio pedal: aumenta
+              :                +6;    // parcial: aumenta mais
+  return base + cargaAdj;
+}
+
+// 6b) Classifica o avanço atual vs o esperado pra condição
+//     Faixa de tolerância: ±4° é normal.
+//     Abaixo de -4° = retardado (ECU cortou avanço, provável proteção térmica).
+//     Acima de +5° = avançado (risco de detonação).
+function classificarIgnicao(ignicaoAtualDeg, ignicaoEsperadaDeg){
+  if (!Number.isFinite(ignicaoAtualDeg) || !Number.isFinite(ignicaoEsperadaDeg)){
+    return { status:'off', label:'—', diff:null };
+  }
+  var diff = ignicaoAtualDeg - ignicaoEsperadaDeg;
+  if (diff <= -8)  return { status:'bad',   label:'MUITO RETARDADO', diff:diff };
+  if (diff <= -4)  return { status:'warn2', label:'RETARDADO',       diff:diff };
+  if (diff >= +5)  return { status:'warn2', label:'AVANÇADO',        diff:diff };
+  return { status:'ok', label:'OK', diff:diff };
+}
+
+// 6) PAce Motor Check — gera lista de status
+function executarMotorCheck(reading){
+  var ignEsp = ignicaoEsperadaParaCondicao(reading.rpm, reading.mapKpa);
+  var ignClass = classificarIgnicao(reading.ignicaoDeg, ignEsp);
+  var items = [
+    { lbl:'TPS',             val:reading.tpsPct + '%',                 status: reading.tpsPct >= 90 ? 'ok' : 'warn' },
+    { lbl:'RPM',             val:reading.rpm.toLocaleString('pt-BR') + ' rpm', status: reading.rpm >= 3500 && reading.rpm <= 6500 ? 'ok' : 'warn' },
+    { lbl:'Marcha',          val:reading.gear + 'ª',                   status: reading.gear >= 2 && reading.gear <= 5 ? 'ok' : 'warn' },
+    { lbl:'MAP',             val:reading.mapKpa + ' kPa',              status: reading.mapKpa >= 85 ? 'ok' : 'warn' },
+    { lbl:'Lambda WB',       val:reading.lambdaWB.toFixed(2) + ' λ',   status: (reading.lambdaWB >= 0.83 && reading.lambdaWB <= 0.92) ? 'ok' : (reading.lambdaWB < 0.80 ? 'bad' : 'warn') },
+    { lbl:'Press. combustível', val:reading.pCombustivelBar.toFixed(1) + ' bar', status: reading.fuelPressureStable && reading.pCombustivelBar >= 3.0 ? 'ok' : 'bad' },
+    { lbl:'IAT',             val:reading.iatC.toFixed(1) + '°C',       status: iatForaDoPadrao(reading.iatC, 45) ? 'bad' : (reading.iatC >= 50 ? 'warn2' : 'ok') },
+    { lbl:'Temp. água',      val:reading.aguaC + '°C',                 status: reading.aguaC >= 105 ? 'bad' : (reading.aguaC >= 98 ? 'warn2' : 'ok') },
+    { lbl:'Temp. óleo',      val:reading.oleoC + '°C',                 status: reading.oleoC >= 120 ? 'bad' : (reading.oleoC >= 112 ? 'warn2' : 'ok') },
+    { lbl:'Ignição / avanço',val:reading.ignicaoDeg.toFixed(1) + '°' + (ignEsp != null ? ' / esp ' + ignEsp + '°' : ''), status: ignClass.status, ignLabel: ignClass.label },
+    { lbl:'Limiter',         val: reading.limiter ? 'ON' : 'OFF',      status: reading.limiter ? 'warn2' : 'off' }
+  ];
+  return items;
+}
+
+// 7) Advisor Verdict — gera o diagnóstico com base nas condições.
+//    Aceita opcionalmente uma análise da janela inteira (analiseJanela). Quando
+//    presente, decide com base em pico de IAT, mínimo de lambda, ignição mínima
+//    e tendência da temperatura. Sem análise de janela, cai no modo pontual
+//    (compatibilidade com chamadas antigas).
+function gerarAdvisorVerdict(reading, correlations, analiseJanela){
+  var deltaPct = reading.deltaPct / 100;
+  var perda = perdaRelevante(deltaPct);
+
+  // ── valores de DECISÃO: preferir os da janela quando disponível ─────
+  var iatDecisao      = analiseJanela ? analiseJanela.iatPico       : reading.iatC;
+  var lambdaDecisao   = analiseJanela ? analiseJanela.lambdaMin     : reading.lambdaWB;
+  var ignicaoDecisao  = analiseJanela ? analiseJanela.ignicaoMin    : reading.ignicaoDeg;
+  var tendIAT         = analiseJanela ? analiseJanela.tendenciaIAT  : 0;
+  // IAT alta E subindo dentro da janela = sinal mais forte de problema térmico
+  var iatPicoAlto     = iatForaDoPadrao(iatDecisao, 45);
+  var iatSubindo      = tendIAT >= 2;   // sobe >= +2°C da entrada à saída da janela
+  // confirmação cruzada com pico do delta coincidindo no tempo com pico da IAT?
+  var picoDeltaCoincide = analiseJanela
+    ? (analiseJanela.iatNoPicoDoDelta >= analiseJanela.iatMedio + 1.5)
+    : false;
+
+  var iatCorr = correlations.find(function(c){ return /IAT/.test(c.lbl); });
+  var iatForte = iatCorr && correlacaoForte(iatCorr.r);
+
+  // ── bloqueios primeiro (qualquer leitura, pontual ou janela) ────────
+  if (!reading.fuelPressureStable || reading.pCombustivelBar < 3.0){
+    return { code:'FUEL PRESSURE ISSUE', confianca:0.85, descricao:'Pressão de combustível instável ou baixa — corrigir alimentação antes de ajuste térmico.' };
+  }
+  if (lambdaDecisao < 0.78){
+    return { code:'UNSAFE', confianca:0.90, descricao:'Mistura excessivamente pobre na janela. Bloqueado patch de performance.' };
+  }
+  if (reading.waterTempCritical || reading.aguaC >= 105){
+    return { code:'UNSAFE', confianca:0.88, descricao:'Temperatura de água crítica. Bloqueado patch de performance.' };
+  }
+  if (reading.limiter){
+    return { code:'LIMITER/CUT ISSUE', confianca:0.80, descricao:'Limitador/corte ativo durante a janela.' };
+  }
+  if (!perda){
+    return { code:'NORMAL', confianca:0.75, descricao:'Entrega de torque dentro do esperado. Manter mapa base.' };
+  }
+  // ── padrão térmico (IAT) — sinal forte: pico alto + tendência subindo + correlação forte.
+  //    Sem análise da janela (modo pontual), aceita só com pico alto + perda + correlação.
+  var sinaisCruzados = analiseJanela ? (iatSubindo || picoDeltaCoincide) : true;
+  if (iatPicoAlto && perda && iatForte && sinaisCruzados){
+    // confiança calibrada com base nos sinais cruzados
+    var conf = 0.70
+             + (iatSubindo      ? 0.04 : 0)
+             + (picoDeltaCoincide ? 0.04 : 0);
+    return {
+      code:'IAT LOSS SUSPECTED',
+      confianca:conf,
+      descricao:'Perda de torque no PAce por efeito térmico (IAT).',
+      diag:'PERDA DE TORQUE NO PAce POR EFEITO TÉRMICO (IAT)',
+      evidencias:[
+        'Pico de IAT na janela: ' + (analiseJanela ? analiseJanela.iatPico.toFixed(1) : iatDecisao.toFixed(1)) + '°C.',
+        'Tendência de IAT na janela: ' + (tendIAT >= 0 ? '+' : '') + tendIAT.toFixed(1) + '°C (subindo).',
+        (picoDeltaCoincide ? 'Pior delta de torque coincide com IAT alta.' : 'Delta de torque concentrado no pico de carga.'),
+        'Lambda mínimo na janela: ' + lambdaDecisao.toFixed(2) + ' (aceitável).',
+        'Ignição mínima na janela: ' + ignicaoDecisao.toFixed(1) + '° (ECU atrasando avanço por temperatura).',
+        'Pressão de combustível estável.'
+      ],
+      ganhoS:[0.18, 0.28],
+      risco:'baixo a médio'
+    };
+  }
+  // ── outros padrões — também usam dado da janela quando disponível
+  if (perda && lambdaDecisao < 0.83){
+    return { code:'FUEL TRANSIENT ISSUE', confianca:0.65, descricao:'Lambda mínimo na janela = ' + lambdaDecisao.toFixed(2) + ' — combustível transitório no PAce.' };
+  }
+  if (perda && ignicaoDecisao < 18){
+    return { code:'IGNITION RETARD ISSUE', confianca:0.65, descricao:'Avanço mínimo na janela = ' + ignicaoDecisao.toFixed(1) + '° — ignição muito atrasada.' };
+  }
+  if (perda && (analiseJanela ? analiseJanela.rpmPico : reading.rpm) < 3500){
+    return { code:'RPM/GEAR ISSUE', confianca:0.60, descricao:'RPM/marcha fora da faixa de torque na janela.' };
+  }
+  if (perda){
+    return { code:'NON-ENGINE ISSUE LIKELY', confianca:0.55, descricao:'Motor entrega dentro do esperado. Verificar tração/setup/linha.' };
+  }
+  return { code:'NORMAL', confianca:0.70, descricao:'Sem padrão de perda.' };
+}
+
+// 8) Simulação de patch — MODELO FÍSICO CALIBRADO
+//    Princípios usados (motor aspirado 1.4):
+//    a) Combustível: cada +1% de enriquecimento em mistura já rica adiciona
+//       ~1 p.p. de torque, mas SATURA acima de +7% (acima vira fumaça,
+//       perde potência). Ajuste negativo (empobrecer) em condição térmica
+//       alta REDUZ torque proporcionalmente (~0.6% por %).
+//    b) Ignição: cada +1° de avanço dentro da janela segura adiciona
+//       ~2.5 p.p. de torque, com saturação acima de +3° (risco de detonação
+//       cresce mais rápido que o ganho).
+//    c) Transitório no PAce: corrige buraco de retomada. Efeito SATURA via
+//       tanh — primeiros pontos rendem muito, depois rende cada vez menos.
+//    d) Sinergia combustível × ignição: quando ambos estão positivos, há
+//       um ganho extra (mistura rica acomoda mais avanço sem detonar).
+//    e) Thermal Bias: Safety = teto rebaixado (75% do ganho), Performance =
+//       teto elevado (115%) com risco maior.
+//    f) Limites duros: nenhum efeito individual ultrapassa o teto físico.
+function simularPatch(reading, patch){
+  var tdiAtual = reading.tdiPct / 100;
+  var fuelPct  = patch.fuelIATPct      || 0;
+  var ignDeg   = patch.ignitionIATDeg  || 0;
+  var transPct = patch.paceTransientPct|| 0;
+  var bias     = patch.thermalBias || 'Balanced';
+
+  // a) Ganho por combustível — com saturação e ajustes negativos funcionando
+  var fuelGain;
+  if (fuelPct >= 0){
+    var fuelEfet = Math.min(fuelPct, 7);                       // satura em +7%
+    fuelGain = fuelEfet * 0.010;                               // 1.0 p.p. por %
+    if (fuelPct > 7) fuelGain -= (fuelPct - 7) * 0.005;        // depois perde
+  } else {
+    fuelGain = fuelPct * 0.006;                                // empobrecer = perda
+  }
+
+  // b) Ganho por ignição — com saturação não-linear e ajustes negativos
+  var ignGain;
+  if (ignDeg >= 0){
+    var ignEfet = Math.min(ignDeg, 3);                         // segura até +3°
+    ignGain = ignEfet * 0.025;                                 // 2.5 p.p. por grau
+    if (ignDeg > 3) ignGain += (ignDeg - 3) * 0.008;           // ganho marginal
+  } else {
+    ignGain = ignDeg * 0.012;                                  // atrasar = perda
+  }
+
+  // c) Transitório no PAce — função tanh (satura suave)
+  var transGain;
+  if (transPct >= 0){
+    transGain = Math.tanh(transPct / 8) * 0.08;                // satura em ~+8 p.p.
+  } else {
+    transGain = -Math.tanh(-transPct / 8) * 0.06;              // perda mais branda
+  }
+
+  // d) Sinergia combustível × ignição (só quando ambos positivos)
+  var sinergia = (fuelPct > 0 && ignDeg > 0)
+               ? fuelGain * ignGain * 30
+               : 0;
+
+  // e) Bias térmico
+  var biasFactor = bias === 'Performance' ? 1.15
+                 : bias === 'Safety'      ? 0.75
+                 : 1.00;
+
+  var ganhoTotal = (fuelGain + ignGain + transGain + sinergia) * biasFactor;
+  // f) Teto físico: o ganho não pode mais que zerar o delta atual
+  var ganhoMaxFisico = Math.abs(reading.deltaPct / 100);       // ex: delta -17% → teto +17 p.p.
+  ganhoTotal = Math.max(-0.30, Math.min(ganhoMaxFisico, ganhoTotal));
+
+  var tdiPrev     = Math.max(0, Math.min(1.0, tdiAtual + ganhoTotal));
+  var deltaPrevNm = Math.round(reading.deltaNm + ganhoTotal * 142);
+
+  // Ganho na saída (s) — proporcional aos pontos de TDI recuperados
+  var pontos   = (tdiPrev - tdiAtual) * 100;
+  var ganhoMin = Math.max(0, pontos * 0.015);
+  var ganhoMax = Math.max(0, pontos * 0.024);
+
+  // Risco térmico — combina bias + agressividade da ignição + condição atual
+  var riscoIdx = (bias === 'Performance' ? 2 : bias === 'Safety' ? 0 : 1)
+               + (Math.abs(ignDeg) > 3 ? 1 : 0)
+               + (reading.iatC >= 60 ? 1 : 0);
+  var risco = riscoIdx >= 3 ? 'ALTO'
+            : riscoIdx >= 2 ? 'MÉDIO / ALTO'
+            : riscoIdx >= 1 ? 'BAIXO / MÉDIO'
+            :                 'BAIXO';
+
+  return {
+    tdiAntesPct:     Math.round(tdiAtual * 100),
+    tdiPrevistoPct:  Math.round(tdiPrev  * 100),
+    deltaPrevistoNm: deltaPrevNm,
+    ganhoSaidaMin:   +ganhoMin.toFixed(2),
+    ganhoSaidaMax:   +ganhoMax.toFixed(2),
+    riscoTermico:    risco,
+    // dados de transparência para auditoria
+    breakdown: {
+      fuelGainPP:    +(fuelGain   * 100).toFixed(2),
+      ignGainPP:     +(ignGain    * 100).toFixed(2),
+      transGainPP:   +(transGain  * 100).toFixed(2),
+      sinergiaPP:    +(sinergia   * 100).toFixed(2),
+      biasFactor:    biasFactor,
+      ganhoTotalPP:  +(ganhoTotal * 100).toFixed(2),
+      ganhoMaxFisicoPP: +(ganhoMaxFisico * 100).toFixed(2)
+    }
+  };
+}
+
+// 9) Validar se patch pode ser aplicado
+function validarAplicacaoPatch(reading, patch){
+  if (!reading.sensorsValid) return { ok:false, motivo:'Sensores inválidos — não aplicar patch.' };
+  if (reading.gpsQuality < 0.5) return { ok:false, motivo:'Qualidade GPS ruim — não aplicar patch.' };
+  if (reading.amostraVoltas < 3) return { ok:false, motivo:'Amostra insuficiente — esperar mais voltas.' };
+  if (!reading.fuelPressureStable) return { ok:false, motivo:'Pressão de combustível instável — corrigir antes de ajuste térmico.' };
+  if (reading.pCombustivelBar < 3.0) return { ok:false, motivo:'Pressão de combustível baixa — corrigir antes de ajuste térmico.' };
+  if (reading.lambdaWB < 0.78) return { ok:false, motivo:'Mistura muito pobre — patch de performance bloqueado.' };
+  if (reading.aguaC >= 105) return { ok:false, motivo:'Temperatura de água crítica — patch bloqueado.' };
+  if (reading.oleoC >= 120) return { ok:false, motivo:'Temperatura de óleo crítica — patch bloqueado.' };
+  if (reading.limiter) return { ok:false, motivo:'Limitador/corte ativo — patch bloqueado.' };
+  if (Math.abs(patch.ignitionIATDeg || 0) > 5) return { ok:false, motivo:'Correção de ignição agressiva — bloqueado.' };
+  // patch precisa atuar dentro do trecho — PAce..Exit ou Apex..Exit
+  var validStarts = ['VMIN','Apex','PAce'];
+  var validEnds   = ['Exit','ExitPlus'];
+  if (validStarts.indexOf(patch.start) === -1) return { ok:false, motivo:'Início do patch fora da janela do trecho.' };
+  if (validEnds.indexOf(patch.end) === -1) return { ok:false, motivo:'Fim do patch fora da janela do trecho.' };
+  // ganho local deve ser maior que risco — modelo simples
+  var sim = simularPatch(reading, patch);
+  if (sim.ganhoSaidaMax < 0.05) return { ok:false, motivo:'Ganho local menor que o risco estimado.' };
+  return { ok:true, motivo:'Patch aprovado para fila simulada — retorno ao mapa base na saída.' };
+}
+
+// 10) Garantia de retorno ao mapa base ao sair do trecho
+function garantirRetornoMapaBase(patchPrepared){
+  // Patch precisa ter scope=local e retornoMapaBase=true. Sai do escopo → volta ao base.
+  return patchPrepared.scope === 'local' && patchPrepared.retornoMapaBase === true;
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * 3) DADOS DO GRÁFICO — Torque Delivery Window
+ *    Janela -1.0 s a +3.0 s, passo 0.1 s = 41 pontos.
+ *    Coerente com:
+ *      - PAce em t=0.0 → expected ~90, delivered ~78 (ramp up)
+ *      - pico em t≈+0.5 → expected 131, delivered 108 (delta -23)
+ *      - IAT cresce do baseline ~48 até ~58, peak +0.7s
+ *    Saída em t=+2.60.
+ * ────────────────────────────────────────────────────────────── */
+function gerarSerieTorque(){
+  var pts = [];
+  for (var t = -1.0; t <= 3.001; t += 0.1){
+    var tt = +t.toFixed(2);
+    var exp, del, iat, lambda, ignicao, rpm;
+
+    if (tt < -0.5){
+      // trecho de freada antes do VMIN — torque baixo
+      var k = (tt + 1.0) / 0.5;     // 0..1
+      exp = 28 - k * 10;            // 28 → 18
+      del = exp - 0.3;
+      iat = 48.0 + k * 0.3;
+      lambda = 0.95 - k * 0.04;     // freando: mistura volta neutra
+      ignicao = 16 + k * 2;
+      rpm = 6200 - k * 1400;
+    } else if (tt < -0.2){
+      // entrando no Ápice
+      var k2 = (tt + 0.5) / 0.3;
+      exp = 18 + k2 * 17;            // 18 → 35
+      del = exp - 0.5;
+      iat = 48.3 + k2 * 0.5;
+      lambda = 0.91 + k2 * 0.02;
+      ignicao = 18 + k2 * 2;
+      rpm = 4800 - k2 * 1700;        // 4800 → 3100
+    } else if (tt < 0){
+      // do Ápice ao PAce: pedal voltando
+      var k3 = (tt + 0.2) / 0.2;
+      exp = 35 + k3 * 55;            // 35 → 90
+      del = 35 + k3 * 43;            // 35 → 78
+      iat = 48.8 + k3 * 2.2;
+      lambda = 0.93 - k3 * 0.04;     // enriquecendo com aceleração
+      ignicao = 20 + k3 * 2;
+      rpm = 3100 + k3 * 800;
+    } else if (tt < 0.5){
+      // explosão de torque (PAce → pico)
+      var k4 = tt / 0.5;
+      exp = 90 + k4 * 41;            // 90 → 131
+      del = 78 + k4 * 30;            // 78 → 108
+      iat = 51.0 + k4 * 5.2;         // 51 → 56.2
+      lambda = 0.89 - k4 * 0.02;     // pico de carga = mais rico (0.88-0.87)
+      ignicao = 22 + k4 * 0;         // 22° (ECU cortando avanço por IAT)
+      rpm = 3900 + k4 * 920;         // 3900 → 4820
+    } else if (tt < 1.0){
+      // sustentação
+      var k5 = (tt - 0.5) / 0.5;
+      exp = 131 - k5 * 6;             // 131 → 125
+      del = 108 - k5 * 5;
+      iat = 56.2 + k5 * 1.8;          // 56.2 → 58 (pico térmico aqui)
+      lambda = 0.87 + k5 * 0.01;
+      ignicao = 22 + k5 * 1;
+      rpm = 4820 + k5 * 380;
+    } else if (tt < 2.0){
+      // queda gradual
+      var k6 = (tt - 1.0) / 1.0;
+      exp = 125 - k6 * 20;             // 125 → 105
+      del = 103 - k6 * 11;             // 103 → 92
+      iat = 58.0 - k6 * 4.0;
+      lambda = 0.88 + k6 * 0.01;
+      ignicao = 23 + k6 * 2;
+      rpm = 5200 + k6 * 300;
+    } else if (tt < 2.6){
+      // chegada à saída
+      var k7 = (tt - 2.0) / 0.6;
+      exp = 105 - k7 * 10;
+      del =  92 - k7 *  4;
+      iat = 54.0 - k7 * 2.0;
+      lambda = 0.89 + k7 * 0.01;
+      ignicao = 25 + k7 * 1;
+      rpm = 5500 + k7 * 400;
+    } else {
+      // após a Saída — fim da janela
+      var k8 = Math.min(1, (tt - 2.6) / 0.4);
+      exp = 95 - k8 * 10;
+      del = 88 - k8 *  6;
+      iat = 52.0 - k8 * 1.0;
+      lambda = 0.90;
+      ignicao = 26;
+      rpm = 5900;
+    }
+    pts.push({
+      t:tt,
+      expected:+exp.toFixed(1),
+      delivered:+del.toFixed(1),
+      iat:+iat.toFixed(2),
+      lambda:+lambda.toFixed(3),
+      ignicao:+ignicao.toFixed(1),
+      rpm:Math.round(rpm)
+    });
+  }
+  return pts;
+}
+var TORQUE_SERIES = gerarSerieTorque();
+
+/* ──────────────────────────────────────────────────────────────
+ * 2b) ANÁLISE DA JANELA INTEIRA (PAce ± 3 s)
+ *     Em vez de olhar 1 ponto, calcula pico, média e tendência
+ *     ao longo da janela inteira. É isso que um engenheiro real faz.
+ * ────────────────────────────────────────────────────────────── */
+function analisarJanela(serie, tInicio, tFim){
+  if (!serie || !serie.length) return null;
+  tInicio = (tInicio == null) ? -1.0 : tInicio;
+  tFim    = (tFim    == null) ?  3.0 : tFim;
+  var slice = serie.filter(function(p){ return p.t >= tInicio && p.t <= tFim; });
+  if (!slice.length) return null;
+
+  function pico(arr, k){ return arr.reduce(function(m,p){ return p[k] > m ? p[k] : m; }, -Infinity); }
+  function vale(arr, k){ return arr.reduce(function(m,p){ return p[k] < m ? p[k] : m; }, +Infinity); }
+  function media(arr, k){ var s=0; for (var i=0;i<arr.length;i++) s += arr[i][k]; return s / arr.length; }
+  function valorEm(arr, t, k){
+    var best = arr[0], bd = Math.abs(arr[0].t - t);
+    for (var i=1;i<arr.length;i++){ var d = Math.abs(arr[i].t - t); if (d < bd){ bd = d; best = arr[i]; } }
+    return best[k];
+  }
+  function pontoDePico(arr, k){
+    var best = arr[0];
+    for (var i=1;i<arr.length;i++) if (arr[i][k] > best[k]) best = arr[i];
+    return best;
+  }
+
+  var deltaArr = slice.map(function(p){ return { t:p.t, d: p.delivered - p.expected }; });
+  var picoDelta = deltaArr.reduce(function(m,p){ return p.d < m.d ? p : m; }, { d:+Infinity });
+  // tendência IAT: primeiros 25% vs últimos 25% da janela
+  var n = slice.length;
+  var iatIni = media(slice.slice(0, Math.max(1, Math.floor(n*0.25))), 'iat');
+  var iatFim = media(slice.slice(Math.max(1, Math.floor(n*0.75))), 'iat');
+  var tendenciaIAT = iatFim - iatIni;   // > 0 = subindo, < 0 = caindo
+
+  return {
+    nPontos:           slice.length,
+    iatPico:           pico(slice, 'iat'),
+    iatVale:           vale(slice, 'iat'),
+    iatMedio:          media(slice, 'iat'),
+    iatNoPace:         valorEm(slice, 0.0, 'iat'),
+    tendenciaIAT:      tendenciaIAT,
+    lambdaMin:         vale(slice, 'lambda'),
+    lambdaMedio:       media(slice, 'lambda'),
+    lambdaNoPace:      valorEm(slice, 0.0, 'lambda'),
+    ignicaoMin:        vale(slice, 'ignicao'),
+    ignicaoMedio:      media(slice, 'ignicao'),
+    rpmPico:           pico(slice, 'rpm'),
+    rpmMedio:          media(slice, 'rpm'),
+    torqueEsperadoPico:   pico(slice, 'expected'),
+    torqueEntreguePico:   pico(slice, 'delivered'),
+    deltaPicoNm:       picoDelta.d,
+    tDoDeltaPico:      picoDelta.t,
+    // o "pior IAT" e o "pior delta" coincidem em tempo?
+    iatNoPicoDoDelta:  valorEm(slice, picoDelta.t, 'iat')
+  };
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * 4) RENDERIZAÇÃO DO GRÁFICO TORQUE DELIVERY WINDOW
+ * ────────────────────────────────────────────────────────────── */
+var NS = 'http://www.w3.org/2000/svg';
+
+function el(name, attrs, text){
+  var n = document.createElementNS(NS, name);
+  if (attrs) for (var k in attrs) n.setAttribute(k, attrs[k]);
+  if (text != null) n.textContent = text;
+  return n;
+}
+
+function renderChart(){
+  var svg = document.getElementById('chart-svg');
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+  // área do gráfico (margins)
+  var W = 820, H = 360;
+  var L = 52, R = 50, T = 16, B = 36;
+  var w = W - L - R, h = H - T - B;
+  var tMin = -1.0, tMax = 3.0;
+  var tqMin = 0,   tqMax = 160;
+  var iatMin = 30, iatMax = 80;
+
+  // helpers
+  function xT(t){ return L + ((t - tMin) / (tMax - tMin)) * w; }
+  function yTq(v){ return T + h - ((v - tqMin) / (tqMax - tqMin)) * h; }
+  function yIa(v){ return T + h - ((v - iatMin) / (iatMax - iatMin)) * h; }
+
+  // grade horizontal Y (torque, eixo esquerdo)
+  for (var v = tqMin; v <= tqMax; v += 40){
+    svg.appendChild(el('line', { x1:L, x2:W-R, y1:yTq(v), y2:yTq(v),
+      stroke:'#232934', 'stroke-width':1, 'stroke-dasharray':'2 4', 'stroke-opacity':0.65 }));
+    svg.appendChild(el('text', { x:L-6, y:yTq(v)+3.5, 'text-anchor':'end',
+      'font-size':'9.5', 'font-family':'SF Mono, monospace', fill:'#8B919B' }, String(v)));
+  }
+  // grade vertical X (tempo)
+  for (var tt = tMin; tt <= tMax + 0.001; tt += 0.5){
+    var x = xT(tt);
+    svg.appendChild(el('line', { x1:x, x2:x, y1:T, y2:T+h,
+      stroke:'#1A1F28', 'stroke-width':1 }));
+    var lbl = (tt === 0 ? '0' : (tt > 0 ? '+' : '') + tt.toFixed(1)) + ' s';
+    svg.appendChild(el('text', { x:x, y:T+h+14, 'text-anchor':'middle',
+      'font-size':'9.5', 'font-family':'SF Mono, monospace', fill:'#8B919B' }, lbl));
+  }
+  // eixo Y direito (IAT)
+  for (var ii = iatMin; ii <= iatMax; ii += 10){
+    svg.appendChild(el('text', { x:W-R+6, y:yIa(ii)+3.5, 'text-anchor':'start',
+      'font-size':'9.5', 'font-family':'SF Mono, monospace', fill:'#B47CFF' }, String(ii)));
+  }
+  // labels dos eixos
+  svg.appendChild(el('text', { x:L, y:T-4, 'text-anchor':'start',
+    'font-size':'9', letter:'0.10em', fill:'#5A6068' }, 'TORQUE (Nm)'));
+  svg.appendChild(el('text', { x:W-R, y:T-4, 'text-anchor':'end',
+    'font-size':'9', letter:'0.10em', fill:'#B47CFF' }, 'IAT (°C)'));
+  svg.appendChild(el('text', { x:W/2, y:H-4, 'text-anchor':'middle',
+    'font-size':'9', letter:'0.10em', fill:'#5A6068' }, 'TEMPO RELATIVO AO PAce (s)'));
+
+  // moldura
+  svg.appendChild(el('rect', { x:L, y:T, width:w, height:h,
+    fill:'none', stroke:'#232934', 'stroke-width':1 }));
+
+  // pattern hachura vermelha p/ delta
+  var defs = el('defs');
+  var pat = el('pattern', { id:'hatch-red', patternUnits:'userSpaceOnUse', width:6, height:6, patternTransform:'rotate(45)' });
+  pat.appendChild(el('rect', { width:6, height:6, fill:'rgba(255,90,78,0.10)' }));
+  pat.appendChild(el('line', { x1:0, y1:0, x2:0, y2:6, stroke:'rgba(255,90,78,0.55)', 'stroke-width':1.4 }));
+  defs.appendChild(pat);
+  svg.appendChild(defs);
+
+  // área de delta (entre torque esperado e torque entregue)
+  var deltaPath = '';
+  var pts = TORQUE_SERIES;
+  for (var i=0; i<pts.length; i++){
+    var p = pts[i];
+    var xx = xT(p.t);
+    deltaPath += (i===0 ? 'M ' : 'L ') + xx.toFixed(2) + ' ' + yTq(p.expected).toFixed(2) + ' ';
+  }
+  for (var j=pts.length-1; j>=0; j--){
+    var p2 = pts[j];
+    deltaPath += 'L ' + xT(p2.t).toFixed(2) + ' ' + yTq(p2.delivered).toFixed(2) + ' ';
+  }
+  deltaPath += 'Z';
+  svg.appendChild(el('path', { d:deltaPath, fill:'url(#hatch-red)', stroke:'none' }));
+
+  // linha IAT (tracejada, roxa) — eixo Y direito
+  var iatPath = pts.map(function(p,i){
+    return (i===0 ? 'M ' : 'L ') + xT(p.t).toFixed(2) + ' ' + yIa(p.iat).toFixed(2);
+  }).join(' ');
+  svg.appendChild(el('path', { d:iatPath, fill:'none', stroke:'#B47CFF',
+    'stroke-width':1.6, 'stroke-dasharray':'5 4', 'stroke-opacity':0.85 }));
+
+  // linha torque esperado (verde, sólida)
+  var expPath = pts.map(function(p,i){
+    return (i===0 ? 'M ' : 'L ') + xT(p.t).toFixed(2) + ' ' + yTq(p.expected).toFixed(2);
+  }).join(' ');
+  svg.appendChild(el('path', { d:expPath, fill:'none', stroke:'#3FE08C',
+    'stroke-width':2.2, 'stroke-linecap':'round', 'stroke-linejoin':'round' }));
+
+  // linha torque entregue (azul/ciano, sólida)
+  var delPath = pts.map(function(p,i){
+    return (i===0 ? 'M ' : 'L ') + xT(p.t).toFixed(2) + ' ' + yTq(p.delivered).toFixed(2);
+  }).join(' ');
+  svg.appendChild(el('path', { d:delPath, fill:'none', stroke:'#38BCFF',
+    'stroke-width':2.2, 'stroke-linecap':'round', 'stroke-linejoin':'round' }));
+
+  // marcadores verticais — VMIN, Ápice, PAce, Saída
+  var markers = [
+    { t:-0.50, name:'VMIN',   color:'#F1C24A' },
+    { t:-0.20, name:'Ápice',  color:'#F1C24A' },
+    { t: 0.00, name:'PAce',   color:'#3FE08C' },
+    { t: 2.60, name:'Saída',  color:'#38BCFF' }
+  ];
+  markers.forEach(function(m){
+    var x = xT(m.t);
+    svg.appendChild(el('line', { x1:x, x2:x, y1:T, y2:T+h,
+      stroke:m.color, 'stroke-width':1.2, 'stroke-dasharray':'3 3', 'stroke-opacity':0.85 }));
+    // etiqueta
+    var label = el('text', { x:x, y:T+12, 'text-anchor':'middle',
+      'font-size':'9.5', 'font-family':'SF Mono, monospace', fill:m.color,
+      'letter-spacing':'0.04em' }, m.name);
+    // fundo
+    var bb = el('rect', { x:x-22, y:T+3, width:44, height:12, fill:'#0B0E13',
+      stroke:m.color, 'stroke-width':0.8, 'stroke-opacity':0.5, rx:2 });
+    svg.appendChild(bb);
+    svg.appendChild(label);
+  });
+
+  // ponto de pico delta (PAce no t=+0.5)
+  var peakX = xT(0.5);
+  var peakExpY = yTq(131);
+  var peakDelY = yTq(108);
+  svg.appendChild(el('line', { x1:peakX, x2:peakX, y1:peakExpY, y2:peakDelY,
+    stroke:'#FF5A4E', 'stroke-width':1.5, 'stroke-dasharray':'2 3' }));
+  svg.appendChild(el('circle', { cx:peakX, cy:peakExpY, r:3.2, fill:'#3FE08C', stroke:'#0B0E13', 'stroke-width':1.5 }));
+  svg.appendChild(el('circle', { cx:peakX, cy:peakDelY, r:3.2, fill:'#38BCFF', stroke:'#0B0E13', 'stroke-width':1.5 }));
+  // etiqueta -23 Nm
+  svg.appendChild(el('text', { x:peakX+8, y:(peakExpY+peakDelY)/2+3, 'text-anchor':'start',
+    'font-size':'10', 'font-family':'SF Mono, monospace', fill:'#FF5A4E', 'font-weight':'600' },
+    '−23 Nm'));
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * 5) MAPA DO TRECHO — Curva 8 (representação esquemática)
+ *    Não é o mapa oficial da pista inteira; é só a curva que está
+ *    sendo analisada. Os 6 pontos da sequência ficam visíveis.
+ * ────────────────────────────────────────────────────────────── */
+function renderCorner(){
+  var svg = document.getElementById('corner-svg');
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+  // path estilizado de uma curva à direita: reta de entrada → curva → reta de saída
+  var defs = el('defs');
+  var asph = el('linearGradient', { id:'asph-corner', x1:'0%', y1:'0%', x2:'0%', y2:'100%' });
+  asph.appendChild(el('stop', { offset:'0%', 'stop-color':'#3C414B' }));
+  asph.appendChild(el('stop', { offset:'100%', 'stop-color':'#1A1F28' }));
+  defs.appendChild(asph);
+  svg.appendChild(defs);
+
+  var path = 'M 30 40 ' +
+             'L 130 40 ' +
+             'C 200 40, 240 60, 240 130 ' +
+             'C 240 175, 220 195, 170 195 ' +
+             'L 70 195 ' +
+             'L 295 195';
+  // runoff
+  svg.appendChild(el('path', { d:path, fill:'none', stroke:'#1F2229', 'stroke-width':24, 'stroke-linecap':'round', 'stroke-linejoin':'round', 'stroke-opacity':0.65 }));
+  // asfalto
+  svg.appendChild(el('path', { d:path, fill:'none', stroke:'url(#asph-corner)', 'stroke-width':16, 'stroke-linecap':'round', 'stroke-linejoin':'round' }));
+  // centerline
+  svg.appendChild(el('path', { d:path, fill:'none', stroke:'#FFFFFF', 'stroke-width':0.6, 'stroke-dasharray':'4 9', 'stroke-opacity':0.12 }));
+
+  // pontos do trecho — posicionados ao longo do path
+  var posByKey = {
+    Entry: { x: 50,  y: 26, side:'top' },
+    Brake: { x:120,  y: 26, side:'top' },
+    VMIN : { x:220,  y: 80, side:'right' },
+    Apex : { x:240,  y:128, side:'right' },
+    PAce : { x:200,  y:205, side:'bottom' },
+    Exit : { x:285,  y:213, side:'bottom' }
+  };
+  var pts = [
+    { key:'Entry', label:'Entrada', color:'#C5C9D0' },
+    { key:'Brake', label:'Freada',  color:'#FF5A4E' },
+    { key:'VMIN',  label:'VMIN',    color:'#F1C24A' },
+    { key:'Apex',  label:'Ápice',   color:'#F1C24A' },
+    { key:'PAce',  label:'PAce',    color:'#3FE08C' },
+    { key:'Exit',  label:'Saída',   color:'#38BCFF' }
+  ];
+  pts.forEach(function(p){
+    var pos = posByKey[p.key];
+    // pino externo
+    svg.appendChild(el('circle', { cx:pos.x, cy:pos.y, r:7, fill:'#0B0E13', stroke:p.color, 'stroke-width':2 }));
+    svg.appendChild(el('circle', { cx:pos.x, cy:pos.y, r:3, fill:p.color }));
+    // etiqueta deslocada
+    var ox = 0, oy = 0;
+    if (pos.side === 'top'){ ox = 0; oy = -12; }
+    if (pos.side === 'right'){ ox = 13; oy = 4; }
+    if (pos.side === 'bottom'){ ox = 0; oy = 18; }
+    var anchor = pos.side === 'top' ? 'middle' : pos.side === 'right' ? 'start' : 'middle';
+    svg.appendChild(el('text', {
+      x:pos.x+ox, y:pos.y+oy, 'text-anchor':anchor,
+      'font-size':'10', 'font-family':'SF Mono, monospace',
+      fill:p.color, 'letter-spacing':'0.06em'
+    }, p.label));
+  });
+
+  // direção da volta — pequena seta
+  svg.appendChild(el('text', { x:30, y:18, 'font-size':'8.5', fill:'#5A6068',
+    'letter-spacing':'0.10em', 'font-family':'SF Mono, monospace' }, 'SENTIDO →'));
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * 6) TABELA DE PONTOS
+ * ────────────────────────────────────────────────────────────── */
+function renderCornerTable(){
+  var tbody = document.getElementById('corner-tbody');
+  tbody.innerHTML = '';
+  POINTS.forEach(function(p){
+    var tr = document.createElement('tr');
+    var dotCls = p.key === 'Entry' ? 'entry'
+              : p.key === 'Brake' ? 'brake'
+              : p.key === 'VMIN'  ? 'vmin'
+              : p.key === 'Apex'  ? 'apex'
+              : p.key === 'PAce'  ? 'pace'
+              : 'exit';
+    tr.innerHTML =
+      '<td class="name"><span class="dot ' + dotCls + '"></span>' + p.label + '</td>' +
+      '<td class="mono" style="text-align:right;">' + (p.dist > 0 ? '+' : '') + p.dist + '</td>' +
+      '<td class="mono" style="text-align:right;">' + p.vel + '</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * 7) CORRELAÇÕES
+ * ────────────────────────────────────────────────────────────── */
+function renderCorrelations(){
+  var box = document.getElementById('corr-list');
+  box.innerHTML = '';
+  CORRELATIONS.forEach(function(c){
+    var pct = Math.min(1, Math.abs(c.r)) * 50;   // metade da barra (eixo central)
+    var pos = c.r >= 0;
+    var strong = correlacaoForte(c.r);
+    var row = document.createElement('div');
+    row.className = 'corr-row';
+    row.innerHTML =
+      '<span class="lbl">' + c.lbl + '</span>' +
+      '<span class="bar">' +
+        '<span class="fill ' + (pos?'pos':'neg') + (strong?' strong':'') + '"' +
+          ' style="' + (pos ? 'left:50%;' : 'right:50%;') + 'width:' + pct + '%;"></span>' +
+      '</span>' +
+      '<span class="val mono ' + (strong?'strong':(Math.abs(c.r)<0.25?'weak':'')) + '">' +
+        (c.r >= 0 ? '+' : '') + c.r.toFixed(2) +
+      '</span>';
+    box.appendChild(row);
+  });
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * 8) MÉDIAS NO PACE
+ * ────────────────────────────────────────────────────────────── */
+function renderMedias(){
+  var box = document.getElementById('medias-grid');
+  var rows = [
+    { lbl:'IAT',         v: MEDIAS_PACE.iatC.toFixed(1),       u:'°C' },
+    { lbl:'TPS',         v: MEDIAS_PACE.tpsPct,                u:'%' },
+    { lbl:'RPM',         v: MEDIAS_PACE.rpm.toLocaleString('pt-BR'), u:'rpm' },
+    { lbl:'MAP',         v: MEDIAS_PACE.mapKpa,                u:'kPa' },
+    { lbl:'Lambda WB',   v: MEDIAS_PACE.lambdaWB.toFixed(2),   u:'λ' },
+    { lbl:'Ignição',     v: MEDIAS_PACE.ignicaoDeg.toFixed(1), u:'°' }
+  ];
+  box.innerHTML = rows.map(function(r){
+    return '<div class="item"><span class="lbl">' + r.lbl + '</span>' +
+           '<span class="v mono">' + r.v + '<span class="u">' + r.u + '</span></span></div>';
+  }).join('');
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * 9) PACE MOTOR CHECK
+ * ────────────────────────────────────────────────────────────── */
+function renderMotorCheck(){
+  var box = document.getElementById('check-grid');
+  var items = executarMotorCheck(READING);
+  box.innerHTML = items.map(function(it){
+    // ignLabel é definido pela classificação por condição (RETARDADO/AVANÇADO/OK/MUITO RETARDADO);
+    // quando presente, sobrepõe o mapeamento por status.
+    var pillText;
+    if (it.ignLabel){
+      pillText = it.ignLabel;
+    } else {
+      pillText = it.status === 'ok'    ? 'OK'
+              : it.status === 'warn'   ? 'BAIXO'
+              : it.status === 'warn2'  ? 'WARN'
+              : it.status === 'bad'    ? (it.lbl === 'IAT' ? 'HIGH' : 'CRITICAL')
+              : 'OFF';
+    }
+    return '<div class="check-item">' +
+      '<span class="lbl">' + it.lbl + '</span>' +
+      '<span class="val mono">' + it.val + '</span>' +
+      '<span class="pill ' + it.status + '">' + pillText + '</span>' +
+    '</div>';
+  }).join('');
+
+  // Sumário da classificação — usa análise da janela inteira
+  var janela = analisarJanela(TORQUE_SERIES);
+  var verdict = gerarAdvisorVerdict(READING, CORRELATIONS, janela);
+  var sum = document.getElementById('check-summary');
+  sum.textContent = verdict.code;
+  if (verdict.code === 'NORMAL'){
+    sum.style.borderColor = 'rgba(63,224,140,0.40)';
+    sum.style.background  = 'rgba(63,224,140,0.10)';
+    sum.style.color       = 'var(--ok)';
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * 10) ADVISOR VERDICT (preenche o bloco)
+ * ────────────────────────────────────────────────────────────── */
+function renderAdvisor(){
+  var janela = analisarJanela(TORQUE_SERIES);
+  var v = gerarAdvisorVerdict(READING, CORRELATIONS, janela);
+  if (v.diag) document.getElementById('advisor-diag').textContent = v.diag;
+  document.getElementById('advisor-confidence').textContent = Math.round(v.confianca * 100) + '%';
+  var evid = document.getElementById('advisor-evidence');
+  evid.innerHTML = '';
+  (v.evidencias || []).forEach(function(e){
+    var li = document.createElement('li');
+    li.textContent = e;
+    evid.appendChild(li);
+  });
+  if (v.ganhoS){
+    document.getElementById('advisor-gain').textContent = '+' + v.ganhoS[0].toFixed(2) + ' s a +' + v.ganhoS[1].toFixed(2) + ' s';
+  }
+  if (v.risco){
+    document.getElementById('advisor-risk').textContent = v.risco;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * 11) PATCH SIMULATION — sliders + bias + cálculo ao vivo
+ * ────────────────────────────────────────────────────────────── */
+var PATCH_STATE = {
+  fuelIATPct: 2.5,
+  ignitionIATDeg: 1.0,
+  paceTransientPct: 6,
+  thermalBias: 'Balanced',
+  start: 'PAce',
+  end: 'Exit'
+};
+
+function updatePatchUI(){
+  document.getElementById('ps-fuel-val').textContent  = (PATCH_STATE.fuelIATPct >= 0 ? '+' : '') + PATCH_STATE.fuelIATPct.toFixed(1) + '%';
+  document.getElementById('ps-ign-val').textContent   = (PATCH_STATE.ignitionIATDeg >= 0 ? '+' : '') + PATCH_STATE.ignitionIATDeg.toFixed(1) + '°';
+  document.getElementById('ps-trans-val').textContent = (PATCH_STATE.paceTransientPct >= 0 ? '+' : '') + PATCH_STATE.paceTransientPct.toFixed(1) + '%';
+  document.getElementById('ps-bias-val').textContent  = PATCH_STATE.thermalBias;
+
+  var sim = simularPatch(READING, PATCH_STATE);
+  document.getElementById('res-tdi-atual').textContent  = sim.tdiAntesPct + '%';
+  document.getElementById('res-tdi-prev').textContent   = sim.tdiPrevistoPct + '%';
+  document.getElementById('res-delta-atual').textContent = '−' + Math.abs(READING.deltaNm) + ' Nm';
+  document.getElementById('res-delta-prev').textContent  = (sim.deltaPrevistoNm > 0 ? '+' : '') + sim.deltaPrevistoNm + ' Nm';
+  document.getElementById('res-ganho').textContent       = '+' + sim.ganhoSaidaMin.toFixed(2) + ' s a +' + sim.ganhoSaidaMax.toFixed(2) + ' s';
+  document.getElementById('res-risco').textContent       = sim.riscoTermico;
+  // cor do risco
+  var riscoEl = document.getElementById('res-risco');
+  riscoEl.className = 'v ' + (sim.riscoTermico === 'ALTO' ? 'bad' : sim.riscoTermico.indexOf('MÉDIO') >= 0 ? 'warn' : 'ok');
+
+  updateTimelineFromState();
+}
+
+function bindPatchControls(){
+  document.getElementById('ps-fuel').addEventListener('input', function(e){
+    PATCH_STATE.fuelIATPct = parseFloat(e.target.value);
+    updatePatchUI();
+  });
+  document.getElementById('ps-ign').addEventListener('input', function(e){
+    PATCH_STATE.ignitionIATDeg = parseFloat(e.target.value);
+    updatePatchUI();
+  });
+  document.getElementById('ps-trans').addEventListener('input', function(e){
+    PATCH_STATE.paceTransientPct = parseFloat(e.target.value);
+    updatePatchUI();
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#ps-bias button'), function(b){
+    b.addEventListener('click', function(){
+      Array.prototype.forEach.call(document.querySelectorAll('#ps-bias button'), function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      PATCH_STATE.thermalBias = b.getAttribute('data-bias');
+      updatePatchUI();
+    });
+  });
+  document.getElementById('apply-start').addEventListener('change', function(e){
+    PATCH_STATE.start = e.target.value;
+    updatePatchUI();
+  });
+  document.getElementById('apply-end').addEventListener('change', function(e){
+    PATCH_STATE.end = e.target.value;
+    updatePatchUI();
+  });
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * 12) TIMELINE DO PATCH — desenha a faixa ativa entre start e end
+ * ────────────────────────────────────────────────────────────── */
+var STOP_POS = { VMIN:0, Apex:33.33, PAce:66.66, Exit:100 };
+function updateTimelineFromState(){
+  var area = document.getElementById('apply-patch-area');
+  var startKey = PATCH_STATE.start === 'PAce' ? 'PAce' : PATCH_STATE.start === 'Apex' ? 'Apex' : 'VMIN';
+  var endKey   = PATCH_STATE.end === 'Exit' ? 'Exit' : 'Exit'; // sempre na ou após a Saída
+  var s = STOP_POS[startKey];
+  var e = STOP_POS[endKey];
+  area.style.left  = s + '%';
+  area.style.right = (100 - e) + '%';
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * 13) APLICAÇÃO DO PATCH (botões)
+ * ────────────────────────────────────────────────────────────── */
+function bindApplyButtons(){
+  document.getElementById('btn-cancel').addEventListener('click', function(){
+    PATCH_STATE.fuelIATPct = 0;
+    PATCH_STATE.ignitionIATDeg = 0;
+    PATCH_STATE.paceTransientPct = 0;
+    PATCH_STATE.thermalBias = 'Balanced';
+    document.getElementById('ps-fuel').value = 0;
+    document.getElementById('ps-ign').value = 0;
+    document.getElementById('ps-trans').value = 0;
+    Array.prototype.forEach.call(document.querySelectorAll('#ps-bias button'), function(x){ x.classList.remove('active'); });
+    document.querySelector('#ps-bias [data-bias="Balanced"]').classList.add('active');
+    updatePatchUI();
+    showApplyResult('ok', 'Simulação resetada. Nenhuma alteração enviada à T4000.');
+  });
+  document.getElementById('btn-apply').addEventListener('click', function(){
+    var sim = simularPatch(READING, PATCH_STATE);
+    var validation = validarAplicacaoPatch(READING, PATCH_STATE);
+    if (!validation.ok){
+      showApplyResult('blocked', 'Bloqueado: ' + validation.motivo);
+      return;
+    }
+    var prepared = calibAdapter.preparePatch(TRECHO, {
+      start: PATCH_STATE.start,
+      end:   PATCH_STATE.end,
+      fuelIATPct:       PATCH_STATE.fuelIATPct,
+      ignitionIATDeg:   PATCH_STATE.ignitionIATDeg,
+      paceTransientPct: PATCH_STATE.paceTransientPct,
+      thermalBias:      PATCH_STATE.thermalBias,
+      tdiBefore: sim.tdiAntesPct,
+      tdiAfter:  sim.tdiPrevistoPct,
+      ganhoEstimadoS: { min: sim.ganhoSaidaMin, max: sim.ganhoSaidaMax },
+      riscoTermico: sim.riscoTermico
+    });
+    var liveTry = calibAdapter.apply();
+    showApplyResult('ok',
+      'Patch local preparado (id: ' + prepared.id + '). Adapter em ' + calibAdapter.mode +
+      ' — nenhuma escrita na T4000 (' + liveTry.reason + '). Retorno ao mapa base na saída do trecho.');
+  });
+}
+function showApplyResult(kind, msg){
+  var box = document.getElementById('apply-result');
+  box.className = 'apply-result visible ' + kind;
+  box.textContent = msg;
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * 14) STATUS BAR — refletir adapter + flag
+ * ────────────────────────────────────────────────────────────── */
+function renderStatusBar(){
+  document.getElementById('status-adapter').textContent = calibAdapter.mode;
+  document.getElementById('status-flag').textContent    = ENABLE_LIVE_T4000_PATCH_APPLY ? 'ON' : 'OFF';
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * 15) TESTES EMBUTIDOS
+ * ────────────────────────────────────────────────────────────── */
+function runTests(){
+  var results = [];
+  function t(name, ok){ results.push({ name:name, ok:!!ok }); }
+
+  // 1) TDI = entregue / esperado
+  t('TDI = torque entregue / torque esperado',
+      Math.abs(calcularTDI(108, 131) - (108/131)) < 1e-9);
+
+  // 2) Delta torque correto
+  var d = calcularDeltaTorque(108, 131);
+  t('Delta torque = entregue − esperado (Nm e %)',
+      d.deltaNm === -23 && Math.abs(d.deltaPct - (-23/131)) < 1e-9);
+
+  // 3) IAT +2°C não gera patch (perda relevante exige queda ≥ 8%)
+  var rNoLoss = Object.assign({}, READING, { iatC: 47, deltaPct: -3, torqueEntregueNm:127, torqueEsperadoNm:131 });
+  var vNoLoss = gerarAdvisorVerdict(rNoLoss, CORRELATIONS);
+  t('IAT +2°C não classifica como IAT LOSS SUSPECTED',
+      vNoLoss.code === 'NORMAL');
+
+  // 4) IAT alta + SEM perda relevante = não classifica como IAT LOSS
+  var rIatNoLoss = Object.assign({}, READING, { iatC: 60, deltaPct: -3 });
+  var vIatNoLoss = gerarAdvisorVerdict(rIatNoLoss, CORRELATIONS);
+  t('IAT alta sem perda relevante de torque = NORMAL',
+      vIatNoLoss.code === 'NORMAL');
+
+  // 5) IAT alta + delta torque grande + motor check OK = IAT LOSS SUSPECTED
+  var vIatLoss = gerarAdvisorVerdict(READING, CORRELATIONS);
+  t('IAT alta + delta grande + motor OK = IAT LOSS SUSPECTED',
+      vIatLoss.code === 'IAT LOSS SUSPECTED');
+
+  // 6) Lambda pobre bloqueia patch agressivo
+  var rPobre = Object.assign({}, READING, { lambdaWB: 0.74 });
+  var vPobre = gerarAdvisorVerdict(rPobre, CORRELATIONS);
+  t('Lambda pobre (λ < 0.78) bloqueia patch (UNSAFE)',
+      vPobre.code === 'UNSAFE');
+  t('Lambda pobre bloqueia validação do patch',
+      validarAplicacaoPatch(rPobre, PATCH_STATE).ok === false);
+
+  // 7) Pressão combustível baixa bloqueia patch
+  var rPress = Object.assign({}, READING, { pCombustivelBar: 2.4, fuelPressureStable: false });
+  t('Pressão combustível baixa bloqueia validação',
+      validarAplicacaoPatch(rPress, PATCH_STATE).ok === false);
+  t('Pressão combustível baixa = FUEL PRESSURE ISSUE no verdict',
+      gerarAdvisorVerdict(rPress, CORRELATIONS).code === 'FUEL PRESSURE ISSUE');
+
+  // 8) TDI previsto após patch > TDI atual
+  var simMock = simularPatch(READING, PATCH_STATE);
+  t('TDI previsto após patch > TDI atual no mock padrão',
+      simMock.tdiPrevistoPct > simMock.tdiAntesPct);
+
+  // 9) Patch começa no PAce e termina na Saída (padrão)
+  t('Patch padrão começa em PAce e termina na Saída',
+      PATCH_STATE.start === 'PAce' && PATCH_STATE.end === 'Exit');
+
+  // 10) Após Saída → volta ao mapa base
+  var prep = calibAdapter.preparePatch(TRECHO, {
+    start:'PAce', end:'Exit',
+    fuelIATPct:2.5, ignitionIATDeg:1.0, paceTransientPct:6, thermalBias:'Balanced',
+    tdiBefore:82, tdiAfter:94, ganhoEstimadoS:{min:0.18,max:0.28}, riscoTermico:'BAIXO / MÉDIO'
+  });
+  t('Patch preparado tem scope local e retorno ao mapa base',
+      garantirRetornoMapaBase(prep) === true);
+
+  // 11) Termo banido não aparece em label nenhum do componente
+  //     (montado em runtime via charCodes pra que o próprio teste não introduza o termo)
+  var bannedTerm = String.fromCharCode(118,101,114,116,101,120); // 'v','e','r','t','e','x'
+  var bodyText = (document.body.innerText || document.body.textContent || '');
+  t('Termo banido NÃO aparece em nenhum label/textnode',
+      bodyText.toLowerCase().indexOf(bannedTerm) === -1);
+
+  // 12) Sequência canônica está presente
+  var hasEntry = bodyText.indexOf('Entrada') !== -1 || bodyText.indexOf('Entry') !== -1;
+  var hasVMIN  = bodyText.indexOf('VMIN') !== -1;
+  var hasApex  = bodyText.indexOf('Ápice') !== -1 || bodyText.indexOf('Apex') !== -1;
+  var hasPAce  = bodyText.indexOf('PAce') !== -1;
+  var hasExit  = bodyText.indexOf('Saída') !== -1 || bodyText.indexOf('Exit') !== -1;
+  t('Sequência Entry → … → VMIN → Ápice → PAce → Saída presente',
+      hasEntry && hasVMIN && hasApex && hasPAce && hasExit);
+
+  // 13) Feature flag T4000 está desligada
+  t('Feature flag ENABLE_LIVE_T4000_PATCH_APPLY está desligada',
+      ENABLE_LIVE_T4000_PATCH_APPLY === false);
+
+  // 14) adapter.apply() recusa quando flag desligada
+  t('adapter.apply() recusa enquanto feature flag está desligada',
+      calibAdapter.apply().ok === false);
+
+  // 15) Gráfico tem as 4 linhas + 4 marcadores
+  t('Gráfico Torque Delivery Window renderizado',
+      document.getElementById('chart-svg').children.length > 10);
+
+  // 16) PAce Motor Check tem 11 itens
+  t('PAce Motor Check tem 11 itens',
+      document.querySelectorAll('#check-grid .check-item').length === 11);
+
+  // 17) Patch Simulation tem 4 controles (3 sliders + 1 bias)
+  t('Patch Simulation tem 4 controles (3 sliders + bias)',
+      document.querySelectorAll('.patch-slider').length === 4);
+
+  // 18) Resultado mostra "TDI previsto após patch" (não "TDI simulado")
+  var allLabels = document.body.innerText || document.body.textContent || '';
+  t('Texto correto: "TDI previsto após patch" (não "TDI simulado")',
+      allLabels.indexOf('TDI previsto após patch') !== -1 &&
+      allLabels.indexOf('TDI simulado') === -1);
+
+  // 19) Correlações tem 6 variáveis
+  t('Correlações tem 6 variáveis (IAT, Lambda, Ignição, MAP, RPM, Press Comb)',
+      document.querySelectorAll('#corr-list .corr-row').length === 6);
+
+  // 20) Mocks identificados (badge "mock" visível)
+  t('Badge "mock" visível no header',
+      document.querySelectorAll('.mock-badge').length >= 1);
+
+  // 21) Adapter está em simulationOnly
+  t('Adapter está em simulationOnly',
+      calibAdapter.mode === 'simulationOnly');
+
+  // 22) validarAplicacao com patch padrão = ok
+  t('validarAplicacao com mock padrão retorna ok',
+      validarAplicacaoPatch(READING, PATCH_STATE).ok === true);
+
+  // 23) Correção de ignição agressiva (>5°) bloqueia patch
+  var aggressivePatch = Object.assign({}, PATCH_STATE, { ignitionIATDeg: 5.5 });
+  t('Correção de ignição agressiva (>5°) bloqueia patch',
+      validarAplicacaoPatch(READING, aggressivePatch).ok === false);
+
+  // 24) IAT roxo + Torque esperado verde + Torque entregue azul nas legendas
+  var legendOK = document.querySelectorAll('.chart-legend .sw.exp').length === 1 &&
+                 document.querySelectorAll('.chart-legend .sw.del').length === 1 &&
+                 document.querySelectorAll('.chart-legend .sw.iat').length === 1 &&
+                 document.querySelectorAll('.chart-legend .sw.dlt').length === 1;
+  t('Legendas do gráfico têm verde/azul/roxo/vermelho',
+      legendOK);
+
+  // 25) Cadeia: scope local + retorno ao mapa base na nota de aplicação
+  t('Nota "Patch local: ativo apenas na Curva 8, do PAce até a Saída" presente',
+      allLabels.indexOf('Patch local') !== -1 &&
+      allLabels.indexOf('retorna ao mapa base') !== -1);
+
+  // monta resultado
+  var failed = results.filter(function(r){ return !r.ok; });
+  var bar = document.getElementById('test-bar');
+  if (failed.length === 0){
+    bar.classList.add('ok');
+    bar.textContent =
+      'testes embutidos: ' + results.length + ' OK / 0 falhas · adapter mode=' + calibAdapter.mode +
+      ' · ENABLE_LIVE_T4000_PATCH_APPLY=' + ENABLE_LIVE_T4000_PATCH_APPLY +
+      ' · sequência Entry→Brake→VMIN→Ápice→PAce→Saída';
+  } else {
+    bar.classList.add('fail');
+    bar.textContent =
+      'testes embutidos: ' + (results.length - failed.length) + ' OK / ' + failed.length + ' FALHAS — ' +
+      failed.map(function(f){ return f.name; }).join(' · ');
+  }
+  if (window.console && console.log) console.log('[PAce Advisor] testes:', results);
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * 16) BOOT
+ * ────────────────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', function(){
+  renderChart();
+  renderCorner();
+  renderCornerTable();
+  renderCorrelations();
+  renderMedias();
+  renderMotorCheck();
+  renderAdvisor();
+  updatePatchUI();
+  bindPatchControls();
+  bindApplyButtons();
+  renderStatusBar();
+  runTests();
+});
+</script>
+
+</body>
+</html>

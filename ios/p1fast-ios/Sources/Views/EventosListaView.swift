@@ -30,38 +30,46 @@ import P1FastCore
 
 struct EventosListaView: View {
     @EnvironmentObject private var repo: EventoRepository
+    @State private var navSelection: BottomNavItem.ID?
     @State private var sheet: EventosSheet?
+    private let navItems: [BottomNavItem] = [
+        BottomNavItem("Home"),
+        BottomNavItem("Eventos"),
+        BottomNavItem("Cadastros"),
+        BottomNavItem("Garagem"),
+    ]
 
     /// Permite abrir a tela já com uma sheet visível — usado pelos
     /// launch args `--p1-eventos-novo` / `--p1-evento-detalhe` pra
     /// screenshot rápida das modais.
     var initialSheet: EventosSheet?
-    /// Handler do menu inferior — injetado pela HomeView pra permitir
-    /// pular pra outra aba direto desta sub-view (fix tab-bar 2026-05-12).
-    var onNavSelect: (BottomNavItem) -> Void = { _ in }
 
-    init(initialSheet: EventosSheet? = nil,
-         onNavSelect: @escaping (BottomNavItem) -> Void = { _ in }) {
+    init(initialSheet: EventosSheet? = nil) {
         self.initialSheet = initialSheet
-        self.onNavSelect = onNavSelect
     }
 
     var body: some View {
-        ScrollView {
-            content
-                .padding(.horizontal, Spacing.lg)
-                .padding(.top, Spacing.sm)
-                .padding(.bottom, 32)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                content
+                    .padding(.horizontal, Spacing.lg)
+                    .padding(.top, Spacing.sm)
+                    .padding(.bottom, 140) // espaço pro FAB + BottomNav fixos
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(Color.surface)
+
+            BottomNav(items: navItems, selection: $navSelection)
         }
-        .background(Color.surface)
         .overlay(alignment: .bottomTrailing) {
             FAB("Novo evento") { sheet = .novo }
                 .padding(.trailing, Spacing.md)
-                .padding(.bottom, Spacing.md)
+                .padding(.bottom, 90)
         }
         .preferredColorScheme(.dark)
         .onAppear {
+            // BottomNav começa com "Eventos" ativo (2º item).
+            if navSelection == nil { navSelection = navItems[1].id }
             if let s = initialSheet, sheet == nil { sheet = s }
         }
         .sheet(item: $sheet) { which in
@@ -87,13 +95,11 @@ struct EventosListaView: View {
                 groupHead(title: "Próximo", count: proximos.count)
                 VStack(spacing: 8) {
                     ForEach(proximos) { ev in
-                        NavigationLink(value: HomeNavTarget.eventoDetalhe(eventoId: ev.id)) {
-                            EventoCard(
-                                ev: ev,
-                                kind: .proximo(diasRestantes: diasParaEvento(ev))
-                            )
-                        }
-                        .buttonStyle(.plain)
+                        EventoCard(
+                            ev: ev,
+                            kind: .proximo(diasRestantes: diasParaEvento(ev)),
+                            onTap: { sheet = .detalhe(eventoId: ev.id) }
+                        )
                     }
                 }
             }
@@ -102,13 +108,11 @@ struct EventosListaView: View {
                 groupHead(title: "Passados", count: passados.count)
                 VStack(spacing: 8) {
                     ForEach(passados) { ev in
-                        NavigationLink(value: HomeNavTarget.eventoDetalhe(eventoId: ev.id)) {
-                            EventoCard(
-                                ev: ev,
-                                kind: .passado(sumario: summaryFor(ev))
-                            )
-                        }
-                        .buttonStyle(.plain)
+                        EventoCard(
+                            ev: ev,
+                            kind: .passado(sumario: summaryFor(ev)),
+                            onTap: { sheet = .detalhe(eventoId: ev.id) }
+                        )
                     }
                 }
             }
@@ -265,6 +269,7 @@ enum EventoCardKind: Equatable {
 private struct EventoCard: View {
     let ev: EventoView
     let kind: EventoCardKind
+    let onTap: () -> Void
 
     private var isProximo: Bool {
         if case .proximo = kind { return true }
@@ -272,24 +277,26 @@ private struct EventoCard: View {
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            dateBlock
-            bodyBlock
-            Spacer(minLength: 0)
-            chev
+        Button(action: onTap) {
+            HStack(alignment: .top, spacing: 14) {
+                dateBlock
+                bodyBlock
+                Spacer(minLength: 0)
+                chev
+            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .fill(isProximo ? Color.accentDim.opacity(0.15) : Color.surfaceRaised)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .stroke(isProximo ? Color.accent.opacity(0.55) : Color.border, lineWidth: 1)
+            )
         }
-        .padding(.horizontal, Spacing.md)
-        .padding(.vertical, 14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                .fill(isProximo ? Color.accentDim.opacity(0.15) : Color.surfaceRaised)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                .stroke(isProximo ? Color.accent.opacity(0.55) : Color.border, lineWidth: 1)
-        )
-        .contentShape(Rectangle())
+        .buttonStyle(.plain)
     }
 
     // MARK: - Sub-blocos

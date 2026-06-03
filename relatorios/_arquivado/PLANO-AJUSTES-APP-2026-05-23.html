@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>Plano de ajustes no app · pós-stint de 23/05</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#101a2e; --panel2:#15233d; --line:#1f2f4d;
+    --ink:#e8eef9; --muted:#8ea0c1; --accent:#5da3ff; --ok:#5dd39e;
+    --warn:#ffb454; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1100px;margin:0 auto;padding:32px 24px 80px}
+  header.topo{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:24px}
+  header.topo h1{font-size:26px;margin:0 0 6px;font-weight:700;letter-spacing:-0.015em}
+  header.topo .sub{color:var(--muted);font-size:13px}
+  section{margin:42px 0}
+  section > h2{font-size:13px;text-transform:uppercase;letter-spacing:0.12em;color:var(--accent);margin:0 0 4px;font-weight:700}
+  section > h3.titulo{font-size:22px;margin:0 0 18px;font-weight:600;letter-spacing:-0.01em}
+  p{margin:0 0 12px}
+  .sub{color:var(--muted);font-size:13px}
+  code{background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:13px;font-family:ui-monospace,SF Mono,Menlo,monospace}
+
+  /* Bandeira de prioridade */
+  .priority-bar{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin:14px 0}
+  .priority-bar .step{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 8px;text-align:center}
+  .priority-bar .step.urgente{border-color:var(--bad);background:rgba(255,107,107,.08)}
+  .priority-bar .step.imp{border-color:var(--warn);background:rgba(255,180,84,.06)}
+  .priority-bar .step.div{border-color:var(--muted);opacity:0.85}
+  .priority-bar .step .n{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+  .priority-bar .step .nome{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-top:2px;line-height:1.2}
+
+  /* Card de ajuste */
+  .ajuste{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px;margin:16px 0;border-left:5px solid var(--bad)}
+  .ajuste.imp{border-left-color:var(--warn)}
+  .ajuste.div{border-left-color:var(--accent)}
+  .ajuste .head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:14px}
+  .ajuste .head .num{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:var(--bad);color:#0b1220;font-weight:700;font-size:17px;flex-shrink:0}
+  .ajuste.imp .head .num{background:var(--warn)}
+  .ajuste.div .head .num{background:var(--accent)}
+  .ajuste .head .titulo-bloco{display:flex;align-items:center;gap:14px;flex:1}
+  .ajuste .head .titulo-bloco h3{margin:0;font-size:19px;font-weight:700;letter-spacing:-0.01em}
+  .ajuste .head .meta{display:flex;gap:8px;flex-wrap:wrap}
+  .tag{display:inline-block;padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em}
+  .tag.bad{background:rgba(255,107,107,.18);color:var(--bad)}
+  .tag.warn{background:rgba(255,180,84,.18);color:var(--warn)}
+  .tag.ok{background:rgba(93,211,158,.15);color:var(--ok)}
+  .tag.neu{background:rgba(123,139,168,.18);color:#7b8ba8}
+
+  .ajuste-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:760px){.ajuste-grid{grid-template-columns:1fr}}
+  .ajuste-block{background:var(--panel2);border-radius:8px;padding:14px}
+  .ajuste-block h4{margin:0 0 6px;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em}
+  .ajuste-block p,.ajuste-block ul{margin:0;font-size:14px}
+  .ajuste-block ul{padding-left:18px}
+  .ajuste-block ul li{margin:3px 0}
+
+  .badges{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12px}
+  .badges .b{display:flex;flex-direction:column;background:var(--panel2);padding:8px 12px;border-radius:6px;min-width:90px}
+  .badges .b .l{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em}
+  .badges .b .v{font-size:14px;font-weight:600;margin-top:1px}
+  .badges .b .v.G{color:var(--bad)}
+  .badges .b .v.M{color:var(--warn)}
+  .badges .b .v.P{color:var(--ok)}
+
+  /* Sequência */
+  .seq{display:grid;grid-template-columns:80px 1fr;gap:14px;margin:10px 0}
+  .seq .num-onda{background:var(--accent);color:#0b1220;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;padding:8px}
+  .seq .conteudo{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
+  .seq .conteudo h4{margin:0 0 6px;font-size:15px;color:var(--ink)}
+  .seq .conteudo .lista{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .seq .conteudo .lista span{background:var(--panel2);padding:3px 10px;border-radius:99px;font-size:12px;color:var(--muted)}
+
+  /* Auditoria */
+  .auditoria{background:linear-gradient(135deg, rgba(93,163,255,0.10), rgba(93,163,255,0.02));border:1px solid rgba(93,163,255,.4);border-radius:12px;padding:24px;margin:20px 0}
+  .auditoria h3{color:var(--accent);margin-top:0}
+  .achado{background:rgba(255,255,255,.03);border-radius:8px;padding:12px;margin:10px 0;border-left:3px solid var(--warn)}
+  .achado.ok{border-left-color:var(--ok)}
+  .achado.bad{border-left-color:var(--bad)}
+  .achado .titulo-a{font-weight:600;font-size:14px;margin-bottom:4px}
+  .achado .desc-a{font-size:13px;color:var(--muted)}
+
+  footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="topo">
+    <h1>Plano de ajustes no app · pós-stint de 23/05</h1>
+    <div class="sub">Diagnóstico, causa, proposta e ordem de execução · baseado em inspeção real do código atual e do banco do iPhone</div>
+  </header>
+
+  <p>Os <strong>8 ajustes</strong> abaixo saíram da análise do stint de hoje e da leitura do código do app. Cada um traz: diagnóstico (o que acontece), causa (arquivo/linha real), proposta concreta, esforço, risco e dependências.</p>
+
+  <!-- ============================================ -->
+  <!-- BANDEIRA DE PRIORIDADE -->
+  <!-- ============================================ -->
+  <section>
+    <h2>Prioridade</h2>
+    <h3 class="titulo">8 ajustes em 3 níveis</h3>
+    <div class="priority-bar">
+      <div class="step urgente"><div class="n">1</div><div class="nome">Voltas falsas</div></div>
+      <div class="step urgente"><div class="n">2</div><div class="nome">Detector</div></div>
+      <div class="step imp"><div class="n">3</div><div class="nome">Carro obrig.</div></div>
+      <div class="step imp"><div class="n">4</div><div class="nome">IA padrão</div></div>
+      <div class="step imp"><div class="n">5</div><div class="nome">Câmera auto</div></div>
+      <div class="step imp"><div class="n">6</div><div class="nome">Status evento</div></div>
+      <div class="step div"><div class="n">7</div><div class="nome">Pista recalib.</div></div>
+      <div class="step div"><div class="n">8</div><div class="nome">Fila envio</div></div>
+    </div>
+    <p class="sub"><span class="tag bad">URGENTE</span> bugs graves que distorcem o que o piloto vê &nbsp; · &nbsp; <span class="tag warn">IMPORTANTE</span> configuração e automação &nbsp; · &nbsp; <span class="tag neu">DÍVIDA</span> dados e sincronização</p>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- AJUSTE 1: VOLTAS SINTETICAS -->
+  <!-- ============================================ -->
+  <div class="ajuste">
+    <div class="head">
+      <div class="titulo-bloco">
+        <div class="num">1</div>
+        <h3>Apagar a geração de voltas falsas no encerramento</h3>
+      </div>
+      <div class="meta"><span class="tag bad">URGENTE · bug grave</span></div>
+    </div>
+
+    <div class="ajuste-grid">
+      <div class="ajuste-block">
+        <h4>Diagnóstico — o que acontece hoje</h4>
+        <p>Quando o piloto encerra a sessão, o app insere <strong>N voltas no banco com tempos calculados a partir do número da sessão</strong>. Hoje exibiu 10 voltas com tempos em progressão de −0,559 s. As 4 voltas reais que o piloto fez ficaram apagadas.</p>
+      </div>
+      <div class="ajuste-block">
+        <h4>Causa — onde está no código</h4>
+        <p><code>ios/p1fast-ios/Sources/Persistence/StintRepository.swift</code> — linhas <strong>192 a 213</strong>, dentro do método <code>finalize()</code>. O comentário da linha 187 diz literalmente "Deterministic-ish: usa stintId hash como seed pra mesma sessao dar sempre os mesmos tempos no preview". É código de preview que ficou em uso real.</p>
+      </div>
+    </div>
+    <div class="ajuste-grid" style="margin-top:14px">
+      <div class="ajuste-block">
+        <h4>Proposta</h4>
+        <ul>
+          <li>Apagar o bloco inteiro de geração de voltas falsas (linhas 192-213).</li>
+          <li>Manter só a parte que insere as passagens por trecho reais (<code>SegmentExecutionMapper</code>) quando o detector capturou eventos.</li>
+          <li>Se a sessão for encerrada sem nenhum evento real, gravar zero voltas no banco e exibir mensagem clara na tela: "Detector de trecho não estava armado nesta sessão — nenhuma volta cronometrada".</li>
+        </ul>
+      </div>
+      <div class="ajuste-block">
+        <h4>Cuidado importante</h4>
+        <p>2 telas usam <code>finalize()</code> como atalho de preview e vão exibir "0 voltas" depois do ajuste:</p>
+        <ul>
+          <li><code>EventoDetalheView.swift:146</code> — finalização rápida</li>
+          <li><code>ContentView.swift:441</code> — <code>prepararStintDemo()</code> usado pra captura de tela</li>
+        </ul>
+        <p style="margin-top:8px">Decidir caso a caso: deletar o atalho, ou redirecionar pra usar a tela de captura real.</p>
+      </div>
+    </div>
+    <div class="badges">
+      <div class="b"><span class="l">Esforço</span><span class="v P">Pequeno</span></div>
+      <div class="b"><span class="l">Risco</span><span class="v M">Médio</span></div>
+      <div class="b"><span class="l">Depende de</span><span class="v">Ajuste 2</span></div>
+      <div class="b"><span class="l">Ambiente</span><span class="v">Dev</span></div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- AJUSTE 2: DETECTOR AUTO -->
+  <!-- ============================================ -->
+  <div class="ajuste">
+    <div class="head">
+      <div class="titulo-bloco">
+        <div class="num">2</div>
+        <h3>Armar o detector de trecho automaticamente na partida da sessão</h3>
+      </div>
+      <div class="meta"><span class="tag bad">URGENTE · bug grave</span></div>
+    </div>
+
+    <div class="ajuste-grid">
+      <div class="ajuste-block">
+        <h4>Diagnóstico — o que acontece hoje</h4>
+        <p>O detector de trecho <strong>existe e funciona</strong> — está implementado no <code>StintCaptureCoordinator.swift</code> e arma sozinho quando a pista está cadastrada. O problema é que <strong>o caminho que o piloto usa pra criar e iniciar a sessão não passa por esse coordenador</strong>. Hoje a sessão foi criada por um caminho que não dispara a captura ao vivo.</p>
+      </div>
+      <div class="ajuste-block">
+        <h4>Causa — onde está no código</h4>
+        <p>O caminho certo está em <code>StintCaptureView.swift</code> linha 232 (<code>ligarCaptura()</code> que chama <code>coordinator.start()</code>). Mas <code>EventoDetalheView.swift:140-153</code> finaliza sessão direto, sem passar pela captura. Provavelmente foi o caminho usado hoje.</p>
+      </div>
+    </div>
+    <div class="ajuste-grid" style="margin-top:14px">
+      <div class="ajuste-block">
+        <h4>Proposta</h4>
+        <ul>
+          <li>Identificar todos os pontos onde uma sessão pode ser criada/iniciada (auditoria das telas).</li>
+          <li>Garantir que toda criação de sessão com pista vinculada redirecione pra <code>StintCaptureView</code> — não pra finalização direta.</li>
+          <li>Remover o atalho de "finalização sem captura" da <code>EventoDetalheView</code> (vira fluxo proibido — só pra dev/preview).</li>
+        </ul>
+      </div>
+      <div class="ajuste-block">
+        <h4>Cuidado importante</h4>
+        <p>O coordenador também publica os dados pra um cockpit Windows (camada <code>LiveTelemetryPublisher</code>) só quando há pista. Se você não usa o cockpit Windows hoje, essa parte é silenciosa. Se um dia for usar, já está pronta.</p>
+      </div>
+    </div>
+    <div class="badges">
+      <div class="b"><span class="l">Esforço</span><span class="v M">Médio</span></div>
+      <div class="b"><span class="l">Risco</span><span class="v M">Médio</span></div>
+      <div class="b"><span class="l">Depende de</span><span class="v">—</span></div>
+      <div class="b"><span class="l">Ambiente</span><span class="v">Dev</span></div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- AJUSTE 3: CARRO OBRIGATORIO -->
+  <!-- ============================================ -->
+  <div class="ajuste imp">
+    <div class="head">
+      <div class="titulo-bloco">
+        <div class="num">3</div>
+        <h3>Tornar a seleção de carro obrigatória na criação da sessão</h3>
+      </div>
+      <div class="meta"><span class="tag warn">IMPORTANTE · ux</span></div>
+    </div>
+
+    <div class="ajuste-grid">
+      <div class="ajuste-block">
+        <h4>Diagnóstico — o que acontece hoje</h4>
+        <p>O modal de criar sessão <strong>não tem seletor de carro</strong>. O comentário no código (linha 47) diz explicitamente: "carroId é derivado do primeiro carro do CarroRepository (MVP — não existe seletor de carro no modal v1)". Hoje a sessão saiu com carro em branco no banco.</p>
+      </div>
+      <div class="ajuste-block">
+        <h4>Causa — onde está no código</h4>
+        <p><code>ios/p1fast-ios/Sources/Views/StintModalView.swift</code>, linhas <strong>47-49 e 111-112</strong>. O cálculo <code>carroIdInferido = carroRepo.carros.first?.id</code> retorna <code>nil</code> se a lista estiver vazia no momento da criação — e isso é gravado no banco como está.</p>
+      </div>
+    </div>
+    <div class="ajuste-grid" style="margin-top:14px">
+      <div class="ajuste-block">
+        <h4>Proposta</h4>
+        <ul>
+          <li>Adicionar Picker (lista suspensa) de carro no modal, com todos os carros cadastrados.</li>
+          <li>Padrão: o último carro usado pelo piloto. Se não tiver histórico, primeiro carro da lista.</li>
+          <li>Botão "Iniciar" desabilitado enquanto o campo estiver vazio.</li>
+          <li>Quando há só 1 carro cadastrado, deixar selecionado por padrão e ocultar o seletor (não fazer o usuário escolher entre 1 opção).</li>
+        </ul>
+      </div>
+      <div class="ajuste-block">
+        <h4>Cuidado importante</h4>
+        <p>Hoje há 2 carros cadastrados (Bolinha e Subaru). Sem ajuste, o "primeiro carro" pode variar conforme a ordem de cadastro — o piloto não tem controle.</p>
+      </div>
+    </div>
+    <div class="badges">
+      <div class="b"><span class="l">Esforço</span><span class="v P">Pequeno</span></div>
+      <div class="b"><span class="l">Risco</span><span class="v P">Baixo</span></div>
+      <div class="b"><span class="l">Depende de</span><span class="v">—</span></div>
+      <div class="b"><span class="l">Ambiente</span><span class="v">Dev</span></div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- AJUSTE 4: IA PADRAO -->
+  <!-- ============================================ -->
+  <div class="ajuste imp">
+    <div class="head">
+      <div class="titulo-bloco">
+        <div class="num">4</div>
+        <h3>Mudar o padrão da IA pra "ligada"</h3>
+      </div>
+      <div class="meta"><span class="tag warn">IMPORTANTE · configuração</span></div>
+    </div>
+
+    <div class="ajuste-grid">
+      <div class="ajuste-block">
+        <h4>Diagnóstico — o que acontece hoje</h4>
+        <p>O campo <code>ia_ligada</code> da sessão começa desligado (valor 0). O piloto tem que ligar manualmente — e hoje não ligou.</p>
+      </div>
+      <div class="ajuste-block">
+        <h4>Causa — onde está no código</h4>
+        <p>Schema da coluna em <code>Migrations.swift</code> tem default 0. Modal de criar sessão (<code>StintModalView.swift</code>) não tem toggle pra ligar a IA.</p>
+      </div>
+    </div>
+    <div class="ajuste-grid" style="margin-top:14px">
+      <div class="ajuste-block">
+        <h4>Proposta</h4>
+        <ul>
+          <li>Mudar o padrão de novas sessões pra <code>ia_ligada = 1</code>.</li>
+          <li>Adicionar toggle no modal pra você desligar caso queira (sessão de aquecimento, por exemplo).</li>
+          <li>Mostrar uma mensagem na tela do stint dizendo "IA ativa" ou "IA desligada" pra deixar o estado visível.</li>
+        </ul>
+      </div>
+      <div class="ajuste-block">
+        <h4>Cuidado importante</h4>
+        <p>A IA hoje só roda quando o T4000 (controlador eletrônico do motor) está conectado, porque depende de dado de RPM/torque/lambda. Sem T4000, ligar a IA é silencioso (não roda análise, mas também não atrapalha). Quando o T4000 chegar, vira automático.</p>
+      </div>
+    </div>
+    <div class="badges">
+      <div class="b"><span class="l">Esforço</span><span class="v P">Pequeno</span></div>
+      <div class="b"><span class="l">Risco</span><span class="v P">Baixo</span></div>
+      <div class="b"><span class="l">Depende de</span><span class="v">—</span></div>
+      <div class="b"><span class="l">Ambiente</span><span class="v">Dev</span></div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- AJUSTE 5: DAILY -->
+  <!-- ============================================ -->
+  <div class="ajuste imp">
+    <div class="head">
+      <div class="titulo-bloco">
+        <div class="num">5</div>
+        <h3>Ligar a câmera frontal (Daily.co) automaticamente quando a sessão começa</h3>
+      </div>
+      <div class="meta"><span class="tag warn">IMPORTANTE · automação faltando</span></div>
+    </div>
+
+    <div class="ajuste-grid">
+      <div class="ajuste-block">
+        <h4>Diagnóstico — o que acontece hoje</h4>
+        <p>O app verifica se as credenciais do Daily.co estão configuradas (linhas 691-692 do <code>ContentView.swift</code>), mas <strong>não tem nenhum código que liga a câmera ao iniciar o stint</strong>. Daily.co e captura de telemetria são processos separados que não conversam.</p>
+      </div>
+      <div class="ajuste-block">
+        <h4>Causa — onde está no código</h4>
+        <p>Não existe. A integração entre <code>StintCaptureCoordinator</code> e o serviço de vídeo do Daily.co ainda não foi escrita.</p>
+      </div>
+    </div>
+    <div class="ajuste-grid" style="margin-top:14px">
+      <div class="ajuste-block">
+        <h4>Proposta</h4>
+        <ul>
+          <li>Adicionar componente novo (algo como <code>DailyVideoSession</code>) que gerencia o ciclo de vida da câmera.</li>
+          <li>Acionar esse componente no <code>start()</code> do <code>StintCaptureCoordinator</code>.</li>
+          <li>Gravar o ID do vídeo na tabela <code>video_streams</code> (já existe no banco).</li>
+          <li>Encerrar a gravação no <code>stop()</code> do coordenador.</li>
+          <li>Tratar permissão de câmera negada (mostrar aviso, não travar a captura de telemetria).</li>
+        </ul>
+      </div>
+      <div class="ajuste-block">
+        <h4>Cuidado importante</h4>
+        <p>Esse é o ajuste de <strong>maior esforço técnico</strong> — precisa integrar com o SDK do Daily.co pra iOS, lidar com permissão de câmera, e garantir que se a câmera falhar a captura de telemetria não para também.</p>
+      </div>
+    </div>
+    <div class="badges">
+      <div class="b"><span class="l">Esforço</span><span class="v G">Grande</span></div>
+      <div class="b"><span class="l">Risco</span><span class="v M">Médio</span></div>
+      <div class="b"><span class="l">Depende de</span><span class="v">Ajuste 2</span></div>
+      <div class="b"><span class="l">Ambiente</span><span class="v">Dev</span></div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- AJUSTE 6: STATUS EVENTO -->
+  <!-- ============================================ -->
+  <div class="ajuste imp">
+    <div class="head">
+      <div class="titulo-bloco">
+        <div class="num">6</div>
+        <h3>Atualizar status do evento automaticamente conforme as sessões acontecem</h3>
+      </div>
+      <div class="meta"><span class="tag warn">IMPORTANTE · automação faltando</span></div>
+    </div>
+
+    <div class="ajuste-grid">
+      <div class="ajuste-block">
+        <h4>Diagnóstico — o que acontece hoje</h4>
+        <p>O evento de Brasília continua com status "planejado" mesmo depois que você rodou o stint. O app cria o evento com esse status (linha 269 do <code>EventoRepository.swift</code>) e nunca atualiza.</p>
+      </div>
+      <div class="ajuste-block">
+        <h4>Causa — onde está no código</h4>
+        <p>Não existe lógica que vire o status automaticamente. Tem que ser feita manualmente — mas a tela de edição também não tem esse seletor.</p>
+      </div>
+    </div>
+    <div class="ajuste-grid" style="margin-top:14px">
+      <div class="ajuste-block">
+        <h4>Proposta</h4>
+        <ul>
+          <li>Quando a primeira sessão de um evento é criada: virar o status do evento pra "em andamento".</li>
+          <li>Quando todas as sessões de um evento estão encerradas e o dia do evento já passou: virar pra "concluído".</li>
+          <li>Adicionar essa lógica no <code>StintRepository.create()</code> e no <code>finalize()</code>.</li>
+        </ul>
+      </div>
+      <div class="ajuste-block">
+        <h4>Cuidado importante</h4>
+        <p>Eventos podem ter vários dias (já existe a tabela <code>evento_dias</code>). A regra de "concluído" deve considerar o último dia, não o primeiro.</p>
+      </div>
+    </div>
+    <div class="badges">
+      <div class="b"><span class="l">Esforço</span><span class="v P">Pequeno</span></div>
+      <div class="b"><span class="l">Risco</span><span class="v P">Baixo</span></div>
+      <div class="b"><span class="l">Depende de</span><span class="v">—</span></div>
+      <div class="b"><span class="l">Ambiente</span><span class="v">Dev</span></div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- AJUSTE 7: PISTA -->
+  <!-- ============================================ -->
+  <div class="ajuste div">
+    <div class="head">
+      <div class="titulo-bloco">
+        <div class="num">7</div>
+        <h3>Recalibrar os pontos de referência geográficos da pista de Brasília</h3>
+      </div>
+      <div class="meta"><span class="tag neu">DÍVIDA · dados</span></div>
+    </div>
+
+    <div class="ajuste-grid">
+      <div class="ajuste-block">
+        <h4>Diagnóstico — o que acontece hoje</h4>
+        <p>A pista tem só 2 pontos de referência geográficos cadastrados, calibrados pra um pedaço pequeno da pista. Quando eu tentei usar pra cruzar o GPS real com o desenho esquemático, o GPS caiu fora do desenho (calibração resultou em pista 2× maior que o desenho).</p>
+      </div>
+      <div class="ajuste-block">
+        <h4>Causa — onde está no código/banco</h4>
+        <p>Coluna <code>geo_ancoras</code> da tabela <code>tracks</code>. Hoje tem 2 pontos: <code>(-15,77, -47,90) → (410, 707)</code> e <code>(-15,7718, -47,898) → (630, 400)</code>.</p>
+      </div>
+    </div>
+    <div class="ajuste-grid" style="margin-top:14px">
+      <div class="ajuste-block">
+        <h4>Proposta</h4>
+        <ul>
+          <li>Pegar 4 pontos do GPS real do stint de hoje (já temos 1.010 pontos do iPhone do Flávio): box, fim da reta principal, fim da reta oposta, e mais um na zona da Curva da Vitória.</li>
+          <li>Cruzar com os pontos correspondentes do desenho esquemático.</li>
+          <li>Atualizar a coluna <code>geo_ancoras</code> com os 4-5 pontos novos.</li>
+        </ul>
+      </div>
+      <div class="ajuste-block">
+        <h4>Cuidado importante</h4>
+        <p>Essa é a única correção que <strong>precisa subir pro servidor</strong> (versão oficial) pra valer pra todos os usuários. Precisa autorização explícita "MIGRAR PARA PRODUÇÃO". Em desenvolvimento, posso ajustar localmente pra testar.</p>
+      </div>
+    </div>
+    <div class="badges">
+      <div class="b"><span class="l">Esforço</span><span class="v P">Pequeno</span></div>
+      <div class="b"><span class="l">Risco</span><span class="v M">Médio</span></div>
+      <div class="b"><span class="l">Depende de</span><span class="v">Servidor</span></div>
+      <div class="b"><span class="l">Ambiente</span><span class="v">Dev → Servidor</span></div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- AJUSTE 8: FILA -->
+  <!-- ============================================ -->
+  <div class="ajuste div">
+    <div class="head">
+      <div class="titulo-bloco">
+        <div class="num">8</div>
+        <h3>Destravar a fila de envio do iPhone pro servidor</h3>
+      </div>
+      <div class="meta"><span class="tag neu">DÍVIDA · técnico</span></div>
+    </div>
+
+    <div class="ajuste-grid">
+      <div class="ajuste-block">
+        <h4>Diagnóstico — o que acontece hoje</h4>
+        <p>A fila de envio do iPhone (<code>sync_queue</code>) tem 213 itens pendentes. As 102.376 linhas de posição calculada (filtro Kalman) ficaram 100% locais — nada subiu pro servidor.</p>
+      </div>
+      <div class="ajuste-block">
+        <h4>Causa — onde está no código</h4>
+        <p>Lógica nos arquivos <code>SyncQueue.swift</code>, <code>SyncDrainer.swift</code> e <code>SyncBackfill.swift</code>. Não inspecionei a fundo ainda — precisa entender por que ela parou de drenar.</p>
+      </div>
+    </div>
+    <div class="ajuste-grid" style="margin-top:14px">
+      <div class="ajuste-block">
+        <h4>Proposta</h4>
+        <ul>
+          <li>Investigar os 213 itens — verificar se há algum erro recorrente em algum tipo de item.</li>
+          <li>Checar logs do <code>SyncDrainer</code> — pode estar travado num retry infinito.</li>
+          <li>Verificar se o problema é (a) servidor recusando uma coluna nova, (b) tamanho do payload, (c) login expirado ou (d) outro.</li>
+          <li>Corrigir a causa-raiz, não só limpar a fila.</li>
+        </ul>
+      </div>
+      <div class="ajuste-block">
+        <h4>Cuidado importante</h4>
+        <p>Limpar a fila sem diagnosticar é perigoso — pode perder dados que ainda não subiram. Tem que investigar primeiro.</p>
+      </div>
+    </div>
+    <div class="badges">
+      <div class="b"><span class="l">Esforço</span><span class="v M">Médio</span></div>
+      <div class="b"><span class="l">Risco</span><span class="v M">Médio</span></div>
+      <div class="b"><span class="l">Depende de</span><span class="v">Diagnóstico</span></div>
+      <div class="b"><span class="l">Ambiente</span><span class="v">Dev</span></div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- SEQUENCIA -->
+  <!-- ============================================ -->
+  <section>
+    <h2>Sequência sugerida</h2>
+    <h3 class="titulo">Em 4 ondas, do mais urgente ao menos</h3>
+
+    <div class="seq">
+      <div class="num-onda">1</div>
+      <div class="conteudo">
+        <h4>Onda 1 — Destravar os 2 bugs graves (1-2 dias)</h4>
+        <p>Resolver os ajustes <strong>1 e 2</strong> juntos. Eles têm dependência: o ajuste 1 (apagar voltas falsas) só faz sentido depois que o ajuste 2 (detector automático) garante que as voltas reais vão ser capturadas.</p>
+        <div class="lista">
+          <span>Ajuste 1 · Voltas falsas</span>
+          <span>Ajuste 2 · Detector automático</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="seq">
+      <div class="num-onda">2</div>
+      <div class="conteudo">
+        <h4>Onda 2 — Reduzir fricção operacional (1 dia)</h4>
+        <p>Atacar os 3 ajustes pequenos juntos: <strong>3, 4 e 6</strong>. Todos mexem em pontos simples do modal e do repositório de sessões. Mudam muito o uso real, com pouco risco.</p>
+        <div class="lista">
+          <span>Ajuste 3 · Carro obrigatório</span>
+          <span>Ajuste 4 · IA padrão ligada</span>
+          <span>Ajuste 6 · Status do evento automático</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="seq">
+      <div class="num-onda">3</div>
+      <div class="conteudo">
+        <h4>Onda 3 — Câmera automática (2-3 dias)</h4>
+        <p>Ajuste <strong>5</strong> isolado. É o de maior esforço técnico, vale entregar separado pra testar bem.</p>
+        <div class="lista">
+          <span>Ajuste 5 · Daily.co automático</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="seq">
+      <div class="num-onda">4</div>
+      <div class="conteudo">
+        <h4>Onda 4 — Dívida técnica (1-2 dias)</h4>
+        <p>Os 2 ajustes de dívida: <strong>7</strong> (recalibrar pista) e <strong>8</strong> (destravar fila). Podem ser feitos em paralelo. Ajuste 7 precisa autorização sua pra subir no servidor.</p>
+        <div class="lista">
+          <span>Ajuste 7 · Pista recalibrada</span>
+          <span>Ajuste 8 · Fila destravada</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- AUDITORIA -->
+  <!-- ============================================ -->
+  <section>
+    <h2>Auditoria do plano</h2>
+    <h3 class="titulo">Onde o plano pode falhar — e o que assumi sem evidência</h3>
+
+    <div class="auditoria">
+      <h3>Achados da auditoria</h3>
+
+      <div class="achado bad">
+        <div class="titulo-a">A1 · Ajuste 1 pode quebrar a tela do Pós-Stint hoje</div>
+        <div class="desc-a">A tela de Pós-Stint provavelmente lê voltas pra exibir estatísticas. Se o ajuste 1 zera voltas em sessões sem detector, a tela vai mostrar vazio. <strong>Mitigação:</strong> antes de tocar o <code>finalize()</code>, conferir como o Pós-Stint reage a 0 voltas. Adaptar a tela pra mostrar mensagem clara.</div>
+      </div>
+
+      <div class="achado bad">
+        <div class="titulo-a">A2 · Ajuste 2 supõe que existe um único caminho de criação de sessão, mas não validei</div>
+        <div class="desc-a">Inspecionei 3 lugares (<code>EventoDetalheView</code>, <code>StintCaptureView</code>, <code>StintModalView</code>) mas pode haver outros. <strong>Mitigação:</strong> antes de executar o ajuste 2, fazer auditoria completa dos pontos que chamam <code>stintRepo.create()</code> e mapear todos os fluxos.</div>
+      </div>
+
+      <div class="achado">
+        <div class="titulo-a">A3 · Ajuste 4 (IA padrão ligada) pode ter consequências em outras telas</div>
+        <div class="desc-a">Não verifiquei se outras telas dependem de <code>ia_ligada = 0</code> como default. Pode haver comportamentos ligados a esse padrão que vão mudar. <strong>Mitigação:</strong> grep no projeto inteiro por <code>ia_ligada</code> antes de mudar o default.</div>
+      </div>
+
+      <div class="achado">
+        <div class="titulo-a">A4 · Ajuste 5 (Daily.co) é o de maior risco e maior esforço</div>
+        <div class="desc-a">Precisa integrar SDK do Daily.co, lidar com permissão de câmera no iPhone, garantir que falha de vídeo não derruba telemetria. <strong>Mitigação:</strong> começar com versão mínima que só liga a câmera; sofisticação (gravação local de backup, retry, etc.) entra depois.</div>
+      </div>
+
+      <div class="achado bad">
+        <div class="titulo-a">A5 · Ajuste 7 mexe na versão oficial — precisa autorização</div>
+        <div class="desc-a">A coluna <code>geo_ancoras</code> existe no servidor (versão oficial) e atualizar lá precisa do comando explícito "MIGRAR PARA PRODUÇÃO" — não posso fazer sem autorização. <strong>Mitigação:</strong> dividir em 2 passos: recalibrar localmente primeiro, validar com novos stints, e só depois você autorizar a atualização do servidor.</div>
+      </div>
+
+      <div class="achado">
+        <div class="titulo-a">A6 · Ajuste 8 (fila) não tem causa-raiz identificada — risco de demorar mais</div>
+        <div class="desc-a">Disse "investigar" porque não sei ainda por que a fila travou. Pode ser 1 hora ou 1 dia, dependendo da causa. <strong>Mitigação:</strong> separar em 2 tarefas: (a) diagnóstico (1 hora), (b) correção (esforço aberto). Reavaliar o esforço depois do diagnóstico.</div>
+      </div>
+
+      <div class="achado">
+        <div class="titulo-a">A7 · Estimativas de esforço são chute baseado em padrão geral, não em medição</div>
+        <div class="desc-a">"Pequeno" significa &lt; 4h, "Médio" &lt; 1 dia, "Grande" &gt; 1 dia. Mas cada ajuste pode esconder complexidade que só aparece executando. <strong>Mitigação:</strong> cada onda deve começar com auditoria curta antes de cravar prazo.</div>
+      </div>
+
+      <div class="achado ok">
+        <div class="titulo-a">A8 · A ordem das ondas faz sentido lógico</div>
+        <div class="desc-a">Ondas 1 → 2 → 3 → 4 vai do mais urgente (bugs que distorcem dados) ao menos urgente (dívida técnica). Cada onda gera valor entregável sozinha — você pode parar em qualquer ponto e ainda ter ganho real no app.</div>
+      </div>
+
+      <div class="achado ok">
+        <div class="titulo-a">A9 · Nenhum ajuste exige T4000 ou hardware adicional</div>
+        <div class="desc-a">Todos os 8 ajustes são puro código + dados — não dependem do controlador eletrônico do motor chegar primeiro. Quando o T4000 chegar, os ajustes 4 (IA) e 5 (vídeo) ganham mais valor, mas funcionam mesmo sem.</div>
+      </div>
+
+      <div class="achado ok">
+        <div class="titulo-a">A10 · Os 2 bugs graves resolvem o problema central do stint de hoje</div>
+        <div class="desc-a">Se você fizer só a Onda 1, no próximo stint o app já vai cronometrar as voltas reais (não as sintéticas) e dar análise por trecho ao vivo. Os outros ajustes melhoram experiência e dados, mas Onda 1 é o que faz o app entregar a promessa central.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- RECOMENDACAO -->
+  <!-- ============================================ -->
+  <section>
+    <h2>Recomendação final</h2>
+    <h3 class="titulo">Por onde começar</h3>
+    <div class="ajuste div">
+      <div class="ajuste-block">
+        <h4>Começar pela Onda 1 (1-2 dias)</h4>
+        <p>Os ajustes <strong>1 e 2</strong> resolvem o problema central que apareceu no stint de hoje: o app exibe voltas inventadas em vez das voltas reais, e a análise por trecho não roda ao vivo. Sem isso, qualquer outro ajuste é cosmético.</p>
+        <p style="margin-top:10px"><strong>Depois da Onda 1</strong>: refazer um stint de teste pra validar que voltas reais aparecem corretamente, e só então atacar a Onda 2.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Plano gerado em 2026-05-23 20:20 · baseado em inspeção real do código atual (<code>StintRepository.swift</code>, <code>StintCaptureCoordinator.swift</code>, <code>StintModalView.swift</code>, <code>EventoDetalheView.swift</code>, <code>ContentView.swift</code>, <code>Migrations.swift</code>, <code>EventoRepository.swift</code>) e do banco do iPhone puxado hoje. 10 achados de auditoria registrados.
+  </footer>
+</div>
+</body>
+</html>
