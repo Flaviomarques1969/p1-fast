@@ -28,15 +28,8 @@ import {
 
 export const DEFAULT_LIMITS = Object.freeze({
   redlineRpm:           7500,
-  fireThresholdRatio:   0.95, // ≥95% redline → FIRE strobe (modo legado, baseado em redline)
+  fireThresholdRatio:   0.95, // ≥95% redline → FIRE strobe
   litStartRatio:        0.50, // <50% redline → LEDs apagados
-  // Modo NOVO baseado em torque (preferido quando informado):
-  //   peakTorqueRpm — rpm do pico de torque (vem do dinamômetro).
-  //   torqueLitOffsetRpm — quantos rpm antes do pico começa o LIT progressivo.
-  // Quando peakTorqueRpm está definido, rpmToShift IGNORA fireThresholdRatio +
-  // litStartRatio e usa janela (peak-offset, peak, redline).
-  peakTorqueRpm:        null,
-  torqueLitOffsetRpm:   300,
   oilPressMinBar:       0.5,
   oilPressMinAtRpm:     2000, // só dispara alerta abaixo do mínimo se RPM > este
   oilTempMaxC:          130,
@@ -57,64 +50,16 @@ export function rpmToShift(rpm, limits = DEFAULT_LIMITS) {
   if (typeof rpm !== 'number' || !Number.isFinite(rpm) || rpm < 0) {
     return { mode: ShiftMode.OFF, level: 0 };
   }
-  const { redlineRpm, peakTorqueRpm, torqueLitOffsetRpm } = limits;
-
-  // ── Modo TORQUE (preferido) ────────────────────────────────
-  // Acende progressivamente nos N rpm antes do pico de torque, dispara
-  // FIRE no pico, e OVERREV acima do redline. Pedido Flávio 2026-05-26:
-  // "quando o carro chegar no máximo do torque, ele aciona o shift light".
-  if (typeof peakTorqueRpm === 'number' && peakTorqueRpm > 0) {
-    if (rpm > redlineRpm) return { mode: ShiftMode.OVERREV, level: 0 };
-    if (rpm >= peakTorqueRpm) return { mode: ShiftMode.FIRE, level: 0 };
-    const start = peakTorqueRpm - (torqueLitOffsetRpm ?? 300);
-    if (rpm < start) return { mode: ShiftMode.OFF, level: 0 };
-    const norm = (rpm - start) / (peakTorqueRpm - start); // 0..<1
-    const level = Math.max(1, Math.min(SHIFT_LEVEL_MAX, Math.round(norm * SHIFT_LEVEL_MAX) || 1));
-    return { mode: ShiftMode.LIT, level };
-  }
-
-  // ── Modo legado (fallback baseado em redline %) ────────────
-  const { fireThresholdRatio, litStartRatio } = limits;
+  const { redlineRpm, fireThresholdRatio, litStartRatio } = limits;
   if (rpm > redlineRpm) return { mode: ShiftMode.OVERREV, level: 0 };
   const ratio = rpm / redlineRpm;
   if (ratio >= fireThresholdRatio) return { mode: ShiftMode.FIRE, level: 0 };
   if (ratio < litStartRatio) return { mode: ShiftMode.OFF, level: 0 };
+  // mapeia [litStart..fireThreshold) → [1..SHIFT_LEVEL_MAX]
   const span = fireThresholdRatio - litStartRatio;
-  const norm = (ratio - litStartRatio) / span;
+  const norm = (ratio - litStartRatio) / span; // 0..<1
   const level = Math.max(1, Math.min(SHIFT_LEVEL_MAX, Math.round(norm * SHIFT_LEVEL_MAX) || 1));
   return { mode: ShiftMode.LIT, level };
-}
-
-/**
- * Alarmes do bitfield da T3000 que o piloto consegue agir enquanto pilota,
- * em ordem de gravidade — o mais grave vence quando há múltiplos ativos.
- * Mensagens curtas e práticas em PT-BR.
- *
- * REMOVIDOS deliberadamente (piloto não pode fazer nada pilotando):
- *   - excessoAberturaInjetor — questão de mapeamento, decisão de engenheiro
- *   - nbMinimo / nbMaximo — sonda auxiliar (Bubi nem tem); duplica WB
- */
-export const ALARM_PRIORITY = Object.freeze([
-  ['baixaPressaoOleo',         MsgTipo.GRAVE,       'ÓLEO BAIXO'],
-  ['excessoTempMotor',         MsgTipo.GRAVE,       'MOTOR QUENTE'],
-  ['baixaPressaoCombustivel',  MsgTipo.GRAVE,       'COMBUSTÍVEL BAIXO'],
-  ['excessoRotacao',           MsgTipo.GRAVE,       'ROTAÇÃO ALTA'],
-  ['excessoPressao',           MsgTipo.GRAVE,       'PRESSÃO ALTA'],
-  ['wbMinimo',                 MsgTipo.COMUNICACAO, 'Alivie'],
-  ['wbMaximo',                 MsgTipo.COMUNICACAO, 'Pra box'],
-  ['alertaNivelCombustivel',   MsgTipo.COMUNICACAO, 'Abasteça'],
-]);
-
-/**
- * Inspeciona o objeto sample.alarmes (vindo do parser T3000) e retorna o
- * alarme MAIS GRAVE ativo, no formato { tipo, texto }. Null quando nenhum.
- */
-export function checkAlarmesBitfield(sample) {
-  if (!sample || !sample.alarmes) return null;
-  for (const [chave, tipo, texto] of ALARM_PRIORITY) {
-    if (sample.alarmes[chave] === true) return { tipo, texto };
-  }
-  return null;
 }
 
 /**
@@ -122,7 +67,7 @@ export function checkAlarmesBitfield(sample) {
  * null se está tudo OK ou se o sample tem checksum quebrado.
  *
  * Ordem de prioridade (mais grave primeiro):
- * 1. alarme do bitfield da central (vence quando ativo)
+ * 1. erro ECU != 0 (bitfield)
  * 2. água > limite
  * 3. óleo > limite
  * 4. pressão óleo < limite com RPM > limite (motor sob carga)
@@ -131,9 +76,9 @@ export function checkAlarmesBitfield(sample) {
 export function checkCriticalAlerts(sample, limits = DEFAULT_LIMITS) {
   if (!sample || sample.checksumOk === false) return null;
 
-  const alarmeBitfield = checkAlarmesBitfield(sample);
-  if (alarmeBitfield) return alarmeBitfield;
-
+  if (sample.ecuErrorBits !== undefined && sample.ecuErrorBits !== 0) {
+    return { tipo: MsgTipo.GRAVE, texto: 'Erro ECU' };
+  }
   if (typeof sample.waterTempC === 'number' && sample.waterTempC > limits.waterTempMaxC) {
     return { tipo: MsgTipo.GRAVE, texto: 'Temperatura água crítica' };
   }
@@ -193,12 +138,6 @@ export class LiveDataBridge {
   getLastImuGps()  { return this._lastImuGps; }
   getLastT4000()   { return this._lastT4000; }
   getStats()       { return { ...this._stats }; }
-  getLimits()      { return this._limits; }
-
-  /** Atualiza limites em runtime (ex.: quando a curva do dinamômetro carrega da nuvem). */
-  setLimits(nextLimits) {
-    this._limits = { ...DEFAULT_LIMITS, ...this._limits, ...nextLimits };
-  }
 
   // ── interno ─────────────────────────────────────────
 

@@ -55,22 +55,6 @@ public struct DetectorLapEvent: Sendable {
     public let tempoMs: Double
     public let temposPorParcial: [String: Double]
     public let temposPorTrecho: [String: Double]
-
-    public init(
-        numero: Int,
-        inicioAt: Double,
-        fimAt: Double,
-        tempoMs: Double,
-        temposPorParcial: [String: Double],
-        temposPorTrecho: [String: Double]
-    ) {
-        self.numero = numero
-        self.inicioAt = inicioAt
-        self.fimAt = fimAt
-        self.tempoMs = tempoMs
-        self.temposPorParcial = temposPorParcial
-        self.temposPorTrecho = temposPorTrecho
-    }
 }
 
 public struct DetectorSegmentStartEvent: Sendable {
@@ -79,20 +63,6 @@ public struct DetectorSegmentStartEvent: Sendable {
     public let entradaAt: Double
     public let velEntrada: Double?
     public let offset: Double
-
-    public init(
-        segmentId: String,
-        lapNumero: Int?,
-        entradaAt: Double,
-        velEntrada: Double?,
-        offset: Double
-    ) {
-        self.segmentId = segmentId
-        self.lapNumero = lapNumero
-        self.entradaAt = entradaAt
-        self.velEntrada = velEntrada
-        self.offset = offset
-    }
 }
 
 public struct DetectorSegmentEndEvent: Sendable {

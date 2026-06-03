@@ -59,6 +59,18 @@ public struct TrackRow: Codable, FetchableRecord, PersistableRecord {
     /// pra `Track.geoAncoras` no domínio. Pode ser nil — pista cadastrada sem
     /// âncoras geo opera só em frame SVG.
     public var geoAncoras: String?
+    /// S4 da rodada 1 (2026-05-12): cidade onde o autódromo fica.
+    /// Usada pra agrupar autódromos por cidade na tela de seleção do
+    /// cadastro de evento. Pode ser nil em pistas legadas sem cidade
+    /// preenchida — UI mostra como "Sem cidade" nesse caso.
+    public var cidade: String?
+    /// v29 (Flávio 2026-05-17): extensão da pista em metros. Usada na
+    /// lista de Autódromos pra calcular km do piloto e mostrar o tamanho
+    /// do circuito.
+    public var extensaoMetros: Int?
+    /// v29: quantidade total de curvas do traçado. Mostrado no card
+    /// e na ficha do autódromo.
+    public var numeroCurvas: Int?
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -68,6 +80,9 @@ public struct TrackRow: Codable, FetchableRecord, PersistableRecord {
         case id, apelido
         case nomeOficial = "nome_oficial"
         case geoAncoras = "geo_ancoras"
+        case cidade
+        case extensaoMetros = "extensao_metros"
+        case numeroCurvas = "numero_curvas"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
@@ -75,10 +90,16 @@ public struct TrackRow: Codable, FetchableRecord, PersistableRecord {
 
     public init(id: String, apelido: String, nomeOficial: String? = nil,
                 geoAncoras: String? = nil,
+                cidade: String? = nil,
+                extensaoMetros: Int? = nil,
+                numeroCurvas: Int? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.apelido = apelido; self.nomeOficial = nomeOficial
         self.geoAncoras = geoAncoras
+        self.cidade = cidade
+        self.extensaoMetros = extensaoMetros
+        self.numeroCurvas = numeroCurvas
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }
@@ -244,6 +265,11 @@ public struct Carro: Codable, FetchableRecord, PersistableRecord {
     public var categoria: String?
     public var cor: String?
     public var fonteTemperatura: FonteTemperatura
+    /// S2 da rodada 1: caminho (key) da foto principal do carro no bucket
+    /// `carro-fotos` do Supabase Storage. Nil → card usa o placeholder
+    /// colorido (cor de fundo). Compressão acontece no upload em
+    /// `CarroRepository.uploadFoto` (~500 KB alvo). Uma foto por carro.
+    public var fotoUrl: String?
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -254,6 +280,7 @@ public struct Carro: Codable, FetchableRecord, PersistableRecord {
         case timeId = "time_id"
         case apelido, modelo, categoria, cor
         case fonteTemperatura = "fonte_temperatura"
+        case fotoUrl = "foto_url"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
@@ -262,16 +289,35 @@ public struct Carro: Codable, FetchableRecord, PersistableRecord {
     public init(id: String, timeId: String, apelido: String, modelo: String? = nil,
                 categoria: String? = nil, cor: String? = nil,
                 fonteTemperatura: FonteTemperatura = .motor,
+                fotoUrl: String? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.timeId = timeId; self.apelido = apelido
         self.modelo = modelo; self.categoria = categoria; self.cor = cor
         self.fonteTemperatura = fonteTemperatura
+        self.fotoUrl = fotoUrl
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }
 
 // MARK: - configuracoes
+/// Tipo do pneu armazenado em `configuracoes.tipo_pneu`. Espelha a
+/// decisão A1 da reformulação Autódromos (2026-05-17): se mudar o tipo,
+/// vira nova configuração.
+public enum TipoPneu: String, Codable, Sendable, CaseIterable {
+    case slick
+    case chuva
+    case rua
+
+    public var legivel: String {
+        switch self {
+        case .slick: return "Slick"
+        case .chuva: return "Chuva"
+        case .rua:   return "Rua"
+        }
+    }
+}
+
 public struct Configuracao: Codable, FetchableRecord, PersistableRecord {
     public var id: String
     public var timeId: String
@@ -280,6 +326,49 @@ public struct Configuracao: Codable, FetchableRecord, PersistableRecord {
     public var dataAplicacao: Int64?
     public var overrides: String?
     public var temperaturaIdealRange: String?
+    // ── v28 — Configuração do carro (Flávio 2026-05-17) ──────
+    /// Descrição livre do motor (ex.: "1.4 standard").
+    public var motor: String?
+    /// Medida do pneu (ex.: "295/30 R18").
+    public var pneusMedida: String?
+    /// Marca do pneu (ex.: "Maxxis", "Pirelli").
+    public var pneusMarca: String?
+    /// Tipo de pneu — guarda string crua compatível com `TipoPneu.rawValue`.
+    /// Use `tipoPneuEnum` pra ler typed; setter aceita `TipoPneu`.
+    public var tipoPneu: String?
+    /// Descrição livre do câmbio (ex.: "5 marchas H").
+    public var cambio: String?
+    /// Marcador aero: assoalho reto presente.
+    public var aeroAssoalhoReto: Bool
+    /// Marcador aero: difusor presente.
+    public var aeroDifusor: Bool
+    /// Marcador aero: splitter presente.
+    public var aeroSplitter: Bool
+    /// 1 quando esta configuração é a que está "marcada como atual" do
+    /// carro. Pode ter 0 ou 1 configuração ativa por carro (cabe ao
+    /// Repository garantir a unicidade). Quando 0, o stint precisa
+    /// escolher antes de começar.
+    public var ativa: Bool
+    // ── v33 — Setup técnico do carro (Flávio 2026-05-18, Bloco 1 do plano
+    // Piloto + Engenheiro). Habilita cálculo de aceleração teórica:
+    // RPM × marcha × redução final ÷ raio do pneu → força de tração.
+    // ────────────────────────────────────────────────────────
+    public var relacaoMarcha1: Double?
+    public var relacaoMarcha2: Double?
+    public var relacaoMarcha3: Double?
+    public var relacaoMarcha4: Double?
+    public var relacaoMarcha5: Double?
+    public var relacaoMarcha6: Double?
+    /// Relação final do diferencial (multiplicador da saída do câmbio).
+    public var relacaoFinal: Double?
+    /// Raio dinâmico do pneu em metros. Calculado de medida tipo "185/60 R14":
+    /// raio = aro_polegadas × 0.0254/2 + largura × perfil/100 / 1000
+    public var raioPneuM: Double?
+    /// Massa do carro pronto (sem piloto, sem combustível) em kg. Pra cálculo
+    /// de peso total no stint, somar `Piloto.pesoKg` cadastrado + combustível
+    /// estimado.
+    public var massaCarroKg: Double?
+    // ────────────────────────────────────────────────────────
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -293,6 +382,24 @@ public struct Configuracao: Codable, FetchableRecord, PersistableRecord {
         case dataAplicacao = "data_aplicacao"
         case overrides
         case temperaturaIdealRange = "temperatura_ideal_range"
+        case motor
+        case pneusMedida = "pneus_medida"
+        case pneusMarca = "pneus_marca"
+        case tipoPneu = "tipo_pneu"
+        case cambio
+        case aeroAssoalhoReto = "aero_assoalho_reto"
+        case aeroDifusor = "aero_difusor"
+        case aeroSplitter = "aero_splitter"
+        case ativa
+        case relacaoMarcha1 = "relacao_marcha_1"
+        case relacaoMarcha2 = "relacao_marcha_2"
+        case relacaoMarcha3 = "relacao_marcha_3"
+        case relacaoMarcha4 = "relacao_marcha_4"
+        case relacaoMarcha5 = "relacao_marcha_5"
+        case relacaoMarcha6 = "relacao_marcha_6"
+        case relacaoFinal = "relacao_final"
+        case raioPneuM = "raio_pneu_m"
+        case massaCarroKg = "massa_carro_kg"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
@@ -301,12 +408,207 @@ public struct Configuracao: Codable, FetchableRecord, PersistableRecord {
     public init(id: String, timeId: String, carroId: String, nome: String? = nil,
                 dataAplicacao: Int64? = nil, overrides: String? = nil,
                 temperaturaIdealRange: String? = nil,
+                motor: String? = nil,
+                pneusMedida: String? = nil, pneusMarca: String? = nil,
+                tipoPneu: String? = nil, cambio: String? = nil,
+                aeroAssoalhoReto: Bool = false, aeroDifusor: Bool = false,
+                aeroSplitter: Bool = false, ativa: Bool = false,
+                relacaoMarcha1: Double? = nil, relacaoMarcha2: Double? = nil,
+                relacaoMarcha3: Double? = nil, relacaoMarcha4: Double? = nil,
+                relacaoMarcha5: Double? = nil, relacaoMarcha6: Double? = nil,
+                relacaoFinal: Double? = nil,
+                raioPneuM: Double? = nil,
+                massaCarroKg: Double? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.timeId = timeId; self.carroId = carroId; self.nome = nome
         self.dataAplicacao = dataAplicacao; self.overrides = overrides
         self.temperaturaIdealRange = temperaturaIdealRange
+        self.motor = motor
+        self.pneusMedida = pneusMedida; self.pneusMarca = pneusMarca
+        self.tipoPneu = tipoPneu; self.cambio = cambio
+        self.aeroAssoalhoReto = aeroAssoalhoReto
+        self.aeroDifusor = aeroDifusor
+        self.aeroSplitter = aeroSplitter
+        self.ativa = ativa
+        self.relacaoMarcha1 = relacaoMarcha1
+        self.relacaoMarcha2 = relacaoMarcha2
+        self.relacaoMarcha3 = relacaoMarcha3
+        self.relacaoMarcha4 = relacaoMarcha4
+        self.relacaoMarcha5 = relacaoMarcha5
+        self.relacaoMarcha6 = relacaoMarcha6
+        self.relacaoFinal = relacaoFinal
+        self.raioPneuM = raioPneuM
+        self.massaCarroKg = massaCarroKg
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+
+    /// Setup técnico está completo o suficiente pra calcular aceleração
+    /// teórica? Exige pelo menos relação da marcha 1, relação final, raio
+    /// do pneu e massa do carro.
+    public var temSetupTecnicoBasico: Bool {
+        return relacaoMarcha1 != nil && relacaoFinal != nil
+            && raioPneuM != nil && massaCarroKg != nil
+    }
+
+    /// Devolve a relação de marcha pra marcha 1..6 (1-indexed). Nil quando
+    /// a marcha não está cadastrada.
+    public func relacaoDaMarcha(_ marcha: Int) -> Double? {
+        switch marcha {
+        case 1: return relacaoMarcha1
+        case 2: return relacaoMarcha2
+        case 3: return relacaoMarcha3
+        case 4: return relacaoMarcha4
+        case 5: return relacaoMarcha5
+        case 6: return relacaoMarcha6
+        default: return nil
+        }
+    }
+
+    /// Lê o tipo do pneu de forma typed-safe.
+    public var tipoPneuEnum: TipoPneu? {
+        guard let raw = tipoPneu else { return nil }
+        return TipoPneu(rawValue: raw)
+    }
+
+    /// Texto curto descritivo da configuração (usado em listas).
+    /// Prioriza o `nome` livre; cai pros campos quando não houver nome.
+    public var resumoLegivel: String {
+        if let n = nome?.trimmingCharacters(in: .whitespaces), !n.isEmpty {
+            return n
+        }
+        var partes: [String] = []
+        if let m = motor?.trimmingCharacters(in: .whitespaces), !m.isEmpty { partes.append(m) }
+        if let t = tipoPneuEnum { partes.append(t.legivel) }
+        if partes.isEmpty { return "Configuração sem nome" }
+        return partes.joined(separator: " · ")
+    }
+
+    /// Lista dos marcadores aero ativos, pronta pra UI.
+    /// Ex.: ["Assoalho reto", "Difusor"]; vazio quando não houver.
+    public var aeroAtivos: [String] {
+        var out: [String] = []
+        if aeroAssoalhoReto { out.append("Assoalho reto") }
+        if aeroDifusor { out.append("Difusor") }
+        if aeroSplitter { out.append("Splitter") }
+        return out
+    }
+}
+
+// MARK: - track_segment_faixas (v30 — Onda 3 reformulação Autódromos)
+/// Tipo de ponto geográfico de um trecho. Faixas de "entrada" e "saída"
+/// delimitam onde o trecho começa/termina (segmento de pista paralelo à
+/// pista, no formato de retângulo desenhado pela cabeça do piloto). Já
+/// "apice" é o ponto exato da curva.
+public enum FaixaTipo: String, Codable, Sendable, CaseIterable {
+    case entrada
+    case saida
+    case apice
+
+    public var legivel: String {
+        switch self {
+        case .entrada: return "Entrada"
+        case .saida:   return "Saída"
+        case .apice:   return "Ápice"
+        }
+    }
+}
+
+public struct TrackSegmentFaixa: Codable, FetchableRecord, PersistableRecord {
+    public var id: String
+    public var segmentId: String
+    /// String crua: "entrada", "saida" ou "apice". Use `tipoEnum` pra ler typed.
+    public var tipo: String
+    /// 0 ou 1 (para curvas com 2 ápices, decisão B3). Entrada/saída só usam 0.
+    public var indice: Int
+    public var x: Double
+    public var y: Double
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "track_segment_faixas"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case segmentId = "segment_id"
+        case tipo, indice, x, y
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, segmentId: String, tipo: FaixaTipo, indice: Int = 0,
+                x: Double, y: Double,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.segmentId = segmentId
+        self.tipo = tipo.rawValue; self.indice = indice
+        self.x = x; self.y = y
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+
+    public var tipoEnum: FaixaTipo? { FaixaTipo(rawValue: tipo) }
+}
+
+// MARK: - segment_pontos_dinamicos (v31 — Onda 5 reformulação Autódromos)
+/// V-min/frenagem/PAce calculados da melhor passagem por carro+config.
+/// 1 row por (segment, carro, config). Atualizada quando vem passagem
+/// melhor (menor tempo_ms no trecho).
+public struct SegmentPontosDinamicos: Codable, FetchableRecord, PersistableRecord {
+    public var id: String
+    public var timeId: String
+    public var segmentId: String
+    public var carroId: String
+    public var configuracaoId: String
+    public var tempoMs: Int
+    public var vminKmh: Double?
+    public var vminX: Double?
+    public var vminY: Double?
+    public var frenagemX: Double?
+    public var frenagemY: Double?
+    public var paceX: Double?
+    public var paceY: Double?
+    public var voltasConsideradas: Int
+    public var fonteVoltaId: String?
+    public var createdAt: Int64
+    public var updatedAt: Int64
+
+    public static let databaseTableName = "segment_pontos_dinamicos"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case segmentId = "segment_id"
+        case carroId = "carro_id"
+        case configuracaoId = "configuracao_id"
+        case tempoMs = "tempo_ms"
+        case vminKmh = "vmin_kmh"
+        case vminX = "vmin_x"
+        case vminY = "vmin_y"
+        case frenagemX = "frenagem_x"
+        case frenagemY = "frenagem_y"
+        case paceX = "pace_x"
+        case paceY = "pace_y"
+        case voltasConsideradas = "voltas_consideradas"
+        case fonteVoltaId = "fonte_volta_id"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(id: String, timeId: String, segmentId: String,
+                carroId: String, configuracaoId: String, tempoMs: Int,
+                vminKmh: Double? = nil, vminX: Double? = nil, vminY: Double? = nil,
+                frenagemX: Double? = nil, frenagemY: Double? = nil,
+                paceX: Double? = nil, paceY: Double? = nil,
+                voltasConsideradas: Int = 0, fonteVoltaId: String? = nil,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs()) {
+        self.id = id; self.timeId = timeId; self.segmentId = segmentId
+        self.carroId = carroId; self.configuracaoId = configuracaoId
+        self.tempoMs = tempoMs
+        self.vminKmh = vminKmh; self.vminX = vminX; self.vminY = vminY
+        self.frenagemX = frenagemX; self.frenagemY = frenagemY
+        self.paceX = paceX; self.paceY = paceY
+        self.voltasConsideradas = voltasConsideradas; self.fonteVoltaId = fonteVoltaId
+        self.createdAt = createdAt; self.updatedAt = updatedAt
     }
 }
 
@@ -427,6 +729,10 @@ public struct Pneu: Codable, FetchableRecord, PersistableRecord {
     public var medida: String?
     public var composto: Composto?
     public var ciclos: Int
+    /// S8 #23 da rodada 1 (2026-05-12): identificador físico do pneu
+    /// (etiqueta colada pelo piloto, ex: "Pneu 01"). Usado pelo TPMS
+    /// futuro pra rastrear leituras por pneu individual.
+    public var numeroSerie: String?
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -437,6 +743,7 @@ public struct Pneu: Codable, FetchableRecord, PersistableRecord {
         case timeId = "time_id"
         case carroId = "carro_id"
         case marca, modelo, medida, composto, ciclos
+        case numeroSerie = "numero_serie"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
@@ -445,11 +752,13 @@ public struct Pneu: Codable, FetchableRecord, PersistableRecord {
     public init(id: String, timeId: String, carroId: String,
                 marca: String? = nil, modelo: String? = nil, medida: String? = nil,
                 composto: Composto? = nil, ciclos: Int = 0,
+                numeroSerie: String? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.timeId = timeId; self.carroId = carroId
         self.marca = marca; self.modelo = modelo; self.medida = medida
         self.composto = composto; self.ciclos = ciclos
+        self.numeroSerie = numeroSerie
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }
@@ -459,8 +768,13 @@ public struct Evento: Codable, FetchableRecord, PersistableRecord {
     public var id: String
     public var timeId: String
     public var trackId: String?
+    /// DEPRECATED 2026-05-16. Tipo agora vive em EventoDia.tipo. Mantido por
+    /// retro-compatibilidade e migração — não usar em código novo.
     public var tipo: String?
+    /// Data início do período (1º dia). Mantém o nome legado `dataEvento`.
     public var dataEvento: Int64
+    /// Data fim do período. 2026-05-16: pra evento de 1 dia, dataFim == dataEvento.
+    public var dataFim: Int64
     public var status: String?
     /// MS-11.1: token único pra link público de vídeo. Vale o dia inteiro
     /// do evento (Q2.4). Quem tem o link consegue ver todos os streams
@@ -477,6 +791,7 @@ public struct Evento: Codable, FetchableRecord, PersistableRecord {
         case trackId = "track_id"
         case tipo
         case dataEvento = "data_evento"
+        case dataFim = "data_fim"
         case status
         case linkPublicoVideoToken = "link_publico_video_token"
         case createdAt = "created_at"
@@ -485,13 +800,59 @@ public struct Evento: Codable, FetchableRecord, PersistableRecord {
     }
 
     public init(id: String, timeId: String, trackId: String? = nil, tipo: String? = nil,
-                dataEvento: Int64, status: String? = "planejado",
+                dataEvento: Int64, dataFim: Int64? = nil,
+                status: String? = "planejado",
                 linkPublicoVideoToken: String? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.timeId = timeId; self.trackId = trackId; self.tipo = tipo
-        self.dataEvento = dataEvento; self.status = status
+        self.dataEvento = dataEvento
+        self.dataFim = dataFim ?? dataEvento
+        self.status = status
         self.linkPublicoVideoToken = linkPublicoVideoToken
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}
+
+// MARK: - evento_dias (rodada 1 fim — 2026-05-16)
+
+/// Dia filho de um evento (1:N evento → evento_dias). Cada dia tem rótulo
+/// opcional + tipo opcional. Quando rótulo é nil, o app exibe "Dia de pista DD"
+/// (número do dia do mês). Decisões P2/P3 do card 20260516-093500/093700.
+public struct EventoDia: Codable, FetchableRecord, PersistableRecord, Equatable {
+    public var id: String
+    public var timeId: String
+    public var eventoId: String
+    public var dataDia: Int64
+    public var rotulo: String?
+    public var tipo: String?
+    public var ordem: Int
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "evento_dias"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case eventoId = "evento_id"
+        case dataDia = "data_dia"
+        case rotulo
+        case tipo
+        case ordem
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, timeId: String, eventoId: String,
+                dataDia: Int64, rotulo: String? = nil, tipo: String? = nil,
+                ordem: Int = 0,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.eventoId = eventoId
+        self.dataDia = dataDia; self.rotulo = rotulo; self.tipo = tipo
+        self.ordem = ordem
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }
@@ -802,6 +1163,11 @@ public struct Sessao: Codable, FetchableRecord, PersistableRecord {
     /// JSON serializado de `[PilotoTurno]?` (nil quando não é endurance).
     public var pilotosRevezamentoJson: String?
     public var convidadoId: String?
+    /// 2026-05-16: vínculo direto stint ↔ dia do evento. Quando o stint é
+    /// criado num dia específico do evento (P1-P5 decisões), aponta pra
+    /// EventoDia.id. Nulo aceitável pra retro-compatibilidade (stints
+    /// pré-v25 ganharam vínculo via migration de conversão).
+    public var eventoDiaId: String?
     // ───────────────────────────────────────────────────────
     public var createdAt: Int64
     public var updatedAt: Int64
@@ -830,6 +1196,7 @@ public struct Sessao: Codable, FetchableRecord, PersistableRecord {
         case canceladoEm = "cancelado_em"
         case pilotosRevezamentoJson = "pilotos_revezamento"
         case convidadoId = "convidado_id"
+        case eventoDiaId = "evento_dia_id"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
@@ -848,6 +1215,7 @@ public struct Sessao: Codable, FetchableRecord, PersistableRecord {
                 canceladoEm: Int64? = nil,
                 pilotosRevezamentoJson: String? = nil,
                 convidadoId: String? = nil,
+                eventoDiaId: String? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.timeId = timeId; self.eventoId = eventoId
@@ -863,6 +1231,7 @@ public struct Sessao: Codable, FetchableRecord, PersistableRecord {
         self.canceladoEm = canceladoEm
         self.pilotosRevezamentoJson = pilotosRevezamentoJson
         self.convidadoId = convidadoId
+        self.eventoDiaId = eventoDiaId
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 
@@ -1158,6 +1527,12 @@ public struct PendenciaTemplate: Codable, FetchableRecord, PersistableRecord, Eq
     public var observacao: String?
     public var obrigatorio: Bool
     public var ordem: Int
+    /// S8 #21 da rodada 1 (2026-05-12): true quando o item exige
+    /// quantidade ao marcar como feita (óleo, combustível, aditivo).
+    public var ehConsumivel: Bool
+    /// S8 #21: unidade fixa do consumível ("L", "mL"). Nil pra
+    /// não-consumíveis.
+    public var unidade: String?
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -1169,6 +1544,8 @@ public struct PendenciaTemplate: Codable, FetchableRecord, PersistableRecord, Eq
         case grupoTitulo = "grupo_titulo"
         case grupoNum = "grupo_num"
         case titulo, observacao, obrigatorio, ordem
+        case ehConsumivel = "eh_consumivel"
+        case unidade
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
@@ -1177,12 +1554,14 @@ public struct PendenciaTemplate: Codable, FetchableRecord, PersistableRecord, Eq
     public init(id: String, grupoId: String, grupoTitulo: String, grupoNum: String,
                 titulo: String, observacao: String? = nil,
                 obrigatorio: Bool = false, ordem: Int,
+                ehConsumivel: Bool = false, unidade: String? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id
         self.grupoId = grupoId; self.grupoTitulo = grupoTitulo; self.grupoNum = grupoNum
         self.titulo = titulo; self.observacao = observacao
         self.obrigatorio = obrigatorio; self.ordem = ordem
+        self.ehConsumivel = ehConsumivel; self.unidade = unidade
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }
@@ -1195,6 +1574,10 @@ public struct EventoPendencia: Codable, FetchableRecord, PersistableRecord, Equa
     public var checado: Bool
     public var checadoAt: Int64?
     public var nota: String?
+    /// S8 #21 da rodada 1 (2026-05-12): quantidade aplicada quando o
+    /// template é consumível (litros de óleo, combustível…). Nil pra
+    /// itens não-consumíveis.
+    public var quantidade: Double?
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -1207,6 +1590,7 @@ public struct EventoPendencia: Codable, FetchableRecord, PersistableRecord, Equa
         case checado
         case checadoAt = "checado_at"
         case nota
+        case quantidade
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
@@ -1214,10 +1598,481 @@ public struct EventoPendencia: Codable, FetchableRecord, PersistableRecord, Equa
 
     public init(id: String, eventoId: String, templateId: String,
                 checado: Bool = false, checadoAt: Int64? = nil, nota: String? = nil,
+                quantidade: Double? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.eventoId = eventoId; self.templateId = templateId
         self.checado = checado; self.checadoAt = checadoAt; self.nota = nota
+        self.quantidade = quantidade
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}
+
+// MARK: - evento_pneus (S8 #23, rodada 1)
+
+/// S8 #23 da rodada 1 (2026-05-12). Liga pneus a eventos onde foram
+/// usados. Estrutura preparatória pra TPMS — pressao_atual e temp_atual
+/// já no schema, leitura via hardware entra quando o sensor chegar.
+public struct EventoPneu: Codable, FetchableRecord, PersistableRecord, Equatable {
+    public var id: String
+    public var timeId: String
+    public var eventoId: String
+    public var pneuId: String
+    public var pressaoAtualPsi: Double?
+    public var temperaturaAtualC: Double?
+    public var ultimaLeituraEm: Int64?
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "evento_pneus"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case eventoId = "evento_id"
+        case pneuId = "pneu_id"
+        case pressaoAtualPsi = "pressao_atual_psi"
+        case temperaturaAtualC = "temperatura_atual_c"
+        case ultimaLeituraEm = "ultima_leitura_em"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, timeId: String, eventoId: String, pneuId: String,
+                pressaoAtualPsi: Double? = nil, temperaturaAtualC: Double? = nil,
+                ultimaLeituraEm: Int64? = nil,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.eventoId = eventoId
+        self.pneuId = pneuId
+        self.pressaoAtualPsi = pressaoAtualPsi
+        self.temperaturaAtualC = temperaturaAtualC
+        self.ultimaLeituraEm = ultimaLeituraEm
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}
+
+// MARK: - evento_setup_replicado (S7 #17, rodada 1)
+
+/// S7 #17 da rodada 1 (2026-05-12). Snapshot do setup de uma volta
+/// passada copiado pra um evento futuro. Quando o piloto toca em
+/// "Replicar essa configuração" numa VoltaDetalheView, criamos uma
+/// row aqui. EventoDetalheView do evento futuro mostra como lembrete.
+public struct EventoSetupReplicado: Codable, FetchableRecord, PersistableRecord, Equatable {
+    public var id: String
+    public var timeId: String
+    public var eventoId: String
+    public var origemVoltaId: String
+    public var origemEventoId: String?
+    public var carroId: String?
+    public var overridesJson: String?
+    public var nota: String?
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "evento_setup_replicado"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case eventoId = "evento_id"
+        case origemVoltaId = "origem_volta_id"
+        case origemEventoId = "origem_evento_id"
+        case carroId = "carro_id"
+        case overridesJson = "overrides_json"
+        case nota
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, timeId: String, eventoId: String,
+                origemVoltaId: String, origemEventoId: String? = nil,
+                carroId: String? = nil, overridesJson: String? = nil,
+                nota: String? = nil,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.eventoId = eventoId
+        self.origemVoltaId = origemVoltaId
+        self.origemEventoId = origemEventoId
+        self.carroId = carroId
+        self.overridesJson = overridesJson
+        self.nota = nota
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}
+
+// MARK: - acoes_a_fazer (S8 #22, rodada 1)
+
+/// S8 #22 da rodada 1 (2026-05-12). Lista pessoal livre de ações a
+/// fazer no evento. Separada das pendências canônicas curadas.
+/// UI filtra `feita_em IS NULL` (some na próxima abertura — P3 #22).
+public struct AcaoAFazer: Codable, FetchableRecord, PersistableRecord, Equatable {
+    public var id: String
+    public var timeId: String
+    public var eventoId: String
+    public var pilotoId: String?
+    public var descricao: String
+    public var feitaEm: Int64?
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "acoes_a_fazer"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case eventoId = "evento_id"
+        case pilotoId = "piloto_id"
+        case descricao
+        case feitaEm = "feita_em"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, timeId: String, eventoId: String,
+                pilotoId: String? = nil, descricao: String,
+                feitaEm: Int64? = nil,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.eventoId = eventoId
+        self.pilotoId = pilotoId; self.descricao = descricao
+        self.feitaEm = feitaEm
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+// MARK: - pecas / pecas_locais / pecas_movimentacoes (2026-05-17)
+// ═══════════════════════════════════════════════════════════
+// Função "Peças do carro" decidida com Flávio em 2026-05-17 (6 decisões
+// + 1 comentário sobre ferramentas de manutenção). Banco único de peças
+// com campos de estoque opcionais; cada peça pertence a UM carro
+// (decisão D); locais cadastráveis (decisão C); movimentações −1/+1 com
+// histórico (decisão F); áreas via lista fixa no app (decisão E).
+
+/// Lista canônica das áreas grandes do carro. Decisão E (2026-05-17):
+/// lista fixa pronta — se faltar área, adicionar aqui.
+public enum PecaArea: String, Codable, CaseIterable, Sendable {
+    case motor          = "Motor"
+    case cambio         = "Câmbio"
+    case embreagem      = "Embreagem"
+    case suspensao      = "Suspensão"
+    case freios         = "Freios"
+    case direcao        = "Direção"
+    case eletrica       = "Elétrica"
+    case refrigeracao   = "Refrigeração"
+    case escape         = "Escape"
+    case carroceria     = "Carroceria"
+    case pneus          = "Pneus"
+    case rodas          = "Rodas"
+    case ferramentas    = "Ferramentas de manutenção"
+    case acessorios     = "Acessórios"
+}
+
+/// Tipo da peça. Comentário do Flávio: além de componentes do carro
+/// (correia, bateria...), cadastrar também ferramentas específicas
+/// de manutenção daquele carro (ex.: extrator do balancinho do 1.4
+/// Onix). Mesma ficha, campo diferente — filtro na lista separa.
+public enum PecaTipo: String, Codable, CaseIterable, Sendable {
+    case componente = "componente"
+    case ferramenta = "ferramenta"
+}
+
+public struct Peca: Codable, FetchableRecord, PersistableRecord, Equatable {
+    public var id: String
+    public var timeId: String
+    public var carroId: String
+    public var nome: String
+    public var codigo: String?
+    public var area: String
+    public var tipo: String
+    public var especificacao: String?
+    public var fotoUrl: String?
+    public var quantidade: Int          // 0 quando "só sei a especificação"
+    public var precoUnitarioCents: Int? // preço unitário em centavos (R$); nil = sem preço cadastrado
+    public var localId: String?
+    public var observacoes: String?
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "pecas"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case carroId = "carro_id"
+        case nome, codigo, area, tipo, especificacao
+        case fotoUrl = "foto_url"
+        case quantidade
+        case precoUnitarioCents = "preco_unitario_cents"
+        case localId = "local_id"
+        case observacoes
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, timeId: String, carroId: String, nome: String,
+                codigo: String? = nil, area: PecaArea, tipo: PecaTipo = .componente,
+                especificacao: String? = nil, fotoUrl: String? = nil,
+                quantidade: Int = 0, precoUnitarioCents: Int? = nil,
+                localId: String? = nil,
+                observacoes: String? = nil,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.carroId = carroId
+        self.nome = nome; self.codigo = codigo
+        self.area = area.rawValue; self.tipo = tipo.rawValue
+        self.especificacao = especificacao
+        self.fotoUrl = fotoUrl; self.quantidade = quantidade
+        self.precoUnitarioCents = precoUnitarioCents
+        self.localId = localId; self.observacoes = observacoes
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+
+    /// Valor total desta linha de estoque (preço × quantidade), em
+    /// centavos. nil se a peça não tem preço cadastrado.
+    public var valorTotalCents: Int? {
+        guard let p = precoUnitarioCents else { return nil }
+        return p * quantidade
+    }
+}
+
+public struct PecaLocal: Codable, FetchableRecord, PersistableRecord, Equatable {
+    public var id: String
+    public var timeId: String
+    public var nome: String
+    public var descricao: String?
+    public var ordem: Int
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "pecas_locais"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case nome, descricao, ordem
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, timeId: String, nome: String,
+                descricao: String? = nil, ordem: Int = 0,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.nome = nome
+        self.descricao = descricao; self.ordem = ordem
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+// MARK: - manutencoes / manutencao_especificacoes / manutencao_periodicidades
+// (2026-05-18, função Manutenção noturna "go")
+// ═══════════════════════════════════════════════════════════
+// Função Manutenção plantada na noite de 2026-05-18 a pedido do Flávio
+// (gatilho pré-aprovado "go"). Reusa PecaArea como conjunto de áreas
+// grandes (Motor, Câmbio, Freios…). 15 itens default (óleo, filtros,
+// velas, pastilhas, fluidos, embreagem…) ficam embutidos em código —
+// `ManutencaoCatalogo.itens`. Local-only nesta rodada (produção
+// Supabase não tocada).
+//
+// Modelo de dados:
+//   • Manutencao             = uma linha por troca/serviço registrado.
+//   • ManutencaoEspecificacao = "qual é o padrão deste item no meu
+//     carro" (marca/modelo/spec). UNIQUE(time, carro, item_codigo).
+//   • ManutencaoPeriodicidade = "quando trocar de novo" — regra
+//     serializada como JSON (`regra_json`). Carro pode sobrescrever o
+//     default do catálogo. UNIQUE(time, carro, item_codigo).
+
+/// Registro cronológico de uma manutenção (troca de óleo, filtro,
+/// fluido, peça…). Cada linha é um evento atômico.
+public struct Manutencao: Codable, FetchableRecord, PersistableRecord, Equatable {
+    public var id: String
+    public var timeId: String
+    public var carroId: String
+    /// Código do item dentro do catálogo (ex.: "oleo_motor").
+    public var itemCodigo: String
+    /// Área grande (PecaArea raw, ex.: "Motor"). Redundante com
+    /// `ManutencaoCatalogo.find(itemCodigo).area`, mas guardado pra
+    /// permitir busca/filtro direto no SQL.
+    public var area: String
+    /// Quando a manutenção foi feita (epoch ms — pode ser passado).
+    public var ocorridoEm: Int64
+    /// Quilometragem do carro no momento da troca. nil = não anotada.
+    public var kmCarro: Double?
+    public var marca: String?
+    public var modelo: String?
+    public var especificacao: String?
+    public var observacao: String?
+    /// Nome do arquivo local (Documents/manutencoes-fotos/{id}.jpg).
+    /// Igual ao PecaRepository — guarda só o lastPathComponent.
+    public var fotoUrl: String?
+    /// FK opcional pra peça do Estoque. Quando preenchida, registrar
+    /// uma manutenção abate `quantidade` do estoque dessa peça.
+    public var pecaId: String?
+    /// Quantas unidades foram consumidas (default 1). Usado pra abate.
+    public var quantidade: Int
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "manutencoes"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case carroId = "carro_id"
+        case itemCodigo = "item_codigo"
+        case area
+        case ocorridoEm = "ocorrido_em"
+        case kmCarro = "km_carro"
+        case marca, modelo, especificacao, observacao
+        case fotoUrl = "foto_url"
+        case pecaId = "peca_id"
+        case quantidade
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, timeId: String, carroId: String,
+                itemCodigo: String, area: PecaArea,
+                ocorridoEm: Int64,
+                kmCarro: Double? = nil,
+                marca: String? = nil, modelo: String? = nil,
+                especificacao: String? = nil, observacao: String? = nil,
+                fotoUrl: String? = nil,
+                pecaId: String? = nil, quantidade: Int = 1,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.carroId = carroId
+        self.itemCodigo = itemCodigo; self.area = area.rawValue
+        self.ocorridoEm = ocorridoEm
+        self.kmCarro = kmCarro
+        self.marca = marca; self.modelo = modelo
+        self.especificacao = especificacao; self.observacao = observacao
+        self.fotoUrl = fotoUrl
+        self.pecaId = pecaId; self.quantidade = max(1, quantidade)
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}
+
+/// Especificação padrão (marca/modelo/spec) de um item de manutenção
+/// pro carro. Ex.: "óleo do Subaru = Motul 8100 X-Cess 5W40". UNIQUE
+/// por (time, carro, item_codigo) — sobrescreve quando o usuário muda.
+public struct ManutencaoEspecificacao: Codable, FetchableRecord, PersistableRecord, Equatable {
+    public var id: String
+    public var timeId: String
+    public var carroId: String
+    public var itemCodigo: String
+    public var marca: String?
+    public var modelo: String?
+    public var especificacao: String?
+    public var observacao: String?
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "manutencao_especificacoes"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case carroId = "carro_id"
+        case itemCodigo = "item_codigo"
+        case marca, modelo, especificacao, observacao
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, timeId: String, carroId: String,
+                itemCodigo: String,
+                marca: String? = nil, modelo: String? = nil,
+                especificacao: String? = nil, observacao: String? = nil,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.carroId = carroId
+        self.itemCodigo = itemCodigo
+        self.marca = marca; self.modelo = modelo
+        self.especificacao = especificacao; self.observacao = observacao
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}
+
+/// Regra de periodicidade (quando trocar de novo) pra um item de um
+/// carro. JSON em `regraJson` permite shape rico sem migrar tabela a
+/// cada novo critério. UNIQUE(time, carro, item_codigo).
+public struct ManutencaoPeriodicidade: Codable, FetchableRecord, PersistableRecord, Equatable {
+    public var id: String
+    public var timeId: String
+    public var carroId: String
+    public var itemCodigo: String
+    public var regraJson: String
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "manutencao_periodicidades"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case carroId = "carro_id"
+        case itemCodigo = "item_codigo"
+        case regraJson = "regra_json"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, timeId: String, carroId: String,
+                itemCodigo: String, regraJson: String,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.carroId = carroId
+        self.itemCodigo = itemCodigo
+        self.regraJson = regraJson
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}
+
+/// Movimentação de estoque de uma peça (decisão F). delta = +1 (recebi)
+/// ou −1 (usei). Cada toque dos botões da ficha grava uma linha. Soma
+/// das deltas == quantidade atual (não recalcula — Repository atualiza
+/// `pecas.quantidade` ao gravar).
+public struct PecaMovimentacao: Codable, FetchableRecord, PersistableRecord, Equatable {
+    public var id: String
+    public var timeId: String
+    public var pecaId: String
+    public var delta: Int            // +1 ou −1 (futuro: outros valores)
+    public var observacao: String?
+    public var ocorridoEm: Int64
+    public var createdAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "pecas_movimentacoes"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case pecaId = "peca_id"
+        case delta, observacao
+        case ocorridoEm = "ocorrido_em"
+        case createdAt = "created_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String, timeId: String, pecaId: String,
+                delta: Int, observacao: String? = nil,
+                ocorridoEm: Int64 = DB.nowMs(),
+                createdAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.pecaId = pecaId
+        self.delta = delta; self.observacao = observacao
+        self.ocorridoEm = ocorridoEm
+        self.createdAt = createdAt; self.syncedAt = syncedAt
     }
 }

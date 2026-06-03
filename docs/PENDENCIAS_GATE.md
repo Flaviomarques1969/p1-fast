@@ -18,6 +18,22 @@ Não duplicar com:
 
 ## Ativas
 
+### P1 — Banco oficial de frases pedagógicas do cockpit (consultor sênior)
+
+**Origem:** 2026-05-16. Flávio confirmou pergunta 5 do questionário `20260516-145000-cockpit-piloto-ligacao-iphone.html`.
+
+**O que falta:** acionar um **consultor sênior de corrida turismo** pra montar o banco oficial das frases pedagógicas que aparecem no centro do cockpit do piloto ("FREIE TARDE", "ÁPICE TARDE", "SOLTE", etc.), incluindo:
+- Lista completa das frases.
+- Para cada frase: qual situação (qual sinal, qual delta, qual padrão de pilotagem) deve disparar.
+- Hierarquia / prioridade entre frases quando mais de uma se aplica.
+- Diferenças por tipo de curva, fase do stint, condição de pista.
+
+**Por enquanto:** Claude vai propor um conjunto inicial das 6 frases mais úteis derivadas do próprio cockpit canônico (deltas + apex). Esse conjunto temporário entra no app pra Flávio testar; é SUBSTITUÍDO assim que o consultor sênior entregar o banco oficial.
+
+**Quem decide:** Flávio aciona o consultor e me passa a lista validada quando estiver pronta.
+
+**Bloqueia:** entrega final do cockpit do piloto. Sem o banco oficial, o cockpit roda com palpite Claude (provisório).
+
 ### P0 — Seed Brasília com cadastro completo de apex
 
 **Origem:** AUDITORIA_INICIAL §"Ajustes prioritários" item 5.

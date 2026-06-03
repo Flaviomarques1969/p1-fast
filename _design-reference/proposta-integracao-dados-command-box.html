@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, initial-scale=1">
+<title>P1 Fast — Proposta de integração · dados → Command Box Engenheiro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(0% 0 0);
+  --surface: oklch(11% 0 0);
+  --surface-2: oklch(14% 0 0);
+  --surface-3: oklch(17% 0 0);
+  --border: oklch(22% 0 0);
+  --hairline: oklch(28% 0 0);
+  --ink: oklch(100% 0 0);
+  --muted: oklch(58% 0 0);
+  --dim: oklch(72% 0 0);
+  --bom: oklch(80% 0.22 145);
+  --erro: oklch(68% 0.26 27);
+  --foco: oklch(82% 0.19 70);
+  --sistema: oklch(78% 0.16 225);
+  --ouro: oklch(78% 0.16 73);
+  --roxo: oklch(60% 0.22 305);
+}
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: 'Inter', system-ui, sans-serif; }
+body { padding: 28px 32px; min-height: 100vh; }
+.legenda-status { font-size: 11px; color: var(--muted); }
+
+/* Header */
+.h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; margin: 0 0 6px; }
+.h1-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+/* 3 colunas */
+.colunas { display: grid; grid-template-columns: 1.1fr 1.3fr 1.1fr; gap: 0; align-items: stretch; }
+.col { padding: 0 18px; }
+.col-titulo { font-size: 11px; text-transform: uppercase; letter-spacing: 0.10em; color: var(--muted); font-weight: 800; margin-bottom: 12px; }
+.col-titulo b { color: var(--ink); }
+
+/* Caixas de dado/processo */
+.caixa { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; position: relative; }
+.caixa.tem-dado { border-color: oklch(35% 0.10 145); }
+.caixa.pendente { border-color: oklch(35% 0.15 70); }
+.caixa-tit { display: flex; gap: 8px; align-items: baseline; margin-bottom: 6px; }
+.caixa-nome { font-size: 14px; font-weight: 700; }
+.caixa-tag { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.caixa-tag.ok { background: oklch(28% 0.10 145); color: var(--bom); }
+.caixa-tag.pendente { background: oklch(28% 0.12 70); color: var(--foco); }
+.caixa-desc { font-size: 12px; color: var(--dim); line-height: 1.5; margin-bottom: 8px; }
+.caixa-campos { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--muted); padding: 0; margin: 0; list-style: none; }
+.caixa-campos li { padding: 2px 0; }
+.caixa-campos li::before { content: "› "; color: var(--hairline); }
+
+/* Coluna central — o Tradutor */
+.tradutor { background: linear-gradient(180deg, var(--surface-2), var(--surface-3)); border: 1px solid var(--hairline); border-radius: 16px; padding: 24px 22px; min-height: 540px; display: flex; flex-direction: column; }
+.tradutor-h { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ouro); font-weight: 800; margin-bottom: 4px; }
+.tradutor-tit { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+.tradutor-end { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 14px; }
+.tradutor-bloco { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+.tradutor-bloco-t { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ouro); font-weight: 700; margin-bottom: 4px; }
+.tradutor-bloco-d { font-size: 12.5px; color: var(--dim); line-height: 1.45; }
+.tradutor-acao { background: oklch(20% 0.04 73); border: 1px dashed oklch(40% 0.12 73); padding: 10px 12px; border-radius: 8px; font-size: 11.5px; color: var(--ouro); margin-top: auto; line-height: 1.4; }
+.tradutor-acao b { color: var(--ink); font-weight: 700; }
+
+/* Conectores entre colunas — setas */
+.setas-esquerda, .setas-direita { display: flex; flex-direction: column; align-items: center; justify-content: space-around; padding: 14px 0; }
+.seta { width: 100%; height: 22px; position: relative; }
+.seta::before { content: ""; position: absolute; left: 0; right: 14px; top: 50%; height: 2px; background: oklch(40% 0.06 73); transform: translateY(-50%); }
+.seta::after { content: ""; position: absolute; right: 8px; top: 50%; width: 0; height: 0; border-left: 8px solid oklch(60% 0.10 73); border-top: 6px solid transparent; border-bottom: 6px solid transparent; transform: translateY(-50%); }
+.seta-vazia::before { background: oklch(30% 0.04 70); border-top: 1px dashed oklch(50% 0.10 70); }
+.seta-pendente::before { background: oklch(30% 0.10 27); }
+.seta-pendente::after { border-left-color: oklch(60% 0.16 27); }
+
+/* Destinos */
+.destino { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+.destino.aprovado { border-color: oklch(35% 0.10 145); }
+.destino-novo { border-color: oklch(35% 0.16 305); }
+.destino-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+.destino-nome { font-size: 14px; font-weight: 700; }
+.destino-tag { font-size: 9.5px; padding: 2px 8px; border-radius: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.destino-tag.aprovado { background: oklch(28% 0.10 145); color: var(--bom); }
+.destino-tag.novo { background: oklch(28% 0.20 305); color: oklch(85% 0.16 305); }
+.destino-data { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 8px; }
+.destino-recebe { font-size: 11.5px; color: var(--dim); line-height: 1.45; }
+.destino-recebe b { color: var(--ink); font-weight: 700; }
+.destino-arquivo { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--hairline); }
+
+/* Rodapé */
+.rodape { margin-top: 26px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; }
+.rodape-t { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+.rodape-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+.rodape-c { font-size: 11.5px; color: var(--dim); line-height: 1.45; }
+.rodape-c-t { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
+.rodape-c-t b { color: var(--ink); }
+
+/* Mini legenda */
+.legenda { display: flex; gap: 14px; margin-top: 14px; font-size: 11px; color: var(--muted); flex-wrap: wrap; }
+.legenda b { color: var(--ink); }
+.legenda .chip { display: inline-flex; align-items: center; gap: 6px; }
+.legenda .dot { width: 9px; height: 9px; border-radius: 50%; }
+.legenda .dot.ok { background: var(--bom); }
+.legenda .dot.pend { background: var(--foco); }
+.legenda .dot.novo { background: var(--roxo); }
+</style>
+</head>
+<body>
+
+<div class="h1">Como o dinamômetro do Celta + os sensores vão alimentar os Command Box</div>
+<div class="h1-sub">Proposta de fluxo · 2026-05-18 noite · pendente sua aprovação antes de qualquer linha de código</div>
+
+<div class="colunas">
+
+  <!-- ═══════════════════ COLUNA 1 — O QUE ENTRA ═══════════════════ -->
+  <div class="col">
+    <div class="col-titulo">1 · <b>O que entra</b> (fontes de dado)</div>
+
+    <div class="caixa tem-dado">
+      <div class="caixa-tit">
+        <div class="caixa-nome">Dinamômetro Celta Bubi</div>
+        <div class="caixa-tag ok">já temos</div>
+      </div>
+      <div class="caixa-desc">Curva oficial registrada em 18/05/2026. 79 pontos. É o que o motor PODE entregar quando saudável.</div>
+      <ul class="caixa-campos">
+        <li>RPM 2.500 a 6.400 (passo 50)</li>
+        <li>torque em Newton-metro</li>
+        <li>potência em HP corrigida</li>
+        <li>pico 162,1 N·m @ 5.200</li>
+        <li>pico 122,8 HP @ 6.050</li>
+      </ul>
+    </div>
+
+    <div class="caixa tem-dado">
+      <div class="caixa-tit">
+        <div class="caixa-nome">Cadastro técnico do carro</div>
+        <div class="caixa-tag ok">já temos</div>
+      </div>
+      <div class="caixa-desc">Configuração ativa que você cadastrou hoje no aplicativo (Bloco 1 do plano). Define como o torque vira aceleração na roda.</div>
+      <ul class="caixa-campos">
+        <li>relações 1ª a 5ª marcha</li>
+        <li>relação do diferencial</li>
+        <li>raio do pneu 185/60 R14</li>
+        <li>massa pronta 800 kg</li>
+      </ul>
+    </div>
+
+    <div class="caixa tem-dado">
+      <div class="caixa-tit">
+        <div class="caixa-nome">GPS do iPhone</div>
+        <div class="caixa-tag ok">já temos</div>
+      </div>
+      <div class="caixa-desc">Posição e velocidade do carro na pista, a cada segundo. Define qual trecho o carro está rodando.</div>
+      <ul class="caixa-campos">
+        <li>latitude e longitude</li>
+        <li>velocidade real em km/h</li>
+        <li>direção do movimento</li>
+      </ul>
+    </div>
+
+    <div class="caixa tem-dado">
+      <div class="caixa-tit">
+        <div class="caixa-nome">Sensor de movimento do iPhone</div>
+        <div class="caixa-tag ok">já temos</div>
+      </div>
+      <div class="caixa-desc">Aceleração e giro do telefone, 100 vezes por segundo. Calcula aceleração real do carro mesmo quando o GPS pisca.</div>
+      <ul class="caixa-campos">
+        <li>aceleração longitudinal</li>
+        <li>aceleração lateral</li>
+        <li>giro do carro</li>
+      </ul>
+    </div>
+
+    <div class="caixa pendente">
+      <div class="caixa-tit">
+        <div class="caixa-nome">T4000 (ECU do carro)</div>
+        <div class="caixa-tag pendente">só na pista</div>
+      </div>
+      <div class="caixa-desc">Sensores do motor em si. Só conectam quando você for à pista com o carro. Tudo que precisa do T4000 cai em "sem dado" enquanto isso.</div>
+      <ul class="caixa-campos">
+        <li>RPM real do motor</li>
+        <li>posição do pedal (0-100%)</li>
+        <li>marcha engatada</li>
+        <li>sonda lambda</li>
+        <li>temperatura do óleo, água, gases</li>
+        <li>pressão do óleo, combustível</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ COLUNA 2 — O TRADUTOR ═══════════════════ -->
+  <div class="col">
+    <div class="col-titulo">2 · <b>O Tradutor</b> (peça central a construir)</div>
+
+    <div class="tradutor">
+      <div class="tradutor-h">Rota do servidor</div>
+      <div class="tradutor-tit">Tradutor de Trecho</div>
+      <div class="tradutor-end">/trecho-analisar</div>
+
+      <div class="tradutor-bloco">
+        <div class="tradutor-bloco-t">A cada 5 segundos</div>
+        <div class="tradutor-bloco-d">
+          Quando o GPS detecta que o carro fechou um trecho da pista, o iPhone empacota tudo que viu nesses 5 segundos e manda pro Tradutor.
+        </div>
+      </div>
+
+      <div class="tradutor-bloco">
+        <div class="tradutor-bloco-t">O que ele calcula</div>
+        <div class="tradutor-bloco-d">
+          Compara aceleração real (sensores) com aceleração teórica (dinamômetro × cadastro técnico). A diferença vira:
+          <ul style="margin: 6px 0 0 14px; padding: 0; font-size: 11.5px;">
+            <li>torque entregue vs esperado</li>
+            <li>estado da mistura por segmento</li>
+            <li>saúde do motor por trecho</li>
+            <li>causa mais provável da perda</li>
+            <li>se cria pendência de manutenção</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tradutor-bloco">
+        <div class="tradutor-bloco-t">O que ele devolve</div>
+        <div class="tradutor-bloco-d">
+          Um pacote único e padronizado, na mesma linguagem que os 3 Command Box entendem. Cada Command Box puxa só o pedaço que precisa.
+        </div>
+      </div>
+
+      <div class="tradutor-acao">
+        <b>O que falta construir:</b> a função base já está pronta (eu criei hoje na rota chamada <b>trecho-analisar</b>). O que falta é estender o pacote de saída pra cobrir TODOS os campos que os 3 Command Box usam — hoje cobre só os campos genéricos.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ COLUNA 3 — DESTINOS ═══════════════════ -->
+  <div class="col">
+    <div class="col-titulo">3 · <b>Onde sai</b> (3 Command Box)</div>
+
+    <div class="destino aprovado">
+      <div class="destino-h">
+        <div class="destino-nome">Lambda Track State Advisor</div>
+        <div class="destino-tag aprovado">aprovado</div>
+      </div>
+      <div class="destino-data">aprovado em 15/05/2026 · 3.451 linhas</div>
+      <div class="destino-recebe">
+        Recebe do Tradutor: <b>lambda médio por trecho</b>, faixa esperada, contadores das 3 etapas da cadeia (Engenheiro · Equipe · Injeção), matriz de oportunidades, check do segmento.
+        <br><br>
+        Sem T4000 hoje, lambda fica como "sem dado de sonda" (estado já previsto na tela).
+      </div>
+      <div class="destino-arquivo">mockup-command-box-engenharia-lambda.html</div>
+    </div>
+
+    <div class="destino aprovado">
+      <div class="destino-h">
+        <div class="destino-nome">PAce Torque Delivery Advisor</div>
+        <div class="destino-tag aprovado">aprovado</div>
+      </div>
+      <div class="destino-data">aprovado em 15/05/2026 · 3.820 linhas · 51 testes verdes</div>
+      <div class="destino-recebe">
+        Recebe do Tradutor: <b>torque entregue × torque esperado pelo dinamômetro</b>, evidência por amostra, sugestão da janela de 41 amostras, simulação física.
+        <br><br>
+        Simulador interno já validado — só precisa receber a entrada real.
+      </div>
+      <div class="destino-arquivo">mockup-command-box-engenharia-pace.html</div>
+    </div>
+
+    <div class="destino destino-novo">
+      <div class="destino-h">
+        <div class="destino-nome">Motor Health Advisor</div>
+        <div class="destino-tag novo">a construir</div>
+      </div>
+      <div class="destino-data">novo · irmão do Lambda e do PAce na mesma família</div>
+      <div class="destino-recebe">
+        Recebe do Tradutor: <b>saúde do motor por trecho</b>, histograma de tempo em cada faixa de rotação com banda ideal 4.500–6.300 RPM, pendência automática quando motor cai em 3 stints seguidos.
+        <br><br>
+        Mesma linguagem visual do Lambda. Mesma cadeia de aprovação de 3 etapas.
+      </div>
+      <div class="destino-arquivo">a criar · base: Lambda Advisor</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════ RODAPÉ — ETAPAS + RISCOS ═══════════════════ -->
+<div class="rodape">
+  <div class="rodape-t">As 4 etapas pra chegar lá</div>
+  <div class="rodape-grid">
+    <div>
+      <div class="rodape-c-t">1 · <b>Tradutor</b></div>
+      <div class="rodape-c">Estender o pacote de saída da rota <b>trecho-analisar</b> pra cobrir os 3 destinos. Pronto quando responde em menos de 200 ms para um trecho de teste.</div>
+    </div>
+    <div>
+      <div class="rodape-c-t">2 · <b>Plugar Lambda</b></div>
+      <div class="rodape-c">Trocar dado sintético do HTML por chamada à rota. Desenho visual intocado. Pronto quando abre no navegador e mostra contadores reais nas 3 etapas da cadeia.</div>
+    </div>
+    <div>
+      <div class="rodape-c-t">3 · <b>Plugar PAce</b></div>
+      <div class="rodape-c">Mesma coisa do Lambda. Simulador físico já validado (51 testes). Pronto quando mostra torque entregue × esperado pela Curva 8 de Brasília.</div>
+    </div>
+    <div>
+      <div class="rodape-c-t">4 · <b>Motor Health Advisor</b></div>
+      <div class="rodape-c">Partir do Lambda como base visual. Trocar conteúdo da aba Mistura por aba Saúde do Motor. Mesma família, terceiro irmão.</div>
+    </div>
+  </div>
+
+  <div class="legenda">
+    <span class="chip"><span class="dot ok"></span> <b>já temos</b> · dado pronto, não depende da pista</span>
+    <span class="chip"><span class="dot pend"></span> <b>só na pista</b> · T4000 precisa estar conectado</span>
+    <span class="chip"><span class="dot novo"></span> <b>a construir</b> · novo, parte do plano</span>
+    <span class="legenda-status">· Modo "dados de exemplo" como rede de segurança quando o servidor local não estiver no ar.</span>
+  </div>
+</div>
+
+</body>
+</html>

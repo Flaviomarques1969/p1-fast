@@ -28,7 +28,15 @@ struct BottomNavItem: Identifiable, Hashable {
 struct BottomNav: View {
     let items: [BottomNavItem]
     @Binding var selection: BottomNavItem.ID?
-    var onSelect: (BottomNavItem) -> Void = { _ in }
+    /// OBRIGATÓRIO — sem callback, os botões do menu ficam mudos e o
+    /// usuário acha que a tela travou (2026-05-16: incidente Flávio).
+    /// Em telas só decorativas (Showcase) passar `BottomNav.noOpSelect`
+    /// explicitamente pra deixar a intenção marcada.
+    let onSelect: (BottomNavItem) -> Void
+
+    /// Callback explícito pra casos legitimamente decorativos. Use só em
+    /// previews/showcase — NÃO em telas reais do app.
+    static let noOpSelect: (BottomNavItem) -> Void = { _ in }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -99,7 +107,8 @@ private struct BottomNavCell: View {
                     BottomNavItem("Pendências"),
                     BottomNavItem("Garagem"),
                 ],
-                selection: selection
+                selection: selection,
+                onSelect: BottomNav.noOpSelect
             )
         }
         .background(Color.surface)
@@ -117,7 +126,8 @@ private struct BottomNavCell: View {
                     BottomNavItem("Eventos"),
                     BottomNavItem("Garagem"),
                 ],
-                selection: selection
+                selection: selection,
+                onSelect: BottomNav.noOpSelect
             )
         }
         .background(Color.surface)

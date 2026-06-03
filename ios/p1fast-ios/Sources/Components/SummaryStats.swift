@@ -15,20 +15,35 @@ struct StatItem: Identifiable {
     let id = UUID()
     let value: String
     let label: String
+    /// S3 da rodada 1 (2026-05-12): toque opcional no card. Quando nil,
+    /// o card é só visual; quando preenchido, vira botão com setinha "›"
+    /// no canto. Recomendação P3 #2.3: 4 cards novos (Stints/Autódromos/
+    /// Recordes/Voltas) redirecionam pra Eventos com filtro.
+    let onTap: (() -> Void)?
+
+    init(value: String, label: String, onTap: (() -> Void)? = nil) {
+        self.value = value
+        self.label = label
+        self.onTap = onTap
+    }
 }
 
 struct SummaryStats: View {
     let items: [StatItem]
+    /// Quantas colunas no grid. Default = 3 (mantém o canônico antigo).
+    /// Quando há 6 itens, a Home da S3 usa 3 colunas pra fazer 2 linhas.
+    let columns: Int
 
-    init(_ items: [StatItem]) {
+    init(_ items: [StatItem], columns: Int = 3) {
         self.items = items
+        self.columns = max(1, columns)
     }
 
     var body: some View {
-        HStack(spacing: Spacing.sm) {
+        let cols = Array(repeating: GridItem(.flexible(), spacing: Spacing.sm), count: columns)
+        LazyVGrid(columns: cols, spacing: Spacing.sm) {
             ForEach(items) { item in
                 StatCell(item: item)
-                    .frame(maxWidth: .infinity)
             }
         }
     }
@@ -38,6 +53,17 @@ private struct StatCell: View {
     let item: StatItem
 
     var body: some View {
+        if let onTap = item.onTap {
+            Button(action: onTap) {
+                cellContent(clicavel: true)
+            }
+            .buttonStyle(.plain)
+        } else {
+            cellContent(clicavel: false)
+        }
+    }
+
+    private func cellContent(clicavel: Bool) -> some View {
         VStack(spacing: 6) {
             Text(item.value)
                 .font(.system(size: 22, weight: .semibold, design: .default))
@@ -62,6 +88,14 @@ private struct StatCell: View {
             RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
                 .stroke(Color.border, lineWidth: 1)
         )
+        .overlay(alignment: .topTrailing) {
+            if clicavel {
+                Text("›")
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(Color.textFaint)
+                    .padding(6)
+            }
+        }
     }
 }
 

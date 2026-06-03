@@ -1,0 +1,727 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, initial-scale=1">
+<title>Mockup Command Box · 32" TV via AirPlay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(0% 0 0);
+  --bg-screen: oklch(4% 0 0);
+  --surface: oklch(11% 0 0);
+  --surface-2: oklch(14% 0 0);
+  --border: oklch(22% 0 0);
+  --hairline: oklch(28% 0 0);
+  --ink: oklch(100% 0 0);
+  --muted: oklch(58% 0 0);
+  --dim: oklch(72% 0 0);
+  --faint: oklch(36% 0 0);
+  --bom: oklch(80% 0.22 145);
+  --erro: oklch(68% 0.26 27);
+  --sistema: oklch(78% 0.16 225);
+  --foco: oklch(82% 0.19 70);
+  --ouro: oklch(78% 0.16 73);
+  --roxo: oklch(60% 0.22 305);
+  --halo-recorde: oklch(78% 0.18 65 / .42);
+  --halo-pior:    oklch(56% 0.22 305 / .42);
+  --ff-display: 'Inter', system-ui, sans-serif;
+  --ff-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --ease-out:   cubic-bezier(0.22, 1, 0.36, 1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#050505;color:var(--ink);font-family:var(--ff-display);font-feature-settings:"tnum","ss01";-webkit-font-smoothing:antialiased;}
+body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:32px;user-select:none;}
+
+/* DEVICE 1920×1080 — alvo AirPlay padrão (TV 32") */
+.device{
+  width:1920px;height:1080px;
+  background:var(--bg-screen);
+  border-radius:14px;
+  border:1px solid oklch(15% 0 0);
+  box-shadow:0 40px 120px oklch(0% 0 0 / .9), 0 0 0 6px oklch(2% 0 0);
+  position:relative;overflow:hidden;
+  display:grid;
+  grid-template-rows:64px 1fr 80px;
+  font-size:14px;
+}
+
+/* HEADER */
+.header{
+  display:grid;
+  grid-template-columns:auto auto 1fr auto auto auto;
+  align-items:center;
+  gap:24px;padding:0 28px;
+  border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg, oklch(8% 0 0), oklch(4% 0 0));
+}
+.header-id{display:flex;align-items:baseline;gap:14px;}
+.h-piloto{font-size:18px;font-weight:700;letter-spacing:-.01em;}
+.h-meta{font-size:12px;color:var(--muted);font-weight:500;}
+.h-meta strong{color:var(--dim);font-weight:600;}
+.divider{width:1px;height:32px;background:var(--border);}
+.header-stint{display:flex;align-items:baseline;gap:18px;font-family:var(--ff-mono);}
+.stint-num{font-size:24px;font-weight:700;}
+.stint-time{font-size:18px;font-weight:600;color:var(--dim);}
+.stint-laps{font-size:12px;color:var(--muted);}
+.bandeira{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--bom);box-shadow:0 0 8px var(--bom);}
+.header-cond{font-size:11px;color:var(--muted);text-align:right;line-height:1.4;}
+.header-cond strong{color:var(--dim);font-family:var(--ff-mono);font-weight:600;}
+.header-papeis{display:flex;align-items:center;gap:8px;font-size:11px;}
+.papel{display:flex;align-items:center;gap:4px;color:var(--dim);}
+.papel-dot{width:6px;height:6px;border-radius:50%;background:var(--bom);}
+.papel-dot.off{background:var(--faint);}
+.header-cadastro{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);font-family:var(--ff-mono);padding:5px 10px;border:1px solid var(--border);border-radius:6px;}
+.cad-warn{color:var(--foco);}
+.header-clock{font-family:var(--ff-mono);font-size:14px;color:var(--dim);font-weight:600;}
+
+/* MID — 4 colunas: Live carro · Centro · Apex+análise · Voltas */
+.mid{
+  display:grid;
+  grid-template-columns:360px 700px 380px 380px;
+  gap:1px;
+  background:var(--border);
+}
+.col{background:var(--bg-screen);overflow:hidden;display:flex;flex-direction:column;}
+
+/* COLUNA 1 — LIVE CARRO */
+.col-live{padding:16px 18px;gap:14px;}
+.lc-section{display:flex;flex-direction:column;gap:8px;}
+.lc-label{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700;}
+.mini-mapa{
+  width:100%;height:140px;
+  background:oklch(7% 0 0);border:1px solid var(--border);border-radius:8px;
+  position:relative;overflow:hidden;
+}
+.mini-mapa svg{width:100%;height:100%;}
+.lc-velocidade{display:flex;align-items:baseline;gap:8px;font-family:var(--ff-mono);}
+.vel-num{font-size:48px;font-weight:800;letter-spacing:-.03em;line-height:.9;}
+.vel-unit{font-size:13px;color:var(--muted);font-weight:600;}
+.lc-rpm-marcha{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;}
+.rpm-bar{height:8px;background:var(--surface);border-radius:4px;overflow:hidden;border:1px solid var(--border);}
+.rpm-bar-fill{height:100%;width:68%;background:linear-gradient(90deg, var(--bom) 0%, var(--bom) 60%, var(--foco) 75%, var(--erro) 100%);}
+.rpm-num{font-family:var(--ff-mono);font-size:18px;font-weight:700;line-height:1;}
+.rpm-cap{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:3px;}
+.marcha-num{font-size:32px;font-weight:800;font-family:var(--ff-mono);line-height:.9;color:var(--foco);}
+.marcha-cap{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+
+.lc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;}
+.lc-cell{display:flex;flex-direction:column;gap:2px;}
+.lc-cell-label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;}
+.lc-cell-val{font-family:var(--ff-mono);font-size:15px;font-weight:700;}
+.lc-cell-val.warn{color:var(--foco);}
+.lc-cell-val.bom{color:var(--bom);}
+.lc-cell-unit{font-size:10px;color:var(--muted);margin-left:3px;}
+
+.lc-tpms{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.tpms-pneu{display:flex;flex-direction:column;align-items:center;padding:6px 4px;background:var(--surface);border:1px solid var(--border);border-radius:6px;}
+.tpms-pos{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-weight:700;}
+.tpms-press{font-family:var(--ff-mono);font-size:13px;font-weight:700;margin-top:2px;}
+.tpms-temp{font-family:var(--ff-mono);font-size:10px;color:var(--dim);margin-top:1px;}
+
+.lc-saude{display:flex;gap:6px;flex-wrap:wrap;}
+.saude-chip{display:flex;align-items:center;gap:4px;padding:3px 7px;background:var(--surface);border:1px solid var(--border);border-radius:4px;font-size:10px;color:var(--dim);font-family:var(--ff-mono);}
+.saude-dot{width:5px;height:5px;border-radius:50%;background:var(--bom);}
+.saude-dot.warn{background:var(--foco);}
+
+/* COLUNA 2 — CENTRO: TRACES (topo) + TRECHO ATUAL (base) */
+.col-centro{display:grid;grid-template-rows:340px 1fr;}
+.center-traces{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:8px;position:relative;}
+.traces-head{display:flex;align-items:center;justify-content:space-between;}
+.traces-title{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700;}
+.cmp-toggle{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;font-size:10px;}
+.cmp-btn{padding:5px 10px;color:var(--muted);font-weight:600;background:transparent;border:none;cursor:pointer;font-family:inherit;text-transform:uppercase;letter-spacing:.06em;}
+.cmp-btn.active{background:var(--ouro);color:oklch(15% 0 0);}
+.traces-body{flex:1;display:grid;grid-template-rows:1fr 1fr 1fr;gap:6px;}
+.trace{position:relative;background:oklch(6% 0 0);border:1px solid var(--border);border-radius:6px;padding:6px 10px;display:flex;flex-direction:column;}
+.trace-label{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700;display:flex;justify-content:space-between;}
+.trace-svg{flex:1;width:100%;}
+.trace-num{font-family:var(--ff-mono);font-size:12px;color:var(--dim);font-weight:700;}
+.trace-num.bom{color:var(--bom);}
+.trace-num.erro{color:var(--erro);}
+
+.center-trecho{padding:14px 18px;display:grid;grid-template-columns:1fr 220px;gap:14px;position:relative;}
+.trecho-main{display:flex;flex-direction:column;gap:10px;}
+.trecho-head{display:flex;align-items:baseline;justify-content:space-between;}
+.trecho-id{font-size:13px;font-weight:700;letter-spacing:-.01em;text-transform:uppercase;color:var(--dim);}
+.trecho-tipo{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+
+.canonicos{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.cano{padding:8px 6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.cano-pt{width:10px;height:10px;border-radius:50%;background:var(--faint);margin-bottom:2px;}
+.cano[data-st="bom"]   .cano-pt{background:var(--bom);box-shadow:0 0 8px var(--bom);}
+.cano[data-st="atenc"] .cano-pt{background:var(--foco);box-shadow:0 0 8px var(--foco);}
+.cano[data-st="erro"]  .cano-pt{background:var(--erro);box-shadow:0 0 10px var(--erro);}
+.cano[data-st="ativo"] .cano-pt{background:var(--ink);box-shadow:0 0 6px var(--ink);}
+.cano-label{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700;}
+.cano-val{font-family:var(--ff-mono);font-size:11px;color:var(--dim);font-weight:600;}
+
+.delta-bloco{display:flex;align-items:baseline;gap:14px;padding:10px 0;}
+.delta-num{font-family:var(--ff-mono);font-size:64px;font-weight:800;line-height:.85;letter-spacing:-.04em;color:var(--bom);}
+.delta-num.erro{color:var(--erro);}
+.delta-cap{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
+.delta-ref{font-size:11px;color:var(--dim);font-family:var(--ff-mono);}
+.delta-ref strong{color:var(--ink);}
+
+.msg-box{background:linear-gradient(180deg, oklch(11% 0 0), oklch(7% 0 0));border:1px solid var(--ouro);border-left:3px solid var(--ouro);border-radius:6px;padding:10px 14px;}
+.msg-box-tag{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ouro);font-weight:700;margin-bottom:4px;}
+.msg-box-text{font-size:14px;line-height:1.45;color:var(--ink);font-weight:500;}
+.msg-box-text strong{color:var(--ouro);}
+
+.shift-light-min{display:flex;gap:6px;align-items:center;justify-content:center;padding:6px 0;}
+.sl-led{width:14px;height:14px;border-radius:50%;background:oklch(15% 0 0);border:1px solid var(--border);}
+.sl-led.green{background:var(--bom);box-shadow:0 0 8px var(--bom);}
+.sl-led.yellow{background:var(--foco);box-shadow:0 0 8px var(--foco);}
+.sl-led.red{background:var(--erro);box-shadow:0 0 10px var(--erro);}
+
+.divergencia{background:oklch(22% 0.10 50);border:1px solid var(--foco);border-radius:6px;padding:8px 12px;font-size:11px;display:flex;align-items:center;gap:8px;color:var(--foco);}
+.divergencia-icon{width:16px;height:16px;border-radius:50%;background:var(--foco);color:oklch(15% 0 0);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;}
+
+.trecho-side{display:flex;flex-direction:column;gap:10px;}
+.vmin-georef{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
+.vmin-cap{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700;}
+.vmin-num{font-family:var(--ff-mono);font-size:24px;font-weight:800;line-height:1;margin-top:4px;}
+.vmin-vs{display:flex;align-items:baseline;gap:6px;margin-top:4px;}
+.vmin-best{font-family:var(--ff-mono);font-size:14px;color:var(--ouro);font-weight:700;}
+.vmin-best-meta{font-size:10px;color:var(--muted);}
+.vmin-mapa{margin-top:6px;height:60px;background:oklch(7% 0 0);border-radius:4px;position:relative;overflow:hidden;}
+
+/* COLUNA 3 — APEX (12 classificações) + extras */
+.col-apex{padding:14px 16px;gap:12px;}
+.apex-tally{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;}
+.tally-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;}
+.tally-titulo{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700;}
+.tally-trecho{font-size:14px;font-weight:700;color:var(--dim);}
+.tally-grid{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;}
+.tally-row{display:contents;}
+.tally-label{font-size:11px;color:var(--dim);}
+.tally-bar-wrap{display:flex;align-items:center;gap:8px;}
+.tally-bar{width:80px;height:5px;background:var(--surface-2);border-radius:3px;overflow:hidden;}
+.tally-bar-fill{height:100%;background:var(--erro);}
+.tally-bar-fill.bom{background:var(--bom);}
+.tally-bar-fill.dim{background:var(--faint);}
+.tally-num{font-family:var(--ff-mono);font-size:11px;color:var(--dim);font-weight:700;width:18px;text-align:right;}
+
+.padroes{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;}
+.padroes-head{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700;margin-bottom:8px;}
+.padroes-list{display:flex;flex-direction:column;gap:8px;}
+.padrao{display:grid;grid-template-columns:30px 1fr auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--hairline);}
+.padrao:last-child{border-bottom:none;}
+.padrao-rank{font-family:var(--ff-mono);font-size:18px;font-weight:800;color:var(--erro);line-height:1;}
+.padrao-text{font-size:12px;line-height:1.4;}
+.padrao-text strong{color:var(--ink);}
+.padrao-freq{font-family:var(--ff-mono);font-size:10px;color:var(--muted);}
+
+.historico-classif{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;}
+.hist-head{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700;margin-bottom:8px;}
+.hist-row{display:flex;align-items:center;gap:6px;font-size:11px;padding:3px 0;font-family:var(--ff-mono);}
+.hist-volta{color:var(--muted);width:24px;}
+.hist-classif{flex:1;color:var(--dim);}
+.hist-classif.bom{color:var(--bom);}
+.hist-classif.erro{color:var(--erro);}
+.hist-classif.atenc{color:var(--foco);}
+.hist-delta{color:var(--muted);}
+
+.faixas-term{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
+.faixas-head{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700;margin-bottom:6px;}
+.faixas-bars{display:flex;flex-direction:column;gap:5px;}
+.faixa-row{display:grid;grid-template-columns:50px 1fr auto;align-items:center;gap:8px;font-size:10px;}
+.faixa-label{color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;}
+.faixa-bar{height:6px;background:linear-gradient(90deg, var(--sistema), var(--bom), var(--foco), var(--erro));border-radius:3px;position:relative;}
+.faixa-cursor{position:absolute;top:-2px;width:2px;height:10px;background:var(--ink);}
+.faixa-val{font-family:var(--ff-mono);font-weight:700;color:var(--dim);}
+
+/* COLUNA 4 — VOLTAS, HEATMAP, TENDÊNCIA, PENDÊNCIAS */
+.col-voltas{padding:14px 16px;gap:12px;display:flex;flex-direction:column;overflow:hidden;}
+.voltas-section{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
+.voltas-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;}
+.voltas-titulo{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700;}
+.voltas-best{font-family:var(--ff-mono);font-size:11px;color:var(--ouro);font-weight:700;}
+.voltas-list{display:flex;flex-direction:column;gap:1px;background:var(--hairline);border-radius:4px;overflow:hidden;}
+.volta-row{display:grid;grid-template-columns:24px 1fr auto auto;gap:10px;align-items:center;padding:5px 8px;background:var(--surface-2);font-family:var(--ff-mono);font-size:11px;}
+.volta-row.best{background:oklch(20% 0.08 73);}
+.volta-row.live{background:oklch(20% 0.10 145);outline:1px solid var(--bom);outline-offset:-1px;}
+.volta-row.sujo{opacity:.6;}
+.volta-num{color:var(--muted);font-weight:700;}
+.volta-tempo{font-weight:700;color:var(--ink);}
+.volta-delta{color:var(--erro);font-weight:600;}
+.volta-delta.bom{color:var(--bom);}
+.volta-status{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+
+.heatmap{margin-top:10px;}
+.heatmap-grid{display:grid;grid-template-columns:repeat(14, 1fr);gap:2px;}
+.heat-cell{aspect-ratio:1;border-radius:2px;display:flex;align-items:center;justify-content:center;font-family:var(--ff-mono);font-size:8px;font-weight:700;color:oklch(15% 0 0);}
+.heat-very-bom{background:oklch(72% 0.20 145);}
+.heat-bom{background:oklch(60% 0.13 145);}
+.heat-neutro{background:oklch(40% 0 0);color:var(--dim);}
+.heat-erro{background:oklch(55% 0.18 27);color:oklch(98% 0 0);}
+.heat-very-erro{background:oklch(48% 0.24 27);color:oklch(98% 0 0);}
+
+.metricas-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.metrica{padding:8px 10px;background:var(--surface-2);border-radius:4px;}
+.metrica-cap{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700;}
+.metrica-val{font-family:var(--ff-mono);font-size:18px;font-weight:800;margin-top:2px;}
+.metrica-trend{display:inline-block;font-size:10px;color:var(--bom);margin-left:4px;}
+
+.pendencias{display:flex;flex-direction:column;gap:6px;}
+.pend-row{display:flex;align-items:center;gap:8px;font-size:11px;}
+.pend-checkbox{width:12px;height:12px;border-radius:3px;border:1.5px solid var(--muted);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.pend-checkbox.done{background:var(--bom);border-color:var(--bom);}
+.pend-checkbox.done::after{content:'';width:5px;height:8px;border:solid oklch(15% 0 0);border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-1px;}
+.pend-text{color:var(--dim);}
+.pend-text.done{color:var(--muted);text-decoration:line-through;}
+
+/* FOOTER */
+.footer{
+  display:grid;
+  grid-template-columns:280px 1fr 320px 360px 200px;
+  gap:1px;background:var(--border);
+  border-top:1px solid var(--border);
+}
+.foot-cell{background:var(--bg-screen);padding:12px 18px;display:flex;flex-direction:column;justify-content:center;gap:2px;}
+.foot-label{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700;}
+.foot-val{font-size:13px;color:var(--ink);font-weight:600;line-height:1.3;}
+.foot-val.mono{font-family:var(--ff-mono);}
+.foot-secondary{font-size:11px;color:var(--muted);}
+
+.foot-stintplan{display:flex;flex-direction:column;gap:3px;}
+.sp-meta{font-size:11px;color:var(--dim);}
+.sp-meta strong{color:var(--ink);font-weight:700;}
+.sp-foco{font-size:10px;color:var(--ouro);}
+
+.foot-msg{display:flex;flex-direction:column;gap:6px;justify-content:center;}
+.msg-input{display:flex;gap:6px;align-items:center;}
+.msg-input input{flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:4px;padding:6px 10px;color:var(--ink);font-family:inherit;font-size:11px;}
+.msg-toggle{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);}
+.msg-toggle-sw{width:22px;height:12px;background:var(--bom);border-radius:6px;position:relative;}
+.msg-toggle-sw::after{content:'';position:absolute;width:8px;height:8px;background:#000;border-radius:50%;top:2px;right:2px;}
+.msg-send{padding:5px 12px;background:var(--bom);color:oklch(15% 0 0);border:none;border-radius:4px;font-family:inherit;font-weight:700;font-size:11px;cursor:pointer;}
+.msg-feed-last{font-size:10px;color:var(--muted);font-family:var(--ff-mono);}
+.msg-feed-last strong{color:var(--dim);}
+
+.foot-daily{display:flex;align-items:center;gap:10px;}
+.daily-thumb{width:64px;height:48px;background:linear-gradient(135deg,oklch(15% 0.05 240),oklch(10% 0 0));border-radius:4px;border:1px solid var(--border);position:relative;overflow:hidden;}
+.daily-thumb::after{content:'AO VIVO';position:absolute;top:2px;left:3px;font-size:7px;background:var(--erro);color:#fff;padding:1px 3px;border-radius:2px;font-weight:800;letter-spacing:.05em;}
+.daily-info{display:flex;flex-direction:column;gap:1px;}
+
+/* Scoped utilities */
+.row{display:flex;align-items:center;gap:8px;}
+.spacer{flex:1;}
+
+</style>
+</head>
+<body>
+
+<div class="device">
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-id">
+    <div class="h-piloto">Bruno Rocha</div>
+    <div class="h-meta"><strong>Celta v8</strong> · Velocittà · Track Day 12/mai</div>
+  </div>
+  <div class="divider"></div>
+  <div class="header-stint">
+    <div><span class="bandeira"></span></div>
+    <div class="stint-num">#3</div>
+    <div class="stint-time">14:32</div>
+    <div class="stint-laps">8 voltas</div>
+  </div>
+  <div></div>
+  <div class="header-cond">
+    <div><strong>28°</strong> ar · <strong>38°</strong> pista</div>
+    <div>vento <strong>5</strong> km/h NO · seco</div>
+  </div>
+  <div class="header-papeis">
+    <div class="papel"><span class="papel-dot"></span>Bruno · piloto</div>
+    <div class="papel"><span class="papel-dot"></span>Carlos · prof.</div>
+    <div class="papel"><span class="papel-dot"></span>João · mec.</div>
+    <div class="papel"><span class="papel-dot off"></span>+2 read-only</div>
+  </div>
+  <div class="header-cadastro">
+    <span>cadastro</span><strong>14/12</strong><span class="cad-warn">⚠ 2 degradados</span>
+  </div>
+</header>
+
+<!-- MID -->
+<main class="mid">
+
+<!-- COL 1 — LIVE CARRO -->
+<div class="col col-live">
+  <div class="lc-section">
+    <div class="lc-label">Posição</div>
+    <div class="mini-mapa">
+      <svg viewBox="0 0 320 130" preserveAspectRatio="xMidYMid meet">
+        <path d="M30,80 Q60,30 120,30 Q180,30 200,60 Q210,80 240,75 Q280,70 290,40 Q295,20 270,20 Q200,30 150,60 Q90,90 50,100 Q30,105 30,80 Z" fill="none" stroke="oklch(40% 0 0)" stroke-width="2"/>
+        <circle cx="200" cy="60" r="5" fill="oklch(80% 0.22 145)" stroke="#fff" stroke-width="1.5">
+          <animate attributeName="opacity" values="1;.4;1" dur="1.5s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="180" cy="30" r="3" fill="oklch(78% 0.16 73)" opacity=".8"/>
+        <text x="186" y="26" font-size="7" fill="oklch(78% 0.16 73)" font-family="JetBrains Mono">vmin best</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="lc-section">
+    <div class="lc-velocidade">
+      <span class="vel-num">142</span><span class="vel-unit">km/h</span>
+    </div>
+    <div class="lc-rpm-marcha">
+      <div>
+        <div class="rpm-cap">RPM</div>
+        <div class="rpm-bar"><div class="rpm-bar-fill"></div></div>
+        <div class="rpm-num">6 800</div>
+      </div>
+      <div>
+        <div class="marcha-cap">Marcha</div>
+        <div class="marcha-num">4</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lc-section">
+    <div class="lc-label">Motor · ECU Injepro</div>
+    <div class="lc-grid">
+      <div class="lc-cell"><div class="lc-cell-label">Água</div><div class="lc-cell-val">92<span class="lc-cell-unit">°C</span></div></div>
+      <div class="lc-cell"><div class="lc-cell-label">Óleo motor</div><div class="lc-cell-val warn">110<span class="lc-cell-unit">°C</span></div></div>
+      <div class="lc-cell"><div class="lc-cell-label">Óleo câmbio</div><div class="lc-cell-val">88<span class="lc-cell-unit">°C</span></div></div>
+      <div class="lc-cell"><div class="lc-cell-label">Ar admissão</div><div class="lc-cell-val">35<span class="lc-cell-unit">°C</span></div></div>
+      <div class="lc-cell"><div class="lc-cell-label">P. óleo</div><div class="lc-cell-val">4.2<span class="lc-cell-unit">bar</span></div></div>
+      <div class="lc-cell"><div class="lc-cell-label">P. comb.</div><div class="lc-cell-val">3.1<span class="lc-cell-unit">bar</span></div></div>
+      <div class="lc-cell"><div class="lc-cell-label">Lambda</div><div class="lc-cell-val bom">0.92<span class="lc-cell-unit">λ</span></div></div>
+      <div class="lc-cell"><div class="lc-cell-label">Alternador</div><div class="lc-cell-val">13.8<span class="lc-cell-unit">V</span></div></div>
+    </div>
+  </div>
+
+  <div class="lc-section">
+    <div class="lc-label">Pneus · TPMS</div>
+    <div class="lc-tpms">
+      <div class="tpms-pneu"><div class="tpms-pos">DE</div><div class="tpms-press">1.9</div><div class="tpms-temp">27°C</div></div>
+      <div class="tpms-pneu"><div class="tpms-pos">DD</div><div class="tpms-press">1.9</div><div class="tpms-temp">28°C</div></div>
+      <div class="tpms-pneu"><div class="tpms-pos">TE</div><div class="tpms-press">2.0</div><div class="tpms-temp">31°C</div></div>
+      <div class="tpms-pneu"><div class="tpms-pos">TD</div><div class="tpms-press">2.0</div><div class="tpms-temp">32°C</div></div>
+    </div>
+  </div>
+
+  <div class="lc-section">
+    <div class="lc-label">Saúde do sinal</div>
+    <div class="lc-saude">
+      <div class="saude-chip"><span class="saude-dot"></span>GPS 12 sat</div>
+      <div class="saude-chip"><span class="saude-dot"></span>IMU OK</div>
+      <div class="saude-chip"><span class="saude-dot"></span>BLE T4000</div>
+      <div class="saude-chip"><span class="saude-dot"></span>ECU OK</div>
+      <div class="saude-chip"><span class="saude-dot"></span>18 ms</div>
+      <div class="saude-chip"><span class="saude-dot"></span>iPhone 78%</div>
+    </div>
+  </div>
+</div>
+
+<!-- COL 2 — CENTRO: TRACES + TRECHO -->
+<div class="col col-centro">
+
+  <!-- TRACES -->
+  <section class="center-traces">
+    <div class="traces-head">
+      <div class="traces-title">Última volta concluída · Volta 7 (1:42.1)</div>
+      <div class="cmp-toggle">
+        <button class="cmp-btn">vs melhor stint</button>
+        <button class="cmp-btn">vs última</button>
+        <button class="cmp-btn active">vs best histórica</button>
+      </div>
+    </div>
+    <div class="traces-body">
+      <div class="trace">
+        <div class="trace-label"><span>Velocidade</span><span class="trace-num">vmax 178 km/h</span></div>
+        <svg class="trace-svg" viewBox="0 0 600 60" preserveAspectRatio="none">
+          <path d="M0,30 L30,32 L60,38 L80,50 L110,44 L140,30 L170,18 L200,10 L240,8 L260,18 L290,30 L320,40 L340,48 L370,40 L410,28 L440,18 L470,10 L500,12 L530,22 L560,32 L590,28 L600,28" fill="none" stroke="oklch(74% 0.16 73)" stroke-width="1.5" opacity=".7"/>
+          <path d="M0,32 L30,34 L60,40 L80,50 L110,46 L140,34 L170,22 L200,16 L240,14 L260,22 L290,34 L320,42 L340,50 L370,42 L410,32 L440,22 L470,14 L500,16 L530,26 L560,34 L590,32 L600,32" fill="none" stroke="oklch(80% 0.22 145)" stroke-width="2"/>
+          <line x1="60" y1="0" x2="60" y2="60" stroke="oklch(28% 0 0)" stroke-width=".5" stroke-dasharray="2 3"/>
+          <line x1="200" y1="0" x2="200" y2="60" stroke="oklch(28% 0 0)" stroke-width=".5" stroke-dasharray="2 3"/>
+          <line x1="320" y1="0" x2="320" y2="60" stroke="oklch(28% 0 0)" stroke-width=".5" stroke-dasharray="2 3"/>
+          <line x1="470" y1="0" x2="470" y2="60" stroke="oklch(28% 0 0)" stroke-width=".5" stroke-dasharray="2 3"/>
+        </svg>
+      </div>
+      <div class="trace">
+        <div class="trace-label"><span>Delta acumulado</span><span class="trace-num erro">+0.3s ao fim</span></div>
+        <svg class="trace-svg" viewBox="0 0 600 60" preserveAspectRatio="none">
+          <line x1="0" y1="30" x2="600" y2="30" stroke="oklch(28% 0 0)" stroke-width=".5" stroke-dasharray="2 3"/>
+          <path d="M0,30 L60,32 L140,28 L200,22 L240,20 L290,30 L340,42 L410,38 L470,32 L530,40 L600,42" fill="none" stroke="oklch(82% 0.19 70)" stroke-width="2"/>
+        </svg>
+      </div>
+      <div class="trace">
+        <div class="trace-label"><span>Freio + Acelerador · G longitudinal</span><span class="trace-num">peak 1.2g</span></div>
+        <svg class="trace-svg" viewBox="0 0 600 60" preserveAspectRatio="none">
+          <path d="M0,55 L40,55 L60,30 L80,15 L110,15 L130,30 L150,50 L180,52 L220,52 L260,55 L290,30 L310,18 L340,18 L370,30 L390,52 L450,55 L500,55 L520,30 L560,15 L590,18 L600,30" fill="none" stroke="oklch(80% 0.22 145)" stroke-width="1.5" opacity=".9"/>
+          <path d="M0,5 L40,5 L60,12 L90,55 L130,55 L150,30 L200,12 L260,5 L290,12 L320,55 L370,55 L390,30 L440,12 L500,5 L520,12 L560,55 L600,55" fill="none" stroke="oklch(68% 0.26 27)" stroke-width="1.5" opacity=".9"/>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRECHO ATUAL -->
+  <section class="center-trecho">
+    <div class="trecho-main">
+      <div class="trecho-head">
+        <div class="trecho-id">Curva 3 · trecho 5/14</div>
+        <div class="trecho-tipo">média rápida · ápice tardio · saída p/ reta longa</div>
+      </div>
+
+      <div class="canonicos">
+        <div class="cano" data-st="bom"><div class="cano-pt"></div><div class="cano-label">Entrada</div><div class="cano-val">141 km/h</div></div>
+        <div class="cano" data-st="atenc"><div class="cano-pt"></div><div class="cano-label">Freio</div><div class="cano-val">cedo 4m</div></div>
+        <div class="cano" data-st="erro"><div class="cano-pt"></div><div class="cano-label">Ápice</div><div class="cano-val">antecipado 7m</div></div>
+        <div class="cano" data-st="ativo"><div class="cano-pt"></div><div class="cano-label">Saída</div><div class="cano-val">em curso</div></div>
+      </div>
+
+      <div class="delta-bloco">
+        <div class="delta-num erro">+0.04</div>
+        <div>
+          <div class="delta-cap">delta no trecho</div>
+          <div class="delta-ref">vs <strong>1.842s</strong> · Bruno · v8 · 13/abr</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="shift-light-min" title="shift light: build-up tier 4">
+          <div class="sl-led green"></div>
+          <div class="sl-led green"></div>
+          <div class="sl-led yellow"></div>
+          <div class="sl-led yellow"></div>
+          <div class="sl-led"></div>
+          <div class="sl-led"></div>
+          <div class="sl-led"></div>
+          <div class="sl-led"></div>
+          <div class="sl-led yellow"></div>
+          <div class="sl-led yellow"></div>
+          <div class="sl-led green"></div>
+          <div class="sl-led green"></div>
+        </div>
+      </div>
+
+      <div class="msg-box">
+        <div class="msg-box-tag">⚙ Mensagem para o box · error-classifier</div>
+        <div class="msg-box-text">Antecipa apex em média <strong>7m</strong> em <strong>4 das 5 últimas voltas</strong>. Abre cedo, sai 0,4s atrás na reta seguinte. Padrão recorrente — sugerir foco em "travar referência tardia" antes do próximo stint.</div>
+      </div>
+
+      <div class="divergencia">
+        <div class="divergencia-icon">!</div>
+        <div>Cadastro de C3 diverge <strong>4m</strong> do que o piloto realmente faz. <strong>Revisar?</strong></div>
+      </div>
+    </div>
+
+    <div class="trecho-side">
+      <div class="vmin-georef">
+        <div class="vmin-cap">Vmin atual</div>
+        <div class="vmin-num">87 <span class="lc-cell-unit">km/h</span></div>
+        <div class="vmin-vs">
+          <div class="vmin-best">↑ 91</div>
+          <div class="vmin-best-meta">best time · Bruno · 13/abr</div>
+        </div>
+        <div class="vmin-mapa">
+          <svg viewBox="0 0 200 60" preserveAspectRatio="none">
+            <path d="M10,40 Q40,15 100,15 Q150,15 170,30 Q185,45 180,50" fill="none" stroke="oklch(40% 0 0)" stroke-width="1.5"/>
+            <circle cx="105" cy="16" r="3" fill="oklch(78% 0.16 73)"/>
+            <circle cx="125" cy="20" r="3" fill="oklch(80% 0.22 145)"/>
+            <text x="65" y="9" font-size="6" fill="oklch(78% 0.16 73)" font-family="JetBrains Mono">best</text>
+            <text x="135" y="14" font-size="6" fill="oklch(80% 0.22 145)" font-family="JetBrains Mono">atual</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="faixas-term">
+        <div class="faixas-head">Faixas térmicas</div>
+        <div class="faixas-bars">
+          <div class="faixa-row">
+            <div class="faixa-label">Pneu</div>
+            <div class="faixa-bar"><div class="faixa-cursor" style="left:55%"></div></div>
+            <div class="faixa-val">31°</div>
+          </div>
+          <div class="faixa-row">
+            <div class="faixa-label">Freio</div>
+            <div class="faixa-bar"><div class="faixa-cursor" style="left:72%"></div></div>
+            <div class="faixa-val">230°</div>
+          </div>
+          <div class="faixa-row">
+            <div class="faixa-label">Motor</div>
+            <div class="faixa-bar"><div class="faixa-cursor" style="left:48%"></div></div>
+            <div class="faixa-val">92°</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- COL 3 — APEX (12 classificações) -->
+<div class="col col-apex">
+  <div class="apex-tally">
+    <div class="tally-head">
+      <div class="tally-titulo">12 classificações · Curva 3</div>
+      <div class="tally-trecho">stint #3</div>
+    </div>
+    <div class="tally-grid">
+      <div class="tally-row"><div class="tally-label">Antecipado</div><div class="tally-bar-wrap"><div class="tally-bar"><div class="tally-bar-fill" style="width:80%"></div></div><div class="tally-num">4</div></div></div>
+      <div class="tally-row"><div class="tally-label">Correto</div><div class="tally-bar-wrap"><div class="tally-bar"><div class="tally-bar-fill bom" style="width:20%"></div></div><div class="tally-num">1</div></div></div>
+      <div class="tally-row"><div class="tally-label">Tardio</div><div class="tally-bar-wrap"><div class="tally-bar"><div class="tally-bar-fill dim" style="width:0%"></div></div><div class="tally-num">0</div></div></div>
+      <div class="tally-row"><div class="tally-label">Perdido por fora</div><div class="tally-bar-wrap"><div class="tally-bar"><div class="tally-bar-fill dim" style="width:0%"></div></div><div class="tally-num">0</div></div></div>
+      <div class="tally-row"><div class="tally-label">Excessivamente interno</div><div class="tally-bar-wrap"><div class="tally-bar"><div class="tally-bar-fill dim" style="width:0%"></div></div><div class="tally-num">0</div></div></div>
+      <div class="tally-row"><div class="tally-label">Apex prejudicando saída</div><div class="tally-bar-wrap"><div class="tally-bar"><div class="tally-bar-fill" style="width:60%"></div></div><div class="tally-num">3</div></div></div>
+      <div class="tally-row"><div class="tally-label">Aceleração atrasada</div><div class="tally-bar-wrap"><div class="tally-bar"><div class="tally-bar-fill" style="width:40%"></div></div><div class="tally-num">2</div></div></div>
+      <div class="tally-row"><div class="tally-label">Entrada boa, apex ruim</div><div class="tally-bar-wrap"><div class="tally-bar"><div class="tally-bar-fill" style="width:60%"></div></div><div class="tally-num">3</div></div></div>
+    </div>
+  </div>
+
+  <div class="padroes">
+    <div class="padroes-head">3 padrões recorrentes · stint</div>
+    <div class="padroes-list">
+      <div class="padrao">
+        <div class="padrao-rank">1</div>
+        <div class="padrao-text"><strong>C3</strong> antecipa apex 7m · abre cedo, perde reta</div>
+        <div class="padrao-freq">4/5</div>
+      </div>
+      <div class="padrao">
+        <div class="padrao-rank">2</div>
+        <div class="padrao-text"><strong>C7</strong> freia 8m antes · entrada lenta</div>
+        <div class="padrao-freq">3/5</div>
+      </div>
+      <div class="padrao">
+        <div class="padrao-rank">3</div>
+        <div class="padrao-text"><strong>C2</strong> saída tardia · perde 2 km/h na reta</div>
+        <div class="padrao-freq">3/5</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="historico-classif">
+    <div class="hist-head">Histórico C3 · últimas execuções</div>
+    <div class="hist-row"><div class="hist-volta">v8</div><div class="hist-classif atenc">em curso · ápice</div><div class="hist-delta">+0.04</div></div>
+    <div class="hist-row"><div class="hist-volta">v7</div><div class="hist-classif erro">antecipado 7m</div><div class="hist-delta">+0.05</div></div>
+    <div class="hist-row"><div class="hist-volta">v6</div><div class="hist-classif erro">antecipado 6m</div><div class="hist-delta">+0.04</div></div>
+    <div class="hist-row"><div class="hist-volta">v5</div><div class="hist-classif erro">antecipado 8m</div><div class="hist-delta">+0.06</div></div>
+    <div class="hist-row"><div class="hist-volta">v4</div><div class="hist-classif">sujo · pneu fora</div><div class="hist-delta">—</div></div>
+    <div class="hist-row"><div class="hist-volta">v3</div><div class="hist-classif bom">correto</div><div class="hist-delta">−0.02</div></div>
+    <div class="hist-row"><div class="hist-volta">v2</div><div class="hist-classif erro">antecipado 9m</div><div class="hist-delta">+0.07</div></div>
+    <div class="hist-row"><div class="hist-volta">v1</div><div class="hist-classif erro">antecipado 11m</div><div class="hist-delta">+0.10</div></div>
+  </div>
+</div>
+
+<!-- COL 4 — VOLTAS, HEATMAP, MÉTRICAS, PENDÊNCIAS -->
+<div class="col col-voltas">
+  <div class="voltas-section">
+    <div class="voltas-head">
+      <div class="voltas-titulo">Voltas · stint #3</div>
+      <div class="voltas-best">ref 1:41.3 · v8 · Bruno · 13/abr</div>
+    </div>
+    <div class="voltas-list">
+      <div class="volta-row live"><div class="volta-num">v8</div><div class="volta-tempo">— em curso</div><div class="volta-delta bom">−0.04</div><div class="volta-status">live</div></div>
+      <div class="volta-row"><div class="volta-num">v7</div><div class="volta-tempo">1:42.1</div><div class="volta-delta">+0.8</div><div class="volta-status">limpa</div></div>
+      <div class="volta-row"><div class="volta-num">v6</div><div class="volta-tempo">1:42.3</div><div class="volta-delta">+1.0</div><div class="volta-status">limpa</div></div>
+      <div class="volta-row"><div class="volta-num">v5</div><div class="volta-tempo">1:42.5</div><div class="volta-delta">+1.2</div><div class="volta-status">limpa</div></div>
+      <div class="volta-row sujo"><div class="volta-num">v4</div><div class="volta-tempo">1:42.0</div><div class="volta-delta">+0.7</div><div class="volta-status">sujo</div></div>
+      <div class="volta-row best"><div class="volta-num">v3</div><div class="volta-tempo">1:41.8</div><div class="volta-delta bom">+0.5</div><div class="volta-status">best stint</div></div>
+      <div class="volta-row"><div class="volta-num">v2</div><div class="volta-tempo">1:42.1</div><div class="volta-delta">+0.8</div><div class="volta-status">limpa</div></div>
+      <div class="volta-row"><div class="volta-num">v1</div><div class="volta-tempo">1:43.2</div><div class="volta-delta">+1.9</div><div class="volta-status">aquec.</div></div>
+    </div>
+
+    <div class="heatmap">
+      <div class="lc-label" style="margin:10px 0 6px">Heatmap · 14 trechos</div>
+      <div class="heatmap-grid">
+        <div class="heat-cell heat-bom">1</div>
+        <div class="heat-cell heat-neutro">2</div>
+        <div class="heat-cell heat-very-erro">3</div>
+        <div class="heat-cell heat-bom">4</div>
+        <div class="heat-cell heat-very-bom">5</div>
+        <div class="heat-cell heat-bom">6</div>
+        <div class="heat-cell heat-erro">7</div>
+        <div class="heat-cell heat-neutro">8</div>
+        <div class="heat-cell heat-bom">9</div>
+        <div class="heat-cell heat-bom">10</div>
+        <div class="heat-cell heat-neutro">11</div>
+        <div class="heat-cell heat-bom">12</div>
+        <div class="heat-cell heat-very-bom">13</div>
+        <div class="heat-cell heat-neutro">14</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="metricas-row">
+    <div class="metrica">
+      <div class="metrica-cap">Tendência</div>
+      <div class="metrica-val">↗<span class="metrica-trend">+0.2 vs v6</span></div>
+    </div>
+    <div class="metrica">
+      <div class="metrica-cap">Consistência (σ)</div>
+      <div class="metrica-val">±0.21<span class="metrica-trend">s</span></div>
+    </div>
+  </div>
+
+  <div class="voltas-section">
+    <div class="voltas-head">
+      <div class="voltas-titulo">Pendências vivas · Celta v8</div>
+      <div class="voltas-best">11/13</div>
+    </div>
+    <div class="pendencias">
+      <div class="pend-row"><div class="pend-checkbox done"></div><div class="pend-text done">Pressão pneus calibrada (frio)</div></div>
+      <div class="pend-row"><div class="pend-checkbox done"></div><div class="pend-text done">Cinto + capacete checados</div></div>
+      <div class="pend-row"><div class="pend-checkbox done"></div><div class="pend-text done">Combustível ≥ ½</div></div>
+      <div class="pend-row"><div class="pend-checkbox done"></div><div class="pend-text done">Câmera embarcada gravando</div></div>
+      <div class="pend-row"><div class="pend-checkbox done"></div><div class="pend-text done">Briefing pré-stint feito</div></div>
+      <div class="pend-row"><div class="pend-checkbox"></div><div class="pend-text">Pneu reserva calibrado <span style="color:var(--foco)">· adicional</span></div></div>
+      <div class="pend-row"><div class="pend-checkbox"></div><div class="pend-text">Kit limpeza visor <span style="color:var(--foco)">· adicional</span></div></div>
+    </div>
+  </div>
+
+  <div class="voltas-section" style="background:oklch(13% 0.02 320);border-color:var(--roxo);">
+    <div class="voltas-head">
+      <div class="voltas-titulo" style="color:oklch(80% 0.13 320)">Setup Coach · drift detectado</div>
+    </div>
+    <div style="font-size:11px;color:var(--dim);line-height:1.5;">Rolagem na C3 está <strong style="color:oklch(82% 0.19 320)">+18%</strong> vs setup anterior (snapshot 13/abr). <strong>Sugestão:</strong> endurecer dianteira em 1 click ou checar pressão lado direito.</div>
+  </div>
+</div>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="foot-cell foot-stintplan">
+    <div class="foot-label">StintPlan ativo</div>
+    <div class="sp-meta">meta <strong>&lt; 1:42.5</strong> · abordagem progressiva</div>
+    <div class="sp-foco">foco: travar apex correto na C3</div>
+  </div>
+
+  <div class="foot-cell foot-msg">
+    <div class="foot-label">Mensageria · operador → piloto</div>
+    <div class="msg-input">
+      <input type="text" placeholder="Digite a mensagem...">
+      <div class="msg-toggle"><span class="msg-toggle-sw"></span>na TV</div>
+      <button class="msg-send">enviar</button>
+    </div>
+    <div class="msg-feed-last">app · 17:43 <strong>"freie tarde"</strong> · 17:44 <strong>"apex cedo"</strong></div>
+  </div>
+
+  <div class="foot-cell">
+    <div class="foot-label">Combustível · próximo ato</div>
+    <div class="foot-val mono">~12 voltas restantes <span class="foot-secondary">(2/3 tanque)</span></div>
+    <div class="foot-secondary" style="color:var(--foco);">⚠ voltar ao box em 3 voltas — cheque pneu</div>
+  </div>
+
+  <div class="foot-cell foot-daily">
+    <div class="daily-thumb"></div>
+    <div class="daily-info">
+      <div class="foot-label">Câmera embarcada</div>
+      <div class="foot-val mono">Daily.co · 720p</div>
+      <div class="foot-secondary">áudio piloto: ON</div>
+    </div>
+  </div>
+
+  <div class="foot-cell">
+    <div class="foot-label">Hora local</div>
+    <div class="foot-val mono">14:47:18</div>
+    <div class="foot-secondary">stint termina ~15:02</div>
+  </div>
+</footer>
+
+</div>
+
+</body>
+</html>

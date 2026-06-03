@@ -20,6 +20,9 @@ struct CarroNovoFormView: View {
     @State private var corHex: String = CarroPalette.opcoes[1].hex // amarelo (default mockup)
     @State private var savingError: String?
     @State private var isSaving = false
+    // S2 rodada 1: foto opcional do carro novo.
+    @State private var fotoSelecionada: Data?
+    @State private var pedidoRemoverFoto = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -36,7 +39,8 @@ struct CarroNovoFormView: View {
                 onCancel: onClose,
                 onSave: save,
                 saveLabel: "Salvar",
-                canSave: !apelido.isEmpty && !isSaving
+                canSave: !apelido.isEmpty && !isSaving,
+                isSaving: isSaving
             )
         }
         .preferredColorScheme(.dark)
@@ -70,6 +74,16 @@ struct CarroNovoFormView: View {
                 CategoriaPicker(selection: $categoria)
             }
 
+            FormField(label: "Cor") {
+                CorPicker(selection: $corHex)
+            }
+
+            FotoCarroSection(
+                fotoUrlAtual: nil,
+                selectedJpeg: $fotoSelecionada,
+                pedidoRemover: $pedidoRemoverFoto
+            )
+
             if let erro = savingError {
                 Text(erro)
                     .font(.captionP1)
@@ -83,22 +97,56 @@ struct CarroNovoFormView: View {
     }
 
     private func save() {
-        guard !apelido.isEmpty else { return }
+        NSLog("[CarroNovoFormView.save] disparado — apelido='\(apelido)', foto=\(fotoSelecionada?.count ?? 0)B")
+        guard !apelido.isEmpty else {
+            NSLog("[CarroNovoFormView.save] guard apelido vazio")
+            return
+        }
         isSaving = true
         savingError = nil
         Task {
             do {
-                try await repo.create(
+                NSLog("[CarroNovoFormView.save] 1) repo.create")
+                let carroId = try await repo.create(
                     apelido: apelido.trimmingCharacters(in: .whitespaces),
                     modelo: trimmedOrNil(modelo),
                     categoria: categoria,
-                    cor: nil
+                    cor: corHex
                 )
-                isSaving = false
-                onClose()
+                NSLog("[CarroNovoFormView.save] criou carroId=\(carroId)")
+                if let jpeg = fotoSelecionada {
+                    NSLog("[CarroNovoFormView.save] 2) uploadFoto (\(jpeg.count)B)")
+                    do {
+                        try await withThrowingTaskGroup(of: Void.self) { group in
+                            group.addTask { _ = try await repo.uploadFoto(carroId: carroId, imageData: jpeg) }
+                            group.addTask {
+                                try await Task.sleep(nanoseconds: 20_000_000_000)
+                                throw SaveTimeoutError(seconds: 20)
+                            }
+                            try await group.next()
+                            group.cancelAll()
+                        }
+                        NSLog("[CarroNovoFormView.save] uploadFoto OK")
+                    } catch {
+                        NSLog("[CarroNovoFormView.save] uploadFoto FAIL: \(error)")
+                        await MainActor.run {
+                            savingError = "Carro criado, mas não subi a foto: \(error.localizedDescription)"
+                            isSaving = false
+                        }
+                        return
+                    }
+                }
+                NSLog("[CarroNovoFormView.save] fechando")
+                await MainActor.run {
+                    isSaving = false
+                    onClose()
+                }
             } catch {
-                isSaving = false
-                savingError = "Não consegui salvar: \(error.localizedDescription)"
+                NSLog("[CarroNovoFormView.save] ERRO geral: \(error)")
+                await MainActor.run {
+                    isSaving = false
+                    savingError = "Não consegui salvar: \(error.localizedDescription)"
+                }
             }
         }
     }
@@ -285,6 +333,7 @@ struct FootBar: View {
     let onSave: () -> Void
     let saveLabel: String
     let canSave: Bool
+    var isSaving: Bool = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -307,16 +356,23 @@ struct FootBar: View {
             .buttonStyle(.plain)
 
             Button(action: onSave) {
-                Text(saveLabel)
-                    .font(.system(size: 15, weight: .semibold))
-                    .tracking(-0.075)
-                    .foregroundStyle(Color.onAccent)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                            .fill(canSave ? Color.accent : Color.accent.opacity(0.4))
-                    )
+                HStack(spacing: 8) {
+                    if isSaving {
+                        ProgressView()
+                            .tint(Color.onAccent)
+                            .scaleEffect(0.85)
+                    }
+                    Text(isSaving ? "Salvando…" : saveLabel)
+                        .font(.system(size: 15, weight: .semibold))
+                        .tracking(-0.075)
+                        .foregroundStyle(Color.onAccent)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .fill(canSave ? Color.accent : Color.accent.opacity(0.4))
+                )
             }
             .buttonStyle(.plain)
             .disabled(!canSave)

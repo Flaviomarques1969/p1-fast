@@ -90,12 +90,12 @@ final class PecaRepository: ObservableObject {
                    area: PecaArea, tipo: PecaTipo, especificacao: String?,
                    quantidade: Int, precoUnitarioCents: Int?,
                    localId: String?, observacoes: String?,
-                   fotos: [UIImage]) async throws -> Peca {
+                   foto: UIImage?) async throws -> Peca {
         guard let teamId = TeamContext.currentTeamId else {
             throw PecaRepoErro.semTime
         }
         let id = UUID().uuidString.lowercased()
-        let fotoPath = Self.salvarFotos(pecaId: id, imagens: fotos)
+        let fotoPath = foto.flatMap { Self.salvarFoto(pecaId: id, imagem: $0) }
         var peca = Peca(
             id: id, timeId: teamId, carroId: carroId,
             nome: nome.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -228,51 +228,30 @@ final class PecaRepository: ObservableObject {
 
     // MARK: - Fotos (armazenamento local)
 
-    /// Até 5 fotos por peça (2026-06-01, pedido do Flávio; era 3).
-    static let maxFotos = 5
-
-    /// índice 0 = `{pecaId}.jpg` (principal, vai no `fotoUrl`); 1..N = `{pecaId}-N.jpg`.
-    static func fotoLocalURL(pecaId: String, indice: Int = 0) -> URL {
+    static func fotoLocalURL(pecaId: String) -> URL {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let dir = docs.appendingPathComponent("pecas-fotos", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let nome = indice == 0 ? "\(pecaId).jpg" : "\(pecaId)-\(indice).jpg"
-        return dir.appendingPathComponent(nome)
+        return dir.appendingPathComponent("\(pecaId).jpg")
     }
 
-    /// Salva até `maxFotos` fotos e apaga sobras de uma versão
-    /// anterior. Retorna o nome do arquivo da PRINCIPAL (índice 0) pra
-    /// guardar em `fotoUrl`; nil se não houver foto.
     @discardableResult
-    static func salvarFotos(pecaId: String, imagens: [UIImage]) -> String? {
-        let lista = Array(imagens.prefix(maxFotos))
-        for indice in 0..<maxFotos {
-            let url = fotoLocalURL(pecaId: pecaId, indice: indice)
-            if indice < lista.count, let data = lista[indice].jpegData(compressionQuality: 0.72) {
-                try? data.write(to: url, options: .atomic)
-            } else {
-                try? FileManager.default.removeItem(at: url)
-            }
+    private static func salvarFoto(pecaId: String, imagem: UIImage) -> String? {
+        guard let data = imagem.jpegData(compressionQuality: 0.72) else { return nil }
+        let url = fotoLocalURL(pecaId: pecaId)
+        do {
+            try data.write(to: url, options: .atomic)
+            return url.lastPathComponent
+        } catch {
+            print("PecaRepository.salvarFoto falhou: \(error)")
+            return nil
         }
-        guard !lista.isEmpty else { return nil }
-        return fotoLocalURL(pecaId: pecaId, indice: 0).lastPathComponent
     }
 
     static func carregarFoto(pecaId: String) -> UIImage? {
-        carregarFotos(pecaId: pecaId).first
-    }
-
-    /// Carrega as até `maxFotos` fotos que existirem, em ordem de índice.
-    static func carregarFotos(pecaId: String) -> [UIImage] {
-        var fotos: [UIImage] = []
-        for indice in 0..<maxFotos {
-            let url = fotoLocalURL(pecaId: pecaId, indice: indice)
-            if FileManager.default.fileExists(atPath: url.path),
-               let img = UIImage(contentsOfFile: url.path) {
-                fotos.append(img)
-            }
-        }
-        return fotos
+        let url = fotoLocalURL(pecaId: pecaId)
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return UIImage(contentsOfFile: url.path)
     }
 }
 

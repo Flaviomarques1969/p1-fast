@@ -25,12 +25,19 @@ final class TrackRepository: ObservableObject {
     @Published private(set) var layoutsByTrack: [String: [TrackLayoutRow]] = [:]
     @Published private(set) var segmentsByLayout: [String: [TrackSegmentRow]] = [:]
     @Published private(set) var marcosByLayout: [String: [Marco]] = [:]
+    /// Faixas geográficas (entrada/saída/ápice) por segment. Onda 3 do
+    /// Autódromos (2026-05-17). Só curvas têm faixas (decisão B2);
+    /// curvas com geometria dupla podem ter 2 ápices (decisão B3).
+    @Published private(set) var faixasPorSegmento: [String: [TrackSegmentFaixa]] = [:]
 
     /// Mapa parcial_id → (apelido, nome) pra UI agrupar. Brasília tem 4 parciais
     /// (P1..P4) com apelidos descritivos do mockup.
     @Published private(set) var parciaisBrasilia: [String: P1FastCore.Parcial] = [:]
 
-    private let queue: DatabaseQueue
+    /// Exposto pra views que precisam rodar SQL custom (resumo do autódromo,
+    /// detalhe do trecho). Ler-only — escrita continua passando pelos
+    /// métodos do Repository.
+    let queue: DatabaseQueue
 
     init(queue: DatabaseQueue) {
         self.queue = queue
@@ -56,12 +63,14 @@ final class TrackRepository: ObservableObject {
             let lays = try TrackLayoutRow.fetchAll(db)
             let segs = try TrackSegmentRow.order(Column("ordem").asc).fetchAll(db)
             let mks = try Marco.fetchAll(db)
-            return Snapshot(tracks: tks, layouts: lays, segments: segs, marcos: mks)
+            let fxs = try TrackSegmentFaixa.order(Column("tipo"), Column("indice")).fetchAll(db)
+            return Snapshot(tracks: tks, layouts: lays, segments: segs, marcos: mks, faixas: fxs)
         }
         self.tracks = snapshot.tracks
         self.layoutsByTrack = Dictionary(grouping: snapshot.layouts, by: { $0.trackId })
         self.segmentsByLayout = Dictionary(grouping: snapshot.segments, by: { $0.layoutId })
         self.marcosByLayout = Dictionary(grouping: snapshot.marcos, by: { $0.layoutId })
+        self.faixasPorSegmento = Dictionary(grouping: snapshot.faixas, by: { $0.segmentId })
         // Parciais hoje só pra Brasília — outras pistas entram quando virarem produto.
         self.parciaisBrasilia = Dictionary(uniqueKeysWithValues: SeedBrasilia.parciais.map { ($0.id, $0) })
     }
@@ -95,6 +104,95 @@ final class TrackRepository: ObservableObject {
             }
         }
         return nil
+    }
+
+    // MARK: - Faixas geográficas (Onda 5 reformulação Autódromos 2026-05-17)
+    /// Move uma faixa geográfica (entrada/saída/ápice) de um trecho.
+    /// Usado pela tela de ajuste — qualquer piloto pode refinar.
+    /// Idempotente: se a faixa já existe, atualiza posição; se não,
+    /// cria. Indice 0 ou 1 (apenas ápice usa 1, decisão B3).
+    func moverFaixa(segmentId: String, tipo: FaixaTipo, indice: Int = 0,
+                    x: Double, y: Double) async throws {
+        let agora = DB.nowMs()
+        try await queue.write { db in
+            let faixaId = "faixa_\(segmentId)_\(tipo.rawValue)_\(indice)"
+            if var existente = try TrackSegmentFaixa.fetchOne(db, key: faixaId) {
+                existente.x = x
+                existente.y = y
+                existente.updatedAt = agora
+                try existente.update(db)
+            } else {
+                try TrackSegmentFaixa(
+                    id: faixaId,
+                    segmentId: segmentId,
+                    tipo: tipo,
+                    indice: indice,
+                    x: x, y: y,
+                    createdAt: agora,
+                    updatedAt: agora
+                ).insert(db)
+            }
+        }
+        try await reloadAll()
+    }
+
+    // MARK: - CRUD de Autódromo (Onda 2 reformulação Autódromos 2026-05-17)
+
+    /// Cria um autódromo novo a partir dos dados básicos (apelido, cidade,
+    /// extensão em metros, número de curvas). Não cadastra layout/segments
+    /// ainda — isso fica pra rodada futura quando o editor visual entrar.
+    /// O autódromo aparece na lista mas a ficha "abrir mapa" mostra apenas
+    /// que ainda não tem trechos cadastrados.
+    @discardableResult
+    func criarAutodromo(apelido: String, nomeOficial: String?,
+                        cidade: String?, extensaoMetros: Int?,
+                        numeroCurvas: Int?) async throws -> TrackRow {
+        let id = UUID().uuidString.lowercased()
+        let agora = DB.nowMs()
+        var nova = TrackRow(
+            id: id,
+            apelido: apelido,
+            nomeOficial: nomeOficial,
+            cidade: cidade,
+            extensaoMetros: extensaoMetros,
+            numeroCurvas: numeroCurvas,
+            createdAt: agora,
+            updatedAt: agora
+        )
+        try await queue.write { db in
+            try nova.insert(db)
+        }
+        try await reloadAll()
+        return nova
+    }
+
+    /// Atualiza dados básicos de um autódromo existente.
+    func atualizarAutodromo(_ row: TrackRow,
+                            apelido: String,
+                            nomeOficial: String?,
+                            cidade: String?,
+                            extensaoMetros: Int?,
+                            numeroCurvas: Int?) async throws {
+        var copia = row
+        copia.apelido = apelido
+        copia.nomeOficial = nomeOficial
+        copia.cidade = cidade
+        copia.extensaoMetros = extensaoMetros
+        copia.numeroCurvas = numeroCurvas
+        copia.updatedAt = DB.nowMs()
+        try await queue.write { db in
+            try copia.update(db)
+        }
+        try await reloadAll()
+    }
+
+    /// Apaga um autódromo. Cascata cuida de layout/segments/marcos.
+    /// Eventos vinculados perdem o trackId (FK ON DELETE SET NULL).
+    func apagarAutodromo(_ trackId: String) async throws {
+        try await queue.write { db in
+            _ = try TrackRow.deleteOne(db, key: trackId)
+        }
+        try await reloadAll()
     }
 
     // MARK: - Updates (MS-1.4 configurador visual)
@@ -164,28 +262,63 @@ final class TrackRepository: ObservableObject {
 
             // --- TrackLayoutRow ---
             // MS-2.6.c: idem, view_box backfill se ausente.
+            // 2026-05-17 (Flavio): sempre re-sincroniza svgPath/viewBox/linhaChegada
+            // com o SeedBrasilia atual. Antes só fazia backfill quando NULL, o que
+            // ignorava correções manuais do desenho (Brasília v2).
             let viewBoxJson = Self.encodeViewBox(bundle.track.viewBox)
+            let linhaChegadaStr = Self.encodeLinhaChegada(bundle.layout.linhaChegada)
+            let parciaisJson = Self.encodeParciais(bundle.layout.parciais)
             if let existing = try TrackLayoutRow.fetchOne(db, key: layoutId) {
-                if existing.viewBox == nil, viewBoxJson != nil {
-                    var row = existing
-                    row.viewBox = viewBoxJson
-                    try row.update(db)
+                var row = existing
+                var changed = false
+                if existing.svgPath != bundle.track.svgPath {
+                    row.svgPath = bundle.track.svgPath
+                    changed = true
                 }
+                if existing.viewBox != viewBoxJson {
+                    row.viewBox = viewBoxJson
+                    changed = true
+                }
+                if existing.linhaChegada != linhaChegadaStr {
+                    row.linhaChegada = linhaChegadaStr
+                    changed = true
+                }
+                if existing.parciais != parciaisJson {
+                    row.parciais = parciaisJson
+                    changed = true
+                }
+                if changed { try row.update(db) }
             } else {
                 try TrackLayoutRow(
                     id: layoutId,
                     trackId: trackId,
                     nome: bundle.layout.nome,
-                    parciais: Self.encodeParciais(bundle.layout.parciais),
+                    parciais: parciaisJson,
                     svgPath: bundle.track.svgPath,
-                    linhaChegada: Self.encodeLinhaChegada(bundle.layout.linhaChegada),
+                    linhaChegada: linhaChegadaStr,
                     viewBox: viewBoxJson
                 ).insert(db)
             }
 
             // --- TrackSegmentRow (12 segments) ---
+            // 2026-05-17 (Flavio renomeou "MERGULHO DA BRUXA" → "CURVA DA RETA OPOSTA"):
+            // sempre re-sincroniza nome / parcial / ordem / ehTrecho / geometria com o
+            // SeedBrasilia. Antes só inseria, ignorando mudanças. Mesma decisão do svgPath.
+            let geometriasFreshSeed = Dictionary(
+                uniqueKeysWithValues: bundle.segments.map { ($0.id, Self.encodeGeometria($0)) }
+            )
             for seg in bundle.segments {
-                if try TrackSegmentRow.fetchOne(db, key: seg.id) == nil {
+                let geomNova = geometriasFreshSeed[seg.id] ?? Self.encodeGeometria(seg)
+                if let existing = try TrackSegmentRow.fetchOne(db, key: seg.id) {
+                    var row = existing
+                    var changed = false
+                    if existing.nome != seg.nome { row.nome = seg.nome; changed = true }
+                    if existing.parcialId != seg.parcialId { row.parcialId = seg.parcialId; changed = true }
+                    if existing.ordem != seg.ordem { row.ordem = seg.ordem; changed = true }
+                    if existing.ehTrecho != seg.ehTrecho { row.ehTrecho = seg.ehTrecho; changed = true }
+                    if existing.geometria != geomNova { row.geometria = geomNova; changed = true }
+                    if changed { try row.update(db) }
+                } else {
                     try TrackSegmentRow(
                         id: seg.id,
                         layoutId: layoutId,
@@ -193,7 +326,33 @@ final class TrackRepository: ObservableObject {
                         ordem: seg.ordem,
                         ehTrecho: seg.ehTrecho,
                         nome: seg.nome,
-                        geometria: Self.encodeGeometria(seg)
+                        geometria: geomNova
+                    ).insert(db)
+                }
+            }
+
+            // --- Faixas geográficas dos trechos.
+            // 2026-05-17 (Flavio refez todas as posições E/S/A via página de marcação):
+            // sempre re-sincroniza x/y com SeedBrasilia. Antes só inseria. Mesma decisão.
+            let nowMs = DB.nowMs()
+            for (segOrdem, tipoStr, indice, x, y) in SeedBrasilia.faixas {
+                let segmentId = "seg_brasilia_\(segOrdem)"
+                let faixaId = "faixa_brasilia_\(segOrdem)_\(tipoStr)_\(indice)"
+                guard let tipoEnum = FaixaTipo(rawValue: tipoStr) else { continue }
+                if var existing = try TrackSegmentFaixa.fetchOne(db, key: faixaId) {
+                    if existing.x != x || existing.y != y {
+                        existing.x = x
+                        existing.y = y
+                        existing.updatedAt = nowMs
+                        try existing.update(db)
+                    }
+                } else {
+                    try TrackSegmentFaixa(
+                        id: faixaId,
+                        segmentId: segmentId,
+                        tipo: tipoEnum,
+                        indice: indice,
+                        x: x, y: y
                     ).insert(db)
                 }
             }
@@ -363,5 +522,6 @@ final class TrackRepository: ObservableObject {
         let layouts: [TrackLayoutRow]
         let segments: [TrackSegmentRow]
         let marcos: [Marco]
+        let faixas: [TrackSegmentFaixa]
     }
 }

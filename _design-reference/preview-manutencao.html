@@ -1,0 +1,1267 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Função Manutenção — vitrine (revisão 2026-05-18 14h45)</title>
+<style>
+:root {
+  --surface:        rgb(20, 22, 24);
+  --surface-raised: rgb(29, 32, 33);
+  --surface-hover:  rgb(39, 41, 43);
+  --border:         rgb(51, 54, 56);
+  --text:           rgb(237, 239, 240);
+  --text-muted:     rgb(168, 175, 180);
+  --text-faint:     rgb(116, 123, 129);
+  --accent:         rgb(85, 196, 254);
+  --on-accent:      rgb(7, 12, 15);
+  --atencao:        rgb(250, 183, 42);
+  --vermelho:       rgb(220, 80, 80);
+  --amarelo:        rgb(250, 183, 42);
+  --verde:          rgb(95, 211, 127);
+  --cinza:          rgb(116, 123, 129);
+  --page-bg:        rgb(8, 10, 12);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  background: var(--page-bg);
+  color: var(--text);
+  padding: 24px 16px;
+}
+
+.wrap { max-width: 1700px; margin: 0 auto; }
+header.topo {
+  text-align: center;
+  margin-bottom: 32px;
+  padding: 24px 16px;
+  background: var(--surface);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+}
+header.topo h1 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+header.topo p {
+  margin: 0 0 4px;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+header.topo .meta {
+  color: var(--text-faint);
+  font-size: 12px;
+  margin-top: 12px;
+}
+header.topo .nota {
+  background: rgba(95, 211, 127, 0.08);
+  border: 1px solid rgba(95, 211, 127, 0.3);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--text);
+  text-align: left;
+  line-height: 1.6;
+}
+header.topo .nota strong { color: var(--verde); }
+
+.galeria {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 32px;
+}
+
+.tela {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.tela h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.tela .descricao {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 0 0 8px;
+  line-height: 1.5;
+  min-height: 60px;
+}
+
+/* iPhone moldura */
+.iphone {
+  width: 393px;
+  height: 802px;
+  border-radius: 50px;
+  border: 8px solid #1a1c1f;
+  background: var(--surface);
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+}
+.iphone .notch {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 110px;
+  height: 24px;
+  background: #000;
+  border-radius: 14px;
+  z-index: 100;
+}
+.iphone .status-bar {
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  font-size: 14px;
+  font-weight: 600;
+  justify-content: space-between;
+}
+.iphone .nav {
+  height: 44px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+}
+.iphone .nav .titulo {
+  font-size: 17px;
+  font-weight: 600;
+}
+.iphone .nav .voltar {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--accent);
+  font-size: 17px;
+}
+.iphone .nav .acao {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--accent);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.iphone .conteudo {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px 20px;
+}
+
+.tab-bar {
+  height: 64px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.tab-item {
+  font-size: 11px;
+  color: var(--text-faint);
+  text-align: center;
+}
+.tab-item.ativo {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-faint);
+  letter-spacing: 1.54px;
+  text-transform: uppercase;
+  margin: 0 0 4px;
+}
+.titulo-tela {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.6px;
+  margin: 0;
+}
+.subtitulo {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 4px 0 0;
+}
+
+.secao {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 14px;
+}
+.secao-titulo {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-faint);
+  letter-spacing: 1.54px;
+  text-transform: uppercase;
+  margin: 0 0 10px;
+}
+
+.linha-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text);
+  padding: 6px 0;
+}
+.linha-info .label {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.linha-info .valor {
+  font-family: "SF Mono", Menlo, Monaco, monospace;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tag-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.54px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
+
+.botao-primario {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 9px 14px;
+  border-radius: 8px;
+}
+
+.fab {
+  position: absolute;
+  right: 16px;
+  bottom: 80px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 14px 22px;
+  border-radius: 30px;
+  box-shadow: 0 8px 24px rgba(85, 196, 254, 0.4);
+}
+
+/* ─── Lista de carros (Tela 1) ─── */
+.card-carro {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  margin-top: 10px;
+}
+.avatar-carro {
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2b3b6e, #1c2540);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.4);
+  flex-shrink: 0;
+}
+.avatar-carro.amarelo { background: linear-gradient(135deg, #d4a017, #8a6b0e); }
+.avatar-carro.verde { background: linear-gradient(135deg, #2c7a3d, #195222); }
+.card-carro .corpo {
+  flex: 1;
+  min-width: 0;
+}
+.card-carro .nome {
+  font-size: 16px;
+  font-weight: 600;
+}
+.card-carro .modelo {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.card-carro .resumo-status {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.card-carro .resumo-status .item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.card-carro .resumo-status .bolinha {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.card-carro .chevron {
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+/* ─── Cockpit dos 15 itens (Tela 2) ─── */
+.grid-itens {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+.card-item {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 11px 12px;
+  position: relative;
+}
+.card-item.vermelho { border-color: rgba(220, 80, 80, 0.55); }
+.card-item.amarelo { border-color: rgba(250, 183, 42, 0.55); }
+.card-item.verde { border-color: rgba(95, 211, 127, 0.4); }
+.card-item.cinza { border-color: var(--border); }
+.card-item .topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 6px;
+}
+.card-item .bolinha {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.card-item .bolinha.vermelho { background: var(--vermelho); }
+.card-item .bolinha.amarelo { background: var(--amarelo); }
+.card-item .bolinha.verde { background: var(--verde); }
+.card-item .bolinha.cinza { background: var(--cinza); }
+.card-item .nome {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.card-item .tempo {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  line-height: 1.3;
+}
+.card-item .tempo.alerta { color: var(--vermelho); font-weight: 600; }
+
+.resumo-area {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  background: var(--surface-raised);
+  padding: 7px 10px;
+  border-radius: 8px;
+  margin: 14px 0 4px;
+}
+.resumo-area .label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--text-faint);
+  flex: 1;
+  text-transform: uppercase;
+}
+
+/* Estatísticas topo */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 12px;
+}
+.stat {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 8px;
+  text-align: center;
+}
+.stat .valor {
+  font-size: 18px;
+  font-weight: 600;
+}
+.stat .label {
+  font-size: 10px;
+  color: var(--text-faint);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* Resumo cabeçalho do carro */
+.cabecalho-carro {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.cabecalho-carro .nome {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+}
+.cabecalho-carro .modelo {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Seletor de sub-abas */
+.seletor-abas {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+  margin-top: 12px;
+}
+.seletor-abas .aba {
+  flex: 1;
+  text-align: center;
+  padding: 9px;
+  background: var(--surface-raised);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.seletor-abas .aba.ativa {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* Card de troca */
+.card-troca {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 8px;
+}
+.card-troca .linha-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.card-troca .nome {
+  font-size: 15px;
+  font-weight: 600;
+}
+.card-troca .data {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: "SF Mono", Menlo, monospace;
+}
+.card-troca .detalhes {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Form */
+.form-secao {
+  background: rgba(29, 32, 33, 0.6);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 12px;
+}
+.form-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.form-input {
+  background: var(--surface-raised);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 14px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.form-input.muted { color: var(--text-faint); font-style: italic; }
+.form-pick {
+  background: var(--surface-raised);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+.form-pick .chevron { color: var(--text-faint); font-size: 11px; }
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.toggle-switch {
+  width: 42px; height: 26px;
+  background: var(--accent);
+  border-radius: 13px;
+  position: relative;
+}
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  right: 3px; top: 3px;
+  width: 20px; height: 20px;
+  background: white;
+  border-radius: 50%;
+}
+.foto-preview {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, #555, #333);
+  border-radius: 6px;
+  display: inline-block;
+  margin-left: 10px;
+}
+
+/* Status pill (ficha do item) */
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.status-pill .bolinha {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+}
+.status-pill .bolinha.vermelho { background: var(--vermelho); }
+.status-pill .label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Legenda embaixo */
+.legenda {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+}
+.legenda h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.legenda ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+.legenda li { margin-bottom: 4px; }
+.legenda li strong { color: var(--text); font-weight: 600; }
+
+.aviso {
+  background: rgba(85, 196, 254, 0.08);
+  border: 1px solid rgba(85, 196, 254, 0.3);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 24px 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+.aviso strong { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="topo">
+  <h1>Função Manutenção — vitrine revisada (rev. 2026-05-18 14h45)</h1>
+  <p>Estrutura nova baseada no seu pedido:</p>
+  <div class="nota">
+    <strong>Mudança principal:</strong> a Manutenção virou <strong>página própria</strong> (entra pelo menu Garagem). A primeira tela mostra a <strong>lista de carros</strong>. Ao tocar num carro, abre o <strong>cockpit visual</strong> com resumo (km · voltas · autódromos) e os <strong>15 itens com estado de cada um</strong> (verde/amarelo/vermelho/cinza) + tempo desde a última troca. Histórico e Especificação padrão viraram sub-abas dentro do cockpit do carro.
+  </div>
+</header>
+
+<div class="aviso">
+  <strong>Como ler:</strong> cada moldura é uma tela do aplicativo. Tela 1 é a entrada da função (lista de carros). Tela 2 é o cockpit principal (resumo + 15 itens). Telas 3, 4, 5 são as derivadas (histórico, formulário, ficha do item). Cores e espaçamentos copiados do código real.
+</div>
+
+<div class="galeria">
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- TELA 1 — Lista de carros (entrada da Manutenção) -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <section class="tela">
+    <h2>Tela 1 · Entrada da Manutenção (lista de carros)</h2>
+    <p class="descricao">Você abre o menu <strong>Garagem</strong> e toca em "Manutenção" no cabeçalho (atalho atual). Cai nesta tela. Vê todos os carros cadastrados, cada um com um resumo rápido do estado de manutenção.</p>
+    <div class="iphone">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ●● 100%</span></div>
+      <div class="nav">
+        <span class="voltar">‹ Garagem</span>
+        <span class="titulo">Manutenção</span>
+      </div>
+      <div class="conteudo">
+        <div class="eyebrow">Manutenção</div>
+        <div class="titulo-tela">Seus carros</div>
+        <p class="subtitulo">Toque num carro pra abrir o painel de manutenção dele.</p>
+
+        <div class="card-carro">
+          <div class="avatar-carro">S</div>
+          <div class="corpo">
+            <div class="nome">Subaru</div>
+            <div class="modelo">Forester 2.0 · Pista</div>
+            <div class="resumo-status">
+              <div class="item"><div class="bolinha" style="background:var(--vermelho)"></div><span style="color:var(--vermelho)">2 vencidos</span></div>
+              <div class="item"><div class="bolinha" style="background:var(--amarelo)"></div><span style="color:var(--amarelo)">3 próximos</span></div>
+              <div class="item"><div class="bolinha" style="background:var(--verde)"></div><span style="color:var(--verde)">8 em dia</span></div>
+            </div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+
+        <div class="card-carro">
+          <div class="avatar-carro amarelo">B</div>
+          <div class="corpo">
+            <div class="nome">Bolinha</div>
+            <div class="modelo">Celta 1.4 · Turismo</div>
+            <div class="resumo-status">
+              <div class="item"><div class="bolinha" style="background:var(--amarelo)"></div><span style="color:var(--amarelo)">1 próximo</span></div>
+              <div class="item"><div class="bolinha" style="background:var(--verde)"></div><span style="color:var(--verde)">12 em dia</span></div>
+              <div class="item"><div class="bolinha" style="background:var(--cinza)"></div><span style="color:var(--text-faint)">2 sem cadastro</span></div>
+            </div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+
+        <div class="card-carro">
+          <div class="avatar-carro verde">G</div>
+          <div class="corpo">
+            <div class="nome">Golf GTI</div>
+            <div class="modelo">VW MK7 · Rua + pista</div>
+            <div class="resumo-status">
+              <div class="item"><div class="bolinha" style="background:var(--cinza)"></div><span style="color:var(--text-faint)">15 sem registro</span></div>
+            </div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <span class="tab-item">Home</span>
+        <span class="tab-item">Eventos</span>
+        <span class="tab-item">Cadastros</span>
+        <span class="tab-item ativo">Garagem</span>
+      </div>
+    </div>
+    <div class="legenda">
+      <h3>O que você vê aqui</h3>
+      <ul>
+        <li>A função Manutenção <strong>tem entrada própria</strong> agora — não está mais escondida dentro do painel do carro.</li>
+        <li>Cada carro mostra um <strong>resumo de status</strong>: quantos itens vencidos (vermelho), perto de vencer (amarelo), em dia (verde) e sem cadastro (cinza).</li>
+        <li>Você bate o olho e já sabe qual carro precisa de atenção primeiro.</li>
+        <li>O Golf GTI exemplifica um carro novo — 15 sem registro (nunca registrou troca nenhuma).</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- TELA 2 — Cockpit do carro (resumo + grade dos 15 itens) -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <section class="tela">
+    <h2>Tela 2 · Cockpit do Subaru (PRINCIPAL — o que você pediu)</h2>
+    <p class="descricao">Resumo do carro em cima (km · voltas · autódromos), depois <strong>grade dos 15 itens</strong> agrupados por área. Cada cartão mostra cor (verde/amarelo/vermelho/cinza) + tempo desde a última troca. Você bate o olho na grade inteira e tem o panorama completo.</p>
+    <div class="iphone">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ●● 100%</span></div>
+      <div class="nav">
+        <span class="voltar">‹ Manutenção</span>
+        <span class="titulo">Subaru</span>
+      </div>
+      <div class="conteudo">
+        <div class="eyebrow">Manutenção</div>
+        <div class="cabecalho-carro" style="margin-top:6px">
+          <div class="avatar-carro">S</div>
+          <div>
+            <div class="nome">Subaru</div>
+            <div class="modelo">Forester 2.0 · Pista</div>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><div class="valor">42.3k</div><div class="label">Km rodados</div></div>
+          <div class="stat"><div class="valor">128</div><div class="label">Voltas</div></div>
+          <div class="stat"><div class="valor">3</div><div class="label">Autódromos</div></div>
+        </div>
+
+        <div class="seletor-abas">
+          <div class="aba ativa">Cockpit</div>
+          <div class="aba">Histórico</div>
+          <div class="aba">Padrões</div>
+        </div>
+
+        <!-- MOTOR -->
+        <div class="resumo-area"><div class="label">MOTOR</div></div>
+        <div class="grid-itens">
+          <div class="card-item vermelho">
+            <div class="topo"><div class="nome">Óleo do motor</div><div class="bolinha vermelho"></div></div>
+            <div class="tempo alerta">Vencido há 32 dias</div>
+          </div>
+          <div class="card-item verde">
+            <div class="topo"><div class="nome">Filtro de óleo</div><div class="bolinha verde"></div></div>
+            <div class="tempo">Trocado há 4 meses</div>
+          </div>
+          <div class="card-item amarelo">
+            <div class="topo"><div class="nome">Filtro de ar</div><div class="bolinha amarelo"></div></div>
+            <div class="tempo">Faltam 11 dias</div>
+          </div>
+          <div class="card-item cinza">
+            <div class="topo"><div class="nome">Filtro combustível</div><div class="bolinha cinza"></div></div>
+            <div class="tempo">Nunca registrado</div>
+          </div>
+          <div class="card-item verde">
+            <div class="topo"><div class="nome">Velas de ignição</div><div class="bolinha verde"></div></div>
+            <div class="tempo">Trocado há 8 meses</div>
+          </div>
+          <div class="card-item cinza">
+            <div class="topo"><div class="nome">Correia / corrente</div><div class="bolinha cinza"></div></div>
+            <div class="tempo">Nunca registrado</div>
+          </div>
+        </div>
+
+        <!-- FREIOS -->
+        <div class="resumo-area"><div class="label">FREIOS</div></div>
+        <div class="grid-itens">
+          <div class="card-item verde">
+            <div class="topo"><div class="nome">Fluido de freio</div><div class="bolinha verde"></div></div>
+            <div class="tempo">Trocado há 6 meses</div>
+          </div>
+          <div class="card-item amarelo">
+            <div class="topo"><div class="nome">Pastilha de freio</div><div class="bolinha amarelo"></div></div>
+            <div class="tempo">Por desgaste · inspecionar</div>
+          </div>
+          <div class="card-item verde">
+            <div class="topo"><div class="nome">Disco de freio</div><div class="bolinha verde"></div></div>
+            <div class="tempo">Trocado há 1 ano</div>
+          </div>
+        </div>
+
+        <!-- CÂMBIO + EMBREAGEM -->
+        <div class="resumo-area"><div class="label">CÂMBIO + EMBREAGEM</div></div>
+        <div class="grid-itens">
+          <div class="card-item vermelho">
+            <div class="topo"><div class="nome">Óleo do câmbio</div><div class="bolinha vermelho"></div></div>
+            <div class="tempo alerta">Vencido há 4 meses</div>
+          </div>
+          <div class="card-item verde">
+            <div class="topo"><div class="nome">Kit embreagem</div><div class="bolinha verde"></div></div>
+            <div class="tempo">Trocado há 18 meses</div>
+          </div>
+        </div>
+
+        <!-- SUSPENSÃO + REFRIGERAÇÃO + ELÉTRICA -->
+        <div class="resumo-area"><div class="label">RESTANTE</div></div>
+        <div class="grid-itens">
+          <div class="card-item amarelo">
+            <div class="topo"><div class="nome">Amortecedores</div><div class="bolinha amarelo"></div></div>
+            <div class="tempo">Faltam 2.5k km</div>
+          </div>
+          <div class="card-item amarelo">
+            <div class="topo"><div class="nome">Alinhamento</div><div class="bolinha amarelo"></div></div>
+            <div class="tempo">Faltam 800 km</div>
+          </div>
+          <div class="card-item verde">
+            <div class="topo"><div class="nome">Líq. arrefecimento</div><div class="bolinha verde"></div></div>
+            <div class="tempo">Trocado há 11 meses</div>
+          </div>
+          <div class="card-item verde">
+            <div class="topo"><div class="nome">Bateria</div><div class="bolinha verde"></div></div>
+            <div class="tempo">Trocada há 10 meses</div>
+          </div>
+        </div>
+      </div>
+      <div class="fab">+ Nova troca</div>
+      <div class="tab-bar">
+        <span class="tab-item">Home</span>
+        <span class="tab-item">Eventos</span>
+        <span class="tab-item">Cadastros</span>
+        <span class="tab-item ativo">Garagem</span>
+      </div>
+    </div>
+    <div class="legenda">
+      <h3>O que você vê aqui (tela principal)</h3>
+      <ul>
+        <li><strong>Estatísticas no topo</strong>: km rodados, voltas em pista, quantos autódromos diferentes o carro já visitou (como você pediu).</li>
+        <li><strong>3 abas</strong>: Cockpit (visual — esta), Histórico (lista cronológica de trocas), Padrões (marca/modelo/spec).</li>
+        <li><strong>Cockpit = grade dos 15 itens</strong> agrupados por área. Cada cartão tem cor de estado e texto curto: "Vencido há X dias" / "Faltam X dias" / "Trocado há X meses" / "Nunca registrado".</li>
+        <li><strong>Tocar num cartão</strong> abre a ficha completa do item (Tela 5).</li>
+        <li>O <strong>botão flutuante "+ Nova troca"</strong> abre o formulário (Tela 4).</li>
+        <li><strong>Vermelho</strong> = vencido. <strong>Amarelo</strong> = aproximando do limite. <strong>Verde</strong> = em dia. <strong>Cinza</strong> = sem registro / por desgaste manual.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- TELA 3 — Aba Histórico (cronológico) -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <section class="tela">
+    <h2>Tela 3 · Aba Histórico (diário de trocas)</h2>
+    <p class="descricao">Mesma tela do Cockpit, mas com a aba Histórico ativa. Lista cronológica decrescente — toda troca registrada do carro aparece aqui.</p>
+    <div class="iphone">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ●● 100%</span></div>
+      <div class="nav">
+        <span class="voltar">‹ Manutenção</span>
+        <span class="titulo">Subaru</span>
+      </div>
+      <div class="conteudo">
+        <div class="eyebrow">Manutenção</div>
+        <div class="cabecalho-carro" style="margin-top:6px">
+          <div class="avatar-carro">S</div>
+          <div>
+            <div class="nome">Subaru</div>
+            <div class="modelo">Forester 2.0 · Pista</div>
+          </div>
+        </div>
+
+        <div class="seletor-abas">
+          <div class="aba">Cockpit</div>
+          <div class="aba ativa">Histórico</div>
+          <div class="aba">Padrões</div>
+        </div>
+
+        <div class="card-troca">
+          <div class="linha-topo">
+            <div class="nome">Óleo do motor</div>
+            <div class="data">12/01/2026</div>
+          </div>
+          <div class="detalhes">Motul · 8100 X-Cess · 5W40 · 36.4k km</div>
+        </div>
+        <div class="card-troca">
+          <div class="linha-topo">
+            <div class="nome">Filtro de óleo</div>
+            <div class="data">12/01/2026</div>
+          </div>
+          <div class="detalhes">Tecfil · PSL104 · 36.4k km</div>
+        </div>
+        <div class="card-troca">
+          <div class="linha-topo">
+            <div class="nome">Pastilha de freio</div>
+            <div class="data">22/11/2025</div>
+          </div>
+          <div class="detalhes">Brembo · Race · 34.9k km · Por desgaste — trocou após 2 eventos</div>
+        </div>
+        <div class="card-troca">
+          <div class="linha-topo">
+            <div class="nome">Líquido arrefecimento</div>
+            <div class="data">18/06/2025</div>
+          </div>
+          <div class="detalhes">Bardahl · MaxFlu · 31.5k km</div>
+        </div>
+        <div class="card-troca">
+          <div class="linha-topo">
+            <div class="nome">Óleo do motor</div>
+            <div class="data">15/06/2025</div>
+          </div>
+          <div class="detalhes">Motul · 8100 X-Cess · 5W40 · 31.2k km</div>
+        </div>
+      </div>
+      <div class="fab">+ Nova troca</div>
+      <div class="tab-bar">
+        <span class="tab-item">Home</span>
+        <span class="tab-item">Eventos</span>
+        <span class="tab-item">Cadastros</span>
+        <span class="tab-item ativo">Garagem</span>
+      </div>
+    </div>
+    <div class="legenda">
+      <h3>O que você vê aqui</h3>
+      <ul>
+        <li>Lista cronológica em ordem decrescente (mais recente em cima).</li>
+        <li>Cada cartão é um registro real de troca: item, data, marca/modelo/spec, quilometragem na hora.</li>
+        <li><strong>Tocar num cartão</strong> abre a ficha do item daquele tipo (mesma Tela 5).</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- TELA 4 — Formulário Nova troca -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <section class="tela">
+    <h2>Tela 4 · Formulário "Nova troca"</h2>
+    <p class="descricao">Aberto pelo botão flutuante. Quando vincula uma peça do <strong>Estoque</strong>, abate −1 automaticamente.</p>
+    <div class="iphone">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ●● 100%</span></div>
+      <div class="nav">
+        <span class="voltar" style="color:var(--text)">Cancelar</span>
+        <span class="titulo">Nova troca</span>
+        <span class="acao">Salvar</span>
+      </div>
+      <div class="conteudo">
+        <div class="eyebrow">Subaru</div>
+        <div style="font-size:20px;font-weight:600">Registrar troca</div>
+
+        <div class="form-secao">
+          <div class="form-label">ITEM</div>
+          <div class="form-pick"><span>Óleo do motor</span><span class="chevron">⌃⌄</span></div>
+          <div style="font-size:12px;color:var(--text-faint);margin-top:4px">Área: Motor</div>
+        </div>
+
+        <div class="form-secao">
+          <div class="form-label">QUANDO</div>
+          <div class="form-input">18 de maio de 2026</div>
+        </div>
+
+        <div class="form-secao">
+          <div class="form-label">DETALHES</div>
+          <div class="form-label" style="margin-top:6px">MARCA</div>
+          <div class="form-input">Motul</div>
+          <div class="form-label">MODELO</div>
+          <div class="form-input">8100 X-Cess</div>
+          <div class="form-label">ESPECIFICAÇÃO</div>
+          <div class="form-input">5W40 4L</div>
+          <div class="toggle-row">
+            <span>Salvar como padrão deste carro</span>
+            <div class="toggle-switch"></div>
+          </div>
+        </div>
+
+        <div class="form-secao">
+          <div class="form-label">KM DO CARRO · FOTO</div>
+          <div class="form-label" style="margin-top:6px">QUILOMETRAGEM</div>
+          <div class="form-input">42.300</div>
+          <div style="display:flex;align-items:center;margin-top:6px">
+            <span class="botao-primario">Adicionar foto</span>
+            <span class="foto-preview"></span>
+          </div>
+        </div>
+
+        <div class="form-secao">
+          <div class="form-label">ABATER DO ESTOQUE (OPCIONAL)</div>
+          <div style="display:flex;align-items:center;padding:8px 10px;background:var(--surface-raised);border-radius:8px;margin-top:4px">
+            <span style="color:var(--text-faint);margin-right:8px">○</span>
+            <span style="font-size:13px">Não abater do estoque</span>
+          </div>
+          <div style="display:flex;align-items:center;padding:8px 10px;background:var(--surface-raised);border-radius:8px;margin-top:4px;border:1px solid var(--accent)">
+            <span style="color:var(--accent);margin-right:8px">●</span>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:500">Motul 8100 X-Cess 5W40</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:1px">qtd: 4</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-secao">
+          <div class="form-label">OBSERVAÇÃO (OPCIONAL)</div>
+          <div class="form-input muted">Detalhes da troca…</div>
+        </div>
+      </div>
+    </div>
+    <div class="legenda">
+      <h3>O que você vê aqui</h3>
+      <ul>
+        <li>Picker do <strong>item</strong> abre lista agrupada por área.</li>
+        <li>Se já cadastrou o padrão deste item (aba Padrões), os campos aparecem pré-preenchidos.</li>
+        <li><strong>Toggle "Salvar como padrão"</strong> atualiza o cadastro na mesma hora.</li>
+        <li><strong>Abater do Estoque</strong> só aparece quando existe peça da mesma área.</li>
+        <li>Foto via galeria/câmera do iPhone (componente padrão da Apple).</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- TELA 5 — Ficha do item -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <section class="tela">
+    <h2>Tela 5 · Ficha do item (com inteligência)</h2>
+    <p class="descricao">Aberta tocando num cartão do cockpit (Tela 2) ou num cartão de troca (Tela 3). Status + contador real desde a última troca + média aprendida + histórico.</p>
+    <div class="iphone">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ●● 100%</span></div>
+      <div class="nav">
+        <span class="titulo">Óleo do motor</span>
+        <span class="acao">Fechar</span>
+      </div>
+      <div class="conteudo">
+        <div class="eyebrow">Motor</div>
+        <div style="font-size:20px;font-weight:600">Óleo do motor</div>
+
+        <div class="form-secao">
+          <div class="form-label">STATUS ATUAL</div>
+          <div class="status-pill">
+            <div class="bolinha vermelho"></div>
+            <div class="label">Vencido</div>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.5">Vencido há 32 dias.</div>
+        </div>
+
+        <div class="form-secao">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="form-label" style="margin:0">REGRA DE TROCA</div>
+            <span style="color:var(--accent);font-size:12px;font-weight:600">Editar ›</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:8px;line-height:1.6">Vence quando <strong style="color:var(--text)">QUALQUER</strong> uma destas baterem:</div>
+          <div style="display:flex;align-items:center;padding:7px 10px;background:var(--surface-raised);border-radius:8px;margin-top:6px;font-size:12px">
+            <span style="color:var(--text-muted);flex:1">Quilometragem de rua</span>
+            <span style="font-family:'SF Mono',Menlo,monospace;color:var(--text)">5.000 km</span>
+          </div>
+          <div style="display:flex;align-items:center;padding:7px 10px;background:var(--surface-raised);border-radius:8px;margin-top:4px;font-size:12px">
+            <span style="color:var(--text-muted);flex:1">Tempo desde a última troca</span>
+            <span style="font-family:'SF Mono',Menlo,monospace;color:var(--text)">6 meses</span>
+          </div>
+          <div style="display:flex;align-items:center;padding:7px 10px;background:var(--surface-raised);border-radius:8px;margin-top:4px;font-size:12px">
+            <span style="color:var(--text-muted);flex:1">Voltas após o último evento</span>
+            <span style="font-family:'SF Mono',Menlo,monospace;color:var(--text)">10 voltas</span>
+          </div>
+        </div>
+
+        <div class="form-secao">
+          <div class="form-label">DESDE A ÚLTIMA TROCA</div>
+          <div class="linha-info"><span class="label">Km de rua</span><span class="valor">5.9k km</span></div>
+          <div class="linha-info"><span class="label">Km de pista</span><span class="valor">214 km</span></div>
+          <div class="linha-info"><span class="label">Horas de stint</span><span class="valor">3.8 h</span></div>
+          <div class="linha-info"><span class="label">Dias</span><span class="valor">212</span></div>
+        </div>
+
+        <div class="form-secao">
+          <div class="form-label">MÉDIA APRENDIDA</div>
+          <div class="linha-info"><span class="label">Km de rua</span><span class="valor">5.1k km</span></div>
+          <div class="linha-info"><span class="label">Km de pista</span><span class="valor">180 km</span></div>
+          <div class="linha-info"><span class="label">Horas</span><span class="valor">3.2 h</span></div>
+          <div class="linha-info"><span class="label">Dias</span><span class="valor">195</span></div>
+          <div style="font-size:11px;color:var(--text-faint);margin-top:6px">Média de 1 intervalo entre trocas.</div>
+        </div>
+
+        <div class="form-secao">
+          <div class="form-label">HISTÓRICO DESSE ITEM</div>
+          <div style="display:flex;justify-content:space-between;padding:8px 10px;background:var(--surface-raised);border-radius:8px;margin-top:4px">
+            <span style="font-family:'SF Mono',Menlo,monospace;font-size:12px;color:var(--text-muted)">12/01/2026</span>
+            <span style="font-size:12px;color:var(--text-faint)">36.4k km</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 10px;background:var(--surface-raised);border-radius:8px;margin-top:4px">
+            <span style="font-family:'SF Mono',Menlo,monospace;font-size:12px;color:var(--text-muted)">15/06/2025</span>
+            <span style="font-size:12px;color:var(--text-faint)">31.2k km</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="legenda">
+      <h3>O que você vê aqui</h3>
+      <ul>
+        <li><strong>Regra de troca</strong> no topo — mostra os critérios atuais (3 nesse caso, combinados por "QUALQUER"). Botão "Editar" abre Tela 6.</li>
+        <li><strong>Status atual</strong> com cor calculada pela regra.</li>
+        <li><strong>Desde a última troca</strong>: contagem REAL — pega stints registrados, soma horas, voltas × extensão dos autódromos.</li>
+        <li><strong>Média aprendida</strong> só aparece com 2+ trocas. Sistema aprende: "esse óleo dura X km neste carro".</li>
+        <li><strong>Detector de anomalia</strong>: se a próxima troca durar &lt; 60% da média, marca como anomalia.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- TELA 6 — Editor de regra (Óleo do motor — combinação 3 critérios) -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <section class="tela">
+    <h2>Tela 6 · Editar regra (Óleo — combinação)</h2>
+    <p class="descricao">Aberta pelo botão "Editar" da regra na ficha do item. Você define <strong>quantos critérios quiser</strong>, escolhe o tipo de cada um (km rua, km pista, voltas, eventos, tempo, inspeção…) e decide como combinar. Esta é o exemplo do óleo do motor com 3 critérios.</p>
+    <div class="iphone">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ●● 100%</span></div>
+      <div class="nav">
+        <span class="voltar" style="color:var(--text)">Cancelar</span>
+        <span class="titulo">Regra do óleo</span>
+        <span class="acao">Salvar</span>
+      </div>
+      <div class="conteudo">
+        <div class="eyebrow">Subaru · Motor</div>
+        <div style="font-size:20px;font-weight:600">Óleo do motor</div>
+        <p style="font-size:12px;color:var(--text-muted);margin:4px 0 0">Cadastre uma ou mais regras pra esse item neste carro. O painel calcula automaticamente quando bate o limite.</p>
+
+        <div class="form-secao">
+          <div class="form-label">VENCE QUANDO</div>
+          <div style="display:flex;gap:4px;margin-top:4px">
+            <div style="flex:1;padding:9px;background:var(--accent);color:var(--on-accent);border-radius:8px;font-size:12px;font-weight:600;text-align:center">QUALQUER UMA bate</div>
+            <div style="flex:1;padding:9px;background:var(--surface-raised);border-radius:8px;font-size:12px;font-weight:600;text-align:center;color:var(--text-muted)">TODAS baterem juntas</div>
+          </div>
+        </div>
+
+        <!-- Critério 1 -->
+        <div class="form-secao">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="form-label" style="margin:0">CRITÉRIO 1</div>
+            <span style="font-size:11px;color:var(--vermelho)">Remover</span>
+          </div>
+          <div class="form-pick" style="margin-top:6px"><span>Quilômetros de rua</span><span class="chevron">⌃⌄</span></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <div class="form-input" style="flex:1;margin:0">5.000</div>
+            <div style="color:var(--text-muted);font-size:13px">km</div>
+          </div>
+        </div>
+
+        <!-- Critério 2 -->
+        <div class="form-secao">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="form-label" style="margin:0">CRITÉRIO 2</div>
+            <span style="font-size:11px;color:var(--vermelho)">Remover</span>
+          </div>
+          <div class="form-pick" style="margin-top:6px"><span>Tempo desde a última troca</span><span class="chevron">⌃⌄</span></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <div class="form-input" style="flex:1;margin:0">6</div>
+            <div style="color:var(--text-muted);font-size:13px">meses</div>
+          </div>
+        </div>
+
+        <!-- Critério 3 -->
+        <div class="form-secao">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="form-label" style="margin:0">CRITÉRIO 3</div>
+            <span style="font-size:11px;color:var(--vermelho)">Remover</span>
+          </div>
+          <div class="form-pick" style="margin-top:6px"><span>Voltas após o último evento</span><span class="chevron">⌃⌄</span></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <div class="form-input" style="flex:1;margin:0">10</div>
+            <div style="color:var(--text-muted);font-size:13px">voltas</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;text-align:center;padding:11px;background:rgba(85,196,254,0.1);border:1px dashed var(--accent);border-radius:10px;color:var(--accent);font-size:13px;font-weight:600">
+          + Adicionar outro critério
+        </div>
+      </div>
+    </div>
+    <div class="legenda">
+      <h3>Tipos de critério disponíveis</h3>
+      <ul>
+        <li><strong>Quilômetros de rua</strong> — quando o carro andar X km. Conta o que você anota na quilometragem ao registrar trocas.</li>
+        <li><strong>Quilômetros de pista</strong> — quando rodar X km em autódromo. Calculado por voltas × extensão da pista.</li>
+        <li><strong>Voltas totais em pista</strong> — quando completar X voltas (somadas de todas as sessões).</li>
+        <li><strong>Voltas após o último evento</strong> — pra peças que sofrem em pista. Conta apenas voltas do evento mais recente. Quando passar de X, vence.</li>
+        <li><strong>Eventos completos</strong> — após N eventos rodados.</li>
+        <li><strong>Horas de stint</strong> — soma de duração dos stints registrados.</li>
+        <li><strong>Dias / meses</strong> — tempo calendário desde a última troca.</li>
+        <li><strong>Inspeção periódica</strong> — não troca automático. Cada X tempo, o aplicativo lembra de "olhar e decidir" (caso do filtro de ar — Tela 7).</li>
+        <li><strong>Por desgaste manual</strong> — sem regra automática. Você decide quando olhar (caso de pastilha de freio).</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- TELA 7 — Editor de regra (Filtro de ar — inspeção) -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <section class="tela">
+    <h2>Tela 7 · Editar regra (Filtro de ar — inspeção)</h2>
+    <p class="descricao">Mesmo editor, agora pro filtro de ar. Aqui você usa o critério <strong>"Inspeção periódica"</strong>: a cada 6 meses, o painel acende amarelo dizendo "olha o filtro de ar" — você inspeciona, decide se troca ou não.</p>
+    <div class="iphone">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ●● 100%</span></div>
+      <div class="nav">
+        <span class="voltar" style="color:var(--text)">Cancelar</span>
+        <span class="titulo">Regra do filtro de ar</span>
+        <span class="acao">Salvar</span>
+      </div>
+      <div class="conteudo">
+        <div class="eyebrow">Subaru · Motor</div>
+        <div style="font-size:20px;font-weight:600">Filtro de ar</div>
+        <p style="font-size:12px;color:var(--text-muted);margin:4px 0 0">Filtro de ar a gente <strong>não troca direto pelo tempo</strong> — a gente inspeciona. Use o critério "Inspeção periódica".</p>
+
+        <div class="form-secao">
+          <div class="form-label">VENCE QUANDO</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Com um critério só, "qualquer" e "todas" dão o mesmo resultado — escolha não importa.</div>
+        </div>
+
+        <div class="form-secao">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="form-label" style="margin:0">CRITÉRIO 1</div>
+            <span style="font-size:11px;color:var(--vermelho)">Remover</span>
+          </div>
+          <div class="form-pick" style="margin-top:6px">
+            <span>Inspeção periódica</span>
+            <span class="chevron">⌃⌄</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <div style="color:var(--text-muted);font-size:13px">A cada</div>
+            <div class="form-input" style="flex:1;margin:0">6</div>
+            <div style="color:var(--text-muted);font-size:13px">meses</div>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:8px;line-height:1.5;padding:8px;background:rgba(250,183,42,0.08);border-radius:6px">
+            <strong style="color:var(--amarelo)">Como funciona:</strong> a cada 6 meses, o cartão do filtro de ar fica <strong>amarelo</strong> no cockpit com a mensagem "Hora de inspecionar". Você abre a ficha, marca "Inspecionado · OK" (zera o contador) ou registra uma troca (também zera).
+          </div>
+        </div>
+
+        <div style="margin-top:12px;text-align:center;padding:11px;background:rgba(85,196,254,0.1);border:1px dashed var(--accent);border-radius:10px;color:var(--accent);font-size:13px;font-weight:600">
+          + Adicionar outro critério
+        </div>
+
+        <div class="form-secao" style="margin-top:18px">
+          <div class="form-label">EXEMPLOS COMUNS DE INSPEÇÃO</div>
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.7;margin-top:4px">
+            • Filtro de ar — a cada 6 meses<br>
+            • Pastilha de freio — a cada 2 eventos<br>
+            • Aperto de torque das rodas — a cada evento<br>
+            • Folga de mancais — a cada 12 meses
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="legenda">
+      <h3>O que muda na inspeção</h3>
+      <ul>
+        <li>Não é "trocar automaticamente". É "lembrar de olhar".</li>
+        <li>Cartão fica <strong>amarelo</strong> (não vermelho) quando bate o tempo — não é alerta urgente, é só lembrete.</li>
+        <li>Ao abrir a ficha, aparecem 2 botões: <strong>"Inspecionado · OK"</strong> (zera contador, registra inspeção sem troca) ou <strong>"Registrar troca"</strong> (zera contador, vai pro formulário normal).</li>
+        <li>O histórico mostra inspeções e trocas misturadas, com ícones diferentes.</li>
+      </ul>
+    </div>
+  </section>
+
+</div>
+
+<div class="aviso">
+  <strong>Próximo passo:</strong> valida o desenho do editor de regras (Telas 6 e 7) e me diz o que ajustar. Tipos de critério extras, unidades diferentes, qualquer coisa. Quando aprovar tudo, escrevo o código no aplicativo iOS na mesma forma e instalo no iPhone.
+</div>
+
+</div>
+</body>
+</html>

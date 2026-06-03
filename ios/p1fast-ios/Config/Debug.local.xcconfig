@@ -1,0 +1,10 @@
+// ═══════════════════════════════════════════════════════════
+// .env.xcconfig — credenciais reais (gitignored)
+// ═══════════════════════════════════════════════════════════
+// Criado 2026-05-06 noite. URLs precisam escapar `//` como `https:/$()/host`
+// — xcconfig trata `//` como início de comentário.
+// Projeto Supabase do P1 Fast (isolado do CDAI Imunoterapia).
+
+SUPABASE_URL = https:/$()/fvhwltzhytpnhlqbttmd.supabase.co
+SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2aHdsdHpoeXRwbmhscWJ0dG1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTExNDAsImV4cCI6MjA5MzM4NzE0MH0._ZpxksUnuVFhLzCB5x7bBiZ_VLQQR5cH4A1T-0-mvrA
+DAILY_API_KEY = REPLACE_ME

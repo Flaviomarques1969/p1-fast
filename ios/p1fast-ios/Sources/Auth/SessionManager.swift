@@ -41,6 +41,15 @@ final class SessionManager: ObservableObject {
     /// conhecido vale até nova confirmação online).
     @Published private(set) var currentTeamId: String?
 
+    /// Pendência 4 da reformulação Autódromos (Flávio 2026-05-17):
+    /// quem fez login no aparelho identifica o piloto. UUID do user
+    /// do servidor (Supabase), exposto pro restante do app cruzar com
+    /// `pilotos.user_id` / `pessoas.user_id`.
+    var currentUserId: String? {
+        if case .authenticated(let uid, _) = state { return uid }
+        return nil
+    }
+
     private let client: SupabaseClient?
 
     init(client: SupabaseClient? = SupabaseManager.shared) {
@@ -134,6 +143,13 @@ final class SessionManager: ObservableObject {
         let user = session.user
         let email = user.email
         state = .authenticated(userId: user.id.uuidString, email: email)
+        // Pendência 4+5 da reformulação Autódromos: persiste user_id
+        // pra leitura síncrona em queues background (perfilCorrente,
+        // regra de visibilidade de dono).
+        UserDefaults.standard.set(user.id.uuidString, forKey: "p1fast.currentUserId")
+        if UserDefaults.standard.string(forKey: TeamContext.ownerStorageKey) == nil {
+            UserDefaults.standard.set(user.id.uuidString, forKey: TeamContext.ownerStorageKey)
+        }
         // Bootstrap do time pessoal em paralelo — não bloqueia UI.
         // Se falhar (offline, RPC indisponível) o currentTeamId em
         // cache vale até a próxima tentativa.

@@ -127,6 +127,50 @@ final class VoltaVideoRepository: ObservableObject {
         }
     }
 
+    // MARK: - S6 (rodada 1): lookup pra player de vídeo
+
+    /// S6 da rodada 1 (2026-05-12): retorna a VoltaVideo mantida (triada
+    /// como mantida) pra uma volta específica. Nil quando não há gravação
+    /// indexada ou foi descartada. Usado no card de detalhe da volta pra
+    /// decidir se mostra o player ou um estado "sem gravação".
+    func findMantidaForVolta(voltaId: String) async throws -> VoltaVideo? {
+        try await queue.read { db in
+            try VoltaVideo
+                .filter(Column("volta_id") == voltaId)
+                .filter(Column("triagem_status") == TriagemStatus.mantida.rawValue)
+                .fetchOne(db)
+        }
+    }
+
+    /// S6 da rodada 1: VideoStream associado a uma VoltaVideo. Carrega o
+    /// VideoStream pra ler `dailyRoomUrl` + `startedAt` no player.
+    func loadStream(videoStreamId: String) async throws -> VideoStream? {
+        try await queue.read { db in
+            try VideoStream.fetchOne(db, key: videoStreamId)
+        }
+    }
+
+    /// S6 da rodada 1: mapa voltaId → status visível ("mantida") pra o
+    /// PosStintView decidir se mostra o indicador de vídeo na linha
+    /// daquela volta. Lê em batch — uma única consulta pra todas as
+    /// voltas do stint.
+    func mapaMantidasPorStint(sessaoId: String) async throws -> [String: VoltaVideo] {
+        guard let teamId = TeamContext.currentTeamId else { return [:] }
+        let rows: [VoltaVideo] = try await queue.read { db in
+            let sql = """
+                SELECT vv.*
+                FROM volta_video vv
+                JOIN video_streams vs ON vs.id = vv.video_stream_id
+                WHERE vs.sessao_id = ? AND vv.time_id = ?
+                  AND vv.triagem_status = 'mantida'
+            """
+            return try VoltaVideo.fetchAll(db, sql: sql, arguments: [sessaoId, teamId])
+        }
+        var m: [String: VoltaVideo] = [:]
+        for r in rows { m[r.voltaId] = r }
+        return m
+    }
+
     /// Confere se uma volta já foi indexada. Útil pro indexador F4.3
     /// não duplicar quando o Detector emite mais de uma vez na mesma
     /// volta (caso o stream caia e volte).

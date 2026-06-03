@@ -1,4 +1,106 @@
 // ═══════════════════════════════════════════════════════════
+// NavigationCoordinator — controle único do navPath da Home
+// ═══════════════════════════════════════════════════════════
+// 2026-05-16: resolve UX "qualquer botão do menu deve ir direto pra
+// tela alvo, não voltar pra Home no meio" (Flávio). Compartilhado
+// entre HomeView (root do NavigationStack) e as sub-views Garagem,
+// Eventos, Pessoas. Cada `goTo` substitui o stack → tab-like puro.
+// Mantemos definido aqui dentro do ContentView.swift pra não precisar
+// adicionar arquivo novo ao project.pbxproj.
+
+@MainActor
+final class NavigationCoordinator: ObservableObject {
+    @Published var navPath = NavigationPath()
+    /// 2026-05-16 (Flávio "menu sempre embaixo em todas as telas"):
+    /// Qual aba está visualmente ativa no menu inferior. Calculado a
+    /// partir do navPath (Home/Eventos/Cadastros/Garagem). Atualizado
+    /// em `goHome()` e `goTo(_:)`. Telas filhas (detalhe de evento,
+    /// painel do carro, etc.) mantêm a aba da raiz onde nasceram.
+    @Published var abaAtual: String = "Home"
+
+    /// 2026-05-17 — Flávio "se sair do app, volta no mesmo ponto":
+    /// pilha de destinos espelhada no UserDefaults pra que a navegação
+    /// possa ser reconstruída no próximo boot. navPath (NavigationPath)
+    /// não é serializável diretamente — espelhamos numa lista paralela.
+    @Published var pilha: [HomeNavTarget] = [] {
+        didSet { persistir() }
+    }
+    private let storageKey = "p1fast.navStack"
+    private let abaStorageKey = "p1fast.navAba"
+
+    init() {
+        // 2026-05-17 (Flávio inverteu a regra): toda vez que abre o
+        // aplicativo, começar na Home. Antes restaurava o último ponto
+        // de navegação — agora não restaura mais. Cold start nasce
+        // vazio. Limpa também o que estava salvo antes pra não polui
+        // próximas execuções.
+        UserDefaults.standard.removeObject(forKey: storageKey)
+        UserDefaults.standard.removeObject(forKey: abaStorageKey)
+    }
+
+    func goHome() {
+        navPath = NavigationPath()
+        pilha = []
+        abaAtual = "Home"
+        UserDefaults.standard.set("Home", forKey: abaStorageKey)
+    }
+
+    func goTo(_ target: HomeNavTarget) {
+        navPath = NavigationPath([target])
+        pilha = [target]
+        switch target {
+        case .eventos, .eventosNovo, .eventoDetalhe:
+            abaAtual = "Eventos"
+        case .cadastros:
+            abaAtual = "Cadastros"
+        case .garagem, .garagemNovo, .carroDashboard, .estoque, .manutencao, .manutencaoCarro,
+             .setupTecnicoCarro,
+             .autodromosLista, .autodromoNovo, .autodromoEditar, .configuracoesCarro,
+             .debriefStint, .evolucaoCarro:
+            abaAtual = "Garagem"
+        case .telemetriaDemo, .stints, .voltas, .autodromos, .recordes, .meuPerfil:
+            // Sub-páginas que partem da Home (cards de estatística + Meu perfil).
+            abaAtual = "Home"
+        }
+        UserDefaults.standard.set(abaAtual, forKey: abaStorageKey)
+    }
+
+    /// Empilha um destino sem trocar a aba ativa (push dentro da
+    /// aba atual). Usado quando o usuário clica em um item específico
+    /// — por exemplo, tocar num carro na Home empurra o painel do carro
+    /// mantendo "Home" como aba ativa.
+    func push(_ target: HomeNavTarget) {
+        navPath.append(target)
+        pilha.append(target)
+    }
+
+    /// Espelho do `removeLast` do NavigationPath — pra views que ainda
+    /// fecham via onClose. Mantém a pilha persistida sincronizada.
+    func popLast() {
+        if !navPath.isEmpty { navPath.removeLast() }
+        if !pilha.isEmpty { pilha.removeLast() }
+    }
+
+    private func persistir() {
+        guard let data = try? JSONEncoder().encode(pilha) else { return }
+        UserDefaults.standard.set(data, forKey: storageKey)
+    }
+
+    private func restaurar() {
+        if let data = UserDefaults.standard.data(forKey: storageKey),
+           let arr = try? JSONDecoder().decode([HomeNavTarget].self, from: data) {
+            self.pilha = arr
+            var path = NavigationPath()
+            for t in arr { path.append(t) }
+            self.navPath = path
+        }
+        if let aba = UserDefaults.standard.string(forKey: abaStorageKey) {
+            self.abaAtual = aba
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
 // ContentView — root view
 // ═══════════════════════════════════════════════════════════
 // Sprint 1A.1: provou esqueleto + DB local (splash com "DB: ok").
@@ -76,9 +178,19 @@ private enum AppRoute {
     case licoes
     case setupAvancado
     case telemetria
+    /// 2026-05-21: atalho diagnóstico de rotação do cockpit (DEV ONLY).
+    /// Abre direto a CockpitOrientationTestView pra validar OrientationLock.
+    case cockpitTest
+    case cockpitFlowTest
+    case cockpitCoverAuto
+    case cockpitSheetToCoverAuto
 
     static var fromLaunchArgs: AppRoute {
         let args = ProcessInfo.processInfo.arguments
+        if args.contains("--p1-cockpit-test") { return .cockpitTest }
+        if args.contains("--p1-cockpit-flow-test") { return .cockpitFlowTest }
+        if args.contains("--p1-cockpit-cover-auto") { return .cockpitCoverAuto }
+        if args.contains("--p1-cockpit-sheet-to-cover-auto") { return .cockpitSheetToCoverAuto }
         if args.contains("--p1-empty") { return .homeEmpty }
         if args.contains("--p1-showcase") { return .showcase }
         if args.contains("--p1-garagem-novo") { return .garagemNovo }
@@ -113,19 +225,14 @@ struct ContentView: View {
     @StateObject private var session = SessionManager()
 
     var body: some View {
-        if ProcessInfo.processInfo.arguments.contains("--p1-hub-mock") {
-            // Atalho SÓ-DEV pra validar o hub do carro no simulador sem login.
-            HubMockLauncher()
-        } else {
-            rootView
-                .environmentObject(session)
-                .task {
-                    // Restaura sessão do storage do SDK (auto-refresh JWT
-                    // expirado). Roda 1× por subida do app — ContentView é
-                    // singleton no scene root.
-                    await session.bootstrap()
-                }
-        }
+        rootView
+            .environmentObject(session)
+            .task {
+                // Restaura sessão do storage do SDK (auto-refresh JWT
+                // expirado). Roda 1× por subida do app — ContentView é
+                // singleton no scene root.
+                await session.bootstrap()
+            }
     }
 
     @ViewBuilder
@@ -188,8 +295,32 @@ private struct ReadyRoot: View {
     @StateObject private var syncCoordinator: SyncCoordinator
     @StateObject private var stintCaptureCoordinator: StintCaptureCoordinator
     @StateObject private var voltaVideoRepo: VoltaVideoRepository
-    @StateObject private var manutencaoStore: ManutencaoConsumiveisStore
+    // S8 rodada 1 — Ações a fazer (#22) + Pneus do evento (#23).
+    @StateObject private var acaoFazerRepo: AcaoFazerRepository
+    @StateObject private var eventoPneuRepo: EventoPneuRepository
+    @StateObject private var setupReplicadoRepo: EventoSetupReplicadoRepository
+    // S3-ajuste 2026-05-12: 4 telas próprias dos cards da Home.
+    @StateObject private var relatoriosRepo: RelatoriosRepository
+    // Função Peças do carro (2026-05-17) — banco único de peças,
+    // locais cadastráveis e movimentações −1/+1.
     @StateObject private var pecaRepo: PecaRepository
+    // Reformulação Autódromos (2026-05-17 — Onda 1). Configuração do
+    // carro: motor + pneus + tipo + câmbio + aero. Várias por carro,
+    // uma marcada como "atual". Compartilhado por painel do carro e
+    // plano do evento.
+    @StateObject private var configuracaoRepo: ConfiguracaoRepository
+    // 2026-05-18 — Função Manutenção (comando "go" autônomo noturno).
+    // 3 tabelas locais + catálogo de 15 itens embarcado + integração
+    // com PecaRepository pra abater estoque quando há vínculo.
+    @StateObject private var manutencaoRepo: ManutencaoRepository
+    // 2026-05-16 — coordenador de navegação tab-like compartilhado por
+    // Home + sub-views (Garagem/Eventos/Pessoas). Resolve UX "botão do
+    // menu deve ir direto pra tela, não passar pela Home".
+    @StateObject private var navCoordinator = NavigationCoordinator()
+    /// 2026-05-16 (Flávio "quando fecha o aplicativo e volta, volta na
+    /// tela de home sempre"): observa o ciclo de vida da janela do app
+    /// pra resetar a navegação quando o gestor volta de segundo plano.
+    @Environment(\.scenePhase) private var scenePhase
 
     init(queue: DatabaseQueue) {
         self.queue = queue
@@ -204,8 +335,16 @@ private struct ReadyRoot: View {
         _licaoRepo = StateObject(wrappedValue: LicaoRepository(queue: queue))
         _pendenciaRepo = StateObject(wrappedValue: PendenciaRepository(queue: queue))
         _voltaVideoRepo = StateObject(wrappedValue: VoltaVideoRepository(queue: queue))
-        _manutencaoStore = StateObject(wrappedValue: ManutencaoConsumiveisStore(queue: queue))
-        _pecaRepo = StateObject(wrappedValue: PecaRepository(queue: queue))
+        _acaoFazerRepo = StateObject(wrappedValue: AcaoFazerRepository(queue: queue))
+        _eventoPneuRepo = StateObject(wrappedValue: EventoPneuRepository(queue: queue))
+        _setupReplicadoRepo = StateObject(wrappedValue: EventoSetupReplicadoRepository(queue: queue))
+        _relatoriosRepo = StateObject(wrappedValue: RelatoriosRepository(queue: queue))
+        let pecaRepoLocal = PecaRepository(queue: queue)
+        _pecaRepo = StateObject(wrappedValue: pecaRepoLocal)
+        _configuracaoRepo = StateObject(wrappedValue: ConfiguracaoRepository(queue: queue))
+        _manutencaoRepo = StateObject(
+            wrappedValue: ManutencaoRepository(queue: queue, pecaRepo: pecaRepoLocal)
+        )
         let reach = Reachability()
         _reachability = StateObject(wrappedValue: reach)
         _syncCoordinator = StateObject(
@@ -232,25 +371,63 @@ private struct ReadyRoot: View {
             .environmentObject(syncCoordinator)
             .environmentObject(stintCaptureCoordinator)
             .environmentObject(voltaVideoRepo)
-            .environmentObject(manutencaoStore)
+            .environmentObject(acaoFazerRepo)
+            .environmentObject(eventoPneuRepo)
+            .environmentObject(setupReplicadoRepo)
+            .environmentObject(relatoriosRepo)
             .environmentObject(pecaRepo)
+            .environmentObject(configuracaoRepo)
+            .environmentObject(manutencaoRepo)
+            .environmentObject(navCoordinator)
             .task {
-                await carroRepo.bootstrap()
-                // EventoRepo seeda o TrackRow brasília — TrackRepo
-                // (Prompt #19) complementa com layout + segments + marcos
-                // e precisa rodar DEPOIS pra evitar duplicar a inserção.
-                await eventoRepo.bootstrap()
-                // PilotoRepo seeda os 2 pilotos canônicos. Tem que rodar
-                // antes do StintRepo pra que o reloadPilotos pegue eles.
-                await pilotoRepo.bootstrap()
-                await passageiroRepo.bootstrap()
-                await combustivelRepo.bootstrap()
-                await stintRepo.bootstrap()
-                await pneuRepo.bootstrap()
-                await trackRepo.bootstrap()
-                await licaoRepo.bootstrap()
-                await pendenciaRepo.bootstrap()
-                await pecaRepo.bootstrap()
+                // 2026-05-17 (Flávio "aplicativo está lento"): boot em
+                // 3 fases pra remover esperas sequenciais desnecessárias.
+                // Antes: 12 awaits sequenciais bloqueavam a UI no boot;
+                // cada repo precisa de 1 round-trip no banco local +
+                // alguns fazem chamada de rede (prefetch fotos).
+                //
+                // Fase 1 (paralelo): seeds independentes — carros,
+                //   eventos (seeda TrackRow Brasília), pilotos
+                //   (seed canônico), passageiros, combustíveis, pneus,
+                //   lições, pendências, peças, configurações. Todos os
+                //   bootstraps tocam tabelas diferentes — sem
+                //   conflito de escrita.
+                async let _carro       = carroRepo.bootstrap()
+                async let _evento      = eventoRepo.bootstrap()
+                async let _piloto      = pilotoRepo.bootstrap()
+                async let _passageiro  = passageiroRepo.bootstrap()
+                async let _combustivel = combustivelRepo.bootstrap()
+                async let _pneu        = pneuRepo.bootstrap()
+                async let _licao       = licaoRepo.bootstrap()
+                async let _pendencia   = pendenciaRepo.bootstrap()
+                async let _peca        = pecaRepo.bootstrap()
+                async let _config      = configuracaoRepo.bootstrap()
+                async let _manutencao  = manutencaoRepo.bootstrap()
+                _ = await (_carro, _evento, _piloto, _passageiro,
+                           _combustivel, _pneu, _licao, _pendencia,
+                           _peca, _config, _manutencao)
+                // Fase 2 (dependentes): TrackRepo precisa do TrackRow
+                // Brasília criado pelo EventoRepo; StintRepo precisa
+                // dos pilotos canônicos criados pelo PilotoRepo.
+                async let _stint = stintRepo.bootstrap()
+                async let _track = trackRepo.bootstrap()
+                _ = await (_stint, _track)
+                // S3-ajuste 2026-05-12: cria massa de teste fictícia
+                // pra alimentar as 4 telas novas (Stints/Voltas/Autódromos
+                // /Recordes). Idempotente — só cria na 1ª vez. Pra
+                // limpar quando entrar em produção real:
+                //   SeedMassaTestes.limparMassaTestes(queue:)
+                // 2026-05-17: SeedMassaTestes em background — não atrasa
+                // a tela inicial. Quando termina, recarrega o cache
+                // de carros pra novos carros aparecerem.
+                let qForSeed = queue
+                let carroRepoRef = carroRepo
+                Task.detached(priority: .utility) {
+                    await SeedMassaTestes.criarSeFaltar(queue: qForSeed)
+                    await MainActor.run {
+                        Task { try? await carroRepoRef.reload() }
+                    }
+                }
                 // Sprint E.1: enfileira retroativamente rows com
                 // synced_at IS NULL que vieram de versões anteriores
                 // (carros/eventos criados antes do fix de enqueue nos
@@ -267,6 +444,15 @@ private struct ReadyRoot: View {
                     } catch {
                         print("SyncBackfill error: \(error)")
                     }
+                }
+            }
+            // 2026-05-17 (Flávio inverteu DE NOVO): toda vez que abrir
+            // o aplicativo — cold start OU voltar do segundo plano —
+            // sempre cair na Home. Restauração de navegação foi
+            // revertida.
+            .onChange(of: scenePhase) { _, novo in
+                if novo == .active {
+                    navCoordinator.goHome()
                 }
             }
     }
@@ -328,7 +514,7 @@ private struct ReadyRoot: View {
             PneuNovoLauncher()
         case .trechos:
             NavigationStack {
-                TrechoListaView()
+                AutodromoListaView()
             }
         case .configurador:
             ConfiguradorLauncher()
@@ -340,6 +526,21 @@ private struct ReadyRoot: View {
             // MS-2.6.c: passa o bundle vindo de TrackRepository.currentTrack
             // se já bootstrapou; senão TelemetriaView usa fallback SeedBrasilia.
             TelemetriaView(queue: queue, trackBundle: trackRepo.currentTrack())
+        case .cockpitTest:
+            // 2026-05-21: diagnóstico isolado de rotação. OrientationLock
+            // pede landscape; se simulator/iPhone gira, lock funciona.
+            CockpitOrientationTestView()
+        case .cockpitFlowTest:
+            // 2026-05-21: simula sheet → fullScreenCover (caminho real).
+            CockpitFlowTestView()
+        case .cockpitCoverAuto:
+            // 2026-05-21: abre fullScreenCover sozinho no onAppear pra
+            // testar rotação sem precisar de clique (automação).
+            CockpitCoverTestAutoView()
+        case .cockpitSheetToCoverAuto:
+            // 2026-05-21: simula sheet → fullScreenCover automático,
+            // reproduzindo o caminho real do StintReadyView → Cockpit.
+            CockpitSheetToCoverAutoView()
         }
     }
 }

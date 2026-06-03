@@ -121,9 +121,16 @@ struct CombustivelPickerView: View {
 
     private func combustivelRow(_ c: Combustivel) -> some View {
         let isOn = selecionado == c.id
-        return Button(action: { selecionado = c.id }) {
+        // 2026-05-16 Flávio "clicou, já seleciona": tocar na opção
+        // confirma direto e fecha. Sem precisar tocar Confirmar depois.
+        return Button(action: {
+            selecionado = c.id
+            onConfirm(c.id)
+        }) {
             HStack(spacing: 14) {
-                radio(isOn: isOn)
+                // 2026-05-16 Flávio "não quer bolinhas no botão": removi
+                // o indicador de rádio. A linha inteira já é o botão; o
+                // estado vem do fundo (com tom de destaque quando ativo).
                 VStack(alignment: .leading, spacing: 3) {
                     Text(c.nome)
                         .font(.system(size: 16, weight: .semibold))
@@ -244,56 +251,10 @@ struct CombustivelPickerView: View {
 
     @ViewBuilder
     private var footBar: some View {
-        if combustiveis.isEmpty {
-            soVoltarBar
-        } else {
-            HStack(spacing: 10) {
-                Button(action: onCancel) {
-                    Text("Cancelar")
-                        .font(.system(size: 15, weight: .semibold))
-                        .tracking(-0.075)
-                        .foregroundStyle(Color.textMuted)
-                        .padding(.horizontal, 18)
-                        .padding(.vertical, 14)
-                        .background(
-                            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                                .fill(Color.clear)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                                .stroke(Color.border, lineWidth: 1)
-                        )
-                }
-                .buttonStyle(.plain)
-
-                Button(action: { onConfirm(selecionado) }) {
-                    Text("Confirmar")
-                        .font(.system(size: 15, weight: .semibold))
-                        .tracking(-0.075)
-                        .foregroundStyle(Color.onAccent)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(
-                            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                                .fill(Color.accent)
-                        )
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, Spacing.lg)
-            .padding(.top, 14)
-            .padding(.bottom, 28)
-            .frame(maxWidth: .infinity)
-            .background(
-                Color.surface.opacity(0.92).background(.ultraThinMaterial)
-            )
-            .overlay(
-                Rectangle()
-                    .fill(Color.border)
-                    .frame(height: 1),
-                alignment: .top
-            )
-        }
+        // 2026-05-16 Flávio "clicou, já seleciona": tocar numa opção
+        // confirma direto e fecha o seletor. Não tem mais botão
+        // Confirmar — só "Voltar" (sair sem mudar).
+        soVoltarBar
     }
 
     private var soVoltarBar: some View {

@@ -1,0 +1,50 @@
+{
+  "respondido_em": "2026-05-18T19:04:42.894Z",
+  "perguntas": {
+    "A": {
+      "escolha": "Outra",
+      "outra_texto": "Eu acho que o cálculo no iPhone deve ser só o essencial. 1 ou 2 parâmetros. Torque, e potência. Por exemplo, chegou no final de uma reta, o motor não chegou no final da potência.ou antes do final da reta, muito antes, o motor chegou no limite dele, então precisava ser alongado para que ele pud esse ter mais espaço, mas precisa ponderar em função das outras, das curvas, para não perder o torque, esse é um algoritmo que você precisa refinar como um ultra especialista no assunto. Mas eu acho que o cálculo pode ser feito na nuvem. e de lá ele forma o command box e o próprio piloto através do cockpit do piloto. Porque o piloto não precisa dar informação em mil segundos, porque ele vai tocar como ele tem que tocar, mas quando ele terminar um determinado trecho, fez a passagem, logo depois do trecho ele tem uns cinco segundos pra ele poder olhar e ver, fui bem ou fui mal. E quando ele está chegando naquele trecho, está a indicação de como ele deve ir, isso aí é dois minutos e tanto depois que ele passou.",
+      "comentario": ""
+    },
+    "B": {
+      "escolha": "separado",
+      "outra_texto": "",
+      "comentario": ""
+    },
+    "C": {
+      "escolha": "catalogo",
+      "outra_texto": "",
+      "comentario": "Na hora tem que considerar o peso do piloto que está regist rado para que ele stinte."
+    },
+    "D": {
+      "escolha": "Outra",
+      "outra_texto": "O conceito é por trecho, pode mostrar uma cor diferente para mostrar esse trecho aqui é o trecho que você tem mais oportunidade por exemplo, na hora de aparecer o Shift Light lá que é aquele branco piscando você pode pescar no Tracor somente antes do trecho que é o trecho de melhor oportunidade e logo depois dele Mas todos os trechos você sempre vai estar mostrando as oportunidades dele.",
+      "comentario": ""
+    },
+    "E": {
+      "escolha": "Outra",
+      "outra_texto": "tudo vai depender do que ele ativou para aquela corrida, por exemplo, se só tem o celular então vai ser no celular do piloto, mas se ele ativou a T4 000, então aí o celular passa apenas a filmar e captar dados de IMU e GPS e a T4000 os demais dados, subindo através o celular pra nuvem, pro sistema processar.",
+      "comentario": ""
+    },
+    "F": {
+      "escolha": "automatico",
+      "outra_texto": "",
+      "comentario": "Cria pendência automática e em forma destaca lá no Comodbox Visão Engenheiro"
+    },
+    "G": {
+      "escolha": "celta-agora",
+      "outra_texto": "",
+      "comentario": "Nós só temos o bolinha hoje, tá? Os demais carros você foi criando pra testes então mas não vou me excluir, hoje é só o Celta do búho"
+    },
+    "H": {
+      "escolha": "proxima-pista",
+      "outra_texto": "",
+      "comentario": ""
+    },
+    "I": {
+      "escolha": "cadeia-5-etapas",
+      "outra_texto": "",
+      "comentario": ""
+    }
+  }
+}

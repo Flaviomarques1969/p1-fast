@@ -23,6 +23,10 @@ public enum DynoFormat: String, Sendable, Codable {
 public struct ParsedDynoCurve: Sendable, Equatable {
     public let format: DynoFormat
     public let points: [DynoPoint]
+    public init(format: DynoFormat, points: [DynoPoint]) {
+        self.format = format
+        self.points = points
+    }
 }
 
 public enum DynoCsvParserError: Error, Equatable, Sendable {

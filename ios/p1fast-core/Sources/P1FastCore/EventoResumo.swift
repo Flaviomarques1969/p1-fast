@@ -72,7 +72,7 @@ public struct DiaResumo: Sendable, Equatable {
     public let calculadoEm: Double          // ms epoch
 }
 
-public struct EventoDia: Sendable, Equatable {
+public struct EventoDiaResumo: Sendable, Equatable {
     public let id: String
     public let data: String?               // ISO YYYY-MM-DD
 
@@ -82,10 +82,10 @@ public struct EventoDia: Sendable, Equatable {
 }
 
 public struct EventoResumoInput: Sendable, Equatable {
-    public let dias: [EventoDia]
+    public let dias: [EventoDiaResumo]
     public let stintsByDia: [String: [StintInput]]
 
-    public init(dias: [EventoDia], stintsByDia: [String: [StintInput]]) {
+    public init(dias: [EventoDiaResumo], stintsByDia: [String: [StintInput]]) {
         self.dias = dias; self.stintsByDia = stintsByDia
     }
 }

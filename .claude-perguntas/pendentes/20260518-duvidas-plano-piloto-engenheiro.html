@@ -1,0 +1,862 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Minhas ideias do plano Piloto + Engenheiro · Suas decisões</title>
+<style>
+:root {
+  --bg: #0f1115;
+  --card: #171a21;
+  --card-2: #1d2027;
+  --border: #2a2f3a;
+  --fg: #e8e8e8;
+  --muted: #9aa0a6;
+  --faint: #6b7280;
+  --accent: #4f8cff;
+  --accent-2: #6aa3ff;
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  padding: 24px 16px 100px;
+  line-height: 1.5;
+}
+.wrap { max-width: 940px; margin: 0 auto; }
+
+/* Cabeçalho */
+header.topo {
+  text-align: center;
+  padding: 24px;
+  background: var(--card);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  margin-bottom: 28px;
+}
+header.topo h1 {
+  font-size: 22px;
+  margin: 0 0 6px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+}
+header.topo p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 24px;
+  padding: 4px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.tabs .tab {
+  flex: 1;
+  text-align: center;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--muted);
+  transition: all .15s;
+}
+.tabs .tab.ativa {
+  background: var(--accent);
+  color: white;
+}
+.tabs .tab:hover:not(.ativa) {
+  background: var(--card-2);
+  color: var(--fg);
+}
+
+.painel { display: none; }
+.painel.ativo { display: block; }
+
+/* Conceitos */
+.conceito {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 22px;
+  margin-bottom: 18px;
+}
+.conceito h2 {
+  font-size: 18px;
+  margin: 0 0 8px;
+  color: var(--accent-2);
+  letter-spacing: -0.3px;
+}
+.conceito .lead {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 14px;
+  font-style: italic;
+}
+.conceito p {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.conceito .metafora {
+  background: rgba(34, 197, 94, .08);
+  border-left: 3px solid var(--ok);
+  padding: 12px 14px;
+  border-radius: 0 8px 8px 0;
+  margin: 10px 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.conceito .metafora strong { color: var(--ok); }
+.conceito .alerta {
+  background: rgba(245, 158, 11, .08);
+  border-left: 3px solid var(--warn);
+  padding: 12px 14px;
+  border-radius: 0 8px 8px 0;
+  margin: 10px 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.conceito .alerta strong { color: var(--warn); }
+
+/* Perguntas */
+.pergunta {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 22px;
+  margin-bottom: 18px;
+}
+.pergunta .num {
+  display: inline-block;
+  background: var(--accent);
+  color: white;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  margin-bottom: 8px;
+}
+.pergunta .titulo {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 6px;
+  line-height: 1.4;
+}
+.pergunta .contexto {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 16px;
+  line-height: 1.6;
+}
+.pergunta .opcoes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.opcao {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--card-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all .12s;
+}
+.opcao:hover { border-color: var(--accent); background: rgba(79, 140, 255, .04); }
+.opcao input { margin-top: 4px; }
+.opcao .corpo { flex: 1; }
+.opcao .opcao-titulo {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+.opcao .opcao-just {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.opcao .rec {
+  display: inline-block;
+  background: rgba(34,197,94,.15);
+  color: var(--ok);
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.outra-wrap {
+  display: none;
+  margin-top: 4px;
+}
+.outra-wrap.ativo { display: block; }
+.outra-wrap label,
+.coment label {
+  display: block;
+  font-size: 11px;
+  color: var(--faint);
+  margin: 6px 0 4px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+textarea {
+  width: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+/* Footer com botões */
+.footer-fixo {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  padding: 14px 16px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  z-index: 50;
+}
+.footer-fixo .info {
+  flex: 1;
+  color: var(--muted);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+}
+button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:hover { background: var(--accent-2); }
+button.secundario {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--fg);
+}
+button.secundario:hover { background: var(--card-2); }
+.status {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 10px;
+}
+
+/* Tabela auxiliar */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 10px 0;
+}
+th, td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+th { color: var(--faint); font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header class="topo">
+  <h1>Minhas ideias do plano Piloto + Engenheiro</h1>
+  <p>Primeiro explico as ideias-chave (aba "Como penso"). Depois listo as perguntas que tenho dúvida e dependo de você decidir (aba "Suas decisões"). Cada pergunta tem cartões clicáveis com recomendação destacada.</p>
+</header>
+
+<div class="tabs">
+  <div class="tab ativa" data-tab="ideias">Como penso (minhas ideias)</div>
+  <div class="tab" data-tab="perguntas">Suas decisões (perguntas)</div>
+</div>
+
+<!-- ═════════════════════════════════════════ -->
+<!-- ABA 1 — IDEIAS                            -->
+<!-- ═════════════════════════════════════════ -->
+<div class="painel ativo" id="painel-ideias">
+
+  <div class="conceito">
+    <h2>Ideia 1 — Toda volta vira evidência (do piloto e do carro)</h2>
+    <p class="lead">A pista deixa de ser "uma volta a mais" e vira fonte de dado contínuo para 2 frentes ao mesmo tempo.</p>
+    <p>Hoje você anda, sente, e tira conclusão da memória. A proposta é: <strong>cada volta passa por 3 comparações automáticas</strong>:</p>
+    <ul>
+      <li><strong>Versus a melhor versão de você</strong> (seu recorde pessoal naquela curva, naquele carro, naquela configuração) — mede se você está no seu teto.</li>
+      <li><strong>Versus a melhor versão do carro</strong> (a aceleração que o motor PODE entregar, calculada da curva oficial do dinamômetro que registramos hoje) — mede se você está extraindo tudo que o motor tem pra dar.</li>
+      <li><strong>Versus a volta anterior do stint atual</strong> — mede progressão dentro da sessão.</li>
+    </ul>
+    <div class="metafora">
+      <strong>Metáfora:</strong> é como ter 3 cronômetros na cabeça ao mesmo tempo, mas só vendo a diferença em palavras simples ("ganhou 0,2 s na C5" / "perdeu 0,4 s na C8") em vez de minutos:segundos.
+    </div>
+  </div>
+
+  <div class="conceito">
+    <h2>Ideia 2 — A curva do motor agora é uma régua</h2>
+    <p class="lead">Os 79 pontos que registramos hoje no dinamômetro deixam de ser um gráfico no PDF e viram uma régua que o aplicativo consulta a 10 vezes por segundo.</p>
+    <p>Em qualquer instante na pista, o aplicativo tem 4 medições vivas: <strong>RPM atual · marcha engatada · aceleração real · pedal do acelerador</strong>. E sabe (porque cadastramos): <strong>relação de cada marcha · redução do diferencial · raio do pneu · massa do carro</strong>.</p>
+    <p>Com esses 8 números, ele calcula <strong>quanto o carro DEVERIA estar acelerando</strong> se o motor entregasse o que entregou no dinamômetro. Compara com o que está acelerando de fato. A diferença é o "Δ aceleração" — o ouro deste sistema.</p>
+    <div class="metafora">
+      <strong>Metáfora:</strong> é a diferença entre "olhar a balança e ver 85 kg" (sentir o motor) e "saber que você comeu 2300 calorias hoje e queimou 2100" (medir o motor). A balança dá um número; a comparação dá causa.
+    </div>
+  </div>
+
+  <div class="conceito">
+    <h2>Ideia 3 — Distinguir "o carro perdeu" de "o piloto não extraiu"</h2>
+    <p class="lead">A pergunta mais difícil do esporte. A maioria dos pilotos amadores erra esse julgamento (acha que é o carro, é o estilo; acha que é o estilo, é o carro).</p>
+    <p>O sistema separa com base no contexto da amostra:</p>
+    <table>
+      <thead>
+        <tr><th>Quando o Δ aparece</th><th>Causa provável</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Em reta, pedal alto (acima de 95%), durante meio segundo</td><td>CARRO — motor entregando abaixo</td></tr>
+        <tr><td>Em reta, pedal abaixo de 95%</td><td>PILOTO — não pisou tudo</td></tr>
+        <tr><td>Em saída de curva, com RPM abaixo de 80% do pico</td><td>PILOTO — marcha errada / soltou freio cedo</td></tr>
+        <tr><td>Em saída de curva, com RPM no pico mas Δ grande</td><td>CARRO — motor ruim mesmo no pico</td></tr>
+        <tr><td>Em troca de marcha, queda de RPM acima de 1500 num só piscar</td><td>CÂMBIO — embreagem escorregando</td></tr>
+      </tbody>
+    </table>
+    <p>Onde a regra não bate com confiança, o aplicativo é honesto e mostra "indeterminado — verificar com o piloto".</p>
+    <div class="alerta">
+      <strong>Atenção:</strong> os limiares (95%, 80%, 1500 RPM) são meus chutes iniciais. Precisam ser calibrados com 2-3 stints reais antes de virar regra dura.
+    </div>
+  </div>
+
+  <div class="conceito">
+    <h2>Ideia 4 — Camadas diferentes pro piloto e pro engenheiro (mesma fonte)</h2>
+    <p class="lead">O dado é o mesmo. A camada de informação é diferente.</p>
+    <p><strong>O piloto na pista</strong> recebe <em>uma frase</em>, <em>uma cor</em>, <em>um número</em>. Ele está correndo — não consegue ler relatório. Exemplo: <em>"Saiu de C5 aos 4.200 RPM. Ideal: 5.200. Atrasar a troca pra 2ª."</em></p>
+    <p><strong>O engenheiro no box</strong> recebe <em>o diagnóstico completo</em>. Não está correndo — consegue ler. Exemplo: <em>mapa de calor mostrando que o motor perde 6% entre 5.500 e 6.000 RPM em 3ª e 4ª; histograma mostrando que o piloto passou 47% do tempo abaixo da banda forte; recomendação automática: "verificar bomba combustível ou mistura"</em>.</p>
+    <p>A engenharia conversa com a pilotagem fechando o ciclo: o engenheiro entende o motor; ajusta; o piloto recebe a sugestão de pilotagem; pilota; gera mais dado; o engenheiro re-analisa.</p>
+    <div class="metafora">
+      <strong>Metáfora:</strong> é o mesmo painel de um avião — o piloto vê altímetro e velocidade; o controle de tráfego vê o radar inteiro. Mesmo dado, camadas diferentes. Não adianta encher o cockpit de mapa nem deixar o controlador sem radar.
+    </div>
+  </div>
+
+  <div class="conceito">
+    <h2>Ideia 5 — Manutenção e Estoque entram no ciclo</h2>
+    <p class="lead">A função Manutenção entregue esta madrugada e a função Estoque entregue ontem encaixam aqui sem trabalho extra.</p>
+    <p>Quando o sistema detecta que o Δ aceleração cresceu em <strong>3 eventos seguidos</strong> na mesma faixa de RPM, ele gera <strong>pendência automática de manutenção</strong> ("verificar vela / filtro / bomba"). Se a sugestão é "trocar vela", o aplicativo consulta o Estoque e mostra "1 disponível no Box" ou "ESGOTADA — comprar antes do próximo evento".</p>
+    <p>É a ponte entre <em>diagnóstico (engenharia) → ação (manutenção) → logística (estoque)</em>.</p>
+    <div class="metafora">
+      <strong>Metáfora:</strong> é a mesma corrente que um time profissional usa, só que automatizada. Eles têm engenheiro que vê dado, mecânico que age, almoxarife que avisa do estoque. Aqui o aplicativo conecta os 3 papéis pra você que faz tudo sozinho.
+    </div>
+  </div>
+
+  <div class="conceito">
+    <h2>Ideia 6 — Aprendizado contínuo (curto, médio e longo prazo)</h2>
+    <p class="lead">Não é só "esta volta versus aquela volta". O sistema aprende em 3 horizontes ao mesmo tempo.</p>
+    <ul>
+      <li><strong>Dentro do stint (curto):</strong> Δ acumulado vivo, cor por trecho que acabou de passar, frase pra ajustar agora.</li>
+      <li><strong>Entre stints do mesmo evento (médio):</strong> "você melhorou C5 entre o stint 1 e o stint 2; piorou C8". Plano sugerido pro próximo stint baseado em onde você está mais inconsistente.</li>
+      <li><strong>Entre eventos (longo):</strong> "sua evolução em Brasília nos últimos 5 eventos: ganhou 1,3 s no setor 2, perdeu 0,3 s no setor 3". Identifica padrão de progresso ou regressão.</li>
+    </ul>
+    <p>Tudo a partir do mesmo dado base — só muda a janela de análise.</p>
+  </div>
+
+  <div class="conceito">
+    <h2>Ideia 7 — Mostrar o motor "envelhecendo" antes de quebrar</h2>
+    <p class="lead">Esta é a parte mais valiosa em dinheiro a médio prazo.</p>
+    <p>Conforme o motor envelhece (vela perdendo, filtro de ar entupindo, bomba combustível velha, sensor desregulado), o Δ aceleração cresce GRADUALMENTE em faixas específicas. Não dá pra perceber dirigindo — você se adapta e nem sente.</p>
+    <p>O sistema detecta a tendência de subida ao longo de várias sessões e <strong>alerta antes da quebra</strong>. É como ter um exame de sangue toda volta — você não precisa esperar o infarto pra saber que o colesterol está alto.</p>
+    <div class="alerta">
+      <strong>Pressuposto:</strong> a curva do motor que registramos hoje vira a linha base. Cada nova medição de dinamômetro compara com essa. Mas conforme o motor envelhece, a comparação no dia a dia da pista também detecta a queda — sem precisar voltar ao dinamômetro toda vez.
+    </div>
+  </div>
+
+</div>
+
+<!-- ═════════════════════════════════════════ -->
+<!-- ABA 2 — PERGUNTAS                         -->
+<!-- ═════════════════════════════════════════ -->
+<div class="painel" id="painel-perguntas">
+
+  <!-- A -->
+  <div class="pergunta" data-id="A">
+    <div class="num">PERGUNTA A</div>
+    <div class="titulo">Onde o cálculo da aceleração teórica deve rodar?</div>
+    <div class="contexto">A informação RPM/marcha/mistura vem do equipamento ligado ao motor (T4000), que fica no notebook do carro. O cálculo pode rodar lá mesmo, OU pode ser enviado pro iPhone calcular. A escolha muda complexidade técnica e velocidade de resposta.</div>
+    <div class="opcoes">
+      <label class="opcao">
+        <input type="radio" name="A" value="windows" />
+        <div class="corpo">
+          <div class="opcao-titulo">Calcular no notebook do carro <span class="rec">RECOMENDADO</span></div>
+          <div class="opcao-just">Cálculo perto da fonte do dado. Resposta mais rápida (menos de 20 milissegundos). Não mexe no canal de comunicação atual entre iPhone e notebook. Custo: a mesma lógica precisa ser escrita 2 vezes se um dia quisermos rodar no iPhone.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="A" value="iphone" />
+        <div class="corpo">
+          <div class="opcao-titulo">Calcular no iPhone</div>
+          <div class="opcao-just">Mantém toda a inteligência no iPhone. Mas exige estender o canal de comunicação (envelope) que hoje só leva posição/velocidade. Mais trabalho de plumbing, mais teste de integração.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="A" value="Outra" />
+        <div class="corpo">
+          <div class="opcao-titulo">Outra</div>
+          <div class="opcao-just">Descreva no campo abaixo.</div>
+        </div>
+      </label>
+    </div>
+    <div class="outra-wrap"><label>Sua opção</label><textarea rows="2" placeholder="Ex.: faça as duas implementações em paralelo / decide depois da próxima ida à pista / etc."></textarea></div>
+    <div class="coment"><label>Comentário (opcional)</label><textarea rows="2"></textarea></div>
+  </div>
+
+  <!-- B -->
+  <div class="pergunta" data-id="B">
+    <div class="num">PERGUNTA B</div>
+    <div class="titulo">Como submeter o trabalho à versão oficial do projeto?</div>
+    <div class="contexto">Estoque (ontem), Manutenção (esta madrugada), Cadastro técnico do carro (Bloco 1), Cockpit do piloto (Bloco 4) e Vista do engenheiro (Bloco 5) podem entrar juntos ou separados.</div>
+    <div class="opcoes">
+      <label class="opcao">
+        <input type="radio" name="B" value="separado" />
+        <div class="corpo">
+          <div class="opcao-titulo">Separado, uma entrega por bloco <span class="rec">RECOMENDADO</span></div>
+          <div class="opcao-just">Cada bloco vira sua entrega. Revisão fica clara, pode reverter individualmente, histórico do projeto fica organizado. Custo: mais trabalho administrativo de empacotar.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="B" value="pacote-unico" />
+        <div class="corpo">
+          <div class="opcao-titulo">Pacote único agora (5 entregas juntas)</div>
+          <div class="opcao-just">Resolve a bagunça atual do ambiente isolado que tem 5.516 arquivos diferentes da versão oficial. Mais simples administrativamente. Custo: revisão fica difícil; se algo der problema, é bagunça maior pra reverter.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="B" value="esperar" />
+        <div class="corpo">
+          <div class="opcao-titulo">Esperar tudo pronto pra decidir</div>
+          <div class="opcao-just">Não submete agora. Continua trabalhando neste ambiente isolado. Decide quando todos os 6 blocos estiverem prontos.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="B" value="Outra" />
+        <div class="corpo">
+          <div class="opcao-titulo">Outra</div>
+          <div class="opcao-just">Descreva no campo abaixo.</div>
+        </div>
+      </label>
+    </div>
+    <div class="outra-wrap"><label>Sua opção</label><textarea rows="2"></textarea></div>
+    <div class="coment"><label>Comentário (opcional)</label><textarea rows="2"></textarea></div>
+  </div>
+
+  <!-- C -->
+  <div class="pergunta" data-id="C">
+    <div class="num">PERGUNTA C</div>
+    <div class="titulo">Como calibrar a massa do Celta Bubi pro cálculo?</div>
+    <div class="contexto">A aceleração teórica precisa do peso em "ordem de marcha" (carro pronto + piloto + combustível). Sem isso o cálculo desvia. Hoje não temos o número exato.</div>
+    <div class="opcoes">
+      <label class="opcao">
+        <input type="radio" name="C" value="pesar-agora" />
+        <div class="corpo">
+          <div class="opcao-titulo">Pesar agora numa balança comercial <span class="rec">RECOMENDADO</span></div>
+          <div class="opcao-just">Mais preciso. Carro pronto pra correr + você dentro + combustível típico de evento. Custo: você precisa ir até uma balança rodoviária ou de oficina. Tempo: 30 minutos.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="C" value="catalogo" />
+        <div class="corpo">
+          <div class="opcao-titulo">Usar valor de catálogo + estimativa por enquanto</div>
+          <div class="opcao-just">Celta de catálogo ~900 kg + você (80 kg estimado) + combustível (30 kg) = 1010 kg. Calibra depois com pista conhecida. Custo: cálculo desvia 5-10% até calibrar.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="C" value="Outra" />
+        <div class="corpo">
+          <div class="opcao-titulo">Outra</div>
+          <div class="opcao-just">Descreva no campo abaixo.</div>
+        </div>
+      </label>
+    </div>
+    <div class="outra-wrap"><label>Sua opção</label><textarea rows="2"></textarea></div>
+    <div class="coment"><label>Comentário (opcional)</label><textarea rows="2"></textarea></div>
+  </div>
+
+  <!-- D -->
+  <div class="pergunta" data-id="D">
+    <div class="num">PERGUNTA D</div>
+    <div class="titulo">Quantas oportunidades de melhoria mostrar no painel do piloto enquanto corre?</div>
+    <div class="contexto">Você está dirigindo. Ler texto enquanto corre divide atenção. Mais informação NÃO é melhor.</div>
+    <div class="opcoes">
+      <label class="opcao">
+        <input type="radio" name="D" value="top1" />
+        <div class="corpo">
+          <div class="opcao-titulo">Só a TOP 1 da volta (a oportunidade que vale mais tempo) <span class="rec">RECOMENDADO</span></div>
+          <div class="opcao-just">Foco total. Atualiza a cada volta cruzada. Em pista você só consegue trabalhar 1 coisa por vez. O Top 3 completo fica pro debrief depois do stint.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="D" value="top3-sempre" />
+        <div class="corpo">
+          <div class="opcao-titulo">Top 3 sempre visíveis</div>
+          <div class="opcao-just">Você vê todas. Custo: mais informação na tela = menos legível na velocidade da pista.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="D" value="top1-toque" />
+        <div class="corpo">
+          <div class="opcao-titulo">Top 1 padrão, top 3 se você tocar</div>
+          <div class="opcao-just">Compromisso. Mas exige você tocar na tela enquanto corre — geralmente má ideia.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="D" value="Outra" />
+        <div class="corpo">
+          <div class="opcao-titulo">Outra</div>
+          <div class="opcao-just">Descreva no campo abaixo.</div>
+        </div>
+      </label>
+    </div>
+    <div class="outra-wrap"><label>Sua opção</label><textarea rows="2"></textarea></div>
+    <div class="coment"><label>Comentário (opcional)</label><textarea rows="2"></textarea></div>
+  </div>
+
+  <!-- E -->
+  <div class="pergunta" data-id="E">
+    <div class="num">PERGUNTA E</div>
+    <div class="titulo">O painel do piloto na pista fica em qual aparelho?</div>
+    <div class="contexto">Há decisão fechada (ADR-023) de usar notebook no carro + tela 10,5" externa invertida. Mas o iPhone tem cockpit funcional também (instalado, com mapa, com GPS).</div>
+    <div class="opcoes">
+      <label class="opcao">
+        <input type="radio" name="E" value="so-notebook" />
+        <div class="corpo">
+          <div class="opcao-titulo">Só notebook + tela 10,5" externa (cumpre a decisão ADR-023) <span class="rec">RECOMENDADO</span></div>
+          <div class="opcao-just">Cumpre o que já foi decidido. Tela maior, melhor posicionada. iPhone fica de gravador (telemetria, vídeo, hub).</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="E" value="notebook-iphone" />
+        <div class="corpo">
+          <div class="opcao-titulo">Notebook E iPhone (iPhone como reserva)</div>
+          <div class="opcao-just">Se algo der errado com o notebook na pista (cabo, bateria, travamento), iPhone funciona como reserva. Trabalho adicional: manter as duas telas atualizadas.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="E" value="Outra" />
+        <div class="corpo">
+          <div class="opcao-titulo">Outra</div>
+          <div class="opcao-just">Descreva no campo abaixo.</div>
+        </div>
+      </label>
+    </div>
+    <div class="outra-wrap"><label>Sua opção</label><textarea rows="2"></textarea></div>
+    <div class="coment"><label>Comentário (opcional)</label><textarea rows="2"></textarea></div>
+  </div>
+
+  <!-- F -->
+  <div class="pergunta" data-id="F">
+    <div class="num">PERGUNTA F</div>
+    <div class="titulo">Quando o sistema detectar motor caindo ao longo de eventos, ele cria pendência sozinho?</div>
+    <div class="contexto">Se o Δ aceleração crescer em 3 eventos seguidos na mesma faixa de RPM, é forte indício de problema (vela, filtro, mistura). A pendência pode nascer automática OU só virar aviso pra você decidir.</div>
+    <div class="opcoes">
+      <label class="opcao">
+        <input type="radio" name="F" value="automatico" />
+        <div class="corpo">
+          <div class="opcao-titulo">Cria pendência automática <span class="rec">RECOMENDADO</span></div>
+          <div class="opcao-just">A pendência nasce com etiqueta "criada pelo sistema · 3 eventos consecutivos". Você pode descartar se for falso positivo. Vantagem: não esquece. Custo: lista de pendências pode encher se algo gerar falso positivo frequente.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="F" value="aviso" />
+        <div class="corpo">
+          <div class="opcao-titulo">Só avisa, você cria a pendência manualmente se concordar</div>
+          <div class="opcao-just">Vê uma notificação ("motor caindo em 5.500-6.000 RPM nos últimos 3 eventos — quer investigar?"). Se você ignora, nada acontece. Vantagem: você no controle. Custo: você pode acabar ignorando e o problema cresce.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="F" value="Outra" />
+        <div class="corpo">
+          <div class="opcao-titulo">Outra</div>
+          <div class="opcao-just">Descreva no campo abaixo.</div>
+        </div>
+      </label>
+    </div>
+    <div class="outra-wrap"><label>Sua opção</label><textarea rows="2"></textarea></div>
+    <div class="coment"><label>Comentário (opcional)</label><textarea rows="2"></textarea></div>
+  </div>
+
+  <!-- G -->
+  <div class="pergunta" data-id="G">
+    <div class="num">PERGUNTA G</div>
+    <div class="titulo">Os outros carros (Bolinha · Golf GTI) também vão ter curva oficial do motor?</div>
+    <div class="contexto">Sem curva, o cálculo do Δ aceleração no outro carro fica grosseiro (usa estimativa genérica). Com curva, fica preciso. Custo: 1 sessão de dinamômetro por carro.</div>
+    <div class="opcoes">
+      <label class="opcao">
+        <input type="radio" name="G" value="todos" />
+        <div class="corpo">
+          <div class="opcao-titulo">Fazer dinamômetro dos 3 carros (Celta · Bolinha · Golf)</div>
+          <div class="opcao-just">Cobertura completa. Custo: 3 sessões de dinamômetro × R$ valor por sessão + tempo. Cada carro fica com a régua própria.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="G" value="celta-agora" />
+        <div class="corpo">
+          <div class="opcao-titulo">Só o Celta Bubi por enquanto (já temos), outros usam estimativa genérica <span class="rec">RECOMENDADO</span></div>
+          <div class="opcao-just">Começa com o que temos. Outros carros entram quando você decidir investir. Estimativa genérica é grosseira mas serve pra cockpit funcional. Cada carro vai gerando curva conforme prioridade.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="G" value="agendar" />
+        <div class="corpo">
+          <div class="opcao-titulo">Agendar próximas medições conforme oportunidade</div>
+          <div class="opcao-just">Coloca na agenda — Bolinha em 1 mês, Golf em 2 meses. Plano gradual.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="G" value="Outra" />
+        <div class="corpo">
+          <div class="opcao-titulo">Outra</div>
+          <div class="opcao-just">Descreva no campo abaixo.</div>
+        </div>
+      </label>
+    </div>
+    <div class="outra-wrap"><label>Sua opção</label><textarea rows="2"></textarea></div>
+    <div class="coment"><label>Comentário (opcional)</label><textarea rows="2"></textarea></div>
+  </div>
+
+  <!-- H -->
+  <div class="pergunta" data-id="H">
+    <div class="num">PERGUNTA H</div>
+    <div class="titulo">A captura real do T4000 (equipamento no motor) — quando você consegue fazer?</div>
+    <div class="contexto">O T4000 é fonte de RPM/marcha/mistura/temperatura ao vivo. Sem essa captura real, os Blocos 3 (Δ aceleração) e 5 (Command Box do engenheiro) ficam parciais — funcionam com dados simulados mas não com pista real.</div>
+    <div class="opcoes">
+      <label class="opcao">
+        <input type="radio" name="H" value="proxima-pista" />
+        <div class="corpo">
+          <div class="opcao-titulo">Próxima ida à pista <span class="rec">RECOMENDADO</span></div>
+          <div class="opcao-just">Faço o trabalho de cadastro técnico + curva calculável + Δ aceleração em paralelo nesta semana. Quando você for à pista, captura T4000 real. Calibração final acontece com dado de verdade.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="H" value="antes-bloco-3" />
+        <div class="corpo">
+          <div class="opcao-titulo">Antes do Bloco 3 começar (~1 mês)</div>
+          <div class="opcao-just">Bloco 1 e 2 saem agora. Bloco 3 só começa depois da captura real. Atraso de cronograma.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="H" value="paralelo" />
+        <div class="corpo">
+          <div class="opcao-titulo">Em paralelo com o trabalho (não trava o resto)</div>
+          <div class="opcao-just">Eu trabalho em todos os blocos com dado simulado; você captura T4000 quando der; integramos quando os 2 estiverem prontos.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="H" value="Outra" />
+        <div class="corpo">
+          <div class="opcao-titulo">Outra</div>
+          <div class="opcao-just">Descreva no campo abaixo.</div>
+        </div>
+      </label>
+    </div>
+    <div class="outra-wrap"><label>Sua opção</label><textarea rows="2"></textarea></div>
+    <div class="coment"><label>Comentário (opcional)</label><textarea rows="2"></textarea></div>
+  </div>
+
+  <!-- I -->
+  <div class="pergunta" data-id="I">
+    <div class="num">PERGUNTA I</div>
+    <div class="titulo">A recomendação automática do engenheiro segue o fluxo de aprovação canônico?</div>
+    <div class="contexto">Regra dura do projeto: Command Box é só visualização. Quando o sistema sugere "ajustar mistura", a ação NÃO acontece dali — acontece no aplicativo do mecânico passando por etapas (IA propõe → Engenheiro propõe → Chefe valida → Sistema confirma → Central reavalia).</div>
+    <div class="opcoes">
+      <label class="opcao">
+        <input type="radio" name="I" value="cadeia-5-etapas" />
+        <div class="corpo">
+          <div class="opcao-titulo">Sim, segue a cadeia das 5 etapas <span class="rec">RECOMENDADO</span></div>
+          <div class="opcao-just">Cumpre a regra dura do projeto. Recomendação aparece como leitura no Command Box, com indicador de em qual etapa está. Execução acontece no aplicativo do mecânico, com seu visto final.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="I" value="só-aviso" />
+        <div class="corpo">
+          <div class="opcao-titulo">É só aviso visual; você decide o que fazer fora do sistema</div>
+          <div class="opcao-just">Mais simples. Custo: perde a rastreabilidade de quem aprovou o quê e quando.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="I" value="Outra" />
+        <div class="corpo">
+          <div class="opcao-titulo">Outra</div>
+          <div class="opcao-just">Descreva no campo abaixo.</div>
+        </div>
+      </label>
+    </div>
+    <div class="outra-wrap"><label>Sua opção</label><textarea rows="2"></textarea></div>
+    <div class="coment"><label>Comentário (opcional)</label><textarea rows="2"></textarea></div>
+  </div>
+
+</div>
+
+</div><!-- /wrap -->
+
+<div class="footer-fixo">
+  <div class="info" id="contador">0 de 9 perguntas respondidas</div>
+  <button id="exportar">Exportar respostas</button>
+  <button class="secundario" id="limpar">Limpar tudo</button>
+</div>
+
+<div class="status" id="status"></div>
+
+<script>
+const STORAGE_KEY = "padrao-flavio:20260518-duvidas-plano";
+
+// Tabs
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('ativa'));
+    document.querySelectorAll('.painel').forEach(x => x.classList.remove('ativo'));
+    t.classList.add('ativa');
+    document.getElementById('painel-' + t.dataset.tab).classList.add('ativo');
+  });
+});
+
+// Outra-wrap toggle
+document.querySelectorAll('.pergunta').forEach(p => {
+  p.querySelectorAll('input[type=radio]').forEach(r => {
+    r.addEventListener('change', () => {
+      const wrap = p.querySelector('.outra-wrap');
+      wrap.classList.toggle('ativo', r.value === 'Outra' && r.checked);
+      salvar();
+      atualizarContador();
+    });
+  });
+  p.querySelectorAll('textarea').forEach(t => t.addEventListener('input', salvar));
+});
+
+function salvar() {
+  const dados = coletar();
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(dados)); } catch (e) {}
+}
+
+function coletar() {
+  const dados = { respondido_em: new Date().toISOString(), perguntas: {} };
+  document.querySelectorAll('.pergunta').forEach(p => {
+    const id = p.dataset.id;
+    const escolhaEl = p.querySelector('input[name="' + id + '"]:checked');
+    const escolha = escolhaEl ? escolhaEl.value : "";
+    const outraEl = p.querySelector('.outra-wrap textarea');
+    const comentEl = p.querySelector('.coment textarea');
+    dados.perguntas[id] = {
+      escolha: escolha,
+      outra_texto: outraEl ? outraEl.value.trim() : "",
+      comentario: comentEl ? comentEl.value.trim() : ""
+    };
+  });
+  return dados;
+}
+
+function carregar() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const dados = JSON.parse(raw);
+    Object.keys(dados.perguntas || {}).forEach(id => {
+      const p = document.querySelector('.pergunta[data-id="' + id + '"]');
+      if (!p) return;
+      const escolha = dados.perguntas[id].escolha;
+      if (escolha) {
+        const r = p.querySelector('input[value="' + escolha + '"]');
+        if (r) r.checked = true;
+      }
+      const outra = dados.perguntas[id].outra_texto;
+      if (outra) {
+        const t = p.querySelector('.outra-wrap textarea');
+        if (t) t.value = outra;
+      }
+      const com = dados.perguntas[id].comentario;
+      if (com) {
+        const t = p.querySelector('.coment textarea');
+        if (t) t.value = com;
+      }
+      const wrap = p.querySelector('.outra-wrap');
+      if (escolha === 'Outra') wrap.classList.add('ativo');
+    });
+    atualizarContador();
+  } catch (e) {}
+}
+
+function atualizarContador() {
+  let respondidas = 0;
+  document.querySelectorAll('.pergunta').forEach(p => {
+    if (p.querySelector('input[type=radio]:checked')) respondidas++;
+  });
+  document.getElementById('contador').textContent = respondidas + ' de 9 perguntas respondidas';
+}
+
+document.getElementById('exportar').addEventListener('click', () => {
+  const dados = coletar();
+  const respondidas = Object.values(dados.perguntas).filter(p => p.escolha).length;
+  if (respondidas === 0) {
+    document.getElementById('status').textContent = 'Responda pelo menos 1 pergunta antes de exportar.';
+    return;
+  }
+  const blob = new Blob([JSON.stringify(dados, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "20260518-duvidas-plano.json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  document.getElementById('status').textContent =
+    "Arquivo exportado: 20260518-duvidas-plano.json — coloque em ./.claude-perguntas/respostas/ e diga 'fiz'.";
+});
+
+document.getElementById('limpar').addEventListener('click', () => {
+  if (!confirm('Limpar todas as respostas?')) return;
+  document.querySelectorAll('.pergunta').forEach(p => {
+    p.querySelectorAll('input[type=radio]').forEach(r => r.checked = false);
+    p.querySelectorAll('textarea').forEach(t => t.value = "");
+    p.querySelector('.outra-wrap').classList.remove('ativo');
+  });
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  atualizarContador();
+  document.getElementById('status').textContent = "Limpo.";
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  carregar();
+  atualizarContador();
+});
+</script>
+
+</body>
+</html>

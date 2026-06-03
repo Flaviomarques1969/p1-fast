@@ -64,6 +64,8 @@ targets:
       - path: Resources/Assets.xcassets
         type: folder.assetcatalog
         buildPhase: resources
+      - path: Resources/cockpit-piloto.html
+        buildPhase: resources
     resources: []
     info:
       path: Sources/App/Info.plist
@@ -75,6 +77,8 @@ targets:
           UIColorName: SplashBackground
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         SUPABASE_URL: $(SUPABASE_URL)
@@ -84,8 +88,6 @@ targets:
         NSLocationWhenInUseUsageDescription: P1 Fast usa GPS pra gravar a telemetria do stint enquanto você pilota.
         NSLocationAlwaysAndWhenInUseUsageDescription: Se a tela apagar ou outro app tomar foco durante o stint, P1 Fast continua gravando o GPS pra não perder voltas. O acelerômetro pausa em background — limitação do iOS — então mantenha a tela aberta sempre que possível.
         NSMotionUsageDescription: P1 Fast usa o acelerômetro do iPhone pra medir aceleração lateral, longitudinal e curvas durante o stint.
-        # 2026-05-31 — câmera pra ler código de barras da caixa da peça + fotos no Estoque.
-        NSCameraUsageDescription: P1 Fast usa a câmera pra ler o código de barras da caixa da peça e pra tirar fotos das peças no Estoque.
         # MS-2.2 — GPS continua em background. Wake lock
         # (isIdleTimerDisabled) é controlado em runtime pelo recorder.
         UIBackgroundModes:

@@ -10,6 +10,7 @@ import SwiftUI
 
 @main
 struct P1FastApp: App {
+    @UIApplicationDelegateAdaptor(P1FastAppDelegate.self) private var appDelegate
     @StateObject private var database = AppDatabase()
 
     var body: some Scene {

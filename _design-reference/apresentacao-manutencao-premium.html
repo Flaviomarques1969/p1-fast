@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>P1 Fast · Manutenção Premium — visão</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #0a0e14;
+    --bg-2: #11161f;
+    --bg-3: #1a2230;
+    --line: rgba(255,255,255,0.07);
+    --line-2: rgba(255,255,255,0.12);
+    --text: #e8eef7;
+    --text-dim: #8a9cb5;
+    --text-very-dim: #4d5a72;
+    --blue: #4a9eff;
+    --blue-dim: #2c5e9c;
+    --blue-glow: rgba(74,158,255,0.18);
+    --green: #4ade80;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --gold: #d4af6a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { line-height: 1.55; font-size: 16px; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+  section { padding: 88px 0; border-bottom: 1px solid var(--line); }
+  section:last-child { border-bottom: none; }
+  .eyebrow { text-transform: uppercase; letter-spacing: 3px; font-size: 11px; color: var(--blue); font-weight: 600; margin-bottom: 16px; }
+  h1 { font-size: 64px; font-weight: 700; letter-spacing: -2px; line-height: 1.05; margin: 0 0 24px; }
+  h1 .sub { display: block; font-size: 28px; font-weight: 300; letter-spacing: -0.5px; color: var(--text-dim); margin-top: 12px; }
+  h2 { font-size: 42px; font-weight: 600; letter-spacing: -1.2px; line-height: 1.1; margin: 0 0 16px; }
+  h3 { font-size: 22px; font-weight: 600; letter-spacing: -0.4px; margin: 0 0 8px; }
+  p.lead { font-size: 22px; font-weight: 300; color: var(--text-dim); max-width: 800px; }
+  p { margin: 0 0 16px; }
+  .dim { color: var(--text-dim); }
+  .very-dim { color: var(--text-very-dim); }
+
+  /* hero */
+  .hero { padding: 140px 0 120px; background: radial-gradient(ellipse at top, var(--blue-glow), transparent 60%); }
+  .hero h1 { background: linear-gradient(180deg, #fff 0%, #c8d4e6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero .tag { display: inline-block; padding: 6px 14px; border: 1px solid var(--line-2); border-radius: 999px; font-size: 12px; color: var(--text-dim); margin-bottom: 32px; }
+  .hero .meta { margin-top: 48px; display: flex; gap: 48px; font-size: 13px; color: var(--text-very-dim); }
+  .hero .meta strong { color: var(--text-dim); font-weight: 500; }
+
+  /* generic blocks */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  @media (max-width: 880px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    h1 { font-size: 44px; }
+    h1 .sub { font-size: 22px; }
+    h2 { font-size: 30px; }
+  }
+
+  .card { background: var(--bg-2); border: 1px solid var(--line); border-radius: 16px; padding: 28px; }
+  .card.bordered { border-color: var(--line-2); }
+  .card.featured { background: linear-gradient(180deg, rgba(74,158,255,0.06), transparent); border-color: rgba(74,158,255,0.25); }
+  .card .num { font-size: 12px; letter-spacing: 2px; color: var(--blue); font-weight: 600; margin-bottom: 12px; }
+
+  /* audit list */
+  .audit ul { list-style: none; padding: 0; margin: 0; }
+  .audit li { padding: 14px 0; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: 60px 1fr; gap: 16px; align-items: start; }
+  .audit li:last-child { border-bottom: none; }
+  .audit .letter { font-size: 11px; letter-spacing: 2px; color: var(--text-very-dim); font-weight: 600; padding-top: 4px; }
+  .audit .text { font-size: 15px; color: var(--text-dim); }
+  .audit .text b { color: var(--text); font-weight: 500; }
+
+  /* phone mockup */
+  .phone-wrap { display: flex; justify-content: center; }
+  .phone { width: 320px; height: 660px; border-radius: 48px; background: #000; padding: 14px; box-shadow: 0 60px 120px -30px rgba(74,158,255,0.25), 0 30px 60px -20px rgba(0,0,0,0.6); border: 1px solid #2a2a2a; }
+  .phone .screen { width: 100%; height: 100%; background: var(--bg); border-radius: 36px; overflow: hidden; display: flex; flex-direction: column; }
+  .phone .statusbar { display: flex; justify-content: space-between; padding: 14px 28px 6px; font-size: 13px; font-weight: 600; color: var(--text); }
+  .phone .header { padding: 16px 22px 8px; }
+  .phone .header .car-name { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; }
+  .phone .header .car-model { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .phone .score { padding: 20px 22px 8px; }
+  .phone .score-num { font-size: 56px; font-weight: 700; letter-spacing: -2px; line-height: 1; }
+  .phone .score-num .pct { color: var(--green); }
+  .phone .score-label { font-size: 11px; letter-spacing: 2px; color: var(--text-very-dim); margin-top: 6px; font-weight: 600; }
+  .phone .bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 14px 22px; }
+  .phone .bar .seg.g { background: var(--green); }
+  .phone .bar .seg.y { background: var(--yellow); }
+  .phone .bar .seg.r { background: var(--red); }
+  .phone .list { padding: 8px 22px; flex: 1; overflow: hidden; }
+  .phone .item { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .phone .item .label { font-size: 10px; letter-spacing: 1px; font-weight: 600; }
+  .phone .item.g .label { color: var(--green); }
+  .phone .item.y .label { color: var(--yellow); }
+  .phone .item.r .label { color: var(--red); }
+  .phone .item .desc { font-size: 13px; color: var(--text); margin-top: 2px; }
+  .phone .item .meta { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .phone .cta { padding: 14px 22px; background: var(--bg-2); border-top: 1px solid var(--line); font-size: 12px; color: var(--text-dim); text-align: center; }
+
+  /* ladder */
+  .ladder { display: grid; grid-template-columns: 60px 1fr; gap: 32px; margin: 32px 0; }
+  .ladder .step { display: contents; }
+  .ladder .step-num { font-size: 48px; font-weight: 700; color: var(--text-very-dim); letter-spacing: -2px; line-height: 1; }
+  .ladder .step-body { padding-bottom: 32px; border-left: 1px solid var(--line); padding-left: 24px; margin-left: -16px; }
+  .ladder .step-body h3 { color: var(--text); }
+  .ladder .step-body .small { font-size: 13px; color: var(--text-very-dim); margin-top: 4px; }
+
+  /* timeline blocks */
+  .timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 32px; }
+  .tl-block { background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  .tl-block .tag { font-size: 10px; letter-spacing: 2px; color: var(--blue); font-weight: 700; }
+  .tl-block .title { font-size: 14px; font-weight: 600; margin: 8px 0 4px; }
+  .tl-block .body { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+  @media (max-width: 880px) {
+    .timeline { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* compare table */
+  .compare { width: 100%; border-collapse: collapse; margin-top: 24px; }
+  .compare th, .compare td { padding: 16px 12px; text-align: left; border-bottom: 1px solid var(--line); font-size: 14px; vertical-align: top; }
+  .compare th { font-size: 11px; letter-spacing: 2px; color: var(--text-very-dim); font-weight: 600; }
+  .compare .mid { color: var(--text-dim); }
+  .compare .premium { color: var(--text); }
+  .compare .premium b { color: var(--blue); font-weight: 600; }
+
+  /* big number */
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 32px; }
+  .stat { padding: 28px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 16px; }
+  .stat .big { font-size: 48px; font-weight: 700; letter-spacing: -1.5px; line-height: 1; color: var(--blue); }
+  .stat .small { font-size: 13px; color: var(--text-dim); margin-top: 12px; }
+  @media (max-width: 880px) { .stat-grid { grid-template-columns: 1fr; } }
+
+  /* invoice mock */
+  .invoice { background: var(--bg-2); border: 1px solid var(--line); border-radius: 16px; padding: 28px; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; line-height: 1.7; color: var(--text-dim); }
+  .invoice .row { display: flex; justify-content: space-between; }
+  .invoice .row b { color: var(--text); font-weight: 500; }
+  .invoice .total { border-top: 1px dashed var(--line-2); padding-top: 12px; margin-top: 12px; color: var(--text); font-size: 14px; }
+
+  /* tape */
+  .tape { display: flex; gap: 32px; overflow-x: auto; padding: 16px 0 32px; scroll-snap-type: x mandatory; }
+  .tape > div { scroll-snap-align: start; flex: 0 0 280px; }
+
+  .footer-cta { background: linear-gradient(180deg, transparent, var(--blue-glow)); padding: 120px 0 160px; text-align: center; }
+  .footer-cta h2 { font-size: 36px; }
+  .footer-cta p { font-size: 18px; color: var(--text-dim); max-width: 600px; margin: 0 auto 32px; }
+
+  .check { color: var(--green); }
+  .x { color: var(--red); }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap">
+    <span class="tag">P1 FAST · NOVA FUNÇÃO</span>
+    <h1>Manutenção<span class="sub">A saúde dos seus carros, na palma da mão.</span></h1>
+    <p class="lead">Substitui o caderninho da prateleira da oficina. Mais inteligente que qualquer software de gestão automotiva. Feito pra quem corre.</p>
+    <div class="meta">
+      <div><strong>VERSÃO</strong><br>Premium · v2</div>
+      <div><strong>ENTREGA</strong><br>9 sessões de trabalho</div>
+      <div><strong>INTEGRA COM</strong><br>Estoque · Carro · Eventos · Pendências</div>
+    </div>
+  </div>
+</section>
+
+<!-- O PROBLEMA -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">O ponto de partida</div>
+    <div class="grid-2">
+      <div>
+        <h2>Hoje você sabe<br>o que tem.<br><span class="dim">Não sabe o que vai precisar.</span></h2>
+      </div>
+      <div>
+        <p class="lead">A função Estoque, entregue ontem, resolveu metade do problema: você fotografa cada peça e o aplicativo guarda. Sabe o que tem na caminhão, no box, na oficina.</p>
+        <p>Mas falta a outra metade: <b>quando foi trocado, o que vai vencer, e quanto isso custou</b>. Sem isso, o estoque é só uma prateleira digital.</p>
+        <p>A Manutenção fecha o ciclo. Cada troca registrada vira histórico, vira pendência futura, vira recomendação pré-corrida.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 SEGUNDOS -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">A resposta em 3 segundos</div>
+    <h2>Dá pra correr<br>no fim de semana?</h2>
+    <p class="lead" style="margin-bottom: 56px;">Um olhar no painel do carro e você sabe. Verde, amarelo, vermelho. Nada mais.</p>
+
+    <div class="grid-2">
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>9:41</span><span>P1 FAST</span></div>
+            <div class="header">
+              <div class="car-name">Subaru 22B</div>
+              <div class="car-model">Impreza · 2.0 turbo · azul</div>
+            </div>
+            <div class="score">
+              <div class="score-label">PRONTO PRA PISTA</div>
+              <div class="score-num"><span class="pct">78</span><span style="font-size:24px;color:var(--text-very-dim);font-weight:400;">%</span></div>
+            </div>
+            <div class="bar">
+              <div class="seg g" style="flex:78"></div>
+              <div class="seg y" style="flex:17"></div>
+              <div class="seg r" style="flex:5"></div>
+            </div>
+            <div class="list">
+              <div class="item g">
+                <div class="label">EM DIA</div>
+                <div class="desc">Óleo motor · freios · fluidos</div>
+                <div class="meta">9 itens dentro do prazo</div>
+              </div>
+              <div class="item y">
+                <div class="label">ATENÇÃO</div>
+                <div class="desc">Filtro de ar · correia dentada</div>
+                <div class="meta">90% do prazo · sobra pouco</div>
+              </div>
+              <div class="item r">
+                <div class="label">URGENTE</div>
+                <div class="desc">Pastilha traseira em 30%</div>
+                <div class="meta">Brasília 24/05 não passa</div>
+              </div>
+            </div>
+            <div class="cta">Troque antes de quinta · ver lista de compras</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3>O semáforo entrega tudo</h3>
+        <p class="dim">O painel cruza 4 fontes que a maioria dos sistemas nem tem:</p>
+        <ul class="dim" style="padding-left: 18px; margin-top: 16px;">
+          <li><b style="color:var(--text)">Histórico de trocas</b> — quando foi o último óleo / freio / correia.</li>
+          <li><b style="color:var(--text)">Periodicidade cruzada</b> — km de rua + km de pista (que pesa 3x) + horas + telemetria de stint.</li>
+          <li><b style="color:var(--text)">Calendário de eventos</b> — Brasília 24/05 vai consumir X voltas, então peça Y precisa aguentar.</li>
+          <li><b style="color:var(--text)">Estoque atual</b> — você tem a pastilha pra trocar? Tem o óleo certo?</li>
+        </ul>
+        <p class="dim" style="margin-top: 24px;">Resultado: a decisão "compro hoje?" / "deixo pra próxima?" sai em 3 segundos. Sem planilha.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOTO INTELIGENTE -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Zero digitação</div>
+    <h2>A foto resolve.<br><span class="dim">Você só confirma.</span></h2>
+    <p class="lead">Três camadas de inteligência, encadeadas. Você fotografa a embalagem — o aplicativo preenche tudo. Marca, modelo, especificação, validade, lote.</p>
+
+    <div class="ladder">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>Leitor de texto do próprio iPhone</h3>
+          <p class="dim">Funciona sem internet, sem custo. Pega 60–70% das embalagens limpas — óleo, fluidos, filtros industriais. Resultado em meio segundo.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>Modelo de visão na nuvem (Claude / GPT)</h3>
+          <p class="dim">Quando a foto é ruim, embalagem amassada ou peça gasta sem texto legível, o aplicativo pergunta antes ("posso mandar pra nuvem? custa 3 centavos"). Você decide na hora.</p>
+          <p class="small">Custo real estimado: R$ 0,03 por foto · R$ 1,50 por ano pra quem troca peça 50 vezes.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>Catálogo aprendido</h3>
+          <p class="dim">Depois da primeira foto de uma embalagem, o aplicativo reconhece igual da próxima vez por aparência. Foto 2 em diante: instantânea, sem nuvem, sem custo.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top: 48px;">
+      <div class="card featured">
+        <div class="num">EXTRA · O QUE NINGUÉM FAZ</div>
+        <h3 style="margin-top: 8px;">Foto da peça antiga também</h3>
+        <p class="dim">Quando você tira a peça velha, fotografa antes de jogar fora. O sistema olha e diz: "pastilha em 25%, podia ter trocado antes" ou "filtro saturado, tirou na hora certa".</p>
+        <p class="dim">Vira inteligência de desgaste real, comparável entre marcas.</p>
+      </div>
+      <div class="card featured">
+        <div class="num">EXTRA · NOTA FISCAL</div>
+        <h3 style="margin-top: 8px;">Foto da nota = todas as peças de uma vez</h3>
+        <p class="dim">Saiu da loja com 4 itens? Foto da nota e o aplicativo extrai os 4, vincula ao carro, abate do estoque e cria as trocas pendentes.</p>
+        <p class="dim">Em 10 segundos, em vez de meia hora digitando.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PERIODICIDADE -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Inteligência única do P1 Fast</div>
+    <div class="grid-2">
+      <div>
+        <h2>Sabe diferenciar<br>km de rua<br>de km de pista.</h2>
+        <p class="lead" style="margin-top: 24px;">Nenhum software de oficina faz isso. Só o P1 Fast pode, porque já registra cada stint, cada volta, cada temperatura.</p>
+      </div>
+      <div>
+        <table class="compare">
+          <thead>
+            <tr><th>O QUE A MAIORIA FAZ</th><th>O QUE O P1 FAST VAI FAZER</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="mid">Trocar óleo a cada 5.000 km</td>
+              <td class="premium">Trocar óleo a cada <b>5.000 km de rua OU 1.500 km de pista OU temperatura passar de 110° por 5 voltas</b></td>
+            </tr>
+            <tr>
+              <td class="mid">Trocar pastilha por desgaste visual</td>
+              <td class="premium">Estimar pastilha por <b>voltas × peso × pista (Brasília puxa mais que Velocitta)</b> e cruzar com foto pós-stint</td>
+            </tr>
+            <tr>
+              <td class="mid">Fluido de freio a cada 2 anos</td>
+              <td class="premium"><b>2 anos OU se telemetria identificar vapor lock</b> em alguma freada</td>
+            </tr>
+            <tr>
+              <td class="mid">Pneu por estado visual</td>
+              <td class="premium">Pneu por <b>número de série, posição (DD/DE/TD/TE), voltas, rotação, marca de stint que matou</b></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MÓDULO DE INTELIGÊNCIA -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Módulo de inteligência · aprende sozinho</div>
+    <h2>O sistema melhora<br>a cada troca.<br><span class="dim">Ninguém precisa ensinar.</span></h2>
+    <p class="lead">Toda vez que você registra uma troca, o aplicativo guarda quanto durou aquela peça e onde rodou. Na próxima vez, em vez de chutar pelo manual, ele usa o número real do seu carro, na sua pista.</p>
+
+    <div class="grid-2" style="margin-top: 56px;">
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>9:41</span><span>P1 FAST</span></div>
+            <div class="header">
+              <div class="car-name">Subaru · Óleo motor</div>
+              <div class="car-model">Mobil 1 5W30 sintético · trocado em 12 abr</div>
+            </div>
+            <div class="score">
+              <div class="score-label">DESDE A ÚLTIMA TROCA</div>
+              <div class="score-num" style="font-size: 42px;">
+                <span style="color:var(--text);">2.340</span><span style="font-size:20px;color:var(--text-very-dim);font-weight:400;"> km</span>
+              </div>
+              <div style="font-size:13px;color:var(--text-dim);margin-top:8px;">
+                <span style="color:var(--blue);">47 voltas</span> em Brasília · <span style="color:var(--blue);">12 voltas</span> em Velocitta
+              </div>
+            </div>
+            <div class="bar">
+              <div class="seg g" style="flex:62"></div>
+              <div class="seg" style="flex:38;background:var(--bg-3);"></div>
+            </div>
+            <div style="padding:0 22px 12px;font-size:11px;color:var(--text-very-dim);letter-spacing:1px;font-weight:600;">62% DA VIDA APRENDIDA · TROCA PREVISTA EM ~25 VOLTAS</div>
+            <div class="list" style="padding-top:0;">
+              <div class="item">
+                <div class="label" style="color:var(--text-very-dim);">O QUE O SISTEMA APRENDEU DESSE CARRO</div>
+                <div class="desc" style="margin-top:8px;font-size:12px;color:var(--text-dim);">Última troca durou <b style="color:var(--text);">3.800 km</b> totais · <b style="color:var(--text);">78 voltas</b> de pista · sobreviveu <b style="color:var(--text);">2 eventos</b>.</div>
+              </div>
+              <div class="item">
+                <div class="label" style="color:var(--text-very-dim);">EM BRASÍLIA · ÓLEO DURA</div>
+                <div class="desc" style="margin-top:8px;font-size:12px;color:var(--text-dim);"><b style="color:var(--blue);">1.450 km de pista</b> · ≈ 75 voltas · base de 2 trocas registradas</div>
+              </div>
+              <div class="item" style="border-bottom:none;">
+                <div class="label" style="color:var(--text-very-dim);">EM VELOCITTA · ÓLEO DURA</div>
+                <div class="desc" style="margin-top:8px;font-size:12px;color:var(--text-dim);"><b style="color:var(--blue);">1.890 km de pista</b> · ≈ 98 voltas · base de 3 trocas registradas</div>
+              </div>
+            </div>
+            <div class="cta">A próxima troca já considera a pista do próximo evento</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3>O contador vivo, por item</h3>
+        <p class="dim">Cada peça aberta no painel mostra desde quando foi trocada e quanto rodou desde então. Em três medidas, simultâneas:</p>
+        <ul class="dim" style="padding-left: 18px; margin: 16px 0 32px;">
+          <li><b style="color:var(--text)">Quilometragem total</b> (rua + pista somadas).</li>
+          <li><b style="color:var(--text)">Voltas por pista</b> (Brasília, Velocitta, Goiânia · separado).</li>
+          <li><b style="color:var(--text)">Tempo de uso</b> (horas e dias).</li>
+        </ul>
+
+        <h3 style="margin-top: 32px;">As três fases do aprendizado</h3>
+        <p class="dim" style="font-size: 14px;">A inteligência começa simples e fica mais inteligente a cada troca registrada:</p>
+
+        <div style="display:flex;gap:14px;margin-top:20px;">
+          <div style="flex:1;padding:16px;background:var(--bg-2);border:1px solid var(--line);border-radius:10px;">
+            <div style="font-size:10px;letter-spacing:2px;color:var(--text-very-dim);font-weight:700;">1ª TROCA</div>
+            <div style="font-size:13px;margin-top:8px;color:var(--text-dim);">Chute do manual do carro · "óleo Mobil dura 5.000 km".</div>
+          </div>
+          <div style="flex:1;padding:16px;background:var(--bg-2);border:1px solid rgba(74,158,255,0.2);border-radius:10px;">
+            <div style="font-size:10px;letter-spacing:2px;color:var(--blue);font-weight:700;">2ª TROCA</div>
+            <div style="font-size:13px;margin-top:8px;color:var(--text-dim);">Sistema mediu: durou <b style="color:var(--text);">3.800 km</b>. Atualiza o número, joga fora o manual.</div>
+          </div>
+          <div style="flex:1;padding:16px;background:linear-gradient(180deg,rgba(74,158,255,0.08),transparent);border:1px solid rgba(74,158,255,0.35);border-radius:10px;">
+            <div style="font-size:10px;letter-spacing:2px;color:var(--blue);font-weight:700;">3ª EM DIANTE</div>
+            <div style="font-size:13px;margin-top:8px;color:var(--text-dim);">Refina por <b style="color:var(--text);">pista · clima · estilo de pilotagem</b>. Não chuta mais nada.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-top: 88px;">"Em Brasília, óleo dura X voltas." E isso se aplica a tudo.</h3>
+    <p class="dim" style="max-width:820px;">Não é só óleo. O mesmo aprendizado roda em paralelo pra <b style="color:var(--text)">cada item</b>: pastilha, fluido de freio, vela, correia, embreagem, pneu. Cada peça acumula seu próprio histórico, por pista, por estilo. Com 5 ou 6 eventos rodados, o aplicativo conhece o seu carro melhor que qualquer manual.</p>
+
+    <table class="compare" style="margin-top: 32px;">
+      <thead>
+        <tr><th>ITEM</th><th>1ª TROCA · CHUTE</th><th>HOJE · APRENDIDO</th><th>O QUE O SISTEMA APRENDEU</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="premium"><b>Óleo motor</b></td>
+          <td class="mid">5.000 km</td>
+          <td class="premium"><b style="color:var(--blue);">3.800 km</b> reais</td>
+          <td class="mid">Durou 75 voltas em Brasília, 98 em Velocitta</td>
+        </tr>
+        <tr>
+          <td class="premium"><b>Pastilha diant.</b></td>
+          <td class="mid">"por desgaste visual"</td>
+          <td class="premium"><b style="color:var(--blue);">140 voltas</b></td>
+          <td class="mid">Brasília desgasta 2× mais que Velocitta</td>
+        </tr>
+        <tr>
+          <td class="premium"><b>Fluido de freio</b></td>
+          <td class="mid">24 meses</td>
+          <td class="premium"><b style="color:var(--blue);">14 meses</b></td>
+          <td class="mid">Telemetria de freada pesada acelera a degradação</td>
+        </tr>
+        <tr>
+          <td class="premium"><b>Vela de ignição</b></td>
+          <td class="mid">20.000 km</td>
+          <td class="premium"><b style="color:var(--blue);">12.400 km</b></td>
+          <td class="mid">Combustível premium e RPM alto encurtam a vida</td>
+        </tr>
+        <tr>
+          <td class="premium"><b>Pneu Hankook</b></td>
+          <td class="mid">"por estado visual"</td>
+          <td class="premium"><b style="color:var(--blue);">110 voltas</b></td>
+          <td class="mid">Dianteiro direito desgasta antes em Brasília (curva da Bruxa)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="grid-3" style="margin-top: 56px;">
+      <div class="card featured">
+        <div class="num">PREVISÃO POR EVENTO</div>
+        <h3 style="margin-top: 8px;">"Esse evento vai consumir"</h3>
+        <p class="dim" style="font-size: 14px;">Você marca Brasília 24/05. Sistema diz: "esse evento vai puxar 18% da vida do óleo, 22% da pastilha, 30% do pneu DD". Você sabe o que vai sobrar.</p>
+      </div>
+      <div class="card featured">
+        <div class="num">COMPARAÇÃO ENTRE MARCAS</div>
+        <h3 style="margin-top: 8px;">"Qual durou mais?"</h3>
+        <p class="dim" style="font-size: 14px;">Trocou Mobil em janeiro, durou 78 voltas. Trocou Petronas em abril, durou 62. Sistema avisa: "Mobil ganha por 16 voltas — vale R$ 40 a mais."</p>
+      </div>
+      <div class="card featured">
+        <div class="num">DETECÇÃO DE ANOMALIA</div>
+        <h3 style="margin-top: 8px;">"Tá durando menos"</h3>
+        <p class="dim" style="font-size: 14px;">Óleo que costuma durar 3.800 km falhou em 2.100 km. Sistema cravado: "consumo 45% acima — pode ser vazamento, junta, alta rotação no último evento".</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PLANO PRÉ-EVENTO -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Antecipação</div>
+    <h2>Sete dias antes do evento,<br>o plano já está pronto.</h2>
+    <p class="lead">Você marca Brasília 24/05 no calendário. O aplicativo abre uma aba nova no evento: "Preparação do Subaru". Não tem que pedir.</p>
+
+    <div class="invoice" style="margin-top: 40px; max-width: 720px;">
+      <div style="font-size:11px;letter-spacing:2px;color:var(--blue);margin-bottom:14px;">PREPARAÇÃO · SUBARU · BRASÍLIA 24/05</div>
+      <div class="row"><span>Trocar pastilhas traseiras</span><b>já tem em estoque</b></div>
+      <div class="row"><span>Trocar fluido de freio (DOT 4)</span><b>R$ 85 · comprar</b></div>
+      <div class="row"><span>Limpar filtro de ar</span><b>serviço · sem peça</b></div>
+      <div class="row"><span>Alinhar pneus dianteiros</span><b>oficina · agendar</b></div>
+      <div class="row"><span>Calibrar pneus a 2,0 bar</span><b>checklist no box</b></div>
+      <div class="total row">
+        <span>Custo estimado de preparação</span><b>R$ 85</b>
+      </div>
+      <div class="row" style="font-size:11px;color:var(--text-very-dim);margin-top:8px;">
+        <span>Última atualização: hoje, 9:41</span><span>compartilhar com mecânico</span>
+      </div>
+    </div>
+
+    <p class="dim" style="margin-top: 32px;">A lista vive na tela do evento. Pode ser compartilhada com o mecânico em 1 toque — WhatsApp, e-mail ou link. Ele vê o histórico completo do Subaru e sabe exatamente o que fazer.</p>
+  </div>
+</section>
+
+<!-- CUSTO -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Dinheiro respeitado</div>
+    <h2>Quanto custa rodar<br>cada um dos carros?</h2>
+    <p class="lead">Cada troca grava o valor. Cada nota fiscal é lida automaticamente. No fim do mês você sabe — sem planilha, sem palpite.</p>
+
+    <div class="stat-grid">
+      <div class="stat">
+        <div class="big">R$ 1,80</div>
+        <div class="small">por km de pista · <b style="color:var(--text)">Subaru</b></div>
+      </div>
+      <div class="stat">
+        <div class="big">R$ 0,90</div>
+        <div class="small">por km de pista · <b style="color:var(--text)">Bolinha</b></div>
+      </div>
+      <div class="stat">
+        <div class="big">R$ 12.300</div>
+        <div class="small">acumulado em 2026 · todos os carros</div>
+      </div>
+    </div>
+
+    <p class="dim" style="margin-top: 32px;">Plus: comparativo entre marcas. "Óleo Mobil durou 5.200 km. Óleo Petronas durou 4.100 km. Mobil paga." Decisão de compra deixa de ser gosto, vira número.</p>
+  </div>
+</section>
+
+<!-- PNEU -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Item mais crítico de pista</div>
+    <div class="grid-2">
+      <div>
+        <h2>Pneu por número<br>de série.<br><span class="dim">Desde o dia 1.</span></h2>
+        <p class="lead" style="margin-top: 24px;">Quatro pneus, quatro vidas. O aplicativo segue cada um.</p>
+      </div>
+      <div>
+        <div class="card">
+          <div class="num">PNEU DT · DIANTEIRO DIREITO</div>
+          <h3 style="margin-top: 8px;">Hankook Ventus RS-4</h3>
+          <p class="dim" style="font-size: 14px;">Série <b style="color:var(--text)">HK4823X9P</b> · medida 245/40 R17</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px;font-size:13px;">
+            <div>
+              <div class="very-dim" style="font-size:10px;letter-spacing:2px;font-weight:600;">VOLTAS</div>
+              <div style="font-size:24px;font-weight:600;margin-top:4px;">87</div>
+            </div>
+            <div>
+              <div class="very-dim" style="font-size:10px;letter-spacing:2px;font-weight:600;">PISTAS</div>
+              <div style="font-size:24px;font-weight:600;margin-top:4px;">Brasília · Velocitta</div>
+            </div>
+            <div>
+              <div class="very-dim" style="font-size:10px;letter-spacing:2px;font-weight:600;">VIDA ESTIMADA</div>
+              <div style="font-size:24px;font-weight:600;margin-top:4px;color:var(--yellow);">62%</div>
+            </div>
+            <div>
+              <div class="very-dim" style="font-size:10px;letter-spacing:2px;font-weight:600;">PRÓXIMA ROTAÇÃO</div>
+              <div style="font-size:24px;font-weight:600;margin-top:4px;">em 8 voltas</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BACKUP -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Confiança total</div>
+    <div class="grid-2">
+      <div>
+        <h2>Tudo salvo<br>na sua nuvem<br>pessoal.</h2>
+      </div>
+      <div>
+        <p class="lead">O histórico inteiro é copiado, criptografado, todos os dias, pro <b>iCloud Drive da sua conta da Apple</b>.</p>
+        <p class="dim">Sem servidor nosso, sem custo, sem privacidade comprometida. Se o iPhone cair na piscina, o próximo iPhone restaura tudo automaticamente quando você entrar na sua conta da Apple.</p>
+        <p class="dim">Anos de manutenção dos seus carros não desaparecem por acidente.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INTEGRAÇÃO -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Tudo conectado ao que já existe</div>
+    <h2>Não é uma ilha.<br><span class="dim">Conversa com o que você já usa.</span></h2>
+
+    <div class="grid-4" style="margin-top: 40px;">
+      <div class="card">
+        <div class="num">ESTOQUE</div>
+        <h3>Abate sozinho</h3>
+        <p class="dim" style="font-size: 13px;">Registrou a troca? O sistema abate −1 da peça correspondente no estoque. Se faltou, oferece cadastrar agora.</p>
+      </div>
+      <div class="card">
+        <div class="num">CARRO</div>
+        <h3>Nova aba no painel</h3>
+        <p class="dim" style="font-size: 13px;">"Manutenção" e "Especificação padrão" entram como abas dentro do painel do carro que você já abre tocando no Subaru.</p>
+      </div>
+      <div class="card">
+        <div class="num">EVENTOS</div>
+        <h3>Plano pré-corrida</h3>
+        <p class="dim" style="font-size: 13px;">Cada evento ganha aba "Preparação" com itens vencendo, lista de compras e checklist pra oficina.</p>
+      </div>
+      <div class="card">
+        <div class="num">PENDÊNCIAS</div>
+        <h3>Pendência automática</h3>
+        <p class="dim" style="font-size: 13px;">Periodicidade vencida vira pendência na função que já existe — aparece na Home, no evento, no painel do carro.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CRONOGRAMA -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Como vou construir</div>
+    <h2>Nove sessões.<br>Cada uma instala<br>e roda no seu iPhone.</h2>
+    <p class="lead">Você testa, aprova, eu sigo pra próxima. Nada esperando o "tudo pronto" pra você ver o resultado.</p>
+
+    <div class="timeline">
+      <div class="tl-block">
+        <div class="tag">SESSÃO 1</div>
+        <div class="title">Fundação</div>
+        <div class="body">Tabelas no banco · lista de itens por área · aba "Manutenção" vazia no painel do carro · sub-aba "Especificação padrão" pronta pra preencher.</div>
+      </div>
+      <div class="tl-block">
+        <div class="tag">SESSÃO 2</div>
+        <div class="title">Lançamento com foto</div>
+        <div class="body">Câmera abre direta · leitor do iPhone preenche · custo da peça · foto da peça antiga · abate do estoque.</div>
+      </div>
+      <div class="tl-block">
+        <div class="tag">SESSÃO 3</div>
+        <div class="title">Foto inteligente plena</div>
+        <div class="body">Modelo de visão na nuvem como reserva · catálogo aprendido · leitura de nota fiscal em lote.</div>
+      </div>
+      <div class="tl-block">
+        <div class="tag">SESSÃO 4</div>
+        <div class="title">Periodicidade que entende pista</div>
+        <div class="body">Cruzamento km de rua + km de pista (peso 3x) + horas + telemetria de stint · regra por item · cálculo de próxima troca.</div>
+      </div>
+      <div class="tl-block" style="border-color:rgba(74,158,255,0.35);background:linear-gradient(180deg,rgba(74,158,255,0.07),transparent);">
+        <div class="tag">SESSÃO 5 · NOVA</div>
+        <div class="title">Inteligência que aprende</div>
+        <div class="body">Contador vivo desde a última troca (km · voltas por pista · horas) · histórico do que cada item durou · "óleo dura X voltas em Brasília" · refina a cada nova troca registrada · detecção de anomalia.</div>
+      </div>
+      <div class="tl-block">
+        <div class="tag">SESSÃO 6</div>
+        <div class="title">Painel "Pronto pra pista"</div>
+        <div class="body">Semáforo verde/amarelo/vermelho · 3 listas (em dia · atenção · urgente) · recomendação principal alimentada pela inteligência aprendida.</div>
+      </div>
+      <div class="tl-block">
+        <div class="tag">SESSÃO 7</div>
+        <div class="title">Pneu por número de série</div>
+        <div class="body">Cadastro de 4 pneus por posição · vida estimada · rotação programada · pistas onde rodou.</div>
+      </div>
+      <div class="tl-block">
+        <div class="tag">SESSÃO 8</div>
+        <div class="title">Plano pré-evento</div>
+        <div class="body">Aba "Preparação" na ficha do evento · lista de compras · lista de serviços · compartilhamento com mecânico · "esse evento vai consumir X%".</div>
+      </div>
+      <div class="tl-block">
+        <div class="tag">SESSÃO 9</div>
+        <div class="title">Backup pessoal</div>
+        <div class="body">Cópia criptografada diária do histórico inteiro pro iCloud Drive da sua conta da Apple · restauração automática em outro iPhone.</div>
+      </div>
+    </div>
+
+    <p class="dim" style="margin-top: 40px; max-width: 720px;">Refinos premium que ficam pra rodada 2: comando de voz no box · garantia automática com aviso · mecânico/oficina como entidade com avaliação · importação de manual de carro usado.</p>
+  </div>
+</section>
+
+<!-- AUDITORIA HONESTA -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">O plano antigo era OK. Era mediano.</div>
+    <h2>O que mudou<br>entre v1 e v2.</h2>
+    <p class="lead">Você pediu auditoria e solução premium. Aqui está o que cortei do v1 e o que entrou no premium.</p>
+
+    <table class="compare" style="margin-top: 40px;">
+      <thead>
+        <tr><th>FRAQUEZA DO V1 MEDIANO</th><th>CORREÇÃO NO PREMIUM</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mid">"Apple Vision resolve 80–90%" — chutado, sem teste</td>
+          <td class="premium">Camada 2 (nuvem) <b>entra na v1</b> com visto explícito · catálogo aprendido faz repetição grátis</td>
+        </tr>
+        <tr>
+          <td class="mid">Pneu jogado pra rodada futura</td>
+          <td class="premium">Pneu por número de série <b>já na sessão 6</b></td>
+        </tr>
+        <tr>
+          <td class="mid">Custo financeiro deixado pra módulo futuro</td>
+          <td class="premium">Custo <b>embutido desde o lançamento</b> · comparativo entre marcas · custo por km de pista</td>
+        </tr>
+        <tr>
+          <td class="mid">Periodicidade só por km / data / horas</td>
+          <td class="premium">Cruzamento <b>km de pista (peso 3x) + telemetria + calendário de eventos</b></td>
+        </tr>
+        <tr>
+          <td class="mid">Modelo de visão cortado por medo de custo (R$ 0,03/foto)</td>
+          <td class="premium">Apresentado com custo real · você decide foto a foto</td>
+        </tr>
+        <tr>
+          <td class="mid">Sem painel resumo de saúde do carro</td>
+          <td class="premium">Painel <b>"Pronto pra pista" com semáforo</b> em 3 segundos</td>
+        </tr>
+        <tr>
+          <td class="mid">Backup só local · perda total se iPhone cair</td>
+          <td class="premium">Backup diário criptografado <b>no iCloud Drive da sua conta da Apple</b></td>
+        </tr>
+        <tr>
+          <td class="mid">Foto só da peça nova</td>
+          <td class="premium">Foto <b>da peça antiga também</b> · vira inteligência de desgaste</td>
+        </tr>
+        <tr>
+          <td class="mid">Sistema usa o mesmo manual pra sempre · não aprende</td>
+          <td class="premium"><b>Módulo de inteligência</b> · contador vivo · refina a cada troca · "óleo dura X voltas em Brasília" por carro · detecta anomalia</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<section class="footer-cta">
+  <div class="wrap">
+    <div class="eyebrow">Próximo passo</div>
+    <h2>Você diz "fechado".<br>Eu começo pela sessão 1.</h2>
+    <p>Cada sessão termina com aplicativo instalado no seu iPhone. Você abre, testa, aprova. Aí seguimos. Sem segredo, sem espera, sem promessa de "tudo no fim".</p>
+    <p style="font-size: 13px; color: var(--text-very-dim); margin-top: 48px;">P1 Fast · Manutenção Premium · documento de visão · 2026-05-17</p>
+  </div>
+</section>
+
+</body>
+</html>
