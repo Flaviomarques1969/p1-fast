@@ -36,7 +36,10 @@ final class StintRepository: ObservableObject {
     /// a cada chamada — é "scoped state" do detalhe de um evento.
     @Published private(set) var stintsPorEvento: [Stint] = []
 
-    private let queue: DatabaseQueue
+    /// Exposto pra UIs que precisam fazer queries customizadas (cockpit
+    /// ao vivo conta voltas em tempo real). Escrita continua pelos
+    /// métodos do Repository.
+    let queue: DatabaseQueue
 
     init(queue: DatabaseQueue) {
         self.queue = queue
@@ -128,7 +131,9 @@ final class StintRepository: ObservableObject {
     /// temos coluna dedicada ainda (Sprint 1A.3 #16 entrega catálogo).
     @discardableResult
     func create(eventoId: String, pilotoId: String, objetivoTipo: String,
-                licaoFocada: String, voltasPlanejadas: Int) async throws -> String {
+                licaoFocada: String, voltasPlanejadas: Int,
+                carroId: String? = nil,
+                configuracaoId: String? = nil) async throws -> String {
         guard let teamId = TeamContext.currentTeamId else {
             throw NSError(domain: "StintRepository", code: -1, userInfo: [NSLocalizedDescriptionKey: "Sem equipe associada — faça login antes de criar stints."])
         }
@@ -140,9 +145,9 @@ final class StintRepository: ObservableObject {
                 id: stintId,
                 timeId: teamId,
                 eventoId: eventoId,
-                carroId: nil,
+                carroId: carroId,
                 pilotoId: pilotoId,
-                configuracaoId: nil,
+                configuracaoId: configuracaoId,
                 status: "ativa",
                 dataInicio: now,
                 dataFim: nil,
@@ -156,6 +161,25 @@ final class StintRepository: ObservableObject {
             try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: stintId, op: .insert, record: sessao)
         }
         return stintId
+    }
+
+    /// Pendência 3 da reformulação Autódromos (Flávio 2026-05-17):
+    /// "última usada" — retorna o último carro e configuração que o
+    /// piloto usou em algum stint do MESMO evento. Quando o piloto
+    /// cria um stint novo (sem plano), o aplicativo pré-marca esses
+    /// valores no formulário. Se nada foi usado ainda, retorna nil/nil.
+    func ultimoCarroEConfigDoEvento(eventoId: String) async throws -> (carroId: String?, configuracaoId: String?) {
+        try await queue.read { db in
+            let row = try Row.fetchOne(db, sql: """
+                SELECT carro_id, configuracao_id
+                FROM sessoes
+                WHERE evento_id = ?
+                  AND (carro_id IS NOT NULL OR configuracao_id IS NOT NULL)
+                ORDER BY created_at DESC
+                LIMIT 1
+            """, arguments: [eventoId])
+            return (row?["carro_id"] as String?, row?["configuracao_id"] as String?)
+        }
     }
 
     /// Finaliza um stint: grava as voltas geradas (mockadas pra Sprint
@@ -252,6 +276,19 @@ final class StintRepository: ObservableObject {
             try await incrementarCiclos(pneuId: pneuIdMontado, by: voltasGeradas)
         }
 
+        // Pendência 1 da reformulação Autódromos (Flávio 2026-05-17):
+        // ao finalizar o stint, processa todas as execuções de trecho e
+        // atualiza a melhor passagem por (segmento, carro, configuração).
+        // Erros aqui NÃO derrubam o finalize (alma do sistema mas não
+        // crítico pro fluxo de stint).
+        do {
+            try await PontosDinamicosUpdater.processarStintFinalizado(
+                stintId: stintId, queue: queue
+            )
+        } catch {
+            print("PontosDinamicosUpdater falhou: \(error)")
+        }
+
         // Recarrega o stint pra UI receber tudo composto.
         return try await fetchStint(id: stintId)
     }
@@ -329,6 +366,22 @@ final class StintRepository: ObservableObject {
     }
 
     // MARK: - Selectors (Sprint 1A.4 — Prompt #17)
+
+    /// Atualiza apenas o `configuracao_id` do stint. Passar `nil` desvincula.
+    /// Onda 1 da reformulação Autódromos (Flávio 2026-05-17). Q1: piloto
+    /// pode trocar a configuração antes de iniciar o stint, na tela
+    /// "Pronto pra começar". Mesma regra do `setPneu` — não bloqueia status.
+    func setConfiguracao(stintId: String, configuracaoId: String?) async throws {
+        let now = DB.nowMs()
+        try await queue.write { db in
+            guard var sessao = try Sessao.fetchOne(db, key: stintId) else { return }
+            sessao.configuracaoId = configuracaoId
+            sessao.updatedAt = now
+            sessao.syncedAt = nil
+            try sessao.update(db)
+            try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: sessao.id, op: .update, record: sessao)
+        }
+    }
 
     /// Atualiza apenas o `pneu_id` do stint. Passar `nil` desvincula. Usado
     /// pelo `PneuPickerView` no `StintModalView` (Configuração → Pneu

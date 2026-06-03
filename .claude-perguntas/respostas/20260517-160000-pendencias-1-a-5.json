@@ -1,0 +1,24 @@
+{
+  "id": "20260517-160000-pendencias-1-a-5",
+  "projeto": "P1 Fast",
+  "tipo": "arquitetura",
+  "respondido_em": "2026-05-17T16:51:43.745Z",
+  "registrado_em": "2026-05-17T17:00:00.000Z",
+  "respostas": {
+    "P1A": { "escolha": "outra", "texto": "Fecha o cálculo do ponto dinâmico ao cruzar a saída do trecho. A todo momento recalcula e registra os pontos dinâmicos da melhor passagem por carro+configuração. Quando alguém faz melhor, sobrescreve." },
+    "P1B": { "escolha": "parcial" },
+    "P2A": { "escolha": "outra", "texto": "Faixa fina no topo do cockpit (item A) com texto 'aguardando completar 3 voltas para dados'." },
+    "P2B": { "escolha": "sempre" },
+    "P3A": { "escolha": "por-stint" },
+    "P3B": { "escolha": "ultima-usada" },
+    "P3C": { "escolha": "sim" },
+    "P4A": { "escolha": "outra", "texto": "Item B (por login). O user_id do login identifica o piloto. Se a pessoa não estiver classificada como 'piloto', não pode planejar stint — exceto se for chefe de equipe." },
+    "P4B": { "escolha": "configuracoes" },
+    "P5A": { "escolha": "outra", "texto": "Item A (gravar volta). Padrão visual igual Brasília (fundo preto, pista cinza). Pra cadastrar autódromo novo, precisa gravar 10 voltas completas." },
+    "P5B": { "escolha": "outra", "texto": "Item A. Autódromos principais o dono do aplicativo (Flávio) cadastra como função de gestão. Quem rodar em autódromo não cadastrado usa essa rotina." },
+    "P5C": { "escolha": "toque-mapa" },
+    "P5D": { "escolha": "outra", "texto": "Híbrido B + A. Auto-sugestão inicial, com capacidade de ir ao autódromo presencialmente e ajustar (especialmente o ápice, refinamento fino) marcando por GPS no local." },
+    "P5E": { "escolha": "outra", "texto": "Pro dono do aplicativo (Flávio): aparece sempre. Pros demais: só quando o autódromo não está cadastrado. Mas ajuste dos pontos (especialmente ápice) acessível pra qualquer piloto." }
+  },
+  "comentario": ""
+}

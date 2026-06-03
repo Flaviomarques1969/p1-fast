@@ -1,0 +1,29 @@
+{
+  "id": "20260517-115500-autodromos-aprofundamento",
+  "projeto": "P1 Fast",
+  "tipo": "arquitetura",
+  "respondido_em": "2026-05-17T14:52:14.276Z",
+  "registrado_em": "2026-05-17T15:00:00.000Z",
+  "respostas": {
+    "A1": { "escolha": "outra", "texto": "os cinco mais aero. no aero apenas informar se tem: assoalho reto, difusor, splitter. aqui se tiver um deles já está valendo como nova configuração." },
+    "A2": { "escolha": "config-ativa" },
+    "A3": { "escolha": "outra", "texto": "Podemos ter várias configurações ativas, como a pneu, podemos mudar o pneu, podemos tirar um aero, então o seu carro tem várias configurações ativas. A gente escolhe essa configuração, na hora de correr você escolhe qual você quer usar, então você tem várias possibilidades de usar, a possibilidade de ter várias, pode só ter um, mas pode ter várias." },
+    "A4": { "escolha": "manual" },
+    "A5": { "escolha": "ja-agora" },
+    "B1": { "escolha": "eu-cadastro" },
+    "B2": { "escolha": "so-curvas" },
+    "B3": { "escolha": "ate-2" },
+    "C1": { "escolha": "outra", "texto": "mostra os dois, o recorde do time e o recorde pessoal, cada um vê o seu, mas também mostra o recorde daquele carro naquela configuração que qualquer pessoa tenha rodado nele usando o aplicativo." },
+    "C2": { "escolha": "piloto-carro" },
+    "C3": { "escolha": "sim" },
+    "C4": { "escolha": "outra", "texto": "Faz o batimento do B com o A, né, pra ver se o B está certo e toca." },
+    "D1": { "escolha": "outra", "texto": "Um botão de mapa escondido. Clicou no botão Abre o mapa e os trechos ficam destacados como é no command box do Visão do Piloto. Clica no trecho que quer ver, fecha o mapa e abre os detalhes do trecho. Voltar no detalhe volta pro mapa, voltar do mapa volta pra tela anterior." },
+    "D2": { "escolha": "outra", "texto": "O foco do aplicativo é a passagem do trecho. A volta é visão secundária. O foco do piloto está em trecho, dentro do trecho, aqueles seis elementos." },
+    "D3": { "escolha": "outra", "texto": "Definição de trecho: segmento da pista onde o piloto tira o pé do acelerador constantemente, em todas as voltas. Se o acelerador estiver pé embaixo ou não houver recuo constante em todas as voltas, aquilo NÃO é um trecho." },
+    "E1": { "escolha": "outra", "texto": "Item A complementado: a melhor passagem do trecho é daquele carro naquela configuração, independente de quem foi o piloto." },
+    "E2": { "escolha": "outra", "texto": "É o B (mínimo 3 voltas), mas precisa informar no cockpit uma mensagem curta tipo Aguardando mais informações para ativar o cálculo dos pontos dinâmicos." },
+    "F1": { "escolha": "ja-agora" },
+    "F2": { "escolha": "sem-parar" }
+  },
+  "comentario": ""
+}

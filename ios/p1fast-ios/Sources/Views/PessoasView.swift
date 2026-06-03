@@ -52,6 +52,8 @@ enum PessoasSheet: Identifiable {
     case editarPassageiro(Passageiro)
     case novoCombustivel
     case editarCombustivel(Combustivel)
+    case novoCarro
+    case editarCarro(String)
 
     var id: String {
         switch self {
@@ -61,6 +63,8 @@ enum PessoasSheet: Identifiable {
         case .editarPassageiro(let p): return "editar-passageiro-\(p.id)"
         case .novoCombustivel: return "novo-combustivel"
         case .editarCombustivel(let c): return "editar-combustivel-\(c.id)"
+        case .novoCarro: return "novo-carro"
+        case .editarCarro(let id): return "editar-carro-\(id)"
         }
     }
 }
@@ -68,6 +72,7 @@ enum PessoasSheet: Identifiable {
 enum PessoasSubTab: String, CaseIterable, Identifiable {
     case pilotos = "Pilotos"
     case passageiros = "Passageiros"
+    case carros = "Carros"
     case combustiveis = "Combustíveis"
     case licoes = "Lições"
     var id: String { rawValue }
@@ -78,6 +83,8 @@ struct PessoasView: View {
     @EnvironmentObject private var passageiroRepo: PassageiroRepository
     @EnvironmentObject private var combustivelRepo: CombustivelRepository
     @EnvironmentObject private var licaoRepo: LicaoRepository
+    @EnvironmentObject private var carroRepo: CarroRepository
+    @EnvironmentObject private var navCoordinator: NavigationCoordinator
     @State private var navSelection: BottomNavItem.ID?
     @State private var sheet: PessoasSheet?
     @State private var subTab: PessoasSubTab = .pilotos
@@ -92,52 +99,61 @@ struct PessoasView: View {
         BottomNavItem("Garagem"),
     ]
 
+    /// Tab-like via NavigationCoordinator: cada item leva DIRETO pra
+    /// tela alvo (substitui o stack). "Cadastros" = no-op (já aqui).
+    private func handleNavSelect(_ item: BottomNavItem) {
+        switch item.label {
+        case "Home":    navCoordinator.goHome()
+        case "Garagem": navCoordinator.goTo(.garagem)
+        case "Eventos": navCoordinator.goTo(.eventos)
+        case "Cadastros": break
+        default:        break
+        }
+    }
+
     var initialSheet: PessoasSheet?
     var initialSubTab: PessoasSubTab?
-    /// Handler do menu inferior — injetado pela HomeView pra permitir
-    /// pular pra outra aba direto desta sub-view (fix tab-bar 2026-05-12).
-    var onNavSelect: (BottomNavItem) -> Void = { _ in }
 
-    init(initialSheet: PessoasSheet? = nil,
-         initialSubTab: PessoasSubTab? = nil,
-         onNavSelect: @escaping (BottomNavItem) -> Void = { _ in }) {
+    init(initialSheet: PessoasSheet? = nil, initialSubTab: PessoasSubTab? = nil) {
         self.initialSheet = initialSheet
         self.initialSubTab = initialSubTab
-        self.onNavSelect = onNavSelect
     }
 
     var body: some View {
         List {
-                contextHeadRow
-                subTabBarRow
-                switch subTab {
-                case .pilotos:
-                    pilotosRows
-                case .passageiros:
-                    passageirosRows
-                case .combustiveis:
-                    CombustivelListaView(
-                        onAdd: { sheet = .novoCombustivel },
-                        onTap: { c in sheet = .editarCombustivel(c) },
-                        onDelete: { c in combustivelToDelete = c }
-                    )
-                    .environmentObject(combustivelRepo)
-                case .licoes:
-                    Section {
-                        LicaoListaView()
-                            .environmentObject(licaoRepo)
-                            .listRowInsets(EdgeInsets())
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.surface)
-                    }
+            contextHeadRow
+            subTabBarRow
+            switch subTab {
+            case .pilotos:
+                pilotosRows
+            case .passageiros:
+                passageirosRows
+            case .carros:
+                carrosRows
+            case .combustiveis:
+                CombustivelListaView(
+                    onAdd: { sheet = .novoCombustivel },
+                    onTap: { c in sheet = .editarCombustivel(c) },
+                    onDelete: { c in combustivelToDelete = c }
+                )
+                .environmentObject(combustivelRepo)
+            case .licoes:
+                Section {
+                    LicaoListaView()
+                        .environmentObject(licaoRepo)
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.surface)
                 }
-                bottomSpacerRow
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(Color.surface)
-            .environment(\.defaultMinListRowHeight, 0)
+            bottomSpacerRow
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(Color.surface)
+        .environment(\.defaultMinListRowHeight, 0)
         .preferredColorScheme(.dark)
+        .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             if let s = initialSubTab { subTab = s }
             if let sh = initialSheet, sheet == nil { sheet = sh }
@@ -162,6 +178,12 @@ struct PessoasView: View {
             case .editarCombustivel(let c):
                 CombustivelCadastroView(combustivelToEdit: c, onClose: { sheet = nil })
                     .environmentObject(combustivelRepo)
+            case .novoCarro:
+                CarroNovoFormView(onClose: { sheet = nil })
+                    .environmentObject(carroRepo)
+            case .editarCarro(let carroId):
+                CarroModalView(carroId: carroId, onClose: { sheet = nil })
+                    .environmentObject(carroRepo)
             }
         }
         .alert(
@@ -253,6 +275,7 @@ struct PessoasView: View {
         switch subTab {
         case .pilotos: return "Pilotos"
         case .passageiros: return "Passageiros"
+        case .carros: return "Carros"
         case .combustiveis: return "Combustível"
         case .licoes: return "Lições"
         }
@@ -262,6 +285,7 @@ struct PessoasView: View {
         switch subTab {
         case .pilotos: return "Quem dirige"
         case .passageiros: return "Quem anda junto"
+        case .carros: return "Carros cadastrados"
         case .combustiveis: return "Tipos cadastrados"
         case .licoes: return "Catálogo curado"
         }
@@ -271,6 +295,7 @@ struct PessoasView: View {
         switch subTab {
         case .pilotos: return "Cadastrados ficam disponíveis em todo stint."
         case .passageiros: return "Passageiros são cadastrados uma vez e reaproveitados."
+        case .carros: return "Toque um carro pra alterar o cadastro (apelido, modelo, foto, categoria, cor)."
         case .combustiveis: return "Tipos abastecidos ficam disponíveis pra próximos stints."
         case .licoes: return "12 lições — 7 ativas com sinais do iPhone, 5 esperando sensores."
         }
@@ -330,6 +355,34 @@ struct PessoasView: View {
         .listRowInsets(EdgeInsets(top: 4, leading: Spacing.lg, bottom: 4, trailing: Spacing.lg))
         .listRowBackground(Color.clear)
         .listRowSeparator(.hidden)
+    }
+
+    // MARK: - Linhas de Carros (2026-05-16 — sub-aba CARROS dentro de CADASTROS,
+    // onde o gestor edita o cadastro de cada carro; o painel do carro continua
+    // só de leitura.)
+
+    @ViewBuilder
+    private var carrosRows: some View {
+        groupHeadRow(title: "Cadastrados", count: carroRepo.carros.count)
+        ForEach(carroRepo.carros, id: \.id) { c in
+            PersonRow(name: tituloCarro(c))
+                .contentShape(Rectangle())
+                .onTapGesture { sheet = .editarCarro(c.id) }
+                .listRowInsets(EdgeInsets(top: 4, leading: Spacing.lg, bottom: 4, trailing: Spacing.lg))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+        }
+        AddRow(label: "Cadastrar carro") {
+            sheet = .novoCarro
+        }
+        .listRowInsets(EdgeInsets(top: 4, leading: Spacing.lg, bottom: 4, trailing: Spacing.lg))
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+    }
+
+    private func tituloCarro(_ c: Carro) -> String {
+        let modelo = c.modelo ?? ""
+        return modelo.isEmpty ? c.apelido : "\(c.apelido) · \(modelo)"
     }
 
     private func groupHeadRow(title: String, count: Int) -> some View {

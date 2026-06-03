@@ -245,6 +245,7 @@ private struct ItemRow: View {
             }
             .padding(.horizontal, Spacing.md)
             .padding(.vertical, 10)
+            .contentShape(Rectangle()) // #19 — linha inteira clicável, não só a setinha/checkbox
         }
         .buttonStyle(.plain)
         .onLongPressGesture(minimumDuration: 0.5) { onLongPress() }

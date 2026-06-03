@@ -24,13 +24,7 @@ struct PecaListaView: View {
     @EnvironmentObject private var carroRepo: CarroRepository
     let onClose: () -> Void
 
-    /// Abre já filtrada por um carro (usado pelo hub do carro). nil = todos.
-    init(carroInicial: String? = nil, onClose: @escaping () -> Void) {
-        self.onClose = onClose
-        _carroFiltroId = State(initialValue: carroInicial)
-    }
-
-    @State private var carroFiltroId: String?
+    @State private var carroFiltroId: String? = nil
     @State private var tipoFiltro: TipoFiltro = .todos
     @State private var busca: String = ""
     @State private var sheet: PecaSheet?
@@ -415,12 +409,6 @@ struct PecaNovoFormView: View {
     let carroIdSugerido: String?
     let tipoSugerido: PecaTipo?
 
-    // 2026-06-01 — modo edição. Se != nil, o form edita a peça existente
-    // (pré-preenche tudo, salva via atualizarPeca, esconde "quantidade
-    // inicial" e mostra o botão Apagar). `onApagada` fecha também o detalhe.
-    let pecaParaEditar: Peca?
-    let onApagada: (() -> Void)?
-
     @State private var nome: String = ""
     @State private var codigo: String = ""
     @State private var area: PecaArea = .motor
@@ -432,67 +420,24 @@ struct PecaNovoFormView: View {
     @State private var localId: String? = nil
     @State private var observacoes: String = ""
     @State private var fotoItem: PhotosPickerItem?
-    @State private var fotos: [UIImage] = []
-    @State private var escolherFonteAberto = false
-    @State private var cameraAberta = false
-    @State private var galeriaAberta = false
-    @State private var scannerAberto = false
+    @State private var fotoUIImage: UIImage?
     @State private var savingError: String?
     @State private var isSaving = false
     /// Permite o usuário "expandir" e trocar a escolha mesmo quando ela
     /// veio pré-preenchida do filtro. Default false: mostra só o resumo.
     @State private var trocarCarro = false
     @State private var trocarTipo = false
-    @State private var mostrarConfirmaApagar = false
-    // 2026-06-01 — leitura da etiqueta (OCR) e preço do Mercado Livre.
-    @State private var escolherFonteEtiquetaAberto = false
-    @State private var capturaEtiqueta = false
-    @State private var lendoEtiqueta = false
-    @State private var buscaPrecoAberta = false
-
-    /// true quando estamos editando uma peça existente.
-    private var editando: Bool { pecaParaEditar != nil }
 
     init(
         carroIdSugerido: String? = nil,
         tipoSugerido: PecaTipo? = nil,
-        pecaParaEditar: Peca? = nil,
-        onApagada: (() -> Void)? = nil,
         onClose: @escaping () -> Void
     ) {
         self.carroIdSugerido = carroIdSugerido
         self.tipoSugerido = tipoSugerido
-        self.pecaParaEditar = pecaParaEditar
-        self.onApagada = onApagada
         self.onClose = onClose
-        if let p = pecaParaEditar {
-            _nome = State(initialValue: p.nome)
-            _codigo = State(initialValue: p.codigo ?? "")
-            _area = State(initialValue: PecaArea(rawValue: p.area) ?? .motor)
-            _tipo = State(initialValue: PecaTipo(rawValue: p.tipo) ?? .componente)
-            _especificacao = State(initialValue: p.especificacao ?? "")
-            _carroId = State(initialValue: p.carroId)
-            _quantidade = State(initialValue: p.quantidade)
-            _precoTexto = State(initialValue: Self.precoParaTexto(p.precoUnitarioCents))
-            _localId = State(initialValue: p.localId)
-            _observacoes = State(initialValue: p.observacoes ?? "")
-            _fotos = State(initialValue: PecaRepository.carregarFotos(pecaId: p.id))
-        } else {
-            _carroId = State(initialValue: carroIdSugerido)
-            _tipo = State(initialValue: tipoSugerido ?? .componente)
-        }
-    }
-
-    /// Centavos → "89,90" pro campo de preço (vazio se nil).
-    private static func precoParaTexto(_ cents: Int?) -> String {
-        guard let c = cents else { return "" }
-        return String(format: "%.2f", Double(c) / 100.0).replacingOccurrences(of: ".", with: ",")
-    }
-
-    /// Trim + nil se vazio (modo edição; o criarPeca já faz isso sozinho).
-    private func limpo(_ s: String) -> String? {
-        let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
-        return t.isEmpty ? nil : t
+        _carroId = State(initialValue: carroIdSugerido)
+        _tipo = State(initialValue: tipoSugerido ?? .componente)
     }
 
     var body: some View {
@@ -511,14 +456,15 @@ struct PecaNovoFormView: View {
                     onCancel: onClose,
                     onSave: salvar,
                     saveLabel: "Salvar",
-                    canSave: podeSalvar && !isSaving
+                    canSave: podeSalvar && !isSaving,
+                    isSaving: isSaving
                 )
             }
             .preferredColorScheme(.dark)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text(editando ? "Editar peça" : "Nova peça").foregroundStyle(Color.text).font(.system(size: 16, weight: .semibold))
+                    Text("Nova peça").foregroundStyle(Color.text).font(.system(size: 16, weight: .semibold))
                 }
             }
         }
@@ -532,76 +478,7 @@ struct PecaNovoFormView: View {
             Task {
                 if let data = try? await novo.loadTransferable(type: Data.self),
                    let img = UIImage(data: data) {
-                    await MainActor.run {
-                        if capturaEtiqueta {
-                            capturaEtiqueta = false
-                            processarEtiqueta(img)
-                        } else if fotos.count < PecaRepository.maxFotos {
-                            fotos.append(img)
-                        }
-                        fotoItem = nil
-                    }
-                }
-            }
-        }
-        .sheet(isPresented: $scannerAberto) {
-            BarcodeScannerSheet(
-                onCode: { codigo = $0; scannerAberto = false },
-                onClose: { scannerAberto = false }
-            )
-        }
-        .photosPicker(isPresented: $galeriaAberta, selection: $fotoItem, matching: .images)
-        .fullScreenCover(isPresented: $cameraAberta) {
-            CameraPicker(
-                onImage: { img in
-                    cameraAberta = false
-                    if capturaEtiqueta {
-                        capturaEtiqueta = false
-                        processarEtiqueta(img)
-                    } else if fotos.count < PecaRepository.maxFotos {
-                        fotos.append(img)
-                    }
-                },
-                onCancel: { cameraAberta = false; capturaEtiqueta = false }
-            )
-            .ignoresSafeArea()
-        }
-        .alert("Apagar peça?", isPresented: $mostrarConfirmaApagar) {
-            Button("Apagar", role: .destructive) {
-                guard let p = pecaParaEditar else { return }
-                Task {
-                    try? await repo.apagarPeca(p)
-                    await MainActor.run { (onApagada ?? onClose)() }
-                }
-            }
-            Button("Cancelar", role: .cancel) {}
-        } message: {
-            Text("Apaga a peça e todo o histórico de movimentações. Não dá pra recuperar.")
-        }
-        .confirmationDialog("Ler etiqueta da peça", isPresented: $escolherFonteEtiquetaAberto, titleVisibility: .visible) {
-            if CameraPicker.disponivel {
-                Button("Tirar foto da etiqueta") { capturaEtiqueta = true; cameraAberta = true }
-            }
-            Button("Escolher da galeria") { capturaEtiqueta = true; galeriaAberta = true }
-            Button("Cancelar", role: .cancel) {}
-        }
-        .sheet(isPresented: $buscaPrecoAberta) {
-            BuscaPrecoMLView(
-                termo: termoBuscaML,
-                onUsar: { cents in precoTexto = Self.precoParaTexto(cents) },
-                onClose: { buscaPrecoAberta = false }
-            )
-        }
-        .overlay {
-            if lendoEtiqueta {
-                ZStack {
-                    Color.black.opacity(0.55).ignoresSafeArea()
-                    VStack(spacing: 12) {
-                        ProgressView().tint(.white)
-                        Text("Lendo a etiqueta...")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(.white)
-                    }
+                    fotoUIImage = img
                 }
             }
         }
@@ -616,18 +493,14 @@ struct PecaNovoFormView: View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             VStack(alignment: .leading, spacing: 6) {
                 Eyebrow(text: "Garagem · Estoque")
-                Text(editando ? "Editar peça" : "Cadastrar peça")
+                Text("Cadastrar peça")
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundStyle(Color.text)
-                Text(editando
-                     ? "Mude os dados da peça. A quantidade em estoque você ajusta na própria peça, pelos botões de usar e receber."
-                     : "Foto + nome são o mínimo. Quantidade e local você preenche só se tiver em estoque.")
+                Text("Foto + nome são o mínimo. Quantidade e local você preenche só se tiver em estoque.")
                     .font(.system(size: 13))
                     .foregroundStyle(Color.textMuted)
             }
             .padding(.bottom, Spacing.xs)
-
-            botaoLerEtiqueta
 
             FormField(label: "Foto", small: "opcional") {
                 fotoPicker
@@ -638,22 +511,11 @@ struct PecaNovoFormView: View {
             }
 
             FormField(label: "Código", small: "opcional") {
-                HStack(spacing: 10) {
-                    FormInput(text: $codigo, placeholder: "Ex: 5PK890")
-                    Button { scannerAberto = true } label: {
-                        Image(systemName: "barcode.viewfinder")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundStyle(Color.onAccent)
-                            .frame(width: 46, height: 46)
-                            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.accent))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Escanear código de barras")
-                }
+                FormInput(text: $codigo, placeholder: "Ex: 5PK890")
             }
 
-            FormField(label: "Especificação e uso no carro", small: "opcional") {
-                TextEditorField(text: $especificacao, placeholder: "Ex: calibragem 28 PSI · 3,5 L de óleo no motor · medida, marca, fabricante")
+            FormField(label: "Especificação técnica", small: "opcional") {
+                TextEditorField(text: $especificacao, placeholder: "Ex: medida, marca, fabricante...")
             }
 
             FormField(label: "Área") {
@@ -705,48 +567,34 @@ struct PecaNovoFormView: View {
             }
 
             FormField(label: "Preço unitário (R$)", small: "opcional") {
-                VStack(alignment: .leading, spacing: 8) {
-                    FormInput(text: $precoTexto, placeholder: "Ex: 89,90", keyboardType: .decimalPad)
-                    Button { buscaPrecoAberta = true } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "magnifyingglass")
-                            Text("Buscar preço no Mercado Livre")
-                        }
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(termoBuscaML.isEmpty ? Color.textFaint : Color.accent)
+                FormInput(text: $precoTexto, placeholder: "Ex: 89,90", keyboardType: .decimalPad)
+            }
+
+            FormField(label: "Quantidade em estoque", small: "0 = só sei a especificação") {
+                HStack(spacing: 12) {
+                    Button { quantidade = max(0, quantidade - 1) } label: {
+                        Text("−").font(.system(size: 22, weight: .bold))
+                            .frame(width: 44, height: 44)
+                            .background(Circle().fill(Color.surfaceRaised))
+                            .foregroundStyle(Color.text)
                     }
                     .buttonStyle(.plain)
-                    .disabled(termoBuscaML.isEmpty)
-                }
-            }
-
-            if !editando {
-                FormField(label: "Quantidade em estoque", small: "0 = só sei a especificação") {
-                    HStack(spacing: 12) {
-                        Button { quantidade = max(0, quantidade - 1) } label: {
-                            Text("−").font(.system(size: 22, weight: .bold))
-                                .frame(width: 44, height: 44)
-                                .background(Circle().fill(Color.surfaceRaised))
-                                .foregroundStyle(Color.text)
-                        }
-                        .buttonStyle(.plain)
-                        Text("\(quantidade)")
-                            .font(.system(size: 22, weight: .bold))
+                    Text("\(quantidade)")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(Color.text)
+                        .frame(minWidth: 60)
+                    Button { quantidade += 1 } label: {
+                        Text("+").font(.system(size: 22, weight: .bold))
+                            .frame(width: 44, height: 44)
+                            .background(Circle().fill(Color.surfaceRaised))
                             .foregroundStyle(Color.text)
-                            .frame(minWidth: 60)
-                        Button { quantidade += 1 } label: {
-                            Text("+").font(.system(size: 22, weight: .bold))
-                                .frame(width: 44, height: 44)
-                                .background(Circle().fill(Color.surfaceRaised))
-                                .foregroundStyle(Color.text)
-                        }
-                        .buttonStyle(.plain)
-                        Spacer()
                     }
+                    .buttonStyle(.plain)
+                    Spacer()
                 }
             }
 
-            if editando || quantidade > 0 {
+            if quantidade > 0 {
                 FormField(label: "Local do estoque") {
                     Menu {
                         Button("(nenhum)") { localId = nil }
@@ -767,70 +615,41 @@ struct PecaNovoFormView: View {
                 Text(erro).font(.captionP1).foregroundStyle(Color.erro)
                     .padding(.horizontal, Spacing.xs)
             }
-
-            if editando {
-                botaoApagar
-                    .padding(.top, Spacing.sm)
-            }
         }
-    }
-
-    private var botaoApagar: some View {
-        Button(role: .destructive) { mostrarConfirmaApagar = true } label: {
-            Text("Apagar peça")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(Color.erro)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .background(RoundedRectangle(cornerRadius: Radius.md).fill(Color.surfaceRaised))
-                .overlay(RoundedRectangle(cornerRadius: Radius.md).stroke(Color.erro.opacity(0.5), lineWidth: 1))
-        }
-        .buttonStyle(.plain)
     }
 
     private var fotoPicker: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                ForEach(Array(fotos.enumerated()), id: \.offset) { idx, img in
-                    ZStack(alignment: .topTrailing) {
-                        Image(uiImage: img).resizable().scaledToFill()
-                            .frame(width: 72, height: 72)
-                            .clipShape(RoundedRectangle(cornerRadius: Radius.md))
-                            .overlay(RoundedRectangle(cornerRadius: Radius.md).stroke(Color.border, lineWidth: 1))
-                        Button { fotos.remove(at: idx) } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 18))
-                                .symbolRenderingMode(.palette)
-                                .foregroundStyle(.white, .black.opacity(0.6))
-                        }
-                        .buttonStyle(.plain)
-                        .padding(4)
-                    }
+        HStack(spacing: 12) {
+            ZStack {
+                if let img = fotoUIImage {
+                    Image(uiImage: img).resizable().scaledToFill()
+                } else {
+                    Image(systemName: "camera.fill")
+                        .foregroundStyle(Color.textFaint)
+                        .font(.system(size: 22))
                 }
-                if fotos.count < PecaRepository.maxFotos {
-                    Button { escolherFonteAberto = true } label: {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: Radius.md).fill(Color.surfaceRaised)
-                            RoundedRectangle(cornerRadius: Radius.md).stroke(Color.border, lineWidth: 1)
-                            Image(systemName: "plus")
-                                .font(.system(size: 22, weight: .semibold))
-                                .foregroundStyle(Color.accent)
-                        }
-                        .frame(width: 72, height: 72)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Adicionar foto")
+            }
+            .frame(width: 72, height: 72)
+            .background(Color.surfaceRaised)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+            .overlay(RoundedRectangle(cornerRadius: Radius.md).stroke(Color.border, lineWidth: 1))
+
+            PhotosPicker(selection: $fotoItem, matching: .images) {
+                Text(fotoUIImage == nil ? "Escolher foto" : "Trocar foto")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.onAccent)
+                    .padding(.horizontal, 16).padding(.vertical, 10)
+                    .background(RoundedRectangle(cornerRadius: Radius.md).fill(Color.accent))
+            }
+            if fotoUIImage != nil {
+                Button {
+                    fotoItem = nil; fotoUIImage = nil
+                } label: {
+                    Text("Remover").font(.system(size: 13)).foregroundStyle(Color.textMuted)
                 }
-                Spacer(minLength: 0)
+                .buttonStyle(.plain)
             }
-            Text("Até 5 fotos — tire na hora ou escolha da galeria.")
-                .font(.system(size: 12)).foregroundStyle(Color.textFaint)
-        }
-        .confirmationDialog("Adicionar foto", isPresented: $escolherFonteAberto, titleVisibility: .visible) {
-            if CameraPicker.disponivel {
-                Button("Tirar foto") { cameraAberta = true }
-            }
-            Button("Escolher da galeria") { galeriaAberta = true }
-            Button("Cancelar", role: .cancel) {}
+            Spacer()
         }
     }
 
@@ -890,91 +709,24 @@ struct PecaNovoFormView: View {
         return carroRepo.carros.first { $0.id == id }?.apelido
     }
 
-    // MARK: - Etiqueta (OCR) e preço Mercado Livre
-
-    private var botaoLerEtiqueta: some View {
-        Button { escolherFonteEtiquetaAberto = true } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "doc.text.viewfinder")
-                    .font(.system(size: 20, weight: .semibold))
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Ler etiqueta da peça")
-                        .font(.system(size: 15, weight: .bold))
-                    Text("Foto da etiqueta → preencho nome e especificação")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Color.onAccent.opacity(0.85))
-                }
-                Spacer(minLength: 0)
-            }
-            .foregroundStyle(Color.onAccent)
-            .padding(.horizontal, 14).padding(.vertical, 12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: Radius.md).fill(Color.accent))
-        }
-        .buttonStyle(.plain)
-    }
-
-    /// Termo pra busca no Mercado Livre: usa o código se houver, senão o nome.
-    private var termoBuscaML: String {
-        let c = codigo.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !c.isEmpty { return c }
-        return nome.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    /// Lê o texto da etiqueta (OCR local) e preenche os campos ainda vazios.
-    private func processarEtiqueta(_ img: UIImage) {
-        if fotos.count < PecaRepository.maxFotos { fotos.append(img) }
-        lendoEtiqueta = true
-        Task {
-            let linhas = await EtiquetaOCR.lerLinhas(de: img)
-            let r = EtiquetaOCR.interpretar(linhas: linhas)
-            await MainActor.run {
-                if nome.trimmingCharacters(in: .whitespaces).isEmpty, let n = r.nome { nome = n }
-                if codigo.trimmingCharacters(in: .whitespaces).isEmpty, let c = r.codigo { codigo = c }
-                if let e = r.especificacao {
-                    especificacao = especificacao.isEmpty ? e : especificacao + "\n" + e
-                }
-                lendoEtiqueta = false
-            }
-        }
-    }
-
     private func salvar() {
         guard let cid = carroId else { return }
         isSaving = true; savingError = nil
         let precoCents = MoedaBR.parseParaCentavos(precoTexto)
         Task {
             do {
-                if let original = pecaParaEditar {
-                    // Edição: re-salva as fotos e atualiza os campos,
-                    // preservando id / created_at / quantidade da peça.
-                    let fotoPath = PecaRepository.salvarFotos(pecaId: original.id, imagens: fotos)
-                    var atualizada = original
-                    atualizada.carroId = cid
-                    atualizada.nome = nome.trimmingCharacters(in: .whitespacesAndNewlines)
-                    atualizada.codigo = limpo(codigo)
-                    atualizada.area = area.rawValue
-                    atualizada.tipo = tipo.rawValue
-                    atualizada.especificacao = limpo(especificacao)
-                    atualizada.fotoUrl = fotoPath
-                    atualizada.precoUnitarioCents = precoCents
-                    atualizada.localId = localId
-                    atualizada.observacoes = limpo(observacoes)
-                    try await repo.atualizarPeca(atualizada)
-                } else {
-                    _ = try await repo.criarPeca(
-                        carroId: cid,
-                        nome: nome,
-                        codigo: codigo.isEmpty ? nil : codigo,
-                        area: area, tipo: tipo,
-                        especificacao: especificacao.isEmpty ? nil : especificacao,
-                        quantidade: quantidade,
-                        precoUnitarioCents: precoCents,
-                        localId: localId,
-                        observacoes: observacoes.isEmpty ? nil : observacoes,
-                        fotos: fotos
-                    )
-                }
+                _ = try await repo.criarPeca(
+                    carroId: cid,
+                    nome: nome,
+                    codigo: codigo.isEmpty ? nil : codigo,
+                    area: area, tipo: tipo,
+                    especificacao: especificacao.isEmpty ? nil : especificacao,
+                    quantidade: quantidade,
+                    precoUnitarioCents: precoCents,
+                    localId: localId,
+                    observacoes: observacoes.isEmpty ? nil : observacoes,
+                    foto: fotoUIImage
+                )
                 await MainActor.run { isSaving = false; onClose() }
             } catch {
                 await MainActor.run {
@@ -1022,7 +774,7 @@ struct PecaDetalheView: View {
     @State private var pecaAtual: Peca
     @State private var historico: [PecaMovimentacao] = []
     @State private var observacaoMov: String = ""
-    @State private var editando = false
+    @State private var mostrarConfirmaApagar = false
     @State private var ultimoErro: String?
 
     init(peca: Peca, onClose: @escaping () -> Void) {
@@ -1035,13 +787,13 @@ struct PecaDetalheView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.md) {
                 cabecalho
-                faixaFotos
                 botoesMov
                 campoObservacao
                 Divider().background(Color.border)
                 infoPeca
                 Divider().background(Color.border)
                 historicoSecao
+                botaoApagar
             }
             .padding(.horizontal, Spacing.lg)
             .padding(.top, Spacing.md)
@@ -1053,42 +805,19 @@ struct PecaDetalheView: View {
             ToolbarItem(placement: .topBarLeading) {
                 Button("Fechar", action: onClose).foregroundStyle(Color.text)
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("Editar") { editando = true }.foregroundStyle(Color.accent)
-            }
         }
         .preferredColorScheme(.dark)
         .task { await carregarHistorico() }
-        .sheet(isPresented: $editando) {
-            PecaNovoFormView(
-                pecaParaEditar: pecaAtual,
-                onApagada: { editando = false; onClose() },
-                onClose: {
-                    editando = false
-                    if let atualizada = repo.pecas.first(where: { $0.id == pecaAtual.id }) {
-                        pecaAtual = atualizada
-                    }
+        .alert("Apagar peça?", isPresented: $mostrarConfirmaApagar) {
+            Button("Apagar", role: .destructive) {
+                Task {
+                    try? await repo.apagarPeca(pecaAtual)
+                    onClose()
                 }
-            )
-        }
-    }
-
-    /// Galeria horizontal das fotos da peça (aparece quando há 2+).
-    @ViewBuilder
-    private var faixaFotos: some View {
-        let fotosPeca = PecaRepository.carregarFotos(pecaId: pecaAtual.id)
-        if fotosPeca.count > 1 {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(Array(fotosPeca.enumerated()), id: \.offset) { _, img in
-                        Image(uiImage: img).resizable().scaledToFill()
-                            .frame(width: 96, height: 96)
-                            .clipShape(RoundedRectangle(cornerRadius: Radius.md))
-                            .overlay(RoundedRectangle(cornerRadius: Radius.md).stroke(Color.border, lineWidth: 1))
-                    }
-                }
-                .padding(.horizontal, 2)
             }
+            Button("Cancelar", role: .cancel) {}
+        } message: {
+            Text("Apaga a peça e todo o histórico de movimentações. Não dá pra recuperar.")
         }
     }
 
@@ -1234,6 +963,19 @@ struct PecaDetalheView: View {
                 }
             }
         }
+    }
+
+    private var botaoApagar: some View {
+        Button(role: .destructive) { mostrarConfirmaApagar = true } label: {
+            Text("Apagar peça")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.erro)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(RoundedRectangle(cornerRadius: Radius.md).fill(Color.surfaceRaised))
+                .overlay(RoundedRectangle(cornerRadius: Radius.md).stroke(Color.erro.opacity(0.5), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 20)
     }
 
     private var carroNome: String {

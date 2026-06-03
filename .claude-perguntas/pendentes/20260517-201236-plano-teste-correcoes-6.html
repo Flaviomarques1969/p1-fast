@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Plano de teste — 6 correções (17/05 fim de tarde)</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --fg:#e8e8e8; --muted:#9aa0a6; --accent:#4f8cff; --ok:#22c55e; --warn:#f59e0b; --erro:#ef4444; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--fg); padding:24px; }
+  .wrap { max-width: 820px; margin: 0 auto; }
+  h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 24px; line-height: 1.5; }
+  .grupo { background:var(--card); border-radius:12px; padding:20px; margin-bottom: 16px; box-shadow: 0 4px 16px rgba(0,0,0,.25); }
+  .grupo h2 { margin: 0 0 4px; font-size: 1.1rem; color: var(--accent); }
+  .grupo .sub { color: var(--muted); font-size: .9rem; margin-bottom: 14px; }
+  .item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-top: 1px solid #232733; }
+  .item:first-of-type { border-top: none; padding-top: 4px; }
+  .item input[type="checkbox"] { margin-top: 6px; transform: scale(1.2); cursor: pointer; }
+  .item-corpo { flex: 1; }
+  .item-titulo { font-weight: 600; }
+  .item-passos { color: var(--muted); font-size: .9rem; margin-top: 4px; line-height: 1.45; }
+  .item textarea { width: 100%; background:#0f1115; color:var(--fg); border:1px solid #2a2f3a; border-radius: 6px; padding: 6px 8px; resize: vertical; font-family: inherit; font-size: .85rem; margin-top: 6px; }
+  .status-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .75rem; font-weight: 600; margin-left: 8px; }
+  .pill-ok { background: rgba(34,197,94,.15); color: var(--ok); }
+  .pill-erro { background: rgba(239,68,68,.15); color: var(--erro); }
+  .pill-aviso { background: rgba(245,158,11,.15); color: var(--warn); }
+  .acoes { display: flex; gap: 10px; margin-top: 18px; position: sticky; bottom: 0; padding: 14px 0; background: var(--bg); }
+  button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 10px 16px; font-size: 1rem; cursor: pointer; }
+  button.secundario { background: transparent; border: 1px solid #2a2f3a; color: var(--fg); }
+  .resumo { color: var(--muted); font-size: .9rem; margin-top: 8px; }
+  .nota { background: rgba(79,140,255,.08); border-left: 3px solid var(--accent); padding: 10px 14px; border-radius: 6px; margin-top: 12px; font-size: .9rem; color: var(--fg); line-height: 1.45; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Plano de teste — 6 correções (17/05 fim de tarde)</h1>
+  <p class="lead">App instalado no iPhone Pro Max (7). Marque cada item conforme testar: <span class="status-pill pill-ok">funciona</span>, <span class="status-pill pill-erro">não funciona</span> ou <span class="status-pill pill-aviso">ressalva</span>. No fim, exporte o JSON e diga "fiz".</p>
+
+  <div class="nota">
+    <strong>Antes de começar:</strong> mate o app (deslize pra cima a partir da parte de baixo) e abra de novo, pra garantir que o boot é limpo.
+  </div>
+
+  <div class="grupo">
+    <h2>Correção 1 — Menu inferior sempre visível</h2>
+    <div class="sub">Antes: o menu (Home · Eventos · Cadastros · Garagem) sumia em várias telas. Agora: tem que aparecer EM TODAS.</div>
+
+    <div class="item">
+      <input type="checkbox" id="c1-1" />
+      <div class="item-corpo">
+        <label for="c1-1" class="item-titulo">1.1 — Estoque mostra o menu inferior</label>
+        <div class="item-passos">Caminho: Garagem (menu inferior) → atalho "Estoque". Confirme que o menu Home · Eventos · Cadastros · Garagem aparece embaixo da lista.</div>
+        <textarea data-key="c1-1" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c1-2" />
+      <div class="item-corpo">
+        <label for="c1-2" class="item-titulo">1.2 — Manutenção mostra o menu inferior</label>
+        <div class="item-passos">Caminho: Garagem → atalho "Manutenção". O menu inferior deve continuar visível.</div>
+        <textarea data-key="c1-2" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c1-3" />
+      <div class="item-corpo">
+        <label for="c1-3" class="item-titulo">1.3 — Autódromos (lista) mostra o menu inferior</label>
+        <div class="item-passos">Caminho: Garagem → atalho "Autódromos". Lista de autódromos abre — menu inferior visível.</div>
+        <textarea data-key="c1-3" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c1-4" />
+      <div class="item-corpo">
+        <label for="c1-4" class="item-titulo">1.4 — Cadastro de autódromo novo mostra o menu inferior</label>
+        <div class="item-passos">Caminho: Garagem → Autódromos → "Novo autódromo" (FAB). Formulário abre — menu inferior visível.</div>
+        <textarea data-key="c1-4" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c1-5" />
+      <div class="item-corpo">
+        <label for="c1-5" class="item-titulo">1.5 — Detalhe do autódromo mostra o menu inferior</label>
+        <div class="item-passos">Caminho: Autódromos → toque em Brasília. Tela do autódromo abre — menu inferior visível.</div>
+        <textarea data-key="c1-5" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c1-6" />
+      <div class="item-corpo">
+        <label for="c1-6" class="item-titulo">1.6 — Configurações do carro mostra o menu inferior</label>
+        <div class="item-passos">Caminho: Home → toque num carro (ou Garagem → toque num carro) → bloco "Configuração mais usada" → "Gerenciar configurações". Lista abre — menu inferior visível.</div>
+        <textarea data-key="c1-6" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c1-7" />
+      <div class="item-corpo">
+        <label for="c1-7" class="item-titulo">1.7 — Meu perfil mostra o menu inferior</label>
+        <div class="item-passos">Caminho: Home → "Meu perfil". Tela do perfil abre — menu inferior visível.</div>
+        <textarea data-key="c1-7" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="grupo">
+    <h2>Correção 2 — Botão Voltar padronizado no topo à esquerda</h2>
+    <div class="sub">Agora todas essas telas devem mostrar a setinha "‹ Voltar" do iOS no topo à esquerda (padrão do sistema). O antigo "Fechar" sumiu.</div>
+
+    <div class="item">
+      <input type="checkbox" id="c2-1" />
+      <div class="item-corpo">
+        <label for="c2-1" class="item-titulo">2.1 — Estoque mostra "‹ Voltar" no topo à esquerda</label>
+        <div class="item-passos">Em Garagem → Estoque, conferir que apareceu a setinha do sistema no topo à esquerda. O botão "Locais" continua à direita.</div>
+        <textarea data-key="c2-1" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c2-2" />
+      <div class="item-corpo">
+        <label for="c2-2" class="item-titulo">2.2 — Manutenção mostra "‹ Voltar"</label>
+        <div class="item-passos">Em Garagem → Manutenção, setinha aparece à esquerda.</div>
+        <textarea data-key="c2-2" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c2-3" />
+      <div class="item-corpo">
+        <label for="c2-3" class="item-titulo">2.3 — Autódromos lista mostra "‹ Voltar"</label>
+        <div class="item-passos">Em Garagem → Autódromos, setinha aparece à esquerda. O FAB "Novo autódromo" continua à direita.</div>
+        <textarea data-key="c2-3" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c2-4" />
+      <div class="item-corpo">
+        <label for="c2-4" class="item-titulo">2.4 — Configurações do carro mostra "‹ Voltar"</label>
+        <div class="item-passos">Em Carro → Configurações, setinha aparece à esquerda.</div>
+        <textarea data-key="c2-4" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c2-5" />
+      <div class="item-corpo">
+        <label for="c2-5" class="item-titulo">2.5 — Meu perfil mostra "‹ Voltar"</label>
+        <div class="item-passos">Em Home → Meu perfil, setinha aparece à esquerda.</div>
+        <textarea data-key="c2-5" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="grupo">
+    <h2>Correção 3 — Salvar estado de navegação</h2>
+    <div class="sub">Antes: voltava sempre pra Home depois de minimizar/destravar o iPhone. Agora: volta no MESMO ponto onde estava.</div>
+
+    <div class="item">
+      <input type="checkbox" id="c3-1" />
+      <div class="item-corpo">
+        <label for="c3-1" class="item-titulo">3.1 — Aba ativa do menu permanece ao voltar</label>
+        <div class="item-passos">Vá na aba "Garagem". Trave o iPhone (botão lateral). Destrave. App deve abrir EM Garagem, não em Home.</div>
+        <textarea data-key="c3-1" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c3-2" />
+      <div class="item-corpo">
+        <label for="c3-2" class="item-titulo">3.2 — Página atual permanece ao voltar de segundo plano</label>
+        <div class="item-passos">Entre em Garagem → Autódromos → Brasília → toque no trecho 1. Pressione Home (mande pro segundo plano). Espere 10 s. Volte pro app. Deve voltar EM Brasília com o trecho 1 já selecionado.</div>
+        <textarea data-key="c3-2" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c3-3" />
+      <div class="item-corpo">
+        <label for="c3-3" class="item-titulo">3.3 — Mate o app totalmente e veja se ainda volta</label>
+        <div class="item-passos">Em Brasília com trecho selecionado, mate o app (deslize pra cima na barra de apps recentes e empurre o card pra cima). Abra de novo. Deve voltar em Brasília com o trecho selecionado.</div>
+        <textarea data-key="c3-3" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="grupo">
+    <h2>Correção 4 — Modo Ajustar (toque na pílula responde)</h2>
+    <div class="sub">Antes (B5-3): tocar em "Entrada / Saída / Ápice" não selecionava nada. Agora: pílula fica destacada com cor accent + borda.</div>
+
+    <div class="item">
+      <input type="checkbox" id="c4-1" />
+      <div class="item-corpo">
+        <label for="c4-1" class="item-titulo">4.1 — Botão "Ajustar" responde ao toque</label>
+        <div class="item-passos">Em Brasília, toque no trecho 1 (Curva do Lago). Role até "AJUSTE DE PONTOS" e toque em "Ajustar". As pílulas Entrada / Saída / Ápice 1 / Ápice 2 devem aparecer.</div>
+        <textarea data-key="c4-1" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c4-2" />
+      <div class="item-corpo">
+        <label for="c4-2" class="item-titulo">4.2 — Tocar em "Saída" destaca a pílula</label>
+        <div class="item-passos">Com modo Ajustar ativado, toque na pílula "Saída". Ela deve ficar destacada (cor accent azul/amarela + borda). O texto abaixo deve mudar pra "Toque no desenho onde a saída deve ficar.".</div>
+        <textarea data-key="c4-2" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c4-3" />
+      <div class="item-corpo">
+        <label for="c4-3" class="item-titulo">4.3 — Tocar em "Ápice 1" destaca a pílula</label>
+        <div class="item-passos">Toque em "Ápice 1". Pílula fica destacada. Texto vira "Toque no desenho onde o ápice 1 deve ficar.".</div>
+        <textarea data-key="c4-3" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c4-4" />
+      <div class="item-corpo">
+        <label for="c4-4" class="item-titulo">4.4 — Mover faixa no desenho funciona</label>
+        <div class="item-passos">Com "Entrada" selecionado, toque num ponto qualquer do desenho do trecho. A barrinha "E" deve mover-se pra perto do toque. Pode demorar 1 s pro banco salvar.</div>
+        <textarea data-key="c4-4" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="grupo">
+    <h2>Correção 5 — Desenho ampliado do trecho sem "ressaltos"</h2>
+    <div class="sub">Antes (B5-1): aparecia pedaços de outras curvas dentro do retângulo do desenho ampliado. Agora: só o trecho real.</div>
+
+    <div class="item">
+      <input type="checkbox" id="c5-1" />
+      <div class="item-corpo">
+        <label for="c5-1" class="item-titulo">5.1 — Curva do Lago (trecho 1) desenha só a curva</label>
+        <div class="item-passos">Em Brasília → toque no trecho 1. Veja o desenho ampliado no topo da ficha do trecho. Não deve aparecer pedaços de retas vindo do lado.</div>
+        <textarea data-key="c5-1" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c5-2" />
+      <div class="item-corpo">
+        <label for="c5-2" class="item-titulo">5.2 — "Esses" (trecho 7) desenha só os 2 ápices</label>
+        <div class="item-passos">Em Brasília → toque no trecho 7 (Esses). Desenho ampliado deve mostrar o S claro, sem ressaltos.</div>
+        <textarea data-key="c5-2" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c5-3" />
+      <div class="item-corpo">
+        <label for="c5-3" class="item-titulo">5.3 — Confirma em mais 2 trechos quaisquer</label>
+        <div class="item-passos">Toque em outros 2 trechos da lista. Cada desenho ampliado deve mostrar SÓ aquele trecho.</div>
+        <textarea data-key="c5-3" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="grupo">
+    <h2>Correção 6 — Botão "Gravar pista" pro dono em Brasília</h2>
+    <div class="sub">Antes (B5-5): em Brasília (que já tem traçado), o botão não aparecia. Agora: como você é o dono, deve aparecer "Editar mapa" no fim da página.</div>
+
+    <div class="item">
+      <input type="checkbox" id="c6-1" />
+      <div class="item-corpo">
+        <label for="c6-1" class="item-titulo">6.1 — "Editar mapa" aparece em Brasília</label>
+        <div class="item-passos">Garagem → Autódromos → Brasília. Role até o fim da página (depois da lista de trechos). Deve ter um botão "Editar mapa ›".</div>
+        <textarea data-key="c6-1" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c6-2" />
+      <div class="item-corpo">
+        <label for="c6-2" class="item-titulo">6.2 — Toque em "Editar mapa" abre a tela de gravação</label>
+        <div class="item-passos">Toque em "Editar mapa". Deve abrir a tela do PistaGravacaoPlaceholder (ainda é placeholder — função real entra em rodada seguinte).</div>
+        <textarea data-key="c6-2" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c6-3" />
+      <div class="item-corpo">
+        <label for="c6-3" class="item-titulo">6.3 — Em autódromo sem mapa, aparece "Gravar pista"</label>
+        <div class="item-passos">Crie um autódromo novo (FAB "Novo autódromo" → preencher só apelido → Salvar). Toque nele. No fim da página, deve aparecer "Gravar pista" em vez de "Editar mapa".</div>
+        <textarea data-key="c6-3" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="grupo">
+    <h2>Itens pulados na rodada anterior — testar agora</h2>
+    <div class="sub">Você não testou esses na rodada anterior (B6-3, B6-4, B7-1, B7-2, B7-3, B8-1, B8-2, B8-3, B8-4). Aproveite que o app está aberto pra testar.</div>
+
+    <div class="item">
+      <input type="checkbox" id="b6-3" />
+      <div class="item-corpo">
+        <label for="b6-3" class="item-titulo">B6-3 — Última configuração usada vem pré-marcada no novo stint</label>
+        <div class="item-passos">Em Eventos → toque um evento → "+ Novo stint". A configuração mais usada do carro escolhido deve vir já marcada.</div>
+        <textarea data-key="b6-3" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="b6-4" />
+      <div class="item-corpo">
+        <label for="b6-4" class="item-titulo">B6-4 — Trocar configuração antes do START</label>
+        <div class="item-passos">No "+ Novo stint" toque na barra da configuração. Lista alternativa abre — escolha outra. Salve. O stint deve gravar com a NOVA configuração.</div>
+        <textarea data-key="b6-4" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="b7-1" />
+      <div class="item-corpo">
+        <label for="b7-1" class="item-titulo">B7-1 — Faixa "aguardando 3 voltas" no cockpit</label>
+        <div class="item-passos">Inicie um stint. Na tela do cockpit (modo box ou na pista), deve aparecer uma faixa avisando que ainda faltam X voltas pra calcular pontos dinâmicos.</div>
+        <textarea data-key="b7-1" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="b7-2" />
+      <div class="item-corpo">
+        <label for="b7-2" class="item-titulo">B7-2 — Faixa some após 3 voltas</label>
+        <div class="item-passos">Depois que 3 voltas válidas forem registradas com aquela combinação carro+configuração, a faixa deve sumir.</div>
+        <textarea data-key="b7-2" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="b7-3" />
+      <div class="item-corpo">
+        <label for="b7-3" class="item-titulo">B7-3 — Pontos dinâmicos aparecem na ficha do trecho após stint</label>
+        <div class="item-passos">Após 3+ voltas registradas, abra a ficha de um trecho daquele autódromo. Os pontos V-min, Frenagem e PAce devem aparecer com valor (não mais "Aguardando dados").</div>
+        <textarea data-key="b7-3" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="b8-1" />
+      <div class="item-corpo">
+        <label for="b8-1" class="item-titulo">B8-1 — Atalho "Meu perfil" na Home</label>
+        <div class="item-passos">Na Home, role pra baixo após os 6 cards de estatística. Deve ter um botão "Meu perfil ›".</div>
+        <textarea data-key="b8-1" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="b8-2" />
+      <div class="item-corpo">
+        <label for="b8-2" class="item-titulo">B8-2 — Tela Meu perfil mostra login e papéis</label>
+        <div class="item-passos">Toque em "Meu perfil". Tela deve mostrar identificador do login + status do vínculo com pessoa cadastrada.</div>
+        <textarea data-key="b8-2" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="b8-3" />
+      <div class="item-corpo">
+        <label for="b8-3" class="item-titulo">B8-3 — Vincular pessoa cadastrada como "Eu"</label>
+        <div class="item-passos">Se ainda não vinculou, deve aparecer card "VINCULAR PESSOA" com lista de pessoas cadastradas e botão "Sou eu". Tocar deve vincular.</div>
+        <textarea data-key="b8-3" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="b8-4" />
+      <div class="item-corpo">
+        <label for="b8-4" class="item-titulo">B8-4 — Recorde pessoal aparece em Brasília após vincular</label>
+        <div class="item-passos">Após vincular pessoa, volte em Autódromos → Brasília. O card "Recorde pessoal" deve mostrar seu melhor tempo (ou ainda "—" se não tiver voltas suas).</div>
+        <textarea data-key="b8-4" rows="2" placeholder="Observações (opcional)"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="grupo">
+    <h2>Comentário geral (opcional)</h2>
+    <textarea id="comentario-geral" rows="4" placeholder="Algo que não está nos itens acima? Algum problema novo? Algo que melhorou ou piorou?"></textarea>
+  </div>
+
+  <div class="acoes">
+    <button type="button" id="exportar">Exportar JSON</button>
+    <button type="button" class="secundario" id="limpar">Limpar tudo</button>
+    <span class="resumo" id="resumo"></span>
+  </div>
+</div>
+
+<script>
+  const PLANO_ID = "20260517-201236-plano-teste-correcoes-6";
+  const STORAGE_KEY = "padrao-flavio-plano:" + PLANO_ID;
+
+  function carregar() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const dados = JSON.parse(raw);
+      Object.entries(dados.checks || {}).forEach(([id, val]) => {
+        const cb = document.getElementById(id);
+        if (cb) cb.checked = !!val;
+      });
+      Object.entries(dados.obs || {}).forEach(([key, val]) => {
+        const ta = document.querySelector('textarea[data-key="' + key + '"]');
+        if (ta) ta.value = val;
+      });
+      if (dados.comentarioGeral) {
+        document.getElementById("comentario-geral").value = dados.comentarioGeral;
+      }
+    } catch (e) {}
+    atualizarResumo();
+  }
+
+  function salvar() {
+    const checks = {};
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      checks[cb.id] = cb.checked;
+    });
+    const obs = {};
+    document.querySelectorAll('textarea[data-key]').forEach(ta => {
+      if (ta.value.trim()) obs[ta.dataset.key] = ta.value.trim();
+    });
+    const comentarioGeral = document.getElementById("comentario-geral").value.trim();
+    const dados = { checks, obs, comentarioGeral };
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(dados)); } catch (e) {}
+    atualizarResumo();
+  }
+
+  function atualizarResumo() {
+    const total = document.querySelectorAll('input[type="checkbox"]').length;
+    const marcados = document.querySelectorAll('input[type="checkbox"]:checked').length;
+    document.getElementById("resumo").textContent = marcados + " de " + total + " itens marcados";
+  }
+
+  function exportar() {
+    const checks = {};
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      checks[cb.id] = cb.checked;
+    });
+    const obs = {};
+    document.querySelectorAll('textarea[data-key]').forEach(ta => {
+      if (ta.value.trim()) obs[ta.dataset.key] = ta.value.trim();
+    });
+    const comentarioGeral = document.getElementById("comentario-geral").value.trim();
+    const payload = {
+      pergunta_id: PLANO_ID,
+      pergunta: "Plano de teste — 6 correções da rodada de 17/05 fim de tarde + itens pulados da rodada anterior",
+      checks: checks,
+      observacoes: obs,
+      comentario_geral: comentarioGeral,
+      respondido_em: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = PLANO_ID + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    document.getElementById("resumo").textContent = "JSON exportado — coloque em ./.claude-perguntas/respostas/ e diga 'fiz'.";
+  }
+
+  function limpar() {
+    if (!confirm("Limpar todos os checks e observações?")) return;
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    document.querySelectorAll('textarea').forEach(ta => ta.value = "");
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    atualizarResumo();
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    carregar();
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.addEventListener("change", salvar));
+    document.querySelectorAll('textarea').forEach(ta => ta.addEventListener("input", salvar));
+    document.getElementById("exportar").addEventListener("click", exportar);
+    document.getElementById("limpar").addEventListener("click", limpar);
+  });
+</script>
+</body>
+</html>

@@ -69,13 +69,6 @@ final class LiveTelemetryRecorder: NSObject, ObservableObject {
     // MARK: - Internals
     private let motion = CMMotionManager()
     private let location = CLLocationManager()
-    /// Publisher GPS pro canal Realtime cockpit-bubi-live (consumido pelo
-    /// painel do piloto pra detecção automática de entrada/saída de curva).
-    /// Opcional — só ativa quando SupabaseManager.shared está disponível.
-    private let cockpitGpsPublisher: CockpitGpsPublisher? = {
-        guard let client = SupabaseManager.shared else { return nil }
-        return CockpitGpsPublisher(client: client)
-    }()
     private let opQueue: OperationQueue = {
         let q = OperationQueue()
         q.qualityOfService = .userInteractive
@@ -190,10 +183,6 @@ final class LiveTelemetryRecorder: NSObject, ObservableObject {
         startGps()
         startImu()
         scheduleFlushTimer()
-        // inscreve no canal Realtime do cockpit (não-bloqueante)
-        if let pub = cockpitGpsPublisher {
-            Task.detached { [pub] in await pub.start() }
-        }
     }
 
     func stop() async {
@@ -207,10 +196,6 @@ final class LiveTelemetryRecorder: NSObject, ObservableObject {
         location.allowsBackgroundLocationUpdates = false
         UIApplication.shared.isIdleTimerDisabled = false
         await flush()
-        // desinscreve do canal Realtime do cockpit
-        if let pub = cockpitGpsPublisher {
-            await pub.stop()
-        }
     }
 
     // MARK: - IMU
@@ -420,18 +405,6 @@ extension LiveTelemetryRecorder: CLLocationManagerDelegate {
                 let sample = Self.makeGpsSample(location: loc, tMono: tMono)
                 self.append(sample)
                 self.trackRate(.gps, tMono: tMono / 1000.0)
-                // Publica ao vivo no canal Realtime do cockpit pra detector
-                // automático de cruzamento de curvas (registro de velocidade
-                // entrada/saída no painel p1t4000.vercel.app). Não-bloqueante.
-                if let pub = self.cockpitGpsPublisher {
-                    let lat = loc.coordinate.latitude
-                    let lng = loc.coordinate.longitude
-                    let speedKmh = max(0, loc.speed) * 3.6 // m/s → km/h
-                    let tWall = Date().timeIntervalSince1970 * 1000.0
-                    Task.detached { [pub] in
-                        await pub.publish(lat: lat, lng: lng, speedKmh: speedKmh, tWallMs: tWall)
-                    }
-                }
             }
         }
     }

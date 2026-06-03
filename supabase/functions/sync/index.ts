@@ -340,15 +340,6 @@ serve(async (req) => {
     }
 
     if (dbError) {
-      // Idempotência (insert): chave duplicada (23505) = registro já está
-      // na nuvem (retentativa após falha de rede). Trata como sucesso
-      // pra cliente parar de retentar e marcar como sincronizado.
-      // Sem isso, o app retenta 5x, marca dead-letter e empilha fila.
-      if (r.op === "insert" && (dbError.code === "23505" || /duplicate key/i.test(dbError.message ?? ""))) {
-        const idFromPayload = (r.payload as any)?.id as string | undefined;
-        accepted.push(idFromPayload ?? r.row_id ?? "");
-        continue;
-      }
       rejected.push({
         row_id: r.row_id,
         table_name: r.table_name,

@@ -1,4 +1,3 @@
-<!-- TODO [CLAUDE 2026-05-26 noite] obsoleto — confirmar com Flávio -->
 # Handoff — sessão 2026-05-03 noite (pré-/clear)
 
 > Doc específico pra próxima sessão Claude após `/clear`.

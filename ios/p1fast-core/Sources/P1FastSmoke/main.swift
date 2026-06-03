@@ -2291,8 +2291,8 @@ step("ER-04: calcularDiaResumo — sem stints → VAZIO") {
 step("ER-05: calcularEventoResumo — agrega 2 dias com melhor global") {
     let evento = EventoResumoInput(
         dias: [
-            EventoDia(id: "D1", data: "2026-05-01"),
-            EventoDia(id: "D2", data: "2026-05-02"),
+            EventoDiaResumo(id: "D1", data: "2026-05-01"),
+            EventoDiaResumo(id: "D2", data: "2026-05-02"),
         ],
         stintsByDia: [
             "D1": [StintInput(id: "S1", lapsExecutados: [StintLap(tempoMs: 102_000)])],
@@ -3639,7 +3639,7 @@ func makeTestDB() throws -> DatabaseQueue {
     return q
 }
 
-step("PERSIST-01: makeMemoryQueue + migrations v1..v27 cria 34 tabelas") {
+step("PERSIST-01: makeMemoryQueue + migrations v1..v31 cria 39 tabelas") {
     let q = try DB.makeMemoryQueue()
     let names = try q.read { db in
         try String.fetchAll(db, sql:
@@ -3648,13 +3648,16 @@ step("PERSIST-01: makeMemoryQueue + migrations v1..v27 cria 34 tabelas") {
     }
     // 20 do Postgres + sync_queue + sync_meta (v2) + licoes (v4) + pendencias_template + evento_pendencias (v5)
     // + telemetry_samples_enriched (v7) + video_streams (v15) + volta_video (v16)
-    // + pessoas (v17) + pessoa_papeis (v18) + manutencoes (v19) = 31
-    // + pecas + pecas_locais + pecas_movimentacoes (v26) = 34
-    try assertEq(names.count, 34, "esperava 34 tabelas")
+    // + pessoas (v17) + pessoa_papeis (v18) + evento_pneus (v22) + acoes_a_fazer (v23) + evento_setup_replicado (v24)
+    // + evento_dias (v25) + pecas_locais + pecas + pecas_movimentacoes (v26) = 37
+    // + track_segment_faixas (v30) + segment_pontos_dinamicos (v31) = 39
+    try assertEq(names.count, 39, "esperava 39 tabelas")
     for expected in ["times", "carros", "configuracoes", "sessoes", "voltas",
                      "marcos", "retas_especiais", "telemetry_samples",
                      "telemetry_samples_enriched", "sync_queue", "sync_meta",
-                     "video_streams", "volta_video", "pessoas", "pessoa_papeis"] {
+                     "video_streams", "volta_video", "pessoas", "pessoa_papeis",
+                     "evento_pneus", "acoes_a_fazer", "evento_setup_replicado",
+                     "track_segment_faixas", "segment_pontos_dinamicos"] {
         try assertTrue(names.contains(expected), "tabela \(expected) ausente")
     }
 }
@@ -3677,8 +3680,11 @@ step("PERSIST-03: todas tabelas (exceto telemetria append-only e sync_queue/meta
     }
     // ADR-014: telemetria append-only (telemetry_samples + telemetry_samples_enriched)
     // não passa por syncQueue. sync_queue/sync_meta são tabelas locais sem synced_at.
+    // segment_pontos_dinamicos é derivado/cache (recalculado das voltas, não é
+    // entidade primária) — também não passa por syncQueue.
     let semSyncedAt: Set<String> = ["telemetry_samples", "telemetry_samples_enriched",
-                                    "sync_queue", "sync_meta"]
+                                    "sync_queue", "sync_meta",
+                                    "segment_pontos_dinamicos"]
     for name in tables where !semSyncedAt.contains(name) {
         let cols = try q.read { db in
             try Row.fetchAll(db, sql: "PRAGMA table_info(\(name))").map { $0["name"] as String }
@@ -7288,887 +7294,231 @@ step("PUB-06: stop encerra transports + suprime publish posterior") {
     }
 }
 
-// ════════════════════════════════════════════════════════════
-// TelemetryTimebase — TB-01..TB-12 (paridade JS timebase.js)
-// MS-16.1 (Command Box Engenharia — Camada 1 Engine Core).
-// docs/COMMAND_BOX_ENGENHARIA.md §1.1 e §5.1.
-//
-// Constantes numéricas inline IDÊNTICAS às do node-smoke-timebase-swift-
-// parity.mjs — cada caso deve produzir o mesmo resultado em ambas as
-// implementações (Swift + JS). Paridade é verificável por code review +
-// saída numérica.
-// ════════════════════════════════════════════════════════════
+// ─── S2 rodada 1: foto_url em carros ───────────────────────
 
-// Helpers de fixture pra timebase smoke.
-func _tbT4000Sample(tMono: Double, t: Int64 = 1_700_000_000_000) -> Sample {
-    var s = Sample(t: t, tMono: tMono, source: SourceTags.t4000)
-    s.rpm = 5800
-    s.tps = 60
-    s.map = 0.92
-    s.lambda = 1.06
-    s.waterTemp = 102
-    s.oilTemp = 118
-    s.oilPressure = 4.0
-    s.batteryVoltage = 13.8
-    return s
-}
-
-func _tbGpsSample(tMono: Double, acc: Double = 3) -> Sample {
-    var s = Sample(
-        t: 1_700_000_000_000,
-        tMono: tMono,
-        source: SourceTags.gps,
-        signalQuality: "GOOD"
-    )
-    s.lat = -15.77
-    s.lng = -47.90
-    s.speed = 23.0
-    s.kmh = 82.8
-    s.acc = acc
-    return s
-}
-
-func _tbImuSample(tMono: Double, signalQuality: String = "GOOD") -> Sample {
-    var s = Sample(
-        t: 1_700_000_000_000,
-        tMono: tMono,
-        source: SourceTags.imu,
-        signalQuality: signalQuality
-    )
-    s.accLong = 1.2
-    s.accLat = 0.3
-    s.accVert = 0.0
-    s.gyroAlpha = 0.0
-    return s
-}
-
-step("TB-01: attach + ingest single sample → snapshot reflete fonte") {
-    let tb = TelemetryTimebase(now: { 1000 })
-    tb.attachSource(source: SourceTags.t4000)
-    let res = tb.ingest(_tbT4000Sample(tMono: 1000))
-    try assertEq(res?.quality, .ok)
-    try assertEq(res?.accepted, true)
-    let snap = tb.snapshotAt(tMono: 1000)
-    try assertClose(snap.engine.rpm, 5800)
-    try assertClose(snap.engine.map, 0.92)
-    try assertClose(snap.engine.lambda, 1.06)
-    try assertEq(snap.quality.t4000, .ok)
-}
-
-step("TB-02: multi-source — t4000 + cockpit-mobile + iphone-imu consolidam") {
-    let tb = TelemetryTimebase(now: { 1200 })
-    tb.attachSource(source: SourceTags.t4000)
-    tb.attachSource(source: SourceTags.gps)
-    tb.attachSource(source: SourceTags.imu)
-    // Timings escolhidos pra todas as 3 fontes ficarem dentro da freshness:
-    // t4000 (50ms) @1190 → delta 10; cockpit (1500ms) @1100 → delta 100;
-    // imu (200ms) @1180 → delta 20. Todas OK → sync OK → Alta.
-    tb.ingest(_tbT4000Sample(tMono: 1190))
-    tb.ingest(_tbGpsSample(tMono: 1100))
-    tb.ingest(_tbImuSample(tMono: 1180))
-    let snap = tb.snapshotAt(tMono: 1200)
-    try assertClose(snap.engine.rpm, 5800)
-    try assertClose(snap.position.lat, -15.77)
-    try assertClose(snap.dynamics.accelLongitudinal, 1.2)
-    try assertEq(snap.quality.sync, .ok)
-    try assertEq(snap.quality.confidence, "Alta")
-}
-
-step("TB-03: out-of-order — segundo tMono retroativo aceito + marcado") {
-    let tb = TelemetryTimebase()
-    tb.attachSource(source: SourceTags.t4000)
-    let r1 = tb.ingest(_tbT4000Sample(tMono: 2000))
-    try assertEq(r1?.quality, .ok)
-    let r2 = tb.ingest(_tbT4000Sample(tMono: 1500))
-    try assertEq(r2?.quality, .outOfOrder)
-    try assertEq(r2?.accepted, true)
-    let s = tb.stats()[SourceTags.t4000]
-    try assertEq(s?.discardedOutOfOrder, 1)
-}
-
-step("TB-04: duplicate — mesmo tMono descartado, accepted=false") {
-    let tb = TelemetryTimebase()
-    tb.attachSource(source: SourceTags.t4000)
-    tb.ingest(_tbT4000Sample(tMono: 2000))
-    let r2 = tb.ingest(_tbT4000Sample(tMono: 2000))
-    try assertEq(r2?.quality, .duplicate)
-    try assertEq(r2?.accepted, false)
-    let s = tb.stats()[SourceTags.t4000]
-    try assertEq(s?.discardedDuplicate, 1)
-}
-
-step("TB-05: late — idade entre freshness e 3×freshness → LATE") {
-    let tb = TelemetryTimebase(now: { 1080 })  // 1080 - 1000 = 80ms idade
-    // t4000 freshness default = 50 → LATE quando 50 < idade ≤ 150
-    tb.attachSource(source: SourceTags.t4000)
-    tb.ingest(_tbT4000Sample(tMono: 1000))
-    let snap = tb.snapshotAt(tMono: 1080)
-    try assertEq(snap.quality.t4000, .late)
-    let s = tb.stats()[SourceTags.t4000]
-    try assertEq(s?.quality, .late)
-}
-
-step("TB-06: missing — idade > 3×freshness → MISSING") {
-    let tb = TelemetryTimebase(now: { 1200 })  // 1200 - 1000 = 200ms idade
-    // t4000 freshness default = 50 → MISSING quando idade > 150
-    tb.attachSource(source: SourceTags.t4000)
-    tb.ingest(_tbT4000Sample(tMono: 1000))
-    let snap = tb.snapshotAt(tMono: 1200)
-    try assertEq(snap.quality.t4000, .missing)
-    let s = tb.stats()[SourceTags.t4000]
-    try assertEq(s?.quality, .missing)
-}
-
-step("TB-07: mock source — auto-attach quando ingere sem attach prévio") {
-    let tb = TelemetryTimebase()
-    try assertEq(tb.sourceCount, 0)
-    tb.ingest(_tbT4000Sample(tMono: 1000))
-    try assertEq(tb.sourceCount, 1)
-    // freshness default deve ter sido aplicada (t4000 = 50)
-    let s = tb.stats()[SourceTags.t4000]
-    try assertTrue(s != nil, "stats deve incluir auto-attach")
-}
-
-step("TB-08: stats — counters discardedOutOfOrder + discardedDuplicate") {
-    let tb = TelemetryTimebase()
-    tb.attachSource(source: SourceTags.t4000)
-    tb.ingest(_tbT4000Sample(tMono: 1000))
-    tb.ingest(_tbT4000Sample(tMono: 800))   // out-of-order
-    tb.ingest(_tbT4000Sample(tMono: 600))   // out-of-order
-    tb.ingest(_tbT4000Sample(tMono: 1000))  // duplicate
-    let s = tb.stats()[SourceTags.t4000]
-    try assertEq(s?.discardedOutOfOrder, 2)
-    try assertEq(s?.discardedDuplicate, 1)
-}
-
-step("TB-09: buffer GC — amostras > 10000ms são descartadas") {
-    let tb = TelemetryTimebase()
-    tb.attachSource(source: SourceTags.mock)
-    var s1 = Sample(t: 0, tMono: 1000, source: SourceTags.mock)
-    s1.accLong = 0.5
-    tb.ingest(s1)
-    var s2 = Sample(t: 0, tMono: 5000, source: SourceTags.mock)
-    s2.accLong = 0.7
-    tb.ingest(s2)
-    var s3 = Sample(t: 0, tMono: 15000, source: SourceTags.mock)
-    s3.accLong = 0.9
-    tb.ingest(s3)
-    // cutoff = 15000 - 10000 = 5000; amostra 1 (1000) eliminada; 2 (5000) eliminada (< cutoff = false, 5000 < 5000 = false). Aguarda.
-    // Re-leitura JS: while buf[0].tMono < cutoff → 1000 < 5000 yes drop; 5000 < 5000 no stop.
-    // Resultado: 2 amostras (5000 e 15000).
-    let stats = tb.stats()[SourceTags.mock]
-    try assertEq(stats?.bufferSize, 2)
-}
-
-step("TB-10: snapshot quality consolidada — worstOf de fontes") {
-    let tb = TelemetryTimebase(now: { 1200 })
-    tb.attachSource(source: SourceTags.t4000)   // freshness 50
-    tb.attachSource(source: SourceTags.gps)     // freshness 1500
-    tb.ingest(_tbT4000Sample(tMono: 1000))      // delta 200 → MISSING
-    tb.ingest(_tbGpsSample(tMono: 1180))        // delta 20 → OK
-    let snap = tb.snapshotAt(tMono: 1200)
-    try assertEq(snap.quality.t4000, .missing)
-    try assertEq(snap.quality.iphone, .ok)      // cockpit-mobile vai pra `iphone` (Snapshot.swift)
-    try assertEq(snap.quality.sync, .missing)   // worstOf
-    try assertEq(snap.quality.confidence, "Baixa")
-}
-
-step("TB-11: detach remove fonte do snapshot") {
-    let tb = TelemetryTimebase(now: { 1100 })
-    tb.attachSource(source: SourceTags.t4000)
-    tb.attachSource(source: SourceTags.gps)
-    tb.ingest(_tbT4000Sample(tMono: 1050))
-    tb.ingest(_tbGpsSample(tMono: 1050))
-    tb.detachSource(SourceTags.t4000)
-    try assertEq(tb.sourceCount, 1)
-    let snap = tb.snapshotAt(tMono: 1100)
-    try assertEq(snap.engine.rpm, nil)          // t4000 detached
-    try assertClose(snap.position.lat, -15.77)
-}
-
-step("TB-12: jitter e latencyMedian — janela LATENCY_WINDOW") {
-    let tb = TelemetryTimebase()
-    tb.attachSource(source: SourceTags.t4000)
-    // Intervalos: 10, 10, 10 → jitter ≈ 0
-    tb.ingest(_tbT4000Sample(tMono: 1000))
-    tb.ingest(_tbT4000Sample(tMono: 1010))
-    tb.ingest(_tbT4000Sample(tMono: 1020))
-    tb.ingest(_tbT4000Sample(tMono: 1030))
-    let s1 = tb.stats()[SourceTags.t4000]
-    try assertClose(s1?.jitter ?? 999, 0, tol: 0.001)
-    // Intervalos: 10,10,10,100 — jitter > 0
-    tb.ingest(_tbT4000Sample(tMono: 1130))
-    let s2 = tb.stats()[SourceTags.t4000]
-    try assertTrue((s2?.jitter ?? 0) > 10, "jitter deve refletir intervalo anômalo")
-}
-
-// ════════════════════════════════════════════════════════════
-// VehicleContextAggregator — VCA-01..VCA-10 (MS-16.2)
-// docs/COMMAND_BOX_ENGENHARIA.md §4 (Vehicle Context Model).
-// Constantes idênticas ao node-smoke-vehicle-context-parity.mjs.
-// ════════════════════════════════════════════════════════════
-
-// Helpers de fixture pra VCA smoke.
-func _vcaT4000(tMono: Double, rpm: Double, map: Double, lambda: Double,
-               tps: Double, waterTemp: Double, accLong: Double = 0) -> Snapshot {
-    let engine = EngineSnap(
-        rpm: rpm, tps: tps, map: map, lambda: lambda,
-        oilPressure: 4.0, oilTemp: 92, waterTemp: waterTemp,
-        batteryVoltage: 13.8, fuelPressure: 4.0, gear: 3
-    )
-    let position = PositionSnap()
-    let dynamics = DynamicsSnap(accelLongitudinal: accLong)
-    let vehicle = VehicleSnap(speedCan: 28.0)
-    let quality = SnapshotQuality(t4000: .ok, racebox: .ok, iphone: .ok,
-                                  sync: .ok, confidence: "Alta")
-    return Snapshot(t: 1_700_000_000_000, tMono: tMono,
-                    engine: engine, position: position,
-                    dynamics: dynamics, vehicle: vehicle, quality: quality)
-}
-
-func _vcaLapEnd(numero: Int, tempoMs: Double) -> DetectorLapEvent {
-    DetectorLapEvent(numero: numero, inicioAt: 0, fimAt: tempoMs,
-                     tempoMs: tempoMs, temposPorParcial: [:], temposPorTrecho: [:])
-}
-
-func _vcaSegEnd(segmentId: String, lapNumero: Int, velMinima: Double) -> DetectorSegmentEndEvent {
-    DetectorSegmentEndEvent(
-        segmentId: segmentId, lapNumero: lapNumero,
-        entradaAt: 0, saidaAt: 5000, tempoMs: 5000,
-        velEntrada: 28.0, velMinima: velMinima, velSaida: 26.0,
-        pontoFrenagem: nil, apexT: nil, apexOffset: nil, apexActual: nil
-    )
-}
-
-step("VCA-01: ingest snapshot incrementa contadores básicos") {
-    let agg = VehicleContextAggregator()
-    agg.ingestSnapshot(_vcaT4000(tMono: 1000, rpm: 5000, map: 0.7, lambda: 0.92,
-                                  tps: 50, waterTemp: 95))
-    let ctx = agg.currentContext()
-    try assertEq(ctx.snapshotsConsumed, 1)
-    try assertEq(ctx.lap.samplesCount, 1)
-    try assertEq(ctx.lap.leanLoadSamples, 0)   // λ 0.92 não é lean
-    try assertClose(ctx.lap.waterTempStart, 95)
-    try assertClose(ctx.lap.rpmMax, 5000)
-}
-
-step("VCA-02: lean-load criteria — sample atendendo TPS+MAP+RPM+λ conta") {
-    let agg = VehicleContextAggregator()
-    // 5 samples atendendo critério: TPS>70, MAP>0.8, RPM>4000, λ>1.0
-    for i in 0..<5 {
-        agg.ingestSnapshot(_vcaT4000(
-            tMono: 1000 + Double(i) * 10,
-            rpm: 5800, map: 0.92, lambda: 1.06, tps: 84, waterTemp: 102
-        ))
-    }
-    // 3 samples NÃO atendendo (TPS baixo)
-    for i in 5..<8 {
-        agg.ingestSnapshot(_vcaT4000(
-            tMono: 1000 + Double(i) * 10,
-            rpm: 5800, map: 0.92, lambda: 1.06, tps: 40, waterTemp: 102
-        ))
-    }
-    let ctx = agg.currentContext()
-    try assertEq(ctx.lap.samplesCount, 8)
-    try assertEq(ctx.lap.leanLoadSamples, 5)
-}
-
-step("VCA-03: lean-load NÃO conta com quality.t4000 != .ok (DATA_QUALITY Regra 4)") {
-    let agg = VehicleContextAggregator()
-    // Engine ok mas quality.t4000 = .late → não conta lean
-    let engine = EngineSnap(rpm: 5800, tps: 84, map: 0.92, lambda: 1.06,
-                            oilPressure: 4.0, oilTemp: 92, waterTemp: 102)
-    let quality = SnapshotQuality(t4000: .late, racebox: .ok, iphone: .ok,
-                                  sync: .late, confidence: "Média")
-    let snap = Snapshot(
-        t: 1_700_000_000_000, tMono: 1000,
-        engine: engine, position: PositionSnap(),
-        dynamics: DynamicsSnap(), vehicle: VehicleSnap(),
-        quality: quality
-    )
-    agg.ingestSnapshot(snap)
-    try assertEq(agg.currentContext().lap.leanLoadSamples, 0)
-}
-
-step("VCA-04: onLapEnd arquiva LapWindow + atualiza bestLapMs") {
-    let agg = VehicleContextAggregator()
-    agg.ingestSnapshot(_vcaT4000(tMono: 1000, rpm: 5000, map: 0.7, lambda: 0.92,
-                                  tps: 50, waterTemp: 95))
-    agg.onLapEnd(_vcaLapEnd(numero: 1, tempoMs: 95_000))
-    agg.ingestSnapshot(_vcaT4000(tMono: 2000, rpm: 5100, map: 0.7, lambda: 0.92,
-                                  tps: 50, waterTemp: 96))
-    agg.onLapEnd(_vcaLapEnd(numero: 2, tempoMs: 92_000))
-    let ctx = agg.currentContext()
-    try assertEq(ctx.stint.lapHistory.count, 2)
-    try assertClose(ctx.stint.bestLapMs, 92_000)
-    try assertEq(ctx.stint.lastNLapTimesMs.count, 2)
-}
-
-step("VCA-05: lap reset após onLapEnd — contadores zerados") {
-    let agg = VehicleContextAggregator()
-    agg.ingestSnapshot(_vcaT4000(tMono: 1000, rpm: 5800, map: 0.92, lambda: 1.06,
-                                  tps: 84, waterTemp: 102))
-    agg.ingestSnapshot(_vcaT4000(tMono: 1010, rpm: 5800, map: 0.92, lambda: 1.06,
-                                  tps: 84, waterTemp: 102))
-    agg.onLapEnd(_vcaLapEnd(numero: 1, tempoMs: 95_000))
-    let ctx = agg.currentContext()
-    try assertEq(ctx.lap.samplesCount, 0)
-    try assertEq(ctx.lap.leanLoadSamples, 0)
-    try assertEq(ctx.lap.waterTempStart, nil)
-}
-
-step("VCA-06: onSegmentEnd grava Vmin georef em vminBySegmentLap") {
-    let agg = VehicleContextAggregator()
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 2, velMinima: 21.5))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 3, velMinima: 21.0))
-    let ctx = agg.currentContext()
-    try assertEq(ctx.stint.vminBySegmentLap["bruxa"]?.count, 3)
-    try assertClose(ctx.stint.vminBySegmentLap["bruxa"]?[0].vminKmh, 22.0 * 3.6)
-}
-
-step("VCA-07: vminTrend detecta queda progressiva de Vmin") {
-    let agg = VehicleContextAggregator()
-    // 22 → 21 → 20 m/s = 79.2 → 75.6 → 72 km/h (queda de 3.6 km/h em 2 voltas)
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 2, velMinima: 21.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 3, velMinima: 20.0))
-    let trend = agg.vminTrend(lastNLaps: 3)
-    try assertTrue((trend["bruxa"] ?? 0) < -1.0,
-                   "deve detectar queda > 1 km/h/lap (recebeu \(trend["bruxa"] ?? 0))")
-}
-
-step("VCA-08: waterTempSeries — drift detection °C/min") {
-    let agg = VehicleContextAggregator()
-    // Sobe 6°C em 60s → drift 6°C/min
-    agg.ingestSnapshot(_vcaT4000(tMono: 1000, rpm: 5000, map: 0.7, lambda: 0.92,
-                                  tps: 50, waterTemp: 95))
-    agg.ingestSnapshot(_vcaT4000(tMono: 30_000, rpm: 5000, map: 0.7, lambda: 0.92,
-                                  tps: 50, waterTemp: 98))
-    agg.ingestSnapshot(_vcaT4000(tMono: 61_000, rpm: 5000, map: 0.7, lambda: 0.92,
-                                  tps: 50, waterTemp: 101))
-    let drift = agg.waterTempDriftPerMinute()
-    try assertTrue((drift ?? 0) > 5.5 && (drift ?? 0) < 6.5,
-                   "drift ~6 °C/min, recebeu \(drift ?? 0)")
-}
-
-step("VCA-09: thermalPhase — state machine COLD→WARMING→AT_TEMP→OVERHEAT") {
-    let agg = VehicleContextAggregator()
-    agg.ingestSnapshot(_vcaT4000(tMono: 1000, rpm: 1000, map: 0.5, lambda: 0.95,
-                                  tps: 10, waterTemp: 45))
-    try assertEq(agg.currentContext().thermalPhase, .cold)
-    agg.ingestSnapshot(_vcaT4000(tMono: 5000, rpm: 3000, map: 0.6, lambda: 0.95,
-                                  tps: 30, waterTemp: 80))
-    try assertEq(agg.currentContext().thermalPhase, .warming)
-    agg.ingestSnapshot(_vcaT4000(tMono: 10_000, rpm: 5000, map: 0.7, lambda: 0.92,
-                                  tps: 50, waterTemp: 100))
-    try assertEq(agg.currentContext().thermalPhase, .atTemp)
-    agg.ingestSnapshot(_vcaT4000(tMono: 15_000, rpm: 6000, map: 0.9, lambda: 1.06,
-                                  tps: 85, waterTemp: 108))
-    try assertEq(agg.currentContext().thermalPhase, .overheat)
-}
-
-step("VCA-10: reset zera tudo") {
-    let agg = VehicleContextAggregator()
-    agg.ingestSnapshot(_vcaT4000(tMono: 1000, rpm: 5800, map: 0.92, lambda: 1.06,
-                                  tps: 84, waterTemp: 102))
-    agg.onLapEnd(_vcaLapEnd(numero: 1, tempoMs: 95_000))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
-    agg.reset()
-    let ctx = agg.currentContext()
-    try assertEq(ctx.snapshotsConsumed, 0)
-    try assertEq(ctx.stint.lapHistory.count, 0)
-    try assertEq(ctx.stint.vminBySegmentLap.count, 0)
-    try assertEq(ctx.thermalPhase, .cold)
-}
-
-// ════════════════════════════════════════════════════════════
-// CalibrationEngine + 3 rules MVP — CE-01..CE-15 (MS-16.3)
-// docs/COMMAND_BOX_ENGENHARIA.md §5.1 Camada 2.
-// ════════════════════════════════════════════════════════════
-
-func _ceSeedLeanLaps(_ agg: VehicleContextAggregator, laps: Int = 3,
-                     leanSamplesPerLap: Int = 40, rpmMax: Double = 5800) {
-    var lapNumero = 1
-    for _ in 0..<laps {
-        let baseT = Double(lapNumero) * 60_000
-        for i in 0..<leanSamplesPerLap {
-            agg.ingestSnapshot(_vcaT4000(
-                tMono: baseT + Double(i) * 10,
-                rpm: rpmMax, map: 0.92, lambda: 1.06, tps: 84, waterTemp: 102
-            ))
-        }
-        agg.onLapEnd(_vcaLapEnd(numero: lapNumero, tempoMs: 95_000))
-        lapNumero += 1
-    }
-}
-
-step("CE-01: FuelLeanSustainedLoadRule dispara com 3 voltas atendendo critério") {
-    let agg = VehicleContextAggregator()
-    _ceSeedLeanLaps(agg, laps: 3, leanSamplesPerLap: 40)
-    let engine = CalibrationEngine(rules: [FuelLeanSustainedLoadRule()])
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 1_000_000 })
-    try assertEq(findings.count, 1)
-    try assertEq(findings[0].ruleId, "fuel-lean-sustained-load")
-    try assertEq(findings[0].confianca, .alta)
-    try assertEq(findings[0].severidade, .atencao)
-    try assertEq(findings[0].escopo, .stint)
-}
-
-step("CE-02: FuelLean NÃO dispara com < 3 voltas atendendo") {
-    let agg = VehicleContextAggregator()
-    _ceSeedLeanLaps(agg, laps: 2, leanSamplesPerLap: 40)
-    let engine = CalibrationEngine(rules: [FuelLeanSustainedLoadRule()])
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 1_000_000 })
-    try assertEq(findings.count, 0)
-}
-
-step("CE-03: FuelLean NÃO dispara com poucos samples lean por volta (< 30)") {
-    let agg = VehicleContextAggregator()
-    _ceSeedLeanLaps(agg, laps: 3, leanSamplesPerLap: 10) // < 30 cutoff default
-    let engine = CalibrationEngine(rules: [FuelLeanSustainedLoadRule()])
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 1_000_000 })
-    try assertEq(findings.count, 0)
-}
-
-step("CE-04: FuelLean propõe recommendation com ajuste +4% combustível") {
-    let agg = VehicleContextAggregator()
-    _ceSeedLeanLaps(agg, laps: 3, leanSamplesPerLap: 40)
-    let engine = CalibrationEngine(rules: [FuelLeanSustainedLoadRule()])
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 1_000_000 })
-    let recs = engine.proposeRecommendations(findings: findings,
-                                              context: agg.currentContext())
-    try assertEq(recs.count, 1)
-    let rec = recs[0]
-    try assertEq(rec.ajustes.count, 1)
-    try assertEq(rec.ajustes[0].campo, "combustivel")
-    try assertEq(rec.ajustes[0].para, "+4%")
-    try assertEq(rec.decisao, .pendente)
-    try assertTrue(rec.naoMexer.count > 0, "rec deve ter naoMexer (campo obrigatório §9)")
-}
-
-step("CE-05: cooldown impede duplo disparo dentro da janela") {
-    let agg = VehicleContextAggregator()
-    _ceSeedLeanLaps(agg, laps: 3, leanSamplesPerLap: 40)
-    let engine = CalibrationEngine(rules: [FuelLeanSustainedLoadRule()])
-    var clock: Double = 1_000_000
-    let f1 = engine.evaluate(context: agg.currentContext(), now: { clock })
-    try assertEq(f1.count, 1)
-    // imediatamente após — cooldown 60s default barra
-    let f2 = engine.evaluate(context: agg.currentContext(), now: { clock })
-    try assertEq(f2.count, 0)
-    // passou cooldown — dispara de novo
-    clock += 61_000
-    let f3 = engine.evaluate(context: agg.currentContext(), now: { clock })
-    try assertEq(f3.count, 1)
-}
-
-step("CE-06: WaterTempDriftNoCooling dispara com drift > 3°C/min sustentado") {
-    let agg = VehicleContextAggregator()
-    // drift ~6°C/min em 90s
-    agg.ingestSnapshot(_vcaT4000(tMono: 0,      rpm: 4000, map: 0.6, lambda: 0.92,
-                                  tps: 40, waterTemp: 95))
-    agg.ingestSnapshot(_vcaT4000(tMono: 45_000, rpm: 4000, map: 0.6, lambda: 0.92,
-                                  tps: 40, waterTemp: 99.5))
-    agg.ingestSnapshot(_vcaT4000(tMono: 90_000, rpm: 4000, map: 0.6, lambda: 0.92,
-                                  tps: 40, waterTemp: 104))
-    let engine = CalibrationEngine(rules: [WaterTempDriftNoCoolingRule()])
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 100_000 })
-    try assertEq(findings.count, 1)
-    try assertEq(findings[0].ruleId, "water-temp-drift-no-cooling")
-    try assertTrue((findings[0].evidencia["drift_c_per_min"] ?? 0) > 5.5,
-                   "drift deve ser ~6°C/min")
-}
-
-step("CE-07: WaterTempDriftNoCooling NÃO dispara com drift abaixo do limite") {
-    let agg = VehicleContextAggregator()
-    // drift ~1°C/min
-    agg.ingestSnapshot(_vcaT4000(tMono: 0,      rpm: 4000, map: 0.6, lambda: 0.92,
-                                  tps: 40, waterTemp: 95))
-    agg.ingestSnapshot(_vcaT4000(tMono: 60_000, rpm: 4000, map: 0.6, lambda: 0.92,
-                                  tps: 40, waterTemp: 96))
-    agg.ingestSnapshot(_vcaT4000(tMono: 120_000, rpm: 4000, map: 0.6, lambda: 0.92,
-                                  tps: 40, waterTemp: 97))
-    let engine = CalibrationEngine(rules: [WaterTempDriftNoCoolingRule()])
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 130_000 })
-    try assertEq(findings.count, 0)
-}
-
-step("CE-08: WaterTempDrift severidade ALTA quando fase = overheat") {
-    let agg = VehicleContextAggregator()
-    agg.ingestSnapshot(_vcaT4000(tMono: 0,      rpm: 5000, map: 0.7, lambda: 0.92,
-                                  tps: 60, waterTemp: 100))
-    agg.ingestSnapshot(_vcaT4000(tMono: 60_000, rpm: 5000, map: 0.7, lambda: 0.92,
-                                  tps: 60, waterTemp: 105))
-    agg.ingestSnapshot(_vcaT4000(tMono: 120_000, rpm: 5000, map: 0.7, lambda: 0.92,
-                                  tps: 60, waterTemp: 110))   // overheat
-    let engine = CalibrationEngine(rules: [WaterTempDriftNoCoolingRule()])
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 130_000 })
-    try assertEq(findings.count, 1)
-    try assertEq(findings[0].severidade, .alta)
-}
-
-step("CE-09: VminProgressiveLoss dispara com Vmin caindo > 1 km/h/volta") {
-    let agg = VehicleContextAggregator()
-    // 22, 20, 18 m/s = 79.2, 72.0, 64.8 km/h — queda ~7.2 km/h/volta
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 2, velMinima: 20.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 3, velMinima: 18.0))
-    let engine = CalibrationEngine(rules: [VminProgressiveLossSegmentRule()])
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 100_000 })
-    try assertEq(findings.count, 1)
-    try assertEq(findings[0].ruleId, "vmin-progressive-loss-segment")
-    try assertEq(findings[0].segmentId, "bruxa")
-    try assertEq(findings[0].confianca, .alta) // > 1.5 km/h/volta
-}
-
-step("CE-10: VminProgressiveLoss NÃO dispara se Vmin não-monotônico") {
-    let agg = VehicleContextAggregator()
-    // sobe, cai, sobe → não dispara
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 2, velMinima: 23.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 3, velMinima: 21.0))
-    let engine = CalibrationEngine(rules: [VminProgressiveLossSegmentRule()])
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 100_000 })
-    try assertEq(findings.count, 0)
-}
-
-step("CE-11: VminProgressiveLoss escolhe trecho com pior queda") {
-    let agg = VehicleContextAggregator()
-    // bruxa: queda pequena ~1.1 km/h/volta
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 2, velMinima: 21.7))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 3, velMinima: 21.4))
-    // s1: queda grande ~7 km/h/volta — esse deve ser o pior
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "s1", lapNumero: 1, velMinima: 25.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "s1", lapNumero: 2, velMinima: 23.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "s1", lapNumero: 3, velMinima: 21.0))
-    let engine = CalibrationEngine(rules: [VminProgressiveLossSegmentRule()])
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 100_000 })
-    try assertEq(findings.count, 1)
-    try assertEq(findings[0].segmentId, "s1")
-}
-
-step("CE-12: minConfidenceForRecommendation gateando recommendation") {
-    let agg = VehicleContextAggregator()
-    // Drift pequeno → confianca = .baixa
-    agg.ingestSnapshot(_vcaT4000(tMono: 0,      rpm: 4000, map: 0.6, lambda: 0.92,
-                                  tps: 40, waterTemp: 95))
-    agg.ingestSnapshot(_vcaT4000(tMono: 35_000, rpm: 4000, map: 0.6, lambda: 0.92,
-                                  tps: 40, waterTemp: 97))
-    let engine = CalibrationEngine(
-        rules: [WaterTempDriftNoCoolingRule()],
-        minConfidenceForRecommendation: .media
-    )
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 40_000 })
-    if !findings.isEmpty {
-        let recs = engine.proposeRecommendations(findings: findings, context: agg.currentContext())
-        if findings[0].confianca == .baixa {
-            try assertEq(recs.count, 0)
-        }
-    }
-}
-
-step("CE-13: defaultRules expõe as 3 rules MVP") {
-    let rules = CalibrationEngine.defaultRules
-    try assertEq(rules.count, 3)
-    let ids = Set(rules.map { $0.id })
-    try assertTrue(ids.contains("fuel-lean-sustained-load"))
-    try assertTrue(ids.contains("water-temp-drift-no-cooling"))
-    try assertTrue(ids.contains("vmin-progressive-loss-segment"))
-}
-
-step("CE-14: evaluate avalia todas as regras (multi-rule)") {
-    let agg = VehicleContextAggregator()
-    _ceSeedLeanLaps(agg, laps: 3, leanSamplesPerLap: 40)
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 1, velMinima: 22.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 2, velMinima: 20.0))
-    agg.onSegmentEnd(_vcaSegEnd(segmentId: "bruxa", lapNumero: 3, velMinima: 18.0))
-    let engine = CalibrationEngine()
-    let findings = engine.evaluate(context: agg.currentContext(), now: { 1_000_000 })
-    let ids = Set(findings.map { $0.ruleId })
-    try assertTrue(ids.contains("fuel-lean-sustained-load"))
-    try assertTrue(ids.contains("vmin-progressive-loss-segment"))
-}
-
-step("CE-15: reset limpa cooldowns") {
-    let agg = VehicleContextAggregator()
-    _ceSeedLeanLaps(agg, laps: 3, leanSamplesPerLap: 40)
-    let engine = CalibrationEngine(rules: [FuelLeanSustainedLoadRule()])
-    let f1 = engine.evaluate(context: agg.currentContext(), now: { 1000 })
-    try assertEq(f1.count, 1)
-    let f2 = engine.evaluate(context: agg.currentContext(), now: { 2000 })
-    try assertEq(f2.count, 0)
-    engine.reset()
-    let f3 = engine.evaluate(context: agg.currentContext(), now: { 2000 })
-    try assertEq(f3.count, 1)
-}
-
-// ════════════════════════════════════════════════════════════
-// EngControlModel + EngineeringDecisionPolicy — ECM-01..ECM-12 (MS-16.5)
-// docs/COMMAND_BOX_ENGENHARIA.md §6 MS-16.5 + §11 D17.
-// ════════════════════════════════════════════════════════════
-
-step("ECM-01: slider de combustível clampa range [-10, +10]") {
-    let s = EngControlModel.fuelAdjustmentSlider(value: 4)
-    try assertClose(s.value, 4)
-    let r = s.tryChange(to: 15, papel: .engenheiro, carroParado: false)
-    try assertEq(r.accepted, true)
-    try assertClose(r.value, 10)   // clamp
-    let r2 = s.tryChange(to: -20, papel: .engenheiro, carroParado: false)
-    try assertEq(r2.accepted, true)
-    try assertClose(r2.value, -10)
-}
-
-step("ECM-02: slider snap em step=0.5") {
-    let s = EngControlModel.fuelAdjustmentSlider(value: 0)
-    let r = s.tryChange(to: 3.7, papel: .engenheiro, carroParado: false)
-    try assertEq(r.accepted, true)
-    try assertClose(r.value, 3.5)  // snap pra 0.5 mais próximo
-}
-
-step("ECM-03: knob RPM step=100") {
-    let k = EngControlModel.rpmTargetKnob(value: 5800)
-    let r = k.tryChange(to: 5850, papel: .engenheiro, carroParado: false)
-    try assertEq(r.accepted, true)
-    try assertClose(r.value, 5900) // 5850 → 5900 (round-half-up)
-    let r2 = k.tryChange(to: 5849, papel: .engenheiro, carroParado: false)
-    try assertEq(r2.accepted, true)
-    try assertClose(r2.value, 5800)
-}
-
-step("ECM-04: piloto SÓ opera com carro parado (D17)") {
-    let s = EngControlModel.fuelAdjustmentSlider(value: 0)
-    let rAndando = s.tryChange(to: 4, papel: .piloto, carroParado: false)
-    try assertEq(rAndando.accepted, false)
-    try assertTrue(rAndando.motivo?.contains("D17") ?? false)
-    let rParado = s.tryChange(to: 4, papel: .piloto, carroParado: true)
-    try assertEq(rParado.accepted, true)
-    try assertClose(rParado.value, 4)
-}
-
-step("ECM-05: chefe + engenheiro operam a qualquer momento") {
-    let s = EngControlModel.fuelAdjustmentSlider(value: 0)
-    try assertEq(s.tryChange(to: 4, papel: .chefe, carroParado: false).accepted, true)
-    try assertEq(s.tryChange(to: 4, papel: .engenheiro, carroParado: false).accepted, true)
-    try assertEq(s.tryChange(to: 4, papel: .chefe, carroParado: true).accepted, true)
-}
-
-step("ECM-06: readonly NUNCA opera") {
-    let s = EngControlModel.fuelAdjustmentSlider(value: 0)
-    try assertEq(s.tryChange(to: 4, papel: .readonly, carroParado: true).accepted, false)
-    try assertEq(s.tryChange(to: 4, papel: .readonly, carroParado: false).accepted, false)
-}
-
-step("ECM-07: valor não-finito rejeitado") {
-    let s = EngControlModel.fuelAdjustmentSlider(value: 0)
-    try assertEq(s.tryChange(to: .nan, papel: .chefe, carroParado: true).accepted, false)
-    try assertEq(s.tryChange(to: .infinity, papel: .chefe, carroParado: true).accepted, false)
-}
-
-step("ECM-08: withValue cria nova instância imutável") {
-    let s = EngControlModel.fuelAdjustmentSlider(value: 4)
-    let s2 = s.withValue(2)
-    try assertClose(s.value, 4)    // original preservado
-    try assertClose(s2.value, 2)
-    try assertEq(s.id, s2.id)
-}
-
-step("ECM-09: toggle moduloEngenhariaToggle binário") {
-    let off = EngControlModel.moduloEngenhariaToggle(value: false)
-    try assertClose(off.value, 0)
-    let on = EngControlModel.moduloEngenhariaToggle(value: true)
-    try assertClose(on.value, 1)
-}
-
-step("ECM-10: DecisionPolicy — piloto não rejeita (só aprova/edita)") {
-    let r1 = EngineeringDecisionPolicy.canDecide(papel: .piloto, carroParado: true, para: .aprovada)
-    if case .success = r1 {} else { throw Bad(msg: "piloto deve poder aprovar parado") }
-    let r2 = EngineeringDecisionPolicy.canDecide(papel: .piloto, carroParado: true, para: .rejeitada)
-    if case .failure = r2 {} else { throw Bad(msg: "piloto NÃO rejeita") }
-}
-
-step("ECM-11: DecisionPolicy — transitionAllowed só de pendente") {
-    let r1 = EngineeringDecisionPolicy.transitionAllowed(from: .pendente, to: .aprovada)
-    if case .success = r1 {} else { throw Bad(msg: "pendente → aprovada deve passar") }
-    let r2 = EngineeringDecisionPolicy.transitionAllowed(from: .aprovada, to: .rejeitada)
-    if case .failure(let err) = r2 {
-        try assertEq(err, .decisaoFinalizada)
-    } else {
-        throw Bad(msg: "aprovada → rejeitada deve falhar")
-    }
-}
-
-step("ECM-12: DecisionPolicy.authorize integra ambos checks") {
-    // Chefe aprovando pendente com carro andando — OK
-    let r1 = EngineeringDecisionPolicy.authorize(
-        papel: .chefe, carroParado: false,
-        from: .pendente, to: .aprovada
-    )
-    if case .success = r1 {} else { throw Bad(msg: "chefe deve aprovar mesmo com carro andando") }
-
-    // Piloto aprovando pendente com carro andando — bloqueio D17
-    let r2 = EngineeringDecisionPolicy.authorize(
-        papel: .piloto, carroParado: false,
-        from: .pendente, to: .aprovada
-    )
-    if case .failure(let err) = r2 {
-        try assertEq(err, .carroAndando)
-    } else {
-        throw Bad(msg: "piloto andando não deve aprovar")
-    }
-
-    // Chefe tentando re-decidir aprovada — bloqueio decisaoFinalizada
-    let r3 = EngineeringDecisionPolicy.authorize(
-        papel: .chefe, carroParado: true,
-        from: .aprovada, to: .rejeitada
-    )
-    if case .failure(let err) = r3 {
-        try assertEq(err, .decisaoFinalizada)
-    } else {
-        throw Bad(msg: "decisão já finalizada não deve mudar")
-    }
-}
-
-// ── Manutenção · Consumíveis (modelo CHECAGEM ≠ TROCA) ───────
-step("consumiveis: catálogo tem 30 itens") {
-    try assertEq(CatalogoConsumiveisCelta.itens.count, 30)
-}
-step("consumiveis: 10 blocos na ordem do catálogo") {
-    try assertEq(CatalogoConsumiveisCelta.porBloco().count, 10)
-}
-step("consumiveis: distribuição por modo de troca (16/9/4/1)") {
-    let it = CatalogoConsumiveisCelta.itens
-    try assertEq(it.filter { $0.troca.token == "limite" }.count, 16)
-    try assertEq(it.filter { $0.troca.token == "resultado" }.count, 9)
-    try assertEq(it.filter { $0.troca.token == "preditivo" }.count, 4)
-    try assertEq(it.filter { $0.troca.token == "rec" }.count, 1)
-}
-step("consumiveis: find acha e devolve nil pro inexistente") {
-    try assertTrue(CatalogoConsumiveisCelta.find("pneus") != nil)
-    try assertTrue(CatalogoConsumiveisCelta.find("nao_existe") == nil)
-}
-step("consumiveis: itens-chave com modo/ação certos") {
-    try assertEq(CatalogoConsumiveisCelta.find("pneus")!.troca.token, "preditivo")
-    try assertEq(CatalogoConsumiveisCelta.find("reaperto_rodas")!.checagem.acao, .reapertar)
-    try assertEq(CatalogoConsumiveisCelta.find("reaperto_rodas")!.troca.token, "resultado")
-    try assertEq(CatalogoConsumiveisCelta.find("velas")!.checagem.acao, .lerVela)
-    try assertEq(CatalogoConsumiveisCelta.find("velas")!.troca, .limiteMaximo(valor: 24, unidade: .horas))
-    try assertEq(CatalogoConsumiveisCelta.find("analise_oleo")!.troca.token, "rec")
-}
-step("troca: peloResultado → condicional, soRecomendacao → recomendacao") {
-    try assertEq(avaliarTroca(troca: .peloResultado, contador: .zero).severidade, .condicional)
-    try assertEq(avaliarTroca(troca: .soRecomendacao, contador: .zero).severidade, .recomendacao)
-}
-step("troca: limite por horas (óleo 2h) verde→amarelo→vermelho") {
-    let t = ModoTroca.limiteMaximo(valor: 2, unidade: .horas)
-    let s1 = avaliarTroca(troca: t, contador: ContadorUso(horas: 1.0))
-    try assertEq(s1.severidade, .verde); try assertClose(s1.fracao, 0.5)
-    try assertEq(avaliarTroca(troca: t, contador: ContadorUso(horas: 1.7)).severidade, .amarelo)
-    try assertEq(avaliarTroca(troca: t, contador: ContadorUso(horas: 2.5)).severidade, .vermelho)
-}
-step("troca: limite por eventos e por meses") {
-    let ev = avaliarTroca(troca: .limiteMaximo(valor: 8, unidade: .eventos), contador: ContadorUso(eventos: 4))
-    try assertEq(ev.severidade, .verde); try assertClose(ev.fracao, 0.5)
-    let me = avaliarTroca(troca: .limiteMaximo(valor: 12, unidade: .meses), contador: ContadorUso(dias: 180))
-    try assertEq(me.severidade, .verde); try assertClose(me.fracao, 0.5)
-}
-step("troca: validade da etiqueta (sem data / vencido / perto / longe)") {
-    let semData = avaliarTroca(troca: .limiteMaximo(valor: nil, unidade: .validade), contador: .zero, diasAteValidade: nil)
-    try assertEq(semData.severidade, .semHistorico)
-    try assertEq(avaliarTroca(troca: .limiteMaximo(valor: nil, unidade: .validade), contador: .zero, diasAteValidade: -5).severidade, .vermelho)
-    try assertEq(avaliarTroca(troca: .limiteMaximo(valor: nil, unidade: .validade), contador: .zero, diasAteValidade: 30).severidade, .amarelo)
-    try assertEq(avaliarTroca(troca: .limiteMaximo(valor: nil, unidade: .validade), contador: .zero, diasAteValidade: 200).severidade, .verde)
-}
-step("troca: preditivo por horas (sem média / com média)") {
-    let semMedia = avaliarTroca(troca: .preditivoPorHoras, contador: ContadorUso(horas: 9), mediaHorasAprendida: nil)
-    try assertEq(semMedia.severidade, .semHistorico)
-    let comMedia = avaliarTroca(troca: .preditivoPorHoras, contador: ContadorUso(horas: 9), mediaHorasAprendida: 10)
-    try assertEq(comMedia.severidade, .amarelo); try assertClose(comMedia.fracao, 0.9)
-}
-step("inteligência: média entre trocas e detecção de anomalia (por horas)") {
-    let m = mediaDuracoes([DuracaoTroca(horas: 10), DuracaoTroca(horas: 20)])
-    try assertClose(m.horas, 15)
-    try assertTrue(detectarAnomalia(atual: DuracaoTroca(horas: 5), media: DuracaoTroca(horas: 15)))   // 5 < 9
-    try assertTrue(!detectarAnomalia(atual: DuracaoTroca(horas: 12), media: DuracaoTroca(horas: 15))) // 12 > 9
-}
-
-step("uso real: soma horas de sessões (cancelada não conta) + eventos distintos") {
+step("CARFOTO-01: v19 adiciona coluna foto_url em carros") {
     let q = try makeTestDB()
-    let carro = "carro-uso-1"; let team = "team-1"
-    let base: Int64 = 1_700_000_000_000
-    let h: Int64 = 3_600_000  // 1 hora em ms
-    try q.write { db in
-        try Carro(id: carro, timeId: team, apelido: "Bubi").insert(db)
-        try Evento(id: "evtA", timeId: team, dataEvento: base).insert(db)
-        try Evento(id: "evtB", timeId: team, dataEvento: base + 4*h).insert(db)
-        try Sessao(id: "su1", timeId: team, eventoId: "evtA", carroId: carro,
-                   status: "finalizada", dataInicio: base, dataFim: base + h).insert(db)
-        try Sessao(id: "su2", timeId: team, eventoId: "evtA", carroId: carro,
-                   status: "finalizada", dataInicio: base + 2*h, dataFim: base + 3*h).insert(db)
-        try Sessao(id: "su3", timeId: team, eventoId: "evtB", carroId: carro,
-                   status: "finalizada", dataInicio: base + 4*h, dataFim: base + 4*h + h/2).insert(db)
-        try Sessao(id: "su4", timeId: team, eventoId: "evtB", carroId: carro,
-                   status: "cancelada", dataInicio: base + 5*h, dataFim: base + 7*h,
-                   canceladoEm: base + 5*h).insert(db)
+    let cols = try q.read { db in
+        try Row.fetchAll(db, sql: "PRAGMA table_info(carros)")
     }
-    let cont = try q.read { db in
-        try ManutencaoUsoReader.contador(db, carroId: carro, timeId: team,
-                                         deMs: base - 1, ateMs: base + 10*h)
-    }
-    try assertClose(cont.horas, 2.5)   // 1 + 1 + 0.5 (a cancelada fica de fora)
-    try assertEq(cont.eventos, 2)      // evtA + evtB
+    let nomes = Set(cols.compactMap { $0["name"] as String? })
+    try assertTrue(nomes.contains("foto_url"), "esperava coluna foto_url, recebi: \(nomes)")
 }
 
-step("histórico: registra trocas, aprende a vida real e calcula status preditivo") {
+step("CARFOTO-02: Carro com fotoUrl preserva valor no round-trip") {
     let q = try makeTestDB()
-    let team = "team-1"; let carro = "carro-hist"
-    let base: Int64 = 1_700_000_000_000
-    let h: Int64 = 3_600_000        // 1 hora
-    let h18: Int64 = 6_480_000      // 1,8 hora
-    try q.write { db in
-        try Carro(id: carro, timeId: team, apelido: "Bubi").insert(db)
-        try Evento(id: "eh1", timeId: team, dataEvento: base).insert(db)
-        try Evento(id: "eh2", timeId: team, dataEvento: base + 10*h).insert(db)
-        try Evento(id: "eh3", timeId: team, dataEvento: base + 20*h).insert(db)
-        // uso: 2h entre troca1→troca2, 2h entre troca2→troca3, 1,8h após troca3
-        try Sessao(id: "sh1", timeId: team, eventoId: "eh1", carroId: carro, status: "finalizada", dataInicio: base + h, dataFim: base + 3*h).insert(db)
-        try Sessao(id: "sh2", timeId: team, eventoId: "eh2", carroId: carro, status: "finalizada", dataInicio: base + 11*h, dataFim: base + 13*h).insert(db)
-        try Sessao(id: "sh3", timeId: team, eventoId: "eh3", carroId: carro, status: "finalizada", dataInicio: base + 20*h, dataFim: base + 20*h + h18).insert(db)
-        // 3 trocas de pneu
-        try ManutencaoRegistro(id: "mh1", timeId: team, carroId: carro, itemCodigo: "pneus", ocorridoEm: base).insert(db)
-        try ManutencaoRegistro(id: "mh2", timeId: team, carroId: carro, itemCodigo: "pneus", ocorridoEm: base + 10*h).insert(db)
-        try ManutencaoRegistro(id: "mh3", timeId: team, carroId: carro, itemCodigo: "pneus", ocorridoEm: base + 20*h).insert(db)
-    }
-    let (n, media, status) = try q.read { db -> (Int, Double?, StatusManutencao) in
-        let hist = try ManutencaoHistorico.historico(db, carroId: carro, timeId: team, itemCodigo: "pneus")
-        let me = try ManutencaoHistorico.mediaHorasAprendida(db, carroId: carro, timeId: team, itemCodigo: "pneus")
-        let st = try ManutencaoHistorico.status(db, item: CatalogoConsumiveisCelta.find("pneus")!,
-                                                carroId: carro, timeId: team, agoraMs: base + 20*h + h18)
-        return (hist.count, me, st)
-    }
-    try assertEq(n, 3)
-    try assertClose(media, 2.0)                 // 2h + 2h → vida média do pneu = 2h
-    try assertEq(status.severidade, .amarelo)   // 1,8h / 2h = 0,9 → amarelo
-    try assertClose(status.fracao, 0.9)
+    let c = Carro(
+        id: "carro-foto",
+        timeId: "team-1",
+        apelido: "Celta com foto",
+        fotoUrl: "team-1/carro-foto.jpg"
+    )
+    try q.write { db in try c.insert(db) }
+    let fetched = try q.read { db in try Carro.fetchOne(db, key: "carro-foto") }
+    try assertEq(fetched?.fotoUrl, "team-1/carro-foto.jpg")
 }
 
-step("migration v19: banco com tabela manutencoes ANTIGA (device 18/05) preserva e não quebra") {
-    let dbq = try DatabaseQueue()  // memória cru, sem migrations
-    try dbq.write { db in
-        // simula a tabela órfã de 18/05 (esquema antigo e incompatível)
-        try db.execute(sql: "CREATE TABLE manutencoes (id TEXT PRIMARY KEY, area TEXT, km_carro REAL, quantidade INTEGER);")
-        try db.execute(sql: "INSERT INTO manutencoes (id, area, km_carro, quantidade) VALUES ('velho-1','Motor',1000,1);")
+step("CARFOTO-03: Carro sem fotoUrl persiste como NULL") {
+    let q = try makeTestDB()
+    let c = Carro(id: "carro-sem-foto", timeId: "team-1", apelido: "Sem foto")
+    try q.write { db in try c.insert(db) }
+    let row = try q.read { db in
+        try Row.fetchOne(db, sql: "SELECT foto_url FROM carros WHERE id = ?", arguments: ["carro-sem-foto"])
     }
-    // aplica TODAS as migrations (v1..v19): a v19 deve renomear a antiga e criar a nova
-    try DB.migrator.migrate(dbq)
-    try dbq.read { db in
-        let cols = try Row.fetchAll(db, sql: "PRAGMA table_info(manutencoes)").map { $0["name"] as String }
-        try assertTrue(cols.contains("validade_etiqueta"), "manutencoes nova deve ter validade_etiqueta")
-        try assertTrue(try db.tableExists("manutencoes_legado_2026_05_18"), "tabela antiga preservada")
-        let n = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM manutencoes_legado_2026_05_18") ?? 0
-        try assertEq(n, 1, "dado antigo preservado (não apagou)")
+    let fotoUrl: String? = row?["foto_url"]
+    try assertTrue(fotoUrl == nil, "esperava foto_url NULL, recebi: \(String(describing: fotoUrl))")
+}
+
+// ─── S4 rodada 1: cidade em tracks ────────────────────────
+
+step("TRC-01: v20 adiciona coluna cidade em tracks") {
+    let q = try makeTestDB()
+    let cols = try q.read { db in
+        try Row.fetchAll(db, sql: "PRAGMA table_info(tracks)")
     }
+    let nomes = Set(cols.compactMap { $0["name"] as String? })
+    try assertTrue(nomes.contains("cidade"), "esperava coluna cidade, recebi: \(nomes)")
+}
+
+step("TRC-02: TrackRow com cidade preserva valor no round-trip") {
+    let q = try makeTestDB()
+    let t = TrackRow(id: "trk-c1", apelido: "Goiânia",
+                     nomeOficial: "Autódromo Internacional Ayrton Senna",
+                     cidade: "Goiânia")
+    try q.write { db in try t.insert(db) }
+    let fetched = try q.read { db in try TrackRow.fetchOne(db, key: "trk-c1") }
+    try assertEq(fetched?.cidade, "Goiânia")
+}
+
+step("TRC-03: TrackRow sem cidade persiste como NULL") {
+    let q = try makeTestDB()
+    let t = TrackRow(id: "trk-c2", apelido: "Sem cidade")
+    try q.write { db in try t.insert(db) }
+    let row = try q.read { db in
+        try Row.fetchOne(db, sql: "SELECT cidade FROM tracks WHERE id = ?", arguments: ["trk-c2"])
+    }
+    let cidade: String? = row?["cidade"]
+    try assertTrue(cidade == nil, "esperava cidade NULL, recebi: \(String(describing: cidade))")
+}
+
+step("TRC-04: v20 preenche Brasília legada (apelido='Brasília') com cidade='Brasília'") {
+    let q = try makeTestDB()
+    // Insere uma row "Brasília" legada SEM cidade — simula um banco
+    // criado antes do v20 e migrado depois. Como v20 já rodou no setup
+    // do makeTestDB, vamos inserir manualmente uma row que iria sofrer
+    // o backfill e verificar via SQL direto.
+    try q.write { db in
+        try TrackRow(id: "trk-legacy", apelido: "Brasília",
+                     nomeOficial: "Auto Test", cidade: nil).insert(db)
+    }
+    // Re-aplica o UPDATE do backfill manualmente (idempotente).
+    try q.write { db in
+        try db.execute(sql: "UPDATE tracks SET cidade = 'Brasília' WHERE apelido = 'Brasília' AND cidade IS NULL;")
+    }
+    let row = try q.read { db in
+        try Row.fetchOne(db, sql: "SELECT cidade FROM tracks WHERE id = ?", arguments: ["trk-legacy"])
+    }
+    let cidade: String? = row?["cidade"]
+    try assertEq(cidade, "Brasília")
+}
+
+// ─── S8 rodada 1: pendências consumíveis + pneus série + ações a fazer ──
+
+step("S8-01: v21 adiciona eh_consumivel + unidade em pendencias_template") {
+    let q = try makeTestDB()
+    let cols = try q.read { db in
+        try Row.fetchAll(db, sql: "PRAGMA table_info(pendencias_template)")
+    }
+    let nomes = Set(cols.compactMap { $0["name"] as String? })
+    try assertTrue(nomes.contains("eh_consumivel"), "esperava eh_consumivel; recebi: \(nomes)")
+    try assertTrue(nomes.contains("unidade"), "esperava unidade")
+}
+
+step("S8-02: v21 adiciona quantidade em evento_pendencias") {
+    let q = try makeTestDB()
+    let cols = try q.read { db in
+        try Row.fetchAll(db, sql: "PRAGMA table_info(evento_pendencias)")
+    }
+    let nomes = Set(cols.compactMap { $0["name"] as String? })
+    try assertTrue(nomes.contains("quantidade"), "esperava quantidade; recebi: \(nomes)")
+}
+
+step("S8-03: v22 adiciona numero_serie em pneus") {
+    let q = try makeTestDB()
+    let cols = try q.read { db in
+        try Row.fetchAll(db, sql: "PRAGMA table_info(pneus)")
+    }
+    let nomes = Set(cols.compactMap { $0["name"] as String? })
+    try assertTrue(nomes.contains("numero_serie"), "esperava numero_serie")
+}
+
+step("S8-04: v22 cria tabela evento_pneus com UNIQUE(evento_id, pneu_id)") {
+    let q = try makeTestDB()
+    let exists = try q.read { db in
+        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='evento_pneus'") ?? 0
+    }
+    try assertEq(exists, 1, "esperava tabela evento_pneus")
+}
+
+step("S8-05: v23 cria tabela acoes_a_fazer com CHECK descricao não-vazia") {
+    let q = try makeTestDB()
+    let exists = try q.read { db in
+        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='acoes_a_fazer'") ?? 0
+    }
+    try assertEq(exists, 1, "esperava tabela acoes_a_fazer")
+}
+
+step("S8-06: AcaoAFazer round-trip GRDB preserva campos") {
+    let q = try makeTestDB()
+    // Insere evento pra satisfazer FK.
+    try q.write { db in
+        try Time(id: "team-acao", nome: "Time Ação", criadoPor: nil).insert(db)
+        try Evento(id: "ev-acao", timeId: "team-acao", trackId: nil,
+                   tipo: "track-day", dataEvento: 1_700_000_000_000).insert(db)
+    }
+    let row = AcaoAFazer(
+        id: "ac-1", timeId: "team-acao", eventoId: "ev-acao",
+        pilotoId: nil, descricao: "Comprar combustível extra"
+    )
+    try q.write { db in try row.insert(db) }
+    let fetched = try q.read { db in try AcaoAFazer.fetchOne(db, key: "ac-1") }
+    try assertEq(fetched?.descricao, "Comprar combustível extra")
+    try assertTrue(fetched?.feitaEm == nil)
+}
+
+step("S8-07: EventoPneu UNIQUE(evento_id, pneu_id) bloqueia duplicata") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try Time(id: "team-p", nome: "Team P", criadoPor: nil).insert(db)
+        try Carro(id: "c-p", timeId: "team-p", apelido: "C-P").insert(db)
+        try Evento(id: "ev-p", timeId: "team-p", trackId: nil,
+                   tipo: "track-day", dataEvento: 1_700_000_000_000).insert(db)
+        try Pneu(id: "pn-1", timeId: "team-p", carroId: "c-p", numeroSerie: "PN01").insert(db)
+        try EventoPneu(id: "ep-1", timeId: "team-p", eventoId: "ev-p", pneuId: "pn-1").insert(db)
+    }
+    var caiu = false
+    do {
+        try q.write { db in
+            try EventoPneu(id: "ep-dup", timeId: "team-p", eventoId: "ev-p", pneuId: "pn-1").insert(db)
+        }
+    } catch { caiu = true }
+    try assertTrue(caiu, "esperava UNIQUE constraint barrar duplicata")
+}
+
+// ─── S7 rodada 1: replicação de setup ──────────────────────
+
+step("S7-01: v24 cria tabela evento_setup_replicado") {
+    let q = try makeTestDB()
+    let exists = try q.read { db in
+        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='evento_setup_replicado'") ?? 0
+    }
+    try assertEq(exists, 1, "esperava tabela evento_setup_replicado")
+}
+
+step("S7-02: EventoSetupReplicado round-trip preserva overrides_json") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try Time(id: "team-s7", nome: "Time S7", criadoPor: nil).insert(db)
+        try Evento(id: "ev-s7", timeId: "team-s7", trackId: nil,
+                   tipo: "track-day", dataEvento: 1_700_000_000_000).insert(db)
+    }
+    let json = "{\"pneu\":\"24psi\",\"amortecedor\":\"4\"}"
+    let row = EventoSetupReplicado(
+        id: "rep-1", timeId: "team-s7", eventoId: "ev-s7",
+        origemVoltaId: "vol-x", origemEventoId: nil, carroId: nil,
+        overridesJson: json
+    )
+    try q.write { db in try row.insert(db) }
+    let fetched = try q.read { db in try EventoSetupReplicado.fetchOne(db, key: "rep-1") }
+    try assertEq(fetched?.overridesJson, json)
+    try assertEq(fetched?.origemVoltaId, "vol-x")
+}
+
+step("S7-03: 2 replicações pro mesmo evento são permitidas (ordem por created_at)") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try Time(id: "team-s7b", nome: "Time", criadoPor: nil).insert(db)
+        try Evento(id: "ev-s7b", timeId: "team-s7b", trackId: nil,
+                   tipo: "track-day", dataEvento: 1_700_000_000_000).insert(db)
+        try EventoSetupReplicado(
+            id: "rep-a", timeId: "team-s7b", eventoId: "ev-s7b",
+            origemVoltaId: "vol-1", overridesJson: "v1",
+            createdAt: 100
+        ).insert(db)
+        try EventoSetupReplicado(
+            id: "rep-b", timeId: "team-s7b", eventoId: "ev-s7b",
+            origemVoltaId: "vol-2", overridesJson: "v2",
+            createdAt: 200
+        ).insert(db)
+    }
+    let rows = try q.read { db in
+        try EventoSetupReplicado
+            .filter(Column("evento_id") == "ev-s7b")
+            .order(Column("created_at").desc)
+            .fetchAll(db)
+    }
+    try assertEq(rows.count, 2)
+    try assertEq(rows.first?.id, "rep-b", "esperava rep-b (mais recente) primeiro")
 }
 
 // ── relatório ────────────────────────────────────────────────

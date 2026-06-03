@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Plano de teste · Pendências 1 a 5 e bônus</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --card-2:#1d212a; --fg:#e8e8e8; --muted:#9aa0a6; --faint:#6b7280; --accent:#4f8cff; --ok:#22c55e; --warn:#f59e0b; --erro:#ef4444; --border:#2a2f3a; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--fg); padding:24px; line-height:1.5; }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  .meta { color: var(--muted); font-size: .85rem; margin-bottom: 24px; }
+  h1 { font-size: 1.5rem; margin: 0 0 6px; }
+  .intro { color: var(--muted); font-size: .95rem; margin: 0 0 24px; padding: 14px 16px; border-left: 3px solid var(--accent); background: var(--card-2); border-radius: 6px; }
+  .bloco-titulo { font-size: 1.05rem; font-weight: 700; color: var(--accent); margin: 36px 0 10px; text-transform: uppercase; letter-spacing: 0.05em; padding-top: 18px; border-top: 1px solid var(--border); }
+  .item { background: var(--card); border-radius: 12px; padding: 16px 18px; margin: 10px 0; box-shadow: 0 4px 12px rgba(0,0,0,.18); }
+  .item-num { display: inline-block; background: var(--accent); color:#fff; font-weight:700; min-width: 30px; height: 22px; line-height: 22px; text-align: center; border-radius: 5px; padding: 0 6px; margin-right: 8px; font-size: .75rem; }
+  .item h3 { display: flex; align-items: center; margin: 0 0 6px; font-size: 1rem; font-weight: 600; }
+  .roteiro { color: var(--fg); font-size: .9rem; margin: 6px 0 8px; }
+  .esperado { color: var(--muted); font-size: .85rem; margin: 0 0 12px; padding: 8px 10px; background: var(--card-2); border-radius: 6px; border-left: 2px solid var(--ok); }
+  .esperado strong { color: var(--ok); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; font-size: .78rem; }
+  .status-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 8px; }
+  .status-btn { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: .9rem; user-select: none; transition: all .12s; background: transparent; color: var(--fg); }
+  .status-btn:hover { border-color: var(--accent); }
+  .status-btn input { cursor: pointer; }
+  .status-btn.ok { color: var(--ok); }
+  .status-btn.problema { color: var(--erro); }
+  .status-btn.pular { color: var(--muted); }
+  .status-btn.selected.ok { background: rgba(34,197,94,.15); border-color: var(--ok); }
+  .status-btn.selected.problema { background: rgba(239,68,68,.15); border-color: var(--erro); }
+  .status-btn.selected.pular { background: rgba(154,160,166,.15); border-color: var(--muted); }
+  textarea { width: 100%; background:#0a0c10; color:var(--fg); border:1px solid var(--border); border-radius: 8px; padding: 10px; resize: vertical; font-family: inherit; font-size: .9rem; min-height: 50px; }
+  .rodape { position: sticky; bottom: 0; background: var(--bg); padding: 16px 0; margin-top: 28px; border-top: 1px solid var(--border); }
+  .acoes { display: flex; gap: 10px; flex-wrap: wrap; }
+  button.acao { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 12px 18px; font-size: 1rem; cursor: pointer; font-weight: 600; }
+  button.acao.secundario { background: transparent; border: 1px solid var(--border); color: var(--fg); font-weight: 400; }
+  .status-info { margin-top: 12px; color: var(--muted); font-size: .9rem; }
+  .saida { background:#0a0c10; border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-family: ui-monospace, monospace; font-size: .8rem; white-space: pre-wrap; word-break: break-word; max-height: 300px; overflow: auto; margin-top: 12px; }
+  .progresso-bar { width: 100%; height: 8px; background: var(--card); border-radius: 4px; overflow: hidden; margin: 10px 0; }
+  .progresso-fill { height: 100%; background: var(--accent); transition: width .3s; }
+  .progresso-texto { color: var(--muted); font-size: .85rem; }
+  .copiar-feedback { color: var(--ok); font-size: .85rem; margin-left: 8px; display: none; font-weight: 600; }
+  .copiar-feedback.visivel { display: inline; }
+  .resumo { display: flex; gap: 16px; margin-top: 8px; }
+  .resumo span { padding: 4px 10px; border-radius: 6px; font-size: .82rem; font-weight: 600; }
+  .resumo .ok { background: rgba(34,197,94,.15); color: var(--ok); }
+  .resumo .problema { background: rgba(239,68,68,.15); color: var(--erro); }
+  .resumo .pular { background: rgba(154,160,166,.15); color: var(--muted); }
+  .resumo .pendente { background: rgba(154,160,166,.08); color: var(--faint); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="meta">ID: <code>20260517-180000-plano-de-teste-pendencias</code> · projeto: P1 Fast</div>
+  <h1>Plano de teste — Pendências 1 a 5 + bônus</h1>
+  <div class="intro">
+    Cada item tem (1) o que você faz, (2) o que deveria acontecer e (3) três botões: <strong style="color:var(--ok)">Funciona</strong>, <strong style="color:var(--erro)">Tem problema</strong> ou <strong style="color:var(--muted)">Pulei agora</strong>. Tem espaço pra comentário quando quiser deixar nota. No fim toca em "Copiar relato" e me devolve aqui no chat.
+  </div>
+
+  <div class="progresso-bar"><div class="progresso-fill" id="progresso-fill" style="width:0%"></div></div>
+  <div class="progresso-texto" id="progresso-texto">0 de 30 itens testados</div>
+
+  <!-- ═══════════════════ BLOCO 1 ═══════════════════ -->
+  <div class="bloco-titulo">Bloco 1 · Garagem — header novo, atalhos e Manutenção</div>
+
+  <div class="item" data-id="B1-1">
+    <h3><span class="item-num">1.1</span> Header da Garagem reorganizado</h3>
+    <div class="roteiro"><strong>Abra:</strong> menu inferior → Garagem.</div>
+    <div class="esperado"><strong>Esperado:</strong> embaixo do título e do subtítulo deve aparecer uma linha com TRÊS botões iguais e alinhados: <strong>Estoque</strong> · <strong>Manutenção</strong> · <strong>Autódromos</strong>. Eles têm o mesmo tamanho, formato de cartão arredondado.</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota placeholder="Observação (opcional)"></textarea>
+  </div>
+
+  <div class="item" data-id="B1-2">
+    <h3><span class="item-num">1.2</span> Botão Manutenção abre tela placeholder</h3>
+    <div class="roteiro"><strong>Faça:</strong> toque no botão <strong>Manutenção</strong>.</div>
+    <div class="esperado"><strong>Esperado:</strong> tela "Em breve" com a lista do que vai entrar (óleo, filtros, fluidos, peças, periodicidade) e nota dizendo que a função real chega na próxima rodada.</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <div class="item" data-id="B1-3">
+    <h3><span class="item-num">1.3</span> Lentidão melhorou</h3>
+    <div class="roteiro"><strong>Faça:</strong> feche o aplicativo, espere uns 5 segundos e abra de novo.</div>
+    <div class="esperado"><strong>Esperado:</strong> a tela inicial deve aparecer rápido. As fotos dos carros podem carregar com pequeno atraso (estão sendo baixadas por trás), mas o aplicativo já fica usável imediatamente.</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota placeholder="Tempo aproximado pra ficar usável?"></textarea>
+  </div>
+
+  <!-- ═══════════════════ BLOCO 2 ═══════════════════ -->
+  <div class="bloco-titulo">Bloco 2 · Configuração do carro (Onda 1)</div>
+
+  <div class="item" data-id="B2-1">
+    <h3><span class="item-num">2.1</span> Painel do carro mostra seção Configurações</h3>
+    <div class="roteiro"><strong>Abra:</strong> Garagem → toque em qualquer carro.</div>
+    <div class="esperado"><strong>Esperado:</strong> uma das primeiras seções na tela do carro é <strong>Configurações</strong>, mostrando a configuração atual (ou aviso "sem configuração cadastrada") e um botão <strong>Gerenciar</strong>.</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <div class="item" data-id="B2-2">
+    <h3><span class="item-num">2.2</span> Criar configuração nova</h3>
+    <div class="roteiro"><strong>Faça:</strong> toque em <strong>Gerenciar</strong> → toque no botão flutuante <strong>+ Nova configuração</strong>. Preencha: nome ("Setup chuva"), motor ("1.4 standard"), câmbio ("5 marchas H"), tipo de pneu (Chuva), medida ("295/30 R18"), marca ("Maxxis") e marque <strong>Difusor</strong> e <strong>Splitter</strong>. Mantenha "Marcar como atual" ligado. Salve.</div>
+    <div class="esperado"><strong>Esperado:</strong> volta pra lista, a nova configuração aparece com selo verde "Atual". Os marcadores aero aparecem como pequenas etiquetas no cartão.</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <div class="item" data-id="B2-3">
+    <h3><span class="item-num">2.3</span> Duplicar configuração (criar variante)</h3>
+    <div class="roteiro"><strong>Faça:</strong> na configuração que criou, toque em <strong>Duplicar</strong>. Mude algo (ex.: troca tipo de pneu pra Slick). Salve.</div>
+    <div class="esperado"><strong>Esperado:</strong> a nova configuração aparece com sufixo " (cópia)" no nome e os campos pré-preenchidos.</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <div class="item" data-id="B2-4">
+    <h3><span class="item-num">2.4</span> Trocar qual configuração é a atual</h3>
+    <div class="roteiro"><strong>Faça:</strong> numa configuração que NÃO seja a atual, toque em <strong>Marcar como atual</strong>.</div>
+    <div class="esperado"><strong>Esperado:</strong> o selo "Atual" se move pra ela. Volte pra Garagem → painel do carro: a seção Configurações reflete a troca.</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <!-- ═══════════════════ BLOCO 3 ═══════════════════ -->
+  <div class="bloco-titulo">Bloco 3 · Autódromos — lista e cadastro (Onda 2)</div>
+
+  <div class="item" data-id="B3-1">
+    <h3><span class="item-num">3.1</span> Lista de Autódromos com card de Brasília</h3>
+    <div class="roteiro"><strong>Abra:</strong> Garagem → botão <strong>Autódromos</strong>.</div>
+    <div class="esperado"><strong>Esperado:</strong> aparece card de Brasília com: nome, cidade, número de curvas (8) e extensão (5.48 km). Embaixo 3 números: melhor volta, vmax, km do piloto.</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <div class="item" data-id="B3-2">
+    <h3><span class="item-num">3.2</span> Filtro por carro</h3>
+    <div class="roteiro"><strong>Faça:</strong> na barra de filtro de carros (logo abaixo do título), toque em um carro específico.</div>
+    <div class="esperado"><strong>Esperado:</strong> os 3 números do card mudam pra mostrar dados só daquele carro (podem virar "—" se nunca rodou com ele).</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <div class="item" data-id="B3-3">
+    <h3><span class="item-num">3.3</span> Cadastrar autódromo novo</h3>
+    <div class="roteiro"><strong>Faça:</strong> toque em <strong>+ Novo autódromo</strong> (canto inferior direito). Preencha: apelido ("Velo Città"), cidade ("Mogi Guaçu"), extensão (3500), curvas (12). Salve.</div>
+    <div class="esperado"><strong>Esperado:</strong> volta pra lista, "Velo Città" aparece junto com Brasília.</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <!-- ═══════════════════ BLOCO 4 ═══════════════════ -->
+  <div class="bloco-titulo">Bloco 4 · Tela do autódromo (Onda 4)</div>
+
+  <div class="item" data-id="B4-1">
+    <h3><span class="item-num">4.1</span> Tela do autódromo abre certo</h3>
+    <div class="roteiro"><strong>Faça:</strong> na lista de autódromos, toque no card de Brasília.</div>
+    <div class="esperado"><strong>Esperado:</strong> cabeçalho com nome + cidade + extensão + curvas. Bloco "CARRO" com seletor. Cards de recordes: Time, Pessoal e (quando filtra carro) Carro/Configuração. Botão azul "Abrir mapa". Lista plana de trechos embaixo.</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <div class="item" data-id="B4-2">
+    <h3><span class="item-num">4.2</span> Botão Abrir mapa funciona</h3>
+    <div class="roteiro"><strong>Faça:</strong> toque em <strong>Abrir mapa</strong>.</div>
+    <div class="esperado"><strong>Esperado:</strong> tela cheia preta com desenho da pista de Brasília em laranja. Sobre o traçado, bolinhas numeradas (1, 2, 3…) marcam os 8 trechos. "Voltar" no topo retorna pra tela anterior.</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <div class="item" data-id="B4-3">
+    <h3><span class="item-num">4.3</span> Tocar num trecho no mapa abre a ficha</h3>
+    <div class="roteiro"><strong>Faça:</strong> dentro do mapa, toque numa bolinha numerada.</div>
+    <div class="esperado"><strong>Esperado:</strong> abre a ficha do trecho (desenho ampliado + 6 elementos).</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <!-- ═══════════════════ BLOCO 5 ═══════════════════ -->
+  <div class="bloco-titulo">Bloco 5 · Ficha do trecho — desenho, 6 elementos e ajuste por toque (Onda 5 + Pendência 5)</div>
+
+  <div class="item" data-id="B5-1">
+    <h3><span class="item-num">5.1</span> Ficha do trecho mostra desenho + 6 pontos</h3>
+    <div class="roteiro"><strong>Abra:</strong> qualquer trecho da Curva 01 (lista da tela do autódromo, ou mapa).</div>
+    <div class="esperado"><strong>Esperado:</strong> desenho ampliado da curva no fundo preto. Lista "6 PONTOS DO TRECHO" com: Entrada (E), Saída (S), Ápice (A), V-min (V), Ponto de frenagem (F), PAce (P). Sem voltas registradas, V-min/Frenagem/PAce ficam como "Aguardando dados".</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <div class="item" data-id="B5-2">
+    <h3><span class="item-num">5.2</span> Modo Ajustar liga e mostra opções</h3>
+    <div class="roteiro"><strong>Faça:</strong> na ficha do trecho, toque em <strong>Ajustar</strong> no bloco AJUSTE DE PONTOS.</div>
+    <div class="esperado"><strong>Esperado:</strong> aparecem pílulas pra escolher Entrada / Saída / Ápice 1 (e Ápice 2 quando aplicável). O botão muda pra "Concluir". Texto orienta "Toque no desenho do trecho onde…".</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <div class="item" data-id="B5-3">
+    <h3><span class="item-num">5.3</span> Mover o ápice por toque no desenho</h3>
+    <div class="roteiro"><strong>Faça:</strong> com modo Ajustar ligado, escolha "Ápice 1". Toque numa posição diferente do desenho.</div>
+    <div class="esperado"><strong>Esperado:</strong> a bolinha branca do ápice se move pra onde você tocou. Toque em <strong>Concluir</strong>. Saia da ficha e volte — a posição nova fica salva.</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <div class="item" data-id="B5-4">
+    <h3><span class="item-num">5.4</span> Curva "S" tem 2 ápices</h3>
+    <div class="roteiro"><strong>Abra:</strong> trecho "Curva S" (na lista de trechos de Brasília).</div>
+    <div class="esperado"><strong>Esperado:</strong> a ficha mostra Ápice 1 E Ápice 2 nos 6 pontos. No modo Ajustar, aparecem as duas pílulas.</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <div class="item" data-id="B5-5">
+    <h3><span class="item-num">5.5</span> Botão "Gravar pista" aparece pra você (dono)</h3>
+    <div class="roteiro"><strong>Abra:</strong> "Velo Città" (autódromo novo cadastrado em 3.3) → na tela do autódromo.</div>
+    <div class="esperado"><strong>Esperado:</strong> abaixo do "Abrir mapa", aparece <strong>Gravar pista</strong>. Toque pra ver a tela placeholder "Captura do traçado" com aviso "Função em construção".</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <!-- ═══════════════════ BLOCO 6 ═══════════════════ -->
+  <div class="bloco-titulo">Bloco 6 · Plano do stint — pré-seleção carro+configuração (Pendência 3)</div>
+
+  <div class="item" data-id="B6-1">
+    <h3><span class="item-num">6.1</span> Formulário Novo stint mostra Carro e Configuração</h3>
+    <div class="roteiro"><strong>Abra:</strong> menu inferior → Eventos → toque num evento → toque em <strong>+ Novo stint</strong> (ou no card de um stint planejado pra editar).</div>
+    <div class="esperado"><strong>Esperado:</strong> na seção CONFIGURAÇÃO, no topo, aparecem 2 campos novos: <strong>Carro</strong> e <strong>Configuração do carro</strong>.</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <div class="item" data-id="B6-2">
+    <h3><span class="item-num">6.2</span> Carro pré-marcado e seletor de configuração</h3>
+    <div class="roteiro"><strong>Faça:</strong> abra o formulário e observe se carro+configuração já vêm preenchidos. Se vierem vazios, toque em <strong>Carro</strong> e escolha um. Depois toque em <strong>Configuração</strong>.</div>
+    <div class="esperado"><strong>Esperado:</strong> quando você escolhe carro, o seletor de configuração mostra as configurações cadastradas daquele carro (e marca a "atual" como padrão).</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <div class="item" data-id="B6-3">
+    <h3><span class="item-num">6.3</span> Última usada vem pré-marcada no próximo stint</h3>
+    <div class="roteiro"><strong>Faça:</strong> salve o stint (Iniciar stint) com Carro A + Configuração X. Cancele/volte ao evento e crie OUTRO stint novo no mesmo evento.</div>
+    <div class="esperado"><strong>Esperado:</strong> o segundo stint abre já pré-marcado com Carro A + Configuração X.</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <div class="item" data-id="B6-4">
+    <h3><span class="item-num">6.4</span> Trocar configuração antes do START</h3>
+    <div class="roteiro"><strong>Faça:</strong> inicie um stint. Na tela "Pronto pra começar", veja a seção CONFIGURAÇÃO DESTE STINT no topo. Toque em <strong>Trocar</strong>.</div>
+    <div class="esperado"><strong>Esperado:</strong> aparece menu com as configurações do carro. Você consegue trocar antes de tocar START.</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <!-- ═══════════════════ BLOCO 7 ═══════════════════ -->
+  <div class="bloco-titulo">Bloco 7 · Cockpit ao vivo + cálculo de pontos (Pendências 1 e 2)</div>
+
+  <div class="item" data-id="B7-1">
+    <h3><span class="item-num">7.1</span> Faixa "aguardando 3 voltas" no cockpit</h3>
+    <div class="roteiro"><strong>Faça:</strong> num stint ativo, escolha <strong>Cockpit do piloto</strong> em "Pronto pra começar" e toque START.</div>
+    <div class="esperado"><strong>Esperado:</strong> no topo do cockpit (acima do círculo de velocidade) aparece uma faixa fina amarela: <strong>"Aguardando completar 3 voltas para os dados — 0/3"</strong>.</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <div class="item" data-id="B7-2">
+    <h3><span class="item-num">7.2</span> Faixa some após completar 3 voltas</h3>
+    <div class="roteiro"><strong>Faça:</strong> ou (a) rode 3 voltas com aquele carro+configuração na pista, ou (b) finalize um stint com 3+ voltas e abra um stint novo com o mesmo carro+configuração.</div>
+    <div class="esperado"><strong>Esperado:</strong> a faixa amarela some sozinha quando o contador chega a 3/3.</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota placeholder="Se não conseguir testar em pista, deixa pulado e me diz"></textarea>
+  </div>
+
+  <div class="item" data-id="B7-3">
+    <h3><span class="item-num">7.3</span> Pontos dinâmicos aparecem na ficha do trecho após stint</h3>
+    <div class="roteiro"><strong>Faça:</strong> finalize um stint com voltas em Brasília. Vá em Garagem → Autódromos → Brasília. Filtre por aquele carro e configuração. Toque num trecho.</div>
+    <div class="esperado"><strong>Esperado:</strong> V-min, Ponto de frenagem e PAce passam de "Aguardando dados" pros valores reais. As 3 bolinhas (V/F/P) aparecem no desenho ampliado do trecho.</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota placeholder="Limitação honesta: frenagem e PAce usam aproximação pela entrada/saída; V-min vem do GPS"></textarea>
+  </div>
+
+  <!-- ═══════════════════ BLOCO 8 ═══════════════════ -->
+  <div class="bloco-titulo">Bloco 8 · Meu perfil + Recorde pessoal (Pendência 4)</div>
+
+  <div class="item" data-id="B8-1">
+    <h3><span class="item-num">8.1</span> Atalho "Meu perfil" no Home</h3>
+    <div class="roteiro"><strong>Abra:</strong> tela inicial (Home). Role até o fim.</div>
+    <div class="esperado"><strong>Esperado:</strong> antes dos atalhos de captura, aparece um botão <strong>Meu perfil</strong>.</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <div class="item" data-id="B8-2">
+    <h3><span class="item-num">8.2</span> Tela Meu perfil mostra login e papéis</h3>
+    <div class="roteiro"><strong>Faça:</strong> toque em <strong>Meu perfil</strong>.</div>
+    <div class="esperado"><strong>Esperado:</strong> bloco LOGIN com seu identificador (primeiras letras). Se já houver pessoa vinculada, mostra nome + papéis e "Pode planejar stint? Sim/Não".</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <div class="item" data-id="B8-3">
+    <h3><span class="item-num">8.3</span> Vincular pessoa cadastrada como "Eu"</h3>
+    <div class="roteiro"><strong>Faça:</strong> se aparecer bloco VINCULAR PESSOA, toque em <strong>Sou eu</strong> ao lado da pessoa correta (provavelmente seu nome).</div>
+    <div class="esperado"><strong>Esperado:</strong> o bloco VINCULAR PESSOA some e o bloco LOGIN agora mostra "Pessoa cadastrada: [seu nome]".</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <div class="item" data-id="B8-4">
+    <h3><span class="item-num">8.4</span> Recorde pessoal aparece no autódromo</h3>
+    <div class="roteiro"><strong>Faça:</strong> com o vínculo feito (item 8.3), vá em Garagem → Autódromos → Brasília.</div>
+    <div class="esperado"><strong>Esperado:</strong> o card "Recorde pessoal" agora mostra um tempo real (se você tem voltas no banco). Sem voltas suas no banco, fica "—" mas o subtítulo deve mostrar "Seu melhor — [seu nome]".</div>
+    <div class="status-row" data-status></div>
+    <textarea data-nota></textarea>
+  </div>
+
+  <!-- ═══════════════════ Comentário geral ═══════════════════ -->
+  <div class="bloco-titulo">Comentário geral</div>
+  <div class="item">
+    <textarea id="comentario-geral" rows="4" placeholder="Qualquer impressão geral, sugestão de ajuste, ou item que não cabe nos quesitos acima…"></textarea>
+  </div>
+
+  <div class="rodape">
+    <div class="resumo" id="resumo">
+      <span class="ok" id="contador-ok">✓ 0 funciona</span>
+      <span class="problema" id="contador-problema">✗ 0 problemas</span>
+      <span class="pular" id="contador-pular">○ 0 pulados</span>
+      <span class="pendente" id="contador-pendente">— 30 pendentes</span>
+    </div>
+    <div class="acoes" style="margin-top: 12px;">
+      <button class="acao" type="button" id="exportar">Copiar relato pro Claude</button>
+      <button class="acao secundario" type="button" id="baixar">Baixar arquivo</button>
+      <button class="acao secundario" type="button" id="limpar">Limpar tudo</button>
+      <span class="copiar-feedback" id="copiar-feedback">✓ copiado</span>
+    </div>
+    <div class="status-info" id="status-info"></div>
+    <div class="saida" id="saida" style="display:none;"></div>
+  </div>
+</div>
+
+<script>
+  const PERGUNTA_ID = "20260517-180000-plano-de-teste-pendencias";
+  const PROJETO = "P1 Fast";
+  const STORAGE_KEY = "padrao-flavio:" + PERGUNTA_ID;
+
+  // Lista de IDs dos itens
+  const ITENS = Array.from(document.querySelectorAll('.item[data-id]'))
+    .map(el => el.dataset.id);
+
+  // Renderiza botões de status em cada item
+  document.querySelectorAll('.item[data-id]').forEach(item => {
+    const row = item.querySelector('[data-status]');
+    ['ok', 'problema', 'pular'].forEach(tipo => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'status-btn ' + tipo;
+      btn.dataset.tipo = tipo;
+      btn.innerHTML =
+        tipo === 'ok'       ? '✓ Funciona'
+      : tipo === 'problema' ? '✗ Tem problema'
+      :                       '○ Pulei agora';
+      btn.addEventListener('click', () => {
+        // Toggle: se já tava marcado, desmarca; senão, marca esse e desmarca outros
+        const jaMarcado = btn.classList.contains('selected');
+        row.querySelectorAll('.status-btn').forEach(b => b.classList.remove('selected'));
+        if (!jaMarcado) btn.classList.add('selected');
+        salvar();
+      });
+      row.appendChild(btn);
+    });
+  });
+
+  function snapshot() {
+    const out = {
+      id: PERGUNTA_ID,
+      projeto: PROJETO,
+      respondido_em: new Date().toISOString(),
+      itens: {},
+      comentario_geral: ""
+    };
+    document.querySelectorAll('.item[data-id]').forEach(item => {
+      const id = item.dataset.id;
+      const selecionado = item.querySelector('.status-btn.selected');
+      const status = selecionado ? selecionado.dataset.tipo : null;
+      const nota = (item.querySelector('[data-nota]')?.value || "").trim();
+      out.itens[id] = { status: status, nota: nota };
+    });
+    out.comentario_geral = (document.getElementById("comentario-geral").value || "").trim();
+    return out;
+  }
+
+  function progresso() {
+    const ok = document.querySelectorAll('.status-btn.selected.ok').length;
+    const pr = document.querySelectorAll('.status-btn.selected.problema').length;
+    const pu = document.querySelectorAll('.status-btn.selected.pular').length;
+    const total = ITENS.length;
+    const respondidos = ok + pr + pu;
+    const pendentes = total - respondidos;
+
+    document.getElementById('contador-ok').textContent = `✓ ${ok} funciona`;
+    document.getElementById('contador-problema').textContent = `✗ ${pr} problemas`;
+    document.getElementById('contador-pular').textContent = `○ ${pu} pulados`;
+    document.getElementById('contador-pendente').textContent = `— ${pendentes} pendentes`;
+    document.getElementById('progresso-texto').textContent = `${respondidos} de ${total} itens testados`;
+    document.getElementById('progresso-fill').style.width = `${(respondidos / total) * 100}%`;
+  }
+
+  function salvar() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot())); } catch(e) {}
+    progresso();
+  }
+
+  function carregar() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) { progresso(); return; }
+      const d = JSON.parse(raw);
+      if (d.itens) {
+        Object.keys(d.itens).forEach(id => {
+          const item = document.querySelector('.item[data-id="' + id + '"]');
+          if (!item) return;
+          const r = d.itens[id];
+          if (r.status) {
+            const btn = item.querySelector('.status-btn[data-tipo="' + r.status + '"]');
+            if (btn) btn.classList.add('selected');
+          }
+          const nota = item.querySelector('[data-nota]');
+          if (nota && r.nota) nota.value = r.nota;
+        });
+      }
+      if (d.comentario_geral) document.getElementById('comentario-geral').value = d.comentario_geral;
+    } catch(e) {}
+    progresso();
+  }
+
+  document.querySelectorAll('textarea').forEach(t => t.addEventListener('input', salvar));
+
+  document.getElementById('exportar').addEventListener('click', async () => {
+    const data = snapshot();
+    // Gera um texto resumo legível pro chat
+    const linhas = [];
+    linhas.push(`# Relato de teste — ${PROJETO}`);
+    linhas.push(`Data: ${data.respondido_em}`);
+    linhas.push('');
+    const ok = Object.values(data.itens).filter(i => i.status === 'ok').length;
+    const pr = Object.values(data.itens).filter(i => i.status === 'problema').length;
+    const pu = Object.values(data.itens).filter(i => i.status === 'pular').length;
+    linhas.push(`Resumo: ${ok} funciona · ${pr} problemas · ${pu} pulados · ${ITENS.length - ok - pr - pu} pendentes`);
+    linhas.push('');
+    document.querySelectorAll('.item[data-id]').forEach(item => {
+      const id = item.dataset.id;
+      const tit = item.querySelector('h3').innerText.trim();
+      const r = data.itens[id] || {};
+      const icone =
+        r.status === 'ok'       ? '✓'
+      : r.status === 'problema' ? '✗'
+      : r.status === 'pular'    ? '○'
+      :                           '—';
+      linhas.push(`${icone} ${id} · ${tit}`);
+      if (r.nota) linhas.push(`    nota: ${r.nota}`);
+    });
+    if (data.comentario_geral) {
+      linhas.push('');
+      linhas.push('## Comentário geral');
+      linhas.push(data.comentario_geral);
+    }
+    const texto = linhas.join('\n');
+    document.getElementById('saida').textContent = texto;
+    document.getElementById('saida').style.display = 'block';
+    try {
+      await navigator.clipboard.writeText(texto);
+      const fb = document.getElementById('copiar-feedback');
+      fb.classList.add('visivel'); setTimeout(() => fb.classList.remove('visivel'), 2200);
+      document.getElementById('status-info').textContent = "Relato copiado. Cole no chat e diga 'fiz'.";
+    } catch(e) {
+      document.getElementById('status-info').textContent = 'Selecione o texto abaixo e copie manualmente.';
+    }
+  });
+
+  document.getElementById('baixar').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(snapshot(), null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = PERGUNTA_ID + '.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  document.getElementById('limpar').addEventListener('click', () => {
+    if (!confirm('Apagar todas as marcações e notas?')) return;
+    try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+    document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('textarea').forEach(t => t.value = '');
+    document.getElementById('saida').style.display = 'none';
+    document.getElementById('status-info').textContent = 'Limpo.';
+    progresso();
+  });
+
+  carregar();
+</script>
+</body>
+</html>

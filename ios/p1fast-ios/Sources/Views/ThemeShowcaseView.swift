@@ -96,7 +96,7 @@ struct ThemeShowcaseView: View {
             }
             .background(Color.surface)
 
-            BottomNav(items: navItems, selection: $navSelection)
+            BottomNav(items: navItems, selection: $navSelection, onSelect: BottomNav.noOpSelect)
         }
         .overlay(alignment: .bottomTrailing) {
             // FAB ancorado bottom-right (uso canônico do mockup —

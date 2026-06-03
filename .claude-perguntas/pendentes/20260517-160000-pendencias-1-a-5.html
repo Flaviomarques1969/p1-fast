@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fechar pendências 1 a 5 · 14 decisões em 5 blocos</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --card-2:#1d212a; --fg:#e8e8e8; --muted:#9aa0a6; --faint:#6b7280; --accent:#4f8cff; --ok:#22c55e; --warn:#f59e0b; --erro:#ef4444; --border:#2a2f3a; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--fg); padding:24px; line-height:1.45; }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  .meta { color: var(--muted); font-size: .85rem; margin-bottom: 24px; }
+  h1 { font-size: 1.5rem; margin: 0 0 6px; }
+  .ajuda { color: var(--muted); font-size: .92rem; margin: 0 0 14px; }
+  .bloco-titulo { font-size: 1.05rem; font-weight: 700; color: var(--accent); margin: 32px 0 8px; text-transform: uppercase; letter-spacing: 0.05em; padding-top: 16px; border-top: 1px solid var(--border); }
+  .decisao { background: var(--card); border-radius: 12px; padding: 20px 22px; margin: 14px 0; box-shadow: 0 4px 16px rgba(0,0,0,.2); }
+  .decisao-num { display: inline-block; background: var(--accent); color:#fff; font-weight:700; min-width: 36px; height: 24px; line-height: 24px; text-align: center; border-radius: 6px; padding: 0 8px; margin-right: 8px; font-size: .8rem; }
+  .decisao h2 { display: flex; align-items: center; margin: 0 0 8px; border: 0; padding: 0; font-size: 1.05rem; }
+  .opcoes { display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; }
+  .opcao { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: all .12s; }
+  .opcao:hover { border-color: var(--accent); }
+  .opcao input { margin-top: 4px; flex-shrink: 0; }
+  .opcao-corpo { flex: 1; }
+  .opcao-titulo { font-weight: 600; font-size: .95rem; }
+  .opcao-just { color: var(--muted); font-size: .85rem; margin-top: 3px; }
+  .recomendado { display: inline-block; background: rgba(34,197,94,.15); color: var(--ok); padding: 1px 7px; border-radius: 999px; font-size: .7rem; margin-left: 6px; vertical-align: middle; }
+  textarea, input[type=text] { width: 100%; background:#0f1115; color:var(--fg); border:1px solid var(--border); border-radius: 8px; padding: 10px; resize: vertical; font-family: inherit; font-size: .92rem; }
+  label.bloco { display: block; margin: 10px 0 4px; color: var(--muted); font-size: .82rem; }
+  .outra-wrap { display: none; }
+  .outra-wrap.ativo { display: block; }
+  .rodape { position: sticky; bottom: 0; background: var(--bg); padding: 16px 0; margin-top: 20px; border-top: 1px solid var(--border); }
+  .acoes { display: flex; gap: 10px; flex-wrap: wrap; }
+  button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 12px 18px; font-size: 1rem; cursor: pointer; font-weight: 600; }
+  button.secundario { background: transparent; border: 1px solid var(--border); color: var(--fg); font-weight: 400; }
+  .status { margin-top: 12px; color: var(--muted); font-size: .85rem; }
+  .progresso { color: var(--muted); font-size: .85rem; }
+  .saida { background:#0a0c10; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: ui-monospace, monospace; font-size: .8rem; white-space: pre-wrap; word-break: break-all; max-height: 240px; overflow: auto; margin-top: 10px; }
+  .copiar-feedback { color: var(--ok); font-size: .85rem; margin-left: 8px; display: none; }
+  .copiar-feedback.visivel { display: inline; }
+  .contexto { background: var(--card-2); border-left: 3px solid var(--warn); padding: 10px 14px; border-radius: 6px; margin: 8px 0 14px; font-size: .9rem; color: var(--fg); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="meta">ID: <code>20260517-160000-pendencias-1-a-5</code> · projeto: P1 Fast</div>
+  <h1>Fechar pendências 1 a 5 · 14 decisões em 5 blocos</h1>
+  <p class="ajuda">Você pediu pra fechar as 5 pendências da entrega de hoje sem parar. Estas são todas as decisões que preciso pra rodar do início ao fim. Responda tudo, exporte e diga "fiz" que eu corro.</p>
+
+  <!-- ═══════════════════ BLOCO 1 ═══════════════════ -->
+  <div class="bloco-titulo">Bloco 1 · Cálculo automático dos pontos dinâmicos (V-min · Frenagem · PAce)</div>
+  <div class="contexto">A tabela e o algoritmo já existem. Falta ligar o disparador que faz o aplicativo CALCULAR os 3 pontos pra cada trecho, por carro+configuração. Hoje a tela sempre mostra "Aguardando dados".</div>
+
+  <div class="decisao" data-id="P1A">
+    <h2><span class="decisao-num">1.1</span> Quando o aplicativo calcula os 3 pontos?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="P1A" value="ao-finalizar-stint" /><div class="opcao-corpo"><div class="opcao-titulo">A · Quando você toca "Finalizar stint" <span class="recomendado">Recomendado</span></div><div class="opcao-just">No fim do stint o aplicativo processa todas as voltas válidas, separa por trecho e atualiza os pontos. Faz 1 vez por stint — não impacta cockpit ao vivo.</div></div></label>
+      <label class="opcao"><input type="radio" name="P1A" value="ao-fim-da-volta" /><div class="opcao-corpo"><div class="opcao-titulo">B · Ao fim de cada volta (ao vivo, durante o stint)</div><div class="opcao-just">Atualiza em tempo real. Custa mais bateria/processamento. Útil se você quiser ver pontos evoluindo durante o stint.</div></div></label>
+      <label class="opcao"><input type="radio" name="P1A" value="ao-abrir-tela" /><div class="opcao-corpo"><div class="opcao-titulo">C · Quando você abre a ficha do trecho</div><div class="opcao-just">Calcula sob demanda. Cada abertura demora um pouco a primeira vez.</div></div></label>
+      <label class="opcao"><input type="radio" name="P1A" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">D · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="P1A"><label class="bloco">Sua opção pra 1.1</label><textarea rows="2" data-outra-texto="P1A"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="P1B">
+    <h2><span class="decisao-num">1.2</span> Exibir os 3 pontos como conjunto ou conforme cada um vai sendo calculado?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="P1B" value="conjunto" /><div class="opcao-corpo"><div class="opcao-titulo">A · Só mostra quando os 3 pontos estão prontos <span class="recomendado">Recomendado</span></div><div class="opcao-just">Visão unificada. Se V-min calculou mas Frenagem ainda não, mantém "Aguardando dados" no trecho inteiro.</div></div></label>
+      <label class="opcao"><input type="radio" name="P1B" value="parcial" /><div class="opcao-corpo"><div class="opcao-titulo">B · Mostra cada ponto assim que ele estiver pronto</div><div class="opcao-just">Vai aparecendo aos poucos. Útil pra ver evolução, mas pode confundir ("metade calculou, metade não").</div></div></label>
+      <label class="opcao"><input type="radio" name="P1B" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">C · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="P1B"><label class="bloco">Sua opção pra 1.2</label><textarea rows="2" data-outra-texto="P1B"></textarea></div>
+  </div>
+
+  <!-- ═══════════════════ BLOCO 2 ═══════════════════ -->
+  <div class="bloco-titulo">Bloco 2 · Mensagem "Aguardando dados" no cockpit ao vivo</div>
+  <div class="contexto">Você pediu na decisão E2 que durante o stint o cockpit avisasse quando ainda faltam voltas pra ativar o cálculo. Hoje a mensagem só aparece dentro do menu Autódromos.</div>
+
+  <div class="decisao" data-id="P2A">
+    <h2><span class="decisao-num">2.1</span> Onde a mensagem aparece no cockpit?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="P2A" value="faixa-topo" /><div class="opcao-corpo"><div class="opcao-titulo">A · Faixa fina no topo do cockpit <span class="recomendado">Recomendado</span></div><div class="opcao-just">Linha discreta encostada no alto da tela — não cobre nada importante. Some sozinha quando o cálculo ativar.</div></div></label>
+      <label class="opcao"><input type="radio" name="P2A" value="campo-dedicado" /><div class="opcao-corpo"><div class="opcao-titulo">B · Substitui o campo "PAce" do cockpit</div><div class="opcao-just">No espaço onde apareceria o PAce do trecho atual, aparece o texto "Aguardando dados".</div></div></label>
+      <label class="opcao"><input type="radio" name="P2A" value="modal" /><div class="opcao-corpo"><div class="opcao-titulo">C · Alerta sobreposto (toque pra fechar)</div><div class="opcao-just">Mais visível. Mais invasivo no meio da pista.</div></div></label>
+      <label class="opcao"><input type="radio" name="P2A" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">D · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="P2A"><label class="bloco">Sua opção pra 2.1</label><textarea rows="2" data-outra-texto="P2A"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="P2B">
+    <h2><span class="decisao-num">2.2</span> A mensagem aparece sempre que faltar, ou só uma vez por stint?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="P2B" value="sempre" /><div class="opcao-corpo"><div class="opcao-titulo">A · Sempre que faltarem voltas, fica visível <span class="recomendado">Recomendado</span></div><div class="opcao-just">Quando completa as 3 voltas mínimas naquele carro+configuração, some sozinha.</div></div></label>
+      <label class="opcao"><input type="radio" name="P2B" value="uma-vez" /><div class="opcao-corpo"><div class="opcao-titulo">B · Aparece nos primeiros 10 segundos do stint e some</div><div class="opcao-just">Avisa uma vez e depois libera a tela. Risco: você esquece que ainda falta dado.</div></div></label>
+      <label class="opcao"><input type="radio" name="P2B" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">C · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="P2B"><label class="bloco">Sua opção pra 2.2</label><textarea rows="2" data-outra-texto="P2B"></textarea></div>
+  </div>
+
+  <!-- ═══════════════════ BLOCO 3 ═══════════════════ -->
+  <div class="bloco-titulo">Bloco 3 · Pré-seleção de carro + configuração no plano do evento</div>
+  <div class="contexto">Hoje você só escolhe a configuração na tela "Pronto pra começar" (logo antes do START). Você pediu (Q1 da rodada anterior) que viesse já pré-marcada do plano do evento.</div>
+
+  <div class="decisao" data-id="P3A">
+    <h2><span class="decisao-num">3.1</span> A pré-escolha de carro+configuração vive em que nível?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="P3A" value="por-stint" /><div class="opcao-corpo"><div class="opcao-titulo">A · Por cada stint planejado <span class="recomendado">Recomendado</span></div><div class="opcao-just">Quando você cria um stint no plano (Stint #1, Stint #2), já escolhe carro e configuração ali. Cada stint pode ser diferente. (O cadastro do stint já tem esses campos no banco — só precisa aparecer no formulário de criar/editar stint.)</div></div></label>
+      <label class="opcao"><input type="radio" name="P3A" value="por-dia" /><div class="opcao-corpo"><div class="opcao-titulo">B · Por DIA do evento (todos os stints do dia herdam)</div><div class="opcao-just">Um carro+config padrão por dia. Stints individuais herdam. Você ainda pode trocar antes do START.</div></div></label>
+      <label class="opcao"><input type="radio" name="P3A" value="por-evento" /><div class="opcao-corpo"><div class="opcao-titulo">C · Por EVENTO inteiro</div><div class="opcao-just">Um único carro+config pro evento todo. Menos flexível.</div></div></label>
+      <label class="opcao"><input type="radio" name="P3A" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">D · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="P3A"><label class="bloco">Sua opção pra 3.1</label><textarea rows="2" data-outra-texto="P3A"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="P3B">
+    <h2><span class="decisao-num">3.2</span> Quando você inicia um stint sem ter planejado antes (criar e iniciar na hora), como funciona a pré-seleção?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="P3B" value="ultima-usada" /><div class="opcao-corpo"><div class="opcao-titulo">A · Vem pré-marcada com o último carro+config que você usou <span class="recomendado">Recomendado</span></div><div class="opcao-just">Memória do último stint do mesmo evento. Você ainda pode trocar antes do START.</div></div></label>
+      <label class="opcao"><input type="radio" name="P3B" value="config-ativa" /><div class="opcao-corpo"><div class="opcao-titulo">B · Vem com a configuração marcada como "atual" do carro escolhido</div><div class="opcao-just">Independente do evento — usa o que está marcado como atual no painel do carro.</div></div></label>
+      <label class="opcao"><input type="radio" name="P3B" value="vazia" /><div class="opcao-corpo"><div class="opcao-titulo">C · Vem vazia, você escolhe sempre</div><div class="opcao-just">Mais explícito, mais 1 toque por stint.</div></div></label>
+      <label class="opcao"><input type="radio" name="P3B" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">D · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="P3B"><label class="bloco">Sua opção pra 3.2</label><textarea rows="2" data-outra-texto="P3B"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="P3C">
+    <h2><span class="decisao-num">3.3</span> O seletor de "Trocar configuração" antes do START continua existindo, certo?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="P3C" value="sim" /><div class="opcao-corpo"><div class="opcao-titulo">A · Continua. Pré-seleção do plano + opção de trocar antes do START <span class="recomendado">Recomendado</span></div><div class="opcao-just">Você combinou na Q1 da rodada anterior: plano define padrão, na hora pode trocar.</div></div></label>
+      <label class="opcao"><input type="radio" name="P3C" value="so-plano" /><div class="opcao-corpo"><div class="opcao-titulo">B · Não. Uma vez planejado, trava — pra mudar, edita o plano</div><div class="opcao-just">Mais disciplinado, menos flexível.</div></div></label>
+      <label class="opcao"><input type="radio" name="P3C" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">C · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="P3C"><label class="bloco">Sua opção pra 3.3</label><textarea rows="2" data-outra-texto="P3C"></textarea></div>
+  </div>
+
+  <!-- ═══════════════════ BLOCO 4 ═══════════════════ -->
+  <div class="bloco-titulo">Bloco 4 · Recorde pessoal — quem é "você" pro aplicativo</div>
+  <div class="contexto">O recorde pessoal está vazio porque o aplicativo ainda não sabe identificar qual piloto cadastrado é VOCÊ. Tem 7 papéis possíveis (piloto, passageiro, engenheiro, etc.) e cada pessoa cadastrada pode ter vários papéis.</div>
+
+  <div class="decisao" data-id="P4A">
+    <h2><span class="decisao-num">4.1</span> Como o aplicativo identifica quem é o piloto que está vendo a tela?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="P4A" value="escolha-app" /><div class="opcao-corpo"><div class="opcao-titulo">A · Você escolhe nas configurações: "Eu sou o piloto X" <span class="recomendado">Recomendado</span></div><div class="opcao-just">Tela simples de "Meu perfil" dentro do aplicativo. Você seleciona uma vez a pessoa cadastrada que é você. Fica guardado no aparelho. Pode trocar quando quiser.</div></div></label>
+      <label class="opcao"><input type="radio" name="P4A" value="por-login" /><div class="opcao-corpo"><div class="opcao-titulo">B · Pelo seu login do servidor (Supabase)</div><div class="opcao-just">Liga sua conta do servidor a uma pessoa cadastrada no time. Mais técnico — precisa um cadastro extra ligando login ↔ pessoa.</div></div></label>
+      <label class="opcao"><input type="radio" name="P4A" value="primeiro-piloto" /><div class="opcao-corpo"><div class="opcao-titulo">C · O primeiro piloto cadastrado SEMPRE é você</div><div class="opcao-just">Mais simples. Funciona enquanto você for o piloto principal. Quebra se o time tiver vários pilotos no mesmo iPhone.</div></div></label>
+      <label class="opcao"><input type="radio" name="P4A" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">D · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="P4A"><label class="bloco">Sua opção pra 4.1</label><textarea rows="2" data-outra-texto="P4A"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="P4B">
+    <h2><span class="decisao-num">4.2</span> Onde fica o atalho pra você se identificar como piloto?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="P4B" value="configuracoes" /><div class="opcao-corpo"><div class="opcao-titulo">A · Tela "Meu perfil" acessível pelo menu inferior <span class="recomendado">Recomendado</span></div><div class="opcao-just">Cria uma tela rápida. Aparece um aviso na Home se nenhum piloto estiver escolhido ainda.</div></div></label>
+      <label class="opcao"><input type="radio" name="P4B" value="onboarding" /><div class="opcao-corpo"><div class="opcao-titulo">B · No primeiro abertura do aplicativo, pergunta direto</div><div class="opcao-just">Onboarding obrigatório. Mais explícito.</div></div></label>
+      <label class="opcao"><input type="radio" name="P4B" value="dentro-pessoas" /><div class="opcao-corpo"><div class="opcao-titulo">C · Dentro da tela "Pessoas" tem um botão "Sou eu"</div><div class="opcao-just">Marca uma pessoa cadastrada como "você". Reaproveita tela existente.</div></div></label>
+      <label class="opcao"><input type="radio" name="P4B" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">D · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="P4B"><label class="bloco">Sua opção pra 4.2</label><textarea rows="2" data-outra-texto="P4B"></textarea></div>
+  </div>
+
+  <!-- ═══════════════════ BLOCO 5 ═══════════════════ -->
+  <div class="bloco-titulo">Bloco 5 · Editor visual de pista (cadastrar mapa de autódromo novo)</div>
+  <div class="contexto">Hoje você cadastra um autódromo novo só com nome/cidade/extensão. Pra pista nova ter mapa (desenho do traçado, trechos clicáveis no mapa), falta um cadastro visual. Brasília já tem mapa porque eu coloquei no código.</div>
+
+  <div class="decisao" data-id="P5A">
+    <h2><span class="decisao-num">5.1</span> Como você prefere cadastrar o traçado da pista?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="P5A" value="gravar-volta" /><div class="opcao-corpo"><div class="opcao-titulo">A · Gravar uma volta lá no autódromo, o app desenha sozinho <span class="recomendado">Recomendado</span></div><div class="opcao-just">Você roda uma volta com o iPhone gravando GPS, e o aplicativo monta o desenho da pista a partir disso. Mais natural. Você só vai precisar marcar onde é a linha de chegada e quais trechos são quais.</div></div></label>
+      <label class="opcao"><input type="radio" name="P5A" value="foto-imagem" /><div class="opcao-corpo"><div class="opcao-titulo">B · Carregar imagem da pista (foto/satélite) e marcar pontos por cima</div><div class="opcao-just">Mais visual antes de pisar na pista, mas exige imagem boa. Precisa "calibrar" os cantos (saber qual ponto no mundo real corresponde a qual ponto na imagem).</div></div></label>
+      <label class="opcao"><input type="radio" name="P5A" value="manual" /><div class="opcao-corpo"><div class="opcao-titulo">C · Desenhar manualmente no aplicativo (linha por linha)</div><div class="opcao-just">Mais trabalhoso. Útil pra ajuste fino, não pra cadastro inicial.</div></div></label>
+      <label class="opcao"><input type="radio" name="P5A" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">D · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="P5A"><label class="bloco">Sua opção pra 5.1</label><textarea rows="2" data-outra-texto="P5A"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="P5B">
+    <h2><span class="decisao-num">5.2</span> Depois do traçado pronto, como marcar os trechos (curvas)?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="P5B" value="toques-no-mapa" /><div class="opcao-corpo"><div class="opcao-titulo">A · Você toca em cada curva no mapa e dá um nome <span class="recomendado">Recomendado</span></div><div class="opcao-just">Toca no centro da curva, abre um pequeno cartão pra digitar o nome ("Curva 1", "Mergulho da Bruxa", "Curva da Junção"). Move por toque e arrasto.</div></div></label>
+      <label class="opcao"><input type="radio" name="P5B" value="auto-sugere" /><div class="opcao-corpo"><div class="opcao-titulo">B · O app sugere automaticamente os trechos pela sua trajetória</div><div class="opcao-just">Analisa onde você tirou o pé do acelerador em cada volta e marca como trecho. Você só revisa e dá nomes. Mais avançado, precisa de algumas voltas pra detectar bem.</div></div></label>
+      <label class="opcao"><input type="radio" name="P5B" value="auto-sugere-com-revisao" /><div class="opcao-corpo"><div class="opcao-titulo">C · Auto-sugere E você pode ajustar/adicionar manualmente</div><div class="opcao-just">Combinação. Mais código, melhor resultado final.</div></div></label>
+      <label class="opcao"><input type="radio" name="P5B" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">D · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="P5B"><label class="bloco">Sua opção pra 5.2</label><textarea rows="2" data-outra-texto="P5B"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="P5C">
+    <h2><span class="decisao-num">5.3</span> Linha de chegada e zona de boxes — como cadastrar?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="P5C" value="toque-mapa" /><div class="opcao-corpo"><div class="opcao-titulo">A · Você toca no mapa onde elas ficam <span class="recomendado">Recomendado</span></div><div class="opcao-just">Dois toques: um pra linha de chegada (uma linha cruzando a pista), um pra zona de boxes (círculo no lado de dentro). Default da zona de boxes: ao lado da largada (decisão de 2026-05-16).</div></div></label>
+      <label class="opcao"><input type="radio" name="P5C" value="gps-real" /><div class="opcao-corpo"><div class="opcao-titulo">B · Você anda fisicamente até cada ponto e o aplicativo marca pelo GPS</div><div class="opcao-just">Mais preciso. Exige você estar no autódromo. Funciona junto com a gravação da volta.</div></div></label>
+      <label class="opcao"><input type="radio" name="P5C" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">C · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="P5C"><label class="bloco">Sua opção pra 5.3</label><textarea rows="2" data-outra-texto="P5C"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="P5D">
+    <h2><span class="decisao-num">5.4</span> Faixas geográficas do trecho (entrada/saída/ápice) — você cadastra junto ou deixa pra depois?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="P5D" value="depois-no-detalhe" /><div class="opcao-corpo"><div class="opcao-titulo">A · Depois, na própria ficha do trecho <span class="recomendado">Recomendado</span></div><div class="opcao-just">O autódromo já fica usável com traçado + trechos nomeados. Pra refinar entrada/saída/ápice do trecho específico, você abre a ficha do trecho e toca no mapa pra mover cada ponto. Pode fazer aos poucos.</div></div></label>
+      <label class="opcao"><input type="radio" name="P5D" value="agora-tudo" /><div class="opcao-corpo"><div class="opcao-titulo">B · Tudo de uma vez no cadastro</div><div class="opcao-just">Mais demorado pra cadastrar uma pista nova. Mas sai 100% pronto.</div></div></label>
+      <label class="opcao"><input type="radio" name="P5D" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">C · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="P5D"><label class="bloco">Sua opção pra 5.4</label><textarea rows="2" data-outra-texto="P5D"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="P5E">
+    <h2><span class="decisao-num">5.5</span> Botão "Editar mapa" no autódromo — quem vê?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="P5E" value="sempre-visivel" /><div class="opcao-corpo"><div class="opcao-titulo">A · Sempre visível pra qualquer pessoa do time <span class="recomendado">Recomendado</span></div><div class="opcao-just">Aparece um botão "Editar mapa" na tela do autódromo. Quem pode quem não pode fica pra rodada futura quando entrar controle de papéis no aplicativo.</div></div></label>
+      <label class="opcao"><input type="radio" name="P5E" value="so-quando-vazio" /><div class="opcao-corpo"><div class="opcao-titulo">B · Só aparece quando o autódromo ainda não tem mapa cadastrado</div><div class="opcao-just">Cadastrou uma vez, some o botão. Pra editar de novo, precisa de outra forma de acesso.</div></div></label>
+      <label class="opcao"><input type="radio" name="P5E" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">C · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="P5E"><label class="bloco">Sua opção pra 5.5</label><textarea rows="2" data-outra-texto="P5E"></textarea></div>
+  </div>
+
+  <div class="decisao">
+    <h2>Comentário geral (opcional)</h2>
+    <textarea rows="3" id="comentario" placeholder="Qualquer ressalva ou item que você queira que eu trate de forma diferente..."></textarea>
+  </div>
+
+  <div class="rodape">
+    <div class="progresso" id="progresso">0 de 14 decisões respondidas</div>
+    <div class="acoes" style="margin-top: 10px;">
+      <button type="button" id="exportar">Copiar respostas pro Claude</button>
+      <button type="button" class="secundario" id="baixar">Baixar arquivo</button>
+      <button type="button" class="secundario" id="limpar">Limpar tudo</button>
+      <span class="copiar-feedback" id="copiar-feedback">✓ copiado</span>
+    </div>
+    <div class="status" id="status"></div>
+    <div class="saida" id="saida" style="display:none;"></div>
+  </div>
+</div>
+
+<script>
+  const PERGUNTA_ID = "20260517-160000-pendencias-1-a-5";
+  const PROJETO = "P1 Fast";
+  const STORAGE_KEY = "padrao-flavio:" + PERGUNTA_ID;
+  const DECISOES = ["P1A","P1B","P2A","P2B","P3A","P3B","P3C","P4A","P4B","P5A","P5B","P5C","P5D","P5E"];
+
+  function elOutra(id) { return document.querySelector('[data-outra-de="' + id + '"]'); }
+  function textoOutra(id) { return document.querySelector('[data-outra-texto="' + id + '"]'); }
+
+  function snapshot() {
+    const out = { id: PERGUNTA_ID, projeto: PROJETO, respondido_em: new Date().toISOString(), respostas: {}, comentario: "" };
+    DECISOES.forEach(d => {
+      const sel = document.querySelector('input[name="' + d + '"]:checked');
+      if (!sel) { out.respostas[d] = { escolha: null }; return; }
+      const reg = { escolha: sel.value };
+      if (sel.value === "outra") reg.texto = (textoOutra(d).value || "").trim();
+      out.respostas[d] = reg;
+    });
+    out.comentario = (document.getElementById("comentario").value || "").trim();
+    return out;
+  }
+  function progresso() {
+    const respondidas = DECISOES.filter(d => document.querySelector('input[name="' + d + '"]:checked')).length;
+    document.getElementById("progresso").textContent = respondidas + " de 14 decisões respondidas";
+  }
+  function salvar() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot())); } catch(e){} progresso(); }
+  function carregar() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY); if (!raw) return;
+      const d = JSON.parse(raw);
+      if (d.respostas) {
+        Object.keys(d.respostas).forEach(k => {
+          const r = d.respostas[k]; if (!r || !r.escolha) return;
+          const radio = document.querySelector('input[name="' + k + '"][value="' + r.escolha + '"]');
+          if (radio) { radio.checked = true; if (r.escolha === "outra") { elOutra(k).classList.add("ativo"); textoOutra(k).value = r.texto || ""; } }
+        });
+      }
+      if (d.comentario) document.getElementById("comentario").value = d.comentario;
+    } catch(e){}
+    progresso();
+  }
+
+  document.querySelectorAll('input[type="radio"]').forEach(r => r.addEventListener("change", () => {
+    const id = r.name; const wrap = elOutra(id);
+    if (r.value === "outra") wrap.classList.add("ativo"); else wrap.classList.remove("ativo");
+    salvar();
+  }));
+  document.querySelectorAll("textarea").forEach(t => t.addEventListener("input", salvar));
+
+  document.getElementById("exportar").addEventListener("click", async () => {
+    const json = JSON.stringify(snapshot(), null, 2);
+    document.getElementById("saida").textContent = json;
+    document.getElementById("saida").style.display = "block";
+    try {
+      await navigator.clipboard.writeText(json);
+      const fb = document.getElementById("copiar-feedback");
+      fb.classList.add("visivel"); setTimeout(() => fb.classList.remove("visivel"), 2200);
+      document.getElementById("status").textContent = "Cole no chat e diga 'fiz'.";
+    } catch(e) { document.getElementById("status").textContent = "Selecione o texto abaixo e copie manualmente."; }
+  });
+  document.getElementById("baixar").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(snapshot(), null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = PERGUNTA_ID + ".json"; a.click();
+    URL.revokeObjectURL(a.href);
+  });
+  document.getElementById("limpar").addEventListener("click", () => {
+    if (!confirm("Apagar todas as respostas?")) return;
+    try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+    document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+    document.querySelectorAll("textarea").forEach(t => t.value = "");
+    document.querySelectorAll(".outra-wrap").forEach(w => w.classList.remove("ativo"));
+    document.getElementById("saida").style.display = "none";
+    document.getElementById("status").textContent = "Limpo.";
+    progresso();
+  });
+  carregar();
+</script>
+</body>
+</html>

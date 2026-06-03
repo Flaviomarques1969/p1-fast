@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pergunta — evento: detalhe + antigos</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --fg:#e8e8e8; --muted:#9aa0a6; --accent:#4f8cff; --ok:#22c55e; --warn:#f59e0b; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--fg); padding:24px; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  .card { background:var(--card); border-radius:12px; padding:24px; box-shadow: 0 8px 32px rgba(0,0,0,.35); margin-bottom: 16px; }
+  h1 { font-size: 1.25rem; margin: 0 0 4px; }
+  h2 { font-size: 1.05rem; margin: 0 0 8px; color: var(--accent); }
+  .meta { color: var(--muted); font-size: .85rem; margin-bottom: 16px; }
+  .pergunta { font-size: 1.05rem; line-height: 1.45; margin: 0 0 20px; }
+  .opcoes { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .opcao { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1px solid #2a2f3a; border-radius: 10px; cursor: pointer; transition: all .15s; }
+  .opcao:hover { border-color: var(--accent); }
+  .opcao input { margin-top: 4px; }
+  .opcao-corpo { flex: 1; }
+  .opcao-titulo { font-weight: 600; }
+  .opcao-just { color: var(--muted); font-size: .9rem; margin-top: 2px; }
+  .recomendado { display: inline-block; background: rgba(34,197,94,.15); color: var(--ok); padding: 1px 8px; border-radius: 999px; font-size: .75rem; margin-left: 8px; }
+  textarea { width: 100%; background:#0f1115; color:var(--fg); border:1px solid #2a2f3a; border-radius: 8px; padding: 10px; resize: vertical; font-family: inherit; font-size: .95rem; }
+  label.bloco { display: block; margin: 16px 0 6px; color: var(--muted); font-size: .85rem; }
+  .acoes { display: flex; gap: 10px; margin-top: 18px; }
+  button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 10px 16px; font-size: 1rem; cursor: pointer; }
+  button.secundario { background: transparent; border: 1px solid #2a2f3a; color: var(--fg); }
+  .status { margin-top: 12px; color: var(--muted); font-size: .85rem; }
+  .outra-wrap { display: none; margin-top: 6px; }
+  .outra-wrap.ativo { display: block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Decisões finais — Evento com período de dias</h1>
+    <div class="meta">ID: <code>20260516-094800-evento-detalhe-e-antigos</code></div>
+    <p class="pergunta">Últimas 2 decisões antes de eu implementar.</p>
+  </div>
+
+  <form id="form">
+
+    <div class="card">
+      <h2>P4. Como mostrar os dias na tela de detalhe do evento?</h2>
+      <div class="opcoes">
+        <label class="opcao">
+          <input type="radio" name="p4" value="A. Abas no topo — uma aba por dia" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">A. Abas no topo — uma aba por dia<span class="recomendado">Recomendado</span></div>
+            <div class="opcao-just">"Sáb 23 | Dom 24" no topo da tela do evento. Você toca a aba pra ver os stints daquele dia. Foco em um dia por vez, sem rolagem longa.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="p4" value="B. Lista vertical com cabeçalho por dia" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">B. Lista vertical com cabeçalho por dia</div>
+            <div class="opcao-just">Tudo na mesma rolagem: "Sáb 23" → stints → "Dom 24" → stints. Visão geral, mas longa pra eventos de 3+ dias.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="p4" value="C. Cards de dia clicáveis — abre tela por dia" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">C. Cards de dia clicáveis — uma tela por dia</div>
+            <div class="opcao-just">Tela do evento mostra cards "Sáb 23 (3 stints)" "Dom 24 (4 stints)". Toca o card e entra na tela do dia. Mais nível de clique, mas isola cada dia.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="p4" value="Outra" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">Outra (descreva embaixo)</div>
+            <div class="opcao-just">Se nenhuma das três bate com o que você imagina.</div>
+          </div>
+        </label>
+      </div>
+      <div class="outra-wrap" id="p4-outra-wrap">
+        <label class="bloco" for="p4-outra">Sua opção pra P4</label>
+        <textarea id="p4-outra" rows="2" placeholder="Descreva a sua opção"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>P5. Eventos antigos (que já têm 1 data) — o que fazer?</h2>
+      <div class="opcoes">
+        <label class="opcao">
+          <input type="radio" name="p5" value="A. Converter automático — cada um vira evento de 1 dia" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">A. Converter automático — cada um vira evento de 1 dia<span class="recomendado">Recomendado</span></div>
+            <div class="opcao-just">Sem trabalho seu. Você pode editar depois e estender o período se quiser.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="p5" value="B. Apagar — estão em teste mesmo" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">B. Apagar — estão em teste mesmo</div>
+            <div class="opcao-just">Memória do projeto registra que dados em teste são descartáveis. Mas perde histórico do trabalho de testes que você já fez.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="p5" value="Outra" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">Outra (descreva embaixo)</div>
+            <div class="opcao-just">Se quiser uma terceira opção.</div>
+          </div>
+        </label>
+      </div>
+      <div class="outra-wrap" id="p5-outra-wrap">
+        <label class="bloco" for="p5-outra">Sua opção pra P5</label>
+        <textarea id="p5-outra" rows="2" placeholder="Descreva a sua opção"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <label class="bloco" for="comentario">Comentário geral (opcional)</label>
+      <textarea id="comentario" rows="3" placeholder="Contexto, ressalvas..."></textarea>
+      <div class="acoes">
+        <button type="button" id="exportar">Exportar JSON</button>
+        <button type="button" class="secundario" id="limpar">Limpar</button>
+      </div>
+      <div class="status" id="status"></div>
+    </div>
+
+  </form>
+</div>
+
+<script>
+  const PERGUNTA_ID = "20260516-094800-evento-detalhe-e-antigos";
+  const STORAGE_KEY = "padrao-flavio:" + PERGUNTA_ID;
+  const PERGS = ["p4","p5"];
+
+  function carregarLocalStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const dados = JSON.parse(raw);
+      PERGS.forEach(p => {
+        if (dados[p]) {
+          const r = document.querySelector(`input[name="${p}"][value="${CSS.escape(dados[p])}"]`);
+          if (r) r.checked = true;
+        }
+        const ot = document.getElementById(`${p}-outra`);
+        if (ot && dados[`${p}_outra`]) ot.value = dados[`${p}_outra`];
+      });
+      if (dados.comentario) document.getElementById("comentario").value = dados.comentario;
+      atualizarOutraWraps();
+    } catch (e) {}
+  }
+
+  function coletar() {
+    const dados = {};
+    PERGS.forEach(p => {
+      const sel = document.querySelector(`input[name="${p}"]:checked`);
+      dados[p] = sel ? sel.value : "";
+      const ot = document.getElementById(`${p}-outra`);
+      dados[`${p}_outra`] = ot ? ot.value.trim() : "";
+    });
+    dados.comentario = document.getElementById("comentario").value.trim();
+    return dados;
+  }
+
+  function salvarLocalStorage() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(coletar())); } catch (e) {}
+  }
+
+  function atualizarOutraWraps() {
+    PERGS.forEach(p => {
+      const sel = document.querySelector(`input[name="${p}"]:checked`);
+      const ativo = sel && sel.value === "Outra";
+      document.getElementById(`${p}-outra-wrap`).classList.toggle("ativo", ativo);
+    });
+  }
+
+  function exportar() {
+    const d = coletar();
+    const faltam = PERGS.filter(p => !d[p]);
+    if (faltam.length > 0) {
+      document.getElementById("status").textContent = "Faltam responder: " + faltam.map(x => x.toUpperCase()).join(", ");
+      return;
+    }
+    const payload = {
+      pergunta_id: PERGUNTA_ID,
+      respostas: PERGS.reduce((acc, p) => {
+        acc[p] = d[p] === "Outra" ? (`Outra — ${d[p+"_outra"] || ""}`) : d[p];
+        return acc;
+      }, {}),
+      comentario: d.comentario,
+      respondido_em: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = PERGUNTA_ID + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    document.getElementById("status").textContent = "JSON salvo. Coloque em ~/Downloads e diga 'fiz'.";
+  }
+
+  function limpar() {
+    PERGS.forEach(p => {
+      document.querySelectorAll(`input[name="${p}"]`).forEach(r => r.checked = false);
+      const ot = document.getElementById(`${p}-outra`);
+      if (ot) ot.value = "";
+    });
+    document.getElementById("comentario").value = "";
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    atualizarOutraWraps();
+    document.getElementById("status").textContent = "Limpo.";
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    carregarLocalStorage();
+    PERGS.forEach(p => {
+      document.querySelectorAll(`input[name="${p}"]`).forEach(r => {
+        r.addEventListener("change", () => { salvarLocalStorage(); atualizarOutraWraps(); });
+      });
+      const ot = document.getElementById(`${p}-outra`);
+      if (ot) ot.addEventListener("input", salvarLocalStorage);
+    });
+    document.getElementById("comentario").addEventListener("input", salvarLocalStorage);
+    document.getElementById("exportar").addEventListener("click", exportar);
+    document.getElementById("limpar").addEventListener("click", limpar);
+  });
+</script>
+</body>
+</html>

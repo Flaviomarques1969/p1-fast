@@ -122,9 +122,15 @@ struct PneuPickerView: View {
 
     private func pneuRow(_ pneu: Pneu) -> some View {
         let isOn = selecionado == pneu.id
-        return Button(action: { selecionado = pneu.id }) {
+        // 2026-05-16 Flávio "clicou, já seleciona": tocar confirma e fecha.
+        return Button(action: {
+            selecionado = pneu.id
+            onConfirm(pneu.id)
+        }) {
             HStack(spacing: 14) {
-                radio(isOn: isOn)
+                // 2026-05-16 Flávio "não quer bolinhas no botão": removi
+                // o indicador de rádio. O destaque do escolhido vem do
+                // fundo + borda. Toque = seleciona.
                 VStack(alignment: .leading, spacing: 3) {
                     Text(pneuTitulo(pneu))
                         .font(.system(size: 16, weight: .semibold))
@@ -313,56 +319,9 @@ struct PneuPickerView: View {
 
     @ViewBuilder
     private var footBar: some View {
-        if pneus.isEmpty {
-            soVoltarBar
-        } else {
-            HStack(spacing: 10) {
-                Button(action: onCancel) {
-                    Text("Voltar")
-                        .font(.system(size: 15, weight: .semibold))
-                        .tracking(-0.075)
-                        .foregroundStyle(Color.textMuted)
-                        .padding(.horizontal, 18)
-                        .padding(.vertical, 14)
-                        .background(
-                            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                                .fill(Color.clear)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                                .stroke(Color.border, lineWidth: 1)
-                        )
-                }
-                .buttonStyle(.plain)
-
-                Button(action: { onConfirm(selecionado) }) {
-                    Text("Confirmar")
-                        .font(.system(size: 15, weight: .semibold))
-                        .tracking(-0.075)
-                        .foregroundStyle(Color.onAccent)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(
-                            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                                .fill(Color.accent)
-                        )
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, Spacing.lg)
-            .padding(.top, 14)
-            .padding(.bottom, 28)
-            .frame(maxWidth: .infinity)
-            .background(
-                Color.surface.opacity(0.92).background(.ultraThinMaterial)
-            )
-            .overlay(
-                Rectangle()
-                    .fill(Color.border)
-                    .frame(height: 1),
-                alignment: .top
-            )
-        }
+        // 2026-05-16 Flávio "clicou, já seleciona": tocar numa opção
+        // confirma direto. Rodapé só com Voltar (sair sem mudar).
+        soVoltarBar
     }
 
     private var soVoltarBar: some View {

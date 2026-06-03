@@ -1,4 +1,3 @@
-<!-- TODO [CLAUDE 2026-05-26 noite] obsoleto — confirmar com Flávio -->
 # SESSION HANDOFF — 2026-05-09 (pre-/clear)
 
 > **Pra quem está lendo isto na próxima sessão:** o Flávio pediu um `/clear` no meio do port C#/WinUI 3. Este doc te dá o ponto exato pra retomar sem repetir o que já foi feito.

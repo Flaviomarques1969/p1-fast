@@ -38,4 +38,27 @@ enum TeamContext {
     static var currentPilotoId: String? {
         UserDefaults.standard.string(forKey: pilotoStorageKey)
     }
+
+    // Pendência 5 da reformulação Autódromos (Flávio 2026-05-17):
+    // "Pro dono do aplicativo (Flávio): aparece sempre. Pros demais:
+    // só quando o autódromo não está cadastrado."
+    // O dono é quem criou o time pessoal (times.criado_por). Persistido
+    // por SessionManager.applySession.
+    static let ownerStorageKey = "p1fast.currentOwnerUserId"
+    static var ownerUserId: String? {
+        UserDefaults.standard.string(forKey: ownerStorageKey)
+    }
+    /// True quando o user logado é o dono do time (e por consequência
+    /// do aplicativo do ponto de vista local). Hoje, em time pessoal,
+    /// é sempre quem fez login. No futuro multi-membro, vira leitura
+    /// real de `times.criado_por`.
+    static var isOwner: Bool {
+        guard let user = UserDefaults.standard.string(forKey: "p1fast.currentUserId"),
+              !user.isEmpty else {
+            return false
+        }
+        // Falha aberta: enquanto não há multi-membro, qualquer login é dono.
+        guard let owner = ownerUserId, !owner.isEmpty else { return true }
+        return user == owner
+    }
 }

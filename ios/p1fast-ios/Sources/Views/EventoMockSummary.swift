@@ -32,6 +32,13 @@ struct EventoMockSummary: Equatable {
     /// Stints detalhados — só populado pros passados (pra preencher a
     /// lista no detalhe). O ativo retorna [] (CTA "Novo stint" só).
     let stintsDetalhados: [StintMock]
+    /// S5 da rodada 1 (2026-05-12): velocidade máxima atingida no evento.
+    /// Usado no resumo do evento passado. Nil pra eventos onde não foi
+    /// medida (ativo hoje sem stints, ou seed antigo).
+    var vmaxKmh: Double?
+    /// S5 da rodada 1 (2026-05-12): quilometragem total estimada do
+    /// evento. Mesma aproximação do S2.
+    var kmTotal: Double?
 
     /// Formatação canônica "M:SS.mmm" (1:42.318) — vai no card da lista
     /// e na cell "Melhor" do summary do detalhe.
@@ -135,7 +142,9 @@ extension EventoMockSummary {
                     licao: "Sem Coach",
                     tagEspecial: nil
                 ),
-            ]
+            ],
+            vmaxKmh: 187,
+            kmTotal: 162
         ),
         // Passado de 28/03 — 3 stints / 32 voltas / melhor 1:43.847.
         // Detalhes simplificados (stints curtos pra alimentar a lista).
@@ -176,7 +185,9 @@ extension EventoMockSummary {
                     licao: "Referência Fixa",
                     tagEspecial: .desvioBaixo
                 ),
-            ]
+            ],
+            vmaxKmh: 178,
+            kmTotal: 110
         ),
     ]
 

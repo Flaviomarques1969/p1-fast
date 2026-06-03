@@ -23,6 +23,14 @@ final class PendenciaRepository: ObservableObject {
     /// Templates carregados do banco (ordenados por grupoNum + ordem).
     @Published private(set) var templates: [PendenciaTemplate] = []
 
+    /// S5 da rodada 1 (2026-05-12): nome legível do template pelo id. Usado
+    /// no histórico de pendências do evento passado pra mostrar "Trocar
+    /// óleo motor" em vez do UUID. Retorna nil se template não foi
+    /// carregado ainda (boot async).
+    func nomeTemplate(_ templateId: String) -> String? {
+        templates.first { $0.id == templateId }?.titulo
+    }
+
     /// Cache de instâncias por evento atualmente carregado.
     /// Map: eventoId → [EventoPendencia], indexado pra atualização rápida.
     @Published private(set) var instanciasPorEvento: [String: [EventoPendencia]] = [:]

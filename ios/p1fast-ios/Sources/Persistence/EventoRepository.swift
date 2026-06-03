@@ -126,22 +126,163 @@ final class EventoRepository: ObservableObject {
         self.sumarioPorEvento = sumarios
     }
 
-    /// Cria um evento novo. Retorna o ID gerado.
+    // MARK: - S8 #18 — Histórico do piloto naquela pista por carro
+
+    /// Resumo de uso de um carro do time numa pista específica, do ponto
+    /// de vista do piloto logado. Usado no detalhe de evento futuro pra
+    /// mostrar "No Celta — sua melhor volta foi 1:38.142 (15/03)".
+    struct CarroPistaResumo: Identifiable, Equatable {
+        var id: String { carroId }
+        let carroId: String
+        let carroApelido: String
+        /// Nº de voltas válidas que esse carro já deu nessa pista, pelo piloto.
+        let voltasValidas: Int
+        /// Melhor volta em ms (nil → "Primeira vez nesse autódromo").
+        let melhorVoltaMs: Int?
+        /// Quando rolou a melhor volta (ms). Nil quando não há voltas.
+        let melhorVoltaQuandoMs: Int64?
+        /// Velocidade máxima em km/h (vmax registrada nas execuções). Nil
+        /// quando não há dado.
+        let vmaxKmh: Double?
+    }
+
+    /// S8 #18 — Carrega o histórico do piloto atual em uma pista, separado
+    /// por carro. Inclui TODOS os carros do time (recomendação P3 #18:
+    /// mostrar todos, mesmo os que nunca correram ali — caem como
+    /// "Primeira vez nesse autódromo").
+    func loadHistoricoPilotoNaPista(trackId: String) async throws -> [CarroPistaResumo] {
+        guard let teamId = TeamContext.currentTeamId else { return [] }
+        let pilotoId = TeamContext.currentPilotoId
+        return try await queue.read { db -> [CarroPistaResumo] in
+            // 1) Todos os carros do time.
+            let carros = try Carro
+                .filter(Column("time_id") == teamId)
+                .order(Column("created_at").desc)
+                .fetchAll(db)
+
+            // 2) Pra cada carro, agrega voltas válidas + melhor volta +
+            //    vmax em sessões do mesmo carro vinculadas a eventos da
+            //    pista alvo e do piloto logado (quando há piloto).
+            var resultado: [CarroPistaResumo] = []
+            for c in carros {
+                let pilotoFiltro = pilotoId != nil ? "AND s.piloto_id = ?" : ""
+                var args: [DatabaseValueConvertible] = [c.id, trackId, teamId]
+                if let pid = pilotoId { args.append(pid) }
+
+                let voltasRow = try Row.fetchOne(db, sql: """
+                    SELECT COUNT(*) AS voltas, MIN(v.tempo_ms) AS melhor,
+                           MIN(v.inicio_at) AS quando_min
+                    FROM voltas v
+                    JOIN sessoes s ON s.id = v.sessao_id
+                    JOIN eventos e ON e.id = s.evento_id
+                    WHERE s.carro_id = ?
+                      AND e.track_id = ?
+                      AND v.time_id = ?
+                      AND v.valida = 1
+                      AND v.tempo_ms IS NOT NULL
+                      \(pilotoFiltro)
+                    """, arguments: StatementArguments(args))
+                let voltas = (voltasRow?["voltas"] as Int?) ?? 0
+                let melhor = voltasRow?["melhor"] as Int?
+                // Quando da melhor volta (usa inicio_at da volta com tempo mínimo)
+                let quandoArgs = StatementArguments([c.id, trackId, teamId] + (pilotoId.map { [$0] } ?? []))
+                let quando: Int64? = melhor != nil
+                    ? try Int64.fetchOne(db, sql: """
+                        SELECT v.inicio_at
+                        FROM voltas v
+                        JOIN sessoes s ON s.id = v.sessao_id
+                        JOIN eventos e ON e.id = s.evento_id
+                        WHERE s.carro_id = ?
+                          AND e.track_id = ?
+                          AND v.time_id = ?
+                          AND v.valida = 1
+                          AND v.tempo_ms = \(melhor!)
+                          \(pilotoFiltro)
+                        ORDER BY v.inicio_at DESC LIMIT 1
+                        """, arguments: quandoArgs)
+                    : nil
+
+                let vmaxArgs = StatementArguments([c.id, trackId, teamId] + (pilotoId.map { [$0] } ?? []))
+                let vmaxRow = try Row.fetchOne(db, sql: """
+                    SELECT MAX(se.velocidade_max) AS vmax
+                    FROM segment_executions se
+                    JOIN sessoes s ON s.id = se.sessao_id
+                    JOIN eventos e ON e.id = s.evento_id
+                    WHERE s.carro_id = ?
+                      AND e.track_id = ?
+                      AND s.time_id = ?
+                      \(pilotoFiltro)
+                    """, arguments: vmaxArgs)
+                let vmax: Double? = vmaxRow?["vmax"]
+
+                resultado.append(CarroPistaResumo(
+                    carroId: c.id,
+                    carroApelido: c.apelido,
+                    voltasValidas: voltas,
+                    melhorVoltaMs: melhor,
+                    melhorVoltaQuandoMs: quando,
+                    vmaxKmh: vmax
+                ))
+            }
+            return resultado
+        }
+    }
+
+    /// Input pra criação de um dia filho do evento. Caller informa rótulo
+    /// e tipo (ambos opcionais — rótulo nil exibe "Dia de pista DD"; tipo
+    /// nil deixa em branco). Data e ordem são derivadas do período.
+    struct EventoDiaInput {
+        let rotulo: String?
+        let tipo: String?
+
+        init(rotulo: String? = nil, tipo: String? = nil) {
+            self.rotulo = rotulo
+            self.tipo = tipo
+        }
+    }
+
+    /// Cria um evento novo COM período (data início + fim) e N dias filhos.
+    /// 2026-05-16 — substitui a API antiga de 1 data só. dataInicio e
+    /// dataFim em ms desde 1970, dia (00:00 local — fuso responsabilidade
+    /// do caller). `dias.count` deve casar com (dataFim - dataInicio + 1).
+    ///
+    /// Retorna o ID do evento criado. Os dias ficam acessíveis via
+    /// `listDias(eventoId:)`.
     @discardableResult
-    func create(trackId: String?, tipo: String?, dataEvento: Int64,
+    func create(trackId: String?,
+                dataInicio: Int64,
+                dataFim: Int64,
+                dias: [EventoDiaInput],
                 status: String? = "planejado") async throws -> String {
         guard let teamId = TeamContext.currentTeamId else {
             throw NSError(domain: "EventoRepository", code: -1, userInfo: [NSLocalizedDescriptionKey: "Sem equipe associada — faça login antes de criar eventos."])
         }
+        guard !dias.isEmpty else {
+            throw NSError(domain: "EventoRepository", code: -2, userInfo: [NSLocalizedDescriptionKey: "Evento precisa de pelo menos 1 dia."])
+        }
         let eventoId = UUID().uuidString
         let now = DB.nowMs()
+        let umDiaMs: Int64 = 24 * 60 * 60 * 1000
+
+        // 2026-05-16 (regra Flávio): não permitir dois eventos da mesma
+        // equipe na mesma pista com algum dia coincidente. Equipe aqui
+        // representa o usuário do app (dev tem 1 usuário = 1 equipe).
+        let novosDias: [Int64] = (0..<dias.count).map { dataInicio + Int64($0) * umDiaMs }
+        if let clash = try await proximoEventoChocando(teamId: teamId, trackId: trackId, dias: novosDias) {
+            let dataChoque = Self.dataChoqueFormatada(ms: clash)
+            throw NSError(domain: "EventoRepository", code: -3, userInfo: [
+                NSLocalizedDescriptionKey: "Já existe outro evento nessa pista no dia \(dataChoque). Não dá pra cadastrar duplicado — abra o evento que já existe ou escolha outra data."
+            ])
+        }
+
         try await queue.write { db in
             let ev = Evento(
                 id: eventoId,
                 timeId: teamId,
                 trackId: trackId,
-                tipo: tipo,
-                dataEvento: dataEvento,
+                tipo: nil,                // tipo agora é por dia (P3)
+                dataEvento: dataInicio,
+                dataFim: dataFim,
                 status: status,
                 createdAt: now,
                 updatedAt: now,
@@ -149,9 +290,75 @@ final class EventoRepository: ObservableObject {
             )
             try ev.insert(db)
             try SyncQueue.enqueueRecord(db, tableName: "eventos", rowId: eventoId, op: .insert, record: ev)
+
+            for (idx, input) in dias.enumerated() {
+                let diaMs = dataInicio + Int64(idx) * umDiaMs
+                let diaId = UUID().uuidString
+                let dia = EventoDia(
+                    id: diaId,
+                    timeId: teamId,
+                    eventoId: eventoId,
+                    dataDia: diaMs,
+                    rotulo: input.rotulo,
+                    tipo: input.tipo,
+                    ordem: idx,
+                    createdAt: now,
+                    updatedAt: now,
+                    syncedAt: nil
+                )
+                try dia.insert(db)
+                try SyncQueue.enqueueRecord(db, tableName: "evento_dias", rowId: diaId, op: .insert, record: dia)
+            }
         }
         try await reload()
         return eventoId
+    }
+
+    /// Retorna o data_dia (em ms) do primeiro choque encontrado, ou nil
+    /// se não há conflito. Choque = mesmo time + mesma pista + algum
+    /// data_dia coincidente com a lista de novos dias.
+    private func proximoEventoChocando(teamId: String, trackId: String?, dias: [Int64]) async throws -> Int64? {
+        guard !dias.isEmpty else { return nil }
+        return try await queue.read { db in
+            let placeholders = dias.map { _ in "?" }.joined(separator: ",")
+            var args: [DatabaseValueConvertible?] = [teamId]
+            let trackClause: String
+            if let trackId {
+                trackClause = "AND e.track_id = ?"
+                args.append(trackId)
+            } else {
+                trackClause = "AND e.track_id IS NULL"
+            }
+            args.append(contentsOf: dias.map { $0 as DatabaseValueConvertible? })
+            let sql = """
+                SELECT ed.data_dia
+                FROM evento_dias ed
+                JOIN eventos e ON e.id = ed.evento_id
+                WHERE e.time_id = ?
+                \(trackClause)
+                AND ed.data_dia IN (\(placeholders))
+                ORDER BY ed.data_dia ASC
+                LIMIT 1
+            """
+            return try Int64.fetchOne(db, sql: sql, arguments: StatementArguments(args))
+        }
+    }
+
+    private static func dataChoqueFormatada(ms: Int64) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "pt_BR")
+        f.dateFormat = "dd/MM/yyyy"
+        return f.string(from: Date(timeIntervalSince1970: TimeInterval(ms) / 1000))
+    }
+
+    /// Lista os dias filhos de um evento, em ordem cronológica.
+    func listDias(eventoId: String) async throws -> [EventoDia] {
+        try await queue.read { db in
+            try EventoDia
+                .filter(Column("evento_id") == eventoId)
+                .order(Column("ordem").asc)
+                .fetchAll(db)
+        }
     }
 
     func update(evento: Evento) async throws {
@@ -238,7 +445,8 @@ final class EventoRepository: ObservableObject {
             try TrackRow(
                 id: Self.brasiliaTrackId,
                 apelido: "Brasília",
-                nomeOficial: "Auto. Int. Nelson Piquet"
+                nomeOficial: "Auto. Int. Nelson Piquet",
+                cidade: "Brasília" // S4 rodada 1
             ).insert(db)
         }
     }

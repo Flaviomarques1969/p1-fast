@@ -30,9 +30,20 @@ struct StintModalView: View {
     @EnvironmentObject private var pneuRepo: PneuRepository
     @EnvironmentObject private var combustivelRepo: CombustivelRepository
     @EnvironmentObject private var licaoRepo: LicaoRepository
+    // 2026-05-16 Flávio "cadastrar piloto dentro do seletor": precisa do
+    // PilotoRepository pra abrir a tela de cadastro e auto-selecionar
+    // o novo piloto após salvar.
+    @EnvironmentObject private var pilotoRepo: PilotoRepository
+    /// Pendência 3 da reformulação Autódromos (Flávio 2026-05-17):
+    /// pré-seleção carro+configuração no plano do stint.
+    @EnvironmentObject private var configuracaoRepo: ConfiguracaoRepository
     let eventoId: String
     let proximoNumero: Int
     let contextoLinha: String
+    /// 2026-05-16 Flávio: quando o usuário toca num carro específico na
+    /// tela do evento (em "Seu histórico nessa pista"), passamos o ID
+    /// dele aqui pra evitar o fallback "primeiro carro do repositório".
+    var carroInicialId: String? = nil
     let onCancel: () -> Void
     let onCreated: (String) -> Void
 
@@ -42,6 +53,9 @@ struct StintModalView: View {
     @State private var licaoIdSelecionada: String?
     @State private var savingError: String?
     @State private var isSaving = false
+    /// Pendência 3 — pré-seleção carro+configuração no plano do stint.
+    @State private var carroIdSelecionado: String?
+    @State private var configuracaoIdSelecionada: String?
 
     // Sprint 1A.4 — Prompt #17. Pneu + combustível ficam no estado local
     // do modal e são persistidos via setPneu/setCombustivel após o create.
@@ -94,6 +108,11 @@ struct StintModalView: View {
         .task {
             // MS-4.4: detecta se evento é endurance pra liberar revezamento.
             permiteRevezamento = await repo.eventoPermiteRevezamento(eventoId: eventoId)
+            // Pendência 3 — hidrata pré-seleção carro+config com a última
+            // usada no evento. Se nada foi usado ainda, cai no carro inicial
+            // (passado pelo toque no card) e na configuração marcada como
+            // atual desse carro.
+            await hidratarCarroConfigDefault()
         }
         .sheet(item: $sheet) { which in
             sheetView(for: which)
@@ -163,11 +182,80 @@ struct StintModalView: View {
                     turnoEditandoIndex = nil
                 }
             )
+        case .pilotoPicker:
+            PilotoPickerView(
+                titulo: "Piloto",
+                subtitulo: "Stint #\(proximoNumero) · \(contextoLinha)",
+                initialId: pilotoId,
+                permiteSemOpcao: false,
+                labelSemOpcao: "",
+                labelCadastrarNovo: "Cadastrar novo piloto",
+                idsBloqueados: convidadoId.map { Set([$0]) } ?? [],
+                onCancel: { sheet = nil },
+                onConfirm: { id in
+                    pilotoId = id
+                    sheet = nil
+                    Task { try? await repo.reloadPilotos() }
+                }
+            )
+            .environmentObject(pilotoRepo)
+        case .convidadoPicker:
+            PilotoPickerView(
+                titulo: "Convidado",
+                subtitulo: "Stint #\(proximoNumero) · \(contextoLinha)",
+                initialId: convidadoId,
+                permiteSemOpcao: true,
+                labelSemOpcao: "Sem convidado",
+                labelCadastrarNovo: "Cadastrar novo piloto",
+                idsBloqueados: pilotoId.map { Set([$0]) } ?? [],
+                onCancel: { sheet = nil },
+                onConfirm: { id in
+                    convidadoId = id
+                    sheet = nil
+                    Task { try? await repo.reloadPilotos() }
+                }
+            )
+            .environmentObject(pilotoRepo)
         }
     }
 
     private var carroIdInferido: String? {
-        carroRepo.carros.first?.id
+        // Pendência 3 — agora prefere o carroIdSelecionado do estado
+        // (escolha explícita do gestor no formulário OU pré-seleção da
+        // última usada). Cai pra carroInicialId (toque num card) e
+        // primeiro carro do repositório como fallback antigo.
+        if let cid = carroIdSelecionado,
+           carroRepo.carros.contains(where: { $0.id == cid }) {
+            return cid
+        }
+        if let cid = carroInicialId,
+           carroRepo.carros.contains(where: { $0.id == cid }) {
+            return cid
+        }
+        return carroRepo.carros.first?.id
+    }
+
+    /// Pendência 3 — popula carro+config no abrir o formulário.
+    /// 1ª opção: última (carro, config) usada nesse evento.
+    /// 2ª opção: carroInicialId (toque num card) + config atual desse carro.
+    /// 3ª opção: deixa em branco — gestor escolhe.
+    private func hidratarCarroConfigDefault() async {
+        do {
+            let ultimo = try await repo.ultimoCarroEConfigDoEvento(eventoId: eventoId)
+            if let cid = ultimo.carroId,
+               carroRepo.carros.contains(where: { $0.id == cid }) {
+                carroIdSelecionado = cid
+                configuracaoIdSelecionada = ultimo.configuracaoId
+                return
+            }
+        } catch {
+            // Silencioso — cai no fallback abaixo.
+        }
+        if let cid = carroInicialId,
+           carroRepo.carros.contains(where: { $0.id == cid }) {
+            carroIdSelecionado = cid
+            configuracaoIdSelecionada = configuracaoRepo.ativaDoCarro(cid)?.id
+        }
     }
 
     private var canSave: Bool {
@@ -224,6 +312,12 @@ struct StintModalView: View {
     private var sectionConfiguracao: some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionHead("Configuração")
+            // Pendência 3 — pré-seleção carro+configuração no plano.
+            FormField(label: "Carro") { carroPicker }
+            FormField(label: "Configuração do carro",
+                      small: "motor, pneus, câmbio, aero") {
+                configuracaoPicker
+            }
             if permiteRevezamento {
                 FormField(label: "Pilotos com troca por volta", small: "endurance · obrigatório cobrir todas as voltas") {
                     turnosSection
@@ -241,6 +335,127 @@ struct StintModalView: View {
                 pneuRow
             }
         }
+    }
+
+    /// Pendência 3 — picker de carro entre os carros cadastrados no time.
+    /// Vem pré-marcado com o último carro usado no evento (ou o carro do
+    /// card que abriu o formulário).
+    private var carroPicker: some View {
+        Menu {
+            ForEach(carroRepo.carros, id: \.id) { c in
+                Button {
+                    carroIdSelecionado = c.id
+                    // Quando troca de carro, a config selecionada pode
+                    // não pertencer mais. Cai pra config marcada como
+                    // atual do novo carro.
+                    let cfgs = configuracaoRepo.paraCarro(c.id)
+                    if let cfg = configuracaoIdSelecionada,
+                       !cfgs.contains(where: { $0.id == cfg }) {
+                        configuracaoIdSelecionada = cfgs.first(where: { $0.ativa })?.id
+                            ?? cfgs.first?.id
+                    } else if configuracaoIdSelecionada == nil {
+                        configuracaoIdSelecionada = cfgs.first(where: { $0.ativa })?.id
+                            ?? cfgs.first?.id
+                    }
+                } label: {
+                    Text(c.apelido)
+                }
+            }
+        } label: {
+            HStack {
+                Text(carroLegivel)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(carroIdSelecionado == nil ? Color.textFaint : Color.text)
+                Spacer()
+                Text("›")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(Color.textMuted)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .fill(Color.surfaceRaised)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .stroke(Color.border, lineWidth: 1)
+            )
+        }
+        .menuStyle(.button)
+    }
+
+    private var carroLegivel: String {
+        if let cid = carroIdSelecionado,
+           let c = carroRepo.carros.first(where: { $0.id == cid }) {
+            return c.apelido
+        }
+        return "Escolher carro"
+    }
+
+    /// Pendência 3 — picker de configuração entre as do carro selecionado.
+    /// Some quando nenhum carro foi escolhido. Se o carro não tem nenhuma
+    /// configuração cadastrada, mostra orientação.
+    @ViewBuilder
+    private var configuracaoPicker: some View {
+        if let cid = carroIdSelecionado {
+            let cfgs = configuracaoRepo.paraCarro(cid)
+            if cfgs.isEmpty {
+                Text("Esse carro não tem configuração. Cadastre uma na Garagem → carro → 'Gerenciar configurações'.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.atencao)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                            .fill(Color.surfaceRaised)
+                    )
+            } else {
+                Menu {
+                    ForEach(cfgs, id: \.id) { cfg in
+                        Button { configuracaoIdSelecionada = cfg.id } label: {
+                            Text(cfg.nome ?? cfg.resumoLegivel)
+                        }
+                    }
+                } label: {
+                    HStack {
+                        Text(configuracaoLegivel(cfgs: cfgs))
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(configuracaoIdSelecionada == nil ? Color.textFaint : Color.text)
+                        Spacer()
+                        Text("›")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundStyle(Color.textMuted)
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                            .fill(Color.surfaceRaised)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                            .stroke(Color.border, lineWidth: 1)
+                    )
+                }
+                .menuStyle(.button)
+            }
+        } else {
+            Text("Escolha um carro primeiro.")
+                .font(.system(size: 12))
+                .foregroundStyle(Color.textFaint)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+        }
+    }
+
+    private func configuracaoLegivel(cfgs: [Configuracao]) -> String {
+        if let cid = configuracaoIdSelecionada,
+           let cfg = cfgs.first(where: { $0.id == cid }) {
+            return cfg.nome ?? cfg.resumoLegivel
+        }
+        return "Escolher configuração"
     }
 
     // MS-4.4 — Revezamento (lista de turnos pra endurance)
@@ -362,12 +577,7 @@ struct StintModalView: View {
     // MS-4.4 — Convidado picker (não-endurance)
 
     private var convidadoPicker: some View {
-        Menu {
-            Button("Sem convidado") { convidadoId = nil }
-            ForEach(repo.pilotos.filter { $0.id != pilotoId }, id: \.id) { p in
-                Button(p.nome) { convidadoId = p.id }
-            }
-        } label: {
+        Button(action: { sheet = .convidadoPicker }) {
             HStack {
                 Text(convidadoNomeAtual ?? "Sem convidado")
                     .font(.system(size: 15, weight: .medium))
@@ -394,7 +604,7 @@ struct StintModalView: View {
                     .stroke(Color.border, lineWidth: 1)
             )
         }
-        .menuStyle(.button)
+        .buttonStyle(.plain)
     }
 
     private var convidadoNomeAtual: String? {
@@ -402,14 +612,15 @@ struct StintModalView: View {
         return repo.pilotos.first(where: { $0.id == id })?.nome
     }
 
-    // MARK: - Combustível abastecido (qty + picker)
+    // MARK: - Combustível abastecido (só o tipo — sem campo de litros)
+    //
+    // 2026-05-16 (Flávio): "A gente só usa litros, só precisa colocar o
+    // tipo de combustível mesmo." Tirei o campo de quantidade. Mantemos
+    // o estado interno `qtCombustivelTexto` vazio — o sanitizarLitros e
+    // o gravar do stint seguem funcionando, simplesmente sem litros.
 
     private var combustivelRow: some View {
-        HStack(spacing: 10) {
-            qtCombustivelField
-                .frame(maxWidth: 110)
-            combustivelPickerButton
-        }
+        combustivelPickerButton
     }
 
     private var qtCombustivelField: some View {
@@ -751,18 +962,14 @@ struct StintModalView: View {
     // MARK: - Picker piloto
 
     private var pilotoPicker: some View {
-        Menu {
-            ForEach(repo.pilotos, id: \.id) { p in
-                Button(p.nome) { pilotoId = p.id }
-            }
-        } label: {
+        Button(action: { sheet = .pilotoPicker }) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(pilotoNomeAtual ?? "Escolher piloto")
                         .font(.system(size: 15, weight: .medium))
                         .tracking(-0.075)
                         .foregroundStyle(pilotoNomeAtual == nil ? Color.textFaint : Color.text)
-                    if let _ = pilotoNomeAtual {
+                    if pilotoNomeAtual != nil {
                         Text("Você")
                             .font(.system(size: 12, weight: .regular))
                             .foregroundStyle(Color.textFaint)
@@ -789,7 +996,7 @@ struct StintModalView: View {
                     .stroke(Color.border, lineWidth: 1)
             )
         }
-        .menuStyle(.button)
+        .buttonStyle(.plain)
     }
 
     private var pilotoNomeAtual: String? {
@@ -833,7 +1040,9 @@ struct StintModalView: View {
                     pilotoId: pid,
                     objetivoTipo: objetivoTipo,
                     licaoFocada: licaoTitulo,
-                    voltasPlanejadas: voltasPlanejadas
+                    voltasPlanejadas: voltasPlanejadas,
+                    carroId: carroIdSelecionado,
+                    configuracaoId: configuracaoIdSelecionada
                 )
                 if pneuParaSalvar != nil {
                     try await repo.setPneu(stintId: stintId, pneuId: pneuParaSalvar)
@@ -969,6 +1178,11 @@ enum StintModalSheet: Identifiable, Equatable {
     case combustivelPicker
     case paradaEditor  // MS-4.3 — abre o ParadaBoxEditorSheet
     case turnoEditor   // MS-4.4 — abre o TurnoEditorSheet (endurance)
+    /// 2026-05-16 Flávio: seletores de Piloto e Convidado agora usam a
+    /// MESMA tela cheia dos outros seletores (PilotoPickerView), em vez
+    /// dos menus suspensos antigos.
+    case pilotoPicker
+    case convidadoPicker
 
     var id: String {
         switch self {
@@ -976,6 +1190,8 @@ enum StintModalSheet: Identifiable, Equatable {
         case .combustivelPicker: return "combustivel-picker"
         case .paradaEditor: return "parada-editor"
         case .turnoEditor: return "turno-editor"
+        case .pilotoPicker: return "piloto-picker"
+        case .convidadoPicker: return "convidado-picker"
         }
     }
 }

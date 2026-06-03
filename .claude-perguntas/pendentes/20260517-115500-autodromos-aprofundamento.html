@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Autódromos · aprofundamento (19 decisões em 6 blocos)</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --card-2:#1d212a; --fg:#e8e8e8; --muted:#9aa0a6; --faint:#6b7280; --accent:#4f8cff; --ok:#22c55e; --warn:#f59e0b; --erro:#ef4444; --border:#2a2f3a; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--fg); padding:24px; line-height:1.45; }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  .meta { color: var(--muted); font-size: .85rem; margin-bottom: 24px; }
+  h1 { font-size: 1.5rem; margin: 0 0 6px; }
+  .ajuda { color: var(--muted); font-size: .92rem; margin: 0 0 14px; }
+  .bloco-titulo { font-size: 1.05rem; font-weight: 700; color: var(--accent); margin: 32px 0 8px; text-transform: uppercase; letter-spacing: 0.05em; padding-top: 16px; border-top: 1px solid var(--border); }
+  .decisao { background: var(--card); border-radius: 12px; padding: 20px 22px; margin: 14px 0; box-shadow: 0 4px 16px rgba(0,0,0,.2); }
+  .decisao-num { display: inline-block; background: var(--accent); color:#fff; font-weight:700; min-width: 32px; height: 24px; line-height: 24px; text-align: center; border-radius: 6px; padding: 0 6px; margin-right: 8px; font-size: .8rem; }
+  .decisao h2 { display: flex; align-items: center; margin: 0 0 8px; border: 0; padding: 0; font-size: 1.05rem; }
+  .opcoes { display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; }
+  .opcao { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: all .12s; }
+  .opcao:hover { border-color: var(--accent); }
+  .opcao input { margin-top: 4px; flex-shrink: 0; }
+  .opcao-corpo { flex: 1; }
+  .opcao-titulo { font-weight: 600; font-size: .95rem; }
+  .opcao-just { color: var(--muted); font-size: .85rem; margin-top: 3px; }
+  .recomendado { display: inline-block; background: rgba(34,197,94,.15); color: var(--ok); padding: 1px 7px; border-radius: 999px; font-size: .7rem; margin-left: 6px; vertical-align: middle; }
+  textarea, input[type=text] { width: 100%; background:#0f1115; color:var(--fg); border:1px solid var(--border); border-radius: 8px; padding: 10px; resize: vertical; font-family: inherit; font-size: .92rem; }
+  label.bloco { display: block; margin: 10px 0 4px; color: var(--muted); font-size: .82rem; }
+  .outra-wrap { display: none; }
+  .outra-wrap.ativo { display: block; }
+  .rodape { position: sticky; bottom: 0; background: var(--bg); padding: 16px 0; margin-top: 20px; border-top: 1px solid var(--border); }
+  .acoes { display: flex; gap: 10px; flex-wrap: wrap; }
+  button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 12px 18px; font-size: 1rem; cursor: pointer; font-weight: 600; }
+  button.secundario { background: transparent; border: 1px solid var(--border); color: var(--fg); font-weight: 400; }
+  .status { margin-top: 12px; color: var(--muted); font-size: .85rem; }
+  .progresso { color: var(--muted); font-size: .85rem; }
+  .saida { background:#0a0c10; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: ui-monospace, monospace; font-size: .8rem; white-space: pre-wrap; word-break: break-all; max-height: 240px; overflow: auto; margin-top: 10px; }
+  .copiar-feedback { color: var(--ok); font-size: .85rem; margin-left: 8px; display: none; }
+  .copiar-feedback.visivel { display: inline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="meta">ID: <code>20260517-115500-autodromos-aprofundamento</code> · projeto: P1 Fast</div>
+  <h1>Autódromos · aprofundamento</h1>
+  <p class="ajuda">19 decisões organizadas em 6 blocos. Você responde tudo aqui e me devolve. Se eu errei algum bloco, escreve no comentário no fim.</p>
+
+  <!-- ═══════════════════ BLOCO 1 ═══════════════════ -->
+  <div class="bloco-titulo">Bloco 1 · Cadastro de "Configuração do carro" (5 perguntas)</div>
+
+  <div class="decisao" data-id="A1">
+    <h2><span class="decisao-num">1.1</span> Quais elementos compõem a Configuração?</h2>
+    <p class="ajuda">Você disse: carro + motor + pneus + tipos de pneus + câmbio. Quero confirmar se é só isso ou tem mais.</p>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="A1" value="5-elementos" /><div class="opcao-corpo"><div class="opcao-titulo">A · Só os 5 que você listou <span class="recomendado">Recomendado</span></div><div class="opcao-just">Motor (descrição livre · ex: "1.4 standard"), pneus (medida + marca · ex: "Maxxis 295/30"), tipos de pneus (slick/chuva/rua), câmbio (descrição · ex: "5 marchas H"). Carro já vem do cadastro existente.</div></div></label>
+      <label class="opcao"><input type="radio" name="A1" value="8-elementos" /><div class="opcao-corpo"><div class="opcao-titulo">B · 5 + suspensão + freios + asa/aero</div><div class="opcao-just">Mais completo. Mais demorado de cadastrar uma config nova.</div></div></label>
+      <label class="opcao"><input type="radio" name="A1" value="campos-livres" /><div class="opcao-corpo"><div class="opcao-titulo">C · 5 fixos + campo "outros" livre</div><div class="opcao-just">Anota o que quiser fora dos 5 padrão.</div></div></label>
+      <label class="opcao"><input type="radio" name="A1" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">D · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="A1"><label class="bloco">Sua opção pra (1.1)</label><textarea rows="2" data-outra-texto="A1"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="A2">
+    <h2><span class="decisao-num">1.2</span> Como o aplicativo sabe qual configuração está ativa quando uma volta é gravada?</h2>
+    <p class="ajuda">Cada carro pode ter várias configurações. Qual está "valendo" agora?</p>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="A2" value="config-ativa" /><div class="opcao-corpo"><div class="opcao-titulo">A · Cada carro tem 1 configuração marcada como "ativa" <span class="recomendado">Recomendado</span></div><div class="opcao-just">Você troca pela tela do carro: "Agora estou rodando com Config Chuva 1". Toda volta gravada daquele carro carrega essa config até você trocar.</div></div></label>
+      <label class="opcao"><input type="radio" name="A2" value="escolhe-no-stint" /><div class="opcao-corpo"><div class="opcao-titulo">B · Antes de iniciar o stint, escolhe a configuração</div><div class="opcao-just">A tela "Iniciar stint" tem um seletor: "Stint com config X". 1 toque a mais por stint, mas mais explícito.</div></div></label>
+      <label class="opcao"><input type="radio" name="A2" value="auto-ultima" /><div class="opcao-corpo"><div class="opcao-titulo">C · Aplicativo usa a última configuração registrada e pergunta só se você quiser trocar</div><div class="opcao-just">Menos toques. Mais risco de gravar volta com config errada se você esqueceu de trocar.</div></div></label>
+      <label class="opcao"><input type="radio" name="A2" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">D · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="A2"><label class="bloco">Sua opção pra (1.2)</label><textarea rows="2" data-outra-texto="A2"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="A3">
+    <h2><span class="decisao-num">1.3</span> Configuração antiga (depois que você trocou pra outra) — fica salva ou some?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="A3" value="historica" /><div class="opcao-corpo"><div class="opcao-titulo">A · Fica salva como histórico, com as voltas vinculadas <span class="recomendado">Recomendado</span></div><div class="opcao-just">Você pode comparar "Config A vs. Config B" no mesmo carro depois. Os pontos dinâmicos (V-min, frenagem, PAce) de cada config ficam separados. Banco cresce mais.</div></div></label>
+      <label class="opcao"><input type="radio" name="A3" value="some" /><div class="opcao-corpo"><div class="opcao-titulo">B · Some (substitui a anterior)</div><div class="opcao-just">Mais simples. Mas perde comparação histórica.</div></div></label>
+      <label class="opcao"><input type="radio" name="A3" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">C · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="A3"><label class="bloco">Sua opção pra (1.3)</label><textarea rows="2" data-outra-texto="A3"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="A4">
+    <h2><span class="decisao-num">1.4</span> Nome da configuração — manual ou automático?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="A4" value="manual" /><div class="opcao-corpo"><div class="opcao-titulo">A · Você dá um nome livre <span class="recomendado">Recomendado</span></div><div class="opcao-just">Ex.: "Setup chuva 1", "Configuração de classificação". Mais útil pra você lembrar depois.</div></div></label>
+      <label class="opcao"><input type="radio" name="A4" value="automatico" /><div class="opcao-corpo"><div class="opcao-titulo">B · Automático ("Config #1 do Celta", "Config #2 do Celta"...)</div><div class="opcao-just">Sem fricção. Você sabe pelos campos (motor, pneus...) qual é qual.</div></div></label>
+      <label class="opcao"><input type="radio" name="A4" value="ambos" /><div class="opcao-corpo"><div class="opcao-titulo">C · Default automático com opção de renomear</div></div></label>
+      <label class="opcao"><input type="radio" name="A4" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">D · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="A4"><label class="bloco">Sua opção pra (1.4)</label><textarea rows="2" data-outra-texto="A4"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="A5">
+    <h2><span class="decisao-num">1.5</span> Cadastro de Configuração entra nesta rodada ou depois?</h2>
+    <p class="ajuda">Sem cadastro de configuração, os pontos dinâmicos (V-min, frenagem, PAce) ficam atrelados a "carro" simplesmente (sem distinção de setup). Quando entrar o cadastro, os dados antigos viram "Configuração inicial" automaticamente.</p>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="A5" value="ja-agora" /><div class="opcao-corpo"><div class="opcao-titulo">A · Já agora, na mesma rodada <span class="recomendado">Recomendado</span></div><div class="opcao-just">Sai tudo coerente desde o começo. Demora mais (mais 1 dia provável de trabalho).</div></div></label>
+      <label class="opcao"><input type="radio" name="A5" value="depois" /><div class="opcao-corpo"><div class="opcao-titulo">B · Depois, em rodada separada</div><div class="opcao-just">Por agora, "configuração" = o carro inteiro. Pontos dinâmicos vinculados ao carro. Cadastro de config entra depois — quando entrar, os dados antigos viram "Configuração inicial" daquele carro.</div></div></label>
+      <label class="opcao"><input type="radio" name="A5" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">C · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="A5"><label class="bloco">Sua opção pra (1.5)</label><textarea rows="2" data-outra-texto="A5"></textarea></div>
+  </div>
+
+  <!-- ═══════════════════ BLOCO 2 ═══════════════════ -->
+  <div class="bloco-titulo">Bloco 2 · Cadastro das faixas geográficas (3 perguntas)</div>
+
+  <div class="decisao" data-id="B1">
+    <h2><span class="decisao-num">2.1</span> Editor visual no aplicativo ou eu cadastro pra Brasília?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="B1" value="eu-cadastro" /><div class="opcao-corpo"><div class="opcao-titulo">A · Eu cadastro Brasília pra você (você revisa e ajusta) <span class="recomendado">Recomendado</span></div><div class="opcao-just">Eu marco entrada/saída/ápice dos 8 trechos com base no traçado oficial. Você abre a tela e ajusta se quiser (clicar e arrastar). Editor visual mais simples — só pra ajuste fino.</div></div></label>
+      <label class="opcao"><input type="radio" name="B1" value="editor-completo" /><div class="opcao-corpo"><div class="opcao-titulo">B · Editor visual completo no aplicativo (você desenha do zero)</div><div class="opcao-just">Mais flexível pra autódromos novos. Mais código pra construir.</div></div></label>
+      <label class="opcao"><input type="radio" name="B1" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">C · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="B1"><label class="bloco">Sua opção pra (2.1)</label><textarea rows="2" data-outra-texto="B1"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="B2">
+    <h2><span class="decisao-num">2.2</span> Trechos que NÃO são curva (retas, transições) — têm faixas?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="B2" value="so-curvas" /><div class="opcao-corpo"><div class="opcao-titulo">A · Só curvas têm entrada/saída/ápice <span class="recomendado">Recomendado</span></div><div class="opcao-just">Retas e transições mostram só velocidade máxima atingida. Faz sentido — reta não tem ápice.</div></div></label>
+      <label class="opcao"><input type="radio" name="B2" value="todos" /><div class="opcao-corpo"><div class="opcao-titulo">B · Todos os trechos têm faixas (mesmo retas)</div><div class="opcao-just">"Entrada da reta" e "saída da reta" servem pra marcar onde começou/terminou a aceleração máxima.</div></div></label>
+      <label class="opcao"><input type="radio" name="B2" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">C · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="B2"><label class="bloco">Sua opção pra (2.2)</label><textarea rows="2" data-outra-texto="B2"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="B3">
+    <h2><span class="decisao-num">2.3</span> Múltiplos ápices na mesma curva — quantos no máximo?</h2>
+    <p class="ajuda">Você falou que algumas curvas têm mais de 1 ápice.</p>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="B3" value="ate-2" /><div class="opcao-corpo"><div class="opcao-titulo">A · Até 2 (S, esses) <span class="recomendado">Recomendado</span></div><div class="opcao-just">Cobre 99% dos casos. Esses (S) têm 2 ápices.</div></div></label>
+      <label class="opcao"><input type="radio" name="B3" value="ate-3" /><div class="opcao-corpo"><div class="opcao-titulo">B · Até 3 (caso raro)</div></div></label>
+      <label class="opcao"><input type="radio" name="B3" value="livre" /><div class="opcao-corpo"><div class="opcao-titulo">C · Livre (sem limite)</div></div></label>
+      <label class="opcao"><input type="radio" name="B3" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">D · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="B3"><label class="bloco">Sua opção pra (2.3)</label><textarea rows="2" data-outra-texto="B3"></textarea></div>
+  </div>
+
+  <!-- ═══════════════════ BLOCO 3 ═══════════════════ -->
+  <div class="bloco-titulo">Bloco 3 · Recordes e contexto piloto/time (4 perguntas)</div>
+
+  <div class="decisao" data-id="C1">
+    <h2><span class="decisao-num">3.1</span> "Recorde do time" — quem entra?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="C1" value="time-todo" /><div class="opcao-corpo"><div class="opcao-titulo">A · Melhor de TODOS os pilotos do time, qualquer carro <span class="recomendado">Recomendado</span></div><div class="opcao-just">Recorde absoluto do time naquele autódromo. Ex.: "1:42.5 — Beto com Subaru".</div></div></label>
+      <label class="opcao"><input type="radio" name="C1" value="so-eu" /><div class="opcao-corpo"><div class="opcao-titulo">B · Só do piloto logado (cada um vê o seu)</div><div class="opcao-just">Mais individual. Cada piloto vê seu próprio recorde como "recorde principal".</div></div></label>
+      <label class="opcao"><input type="radio" name="C1" value="ambos" /><div class="opcao-corpo"><div class="opcao-titulo">C · Mostra os dois ("Recorde do time" + "Meu recorde")</div></div></label>
+      <label class="opcao"><input type="radio" name="C1" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">D · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="C1"><label class="bloco">Sua opção pra (3.1)</label><textarea rows="2" data-outra-texto="C1"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="C2">
+    <h2><span class="decisao-num">3.2</span> Mostra nome do piloto e do carro junto ao recorde?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="C2" value="piloto-carro" /><div class="opcao-corpo"><div class="opcao-titulo">A · Sim: "1:42.5 · Flávio · Celta · 12/05/2026" <span class="recomendado">Recomendado</span></div><div class="opcao-just">Contexto completo. Bom pra histórico e comparação.</div></div></label>
+      <label class="opcao"><input type="radio" name="C2" value="so-tempo" /><div class="opcao-corpo"><div class="opcao-titulo">B · Não, só o tempo</div><div class="opcao-just">Mais limpo visualmente.</div></div></label>
+      <label class="opcao"><input type="radio" name="C2" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">C · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="C2"><label class="bloco">Sua opção pra (3.2)</label><textarea rows="2" data-outra-texto="C2"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="C3">
+    <h2><span class="decisao-num">3.3</span> Recordes POR TRECHO também (não só volta inteira)?</h2>
+    <p class="ajuda">Ex.: "Melhor V-min na Curva 7 — Flávio · Celta · 71 km/h". Útil pra ver onde cada um se destaca.</p>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="C3" value="sim" /><div class="opcao-corpo"><div class="opcao-titulo">A · Sim, recordes por trecho também <span class="recomendado">Recomendado</span></div><div class="opcao-just">Bom pra debug por curva. "Por que minha melhor volta é pior se meu V-min da curva 3 é o melhor?"</div></div></label>
+      <label class="opcao"><input type="radio" name="C3" value="nao" /><div class="opcao-corpo"><div class="opcao-titulo">B · Não, só recorde da volta inteira</div><div class="opcao-just">Mais simples.</div></div></label>
+      <label class="opcao"><input type="radio" name="C3" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">C · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="C3"><label class="bloco">Sua opção pra (3.3)</label><textarea rows="2" data-outra-texto="C3"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="C4">
+    <h2><span class="decisao-num">3.4</span> "Km rodados pelo piloto naquele autódromo" — como contar?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="C4" value="extensao-x-voltas" /><div class="opcao-corpo"><div class="opcao-titulo">A · Extensão da pista × número de voltas registradas <span class="recomendado">Recomendado</span></div><div class="opcao-just">Brasília tem ~3,1 km. Se você fez 50 voltas, são 155 km. Cálculo simples e estável.</div></div></label>
+      <label class="opcao"><input type="radio" name="C4" value="gps-real" /><div class="opcao-corpo"><div class="opcao-titulo">B · Soma do que o GPS marcou em cada stint</div><div class="opcao-just">Mais "real" (inclui voltas parciais, abandonos). Mas depende de o GPS estar funcionando perfeitamente.</div></div></label>
+      <label class="opcao"><input type="radio" name="C4" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">C · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="C4"><label class="bloco">Sua opção pra (3.4)</label><textarea rows="2" data-outra-texto="C4"></textarea></div>
+  </div>
+
+  <!-- ═══════════════════ BLOCO 4 ═══════════════════ -->
+  <div class="bloco-titulo">Bloco 4 · Mapa visual e agrupamento de trechos (3 perguntas)</div>
+
+  <div class="decisao" data-id="D1">
+    <h2><span class="decisao-num">4.1</span> Mapa visual do autódromo na tela detalhe?</h2>
+    <p class="ajuda">O traçado de Brasília já existe (é o mesmo do cockpit). Posso mostrá-lo aqui também.</p>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="D1" value="mapa-no-topo" /><div class="opcao-corpo"><div class="opcao-titulo">A · Mapa no topo da tela do autódromo, com os trechos numerados <span class="recomendado">Recomendado</span></div><div class="opcao-just">Toca num número no mapa → vai pro trecho. Toca num trecho da lista → destaca no mapa. Mais imersivo.</div></div></label>
+      <label class="opcao"><input type="radio" name="D1" value="lista-textual" /><div class="opcao-corpo"><div class="opcao-titulo">B · Só lista textual (igual hoje), sem mapa</div></div></label>
+      <label class="opcao"><input type="radio" name="D1" value="mapa-escondido" /><div class="opcao-corpo"><div class="opcao-titulo">C · Mapa escondido, botão "ver mapa" abre em tela cheia</div></div></label>
+      <label class="opcao"><input type="radio" name="D1" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">D · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="D1"><label class="bloco">Sua opção pra (4.1)</label><textarea rows="2" data-outra-texto="D1"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="D2">
+    <h2><span class="decisao-num">4.2</span> Continua agrupando trechos por Parcial?</h2>
+    <p class="ajuda">Hoje: "Parcial 1 · Saída do box → Curva 1, Mergulho da Bruxa, Curva 2 / Parcial 2 · Junção → ...".</p>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="D2" value="parcial" /><div class="opcao-corpo"><div class="opcao-titulo">A · Continua agrupado por parcial <span class="recomendado">Recomendado</span></div><div class="opcao-just">Tempos parciais são úteis pra entender setores fortes/fracos.</div></div></label>
+      <label class="opcao"><input type="radio" name="D2" value="plano" /><div class="opcao-corpo"><div class="opcao-titulo">B · Lista plana ordenada por sequência da volta</div><div class="opcao-just">Mais simples. Perde a info de qual parcial.</div></div></label>
+      <label class="opcao"><input type="radio" name="D2" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">C · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="D2"><label class="bloco">Sua opção pra (4.2)</label><textarea rows="2" data-outra-texto="D2"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="D3">
+    <h2><span class="decisao-num">4.3</span> Trecho aberto (detalhe da curva) — desenho ou ficha?</h2>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="D3" value="desenho" /><div class="opcao-corpo"><div class="opcao-titulo">A · Desenho do trecho com os 6 pontos marcados visualmente <span class="recomendado">Recomendado</span></div><div class="opcao-just">Imagem vale por mil palavras. Entrada/saída como faixas coloridas, V-min/frenagem/PAce/ápice como pontos com cor diferente.</div></div></label>
+      <label class="opcao"><input type="radio" name="D3" value="ficha" /><div class="opcao-corpo"><div class="opcao-titulo">B · Ficha numérica (lista dos 6 pontos com valores)</div><div class="opcao-just">Mais densa em informação rápida. Sem visualização espacial.</div></div></label>
+      <label class="opcao"><input type="radio" name="D3" value="ambos" /><div class="opcao-corpo"><div class="opcao-titulo">C · Desenho em cima + ficha embaixo</div></div></label>
+      <label class="opcao"><input type="radio" name="D3" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">D · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="D3"><label class="bloco">Sua opção pra (4.3)</label><textarea rows="2" data-outra-texto="D3"></textarea></div>
+  </div>
+
+  <!-- ═══════════════════ BLOCO 5 ═══════════════════ -->
+  <div class="bloco-titulo">Bloco 5 · Cálculo dos pontos dinâmicos (2 perguntas)</div>
+
+  <div class="decisao" data-id="E1">
+    <h2><span class="decisao-num">5.1</span> "Melhor passagem no trecho" — qual referência?</h2>
+    <p class="ajuda">Pode dar diferente:</p>
+    <p class="ajuda">Ex.: melhor volta = 1:42 (Curva 3 com V-min=68km/h). Mas teve outra volta de 1:43 onde V-min da Curva 3 foi 72km/h. Qual usa pros pontos dinâmicos da Curva 3?</p>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="E1" value="melhor-trecho" /><div class="opcao-corpo"><div class="opcao-titulo">A · Melhor passagem DAQUELE TRECHO específico (não da volta inteira) <span class="recomendado">Recomendado</span></div><div class="opcao-just">Cada trecho usa sua melhor passagem (menor tempo no trecho). Mais útil pra ver "minha curva 3 melhor é V-min 72". Pode ser de voltas diferentes.</div></div></label>
+      <label class="opcao"><input type="radio" name="E1" value="melhor-volta" /><div class="opcao-corpo"><div class="opcao-titulo">B · Da melhor volta inteira (tempo total)</div><div class="opcao-just">"Tudo da minha melhor volta". Mais coerente como referência única.</div></div></label>
+      <label class="opcao"><input type="radio" name="E1" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">C · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="E1"><label class="bloco">Sua opção pra (5.1)</label><textarea rows="2" data-outra-texto="E1"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="E2">
+    <h2><span class="decisao-num">5.2</span> Quantas voltas mínimas pra ativar o cálculo dos pontos dinâmicos?</h2>
+    <p class="ajuda">Pra não mostrar pontos baseados em 1 volta esquisita.</p>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="E2" value="1-volta" /><div class="opcao-corpo"><div class="opcao-titulo">A · 1 volta basta — mostra logo <span class="recomendado">Recomendado</span></div><div class="opcao-just">Você prefere ver algo a esperar. Cabe um aviso "baseado em só 1 volta" embaixo.</div></div></label>
+      <label class="opcao"><input type="radio" name="E2" value="3-voltas" /><div class="opcao-corpo"><div class="opcao-titulo">B · Mínimo 3 voltas pra mostrar</div><div class="opcao-just">Mais confiável. Mas faz "Sem dados ainda" aparecer mais tempo.</div></div></label>
+      <label class="opcao"><input type="radio" name="E2" value="5-voltas" /><div class="opcao-corpo"><div class="opcao-titulo">C · Mínimo 5 voltas</div></div></label>
+      <label class="opcao"><input type="radio" name="E2" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">D · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="E2"><label class="bloco">Sua opção pra (5.2)</label><textarea rows="2" data-outra-texto="E2"></textarea></div>
+  </div>
+
+  <!-- ═══════════════════ BLOCO 6 ═══════════════════ -->
+  <div class="bloco-titulo">Bloco 6 · Escopo geral (2 perguntas)</div>
+
+  <div class="decisao" data-id="F1">
+    <h2><span class="decisao-num">6.1</span> Cadastro de NOVO autódromo (criar/editar/apagar) — entra agora ou depois?</h2>
+    <p class="ajuda">Hoje só Brasília existe (cadastrada no código). Pra você cadastrar um autódromo novo (ex.: Velo Città) precisa do cadastro.</p>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="F1" value="depois" /><div class="opcao-corpo"><div class="opcao-titulo">A · Depois, em rodada separada <span class="recomendado">Recomendado</span></div><div class="opcao-just">Brasília chega — quando precisar de mais um autódromo, cadastrei outra rodada com o editor visual completo (incluindo desenhar a pista no GPS). Muito trabalho pra incluir agora.</div></div></label>
+      <label class="opcao"><input type="radio" name="F1" value="ja-agora" /><div class="opcao-corpo"><div class="opcao-titulo">B · Já agora, junto</div><div class="opcao-just">Aumenta muito o escopo — desenhar pista nova precisa de UI complexa.</div></div></label>
+      <label class="opcao"><input type="radio" name="F1" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">C · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="F1"><label class="bloco">Sua opção pra (6.1)</label><textarea rows="2" data-outra-texto="F1"></textarea></div>
+  </div>
+
+  <div class="decisao" data-id="F2">
+    <h2><span class="decisao-num">6.2</span> Ordem de entrega — sem parar ou aprovação por onda?</h2>
+    <p class="ajuda">São 4 ondas: (1) lista de autódromos + tela do autódromo, (2) Configuração do carro, (3) Pontos geográficos do trecho, (4) Cálculo dos pontos dinâmicos.</p>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="F2" value="sem-parar" /><div class="opcao-corpo"><div class="opcao-titulo">A · Sem parar até o fim (modo "go") <span class="recomendado">Recomendado</span></div><div class="opcao-just">Igual ao "vai. sem parar. até o fim" da rodada C do cockpit + função Estoque. Eu corro as 4 ondas. No fim mando um relatório único.</div></div></label>
+      <label class="opcao"><input type="radio" name="F2" value="por-onda" /><div class="opcao-corpo"><div class="opcao-titulo">B · Aprovação onda por onda</div><div class="opcao-just">Eu termino onda 1, você confere no aplicativo, aprova, e eu começo a 2. Mais lento, menos risco de fazer várias ondas em direção errada.</div></div></label>
+      <label class="opcao"><input type="radio" name="F2" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">C · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="F2"><label class="bloco">Sua opção pra (6.2)</label><textarea rows="2" data-outra-texto="F2"></textarea></div>
+  </div>
+
+  <div class="decisao">
+    <h2>Comentário geral (opcional)</h2>
+    <p class="ajuda">Se eu errei algum bloco, descrevo aqui. Ou qualquer ressalva.</p>
+    <textarea rows="4" id="comentario" placeholder="Ex.: configuração tem que ter X também / a faixa do ápice precisa ser maior / não esqueça de Y..."></textarea>
+  </div>
+
+  <div class="rodape">
+    <div class="progresso" id="progresso">0 de 19 decisões respondidas</div>
+    <div class="acoes" style="margin-top: 10px;">
+      <button type="button" id="exportar">Copiar respostas pro Claude</button>
+      <button type="button" class="secundario" id="baixar">Baixar arquivo</button>
+      <button type="button" class="secundario" id="limpar">Limpar tudo</button>
+      <span class="copiar-feedback" id="copiar-feedback">✓ copiado</span>
+    </div>
+    <div class="status" id="status"></div>
+    <div class="saida" id="saida" style="display:none;"></div>
+  </div>
+</div>
+
+<script>
+  const PERGUNTA_ID = "20260517-115500-autodromos-aprofundamento";
+  const PROJETO = "P1 Fast";
+  const STORAGE_KEY = "padrao-flavio:" + PERGUNTA_ID;
+  const DECISOES = ["A1","A2","A3","A4","A5","B1","B2","B3","C1","C2","C3","C4","D1","D2","D3","E1","E2","F1","F2"];
+
+  function elOutra(id) { return document.querySelector('[data-outra-de="' + id + '"]'); }
+  function textoOutra(id) { return document.querySelector('[data-outra-texto="' + id + '"]'); }
+
+  function snapshot() {
+    const out = { id: PERGUNTA_ID, projeto: PROJETO, respondido_em: new Date().toISOString(), respostas: {}, comentario: "" };
+    DECISOES.forEach(d => {
+      const sel = document.querySelector('input[name="' + d + '"]:checked');
+      if (!sel) { out.respostas[d] = { escolha: null }; return; }
+      const reg = { escolha: sel.value };
+      if (sel.value === "outra") reg.texto = (textoOutra(d).value || "").trim();
+      out.respostas[d] = reg;
+    });
+    out.comentario = (document.getElementById("comentario").value || "").trim();
+    return out;
+  }
+  function progresso() {
+    const respondidas = DECISOES.filter(d => document.querySelector('input[name="' + d + '"]:checked')).length;
+    document.getElementById("progresso").textContent = respondidas + " de 19 decisões respondidas";
+  }
+  function salvar() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot())); } catch(e){} progresso(); }
+  function carregar() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY); if (!raw) return;
+      const d = JSON.parse(raw);
+      if (d.respostas) {
+        Object.keys(d.respostas).forEach(k => {
+          const r = d.respostas[k]; if (!r || !r.escolha) return;
+          const radio = document.querySelector('input[name="' + k + '"][value="' + r.escolha + '"]');
+          if (radio) { radio.checked = true; if (r.escolha === "outra") { elOutra(k).classList.add("ativo"); textoOutra(k).value = r.texto || ""; } }
+        });
+      }
+      if (d.comentario) document.getElementById("comentario").value = d.comentario;
+    } catch(e){}
+    progresso();
+  }
+
+  document.querySelectorAll('input[type="radio"]').forEach(r => r.addEventListener("change", () => {
+    const id = r.name; const wrap = elOutra(id);
+    if (r.value === "outra") wrap.classList.add("ativo"); else wrap.classList.remove("ativo");
+    salvar();
+  }));
+  document.querySelectorAll("textarea").forEach(t => t.addEventListener("input", salvar));
+
+  document.getElementById("exportar").addEventListener("click", async () => {
+    const json = JSON.stringify(snapshot(), null, 2);
+    document.getElementById("saida").textContent = json;
+    document.getElementById("saida").style.display = "block";
+    try {
+      await navigator.clipboard.writeText(json);
+      const fb = document.getElementById("copiar-feedback");
+      fb.classList.add("visivel"); setTimeout(() => fb.classList.remove("visivel"), 2200);
+      document.getElementById("status").textContent = "Cole no chat com o Claude e diga 'fiz'.";
+    } catch(e) { document.getElementById("status").textContent = "Selecione o texto abaixo e copie manualmente."; }
+  });
+  document.getElementById("baixar").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(snapshot(), null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = PERGUNTA_ID + ".json"; a.click();
+    URL.revokeObjectURL(a.href);
+  });
+  document.getElementById("limpar").addEventListener("click", () => {
+    if (!confirm("Apagar todas as respostas?")) return;
+    try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+    document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+    document.querySelectorAll("textarea").forEach(t => t.value = "");
+    document.querySelectorAll(".outra-wrap").forEach(w => w.classList.remove("ativo"));
+    document.getElementById("saida").style.display = "none";
+    document.getElementById("status").textContent = "Limpo.";
+    progresso();
+  });
+  carregar();
+</script>
+</body>
+</html>

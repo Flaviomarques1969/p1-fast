@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Decisão E — Áreas grandes do carro</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --fg:#e8e8e8; --muted:#9aa0a6; --accent:#4f8cff; --ok:#22c55e; --border:#2a2f3a; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--fg); padding:24px; line-height:1.45; }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  .card { background:var(--card); border-radius:12px; padding:24px; box-shadow: 0 8px 32px rgba(0,0,0,.35); }
+  h1 { font-size: 1.25rem; margin: 0 0 4px; }
+  .meta { color: var(--muted); font-size: .85rem; margin-bottom: 16px; }
+  .pergunta { font-size: 1.05rem; line-height: 1.45; margin: 0 0 8px; }
+  .ajuda { color: var(--muted); font-size: .92rem; margin: 0 0 18px; }
+  .opcoes { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .opcao { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; transition: all .15s; }
+  .opcao:hover { border-color: var(--accent); }
+  .opcao input { margin-top: 4px; flex-shrink: 0; }
+  .opcao-corpo { flex: 1; }
+  .opcao-titulo { font-weight: 600; }
+  .opcao-just { color: var(--muted); font-size: .9rem; margin-top: 4px; }
+  .lista-areas { color: var(--muted); font-size: .88rem; margin-top: 6px; font-style: italic; }
+  .recomendado { display: inline-block; background: rgba(34,197,94,.15); color: var(--ok); padding: 1px 8px; border-radius: 999px; font-size: .72rem; margin-left: 8px; vertical-align: middle; }
+  textarea { width: 100%; background:#0f1115; color:var(--fg); border:1px solid var(--border); border-radius: 8px; padding: 10px; resize: vertical; font-family: inherit; font-size: .95rem; }
+  label.bloco { display: block; margin: 14px 0 6px; color: var(--muted); font-size: .85rem; }
+  .outra-wrap { display: none; }
+  .outra-wrap.ativo { display: block; }
+  .acoes { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+  button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 12px 18px; font-size: 1rem; cursor: pointer; font-weight: 600; }
+  button.secundario { background: transparent; border: 1px solid var(--border); color: var(--fg); font-weight: 400; }
+  .status { margin-top: 12px; color: var(--muted); font-size: .85rem; }
+  .saida { background:#0a0c10; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: ui-monospace, monospace; font-size: .82rem; white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow: auto; margin-top: 10px; }
+  .copiar-feedback { color: var(--ok); font-size: .85rem; margin-left: 8px; display: none; }
+  .copiar-feedback.visivel { display: inline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Decisão E · Áreas grandes do carro</h1>
+    <div class="meta">ID: <code>20260517-013100-areas-do-carro</code></div>
+    <p class="pergunta">Como o aplicativo organiza as áreas que você usa pra agrupar as peças (motor, câmbio, elétrica, etc.)?</p>
+    <p class="ajuda">Toda peça precisa de uma área pra organizar a lista e a busca. Essa decisão fecha como você escolhe a área quando cadastra.</p>
+
+    <form id="form">
+      <div class="opcoes">
+        <label class="opcao">
+          <input type="radio" name="E" value="lista-fixa-padrao" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">E1 · Lista fixa que eu te entrego pronta <span class="recomendado">Recomendado</span></div>
+            <div class="opcao-just">Você não cadastra nada — só escolhe a área quando cadastra a peça. Se faltar área, eu adiciono na lista padrão.</div>
+            <div class="lista-areas">Sugestão: Motor · Câmbio · Embreagem · Suspensão · Freios · Direção · Elétrica · Refrigeração · Escape · Carroceria · Pneus · Rodas · Ferramentas de manutenção · Acessórios</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="E" value="livres-cadastraveis" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">E2 · Você cadastra as áreas livremente</div>
+            <div class="opcao-just">Máxima flexibilidade. Risco: você usar nome diferente pra mesma área em momentos diferentes ("freios" vs "sistema de freios") e a busca por área ficar bagunçada.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="E" value="hibrido" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">E3 · Lista fixa padrão · com botão "adicionar área nova" se faltar</div>
+            <div class="opcao-just">Pronta na maior parte do tempo, com escape pra casos especiais.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="E" value="outra" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">E4 · Outra</div>
+            <div class="opcao-just">Descreva no campo abaixo.</div>
+          </div>
+        </label>
+      </div>
+
+      <div class="outra-wrap" id="outra-wrap">
+        <label class="bloco" for="outra-texto">Sua opção</label>
+        <textarea id="outra-texto" rows="2" placeholder="Descreva..."></textarea>
+      </div>
+
+      <label class="bloco" for="comentario">Comentário (opcional)</label>
+      <textarea id="comentario" rows="3" placeholder="Áreas que faltam na lista, prioridades..."></textarea>
+
+      <div class="acoes">
+        <button type="button" id="exportar">Copiar resposta pro Claude</button>
+        <button type="button" class="secundario" id="limpar">Limpar</button>
+        <span class="copiar-feedback" id="copiar-feedback">✓ copiado</span>
+      </div>
+      <div class="status" id="status"></div>
+      <div class="saida" id="saida" style="display:none;"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const PERGUNTA_ID = "20260517-013100-areas-do-carro";
+  const STORAGE_KEY = "padrao-flavio:" + PERGUNTA_ID;
+
+  function snapshot() {
+    const sel = document.querySelector('input[name="E"]:checked');
+    const out = { id: PERGUNTA_ID, projeto: "P1 Fast", respondido_em: new Date().toISOString(), respostas: { E: { escolha: sel ? sel.value : null } }, comentario: (document.getElementById("comentario").value || "").trim() };
+    if (sel && sel.value === "outra") out.respostas.E.texto = (document.getElementById("outra-texto").value || "").trim();
+    return out;
+  }
+  function salvar(){ try { localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot())); } catch(e){} }
+  function carregar(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY); if (!raw) return;
+      const d = JSON.parse(raw);
+      const esc = d.respostas && d.respostas.E && d.respostas.E.escolha;
+      if (esc) { const r = document.querySelector('input[name="E"][value="' + esc + '"]'); if (r) { r.checked = true; if (esc === "outra") { document.getElementById("outra-wrap").classList.add("ativo"); document.getElementById("outra-texto").value = (d.respostas.E.texto || ""); } } }
+      if (d.comentario) document.getElementById("comentario").value = d.comentario;
+    } catch(e){}
+  }
+
+  document.querySelectorAll('input[type="radio"]').forEach(r => r.addEventListener("change", () => {
+    if (r.value === "outra") document.getElementById("outra-wrap").classList.add("ativo");
+    else document.getElementById("outra-wrap").classList.remove("ativo");
+    salvar();
+  }));
+  document.querySelectorAll("textarea").forEach(t => t.addEventListener("input", salvar));
+
+  document.getElementById("exportar").addEventListener("click", async () => {
+    const json = JSON.stringify(snapshot(), null, 2);
+    document.getElementById("saida").textContent = json;
+    document.getElementById("saida").style.display = "block";
+    try {
+      await navigator.clipboard.writeText(json);
+      const fb = document.getElementById("copiar-feedback");
+      fb.classList.add("visivel");
+      setTimeout(() => fb.classList.remove("visivel"), 2200);
+      document.getElementById("status").textContent = "Cole no chat com o Claude e diga 'fiz'.";
+    } catch(e) { document.getElementById("status").textContent = "Selecione o texto abaixo e copie manualmente."; }
+  });
+  document.getElementById("limpar").addEventListener("click", () => {
+    if (!confirm("Apagar resposta?")) return;
+    try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+    document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+    document.querySelectorAll("textarea").forEach(t => t.value = "");
+    document.getElementById("outra-wrap").classList.remove("ativo");
+    document.getElementById("saida").style.display = "none";
+    document.getElementById("status").textContent = "Limpo.";
+  });
+  carregar();
+</script>
+</body>
+</html>

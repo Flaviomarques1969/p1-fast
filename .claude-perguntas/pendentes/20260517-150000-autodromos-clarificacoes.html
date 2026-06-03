@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Autódromos · 3 clarificações antes do "vai"</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --card-2:#1d212a; --fg:#e8e8e8; --muted:#9aa0a6; --faint:#6b7280; --accent:#4f8cff; --ok:#22c55e; --warn:#f59e0b; --erro:#ef4444; --border:#2a2f3a; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--fg); padding:24px; line-height:1.45; }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  .meta { color: var(--muted); font-size: .85rem; margin-bottom: 24px; }
+  h1 { font-size: 1.5rem; margin: 0 0 6px; }
+  .ajuda { color: var(--muted); font-size: .92rem; margin: 0 0 14px; }
+  .decisao { background: var(--card); border-radius: 12px; padding: 22px; margin: 18px 0; box-shadow: 0 4px 16px rgba(0,0,0,.2); }
+  .decisao-num { display: inline-block; background: var(--accent); color:#fff; font-weight:700; min-width: 32px; height: 24px; line-height: 24px; text-align: center; border-radius: 6px; padding: 0 6px; margin-right: 8px; font-size: .8rem; }
+  .decisao h2 { display: flex; align-items: center; margin: 0 0 10px; font-size: 1.1rem; }
+  .contexto { background: var(--card-2); border-left: 3px solid var(--warn); padding: 10px 14px; border-radius: 6px; margin-bottom: 14px; font-size: .9rem; color: var(--fg); }
+  .opcoes { display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; }
+  .opcao { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: all .12s; }
+  .opcao:hover { border-color: var(--accent); }
+  .opcao input { margin-top: 4px; flex-shrink: 0; }
+  .opcao-corpo { flex: 1; }
+  .opcao-titulo { font-weight: 600; font-size: .95rem; }
+  .opcao-just { color: var(--muted); font-size: .85rem; margin-top: 4px; }
+  .recomendado { display: inline-block; background: rgba(34,197,94,.15); color: var(--ok); padding: 1px 7px; border-radius: 999px; font-size: .7rem; margin-left: 6px; vertical-align: middle; }
+  textarea, input[type=text] { width: 100%; background:#0f1115; color:var(--fg); border:1px solid var(--border); border-radius: 8px; padding: 10px; resize: vertical; font-family: inherit; font-size: .92rem; }
+  label.bloco { display: block; margin: 10px 0 4px; color: var(--muted); font-size: .82rem; }
+  .outra-wrap { display: none; }
+  .outra-wrap.ativo { display: block; }
+  .rodape { position: sticky; bottom: 0; background: var(--bg); padding: 16px 0; margin-top: 20px; border-top: 1px solid var(--border); }
+  .acoes { display: flex; gap: 10px; flex-wrap: wrap; }
+  button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 12px 18px; font-size: 1rem; cursor: pointer; font-weight: 600; }
+  button.secundario { background: transparent; border: 1px solid var(--border); color: var(--fg); font-weight: 400; }
+  .status { margin-top: 12px; color: var(--muted); font-size: .85rem; }
+  .saida { background:#0a0c10; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: ui-monospace, monospace; font-size: .8rem; white-space: pre-wrap; word-break: break-all; max-height: 240px; overflow: auto; margin-top: 10px; }
+  .copiar-feedback { color: var(--ok); font-size: .85rem; margin-left: 8px; display: none; }
+  .copiar-feedback.visivel { display: inline; }
+  .progresso { color: var(--muted); font-size: .85rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="meta">ID: <code>20260517-150000-autodromos-clarificacoes</code> · projeto: P1 Fast</div>
+  <h1>3 clarificações antes do "vai"</h1>
+  <p class="ajuda">Recebi suas 19 respostas. Tem 3 pontos que ainda preciso confirmar antes de começar a executar sem parar. Responde aqui e eu rodo as 5 ondas.</p>
+
+  <!-- ═══════════════════ Q1 — Config ativa única vs múltiplas ═══════════════════ -->
+  <div class="decisao" data-id="Q1">
+    <h2><span class="decisao-num">Q1</span> Múltiplas configurações por carro — qual é "a do momento"?</h2>
+    <div class="contexto">
+      No A2 você escolheu "1 configuração marcada como ativa por carro". No A3 escreveu que "podemos ter várias configurações ativas no carro e na hora de correr você escolhe qual quer usar". Aparentemente conflita. Quero confirmar o desenho final.
+    </div>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="Q1" value="ativa-trocavel" /><div class="opcao-corpo"><div class="opcao-titulo">A · Várias configurações cadastradas, 1 marcada como "atual". A troca pode ser feita pela tela do carro OU antes de cada stint. <span class="recomendado">Recomendado</span></div><div class="opcao-just">O carro tem N configurações salvas (nenhuma some). Sempre tem 1 marcada como "configuração atual". O piloto troca pela tela do carro OU antes de iniciar o stint (mesmo botão de troca em 2 lugares). Toda volta gravada carrega o ID da configuração que estava marcada como atual no momento da gravação.</div></div></label>
+      <label class="opcao"><input type="radio" name="Q1" value="escolhe-no-stint" /><div class="opcao-corpo"><div class="opcao-titulo">B · Várias configurações cadastradas. SEMPRE escolhe a configuração antes de iniciar o stint.</div><div class="opcao-just">Não tem "configuração atual marcada". Toda vez que vai começar um stint, escolhe. Mais explícito, mais 1 toque por stint.</div></div></label>
+      <label class="opcao"><input type="radio" name="Q1" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">C · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="Q1"><label class="bloco">Sua opção pra Q1</label><textarea rows="2" data-outra-texto="Q1"></textarea></div>
+  </div>
+
+  <!-- ═══════════════════ Q2 — Detalhe do trecho ═══════════════════ -->
+  <div class="decisao" data-id="Q2">
+    <h2><span class="decisao-num">Q2</span> Ficha do trecho — desenho ou só números?</h2>
+    <div class="contexto">
+      Quando você toca num trecho no mapa, abre o detalhe daquele trecho. No D3 você explicou a definição de trecho mas não me disse se quer ver desenho ou só números. Como o mapa da pista inteira já abre antes (botão "Abrir mapa"), o detalhe do trecho pode ser textual.
+    </div>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="Q2" value="ficha-textual" /><div class="opcao-corpo"><div class="opcao-titulo">A · Ficha textual com os 6 elementos numerados <span class="recomendado">Recomendado</span></div><div class="opcao-just">Sem desenho do trecho específico. 6 linhas: entrada, saída, ápice(s), V-min, ponto de frenagem, PAce. Cada linha mostra o valor (km/h, distância da curva, etc.) + recorde por trecho. Mais simples e cabe na tela.</div></div></label>
+      <label class="opcao"><input type="radio" name="Q2" value="desenho-trecho" /><div class="opcao-corpo"><div class="opcao-titulo">B · Desenho ampliado SÓ do trecho + ficha embaixo</div><div class="opcao-just">Recorte do mapa só naquela curva, com os 6 pontos marcados visualmente, e a ficha numérica embaixo. Mais bonito, mais código pra fazer.</div></div></label>
+      <label class="opcao"><input type="radio" name="Q2" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">C · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="Q2"><label class="bloco">Sua opção pra Q2</label><textarea rows="2" data-outra-texto="Q2"></textarea></div>
+  </div>
+
+  <!-- ═══════════════════ Q3 — Km do piloto ═══════════════════ -->
+  <div class="decisao" data-id="Q3">
+    <h2><span class="decisao-num">Q3</span> Km do piloto naquele autódromo — qual número aparece?</h2>
+    <div class="contexto">
+      Você disse "faz o batimento do B com o A pra ver se o B está certo e toca". Interpretei: A = extensão da pista × nº voltas (cálculo seco). B = soma do GPS de cada stint (real). Quero confirmar como mostro.
+    </div>
+    <div class="opcoes">
+      <label class="opcao"><input type="radio" name="Q3" value="gps-validado" /><div class="opcao-corpo"><div class="opcao-titulo">A · Mostro o B (GPS real). Se divergir muito do A, mostro um aviso ao lado. <span class="recomendado">Recomendado</span></div><div class="opcao-just">Bate B contra A internamente. Se a diferença for menor que ~10% mostra só o B (real). Se for maior, mostra "Km medido pelo GPS · pode ter erro · esperado: X" pra você saber que tem algo errado naquela rodagem.</div></div></label>
+      <label class="opcao"><input type="radio" name="Q3" value="dois-numeros" /><div class="opcao-corpo"><div class="opcao-titulo">B · Mostro os dois números lado a lado sempre</div><div class="opcao-just">Ex.: "Km rodado: 142,3 GPS · 155,0 calculado". Sempre transparente.</div></div></label>
+      <label class="opcao"><input type="radio" name="Q3" value="outra" /><div class="opcao-corpo"><div class="opcao-titulo">C · Outra</div></div></label>
+    </div>
+    <div class="outra-wrap" data-outra-de="Q3"><label class="bloco">Sua opção pra Q3</label><textarea rows="2" data-outra-texto="Q3"></textarea></div>
+  </div>
+
+  <div class="decisao">
+    <h2>Comentário geral (opcional)</h2>
+    <textarea rows="3" id="comentario" placeholder="Qualquer ressalva ou item que eu não tenha entendido direito..."></textarea>
+  </div>
+
+  <div class="rodape">
+    <div class="progresso" id="progresso">0 de 3 decisões respondidas</div>
+    <div class="acoes" style="margin-top: 10px;">
+      <button type="button" id="exportar">Copiar respostas pro Claude</button>
+      <button type="button" class="secundario" id="baixar">Baixar arquivo</button>
+      <button type="button" class="secundario" id="limpar">Limpar tudo</button>
+      <span class="copiar-feedback" id="copiar-feedback">✓ copiado</span>
+    </div>
+    <div class="status" id="status"></div>
+    <div class="saida" id="saida" style="display:none;"></div>
+  </div>
+</div>
+
+<script>
+  const PERGUNTA_ID = "20260517-150000-autodromos-clarificacoes";
+  const PROJETO = "P1 Fast";
+  const STORAGE_KEY = "padrao-flavio:" + PERGUNTA_ID;
+  const DECISOES = ["Q1","Q2","Q3"];
+
+  function elOutra(id) { return document.querySelector('[data-outra-de="' + id + '"]'); }
+  function textoOutra(id) { return document.querySelector('[data-outra-texto="' + id + '"]'); }
+
+  function snapshot() {
+    const out = { id: PERGUNTA_ID, projeto: PROJETO, respondido_em: new Date().toISOString(), respostas: {}, comentario: "" };
+    DECISOES.forEach(d => {
+      const sel = document.querySelector('input[name="' + d + '"]:checked');
+      if (!sel) { out.respostas[d] = { escolha: null }; return; }
+      const reg = { escolha: sel.value };
+      if (sel.value === "outra") reg.texto = (textoOutra(d).value || "").trim();
+      out.respostas[d] = reg;
+    });
+    out.comentario = (document.getElementById("comentario").value || "").trim();
+    return out;
+  }
+  function progresso() {
+    const respondidas = DECISOES.filter(d => document.querySelector('input[name="' + d + '"]:checked')).length;
+    document.getElementById("progresso").textContent = respondidas + " de 3 decisões respondidas";
+  }
+  function salvar() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot())); } catch(e){} progresso(); }
+  function carregar() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY); if (!raw) return;
+      const d = JSON.parse(raw);
+      if (d.respostas) {
+        Object.keys(d.respostas).forEach(k => {
+          const r = d.respostas[k]; if (!r || !r.escolha) return;
+          const radio = document.querySelector('input[name="' + k + '"][value="' + r.escolha + '"]');
+          if (radio) { radio.checked = true; if (r.escolha === "outra") { elOutra(k).classList.add("ativo"); textoOutra(k).value = r.texto || ""; } }
+        });
+      }
+      if (d.comentario) document.getElementById("comentario").value = d.comentario;
+    } catch(e){}
+    progresso();
+  }
+
+  document.querySelectorAll('input[type="radio"]').forEach(r => r.addEventListener("change", () => {
+    const id = r.name; const wrap = elOutra(id);
+    if (r.value === "outra") wrap.classList.add("ativo"); else wrap.classList.remove("ativo");
+    salvar();
+  }));
+  document.querySelectorAll("textarea").forEach(t => t.addEventListener("input", salvar));
+
+  document.getElementById("exportar").addEventListener("click", async () => {
+    const json = JSON.stringify(snapshot(), null, 2);
+    document.getElementById("saida").textContent = json;
+    document.getElementById("saida").style.display = "block";
+    try {
+      await navigator.clipboard.writeText(json);
+      const fb = document.getElementById("copiar-feedback");
+      fb.classList.add("visivel"); setTimeout(() => fb.classList.remove("visivel"), 2200);
+      document.getElementById("status").textContent = "Cole no chat com o Claude e diga 'fiz'.";
+    } catch(e) { document.getElementById("status").textContent = "Selecione o texto abaixo e copie manualmente."; }
+  });
+  document.getElementById("baixar").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(snapshot(), null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = PERGUNTA_ID + ".json"; a.click();
+    URL.revokeObjectURL(a.href);
+  });
+  document.getElementById("limpar").addEventListener("click", () => {
+    if (!confirm("Apagar todas as respostas?")) return;
+    try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+    document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+    document.querySelectorAll("textarea").forEach(t => t.value = "");
+    document.querySelectorAll(".outra-wrap").forEach(w => w.classList.remove("ativo"));
+    document.getElementById("saida").style.display = "none";
+    document.getElementById("status").textContent = "Limpo.";
+    progresso();
+  });
+  carregar();
+</script>
+</body>
+</html>

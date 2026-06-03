@@ -26,14 +26,18 @@
 // padrão das demais listas do Sprint 1A.3.
 
 import SwiftUI
-import PhotosUI
-import UIKit
 import P1FastCore
+
+/// Erro lançado quando uma operação de save passa do limite de segundos.
+/// Mensagem usada na UI ("…travou após Xs.").
+struct SaveTimeoutError: LocalizedError {
+    let seconds: Double
+    var errorDescription: String? { "travou após \(Int(seconds))s sem resposta do servidor" }
+}
 
 struct CarroModalView: View {
     @EnvironmentObject private var repo: CarroRepository
     @EnvironmentObject private var pneuRepo: PneuRepository
-    @EnvironmentObject private var manutencaoStore: ManutencaoConsumiveisStore
     let carroId: String
     let initialPneuSheet: Bool
     let onClose: () -> Void
@@ -66,8 +70,6 @@ struct CarroModalView: View {
     @State private var modelo: String = ""
     @State private var categoria: String? = nil
     @State private var corHex: String = CarroPalette.opcoes[1].hex
-    @State private var photoItem: PhotosPickerItem? = nil
-    @State private var fotoCarro: UIImage? = nil
 
     // Setup overrides (14 campos)
     @State private var setup = CarroSetupOverrides.empty
@@ -76,7 +78,9 @@ struct CarroModalView: View {
     @State private var savingError: String?
     @State private var isSaving = false
     @State private var setupAvancadoOpen = false
-    @State private var manutencaoOpen = false
+    // S2 rodada 1 — foto: trocar/remover.
+    @State private var fotoSelecionada: Data?
+    @State private var pedidoRemoverFoto = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -93,23 +97,12 @@ struct CarroModalView: View {
                 onCancel: onClose,
                 onSave: save,
                 saveLabel: "Salvar",
-                canSave: !apelido.isEmpty && !isSaving
+                canSave: !apelido.isEmpty && !isSaving,
+                isSaving: isSaving
             )
         }
         .preferredColorScheme(.dark)
-        .task {
-            await load()
-            fotoCarro = CarroFoto.carregar(carroId: carroId)
-        }
-        .onChange(of: photoItem) { _, novo in
-            Task {
-                if let novo, let data = try? await novo.loadTransferable(type: Data.self),
-                   let img = UIImage(data: data) {
-                    fotoCarro = img
-                    CarroFoto.salvar(carroId: carroId, imagem: img)
-                }
-            }
-        }
+        .task { await load() }
         .alert(
             "Apagar pneu?",
             isPresented: Binding(
@@ -148,19 +141,33 @@ struct CarroModalView: View {
             SetupAvancadoView(carroId: carroId, onClose: { setupAvancadoOpen = false })
                 .environmentObject(repo)
         }
-        .sheet(isPresented: $manutencaoOpen) {
-            NavigationStack {
-                ManutencaoConsumiveisView(carroId: carroId, onClose: { manutencaoOpen = false })
-            }
-            .environmentObject(manutencaoStore)
-            .environmentObject(repo)
-        }
     }
 
     @ViewBuilder
     private var content: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
             header
+
+            if let erro = savingError {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(Color.erro)
+                    Text(erro)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.erro)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color.erro.opacity(0.10))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(Color.erro.opacity(0.6), lineWidth: 1)
+                )
+            }
 
             sectionIdentidade
             sectionPneus
@@ -169,41 +176,7 @@ struct CarroModalView: View {
             sectionFreios
             sectionMotorTransmissao
             sectionPneusCadastrados
-
-            if let erro = savingError {
-                Text(erro)
-                    .font(.captionP1)
-                    .foregroundStyle(Color.erro)
-                    .padding(.horizontal, Spacing.xs)
-            }
         }
-    }
-
-    /// Seção que abre a função Manutenção (consumíveis · modelo
-    /// Checagem ≠ Troca) do carro, em sheet própria.
-    private var sectionManutencao: some View {
-        Button { manutencaoOpen = true } label: {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Manutenção · consumíveis")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Color.text)
-                    Text("Checagem e troca dos 30 itens · pendências e vida das peças")
-                        .font(.system(size: 12))
-                        .foregroundStyle(Color.textMuted)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 0)
-                Text("›")
-                    .font(.system(size: 16, weight: .regular))
-                    .foregroundStyle(Color.textMuted)
-            }
-            .padding(.horizontal, Spacing.md).padding(.vertical, 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).fill(Color.surfaceRaised))
-            .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(Color.border, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
     }
 
     private var header: some View {
@@ -265,36 +238,17 @@ struct CarroModalView: View {
             FormField(label: "Categoria") {
                 CategoriaPicker(selection: $categoria)
             }
-            FormField(label: "Foto do carro", small: "opcional") {
-                HStack(spacing: 12) {
-                    fotoPreview
-                    PhotosPicker(selection: $photoItem, matching: .images) {
-                        Text(fotoCarro == nil ? "Escolher foto" : "Trocar foto")
-                            .font(.system(size: 13, weight: .semibold))
-                            .padding(.horizontal, 14).padding(.vertical, 9)
-                            .foregroundStyle(Color.onAccent)
-                            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.accent))
-                    }
-                    Spacer(minLength: 0)
-                }
+            FormField(label: "Cor") {
+                CorPicker(selection: $corHex)
             }
-        }
-    }
 
-    private var fotoPreview: some View {
-        Group {
-            if let img = fotoCarro {
-                Image(uiImage: img).resizable().scaledToFill()
-            } else {
-                ZStack {
-                    Rectangle().fill(Color.surfaceHover)
-                    Image(systemName: "car.fill").font(.system(size: 18)).foregroundStyle(Color.textFaint)
-                }
-            }
+            FotoCarroSection(
+                fotoUrlAtual: repo.fotoPublicURL(carro?.fotoUrl),
+                carroId: carroId,
+                selectedJpeg: $fotoSelecionada,
+                pedidoRemover: $pedidoRemoverFoto
+            )
         }
-        .frame(width: 64, height: 48)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.border, lineWidth: 1))
     }
 
     private var sectionPneus: some View {
@@ -435,7 +389,11 @@ struct CarroModalView: View {
     }
 
     private func save() {
-        guard !apelido.isEmpty, var current = carro else { return }
+        NSLog("[CarroModalView.save] disparado — carroId=\(carroId), foto=\(fotoSelecionada?.count ?? 0)B, remover=\(pedidoRemoverFoto)")
+        guard !apelido.isEmpty, var current = carro else {
+            NSLog("[CarroModalView.save] guard falhou — apelido='\(apelido)' carro=\(carro == nil ? "nil" : "ok")")
+            return
+        }
         isSaving = true
         savingError = nil
         current.apelido = apelido.trimmingCharacters(in: .whitespaces)
@@ -443,16 +401,69 @@ struct CarroModalView: View {
         current.categoria = categoria
         current.cor = corHex
         let json = setup.encodedJSON()
+        let jpegPraSubir = fotoSelecionada
+        let querRemoverFoto = pedidoRemoverFoto
         Task {
             do {
+                NSLog("[CarroModalView.save] 1) repo.update")
                 try await repo.update(carro: current)
+                NSLog("[CarroModalView.save] 2) repo.saveOverrides")
                 try await repo.saveOverrides(carroId: carroId, overridesJSON: json)
-                isSaving = false
-                onClose()
+                if querRemoverFoto && jpegPraSubir == nil {
+                    NSLog("[CarroModalView.save] 3) repo.removeFoto")
+                    do {
+                        try await withTimeoutS(20) { try await repo.removeFoto(carroId: carroId) }
+                    } catch {
+                        NSLog("[CarroModalView.save] removeFoto FALHOU: \(error)")
+                        await MainActor.run {
+                            savingError = "Setup salvo, mas não removi a foto: \(error.localizedDescription)"
+                            isSaving = false
+                        }
+                        return
+                    }
+                }
+                if let jpeg = jpegPraSubir {
+                    NSLog("[CarroModalView.save] 4) repo.uploadFoto (\(jpeg.count)B)")
+                    do {
+                        try await withTimeoutS(20) { try await repo.uploadFoto(carroId: carroId, imageData: jpeg) }
+                        NSLog("[CarroModalView.save] uploadFoto OK")
+                    } catch {
+                        NSLog("[CarroModalView.save] uploadFoto FALHOU: \(error)")
+                        await MainActor.run {
+                            savingError = "Setup salvo, mas não subi a foto: \(error.localizedDescription)"
+                            isSaving = false
+                        }
+                        return
+                    }
+                }
+                NSLog("[CarroModalView.save] 5) fechando")
+                await MainActor.run {
+                    isSaving = false
+                    onClose()
+                }
             } catch {
-                isSaving = false
-                savingError = "Não consegui salvar: \(error.localizedDescription)"
+                NSLog("[CarroModalView.save] ERRO geral: \(error)")
+                await MainActor.run {
+                    isSaving = false
+                    savingError = "Não consegui salvar: \(error.localizedDescription)"
+                }
             }
+        }
+    }
+
+    /// Helper: race entre a operação e um timeout em segundos. Se o timeout
+    /// vence, lança SaveTimeoutError. Evita deixar `isSaving = true` pra
+    /// sempre quando o cliente Supabase pendura sem responder.
+    private func withTimeoutS<T: Sendable>(_ seconds: Double, op: @escaping @Sendable () async throws -> T) async throws -> T {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask { try await op() }
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                throw SaveTimeoutError(seconds: seconds)
+            }
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
         }
     }
 

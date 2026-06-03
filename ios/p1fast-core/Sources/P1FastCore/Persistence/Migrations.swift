@@ -397,49 +397,212 @@ enum Migrations {
             try db.execute(sql: "CREATE INDEX idx_pessoa_papeis_papel ON pessoa_papeis(papel);")
         }
 
-        // ═══ v19_manutencao_consumiveis ════════════════════════
-        // Reforma 2026-05-31: histórico de trocas de consumíveis
-        // (modelo CHECAGEM ≠ TROCA). O catálogo dos 30 itens vive no
-        // domínio (CatalogoConsumiveisCelta); aqui guardamos só as
-        // TROCAS feitas, pra calcular a vida real e o aprendizado
-        // preditivo. Tabela local — sync pra nuvem fica pra depois.
-        m.registerMigration("v19_manutencao_consumiveis") { db in
-            // Bancos que já receberam a função Manutenção órfã de 18/05
-            // têm uma tabela `manutencoes` com esquema ANTIGO e
-            // incompatível. Preserva renomeando antes de criar a nova —
-            // não perde dados e não colide (idempotente em device usado).
-            if try db.tableExists("manutencoes") {
-                try db.execute(sql: "ALTER TABLE manutencoes RENAME TO manutencoes_legado_2026_05_18;")
-            }
-            try db.execute(sql: """
-                CREATE TABLE manutencoes (
-                    id                TEXT PRIMARY KEY,
-                    time_id           TEXT NOT NULL REFERENCES times(id) ON DELETE CASCADE,
-                    carro_id          TEXT NOT NULL REFERENCES carros(id) ON DELETE CASCADE,
-                    item_codigo       TEXT NOT NULL,
-                    ocorrido_em       INTEGER NOT NULL,
-                    marca             TEXT,
-                    modelo            TEXT,
-                    especificacao     TEXT,
-                    observacao        TEXT,
-                    foto_url          TEXT,
-                    validade_etiqueta INTEGER,
-                    created_at        INTEGER NOT NULL,
-                    updated_at        INTEGER NOT NULL,
-                    synced_at         INTEGER
-                );
-            """)
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_manutencoes_v19_carro_item ON manutencoes(carro_id, item_codigo);")
+        // ═══ v19_carros_foto_url ════════════════════════════════
+        // S2 da rodada 1 (2026-05-12). Espelha
+        // supabase/migrations/0020_carros_foto_url.sql.
+        // Adiciona o campo opcional `foto_url` em `carros` — caminho
+        // (key) do arquivo no bucket `carro-fotos` do Supabase Storage.
+        // A leitura/exibição usa AsyncImage, o upload é feito pelo
+        // CarroRepository.uploadFoto com compressão automática (≤ 500KB).
+        m.registerMigration("v19_carros_foto_url") { db in
+            try db.execute(sql: "ALTER TABLE carros ADD COLUMN foto_url TEXT;")
         }
 
-        // ═══ v26_pecas — função Estoque (peças por carro, 2026-05-17) ══
-        // Trazida pra versão oficial em 2026-05-31. MESMO NOME da migration
-        // original: bancos que já receberam a função (iPhone 18/05) têm a
-        // migration registrada e o GRDB pula. IF NOT EXISTS protege o caso
-        // de a tabela existir sem a migration registrada (lição manutencoes).
+        // ═══ v20_tracks_cidade ═════════════════════════════════
+        // S4 da rodada 1 (2026-05-12). Espelha
+        // supabase/migrations/0021_tracks_cidade.sql.
+        // Adiciona coluna `cidade` em `tracks`. Usada pra agrupar
+        // autódromos na tela de seleção do cadastro de evento.
+        // Atualiza Brasília legada (apelido='Brasília') pra cidade='Brasília'.
+        m.registerMigration("v20_tracks_cidade") { db in
+            try db.execute(sql: "ALTER TABLE tracks ADD COLUMN cidade TEXT;")
+            try db.execute(sql: "UPDATE tracks SET cidade = 'Brasília' WHERE apelido = 'Brasília' AND cidade IS NULL;")
+        }
+
+        // ═══ v21_pendencias_consumiveis ════════════════════════
+        // S8 #21 da rodada 1 (2026-05-12). Espelha
+        // supabase/migrations/0022_pendencias_consumiveis.sql.
+        // Templates de pendência ganham flag `eh_consumivel` (1 quando
+        // o item é consumível tipo óleo/combustível) e `unidade` (texto:
+        // "L" pra litros, "mL" pra mililitros). evento_pendencias ganha
+        // `quantidade` (numérica). UI condiciona o campo: só pendências
+        // consumíveis pedem quantidade ao marcar como feita.
+        m.registerMigration("v21_pendencias_consumiveis") { db in
+            try db.execute(sql: "ALTER TABLE pendencias_template ADD COLUMN eh_consumivel INTEGER NOT NULL DEFAULT 0;")
+            try db.execute(sql: "ALTER TABLE pendencias_template ADD COLUMN unidade TEXT;")
+            try db.execute(sql: "ALTER TABLE evento_pendencias ADD COLUMN quantidade REAL;")
+            // Backfill heurístico: marca consumíveis pela palavra-chave
+            // no título. Lista canônica do Flávio quando ele passar.
+            try db.execute(sql: """
+                UPDATE pendencias_template
+                SET eh_consumivel = 1,
+                    unidade = 'L'
+                WHERE LOWER(titulo) LIKE '%óleo%'
+                   OR LOWER(titulo) LIKE '%oleo%'
+                   OR LOWER(titulo) LIKE '%combustível%'
+                   OR LOWER(titulo) LIKE '%combustivel%'
+                   OR LOWER(titulo) LIKE '%aditivo%'
+                   OR LOWER(titulo) LIKE '%fluido%';
+            """)
+        }
+
+        // ═══ v22_pneus_serie_evento ════════════════════════════
+        // S8 #23 da rodada 1 (2026-05-12). Espelha
+        // supabase/migrations/0023_pneus_serie_evento.sql.
+        // Pneus ganham `numero_serie` (identificador físico). Nova
+        // tabela `evento_pneus` liga pneus aos eventos onde foram usados.
+        // Estrutura preparatória pra TPMS (campos pressão/temperatura
+        // atual já presentes — UI futura plumba quando hardware chegar).
+        m.registerMigration("v22_pneus_serie_evento") { db in
+            try db.execute(sql: "ALTER TABLE pneus ADD COLUMN numero_serie TEXT;")
+            try db.execute(sql: """
+                CREATE TABLE evento_pneus (
+                    id              TEXT PRIMARY KEY,
+                    time_id         TEXT NOT NULL,
+                    evento_id       TEXT NOT NULL REFERENCES eventos(id) ON DELETE CASCADE,
+                    pneu_id         TEXT NOT NULL REFERENCES pneus(id) ON DELETE CASCADE,
+                    pressao_atual_psi    REAL,
+                    temperatura_atual_c  REAL,
+                    ultima_leitura_em    INTEGER,
+                    created_at      INTEGER NOT NULL,
+                    updated_at      INTEGER NOT NULL,
+                    synced_at       INTEGER,
+                    UNIQUE(evento_id, pneu_id)
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX idx_evento_pneus_evento ON evento_pneus(evento_id);")
+            try db.execute(sql: "CREATE INDEX idx_evento_pneus_pneu ON evento_pneus(pneu_id);")
+        }
+
+        // ═══ v23_acoes_a_fazer ═════════════════════════════════
+        // S8 #22 da rodada 1 (2026-05-12). Espelha
+        // supabase/migrations/0024_acoes_a_fazer.sql.
+        // Lista pessoal e livre de ações a fazer, separada de pendências
+        // canônicas. Per-evento (decisão Flávio P3 #22). Some na próxima
+        // abertura ao marcar feita — implementação filtra `feita_em IS NULL`.
+        m.registerMigration("v23_acoes_a_fazer") { db in
+            try db.execute(sql: """
+                CREATE TABLE acoes_a_fazer (
+                    id          TEXT PRIMARY KEY,
+                    time_id     TEXT NOT NULL,
+                    evento_id   TEXT NOT NULL REFERENCES eventos(id) ON DELETE CASCADE,
+                    piloto_id   TEXT,
+                    descricao   TEXT NOT NULL,
+                    feita_em    INTEGER,
+                    created_at  INTEGER NOT NULL,
+                    updated_at  INTEGER NOT NULL,
+                    synced_at   INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX idx_acoes_a_fazer_evento ON acoes_a_fazer(evento_id);")
+        }
+
+        // ═══ v24_evento_setup_replicado ═══════════════════════
+        // S7 #17 da rodada 1 (2026-05-12). Espelha
+        // supabase/migrations/0025_evento_setup_replicado.sql.
+        // Quando o piloto toca em "Replicar essa configuração" numa volta
+        // passada (VoltaDetalheView), criamos uma row aqui apontando pro
+        // evento futuro de destino. O EventoDetalheView do evento futuro
+        // lê e mostra "Setup replicado de [evento origem]".
+        //
+        // overrides_json carrega o JSON da configuracoes.overrides da
+        // sessão de origem — preserva snapshot mesmo se o setup do
+        // carro mudar depois.
+        m.registerMigration("v24_evento_setup_replicado") { db in
+            try db.execute(sql: """
+                CREATE TABLE evento_setup_replicado (
+                    id              TEXT PRIMARY KEY,
+                    time_id         TEXT NOT NULL,
+                    evento_id       TEXT NOT NULL REFERENCES eventos(id) ON DELETE CASCADE,
+                    origem_volta_id TEXT NOT NULL,
+                    origem_evento_id TEXT,
+                    carro_id        TEXT,
+                    overrides_json  TEXT,
+                    nota            TEXT,
+                    created_at      INTEGER NOT NULL,
+                    updated_at      INTEGER NOT NULL,
+                    synced_at       INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX idx_evento_setup_replicado_evento ON evento_setup_replicado(evento_id);")
+        }
+
+        // ═══ v25_evento_periodo_e_dias ════════════════════════════
+        // 2026-05-16 (Flávio autorizou). Espelha
+        // supabase/migrations/0029_evento_periodo_e_dias.sql.
+        //
+        // Evento vira guarda-chuva de período:
+        //   eventos.data_evento  = data início (legado, mantido)
+        //   eventos.data_fim     = NOVO; backfill = data_evento (1 dia)
+        //   evento_dias          = NOVA tabela; 1 row por dia do evento
+        //   sessoes.evento_dia_id = NOVO vínculo direto stint ↔ dia
+        //
+        // Tipo do evento sobe pra evento_dias.tipo (cada dia tem o seu).
+        // Coluna eventos.tipo é preservada por retro-compatibilidade
+        // mas não é mais usada pelo app a partir desta migration.
+        // Rotulo é NULL por default — app exibe "Dia de pista DD"
+        // (número do dia do mês) quando rotulo == NULL.
+        m.registerMigration("v25_evento_periodo_e_dias") { db in
+            try db.execute(sql: "ALTER TABLE eventos ADD COLUMN data_fim INTEGER;")
+            try db.execute(sql: "UPDATE eventos SET data_fim = data_evento WHERE data_fim IS NULL;")
+            // SQLite não suporta ALTER COLUMN SET NOT NULL; manter NOT NULL via constraint
+            // implícita no app (Carro.swift / Evento.swift). Sem CHECK pra preservar
+            // simplicidade — Repository garante data_fim sempre preenchido.
+
+            try db.execute(sql: """
+                CREATE TABLE evento_dias (
+                    id          TEXT PRIMARY KEY,
+                    time_id     TEXT NOT NULL,
+                    evento_id   TEXT NOT NULL REFERENCES eventos(id) ON DELETE CASCADE,
+                    data_dia    INTEGER NOT NULL,
+                    rotulo      TEXT,
+                    tipo        TEXT,
+                    ordem       INTEGER NOT NULL DEFAULT 0,
+                    created_at  INTEGER NOT NULL,
+                    updated_at  INTEGER NOT NULL,
+                    synced_at   INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX idx_evento_dias_evento ON evento_dias(evento_id);")
+            try db.execute(sql: "CREATE INDEX idx_evento_dias_time ON evento_dias(time_id);")
+            try db.execute(sql: "CREATE INDEX idx_evento_dias_data ON evento_dias(data_dia);")
+
+            try db.execute(sql: "ALTER TABLE sessoes ADD COLUMN evento_dia_id TEXT REFERENCES evento_dias(id) ON DELETE SET NULL;")
+            try db.execute(sql: "CREATE INDEX idx_sessoes_evento_dia ON sessoes(evento_dia_id);")
+
+            // Conversão automática (P5): cada evento existente vira 1 dia.
+            try db.execute(sql: """
+                INSERT INTO evento_dias (id, time_id, evento_id, data_dia, rotulo, tipo, ordem, created_at, updated_at)
+                SELECT
+                    lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-a' || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))),
+                    e.time_id,
+                    e.id,
+                    e.data_evento,
+                    NULL,
+                    e.tipo,
+                    0,
+                    e.created_at,
+                    e.updated_at
+                FROM eventos e
+                WHERE NOT EXISTS (SELECT 1 FROM evento_dias d WHERE d.evento_id = e.id);
+            """)
+
+            // Linka sessões ao único dia existente (eventos antigos têm 1 dia só).
+            try db.execute(sql: """
+                UPDATE sessoes
+                SET evento_dia_id = (SELECT d.id FROM evento_dias d WHERE d.evento_id = sessoes.evento_id LIMIT 1)
+                WHERE evento_id IS NOT NULL AND evento_dia_id IS NULL;
+            """)
+        }
+
+        // v26 — Função "Peças do carro" (2026-05-17). Banco único de peças
+        // (decisão A); por carro (decisão D); locais cadastráveis (decisão
+        // C); movimentações −1/+1 com histórico (decisão F). Áreas vivem
+        // no app via PecaArea enum (decisão E); SQL guarda só TEXT pra não
+        // restringir crescimento futuro.
         m.registerMigration("v26_pecas") { db in
             try db.execute(sql: """
-                CREATE TABLE IF NOT EXISTS pecas_locais (
+                CREATE TABLE pecas_locais (
                     id          TEXT PRIMARY KEY,
                     time_id     TEXT NOT NULL,
                     nome        TEXT NOT NULL,
@@ -450,11 +613,11 @@ enum Migrations {
                     synced_at   INTEGER
                 );
             """)
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_locais_time ON pecas_locais(time_id);")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_locais_ordem ON pecas_locais(ordem);")
+            try db.execute(sql: "CREATE INDEX idx_pecas_locais_time ON pecas_locais(time_id);")
+            try db.execute(sql: "CREATE INDEX idx_pecas_locais_ordem ON pecas_locais(ordem);")
 
             try db.execute(sql: """
-                CREATE TABLE IF NOT EXISTS pecas (
+                CREATE TABLE pecas (
                     id              TEXT PRIMARY KEY,
                     time_id         TEXT NOT NULL,
                     carro_id        TEXT NOT NULL REFERENCES carros(id) ON DELETE CASCADE,
@@ -472,14 +635,14 @@ enum Migrations {
                     synced_at       INTEGER
                 );
             """)
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_carro ON pecas(carro_id);")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_area ON pecas(area);")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_tipo ON pecas(tipo);")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_local ON pecas(local_id);")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_time ON pecas(time_id);")
+            try db.execute(sql: "CREATE INDEX idx_pecas_carro ON pecas(carro_id);")
+            try db.execute(sql: "CREATE INDEX idx_pecas_area ON pecas(area);")
+            try db.execute(sql: "CREATE INDEX idx_pecas_tipo ON pecas(tipo);")
+            try db.execute(sql: "CREATE INDEX idx_pecas_local ON pecas(local_id);")
+            try db.execute(sql: "CREATE INDEX idx_pecas_time ON pecas(time_id);")
 
             try db.execute(sql: """
-                CREATE TABLE IF NOT EXISTS pecas_movimentacoes (
+                CREATE TABLE pecas_movimentacoes (
                     id              TEXT PRIMARY KEY,
                     time_id         TEXT NOT NULL,
                     peca_id         TEXT NOT NULL REFERENCES pecas(id) ON DELETE CASCADE,
@@ -490,15 +653,115 @@ enum Migrations {
                     synced_at       INTEGER
                 );
             """)
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_mov_peca ON pecas_movimentacoes(peca_id);")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_pecas_mov_ocorrido ON pecas_movimentacoes(ocorrido_em);")
+            try db.execute(sql: "CREATE INDEX idx_pecas_mov_peca ON pecas_movimentacoes(peca_id);")
+            try db.execute(sql: "CREATE INDEX idx_pecas_mov_ocorrido ON pecas_movimentacoes(ocorrido_em);")
         }
 
-        // v27 — preço unitário opcional (centavos). SQLite não tem ADD
-        // COLUMN IF NOT EXISTS; o try? cobre o caso da coluna já existir
-        // (device com v27 aplicada o GRDB pula pelo nome de qualquer forma).
+        // v27 — preço unitário opcional nas peças (Flávio 2026-05-17:
+        // "inclua por área a quantidade e o valor total delas"). Guarda
+        // em centavos (Int) pra evitar imprecisão de ponto flutuante.
+        // Resumo é calculado em runtime (sum/group by area).
         m.registerMigration("v27_pecas_preco") { db in
-            try? db.execute(sql: "ALTER TABLE pecas ADD COLUMN preco_unitario_cents INTEGER;")
+            try db.execute(sql: "ALTER TABLE pecas ADD COLUMN preco_unitario_cents INTEGER;")
+        }
+
+        // v28 — Configuração do carro (Flávio 2026-05-17, reformulação
+        // Autódromos). Estende `configuracoes` com 9 campos novos:
+        // motor (livre), pneus_medida + pneus_marca, tipo_pneu (slick/
+        // chuva/rua), câmbio (livre), 3 marcadores de aero (assoalho_reto,
+        // difusor, splitter) e flag `ativa` (qual está marcada como
+        // "atual" pelo carro). Apelido legível usa o campo `nome` já
+        // existente (ex.: "Setup chuva 1"). Várias configs por carro:
+        // FK carro_id já existe. Nenhuma config é apagada automaticamente
+        // — histórico vivo (decisão A3).
+        //
+        // Local-only nesta rodada — produção (Supabase) não foi tocada
+        // ainda. Quando alinharmos com o servidor, gera migration espelho.
+        m.registerMigration("v28_configuracao_setup") { db in
+            try db.execute(sql: "ALTER TABLE configuracoes ADD COLUMN motor TEXT;")
+            try db.execute(sql: "ALTER TABLE configuracoes ADD COLUMN pneus_medida TEXT;")
+            try db.execute(sql: "ALTER TABLE configuracoes ADD COLUMN pneus_marca TEXT;")
+            try db.execute(sql: "ALTER TABLE configuracoes ADD COLUMN tipo_pneu TEXT;")
+            try db.execute(sql: "ALTER TABLE configuracoes ADD COLUMN cambio TEXT;")
+            try db.execute(sql: "ALTER TABLE configuracoes ADD COLUMN aero_assoalho_reto INTEGER NOT NULL DEFAULT 0;")
+            try db.execute(sql: "ALTER TABLE configuracoes ADD COLUMN aero_difusor INTEGER NOT NULL DEFAULT 0;")
+            try db.execute(sql: "ALTER TABLE configuracoes ADD COLUMN aero_splitter INTEGER NOT NULL DEFAULT 0;")
+            try db.execute(sql: "ALTER TABLE configuracoes ADD COLUMN ativa INTEGER NOT NULL DEFAULT 0;")
+            try db.execute(sql: "CREATE INDEX idx_configuracoes_ativa ON configuracoes(carro_id, ativa);")
+        }
+
+        // v29 — Tela do autódromo (Flávio 2026-05-17). 2 campos novos
+        // em `tracks`: extensao_metros (extensão da pista) e
+        // numero_curvas (quantidade total de curvas). Usados na lista de
+        // autódromos pra mostrar km × voltas e contar trechos. SeedBrasilia
+        // preenche com 5476 m / 8 curvas.
+        m.registerMigration("v29_tracks_extensao_curvas") { db in
+            try db.execute(sql: "ALTER TABLE tracks ADD COLUMN extensao_metros INTEGER;")
+            try db.execute(sql: "ALTER TABLE tracks ADD COLUMN numero_curvas INTEGER;")
+            try db.execute(sql: """
+                UPDATE tracks
+                SET extensao_metros = 5476,
+                    numero_curvas = 8
+                WHERE id = 'e8335412-3312-54fe-b634-db2d02c7fa81'
+                  AND extensao_metros IS NULL;
+            """)
+        }
+
+        // v30 — Pontos geográficos por trecho (entrada/saída/ápice).
+        // Só pra curvas (decisão B2). Até 2 ápices por curva (decisão B3).
+        // Posições guardadas em coordenadas SVG (x,y) compatíveis com o
+        // path oficial da pista. Cada trecho pode ter NULL nas faixas
+        // (cadastro incremental). Estrutura preparada pra editor visual
+        // futuro — escrita inicial vem do código (SeedBrasilia).
+        m.registerMigration("v30_track_segment_faixas") { db in
+            try db.execute(sql: """
+                CREATE TABLE track_segment_faixas (
+                    id            TEXT PRIMARY KEY,
+                    segment_id    TEXT NOT NULL REFERENCES track_segments(id) ON DELETE CASCADE,
+                    tipo          TEXT NOT NULL CHECK (tipo IN ('entrada','saida','apice')),
+                    indice        INTEGER NOT NULL DEFAULT 0,
+                    x             REAL NOT NULL,
+                    y             REAL NOT NULL,
+                    created_at    INTEGER NOT NULL,
+                    updated_at    INTEGER NOT NULL,
+                    synced_at     INTEGER,
+                    UNIQUE (segment_id, tipo, indice)
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX idx_segfaixas_segment ON track_segment_faixas(segment_id);")
+            try db.execute(sql: "CREATE INDEX idx_segfaixas_tipo ON track_segment_faixas(segment_id, tipo);")
+        }
+
+        // v31 — Pontos dinâmicos por trecho (V-min/frenagem/PAce) calcu-
+        // lados da melhor passagem por carro+configuração (decisão E1).
+        // Mínimo 3 voltas pra ativar cálculo (decisão E2). Tabela
+        // append-only por (carro, configuração, segmento): cada melhor
+        // passagem é uma row, atualizada quando vem passagem melhor.
+        m.registerMigration("v31_segment_pontos_dinamicos") { db in
+            try db.execute(sql: """
+                CREATE TABLE segment_pontos_dinamicos (
+                    id                TEXT PRIMARY KEY,
+                    time_id           TEXT NOT NULL,
+                    segment_id        TEXT NOT NULL REFERENCES track_segments(id) ON DELETE CASCADE,
+                    carro_id          TEXT NOT NULL REFERENCES carros(id) ON DELETE CASCADE,
+                    configuracao_id   TEXT NOT NULL REFERENCES configuracoes(id) ON DELETE CASCADE,
+                    tempo_ms          INTEGER NOT NULL,
+                    vmin_kmh          REAL,
+                    vmin_x            REAL,
+                    vmin_y            REAL,
+                    frenagem_x        REAL,
+                    frenagem_y        REAL,
+                    pace_x            REAL,
+                    pace_y            REAL,
+                    voltas_consideradas INTEGER NOT NULL DEFAULT 0,
+                    fonte_volta_id    TEXT,
+                    created_at        INTEGER NOT NULL,
+                    updated_at        INTEGER NOT NULL,
+                    UNIQUE (segment_id, carro_id, configuracao_id)
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX idx_segpd_seg ON segment_pontos_dinamicos(segment_id);")
+            try db.execute(sql: "CREATE INDEX idx_segpd_carro_cfg ON segment_pontos_dinamicos(carro_id, configuracao_id);")
         }
     }
 

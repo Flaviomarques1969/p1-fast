@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pergunta — foto do carro: onde trava?</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --fg:#e8e8e8; --muted:#9aa0a6; --accent:#4f8cff; --ok:#22c55e; --warn:#f59e0b; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--fg); padding:24px; }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  .card { background:var(--card); border-radius:12px; padding:24px; box-shadow: 0 8px 32px rgba(0,0,0,.35); }
+  h1 { font-size: 1.25rem; margin: 0 0 4px; }
+  .meta { color: var(--muted); font-size: .85rem; margin-bottom: 16px; }
+  .pergunta { font-size: 1.05rem; line-height: 1.45; margin: 0 0 20px; }
+  .opcoes { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .opcao { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1px solid #2a2f3a; border-radius: 10px; cursor: pointer; transition: all .15s; }
+  .opcao:hover { border-color: var(--accent); }
+  .opcao input { margin-top: 4px; }
+  .opcao-corpo { flex: 1; }
+  .opcao-titulo { font-weight: 600; }
+  .opcao-just { color: var(--muted); font-size: .9rem; margin-top: 2px; }
+  textarea { width: 100%; background:#0f1115; color:var(--fg); border:1px solid #2a2f3a; border-radius: 8px; padding: 10px; resize: vertical; font-family: inherit; font-size: .95rem; }
+  label.bloco { display: block; margin: 16px 0 6px; color: var(--muted); font-size: .85rem; }
+  .acoes { display: flex; gap: 10px; margin-top: 18px; }
+  button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 10px 16px; font-size: 1rem; cursor: pointer; }
+  button.secundario { background: transparent; border: 1px solid #2a2f3a; color: var(--fg); }
+  .status { margin-top: 12px; color: var(--muted); font-size: .85rem; }
+  .outra-wrap { display: none; }
+  .outra-wrap.ativo { display: block; }
+  .copiar-area { margin-top: 16px; padding: 12px; background:#0f1115; border:1px dashed #2a2f3a; border-radius: 8px; }
+  .copiar-area pre { margin:0; white-space: pre-wrap; word-break: break-word; font-size: .85rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Foto do carro — onde exatamente trava no iPhone?</h1>
+    <div class="meta">ID: <code>20260516-foto-carro-onde-trava</code></div>
+    <p class="pergunta">Quando você abre o formulário do carro pra adicionar uma foto, em qual passo ela falha? Marque a opção que melhor descreve o que você vê.</p>
+
+    <form id="form">
+      <div class="opcoes">
+        <label class="opcao">
+          <input type="radio" name="opcao" value="A_nao_aparece" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">A. O campo "Foto do carro" nem aparece no formulário</div>
+            <div class="opcao-just">Se for isso, o app no celular está rodando uma versão antiga, sem a Parte B+C.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="opcao" value="B_botao_nao_abre" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">B. Aparece o campo + botão "Escolher foto", mas clicando não abre a galeria do iPhone</div>
+            <div class="opcao-just">Falha no seletor nativo do iPhone — pode ser permissão.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="opcao" value="C_escolho_mas_nao_volta" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">C. Abre a galeria, escolho a foto, mas nada acontece (não vejo preview)</div>
+            <div class="opcao-just">Falha lendo o arquivo da foto.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="opcao" value="D_aparece_mas_erro_ao_salvar" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">D. Escolho, vejo o preview, mas aparece texto vermelho de erro ao salvar</div>
+            <div class="opcao-just">Falha enviando pro servidor. Cole o texto vermelho exato no campo abaixo.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="opcao" value="E_salva_mas_nao_aparece_depois" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">E. Salva sem erro, mas quando reabro o carro a foto não está lá</div>
+            <div class="opcao-just">Foto subiu mas não está sendo carregada de volta.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="opcao" value="Outra" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">Outra (descreva embaixo)</div>
+            <div class="opcao-just">Nenhuma das acima descreve.</div>
+          </div>
+        </label>
+      </div>
+
+      <div class="outra-wrap" id="outra-wrap">
+        <label class="bloco" for="outra-texto">Descreva o que acontece</label>
+        <textarea id="outra-texto" rows="3" placeholder="Ex: o app fecha sozinho ao clicar Escolher foto"></textarea>
+      </div>
+
+      <label class="bloco" for="comentario">Se houve mensagem de erro em vermelho, cole o texto aqui</label>
+      <textarea id="comentario" rows="3" placeholder="Ex: 'Carro criado, mas não subi a foto: Bucket not found'"></textarea>
+
+      <div class="acoes">
+        <button type="button" id="copiar">Copiar resposta</button>
+        <button type="button" id="exportar">Exportar JSON</button>
+        <button type="button" class="secundario" id="limpar">Limpar</button>
+      </div>
+      <div class="status" id="status"></div>
+
+      <div class="copiar-area" id="copiar-area" style="display:none;">
+        <pre id="copiar-texto"></pre>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const PERGUNTA_ID = "20260516-foto-carro-onde-trava";
+  const STORAGE_KEY = "padrao-flavio:" + PERGUNTA_ID;
+
+  function carregarLocalStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const dados = JSON.parse(raw);
+      if (dados.escolha) {
+        const radio = document.querySelector('input[name="opcao"][value="' + CSS.escape(dados.escolha) + '"]');
+        if (radio) radio.checked = true;
+      }
+      if (dados.outra_texto) document.getElementById("outra-texto").value = dados.outra_texto;
+      if (dados.comentario) document.getElementById("comentario").value = dados.comentario;
+      atualizarOutraWrap();
+    } catch (e) {}
+  }
+
+  function salvarLocalStorage() {
+    const escolhaEl = document.querySelector('input[name="opcao"]:checked');
+    const dados = {
+      escolha: escolhaEl ? escolhaEl.value : "",
+      outra_texto: document.getElementById("outra-texto").value,
+      comentario: document.getElementById("comentario").value,
+    };
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(dados)); } catch (e) {}
+  }
+
+  function atualizarOutraWrap() {
+    const escolhaEl = document.querySelector('input[name="opcao"]:checked');
+    const ativo = escolhaEl && escolhaEl.value === "Outra";
+    document.getElementById("outra-wrap").classList.toggle("ativo", ativo);
+  }
+
+  function montarPayload() {
+    const escolhaEl = document.querySelector('input[name="opcao"]:checked');
+    const escolha = escolhaEl ? escolhaEl.value : "";
+    const outraOpcaoUsada = escolha === "Outra";
+    const outraTexto = document.getElementById("outra-texto").value.trim();
+    const comentario = document.getElementById("comentario").value.trim();
+    return {
+      pergunta_id: PERGUNTA_ID,
+      pergunta: document.querySelector(".pergunta").innerText.trim(),
+      escolha: outraOpcaoUsada ? (outraTexto || "Outra") : escolha,
+      outra_opcao_usada: outraOpcaoUsada,
+      comentario_ou_erro: comentario,
+      respondido_em: new Date().toISOString(),
+    };
+  }
+
+  function copiarTexto() {
+    const p = montarPayload();
+    if (!p.escolha) {
+      document.getElementById("status").textContent = "Marque uma opção primeiro.";
+      return;
+    }
+    const txt = "Resposta foto carro:\nOpção: " + p.escolha + (p.comentario_ou_erro ? "\nErro/Comentário: " + p.comentario_ou_erro : "");
+    navigator.clipboard.writeText(txt).then(() => {
+      document.getElementById("status").textContent = "Copiado. Cole no chat com o Claude.";
+      const ca = document.getElementById("copiar-area");
+      ca.style.display = "block";
+      document.getElementById("copiar-texto").textContent = txt;
+    });
+  }
+
+  function exportar() {
+    const payload = montarPayload();
+    if (!payload.escolha) {
+      document.getElementById("status").textContent = "Marque uma opção antes de exportar.";
+      return;
+    }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = PERGUNTA_ID + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    document.getElementById("status").textContent = "JSON salvo: " + PERGUNTA_ID + ".json";
+  }
+
+  function limpar() {
+    document.querySelectorAll('input[name="opcao"]').forEach(r => r.checked = false);
+    document.getElementById("outra-texto").value = "";
+    document.getElementById("comentario").value = "";
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    atualizarOutraWrap();
+    document.getElementById("status").textContent = "Limpo.";
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    carregarLocalStorage();
+    document.querySelectorAll('input[name="opcao"]').forEach(r => {
+      r.addEventListener("change", () => { salvarLocalStorage(); atualizarOutraWrap(); });
+    });
+    document.getElementById("outra-texto").addEventListener("input", salvarLocalStorage);
+    document.getElementById("comentario").addEventListener("input", salvarLocalStorage);
+    document.getElementById("copiar").addEventListener("click", copiarTexto);
+    document.getElementById("exportar").addEventListener("click", exportar);
+    document.getElementById("limpar").addEventListener("click", limpar);
+  });
+</script>
+</body>
+</html>

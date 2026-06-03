@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reformular tela Autódromos · 6 decisões</title>
+<style>
+  :root {
+    --bg:#0f1115; --card:#171a21; --card-2:#1d212a;
+    --fg:#e8e8e8; --muted:#9aa0a6; --faint:#6b7280;
+    --accent:#4f8cff; --ok:#22c55e; --warn:#f59e0b; --erro:#ef4444;
+    --border:#2a2f3a;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--fg); padding:24px; line-height:1.45; }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  .meta { color: var(--muted); font-size: .85rem; margin-bottom: 24px; }
+  h1 { font-size: 1.6rem; margin: 0 0 6px; }
+  h2 { font-size: 1.15rem; margin: 32px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .ajuda { color: var(--muted); font-size: .92rem; margin: 0 0 14px; }
+  .resumo { background: var(--card); border-radius: 12px; padding: 20px 22px; box-shadow: 0 4px 16px rgba(0,0,0,.25); }
+  .resumo h2 { margin-top: 0; border: 0; padding: 0; font-size: 1.05rem; color: var(--muted); }
+  .parte { background: var(--card-2); border-radius: 10px; padding: 14px 16px; margin: 12px 0; }
+  .parte-titulo { font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+  .decisao { background: var(--card); border-radius: 12px; padding: 22px 24px; margin: 18px 0; box-shadow: 0 4px 16px rgba(0,0,0,.25); }
+  .decisao-num { display: inline-block; background: var(--accent); color:#fff; font-weight:700; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; margin-right: 8px; font-size: .9rem; }
+  .decisao h2 { display: flex; align-items: center; margin: 0 0 10px; border: 0; padding: 0; font-size: 1.15rem; }
+  .opcoes { display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; }
+  .opcao { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; transition: all .15s; }
+  .opcao:hover { border-color: var(--accent); }
+  .opcao input { margin-top: 4px; flex-shrink: 0; }
+  .opcao-corpo { flex: 1; }
+  .opcao-titulo { font-weight: 600; }
+  .opcao-just { color: var(--muted); font-size: .9rem; margin-top: 4px; }
+  .recomendado { display: inline-block; background: rgba(34,197,94,.15); color: var(--ok); padding: 1px 8px; border-radius: 999px; font-size: .72rem; margin-left: 8px; vertical-align: middle; }
+  textarea, input[type=text] { width: 100%; background:#0f1115; color:var(--fg); border:1px solid var(--border); border-radius: 8px; padding: 10px; resize: vertical; font-family: inherit; font-size: .95rem; }
+  label.bloco { display: block; margin: 12px 0 6px; color: var(--muted); font-size: .85rem; }
+  .outra-wrap { display: none; }
+  .outra-wrap.ativo { display: block; }
+  .rodape { position: sticky; bottom: 0; background: var(--bg); padding: 16px 0; margin-top: 20px; border-top: 1px solid var(--border); }
+  .acoes { display: flex; gap: 10px; flex-wrap: wrap; }
+  button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 12px 18px; font-size: 1rem; cursor: pointer; font-weight: 600; }
+  button.secundario { background: transparent; border: 1px solid var(--border); color: var(--fg); font-weight: 400; }
+  .status { margin-top: 12px; color: var(--muted); font-size: .85rem; }
+  .progresso { color: var(--muted); font-size: .85rem; }
+  .saida { background:#0a0c10; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: ui-monospace, monospace; font-size: .82rem; white-space: pre-wrap; word-break: break-all; max-height: 240px; overflow: auto; margin-top: 10px; }
+  .copiar-feedback { color: var(--ok); font-size: .85rem; margin-left: 8px; display: none; }
+  .copiar-feedback.visivel { display: inline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="meta">ID: <code>20260517-110700-autodromos-funcao</code> · projeto: P1 Fast</div>
+  <h1>Reformular tela "Autódromos"</h1>
+  <p class="ajuda">Antes de mexer, fechar 6 decisões. O resumo embaixo é o que eu entendi do seu pedido — corrige no campo de comentário no fim se estiver errado.</p>
+
+  <div class="resumo">
+    <h2>O que eu entendi</h2>
+    <div class="parte">
+      <div class="parte-titulo">Hoje (tela atual)</div>
+      <p>"Autódromos" abre direto na lista de trechos de Brasília. Pula a camada do autódromo.</p>
+    </div>
+    <div class="parte">
+      <div class="parte-titulo">Como você quer</div>
+      <p><strong>1.</strong> "Autódromos" abre primeiro uma lista de autódromos (Brasília agora; outros no futuro). Cada card com informações básicas.</p>
+      <p><strong>2.</strong> Tocar num autódromo abre a tela do autódromo com: seletor de carro (ou ver recordes gerais) + resumo (melhor volta, velocidade máxima) + lista de trechos.</p>
+      <p><strong>3.</strong> Cada trecho mostra: desenho + ponto de entrada + ponto de frenagem + V-min + PAce (ponto de aceleração) + ápice + ponto de saída.</p>
+      <p><strong>4.</strong> A filosofia continua sendo trechos. O autódromo é só a porta de entrada pra navegar com contexto do carro.</p>
+    </div>
+  </div>
+
+  <!-- A — Origem dos pontos -->
+  <div class="decisao" data-id="A">
+    <h2><span class="decisao-num">A</span> De onde vêm os pontos do trecho?</h2>
+    <p class="ajuda">Entrada, frenagem, V-min, PAce, ápice, saída — esses pontos podem vir de 2 lugares: das voltas reais que você correu (medidos pelo aplicativo) ou cadastrados manualmente por você.</p>
+    <div class="opcoes">
+      <label class="opcao">
+        <input type="radio" name="A" value="medidos-auto" />
+        <div class="opcao-corpo">
+          <div class="opcao-titulo">A1 · Medidos automaticamente das voltas reais <span class="recomendado">Recomendado</span></div>
+          <div class="opcao-just">O aplicativo extrai dos dados do GPS e acelerômetro das voltas já gravadas. Zero esforço de cadastro. Mostra a realidade do que aquele carro faz ali. Desvantagem: enquanto você não correr naquele autódromo com aquele carro, a tela fica sem pontos (mostra "Sem dados ainda").</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="A" value="manual" />
+        <div class="opcao-corpo">
+          <div class="opcao-titulo">A2 · Cadastrados manualmente no desenho</div>
+          <div class="opcao-just">Você toca no desenho do trecho pra marcar cada ponto (entrada, frenagem, ápice, etc.). Funciona antes de correr. Desvantagem: dá trabalho cadastrar 8 pontos × 8 curvas = 64 toques por carro, e o que você cadastra pode não bater com a realidade da volta.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="A" value="hibrido" />
+        <div class="opcao-corpo">
+          <div class="opcao-titulo">A3 · Híbrido: "ideal" cadastrado + "real" das voltas</div>
+          <div class="opcao-just">Você cadastra os pontos "ideais" do trecho (sem carro) — é o traçado teórico. Depois o aplicativo sobrepõe os pontos REAIS das suas voltas com aquele carro. Você compara: onde você está acertando, onde está errando. Mais rico, mas mais complexo de implementar e de usar.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="A" value="outra" />
+        <div class="opcao-corpo"><div class="opcao-titulo">A4 · Outra</div><div class="opcao-just">Descreva no campo abaixo.</div></div>
+      </label>
+    </div>
+    <div class="outra-wrap" data-outra-de="A"><label class="bloco">Sua opção pra (A)</label><textarea rows="2" data-outra-texto="A"></textarea></div>
+  </div>
+
+  <!-- B — Entrada na tela do autódromo -->
+  <div class="decisao" data-id="B">
+    <h2><span class="decisao-num">B</span> Ao tocar num autódromo, a tela já pergunta o carro ou mostra recordes gerais primeiro?</h2>
+    <p class="ajuda">Quando você abre Brasília, o que aparece primeiro?</p>
+    <div class="opcoes">
+      <label class="opcao">
+        <input type="radio" name="B" value="pergunta-carro" />
+        <div class="opcao-corpo">
+          <div class="opcao-titulo">B1 · Pergunta o carro de cara <span class="recomendado">Recomendado</span></div>
+          <div class="opcao-just">A primeira coisa é "Qual carro?". Escolhe e a tela do autódromo monta com tudo daquele carro. Tem botão "ver recordes do time" como atalho lateral pra ver o panorama geral. Razão: 90% das vezes você quer ver seu carro.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="B" value="recordes-primeiro" />
+        <div class="opcao-corpo">
+          <div class="opcao-titulo">B2 · Mostra recordes do time primeiro</div>
+          <div class="opcao-just">Abre com os recordes gerais (melhor volta histórica, vmax do time, melhor de cada trecho). Carro é um filtro no topo. Razão: dá panorama mais amplo no primeiro toque.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="B" value="dois-lados" />
+        <div class="opcao-corpo">
+          <div class="opcao-titulo">B3 · Os 2 lados na mesma tela</div>
+          <div class="opcao-just">Recordes do time no topo + seletor de carro logo abaixo. Toca no carro e os trechos abaixo recarregam. Mais informação ao mesmo tempo.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="B" value="outra" />
+        <div class="opcao-corpo"><div class="opcao-titulo">B4 · Outra</div><div class="opcao-just">Descreva no campo abaixo.</div></div>
+      </label>
+    </div>
+    <div class="outra-wrap" data-outra-de="B"><label class="bloco">Sua opção pra (B)</label><textarea rows="2" data-outra-texto="B"></textarea></div>
+  </div>
+
+  <!-- C — 1 carro ou comparação -->
+  <div class="decisao" data-id="C">
+    <h2><span class="decisao-num">C</span> Você quer escolher 1 carro por vez ou comparar carros lado a lado?</h2>
+    <p class="ajuda">Quando você escolhe o carro pra ver os trechos.</p>
+    <div class="opcoes">
+      <label class="opcao">
+        <input type="radio" name="C" value="um-por-vez" />
+        <div class="opcao-corpo">
+          <div class="opcao-titulo">C1 · 1 carro por vez <span class="recomendado">Recomendado</span></div>
+          <div class="opcao-just">Foco. Telas mais limpas, mais rápidas de ler. Comparação fica pra rodada futura. Se quiser ver outro carro, troca pelo seletor.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="C" value="dois-carros" />
+        <div class="opcao-corpo">
+          <div class="opcao-titulo">C2 · 2 carros lado a lado</div>
+          <div class="opcao-just">Tela com 2 colunas: "Celta vs. Subaru" no trecho X. Mostra a diferença direto. Complexidade visual cresce — telas de iPhone ficam apertadas.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="C" value="varios" />
+        <div class="opcao-corpo">
+          <div class="opcao-titulo">C3 · N carros (escolhe quais)</div>
+          <div class="opcao-just">Lista de carros com seleção múltipla. Mostra todos numa tabela compacta. Mais flexível mas a tela vira tabela densa, sem desenho do trecho.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="C" value="outra" />
+        <div class="opcao-corpo"><div class="opcao-titulo">C4 · Outra</div><div class="opcao-just">Descreva no campo abaixo.</div></div>
+      </label>
+    </div>
+    <div class="outra-wrap" data-outra-de="C"><label class="bloco">Sua opção pra (C)</label><textarea rows="2" data-outra-texto="C"></textarea></div>
+  </div>
+
+  <!-- D — PAce -->
+  <div class="decisao" data-id="D">
+    <h2><span class="decisao-num">D</span> Sobre o PAce (ponto de aceleração) — ele não existe hoje no aplicativo</h2>
+    <p class="ajuda">Hoje o aplicativo mede automaticamente: ponto de frenagem, V-min, velocidade de entrada e velocidade de saída. O <strong>PAce (ponto onde o carro volta a acelerar)</strong> não é medido nem cadastrado. Como você quer resolver?</p>
+    <div class="opcoes">
+      <label class="opcao">
+        <input type="radio" name="D" value="calcular-auto" />
+        <div class="opcao-corpo">
+          <div class="opcao-titulo">D1 · Calcular automaticamente das voltas reais <span class="recomendado">Recomendado</span></div>
+          <div class="opcao-just">O aplicativo já mede a aceleração. Posso adicionar: "PAce é o instante depois do ápice em que a aceleração longitudinal volta a ser positiva". Mesmo critério, mesma tecnologia. Zero cadastro.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="D" value="cadastrar-manual" />
+        <div class="opcao-corpo">
+          <div class="opcao-titulo">D2 · Cadastrar manualmente</div>
+          <div class="opcao-just">Você marca o PAce no desenho do trecho. Mas só faz sentido se a decisão A for "manual" ou "híbrido".</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="D" value="adiar" />
+        <div class="opcao-corpo">
+          <div class="opcao-titulo">D3 · Adiar o PAce — não mostrar agora</div>
+          <div class="opcao-just">Primeira versão só com Entrada · Frenagem · V-min · Ápice · Saída. PAce entra numa rodada futura quando tivermos certeza do critério.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="D" value="outra" />
+        <div class="opcao-corpo"><div class="opcao-titulo">D4 · Outra</div><div class="opcao-just">Descreva no campo abaixo.</div></div>
+      </label>
+    </div>
+    <div class="outra-wrap" data-outra-de="D"><label class="bloco">Sua opção pra (D)</label><textarea rows="2" data-outra-texto="D"></textarea></div>
+  </div>
+
+  <!-- E — Card do autódromo -->
+  <div class="decisao" data-id="E">
+    <h2><span class="decisao-num">E</span> O que aparece no card do autódromo na lista de autódromos?</h2>
+    <p class="ajuda">Primeira tela que abre quando você toca em "Autódromos".</p>
+    <div class="opcoes">
+      <label class="opcao">
+        <input type="radio" name="E" value="enxuto" />
+        <div class="opcao-corpo">
+          <div class="opcao-titulo">E1 · Cidade · nº de trechos · melhor volta histórica · velocidade máxima histórica <span class="recomendado">Recomendado</span></div>
+          <div class="opcao-just">Os 4 dados mais úteis. Conta o essencial do autódromo num olhar. As 2 últimas só aparecem se o time já tem voltas registradas ali.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="E" value="completo" />
+        <div class="opcao-corpo">
+          <div class="opcao-titulo">E2 · Tudo do E1 + nº de carros que rodaram lá + nº de eventos</div>
+          <div class="opcao-just">Mais contexto da operação. Card fica mais alto mas dá panorama. Útil quando tiver vários autódromos cadastrados.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="E" value="minimo" />
+        <div class="opcao-corpo">
+          <div class="opcao-titulo">E3 · Mínimo: só cidade + nº de trechos</div>
+          <div class="opcao-just">Cards compactos. O resto você descobre tocando no autódromo.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="E" value="outra" />
+        <div class="opcao-corpo"><div class="opcao-titulo">E4 · Outra</div><div class="opcao-just">Descreva no campo abaixo.</div></div>
+      </label>
+    </div>
+    <div class="outra-wrap" data-outra-de="E"><label class="bloco">Sua opção pra (E)</label><textarea rows="2" data-outra-texto="E"></textarea></div>
+  </div>
+
+  <!-- F — Melhor volta + vmax -->
+  <div class="decisao" data-id="F">
+    <h2><span class="decisao-num">F</span> "Melhor volta" e "velocidade máxima" — só do carro escolhido ou separado?</h2>
+    <p class="ajuda">Quando você está vendo o autódromo com um carro selecionado.</p>
+    <div class="opcoes">
+      <label class="opcao">
+        <input type="radio" name="F" value="dois-lados" />
+        <div class="opcao-corpo">
+          <div class="opcao-titulo">F1 · Mostra os 2 lados: "Sua melhor com Celta" + "Recorde do time" <span class="recomendado">Recomendado</span></div>
+          <div class="opcao-just">Útil pra ter referência. Você vê quanto está do recorde geral. Quando ainda não correu com o carro escolhido naquele autódromo, mostra "—" do seu lado mas o recorde do time aparece.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="F" value="so-carro" />
+        <div class="opcao-corpo">
+          <div class="opcao-titulo">F2 · Só do carro escolhido</div>
+          <div class="opcao-just">Mais simples e focado. Se quiser ver o recorde do time, troca o filtro de carro pra "todos".</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="F" value="so-time" />
+        <div class="opcao-corpo">
+          <div class="opcao-titulo">F3 · Só do time (recorde geral, sem filtrar por carro)</div>
+          <div class="opcao-just">O carro filtra os trechos mas o cabeçalho do autódromo é sempre o recorde geral.</div>
+        </div>
+      </label>
+      <label class="opcao">
+        <input type="radio" name="F" value="outra" />
+        <div class="opcao-corpo"><div class="opcao-titulo">F4 · Outra</div><div class="opcao-just">Descreva no campo abaixo.</div></div>
+      </label>
+    </div>
+    <div class="outra-wrap" data-outra-de="F"><label class="bloco">Sua opção pra (F)</label><textarea rows="2" data-outra-texto="F"></textarea></div>
+  </div>
+
+  <div class="decisao">
+    <h2>Comentário geral (opcional)</h2>
+    <p class="ajuda">Qualquer correção do que entendi, escopo extra ou prioridade.</p>
+    <textarea rows="4" id="comentario" placeholder="Ex.: entendi errado o item X / quero ver primeiro a parte de Y / não tem pressa de Z..."></textarea>
+  </div>
+
+  <div class="rodape">
+    <div class="progresso" id="progresso">0 de 6 decisões respondidas</div>
+    <div class="acoes" style="margin-top: 10px;">
+      <button type="button" id="exportar">Copiar respostas pro Claude</button>
+      <button type="button" class="secundario" id="baixar">Baixar arquivo</button>
+      <button type="button" class="secundario" id="limpar">Limpar tudo</button>
+      <span class="copiar-feedback" id="copiar-feedback">✓ copiado</span>
+    </div>
+    <div class="status" id="status"></div>
+    <div class="saida" id="saida" style="display:none;"></div>
+  </div>
+</div>
+
+<script>
+  const PERGUNTA_ID = "20260517-110700-autodromos-funcao";
+  const PROJETO = "P1 Fast";
+  const STORAGE_KEY = "padrao-flavio:" + PERGUNTA_ID;
+  const DECISOES = ["A","B","C","D","E","F"];
+
+  function elOutra(id) { return document.querySelector('[data-outra-de="' + id + '"]'); }
+  function textoOutra(id) { return document.querySelector('[data-outra-texto="' + id + '"]'); }
+
+  function snapshot() {
+    const out = { id: PERGUNTA_ID, projeto: PROJETO, respondido_em: new Date().toISOString(), respostas: {}, comentario: "" };
+    DECISOES.forEach(d => {
+      const sel = document.querySelector('input[name="' + d + '"]:checked');
+      if (!sel) { out.respostas[d] = { escolha: null }; return; }
+      const reg = { escolha: sel.value };
+      if (sel.value === "outra") reg.texto = (textoOutra(d).value || "").trim();
+      out.respostas[d] = reg;
+    });
+    out.comentario = (document.getElementById("comentario").value || "").trim();
+    return out;
+  }
+  function progresso() {
+    const respondidas = DECISOES.filter(d => document.querySelector('input[name="' + d + '"]:checked')).length;
+    document.getElementById("progresso").textContent = respondidas + " de 6 decisões respondidas";
+  }
+  function salvar() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot())); } catch(e){} progresso(); }
+  function carregar() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY); if (!raw) return;
+      const d = JSON.parse(raw);
+      if (d.respostas) {
+        Object.keys(d.respostas).forEach(k => {
+          const r = d.respostas[k]; if (!r || !r.escolha) return;
+          const radio = document.querySelector('input[name="' + k + '"][value="' + r.escolha + '"]');
+          if (radio) { radio.checked = true; if (r.escolha === "outra") { elOutra(k).classList.add("ativo"); textoOutra(k).value = r.texto || ""; } }
+        });
+      }
+      if (d.comentario) document.getElementById("comentario").value = d.comentario;
+    } catch(e){}
+    progresso();
+  }
+
+  document.querySelectorAll('input[type="radio"]').forEach(r => r.addEventListener("change", () => {
+    const id = r.name; const wrap = elOutra(id);
+    if (r.value === "outra") wrap.classList.add("ativo"); else wrap.classList.remove("ativo");
+    salvar();
+  }));
+  document.querySelectorAll("textarea").forEach(t => t.addEventListener("input", salvar));
+
+  document.getElementById("exportar").addEventListener("click", async () => {
+    const json = JSON.stringify(snapshot(), null, 2);
+    document.getElementById("saida").textContent = json;
+    document.getElementById("saida").style.display = "block";
+    try {
+      await navigator.clipboard.writeText(json);
+      const fb = document.getElementById("copiar-feedback");
+      fb.classList.add("visivel"); setTimeout(() => fb.classList.remove("visivel"), 2200);
+      document.getElementById("status").textContent = "Cole no chat com o Claude e diga 'fiz'.";
+    } catch(e) { document.getElementById("status").textContent = "Selecione o texto abaixo e copie manualmente."; }
+  });
+  document.getElementById("baixar").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(snapshot(), null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = PERGUNTA_ID + ".json"; a.click();
+    URL.revokeObjectURL(a.href);
+  });
+  document.getElementById("limpar").addEventListener("click", () => {
+    if (!confirm("Apagar todas as respostas?")) return;
+    try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+    document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+    document.querySelectorAll("textarea").forEach(t => t.value = "");
+    document.querySelectorAll(".outra-wrap").forEach(w => w.classList.remove("ativo"));
+    document.getElementById("saida").style.display = "none";
+    document.getElementById("status").textContent = "Limpo.";
+    progresso();
+  });
+  carregar();
+</script>
+</body>
+</html>

@@ -25,24 +25,53 @@ enum HomeState {
 /// MS-10 Sprint D: cabeação mínima da Home pra desbloquear cadastro
 /// de carro / criação de evento via iPhone real (antes só via launch
 /// args do simulador).
-enum HomeNavTarget: Hashable {
+/// Wrapper Identifiable pra `sheet(item:)` abrir o detalhe de um carro
+/// específico direto da Home (2026-05-16 Flávio: "abre o conteúdo, não
+/// o grupo"). Não usa o próprio String porque estender String:
+/// Identifiable global seria intrusivo.
+struct HomeCarroSheetItem: Identifiable, Equatable {
+    let id: String
+}
+
+enum HomeNavTarget: Hashable, Codable {
     case eventos
     case eventosNovo
+    /// Detalhe direto de um evento específico — usado pelos cards de
+    /// "ativo hoje" e "próximo" da Home pra abrir num toque só.
+    /// 2026-05-16 (Flávio).
+    case eventoDetalhe(eventoId: String)
     case cadastros
     case garagem
     case garagemNovo
-    /// Fluxo do carro empilhado (push) em vez de folha modal — assim o
-    /// menu inferior fixo continua visível. 2026-05-31, pedido do Flávio.
-    case carroHub(carroId: String)
-    case carroCadastro(carroId: String)
-    case manutencao(carroId: String)
-    case estoque(carroId: String)
-    case eventoDetalhe(eventoId: String)
     /// Atalho dev — abre TelemetriaView (sessão demo descartável). Usado
     /// pra captura rápida em test drive sem passar pelo fluxo Evento →
     /// Stint. Botão fica embaixo do conteúdo da Home, marcado como
     /// "(dev)" pra não ser confundido com fluxo canônico.
     case telemetriaDemo
+    // S3-ajuste 2026-05-12: telas próprias dos 4 cards de estatística.
+    case stints
+    case voltas
+    case autodromos
+    case recordes
+    /// 2026-05-16 — painel do carro (km, voltas, autódromos, pilotos,
+    /// melhor volta, configuração mais usada). Empurrado pela pilha pra
+    /// o menu de baixo continuar visível. Substitui a janela modal antiga.
+    case carroDashboard(carroId: String)
+    /// Pendência 4 da reformulação Autódromos (Flávio 2026-05-17):
+    /// tela "Meu perfil" — quem é VOCÊ pro aplicativo. Vincula o login
+    /// a uma pessoa cadastrada. Recorde pessoal depende disso.
+    case meuPerfil
+    /// 2026-05-17 — telas dos atalhos da Garagem viram destinos da pilha
+    /// (em vez de janelas modais) pra o menu inferior continuar visível
+    /// dentro delas. REGRA DURA do Flávio: "menu inferior sempre visível".
+    case estoque
+    case manutencao
+    /// Lista CRUD de autódromos (atalho "Autódromos" da Garagem). Diferente
+    /// de `.autodromos` que é o relatório de visitas (card da Home).
+    case autodromosLista
+    case autodromoNovo
+    case autodromoEditar(autodromoId: String)
+    case configuracoesCarro(carroId: String)
 }
 
 /// Dados necessários para renderizar o estado cheio. Por enquanto vêm
@@ -55,10 +84,22 @@ struct HomeData {
     let eventoAtivoHoje: EventoMock?
     let proximoEvento: EventoMock?
     let carrosRecentes: [CarroMock]
+    // S3 da rodada 1 (2026-05-12): nome do piloto + 3 estatísticas novas
+    // pros 6 cards clicáveis da tela inicial.
+    /// Primeiro nome do piloto logado (pilotos.user_id == auth.uid()).
+    /// Nil quando não há login ou quando o cadastro do piloto ainda não
+    /// foi feito — a saudação cai pra versão sem nome.
+    let pilotoPrimeiroNome: String?
+    /// Quantos autódromos diferentes onde o time já correu.
+    let autodromosTotal: Int
+    /// Quantos trechos onde o piloto tem o tempo recorde dele (PB).
+    let recordesTotal: Int
+    /// Total de voltas registradas em todos os stints encerrados.
+    let voltasTotal: Int
 }
 
 struct EventoMock: Identifiable, Equatable {
-    let id = UUID()
+    var id: String = UUID().uuidString
     /// "Brasília", "Interlagos", etc.
     let pista: String
     /// "Auto. Int. Nelson Piquet", "Auto. José Carlos Pace", etc.
@@ -67,16 +108,30 @@ struct EventoMock: Identifiable, Equatable {
     let dataISO: String
     /// "09:00", "14:30" etc — nullable.
     let horario: String?
+    /// ID do evento real no banco (UUID). Nil quando o mock vem de
+    /// `HomeData.mockFilled` (sem persistência). Quando presente, o
+    /// tap no card abre o detalhe direto. 2026-05-16 (Flávio).
+    var eventoIdReal: String? = nil
 }
 
 struct CarroMock: Identifiable, Equatable {
-    let id = UUID()
+    var id: String = UUID().uuidString
     let apelido: String
     /// "Celta 1.4 turismo", "Honda Civic" etc.
     let modeloCategoria: String
     /// Cor do swatch (token Color).
     let cor: Color
     let stints: Int
+    // S2 — Conceito 1: 3 números no card do carro.
+    /// Quilometragem estimada rodada dentro do app (nil → "—").
+    let kmRodada: Double?
+    /// Velocidade máxima (km/h) já atingida pelo carro (nil → "—").
+    let vmaxKmh: Double?
+    /// Quantos autódromos diferentes o carro já visitou.
+    let autodromosCount: Int
+    /// URL pública da foto do carro (Supabase Storage). Nil → fallback
+    /// pra `cor` como fundo sólido do avatar quadrado.
+    var fotoUrl: URL? = nil
 }
 
 // MARK: - View raiz
@@ -90,12 +145,12 @@ struct HomeView: View {
     /// TelemetriaView com queue + trackBundle (a Home não tem acesso
     /// direto aos repositórios). Quando nil, o atalho dev fica oculto.
     var telemetriaDevView: (() -> AnyView)? = nil
-    /// SÓ-DEV: rota inicial pré-empilhada — usada pelos launchers de mock
-    /// pra validar telas profundas no simulador sem passar pelo login.
-    var initialRoute: [HomeNavTarget] = []
+    @EnvironmentObject private var carroRepo: CarroRepository
+    @EnvironmentObject private var eventoRepo: EventoRepository
+    @EnvironmentObject private var navCoordinator: NavigationCoordinator
     @State private var navSelection: BottomNavItem.ID?
     @State private var showSyncSheet = false
-    @State private var navPath = NavigationPath()
+    @State private var carroDetalheSheet: HomeCarroSheetItem? = nil
     private let navItems: [BottomNavItem] = [
         BottomNavItem("Home"),
         BottomNavItem("Eventos"),
@@ -104,45 +159,63 @@ struct HomeView: View {
     ]
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavigationStack(path: $navPath) {
-                shell
+        ZStack(alignment: .bottom) {
+            NavigationStack(path: $navCoordinator.navPath) {
+                shellSemMenu
                     .navigationDestination(for: HomeNavTarget.self) { target in
                         destinationView(for: target)
                     }
             }
-            // Menu inferior FIXO: fica FORA do NavigationStack, então
-            // permanece visível em TODA tela empilhada (hub do carro,
-            // cadastro, estoque, detalhe de evento…). 2026-05-31, pedido
-            // do Flávio — antes cada tela desenhava o seu, e as telas de
-            // detalhe (abertas como folha modal) cobriam o menu.
-            BottomNav(items: navItems, selection: $navSelection, onSelect: handleNavSelect)
+            // 2026-05-16 Flávio: menu de baixo SEMPRE visível em todas as
+            // telas. Por isso fica fora da NavigationStack — não some quando
+            // a navegação empurra detalhes (painel do carro, detalhe do
+            // evento etc.). Janelas modais ainda cobrem por design do iOS.
+            BottomNav(
+                items: navItems,
+                selection: Binding(
+                    get: { navItemId(for: navCoordinator.abaAtual) },
+                    set: { id in
+                        if let item = navItems.first(where: { $0.id == id }) {
+                            handleNavSelect(item)
+                        }
+                    }
+                ),
+                onSelect: handleNavSelect
+            )
         }
-        .background(Color.surface)
         .preferredColorScheme(.dark)
-        .onAppear {
-            if navSelection == nil { navSelection = navItems.first?.id }
-            if navPath.isEmpty {
-                for r in initialRoute { navPath.append(r) }
+        .sheet(isPresented: $showSyncSheet) {
+            if let coord = syncCoordinator {
+                SincronizacaoView()
+                    .environmentObject(coord)
             }
         }
     }
 
-    private var shell: some View {
-        ScrollView {
-            content
-                .padding(.horizontal, Spacing.lg)
-                .padding(.top, Spacing.md)
-                .padding(.bottom, 32)
-                .frame(maxWidth: .infinity, alignment: .leading)
+    private func navItemId(for label: String) -> BottomNavItem.ID? {
+        navItems.first(where: { $0.label == label })?.id
+    }
+
+    private var shellSemMenu: some View {
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                content
+                    .padding(.horizontal, Spacing.lg)
+                    .padding(.top, Spacing.md)
+                    .padding(.bottom, 140) // espaço pro menu (fica por cima do ZStack pai)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(Color.surface)
         }
-        .background(Color.surface)
         .overlay(alignment: .bottomTrailing) {
             if case .filled = state {
-                FAB("Novo evento", action: { navPath.append(HomeNavTarget.eventosNovo) })
+                FAB("Novo evento", action: { navCoordinator.navPath.append(HomeNavTarget.eventosNovo) })
                     .padding(.trailing, Spacing.md)
-                    .padding(.bottom, Spacing.md)
+                    .padding(.bottom, 90)
             }
+        }
+        .onAppear {
+            if navSelection == nil { navSelection = navItems.first?.id }
         }
         .overlay(alignment: .topTrailing) {
             if let coord = syncCoordinator {
@@ -153,12 +226,6 @@ struct HomeView: View {
                 .padding(.top, Spacing.md)
             }
         }
-        .sheet(isPresented: $showSyncSheet) {
-            if let coord = syncCoordinator {
-                SincronizacaoView()
-                    .environmentObject(coord)
-            }
-        }
     }
 
     @ViewBuilder
@@ -166,19 +233,55 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
             switch state {
             case .filled(let data):
-                FilledContent(data: data)
+                FilledContent(
+                    data: dataComCarrosReais(data),
+                    onTapCard: { destino in handleNavSelect(destino) },
+                    onTapEvento: { eventoId in
+                        navCoordinator.navPath.append(HomeNavTarget.eventoDetalhe(eventoId: eventoId))
+                    },
+                    onTapCarro: { carroId in
+                        navCoordinator.navPath.append(HomeNavTarget.carroDashboard(carroId: carroId))
+                    }
+                )
             case .empty:
                 EmptyContent(
-                    onCadastrarCarro: { navPath.append(HomeNavTarget.garagemNovo) },
-                    onCriarEvento: { navPath.append(HomeNavTarget.eventosNovo) }
+                    onCadastrarCarro: { navCoordinator.navPath.append(HomeNavTarget.garagemNovo) },
+                    onCriarEvento: { navCoordinator.navPath.append(HomeNavTarget.eventosNovo) }
                 )
             }
+            // Pendência 4 da reformulação Autódromos (2026-05-17):
+            // atalho pra tela "Meu perfil" (vincular login a pessoa
+            // cadastrada). Identidade do piloto vem daqui — recorde
+            // pessoal nos autódromos depende disso.
+            Button {
+                navCoordinator.navPath.append(HomeNavTarget.meuPerfil)
+            } label: {
+                HStack {
+                    Text("Meu perfil")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.text)
+                    Spacer()
+                    Text("›")
+                        .foregroundStyle(Color.textMuted)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .fill(Color.surfaceRaised)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .stroke(Color.border, lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
             // Atalho dev pra captura rápida em test drive — fica embaixo
             // do conteúdo canônico. Só renderiza quando o caller injetou
             // um builder válido.
             if telemetriaDevView != nil {
                 DevShortcuts(onAbrirTelemetria: {
-                    navPath.append(HomeNavTarget.telemetriaDemo)
+                    navCoordinator.navPath.append(HomeNavTarget.telemetriaDemo)
                 })
             }
         }
@@ -186,87 +289,197 @@ struct HomeView: View {
 
     @ViewBuilder
     private func destinationView(for target: HomeNavTarget) -> some View {
-        // Fix tab-bar: cada sub-view recebe o handler do menu de baixo
-        // pra que o usuário possa pular pra outra aba sem precisar
-        // voltar manualmente pra Home antes. Quando a sub-view chama
-        // este handler, navPath é resetado e o novo destino empilhado.
-        let nav: (BottomNavItem) -> Void = { item in
-            navigateFromSubView(to: item)
-        }
         switch target {
         case .eventos:
-            EventosListaView(onNavSelect: nav)
+            EventosListaView()
         case .eventosNovo:
-            EventosListaView(initialSheet: .novo, onNavSelect: nav)
+            EventosListaView(initialSheet: .novo)
+        case .eventoDetalhe(let eventoId):
+            EventoDetalheView(eventoId: eventoId, onClose: {
+                if !navCoordinator.navPath.isEmpty { navCoordinator.navPath.removeLast() }
+            })
         case .cadastros:
-            PessoasView(onNavSelect: nav)
+            PessoasView()
         case .garagem:
-            GaragemView(onNavSelect: nav)
+            GaragemView()
         case .garagemNovo:
-            GaragemView(initialSheet: .novo, onNavSelect: nav)
-        case .carroHub(let id):
-            CarroHubView(carroId: id, onClose: { navPath.removeLast() })
-        case .carroCadastro(let id):
-            CarroModalView(carroId: id, onClose: { navPath.removeLast() })
-        case .manutencao(let id):
-            ManutencaoConsumiveisView(carroId: id, onClose: { navPath.removeLast() })
-        case .estoque(let id):
-            PecaListaView(carroInicial: id, onClose: { navPath.removeLast() })
-        case .eventoDetalhe(let id):
-            EventoDetalheView(eventoId: id, onClose: { navPath.removeLast() })
+            GaragemView(initialSheet: .novo)
         case .telemetriaDemo:
             if let builder = telemetriaDevView {
                 builder()
             } else {
                 EmptyView()
             }
+        case .stints:
+            StintsView(onClose: { if !navCoordinator.navPath.isEmpty { navCoordinator.navPath.removeLast() } })
+        case .voltas:
+            VoltasView(onClose: { if !navCoordinator.navPath.isEmpty { navCoordinator.navPath.removeLast() } })
+        case .autodromos:
+            AutodromosView(onClose: { if !navCoordinator.navPath.isEmpty { navCoordinator.navPath.removeLast() } })
+        case .recordes:
+            RecordesView(onClose: { if !navCoordinator.navPath.isEmpty { navCoordinator.navPath.removeLast() } })
+        case .carroDashboard(let carroId):
+            CarroDashboardView(carroId: carroId, onClose: { if !navCoordinator.navPath.isEmpty { navCoordinator.navPath.removeLast() } })
+        case .meuPerfil:
+            MeuPerfilView(onClose: { if !navCoordinator.navPath.isEmpty { navCoordinator.navPath.removeLast() } })
+        case .estoque:
+            PecaListaView(onClose: { navCoordinator.popLast() })
+        case .manutencao:
+            ManutencaoPlaceholderView(onClose: { navCoordinator.popLast() })
+        case .autodromosLista:
+            AutodromoListaView(onClose: { navCoordinator.popLast() })
+        case .autodromoNovo:
+            AutodromoFormView(modo: .novo, onClose: { navCoordinator.popLast() })
+        case .autodromoEditar(let autodromoId):
+            AutodromoEditarLauncher(autodromoId: autodromoId, onClose: { navCoordinator.popLast() })
+        case .configuracoesCarro(let carroId):
+            ConfiguracaoListaView(carroId: carroId, onClose: { navCoordinator.popLast() })
         }
     }
 
-    /// Handler usado pelas sub-views quando o usuário toca em outro
-    /// item do menu inferior. Reset do navPath + push do novo destino.
-    /// "Home" só limpa o stack (volta pra raiz).
-    private func navigateFromSubView(to item: BottomNavItem) {
-        navPath = NavigationPath()
-        switch item.label {
-        case "Home":
-            break
-        case "Eventos":
-            navPath.append(HomeNavTarget.eventos)
-        case "Cadastros":
-            navPath.append(HomeNavTarget.cadastros)
-        case "Garagem":
-            navPath.append(HomeNavTarget.garagem)
-        default:
-            break
+    /// S2 — Rodada 1 fim: substitui `carrosRecentes` mock por carros reais
+    /// vindos do CarroRepository, mantendo o resto dos dados (eventos,
+    /// totais, etc) como está. Quando o repositório está vazio (sem login
+    /// ou sem cadastro), devolve `data` inalterado pra preservar a UX
+    /// existente da Home cheia/vazia.
+    private func dataComCarrosReais(_ data: HomeData) -> HomeData {
+        let reais: [CarroMock] = carroRepo.carros.prefix(2).map { c in
+            let metricas = carroRepo.metricasPorCarro[c.id] ?? .vazio
+            let modeloCat = [c.modelo, c.categoria].compactMap { $0 }.joined(separator: " · ")
+            return CarroMock(
+                id: c.id,
+                apelido: c.apelido,
+                modeloCategoria: modeloCat.isEmpty ? "—" : modeloCat,
+                cor: Color(hex: c.cor ?? "") ?? .gray,
+                stints: carroRepo.stintsPorCarro[c.id] ?? 0,
+                kmRodada: metricas.kmRodada,
+                vmaxKmh: metricas.vmaxKmh,
+                autodromosCount: metricas.autodromosCount,
+                fotoUrl: carroRepo.fotoPublicURL(c.fotoUrl)
+            )
         }
+        // Eventos REAIS (2026-05-16 — Flávio cobrou clique funcionando):
+        // ativo de hoje = primeiro evento com data ≤ hoje ≤ data_fim.
+        // próximo = primeiro evento futuro.
+        let agora = Int64(Date().timeIntervalSince1970 * 1000)
+        let inicioDeHojeMs: Int64 = {
+            let cal = Calendar(identifier: .gregorian)
+            return Int64(cal.startOfDay(for: Date()).timeIntervalSince1970 * 1000)
+        }()
+        let umDiaMs: Int64 = 24 * 60 * 60 * 1000
+        let fimDeHojeMs = inicioDeHojeMs + umDiaMs - 1
+
+        let ativoReal = eventoRepo.eventos.first { ev in
+            ev.evento.dataEvento <= fimDeHojeMs && ev.evento.dataFim >= inicioDeHojeMs
+        }
+        let proximoReal = eventoRepo.eventos
+            .filter { $0.evento.dataEvento > fimDeHojeMs }
+            .min(by: { $0.evento.dataEvento < $1.evento.dataEvento })
+
+        let ativoMock: EventoMock? = ativoReal.map { mockFromReal($0) }
+        let proximoMock: EventoMock? = proximoReal.map { mockFromReal($0) }
+        _ = agora
+
+        // Quando temos eventos reais no banco (mesmo que NENHUM seja ativo
+        // hoje ou próximo), os cards mock antigos somem — evitam o usuário
+        // tocar num card "fantasma" que não navega.
+        let temEventosReais = !eventoRepo.eventos.isEmpty
+        return HomeData(
+            carrosTotal: carroRepo.carros.isEmpty ? data.carrosTotal : carroRepo.carros.count,
+            eventosTotal: eventoRepo.eventos.isEmpty ? data.eventosTotal : eventoRepo.eventos.count,
+            stintsTotal: data.stintsTotal,
+            eventoAtivoHoje: temEventosReais ? ativoMock : data.eventoAtivoHoje,
+            proximoEvento: temEventosReais ? proximoMock : data.proximoEvento,
+            carrosRecentes: carroRepo.carros.isEmpty ? data.carrosRecentes : Array(reais),
+            pilotoPrimeiroNome: data.pilotoPrimeiroNome,
+            autodromosTotal: data.autodromosTotal,
+            recordesTotal: data.recordesTotal,
+            voltasTotal: data.voltasTotal
+        )
     }
 
-    /// Menu inferior fixo: tocar num item SEMPRE volta à raiz daquela aba
-    /// (zera o histórico) e marca a aba ativa. Vale de qualquer
-    /// profundidade — inclusive de dentro do hub/cadastro/estoque.
+    /// Converte EventoView real (do repo) em EventoMock pra UI da Home,
+    /// preservando o id real pra navegação por toque.
+    private func mockFromReal(_ ev: EventoView) -> EventoMock {
+        let dataISO: String = {
+            let date = Date(timeIntervalSince1970: TimeInterval(ev.evento.dataEvento) / 1000)
+            let f = DateFormatter()
+            f.dateFormat = "yyyy-MM-dd"
+            f.timeZone = .current
+            return f.string(from: date)
+        }()
+        return EventoMock(
+            pista: ev.pistaDisplay,
+            pistaOficial: ev.pistaLayoutNome,
+            dataISO: dataISO,
+            horario: nil,
+            eventoIdReal: ev.evento.id
+        )
+    }
+
+    /// BottomNav é tab-like visualmente, mas comportamento é push de
+    /// NavigationStack — sub-views ganham back button do sistema. Home
+    /// é a única raiz; tocar "Home" volta pra raiz.
     private func handleNavSelect(_ item: BottomNavItem) {
-        navSelection = item.id
-        navPath = NavigationPath()
         switch item.label {
         case "Home":
-            break // a raiz do stack já é a Home
+            if !navCoordinator.navPath.isEmpty { navCoordinator.goHome() }
         case "Eventos":
-            navPath.append(HomeNavTarget.eventos)
+            navCoordinator.navPath.append(HomeNavTarget.eventos)
         case "Cadastros":
-            navPath.append(HomeNavTarget.cadastros)
+            navCoordinator.navPath.append(HomeNavTarget.cadastros)
         case "Garagem":
-            navPath.append(HomeNavTarget.garagem)
+            navCoordinator.navPath.append(HomeNavTarget.garagem)
         default:
             break
         }
+        // Reset selection pro item Home assim que voltar pra raiz —
+        // BottomNav só aparece na Home, então sub-views não precisam
+        // do estado.
+        navSelection = navItems.first?.id
     }
+
+    /// S3 rodada 1 — S3-ajuste 2026-05-12: cada card abre uma tela própria.
+    /// Decisão P3 #2.3 (redirecionar pra Eventos) foi REVOGADA por Flávio.
+    private func handleNavSelect(_ destino: HomeStatDestino) {
+        switch destino {
+        case .carros:
+            navCoordinator.navPath.append(HomeNavTarget.garagem)
+        case .eventos:
+            navCoordinator.navPath.append(HomeNavTarget.eventos)
+        case .stints:
+            navCoordinator.navPath.append(HomeNavTarget.stints)
+        case .autodromos:
+            navCoordinator.navPath.append(HomeNavTarget.autodromos)
+        case .recordes:
+            navCoordinator.navPath.append(HomeNavTarget.recordes)
+        case .voltas:
+            navCoordinator.navPath.append(HomeNavTarget.voltas)
+        }
+    }
+}
+
+/// Destinos de toque dos 6 cards de estatística da Home. P3 #2.3:
+/// Stints/Autódromos/Recordes/Voltas redirecionam pra Eventos com filtro
+/// (filtro fica pra sprint futura — hoje só abre Eventos).
+enum HomeStatDestino {
+    case carros, eventos, stints, autodromos, recordes, voltas
 }
 
 // MARK: - Estado cheio
 
 private struct FilledContent: View {
     let data: HomeData
+    /// S3 da rodada 1 (2026-05-12): callback de toque nos 6 cards de
+    /// estatística. HomeView passa pra cá pra navegar via NavigationStack.
+    let onTapCard: (HomeStatDestino) -> Void
+    /// 2026-05-16 (Flávio): toque nos cards "Ativo hoje" e "Próximo evento"
+    /// abre o detalhe do evento real direto. Recebe o eventoId.
+    var onTapEvento: (String) -> Void = { _ in }
+    /// 2026-05-16 (Flávio "abrir o conteúdo, não o grupo"): toque em um
+    /// card específico de carro na lista da Home abre o detalhe daquele
+    /// carro direto. Não passa mais pela Garagem.
+    var onTapCarro: (String) -> Void = { _ in }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
@@ -284,55 +497,87 @@ private struct FilledContent: View {
             .padding(.horizontal, Spacing.xs)
             .padding(.vertical, Spacing.sm)
 
+            // S3 #2 — 6 cards clicáveis em grid 3x2.
             SummaryStats([
-                StatItem(value: "\(data.carrosTotal)", label: "Carros"),
-                StatItem(value: "\(data.eventosTotal)", label: "Eventos"),
-                StatItem(value: "\(data.stintsTotal)", label: "Stints"),
-            ])
-
-            if !data.carrosRecentes.isEmpty {
-                Text("Carros recentes".uppercased())
-                    .font(.system(size: 11, weight: .semibold))
-                    .tracking(1.54) // 0.14em em 11pt
-                    .foregroundStyle(Color.textFaint)
-                    .padding(.horizontal, Spacing.xs)
-                    .padding(.top, Spacing.sm)
-
-                VStack(spacing: Spacing.sm) {
-                    ForEach(Array(data.carrosRecentes.prefix(3))) { carro in
-                        CarroRow(carro: carro)
-                    }
-                }
-            }
-
-            // Próximos eventos no fim da página (decisão Flávio 2026-05-12).
-            // Antes ficava logo após o header — agora carros vêm primeiro.
-            // O bloco DevShortcuts (atalhos dev) é renderizado depois deste
-            // FilledContent pelo parent.
-            if data.eventoAtivoHoje != nil || data.proximoEvento != nil {
-                Text("Próximos eventos".uppercased())
-                    .font(.system(size: 11, weight: .semibold))
-                    .tracking(1.54)
-                    .foregroundStyle(Color.textFaint)
-                    .padding(.horizontal, Spacing.xs)
-                    .padding(.top, Spacing.sm)
-            }
+                StatItem(value: "\(data.carrosTotal)", label: "Carros",
+                         onTap: { onTapCard(.carros) }),
+                StatItem(value: "\(data.eventosTotal)", label: "Eventos",
+                         onTap: { onTapCard(.eventos) }),
+                StatItem(value: "\(data.stintsTotal)", label: "Stints",
+                         onTap: { onTapCard(.stints) }),
+                StatItem(value: "\(data.autodromosTotal)", label: "Autódromos",
+                         onTap: { onTapCard(.autodromos) }),
+                StatItem(value: "\(data.recordesTotal)", label: "Recordes",
+                         onTap: { onTapCard(.recordes) }),
+                StatItem(value: "\(data.voltasTotal)", label: "Voltas",
+                         onTap: { onTapCard(.voltas) }),
+            ], columns: 3)
 
             if let evento = data.eventoAtivoHoje {
-                EventoAtivoHojeCard(evento: evento)
+                EventoAtivoHojeCard(evento: evento, onTap: {
+                    if let id = evento.eventoIdReal { onTapEvento(id) }
+                })
             }
 
             if let proximo = data.proximoEvento {
-                ProximoEventoCard(evento: proximo, hojeISO: data.eventoAtivoHoje?.dataISO ?? todayISO())
+                ProximoEventoCard(
+                    evento: proximo,
+                    hojeISO: data.eventoAtivoHoje?.dataISO ?? todayISO(),
+                    onTap: {
+                        if let id = proximo.eventoIdReal { onTapEvento(id) }
+                    }
+                )
+            }
+
+            // S3 #3 — bloco "Garagem" substitui "Carros recentes" e mostra
+            // TODOS os carros (não só 3). Toque no cabeçalho ou em qualquer
+            // carro leva pra Garagem completa.
+            if !data.carrosRecentes.isEmpty {
+                Button(action: { onTapCard(.carros) }) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Garagem".uppercased())
+                            .font(.system(size: 11, weight: .semibold))
+                            .tracking(1.54)
+                            .foregroundStyle(Color.textFaint)
+                        Text(data.carrosTotal == 1 ? "1 carro" : "\(data.carrosTotal) carros")
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundStyle(Color.textFaint)
+                        Spacer()
+                        Text("Ver todos ›")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Color.accent)
+                    }
+                    .padding(.horizontal, Spacing.xs)
+                    .padding(.top, Spacing.sm)
+                }
+                .buttonStyle(.plain)
+
+                VStack(spacing: Spacing.sm) {
+                    ForEach(data.carrosRecentes) { carro in
+                        Button(action: { onTapCarro(carro.id) }) {
+                            CarroRow(carro: carro)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
         }
     }
 
-    /// "Hoje em Brasília" se há evento ativo, senão "Próximo evento em N dias",
-    /// senão "Pronto pra primeira pedalada".
+    /// S3 da rodada 1 (2026-05-12): adiciona ", <PrimeiroNome>" ao fim
+    /// de qualquer um dos 3 estados quando há piloto logado (decisão
+    /// Flávio: aplica nos 3 estados, recomendação P3 #1).
+    /// "Hoje em Brasília, Flávio" / "Próximo evento em 3 dias, Flávio"
+    /// / "Sem eventos planejados, Flávio".
     private func headerStatusLine(data: HomeData) -> AttributedString {
+        let nomeSufixo: String = {
+            guard let n = data.pilotoPrimeiroNome,
+                  !n.trimmingCharacters(in: .whitespaces).isEmpty else { return "" }
+            return ", \(n)"
+        }()
+
         if let ativo = data.eventoAtivoHoje {
-            var s = AttributedString("Hoje em \(ativo.pista)")
+            var s = AttributedString("Hoje em \(ativo.pista)\(nomeSufixo)")
             if let range = s.range(of: ativo.pista) {
                 s[range].foregroundColor = Color.accent
             }
@@ -341,13 +586,13 @@ private struct FilledContent: View {
         if let proximo = data.proximoEvento {
             let dias = daysFromTodayToISO(proximo.dataISO)
             let label = dias == 1 ? "amanhã" : "em \(dias) dias"
-            var s = AttributedString("Próximo evento \(label)")
+            var s = AttributedString("Próximo evento \(label)\(nomeSufixo)")
             if let range = s.range(of: label) {
                 s[range].foregroundColor = Color.accent
             }
             return s
         }
-        return AttributedString("Sem eventos planejados")
+        return AttributedString("Sem eventos planejados\(nomeSufixo)")
     }
 }
 
@@ -358,22 +603,26 @@ private struct FilledContent: View {
 /// visual do estado "está acontecendo agora").
 private struct EventoAtivoHojeCard: View {
     let evento: EventoMock
+    var onTap: () -> Void = {}
 
     var body: some View {
-        Card(style: .accent) {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Eyebrow(text: "Ativo · hoje")
-                Text("\(evento.pista) · \(formatDateLong(evento.dataISO))")
-                    .font(.system(size: 18, weight: .semibold))
-                    .tracking(-0.27)
-                    .foregroundStyle(Color.text)
-                if let oficial = evento.pistaOficial {
-                    Text(subtitleLine(evento: evento, oficial: oficial))
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundStyle(Color.textFaint)
+        Button(action: onTap) {
+            Card(style: .accent) {
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    Eyebrow(text: "Ativo · hoje")
+                    Text("\(evento.pista) · \(formatDateLong(evento.dataISO))")
+                        .font(.system(size: 18, weight: .semibold))
+                        .tracking(-0.27)
+                        .foregroundStyle(Color.text)
+                    if let oficial = evento.pistaOficial {
+                        Text(subtitleLine(evento: evento, oficial: oficial))
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(Color.textFaint)
+                    }
                 }
             }
         }
+        .buttonStyle(.plain)
     }
 
     private func subtitleLine(evento: EventoMock, oficial: String) -> String {
@@ -389,89 +638,107 @@ private struct EventoAtivoHojeCard: View {
 private struct ProximoEventoCard: View {
     let evento: EventoMock
     let hojeISO: String
+    var onTap: () -> Void = {}
 
     private var dias: Int {
         daysBetween(fromISO: hojeISO, toISO: evento.dataISO)
     }
 
     var body: some View {
-        Card {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Eyebrow(text: "Próximo evento")
+        Button(action: onTap) {
+            Card {
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    Eyebrow(text: "Próximo evento")
 
-                HStack(alignment: .lastTextBaseline, spacing: Spacing.sm) {
-                    Text("\(dias)")
-                        .font(.system(size: 36, weight: .semibold))
-                        .monospacedDigit()
-                        .tracking(-1.08) // -0.03em em 36pt
-                        .foregroundStyle(Color.accent)
-                    Text(dias == 1 ? "DIA" : "DIAS")
-                        .font(.system(size: 11, weight: .medium))
-                        .tracking(1.1) // 0.1em em 11pt
-                        .foregroundStyle(Color.textFaint)
-                }
+                    HStack(alignment: .lastTextBaseline, spacing: Spacing.sm) {
+                        Text("\(dias)")
+                            .font(.system(size: 36, weight: .semibold))
+                            .monospacedDigit()
+                            .tracking(-1.08)
+                            .foregroundStyle(Color.accent)
+                        Text(dias == 1 ? "DIA" : "DIAS")
+                            .font(.system(size: 11, weight: .medium))
+                            .tracking(1.1)
+                            .foregroundStyle(Color.textFaint)
+                    }
 
-                Text("\(evento.pista) · \(formatDateLong(evento.dataISO))")
-                    .font(.system(size: 18, weight: .semibold))
-                    .tracking(-0.27)
-                    .foregroundStyle(Color.text)
-                    .padding(.top, Spacing.xs)
+                    Text("\(evento.pista) · \(formatDateLong(evento.dataISO))")
+                        .font(.system(size: 18, weight: .semibold))
+                        .tracking(-0.27)
+                        .foregroundStyle(Color.text)
+                        .padding(.top, Spacing.xs)
 
-                if let oficial = evento.pistaOficial {
-                    Text("\(formatWeekdayShort(evento.dataISO)), \(formatDateShort(evento.dataISO)) · \(oficial)")
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundStyle(Color.textFaint)
+                    if let oficial = evento.pistaOficial {
+                        Text("\(formatWeekdayShort(evento.dataISO)), \(formatDateShort(evento.dataISO)) · \(oficial)")
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(Color.textFaint)
+                    }
                 }
             }
         }
+        .buttonStyle(.plain)
     }
 }
 
-// MARK: - Carros recentes
+// MARK: - Carros recentes (S2 — Conceito 1)
 
-/// Linha de carro — espelha `.event` do mockup-home-cheio (mesma estrutura
-/// flex: avatar/swatch + body com nome + sub + meta tags + chev).
+/// Linha de carro com avatar grande de 84pt à esquerda e 3 números embaixo
+/// (km no app · velocidade máxima · autódromos). Espelha o mesmo padrão
+/// do `CarroCard` da Garagem — conceito 1 aprovado por Flávio em 2026-05-12.
 private struct CarroRow: View {
     let carro: CarroMock
 
+    @State private var fotoLocal: UIImage?
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(carro.cor)
-                .frame(width: 52, height: 52)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.border, lineWidth: 1)
-                )
+        HStack(alignment: .center, spacing: 16) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(carro.cor)
+                if let local = fotoLocal {
+                    Image(uiImage: local).resizable().scaledToFill()
+                } else if let url = carro.fotoUrl {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .empty:
+                            ProgressView().tint(Color.textFaint)
+                        case .success(let img):
+                            img.resizable().scaledToFill()
+                        case .failure:
+                            EmptyView()
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                }
+            }
+            .frame(width: 84, height: 84)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.border, lineWidth: 1)
+            )
+            .task(id: carro.id) {
+                fotoLocal = CarroRepository.carregarFotoLocal(carroId: carro.id)
+            }
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(carro.apelido)
-                    .font(.system(size: 16, weight: .semibold))
-                    .tracking(-0.08) // -0.005em em 16pt
+                    .font(.system(size: 19, weight: .semibold))
+                    .tracking(-0.285) // -0.015em em 19pt
                     .foregroundStyle(Color.text)
+                    .lineLimit(1)
                 Text(carro.modeloCategoria)
                     .font(.system(size: 12, weight: .regular))
                     .foregroundStyle(Color.textFaint)
-                HStack(spacing: 6) {
-                    EventTag(text: "\(carro.stints) stints")
-                }
-                .padding(.top, Spacing.sm)
+                    .lineLimit(1)
+                numerosRow
+                    .padding(.top, 10)
             }
 
             Spacer(minLength: 0)
-
-            Text("›")
-                .font(.system(size: 14, weight: .regular))
-                .foregroundStyle(Color.textMuted)
-                .frame(width: 24, height: 24)
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color.surfaceHover)
-                )
-                .padding(.top, 14)
         }
         .padding(.horizontal, Spacing.md)
-        .padding(.vertical, 14)
+        .padding(.vertical, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
@@ -481,6 +748,79 @@ private struct CarroRow: View {
             RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
                 .stroke(Color.border, lineWidth: 1)
         )
+    }
+
+    /// ViewThatFits: tenta 3 colunas; se a fonte grande do iOS quebrar,
+    /// cai pra layout vertical com cada métrica numa linha completa.
+    private var numerosRow: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline, spacing: 14) {
+                metricaCol(valor: formatKm(carro.kmRodada), unidade: "km", rotulo: "no app")
+                metricaCol(valor: formatVmax(carro.vmaxKmh), unidade: "km/h", rotulo: "vel. máxima")
+                metricaCol(valor: "\(carro.autodromosCount)", unidade: nil, rotulo: "autódromos")
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                metricaLinha(valor: formatKm(carro.kmRodada), unidade: "km", rotulo: "no app")
+                metricaLinha(valor: formatVmax(carro.vmaxKmh), unidade: "km/h", rotulo: "vel. máxima")
+                metricaLinha(valor: "\(carro.autodromosCount)", unidade: nil, rotulo: "autódromos")
+            }
+        }
+    }
+
+    private func metricaCol(valor: String, unidade: String?, rotulo: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(valor)
+                    .font(.system(size: 18, weight: .semibold))
+                    .monospacedDigit()
+                    .tracking(-0.27)
+                    .foregroundStyle(Color.text)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                if let unidade = unidade {
+                    Text(unidade)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.textMuted)
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+            }
+            Text(rotulo.uppercased())
+                .font(.system(size: 9, weight: .medium))
+                .tracking(0.72)
+                .foregroundStyle(Color.textFaint)
+                .fixedSize(horizontal: true, vertical: false)
+        }
+    }
+
+    private func metricaLinha(valor: String, unidade: String?, rotulo: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 5) {
+            Text(valor)
+                .font(.system(size: 16, weight: .semibold))
+                .monospacedDigit()
+                .foregroundStyle(Color.text)
+            if let unidade = unidade {
+                Text(unidade)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.textMuted)
+            }
+            Text("·")
+                .font(.system(size: 11, weight: .regular))
+                .foregroundStyle(Color.textFaint)
+            Text(rotulo)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Color.textFaint)
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func formatKm(_ km: Double?) -> String {
+        guard let km = km, km > 0 else { return "—" }
+        return String(format: "%.0f", km)
+    }
+
+    private func formatVmax(_ kmh: Double?) -> String {
+        guard let kmh = kmh, kmh > 0 else { return "—" }
+        return String(format: "%.0f", kmh)
     }
 }
 
@@ -765,15 +1105,26 @@ extension HomeData {
                 apelido: "Celta 1.4",
                 modeloCategoria: "Chevrolet · Turismo",
                 cor: Color(red: 30.0/255, green: 100.0/255, blue: 180.0/255), // azul Chevrolet
-                stints: 31
+                stints: 31,
+                kmRodada: 245,
+                vmaxKmh: 187,
+                autodromosCount: 3
             ),
             CarroMock(
                 apelido: "Honda Civic",
                 modeloCategoria: "Honda · Sedã",
                 cor: Color(red: 130.0/255, green: 130.0/255, blue: 138.0/255), // cinza
-                stints: 16
+                stints: 16,
+                kmRodada: 128,
+                vmaxKmh: 174,
+                autodromosCount: 2
             ),
-        ]
+        ],
+        // S3 rodada 1
+        pilotoPrimeiroNome: "Flávio",
+        autodromosTotal: 3,
+        recordesTotal: 8,
+        voltasTotal: 412
     )
 }
 

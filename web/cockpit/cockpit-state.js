@@ -56,7 +56,6 @@ export const Tone = Object.freeze({
 });
 
 export const ApexEstado = Object.freeze({
-  PENDENTE:  'pendente',  // ainda sem dado real — desenha neutro/cinza
   OK_MELHOR: 'ok-melhor',
   OK_PIOR:   'ok-pior',
 });
@@ -79,10 +78,10 @@ export function defaultCockpitState() {
     delta: { value: '0.00', tone: Tone.NEUTRO },
     acao:  { texto: '',     tone: Tone.NEUTRO },
     apex: {
-      entrada: { estado: ApexEstado.PENDENTE, valorKmh: null, nomeCurva: null },
-      freio:   { estado: ApexEstado.PENDENTE, atualM: null, refM: null, deltaM: null, lat: null, lng: null },
-      apice:   { estado: ApexEstado.PENDENTE, valorKmh: null, deltaM: null, lat: null, lng: null, nomeCurva: null },
-      saida:   { estado: ApexEstado.PENDENTE, valorKmh: null, nomeCurva: null },
+      entrada: { estado: ApexEstado.OK_PIOR, valorKmh: null },
+      freio:   { estado: ApexEstado.OK_PIOR, atualM: null, refM: null },
+      apice:   { estado: ApexEstado.OK_PIOR, valorKmh: null },
+      saida:   { estado: ApexEstado.OK_PIOR, valorKmh: null },
     },
   };
 }
