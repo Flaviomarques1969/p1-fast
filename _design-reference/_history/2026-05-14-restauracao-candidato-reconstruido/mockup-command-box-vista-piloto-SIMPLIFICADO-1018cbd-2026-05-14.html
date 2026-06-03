@@ -8,8 +8,7 @@
 <meta http-equiv="Expires" content="0">
 <title>Mockup polido — Command Box · Vista Piloto (P1 Fast)</title>
 <script>
-// Auto-reset agressivo: ?reset=1 na URL zera a memória do navegador antes
-// de qualquer coisa rodar — garante volta ao layout inicial sem clique.
+// Auto-reset: ?reset=1 zera memória antes do carregamento.
 (function(){
   if(location.search.indexOf('reset=1') >= 0){
     try{
@@ -17,6 +16,44 @@
       localStorage.removeItem('p1fast-shift-light-fit-v1');
     }catch(e){}
   }
+  // Pre-seed: se localStorage está vazio, popula com layout default que
+  // bate com o print do Flávio (2026-05-13). TODAS as posições (fixos+custom)
+  // são definidas aqui pra garantir reprodução fiel da imagem-referência.
+  try{
+    var KEY = 'p1fast-vista-piloto-layout-v1';
+    if(!localStorage.getItem(KEY)){
+      var seed = {
+        positions: {
+          // FIXOS — posições medidas do print
+          'header':     {x:0,  y:0,  w:100, h:8},
+          'video':      {x:4,  y:8,  w:27,  h:45},
+          'mapa':       {x:4,  y:55, w:27,  h:35},
+          'hud':        {x:31, y:8,  w:27,  h:42},
+          'coach':      {x:67, y:35, w:18,  h:27},
+          'stint':      {x:67, y:8,  w:18,  h:27},
+          'checklist':  {x:85, y:8,  w:15,  h:42},
+          'fuel-gauge': {x:85, y:85, w:15,  h:15},
+          'delta-acum': {x:31, y:50, w:27,  h:5},
+          // CUSTOM — adicionados pra bater com o print
+          'stint-bar':  {x:0,  y:8,  w:4,   h:82},
+          'passagem':   {x:31, y:55, w:18,  h:23},
+          'carro':      {x:49, y:55, w:18,  h:23},
+          'vmin':       {x:49, y:78, w:18,  h:14},
+          'frenagem':   {x:31, y:78, w:18,  h:14},
+          'pneus':      {x:85, y:50, w:15,  h:35}
+        },
+        customs: [
+          {id:'stint-bar', name:'Stint'},
+          {id:'passagem',  name:'Passagem'},
+          {id:'carro',     name:'Carro'},
+          {id:'vmin',      name:'Vmin'},
+          {id:'frenagem',  name:'Frenagem'},
+          {id:'pneus',     name:'Pneus'}
+        ]
+      };
+      localStorage.setItem(KEY, JSON.stringify(seed));
+    }
+  }catch(e){}
 })();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -234,9 +271,7 @@ html,body{
   padding:6px 2px;
   background:transparent;border:none;cursor:pointer;
   text-align:center;white-space:nowrap;
-  text-decoration:none;
 }
-.vista-btn:hover{color:var(--text-1);}
 .vista-btn.active{color:var(--gold-1);}
 .vista-btn.active::after{
   content:"";display:block;
@@ -248,7 +283,7 @@ html,body{
 
 /* VÍDEO 0-40%, 8-54% */
 .b-video{
-  position:absolute;left:4.5%;top:8.12%;width:30%;height:45%;
+  position:absolute;left:0.08%;top:8.12%;width:40%;height:45%;
   border-right:1px solid var(--hairline);
   border-bottom:1px solid var(--hairline);
   overflow:hidden;
@@ -295,7 +330,7 @@ html,body{
 
 /* MAPA 0-40%, 54-100% */
 .b-map{
-  position:absolute;left:4.5%;top:53%;width:25%;height:36%;
+  position:absolute;left:0;top:53%;width:29%;height:47%;
   border-right:1px solid var(--hairline);
   overflow:hidden;
 }
@@ -397,24 +432,6 @@ html,body{
    Brake e vmin são dados de cada volta — aparecem só quando o carro cruza. */
 .pt.is-entry, .pt.is-exit{ opacity:1; }
 .pt.is-apex{ opacity:1; }
-
-/* Marcha de entrada — texto pelo lado de FORA do traçado, próximo do apice
-   de cada curva. Cor branca para destacar contra o asfalto escuro.
-   Texto em pé (vertical no sentido da tela) — rotação inversa do mapa
-   aplicada no atributo transform de cada texto. */
-.pt-entry-gear{
-  fill:#FFFFFF;
-  font-family:'Helvetica Neue',sans-serif;
-  font-size:20px;
-  font-weight:600;
-  text-anchor:middle;
-  dominant-baseline:central;
-  paint-order:stroke;
-  stroke:rgba(0,0,0,0.70);
-  stroke-width:3;
-  stroke-linejoin:round;
-  pointer-events:none;
-}
 
 /* Entry/exit: barrinha perpendicular ao traçado (mesmo padrão da linha de
    chegada/largada — cor ouro, mais discreta). */
@@ -598,7 +615,7 @@ html,body{
    e ser dimensionado sem estar preso numa caixa visual.
    Padding-top alto pra dar respiro à curva superior do bezel. */
 .b-hud{
-  position:absolute;left:36%;top:8.5%;width:27%;height:45%;
+  position:absolute;left:36%;top:4%;width:35%;height:75%;
   /* Padding reduzido pra dar mais área pro velocímetro (Flávio 2026-05-11):
      era 32px 8px 6px e estava sobrando moldura em cima/lados. */
   padding:4px 0 2px;
@@ -724,26 +741,12 @@ html,body{
   filter:drop-shadow(0 0 3px rgba(212, 56, 56, 0.45));
 }
 
-/* Odômetro do carro estilo plaquinhas mecânicas (Flávio 2026-05-15) —
-   substitui a antiga marca "P1 FAST" no centro do dial. Cada dígito numa
-   caixinha com fundo escuro e borda dourada fina, lembrando odômetro
-   analógico clássico (estilo VDO/fusca). */
-.sg-odo-plates .sg-odo-cell rect{
-  fill:#0E1116;
-  stroke:rgba(212,175,55,0.55);
-  stroke-width:0.4;
-}
-.sg-odo-plates .sg-odo-cell text{
+/* Marca dentro do dial — assinatura sutil "P1 FAST" */
+.sg-brand{
   font-family:'Helvetica Neue','Inter',sans-serif;
-  font-size:9.5px;font-weight:600;letter-spacing:0;
-  fill:#F5F0E0;
+  font-size:7.8px;letter-spacing:.4em;font-weight:600;
+  fill:rgba(232, 201, 122, 0.65);
   text-anchor:middle;
-  font-variant-numeric:tabular-nums;
-}
-.sg-odo-plates .sg-odo-unit{
-  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
-  font-size:5.5px;letter-spacing:.18em;
-  fill:rgba(212,175,55,0.85);
   text-transform:uppercase;
 }
 
@@ -921,15 +924,15 @@ html,body{
   position:absolute;left:64%;top:9%;width:21%;height:45%;
   border-right:1px solid var(--hairline);
   border-bottom:1px solid var(--hairline);
-  padding:10px 12px 10px;
-  display:flex;flex-direction:column;gap:5px;
+  padding:18px 16px;
+  display:flex;flex-direction:column;gap:10px;
   background:rgba(10,14,24,0.30);
   overflow:hidden;
   contain:layout paint;
 }
 .coach-eyebrow{
   font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
-  font-size:10px;letter-spacing:.22em;color:var(--gold-2);text-transform:uppercase;
+  font-size:11px;letter-spacing:.22em;color:var(--gold-2);text-transform:uppercase;
 }
 
 /* Área da mensagem do P1 Coach — espaço reservado pra a frase principal
@@ -937,16 +940,16 @@ html,body{
    pra cima do bloco de baixo. min-height fixo absorve mensagens variáveis;
    o resto desce naturalmente dentro do b-coach. */
 .coach-message-area{
-  display:flex;flex-direction:column;justify-content:center;gap:4px;
+  display:flex;flex-direction:column;justify-content:center;gap:8px;
   flex:0 0 auto;
-  min-height:64px;
-  padding-bottom:4px;
+  min-height:112px;
+  padding-bottom:6px;
   border-bottom:1px solid var(--hairline);
 }
 .coach-frase{
   font-family:'Helvetica Neue',sans-serif;
-  font-size:18px;font-weight:200;letter-spacing:-.3px;
-  line-height:1.1;color:var(--text-1);
+  font-size:24px;font-weight:200;letter-spacing:-.3px;
+  line-height:1.15;color:var(--text-1);
   transition:color 0.25s ease;
 }
 .coach-frase em{
@@ -960,67 +963,68 @@ html,body{
 .coach-frase.coach-frase-good em{ color:#3FE08C; font-weight:400; }
 .coach-meta{
   font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
-  font-size:9px;letter-spacing:.14em;color:var(--text-2);
+  font-size:11px;letter-spacing:.14em;color:var(--text-2);
   text-transform:uppercase;
 }
 .coach-licao{
   font-family:'Helvetica Neue',sans-serif;
-  font-size:11px;color:var(--text-2);letter-spacing:.02em;line-height:1.3;
-  padding-top:5px;border-top:1px solid var(--hairline);
+  font-size:14px;color:var(--text-2);letter-spacing:.02em;line-height:1.35;
+  padding-top:10px;border-top:1px solid var(--hairline);
   /* Altura fixa: a lição focada NÃO desloca os blocos de baixo
      (pontuação/progresso/análise/preditivo) quando a mensagem do
      coach acima crescer ou o texto da lição variar de tamanho.
      Cabe título (strong) + 2-3 linhas de descrição confortavelmente. */
   flex:0 0 auto;
-  min-height:42px;
+  min-height:66px;
   overflow:hidden;
 }
 .coach-licao .l-tag{
-  font-size:8px;letter-spacing:.18em;color:var(--gold-2);text-transform:uppercase;
-  display:block;margin-bottom:2px;
+  font-size:10px;letter-spacing:.2em;color:var(--gold-2);text-transform:uppercase;
+  display:block;margin-bottom:5px;
 }
 .coach-licao strong{color:var(--text-1);font-weight:500;}
 
 .coach-progresso{
-  display:flex;align-items:center;gap:10px;
-  padding-top:5px;border-top:1px solid var(--hairline);
+  display:flex;align-items:center;gap:12px;
+  margin-top:auto;
+  padding-top:10px;border-top:1px solid var(--hairline);
 }
 .coach-progresso .cp-bar{
-  flex:1;height:5px;background:rgba(255,255,255,0.06);
-  border-radius:2.5px;overflow:hidden;
+  flex:1;height:7px;background:rgba(255,255,255,0.06);
+  border-radius:3.5px;overflow:hidden;
 }
 .coach-progresso .cp-fill{height:100%;background:var(--gold-2);width:78%;}
 .coach-progresso .cp-num{
   font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
-  font-size:11px;color:var(--gold-1);letter-spacing:.04em;
+  font-size:13px;color:var(--gold-1);letter-spacing:.04em;
 }
 
 .coach-pontuacao{
   font-family:'Helvetica Neue',sans-serif;
-  display:flex;align-items:baseline;gap:6px;
+  display:flex;align-items:baseline;gap:10px;
 }
 .coach-pontuacao .pt-num{
-  font-size:22px;font-weight:100;letter-spacing:-1px;color:var(--text-1);
+  font-size:36px;font-weight:100;letter-spacing:-1px;color:var(--text-1);
   font-variant-numeric:tabular-nums;line-height:1;
 }
 .coach-pontuacao .pt-tot{
-  font-size:11px;color:var(--text-3);font-weight:300;
+  font-size:15px;color:var(--text-3);font-weight:300;
 }
 .coach-pontuacao .pt-key{
   font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
-  font-size:8px;letter-spacing:.18em;color:var(--text-3);text-transform:uppercase;
+  font-size:10px;letter-spacing:.18em;color:var(--text-3);text-transform:uppercase;
   margin-left:auto;
 }
 
 .coach-analise{
   font-family:'Helvetica Neue',sans-serif;
-  font-size:10px;line-height:1.3;color:var(--text-2);
+  font-size:13px;line-height:1.4;color:var(--text-2);
   font-style:italic;
 }
 
 /* STINT 62-85%, 54-94% */
 .b-stint{
-  position:absolute;left:64%;top:55%;width:21%;height:20%;
+  position:absolute;left:64%;top:53%;width:21%;height:37%;
   border-right:1px solid var(--hairline);
   border-bottom:1px solid var(--hairline);
   padding:14px 18px;
@@ -1294,56 +1298,32 @@ html,body{
    ou de ritmo antes que vire crítico. Cor padrão: âmbar (atenção).
    Em alerta forte (--alert): vermelho (problema iminente). */
 .coach-preditivo{
-  position:relative;
-  display:flex;flex-direction:column;gap:4px;
-  padding:6px 0 0 8px;margin-top:2px;
-  border-top:1px solid var(--hairline);
-}
-.coach-preditivo::before{
-  content:'';position:absolute;left:0;top:8px;bottom:2px;
-  width:2px;border-radius:1px;background:#FFB347;opacity:0.85;
+  display:flex;flex-direction:column;gap:6px;
+  padding-top:10px;border-top:1px solid var(--hairline);
 }
 .coach-preditivo .cpr-head{
-  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  display:flex;align-items:baseline;justify-content:space-between;gap:8px;
 }
-.coach-preditivo .cpr-tag{
-  font-family:'Helvetica Neue',sans-serif;
-  font-size:9px;font-weight:600;letter-spacing:.08em;
-  color:#FFB347;text-transform:uppercase;
+.coach-preditivo .cpr-eyebrow{
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:11px;letter-spacing:.20em;color:#FFB347;text-transform:uppercase;
 }
 .coach-preditivo .cpr-eta{
-  font-family:'Helvetica Neue',sans-serif;
-  font-size:10px;font-weight:500;color:#FFB347;letter-spacing:.02em;
-  background:rgba(255,179,71,0.10);
-  border:0.5px solid rgba(255,179,71,0.35);
-  border-radius:3px;
-  padding:1px 6px;
-  white-space:nowrap;
-}
-.coach-preditivo .cpr-main{
-  display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;
-}
-.coach-preditivo .cpr-metric{
-  font-family:'Helvetica Neue',sans-serif;
-  font-size:20px;font-weight:300;letter-spacing:-.6px;
-  color:#FFB347;line-height:1;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  font-size:12px;letter-spacing:.04em;color:#FFB347;
   font-variant-numeric:tabular-nums;
 }
-.coach-preditivo .cpr-metric-key{
+.coach-preditivo .cpr-frase{
   font-family:'Helvetica Neue',sans-serif;
-  font-size:11px;color:var(--text-1);letter-spacing:.02em;font-weight:400;
+  font-size:15px;font-weight:300;letter-spacing:-.1px;line-height:1.3;
+  color:var(--text-1);
+}
+.coach-preditivo .cpr-frase em{
+  color:#FFB347;font-style:normal;font-weight:400;
 }
 .coach-preditivo .cpr-detail{
   font-family:'Helvetica Neue',sans-serif;
-  font-size:10px;line-height:1.3;color:var(--text-2);font-style:normal;
-}
-.coach-preditivo--alert::before{ background:#FF7A6E; }
-.coach-preditivo--alert .cpr-tag,
-.coach-preditivo--alert .cpr-eta,
-.coach-preditivo--alert .cpr-metric{ color:#FF7A6E; }
-.coach-preditivo--alert .cpr-eta{
-  background:rgba(255,122,110,0.10);
-  border-color:rgba(255,122,110,0.40);
+  font-size:13px;line-height:1.4;color:var(--text-2);font-style:italic;
 }
 .coach-preditivo--alert .cpr-eyebrow,
 .coach-preditivo--alert .cpr-eta,
@@ -1395,29 +1375,10 @@ html,body{
 }
 .cl-list{
   display:flex;flex-direction:column;gap:6px;
-  flex:1 1 0;min-height:0;
-  overflow-y:auto;
-  padding-right:6px;
-  scrollbar-width:thin;
-  scrollbar-color:rgba(212,175,55,0.55) rgba(255,255,255,0.06);
-}
-.cl-list::-webkit-scrollbar{
-  width:6px;
-}
-.cl-list::-webkit-scrollbar-track{
-  background:rgba(255,255,255,0.06);
-  border-radius:3px;
-}
-.cl-list::-webkit-scrollbar-thumb{
-  background:rgba(212,175,55,0.55);
-  border-radius:3px;
-}
-.cl-list::-webkit-scrollbar-thumb:hover{
-  background:rgba(212,175,55,0.80);
 }
 .cl-item{
   background:rgba(255,255,255,0.03);
-  border-left:3px solid var(--hairline);
+  border-left:2px solid var(--hairline);
   padding:8px 10px;
   font-size:11px;
   display:flex;flex-direction:column;gap:2px;
@@ -1427,11 +1388,15 @@ html,body{
   font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
   font-size:8px;letter-spacing:.14em;color:var(--text-3);text-transform:uppercase;
 }
+.cl-item.pending{border-left-color:var(--warn);}
+.cl-item.waiting{border-left-color:var(--gold-2);}
+.cl-item.checked{
+  border-left-color:var(--good);opacity:.5;
+}
+.cl-item.checked .cl-text{text-decoration:line-through;}
 
-/* Criticidade indicada pela barra lateral colorida (Flávio 2026-05-15):
-   vermelho = obrigatório · amarelo = adicional */
-.cl-item.is-obrigatorio{ border-left-color:#FF5A4E; }
-.cl-item.is-adicional{ border-left-color:#FFB347; }
+/* Adicional vs obrigatório — adicional sai mais discreto pra hierarquizar */
+.cl-item.is-adicional{ opacity:.65; }
 .cl-item.is-adicional .cl-text{ font-weight:300; }
 .cl-tag-tipo{
   font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
@@ -1476,114 +1441,6 @@ html,body{
 }
 
 /* ───── COMBUSTÍVEL — gauge à esquerda · painel à direita ───── */
-/* STINT BAR (vertical) — extrema esquerda, voltas numeradas com cores semânticas */
-.b-stintbar-fixed{
-  position:absolute;left:0%;top:8.5%;width:4%;height:81%;
-  background:transparent;
-  border:none;
-  padding:2px;
-  z-index:5;
-}
-/* SHIFT LIGHT — marcha + LEDs + RPM. Centro-topo do header. */
-.b-shift-light-fixed{
-  position:absolute;left:28%;top:0%;width:28%;height:7.98%;
-  z-index:5;
-}
-/* CARRO — temperaturas e pressões (motor/câmbio/óleo). Centro-baixo. */
-.b-carro-fixed{
-  position:absolute;left:46%;top:55%;width:9%;height:30%;
-  background:rgba(10,14,24,0.55);
-  border:1px solid var(--hairline);
-  padding:0;
-  z-index:5;
-}
-/* PASSAGEM (entrada/apice/saída) — esquerda do Carro */
-.b-passagem-fixed{
-  position:absolute;left:36%;top:55%;width:9%;height:17%;
-  background:rgba(10,14,24,0.55);
-  border:1px solid var(--hairline);
-  padding:0;
-  z-index:5;
-}
-/* FRENAGEM (gráfico) — abaixo da Passagem */
-.b-frenagem-fixed{
-  position:absolute;left:36%;top:73%;width:9%;height:16%;
-  background:rgba(10,14,24,0.55);
-  border:1px solid var(--hairline);
-  padding:0;
-  z-index:5;
-}
-/* VMIN (gráfico) — direita do Carro */
-.b-vmin-fixed{
-  position:absolute;left:56%;top:55%;width:8%;height:17%;
-  background:rgba(10,14,24,0.55);
-  border:1px solid var(--hairline);
-  padding:0;
-  z-index:5;
-}
-/* PNEUS — 4 pneus com temperatura e pressão. Canto inferior direito, abaixo do Plano Stint. */
-.b-pneus-fixed{
-  position:absolute;left:64%;top:76%;width:21%;height:13%;
-  background:rgba(10,14,24,0.55);
-  border:1px solid var(--hairline);
-  padding:0;
-  z-index:5;
-}
-
-/* STINT BAR (vertical) — extrema esquerda, voltas numeradas com cores semânticas */
-.b-stintbar-fixed{
-  position:absolute;left:0%;top:8.5%;width:4%;height:81%;
-  background:transparent;
-  border:none;
-  padding:2px;
-  z-index:5;
-}
-/* SHIFT LIGHT — marcha + LEDs + RPM. Centro-topo do header. */
-.b-shift-light-fixed{
-  position:absolute;left:28%;top:0%;width:28%;height:7.98%;
-  z-index:5;
-}
-/* CARRO — temperaturas e pressões (motor/câmbio/óleo). Centro-baixo. */
-.b-carro-fixed{
-  position:absolute;left:46%;top:55%;width:9%;height:30%;
-  background:rgba(10,14,24,0.55);
-  border:1px solid var(--hairline);
-  padding:0;
-  z-index:5;
-}
-/* PASSAGEM (entrada/apice/saída) — esquerda do Carro */
-.b-passagem-fixed{
-  position:absolute;left:36%;top:55%;width:9%;height:17%;
-  background:rgba(10,14,24,0.55);
-  border:1px solid var(--hairline);
-  padding:0;
-  z-index:5;
-}
-/* FRENAGEM (gráfico) — abaixo da Passagem */
-.b-frenagem-fixed{
-  position:absolute;left:36%;top:73%;width:9%;height:16%;
-  background:rgba(10,14,24,0.55);
-  border:1px solid var(--hairline);
-  padding:0;
-  z-index:5;
-}
-/* VMIN (gráfico) — direita do Carro */
-.b-vmin-fixed{
-  position:absolute;left:56%;top:55%;width:8%;height:17%;
-  background:rgba(10,14,24,0.55);
-  border:1px solid var(--hairline);
-  padding:0;
-  z-index:5;
-}
-/* PNEUS — 4 pneus com temperatura e pressão. Canto inferior direito, abaixo do Plano Stint. */
-.b-pneus-fixed{
-  position:absolute;left:64%;top:76%;width:21%;height:13%;
-  background:rgba(10,14,24,0.55);
-  border:1px solid var(--hairline);
-  padding:0;
-  z-index:5;
-}
-
 .b-fuel-gauge{
   position:absolute;left:65%;top:90%;width:15%;height:10%;
   border-top:1px solid var(--hairline);
@@ -1695,7 +1552,7 @@ html,body{
 
 /* ───── DELTA ACUMULADO DE TEMPO ───── */
 .b-delta-acum{
-  position:absolute;left:36%;top:90%;width:27%;height:10%;
+  position:absolute;left:43%;top:90%;width:42%;height:10%;
   border-top:1px solid var(--hairline);
   display:flex;flex-direction:column;
   padding:4px 10px 5px;gap:2px;
@@ -2158,20 +2015,19 @@ html,body{
 
 /* ───── PASSAGEM — 3 dots heróis sobre a curva (entrada / ápice / saída) ───── */
 .ps-header{
-  display:flex;justify-content:center;align-items:baseline;
-  gap:14px;
-  padding:0 2px 6px;
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:0 2px 5px;
   border-bottom:0.5px solid rgba(212,175,55,0.18);
 }
 .ps-title{
   font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
-  font-size:11px;letter-spacing:.34em;
-  color:#FFFFFF;text-transform:uppercase;font-weight:500;
+  font-size:8px;letter-spacing:.24em;
+  color:var(--gold-2);text-transform:uppercase;font-weight:500;
 }
 .ps-curva{
   font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
-  font-size:11px;letter-spacing:.20em;
-  color:#FFFFFF;text-transform:uppercase;font-weight:500;
+  font-size:7px;letter-spacing:.16em;
+  color:var(--text-3);text-transform:uppercase;
 }
 
 .ps-canvas{
@@ -2527,11 +2383,10 @@ html,body{
   flex:1 1 0;min-height:0;
   display:grid;
   grid-template-columns:auto 1fr 1fr auto;
-  grid-template-rows:1fr auto 1fr auto;
-  column-gap:18px;
-  row-gap:10px;
+  grid-template-rows:1fr 1fr;
+  gap:14px 10px;
   align-items:center;
-  padding:8px 8px 6px;
+  padding:4px 4px;
 }
 /* Cartão de pneu = só o círculo. Sem borda, sem fundo, sem etiqueta dentro. */
 .pn-tire-cell{
@@ -2540,45 +2395,25 @@ html,body{
 }
 .pn-tire-pos-label{
   font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
-  font-size:8px;letter-spacing:.26em;font-weight:700;
-  color:rgba(212,175,55,0.90);
-  margin-bottom:3px;
+  font-size:9px;letter-spacing:.28em;font-weight:700;
+  color:rgba(212,175,55,0.95);
 }
 .pn-ring{
-  width:100%;min-height:30px;
+  width:100%;max-width:60px;aspect-ratio:1;
   flex-shrink:1;flex-grow:0;position:relative;
   display:flex;align-items:center;justify-content:center;
 }
 .pn-ring svg{position:absolute;inset:0;width:100%;height:100%;display:block;}
 .pn-ring-bg{fill:none;stroke:rgba(255,255,255,0.07);stroke-width:2.6;}
 .pn-ring-life{fill:none;stroke-width:2.6;stroke-linecap:round;}
-.pn-life-bar-wide{
-  width:100%;height:7px;
-  background:rgba(255,255,255,0.16);
-  border:0.5px solid rgba(255,255,255,0.22);
-  border-radius:3.5px;
-  overflow:hidden;
-  grid-column:span 2;
-  align-self:start;
-}
-.pn-life-bar-wide.is-left{ grid-column:1 / span 2; }
-.pn-life-bar-wide.is-right{ grid-column:3 / span 2; }
-.pn-life-bar-wide-fill{
-  height:100%;
-  border-radius:2.5px;
-  opacity:0.72;
-  transition:width .35s ease, background-color .25s ease, opacity .25s ease;
-}
-.pn-life-bar-wide.zone-critical-high .pn-life-bar-wide-fill,
-.pn-life-bar-wide.zone-critical-low  .pn-life-bar-wide-fill{ opacity:1; }
 .pn-temp{
   font-family:'Helvetica Neue',sans-serif;
-  font-size:18px;font-weight:300;letter-spacing:-0.5px;
+  font-size:20px;font-weight:300;letter-spacing:-0.8px;
   color:#FFFFFF;font-variant-numeric:tabular-nums;
   line-height:1;position:relative;z-index:1;
 }
 .pn-temp-unit{
-  font-size:9px;font-weight:300;color:rgba(255,255,255,0.55);
+  font-size:10px;font-weight:300;color:rgba(255,255,255,0.55);
   letter-spacing:-0.3px;margin-left:1px;vertical-align:top;
 }
 /* Coluna de DADOS — fica nas BORDAS do painel · pressão em cima, vida em baixo */
@@ -2590,11 +2425,11 @@ html,body{
 .pn-data.is-left { align-items:flex-end;  text-align:right; }
 .pn-data.is-right{ align-items:flex-start;text-align:left;  }
 .pn-press{
-  font-size:14px;font-weight:400;letter-spacing:-0.2px;
+  font-size:16px;font-weight:400;letter-spacing:-0.3px;
   color:#FFFFFF;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap;
 }
 .pn-press-unit{
-  font-size:8px;font-weight:400;color:rgba(255,255,255,0.50);
+  font-size:8px;font-weight:400;color:rgba(255,255,255,0.45);
   letter-spacing:.04em;margin-left:2px;
 }
 .pn-life{
@@ -2605,19 +2440,17 @@ html,body{
   display:inline-block;width:6px;height:6px;border-radius:50%;
   margin-left:4px;vertical-align:middle;
 }
-/* Crítico — pisca a barra de vida útil do pneu (shift-light wash branco) */
-@keyframes pn-bar-crit-high{
-  0%, 100% { background:rgba(255,90,80,0.95) !important; }
-  50%      { background:#FFFFFF !important; }
+/* Crítico — pisca o anel ao redor do pneu (shift-light wash branco) */
+@keyframes pn-ring-crit-high{
+  0%, 100% { stroke:rgba(255,90,80,0.95); }
+  50%      { stroke:#FFFFFF; }
 }
-@keyframes pn-bar-crit-low{
-  0%, 100% { background:rgba(125,211,252,0.95) !important; }
-  50%      { background:#FFFFFF !important; }
+@keyframes pn-ring-crit-low{
+  0%, 100% { stroke:rgba(125,211,252,0.95); }
+  50%      { stroke:#FFFFFF; }
 }
-.pn-tire-cell.zone-critical-high .pn-life-bar-fill,
-.pn-life-bar-wide.zone-critical-high .pn-life-bar-wide-fill{ animation:pn-bar-crit-high 0.2s ease-in-out infinite; }
-.pn-tire-cell.zone-critical-low  .pn-life-bar-fill,
-.pn-life-bar-wide.zone-critical-low  .pn-life-bar-wide-fill{ animation:pn-bar-crit-low  0.2s ease-in-out infinite; }
+.pn-tire-cell.zone-critical-high .pn-ring-life{ animation:pn-ring-crit-high 0.2s ease-in-out infinite; }
+.pn-tire-cell.zone-critical-low  .pn-ring-life{ animation:pn-ring-crit-low  0.2s ease-in-out infinite; }
 
 .pn-footer{
   display:flex;justify-content:space-around;align-items:baseline;
@@ -2835,7 +2668,6 @@ html,body{
   border:0.5px solid rgba(212,175,55,0.10);
   border-radius:4px;
   position:relative;
-  overflow:hidden;
   transition:border-color .25s, background .25s;
 }
 .cr-metric.zone-warn{
@@ -2848,8 +2680,8 @@ html,body{
   animation:cr-pulse-hot 1.8s ease-in-out infinite;
 }
 @keyframes cr-pulse-hot{
-  0%, 100% { box-shadow:inset 0 0 0 rgba(255,90,80,0); }
-  50%      { box-shadow:inset 0 0 8px rgba(255,90,80,0.30); }
+  0%, 100% { box-shadow:0 0 0 rgba(255,90,80,0); }
+  50%      { box-shadow:0 0 8px rgba(255,90,80,0.30); }
 }
 .cr-metric.zone-cold{
   border-color:rgba(125,211,252,0.32);
@@ -2903,6 +2735,7 @@ html,body{
 /* ── critical-high (estourou max) ─────────────────────────── */
 .cr-metric.zone-critical-high{
   border-color:#FF3322;
+  border-width:1.5px;
   background:rgba(255,90,80,0.05);
   animation:cr-flash-high-wash 0.10s steps(2,end) infinite;
 }
@@ -2911,15 +2744,15 @@ html,body{
   animation:cr-dot-flash-high-wash 0.10s steps(2,end) infinite;
 }
 @keyframes cr-flash-high-wash{
-  /* frame ON: vermelho-sangue intenso (brilho contido dentro do bloco) */
+  /* frame ON: vermelho-sangue intenso */
   0%, 49%   {
     border-color:#FF3322;
-    box-shadow:inset 0 0 8px rgba(255,51,34,0.55);
+    box-shadow:0 0 16px rgba(255,51,34,0.95), inset 0 0 6px rgba(255,90,80,0.20);
   }
-  /* frame WASH: branco brilhante (brilho contido dentro do bloco) */
+  /* frame WASH: branco brilhante (igual lit-blue do shift light) */
   50%, 100% {
     border-color:#FFFFFF;
-    box-shadow:inset 0 0 10px rgba(255,255,255,0.55);
+    box-shadow:0 0 22px rgba(255,255,255,0.95), 0 0 6px #FFFFFF, inset 0 0 10px rgba(255,255,255,0.30);
   }
 }
 @keyframes cr-dot-flash-high-wash{
@@ -2930,6 +2763,7 @@ html,body{
 /* ── critical-low (caiu abaixo do min) ────────────────────── */
 .cr-metric.zone-critical-low{
   border-color:#38BCFF;
+  border-width:1.5px;
   background:rgba(125,211,252,0.05);
   animation:cr-flash-low-wash 0.10s steps(2,end) infinite;
 }
@@ -2940,11 +2774,11 @@ html,body{
 @keyframes cr-flash-low-wash{
   0%, 49%   {
     border-color:#38BCFF;
-    box-shadow:inset 0 0 8px rgba(56,188,255,0.55);
+    box-shadow:0 0 16px rgba(56,188,255,0.90), inset 0 0 6px rgba(125,211,252,0.20);
   }
   50%, 100% {
     border-color:#FFFFFF;
-    box-shadow:inset 0 0 10px rgba(255,255,255,0.55);
+    box-shadow:0 0 22px rgba(255,255,255,0.95), 0 0 6px #FFFFFF, inset 0 0 10px rgba(255,255,255,0.30);
   }
 }
 @keyframes cr-dot-flash-low-wash{
@@ -3634,19 +3468,8 @@ html,body{
         <g class="sg-major"  data-sg-major></g>
         <g class="sg-labels" data-sg-labels></g>
 
-        <!-- Odômetro do carro estilo plaquinhas mecânicas (Flávio 2026-05-15) —
-             posicionado na BASE do mostrador, no espaço em branco entre o
-             "0" (canto inferior esquerdo do dial) e o redline arc (canto
-             inferior direito). Quilometragem total do carro em qualquer
-             pista. Detalhamento por autódromo fica no aplicativo. -->
-        <g class="sg-odo-plates" data-hud="odometro" transform="translate(78 150)">
-          <g class="sg-odo-cell"><rect x="0"  y="0" width="9" height="13" rx="1.4"/><text x="4.5"  y="9.6">1</text></g>
-          <g class="sg-odo-cell"><rect x="10" y="0" width="9" height="13" rx="1.4"/><text x="14.5" y="9.6">2</text></g>
-          <g class="sg-odo-cell"><rect x="20" y="0" width="9" height="13" rx="1.4"/><text x="24.5" y="9.6">3</text></g>
-          <g class="sg-odo-cell"><rect x="30" y="0" width="9" height="13" rx="1.4"/><text x="34.5" y="9.6">4</text></g>
-          <g class="sg-odo-cell"><rect x="40" y="0" width="9" height="13" rx="1.4"/><text x="44.5" y="9.6">7</text></g>
-          <text class="sg-odo-unit" x="52" y="9.6">km</text>
-        </g>
+        <!-- Marca P1 FAST no topo do gauge (entre as numerações) -->
+        <text class="sg-brand" x="100" y="78">P1 FAST</text>
 
         <!-- Ponteiro vermelho clássico, sem hub central (Flávio 2026-05-10).
              Demo: 143 km/h em range 0-200 → SVG rotate(-32.85 100 100).
@@ -3707,15 +3530,14 @@ html,body{
          Cor âmbar = atenção · vermelho (--alert) = problema iminente. -->
     <div class="coach-preditivo" data-coach-preditivo>
       <div class="cpr-head">
-        <span class="cpr-tag">alerta preditivo</span>
+        <span class="cpr-eyebrow">preditivo</span>
         <span class="cpr-eta" data-coach="preditEta">crítico em ~6 voltas</span>
       </div>
-      <div class="cpr-main">
-        <span class="cpr-metric">+8°C</span>
-        <span class="cpr-metric-key" data-coach="preditFrase">temp motor &middot; curva 5</span>
+      <div class="cpr-frase" data-coach="preditFrase">
+        temp motor <em>+8°C</em> vs padrão na C5
       </div>
       <div class="cpr-detail" data-coach="preditDetail">
-        sobe 1,3°C por volta &middot; estoura 120°C antes do fim do stint
+        subindo 1,3°C/volta — vai bater max=120°C antes do fim do stint
       </div>
     </div>
   </div>
@@ -3844,28 +3666,6 @@ html,body{
     </div>
   </div>
 
-  <!-- Blocos custom convertidos em FIXOS (Flávio 2026-05-13) -->
-  <!-- Carro vivo (motor/câmbio/óleo — temperaturas e pressões) -->
-  <div class="b-custom is-carro b-carro-fixed" data-block-id="carro" data-block-name="Carro"></div>
-
-  <!-- Pneus (4 pneus com temp e pressão) -->
-  <div class="b-custom is-pneus b-pneus-fixed" data-block-id="pneus" data-block-name="Pneus"></div>
-
-  <!-- Stint Bar (vertical à esquerda — voltas numeradas com cores semânticas) -->
-  <div class="b-custom is-stint-bar b-stintbar-fixed" data-block-id="stint-bar" data-block-name="Stint"></div>
-
-  <!-- Passagem na curva atual (entrada / apice / saída) -->
-  <div class="b-custom is-passagem b-passagem-fixed" data-block-id="passagem" data-block-name="Passagem"></div>
-
-  <!-- Frenagem na curva atual (gráfico) -->
-  <div class="b-custom is-frenagem b-frenagem-fixed" data-block-id="frenagem" data-block-name="Frenagem"></div>
-
-  <!-- Velocidade mínima na curva atual (gráfico) -->
-  <div class="b-custom is-vmin b-vmin-fixed" data-block-id="vmin" data-block-name="Vmin"></div>
-
-  <!-- Shift Light (marcha + LEDs + RPM) — centro-topo do header -->
-  <div class="b-custom is-shift-light b-shift-light-fixed" data-block-id="shift-light" data-block-name="Shift Light"></div>
-
 </div>
 
 <div class="legend">
@@ -3930,22 +3730,11 @@ html,body{
   }
 
   function applyBlock(el, data){
-    // Validação: rejeita dimensões absurdas que zeram visualmente o bloco
-    // (layout salvo corrompido causa "tela em branco" — Flávio 2026-05-13).
-    if(!data || typeof data.x !== 'number' || typeof data.y !== 'number' ||
-       typeof data.w !== 'number' || typeof data.h !== 'number' ||
-       isNaN(data.x) || isNaN(data.y) || isNaN(data.w) || isNaN(data.h) ||
-       data.w < 3 || data.h < 3 ||
-       data.x < -5 || data.y < -5 ||
-       data.x > 95 || data.y > 95){
-      return false;
-    }
     el.style.left = data.x + '%';
     el.style.top = data.y + '%';
     el.style.width = data.w + '%';
     el.style.height = data.h + '%';
     updateTag(el);
-    return true;
   }
 
   function updateTag(el){
@@ -3999,25 +3788,6 @@ html,body{
           var v = data[k];
           if(v && typeof v === 'object' && 'x' in v && 'w' in v) positions[k] = v;
         });
-      }
-      // Auto-cura: se >20% dos blocos têm dimensão absurda, descarta o layout salvo.
-      // Evita "tela em branco" ou layout bagunçado herdado (Flávio 2026-05-13).
-      var ids = Object.keys(positions);
-      if(ids.length > 0){
-        var ruim = 0;
-        ids.forEach(function(id){
-          var d = positions[id];
-          if(!d || typeof d.w !== 'number' || typeof d.h !== 'number' ||
-             d.w < 3 || d.h < 3 || isNaN(d.w) || isNaN(d.h) ||
-             d.x < -5 || d.y < -5 || d.x > 95 || d.y > 95){
-            ruim++;
-          }
-        });
-        if(ruim / ids.length > 0.2){
-          console.warn('[vista-piloto] layout salvo descartado (' + ruim + '/' + ids.length + ' blocos suspeitos) — usando layout inicial.');
-          localStorage.removeItem(KEY);
-          return false;
-        }
       }
       customs.forEach(function(c){
         if(!stage.querySelector('[data-block-id="'+c.id+'"]')){
@@ -4247,7 +4017,7 @@ html,body{
       '<div class="fr-chart'+emptyCls+'">'+frenagemChartSvg(v)+'</div>'+
       '<div class="fr-verdict">'+
         '<span class="fr-badge '+(revealed ? v.tone : 'empty')+'">'+(revealed ? v.label : 'aguardando')+'</span>'+
-        '<span class="fr-delta'+emptyCls+'"><strong>'+(revealed ? v.delta.replace(/[+−]/g,'') : '—')+'</strong></span>'+
+        '<span class="fr-delta'+emptyCls+'"><strong>'+(revealed ? v.delta : '—')+'</strong></span>'+
       '</div>';
   }
   // Reveal state pra Frenagem/Vmin: revela durante o evento (entry→apex desenhando),
@@ -4387,7 +4157,7 @@ html,body{
       '<div class="fr-chart'+emptyCls+'">'+vminChartSvg(v)+'</div>'+
       '<div class="fr-verdict">'+
         '<span class="fr-badge '+(revealed ? v.tone : 'empty')+'">'+(revealed ? v.label : 'aguardando')+'</span>'+
-        '<span class="fr-delta'+emptyCls+'"><strong>'+(revealed ? v.delta.replace(/[+−]/g,'') : '—')+'</strong></span>'+
+        '<span class="fr-delta'+emptyCls+'"><strong>'+(revealed ? v.delta : '—')+'</strong></span>'+
       '</div>';
   }
   var _lastVminKey = '';
@@ -5040,9 +4810,6 @@ html,body{
     _lastTermicaState = '';
       rebuildCarro();
       rebuildPneus();
-      rebuildPassagem();
-      rebuildFrenagem();
-      rebuildVmin();
       rebuildHUD();
       rebuildStint();
       rebuildCoach();
@@ -5067,14 +4834,6 @@ html,body{
     if(!els.length) return;
     var html = '<button class="b-custom-remove" type="button">remover</button>' + buildPneusPanel();
     els.forEach(function(el){ el.innerHTML = html; });
-  }
-  function rebuildShiftLight(){
-    var els = document.querySelectorAll('.b-custom.is-shift-light');
-    if(!els.length) return;
-    var html = '<button class="b-custom-remove" type="button">remover</button>' + buildShiftLight();
-    els.forEach(function(el){
-      if(!el.querySelector('.sl-leds')) el.innerHTML = html;
-    });
   }
   // Atualiza HUD strip (telemetria) lendo currentLap().hero + .deltaTotal
   function rebuildHUD(){
@@ -5356,35 +5115,23 @@ html,body{
   }
 
   // ─── CHECKLIST — render condicional pela STINT_PHASE ────
-  // Regra Flávio 2026-05-15: no Command Box só aparecem os pendentes,
-  // ordenados por criticidade (obrigatórios em cima, adicionais embaixo).
-  // Itens já feitos saem desta lista e ficam apenas no aplicativo
-  // (lista separada "já realizados" — consulta opcional).
   function _renderChecklistList(items, headerLabel){
-    var pendentes = items.filter(function(i){ return i.status !== 'checked'; });
-    pendentes.sort(function(a, b){
-      // Obrigatórios primeiro (true=1) → adicionais depois (false=0)
-      var oA = a.obrigatorio ? 1 : 0;
-      var oB = b.obrigatorio ? 1 : 0;
-      if(oA !== oB) return oB - oA;
-      // Dentro do mesmo grupo, 'pending' antes de 'waiting'
-      var sOrder = { 'pending':0, 'waiting':1 };
-      var sA = sOrder[a.status] != null ? sOrder[a.status] : 2;
-      var sB = sOrder[b.status] != null ? sOrder[b.status] : 2;
-      return sA - sB;
-    });
+    var pendingCount = items.filter(function(i){ return i.status !== 'checked'; }).length;
     var html = ''+
       '<div class="cl-title">'+
         '<span>'+headerLabel+'</span>'+
-        '<span class="cl-count">'+pendentes.length+'</span>'+
+        '<span class="cl-count">'+pendingCount+'</span>'+
       '</div>'+
       '<div class="cl-list">';
-    pendentes.forEach(function(item){
+    items.forEach(function(item){
       var cls = 'cl-item ' + item.status;
-      cls += item.obrigatorio ? ' is-obrigatorio' : ' is-adicional';
+      if(!item.obrigatorio) cls += ' is-adicional';
+      var tag = item.obrigatorio
+        ? '<span class="cl-tag-tipo is-obrigatorio">obrig</span>'
+        : '<span class="cl-tag-tipo is-adicional">adic</span>';
       var who = item.who + (item.status === 'checked' ? ' · ok' : '');
       html += '<div class="'+cls+'">'+
-                '<span class="cl-text">'+item.text+'</span>'+
+                '<span class="cl-text">'+item.text+tag+'</span>'+
                 '<span class="cl-who">'+who+'</span>'+
               '</div>';
     });
@@ -5438,44 +5185,6 @@ html,body{
     if(!els.length) return;
     var html = '<button class="b-custom-remove" type="button">remover</button>' +
                buildStintBar({ laps:8, current:lap.numero || 8, warmupLaps:1, cooldownLaps:1 });
-    els.forEach(function(el){ el.innerHTML = html; });
-  }
-  // Rebuilders para Passagem, Frenagem e Vmin (blocos fixos no HTML — Flávio 2026-05-13).
-  function rebuildPassagem(){
-    var els = document.querySelectorAll('.b-custom.is-passagem');
-    if(!els.length) return;
-    var html = '<button class="b-custom-remove" type="button">remover</button>' + buildPassagemPanel();
-    els.forEach(function(el){ el.innerHTML = html; });
-  }
-  function rebuildFrenagem(){
-    var els = document.querySelectorAll('.b-custom.is-frenagem');
-    if(!els.length) return;
-    var html = '<button class="b-custom-remove" type="button">remover</button>' + buildFrenagemPanel(0);
-    els.forEach(function(el){ el.innerHTML = html; });
-  }
-  function rebuildVmin(){
-    var els = document.querySelectorAll('.b-custom.is-vmin');
-    if(!els.length) return;
-    var html = '<button class="b-custom-remove" type="button">remover</button>' + buildVminPanel(0);
-    els.forEach(function(el){ el.innerHTML = html; });
-  }
-  // Rebuilders para Passagem, Frenagem e Vmin (blocos fixos no HTML — Flávio 2026-05-13).
-  function rebuildPassagem(){
-    var els = document.querySelectorAll('.b-custom.is-passagem');
-    if(!els.length) return;
-    var html = '<button class="b-custom-remove" type="button">remover</button>' + buildPassagemPanel();
-    els.forEach(function(el){ el.innerHTML = html; });
-  }
-  function rebuildFrenagem(){
-    var els = document.querySelectorAll('.b-custom.is-frenagem');
-    if(!els.length) return;
-    var html = '<button class="b-custom-remove" type="button">remover</button>' + buildFrenagemPanel(0);
-    els.forEach(function(el){ el.innerHTML = html; });
-  }
-  function rebuildVmin(){
-    var els = document.querySelectorAll('.b-custom.is-vmin');
-    if(!els.length) return;
-    var html = '<button class="b-custom-remove" type="button">remover</button>' + buildVminPanel(0);
     els.forEach(function(el){ el.innerHTML = html; });
   }
 
@@ -5590,7 +5299,8 @@ html,body{
     // Número grande à direita
     var numEl = document.querySelector('[data-da-num]');
     if(numEl){
-      numEl.innerHTML = Math.abs(cumNow).toFixed(2) + '<small>s</small>';
+      var sign = cumNow >= 0 ? '+' : '−';
+      numEl.innerHTML = sign + Math.abs(cumNow).toFixed(2) + '<small>s</small>';
       numEl.style.color = cumNow < 0 ? '#3FE08C' : '#FF5A4E';
     }
   }
@@ -5774,7 +5484,7 @@ html,body{
     var verdictHtml = revealSaida ?
       ('<div class="ps-verdict tone-'+data.verdictTone+'">'+
          '<span class="ps-badge '+data.verdictTone+'">'+data.verdict+'</span>'+
-         '<span class="ps-delta-tot">'+String(data.totalDelta).replace(/[+−]/g,'')+'</span>'+
+         '<span class="ps-delta-tot">'+data.totalDelta+'</span>'+
        '</div>') :
       ('<div class="ps-verdict empty">'+
          '<span class="ps-badge empty">'+(revealAny ? 'em curva' : 'aguardando')+'</span>'+
@@ -5813,9 +5523,9 @@ html,body{
       return z;
     }
     function lifeColor(p){
-      if(p >= 70) return '#557E68';
-      if(p >= 40) return '#A87538';
-      return '#A04A41';
+      if(p >= 70) return '#3FE08C';
+      if(p >= 40) return '#FFB347';
+      return '#FF5A4E';
     }
 
     // Lê pneus da volta atual (FAKE_LAPS) ou snapshot ao vivo (interpolação).
@@ -5847,32 +5557,28 @@ html,body{
       // side = 'left' | 'right'
       return '<div class="pn-data is-'+side+'" data-pos="'+t.pos+'">'+
                '<span class="pn-press">'+t.pressPsi+'<span class="pn-press-unit">psi</span></span>'+
+               '<span class="pn-life">'+t.life+'%<span class="pn-life-dot" style="background:'+t.lc+'"></span></span>'+
              '</div>';
     }
     function tireCell(t){
       return '<div class="pn-tire-cell zone-'+t.z+'" data-pos="'+t.pos+'">'+
                '<span class="pn-tire-pos-label">'+t.pos+'</span>'+
                '<div class="pn-ring">'+
+                 '<svg viewBox="0 0 78 78" preserveAspectRatio="xMidYMid meet">'+
+                   '<circle class="pn-ring-bg" cx="39" cy="39" r="34"/>'+
+                   '<circle class="pn-ring-life" cx="39" cy="39" r="34"'+
+                   ' stroke="'+t.lc+'"'+
+                   ' stroke-dasharray="'+t.lifeArc.toFixed(2)+' '+t.lifeGap.toFixed(2)+'"'+
+                   ' transform="rotate(-90 39 39)"/>'+
+                 '</svg>'+
                  '<span class="pn-temp">'+t.temp+'<span class="pn-temp-unit">°</span></span>'+
                '</div>'+
              '</div>';
     }
-    function lifeBarCell(t, side){
-      // side = 'left' → barra cresce a partir da DIREITA (cheia encosta no centro do bloco)
-      // side = 'right' → barra cresce a partir da ESQUERDA (cheia encosta no centro do bloco)
-      var fillSide = (side === 'left') ? 'right' : 'left';
-      return '<div class="pn-life-bar-wide is-'+side+' zone-'+t.z+'" data-pos="'+t.pos+'" aria-label="vida útil do pneu">'+
-               '<div class="pn-life-bar-wide-fill" style="width:'+t.life+'%;background:'+t.lc+';float:'+fillSide+';"></div>'+
-             '</div>';
-    }
-    // Frente: pneus DE/DD com barras embaixo (DE no lado esquerdo, DD no lado direito)
-    // Traseira: pneus TE/TD com barras embaixo (TE no lado esquerdo, TD no lado direito)
-    // Cada barra ocupa 2 colunas do grid (info-coluna + tire-coluna), saindo da borda externa até o centro
+    // Linha 1: frente · Linha 2: traseira · cada linha: [info-esq] [pneu-esq] [pneu-dir] [info-dir]
     var gridHtml =
       infoCell(byPos.DE, 'left')  + tireCell(byPos.DE) + tireCell(byPos.DD) + infoCell(byPos.DD, 'right') +
-      lifeBarCell(byPos.DE, 'left') + lifeBarCell(byPos.DD, 'right') +
-      infoCell(byPos.TE, 'left')  + tireCell(byPos.TE) + tireCell(byPos.TD) + infoCell(byPos.TD, 'right') +
-      lifeBarCell(byPos.TE, 'left') + lifeBarCell(byPos.TD, 'right');
+      infoCell(byPos.TE, 'left')  + tireCell(byPos.TE) + tireCell(byPos.TD) + infoCell(byPos.TD, 'right');
 
     var phaseTag = emAquec
       ? '<span class="pn-phase">'+(phase === 'aquecimento' ? 'aquecendo' : 'resfriando')+' · alvo '+tempAlvoAquec+'°</span>'
@@ -5883,6 +5589,7 @@ html,body{
         phaseTag+
       '</div>'+
       '<div class="pn-graphic'+(emAquec ? ' is-warmup' : '')+'">'+
+        '<div class="pn-frente">↑ frente</div>'+
         '<div class="pn-grid">'+gridHtml+'</div>'+
       '</div>'+
       '<div class="pn-footer">'+
@@ -5939,6 +5646,9 @@ html,body{
     });
 
     return ''+
+      '<div class="carro-title-row">'+
+        '<span class="ct-label">carro · vivo</span>'+
+      '</div>'+
       '<div class="cr-grid">'+
         '<div class="cr-grid-colhead">motor</div>'+
         '<div class="cr-grid-colhead">câmbio</div>'+
@@ -5975,24 +5685,24 @@ html,body{
     return 'lit-blue';
   }
 
-  // Curva de RPM realista — loop 14s: gear 2 acel → shift gear 3 → shift gear 4 → freio + downshift duplo
+  // Curva de RPM realista — loop 7s: gear 2 acel → shift gear 3 → shift gear 4 → freio + downshift duplo
   var SHIFT_LIGHT_PHASES = [
-    { t:0.0,  rpm:5800, gear:2 },
-    { t:3.4,  rpm:8200, gear:2 },
-    { t:3.4,  rpm:6500, gear:3 },
-    { t:6.8,  rpm:8200, gear:3 },
-    { t:6.8,  rpm:6600, gear:4 },
-    { t:9.8,  rpm:8200, gear:4 },
-    { t:11.0, rpm:6900, gear:3 },
-    { t:12.0, rpm:5400, gear:2 },
-    { t:14.0, rpm:5800, gear:2 }
+    { t:0.0, rpm:5800, gear:2 },
+    { t:1.7, rpm:8200, gear:2 },
+    { t:1.7, rpm:6500, gear:3 },
+    { t:3.4, rpm:8200, gear:3 },
+    { t:3.4, rpm:6600, gear:4 },
+    { t:4.9, rpm:8200, gear:4 },
+    { t:5.5, rpm:6900, gear:3 },
+    { t:6.0, rpm:5400, gear:2 },
+    { t:7.0, rpm:5800, gear:2 }
   ];
   var SHIFT_LIGHT_CFG = {
     rpmMin: 4000,
     rpmMax: 8500,
     shiftPoint: 7800,
     redline: 8400,
-    totalT: 14.0
+    totalT: 7.0
   };
 
   function shiftLightSample(dt){
@@ -6233,26 +5943,6 @@ html,body{
           shine.setAttribute('class', 'pt-shine');
           shine.setAttribute('cx', pa.x - 1.5); shine.setAttribute('cy', pa.y - 1.8); shine.setAttribute('r', 1.3);
           g.appendChild(shine);
-
-          // Marcha de entrada da curva — texto pelo lado de FORA do traçado,
-          // à mesma distância (26px) usada antes no ponto de entrada, mas
-          // posicionado próximo do ápice (Flávio 2026-05-15).
-          // Rotação inversa de +106° (o mapa está rotacionado -106°) para o
-          // número ficar em pé no sentido da tela.
-          var lapApex = (typeof currentLap === 'function') ? currentLap() : null;
-          var cornerApex = lapApex && lapApex.corners ? lapApex.corners[ci] : null;
-          var entryGearApex = cornerApex ? cornerApex.entradaGear : null;
-          if(entryGearApex != null){
-            var outsideApex = pointWithLateralOffset(path, len, totalLen, 26, 'outside');
-            var gearTxtApex = document.createElementNS(NS, 'text');
-            gearTxtApex.setAttribute('class', 'pt-entry-gear');
-            gearTxtApex.setAttribute('x', outsideApex.x.toFixed(2));
-            gearTxtApex.setAttribute('y', outsideApex.y.toFixed(2));
-            gearTxtApex.setAttribute('data-entry-gear', ci);
-            gearTxtApex.setAttribute('transform', 'rotate(106 '+outsideApex.x.toFixed(2)+' '+outsideApex.y.toFixed(2)+')');
-            gearTxtApex.textContent = entryGearApex;
-            g.appendChild(gearTxtApex);
-          }
         } else {
           // Entry/exit: barrinha perpendicular ao traçado, no LADO DE FORA
           // (onde o carro chega largo no início e sai largo no final).
@@ -6802,7 +6492,7 @@ html,body{
         host.classList.toggle('shift-now', s.rpm >= SHIFT_LIGHT_CFG.shiftPoint);
       }
     }
-    shiftLightAnimId = setInterval(tick, 350);
+    shiftLightAnimId = setInterval(tick, 33);
     tick();
   }
 
@@ -7110,12 +6800,6 @@ html,body{
       localStorage.setItem(SL_MIGRATED, '1');
     }
 
-    rebuildCarro();
-    rebuildPneus();
-    rebuildPassagem();
-    rebuildFrenagem();
-    rebuildVmin();
-    rebuildShiftLight();
     rebuildHUD();
     rebuildStint();
     rebuildCoach();
@@ -7172,9 +6856,6 @@ html,body{
     _lastTermicaState = '';
     rebuildCarro();
     rebuildPneus();
-    rebuildPassagem();
-    rebuildFrenagem();
-    rebuildVmin();
     rebuildHUD();
     rebuildStint();
     rebuildCoach();
@@ -7324,27 +7005,6 @@ html,body{
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
-  }
-})();
-
-// Cache-bust no toggle Piloto↔Engenheiro — força o navegador a buscar
-// versão nova mesmo se houver cache antigo. (Flávio 2026-05-13)
-(function(){
-  function wireToggle(){
-    document.querySelectorAll('a.vista-btn').forEach(function(a){
-      a.addEventListener('click', function(e){
-        e.preventDefault();
-        var href = this.getAttribute('href');
-        if(!href) return;
-        var sep = href.indexOf('?') >= 0 ? '&' : '?';
-        window.location.href = href + sep + 'v=' + Date.now();
-      });
-    });
-  }
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', wireToggle);
-  } else {
-    wireToggle();
   }
 })();
 </script>

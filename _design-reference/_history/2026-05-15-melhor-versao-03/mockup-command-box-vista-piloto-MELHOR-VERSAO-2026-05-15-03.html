@@ -398,20 +398,18 @@ html,body{
 .pt.is-entry, .pt.is-exit{ opacity:1; }
 .pt.is-apex{ opacity:1; }
 
-/* Marcha de entrada — texto pelo lado de FORA do traçado, próximo do apice
-   de cada curva. Cor branca para destacar contra o asfalto escuro.
-   Texto em pé (vertical no sentido da tela) — rotação inversa do mapa
-   aplicada no atributo transform de cada texto. */
-.pt-entry-gear{
+/* Marcha de entrada — texto pelo lado de DENTRO do traçado, no ponto de
+   entrada de cada curva. Cor branca para destacar contra o asfalto escuro. */
+.pt.is-entry .pt-entry-gear{
   fill:#FFFFFF;
   font-family:'Helvetica Neue',sans-serif;
-  font-size:20px;
+  font-size:33px;
   font-weight:600;
   text-anchor:middle;
   dominant-baseline:central;
   paint-order:stroke;
   stroke:rgba(0,0,0,0.70);
-  stroke-width:3;
+  stroke-width:5;
   stroke-linejoin:round;
   pointer-events:none;
 }
@@ -653,6 +651,25 @@ html,body{
 
 /* Display digital — volta pro tamanho pequeno (Flávio 2026-05-10).
    O espaço extra do bloco vai pro velocímetro SVG, não pro número. */
+.hud-odometer{
+  flex:0 0 auto;
+  display:flex;align-items:baseline;justify-content:center;gap:6px;
+  padding:4px 0 2px;
+  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+}
+.hud-odo-key{
+  font-size:8px;letter-spacing:.26em;color:var(--text-3);
+  text-transform:uppercase;
+}
+.hud-odo-val{
+  font-family:'Helvetica Neue','Inter',sans-serif;
+  font-size:13px;letter-spacing:.04em;color:#F8F4E8;
+  font-variant-numeric:tabular-nums;font-weight:300;line-height:1;
+}
+.hud-odo-unit{
+  font-size:8px;letter-spacing:.26em;color:var(--gold-2);
+  text-transform:uppercase;
+}
 .sg-readout{
   flex:0 0 auto;
   display:flex;align-items:baseline;justify-content:center;gap:6px;
@@ -724,26 +741,12 @@ html,body{
   filter:drop-shadow(0 0 3px rgba(212, 56, 56, 0.45));
 }
 
-/* Odômetro do carro estilo plaquinhas mecânicas (Flávio 2026-05-15) —
-   substitui a antiga marca "P1 FAST" no centro do dial. Cada dígito numa
-   caixinha com fundo escuro e borda dourada fina, lembrando odômetro
-   analógico clássico (estilo VDO/fusca). */
-.sg-odo-plates .sg-odo-cell rect{
-  fill:#0E1116;
-  stroke:rgba(212,175,55,0.55);
-  stroke-width:0.4;
-}
-.sg-odo-plates .sg-odo-cell text{
+/* Marca dentro do dial — assinatura sutil "P1 FAST" */
+.sg-brand{
   font-family:'Helvetica Neue','Inter',sans-serif;
-  font-size:9.5px;font-weight:600;letter-spacing:0;
-  fill:#F5F0E0;
+  font-size:7.8px;letter-spacing:.4em;font-weight:600;
+  fill:rgba(232, 201, 122, 0.65);
   text-anchor:middle;
-  font-variant-numeric:tabular-nums;
-}
-.sg-odo-plates .sg-odo-unit{
-  font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
-  font-size:5.5px;letter-spacing:.18em;
-  fill:rgba(212,175,55,0.85);
   text-transform:uppercase;
 }
 
@@ -3634,19 +3637,8 @@ html,body{
         <g class="sg-major"  data-sg-major></g>
         <g class="sg-labels" data-sg-labels></g>
 
-        <!-- Odômetro do carro estilo plaquinhas mecânicas (Flávio 2026-05-15) —
-             posicionado na BASE do mostrador, no espaço em branco entre o
-             "0" (canto inferior esquerdo do dial) e o redline arc (canto
-             inferior direito). Quilometragem total do carro em qualquer
-             pista. Detalhamento por autódromo fica no aplicativo. -->
-        <g class="sg-odo-plates" data-hud="odometro" transform="translate(78 150)">
-          <g class="sg-odo-cell"><rect x="0"  y="0" width="9" height="13" rx="1.4"/><text x="4.5"  y="9.6">1</text></g>
-          <g class="sg-odo-cell"><rect x="10" y="0" width="9" height="13" rx="1.4"/><text x="14.5" y="9.6">2</text></g>
-          <g class="sg-odo-cell"><rect x="20" y="0" width="9" height="13" rx="1.4"/><text x="24.5" y="9.6">3</text></g>
-          <g class="sg-odo-cell"><rect x="30" y="0" width="9" height="13" rx="1.4"/><text x="34.5" y="9.6">4</text></g>
-          <g class="sg-odo-cell"><rect x="40" y="0" width="9" height="13" rx="1.4"/><text x="44.5" y="9.6">7</text></g>
-          <text class="sg-odo-unit" x="52" y="9.6">km</text>
-        </g>
+        <!-- Marca P1 FAST no topo do gauge (entre as numerações) -->
+        <text class="sg-brand" x="100" y="78">P1 FAST</text>
 
         <!-- Ponteiro vermelho clássico, sem hub central (Flávio 2026-05-10).
              Demo: 143 km/h em range 0-200 → SVG rotate(-32.85 100 100).
@@ -3657,6 +3649,15 @@ html,body{
           <path class="sg-needle" d="M 92 103 L 178 100 L 92 97 Z"/>
         </g>
       </svg>
+
+      <!-- Odômetro do carro — quilometragem TOTAL acumulada (qualquer pista,
+           qualquer evento). Detalhamento por autódromo fica no aplicativo,
+           não aqui no painel. Atualiza a cada deslocamento. -->
+      <div class="hud-odometer">
+        <span class="hud-odo-key">odômetro</span>
+        <span class="hud-odo-val" data-hud="odometro">12.347</span>
+        <span class="hud-odo-unit">km</span>
+      </div>
 
       <!-- Display digital — sai do dial pra ficar limpo (Flávio 2026-05-10).
            Fica na base do bloco, separado do mostrador analógico. -->
@@ -6233,26 +6234,6 @@ html,body{
           shine.setAttribute('class', 'pt-shine');
           shine.setAttribute('cx', pa.x - 1.5); shine.setAttribute('cy', pa.y - 1.8); shine.setAttribute('r', 1.3);
           g.appendChild(shine);
-
-          // Marcha de entrada da curva — texto pelo lado de FORA do traçado,
-          // à mesma distância (26px) usada antes no ponto de entrada, mas
-          // posicionado próximo do ápice (Flávio 2026-05-15).
-          // Rotação inversa de +106° (o mapa está rotacionado -106°) para o
-          // número ficar em pé no sentido da tela.
-          var lapApex = (typeof currentLap === 'function') ? currentLap() : null;
-          var cornerApex = lapApex && lapApex.corners ? lapApex.corners[ci] : null;
-          var entryGearApex = cornerApex ? cornerApex.entradaGear : null;
-          if(entryGearApex != null){
-            var outsideApex = pointWithLateralOffset(path, len, totalLen, 26, 'outside');
-            var gearTxtApex = document.createElementNS(NS, 'text');
-            gearTxtApex.setAttribute('class', 'pt-entry-gear');
-            gearTxtApex.setAttribute('x', outsideApex.x.toFixed(2));
-            gearTxtApex.setAttribute('y', outsideApex.y.toFixed(2));
-            gearTxtApex.setAttribute('data-entry-gear', ci);
-            gearTxtApex.setAttribute('transform', 'rotate(106 '+outsideApex.x.toFixed(2)+' '+outsideApex.y.toFixed(2)+')');
-            gearTxtApex.textContent = entryGearApex;
-            g.appendChild(gearTxtApex);
-          }
         } else {
           // Entry/exit: barrinha perpendicular ao traçado, no LADO DE FORA
           // (onde o carro chega largo no início e sai largo no final).
@@ -6265,6 +6246,24 @@ html,body{
           bar.setAttribute('x2', (pa.x - Math.cos(perpRad) * halfLen).toFixed(2));
           bar.setAttribute('y2', (pa.y - Math.sin(perpRad) * halfLen).toFixed(2));
           g.appendChild(bar);
+
+          // No ponto de ENTRADA, mostra a marcha em que o piloto chegou —
+          // texto pelo lado de DENTRO do traçado.
+          if(pd.type === 'entry'){
+            var lapEG = (typeof currentLap === 'function') ? currentLap() : null;
+            var cornerEG = lapEG && lapEG.corners ? lapEG.corners[ci] : null;
+            var entryGear = cornerEG ? cornerEG.entradaGear : null;
+            if(entryGear != null){
+              var insidePa = pointWithLateralOffset(path, len, totalLen, 16, 'inside');
+              var gearTxt = document.createElementNS(NS, 'text');
+              gearTxt.setAttribute('class', 'pt-entry-gear');
+              gearTxt.setAttribute('x', insidePa.x.toFixed(2));
+              gearTxt.setAttribute('y', insidePa.y.toFixed(2));
+              gearTxt.setAttribute('data-entry-gear', ci);
+              gearTxt.textContent = entryGear;
+              g.appendChild(gearTxt);
+            }
+          }
         }
         container.appendChild(g);
       });

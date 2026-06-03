@@ -398,11 +398,11 @@ html,body{
 .pt.is-entry, .pt.is-exit{ opacity:1; }
 .pt.is-apex{ opacity:1; }
 
-/* Marcha de entrada — texto pelo lado de FORA do traçado, próximo do apice
-   de cada curva. Cor branca para destacar contra o asfalto escuro.
+/* Marcha de entrada — texto pelo lado de DENTRO do traçado, no ponto de
+   entrada de cada curva. Cor branca para destacar contra o asfalto escuro.
    Texto em pé (vertical no sentido da tela) — rotação inversa do mapa
    aplicada no atributo transform de cada texto. */
-.pt-entry-gear{
+.pt.is-entry .pt-entry-gear{
   fill:#FFFFFF;
   font-family:'Helvetica Neue',sans-serif;
   font-size:20px;
