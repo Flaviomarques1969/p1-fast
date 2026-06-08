@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Decisões — Fixes PR #166 (rotação cockpit)</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --fg:#e8e8e8; --muted:#9aa0a6; --accent:#4f8cff; --ok:#22c55e; --warn:#f59e0b; --erro:#ef4444; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--fg); padding:24px; }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  .header { margin-bottom: 24px; }
+  h1 { font-size: 1.4rem; margin: 0 0 6px; }
+  .subtitulo { color: var(--muted); font-size: .9rem; }
+  .meta { color: var(--muted); font-size: .8rem; margin-top: 6px; }
+  .resumo { background: var(--card); border-radius: 12px; padding: 18px 20px; margin-bottom: 24px; border-left: 3px solid var(--accent); }
+  .resumo h2 { font-size: 1rem; margin: 0 0 8px; }
+  .resumo p { margin: 4px 0; font-size: .92rem; line-height: 1.5; }
+  .resumo code { background:#0f1115; padding: 1px 6px; border-radius: 4px; font-size: .85rem; }
+  .bug { font-weight: 600; }
+  .bug.normal { color: var(--warn); }
+  .bug.nit { color: var(--muted); }
+  .card { background:var(--card); border-radius:12px; padding:22px 24px; box-shadow: 0 8px 32px rgba(0,0,0,.35); margin-bottom: 22px; }
+  .card-num { color: var(--accent); font-weight: 700; font-size: .85rem; letter-spacing: .04em; }
+  .pergunta { font-size: 1.08rem; line-height: 1.45; margin: 6px 0 18px; font-weight: 600; }
+  .opcoes { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .opcao { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1px solid #2a2f3a; border-radius: 10px; cursor: pointer; transition: all .15s; }
+  .opcao:hover { border-color: var(--accent); }
+  .opcao.selecionada { border-color: var(--accent); background: rgba(79,140,255,.06); }
+  .opcao input { margin-top: 4px; }
+  .opcao-corpo { flex: 1; }
+  .opcao-titulo { font-weight: 600; }
+  .opcao-just { color: var(--muted); font-size: .88rem; margin-top: 4px; line-height: 1.4; }
+  .recomendado { display: inline-block; background: rgba(34,197,94,.15); color: var(--ok); padding: 1px 8px; border-radius: 999px; font-size: .72rem; margin-left: 8px; vertical-align: middle; }
+  textarea { width: 100%; background:#0f1115; color:var(--fg); border:1px solid #2a2f3a; border-radius: 8px; padding: 10px; resize: vertical; font-family: inherit; font-size: .92rem; }
+  label.bloco { display: block; margin: 12px 0 4px; color: var(--muted); font-size: .82rem; }
+  .outra-wrap { display: none; }
+  .outra-wrap.ativo { display: block; }
+  .acoes { position: sticky; bottom: 12px; background: rgba(15,17,21,.92); backdrop-filter: blur(8px); padding: 14px; border-radius: 10px; border: 1px solid #2a2f3a; display: flex; gap: 10px; align-items: center; }
+  button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 10px 16px; font-size: 1rem; cursor: pointer; }
+  button.secundario { background: transparent; border: 1px solid #2a2f3a; color: var(--fg); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  .status { color: var(--muted); font-size: .85rem; margin-left: auto; }
+  .status.ok { color: var(--ok); }
+  .status.erro { color: var(--erro); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>Decisões — Plano de fixes da PR #166</h1>
+    <div class="subtitulo">/ultrareview confirmou 2 bugs. Antes de mexer no código, preciso de 4 decisões.</div>
+    <div class="meta">ID: <code>20260510-191131-p1-fast-pr166-fixes</code> · Projeto: P1 Fast · Tipo: operacao</div>
+  </div>
+
+  <div class="resumo">
+    <h2>O que vai ser corrigido</h2>
+    <p><span class="bug normal">Bug 8 (normal)</span> — <code>MainWindow.xaml.cs:686-707, 723-729</code>. Quando <code>--display-index 2</code> é passado mas o display externo ainda não está enumerado (race no cold start USB-C/dock), <code>ApplyDisplayPlacement</code> cai pro fallback janelado, mas <code>OnRotateToggleInvoked</code> e <code>ApplyInitialRotation</code> continuam usando <code>_options.DisplayIndex = 2</code> pra montar a chave do <code>rotation.json</code>. Resultado: app rodando janelado no notebook escreve na chave "2" (que era pra ser do display externo) → próxima sessão pode subir invertida.</p>
+    <p><span class="bug nit">Bug 5 (nit)</span> — <code>MainWindow.xaml.cs:723-729</code>. <code>OnRotateToggleInvoked</code> não chama <code>UpdateStatusText()</code>, então o indicador <code>rot0</code>/<code>rot180</code> no rodapé fica stale até a próxima mutação de estado disparar o callback.</p>
+    <p><strong>Constraint técnica:</strong> <code>LaunchOptions</code> é <code>sealed record</code> imutável — não dá pra <code>_options.DisplayIndex = null</code>; precisa de outra abordagem.</p>
+  </div>
+
+  <form id="form">
+
+    <!-- ───────── Pergunta 1 ───────── -->
+    <div class="card" data-pergunta="worktree">
+      <div class="card-num">DECISÃO 1 / 4</div>
+      <div class="pergunta">Onde aplicar os fixes?</div>
+      <div class="opcoes">
+        <label class="opcao">
+          <input type="radio" name="worktree" value="tender-lalande" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">Worktree existente <code>tender-lalande-0f034a</code> <span class="recomendado">recomendado</span></div>
+            <div class="opcao-just">Já está na branch <code>claude/develop-cockpit-app-rotation</code> (HEAD = <code>1e17243</code>), working tree limpo. Zero setup. Só preciso editar e committar.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="worktree" value="novo" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">Worktree novo a partir da branch da PR</div>
+            <div class="opcao-just">Mais isolado, mas ocupa disco e demora 30s pra subir. Útil se quiser preservar o tender-lalande intocado por algum motivo.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="worktree" value="atual" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">Worktree atual <code>kind-goldberg-1caba1</code> (trocar branch)</div>
+            <div class="opcao-just">Não recomendado — está na branch <code>claude/kind-goldberg-1caba1</code>; trocar pra rotation perde contexto da sessão atual.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="worktree" value="Outra" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">Outra</div>
+            <div class="opcao-just">Você descreve abaixo.</div>
+          </div>
+        </label>
+      </div>
+      <div class="outra-wrap">
+        <label class="bloco">Sua opção</label>
+        <textarea data-outra rows="2" placeholder="Descreva"></textarea>
+      </div>
+      <label class="bloco">Comentário (opcional)</label>
+      <textarea data-comentario rows="2" placeholder="Ressalvas, prazos, contexto"></textarea>
+    </div>
+
+    <!-- ───────── Pergunta 2 ───────── -->
+    <div class="card" data-pergunta="abordagem">
+      <div class="card-num">DECISÃO 2 / 4</div>
+      <div class="pergunta">Como o código deve saber que o display escolhido não existe?</div>
+      <div class="opcoes">
+        <label class="opcao">
+          <input type="radio" name="abordagem" value="bool-retorno" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo"><code>ApplyDisplayPlacement</code> retorna <code>bool fellBack</code> <span class="recomendado">recomendado</span></div>
+            <div class="opcao-just">Mudança mínima: método vira <code>bool</code>, MainWindow guarda em campo <code>private bool _isWindowedFallback</code>. <code>ApplyInitialRotation</code> e <code>OnRotateToggleInvoked</code> passam <code>null</code> (chave <code>"default"</code>) quando <code>_isWindowedFallback == true</code>. Casa exatamente com o fix proposto pelo ultrareview.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="abordagem" value="effective-key" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">Método helper <code>EffectiveDisplayIndex()</code> centraliza a lógica</div>
+            <div class="opcao-just">Helper checa se <code>_options.DisplayIndex</code> é válido contra <code>DisplayArea.FindAll()</code> e retorna <code>null</code> se inválido. Mais defensivo (cobre cenários futuros), mas re-enumera displays a cada toggle (custo baixo, mas chamada extra).</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="abordagem" value="record-with" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">Substituir <code>_options</code> por <code>_options with { DisplayIndex = null }</code> no fallback</div>
+            <div class="opcao-just">Funciona porque <code>LaunchOptions</code> é record. Mas <code>_options</code> é <code>readonly</code> — precisa virar mutable. Pequena quebra de imutabilidade. Fica menos rastreável que campo bool dedicado.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="abordagem" value="Outra" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">Outra</div>
+            <div class="opcao-just">Descreva abaixo (ex: log estruturado, telemetria do fallback, etc.)</div>
+          </div>
+        </label>
+      </div>
+      <div class="outra-wrap">
+        <label class="bloco">Sua opção</label>
+        <textarea data-outra rows="2" placeholder="Descreva"></textarea>
+      </div>
+      <label class="bloco">Comentário (opcional)</label>
+      <textarea data-comentario rows="2" placeholder="Ressalvas, contexto"></textarea>
+    </div>
+
+    <!-- ───────── Pergunta 3 ───────── -->
+    <div class="card" data-pergunta="testes">
+      <div class="card-num">DECISÃO 3 / 4</div>
+      <div class="pergunta">Que cobertura de teste exigir antes do commit?</div>
+      <div class="opcoes">
+        <label class="opcao">
+          <input type="radio" name="testes" value="xunit-rotationkey" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">xUnit no domínio da rotação (3-4 testes) <span class="recomendado">recomendado</span></div>
+            <div class="opcao-just">Extrair <code>RotationKey()</code> e a decisão de fallback pra classe testável. 4 testes: (a) display válido → chave "2", (b) fallback → chave "default", (c) load com chave inexistente → 0°, (d) toggle 0→180 atualiza só a chave certa. Bug 5 (status text) só dá pra validar manual no app rodando.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="testes" value="smoke-build" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">Só <code>dotnet build</code> + smoke manual no app</div>
+            <div class="opcao-just">Mais rápido, mas o bug 8 só aparece quando o display some — difícil reproduzir manualmente. Risco de regressão futura sem rede de proteção.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="testes" value="integration-display" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">Integration test simulando display ausente</div>
+            <div class="opcao-just">Caro — exige mock do <code>DisplayArea.FindAll()</code> ou refactor pra DI. ROI baixo nesse momento, melhor deixar pra MS-13.3.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="testes" value="Outra" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">Outra</div>
+            <div class="opcao-just">Descreva abaixo (ex: só Bug 5 sem teste, snapshot test, etc.)</div>
+          </div>
+        </label>
+      </div>
+      <div class="outra-wrap">
+        <label class="bloco">Sua opção</label>
+        <textarea data-outra rows="2" placeholder="Descreva"></textarea>
+      </div>
+      <label class="bloco">Comentário (opcional)</label>
+      <textarea data-comentario rows="2" placeholder="Ressalvas"></textarea>
+    </div>
+
+    <!-- ───────── Pergunta 4 ───────── -->
+    <div class="card" data-pergunta="commit">
+      <div class="card-num">DECISÃO 4 / 4</div>
+      <div class="pergunta">Como organizar o commit e o push pra PR #166?</div>
+      <div class="opcoes">
+        <label class="opcao">
+          <input type="radio" name="commit" value="um-commit" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">1 commit cobrindo os 2 bugs + push automático <span class="recomendado">recomendado</span></div>
+            <div class="opcao-just">Mensagem: <code>fix(MS-13.2 PR-L): trata fallback de display + atualiza status text no toggle (ultrareview #166)</code>. Push direto na branch da PR — assinatura "fix ultrareview findings" coesa.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="commit" value="dois-commits" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">2 commits separados (Bug 8 + Bug 5) + push</div>
+            <div class="opcao-just">Mais granular pra git log, útil se quiser bisect. Custa mais um commit no histórico da PR.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="commit" value="commit-sem-push" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">Commitar local, mas NÃO dar push (você revisa antes)</div>
+            <div class="opcao-just">Você confere o diff localmente antes do push. Mais seguro, mas exige 1 ida-e-volta extra.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="commit" value="Outra" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">Outra</div>
+            <div class="opcao-just">Descreva abaixo (ex: PR nova em vez de empurrar na #166, etc.)</div>
+          </div>
+        </label>
+      </div>
+      <div class="outra-wrap">
+        <label class="bloco">Sua opção</label>
+        <textarea data-outra rows="2" placeholder="Descreva"></textarea>
+      </div>
+      <label class="bloco">Comentário (opcional)</label>
+      <textarea data-comentario rows="2" placeholder="Ressalvas"></textarea>
+    </div>
+
+    <div class="acoes">
+      <button type="button" id="exportar">Exportar JSON com as 4 respostas</button>
+      <button type="button" class="secundario" id="limpar">Limpar tudo</button>
+      <span class="status" id="status">Aguardando suas escolhas…</span>
+    </div>
+  </form>
+</div>
+
+<script>
+  const PERGUNTA_ID = "20260510-191131-p1-fast-pr166-fixes";
+  const STORAGE_KEY = "padrao-flavio:" + PERGUNTA_ID;
+  const PERGUNTAS = ["worktree", "abordagem", "testes", "commit"];
+
+  function getCard(nome) {
+    return document.querySelector('.card[data-pergunta="' + nome + '"]');
+  }
+
+  function carregar() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const dados = JSON.parse(raw);
+      PERGUNTAS.forEach(nome => {
+        const r = dados[nome] || {};
+        if (r.escolha) {
+          const radio = document.querySelector('input[name="' + nome + '"][value="' + CSS.escape(r.escolha) + '"]');
+          if (radio) radio.checked = true;
+        }
+        const card = getCard(nome);
+        if (r.outra_texto) card.querySelector('[data-outra]').value = r.outra_texto;
+        if (r.comentario)  card.querySelector('[data-comentario]').value = r.comentario;
+      });
+      atualizarSelecoes();
+    } catch (e) { /* noop */ }
+  }
+
+  function salvar() {
+    const dados = {};
+    PERGUNTAS.forEach(nome => {
+      const card = getCard(nome);
+      const checked = document.querySelector('input[name="' + nome + '"]:checked');
+      dados[nome] = {
+        escolha: checked ? checked.value : "",
+        outra_texto: card.querySelector('[data-outra]').value,
+        comentario: card.querySelector('[data-comentario]').value,
+      };
+    });
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(dados)); } catch (e) {}
+  }
+
+  function atualizarSelecoes() {
+    PERGUNTAS.forEach(nome => {
+      const card = getCard(nome);
+      const checked = card.querySelector('input[name="' + nome + '"]:checked');
+      card.querySelectorAll('.opcao').forEach(op => {
+        op.classList.toggle('selecionada', op.contains(checked));
+      });
+      const wrap = card.querySelector('.outra-wrap');
+      const isOutra = checked && checked.value === "Outra";
+      wrap.classList.toggle('ativo', !!isOutra);
+    });
+  }
+
+  function montarPayload() {
+    const out = {
+      pergunta_id: PERGUNTA_ID,
+      contexto: "Plano de fixes pra 2 bugs confirmados pelo /ultrareview da PR #166 (rotação 180° cockpit Windows)",
+      respondido_em: new Date().toISOString(),
+      respostas: {},
+    };
+    PERGUNTAS.forEach(nome => {
+      const card = getCard(nome);
+      const checked = document.querySelector('input[name="' + nome + '"]:checked');
+      const escolha = checked ? checked.value : "";
+      const isOutra = escolha === "Outra";
+      const outraTexto = card.querySelector('[data-outra]').value.trim();
+      out.respostas[nome] = {
+        pergunta: card.querySelector('.pergunta').innerText.trim(),
+        escolha: isOutra ? (outraTexto || "Outra") : escolha,
+        outra_opcao_usada: isOutra,
+        comentario: card.querySelector('[data-comentario]').value.trim(),
+      };
+    });
+    return out;
+  }
+
+  function exportar() {
+    const payload = montarPayload();
+    const faltando = PERGUNTAS.filter(n => !payload.respostas[n].escolha);
+    const status = document.getElementById('status');
+    if (faltando.length) {
+      status.className = 'status erro';
+      status.textContent = 'Faltam respostas: ' + faltando.join(', ');
+      return;
+    }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = PERGUNTA_ID + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    status.className = 'status ok';
+    status.textContent = 'JSON exportado. Coloque em ./.claude-perguntas/respostas/ e diga "fiz".';
+  }
+
+  function limpar() {
+    document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+    document.querySelectorAll('textarea').forEach(t => t.value = '');
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    atualizarSelecoes();
+    const status = document.getElementById('status');
+    status.className = 'status';
+    status.textContent = 'Tudo limpo.';
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    carregar();
+    document.querySelectorAll('input[type="radio"]').forEach(r => {
+      r.addEventListener('change', () => { salvar(); atualizarSelecoes(); });
+    });
+    document.querySelectorAll('textarea').forEach(t => {
+      t.addEventListener('input', salvar);
+    });
+    document.getElementById('exportar').addEventListener('click', exportar);
+    document.getElementById('limpar').addEventListener('click', limpar);
+  });
+</script>
+</body>
+</html>

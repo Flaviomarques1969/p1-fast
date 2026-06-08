@@ -14,6 +14,7 @@
 // Tokens só de Theme.swift. Tratamento "você", sem ícones decorativos.
 
 import SwiftUI
+import UIKit
 
 enum HomeState {
     case filled(HomeData)
@@ -81,6 +82,17 @@ struct CarroMock: Identifiable, Equatable {
 
 // MARK: - View raiz
 
+/// Fonte de verdade ESTÁVEL do caminho de navegação. Vive como
+/// @StateObject no ReadyRoot (criado UMA vez), então o histórico de telas
+/// sobrevive às recriações da HomeView disparadas pelos repositórios (timer
+/// de sincronização a cada 30s, status de manutenção ao abrir o hub, etc.).
+/// Antes o caminho era @State volátil dentro da HomeView e se perdia nessas
+/// recriações, fazendo o "Cancelar" cair na tela inicial em vez de voltar
+/// pra tela anterior (cobrado Flávio 2026-06-03).
+final class NavRouter: ObservableObject {
+    @Published var path = NavigationPath()
+}
+
 struct HomeView: View {
     let state: HomeState
     /// Opcional pra previews — quando presente, mostra SyncStatusBadge no
@@ -95,7 +107,7 @@ struct HomeView: View {
     var initialRoute: [HomeNavTarget] = []
     @State private var navSelection: BottomNavItem.ID?
     @State private var showSyncSheet = false
-    @State private var navPath = NavigationPath()
+    @EnvironmentObject private var router: NavRouter
     private let navItems: [BottomNavItem] = [
         BottomNavItem("Home"),
         BottomNavItem("Eventos"),
@@ -105,7 +117,7 @@ struct HomeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            NavigationStack(path: $navPath) {
+            NavigationStack(path: $router.path) {
                 shell
                     .navigationDestination(for: HomeNavTarget.self) { target in
                         destinationView(for: target)
@@ -122,8 +134,8 @@ struct HomeView: View {
         .preferredColorScheme(.dark)
         .onAppear {
             if navSelection == nil { navSelection = navItems.first?.id }
-            if navPath.isEmpty {
-                for r in initialRoute { navPath.append(r) }
+            if router.path.isEmpty {
+                for r in initialRoute { router.path.append(r) }
             }
         }
     }
@@ -139,7 +151,7 @@ struct HomeView: View {
         .background(Color.surface)
         .overlay(alignment: .bottomTrailing) {
             if case .filled = state {
-                FAB("Novo evento", action: { navPath.append(HomeNavTarget.eventosNovo) })
+                FAB("Novo evento", action: { router.path.append(HomeNavTarget.eventosNovo) })
                     .padding(.trailing, Spacing.md)
                     .padding(.bottom, Spacing.md)
             }
@@ -169,8 +181,8 @@ struct HomeView: View {
                 FilledContent(data: data)
             case .empty:
                 EmptyContent(
-                    onCadastrarCarro: { navPath.append(HomeNavTarget.garagemNovo) },
-                    onCriarEvento: { navPath.append(HomeNavTarget.eventosNovo) }
+                    onCadastrarCarro: { router.path.append(HomeNavTarget.garagemNovo) },
+                    onCriarEvento: { router.path.append(HomeNavTarget.eventosNovo) }
                 )
             }
             // Atalho dev pra captura rápida em test drive — fica embaixo
@@ -178,7 +190,7 @@ struct HomeView: View {
             // um builder válido.
             if telemetriaDevView != nil {
                 DevShortcuts(onAbrirTelemetria: {
-                    navPath.append(HomeNavTarget.telemetriaDemo)
+                    router.path.append(HomeNavTarget.telemetriaDemo)
                 })
             }
         }
@@ -205,15 +217,15 @@ struct HomeView: View {
         case .garagemNovo:
             GaragemView(initialSheet: .novo, onNavSelect: nav)
         case .carroHub(let id):
-            CarroHubView(carroId: id, onClose: { navPath.removeLast() })
+            CarroHubView(carroId: id, onClose: { voltarUmaTela() })
         case .carroCadastro(let id):
-            CarroModalView(carroId: id, onClose: { navPath.removeLast() })
+            CarroModalView(carroId: id, onClose: { voltarUmaTela() })
         case .manutencao(let id):
-            ManutencaoConsumiveisView(carroId: id, onClose: { navPath.removeLast() })
+            ManutencaoConsumiveisView(carroId: id, onClose: { voltarUmaTela() })
         case .estoque(let id):
-            PecaListaView(carroInicial: id, onClose: { navPath.removeLast() })
+            PecaListaView(carroInicial: id, onClose: { voltarUmaTela() })
         case .eventoDetalhe(let id):
-            EventoDetalheView(eventoId: id, onClose: { navPath.removeLast() })
+            EventoDetalheView(eventoId: id, onClose: { voltarUmaTela() })
         case .telemetriaDemo:
             if let builder = telemetriaDevView {
                 builder()
@@ -223,20 +235,30 @@ struct HomeView: View {
         }
     }
 
+    /// Volta exatamente UMA tela. Fecha o teclado antes (um campo em edição
+    /// poderia fazer a pilha colapsar) e faz pop incremental do caminho — que
+    /// agora é estável (NavRouter), então o "Cancelar"/voltar leva pra tela
+    /// anterior em vez de cair na tela inicial (cobrado Flávio 2026-06-03).
+    private func voltarUmaTela() {
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        if !router.path.isEmpty { router.path.removeLast() }
+    }
+
     /// Handler usado pelas sub-views quando o usuário toca em outro
     /// item do menu inferior. Reset do navPath + push do novo destino.
     /// "Home" só limpa o stack (volta pra raiz).
     private func navigateFromSubView(to item: BottomNavItem) {
-        navPath = NavigationPath()
+        router.path = NavigationPath()
         switch item.label {
         case "Home":
             break
         case "Eventos":
-            navPath.append(HomeNavTarget.eventos)
+            router.path.append(HomeNavTarget.eventos)
         case "Cadastros":
-            navPath.append(HomeNavTarget.cadastros)
+            router.path.append(HomeNavTarget.cadastros)
         case "Garagem":
-            navPath.append(HomeNavTarget.garagem)
+            router.path.append(HomeNavTarget.garagem)
         default:
             break
         }
@@ -247,16 +269,16 @@ struct HomeView: View {
     /// profundidade — inclusive de dentro do hub/cadastro/estoque.
     private func handleNavSelect(_ item: BottomNavItem) {
         navSelection = item.id
-        navPath = NavigationPath()
+        router.path = NavigationPath()
         switch item.label {
         case "Home":
             break // a raiz do stack já é a Home
         case "Eventos":
-            navPath.append(HomeNavTarget.eventos)
+            router.path.append(HomeNavTarget.eventos)
         case "Cadastros":
-            navPath.append(HomeNavTarget.cadastros)
+            router.path.append(HomeNavTarget.cadastros)
         case "Garagem":
-            navPath.append(HomeNavTarget.garagem)
+            router.path.append(HomeNavTarget.garagem)
         default:
             break
         }
@@ -824,10 +846,12 @@ private struct DevShortcuts: View {
 
 #Preview("Home — cheio") {
     HomeView(state: .filled(HomeData.mockFilled))
+        .environmentObject(NavRouter())
 }
 
 #Preview("Home — vazio") {
     HomeView(state: .empty)
+        .environmentObject(NavRouter())
 }
 
 #Preview("EmptyContent — taps") {

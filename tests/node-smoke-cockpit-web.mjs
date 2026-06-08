@@ -38,13 +38,17 @@ const scriptOpen = findLine('<script>', styleClose);
 const scriptClose = findLine('</script>', scriptOpen);
 
 t('CKW-01 mockup canônico tem <style> e </style> nas linhas esperadas', () => {
-  if (styleOpen !== 10 || styleClose !== 615) {
+  // Atualizado 2026-05-29 após Onda 8 (tipos de trecho, alerta-escandaloso,
+  // barra de aprendizado). Se mudar de novo, reextraia css/js com sed e
+  // atualize estes números (são apenas o limite de erro útil pra detectar
+  // drift acidental).
+  if (styleOpen !== 10 || styleClose !== 902) {
     throw new Error(`<style> em ${styleOpen}, </style> em ${styleClose} — mockup mudou de tamanho. Atualizar este smoke + tools de extração.`);
   }
 });
 
 t('CKW-02 mockup canônico tem <script> e </script> nas linhas esperadas', () => {
-  if (scriptOpen !== 757 || scriptClose !== 968) {
+  if (scriptOpen !== 1079 || scriptClose !== 1330) {
     throw new Error(`<script> em ${scriptOpen}, </script> em ${scriptClose} — mockup mudou. Atualizar smoke.`);
   }
 });

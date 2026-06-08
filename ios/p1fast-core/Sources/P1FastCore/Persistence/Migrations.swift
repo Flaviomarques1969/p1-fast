@@ -500,6 +500,21 @@ enum Migrations {
         m.registerMigration("v27_pecas_preco") { db in
             try? db.execute(sql: "ALTER TABLE pecas ADD COLUMN preco_unitario_cents INTEGER;")
         }
+
+        // v28 — pendências consumíveis (óleo X litros, gasolina Y litros).
+        // Alinha o banco local com a nuvem (supabase/migrations/
+        // 0038_iphone_sync_compat_preservando.sql: eh_consumivel + unidade em
+        // pendencias_template; quantidade em evento_pendencias). O modelo
+        // (Models.swift: PendenciaTemplate.ehConsumivel/unidade,
+        // EventoPendencia.quantidade) já espera essas colunas — esta migration
+        // estava no lado descartado da colisão v19 e voltou aqui em 2026-06-03.
+        // try? cobre o caso da coluna já existir (device que rodou a antiga
+        // v19_pendencias_consumivel): SQLite não tem ADD COLUMN IF NOT EXISTS.
+        m.registerMigration("v28_pendencias_consumivel") { db in
+            try? db.execute(sql: "ALTER TABLE pendencias_template ADD COLUMN eh_consumivel INTEGER NOT NULL DEFAULT 0;")
+            try? db.execute(sql: "ALTER TABLE pendencias_template ADD COLUMN unidade TEXT;")
+            try? db.execute(sql: "ALTER TABLE evento_pendencias ADD COLUMN quantidade REAL;")
+        }
     }
 
     // swiftlint:disable:next function_body_length

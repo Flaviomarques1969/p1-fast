@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audit · Mockups × App iOS · P1 Fast · 2026-05-10</title>
+<style>
+:root{
+  --bg:#0a0a0a; --surface:#111418; --hairline:rgba(212,175,55,0.18);
+  --gold-1:#F5E2A7; --gold-2:#D4AF37; --text-1:#F5F0E0; --text-2:rgba(245,240,224,0.78);
+  --text-3:rgba(245,240,224,0.45);
+  --green:#3FE08C; --amber:#FFB347; --orange:#FF8B4E; --red:#FF5A4E; --blue:#7DD3FC; --grey:#666;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:var(--bg);color:var(--text-1);font-family:'Helvetica Neue',sans-serif;
+  -webkit-font-smoothing:antialiased;font-feature-settings:"ss01";line-height:1.5;}
+body{padding:48px 32px 96px;max-width:1240px;margin:0 auto;}
+
+h1,h2,h3,h4{font-weight:300;letter-spacing:-0.02em;}
+h1{font-size:32px;margin-bottom:6px;color:var(--gold-1);}
+h2{font-size:22px;margin:48px 0 14px;color:var(--gold-1);
+  padding-bottom:8px;border-bottom:0.5px solid var(--hairline);}
+h3{font-size:14px;margin:0;color:var(--text-1);font-weight:500;letter-spacing:0;}
+h4{font-size:11px;letter-spacing:.22em;color:var(--gold-2);text-transform:uppercase;font-weight:500;
+  margin-bottom:6px;}
+p{color:var(--text-2);margin-bottom:10px;}
+
+.lead{font-size:14px;color:var(--text-3);font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+  letter-spacing:.04em;}
+
+/* ── KPIs no topo ───────────────────────────────── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0 36px;}
+.kpi{background:var(--surface);border:0.5px solid var(--hairline);padding:18px 16px;border-radius:2px;}
+.kpi__num{font-size:36px;font-weight:200;color:var(--gold-1);font-variant-numeric:tabular-nums;
+  letter-spacing:-0.04em;line-height:1;}
+.kpi__lbl{font-size:9px;letter-spacing:.22em;color:var(--text-3);text-transform:uppercase;
+  font-family:'JetBrains Mono',monospace;margin-top:8px;}
+.kpi.crit .kpi__num{color:var(--red);}
+.kpi.warn .kpi__num{color:var(--amber);}
+.kpi.ok .kpi__num{color:var(--green);}
+
+/* ── Como ler ───────────────────────────────── */
+.guide{background:var(--surface);border-left:2px solid var(--gold-2);
+  padding:16px 18px;margin-bottom:36px;}
+.guide ul{list-style:none;display:grid;grid-template-columns:repeat(2,1fr);gap:8px 24px;
+  margin-top:8px;}
+.guide li{font-size:13px;color:var(--text-2);}
+.guide li b{color:var(--text-1);font-weight:500;}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;
+  vertical-align:middle;box-shadow:0 0 6px currentColor;}
+.dot.s-real{background:var(--green);color:var(--green);}
+.dot.s-parcial{background:var(--amber);color:var(--amber);}
+.dot.s-mock{background:var(--orange);color:var(--orange);}
+.dot.s-faltando{background:var(--red);color:var(--red);}
+.dot.s-fora{background:var(--grey);color:var(--grey);box-shadow:none;}
+
+/* ── Cards de gap ───────────────────────────────── */
+.area{margin-bottom:28px;}
+.area__resumo{font-size:13px;color:var(--text-2);margin-bottom:16px;}
+.gap-list{display:grid;grid-template-columns:1fr;gap:10px;}
+.gap{background:var(--surface);border-left:2px solid var(--grey);padding:16px 18px;
+  border-radius:2px;display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:start;}
+.gap.s-real{border-left-color:var(--green);}
+.gap.s-parcial{border-left-color:var(--amber);}
+.gap.s-mock{border-left-color:var(--orange);}
+.gap.s-faltando{border-left-color:var(--red);}
+.gap.s-fora{border-left-color:var(--grey);opacity:.55;}
+
+.gap__col-status{padding-top:2px;}
+.gap__col-content{min-width:0;}
+.gap__col-actions{font-size:9px;letter-spacing:.18em;color:var(--text-3);
+  text-transform:uppercase;font-family:'JetBrains Mono',monospace;text-align:right;}
+
+.gap__title-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+.gap__hint{font-size:11px;color:var(--text-3);font-family:'JetBrains Mono',monospace;
+  letter-spacing:.04em;}
+.gap__desc{font-size:13px;color:var(--text-2);margin-bottom:8px;}
+.gap__falta{font-size:13px;color:var(--text-1);}
+.gap__falta b{color:var(--gold-1);font-weight:500;}
+
+.gap__tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.tag{font-size:9px;letter-spacing:.16em;text-transform:uppercase;
+  font-family:'JetBrains Mono',monospace;
+  padding:2px 7px;border-radius:1px;font-weight:500;}
+.tag.tier-critico{background:rgba(255,90,80,0.10);color:rgba(255,140,130,0.85);
+  border:0.5px solid rgba(255,90,80,0.35);}
+.tag.tier-medio{background:rgba(255,179,71,0.10);color:rgba(255,179,71,0.85);
+  border:0.5px solid rgba(255,179,71,0.35);}
+.tag.tier-baixo{background:rgba(125,211,252,0.06);color:rgba(125,211,252,0.65);
+  border:0.5px solid rgba(125,211,252,0.20);}
+.tag.tier-pronto{background:rgba(63,224,140,0.06);color:rgba(63,224,140,0.65);
+  border:0.5px solid rgba(63,224,140,0.20);}
+
+.gap__comment{margin-top:10px;}
+.gap__comment label{display:block;font-size:8px;letter-spacing:.20em;color:var(--text-3);
+  text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:4px;}
+.gap__comment textarea{width:100%;background:rgba(0,0,0,0.4);
+  border:0.5px solid var(--hairline);color:var(--text-1);
+  font-family:inherit;font-size:13px;padding:8px 10px;border-radius:2px;
+  resize:vertical;min-height:36px;line-height:1.4;outline:none;
+  transition:border-color 160ms,background 160ms;}
+.gap__comment textarea:focus{border-color:var(--gold-2);background:rgba(0,0,0,0.6);}
+.gap__comment textarea.has-content{border-color:var(--gold-2);}
+
+/* ── Toolbar fixo ───────────────────────────────── */
+.toolbar{position:fixed;bottom:0;left:0;right:0;
+  background:rgba(8,10,14,0.96);backdrop-filter:blur(12px);
+  border-top:0.5px solid var(--hairline);
+  padding:14px 32px;display:flex;justify-content:space-between;align-items:center;
+  z-index:100;}
+.toolbar__lead{font-size:12px;color:var(--text-3);font-family:'JetBrains Mono',monospace;
+  letter-spacing:.06em;}
+.toolbar__lead b{color:var(--gold-1);font-variant-numeric:tabular-nums;}
+.toolbar__btns{display:flex;gap:10px;}
+.btn{font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  font-family:'JetBrains Mono',monospace;font-weight:500;
+  padding:9px 14px;border-radius:2px;border:0.5px solid var(--hairline);
+  background:transparent;color:var(--text-1);cursor:pointer;
+  transition:all 160ms;}
+.btn:hover{background:rgba(212,175,55,0.10);border-color:var(--gold-2);}
+.btn.primary{background:rgba(212,175,55,0.15);border-color:var(--gold-2);color:var(--gold-1);}
+.btn.primary:hover{background:rgba(212,175,55,0.25);}
+.btn.danger{color:rgba(255,140,130,0.85);}
+.btn.danger:hover{background:rgba(255,90,80,0.10);border-color:rgba(255,90,80,0.45);}
+
+/* ── Estado salvo ───────────────────────────────── */
+.saved{position:fixed;top:24px;right:24px;
+  background:rgba(63,224,140,0.12);color:var(--green);
+  border:0.5px solid rgba(63,224,140,0.35);
+  padding:8px 14px;border-radius:2px;
+  font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  font-family:'JetBrains Mono',monospace;
+  opacity:0;transition:opacity 320ms;
+  z-index:200;pointer-events:none;}
+.saved.visible{opacity:1;}
+
+@media (max-width: 720px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr);}
+  .gap{grid-template-columns:auto 1fr;}
+  .gap__col-actions{display:none;}
+}
+</style>
+</head>
+<body>
+
+<h1>Audit · Mockups × App iOS</h1>
+<p class="lead">P1 Fast · 2026-05-10 · sweep do que existe em design vs o que já roda no app</p>
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="kpi__num">31</div><div class="kpi__lbl">Mockups canônicos</div></div>
+  <div class="kpi ok"><div class="kpi__num" id="kpi-real">—</div><div class="kpi__lbl">Já funcionam no app</div></div>
+  <div class="kpi warn"><div class="kpi__num" id="kpi-parcial">—</div><div class="kpi__lbl">Tem app, mas com dado de exemplo</div></div>
+  <div class="kpi crit"><div class="kpi__num" id="kpi-faltando">—</div><div class="kpi__lbl">Ainda não no app</div></div>
+</div>
+
+<div class="guide">
+  <h4>Como ler este relatório</h4>
+  <p>Cada item é um pedaço da experiência: uma tela, um bloco de tela, uma funcionalidade. Comparei o desenho aprovado (mockup HTML) com o que o app iPhone já tem hoje. Status:</p>
+  <ul>
+    <li><span class="dot s-real"></span><b>Pronto</b> — funciona no app, lendo dados reais do banco</li>
+    <li><span class="dot s-parcial"></span><b>Parcial</b> — tela existe, mas alguns dados ainda são exemplo</li>
+    <li><span class="dot s-mock"></span><b>Esqueleto</b> — tela existe só com dados de exemplo</li>
+    <li><span class="dot s-faltando"></span><b>Faltando</b> — só o desenho existe, app nem tem a tela ainda</li>
+    <li><span class="dot s-fora"></span><b>Fora de escopo</b> — não vai pro app desta fase</li>
+  </ul>
+  <p style="margin-top:10px;"><b>Como dar feedback:</b> deixe um comentário em qualquer item. O texto é salvo automaticamente no seu navegador. No fim, clique <b>Exportar comentários</b> pra baixar tudo num arquivo JSON que pode mandar pro Claude.</p>
+</div>
+
+<!-- ─────────────────────────────────────────────── -->
+<!-- Conteúdo gerado por JS a partir do AUDIT_DATA   -->
+<!-- ─────────────────────────────────────────────── -->
+<div id="audit-root"></div>
+
+<div class="toolbar">
+  <div class="toolbar__lead">
+    Comentários salvos: <b id="comment-count">0</b> · Auto-save ativo no navegador
+  </div>
+  <div class="toolbar__btns">
+    <button class="btn danger" id="btn-clear">Apagar comentários</button>
+    <button class="btn primary" id="btn-export">Exportar comentários</button>
+  </div>
+</div>
+
+<div class="saved" id="saved-toast">Salvo</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// AUDIT_DATA — dataset bruto. Cada item:
+//   id     — chave única
+//   titulo — nome da tela/bloco em PT-BR de gestor
+//   mockup — arquivo do mockup canônico (referência)
+//   swift  — arquivo Swift correspondente (ou '' se não existe)
+//   status — 'real' | 'parcial' | 'mock' | 'faltando' | 'fora'
+//   tier   — 'critico' | 'medio' | 'baixo' | 'pronto'  (impacto pra Fase 1)
+//   desc   — onde está hoje
+//   falta  — o que precisa pra ficar pronto (linguagem de gestor, sem jargão)
+// ─────────────────────────────────────────────────────────────────────────────
+const AUDIT_DATA = [
+  {
+    secao:'cockpit',
+    titulo:'Cockpit ao vivo (Vista Piloto)',
+    intro:'Tela que o piloto vê durante a corrida. Mostra shift light, ápice, frenagem, vmin, delta, mensagens do box. É o coração da experiência ao vivo.',
+    items:[
+      {
+        id:'cockpit-piloto',
+        titulo:'Tela do piloto durante a corrida',
+        mockup:'mockup-cockpit-piloto.html',
+        swift:'',
+        status:'faltando',
+        tier:'critico',
+        desc:'Hoje só existe o mockup HTML aberto no navegador. O app iPhone ainda não tem essa tela em código nativo.',
+        falta:'Construir a tela inteira em Swift: shift light premium, linha de ápice/freio/vmin/saída, delta grande no centro, dinâmica de mensagem que entra da direita, halo de status (laranja recorde / roxo pior). <b>Tudo</b>. A inteligência por trás (Detector ao vivo, Coach, Score) já está pronta no motor Swift — falta a tela que mostra.'
+      },
+      {
+        id:'cockpit-piloto-clean',
+        titulo:'Variante celular (sem chrome)',
+        mockup:'mockup-cockpit-piloto-clean.html',
+        swift:'',
+        status:'faltando',
+        tier:'medio',
+        desc:'Versão sem moldura pra rodar em tela cheia no celular. Wrapper webapp existe num app demo separado (`dev.p1fast.CockpitWeb`), não no app principal.',
+        falta:'Decisão pendente: mantém wrapper webapp ou migra pra Swift junto com a tela principal? Se Swift, é a mesma tela do item acima em modo full-screen.'
+      },
+      {
+        id:'cockpit-piloto-105',
+        titulo:'Variante kiosque tela 10.5"',
+        mockup:'mockup-cockpit-piloto-tela-10.5.html',
+        swift:'',
+        status:'parcial',
+        tier:'baixo',
+        desc:'Mockup gerado hoje pra rodar em tela automotiva 10.5". Auto-cycle ligado, sem controles, só painel.',
+        falta:'Mesma decisão da variante celular. Hoje funciona como página web servida em HTTP.'
+      },
+      {
+        id:'cockpit-ghost',
+        titulo:'Vista de volta + ghost map',
+        mockup:'mockup-cockpit-ghost.html',
+        swift:'',
+        status:'faltando',
+        tier:'medio',
+        desc:'Tela que aparece UMA vez por volta na reta principal: mapa do trecho com a linha atual e a linha do ghost (melhor passagem) sobrepostas, etiqueta com tempo de referência.',
+        falta:'Construir a tela em Swift. Renderizar o traçado via PathKit/MetalKit, sobrepor as duas linhas, mostrar diff visual. O motor Swift já calcula a linha ótima, falta a UI.'
+      },
+      {
+        id:'cockpit-comparacao',
+        titulo:'Cockpit em modo comparação',
+        mockup:'mockup-cockpit-comparacao.html',
+        swift:'',
+        status:'faltando',
+        tier:'baixo',
+        desc:'Variação do cockpit pra modo "comparação" — usado em estudo pós-volta dentro do mesmo formato visual.',
+        falta:'Depende da tela principal do cockpit. Não faz sentido construir antes.'
+      }
+    ]
+  },
+  {
+    secao:'box',
+    titulo:'Command Box (TV 32" no box)',
+    intro:'Tela que fica na TV do box, espelhando o que o piloto vê + dados extras pro engenheiro/chefe. iPhone alimenta a TV via AirPlay.',
+    items:[
+      {
+        id:'command-box-vista-piloto',
+        titulo:'Command Box — vista do piloto',
+        mockup:'mockup-command-box-vista-piloto.html (worktree)',
+        swift:'',
+        status:'mock',
+        tier:'medio',
+        desc:'O mockup polido mais avançado do projeto. Mostra: vídeo ao vivo, mapa da pista com marker piscante, telemetria 30Hz, P1 Coach contextual, stint bar, gauge de combustível, alertas críticos shift-light wash branco em motor/câmbio/óleo/pneus, checklist de saída/chegada, fase térmica do pneu. Tem 14 rodadas de polimento + 3 de ajustes hoje.',
+        falta:'Mockup riquíssimo, mas zero Swift. Decisão de produto: o Command Box em iOS nativo é um tablet ou continua como página web servida pra TV? Se nativo, é o segundo maior trabalho depois do cockpit do piloto.'
+      },
+      {
+        id:'command-box-engenheiro',
+        titulo:'Command Box — vista do engenheiro',
+        mockup:'mockup-command-box.html (legacy)',
+        swift:'',
+        status:'faltando',
+        tier:'baixo',
+        desc:'Vista alternativa pro engenheiro de pista — foco em telemetria e dados técnicos.',
+        falta:'Pendente — mockup precisa ser revisitado depois que a vista piloto fechar.'
+      },
+      {
+        id:'command-box-selecao',
+        titulo:'Hub de seleção do Command Box',
+        mockup:'selecao-command-box.html',
+        swift:'',
+        status:'faltando',
+        tier:'baixo',
+        desc:'Tela inicial do Command Box — escolha entre vistas (piloto / engenheiro / análise).',
+        falta:'Mockup existe, sem implementação.'
+      }
+    ]
+  },
+  {
+    secao:'garagem',
+    titulo:'Garagem do time (carros, pneus, combustível)',
+    intro:'Cadastro do que o time tem: carros, pneus, combustíveis, setups. É o que aparece quando vai planejar evento ou stint.',
+    items:[
+      {
+        id:'garagem',
+        titulo:'Tela Garagem',
+        mockup:'mockup-garagem.html',
+        swift:'GaragemView.swift',
+        status:'real',
+        tier:'pronto',
+        desc:'Tela existe no app, lê os carros do banco. Funciona.',
+        falta:'Nada crítico. Cadastro de limites técnicos (T4000 + cadastro do carro) ainda não tem UI dedicada — está hardcoded no mockup do Command Box. Quando esse for portado, abre seção "Limites técnicos" aqui.'
+      },
+      {
+        id:'carro-detalhe',
+        titulo:'Detalhe do carro',
+        mockup:'mockup-carro.html',
+        swift:'CarroModalView.swift',
+        status:'parcial',
+        tier:'medio',
+        desc:'Tela existe, lê o carro real. Tem alguns campos com valores de exemplo ainda (5 marcadores de mock no código).',
+        falta:'Auditar quais campos estão hardcoded no Swift (ex: setup default) e plugar nos repositórios reais.'
+      },
+      {
+        id:'carro-novo',
+        titulo:'Cadastrar carro novo',
+        mockup:'mockup-carro-novo.html',
+        swift:'CarroNovoFormView.swift',
+        status:'parcial',
+        tier:'medio',
+        desc:'Formulário existe, mas tem dados de exemplo embutidos (4 sinais de mock).',
+        falta:'Validar campos e salvar via CarroRepository. Pode estar próximo do real, precisa abrir e checar.'
+      },
+      {
+        id:'pneu-lista',
+        titulo:'Lista de pneus',
+        mockup:'mockup-pneu-lista.html',
+        swift:'PneuPickerView.swift',
+        status:'real',
+        tier:'pronto',
+        desc:'Lê do PneuRepository, mostra pneus reais.',
+        falta:'Nada.'
+      },
+      {
+        id:'pneu-cadastro',
+        titulo:'Cadastrar pneu',
+        mockup:'mockup-pneu-cadastro.html',
+        swift:'PneuCadastroView.swift',
+        status:'parcial',
+        tier:'baixo',
+        desc:'Tela existe, 2 sinais de mock — provavelmente em campos default.',
+        falta:'Auditoria rápida pra ver se valores default são "exemplo" ou "default real".'
+      },
+      {
+        id:'combustivel-lista',
+        titulo:'Lista de combustíveis',
+        mockup:'mockup-combustivel-lista.html',
+        swift:'CombustivelListaView.swift',
+        status:'real',
+        tier:'pronto',
+        desc:'Lê do banco, sem mocks.',
+        falta:'Nada.'
+      },
+      {
+        id:'combustivel-cadastro',
+        titulo:'Cadastrar combustível',
+        mockup:'mockup-combustivel-cadastro.html',
+        swift:'CombustivelCadastroView.swift',
+        status:'parcial',
+        tier:'medio',
+        desc:'Tela existe com 5 sinais de mock — pode ter formulação ou tipos de combustível com valores de exemplo.',
+        falta:'Verificar se as opções (tipos, octanagem, etc) estão vindo de catálogo real ou hardcoded.'
+      },
+      {
+        id:'setup-avancado',
+        titulo:'Setup avançado do carro',
+        mockup:'mockup-setup-avancado.html',
+        swift:'SetupAvancadoView.swift',
+        status:'parcial',
+        tier:'medio',
+        desc:'Tela mais complexa de configuração — 5 sinais de mock.',
+        falta:'Tela densa, alta chance de ter campos default ainda hardcoded. Vale uma sessão dedicada de port real.'
+      }
+    ]
+  },
+  {
+    secao:'eventos',
+    titulo:'Eventos (track day, treino, corrida)',
+    intro:'Onde organiza o evento: data, pista, carros que vão, pendências.',
+    items:[
+      {
+        id:'eventos-lista',
+        titulo:'Lista de eventos',
+        mockup:'mockup-eventos-lista.html',
+        swift:'EventosListaView.swift',
+        status:'real',
+        tier:'pronto',
+        desc:'Lista do banco, com 2 sinais de mock isolados.',
+        falta:'Auditar os 2 mocks — pode ser apenas valor exemplo em estado vazio.'
+      },
+      {
+        id:'evento-detalhe',
+        titulo:'Detalhe do evento',
+        mockup:'mockup-evento-detalhe.html',
+        swift:'EventoDetalheView.swift',
+        status:'real',
+        tier:'pronto',
+        desc:'Tela rica (24 referências a repositórios, 654 linhas). Lê dados reais.',
+        falta:'3 mocks pendentes — provavelmente em widgets específicos. Auditar.'
+      },
+      {
+        id:'evento-novo',
+        titulo:'Criar evento novo',
+        mockup:'mockup-evento.html',
+        swift:'EventoNovoFormView.swift',
+        status:'real',
+        tier:'pronto',
+        desc:'Formulário funcional.',
+        falta:'1 mock isolado.'
+      },
+      {
+        id:'evento-mock-summary',
+        titulo:'Resumo do evento (legacy)',
+        mockup:'-',
+        swift:'EventoMockSummary.swift',
+        status:'fora',
+        tier:'baixo',
+        desc:'Arquivo com nome "Mock" — provável vestígio de demo. Não ligado a um mockup canônico.',
+        falta:'Decidir se substituir por View final ou apagar.'
+      }
+    ]
+  },
+  {
+    secao:'stint',
+    titulo:'Stint (configurar, capturar, rever)',
+    intro:'O stint é o ciclo carro→pista→box. Aqui você planeja antes (StintModal), captura ao vivo (StintCapture) e revê depois (PosStint).',
+    items:[
+      {
+        id:'stint-plan',
+        titulo:'Planejar stint (StintModal)',
+        mockup:'mockup-stint.html',
+        swift:'StintModalView.swift',
+        status:'real',
+        tier:'pronto',
+        desc:'Tela rica (623 linhas, 17 referências a repositórios). Lê dados reais.',
+        falta:'2 mocks — auditar. MS-4 do plano fala em fechar StintPlan persistente; talvez já fechado.'
+      },
+      {
+        id:'stint-capture',
+        titulo:'Captura ao vivo do stint',
+        mockup:'-',
+        swift:'StintCaptureView.swift',
+        status:'real',
+        tier:'pronto',
+        desc:'Tela responsável por gravar telemetria ao vivo durante a corrida. 100% real, sem mocks.',
+        falta:'Não tem mockup canônico próprio (a tela é mais funcional que estética). Fluxo de captura está pronto.'
+      },
+      {
+        id:'pos-stint',
+        titulo:'Pós-stint (debrief)',
+        mockup:'mockup-pos-stint.html',
+        swift:'PosStintView.swift',
+        status:'real',
+        tier:'pronto',
+        desc:'Tela existe com 5 referências reais. 1 mock isolado.',
+        falta:'MS-6 do plano (debrief com troféus) — verificar se já está ligando aos cálculos do motor Swift (Score/Repeatability/PedagogicalDecider já existem no core).'
+      }
+    ]
+  },
+  {
+    secao:'pedagogia',
+    titulo:'Pedagogia (lições, reações, shift)',
+    intro:'O conteúdo educativo do P1 — lições, reações aprendidas do piloto, cards de shift light. Lógica do motor Swift já está pronta, falta UI específica.',
+    items:[
+      {
+        id:'licoes-lista',
+        titulo:'Catálogo de lições',
+        mockup:'mockup-licao-lista.html',
+        swift:'LicaoListaView.swift',
+        status:'real',
+        tier:'pronto',
+        desc:'Lê do LicaoRepository. As 12 lições do catálogo estão portadas em Swift (auditoria de paridade JS feita).',
+        falta:'Nada. Lições avançadas (L101-L105) ficam inativas até sensores chegarem.'
+      },
+      {
+        id:'reacoes-aprendidas',
+        titulo:'Reações aprendidas pelo piloto',
+        mockup:'mockup-reacoes-aprendidas.html',
+        swift:'',
+        status:'mock',
+        tier:'medio',
+        desc:'A lógica de aprendizado de reação (EWMA α=0.15, 4-tier fallback) está pronta no motor Swift (`PilotReaction.swift`). A tela que mostra isso ao piloto/chefe ainda não existe.',
+        falta:'Construir a View Swift consumindo `PilotReactionService`. Trabalho médio — backend já está feito.'
+      },
+      {
+        id:'shift-cards',
+        titulo:'Cards de shift light',
+        mockup:'mockup-shift-cards.html',
+        swift:'',
+        status:'mock',
+        tier:'medio',
+        desc:'A lógica de análise de shift (acertos, atraso, antecipação) está pronta em `ShiftAnalysis.swift` + `ShiftEventDetector.swift`. A tela de cards ainda não.',
+        falta:'Construir a View Swift consumindo o ShiftAnalyzer. Backend pronto.'
+      }
+    ]
+  },
+  {
+    secao:'pessoas-pendencias',
+    titulo:'Pessoas, pendências, trechos',
+    intro:'Cadastros de apoio do dia a dia.',
+    items:[
+      {
+        id:'pessoas',
+        titulo:'Pessoas (pilotos + passageiros)',
+        mockup:'mockup-piloto-lista.html, mockup-passageiro-lista.html',
+        swift:'PessoasView.swift',
+        status:'real',
+        tier:'pronto',
+        desc:'Lista única com 30 referências a repositórios. Cobre piloto e passageiro.',
+        falta:'Nada.'
+      },
+      {
+        id:'piloto-cadastro',
+        titulo:'Cadastrar piloto',
+        mockup:'mockup-piloto-cadastro.html',
+        swift:'PilotoCadastroView.swift',
+        status:'parcial',
+        tier:'baixo',
+        desc:'Formulário existe — 4 sinais de mock.',
+        falta:'Auditar os 4 mocks — provável valor default em campo opcional.'
+      },
+      {
+        id:'passageiro-cadastro',
+        titulo:'Cadastrar passageiro',
+        mockup:'mockup-passageiro-cadastro.html',
+        swift:'PassageiroCadastroView.swift',
+        status:'parcial',
+        tier:'baixo',
+        desc:'Igual ao piloto — 4 sinais de mock.',
+        falta:'Mesma auditoria que piloto.'
+      },
+      {
+        id:'pendencias',
+        titulo:'Pendências do evento',
+        mockup:'mockup-pendencias-cascata.html',
+        swift:'PendenciasView.swift',
+        status:'real',
+        tier:'pronto',
+        desc:'Tela existe. MS-5 (obrigatório × adicional vivas por carro+evento) está em execução.',
+        falta:'Verificar se o filtro por carro+evento já está implementado ou se ainda é catálogo único.'
+      },
+      {
+        id:'trechos',
+        titulo:'Lista de trechos da pista',
+        mockup:'mockup-trecho-lista.html',
+        swift:'TrechoListaView.swift',
+        status:'real',
+        tier:'pronto',
+        desc:'Lista do banco. Configurador de trechos (`ConfiguradorTrechoView` 1121 linhas) também está pronto.',
+        falta:'Nada crítico.'
+      }
+    ]
+  },
+  {
+    secao:'home',
+    titulo:'Home / boas-vindas',
+    intro:'Primeira tela depois do login.',
+    items:[
+      {
+        id:'home',
+        titulo:'Home',
+        mockup:'mockup-home-cheio.html, mockup-home-vazio.html',
+        swift:'HomeView.swift',
+        status:'parcial',
+        tier:'baixo',
+        desc:'Tela existe (773 linhas). Tem `HomeData.mockFilled` definido como exemplo de dados — provavelmente está como fallback de demo.',
+        falta:'Verificar se o app está usando mockFilled em produção ou só como preview/placeholder. Substituir por dados reais do banco quando o evento estiver carregado.'
+      }
+    ]
+  },
+  {
+    secao:'infra',
+    titulo:'Infra do app (sync, telemetria, login)',
+    intro:'Telas que dão suporte ao funcionamento — sincronização, login, diagnóstico.',
+    items:[
+      {
+        id:'login',
+        titulo:'Login',
+        mockup:'-',
+        swift:'LoginView.swift',
+        status:'real',
+        tier:'pronto',
+        desc:'Apple/Google/Email + senha 1212 em dev. Decisão Flávio 2026-05-06.',
+        falta:'Nada da Fase 1. Modelo rico de papéis/convites é frente futura (MS-X).'
+      },
+      {
+        id:'telemetria',
+        titulo:'Telemetria (diagnóstico ao vivo)',
+        mockup:'-',
+        swift:'TelemetriaView.swift',
+        status:'real',
+        tier:'pronto',
+        desc:'Tela de debug que mostra IMU 100Hz + GPS 1Hz + Kalman + Detector ao vivo. Usada pra field tests.',
+        falta:'Não tem mockup canônico — é tela técnica.'
+      },
+      {
+        id:'sync',
+        titulo:'Sincronização',
+        mockup:'-',
+        swift:'SincronizacaoView.swift, SyncStatusBadge.swift',
+        status:'real',
+        tier:'pronto',
+        desc:'Status de sync com Supabase. Sem mocks.',
+        falta:'Nada.'
+      },
+      {
+        id:'theme',
+        titulo:'Showcase de tema',
+        mockup:'-',
+        swift:'ThemeShowcaseView.swift',
+        status:'fora',
+        tier:'baixo',
+        desc:'Tela interna de catálogo visual — só pra desenvolvedor.',
+        falta:'Manter como está.'
+      }
+    ]
+  }
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render
+// ─────────────────────────────────────────────────────────────────────────────
+const STATUS_LABEL = {
+  real:'Pronto', parcial:'Parcial', mock:'Esqueleto', faltando:'Faltando', fora:'Fora de escopo'
+};
+const TIER_LABEL = {
+  critico:'Crítico', medio:'Médio impacto', baixo:'Baixo impacto', pronto:'Pronto'
+};
+
+const STORAGE_KEY = 'p1fast-audit-2026-05-10-comments';
+
+function loadComments(){
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+  catch(e) { return {}; }
+}
+function saveComments(c){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(c));
+}
+function renderItem(it, comments){
+  const cmt = comments[it.id] || '';
+  const cmtClass = cmt.trim() ? 'has-content' : '';
+  return `
+    <div class="gap s-${it.status}" data-id="${it.id}">
+      <div class="gap__col-status"><span class="dot s-${it.status}"></span></div>
+      <div class="gap__col-content">
+        <div class="gap__title-row">
+          <h3>${it.titulo}</h3>
+          <span class="gap__hint">${it.mockup}${it.swift ? ' → ' + it.swift : ''}</span>
+        </div>
+        <div class="gap__desc"><b>Onde está hoje:</b> ${it.desc}</div>
+        <div class="gap__falta"><b>Pra fechar:</b> ${it.falta}</div>
+        <div class="gap__tags">
+          <span class="tag tier-${it.tier}">${TIER_LABEL[it.tier]}</span>
+          <span class="tag tier-${it.tier === 'pronto' ? 'pronto' : 'baixo'}">${STATUS_LABEL[it.status]}</span>
+        </div>
+        <div class="gap__comment">
+          <label>Seu comentário (auto-salvo)</label>
+          <textarea class="${cmtClass}" data-id="${it.id}" placeholder="anotação, decisão, prioridade…">${cmt.replace(/</g,'&lt;')}</textarea>
+        </div>
+      </div>
+      <div class="gap__col-actions">${STATUS_LABEL[it.status]}</div>
+    </div>
+  `;
+}
+function renderArea(area, comments){
+  return `
+    <section class="area">
+      <h2>${area.titulo}</h2>
+      <p class="area__resumo">${area.intro}</p>
+      <div class="gap-list">
+        ${area.items.map(it => renderItem(it, comments)).join('')}
+      </div>
+    </section>
+  `;
+}
+function render(){
+  const comments = loadComments();
+  document.getElementById('audit-root').innerHTML =
+    AUDIT_DATA.map(a => renderArea(a, comments)).join('');
+  updateKpis();
+  attachHandlers();
+  refreshCommentCount();
+}
+
+function updateKpis(){
+  const all = AUDIT_DATA.flatMap(a => a.items);
+  const real = all.filter(i => i.status === 'real').length;
+  const parcial = all.filter(i => i.status === 'parcial' || i.status === 'mock').length;
+  const faltando = all.filter(i => i.status === 'faltando').length;
+  document.getElementById('kpi-real').textContent = real;
+  document.getElementById('kpi-parcial').textContent = parcial;
+  document.getElementById('kpi-faltando').textContent = faltando;
+}
+
+let saveTimer = null;
+function attachHandlers(){
+  document.querySelectorAll('textarea[data-id]').forEach(ta => {
+    ta.addEventListener('input', () => {
+      const c = loadComments();
+      const v = ta.value.trim();
+      if(v){ c[ta.dataset.id] = v; ta.classList.add('has-content'); }
+      else { delete c[ta.dataset.id]; ta.classList.remove('has-content'); }
+      saveComments(c);
+      if(saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        showToast();
+        refreshCommentCount();
+      }, 380);
+    });
+  });
+}
+
+function showToast(){
+  const t = document.getElementById('saved-toast');
+  t.classList.add('visible');
+  setTimeout(() => t.classList.remove('visible'), 1100);
+}
+function refreshCommentCount(){
+  const c = loadComments();
+  document.getElementById('comment-count').textContent = Object.keys(c).length;
+}
+
+document.getElementById('btn-export').addEventListener('click', () => {
+  const c = loadComments();
+  const meta = {
+    audit:'P1 Fast — Mockups × App iOS',
+    data:'2026-05-10',
+    total_itens:AUDIT_DATA.flatMap(a => a.items).length,
+    comentarios_count:Object.keys(c).length
+  };
+  const out = { meta, comentarios:c };
+  const blob = new Blob([JSON.stringify(out, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `p1fast-audit-comentarios-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('btn-clear').addEventListener('click', () => {
+  if(!confirm('Apagar TODOS os comentários salvos? Não dá pra desfazer.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  render();
+});
+
+render();
+</script>
+</body>
+</html>

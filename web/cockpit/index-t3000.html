@@ -36,6 +36,34 @@
     padding: 8px; border-radius: 6px; z-index: 999;
   }
   .stage { padding-top: 56px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .conn-bar .btn--ghost {
+    background: transparent; color: #cbd5e1; border: 1px solid #2a3645;
+    padding: 6px 12px; font-weight: 600; font-size: 13px;
+  }
+  .conn-bar .btn--ghost:hover { background: #2a3645; }
+  .badge-safe-mode {
+    display: none;
+    padding: 4px 10px; border-radius: 5px; font-weight: 700; font-size: 12px;
+    background: #3a2a0f; color: #fcd34d; border: 1px solid #a16207;
+    letter-spacing: 0.5px;
+  }
+  .badge-safe-mode[data-active="1"] { display: inline-block; }
+  /* Overlay "SEM SINAL" — quando o conversor T3000 perde amostras por >1,5 s */
+  .no-signal-overlay {
+    position: fixed; inset: 56px 0 0 0;
+    background: rgba(15, 4, 4, 0.78);
+    display: none; align-items: center; justify-content: center;
+    z-index: 900; pointer-events: none;
+  }
+  .no-signal-overlay[data-active="1"] { display: flex; }
+  .no-signal-overlay__card {
+    background: #2c0a0a; color: #fca5a5; border: 2px solid #b91c1c;
+    padding: 28px 40px; border-radius: 12px;
+    font-family: 'Inter', sans-serif;
+    text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  .no-signal-overlay__titulo { font-size: 32px; font-weight: 900; letter-spacing: 2px; }
+  .no-signal-overlay__detalhe { font-size: 14px; margin-top: 8px; color: #fecaca; }
 </style>
 </head>
 <body>
@@ -44,7 +72,23 @@
   <button class="btn" id="btnConnect">Autorizar T3000 via WebUSB</button>
   <span class="conn-status warn" id="connStatus">aguardando</span>
   <span class="conn-status warn" id="cloudStatus">nuvem: desligado</span>
+  <span class="conn-status warn" id="fonteShiftStatus" title="Origem do RPM ótimo de troca">shift: semente</span>
+  <span class="badge-safe-mode" id="badgeSafeMode" title="Curva do dinamômetro ou marchas indisponíveis — operando em modo seguro" data-active="0">MODO SEGURO</span>
   <span class="hud" id="hud"><b>RPM</b>—</span>
+  <!-- Configuração do stint: abre a tela em outra aba pra escolher modo + envelope -->
+  <a class="btn btn--ghost" id="btnStint" href="./configuracao-stint.html" target="_blank" rel="noopener" title="Selecionar modo e envelope antes do stint">STINT</a>
+  <!-- Comandos do mecânico — disparam alertas manuais no painel piloto -->
+  <button class="btn" id="btnBox" style="background:#2a3645;color:#fcd34d" data-ativo="0">BOX</button>
+  <button class="btn" id="btnUltimaVolta" style="background:#2a3645;color:#cbd5e1" data-ativo="0">ÚLTIMA VOLTA</button>
+  <button class="btn" id="btnSilencioso" style="margin-left:auto;background:#2a3645;color:#fcd34d">🔔 mensagens ON</button>
+</div>
+
+<!-- Overlay "SEM SINAL" — só aparece quando o conversor T3000 deixa de mandar amostras por >1,5 s -->
+<div class="no-signal-overlay" id="noSignalOverlay" data-active="0">
+  <div class="no-signal-overlay__card">
+    <div class="no-signal-overlay__titulo">SEM SINAL</div>
+    <div class="no-signal-overlay__detalhe">Conversor T3000 sem amostras há mais de 1,5 s. Painel pode estar congelado.</div>
+  </div>
 </div>
 
 <div class="stage">

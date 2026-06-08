@@ -70,6 +70,7 @@ struct HubMockLauncher: View {
                         .environmentObject(manutencaoStore)
                         .environmentObject(pecaRepo)
                         .environmentObject(pneuRepo)
+                        .environmentObject(NavRouter())
                 }
             } else {
                 Color.black.ignoresSafeArea()

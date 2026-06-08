@@ -1,0 +1,143 @@
+{
+  "_meta": {
+    "titulo": "Mapa definitivo de Brasília — P1 Fast",
+    "aprovado_por": "Flávio Marques",
+    "aprovado_em": "2026-05-17T23:35:00-03:00",
+    "selo": "DEFINITIVO — não aplicar nenhum filtro automático em cima",
+    "versao": "v2-flavio-aprovado-com-ESA"
+  },
+  "pista": {
+    "id": "e8335412-3312-54fe-b634-db2d02c7fa81",
+    "nome_oficial": "Autódromo Internacional Nelson Piquet",
+    "apelido": "Brasília",
+    "pais": "BR",
+    "cidade": "Brasília",
+    "extensao_metros": 5476,
+    "sentido": "anti-horário",
+    "lap_time_seg": 171.038,
+    "view_box": { "largura": 823, "altura": 799 },
+    "linha_chegada": { "x1": 415, "y1": 695, "x2": 415, "y2": 720 },
+    "ancoras_geo": [
+      { "latitude": -15.77000, "longitude": -47.90000, "x": 410, "y": 707 },
+      { "latitude": -15.77180, "longitude": -47.89800, "x": 630, "y": 400 }
+    ],
+    "desenho_svg_path_arquivo": "PISTA-OFICIAL-brasilia.txt",
+    "desenho_quantidade_pontos": 495
+  },
+  "parciais": [
+    { "id": "P1", "nome": "Parcial 1", "apelido": "Saída do box",      "inicio_pct": 0,  "fim_pct": 25 },
+    { "id": "P2", "nome": "Parcial 2", "apelido": "Junção",            "inicio_pct": 25, "fim_pct": 50 },
+    { "id": "P3", "nome": "Parcial 3", "apelido": "Bruxa",             "inicio_pct": 50, "fim_pct": 75 },
+    { "id": "P4", "nome": "Parcial 4", "apelido": "Placar → chegada",  "inicio_pct": 75, "fim_pct": 100 }
+  ],
+  "trechos": [
+    {
+      "ordem": 0, "id": "seg_brasilia_0", "nome": "CURVA 01",
+      "tipo": "curva", "parcial": "P1", "eh_trecho_pedagogico": true,
+      "centroide": { "x": 177, "y": 658 },
+      "estrategia_apice": "tardio", "tipo_curva": "lenta",
+      "comprimento_reta_seguinte_m": 280, "t_na_volta_seg": 7.6,
+      "entradas": [ { "x": 241.32, "y": 705.29 } ],
+      "saidas":   [ { "x": 172.06, "y": 614.00 } ],
+      "apices":   [ { "x": 177.40, "y": 658.23 } ]
+    },
+    {
+      "ordem": 1, "id": "seg_brasilia_1", "nome": "RETA PRINCIPAL / BOX",
+      "tipo": "reta", "parcial": "P1", "eh_trecho_pedagogico": false,
+      "centroide": { "x": 390, "y": 630 }, "t_na_volta_seg": 98.0
+    },
+    {
+      "ordem": 2, "id": "seg_brasilia_2", "nome": "CURVA DA RETA OPOSTA",
+      "_renomeacao": "Era 'MERGULHO DA BRUXA' — Flávio renomeou em 2026-05-17 23h25 porque o mergulho da bruxa em si não é trecho pedagógico; o que está marcado aqui é a curva da reta oposta.",
+      "tipo": "curva", "parcial": "P1", "eh_trecho_pedagogico": true,
+      "centroide": { "x": 553, "y": 664 },
+      "estrategia_apice": "neutro", "tipo_curva": "rapida",
+      "comprimento_reta_seguinte_m": 80, "t_na_volta_seg": 16.5,
+      "entradas": [ { "x": 494.13, "y": 661.22 } ],
+      "saidas":   [ { "x": 549.19, "y": 583.09 } ],
+      "apices":   [ { "x": 552.81, "y": 663.85 } ]
+    },
+    {
+      "ordem": 3, "id": "seg_brasilia_3", "nome": "CURVA 2",
+      "tipo": "curva", "parcial": "P1", "eh_trecho_pedagogico": true,
+      "centroide": { "x": 313, "y": 152 },
+      "estrategia_apice": "tardio", "tipo_curva": "media",
+      "comprimento_reta_seguinte_m": 220, "t_na_volta_seg": 21.1,
+      "entradas": [ { "x": 285.03, "y": 179.48 } ],
+      "saidas":   [ { "x": 378.71, "y": 168.81 } ],
+      "apices":   [ { "x": 312.64, "y": 151.70 } ]
+    },
+    {
+      "ordem": 4, "id": "seg_brasilia_4", "nome": "CURVA DA JUNÇÃO",
+      "tipo": "curva", "parcial": "P2", "eh_trecho_pedagogico": true,
+      "centroide": { "x": 677, "y": 395 },
+      "estrategia_apice": "neutro", "tipo_curva": "media",
+      "comprimento_reta_seguinte_m": 180, "t_na_volta_seg": 31.0,
+      "entradas": [ { "x": 647.17, "y": 327.90 } ],
+      "saidas":   [ { "x": 590.27, "y": 409.42 } ],
+      "apices":   [ { "x": 677.17, "y": 395.16 } ]
+    },
+    {
+      "ordem": 5, "id": "seg_brasilia_5", "nome": "PISCINA",
+      "tipo": "reta", "parcial": "P2", "eh_trecho_pedagogico": false,
+      "centroide": { "x": 460, "y": 275 }, "t_na_volta_seg": 40.0
+    },
+    {
+      "ordem": 6, "id": "seg_brasilia_6", "nome": "CURVA DA BRUXA",
+      "tipo": "curva", "parcial": "P3", "eh_trecho_pedagogico": true,
+      "centroide": { "x": 244, "y": 570 },
+      "estrategia_apice": "tardio", "tipo_curva": "lenta",
+      "comprimento_reta_seguinte_m": 380, "t_na_volta_seg": 51.8,
+      "entradas": [ { "x": 236.19, "y": 511.50 } ],
+      "saidas":   [ { "x": 279.89, "y": 600.20 } ],
+      "apices":   [ { "x": 243.54, "y": 570.08 } ]
+    },
+    {
+      "ordem": 7, "id": "seg_brasilia_7", "nome": "RETA DO MILITAR",
+      "tipo": "reta", "parcial": "P3", "eh_trecho_pedagogico": false,
+      "centroide": { "x": 155, "y": 335 }, "t_na_volta_seg": 56.0
+    },
+    {
+      "ordem": 8, "id": "seg_brasilia_8", "nome": "CURVA DO PLACAR",
+      "tipo": "curva", "parcial": "P4", "eh_trecho_pedagogico": true,
+      "centroide": { "x": 293, "y": 517 },
+      "estrategia_apice": "neutro", "tipo_curva": "media",
+      "comprimento_reta_seguinte_m": 120, "t_na_volta_seg": 78.6,
+      "entradas": [ { "x": 360.42, "y": 550.90 } ],
+      "saidas":   [ { "x": 336.46, "y": 468.96 } ],
+      "apices":   [ { "x": 292.83, "y": 517.09 } ]
+    },
+    {
+      "ordem": 9, "id": "seg_brasilia_9", "nome": "CURVA \"S\"",
+      "tipo": "curva", "parcial": "P4", "eh_trecho_pedagogico": true,
+      "centroide": { "x": 635, "y": 510 },
+      "estrategia_apice": "duplo", "tipo_curva": "rapida",
+      "comprimento_reta_seguinte_m": 60, "t_na_volta_seg": 89.2,
+      "entradas": [ { "x": 617.81, "y": 480.51 } ],
+      "saidas":   [ { "x": 625.51, "y": 613.99 } ],
+      "apices":   [
+        { "x": 634.65, "y": 509.61 },
+        { "x": 624.26, "y": 571.22 }
+      ]
+    },
+    {
+      "ordem": 10, "id": "seg_brasilia_10", "nome": "CURVA DA VITÓRIA",
+      "tipo": "curva", "parcial": "P4", "eh_trecho_pedagogico": true,
+      "centroide": { "x": 617, "y": 674 },
+      "estrategia_apice": "tardio", "tipo_curva": "media",
+      "comprimento_reta_seguinte_m": 320, "t_na_volta_seg": 93.5,
+      "entradas": [ { "x": 629.98, "y": 621.13 } ],
+      "saidas":   [ { "x": 522.34, "y": 712.51 } ],
+      "apices":   [ { "x": 617.02, "y": 674.35 } ]
+    },
+    {
+      "ordem": 11, "id": "seg_brasilia_11", "nome": "RETA OPOSTA",
+      "tipo": "reta", "parcial": "P4", "eh_trecho_pedagogico": false,
+      "centroide": { "x": 405, "y": 555 }, "t_na_volta_seg": 75.0
+    }
+  ],
+  "marcos": [
+    { "id": "marco_brasilia_largada", "tipo": "largada", "posicao": { "x": 415, "y": 720 } },
+    { "id": "marco_brasilia_chegada", "tipo": "chegada", "posicao": { "x": 415, "y": 695 } }
+  ]
+}

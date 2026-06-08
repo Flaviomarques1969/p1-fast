@@ -19,7 +19,10 @@ import {
   ShiftMode,
   MsgTipo,
   SHIFT_LEVEL_MAX,
+  ApexEstado,
 } from './cockpit-state.js';
+import { acharApice } from './apice-calculator.js';
+import { bearingDeg, distMeters, apexErrorAngleDeg } from './trecho-detector.js';
 
 // ── Limites default (calibrar por carro com Flávio) ──────────
 //
@@ -161,25 +164,122 @@ export class LiveDataBridge {
    * @param {Object} [opts.limits]       limites de calibração (DEFAULT_LIMITS)
    * @param {(stage:string,info:any)=>void} [opts.onEvent]  observabilidade
    */
-  constructor({ cockpitState, limits = DEFAULT_LIMITS, onEvent = () => {} }) {
+  constructor({
+    cockpitState,
+    limits = DEFAULT_LIMITS,
+    onEvent = () => {},
+    // ── Módulos plugáveis (decisão Flávio 27/05/2026 — passo A) ──
+    trechoDetector  = null,   // instância de TrechoDetector (consumirá GPS)
+    deltaCalculator = null,   // função calcularDelta (chamada ao fim de cada trecho)
+    alertasCriticos = null,   // instância de AlertasCriticos (consumirá T4000+GPS)
+    onTrechoEvent   = null,   // callback opcional pra eventos de trecho
+    onSalvarPassagem = null,  // async ({segmentId, tempoS, pontos}) — persiste no banco
+  } = {}) {
     if (!cockpitState) throw new Error('LiveDataBridge: cockpitState é obrigatório');
     this._cockpitState = cockpitState;
     this._limits = limits;
     this._onEvent = onEvent;
+    this._trechoDetector  = trechoDetector;
+    this._deltaCalculator = deltaCalculator;
+    this._alertasCriticos = alertasCriticos;
+    this._onTrechoEvent   = onTrechoEvent;
+    this._onSalvarPassagem = onSalvarPassagem;
+    this._passagemBuffer  = []; // amostras GPS acumuladas da passagem atual no trecho
+    this._referenciasPorSegmento = new Map(); // segmentId → melhor passagem histórica
 
     this._lastImuGps = null;
     this._lastT4000 = null;
     this._activeAlertTexto = null; // pra evitar showMessage repetida
-    this._stats = { imuGpsCount: 0, t4000Count: 0, alertsRaised: 0, alertsCleared: 0 };
+    this._stats = { imuGpsCount: 0, t4000Count: 0, alertsRaised: 0, alertsCleared: 0,
+                    trechosCompletos: 0, deltaCalculados: 0 };
+
+    // Se o detector foi passado, conecta o handler de eventos de trecho.
+    if (this._trechoDetector && typeof this._trechoDetector === 'object') {
+      // Substitui o onEvent original do detector por um wrapper que distribui
+      // evento → buffer / calculador / callback do consumidor.
+      this._trechoDetector._onEvent = (ev) => this._handleTrechoEvent(ev);
+    }
+  }
+
+  /** Registra a referência (melhor passagem histórica) de um segmento.
+   *  Carregado uma vez pelo melhores-loader.js no boot da sessão. */
+  setReferenciaSegmento(segmentId, passagemRef) {
+    if (!segmentId) return;
+    this._referenciasPorSegmento.set(segmentId, passagemRef);
   }
 
   /** Plugado no TransportSelector — recebe envelope do cabo OU do realtime, indistinto. */
   ingestImuGps(envelope) {
     if (!envelope || envelope.source !== 'iphone-imu' || !envelope.payload) return;
-    this._lastImuGps = envelope.payload;
+    const payload = envelope.payload;
+    this._lastImuGps = payload;
     this._stats.imuGpsCount++;
-    // por enquanto não muta CockpitState diretamente — fica disponível pro
-    // detector (MS-13.5) consumir via getLastImuGps().
+
+    // Alimenta o detector de trechos (decisão Flávio 27/05/2026 passo A).
+    if (this._trechoDetector && typeof payload.lat === 'number') {
+      this._trechoDetector.ingestGps({
+        lat: payload.lat,
+        lng: payload.lng,
+        kmh: payload.kmh ?? (payload.speed * 3.6),
+        t:   payload.tMono ?? payload.t ?? Date.now(),
+        headingDeg: payload.course,
+      });
+    }
+
+    // Alimenta o avaliador de alertas (SEM_GPS via accuracy).
+    if (this._alertasCriticos && typeof this._alertasCriticos.ingestGps === 'function') {
+      this._alertasCriticos.ingestGps({ accM: payload.acc ?? payload.accM });
+    }
+
+    // Buffer da passagem atual no trecho (se detector já está dentro de uma curva).
+    if (this._trechoDetector && this._estaDentroDoTrecho()) {
+      this._passagemBuffer.push({
+        lat: payload.lat,
+        lng: payload.lng,
+        kmh: payload.kmh ?? (payload.speed * 3.6),
+        t:   payload.tMono ?? payload.t ?? Date.now(),
+        sub: this._subTrechoAtual(),
+      });
+      // Atualiza a bolinha do Ápice em TEMPO REAL: distância e direção até
+      // o ápice de referência (decisão Flávio 27/05: bolinha aponta pra onde
+      // estava o ápice ideal — "siga a bolinha").
+      this._atualizarBolinhaApiceAoVivo(payload);
+    }
+  }
+
+  /** Atualiza apex.apice no CockpitState com base na posição atual e no
+   *  ápice de referência do segmento corrente (vem da melhor passagem). */
+  _atualizarBolinhaApiceAoVivo(payload) {
+    if (!this._cockpitState || !this._trechoDetector) return;
+    const seg = this._trechoDetector.getState();
+    if (!seg.currentSegmentId) return;
+    const apiceRef = this.getApiceReferencia(seg.currentSegmentId);
+    if (!apiceRef) {
+      // Sem melhor passagem cadastrada ainda → estado pendente.
+      this._cockpitState.setApexPonto('apice', {
+        estado:   ApexEstado.PENDENTE,
+        distM:    null,
+        angleDeg: null,
+      });
+      return;
+    }
+    const posAtual = { lat: payload.lat, lng: payload.lng };
+    // Heading do carro: usa o course do GPS se disponível, senão calcula
+    // entre a amostra anterior e a atual.
+    let heading = payload.course;
+    if ((heading == null || !Number.isFinite(heading)) && this._passagemBuffer.length >= 2) {
+      const prev = this._passagemBuffer[this._passagemBuffer.length - 2];
+      if (distMeters(prev, posAtual) >= 1) {
+        heading = bearingDeg(prev, posAtual);
+      }
+    }
+    const distM = distMeters(posAtual, apiceRef);
+    const angleDeg = (typeof heading === 'number' && Number.isFinite(heading))
+      ? apexErrorAngleDeg(posAtual, heading, apiceRef)
+      : null;
+    // Estado pela proximidade: dentro de 2m = ok-melhor (mira certa), fora = ok-pior.
+    const estado = distM <= 2 ? ApexEstado.OK_MELHOR : ApexEstado.OK_PIOR;
+    this._cockpitState.setApexPonto('apice', { estado, distM, angleDeg });
   }
 
   /** Plugado no T4000Provider — recebe sample já parseado e validado. */
@@ -188,6 +288,11 @@ export class LiveDataBridge {
     this._lastT4000 = sample;
     this._stats.t4000Count++;
     this._applyT4000ToCockpit(sample);
+
+    // Encaminha pro avaliador de alertas (catálogo v2).
+    if (this._alertasCriticos && typeof this._alertasCriticos.ingestT4000 === 'function') {
+      this._alertasCriticos.ingestT4000(sample);
+    }
   }
 
   getLastImuGps()  { return this._lastImuGps; }
@@ -231,5 +336,137 @@ export class LiveDataBridge {
       this._stats.alertsCleared++;
       this._onEvent('alert-cleared', null);
     }
+  }
+
+  // ── Integração TrechoDetector → DeltaCalculator ──
+
+  _estaDentroDoTrecho() {
+    if (!this._trechoDetector || typeof this._trechoDetector.getState !== 'function') return false;
+    const st = this._trechoDetector.getState();
+    return st.phase !== 'antes-entrada' && st.phase !== 'pos-saida';
+  }
+
+  _subTrechoAtual() {
+    if (!this._trechoDetector || typeof this._trechoDetector.getState !== 'function') return null;
+    const phase = this._trechoDetector.getState().phase;
+    if (phase === 'entrada-freio') return 'entrada';
+    if (phase === 'freio-apice')   return 'freio';
+    if (phase === 'apice-saida')   return 'apice';
+    return 'saida';
+  }
+
+  /** Recebe eventos do TrechoDetector: alimenta buffer, calcula delta ao
+   *  cruzar a linha de saída, repassa pro callback externo. */
+  _handleTrechoEvent(ev) {
+    if (!ev) return;
+    if (typeof this._onTrechoEvent === 'function') this._onTrechoEvent(ev);
+
+    // Quando cruza a saída → fecha a passagem atual e calcula o delta.
+    if (ev.type === 'saida-cruzou') {
+      this._stats.trechosCompletos++;
+
+      // Calcula ápice da passagem que acabou (lugar mais dentro da curva).
+      // Decisão Flávio 2026-05-27: o ápice depende da configuração (carro+pneu),
+      // por isso é derivado da passagem real, não cadastrado fixo.
+      const apicePassagem = (this._passagemBuffer.length >= 9)
+        ? acharApice(this._passagemBuffer)
+        : null;
+      if (apicePassagem && typeof this._onTrechoEvent === 'function') {
+        this._onTrechoEvent({
+          type:       'apice-passagem',
+          segmentId:  ev.segmentId,
+          ponto:      apicePassagem.ponto,
+          raioM:      apicePassagem.raioM,
+        });
+      }
+
+      // Persistência automática: se a passagem é melhor que a referência atual
+      // (ou se não há referência ainda), grava no banco. O ápice recalcula
+      // sozinho da próxima vez que a referência for carregada.
+      if (this._onSalvarPassagem && this._passagemBuffer.length >= 9) {
+        const primeiro = this._passagemBuffer[0];
+        const ultimo = this._passagemBuffer[this._passagemBuffer.length - 1];
+        const tempoS = (ultimo.t - primeiro.t) / 1000;
+        if (tempoS > 0 && Number.isFinite(tempoS)) {
+          const refAtual = this._referenciasPorSegmento.get(ev.segmentId);
+          const ehNovaMelhor = !refAtual || tempoS < refAtual.tempoS;
+          if (ehNovaMelhor) {
+            const pontosCanonicos = this._calcularFracoesPra(this._passagemBuffer);
+            // Persiste async — atualiza referência local imediatamente pra
+            // próxima passagem comparar contra ela mesma.
+            const novaRef = {
+              segmentId: ev.segmentId,
+              tempoS,
+              pontos: pontosCanonicos,
+              apicePoint: apicePassagem?.ponto ?? null,
+              apiceRaioM: apicePassagem?.raioM ?? null,
+            };
+            this._referenciasPorSegmento.set(ev.segmentId, novaRef);
+            Promise.resolve()
+              .then(() => this._onSalvarPassagem({
+                segmentId: ev.segmentId, tempoS, pontos: pontosCanonicos,
+              }))
+              .catch(e => this._onEvent('persist-erro', { segmentId: ev.segmentId, msg: e.message }));
+            this._stats.passagensSalvas = (this._stats.passagensSalvas || 0) + 1;
+            this._onEvent('passagem-salva', { segmentId: ev.segmentId, tempoS });
+            if (typeof this._onTrechoEvent === 'function') {
+              this._onTrechoEvent({ type: 'passagem-salva', segmentId: ev.segmentId, tempoS });
+            }
+          }
+        }
+      }
+
+      if (this._deltaCalculator && this._passagemBuffer.length >= 2) {
+        const ref = this._referenciasPorSegmento.get(ev.segmentId);
+        if (ref) {
+          try {
+            const passagemAtual = {
+              segmentId: ev.segmentId,
+              pontos: this._calcularFracoesPra(this._passagemBuffer),
+            };
+            const resultado = this._deltaCalculator({ atual: passagemAtual, referencia: ref });
+            this._stats.deltaCalculados++;
+            this._onEvent('delta-calculado', resultado);
+            // Propaga o resultado pro callback externo também.
+            if (typeof this._onTrechoEvent === 'function') {
+              this._onTrechoEvent({ type: 'delta-calculado', ...resultado });
+            }
+          } catch (e) {
+            this._onEvent('delta-erro', { segmentId: ev.segmentId, msg: e.message });
+          }
+        }
+      }
+      this._passagemBuffer = []; // limpa pra próximo trecho
+    }
+  }
+
+  /** Retorna o ápice de REFERÊNCIA registrado pra um segmento (vem da melhor
+   *  passagem persistida no banco, com ápice já calculado por melhores-loader). */
+  getApiceReferencia(segmentId) {
+    const ref = this._referenciasPorSegmento.get(segmentId);
+    return ref?.apicePoint ?? null;
+  }
+
+  /** Calcula a fração 0..1 ao longo do trecho pra cada ponto do buffer
+   *  (proporcional à distância acumulada). */
+  _calcularFracoesPra(buffer) {
+    if (buffer.length === 0) return [];
+    let ds = 0;
+    const dists = [0];
+    for (let i = 1; i < buffer.length; i++) {
+      const a = buffer[i - 1], b = buffer[i];
+      const DEG2RAD = Math.PI / 180;
+      const EARTH_R_M = 6_378_137;
+      const lat1 = a.lat * DEG2RAD, lat2 = b.lat * DEG2RAD;
+      const dLat = lat2 - lat1;
+      const dLng = (b.lng - a.lng) * DEG2RAD;
+      const x = dLng * Math.cos((lat1 + lat2) / 2);
+      const y = dLat;
+      const d = Math.sqrt(x * x + y * y) * EARTH_R_M;
+      ds += d;
+      dists.push(ds);
+    }
+    const total = ds || 1;
+    return buffer.map((p, i) => ({ ...p, fracao: dists[i] / total }));
   }
 }

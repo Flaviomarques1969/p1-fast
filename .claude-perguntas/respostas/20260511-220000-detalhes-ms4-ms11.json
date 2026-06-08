@@ -1,0 +1,47 @@
+{
+  "pergunta_id": "20260511-220000-detalhes-ms4-ms11",
+  "tipo": "detalhes-roteiros-rodada2",
+  "respostas": {
+    "licao": {
+      "escolha": "outra",
+      "livre": "As lições são as cadastradas do aplicativo que são constru ídas com o IA para que o IA possa ajudar o piloto no cockpit do piloto em função do desempenho que ele está tendo. Mas além disso, tem que ter um modo para que a gente vá acrescentando novas lições a partir das nossas sugestões de temas que são colocadas para ser implementadas via Claude."
+    },
+    "tipo-treino": {
+      "escolha": "igual",
+      "livre": ""
+    },
+    "ativar-ia": {
+      "escolha": "outra",
+      "livre": "A IA vai observando o desempenho dele em função do desempen ho em cada trecho, a partir da melhor passagem naquele tre cho. Então, se ele freou antes, se ele freou depois, ela vai administrando isso. Além disso, tem uma outra forma de ele agir, que é quando ele escolhe ser treinado com determinada habilidade das li ções que nós temos. A IA então entra também na tela direita e vai colocando as orientações para que ele possa seguir o desempenho antes da curva, antes de chegar no trecho. E imediatamente depois do trecho ela faz um resumo e já p aga para poder se preparar para o próximo trecho."
+    },
+    "mapa-ghost": {
+      "escolha": "outra",
+      "livre": "Nos dois lugares, no caso do piloto, no cockpit do piloto, aparece só o trecho Como no cockpit do piloto, aparece uma área um pouquinho antes da linha de entrada e um pouquinho depois da saída o piloto vê qual foi o caminho que o Ghost fez, de velocidade, como está o Delta dele e os empenhos E no Comod Box, já tem lá no mapa sempre o Ghost, que é da melhor volta e lá é a pista toda daquela configuração do carro, naquele carro, na história todaEntão, a gente tem aqui um processo de aprendizado contínuo ."
+    },
+    "checklist": {
+      "escolha": "outra",
+      "livre": "Existe um padrão de Checklist para saída do carro, durante a pista, pode ser que planejou uma parada no box, tem um Checklist para ser feito, e no en cerramento do Stint. Os Checklists são montados com obrigatórios e adicionais, acessórios, ou adicionais, e na hora de planejar o evento que são definidos os papéis, as pessoas recebem esse Checklist e elas vão cumprindo o Checklist, e esse Checklist vai sendo atualizado no sistema e no Command Box, por exemplo, o mecânico foi lá e checou a pressão dos pneus, quando ele termina de fazer a checa de cada pneu, ele informa, pne u traseiro esquerdo, checado qual foi a pressão que ele encontrou, e por aí vai, e as outras áreas dos itens que foram definidos, como obrigatórios ou acessórios, se ficou algum obrigatório ele fica piscando na tela antes do piloto sair, se não, se já foi cumprido com obrigatórios, os acessórios então quando eles saem eles apagam."
+    },
+    "parada-checklist": {
+      "escolha": "ambos",
+      "livre": ""
+    },
+    "endurance": {
+      "escolha": "nome-tipo",
+      "livre": ""
+    },
+    "chefe-equipe": {
+      "escolha": "criar",
+      "livre": ""
+    },
+    "link-publico": {
+      "escolha": "evento",
+      "livre": ""
+    },
+    "triagem": {
+      "escolha": "outra",
+      "livre": "O sistema exige automaticamente depois de iniciar o outro Stint, mas até lá, o chefe de equipe ou piloto também pode entrar no Stint e escolher quais voltas ele quer guardar. E aí tem que ter as informações da volta, o tempo de cada uma, para poder saber exatamente qual foi."
+    }
+  },
+  "respondido_em": "2026-05-12T02:28:23.015Z"
+}

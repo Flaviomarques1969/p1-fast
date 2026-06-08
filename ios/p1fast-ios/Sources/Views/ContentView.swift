@@ -190,6 +190,10 @@ private struct ReadyRoot: View {
     @StateObject private var voltaVideoRepo: VoltaVideoRepository
     @StateObject private var manutencaoStore: ManutencaoConsumiveisStore
     @StateObject private var pecaRepo: PecaRepository
+    /// Histórico de navegação estável (ver NavRouter em HomeView.swift):
+    /// criado UMA vez aqui pra não se perder quando os repositórios acima
+    /// publicam e re-renderizam esta view.
+    @StateObject private var router = NavRouter()
 
     init(queue: DatabaseQueue) {
         self.queue = queue
@@ -234,6 +238,7 @@ private struct ReadyRoot: View {
             .environmentObject(voltaVideoRepo)
             .environmentObject(manutencaoStore)
             .environmentObject(pecaRepo)
+            .environmentObject(router)
             .task {
                 await carroRepo.bootstrap()
                 // EventoRepo seeda o TrackRow brasília — TrackRepo

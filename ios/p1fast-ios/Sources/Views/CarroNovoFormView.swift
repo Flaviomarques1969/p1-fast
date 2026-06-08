@@ -40,6 +40,17 @@ struct CarroNovoFormView: View {
             )
         }
         .preferredColorScheme(.dark)
+        // Botão "Concluído" acima do teclado: fecha só o campo, sem cancelar a
+        // tela (mesma correção do CarroModalView — cobrado Flávio 03/06).
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Concluído") {
+                    UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
+            }
+        }
     }
 
     @ViewBuilder

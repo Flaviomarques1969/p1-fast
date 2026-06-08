@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>P1 Fast — Configuração de Stint</title>
+<style>
+  :root{
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --border: #2a2a2a;
+    --hairline: #3a3a3a;
+    --ink: #fff;
+    --muted: #888;
+    --faint: #555;
+    --cor-durabilidade: oklch(70% 0.18 230);
+    --cor-normal:       oklch(75% 0.20 145);
+    --cor-agressivo:    oklch(70% 0.24 25);
+    --ff: 'Inter', system-ui, sans-serif;
+    --ff-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:var(--ff);background:var(--bg);color:var(--ink);
+    min-height:100vh;padding:32px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .container{max-width:1180px;margin:0 auto;}
+  h1{
+    font-size:24px;font-weight:600;letter-spacing:-0.02em;
+    margin-bottom:6px;
+  }
+  .subtitle{color:var(--muted);font-size:13px;margin-bottom:32px;}
+
+  .section{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:12px;padding:24px;margin-bottom:24px;
+  }
+  .section h2{
+    font-size:11px;text-transform:uppercase;letter-spacing:0.25em;
+    color:var(--muted);font-weight:600;margin-bottom:16px;
+  }
+
+  /* Combinação */
+  .combinacao{display:grid;grid-template-columns:repeat(4, 1fr);gap:16px;}
+  .field label{
+    display:block;font-size:10px;text-transform:uppercase;
+    letter-spacing:0.18em;color:var(--muted);margin-bottom:6px;
+  }
+  .field select, .field input{
+    width:100%;background:#0a0a0a;border:1px solid var(--border);
+    border-radius:6px;padding:10px 12px;color:var(--ink);
+    font-family:var(--ff);font-size:14px;
+  }
+  .field select:focus, .field input:focus{
+    outline:none;border-color:var(--cor-normal);
+  }
+
+  /* Modos */
+  .modos{display:grid;grid-template-columns:repeat(3, 1fr);gap:16px;}
+  .modo{
+    background:#0a0a0a;border:2px solid var(--border);border-radius:12px;
+    padding:20px;cursor:pointer;transition:all 240ms ease;
+    position:relative;overflow:hidden;
+  }
+  .modo:hover{border-color:var(--hairline);transform:translateY(-2px);}
+  .modo.is-selected{
+    border-color:var(--cor-ativa);
+    box-shadow:0 0 0 4px color-mix(in oklab, var(--cor-ativa) 22%, transparent),
+               0 16px 40px color-mix(in oklab, var(--cor-ativa) 18%, transparent);
+  }
+  .modo[data-modo="durabilidade"]{--cor-ativa:var(--cor-durabilidade);}
+  .modo[data-modo="normal"]      {--cor-ativa:var(--cor-normal);}
+  .modo[data-modo="agressivo"]   {--cor-ativa:var(--cor-agressivo);}
+
+  .modo__nome{
+    font-size:18px;font-weight:600;letter-spacing:-0.01em;
+    color:var(--cor-ativa);margin-bottom:8px;
+  }
+  .modo__faixa{
+    font-family:var(--ff-mono);font-size:13px;
+    color:var(--ink);margin-bottom:14px;
+    background:#000;padding:8px 12px;border-radius:6px;
+    display:inline-block;letter-spacing:0.06em;
+  }
+  .modo__desc{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:14px;}
+  .modo__meta{
+    display:grid;grid-template-columns:repeat(2, 1fr);gap:8px;
+    font-size:11px;color:var(--faint);
+  }
+  .modo__meta span{display:block;}
+  .modo__meta strong{color:var(--ink);font-weight:500;}
+
+  /* Envelope */
+  .envelope{display:grid;grid-template-columns:repeat(2, 1fr);gap:24px 32px;}
+  .envelope-item{
+    border-left:3px solid var(--cor-ativa-envelope, var(--cor-normal));
+    padding-left:14px;
+  }
+  .envelope-item__label{
+    font-size:10px;text-transform:uppercase;letter-spacing:0.18em;
+    color:var(--muted);margin-bottom:4px;
+  }
+  .envelope-item__valor{
+    font-family:var(--ff-mono);font-size:18px;color:var(--ink);
+  }
+  .envelope-item__desc{font-size:11px;color:var(--faint);margin-top:2px;}
+
+  /* Ações */
+  .actions{
+    display:flex;justify-content:flex-end;gap:12px;margin-top:24px;
+  }
+  .btn{
+    padding:14px 28px;border-radius:8px;font-family:var(--ff);
+    font-size:14px;font-weight:600;letter-spacing:0.02em;cursor:pointer;
+    border:none;transition:all 200ms ease;
+  }
+  .btn-primary{
+    background:var(--cor-ativa-envelope, var(--cor-normal));
+    color:#000;
+  }
+  .btn-primary:hover{transform:translateY(-1px);filter:brightness(1.1);}
+  .btn-secondary{
+    background:transparent;color:var(--muted);
+    border:1px solid var(--border);
+  }
+  .btn-secondary:hover{color:var(--ink);border-color:var(--hairline);}
+  .btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+  /* Status */
+  .status{
+    margin-top:16px;padding:12px 16px;border-radius:6px;
+    background:#0a0a0a;font-size:13px;color:var(--muted);
+    border:1px solid var(--border);min-height:46px;
+  }
+  .status.ok{color:oklch(80% 0.22 145);border-color:oklch(50% 0.16 145);}
+  .status.err{color:oklch(70% 0.24 25);border-color:oklch(50% 0.18 25);}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Configuração do Stint</h1>
+  <p class="subtitle">Defina a combinação ativa, escolha o modo do shift light e aprove o envelope de segurança.</p>
+
+  <!-- COMBINAÇÃO -->
+  <div class="section">
+    <h2>Combinação ativa</h2>
+    <div class="combinacao">
+      <div class="field">
+        <label>Carro</label>
+        <select id="selCarro">
+          <option value="641a81e7-3192-4e68-8183-b8401f105574">Bubi — Celta 1.4 (motor Onix preparado)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Autódromo</label>
+        <select id="selAutodromo">
+          <option value="brasilia">Brasília — completo</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Tipo de pneu</label>
+        <select id="selPneu">
+          <option value="westlake-z108-185-60-r14">Westlake Z108 185/60 R14</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Vida do pneu</label>
+        <select id="selVida">
+          <option value="0-30">Novo (0-30% gasto)</option>
+          <option value="30-60">Médio (30-60% gasto)</option>
+          <option value="60+">Gasto (60%+ gasto)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODO -->
+  <div class="section">
+    <h2>Modo do shift light</h2>
+    <div class="modos" id="modosContainer">
+      <!-- Cartões inseridos via JS -->
+    </div>
+  </div>
+
+  <!-- ENVELOPE -->
+  <div class="section">
+    <h2>Envelope de segurança — limites duros que a IA NÃO pode violar</h2>
+    <div class="envelope" id="envelope">
+      <!-- Preenchido via JS -->
+    </div>
+  </div>
+
+  <!-- AÇÕES -->
+  <div class="actions">
+    <button class="btn btn-secondary" id="btnCancelar">Cancelar</button>
+    <button class="btn btn-primary"   id="btnAprovar" disabled>Aprovar envelope e iniciar stint</button>
+  </div>
+
+  <div class="status" id="status">Selecione um modo pra aprovar o envelope.</div>
+
+</div>
+
+<script type="module" src="./configuracao-stint.js"></script>
+</body>
+</html>

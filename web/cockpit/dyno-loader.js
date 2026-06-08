@@ -65,9 +65,41 @@ export async function loadDynoCurve(carroId) {
       redlineRpm,
       pointsCount: curva.length,
       apelido: carro?.apelido,
+      // Pontos brutos da curva (rpm crescente). Necessário pro orquestrador
+      // shift light v2 calcular o cruzamento de força integrada por marcha.
+      pontos: curva.map(p => ({
+        rpm: Number(p.rpm),
+        torque_nm: Number(p.torque_nm),
+        potencia_cv: Number(p.potencia_cv),
+      })),
     };
   } catch (e) {
     console.warn('[dyno] falha geral:', e.message);
     return null;
+  }
+}
+
+/**
+ * Carrega as relações de marcha do carro (1ª a Nª + diferencial).
+ * Retorna lista crescente por número de marcha, ou [] se nada cadastrado.
+ */
+export async function loadGearRatios(carroId) {
+  try {
+    const sb = client();
+    const { data, error } = await sb
+      .from('gear_ratios')
+      .select('marcha, ratio, final_drive')
+      .eq('carro_id', carroId)
+      .order('marcha', { ascending: true });
+    if (error) { console.warn('[gear_ratios] erro:', error.message); return []; }
+    if (!data || data.length === 0) return [];
+    return data.map(r => ({
+      marcha: Number(r.marcha),
+      ratio: Number(r.ratio),
+      finalDrive: Number(r.final_drive),
+    }));
+  } catch (e) {
+    console.warn('[gear_ratios] falha:', e.message);
+    return [];
   }
 }
