@@ -367,6 +367,13 @@ export class LiveDataBridge {
     if (ev.type === 'saida-cruzou') {
       this._stats.trechosCompletos++;
 
+      // Referência vigente ANTES desta passagem — o delta é calculado contra
+      // ela. (Conserto 10/06/2026: a passagem "nova melhor" substituía a
+      // referência local ANTES do cálculo e o delta saía dela contra ela
+      // mesma — zero em tudo, e a tela de orientação nunca acendia. Prova:
+      // tests/node-smoke-bridge-delta-referencia.mjs.)
+      const refAnterior = this._referenciasPorSegmento.get(ev.segmentId);
+
       // Calcula ápice da passagem que acabou (lugar mais dentro da curva).
       // Decisão Flávio 2026-05-27: o ápice depende da configuração (carro+pneu),
       // por isso é derivado da passagem real, não cadastrado fixo.
@@ -382,20 +389,33 @@ export class LiveDataBridge {
         });
       }
 
+      const pontosCanonicos = this._passagemBuffer.length >= 2
+        ? this._calcularFracoesPra(this._passagemBuffer)
+        : null;
+
+      // Toda passagem fechada é o "hábito" mais recente do piloto — melhor ou
+      // não, simulador ou não. Alimenta as marcas VOCÊ da tela de orientação.
+      if (pontosCanonicos && typeof this._onTrechoEvent === 'function') {
+        this._onTrechoEvent({
+          type: 'passagem-fechada',
+          segmentId: ev.segmentId,
+          pontos: pontosCanonicos,
+        });
+      }
+
       // Persistência automática: se a passagem é melhor que a referência atual
-      // (ou se não há referência ainda), grava no banco. O ápice recalcula
-      // sozinho da próxima vez que a referência for carregada.
-      if (this._onSalvarPassagem && this._passagemBuffer.length >= 9) {
+      // (ou se não há referência ainda), grava no banco e vira a referência
+      // local pra PRÓXIMA passagem. Passagem de SIMULADOR nunca entra aqui —
+      // referência é do carro real (par local da blindagem __P1_ORIGEM_SIM__
+      // da nuvem; sem isso o replay trocava a referência pela volta 1 do
+      // simulador e as voltas seguintes comparavam sim×sim = delta zero).
+      if (this._onSalvarPassagem && this._passagemBuffer.length >= 9 && !this._origemSimulador()) {
         const primeiro = this._passagemBuffer[0];
         const ultimo = this._passagemBuffer[this._passagemBuffer.length - 1];
         const tempoS = (ultimo.t - primeiro.t) / 1000;
         if (tempoS > 0 && Number.isFinite(tempoS)) {
-          const refAtual = this._referenciasPorSegmento.get(ev.segmentId);
-          const ehNovaMelhor = !refAtual || tempoS < refAtual.tempoS;
+          const ehNovaMelhor = !refAnterior || tempoS < refAnterior.tempoS;
           if (ehNovaMelhor) {
-            const pontosCanonicos = this._calcularFracoesPra(this._passagemBuffer);
-            // Persiste async — atualiza referência local imediatamente pra
-            // próxima passagem comparar contra ela mesma.
             const novaRef = {
               segmentId: ev.segmentId,
               tempoS,
@@ -418,24 +438,21 @@ export class LiveDataBridge {
         }
       }
 
-      if (this._deltaCalculator && this._passagemBuffer.length >= 2) {
-        const ref = this._referenciasPorSegmento.get(ev.segmentId);
-        if (ref) {
-          try {
-            const passagemAtual = {
-              segmentId: ev.segmentId,
-              pontos: this._calcularFracoesPra(this._passagemBuffer),
-            };
-            const resultado = this._deltaCalculator({ atual: passagemAtual, referencia: ref });
-            this._stats.deltaCalculados++;
-            this._onEvent('delta-calculado', resultado);
-            // Propaga o resultado pro callback externo também.
-            if (typeof this._onTrechoEvent === 'function') {
-              this._onTrechoEvent({ type: 'delta-calculado', ...resultado });
-            }
-          } catch (e) {
-            this._onEvent('delta-erro', { segmentId: ev.segmentId, msg: e.message });
+      if (this._deltaCalculator && pontosCanonicos && refAnterior) {
+        try {
+          const passagemAtual = {
+            segmentId: ev.segmentId,
+            pontos: pontosCanonicos,
+          };
+          const resultado = this._deltaCalculator({ atual: passagemAtual, referencia: refAnterior });
+          this._stats.deltaCalculados++;
+          this._onEvent('delta-calculado', resultado);
+          // Propaga o resultado pro callback externo também.
+          if (typeof this._onTrechoEvent === 'function') {
+            this._onTrechoEvent({ type: 'delta-calculado', ...resultado });
           }
+        } catch (e) {
+          this._onEvent('delta-erro', { segmentId: ev.segmentId, msg: e.message });
         }
       }
       this._passagemBuffer = []; // limpa pra próximo trecho
