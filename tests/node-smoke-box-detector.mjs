@@ -80,5 +80,43 @@ t('BX-07 várias passagens pelo prolongamento seguem NA PISTA (cenário do repla
   if (entrou !== 0 || det.isNoBox()) throw new Error(`entrou=${entrou} noBox=${det.isNoBox()}`);
 });
 
+// ── GEOMETRIA REAL (auditoria adversarial 10/06): os marcos aprovados de 27/05 têm
+// pit-in de 25,9 m terminando a ~12 m do traçado de corrida. Folga proporcional de 50%
+// (13 m) engolia o traçado: voltas lançadas reais cruzavam em u=1,45-1,55 a 108-152 km/h
+// → NO BOX falso por voltas inteiras. A folga absoluta de 5 m mata isso. Entradas reais
+// medem u≈0,5 e seguem detectando. ──
+import { readFileSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+const REF = join(dirname(fileURLToPath(import.meta.url)), '..', '_design-reference');
+const marcosReais = JSON.parse(readFileSync(join(REF, 'BOX-PIT-BRASILIA-FLAVIO-APROVADO-2026-05-27.json')));
+const pitInReal  = { a_gps: marcosReais.pit_in.a,  b_gps: marcosReais.pit_in.b };
+const pitOutReal = { a_gps: marcosReais.pit_out.a, b_gps: marcosReais.pit_out.b };
+const trajeto = JSON.parse(readFileSync(join(REF, 'TRAJETO-LIMPO-BRASILIA-FLAVIO-2026-05-27.json'))).trajeto;
+
+t('BX-08 REAL: trajeto canônico inteiro (920 pts, 4 voltas lançadas) gera ZERO evento de box', () => {
+  let entrou = 0, saiu = 0;
+  const det = new BoxDetector({
+    pitIn: pitInReal, pitOut: pitOutReal,
+    onEntradaBox: () => entrou++, onSaidaBox: () => saiu++,
+  });
+  trajeto.forEach((p, i) => det.ingestGps({ lat: p.lat, lng: p.lng, t: 1000 + i * 200 }));
+  if (entrou !== 0 || saiu !== 0) throw new Error(`falsos: entrou=${entrou} saiu=${saiu}`);
+  if (det.isNoBox()) throw new Error('terminou preso NO BOX numa volta lançada');
+});
+
+t('BX-09 REAL: cruzar o MEIO da pit-in real (u≈0,5) ainda entra no box', () => {
+  let entrou = 0;
+  const det = new BoxDetector({ pitIn: pitInReal, pitOut: pitOutReal, onEntradaBox: () => entrou++ });
+  const meio = {
+    lat: (pitInReal.a_gps.lat + pitInReal.b_gps.lat) / 2,
+    lng: (pitInReal.a_gps.lng + pitInReal.b_gps.lng) / 2,
+  };
+  det.ingestGps({ lat: meio.lat + 0.0001, lng: meio.lng, t: 1000 }); // ~11 m antes
+  det.ingestGps({ lat: meio.lat - 0.0001, lng: meio.lng, t: 2000 }); // ~11 m depois
+  if (entrou !== 1) throw new Error(`entrou=${entrou}`);
+  if (!det.isNoBox()) throw new Error('não registrou NO BOX numa entrada real');
+});
+
 console.log(`\nBox Detector: ${ok} ok / ${fail} fail`);
 process.exit(fail > 0 ? 1 : 0);
