@@ -107,7 +107,7 @@ function montar({ origemSimulador } = {}) {
 
 // ── A) o delta sai contra a referência ANTERIOR ──────────────────────────
 
-t('DELTA-REF-01 passagem mais lenta que a referência → deltaTotalS positivo (mesmo sendo "nova melhor" no tempo)', () => {
+await t('DELTA-REF-01 passagem mais lenta que a referência → deltaTotalS positivo (mesmo sendo "nova melhor" no tempo)', () => {
   const { bridge, det, eventos } = montar();
   rodarPassagem(bridge, det, { kmh: 90 });
   const d = eventos.find(e => e.type === 'delta-calculado');
@@ -118,7 +118,7 @@ t('DELTA-REF-01 passagem mais lenta que a referência → deltaTotalS positivo (
   }
 });
 
-t('DELTA-REF-02 sub-trechos recebem delta (entrada/freio/apice com amostras e deltaS > 0)', () => {
+await t('DELTA-REF-02 sub-trechos recebem delta (entrada/freio/apice com amostras e deltaS > 0)', () => {
   const { bridge, det, eventos } = montar();
   rodarPassagem(bridge, det, { kmh: 90 });
   const d = eventos.find(e => e.type === 'delta-calculado');
@@ -131,9 +131,10 @@ t('DELTA-REF-02 sub-trechos recebem delta (entrada/freio/apice com amostras e de
 
 // ── B) referência local substituída DEPOIS (carro real) ──────────────────
 
-t('DELTA-REF-03 carro real: depois do cálculo a passagem vira a referência local', () => {
+await t('DELTA-REF-03 carro real: depois do cálculo a passagem vira a referência local', async () => {
   const { bridge, det, salvas } = montar();
   rodarPassagem(bridge, det, { kmh: 90 });
+  await tick();
   const ref = bridge._referenciasPorSegmento.get(SEG);
   if (!ref || ref.tempoS === 18.0) throw new Error('referência local não foi substituída');
   if (salvas.length !== 1) throw new Error(`onSalvarPassagem: ${salvas.length}x (esperado 1)`);
@@ -141,10 +142,11 @@ t('DELTA-REF-03 carro real: depois do cálculo a passagem vira a referência loc
 
 // ── C) simulador nunca vira referência nem salva ──────────────────────────
 
-t('DELTA-REF-04 simulador: referência local intacta + onSalvarPassagem NÃO chamado + delta segue positivo na 2ª volta', () => {
+await t('DELTA-REF-04 simulador: referência local intacta + onSalvarPassagem NÃO chamado + delta segue positivo na 2ª volta', async () => {
   const { bridge, det, eventos, salvas } = montar({ origemSimulador: () => true });
   rodarPassagem(bridge, det, { kmh: 90 });
   rodarPassagem(bridge, det, { kmh: 90 });
+  await tick();
   const ref = bridge._referenciasPorSegmento.get(SEG);
   if (!ref || ref.tempoS !== 18.0) throw new Error('referência local foi trocada por passagem de simulador');
   if (salvas.length !== 0) throw new Error(`onSalvarPassagem chamado ${salvas.length}x pra simulador`);
@@ -157,7 +159,7 @@ t('DELTA-REF-04 simulador: referência local intacta + onSalvarPassagem NÃO cha
 
 // ── D) toda passagem fechada emite os pontos canônicos ────────────────────
 
-t('DELTA-REF-05 passagem-fechada emitida com pontos canônicos (fracao + sub), melhor ou não', () => {
+await t('DELTA-REF-05 passagem-fechada emitida com pontos canônicos (fracao + sub), melhor ou não', () => {
   const { bridge, det, eventos } = montar({ origemSimulador: () => true });
   rodarPassagem(bridge, det, { kmh: 90 });
   const pf = eventos.find(e => e.type === 'passagem-fechada');
