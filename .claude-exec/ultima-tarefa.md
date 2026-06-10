@@ -66,7 +66,10 @@ B2. "NO BOX" PRESO (defeito REAL): box-detector acha que entrou no box e nunca s
   pneu radial-185-14, pontos com kmh/fracao OK e sub:null em TODOS (gravadas 24/05 20:00,
   tempos redondos = sintéticas). Inspetor: /tmp/p1-inspeciona-banco.py.
 
-## O QUE FOI PROVADO NESTA SESSÃO (não refazer)
+## ─── HISTÓRICO do checkpoint das 15h (SUPERADO pelo bloco acima — a "PRÓXIMA AÇÃO
+## EXATA" dali JÁ FOI EXECUTADA; ler só como contexto) ───
+
+## O QUE FOI PROVADO NA SESSÃO DAS 15h (não refazer)
 1. trecho-detector.js consertado: RESSINCRONIZAÇÃO (vigia paralelo de entradas — perdeu curva,
    engata na próxima), SAÍDA DE EMERGÊNCIA (fecha sem ápice, sem inventar), memória contínua
    de entrada (sem tick cego pós-avanço), sanidade do ápice (>60 m não vale).
