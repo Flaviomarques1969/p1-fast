@@ -35,11 +35,14 @@ const CSS = `
 .p1-orient .apice-anel { fill:none; stroke:oklch(80% 0.22 145); stroke-width:2.5; animation:p1orRespira 1.5s ease-in-out infinite; }
 .p1-orient .apice-bola { fill:oklch(80% 0.22 145); filter:drop-shadow(0 0 12px oklch(80% 0.22 145 / .4)); }
 .p1-orient .carro { fill:oklch(100% 0 0); opacity:.9; }
-.p1-orient .acao { position:absolute; right:3%; top:12%; bottom:10%; width:44%; text-align:right;
-  display:flex; flex-direction:column; justify-content:space-between; align-items:flex-end; }
+/* Par verbo+dado JUNTO, centrado na vertical — distância equilibrada com a curva
+   da esquerda. Antes era justify-content:space-between + margin-top:auto (extremos
+   com buraco no meio); Flávio mandou aproximar em 10/06/2026. */
+.p1-orient .acao { position:absolute; right:3%; top:50%; transform:translateY(-50%); width:44%; text-align:right;
+  display:flex; flex-direction:column; justify-content:center; gap:5vh; align-items:flex-end; }
 .p1-orient .verbo { font-size:clamp(44px, 6vw, 80px); font-weight:900; letter-spacing:2px; line-height:1.02; }
 .p1-orient .verbo b { color:oklch(80% 0.22 145); }
-.p1-orient .dado { margin-top:auto; font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:900;
+.p1-orient .dado { font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:900;
   letter-spacing:-2px; font-size:clamp(80px, 12vw, 150px); line-height:.95; color:oklch(80% 0.22 145);
   font-variant-numeric:tabular-nums; text-shadow:0 0 30px oklch(80% 0.22 145 / .4); width:100%; }
 .p1-orient .dado small { font-size:.34em; letter-spacing:0; font-weight:800; opacity:.75; margin-left:4px; }
