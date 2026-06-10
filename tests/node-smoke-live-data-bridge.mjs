@@ -88,19 +88,22 @@ t('LDB-07 rpmToShift respeita redlineRpm injetado', () => {
 
 // ── checkCriticalAlerts puro ────────────────────────────
 
-t('LDB-08 checkCriticalAlerts: erro ECU != 0 → grave Erro ECU', () => {
-  const a = checkCriticalAlerts(FRESH_T4000({ ecuErrorBits: 0x0005 }));
+// (10/06/2026) LDB-08/09/18/19/24 atualizados: ecuErrorBits era da especificação
+// ANTERIOR ao protocolo real do T3000 (25/05) — o dado real traz
+// sample.alarmes.{baixaPressaoOleo,...} (bitfield da central, ALARM_PRIORITY).
+t('LDB-08 checkCriticalAlerts: alarme da central (óleo baixo) → grave', () => {
+  const a = checkCriticalAlerts(FRESH_T4000({ alarmes: { baixaPressaoOleo: true } }));
   if (!a) throw new Error('deveria alertar');
   if (a.tipo !== MsgTipo.GRAVE) throw new Error('tipo');
-  if (!/erro ecu/i.test(a.texto)) throw new Error(`texto ${a.texto}`);
+  if (!/óleo baixo/i.test(a.texto)) throw new Error(`texto ${a.texto}`);
 });
 
-t('LDB-09 checkCriticalAlerts: prioridade — erro ECU vence outras condições', () => {
+t('LDB-09 checkCriticalAlerts: prioridade — alarme da central vence outras condições', () => {
   const a = checkCriticalAlerts(FRESH_T4000({
-    ecuErrorBits: 0x0001,
-    waterTempC: 130, // tb crítico, mas ECU vence
+    alarmes: { baixaPressaoOleo: true },
+    waterTempC: 130, // tb crítico, mas o bitfield da central vence
   }));
-  if (!/erro ecu/i.test(a.texto)) throw new Error('ECU deveria ter prioridade');
+  if (!/óleo baixo/i.test(a.texto)) throw new Error('bitfield deveria ter prioridade');
 });
 
 t('LDB-10 checkCriticalAlerts: água acima do limite → grave', () => {
