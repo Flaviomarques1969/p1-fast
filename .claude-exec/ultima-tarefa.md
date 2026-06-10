@@ -27,7 +27,38 @@
 ## Ambiente: DESENVOLVIMENTO. Produção protegida: sim. Autorização: não recebida.
 ## Riscos: tela do stint pode morar no app iOS (reinstalação) ou no painel web; vida útil
 ## pode exigir estrutura nova no banco (aí: propor, não executar sem combinar).
-## Status: iniciado
+## Status: CONCLUÍDO (aguardando validação do Flávio nas janelas)
+##
+## TASK_DONE (sessão 4):
+## - Mapeamento: workflow 4 exploradores (telas com o par; stint atual; specs nos docs;
+##   vida útil/manutenção; resolução 10,5"). Descobertas-chave: o par nos extremos veio
+##   do desenho APROVADO 09/06 (a consideração de hoje vira v4); existem DOIS planejamentos
+##   de stint (web=modo+envelope; iOS=objetivo/voltas/paradas/lição); specs ditadas 11/05
+##   (37 respostas) e 09/06 localizadas; vida útil: manutencoes tem data de troca, sessões
+##   dão tempo; voltas reais NÃO são gravadas (mock) e km não existe; tela = PDM-10.5T
+##   1920×1280, escala 2× + faixas ~200px (MS-13.1 fechado, mas NÃO implementado no painel).
+## - Alterações: tela-orientacao.js (.acao par centrado, gap 5vh — antes space-between +
+##   margin-top:auto); _design-reference/mockup-oportunidade-trecho-ultra-v4.html (NOVO,
+##   v3 aprovado preservado); index-t3000.html (escala uniforme do .stage p/ 1920×1280 —
+##   implementa MS-13.1); configuracao-stint.html+js REFORMADOS → "Planejamento do Stint":
+##   padrões naturais (carro/piloto/autódromo), pneu/roda, VIDA ÚTIL do item (3 contadores
+##   derivados da nuvem desde a troca; km honesto "—"), PROPÓSITO (livre × testar parte do
+##   carro × treinar habilidade: trail braking + 6 pontos), GHOST liga/desliga, voltas,
+##   paradas (volta+motivo); plano completo gravado em localStorage p1fast-plano-stint-v1
+##   no aprovar (envelope continua igual). docs/CONCEITOS_TRECHO_PRODUTO.md: ditado de
+##   10/06 registrado (5 itens).
+## - Validação: sintaxe OK; screenshots 1920×1280 (par centrado: gap 64px, centro Y=640;
+##   stint completo; painel escalado com faixas); prova funcional 9/9 interações
+##   (chips, clamps, paradas, ghost teclado); vida útil responde honesto (sem troca
+##   registrada → orienta registrar no app). NADA gravado no banco (aprovar não clicado).
+## - Aberto pro Flávio: navegador visível 1920×1280, 3 abas (Central+sim, painel, stint).
+## - Produção: INTOCADA.
+## - Pendências novas (propostas, dependem de decisão/estrutura): voltas REAIS persistidas
+##   (substituir mock do app); km (comprimento do layout × voltas OU velocidade integrada);
+##   vínculo troca→peça física (manutencoes sem FK pra pneus/pecas); tempo motor-ligado
+##   real (hoje proxy = duração da sessão); comportamento do painel por propósito/foco
+##   (treino focado, painel focado em parte do carro, ghost ao vivo) — consomem o plano
+##   gravado; unificação web×app do planejamento.
 
 ---
 

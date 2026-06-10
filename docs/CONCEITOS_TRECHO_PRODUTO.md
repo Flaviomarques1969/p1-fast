@@ -85,3 +85,24 @@ Muitos tipos de treinamento serão cadastrados ao longo do tempo. **Ainda não c
 - Mensagens do painel: máximo 2 palavras (decisão 27/05) — vale pras mensagens; a prévia
   do trecho e o resumo de volta são blocos visuais, não mensagens.
 - Comparação por trecho vs melhor histórica (memória `p1fast_logica_central`) — idêntico.
+
+## Ditado do Flávio — 10/06/2026 (rodada de considerações na validação da orientação)
+
+1. **Par mensagem+dado nas telas ao vivo**: aproximados e centrados na vertical, distância
+   equilibrada com o desenho da esquerda. NUNCA espalhados nos extremos com vazio no meio.
+   (Revisa o desenho aprovado 09/06 — v4 do mockup oportunidade-trecho.)
+2. **Padrões naturais**: enquanto houver 1 carro, 1 piloto e 1 autódromo, esses campos vêm
+   pré-preenchidos em qualquer planejamento. Pneu/roda terá MAIS de um tipo — escolha real.
+3. **Vida útil por item instalado**: toda peça (pneu, roda, qualquer item) tem data de
+   instalação/troca registrada; a consulta deriva, daquela data até a data consultada, os
+   TRÊS contadores da telemetria: tempo de carro ligado, voltas e quilômetros. Os três,
+   para todas as peças.
+4. **Propósito do stint (escolha obrigatória no planejamento, abordagem gráfica)**:
+   (a) RODAR LIVRE; (b) TESTAR O CARRO — escolhe a parte; o painel foca e mostra os dados
+   daquela parte o stint inteiro; (c) TREINAR HABILIDADE — trail braking OU um dos 6 pontos
+   do trecho (entrada, ponto de frenagem, velocidade mínima, ápice, início de aceleração,
+   saída), voltas focadas só naquilo. Mais: ligar/desligar GHOST; quantas voltas o stint
+   tem; quantas paradas e em QUAL volta cada parada.
+5. **Tela de referência do painel do piloto**: a de ~10,5/10,7" ligada como monitor do
+   notebook (1920×1280 — PDM-10.5T, MS-13.1). iPhone fora do fluxo do cockpit; uso
+   eventual só como envio de dados (Starlink × iPhone × modem 5G: decisão em aberto).
