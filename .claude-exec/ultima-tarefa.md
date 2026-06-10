@@ -222,6 +222,27 @@ PRECISA ir pro ar — o do ar atual tem o defeito sequencial).
 ## riscos (a)(b)(d) da auditoria das 17h; debounce único pit-in/pit-out <5s;
 ## savePadrao aparentemente nunca grava (atualizado_em=30/05);
 ## (decisão de produto p/ Flávio: trava de velocidade na entrada do box).
+##
+## TASK_DONE (sessão 3, 10/06 noite):
+## - Pedido original conferido: sim ("continua a orientação" = sequência do checkpoint 17h)
+## - Ambiente trabalhado: DESENVOLVIMENTO (produção intocada; banco só leitura)
+## - Produção foi alterada: NÃO
+## - Arquivos reais inspecionados: sim (box/chegada/trecho-detector, main-t3000,
+##   alertas-criticos, padrao-acumulador, padrao-persister, oportunidade-trecho,
+##   coreografia-volta, mensagens-pedagogicas, banco padrões/marcos via REST leitura)
+## - Alterações: box-detector.js, alertas-criticos.js, padrao-acumulador.js,
+##   padrao-persister.js, main-t3000.js, package.json (corrente smoke),
+##   tests/{box-detector,alertas-criticos,padrao-acumulador}.mjs
+## - Testes: box 9/9, alertas 25/25, padrão 14/14, vizinhos verdes, bateria sem
+##   vermelho novo; 2 rodadas de fiscais adversariais (workflows) — refutações
+##   incorporadas (folga 5 m; persister recalcula; pressN; desempate; flag no cabo)
+## - Critérios: (a) causa provada SIM (sondas v3/v4 com pilha de chamada);
+##   (b) consertos DEV+smoke SIM; (c) replay tela acesa SIM (RESULTADO: TELA ACENDEU,
+##   16 trechos/2 voltas, mostrar=6, graveComO=0, captura); (d) aberto pro Flávio SIM
+##   (navegador visível, Central + painel, simulador ligado)
+## - Resultado: CONCLUÍDO (desta sessão) — aguardando validação do Flávio nas janelas
+##   e, com aprovação, novo MIGRAR PARA PRODUÇÃO: painel p1t4000
+## - Pendências reais: listadas no checkpoint do topo
 
 ---
 
