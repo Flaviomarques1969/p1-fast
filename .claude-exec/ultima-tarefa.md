@@ -1,4 +1,40 @@
-# ⏰ RETOMADA PÓS-CLEAR — "continua a orientação" (checkpoint 2026-06-10 ~17h)  ← LER PRIMEIRO
+# ✅ ORIENTAÇÃO ACESA — checkpoint 2026-06-10 noite (sessão 3)  ← LER PRIMEIRO
+
+## ONDE ESTÁ (1 frase)
+TELA DE ORIENTAÇÃO ACENDEU NO REPLAY (prova: RESULTADO TELA ACENDEU, 16 trechos/2 voltas,
+mostrar=6, zero bloqueio indevido, captura /tmp/p1-orientacao-acesa.png "FREIA DEPOIS") e
+foi ABERTA PRO FLÁVIO em navegador visível (Central p1tv + painel ?semfio) — aguardando
+aprovação dele pra propor MIGRAR PARA PRODUÇÃO: painel p1t4000.
+
+## O QUE FOI CONSERTADO NA SESSÃO 3 (tudo DEV, ver TASK_INIT sessão 3 abaixo p/ detalhe)
+1. box-detector: interseção real + folga ABSOLUTA 5 m (fiscais derrubaram a folga de 50%
+   com voltas reais; 9/9 + zero falso nas sessões reais 23-24/05).
+2. Cadeia de alertas preditivos (causa da tela apagada): aplicarPreditivos sobe-E-limpa
+   (raiseManual travava MOTOR_AQUECENDO eterno); regra n>=3 POR MÉTRICA (voltas do banco
+   sem temperatura furavam o mínimo); persister recalcula padrão das voltas guardadas
+   (não forja mais n=total — 2ª rodada de fiscais); blindagem: sim não alimenta padrão
+   (semfio E cabo via gps.sim); pedagógica não escreve por cima de alerta super/crítico;
+   desempate QUENTE>AQUECENDO no mostrador.
+3. npm run smoke: box/chegada/delta/bridge-delta no INÍCIO da corrente (parava num
+   vermelho pré-existente antes deles). Backup package.json: /tmp/package-json-backup-20260610.json.
+## Testes: box 9/9 · alertas 25/25 · padrão 14/14 · bateria oficial sem vermelho NOVO
+## (só os 5 pré-existentes do gabarito de tabelas, schema-parity).
+
+## PRÓXIMO PASSO
+Flávio valida nas janelas abertas (orientação acende na 2ª volta do replay, ~10 min).
+Aprovou → propor "MIGRAR PARA PRODUÇÃO: painel p1t4000" (pacote leva consertos do vigia
+de 15h + delta×referência de 17h + box + cadeia de alertas desta sessão).
+
+## PENDÊNCIAS REAIS (pré-existentes / decisões de produto)
+- schema-parity 5 falhas (gabarito espera 30 tabelas, banco tem 32 — drift de maio).
+- live-data-bridge 21/5 (teste defasado, área alerta ECU).
+- savePadrao aparentemente nunca grava (atualizado_em parado em 30/05) — investigar.
+- __P1_ORIGEM_SIM__ pegajoso: 1 replay na sessão → dados reais param de aprender até
+  recarregar a página (anotado pelos fiscais; decidir mecanismo de destravamento).
+- Decisão de produto p/ Flávio: trava de velocidade na entrada do box (fiscais sugeriram).
+- Debounce único pit-in/pit-out <5s (pit de Brasília leva >5s — só anotado).
+
+## ─── HISTÓRICO: checkpoint das ~17h (SUPERADO pelo bloco acima) ───
 
 ## ONDE PAROU (1 frase)
 DELTA×REFERÊNCIA CONSERTADO E PROVADO (deltas positivos, 7/8 curvas com orientação PRONTA
