@@ -171,5 +171,54 @@ t('AC-19 catálogo: 9 super, 3 crítico, 4 atenção, 3 info', () => {
   if (por.info !== 3)    throw new Error(`info=${por.info} (esperado 3)`);
 });
 
+// ── Conserto 10/06: preditivo por padrão sobe E LIMPA (antes travava) ──────
+t('AC-20 aplicarPreditivos sobe o alerta e a volta saudável LIMPA', () => {
+  const ac = new AlertasCriticos();
+  ac.aplicarPreditivos(['MOTOR_AQUECENDO']);
+  if (!ac.getAtivos().includes('MOTOR_AQUECENDO')) throw new Error('não subiu');
+  ac.aplicarPreditivos([]); // volta seguinte dentro do padrão
+  if (ac.getAtivos().includes('MOTOR_AQUECENDO')) throw new Error('não limpou — alerta travado');
+});
+
+t('AC-21 fluxo automático do T4000 NÃO derruba preditivo ativo', () => {
+  const ac = new AlertasCriticos();
+  ac.aplicarPreditivos(['MOTOR_AQUECENDO']);
+  ac.ingestT4000({ waterTempC: 55, rpm: 4000 }); // absoluto diz "sem alerta"
+  if (!ac.getAtivos().includes('MOTOR_AQUECENDO')) {
+    throw new Error('amostra seguinte apagou o preditivo (regressão do raiseManual)');
+  }
+});
+
+t('AC-22 aplicarPreditivos não mexe nos manuais do mecânico', () => {
+  const ac = new AlertasCriticos();
+  ac.raiseManual('BOX');
+  ac.aplicarPreditivos(['MOTOR_AQUECENDO']);
+  ac.aplicarPreditivos([]);
+  if (!ac.getAtivos().includes('BOX')) throw new Error('limpou o BOX manual');
+});
+
+t('AC-23 preditivo limpo + condição absoluta ainda vale → T4000 reergue', () => {
+  const ac = new AlertasCriticos();
+  ac.aplicarPreditivos(['MOTOR_AQUECENDO']);
+  ac.aplicarPreditivos([]);
+  ac.ingestT4000({ waterTempC: 71, rpm: 4000 }); // absoluto ≥70 manda subir
+  if (!ac.getAtivos().includes('MOTOR_AQUECENDO')) throw new Error('absoluto não reergueu');
+});
+
+// ── Conserto 10/06: padrão só vale com 3+ voltas COM a métrica ─────────────
+t('AC-24 média com n<3 voltas NÃO arma o preditivo (voltas do banco sem temperatura)', () => {
+  const padrao1 = { motor: { media: 47, n: 1 }, pneu: {}, cambio: {} };
+  const ids1 = avaliarPreditivoPorPadrao({ motorMaxC: 60 }, padrao1); // 60 > 47*1.2=56.4, mas n=1
+  if (ids1.includes('MOTOR_AQUECENDO')) throw new Error('armou com 1 volta só');
+  const padrao3 = { motor: { media: 47, n: 3 }, pneu: {}, cambio: {} };
+  const ids3 = avaliarPreditivoPorPadrao({ motorMaxC: 60 }, padrao3);
+  if (!ids3.includes('MOTOR_AQUECENDO')) throw new Error('com 3 voltas devia disparar');
+  // compatibilidade: padrão sem n (chamadas antigas) segue funcionando
+  const padraoSemN = { motor: { media: 47 }, pneu: {}, cambio: {} };
+  if (!avaliarPreditivoPorPadrao({ motorMaxC: 60 }, padraoSemN).includes('MOTOR_AQUECENDO')) {
+    throw new Error('quebrou compatibilidade com padrão sem contagem');
+  }
+});
+
 console.log(`\nAlertas críticos: ${ok} ok / ${fail} fail`);
 if (fail) process.exit(1);
