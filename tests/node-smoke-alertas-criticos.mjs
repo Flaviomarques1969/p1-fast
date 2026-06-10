@@ -220,5 +220,15 @@ t('AC-24 média com n<3 voltas NÃO arma o preditivo (voltas do banco sem temper
   }
 });
 
+t('AC-25 empate super×super: QUENTE vence AQUECENDO no mostrador', () => {
+  const ac = new AlertasCriticos();
+  ac.aplicarPreditivos(['MOTOR_AQUECENDO']);   // preditivo segura o aquecendo
+  ac.ingestT4000({ waterTempC: 80, rpm: 4000 }); // absoluto: motor QUENTE
+  const principal = ac.getMensagemPrincipal();
+  if (principal.id !== 'MOTOR_QUENTE') {
+    throw new Error(`mostrador diz "${principal.texto}" com o motor já QUENTE`);
+  }
+});
+
 console.log(`\nAlertas críticos: ${ok} ok / ${fail} fail`);
 if (fail) process.exit(1);
