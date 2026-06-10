@@ -88,6 +88,38 @@ const telaOrientacao = criarTelaOrientacao({});
 let coreografia = null;
 // tempos de volta locais (pro resumo na reta longa)
 const voltas = { n: null, inicioTs: null, ultimaS: null, melhorS: null };
+
+// ── Voltas REAIS na nuvem (autorização Flávio 10/06) ──────────
+let _sessaoAberta = null;       // cache da sessão aberta do stint
+let _sessaoBuscadaEm = 0;
+const _persistStats = { gravadas: 0, recusadas: 0, semSessao: 0 };
+async function persistirVoltaReal({ numero, tempoMs, inicioAt }) {
+  try {
+    const { acharSessaoAberta, gravarVoltaReal } = await import('./voltas-persister.js');
+    // re-busca a sessão no máx. a cada 60 s (o app pode abrir o stint no meio)
+    if (!_sessaoAberta && Date.now() - _sessaoBuscadaEm > 60000) {
+      _sessaoBuscadaEm = Date.now();
+      _sessaoAberta = await acharSessaoAberta(CARRO_ATIVO);
+    }
+    if (!_sessaoAberta) {
+      _persistStats.semSessao++;
+      if (_persistStats.semSessao === 1) {
+        log('volta real NÃO gravada: nenhum stint aberto no app (abra o stint pra contagem valer)');
+      }
+      return;
+    }
+    const okGravou = await gravarVoltaReal({ sessao: _sessaoAberta, numero, tempoMs, inicioAt });
+    if (okGravou) {
+      _persistStats.gravadas++;
+      log(`volta ${numero} gravada na sessão ${String(_sessaoAberta.id).slice(0, 8)}`);
+    } else {
+      _persistStats.recusadas++;
+      if (_persistStats.recusadas === 1) {
+        log('volta real NÃO gravada: banco recusou (permissão de escrita em decisão)');
+      }
+    }
+  } catch (e) { log('erro ao gravar volta real: ' + e.message); }
+}
 /** Mensagem que ATROPELA a orientação: só níveis super/crítico.
  *  Avisos de atenção/info convivem com a tela (calibrado 10/06 — alerta
  *  preditivo constante escondia a orientação 2x/segundo no replay). */
