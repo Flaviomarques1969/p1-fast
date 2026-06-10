@@ -324,6 +324,11 @@ async function carregarVidaUtil() {
 
 renderModos();
 selecionarModo('agressivo'); // sugestão default = Agressivo (decisão Flávio 2026-05-29)
+ligarPropositos();
+selecionarProposito('livre'); // padrão natural: rodar livre
+ligarVoltasParadas();
+renderParadas();
+carregarVidaUtil();
 
 document.getElementById('btnAprovar').addEventListener('click', aprovarEnvelope);
 document.getElementById('btnCancelar').addEventListener('click', () => {
