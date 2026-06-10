@@ -151,7 +151,7 @@ t('PA-08 buffer limitado a 10 voltas', () => {
 });
 
 // ── Conserto 10/06: volta saudável AVISA com lista vazia (limpa preditivos) ──
-t('PA-09 volta de volta ao padrão emite lista VAZIA (limpa o alerta da anterior)', () => {
+t('PA-11 volta de volta ao padrão emite lista VAZIA (limpa o alerta da anterior)', () => {
   const chamadas = [];
   const acu = new PadraoAcumulador({
     carroId: 'c1', trackId: 't1', tipoPneu: 'semi-slick',
