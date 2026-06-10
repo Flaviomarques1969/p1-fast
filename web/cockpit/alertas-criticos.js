@@ -300,12 +300,22 @@ export class AlertasCriticos {
   }
 
   getAtivos() {
-    // retorna em ordem de gravidade: super > critico > atencao > info
+    // retorna em ordem de gravidade: super > critico > atencao > info.
+    // Desempate dentro da MESMA gravidade: o estágio pior vence (QUENTE antes
+    // de AQUECENDO) — antes a ordem de chegada decidia e o painel mostrava
+    // "MOTOR AQUECENDO" com o motor já QUENTE (achado dos fiscais 10/06).
     const order = { super: 0, critico: 1, atencao: 2, info: 3 };
+    const estagio = {
+      MOTOR_QUENTE: 0, MOTOR_AQUECENDO: 1,
+      PNEU_QUENTE: 0, PNEU_AQUECENDO: 1,
+      CAMBIO_QUENTE: 0, CAMBIO_AQUECENDO: 1,
+      COMBUSTIVEL_BAIXO_CRITICO: 0,
+    };
     return [...this._ativos].sort((a, b) => {
       const ga = ALERTAS[a]?.gravidade ?? 'info';
       const gb = ALERTAS[b]?.gravidade ?? 'info';
-      return order[ga] - order[gb];
+      if (order[ga] !== order[gb]) return order[ga] - order[gb];
+      return (estagio[a] ?? 9) - (estagio[b] ?? 9);
     });
   }
 
