@@ -51,7 +51,7 @@ t('BX-04 construtor sem pit-in ou pit-out lança erro', () => {
 t('BX-05 cruzar o PROLONGAMENTO da pit-in (longe do segmento) NÃO entra no box', () => {
   let entrou = 0;
   const det = new BoxDetector({ pitIn, pitOut, onEntradaBox: () => entrou++ });
-  // mesma latitude da pit-in, mas ~80 m além da ponta do segmento (lng -47.8950)
+  // mesma latitude da pit-in, mas ~750 m além da ponta do segmento (lng -47.8950)
   det.ingestGps({ lat: -15.7755, lng: -47.8950, t: 1000 }); // antes
   det.ingestGps({ lat: -15.7745, lng: -47.8950, t: 2000 }); // sinal vira, segmento longe
   if (entrou !== 0) throw new Error(`falso positivo: entrou=${entrou}`);
