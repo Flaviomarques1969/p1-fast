@@ -12,6 +12,17 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 let modoSelecionado = null;
 
+// ── Plano do stint (ditado Flávio 10/06/2026) ─────────────────
+// propósito: livre | testar (parte do carro) | treinar (trail braking ou um
+// dos 6 pontos do trecho) · ghost liga/desliga · voltas · paradas (volta+motivo)
+const plano = {
+  proposito: null,   // 'livre' | 'testar' | 'treinar'
+  foco: null,        // parte do carro OU disciplina do treino
+  ghost: false,
+  voltas: 10,
+  paradas: [],       // [{ volta, motivo }]
+};
+
 // ── Render dos cartões ────────────────────────────────────────
 
 function renderModos() {
