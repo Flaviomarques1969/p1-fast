@@ -1,9 +1,70 @@
-# ⏰ RETOMADA PÓS-CLEAR — "continua a orientação" (checkpoint 2026-06-10 ~15h)  ← LER PRIMEIRO
+# ⏰ RETOMADA PÓS-CLEAR — "continua a orientação" (checkpoint 2026-06-10 ~17h)  ← LER PRIMEIRO
 
 ## ONDE PAROU (1 frase)
-Vigia de curvas CONSERTADO (8,0 de 8 por volta no replay!), resumo da volta APARECE na reta
-longa, e a tela de orientação ainda NÃO aparece — causa isolada: motor devolve null (sem
-componente perdendo) mesmo com deltas registrados. Falta UMA investigação pontual.
+DELTA×REFERÊNCIA CONSERTADO E PROVADO (deltas positivos, 7/8 curvas com orientação PRONTA
+no motor: "FREIA DEPOIS", "FECHA A CURVA 1,9m"...), mas a TELA segue apagada por DOIS
+bloqueadores novos, ambos identificados com evidência na sonda v2.
+
+## O QUE FOI FEITO NESTA SESSÃO (não refazer)
+1. CAUSA DO getOrientacao null ACHADA E CONSERTADA: live-data-bridge.js substituía a
+   referência local pela passagem "nova melhor" ANTES de calcular o delta → passagem
+   comparada com ELA MESMA → delta 0 em tudo (as 8 refs do banco são sintéticas/lentas —
+   tempo 18s p/ trecho de 7,8s — então TODA passagem virava "nova melhor").
+   Conserto: refAnterior capturada no início do saida-cruzou; delta vs refAnterior;
+   + origemSimulador() (passagem de sim NUNCA vira referência local nem salva);
+   + evento novo 'passagem-fechada' (TODA passagem alimenta marcas VOCÊ, não só novas-melhores).
+   main-t3000.js: passa origemSimulador, trata passagem-fechada → oportunidade.registrarPassagem.
+2. PROVA: tests/node-smoke-bridge-delta-referencia.mjs — 0/5 ANTES → 5/5 DEPOIS do conserto.
+   Bateria vizinha verde (delta 10/0, oportunidade 13/0, detector 12/0, resync 6/0,
+   coreografia 10/0, chegada 5/0). live-data-bridge antigo: 5 falhas ECU PRÉ-EXISTENTES
+   (provado por fiscal em ambiente isolado com a versão pré-conserto — mesmas 5).
+3. REPLAY (sonda v1): 24 fechamentos/3 voltas (8,0/volta), 1º delta inteiro capturado:
+   c175d6f2 total +2,83s {entrada +1,83 (26 am.), apice +1,00 (20 am.)}, pior=entrada.
+   7/8 orientações prontas no motor. Bank da nuvem intacto (56 linhas).
+4. AUDITORIA (workflow 4 fiscais adversariais): NENHUM refutou o conserto. Riscos anotados:
+   (a) flag __P1_ORIGEM_SIM__ só liga no modo ?semfio (modo cabo: gps sim:true entra sem
+   filtro — furo herdado, main-t3000.js:230-242 + :756-760); (b) flag é pegajosa (1 amostra
+   sim → bloqueia referência/persistência de dado REAL até recarregar — sessão mista sim→real);
+   (c) teste novo NÃO está no npm run smoke (e a suíte para no 1º vermelho por &&);
+   (d) marca OURO defasada na sessão (oportunidade.setReferencia só no boot, não acompanha
+   promoção de referência local); (e) delta-calculator não barra NaN de kmh ausente (robustez).
+
+## OS 2 BLOQUEADORES DA TELA (evidência da sonda v2 — próxima ação EXATA)
+A coreografia ENTRA na fase orientacao, mas onOrientacao esconde a tela:
+B1. mensagemGraveAtiva() true quase o tempo todo NO REPLAY DE PROVA: alertasCriticos com
+    SEM_DADOS ('critico') — a aba da Central (publicadora) fica em 2º plano no navegador
+    automatizado e o relógio dela é DESACELERADO → buracos >2s nas amostras do motor.
+    ARTEFATO DE PROVA, não do produto. Mitigar na sonda: chromium.launch com args
+    ['--disable-background-timer-throttling','--disable-renderer-backgrounding',
+    '--disable-backgrounding-occluded-windows'] (ou 2 janelas visíveis/headed).
+B2. "NO BOX" PRESO (defeito REAL): box-detector acha que entrou no box e nunca sai — msg
+    grave 'NO BOX' + setSilencioso(true) enquanto o carro fecha trechos na pista
+    (t=164-182s: trechos 2→3 com NO BOX ativo). CAUSA PROVÁVEL (mesma família dos defeitos
+    da madrugada): box-detector.js:55-64 usa lado-da-linha SEM limite do segmento (reta
+    INFINITA da pit-in corta a pista) — chegada-detector e trecho-detector JÁ ganharam o
+    conserto "interseção caminho×segmento com folga 50%"; box-detector NÃO.
+    → CONSERTAR box-detector igual + smoke; conferir tb. se 'NO BOX' deve mesmo ser msg
+    grave que atropela orientação (decisão de produto: no box não há orientação mesmo, ok,
+    mas só quando o box é VERDADE).
+
+## SEQUÊNCIA DA PRÓXIMA SESSÃO
+1. Consertar box-detector (cruzamento limitado ao segmento, como trecho-detector) + smoke.
+2. Relançar prova: servidor `cd "/Users/imac/Projetos/P1 Fast" && python3 -m http.server 8767`
+   (pode já estar no ar) + `node /tmp/p1-replay-proof2.mjs` (sonda v2 PRONTA em /tmp; só
+   adicionar os args anti-desaceleração no chromium.launch; critério tela acesa = dataset
+   on='1' + modo='curva'; captura → /tmp/p1-orientacao-acesa.png).
+3. Tela acesa → ABRIR PRO FLÁVIO (Central p1tv + painel ?semfio no navegador dele, headed).
+4. Com aprovação dele, propor: MIGRAR PARA PRODUÇÃO (painel p1t4000 com vigia + delta).
+5. Pendências menores: teste novo no npm run smoke; riscos (a)(b)(d)(e) da auditoria.
+
+## DETALHES TÉCNICOS DA PROVA
+- Sonda v2: /tmp/p1-replay-proof2.mjs (playwright via createRequire de
+  /Users/imac/Documents/Sistemas/cdai/frontend; Central https://p1tv.vercel.app click #btnSim;
+  painel http://localhost:8767/web/cockpit/index-t3000.html?semfio; window.__t3 exposto
+  em main-t3000.js:801; tela = document.querySelector('.p1-orient').dataset).
+- Banco de referências (leitura): melhores_passagens_trecho — 56 linhas, carro 641a81e7,
+  pneu radial-185-14, pontos com kmh/fracao OK e sub:null em TODOS (gravadas 24/05 20:00,
+  tempos redondos = sintéticas). Inspetor: /tmp/p1-inspeciona-banco.py.
 
 ## O QUE FOI PROVADO NESTA SESSÃO (não refazer)
 1. trecho-detector.js consertado: RESSINCRONIZAÇÃO (vigia paralelo de entradas — perdeu curva,
