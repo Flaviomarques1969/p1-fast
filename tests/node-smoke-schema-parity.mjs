@@ -53,7 +53,8 @@ function pgTables(sql) {
 }
 
 function grdbTables(swift) {
-  const re = /CREATE TABLE ([a-z_]+)/g;
+  // aceita IF NOT EXISTS (v26_pecas+ usam) e dígitos no nome
+  const re = /CREATE TABLE (?:IF NOT EXISTS )?([a-z0-9_]+)/g;
   const out = new Set();
   let m;
   while ((m = re.exec(swift)) !== null) out.add(m[1]);
