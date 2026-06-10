@@ -160,6 +160,11 @@ const bridge = new LiveDataBridge({
     if (coreografia) coreografia.evento(ev);
     if (ev.type === 'delta-calculado') oportunidade.registrarDelta(ev);
     if (ev.type === 'apice-cruzou') oportunidade.registrarApice(ev);
+    // Toda passagem fechada (melhor ou não) vira o hábito mais recente do
+    // piloto — antes só as "novas melhores" alimentavam as marcas VOCÊ.
+    if (ev.type === 'passagem-fechada') {
+      oportunidade.registrarPassagem({ segmentId: ev.segmentId, pontos: ev.pontos });
+    }
     // Espelha eventos básicos pro canal da nuvem (tela ASSISTIR no app).
     if (ev.type === 'entrada-cruzou') {
       publishEvento({ tipo: 'trecho', segmentId: ev.segmentId });
