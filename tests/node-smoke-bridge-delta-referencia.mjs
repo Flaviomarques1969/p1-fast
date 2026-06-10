@@ -25,10 +25,11 @@ import { CockpitState } from '../web/cockpit/cockpit-state.js';
 import { calcularDelta } from '../web/cockpit/delta-calculator.js';
 
 let ok = 0, fail = 0;
-function t(name, fn) {
-  try { fn(); console.log('✓', name); ok++; }
+async function t(name, fn) {
+  try { await fn(); console.log('✓', name); ok++; }
   catch (e) { console.log('✗', name, '—', e.message); fail++; }
 }
+const tick = () => new Promise(r => setTimeout(r, 0));
 
 const SEG = 'seg-teste-0001';
 
