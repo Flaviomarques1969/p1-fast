@@ -143,7 +143,7 @@ const bridge = new LiveDataBridge({
     if (!_ctxConfig.carroId || !_ctxConfig.trackId || !_ctxConfig.tipoPneu) return;
     try {
       const { gravarPassagem } = await import('./melhores-loader.js');
-      await gravarPassagem({
+      const gravou = await gravarPassagem({
         carroId:     _ctxConfig.carroId,
         autodromoId: _ctxConfig.trackId,
         layoutId:    _ctxConfig.layoutId,
@@ -152,7 +152,11 @@ const bridge = new LiveDataBridge({
         tempoS,
         pontos,
       });
-      log(`passagem salva: ${segmentId.slice(0,8)} ${tempoS.toFixed(2)}s`);
+      // gravarPassagem devolve false quando o banco recusa (ex.: trava de acesso
+      // só-time barra o painel anônimo) — antes o log dizia "salva" sem conferir
+      // e num dia de pista real ninguém perceberia a perda (achado 10/06).
+      if (gravou) log(`passagem salva: ${segmentId.slice(0,8)} ${tempoS.toFixed(2)}s`);
+      else log(`passagem NÃO gravada (banco recusou — ver acesso): ${segmentId.slice(0,8)} ${tempoS.toFixed(2)}s`);
     } catch (e) { log('erro ao salvar passagem: ' + e.message); }
   },
   onTrechoEvent: (ev) => {
