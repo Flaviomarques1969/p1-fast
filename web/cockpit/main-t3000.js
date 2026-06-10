@@ -185,8 +185,10 @@ const bridge = new LiveDataBridge({
     if (ev.type === 'entrada-cruzou' && shiftOrquestrador) {
       try { shiftOrquestrador.setTrechoAtual(ev.segmentId); } catch {}
     }
-    // delta-calculado → empurra mensagem pedagógica das 17 aprovadas
-    if (ev.type === 'delta-calculado') {
+    // delta-calculado → empurra mensagem pedagógica das 17 aprovadas.
+    // NUNCA por cima de alerta super/crítico: a pedagógica escrevia por cima
+    // de MOTOR AQUECENDO no mostrador e o piloto perdia o aviso (achado 10/06).
+    if (ev.type === 'delta-calculado' && !mensagemGraveAtiva()) {
       try { empurrarMsgPedagogica(ev); } catch {}
     }
     if (!chegadaDetector && ev.type === 'saida-cruzou'
