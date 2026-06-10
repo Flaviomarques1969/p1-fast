@@ -388,7 +388,9 @@ bridge.ingestImuGps = (envelope) => {
             voltasIniciais: inicial?.voltas ?? [],
             desvioPct: inicial?.desvioPct ?? 0.20,
             onAlertasPreditivos: (ids) => {
-              for (const id of ids) alertasCriticos.raiseManual(id);
+              // aplicar = sobe E limpa por volta. raiseManual aqui TRAVAVA o
+              // alerta pra sempre (manual só sai com clearManual, que não havia).
+              alertasCriticos.aplicarPreditivos(ids);
             },
             onPersist: async (snap) => { await savePadrao(snap); },
           });
