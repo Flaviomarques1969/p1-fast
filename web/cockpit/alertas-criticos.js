@@ -196,9 +196,10 @@ export function avaliarPreditivoPorPadrao(amostraVoltaAtual, padrao, desvioPct =
     if (amostraVoltaAtual.pneuMaxC > limite) ativos.push('PNEU_AQUECENDO');
   }
 
-  // Pneu — pressão caindo (queda de 20% do padrão)
+  // Pneu — pressão caindo (queda de 20% do padrão). Contagem PRÓPRIA (pressN):
+  // 3 voltas com temperatura não validam média de pressão de 1 volta.
   if (typeof amostraVoltaAtual.pneuMinPressBar === 'number' && padrao.pneu?.pressMedia > 0
-      && (padrao.pneu.n == null || padrao.pneu.n >= 3)) {
+      && ((padrao.pneu.pressN ?? padrao.pneu.n) == null || (padrao.pneu.pressN ?? padrao.pneu.n) >= 3)) {
     const limite = padrao.pneu.pressMedia * (1 - desvioPct);
     if (amostraVoltaAtual.pneuMinPressBar < limite) ativos.push('PRESSAO_PNEU');
   }
