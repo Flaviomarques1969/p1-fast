@@ -167,6 +167,23 @@
 
 <div class="conn-log" id="connLog"></div>
 
+<script>
+// Tela de pista PDM-10.5T (1920×1280): o painel 956×440 escala uniforme pra
+// caber na janela (em 1920×1280 dá ~2× = 1912×880 com faixas pretas ~200 px
+// em cima/embaixo — MS-13.1, fechado 2026-05-10). Em janela de bancada (~956)
+// a escala fica 1 e nada muda.
+(function () {
+  const device = document.querySelector('.device');
+  if (!device) return;
+  function ajustaEscala() {
+    const s = Math.min(window.innerWidth / 1004, window.innerHeight / 520, 2.2);
+    device.style.transform = s > 1.01 ? `scale(${s.toFixed(3)})` : '';
+    device.style.transformOrigin = 'center center';
+  }
+  window.addEventListener('resize', ajustaEscala);
+  ajustaEscala();
+})();
+</script>
 <script type="module" src="main-t3000.js"></script>
 </body>
 </html>
