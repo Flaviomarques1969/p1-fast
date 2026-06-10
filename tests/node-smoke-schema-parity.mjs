@@ -43,7 +43,9 @@ function t(name, fn) {
 
 // ─── Helpers ──────────────────────────────────────────────
 function pgTables(sql) {
-  const re = /^create table public\.([a-z_]+)/gim;
+  // aceita "if not exists" (formato das migs 0030+) e dígitos no nome
+  // (t4000_live_*) — o leitor antigo contava 32 de 45 e cortava "t4000" em "t".
+  const re = /^create table (?:if not exists )?public\.([a-z0-9_]+)/gim;
   const out = new Set();
   let m;
   while ((m = re.exec(sql)) !== null) out.add(m[1]);
