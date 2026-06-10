@@ -5,7 +5,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "smoke": "node tests/node-smoke-perna1-iphone.mjs && node tests/node-smoke-detector.mjs && node tests/node-smoke-detector-snapshot.mjs && node tests/node-smoke-migration-port.mjs && node tests/node-smoke-migration.mjs && node tests/node-smoke-projector.mjs && node tests/node-smoke-telemetry-p0.mjs && node tests/node-smoke-contracts.mjs && node tests/node-smoke-concurrency.mjs && node tests/node-smoke-proximity-watcher.mjs && node tests/node-smoke-p1-coach.mjs && node tests/node-smoke-trajectory-monitor.mjs && node tests/node-smoke-replay.mjs && node tests/node-smoke-csv-iphone-loader.mjs && node tests/node-smoke-cross-validation.mjs && node tests/node-smoke-ingest-edge.mjs && node tests/node-smoke-oklch.mjs && node tests/node-smoke-schema-parity.mjs && node tests/node-smoke-no-tracked-artifacts.mjs && node tests/node-smoke-sync-edge.mjs && node tests/node-smoke-pull-edge.mjs && node tests/node-smoke-health-edge.mjs && node tests/node-smoke-t4000.mjs && node tests/node-smoke-cockpit-web.mjs && node tests/node-smoke-cockpit-state.mjs && node tests/node-smoke-transport.mjs && node tests/node-smoke-live-data-bridge.mjs && node tests/node-smoke-cockpit-renderer.mjs && node tests/node-smoke-cockpit-bootstrap.mjs && node tests/node-smoke-timebase-swift-parity.mjs && node tests/node-smoke-advisor-findings.mjs && node tests/node-smoke-oportunidade-trecho.mjs && node tests/node-smoke-coreografia-volta.mjs && node tests/node-smoke-trecho-advisor.mjs && node tests/node-smoke-trecho-detector-resync.mjs",
+    "smoke": "node tests/node-smoke-perna1-iphone.mjs && node tests/node-smoke-detector.mjs && node tests/node-smoke-detector-snapshot.mjs && node tests/node-smoke-box-detector.mjs && node tests/node-smoke-chegada-detector.mjs && node tests/node-smoke-delta-calculator.mjs && node tests/node-smoke-bridge-delta-referencia.mjs && node tests/node-smoke-migration-port.mjs && node tests/node-smoke-migration.mjs && node tests/node-smoke-projector.mjs && node tests/node-smoke-telemetry-p0.mjs && node tests/node-smoke-contracts.mjs && node tests/node-smoke-concurrency.mjs && node tests/node-smoke-proximity-watcher.mjs && node tests/node-smoke-p1-coach.mjs && node tests/node-smoke-trajectory-monitor.mjs && node tests/node-smoke-replay.mjs && node tests/node-smoke-csv-iphone-loader.mjs && node tests/node-smoke-cross-validation.mjs && node tests/node-smoke-ingest-edge.mjs && node tests/node-smoke-oklch.mjs && node tests/node-smoke-schema-parity.mjs && node tests/node-smoke-no-tracked-artifacts.mjs && node tests/node-smoke-sync-edge.mjs && node tests/node-smoke-pull-edge.mjs && node tests/node-smoke-health-edge.mjs && node tests/node-smoke-t4000.mjs && node tests/node-smoke-cockpit-web.mjs && node tests/node-smoke-cockpit-state.mjs && node tests/node-smoke-transport.mjs && node tests/node-smoke-live-data-bridge.mjs && node tests/node-smoke-cockpit-renderer.mjs && node tests/node-smoke-cockpit-bootstrap.mjs && node tests/node-smoke-timebase-swift-parity.mjs && node tests/node-smoke-advisor-findings.mjs && node tests/node-smoke-oportunidade-trecho.mjs && node tests/node-smoke-coreografia-volta.mjs && node tests/node-smoke-trecho-advisor.mjs && node tests/node-smoke-trecho-detector-resync.mjs",
     "smoke:timebase-parity": "node tests/node-smoke-timebase-swift-parity.mjs",
     "smoke:advisor-findings": "node tests/node-smoke-advisor-findings.mjs",
     "smoke:t4000": "node tests/node-smoke-t4000.mjs",
@@ -26,7 +26,11 @@
     "smoke:oportunidade-trecho": "node tests/node-smoke-oportunidade-trecho.mjs",
     "smoke:coreografia-volta": "node tests/node-smoke-coreografia-volta.mjs",
     "smoke:trecho-advisor": "node tests/node-smoke-trecho-advisor.mjs",
-    "smoke:trecho-resync": "node tests/node-smoke-trecho-detector-resync.mjs"
+    "smoke:trecho-resync": "node tests/node-smoke-trecho-detector-resync.mjs",
+    "smoke:box-detector": "node tests/node-smoke-box-detector.mjs",
+    "smoke:chegada-detector": "node tests/node-smoke-chegada-detector.mjs",
+    "smoke:delta-calculator": "node tests/node-smoke-delta-calculator.mjs",
+    "smoke:bridge-delta": "node tests/node-smoke-bridge-delta-referencia.mjs"
   },
   "engines": {
     "node": ">=20"
