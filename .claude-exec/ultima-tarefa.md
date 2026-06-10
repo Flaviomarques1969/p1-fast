@@ -12,7 +12,22 @@
 ## GATE: o card aberto (20260610-191605-banco-escrita-painel) decide COMO o painel ganha
 ## permissão de gravar — a construção fica pronta esperando a escolha.
 ## Ambiente: DESENVOLVIMENTO (estrutura no banco só via MIGRAR autorizado).
-## Status: iniciado
+## Status: CONSTRUÍDO (aguardando card + MIGRAR pra ligar)
+##
+## TASK_DONE (sessão 6):
+## - CONSTRUÍDO: web/cockpit/voltas-persister.js (novo — acha sessão aberta do carro,
+##   grava volta real, nunca inventa, devolve a verdade); main-t3000 grava a volta na
+##   chegada (replay de escritório NUNCA grava; logs honestos: gravou / sem stint aberto /
+##   banco recusou); configuracao-stint mostra km = voltas × comprimento quando a coluna
+##   existir (tolerante até lá); supabase/PROPOSTA-voltas-reais-km-pecas.sql (ADITIVA:
+##   comprimento_m=5476 no traçado, voltas.origem, pneus.instalado_em, vínculo
+##   manutencoes→pneu/peça, policy de voltas condicionada ao card).
+## - Testes: voltas-persister 5/5 (na bateria oficial) · bateria completa exit 0 ·
+##   boot do painel limpo com guarda provada ao vivo (sem stint aberto → não grava).
+## - PARA LIGAR: (1) resposta do card de acesso; (2) "MIGRAR PARA PRODUÇÃO: contagem
+##   real" aplica a estrutura + policies; (3) sessão própria: app parar de gravar voltas
+##   provisórias (StintRepository.finalize — reconstruir app e instalar no iPhone).
+## - Produção INTOCADA.
 
 ---
 
