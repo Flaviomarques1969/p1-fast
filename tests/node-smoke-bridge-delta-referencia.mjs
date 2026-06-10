@@ -53,7 +53,7 @@ function pontosLinha({ n = 21, kmh, t0 = 0 }) {
 // mas com tempo_trecho_s MAIOR (gravação sintética mais comprida) → a passagem
 // atual (90 km/h, ~8 s) é "nova melhor" em tempo. sub:null como no banco real.
 function referenciaBanco() {
-  const pts = pontosLinha({ n = 21, kmh: 100 } = { n: 21, kmh: 100 });
+  const pts = pontosLinha({ n: 21, kmh: 100 });
   const total = pts[pts.length - 1].t - pts[0].t;
   return {
     segmentId: SEG,
