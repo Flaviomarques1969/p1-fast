@@ -234,6 +234,9 @@ bridge.ingestT4000 = (sample) => {
 // Aqui eles alimentam o detector de trechos/chegada/box igual ao GPS do iPhone.
 onGpsPoint((p) => {
   if (!p || typeof p.lat !== 'number' || typeof p.lng !== 'number') return;
+  // GPS marcado como simulador liga a blindagem MESMO no modo cabo — antes a
+  // flag só ligava em ?semfio e o cabo gravava passagem/padrão de replay (fiscais 10/06).
+  if (p.sim) window.__P1_ORIGEM_SIM__ = true;
   bridge.ingestImuGps({
     source: 'iphone-imu', // formato canônico que o bridge entende (fonte indistinta)
     payload: {
