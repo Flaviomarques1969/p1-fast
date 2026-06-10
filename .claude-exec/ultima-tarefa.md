@@ -15,7 +15,33 @@
 ## (se a causa do savePadrao for trava de acesso no banco de produção → PROPOR, não mexer).
 ## Plano (≤5): sonda savePadrao → gabarito schema-parity → teste bridge → riscos (d)(e)
 ## com smokes → relatório com lista de decisões pendentes do Flávio.
-## Status: iniciado
+## Status: CONCLUÍDO
+##
+## TASK_DONE (sessão 5):
+## 1. savePadrao: causa PROVADA por sonda segura (FK falsa, nada gravado) — RLS recusa
+##    anon em padroes_telemetria_por_volta E melhores_passagens_trecho (políticas
+##    só-time das migs 0025/0026). "passagem salva" do painel ERA MENTIRA (gravarPassagem
+##    devolve false e main não conferia) → log honesto em main-t3000. As 56 do banco são
+##    sementes de script. PROPOSTA pronta (não aplicada): supabase/PROPOSTA-escrita-painel-anon.sql
+##    — decisão de segurança do Flávio (card aberto).
+## 2. ACHADO DE SEGURANÇA: 9 tabelas de maio SEM RLS nenhuma (dyno_curve, gear_ratios,
+##    gear_signatures, pontos_troca_aprendidos, perfis_reacao_piloto, envelopes_seguranca_stint,
+##    qualidade_troca_marcha, t4000_live_commands, t4000_live_events) — escrita aberta com a
+##    chave pública. Inconsistente com as 2 sobre-travadas. No card também.
+## 3. schema-parity REESCRITO com leitor corrigido (if not exists + dígitos — contava 32
+##    de 45 e cortava t4000_* em "t"): 45 tabelas, 13 só-nuvem documentadas, espelho 32+2,
+##    exceção RLS_ABERTAS_CONHECIDAS (tabela NOVA sem RLS segue reprovando). 15/15.
+## 4. live-data-bridge: 5 testes da era ecuErrorBits (spec anterior a 25/05) reescritos
+##    pro contrato real (sample.alarmes bitfield). 26/26.
+## 5. Risco (e): delta-calculator barra NaN de kmh ausente (1 ponto sem velocidade
+##    envenenava o trecho) + DC-11. Risco (d): evento passagem-salva leva ref junto e
+##    main chama oportunidade.setReferencia — marca OURO acompanha a promoção na sessão
+##    + DELTA-REF-06. BATERIA OFICIAL COMPLETA: 39 suítes verdes, exit 0 (1ª vez).
+## 6. Produção INTOCADA (consertos d/e + log honesto são DEV, vão no próximo MIGRAR).
+## DECISÕES DO FLÁVIO (card 1 aberto; demais aguardam): (a) postura de escrita do banco
+## (A anon nas 2 / B login no painel / C A+fechar as 9 depois); (b) trava de velocidade
+## na entrada do box; (c) destravamento da flag de simulador; (d) estrutura voltas
+## reais/km/vínculo peça física.
 
 ---
 

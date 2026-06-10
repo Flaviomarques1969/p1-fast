@@ -171,5 +171,18 @@ await t('DELTA-REF-05 passagem-fechada emitida com pontos canônicos (fracao + s
   if (!p.sub) throw new Error('ponto sem sub');
 });
 
+// ── E) marca OURO acompanha a promoção (risco (d) da auditoria, 10/06) ───
+
+await t('DELTA-REF-06 nova melhor → evento passagem-salva carrega a referência (ref.pontos)', () => {
+  const { bridge, det, eventos } = montar();
+  rodarPassagem(bridge, det, { kmh: 90 });
+  const ps = eventos.find(e => e.type === 'passagem-salva');
+  if (!ps) throw new Error('passagem-salva não disparou');
+  if (!ps.ref || !Array.isArray(ps.ref.pontos) || ps.ref.pontos.length < 9) {
+    throw new Error('evento sem ref.pontos — a marca OURO não tem como acompanhar');
+  }
+  if (!Number.isFinite(ps.ref.tempoS)) throw new Error('ref sem tempoS');
+});
+
 console.log(`\nbridge-delta-referencia: ${ok} ok / ${fail} fail`);
 if (fail > 0) process.exit(1);

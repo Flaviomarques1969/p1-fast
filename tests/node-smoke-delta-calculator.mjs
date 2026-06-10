@@ -134,5 +134,16 @@ t('DC-10 passagem com menos de 2 pontos é descartada com erro claro', () => {
   if (!pegou) throw new Error('aceitou passagem de 1 ponto');
 });
 
+t('DC-11 ponto sem velocidade (kmh ausente) não envenena o delta com NaN', () => {
+  const ref = { segmentId: 's1', pontos: geraReta(100, 'freio') };
+  const pontos = geraReta(90, 'freio');
+  delete pontos[5].kmh; // um furo de leitura no meio da passagem
+  const r = calcularDelta({ atual: { segmentId: 's1', pontos }, referencia: ref });
+  if (!Number.isFinite(r.deltaTotalS)) throw new Error('deltaTotalS=' + r.deltaTotalS);
+  for (const sub of Object.keys(r.porSubTrecho)) {
+    if (!Number.isFinite(r.porSubTrecho[sub].deltaS)) throw new Error(`sub ${sub} com NaN`);
+  }
+});
+
 console.log(`\nDelta calculator: ${ok} ok / ${fail} fail`);
 if (fail) process.exit(1);
