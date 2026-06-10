@@ -133,11 +133,24 @@ PRECISA ir pro ar — o do ar atual tem o defeito sequencial).
 ## 3) consertar a causa em DEV + smoke; 4) replay final 8/8 com tela acendendo; 5) abrir pro Flávio.
 ## Arquivos/áreas: web/cockpit/{delta-calculator,oportunidade-trecho,live-data-bridge,main-t3000,
 ## trecho-detector,melhores-loader,coreografia-volta,tela-orientacao}.js + banco melhores passagens (leitura).
-## Ambiente alvo: DESENVOLVIMENTO (linha wip/20260608-143705, auto-save).
+## Ambiente alvo: DESENVOLVIMENTO (linha local main, auto-save commitando; NADA enviado pra fora).
 ## Produção protegida: sim. Autorização para produção: não (não recebida — novo MIGRAR só depois,
 ## com aprovação do Flávio). Riscos: mexer no comparador afeta widgets que usam delta (validar smokes);
 ## nuvem não pode ser poluída por passagem de simulador (blindagem __P1_ORIGEM_SIM__ já existe).
-## Status: iniciado
+## Status: PARCIAL (encerrado pra /clear a pedido do Flávio às ~17h)
+##
+## TASK_DONE (parcial, 10/06 ~17h):
+## - Critério (a) causa provada: SIM (smoke 0/5→5/5 + delta real +2,83s no replay)
+## - Critério (b) conserto em DEV com smoke: SIM (live-data-bridge.js + main-t3000.js +
+##   tests/node-smoke-bridge-delta-referencia.mjs; bateria vizinha verde; 5 falhas ECU do
+##   smoke antigo provadas pré-existentes)
+## - Critério (c) tela acendendo no replay: NÃO — 2 bloqueadores identificados c/ evidência
+##   (ver bloco RETOMADA no topo: SEM_DADOS artefato de prova + NO BOX preso no box-detector)
+## - Critério (d) abrir pro Flávio: NÃO (depende do c)
+## - Produção: INTOCADA. Banco de melhores passagens: só leitura (56 linhas intactas).
+## - Arquivos alterados: web/cockpit/live-data-bridge.js, web/cockpit/main-t3000.js,
+##   tests/node-smoke-bridge-delta-referencia.mjs (novo). Sondas: /tmp/p1-replay-proof2.mjs,
+##   /tmp/p1-inspeciona-banco.py. Servidor local porta 8767 pode ter ficado no ar.
 
 ---
 
