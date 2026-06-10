@@ -173,7 +173,7 @@ t('PA-11 volta de volta ao padrão emite lista VAZIA (limpa o alerta da anterior
 });
 
 // ── Conserto 10/06: voltas do banco SEM temperatura não contam pro padrão ──
-t('PA-10 voltas iniciais sem motorMaxC não armam média de 1 volta', () => {
+t('PA-12 voltas iniciais sem motorMaxC não armam média de 1 volta', () => {
   const recebidos = [];
   const acu = new PadraoAcumulador({
     carroId: 'c1', trackId: 't1', tipoPneu: 'semi-slick',
