@@ -142,12 +142,13 @@ export class PadraoAcumulador {
 
     // Avalia ANTES de empurrar — a volta nova é comparada contra o padrão
     // das voltas anteriores (não contra a média que inclui ela mesma).
+    // Avisa SEMPRE que avaliou, inclusive lista VAZIA: volta saudável LIMPA os
+    // alertas preditivos da volta anterior (semântica aplicarPreditivos —
+    // antes só avisava com alerta e o consumidor nunca tinha como limpar).
     if (this._padrao && this._voltas.length >= this._voltasMinPraPadrao) {
       const ids = avaliarPreditivoPorPadrao(volta, this._padrao, this._desvioPct);
-      if (ids.length > 0) {
-        try { this._onAlertas(ids); }
-        catch (e) { console.warn('[padrao-acumulador] onAlertas falhou:', e.message); }
-      }
+      try { this._onAlertas(ids); }
+      catch (e) { console.warn('[padrao-acumulador] onAlertas falhou:', e.message); }
     }
 
     this._voltas.push(volta);
