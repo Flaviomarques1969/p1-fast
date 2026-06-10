@@ -158,22 +158,22 @@ t('LDB-17 ingestT4000 com RPM 5000 (66%) → cockpit.shift.mode=LIT, level médi
   if (s.level < 1 || s.level > 6) throw new Error(`level ${s.level}`);
 });
 
-t('LDB-18 ingestT4000 com erro ECU → cockpit.message=GRAVE Erro ECU', () => {
+t('LDB-18 ingestT4000 com alarme da central → cockpit.message GRAVE', () => {
   const cs = new CockpitState();
   const b = new LiveDataBridge({ cockpitState: cs });
-  b.ingestT4000(FRESH_T4000({ ecuErrorBits: 0x0001 }));
+  b.ingestT4000(FRESH_T4000({ alarmes: { baixaPressaoOleo: true } }));
   const m = cs.get().message;
   if (!m) throw new Error('sem message');
   if (m.tipo !== MsgTipo.GRAVE) throw new Error();
-  if (!/erro ecu/i.test(m.texto)) throw new Error();
+  if (!/óleo baixo/i.test(m.texto)) throw new Error();
 });
 
 t('LDB-19 ingestT4000 com alerta resolvido → cockpit.message volta a null', () => {
   const cs = new CockpitState();
   const b = new LiveDataBridge({ cockpitState: cs });
-  b.ingestT4000(FRESH_T4000({ ecuErrorBits: 0x0001 })); // alerta
+  b.ingestT4000(FRESH_T4000({ alarmes: { baixaPressaoOleo: true } })); // alerta
   if (!cs.get().message) throw new Error('alerta não setou');
-  b.ingestT4000(FRESH_T4000({ ecuErrorBits: 0 })); // resolveu
+  b.ingestT4000(FRESH_T4000({ alarmes: { baixaPressaoOleo: false } })); // resolveu
   if (cs.get().message !== null) throw new Error('alerta não limpou');
 });
 
