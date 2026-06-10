@@ -164,6 +164,11 @@ const bridge = new LiveDataBridge({
     if (coreografia) coreografia.evento(ev);
     if (ev.type === 'delta-calculado') oportunidade.registrarDelta(ev);
     if (ev.type === 'apice-cruzou') oportunidade.registrarApice(ev);
+    // Nova melhor passagem na sessão → a marca OURO da orientação passa a
+    // apontar pra ELA (antes ficava na referência do boot até recarregar).
+    if (ev.type === 'passagem-salva' && ev.ref) {
+      oportunidade.setReferencia(ev.segmentId, ev.ref);
+    }
     // Toda passagem fechada (melhor ou não) vira o hábito mais recente do
     // piloto — antes só as "novas melhores" alimentavam as marcas VOCÊ.
     if (ev.type === 'passagem-fechada') {
