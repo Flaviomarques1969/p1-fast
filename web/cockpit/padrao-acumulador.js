@@ -73,6 +73,7 @@ export function calcularMediaVoltas(voltas) {
       tempMedia:  acc.pneuTN ? acc.pneuT / acc.pneuTN : null,
       pressMedia: acc.pneuPN ? acc.pneuP / acc.pneuPN : null,
       n: acc.pneuTN,
+      pressN: acc.pneuPN, // pressão tem contagem própria — 3 voltas COM pressão
     },
     cambio: { media: acc.cambioN ? acc.cambio / acc.cambioN : null, n: acc.cambioN },
   };
