@@ -198,13 +198,18 @@ t('RLS habilitada em toda tabela do PG (exceto as 9 abertas conhecidas de maio)'
   if (sobrando.length) throw new Error('já ganhou RLS, tirar da exceção: ' + sobrando.join(', '));
 });
 
-t('Toda tabela com RLS tem ≥1 policy (sem lockdown total acidental)', () => {
-  const polRe = /create policy [a-z_]+ on public\.([a-z_]+)/gi;
-  const polTables = new Set();
+t('Toda tabela COM RLS tem ≥1 policy (sem lockdown total acidental)', () => {
+  // o teste vale pra quem tem RLS ligada — sem RLS não há trava pra destrancar
+  // (as 9 abertas conhecidas são cobradas no teste anterior).
+  const rlsRe = /alter table public\.([a-z0-9_]+)\s+enable row level security/g;
+  const rlsTables = new Set();
   let m;
+  while ((m = rlsRe.exec(pg)) !== null) rlsTables.add(m[1]);
+  const polRe = /create policy [a-z0-9_]+ on public\.([a-z0-9_]+)/gi;
+  const polTables = new Set();
   while ((m = polRe.exec(pg)) !== null) polTables.add(m[1]);
-  const missing = [...PG_TABLES].filter(x => !polTables.has(x));
-  if (missing.length) throw new Error('sem policy: ' + missing.join(', '));
+  const missing = [...rlsTables].filter(x => !polTables.has(x));
+  if (missing.length) throw new Error('RLS ligada sem nenhuma policy (lockdown): ' + missing.join(', '));
 });
 
 // ─── ENTITIES count ──────────────────────────────────────
