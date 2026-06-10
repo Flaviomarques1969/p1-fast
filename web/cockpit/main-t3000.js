@@ -201,7 +201,10 @@ const bridge = new LiveDataBridge({
 const _bridgeIngestT4000_t = bridge.ingestT4000.bind(bridge);
 bridge.ingestT4000 = (sample) => {
   _bridgeIngestT4000_t(sample);
-  if (padraoAcumulador) padraoAcumulador.ingestT4000(sample);
+  // Simulador NUNCA alimenta o padrão histórico do carro real (par da blindagem
+  // __P1_ORIGEM_SIM__ — o replay poluía a média com meia volta fria e tudo
+  // depois virava MOTOR AQUECENDO falso; achado 10/06).
+  if (padraoAcumulador && !window.__P1_ORIGEM_SIM__) padraoAcumulador.ingestT4000(sample);
   // Alimenta o orquestrador shift light v2 — se carregado.
   // Tem fallback automático: se a curva não tiver carregado, o orquestrador
   // não recalcula (devolve null) e o bridge segue com BUBI_LIMITS estáticos.
