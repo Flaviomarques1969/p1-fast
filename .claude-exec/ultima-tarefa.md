@@ -51,6 +51,32 @@ PRECISA ir pro ar — o do ar atual tem o defeito sequencial).
 
 ---
 
+# TASK_INIT (2026-06-10 ~16h) — RETOMADA "continua a orientação" (pós-/clear)
+
+## Pedido original: "continua a orientação" — fechar o último elo: a tela de orientação
+## não aparece porque getOrientacao devolve null mesmo com 13 deltas calculados.
+## Objetivo (1 frase): fazer a tela de orientação acender de verdade no replay e mostrar pro Flávio.
+## Critérios de conclusão: (a) causa do null PROVADA com evidência (evento delta-calculado
+## capturado inteiro); (b) conserto aplicado em DEV com smoke; (c) replay final com telas de
+## orientação aparecendo; (d) abrir pro Flávio ver ao vivo (Central p1tv + painel ?semfio).
+## Leitura confirmada: ~/.claude/CLAUDE.md SIM · ~/.claude-decisoes/padroes.md SIM ·
+## FLAVIO_EXECUTION_PROTOCOL.md SIM · FLAVIO_DONE_CHECKLIST.md SIM ·
+## FLAVIO_ENVIRONMENT_RULES.md SIM · FLAVIO_COMMUNICATION_RULES.md SIM ·
+## + 3 memórias da sessão (central-pista, conceitos-trecho, telas_de_acao_minimas) + CLAUDE.md do projeto.
+## Plano (≤5): 1) inspecionar contrato delta-calculator × oportunidade-trecho × bridge (FEITO:
+## suspeita forte = pontos de referência sem kmh → todos os pares pulados → delta 0);
+## 2) provar com dados reais (banco de melhores passagens + sonda no replay);
+## 3) consertar a causa em DEV + smoke; 4) replay final 8/8 com tela acendendo; 5) abrir pro Flávio.
+## Arquivos/áreas: web/cockpit/{delta-calculator,oportunidade-trecho,live-data-bridge,main-t3000,
+## trecho-detector,melhores-loader,coreografia-volta,tela-orientacao}.js + banco melhores passagens (leitura).
+## Ambiente alvo: DESENVOLVIMENTO (linha wip/20260608-143705, auto-save).
+## Produção protegida: sim. Autorização para produção: não (não recebida — novo MIGRAR só depois,
+## com aprovação do Flávio). Riscos: mexer no comparador afeta widgets que usam delta (validar smokes);
+## nuvem não pode ser poluída por passagem de simulador (blindagem __P1_ORIGEM_SIM__ já existe).
+## Status: iniciado
+
+---
+
 # AFINAÇÃO DO VIGIA DE CURVAS ("continua a orientação") — 2026-06-10
 
 ## Pedido: fechar a pendência — vigia completa só 2-3 de 8 curvas por volta no replay.
