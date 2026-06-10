@@ -34,7 +34,8 @@ async function client() {
 export async function acharSessaoAberta(carroId) {
   if (!carroId) return null;
   try {
-    const { data, error } = await client()
+    const sb = await client();
+    const { data, error } = await sb
       .from('sessoes')
       .select('id, time_id, data_inicio')
       .eq('carro_id', carroId)
@@ -60,7 +61,8 @@ export async function acharSessaoAberta(carroId) {
 export async function gravarVoltaReal({ sessao, numero, tempoMs, inicioAt }) {
   if (!sessao || !sessao.id || !sessao.time_id || !Number.isFinite(numero)) return false;
   try {
-    const { error } = await client()
+    const sb = await client();
+    const { error } = await sb
       .from('voltas')
       .insert({
         time_id:   sessao.time_id,
