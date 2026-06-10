@@ -134,8 +134,11 @@ const bridge = new LiveDataBridge({
   limits: BUBI_LIMITS,
   alertasCriticos,
   deltaCalculator: calcularDelta,
+  // Passagem de simulador nunca vira referência local nem vai pro banco
+  // (par local da blindagem __P1_ORIGEM_SIM__ — sem isso o replay trocava a
+  // referência pela volta 1 do simulador e o delta zerava nas seguintes).
+  origemSimulador: () => !!window.__P1_ORIGEM_SIM__,
   onSalvarPassagem: async ({ segmentId, tempoS, pontos }) => {
-    oportunidade.registrarPassagem({ segmentId, pontos });
     if (window.__P1_ORIGEM_SIM__) { log('passagem NÃO salva (origem: simulador)'); return; }
     if (!_ctxConfig.carroId || !_ctxConfig.trackId || !_ctxConfig.tipoPneu) return;
     try {
