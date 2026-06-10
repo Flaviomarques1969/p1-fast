@@ -139,7 +139,34 @@ PRECISA ir pro ar — o do ar atual tem o defeito sequencial).
 ## Autorização para produção: não (não recebida — novo MIGRAR só depois da aprovação do Flávio).
 ## Riscos: mexer no box-detector afeta msg grave NO BOX (validar que box REAL ainda detecta);
 ## replay longo (~10-25 min); nuvem não pode ser poluída (blindagem sim já existe).
-## Status: iniciado
+## Status: EM ANDAMENTO (progresso abaixo)
+##
+## PROGRESSO sessão 3 (registrado antes do replay final):
+## 1. box-detector.js consertado em 2 RODADAS:
+##    R1: caminhoCruzaLinha (igual chegada-detector, folga 50%) — 7/7 no smoke, e a versão
+##        pré-conserto (git cd3af53b) falha exatamente nos 3 testes novos BX-05/06/07.
+##    R2 (fiscais adversariais derrubaram a R1 com dados reais): folga de 50% nas pontas é
+##        segura na chegada/trecho (linha atravessa a pista) mas LARGA DEMAIS no pit
+##        (pit-in 25,9 m → 13 m de folga; o traçado real passa a 10-14 m das pontas,
+##        u=1,45-1,60 a 100-153 km/h → NO BOX falso seguia, só intermitente).
+##        Calibração: FOLGA_PONTA_M = 5 m ABSOLUTA (entradas reais medem u≈0,5).
+## 2. PROVA com dados reais: 9/9 no smoke (BX-08 trajeto canônico 920 pts: só a entrada
+##    VERDADEIRA do fim dispara, idx 726, v cai 79→20 km/h, para a 8 m do box;
+##    BX-09 meio da pit-in real dispara) + sessões reais gps-23/24-05.tsv: 1 único evento
+##    cada (ENTRA t=897s/t=745s, fim das gravações, últimos pontos a 10 m/8 m do box),
+##    ZERO falsos (antes: NO BOX falso por 496 s e 181 s).
+## 3. npm run smoke: 4 testes novos inseridos NO INÍCIO da corrente (box, chegada,
+##    delta-calculator, bridge-delta-referencia) — a corrente parava no schema-parity
+##    (5 falhas PRÉ-EXISTENTES: gabarito espera 30 tabelas, banco tem 32 — drift de maio)
+##    e os testes do fim nunca rodavam. Backup: /tmp/package-json-backup-20260610.json.
+## 4. Sonda v2 com flags anti-desaceleração (B1 do checkpoint) — 1ª rodada do replay provou:
+##    sem SEM_DADOS, sem NO BOX, coreografia entra na fase orientacao; na volta 1 a tela
+##    não acende porque o trecho à frente ainda não tem medição (desenho do produto).
+## 5. Replay final RODANDO (sonda /tmp/p1-replay-proof2.mjs, log /tmp/p1-replay-proof2-saida.log).
+## Pendências conhecidas (pré-existentes, não desta sessão): schema-parity 5 falhas;
+## live-data-bridge 21/5 (área alerta ECU); riscos (a)(b)(d) da auditoria das 17h;
+## debounce único pit-in/pit-out <5s (anotado pelos fiscais, pit de Brasília leva >5s);
+## (sugestão fiscais, decisão de produto: trava de velocidade na entrada do box).
 
 ---
 
