@@ -164,6 +164,148 @@ async function aprovarEnvelope() {
   }
 }
 
+// ── Propósito do stint ────────────────────────────────────────
+
+function selecionarProposito(slug) {
+  plano.proposito = slug;
+  if (slug === 'livre') plano.foco = null;
+  document.querySelectorAll('.proposito').forEach(el => {
+    const sel = el.dataset.proposito === slug;
+    el.classList.toggle('is-selected', sel);
+    if (!sel) el.querySelectorAll('.chip').forEach(c => c.classList.remove('is-on'));
+  });
+  if (slug !== 'livre') {
+    // foco anterior de outro propósito não vale mais
+    const aberto = document.querySelector(`.proposito[data-proposito="${slug}"]`);
+    const ligado = aberto && aberto.querySelector('.chip.is-on');
+    plano.foco = ligado ? ligado.dataset.foco : null;
+  }
+  atualizarBotoes();
+}
+
+function ligarPropositos() {
+  document.querySelectorAll('.proposito').forEach(el => {
+    el.addEventListener('click', () => selecionarProposito(el.dataset.proposito));
+  });
+  document.querySelectorAll('.subescolha .chip').forEach(chip => {
+    chip.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const grupo = chip.closest('.subescolha');
+      grupo.querySelectorAll('.chip').forEach(c => c.classList.remove('is-on'));
+      chip.classList.add('is-on');
+      plano.foco = chip.dataset.foco;
+      atualizarBotoes();
+    });
+  });
+  const tg = document.getElementById('toggleGhost');
+  const alterna = () => {
+    plano.ghost = !plano.ghost;
+    tg.classList.toggle('is-on', plano.ghost);
+    tg.setAttribute('aria-checked', String(plano.ghost));
+  };
+  tg.addEventListener('click', alterna);
+  tg.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); alterna(); } });
+}
+
+// ── Voltas e paradas ──────────────────────────────────────────
+
+function renderParadas() {
+  const lista = document.getElementById('paradasLista');
+  lista.innerHTML = '';
+  plano.paradas.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'parada';
+    row.innerHTML = `
+      <input type="number" min="1" max="${plano.voltas}" value="${p.volta}" aria-label="Volta da parada">
+      <input type="text" placeholder="Motivo (ex.: calibrar pneus, combustível…)" value="${p.motivo.replace(/"/g, '&quot;')}" aria-label="Motivo da parada">
+      <button type="button" class="parada__remover" title="Remover parada">×</button>
+    `;
+    const [inpVolta, inpMotivo] = row.querySelectorAll('input');
+    inpVolta.addEventListener('change', () => {
+      p.volta = Math.max(1, Math.min(plano.voltas, parseInt(inpVolta.value, 10) || 1));
+      inpVolta.value = p.volta;
+    });
+    inpMotivo.addEventListener('input', () => { p.motivo = inpMotivo.value; });
+    row.querySelector('.parada__remover').addEventListener('click', () => {
+      plano.paradas.splice(i, 1);
+      renderParadas();
+    });
+    lista.appendChild(row);
+  });
+}
+
+function ligarVoltasParadas() {
+  const inpVoltas = document.getElementById('inpVoltas');
+  inpVoltas.addEventListener('change', () => {
+    plano.voltas = Math.max(1, Math.min(99, parseInt(inpVoltas.value, 10) || 1));
+    inpVoltas.value = plano.voltas;
+    plano.paradas.forEach(p => { p.volta = Math.min(p.volta, plano.voltas); });
+    renderParadas();
+  });
+  document.getElementById('btnAddParada').addEventListener('click', () => {
+    const sugestao = plano.paradas.length
+      ? Math.min(plano.voltas, plano.paradas[plano.paradas.length - 1].volta + 5)
+      : Math.min(plano.voltas, Math.ceil(plano.voltas / 2));
+    plano.paradas.push({ volta: sugestao, motivo: '' });
+    renderParadas();
+  });
+}
+
+// ── Vida útil do item selecionado (desde a última troca registrada) ──
+// Deriva da nuvem: data da troca em `manutencoes` (item pneus) + sessões desde
+// essa data. Voltas vêm da tabela `voltas` (hoje provisórias — a gravação real
+// entra em frente própria). Quilômetros ainda não existem na telemetria.
+
+async function rest(caminho) {
+  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${caminho}`, {
+    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+  });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return resp.json();
+}
+
+function fmtHoras(ms) {
+  const h = ms / 3600000;
+  if (h >= 10) return `${Math.round(h)} h`;
+  return `${h.toFixed(1).replace('.', ',')} h`;
+}
+
+async function carregarVidaUtil() {
+  const nota = document.getElementById('vuNota');
+  const elT = document.getElementById('vuTempo');
+  const elV = document.getElementById('vuVoltas');
+  const elK = document.getElementById('vuKm');
+  const carroId = document.getElementById('selCarro').value;
+  try {
+    const trocas = await rest(`manutencoes?select=ocorrido_em&carro_id=eq.${carroId}&item_codigo=eq.pneus&order=ocorrido_em.desc&limit=1`);
+    if (!trocas.length) {
+      nota.textContent = 'Sem troca registrada pra este item — registre a instalação no app (Manutenção) pra contagem começar.';
+      return;
+    }
+    const desde = Number(trocas[0].ocorrido_em);
+    const sessoes = await rest(`sessoes?select=id,data_inicio,data_fim&carro_id=eq.${carroId}&data_inicio=gte.${new Date(desde).toISOString()}`);
+    let ms = 0;
+    for (const s of sessoes) {
+      const ini = Date.parse(s.data_inicio);
+      const fim = s.data_fim ? Date.parse(s.data_fim) : ini;
+      if (Number.isFinite(ini) && Number.isFinite(fim) && fim > ini) ms += fim - ini;
+    }
+    elT.textContent = ms > 0 ? fmtHoras(ms) : '0 h';
+    if (sessoes.length) {
+      const ids = sessoes.map(s => `"${s.id}"`).join(',');
+      const voltas = await rest(`voltas?select=id&sessao_id=in.(${ids})`);
+      elV.textContent = String(voltas.length);
+    } else {
+      elV.textContent = '0';
+    }
+    elK.textContent = '—';
+    nota.textContent = `Troca registrada em ${new Date(desde).toLocaleDateString('pt-BR')}. ` +
+      'Quilômetros passam a contar quando a gravação de voltas reais ligar (frente própria).';
+  } catch (e) {
+    nota.textContent = 'Não consegui consultar os registros agora (' + e.message + ').';
+  }
+}
+
 // ── Init ──────────────────────────────────────────────────────
 
 renderModos();
