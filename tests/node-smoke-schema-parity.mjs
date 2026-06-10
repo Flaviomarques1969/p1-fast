@@ -66,19 +66,21 @@ const GRDB_TABLES = grdbTables(grdb);
 
 // ─── Tests ────────────────────────────────────────────────
 // Contagem atualizada conforme migrations vão entrando.
-// PG: 20 do 0001 + licoes (0004) + pendencias_template + evento_pendencias
-//     (0005) + telemetry_samples_enriched (0008) + video_streams (0015)
-//     + volta_video (0016) + pessoas (0018) + pessoa_papeis (0019)
-//     + engineering_findings (0020) + engineering_recommendations (0021) = 30.
-//     (0014 só estende sessoes; 0017 só ajusta policies RLS, sem criar tabela.)
-const PG_TABLE_COUNT_ESPERADO = 30;
-// MS-16.3 (Command Box Engenharia Camada 2): engineering_findings + engineering_recommendations
-// vivem só em Supabase (Camada 2 emite em memória + persiste via REST direto;
-// cliente lê via REST). GRDB não precisa replicar. Quando MS-16.5 entrar com
-// upload local-first opcional dessas tabelas, mover daqui pra cobertura GRDB.
-const PG_ONLY_TABLES = new Set(['engineering_findings', 'engineering_recommendations']);
-const GRDB_REQUIRED_COUNT = PG_TABLE_COUNT_ESPERADO - PG_ONLY_TABLES.size; // 28
-const GRDB_TABLE_COUNT_ESPERADO = GRDB_REQUIRED_COUNT + 2; // + sync_queue + sync_meta = 30
+// Recontado 10/06/2026 com o leitor corrigido (if not exists + dígitos):
+// 45 tabelas na nuvem. As 13 SÓ-nuvem abaixo não têm espelho no app de
+// propósito — são do painel web, shift light, dyno, canal ao vivo e
+// engenharia Camada 2 (emitem/consomem via REST direto).
+const PG_TABLE_COUNT_ESPERADO = 45;
+const PG_ONLY_TABLES = new Set([
+  'engineering_findings', 'engineering_recommendations',     // MS-16.3 Camada 2
+  'melhores_passagens_trecho', 'padroes_telemetria_por_volta', // painel web (0025/0026)
+  'dyno_curve', 'gear_ratios', 'gear_signatures',            // shift light v2 (dyno Bubi)
+  'pontos_troca_aprendidos', 'perfis_reacao_piloto',         // aprendizagem shift light
+  'envelopes_seguranca_stint', 'qualidade_troca_marcha',     // stint/câmbio (0034)
+  't4000_live_commands', 't4000_live_events',                // canal ao vivo (0023)
+]);
+const GRDB_REQUIRED_COUNT = PG_TABLE_COUNT_ESPERADO - PG_ONLY_TABLES.size; // 32
+const GRDB_TABLE_COUNT_ESPERADO = GRDB_REQUIRED_COUNT + 2; // + sync_queue + sync_meta = 34
 
 t(`PG tem ${PG_TABLE_COUNT_ESPERADO} tabelas em public`, () => {
   if (PG_TABLES.size !== PG_TABLE_COUNT_ESPERADO) throw new Error('size=' + PG_TABLES.size);
