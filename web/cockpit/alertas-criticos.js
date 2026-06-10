@@ -341,7 +341,7 @@ export class AlertasCriticos {
       const deveriaEstar = ids.includes(id);
       const ja = this._ativos.has(id);
       if (deveriaEstar && !ja) { this._ativos.add(id); mudou = true; }
-      else if (!deveriaEstar && ja && !this._manuais.has(id)) {
+      else if (!deveriaEstar && ja && !this._manuais.has(id) && !this._preditivos.has(id)) {
         this._ativos.delete(id); mudou = true;
       }
     }
@@ -356,6 +356,7 @@ export class AlertasCriticos {
   _remove(id) {
     if (!this._ativos.has(id)) return;
     if (this._manuais.has(id)) return; // manuais só somem via clearManual
+    if (this._preditivos.has(id)) return; // preditivos só somem via aplicarPreditivos
     this._ativos.delete(id);
     this._onChange(this.getAtivos());
   }
