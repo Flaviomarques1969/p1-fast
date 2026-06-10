@@ -11,9 +11,15 @@
 ## vida útil. PROPOSTA-escrita-painel-anon.sql ganhou ADENDO (leitura) e o card foi
 ## atualizado (opção A agora descreve o alcance completo). Mensagem da vida útil na tela
 ## corrigida pra não afirmar "sem troca" quando pode ser acesso bloqueado.
-## NOTA menor: existem 2 layouts "Principal" do mesmo traçado de Brasília (a85c1234 de
-## 26/05 parece semente órfã; o canônico 0dc85cfb tem marcos/trechos). NADA apagado —
-## limpeza só com decisão do Flávio.
+## NOTA menor: existiam 2 layouts "Principal" de Brasília. LIMPO em 10/06 ~20h45 com
+## autorização do Flávio ("pode limpar o traçado duplicado"): a85c1234 (semente de 26/05,
+## 12 trechos antigos) removido APÓS checagem autenticada de dependências (zero em
+## segment_executions/melhores/retas/marcos) e backup completo em
+## supabase/backup-layout-duplicado-removido-2026-06-10.json (layout + 12 trechos, 8 KB).
+## Pós-remoção validado: só o canônico 0dc85cfb no banco, com 8 trechos + 4 marcos +
+## 56 melhores passagens intactos e comprimento 5476. (Pegadinha evitada: sonda anônima
+## acusava "4 referências" numa tabela que nem existe — eram as 4 chaves da mensagem de
+## erro; a checagem que vale foi a autenticada.)
 ## TASK_DONE migração: concluída. Produção alterada COM autorização literal registrada.
 
 ---

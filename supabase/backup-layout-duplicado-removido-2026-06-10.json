@@ -1,0 +1,297 @@
+{
+ "layout": {
+  "comprimento_m": null,
+  "created_at": "2026-05-26T23:18:14.787329+00:00",
+  "id": "a85c1234-5678-49ab-90cd-ef0123456789",
+  "linha_chegada": {
+   "x1": 415,
+   "x2": 415,
+   "y1": 695,
+   "y2": 720
+  },
+  "nome": "Principal",
+  "parciais": [
+   {
+    "apelido": "Saída do box",
+    "id": "P1",
+    "nome": "Parcial 1",
+    "t_end": 25,
+    "t_start": 0
+   },
+   {
+    "apelido": "Junção",
+    "id": "P2",
+    "nome": "Parcial 2",
+    "t_end": 50,
+    "t_start": 25
+   },
+   {
+    "apelido": "Bruxa",
+    "id": "P3",
+    "nome": "Parcial 3",
+    "t_end": 75,
+    "t_start": 50
+   },
+   {
+    "apelido": "Placar → chegada",
+    "id": "P4",
+    "nome": "Parcial 4",
+    "t_end": 100,
+    "t_start": 75
+   }
+  ],
+  "svg_path": "M 420.20 707.58 L 242.63 705.75 L 223.63 704.27 L 206.67 699.64 L 190.46 690.06 L 177.44 675.92 L 163.53 640.49 L 173.07 615.32 L 177.09 595.50 L 181.56 552.34 L 189.99 507.41 L 195.17 485.19 L 201.93 462.25 L 207.99 438.19 L 229.60 366.52 L 237.64 341.92 L 252.10 290.03 L 260.17 264.58 L 279.72 194.33 L 291.15 161.70 L 294.72 156.29 L 298.66 150.33 L 311.63 145.96 L 326.58 143.68 L 343.19 148.38 L 358.95 155.60 L 374.08 164.69 L 388.56 176.62 L 401.91 190.62 L 426.33 224.01 L 454.76 257.96 L 469.70 274.35 L 488.13 287.86 L 508.65 299.03 L 530.47 307.88 L 553.93 313.11 L 602.62 318.12 L 625.66 321.92 L 645.47 326.63 L 661.43 333.14 L 674.27 342.65 L 683.96 355.44 L 688.29 370.67 L 686.56 387.23 L 679.94 402.31 L 668.35 415.01 L 653.49 424.27 L 635.14 427.77 L 615.99 423.99 L 599.32 414.02 L 563.03 395.14 L 544.62 386.15 L 524.16 377.79 L 502.83 371.66 L 478.87 368.78 L 455.47 367.00 L 432.13 368.11 L 407.30 371.47 L 382.97 378.12 L 335.78 393.87 L 314.58 402.85 L 295.48 415.65 L 279.26 431.18 L 265.73 450.19 L 255.25 471.55 L 248.52 494.81 L 234.11 513.72 L 238.41 537.37 L 234.92 549.83 L 233.49 560.58 L 237.93 572.18 L 246.95 583.62 L 259.77 593.13 L 276.11 598.40 L 327.75 611.39 L 528.57 671.64 L 542.60 672.98 L 556.32 670.11 L 567.69 660.39 L 574.68 647.16 L 575.82 631.31 L 573.66 615.56 L 566.35 600.49 L 554.99 587.43 L 541.29 575.59 L 513.98 548.01 L 498.16 534.88 L 478.96 526.19 L 458.62 521.37 L 436.90 521.82 L 415.24 527.50 L 373.61 546.75 L 354.89 553.63 L 338.93 557.39 L 324.68 557.18 L 311.28 554.18 L 299.36 546.38 L 289.53 535.43 L 285.49 521.07 L 288.02 505.40 L 296.27 490.63 L 309.55 478.98 L 325.18 470.45 L 342.41 464.46 L 379.49 454.28 L 439.98 435.42 L 461.07 430.16 L 483.11 427.44 L 505.75 428.57 L 528.04 434.62 L 549.64 443.47 L 570.90 453.24 L 591.54 464.27 L 624.25 484.01 L 634.38 492.47 L 640.90 503.88 L 640.91 518.80 L 634.34 534.24 L 624.59 547.53 L 617.04 562.63 L 616.26 580.34 L 620.02 598.86 L 627.99 616.73 L 632.73 634.83 L 632.38 653.04 L 626.28 670.72 L 615.99 687.30 L 600.08 701.09 L 580.92 709.60 L 559.69 712.35 L 492.40 708.43 L 420.77 707.60 Z",
+  "track_id": "e8335412-3312-54fe-b634-db2d02c7fa81",
+  "updated_at": "2026-05-26T23:18:14.787329+00:00",
+  "view_box": {
+   "h": 799,
+   "w": 823
+  }
+ },
+ "segments": [
+  {
+   "created_at": "2026-05-26T23:18:14.787329+00:00",
+   "eh_trecho": true,
+   "geometria": {
+    "apex_x": 145,
+    "apex_y": 645,
+    "corner_type": "lenta",
+    "next_braking_m": 280,
+    "strategy": "tardio",
+    "t_ref_sec": 7.6,
+    "tipo": "curva",
+    "x": 145,
+    "y": 645
+   },
+   "id": "a85c0000-0001-49ab-90cd-ef0123456789",
+   "layout_id": "a85c1234-5678-49ab-90cd-ef0123456789",
+   "nome": "CURVA 01",
+   "ordem": 0,
+   "parcial_id": "P1",
+   "tipo": null,
+   "updated_at": "2026-05-26T23:18:14.787329+00:00"
+  },
+  {
+   "created_at": "2026-05-26T23:18:14.787329+00:00",
+   "eh_trecho": false,
+   "geometria": {
+    "t_ref_sec": 98,
+    "tipo": "reta",
+    "x": 390,
+    "y": 630
+   },
+   "id": "a85c0001-0001-49ab-90cd-ef0123456789",
+   "layout_id": "a85c1234-5678-49ab-90cd-ef0123456789",
+   "nome": "RETA PRINCIPAL / BOX",
+   "ordem": 1,
+   "parcial_id": "P1",
+   "tipo": null,
+   "updated_at": "2026-05-26T23:18:14.787329+00:00"
+  },
+  {
+   "created_at": "2026-05-26T23:18:14.787329+00:00",
+   "eh_trecho": true,
+   "geometria": {
+    "apex_x": 315,
+    "apex_y": 305,
+    "corner_type": "rapida",
+    "next_braking_m": 80,
+    "strategy": "neutro",
+    "t_ref_sec": 16.5,
+    "tipo": "curva",
+    "x": 315,
+    "y": 305
+   },
+   "id": "a85c0002-0001-49ab-90cd-ef0123456789",
+   "layout_id": "a85c1234-5678-49ab-90cd-ef0123456789",
+   "nome": "MERGULHO DA BRUXA",
+   "ordem": 2,
+   "parcial_id": "P1",
+   "tipo": null,
+   "updated_at": "2026-05-26T23:18:14.787329+00:00"
+  },
+  {
+   "created_at": "2026-05-26T23:18:14.787329+00:00",
+   "eh_trecho": true,
+   "geometria": {
+    "apex_x": 290,
+    "apex_y": 85,
+    "corner_type": "media",
+    "next_braking_m": 220,
+    "strategy": "tardio",
+    "t_ref_sec": 21.1,
+    "tipo": "curva",
+    "x": 290,
+    "y": 85
+   },
+   "id": "a85c0003-0001-49ab-90cd-ef0123456789",
+   "layout_id": "a85c1234-5678-49ab-90cd-ef0123456789",
+   "nome": "CURVA 2",
+   "ordem": 3,
+   "parcial_id": "P1",
+   "tipo": null,
+   "updated_at": "2026-05-26T23:18:14.787329+00:00"
+  },
+  {
+   "created_at": "2026-05-26T23:18:14.787329+00:00",
+   "eh_trecho": true,
+   "geometria": {
+    "apex_x": 600,
+    "apex_y": 330,
+    "corner_type": "media",
+    "next_braking_m": 180,
+    "strategy": "neutro",
+    "t_ref_sec": 31,
+    "tipo": "curva",
+    "x": 600,
+    "y": 330
+   },
+   "id": "a85c0004-0001-49ab-90cd-ef0123456789",
+   "layout_id": "a85c1234-5678-49ab-90cd-ef0123456789",
+   "nome": "CURVA DA JUNÇÃO",
+   "ordem": 4,
+   "parcial_id": "P2",
+   "tipo": null,
+   "updated_at": "2026-05-26T23:18:14.787329+00:00"
+  },
+  {
+   "created_at": "2026-05-26T23:18:14.787329+00:00",
+   "eh_trecho": false,
+   "geometria": {
+    "t_ref_sec": 40,
+    "tipo": "reta",
+    "x": 460,
+    "y": 275
+   },
+   "id": "a85c0005-0001-49ab-90cd-ef0123456789",
+   "layout_id": "a85c1234-5678-49ab-90cd-ef0123456789",
+   "nome": "PISCINA",
+   "ordem": 5,
+   "parcial_id": "P2",
+   "tipo": null,
+   "updated_at": "2026-05-26T23:18:14.787329+00:00"
+  },
+  {
+   "created_at": "2026-05-26T23:18:14.787329+00:00",
+   "eh_trecho": true,
+   "geometria": {
+    "apex_x": 225,
+    "apex_y": 570,
+    "corner_type": "lenta",
+    "next_braking_m": 380,
+    "strategy": "tardio",
+    "t_ref_sec": 51.8,
+    "tipo": "curva",
+    "x": 225,
+    "y": 570
+   },
+   "id": "a85c0006-0001-49ab-90cd-ef0123456789",
+   "layout_id": "a85c1234-5678-49ab-90cd-ef0123456789",
+   "nome": "CURVA DA BRUXA",
+   "ordem": 6,
+   "parcial_id": "P3",
+   "tipo": null,
+   "updated_at": "2026-05-26T23:18:14.787329+00:00"
+  },
+  {
+   "created_at": "2026-05-26T23:18:14.787329+00:00",
+   "eh_trecho": false,
+   "geometria": {
+    "t_ref_sec": 56,
+    "tipo": "reta",
+    "x": 155,
+    "y": 335
+   },
+   "id": "a85c0007-0001-49ab-90cd-ef0123456789",
+   "layout_id": "a85c1234-5678-49ab-90cd-ef0123456789",
+   "nome": "RETA DO MILITAR",
+   "ordem": 7,
+   "parcial_id": "P3",
+   "tipo": null,
+   "updated_at": "2026-05-26T23:18:14.787329+00:00"
+  },
+  {
+   "created_at": "2026-05-26T23:18:14.787329+00:00",
+   "eh_trecho": true,
+   "geometria": {
+    "apex_x": 335,
+    "apex_y": 475,
+    "corner_type": "media",
+    "next_braking_m": 120,
+    "strategy": "neutro",
+    "t_ref_sec": 78.6,
+    "tipo": "curva",
+    "x": 335,
+    "y": 475
+   },
+   "id": "a85c0008-0001-49ab-90cd-ef0123456789",
+   "layout_id": "a85c1234-5678-49ab-90cd-ef0123456789",
+   "nome": "CURVA DO PLACAR",
+   "ordem": 8,
+   "parcial_id": "P4",
+   "tipo": null,
+   "updated_at": "2026-05-26T23:18:14.787329+00:00"
+  },
+  {
+   "created_at": "2026-05-26T23:18:14.787329+00:00",
+   "eh_trecho": false,
+   "geometria": {
+    "t_ref_sec": 110,
+    "tipo": "reta",
+    "x": 600,
+    "y": 580
+   },
+   "id": "a85c0009-0001-49ab-90cd-ef0123456789",
+   "layout_id": "a85c1234-5678-49ab-90cd-ef0123456789",
+   "nome": "RETA OPOSTA",
+   "ordem": 9,
+   "parcial_id": "P4",
+   "tipo": null,
+   "updated_at": "2026-05-26T23:18:14.787329+00:00"
+  },
+  {
+   "created_at": "2026-05-26T23:18:14.787329+00:00",
+   "eh_trecho": true,
+   "geometria": {
+    "apex_x": 560,
+    "apex_y": 660,
+    "corner_type": "rapida",
+    "next_braking_m": 200,
+    "strategy": "neutro",
+    "t_ref_sec": 135,
+    "tipo": "curva",
+    "x": 560,
+    "y": 660
+   },
+   "id": "a85c0010-0001-49ab-90cd-ef0123456789",
+   "layout_id": "a85c1234-5678-49ab-90cd-ef0123456789",
+   "nome": "CURVA DA SUBIDA",
+   "ordem": 10,
+   "parcial_id": "P4",
+   "tipo": null,
+   "updated_at": "2026-05-26T23:18:14.787329+00:00"
+  },
+  {
+   "created_at": "2026-05-26T23:18:14.787329+00:00",
+   "eh_trecho": true,
+   "geometria": {
+    "apex_x": 480,
+    "apex_y": 695,
+    "corner_type": "media",
+    "next_braking_m": 100,
+    "strategy": "tardio",
+    "t_ref_sec": 160,
+    "tipo": "curva",
+    "x": 480,
+    "y": 695
+   },
+   "id": "a85c0011-0001-49ab-90cd-ef0123456789",
+   "layout_id": "a85c1234-5678-49ab-90cd-ef0123456789",
+   "nome": "ESSE FINAL",
+   "ordem": 11,
+   "parcial_id": "P4",
+   "tipo": null,
+   "updated_at": "2026-05-26T23:18:14.787329+00:00"
+  }
+ ]
+}
