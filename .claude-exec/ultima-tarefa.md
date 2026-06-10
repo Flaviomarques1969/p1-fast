@@ -115,6 +115,34 @@ PRECISA ir pro ar — o do ar atual tem o defeito sequencial).
 
 ---
 
+# TASK_INIT (2026-06-10 ~noite, sessão 3) — "continua a orientação" (pós-/clear)
+
+## Pedido original: "continua a orientação" — executar a SEQUÊNCIA DA PRÓXIMA SESSÃO do
+## checkpoint das ~17h (bloco RETOMADA no topo deste arquivo).
+## Objetivo (1 frase): derrubar os 2 bloqueadores da tela (NO BOX preso + SEM_DADOS artefato
+## de prova) e fazer a tela de orientação acender no replay, aí abrir pro Flávio.
+## Critérios de conclusão: (a) box-detector consertado (interseção caminho×segmento, como
+## chegada/trecho) com smoke verde; (b) sonda v2 com args anti-desaceleração; (c) replay com
+## tela acesa (dataset on='1' modo='curva') + captura; (d) abrir pro Flávio ver ao vivo
+## (Central p1tv + painel ?semfio, navegador headed).
+## Leitura confirmada: ~/.claude/CLAUDE.md SIM · ~/.claude-decisoes/padroes.md SIM ·
+## FLAVIO_EXECUTION_PROTOCOL.md SIM · FLAVIO_DONE_CHECKLIST.md SIM ·
+## FLAVIO_ENVIRONMENT_RULES.md SIM · FLAVIO_COMMUNICATION_RULES.md SIM ·
+## + memórias p1-fast-central-pista + conceitos-trecho-ditado + telas_de_acao_minimas + CLAUDE.md do projeto.
+## Plano (≤5): 1) consertar box-detector.js (caminhoCruzaLinha igual chegada-detector) +
+## smoke novo BX-05 (reta infinita NÃO dispara); 2) bateria de smokes vizinha; 3) sonda v2
+## com flags anti-throttling + replay; 4) fiscais adversariais no conserto (workflow);
+## 5) tela acesa → abrir pro Flávio headed.
+## Arquivos/áreas: web/cockpit/box-detector.js, tests/node-smoke-box-detector.mjs,
+## /tmp/p1-replay-proof2.mjs (sonda, fora do repo). Banco: só leitura.
+## Ambiente alvo: DESENVOLVIMENTO (linha local, auto-save). Produção protegida: sim.
+## Autorização para produção: não (não recebida — novo MIGRAR só depois da aprovação do Flávio).
+## Riscos: mexer no box-detector afeta msg grave NO BOX (validar que box REAL ainda detecta);
+## replay longo (~10-25 min); nuvem não pode ser poluída (blindagem sim já existe).
+## Status: iniciado
+
+---
+
 # TASK_INIT (2026-06-10 ~16h) — RETOMADA "continua a orientação" (pós-/clear)
 
 ## Pedido original: "continua a orientação" — fechar o último elo: a tela de orientação

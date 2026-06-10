@@ -20,9 +20,29 @@
 // rastreia se o carro está NO BOX ou NA PISTA, sem reagir a falsos cruzamentos.
 
 const DEBOUNCE_MS = 5000;
+// Cruzamento só vale se o CAMINHO entre 2 amostras corta a linha DE VERDADE
+// (segmento a–b com folga). Sem isso, o prolongamento infinito da pit-in corta a
+// pista inteira e o carro fica PRESO "no box" rodando na pista (achado no replay, 10/06).
 
 function sideOfLine(p, a, b) {
   return (b.lng - a.lng) * (p.lat - a.lat) - (b.lat - a.lat) * (p.lng - a.lng);
+}
+
+/** O caminho p0→p1 cruza a LINHA DE VERDADE a–b? (interseção de segmentos
+ *  em projeção local; folga de 50% em cada ponta da linha pela largura real). */
+function caminhoCruzaLinha(p0, p1, a, b) {
+  const kLat = 110540;
+  const kLng = 111320 * Math.cos((a.lat * Math.PI) / 180);
+  const X = q => (q.lng - a.lng) * kLng;
+  const Y = q => (q.lat - a.lat) * kLat;
+  const r = { x: X(p1) - X(p0), y: Y(p1) - Y(p0) };
+  const d = { x: X(b), y: Y(b) };
+  const den = r.x * d.y - r.y * d.x;
+  if (Math.abs(den) < 1e-9) return false; // paralelos
+  const qp = { x: -X(p0), y: -Y(p0) };
+  const v = (qp.x * d.y - qp.y * d.x) / den;  // posição ao longo do caminho
+  const u = (qp.x * r.y - qp.y * r.x) / den; // posição ao longo da linha
+  return v >= 0 && v <= 1 && u >= -0.5 && u <= 1.5;
 }
 
 export class BoxDetector {
@@ -53,14 +73,20 @@ export class BoxDetector {
 
     // Cruzamento da pit-in: só conta se estamos NA PISTA
     if (!this._noBox && this._lastSideIn != null
-        && Math.sign(sideIn) !== Math.sign(this._lastSideIn) && debounceOk) {
+        && Math.sign(sideIn) !== Math.sign(this._lastSideIn)
+        && this._lastPos
+        && caminhoCruzaLinha(this._lastPos, sample, this._pitIn.a_gps, this._pitIn.b_gps)
+        && debounceOk) {
       this._noBox = true;
       this._lastCrossT = t;
       try { this._onEntradaBox({ t }); } catch (e) {}
     }
     // Cruzamento da pit-out: só conta se estamos NO BOX
     else if (this._noBox && this._lastSideOut != null
-        && Math.sign(sideOut) !== Math.sign(this._lastSideOut) && debounceOk) {
+        && Math.sign(sideOut) !== Math.sign(this._lastSideOut)
+        && this._lastPos
+        && caminhoCruzaLinha(this._lastPos, sample, this._pitOut.a_gps, this._pitOut.b_gps)
+        && debounceOk) {
       this._noBox = false;
       this._lastCrossT = t;
       try { this._onSaidaBox({ t }); } catch (e) {}
@@ -68,6 +94,7 @@ export class BoxDetector {
 
     this._lastSideIn  = sideIn;
     this._lastSideOut = sideOut;
+    this._lastPos = { lat: sample.lat, lng: sample.lng };
   }
 
   isNoBox() { return this._noBox; }
