@@ -355,18 +355,27 @@ bridge.ingestImuGps = (envelope) => {
             onChegada: ({ voltaN }) => {
               if (padraoAcumulador) padraoAcumulador.fecharVolta();
               const agora = Date.now();
+              let durMs = null;
               if (voltas.inicioTs) {
                 const dur = (agora - voltas.inicioTs) / 1000;
                 if (dur > 20 && dur < 1200) {
                   voltas.ultimaS = dur;
+                  durMs = Math.round(dur * 1000);
                   if (voltas.melhorS == null || dur < voltas.melhorS) voltas.melhorS = dur;
                 }
               }
+              const inicioVolta = voltas.inicioTs;
               voltas.n = voltaN; voltas.inicioTs = agora;
               // Tela ASSISTIR: a Central calcula o tempo da volta pela
               // diferença entre duas chegadas consecutivas (tWall).
               publishEvento({ tipo: 'volta', n: voltaN });
               log(`volta ${voltaN} fechada pela linha de chegada`);
+              // VOLTA REAL na nuvem (autorização Flávio 10/06): entra na sessão
+              // aberta do stint. Replay de escritório nunca grava; sem sessão
+              // aberta ou banco recusando, o log conta a verdade.
+              if (!window.__P1_ORIGEM_SIM__ && durMs != null) {
+                persistirVoltaReal({ numero: voltaN, tempoMs: durMs, inicioAt: inicioVolta });
+              }
             },
           });
           log('marco de chegada carregado');
