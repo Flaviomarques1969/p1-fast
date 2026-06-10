@@ -174,6 +174,7 @@ export class LiveDataBridge {
     alertasCriticos = null,   // instância de AlertasCriticos (consumirá T4000+GPS)
     onTrechoEvent   = null,   // callback opcional pra eventos de trecho
     onSalvarPassagem = null,  // async ({segmentId, tempoS, pontos}) — persiste no banco
+    origemSimulador = () => false, // passagem de simulador NUNCA vira referência nem salva
   } = {}) {
     if (!cockpitState) throw new Error('LiveDataBridge: cockpitState é obrigatório');
     this._cockpitState = cockpitState;
