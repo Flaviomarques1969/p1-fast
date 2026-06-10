@@ -282,6 +282,22 @@ export class AlertasCriticos {
   raiseManual(id) { this._add(id); this._manuais.add(id); }
   clearManual(id) { this._manuais.delete(id); this._remove(id); }
 
+  /** Aplica o conjunto de alertas PREDITIVOS da volta fechada: sobe os novos e
+   *  LIMPA os que sumiram. Substitui o raiseManual antigo, que TRAVAVA o alerta
+   *  pro resto da sessão (uma volta quente = MOTOR AQUECENDO eterno + orientação
+   *  morta — provado no replay 10/06). Não mexe nos manuais do mecânico nem nos
+   *  absolutos do T4000 (fontes próprias). */
+  aplicarPreditivos(ids = []) {
+    const novos = new Set(ids);
+    for (const id of [...this._preditivos]) {
+      if (!novos.has(id)) { this._preditivos.delete(id); this._remove(id); }
+    }
+    for (const id of novos) {
+      this._preditivos.add(id);
+      this._add(id);
+    }
+  }
+
   getAtivos() {
     // retorna em ordem de gravidade: super > critico > atencao > info
     const order = { super: 0, critico: 1, atencao: 2, info: 3 };
