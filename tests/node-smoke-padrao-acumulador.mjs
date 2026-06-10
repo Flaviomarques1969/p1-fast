@@ -3,6 +3,7 @@
 // dispara alerta correspondente.
 
 import { PadraoAcumulador, calcularMediaVoltas } from '../web/cockpit/padrao-acumulador.js';
+import { avaliarPreditivoPorPadrao } from '../web/cockpit/alertas-criticos.js';
 
 let ok = 0, fail = 0;
 function t(name, fn) {
