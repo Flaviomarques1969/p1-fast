@@ -1,3 +1,21 @@
+# TASK_INIT (2026-06-10 ~20h, sessão 6) — VOLTAS REAIS + KM + VIDA ÚTIL POR PEÇA (autorizado)
+
+## Pedido: Flávio confirmou "eu já te disse que quero" — construir a contagem real:
+## voltas de verdade persistidas (hoje o app grava provisórias), quilômetros (não existe)
+## e vínculo troca→peça. DECISÕES DELE 10/06 noite (memória feedback-p1fast-decisoes):
+## NUNCA trava de velocidade no box; proteção de teste de escritório = detalhe interno.
+## Plano: (1) estrutura aditiva PROPOSTA (comprimento do traçado no banco p/ km = voltas ×
+## comprimento; data de instalação por pneu/peça); (2) painel grava volta REAL na sessão
+## aberta ao cruzar a chegada (log honesto se o banco recusar — depende do card de acesso);
+## (3) leitor de vida útil passa a contar voltas reais + km; (4) app parar de gravar
+## voltas provisórias = sessão própria (precisa reconstruir e instalar no iPhone).
+## GATE: o card aberto (20260610-191605-banco-escrita-painel) decide COMO o painel ganha
+## permissão de gravar — a construção fica pronta esperando a escolha.
+## Ambiente: DESENVOLVIMENTO (estrutura no banco só via MIGRAR autorizado).
+## Status: iniciado
+
+---
+
 # TASK_INIT (2026-06-10 ~19h30, sessão 5) — "siga": pendências objetivas pós-migração
 
 ## Pedido: fechar o que não depende de decisão do Flávio:
