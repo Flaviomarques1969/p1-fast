@@ -94,15 +94,21 @@ const pitInReal  = { a_gps: marcosReais.pit_in.a,  b_gps: marcosReais.pit_in.b }
 const pitOutReal = { a_gps: marcosReais.pit_out.a, b_gps: marcosReais.pit_out.b };
 const trajeto = JSON.parse(readFileSync(join(REF, 'TRAJETO-LIMPO-BRASILIA-FLAVIO-2026-05-27.json'))).trajeto;
 
-t('BX-08 REAL: trajeto canônico inteiro (920 pts, 4 voltas lançadas) gera ZERO evento de box', () => {
-  let entrou = 0, saiu = 0;
+t('BX-08 REAL: trajeto canônico (920 pts, 4 voltas + entrada no box no fim) — só a entrada VERDADEIRA dispara', () => {
+  // A sessão real termina ENTRANDO no box (idx≈726, v cai 79→20 km/h, para a 8 m do box).
+  // As voltas lançadas cruzam o prolongamento da pit-in/pit-out em u=1,45-1,60 a
+  // 100-153 km/h (idx 203/366/527 e 220/384/547) — NENHUMA pode disparar.
+  const entradas = [];
+  let saiu = 0, idx = 0;
   const det = new BoxDetector({
     pitIn: pitInReal, pitOut: pitOutReal,
-    onEntradaBox: () => entrou++, onSaidaBox: () => saiu++,
+    onEntradaBox: () => entradas.push(idx), onSaidaBox: () => saiu++,
   });
-  trajeto.forEach((p, i) => det.ingestGps({ lat: p.lat, lng: p.lng, t: 1000 + i * 200 }));
-  if (entrou !== 0 || saiu !== 0) throw new Error(`falsos: entrou=${entrou} saiu=${saiu}`);
-  if (det.isNoBox()) throw new Error('terminou preso NO BOX numa volta lançada');
+  trajeto.forEach((p, i) => { idx = i; det.ingestGps({ lat: p.lat, lng: p.lng, t: 1000 + i * 200 }); });
+  if (entradas.length !== 1) throw new Error(`entradas=${JSON.stringify(entradas)} (esperava só a real)`);
+  if (entradas[0] !== 726) throw new Error(`entrada no idx=${entradas[0]}, esperava 726 (a verdadeira)`);
+  if (saiu !== 0) throw new Error(`saídas falsas: ${saiu}`);
+  if (!det.isNoBox()) throw new Error('sessão termina estacionada no box — estado deveria ser NO BOX');
 });
 
 t('BX-09 REAL: cruzar o MEIO da pit-in real (u≈0,5) ainda entra no box', () => {
