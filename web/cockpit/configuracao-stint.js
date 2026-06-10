@@ -293,7 +293,9 @@ async function carregarVidaUtil() {
   try {
     const trocas = await rest(`manutencoes?select=ocorrido_em&carro_id=eq.${carroId}&item_codigo=eq.pneus&order=ocorrido_em.desc&limit=1`);
     if (!trocas.length) {
-      nota.textContent = 'Sem troca registrada pra este item — registre a instalação no app (Manutenção) pra contagem começar.';
+      // vazio aqui pode ser "não existe" OU "o acesso do painel ainda não enxerga"
+      // (card de acesso em decisão) — a mensagem não pode afirmar o que não vê.
+      nota.textContent = 'Nenhuma troca visível pro painel — registre a instalação no app (Manutenção) ou conclua a liberação de acesso pra contagem aparecer.';
       return;
     }
     const desde = Number(trocas[0].ocorrido_em);

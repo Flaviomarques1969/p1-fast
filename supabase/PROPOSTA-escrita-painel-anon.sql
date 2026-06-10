@@ -29,3 +29,22 @@ create policy padroes_insert_anon on public.padroes_telemetria_por_volta
 drop policy if exists padroes_update_anon on public.padroes_telemetria_por_volta;
 create policy padroes_update_anon on public.padroes_telemetria_por_volta
   for update to anon using (true) with check (true);
+
+-- ADENDO 10/06 (descoberto na migração 0040): a trava também BLOQUEIA A LEITURA
+-- dessas tabelas pro painel — sem liberar, o painel não enxerga o stint aberto
+-- (sessoes), não conta voltas nem lê trocas/pneus pra vida útil. Se Opção A:
+drop policy if exists sessoes_select_anon on public.sessoes;
+create policy sessoes_select_anon on public.sessoes
+  for select to anon using (true);
+drop policy if exists voltas_select_anon on public.voltas;
+create policy voltas_select_anon on public.voltas
+  for select to anon using (true);
+drop policy if exists voltas_insert_anon on public.voltas;
+create policy voltas_insert_anon on public.voltas
+  for insert to anon with check (true);
+drop policy if exists pneus_select_anon on public.pneus;
+create policy pneus_select_anon on public.pneus
+  for select to anon using (true);
+drop policy if exists manutencoes_select_anon on public.manutencoes;
+create policy manutencoes_select_anon on public.manutencoes
+  for select to anon using (true);
