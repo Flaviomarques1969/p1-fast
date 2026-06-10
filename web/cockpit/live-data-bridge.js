@@ -185,6 +185,7 @@ export class LiveDataBridge {
     this._alertasCriticos = alertasCriticos;
     this._onTrechoEvent   = onTrechoEvent;
     this._onSalvarPassagem = onSalvarPassagem;
+    this._origemSimulador  = origemSimulador;
     this._passagemBuffer  = []; // amostras GPS acumuladas da passagem atual no trecho
     this._referenciasPorSegmento = new Map(); // segmentId → melhor passagem histórica
 
