@@ -150,5 +150,54 @@ t('PA-08 buffer limitado a 10 voltas', () => {
   }
 });
 
+// ── Conserto 10/06: volta saudável AVISA com lista vazia (limpa preditivos) ──
+t('PA-09 volta de volta ao padrão emite lista VAZIA (limpa o alerta da anterior)', () => {
+  const chamadas = [];
+  const acu = new PadraoAcumulador({
+    carroId: 'c1', trackId: 't1', tipoPneu: 'semi-slick',
+    onAlertasPreditivos: (ids) => chamadas.push(ids.slice()),
+  });
+  for (let i = 0; i < 3; i++) {
+    acu.ingestT4000({ waterTempC: 70, checksumOk: true });
+    acu.fecharVolta();
+  }
+  acu.ingestT4000({ waterTempC: 90, checksumOk: true }); // 4ª: quente → alerta
+  acu.fecharVolta();
+  acu.ingestT4000({ waterTempC: 71, checksumOk: true }); // 5ª: de volta ao normal
+  acu.fecharVolta();
+  const ultima = chamadas[chamadas.length - 1];
+  if (!Array.isArray(ultima) || ultima.length !== 0) {
+    throw new Error(`5ª volta devia emitir [] pra limpar, emitiu: ${JSON.stringify(ultima)} ` +
+      `(sem o aviso vazio, o alerta da 4ª fica travado pra sempre no painel)`);
+  }
+});
+
+// ── Conserto 10/06: voltas do banco SEM temperatura não contam pro padrão ──
+t('PA-10 voltas iniciais sem motorMaxC não armam média de 1 volta', () => {
+  const recebidos = [];
+  const acu = new PadraoAcumulador({
+    carroId: 'c1', trackId: 't1', tipoPneu: 'semi-slick',
+    voltasIniciais: [
+      { dia: '23/05', numero: 1, tempo_curvas_s: 76 },
+      { dia: '23/05', numero: 2, tempo_curvas_s: 71 },
+      { dia: '23/05', numero: 3, tempo_curvas_s: 71 },
+      { dia: '23/05', numero: 4, tempo_curvas_s: 72 },
+      { dia: '24/05', numero: 5, tempo_curvas_s: 70 },
+      { dia: '24/05', numero: 6, tempo_curvas_s: 70 },
+      { dia: '24/05', numero: 7, tempo_curvas_s: 69 },
+    ],
+    onAlertasPreditivos: (ids) => recebidos.push(...ids),
+  });
+  // volta 1 da sessão: motor frio (aquecimento)
+  acu.ingestT4000({ waterTempC: 47, checksumOk: true });
+  acu.fecharVolta();
+  // volta 2: motor em regime — 60 > 47*1.2, mas a média tem n=1 → NÃO pode armar
+  acu.ingestT4000({ waterTempC: 60, checksumOk: true });
+  acu.fecharVolta();
+  if (recebidos.includes('MOTOR_AQUECENDO')) {
+    throw new Error('média de 1 volta armou o preditivo (cenário do replay 10/06)');
+  }
+});
+
 console.log(`\nPadrão Acumulador: ${ok} ok / ${fail} fail`);
 process.exit(fail > 0 ? 1 : 0);
