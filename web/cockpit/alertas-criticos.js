@@ -175,8 +175,14 @@ export function avaliarPreditivoPorPadrao(amostraVoltaAtual, padrao, desvioPct =
   const ativos = [];
   if (!amostraVoltaAtual || !padrao) return ativos;
 
+  // Padrão só vale com 3+ voltas COM a métrica (decisão Flávio 27/05: "aprende
+  // padrão em 3 voltas"). Sem isso, voltas antigas do banco SEM temperatura
+  // contavam pro mínimo e a média armava com 1 volta só — meia volta fria de
+  // aquecimento virava o "padrão" e tudo depois disparava falso (provado 10/06).
+  const nOk = (m) => m && m.media > 0 && (m.n == null || m.n >= 3);
+
   // Motor — preditivo acima (aquecendo) e abaixo (esfriando = trinca radiador)
-  if (typeof amostraVoltaAtual.motorMaxC === 'number' && padrao.motor?.media > 0) {
+  if (typeof amostraVoltaAtual.motorMaxC === 'number' && nOk(padrao.motor)) {
     const limiteAlto = padrao.motor.media * (1 + desvioPct);
     const limiteBaixo = padrao.motor.media * (1 - desvioPct);
     if (amostraVoltaAtual.motorMaxC > limiteAlto) ativos.push('MOTOR_AQUECENDO');
@@ -184,19 +190,21 @@ export function avaliarPreditivoPorPadrao(amostraVoltaAtual, padrao, desvioPct =
   }
 
   // Pneu — temperatura acima
-  if (typeof amostraVoltaAtual.pneuMaxC === 'number' && padrao.pneu?.tempMedia > 0) {
+  if (typeof amostraVoltaAtual.pneuMaxC === 'number' && padrao.pneu?.tempMedia > 0
+      && (padrao.pneu.n == null || padrao.pneu.n >= 3)) {
     const limite = padrao.pneu.tempMedia * (1 + desvioPct);
     if (amostraVoltaAtual.pneuMaxC > limite) ativos.push('PNEU_AQUECENDO');
   }
 
   // Pneu — pressão caindo (queda de 20% do padrão)
-  if (typeof amostraVoltaAtual.pneuMinPressBar === 'number' && padrao.pneu?.pressMedia > 0) {
+  if (typeof amostraVoltaAtual.pneuMinPressBar === 'number' && padrao.pneu?.pressMedia > 0
+      && (padrao.pneu.n == null || padrao.pneu.n >= 3)) {
     const limite = padrao.pneu.pressMedia * (1 - desvioPct);
     if (amostraVoltaAtual.pneuMinPressBar < limite) ativos.push('PRESSAO_PNEU');
   }
 
   // Câmbio — preditivo acima
-  if (typeof amostraVoltaAtual.cambioMaxC === 'number' && padrao.cambio?.media > 0) {
+  if (typeof amostraVoltaAtual.cambioMaxC === 'number' && nOk(padrao.cambio)) {
     const limite = padrao.cambio.media * (1 + desvioPct);
     if (amostraVoltaAtual.cambioMaxC > limite) ativos.push('CAMBIO_AQUECENDO');
   }
