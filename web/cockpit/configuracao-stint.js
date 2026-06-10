@@ -154,9 +154,23 @@ async function aprovarEnvelope() {
     const data = await resp.json();
     const id = Array.isArray(data) && data[0] ? data[0].id : '?';
     status.className = 'status ok';
-    status.textContent = `✓ Envelope aprovado em produção (id ${id.substring(0, 8)}…). Modo: ${modoSelecionado.toUpperCase()}. Painel piloto pode iniciar.`;
+    status.textContent = `✓ Envelope aprovado (id ${id.substring(0, 8)}…). Modo: ${modoSelecionado.toUpperCase()}. Plano do stint registrado. Painel piloto pode iniciar.`;
     // Cache local — painel principal lê na próxima abertura.
     try { localStorage.setItem('p1fast-modo-stint-v1', modoSelecionado); } catch {}
+    // Plano completo do stint (propósito/foco/ghost/voltas/paradas) — o painel
+    // passa a consumir destas chaves nas próximas frentes (treino focado, ghost).
+    try {
+      localStorage.setItem('p1fast-plano-stint-v1', JSON.stringify({
+        ...plano,
+        carroId: document.getElementById('selCarro').value,
+        piloto: document.getElementById('selPiloto').value,
+        autodromo: document.getElementById('selAutodromo').value,
+        tipoPneu: document.getElementById('selPneu').value,
+        vidaPneuFaixa: document.getElementById('selVida').value,
+        modo: modoSelecionado,
+        aprovadoEm: new Date().toISOString(),
+      }));
+    } catch {}
   } catch (err) {
     status.className = 'status err';
     status.textContent = `✗ Falhou ao gravar: ${err.message}. (Pode ser política de acesso do banco bloqueando — o envelope está pronto na tela mas não persistiu.)`;
