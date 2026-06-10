@@ -139,17 +139,23 @@
 <body>
 <div class="container">
 
-  <h1>Configuração do Stint</h1>
-  <p class="subtitle">Defina a combinação ativa, escolha o modo do shift light e aprove o envelope de segurança.</p>
+  <h1>Planejamento do Stint</h1>
+  <p class="subtitle">Combinação já vem preenchida (um carro, um piloto, um autódromo). Escolha o propósito, o plano de voltas, o modo do shift light e aprove o envelope.</p>
 
   <!-- COMBINAÇÃO -->
   <div class="section">
-    <h2>Combinação ativa</h2>
+    <h2>Combinação ativa — padrões naturais</h2>
     <div class="combinacao">
       <div class="field">
         <label>Carro</label>
         <select id="selCarro">
           <option value="641a81e7-3192-4e68-8183-b8401f105574">Bubi — Celta 1.4 (motor Onix preparado)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Piloto</label>
+        <select id="selPiloto">
+          <option value="flavio">Flávio</option>
         </select>
       </div>
       <div class="field">
@@ -159,7 +165,7 @@
         </select>
       </div>
       <div class="field">
-        <label>Tipo de pneu</label>
+        <label>Tipo de pneu / roda</label>
         <select id="selPneu">
           <option value="westlake-z108-185-60-r14">Westlake Z108 185/60 R14</option>
         </select>
@@ -171,6 +177,78 @@
           <option value="30-60">Médio (30-60% gasto)</option>
           <option value="60+">Gasto (60%+ gasto)</option>
         </select>
+      </div>
+    </div>
+    <div class="vida-util" id="vidaUtil">
+      <div class="vida-util__titulo">Vida útil do item selecionado — desde a última troca registrada</div>
+      <div class="vida-util__grid">
+        <div class="vida-util__item"><span class="vida-util__num" id="vuTempo">—</span><span class="vida-util__rotulo">tempo de carro ligado</span></div>
+        <div class="vida-util__item"><span class="vida-util__num" id="vuVoltas">—</span><span class="vida-util__rotulo">voltas</span></div>
+        <div class="vida-util__item"><span class="vida-util__num" id="vuKm">—</span><span class="vida-util__rotulo">quilômetros</span></div>
+      </div>
+      <div class="vida-util__nota" id="vuNota">Consultando registros…</div>
+    </div>
+  </div>
+
+  <!-- PROPÓSITO DO STINT -->
+  <div class="section">
+    <h2>Propósito do stint — o que você quer desta sessão</h2>
+    <div class="propositos" id="propositosContainer">
+      <div class="proposito" data-proposito="livre">
+        <svg class="proposito__icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c4-1 5-9 9-9s5 6 9 5"/><path d="M3 21h18"/></svg>
+        <div class="proposito__nome">Rodar livre</div>
+        <div class="proposito__desc">Volta livre, painel padrão completo. Sem foco específico.</div>
+      </div>
+      <div class="proposito" data-proposito="testar">
+        <svg class="proposito__icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4.5 4.5 0 0 0-6.1 5.9L3 17.8V21h3.2l5.6-5.6a4.5 4.5 0 0 0 5.9-6.1l-3 3-2.4-2.4 3-3z"/></svg>
+        <div class="proposito__nome">Testar o carro</div>
+        <div class="proposito__desc">O painel foca na parte escolhida e mostra os dados dela o stint inteiro.</div>
+        <div class="subescolha" id="subTestar">
+          <div class="chip" data-foco="motor">Motor</div>
+          <div class="chip" data-foco="freios">Freios</div>
+          <div class="chip" data-foco="pneus">Pneus e rodas</div>
+          <div class="chip" data-foco="cambio">Câmbio</div>
+          <div class="chip" data-foco="suspensao">Suspensão</div>
+          <div class="chip" data-foco="eletrica">Elétrica</div>
+        </div>
+      </div>
+      <div class="proposito" data-proposito="treinar">
+        <svg class="proposito__icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg>
+        <div class="proposito__nome">Treinar habilidade</div>
+        <div class="proposito__desc">Voltas focadas numa disciplina: técnica de pilotagem ou um dos 6 pontos do trecho.</div>
+        <div class="subescolha" id="subTreinar">
+          <div class="chip chip--tecnica" data-foco="trail-braking">Trail braking</div>
+          <div class="subescolha__divisor">6 pontos do trecho</div>
+          <div class="chip" data-foco="entrada">Entrada</div>
+          <div class="chip" data-foco="frenagem">Ponto de frenagem</div>
+          <div class="chip" data-foco="vmin">Velocidade mínima</div>
+          <div class="chip" data-foco="apice">Ápice</div>
+          <div class="chip" data-foco="pace">Início de aceleração</div>
+          <div class="chip" data-foco="saida">Saída</div>
+        </div>
+      </div>
+    </div>
+    <div class="ghost-linha">
+      <div>
+        <div class="ghost-linha__nome">Ghost na tela</div>
+        <div class="ghost-linha__desc">Mapa do trecho com o traçado da melhor passagem pra seguir. A escolha fica registrada no plano; o mapa ao vivo entra na próxima frente.</div>
+      </div>
+      <div class="toggle" id="toggleGhost" role="switch" aria-checked="false" tabindex="0"><div class="toggle__bola"></div></div>
+    </div>
+  </div>
+
+  <!-- VOLTAS E PARADAS -->
+  <div class="section">
+    <h2>Plano de voltas e paradas</h2>
+    <div class="plano-voltas">
+      <div class="field field--voltas">
+        <label>Voltas do stint</label>
+        <input type="number" id="inpVoltas" min="1" max="99" value="10">
+      </div>
+      <div class="paradas">
+        <label class="paradas__rotulo">Paradas no box — em qual volta e por quê</label>
+        <div id="paradasLista" class="paradas__lista"></div>
+        <button type="button" class="btn-mini" id="btnAddParada">Adicionar parada</button>
       </div>
     </div>
   </div>
