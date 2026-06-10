@@ -96,19 +96,19 @@ export function defaultCockpitState() {
     delta: { value: '0.00', tone: Tone.NEUTRO },
     acao:  { texto: '',     tone: Tone.NEUTRO },
     apex: {
-<<<<<<< HEAD
+      // Entrada: único ponto, marcado quando o carro cruza a linha de entrada
+      // do trecho. valorKmh = velocidade ali.
       entrada: { estado: ApexEstado.PENDENTE, valorKmh: null, nomeCurva: null },
-      freio:   { estado: ApexEstado.PENDENTE, atualM: null, refM: null, deltaM: null, lat: null, lng: null },
-      apice:   { estado: ApexEstado.PENDENTE, valorKmh: null, deltaM: null, lat: null, lng: null, nomeCurva: null },
-      saida:   { estado: ApexEstado.PENDENTE, valorKmh: null, nomeCurva: null },
-=======
-      entrada: { estado: ApexEstado.PENDENTE, valorKmh: null },
-      freio:   { estado: ApexEstado.PENDENTE, atualM: null, refM: null },
-      // apice: distM = distância ao ponto ideal (m); angleDeg = direção
-      // do ápice ideal em relação ao heading do carro (0..360, 0=frente).
+      // Freio: ponto de frenagem. atualM/refM = distância (m) desde a linha de
+      // entrada (atual vs. melhor passagem); deltaM = diferença; valorKmh = vel
+      // registrada nesse ponto.
+      freio:   { estado: ApexEstado.PENDENTE, atualM: null, refM: null, deltaM: null, valorKmh: null, lat: null, lng: null },
+      // Ápice: a "bolinha" — ponto mais interno da curva na passagem mais rápida
+      // do trecho. distM = distância do carro a esse ponto ideal (m);
+      // angleDeg = direção da bolinha vs. heading do carro (0..360, 0=frente).
       apice:   { estado: ApexEstado.PENDENTE, distM: null, angleDeg: null },
-      saida:   { estado: ApexEstado.PENDENTE, valorKmh: null },
->>>>>>> wip/20260526-132312
+      // Saída: velocidade ao cruzar a linha de saída do trecho.
+      saida:   { estado: ApexEstado.PENDENTE, valorKmh: null, nomeCurva: null },
     },
     // Barra de aprendizado do shift light contextual.
     // pct: 0..100 (% de calibração da combinação ativa).

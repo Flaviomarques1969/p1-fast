@@ -1,7 +1,50 @@
 # P1 Fast — STATUS
 
-**Data deste checkpoint:** 2026-05-24 (sessão simulador T4000 — destrava MS-9 sem precisar do carro)
-**Estado:** Plano `docs/PLANO_FASE_1.md` em execução. **MS-2 + MS-3 fechados em main.** Virada arquitetural 2026-05-09: cockpit-display do piloto migra de SwiftUI iPhone pra **web app no notebook Windows 10,5"**, T4000 deixa de ser BLE iOS e vira USB/CAN no Windows, transporte entre as duas plataformas via Supabase Realtime. Detalhes em **ADR-023**. PRs totais até **#120** mergeados, **404 smoke tests verdes**.
+**Data deste checkpoint:** 2026-06-08 (auditoria profunda — ver `.claude-exec/ultima-tarefa.md`)
+
+## Estado real hoje (verificado, não inferido)
+
+- **Versão oficial (origin/main, topo `deb46bed` 2026-06-03)** já tem: Hub do carro, Estoque
+  (peças/locais/±1), Manutenção reformada (Checagem≠Troca, catálogo Celta), cadastro de peça
+  (leitor de código, 5 fotos, OCR de etiqueta, preço Mercado Livre, Editar/Apagar), navegação de
+  menu fixo (NavRouter), e **sincronização de Estoque/Manutenção com a nuvem**.
+- **Núcleo testável Swift: 545 testes verdes / 0 falhas** (`swift run p1fast-smoke`, 2026-06-08).
+- **App iOS empacota: BUILD SUCCEEDED** (só avisos, nenhum erro).
+- **Estoque já subiu pra nuvem de ponta a ponta**: 2 peças + 3 locais + 5 movimentações
+  confirmadas por consulta direta. Schema da nuvem alinhado (drift dos 197 dead-letters resolvido).
+- **Painel web do cockpit consertado em 2026-06-08** (3 arquivos tinham junção mal resolvida;
+  resolvidos pelo modelo do Flávio: entrada/freio-metros+vel/ápice-bolinha; 4 testes verdes).
+  Em desenvolvimento — NÃO no ar (precisa `MIGRAR PARA PRODUÇÃO` se for ligar o p1t4000.vercel.app).
+
+## Correções de rumo desta auditoria (este STATUS estava 10 dias atrasado e contradizia o PLANO)
+
+- **MS-4 (StintPlan iOS): FECHADO em 2026-05-11** (PRs #176–#181, extensão da tabela `sessoes`) —
+  a tabela de mini-sprints mais abaixo dizia "não feito"; está ERRADA, ver `PLANO_FASE_1.md`.
+- **MS-16 (Command Box Engenharia): ENTREGUE 2026-05-13** (mockups Lambda/PAce/Vista Engenheiro) —
+  estava invisível neste STATUS.
+- **Estoque/Manutenção** não constam no `PLANO_FASE_1.md` como mini-sprint formal, mas foram
+  entregues e estão na oficial. Pendente: o Flávio decidir se viram MS formal.
+
+## Pendências de validação no iPhone (aguardam o Flávio)
+
+1. Botão "Cancelar" do cadastro do carro volta pro hub (conserto NavRouter de 03/06).
+2. Registrar uma manutenção com app aberto/desbloqueado → confirmar que sobe pra nuvem
+   (hoje `manutencoes` tem 0 linhas; o envio só roda com o app em primeiro plano).
+3. Validar no aparelho: OCR de etiqueta, preço Mercado Livre, 5 fotos, Editar/Apagar peça.
+
+## Trabalho órfão (ambientes isolados) — retrato honesto 2026-06-08
+
+A maior parte do que parecia "preso" JÁ está na oficial ou é histórico: Vista Piloto v04 e
+Mapa Brasília definitivo **já estão na oficial**; grande volume é card de pergunta antigo (lixo).
+**Único item novo, de valor e baixo risco: `mockup-command-box-vista-engenheiro.html`** (Vista
+Engenheiro do Command Box, aprovado 13/05, nunca entrou). Telas .swift soltas (CockpitOrientationTest,
+StintRodando, edições de Stint) divergem da estrutura atual da oficial → alto risco, avaliar 1 a 1.
+
+---
+
+### (histórico) Checkpoint 2026-05-24 — simulador T4000
+
+**Estado (à época):** Plano `docs/PLANO_FASE_1.md` em execução. **MS-2 + MS-3 fechados em main.** Virada arquitetural 2026-05-09: cockpit-display do piloto migra de SwiftUI iPhone pra **web app no notebook Windows 10,5"**, T4000 deixa de ser BLE iOS e vira USB/CAN no Windows, transporte entre as duas plataformas via Supabase Realtime. Detalhes em **ADR-023**. PRs totais até **#120** mergeados, **404 smoke tests verdes**.
 
 ## Sessão 2026-05-24 — simulador T4000 + leitor ao vivo + demo + cadastro carros
 

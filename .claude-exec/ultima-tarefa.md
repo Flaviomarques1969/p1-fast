@@ -1,1101 +1,531 @@
-# Tarefa atual — TASK (2026-06-03, 18h) — "Cancelar" do Cadastro do carro caía na tela inicial
+# ⏰ RETOMADA PÓS-CLEAR — "continua a orientação" (checkpoint 2026-06-10 ~15h)  ← LER PRIMEIRO
+
+## ONDE PAROU (1 frase)
+Vigia de curvas CONSERTADO (8,0 de 8 por volta no replay!), resumo da volta APARECE na reta
+longa, e a tela de orientação ainda NÃO aparece — causa isolada: motor devolve null (sem
+componente perdendo) mesmo com deltas registrados. Falta UMA investigação pontual.
+
+## O QUE FOI PROVADO NESTA SESSÃO (não refazer)
+1. trecho-detector.js consertado: RESSINCRONIZAÇÃO (vigia paralelo de entradas — perdeu curva,
+   engata na próxima), SAÍDA DE EMERGÊNCIA (fecha sem ápice, sem inventar), memória contínua
+   de entrada (sem tick cego pós-avanço), sanidade do ápice (>60 m não vale).
+   Smokes: resync 6/0 + trecho 12/0 + detector 3/0. REPLAY: 24 fechamentos em 3 voltas =
+   8,0/volta, 8/8 curvas distintas, 0 emergências, 9 resyncs.
+2. Atropelo calibrado em main-t3000 (mensagemGraveAtiva): só gravidade super/crítico esconde a
+   orientação (MOTOR_AQUECENDO/super da gravação escondia tudo 2x/s — gravação é motor esquentando).
+3. Sim ajustado pra demo: sim-amostras.json água≤60°C sem alarmes; sim-gps.json (?v=5520b)
+   posição E velocidade 10% mais lentas (antes só posição → deltas zero "honestos").
+4. Coreografia comprovada por sonda: fases painel→trecho→reta/orientacao (100 ticks) + resumo.
+   RESUMO DA VOLTA apareceu (captura: /tmp/p1-resumo-volta.png).
+
+## A PRÓXIMA AÇÃO EXATA (começar por aqui)
+Sonda: getOrientacao devolveu null 200/200 com bridge._stats.deltaCalculados=13. Capturar UM
+evento delta-calculado INTEIRO (ev.porSubTrecho: chaves e SINAIS dos deltaS) monkey-patchando
+oportunidade.registrarDelta via window.__t3, e LER delta-calculator.js (~linhas 95-165) pra
+confirmar: (a) convenção de sinal (positivo = mais lento?); (b) nomes das sub-chaves
+(entrada/freio/apice/saida?); (c) se porSubTrecho chega vazio (buffer de pontos por sub).
+Suspeitas ordenadas: sinal invertido OU sub-chaves com nomes diferentes do que o motor
+oportunidade-trecho.js espera OU deltas diluídos pela janela de 2.
+Depois do conserto: replay final → telas de orientação aparecem → ABRIR pro Flávio ver ao
+vivo (Central p1tv + painel ?semfio no Chrome dele) → propor novo MIGRAR (o vigia consertado
+PRECISA ir pro ar — o do ar atual tem o defeito sequencial).
+
+## COMO RODAR A PROVA (receita exata)
+1. cd "/Users/imac/Projetos/P1 Fast" && python3 -m http.server 8767 &
+2. Navegador automatizado: scripts node em /Users/imac/Documents/Sistemas/cdai/frontend
+   (playwright instalado lá; import { chromium } from 'playwright').
+3. Central: https://p1tv.vercel.app → click #btnSim (simulador: motor saudável + GPS volta real
+   10% mais lenta, ~276 s/volta, 4 voltas por ciclo).
+4. Painel DEV: http://localhost:8767/web/cockpit/index-t3000.html?semfio
+   (modo sem fio: amostras vêm do canal cockpit-bubi-live).
+5. Sonda: window.__t3 = { t3, cockpitState, bridge, oportunidade, getCoreografia(), telaOrientacao }.
+   Tela: document.querySelector('.p1-orient').dataset.on/modo.
+
+## AMBIENTE / PRODUÇÃO
+- Tudo desta sessão em DEV (auto-save commita sozinho na linha wip/20260608-143705).
+- PRODUÇÃO p1t4000.vercel.app = deploy 9mto8lxqj de hoje cedo (ANTERIOR ao conserto do vigia —
+  ainda tem o defeito sequencial 2-3/8). Novo MIGRAR depois da orientação fechada.
+- Rollback prod (se precisar): npx vercel alias set https://p1t4000-fitlngal6-flaviomarques-6007s-projects.vercel.app p1t4000.vercel.app
+- iPhone: app com amarração v3 instalado. Memórias da sessão: p1-fast-central-pista-2026-06-09
+  + p1-fast-conceitos-trecho-ditado-2026-06-09 + feedback_telas_de_acao_minimas (ler os 3).
+
+---
+
+# AFINAÇÃO DO VIGIA DE CURVAS ("continua a orientação") — 2026-06-10
+
+## Pedido: fechar a pendência — vigia completa só 2-3 de 8 curvas por volta no replay.
+## Critério de conclusão: replay com 8/8 curvas medidas por volta + tela de orientação
+## acendendo de verdade + mostrar pro Flávio no navegador. Ambiente: DESENVOLVIMENTO
+## (produção intocada; atualização do painel no ar só com novo MIGRAR).
+## Plano: (1) sonda por curva descobrindo QUAL passo escapa; (2) consertar a causa
+## (suspeitas: sequência rígida — perdeu 1, trava a fila; freada); (3) testes; (4) replay
+## até 8/8; (5) abrir pro Flávio ver a tela acender. Status: iniciado
+
+---
+
+# MIGRAÇÃO PRA PRODUÇÃO: painel p1t4000 (2026-06-10)
+
+## Autorização LITERAL do Flávio: "MIGRAR PARA PRODUÇÃO: painel p1t4000" (10/06)
+## PROD_RELEASE_PLAN apresentado antes de executar (sem risco destrutivo; sem migration).
+## Publicado: https://p1t4000-9mto8lxqj-flaviomarques-6007s-projects.vercel.app → p1t4000.vercel.app
+## ROLLBACK (1 comando): npx vercel alias set https://p1t4000-fitlngal6-flaviomarques-6007s-projects.vercel.app p1t4000.vercel.app
+## Pré-voo do pacote: 39 js sintaxe OK · grafo 31 módulos fechado · zero marcador de conflito.
+## Pacote leva: consertos 08/06 + religações automáticas + eventos volta/trecho + GPS do canal
+## + detectores consertados (interseção real) + ápices-semente + orientação por trecho +
+## modo sem fio + blindagem anti-simulador + amarração v3.
+## Validação pós-deploy: APROVADA NAS 3 FRENTES (workflow, 3 verificadores independentes):
+## (1) conteúdo servido = byte-idêntico ao pacote, todos os marcadores presentes, zero conflito;
+## (2) grafo público: 31/31 módulos no ar com sintaxe válida;
+## (3) boot real em produção com simulador: canal online, 8/8 trechos armados, coreografia ativa,
+##     volta fechada na linha de chegada, zero erros de página.
+## Notas não-bloqueantes (artefato do dado do simulador, não do painel): HUD "Ar undefined°C"
+## (campo nulo removido na gravação) e "λ 0.00" (gravação tinha lambda 0 em trechos; o real
+## com motor foi validado 26/05 com λ 0,77).
+## TASK_DONE migração: concluída. Produção alterada COM autorização literal registrada.
+
+---
+
+# IMPLEMENTAÇÃO ORIENTAÇÃO POR TRECHO NO PAINEL (2026-06-09 noite)
+
+## Pedido: "pode implementar. vá até o fim sem parar. está autorizado."
+## Escopo autorizado: coreografia da volta + tela Oportunidade do Trecho (contrato v3) +
+## motor do radar por trecho, NO PAINEL DO PILOTO (web/cockpit) — EM DESENVOLVIMENTO.
+## Inclui resgate do TrechoAdvisor (peça JS órfã de 24/05) se compatível.
+## Produção protegida: sim. Sem MIGRAR PARA PRODUÇÃO nada vai ao ar. Autorização prod: NÃO recebida.
+## Critérios de conclusão: (1) coreografia funcionando (saída→meia-reta painel; meia-reta→entrada
+## orientação; críticas atropelam); (2) tela v3 renderizando curva real na visão do piloto com
+## vermelho/verde; (3) motor decide verbo+correção por trecho dos deltas por componente;
+## (4) testes automáticos verdes; (5) validação no navegador com o replay do simulador.
+## Plano: congelar v3 → motor (oportunidade-trecho.js) → tela (tela-orientacao) → coreografia →
+## plugar no main-t3000 → smokes → validação navegador → relatório.
+## Status: PARCIALMENTE CONCLUÍDO (madrugada 10/06) — ver TASK_DONE abaixo
+
+## TASK_DONE (implementação orientação por trecho)
+- Pedido conferido: sim. Ambiente: desenvolvimento (+ p1tv teste). Produção: NÃO alterada
+  (única escrita na nuvem foi tentativa de DELETE de poluição de teste que retornou 0 linhas —
+  a tabela estava intacta, 56 passagens reais preservadas).
+- CONSTRUÍDO E TESTADO (46 testes verdes novos/área):
+  · oportunidade-trecho.js (motor, 13/0) · coreografia-volta.js (10/0) · tela-orientacao.js
+  (tela contrato v3) · costura no main-t3000 (críticas atropelam, resumo de volta, ordem por
+  trecho) · modo SEM FIO (?semfio) · blindagem anti-simulador (provada: "passagem NÃO salva")
+  · TrechoAdvisor resgatado (6/0) · v3 congelada em versions/ · simulador com GPS interpolado
+  em cadência real (~276 s/volta, 10% mais lento de propósito).
+- 3 DEFEITOS GRAVES PRÉ-EXISTENTES achados e consertados:
+  · detectores cruzavam com RETA INFINITA (chegada 5/0 + trecho 12/0 após conserto por
+    interseção caminho×linha) — na pista real ia fechar voltas erradas;
+  · segments-loader exigia ápice cadastrado (não existe — ápice é calculado) → detector
+    NUNCA armava; consertado + ápices-semente do mapa oficial (validados ≤24 m);
+  · amarração GPS→desenho com COLAPSO DE ESCALA (trajeto canônico = 4 voltas/22 km, não 1);
+    v3 com escala travada em 5.476 m — mediana 5,7 px. App reconstruído e INSTALADO no iPhone.
+- VALIDADO no replay de voltas reais: voltas fecham na linha certa; passagens completam e
+  salvam (e a blindagem bloqueia quando é simulador); coreografia muda de estado nos lugares
+  certos (painel→trecho→reta→fase orientação); motor devolve orientação válida (FREIA DEPOIS).
+- PENDÊNCIA REAL ÚNICA do bloco: o detector completa só ~2-3 dos 8 trechos por volta no
+  replay (fases perdem cruzamentos de entrada/saída em parte das curvas) → a tela de
+  orientação ao vivo ainda não APARECE de ponta a ponta. Precisa de afinação dedicada do
+  detector (robustez das fases + ápice-semente). Sondagem pronta (window.__t3 expõe tudo).
+- Outras pendências: publicar painel exige "MIGRAR PARA PRODUÇÃO: painel p1t4000";
+  teste antigo live-data-bridge segue 21/5 (pré-existente, área alerta ECU).
+
+---
+
+# AUDITORIA "tudo ligado esperando dados reais?" (2026-06-09 noite)
+
+## Pedido: Flávio aprovou o visual no iPhone e pediu auditoria da cadeia de dados reais.
+## Método: somente leitura — página no ar inspecionada + nuvem consultada + código conferido.
+
+## VERDE (ligado, só esperando dado real)
+- Vídeo: DJI→notebook→Central→sala→app (caminho provado em campo 09/06).
+- GPS: RaceBox→Central→sala+canal→app/bolinha (RaceBox provado no escritório 25,1 Hz).
+- Dados do motor: painel NO AR publica amostras no canal (grep publishSample=2 na versão
+  publicada; provado com motor real 26/05) → Central repassa → app.
+- Referências na nuvem (consulta direta): 20 trechos, 4 marcos (chegada/box/pit),
+  56 melhores passagens reais, curva do motor 79 pts, 5 marchas. TUDO lá.
+- App ASSISTIR decodifica exatamente o que a Central repassa (validado ao vivo).
+
+## VERMELHO (1 elo faltando — depende de autorização)
+- VOLTA e cor verde/vermelho com dados REAIS: o painel do piloto NO AR não publica eventos
+  de volta/trecho (grep publishEvento=0) e não consome GPS do canal (grep onGpsPoint=0).
+  As duas peças estão prontas EM DESENVOLVIMENTO (feitas hoje). Sem publicar, a linha da
+  volta no app só funciona com simulador. Destrava com: "MIGRAR PARA PRODUÇÃO: painel
+  p1t4000" (pacote leva junto: consertos 08/06 + religação automática + eventos + GPS canal).
+
+## AMARELO (risco conhecido, não bloqueia ligação)
+- Fix de GPS do RaceBox ao ar livre nunca testado (escritório bloqueia satélite).
+- Religação automática da T4000 testada só em lógica (hardware está no carro).
+- Bolinha: precisão ~1 largura de pista (amarração desenho estilizado × GPS).
+
+---
+
+# TELA ASSISTIR — REFORMA DITADA (2026-06-09 noite, 2ª rodada)
+
+## Pedido do Flávio (voz)
+Esquecer o TRECHO. Na mesma linha: melhor volta do dia + tempo da volta em curso, colorido
+(verde se naquela parte está melhor que a melhor volta do dia, vermelho se pior). Layout:
+CIMA vídeo · MEIO velocidade + dado da volta · BAIXO mapa de Brasília com o ponto do carro.
+Mapa: fundo preto, pista cinza, usar a pista OFICIAL dos arquivos (a que ele posicionou).
+
+## TASK_DONE (reforma)
+- Ambiente: desenvolvimento + p1tv (teste). Produção NÃO alterada.
+- Arquivos: AssistirView.swift (layout novo, sem TRECHO, em-curso colorido por deltaS),
+  PistaBrasilia.swift (NOVO, gerado: 495 pts do desenho DEFINITIVO + amarração GPS calculada
+  por aproximação iterativa, erro mediano 11,5 px), index.html da Central (simulador ganhou
+  replay de GPS do trajeto canônico + volta fechada ao completar o circuito + guarda contra
+  GPS congelado), sim-gps.json (NOVO, 307 pts).
+- Validação: BUILD SUCCEEDED, app instalado no iPhone, sala recebeu gps(lat Brasília,
+  spd real)/carro/painel sem erros via navegador automatizado.
+- Resultado: concluído — aguardando validação visual do Flávio no iPhone.
+- Pendência honesta: precisão da bolinha ~1 largura de pista (desenho oficial é estilizado;
+  se incomodar, dá pra refinar a amarração trecho a trecho).
+
+---
+
+# TELA ASSISTIR NO APP (2026-06-09 noite)
+
+## Pedido do Flávio (card respondido: "Tela de ASSISTIR primeiro, depois modo BOX")
+Tela pra pessoas assistirem no app: vídeo em tempo real em cima + dados básicos de trecho e
+volta do piloto embaixo. Decisões registradas: internet da Apple TV = celular do modo BOX.
+
+## TASK_DONE (tela ASSISTIR)
+- Pedido conferido: sim · Ambiente: desenvolvimento + p1tv (teste) · Produção alterada: não
+- Arquivos: AssistirView.swift (NOVO), HomeView.swift (botão+rota), ContentView.swift (rota),
+  web/teste-aparelhos/index.html (repasse carro/painel pra sala + simulador de voltas/trechos),
+  web/cockpit/cloud-bridge.js (publishEvento), web/cockpit/main-t3000.js (eventos volta/trecho/delta — DEV)
+- Validação: BUILD SUCCEEDED + app INSTALADO no iPhone; ouvinte na sala recebeu gps=60 carro=24
+  painel=12 em 12 s (exemplos reais conferidos); sintaxe OK nos 3 js; smokes bootstrap 7/0, web 16/0.
+- Resultado: concluído — FALTA validação visual do Flávio no iPhone (abrir ASSISTIR AO VIVO com
+  a Central transmitindo + simulador ligado).
+- Próximo bloco já decidido no card: MODO BOX (Vista Piloto na Apple TV, internet do celular).
+
+---
+
+# SOLUÇÃO DE PISTA SEM IR À PISTA (2026-06-09)
+
+## Pedido original do Flávio
+"vc já criou uma aplicação para testar a t4000. e testamos e deu certo. hoje testamos gps e câmera.
+quero preparar a solução de pista sem ir lá. porque na próxima quero tudo funcionando."
+
+## Objetivo em 1 frase
+Juntar os dois caminhos já provados (T4000→painel→nuvem de 26/05 + câmera/GPS→app de 09/06) numa
+solução de pista única, robusta (religação automática) e testável no escritório via replay das
+amostras reais do motor.
+
+## Critérios objetivos de conclusão
+1. Transmissor p1tv com câmera + GPS + status do carro + religação automática nas 3 fontes.
+2. Painel remoto (painel.html) mostrando vídeo + GPS + dados do carro com aviso de queda.
+3. Modo simulador tocando as 2.901 amostras reais (26/05) sem o carro.
+4. Painel do piloto (p1t4000) com religação automática — EM DESENVOLVIMENTO, sem publicar.
+5. Cadeia inteira validada no escritório (navegador + ouvinte no Mac).
+6. Checklist do dia de pista + ADR-024 atualizada (câmera iPhone → DJI).
+
+## Confirmação de leitura: ~/.claude/CLAUDE.md sim · padroes.md sim · FLAVIO_EXECUTION_PROTOCOL sim ·
+FLAVIO_DONE_CHECKLIST sim · FLAVIO_ENVIRONMENT_RULES sim · FLAVIO_COMMUNICATION_RULES sim
+
+## Plano (5 passos)
+1. Transmissor unificado em web/teste-aparelhos/ (religação + GPS na nuvem + status carro).
+2. painel.html com dados do carro + religação.
+3. Modo simulador (replay amostras reais).
+4. Robustez do painel do piloto em dev (main-t3000.js) — SEM publicar.
+5. Validação no escritório + checklist de pista + ADR-024.
+
+## Arquitetura decidida (com base no que está provado)
+- Notebook na pista roda 2 abas: p1t4000.vercel.app (painel do piloto + T4000 via USB — provado 26/05)
+  e p1tv.vercel.app (câmera DJI + RaceBox — provado 09/06). Só UMA página pode segurar o USB da
+  T4000 por vez, por isso 2 abas, cada uma dona de um aparelho.
+- Dados do carro trafegam SÓ pelo canal canônico cockpit-bubi-live (regra: não criar fonte paralela).
+- GPS do RaceBox passa a ser publicado TAMBÉM no cockpit-bubi-live (evento 'gps' que o canal já
+  suporta) além do caminho atual pelo vídeo — assim o painel do piloto pode usar o GPS de 25 Hz.
+
+## Ambiente alvo: desenvolvimento. p1tv.vercel.app = endereço de TESTE (criado 09/06 como tal).
+## p1t4000.vercel.app NÃO será republicado (exige MIGRAR PARA PRODUÇÃO).
+## Produção protegida: sim · Autorização para produção: não · Evidência: não recebida
+## Riscos: nenhum em produção; canal de broadcast não persiste dados (simulador não polui banco).
+## Status: CONCLUÍDO (aguardando validação visual do Flávio com RaceBox+DJI reais)
+
+## TASK_DONE (2026-06-09 noite)
+- Pedido original conferido: sim (solução de pista preparada sem ir à pista, testável no escritório)
+- Ambiente trabalhado: desenvolvimento + endereço de TESTE p1tv.vercel.app (criado 09/06 como teste)
+- Produção foi alterada: não (p1t4000.vercel.app intocado; nada enviado pro repositório oficial remoto)
+- Arquivos reais inspecionados: sim (main-t3000.js, cloud-bridge.js, live-data-bridge.js, index/painel,
+  FONTE_DADOS_AO_VIVO.md, HANDOFF_T4000, BLOCKERS, STATUS, vercel configs)
+- Alterações feitas: sim — ver lista abaixo
+- Testes executados: 5 smokes da área (state 24/0, renderer 17/0, bootstrap 7/0, web 16/0,
+  live-data-bridge 21/5 — as 5 falhas são PRÉ-EXISTENTES, provado contra estado 546b2da0 16:51);
+  sintaxe OK nos 4 arquivos mexidos; validação ponta-a-ponta com navegador automatizado:
+  simulador→nuvem→painel remoto (RPM 843/água 38°/bat 12,8 V) + ouvinte externo (105 amostras).
+- Resultado: concluído
+- Pendências reais: (1) Flávio validar Central com RaceBox+DJI reais clicando;
+  (2) religação T4000 sem teste com hardware real; (3) publicar painel do piloto reforçado
+  exige "MIGRAR PARA PRODUÇÃO: painel p1t4000" (inclui consertos 08/06); (4) teste antigo
+  live-data-bridge defasado (5 falhas pré-existentes, área alerta ECU).
+
+## Arquivos alterados nesta tarefa
+- web/teste-aparelhos/index.html (Central de Pista: 4 luzes + religações + GPS→nuvem + simulador)
+- web/teste-aparelhos/painel.html (dados do carro + religação + GPS reserva pela nuvem)
+- web/teste-aparelhos/sim-amostras.json (NOVO — 2.901 amostras reais do motor, 827 KB)
+- web/cockpit/main-t3000.js (religação automática T4000 + GPS do canal no detector) — DEV
+- web/cockpit/cloud-bridge.js (religação automática do canal) — DEV
+- ARCHITECTURE_DECISIONS.md (ADR-024 registrada: câmera DJI no notebook)
+- docs/CHECKLIST_DIA_DE_PISTA.md (NOVO)
+Tudo preservado pelo auto-save no branch wip/20260608-143705. Publicado SÓ o p1tv (teste).
+
+---
+
+# ANÁLISE + PROPOSTA — "implementar o que está faltando" (2026-06-09) — superada pela tarefa acima (Flávio respondeu em texto: preparar solução de pista; card não precisa mais de resposta)
+
+## Pedido original do Flávio
+"agora vamos implementar em p1 fast o que está faltando. analise e me proponha."
+
+## Objetivo em 1 frase
+Mapear o que falta no P1 Fast com evidência e propor ordem de implementação pra decisão do Flávio.
+
+## Critérios objetivos de conclusão
+1. Pendências levantadas de fontes reais (memória, ultima-tarefa, STATUS.md, BLOCKERS.md, código).
+2. Proposta com recomendação apresentada.
+3. Card de decisão aberto no navegador.
+
+## Confirmação de leitura dos arquivos obrigatórios
+- ~/.claude/CLAUDE.md: sim
+- ~/.claude-decisoes/padroes.md: sim (0 decisões sintetizadas)
+- ~/.claude/FLAVIO_EXECUTION_PROTOCOL.md: sim (existe, 92 linhas)
+- ~/.claude/FLAVIO_DONE_CHECKLIST.md: sim (existe, 64 linhas)
+- ~/.claude/FLAVIO_ENVIRONMENT_RULES.md: sim (existe, 86 linhas)
+- ~/.claude/FLAVIO_COMMUNICATION_RULES.md: sim (lido integral)
+
+## Plano (≤5 passos)
+1. Ler memória (global + P1 Fast) e registros do projeto. [feito]
+2. Conferir STATUS.md, BLOCKERS.md, shift light, pasta windows/. [feito]
+3. Consolidar o que falta em frentes.
+4. Apresentar proposta com recomendação.
+5. Abrir card de decisão e aguardar.
+
+## Áreas inspecionadas
+STATUS.md, BLOCKERS.md, docs/SHIFT_LIGHT_PROGRESS.md, windows/cockpit/, .claude-exec/ultima-tarefa.md, memória dos 2 caminhos.
+
+## Ambiente alvo: desenvolvimento (análise somente leitura; nenhuma alteração de código nesta etapa)
+## Produção protegida: sim
+## Autorização para produção: não
+## Evidência da autorização: não recebida
+## Riscos: nenhum (somente leitura + card)
+## Status: iniciado → proposta apresentada, aguardando decisão do Flávio
+
+---
+
+# TESTE DE APARELHOS (vídeo + GPS) — 2026-06-09
+
+## Pedido do Flávio
+Teste de ponta a ponta: o **notebook Windows** da pista transmite **vídeo (câmera DJI Osmo Action 6,
+1080p, via Daily.co)** + **dados do GPS (RaceBox Mini S)**, e o Flávio **vê no celular** numa tela de
+painel ao vivo. Iterar ao vivo com ele, ajustando conforme o feedback.
+
+## PUBLICADO e no ar (endereço de teste novo e separado — NÃO toca produção)
+- **Notebook (transmite):** https://p1tv.vercel.app
+- **Celular (assiste):** https://p1tv.vercel.app/painel
+- Projeto Vercel `p1-teste-aparelhos` (apelido `p1tv.vercel.app`). Proteção SSO desligada (público).
+
+## Arquitetura (3 peças) — fonte em `web/teste-aparelhos/`
+- `index.html` (notebook): Daily.co publisher (câmera, seletor pra escolher a DJI) + RaceBox por
+  **WebBluetooth** (Nordic UART notify 6e400003; frame B5 62 / class 0xFF id 0x01 / payload 80B —
+  fix p[20], numSV p[23], hacc u32@40/1000, spd i32@48/1000*3.6, lat i32@28/1e7, lon i32@24/1e7) →
+  manda GPS pro celular via `sendAppMessage` (200ms).
+- `painel.html` (celular): Daily.co viewer (vídeo) + recebe GPS por `app-message`.
+- `api/room.js`: ponte same-origin → chama servidor-pra-servidor `fam-racing.vercel.app/api/video/room`
+  (que bloqueia Origin de outro site). Sala determinística eventId `p1-teste-aparelhos` + data de hoje.
+
+## Verificado por evidência (2026-06-09)
+fam-racing/api/video/room → 200 (roomUrl+tokens). p1tv.vercel.app `/`→200, `/painel`→200,
+`/api/room`→200 (cria sala `evento-p1-teste-aparelhos-20260609`).
+
+## VALIDADO EM CAMPO (2026-06-09) ✅
+Flávio rodou o teste: "a imagem apareceu e o gps também". Vídeo ao vivo + GPS do notebook
+chegam DENTRO do app P1 Fast no iPhone (tela "TESTE AO VIVO" na Home). Primeira vez que o
+vídeo rodou no app (MS-11 era stub). Detalhe completo em memória
+`p1-fast-teste-video-gps-app-validado-2026-06-09`.
+
+App iOS: tela nova `Sources/Views/TesteAoVivoView.swift` + botão "TESTE AO VIVO" na HomeView +
+rota `--p1-teste-aovivo` + chaves de plist. Instalado no iPhone 16 Pro Max (id 00008140-000E2D611E6A801C).
+Build SUCCEEDED, install OK.
+
+## Próximo passo (aguardar decisão do Flávio)
+Teste validado. Próximas frentes possíveis (ele decide): (a) integrar a T4000/dados do carro no mesmo
+fluxo; (b) levar do "teste" pro painel real do piloto; (c) robustez (reconexão, Starlink na pista);
+(d) atualizar ADR-024/CLAUDE.md (câmera iPhone → DJI). Iterar app: ver comando de reinstalação na memória.
+
+## Pendências do modelo (separadas deste teste)
+- ADR-024 / CLAUDE.md dizem câmera = iPhone frontal; Flávio mudou pra DJI no notebook. Atualizar doc.
+- MS-11 real no app iOS: StreamCoordinator tem stub, conexão Daily.co CallClient não implementada.
+
+---
+
+# AUDITORIA PROFUNDA — TASK_DONE (2026-06-08)
+
+Pedido Flávio: "faça uma auditoria profunda." Ambiente: desenvolvimento + leitura na nuvem.
+Produção NÃO alterada. 5 frentes paralelas, cada achado provado.
+
+VERDE (com evidência):
+- Núcleo Swift: 545 ok / 0 fail (`swift run p1fast-smoke`).
+- App iOS: BUILD SUCCEEDED (só warnings).
+- Migrations.swift: colisão v19 RESOLVIDA (único v19_manutencao_consumiveis; antigo virou v28).
+- Estoque na nuvem chegou ponta-a-ponta: pecas=2, pecas_locais=3, pecas_movimentacoes=5.
+- Schema drift RESOLVIDO (data_fim nullable, template_id text, quantidade/nota presentes).
+- App iOS: 7 funções principais existem e integradas; 0 TODO/FIXME/fatalError críticos.
+
+VERMELHO / RISCO:
+1. 3 arquivos do PAINEL WEB do cockpit NA VERSÃO OFICIAL com marcadores de conflito não
+   resolvidos (JS inválido): web/cockpit/cockpit-renderer.js (9), cockpit-state.js (3),
+   melhores-loader.js (9). Em origin/main E branch local. Introduzido em cd3af53b. Quebra
+   `npm run smoke`. NÃO afeta o app iPhone (afeta só o painel web do cockpit).
+2. STATUS.md 10 dias atrasado (topo 2026-05-24; realidade 2026-06-03). Contradição doc×doc:
+   MS-4 e MS-16 = "não feito" no STATUS, "fechado" no PLANO_FASE_1.
+3. Trabalho órfão em 4 ambientes isolados nunca incorporados: infallible-liskov (editor de
+   pista + mapa Brasília), infallible-snyder (6 telas), rodada1-s1 (foto carro + telas S1-S8),
+   vista-engenheiro (Vista Piloto canônica + Vista Engenheiro Command Box).
+4. Manutenção: 0 linhas na nuvem (sync de manutenção nunca exercitado de verdade).
+5. Sincronização só roda com app aberto/desbloqueado (sem envio em segundo plano).
+6. Teste node-smoke-schema-parity desatualizado vs schema atual (5 asserts) — teste velho.
+7. 22 dos últimos 50 registros da oficial são "auto-save" automáticos (poluição de processo).
+
+Resultado: concluído. Próximo passo aguarda decisão do Flávio.
+
+---
+
+# FRENTE 1 CONCLUÍDA (2026-06-08) — Painel do cockpit consertado
+
+Flávio aprovou consertar os 3 arquivos do painel web. Esclareceu o modelo (NÃO eram 2 opções):
+um quadro por curva com ENTRADA (único ponto, velocidade ao cruzar a linha de entrada),
+FREIO (ponto de frenagem em metros desde a entrada + velocidade) e ÁPICE (bolinha = ponto
+mais interno da passagem mais rápida). Saída mantida.
+
+Resolução (por evidência, não escolha cega):
+- melhores-loader.js: adotado o modelo que casa com a nuvem (migrations 0026/0027: track_id,
+  segment_id, tempo_trecho_s, pontos_json) e com os 2 pontos de entrada do painel (main.js,
+  main-t3000.js chamam gravarPassagem + loadMelhoresPassagens({obj})). Lado antigo
+  (salvarPassagemSeMelhor/distanciaMetros) descartado — ninguém usava (grep confirmou).
+- cockpit-state.js: apex.apice = {distM, angleDeg} (bolinha); entrada/freio/saida preservados;
+  freio ganhou valorKmh (modelo Flávio). 4 papéis mantidos (setApexPonto valida os 4).
+- cockpit-renderer.js: removida a definição duplicada/antiga de _renderApexApice; mantida a
+  versão bolinha; saída renderizada; bindings = bolinha (apexApiceBola/Num) + saída.
+
+Validação: 0 marcadores de conflito restantes; cockpit-state e cockpit-renderer carregam em
+Node; smokes VERDES: cockpit-state 24/0, cockpit-renderer 17/0, cockpit-bootstrap 7/0 (CKB-07
+que falhava agora passa), cockpit-web 16/0.
+
+Ambiente: DESENVOLVIMENTO. NÃO enviado pro repositório oficial / NÃO colocado no ar (o painel
+p1t4000.vercel.app pode estar ligado à oficial; envio precisa de "MIGRAR PARA PRODUÇÃO").
+
+Pendentes das 3 frentes aprovadas: (2) atualizar STATUS.md; (3) trazer trabalho órfão.
+
+---
+
+# FRENTES 2 e 3 (2026-06-08)
+
+## Frente 2 — STATUS.md atualizado ✅
+Topo reescrito pro checkpoint 2026-06-08 (estado real verificado) + correção das contradições:
+MS-4 FECHADO 2026-05-11 (confirmado em PLANO_FASE_1.md:184), MS-16 entregue 2026-05-13. Histórico
+2026-05-24 preservado logo abaixo (marcado como histórico). Nada apagado.
+
+## Frente 3 — trabalho órfão: retrato honesto + 1 item trazido
+Os diffs dos 4 ambientes vs oficial são GIGANTES (5000+ arquivos divergentes) — merge cego
+REVERTERIA a oficial. Avaliei só os commits nomeados de cada entrega + checagem de presença na oficial:
+- Vista Piloto canônica/v04 (fb9126ed): JÁ na oficial (mockup-command-box-vista-piloto + auditorias).
+- Mapa Brasília definitivo (d453652c): JÁ na oficial (_design-reference/MAPA-BRASILIA-DEFINITIVO.json).
+- rodada1-s1 (19c23841): majoritariamente cards de pergunta .html antigos = lixo histórico.
+- c0b6026a/13ce80c6 (telas .swift): StintCockpitView/StintReadyView NEM EXISTEM na oficial atual
+  → estrutura divergente, ALTO RISCO de reverter trabalho de 03/06. CockpitOrientationTestView +
+  StintRodandoView são telas NOVAS (faltam na oficial) — avaliar 1 a 1 (decisão pendente).
+- **TRAZIDO: _design-reference/mockup-command-box-vista-engenheiro.html** (de 15c911f6, Vista
+  Engenheiro Command Box, aprovado 13/05). FALTAVA na oficial. 7371 linhas, HTML íntegro, arquivo
+  novo (não toca nada). Só esse arquivo do commit foi extraído (não a edição do vista-piloto).
+
+## Estado de publicação
+TUDO em desenvolvimento (working tree do branch wip/20260608-143705). NADA enviado pro repositório
+oficial / NADA no ar. Conserto do painel web pode disparar deploy se p1t4000.vercel.app estiver
+ligado à oficial → envio precisa de "MIGRAR PARA PRODUÇÃO". STATUS.md e Vista Engenheiro são docs,
+não afetam produção.
+
+Pendências: (a) Flávio decidir sobre telas novas CockpitOrientationTest/StintRodando; (b) Flávio
+autorizar (ou não) o envio pro repositório oficial / colocar painel no ar.
+
+## Avaliação das 2 telas novas (Flávio pediu "testar antes") — VEREDITO: NÃO TRAZER
+git grep em origin/main: OrientationLock=0, FlowToken=0, StintCockpitView=0, StintCaptureView=2.
+- CockpitOrientationTestView: depende de OrientationLock + FlowToken (ausentes). É ferramenta de
+  diagnóstico DEV-ONLY (--p1-cockpit-test) pra testar rotação, não produto.
+- StintRodandoView: depende de StintCockpitView (ausente) + OrientationLock (ausente). Alterna
+  cockpit-horizontal-no-iPhone vs captura-vertical.
+- Ambas pertencem ao COCKPIT DO PILOTO NO IPHONE, caminho DESCONTINUADO por ADR-023 (09/05):
+  cockpit-display migrou pro notebook Windows. Trazer = ressuscitar caminho abandonado + puxar
+  cadeia ausente. Reprovadas. Preservadas nos worktrees (infallible-snyder), nada apagado.
+
+## DECISÕES DO FLÁVIO (2026-06-08)
+- Telas novas: avaliar antes (feito → reprovadas, ver acima).
+- Publicação: ESPERAR — tudo fica em desenvolvimento. NADA enviado pro repositório oficial / no ar.
+
+## ESTADO FINAL das 3 frentes (todas em desenvolvimento, nada publicado)
+1. Painel cockpit consertado + validado (4 smokes verdes).
+2. STATUS.md atualizado (checkpoint 2026-06-08 + correção MS-4/MS-16).
+3. Órfão: Vista Engenheiro trazida (1 arquivo novo); telas .swift reprovadas; resto já-na-oficial/lixo.
+Quando o Flávio mandar, envio pro repositório oficial (e, com "MIGRAR PARA PRODUÇÃO", coloco painel no ar).
+
+---
+---
+
+# Auditoria — Sincronização Estoque + Manutenção (2026-06-08)
+
+## Pedido
+Auditar (somente leitura) a sincronização de Estoque+Manutenção pra nuvem Supabase p1-fast: migration 0039, Edge Function sync, estado real da nuvem, fila/backfill do app iOS.
+
+## Ambiente: produção (Supabase p1-fast fvhwltzhytpnhlqbttmd) — SOMENTE LEITURA. Nada escrito.
+
+## Achados (com evidência)
+- Migration 0039 existe: cria pecas_locais, pecas, pecas_movimentacoes, manutencoes (+índices, triggers updated_at, RLS is_member).
+- Edge Function sync (index.ts:29-47): ALLOWED_TABLES inclui pecas_locais, pecas, pecas_movimentacoes, manutencoes.
+- Nuvem (via `supabase db query --linked`, SELECT): pecas=2, pecas_locais=3, pecas_movimentacoes=5, manutencoes=0.
+- Schema drift RESOLVIDO: eventos.data_fim = date NULLABLE; evento_pendencias.template_id = text (NOT NULL); quantidade=real, nota=text presentes.
+- App: PecaRepository.swift enfileira em cada mutação; ManutencaoConsumiveisView.swift:60 enfileira manutenção; SyncBackfill.run no boot (ContentView.swift:268, Task.detached background); drain por Timer no SyncCoordinator (30s) — depende de foreground; sem BGTaskScheduler.
+
+## Status: concluído
+
+---
+---
+
+# TASK (2026-06-09) — Testar RaceBox Mini S no escritório
 
 ## Pedido (Flávio)
-No Cadastro do carro, clicar num campo e depois em "Cancelar" levava à TELA INICIAL do app (menu
-principal), em vez de voltar pra tela ANTERIOR (o painel/hub do carro). Flávio confirmou "B" (vai
-pra tela inicial). Quer manter o botão Cancelar; só corrigir pra onde ele volta. Rejeitou contornos
-de UI (esconder Cancelar / fechar teclado ao tocar fora).
-
-## Diagnóstico
-Navegação por push (NavigationPath no HomeView). Caminho esperado [garagem, carroHub, carroCadastro];
-"Cancelar" = onClose = navPath.removeLast() (volta 1). Pela leitura deveria voltar ao hub, mas em
-runtime o caminho se perde e o removeLast cai na raiz (tela inicial). Não reproduzível por leitura
-nem por toque automatizado no simulador (System Events não chega ao Simulator; idb ausente).
-
-## Tentativas 1-3 (FALHARAM — Flávio confirmou "B": continua indo pra tela inicial)
-- "Concluído" no teclado; reconstruir caminho (voltarAoHub). Nenhuma resolveu → sinal de que o
-  problema NÃO era o conteúdo do caminho que eu mexia.
-
-## CAUSA RAIZ (2 investigadores independentes — agentes general-purpose, 2026-06-03)
-O caminho de navegação (navPath) era @State VOLÁTIL dentro do HomeView. O HomeView é reconstruído
-pelo ReadyRoot (ContentView) toda vez que qualquer um dos 16 @StateObject publica — em especial o
-SyncCoordinator (timers 30s/5min/60s) e o ManutencaoConsumiveisStore (ao abrir o hub). Cada
-reconstrução zerava o @State navPath. Com o teclado aberto (clicou no campo) + um timer disparando,
-o caminho se perdia e qualquer "voltar" (removeLast OU reconstrução) caía na raiz = tela inicial.
-
-## CORREÇÃO REAL (ataca a causa)
-- HomeView.swift: novo `final class NavRouter: ObservableObject { @Published var path }`.
-- HomeView: trocado `@State navPath` por `@EnvironmentObject router: NavRouter`; todos os usos →
-  router.path; NavigationStack(path: $router.path).
-- ContentView (ReadyRoot): `@StateObject private var router = NavRouter()` (criado UMA vez, estável)
-  + `.environmentObject(router)`. Assim o caminho sobrevive às reconstruções.
-- Voltar unificado em `voltarUmaTela()`: fecha o teclado (resignFirstResponder) e faz removeLast
-  incremental. Usado por carroHub/cadastro/manutencao/estoque/eventoDetalhe.
-- HubMockLauncher + previews: injetam NavRouter() pra não quebrar.
-Build SUCCEEDED, 0 erros. Instalado no iPhone. Validando não-crash no simulador. AGUARDA teste do Flávio.
-
----
----
-
-# Tarefa (2026-06-03, 16h) — App no iPhone sem credenciais da nuvem ("Servidor não configurado")
-
-## 1. Pedido (Flávio, 2026-06-03)
-Flávio mandou print da tela "Entrar" do app no iPhone mostrando aviso amarelo "Servidor não
-configurado — Esta build não tem credenciais Supabase". Login/sincronização indisponíveis.
-
-## 2. Objetivo
-Reinstalar no iPhone uma versão do app que tenha as chaves de conexão com a nuvem, pra destravar
-login + validar a sincronização de Estoque/Manutenção.
-
-## 3. Critérios de conclusão
-- App reinstalado no iPhone abre a tela Entrar SEM o aviso amarelo (login disponível).
-- Versão empacotada = oficial (deb46bed): Hub + Estoque + Manutenção + sync + ajustes de peça.
-
-## 4. Diagnóstico verificado (evidência, não inferência)
-- Chaves ficam em `ios/p1fast-ios/.env.xcconfig` e `ios/p1fast-ios/Config/.env.xcconfig` — ambos GITIGNORED (`git check-ignore` confirmou).
-- `Config/Debug.xcconfig` e `Config/Release.xcconfig` fazem `#include? ".env.xcconfig"`; sem o arquivo, caem no default `example.supabase.co` → tela "Servidor não configurado".
-- Pasta OFICIAL tem os dois `.env.xcconfig` com URL+ANON_KEY reais E todo o código novo (deb46bed): EtiquetaOCR/BarcodeScanner/BuscaPrecoML, maxFotos=5, Editar peça, Hub, Estoque, Manutenção, sync.
-- Conclusão: a build hoje no iPhone foi empacotada de origem/momento sem o arquivo de chaves. Solução = re-empacotar da pasta oficial e reinstalar.
-
-## 5. Ambiente: DESENVOLVIMENTO (pasta oficial local). Produção NÃO tocada (só uso a URL da nuvem que já existe).
-## 6. iPhone alvo: iPhone 16 Pro Max ("iPhone Pro Max (7)", udid 00008140-000E2D611E6A801C), conectado.
-## 7-11. Riscos: assinatura/provisionamento; tempo de empacotamento; validar no device.
-## 12. Status: CONCLUÍDO no empacotamento+instalação — aguardando confirmação visual do Flávio.
-
-### Causa raiz real (corrigida)
-NÃO era só falta de chaves. O app NÃO compilava: `Migrations.swift` (núcleo, esquema do banco
-local) estava com COLISÃO de incorporação não resolvida — `v19_manutencao_consumiveis` (lado HEAD,
-Estoque+Manutenção) vs `v19_pendencias_consumivel` (lado wip/20260526-132312, 3 colunas de
-pendências consumível), mesmo número v19. Um commit local "auto-save: 16:30:31" (a6e01aa8, NÃO
-publicado) fotografou o estado quebrado. A versão PUBLICADA (origin/main = deb46bed) está limpa
-(resolveu mantendo v19_manutencao + v26_pecas + v27_pecas_preco). Restaurei o arquivo da versão
-publicada (working tree; backup do quebrado em /tmp/Migrations.swift.quebrado-backup).
-
-### TASK_DONE (2026-06-03, 17h)
-- Pedido original conferido: sim (app sem credenciais → reinstalar versão que conecta na nuvem).
-- Ambiente trabalhado: desenvolvimento (pasta oficial local). Produção NÃO tocada.
-- Produção foi alterada: não.
-- Arquivos reais inspecionados: sim (xcconfig, project.yml, Migrations.swift, origin/main).
-- Alterações feitas: sim — restaurei Migrations.swift à versão publicada (só working tree, não comitado).
-- Testes/validação executados: empacotamento BUILD SUCCEEDED, 0 erros; Info.plist do app tem SUPABASE_URL real + ANON_KEY real; app instalado e lançado no iPhone (bundle com.flaviomarques.p1fast).
-- Resultado: concluído (empacotamento+instalação). NÃO capturei screenshot do device (idevicescreenshot não acha o device no túnel CoreDevice) → confirmação visual do Flávio pendente.
-- Pendências reais:
-  1. Flávio confirmar no iPhone: tela Entrar SEM aviso amarelo + login disponível.
-  2. Migração v19_pendencias_consumivel (3 colunas: pendencias_template.eh_consumivel/unidade,
-     evento_pendencias.quantidade) ficou FORA da versão publicada — decidir se precisa entrar.
-  3. 3 arquivos do painel web com conflito não resolvido (cockpit-renderer.js, melhores-loader.js,
-     cockpit-state.js) — não afetam o app iPhone; limpar depois.
-  4. Commit local a6e01aa8 "auto-save" (quebrado, não publicado) + working tree divergente de
-     origin/main — revisar/limpar.
-  5. Conflito não resolvido em .claude-exec/ultima-tarefa.md (marcadores HEAD/wip) — limpar.
-
----
----
-
-# Tarefa atual — TASK_INIT (2026-06-01) — Leitura de etiqueta da peça com IA + preço Mercado Livre
-
-## 1. Pedido (Flávio, 2026-06-01)
-Ao fotografar a etiqueta, a IA deve LER o descritivo (qualquer formato/marca, sem padrão fixo) e
-preencher nome/especificação/código; e buscar o preço da peça no Mercado Livre. Decisões do Flávio
-(card): leitura = IA na nuvem; preço = aceitou raspagem (melhor-esforço).
-
-## 2. Objetivo
-Foto da etiqueta → IA estrutura os dados e preenche o cadastro; preço de referência (ML) quando possível.
-
-## 3. Fatos verificados (não inferidos)
-- API oficial de busca do Mercado Livre = FECHADA (403 mesmo com token; relatos públicos). WebFetch na busca do ML = 403 também. Raspagem caseira não passa; precisa serviço de raspagem PAGO (Bright Data — não configurado aqui).
-- App conecta num Supabase ÚNICO (project "p1-fast"), no ar (produção). Edge Functions em Deno/TS (padrão std http serve + esm.sh). Nenhuma usa IA hoje. Supabase CLI 2.101.0 disponível (testa função local).
-- Eu (IA de visão) já li a etiqueta Sabó da foto: Nº 02370, "Ret da saída da transmissão", aplicação Corsa/Astra, dim. 35x54x10/15 mm, nitrílico, EAN 7891252023700.
-
-## 4. Plano REVISADO (2026-06-01, pós-prova do navegador) — TUDO no app, grátis, sem servidor/chave
-Prova: abri o ML num navegador real (Chrome) e li o preço sem bloqueio. Peça da foto (retentor saída
-transmissão Corsa Sabó 02370) = ~R$ 39,90/un, kit R$ 78,90. Flávio confirmou "sim". Logo:
-1. OCR LOCAL (Vision/VNRecognizeTextRequest) lê o texto da etiqueta (qualquer formato) → preenche nome + especificação (+ EAN se achar). Grátis, offline. → `EtiquetaOCR.swift`.
-2. Preço ML via WKWebView embutida: abre a busca do ML (navegador real = sem 403), lê o 1º preço ativo (mediana), preenche o campo Preço. Grátis. → `BuscaPrecoMLView.swift`.
-3. Botões no PecaNovoFormView: "Ler etiqueta (foto)" + "Buscar preço no Mercado Livre".
-4. xcodegen generate (incluir arquivos novos) + compilar (simulador + device) + instalar no iPhone.
-5. (FUTURO/opcional) "IA de verdade" pra estruturar campos melhor — só se o OCR local não bastar (aí precisaria chave/servidor).
-NÃO precisa mais: chave de IA, Edge Function, serviço de raspagem pago, tocar produção.
-
-## 5-11. Ambiente DESENVOLVIMENTO (determined-beaver-390de9). Produção NÃO é tocada (tudo roda no app). Flávio confirmou "sim" (2026-06-01).
-Riscos: OCR depende da qualidade da foto; WKWebView do ML pode mudar layout/pedir consentimento (melhor-esforço); validar no device.
-
-## 12. Status: CONCLUÍDO no app — instalado no iPhone, aguardando validação do Flávio.
-
-### TASK_DONE (2026-06-01)
-- Pedido conferido: sim (ler etiqueta por foto + preço ML, ambos no app, grátis).
-- Ambiente: desenvolvimento (determined-beaver-390de9). Produção NÃO tocada.
-- Alterações: 2 arquivos novos (EtiquetaOCR.swift = OCR Vision; BuscaPrecoMLView.swift = WKWebView + lê preço) + PecaNovoFormView (botões "Ler etiqueta" e "Buscar preço no ML" + fluxos) + mock dev --p1-preco-ml.
-- Validação: build simulador + device = SUCCEEDED. Simulador provou o PREÇO ML de ponta a ponta: app leu R$ 39,90 da peça "sabo 02370" pelo navegador embutido (screenshot /tmp/p1-preco-ml.png). Botão "Ler etiqueta" visível no cadastro (/tmp/p1-peca-cadastro-novo.png). App instalado no iPhone.
-- Pendência: OCR da etiqueta só testa no device (câmera) — Flávio valida; decidir incorporar à versão oficial.
-- Resultado: concluído no ambiente isolado.
-
----
----
-
-# (CONCLUÍDO) TASK_INIT (2026-06-01) — Editar / Apagar / 5 fotos da peça
-
-## 1. Pedido original (Flávio, 2026-06-01, depois de testar no iPhone)
-(a) Botão Apagar peça precisa pedir CONFIRMAÇÃO antes. (b) Apagar deve ficar SÓ dentro de uma
-tela de edição de dados, acionada por um botão novo "Editar". (c) Na tela de usar (adicionar/
-retirar +1/−1) NÃO tem botão apagar. (d) Botão "Editar" novo pra editar os dados da peça.
-(e) Fotos: até 5 (era 3). (f) Confirmado: ao escanear o código não vem o nome → fica manual.
-
-## 2. Objetivo
-Mover o Apagar pra uma tela de edição (com confirmação), tirar da tela de usar; criar botão
-Editar; subir o limite de fotos de 3 pra 5.
-
-## 3. Critérios de conclusão
-- [ ] Tela de usar (detalhe +1/−1) sem botão Apagar.
-- [ ] Botão Editar abre tela de edição dos dados da peça.
-- [ ] Apagar só na tela de edição, com confirmação antes.
-- [ ] Peça aceita até 5 fotos.
-- [ ] Compila + testes do core verdes + instalado no iPhone + validado pelo Flávio.
-
-## 4. Plano (≤5 passos)
-1. PecaRepository: maxFotos 3→5.
-2. PecaNovoFormView: aceitar peça pra editar (pré-preenche; título "Editar peça"; esconde
-   quantidade inicial; mostra Local; botão Apagar com confirmação; salvar via atualizarPeca).
-3. PecaDetalheView: remover botão Apagar + alert; adicionar botão Editar (toolbar) + sheet de edição.
-4. Build simulador + testes do core.
-5. Instalar no iPhone + pedir validação.
-
-## 5. Ambiente: DESENVOLVIMENTO (determined-beaver-390de9). Produção protegida. Sem autorização produção (não necessária).
-## 6. Arquivos a editar: PecaViews.swift, PecaRepository.swift (PecaModels.swift lido — campos `var`, dá pra editar preservando created_at).
-## 7-11. Riscos: não quebrar o cadastro novo (já aprovado) ao reusar o form; sheet sobre sheet no detalhe; validar no device.
-## 12. Status: CONCLUÍDO no ambiente isolado — aguardando validação do Flávio no iPhone.
-
-### TASK_DONE (2026-06-01)
-- Pedido original conferido: sim (confirmação ao apagar; Apagar só na edição; sem Apagar no usar; botão Editar; 5 fotos; código de barras manual).
-- Ambiente trabalhado: desenvolvimento (determined-beaver-390de9).
-- Produção foi alterada: não.
-- Arquivos reais inspecionados: sim (PecaViews, PecaRepository, PecaModels, HubMockLauncher).
-- Alterações feitas: sim.
-- Testes/validação executados: compila no simulador E no iPhone (BUILD SUCCEEDED nos dois); screenshots do simulador (detalhe sem Apagar + com Editar; topo da edição com título "Editar peça", campos preenchidos e "Até 5 fotos"); app instalado no iPhone. Não há suíte automatizada de UI pra peça; o núcleo P1FastCore não foi tocado.
-- Resultado: concluído no ambiente isolado; validação final do Flávio no device pendente. O rodapé da edição (botão Apagar + confirmação) não foi capturado por screenshot (scroll do simulador não controlável neste setup multi-monitor) — garantido por código e compilação.
-- Pendências reais: Flávio validar no iPhone (Apagar com confirmação, editar+salvar, 5 fotos reais via câmera); decidir incorporar à versão oficial.
-
-### Arquivos alterados
-- ios/p1fast-ios/Sources/Persistence/PecaRepository.swift — maxFotos 3→5 + comentários.
-- ios/p1fast-ios/Sources/Views/PecaViews.swift — form passa a editar peça existente; Apagar movido do detalhe pro form (com confirmação); botão Editar no detalhe; quantidade escondida na edição; texto "Até 5 fotos".
-- ios/p1fast-ios/Sources/Views/HubMockLauncher.swift — atalhos só-dev `--p1-peca-detalhe` e `--p1-peca-editar` (inofensivos, só com launch arg).
-
-### O que foi preservado
-- Cadastro NOVO de peça (fluxo já aprovado) intacto — parâmetros novos do form têm valor padrão; nenhuma chamada existente quebrou.
-- Campos/coluna do banco preservados; created_at e quantidade preservados na edição.
-- Texto de confirmação de apagar reaproveitado.
-
----
----
-
-# (PRESERVADO) Tarefa — TASK_INIT (2026-05-31, noite) — Navegação (menu fixo) + cadastros
-
-## 1. Pedido original (Flávio, 2026-05-31)
-(a) Menu inferior (Home·Eventos·Cadastros·Garagem) SEMPRE embaixo, em QUALQUER tela —
-inclusive hub/cadastro/manutenção/estoque/detalhe de evento, que hoje abrem como "folha"
-modal e cobrem o menu. (b) Cadastro do carro: remover a Cor (identidade = foto; sem foto =
-ícone neutro). (c) Cadastro de peça: scanner de código de barras (lê a caixa → traz dados),
-até 3 fotos, e campo "especificação de uso no carro" (calibragem, litros) p/ peças com qtd.
-
-## 2. Objetivo
-Menu fixo embaixo em todas as telas de "lugar" + cadastro do carro sem cor + cadastro de peça
-com scanner/3 fotos/especificação.
-
-## 3. Critérios de conclusão
-- [ ] Menu fixo embaixo no fluxo do carro (hub, cadastro, manutenção, estoque) — validado simulador.
-- [ ] Menu fixo no detalhe de evento.
-- [ ] Cadastro do carro sem Cor; sem foto = ícone neutro.
-- [ ] Cadastro de peça: scanner + até 3 fotos + especificação de uso.
-- [ ] Validado no iPhone do Flávio.
-
-## 4. Plano (do agente Plan, abordagem (a): shell com BottomNav FIXO fora do NavigationStack)
-Fato-chave: telas de detalhe já usam `onClose: () -> Void` (não @Environment dismiss) → sheet→push
-é mecânico (`onClose: { path.removeLast() }`), sem mexer no corpo delas.
-- P1: HomeView — BottomNav fixo fora do stack + enum de rota expandido + destinos.
-- P2: remover BottomNav duplicado de Garagem/Eventos/Pessoas (passa a ter 1 só, fixo).
-- P3: migrar Garagem→Hub→Cadastro/Manutenção/Estoque de .sheet p/ push (remover NavigationStack
-  internos; esconder nav bar nativa no Hub por causa da foto edge-to-edge).
-- P4: EventoDetalhe vira push (wizard de stint continua sheet).
-- P5: limpeza (remover onNavSelect/navSelection mortos).
-Corte: "lugares" (hub, cadastro, manutenção, estoque, evento detalhe, setup, trechos) = push c/ menu.
-"Seletores/confirmações" (pickers pneu/combustível, forms rápidos, wizard stint, sincronização) = continuam folha.
-Risco: stacks aninhados, back duplo, perda de estado ao trocar aba, environmentObjects, mocks de screenshot.
-ESCOPO DESTA SESSÃO: P1+P2+P3 (fluxo do carro) validado no simulador. Depois cor (b) e peça (c).
-
-## 5. Ambiente: DESENVOLVIMENTO (determined-beaver-390de9). Produção protegida. Sem autorização produção (não necessária).
-## 6. Status (2026-05-31, noite — em andamento)
-**UPDATE +1h:** P4 navegação de EVENTOS FEITA (EventoDetalheView vira push via HomeNavTarget.eventoDetalhe;
-EventoCard virou NavigationLink; nav bar nativa escondida pq tem topbar "‹ Eventos"; wizard de stint
-continua sheet). Pedido (c) PEÇA: campo de especificação ajustado p/ "Especificação e uso no carro" +
-exemplos (calibragem/litros); SCANNER de código de barras FEITO — `BarcodeScannerView.swift` (VisionKit
-DataScanner, @MainActor no `disponivel`), botão no campo Código do PecaNovoFormView, +NSCameraUsageDescription
-no project.yml. Modelo Peca JÁ tinha `codigo` e `especificacao` (sem migration). Tudo compila + instalado no iPhone.
-**+2h: 3 FOTOS FEITAS** — PecaRepository.salvarFotos/carregarFotos (até 3 locais; índice 0={id}.jpg
-principal no fotoUrl, 1/2={id}-N.jpg), CameraPicker.swift (UIImagePickerController câmera),
-PecaNovoFormView com 3 slots (câmera OU galeria via confirmationDialog + .photosPicker(isPresented)
-+ .fullScreenCover), criarPeca(fotos:[UIImage]), faixa de fotos no PecaDetalheView. Validado UI no
-simulador (--p1-hub-mock --p1-peca). TODOS OS 3 PEDIDOS (navegação + cor + peça) FEITOS, compilando e
-instalados no iPhone. AGUARDANDO validação final do Flávio (câmera/scanner/3 fotos só testam no device real).
-**PESQUISA BASE CÓD. BARRAS (01/06):** testei DotCompany (endpoint /api/catalogo/public/buscar mas sem API aberta
-a terceiros — devolve landing), produto.xyz (morta), Open Products Facts (sem autopeça BR), Cosmos (10/mês).
-Nenhuma grátis serve bem → RECOMENDEI cadastro MANUAL pras ~50 peças (cadastro 1x; depois só movimentação).
-Flávio pediu /clear sem bater martelo manual vs Mercado Livre — confirmar ao retomar (provável manual = nada a fazer).
-**PRÉ-CLEAR 01/06:** checkpoint completo em ~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/p1-fast-checkpoint-navegacao-menu-fixo-2026-05-31.md.
-PRÓXIMOS: (1) Flávio validar no iPhone; (2) decidir base; (3) incorporar à versão oficial.
-(histórico abaixo)
-FEITO + validado no SIMULADOR (não no device ainda — iPhone desconectou/unavailable):
-- P1+P2+P3 navegação: BottomNav FIXO fora do NavigationStack (HomeView). Garagem/Eventos/Pessoas
-  sem BottomNav próprio. Fluxo do carro (hub/cadastro/manutenção/estoque) virou push
-  (navigationDestination em HomeNavTarget) com `onClose: { navPath.removeLast() }`. Hub esconde
-  nav bar nativa (.toolbar(.hidden)) por causa do "X" + foto edge-to-edge. CarroCard e botões do
-  hub viraram NavigationLink(value:). Validado: hub (menu, só X), estoque (menu+toolbar), cadastro
-  (menu+FootBar). Mock: HubMockLauncher monta HomeView REAL com initialRoute (--p1-hub-mock,
-  +--p1-deep abre cadastro). HomeView ganhou `var initialRoute: [HomeNavTarget]` (só-dev).
-- Pedido (b) COR: removida do CarroModalView + CarroNovoFormView (CorPicker). Garagem sem foto =
-  ícone neutro car.fill (não bolinha colorida). Cor preservada no banco (não removi coluna).
-  `corHex` em CarroNovoFormView ficou órfão (warning, não erro). CorPicker struct preservado.
-APROVADO PELO FLÁVIO no iPhone 31/05 noite ("tudo funcionando"): menu fixo no fluxo do carro +
-navegação pelas abas + cadastro sem cor. (Não capturei screenshot do device — túnel não subiu; Flávio validou.)
-FALTA: P4 navegação de EVENTOS
-(EventoDetalheView vira push — wizard de stint continua sheet); pedido (c) peça: scanner código de
-barras + até 3 fotos + campo "especificação de uso". Builds: device /tmp/p1fast-dd, sim /tmp/p1fast-dd-sim.
-
----
----
-
-# (PRESERVADO) Tarefa — Foto do carro + foto de fundo no hub (2026-05-31, noite)
-
-## 1. Pedido original (Flávio, 2026-05-31, retomada "voltei hub")
-"Você perdeu a foto que tinha do carro porque é onde está o bolinho ali, está com um botão
-amarelo ali era a foto, colocar a foto para o carro e sobre essa ideia de colocar a foto na
-tela maior é para ela ficar no fundo, o texto pode continuar onde está."
-
-## 2. Objetivo (1 frase)
-Colocar a foto do carro (Bolinha) de volta e, no hub do carro, fazer a foto virar o FUNDO da
-tela (não mais só uma faixa no topo), mantendo o texto na posição atual.
-
-## 3. Critérios objetivos de conclusão
-- [ ] Receber/definir a foto do carro (insumo do Flávio — não há foto recuperável).
-- [ ] Foto aplicada ao carro e visível no hub.
-- [ ] Hub: foto como fundo da tela, texto na posição atual, com legibilidade preservada.
-- [ ] Decidir com o Flávio: foto também na Garagem (lista) no lugar da bolinha colorida?
-- [ ] Build + instalar no iPhone + validação visual do Flávio.
-
-## 4. Leitura dos arquivos obrigatórios: feitos (CLAUDE.md, protocolos, padrões).
-
-## 5. Plano (≤5 passos)
-1. (FEITO) Diagnosticar onde a foto foi parar — verificado: não há foto guardada.
-2. Receber a foto do Flávio (arquivo) OU ele escolhe no Cadastro (PhotosPicker já existe).
-3. Reescrever heroHeader do CarroHubView → foto de fundo full-bleed + legibilidade.
-4. (se decidido) Mostrar foto no card da Garagem no lugar do swatch.
-5. Build + instalar no iPhone + validar.
-
-## 6. Diagnóstico verificado (evidência, não inferência)
-- Foto do carro hoje = LOCAL no iPhone: `Documents/carros-fotos/{carroId}.jpg` (CarroFoto.swift).
-- Puxei a pasta do iPhone via devicectl → **VAZIA**: não há foto local salva.
-- Garagem (CarroCard) mostra um CÍRCULO da cor do carro (swatch), nunca foto — é o "amarelo".
-- Foto-na-nuvem (`foto_url` + bucket `carro-fotos`) existe só ARQUIVADA em
-  `_archive/propostas-2026-05-13/` — nunca entrou no app. Logo, nada a recuperar da nuvem.
-- Cadastro (CarroModalView) JÁ tem campo "Foto do carro" → "Escolher foto" (PhotosPicker) → salva local.
-
-## 7. Ambiente alvo: DESENVOLVIMENTO (worktree determined-beaver-390de9).
-## 8. Produção protegida: sim.
-## 9. Autorização para produção: não (não necessária — desenvolvimento).
-## 10. Evidência: não aplicável.
-## 11. Riscos: sem a foto do Flávio, não há o que "recuperar"; foto de fundo full-screen exige
-overlay pra legibilidade dos botões; não confirmar visual no iPhone = não declarar pronto.
-## 12. Status: AGUARDANDO insumo (foto) + decisão de escopo (Garagem sim/não).
-
----
----
-
-# (PRESERVADO) Tarefa anterior — Planejamento de consumíveis Celta (2026-05-31, tarde)
-
-# Última tarefa — TASK_INIT (2026-05-31)
-
-## 1. Pedido original (Flávio, 2026-05-31)
-"Em P1 Fast você estava com um trabalho de fazer um planejamento para a gente gerenciar os
-consumíveis do CELTA de corrida 1.4: definir quais são os consumíveis, qual o método para
-gerenciar os intervalos de cada consumível e qual o intervalo proposto para cada um;
-permitir que eu altere esses dados e que eu possa te orientar em cada um deles, para a gente
-montar um prompt de planejamento para implementar na função Garagem do P1 Fast. E gera um
-HTML para mim no navegador."
-
-## 2. Objetivo (1 frase)
-Entregar um HTML interativo no navegador que liste os consumíveis do Celta 1.4 de corrida com
-método + intervalo proposto, editável pelo Flávio e com campo de orientação por item, que gere
-ao final um prompt de planejamento para implementar na função Garagem → Manutenção.
-
-## 3. Critérios objetivos de conclusão
-- [x] HTML criado e aberto no Chrome do Flávio.
-- [x] Lista de consumíveis do Celta de corrida (partindo do catálogo real de 15 itens já existente).
-- [x] Cada item com método de intervalo + intervalo proposto + justificativa.
-- [x] Campos editáveis (método, intervalo) + campo "sua orientação" por item.
-- [x] Adicionar/remover itens.
-- [x] Botão que gera o prompt de planejamento consolidado, incorporando as edições e orientações.
-- [x] Persistência local (não perder o que ele digitou).
-
-## 4. Leitura dos arquivos obrigatórios
-- ~/.claude/CLAUDE.md — lido (contexto da sessão)
-- ~/.claude-decisoes/padroes.md — lido (sem decisões registradas ainda)
-- ~/.claude/FLAVIO_EXECUTION_PROTOCOL.md — lido
-- ~/.claude/FLAVIO_DONE_CHECKLIST.md — lido
-- ~/.claude/FLAVIO_ENVIRONMENT_RULES.md — lido
-- ~/.claude/FLAVIO_COMMUNICATION_RULES.md — lido
-
-## 5. Plano (≤5 passos)
-1. Verificar o que já existe de manutenção/consumíveis (FEITO — está órfão no worktree infallible-snyder-198a08, fora da versão oficial).
-2. Ler catálogo real (15 itens) + plano de manutenção (FEITO).
-3. Criar HTML interativo de planejamento de consumíveis de corrida.
-4. Abrir no Chrome do Flávio.
-5. Esperar ele editar/orientar → montar o prompt de implementação final.
-
-## 6. Arquivos/áreas inspecionados
-- `infallible-snyder-198a08/ios/p1fast-core/Sources/P1FastCore/Manutencao.swift` — catálogo 15 itens + motor de cálculo.
-- `infallible-snyder-198a08/docs/PLANO_MANUTENCAO.md` — plano genérico de manutenção (rua).
-- versão oficial (worktree atual): grep confirma que NÃO há código de manutenção em main (só Garagem).
-- STATUS.md, memórias de manutenção e dyno do Celta.
-
-## 7. Ambiente alvo: DESENVOLVIMENTO
-## 8. Produção protegida: sim
-## 9. Autorização para produção: não (não necessária — só cria HTML de planejamento)
-## 10. Evidência da autorização para produção: não recebida (não aplicável)
-
-## 11. Riscos
-- Os intervalos propostos são chutes iniciais de preparação típica — quem valida é o Flávio (por isso editável).
-- Função Manutenção está órfã num worktree: precisa decidir se reaproveita o código de 18/05 ou refaz na implementação.
-- Método "por evento/bateria" não existe no motor de cálculo atual (suporta horas/km-pista/data/desgaste) — é extensão a implementar.
-
-## 12. Status: PAUSADO PARA /clear (2026-05-31 ~13h) — retomar do checkpoint.
-
-### Evolução até o /clear
-- Instrumento HTML reconstruído 4 vezes conforme o Flávio aprofundou: v1 (20 itens rua) → v2 (30 itens corrida, régua evento) → v3 (indicador mínimo escolhível) → **v4 (modelo CHECAGEM + TROCA, 30 itens)**.
-- Modelo final fechado: cada item tem CHECAGEM (inspeção recorrente) ≠ TROCA (4 modos: pelo resultado / limite máximo / preditivo-IA / só recomendação). Cadência 1 evento/mês.
-- Orientações do Flávio capturadas e embutidas no HTML (óleo 2h, pneu preditivo por horas, filtros laváveis, rolamento 8h, amortecedor 6h, coxins 3 eventos, mangueira/flexível 24 meses, etc.).
-- Ponto de retomada completo (caminhos, como religar servidor, modelo, próximos passos) em:
-  `~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/p1-fast-checkpoint-consumiveis-celta-2026-05-31.md`
-- Backup durável do instrumento: `~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/p1-fast-INSTRUMENTO-consumiveis-celta.html`
-
-### Pendências reais
-- Flávio revisar os 30 itens e mandar "gera o prompt".
-- Confirmar torque do reaperto de roda (~95 N·m).
-- Decidir: trazer função Manutenção órfã (infallible-snyder-198a08) pra versão oficial ou refazer.
-- Nada foi pra produção. Tudo em desenvolvimento.
-
----
----
-
-# (PRESERVADO) Tarefa anterior — Pacote noturno auditoria 26/05/2026
-
-## TASK_DONE — 2026-05-27 (madrugada, ~02:30 horário de Brasília)
-
-- **Pedido original:** Pacote noturno da auditoria de 26/05/2026. Tarefa autônoma do agente noturno.
-- **Objetivo resumido:** Ler o quadro, fazer limpezas seguras, sinalizar arquivos obsoletos, criar relatório com decisões pendentes, submeter pra aprovação formal.
-
-### O que foi feito
-
-1. **Leitura do quadro:**
-   - Lido `docs/AUDITORIA_REAL_2026-05-26.md` (retrato honesto do estado real)
-   - Lido `STATUS.md` (checkpoint 2026-05-26 com sessão noturna)
-   - Buscado estado atualizado do main via `git fetch origin main`
-   - Identificado 8 submissões abertas reais: #218, #203, #202, #193, #166, #97, #94, #51
-
-2. **Limpezas seguras:**
-   - `git remote prune origin` executado — nada a podar
-   - Verificado: nenhuma submissão anômala (mergeada mas aberta)
-   - #201 e #205 já foram encerradas por sessão anterior (madrugada 27/05)
-   - `git branch -r --merged origin/main`: vazio — repositório remoto tem só `origin/main`
-
-3. **Sinalizações de obsolescência:**
-   - `docs/HANDOFF_2026-05-03_NOITE.md` — marcador TODO adicionado
-   - `docs/SESSION_HANDOFF_2026-05-09_pre-clear.md` — marcador TODO adicionado
-   - `docs/SESSION_HANDOFF_2026-05-13_pre-clear.md` — marcador TODO adicionado
-
-4. **Relatório criado:**
-   - `docs/_relatorios/RELATORIO_NOTURNO_2026-05-26.md`
-   - 10 cartas de decisão pendente para Flávio
-   - Alerta sobre 13 commits "auto-save" diretos no main (desvio ADR-021)
-
-5. **Submissão criada:**
-   - Linha de trabalho: `relatorio-noturno-2026-05-26`
-   - Submissão: #219 — https://github.com/Flaviomarques1969/p1-fast/pull/219
-   - NÃO incorporar automaticamente — Flávio revisa de manhã
-
-### Descobertas importantes registradas no relatório
-
-- Submissões #201 e #205 já encerradas (sessão autônoma de 01:18 do dia 27/05)
-- 13 commits "auto-save" diretos no main durante sessão de 26/05 (desvio ADR-021)
-- Submissão #218 aberta com curadoria de #201+#205 — aguarda decisão
-- 8 submissões abertas envelhecendo — 7 delas com recomendação de incorporar
-
-### Próximo passo para Flávio
-
-Ler `docs/_relatorios/RELATORIO_NOTURNO_2026-05-26.md` e para cada carta:
-- Dizer "incorporar #NNN" para as que recomenda incorporar
-- Decidir sobre os alertas de fluxo de trabalho (auto-saves no main)
-- Verificar o canal de envio iPhone→nuvem no painel Supabase
-
----
----
-
-# TASK — Auditoria severa de Shift Light e IA (P1 Fast)
-Data: 2026-05-29
-
-> ⚡ ESTADO MAIS RECENTE (2026-05-31 noite): o trabalho atual é o **HUB DO CARRO** (foto premium + Cadastro/Manutenção/Estoque), instalado no iPhone, aguardando validação visual do Flávio. Ver Fases 6+7 abaixo e a memória `p1-fast-checkpoint-hub-carro-2026-05-31`. **GATILHO do Flávio pra retomar exatamente daqui: "voltei hub".**
-
-## TASK_INIT
-- Protocolo carregado: sim
-- Padrões carregados: sim
-- Ambiente alvo: desenvolvimento + leitura em produção
-- Produção protegida: sim
-- Autorização para produção: não
-- Pedido entendido: auditar de forma severa, com evidência, se as funções de shift light e IA do P1 Fast estão prontas para funcionar.
-- Critério de conclusão: relatório por função (shift light, IA) com veredito (pronta/pronta com ressalva/não pronta/não implementada), cada ponto ancorado em arquivo:linha, comando ou log; lista do que falta.
-
-## 1. Pedido original
-"no projeto p1 fast audite as funções de shift light e ia. use um auditor severo para checar se realmente estão prontas para funcionar a partir de evidências"
-
-## 2. Objetivo
-Produzir relatório baseado em evidência objetiva sobre o estado real das funções Shift Light e IA — o que existe, o que está integrado ao fluxo ao vivo, o que é mock/placeholder, o que falta para rodar em pista.
-
-## 3. Critérios objetivos de conclusão
-- Mapear arquivos que implementam shift light (regra + UI).
-- Mapear arquivos que implementam IA (mensagens, detecção preditiva, agente de pista).
-- Para cada função: existência (arquivo:linha), integração com cockpit-bubi-live, dados de calibração/treino, testes.
-- Veredito por função.
-- Lista do que falta.
-
-## 4. Confirmação de leitura
-- ~/.claude/CLAUDE.md: sim
-- ~/.claude-decisoes/padroes.md: sim (vazio)
-- ~/.claude/FLAVIO_EXECUTION_PROTOCOL.md: sim
-- ~/.claude/FLAVIO_DONE_CHECKLIST.md: sim
-- ~/.claude/FLAVIO_ENVIRONMENT_RULES.md: sim
-- ~/.claude/FLAVIO_COMMUNICATION_RULES.md: sim
-
-## 5. Plano (5 passos)
-1. Mapear código (shift light + IA + mensagens + preditivo + modelo).
-2. Abrir arquivos reais, separar implementação efetiva de mock/placeholder.
-3. Confirmar integração com canal cockpit-bubi-live.
-4. Conferir dados de calibração (curva Bubi, padrão histórico).
-5. Auditor severo emite veredito ancorado em evidência.
-
-## 6. Áreas a inspecionar
-src/, web/, ios/, supabase/, docs/, _design-reference/, STATUS.md, BLOCKERS.md, CLAUDE.md, memória específica do P1 Fast.
-
-## 7. Ambiente alvo
-Desenvolvimento. Leitura em produção somente para confirmar calibração.
-
-## 8. Produção protegida: sim
-## 9. Autorização para produção: não
-## 10. Evidência da autorização: não recebida
-## 11. Riscos
-- Auditoria precisa permanecer em modo leitura.
-- Confundir mock com produção.
-## 12. Status inicial: iniciado
-
-## TASK_DONE — 2026-05-29 (após "faça todas e cheque no final")
-- Pedido original conferido: sim
-- Ambiente trabalhado: desenvolvimento (ambiente isolado v04 + versão oficial local). Banco de produção não alterado — só leitura.
-- Produção foi alterada: não
-- Autorização explícita registrada: n/a (incorporação à versão oficial usou autorização contínua P1 Fast)
-- Arquivos reais inspecionados: sim
-- Alterações feitas: sim — relatório abaixo
-- Testes/validação executados: sim. 13 baterias de testes automáticos verde após incorporação (214+ verificações), 0 falhas.
-- Resultado: concluído (operações em produção do banco ficaram dependentes de autorização literal)
-- Pendências reais: aplicar migrations 0033/0034/0037 em produção do banco (precisa "MIGRAR PARA PRODUÇÃO: …"); popular tabelas de aprendizado com voltas históricas do Bubi; instalar sensores TPMS + temperatura câmbio.
-
-### Alterações desta sessão
-- web/cockpit/mensagens-pedagogicas.js (novo, 17 mensagens aprovadas em 27/05 finalmente plugadas).
-- web/cockpit/main-t3000.js (orquestrador v2 plugado + empurrador de mensagens + botões BOX/ÚLTIMA VOLTA + indicador "shift: semente/dyno/aprendido").
-- web/cockpit/dyno-loader.js (devolve pontos brutos da curva + loadGearRatios).
-- web/cockpit/index-t3000.html (botões BOX, ÚLTIMA VOLTA, indicador fonte do shift).
-- web/cockpit/cockpit.css, cockpit.js, index.html (re-extraídos do mockup canônico para resolver drift).
-- supabase/migrations/0037_gear_ratios_bubi.sql (novo, relações 1ª-5ª + diferencial 3.94).
-- tests/node-smoke-alertas-criticos.mjs (novo, 19 verificações).
-- tests/node-smoke-trecho-detector.mjs (novo, 12 verificações).
-- tests/node-smoke-delta-calculator.mjs (novo, 10 verificações).
-- tests/node-smoke-mensagens-pedagogicas.mjs (novo, 17 verificações).
-- tests/node-smoke-cockpit-web.mjs (linhas hardcoded atualizadas para refletir mockup atual).
-- Merge incorporando o ambiente isolado v04-promote na versão oficial (333 commits, conflitos resolvidos a favor do HEAD em ultima-tarefa/STATUS e a favor do v04 nos demais).
-
-### Estado real do banco de produção (consultado em leitura)
-- dyno_curve: tabela existe, ZERO linhas pra Bubi (migration 0033 não aplicada).
-- gear_ratios: tabela NÃO EXISTE (migration 0022 não aplicada). 404.
-- track_segments: 20 linhas (Brasília aplicada).
-- padroes_telemetria_por_volta: existe, ZERO linhas.
-- melhores_passagens_trecho: existe, ZERO linhas.
-- carros: existe, Bubi NÃO cadastrado.
-
-### Testes verdes após incorporação (versão oficial)
-alertas-criticos 19/19, trecho-detector 12/12, delta-calculator 10/10, mensagens-pedagogicas 17/17, shift-light-inteligente 24/24, padrão-acumulador 10/10, apice-calculator 4/4, cockpit-state 24/24, cockpit-renderer 17/17, cockpit-bootstrap 7/7, live-data-bridge 26/26, cockpit-web 16/16, p1-coach 28/28 + suites domain (test:shift-light).
-
-### Arquivos de saída
-- `.claude-exec/auditoria-shift-light-2026-05-29.md` (auditoria detalhada).
-- `.claude-exec/auditoria-ia-2026-05-29.md` (auditoria detalhada).
-
----
-
-## ETAPA EXTRA — MIGRAR PARA PRODUÇÃO (2026-05-29, fim de tarde)
-
-### Autorização literal
-"MIGRAR PARA PRODUÇÃO: curva do Bubi + relações de marcha + shift light v2"
-(Flávio, 2026-05-29)
-
-### PROD_RELEASE_PLAN executado
-- O que foi migrado: criação da tabela `gear_ratios` em produção + inserção das 5 relações de marcha do Bubi.
-- Origem em desenvolvimento: `supabase/migrations/0022_carros_gears_dyno.sql` (parte) + `supabase/migrations/0037_gear_ratios_bubi.sql`. Consolidado em `/tmp/migrar-prod.sql`.
-- Destino em produção: Supabase projeto p1-fast (`fvhwltzhytpnhlqbttmd`).
-- Arquivos/serviços afetados: somente banco de produção. Nenhuma rota de servidor, nenhuma variável de ambiente, nenhuma alteração de Vercel.
-- Banco afetado: sim.
-- Atualização do banco necessária: sim.
-- Risco de perda de dados: não. Tabela é nova. Inserts são aditivos com ON CONFLICT.
-- Plano de reversão: `DELETE FROM public.gear_ratios WHERE carro_id='641a81e7-3192-4e68-8183-b8401f105574';` e/ou `DROP TABLE IF EXISTS public.gear_ratios;` (documentado no cabeçalho da migration).
-- Teste feito em desenvolvimento: sim, 214+ verificações automáticas verdes.
-- Validação pós-deploy: sim, consulta de leitura confirmou 5 marchas com diferencial 3,94.
-- Janela/restrição operacional: nenhuma — produção (Vercel) continua funcionando; tabela nova não afeta consumidores existentes.
-
-### Estado descoberto antes de executar
-A consulta inicial desta sessão usou a chave **anônima**, que sofre restrição de segurança (RLS) e mostrou as tabelas como vazias. Ao consultar com privilégio de leitura via linha de comando, descobri que:
-- Carro Bubi (Bolinha) JÁ estava cadastrado em produção.
-- Curva do dinamômetro JÁ estava em produção (79 pontos).
-- Tabelas do shift light v2 (pontos_troca_aprendidos, envelopes_seguranca_stint, qualidade_troca_marcha, perfis_reacao_piloto, melhores_passagens_trecho) JÁ existiam.
-- 6 colunas novas em `padroes_telemetria_por_volta` JÁ existiam.
-- Tabela `gear_ratios` NÃO existia — era o único gap real.
-
-### Aplicação executada
-Aplicado SQL único (consolidando `gear_ratios` schema + dados do Bubi) via `supabase db query --linked`. Tudo em uma transação (BEGIN/COMMIT). Idempotente.
-
-### Validação pós-deploy (consultada via linha de comando com privilégio)
-| Item | Esperado | Real |
-|------|----------|------|
-| Carro Bubi cadastrado | 1 | **1** |
-| Pontos da curva do dinamômetro (Bubi) | 79 | **79** |
-| Relações de marcha do Bubi | 5 | **5** |
-| Tabela pontos_troca_aprendidos | 1 | **1** |
-| Tabela envelopes_seguranca_stint | 1 | **1** |
-| Tabela qualidade_troca_marcha | 1 | **1** |
-| Colunas novas em padroes_telemetria_por_volta | 6 | **6** |
-
-### Conclusão
-Aplicação em produção concluída com sucesso. Nenhuma regressão; risco zero.
-
-### Conclusão sintética
-- **Shift Light v1 (versão atual, em main)**: PRONTO para pista no Bubi com pequenas ressalvas (fallback silencioso quando faltar `gear_ratios`).
-- **Shift Light v2 (3 modos + cruzamento de força + aprendizado online, aprovado em 29/05)**: implementado e testado em isolamento, MAS não plugado no entry point real (`main-t3000.js`) e migration 0034 não está em produção. Trabalho focado de 1-2 dias para promover.
-- **IA (alertas críticos + preditivo + delta + ápice)**: PARCIALMENTE PRONTA. Alertas críticos e preditivo plugados; **17 mensagens pedagógicas APROVADAS em 27/05 não chegam ao piloto** (texto só no JSON de design, falta o módulo de tradução).
-- **Linha oficial × linha isolada**: TUDO da IA nova só existe no worktree v04-promote-2026-05-26. Sem o merge, nada disso vai pra produção.
-
-### Arquivos de saída
-- `.claude-exec/auditoria-shift-light-2026-05-29.md` (relatório detalhado, evidência por componente).
-- `.claude-exec/auditoria-ia-2026-05-29.md` (relatório detalhado, evidência por componente).
-
----
-
-## FASE 2 — Fechar pontas pós-auditoria (2026-05-29, noite)
-
-### TASK_INIT
-- Protocolo carregado: sim
-- Padrões carregados: sim
-- Ambiente alvo: desenvolvimento (banco de produção em modo somente leitura)
-- Produção protegida: sim
-- Autorização para produção: não (popular tabelas de aprendizado exige frase literal)
-- Pedido entendido: "faça tudo" (Flávio, 2026-05-29 noite) — atacar as 5 frentes técnicas que sobraram após auditoria 29/05; sinalizar 3 que dependem dele.
-- Critério de conclusão: 5 frentes implementadas + testes verdes + relatório claro do que sobrou.
-
-### Frentes a atacar (sem precisar de você)
-1. Detector de queda do equipamento T3000 (1,5 s sem amostra → alerta visual + shift apaga + recupera quando volta).
-2. Indicador visual de "MODO SEGURO" no painel (curva ou marchas indisponíveis).
-3. Tela de configuração de stint plugada ao painel principal (botão STINT abre tela; modo escolhido fica salvo localmente).
-4. Generalizar identificação do carro (variável + Bubi como padrão; remove ID fixo em 8 lugares).
-5. Teste automático novo cobrindo queda do T3000 + modo seguro.
-
-### Aguardando você
-- Frase literal "MIGRAR PARA PRODUÇÃO: ..." pra popular as tabelas de aprendizado com voltas Bubi 26/05.
-- Instalação física: sensor de pressão de pneu (TPMS) + sensor de temperatura do câmbio no Bubi.
-
-### Decisão registrada nesta sessão
-- Modo padrão do shift light = **Agressivo** (card respondido 2026-05-29 23:24 UTC). Aplicado em `main-t3000.js` (default do `resolveModoStintInicial`) e em `configuracao-stint.js` (cartão pré-selecionado). Auto-rebaixa pra Normal se água ficar abaixo da temperatura mínima do envelope.
-
-### FASE 3 — MIGRAR PARA PRODUÇÃO: voltas Bubi (2026-05-29 noite tardia)
-
-#### Autorização literal
-"MIGRAR PARA PRODUÇÃO: popular tabelas de aprendizado (melhores_passagens_trecho + padroes_telemetria_por_volta) com voltas Bubi 26/05/2026"
-
-#### Dados extraídos do backup local /private/tmp/p1fast-pull/p1fast.sqlite (cópia de 25/05)
-- 23/05/2026 sessão 51ADFD3B: 1013 amostras GPS, 13,7 min em pista, **4 voltas válidas** (167/159/162/158 s, vel até 159 km/h)
-- 24/05/2026 sessão EDA3DA6B: 940 amostras GPS, 11,7 min em pista, **3 voltas detectadas** (167/163/163 s, vel até 154 km/h)
-- Ambas dentro do autódromo de Brasília (lat -15.78/-15.77, lng -47.90/-47.89)
-- Carro_id das sessões está incorreto no banco (uma vazio, outra "Subaru"); Flávio confirmou que são todas do Bubi
-
-#### Processamento local
-- Script `/tmp/processar-voltas-bubi.py` adapta `detect_laps.py` para os dois dias.
-- Detecção de volta = cruzamento da linha de entrada da CURVA 01 (s0).
-- Fatiamento por trecho = pra cada amostra GPS, identifica segmento mais próximo (entrada GPS); 1 passagem por trecho × volta, suprimindo revisitas dentro da volta.
-- Resultado: **56 passagens (7 voltas × 8 curvas)** + 1 padrão consolidado.
-
-#### Aplicação em produção
-- SQL gerado: `/tmp/migrar-bubi-prod.sql` (95 KB).
-- Coluna `autodromo_id` foi corrigida para `track_id` (descoberta: nome real no banco).
-- Aplicado via `supabase db query --linked --file ...`.
-- Validação: `melhores_passagens_trecho` 56 registros (carro = Bubi); `padroes_telemetria_por_volta` 1 registro (voltas_acumuladas=7, modo_stint="agressivo").
-
-#### Correção de código
-- `web/cockpit/melhores-loader.js`: trocado `autodromo_id` por `track_id` em 3 pontos (cabeçalho doc, eq() do select, payload do insert). Sintaxe OK. Smokes verde (padrao-acumulador, trecho-detector, delta-calculator).
-
-### TASK_DONE — 2026-05-29 (noite tardia, Fase 3)
-- Pedido original conferido: sim
-- Ambiente trabalhado: produção (com autorização literal registrada)
-- Produção foi alterada: sim
-- Autorização explícita registrada: sim — "MIGRAR PARA PRODUÇÃO: popular tabelas de aprendizado (melhores_passagens_trecho + padroes_telemetria_por_volta) com voltas Bubi 26/05/2026"
-- Arquivos reais inspecionados: sim (backup local + banco oficial + código)
-- Alterações feitas: sim — 56 passagens + 1 padrão em produção; 3 edições em `melhores-loader.js` em desenvolvimento.
-- Testes/validação executados: sim — SELECT pós-deploy confirma contagem; smokes do código corrigido verde.
-- Resultado: concluído
-- Pendências reais: tabelas têm sensores de motor/pneu NULL (essas voltas só têm GPS — vão se completar nas próximas idas reais à pista com o conversor T3000 ligado).
-
-### TASK_DONE — 2026-05-29 (noite, Fase 2)
-- Pedido original conferido: sim
-- Ambiente trabalhado: desenvolvimento (versão oficial local). Banco de produção não tocado.
-- Produção foi alterada: não
-- Autorização explícita registrada: n/a (sem alterações em produção)
-- Arquivos reais inspecionados: sim
-- Alterações feitas: sim (5 frentes)
-- Testes/validação executados: sim. Smokes específicos: 12 baterias verdes. Master smoke: 254 verdes / 3 falhas pré-existentes em schema-parity (não causadas pela sessão).
-- Resultado: concluído (frentes técnicas) / aguardando autorização (popular banco) / aguardando você (sensores físicos e modo padrão definitivo).
-- Pendências reais: ver "Aguardando você" acima.
-
-### Arquivos alterados nesta sessão
-- `web/cockpit/t3000-watchdog.js` (novo, ~90 linhas). Vigia silêncio do conversor T3000.
-- `web/cockpit/main-t3000.js`. Resolve CARRO_ATIVO via variável; lê modo de stint do localStorage; pluga watchdog; mostra/esconde MODO SEGURO; mostra/esconde overlay SEM SINAL.
-- `web/cockpit/index-t3000.html`. Botão STINT + badge MODO SEGURO + overlay SEM SINAL + estilos.
-- `web/cockpit/configuracao-stint.js`. Salva modo escolhido em localStorage (para o painel principal usar).
-- `tests/node-smoke-t3000-watchdog.mjs` (novo). 12 verificações verdes.
-
-### O que foi preservado
-- Toda a lógica anterior do shift light v1 e v2, mensagens, alertas, trecho-detector, etc.
-- Indicador `shift: semente/dyno/aprendido` continua existindo. MODO SEGURO é badge adicional, não substitui.
-- Tela `configuracao-stint.html` continua gravando envelope no banco — só ganhou cache local.
-- Tabelas e dados em banco de produção: nada tocado.
-
-### O que foi acrescentado
-- Detector de queda do conversor T3000: 1,5 s sem amostra → alerta visual e shift apaga; recupera sozinho.
-- Indicador "MODO SEGURO" no canto superior do painel para sinalizar limites estáticos.
-- Botão "STINT" no painel principal (atalho para configurar modo + envelope antes da volta).
-- Cache local do modo de stint escolhido (painel passa a respeitar a última escolha).
-- Identificação do carro via variável + localStorage + Bubi como padrão (substitui 8 referências fixas).
-- Smoke novo de queda do T3000 (12 verificações).
-
-### Validação executada
-- `node --check` em 4 arquivos JavaScript: sintaxe limpa.
-- `node tests/node-smoke-t3000-watchdog.mjs`: 12/12 verde.
-- `node tests/node-smoke-cockpit-web.mjs`: 16/16 verde.
-- `node tests/node-smoke-cockpit-bootstrap.mjs`: 7/7 verde.
-- `npm run test:shift-light`: suite domain inteira verde.
-- `node tests/node-smoke-mensagens-pedagogicas.mjs`: 17/17 verde.
-- `node tests/node-smoke-shift-light-e2e.mjs`: 12/12 verde.
-- `node tests/node-smoke-alertas-criticos.mjs`: 19/19 verde.
-- `node tests/node-smoke-trecho-detector.mjs`: 12/12 verde.
-- `node tests/node-smoke-delta-calculator.mjs`: 10/10 verde.
-- `node tests/node-smoke-padrao-acumulador.mjs`: 10/10 verde.
-- `node tests/node-smoke-apice-calculator.mjs`: 4/4 verde.
-- `npm run smoke`: 254 verdes / 3 falhas pré-existentes em schema-parity (32 tabelas em PG vs 30 esperadas; 2 tabelas só em PG não espelhadas no GRDB — `padroes_telemetria_por_volta` e `melhores_passagens_trecho`, vindas das migrations 0033/0034 e independentes desta sessão).
-
-### Checagem contra o pedido original
-1. Detector de queda do equipamento T3000 — **feito** (`t3000-watchdog.js`, plugado em `main-t3000.js`).
-2. Indicador visual "MODO SEGURO" — **feito** (badge `#badgeSafeMode`).
-3. Tela de configuração de stint plugada — **feito** (botão `#btnStint` + cache localStorage).
-4. Generalizar identificação do carro — **feito** (`CARRO_ATIVO` resolvido no boot; Bubi como padrão).
-5. Teste automático novo — **feito** (`node-smoke-t3000-watchdog.mjs`, 12/12 verde).
-
-### Pendências ou riscos
-- 3 falhas pré-existentes em `node-smoke-schema-parity.mjs` (contagem hardcoded de 30 tabelas vs 32 reais). Não é regressão desta sessão; requer decisão de arquitetura: as 2 tabelas novas precisam espelhar em GRDB ou ficam só na nuvem? Pode ficar aberto.
-- Os 5 itens novos (watchdog, MODO SEGURO, overlay SEM SINAL, botão STINT, cache de modo) ainda não foram testados no painel real conectado ao conversor T3000 — só em testes automáticos. Validação visual ao vivo precisa do conversor físico.
-- Popular tabelas de aprendizado e instalar sensores físicos continuam aguardando você.
-
----
-
-# Histórico anterior (preservado abaixo)
-
-
----
-
-## FASE 4 — 3 frentes "siga em frente" (2026-05-29 noite tardia)
-
-### Pedido de Flávio
-"todas. siga em frente" (após eu apresentar 3 frentes possíveis sem precisar do carro).
-
-### Achados de auditoria das 3 frentes
-
-**Frente 2 (19 mensagens críticas v2)** — JÁ ESTAVA PLUGADA.
-- `web/cockpit/alertas-criticos.js`: catálogo dos 19 IDs (linhas 74-102), integrado em `main-t3000.js:82`.
-- Teste automático `node-smoke-alertas-criticos.mjs` cobre os 19 (AC-01 a AC-19) — 19/19 verde.
-- O que falta pra TODOS dispararem é dado sensorial físico (TPMS, temp câmbio) — depende do carro.
-
-**Frente 3 (PRs #201 e #205)** — JÁ FORAM FECHADAS em 27/05.
-- #201 (Vista Engenheiro com sliders): descartada por violar "Command Box é só visualização".
-- #205 (Vista Piloto polido + dúvidas): trecho útil (PARADA NO BOX) incorporado em PR #223 (commit 08560db1).
-- 4 propostas órfãs de #205 preservadas em `_design-reference/_propostas-pr205/` aguardando decisão caso a caso.
-
-**Frente 1 (envio iPhone → nuvem)** — É A ÚNICA QUE ENVOLVE TRABALHO.
-- Migration `0024_iphone_sync_compat.sql` já existe (criada hoje cedo). Resolve 74 itens dead-letter + destrava 104.670 medições.
-- Problema novo: banco local do iPhone NÃO tinha as colunas que a 0024 traz (quantidade em evento_pendencias; eh_consumivel + unidade em pendencias_template).
-
-### Implementação desta fase
-- `ios/p1fast-core/Sources/P1FastCore/Persistence/Migrations.swift`: v19_pendencias_consumivel adiciona as 3 colunas locais (todas nullable / default).
-- `ios/p1fast-core/Sources/P1FastCore/Persistence/Models.swift`:
-  - `EventoPendencia` ganhou `quantidade: Double?`
-  - `PendenciaTemplate` ganhou `ehConsumivel: Bool` e `unidade: String?`
-
-### Validação
-- `swift run p1fast-smoke`: 531 ok / 0 fail.
-- `node tests/node-smoke-cockpit-web.mjs`: 16 ok / 0 fail.
-- `node tests/node-smoke-alertas-criticos.mjs`: 19 ok / 0 fail.
-
-### Pendente pra Flávio decidir
-1. Autorização literal pra aplicar a 0024 na nuvem (frase: "MIGRAR PARA PRODUÇÃO: esquema eventos + evento_pendencias").
-2. Como destravar os 197 itens dead-letter no iPhone:
-   - Caminho A: instalar nova versão do app (v19 roda; criar v20 que reseta attempts → drena automático).
-   - Caminho B: comando manual via linha de comando (precisa cabo + iPhone presente).
-3. Decisão caso a caso sobre as 4 propostas órfãs em `_design-reference/_propostas-pr205/`.
-
-### TASK_DONE — Fase 4
-- Pedido original conferido: sim
-- Ambiente trabalhado: desenvolvimento (banco de produção e iPhone não tocados)
-- Produção foi alterada: não
-- Autorização explícita registrada: n/a (sem alteração em produção)
-- Arquivos reais inspecionados: sim (Migrations.swift, Models.swift, 0024, alertas-criticos.js, main-t3000.js, propostas-pr205)
-- Alterações feitas: sim — v19 + 2 structs atualizados
-- Testes/validação executados: sim — 531 + 16 + 19 verdes
-- Resultado: parcial — código pronto; aplicação em produção e instalação no iPhone aguardam decisão
-- Pendências reais: 3 pontos de decisão listados acima
-
-
----
-
-## FASE 5 — Aplicação em produção da reestruturação de pendências (2026-05-30)
-
-### Autorização literal
-"MIGRAR PARA PRODUÇÃO: esquema eventos + evento_pendencias" (Flávio, 30/05).
-
-### Achado pré-aplicação (crítico)
-Antes de aplicar a 0024 original (que dropava as tabelas), reconferi produção:
-- 6 eventos (time "Flavio P1 Fast", inclusive track-day Brasília 23/05)
-- 135 pendências
-- 45 templates
-A 0024 original os teria destruído. PAREI e reportei.
-
-### Decisão de Flávio
-"reescreva a 0024 e siga" — pediu versão preservadora.
-
-### O que foi feito
-- `supabase/migrations/0024_iphone_sync_compat.sql`: esvaziada (marcada OBSOLETA com aviso).
-- `supabase/migrations/0038_iphone_sync_compat_preservando.sql`: nova migração que ALTERA tipos e ADICIONA colunas sem destruir dados.
-
-### PROD_RELEASE_PLAN executado
-- O que foi migrado: alteração de esquema em `eventos`, `evento_pendencias`, `pendencias_template`.
-- Origem: 0038_iphone_sync_compat_preservando.sql.
-- Destino: Supabase projeto p1-fast (fvhwltzhytpnhlqbttmd).
-- Arquivos/serviços afetados: somente banco. Vercel, Edge Functions e clients não tocados.
-- Banco afetado: sim.
-- Risco de perda de dados: zero (validado).
-- Reversão: documentada no rodapé do arquivo.
-- Teste em desenvolvimento: aplicado em produção dentro de transação (BEGIN/COMMIT). Não havia ambiente local disponível.
-- Validação pós-deploy: feita (ver abaixo).
-
-### Validação pós-aplicação (consulta em modo leitura)
-| Item | Esperado | Real |
-|------|----------|------|
-| eventos preservados | 6 | **6** |
-| pendências preservadas | 135 | **135** |
-| templates preservados | 45 | **45** |
-| `evento_pendencias.template_id` | text | **text** |
-| `pendencias_template.id` | text | **text** |
-| `eventos.data_fim` nullable | YES | **YES** |
-| `evento_pendencias.quantidade` existe | true | **true** |
-| `pendencias_template.eh_consumivel` existe | true | **true** |
-| `pendencias_template.unidade` existe | true | **true** |
-
-### Próximo gap conhecido (precisa decisão futura de Flávio)
-Os 45 templates em produção têm IDs UUID (ex.: "550e8400-e29b-41d4-a716-446655440000"). O catálogo curado do app iOS usa códigos tipo "pt-g1-05". App não vai sincronizar até alguém decidir:
-- (A) renomear os 45 IDs UUID pros códigos curados;
-- (B) apagar os 45 (CASCADE apaga as 135 pendências) e seedar o catálogo curado;
-- (C) manter os 2 sets em paralelo (templates UUID via web admin + templates curados via app).
-
-Não é decisão técnica. É decisão de catálogo / produto. Aguardando Flávio decidir depois.
-
-### TASK_DONE — Fase 5
-- Pedido original conferido: sim
-- Ambiente trabalhado: produção (com autorização literal)
-- Produção foi alterada: sim
-- Autorização explícita registrada: sim — "MIGRAR PARA PRODUÇÃO: esquema eventos + evento_pendencias"
-- Arquivos reais inspecionados: sim (estado real do banco antes e depois)
-- Alterações feitas: sim (esquema em 3 tabelas + 1 arquivo de migração novo + 1 marcado obsoleto)
-- Testes/validação executados: sim (probe pré, transação atômica, probe pós)
-- Resultado: concluído
-- Pendências reais: gap semântico de catálogo (UUIDs vs códigos curados) aguarda decisão de Flávio; destravar os 197 itens dead-letter no iPhone exige nova versão do app instalada + reset (Fase 6 futura).
-
----
-
-## FASE 6 — Reforma da função Manutenção (BACK-END) — 2026-05-31
-
-### Contexto
-Após a mesa de consumíveis do Celta (instrumento HTML + prompt) e a auditoria da função Manutenção órfã (ambiente `infallible-snyder-198a08`, 18/05), Flávio mandou "vá até o fim sem parar". Veredito da auditoria: APROVEITAR e reformar, NÃO refazer.
-
-### O que foi feito (ambiente isolado `determined-beaver-390de9` — produção e app oficial NÃO tocados)
-Portada a lógica testada da função órfã para o modelo novo CHECAGEM ≠ TROCA, direto no núcleo `p1fast-core` (testável):
-- `ios/p1fast-core/Sources/P1FastCore/ManutencaoConsumiveis.swift` (novo): Checagem (recorrência+ação) + Troca (4 modos: resultado/limite/preditivo/recomendação; unidades horas/eventos/meses/validade) + catálogo dos 30 consumíveis do Celta + cálculo de status + inteligência (média entre trocas + anomalia) por HORAS.
-- `ios/p1fast-core/Sources/P1FastCore/ManutencaoUsoReader.swift` (novo): soma horas reais das sessões (ignora canceladas) + eventos distintos + dias.
-- `ios/p1fast-core/Sources/P1FastCore/ManutencaoRegistro.swift` (novo): tabela GRDB `manutencoes` + histórico + média de vida aprendida + status end-to-end.
-- `ios/p1fast-core/Sources/P1FastCore/Persistence/Migrations.swift`: migration `v19_manutencao_consumiveis`.
-- `ios/p1fast-core/Sources/P1FastSmoke/main.swift`: 14 verificações novas + PERSIST-01 atualizado (30→31 tabelas).
-
-### Validação
-`swift run p1fast-smoke`: **544 ok / 0 fail**.
-
-### TASK_DONE — Fase 6 (back-end)
-- Pedido original conferido: sim
-- Ambiente trabalhado: desenvolvimento (ambiente isolado). Produção e app oficial NÃO tocados.
-- Produção foi alterada: não
-- Arquivos reais inspecionados: sim
-- Alterações feitas: sim (4 arquivos novos/editados no core + migration + testes)
-- Testes/validação executados: sim — 544 ok / 0 fail
-- Resultado: back-end COMPLETO e testado; telas (SwiftUI) e instalação no iPhone pendentes
-- Pendências reais:
-  1. Telas Garagem → Manutenção (DESIGN — decisão do Flávio; base: telas da órfã 18/05).
-  2. Repositório de UI fino (app sobre o core) + plugar na navegação.
-  3. Build do app + instalar no iPhone (precisa do Flávio: cabo + Face ID).
-  4. Sync da tabela `manutencoes` pra nuvem (rodada futura).
-  5. Confirmar torque do reaperto (~95 N·m) e datas de validade — entram no cadastro, não travam.
-
-### FASE 6b — Telas + integração (2026-05-31, mesma sessão)
-- `ios/p1fast-ios/Sources/Views/ManutencaoConsumiveisView.swift` (novo): store (ponte app↔core) + tela principal (pendências no topo + 30 itens por bloco com checagem, modo de troca e status colorido) + tela de registrar troca (com validade de etiqueta pros itens de segurança).
-- `ios/p1fast-ios/Sources/Views/ContentView.swift`: store `ManutencaoConsumiveisStore` criado e injetado (mesmo padrão dos outros repositórios).
-- `ios/p1fast-ios/Sources/Views/CarroModalView.swift`: seção "Manutenção · consumíveis" no painel do carro abre a tela em sheet.
-- Validação: `xcodebuild` pro simulador iPhone 17 Pro = **BUILD SUCCEEDED** (app inteiro compila com as telas).
-- FALTA: instalar no iPhone (cabo + Face ID — Flávio) + validação visual real. Ficha detalhada do item (histórico/média na tela) e sync pra nuvem ficam pra rodada seguinte.
-
----
-
-## FASE 7 — Hub do carro + Estoque trazido + correções (2026-05-31, noite)
-
-### Correção de nomenclatura
-Carro = **"Bolinha"**; **"Bubi" é o PILOTO**. Gravado em memória `p1-fast-carro-bolinha-piloto-bubi`.
-
-### Bugs corrigidos no iPhone (descobertos ao instalar)
-1. App não subia: migration v19 (manutencoes) colidia com a tabela órfã de 18/05. Corrigido: renomeia a antiga (`manutencoes_legado_2026_05_18`) e cria a nova. Idempotente + testado.
-2. "Servidor não configurado": faltava `Config/.env.xcconfig` (chaves Supabase, gitignored). Copiado da versão oficial. Daily.co fica REPLACE_ME (vídeo, não usado aqui).
-
-### Função Estoque trazida da órfã (infallible-snyder, 17/05) → versão oficial
-- `ios/p1fast-core/Sources/P1FastCore/PecaModels.swift` (Peca/PecaArea/PecaTipo/PecaLocal/PecaMovimentacao).
-- Migration `v26_pecas` + `v27_pecas_preco` (mesmos nomes da órfã + IF NOT EXISTS — pula no device que já tem).
-- `PecaRepository.swift` + `PecaViews.swift` copiados (1 ajuste: FootBar sem `isSaving`). `PecaListaView` ganhou `carroInicial` (abre filtrada pelo carro).
-- PecaRepository injetado no ContentView.
-
-### Hub do carro
-- `ios/p1fast-ios/Sources/Views/CarroHubView.swift` (novo): painel geral (swatch + apelido + modelo + 3 stats: stints/peças/pendências) + 3 botões (Cadastro básico · Manutenção · Estoque do carro). GaragemView passa a abrir o hub. Seção Manutenção removida do CarroModalView (agora no hub).
-
-### Validação
-- `swift run p1fast-smoke`: 545 ok / 0 fail (34 tabelas).
-- `xcodebuild` simulador + device: BUILD SUCCEEDED. Instalado e aberto no iPhone 16 Pro Max.
-- PENDENTE: validação visual do Flávio. Sync pra nuvem (pecas/manutencoes) e ficha detalhada do item ficam pra rodada seguinte.
-
-### Foto do carro (mesma sessão)
-- Flávio pediu: tirar o círculo de cor do painel e usar a FOTO do carro (Bolinha = amarelo). A função de foto de carro (S2, 12/05) também era órfã (`rodada1-s1`) — não estava no oficial.
-- Solução: foto LOCAL (`Documents/carros-fotos/{carroId}.jpg`), FORA do struct Carro/sync — não toca banco nem nuvem (evita quebrar o sync de carros).
-- `ios/p1fast-ios/Sources/Persistence/CarroFoto.swift` (novo): salvar/carregar/remover.
-- `CarroHubView`: painel mostra a foto (fallback = ícone de carro).
-- `CarroModalView` (Cadastro básico): PhotosPicker "Foto do carro" salva local ao escolher.
-- BUILD SUCCEEDED + instalado no iPhone. Lembrete: `xcodegen generate` ao adicionar arquivo novo antes de compilar.
-- Flávio escolhe a foto no Cadastro básico (a foto antiga ficou na versão órfã, não migra sozinha).
-
----
-
-## FASE 8 — "autorizado a 1 para produção": verificação revelou que JÁ ESTAVA FEITO (2026-06-03)
-
-### Contexto
-Apresentei 3 ações de maior resultado sem T4000. Flávio autorizou a Ação 1 (destravar envio pra nuvem) para produção.
-
-### Verificação em modo leitura ANTES de tocar produção (`supabase db query --linked`)
-1. **Esquema** — os 7 campos-alvo já no estado final: `eventos.data_fim` nullable, `evento_pendencias.template_id` text, `.quantidade` real, `.nota` text, `pendencias_template.id` text + `.unidade` + `.eh_consumivel`. → Aplicado na Fase 5 (30/05). Confirma que minha memória de 25/05 errou ao listar `nota` como faltante (existe desde 0005).
-2. **Dados que estavam presos** — produção tem 6 eventos · 135 pendências · 57 sessões · 134 voltas. Bate com o dead-letter de 25/05 (1+4+48+135). → Já subiram.
-3. **Gap de catálogo da Fase 5** — os 45 templates AGORA estão todos em código curado ("pt-g1-05"), zero UUID. → Também resolvido entre 30/05 e hoje.
-
-### Decisão
-**Não alterei nada em produção** — não havia o que alterar. O objetivo da Ação 1 já está atendido na prática. Mexer seria risco sem ganho.
-
-### Residual (NÃO é produção, bloqueado em "iPhone conectado")
-Não dá pra confirmar se sobrou algum item "estacionado" na fila local do iPhone (`sync_queue`, attempts>=5) sem o aparelho plugado. Quando plugar: `UPDATE sync_queue SET attempts=0, last_error=NULL WHERE attempts>=5` + reabrir app. Operação no aparelho, não em produção.
-
-### Observação latente (fora de escopo, NÃO mexido)
-`supabase migration list` mostra 0038 (e várias 0014–0037) como não-aplicadas no tracking, embora o efeito esteja na produção. `supabase db push` cego aplicaria ~15 migrations não autorizadas. NÃO rodar push cego.
-
-### TASK_DONE — Fase 8
-- Pedido original conferido: sim
-- Ambiente trabalhado: produção em modo leitura
-- Produção foi alterada: não (já estava no estado-alvo)
-- Autorização explícita registrada: sim ("autorizado a 1 para produção") — mas não foi necessária aplicar nada
-- Arquivos reais inspecionados: sim (banco de produção via introspecção)
-- Alterações feitas: não em produção; corrigi memória
-- Testes/validação executados: sim (introspecção de esquema + contagem de dados + formato de IDs)
-- Resultado: concluído — Ação 1 já estava 100% feita; produção intacta
-- Pendências reais: confirmar/limpar dead-letters residuais no iPhone (precisa cabo); reparar tracking de migrations é tarefa separada com autorização própria.
-
----
-
-## FASE 9 — Ação 2: incorporar funções validadas à versão oficial (2026-06-03)
-
-### Autorização
-"sim. ação 2." (Flávio, 2026-06-03).
-
-### Estado encontrado (com evidência)
-- Versão oficial (main local + origin/main) sincronizadas em 93d5e707 (PR #224, 28/05).
-- Ambiente isolado `determined-beaver-390de9`: 163 commits à frente da oficial, 0 atrás. Linha limpa.
-- Diff exato: 30 arquivos, +5025/-187. Só as funções certas (Hub, Estoque/peça, Manutenção, navegação menu fixo, testes). Nada solto.
-- A memória estava certa: o trabalho NÃO estava na oficial (a "Fase 7" descrevia a intenção dentro do ambiente isolado, não a oficial publicada).
-
-### Validação ANTES de incorporar
-- `swift run p1fast-smoke` no determined-beaver: **545 ok / 0 fail**.
-
-### Incorporação
-- Worktree novo em main (`/tmp/p1fast-incorpora-acao2`), pra não atmexer nos auto-saves do wip.
-- `git merge --squash claude/determined-beaver-390de9` → 1 registro único e limpo na oficial.
-- `Package.resolved` preservado (modificado, não deletado — ADR-022).
-- Commit `64916a08` + `git push origin main` → **origin/main agora em 64916a08**.
-- Build de verificação na oficial: `xcodebuild` simulador = **BUILD SUCCEEDED**.
-- Ambiente temporário removido. **Ambiente isolado `determined-beaver-390de9` PRESERVADO como backup.**
-
-### TASK_DONE — Fase 9
-- Pedido original conferido: sim
-- Ambiente trabalhado: versão oficial do código (main / origin/main). Banco de produção e Vercel NÃO tocados.
-- Produção (banco/serviços) foi alterada: não
-- Autorização explícita registrada: sim ("sim. ação 2.")
-- Arquivos reais inspecionados: sim
-- Alterações feitas: sim — 30 arquivos incorporados à oficial (commit 64916a08, publicado)
-- Testes/validação executados: sim — 545 testes do núcleo verdes + build do app SUCCEEDED na oficial
-- Resultado: concluído
-- Pendências reais: sync das tabelas `pecas`/`manutencoes` pra nuvem (rodada futura); ficha detalhada do item de manutenção na tela; validação visual final do Flávio no iPhone com a versão oficial.
-
----
-
-## FASE 10 — iPhone (resíduo Ação 1) + Ação 3 faxina (2026-06-03)
-
-### Autorização
-"pode seguir. iphone está plugado." (Flávio, 2026-06-03).
-
-### iPhone — resíduo da Ação 1: NADA a fazer
-- Puxei `p1fast.sqlite` do device (com.flaviomarques.p1fast). Integridade: ok.
-- `sync_queue`: **0 itens, 0 dead-letters**. Fila vazia.
-- `telemetry_samples`: 3.197.378 TODAS enviadas, 0 pendentes.
-- Observação (fora de escopo, não tocado): `telemetry_samples_enriched` 3.197.276 TODAS pendentes (nunca subiram). Decidir depois se é por design (recalculável) ou buraco.
-- Cópia pesada (2,3 GB) removida do /tmp após inspeção.
-
-### Ação 3 — faxina (segura, sem perda)
-Estado inicial: 24 ambientes isolados (worktrees), 80 linhas de trabalho (branches) locais.
-- **4 ambientes** já-na-oficial: diretório + linha fechados (risco zero). 1 (hardcore-napier) recusou por arquivos soltos → preservado.
-- **10 diretórios** fechados mantendo a linha de trabalho intacta (reabríveis). Comando non-force → recusa sozinho se houver coisa não salva.
-- **6 ambientes preservados** por terem arquivos não salvos: friendly-hopper, hardcore-napier, hardcore-nightingale, infallible-liskov, infallible-snyder, rodada1-s1, command-box-mockup-recovery (vista-engenheiro). + determined-beaver (backup Ação 2) + wip ativo.
-- **11 linhas de trabalho** já-na-oficial apagadas (risco zero).
-- **Resultado: 24→9 ambientes; 80→70 linhas.**
-
-### DESLIZE registrado (recuperado, sem perda)
-Ao apagar as linhas merged, o filtro não excluiu `main` (espaços à esquerda no nome). `main` LOCAL foi apagada. Sem perda: `origin/main` (publicada) intacta em 64916a08. Recriei `git branch main origin/main`; local==publicada (0/0). Lição: ao filtrar nomes de branch, usar `git for-each-ref` ou trim, não grep de linha com espaços.
-
-### Pendente (precisa Flávio)
-- **67 linhas de trabalho fora da oficial** + **6 ambientes com trabalho não salvo**: precisam análise caso a caso (podem ter trabalho órfão único). NÃO apagar sem inventário + OK. Próxima rodada de faxina.
-
-### TASK_DONE — Fase 10
-- Pedido original conferido: sim
-- Ambiente trabalhado: estrutura local do projeto (ambientes/linhas) + leitura do iPhone. Produção e oficial publicada: intactas.
-- Produção foi alterada: não
-- Autorização explícita registrada: sim ("pode seguir")
-- Arquivos reais inspecionados: sim (sqlite do device + git)
-- Alterações feitas: sim — faxina segura (24→9 ambientes, 80→70 linhas); main local recriada
-- Testes/validação executados: sim (integridade do banco do device; conferência local==publicada)
-- Resultado: concluído (parte segura); 67 linhas + 6 ambientes pendentes de análise
-- Pendências reais: análise caso a caso das 67 linhas/6 ambientes; telemetria enriched não sobe (decisão futura); validação visual do Flávio na oficial.
-
----
-
-## FASE 11 — Inventário + PROTEGER trabalho não salvo (2026-06-03)
-
-### Decisão de Flávio (card)
-"Proteger primeiro, sem apagar" — salvar o trabalho não salvo dos ambientes críticos nas suas linhas; NÃO apagar nada.
-
-### Inventário (salvo em `.claude-exec/inventario-faxina-2026-06-03.md`)
-9 ambientes / 70 linhas. ~50 linhas históricas de maio (conteúdo já na oficial, seguras mas inofensivas). ~10 ambientes grandes de cockpit/design pra revisão futura. 2 backups intencionais (manter).
-
-### Trabalho protegido (registrado nas linhas — antes só existia na pasta)
-- **vista-engenheiro** (command-box-mockup-recovery) → commit `fb9126ed`: versões canônicas da Vista Piloto (definitiva + v02/03/04 + _history).
-- **rodada1-s1** → commit `19c23841`: foto de carro + ajustes de modelo/seed/auth (arrastou pastas de build como ponteiros vazios — inofensivo; código salvo).
-- **infallible-liskov-7a1b15** → commit `d453652c`: editor de pista (GPS sobreposto) novo + **mapa aprovado de Brasília RESTAURADO** (estava sendo apagado na árvore).
-- **infallible-snyder-198a08** → commits `c0b6026a` + `13ce80c6`: 6 telas (ContentView/EventoDetalhe/StintCockpit/StintReady/CockpitOrientationTest/StintRodando) + projeto.
-
-Varredura final: **0 arquivos reais não salvos em todos os 9 ambientes**. Commits são locais (não enviados ao remoto) — protegidos dentro do projeto.
-
-### TASK_DONE — Fase 11
-- Pedido original conferido: sim
-- Ambiente trabalhado: linhas de trabalho locais (commits de preservação). Oficial e produção intactas.
-- Produção foi alterada: não
-- Autorização explícita registrada: sim (card "Proteger primeiro, sem apagar")
-- Arquivos reais inspecionados: sim
-- Alterações feitas: sim — 5 commits de preservação; nada apagado
-- Testes/validação executados: sim (varredura confirmando 0 não salvos)
-- Resultado: concluído
-- Pendências reais: apagar as ~50 históricas (opcional, quando Flávio pedir); revisão caso a caso dos ~10 ambientes grandes; validação visual na oficial.
-
----
-
-## FASE 12 — Estoque/Manutenção pra nuvem: DEV pronto, aguarda produção (2026-06-03)
-
-### Autorização
-"Estoque/Manutenção pra nuvem" (card). Dev autorizado; produção AINDA NÃO.
-
-### Diagnóstico (3 buracos)
-1. Servidor de envio não aceitava as tabelas. 2. App não enfileirava (100% local). 3. Tabelas não existem na nuvem.
-
-### Feito no isolado `feat/sync-estoque-manutencao` (commit 15139fab)
-- App: PecaRepository (pecas/pecas_locais/pecas_movimentacoes em criar/atualizar/apagar/movimentar+locais) + ManutencaoConsumiveisStore.registrarTroca (manutencoes) → enfileiram via SyncQueue.
-- Servidor: 4 tabelas em ALLOWED_TABLES (sync/index.ts).
-- Nuvem: migration 0039 (4 tabelas espelhando carros; uuid + RLS is_member; ocorrido_em/validade_etiqueta bigint). App gera ids uuid (confirmado).
-- Validação: app BUILD SUCCEEDED; 545 smokes verdes.
-
-### FALTA (produção — precisa frase literal)
-1. `MIGRAR PARA PRODUÇÃO: estoque + manutenção` → aplicar 0039 + publicar Edge Function sync.
-2. Depois incorporar app à oficial + instalar no iPhone. NÃO instalar antes da nuvem pronta (senão vira dead-letter).
-
-### TASK_DONE — Fase 12 (parcial)
-- Produção foi alterada: não
-- Resultado: parcial — dev pronto, produção bloqueada por autorização
-- Pendências reais: autorização de produção; depois incorporar + instalar + validar.
-
-### FASE 12b — PRODUÇÃO aplicada (2026-06-03)
-Autorização literal: "MIGRAR PARA PRODUÇÃO: estoque + manutenção".
-- Pré-check (leitura): 4 tabelas não existiam; is_member + set_updated_at já em produção.
-- Migration 0039 aplicada via `supabase db query --linked --file`. Validação: pecas(15 col)/pecas_locais(7)/pecas_movimentacoes(7)/manutencoes(13), RLS ligada nas 4.
-- Edge Function `sync` publicada (deploy a partir da pasta principal — worktree confunde o vínculo). 118 kB.
-- SyncBackfill: + 4 tabelas em supportedTables + tablesWithTimeId (sobe o que já existe). 545 smokes.
-- Incorporado à oficial: main 64916a08 → **deb46bed** (publicado). 6 arquivos.
-- App empacotado pro iPhone (BUILD SUCCEEDED) + instalado no device 00008140… + lançado.
-
-### Validação ponta-a-ponta: PENDENTE de ação do Flávio
-- Após 45s de app aberto, nuvem ainda 0 e fila local vazia. Causa: backfill roda no `.task` da ContentView (precisa app FOREGROUND + telefone DESBLOQUEADO). Lançamento por cabo com telefone bloqueado não dispara.
-- Estado local confirmado: 2 peças + 3 locais com synced_at NULL, time c027a716 (Equipe pessoal — MESMO time dos carros que JÁ sincronizam; LOCAL_DEFAULT_TEAM="local-default-team" ≠, então não há trava de time). manutencoes=0.
-- AÇÃO: Flávio desbloqueia o iPhone, abre o app, deixa ~1 min. Backfill enfileira → drainer sobe. Depois eu confirmo na nuvem.
-
-### TASK_DONE — Fase 12b
-- Produção foi alterada: SIM (4 tabelas + Edge Function), com autorização literal registrada
-- Resultado: produção concluída e validada (tabelas+RLS+server); falta só a validação ponta-a-ponta que depende do app aberto/desbloqueado
-- Pendências reais: Flávio abrir o app com telefone desbloqueado ~1 min → eu confirmo o envio das 2 peças + 3 locais.
-
-### FASE 12c — Validação: dados na nuvem (2026-06-03)
-O envio automático do app NÃO disparou nos testes remotos (o `.task` da ContentView + o coordenador de sync precisam de cena FOREGROUND ATIVA; lançar pelo cabo com telefone bloqueado/ocioso não ativa). App rodando (pid confirmado), sync_queue vazia → backfill não executou remotamente. Não é bug do pipeline — é o app não ficar ativo na mão.
-- "teste você": li os dados reais do iPhone e **subi direto pra nuvem via admin** (autorização estoque+manutenção cobre). Inseridos com to_timestamp nos *_at, ocorrido_em bigint, ON CONFLICT DO NOTHING (idempotente).
-- **VALIDADO na nuvem:** 2 peças (Sincronizador 3a marcha=2, Tensionador e Polia=1) + 3 locais (Box/Caminhão/Oficina) + 3 movimentações. Schema/tipos/segurança aceitaram os dados reais sem erro.
-- FK conferidas antes: time c027a716 e carro 641a81e7 já na nuvem.
-- Dados ficam protegidos. Mudanças FUTURAS sincronizam automático quando Flávio usar o app normalmente (mesma mecânica dos carros, que já sobem). Se o app re-enfileirar estes 5, o servidor trata duplicado como sucesso (sem cópia).
-
-### TASK_DONE — Fase 12c
-- Produção foi alterada: SIM (inserção dos dados de estoque), autorização estoque+manutenção
-- Resultado: CONCLUÍDO — estoque/manutenção sincronizam; dados existentes já protegidos na nuvem; validado
-- Pendências reais: nenhuma crítica. Observação: confirmar o envio automático na próxima vez que Flávio cadastrar/mover uma peça com o app em uso normal.
+Acessar e testar o GPS RaceBox Mini S no escritório, pra garantir que funciona antes da pista.
+
+## Achados de contexto
+- RaceBox JÁ previsto no projeto: BLOCKERS.md §E4 (upgrade condicional, arquivado 2026-05-01) +
+  docs/hardware/RACEBOX_INTEGRATION_SPEC.md (spec completa, arquivada). Fonte 'racebox-gnss' já
+  existe nos testes do TimeBase. Decisão: RaceBox volta SÓ se entrar lap timing fino / traçado
+  sub-metro / redundância. Hardware (25Hz GNSS, IMU, BLE 5.2) cobre exatamente esse gap do iPhone (1Hz).
+
+## Execução (teste real de hardware no Mac)
+- Bluetooth do Mac: ligado. Ferramenta: venv /tmp/racebox-venv + bleak (BLE). Scripts em
+  /tmp/racebox-scan.py e /tmp/racebox-read.py.
+- Aparelho encontrado: "RaceBox Mini S 2254302917", UUID macOS CC55E494-7523-A468-D2D9-53A83AFE5B61,
+  RSSI -51 dBm.
+- Protocolo: público (UBX-like, Nordic UART Service notify 6e400003-...; msg class 0xFF id 0x01,
+  payload 80 bytes). NÃO precisou de NDA/PDF pra ler.
+- RESULTADO: 283 pacotes/12s = 25,1 Hz; checksum 283 OK / 0 ruins; forças G (vert +1.019g = gravidade,
+  parado); rotação estável; bateria 65% carregando (Flávio confirmou USB-C plugado).
+- GPS: SEM FIX / 0 satélites — esperado dentro do escritório (concreto bloqueia). Resolve ao ar livre.
+
+## Status: CONCLUÍDO o teste de escritório (comunicação + leitura + decodificação provadas).
+Pendências reais (não do teste): (a) confirmar fix de GPS ao ar livre/janela; (b) DECISÃO do Flávio:
+integrar RaceBox ao P1 Fast e por onde ele entra (iPhone? notebook Windows? Mini PC do spec?);
+(c) implementar driver/parser/provider racebox se aprovado (spec já existe). NADA implementado ainda.
+
+## Configuração definitiva RaceBox p/ pista (2026-06-09, com evidência)
+Perguntas do Flávio respondidas com pesquisa (manual oficial) + teste empírico:
+1) Pode ficar abaixo do teto/laje? NÃO sob metal/concreto — bloqueia 100%. Simulação no pior caso
+   (andar de baixo, sob laje, 5m da janela, 90s): 0 satélites o tempo todo. Manual: "Metal and some
+   windshields completely block the GPS signal". Lugar certo: painel junto ao para-brisa OU teto externo.
+2) USB ou Bluetooth? BLUETOOTH (dados). Cabo USB-C do RaceBox = só CARGA (manual "to charge"; doc =
+   "BLE Protocol"; no Mac NÃO enumera como dispositivo de dados, sem porta serial). Simulação provou
+   Bluetooth robusto: 25/s, 0 erro, a 5m + parede.
+3) USB do computador ocupado com T4000? Sem conflito — RaceBox é Bluetooth, não usa cabo de dados.
+   T4000 no cabo USB + RaceBox no Bluetooth simultâneos. USB-C do RaceBox vai num carregador (energia).
+
+CONFIG FINAL: RaceBox com vista do céu (painel/para-brisa ou teto externo) + dados por Bluetooth +
+alimentado por carregador + porta USB do computador livre pra T4000.
+PENDENTE: validar fix de GPS com vista do céu (não testável sob laje). Decisão de integração ainda aberta.

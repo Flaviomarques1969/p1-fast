@@ -69,18 +69,24 @@ export async function loadTrackSegments(layoutId = BRASILIA_LAYOUT_PRINCIPAL_ID)
     return data
       .filter(row => {
         const g = row.geometria || {};
-        return g.entrada_line_gps && g.saida_line_gps && g.apice_gps;
+        // Ápice NÃO é exigido: decisão Flávio 27/05 — o ápice é CALCULADO da
+        // melhor passagem, não cadastrado no trecho. Quem precisa dele enxerta
+        // depois (main-t3000 usa o da melhor passagem).
+        return g.entrada_line_gps && g.saida_line_gps;
       })
       .map(row => {
         const g = row.geometria;
         return {
           id: row.id,
           nome: row.nome,
+          ordem: row.ordem,
           entradaLine: {
             a: { lat: Number(g.entrada_line_gps.a.lat), lng: Number(g.entrada_line_gps.a.lng) },
             b: { lat: Number(g.entrada_line_gps.b.lat), lng: Number(g.entrada_line_gps.b.lng) },
           },
-          apicePoint: { lat: Number(g.apice_gps.lat), lng: Number(g.apice_gps.lng) },
+          apicePoint: g.apice_gps
+            ? { lat: Number(g.apice_gps.lat), lng: Number(g.apice_gps.lng) }
+            : null, // enxertado da melhor passagem pelo chamador
           saidaLine: {
             a: { lat: Number(g.saida_line_gps.a.lat), lng: Number(g.saida_line_gps.a.lng) },
             b: { lat: Number(g.saida_line_gps.b.lat), lng: Number(g.saida_line_gps.b.lng) },

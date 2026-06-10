@@ -60,6 +60,29 @@ export function distMeters(a, b) {
  *   = 0 → ponto está SOBRE a linha
  * Usado pra detectar cruzamento: sinal muda entre amostra n-1 e n.
  */
+/** O caminho p0→p1 cruza o SEGMENTO a–b? (projeção local; folga de 50% nas
+ *  pontas da linha). Trava dos cruzamentos: sem ela o prolongamento infinito
+ *  da linha corta a pista inteira (achado com replay de voltas reais, 10/06). */
+// Sanidade física: mínimo de distância ao ápice acima disso NÃO é passagem de
+// ápice (observação Flávio 10/06: ápice real fica a ≤ ~10 m da linha do carro;
+// 60 m dá folga pra semente + ruído sem aceitar absurdo).
+const APICE_DIST_MAX_M = 60;
+
+export function caminhoCruzaLinha(p0, p1, a, b) {
+  const kLat = 110540;
+  const kLng = 111320 * Math.cos((a.lat * Math.PI) / 180);
+  const X = q => (q.lng - a.lng) * kLng;
+  const Y = q => (q.lat - a.lat) * kLat;
+  const r = { x: X(p1) - X(p0), y: Y(p1) - Y(p0) };
+  const d = { x: X(b), y: Y(b) };
+  const den = r.x * d.y - r.y * d.x;
+  if (Math.abs(den) < 1e-9) return false;
+  const qp = { x: -X(p0), y: -Y(p0) };
+  const v = (qp.x * d.y - qp.y * d.x) / den;
+  const u = (qp.x * r.y - qp.y * r.x) / den;
+  return v >= 0 && v <= 1 && u >= -0.5 && u <= 1.5;
+}
+
 export function sideOfLine(p, a, b) {
   // produto vetorial 2D ((b-a) × (p-a)) no plano lat-lng
   const ax = a.lng;
@@ -157,6 +180,7 @@ export class TrechoDetector {
     this._last = null;            // última amostra GPS
     this._lastEntradaSide = null; // sinal do lado em relação à linha de entrada
     this._lastSaidaSide   = null; // sinal do lado em relação à linha de saída
+    this._entradaSides = new Array(this._segments.length).fill(null); // lados de TODAS as entradas (resync)
     this._entradaPos = null;      // ponto GPS de cruzamento da entrada
     this._entradaT   = null;      // timestamp do cruzamento da entrada
     this._lastApiceDist = Infinity; // pra detectar mínimo local
@@ -231,9 +255,15 @@ export class TrechoDetector {
       : 0;
 
     // ── Detecção de cruzamento da linha de entrada ──
+    // Usa o vigia paralelo (_entradaSides) como memória do lado anterior: ele
+    // sobrevive ao avanço de trecho — sem o "tick cego" que perdia a curva
+    // seguinte quando a reta entre elas era curta (achado nos testes 10/06).
     const entradaSide = sideOfLine(sample, seg.entradaLine.a, seg.entradaLine.b);
-    if (this._lastEntradaSide != null
-        && Math.sign(entradaSide) !== Math.sign(this._lastEntradaSide)
+    const ladoAnteriorEntrada = this._entradaSides[this._currentIdx] != null
+      ? this._entradaSides[this._currentIdx] : this._lastEntradaSide;
+    if (ladoAnteriorEntrada != null
+        && Math.sign(entradaSide) !== Math.sign(ladoAnteriorEntrada)
+        && (!this._last || caminhoCruzaLinha(this._last, sample, seg.entradaLine.a, seg.entradaLine.b))
         && this._phase === TrechoFase.ANTES_ENTRADA) {
       this._phase = TrechoFase.ENTRADA_FREIO;
       this._entradaPos = { lat: sample.lat, lng: sample.lng };
@@ -259,11 +289,12 @@ export class TrechoDetector {
     }
 
     // ── Detecção do ápice (mínimo de distância ao ponto ideal) ──
-    if (this._phase === TrechoFase.FREIO_APICE || this._phase === TrechoFase.ENTRADA_FREIO) {
+    if ((this._phase === TrechoFase.FREIO_APICE || this._phase === TrechoFase.ENTRADA_FREIO)
+        && seg.apicePoint) {
       const distToApex = distMeters(sample, seg.apicePoint);
       if (distToApex < this._lastApiceDist) {
         this._lastApiceDist = distToApex;
-      } else if (!this._apiceCrossed && this._lastApiceDist < Infinity) {
+      } else if (!this._apiceCrossed && this._lastApiceDist < APICE_DIST_MAX_M) {
         // distância começou a aumentar → cruzou o ponto mais próximo
         this._apiceCrossed = true;
         this._phase = TrechoFase.APICE_SAIDA;
@@ -281,10 +312,29 @@ export class TrechoDetector {
     }
 
     // ── Detecção de cruzamento da linha de saída ──
+    // Aceita fechar a partir de qualquer fase INTERNA do trecho. Se o ápice
+    // ainda não tinha sido reconhecido (ponto-semente impreciso, ruído), fecha
+    // com o melhor que viu — distFromIdealM = mínimo observado, ou null se
+    // nunca chegou perto (NUNCA inventa valor). Sem isso, ápice perdido
+    // travava a curva e a fila inteira (defeito 2-3 de 8, replay 10/06).
     const saidaSide = sideOfLine(sample, seg.saidaLine.a, seg.saidaLine.b);
+    const dentroDoTrecho = this._phase === TrechoFase.ENTRADA_FREIO
+      || this._phase === TrechoFase.FREIO_APICE
+      || this._phase === TrechoFase.APICE_SAIDA;
     if (this._lastSaidaSide != null
         && Math.sign(saidaSide) !== Math.sign(this._lastSaidaSide)
-        && this._phase === TrechoFase.APICE_SAIDA) {
+        && (!this._last || caminhoCruzaLinha(this._last, sample, seg.saidaLine.a, seg.saidaLine.b))
+        && dentroDoTrecho) {
+      if (!this._apiceCrossed) {
+        this._onEvent({
+          type: 'apice-cruzou',
+          segmentId: seg.id,
+          t, kmh,
+          distFromIdealM: this._lastApiceDist < Infinity ? this._lastApiceDist : null,
+          angleFromIdealDeg: null,
+          fechamentoDeEmergencia: true,
+        });
+      }
       this._phase = TrechoFase.POS_SAIDA;
       this._onEvent({
         type: 'saida-cruzou',
@@ -292,10 +342,61 @@ export class TrechoDetector {
         t, kmh, completed: true,
       });
       this._advance();
+      this._last = { lat: sample.lat, lng: sample.lng, kmh, t };
+      this._atualizarLadosEntradas(sample);
+      return;
     }
     this._lastSaidaSide = saidaSide;
 
+    // ── RESSINCRONIZAÇÃO: vigia paralelo das entradas de TODOS os trechos ──
+    // Se o carro cruzar a entrada de OUTRO trecho (porque o atual foi perdido),
+    // o vigia abandona o atual (sem inventar medição) e engata no trecho onde
+    // o carro REALMENTE está. Sem isso, 1 curva perdida cegava o resto da volta.
+    const cruzouOutra = this._detectarEntradaDeOutro(sample);
+    if (cruzouOutra !== null && cruzouOutra !== this._currentIdx) {
+      const de = seg.id;
+      this._currentIdx = cruzouOutra;
+      const novo = this._segments[this._currentIdx];
+      this._phase = TrechoFase.ENTRADA_FREIO;
+      this._entradaPos = { lat: sample.lat, lng: sample.lng };
+      this._entradaT = t;
+      this._lastSaidaSide = null;
+      this._lastApiceDist = Infinity;
+      this._apiceCrossed = false;
+      this._decelWindow = [];
+      this._onEvent({ type: 'resync', deSegmentId: de, paraSegmentId: novo.id, t });
+      this._onEvent({ type: 'entrada-cruzou', segmentId: novo.id, t, kmh });
+    }
+    this._atualizarLadosEntradas(sample);
+
     this._last = { lat: sample.lat, lng: sample.lng, kmh, t };
+  }
+
+  /** Atualiza o lado de cada linha de entrada (estado do vigia paralelo). */
+  _atualizarLadosEntradas(sample) {
+    for (let j = 0; j < this._segments.length; j++) {
+      const sj = this._segments[j];
+      this._entradaSides[j] = sideOfLine(sample, sj.entradaLine.a, sj.entradaLine.b);
+    }
+  }
+
+  /** Algum OUTRO trecho teve a entrada cruzada nesta amostra? Devolve o índice ou null. */
+  _detectarEntradaDeOutro(sample) {
+    if (!this._last) return null;
+    const n = this._segments.length;
+    // varre na ordem da volta a partir do trecho atual (o mais provável primeiro)
+    for (let passo = 1; passo < n; passo++) {
+      const j = (this._currentIdx + passo) % n;
+      const sj = this._segments[j];
+      const lado = sideOfLine(sample, sj.entradaLine.a, sj.entradaLine.b);
+      const anterior = this._entradaSides[j];
+      if (anterior != null
+          && Math.sign(lado) !== Math.sign(anterior)
+          && caminhoCruzaLinha(this._last, sample, sj.entradaLine.a, sj.entradaLine.b)) {
+        return j;
+      }
+    }
+    return null;
   }
 
   /** Estado público pra debug / UI. */

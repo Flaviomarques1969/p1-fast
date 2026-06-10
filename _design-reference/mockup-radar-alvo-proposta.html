@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROPOSTA — Radar do Maior Ganho no painel do piloto ("o Ouro")</title>
+<style>
+  :root { color-scheme: dark;
+    --ouro:#d4af37; --ouro-vivo:#ffd75e; --verde:#22c55e; --vermelho:#ef4444;
+    --fundo:#000; --painel:#0b0e13; --borda:#1c232e; --texto:#e8edf2; --apagado:#74808e; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#14181f; font-family:-apple-system,Segoe UI,Roboto,sans-serif; color:var(--texto);
+    display:flex; flex-direction:column; align-items:center; gap:18px; padding:26px 14px 60px; }
+  h1 { font-size:17px; margin:0; } .sub { color:var(--apagado); font-size:13px; max-width:700px; text-align:center; line-height:1.5; }
+  .device { width:min(960px, 96vw); aspect-ratio:16/7.2; background:var(--fundo); border-radius:18px;
+    border:1px solid #232a36; padding:18px 22px; display:flex; flex-direction:column; gap:10px; position:relative; overflow:hidden; }
+
+  /* ── chip do ALVO (sempre visível após a 1ª volta) ── */
+  .alvo { position:absolute; top:14px; left:50%; transform:translateX(-50%);
+    display:flex; gap:0; border:1.5px solid var(--ouro); border-radius:999px; overflow:hidden;
+    font-weight:800; font-size:clamp(13px, 1.8vw, 17px); letter-spacing:.4px; }
+  .alvo span { padding:6px 14px; }
+  .alvo .a1 { background:var(--ouro); color:#14100a; }
+  .alvo .a2 { background:#161208; color:var(--ouro-vivo); border-left:1px solid #332a10; }
+  .alvo .a3 { background:#161208; color:var(--ouro-vivo); border-left:1px solid #332a10; font-variant-numeric:tabular-nums; }
+  .alvo.conquistado .a1 { background:var(--verde); color:#06140b; }
+  .alvo.conquistado { border-color:var(--verde); }
+  .alvo.conquistado .a2, .alvo.conquistado .a3 { color:#86efac; background:#08150d; }
+
+  /* ── miolo do painel (esboço simplificado do cockpit aprovado) ── */
+  .meio { flex:1; display:flex; align-items:center; justify-content:center; gap:26px; margin-top:34px; }
+  .delta { font-size:clamp(44px, 7vw, 84px); font-weight:900; font-variant-numeric:tabular-nums; }
+  .delta.bom { color:var(--verde); } .delta.ruim { color:var(--vermelho); }
+  .widgets { display:flex; gap:12px; }
+  .w { width:clamp(90px, 12vw, 132px); aspect-ratio:1/1.06; background:var(--painel); border:1.5px solid var(--borda);
+    border-radius:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; position:relative; }
+  .w .titulo { font-size:11px; color:var(--apagado); letter-spacing:1.2px; font-weight:700; }
+  .w .valor { font-size:clamp(20px, 2.8vw, 30px); font-weight:800; font-variant-numeric:tabular-nums; }
+  .w .unidade { font-size:10px; color:var(--apagado); }
+
+  /* o widget ALVO ganha o halo dourado pulsante quando o trecho-alvo se aproxima */
+  .w.ouro { border-color:var(--ouro); animation:pulso 1.1s ease-in-out infinite; }
+  .w.ouro .titulo { color:var(--ouro-vivo); }
+  .w.ouro::after { content:"ALVO"; position:absolute; top:-9px; right:10px; background:var(--ouro); color:#14100a;
+    font-size:9px; font-weight:900; letter-spacing:1px; padding:2px 8px; border-radius:999px; }
+  @keyframes pulso { 0%,100% { box-shadow:0 0 0 0 rgba(212,175,55,.0); } 50% { box-shadow:0 0 22px 4px rgba(212,175,55,.45); } }
+
+  .rodape { display:flex; justify-content:space-between; align-items:center; color:var(--apagado); font-size:12px; }
+  .fase { color:var(--apagado); font-size:12px; text-align:center; min-height:18px; }
+
+  .controles { display:flex; gap:10px; }
+  button { background:#1b2330; color:var(--texto); border:1px solid #2a3442; border-radius:10px; padding:10px 18px; font-size:14px; cursor:pointer; }
+  button.p { background:#2563eb; border-color:#2563eb; font-weight:700; }
+  .legenda { max-width:700px; font-size:13px; color:var(--apagado); line-height:1.6; }
+  .legenda b { color:var(--texto); }
+  .legenda .dourado { color:var(--ouro-vivo); font-weight:700; }
+</style>
+</head>
+<body>
+  <h1>PROPOSTA — Radar do Maior Ganho no painel ("o Ouro")</h1>
+  <div class="sub">Zero leitura. Uma cor (dourado) e três fichas. O piloto entende em 1 olhada:
+  <b>onde</b> está o tempo, <b>em quê</b>, e <b>quanto</b>. Conquistou → o ouro muda de lugar sozinho.</div>
+
+  <div class="device">
+    <div class="alvo" id="alvo">
+      <span class="a1" id="alvoTrecho">C7</span><span class="a2" id="alvoDisc">FREIO</span><span class="a3" id="alvoGanho">−0,8</span>
+    </div>
+    <div class="meio">
+      <div class="delta bom" id="delta">−0,21</div>
+      <div class="widgets">
+        <div class="w" id="wEntrada"><div class="titulo">ENTRADA</div><div class="valor">142</div><div class="unidade">km/h na linha</div></div>
+        <div class="w" id="wFreio"><div class="titulo">FREIO</div><div class="valor">87m</div><div class="unidade">da entrada</div></div>
+        <div class="w" id="wApice"><div class="titulo">ÁPICE</div><div class="valor">●</div><div class="unidade">siga a bolinha</div></div>
+        <div class="w" id="wSaida"><div class="titulo">SAÍDA</div><div class="valor">156</div><div class="unidade">km/h na linha</div></div>
+      </div>
+    </div>
+    <div class="rodape"><span>VOLTA 4 · 1:12</span><span id="msg" style="font-weight:800; color:#e8edf2"></span><span>MELHOR 2:41,3</span></div>
+  </div>
+
+  <div class="fase" id="fase">demonstração automática — ou use os botões</div>
+  <div class="controles">
+    <button class="p" id="btnPassou">simular: piloto CONQUISTOU o alvo</button>
+    <button id="btnReiniciar">reiniciar demonstração</button>
+  </div>
+
+  <div class="legenda">
+    <p><b>Como funciona (3 regras, nenhuma frase longa):</b></p>
+    <p>1 · <span class="dourado">O chip dourado no topo</span> existe a partir da 2ª volta e mostra SEMPRE a maior oportunidade:
+    <b>trecho · disciplina · segundos</b> (ex.: C7 · FREIO · −0,8). Três fichas, sem texto corrido.</p>
+    <p>2 · Quando o carro se aproxima do trecho-alvo, <span class="dourado">o widget daquela disciplina acende em dourado</span>
+    (halo pulsante + etiqueta ALVO). As 4 disciplinas já são os 4 widgets do painel aprovado — entrada, freio, ápice, saída — então
+    não entra elemento novo na tela: o que já existe muda de cor. O dourado já é a cor de "melhor da história" no painel — vira a cor do tempo.</p>
+    <p>3 · Conquistou (2 passagens melhores no componente, pra não pular à toa): flash verde <b>GANHOU 0,8</b> (padrão das
+    mensagens aprovadas: verbo no pretérito + valor) e <span class="dourado">o ouro muda sozinho</span> pra próxima oportunidade do ranking.</p>
+    <p class="muted">Encaixe com o ritmo da volta: na metade da reta antes do trecho-alvo, a prévia "como fazer" aparece reforçada;
+    no resumo da volta (reta longa), o chip é a primeira informação.</p>
+  </div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  // fila de oportunidades (viria do ranking real, recalculado a cada volta)
+  const fila = [
+    { trecho:'C7', disc:'FREIO',   ganho:'−0,8', widget:'wFreio'   },
+    { trecho:'C3', disc:'ÁPICE',   ganho:'−0,5', widget:'wApice'   },
+    { trecho:'C11', disc:'SAÍDA',  ganho:'−0,3', widget:'wSaida'   },
+    { trecho:'C1', disc:'ENTRADA', ganho:'−0,2', widget:'wEntrada' },
+  ];
+  let i = 0, timerAuto = null;
+
+  function aplicarAlvo() {
+    const a = fila[i % fila.length];
+    $('alvoTrecho').textContent = a.trecho;
+    $('alvoDisc').textContent = a.disc;
+    $('alvoGanho').textContent = a.ganho;
+    $('alvo').classList.remove('conquistado');
+    document.querySelectorAll('.w').forEach(w => w.classList.remove('ouro'));
+    $('msg').textContent = '';
+    $('fase').textContent = `alvo atual: ${a.trecho} · ${a.disc} — o widget acende quando o trecho se aproxima…`;
+    // simula a aproximação do trecho-alvo: halo acende após 1,5s
+    setTimeout(() => { $(a.widget).classList.add('ouro');
+      $('fase').textContent = `chegando no ${a.trecho}: o widget ${a.disc} está dourado — é ali que mora o tempo.`; }, 1500);
+  }
+
+  function conquistar() {
+    const a = fila[i % fila.length];
+    $(a.widget).classList.remove('ouro');
+    $('alvo').classList.add('conquistado');
+    $('msg').textContent = 'GANHOU ' + a.ganho.replace('−','');
+    $('msg').style.color = '#22c55e';
+    $('fase').textContent = `conquistado! o ranking recalcula e o ouro muda pra próxima oportunidade…`;
+    setTimeout(() => { $('msg').textContent=''; i++; aplicarAlvo(); }, 2200);
+  }
+
+  function autoDemo() {
+    if (timerAuto) clearInterval(timerAuto);
+    timerAuto = setInterval(conquistar, 6500);
+  }
+
+  $('btnPassou').onclick = conquistar;
+  $('btnReiniciar').onclick = () => { i = 0; aplicarAlvo(); autoDemo(); };
+  aplicarAlvo(); autoDemo();
+</script>
+</body>
+</html>

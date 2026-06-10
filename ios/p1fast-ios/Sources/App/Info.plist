@@ -24,10 +24,14 @@
 	<string>$(DAILY_API_KEY)</string>
 	<key>NSCameraUsageDescription</key>
 	<string>P1 Fast usa a câmera pra ler o código de barras da caixa da peça e pra tirar fotos das peças no Estoque.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>P1 Fast usa a rede local pra transmitir o vídeo ao vivo entre o notebook e o iPhone com menor latência.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Se a tela apagar ou outro app tomar foco durante o stint, P1 Fast continua gravando o GPS pra não perder voltas. O acelerômetro pausa em background — limitação do iOS — então mantenha a tela aberta sempre que possível.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>P1 Fast usa GPS pra gravar a telemetria do stint enquanto você pilota.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>P1 Fast usa o microfone no vídeo ao vivo do espelhamento (no teste o app não publica áudio).</string>
 	<key>NSMotionUsageDescription</key>
 	<string>P1 Fast usa o acelerômetro do iPhone pra medir aceleração lateral, longitudinal e curvas durante o stint.</string>
 	<key>SUPABASE_ANON_KEY</key>

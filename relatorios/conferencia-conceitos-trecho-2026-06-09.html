@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1 Fast — Conferência dos conceitos do produto + proposições (09/06/2026)</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system,Segoe UI,Roboto,sans-serif; background:#0a0d12; color:#e8edf2; line-height:1.55; }
+  .wrap { max-width:900px; margin:0 auto; padding:28px 20px 60px; }
+  h1 { font-size:22px; margin:0 0 6px; }
+  .sub { color:#8a97a6; font-size:13px; margin-bottom:24px; }
+  h2 { font-size:16px; margin:34px 0 12px; padding-bottom:6px; border-bottom:1px solid #1d2530; }
+  table { width:100%; border-collapse:collapse; font-size:13.5px; margin:10px 0; }
+  th, td { text-align:left; padding:9px 10px; border-bottom:1px solid #1d2530; vertical-align:top; }
+  th { color:#8a97a6; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.5px; }
+  .ok { color:#4ade80; font-weight:700; } .parcial { color:#fbbf24; font-weight:700; } .nao { color:#f87171; font-weight:700; }
+  .card { background:#11161e; border:1px solid #1d2530; border-radius:12px; padding:16px 18px; margin:12px 0; }
+  .num { display:inline-block; background:#1b2330; border:1px solid #2a3442; border-radius:8px; min-width:26px; text-align:center; font-weight:800; margin-right:8px; }
+  .muted { color:#8a97a6; font-size:13px; }
+  .rec { border-left:3px solid #22c55e; padding-left:14px; }
+  .atencao { border-left:3px solid #f59e0b; padding-left:14px; }
+  b.el { color:#93c5fd; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Conferência dos conceitos do produto — e o que proponho além</h1>
+  <div class="sub">Seu ditado de 09/06 virou documento oficial (<code>docs/CONCEITOS_TRECHO_PRODUTO.md</code>). Abaixo, cada conceito conferido contra o sistema REAL (código, banco e telas), com veredito honesto.</div>
+
+  <h2>1 · Conferência conceito a conceito</h2>
+  <table>
+    <tr><th>Conceito (como você ditou)</th><th>No sistema</th><th>Situação real</th></tr>
+    <tr><td><b>Trecho</b> = lugar onde freia, com <b class="el">entrada</b> (ponto + velocidade), <b class="el">frenagem</b> (metros desde a entrada), <b class="el">Vmin</b>, <b class="el">ápice</b>, <b class="el">saída</b></td><td><span class="ok">EXISTE</span></td><td>O detector registra entrada/saída com velocidade, velocidade mínima e ápice; o comparador divide o trecho em 4 partes (entrada, freio, ápice, saída). Ápice múltiplo (2-3) suportado desde 05/05.</td></tr>
+    <tr><td><b class="el">PAce</b> — ponto de início de aceleração (antes ou depois do ápice)</td><td><span class="parcial">PARCIAL</span></td><td>Hoje é <b>deduzido</b> da fase final da curva — não é registrado como ponto GPS próprio em cada passagem. (Proposição 2.)</td></tr>
+    <tr><td>Comparação sempre vs <b>melhor passagem histórica do carro+configuração, qualquer piloto</b></td><td><span class="ok">EXISTE</span></td><td>O painel carrega da nuvem a melhor passagem por carro+autódromo+pneu (56 passagens reais do Bubi lá) e compara ponto a ponto, gerando o delta.</td></tr>
+    <tr><td><b>Após a linha de saída</b> → mostra o desempenho do trecho</td><td><span class="ok">EXISTE</span></td><td>Mensagem e delta disparam ao fechar o trecho (17 mensagens aprovadas).</td></tr>
+    <tr><td><b>Metade da reta</b> → mostra COMO FAZER o próximo trecho (melhor passagem: frenagem, vmin, pontos)</td><td><span class="nao">NÃO EXISTE</span></td><td>Não há hoje gatilho de "metade da reta" nem prévia do próximo trecho. (Proposição 1.)</td></tr>
+    <tr><td><b>Reta mais longa</b> → trecho anterior, depois o desempenho da VOLTA</td><td><span class="nao">NÃO EXISTE</span></td><td>Não há resumo de volta ao vivo nem tratamento especial da reta longa. (Proposição 1.)</td></tr>
+    <tr><td><b>Shift light</b> no ponto de máxima entrega</td><td><span class="ok">EXISTE</span></td><td>Implementado pela regra que você aprovou em 28-29/05: cruzamento da força na roda entre a marcha atual e a próxima, usando a curva real do motor (dinamômetro) + 3 modos + aprendizado.</td></tr>
+    <tr><td><b>Mensagens críticas + orientação</b></td><td><span class="ok">EXISTE</span></td><td>19 críticas (v2) + 17 de orientação, todas as suas, plugadas no painel.</td></tr>
+    <tr><td><b>Ghost</b> — delta à esquerda + mapa só do trecho pra seguir a melhor linha</td><td><span class="parcial">PARCIAL</span></td><td>O desenho aprovado existe (mockup do cockpit com modo ghost + retas marcadas) e a melhor passagem já tem os pontos na nuvem — mas o painel REAL ainda não liga o modo. (Proposição 6.)</td></tr>
+    <tr><td><b>Stint</b>: volta de box planejada, warmup, cooldown marcadas no cockpit</td><td><span class="parcial">PARCIAL</span></td><td>O plano de stint existe (meta, abordagem, voltas, trechos-foco) e o desenho mostra warmup/cooldown — mas <b>não há campos no banco</b> pra essas voltas; o cockpit não tem como marcá-las de verdade. (Proposição 5.)</td></tr>
+    <tr><td><b>Treino de técnica com IA</b> (ex.: trail braking) no planejamento do stint</td><td><span class="nao">NÃO EXISTE</span></td><td>Como você disse: ainda não foi feito. Zero estrutura hoje. (Proposição 8.)</td></tr>
+    <tr><td><b>Radar do maior ganho</b> — após a 1ª volta, mostrar em qual trecho e em qual componente (entrada, frenagem, Vmin, ápice) está a maior chance de ganhar tempo</td><td><span class="parcial">PARCIAL</span></td><td>A matéria-prima JÁ EXISTE: o comparador calcula o delta separado por componente (entrada/freio/ápice/saída) em cada passagem, e já aponta o pior componente do trecho. Falta acumular por volta, ranquear os trechos e mostrar. (Proposição 2.)</td></tr>
+  </table>
+
+  <div class="card atencao">
+    <b>Achado da conferência:</b> os <b>6 indicadores por trecho + conselheiro de trecho</b> (entregues 24/05, tabela pós-stint por trecho + frase de orientação) estão <b>órfãos num ambiente isolado de trabalho</b> — não entraram na versão oficial. É o terceiro resgate desse tipo que encontro hoje. Entra como Proposição 3.
+  </div>
+
+  <h2>2 · Proposições — pra deixar melhor do que já está (ajustadas com o radar do maior ganho)</h2>
+
+  <div class="card rec"><span class="num">1</span><b>Completar o ritmo da volta que você ditou</b> (metade da reta + resumo de volta na reta longa).<br>
+  <span class="muted">É o pedaço que falta do seu conceito central. A geometria já existe (saída do trecho N e entrada do N+1); a reta mais longa dá pra calcular sozinho pelo tempo da melhor volta. Prévia do "como fazer" usa dados que já estão na nuvem.</span></div>
+
+  <div class="card rec"><span class="num">2</span><b>Radar do MAIOR GANHO (após a 1ª volta)</b> — a partir da 2ª volta, o sistema acumula o que viu em cada trecho, ranqueia e aponta: <i>"seu maior ganho está na CURVA 7, no PONTO DE FRENAGEM: dá pra ganhar 0,8 s"</i>.<br>
+  <span class="muted">A matéria-prima já existe: o comparador já separa o delta por componente (entrada/freio/ápice/saída) e já aponta o pior componente de cada passagem. Falta o ranking por volta e a exibição. <b>Encaixe perfeito com a proposição 1:</b> o radar entra (a) no resumo de volta da reta longa, (b) na prévia da metade da reta quando o próximo trecho É o do maior ganho (prévia reforçada), e (c) como prioridade das mensagens de orientação — o painel passa a "puxar" o piloto pro lugar onde mais tem tempo a recuperar. No futuro alimenta a IA de treino (proposição 8): o histórico do radar diz qual técnica treinar.</span></div>
+
+  <div class="card rec"><span class="num">3</span><b>Resgatar os 6 indicadores por trecho + conselheiro</b> do ambiente isolado pra versão oficial.<br>
+  <span class="muted">Trabalho pronto e testado (24/05) que materializa o seu conceito no pós-stint — e é a mesma família de conta que o radar usa ao vivo. Resgate de baixo risco, igual fiz com as telas de engenharia hoje.</span></div>
+
+  <div class="card rec"><span class="num">4</span><b>RaceBox vira a régua oficial do trecho</b> — usar os 25 pontos/segundo dele (vs 1/segundo do iPhone) pra cravar linhas de entrada/saída, ponto de frenagem e Vmin.<br>
+  <span class="muted">As medições do seu conceito ficam ~25× mais finas sem comprar nada — o aparelho já chega na nuvem pela Central desde hoje. Frenagem medida em metros (e o radar que depende dela) fica confiável de verdade.</span></div>
+
+  <div class="card rec"><span class="num">5</span><b>PAce vira registro de verdade</b> — gravar o ponto GPS do início de aceleração em cada passagem, usando o acelerador REAL da T4000 (sinal já chega hoje), e comparar no delta como os outros elementos.<br>
+  <span class="muted">Hoje o PAce é deduzido. Com o registro real, o radar ganha mais uma disciplina ranqueável: "seu maior ganho está no PONTO DE ACELERAÇÃO da curva 3".</span></div>
+
+  <div class="card rec"><span class="num">6</span><b>Warmup, cooldown e volta de box no banco do stint</b> — pro cockpit marcar essas voltas de verdade.<br>
+  <span class="muted">Importante pro radar também: volta de aquecimento/resfriamento NÃO entra na conta do maior ganho (senão polui o ranking). E nessas voltas as mensagens de orientação ficam mudas sozinhas.</span></div>
+
+  <div class="card rec"><span class="num">7</span><b>Ligar o Ghost no painel real</b> — o desenho aprovado já existe e a melhor passagem já tem os pontos na nuvem.<br>
+  <span class="muted">Delta à esquerda + mapa do trecho com a linha da melhor passagem. Casado com o radar: o Ghost sugere abrir justamente no trecho do maior ganho.</span></div>
+
+  <div class="card rec"><span class="num">8</span><b>Catálogo de treinos de técnica</b> — estrutura pra cadastrar treinos (nome, o que medir, como a tela se formata), começando pelo trail braking.<br>
+  <span class="muted"><b>Atenção física:</b> trail braking DE VERDADE exige o sensor de pressão de freio instalado no Bubi — a leitura já está pronta no conversor, falta o sensor no carro. O histórico do radar (proposição 2) vira o critério de qual treino sugerir pro piloto.</span></div>
+
+  <h2>3 · Ordem que eu recomendo (ajustada)</h2>
+  <div class="card">
+    <p><b>Agora:</b> 3 (resgate, barato — é a base de conta do radar) → <b>1 + 2 juntos</b> (ritmo da volta + radar do maior ganho — são o mesmo motor: um diz QUANDO mostrar, o outro diz O QUE mostrar) → 4 (RaceBox como régua, pra essas contas serem finas).<br>
+    <b>Depois:</b> 5 (PAce real) → 6 (voltas do stint no banco) → 7 (Ghost ao vivo).<br>
+    <b>Por último:</b> 8 (catálogo de treinos) — junto com a instalação do sensor de freio.</p>
+    <p class="muted">Tudo em desenvolvimento primeiro; nada vai ao ar sem sua ordem. O elo do painel do piloto (volta/trecho real no app) continua aguardando o seu "MIGRAR PARA PRODUÇÃO: painel p1t4000".</p>
+  </div>
+</div>
+</body>
+</html>

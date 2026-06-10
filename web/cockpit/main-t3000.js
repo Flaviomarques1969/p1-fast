@@ -11,7 +11,7 @@ import { CockpitState, ApexEstado } from './cockpit-state.js';
 import { attachRendererToDocument } from './cockpit-renderer.js';
 import { LiveDataBridge, DEFAULT_LIMITS } from './live-data-bridge.js';
 import { parseT3000RIBlock, ACK_BYTES, RI_BYTES, isAckOk } from './t3000-usb-parser.js';
-import { startCloudBridge, publishSample, onStatusChange, getStats } from './cloud-bridge.js';
+import { startCloudBridge, publishSample, publishEvento, onStatusChange, onGpsPoint, getStats } from './cloud-bridge.js';
 import { loadDynoCurve, loadGearRatios, BUBI_CARRO_ID } from './dyno-loader.js';
 import { TrechoDetector } from './trecho-detector.js';
 import { AlertasCriticos } from './alertas-criticos.js';
@@ -27,6 +27,12 @@ import { ModoStint } from './shift-light-modos.js';
 import { criarEmpurradorDeMensagens } from './mensagens-pedagogicas.js';
 // ── Watchdog do conversor T3000 (queda de sinal → alerta visual no painel) ──
 import { criarT3000Watchdog } from './t3000-watchdog.js';
+// ── Orientação por trecho (autorização Flávio 09/06: coreografia + tela v3) ──
+import { OportunidadeTrecho } from './oportunidade-trecho.js';
+import { criarTelaOrientacao } from './tela-orientacao.js';
+import { CoreografiaVolta } from './coreografia-volta.js';
+import { APICES_SEMENTE_BRASILIA } from './apices-semente-brasilia.js';
+import { onSample } from './cloud-bridge.js';
 // segments-loader/melhores-loader importam Supabase via esm.sh — dynamic
 // import dentro da IIFE evita quebra em smoke Node.
 
@@ -76,12 +82,32 @@ const BUBI_LIMITS = {
 const cockpitState = new CockpitState();
 attachRendererToDocument(cockpitState, document);
 
+// ── Orientação por trecho (coreografia 09/06) ─────────────────
+const oportunidade = new OportunidadeTrecho();
+const telaOrientacao = criarTelaOrientacao({});
+let coreografia = null;
+// tempos de volta locais (pro resumo na reta longa)
+const voltas = { n: null, inicioTs: null, ultimaS: null, melhorS: null };
+/** Mensagem que ATROPELA a orientação: só níveis super/crítico.
+ *  Avisos de atenção/info convivem com a tela (calibrado 10/06 — alerta
+ *  preditivo constante escondia a orientação 2x/segundo no replay). */
+function mensagemGraveAtiva() {
+  const m = alertasCriticos.getMensagemPrincipal();
+  return m && (m.gravidade === 'super' || m.gravidade === 'critico') ? m : null;
+}
+function fmtVolta(v) {
+  if (v == null || !(v > 0)) return null;
+  const m = Math.floor(v / 60);
+  return `${m}:${(v - m * 60).toFixed(1).padStart(4, '0')}`;
+}
+
 // Engines plugáveis (decisão Flávio 27/05/2026 — passo A). Detector é
 // instanciado depois que track_segments carrega via Supabase.
 let trechoDetector = null;
 const alertasCriticos = new AlertasCriticos({
   onChange: () => {
     const msg = alertasCriticos.getMensagemPrincipal();
+    if (mensagemGraveAtiva()) telaOrientacao.esconder(); // só GRAVE atropela a orientação
     if (!msg) { cockpitState.hideMessage(); return; }
     cockpitState.showMessage({ tipo: msg.tipo, texto: msg.texto });
   },
@@ -109,6 +135,8 @@ const bridge = new LiveDataBridge({
   alertasCriticos,
   deltaCalculator: calcularDelta,
   onSalvarPassagem: async ({ segmentId, tempoS, pontos }) => {
+    oportunidade.registrarPassagem({ segmentId, pontos });
+    if (window.__P1_ORIGEM_SIM__) { log('passagem NÃO salva (origem: simulador)'); return; }
     if (!_ctxConfig.carroId || !_ctxConfig.trackId || !_ctxConfig.tipoPneu) return;
     try {
       const { gravarPassagem } = await import('./melhores-loader.js');
@@ -126,6 +154,16 @@ const bridge = new LiveDataBridge({
   },
   onTrechoEvent: (ev) => {
     if (!ev) return;
+    if (coreografia) coreografia.evento(ev);
+    if (ev.type === 'delta-calculado') oportunidade.registrarDelta(ev);
+    if (ev.type === 'apice-cruzou') oportunidade.registrarApice(ev);
+    // Espelha eventos básicos pro canal da nuvem (tela ASSISTIR no app).
+    if (ev.type === 'entrada-cruzou') {
+      publishEvento({ tipo: 'trecho', segmentId: ev.segmentId });
+    }
+    if (ev.type === 'delta-calculado' && typeof ev.deltaTotalS === 'number') {
+      publishEvento({ tipo: 'delta', segmentId: ev.segmentId, deltaS: ev.deltaTotalS });
+    }
     if (ev.type === 'apice-cruzou') {
       const dist  = typeof ev.distFromIdealM === 'number' ? ev.distFromIdealM : null;
       const angle = typeof ev.angleFromIdealDeg === 'number' ? ev.angleFromIdealDeg : null;
@@ -178,6 +216,23 @@ bridge.ingestT4000 = (sample) => {
   }
 };
 
+// ── GPS vindo do canal da nuvem (RaceBox publicado pela Central de Pista) ──
+// O canal cockpit-bubi-live carrega eventos 'gps' além das amostras do motor.
+// Aqui eles alimentam o detector de trechos/chegada/box igual ao GPS do iPhone.
+onGpsPoint((p) => {
+  if (!p || typeof p.lat !== 'number' || typeof p.lng !== 'number') return;
+  bridge.ingestImuGps({
+    source: 'iphone-imu', // formato canônico que o bridge entende (fonte indistinta)
+    payload: {
+      lat: p.lat,
+      lng: p.lng,
+      kmh: typeof p.kmh === 'number' ? p.kmh : undefined,
+      t:   p.tWall ?? Date.now(),
+      acc: p.accM,
+    },
+  });
+});
+
 const _bridgeIngestImu_t = bridge.ingestImuGps.bind(bridge);
 bridge.ingestImuGps = (envelope) => {
   _bridgeIngestImu_t(envelope);
@@ -189,6 +244,7 @@ bridge.ingestImuGps = (envelope) => {
   };
   if (chegadaDetector) chegadaDetector.ingestGps(gps);
   if (boxDetector) boxDetector.ingestGps(gps);
+  if (coreografia) coreografia.gps({ lat: gps.lat, lng: gps.lng });
 };
 
 // Carga assíncrona dos segmentos (Supabase). Sem segmentos = detector
@@ -200,11 +256,72 @@ bridge.ingestImuGps = (envelope) => {
     const { loadBrasiliaPrincipal } = await import('./segments-loader.js');
     const segments = await loadBrasiliaPrincipal();
     if (Array.isArray(segments) && segments.length > 0) {
-      trechoDetector = new TrechoDetector({ segments });
+      log(`track_segments carregados: ${segments.length}`);
+      // ── Melhores passagens ANTES do detector: o ápice de cada trecho é
+      // CALCULADO da melhor passagem (decisão Flávio 27/05), não cadastrado.
+      // (Era o defeito que deixava o detector inativo: o carregador exigia
+      // ápice cadastrado, que não existe no banco — tudo era descartado.)
+      const tipoPneu = window.__P1_TIPO_PNEU__ ?? 'radial-185-14';
+      const autodromoId = window.__P1_AUTODROMO_ID__ ?? 'e8335412-3312-54fe-b634-db2d02c7fa81';
+      _ctxConfig = {
+        carroId: CARRO_ATIVO, trackId: autodromoId,
+        layoutId: '0dc85cfb-6236-567e-814c-eddf610b301f', tipoPneu,
+      };
+      let melhores = new Map();
+      try {
+        const { loadMelhoresPassagens } = await import('./melhores-loader.js');
+        melhores = await loadMelhoresPassagens({ carroId: CARRO_ATIVO, autodromoId, tipoPneu });
+        for (const [segId, ref] of melhores) {
+          bridge.setReferenciaSegmento(segId, ref);
+          oportunidade.setReferencia(segId, ref);
+        }
+        log(`melhores passagens: ${melhores.size}`);
+      } catch (e) { log('melhores falharam: ' + e.message); }
+      let daMelhor = 0, daSemente = 0;
+      for (const seg of segments) {
+        if (!seg.apicePoint) {
+          const ap = melhores.get(seg.id)?.apicePoint;
+          if (ap) { seg.apicePoint = ap; daMelhor++; }
+          else if (APICES_SEMENTE_BRASILIA[seg.nome]) {
+            // SEMENTE: ápice marcado pelo Flávio no mapa oficial — sai de cena
+            // sozinho quando a melhor passagem tiver pontos pro cálculo físico.
+            seg.apicePoint = APICES_SEMENTE_BRASILIA[seg.nome];
+            daSemente++;
+          }
+        }
+      }
+      const comApice = segments.filter(sg => sg.apicePoint);
+      log(`ápices: ${daMelhor} da melhor passagem + ${daSemente} semente (mapa oficial) · ${comApice.length}/${segments.length} trechos armados`);
+      trechoDetector = new TrechoDetector({ segments: comApice });
       bridge._trechoDetector = trechoDetector;
       trechoDetector._onEvent = (ev) => bridge._handleTrechoEvent(ev);
-      _ultimoSegmentId = segments[segments.length - 1].id;
-      log(`track_segments carregados: ${segments.length}`);
+      _ultimoSegmentId = (comApice.length ? comApice[comApice.length - 1] : segments[segments.length - 1]).id;
+      // ── Coreografia da volta (Flávio 09/06): painel ↔ orientação ↔ resumo ──
+      const ordenados = segments.slice().sort((x, y) => (x.ordem ?? 0) - (y.ordem ?? 0));
+      coreografia = new CoreografiaVolta(ordenados, {
+        onPainel: () => telaOrientacao.esconder(),
+        onResumoVolta: () => {
+          if (mensagemGraveAtiva()) { telaOrientacao.esconder(); return; }
+          telaOrientacao.mostrarResumoVolta({
+            voltaN: voltas.n,
+            tempoTxt: fmtVolta(voltas.ultimaS),
+            melhorTxt: fmtVolta(voltas.melhorS),
+            melhorou: (voltas.ultimaS != null && voltas.melhorS != null)
+              ? voltas.ultimaS <= voltas.melhorS : null,
+          });
+        },
+        onOrientacao: (seg, prog) => {
+          if (mensagemGraveAtiva()) { telaOrientacao.esconder(); return; }
+          const o = oportunidade.getOrientacao(seg.id);
+          if (!o) { telaOrientacao.esconder(); return; } // 1ª volta / sem perda → painel
+          if (!telaOrientacao.visivel() || telaOrientacao._segAtual !== seg.id) {
+            telaOrientacao.mostrar(seg, o);
+            telaOrientacao._segAtual = seg.id;
+          }
+          telaOrientacao.setProgresso(prog);
+        },
+      });
+      log(`coreografia da volta ativa (${ordenados.length} trechos; reta longa após ${coreografia.retaMaisLonga().deSegId.slice(0, 8)})`);
       try {
         const marco = await loadMarcoChegada('0dc85cfb-6236-567e-814c-eddf610b301f');
         if (marco) {
@@ -212,6 +329,18 @@ bridge.ingestImuGps = (envelope) => {
             marco,
             onChegada: ({ voltaN }) => {
               if (padraoAcumulador) padraoAcumulador.fecharVolta();
+              const agora = Date.now();
+              if (voltas.inicioTs) {
+                const dur = (agora - voltas.inicioTs) / 1000;
+                if (dur > 20 && dur < 1200) {
+                  voltas.ultimaS = dur;
+                  if (voltas.melhorS == null || dur < voltas.melhorS) voltas.melhorS = dur;
+                }
+              }
+              voltas.n = voltaN; voltas.inicioTs = agora;
+              // Tela ASSISTIR: a Central calcula o tempo da volta pela
+              // diferença entre duas chegadas consecutivas (tWall).
+              publishEvento({ tipo: 'volta', n: voltaN });
               log(`volta ${voltaN} fechada pela linha de chegada`);
             },
           });
@@ -239,22 +368,8 @@ bridge.ingestImuGps = (envelope) => {
           log('detector de box ativo');
         }
       } catch (e) { log('marcos box falharam: ' + e.message); }
-      const tipoPneu = window.__P1_TIPO_PNEU__ ?? 'radial-185-14';
-      const autodromoId = window.__P1_AUTODROMO_ID__ ?? 'e8335412-3312-54fe-b634-db2d02c7fa81';
-      _ctxConfig = {
-        carroId: CARRO_ATIVO, trackId: autodromoId,
-        layoutId: '0dc85cfb-6236-567e-814c-eddf610b301f', tipoPneu,
-      };
-      if (tipoPneu) {
-        const { loadMelhoresPassagens } = await import('./melhores-loader.js');
-        const melhores = await loadMelhoresPassagens({
-          carroId: CARRO_ATIVO,
-          autodromoId,
-          tipoPneu,
-        });
-        for (const [segId, ref] of melhores) bridge.setReferenciaSegmento(segId, ref);
-        log(`melhores passagens: ${melhores.size}`);
-        if (autodromoId) {
+      if (tipoPneu && autodromoId) {
+        {
           const { loadPadrao, savePadrao } = await import('./padrao-persister.js');
           const inicial = await loadPadrao({ carroId: CARRO_ATIVO, trackId: autodromoId, tipoPneu });
           padraoAcumulador = new PadraoAcumulador({
@@ -305,7 +420,69 @@ function log(msg) {
 }
 
 // ── Estado da leitura ─────────────────────────────────────────
-const t3 = { device:null, iface:null, epIn:null, epOut:null, reading:false, lastSampleTs:0 };
+const t3 = { device:null, iface:null, epIn:null, epOut:null, reading:false, lastSampleTs:0,
+             vid:null, pid:null, religando:false };
+
+// ── Abrir + saudação (usado na 1ª conexão e em toda religação) ─
+async function abrirEHandshake(dev) {
+  await dev.open();
+  if (dev.configuration === null) await dev.selectConfiguration(1);
+  let ifc = -1, epIn = null, epOut = null;
+  for (const it of dev.configuration.interfaces) {
+    for (const a of it.alternates) {
+      for (const e of a.endpoints) {
+        if (e.direction === 'in'  && epIn  === null) { ifc = it.interfaceNumber; epIn  = e.endpointNumber; }
+        if (e.direction === 'out' && epOut === null) { epOut = e.endpointNumber; }
+      }
+    }
+  }
+  if (ifc < 0 || epIn === null || epOut === null) {
+    throw new Error('aparelho sem canal de leitura/escrita');
+  }
+  await dev.claimInterface(ifc);
+  await dev.transferOut(epOut, ACK_BYTES);
+  const ackResp = await dev.transferIn(epIn, 64);
+  const ackBuf = new Uint8Array(ackResp.data.buffer);
+  if (!isAckOk(ackBuf)) {
+    throw new Error('saudação rejeitada: ' + Array.from(ackBuf.slice(0, 8)).map(b => b.toString(16)).join(' '));
+  }
+  t3.device = dev; t3.iface = ifc; t3.epIn = epIn; t3.epOut = epOut;
+  t3.vid = dev.vendorId; t3.pid = dev.productId;
+  return true;
+}
+
+// ── Religação automática da T4000 ─────────────────────────────
+// Aparelho já autorizado uma vez reaparece em navigator.usb.getDevices()
+// sem novo diálogo — dá pra religar sozinho quando o cabo/energia voltar.
+async function reconectarT3000() {
+  if (t3.religando) return false;
+  t3.religando = true;
+  setStatus('T3000 caiu — religando sozinho…', 'bad');
+  log('⚠ leitura caiu. Tentando religar automaticamente a cada 2 s…');
+  let tent = 0;
+  try {
+    while (t3.reading) {
+      tent++;
+      try {
+        try { if (t3.device && t3.device.opened) await t3.device.close(); } catch {}
+        const devs = await navigator.usb.getDevices();
+        const dev = devs.find(d =>
+          (t3.vid == null) || (d.vendorId === t3.vid && d.productId === t3.pid));
+        if (!dev) throw new Error('aparelho ainda não voltou na USB');
+        await abrirEHandshake(dev);
+        setStatus('conectado — lendo a T3000', 'ok');
+        log(`✓ T3000 religada sozinha (tentativa ${tent})`);
+        return true;
+      } catch (e) {
+        if (tent === 1 || tent % 15 === 0) log(`religando T3000… tentativa ${tent} (${e.message})`);
+        await new Promise(r => setTimeout(r, 2000));
+      }
+    }
+    return false;
+  } finally {
+    t3.religando = false;
+  }
+}
 
 // Watchdog do T3000 — instanciado no boot pra reagir ao primeiro silêncio.
 const _t3000Watchdog = criarT3000Watchdog({
@@ -336,37 +513,8 @@ async function connectAndRun() {
     setStatus('escolhendo aparelho…', 'warn');
     const dev = await navigator.usb.requestDevice({ filters: [] });
     log(`autorizado: ${dev.manufacturerName||''} ${dev.productName||''} (${dev.vendorId.toString(16)}:${dev.productId.toString(16)})`);
-    await dev.open();
-    if (dev.configuration === null) await dev.selectConfiguration(1);
-    // descobre interface + endpoints in/out
-    let ifc=-1, epIn=null, epOut=null;
-    for (const it of dev.configuration.interfaces) {
-      for (const a of it.alternates) {
-        for (const e of a.endpoints) {
-          if (e.direction === 'in'  && epIn  === null) { ifc = it.interfaceNumber; epIn  = e.endpointNumber; }
-          if (e.direction === 'out' && epOut === null) { epOut = e.endpointNumber; }
-        }
-      }
-    }
-    if (ifc < 0 || epIn === null || epOut === null) {
-      setStatus('aparelho sem canal de leitura/escrita', 'bad');
-      log(`interfaces: ${dev.configuration.interfaces.length}, epIn=${epIn}, epOut=${epOut}`);
-      return;
-    }
-    await dev.claimInterface(ifc);
-    t3.device = dev; t3.iface = ifc; t3.epIn = epIn; t3.epOut = epOut;
-    log(`canal aberto: interface ${ifc}, leitura ep ${epIn}, escrita ep ${epOut}`);
-
-    // saudação
-    await dev.transferOut(epOut, ACK_BYTES);
-    log('mandado ACK, esperando OK…');
-    const ackResp = await dev.transferIn(epIn, 64);
-    const ackBuf = new Uint8Array(ackResp.data.buffer);
-    if (!isAckOk(ackBuf)) {
-      setStatus('saudação rejeitada pela central', 'bad');
-      log('resposta ACK não foi OK: ' + Array.from(ackBuf.slice(0,8)).map(b=>b.toString(16)).join(' '));
-      return;
-    }
+    await abrirEHandshake(dev);
+    log(`canal aberto: interface ${t3.iface}, leitura ep ${t3.epIn}, escrita ep ${t3.epOut}`);
     log('central respondeu OK — handshake confirmado');
     setStatus('conectado — lendo a T3000', 'ok');
 
@@ -463,10 +611,12 @@ async function runReadLoop() {
         updateHud(sample);
       }
     } catch (e) {
+      // NÃO desiste: religa sozinho (cabo solto, queda de energia, USB resetada).
+      // O watchdog já mostra SEM SINAL no painel enquanto isso.
       log('leitura interrompida: ' + e.message);
-      setStatus('leitura interrompida', 'bad');
-      t3.reading = false;
-      break;
+      const voltou = await reconectarT3000();
+      if (!voltou) { setStatus('leitura encerrada', 'bad'); t3.reading = false; break; }
+      continue;
     }
     // throttle pra ~10Hz total (intervalo + tempo de transferência)
     await new Promise(r => setTimeout(r, 50));
@@ -594,6 +744,21 @@ window.addEventListener('DOMContentLoaded', () => {
   if (btn) btn.addEventListener('click', connectAndRun);
   setStatus('aguardando você clicar em Autorizar', 'warn');
   log('p1t4000 — cockpit ao vivo. Clica "Autorizar T3000 via WebUSB" pra começar.');
+  // MODO SEM FIO: ?semfio — recebe amostras pela nuvem (Central/simulador transmite).
+  if (new URLSearchParams(location.search).has('semfio')) {
+    setStatus('modo sem fio — recebendo pela nuvem', 'warn');
+    log('MODO SEM FIO: amostras vêm do canal da nuvem (sem cabo da T4000).');
+    onSample((s) => {
+      if (s && s.source === 'sim-replay') window.__P1_ORIGEM_SIM__ = true;
+      bridge.ingestT4000(s);
+      t3.lastSampleTs = performance.now();
+      updateHud(s);
+    });
+    setCloudStatus('connecting');
+    startCloudBridge().then(st => log('canal ao vivo: ' + st)).catch(e => log('canal falhou: ' + e.message));
+    iniciarWatchdog();
+    const bc = $('btnConnect'); if (bc) bc.disabled = true;
+  }
   plugarBotoesManuais();
   atualizarIndicadorFonte('semente'); // estado inicial até a curva carregar
 
@@ -625,4 +790,4 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // Expose pra DevTools
-window.__t3 = { t3, cockpitState, bridge };
+window.__t3 = { t3, cockpitState, bridge, oportunidade, getCoreografia: () => coreografia, telaOrientacao };

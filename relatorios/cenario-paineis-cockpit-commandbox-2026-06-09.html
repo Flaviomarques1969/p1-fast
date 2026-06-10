@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1 Fast — Cenário dos painéis: Cockpit do Piloto e Command Box (09/06/2026)</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system,Segoe UI,Roboto,sans-serif; background:#0a0d12; color:#e8edf2; line-height:1.55; }
+  .wrap { max-width:860px; margin:0 auto; padding:28px 20px 60px; }
+  h1 { font-size:22px; margin:0 0 6px; }
+  .sub { color:#8a97a6; font-size:13px; margin-bottom:24px; }
+  h2 { font-size:16px; margin:34px 0 12px; padding-bottom:6px; border-bottom:1px solid #1d2530; letter-spacing:.3px; }
+  .card { background:#11161e; border:1px solid #1d2530; border-radius:12px; padding:16px 18px; margin:12px 0; }
+  .status { display:inline-block; padding:3px 12px; border-radius:999px; font-size:12px; font-weight:700; margin-left:8px; vertical-align:middle; }
+  .ok { background:#0d3320; color:#4ade80; } .warn { background:#3a2d0d; color:#fbbf24; } .bad { background:#3a1212; color:#f87171; }
+  .fluxo { display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:13px; margin:10px 0; }
+  .no { background:#1b2330; border:1px solid #2a3442; border-radius:10px; padding:8px 12px; }
+  .seta { color:#4f8cff; font-weight:700; }
+  ul { margin:8px 0; padding-left:20px; } li { margin:5px 0; }
+  ol { margin:8px 0; padding-left:22px; } ol li { margin:8px 0; }
+  .muted { color:#8a97a6; font-size:13px; }
+  b.vista { color:#93c5fd; }
+  .destaque { border-left:3px solid #2563eb; padding-left:14px; }
+  .honesto { border-left:3px solid #f59e0b; padding-left:14px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; margin:10px 0; }
+  th, td { text-align:left; padding:7px 10px; border-bottom:1px solid #1d2530; }
+  th { color:#8a97a6; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Os painéis do P1 Fast — onde cada um está hoje</h1>
+  <div class="sub">Levantado em 09/06/2026, com base nos arquivos reais do projeto (nada inferido).</div>
+
+  <h2>O mapa geral — 3 painéis diferentes, 1 única fonte de dados</h2>
+  <div class="fluxo">
+    <span class="no">Carro<br><span class="muted">T4000 · RaceBox · câmera DJI</span></span>
+    <span class="seta">→</span>
+    <span class="no">Notebook Windows na pista<br><span class="muted">lê tudo e manda pra nuvem (Starlink)</span></span>
+    <span class="seta">→</span>
+    <span class="no">Nuvem<br><span class="muted">canal único de dados ao vivo</span></span>
+    <span class="seta">→</span>
+    <span class="no">Quem assiste<br><span class="muted">celular · app · TV do box</span></span>
+  </div>
+  <table>
+    <tr><th>Painel</th><th>Onde roda</th><th>Pra quem</th><th>Situação hoje</th></tr>
+    <tr><td><b>Cockpit do Piloto</b></td><td>Notebook Windows, dentro do carro</td><td>Piloto, durante a volta</td><td><span class="status ok">FUNCIONANDO em campo</span></td></tr>
+    <tr><td><b>Painel ao vivo</b> (acompanhamento)</td><td>Celular (navegador ou app)</td><td>Você / equipe, de qualquer lugar</td><td><span class="status ok">FUNCIONANDO (validado hoje)</span></td></tr>
+    <tr><td><b>Command Box</b></td><td>TV 32" do box, via Apple TV 4K</td><td>Chefe / engenheiro / mecânico no box</td><td><span class="status warn">desenhos aprovados · tela real NÃO construída</span></td></tr>
+  </table>
+
+  <h2>1 · Cockpit do Piloto (notebook no carro)</h2>
+  <div class="card">
+    <p><b>O que já funciona, provado com o motor ligado (26/05):</b></p>
+    <ul>
+      <li>Painel aberto no navegador do notebook, lendo a T4000 direto pelo cabo — 30+ sensores conferidos contra o software oficial da Injepro.</li>
+      <li><b>Shift light inteligente</b> nos 3 modos que você aprovou (Durabilidade / Normal / Agressivo), pela regra do torque por marcha.</li>
+      <li>As <b>17 mensagens pedagógicas</b> + <b>19 mensagens críticas</b> aprovadas, alertas de motor, aviso de "SEM SINAL" se o cabo cair.</li>
+      <li>Comparação por trecho contra a melhor volta histórica (a lógica central do produto).</li>
+      <li><b>Novo de hoje (09/06):</b> religação automática (cabo da T4000, nuvem) e GPS de 25x/segundo do RaceBox alimentando as comparações — pronto em desenvolvimento, <b>aguardando sua ordem pra ir ao ar</b>.</li>
+    </ul>
+    <p class="honesto"><b>Ponto honesto sobre a decisão antiga:</b> o plano de 09/05 (decisão ADR-023) previa um programa nativo de Windows pra esse painel. O programa nativo existe pela metade (visual com halo e LEDs + motor de dados com 129 testes), <b>mas no teste real dentro do carro (25/05) ele não conseguiu ler o cabo da Injepro — só o navegador consegue</b>. Por isso o painel que vale é o do navegador: é o que está validado em campo. Recomendo seguir nele e deixar o nativo como evolução futura, só se aparecer uma limitação concreta.</p>
+    <p><b>Falta:</b> conferência visual fina contra o desenho aprovado de 27/05 e a sua autorização pra publicar o reforço de hoje.</p>
+  </div>
+
+  <h2>2 · Command Box (TV do box, via Apple TV 4K)</h2>
+  <div class="card">
+    <p><b>O que já está pronto (desenhos aprovados = contrato do que vamos construir):</b></p>
+    <ul>
+      <li><b class="vista">Vista Piloto</b> — versão 04, aprovada 15/05 (mapa da pista, velocímetro, marchas, stint).</li>
+      <li><b class="vista">Vista Engenheiro</b> — aprovada 13/05 (resgatada pra versão oficial em 08/06).</li>
+      <li><b class="vista">Engenharia · Lambda</b> (estado da mistura por trecho) — aprovada 15/05.</li>
+      <li><b class="vista">Engenharia · PAce</b> (entrega de torque por curva) — aprovada 15/05.</li>
+      <li>Rascunhos ainda não aprovados: Saúde do Carro e Motor/Saúde.</li>
+    </ul>
+    <p class="destaque"><b>Resgate feito agora (09/06):</b> os desenhos de Lambda e PAce (e os 2 rascunhos) estavam <b>órfãos fora da versão oficial</b>, num ambiente isolado de trabalho que está na fila da faxina. Copiei os 4 pra versão oficial hoje — nada foi perdido, nada existente foi alterado.</p>
+    <p><b>O que NÃO existe ainda:</b> a tela real no aplicativo. Nenhuma linha do modo BOX foi construída no app — o que há é 1 peça pronta (o detector que percebe quando você liga o espelhamento na Apple TV) e os desenhos aprovados.</p>
+    <p><b>Regra travada (15/05):</b> Command Box é <b>só visualização</b> — nenhum botão de ação. Quem age é o app no celular.</p>
+  </div>
+
+  <h2>3 · Como vai funcionar a seleção do que aparece na TV (sua pergunta)</h2>
+  <div class="card">
+    <ol>
+      <li><b>Apple TV 4K</b> ligada na TV 32" do box, <b>recebendo internet do próprio celular que está no modo BOX</b> (compartilhamento de internet do iPhone — ajuste seu de 09/06; a TV do box não depende do Starlink).</li>
+      <li>Você (ou o chefe de equipe) abre o <b>app P1 Fast no iPhone/iPad</b> e entra no <b>modo BOX</b>.</li>
+      <li>Liga o <b>espelhamento</b> pro Apple TV pelo Centro de Controle do iPhone — <b>1 gesto seu</b>. (A Apple não deixa nenhum aplicativo ligar o AirPlay sozinho; é regra da plataforma. Mas o app <b>percebe na hora</b> que você ligou — essa peça já está pronta — e troca o visual pro formato de TV automaticamente.)</li>
+      <li>O celular vira o <b>controle remoto</b>: nele você escolhe qual vista a TV mostra — <b class="vista">Piloto</b>, <b class="vista">Engenheiro</b>, <b class="vista">Lambda</b> ou <b class="vista">PAce</b>. A TV mostra a vista em tela cheia; trocou no celular, trocou na TV.</li>
+      <li>Os dados vêm da <b>nuvem</b> — o mesmo canal único que hoje já alimenta o painel do celular e que o simulador de hoje testou de ponta a ponta. O Command Box é só mais um ouvinte desse canal.</li>
+    </ol>
+    <p class="muted">Existe também um desenho de 08/05 pra escolher <i>quais informações</i> aparecem dentro de cada vista ("seleção de conteúdo v2") — entra como refinamento depois que a primeira vista estiver na TV.</p>
+  </div>
+
+  <h2>4 · O que falta construir — ordem que proponho</h2>
+  <div class="card">
+    <ol>
+      <li><b>Tela de ASSISTIR no app</b> (pedido seu de 09/06): pra qualquer pessoa acompanhar pelo celular — <b>vídeo em tempo real na parte de cima</b> + <b>dados básicos de trecho e de volta do piloto embaixo</b>. É a evolução da tela de teste validada hoje (que já recebe vídeo + GPS) ganhando os dados de volta/trecho do canal da nuvem.</li>
+      <li><b>Modo BOX no app</b>: tela de seleção + formato TV + ligação com o canal da nuvem, começando pela <b class="vista">Vista Piloto</b> (desenho v04 aprovado). É o bloco que destrava a TV do box.</li>
+      <li>As demais vistas, <b>uma por vez</b>: Engenheiro → Lambda → PAce (cada uma validada por você antes da próxima).</li>
+      <li><b>Ensaio com Apple TV real</b> — dá pra fazer em casa/escritório com o simulador do carro, sem pista (igual fizemos hoje com o painel do celular).</li>
+      <li>Em paralelo, quando você autorizar: publicar o reforço do painel do piloto (frase necessária: <b>MIGRAR PARA PRODUÇÃO: painel p1t4000</b>).</li>
+    </ol>
+  </div>
+
+  <h2>Resumo em 3 linhas</h2>
+  <div class="card">
+    <p>① <b>Cockpit do piloto</b>: funcionando em campo no navegador do notebook, com toda a inteligência aprovada; reforço de hoje aguarda sua ordem pra ir ao ar.<br>
+    ② <b>Command Box</b>: todos os desenhos aprovados e agora salvos na versão oficial; a tela real no app ainda não foi construída — é o próximo grande bloco.<br>
+    ③ <b>Seleção</b>: app no celular em modo BOX → você liga o espelhamento (1 gesto) → celular vira controle e escolhe a vista → TV mostra → dados vêm do canal único da nuvem.</p>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1 Fast — Central de Pista (notebook)</title>
+<script crossorigin src="https://unpkg.com/@daily-co/daily-js"></script>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system,Segoe UI,Roboto,sans-serif; background:#0a0d12; color:#e8edf2; }
+  header { padding:14px 18px; background:#11161e; border-bottom:1px solid #1d2530; }
+  header h1 { margin:0; font-size:17px; letter-spacing:.5px; }
+  header p { margin:4px 0 0; font-size:12px; color:#8a97a6; }
+  .board { display:flex; gap:8px; padding:12px 16px 0; max-width:760px; margin:0 auto; flex-wrap:wrap; }
+  .board .pill { flex:1; min-width:140px; text-align:center; padding:9px 6px; }
+  .wrap { padding:16px; display:grid; gap:14px; max-width:760px; margin:0 auto; }
+  .card { background:#11161e; border:1px solid #1d2530; border-radius:12px; padding:14px; }
+  .card h2 { margin:0 0 10px; font-size:13px; color:#8a97a6; text-transform:uppercase; letter-spacing:.6px; }
+  video { width:100%; border-radius:10px; background:#000; aspect-ratio:16/9; object-fit:cover; }
+  button { font-size:15px; padding:12px 16px; border-radius:10px; border:1px solid #2a3442; background:#1b2330; color:#e8edf2; cursor:pointer; width:100%; }
+  button.primary { background:#2563eb; border-color:#2563eb; font-weight:600; }
+  button:disabled { opacity:.5; cursor:default; }
+  select { width:100%; padding:10px; border-radius:8px; background:#0e1319; color:#e8edf2; border:1px solid #2a3442; margin-top:8px; }
+  .row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #161d27; font-size:14px; }
+  .row:last-child { border:0; }
+  .lbl { color:#8a97a6; } .val { font-variant-numeric:tabular-nums; font-weight:600; }
+  .pill { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+  .ok { background:#0d3320; color:#4ade80; } .bad { background:#3a1212; color:#f87171; } .warn { background:#3a2d0d; color:#fbbf24; } .idle{ background:#1b2330; color:#8a97a6; }
+  #log { font-family:ui-monospace,monospace; font-size:11px; color:#7e8a98; white-space:pre-wrap; max-height:140px; overflow:auto; background:#0b0f15; border-radius:8px; padding:8px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:8px 18px; }
+  .note { font-size:12px; color:#8a97a6; margin:8px 0 0; line-height:1.5; }
+</style>
+</head>
+<body>
+<header>
+  <h1>P1 Fast — Central de Pista</h1>
+  <p>Notebook da pista · câmera + GPS + acompanhamento dos dados do carro · quem assiste abre <b>/painel</b></p>
+</header>
+
+<div class="board">
+  <span id="bVideo" class="pill idle">VÍDEO · parado</span>
+  <span id="bGps" class="pill idle">GPS · desligado</span>
+  <span id="bCarro" class="pill idle">CARRO · sem dados</span>
+  <span id="bNuvem" class="pill idle">NUVEM · desligada</span>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <h2>1 · Vídeo (câmera DJI)</h2>
+    <video id="local" autoplay muted playsinline></video>
+    <select id="cams" style="display:none"></select>
+    <div class="row"><span class="lbl">Transmissão</span><span id="vStatus" class="pill idle">parada</span></div>
+    <button id="btnStart" class="primary" style="margin-top:10px">▶ Iniciar transmissão</button>
+  </div>
+
+  <div class="card">
+    <h2>2 · GPS (RaceBox)</h2>
+    <div class="row"><span class="lbl">Aparelho</span><span id="rbConn" class="pill idle">desligado</span></div>
+    <div class="grid2" style="margin-top:6px">
+      <div class="row"><span class="lbl">Sinal</span><span id="rbVer" class="val">—</span></div>
+      <div class="row"><span class="lbl">Satélites</span><span id="rbSv" class="val">—</span></div>
+      <div class="row"><span class="lbl">Velocidade</span><span id="rbSpd" class="val">—</span></div>
+      <div class="row"><span class="lbl">Taxa</span><span id="rbHz" class="val">—</span></div>
+      <div class="row"><span class="lbl">Latitude</span><span id="rbLat" class="val">—</span></div>
+      <div class="row"><span class="lbl">Longitude</span><span id="rbLon" class="val">—</span></div>
+    </div>
+    <button id="btnRb" style="margin-top:10px">Conectar RaceBox por Bluetooth</button>
+  </div>
+
+  <div class="card">
+    <h2>3 · Dados do carro (T4000)</h2>
+    <div class="grid2">
+      <div class="row"><span class="lbl">Chegando</span><span id="t4Age" class="val">—</span></div>
+      <div class="row"><span class="lbl">Ritmo</span><span id="t4Hz" class="val">—</span></div>
+      <div class="row"><span class="lbl">RPM</span><span id="t4Rpm" class="val">—</span></div>
+      <div class="row"><span class="lbl">Água</span><span id="t4Agua" class="val">—</span></div>
+      <div class="row"><span class="lbl">Bateria</span><span id="t4Bat" class="val">—</span></div>
+      <div class="row"><span class="lbl">Fonte</span><span id="t4Fonte" class="val">—</span></div>
+    </div>
+    <p class="note">Quem lê o carro é a <b>outra aba</b> do notebook (painel do piloto, p1t4000.vercel.app),
+    que manda os dados pra nuvem. Este quadro só confirma que estão chegando.
+    Sem o carro por perto, use o simulador abaixo: ele toca uma gravação real do motor (26/05).</p>
+    <button id="btnSim" style="margin-top:10px">▶ Simular carro (gravação real do motor)</button>
+  </div>
+
+  <div class="card">
+    <h2>Registro</h2>
+    <div id="log"></div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+
+const $ = id => document.getElementById(id);
+function log(m){ const t=new Date().toLocaleTimeString(); $('log').textContent = `${t}  ${m}\n` + $('log').textContent; }
+function pill(el, txt, cls){ el.textContent = txt; el.className = 'pill ' + cls; }
+const boardPill = pill;
+
+// ════════════════ NUVEM (canal canônico cockpit-bubi-live) ════════════════
+// Mesma nuvem e mesmo canal que o painel do piloto usa desde 26/05.
+// Regra do projeto: dados ao vivo trafegam SÓ por este canal (não criar fonte paralela).
+const SUPABASE_URL  = 'https://fvhwltzhytpnhlqbttmd.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2aHdsdHpoeXRwbmhscWJ0dG1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTExNDAsImV4cCI6MjA5MzM4NzE0MH0._ZpxksUnuVFhLzCB5x7bBiZ_VLQQR5cH4A1T-0-mvrA';
+const CHANNEL_NAME  = 'cockpit-bubi-live';
+
+const nuvem = { client:null, channel:null, status:'off', retryMs:2000, lastSampleTs:0, lastSampleSource:'—', sampleCount:0, sampleWindow:[] , lastSample:null };
+
+function setNuvem(status){
+  nuvem.status = status;
+  const map = { off:['NUVEM · desligada','idle'], connecting:['NUVEM · conectando…','warn'], online:['NUVEM · ao vivo ✓','ok'], error:['NUVEM · religando…','bad'] };
+  const [txt, cls] = map[status] || ['NUVEM · '+status,'warn'];
+  boardPill($('bNuvem'), txt, cls);
+}
+
+async function connectCloud(){
+  if (nuvem.channel) { try { await nuvem.channel.unsubscribe(); } catch{} nuvem.channel = null; }
+  setNuvem('connecting');
+  try {
+    if (!nuvem.client) nuvem.client = createClient(SUPABASE_URL, SUPABASE_ANON, { realtime: { params: { eventsPerSecond: 10 } } });
+    const ch = nuvem.client.channel(CHANNEL_NAME, { config: { broadcast: { ack:false, self:false } } });
+    ch.on('broadcast', { event:'sample' }, msg => { if (msg && msg.payload) onCarSample(msg.payload); });
+    ch.on('broadcast', { event:'evento' }, msg => { if (msg && msg.payload) onEvento(msg.payload); });
+    ch.subscribe((status, err) => {
+      if (status === 'SUBSCRIBED') { nuvem.channel = ch; nuvem.retryMs = 2000; setNuvem('online'); log('Nuvem conectada (canal do carro).'); }
+      else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        setNuvem('error');
+        log('Nuvem caiu ('+status+'). Religando em '+(nuvem.retryMs/1000)+'s…');
+        nuvem.channel = null;
+        setTimeout(connectCloud, nuvem.retryMs);
+        nuvem.retryMs = Math.min(nuvem.retryMs * 2, 15000);
+      }
+    });
+  } catch(e){
+    setNuvem('error'); log('Falha na nuvem: '+e.message+'. Religando…');
+    setTimeout(connectCloud, nuvem.retryMs);
+    nuvem.retryMs = Math.min(nuvem.retryMs * 2, 15000);
+  }
+}
+
+function cloudSend(event, payload){
+  if (!nuvem.channel || nuvem.status !== 'online') return false;
+  try { nuvem.channel.send({ type:'broadcast', event, payload }); return true; }
+  catch(e){ return false; }
+}
+
+// ════════════════ DADOS DO CARRO (recebidos do canal) ════════════════
+function onCarSample(s){
+  const now = performance.now();
+  nuvem.lastSampleTs = now;
+  nuvem.lastSample = s;
+  nuvem.lastSampleSource = s.source === 'sim-replay' ? 'simulador' : 'carro real';
+  nuvem.sampleWindow.push(now);
+  while (nuvem.sampleWindow.length && now - nuvem.sampleWindow[0] > 5000) nuvem.sampleWindow.shift();
+  // Simulador não pode misturar com carro real: se chegou amostra REAL, desliga o replay.
+  if (s.source !== 'sim-replay' && sim.rodando) {
+    pararSim();
+    log('Carro REAL detectado na nuvem — simulador desligado automaticamente.');
+  }
+}
+
+// ════════════════ VOLTA / TRECHO (eventos do painel do piloto) ════════════════
+// O painel do piloto publica eventos 'volta' / 'trecho' / 'delta' no canal.
+// A Central guarda o estado e repassa 1x/segundo pra sala de vídeo (tela ASSISTIR).
+const painel = { voltaN:null, voltaInicioTs:null, ultimaS:null, melhorS:null,
+                 trechoSeg:null, deltaS:null, sim:false };
+
+function onEvento(ev){
+  if (!ev || !ev.tipo) return;
+  painel.sim = ev.source === 'sim-replay';
+  if (ev.tipo === 'volta') {
+    const agora = ev.tWall ?? Date.now();
+    if (painel.voltaInicioTs) {
+      const dur = (agora - painel.voltaInicioTs) / 1000;
+      if (dur > 20 && dur < 1200) { // descarta lixo (volta de 20s ou de 20min não é volta)
+        painel.ultimaS = dur;
+        if (painel.melhorS == null || dur < painel.melhorS) painel.melhorS = dur;
+      }
+    }
+    painel.voltaN = (typeof ev.n === 'number') ? ev.n : ((painel.voltaN ?? 0) + 1);
+    painel.voltaInicioTs = agora;
+  }
+  if (ev.tipo === 'trecho') painel.trechoSeg = ev.segmentId ?? painel.trechoSeg;
+  if (ev.tipo === 'delta' && typeof ev.deltaS === 'number') painel.deltaS = ev.deltaS;
+}
+
+// Repasse pra sala de vídeo: dados do carro (2x/s) + volta/trecho (1x/s).
+setInterval(()=>{
+  if (!call) return;
+  const age = nuvem.lastSampleTs ? (performance.now() - nuvem.lastSampleTs) : Infinity;
+  if (age < 3000 && nuvem.lastSample) {
+    const s = nuvem.lastSample;
+    try { call.sendAppMessage({ t:'carro', rpm:s.rpm ?? null, kmh:s.speedKmh ?? null,
+      agua:s.waterTempC ?? null, lam:(typeof s.lambda==='number'? s.lambda : null),
+      bat:s.batteryV ?? null, sim:s.source==='sim-replay' }, '*'); } catch(e){}
+  }
+}, 500);
+setInterval(()=>{
+  if (!call || painel.voltaN == null && painel.trechoSeg == null) return;
+  const voltaS = painel.voltaInicioTs ? (Date.now() - painel.voltaInicioTs)/1000 : null;
+  try { call.sendAppMessage({ t:'painel',
+    voltaN: painel.voltaN, voltaS,
+    ultimaS: painel.ultimaS, melhorS: painel.melhorS,
+    trecho: painel.trechoSeg ? String(painel.trechoSeg).slice(0,8) : null,
+    deltaS: painel.deltaS, sim: painel.sim }, '*'); } catch(e){}
+}, 1000);
+
+function renderCarro(){
+  const age = nuvem.lastSampleTs ? (performance.now() - nuvem.lastSampleTs) : Infinity;
+  const s = nuvem.lastSample;
+  if (age < 3000 && s) {
+    boardPill($('bCarro'), 'CARRO · ao vivo ✓' + (s.source==='sim-replay' ? ' (sim)' : ''), 'ok');
+    $('t4Age').textContent = (age/1000).toFixed(1)+'s atrás';
+    $('t4Hz').textContent = (nuvem.sampleWindow.length/5).toFixed(1)+'/s';
+    $('t4Rpm').textContent = (s.rpm ?? '—');
+    $('t4Agua').textContent = (s.waterTempC != null ? s.waterTempC+'°C' : '—');
+    $('t4Bat').textContent = (s.batteryV != null ? s.batteryV.toFixed(1)+'V' : '—');
+    $('t4Fonte').textContent = nuvem.lastSampleSource;
+  } else {
+    boardPill($('bCarro'), 'CARRO · sem dados', nuvem.lastSampleTs ? 'bad' : 'idle');
+    $('t4Age').textContent = nuvem.lastSampleTs ? 'parou' : '—';
+    $('t4Hz').textContent = '—';
+  }
+}
+setInterval(renderCarro, 500);
+
+// ════════════════ SIMULADOR (gravação real do motor 26/05) ════════════════
+const sim = { rodando:false, amostras:null, idx:0, timer:null,
+              evTimer:null, voltaN:0, trechoN:0,
+              gpsPts:null, gpsIdx:0, gpsTimer:null };
+
+// Eventos de mentira (claramente marcados como simulador): trecho a cada 4s,
+// volta a cada ~60s — só pra exercitar a tela ASSISTIR sem o carro.
+function simEmitirEvento(ev){
+  const payload = { ...ev, source:'sim-replay', tWall: Date.now() };
+  cloudSend('evento', payload);
+  onEvento(payload); // canal não devolve pra quem enviou
+}
+async function ligarSimEventos(){
+  sim.voltaN = 0; sim.trechoN = 0; sim.gpsIdx = 0;
+  simEmitirEvento({ tipo:'volta', n: ++sim.voltaN });
+  sim.evTimer = setInterval(() => {
+    sim.trechoN = (sim.trechoN % 14) + 1;
+    simEmitirEvento({ tipo:'trecho', segmentId: 'Curva ' + sim.trechoN });
+    simEmitirEvento({ tipo:'delta', segmentId: 'Curva ' + sim.trechoN,
+                      deltaS: Math.round((Math.random()-0.45)*100)/100 });
+  }, 4000);
+  // GPS do simulador: replay do trajeto canônico de Brasília (volta ~61 s).
+  // Quando o ponteiro dá a volta completa, fecha a volta — tempos coerentes.
+  try {
+    if (!sim.gpsPts) {
+      const r = await fetch('./sim-gps.json?v=5520b');
+      if (r.ok) sim.gpsPts = await r.json();
+    }
+  } catch(e) { log('GPS do simulador indisponível: '+e.message); }
+  if (sim.gpsPts && sim.gpsPts.length) {
+    sim.gpsTimer = setInterval(() => {
+      // RaceBox real mandando? Então o GPS real manda e o sim não interfere.
+      if (gps.lastPktTs && performance.now() - gps.lastPktTs < 2000) return;
+      const p = sim.gpsPts[sim.gpsIdx % sim.gpsPts.length];
+      sim.gpsIdx++;
+      if (sim.gpsIdx % sim.gpsPts.length === 0) simEmitirEvento({ tipo:'volta', n: ++sim.voltaN });
+      const pkt = { t:'gps', fix:3, numSV:0, spd:(p.v||0), lat:p.lat, lon:p.lng,
+                    hz:5, hacc:2, ver:'simulador', sim:true };
+      if (call) { try { call.sendAppMessage(pkt, '*'); } catch(e){} }
+      cloudSend('gps', { lat:p.lat, lng:p.lng, kmh:(p.v||0), numSV:0, fix:3, accM:2, sim:true, tWall:Date.now() });
+    }, 200);
+  }
+}
+function desligarSimEventos(){
+  if (sim.evTimer) { clearInterval(sim.evTimer); sim.evTimer = null; }
+  if (sim.gpsTimer) { clearInterval(sim.gpsTimer); sim.gpsTimer = null; }
+}
+
+async function toggleSim(){
+  if (sim.rodando) { pararSim(); return; }
+  // Carro real mandando agora? Não liga o simulador por cima.
+  if (nuvem.lastSampleTs && performance.now() - nuvem.lastSampleTs < 3000 && nuvem.lastSample?.source !== 'sim-replay') {
+    log('Carro REAL está mandando dados — simulador bloqueado pra não misturar.');
+    return;
+  }
+  $('btnSim').disabled = true;
+  try {
+    if (!sim.amostras) {
+      log('Baixando a gravação real do motor (26/05)…');
+      const r = await fetch('./sim-amostras.json?v=saudavel');
+      if (!r.ok) throw new Error('gravação respondeu '+r.status);
+      sim.amostras = await r.json();
+      log(sim.amostras.length+' amostras reais carregadas.');
+    }
+    sim.rodando = true; sim.idx = 0;
+    $('btnSim').textContent = '⏹ Parar simulação';
+    log('Simulador LIGADO — motor real de 26/05 em loop + voltas/trechos de mentira (marcados sim).');
+    ligarSimEventos();
+    sim.timer = setInterval(() => {
+      if (!sim.rodando) return;
+      const s = sim.amostras[sim.idx % sim.amostras.length];
+      sim.idx++;
+      const payload = { ...s, source:'sim-replay', tWall: Date.now() };
+      cloudSend('sample', payload);
+      // O canal não devolve pra quem enviou — alimenta o quadro local direto.
+      onCarSample(payload);
+    }, 200);
+  } catch(e){
+    log('Simulador falhou: '+e.message);
+  } finally {
+    $('btnSim').disabled = false;
+  }
+}
+function pararSim(){
+  sim.rodando = false;
+  if (sim.timer) { clearInterval(sim.timer); sim.timer = null; }
+  desligarSimEventos();
+  $('btnSim').textContent = '▶ Simular carro (gravação real do motor)';
+  log('Simulador desligado.');
+}
+
+// ════════════════ VÍDEO (Daily.co) com religação automática ════════════════
+let call = null;
+let videoQuero = false;      // intenção: a transmissão deve estar no ar
+let videoRetryMs = 3000;
+
+async function getRoom(){
+  const r = await fetch('/api/room', { method:'POST' });
+  if(!r.ok) throw new Error('servidor de vídeo respondeu ' + r.status);
+  return r.json();
+}
+
+async function startVideo(){
+  videoQuero = true;
+  $('btnStart').disabled = true;
+  try {
+    pill($('vStatus'),'conectando…','warn'); boardPill($('bVideo'),'VÍDEO · conectando…','warn');
+    log('Pedindo sala de vídeo…');
+    const room = await getRoom();
+    log('Sala: ' + room.roomName);
+    if (call) { try { await call.destroy(); } catch{} call = null; }
+    call = window.DailyIframe.createCallObject();
+    call.on('camera-error', e => log('Erro de câmera: ' + (e.errorMsg||e.error)));
+    call.on('joined-meeting', () => {
+      pill($('vStatus'),'NO AR ✓','ok'); boardPill($('bVideo'),'VÍDEO · no ar ✓','ok');
+      videoRetryMs = 3000; log('Transmissão no ar.');
+    });
+    call.on('participant-updated', renderLocal);
+    call.on('left-meeting', onVideoDown);
+    call.on('error', e => { log('Vídeo deu erro: ' + (e.errorMsg||'desconhecido')); onVideoDown(); });
+    call.on('network-connection', e => { if (e.event === 'interrupted') log('Internet do vídeo oscilou…'); });
+    await call.join({ url: room.roomUrl, token: room.tokenPiloto });
+    await call.setLocalVideo(true);
+    await call.setLocalAudio(false);
+    await listCams();
+    renderLocal();
+  } catch(e){
+    pill($('vStatus'),'falhou','bad'); boardPill($('bVideo'),'VÍDEO · falhou','bad');
+    log('FALHA no vídeo: ' + e.message);
+    onVideoDown();
+  }
+}
+
+function onVideoDown(){
+  if (!videoQuero) return;
+  pill($('vStatus'),'religando…','warn'); boardPill($('bVideo'),'VÍDEO · religando…','warn');
+  log('Vídeo caiu. Religando em '+(videoRetryMs/1000)+'s…');
+  const wait = videoRetryMs;
+  videoRetryMs = Math.min(videoRetryMs * 2, 15000);
+  setTimeout(() => { if (videoQuero) startVideo(); }, wait);
+}
+
+function renderLocal(){
+  if(!call) return;
+  const p = call.participants().local;
+  const tr = p && p.tracks && p.tracks.video && p.tracks.video.persistentTrack;
+  if(tr && $('local').srcObject == null){ $('local').srcObject = new MediaStream([tr]); }
+}
+async function listCams(){
+  try {
+    const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
+    if(devs.length < 2) return;
+    const sel = $('cams'); sel.innerHTML=''; sel.style.display='block';
+    devs.forEach(d=>{ const o=document.createElement('option'); o.value=d.deviceId; o.textContent=d.label||'Câmera'; sel.appendChild(o); });
+    sel.onchange = async ()=>{ await call.setInputDevicesAsync({ videoDeviceId: sel.value }); $('local').srcObject=null; setTimeout(renderLocal,400); log('Câmera trocada: '+sel.selectedOptions[0].textContent); };
+    log(devs.length + ' câmeras disponíveis (escolha a DJI no seletor).');
+  } catch(e){ log('Não consegui listar câmeras: '+e.message); }
+}
+
+// ════════════════ GPS (RaceBox) com religação automática ════════════════
+const NUS_SVC = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const NUS_RX  = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+const gps = { fix:0, numSV:0, spd:0, lat:null, lon:null, hz:0, hacc:null, ver:'—', lastPktTs:0 };
+const rb = { device:null, quero:false, religando:false };
+let buf = new Uint8Array(0); let pkts=0, t0=null;
+
+function append(a,b){ const c=new Uint8Array(a.length+b.length); c.set(a); c.set(b,a.length); return c; }
+function onNotify(ev){
+  const v = new Uint8Array(ev.target.value.buffer);
+  buf = append(buf, v);
+  let i = 0;
+  while(i + 8 <= buf.length){
+    if(buf[i]!==0xB5 || buf[i+1]!==0x62){ i++; continue; }
+    const len = buf[i+4] | (buf[i+5]<<8);
+    const tot = 6 + len + 2;
+    if(i + tot > buf.length) break;
+    let a=0,b=0; for(let k=i+2;k<i+6+len;k++){ a=(a+buf[k])&0xFF; b=(b+a)&0xFF; }
+    const ok = (a===buf[i+6+len] && b===buf[i+7+len]);
+    const cls=buf[i+2], id=buf[i+3], p=buf.subarray(i+6, i+6+len);
+    if(ok && cls===0xFF && id===0x01 && p.length>=80) decode(p);
+    i += tot;
+  }
+  buf = buf.subarray(i);
+}
+const dv = b => new DataView(b.buffer, b.byteOffset, b.byteLength);
+function decode(p){
+  const d = dv(p);
+  gps.fix = p[20]; gps.numSV = p[23];
+  gps.hacc = d.getUint32(40,true)/1000;
+  gps.spd = d.getInt32(48,true)/1000*3.6;
+  gps.lat = d.getInt32(28,true)/1e7;
+  gps.lon = d.getInt32(24,true)/1e7;
+  gps.lastPktTs = performance.now();
+  const now = performance.now()/1000;
+  if(t0===null) t0=now; pkts++;
+  if(now-t0>0) gps.hz = pkts/(now-t0);
+  gps.ver = gps.fix===0 ? 'sem sinal' : (gps.numSV<4 ? 'fraco' : (gps.numSV<6?'ok':'travado ✓'));
+  renderGps();
+}
+function renderGps(){
+  $('rbVer').textContent = gps.ver;
+  $('rbSv').textContent = gps.numSV;
+  $('rbSpd').textContent = gps.spd.toFixed(1)+' km/h';
+  $('rbHz').textContent = gps.hz.toFixed(1)+' Hz';
+  $('rbLat').textContent = gps.lat!=null ? gps.lat.toFixed(6) : '—';
+  $('rbLon').textContent = gps.lon!=null ? gps.lon.toFixed(6) : '—';
+}
+
+async function assinarRaceBox(device){
+  const gatt = await device.gatt.connect();
+  const svc = await gatt.getPrimaryService(NUS_SVC);
+  const ch = await svc.getCharacteristic(NUS_RX);
+  await ch.startNotifications();
+  ch.addEventListener('characteristicvaluechanged', onNotify);
+}
+
+async function religarRaceBox(){
+  if (!rb.quero || !rb.device || rb.religando) return;
+  rb.religando = true;
+  pill($('rbConn'),'religando…','warn'); boardPill($('bGps'),'GPS · religando…','warn');
+  log('RaceBox caiu. Religando automaticamente…');
+  let tent = 0;
+  while (rb.quero) {
+    tent++;
+    try {
+      await assinarRaceBox(rb.device);
+      pill($('rbConn'),'ligado ✓','ok');
+      log('RaceBox religado (tentativa '+tent+').');
+      rb.religando = false;
+      return;
+    } catch(e){
+      if (tent === 1 || tent % 10 === 0) log('Religando RaceBox… (tentativa '+tent+')');
+      await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+  rb.religando = false;
+}
+
+async function connectRaceBox(){
+  if(!navigator.bluetooth){ log('Este navegador não tem Bluetooth (use Chrome ou Edge).'); return; }
+  try {
+    pill($('rbConn'),'procurando…','warn'); boardPill($('bGps'),'GPS · procurando…','warn');
+    const dev = await navigator.bluetooth.requestDevice({ filters:[{ namePrefix:'RaceBox' }], optionalServices:[NUS_SVC] });
+    dev.addEventListener('gattserverdisconnected', religarRaceBox);
+    rb.device = dev; rb.quero = true;
+    await assinarRaceBox(dev);
+    pill($('rbConn'),'ligado ✓','ok'); log('RaceBox conectado: '+dev.name);
+  } catch(e){ pill($('rbConn'),'falhou','bad'); boardPill($('bGps'),'GPS · falhou','bad'); log('Falha no RaceBox: '+e.message); }
+}
+
+// Luz do GPS no quadro de cima: baseada na idade do último pacote, não só no evento de conexão.
+setInterval(() => {
+  if (!rb.quero) return;
+  const age = gps.lastPktTs ? performance.now() - gps.lastPktTs : Infinity;
+  if (age < 2000) {
+    boardPill($('bGps'), 'GPS · '+(gps.fix===0?'ligado, sem céu':'travado ✓')+' ('+gps.numSV+' sat)', gps.fix===0?'warn':'ok');
+  } else if (!rb.religando) {
+    boardPill($('bGps'), 'GPS · sem pacotes', 'bad');
+  }
+}, 1000);
+
+// ════════════════ ENVIO DO GPS (2 caminhos em paralelo) ════════════════
+// 1) Pela sala de vídeo (app no celular — caminho provado 09/06), a cada 200ms.
+// 2) Pelo canal da nuvem (painel do piloto pode usar o GPS de 25 Hz), 5x/segundo.
+setInterval(()=>{
+  // Só repassa GPS do RaceBox quando ele está mandando pacote DE VERDADE
+  // (senão briga com o GPS do simulador e manda dado congelado).
+  if (!gps.lastPktTs || performance.now() - gps.lastPktTs > 2000) return;
+  if(call) try{ call.sendAppMessage({ t:'gps', fix:gps.fix, numSV:gps.numSV, spd:gps.spd, lat:gps.lat, lon:gps.lon, hz:gps.hz, hacc:gps.hacc, ver:gps.ver }, '*'); }catch(e){}
+}, 200);
+setInterval(()=>{
+  if (gps.lastPktTs && performance.now() - gps.lastPktTs < 2000) {
+    cloudSend('gps', { lat:gps.lat, lng:gps.lon, kmh:gps.spd, numSV:gps.numSV, fix:gps.fix, accM:gps.hacc, tWall:Date.now() });
+  }
+}, 200);
+
+// ════════════════ boot ════════════════
+$('btnStart').onclick = startVideo;
+$('btnRb').onclick = connectRaceBox;
+$('btnSim').onclick = toggleSim;
+connectCloud();
+log('Central de pista pronta. 1) Iniciar transmissão  2) Conectar RaceBox. O quadro CARRO acende quando o painel do piloto (outra aba) estiver lendo a T4000 — ou use o simulador.');
+</script>
+</body>
+</html>
