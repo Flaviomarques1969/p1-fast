@@ -162,11 +162,30 @@ PRECISA ir pro ar — o do ar atual tem o defeito sequencial).
 ## 4. Sonda v2 com flags anti-desaceleração (B1 do checkpoint) — 1ª rodada do replay provou:
 ##    sem SEM_DADOS, sem NO BOX, coreografia entra na fase orientacao; na volta 1 a tela
 ##    não acende porque o trecho à frente ainda não tem medição (desenho do produto).
-## 5. Replay final RODANDO (sonda /tmp/p1-replay-proof2.mjs, log /tmp/p1-replay-proof2-saida.log).
-## Pendências conhecidas (pré-existentes, não desta sessão): schema-parity 5 falhas;
-## live-data-bridge 21/5 (área alerta ECU); riscos (a)(b)(d) da auditoria das 17h;
-## debounce único pit-in/pit-out <5s (anotado pelos fiscais, pit de Brasília leva >5s);
-## (sugestão fiscais, decisão de produto: trava de velocidade na entrada do box).
+## 5. REPLAY 2 revelou 3º bloqueador (sondas v3/v4 com pilha de chamada): a tela seguia
+##    apagada nas voltas 2-3 mesmo com 7/8 orientações prontas e SEM grave NA TELA —
+##    MOTOR_AQUECENDO/super ATIVO POR BAIXO (pedagógica escrevia por cima no mostrador).
+##    CADEIA DA CAUSA (provada): (a) voltas antigas do banco SEM temperatura contavam
+##    pro mínimo de 3 → média armava com 1 volta fria (47°C) → voltas a 60°C = +20% falso;
+##    (b) alerta subia via raiseManual e NUNCA limpava (manual sem clearManual);
+##    (c) simulador alimentava o padrão do carro real (blindagem não cobria);
+##    (d) pedagógica sobrescrevia alerta super no mostrador (piloto não via).
+## 6. 4 CONSERTOS (DEV): alertas-criticos.js (aplicarPreditivos sobe-e-limpa + conjunto
+##    _preditivos protegido + n>=3 por métrica em avaliarPreditivoPorPadrao);
+##    padrao-acumulador.js (fecharVolta SEMPRE emite, [] limpa); main-t3000.js
+##    (aplicarPreditivos na costura + guarda __P1_ORIGEM_SIM__ no ingest do padrão +
+##    pedagógica só sem grave ativo). Testes: AC-20..24 + PA-09/10 → 24/24 e 12/12;
+##    bateria oficial até o vermelho pré-existente: tudo verde.
+## 7. NUVEM CONFERIDA (leitura): padroes_telemetria_por_volta tem 1 linha (30/05,
+##    médias de motor NULAS, 7 voltas só com tempos) — SEM contaminação de simulador
+##    (savePadrao falha silencioso? atualizado_em parou em 30/05 — anotar).
+## 8. Replay FINAL rodando com tudo (log /tmp/p1-replay-proof5-saida.log, sonda v3).
+##    Fiscais adversariais dos consertos de alerta rodando em workflow.
+## Pendências conhecidas (pré-existentes, não desta sessão): schema-parity 5 falhas
+## (gabarito 30 tabelas × banco 32); live-data-bridge 21/5 (área alerta ECU);
+## riscos (a)(b)(d) da auditoria das 17h; debounce único pit-in/pit-out <5s;
+## savePadrao aparentemente nunca grava (atualizado_em=30/05);
+## (decisão de produto p/ Flávio: trava de velocidade na entrada do box).
 
 ---
 
