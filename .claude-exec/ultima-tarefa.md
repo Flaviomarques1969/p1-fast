@@ -1,3 +1,36 @@
+# TASK_INIT (2026-06-10 ~18h, sessão 4) — RODADA DE CONSIDERAÇÕES DO FLÁVIO (3 itens)
+
+## Pedido original (ditado em partes, comando final "siga"):
+## (1) ESPAÇAMENTO: verbo (alto-direita) e número (baixo-direita) ficaram nos EXTREMOS
+##     com buracão no meio — aproximar, distância equilibrada com a curva da esquerda.
+##     Vale pra TODAS as telas com esse par (orientação e as padrão).
+## (2) PLANEJAMENTO DO STINT perdeu especificações já ditadas: padrões naturais
+##     (1 carro/1 piloto/1 autódromo pré-preenchidos); tipo de pneu/roda (teremos
+##     mais de um); VIDA ÚTIL por item instalado (da data de troca/instalação,
+##     derivar da telemetria: tempo ligado + voltas + km — os 3 pra toda peça);
+##     PROPÓSITO do stint: livre × testar parte do carro (painel foca nela) ×
+##     treinar habilidade (trail braking OU um dos 6 pontos do trecho — ápice,
+##     frenagem, Vmin...); ligar/desligar GHOST; nº de voltas; nº de paradas e em
+##     quais voltas. Abordagem gráfica bacana pra escolher.
+## (3) TELA ALVO: validar/mostrar na proporção da tela 10,5/10,7" ligada como
+##     monitor do notebook (NÃO iPhone). iPhone só p/ envio de dados (decisão
+##     Starlink × iPhone × modem 5G fica aberta, só registrada).
+## Objetivo (1 frase): aplicar as 3 considerações em DEV e reabrir pro Flávio na proporção certa.
+## Critérios: (a) par verbo+número aproximado em todas as telas com o par; (b) tela de
+## Planejamento do Stint com TODAS as especificações resgatadas dos docs (mockup/tela
+## aberta pro Flávio validar); (c) janelas de validação na resolução da tela 10,5".
+## Leitura: protocolo+padrões+4 FLAVIO_*.md SIM (sessão); docs a resgatar: CONCEITOS_TRECHO_PRODUTO,
+## PLANO_FASE_1 (stint/paradas), ADR-023 (tela 10,5), decision-logs, manutenção/consumíveis.
+## Plano (≤5): 1) explorar em paralelo (telas com o par; tela atual do stint; specs nos docs;
+## vida útil/manutenção existente; resolução 10,5); 2) consolidar o que a tela perdeu;
+## 3) aplicar espaçamento; 4) reformar Planejamento do Stint; 5) abrir pro Flávio na proporção certa.
+## Ambiente: DESENVOLVIMENTO. Produção protegida: sim. Autorização: não recebida.
+## Riscos: tela do stint pode morar no app iOS (reinstalação) ou no painel web; vida útil
+## pode exigir estrutura nova no banco (aí: propor, não executar sem combinar).
+## Status: iniciado
+
+---
+
 # ✅ ORIENTAÇÃO ACESA — checkpoint 2026-06-10 noite (sessão 3)  ← LER PRIMEIRO
 
 ## ONDE ESTÁ (1 frase)
