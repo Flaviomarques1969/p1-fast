@@ -119,7 +119,9 @@ export function calcularDelta({ atual, referencia }) {
     const ds = distMeters(a0, a1);
     if (ds < 0.05) continue; // amostras quase coincidentes — descarta
     const vAtual = ((a0.kmh + a1.kmh) / 2) / 3.6; // m/s
-    if (vAtual < 0.5) continue; // parado/quase parado
+    // kmh ausente vira NaN, e "NaN < 0.5" é falso — sem a guarda, UM ponto sem
+    // velocidade envenenava o delta do trecho inteiro (risco (e) da auditoria 10/06).
+    if (!Number.isFinite(vAtual) || vAtual < 0.5) continue; // inválido/parado
 
     // tempo gasto pelo carro atual nesse incremento
     const dtAtual = ds / vAtual;
@@ -130,7 +132,7 @@ export function calcularDelta({ atual, referencia }) {
     refIdx = idxRef;
     // tempo esperado pela referência pra percorrer o mesmo ds com vRef
     const vRef = pRef.kmh / 3.6;
-    if (vRef < 0.5) continue;
+    if (!Number.isFinite(vRef) || vRef < 0.5) continue;
     const dtRef = ds / vRef;
 
     // dt positivo = atual mais lento que ref (perdeu tempo); negativo = ganhou
