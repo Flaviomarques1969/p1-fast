@@ -1,3 +1,23 @@
+# MIGRAÇÃO PRA PRODUÇÃO: contagem real (banco) — 2026-06-10 ~20h30
+
+## Autorização LITERAL: "MIGRAR PARA PRODUÇÃO: contagem real — aplica a estrutura no banco de uma vez"
+## Aplicada migração 0040_contagem_real.sql via supabase db query --linked (p1-fast):
+##   track_layouts.comprimento_m (Brasília 0dc85cfb = 5476) · voltas.origem (default app)
+##   · pneus.instalado_em · manutencoes.pneu_id/peca_id. TUDO ADITIVO; rollback no arquivo.
+## VALIDADO por leitura: comprimento_m=5476 no traçado canônico; colunas novas respondem.
+## A permissão de escrita/leitura do painel NÃO entrou (aguarda card, como combinado).
+## DESCOBERTA na validação: a trava também BLOQUEIA A LEITURA de sessoes/voltas/pneus/
+## manutencoes pro painel — sem o card, o painel não enxerga o stint aberto nem conta
+## vida útil. PROPOSTA-escrita-painel-anon.sql ganhou ADENDO (leitura) e o card foi
+## atualizado (opção A agora descreve o alcance completo). Mensagem da vida útil na tela
+## corrigida pra não afirmar "sem troca" quando pode ser acesso bloqueado.
+## NOTA menor: existem 2 layouts "Principal" do mesmo traçado de Brasília (a85c1234 de
+## 26/05 parece semente órfã; o canônico 0dc85cfb tem marcos/trechos). NADA apagado —
+## limpeza só com decisão do Flávio.
+## TASK_DONE migração: concluída. Produção alterada COM autorização literal registrada.
+
+---
+
 # TASK_INIT (2026-06-10 ~20h, sessão 6) — VOLTAS REAIS + KM + VIDA ÚTIL POR PEÇA (autorizado)
 
 ## Pedido: Flávio confirmou "eu já te disse que quero" — construir a contagem real:
