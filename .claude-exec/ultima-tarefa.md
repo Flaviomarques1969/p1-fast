@@ -1,3 +1,29 @@
+# MIGRAÇÃO PRA PRODUÇÃO: painel p1t4000 — 2ª do dia (2026-06-10 ~19h)
+
+## Autorização LITERAL do Flávio: "MIGRAR PARA PRODUÇÃO: painel p1t4000" (10/06, após
+## validar orientação acesa + tela de stint reformada nas janelas 1920×1280).
+## PROD_RELEASE_PLAN apresentado antes de executar (sem risco destrutivo; sem migration).
+## Pacote: web/cockpit completo — vigia de curvas (15h) + delta×referência (17h) +
+## box-detector (interseção + folga 5 m) + cadeia de alertas preditivos (sessão 3) +
+## par verbo+número junto (v4) + escala tela 10,5 (MS-13.1) + Planejamento do Stint.
+## Pré-voo: 39 js sintaxe OK · grafo 28 alvos fechado · zero conflito · 21 suítes verdes
+## (5 vermelhos = schema-parity pré-existente, fora do pacote).
+## Publicado: https://p1t4000-nf43ly9k4-flaviomarques-6007s-projects.vercel.app → p1t4000.vercel.app
+## (deploy via npx vercel deploy --prod --yes em web/cockpit, projeto linkado --project p1t4000)
+## ROLLBACK (1 comando): npx vercel alias set https://p1t4000-9mto8lxqj-flaviomarques-6007s-projects.vercel.app p1t4000.vercel.app
+## Validação pós-deploy APROVADA NAS 3 FRENTES:
+## (1) conteúdo: 48 arquivos servidos byte-idênticos ao local (tela-orientacao com par
+##     centrado, configuracao-stint reformada, index com escala — confirmados no ar);
+## (2) estrutura: 39 módulos no ar, todos 200 + sintaxe válida;
+## (3) boot real em produção: canal online, 8/8 trechos armados, coreografia ativa,
+##     escala aplicada, ZERO erros de página (captura /tmp/p1-prod-boot-1920.png).
+## Nota não-bloqueante: no momento da checagem o simulador da Central não estava
+## transmitindo amostras de motor (janela do Flávio pode ter parado o ciclo) — o canal
+## em si estava online e os 8/8 trechos armados; nada do painel depende disso pra boot.
+## TASK_DONE migração: concluída. Produção alterada COM autorização literal registrada.
+
+---
+
 # TASK_INIT (2026-06-10 ~18h, sessão 4) — RODADA DE CONSIDERAÇÕES DO FLÁVIO (3 itens)
 
 ## Pedido original (ditado em partes, comando final "siga"):
