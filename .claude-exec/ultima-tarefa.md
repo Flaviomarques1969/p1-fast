@@ -1,3 +1,24 @@
+# TASK_INIT (2026-06-10 ~19h30, sessão 5) — "siga": pendências objetivas pós-migração
+
+## Pedido: fechar o que não depende de decisão do Flávio:
+## (1) savePadrao nunca grava (atualizado_em parado em 30/05) — investigar causa SEM
+##     escrever no banco produtivo (sonda com chave estrangeira falsa: revela trava de
+##     acesso × erro de estrutura sem persistir nada);
+## (2) schema-parity 5 vermelhos — gabarito espera 30 tabelas, banco tem 32 legítimas
+##     (padroes_telemetria_por_volta + melhores_passagens_trecho, de maio) + manutencoes
+##     espelhada (0039) — atualizar gabarito do teste;
+## (3) live-data-bridge 21/5 — teste defasado do refactor alertasCriticos, atualizar;
+## (4) risco (d) auditoria 17h: marca OURO não acompanha promoção de referência local
+##     na sessão (setReferencia só no boot); (5) risco (e): delta-calculator não barra
+##     NaN de velocidade ausente.
+## Ambiente: DESENVOLVIMENTO. Produção protegida: sim. Autorização: não necessária
+## (se a causa do savePadrao for trava de acesso no banco de produção → PROPOR, não mexer).
+## Plano (≤5): sonda savePadrao → gabarito schema-parity → teste bridge → riscos (d)(e)
+## com smokes → relatório com lista de decisões pendentes do Flávio.
+## Status: iniciado
+
+---
+
 # MIGRAÇÃO PRA PRODUÇÃO: painel p1t4000 — 2ª do dia (2026-06-10 ~19h)
 
 ## Autorização LITERAL do Flávio: "MIGRAR PARA PRODUÇÃO: painel p1t4000" (10/06, após
