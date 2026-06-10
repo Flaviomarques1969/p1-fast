@@ -305,16 +305,21 @@ async function carregarVidaUtil() {
       if (Number.isFinite(ini) && Number.isFinite(fim) && fim > ini) ms += fim - ini;
     }
     elT.textContent = ms > 0 ? fmtHoras(ms) : '0 h';
+    let nVoltas = 0;
     if (sessoes.length) {
       const ids = sessoes.map(s => `"${s.id}"`).join(',');
       const voltas = await rest(`voltas?select=id&sessao_id=in.(${ids})`);
-      elV.textContent = String(voltas.length);
-    } else {
-      elV.textContent = '0';
+      nVoltas = voltas.length;
     }
-    elK.textContent = '—';
-    nota.textContent = `Troca registrada em ${new Date(desde).toLocaleDateString('pt-BR')}. ` +
-      'Quilômetros passam a contar quando a gravação de voltas reais ligar (frente própria).';
+    elV.textContent = String(nVoltas);
+    // km = voltas × comprimento oficial do traçado (coluna entra com a
+    // estrutura da contagem real; até lá a consulta falha de leve e mostra —)
+    try {
+      const lay = await rest('track_layouts?select=comprimento_m&comprimento_m=not.is.null&limit=1');
+      const compM = lay.length ? Number(lay[0].comprimento_m) : null;
+      elK.textContent = (compM && nVoltas) ? `${((nVoltas * compM) / 1000).toFixed(0)} km` : (compM ? '0 km' : '—');
+    } catch { elK.textContent = '—'; }
+    nota.textContent = `Troca registrada em ${new Date(desde).toLocaleDateString('pt-BR')}.`;
   } catch (e) {
     nota.textContent = 'Não consegui consultar os registros agora (' + e.message + ').';
   }
