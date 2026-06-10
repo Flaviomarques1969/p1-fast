@@ -244,6 +244,7 @@ export class AlertasCriticos {
     this._onChange = onChange;
     this._ativos = new Set();
     this._manuais = new Set();
+    this._preditivos = new Set(); // ids subidos pelo padrão histórico (fonte própria)
     this._lastT4000T = null;
     this._derrapagemPorTrecho = new Map(); // trechoId -> contagem
   }
