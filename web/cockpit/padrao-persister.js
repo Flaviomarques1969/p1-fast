@@ -43,13 +43,23 @@ export async function loadPadrao({ carroId, trackId, tipoPneu }) {
       return null;
     }
     if (!data) return null;
+    const voltas = Array.isArray(data.voltas_json) ? data.voltas_json : [];
+    // O padrão é RECALCULADO das voltas guardadas — assim o n por métrica é o
+    // número de voltas COM a métrica. A versão antiga forjava n = voltas_acumuladas
+    // (total) e a regra das 3 voltas era furada após gravar/recarregar: 1 volta
+    // fria persistida virava média "válida" com n=8 e a volta seguinte normal
+    // disparava MOTOR AQUECENDO falso (achado dos fiscais 10/06).
     return {
-      voltas: Array.isArray(data.voltas_json) ? data.voltas_json : [],
-      padrao: {
-        motor:  { media: data.motor_max_media_c, n: data.voltas_acumuladas ?? 0 },
-        pneu:   { tempMedia: data.pneu_temp_max_media_c, pressMedia: data.pneu_press_min_media_bar, n: data.voltas_acumuladas ?? 0 },
-        cambio: { media: data.cambio_max_media_c, n: data.voltas_acumuladas ?? 0 },
-      },
+      voltas,
+      padrao: voltas.length > 0
+        ? calcularMediaVoltas(voltas)
+        // linha antiga sem voltas guardadas: usa as médias das colunas, mas com
+        // n=0 — não arma preditivo sem como contar as voltas com a métrica.
+        : {
+            motor:  { media: data.motor_max_media_c, n: 0 },
+            pneu:   { tempMedia: data.pneu_temp_max_media_c, pressMedia: data.pneu_press_min_media_bar, n: 0, pressN: 0 },
+            cambio: { media: data.cambio_max_media_c, n: 0 },
+          },
       desvioPct: Number(data.desvio_pct ?? 0.20),
     };
   } catch (e) {
