@@ -432,7 +432,9 @@ export class LiveDataBridge {
             this._stats.passagensSalvas = (this._stats.passagensSalvas || 0) + 1;
             this._onEvent('passagem-salva', { segmentId: ev.segmentId, tempoS });
             if (typeof this._onTrechoEvent === 'function') {
-              this._onTrechoEvent({ type: 'passagem-salva', segmentId: ev.segmentId, tempoS });
+              // ref vai junto: a marca OURO da tela acompanha a promoção na
+              // própria sessão (antes setReferencia só rodava no boot — risco (d)).
+              this._onTrechoEvent({ type: 'passagem-salva', segmentId: ev.segmentId, tempoS, ref: novaRef });
             }
           }
         }
