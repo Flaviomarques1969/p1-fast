@@ -219,8 +219,8 @@ t('LDB-24 stats expõe contadores', () => {
   const cs = new CockpitState();
   const b = new LiveDataBridge({ cockpitState: cs });
   b.ingestT4000(FRESH_T4000());
-  b.ingestT4000(FRESH_T4000({ ecuErrorBits: 1 }));
-  b.ingestT4000(FRESH_T4000({ ecuErrorBits: 0 }));
+  b.ingestT4000(FRESH_T4000({ alarmes: { baixaPressaoOleo: true } }));
+  b.ingestT4000(FRESH_T4000({ alarmes: { baixaPressaoOleo: false } }));
   b.ingestImuGps({ tMono: 1, source: 'iphone-imu', payload: { x: 0, y: 0 } });
   const s = b.getStats();
   if (s.t4000Count !== 3) throw new Error('t4000Count');
