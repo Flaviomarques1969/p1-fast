@@ -96,3 +96,7 @@ export async function gravarVoltaReal({ sessao, numero, tempoMs, inicioAt }) {
 export function criarContadorPersistencia() {
   return { gravadas: 0, recusadas: 0, semSessao: 0 };
 }
+
+/** SÓ PRA TESTE: injeta um dublê de banco (evita rede e prende o contrato
+ *  do caminho de sucesso — payload com origem, sessão, número etc.). */
+export function _injetarClienteParaTeste(fake) { _client = fake; }
