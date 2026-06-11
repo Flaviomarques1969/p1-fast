@@ -836,8 +836,22 @@ window.addEventListener('DOMContentLoaded', () => {
   if (new URLSearchParams(location.search).has('semfio')) {
     setStatus('modo sem fio — recebendo pela nuvem', 'warn');
     log('MODO SEM FIO: amostras vêm do canal da nuvem (sem cabo da T4000).');
+    let _reaisSeguidas = 0; // destravamento automático pós-teste (auditoria 10/06)
     onSample((s) => {
-      if (s && s.source === 'sim-replay') window.__P1_ORIGEM_SIM__ = true;
+      if (s && s.source === 'sim-replay') {
+        if (!window.__P1_ORIGEM_SIM__) log('teste de escritório detectado — gravações pausadas');
+        window.__P1_ORIGEM_SIM__ = true;
+        _reaisSeguidas = 0;
+      } else if (window.__P1_ORIGEM_SIM__) {
+        // 50 amostras reais seguidas (~10 s) = carro de verdade falando → religa
+        // a contagem sozinho (antes só recarregando a tela; em pista, teste rápido
+        // de replay matava a gravação do resto do dia em silêncio).
+        if (++_reaisSeguidas >= 50) {
+          window.__P1_ORIGEM_SIM__ = false;
+          _reaisSeguidas = 0;
+          log('dados reais de volta há 10 s — gravações religadas');
+        }
+      }
       bridge.ingestT4000(s);
       t3.lastSampleTs = performance.now();
       updateHud(s);
