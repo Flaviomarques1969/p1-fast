@@ -1,3 +1,44 @@
+# ⏰ CHECKPOINT PRÉ-CLEAR 11/06 ~16h — PRÓXIMA TAREFA ARMADA (gatilho: "voltei" / "voltei treinos")
+
+## CONTEXTO EM 3 LINHAS: Treinos de técnica v1 ("Stint Revestido") está EM PRODUÇÃO
+## (p1t4000.vercel.app, deploy wlgvqd6tc, main 644de170) e o ciclo foi PROVADO em replay
+## com voltas reais (zero erros, zero gravação, 1 trecho consolidou). Flávio: "siga".
+##
+## DECISÕES VIVAS: válvula fora-do-foco FICA COMO APROVADA (re-arma com 1 passagem
+## melhor — Flávio não pediu o aperto opcional). Degrau ~30% teto 4 m. Verbos novos
+## de vmin/entrada SÓ com crivo dele item a item (ainda não solicitado).
+##
+## PRÓXIMA TAREFA (item 2 da fila aprovada): PLANO DO STINT VIAJA COM O ENVELOPE
+## Problema: o plano (propósito/foco/ghost/voltas/paradas) vive SÓ no localStorage
+## 'p1fast-plano-stint-v1' do navegador onde foi aprovado (escrita: web/cockpit/
+## configuracao-stint.js dentro de aprovarEnvelope; leitor: resolvePlanoStint em
+## web/cockpit/treino-stint.js, chamado no boot de main-t3000.js). No notebook do
+## carro (outro navegador) o treino NÃO arma — selo apagado avisa, mas o certo é
+## o plano viajar com o envelope.
+## Caminho recomendado (validado na pesquisa de 11/06):
+##  a) Migration: coluna `plano_stint jsonb` em `envelopes_seguranca_stint`
+##     (escrita atômica junto do envelope; sem tabela nova). Conferir numeração em
+##     supabase/migrations (última conhecida: 0041) e policies em
+##     supabase/POLICIES-VIVAS-2026-06-11.md (anon já INSERE envelope — conferir SELECT).
+##  b) configuracao-stint.js: incluir o plano no payload do POST (campo novo, aditivo).
+##  c) treino-stint.js: resolvePlanoStint ganha fallback assíncrono — sem localStorage,
+##     busca o último envelope do carro (REST, order created_at desc limit 1) e usa
+##     plano_stint; main-t3000 arma o treino e acende o selo QUANDO o fallback chegar.
+##  d) Testes novos + bateria completa + replay curto (injeção local na página, ritmo
+##     10x, blindagem __P1_ORIGEM_SIM__ ligada ANTES — receita provada, sondas-modelo
+##     em /tmp/replay-local-treino.mjs e /tmp/sonda-filtro.mjs, podem ter sido limpas).
+##  e) ATENÇÃO: banco é PRODUÇÃO → migration SÓ com frase literal "MIGRAR PARA
+##     PRODUÇÃO: [...]" do Flávio. Preparar tudo em desenvolvimento e pedir.
+## DEPOIS DESTA (item 3): PAce real via acelerador do motor (TPS) × GPS por
+## timestamp — destrava o treino pleno de aceleração. DEPOIS (4): verbos vmin/entrada
+## pro crivo. AÇÕES DO FLÁVIO pendentes (outra frente): validar app + registrar troca
+## de pneus em Manutenção.
+## REGRAS DE OURO DA SESSÃO: trabalhar em ambiente isolado novo a partir de main;
+## bateria inteira verde antes de mostrar; abrir telas no navegador EU MESMO; sem
+## emojis em tela; produção só com frase literal.
+
+---
+
 # REPLAY DE STINT DE TREINO COMPLETO — 11/06 ~15h55 ✅ CICLO PROVADO EM PRODUÇÃO
 
 ## Pedido: provar o ciclo pedagógico inteiro com voltas reais antes do dia de pista.
