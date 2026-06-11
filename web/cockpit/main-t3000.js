@@ -847,7 +847,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function aplicar(silencioso) {
     cockpitState.setSilencioso(silencioso);
     if (btnSil) {
-      btnSil.textContent = silencioso ? '🔕 mensagens OFF' : '🔔 mensagens ON';
+      btnSil.textContent = silencioso ? 'mensagens OFF' : 'mensagens ON';
       btnSil.style.background = silencioso ? '#3a2a0f' : '#2a3645';
     }
     try { localStorage.setItem(LS_KEY, silencioso ? '1' : '0'); } catch {}
