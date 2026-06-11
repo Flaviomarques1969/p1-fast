@@ -184,36 +184,16 @@ final class StintRepository: ObservableObject {
         // commit da escrita — incrementarCiclos abre transação própria.
         let (pneuIdMontado, voltasGeradas): (String?, Int) = try await queue.write { db in
             guard var sessao = try Sessao.fetchOne(db, key: stintId) else { return (nil, 0) }
-            let planejadas = sessao.voltasPlanejadas ?? 0
 
-            // Gera N voltas com tempos plausíveis em torno da média (±5%).
-            // Deterministic-ish: usa stintId hash como seed pra mesma sessao
-            // dar sempre os mesmos tempos no preview.
-            // Mantém um índice numero→voltaId pra mapear segmentEvents abaixo.
-            var voltaIdByNumero: [Int: String] = [:]
-            let seed = abs(stintId.hashValue)
-            for i in 0..<planejadas {
-                let jitter = Int(((seed &+ i &* 9973) % 200) - 100) * mediaVoltaMs / 5_000
-                // Volta 1 = aquecimento (mais lenta); volta 2+ = perto da média.
-                let base = (i == 0) ? mediaVoltaMs + 1500 : mediaVoltaMs
-                let tempoMs = base + jitter
-                let voltaId = UUID().uuidString
-                let numero = i + 1
-                let volta = Volta(
-                    id: voltaId,
-                    timeId: teamId,
-                    sessaoId: stintId,
-                    numero: numero,
-                    tempoMs: tempoMs,
-                    temposPorParcial: nil,
-                    valida: true,
-                    motivoInvalidacao: nil,
-                    inicioAt: nil
-                )
-                try volta.insert(db)
-                try SyncQueue.enqueueRecord(db, tableName: "voltas", rowId: voltaId, op: .insert, record: volta)
-                voltaIdByNumero[numero] = voltaId
-            }
+            // CONTAGEM REAL (autorização Flávio 10-11/06/2026): o app NÃO gera
+            // mais voltas provisórias ao finalizar (mock da Sprint 1A.3). As
+            // voltas DE VERDADE são gravadas pelo painel ao cruzar a linha de
+            // chegada, direto na nuvem, com origem='painel-ao-vivo'
+            // (web/cockpit/voltas-persister.js + migração 0040). O mock inflava
+            // a vida útil e contaria 2× com a gravação real ligada.
+            // Índice numero→voltaId fica vazio: segmentEvents sem volta local
+            // continuam sendo ignorados pelo contrato existente (abaixo).
+            let voltaIdByNumero: [Int: String] = [:]
 
             // MS-2.5: persiste 1 SegmentExecution por DetectorSegmentEndEvent.
             // Lógica de mapeamento (m/s → km/h, vmin trio, velocidadeMax) vive
