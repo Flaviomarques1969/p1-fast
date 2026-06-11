@@ -181,9 +181,12 @@ export function acharVminBuffer(buffer) {
   return kmh === null ? null : { kmh, idx };
 }
 
-/** Re-etiqueta os subs do buffer pelos marcos reais da passagem (não muta). */
+/** Re-etiqueta os subs do buffer pelos marcos reais da passagem (não muta).
+ *  SEM nenhum marco real (nem freada nem ápice), devolve o buffer como está —
+ *  as fases do detector são a única informação que existe e não se destrói. */
 export function retagSubsPorEventos(buffer, { freadaT = null, apiceT = null, vminIdx = null } = {}) {
   if (!Array.isArray(buffer)) return buffer;
+  if (freadaT == null && apiceT == null) return buffer;
   const vminT = (vminIdx != null && buffer[vminIdx]) ? buffer[vminIdx].t : null;
   return buffer.map((p, i) => {
     if (!p) return p;
