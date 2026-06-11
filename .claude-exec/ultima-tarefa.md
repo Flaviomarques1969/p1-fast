@@ -1,3 +1,26 @@
+# MIGRAÇÃO PRA PRODUÇÃO: acesso + zumbis + 6 arquivos — 11/06 ~1h30 ✅ CONTAGEM REAL LIGADA
+
+## Autorização LITERAL: "MIGRAR PARA PRODUÇÃO: acesso do painel + fechamento dos 5 stints
+## zumbis + envio dos 6 arquivos" (após "tudo autorizado." ser barrado pelo guarda
+## automático como genérico — corretamente, pelo próprio contrato).
+## EXECUTADO NA ORDEM:
+## 1. ACESSO (mig 0041 aplicada): painel grava melhores/padrão/voltas reais e LÊ
+##    sessões/voltas/pneus/manutenções. Decisão do card = OPÇÃO A (registrada em
+##    ~/.claude-decisoes/respostas/p1-fast/ + index.jsonl; respondida via chat).
+##    Validado: anon lê 57 sessões/134 voltas/2 pneus/0 manutenções.
+## 2. ZUMBIS: 5 stints do Bubi (17-19/05) fechados com data_fim = última atividade.
+##    Cópia ANTES: supabase/backup-stints-zumbis-fechados-2026-06-11.json. Pós: 0 abertos.
+## 3. ENVIO: deploy p1t4000-a8efau7jy → p1t4000.vercel.app. 49/49 arquivos byte-idênticos
+##    (os 6 novos conferidos um a um). ROLLBACK: npx vercel alias set
+##    https://p1t4000-nf43ly9k4-flaviomarques-6007s-projects.vercel.app p1t4000.vercel.app
+## VALIDAÇÃO FINAL EM PRODUÇÃO: painel boot 0 erros; gravador consulta o banco de verdade
+## (sem stint aberto → resposta honesta); tela de stint no ar lendo o banco (manutenções
+## vazia de verdade → mensagem honesta). CONTAGEM REAL: ponta a ponta LIGADA — falta só
+## o app parar de gravar voltas provisórias (sessão própria, reconstruir app no iPhone).
+## Produção alterada COM autorização literal registrada. TASK_DONE: concluída.
+
+---
+
 # SESSÃO 7 (11/06 ~0h-1h, "continue") — FILA DA AUDITORIA EXECUTADA
 
 ## Feito (tudo DEV, produção intocada):
