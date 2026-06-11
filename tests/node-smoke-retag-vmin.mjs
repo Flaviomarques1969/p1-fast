@@ -59,10 +59,13 @@ function buffer() {
     !subs.includes('apice') && subs[5] === 'freio' && subs[7] === 'saida', subs.join(','));
 }
 
-// RT-10: sem marco nenhum → tudo entrada/freio honesto (nada de saida falsa)
+// RT-10: sem marco real NENHUM → buffer fica como está (as fases do detector
+// são a única informação e não se destrói — caso das referências sintéticas)
 {
-  const b = retagSubsPorEventos(buffer().map(p => ({ ...p, kmh: null })), { freadaT: null, apiceT: null, vminIdx: null });
-  t('RT-10 sem marcos: tudo entrada (nunca inventa)', b.every(p => p.sub === 'entrada'));
+  const original = buffer().map((p, i) => ({ ...p, sub: i < 4 ? 'entrada' : i < 8 ? 'freio' : 'apice' }));
+  const b = retagSubsPorEventos(original, { freadaT: null, apiceT: null, vminIdx: 6 });
+  t('RT-10 sem marcos: etiquetas de fase preservadas',
+    b[2].sub === 'entrada' && b[5].sub === 'freio' && b[9].sub === 'apice');
 }
 
 console.log(`\nretag-vmin: ${ok} ok / ${fail} fail`);
