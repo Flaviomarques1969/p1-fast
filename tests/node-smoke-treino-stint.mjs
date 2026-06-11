@@ -1,7 +1,7 @@
 // Smoke do motor pedagógico do treino (Stint Revestido — decisões Flávio 11/06:
 // válvula LIGADA + degrau ~30% teto 4 m) e do leitor do plano do stint.
 import {
-  TreinoStint, resolvePlanoStint,
+  TreinoStint, resolvePlanoStint, buscarPlanoStintDaNuvem, validarPlanoStint,
   VALVULA_FORA_FOCO_S, CALIBRACAO_PASSAGENS,
 } from '../web/cockpit/treino-stint.js';
 import { PEDAGOGICA } from '../web/cockpit/mensagens-pedagogicas.js';
