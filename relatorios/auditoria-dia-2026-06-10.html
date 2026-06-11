@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>P1 Fast — Auditoria do dia 10/06/2026</title>
+<style>
+  :root{
+    --bg:#0a0a0a; --surface:#141414; --border:#2a2a2a; --ink:#fff; --muted:#999; --faint:#666;
+    --ok: oklch(80% 0.22 145); --furo: oklch(68% 0.26 27); --risco: oklch(74% 0.16 73);
+    --ff:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--ff);background:var(--bg);color:var(--ink);padding:40px 24px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1060px;margin:0 auto}
+  h1{font-size:26px;font-weight:700;letter-spacing:-0.02em}
+  .sub{color:var(--muted);font-size:14px;margin:6px 0 28px}
+  .placar{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:30px}
+  .placar div{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px}
+  .placar .n{font-family:var(--mono);font-size:34px;font-weight:800}
+  .placar .r{font-size:12px;color:var(--muted);margin-top:4px}
+  .n.ok{color:var(--ok)} .n.furo{color:var(--furo)} .n.risco{color:var(--risco)}
+  .aviso{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--risco);
+    border-radius:10px;padding:14px 16px;font-size:13px;color:var(--muted);margin-bottom:30px}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.22em;color:var(--muted);margin:34px 0 14px}
+  .item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:10px}
+  .item .t{font-size:14.5px;font-weight:600;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+  .item .d{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.55}
+  .tag{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;border-radius:999px;padding:3px 10px;flex:none}
+  .tag.corrigido{background:color-mix(in oklab,var(--ok) 18%,transparent);color:var(--ok)}
+  .tag.fila{background:color-mix(in oklab,var(--risco) 16%,transparent);color:var(--risco)}
+  .tag.decisao{background:color-mix(in oklab,#7aa7ff 16%,transparent);color:#9dbcff}
+  .tag.pronto{background:color-mix(in oklab,var(--ok) 12%,transparent);color:var(--ok);border:1px solid var(--ok)}
+  details{margin-bottom:10px}
+  summary{cursor:pointer;font-size:14px;font-weight:600;padding:14px 18px;background:var(--surface);
+    border:1px solid var(--border);border-radius:12px;list-style:none;display:flex;justify-content:space-between;gap:12px}
+  summary::-webkit-details-marker{display:none}
+  summary .chev{color:var(--faint);transition:transform .2s}
+  details[open] summary .chev{transform:rotate(90deg)}
+  details .corpo{border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;padding:6px 18px 14px;background:#0f0f0f}
+  details[open] summary{border-radius:12px 12px 0 0}
+  ul{padding-left:18px}
+  li{font-size:13px;color:var(--muted);margin:7px 0;line-height:1.5}
+  li b{color:var(--ink);font-weight:600}
+  code{font-family:var(--mono);font-size:.92em;color:#cfd8e3;background:#000;padding:1px 6px;border-radius:5px}
+  .rodape{margin-top:36px;font-size:12px;color:var(--faint)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Auditoria do dia — 10/06/2026</h1>
+  <p class="sub">5 frentes pedidas · 3 auditores independentes completaram (produção, código, testes) · 2 pararam no limite de uso da conta (banco e registros — o essencial das duas foi coberto pelos auditores de produção e código). Tudo abaixo foi verificado com evidência: arquivo servido comparado byte a byte, consulta autenticada no banco, bateria executada de verdade.</p>
+
+  <div class="placar">
+    <div><div class="n ok">29</div><div class="r">alegações confirmadas com prova</div></div>
+    <div><div class="n furo">11</div><div class="r">furos reais encontrados</div></div>
+    <div><div class="n ok">8</div><div class="r">furos já corrigidos esta noite</div></div>
+    <div><div class="n risco">42</div><div class="r">suítes na bateria — verde de ponta a ponta</div></div>
+  </div>
+
+  <div class="aviso"><b>O achado mais importante:</b> o card de decisão na sua tela descrevia um estado de segurança ERRADO ("9 tabelas abertas") — eu tinha medido pelos arquivos do projeto, e o banco vivo tem regras aplicadas por fora que os arquivos não mostram. O estado real: <b>3 tabelas sem trava</b> (envelope do stint + 2 de aprendizagem do shift light) e <b>2 canais ao vivo com escrita aberta de propósito</b>. O card já foi corrigido — pode responder com confiança.</div>
+
+  <h2>Confirmado com prova (o que o dia entregou de verdade)</h2>
+  <details open>
+    <summary>Produção — painel no ar é exatamente o validado <span class="chev">›</span></summary>
+    <div class="corpo"><ul>
+      <li><b>44 dos 49 arquivos no ar são byte-idênticos aos validados</b>; os 5 diferentes são exatamente as mudanças de desenvolvimento feitas DEPOIS do envio (contagem real) — nada inesperado.</li>
+      <li>Detector de box com a folga calibrada, alertas com sobe-e-limpa, par mensagem+número junto, escala da tela 10,5" e Planejamento do Stint: <b>tudo confirmado no ar</b>, no arquivo servido.</li>
+      <li>Painel abre em produção com <b>zero erros</b>, 8/8 trechos armados, escala aplicada (2×).</li>
+      <li>Plano de volta real: o pacote anterior segue disponível pra reverter em 1 comando.</li>
+    </ul></div>
+  </details>
+  <details>
+    <summary>Banco — estrutura da contagem real e limpeza <span class="chev">›</span></summary>
+    <div class="corpo"><ul>
+      <li>Migração aplicada de verdade (consulta autenticada): extensão de Brasília = <b>5.476 m</b>, origem da volta, data de instalação do pneu, vínculo troca→peça.</li>
+      <li>Traçado duplicado <b>removido sem sobras</b>; o oficial intacto (8 trechos, 4 marcos, 56 melhores passagens); cópia de reversão válida guardada no projeto.</li>
+      <li>A trava de leitura que cega o painel é real e segue como descrito — é o que o card decide.</li>
+    </ul></div>
+  </details>
+  <details>
+    <summary>Testes — bateria verde é verdade <span class="chev">›</span></summary>
+    <div class="corpo"><ul>
+      <li><code>npm run smoke</code> executado pelo auditor: <b>verde, 552 checagens</b>, zero falha.</li>
+      <li>Teste do mutante: os consertos do box e do comparador <b>quebram o teste se forem revertidos</b> (o teste protege de verdade).</li>
+    </ul></div>
+  </details>
+
+  <h2>Furos encontrados — e o status de cada um</h2>
+  <div class="item"><div class="t">Card de decisão com estado de segurança errado <span class="tag corrigido">corrigido agora</span></div>
+    <div class="d">Dizia "9 tabelas abertas"; o banco vivo tem 3 (e 2 canais abertos de propósito). Card reescrito com o estado real ANTES de você responder.</div></div>
+  <div class="item"><div class="t">Volta real ia entrar etiquetada como provisória <span class="tag corrigido">corrigido agora</span></div>
+    <div class="d">O gravador não preenchia a origem e o banco assume "app" (provisória) — a separação real×provisória morreria no primeiro dia de pista. Agora grava "painel-ao-vivo".</div></div>
+  <div class="item"><div class="t">5 stints "zumbis" de maio abertos no banco <span class="tag corrigido">mitigado agora</span> <span class="tag decisao">limpeza é sua</span></div>
+    <div class="d">Sessões antigas sem hora de fim. A volta real cairia numa delas com cara de sucesso. O gravador agora só aceita stint aberto nas últimas 12 h. Fechar os 5 antigos mexe em dados — faço com seu aval.</div></div>
+  <div class="item"><div class="t">Stint fechado/novo não era percebido sem recarregar <span class="tag corrigido">corrigido agora</span></div>
+    <div class="d">O painel guardava o stint achado pra sempre. Agora reconfere a cada 2 minutos e solta na primeira recusa.</div></div>
+  <div class="item"><div class="t">Volta descartada por sanidade sumia em silêncio <span class="tag corrigido">corrigido agora</span></div>
+    <div class="d">Volta com parada longa no meio (fora de 20 s–20 min) era pulada sem rastro. Agora o registro conta o descarte.</div></div>
+  <div class="item"><div class="t">2 conjuntos de teste importantes fora da bateria oficial <span class="tag corrigido">corrigido agora</span></div>
+    <div class="d">Os testes dos alertas e do padrão aprendido não rodavam no comando oficial — reverter aqueles consertos passava despercebido. Entraram (bateria agora com 42 suítes). Restam ~12 suítes antigas fora — na fila.</div></div>
+  <div class="item"><div class="t">Teste que testava código que ninguém usava <span class="tag corrigido">corrigido agora</span></div>
+    <div class="d">O contador do gravador tinha fábrica própria que só o teste usava. O painel agora usa a fábrica — o teste passou a vigiar código de verdade.</div></div>
+  <div class="item"><div class="t">Volta perdida na primeira falha (sem repescagem) <span class="tag fila">na fila</span></div>
+    <div class="d">Se a gravação falhar, aquela volta não é retentada. Em Brasília o custo é ~1 volta por janela de falha. Fila de repescagem local é a próxima melhoria do gravador.</div></div>
+  <div class="item"><div class="t">Guardas do gravador sem teste que as prenda <span class="tag fila">na fila</span></div>
+    <div class="d">Os testes atuais passariam mesmo sem as guardas (o erro cai na rede e devolve igual). Falta testar o caminho de sucesso com dublê do banco.</div></div>
+  <div class="item"><div class="t">Metade do conserto da marca OURO sem teste <span class="tag fila">na fila</span></div>
+    <div class="d">A ponta do painel que atualiza a marca na promoção não é coberta por teste — reverter 3 linhas passaria verde.</div></div>
+  <div class="item"><div class="t">Contagem dupla na vida útil quando a gravação ligar <span class="tag fila">na fila (sessão do app)</span></div>
+    <div class="d">Enquanto o aplicativo do iPhone gravar voltas provisórias, painel + app contam 2×. Resolve quando o app parar de gravar provisórias (reconstruir e reinstalar) e o leitor filtrar por origem.</div></div>
+
+  <h2>Riscos anotados (não quebram hoje)</h2>
+  <div class="item"><div class="t">O painel NO AR ainda anuncia "passagem salva" sem salvar <span class="tag pronto">pronto pro envio</span></div>
+    <div class="d">O conserto da verdade no registro está pronto em desenvolvimento. O próximo envio pro ar leva exatamente 5 arquivos (o auditor listou um a um). Dia de pista antes do envio = perda silenciosa. <b>Pede sua frase de migração quando quiser.</b></div></div>
+  <div class="item"><div class="t">Canais ao vivo aceitam escrita de qualquer um com a chave pública</div>
+    <div class="d">Desenho de propósito (telemetria ao vivo), mas é escrita aberta de fato — está descrito no card pra entrar na sua decisão de postura.</div></div>
+  <div class="item"><div class="t">Regras do banco aplicadas por fora dos arquivos do projeto</div>
+    <div class="d">Recriar o banco pelos arquivos não reproduz o estado real de segurança. Documentar as regras vivas no projeto está na fila.</div></div>
+  <div class="item"><div class="t">Quilômetros podem usar a extensão do traçado errado no futuro</div>
+    <div class="d">Hoje só Brasília tem extensão cadastrada, então não há erro possível. Quando houver 2º autódromo, amarrar a conta ao traçado da sessão.</div></div>
+  <div class="item"><div class="t">Teste rápido de replay num dia de pista pausa a contagem real</div>
+    <div class="d">A proteção que impede dados de teste de sujarem o registro é "pegajosa": depois de um replay, só volta a gravar voltas reais ao reabrir o painel. Em pista: reabrir o painel após qualquer teste. Destravamento automático na fila.</div></div>
+
+  <p class="rodape">Auditoria executada por 3 agentes independentes adversariais em 10-11/06/2026 · provas: comparação byte a byte do servido × local, consultas autenticadas ao banco, execução real da bateria, leitura de regra viva (pg_policy/pg_class) · 2 frentes (banco/registros) interrompidas por limite de uso — itens essenciais cobertos pelas frentes vizinhas, lacuna declarada.</p>
+
+</div>
+</body>
+</html>
