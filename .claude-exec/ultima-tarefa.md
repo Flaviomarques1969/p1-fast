@@ -1,3 +1,58 @@
+# MIGRAÇÃO PRA PRODUÇÃO: treinos de técnica v1 — 11/06 ~15h10 ✅ NO AR
+
+## Autorização LITERAL: "MIGRAR PARA PRODUÇÃO: treinos de técnica v1" (Flávio, 11/06).
+## EXECUTADO:
+## 1. Versão oficial não tinha andado desde a criação do ambiente isolado →
+##    incorporação limpa (fast-forward) de claude/treinos-ia-v1 em main (644de170).
+## 2. Bateria oficial completa NA MAIN: todas as suítes verdes, zero falhas.
+## 3. Envio Vercel: p1t4000-wlgvqd6tc → alias p1t4000.vercel.app virado.
+##    Pré-visualização é protegida por login (401) — conferência feita no oficial.
+## 4. CONFERÊNCIA: 17/17 arquivos byte-idênticos no ar (10 alterados + 7 vizinhos).
+## 5. VALIDAÇÃO PÓS-DEPLOY (Playwright, espera real, produção):
+##    - sem treino: boot 8/8 trechos armados + coreografia ativa + selo APAGADO
+##      (painel idêntico ao anterior);
+##    - ?treino=frenagem&semfio: "treino armado: TREINO · FRENAGEM", selo ACESO,
+##      canal da nuvem online, boot completo;
+##    - ZERO erros de página/console nas duas cargas.
+## ROLLBACK: npx vercel alias set
+##    https://p1t4000-a8efau7jy-flaviomarques-6007s-projects.vercel.app p1t4000.vercel.app
+## Banco intocado (sem migration; plano continua no localStorage como antes).
+## Telas de produção abertas pro Flávio (Planejamento + painel ?treino=frenagem).
+
+---
+
+# TASK_DONE 11/06 (sessão manual de pilotagem): TREINOS DE TÉCNICA v1 CONSTRUÍDA ✅
+
+## Autorização: "autorizzado. pode seguir suas recomendações." (11/06, após proposta).
+## Decisões registradas em ~/.claude-decisoes (20260611-122527-treinos-ia-direcao):
+## válvula LIGADA + degrau ~30% teto 4 m + começar por FRENAGEM.
+## CONSTRUÍDO no ambiente isolado `claude/treinos-ia-v1` (15 arquivos, +1154/−43):
+## - catalogo-treinos.js (7 treinos, etiqueta pleno/proxy, brief, mensagens permitidas)
+## - treino-stint.js (motor: calibração 2 passagens, 3-de-4 consolida, guarda círculo
+##   de tração, anti-saturação 2→reduz 3→cala, consolidação pré-box, válvula, degrau)
+## - main-t3000.js lê o plano (resolvePlanoStint; atalho ?treino=<foco> pra bancada)
+##   + selo TREINO·<FOCO> na conn-bar + filtros plugados
+## - oportunidade-trecho.js: setFoco (foco vence pior global; foco em dia = silêncio)
+##   + Vmin (FREIA MENOS quando abaixo da melhor) + degrau no número (marcas reais)
+## - live-data-bridge.js: Vmin calculada + retag dos subs por marcos REAIS (sub saida
+##   passa a existir — defeito consertado) + vmin no evento passagem-fechada
+## - mensagens-pedagogicas.js: filtro opcional (aditivo)
+## - configuracao-stint: chips nascem do catálogo + foco obrigatório + BRIEF trava o
+##   Aprovar + etiqueta PLENO/PROXY nos chips
+## - tela-orientacao.js: SVG estático de pedal REMOVIDO (regra: sem sensor, só verbo)
+## - index-t3000.html: selo + emoji de sino removido (regra sem-emoji)
+## VALIDAÇÃO: 57 suítes verdes (3 novas: 42+41+13 checks); navegador real conferido
+## (chips+brief no Planejamento; selo aceso com ?treino=frenagem; selo apagado e
+## painel idêntico sem treino). Servidor local: porta 8766 (worktree).
+## PRODUÇÃO INTOCADA. Próximo: validação visual do Flávio → incorporar à versão
+## oficial → frase "MIGRAR PARA PRODUÇÃO: treinos de técnica v1" pra ir pro ar.
+## Pendências declaradas: verbos novos vmin/entrada (não criados — só com crivo dele,
+## item a item); persistir plano no banco junto ao envelope (pré-requisito antes do
+## painel Windows nativo); PAce real via TPS×GPS (frente seguinte); brief gate testado
+## só manualmente (lógica de tela); pós-stint com foco no payload (frente seguinte).
+
+---
+
 # TASK_INIT 11/06 (sessão manual de pilotagem): TREINOS DE TÉCNICA COM IA — estudo + proposta
 
 ## Pedido: transformar o manual de pilotagem FWD (20 técnicas, PDF de 11/06) em treinos de IA
