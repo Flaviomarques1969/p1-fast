@@ -1,3 +1,21 @@
+# TASK_INIT 11/06 (sessão manual de pilotagem): TREINOS DE TÉCNICA COM IA — estudo + proposta
+
+## Pedido: transformar o manual de pilotagem FWD (20 técnicas, PDF de 11/06) em treinos de IA
+## dentro do P1 Fast: piloto escolhe a habilidade no Planejamento do Stint → o stint inteiro
+## vira treino daquela técnica, trecho a trecho, com apoio visual de "bater o olho" no painel.
+## Estudar o P1 Fast antes (pesquisa profunda), debater soluções com ≥4 agentes, escolher a melhor.
+## Critério de conclusão: proposta fechada + mockup arrastável aberto no navegador + catálogo
+## técnica→treinável hoje/depois (sensores). SEM implementação sem aval; produção intocada.
+## Arquivos-base já lidos: CONCEITOS_TRECHO_PRODUTO.md, memórias conceitos-ditado-09/06,
+## plano-stint-tela-105-10/06, decisões 10/06 noite, telas-de-ação-mínimas, CLAUDE.md do projeto.
+## Plano: (1) pesquisa profunda no código real (6 agentes); (2) debate de solução (4 propositores
+## + 3 juízes); (3) síntese da vencedora; (4) mockup arrastável; (5) proposta em linguagem de gestor.
+## Riscos: contradizer decisão fechada (mitigado: regras embutidas nos prompts dos agentes);
+## propor treino que os sensores de hoje não medem (mitigado: agente de viabilidade + catálogo honesto).
+## Status: iniciado.
+
+---
+
 # MIGRAÇÃO PRA PRODUÇÃO: acesso + zumbis + 6 arquivos — 11/06 ~1h30 ✅ CONTAGEM REAL LIGADA
 
 ## Autorização LITERAL: "MIGRAR PARA PRODUÇÃO: acesso do painel + fechamento dos 5 stints
