@@ -1,3 +1,38 @@
+# TASK_INIT 11/06/2026 ~17h30 — PLANO DO STINT VIAJA COM O ENVELOPE (banco)
+
+1. Pedido original: Flávio respondeu "prossiga" à retomada — executar item 2 da fila
+   aprovada dos treinos: o plano do stint (propósito/foco/ghost/voltas/paradas) deve
+   viajar com o envelope no banco, não viver só no navegador onde foi aprovado.
+2. Objetivo em 1 frase: painel em qualquer máquina arma o treino lendo o plano do
+   último envelope aprovado no banco quando não houver plano local.
+3. Critérios objetivos de conclusão:
+   - migration 0042 criada (coluna plano_stint jsonb em envelopes_seguranca_stint) — NÃO aplicada (produção)
+   - configuracao-stint.js envia plano_stint no POST (tolerante a banco sem a coluna: retry sem o campo)
+   - treino-stint.js: busca assíncrona do plano na nuvem (testável com fetch injetado)
+   - main-t3000.js: arma treino + selo + filtro + foco quando o plano chegar da nuvem
+   - testes novos + bateria completa verde + validação em navegador real
+   - produção INTOCADA; pedir "MIGRAR PARA PRODUÇÃO" ao final
+4. Leitura confirmada: ~/.claude/CLAUDE.md SIM · ~/.claude-decisoes/padroes.md SIM ·
+   FLAVIO_EXECUTION_PROTOCOL.md SIM · FLAVIO_DONE_CHECKLIST.md SIM ·
+   FLAVIO_ENVIRONMENT_RULES.md SIM · FLAVIO_COMMUNICATION_RULES.md SIM
+5. Plano (≤5 passos): (1) worktree novo a partir de main; (2) migration + escrita do
+   plano no POST + leitura com fallback na nuvem + religação no painel; (3) testes
+   novos + bateria completa; (4) validação em navegador real + revisão adversarial;
+   (5) relatório + pedir autorização pra banco e pro ar.
+6. Arquivos/áreas: supabase/migrations/, web/cockpit/configuracao-stint.js,
+   web/cockpit/treino-stint.js, web/cockpit/main-t3000.js, tests/node-smoke-treino-stint.mjs
+7. Ambiente alvo: desenvolvimento (worktree local; banco e painel do ar NÃO mudam)
+8. Produção protegida: sim
+9. Autorização para produção: não
+10. Evidência da autorização: não recebida
+11. Riscos: (a) POST com coluna inexistente quebraria aprovação do envelope → mitigado
+    com retry sem o campo; (b) SELECT com coluna inexistente → mitigado sem select
+    explícito; (c) plano antigo na nuvem arma treino indesejado → mesma semântica do
+    localStorage atual (último aprovado vale), declarar no relatório.
+12. Status: iniciado
+
+---
+
 # ⏰ CHECKPOINT PRÉ-CLEAR 11/06 ~16h — PRÓXIMA TAREFA ARMADA (gatilho: "voltei" / "voltei treinos")
 
 ## CONTEXTO EM 3 LINHAS: Treinos de técnica v1 ("Stint Revestido") está EM PRODUÇÃO
