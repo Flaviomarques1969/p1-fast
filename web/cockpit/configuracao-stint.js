@@ -227,17 +227,19 @@ async function aprovarEnvelope() {
       body: JSON.stringify(body),
     });
 
+    let planoFicouSoLocal = false;
     let resp = await postEnvelope(payload);
     if (!resp.ok) {
       const err = await resp.text();
-      // Banco ainda sem a coluna plano_stint (migration 0042 não aplicada):
-      // a aprovação do envelope NÃO pode falhar por causa do plano — regrava
-      // sem ele (comportamento anterior; o plano fica só no navegador local).
-      if (resp.status === 400 && err.includes('plano_stint')) {
+      // Banco ainda sem a coluna plano_stint (migration 0042 não aplicada —
+      // erro PGRST204 citando a coluna): a aprovação do envelope NÃO pode
+      // falhar por causa do plano — regrava sem ele, e a tela CONTA a verdade.
+      if (resp.status === 400 && err.includes('PGRST204') && err.includes('plano_stint')) {
         const semPlano = { ...payload };
         delete semPlano.plano_stint;
         resp = await postEnvelope(semPlano);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${await resp.text()}`);
+        planoFicouSoLocal = true;
         console.warn('[configuracao-stint] banco sem a coluna plano_stint — envelope gravado sem o plano (aplique a migration 0042).');
       } else {
         throw new Error(`HTTP ${resp.status}: ${err}`);
@@ -246,7 +248,9 @@ async function aprovarEnvelope() {
     const data = await resp.json();
     const id = Array.isArray(data) && data[0] ? data[0].id : '?';
     status.className = 'status ok';
-    status.textContent = `✓ Envelope aprovado (id ${id.substring(0, 8)}…). Modo: ${modoSelecionado.toUpperCase()}. Plano do stint registrado. Painel piloto pode iniciar.`;
+    status.textContent = planoFicouSoLocal
+      ? `✓ Envelope aprovado (id ${id.substring(0, 8)}…). Modo: ${modoSelecionado.toUpperCase()}. ATENÇÃO: o plano do stint NÃO foi pro banco (banco ainda sem a atualização 0042) — o treino só arma neste navegador.`
+      : `✓ Envelope aprovado (id ${id.substring(0, 8)}…). Modo: ${modoSelecionado.toUpperCase()}. Plano do stint registrado. Painel piloto pode iniciar.`;
     // Cache local — painel principal lê na próxima abertura.
     try { localStorage.setItem('p1fast-modo-stint-v1', modoSelecionado); } catch {}
     // Plano completo do stint (propósito/foco/ghost/voltas/paradas) — cache

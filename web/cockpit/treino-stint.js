@@ -91,8 +91,14 @@ const NUVEM_ANON_DEFAULT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXB
  *     volta sem plano e o painel roda padrão;
  *   - sem rede / erro HTTP / envelope sem plano → null (painel roda padrão,
  *     idêntico ao de hoje). Nunca derruba o boot.
+ *
+ * VALIDADE (achado da revisão 11/06): o plano da nuvem só vale no DIA da
+ * aprovação (fuso Brasília) — o chefe aprova antes do stint, no dia. Sem
+ * isso, o notebook do carro armaria pra sempre o treino da semana passada
+ * em todo boot, violando a regra "sem treino = painel idêntico ao padrão".
+ * (O cache local do navegador do chefe mantém a semântica antiga.)
  */
-export async function buscarPlanoStintDaNuvem({ carroId, fetchFn, url, anonKey } = {}) {
+export async function buscarPlanoStintDaNuvem({ carroId, fetchFn, url, anonKey, agoraIso } = {}) {
   if (!carroId) return null;
   const f = fetchFn ?? (typeof fetch !== 'undefined' ? fetch : null);
   if (!f) return null;
@@ -107,6 +113,16 @@ export async function buscarPlanoStintDaNuvem({ carroId, fetchFn, url, anonKey }
     const rows = await resp.json();
     const envelope = Array.isArray(rows) ? rows[0] : null;
     if (!envelope || !envelope.plano_stint) return null;
+    const diaSP = (iso) => {
+      try {
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return null;
+        return d.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+      } catch { return null; }
+    };
+    const aprovadoDia = diaSP(envelope.created_at ?? envelope.plano_stint.aprovadoEm);
+    const hoje = diaSP(agoraIso ?? new Date().toISOString());
+    if (!aprovadoDia || aprovadoDia !== hoje) return null;
     return validarPlanoStint(envelope.plano_stint, 'nuvem');
   } catch {
     return null;

@@ -124,8 +124,8 @@ if (!_planoStint) {
     empurrarMsgPedagogica.setFiltro((msg, ev) => treinoStint.filtroMensagem(msg, ev));
     atualizarSeloTreino();
     if (window.__t3) { window.__t3.treinoStint = treinoStint; window.__t3.planoStint = _planoStint; }
-    log(`treino armado: ${treinoStint.seloTexto()} (origem: nuvem — plano do último envelope aprovado)`);
-  });
+    log(`treino armado: ${treinoStint.seloTexto()} (origem: nuvem — plano do último envelope aprovado hoje)`);
+  }).catch((e) => console.warn('[treino] fallback da nuvem falhou:', e?.message));
 }
 const telaOrientacao = criarTelaOrientacao({});
 let coreografia = null;
