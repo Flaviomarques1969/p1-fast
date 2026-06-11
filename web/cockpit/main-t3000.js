@@ -413,6 +413,10 @@ bridge.ingestImuGps = (envelope) => {
               // aberta ou banco recusando, o log conta a verdade.
               if (!window.__P1_ORIGEM_SIM__ && durMs != null) {
                 persistirVoltaReal({ numero: voltaN, tempoMs: durMs, inicioAt: inicioVolta });
+              } else if (!window.__P1_ORIGEM_SIM__ && inicioVolta) {
+                // tinha cronômetro mas a duração caiu fora da sanidade (20s-20min)
+                // — descarte aparece no registro, não some em silêncio (auditoria 10/06)
+                log(`volta ${voltaN} NÃO gravada: duração fora de sanidade`);
               }
             },
           });
