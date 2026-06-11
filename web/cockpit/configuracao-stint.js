@@ -310,7 +310,9 @@ async function carregarVidaUtil() {
     let nVoltas = 0;
     if (sessoes.length) {
       const ids = sessoes.map(s => `"${s.id}"`).join(',');
-      const voltas = await rest(`voltas?select=id&sessao_id=in.(${ids})`);
+      // só volta REAL (painel na pista) — as provisórias antigas do app inflavam
+      // a contagem e contariam 2× quando a gravação real ligar (auditoria 10/06)
+      const voltas = await rest(`voltas?select=id&sessao_id=in.(${ids})&origem=eq.painel-ao-vivo`);
       nVoltas = voltas.length;
     }
     elV.textContent = String(nVoltas);
