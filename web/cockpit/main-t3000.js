@@ -93,6 +93,7 @@ const voltas = { n: null, inicioTs: null, ultimaS: null, melhorS: null };
 let _sessaoAberta = null;       // cache da sessão aberta do stint
 let _sessaoBuscadaEm = 0;
 let _persistStats = null;       // contador da fábrica do persister (1º uso cria)
+const _voltasPendentes = [];    // repescagem: volta que falhou tenta de novo na próxima chegada
 async function persistirVoltaReal({ numero, tempoMs, inicioAt }) {
   try {
     const { acharSessaoAberta, gravarVoltaReal, criarContadorPersistencia } =
@@ -106,22 +107,31 @@ async function persistirVoltaReal({ numero, tempoMs, inicioAt }) {
       _sessaoBuscadaEm = Date.now();
       _sessaoAberta = await acharSessaoAberta(CARRO_ATIVO);
     }
+    // fila de tentativa: a volta atual entra; o que falhou antes sai junto
+    _voltasPendentes.push({ numero, tempoMs, inicioAt });
+    while (_voltasPendentes.length > 20) _voltasPendentes.shift(); // teto de sanidade
     if (!_sessaoAberta) {
       _persistStats.semSessao++;
       if (_persistStats.semSessao === 1) {
-        log('volta real NÃO gravada: nenhum stint aberto no app (abra o stint pra contagem valer)');
+        log('volta real NÃO gravada: nenhum stint aberto no app (abra o stint pra contagem valer; fica na repescagem)');
       }
       return;
     }
-    const okGravou = await gravarVoltaReal({ sessao: _sessaoAberta, numero, tempoMs, inicioAt });
-    if (okGravou) {
-      _persistStats.gravadas++;
-      log(`volta ${numero} gravada na sessão ${String(_sessaoAberta.id).slice(0, 8)}`);
-    } else {
-      _persistStats.recusadas++;
-      _sessaoAberta = null; // pode ter fechado/perdido permissão — re-busca na próxima
-      if (_persistStats.recusadas === 1) {
-        log('volta real NÃO gravada: banco recusou (permissão de escrita em decisão)');
+    // grava tudo que está pendente (a atual + repescagens), na ordem
+    const fila = _voltasPendentes.splice(0, _voltasPendentes.length);
+    for (const v of fila) {
+      const okGravou = await gravarVoltaReal({ sessao: _sessaoAberta, ...v });
+      if (okGravou) {
+        _persistStats.gravadas++;
+        log(`volta ${v.numero} gravada na sessão ${String(_sessaoAberta.id).slice(0, 8)}`);
+      } else {
+        _persistStats.recusadas++;
+        _voltasPendentes.push(v); // volta pra repescagem
+        _sessaoAberta = null;     // pode ter fechado/perdido permissão — re-busca na próxima
+        if (_persistStats.recusadas === 1) {
+          log('volta real NÃO gravada: banco recusou (permissão em decisão; fica na repescagem)');
+        }
+        break; // sem sessão válida, não adianta insistir nas demais agora
       }
     }
   } catch (e) { log('erro ao gravar volta real: ' + e.message); }
