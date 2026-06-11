@@ -35,11 +35,16 @@ export async function acharSessaoAberta(carroId) {
   if (!carroId) return null;
   try {
     const sb = await client();
+    // só sessão aberta RECENTE (12 h): o banco tem sessões antigas que ficaram
+    // abertas (sem hora de fim) — sem o filtro, a volta real cairia numa sessão
+    // zumbi de maio com cara de sucesso (auditoria 10/06).
+    const desde = new Date(Date.now() - 12 * 3600 * 1000).toISOString();
     const { data, error } = await sb
       .from('sessoes')
       .select('id, time_id, data_inicio')
       .eq('carro_id', carroId)
       .is('data_fim', null)
+      .gte('data_inicio', desde)
       .order('data_inicio', { ascending: false })
       .limit(1)
       .maybeSingle();
