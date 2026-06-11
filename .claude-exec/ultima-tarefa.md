@@ -1,3 +1,29 @@
+# REPLAY DE STINT DE TREINO COMPLETO — 11/06 ~15h55 ✅ CICLO PROVADO EM PRODUÇÃO
+
+## Pedido: provar o ciclo pedagógico inteiro com voltas reais antes do dia de pista.
+## Método: canal ao vivo NÃO foi usado (guarda barrou broadcast de teste no canal
+## compartilhado — correto). Em vez disso: injeção das voltas reais (sim-gps.json,
+## 5.520 pts, 20 voltas de pista) DENTRO da página do painel do ar, em janela
+## visível, com blindagem __P1_ORIGEM_SIM__ ligada ANTES (nada gravado — provado
+## no registro: zero "passagem salva"/"volta gravada"); ritmo 10× com relógio
+## físico exato nos dados.
+## PROVADO: selo aceso · orientação SÓ FREIA DEPOIS (zero ápice/aceleração na tela
+## de orientação) · mensagens do foco (FREOU CEDO/TARDE + RECORDE etc.) · ponto de
+## freada real virando métrica por trecho (freadasM) · 1 trecho CONSOLIDOU (3-de-4
+## → consolidado=true, IA cala) · resumo da volta na reta longa · box detectado ·
+## ZERO erros de página em ~10 min de execução.
+## SONDA NO FILTRO (1 passada, 31 decisões): 8 mensagens fora do foco SEGURADAS;
+## 15 passaram TODAS pelo contrato da válvula (pior fora do foco ≥ 0,5 s) —
+## "todas dentro do contrato", zero violação.
+## OBSERVAÇÃO DE PRODUTO: neste replay os deltas vs referências do banco são
+## enormes (1-6 s — dados de épocas/traçados diferentes), então a válvula re-armou
+## com frequência (~1 msg fora do foco por trecho/volta). Em stint real (deltas em
+## décimos) ela quase não dispara. OPÇÃO oferecida ao Flávio: re-armar só após o
+## componente fora do foco ficar 2 passagens seguidas melhor (hoje basta 1).
+## Sondas em /tmp/replay-local-treino.mjs + /tmp/sonda-filtro.mjs (descartáveis).
+
+---
+
 # MIGRAÇÃO PRA PRODUÇÃO: treinos de técnica v1 — 11/06 ~15h10 ✅ NO AR
 
 ## Autorização LITERAL: "MIGRAR PARA PRODUÇÃO: treinos de técnica v1" (Flávio, 11/06).
