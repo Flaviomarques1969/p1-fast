@@ -32,7 +32,7 @@ import { OportunidadeTrecho } from './oportunidade-trecho.js';
 import { criarTelaOrientacao } from './tela-orientacao.js';
 import { CoreografiaVolta } from './coreografia-volta.js';
 // ── Treino de técnica (Stint Revestido — autorização Flávio 11/06) ──
-import { resolvePlanoStint, TreinoStint } from './treino-stint.js';
+import { resolvePlanoStint, buscarPlanoStintDaNuvem, TreinoStint } from './treino-stint.js';
 import { APICES_SEMENTE_BRASILIA } from './apices-semente-brasilia.js';
 import { onSample } from './cloud-bridge.js';
 // segments-loader/melhores-loader importam Supabase via esm.sh — dynamic
