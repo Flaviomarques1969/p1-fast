@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Manual de Pilotagem — Turismo Tração Dianteira</title>
+<style>
+  @page { size: A4; margin: 17mm 16mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1c2330; font-size: 11.5pt; line-height: 1.5; }
+
+  .cover { height: 250mm; display: flex; flex-direction: column; justify-content: center; page-break-after: always; border-left: 4mm solid #b08a2e; padding-left: 14mm; }
+  .cover .kicker { text-transform: uppercase; letter-spacing: 3px; font-size: 10pt; color: #b08a2e; font-weight: 700; }
+  .cover h1 { font-size: 34pt; line-height: 1.15; margin: 8mm 0 6mm; letter-spacing: -.5pt; }
+  .cover .sub { font-size: 13pt; color: #4a5568; max-width: 130mm; }
+  .cover .meta { margin-top: 16mm; font-size: 9.5pt; color: #718096; text-transform: uppercase; letter-spacing: 1.5px; line-height: 2; }
+
+  .page { page-break-before: always; }
+  h2.sec { font-size: 13pt; text-transform: uppercase; letter-spacing: 2.5px; color: #b08a2e; border-bottom: 1.5pt solid #1c2330; padding-bottom: 3mm; margin-bottom: 7mm; }
+
+  .intro p { margin-bottom: 4mm; }
+  .regra-mae { border: 1.5pt solid #1c2330; border-left: 4mm solid #b08a2e; padding: 5mm 6mm; margin: 6mm 0; }
+  .regra-mae b { color: #8a6a1e; }
+  .leg { font-size: 10pt; color: #4a5568; margin-top: 5mm; }
+
+  .sum-parte { font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; font-size: 10pt; color: #8a6a1e; margin: 6mm 0 2mm; }
+  .sum-cap { padding: 1.2mm 0; border-bottom: .5pt dotted #cbd5e0; font-size: 11pt; }
+  .sum-n { display: inline-block; width: 9mm; font-weight: 700; color: #b08a2e; }
+  .sum-en { color: #718096; font-style: italic; font-size: 9.5pt; }
+
+  .part { page-break-before: always; height: 250mm; display: flex; align-items: center; }
+  .part-inner { border-left: 4mm solid #b08a2e; padding-left: 12mm; }
+  .part h2 { font-size: 24pt; letter-spacing: -.3pt; margin-bottom: 5mm; }
+  .part p { font-size: 12.5pt; color: #4a5568; max-width: 125mm; }
+
+  .chapter { page-break-before: always; }
+  .ch-head { display: flex; gap: 6mm; align-items: flex-start; border-bottom: 2pt solid #1c2330; padding-bottom: 4mm; margin-bottom: 5mm; }
+  .ch-num { font-size: 30pt; font-weight: 800; color: #b08a2e; line-height: 1; }
+  .ch-head h3 { font-size: 18pt; line-height: 1.2; }
+  .ch-en { color: #718096; font-style: italic; font-size: 10pt; margin-top: 1.5mm; }
+  .badge { font-style: normal; font-size: 8pt; text-transform: uppercase; letter-spacing: 1px; padding: .8mm 3mm; border-radius: 8mm; font-weight: 700; vertical-align: middle; }
+  .b-aud { border: 1pt solid #2f855a; color: #2f855a; }
+  .b-exp { border: 1pt solid #2b6cb0; color: #2b6cb0; }
+
+  .def { font-size: 12pt; margin-bottom: 5mm; }
+  .box { margin-bottom: 4.5mm; break-inside: avoid; }
+  .box h4 { font-size: 9.5pt; text-transform: uppercase; letter-spacing: 1.8px; color: #8a6a1e; margin-bottom: 2mm; }
+  .box ol, .box ul { padding-left: 6mm; }
+  .box li { margin-bottom: 1.6mm; }
+  .box.fwd { background: #f7f3e8; border-left: 3pt solid #b08a2e; padding: 4mm 5mm; }
+  .box.fwd h4 { color: #8a6a1e; }
+  .box.aviso { border: 1.5pt solid #c53030; padding: 4mm 5mm; }
+  .box.aviso h4 { color: #c53030; }
+
+  .sinais { display: flex; gap: 5mm; margin-bottom: 4.5mm; break-inside: avoid; }
+  .sinais > div { flex: 1; padding: 4mm 5mm; }
+  .s-certo { background: #ecf5ee; border-left: 3pt solid #2f855a; }
+  .s-certo h4 { color: #2f855a; }
+  .s-errado { background: #fbeeee; border-left: 3pt solid #c53030; }
+  .s-errado h4 { color: #c53030; }
+  .sinais h4 { font-size: 9.5pt; text-transform: uppercase; letter-spacing: 1.8px; margin-bottom: 2mm; }
+  .sinais p { font-size: 10.5pt; }
+
+  .fontes ol { padding-left: 6mm; font-size: 10pt; color: #4a5568; }
+  .fontes li { margin-bottom: 1.5mm; word-break: break-all; }
+  .metodo p { font-size: 10.5pt; color: #4a5568; margin-bottom: 3mm; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="kicker">Manual do Piloto</div>
+  <h1>Pilotagem de Carros de Turismo de Tração Dianteira</h1>
+  <div class="sub">As 20 técnicas que o piloto precisa dominar — o que é cada uma, como executar na pista, os erros que custam tempo e os exercícios pra treinar. Escrito pra realidade de um turismo de tração dianteira com câmbio manual.</div>
+  <div class="meta">Edição 1 &middot; Junho de 2026<br>Baseado em pesquisa com 18 fontes e auditoria independente de cada afirmação central<br>20 capítulos &middot; 6 partes</div>
+</div>
+
+<div class="page intro">
+  <h2 class="sec">Como usar este manual</h2>
+  <div class="regra-mae"><b>A regra-mãe da tração dianteira:</b> os pneus da frente fazem três trabalhos ao mesmo tempo — frear, virar e acelerar — enquanto a traseira anda leve, quase de carona. Todas as 20 técnicas deste manual existem pra administrar essa sobrecarga: ou tirando trabalho dos pneus da frente, ou usando a traseira leve a favor do piloto.</div>
+  <p>Cada capítulo tem a mesma estrutura: <b>o que é</b> a técnica, <b>por que importa</b> na tração dianteira, <b>execução</b> passo a passo na ordem real dentro da curva, <b>erros comuns</b> com a consequência de cada um, <b>como treinar</b> com critério observável de evolução, e os <b>sinais no banco</b> — como você percebe, pilotando, que está certo ou errado.</p>
+  <p>A ordem das partes é a ordem de aprendizado: fundamentos físicos primeiro, depois frenagem, rotação, aceleração, gestão de pneus e, por último, corpo a corpo. As técnicas das partes II e III se constroem umas sobre as outras — trail braking alimenta a soltura do freio, que alimenta a rotação antes do ápice, que culmina no estilo "jogar e segurar".</p>
+  <p class="leg"><b>Etiquetas de confiança:</b> "Auditada 3&times;0 na pesquisa" = a técnica foi confirmada por três verificadores independentes contra fontes de pilotos profissionais e escolas de pilotagem. "Consenso de escola de pilotagem" = técnica consagrada no ensino de competição, vinda das mesmas fontes, sem a rodada formal de verificação tripla.</p>
+</div>
+
+<div class="page">
+  <h2 class="sec">Sumário</h2>
+  
+  <div class="sum-parte">Parte I — Fundamentos Físicos</div>
+  <div class="sum-cap"><span class="sum-n">01</span> Círculo de Tração <span class="sum-en">Traction Circle</span></div>
+<div class="sum-cap"><span class="sum-n">02</span> Transferência de Peso <span class="sum-en">Weight Transfer</span></div>
+
+  <div class="sum-parte">Parte II — Frenagem</div>
+  <div class="sum-cap"><span class="sum-n">03</span> Frenagem no Limite <span class="sum-en">Threshold Braking</span></div>
+<div class="sum-cap"><span class="sum-n">04</span> Trail Braking (freio arrastado até o ápice) <span class="sum-en">Trail Braking</span></div>
+<div class="sum-cap"><span class="sum-n">05</span> Rotação pela Soltura do Freio <span class="sum-en">Brake Release Rotation</span></div>
+<div class="sum-cap"><span class="sum-n">06</span> Freio com o Pé Esquerdo e Sobreposição Freio + Acelerador <span class="sum-en">Left-Foot Braking / Brake-Throttle Overlap</span></div>
+<div class="sum-cap"><span class="sum-n">07</span> Punta-Tacco e Acerto de Giro <span class="sum-en">Heel-and-Toe / Rev Matching</span></div>
+
+  <div class="sum-parte">Parte III — Curva e Rotação</div>
+  <div class="sum-cap"><span class="sum-n">08</span> Traçado e Ápice Tardio <span class="sum-en">Racing Line / Late Apex</span></div>
+<div class="sum-cap"><span class="sum-n">09</span> Rotação Completa Antes do Ápice <span class="sum-en">Early Rotation</span></div>
+<div class="sum-cap"><span class="sum-n">10</span> Sobre-esterço de Alívio (deliberado) <span class="sum-en">Lift-off Oversteer</span></div>
+<div class="sum-cap"><span class="sum-n">11</span> Jogar e Segurar <span class="sum-en">Pitch and Catch</span></div>
+<div class="sum-cap"><span class="sum-n">12</span> Abrir o Volante Cedo <span class="sum-en">Steering Unwinding</span></div>
+
+  <div class="sum-parte">Parte IV — Aceleração e Tração</div>
+  <div class="sum-cap"><span class="sum-n">13</span> Paciência de Acelerador — Aplicação Única e Progressiva <span class="sum-en">Throttle Discipline</span></div>
+<div class="sum-cap"><span class="sum-n">14</span> Correção de Derrapagem — Pé NO Acelerador <span class="sum-en">FWD Slide Correction</span></div>
+<div class="sum-cap"><span class="sum-n">15</span> Largada e Controle de Patinação <span class="sum-en">Race Start / Launch</span></div>
+
+  <div class="sum-parte">Parte V — Gestão de Pneus</div>
+  <div class="sum-cap"><span class="sum-n">16</span> Preservação dos Pneus Dianteiros <span class="sum-en">Front Tire Management</span></div>
+<div class="sum-cap"><span class="sum-n">17</span> Uso de Zebras <span class="sum-en">Kerb Riding</span></div>
+
+  <div class="sum-parte">Parte VI — Corpo a Corpo</div>
+  <div class="sum-cap"><span class="sum-n">18</span> Ultrapassagem sob Frenagem <span class="sum-en">Out-braking</span></div>
+<div class="sum-cap"><span class="sum-n">19</span> Defesa de Posição <span class="sum-en">Defensive Driving</span></div>
+<div class="sum-cap"><span class="sum-n">20</span> Corrida Lado a Lado <span class="sum-en">Side-by-side Racing</span></div>
+</div>
+
+
+<section class="part">
+  <div class="part-inner">
+    <h2>Parte I — Fundamentos Físicos</h2>
+    <p>O orçamento de aderência do pneu e a balança de peso do carro. Tudo que vem depois é aplicação destes dois capítulos.</p>
+  </div>
+</section>
+
+<article class="chapter">
+  <div class="ch-head">
+    <div class="ch-num">01</div>
+    <div>
+      <h3>Círculo de Tração</h3>
+      <div class="ch-en">Traction Circle &middot; <span class="badge b-aud">Auditada 3&times;0 na pesquisa</span></div>
+    </div>
+  </div>
+
+  <p class="def">Cada pneu tem um orçamento fixo de aderência, e tudo que você pede a ele — frear, virar, acelerar — sai desse mesmo orçamento. Pedir mais do que o orçamento permite faz o pneu deslizar; não tem negociação. Usando 80% do orçamento pra virar, ainda sobram uns 20% pra tração. E freio com curva não se somam de forma simples: combinam-se de forma pitagórica — por isso dá pra entrar na curva com um resto de freio no pedal sem estourar o pneu. O círculo de tração é a base de toda técnica combinada deste manual: trail braking (frenagem arrastada, soltando o freio aos poucos curva adentro), lift-off (rotação do carro pelo alívio calculado do acelerador) e pitch and catch (jogar o carro na curva e segurar a rotação com o acelerador) são apenas jeitos diferentes de gastar esse orçamento sem estourá-lo. Pilotar rápido é manter o pneu perto da borda do círculo o tempo inteiro, sem cruzá-la.</p>
+
+  <div class="box fwd"><h4>Por que importa na tração dianteira</h4><p>No seu hatch de tração dianteira (FWD), os dois pneus da frente acumulam os três trabalhos — frear, virar e acelerar — enquanto a traseira é leve e pouco carregada. O orçamento do pneu dianteiro é o gargalo do carro inteiro: é ele que estoura primeiro em todo erro clássico de FWD, da entrada empurrando até a saída larga. Por isso a gestão do círculo em FWD se faz quase toda nos pés: soltura do freio na entrada e paciência com o acelerador na saída, pra nunca cobrar do pneu da frente dois trabalhos inteiros ao mesmo tempo. E esqueça girar a traseira com o acelerador: em FWD, acelerar estica o carro, nunca o gira.</p></div>
+
+  <div class="box"><h4>Execução na pista</h4><ol><li>Freie forte com o carro ainda reto, no ponto de freada: ali o pneu dianteiro pode gastar quase todo o orçamento só desacelerando.</li>
+<li>Comece a soltar o freio no instante em que começa a virar — cada grau de volante a mais pede um pouco menos de pedal. Isso é o trail braking (frenagem arrastada), e em FWD ele é quase obrigatório.</li>
+<li>Module a velocidade da soltura até perto do ápice: pedal saindo devagar mantém peso na dianteira (mais aderência pra virar) e alivia a traseira (induz a rotação). O jeito de soltar o pedal é uma ferramenta de rotação por si só.</li>
+<li>Complete a rotação antes do ápice ou nele — a Vmin (velocidade mínima da curva) acontece aí, com o nariz já apontado pra saída.</li>
+<li>Abra o volante o quanto antes, ainda sem acelerar: esterço devolvido é orçamento liberado pra tração.</li>
+<li>Acelere em uma única aplicação progressiva e não solte mais até a saída.</li>
+<li>Se a frente escorregar com tração aplicada, abra um pouco mais o volante em vez de insistir no esterço — devolver orçamento à frente é o que faz o pneu voltar a agarrar.</li></ol></div>
+
+  <div class="box"><h4>Erros comuns</h4><ul><li>Pedir freio cheio e esterço cheio ao mesmo tempo na entrada: o orçamento estoura, a frente desliza reta e o carro ignora o ponto de virada.</li>
+<li>Soltar o freio de uma vez ao virar: o peso sai da dianteira de golpe, a frente perde aderência justo quando mais precisa dela e o carro empurra pra fora.</li>
+<li>Acelerar antes de terminar a rotação: o pneu dianteiro recebe tração com esterço alto, estoura o orçamento e nasce o power-on push (subesterço de potência) — você sai largo e lento, achando que o carro não vira.</li>
+<li>Aliviar o acelerador de forma brusca no meio da curva: o peso despenca pra frente, a traseira leve solta sem aviso — é o lift-off oversteer (sobre-esterço por alívio) na versão descontrolada. Calculado, ele aponta o carro ao ápice; brusco, ele te põe de costas.</li>
+<li>Tratar escorregão de traseira como num carro de tração traseira, tirando o pé: em FWD é o contrário — manter ou pisar o acelerador é o que puxa o carro do escorregão. Tirar o pé só piora.</li>
+<li>Modular ou soltar o acelerador na saída pra não sair da pista: sintoma, não causa. O erro foi cometido metros antes — acelerou cedo demais ou rotacionou de menos.</li></ul></div>
+
+  <div class="box"><h4>Como treinar</h4><ul><li>Separar pra depois sobrepor: escolha uma curva lenta e faça 10 passagens frenando 100% em reta e virando só com o pedal já liberado; depois 10 passagens sobrepondo a soltura do freio com o crescimento do esterço. Critério de evolução: Vmin mais alta e repetível nas passagens sobrepostas, sem correção extra de volante.</li>
+<li>Telemetria no simulador: sobreponha o traço de pressão de freio com o de esterço. Critério: o freio deve morrer em rampa suave terminando perto do ápice, nunca em degrau — e a rampa deve ficar igual volta após volta.</li>
+<li>Laboratório de soltura: na mesma curva, mantenha tudo constante e varie só a velocidade com que solta o freio. Critério: conseguir provocar uma rotação leve e previsível de entrada — e repeti-la três voltas seguidas. Quando a soltura vira ferramenta de rotação, o exercício está vencido.</li>
+<li>Aplicação única na saída: numa curva que antecede reta, proíba-se de aliviar o acelerador depois de pisar. Se precisou soltar, atrase o ponto de aceleração na volta seguinte até conseguir. Critério: cinco saídas seguidas em uma só aplicação progressiva, sem a frente escorregar.</li></ul></div>
+
+  <div class="sinais">
+    <div class="s-certo"><h4>Está certo quando</h4><p>O carro flui num arco só: o freio acaba exatamente onde o esterço cresce, a Vmin chega no ápice com o nariz já apontado pra saída e o acelerador desce uma vez, sem ajuste. As mãos ficam quietas — as correções acontecem nos pés. A sensação no banco é de uma carga contínua trocando de direção, sem solavanco entre frear, virar e acelerar.</p></div>
+    <div class="s-errado"><h4>Está errado quando</h4><p>Volante cheio e o carro seguindo reto (frente estourada na entrada), traseira soltando no susto quando você tira o pé no meio da curva, ou aquele alívio de acelerador na saída pra não cair da pista. Cada um desses é o mesmo diagnóstico: orçamento estourado em algum ponto anterior da curva. Se as mãos trabalham muito, os pés erraram antes.</p></div>
+  </div>
+
+  <div class="box aviso"><h4>Atenção</h4><p>Correção de derrapagem em FWD é o oposto da tração traseira: aqui você mantém ou pisa o acelerador pra puxar o carro do escorregão. O reflexo de tração traseira (RWD) — aliviar tudo e contraesterçar — transferido pro FWD é perigoso. Treine o reflexo certo pra plataforma que você pilota. E o toque de freio com o pé esquerdo mantendo o acelerador, útil contra subesterço em curvas rápidas quase planas, no seu câmbio manual H só existe em curva sem redução — porque o pé esquerdo está ocupado com a embreagem.</p></div>
+</article>
+
+<article class="chapter">
+  <div class="ch-head">
+    <div class="ch-num">02</div>
+    <div>
+      <h3>Transferência de Peso</h3>
+      <div class="ch-en">Weight Transfer &middot; <span class="badge b-aud">Auditada 3&times;0 na pesquisa</span></div>
+    </div>
+  </div>
+
+  <p class="def">Transferência de peso é o deslocamento da carga entre os eixos toda vez que você mexe nos pedais: pisar no freio carrega a dianteira, abrir o acelerador carrega a traseira, e tirar o pé do acelerador no meio da curva manda carga de volta pra frente. Pneu com carga em cima agarra mais; pneu descarregado agarra menos. Em competição isso não é efeito colateral a ser tolerado — é ferramenta de controle. O piloto provoca cada transferência de propósito, no momento certo, pra colocar aderência exatamente no eixo que precisa trabalhar naquele ponto da curva.</p>
+
+  <div class="box fwd"><h4>Por que importa na tração dianteira</h4><p>Num carro de tração dianteira (FWD, na sigla em inglês), os dois pneus da frente acumulam os três trabalhos da curva: frear, virar e acelerar — enquanto a traseira anda leve, quase de carona. Quem decide quanto cada eixo agarra a cada instante é o seu pé. Peso na frente na entrada faz o carro virar; traseira aliviada de propósito faz o carro rotacionar; peso atrás na saída estabiliza a tração. Errar essa distribuição num FWD vira subesterço na saída ou traseira solta sem aviso no meio da curva.</p></div>
+
+  <div class="box"><h4>Execução na pista</h4><ol><li>Freie firme em linha reta no ponto de freada: o peso vai pra frente e os pneus dianteiros ficam carregados, prontos pra virar.</li>
+<li>Solte o freio aos poucos enquanto começa a virar (trail braking — arrastar um resto de freio pra dentro da curva): a soltura gradual mantém peso na dianteira pra virar e alivia a traseira pra ajudar o carro a girar. O pneu aceita freio e curva ao mesmo tempo, desde que a combinação dos dois respeite o orçamento fixo de aderência dele (o círculo de tração) — é por isso que dá pra entrar na curva com um resto de freio.</li>
+<li>Module a velocidade da soltura conforme a rotação que você quer: soltar mais devagar segura mais peso na frente e gira mais a traseira; soltar mais rápido estabiliza. O jeito de soltar o pedal é um comando de direção.</li>
+<li>Complete a rotação antes do ápice ou nele, com o nariz já apontado pra saída e a Vmin (a velocidade mínima da curva) acontecendo ali.</li>
+<li>Abra o volante o quanto antes, ANTES de acelerar: reduzir esterço libera o pneu da frente pra fazer tração.</li>
+<li>Acelere em UMA aplicação progressiva, sem serrar: o peso migra pra trás, o carro estica e estabiliza na saída.</li>
+<li>Se a traseira escorregar com o carro em curva, mantenha ou pise mais o acelerador: no FWD a tração na frente puxa o carro do escorregão. Nunca solte de susto.</li></ol></div>
+
+  <div class="box"><h4>Erros comuns</h4><ul><li>Tirar o pé do acelerador de forma brusca no meio da curva: o peso despenca na dianteira e a traseira solta sem controle (lift-off oversteer involuntário — a traseira escapando porque você aliviou de susto) — é o jeito clássico de rodar um FWD.</li>
+<li>Soltar o freio de uma vez na entrada: a dianteira descarrega de repente, o carro para de virar e segue reto. O subesterço de entrada nasce no pé, não no volante.</li>
+<li>Acelerar antes de completar a rotação: o pneu da frente, que ainda está virando, recebe o trabalho de tração por cima e o carro empurra de frente na saída (power-on push). Resultado: você alivia no meio da saída e perde a curva inteira.</li>
+<li>Precisar modular ou soltar o acelerador na saída: não é erro de saída — é sintoma de erro cometido metros antes (entrada rápida demais ou rotação incompleta).</li>
+<li>Corrigir traseira solta como num tração traseira (aliviar acelerador + contraesterço): no FWD isso manda ainda mais peso pra frente e piora o escorregão. O reflexo certo é manter ou pisar o acelerador.</li>
+<li>Tratar freio e volante como ações separadas — 100% de freio, depois 100% de volante: desperdiça a aderência combinada do pneu (o círculo de tração) e te obriga a uma Vmin abaixo do que a curva entrega.</li></ul></div>
+
+  <div class="box"><h4>Como treinar</h4><ul><li>Soltura do freio (track day ou simulador, curva lenta): freie em reta e treine só a SOLTURA — primeiro tudo em reta, depois arrastando freio leve até perto do ápice. Critério de evolução: o nariz aponta pro ápice sem você adicionar volante, e o pedal sobe sem nenhum degrau perceptível.</li>
+<li>Rotação com o pé direito (simulador primeiro, depois pista): em curva média, equilibre o carro em acelerador parcial e alivie de forma calculada — sem soltar tudo — pra apontar o carro ao ápice. Critério: você dosa QUANTO o carro gira pelo tamanho do alívio e nunca precisa de contraesterço de susto.</li>
+<li>Uma aplicação só: escolha uma curva e proíba-se de modular o acelerador na saída. Se precisou soltar, a entrada foi rápida demais — entre mais devagar na volta seguinte e suba aos poucos. Critério: voltas seguidas com aplicação única e progressiva do ponto de retomada até a reta.</li>
+<li>Pitch and catch — jogar e segurar (avançado, simulador antes da pista): jogue o carro na curva, deixe a traseira começar a girar e SEGURE a rotação com o acelerador, acelerando bem antes do ápice. Critério: a rotação termina no ápice com o volante já abrindo, sem correção brusca.</li>
+<li>Sobreposição freio e acelerador (avançado, só em curva rápida e quase plana, SEM redução de marcha): mantendo o acelerador, dê um toque curto de freio com o pé esquerdo pra carregar a dianteira e matar o subesterço. No câmbio manual H isso só existe em curva sem troca — o pé esquerdo tem dono na embreagem. Critério: o nariz volta pra linha com um toque, sem o carro mergulhar de frente.</li></ul></div>
+
+  <div class="sinais">
+    <div class="s-certo"><h4>Está certo quando</h4><p>Na entrada o carro responde ao volante como se tivesse ganhado direção, a traseira ajuda a virar de forma previsível e gostosa, e na saída o carro estica estável com o volante abrindo sozinho. As transferências chegam no banco como movimentos suaves de gangorra que VOCÊ comandou — nada acontece de surpresa.</p></div>
+    <div class="s-errado"><h4>Está errado quando</h4><p>O carro segue reto na entrada mesmo com mais volante (dianteira descarregada), a traseira solta de susto quando você tira o pé (transferência brusca que você não pediu), ou você se pega serrando o acelerador na saída pra segurar a frente — sinal de que o peso chegou no eixo errado, na hora errada.</p></div>
+  </div>
+
+  <div class="box aviso"><h4>Atenção</h4><p>A correção de derrapagem do FWD (manter ou pisar o acelerador) é o OPOSTO do reflexo de tração traseira (aliviar + contraesterço). Treine até virar instinto antes de alternar entre plataformas — transferir o reflexo errado de um carro pro outro é o caminho mais curto pro muro. E não procure no FWD o que ele não tem: acelerar nunca gira a traseira; sobre-esterço de potência não existe nessa tração.</p></div>
+</article>
+
+<section class="part">
+  <div class="part-inner">
+    <h2>Parte II — Frenagem</h2>
+    <p>Onde o carro de tração dianteira ganha tempo e constrói a curva. Da freada bruta em reta à soltura fina que gira o carro.</p>
+  </div>
+</section>
+
+<article class="chapter">
+  <div class="ch-head">
+    <div class="ch-num">03</div>
+    <div>
+      <h3>Frenagem no Limite</h3>
+      <div class="ch-en">Threshold Braking &middot; <span class="badge b-exp">Consenso de escola de pilotagem</span></div>
+    </div>
+  </div>
+
+  <p class="def">Threshold braking, em bom português frenagem no limiar, é frear no ponto exato antes do travamento da roda — onde o pneu desacelera o máximo que consegue. A execução tem dois movimentos: pressão máxima logo no primeiro toque, em linha reta, com o carro ainda rápido; e modulação fina dali em diante, porque, conforme a velocidade cai, o pneu passa a travar com cada vez menos força e a pressão precisa diminuir junto. É essa técnica que permite escolher um ponto de freada mais tarde. Não é pisar e segurar: é pisar forte e administrar o pedal até a entrada da curva.</p>
+
+  <div class="box fwd"><h4>Por que importa na tração dianteira</h4><p>Num carro de tração dianteira (FWD, sigla em inglês para front-wheel drive), os pneus da frente acumulam três trabalhos — frear, virar e acelerar — e a traseira leve quase não ajuda; quem freia de verdade é a dianteira, e ela precisa ser bem usada. Contra carro mais forte você raramente ganha posição na saída de curva: a freada tardia é uma das poucas armas reais de ultrapassagem que sobram no FWD. E a freada bem terminada é a porta de entrada do trail braking — o arrasto de um resto de freio até perto do ápice — que mantém peso na dianteira (mais aderência pra virar) e deixa a traseira leve, ajudando o carro a rotacionar. Até o jeito de soltar o pedal é ferramenta: a soltura bem dosada decide se o carro só entra na curva ou também gira.</p></div>
+
+  <div class="box"><h4>Execução na pista</h4><ol><li>Escolha uma referência fixa de ponto de freada (placa, marca no asfalto, mudança de piso) ainda nas voltas de reconhecimento.</li>
+<li>Chegue em linha reta, volante centrado, carro estabilizado.</li>
+<li>Pise forte e rápido de primeira: a pressão máxima entra no início da freada, quando o carro está mais veloz e o pneu aguenta mais.</li>
+<li>Reduza as marchas com o freio firme, soltando a embreagem com calma para o freio motor não travar a dianteira.</li>
+<li>Alivie a pressão de forma contínua conforme a velocidade cai; se a roda travar ou a direção ficar leve, solte um fio de pressão e reaplique.</li>
+<li>Comece a soltar o pedal antes do ponto de virada, em rampa, nunca de estalo — a soltura também é ferramenta de rotação: o jeito de soltar decide quanto o carro gira na entrada.</li>
+<li>Olhe para o ápice já durante a soltura, antes de virar o volante.</li>
+<li>Vire para a curva carregando um resto de freio que diminui até perto do ápice: é aqui que a freada no limite emenda no trail braking — a freada termina onde a curva começa, sem trecho morto.</li></ol></div>
+
+  <div class="box"><h4>Erros comuns</h4><ul><li>Construir a pressão aos poucos, 'sentindo' o pedal: desperdiça o trecho em que o freio mais funciona e obriga a frear metros antes — devolve exatamente a vantagem que a freada tardia daria.</li>
+<li>Segurar a pressão máxima até o fim da zona de freada: o carro mais lento trava a roda com menos força; dianteira travada não vira, e num FWD isso significa seguir reto no ponto de virada.</li>
+<li>Largar a embreagem de estalo na redução: o freio motor chega de pancada na mesma roda que freia e vira, e a dianteira trava ou pula justamente no momento mais delicado.</li>
+<li>Soltar o pedal de uma vez na entrada: o peso volta para a traseira de golpe, a dianteira perde carga na hora em que mais precisa dela e o carro abre de frente — subesterço de entrada.</li>
+<li>Entrar na curva ainda com pressão alta de freio: frenagem e curva dividem o mesmo orçamento de aderência do pneu (círculo de tração); estourou o orçamento, trava a roda interna ou o carro recusa a virada.</li>
+<li>Frear cedo 'por segurança' e terminar a zona de freada com o pé fora de tudo: vira alvo fácil na disputa de freada e o carro chega ao ápice sem peso na dianteira e sem referência de velocidade.</li></ul></div>
+
+  <div class="box"><h4>Como treinar</h4><ul><li>Pressão inicial (track day ou simulador): escolha uma curva de freada forte e, freando num ponto confortável, treine só o primeiro toque — pisada forte e imediata. Critério de evolução: o aperto do cinto (ou o traço do pedal no simulador) mostra a desaceleração mais forte no primeiro terço da zona de freada, não no final.</li>
+<li>Calibragem do limiar (primeiro no simulador, depois em reta segura): provoque o travamento de propósito em linha reta, solte um fio de pressão e reaplique. Critério: o intervalo entre travar e recuperar diminui a cada tentativa, até você rodar sessões inteiras encostado no limiar sem travar.</li>
+<li>Rampa de soltura: mesma curva, mesmo ponto de freada, foco só em terminar a freada sem degrau no pedal. Critério: nenhum travamento no fim da zona e a Vmin (velocidade mínima da curva) se repetindo volta após volta — consistência vem antes de velocidade.</li>
+<li>Atraso progressivo: mova o ponto de freada uma referência por vez (uma placa, uma marca). Critério: você ainda cruza o ápice na linha de sempre e com a mesma Vmin; se a entrada virar correria ou a linha alargar, volte uma referência e estabilize de novo.</li></ul></div>
+
+  <div class="sinais">
+    <div class="s-certo"><h4>Está certo quando</h4><p>A desaceleração mais violenta vem logo no início — o cinto morde forte de cara e vai afrouxando de forma contínua, sem degraus. A direção responde do começo ao fim: o carro freia e ainda obedece o volante na entrada. A velocidade chega certa no ponto de virada, sem sobrar nem faltar freio, e a freada emenda na curva sem trecho morto.</p></div>
+    <div class="s-errado"><h4>Está errado quando</h4><p>Direção leve e muda, com pneu gemendo arrastado: roda dianteira travada, o carro vai reto e não adianta virar mais o volante. Precisar soltar o freio antes do fim porque ia chegar lento demais: freou cedo. Chegar afobado e frear forte já virando, com o carro recusando o ápice: freou tarde demais ou não tirou pressão na entrada. Vmin variando muito de volta a volta é o sinal-resumo de que a modulação ainda não existe.</p></div>
+  </div>
+
+  <div class="box aviso"><h4>Atenção</h4><p>O carro de referência não tem ABS nem controle de estabilidade: roda travada fica travada até você tirar pressão, e dianteira travada não vira. Treine a provocação do travamento primeiro no simulador e depois em reta livre de track day — nunca direto no ponto de freada de uma disputa.</p></div>
+</article>
+
+<article class="chapter">
+  <div class="ch-head">
+    <div class="ch-num">04</div>
+    <div>
+      <h3>Trail Braking (freio arrastado até o ápice)</h3>
+      <div class="ch-en">Trail Braking &middot; <span class="badge b-aud">Auditada 3&times;0 na pesquisa</span></div>
+    </div>
+  </div>
+
+  <p class="def">Trail braking é arrastar um resto de freio para dentro da curva: depois da freada forte em linha reta, em vez de soltar o pedal de uma vez no ponto de virada, você vai tirando pressão aos poucos enquanto vira, e só zera o freio perto do ápice. Funciona porque cada pneu tem um orçamento fixo de aderência (o círculo de tração): se a curva está usando 80%, ainda sobra uma fatia para frenagem — freio e curva se combinam, não se somam de forma simples. O freio residual mantém o peso do carro sobre a dianteira, que é exatamente onde você precisa de mordida para virar. E a forma como você SOLTA o pedal vira uma ferramenta de rotação: soltar mais devagar segura o carro apontando para dentro; dá até para provocar sobre-esterço de entrada (a traseira girar de propósito) só com o jeito de aliviar o freio.</p>
+
+  <div class="box fwd"><h4>Por que importa na tração dianteira</h4><p>No seu hatch de tração dianteira, os dois pneus da frente acumulam três trabalhos — frear, virar e acelerar — enquanto a traseira é leve e pouco carregada. Trail braking joga a favor disso: o freio arrastado mantém peso na dianteira (mais aderência para virar) e alivia ainda mais a traseira, induzindo a rotação que o FWD não consegue por potência — acelerar em FWD estica o carro, nunca gira a traseira. É a sua principal ferramenta para apontar o carro ao ápice sem depender do acelerador. Por isso, em FWD, trail braking não é refinamento: é quase obrigatório.</p></div>
+
+  <div class="box"><h4>Execução na pista</h4><ol><li>Freie forte e em linha reta no ponto de freada, com o carro estabilizado e o grosso da velocidade eliminado antes de virar.</li>
+<li>Inicie o esterço ainda com freio no pedal, já começando a reduzir a pressão.</li>
+<li>Alivie de forma progressiva e casada: quanto mais volante, menos freio — você está trocando frenagem por curva dentro do mesmo orçamento do pneu.</li>
+<li>Dose a rotação pela velocidade da soltura: soltar mais devagar mantém peso na frente e a traseira leve, e o carro gira mais para dentro; soltar mais rápido estabiliza.</li>
+<li>Zere o freio perto do ápice, com a rotação completa — o nariz já apontado para a saída.</li>
+<li>Abra o volante o quanto antes, ANTES de pisar no acelerador.</li>
+<li>Acelere em UMA aplicação progressiva, sem modular, e deixe o carro esticar para a saída.</li></ol></div>
+
+  <div class="box"><h4>Erros comuns</h4><ul><li>Soltar o freio de uma vez no ponto de virada: o peso sai da dianteira no exato momento em que você pede esterço; a frente perde mordida, o carro empurra reto (subesterço) e você atrasa tudo que vem depois.</li>
+<li>Manter pressão demais com muito volante: estoura o orçamento do pneu dianteiro; o carro trava roda ou recusa a curva, passa do ápice e a Vmin (velocidade mínima da curva) cai além do necessário.</li>
+<li>Soltar o pedal bruscamente com o carro já inclinado: o peso sai da dianteira de uma vez, a frente perde mordida no meio da curva e o carro empurra reto de repente — e você joga fora a sua ferramenta de rotação, que é justamente a soltura gradual.</li>
+<li>Carregar freio além do ápice: a rotação que deveria estar completa no ápice atrasa, o carro ainda aponta para fora, a aceleração sai tarde e a saída fica estragada.</li>
+<li>Acelerar antes de completar a rotação: o power-on push — o pneu dianteiro, já ocupado virando, recebe tração por cima; o carro empurra de frente e abre da saída. Paciência com o acelerador.</li>
+<li>Reagir como tração traseira quando a traseira anda: tirar o pé de tudo e contraesterçar grande é reflexo de tração traseira e é perigoso no FWD; aqui a correção é MANTER ou pisar o acelerador para puxar o carro do escorregão.</li></ul></div>
+
+  <div class="box"><h4>Como treinar</h4><ul><li>Estender a soltura (simulador ou curva lenta com escape): faça sua referência atual — frear tudo em reta, soltar, depois virar. Em seguida, passe a terminar a frenagem só DEPOIS de iniciar o esterço, entrando na curva com um resto leve de pedal. Critério de evolução: você consegue atrasar o ponto de freada alguns metros sem travar pneu e sem perder o ápice; na telemetria, freio e esterço aparecem sobrepostos em vez de separados.</li>
+<li>Soltura em rampa: na mesma curva, repita voltas mudando SÓ a velocidade da soltura — rápida, média, lenta. Critério: você provoca diferença de comportamento sob demanda; com soltura mais lenta o carro aponta mais cedo para o ápice e pede menos volante.</li>
+<li>Zerar no ápice: trabalhe para que o fim do freio coincida com a região do ápice, com rotação completa. Critério: na saída você abre o volante cedo e acelera em uma única aplicação progressiva, sem precisar aliviar no meio.</li>
+<li>Rotação pelo pedal (avançado, simulador primeiro): numa curva lenta, induza sobre-esterço de entrada só com a soltura do freio. Critério: a traseira desliza alguns graus de forma prevista por você, e é recolhida com o acelerador — sem contraesterço grande e sem perder o ápice.</li></ul></div>
+
+  <div class="sinais">
+    <div class="s-certo"><h4>Está certo quando</h4><p>A soltura do pedal é contínua, sem degraus — freada e curva viram um movimento só. O carro aponta para o ápice quase sozinho, com menos volante do que parecia necessário; a traseira fica levemente viva na entrada, mas previsível, obedecendo ao seu pedal. Na saída, é uma aceleração única, sem ajuste.</p></div>
+    <div class="s-errado"><h4>Está errado quando</h4><p>A curva acontece em dois eventos separados: freia, solta tudo, depois vira — e o carro empurra de frente no meio da curva enquanto você espera para acelerar. A traseira dá sustos repentinos quando você mexe no pedal, em vez de girar no ritmo que você pediu. E se precisou modular ou soltar o acelerador na saída, o erro foi cometido metros antes, na soltura do freio.</p></div>
+  </div>
+
+  <div class="box aviso"><h4>Atenção</h4><p>Esta técnica trabalha no limite da entrada da curva e pode soltar a traseira de propósito. Progrida do simulador para curva lenta com área de escape, aumentando a sobreposição freio+esterço aos poucos. E grave o reflexo certo da plataforma: se a traseira soltar no FWD, a correção é manter ou pisar o acelerador — aliviar tudo e contraesterçar é reflexo de tração traseira e piora o escorregão.</p></div>
+</article>
+
+<article class="chapter">
+  <div class="ch-head">
+    <div class="ch-num">05</div>
+    <div>
+      <h3>Rotação pela Soltura do Freio</h3>
+      <div class="ch-en">Brake Release Rotation &middot; <span class="badge b-aud">Auditada 3&times;0 na pesquisa</span></div>
+    </div>
+  </div>
+
+  <p class="def">O jeito de soltar o pedal de freio é um comando de direção, não só o fim da frenagem. Soltura lenta mantém peso na dianteira e a traseira leve: o nariz continua apontando pra dentro da curva. Soltura rápida devolve peso pra trás e estabiliza o carro na hora. Na prática, é a fase final do trail braking (frenagem arrastada que entra na curva junto com o volante) tratada como ferramenta de rotação: você gira o carro com o pé e economiza o volante. O resultado é apontar o carro pro ápice sem gastar a aderência do pneu dianteiro em esterço extra.</p>
+
+  <div class="box fwd"><h4>Por que importa na tração dianteira</h4><p>No tração dianteira (FWD, na sigla em inglês), os dois pneus da frente acumulam três trabalhos: frear, virar e acelerar. Cada grau de volante que você economiza na entrada é aderência que sobra pra esses pneus trabalharem depois. A traseira é leve por natureza; com resto de freio ela fica mais leve ainda e ajuda o carro a girar. E como acelerar num FWD estica o carro — nunca gira a traseira —, não existe sobre-esterço de potência nessa plataforma: a soltura modulada do freio é a sua principal ferramenta de sobre-esterço controlado na entrada.</p></div>
+
+  <div class="box"><h4>Execução na pista</h4><ol><li>Freie forte e em linha reta no ponto de freada, com o carro estável e o peso plantado na dianteira.</li>
+<li>Comece a virar ainda com resto de freio: conforme adiciona volante, vá tirando pressão do pedal. O pneu tem orçamento fixo de aderência; freio e curva se combinam, então a troca tem que ser gradual, um entra enquanto o outro sai.</li>
+<li>Module a velocidade da soltura conforme a rotação que você quer: subir o pé devagar mantém o carro girando pra dentro; subir mais rápido estanca a rotação e estabiliza.</li>
+<li>Sinta a traseira leve começar a girar o carro e segure a mão: não adicione volante, deixe o pé terminar o serviço.</li>
+<li>Complete a rotação antes do ápice ou nele, com o pé já saindo do freio.</li>
+<li>Abra o volante o mais cedo possível, antes de acelerar.</li>
+<li>Acelere em uma única aplicação progressiva até a saída. Se precisar soltar o acelerador no meio, o erro foi cometido metros antes, na soltura.</li></ol></div>
+
+  <div class="box"><h4>Erros comuns</h4><ul><li>Soltar o pedal de uma vez na entrada: o peso volta pra trás de estalo, a dianteira perde carga e o carro empurra de frente. Você compensa com mais volante e queima aderência que vai fazer falta na saída.</li>
+<li>Corrigir a falta de rotação com mais volante em vez de segurar a soltura: o pneu dianteiro satura, o subesterço aumenta e a curva abre.</li>
+<li>Segurar freio além do ápice: a Vmin (velocidade mínima da curva) afunda mais do que precisa, a rotação termina tarde e a aceleração atrasa a saída inteira.</li>
+<li>Acelerar antes da rotação completa: o carro estica, abre a trajetória (o empurrão de frente com acelerador típico de FWD) e sobrecarrega o pneu dianteiro justamente quando ele mais precisa de folga.</li>
+<li>Reagir ao giro da traseira com o reflexo de quem dirige tração traseira — aliviar tudo e contraesterçar: em FWD isso mantém a traseira leve e transforma uma rotação controlada em rodada. A correção aqui é o oposto: manter ou pisar o acelerador pra puxar o carro do escorregão.</li></ul></div>
+
+  <div class="box"><h4>Como treinar</h4><ul><li>Base, em reta (simulador ou trecho seguro do track day): freie forte e treine só a soltura, sem curva. Solte de três jeitos: de uma vez, em contagem curta, em contagem longa. Critério de evolução: você anuncia antes como vai soltar e o nariz do carro responde diferente em cada versão, sem surpresa.</li>
+<li>Curva média com escapatória boa: trail braking com soltura lenta terminando no ápice. Critério: a cada sessão você precisa de menos volante pra fazer a mesma trajetória na mesma curva — esterço máximo caindo com linha igual.</li>
+<li>Mesma curva, variação deliberada: uma passagem com soltura lenta, outra com soltura rápida, alternando. Critério: na soltura rápida você prevê o subesterço antes de ele aparecer e já posiciona o carro contando com a curva mais aberta.</li>
+<li>Avançado: estique a soltura até a traseira girar de forma clara e controle a rotação só com o ritmo do pé, sem contraesterço grande. Critério: rotação completa no ápice, volante abrindo cedo e uma única aplicação progressiva de acelerador até a saída, sem modular.</li></ul></div>
+
+  <div class="sinais">
+    <div class="s-certo"><h4>Está certo quando</h4><p>O carro aponta pro ápice sozinho enquanto seu pé sobe do pedal; o volante fica mais leve e com menos esterço do que você esperava pra aquela curva. A traseira gira aos poucos, num ritmo que você ditou, e quando a soltura termina o carro já está apontado pra saída, pronto pra uma única aceleração progressiva.</p></div>
+    <div class="s-errado"><h4>Está errado quando</h4><p>O carro empurra de frente e pede mais volante logo depois que você soltou o pedal: soltura rápida ou cedo demais. A traseira solta de estalo e exige contraesterço: você segurou pressão demais no freio com muito volante aplicado — a troca entre freio e volante não foi gradual e a traseira ficou leve além da conta. Na saída você precisa modular o acelerador: a rotação não terminou no ápice.</p></div>
+  </div>
+
+  <div class="box aviso"><h4>Atenção</h4><p>Esta técnica deliberadamente deixa a traseira leve com o carro virado. Se a traseira girar mais do que você quer, a correção em FWD é manter ou pisar o acelerador pra puxar o carro do escorregão — nunca tirar o pé de tudo nem aplicar o reflexo de tração traseira (aliviar e contraesterçar), que aqui transforma uma rotação controlada em rodada. Treine primeiro no simulador ou em curva com escapatória, e só leve pra curvas rápidas quando a resposta do carro à sua soltura for previsível em todas as passagens.</p></div>
+</article>
+
+<article class="chapter">
+  <div class="ch-head">
+    <div class="ch-num">06</div>
+    <div>
+      <h3>Freio com o Pé Esquerdo e Sobreposição Freio + Acelerador</h3>
+      <div class="ch-en">Left-Foot Braking / Brake-Throttle Overlap &middot; <span class="badge b-aud">Auditada 3&times;0 na pesquisa</span></div>
+    </div>
+  </div>
+
+  <p class="def">Left-foot braking (frenagem com o pé esquerdo) com sobreposição — brake-throttle overlap, freio e acelerador pisados ao mesmo tempo — é tocar de leve o freio com o pé esquerdo SEM tirar o pé direito do acelerador. O toque transfere um pouco de peso para a dianteira, que ganha aderência para virar, enquanto o acelerador mantido segura a traseira assentada. O território dela é a curva rápida quase plana — aquela sem ponto de freada próprio, que você faz sem reduzir marcha — quando o carro começa a empurrar de frente (subesterço). Você corrige o nariz sem apelar para o alívio brusco de acelerador, que jogaria todo o peso para a frente de uma vez e soltaria a traseira sem controle.</p>
+
+  <div class="box fwd"><h4>Por que importa na tração dianteira</h4><p>Na tração dianteira o pneu da frente acumula três trabalhos — frear, virar e acelerar — e numa curva rápida ele já está perto do limite só de virar. A traseira é leve e pouco carregada: um alívio brusco do acelerador nesse momento joga peso para a frente e solta a traseira sem aviso, o lift-off oversteer (sobre-esterço por alívio). O toque de freio com o acelerador mantido entrega a mesma transferência de peso, só que dosada e reversível: o nariz morde a linha de novo e a traseira continua no lugar.</p></div>
+
+  <div class="box"><h4>Execução na pista</h4><ol><li>Identifique a curva candidata: rápida, quase plana, sem redução de marcha.</li>
+<li>Posicione o pé esquerdo sobre o pedal do freio antes da entrada, sem pressionar.</li>
+<li>Entre no traçado normal, com o acelerador parcial mantido estável.</li>
+<li>Espere o sinal de subesterço: o carro empurra de frente e começa a fugir do ápice.</li>
+<li>Toque o freio de leve com o pé esquerdo, sem mexer no pé direito. É roçar de pastilha, não freada.</li>
+<li>Sinta o nariz apontar de volta para o ápice e mantenha a pressão mínima só o tempo necessário.</li>
+<li>Solte o freio de forma progressiva — soltura suave, nunca seca.</li>
+<li>Abra o volante o quanto antes, ainda antes de acelerar.</li>
+<li>Acelere na saída em uma única aplicação progressiva.</li></ol></div>
+
+  <div class="box"><h4>Erros comuns</h4><ul><li>Aliviar o acelerador junto com o toque de freio: vira lift-off disfarçado — peso demais na frente, traseira solta de estalo, e você perde exatamente o controle que a técnica deveria dar.</li>
+<li>Pressão demais no pedal: o pé esquerdo não tem a calibragem fina do direito; freada de verdade no meio da curva estoura o orçamento de aderência de um pneu dianteiro que já está virando — o carro empurra mais ou a traseira escapa.</li>
+<li>Usar a técnica em curva com redução de marcha: no câmbio H o pé esquerdo está ocupado na embreagem; improvisar deixa você sem pé para a embreagem ou sem freio dosado, no pior lugar possível.</li>
+<li>Segurar o toque por tempo demais: arrasta freio pela curva inteira, derruba a Vmin (velocidade mínima da curva) e mata a saída — a correção é pontual, não um estado.</li>
+<li>Soltar o freio seco quando o carro apontar: a soltura brusca devolve o peso para trás de uma vez e o carro volta a empurrar de frente bem na hora de acelerar.</li>
+<li>Reagir com reflexo de tração traseira se a traseira mexer (soltar tudo e contraesterçar): em FWD a correção de escorregão é manter ou pisar o acelerador para puxar o carro; o reflexo trocado entre plataformas é perigoso.</li></ul></div>
+
+  <div class="box"><h4>Como treinar</h4><ul><li>Base (simulador ou reta de track day, em velocidade constante): com acelerador parcial mantido, toque o freio com o pé esquerdo nas menores pressões que conseguir e solte suave. Critério de evolução: você aciona o freio sem o nariz mergulhar e sem o conta-giros ou a velocidade oscilarem de forma perceptível.</li>
+<li>Uma curva só: escolha UMA curva rápida sem redução, rode três voltas de referência no traçado normal, depois entre um pouco mais rápido até sentir o empurrão de frente e aplique o toque. Critério: o carro volta a apontar para o ápice sem você abrir mais o volante e sem aliviar o acelerador.</li>
+<li>Encurtando a correção: mesma curva, toque cada vez mais cedo e mais curto, assim que o subesterço insinuar. Critério: menos esterço total para a mesma curva a cada sessão e saída em uma única aplicação de acelerador, sem modular.</li>
+<li>Avançado (primeiro no simulador): confira na telemetria ou no replay a sobreposição real dos pedais. Critério: traço de freio baixo e curto sobreposto a um traço de acelerador estável — sem vale no acelerador durante o toque.</li></ul></div>
+
+  <div class="sinais">
+    <div class="s-certo"><h4>Está certo quando</h4><p>O nariz responde ao toque e o carro morde a linha de novo sem sacudir. A correção aparece no volante — ele ganha peso e resposta — e não no cinto: seu corpo não é jogado para a frente. A Vmin se mantém e a saída sai em uma aceleração só, sem ajuste.</p></div>
+    <div class="s-errado"><h4>Está errado quando</h4><p>Você é jogado contra o cinto no toque (pressão demais). A traseira fica leve ou escorrega de lado (você aliviou o acelerador junto, sem perceber). Ou você precisa modular o acelerador na saída — sinal de que arrastou freio tempo demais e matou a Vmin metros antes.</p></div>
+  </div>
+
+  <div class="box aviso"><h4>Atenção</h4><p>Duas ressalvas obrigatórias. Primeira: no câmbio manual padrão H, a técnica só vale em curva SEM redução de marcha — nas demais o pé esquerdo está ocupado na embreagem, e não existe terceiro pé. Segunda: a alegação popular de que frear com o pé esquerdo é sempre mais rápido foi DERRUBADA na auditoria desta pesquisa. Isto aqui é ferramenta específica de correção de subesterço em curva rápida quase plana, não um jeito novo de frear a pista inteira.</p></div>
+</article>
+
+<article class="chapter">
+  <div class="ch-head">
+    <div class="ch-num">07</div>
+    <div>
+      <h3>Punta-Tacco e Acerto de Giro</h3>
+      <div class="ch-en">Heel-and-Toe / Rev Matching &middot; <span class="badge b-exp">Consenso de escola de pilotagem</span></div>
+    </div>
+  </div>
+
+  <p class="def">Punta-tacco (heel-and-toe, "calcanhar e ponta") é reduzir marcha no meio da freada sem mandar tranco pro carro. O pé direito segue firme no freio com a planta e, durante a redução, a borda externa dá um toque curto no acelerador — o blip — pra subir o giro do motor até o ponto certo da marcha menor. Quando a embreagem volta, motor e roda já giram casados: a redução entra lisa, sem solavanco. Acerto de giro (rev matching) é esse casamento de rotações; o punta-tacco é o jeito de fazê-lo enquanto você ainda está freando forte.</p>
+
+  <div class="box fwd"><h4>Por que importa na tração dianteira</h4><p>No FWD os pneus dianteiros já acumulam frear e virar — e ainda vão acelerar na saída. Uma redução sem acerto de giro despeja o freio-motor de uma vez nessas mesmas rodas, justamente quando o orçamento de aderência delas está quase todo gasto na freada. O resultado é dianteira travando ou empurrando reto na entrada. Pior: o trail braking — a soltura gradual do freio até perto do ápice, sua principal ferramenta de rotação no FWD — fica impossível de modular, porque o tranco da redução suja a pressão do pedal. Com o giro casado, a freada continua limpa e a soltura progressiva do freio fica inteira na sua mão.</p></div>
+
+  <div class="box"><h4>Execução na pista</h4><ol><li>Posicione o pé antes da freada: planta do pé direito pronta pra cobrir o freio, borda externa alinhada com o acelerador.</li>
+<li>Freie firme e em linha reta no ponto de freada, com a planta do pé direito.</li>
+<li>Pise a embreagem com o pé esquerdo, mantendo a pressão de freio constante.</li>
+<li>Engate a marcha menor (4ª pra 3ª, por exemplo) com o carro ainda desacelerando forte.</li>
+<li>Toque o acelerador com a borda externa do pé direito — um blip curto e seco — sem aliviar a planta no freio.</li>
+<li>Solte a embreagem com o giro ainda alto: o engate tem que entrar liso, sem o carro cabecear.</li>
+<li>Devolva toda a atenção à pressão do freio e comece a soltura progressiva (trail braking) rumo ao ápice.</li></ol></div>
+
+  <div class="box"><h4>Erros comuns</h4><ul><li>Aliviar o freio durante o blip — a desaceleração oscila, o ponto de freada estoura e você chega na entrada mais rápido do que planejou.</li>
+<li>Blip cedo ou longo demais — o giro já caiu (ou passou do ponto) quando a embreagem volta; o tranco aparece do mesmo jeito e a dianteira trava ou arrasta o bico.</li>
+<li>Soltar a embreagem de uma vez sem casar o giro — o freio-motor cai inteiro nas rodas que freiam e viram; em piso sujo ou úmido isso trava a dianteira na hora.</li>
+<li>Usar a redução como freio extra — em FWD não existe roda sobrando pra absorver freio-motor; é orçamento de aderência do pneu dianteiro queimado à toa.</li>
+<li>Fazer punta-tacco só nas freadas fortes — a técnica tem que ser automática em toda redução; se não for, o tranco volta exatamente na volta rápida, quando você menos pode pagar por ele.</li>
+<li>Olhar ou pensar nos pedais durante a freada — o olho sai do ponto de entrada e a freada inteira perde referência.</li></ul></div>
+
+  <div class="box"><h4>Como treinar</h4><ul><li>Coreografia parada: carro em ponto morto com motor ligado, ou simulador com indicador de pedais na tela. Repita freio firme + embreagem + engate + blip + soltura até virar um gesto só. Critério de evolução: a pressão do freio não varia durante o blip — no simulador a barra do freio fica reta; no carro, seu tronco não balança.</li>
+<li>Linha reta em ritmo baixo, em trecho seguro do track day (dia de treino livre no autódromo): freadas de 4ª pra 3ª com punta-tacco completo. Critério: soltura da embreagem sem nenhum tranco perceptível e conta-giros subindo e encaixando sem pico nem vale.</li>
+<li>Curva de verdade em ritmo crescente: redução concluída ainda na fase forte da freada, depois trail braking até perto do ápice. Critério: carro estável na entrada, sem correção extra de volante, com Vmin (velocidade mínima da curva) igual ou melhor que a sua referência anterior.</li>
+<li>Teste de consistência: 10 voltas fazendo punta-tacco em todas as freadas, sem exceção. Critério: nenhuma redução com tranco e tempos de volta mais regulares entre si — regularidade vem antes de velocidade.</li></ul></div>
+
+  <div class="sinais">
+    <div class="s-certo"><h4>Está certo quando</h4><p>A desaceleração é uma linha contínua: o corpo vai pra frente uma vez e fica lá, sem vai-e-vem. Você ouve o motor subir e encaixar, o carro não cabeceia, o volante não pede correção — e a sua cabeça já está no ápice, não nos pés.</p></div>
+    <div class="s-errado"><h4>Está errado quando</h4><p>O carro cabeceia na soltura da embreagem e o tronco dá um segundo solavanco dentro da freada. A dianteira reclama — vibra, trava momentaneamente ou empurra reto na entrada —, o ponto de freada começa a estourar e você se pega pensando nos pedais em vez da curva.</p></div>
+  </div>
+
+  <div class="box aviso"><h4>Atenção</h4><p>Se em alguma freada o blip e a pressão do freio brigarem, o freio ganha sempre: melhor uma redução com tranco do que passar reto. Treine a coreografia parado ou no simulador antes de levar pra pista — estrear o gesto em ritmo de ataque é convite pra erro.</p></div>
+</article>
+
+<section class="part">
+  <div class="part-inner">
+    <h2>Parte III — Curva e Rotação</h2>
+    <p>Apontar o carro pra saída antes do ápice. A assinatura da pilotagem rápida em tração dianteira.</p>
+  </div>
+</section>
+
+<article class="chapter">
+  <div class="ch-head">
+    <div class="ch-num">08</div>
+    <div>
+      <h3>Traçado e Ápice Tardio</h3>
+      <div class="ch-en">Racing Line / Late Apex &middot; <span class="badge b-exp">Consenso de escola de pilotagem</span></div>
+    </div>
+  </div>
+
+  <p class="def">O traçado (racing line) é o caminho que transforma a curva no maior raio possível: entrada pelo lado de fora da pista, toque no ápice por dentro e saída abrindo até a borda externa. O ápice é o ponto em que o carro mais se aproxima do lado interno da curva. Ápice tardio (late apex) é deslocar esse ponto para mais adiante do que o centro geométrico da curva, transformando a curva num "V": o carro gira quase tudo na entrada e sai com o volante quase reto. Na prática, você troca um pouco de velocidade de entrada por uma saída mais cedo e mais forte — e é a saída que define a velocidade na reta seguinte. Quem entra bonito e sai devagar perde a reta inteira.</p>
+
+  <div class="box fwd"><h4>Por que importa na tração dianteira</h4><p>No seu hatch, os pneus dianteiros acumulam três trabalhos: frear, virar e acelerar — e cada pneu tem um orçamento fixo de aderência. Se você acelera com o volante ainda carregado, o pneu da frente não dá conta de virar e tracionar ao mesmo tempo: o carro empurra de frente e a saída morre. O ápice tardio resolve isso na origem: a rotação termina antes do ápice, o volante abre cedo e o orçamento inteiro do pneu dianteiro fica livre para tração. Tração traseira pode acelerar mais cedo porque quem traciona é o eixo de trás; em FWD esse luxo não existe. As técnicas fundamentais são as mesmas em qualquer tração — o que muda é a dosagem, o lugar e o momento. No FWD, o momento de acelerar chega mais tarde, e por isso seu ápice tende a ser mais tardio que o de um carro de tração traseira.</p></div>
+
+  <div class="box"><h4>Execução na pista</h4><ol><li>Posicione o carro no extremo externo da pista antes do ponto de freada.</li>
+<li>Freie forte em linha reta e comece a soltar o pedal de forma progressiva enquanto inicia o esterço — o freio saindo aos poucos mantém peso e aderência na dianteira e ajuda o carro a girar.</li>
+<li>Mire um ápice mais adiante do que o meio da curva; ignore o instinto de cortar por dentro cedo.</li>
+<li>Complete a rotação antes de chegar ao ápice — a Vmin (velocidade mínima da curva) acontece aí, com o nariz do carro já apontando para a saída.</li>
+<li>Abra o volante o quanto antes, ainda sem acelerar.</li>
+<li>Acelere em uma única aplicação progressiva, com o volante quase reto, e vá até o fundo sem soltar.</li>
+<li>Deixe o carro abrir naturalmente até a borda externa, usando toda a largura da pista na saída.</li></ol></div>
+
+  <div class="box"><h4>Erros comuns</h4><ul><li>Ápice cedo (no centro geométrico ou antes): você chega na saída com o volante ainda carregado, não pode acelerar e ainda arrisca sair da pista pelo lado de fora.</li>
+<li>Acelerar antes de completar a rotação: o pneu dianteiro estoura o orçamento de aderência, o carro empurra de frente (power-on push, o subesterço de acelerador) e a curva inteira alarga.</li>
+<li>Modular ou soltar o acelerador na saída: isso não é o erro, é a fatura — significa que você acelerou cedo demais ou tocou o ápice cedo metros antes.</li>
+<li>Aliviar o acelerador de forma brusca no meio da curva: o peso vai todo para a frente e a traseira leve solta sem controle (lift-off oversteer, o sobre-esterço por alívio do acelerador).</li>
+<li>Entrar rápido demais: a Vmin alta impede a rotação, o ápice foge para frente do jeito errado e a saída — que é onde se ganha tempo — vai embora junto.</li></ul></div>
+
+  <div class="box"><h4>Como treinar</h4><ul><li>Exagere o ápice tardio de propósito: entre devagar, gire tudo cedo e toque o ápice bem tarde, saindo com o volante reto. A cada sessão, antecipe um pouco o ponto de toque. Critério: o ponto de aceleração total vem cada vez mais cedo sem correção de volante na saída.</li>
+<li>Regra do acelerador de mão única: da saída da curva até o próximo ponto de freada, o acelerador só aumenta, nunca diminui — o pé desce e não volta a subir. Conte as violações por volta. Critério: zero modulações na saída em voltas consecutivas.</li>
+<li>No simulador, com telemetria ou cronômetro de trecho: compare a velocidade no FIM da reta seguinte, não a velocidade dentro da curva. Critério: velocidade de fim de reta subindo entre sessões, com o carro estável na saída.</li>
+<li>Em track day, escolha UMA curva lenta e trabalhe só ela: marque uma referência visual do ápice tardio (cone, placa, remendo no asfalto) e repita. Critério: tocar a referência em 8 de 10 voltas com o volante já abrindo ao acelerar.</li></ul></div>
+
+  <div class="sinais">
+    <div class="s-certo"><h4>Está certo quando</h4><p>A curva tem duas fases nítidas no banco: primeiro o carro gira (freio saindo, traseira leve ajudando a apontar), depois traciona. No ápice você já vê a saída pelo para-brisa, o volante abre quase sozinho e o pé direito desce em um movimento único até o fundo, sem hesitação. O carro usa toda a pista na saída sem você precisar segurar.</p></div>
+    <div class="s-errado"><h4>Está errado quando</h4><p>Você acelera e o carro responde alargando em vez de ir embora; o volante continua carregado depois do ápice; o pé direito hesita, sobe e desce na saída; ou você precisa adicionar esterço no fim da curva para não escapar da pista. Tudo aponta para o mesmo diagnóstico: ápice cedo demais ou pressa no acelerador.</p></div>
+  </div>
+
+  <div class="box aviso"><h4>Atenção</h4><p>Se errar a entrada e perceber que vai alargar, não corte o acelerador de uma vez no meio da curva: alívio brusco joga o peso para a frente e solta a traseira sem aviso. Alivie progressivo ou mantenha o pé e aceite a linha mais larga. Se o carro escorregar de frente, reduza o esterço primeiro — somar mais volante só apaga ainda mais a dianteira.</p></div>
+</article>
+
+<article class="chapter">
+  <div class="ch-head">
+    <div class="ch-num">09</div>
+    <div>
+      <h3>Rotação Completa Antes do Ápice</h3>
+      <div class="ch-en">Early Rotation &middot; <span class="badge b-aud">Auditada 3&times;0 na pesquisa</span></div>
+    </div>
+  </div>
+
+  <p class="def">Early rotation (rotação antecipada) é fazer o carro girar de verdade ainda na fase de entrada da curva, usando a soltura progressiva do freio e a transferência de peso pra dianteira — e não o volante sozinho. O objetivo é chegar no ápice com o nariz já apontado pra reta seguinte, o volante abrindo e a Vmin (velocidade mínima da curva) cumprida. Daí em diante o trabalho é um só: acelerar em uma aplicação progressiva, sem corrigir nada. Na prática, a curva deixa de ser um arco constante e vira duas fases separadas: girar primeiro, acelerar depois.</p>
+
+  <div class="box fwd"><h4>Por que importa na tração dianteira</h4><p>Na tração dianteira o pneu da frente acumula três trabalhos — frear, virar e acelerar — enquanto a traseira é leve e pouco carregada. Cada pneu tem um orçamento fixo de aderência: se você pisa com o volante ainda torto, a frente estoura esse orçamento e o carro empurra reto pra fora. Rotacionar antes do ápice concentra o trabalho de girar na fase em que a dianteira está carregada pelo freio e a traseira aliviada (ela até ajuda o giro), sobrando aderência limpa só pra tração na saída. É a diferença entre o FWD sair esticado e sair arrastando a frente.</p></div>
+
+  <div class="box"><h4>Execução na pista</h4><ol><li>Freie forte e em linha reta no ponto de freada; faça o grosso da redução de velocidade antes de virar.</li>
+<li>Vire pra dentro ainda com resto de freio, soltando o pedal aos poucos (trail braking — arrastar o freio na entrada pra manter peso e mordida na dianteira).</li>
+<li>Module a soltura do freio pra girar o carro: segurar pressão um instante a mais mantém a traseira leve e induz o sobre-esterço de entrada que aponta o nariz pro ápice. O jeito de soltar o pedal é a ferramenta de rotação.</li>
+<li>Deixe a rotação acontecer. Se faltar giro, não abra mais o volante: segure um resto de pressão no freio por um instante a mais — nunca solte o pedal de uma vez.</li>
+<li>Abra o volante assim que o carro apontar pra saída — reduzir esterço vem ANTES de tocar no acelerador.</li>
+<li>Confirme no ápice: nariz na reta seguinte, Vmin feita, volante quase reto.</li>
+<li>Acelere em uma única aplicação progressiva até a saída, sem modular nem soltar. Se precisou soltar, o erro foi metros antes.</li></ol></div>
+
+  <div class="box"><h4>Erros comuns</h4><ul><li>Acelerar antes da rotação completa: tração com o volante torto estoura o orçamento de aderência da frente e o carro empurra pra fora (power-on push — subesterço de potência). Você sai largo e ainda castiga o pneu dianteiro à toa.</li>
+<li>Soltar o freio de uma vez na entrada: o peso sai da dianteira de golpe, a frente perde mordida e o carro não gira. Você chega no ápice ainda virando e atrasa toda a aceleração.</li>
+<li>Aliviar o acelerador de forma brusca no meio da curva: o peso voa pra frente e a traseira solta sem controle — é o lift-off oversteer (sobre-esterço por alívio do acelerador) na versão descontrolada. Em vez de rotação útil, vira susto e correção.</li>
+<li>Corrigir o escorregão como se fosse tração traseira (soltar tudo e contraesterçar): em FWD o remédio é manter ou pisar o acelerador pra puxar o carro do escorregão. O reflexo trocado entre plataformas piora o giro e é perigoso.</li>
+<li>Modular ou soltar o acelerador na saída: não é problema da saída — é sintoma de que você pisou cedo demais ou não completou a rotação. Conserte a entrada, não o pé na saída.</li>
+<li>Tentar girar a traseira com potência (throttle steering — dirigir o carro girando a traseira no acelerador): isso não existe em FWD. Acelerar estica o carro, nunca gira a traseira; insistir só gasta pneu dianteiro e abre a trajetória.</li></ul></div>
+
+  <div class="box"><h4>Como treinar</h4><ul><li>Soltura do freio (simulador ou curva lenta com escape): 10 voltas treinando só o jeito de soltar o pedal. Entre com resto de freio e varie a velocidade da soltura, sem tocar no acelerador até o ápice. Evoluiu quando você muda quanto o carro gira só com a modulação da soltura, de forma repetível.</li>
+<li>Regra do volante reto: escolha uma curva de referência e proíba-se de acelerar enquanto o volante não estiver abrindo. Evoluiu quando, na telemetria ou no replay, o ponto de aceleração coincide com o volante quase reto e a saída sai sem nenhuma correção.</li>
+<li>Uma aplicação só: na mesma curva, só pise quando puder ir até o fundo de forma progressiva, sem soltar. Critério observável: zero modulação de acelerador entre o ápice e a saída por 5 voltas seguidas.</li>
+<li>Avançado, primeiro no simulador — pitch and catch (jogar e segurar): jogue o carro na entrada, deixe a traseira começar a girar e segure a rotação com o acelerador bem antes do ápice. Evoluiu quando a captura vira um movimento só e a saída fica limpa, sem zigue-zague de correções.</li></ul></div>
+
+  <div class="sinais">
+    <div class="s-certo"><h4>Está certo quando</h4><p>A curva parece curta: o carro gira cedo, no ápice o volante já está abrindo e a aceleração é uma pisada só, contínua, com o carro esticando reto na saída. Mãos calmas, nenhuma correção, traseira trabalhando junto sem assustar — e você usa toda a pista na saída porque escolheu, não porque sobrou.</p></div>
+    <div class="s-errado"><h4>Está errado quando</h4><p>Você chega no ápice ainda virando e, ao pisar, sente a frente escorregar pra fora — o volante fica leve e o carro para de responder ao esterço. Ou precisa soltar o acelerador na saída pra não sair largo. Se a traseira solta de susto quando você alivia o pé, a soltura foi brusca, não calculada.</p></div>
+  </div>
+
+  <div class="box aviso"><h4>Atenção</h4><p>Treine a indução de rotação primeiro no simulador ou em curva lenta com área de escape: alívio brusco do acelerador em curva rápida solta a traseira sem aviso. O reflexo de correção em FWD (manter ou pisar o acelerador) é o OPOSTO da tração traseira — não misture as plataformas no automático. E a sobreposição freio+acelerador com pé esquerdo serve pra corrigir subesterço em curva rápida quase plana, e no câmbio H só se aplica em curva sem redução de marcha (na redução, o pé esquerdo está na embreagem); não é verdade que frear com o pé esquerdo é sempre mais rápido.</p></div>
+</article>
+
+<article class="chapter">
+  <div class="ch-head">
+    <div class="ch-num">10</div>
+    <div>
+      <h3>Sobre-esterço de Alívio (deliberado)</h3>
+      <div class="ch-en">Lift-off Oversteer &middot; <span class="badge b-aud">Auditada 3&times;0 na pesquisa</span></div>
+    </div>
+  </div>
+
+  <p class="def">Sobre-esterço de alívio (lift-off oversteer) é soltar o acelerador de forma calculada no instante em que você vira pra curva. O alívio joga peso nos pneus dianteiros e descarrega a traseira, que já é leve no carro de tração dianteira; ela escorrega de propósito e o nariz aponta pro ápice. Não é tirar o pé por susto: é uma soltura dosada, decidida antes da curva, usada como ferramenta de rotação. Dominar a técnica é dominar a dose — quanto soltar, com que velocidade e por quanto tempo. Errar pra mais é rodada; errar pra menos é carro empurrando de frente.</p>
+
+  <div class="box fwd"><h4>Por que importa na tração dianteira</h4><p>No FWD (tração dianteira) os pneus dianteiros acumulam três trabalhos — frear, virar e acelerar — enquanto a traseira roda leve, quase de carona. Acelerar nunca gira a traseira num FWD: o acelerador só estica o carro, então não existe sobre-esterço de potência nessa plataforma. O alívio do pedal vira, portanto, uma das poucas ferramentas que você tem pra girar o carro sem freio: manda carga exatamente pra onde o trabalho acontece (a frente) e solta uma traseira que já está predisposta a escorregar. Bem dosado, ele aponta o carro ao ápice e deixa você abrir o volante mais cedo na saída.</p></div>
+
+  <div class="box"><h4>Execução na pista</h4><ol><li>Planeje a dose antes da entrada: decida quanto vai soltar o pedal, com que velocidade e por quanto tempo. A soltura pode ser parcial ou total, mas é sempre decidida antes da curva — nunca por susto.</li>
+<li>Chegue ao ponto de virada com o carro estabilizado e o acelerador parcialmente aplicado.</li>
+<li>Vire e alivie ao mesmo tempo, na dose planejada: o peso vai pra dianteira, a traseira solta e o nariz começa a apontar pro ápice.</li>
+<li>Sinta a rotação pelo banco. Se a traseira girar mais que o planejado, reaplique acelerador: em tração dianteira é o acelerador que puxa o carro do escorregão, não o contraesterço.</li>
+<li>Complete a rotação antes do ápice ou nele. A Vmin (velocidade mínima da curva) acontece aí, com o carro já apontado pra saída.</li>
+<li>Abra o volante o quanto antes, ainda sem acelerar forte: menos esterço libera aderência pra tração.</li>
+<li>Acelere uma única vez, de forma progressiva, até a saída. Se precisou soltar de novo no meio da saída, o erro foi cometido metros antes — a dose da entrada ou o momento de acelerar estavam errados.</li></ol></div>
+
+  <div class="box"><h4>Erros comuns</h4><ul><li>Aliviar brusco no meio da curva, em vez de dosar na entrada: o peso despenca na dianteira, a traseira solta sem controle e o carro roda pra dentro da curva. É o erro clássico que derruba carro de rua em curva rápida.</li>
+<li>Reagir com reflexo de tração traseira: sentir a traseira sair, soltar tudo e contraesterçar. No FWD isso agrava o giro — o correto é manter ou pisar no acelerador pra esticar o carro. Transferir o reflexo entre plataformas é perigoso.</li>
+<li>Acelerar antes de completar a rotação: o carro responde com subesterço de potência (power-on push — escapa de frente sob aceleração), sai largo e ainda cozinha o pneu dianteiro, que já faz três trabalhos.</li>
+<li>Exagerar a dose na entrada: o carro gira além do que a curva pede e você gasta a saída inteira corrigindo, em vez de acelerando.</li>
+<li>Modular ou soltar o acelerador na saída: a saída em FWD é uma aplicação única e progressiva; precisar aliviar ali denuncia entrada rápida demais ou rotação incompleta no ápice.</li>
+<li>Estrear a técnica em curva rápida: a janela de dose encolhe com a velocidade e o custo do erro vira rodada de verdade. Aprenda em curva lenta com escape ou no simulador.</li></ul></div>
+
+  <div class="box"><h4>Como treinar</h4><ul><li>Calibração de dose (simulador ou curva lenta com área de escape): entre na mesma curva repetidas vezes variando só a soltura do acelerador — um quarto, metade, pé fora. Tudo o mais igual: freada, marcha, traçado. Critério de evolução: antes de soltar o pedal, você anuncia quanto o carro vai girar — e acerta.</li>
+<li>Segurar a rotação com o pé direito (track day, curva lenta): alivie na virada, deixe a traseira começar a girar e contenha o giro reaplicando acelerador, sem contraesterço. Critério de evolução: três voltas seguidas corrigindo só com o pedal, volante quieto.</li>
+<li>Rotação completa no ápice: use o alívio na entrada e exija de si rotação terminada no ápice, volante abrindo cedo e UMA aplicação de acelerador até a saída. Critério de evolução: voltas seguidas sem nenhuma soltura entre o ápice e a saída — na telemetria do simulador, o traço do acelerador na saída é uma rampa única, sem dentes.</li>
+<li>Pitch and catch (jogar e segurar — avançado, simulador primeiro): jogue o carro na curva com o alívio, deixe a traseira girar e pegue a rotação acelerando bem antes do ápice. Critério de evolução: na mesma curva, o ponto em que você inicia a aceleração migra pra antes do ápice, sessão após sessão, sem correção na saída.</li></ul></div>
+
+  <div class="sinais">
+    <div class="s-certo"><h4>Está certo quando</h4><p>Assim que você alivia, o nariz aponta pro ápice sozinho e o carro parece girar em torno do seu banco, sem susto. Você usa menos volante pra mesma curva, abre o esterço mais cedo e a saída vira uma aceleração única, contínua, sem precisar tirar o pé.</p></div>
+    <div class="s-errado"><h4>Está errado quando</h4><p>Pra mais: você precisa de contraesterço pra segurar a traseira — a dose passou ou o alívio foi brusco. Pra menos: o carro continua empurrando de frente e você adiciona volante depois do ápice — a dose faltou ou veio tarde. E se você se pega soltando o acelerador na saída, acelerou antes de completar a rotação.</p></div>
+  </div>
+
+  <div class="box aviso"><h4>Atenção</h4><p>Errar a dose é rodada. Aprenda em simulador ou em curva lenta com área de escape antes de levar pra curva rápida. E grave o reflexo certo da plataforma: no FWD, traseira saindo se corrige mantendo ou pisando no acelerador — soltar tudo e contraesterçar, que é o instinto de quem veio de tração traseira, transforma uma rotação planejada em rodada.</p></div>
+</article>
+
+<article class="chapter">
+  <div class="ch-head">
+    <div class="ch-num">11</div>
+    <div>
+      <h3>Jogar e Segurar</h3>
+      <div class="ch-en">Pitch and Catch &middot; <span class="badge b-aud">Auditada 3&times;0 na pesquisa</span></div>
+    </div>
+  </div>
+
+  <p class="def">Jogar e segurar (pitch and catch) é o jeito rápido de fazer curva num FWD (tração dianteira: o motor manda força só nas rodas da frente, então é a frente que puxa o carro) de corrida. Você joga o carro pra dentro na entrada — o pitch — usando a soltura do freio e o alívio do acelerador pra fazer a traseira, leve, começar a girar. Em vez de esperar o carro assentar, você segura essa rotação com o acelerador — o catch — pisando bem antes do ápice. É a forma avançada que junta trail braking (entrar na curva ainda com resto de freio), a modulação da soltura do pedal e o lift-off (a traseira que solta quando você tira o pé) num movimento só. O carro entra girando e sai esticado pela tração.</p>
+
+  <div class="box fwd"><h4>Por que importa na tração dianteira</h4><p>No FWD o pneu dianteiro acumula três trabalhos — frear, virar e acelerar — enquanto a traseira é leve e pouco carregada. Acelerar nunca gira a traseira de um FWD: só estica o carro. Logo, toda a rotação precisa acontecer na entrada, de graça, usando a leveza da traseira; quanto antes a rotação termina, mais cedo o acelerador entra, e é nessa aceleração antecipada que o FWD ganha tempo. Pitch and catch é exatamente isso: rotação barata na entrada pra liberar tração cedo.</p></div>
+
+  <div class="box"><h4>Execução na pista</h4><ol><li>Freie forte e em linha reta no ponto de freada.</li>
+<li>Vire pra dentro ainda com resto de freio, soltando o pedal de forma gradual conforme adiciona esterço. O peso fica na dianteira pra virar e a traseira alivia.</li>
+<li>Jogue o carro: case a soltura final do freio com o esterço pra traseira começar a girar. É a velocidade da soltura que dosa o tamanho do giro.</li>
+<li>Deixe a traseira girar só o necessário pra apontar o nariz no ápice. A rotação tem que estar completa antes ou no ápice, nunca depois.</li>
+<li>Segure a rotação com o acelerador: pise progressivo bem antes do ápice. A tração puxa o carro pra frente e estanca o giro.</li>
+<li>Abra o volante o mais cedo possível, antes de pedir mais acelerador.</li>
+<li>Acelere em uma única aplicação progressiva até a saída. Se precisar soltar e pisar de novo, o erro foi cometido metros antes.</li></ol></div>
+
+  <div class="box"><h4>Erros comuns</h4><ul><li>Acelerar cedo demais, com a rotação incompleta: vira subesterço de aceleração (power-on push), sobrecarrega o pneu dianteiro e o carro escapa largo na saída.</li>
+<li>Aliviar o acelerador de forma brusca no meio da curva: o peso vai pra frente de uma vez e a traseira solta sem controle. Isso é rodada, não rotação.</li>
+<li>Reagir ao giro da traseira tirando o pé do acelerador, que é o reflexo de quem veio de tração traseira: em FWD isso aumenta o giro. A correção certa é manter ou pisar pra puxar o carro do escorregão.</li>
+<li>Soltar o freio de uma vez na entrada: a dianteira perde carga, o carro não aponta e entra empurrando de frente. Sem pitch não existe catch.</li>
+<li>Jogar demais o carro: a rotação passa do ponto, você gasta tempo contraesterçando e atrasa o acelerador. Perde exatamente o que a técnica deveria entregar.</li>
+<li>Esperar girar a traseira com potência na saída: isso não existe em FWD, acelerar só estica o carro. Quem confunde fica esperando uma rotação que nunca vem.</li></ul></div>
+
+  <div class="box"><h4>Como treinar</h4><ul><li>Trail braking básico, em track day (treino livre em autódromo, sem disputa) ou simulador: numa curva média conhecida, aproxime aos poucos o ponto onde o freio zera, levando a soltura cada vez mais perto do ápice. Evolução observável: o carro aponta pro ápice com menos esterço, sem empurrar de frente na entrada.</li>
+<li>Soltura como ferramenta de rotação: na mesma curva, mantenha tudo igual e varie só a velocidade de soltura do pedal de freio. Evolução observável: você provoca um giro leve e repetível da traseira só com o jeito de soltar o pedal, em três voltas seguidas iguais.</li>
+<li>Lift-off calculado (comece no simulador): em curva média, alivie o acelerador de forma medida com o volante esterçado pra apontar o nariz. Evolução observável: o carro aponta pro ápice sem correção de volante e sem ameaça de rodada.</li>
+<li>Catch com acelerador: induza a rotação na entrada e segure-a pisando progressivo antes do ápice. Evolução observável: rotação completa no ápice, volante abrindo e acelerador subindo em rampa única, sem soltar na saída.</li>
+<li>Curva completa: escolha UMA curva por sessão e monte a sequência inteira — pitch na entrada, catch antes do ápice, saída esticada. Evolução observável: três voltas seguidas com o mesmo traçado, a mesma Vmin (velocidade mínima da curva) e o acelerador em aplicação única no replay ou na telemetria.</li></ul></div>
+
+  <div class="sinais">
+    <div class="s-certo"><h4>Está certo quando</h4><p>O carro gira de graça na entrada: a traseira leve aponta o nariz pro ápice e você esterça MENOS do que o desenho da curva pede. O pé direito entra cedo e segura o giro. Na saída as mãos já estão quase retas e o acelerador sobe em rampa única, sem susto e sem correção.</p></div>
+    <div class="s-errado"><h4>Está errado quando</h4><p>Precisou adicionar volante no meio da curva: subesterço — acelerou cedo demais ou soltou o freio de uma vez. Pegou-se contraesterçando com o carro atravessado: jogou demais ou aliviou o acelerador de forma brusca. Está modulando o acelerador na saída: o erro aconteceu metros antes, na soltura do freio ou no momento de pisar.</p></div>
+  </div>
+
+  <div class="box aviso"><h4>Atenção</h4><p>Técnica avançada. Domine trail braking e lift-off isolados antes de juntar tudo. Treine primeiro em simulador ou em curva lenta com área de escape: sem ajudas eletrônicas, o catch depende só do seu pé direito, e o reflexo errado — tirar o pé com a traseira girando — piora o giro. Nunca estreie a técnica em curva rápida.</p></div>
+</article>
+
+<article class="chapter">
+  <div class="ch-head">
+    <div class="ch-num">12</div>
+    <div>
+      <h3>Abrir o Volante Cedo</h3>
+      <div class="ch-en">Steering Unwinding &middot; <span class="badge b-aud">Auditada 3&times;0 na pesquisa</span></div>
+    </div>
+  </div>
+
+  <p class="def">Abrir o volante cedo (steering unwinding, ou simplesmente "desvirar") é reduzir o ângulo de esterço o quanto antes na saída da curva, antes de pisar no acelerador. Cada grau de volante consome parte do orçamento fixo de aderência do pneu dianteiro; volante mais reto significa mais orçamento sobrando para tração. A regra cabe numa frase: primeiro desvira, depois pisa. Quanto mais cedo o volante endireita, mais cedo e mais forte você acelera sem o carro empurrar de frente.</p>
+
+  <div class="box fwd"><h4>Por que importa na tração dianteira</h4><p>Na tração dianteira o pneu da frente acumula três trabalhos: frear, virar e acelerar — e no limite ele não faz dois desses ao mesmo tempo de graça. Pisar com o volante virado é pedir tração a um pneu que ainda está gastando aderência pra virar: o resultado é o power-on push, o subesterço de aceleração que manda o carro pra fora da curva e cozinha o pneu dianteiro. Desvirar cedo é a única forma de devolver orçamento a esse pneu para ele puxar o carro da curva. No FWD, a saída começa nas mãos, não no pé.</p></div>
+
+  <div class="box"><h4>Execução na pista</h4><ol><li>Termine a rotação antes do ápice: module a soltura do freio na entrada até o nariz apontar para a saída.</li>
+<li>Passe pela Vmin (a velocidade mínima da curva) com o trabalho de virar já feito; o esterço máximo acontece na fase de entrada, antes do ápice — no ápice o volante já está quase reto e abrindo, e continua a desvirar na saída antes de acelerar.</li>
+<li>Comece a abrir o volante assim que o carro apontar para a saída, com o pé ainda fora do acelerador.</li>
+<li>Pise somente depois que as mãos começaram a desvirar: a tração só entra no espaço que o esterço liberou.</li>
+<li>Sincronize mão e pé: cada fração de volante que endireita autoriza mais uma fração de acelerador.</li>
+<li>Acelere em uma única aplicação progressiva até o fundo, sem soltar nem modular.</li>
+<li>Use toda a largura da pista na saída: deixar o carro abrir é o que permite desvirar cedo.</li></ol></div>
+
+  <div class="box"><h4>Erros comuns</h4><ul><li>Pisar com o volante virado: o carro empurra de frente (power-on push), sai largo e o pneu dianteiro superaquece — você perde a saída inteira e ainda paga em desgaste.</li>
+<li>Desvirar antes de completar a rotação: o carro não está apontado pra saída, você descobre no meio da aceleração que a curva não fecha e precisa virar de novo com o pé embaixo — o pior dos dois mundos.</li>
+<li>Virar mais o volante quando o carro empurra de frente: passado o pico de aderência do pneu, mais esterço só aumenta o arrasto e o carro vai ainda mais largo.</li>
+<li>Modular ou soltar o acelerador na saída: o erro foi cometido metros antes (rotação incompleta ou pisada cedo demais); além de perder tração, um alívio brusco no meio da curva joga peso pra frente e pode soltar a traseira sem aviso (lift-off oversteer).</li>
+<li>Apertar a saída por não usar a pista toda: linha fechada obriga a segurar esterço por mais tempo e atrasa o acelerador em toda curva, toda volta.</li></ul></div>
+
+  <div class="box"><h4>Como treinar</h4><ul><li>Mão antes do pé (básico, simulador ou track day): escolha uma curva lenta conhecida e proíba-se de tocar o acelerador antes de começar a desvirar. Critério de evolução: zero subesterço na saída e nenhuma correção de volante depois de pisar; com telemetria, o traço do acelerador só começa depois que o ângulo de volante começou a cair.</li>
+<li>Gangorra mão-pé (intermediário): trate volante e acelerador como pratos de uma balança — porcentagem de acelerador proporcional ao quanto o volante já abriu. Critério: uma única aplicação progressiva do ápice até o fim da reta, sem alívio, e pneu dianteiro sem gritar na saída.</li>
+<li>Referência de volante reto (intermediário): marque em cada curva o ponto onde o volante fica reto (placa, cone, mancha no asfalto). Critério: a cada sessão essa referência se aproxima do ápice sem aparecer correção de mão nem alívio de pé.</li>
+<li>Rotação antecipada (avançado): trabalhe a soltura do freio na entrada pra completar a rotação mais cedo e ganhar o direito de desvirar mais cedo. Critério: Vmin no mesmo ponto ou antes, volante reto mais cedo, acelerador no fundo mais cedo — tudo sem modular na saída.</li></ul></div>
+
+  <div class="sinais">
+    <div class="s-certo"><h4>Está certo quando</h4><p>O volante vai ficando leve nas mãos enquanto o pé desce, e os dois movimentos terminam quase juntos: mãos retas, pé no fundo. O carro estica pra saída sem brigar — a sensação é de ser puxado pra fora da curva, sem ajuste de mão nem de pé, com o pneu dianteiro trabalhando em silêncio.</p></div>
+    <div class="s-errado"><h4>Está errado quando</h4><p>O volante pesa e o carro empurra de frente com o pé no acelerador: o pneu dianteiro grita, a saída não vem e você se pega aliviando o pé ou virando mais a mão pra fechar a curva. Qualquer um dos dois é o mesmo diagnóstico: pisou antes de desvirar.</p></div>
+  </div>
+
+  <div class="box aviso"><h4>Atenção</h4><p>Se a traseira escorregar na saída por um alívio brusco do acelerador, a correção em tração dianteira é manter ou pisar o acelerador para puxar o carro do escorregão. Em tração traseira é o oposto (aliviar e contraesterçar) — não transfira o reflexo de uma plataforma pra outra.</p></div>
+</article>
+
+<section class="part">
+  <div class="part-inner">
+    <h2>Parte IV — Aceleração e Tração</h2>
+    <p>A disciplina do pé direito: uma aplicação só, no momento certo — e o reflexo que salva o carro quando a traseira escapa.</p>
+  </div>
+</section>
+
+<article class="chapter">
+  <div class="ch-head">
+    <div class="ch-num">13</div>
+    <div>
+      <h3>Paciência de Acelerador — Aplicação Única e Progressiva</h3>
+      <div class="ch-en">Throttle Discipline &middot; <span class="badge b-aud">Auditada 3&times;0 na pesquisa</span></div>
+    </div>
+  </div>
+
+  <p class="def">Disciplina de acelerador (throttle discipline) é entregar potência uma única vez por curva: desacelerar o suficiente antes, rotacionar o carro até o ápice e só então abrir o acelerador em uma aplicação progressiva e contínua até o fim da saída. Não é acelerar tarde — é acelerar uma vez. Se você precisou aliviar ou modular o pedal depois do ápice, o erro não está na saída: foi cometido metros antes, na freada, na velocidade de entrada ou no ponto da pisada. A saída do FWD se ganha com disciplina, não com coragem.</p>
+
+  <div class="box fwd"><h4>Por que importa na tração dianteira</h4><p>No FWD os pneus dianteiros acumulam três trabalhos: frear, virar e acelerar — e o orçamento de aderência deles é fixo. Se você usa quase tudo virando, sobra pouco para tração; pisar antes da hora gasta o pneu em subesterço de potência (power-on push: a frente empurra e o carro abre da curva). E acelerar em FWD estica o carro, nunca gira a traseira: não existe consertar o traçado com potência depois do ápice. O que você levou pra saída é o que tem.</p></div>
+
+  <div class="box"><h4>Execução na pista</h4><ol><li>Freie antes e o suficiente: chegue à entrada com velocidade que permita acelerar uma vez só. A Vmin certa (velocidade mínima da curva) é a que dispensa qualquer correção depois.</li>
+<li>Solte o freio aos poucos já virando (trail braking, a soltura gradual do freio dentro da curva): o peso fica na dianteira, o carro continua virando e a traseira leve ajuda a rotacionar.</li>
+<li>Complete a rotação antes ou no ápice. Carro apontado pra saída é o pré-requisito da pisada — sem isso, não pise.</li>
+<li>Abra o volante o quanto a pista deixar ANTES de acelerar. Menos esterço é mais aderência sobrando pra tração.</li>
+<li>Pise uma vez: aplicação progressiva e contínua, sem degraus. A pressão só aumenta, nunca volta.</li>
+<li>Case acelerador com volante: quanto mais reta a roda, mais pedal. Acelerador cheio só com o volante quase reto.</li>
+<li>Se a frente começar a empurrar, segure a progressão e abra mais o volante. Nunca solte o pé de golpe com o carro carregado.</li>
+<li>Audite a saída: precisou modular? O erro foi metros antes — freada insuficiente, entrada rápida ou pisada cedo demais. Corrija lá na volta seguinte.</li></ol></div>
+
+  <div class="box"><h4>Erros comuns</h4><ul><li>Acelerar antes de completar a rotação: subesterço de potência — a frente empurra, o carro abre, o pneu dianteiro fica sobrecarregado e a saída fica larga e lenta.</li>
+<li>Entrar rápido demais (Vmin alta): parece coragem, mas atrasa o ponto em que dá pra pisar e obriga a modular — você perde a saída inteira e a reta que vem depois.</li>
+<li>Acelerar em degraus (pisa-alivia-pisa): cada alívio joga peso pra frente, o carro nunca assenta e a tração nunca estabiliza — é o sintoma clássico de erro cometido na entrada.</li>
+<li>Soltar o acelerador de golpe no meio da curva: lift-off oversteer (sobre-esterço por alívio do pé) sem controle — o peso vai todo pra dianteira, a traseira leve solta de uma vez e você vira passageiro.</li>
+<li>Pisar com o volante ainda cheio de esterço: o pneu dianteiro gasta o orçamento de aderência virando e não sobra nada pra tração — arrasto, subesterço e desgaste à toa.</li>
+<li>Tentar consertar a saída com mais potência: em FWD acelerar estica o carro, nunca fecha o traçado — quanto mais pedal, mais largo você sai.</li></ul></div>
+
+  <div class="box"><h4>Como treinar</h4><ul><li>Regra da pisada única (simulador ou curva lenta de track day): escolha 2 ou 3 curvas e proíba qualquer alívio depois que começou a acelerar; se aliviou, a curva não valeu. Critério de evolução: número de curvas válidas por sessão subindo até a pisada única virar regra, não exceção.</li>
+<li>Exagero pedagógico: freie de propósito um pouco mais que o necessário (Vmin mais baixa) e concentre tudo em pisar mais cedo, em aplicação única. Critério: o ponto da pisada avança volta a volta sem aparecer nenhum alívio até a saída.</li>
+<li>Leitura de traço (simulador ou data logger, o registrador que grava pedais e velocidade da volta): olhe o gráfico do acelerador nas curvas-chave e conte os dentes de modulação. Critério: o traço vira uma rampa única, sem serrilhado, na maioria das voltas.</li>
+<li>Encadeamento completo (avançado): trail braking até perto do ápice, rotação completa, volante abrindo, pisada única até a saída. Critério: o tempo morto entre soltar todo o freio e começar a acelerar diminui, sem a modulação reaparecer na saída.</li></ul></div>
+
+  <div class="sinais">
+    <div class="s-certo"><h4>Está certo quando</h4><p>A saída é silenciosa: o volante abre sozinho, o pedal só sobe de pressão e o carro estica reto pra fora da curva, sem briga. A sensação é de antecipação — você já sabia onde ia pisar antes de chegar lá. Mão parada, pé subindo, carro liso.</p></div>
+    <div class="s-errado"><h4>Está errado quando</h4><p>Pé fazendo escadinha (pisa-alivia-pisa), volante cheio de correção depois do ápice, frente empurrando pra fora e aquela sensação de estar salvando a curva. Se a mão corrige e o pé hesita na saída, o erro já aconteceu metros antes — na freada ou na entrada.</p></div>
+  </div>
+
+  <div class="box aviso"><h4>Atenção</h4><p>Reflexo de plataforma: se a traseira escorregar num FWD (quase sempre por alívio brusco do pé), a correção é manter ou retomar o acelerador pra puxar o carro do escorregão. Tirar o pé e contraesterçar como em tração traseira piora o problema — não transfira esse reflexo. E nunca alivie o acelerador de golpe com o carro carregado no meio da curva: é o gatilho clássico do lift-off oversteer.</p></div>
+</article>
+
+<article class="chapter">
+  <div class="ch-head">
+    <div class="ch-num">14</div>
+    <div>
+      <h3>Correção de Derrapagem — Pé NO Acelerador</h3>
+      <div class="ch-en">FWD Slide Correction &middot; <span class="badge b-aud">Auditada 3&times;0 na pesquisa</span></div>
+    </div>
+  </div>
+
+  <p class="def">Quando a traseira escapa num carro de tração dianteira (FWD), a correção é manter ou aumentar o acelerador — nunca tirar o pé. As rodas da frente, que são as que tracionam, puxam o carro pra frente e esticam o conjunto, realinhando a traseira atrás de você. Acelerar em FWD não gira a traseira: estica o carro — por isso o gás é a ferramenta que salva o escorregão, não a que agrava. É o reflexo oposto ao de tração traseira, e por isso precisa ser construído de propósito, com repetição. Isto é rede de segurança, não técnica de volta rápida: se a traseira escapou sem você pedir, o erro aconteceu metros antes.</p>
+
+  <div class="box fwd"><h4>Por que importa na tração dianteira</h4><p>No FWD a traseira é leve e pouco carregada, e o capítulo de trail braking (soltura gradual do freio curva adentro) ensinou justamente a deixá-la mais leve ainda pra rotacionar o carro — ou seja, a traseira solta faz parte do jogo, e às vezes ela solta mais do que você pediu. O instinto natural no susto é tirar o pé, e no FWD isso é exatamente o que piora: o alívio joga ainda mais peso pra frente, descarrega a traseira e transforma um escorregão controlável numa rodada (lift-off oversteer: sobre-esterço por alívio do acelerador). Como a tração está na frente, o gás trabalha a seu favor: quanto mais o pneu dianteiro puxa, mais o carro estica e se alinha. Quem domina esse reflexo pode usar trail braking e pitch and catch (jogar o carro na curva e segurar a rotação com o acelerador) sem medo — sabe que tem como sair de qualquer exagero.</p></div>
+
+  <div class="box"><h4>Execução na pista</h4><ol><li>Perceba o escorregão no primeiro sinal: a traseira gira mais do que o volante pediu e o quadril desliza pra fora do banco.</li>
+<li>Trave o reflexo errado: o pé direito NÃO sai do acelerador. Se estava em transição de pedais, aplique gás imediatamente.</li>
+<li>Aumente o acelerador de forma progressiva: as rodas dianteiras puxam o carro pra frente e começam a esticar o conjunto.</li>
+<li>Aponte as rodas dianteiras pra onde você quer ir, com correção curta de volante — sem cruzar os braços em contraesterço longo de tração traseira.</li>
+<li>Espere a traseira assentar: você sente o carro esticar e o quadril voltar ao centro do banco.</li>
+<li>Abra o volante conforme o carro aponta e siga em UMA aplicação progressiva de gás até a saída — sem alívio, sem modulação.</li>
+<li>Aproveite a rotação extra se ela deixou o carro melhor apontado pro ápice; se deixou pior, sacrifique a saída desta curva e ajuste a entrada na próxima volta.</li></ol></div>
+
+  <div class="box"><h4>Erros comuns</h4><ul><li>Tirar o pé no susto: o alívio joga mais peso pra frente, descarrega a traseira já leve e o escorregão controlável vira rodada.</li>
+<li>Pisar no freio no meio do escorregão: soma frenagem ao pneu dianteiro que já está virando e tracionando, estoura o orçamento de aderência dele e tira o resto de carga da traseira — receita de rodada.</li>
+<li>Contraesterçar longo, estilo tração traseira: quando o gás estica o carro e a traseira assenta, o volante cruzado dispara o carro pro lado oposto — o rebote costuma ser pior que o escorregão original.</li>
+<li>Acelerar de soco em vez de progressivo: satura o pneu dianteiro de tração, o carro empurra de frente (power-on push: subesterço de potência) e você troca uma derrapagem de traseira por uma saída de pista de nariz.</li>
+<li>Tratar a correção como técnica de volta rápida: escorregão não pedido nasce metros antes, na freada ou na soltura do freio — corrigir bem e não revisar a entrada é repetir o susto a cada volta.</li>
+<li>Conhecer o reflexo só na teoria: na hora, o instinto antigo vence e o pé sai do gás sozinho; sem repetição em ambiente seguro, este capítulo não existe na pista.</li></ul></div>
+
+  <div class="box"><h4>Como treinar</h4><ul><li>Simulador ou área segura de track day, curva lenta com escape: induza sobre-esterço de entrada de propósito com uma soltura mais brusca do freio, em velocidade baixa, e corrija só com gás mantido ou crescente mais correção curta de volante. Critério de evolução: o carro estica sem rodar em 8 de cada 10 tentativas, sem o pé sair do acelerador.</li>
+<li>Simulador, sessão de contraste: alterne na mesma sessão um carro de tração traseira e o seu FWD, na mesma curva; a cada escorregão, fale em voz alta a correção da plataforma antes de executar. Critério: zero correções trocadas de plataforma numa sessão inteira.</li>
+<li>Track day, curva lenta conhecida: use trail braking um pouco mais agressivo pra deixar a traseira leve na entrada; quando ela insinuar rotação, mantenha ou aumente o gás e abra o volante. Critério: a rotação se completa antes do ápice e a saída sai em UMA aplicação progressiva, sem alívio nem modulação.</li>
+<li>Avançado, mesma curva: pitch and catch deliberado — entre com o carro jogado, traseira iniciando rotação, e segure com o acelerador bem antes do ápice. Critério: Vmin (velocidade mínima da curva) estável entre voltas e nenhuma correção de volante depois do ápice.</li></ul></div>
+
+  <div class="sinais">
+    <div class="s-certo"><h4>Está certo quando</h4><p>O escorregão para de crescer no instante em que o gás entra ou aumenta. Você sente o carro esticar: o quadril volta pro centro do banco, o volante alivia e fica quase reto sozinho, e a saída segue em uma aplicação só de acelerador, sem susto e sem rebote.</p></div>
+    <div class="s-errado"><h4>Está errado quando</h4><p>O pé direito alivia sozinho no susto e o quadril desliza ainda mais pra fora logo depois da sua 'correção'. O volante pede cada vez mais braço cruzado e, quando a traseira finalmente assenta, o carro rebate com força pro outro lado — assinatura de quem corrigiu como tração traseira.</p></div>
+  </div>
+
+  <div class="box aviso"><h4>Atenção</h4><p>O reflexo de tração traseira — aliviar o acelerador e contraesterçar — AGRAVA o escorregão no FWD. O alívio transfere ainda mais peso pra frente, descarrega a traseira que já estava leve e solta de vez; o contraesterço longo ainda arma o rebote pro lado oposto quando o carro assenta. Transferir esse reflexo entre plataformas é perigoso. Se você também pilota tração traseira, trate a troca de carro como troca de reflexo: no FWD, no susto, o pé fica NO acelerador.</p></div>
+</article>
+
+<article class="chapter">
+  <div class="ch-head">
+    <div class="ch-num">15</div>
+    <div>
+      <h3>Largada e Controle de Patinação</h3>
+      <div class="ch-en">Race Start / Launch &middot; <span class="badge b-exp">Consenso de escola de pilotagem</span></div>
+    </div>
+  </div>
+
+  <p class="def">Launch é a arrancada do carro parado: transformar giro do motor em movimento desperdiçando o mínimo possível em patinação das rodas dianteiras. A ferramenta é o equilíbrio entre rotação e embreagem — a embreagem desliza de forma controlada enquanto o pneu transmite só o que aguenta transmitir. Roda patinando não é arrancada agressiva: é carro parado fazendo barulho. Largada boa é técnica de dosagem, não de coragem; quem ganha posição na primeira reta é quem desperdiçou menos, não quem fez mais fumaça.</p>
+
+  <div class="box fwd"><h4>Por que importa na tração dianteira</h4><p>Na arrancada o peso do carro vai para trás — exatamente para fora das rodas que tracionam. O pneu dianteiro recebe menos carga no único momento em que precisaria de mais tração, então o limite de patinação em FWD é mais baixo do que a intuição sugere. E o castigo é duplo: além de sair devagar, você queima logo na largada o mesmo pneu dianteiro que vai ter que frear, virar e acelerar pela corrida inteira — em FWD ele acumula os três trabalhos. Em tração traseira o peso indo para trás ajuda a largada; em FWD ele trabalha contra você do primeiro ao último metro.</p></div>
+
+  <div class="box"><h4>Execução na pista</h4><ol><li>Posicione o carro no grid com as rodas dianteiras retas e, se a vaga permitir, fora de borracha solta e sujeira — tração na largada começa na escolha do piso.</li>
+<li>Engate a primeira e leve o giro para uma faixa intermediária, na região de torque do motor: alta o bastante para não apagar quando a embreagem morder, baixa o bastante para não estourar em patinação.</li>
+<li>Encontre o ponto de acoplamento da embreagem (onde ela começa a morder) e segure o pedal ali, com o carro carregado contra a embreagem e o giro estável.</li>
+<li>No sinal de largada, solte a embreagem até a faixa de deslizamento parcial — deslizando de forma controlada, nunca soltando de uma vez — e segure o giro estável com o pé direito.</li>
+<li>Escute e sinta: se o giro subir sem a velocidade acompanhar, é patinação. Segure ou alivie levemente o acelerador. Nunca pise mais.</li>
+<li>Quando a velocidade do carro alcançar o giro, termine de soltar a embreagem por completo e só então leve o acelerador, em uma aplicação progressiva, até o fundo.</li>
+<li>Troque para a segunda no ponto de troca normal, com a mão calma. É onde a segunda patinação costuma aparecer: se a roda chiar de novo, repita a dose — acelerador progressivo, não pedal cravado.</li></ol></div>
+
+  <div class="box"><h4>Erros comuns</h4><ul><li>Largar com giro alto demais "para garantir": vira patinação imediata, o carro fica quase parado e quem largou com menos giro passa por fora — e seu pneu dianteiro começa a corrida já degradado.</li>
+<li>Soltar a embreagem de uma vez (o chamado dump — largar o pedal seco): ou o motor apaga ou tudo vira patinação; nos dois casos você perde posições e ainda castiga embreagem e transmissão.</li>
+<li>Reagir à patinação pisando mais fundo: é o instinto errado — mais giro gera mais patinação e o carro anda menos ainda. A correção na largada é segurar ou aliviar o acelerador.</li>
+<li>Ficar com a embreagem deslizando por tempo demais, por medo de apagar: a arrancada sai lenta e a embreagem superaquece — em poucas largadas assim ela para de morder direito.</li>
+<li>Largar com o volante torto em vaga de grid em ângulo: o pouco de aderência que o pneu dianteiro tem ainda é dividido com o esterço (círculo de tração — o orçamento de aderência do pneu é um só); endireite a roda antes de pedir tração.</li></ul></div>
+
+  <div class="box"><h4>Como treinar</h4><ul><li>Base (simulador ou área segura de track day — dia de pista aberta para treino livre): arrancadas paradas repetidas variando apenas o giro de largada — baixo, médio, alto — com a embreagem solta sempre do mesmo jeito. Critério de evolução: identificar a faixa de giro em que o carro sai sem chiado prolongado e sem apagar, e repetir essa faixa em 8 de 10 largadas.</li>
+<li>Reta de track day com marcador fixo (cone ou placa): largada completa até uma velocidade-alvo. Critério: o ponto onde você atinge a velocidade-alvo se aproxima do carro e estabiliza entre tentativas, e o chiado de pneu dura menos de um segundo do início ao fim.</li>
+<li>Largada com sequência completa até a terceira marcha. Critério: nenhum chiado novo nas trocas de primeira para segunda e de segunda para terceira; o giro nunca dispara desacompanhado da velocidade no conta-giros.</li>
+<li>Avançado: largada com gatilho externo (luz do simulador ou alguém dando o sinal), simulando a pressão da prova. Critério: o tempo de reação melhora sem mudar o som da largada — se a pressa trouxe chiado de volta, a técnica ainda não está automática.</li></ul></div>
+
+  <div class="sinais">
+    <div class="s-certo"><h4>Está certo quando</h4><p>O banco empurra suas costas de forma contínua desde o primeiro metro e não para de empurrar; giro e velocidade sobem juntos no painel; o som dominante é motor carregado, não pneu. A embreagem sai do jogo cedo e o pé direito termina o trabalho sozinho, em uma aplicação só.</p></div>
+    <div class="s-errado"><h4>Está errado quando</h4><p>O giro dispara e o empurrão nas costas não vem — o carro flutua parado enquanto o motor grita; barulho de pneu mais alto que o motor; tranco seco quando a roda finalmente agarra; cheiro de borracha ou de embreagem queimada na primeira reta. Se você precisou aliviar e pisar de novo várias vezes, a dose inicial de giro estava errada.</p></div>
+  </div>
+
+  <div class="box aviso"><h4>Atenção</h4><p>Largadas paradas repetidas aquecem a embreagem rápido. Em treino, limite o número de arrancadas por sessão e ande alguns minutos entre elas para resfriar — embreagem queimada encerra o dia e a técnica não evolui com o componente degradado. E lembre: cada largada com patinação cobra a conta no fim da corrida, no mesmo pneu dianteiro que ainda precisa frear e virar.</p></div>
+</article>
+
+<section class="part">
+  <div class="part-inner">
+    <h2>Parte V — Gestão de Pneus</h2>
+    <p>Os pneus dianteiros fazem todo o trabalho. Quem os preserva no começo da prova tem carro no fim.</p>
+  </div>
+</section>
+
+<article class="chapter">
+  <div class="ch-head">
+    <div class="ch-num">16</div>
+    <div>
+      <h3>Preservação dos Pneus Dianteiros</h3>
+      <div class="ch-en">Front Tire Management &middot; <span class="badge b-exp">Consenso de escola de pilotagem</span></div>
+    </div>
+  </div>
+
+  <p class="def">Front tire management — gestão dos pneus dianteiros — é administrar temperatura e desgaste da frente ao longo do stint (o período inteiro com o mesmo jogo de pneus) para que ela ainda entregue aderência nas voltas finais. Na prática: suavizar a entrada das curvas, cortar patinação na saída e nunca sustentar subesterço, porque pneu de frente arrastando é lixa trabalhando contra você. Significa aceitar abrir mão de um pouco de ritmo nas primeiras voltas para ter carro nas últimas. É gestão estratégica central no turismo de tração dianteira.</p>
+
+  <div class="box fwd"><h4>Por que importa na tração dianteira</h4><p>Num FWD os dois pneus da frente acumulam os três trabalhos: frear, virar e acelerar — a traseira é leve e quase só acompanha. Cada pneu tem um orçamento fixo de aderência (o círculo de tração): tudo o que você pede ao mesmo tempo de freio, esterço e tração sai da mesma conta, e a conta é sempre dos dianteiros. Quem estoura esse orçamento cedo termina o stint com a frente cozida, empurrando reto em toda curva, sem defesa e sem ataque.</p></div>
+
+  <div class="box"><h4>Execução na pista</h4><ol><li>Comece o stint um degrau abaixo do limite: nas primeiras voltas, entrada mais suave, Vmin (a velocidade mínima da curva) um tico menor e zero patinação — o pneu entra em temperatura sem ser maltratado.</li>
+<li>Freie em linha reta, firme, e solte o pedal em rampa até perto do ápice — o trail braking, a freada que entra junto na curva: a soltura gradual mantém peso na frente, o carro vira com menos volante e a traseira aliviada ajuda o carro a rotacionar.</li>
+<li>Entre com menos esterço do que a vontade manda; cada grau de volante a mais é gasto direto do pneu dianteiro.</li>
+<li>Complete a rotação do carro antes do ápice, usando a soltura do freio ou um alívio calculado do acelerador — nunca mais volante.</li>
+<li>Abra o volante o quanto antes na saída, antes de pisar no acelerador.</li>
+<li>Acelere em uma aplicação única e progressiva; se a frente patinar, você pisou cedo demais ou com volante demais.</li>
+<li>Monitore o subesterço volta a volta: quando a frente começar a empurrar, recue o ponto de aceleração e tire esterço antes de pensar em atrasar o ponto de freada.</li></ol></div>
+
+  <div class="box"><h4>Erros comuns</h4><ul><li>Sustentar subesterço adicionando volante: o pneu arrasta de frente como lixa, superaquece e o carro empurra cada vez mais — você fica mais lento E destrói o pneu ao mesmo tempo.</li>
+<li>Acelerar antes de completar a rotação (power-on push, o empurrão de frente sob potência): o carro alarga a trajetória na saída e cobra do dianteiro tração e esterço juntos, estourando o orçamento do círculo de tração.</li>
+<li>Patinar na saída de curva lenta: roda dianteira girando em falso queima borracha e não ganha velocidade nenhuma — desgaste puro, sem retorno.</li>
+<li>Frear atrasado e fundo com o volante já virado: soma os dois maiores gastos de aderência no mesmo pneu e frita a entrada da curva.</li>
+<li>Modular ou soltar o acelerador no meio da saída: sinal de que o erro foi cometido metros antes, na entrada; além de lento, alívio brusco com o carro carregado joga peso pra frente e pode soltar a traseira sem controle (lift-off oversteer, a traseira que escapa quando você tira o pé de uma vez).</li>
+<li>Atacar 100% nas voltas iniciais para abrir vantagem: o ritmo ganho no começo volta multiplicado contra você quando a frente morre no fim do stint.</li></ul></div>
+
+  <div class="box"><h4>Como treinar</h4><ul><li>Saída limpa (simulador ou track day, o dia de pista aberta pra treino): escolha a curva lenta mais importante da pista, abra o volante antes de acelerar e busque 5 voltas seguidas sem nenhuma patinação de dianteira. Evoluiu quando o tempo de volta se mantém sem o chiado da frente.</li>
+<li>Entrada em rampa: numa curva média, treine soltar o freio gradualmente até perto do ápice. Evoluiu quando consegue a mesma Vmin com visivelmente menos volante — menos esterço pro mesmo resultado é pneu poupado.</li>
+<li>Stint simulado (comece no simulador): rode 10 a 15 voltas seguidas administrando a frente desde a volta 1. Evoluiu quando a diferença entre sua melhor volta e a última volta do stint diminui de sessão para sessão.</li>
+<li>Curva-termômetro no track day: eleja a curva que mais cobra a dianteira e anote, a cada saída de box, em qual volta o subesterço aparece. Evoluiu quando esse aviso chega cada vez mais tarde no stint.</li></ul></div>
+
+  <div class="sinais">
+    <div class="s-certo"><h4>Está certo quando</h4><p>Volante leve, carro respondendo ao primeiro toque de esterço. A frente não esfrega na entrada, a saída resolve em uma pisada só, e nas voltas finais do stint o carro ainda aponta pro ápice como apontava nas iniciais — você ataca no fim enquanto os outros seguram.</p></div>
+    <div class="s-errado"><h4>Está errado quando</h4><p>O volante vai pesando e o nariz empurra reto mesmo com mais esterço. Você se pega corrigindo a saída com alívios no acelerador, alargando trajetória e ouvindo a frente cantar em curva que antes era silenciosa. Pneu dianteiro gritando é orçamento de aderência sendo queimado sem retorno.</p></div>
+  </div>
+
+  <div class="box aviso"><h4>Atenção</h4><p>Não confunda gestão com reflexo de emergência. Se a traseira escapar num FWD, o caminho é manter ou até pisar o acelerador para a tração puxar o carro do escorregão; aliviar tudo e contraesterçar é reflexo de tração traseira e, transferido pro FWD, só piora a saída de traseira. E lembre da regra de Ross Bentley: as técnicas fundamentais são as mesmas em qualquer tração — o que muda é a dosagem, o lugar e o momento. Aqui, a dosagem é sempre a favor do pneu da frente.</p></div>
+</article>
+
+<article class="chapter">
+  <div class="ch-head">
+    <div class="ch-num">17</div>
+    <div>
+      <h3>Uso de Zebras</h3>
+      <div class="ch-en">Kerb Riding &middot; <span class="badge b-exp">Consenso de escola de pilotagem</span></div>
+    </div>
+  </div>
+
+  <p class="def">Kerb riding (uso de zebras) é tratar a zebra como parte da pista: a zebra interna do ápice retifica a curva e a zebra externa da saída alarga o traçado. Curva mais reta significa menos esterço, Vmin (a velocidade mínima da curva) mais alta e menos carga lateral no pneu. Em carro de turismo FWD o ataque é agressivo: a traseira é leve e pode pular a zebra sem comprometer o controle. O limite absoluto é a dianteira — ela nunca pode sair do chão, porque é nela que moram o freio, a direção e a tração.</p>
+
+  <div class="box fwd"><h4>Por que importa na tração dianteira</h4><p>No FWD o pneu dianteiro acumula frear, virar e acelerar; tudo que reduz esterço devolve orçamento de aderência pra tração e poupa o pneu que decide sua corrida. A zebra interna faz exatamente isso: retifica a curva e tira trabalho da dianteira. A traseira leve do FWD transforma a zebra em aliada — sobe, pula e volta sem desestabilizar o carro, coisa que num tração traseira pediria muito mais respeito. O risco é único e concentrado: dianteira no ar sobre zebra alta é perder freio, direção e tração ao mesmo tempo.</p></div>
+
+  <div class="box"><h4>Execução na pista</h4><ol><li>Mapeie as zebras no reconhecimento: plana e baixa é pista; alta ou serrilhada demais é obstáculo. Decida antes, não na freada.</li>
+<li>Termine a frenagem pesada antes da zebra. Chegue nela só com resto de freio, soltando o pedal de forma progressiva.</li>
+<li>Aponte a roda dianteira interna para a faixa baixa da zebra do ápice. Suba com a roda interna, não com o carro inteiro.</li>
+<li>Abra uma fração de volante ao tocar a zebra: ela retifica a curva e o esterço necessário cai.</li>
+<li>Ignore o pulo da traseira interna. Ela é leve: sobe, bate e volta sem pedir correção.</li>
+<li>Complete a rotação até o ápice, abra o volante e acelere em uma única aplicação progressiva.</li>
+<li>Use a zebra de saída como pista extra: deixe o carro abrir até a parte plana dela em vez de segurá-lo no asfalto com volante.</li>
+<li>Mantenha o acelerador se a dianteira patinar na tinta lisa da zebra; soltar de susto é o que desequilibra o carro.</li></ol></div>
+
+  <div class="box"><h4>Erros comuns</h4><ul><li>Frear em cima da zebra: o serrilhado tira a roda do chão por instantes e o pedal vira enfeite — o carro segue reto exatamente onde você mais precisava de freio e direção.</li>
+<li>Subir na parte alta e pôr a dianteira no ar: em FWD é apagão completo — sem freio, sem direção e sem tração ao mesmo tempo, até a roda voltar ao chão metros adiante.</li>
+<li>Manter esterço cheio sobre a zebra: tinta e concreto liso agarram menos que asfalto; a dianteira desliza, você adiciona volante e sai da zebra com a roda atravessada, arrastando e cozinhando o pneu dianteiro.</li>
+<li>Acelerar forte com a roda de tração ainda na zebra: ela patina no liso e agarra de estalo ao voltar pro asfalto — desgaste extra e o carro esticando pra fora da pista (subesterço de aceleração).</li>
+<li>Soltar o acelerador de susto quando a traseira pula: o alívio brusco joga peso na dianteira e solta a traseira de verdade (lift-off oversteer, o sobre-esterço por tirar o pé) — você transforma um pulo inofensivo em meia rodada.</li>
+<li>Tratar toda zebra como igual: a mesma pista mistura zebra plana de ápice com salsichão alto de chicane; subir no alto custa suspensão, bandeja e, na pior, o controle do carro.</li></ul></div>
+
+  <div class="box"><h4>Como treinar</h4><ul><li>Aproximação por incrementos (simulador ou track day, ritmo reduzido): escolha uma curva com zebra plana no ápice. Volta um: tangencie sem tocar. Voltas seguintes: ponha a roda interna na faixa baixa, um palmo a mais por vez. Evoluiu quando o toque na zebra não muda a direção do carro nem pede correção de volante, volta após volta.</li>
+<li>Zebra com resto de freio: na mesma curva, chegue na zebra ainda terminando de soltar o pedal (trail braking, a soltura gradual do freio até perto do ápice). Evoluiu quando não há travamento de roda nem coice no volante sobre a zebra, e a Vmin se mantém ou sobe sem alargar o ponto de saída.</li>
+<li>Zebra de saída em aceleração: trabalhe levar o carro até a parte plana da zebra externa com o pé descendo. Evoluiu quando a saída vira uma única aplicação contínua de acelerador, sem alívio sobre a zebra, com o volante abrindo de forma constante.</li>
+<li>Traseira no ar (primeiro no simulador): procure curvas onde a traseira interna sobe agressivo na zebra. Evoluiu quando você mantém pé e esterço estáveis durante o pulo e a correção pós-zebra tende a zero ao longo das sessões.</li></ul></div>
+
+  <div class="sinais">
+    <div class="s-certo"><h4>Está certo quando</h4><p>A zebra passa como vibração curta e seca, o volante fica mais leve e mais aberto do que quando você fazia a curva só no asfalto, e o carro sai apontado pra reta sem briga. O pulo da traseira vira paisagem: você nem reage.</p></div>
+    <div class="s-errado"><h4>Está errado quando</h4><p>Volante dando coice ou ficando vazio em cima da zebra, correção de direção no meio dela, ou o bico flutuando reto por um instante — entrou rápido demais ou pegou a parte alta. Se você alivia o pé toda vez que a traseira pula, está pagando caro por algo que era de graça.</p></div>
+  </div>
+
+  <div class="box aviso"><h4>Atenção</h4><p>Zebra alta não é traçado, é punição: dianteira no ar em FWD significa sem freio, sem direção e sem tração ao mesmo tempo. Na chuva, zebra pintada vira sabão — reduza o uso ao mínimo e nunca freie nem acelere forte sobre ela.</p></div>
+</article>
+
+<section class="part">
+  <div class="part-inner">
+    <h2>Parte VI — Corpo a Corpo</h2>
+    <p>Ultrapassar, defender e dividir curva. A corrida que acontece quando há outro carro na foto.</p>
+  </div>
+</section>
+
+<article class="chapter">
+  <div class="ch-head">
+    <div class="ch-num">18</div>
+    <div>
+      <h3>Ultrapassagem sob Frenagem</h3>
+      <div class="ch-en">Out-braking &middot; <span class="badge b-exp">Consenso de escola de pilotagem</span></div>
+    </div>
+  </div>
+
+  <p class="def">Out-braking (ultrapassar na freada) é conquistar a posição freando mais tarde que o rival e chegando primeiro à linha interna da curva. A manobra começa antes do ponto de freada: você usa o vácuo — o buraco de ar que o carro da frente abre na reta, que deixa você ganhar velocidade sem precisar de motor melhor — para emparelhar por dentro. Quem ocupa o lado de dentro no ápice é dono da curva; o rival tem que esperar. O preço é frear fora da linha ideal, onde a pista tem menos borracha e menos aderência, e aceitar uma curva pior que a da sua volta normal. Você troca uma curva perfeita pela posição.</p>
+
+  <div class="box fwd"><h4>Por que importa na tração dianteira</h4><p>Em tração dianteira os pneus da frente acumulam três trabalhos — frear, virar e acelerar — e a traseira é leve; na saída de curva você nunca vai disparar sobre ninguém. Se o FWD não ganha na saída, a zona de frenagem é O lugar de ultrapassar. E a plataforma tem uma arma natural para isso: o trail braking (entrar na curva ainda soltando o freio aos poucos) mantém peso na dianteira e ajuda o carro a girar mesmo entrando mais fundo que o normal.</p></div>
+
+  <div class="box"><h4>Execução na pista</h4><ol><li>Cole no vácuo na reta e ganhe aproximação sem gastar nada.</li>
+<li>Saia do vácuo para o lado de dentro cedo o bastante para emparelhar antes da zona de frenagem — no mínimo com o seu nariz na altura da porta dele.</li>
+<li>Freie em linha reta, forte, mais tarde que o seu ponto de freada normal — mas não tão tarde quanto o instinto pede: por dentro tem menos borracha e a roda trava mais fácil.</li>
+<li>Solte o freio gradualmente enquanto vira para o ápice; é a soltura do pedal que gira o carro e mantém peso na dianteira.</li>
+<li>Aceite uma Vmin (velocidade mínima da curva) mais baixa e um ápice mais fechado que o normal: o objetivo é colocar o carro entre o rival e o ápice, não fazer a curva perfeita.</li>
+<li>Complete a rotação até o ápice, abra o volante e só então acelere, em uma única aplicação progressiva.</li>
+<li>Segure a largura na saída sem modular o acelerador; o rival por fora vai tentar recruzar — não dê pista de graça.</li></ol></div>
+
+  <div class="box"><h4>Erros comuns</h4><ul><li>Frear no ponto de sempre estando por dentro: a faixa interna tem menos borracha; a roda trava, você passa reto e devolve a posição — ou leva os dois para fora.</li>
+<li>Dive bomb (mergulho de desespero): frear tarde demais sem estar emparelhado e usar o carro do rival de muro. Resultado prático: contato, punição ou os dois fora da curva.</li>
+<li>Chegar à zona de frenagem só com o nariz emparelhado: o rival tem o direito de fechar a linha e você termina espremido, com roda travada e sem saída.</li>
+<li>Soltar o freio de estalo ao perceber que entrou fundo demais: o peso sai da dianteira de uma vez, o carro para de virar e segue reto com o volante torto.</li>
+<li>Acelerar cedo demais para fechar a porta: o pneu dianteiro estoura o orçamento de aderência, o carro abre em subesterço e o rival recruza por baixo na saída.</li>
+<li>Olhar para o rival em vez do ápice: você freia quando ele freia e vai para onde olha — perde a referência e a curva junto.</li></ul></div>
+
+  <div class="box"><h4>Como treinar</h4><ul><li>Sozinho, na curva de freada mais forte da pista: faça a curva inteira pela faixa interna, fora da linha de borracha, no seu ponto de freada normal. Depois atrase a freada uma referência por vez (placa, início de zebra). Evolução: três voltas seguidas chegando ao ápice interno sem travar roda e sem passar reto.</li>
+<li>Ainda sozinho, trabalhe a troca: meça até onde consegue atrasar a freada mantendo o carro no ápice fechado. Evolução: atrasar o ponto de freada sem precisar de segunda pisada no freio e saindo com uma única aplicação de acelerador.</li>
+<li>No simulador, contra IA ou um amigo: pratique o pacote completo — vácuo, emparelhar, frear por dentro, segurar a saída. Evolução: ultrapassagens completadas sem contato e sem sair da pista, com a posição mantida até a curva seguinte.</li>
+<li>Em track day, com parceiro combinado: alternem ataque e defesa na mesma curva, em ritmo controlado. Evolução: o defensor nunca precisa desviar do seu movimento e você sai da curva sem correção brusca de volante.</li></ul></div>
+
+  <div class="sinais">
+    <div class="s-certo"><h4>Está certo quando</h4><p>Freada forte e reta, depois o pedal subindo aos poucos enquanto o nariz morde o ápice — o carro gira no ritmo da soltura do freio. Você vê o rival pela janela lateral antes do ápice, não pelo para-brisa. Na saída, uma única aplicação de acelerador, sem soltar, com o volante já abrindo.</p></div>
+    <div class="s-errado"><h4>Está errado quando</h4><p>Vibração e ronco de roda dianteira travando, carro seguindo reto com o volante virado, necessidade de soltar e pisar de novo no freio. Na saída, você modula o acelerador (pisa-solta-pisa) ou o rival recruza por fora — sinal de que a freada foi tarde demais ou a aceleração veio cedo demais.</p></div>
+  </div>
+
+  <div class="box aviso"><h4>Atenção</h4><p>Out-braking é a técnica com maior risco de contato do corpo a corpo. Regra de ouro: só inicie se for estar emparelhado de verdade no ápice; manobra que depende do rival desviar não é ultrapassagem, é acidente adiado. Em carro sem ajudas eletrônicas, roda travada na faixa suja não avisa duas vezes.</p></div>
+</article>
+
+<article class="chapter">
+  <div class="ch-head">
+    <div class="ch-num">19</div>
+    <div>
+      <h3>Defesa de Posição</h3>
+      <div class="ch-en">Defensive Driving &middot; <span class="badge b-exp">Consenso de escola de pilotagem</span></div>
+    </div>
+  </div>
+
+  <p class="def">Defender posição é abrir mão do traçado ideal para ocupar cedo o lado de dentro da curva, fechando a porta antes de o atacante decidir o bote. Não é reação em cima da hora: é um movimento único, claro e previsível, feito ainda na reta. Você aceita uma curva mais lenta — entrada mais fechada, Vmin (velocidade mínima da curva) menor — em troca de uma linha impassável por dentro. O preço é ritmo, e a essência da técnica é refazer essa conta a cada volta: o que custa menos agora, a posição ou o ritmo?</p>
+
+  <div class="box fwd"><h4>Por que importa na tração dianteira</h4><p>No FWD o pneu dianteiro acumula três trabalhos — frear, virar e tracionar — e a saída de curva já é o ponto fraco natural da plataforma. Defender por dentro aperta a curva, atrasa a abertura do volante e atrasa a aceleração, ou seja, amplia exatamente essa fraqueza. Por isso a defesa em tração dianteira custa mais caro na saída do que em outras trações, e o atacante esperto sabe disso: ele vai tentar o cruzamento, deixando você fechar a entrada para te passar na reta seguinte. Defender bem em FWD é administrar esse custo, não fingir que ele não existe.</p></div>
+
+  <div class="box"><h4>Execução na pista</h4><ol><li>Olhe o retrovisor na reta anterior e decida defender ANTES da zona de freada — a decisão acontece na reta, nunca durante a freada.</li>
+<li>Mova o carro para o lado de dentro cedo, em um único movimento claro, ainda em aceleração. Um movimento só: mudar de linha duas vezes é toque na certa e punição provável.</li>
+<li>Freie mais cedo e em linha reta. A linha interna é mais fechada e pede menos velocidade de entrada; chegar no ponto de freada de sempre é entrar rápido demais numa curva que não existe mais.</li>
+<li>Solte o freio de forma gradual até perto do ápice (trail braking — arrastar um resto de freio para dentro da curva). Isso mantém peso na dianteira, alivia a traseira e ajuda o carro a rotacionar mesmo na linha apertada.</li>
+<li>Aceite a Vmin menor e mantenha o carro colado por dentro até o ápice. O objetivo não é ser rápido aqui: é não deixar espaço de um carro entre você e o lado de dentro.</li>
+<li>Complete a rotação antes do ápice e abra o volante o quanto antes — só então pense em acelerar.</li>
+<li>Acelere em UMA aplicação progressiva, mesmo que comece mais tarde que o normal. Se precisar soltar o pé na saída, o erro foi cometido metros antes, na entrada.</li>
+<li>Vigie o cruzamento na saída: o atacante vai tentar passar por fora e converter em reta. Avalie na hora se defende de novo na próxima curva ou se devolve o carro ao traçado ideal para recuperar ritmo.</li></ol></div>
+
+  <div class="box"><h4>Erros comuns</h4><ul><li>Defender como reação, mexendo na zona de freada: além de perigoso e punível, é o jeito mais rápido de causar um toque. Defesa boa é movimento cedo e previsível — se o atacante já está ao lado, a porta fechou pra você, não pra ele.</li>
+<li>Frear no ponto de sempre na linha interna: o carro chega rápido demais numa curva mais fechada, empurra de frente (subesterço) e você entrega a saída — ou a vaga inteira — de bandeja.</li>
+<li>Acelerar cedo demais na linha fechada: o pneu dianteiro ainda está virando e não tem orçamento de aderência sobrando para tracionar. Resultado é o power-on push (o carro abre de frente sob aceleração), pneu dianteiro fritando e saída ainda mais lenta.</li>
+<li>Aliviar o acelerador de forma brusca no meio da curva ao ver o atacante na janela: o peso despenca pra frente, a traseira solta sem controle (lift-off oversteer) — justamente com um carro do lado. Se a traseira escapar, a correção em FWD é manter ou pisar o acelerador, nunca soltar tudo.</li>
+<li>Fechar a entrada e esquecer a saída: em FWD a ultrapassagem clássica contra quem defende é o cruzamento — o atacante abre, pega a saída melhor e te passa na reta. Quem defende a freada e sai lento só adiou a perda em uma curva.</li>
+<li>Defender toda curva, toda volta: cada defesa cobra do pneu dianteiro e do seu ritmo. O atacante nem precisa ultrapassar — espera você cozinhar o pneu e se entregar sozinho.</li></ul></div>
+
+  <div class="box"><h4>Como treinar</h4><ul><li>Pista livre (track day vazio ou simulador): rode um bloco de voltas no traçado ideal, depois um bloco fazendo as curvas de ultrapassagem pela linha interna defensiva. Critério de evolução: você consegue dizer, curva a curva, onde a linha defensiva perde tempo (entrada ou saída) e completa a volta defensiva sem precisar modular o acelerador na saída.</li>
+<li>Entrada defensiva isolada: escolha uma curva e repita só a sequência freada antecipada em linha reta + soltura gradual do freio até o ápice na linha fechada. Critério: rotação completa antes do ápice, sem segunda mordida no volante, e aceleração saindo em uma aplicação única.</li>
+<li>Ataque e defesa com parceiro (simulador ou track day com acordo prévio): alternem papéis numa curva combinada, várias voltas. Critério: o atacante confirma que viu sua defesa ainda na reta (movimento único e previsível) e você nunca muda de linha dentro da zona de freada.</li>
+<li>Jogo do custo, com o parceiro atacando de verdade: a cada volta você escolhe — defender ou abrir mão e priorizar ritmo. Critério: segurar a posição pelo número de voltas combinado sem o subesterço crescer volta a volta; se o pneu dianteiro começar a gritar mais cedo a cada curva, você está pagando caro demais pela defesa.</li></ul></div>
+
+  <div class="sinais">
+    <div class="s-certo"><h4>Está certo quando</h4><p>A decisão de defender nasce na reta, com calma, e vira um movimento só. A freada acontece em linha reta, o carro vira na linha fechada sem briga com o volante, e a aceleração sai em um movimento único mesmo começando tarde. No fim de cada volta você sabe exatamente quanto pagou de ritmo e por quê — a defesa é uma escolha, não um susto.</p></div>
+    <div class="s-errado"><h4>Está errado quando</h4><p>Você se pega reagindo ao vulto no retrovisor já dentro da zona de freada. Precisa de segunda correção de volante pra fazer a curva interna, o carro empurra de frente na saída e você solta ou modula o acelerador pra ficar na pista. O pneu dianteiro reclama mais a cada volta — e o atacante cruza por fora e te passa na reta seguinte, sinal de que você defendeu a entrada e entregou a saída.</p></div>
+  </div>
+
+  <div class="box aviso"><h4>Atenção</h4><p>Mudar de direção dentro da zona de freada é a forma mais rápida de causar um acidente — e costuma ser punida. A regra prática: um movimento defensivo só, feito cedo, previsível para quem vem atrás. Se o atacante já emparelhou por dentro, aquela curva é dele: abra mão, monte o cruzamento e dispute a posição na saída, onde o erro vai ser dele, não seu.</p></div>
+</article>
+
+<article class="chapter">
+  <div class="ch-head">
+    <div class="ch-num">20</div>
+    <div>
+      <h3>Corrida Lado a Lado</h3>
+      <div class="ch-en">Side-by-side Racing &middot; <span class="badge b-exp">Consenso de escola de pilotagem</span></div>
+    </div>
+  </div>
+
+  <p class="def">É dividir a mesma curva com outro carro, cada um abrindo mão de parte do traçado ideal. Você pilota com menos pista, num traçado comprometido, e precisa saber onde o rival está mesmo quando ele some da sua visão. O objetivo não é vencer a curva: é sair dela com o carro estável e a disputa viva para a próxima freada. Quem divide curva aceita curva mais lenta; quem não aceita transforma disputa em abandono duplo.</p>
+
+  <div class="box fwd"><h4>Por que importa na tração dianteira</h4><p>No FWD o pneu dianteiro já acumula três trabalhos — frear, virar e acelerar — e o traçado comprometido do lado a lado cobra ainda mais de um orçamento de aderência que já está cheio. As ferramentas naturais de rotação do FWD viram risco com um carro do lado: um alívio brusco do acelerador solta a traseira na direção do rival, e acelerar cedo demais gera subesterço que alarga o carro para dentro do espaço dele. Por isso o lado a lado em FWD pede Vmin (velocidade mínima da curva) menor, rotação completa antes do ápice e uma única aplicação progressiva de acelerador. É disciplina, não improviso.</p></div>
+
+  <div class="box"><h4>Execução na pista</h4><ol><li>Registre o rival antes do ponto de freada: espelho e visão periférica ainda na reta. Decida ali se vai por dentro ou por fora — nunca no meio da freada.</li>
+<li>Freie mais cedo e mais em linha reta que o normal. Traçado comprometido tem menos pista para corrigir erro; guarde margem de freio.</li>
+<li>Suavize o trail braking (soltar o freio aos poucos já virando, para manter peso na dianteira): com carro do lado, a rotação precisa ser mais gentil e estar completa antes do ápice.</li>
+<li>Aceite uma Vmin menor que a sua referência de volta solo. Por dentro você não tem a saída larga; por fora você não tem o ápice.</li>
+<li>Mantenha um carro de largura. Se o rival sumiu da janela, assuma que ele continua lá até ter certeza do contrário.</li>
+<li>Segure o pé estável no meio da curva. Nada de alívio brusco do acelerador: lift-off oversteer (a traseira que solta quando você tira o pé de repente) aqui significa traseira em cima do carro do rival.</li>
+<li>Abra o volante o quanto a posição do rival permitir e só então acelere — uma aplicação só, progressiva, mais tarde que o normal.</li>
+<li>Ceda se a conta não fechar: se você está por fora e ele tem o ápice, alivie o esterço, entregue a posição e arme o bote para a próxima freada. Posição se recupera; corrida abandonada, não.</li></ol></div>
+
+  <div class="box"><h4>Erros comuns</h4><ul><li>Frear no ponto de freada da volta solo com traçado comprometido — você chega rápido demais numa curva onde não há pista para corrigir; o subesterço leva o carro para cima do rival ou para fora.</li>
+<li>Aliviar o acelerador de susto ao ver o rival na janela — alívio brusco no meio da curva joga peso para a frente e solta a traseira sem controle, na direção do outro carro.</li>
+<li>Acelerar cedo com o volante ainda torto na linha interna — power-on push (o carro empurrando de frente sob aceleração) alarga a trajetória direto para o espaço do rival.</li>
+<li>Esquecer o rival que saiu do espelho — fechar a porta em cima de um carro que ainda está lá é a forma mais comum de contato lado a lado.</li>
+<li>Olhar para o carro do lado em vez de para a saída — o carro vai aonde o olho vai; você converge e provoca o toque que queria evitar.</li>
+<li>Insistir por fora sem ter ganhado a frente — na saída a pista acaba para você primeiro; ou cede tarde demais ou vira abandono duplo.</li></ul></div>
+
+  <div class="box"><h4>Como treinar</h4><ul><li>Simulador, sozinho: rode voltas inteiras só pela linha interna apertada, depois só pela externa, fingindo um rival do lado. Critério de evolução: Vmin estável volta após volta e saída em uma única aplicação de acelerador, sem precisar modular.</li>
+<li>Simulador multiplayer ou sala privada com parceiro: rodem lado a lado em ritmo reduzido (combinem algo como 7 décimos do ritmo) mantendo um carro de largura por sequências de curvas. Critério: dez voltas seguidas sem correção brusca de volante e sem variação repentina da distância lateral.</li>
+<li>Track day com parceiro de confiança: alternem por dentro e por fora na mesma curva, subindo o ritmo aos poucos. Critério: os dois saem da curva acelerando juntos, sem que nenhum precise frear ou soltar o pé no meio.</li>
+<li>Corrida de treino (simulador ou bateria combinada em track day): escolha de antemão uma curva onde você vai ceder se estiver por fora. Critério: zero contatos na sessão e capacidade de relatar, depois, onde o rival estava em cada fase da curva disputada — entrada, ápice e saída.</li></ul></div>
+
+  <div class="sinais">
+    <div class="s-certo"><h4>Está certo quando</h4><p>Curva feia, carro calmo: freada mais cedo, mãos quietas, pé estável, e você sabe onde o rival está sem virar a cabeça. A saída sai numa aceleração só, os dois carros saem inteiros e a disputa continua viva para a próxima freada.</p></div>
+    <div class="s-errado"><h4>Está errado quando</h4><p>Você se assusta com o rival que ainda estava ali, solta o acelerador no meio da curva e sente a traseira dar um passo para o lado, ou precisa abrir o volante de repente na saída. É tudo o mesmo erro: entrou rápido demais para uma curva que era dividida.</p></div>
+  </div>
+
+  <div class="box aviso"><h4>Atenção</h4><p>Reflexo de plataforma: se o carro escorregar com um rival do lado, a correção em FWD é manter ou pisar o acelerador para puxar o carro do escorregão. Tirar o pé e contraesterçar é reflexo de tração traseira e, aqui, piora tudo. E vale a regra de gestor na pista: lado a lado não se vence na curva em disputa — se vence chegando inteiro na saída.</p></div>
+</article>
+
+<div class="page metodo fontes">
+  <h2 class="sec">Método e fontes</h2>
+  <p><b>Como este manual foi produzido:</b> a pergunta ("quais técnicas o piloto de turismo de tração dianteira precisa dominar?") foi decomposta em 5 ângulos de busca; 18 fontes foram lidas na íntegra; 88 afirmações técnicas foram extraídas e as 25 centrais passaram por auditoria adversarial — cada uma atacada por 3 verificadores independentes instruídos a refutá-la. 20 afirmações sobreviveram (3&times;0) e 5 foram derrubadas, entre elas "frear com o pé esquerdo é sempre mais rápido" e "tração dianteira não subesterça por natureza, é só acerto de carro". Os 20 capítulos foram então redigidos individualmente, revisados um a um por revisor técnico e submetidos a uma auditoria final de consistência do conjunto — que apontou uma contradição no capítulo 12, corrigida nesta edição.</p>
+  <p><b>O que ficou de fora de propósito:</b> técnicas exclusivas de tração traseira que não se aplicam — girar a traseira com o acelerador (sobre-esterço de potência, base do drift) e o reflexo de correção "aliviar e contraesterçar", que na tração dianteira agrava o escorregão (ver capítulo 14).</p>
+  <h2 class="sec" style="margin-top:8mm">Fontes principais</h2>
+  <ol>
+    <li>Speed Secrets (Ross Bentley) — speedsecrets.com/q-how-should-i-adapt-my-driving-to-a-front-wheel-drive-car</li>
+    <li>Speed Secrets / Winding Road — windingroad.com/articles/features/speed-secrets-fwd-vs-rwd</li>
+    <li>Grassroots Motorsports — conselhos de piloto profissional para FWD — grassrootsmotorsports.com/articles/make-your-front-wheel-drive-car-faster-advice-pro-</li>
+    <li>Randy Pobst sobre subesterço em FWD — grassrootsmotorsports.com/articles/randy-pobst-front-wheel-drive-understeer</li>
+    <li>Driver61 — freio com pé esquerdo — driver61.com/uni/left-foot-braking</li>
+    <li>Driver61 — pilotando carros FWD — driver61.com/sim-racing/sim-fwd-cars</li>
+    <li>The Physics of Racing — círculo de tração — miata.net/sport/Physics/07-Circle.html</li>
+    <li>NASA Speed News — gestão de pneus de corrida — nasaspeed.news/tech/suspension/tire-management</li>
+    <li>Blayze — corpo a corpo avançado — blayze.io/blog/car-racing/racecraft-201-advanced-wheel-to-wheel-racing</li>
+    <li>Blayze — defesa de posição — blayze.io/blog/car-racing/defend-your-position-on-track</li>
+  </ol>
+</div>
+
+</body>
+</html>
