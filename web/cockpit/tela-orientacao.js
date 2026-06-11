@@ -97,17 +97,12 @@ function orientarPiloto(pts, folga) {
                        a[1] + (p[0] - a[0]) * sin + (p[1] - a[1]) * cos]);
 }
 
-const GRAFICO_FREIO_SVG = `
-  <svg viewBox="0 0 460 240" style="width:100%;overflow:visible">
-    <line x1="8" y1="218" x2="452" y2="218" stroke="oklch(30% 0 0)" stroke-width="2"/>
-    <path d="M 22 218 C 70 36, 180 28, 248 92 C 304 144, 366 200, 436 216"
-          fill="none" stroke="oklch(68% 0.26 27)" stroke-width="7" stroke-linecap="round"/>
-    <path d="M 22 218 C 80 92, 160 84, 218 134 C 264 172, 308 208, 352 216"
-          fill="none" stroke="oklch(80% 0.22 145)" stroke-width="8" stroke-linecap="round"
-          style="filter:drop-shadow(0 0 14px oklch(80% 0.22 145 / .45))"/>
-    <text x="8" y="18" font-family="Inter,system-ui" font-size="17" font-weight="800"
-          letter-spacing="3" fill="oklch(58% 0 0)">PRESSÃO NO PEDAL · SUA ÚLTIMA PASSAGEM × MELHOR</text>
-  </svg>`;
+// O gráfico de pressão do pedal (FREIA MENOS) só pode existir com sensor de
+// pedal INSTALADO e desenhado da passagem real — regra Flávio 09/06 ("sem
+// sensor, o sistema só infere pelo Vmin e mostra o verbo sem curva"). O SVG
+// estático que ficava aqui furava a regra (curvas inventadas, iguais pra
+// qualquer passagem) e foi removido em 11/06 (proposta treinos aprovada).
+// Quando o sensor chegar, o gráfico volta desenhado dos dados reais.
 
 export function criarTelaOrientacao({ container } = {}) {
   const doc = (container && container.ownerDocument) || document;
@@ -189,8 +184,7 @@ export function criarTelaOrientacao({ container } = {}) {
       raiz.dataset.modo = 'curva';
       raiz.querySelector('.verbo').innerHTML = `${o.verbo}<br><b>${o.destaque}</b>`;
       const dado = raiz.querySelector('.dado');
-      if (o.grafico === 'freio') dado.innerHTML = GRAFICO_FREIO_SVG;
-      else if (o.quanto != null) dado.innerHTML = `${o.quanto}<small>${o.un || ''}</small>`;
+      if (o.quanto != null) dado.innerHTML = `${o.quanto}<small>${o.un || ''}</small>`;
       else dado.innerHTML = '';
       desenharCurva(segment, o);
       raiz.dataset.on = '1';

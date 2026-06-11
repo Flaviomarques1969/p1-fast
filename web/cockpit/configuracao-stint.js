@@ -6,6 +6,7 @@
 //   - Tudo persistido pra revisão pós-stint.
 
 import { listarModos, janelaParaModo, ENVELOPE_DEFAULT_BUBI, ModoStint } from './shift-light-modos.js';
+import { listarTreinos, treinoPorFoco } from './catalogo-treinos.js';
 
 const SUPABASE_URL = 'https://fvhwltzhytpnhlqbttmd.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2aHdsdHpoeXRwbmhscWJ0dG1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTExNDAsImV4cCI6MjA5MzM4NzE0MH0._ZpxksUnuVFhLzCB5x7bBiZ_VLQQR5cH4A1T-0-mvrA';
@@ -22,6 +23,10 @@ const plano = {
   voltas: 10,
   paradas: [],       // [{ volta, motivo }]
 };
+
+// Brief do treino (decisão 11/06): o piloto precisa VER o brief da habilidade
+// antes de aprovar — o "como fazer" se ensina parado; em movimento vai só o verbo.
+let briefVisto = false;
 
 // ── Render dos cartões ────────────────────────────────────────
 
@@ -108,11 +113,72 @@ function renderEnvelope() {
 
 function atualizarBotoes() {
   const btn = document.getElementById('btnAprovar');
-  btn.disabled = !modoSelecionado;
+  // Treinar habilidade exige foco escolhido + brief visto (antes dava pra
+  // aprovar treino sem foco — o painel ficava sem ter o que armar).
+  const treinoIncompleto = plano.proposito === 'treinar' && (!plano.foco || !briefVisto);
+  btn.disabled = !modoSelecionado || treinoIncompleto;
   btn.style.setProperty('--cor-ativa-envelope', `var(--cor-${modoSelecionado || 'normal'})`);
   if (modoSelecionado) {
     btn.style.background = `var(--cor-${modoSelecionado})`;
   }
+}
+
+// ── Catálogo de treinos → chips + brief ───────────────────────
+
+function renderChipsTreinar() {
+  const grupo = document.getElementById('subTreinar');
+  if (!grupo) return;
+  grupo.innerHTML = '';
+  const treinos = listarTreinos();
+  const mkChip = (t) => {
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (t.grupo === 'tecnica' ? ' chip--tecnica' : '');
+    chip.dataset.foco = t.id;
+    chip.innerHTML = `${t.rotulo}<span class="chip__etq">${t.etiqueta === 'proxy' ? 'PROXY' : 'PLENO'}</span>`;
+    return chip;
+  };
+  for (const t of treinos.filter(t => t.grupo === 'tecnica')) grupo.appendChild(mkChip(t));
+  const div = document.createElement('div');
+  div.className = 'subescolha__divisor';
+  div.textContent = '6 pontos do trecho';
+  grupo.appendChild(div);
+  for (const t of treinos.filter(t => t.grupo === 'ponto')) grupo.appendChild(mkChip(t));
+}
+
+function renderBriefTreino(foco) {
+  const box = document.getElementById('briefTreino');
+  if (!box) return;
+  const t = treinoPorFoco(foco);
+  if (!t) { box.style.display = 'none'; return; }
+  briefVisto = false;
+  box.innerHTML = `
+    <div class="brief__titulo">${t.selo}
+      <span class="brief__etq">${t.etiqueta === 'proxy' ? 'MEDIÇÃO POR APROXIMAÇÃO' : 'MEDIÇÃO PLENA'}</span>
+      <span class="brief__etq">Manual: cap. ${t.capitulos.join(' + ')}</span>
+    </div>
+    <div class="brief__texto">${t.brief.oQueE}</div>
+    <div class="brief__sub">O que a IA mede neste stint</div>
+    <ul>${t.brief.oQueMede.map(m => `<li>${m}</li>`).join('')}</ul>
+    <div class="brief__sub">Como aparece na tela</div>
+    <div class="brief__texto">${t.brief.comoAparece}</div>
+    <div class="brief__texto">Meta do stint: REPETIR, não cravar — aprendeu = 3 de 4 passagens dentro da janela. A IA cala no trecho que assentou e recua se você saturar.</div>
+    ${t.brief.ressalva ? `<div class="brief__ressalva">${t.brief.ressalva}</div>` : ''}
+    <button type="button" class="brief__ok" id="btnBriefOk">Entendi o treino — liberar aprovação</button>
+  `;
+  box.style.display = 'block';
+  document.getElementById('btnBriefOk').addEventListener('click', (e) => {
+    briefVisto = true;
+    e.target.classList.add('is-ok');
+    e.target.textContent = 'Treino entendido — aprovação liberada';
+    atualizarBotoes();
+  });
+  atualizarBotoes();
+}
+
+function esconderBriefTreino() {
+  const box = document.getElementById('briefTreino');
+  if (box) box.style.display = 'none';
+  briefVisto = false;
 }
 
 // ── Gravar envelope no banco ──────────────────────────────────
@@ -194,6 +260,9 @@ function selecionarProposito(slug) {
     const ligado = aberto && aberto.querySelector('.chip.is-on');
     plano.foco = ligado ? ligado.dataset.foco : null;
   }
+  // brief só existe no propósito treinar
+  if (slug === 'treinar' && plano.foco) renderBriefTreino(plano.foco);
+  else esconderBriefTreino();
   atualizarBotoes();
 }
 
@@ -208,6 +277,8 @@ function ligarPropositos() {
       grupo.querySelectorAll('.chip').forEach(c => c.classList.remove('is-on'));
       chip.classList.add('is-on');
       plano.foco = chip.dataset.foco;
+      // Treino escolhido → brief obrigatório antes de liberar o Aprovar.
+      if (grupo.id === 'subTreinar') renderBriefTreino(plano.foco);
       atualizarBotoes();
     });
   });
@@ -333,6 +404,7 @@ async function carregarVidaUtil() {
 
 renderModos();
 selecionarModo('agressivo'); // sugestão default = Agressivo (decisão Flávio 2026-05-29)
+renderChipsTreinar();        // chips nascem do catálogo canônico (11/06)
 ligarPropositos();
 selecionarProposito('livre'); // padrão natural: rodar livre
 ligarVoltasParadas();

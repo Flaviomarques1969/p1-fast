@@ -31,6 +31,8 @@ import { criarT3000Watchdog } from './t3000-watchdog.js';
 import { OportunidadeTrecho } from './oportunidade-trecho.js';
 import { criarTelaOrientacao } from './tela-orientacao.js';
 import { CoreografiaVolta } from './coreografia-volta.js';
+// ── Treino de técnica (Stint Revestido — autorização Flávio 11/06) ──
+import { resolvePlanoStint, TreinoStint } from './treino-stint.js';
 import { APICES_SEMENTE_BRASILIA } from './apices-semente-brasilia.js';
 import { onSample } from './cloud-bridge.js';
 // segments-loader/melhores-loader importam Supabase via esm.sh — dynamic
@@ -82,8 +84,26 @@ const BUBI_LIMITS = {
 const cockpitState = new CockpitState();
 attachRendererToDocument(cockpitState, document);
 
+// ── Treino de técnica armado pelo Planejamento do Stint (11/06) ──
+// O painel passa a LER o plano gravado (precedente: p1fast-modo-stint-v1).
+// Plano ausente, "livre" ou "testar" → painel byte-idêntico ao de hoje.
+// ?treino=<foco> arma sem Planejamento (validação de bancada, só leitura).
+const _planoStint = resolvePlanoStint();
+let treinoStint = null;
+if (_planoStint?.proposito === 'treinar' && _planoStint.foco) {
+  try { treinoStint = new TreinoStint({ foco: _planoStint.foco, plano: _planoStint }); }
+  catch (e) { console.warn('[treino] não armou:', e?.message); }
+}
+
 // ── Orientação por trecho (coreografia 09/06) ─────────────────
 const oportunidade = new OportunidadeTrecho();
+if (treinoStint) {
+  oportunidade.setFoco({
+    subs: treinoStint.subsFoco(),
+    usaVmin: !!treinoStint.treino.usaVmin,
+    degrauFn: (difM, segId) => treinoStint.aplicarDegrau(difM, segId),
+  });
+}
 const telaOrientacao = criarTelaOrientacao({});
 let coreografia = null;
 // tempos de volta locais (pro resumo na reta longa)
@@ -164,7 +184,12 @@ setInterval(() => alertasCriticos.tick(), 500);
 
 // Empurrador das 17 mensagens pedagógicas (decisão Flávio 27/05/2026).
 // Plugado nos eventos delta-calculado + apice-passagem disparados pelo bridge.
-const empurrarMsgPedagogica = criarEmpurradorDeMensagens({ cockpitState });
+// Com treino armado, o filtro segura mensagens fora do foco (válvula: erro
+// grave fora do foco fura 1 vez — decisão Flávio 11/06).
+const empurrarMsgPedagogica = criarEmpurradorDeMensagens({
+  cockpitState,
+  filtro: treinoStint ? (msg, ev) => treinoStint.filtroMensagem(msg, ev) : null,
+});
 
 // Orquestrador shift light v2 — instanciado quando a curva carrega.
 let shiftOrquestrador = null;
@@ -210,8 +235,15 @@ const bridge = new LiveDataBridge({
   onTrechoEvent: (ev) => {
     if (!ev) return;
     if (coreografia) coreografia.evento(ev);
-    if (ev.type === 'delta-calculado') oportunidade.registrarDelta(ev);
+    if (ev.type === 'delta-calculado') {
+      oportunidade.registrarDelta(ev);
+      // Motor pedagógico do treino: consistência, falhas, consolidação.
+      if (treinoStint) treinoStint.registrarDelta(ev);
+    }
     if (ev.type === 'apice-cruzou') oportunidade.registrarApice(ev);
+    // Ponto de freada REAL (metros desde a entrada) — era medido e morria
+    // órfão; vira a métrica do treino de frenagem (conserto 11/06).
+    if (ev.type === 'freada-iniciou' && treinoStint) treinoStint.registrarFreada(ev);
     // Nova melhor passagem na sessão → a marca OURO da orientação passa a
     // apontar pra ELA (antes ficava na referência do boot até recarregar).
     if (ev.type === 'passagem-salva' && ev.ref) {
@@ -220,7 +252,7 @@ const bridge = new LiveDataBridge({
     // Toda passagem fechada (melhor ou não) vira o hábito mais recente do
     // piloto — antes só as "novas melhores" alimentavam as marcas VOCÊ.
     if (ev.type === 'passagem-fechada') {
-      oportunidade.registrarPassagem({ segmentId: ev.segmentId, pontos: ev.pontos });
+      oportunidade.registrarPassagem({ segmentId: ev.segmentId, pontos: ev.pontos, vminKmh: ev.vminKmh });
     }
     // Espelha eventos básicos pro canal da nuvem (tela ASSISTIR no app).
     if (ev.type === 'entrada-cruzou') {
@@ -385,6 +417,9 @@ bridge.ingestImuGps = (envelope) => {
         },
         onOrientacao: (seg, prog) => {
           if (mensagemGraveAtiva()) { telaOrientacao.esconder(); return; }
+          // Treino: calibração (2 passagens), trecho consolidado/saturado e
+          // consolidação pré-box NÃO recebem meta nova — painel padrão.
+          if (treinoStint && !treinoStint.deveOrientar(seg.id)) { telaOrientacao.esconder(); return; }
           const o = oportunidade.getOrientacao(seg.id);
           if (!o) { telaOrientacao.esconder(); return; } // 1ª volta / sem perda → painel
           if (!telaOrientacao.visivel() || telaOrientacao._segAtual !== seg.id) {
@@ -414,6 +449,8 @@ bridge.ingestImuGps = (envelope) => {
               }
               const inicioVolta = voltas.inicioTs;
               voltas.n = voltaN; voltas.inicioTs = agora;
+              // Consolidação pré-box do treino depende da volta atual.
+              if (treinoStint) treinoStint.setVoltaAtual(voltaN);
               // Tela ASSISTIR: a Central calcula o tempo da volta pela
               // diferença entre duas chegadas consecutivas (tWall).
               publishEvento({ tipo: 'volta', n: voltaN });
@@ -826,12 +863,28 @@ setInterval(() => {
   } catch {}
 }, 1000);
 
+// Selo do modo TREINO na barra operacional (fora do palco de ações).
+// Único elemento visual novo do treino: responde "estou treinando? de quê?".
+// Selo apagado = treino NÃO armado (mitigação do plano preso ao navegador).
+function atualizarSeloTreino() {
+  const el = $('seloTreino');
+  if (!el) return;
+  if (treinoStint) {
+    el.textContent = treinoStint.seloTexto();
+    el.style.display = 'inline-block';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
 // botão de início
 window.addEventListener('DOMContentLoaded', () => {
   const btn = $('btnConnect');
   if (btn) btn.addEventListener('click', connectAndRun);
   setStatus('aguardando você clicar em Autorizar', 'warn');
   log('p1t4000 — cockpit ao vivo. Clica "Autorizar T3000 via WebUSB" pra começar.');
+  atualizarSeloTreino();
+  if (treinoStint) log(`treino armado: ${treinoStint.seloTexto()} (origem: ${_planoStint.origem})`);
   // MODO SEM FIO: ?semfio — recebe amostras pela nuvem (Central/simulador transmite).
   if (new URLSearchParams(location.search).has('semfio')) {
     setStatus('modo sem fio — recebendo pela nuvem', 'warn');
@@ -892,4 +945,5 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // Expose pra DevTools
-window.__t3 = { t3, cockpitState, bridge, oportunidade, getCoreografia: () => coreografia, telaOrientacao };
+window.__t3 = { t3, cockpitState, bridge, oportunidade, getCoreografia: () => coreografia, telaOrientacao,
+                treinoStint, planoStint: _planoStint };

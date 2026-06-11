@@ -185,10 +185,13 @@ export function listarMensagens() {
  *     if (ev.type === 'apice-passagem') empurrarMsg.setUltimoApice(ev);
  *   }
  */
-export function criarEmpurradorDeMensagens({ cockpitState, getRecordeAbsoluto = () => null } = {}) {
+export function criarEmpurradorDeMensagens({ cockpitState, getRecordeAbsoluto = () => null, filtro = null } = {}) {
   if (!cockpitState) throw new Error('mensagens-pedagogicas: cockpitState obrigatório');
   let _ultimoApice = null;
   let _melhorStintPorSegmento = new Map(); // segmentId → menorTempoS visto neste stint
+  // Filtro opcional (modo TREINO, 11/06): recebe (msg, evDelta) e devolve a
+  // mensagem (passa), outra mensagem (substitui) ou null (segura pro box).
+  let _filtro = typeof filtro === 'function' ? filtro : null;
 
   function empurrar(evDelta) {
     if (!evDelta) return;
@@ -208,17 +211,23 @@ export function criarEmpurradorDeMensagens({ cockpitState, getRecordeAbsoluto = 
       }
     }
 
-    const msg = decidirMensagemPedagogica({
+    let msg = decidirMensagemPedagogica({
       resultadoDelta: evDelta,
       contextoApice: _ultimoApice,
       primeiraPassagem: false,
       recordeAbsolutoS: recordeAbsoluto,
       bateuMelhorStint,
     });
+    if (msg && _filtro) {
+      try { msg = _filtro(msg, evDelta); } catch {}
+    }
     if (msg) {
       try { cockpitState.showMessage({ tipo: msg.tipo, texto: msg.texto }); } catch {}
     }
   }
+
+  // Troca o filtro em runtime (testes / treino armado depois do boot).
+  empurrar.setFiltro = (fn) => { _filtro = typeof fn === 'function' ? fn : null; };
 
   // Permite que o caller atualize o último ápice antes do delta-calculado chegar.
   empurrar.setUltimoApice = (ev) => {

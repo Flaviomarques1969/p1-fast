@@ -155,6 +155,58 @@ export function checkCriticalAlerts(sample, limits = DEFAULT_LIMITS) {
   return null;
 }
 
+// ── Vmin + sub-trechos por eventos reais (conserto 11/06) ─────
+//
+// Defeito de origem: o buffer etiquetava o sub pela FASE do detector, e a
+// fase pós-ápice ('apice-saida') ia inteira pro sub 'apice' — o sub 'saida'
+// NUNCA acumulava amostra e a perda na aceleração sumia do delta (achado da
+// pesquisa de 11/06; pré-requisito dos treinos de saída/início de aceleração).
+//
+// Conserto: ao fechar a passagem, re-etiquetar pelos MARCOS REAIS medidos:
+//   entrada = linha de entrada → freada-iniciou (t real)
+//   freio   = freada → ápice (t real do apice-cruzou)
+//   apice   = ápice → Vmin (menor velocidade da passagem — calculada aqui)
+//   saida   = Vmin → linha de saída (a fase de aceleração de verdade)
+// Sem freada detectada: entrada vai até o ápice. Vmin antes do ápice: o
+// pedaço 'apice' fica vazio e a saída começa no ápice — nunca se inventa marco.
+
+/** Menor velocidade finita do buffer da passagem. → { kmh, idx } | null */
+export function acharVminBuffer(buffer) {
+  if (!Array.isArray(buffer) || !buffer.length) return null;
+  let kmh = null, idx = -1;
+  for (let i = 0; i < buffer.length; i++) {
+    const v = buffer[i]?.kmh;
+    if (Number.isFinite(v) && v > 0 && (kmh === null || v < kmh)) { kmh = v; idx = i; }
+  }
+  return kmh === null ? null : { kmh, idx };
+}
+
+/** Re-etiqueta os subs do buffer pelos marcos reais da passagem (não muta). */
+export function retagSubsPorEventos(buffer, { freadaT = null, apiceT = null, vminIdx = null } = {}) {
+  if (!Array.isArray(buffer)) return buffer;
+  const vminT = (vminIdx != null && buffer[vminIdx]) ? buffer[vminIdx].t : null;
+  return buffer.map((p, i) => {
+    if (!p) return p;
+    let sub;
+    const t = p.t;
+    if (freadaT != null && t <= freadaT) {
+      sub = 'entrada';
+    } else if (apiceT != null) {
+      if (t <= apiceT) sub = (freadaT == null) ? 'entrada' : 'freio';
+      else if (vminT != null && t <= vminT && i <= vminIdx) sub = 'apice';
+      else sub = 'saida';
+    } else if (vminT != null) {
+      // sem ápice reconhecido: a Vmin (marco real) divide desaceleração de
+      // aceleração — nunca se inventa pedaço de ápice
+      if (t <= vminT || i <= vminIdx) sub = (freadaT == null) ? 'entrada' : 'freio';
+      else sub = 'saida';
+    } else {
+      sub = (freadaT == null) ? 'entrada' : 'freio';
+    }
+    return { ...p, sub };
+  });
+}
+
 // ── Bridge ──────────────────────────────────────────────────
 
 export class LiveDataBridge {
@@ -188,6 +240,8 @@ export class LiveDataBridge {
     this._origemSimulador  = origemSimulador;
     this._passagemBuffer  = []; // amostras GPS acumuladas da passagem atual no trecho
     this._referenciasPorSegmento = new Map(); // segmentId → melhor passagem histórica
+    this._freadaT = null;       // t real do freada-iniciou da passagem atual
+    this._apiceT  = null;       // t real do apice-cruzou da passagem atual
 
     this._lastImuGps = null;
     this._lastT4000 = null;
@@ -363,9 +417,25 @@ export class LiveDataBridge {
     if (!ev) return;
     if (typeof this._onTrechoEvent === 'function') this._onTrechoEvent(ev);
 
+    // Marcos reais da passagem atual (re-etiquetagem honesta no fechamento).
+    if (ev.type === 'entrada-cruzou') { this._freadaT = null; this._apiceT = null; }
+    if (ev.type === 'freada-iniciou' && this._freadaT == null) this._freadaT = ev.t ?? null;
+    if (ev.type === 'apice-cruzou'   && this._apiceT  == null) this._apiceT  = ev.t ?? null;
+
     // Quando cruza a saída → fecha a passagem atual e calcula o delta.
     if (ev.type === 'saida-cruzou') {
       this._stats.trechosCompletos++;
+
+      // Re-etiqueta os subs pelos marcos REAIS antes de qualquer consumo —
+      // o sub 'saida' passa a existir de verdade (conserto 11/06).
+      const vmin = acharVminBuffer(this._passagemBuffer);
+      if (this._passagemBuffer.length >= 2) {
+        this._passagemBuffer = retagSubsPorEventos(this._passagemBuffer, {
+          freadaT: this._freadaT,
+          apiceT:  this._apiceT,
+          vminIdx: vmin ? vmin.idx : null,
+        });
+      }
 
       // Referência vigente ANTES desta passagem — o delta é calculado contra
       // ela. (Conserto 10/06/2026: a passagem "nova melhor" substituía a
@@ -395,11 +465,14 @@ export class LiveDataBridge {
 
       // Toda passagem fechada é o "hábito" mais recente do piloto — melhor ou
       // não, simulador ou não. Alimenta as marcas VOCÊ da tela de orientação.
+      // Vmin vai junto (treino de velocidade mínima / trail braking, 11/06).
       if (pontosCanonicos && typeof this._onTrechoEvent === 'function') {
         this._onTrechoEvent({
           type: 'passagem-fechada',
           segmentId: ev.segmentId,
           pontos: pontosCanonicos,
+          vminKmh:    vmin ? vmin.kmh : null,
+          vminFracao: (vmin && pontosCanonicos[vmin.idx]) ? pontosCanonicos[vmin.idx].fracao : null,
         });
       }
 
@@ -458,6 +531,8 @@ export class LiveDataBridge {
         }
       }
       this._passagemBuffer = []; // limpa pra próximo trecho
+      this._freadaT = null;
+      this._apiceT = null;
     }
   }
 

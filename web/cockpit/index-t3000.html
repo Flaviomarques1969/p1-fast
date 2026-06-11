@@ -28,6 +28,9 @@
   .conn-status.ok   { background: #0f3a23; color: #86efac; }
   .conn-status.warn { background: #3a2a0f; color: #fcd34d; }
   .conn-status.bad  { background: #3a0f0f; color: #fca5a5; }
+  /* Selo do modo TREINO (Stint Revestido, 11/06) — fora do palco de ações */
+  .conn-status.treino { background: #2b2008; color: #e7c463; border: 1px solid #a8841f;
+    letter-spacing: 1px; font-weight: 800; }
   .hud { display: flex; gap: 16px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
   .hud b { color: #8a99a8; font-weight: 600; margin-right: 4px; }
   .conn-log {
@@ -74,13 +77,14 @@
   <span class="conn-status warn" id="cloudStatus">nuvem: desligado</span>
   <span class="conn-status warn" id="fonteShiftStatus" title="Origem do RPM ótimo de troca">shift: semente</span>
   <span class="badge-safe-mode" id="badgeSafeMode" title="Curva do dinamômetro ou marchas indisponíveis — operando em modo seguro" data-active="0">MODO SEGURO</span>
+  <span class="conn-status treino" id="seloTreino" style="display:none" title="Treino armado pelo Planejamento do Stint">TREINO</span>
   <span class="hud" id="hud"><b>RPM</b>—</span>
   <!-- Configuração do stint: abre a tela em outra aba pra escolher modo + envelope -->
   <a class="btn btn--ghost" id="btnStint" href="./configuracao-stint.html" target="_blank" rel="noopener" title="Selecionar modo e envelope antes do stint">STINT</a>
   <!-- Comandos do mecânico — disparam alertas manuais no painel piloto -->
   <button class="btn" id="btnBox" style="background:#2a3645;color:#fcd34d" data-ativo="0">BOX</button>
   <button class="btn" id="btnUltimaVolta" style="background:#2a3645;color:#cbd5e1" data-ativo="0">ÚLTIMA VOLTA</button>
-  <button class="btn" id="btnSilencioso" style="margin-left:auto;background:#2a3645;color:#fcd34d">🔔 mensagens ON</button>
+  <button class="btn" id="btnSilencioso" style="margin-left:auto;background:#2a3645;color:#fcd34d">mensagens ON</button>
 </div>
 
 <!-- Overlay "SEM SINAL" — só aparece quando o conversor T3000 deixa de mandar amostras por >1,5 s -->

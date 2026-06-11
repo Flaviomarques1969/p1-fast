@@ -53,14 +53,17 @@ function delta(seg, piorSub, deltaS = 0.5) {
   t('OT-05 FREIA ANTES', o && o.destaque === 'ANTES', JSON.stringify(o));
 }
 
-// OT-06: mesmo ponto (<5 m) → FREIA MENOS com gráfico de pedal, marcas iguais
+// OT-06: mesmo ponto (<5 m) → FREIA MENOS, marcas iguais. SEM gráfico de pedal:
+// a regra do contrato ("gráfico quando houver sensor de pedal") sempre disse
+// isso — o SVG estático que era emitido furava a regra e saiu em 11/06.
 {
   const m = new OportunidadeTrecho();
   m.setReferencia('s1', { pontos: refPontos(0.25) });
   m.registrarPassagem({ segmentId: 's1', pontos: passagem(0.27) }); // ~2 m de diferença
   m.registrarDelta(delta('s1', 'freio'));
   const o = m.getOrientacao('s1');
-  t('OT-06 FREIA MENOS no mesmo ponto', o && o.destaque === 'MENOS' && o.grafico === 'freio', JSON.stringify(o));
+  t('OT-06 FREIA MENOS no mesmo ponto, sem gráfico (sem sensor)',
+    o && o.destaque === 'MENOS' && !o.grafico && o.quanto === null, JSON.stringify(o));
   t('OT-07 sem deslocamento falso', o && o.voceFrac === o.ouroFrac);
 }
 
