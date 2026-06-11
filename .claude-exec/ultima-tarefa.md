@@ -12,7 +12,30 @@
 ## + 3 juízes); (3) síntese da vencedora; (4) mockup arrastável; (5) proposta em linguagem de gestor.
 ## Riscos: contradizer decisão fechada (mitigado: regras embutidas nos prompts dos agentes);
 ## propor treino que os sensores de hoje não medem (mitigado: agente de viabilidade + catálogo honesto).
-## Status: iniciado.
+## Status: CONCLUÍDO 11/06 (proposta entregue; implementação aguarda OK do Flávio).
+## RESULTADO:
+## - Pesquisa: 6 agentes, 130+ fatos com arquivo:linha. Achados-chave: plano do stint
+##   (p1fast-plano-stint-v1) gravado e SEM nenhum leitor; evento freada-iniciou com
+##   distFromEntradaM medido ao vivo e órfão; coreografia + gatilho metade-da-reta JÁ
+##   implementados (coreografia-volta.js); precedente de consumo = p1fast-modo-stint-v1
+##   em main-t3000.js:60-70; trecho-advisor órfão compara melhor da sessão (PROIBIDO usar
+##   sem trocar a régua); contrato v3 da orientação aceita verbo/destaque/quanto.
+## - Debate: 4 propostas (Coreógrafo/Professor/Minimalista/Engenheiro) + 3 juízes
+##   (dono/piloto/engenharia). UNÂNIME: "Stint Revestido" (106 × 66 × 66 × 60).
+## - Solução: coreografia intocada; treino = leitor do plano + 2 filtros (orientação
+##   prioriza foco; mensagens só do grupo do foco) + selo TREINO·<FOCO> na conn-bar +
+##   brief obrigatório no Planejamento + motor pedagógico (3-de-4 consistência, guarda
+##   do círculo de tração, anti-saturação, consolidação pré-box, currículo entre sessões)
+##   + catálogo honesto pleno/proxy/aguarda-sensor (9 plenos + 2 proxy hoje; caps 14/15/
+##   18/19/20 registrados como NÃO-treino-de-stint, com fundamento).
+## - 2 decisões de negócio em aberto pro Flávio: válvula de erro grave fora do foco
+##   (recomendo ligada) e degrau da prescrição ~30%/teto +4 m (recomendo degrau).
+##   Verbos novos (vmin/entrada) só com crivo dele item a item.
+## - Entregues abertos no Chrome: relatorios/proposta-treinos-ia-2026-06-11.html +
+##   _design-reference/mockup-treino-stint-blocos-2026-06-11.html (blocos arrastáveis,
+##   4 momentos). Resultado bruto do debate (160 KB): /private/tmp/claude-501/-Users-imac/
+##   cba87795-0480-4de2-b6c7-547cf45554f2/tasks/wvfajtewe.output
+## - NADA implementado no código do painel; produção intocada.
 
 ---
 
