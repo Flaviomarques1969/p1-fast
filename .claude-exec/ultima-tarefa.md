@@ -29,7 +29,16 @@
     com retry sem o campo; (b) SELECT com coluna inexistente → mitigado sem select
     explícito; (c) plano antigo na nuvem arma treino indesejado → mesma semântica do
     localStorage atual (último aprovado vale), declarar no relatório.
-12. Status: iniciado
+12. Status: em validação final
+PROGRESSO 17h40: implementação completa no ambiente isolado
+(../p1fast-worktrees/plano-stint-banco-v1, linha claude/plano-stint-banco-v1,
+marco 709ce5d8 — auto-saves registraram o conteúdo). Bateria completa verde
+(npm run smoke exit=0 + test:shift-light exit=0; suíte treino-stint 54 ok com
+13 checks novos BN-*). Navegador real: 13/13 cenários verdes (banco real só
+leitura respondeu 200; selo apagado sem plano; ?treino=frenagem arma; plano da
+nuvem arma com origem nuvem; aprovação com banco antigo reenvia sem o campo;
+banco novo grava plano junto). Revisão adversarial multi-agente em curso.
+Produção INTOCADA (banco e p1t4000.vercel.app).
 
 ---
 
