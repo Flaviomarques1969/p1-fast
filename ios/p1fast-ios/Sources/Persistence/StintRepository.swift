@@ -223,11 +223,14 @@ final class StintRepository: ObservableObject {
             sessao.syncedAt = nil
             try sessao.update(db)
             try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: stintId, op: .update, record: sessao)
-            return (pid, planejadas)
+            // Sem voltas geradas: ciclos do pneu passam a derivar das voltas
+            // REAIS da nuvem (contagem real) — incremento local desligado.
+            return (pid, 0)
         }
 
         // Sprint 1A.4 — auto-incrementa pneus.ciclos quando o stint tem
-        // pneu montado. No-op silencioso se pneu_id == nil.
+        // pneu montado. Desligado na contagem real (voltasGeradas é sempre 0;
+        // o ciclo verdadeiro vem das voltas origem='painel-ao-vivo' na nuvem).
         if let pneuIdMontado, voltasGeradas > 0 {
             try await incrementarCiclos(pneuId: pneuIdMontado, by: voltasGeradas)
         }
