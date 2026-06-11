@@ -70,6 +70,9 @@ export async function gravarVoltaReal({ sessao, numero, tempoMs, inicioAt }) {
         numero,
         tempo_ms:  Number.isFinite(tempoMs) ? Math.round(tempoMs) : null,
         inicio_at: inicioAt ? new Date(inicioAt).toISOString() : null,
+        // sem isto a volta REAL entrava com o default 'app' (provisória) e a
+        // separação prometida pela migração 0040 morria (auditoria 10/06)
+        origem:    'painel-ao-vivo',
       });
     if (error) {
       console.warn('[voltas-persister] banco recusou a volta:', error.message);
