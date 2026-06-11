@@ -16,14 +16,16 @@
 // Callers que precisam dos IDs canônicos referenciam `PilotoRepository.*`
 // direto (Sprint 1A.4 #16 removeu os aliases que existiam aqui).
 //
-// Voltas: na criação do stint só temos `voltas_planejadas`. As linhas
-// reais em `voltas` chegam quando o stint é finalizado — esse repo
-// expõe `finalize(...)` que recebe a lista de tempos e grava todas as
-// voltas + atualiza `sessao.dataFim` + status='finalizada'.
+// Voltas: na criação do stint só temos `voltas_planejadas`. As voltas
+// REAIS são gravadas pelo PAINEL ao cruzar a linha de chegada, direto na
+// nuvem, com origem='painel-ao-vivo' (web/cockpit/voltas-persister.js +
+// migração 0040 — contagem real, autorização Flávio 10-11/06/2026).
+// `finalize(...)` aqui só fecha a sessão (dataFim + status) e persiste
+// segment_executions de eventos com volta conhecida.
 //
-// Sprint 1A.3 trabalha com voltas FAKE (geradas ao finalizar com um
-// gerador determinístico). Sprint 1B substitui pelo input do cockpit
-// real (telemetria + cronômetro automatizado).
+// HISTÓRICO: a Sprint 1A.3 gerava voltas FAKE ao finalizar (gerador
+// determinístico) — removido em 11/06/2026; inflava a vida útil e
+// contaria 2× com a gravação real ligada.
 
 import Foundation
 import GRDB
