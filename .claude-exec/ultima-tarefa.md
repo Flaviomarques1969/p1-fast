@@ -16,6 +16,25 @@
 
 ---
 
+# SESSÃO 8 (11/06 ~2h, "autorizado") — APP PAROU DE GRAVAR VOLTAS PROVISÓRIAS ✅
+
+## StintRepository.swift (app iPhone): finalize NÃO gera mais voltas fake (mock Sprint
+## 1A.3 removido); fechamento da sessão e segment_executions preservados (eventos sem
+## volta local são ignorados pelo contrato que já existia); incremento de ciclos do pneu
+## desligado (ciclo verdadeiro deriva das voltas origem='painel-ao-vivo' na nuvem);
+## cabeçalho do arquivo atualizado. Assinatura de finalize intacta (chamadores não mudam).
+## BUILD SUCCEEDED + INSTALADO no iPhone 16 Pro Max (devicectl; 1ª tentativa
+## IXRemoteErrorDomain 5 — aparelho ocupado; 2ª instalou).
+## CONTAGEM REAL 100% DO LADO DO SISTEMA. Falta SÓ ação do Flávio:
+## (1) abrir o app e validar; (2) registrar a troca de pneus em Manutenção (dispara a
+## vida útil: tempo ligado + voltas reais + km desde a troca).
+## PENDÊNCIAS declaradas: segment_executions do detector do iPhone sem persistir até
+## vincular com voltas reais da nuvem (cockpit que vale é o do navegador — decisão
+## antiga); Pós-Stint mostra 0 voltas locais (reais estão na nuvem) — honesto; tela de
+## consulta às voltas reais no app entra na frente da vida útil.
+
+---
+
 # MIGRAÇÃO PRA PRODUÇÃO: acesso + zumbis + 6 arquivos — 11/06 ~1h30 ✅ CONTAGEM REAL LIGADA
 
 ## Autorização LITERAL: "MIGRAR PARA PRODUÇÃO: acesso do painel + fechamento dos 5 stints

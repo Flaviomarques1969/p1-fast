@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Proposta — Treinos de Técnica com IA no P1 Fast</title>
+<style>
+  :root{--bg:#0d1117;--card:#161b22;--border:#2d333b;--txt:#e6edf3;--dim:#9da7b3;--gold:#d4a843;--green:#3fb950;--red:#f85149;--blue:#58a6ff}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.55;padding:44px 24px}
+  .wrap{max-width:960px;margin:0 auto}
+  header{border-bottom:2px solid var(--gold);padding-bottom:20px;margin-bottom:26px}
+  h1{font-size:26px;letter-spacing:-.4px}
+  .sub{color:var(--dim);font-size:14.5px;margin-top:8px}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:2px;color:var(--gold);border-bottom:1px solid var(--border);padding-bottom:8px;margin:34px 0 14px}
+  p{margin-bottom:10px;font-size:14.5px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:12px}
+  .card h3{font-size:15px;margin-bottom:6px}
+  .card p{font-size:13.5px;color:var(--dim);margin-bottom:6px}
+  .card p b{color:var(--txt)}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+  th,td{border:1px solid var(--border);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:#1d232e;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--dim)}
+  .ok{color:var(--green);font-weight:600}
+  .px{color:var(--gold);font-weight:600}
+  .no{color:var(--dim)}
+  .red{color:var(--red);font-weight:600}
+  .placar{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+  .pl{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 16px;text-align:center;flex:1;min-width:150px}
+  .pl.win{border-color:var(--gold)}
+  .pl .n{font-size:24px;font-weight:800}
+  .pl.win .n{color:var(--gold)}
+  .pl .l{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+  .canon{border-left:3px solid var(--gold);padding:12px 16px;background:var(--card);border-radius:0 8px 8px 0;margin:8px 0}
+  .canon b{color:var(--gold)}
+  a{color:var(--blue);text-decoration:none}
+  ul,ol{padding-left:22px;margin-bottom:10px}
+  li{font-size:14px;margin-bottom:5px}
+  .dec{border:1.5px solid var(--red);border-radius:8px;padding:14px 16px;margin-bottom:12px}
+  .dec h3{color:var(--red);font-size:14px;margin-bottom:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Treinos de Técnica com IA — proposta fechada</h1>
+  <div class="sub">Manual de pilotagem (20 técnicas) virando treino dentro do P1 Fast: o piloto escolhe a habilidade no Planejamento do Stint e o stint inteiro vira aula daquela técnica, trecho a trecho. Pesquisa profunda no sistema real + debate de 4 propostas + 3 juízes. 11/06/2026.</div>
+</header>
+
+<h2>O que a pesquisa no sistema confirmou</h2>
+<ul>
+  <li><b>O seletor já existe e já grava:</b> no Planejamento do Stint, "Treinar habilidade" com 7 opções (trail braking + os 6 pontos do trecho) é gravado no plano do stint a cada aprovação.</li>
+  <li><b>Ninguém lê o plano:</b> hoje nenhuma parte do painel consome essa escolha — o piloto seleciona o treino e nada acontece. Este é exatamente o buraco.</li>
+  <li><b>Há dado de treino já medido e jogado fora:</b> o ponto de freada em metros é medido ao vivo em cada trecho e hoje morre sem nenhum consumidor. A velocidade de entrada, a de saída e o erro de ápice também já são medidos.</li>
+  <li><b>A coreografia da volta que você aprovou já funciona</b> (painel &rarr; desempenho do trecho &rarr; orientação na metade da reta), com o gatilho da metade da reta implementado e validado no replay de 10/06.</li>
+  <li><b>Precedente pronto:</b> o painel já consome uma escolha do Planejamento (o modo do shift light). O treino entra pelo mesmo caminho.</li>
+  <li><b>Limite honesto:</b> sem sensor de pedal/pressão de freio (decididos, não instalados) e com o GPS atual (erro de metros), parte das técnicas só treina por aproximação declarada — e o gráfico de pedal fica proibido até o sensor existir (regra sua, já fechada).</li>
+</ul>
+
+<h2>O debate — 4 propostas, 3 juízes, veredito unânime</h2>
+<div class="placar">
+  <div class="pl win"><div class="n">106</div><div class="l">Stint Revestido</div></div>
+  <div class="pl"><div class="n">66</div><div class="l">Stint-Aula (currículo)</div></div>
+  <div class="pl"><div class="n">66</div><div class="l">Treino Medido (catálogo)</div></div>
+  <div class="pl"><div class="n">60</div><div class="l">Risco Único (minimalista)</div></div>
+</div>
+<p>Os três juízes (fidelidade às suas regras &middot; experiência do piloto em movimento &middot; viabilidade com o que existe hoje) escolheram a mesma vencedora: <b>Stint Revestido</b> — treino não é tela nova nem modo novo; é a coreografia que você já aprovou <b>vestida</b> pela habilidade escolhida. As três perdedoras não morreram: as melhores ideias delas foram enxertadas na vencedora (lista abaixo).</p>
+
+<h2>A solução — como funciona ponta a ponta</h2>
+
+<div class="canon"><b>Tese:</b> dentro da curva, nada muda — em curva o piloto executa, não lê. O treino age nos dois momentos de leitura que já existem (depois do trecho e antes do próximo) e em terra firme (planejamento e pós-stint). A única marca nova na tela é o selo <b>TREINO &middot; FRENAGEM</b> na barra operacional, fora do palco de ações.</div>
+
+<div class="card"><h3>1 &middot; Parado, no box (Planejamento do Stint)</h3>
+<p><b>Catálogo de treinos</b> com etiqueta de honestidade em cada opção: <b>PLENO</b> (mede de verdade hoje), <b>PROXY</b> (mede por aproximação declarada) ou <b>AGUARDA SENSOR</b> (opção apagada mostrando o que a destrava). <b>Brief obrigatório:</b> só libera o APROVAR depois que o piloto viu 1 tela parada com o resumo do capítulo do manual, o que a IA vai medir e como a nota aparece. O "como fazer" se ensina parado; em movimento vai só o verbo.</p></div>
+
+<div class="card"><h3>2 &middot; Volta 1 — a IA observa e cala</h3>
+<p>Primeira volta mede o hábito do piloto (2 passagens limpas por trecho, descartando atrapalhadas — pneu frio, tráfego). Sem hábito medido, nenhuma prescrição. A régua de comparação continua a sua regra de sempre: melhor passagem histórica do carro + configuração.</p></div>
+
+<div class="card"><h3>3 &middot; Dentro do trecho — silêncio</h3>
+<p>Painel canônico intocado (4 widgets + Pace central + shift light + delta). Mensagens críticas atropelam tudo, sempre, como hoje.</p></div>
+
+<div class="card"><h3>4 &middot; Da saída até a metade da reta — a nota</h3>
+<p>O espaço de mensagem que já existe passa a falar <b>só da técnica em treino</b>, no catálogo aprovado (2 palavras: FREOU TARDE, FREOU CEDO, RECORDE&hellip;). Erro fora do foco = espaço vazio — vai pro box, não pro para-brisa.</p></div>
+
+<div class="card"><h3>5 &middot; Da metade da reta até a entrada — a prescrição</h3>
+<p>A tela de orientação (estrutura aprovada: curva na visão do piloto, vermelho = onde fez, verde = onde fazer) passa a prescrever <b>só o foco do treino</b>, em degrau digerível: ~30% do caminho até a melhor passagem (teto +4 m por vez), nunca o salto inteiro. Trecho em dia no foco = tela não aparece (o silêncio diz "essa curva está em dia"). No treino a tela ainda <b>perde</b> elementos: sem anel de ápice quando ápice não é o foco, sem animação pulsando, sem gráfico de pedal enquanto não houver sensor.</p></div>
+
+<div class="card"><h3>6 &middot; O motor pedagógico (a IA professora)</h3>
+<p><b>Aprendeu = consistência, não pico:</b> 3 de 4 passagens dentro da janela. <b>Guarda do círculo de tração:</b> acerto no componente focado só vale se o trecho inteiro não piorou (frear 12 m mais fundo matando a saída não é aprendizado). <b>Anti-saturação:</b> 2 falhas seguidas piorando &rarr; exigência recua; 3 &rarr; a IA cala naquele trecho até o fim do stint. <b>Consolidação pré-box:</b> últimas 2 voltas antes de parada planejada, sem meta nova. <b>Currículo entre sessões:</b> o pós-stint grava a lição e sugere (nunca impõe) o foco da próxima sessão.</p></div>
+
+<h2>Catálogo v1 — as 20 técnicas do manual, com honestidade de medição</h2>
+<table>
+  <tr><th>Status</th><th>Técnicas</th><th>O que significa</th></tr>
+  <tr><td class="ok">TREINA HOJE (pleno)</td><td>Frenagem no Limite &middot; Ápice Tardio + Rotação antes do Ápice &middot; Paciência de Acelerador &middot; Punta-Tacco &middot; Preservação dos Pneus (stint inteiro) &middot; os 6 pontos do trecho (entrada, frenagem, Vmin, ápice, início de aceleração, saída)</td><td>Métrica real por trecho com GPS + motor de hoje. Obs.: Vmin, saída e início de aceleração precisam de consertos de cálculo já mapeados (são trabalho de programação, não de sensor).</td></tr>
+  <tr><td class="px">TREINA HOJE (aproximação declarada)</td><td>Trail Braking &middot; Abrir o Volante Cedo</td><td>A IA mede por sinais indiretos (tempo morto entre freio e acelerador, posição da Vmin, raio do traçado) e DECLARA isso no brief. Trail braking pleno chega com o sensor de pressão de freio.</td></tr>
+  <tr><td class="no">AGUARDA SENSOR JÁ DECIDIDO</td><td>Soltura do Freio &middot; Pé Esquerdo &middot; Transferência de Peso (fina) &middot; Jogar e Segurar</td><td>Dependem dos sensores de pedal/pressão (decisão sua de 26/05, ainda não instalados). O chip acende sozinho quando o sensor entrar.</td></tr>
+  <tr><td class="no">AGUARDA GPS NOVO (RaceBox)</td><td>Lift-off deliberado &middot; Zebras</td><td>Precisam do GPS de 25 leituras/segundo + giroscópio (aparelho já comprado e testado, falta integrar).</td></tr>
+  <tr><td class="red">NÃO É TREINO DE STINT</td><td>Correção de Derrapagem &middot; Largada &middot; Ultrapassagem &middot; Defesa &middot; Lado a Lado</td><td>Derrapagem não se provoca em stint (se acontecer, o sistema registra passivamente). Largada vira exercício próprio fora do ciclo de trechos. Corpo a corpo exige rival — e linha defensiva é por definição mais lenta que a melhor passagem, então a régua canônica não se aplica: viram leitura do manual + análise de corrida. Registrado pra ninguém reabrir como "função faltando".</td></tr>
+</table>
+<p>Os fundamentos (Círculo de Tração e Transferência de Peso) não viram botão: o Círculo vira a <b>nota-mãe</b> que protege todos os treinos (a guarda anti-vício), e os capítulos completos do manual ficam disponíveis como leitura no brief de cada treino.</p>
+
+<h2>Salvaguardas de confiança (enxertos do debate)</h2>
+<ul>
+  <li><b>Treino natimorto não nasce:</b> uma opção só vira selecionável depois de provada em reprodução de dados reais (se a métrica não dispara no replay, o chip não acende).</li>
+  <li><b>Sensor de mentira não engana:</b> leitura zerada de sensor não instalado nunca é tratada como dado real — detecção de presença antes de qualquer treino que dependa dele.</li>
+  <li><b>GPS atual tem erro de metros:</b> até o GPS novo integrar, a IA usa banda de aceite larga pra prescrição de freada nunca trocar de sinal entre voltas (FREIA DEPOIS numa volta, FREIA ANTES na outra mina a confiança).</li>
+  <li><b>Plano preso ao navegador:</b> hoje o plano do stint vive só na máquina onde foi aprovado. Proposta: gravar junto do envelope no banco — vira pré-requisito antes do painel definitivo do carro. Sem isso, o selo apagado é o aviso de "treino não armado".</li>
+</ul>
+
+<h2>Duas decisões que são suas (não assumi nenhuma)</h2>
+<div class="dec"><h3>Decisão 1 — Válvula do erro grave fora do foco</h3>
+<p style="color:var(--dim);font-size:13.5px">Durante o treino o painel filtra tudo pro foco. Se o piloto cometer um erro grande em OUTRA disciplina, a IA: (a) fura o filtro 1 vez com a mensagem padrão, ou (b) fica muda até o box. <b style="color:var(--txt)">Recomendo (a)</b> — erro grave repetido a stint inteiro custa caro; mensagens críticas de segurança já atropelam de qualquer jeito.</p></div>
+<div class="dec"><h3>Decisão 2 — Tamanho do degrau da prescrição</h3>
+<p style="color:var(--dim);font-size:13.5px">A comparação é sempre contra a melhor passagem histórica (regra intocada). Mas o NÚMERO mostrado pode ser: (a) o degrau digerível (~30% do caminho, teto +4 m por vez), ou (b) o caminho inteiro de uma vez. <b style="color:var(--txt)">Recomendo (a)</b> — a 140 km/h, "+4 m" é executável na volta seguinte; "+12 m" de uma vez é convite a passar reto.</p></div>
+<p>Além delas: os verbos novos pra Vmin e entrada (hoje não existem no catálogo aprovado) só estreiam depois de passarem pelo seu crivo, item a item, como foi nos catálogos de mensagens v1 e v2.</p>
+
+<h2>Caminho de construção (enxuto, sem mexer no que está no ar)</h2>
+<ol>
+  <li><b>Catálogo de treinos</b> — o módulo único que declara cada treino (o que mede, mensagens permitidas, sensor necessário, critério de "aprendeu"). As opções da tela de Planejamento passam a nascer dele.</li>
+  <li><b>O painel passa a ler o plano</b> — mesmo caminho já aprovado do modo do shift light. Plano "livre" ou ausente = painel exatamente como hoje.</li>
+  <li><b>Os 2 filtros</b> — orientação prioriza o foco; mensagens só do grupo do foco. Coreografia: zero mudança.</li>
+  <li><b>Consertos de dado devidos de qualquer forma</b> — Vmin calculada, conserto do componente de saída, início de aceleração real via acelerador do motor + GPS, e o ponto de freada (que já é medido e hoje morre sem uso) vira a métrica do treino de frenagem.</li>
+  <li><b>Brief no Planejamento + pós-stint com foco</b> — a aula parada antes, a lição gravada depois.</li>
+</ol>
+<p>Tudo em desenvolvimento, validado em replay e no navegador, e só vai pro ar com a sua frase de migração — como sempre.</p>
+
+<h2>Recomendação</h2>
+<div class="card">
+<p><b>Recomendação</b> — aprovar a direção "Stint Revestido" com os enxertos e o catálogo honesto v1 (9 treinos plenos + 2 por aproximação declarada), começando pelo treino de FRENAGEM (o dado já existe e morre sem uso).</p>
+<p><b>Por quê</b> — é a única solução que ensina sem criar tela nova: usa a coreografia, os catálogos de mensagens e a régua histórica que você já aprovou. Menor risco de virar enfeite, maior chance de mudar a volta seguinte de verdade.</p>
+<p><b>Impacto prático</b> — o seletor de treino que hoje não faz nada passa a comandar o stint inteiro: brief no box, nota e prescrição só da técnica escolhida, evolução medida por consistência e lição gravada pra próxima sessão.</p>
+<p><b>Risco</b> — GPS atual tem erro de metros (banda larga até o RaceBox integrar); plano preso ao navegador (resolver gravando no banco); telas de Vmin/entrada dependem de verbos novos que passam pelo seu crivo.</p>
+<p><b>Próximo passo</b> — você olha o apoio visual em blocos arrastáveis (aberto em outra aba), arrasta o que quiser de lugar e responde as 2 decisões. Com o seu OK na direção, eu começo pelo catálogo + leitor do plano + treino de FRENAGEM, tudo em desenvolvimento.</p>
+</div>
+
+<p style="margin-top:20px;color:var(--dim);font-size:12.5px">Material de base: manual de pilotagem FWD (20 técnicas, PDF 11/06) &middot; pesquisa em 6 áreas do sistema (130+ fatos verificados com arquivo e linha) &middot; 4 propostas &middot; 3 juízes &middot; placar 106 &times; 66 &times; 66 &times; 60.</p>
+
+</div>
+</body>
+</html>
