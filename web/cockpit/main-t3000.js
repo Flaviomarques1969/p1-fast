@@ -119,6 +119,7 @@ async function persistirVoltaReal({ numero, tempoMs, inicioAt }) {
       log(`volta ${numero} gravada na sessão ${String(_sessaoAberta.id).slice(0, 8)}`);
     } else {
       _persistStats.recusadas++;
+      _sessaoAberta = null; // pode ter fechado/perdido permissão — re-busca na próxima
       if (_persistStats.recusadas === 1) {
         log('volta real NÃO gravada: banco recusou (permissão de escrita em decisão)');
       }
