@@ -189,6 +189,19 @@ async function aprovarEnvelope() {
   status.className = 'status';
   status.textContent = 'Aprovando envelope…';
 
+  // Plano completo do stint — gravado no banco JUNTO do envelope (plano viaja
+  // com o envelope, 11/06) e no localStorage (cache do navegador local).
+  const planoCompleto = {
+    ...plano,
+    carroId: document.getElementById('selCarro').value,
+    piloto: document.getElementById('selPiloto').value,
+    autodromo: document.getElementById('selAutodromo').value,
+    tipoPneu: document.getElementById('selPneu').value,
+    vidaPneuFaixa: document.getElementById('selVida').value,
+    modo: modoSelecionado,
+    aprovadoEm: new Date().toISOString(),
+  };
+
   const payload = {
     carro_id:           document.getElementById('selCarro').value,
     modo_stint:         modoSelecionado,
@@ -199,10 +212,11 @@ async function aprovarEnvelope() {
     rpm_min_motor_celsius: ENVELOPE_DEFAULT_BUBI.rpm_min_motor_celsius,
     forca_lateral_max_g:   ENVELOPE_DEFAULT_BUBI.forca_lateral_max_g,
     observacoes:        `Envelope aprovado via tela de configuração (chefe). Janela ${janelaParaModo(modoSelecionado).rpmMin}-${janelaParaModo(modoSelecionado).rpmMax} rpm.`,
+    plano_stint:        planoCompleto,
   };
 
   try {
-    const resp = await fetch(`${SUPABASE_URL}/rest/v1/envelopes_seguranca_stint`, {
+    const postEnvelope = (body) => fetch(`${SUPABASE_URL}/rest/v1/envelopes_seguranca_stint`, {
       method: 'POST',
       headers: {
         'apikey':         SUPABASE_ANON_KEY,
@@ -210,12 +224,24 @@ async function aprovarEnvelope() {
         'Content-Type':   'application/json',
         'Prefer':         'return=representation',
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
     });
 
+    let resp = await postEnvelope(payload);
     if (!resp.ok) {
       const err = await resp.text();
-      throw new Error(`HTTP ${resp.status}: ${err}`);
+      // Banco ainda sem a coluna plano_stint (migration 0042 não aplicada):
+      // a aprovação do envelope NÃO pode falhar por causa do plano — regrava
+      // sem ele (comportamento anterior; o plano fica só no navegador local).
+      if (resp.status === 400 && err.includes('plano_stint')) {
+        const semPlano = { ...payload };
+        delete semPlano.plano_stint;
+        resp = await postEnvelope(semPlano);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${await resp.text()}`);
+        console.warn('[configuracao-stint] banco sem a coluna plano_stint — envelope gravado sem o plano (aplique a migration 0042).');
+      } else {
+        throw new Error(`HTTP ${resp.status}: ${err}`);
+      }
     }
     const data = await resp.json();
     const id = Array.isArray(data) && data[0] ? data[0].id : '?';
@@ -223,19 +249,10 @@ async function aprovarEnvelope() {
     status.textContent = `✓ Envelope aprovado (id ${id.substring(0, 8)}…). Modo: ${modoSelecionado.toUpperCase()}. Plano do stint registrado. Painel piloto pode iniciar.`;
     // Cache local — painel principal lê na próxima abertura.
     try { localStorage.setItem('p1fast-modo-stint-v1', modoSelecionado); } catch {}
-    // Plano completo do stint (propósito/foco/ghost/voltas/paradas) — o painel
-    // passa a consumir destas chaves nas próximas frentes (treino focado, ghost).
+    // Plano completo do stint (propósito/foco/ghost/voltas/paradas) — cache
+    // local; em outra máquina o painel busca o mesmo plano no envelope (banco).
     try {
-      localStorage.setItem('p1fast-plano-stint-v1', JSON.stringify({
-        ...plano,
-        carroId: document.getElementById('selCarro').value,
-        piloto: document.getElementById('selPiloto').value,
-        autodromo: document.getElementById('selAutodromo').value,
-        tipoPneu: document.getElementById('selPneu').value,
-        vidaPneuFaixa: document.getElementById('selVida').value,
-        modo: modoSelecionado,
-        aprovadoEm: new Date().toISOString(),
-      }));
+      localStorage.setItem('p1fast-plano-stint-v1', JSON.stringify(planoCompleto));
     } catch {}
   } catch (err) {
     status.className = 'status err';

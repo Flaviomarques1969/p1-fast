@@ -62,12 +62,52 @@ export function resolvePlanoStint({ storage, search } = {}) {
     if (!ls) return null;
     const raw = ls.getItem('p1fast-plano-stint-v1');
     if (!raw) return null;
-    const plano = JSON.parse(raw);
-    if (!plano || typeof plano !== 'object') return null;
-    if (plano.proposito === 'treinar' && (!plano.foco || !treinoPorFoco(plano.foco))) {
-      return null; // treino sem foco válido = plano não-armável (painel roda padrão)
-    }
-    return { ...plano, origem: 'planejamento' };
+    return validarPlanoStint(JSON.parse(raw), 'planejamento');
+  } catch {
+    return null;
+  }
+}
+
+/** Mesma validação pros dois caminhos (localStorage e nuvem). */
+export function validarPlanoStint(plano, origem) {
+  if (!plano || typeof plano !== 'object') return null;
+  if (plano.proposito === 'treinar' && (!plano.foco || !treinoPorFoco(plano.foco))) {
+    return null; // treino sem foco válido = plano não-armável (painel roda padrão)
+  }
+  return { ...plano, origem };
+}
+
+const NUVEM_URL_DEFAULT  = 'https://fvhwltzhytpnhlqbttmd.supabase.co';
+const NUVEM_ANON_DEFAULT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2aHdsdHpoeXRwbmhscWJ0dG1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTExNDAsImV4cCI6MjA5MzM4NzE0MH0._ZpxksUnuVFhLzCB5x7bBiZ_VLQQR5cH4A1T-0-mvrA';
+
+/**
+ * Fallback: o plano viaja com o envelope (decisão 11/06). Quando o navegador
+ * não tem plano local (notebook do carro ≠ máquina onde o chefe aprovou),
+ * busca o ÚLTIMO envelope aprovado do carro e usa o plano_stint gravado nele.
+ *
+ * Tolerante por desenho:
+ *   - banco sem a coluna plano_stint (migration 0042 ainda não aplicada):
+ *     a consulta não pede coluna específica, então não falha — o envelope
+ *     volta sem plano e o painel roda padrão;
+ *   - sem rede / erro HTTP / envelope sem plano → null (painel roda padrão,
+ *     idêntico ao de hoje). Nunca derruba o boot.
+ */
+export async function buscarPlanoStintDaNuvem({ carroId, fetchFn, url, anonKey } = {}) {
+  if (!carroId) return null;
+  const f = fetchFn ?? (typeof fetch !== 'undefined' ? fetch : null);
+  if (!f) return null;
+  try {
+    const base = url ?? NUVEM_URL_DEFAULT;
+    const key  = anonKey ?? NUVEM_ANON_DEFAULT;
+    const resp = await f(
+      `${base}/rest/v1/envelopes_seguranca_stint?carro_id=eq.${encodeURIComponent(carroId)}&order=created_at.desc&limit=1`,
+      { headers: { 'apikey': key, 'Authorization': `Bearer ${key}` } },
+    );
+    if (!resp.ok) return null;
+    const rows = await resp.json();
+    const envelope = Array.isArray(rows) ? rows[0] : null;
+    if (!envelope || !envelope.plano_stint) return null;
+    return validarPlanoStint(envelope.plano_stint, 'nuvem');
   } catch {
     return null;
   }

@@ -88,7 +88,7 @@ attachRendererToDocument(cockpitState, document);
 // O painel passa a LER o plano gravado (precedente: p1fast-modo-stint-v1).
 // Plano ausente, "livre" ou "testar" → painel byte-idêntico ao de hoje.
 // ?treino=<foco> arma sem Planejamento (validação de bancada, só leitura).
-const _planoStint = resolvePlanoStint();
+let _planoStint = resolvePlanoStint();
 let treinoStint = null;
 if (_planoStint?.proposito === 'treinar' && _planoStint.foco) {
   try { treinoStint = new TreinoStint({ foco: _planoStint.foco, plano: _planoStint }); }
@@ -102,6 +102,29 @@ if (treinoStint) {
     subs: treinoStint.subsFoco(),
     usaVmin: !!treinoStint.treino.usaVmin,
     degrauFn: (difM, segId) => treinoStint.aplicarDegrau(difM, segId),
+  });
+}
+
+// Plano viaja com o envelope (11/06): sem plano local (notebook do carro não é
+// a máquina onde o chefe aprovou), busca o plano do último envelope na nuvem.
+// Chegando, arma o treino tarde: motor + foco da orientação + filtro + selo.
+// Nuvem sem plano / sem rede / banco antigo → painel padrão, idêntico ao de hoje.
+if (!_planoStint) {
+  buscarPlanoStintDaNuvem({ carroId: CARRO_ATIVO }).then((planoNuvem) => {
+    if (!planoNuvem || treinoStint) return;
+    _planoStint = planoNuvem;
+    if (planoNuvem.proposito !== 'treinar' || !planoNuvem.foco) return;
+    try { treinoStint = new TreinoStint({ foco: planoNuvem.foco, plano: planoNuvem }); }
+    catch (e) { console.warn('[treino] não armou (nuvem):', e?.message); return; }
+    oportunidade.setFoco({
+      subs: treinoStint.subsFoco(),
+      usaVmin: !!treinoStint.treino.usaVmin,
+      degrauFn: (difM, segId) => treinoStint.aplicarDegrau(difM, segId),
+    });
+    empurrarMsgPedagogica.setFiltro((msg, ev) => treinoStint.filtroMensagem(msg, ev));
+    atualizarSeloTreino();
+    if (window.__t3) { window.__t3.treinoStint = treinoStint; window.__t3.planoStint = _planoStint; }
+    log(`treino armado: ${treinoStint.seloTexto()} (origem: nuvem — plano do último envelope aprovado)`);
   });
 }
 const telaOrientacao = criarTelaOrientacao({});
