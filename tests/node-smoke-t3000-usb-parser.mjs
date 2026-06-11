@@ -55,7 +55,9 @@ function buildBlock({
   w16(54, pedal2Raw);
   w16(56, tempArRaw);
   w16(58, tempMotorRaw);
-  w16(60, lambdaRaw);
+  // lambda de teste vai no offset 62 (sonda WB banda larga — a ATIVA no Bubi;
+  // conserto 26/05, PR #216). O offset 60 é a NB desligada (fica 0 no bloco).
+  w16(62, lambdaRaw);
   for (let i = 0; i < 8; i++) w16(84 + i*2, injTimeA[i]);
   b[100] = b18;
   w16(102, velocidadeRaw);

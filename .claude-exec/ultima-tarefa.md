@@ -1,3 +1,33 @@
+# SESSÃO 7 (11/06 ~0h-1h, "continue") — FILA DA AUDITORIA EXECUTADA
+
+## Feito (tudo DEV, produção intocada):
+## 1. REPESCAGEM de volta: falhou → fica na fila (teto 20) e tenta na próxima chegada;
+##    recusa solta o cache da sessão. main-t3000 persistirVoltaReal reescrito.
+## 2. DESTRAVAMENTO AUTOMÁTICO pós-teste: 50 amostras reais seguidas (~10 s) religam
+##    as gravações sozinhas (flag de replay deixou de ser pegajosa); logs claros
+##    ("teste de escritório detectado — gravações pausadas" / "religadas").
+## 3. Testes que PRENDEM o gravador: _injetarClienteParaTeste no persister + VP-06
+##    (payload completo com origem painel-ao-vivo), VP-07 (recusa→false), VP-08
+##    (filtro de recência obrigatório). 8/8.
+## 4. Vida útil conta SÓ volta real (origem=painel-ao-vivo) — sem inflar com as
+##    provisórias do app; rótulo da tela virou "voltas reais".
+## 5. 12 SUÍTES ÓRFÃS: 11 verdes direto + t3000-usb-parser tinha teste DESATUALIZADO
+##    (escrevia lambda no offset 60/NB; conserto de 26/05 lê 62/WB — teste alinhado,
+##    21/0). TODAS na bateria oficial: 54 suítes, exit 0.
+## 6. Fotografia das regras vivas do banco: supabase/POLICIES-VIVAS-2026-06-11.md
+##    (54 políticas + 3 tabelas sem trava — o drift fora dos arquivos está documentado).
+## 7. Boot final: painel + tela de stint, 1920×1280, ZERO erros.
+## FICA NA FILA (declarado): teste da ponta main→setReferencia (mexer no main agora,
+## pré-envio, é risco desnecessário); índice único (sessão, número) nas voltas —
+## entra na próxima proposta de banco; leitor km amarrado ao traçado da sessão
+## quando houver 2º autódromo.
+## DEPENDEM DO FLÁVIO: card de acesso (respondido? dizer "fiz"); limpeza dos 5 stints
+## zumbis de maio (mexe em dados — pede aval); próximo envio pro ar (6 arquivos:
+## voltas-persister novo + main-t3000 + live-data-bridge + delta-calculator +
+## configuracao-stint.js/.html) — pede frase de migração.
+
+---
+
 # AUDITORIA DO DIA (pedido "audite" + "gere em html") — 2026-06-10 noite/11-06
 
 ## Workflow com 5 auditores adversariais; 3 completaram (produção/código/testes), 2 caíram
