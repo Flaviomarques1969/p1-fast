@@ -1,3 +1,32 @@
+# AUDITORIA DO DIA (pedido "audite" + "gere em html") — 2026-06-10 noite/11-06
+
+## Workflow com 5 auditores adversariais; 3 completaram (produção/código/testes), 2 caíram
+## no LIMITE DE USO da conta (banco/registros — essencial coberto pelos vizinhos, declarado).
+## Resultado: 29 confirmações com prova · 11 furos · relatório HTML aberto pro Flávio:
+## relatorios/auditoria-dia-2026-06-10.html
+## FURO Nº1 (MEU ERRO, corrigido antes do Flávio responder o card): "9 tabelas sem RLS" era
+## medição pelos ARQUIVOS; o banco vivo (pg_class/pg_policy) tem 3 sem RLS (envelopes,
+## pontos_troca_aprendidos, qualidade_troca_marcha), gear_signatures NEM EXISTE, dyno/gear_ratios
+## têm policies VIVAS fora do repo (drift não documentado), t4000_live_* têm anon_all DE PROPÓSITO.
+## Card 20260610-191605 REESCRITO com o estado real. LIÇÃO: estado de segurança se mede no
+## banco vivo, nunca nos arquivos.
+## CONSERTOS APLICADOS NA HORA (8): card; origem='painel-ao-vivo' no insert da volta real
+## (entrava como 'app'!); filtro de recência 12h na busca de sessão (5 sessões zumbis de maio
+## abertas no banco — limpeza pede aval do Flávio); cache de sessão revalida a cada 2 min e
+## solta na recusa; log do descarte por sanidade; suítes alertas+padrão NA bateria (42 agora,
+## verde); _persistStats usa a fábrica (mata teste tautológico VP-05); emojis removidos do
+## main-t3000 (botão mensagens ON/OFF).
+## NA FILA (do relatório): fila de repescagem da volta que falhou; teste do caminho de sucesso
+## do gravador (dublê de banco); teste da ponta main→setReferencia; ~12 suítes antigas fora da
+## bateria; filtrar vida útil por origem + km amarrado ao traçado da sessão; documentar policies
+## vivas fora do repo; destravamento automático da flag de replay.
+## PRÓXIMO ENVIO PRO AR (pede MIGRAR do Flávio): exatamente 5 arquivos de web/cockpit —
+## voltas-persister.js (novo) + main-t3000.js + live-data-bridge.js + delta-calculator.js +
+## configuracao-stint.js. SEM o card respondido, contagem real continua cega (leitura travada).
+## RISCO ABERTO: painel NO AR ainda mente "passagem salva" até esse envio.
+
+---
+
 # MIGRAÇÃO PRA PRODUÇÃO: contagem real (banco) — 2026-06-10 ~20h30
 
 ## Autorização LITERAL: "MIGRAR PARA PRODUÇÃO: contagem real — aplica a estrutura no banco de uma vez"
