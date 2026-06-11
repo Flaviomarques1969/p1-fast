@@ -201,5 +201,45 @@ function refPontos(fracFreio = 0.25, kmhMin = 80) {
   t('VM-03 Vmin na banda → silêncio', m2.getOrientacao('s1') === null);
 }
 
+// ── buscarPlanoStintDaNuvem (plano viaja com o envelope, 11/06) ──
+{
+  const resposta = (status, json) => ({ ok: status >= 200 && status < 300, status, json: async () => json, text: async () => JSON.stringify(json) });
+  const fetchCom = (status, json, capt) => async (url, opts) => { if (capt) { capt.url = url; capt.opts = opts; } return resposta(status, json); };
+
+  const planoTreino = { proposito: 'treinar', foco: 'frenagem', ghost: false, voltas: 12, paradas: [{ volta: 6, motivo: 'pneus' }] };
+
+  const capt = {};
+  const p1 = await buscarPlanoStintDaNuvem({ carroId: 'carro-1', fetchFn: fetchCom(200, [{ id: 'e1', plano_stint: planoTreino }], capt) });
+  t('BN-01 plano de treino no último envelope → arma com origem nuvem',
+    p1 && p1.proposito === 'treinar' && p1.foco === 'frenagem' && p1.origem === 'nuvem' && p1.paradas.length === 1);
+  t('BN-02 consulta pede o último envelope do carro',
+    capt.url.includes('envelopes_seguranca_stint') && capt.url.includes('carro_id=eq.carro-1')
+    && capt.url.includes('order=created_at.desc') && capt.url.includes('limit=1'), capt.url);
+  t('BN-03 consulta NÃO pede coluna específica (banco sem a 0042 não falha)', !capt.url.includes('select='), capt.url);
+  t('BN-04 consulta vai autenticada (apikey)', !!(capt.opts && capt.opts.headers && capt.opts.headers.apikey));
+
+  t('BN-05 envelope sem plano (banco antigo) → null',
+    await buscarPlanoStintDaNuvem({ carroId: 'c', fetchFn: fetchCom(200, [{ id: 'e1' }]) }) === null);
+  t('BN-06 nenhum envelope → null',
+    await buscarPlanoStintDaNuvem({ carroId: 'c', fetchFn: fetchCom(200, []) }) === null);
+  t('BN-07 erro HTTP → null (painel roda padrão)',
+    await buscarPlanoStintDaNuvem({ carroId: 'c', fetchFn: fetchCom(500, { erro: 'x' }) }) === null);
+  t('BN-08 sem rede (fetch lança) → null',
+    await buscarPlanoStintDaNuvem({ carroId: 'c', fetchFn: async () => { throw new Error('offline'); } }) === null);
+  t('BN-09 sem carroId → null sem consultar',
+    await buscarPlanoStintDaNuvem({ carroId: null, fetchFn: async () => { throw new Error('não era pra chamar'); } }) === null);
+
+  const livre = await buscarPlanoStintDaNuvem({ carroId: 'c', fetchFn: fetchCom(200, [{ plano_stint: { proposito: 'livre', foco: null } }]) });
+  t('BN-10 plano livre passa (painel decide não armar)', livre && livre.proposito === 'livre' && livre.origem === 'nuvem');
+  t('BN-11 treino com foco inválido na nuvem → null',
+    await buscarPlanoStintDaNuvem({ carroId: 'c', fetchFn: fetchCom(200, [{ plano_stint: { proposito: 'treinar', foco: 'drift' } }]) }) === null);
+  t('BN-12 plano corrompido (não-objeto) → null',
+    await buscarPlanoStintDaNuvem({ carroId: 'c', fetchFn: fetchCom(200, [{ plano_stint: 'lixo' }]) }) === null);
+
+  // validação compartilhada: localStorage e nuvem julgam o plano pela MESMA régua
+  t('BN-13 validarPlanoStint é a mesma régua dos dois caminhos',
+    validarPlanoStint(planoTreino, 'nuvem')?.foco === 'frenagem' && validarPlanoStint({ proposito: 'treinar', foco: 'drift' }, 'nuvem') === null);
+}
+
 console.log(`\ntreino-stint: ${ok} ok / ${fail} fail`);
 process.exit(fail ? 1 : 0);
