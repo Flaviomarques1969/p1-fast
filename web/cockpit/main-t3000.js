@@ -92,12 +92,17 @@ const voltas = { n: null, inicioTs: null, ultimaS: null, melhorS: null };
 // ── Voltas REAIS na nuvem (autorização Flávio 10/06) ──────────
 let _sessaoAberta = null;       // cache da sessão aberta do stint
 let _sessaoBuscadaEm = 0;
-const _persistStats = { gravadas: 0, recusadas: 0, semSessao: 0 };
+let _persistStats = null;       // contador da fábrica do persister (1º uso cria)
 async function persistirVoltaReal({ numero, tempoMs, inicioAt }) {
   try {
-    const { acharSessaoAberta, gravarVoltaReal } = await import('./voltas-persister.js');
-    // re-busca a sessão no máx. a cada 60 s (o app pode abrir o stint no meio)
-    if (!_sessaoAberta && Date.now() - _sessaoBuscadaEm > 60000) {
+    const { acharSessaoAberta, gravarVoltaReal, criarContadorPersistencia } =
+      await import('./voltas-persister.js');
+    if (!_persistStats) _persistStats = criarContadorPersistencia();
+    // revalida o cache: sem sessão re-busca a cada 60 s; COM sessão reconfere a
+    // cada 2 min — pega stint novo aberto no app e solta stint fechado
+    // (o cache antigo nunca invalidava; auditoria 10/06).
+    const idade = Date.now() - _sessaoBuscadaEm;
+    if ((!_sessaoAberta && idade > 60000) || (_sessaoAberta && idade > 120000)) {
       _sessaoBuscadaEm = Date.now();
       _sessaoAberta = await acharSessaoAberta(CARRO_ATIVO);
     }
