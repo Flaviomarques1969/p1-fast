@@ -1,9 +1,19 @@
 # ⏰⏰⏰ CHECKPOINT PRÉ-CLEAR 11/06 ~22h — IMPLEMENTAR COCKPIT EM MODO TREINO (TRAIL BRAKING)
 
-## ORDEM DO FLÁVIO (literal): "se organiza aí pra eu dar o clear e você fazer a
-## implementação do que eu tô te pedindo." → AO VOLTAR ("voltei treinos" ou "siga"):
-## TASK_INIT e IMPLEMENTAR direto (sem re-perguntar direção). Spec visual = mockup v3:
-## _design-reference/mockup-cockpit-treino-trail-braking-2026-06-11.html (4 quadros).
+## GATILHO PÓS-CLEAR: `/voltei cockpit-treino-trail` → TASK_INIT e IMPLEMENTAR direto
+## (ordem literal do Flávio: "se organiza aí pra eu dar o clear e você fazer a
+## implementação do que eu tô te pedindo" — sem re-perguntar direção).
+## Spec visual FINAL = mockup v4 (4 quadros, COMPONENTES REAIS do painel via
+## ../web/cockpit/cockpit.css): _design-reference/mockup-cockpit-treino-trail-braking-2026-06-11.html
+## CORREÇÕES da 4ª rodada do ditado (já no mockup v4):
+##   - shift light = componente REAL (.shift-light premium, tiers verde/amarelo/vermelho,
+##     das pontas pro centro) — NUNCA desenhar bolinha genérica;
+##   - freio em cima = O MESMO componente real reposicionado no topo (régua = distância
+##     até o ponto de freada; par vermelho central fechou = ponto);
+##   - wash = o clarão REAL do disparo (fire-overlay, 300ms), reservado ao freio no treino;
+##   - momento 2 SEM texto verbo/dado — "ele já sabe, é só olhar o gráfico" (o gráfico
+##     leva os rótulos FREIA AQUI · 87 m e ÁPICE · 40% dentro dele);
+##   - trilho vertical começa DEPOIS do recorte físico da tela (notch, left:64).
 
 ## O QUE CONSTRUIR (ditado 11/06 noite, 3 rodadas — TUDO já corrigido no mockup):
 ## 1. TRILHO VERTICAL à esquerda (dentro do palco 956×440): 8 trechos × passagens —

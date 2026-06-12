@@ -55,8 +55,18 @@
   .orient .grafico svg { width:100%; height:100%; }
   .rotulo-eixo { font:800 10px 'JetBrains Mono',monospace; letter-spacing:1px; fill:#64748b; }
 
-  /* shift light de FREIO = o MESMO componente real, ancorado no TOPO do palco */
-  .shift-light--freio { top:10px; bottom:auto; }
+  /* shift light de FREIO = colunas VERTICAIS nos dois cantos da tela, com os
+     LEDs REAIS do painel. Vão DESCENDO conforme chega no ponto de frenagem;
+     bateu no vermelho (embaixo) = pisca tudo. Enquanto o freio está na tela,
+     o shift light de marcha SAI (freando só se reduz — assunto do freio). */
+  .freio-col { position:absolute; top:26px; bottom:26px; width:35px; z-index:46;
+    display:flex; flex-direction:column; align-items:center; justify-content:space-between;
+    padding:13px 9px; border-radius:999px;
+    background:linear-gradient(90deg, oklch(8% 0 0) 0%, oklch(5% 0 0) 48%, oklch(9% 0 0) 100%);
+    box-shadow: inset 1px 0 0 oklch(22% 0 0 / .8), inset -1px 0 0 oklch(0% 0 0 / .9),
+      inset 0 0 0 1px oklch(15% 0 0), 0 2px 6px oklch(0% 0 0 / .6), 0 8px 24px oklch(0% 0 0 / .35); }
+  .freio-col--esq { left:62px; }
+  .freio-col--dir { right:26px; }
 
   /* wash do PONTO DE FRENAGEM — mesmo clarão do disparo real (fire-overlay),
      reservado pro freio no modo treino */
