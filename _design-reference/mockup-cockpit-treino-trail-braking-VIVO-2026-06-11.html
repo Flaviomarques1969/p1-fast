@@ -704,6 +704,7 @@ soltou de uma vez, freou cedo e freou tarde. Os números são simulados só pra 
       /* anota em passos curtos pra curva ficar lisa mesmo em quadros longos */
       for(var xs=ultimo+3; xs<=x; xs+=3) anota(xs);
       if(x-ultimo>0.5) anota(x);
+      if(x>=560) setRegua('apice');
       if(tF>=DUR.freia) entraFase('veredito');
 
     } else if(fase==='veredito'){
