@@ -1,37 +1,3 @@
-# TASK_INIT 11/06/2026 ~23h — TELA MANUTENÇÃO NO IPHONE: registrar troca de pneus não funciona
-
-1. Pedido original (Flávio, literal): "na tela de manutenção, não está aparecendo nada disso,
-   está aparecendo data, quando foi a troca e aparece a data de hoje, 11 de junho, mas até
-   bota como salvar, nem parece que salvou nada, não muda nada no menu, parece que está
-   estávio [estático]."
-2. Objetivo em 1 frase: descobrir por que o registro de troca de pneus na tela Manutenção do
-   app iPhone parece não salvar nada (nem refletir no menu) e identificar a causa real.
-3. Critérios de conclusão: (a) evidência objetiva se o toque em Salvar gravou ou não no banco
-   local do aparelho; (b) evidência se subiu ou não pra nuvem; (c) causa identificada no código
-   real com arquivo:linha; (d) relatório honesto + plano de correção (correção só em
-   desenvolvimento; instalar no iPhone só depois de validar).
-4. Leitura confirmada: ~/.claude/CLAUDE.md sim · padroes.md sim · FLAVIO_EXECUTION_PROTOCOL sim ·
-   FLAVIO_DONE_CHECKLIST sim · FLAVIO_ENVIRONMENT_RULES sim · FLAVIO_COMMUNICATION_RULES sim
-5. Plano ≤5 passos: (1) copiar banco local do iPhone (somente leitura, devicectl) e conferir se
-   a manutenção foi gravada; (2) consultar nuvem (somente leitura) se o registro subiu;
-   (3) inspecionar código real da tela Manutenção (Swift, versão oficial) — o que o Salvar faz,
-   o que a tela deveria mostrar; (4) cruzar com o modelo Checagem≠Troca e a vida útil dos pneus;
-   (5) relatório com causa + proposta de correção (sem implementar sem aval se mudar comportamento).
-6. Arquivos/áreas: app iOS (telas Manutenção/SwiftUI), repositórios SQLite, fila de sync,
-   banco do aparelho via /tmp/p1fast-data, tabela manutencoes na nuvem (leitura).
-7. Ambiente alvo: desenvolvimento (diagnóstico; nuvem só leitura)
-8. Produção protegida: sim
-9. Autorização para produção: não
-10. Evidência da autorização para produção: não recebida (diagnóstico não precisa)
-11. Riscos: app instalado no iPhone é o que o Flávio usa de verdade — qualquer correção precisa
-    preservar dados locais (instalar preserva /Documents); nuvem é produção (só leitura).
-12. Status inicial: iniciado
-BACKUP deste registro: .claude-exec/ultima-tarefa-backup-pre-manutencao-pneus-2026-06-11.md
-NOTA: a RODADA 8 (mockup vivo trail braking, bloco abaixo) ficou EM ESPERA — Flávio puxou a
-frente do app/Manutenção primeiro. Nada da rodada 8 foi perdido.
-
----
-
 # TASK_INIT 11/06/2026 ~22h30 — RODADA 8 DO DITADO: MOCKUP VIVO do treino trail braking
 
 1. Pedido original (Flávio, literal): "a qualidade gráfica está muito ruim... você pode começar

@@ -60,6 +60,8 @@
 
   /* fundo da janela de orientação (palco preto, componentes por cima) */
   .orient { position:absolute; inset:0; background:#000; z-index:5; }
+  /* halo de veredito do componente real precisa pintar ACIMA do fundo preto */
+  .device::before { z-index:6; }
 
   /* SHIFT LIGHT DE FREIO — o componente REAL, reposicionado no topo.
      Os 12 LEDs já acendem UM PAR POR VEZ DAS PONTAS PRO CENTRO (tier 1 = pontas).
