@@ -227,14 +227,11 @@ soltou de uma vez, freou cedo e freou tarde. Os números são simulados só pra 
         <!-- marcos de distância na aproximação (a contagem anda sobre eles) -->
         <g id="marcosDist"></g>
 
-        <!-- ÁREA-ALVO (banda de aceite em volta da curva da melhor) -->
-        <path d="M300,40 L390,40 C540,62 660,140 740,176 L740,206 C660,168 540,94 390,72 L300,72 Z"
-              fill="url(#gBanda)" stroke="oklch(78% 0.18 65 / .35)" stroke-width="1"/>
-        <!-- CURVA-ALVO (da melhor passagem) — halo + núcleo nítido -->
-        <path d="M300,56 L390,56 C540,77 660,154 740,191" fill="none"
-              stroke="oklch(78% 0.18 65 / .35)" stroke-width="12" filter="url(#fGlow)"/>
-        <path d="M70,252 L300,252 L300,56 L390,56 C540,77 660,154 740,191" fill="none"
-              stroke="url(#gAlvo)" stroke-width="4" stroke-linecap="round"/>
+        <!-- ÁREA-ALVO + CURVA-ALVO: desenhadas pelo motor a partir do alvo DAQUELE trecho
+             (cada curva tem seu próprio trail — formatos trocam por cenário) -->
+        <path id="bandaPath" d="" fill="url(#gBanda)" stroke="oklch(78% 0.18 65 / .35)" stroke-width="1"/>
+        <path id="haloPath" d="" fill="none" stroke="oklch(78% 0.18 65 / .35)" stroke-width="12" filter="url(#fGlow)"/>
+        <path id="alvoPath" d="" fill="none" stroke="url(#gAlvo)" stroke-width="4" stroke-linecap="round"/>
 
         <!-- marca do ponto de freada da melhor (vira COLUNA DE LUZ quando bate no ponto) -->
         <line id="marcaPonto" x1="300" y1="36" x2="300" y2="252" stroke="oklch(78% 0.18 65 / .6)"
@@ -314,6 +311,7 @@ soltou de uma vez, freou cedo e freou tarde. Os números são simulados só pra 
       <button data-cen="soltou">SOLTOU DE UMA VEZ</button>
       <button data-cen="cedo">FREOU CEDO</button>
       <button data-cen="tarde">FREOU TARDE</button>
+      <button data-cen="residual">CURVA DE RESIDUAL</button>
       <button id="btnPausa">PAUSAR</button>
     </div>
     <h2>O QUE A TELA FAZ, NA ORDEM</h2>
@@ -360,10 +358,12 @@ soltou de uma vez, freou cedo e freou tarde. Os números são simulados só pra 
     A medição da reação alimenta a inteligência e o registro do treino — não vira texto
     na tela do piloto.</p></div>
   <div class="nota"><h3>DEFAULTS ASSUMIDOS (ajustáveis)</h3>
-    <p>CERTO = freou na banda + soltura progressiva + chegou na mínima ainda freando ·
-    gráfico-alvo em toda reta. Trilho: <b>decidido — só a última passagem e a anterior</b>
-    (janela que vai trocando, atualizada logo após cada passagem). <b>Decisões ainda em
-    aberto:</b> critério do CERTO (3 de 3?) e alvo em toda reta ou só onde está errando.</p></div>
+    <p>CERTO = freou na banda + <b>seguiu o formato da melhor passagem DAQUELE trecho</b> +
+    chegou na mínima ainda freando. Cada curva tem seu próprio trail: 100% e soltura
+    gradativa, ou percentual com residual constante — o alvo é a curva real da melhor
+    naquele trecho, não um modelo fixo. Trilho: decidido — só a última passagem e a
+    anterior. <b>Decisões em aberto:</b> critério do CERTO (3 de 3?) e alvo em toda reta
+    ou só onde está errando.</p></div>
 </div>
 
 <script>
@@ -385,7 +385,14 @@ soltou de uma vez, freou cedo e freou tarde. Os números são simulados só pra 
   /* ZERO ADIANTADO pela IA: reação aprendida 0,31 s a ~38 m/s ≈ 12 m antes do ponto real */
   var VEL_MS=38, REACAO_S=0.31, ADIANTO_PX=Math.round(REACAO_S*VEL_MS*PX_POR_M), XZ=XB-ADIANTO_PX;
 
-  /* curva-alvo: tabela da parte em curva (soltura progressiva até o ápice) */
+  function smooth(a,b,x){
+    var t=Math.min(1,Math.max(0,(x-a)/(b-a)));
+    return t*t*(3-2*t);
+  }
+  function pctY(p){ return YG-(YG-PLATO)*p/100; }   /* % de freio → altura no gráfico */
+
+  /* CADA CURVA TEM SEU PRÓPRIO TRAIL (rodada 16-17): o alvo é a freada real da melhor
+     passagem DAQUELE trecho. Dois formatos de exemplo no mockup: */
   var LUT=[];
   (function(){
     var P=[390,56,540,77,660,154,740,191];
@@ -395,19 +402,43 @@ soltou de uma vez, freou cedo e freou tarde. Os números são simulados só pra 
                  mt*mt*mt*P[1]+3*mt*mt*t*P[3]+3*mt*t*t*P[5]+t*t*t*P[7] ]);
     }
   })();
-  function alvoY(x){
-    if(x<XB) return YG;
-    if(x<=390) return PLATO;
-    if(x>=XA) return LUT[LUT.length-1][1];
-    var lo=0, hi=LUT.length-1;
-    while(lo<hi){ var mid=(lo+hi)>>1; if(LUT[mid][0]<x) lo=mid+1; else hi=mid; }
-    var b=LUT[lo], a=LUT[Math.max(0,lo-1)];
-    var f=(x-a[0])/((b[0]-a[0])||1);
-    return a[1]+(b[1]-a[1])*f;
+  var ALVOS={
+    /* 100% na pancada inicial + soltura gradativa até o ápice */
+    classico:{ y:function(x){
+      if(x<XB) return YG;
+      if(x<=390) return PLATO;
+      if(x>=XA) return LUT[LUT.length-1][1];
+      var lo=0, hi=LUT.length-1;
+      while(lo<hi){ var mid=(lo+hi)>>1; if(LUT[mid][0]<x) lo=mid+1; else hi=mid; }
+      var b=LUT[lo], a=LUT[Math.max(0,lo-1)];
+      var f=(x-a[0])/((b[0]-a[0])||1);
+      return a[1]+(b[1]-a[1])*f;
+    } },
+    /* pancada parcial (65%) + RESIDUAL CONSTANTE (45%) por um tempo + soltura no fim */
+    residual:{ y:function(x){
+      if(x<XB) return YG;
+      if(x<330) return YG+(pctY(65)-YG)*smooth(XB,330,x);
+      if(x<380) return pctY(65)+(pctY(45)-pctY(65))*smooth(330,380,x);
+      if(x<560) return pctY(45);
+      return pctY(45)+(pctY(25)-pctY(45))*smooth(560,XA,x);
+    } }
+  };
+  var alvoAtual=ALVOS.classico;
+  function alvoY(x){ return alvoAtual.y(x); }
+
+  /* desenha alvo/halo/banda do alvo vigente (amostragem da curva real) */
+  function dCurva(alvo,desde,offset){
+    var d='';
+    for(var x=desde;x<=XA;x+=4) d+=(d?'L':'M')+x+','+(alvo.y(x)+offset).toFixed(1);
+    return d;
   }
-  function smooth(a,b,x){
-    var t=Math.min(1,Math.max(0,(x-a)/(b-a)));
-    return t*t*(3-2*t);
+  function aplicaAlvo(alvo){
+    alvoAtual=alvo;
+    document.getElementById('alvoPath').setAttribute('d','M'+X0+','+YG+' L'+(XB-1)+','+YG+' '+dCurva(alvo,XB,0).replace('M','L'));
+    document.getElementById('haloPath').setAttribute('d',dCurva(alvo,XB,0));
+    var top=dCurva(alvo,XB,-BAND), bot='';
+    for(var x=XA;x>=XB;x-=4) bot+='L'+x+','+(alvo.y(x)+BAND).toFixed(1);
+    document.getElementById('bandaPath').setAttribute('d',top+bot+'Z');
   }
   function wob(x,amp,per,ph){ return amp*Math.sin((x-XB)/per+ph); }
 
@@ -437,7 +468,11 @@ soltou de uma vez, freou cedo e freou tarde. Os números são simulados só pra 
         if(x<400) return YG+(46-YG)*smooth(340,400,x);
         var yT=alvoY(x)-10*Math.exp(-(x-400)/160);
         return yT+wob(x,3,29,0);
-      } }
+      } },
+    /* outro TIPO de curva: alvo com pancada parcial + residual constante + soltura no fim */
+    { id:'residual', rotulo:'CURVA DE RESIDUAL', erro:null, motivo:null, xIni:XB,
+      alvo:'residual', saidaV:'141', saidaE:'ok-melhor',
+      y:function(x){ return alvoY(x)+wob(x,4,43,0.3)+wob(x,3,19,1.1); } }
   ];
 
   var DUR={ entrada:1400, aproxima:3600, freia:3400, veredito:2600, gap:500 };
@@ -616,6 +651,7 @@ soltou de uma vez, freou cedo e freou tarde. Os números são simulados só pra 
     pts=[]; foraDaLinha=false; motivoPosto=false; decadaAnterior=null; pontoDisparado=false;
     freou=false; apicePosto=false;
     if(tmrPosFire){ clearTimeout(tmrPosFire); tmrPosFire=null; }
+    aplicaAlvo(ALVOS[cen.alvo||'classico']);   /* o alvo é o da curva deste trecho */
     resetPontos();
     tracoVerde.setAttribute('d',''); tracoVermelho.setAttribute('d','');
     pintaChao.setAttribute('d','');
@@ -682,7 +718,7 @@ soltou de uma vez, freou cedo e freou tarde. Os números são simulados só pra 
     if(fase==='veredito'||fase==='gap')
       extra=' · RESULTADO: '+(cen.erro
         ? '<b class="errado">TRAIL ERRADO — '+cen.erro+'</b>'
-        : '<b class="certo">TRAIL CERTO — SOLTURA PROGRESSIVA</b>');
+        : '<b class="certo">TRAIL CERTO — SEGUIU O FORMATO</b>');
     faseInfo.innerHTML='CENÁRIO: <b>'+cen.rotulo+'</b> · FASE: <b>'+NOME_FASE[fase]+'</b>'+extra;
   }
 
@@ -733,7 +769,8 @@ soltou de uma vez, freou cedo e freou tarde. Os números são simulados só pra 
       if(!apicePosto && x>=700){
         apicePosto=true;
         var pa=Math.max(0,Math.round((YG-cen.y(XA))/(YG-PLATO)*100));
-        setPonto('apice', pa+'%', Math.abs(pa-40)<=12?'ok-melhor':'ok-pior');
+        var paAlvo=Math.round((YG-alvoY(XA))/(YG-PLATO)*100);
+        setPonto('apice', pa+'%', Math.abs(pa-paAlvo)<=12?'ok-melhor':'ok-pior');
       }
       if(tF>=DUR.freia) entraFase('veredito');
 

@@ -167,6 +167,22 @@ RODADA 10 (12/06 ~0h, ditado — CONCLUÍDA, aguardando validação visual):
    REQUISITO DE PRODUTO ditado nesta rodada (levar pra implementação real): medir e
    aprender o tempo de reação e adiantar o zero por ele.
 
+RODADAS 16-17 (12/06 ~0h50 — pergunta + "sim quero ver tudo" — CONCLUÍDAS):
+   16. Confirmado pro Flávio: cada curva tem seu próprio trail POR DESENHO (alvo = curva
+   real da melhor passagem daquele trecho). Critério do CERTO corrigido: "seguiu o
+   FORMATO da melhor daquele trecho" (não "soltura progressiva" universal).
+   17. 5º cenário no mockup: CURVA DE RESIDUAL (65% inicial + 45% constante + soltura
+   no fim). Alvo agora é trocável por trecho no motor (banda/halo/curva redesenham).
+   Veredito positivo renomeado "SEGUIU O FORMATO". Validação: navegador: ZERO erros,
+   residual rodou até TRAIL CERTO, alvo clássico redesenhou na volta, 4 capturas
+   conferidas. Reaberto pro Flávio.
+
+RODADA 15 (12/06 ~0h35, ditado + captura — CONCLUÍDA, aguardando validação visual):
+   FUNDO SEMPRE PRETO — saiu o brilho dourado de fundo do veredito TRAIL CERTO (o roxo
+   já tinha saído na 9b). Nenhum fundo de cor em momento algum; clarão do zero e pisca
+   de erro continuam (pulsos de evento, ditados). Validação: navegador: estado "neutro"
+   confirmado no veredito, ZERO erros, captura conferida. Reaberto pro Flávio.
+
 RODADA 14 (12/06 ~0h25, ditado — CONCLUÍDA, aguardando validação visual): SEM TEXTO
    PEQUENO perto do gráfico ("o piloto nunca vai conseguir ler isso"). Removidos: eixo
    FREIO %/100/50/0 · números 120·90·60·30 (só risquinhos) · rótulo ZERO·REAÇÃO (só a
