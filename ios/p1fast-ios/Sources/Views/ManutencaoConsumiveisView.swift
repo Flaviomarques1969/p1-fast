@@ -388,8 +388,10 @@ struct RegistrarTrocaView: View {
 // MARK: - Helpers de apresentação
 // ─────────────────────────────────────────────────────────────
 
-private func corStatus(_ s: SeveridadeManutencao?) -> Color {
-    switch s {
+private func corStatus(_ s: StatusManutencao?) -> Color {
+    // Preditivo já com troca registrada = a contagem está viva → cor de ação.
+    if s?.severidade == .semHistorico, s?.ultimaTrocaMs != nil { return Color.accent }
+    switch s?.severidade {
     case .verde:        return Color.bom
     case .amarelo:      return Color.yellow
     case .vermelho:     return Color.atencao
@@ -398,8 +400,9 @@ private func corStatus(_ s: SeveridadeManutencao?) -> Color {
     }
 }
 
-private func textoSeveridade(_ s: SeveridadeManutencao?) -> String {
-    switch s {
+private func textoSeveridade(_ s: StatusManutencao?) -> String {
+    if s?.severidade == .semHistorico, s?.ultimaTrocaMs != nil { return "CONTANDO" }
+    switch s?.severidade {
     case .verde:        return "EM DIA"
     case .amarelo:      return "ATENÇÃO"
     case .vermelho:     return "TROCAR"
@@ -407,6 +410,31 @@ private func textoSeveridade(_ s: SeveridadeManutencao?) -> String {
     case .recomendacao: return "OPCIONAL"
     case .semHistorico, .none: return "SEM DADO"
     }
+}
+
+/// "Trocado em 10/06/2026 · 0 h de uso · aprendendo a vida útil"
+/// (a parte de aprendizado só nos preditivos ainda sem média).
+private func linhaUltimaTroca(_ s: StatusManutencao, trocaMs: Int64) -> String {
+    var partes = ["Trocado em \(fmtDataCurta(trocaMs))"]
+    if let horas = s.horasDesdeUltima {
+        partes.append("\(fmtHorasUso(horas)) de uso")
+    }
+    if s.severidade == .semHistorico {
+        partes.append("aprendendo a vida útil")
+    }
+    return partes.joined(separator: " · ")
+}
+
+private func fmtDataCurta(_ ms: Int64) -> String {
+    let df = DateFormatter()
+    df.dateFormat = "dd/MM/yyyy"
+    return df.string(from: Date(timeIntervalSince1970: Double(ms) / 1000))
+}
+
+private func fmtHorasUso(_ horas: Double) -> String {
+    if horas <= 0 { return "0 h" }
+    if horas >= 10 { return "\(Int(horas.rounded())) h" }
+    return String(format: "%.1f h", horas).replacingOccurrences(of: ".", with: ",")
 }
 
 private func descricaoChecagem(_ item: ConsumivelDef) -> String {
