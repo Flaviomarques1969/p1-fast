@@ -622,6 +622,9 @@ soltou de uma vez, freou cedo e freou tarde. Os números são simulados só pra 
     if(nova==='veredito'){
       encerraFlashErro();
       leituraPct.setAttribute('opacity','0');
+      /* gráfico vira eco de fundo: o veredito é a estrela, sem texto disputando pixel */
+      palcoGrafico.style.opacity='.35';
+      cabeca.setAttribute('opacity','0');
       device.setAttribute('data-trecho-status', cen.erro?'pior-stint':'recorde-stint');
       vereditoTitulo.className='veredito '+(cen.erro?'errado':'certo');
       vereditoTitulo.innerHTML= cen.erro?'TRAIL<br>ERRADO':'TRAIL<br>CERTO';
