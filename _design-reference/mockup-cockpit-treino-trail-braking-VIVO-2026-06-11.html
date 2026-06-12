@@ -525,6 +525,7 @@ soltou de uma vez, freou cedo e freou tarde. Os números são simulados só pra 
     if(!ok && !foraDaLinha){
       foraDaLinha=true;
       disparaFlashErro();
+      if(fase==='aproxima') gContagem.setAttribute('opacity','0'); /* já pisou — contagem perdeu função */
       if(!motivoPosto && cen.motivo){ poeMotivo(x,y,cen.motivo); motivoPosto=true; }
     } else if(ok && foraDaLinha){
       foraDaLinha=false;
