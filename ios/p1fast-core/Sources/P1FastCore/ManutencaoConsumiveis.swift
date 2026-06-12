@@ -359,9 +359,17 @@ public struct StatusManutencao: Equatable, Sendable {
     /// Fração da vida consumida (0…>1). nil quando não há cálculo automático.
     public let fracao: Double?
     public let resumo: String
+    /// Data (ms) da última troca registrada. nil = nunca registrada.
+    /// A tela usa pra mostrar "Trocado em DD/MM" assim que o registro é salvo.
+    public let ultimaTrocaMs: Int64?
+    /// Uso em horas desde a última troca (a contagem que zera na troca).
+    /// nil = nunca registrada.
+    public let horasDesdeUltima: Double?
 
-    public init(severidade: SeveridadeManutencao, fracao: Double?, resumo: String) {
+    public init(severidade: SeveridadeManutencao, fracao: Double?, resumo: String,
+                ultimaTrocaMs: Int64? = nil, horasDesdeUltima: Double? = nil) {
         self.severidade = severidade; self.fracao = fracao; self.resumo = resumo
+        self.ultimaTrocaMs = ultimaTrocaMs; self.horasDesdeUltima = horasDesdeUltima
     }
 }
 
