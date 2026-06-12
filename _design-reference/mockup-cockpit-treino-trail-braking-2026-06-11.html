@@ -158,44 +158,91 @@ o trilho vertical de trechos à esquerda, o delta e as mensagens passam a falar 
   </div>
 </div>
 
-<!-- ═══════════ MOMENTO 2 — METADE DA RETA (ANTES): O ALVO ═══════════ -->
+<!-- ═══════════ MOMENTO 2 — METADE DA RETA: ALVO + SHIFT LIGHT DE FREIO ═══════════ -->
 <div class="momento">
   <div class="device">
     <div class="orient">
-      <div class="grafico">
-        <svg viewBox="0 0 520 330">
+      <div class="freio-light">
+        <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i>
+      </div>
+      <div class="grafico grafico--baixo">
+        <svg viewBox="0 0 520 300">
           <text x="6" y="14" class="rotulo-eixo">FREIO %</text>
-          <text x="470" y="322" class="rotulo-eixo">METROS</text>
-          <line x1="34" y1="20" x2="34" y2="296" stroke="#1f2937" stroke-width="1"/>
-          <line x1="34" y1="296" x2="506" y2="296" stroke="#1f2937" stroke-width="1"/>
+          <text x="470" y="292" class="rotulo-eixo">METROS</text>
+          <line x1="34" y1="20" x2="34" y2="266" stroke="#1f2937" stroke-width="1"/>
+          <line x1="34" y1="266" x2="506" y2="266" stroke="#1f2937" stroke-width="1"/>
           <!-- alvo: sobe forte na marca, segura, solta progressivo até o ápice -->
-          <path d="M60,296 L118,296 L138,60 L196,60 C300,86 386,200 442,272 L470,288"
+          <path d="M60,266 L118,266 L138,54 L196,54 C300,78 386,180 442,244 L470,258"
                 fill="none" stroke="oklch(74% 0.16 73)" stroke-width="7" stroke-linecap="round"
                 style="filter:drop-shadow(0 0 14px oklch(74% 0.16 73 / .5))"/>
-          <!-- marcas -->
-          <line x1="138" y1="20" x2="138" y2="296" stroke="oklch(74% 0.16 73)" stroke-dasharray="4 6" stroke-width="1.6"/>
+          <line x1="138" y1="20" x2="138" y2="266" stroke="oklch(74% 0.16 73)" stroke-dasharray="4 6" stroke-width="1.6"/>
           <text x="144" y="34" class="rotulo-eixo" style="fill:oklch(74% 0.16 73)">FREIA AQUI · 87 m</text>
-          <line x1="442" y1="20" x2="442" y2="296" stroke="#e8eef5" stroke-dasharray="4 6" stroke-width="1.4"/>
+          <line x1="442" y1="20" x2="442" y2="266" stroke="#e8eef5" stroke-dasharray="4 6" stroke-width="1.4"/>
           <text x="448" y="34" class="rotulo-eixo" style="fill:#e8eef5">ÁPICE</text>
-          <text x="210" y="140" class="rotulo-eixo" style="font-size:13px; fill:oklch(74% 0.16 73)">SOLTANDO ATÉ O ÁPICE</text>
+          <text x="210" y="130" class="rotulo-eixo" style="font-size:13px; fill:oklch(74% 0.16 73)">SOLTANDO ATÉ O ÁPICE</text>
         </svg>
       </div>
-      <div class="acao">
+      <div class="acao" style="top:46%">
         <div class="verbo">FREIA <b>87 m</b><br>SOLTA <b>AOS POUCOS</b></div>
         <div class="dado">40<small>% NO ÁPICE</small></div>
       </div>
-      <div class="legenda-mini"><span><i style="border-color:oklch(74% 0.16 73)"></i>como deve ser (da melhor passagem)</span></div>
+      <div class="rodape-mantido">
+        <span>ENTRADA</span><span class="ativo">FREIO</span><span>ÁPICE</span><span>SAÍDA</span>
+      </div>
+      <div class="shift"><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="on"></i></div>
     </div>
   </div>
   <div class="notas">
-    <h2>MOMENTO 2 — METADE DA RETA (ANTES)</h2>
-    <p class="novo">A orientação toma a tela como hoje, mas o conteúdo é o <b>gráfico de frenagem alvo</b>:
-    a forma de como a freada DEVE ser — onde pisa (87 m), e a rampa soltando progressivamente até
-    chegar no ápice ainda com ~40% de freio.</p>
+    <h2>MOMENTO 2 — METADE DA RETA (APROXIMANDO)</h2>
     <ul>
-      <li class="novo">O alvo vem da <b>melhor passagem real</b> daquele trecho (régua de sempre) —
-      hoje pela física do GPS, segunda/terça pela pressão real do sensor.</li>
-      <li class="mantido">Verbo + número no padrão atual da tela. Tempo de leitura: bater o olho.</li>
+      <li class="novo"><b>Shift light de FREIO em cima (novo):</b> as luzes vêm das duas pontas
+      e vão se juntando conforme o carro chega no ponto de frenagem. Juntou no centro = o ponto.</li>
+      <li class="novo">No meio, o <b>gráfico de frenagem alvo</b>: onde pisa (87 m) e a rampa
+      soltando progressiva até o ápice com ~40% de freio — da melhor passagem real.</li>
+      <li class="mantido">Embaixo continua igual: ENTRADA · FREIO · ÁPICE · SAÍDA e o shift light
+      de marcha normal (só acende progressivo, SEM onda).</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════ MOMENTO 2b — O PONTO DE FRENAGEM (wash) ═══════════ -->
+<div class="momento">
+  <div class="device">
+    <div class="orient">
+      <div class="wash-freio"></div>
+      <div class="freio-light">
+        <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="ponto"></i>
+        <i class="ponto"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i>
+      </div>
+      <div class="grafico grafico--baixo" style="opacity:.55">
+        <svg viewBox="0 0 520 300">
+          <line x1="34" y1="20" x2="34" y2="266" stroke="#1f2937" stroke-width="1"/>
+          <line x1="34" y1="266" x2="506" y2="266" stroke="#1f2937" stroke-width="1"/>
+          <path d="M60,266 L118,266 L138,54 L196,54 C300,78 386,180 442,244 L470,258"
+                fill="none" stroke="oklch(74% 0.16 73)" stroke-width="7" stroke-linecap="round"/>
+          <line x1="138" y1="20" x2="138" y2="266" stroke="#fff" stroke-width="2.4"/>
+        </svg>
+      </div>
+      <div class="acao" style="top:46%">
+        <div class="verbo" style="font-size:84px">FREIA<br><b>AGORA</b></div>
+      </div>
+      <div class="rodape-mantido">
+        <span>ENTRADA</span><span class="ativo">FREIO</span><span>ÁPICE</span><span>SAÍDA</span>
+      </div>
+      <div class="shift"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+    </div>
+  </div>
+  <div class="notas">
+    <h2>MOMENTO 2b — O PONTO (a onda é do freio)</h2>
+    <ul>
+      <li class="novo">As luzes <b>fecharam no centro</b> = ponto de frenagem. Nesse instante entra a
+      <b>onda (wash)</b> — o mesmo efeito de clarão que hoje existe na troca de marcha, agora
+      reservado pro freio no modo treino.</li>
+      <li class="mantido">O shift light de marcha embaixo NÃO faz onda — segue só acendendo
+      as luzes até o ponto de trocar, como hoje.</li>
+      <li class="novo">Clarão na cor do alvo (âmbar), 1 piscada curta — mesmo tempo do clarão atual
+      da troca (300 ms).</li>
     </ul>
   </div>
 </div>
