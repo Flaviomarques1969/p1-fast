@@ -144,12 +144,16 @@ struct ManutencaoConsumiveisView: View {
     }
 
     /// Mostra a confirmação no topo e some sozinha depois de alguns segundos.
+    /// O contador de geração garante que só o aviso MAIS RECENTE agenda o
+    /// desaparecimento (dois salvamentos idênticos seguidos não se atropelam).
     private func mostrarAviso(_ texto: String) {
+        avisoGeracao += 1
+        let geracao = avisoGeracao
         withAnimation(.easeOut(duration: 0.25)) { aviso = texto }
         Task {
             try? await Task.sleep(nanoseconds: 3_500_000_000)
             await MainActor.run {
-                if aviso == texto {
+                if avisoGeracao == geracao {
                     withAnimation(.easeIn(duration: 0.3)) { aviso = nil }
                 }
             }
