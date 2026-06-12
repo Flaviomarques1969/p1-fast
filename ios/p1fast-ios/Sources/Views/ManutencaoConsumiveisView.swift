@@ -293,12 +293,19 @@ struct RegistrarTrocaView: View {
                 VStack(alignment: .leading, spacing: Spacing.md) {
                     secao("Item") {
                         Picker("Item", selection: $itemCodigo) {
+                            if itemCodigo.isEmpty {
+                                Text("Escolha o item").tag("")
+                            }
                             ForEach(CatalogoConsumiveisCelta.itens, id: \.codigo) { it in
                                 Text(it.nome).tag(it.codigo)
                             }
                         }
                         .pickerStyle(.menu)
                         .tint(Color.accent)
+                        if itemCodigo.isEmpty {
+                            Text("Escolha qual item foi trocado — o Salvar libera depois disso.")
+                                .font(.system(size: 11)).foregroundStyle(Color.yellow)
+                        }
                     }
                     secao("Quando foi a troca") {
                         DatePicker("Data", selection: $data, in: ...Date(), displayedComponents: .date)
