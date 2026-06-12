@@ -651,7 +651,8 @@ soltou de uma vez, freou cedo e freou tarde. Os números são simulados só pra 
 
   function frame(ts){
     if(lastTs===null) lastTs=ts;
-    var dt=pausado?0:(ts-lastTs);
+    if(pausado){ lastTs=ts; requestAnimationFrame(frame); return; }
+    var dt=Math.min(ts-lastTs,50);   /* aba em segundo plano não pula fase */
     lastTs=ts;
     tF+=dt;
 
