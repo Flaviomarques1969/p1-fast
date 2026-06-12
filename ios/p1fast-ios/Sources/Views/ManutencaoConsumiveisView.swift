@@ -204,7 +204,7 @@ struct ManutencaoConsumiveisView: View {
 
     private func itemCard(_ item: ConsumivelDef, status: StatusManutencao?, compacto: Bool) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            Circle().fill(corStatus(status?.severidade))
+            Circle().fill(corStatus(status))
                 .frame(width: 10, height: 10).padding(.top, 5)
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.nome)
@@ -218,18 +218,28 @@ struct ManutencaoConsumiveisView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 if let s = status {
-                    Text(s.resumo)
-                        .font(.system(size: 11.5))
-                        .foregroundStyle(corStatus(s.severidade))
-                        .fixedSize(horizontal: false, vertical: true)
+                    if let trocaMs = s.ultimaTrocaMs {
+                        Text(linhaUltimaTroca(s, trocaMs: trocaMs))
+                            .font(.system(size: 11.5, weight: .medium))
+                            .foregroundStyle(Color.accent)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    // Sem média ainda, o resumo do motor ("registre as trocas…")
+                    // confundiria logo depois de salvar — a linha acima já informa.
+                    if !(s.severidade == .semHistorico && s.ultimaTrocaMs != nil) {
+                        Text(s.resumo)
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(corStatus(s))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
             Spacer(minLength: 0)
-            Text(textoSeveridade(status?.severidade))
+            Text(textoSeveridade(status))
                 .font(.system(size: 10, weight: .bold)).tracking(0.4)
                 .padding(.horizontal, 8).padding(.vertical, 3)
-                .background(Capsule().fill(corStatus(status?.severidade).opacity(0.16)))
-                .foregroundStyle(corStatus(status?.severidade))
+                .background(Capsule().fill(corStatus(status).opacity(0.16)))
+                .foregroundStyle(corStatus(status))
         }
         .padding(.horizontal, 12).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
