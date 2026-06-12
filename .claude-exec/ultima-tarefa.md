@@ -164,6 +164,15 @@ RODADA 10 (12/06 ~0h, ditado — CONCLUÍDA, aguardando validação visual):
    REQUISITO DE PRODUTO ditado nesta rodada (levar pra implementação real): medir e
    aprender o tempo de reação e adiantar o zero por ele.
 
+RODADA 14 (12/06 ~0h25, ditado — CONCLUÍDA, aguardando validação visual): SEM TEXTO
+   PEQUENO perto do gráfico ("o piloto nunca vai conseguir ler isso"). Removidos: eixo
+   FREIO %/100/50/0 · números 120·90·60·30 (só risquinhos) · rótulo ZERO·REAÇÃO (só a
+   linha) · FREIO·87m · ÁPICE·40% · leitura FREIO×ALVO · motivo do erro · rótulo da
+   contagem. Regra: no palco, texto só gigante (contagem/delta) ou no .apex; o resto é
+   forma, cor e luz. Validação: sintaxe OK + navegador ciclo completo + reinício: ZERO
+   erros; único texto restante no gráfico = o número gigante (verificado por varredura);
+   2 capturas conferidas. Reaberto pro Flávio.
+
 RODADAS 12-13 (12/06 ~0h10, ditado + captura — CONCLUÍDAS, aguardando validação visual):
    12. DENTRO DO TRECHO limpo: saiu o nome sobreposto ("SOLTA AOS POUCOS"); fica só o
    delta em fundo preto, e o gráfico SÓ entra quando a reta começa (sobreposição zero).
