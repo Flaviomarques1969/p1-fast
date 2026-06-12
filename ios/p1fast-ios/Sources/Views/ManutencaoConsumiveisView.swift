@@ -67,6 +67,13 @@ final class ManutencaoConsumiveisStore: ObservableObject {
 // MARK: - Tela principal
 // ─────────────────────────────────────────────────────────────
 
+/// Alvo do formulário de troca: item pré-escolhido (toque no cartão)
+/// ou nenhum (botão geral — o piloto escolhe o item no formulário).
+private struct AlvoRegistro: Identifiable {
+    let id = UUID()
+    let item: ConsumivelDef?
+}
+
 struct ManutencaoConsumiveisView: View {
     @EnvironmentObject private var store: ManutencaoConsumiveisStore
     @EnvironmentObject private var carroRepo: CarroRepository
@@ -74,7 +81,8 @@ struct ManutencaoConsumiveisView: View {
     let carroId: String
     let onClose: () -> Void
 
-    @State private var registrar: ConsumivelDef?
+    @State private var registrar: AlvoRegistro?
+    @State private var aviso: String?
 
     private var carro: Carro? { carroRepo.carros.first { $0.id == carroId } }
 
@@ -93,20 +101,50 @@ struct ManutencaoConsumiveisView: View {
             }
             .background(Color.surface)
 
-            FAB("Registrar troca") { registrar = CatalogoConsumiveisCelta.itens.first }
+            FAB("Registrar troca") { registrar = AlvoRegistro(item: nil) }
                 .padding(.trailing, Spacing.md)
                 .padding(.bottom, 24)
+        }
+        .overlay(alignment: .top) {
+            if let aviso {
+                Text(aviso)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.text)
+                    .padding(.horizontal, 14).padding(.vertical, 9)
+                    .background(Capsule().fill(Color.surfaceRaised))
+                    .overlay(Capsule().stroke(Color.bom.opacity(0.7), lineWidth: 1))
+                    .padding(.top, 6)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
         }
         .navigationTitle("Manutenção")
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
         .task { await store.carregarStatus(carroId: carroId) }
-        .sheet(item: $registrar) { item in
-            RegistrarTrocaView(carroId: carroId, itemInicial: item) {
-                registrar = nil
-                Task { await store.carregarStatus(carroId: carroId) }
-            }
+        .sheet(item: $registrar) { alvo in
+            RegistrarTrocaView(
+                carroId: carroId,
+                itemInicial: alvo.item,
+                onSaved: { def, dataMs in
+                    registrar = nil
+                    mostrarAviso("Troca registrada · \(def.nome) · \(fmtDataCurta(dataMs))")
+                    Task { await store.carregarStatus(carroId: carroId) }
+                },
+                onClose: { registrar = nil })
             .environmentObject(store)
+        }
+    }
+
+    /// Mostra a confirmação no topo e some sozinha depois de alguns segundos.
+    private func mostrarAviso(_ texto: String) {
+        withAnimation(.easeOut(duration: 0.25)) { aviso = texto }
+        Task {
+            try? await Task.sleep(nanoseconds: 3_500_000_000)
+            await MainActor.run {
+                if aviso == texto {
+                    withAnimation(.easeIn(duration: 0.3)) { aviso = nil }
+                }
+            }
         }
     }
 
