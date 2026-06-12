@@ -122,6 +122,7 @@ struct ManutencaoConsumiveisView: View {
                     .overlay(Capsule().stroke(Color.bom.opacity(0.7), lineWidth: 1))
                     .padding(.top, 6)
                     .transition(.move(edge: .top).combined(with: .opacity))
+                    .allowsHitTesting(false)
             }
         }
         .navigationTitle("Manutenção")
