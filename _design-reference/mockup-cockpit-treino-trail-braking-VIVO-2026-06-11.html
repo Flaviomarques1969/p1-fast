@@ -494,7 +494,7 @@ soltou de uma vez, freou cedo e freou tarde. Os números são simulados só pra 
 
   function poeMotivo(x,y,texto){
     var t=document.createElementNS(SVG,'text');
-    t.setAttribute('x',Math.min(x+12,640)); t.setAttribute('y',Math.max(y-14,30));
+    t.setAttribute('x',Math.max(320,Math.min(x+12,640))); t.setAttribute('y',Math.max(y-14,30));
     t.setAttribute('class','motivo-erro');
     t.textContent=texto;
     gDyn.appendChild(t);
