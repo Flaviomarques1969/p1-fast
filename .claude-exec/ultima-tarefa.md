@@ -1,3 +1,64 @@
+# TASK_INIT 11/06/2026 ~23h25 — MANUTENÇÃO: dar retorno visível ao salvar troca (pedido do Flávio)
+
+1. Pedido original (Flávio, literal): "A função de atualização não tá bacana, ela não tá
+   parecendo tá correta. Não dá impressão que você salvou alguma coisa, que alterou, que
+   começou a contar."
+2. Objetivo em 1 frase: fazer a tela Manutenção do app DIZER o que aconteceu — aviso claro de
+   troca registrada, cartão do item mudando na hora (data da troca + uso contando), erro
+   visível se falhar, e botão geral perguntando o item em vez de vir com óleo pré-escolhido.
+3. Critérios de conclusão: (a) ao salvar, aviso "Troca registrada · <item> · <data>" aparece;
+   (b) cartão do item passa a mostrar "Trocado em DD/MM · X h de uso · aprendendo a vida útil"
+   e selo CONTANDO (em vez de SEM DADO parado); (c) falha de gravação mostra alerta visível;
+   (d) botão "Registrar troca" abre com "Escolha o item" (Salvar travado até escolher);
+   (e) bateria de testes verde; (f) empacotado e instalado no iPhone pra validação do Flávio.
+4. Leitura confirmada: ~/.claude/CLAUDE.md sim · padroes.md sim · FLAVIO_EXECUTION_PROTOCOL sim ·
+   FLAVIO_DONE_CHECKLIST sim · FLAVIO_ENVIRONMENT_RULES sim · FLAVIO_COMMUNICATION_RULES sim ·
+   memórias worktree/.env.xcconfig + auto-save + sem-ícones lidas.
+5. Plano ≤5 passos: (1) ambiente isolado novo a partir da versão oficial; (2) núcleo: status
+   passa a expor data da última troca + horas desde então (aditivo, sem mudar severidades);
+   (3) tela: aviso de salvo + alerta de erro + "Escolha o item" + cartão CONTANDO; (4) testes
+   novos + bateria completa + revisão adversarial; (5) empacotar com credenciais certas
+   (.env.xcconfig + limpeza de cache + conferência do Info.plist) e instalar no iPhone.
+6. Arquivos/áreas: ios/p1fast-ios/Sources/Views/ManutencaoConsumiveisView.swift ·
+   ios/p1fast-core/Sources/P1FastCore/ManutencaoConsumiveis.swift e ManutencaoRegistro.swift ·
+   testes do núcleo.
+7. Ambiente alvo: desenvolvimento (ambiente isolado; instalar no iPhone só após bateria verde)
+8. Produção protegida: sim (nuvem e painel no ar intocados)
+9. Autorização para produção: não necessária (app no iPhone segue o rito já praticado:
+   instalar → Flávio valida; incorporação à versão oficial só depois do aval)
+10. Evidência da autorização para produção: não se aplica
+11. Riscos: mudança de comportamento do botão geral (agora pergunta o item) — é exatamente o
+    que o Flávio pediu; preservar dados locais do aparelho (instalação preserva /Documents);
+    não mexer em severidades/pendências do motor (só expor dados novos).
+12. Status: EXECUTADO 12/06 ~0h — AGUARDANDO VALIDAÇÃO DO FLÁVIO NO IPHONE.
+    FEITO (ambiente isolado claude/manutencao-feedback-visual em p1fast-worktrees/):
+    - Núcleo: StatusManutencao ganhou ultimaTrocaMs + horasDesdeUltima (aditivo, severidades
+      intactas); ManutencaoHistorico.status preenche os dois.
+    - Tela: aviso "Troca registrada · <item> · <data>" no topo (some sozinho em 3,5 s);
+      cartão mostra "Trocado em DD/MM/AAAA · X h de uso · aprendendo a vida útil" + selo
+      CONTANDO (cor de ação) no lugar de SEM DADO parado; alerta visível quando NÃO salva
+      (português claro, sem jargão); botão geral "Registrar troca" abre com "Escolha o item"
+      e Salvar travado até escolher (cartão do item continua pré-selecionando).
+    - Bateria: 546 testes verdes (545 + 1 novo cobrindo os campos novos; teste de histórico
+      ganhou 2 conferências extras).
+    - Revisão adversarial (19 agentes): 3 achados confirmados e CORRIGIDOS (erro em inglês
+      técnico na tela; aviso engolia toque no topo por 3,5 s; aviso da 2ª troca idêntica
+      sumia cedo) + 4 falsos alarmes descartados. Reempacotado após correções.
+    - Empacotamento: BUILD SUCCEEDED com .env.xcconfig copiado + cache limpo + Info.plist
+      conferido (credenciais reais). INSTALADO no iPhone 16 Pro Max (devicectl, dados
+      preservados).
+    AJUSTE 12/06 ~0h30 (pedido Flávio na validação): item recém-trocado fica VERDE "EM DIA"
+    mesmo enquanto a inteligência aprende a vida (era selo azul CONTANDO). Ciclo confirmado
+    por ele: verde → amarelo perto da troca esperada (80%) → vermelho passou → verde ao
+    registrar. Reempacotado + reinstalado no iPhone. Nuvem conferida: nenhum registro de
+    teste novo (seguem 1 pneus real + 2 óleos errados).
+    FALTA: (a) Flávio validar no iPhone; (b) incorporar à versão oficial após aval;
+    (c) autorização pra apagar os 2 registros errados de óleo de 11/06 (aparelho + nuvem);
+    (d) se ele registrar troca de teste na validação, apagar junto.
+BACKUP deste registro: .claude-exec/ultima-tarefa-backup-pre-manutencao-pneus-2026-06-11.md
+
+---
+
 # TASK_INIT 11/06/2026 ~23h — TELA MANUTENÇÃO NO IPHONE: registrar troca de pneus não funciona
 
 1. Pedido original (Flávio, literal): "na tela de manutenção, não está aparecendo nada disso,
@@ -25,10 +86,100 @@
 10. Evidência da autorização para produção: não recebida (diagnóstico não precisa)
 11. Riscos: app instalado no iPhone é o que o Flávio usa de verdade — qualquer correção precisa
     preservar dados locais (instalar preserva /Documents); nuvem é produção (só leitura).
-12. Status inicial: iniciado
+12. Status: DIAGNÓSTICO CONCLUÍDO 11/06 ~23h10. CAUSA (com prova):
+    a) O Salvar FUNCIONA: 2 registros gravados no banco do iPhone às 22:51:46 e 22:51:58
+       (Brasília) e AMBOS já na nuvem (conferido por consulta só-leitura) — porém os dois
+       como item "oleo_motor", NÃO pneus: o botão "Registrar troca" abre o formulário com
+       o PRIMEIRO item do catálogo (Óleo do motor) pré-selecionado
+       (ManutencaoConsumiveisView.swift:96 + RegistrarTrocaView init :225).
+    b) Tela parece "estática" porque: salvar não dá NENHUM aviso visível (salva→fecha em
+       silêncio, erro só vai pro console — :276-298) e itens preditivos (óleo, pneus) ficam
+       "SEM DADO · Aprendendo..." até existir 2ª troca com uso real entre elas
+       (ManutencaoConsumiveis.swift:434-437 + ManutencaoRegistro.swift:87-99).
+    c) A vida útil (tempo ligado + voltas reais + km) NÃO aparece no app — aparece na tela
+       Planejamento do Stint do painel web, lendo manutencoes da nuvem com
+       item_codigo=eq.pneus (configuracao-stint.js:360-420). Como os registros são de óleo,
+       o painel segue mostrando "Nenhuma troca visível".
+    d) Efeito colateral: 2 registros ERRADOS de óleo (11/06, duplicados) no aparelho e na
+       nuvem. SEM alerta falso (média só aprende com horas>0 — guard ManutencaoRegistro:98),
+       mas é dado errado. Limpeza = exclusão de dado em produção → SÓ com autorização literal.
+    PASSO 1 FEITO 11/06 23h11: Flávio registrou a troca no item PNEUS pelo app — 1 registro
+    na nuvem (id 80598c9d, ocorrido_em = 10/06/2026 23:11 Brasília, sem duplicar). Validado
+    por consulta só-leitura. Vida útil no Planejamento do Stint vai mostrar 0 h / 0 voltas /
+    0 km — CORRETO (contagem zera na troca; nenhuma sessão desde 10/06 23:11; comprimento
+    do traçado 5.476 m presente). Tela aberta pra ele no navegador.
+    AGUARDANDO FLÁVIO: (2) autorizar limpeza dos 2 registros errados de óleo de 11/06
+    (aparelho + nuvem; nuvem = produção, precisa frase literal). (3) Aprovar consertos de
+    usabilidade (aviso de salvo, erro visível, botão perguntar o item, cartão mostrar
+    "última troca em DD/MM") — implementar em desenvolvimento e validar antes de instalar.
+    CONFERIR COM ELE: a data registrada da troca ficou 10/06 — confirmar se é a data real.
 BACKUP deste registro: .claude-exec/ultima-tarefa-backup-pre-manutencao-pneus-2026-06-11.md
 NOTA: a RODADA 8 (mockup vivo trail braking, bloco abaixo) ficou EM ESPERA — Flávio puxou a
 frente do app/Manutenção primeiro. Nada da rodada 8 foi perdido.
+
+---
+
+# TASK_INIT 11/06/2026 ~23h20 — RODADA 9: shift light do freio vai pras LATERAIS (2 colunas verticais)
+
+1. Pedido original (Flávio, literal): "vamos colocar o shift light do freio nas laterais, vou
+   fazer duas colunas descendo de cima para baixo nas laterais, uma na esquerda e outra na
+   direita. pode usar o mesmo padrão do shift light como ele é mas na vertical e com a distância
+   das bolinhas igual né não faz longe não fica feio uma bolinha da outra. Mantenha o mesmo
+   padrão de contar na horizontal."
+2. Objetivo em 1 frase: trocar a barra de freio do topo por duas colunas verticais laterais
+   (LED premium real, mesmo espaçamento entre bolinhas, acendendo de cima pra baixo, mesma contagem).
+3. Critérios: (a) coluna esquerda + direita espelhadas, mesmo espaçamento do horizontal (18px);
+   (b) acendem de cima pra baixo conforme a distância cai; (c) clarão no ponto igual;
+   (d) sem colisão com o gráfico; (e) zero erros de console + navegador aberto por mim.
+4. Leitura confirmada: todos os 6 arquivos obrigatórios (mesma sessão da rodada 8).
+5. Plano: (1) variante vertical do componente real; (2) trocar barra por 2 colunas; (3) ajustar
+   motor pros 2 elementos; (4) validar no navegador com capturas; (5) abrir + memória.
+6. Arquivos: mockup-cockpit-treino-trail-braking-VIVO-2026-06-11.html · memória do ditado.
+7. Ambiente alvo: desenvolvimento  8. Produção protegida: sim  9. Autorização: não (não precisa)
+10. Evidência: não se aplica  11. Riscos: colisão com rótulos do eixo do gráfico (resolver
+    deslocando o gráfico) · trilho usa a mesma região da coluna esquerda (sem conflito real:
+    nunca ficam visíveis ao mesmo tempo).
+12. Status: CONCLUÍDO 11/06 ~23h35 — aguardando validação visual do Flávio
+RESULTADO RODADA 9: duas colunas verticais (6 LEDs cada, espelhadas, gap 18px igual ao
+horizontal) em left:58 / right:20, acendendo de cima pra baixo pelas mesmas faixas de
+metros; clarão no ponto mantido; gráfico recuado (left 10% / width 80%). Validação:
+sintaxe OK + navegador real (Chromium): ZERO erros, geometria medida sem colisão
+(coluna esq 59-90 · gráfico 96-860 · coluna dir 904-935) + 4 capturas conferidas.
+Aberto no navegador do Flávio. Memória do ditado atualizada (rodada 9).
+AJUSTE 9b (~23h45, ditado): veredito TRAIL ERRADO sem o halo roxo — letreiro vermelho
+sozinho ("o trail errado já é o suficiente"); TRAIL CERTO mantém o dourado. Validado
+no navegador (status neutro confirmado + captura) e reaberto pro Flávio.
+
+RODADA 10 (12/06 ~0h, ditado — CONCLUÍDA, aguardando validação visual):
+1. Contador CONTINUA depois do zero/clarão (branco até o ponto, vermelho se passou;
+   some quando ele pisa de verdade). 2. ZERO ADIANTADO PELA REAÇÃO: IA cronometra
+   zero→pé a cada passagem, aprende o tempo (demo 0,31 s ≈ 12 m a 38 m/s) e dispara o
+   zero esse tanto ANTES do ponto — o aperto cai no ponto correto. Linha "ZERO · REAÇÃO"
+   no gráfico + medição pós-freada (REAÇÃO X s · NO PONTO / m DEPOIS). 3. Trilho com
+   FAIXA PRÓPRIA; gráfico mais pra direita (left 21% / width 70%). 4. SEM letreiro de
+   resultado por cima do gráfico — o veredito é o próprio gráfico pintado inteiro +
+   célula no trilho; o nome (TRAIL CERTO/ERRADO) vive na faixa de status fora da tela.
+   Validação: sintaxe OK + navegador (Chromium): ZERO erros, 5 capturas conferidas,
+   faixa de status confirmou "TRAIL ERRADO — FREOU TARDE". Reaberto pro Flávio.
+   REQUISITO DE PRODUTO ditado nesta rodada (levar pra implementação real): medir e
+   aprender o tempo de reação e adiantar o zero por ele.
+
+RODADAS 12-13 (12/06 ~0h10, ditado + captura — CONCLUÍDAS, aguardando validação visual):
+   12. DENTRO DO TRECHO limpo: saiu o nome sobreposto ("SOLTA AOS POUCOS"); fica só o
+   delta em fundo preto, e o gráfico SÓ entra quando a reta começa (sobreposição zero).
+   13. Régua inferior virou o componente REAL .apex (padrão combinado): rótulo em cima,
+   DADO embaixo, estados reais — preenche ao vivo: ENTRADA 142 na entrada · FREIO X m
+   quando pisa · ÁPICE X% perto do ápice · SAÍDA X no pós-trecho; verde/vermelho pela
+   comparação, traço apagado enquanto pendente. Ajustes de espaço: trilho bottom 140 ·
+   gráfico top 8%/bottom 32%. Validação: sintaxe OK + navegador: ZERO erros, valores
+   confirmados ("142/87 m/32%/139"), 4 capturas conferidas. Reaberto pro Flávio.
+
+RODADA 11 (12/06, ditado — CONCLUÍDA, aguardando validação visual): TRILHO ENXUTO —
+   só a ÚLTIMA passagem + a ANTERIOR por trecho (janela rolante, troca logo depois de
+   cada passagem); quadrinhos maiores (18px). FECHA a decisão "janela do trilho".
+   Validação: sintaxe OK + navegador: ZERO erros, 2 células confirmadas durante e após
+   a passagem, captura conferida. Reaberto pro Flávio. Decisões restantes: critério do
+   CERTO (3 de 3?) e gráfico-alvo em toda reta ou só onde erra.
 
 ---
 
@@ -61,8 +212,28 @@ frente do app/Manutenção primeiro. Nada da rodada 8 foi perdido.
 10. Evidência: não recebida (não se aplica — mockup local)
 11. Riscos: animação precisa rodar sem erro de console; v6 continua sendo a referência
     anterior — NADA é apagado.
-12. Status: iniciado
+12. Status: CONCLUÍDO 11/06 ~23h — aguardando validação visual do Flávio
 BACKUP deste registro antes da atualização: .claude-exec/ultima-tarefa-backup-pre-rodada8-2026-06-11.md
+
+RESULTADO DA RODADA 8:
+- Entregue e ABERTO NO NAVEGADOR: _design-reference/mockup-cockpit-treino-trail-braking-VIVO-2026-06-11.html
+  (mockup ANIMADO; roda sozinho os 4 cenários: certa / soltou de uma vez / cedo / tarde,
+  com botões pra rodar um cenário específico e pausar).
+- v6 estático preservado intacto (mesma pasta). Nada apagado.
+- Revisão adversarial (10 agentes, 3 lentes, achados verificados com render real no
+  Chromium): 6 confirmados corrigidos (coluna de luz no ponto recuperada do ditado;
+  halo de veredito destravado; colisões de texto veredito/trilho/contagem; pausa que
+  mutava estado) + 7 ajustes menores aplicados (pisca 300 ms igual ao disparo real;
+  vermelhos unificados no tom do painel; ÁPICE acende na régua; leitura FREIO×ALVO
+  no freou cedo; proteção contra aba em segundo plano).
+- Validação: node --check 2x OK + navegador real: ZERO erros de console; 6 capturas
+  dos momentos-chave conferidas visualmente uma a uma.
+- DECISÃO DE 1 LINHA PENDENTE (não alterei sozinho): rótulo do ponto é "FREIO · 87 m"
+  nos dois mockups, mas a memória do ditado registra "FREIA AQUI · 87 m". Qual vale?
+- Memória atualizada: p1-fast-ditado-cockpit-treino-por-disciplina-2026-06-11.md
+  (rodada 8: mockup VIVO é o vigente; a implementação deve reproduzir a DINÂMICA).
+- 3 decisões do treino seguem em aberto (critério do CERTO · janela do trilho · alvo
+  em toda reta ou só onde erra).
 
 ---
 
