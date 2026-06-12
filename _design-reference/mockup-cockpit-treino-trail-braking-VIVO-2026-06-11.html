@@ -43,8 +43,9 @@
     color:#8a99a8; letter-spacing:1px; background:none; animation:none; }
 
   /* trilho vertical de trechos (esquerda, depois do recorte físico) */
-  .trilho { position:absolute; top:36px; bottom:64px; left:64px; width:110px; z-index:40;
-    display:flex; flex-direction:column; gap:5px; transition:opacity 420ms var(--ease-out); }
+  .trilho { position:absolute; top:36px; bottom:92px; left:64px; width:118px; z-index:40;
+    display:flex; flex-direction:column; gap:5px; transition:opacity 420ms var(--ease-out);
+    background:linear-gradient(90deg, rgba(0,0,0,.9) 72%, transparent); padding-right:14px; }
   .trilho .titulo { font:800 9px 'JetBrains Mono',monospace; color:#e7c463; letter-spacing:1px; }
   .tr { flex:1; display:flex; align-items:center; gap:5px; }
   .tr .nome { width:24px; font:800 11px 'JetBrains Mono',monospace; color:#8a99a8; }
