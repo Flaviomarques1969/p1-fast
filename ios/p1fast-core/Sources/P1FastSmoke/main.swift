@@ -8151,6 +8151,53 @@ step("histórico: registra trocas, aprende a vida real e calcula status preditiv
     try assertClose(media, 2.0)                 // 2h + 2h → vida média do pneu = 2h
     try assertEq(status.severidade, .amarelo)   // 1,8h / 2h = 0,9 → amarelo
     try assertClose(status.fracao, 0.9)
+    // retorno visível: status carrega a data da última troca + uso desde ela
+    try assertEq(status.ultimaTrocaMs, base + 20*h)
+    try assertClose(status.horasDesdeUltima, 1.8)
+}
+
+step("status expõe última troca + uso desde ela (retorno visível na tela de Manutenção)") {
+    let q = try makeTestDB()
+    let team = "team-1"; let carro = "carro-feedback"
+    let base: Int64 = 1_700_000_000_000
+    let h: Int64 = 3_600_000
+    try q.write { db in
+        try Carro(id: carro, timeId: team, apelido: "Bubi").insert(db)
+    }
+    let pneus = CatalogoConsumiveisCelta.find("pneus")!
+    // SEM troca registrada: campos novos ficam nil (tela mostra SEM DADO)
+    let antes = try q.read { db in
+        try ManutencaoHistorico.status(db, item: pneus, carroId: carro, timeId: team, agoraMs: base)
+    }
+    try assertEq(antes.severidade, .semHistorico)
+    try assertTrue(antes.ultimaTrocaMs == nil, "sem troca, ultimaTrocaMs deve ser nil")
+    try assertTrue(antes.horasDesdeUltima == nil, "sem troca, horasDesdeUltima deve ser nil")
+    // COM 1 troca: severidade segue semHistorico (média ainda não aprendida),
+    // mas a tela já tem o que mostrar — data da troca + contagem zerada/contando
+    try q.write { db in
+        try ManutencaoRegistro(id: "mfb1", timeId: team, carroId: carro,
+                               itemCodigo: "pneus", ocorridoEm: base).insert(db)
+        try Evento(id: "efb1", timeId: team, dataEvento: base + h).insert(db)
+        try Sessao(id: "sfb1", timeId: team, eventoId: "efb1", carroId: carro,
+                   status: "finalizada", dataInicio: base + h, dataFim: base + 2*h).insert(db)
+    }
+    let depois = try q.read { db in
+        try ManutencaoHistorico.status(db, item: pneus, carroId: carro, timeId: team, agoraMs: base + 3*h)
+    }
+    try assertEq(depois.severidade, .semHistorico)   // 1 troca não muda severidade
+    try assertEq(depois.ultimaTrocaMs, base)
+    try assertClose(depois.horasDesdeUltima, 1.0)    // 1 sessão de 1h desde a troca
+    // itens NÃO-preditivos também carregam a data (cartão mostra "Trocado em…")
+    let geometria = CatalogoConsumiveisCelta.find("geometria")!
+    try q.write { db in
+        try ManutencaoRegistro(id: "mfb2", timeId: team, carroId: carro,
+                               itemCodigo: "geometria", ocorridoEm: base + h).insert(db)
+    }
+    let geo = try q.read { db in
+        try ManutencaoHistorico.status(db, item: geometria, carroId: carro, timeId: team, agoraMs: base + 3*h)
+    }
+    try assertEq(geo.severidade, .condicional)       // comportamento de antes preservado
+    try assertEq(geo.ultimaTrocaMs, base + h)
 }
 
 step("migration v19: banco com tabela manutencoes ANTIGA (device 18/05) preserva e não quebra") {
