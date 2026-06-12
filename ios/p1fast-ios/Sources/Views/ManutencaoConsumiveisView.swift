@@ -234,7 +234,7 @@ struct ManutencaoConsumiveisView: View {
                     if let trocaMs = s.ultimaTrocaMs {
                         Text(linhaUltimaTroca(s, trocaMs: trocaMs))
                             .font(.system(size: 11.5, weight: .medium))
-                            .foregroundStyle(Color.accent)
+                            .foregroundStyle(corStatus(s))
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     // Sem média ainda, o resumo do motor ("registre as trocas…")
