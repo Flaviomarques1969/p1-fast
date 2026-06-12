@@ -60,8 +60,7 @@
 
   /* fundo da janela de orientação (palco preto, componentes por cima) */
   .orient { position:absolute; inset:0; background:#000; z-index:5; }
-  /* halo de veredito do componente real precisa pintar ACIMA do fundo preto */
-  .device::before { z-index:6; }
+  /* rodada 15: fundo sempre preto — halo de cor do veredito não é usado neste modo */
 
   /* SHIFT LIGHT DE FREIO — o componente REAL na VERTICAL, em DUAS COLUNAS LATERAIS
      (ditado rodada 9). Mesmo LED, mesmo espaçamento de 18px entre bolinhas, mesma
@@ -664,8 +663,9 @@ soltou de uma vez, freou cedo e freou tarde. Os números são simulados só pra 
       encerraFlashErro();
       /* rodada 10: NADA por cima do gráfico — o gráfico pintado É o resultado.
          O nome do veredito vai pra faixa de status, fora da tela do piloto.
-         TRAIL ERRADO segue sem halo roxo; CERTO mantém o dourado. */
-      device.setAttribute('data-trecho-status', cen.erro?'neutro':'recorde-stint');
+         Rodada 15: fundo SEMPRE preto — sem brilho de cor no veredito (nem dourado,
+         nem roxo, nem nenhum). */
+      device.setAttribute('data-trecho-status','neutro');
       marcha.classList.remove('escondido');
       trilho.style.opacity='1';
       histJU.push(cen.erro?'errado':'certo');

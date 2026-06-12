@@ -52,9 +52,12 @@
     por ele: verde → amarelo perto da troca esperada (80%) → vermelho passou → verde ao
     registrar. Reempacotado + reinstalado no iPhone. Nuvem conferida: nenhum registro de
     teste novo (seguem 1 pneus real + 2 óleos errados).
-    FALTA: (a) Flávio validar no iPhone; (b) incorporar à versão oficial após aval;
-    (c) autorização pra apagar os 2 registros errados de óleo de 11/06 (aparelho + nuvem);
-    (d) se ele registrar troca de teste na validação, apagar junto.
+    VALIDADO PELO FLÁVIO 12/06 ~0h40 ("sim." após conferir o verde EM DIA no iPhone).
+    INCORPORADO À VERSÃO OFICIAL 12/06 ~0h45: merge 2b100ac3 na main local (5 arquivos,
+    +228/−43, conflito zero) + bateria completa NA OFICIAL: 546 ok / 0 fail.
+    App no iPhone já é o mesmo conteúdo incorporado. Ambiente isolado preservado.
+    FALTA SÓ: autorização literal pra apagar os 2 registros errados de óleo de 11/06
+    (ids ab4c60d3 + 28683e7b, aparelho + nuvem). Nenhum registro de teste novo na nuvem.
 BACKUP deste registro: .claude-exec/ultima-tarefa-backup-pre-manutencao-pneus-2026-06-11.md
 
 ---
