@@ -26,7 +26,14 @@ final class ManutencaoConsumiveisStore: ObservableObject {
     private let queue: DatabaseQueue
     init(queue: DatabaseQueue) { self.queue = queue }
 
-    enum StoreErro: Error { case semTime }
+    enum StoreErro: Error, LocalizedError {
+        case semTime
+        var errorDescription: String? {
+            switch self {
+            case .semTime: return "O app está sem time ativo — feche e abra o app antes de tentar de novo."
+            }
+        }
+    }
 
     /// Recalcula o status dos 30 itens pra um carro (uma transação só).
     func carregarStatus(carroId: String) async {
