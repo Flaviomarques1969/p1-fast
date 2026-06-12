@@ -177,7 +177,7 @@ struct ManutencaoConsumiveisView: View {
                         .font(.system(size: 11, weight: .semibold)).tracking(1.4)
                         .foregroundStyle(Color.textFaint)
                     ForEach(lista, id: \.0.codigo) { item, status in
-                        Button { registrar = item } label: { itemCard(item, status: status, compacto: true) }
+                        Button { registrar = AlvoRegistro(item: item) } label: { itemCard(item, status: status, compacto: true) }
                             .buttonStyle(.plain)
                     }
                 }
