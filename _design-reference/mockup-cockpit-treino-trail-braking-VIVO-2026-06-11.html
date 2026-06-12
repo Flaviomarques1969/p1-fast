@@ -602,6 +602,12 @@ soltou de uma vez, freou cedo e freou tarde. Os números são simulados só pra 
         device.setAttribute('data-shift-fire','idle');
         void device.offsetWidth;
         device.setAttribute('data-shift-fire','active');
+        /* COLUNA DE LUZ no ponto (ditado: coluna + pisca) — fica acesa como referência da freada */
+        marcaPonto.setAttribute('stroke','oklch(99% 0.02 90)');
+        marcaPonto.setAttribute('stroke-width','4');
+        marcaPonto.removeAttribute('stroke-dasharray');
+        marcaPonto.setAttribute('filter','url(#fGlow)');
+        pontoBase.setAttribute('opacity','1');
       }
     }
     if(nova==='freia'){
