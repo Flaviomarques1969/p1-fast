@@ -337,10 +337,18 @@ struct RegistrarTrocaView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Salvar") { Task { await salvar() } }
-                        .foregroundStyle(salvando ? Color.textFaint : Color.accent).disabled(salvando)
+                        .foregroundStyle((salvando || itemDef == nil) ? Color.textFaint : Color.accent)
+                        .disabled(salvando || itemDef == nil)
                 }
             }
             .preferredColorScheme(.dark)
+            .alert("Não foi salvo", isPresented: Binding(
+                get: { erroSalvar != nil },
+                set: { if !$0 { erroSalvar = nil } })) {
+                Button("Entendi", role: .cancel) {}
+            } message: {
+                Text(erroSalvar ?? "")
+            }
         }
     }
 
@@ -348,16 +356,18 @@ struct RegistrarTrocaView: View {
     private func salvar() async {
         guard let def = itemDef else { return }
         salvando = true; defer { salvando = false }
+        let ocorridoMs = Int64(data.timeIntervalSince1970 * 1000)
         let validadeMs: Int64? = (ehValidade) ? Int64(validade.timeIntervalSince1970 * 1000) : nil
         do {
             try await store.registrarTroca(
                 carroId: carroId, itemCodigo: def.codigo,
-                ocorridoEm: Int64(data.timeIntervalSince1970 * 1000),
+                ocorridoEm: ocorridoMs,
                 validadeEtiqueta: validadeMs,
                 observacao: observacao)
-            onClose()
+            onSaved(def, ocorridoMs)
         } catch {
             print("RegistrarTrocaView.salvar falhou: \(error)")
+            erroSalvar = "A troca de \(def.nome) NÃO foi registrada. Tente de novo. Detalhe: \(error.localizedDescription)"
         }
     }
 
