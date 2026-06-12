@@ -177,23 +177,25 @@ verde, amarelo, vermelho — sem onda), régua ENTRADA · FREIO · ÁPICE · SA�
     <div class="notch"></div>
     <div class="orient"></div>
 
-    <!-- shift light de FREIO: MESMO componente real, no topo. Convergindo: faltam 2 pares -->
-    <div class="shift-light shift-light--freio" data-state="on">
+    <!-- FREIO: colunas verticais nos 2 cantos, descendo — falta o vermelho de baixo -->
+    <div class="freio-col freio-col--esq">
       <span class="shift-light__dot is-on" data-tier="1"></span>
       <span class="shift-light__dot is-on" data-tier="2"></span>
       <span class="shift-light__dot is-on" data-tier="3"></span>
       <span class="shift-light__dot is-on" data-tier="4"></span>
       <span class="shift-light__dot" data-tier="5"></span>
       <span class="shift-light__dot" data-tier="6"></span>
-      <span class="shift-light__dot" data-tier="6"></span>
-      <span class="shift-light__dot" data-tier="5"></span>
-      <span class="shift-light__dot is-on" data-tier="4"></span>
-      <span class="shift-light__dot is-on" data-tier="3"></span>
-      <span class="shift-light__dot is-on" data-tier="2"></span>
+    </div>
+    <div class="freio-col freio-col--dir">
       <span class="shift-light__dot is-on" data-tier="1"></span>
+      <span class="shift-light__dot is-on" data-tier="2"></span>
+      <span class="shift-light__dot is-on" data-tier="3"></span>
+      <span class="shift-light__dot is-on" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
     </div>
 
-    <div class="grafico orient-svg" style="position:absolute; left:5%; top:14%; bottom:22%; width:90%; z-index:9">
+    <div class="grafico orient-svg" style="position:absolute; left:12%; top:14%; bottom:22%; width:76%; z-index:9">
       <svg viewBox="0 0 860 250" style="width:100%; height:100%">
         <text x="6" y="14" class="rotulo-eixo">FREIO %</text>
         <text x="816" y="242" class="rotulo-eixo">METROS</text>
