@@ -409,8 +409,10 @@ struct RegistrarTrocaView: View {
 // ─────────────────────────────────────────────────────────────
 
 private func corStatus(_ s: StatusManutencao?) -> Color {
-    // Preditivo já com troca registrada = a contagem está viva → cor de ação.
-    if s?.severidade == .semHistorico, s?.ultimaTrocaMs != nil { return Color.accent }
+    // Acabou de trocar = VERDE, mesmo enquanto a inteligência ainda aprende a
+    // vida do item (decisão Flávio 12/06: troquei → fica verde; amarelo perto
+    // da troca esperada; vermelho passou dela).
+    if s?.severidade == .semHistorico, s?.ultimaTrocaMs != nil { return Color.bom }
     switch s?.severidade {
     case .verde:        return Color.bom
     case .amarelo:      return Color.yellow
@@ -421,7 +423,7 @@ private func corStatus(_ s: StatusManutencao?) -> Color {
 }
 
 private func textoSeveridade(_ s: StatusManutencao?) -> String {
-    if s?.severidade == .semHistorico, s?.ultimaTrocaMs != nil { return "CONTANDO" }
+    if s?.severidade == .semHistorico, s?.ultimaTrocaMs != nil { return "EM DIA" }
     switch s?.severidade {
     case .verde:        return "EM DIA"
     case .amarelo:      return "ATENÇÃO"
