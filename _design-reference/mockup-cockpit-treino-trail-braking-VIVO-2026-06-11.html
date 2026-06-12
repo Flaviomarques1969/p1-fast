@@ -241,9 +241,11 @@ soltou de uma vez, freou cedo e freou tarde. Os números são simulados só pra 
         <path d="M70,252 L300,252 L300,56 L390,56 C540,77 660,154 740,191" fill="none"
               stroke="url(#gAlvo)" stroke-width="4" stroke-linecap="round"/>
 
-        <!-- marca do ponto de freada da melhor -->
+        <!-- marca do ponto de freada da melhor (vira COLUNA DE LUZ quando bate no ponto) -->
         <line id="marcaPonto" x1="300" y1="36" x2="300" y2="252" stroke="oklch(78% 0.18 65 / .6)"
               stroke-width="1.6" stroke-dasharray="2 5"/>
+        <circle id="pontoBase" cx="300" cy="252" r="9" fill="oklch(99% 0.02 90)" opacity="0"
+                style="filter:drop-shadow(0 0 16px oklch(95% 0.06 88)) drop-shadow(0 0 36px oklch(80% 0.17 75))"/>
         <text x="306" y="30" class="rotulo-grafico" fill="oklch(82% 0.17 78)">FREIO · 87 m</text>
         <text x="742" y="176" class="rotulo-grafico" fill="#cbd5e1">ÁPICE · 40%</text>
 
