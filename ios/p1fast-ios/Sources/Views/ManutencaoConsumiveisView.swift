@@ -90,6 +90,7 @@ struct ManutencaoConsumiveisView: View {
 
     @State private var registrar: AlvoRegistro?
     @State private var aviso: String?
+    @State private var avisoGeracao = 0
 
     private var carro: Carro? { carroRepo.carros.first { $0.id == carroId } }
 
