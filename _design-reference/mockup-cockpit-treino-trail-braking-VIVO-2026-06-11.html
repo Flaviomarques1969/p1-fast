@@ -554,6 +554,12 @@ soltou de uma vez, freou cedo e freou tarde. Os números são simulados só pra 
     var rot=gContagem.querySelector('.contagem-rotulo');
     rot.textContent='METROS PRO FREIO'; rot.setAttribute('fill','#8a99a8');
     gDyn.innerHTML='';
+    marcaPonto.setAttribute('stroke','oklch(78% 0.18 65 / .6)');
+    marcaPonto.setAttribute('stroke-width','1.6');
+    marcaPonto.setAttribute('stroke-dasharray','2 5');
+    marcaPonto.removeAttribute('filter');
+    pontoBase.setAttribute('opacity','0');
+    palcoGrafico.style.opacity='1';
     gContagem.setAttribute('opacity','0');
     leituraPct.setAttribute('opacity','0');
     encerraFlashErro();
