@@ -1,3 +1,128 @@
+# TASK_INIT 11/06/2026 ~21h — REVISÃO DO TREINO: GRÁFICO DE PRESSÃO DE FREIO (lógica de produção, dado simulado até o sensor chegar)
+
+1. Pedido original (Flávio, literal): "pode registrar e fazer simulação do dado agora pra essa
+   função, mas a função, a lógica, é a de produção. Você só vai preencher com dados, simulando
+   como se tivesse funcionando o controle da pressão do freio. Nós vamos instalar isso agora,
+   segunda ou terça-feira. e aí a gente já pode testar ali, freiando e tal, para você ver o
+   dado vindo, mas o dado é o dado de informação de pressão de freio."
+   + contexto da conversa: gráfico premium de frenagem/aceleração por trecho (desenho do pedaço
+   da pista, ONDE freia, QUANTO freia, a forma da soltura no trail braking), sem inventáção —
+   dado simulado SEMPRE rotulado.
+2. Objetivo em 1 frase: tela de Revisão do Treino (box, parado) com gráfico de pressão de freio
+   e aceleração por posição no trecho, dele vs melhor, em lógica de produção — fonte simulada
+   rotulada hoje, sensor real plugando sem retrabalho na segunda/terça.
+3. Critérios de conclusão: (a) contrato de dado por ponto com campo de freio % + origem
+   (sensor|simulado); (b) tela nova de box com desenho do trecho + curvas + marcas + leitura IA;
+   (c) simulador de pressão derivado da física real das voltas reais (rotulado SIMULAÇÃO);
+   (d) ponto de entrada do sensor real identificado no decodificador da T4000; (e) testes novos
+   + bateria verde; (f) validação em navegador real; (g) produção só com frase MIGRAR.
+4. Leitura confirmada: CLAUDE.md sim · padroes.md sim · EXECUTION_PROTOCOL sim · DONE_CHECKLIST
+   sim · ENVIRONMENT_RULES sim · COMMUNICATION_RULES sim
+5. Plano ≤5 passos: (1) inspecionar decodificador T4000 (canal de pressão/pedal) + estruturas
+   de passagem; (2) ambiente isolado novo a partir da oficial; (3) contrato de dado + simulador
+   rotulado + tela Revisão do Treino; (4) testes + bateria + navegador; (5) mostrar pro Flávio.
+6. Arquivos/áreas: web/cockpit/t3000-usb-parser(?), live-data-bridge.js, melhores-loader.js,
+   oportunidade-trecho.js, tela nova revisao-treino.*, tests/
+7. Ambiente alvo: desenvolvimento
+8. Produção protegida: sim
+9. Autorização para produção: não (construção autorizada; ar/banco só com frase)
+10. Evidência: frase MIGRAR não recebida para esta função
+11. Riscos: dado simulado precisa ser INCONFUNDÍVEL com real (rótulo forte); contrato do ponto
+    não pode quebrar passagens existentes (campo novo opcional).
+12. Status: CONSTRUÍDA E VALIDADA — aguardando validação visual do Flávio
+PROGRESSO ~21h15: ambiente isolado ../p1fast-worktrees/revisao-treino-freio
+(linha claude/revisao-treino-freio, marco pós-664e2d5e). 29 testes novos verdes,
+bateria completa exit=0, navegador real zero erros (8 trechos do banco, 3 voltas
+reais, frase IA com números reais). Tela aberta pro Flávio em
+http://localhost:8767/web/cockpit/revisao-treino.html (servidor local porta 8767).
+SENSOR seg/ter pluga em: detectarPresencaSensorFreio + fundirFreioNosPontos
+(freio-trecho.js) — canais T4000 já expostos (pedal 52/54, pressão 268).
+Produção INTOCADA. Ar só com frase MIGRAR.
+
+---
+
+# ✅ MIGRADO PRA PRODUÇÃO 11/06 ~20h — PLANO DO STINT VIAJA COM O ENVELOPE
+
+## Autorização LITERAL: "MIGRAR PARA PRODUÇÃO: plano do stint no envelope (migration 0042 + painel)" (Flávio, 11/06).
+## EXECUTADO:
+## 1. BANCO: coluna plano_stint (jsonb) criada em envelopes_seguranca_stint via
+##    ferramenta oficial autenticada (db query --linked). Verificada por consulta de
+##    estrutura + REST 400→200. Envelopes antigos intactos. Histórico remoto de
+##    migrações continua com a deriva 0033-0041 conhecida (não mexi — só nota).
+## 2. OFICIAL: claude/plano-stint-banco-v1 incorporada à main (1e6fdaef, 5 arquivos).
+## 3. BATERIA NA OFICIAL: smoke exit=0 + shift-light exit=0 + treino-stint 59 ok.
+## 4. AR: deploy p1t4000-g8vxdxf8m → alias p1t4000.vercel.app virado.
+##    17/17 arquivos byte-idênticos no oficial.
+## 5. VALIDAÇÃO PÓS-DEPLOY (Playwright, produção): 7/7 —
+##    consulta envelope 200 · selo apagado sem plano · zero erros ·
+##    ?treino=frenagem&semfio arma selo · Planejamento carrega limpo.
+## ROLLBACK ar: npx vercel alias set https://p1t4000-wlgvqd6tc-flaviomarques-6007s-projects.vercel.app p1t4000.vercel.app
+## ROLLBACK banco: ALTER TABLE public.envelopes_seguranca_stint DROP COLUMN IF EXISTS plano_stint;
+## VALIDAÇÃO HUMANA SUGERIDA (30 s): Flávio aprova um envelope no Planejamento
+##    e abre o painel numa janela anônima — selo TREINO deve acender sozinho
+##    (plano só vale no DIA da aprovação, fuso Brasília).
+## PENDÊNCIAS DA FRENTE: (a) MODO do stint ainda não viaja (shift light — decisão
+##    Flávio); (b) fila: PAce via TPS×GPS → verbos vmin/entrada no crivo.
+
+---
+
+# PROD_RELEASE_PLAN — 11/06/2026 (autorização literal recebida)
+- Autorização: "MIGRAR PARA PRODUÇÃO: plano do stint no envelope (migration 0042 + painel)" (Flávio, 11/06)
+- O que será migrado: coluna plano_stint (jsonb) na tabela envelopes_seguranca_stint + painel/tela atualizados
+- Origem em desenvolvimento: ambiente isolado claude/plano-stint-banco-v1 (marcos 709ce5d8 + 7df17c87)
+- Destino em produção: banco p1-fast (fvhwltzhytpnhlqbttmd) + p1t4000.vercel.app
+- Arquivos/serviços afetados: envelopes_seguranca_stint (coluna nova) · configuracao-stint.js · treino-stint.js · main-t3000.js
+- Banco afetado: sim (coluna NOVA, aceita vazio — envelopes antigos intactos)
+- Migration necessária: sim (0042, só ADICIONA — não altera nem remove nada existente)
+- Risco de perda de dados: não (nenhum dado tocado; só estrutura nova)
+- Plano de rollback: banco → ALTER TABLE ... DROP COLUMN IF EXISTS plano_stint; ar → voltar alias pro deploy atual (anotar URL antes de virar)
+- Teste feito em desenvolvimento: bateria completa verde + 59 testes da suíte + 13/13 cenários navegador (4 combinações código×banco)
+- Validação pós-deploy: coluna respondendo (consulta leve) + boot do painel limpo + selo apagado sem plano + atalho ?treino arma + arquivos no ar idênticos
+- Janela/restrição: nenhuma (mudança aditiva, tolerante à ordem)
+
+---
+
+# ⏰ CHECKPOINT 11/06 ~19h — PLANO NO BANCO: PRONTO, AGUARDANDO "MIGRAR PARA PRODUÇÃO"
+
+## Item 2 da fila dos treinos CONSTRUÍDO E VALIDADO no ambiente isolado
+## `../p1fast-worktrees/plano-stint-banco-v1` (linha claude/plano-stint-banco-v1,
+## marcos 709ce5d8 + 7df17c87). PRODUÇÃO INTOCADA (banco e p1t4000.vercel.app).
+##
+## O QUE FAZ: plano do stint gravado no banco JUNTO do envelope (coluna
+## plano_stint jsonb, migration 0042 PREPARADA e NÃO aplicada). Painel sem
+## plano local busca o último envelope do carro; plano de treino aprovado
+## HOJE (fuso Brasília) arma motor + foco + filtro + selo. Plano de ontem
+## NÃO arma (achado da revisão adversarial — sem isso o notebook armaria
+## pra sempre o treino da semana passada). Tela do Planejamento conta a
+## verdade se o banco ainda não tiver a coluna (aprovação nunca quebra).
+##
+## VALIDADO: suíte treino-stint 59 ok (18 checks novos) · bateria completa
+## verde (smoke + shift-light exit=0) · navegador real 13/13 (banco real só
+## leitura · atalho ?treino= · plano da nuvem armando · retry banco antigo ·
+## banco novo) · revisão adversarial multi-agente (2 achados confirmados,
+## AMBOS corrigidos; 1 lente caiu por limite de sessão, coberta por validação
+## direta dos 4 cenários código×banco).
+##
+## PRA IR AO AR (aguardando frase literal do Flávio):
+##   "MIGRAR PARA PRODUÇÃO: plano do stint no envelope (migration 0042 + painel)"
+##   Ordem: (1) aplicar 0042 no banco; (2) incorporar à versão oficial;
+##   (3) bateria na oficial; (4) subir pro ar + virar alias; (5) validar
+##   pós-deploy (boot limpo, selo apagado sem plano, aprovação grava plano).
+##   Código é tolerante às 4 combinações código×banco — ordem não quebra nada.
+##
+## DECISÕES/PENDÊNCIAS DECLARADAS:
+##   (a) validade adotada: plano vale NO DIA da aprovação (Brasília) — ajustável;
+##   (b) GAP descoberto: o MODO do stint (durabilidade/normal/agressivo) ainda
+##       NÃO viaja — notebook usa padrão agressivo, não o modo aprovado pelo
+##       chefe; mexe no shift light → só com decisão do Flávio;
+##   (c) cache local do navegador do chefe mantém semântica antiga (sem validade);
+##   (d) tabela do envelope é pública pra escrita (exposição pré-existente,
+##       frente "acesso do painel") — painel passa a obedecer dado escrevível;
+##   (e) sonda de navegador preservada em /tmp/valida-plano-banco.mjs.
+## DEPOIS DESTA: (3) PAce real via TPS×GPS · (4) verbos vmin/entrada no crivo.
+
+---
+
 # TASK_INIT 11/06/2026 ~17h30 — PLANO DO STINT VIAJA COM O ENVELOPE (banco)
 
 1. Pedido original: Flávio respondeu "prossiga" à retomada — executar item 2 da fila

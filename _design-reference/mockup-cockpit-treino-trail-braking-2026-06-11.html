@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>MOCKUP — Cockpit em modo treino · Trail Braking (ditado Flávio 11/06/2026)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#06080b; --ink:#1a222c; --faint:#2a3645; --texto:#e8eef5; --apagado:#64748b;
+    --bom:oklch(80% 0.22 145); --erro:oklch(68% 0.26 27); --alvo:oklch(74% 0.16 73);
+    --treino:#e7c463;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0b0f14; color:var(--texto); font:14px/1.5 'Inter',-apple-system,sans-serif; padding:26px 30px 60px; }
+  h1 { font-size:19px; font-weight:900; letter-spacing:.04em; }
+  h1 small { color:var(--apagado); font-weight:500; }
+  .sub { color:var(--apagado); margin:6px 0 26px; max-width:1100px; }
+  .momento { display:flex; gap:22px; align-items:flex-start; margin-bottom:44px; flex-wrap:wrap; }
+  .notas { flex:1; min-width:260px; max-width:380px; }
+  .notas h2 { font-size:13px; letter-spacing:.12em; color:var(--treino); font-weight:800; margin-bottom:8px; }
+  .notas p, .notas li { color:#a8b6c6; font-size:13.5px; line-height:1.6; }
+  .notas ul { padding-left:18px; margin-top:6px; }
+  .notas .mantido { color:#7c8b9b; }
+  .notas .novo { color:#e8eef5; }
+  .notas .novo b { color:var(--treino); }
+
+  /* ── réplica do palco real 956×440 ─────────────────────────── */
+  .device { width:956px; height:440px; background:#000; border-radius:26px; position:relative;
+    overflow:hidden; border:2px solid #11161d; box-shadow:0 14px 50px rgba(0,0,0,.6); flex-shrink:0; }
+  .stint-bar { position:absolute; top:12px; left:130px; right:18px; display:flex; gap:6px; }
+  .sb { flex:1; height:14px; border-radius:2px; background:var(--faint); position:relative; }
+  .sb.faster { background:var(--bom); } .sb.slower { background:var(--erro); }
+  .sb.neutral { background:var(--ink); }
+  .sb.box { background:repeating-linear-gradient(45deg,#1a222c 0 4px,#2a3645 4px 8px); }
+  .sb .b { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font:800 9px 'JetBrains Mono',monospace; color:#8a99a8; letter-spacing:1px; }
+  .selo { position:absolute; top:34px; right:18px; font:800 11px 'JetBrains Mono',monospace; letter-spacing:1.5px;
+    color:var(--treino); border:1px solid #a8841f; background:#2b2008; padding:3px 10px; border-radius:5px; }
+
+  /* NOVO — trilho vertical de trechos (esquerda, dentro do palco) */
+  .trilho { position:absolute; top:12px; bottom:14px; left:14px; width:104px;
+    display:flex; flex-direction:column; gap:5px; }
+  .trilho .titulo { font:800 9px 'JetBrains Mono',monospace; color:var(--treino); letter-spacing:1px; text-align:left; }
+  .tr { flex:1; display:flex; align-items:center; gap:5px; }
+  .tr .nome { width:24px; font:800 11px 'JetBrains Mono',monospace; color:#8a99a8; }
+  .tr.atual .nome { color:#fff; }
+  .tr .passes { display:flex; gap:4px; flex:1; }
+  .tr .p { width:14px; height:14px; border-radius:3px; background:var(--ink); }
+  .tr .p.certo { background:var(--bom); }
+  .tr .p.errado { background:var(--erro); }
+  .tr .p.calib { background:var(--faint); }
+  .tr .p.agora { outline:2px solid #fff; outline-offset:1px; }
+  .tr.atual { background:rgba(231,196,99,.07); border-radius:5px; }
+
+  /* centro do palco (delta + ação) — réplica simplificada */
+  .centro { position:absolute; left:130px; right:18px; top:64px; bottom:104px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .delta { font:900 120px/1 'JetBrains Mono',monospace; letter-spacing:-4px; font-variant-numeric:tabular-nums; }
+  .delta.bom { color:var(--bom); } .delta.ruim { color:var(--erro); }
+  .acao-txt { font:900 26px 'Inter',sans-serif; letter-spacing:2px; margin-top:6px; }
+  .msgzona { position:absolute; left:130px; right:18px; bottom:104px; text-align:center;
+    font:900 21px 'Inter',sans-serif; letter-spacing:1.5px; color:var(--treino); }
+
+  /* régua inferior (entrada/freio/ápice/saída) + shift light — mantidos */
+  .apex { position:absolute; bottom:46px; left:130px; right:18px; display:flex; justify-content:space-between; }
+  .apex span { font:800 13px 'Inter',sans-serif; letter-spacing:3px; color:#8a99a8; }
+  .apex span.ativo { color:#fff; }
+  .shift { position:absolute; bottom:14px; left:50%; transform:translateX(-50%); display:flex; gap:9px; }
+  .shift i { width:13px; height:13px; border-radius:50%; background:#1a222c; }
+  .shift i.on { background:var(--bom); box-shadow:0 0 8px var(--bom); }
+
+  /* camada de orientação (metade da reta / pós-trecho) — toma o palco como hoje */
+  .orient { position:absolute; inset:0; background:#000; }
+  .orient .grafico { position:absolute; left:3%; top:8%; bottom:12%; width:53%; }
+  .orient .acao { position:absolute; right:3%; top:50%; transform:translateY(-50%); width:40%;
+    text-align:right; display:flex; flex-direction:column; gap:26px; align-items:flex-end; }
+  .orient .verbo { font-size:54px; font-weight:900; letter-spacing:2px; line-height:1.05; }
+  .orient .verbo b { color:var(--bom); }
+  .orient .dado { font:900 110px/0.95 'JetBrains Mono',monospace; letter-spacing:-3px; color:var(--bom); }
+  .orient .dado small { font-size:.34em; opacity:.75; font-weight:800; }
+  .orient .rotulo-eixo { font:800 10px 'JetBrains Mono',monospace; letter-spacing:1px; fill:#64748b; }
+  .veredito { font:900 64px 'Inter',sans-serif; letter-spacing:3px; }
+  .veredito.certo { color:var(--bom); text-shadow:0 0 30px oklch(80% 0.22 145 / .45); }
+  .veredito.errado { color:var(--erro); text-shadow:0 0 30px oklch(68% 0.26 27 / .45); }
+  .legenda-mini { position:absolute; left:3%; bottom:3%; display:flex; gap:16px;
+    font:700 11px 'Inter',sans-serif; color:#8a99a8; }
+  .legenda-mini i { display:inline-block; width:16px; border-top:3px solid; margin-right:5px; border-radius:2px; }
+</style>
+</head>
+<body>
+
+<h1>COCKPIT EM MODO TREINO · TRAIL BRAKING <small>— proposta visual sobre o palco real 956×440 (ditado de 11/06/2026)</small></h1>
+<p class="sub">Regra ditada: cada treinamento monta a tela do seu jeito. A base comum não muda — voltas em cima
+(verde/vermelho, mesma régua de hoje), shift light, Entrada · Freio · Ápice · Saída. O que muda é o conteúdo variável:
+o trilho vertical de trechos à esquerda, o delta e as mensagens passam a falar SÓ do treino selecionado.</p>
+
+<!-- ═══════════ MOMENTO 1 — DENTRO DO TRECHO (tela base do treino) ═══════════ -->
+<div class="momento">
+  <div class="device">
+    <div class="stint-bar">
+      <div class="sb faster"></div><div class="sb slower"></div><div class="sb faster"></div>
+      <div class="sb box"><span class="b">BOX</span></div>
+      <div class="sb faster"></div><div class="sb neutral"></div>
+      <div class="sb"></div><div class="sb"></div><div class="sb"></div><div class="sb"></div>
+    </div>
+    <span class="selo">TREINO · TRAIL BRAKING</span>
+
+    <div class="trilho">
+      <div class="titulo">TRAIL POR TRECHO</div>
+      <div class="tr"><span class="nome">C1</span><div class="passes"><i class="p calib"></i><i class="p calib"></i><i class="p certo"></i><i class="p certo"></i><i class="p certo"></i></div></div>
+      <div class="tr"><span class="nome">RO</span><div class="passes"><i class="p calib"></i><i class="p calib"></i><i class="p errado"></i><i class="p certo"></i><i class="p certo"></i></div></div>
+      <div class="tr"><span class="nome">C2</span><div class="passes"><i class="p calib"></i><i class="p calib"></i><i class="p certo"></i><i class="p errado"></i><i class="p certo"></i></div></div>
+      <div class="tr atual"><span class="nome">JU</span><div class="passes"><i class="p calib"></i><i class="p calib"></i><i class="p errado"></i><i class="p errado"></i><i class="p agora"></i></div></div>
+      <div class="tr"><span class="nome">BR</span><div class="passes"><i class="p calib"></i><i class="p calib"></i><i class="p certo"></i><i class="p certo"></i></div></div>
+      <div class="tr"><span class="nome">PL</span><div class="passes"><i class="p calib"></i><i class="p calib"></i><i class="p certo"></i><i class="p certo"></i></div></div>
+      <div class="tr"><span class="nome">S</span><div class="passes"><i class="p calib"></i><i class="p calib"></i><i class="p errado"></i><i class="p certo"></i></div></div>
+      <div class="tr"><span class="nome">VI</span><div class="passes"><i class="p calib"></i><i class="p calib"></i><i class="p certo"></i><i class="p certo"></i></div></div>
+    </div>
+
+    <div class="centro">
+      <div class="delta bom">-0.18</div>
+      <div class="acao-txt" style="color:var(--treino)">SOLTA AOS POUCOS</div>
+    </div>
+
+    <div class="apex">
+      <span>ENTRADA</span><span class="ativo">FREIO</span><span>ÁPICE</span><span>SAÍDA</span>
+    </div>
+    <div class="shift"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  </div>
+  <div class="notas">
+    <h2>MOMENTO 1 — DENTRO DO TRECHO</h2>
+    <p class="mantido">Mantido igual: voltas em cima (com o pedaço BOX hachurado), delta grande, régua
+    Entrada · Freio · Ápice · Saída, shift light.</p>
+    <ul>
+      <li class="novo"><b>Trilho vertical à esquerda (novo):</b> 8 trechos, uma célula por passagem.
+      Verde = trail certo · vermelho = errado · cinza = calibrando (2 primeiras) · célula com contorno = agora.</li>
+      <li class="novo"><b>Delta e ação falam só do treino:</b> aqui a ação é a do trail
+      ("SOLTA AOS POUCOS"), não a do pior ponto geral.</li>
+      <li class="novo">JU (Junção) destacada: é o trecho em que ele está — 2 erros seguidos ali.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════ MOMENTO 2 — METADE DA RETA (ANTES): O ALVO ═══════════ -->
+<div class="momento">
+  <div class="device">
+    <div class="orient">
+      <div class="grafico">
+        <svg viewBox="0 0 520 330">
+          <text x="6" y="14" class="rotulo-eixo">FREIO %</text>
+          <text x="470" y="322" class="rotulo-eixo">METROS</text>
+          <line x1="34" y1="20" x2="34" y2="296" stroke="#1f2937" stroke-width="1"/>
+          <line x1="34" y1="296" x2="506" y2="296" stroke="#1f2937" stroke-width="1"/>
+          <!-- alvo: sobe forte na marca, segura, solta progressivo até o ápice -->
+          <path d="M60,296 L118,296 L138,60 L196,60 C300,86 386,200 442,272 L470,288"
+                fill="none" stroke="oklch(74% 0.16 73)" stroke-width="7" stroke-linecap="round"
+                style="filter:drop-shadow(0 0 14px oklch(74% 0.16 73 / .5))"/>
+          <!-- marcas -->
+          <line x1="138" y1="20" x2="138" y2="296" stroke="oklch(74% 0.16 73)" stroke-dasharray="4 6" stroke-width="1.6"/>
+          <text x="144" y="34" class="rotulo-eixo" style="fill:oklch(74% 0.16 73)">FREIA AQUI · 87 m</text>
+          <line x1="442" y1="20" x2="442" y2="296" stroke="#e8eef5" stroke-dasharray="4 6" stroke-width="1.4"/>
+          <text x="448" y="34" class="rotulo-eixo" style="fill:#e8eef5">ÁPICE</text>
+          <text x="210" y="140" class="rotulo-eixo" style="font-size:13px; fill:oklch(74% 0.16 73)">SOLTANDO ATÉ O ÁPICE</text>
+        </svg>
+      </div>
+      <div class="acao">
+        <div class="verbo">FREIA <b>87 m</b><br>SOLTA <b>AOS POUCOS</b></div>
+        <div class="dado">40<small>% NO ÁPICE</small></div>
+      </div>
+      <div class="legenda-mini"><span><i style="border-color:oklch(74% 0.16 73)"></i>como deve ser (da melhor passagem)</span></div>
+    </div>
+  </div>
+  <div class="notas">
+    <h2>MOMENTO 2 — METADE DA RETA (ANTES)</h2>
+    <p class="novo">A orientação toma a tela como hoje, mas o conteúdo é o <b>gráfico de frenagem alvo</b>:
+    a forma de como a freada DEVE ser — onde pisa (87 m), e a rampa soltando progressivamente até
+    chegar no ápice ainda com ~40% de freio.</p>
+    <ul>
+      <li class="novo">O alvo vem da <b>melhor passagem real</b> daquele trecho (régua de sempre) —
+      hoje pela física do GPS, segunda/terça pela pressão real do sensor.</li>
+      <li class="mantido">Verbo + número no padrão atual da tela. Tempo de leitura: bater o olho.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════ MOMENTO 3 — PÓS-TRECHO (DEPOIS): COMO FOI ═══════════ -->
+<div class="momento">
+  <div class="device">
+    <div class="orient">
+      <div class="grafico">
+        <svg viewBox="0 0 520 330">
+          <text x="6" y="14" class="rotulo-eixo">FREIO %</text>
+          <line x1="34" y1="20" x2="34" y2="296" stroke="#1f2937" stroke-width="1"/>
+          <line x1="34" y1="296" x2="506" y2="296" stroke="#1f2937" stroke-width="1"/>
+          <!-- alvo (fino, atrás) -->
+          <path d="M60,296 L118,296 L138,60 L196,60 C300,86 386,200 442,272 L470,288"
+                fill="none" stroke="oklch(74% 0.16 73)" stroke-width="3.5" stroke-dasharray="8 7" opacity=".85"/>
+          <!-- como foi: freou no ponto, mas LARGOU o freio de uma vez -->
+          <path d="M60,296 L122,296 L142,64 L208,64 L228,282 L442,290"
+                fill="none" stroke="oklch(68% 0.26 27)" stroke-width="7" stroke-linecap="round"
+                style="filter:drop-shadow(0 0 14px oklch(68% 0.26 27 / .5))"/>
+          <line x1="442" y1="20" x2="442" y2="296" stroke="#e8eef5" stroke-dasharray="4 6" stroke-width="1.4"/>
+          <text x="448" y="34" class="rotulo-eixo" style="fill:#e8eef5">ÁPICE</text>
+          <text x="236" y="200" class="rotulo-eixo" style="font-size:13px; fill:oklch(68% 0.26 27)">LARGOU DE UMA VEZ — 5 m</text>
+        </svg>
+      </div>
+      <div class="acao">
+        <div class="veredito errado">TRAIL ERRADO</div>
+        <div class="verbo" style="font-size:34px">SOLTOU <b>DE UMA VEZ</b></div>
+      </div>
+      <div class="legenda-mini">
+        <span><i style="border-color:oklch(74% 0.16 73)"></i>alvo</span>
+        <span><i style="border-color:oklch(68% 0.26 27)"></i>como foi agora</span>
+      </div>
+    </div>
+  </div>
+  <div class="notas">
+    <h2>MOMENTO 3 — PÓS-TRECHO (DEPOIS)</h2>
+    <p class="novo">Logo depois do trecho: a curva de como FOI por cima do alvo + o veredito
+    <b>TRAIL CERTO / TRAIL ERRADO</b> — e a célula do trecho acende verde ou vermelha no trilho.</p>
+    <ul>
+      <li class="novo"><b>Critério proposto pro CERTO</b> (3 condições): freou na banda do alvo ·
+      soltura progressiva (não degrau) · chegou na velocidade mínima ainda freando.</li>
+      <li class="novo">Errou → a mensagem diz O QUE errou no padrão aprovado (SOLTOU DE UMA VEZ ·
+      FREOU CEDO · FREOU TARDE).</li>
+      <li class="mantido">Resumo da volta na reta longa continua o mesmo.</li>
+    </ul>
+  </div>
+</div>
+
+<p class="sub" style="margin-top:-10px">Decisões em aberto pra você bater o martelo: (1) o critério do CERTO com as 3 condições acima;
+(2) trilho mostra as últimas 5 passagens ou a sessão inteira encolhendo; (3) o gráfico-alvo aparece em TODA reta ou só nos
+trechos onde ele está errando (anti-saturação). Nada disso foi construído — proposta visual pra sua validação.</p>
+
+</body>
+</html>
