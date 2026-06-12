@@ -193,7 +193,7 @@ struct ManutencaoConsumiveisView: View {
                     .foregroundStyle(Color.accent)
                     .padding(.top, 4)
                 ForEach(itens, id: \.codigo) { item in
-                    Button { registrar = item } label: {
+                    Button { registrar = AlvoRegistro(item: item) } label: {
                         itemCard(item, status: store.statusPorItem[item.codigo], compacto: false)
                     }
                     .buttonStyle(.plain)
