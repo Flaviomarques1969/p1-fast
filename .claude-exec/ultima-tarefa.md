@@ -1,3 +1,19 @@
+# ⏰ CHECKPOINT 11/06 ~21h40 — DITADO NOVO: cockpit em modo treino POR DISCIPLINA
+
+## Flávio ditou (após ver v1 rodando): cada treinamento monta o cockpit do seu jeito.
+## Base comum fica (voltas em cima, shift light, ENTRADA·FREIO·ÁPICE·SAÍDA); muda o
+## conteúdo variável: trilho VERTICAL à esquerda (8 trechos × passagens, verde/vermelho/
+## calibrando, box marcado), delta+mensagens SÓ do treino, ANTES = gráfico de frenagem
+## ALVO (metade da reta), DEPOIS = como foi sobre o alvo + TRAIL CERTO/ERRADO.
+## Registrado em memória: p1-fast-ditado-cockpit-treino-por-disciplina-2026-06-11.md
+## MOCKUP ABERTO PRO FLÁVIO: _design-reference/mockup-cockpit-treino-trail-braking-2026-06-11.html
+## AGUARDANDO: validação do mockup + 3 decisões (critério do CERTO 3/3 · janela do
+## trilho · alvo em toda reta ou só onde erra). NADA construído do cockpit-treino ainda.
+## Sensor de pressão de freio: instalação SEG/TER (15-16/06) — módulo freio-trecho.js
+## (worktree revisao-treino-freio) pronto pra receber: presença + fusão por timestamp.
+
+---
+
 # TASK_INIT 11/06/2026 ~21h — REVISÃO DO TREINO: GRÁFICO DE PRESSÃO DE FREIO (lógica de produção, dado simulado até o sensor chegar)
 
 1. Pedido original (Flávio, literal): "pode registrar e fazer simulação do dado agora pra essa

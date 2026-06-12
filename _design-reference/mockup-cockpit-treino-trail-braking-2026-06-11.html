@@ -72,6 +72,23 @@
   /* camada de orientação (metade da reta / pós-trecho) — toma o palco como hoje */
   .orient { position:absolute; inset:0; background:#000; }
   .orient .grafico { position:absolute; left:3%; top:8%; bottom:12%; width:53%; }
+
+  /* NOVO — shift light de FREIO no topo: luzes vêm das pontas e se juntam no centro */
+  .freio-light { position:absolute; top:10px; left:50%; transform:translateX(-50%);
+    display:flex; gap:8px; z-index:30; }
+  .freio-light i { width:15px; height:15px; border-radius:50%; background:#1a222c; }
+  .freio-light i.on { background:oklch(74% 0.16 73); box-shadow:0 0 10px oklch(74% 0.16 73 / .8); }
+  .freio-light i.ponto { background:#fff; box-shadow:0 0 16px #fff; }
+  /* wash do PONTO DE FRENAGEM (exclusivo do freio no modo treino) */
+  .wash-freio { position:absolute; inset:0; pointer-events:none; z-index:25;
+    background:radial-gradient(ellipse 110% 65% at 50% 0%,
+      oklch(85% 0.16 73 / .65) 0%, oklch(78% 0.17 70 / .30) 35%,
+      oklch(72% 0.16 73 / .08) 65%, transparent 100%); }
+  .orient .grafico--baixo { top:16%; bottom:20%; }
+  .rodape-mantido { position:absolute; bottom:46px; left:18px; right:18px;
+    display:flex; justify-content:space-between; z-index:30; }
+  .rodape-mantido span { font:800 13px 'Inter',sans-serif; letter-spacing:3px; color:#8a99a8; }
+  .rodape-mantido span.ativo { color:#fff; }
   .orient .acao { position:absolute; right:3%; top:50%; transform:translateY(-50%); width:40%;
     text-align:right; display:flex; flex-direction:column; gap:26px; align-items:flex-end; }
   .orient .verbo { font-size:54px; font-weight:900; letter-spacing:2px; line-height:1.05; }
