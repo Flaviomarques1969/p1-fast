@@ -1,37 +1,3 @@
-# TASK_INIT 11/06/2026 ~22h30 — RODADA 8 DO DITADO: MOCKUP VIVO do treino trail braking
-
-1. Pedido original (Flávio, literal): "a qualidade gráfica está muito ruim... você pode começar
-   uma contagem antes do ponto mostrando para ele 143 metros, 60, 50, 40, 30 e associar isso com
-   o shift light de altíssima qualidade nas duas pontas. E quando ele apertar o freio, você
-   mostrar um gráfico bastante detalhado na cor se ele está freando certo, na quantidade certa,
-   com o verde ou vermelho... se você estiver saindo da linha que deveria estar freando, você
-   pisca a tela... você não está encontrando soluções inteligentes, incríveis pra essa função."
-2. Objetivo em 1 frase: substituir os quadros parados por um MOCKUP VIVO (animado) que roda a
-   sequência inteira da frenagem com os 4 recursos ditados, em qualidade premium real.
-3. Critérios de conclusão: (a) contagem regressiva grande em metros (143→0) viva; (b) shift
-   light de freio REAL (componente premium) fechando das duas pontas, amarrado à contagem;
-   (c) clarão real no ponto; (d) freada pintando o gráfico ao vivo VERDE dentro / VERMELHO fora
-   da área-alvo; (e) tela PISCA vermelho no instante em que sai da linha; (f) veredito + trilho;
-   (g) aberto no navegador por mim; (h) arquivo v6 anterior preservado intacto.
-4. Leitura confirmada: CLAUDE.md sim · padroes.md sim · EXECUTION_PROTOCOL sim · DONE_CHECKLIST
-   sim · ENVIRONMENT_RULES sim · COMMUNICATION_RULES sim
-5. Plano ≤5 passos: (1) novo arquivo mockup VIVO usando componentes reais (cockpit.css);
-   (2) motor de cenários (freada certa · soltou de uma vez · freou cedo · freou tarde);
-   (3) revisão adversarial (fidelidade ao ditado + qualidade premium + regras sem emoji/você);
-   (4) corrigir achados; (5) abrir no navegador e atualizar memória do ditado (rodada 8).
-6. Arquivos/áreas: _design-reference/mockup-cockpit-treino-trail-braking-VIVO-2026-06-11.html
-   (novo) · web/cockpit/cockpit.css (só leitura) · memória do ditado.
-7. Ambiente alvo: desenvolvimento (mockup local, nada no ar)
-8. Produção protegida: sim
-9. Autorização para produção: não (não necessária)
-10. Evidência: não recebida (não se aplica — mockup local)
-11. Riscos: animação precisa rodar sem erro de console; v6 continua sendo a referência
-    anterior — NADA é apagado.
-12. Status: iniciado
-BACKUP deste registro antes da atualização: .claude-exec/ultima-tarefa-backup-pre-rodada8-2026-06-11.md
-
----
-
 # ⏰⏰⏰ CHECKPOINT PRÉ-CLEAR 11/06 ~22h — IMPLEMENTAR COCKPIT EM MODO TREINO (TRAIL BRAKING)
 
 ## GATILHO PÓS-CLEAR: `/voltei cockpit-treino-trail` → TASK_INIT e IMPLEMENTAR direto
