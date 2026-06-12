@@ -1,3 +1,60 @@
+# ⏰⏰⏰ CHECKPOINT PRÉ-CLEAR 11/06 ~22h — IMPLEMENTAR COCKPIT EM MODO TREINO (TRAIL BRAKING)
+
+## ORDEM DO FLÁVIO (literal): "se organiza aí pra eu dar o clear e você fazer a
+## implementação do que eu tô te pedindo." → AO VOLTAR ("voltei treinos" ou "siga"):
+## TASK_INIT e IMPLEMENTAR direto (sem re-perguntar direção). Spec visual = mockup v3:
+## _design-reference/mockup-cockpit-treino-trail-braking-2026-06-11.html (4 quadros).
+
+## O QUE CONSTRUIR (ditado 11/06 noite, 3 rodadas — TUDO já corrigido no mockup):
+## 1. TRILHO VERTICAL à esquerda (dentro do palco 956×440): 8 trechos × passagens —
+##    verde=trail certo · vermelho=errado · cinza=calibrando(2 primeiras) · contorno=agora ·
+##    box marcado. Só existe com treino armado; sem treino, painel byte-idêntico.
+## 2. Delta + ação central falam SÓ do treino selecionado (trail: SOLTA AOS POUCOS etc).
+## 3. SHIFT LIGHT DE FREIO no topo, SÓ no momento da reta até o ponto de frenagem:
+##    luzes vêm das DUAS PONTAS convergindo (régua = distância até o ponto de freada
+##    da melhor); fecharam no centro = PONTO → WASH âmbar ~300ms (clarão radial igual
+##    ao da troca, cor do alvo). A ONDA É EXCLUSIVA DO FREIO no modo treino.
+## 4. SHIFT LIGHT DE MARCHA embaixo: presente e funcionando NORMAL em TODOS os
+##    momentos (1, 2, 2b e 3) — das pontas pro centro, troca na hora certa, SEM onda.
+##    Rodapé ENTRADA·FREIO·ÁPICE·SAÍDA idem: presente em todos os momentos.
+## 5. Metade da reta: GRÁFICO DE FRENAGEM ALVO (forma da melhor passagem real: onde
+##    pisa, segura, solta progressivo, % restante no ápice) + verbo/dado no padrão.
+## 6. Pós-trecho: curva de como FOI sobre o alvo + veredito TRAIL CERTO/ERRADO +
+##    erro nomeado (SOLTOU DE UMA VEZ / FREOU CEDO / FREOU TARDE) + célula acende
+##    no trilho. Resumo da volta na reta longa continua o mesmo.
+## 7. Voltas em cima (stint-bar) e selo TREINO: como estão hoje.
+
+## DEFAULTS ASSUMIDOS (Flávio não bateu martelo — declarar na entrega, ajustáveis):
+##   a) CERTO = 3 condições juntas (freou na banda do alvo + soltura progressiva +
+##      chegou na mínima ainda freando);
+##   b) trilho mostra as últimas 5 passagens por trecho;
+##   c) gráfico-alvo em toda reta (anti-saturação existente continua valendo).
+
+## COM O QUE CONSTRUIR (já pronto e testado):
+##   - freio-trecho.js NO WORKTREE ../p1fast-worktrees/revisao-treino-freio (29 testes
+##     verdes): física GPS→freio% · detectarPresencaSensorFreio (zero chapado ≠ sensor) ·
+##     fundirFreioNosPontos (timestamp, 250ms) · metricasTrail (freada/pico/soltura/
+##     degrau×progressiva/freio na Vmin) · leituraIA. INCORPORAR esse módulo na linha
+##     de trabalho da implementação (e a tela de box revisao-treino.* junto).
+##   - Canais do sensor REAL no decodificador (t3000-usb-parser.js): pedalAcelerador
+##     offset 52 · pedalFreio offset 54 · pressaoFreioBar offset 268. SENSOR DE
+##     PRESSÃO INSTALA SEG/TER 15-16/06 — bench test: freiar parado e ver dado vindo.
+##   - Motor do treino existente (treino-stint.js): calibração 2 passagens, 3-de-4,
+##     válvula, anti-saturação, consolidação pré-box — veredito do trilho usa
+##     metricasTrail por passagem (NÃO mexer na régua canônica: melhor histórica).
+##   - Plano viaja com envelope (EM PRODUÇÃO hoje): treino arma da nuvem, vale no dia.
+## ONDE MEXER: main-t3000.js (camadas/momentos) · tela-orientacao.js (conteúdo por
+##   treino) · treino-stint.js (veredito→trilho) · módulos novos (trilho + freio-light)
+##   · index-t3000.html (elementos) · testes novos + bateria + replay voltas reais
+##   (receita provada: /tmp/replay-local-treino.mjs, injeção na página, blindagem
+##   __P1_ORIGEM_SIM__ ANTES, ritmo 4-10x) + abrir navegador EU MESMO.
+## REGRAS: ambiente isolado novo a partir da oficial · bateria inteira verde antes de
+##   mostrar · produção (banco e p1t4000.vercel.app) SÓ com frase MIGRAR · sem emojis ·
+##   tratamento "você" · conceito registrado em memória:
+##   p1-fast-ditado-cockpit-treino-por-disciplina-2026-06-11.md
+
+---
+
 # ⏰ CHECKPOINT 11/06 ~21h40 — DITADO NOVO: cockpit em modo treino POR DISCIPLINA
 
 ## Flávio ditou (após ver v1 rodando): cada treinamento monta o cockpit do seu jeito.
@@ -6,7 +63,11 @@
 ## calibrando, box marcado), delta+mensagens SÓ do treino, ANTES = gráfico de frenagem
 ## ALVO (metade da reta), DEPOIS = como foi sobre o alvo + TRAIL CERTO/ERRADO.
 ## Registrado em memória: p1-fast-ditado-cockpit-treino-por-disciplina-2026-06-11.md
-## MOCKUP ABERTO PRO FLÁVIO: _design-reference/mockup-cockpit-treino-trail-braking-2026-06-11.html
+## MOCKUP ABERTO PRO FLÁVIO (v2 com shift light de freio):
+## _design-reference/mockup-cockpit-treino-trail-braking-2026-06-11.html
+## REFINAMENTO DITADO (2ª rodada): shift light de FREIO no topo do momento da reta —
+## luzes das duas pontas convergindo até o ponto de frenagem; fechou = WASH âmbar
+## (onda exclusiva do freio no treino); marcha embaixo sem onda; rodapé mantido.
 ## AGUARDANDO: validação do mockup + 3 decisões (critério do CERTO 3/3 · janela do
 ## trilho · alvo em toda reta ou só onde erra). NADA construído do cockpit-treino ainda.
 ## Sensor de pressão de freio: instalação SEG/TER (15-16/06) — módulo freio-trecho.js

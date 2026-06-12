@@ -4,121 +4,111 @@
 <meta charset="UTF-8">
 <title>MOCKUP — Cockpit em modo treino · Trail Braking (ditado Flávio 11/06/2026)</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+<!-- COMPONENTES REAIS do painel: shift light premium, palco, faixa de voltas, delta -->
+<link rel="stylesheet" href="../web/cockpit/cockpit.css">
 <style>
-  :root {
-    --bg:#06080b; --ink:#1a222c; --faint:#2a3645; --texto:#e8eef5; --apagado:#64748b;
-    --bom:oklch(80% 0.22 145); --erro:oklch(68% 0.26 27); --alvo:oklch(74% 0.16 73);
-    --treino:#e7c463;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:#0b0f14; color:var(--texto); font:14px/1.5 'Inter',-apple-system,sans-serif; padding:26px 30px 60px; }
-  h1 { font-size:19px; font-weight:900; letter-spacing:.04em; }
-  h1 small { color:var(--apagado); font-weight:500; }
-  .sub { color:var(--apagado); margin:6px 0 26px; max-width:1100px; }
+  /* página do mockup (vence o layout de página do painel; os COMPONENTES ficam intactos) */
+  body { display:block !important; background:#0b0f14 !important; padding:26px 30px 60px !important;
+         min-height:auto !important; user-select:text !important; color:#e8eef5 !important;
+         font-family:'Inter',-apple-system,sans-serif !important; }
+  h1 { font-size:19px; font-weight:900; letter-spacing:.04em; color:#e8eef5; }
+  h1 small { color:#64748b; font-weight:500; }
+  .sub { color:#64748b; margin:6px 0 26px; max-width:1100px; font-size:14px; line-height:1.5; }
   .momento { display:flex; gap:22px; align-items:flex-start; margin-bottom:44px; flex-wrap:wrap; }
-  .notas { flex:1; min-width:260px; max-width:380px; }
-  .notas h2 { font-size:13px; letter-spacing:.12em; color:var(--treino); font-weight:800; margin-bottom:8px; }
-  .notas p, .notas li { color:#a8b6c6; font-size:13.5px; line-height:1.6; }
-  .notas ul { padding-left:18px; margin-top:6px; }
+  .notas { flex:1; min-width:260px; max-width:380px; font-size:13.5px; }
+  .notas h2 { font-size:13px; letter-spacing:.12em; color:#e7c463; font-weight:800; margin-bottom:8px; }
+  .notas li { color:#a8b6c6; line-height:1.6; margin-left:18px; }
   .notas .mantido { color:#7c8b9b; }
   .notas .novo { color:#e8eef5; }
-  .notas .novo b { color:var(--treino); }
+  .notas .novo b { color:#e7c463; }
 
-  /* ── réplica do palco real 956×440 ─────────────────────────── */
-  .device { width:956px; height:440px; background:#000; border-radius:26px; position:relative;
-    overflow:hidden; border:2px solid #11161d; box-shadow:0 14px 50px rgba(0,0,0,.6); flex-shrink:0; }
-  .stint-bar { position:absolute; top:12px; left:130px; right:18px; display:flex; gap:6px; }
-  .sb { flex:1; height:14px; border-radius:2px; background:var(--faint); position:relative; }
-  .sb.faster { background:var(--bom); } .sb.slower { background:var(--erro); }
-  .sb.neutral { background:var(--ink); }
-  .sb.box { background:repeating-linear-gradient(45deg,#1a222c 0 4px,#2a3645 4px 8px); }
-  .sb .b { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    font:800 9px 'JetBrains Mono',monospace; color:#8a99a8; letter-spacing:1px; }
-  .selo { position:absolute; top:34px; right:18px; font:800 11px 'JetBrains Mono',monospace; letter-spacing:1.5px;
-    color:var(--treino); border:1px solid #a8841f; background:#2b2008; padding:3px 10px; border-radius:5px; }
+  /* selo TREINO (vive na barra de operação, fora do palco — aqui só contexto) */
+  .selo { position:absolute; top:34px; right:18px; z-index:60; font:800 11px 'JetBrains Mono',monospace;
+    letter-spacing:1.5px; color:#e7c463; border:1px solid #a8841f; background:#2b2008;
+    padding:3px 10px; border-radius:5px; }
 
-  /* NOVO — trilho vertical de trechos (esquerda, dentro do palco) */
-  .trilho { position:absolute; top:12px; bottom:14px; left:14px; width:104px;
+  /* pedaço BOX na faixa de voltas (proposta — classe nova sobre o componente real) */
+  .stint-bar__block.box-lap { background:repeating-linear-gradient(45deg,#1a222c 0 4px,#2a3645 4px 8px); }
+  .stint-bar__block.box-lap::after { content:'BOX'; position:absolute; inset:0; display:flex;
+    align-items:center; justify-content:center; font:800 9px 'JetBrains Mono',monospace;
+    color:#8a99a8; letter-spacing:1px; background:none; animation:none; }
+
+  /* NOVO — trilho vertical de trechos (esquerda, depois do recorte da tela) */
+  .trilho { position:absolute; top:36px; bottom:64px; left:64px; width:110px; z-index:40;
     display:flex; flex-direction:column; gap:5px; }
-  .trilho .titulo { font:800 9px 'JetBrains Mono',monospace; color:var(--treino); letter-spacing:1px; text-align:left; }
+  .trilho .titulo { font:800 9px 'JetBrains Mono',monospace; color:#e7c463; letter-spacing:1px; }
   .tr { flex:1; display:flex; align-items:center; gap:5px; }
   .tr .nome { width:24px; font:800 11px 'JetBrains Mono',monospace; color:#8a99a8; }
   .tr.atual .nome { color:#fff; }
   .tr .passes { display:flex; gap:4px; flex:1; }
-  .tr .p { width:14px; height:14px; border-radius:3px; background:var(--ink); }
-  .tr .p.certo { background:var(--bom); }
-  .tr .p.errado { background:var(--erro); }
-  .tr .p.calib { background:var(--faint); }
+  .tr .p { width:14px; height:14px; border-radius:3px; background:#1a222c; }
+  .tr .p.certo { background:oklch(80% 0.22 145); box-shadow:0 0 6px oklch(80% 0.22 145 / .5); }
+  .tr .p.errado { background:oklch(68% 0.26 27); box-shadow:0 0 6px oklch(68% 0.26 27 / .5); }
+  .tr .p.calib { background:#2a3645; }
   .tr .p.agora { outline:2px solid #fff; outline-offset:1px; }
   .tr.atual { background:rgba(231,196,99,.07); border-radius:5px; }
 
-  /* centro do palco (delta + ação) — réplica simplificada */
-  .centro { position:absolute; left:130px; right:18px; top:64px; bottom:104px;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; }
-  .delta { font:900 120px/1 'JetBrains Mono',monospace; letter-spacing:-4px; font-variant-numeric:tabular-nums; }
-  .delta.bom { color:var(--bom); } .delta.ruim { color:var(--erro); }
-  .acao-txt { font:900 26px 'Inter',sans-serif; letter-spacing:2px; margin-top:6px; }
-  .msgzona { position:absolute; left:130px; right:18px; bottom:104px; text-align:center;
-    font:900 21px 'Inter',sans-serif; letter-spacing:1.5px; color:var(--treino); }
+  /* camada de orientação (toma o palco como hoje) — fica ABAIXO da régua e dos
+     shift lights (z 5 < apex 10 < shift-light 45), que continuam visíveis */
+  .orient { position:absolute; inset:0; background:#000; z-index:5; }
+  .orient .grafico { position:absolute; left:5%; top:13%; bottom:21%; width:62%; }
+  .orient .grafico svg { width:100%; height:100%; }
+  .rotulo-eixo { font:800 10px 'JetBrains Mono',monospace; letter-spacing:1px; fill:#64748b; }
 
-  /* régua inferior (entrada/freio/ápice/saída) + shift light — mantidos */
-  .apex { position:absolute; bottom:46px; left:130px; right:18px; display:flex; justify-content:space-between; }
-  .apex span { font:800 13px 'Inter',sans-serif; letter-spacing:3px; color:#8a99a8; }
-  .apex span.ativo { color:#fff; }
-  .shift { position:absolute; bottom:14px; left:50%; transform:translateX(-50%); display:flex; gap:9px; }
-  .shift i { width:13px; height:13px; border-radius:50%; background:#1a222c; }
-  .shift i.on { background:var(--bom); box-shadow:0 0 8px var(--bom); }
+  /* shift light de FREIO = o MESMO componente real, ancorado no TOPO do palco */
+  .shift-light--freio { top:10px; bottom:auto; }
 
-  /* camada de orientação (metade da reta / pós-trecho) — toma o palco como hoje */
-  .orient { position:absolute; inset:0; background:#000; }
-  .orient .grafico { position:absolute; left:3%; top:8%; bottom:12%; width:53%; }
-
-  /* NOVO — shift light de FREIO no topo: luzes vêm das pontas e se juntam no centro */
-  .freio-light { position:absolute; top:10px; left:50%; transform:translateX(-50%);
-    display:flex; gap:8px; z-index:30; }
-  .freio-light i { width:15px; height:15px; border-radius:50%; background:#1a222c; }
-  .freio-light i.on { background:oklch(74% 0.16 73); box-shadow:0 0 10px oklch(74% 0.16 73 / .8); }
-  .freio-light i.ponto { background:#fff; box-shadow:0 0 16px #fff; }
-  /* wash do PONTO DE FRENAGEM (exclusivo do freio no modo treino) */
-  .wash-freio { position:absolute; inset:0; pointer-events:none; z-index:25;
+  /* wash do PONTO DE FRENAGEM — mesmo clarão do disparo real (fire-overlay),
+     reservado pro freio no modo treino */
+  .wash-freio { position:absolute; inset:0; pointer-events:none; z-index:8;
     background:radial-gradient(ellipse 110% 65% at 50% 0%,
-      oklch(85% 0.16 73 / .65) 0%, oklch(78% 0.17 70 / .30) 35%,
-      oklch(72% 0.16 73 / .08) 65%, transparent 100%); }
-  .orient .grafico--baixo { top:16%; bottom:20%; }
-  .rodape-mantido { position:absolute; bottom:46px; left:18px; right:18px;
-    display:flex; justify-content:space-between; z-index:30; }
-  .rodape-mantido span { font:800 13px 'Inter',sans-serif; letter-spacing:3px; color:#8a99a8; }
-  .rodape-mantido span.ativo { color:#fff; }
-  .orient .acao { position:absolute; right:3%; top:50%; transform:translateY(-50%); width:40%;
-    text-align:right; display:flex; flex-direction:column; gap:26px; align-items:flex-end; }
-  .orient .verbo { font-size:54px; font-weight:900; letter-spacing:2px; line-height:1.05; }
-  .orient .verbo b { color:var(--bom); }
-  .orient .dado { font:900 110px/0.95 'JetBrains Mono',monospace; letter-spacing:-3px; color:var(--bom); }
-  .orient .dado small { font-size:.34em; opacity:.75; font-weight:800; }
-  .orient .rotulo-eixo { font:800 10px 'JetBrains Mono',monospace; letter-spacing:1px; fill:#64748b; }
-  .veredito { font:900 64px 'Inter',sans-serif; letter-spacing:3px; }
-  .veredito.certo { color:var(--bom); text-shadow:0 0 30px oklch(80% 0.22 145 / .45); }
-  .veredito.errado { color:var(--erro); text-shadow:0 0 30px oklch(68% 0.26 27 / .45); }
-  .legenda-mini { position:absolute; left:3%; bottom:3%; display:flex; gap:16px;
+      oklch(96% 0.10 235 / .55) 0%, oklch(88% 0.14 240 / .25) 35%,
+      oklch(72% 0.16 245 / .06) 65%, transparent 100%); }
+
+  /* régua inferior simplificada nos momentos de orientação (rótulos da régua real) */
+  .regua-rotulos { position:absolute; bottom:60px; left:60px; right:36px; z-index:10;
+    display:flex; justify-content:space-between; }
+  .regua-rotulos span { font:800 13px 'Inter',sans-serif; letter-spacing:3px; color:#8a99a8; }
+  .regua-rotulos span.ativo { color:#fff; }
+
+  .veredito { font:900 58px 'Inter',sans-serif; letter-spacing:3px; line-height:1.1; }
+  .veredito.errado { color:oklch(68% 0.26 27); text-shadow:0 0 30px oklch(68% 0.26 27 / .45); }
+  .erro-nome { font:900 26px 'Inter',sans-serif; letter-spacing:2px; color:#e8eef5; margin-top:10px; }
+  .erro-nome b { color:oklch(68% 0.26 27); }
+  .acao-dir { position:absolute; right:4%; top:42%; transform:translateY(-50%); width:28%;
+    text-align:right; z-index:9; }
+  .legenda-mini { position:absolute; left:5%; bottom:15%; display:flex; gap:16px; z-index:9;
     font:700 11px 'Inter',sans-serif; color:#8a99a8; }
   .legenda-mini i { display:inline-block; width:16px; border-top:3px solid; margin-right:5px; border-radius:2px; }
+
+  /* centro do momento 1 usa o bloco real de delta+ação, posicionado pro mockup */
+  .centro-m1 { position:absolute; left:200px; right:36px; top:70px; bottom:120px; z-index:9;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+  .centro-m1 .info__acao { color:#e7c463; font-weight:900; font-size:26px; letter-spacing:2px; margin-top:4px; }
 </style>
 </head>
 <body>
 
-<h1>COCKPIT EM MODO TREINO · TRAIL BRAKING <small>— proposta visual sobre o palco real 956×440 (ditado de 11/06/2026)</small></h1>
-<p class="sub">Regra ditada: cada treinamento monta a tela do seu jeito. A base comum não muda — voltas em cima
-(verde/vermelho, mesma régua de hoje), shift light, Entrada · Freio · Ápice · Saída. O que muda é o conteúdo variável:
-o trilho vertical de trechos à esquerda, o delta e as mensagens passam a falar SÓ do treino selecionado.</p>
+<h1>COCKPIT EM MODO TREINO · TRAIL BRAKING <small>— componentes REAIS do painel (palco 956×440) · ditado de 11/06/2026</small></h1>
+<p class="sub">Cada treinamento monta a tela do seu jeito. Base comum intacta: voltas em cima (mesma régua),
+shift light de marcha embaixo fazendo o trabalho normal dele em TODOS os momentos (das pontas pro centro,
+verde, amarelo, vermelho — sem onda), régua ENTRADA · FREIO · ÁPICE · SAÍDA. O conteúdo variável fala só do treino.</p>
 
-<!-- ═══════════ MOMENTO 1 — DENTRO DO TRECHO (tela base do treino) ═══════════ -->
+<!-- ═══════════ MOMENTO 1 — DENTRO DO TRECHO ═══════════ -->
 <div class="momento">
-  <div class="device">
-    <div class="stint-bar">
-      <div class="sb faster"></div><div class="sb slower"></div><div class="sb faster"></div>
-      <div class="sb box"><span class="b">BOX</span></div>
-      <div class="sb faster"></div><div class="sb neutral"></div>
-      <div class="sb"></div><div class="sb"></div><div class="sb"></div><div class="sb"></div>
+  <div class="device" data-trecho-status="neutro" data-shift-fire="idle">
+    <div class="notch"></div>
+    <div class="stint-bar" style="z-index:40">
+      <div class="stint-bar__block is-faster"></div>
+      <div class="stint-bar__block is-slower"></div>
+      <div class="stint-bar__block is-best-stint"></div>
+      <div class="stint-bar__block box-lap"></div>
+      <div class="stint-bar__block is-faster"></div>
+      <div class="stint-bar__block is-neutral"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
     </div>
     <span class="selo">TREINO · TRAIL BRAKING</span>
 
@@ -134,167 +124,244 @@ o trilho vertical de trechos à esquerda, o delta e as mensagens passam a falar 
       <div class="tr"><span class="nome">VI</span><div class="passes"><i class="p calib"></i><i class="p calib"></i><i class="p certo"></i><i class="p certo"></i></div></div>
     </div>
 
-    <div class="centro">
-      <div class="delta bom">-0.18</div>
-      <div class="acao-txt" style="color:var(--treino)">SOLTA AOS POUCOS</div>
+    <div class="centro-m1">
+      <span class="info__delta bom" style="font-size:118px">-0.18</span>
+      <div class="info__acao">SOLTA AOS POUCOS</div>
     </div>
 
-    <div class="apex">
+    <div class="regua-rotulos" style="bottom:60px">
       <span>ENTRADA</span><span class="ativo">FREIO</span><span>ÁPICE</span><span>SAÍDA</span>
     </div>
-    <div class="shift"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+    <div class="shift-light" data-state="on">
+      <span class="shift-light__dot is-on" data-tier="1"></span>
+      <span class="shift-light__dot is-on" data-tier="2"></span>
+      <span class="shift-light__dot is-on" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot is-on" data-tier="3"></span>
+      <span class="shift-light__dot is-on" data-tier="2"></span>
+      <span class="shift-light__dot is-on" data-tier="1"></span>
+    </div>
   </div>
   <div class="notas">
     <h2>MOMENTO 1 — DENTRO DO TRECHO</h2>
-    <p class="mantido">Mantido igual: voltas em cima (com o pedaço BOX hachurado), delta grande, régua
-    Entrada · Freio · Ápice · Saída, shift light.</p>
     <ul>
       <li class="novo"><b>Trilho vertical à esquerda (novo):</b> 8 trechos, uma célula por passagem.
-      Verde = trail certo · vermelho = errado · cinza = calibrando (2 primeiras) · célula com contorno = agora.</li>
-      <li class="novo"><b>Delta e ação falam só do treino:</b> aqui a ação é a do trail
-      ("SOLTA AOS POUCOS"), não a do pior ponto geral.</li>
-      <li class="novo">JU (Junção) destacada: é o trecho em que ele está — 2 erros seguidos ali.</li>
+      Verde = trail certo · vermelho = errado · cinza = calibrando · contorno = agora.</li>
+      <li class="novo"><b>Delta e ação falam só do trail</b> ("SOLTA AOS POUCOS").</li>
+      <li class="mantido">Shift light de marcha REAL embaixo, no trabalho normal dele
+      (aqui com 6 LEDs acesos, subindo das pontas verdes). Voltas em cima com o pedaço BOX.
+      Régua e selo como hoje.</li>
     </ul>
   </div>
 </div>
 
-<!-- ═══════════ MOMENTO 2 — METADE DA RETA: ALVO + SHIFT LIGHT DE FREIO ═══════════ -->
+<!-- ═══════════ MOMENTO 2 — METADE DA RETA (gráfico fala sozinho) ═══════════ -->
 <div class="momento">
-  <div class="device">
-    <div class="orient">
-      <div class="freio-light">
-        <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i>
-        <i></i><i></i><i></i><i></i><i></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i>
-      </div>
-      <div class="grafico grafico--baixo">
-        <svg viewBox="0 0 520 300">
-          <text x="6" y="14" class="rotulo-eixo">FREIO %</text>
-          <text x="470" y="292" class="rotulo-eixo">METROS</text>
-          <line x1="34" y1="20" x2="34" y2="266" stroke="#1f2937" stroke-width="1"/>
-          <line x1="34" y1="266" x2="506" y2="266" stroke="#1f2937" stroke-width="1"/>
-          <!-- alvo: sobe forte na marca, segura, solta progressivo até o ápice -->
-          <path d="M60,266 L118,266 L138,54 L196,54 C300,78 386,180 442,244 L470,258"
-                fill="none" stroke="oklch(74% 0.16 73)" stroke-width="7" stroke-linecap="round"
-                style="filter:drop-shadow(0 0 14px oklch(74% 0.16 73 / .5))"/>
-          <line x1="138" y1="20" x2="138" y2="266" stroke="oklch(74% 0.16 73)" stroke-dasharray="4 6" stroke-width="1.6"/>
-          <text x="144" y="34" class="rotulo-eixo" style="fill:oklch(74% 0.16 73)">FREIA AQUI · 87 m</text>
-          <line x1="442" y1="20" x2="442" y2="266" stroke="#e8eef5" stroke-dasharray="4 6" stroke-width="1.4"/>
-          <text x="448" y="34" class="rotulo-eixo" style="fill:#e8eef5">ÁPICE</text>
-          <text x="210" y="130" class="rotulo-eixo" style="font-size:13px; fill:oklch(74% 0.16 73)">SOLTANDO ATÉ O ÁPICE</text>
-        </svg>
-      </div>
-      <div class="acao" style="top:46%">
-        <div class="verbo">FREIA <b>87 m</b><br>SOLTA <b>AOS POUCOS</b></div>
-        <div class="dado">40<small>% NO ÁPICE</small></div>
-      </div>
-      <div class="rodape-mantido">
-        <span>ENTRADA</span><span class="ativo">FREIO</span><span>ÁPICE</span><span>SAÍDA</span>
-      </div>
-      <div class="shift"><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="on"></i></div>
+  <div class="device" data-trecho-status="neutro" data-shift-fire="idle">
+    <div class="notch"></div>
+    <div class="orient"></div>
+
+    <!-- shift light de FREIO: MESMO componente real, no topo. Convergindo: faltam 2 pares -->
+    <div class="shift-light shift-light--freio" data-state="on">
+      <span class="shift-light__dot is-on" data-tier="1"></span>
+      <span class="shift-light__dot is-on" data-tier="2"></span>
+      <span class="shift-light__dot is-on" data-tier="3"></span>
+      <span class="shift-light__dot is-on" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot is-on" data-tier="4"></span>
+      <span class="shift-light__dot is-on" data-tier="3"></span>
+      <span class="shift-light__dot is-on" data-tier="2"></span>
+      <span class="shift-light__dot is-on" data-tier="1"></span>
+    </div>
+
+    <div class="grafico orient-svg" style="position:absolute; left:5%; top:14%; bottom:22%; width:90%; z-index:9">
+      <svg viewBox="0 0 860 250" style="width:100%; height:100%">
+        <text x="6" y="14" class="rotulo-eixo">FREIO %</text>
+        <text x="816" y="242" class="rotulo-eixo">METROS</text>
+        <line x1="40" y1="16" x2="40" y2="222" stroke="#1f2937" stroke-width="1"/>
+        <line x1="40" y1="222" x2="836" y2="222" stroke="#1f2937" stroke-width="1"/>
+        <path d="M70,222 L180,222 L210,44 L300,44 C470,66 640,160 740,202 L790,214"
+              fill="none" stroke="oklch(74% 0.16 73)" stroke-width="8" stroke-linecap="round"
+              style="filter:drop-shadow(0 0 16px oklch(74% 0.16 73 / .5))"/>
+        <line x1="210" y1="16" x2="210" y2="222" stroke="oklch(74% 0.16 73)" stroke-dasharray="4 6" stroke-width="1.8"/>
+        <text x="218" y="32" class="rotulo-eixo" style="fill:oklch(74% 0.16 73); font-size:13px">FREIA AQUI · 87 m</text>
+        <line x1="740" y1="16" x2="740" y2="222" stroke="#e8eef5" stroke-dasharray="4 6" stroke-width="1.4"/>
+        <text x="748" y="32" class="rotulo-eixo" style="fill:#e8eef5; font-size:13px">ÁPICE · 40%</text>
+        <text x="430" y="120" class="rotulo-eixo" style="font-size:14px; fill:oklch(74% 0.16 73)">SOLTANDO ATÉ O ÁPICE</text>
+      </svg>
+    </div>
+
+    <div class="regua-rotulos">
+      <span>ENTRADA</span><span class="ativo">FREIO</span><span>ÁPICE</span><span>SAÍDA</span>
+    </div>
+
+    <div class="shift-light" data-state="on">
+      <span class="shift-light__dot is-on" data-tier="1"></span>
+      <span class="shift-light__dot is-on" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot is-on" data-tier="2"></span>
+      <span class="shift-light__dot is-on" data-tier="1"></span>
     </div>
   </div>
   <div class="notas">
-    <h2>MOMENTO 2 — METADE DA RETA (APROXIMANDO)</h2>
+    <h2>MOMENTO 2 — METADE DA RETA</h2>
     <ul>
-      <li class="novo"><b>Shift light de FREIO em cima (novo):</b> as luzes vêm das duas pontas
-      e vão se juntando conforme o carro chega no ponto de frenagem. Juntou no centro = o ponto.</li>
-      <li class="novo">No meio, o <b>gráfico de frenagem alvo</b>: onde pisa (87 m) e a rampa
-      soltando progressiva até o ápice com ~40% de freio — da melhor passagem real.</li>
-      <li class="mantido">Embaixo continua igual: ENTRADA · FREIO · ÁPICE · SAÍDA e o shift light
-      de marcha normal (só acende progressivo, SEM onda).</li>
+      <li class="novo"><b>Shift light de FREIO em cima — o componente REAL do painel</b>, só que
+      a régua dele é distância: as luzes fecham das pontas pro centro conforme chega no ponto
+      de frenagem (aqui faltam os 2 pares vermelhos).</li>
+      <li class="novo"><b>Sem texto:</b> o gráfico fala sozinho — onde pisa (87 m), a rampa
+      soltando progressiva, ápice com 40%.</li>
+      <li class="mantido">Embaixo: shift light de marcha REAL no trabalho normal + régua.</li>
     </ul>
   </div>
 </div>
 
-<!-- ═══════════ MOMENTO 2b — O PONTO DE FRENAGEM (wash) ═══════════ -->
+<!-- ═══════════ MOMENTO 2b — O PONTO (a onda é do freio) ═══════════ -->
 <div class="momento">
-  <div class="device">
-    <div class="orient">
-      <div class="wash-freio"></div>
-      <div class="freio-light">
-        <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="ponto"></i>
-        <i class="ponto"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i>
-      </div>
-      <div class="grafico grafico--baixo" style="opacity:.55">
-        <svg viewBox="0 0 520 300">
-          <line x1="34" y1="20" x2="34" y2="266" stroke="#1f2937" stroke-width="1"/>
-          <line x1="34" y1="266" x2="506" y2="266" stroke="#1f2937" stroke-width="1"/>
-          <path d="M60,266 L118,266 L138,54 L196,54 C300,78 386,180 442,244 L470,258"
-                fill="none" stroke="oklch(74% 0.16 73)" stroke-width="7" stroke-linecap="round"/>
-          <line x1="138" y1="20" x2="138" y2="266" stroke="#fff" stroke-width="2.4"/>
-        </svg>
-      </div>
-      <div class="acao" style="top:46%">
-        <div class="verbo" style="font-size:84px">FREIA<br><b>AGORA</b></div>
-      </div>
-      <div class="rodape-mantido">
-        <span>ENTRADA</span><span class="ativo">FREIO</span><span>ÁPICE</span><span>SAÍDA</span>
-      </div>
-      <div class="shift"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+  <div class="device" data-trecho-status="neutro" data-shift-fire="idle">
+    <div class="notch"></div>
+    <div class="orient"></div>
+    <div class="wash-freio"></div>
+
+    <!-- freio: TODOS os pares fechados no centro = PONTO DE FRENAGEM -->
+    <div class="shift-light shift-light--freio" data-state="on">
+      <span class="shift-light__dot is-on" data-tier="1"></span>
+      <span class="shift-light__dot is-on" data-tier="2"></span>
+      <span class="shift-light__dot is-on" data-tier="3"></span>
+      <span class="shift-light__dot is-on" data-tier="4"></span>
+      <span class="shift-light__dot is-on" data-tier="5"></span>
+      <span class="shift-light__dot is-on" data-tier="6"></span>
+      <span class="shift-light__dot is-on" data-tier="6"></span>
+      <span class="shift-light__dot is-on" data-tier="5"></span>
+      <span class="shift-light__dot is-on" data-tier="4"></span>
+      <span class="shift-light__dot is-on" data-tier="3"></span>
+      <span class="shift-light__dot is-on" data-tier="2"></span>
+      <span class="shift-light__dot is-on" data-tier="1"></span>
+    </div>
+
+    <div style="position:absolute; left:5%; top:16%; bottom:24%; width:90%; z-index:9; opacity:.5">
+      <svg viewBox="0 0 860 240" style="width:100%; height:100%">
+        <line x1="40" y1="14" x2="40" y2="214" stroke="#1f2937" stroke-width="1"/>
+        <line x1="40" y1="214" x2="836" y2="214" stroke="#1f2937" stroke-width="1"/>
+        <path d="M70,214 L180,214 L210,42 L300,42 C470,62 640,154 740,194 L790,206"
+              fill="none" stroke="oklch(74% 0.16 73)" stroke-width="8" stroke-linecap="round"/>
+        <line x1="210" y1="14" x2="210" y2="214" stroke="#fff" stroke-width="3"/>
+      </svg>
+    </div>
+
+    <div class="regua-rotulos">
+      <span>ENTRADA</span><span class="ativo">FREIO</span><span>ÁPICE</span><span>SAÍDA</span>
+    </div>
+
+    <div class="shift-light" data-state="on">
+      <span class="shift-light__dot is-on" data-tier="1"></span>
+      <span class="shift-light__dot is-on" data-tier="2"></span>
+      <span class="shift-light__dot is-on" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot is-on" data-tier="3"></span>
+      <span class="shift-light__dot is-on" data-tier="2"></span>
+      <span class="shift-light__dot is-on" data-tier="1"></span>
     </div>
   </div>
   <div class="notas">
     <h2>MOMENTO 2b — O PONTO (a onda é do freio)</h2>
     <ul>
-      <li class="novo">As luzes <b>fecharam no centro</b> = ponto de frenagem. Nesse instante entra a
-      <b>onda (wash)</b> — o mesmo efeito de clarão que hoje existe na troca de marcha, agora
-      reservado pro freio no modo treino.</li>
-      <li class="mantido">O shift light de marcha embaixo NÃO faz onda — segue só acendendo
-      as luzes até o ponto de trocar, como hoje.</li>
-      <li class="novo">Clarão na cor do alvo (âmbar), 1 piscada curta — mesmo tempo do clarão atual
-      da troca (300 ms).</li>
+      <li class="novo">Os pares <b>fecharam no centro</b> (vermelho aceso) = ponto de frenagem.
+      Nesse instante entra a <b>onda</b> — o MESMO clarão do disparo de troca de hoje (300 ms),
+      agora reservado pro freio no modo treino.</li>
+      <li class="mantido">O shift light de marcha embaixo segue o trabalho normal dele —
+      sem onda, ele continua mandando trocar marcha na hora certa.</li>
     </ul>
   </div>
 </div>
 
-<!-- ═══════════ MOMENTO 3 — PÓS-TRECHO (DEPOIS): COMO FOI ═══════════ -->
+<!-- ═══════════ MOMENTO 3 — PÓS-TRECHO ═══════════ -->
 <div class="momento">
-  <div class="device">
-    <div class="orient">
-      <div class="grafico">
-        <svg viewBox="0 0 520 330">
-          <text x="6" y="14" class="rotulo-eixo">FREIO %</text>
-          <line x1="34" y1="20" x2="34" y2="296" stroke="#1f2937" stroke-width="1"/>
-          <line x1="34" y1="296" x2="506" y2="296" stroke="#1f2937" stroke-width="1"/>
-          <!-- alvo (fino, atrás) -->
-          <path d="M60,296 L118,296 L138,60 L196,60 C300,86 386,200 442,272 L470,288"
-                fill="none" stroke="oklch(74% 0.16 73)" stroke-width="3.5" stroke-dasharray="8 7" opacity=".85"/>
-          <!-- como foi: freou no ponto, mas LARGOU o freio de uma vez -->
-          <path d="M60,296 L122,296 L142,64 L208,64 L228,282 L442,290"
-                fill="none" stroke="oklch(68% 0.26 27)" stroke-width="7" stroke-linecap="round"
-                style="filter:drop-shadow(0 0 14px oklch(68% 0.26 27 / .5))"/>
-          <line x1="442" y1="20" x2="442" y2="296" stroke="#e8eef5" stroke-dasharray="4 6" stroke-width="1.4"/>
-          <text x="448" y="34" class="rotulo-eixo" style="fill:#e8eef5">ÁPICE</text>
-          <text x="236" y="200" class="rotulo-eixo" style="font-size:13px; fill:oklch(68% 0.26 27)">LARGOU DE UMA VEZ — 5 m</text>
-        </svg>
+  <div class="device" data-trecho-status="pior-stint" data-shift-fire="idle">
+    <div class="notch"></div>
+    <div class="orient"></div>
+
+    <div style="position:absolute; left:5%; top:10%; bottom:24%; width:58%; z-index:9">
+      <svg viewBox="0 0 520 280" style="width:100%; height:100%">
+        <text x="6" y="14" class="rotulo-eixo">FREIO %</text>
+        <line x1="34" y1="18" x2="34" y2="248" stroke="#1f2937" stroke-width="1"/>
+        <line x1="34" y1="248" x2="506" y2="248" stroke="#1f2937" stroke-width="1"/>
+        <path d="M60,248 L118,248 L138,50 L196,50 C300,72 386,168 442,228 L470,240"
+              fill="none" stroke="oklch(74% 0.16 73)" stroke-width="3.5" stroke-dasharray="8 7" opacity=".85"/>
+        <path d="M60,248 L122,248 L142,54 L208,54 L228,236 L442,244"
+              fill="none" stroke="oklch(68% 0.26 27)" stroke-width="7" stroke-linecap="round"
+              style="filter:drop-shadow(0 0 14px oklch(68% 0.26 27 / .5))"/>
+        <line x1="442" y1="18" x2="442" y2="248" stroke="#e8eef5" stroke-dasharray="4 6" stroke-width="1.4"/>
+        <text x="448" y="32" class="rotulo-eixo" style="fill:#e8eef5">ÁPICE</text>
+        <text x="240" y="190" class="rotulo-eixo" style="font-size:13px; fill:oklch(68% 0.26 27)">LARGOU DE UMA VEZ — 5 m</text>
+      </svg>
+      <div style="display:flex; gap:16px; font:700 11px 'Inter',sans-serif; color:#8a99a8; margin-top:2px">
+        <span><i style="display:inline-block; width:16px; border-top:3px solid oklch(74% 0.16 73); margin-right:5px; border-radius:2px"></i>alvo</span>
+        <span><i style="display:inline-block; width:16px; border-top:3px solid oklch(68% 0.26 27); margin-right:5px; border-radius:2px"></i>como foi</span>
       </div>
-      <div class="acao">
-        <div class="veredito errado">TRAIL ERRADO</div>
-        <div class="verbo" style="font-size:34px">SOLTOU <b>DE UMA VEZ</b></div>
-      </div>
-      <div class="legenda-mini">
-        <span><i style="border-color:oklch(74% 0.16 73)"></i>alvo</span>
-        <span><i style="border-color:oklch(68% 0.26 27)"></i>como foi agora</span>
-      </div>
+    </div>
+
+    <div class="acao-dir">
+      <div class="veredito errado">TRAIL<br>ERRADO</div>
+      <div class="erro-nome">SOLTOU <b>DE UMA VEZ</b></div>
+    </div>
+
+    <div class="regua-rotulos">
+      <span>ENTRADA</span><span>FREIO</span><span>ÁPICE</span><span class="ativo">SAÍDA</span>
+    </div>
+
+    <div class="shift-light" data-state="on">
+      <span class="shift-light__dot is-on" data-tier="1"></span>
+      <span class="shift-light__dot is-on" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot is-on" data-tier="2"></span>
+      <span class="shift-light__dot is-on" data-tier="1"></span>
     </div>
   </div>
   <div class="notas">
-    <h2>MOMENTO 3 — PÓS-TRECHO (DEPOIS)</h2>
-    <p class="novo">Logo depois do trecho: a curva de como FOI por cima do alvo + o veredito
-    <b>TRAIL CERTO / TRAIL ERRADO</b> — e a célula do trecho acende verde ou vermelha no trilho.</p>
+    <h2>MOMENTO 3 — PÓS-TRECHO</h2>
     <ul>
-      <li class="novo"><b>Critério proposto pro CERTO</b> (3 condições): freou na banda do alvo ·
-      soltura progressiva (não degrau) · chegou na velocidade mínima ainda freando.</li>
-      <li class="novo">Errou → a mensagem diz O QUE errou no padrão aprovado (SOLTOU DE UMA VEZ ·
-      FREOU CEDO · FREOU TARDE).</li>
+      <li class="novo">Como FOI sobre o alvo + veredito <b>TRAIL CERTO / TRAIL ERRADO</b> com o
+      erro nomeado (SOLTOU DE UMA VEZ · FREOU CEDO · FREOU TARDE). A célula do trecho acende
+      no trilho.</li>
+      <li class="mantido">Régua e <b>shift light de marcha REAL de volta no lugar</b> — ele
+      precisa continuar trocando marcha na hora certa.</li>
       <li class="mantido">Resumo da volta na reta longa continua o mesmo.</li>
     </ul>
   </div>
 </div>
 
-<p class="sub" style="margin-top:-10px">Decisões em aberto pra você bater o martelo: (1) o critério do CERTO com as 3 condições acima;
-(2) trilho mostra as últimas 5 passagens ou a sessão inteira encolhendo; (3) o gráfico-alvo aparece em TODA reta ou só nos
-trechos onde ele está errando (anti-saturação). Nada disso foi construído — proposta visual pra sua validação.</p>
+<p class="sub" style="margin-top:-10px">Padrões assumidos (ajustáveis): CERTO = freou na banda do alvo + soltura progressiva +
+chegou na mínima ainda freando · trilho mostra as últimas 5 passagens · gráfico-alvo em toda reta.
+Freio % hoje pela física do GPS (rotulado); pressão real entra com o sensor segunda/terça.</p>
 
 </body>
 </html>
