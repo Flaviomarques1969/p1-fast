@@ -56,9 +56,10 @@
   .rotulo-eixo { font:800 10px 'JetBrains Mono',monospace; letter-spacing:1px; fill:#64748b; }
 
   /* shift light de FREIO = colunas VERTICAIS nos dois cantos da tela, com os
-     LEDs REAIS do painel. Vão DESCENDO conforme chega no ponto de frenagem;
-     bateu no vermelho (embaixo) = pisca tudo. Enquanto o freio está na tela,
-     o shift light de marcha SAI (freando só se reduz — assunto do freio). */
+     LEDs REAIS do painel. Vão SUBINDO de baixo (verde) pra cima conforme chega
+     no ponto de frenagem; bateu no VERMELHO do topo = pisca tudo (clarão real,
+     vibração na frequência do disparo). Enquanto o freio está na tela, o shift
+     light de marcha SAI (freando só se reduz — assunto do freio, não do motor). */
   .freio-col { position:absolute; top:26px; bottom:26px; width:35px; z-index:46;
     display:flex; flex-direction:column; align-items:center; justify-content:space-between;
     padding:13px 9px; border-radius:999px;
@@ -101,8 +102,9 @@
 
 <h1>COCKPIT EM MODO TREINO · TRAIL BRAKING <small>— componentes REAIS do painel (palco 956×440) · ditado de 11/06/2026</small></h1>
 <p class="sub">Cada treinamento monta a tela do seu jeito. Base comum intacta: voltas em cima (mesma régua),
-shift light de marcha embaixo fazendo o trabalho normal dele em TODOS os momentos (das pontas pro centro,
-verde, amarelo, vermelho — sem onda), régua ENTRADA · FREIO · ÁPICE · SAÍDA. O conteúdo variável fala só do treino.</p>
+régua ENTRADA · FREIO · ÁPICE · SAÍDA, shift light de marcha real. REGRA DO FREIO: quando o shift light de
+FREIO está na tela (janela de frenagem), o de MARCHA sai — freando só se reduz, e redução é assunto do freio.
+Ele volta no pós-trecho. O conteúdo variável fala só do treino.</p>
 
 <!-- ═══════════ MOMENTO 1 — DENTRO DO TRECHO ═══════════ -->
 <div class="momento">
