@@ -537,8 +537,9 @@ soltou de uma vez, freou cedo e freou tarde. Os números são simulados só pra 
       : 'drop-shadow(0 0 12px oklch(90% 0.12 85)) drop-shadow(0 0 26px oklch(70% 0.22 30 / .9))';
     var pctEle=Math.round((YG-y)/(YG-PLATO)*100);
     var pctAlvo=Math.round((YG-alvoY(x))/(YG-PLATO)*100);
+    leituraPct.setAttribute('opacity','1');  /* liga junto da primeira amostra (vale pro freou cedo) */
     leituraPct.textContent='FREIO '+Math.max(0,pctEle)+'% · ALVO '+Math.max(0,pctAlvo)+'%';
-    leituraPct.setAttribute('fill', ok?'oklch(80% 0.22 145)':'oklch(70% 0.24 28)');
+    leituraPct.setAttribute('fill', ok?'oklch(80% 0.22 145)':'oklch(70% 0.24 27)');
     rebuildTraco();
   }
 
