@@ -379,8 +379,15 @@ struct RegistrarTrocaView: View {
                 observacao: observacao)
             onSaved(def, ocorridoMs)
         } catch {
+            // Detalhe técnico fica no registro interno; pra tela, português claro.
             print("RegistrarTrocaView.salvar falhou: \(error)")
-            erroSalvar = "A troca de \(def.nome) NÃO foi registrada. Tente de novo. Detalhe: \(error.localizedDescription)"
+            let detalhe: String
+            if case ManutencaoConsumiveisStore.StoreErro.semTime = error {
+                detalhe = "O app está sem time ativo — feche e abra o app antes de tentar de novo."
+            } else {
+                detalhe = "Tente de novo."
+            }
+            erroSalvar = "A troca de \(def.nome) NÃO foi registrada. \(detalhe)"
         }
     }
 
