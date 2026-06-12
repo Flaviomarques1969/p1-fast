@@ -1,3 +1,103 @@
+# TASK_INIT 12/06/2026 ~manhã — IMPLEMENTAR COCKPIT EM MODO TREINO (TRAIL BRAKING)
+
+1. Pedido original (Flávio): `/voltei cockpit-treino-trail` + "sim" (confirmação pra seguir).
+   Ordem literal anterior (11/06): "se organiza aí pra eu dar o clear e você fazer a
+   implementação do que eu tô te pedindo" — implementar sem re-perguntar direção.
+2. Objetivo em 1 frase: implementar no painel do piloto (desenvolvimento) o cockpit em modo
+   treino trail braking reproduzindo a DINÂMICA do mockup VIVO validado (5 cenários).
+3. Critérios de conclusão: (a) com treino trail armado o painel mostra: trilho vertical em
+   faixa própria (só última+anterior por trecho), contagem regressiva GIGANTE 143→0 que
+   continua após o zero (branca; vermelha se passou; some ao pisar), ZERO ADIANTADO PELA
+   REAÇÃO aprendida por passagem, shift light de FREIO em 2 colunas verticais laterais
+   (componente real, 6 LEDs, gap 18px, de cima pra baixo), fechou = clarão real + coluna de
+   luz no ponto, freada pintando o gráfico ao vivo VERDE na banda / VERMELHO fora (alvo por
+   trecho, formatos diferentes, incl. residual), saiu da linha = tela pisca vermelho (3 pulsos
+   ~10 Hz + brasa), régua .apex real embaixo com dados AO VIVO, shift de marcha SAI na janela
+   de frenagem e volta no pós-trecho, fundo SEMPRE preto, SEM texto pequeno no palco;
+   (b) sem treino armado, painel byte-idêntico ao atual; (c) freio-trecho.js (29 testes)
+   incorporado; (d) bateria inteira verde; (e) replay com voltas reais provando o ciclo;
+   (f) navegador aberto POR MIM pra validação do Flávio.
+4. Leitura confirmada: ~/.claude/CLAUDE.md sim · padroes.md sim · FLAVIO_EXECUTION_PROTOCOL
+   sim · FLAVIO_DONE_CHECKLIST sim · FLAVIO_ENVIRONMENT_RULES sim ·
+   FLAVIO_COMMUNICATION_RULES sim · memória ditado 18 rodadas LIDA INTEIRA · checkpoint 11/06
+   ~22h (7 itens + defaults) LIDO · CLAUDE.md do projeto lido.
+5. Plano ≤5 passos: (1) ambiente isolado novo a partir da versão oficial; (2) incorporar
+   freio-trecho.js + revisao-treino.* do ambiente revisao-treino-freio; (3) implementar
+   módulos novos (trilho vertical, shift de freio lateral, contagem+reação, gráfico vivo,
+   pisca de linha) e religar main-t3000/tela-orientacao/treino-stint/index-t3000;
+   (4) testes novos + bateria completa + replay com voltas reais; (5) abrir navegador eu
+   mesmo e chamar o Flávio.
+6. Arquivos/áreas: web/cockpit/{main-t3000.js, index-t3000.html, cockpit.css,
+   tela-orientacao.js, treino-stint.js, trecho-detector.js, catalogo-treinos.js,
+   coreografia-volta.js} · módulos novos · tests/ · mockup VIVO como contrato visual.
+7. Ambiente alvo: desenvolvimento (ambiente isolado novo).
+8. Produção protegida: sim (p1t4000.vercel.app e banco intocados).
+9. Autorização para produção: não.
+10. Evidência da autorização para produção: não recebida (não necessária nesta fase).
+11. Riscos: regressão no painel sem treino (mitigação: sem treino armado = byte-idêntico +
+    bateria inteira); sensor de pressão só chega seg/ter 15-16/06 (física GPS até lá, já
+    prevista); decisões 1 e 3 do Flávio pendentes — DEFAULTS declarados e ajustáveis:
+    CERTO = 3 de 3 (banda + seguiu o formato da melhor do trecho + mínima ainda freando),
+    gráfico-alvo em toda reta (anti-saturação vigente continua), rótulos conforme mockup
+    VIVO (rodada 14: sem texto pequeno no palco). Decisão 2 já fechada (rodada 11:
+    última+anterior). FORA DE ESCOPO: 1ª fatia do classificador (aguarda OK literal).
+12. Status inicial: iniciado.
+
+---
+
+# ⏰⏰⏰ CHECKPOINT PRÉ-CLEAR 12/06 ~1h30 — COCKPIT-TREINO TRAIL BRAKING (rodadas 8-18 FECHADAS)
+
+## GATILHO PÓS-CLEAR: `/voltei cockpit-treino-trail` → TASK_INIT e continuar daqui.
+## ESTE checkpoint SUBSTITUI o checkpoint de 11/06 ~22h (mais abaixo): a spec mudou.
+
+## ONDE PARAMOS (12/06 ~1h30)
+## A) SPEC VISUAL VIGENTE = MOCKUP VIVO (animado, 5 cenários), NÃO os quadros parados:
+##    _design-reference/mockup-cockpit-treino-trail-braking-VIVO-2026-06-11.html
+##    Validado: zero erros no navegador, todas as rodadas aplicadas. Flávio acompanhou
+##    rodada a rodada (8→17) e os ajustes dele estão TODOS dentro. v6 estático = histórico.
+## B) REGISTRO CANÔNICO das 18 rodadas do ditado (LER ANTES DE IMPLEMENTAR):
+##    ~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/
+##    p1-fast-ditado-cockpit-treino-por-disciplina-2026-06-11.md
+##    Resumo do que a implementação DEVE reproduzir (dinâmica, não quadros):
+##    - contagem regressiva GIGANTE (143→0) que CONTINUA depois do zero (branca; vermelha
+##      se passou do ponto); some só quando pisa de verdade;
+##    - ZERO ADIANTADO PELA REAÇÃO (requisito de produto): IA cronometra zero→pé por
+##      passagem, aprende e dispara o zero esse tempo antes — aperto cai no ponto;
+##    - shift light de FREIO = 2 COLUNAS VERTICAIS LATERAIS (componente real, 6 LEDs,
+##      gap 18px, de cima pra baixo); fechou = clarão real + COLUNA DE LUZ no ponto;
+##    - freada pinta o gráfico ao vivo: VERDE na banda / VERMELHO fora — banda do alvo
+##      DAQUELE trecho (alvo por trecho, formatos diferentes; 5º cenário = residual);
+##    - saiu da linha = TELA PISCA VERMELHO (3 pulsos ~10 Hz + brasa enquanto fora);
+##    - SEM texto pequeno no palco (só contagem/delta gigantes + componente .apex);
+##    - .apex real embaixo com DADOS AO VIVO (ENTRADA/FREIO m/ÁPICE %/SAÍDA, estados);
+##    - trilho: faixa própria à esquerda, SÓ 2 passagens (anterior+última), troca após
+##      cada passagem; dentro do trecho = delta sozinho (sem gráfico, sem nome);
+##    - veredito = o gráfico inteiro (SEM letreiro por cima); fundo SEMPRE preto (sem
+##      halo dourado/roxo); shift de marcha sai na janela de frenagem e volta depois.
+## C) CLASSIFICADOR DE TRECHO (rodada 18): proposta v2 AUDITADA por 4 agentes (4× aprovado
+##    com ressalvas, correções incorporadas): relatorios/proposta-classificador-trail-2026-06-12.md
+##    + relatorios/auditoria-classificador-trail-2026-06-12.html (abertos pro Flávio).
+##    Tabela: T0 média clássica · T1 lenta pós-reta · T2 raio decrescente · T3 rápida ·
+##    T4 encadeada · T5 raio crescente · SF sem freada. Regras duras: geometria fina das
+##    MELHORES PASSAGENS (não do trajeto 920 pts); alvo teórico SÓ no box rotulado;
+##    coluna tipo_curva nova (NÃO mexer na 'tipo' usada por ehReta).
+##    PRIMEIRA FATIA OFERECIDA (aguarda OK literal): classificar as 8 curvas de Brasília
+##    offline + página de validação curva a curva.
+## D) COM O QUE CONSTRUIR (verificado em auditoria): ambiente isolado
+##    ../p1fast-worktrees/revisao-treino-freio (freio-trecho.js 29/29 testes ·
+##    revisao-treino.html/js) · trecho-detector.js:281-287 freada-iniciou/distFromEntradaM ·
+##    t3000-usb-parser.js pedal offset 54 ("pode ser freio" — confirmar) e pressão 268÷100 ·
+##    7 voltas reais em ~/Documents/p1fast-backup-voltas-reais/ · motor treino-stint.js ·
+##    plano viaja no envelope (EM PRODUÇÃO). SENSOR DE PRESSÃO instala SEG/TER 15-16/06.
+## E) DECISÕES PENDENTES DO FLÁVIO: (1) critério do CERTO = banda + SEGUIU O FORMATO da
+##    melhor do trecho + mínima ainda freando — exigir 3 de 3?; (2) gráfico-alvo em toda
+##    reta ou só onde está errando; (3) rótulo "FREIO · 87 m" vs "FREIA AQUI" (memória vs
+##    mockups); (4) OK pra primeira fatia do classificador.
+## F) REGRAS DA CASA: bateria inteira verde antes de mostrar · navegador EU abro · sem
+##    emojis · tratamento "você" · produção SÓ com frase MIGRAR · TASK_INIT antes de mexer.
+
+---
+
 # TASK_INIT 11/06/2026 ~23h25 — MANUTENÇÃO: dar retorno visível ao salvar troca (pedido do Flávio)
 
 1. Pedido original (Flávio, literal): "A função de atualização não tá bacana, ela não tá
@@ -176,6 +276,20 @@ RODADA 10 (12/06 ~0h, ditado — CONCLUÍDA, aguardando validação visual):
    faixa de status confirmou "TRAIL ERRADO — FREOU TARDE". Reaberto pro Flávio.
    REQUISITO DE PRODUTO ditado nesta rodada (levar pra implementação real): medir e
    aprender o tempo de reação e adiantar o zero por ele.
+
+RODADA 18 (12/06 ~1h20 — "como vai classificar o trecho? chame 4 auditores. não minta.
+   não finja." — CONCLUÍDA): proposta do classificador escrita com insumos conferidos
+   por mim ANTES (arquivos/linhas/JSONs) e auditada por 4 agentes independentes:
+   engenharia, dados (rodou os 29 testes: 29/29; contou as 7 voltas no backup), regras
+   canônicas e viabilidade (consultou o banco: 8 curvas) — 4× APROVADO COM RESSALVAS,
+   correções incorporadas (v2): +T0 média clássica, +T5 raio crescente, +SF sem freada;
+   manual só cobre T0/T1/T3/T5 (T2/T4 = ditado do Flávio); geometria fina vem das
+   melhores passagens (não do trajeto canônico); alvo teórico só no box; coluna
+   tipo_curva própria (não mexer na tipo existente). Entregues e ABERTOS:
+   relatorios/proposta-classificador-trail-2026-06-12.md (v2) +
+   relatorios/auditoria-classificador-trail-2026-06-12.html. Próximo passo OFERECIDO
+   (aguarda OK do Flávio): classificar as 8 curvas de Brasília offline + página de
+   validação curva a curva. Nada foi pro ar.
 
 RODADAS 16-17 (12/06 ~0h50 — pergunta + "sim quero ver tudo" — CONCLUÍDAS):
    16. Confirmado pro Flávio: cada curva tem seu próprio trail POR DESENHO (alvo = curva

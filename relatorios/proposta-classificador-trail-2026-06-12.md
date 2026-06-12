@@ -1,5 +1,5 @@
-# PROPOSTA v1 — Classificador de trecho + tipo de trail braking proposto
-Data: 2026-06-12 · Autor: Claude (rodada 18 do ditado do cockpit-treino) · STATUS: EM AUDITORIA
+# PROPOSTA — Classificador de trecho + tipo de trail braking proposto
+Data: 2026-06-12 · Autor: Claude (rodada 18) · STATUS: v2 — AUDITADA (4 auditores, 4× aprovado com ressalvas; correções incorporadas na seção final)
 
 Pergunta do Flávio: "como você vai classificar o trecho e propor o melhor tipo de trail
 braking para ele?"
@@ -69,3 +69,48 @@ preservadas + as futuras). Declarado: até calibrar, são chute educado.
 - Freio % por GPS é estimativa (rotulada). Pressão real chega seg/ter 15-16/06.
 - Nenhuma curva de Brasília foi classificada ainda — a tabela de tipos por trecho sai
   da PRIMEIRA rodada do classificador sobre o trajeto canônico, e o Flávio valida.
+
+---
+
+## v2 — CORREÇÕES INCORPORADAS DA AUDITORIA (12/06, 4 auditores independentes)
+Vereditos: engenharia, dados, regras canônicas e viabilidade — todos APROVADO COM
+RESSALVAS. Tudo que citei como real foi verificado (29 testes rodados de novo: 29/29;
+arquivos abertos; 8 curvas confirmadas no banco; 7 voltas contadas no backup). Furos
+encontrados e corrigidos:
+
+1. TIPOS FALTANTES — a tabela vira 6 tipos + 1 classe:
+   T0 MÉDIA CLÁSSICA de raio constante (o caso canônico do manual; formato = trail
+   progressivo do cap. 4; é o DEFAULT e dono da faixa Ve/Vmin 1,15–1,6) ·
+   T1 LENTA PÓS-RETA · T2 RAIO DECRESCENTE (residual) · T3 RÁPIDA · T4 ENCADEADA ·
+   T5 RAIO CRESCENTE (ápice cedo, trail curto, acelera cedo — ouro de saída em FWD) ·
+   SF SEM FREADA (kink, Ve/Vmin≈1, sem evento de freada → não prescrever freio).
+2. FONTE DOS FORMATOS, declarada com honestidade: o manual FWD sustenta T0/T1/T3 e os
+   princípios (círculo de tração, soltura = rotação). T2 e T4 vêm do DITADO do Flávio
+   (rodada 16) + engenharia de prova — sem capítulo específico no manual. O QA interno
+   do manual tem 1 contradição pendente (cap. 12, definição de ápice) — resolver ou
+   manter declarada antes de tratá-lo como fonte canônica.
+3. GEOMETRIA FINA: o trajeto canônico de 920 pontos tem 24–44 m entre pontos dentro
+   das curvas (multi-volta) — raio ponto a ponto e perfil do raio NÃO saem confiáveis
+   só dele. Fonte correta: pontos_json das melhores passagens (~6 leituras/s ≈ 4–5 m),
+   que a tela Revisão do Treino já carrega. Trajeto canônico fica pro contexto macro.
+   Alternativa de upgrade: regravar trajeto com RaceBox Mini S a 25 Hz (já testado).
+4. VARIÁVEIS BARATAS ADICIONADAS (todas computáveis hoje): g lateral no Vmin
+   (Vmin²/R_min) · desaceleração de pico (freio-trecho.js já calcula) · distância
+   numérica saída→próxima entrada (critério objetivo de "encadeada") · sentido da
+   curva (esq/dir) pra detectar troca de direção.
+5. FRONTEIRA DO BOOTSTRAP (regra canônica preservada): o formato teórico aparece SÓ
+   na tela de box, rotulado TEÓRICO; durante a calibração (2 passagens) NENHUMA
+   passagem é julgada (células seguem cinza); o alvo teórico NUNCA vai pro cockpit.
+6. IMPLEMENTAÇÃO: módulo novo puro `classificador-trecho.js` (padrão do freio-trecho,
+   com teste automático). NÃO sobrescrever a coluna `tipo` existente de track_segments
+   (reta/curva — o flash da IA depende dela); usar coluna/dicionário próprio
+   (`tipo_curva`). Canal do pedal (offset 54) está anotado como "pode ser freio" no
+   decodificador — confirmar identidade na instalação do sensor (15-16/06) antes de
+   promover a medida.
+7. RESSALVAS DE PILOTAGEM no T3 (do manual): toque de freio com pé esquerdo só em
+   curva SEM redução de marcha; alívio de acelerador medido, nunca brusco. No T4:
+   vence a curva que despeja na reta mais longa.
+
+PRIMEIRA ENTREGA (sem depender do sensor): script que classifica as 8 curvas de
+Brasília com os dados reais existentes + página pro Flávio validar tipo a tipo.
+Esforço: pequeno (1 sessão). Persistência + bootstrap/coerência: médio, depois do OK.

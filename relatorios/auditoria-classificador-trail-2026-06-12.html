@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>AUDITORIA — Classificador de trecho + tipo de trail (12/06/2026)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#0b0f14; color:#e8eef5; font:500 15px/1.6 'Inter',-apple-system,sans-serif;
+    padding:30px 40px 70px; }
+  h1 { font-size:21px; font-weight:900; letter-spacing:.03em; }
+  h1 small { color:#64748b; font-weight:500; font-size:14px; }
+  h2 { font:800 13px 'JetBrains Mono',monospace; letter-spacing:2px; color:#e7c463;
+    margin:34px 0 12px; }
+  .sub { color:#8a99a8; margin-top:6px; max-width:1200px; }
+  .vereditos { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:14px; margin-top:18px; }
+  .ver { background:#10151c; border:1px solid #1d2632; border-radius:10px; padding:14px 16px; }
+  .ver b { display:block; font:800 11px 'JetBrains Mono',monospace; letter-spacing:1.5px; color:#8a99a8; margin-bottom:6px; }
+  .ver .selo { display:inline-block; font:800 11px 'JetBrains Mono',monospace; letter-spacing:1px;
+    padding:3px 9px; border-radius:5px; color:#0b0f14; background:oklch(85% 0.17 80); }
+  .ver p { color:#a8b6c6; font-size:13px; margin-top:9px; }
+  table { border-collapse:collapse; width:100%; max-width:1500px; }
+  th, td { text-align:left; padding:9px 14px; border-bottom:1px solid #1d2632; vertical-align:top; font-size:13.5px; }
+  th { font:800 11px 'JetBrains Mono',monospace; letter-spacing:1.5px; color:#8a99a8; }
+  td b { color:#e8eef5; }
+  td.tipo { font:800 12px 'JetBrains Mono',monospace; color:#e7c463; white-space:nowrap; }
+  .ok { color:oklch(80% 0.22 145); font-weight:800; }
+  .corr { color:oklch(78% 0.18 65); font-weight:800; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:24px; max-width:1500px; }
+  ul { margin-left:20px; }
+  li { color:#a8b6c6; margin-bottom:8px; }
+  li b { color:#e8eef5; }
+  .rodape { margin-top:36px; color:#5b6b7c; font-size:13px; max-width:1200px; }
+  @media (max-width:1100px){ .grid2 { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<h1>AUDITORIA · CLASSIFICADOR DE TRECHO + TIPO DE TRAIL <small>— 4 auditores independentes · 12/06/2026</small></h1>
+<p class="sub">Sua pergunta: <i>"como você vai classificar o trecho e propor o melhor tipo de trail braking para ele?"</i>
+Abaixo: a resposta auditada. Cada afirmação foi checada em arquivo, código e banco — o que não passou foi corrigido ou cortado.</p>
+
+<h2>VEREDITOS</h2>
+<div class="vereditos">
+  <div class="ver"><b>ENGENHARIA DE COMPETIÇÃO</b><span class="selo">APROVADO COM RESSALVAS</span>
+    <p>Formatos fisicamente corretos pra tração dianteira. Derrubou: faltavam 2 tipos de curva e a tabela citava o manual além do que ele cobre.</p></div>
+  <div class="ver"><b>DADOS REAIS (ANTI-INVENÇÃO)</b><span class="selo">APROVADO COM RESSALVAS</span>
+    <p>Todos os insumos existem: rodou os 29 testes (29/29), abriu os arquivos, contou as 7 voltas no backup. Achou 2 rótulos de incerteza que faltavam.</p></div>
+  <div class="ver"><b>REGRAS JÁ DECIDIDAS</b><span class="selo">APROVADO COM RESSALVAS</span>
+    <p>A régua continua a melhor passagem real — nada de "melhor da sessão". Exigiu 1 fronteira explícita: alvo teórico nunca vai pro cockpit.</p></div>
+  <div class="ver"><b>VIABILIDADE</b><span class="selo">APROVADO COM RESSALVAS</span>
+    <p>Consultou até o banco (8 curvas confirmadas). Derrubou a fonte da geometria fina e apontou onde o módulo deve morar sem quebrar o que existe.</p></div>
+</div>
+
+<h2>COMO O SISTEMA CLASSIFICA CADA CURVA (versão auditada)</h2>
+<p class="sub" style="margin-bottom:12px">Mede a curva com dados reais — geometria fina das melhores passagens (~1 ponto a cada 4-5 m),
+velocidades de entrada/mínima/saída, g lateral, pico de desaceleração, distância até a próxima curva, sentido — e encaixa em um dos tipos:</p>
+<table>
+  <tr><th>TIPO</th><th>COMO RECONHECE</th><th>TRAIL PROPOSTO</th><th>FONTE</th></tr>
+  <tr><td class="tipo">T0 · MÉDIA CLÁSSICA</td><td>raio constante, faixa intermediária de redução (é o padrão quando nada se destaca)</td><td><b>trail clássico:</b> freia forte, alivia progressivo, zera perto do ápice</td><td>manual cap. 4</td></tr>
+  <tr><td class="tipo">T1 · LENTA PÓS-RETA</td><td>grande redução de velocidade + raio pequeno + reta antes</td><td><b>100% na pancada</b>, soltura gradativa profunda (o freio gira o carro)</td><td>manual cap. 4-5</td></tr>
+  <tr><td class="tipo">T2 · RAIO DECRESCENTE</td><td>o raio aperta ao longo da curva</td><td><b>pancada parcial + residual constante</b> até o raio mínimo, soltura curta (o 5º cenário do mockup)</td><td>seu ditado (rodada 16) + engenharia</td></tr>
+  <tr><td class="tipo">T3 · RÁPIDA</td><td>pouca redução, raio grande</td><td><b>toque curto ou só alívio</b> — assentar a dianteira; alívio medido, nunca brusco</td><td>manual cap. 6 e 9</td></tr>
+  <tr><td class="tipo">T4 · ENCADEADA</td><td>a saída é entrada de outra curva (distância medida entre elas)</td><td><b>residual até a troca de direção</b>; vence a curva que despeja na reta mais longa</td><td>seu ditado + prática de prova</td></tr>
+  <tr><td class="tipo">T5 · RAIO CRESCENTE</td><td>o raio abre ao longo da curva</td><td><b>ápice cedo, trail curto, acelera cedo</b> — tração de saída é o ouro em dianteira</td><td>manual cap. 8 e 13</td></tr>
+  <tr><td class="tipo">SF · SEM FREADA</td><td>quase sem redução, sem evento de freada</td><td><b>nenhum freio prescrito</b> — o sistema não inventa freada onde não cabe</td><td>auditoria (caso que faltava)</td></tr>
+</table>
+<p class="sub" style="margin-top:10px">O tipo proposto NÃO substitui a régua: o alvo do treino continua a <b>melhor passagem real</b> do trecho.
+O tipo serve pra (a) dar um alvo provisório rotulado TEÓRICO enquanto o trecho calibra — só na tela de box, nunca no cockpit, sem julgar ninguém;
+(b) nomear o erro com o vocabulário da curva; (c) avisar quando a melhor passagem destoa do tipo (teto provavelmente baixo).</p>
+
+<div class="grid2">
+<div>
+<h2>O QUE OS AUDITORES CONFIRMARAM COMO REAL</h2>
+<ul>
+  <li><span class="ok">29/29</span> testes do módulo de freio — <b>rodados de novo na auditoria</b>, não confiaram no meu relato.</li>
+  <li>Trajeto de Brasília com 920 pontos reais + <b>8 curvas confirmadas no banco</b> (consulta só-leitura).</li>
+  <li>Detector já mede <b>onde a freada começou</b> (distância da linha de entrada) — código nas linhas exatas citadas.</li>
+  <li>Decodificador já lê <b>pedal e pressão de freio</b> (sensor instala seg/ter 15-16/06).</li>
+  <li><b>7 voltas reais preservadas</b> (56 passagens contadas uma a uma) pra calibrar os limiares.</li>
+  <li>Tela de box "Revisão do Treino" pronta no ambiente isolado pra receber tipo + formato por trecho.</li>
+</ul>
+</div>
+<div>
+<h2>O QUE FOI DERRUBADO E CORRIGIDO</h2>
+<ul>
+  <li><span class="corr">CORRIGIDO</span> Faltavam tipos: a curva média comum não tinha classe (virou T0, o padrão), e raio crescente + curva sem freada entraram.</li>
+  <li><span class="corr">CORRIGIDO</span> Eu citei o manual como fonte de TUDO — ele só cobre T0/T1/T3/T5; T2 e T4 vêm do seu ditado + prática. Agora está declarado.</li>
+  <li><span class="corr">CORRIGIDO</span> A geometria fina NÃO sai do trajeto de 920 pontos (24-44 m entre pontos nas curvas) — sai dos pontos das melhores passagens (4-5 m). Medido pelo auditor.</li>
+  <li><span class="corr">CORRIGIDO</span> Fronteira do alvo teórico: só no box, rotulado, nunca julga passagem na calibração, nunca aparece no cockpit.</li>
+  <li><span class="corr">PENDÊNCIA DECLARADA</span> O manual tem 1 contradição interna (cap. 12, ápice) e o canal do pedal está anotado como "pode ser freio" — os dois se resolvem na instalação do sensor / revisão do manual.</li>
+</ul>
+</div>
+</div>
+
+<h2>PRIMEIRA ENTREGA PROPOSTA</h2>
+<p class="sub">Classificar as 8 curvas de Brasília com os dados que já existem (sem esperar o sensor) e
+abrir uma página com o tipo de cada curva + formato proposto + formato da melhor passagem real, pra você validar
+curva a curva. Esforço pequeno — 1 sessão de trabalho. Nada vai pro ar sem a sua palavra.</p>
+
+<p class="rodape">Proposta completa auditada: relatorios/proposta-classificador-trail-2026-06-12.md ·
+Auditoria bruta com evidência arquivo:linha preservada no registro da sessão · Suas 2 decisões continuam em aberto
+(critério do CERTO · alvo em toda reta ou só onde erra) — nada foi fechado em seu nome.</p>
+
+</body>
+</html>
