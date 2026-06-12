@@ -26,7 +26,14 @@ final class ManutencaoConsumiveisStore: ObservableObject {
     private let queue: DatabaseQueue
     init(queue: DatabaseQueue) { self.queue = queue }
 
-    enum StoreErro: Error { case semTime }
+    enum StoreErro: Error, LocalizedError {
+        case semTime
+        var errorDescription: String? {
+            switch self {
+            case .semTime: return "O app está sem time ativo — feche e abra o app antes de tentar de novo."
+            }
+        }
+    }
 
     /// Recalcula o status dos 30 itens pra um carro (uma transação só).
     func carregarStatus(carroId: String) async {
@@ -67,6 +74,13 @@ final class ManutencaoConsumiveisStore: ObservableObject {
 // MARK: - Tela principal
 // ─────────────────────────────────────────────────────────────
 
+/// Alvo do formulário de troca: item pré-escolhido (toque no cartão)
+/// ou nenhum (botão geral — o piloto escolhe o item no formulário).
+private struct AlvoRegistro: Identifiable {
+    let id = UUID()
+    let item: ConsumivelDef?
+}
+
 struct ManutencaoConsumiveisView: View {
     @EnvironmentObject private var store: ManutencaoConsumiveisStore
     @EnvironmentObject private var carroRepo: CarroRepository
@@ -74,7 +88,9 @@ struct ManutencaoConsumiveisView: View {
     let carroId: String
     let onClose: () -> Void
 
-    @State private var registrar: ConsumivelDef?
+    @State private var registrar: AlvoRegistro?
+    @State private var aviso: String?
+    @State private var avisoGeracao = 0
 
     private var carro: Carro? { carroRepo.carros.first { $0.id == carroId } }
 
@@ -93,20 +109,55 @@ struct ManutencaoConsumiveisView: View {
             }
             .background(Color.surface)
 
-            FAB("Registrar troca") { registrar = CatalogoConsumiveisCelta.itens.first }
+            FAB("Registrar troca") { registrar = AlvoRegistro(item: nil) }
                 .padding(.trailing, Spacing.md)
                 .padding(.bottom, 24)
+        }
+        .overlay(alignment: .top) {
+            if let aviso {
+                Text(aviso)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.text)
+                    .padding(.horizontal, 14).padding(.vertical, 9)
+                    .background(Capsule().fill(Color.surfaceRaised))
+                    .overlay(Capsule().stroke(Color.bom.opacity(0.7), lineWidth: 1))
+                    .padding(.top, 6)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .allowsHitTesting(false)
+            }
         }
         .navigationTitle("Manutenção")
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
         .task { await store.carregarStatus(carroId: carroId) }
-        .sheet(item: $registrar) { item in
-            RegistrarTrocaView(carroId: carroId, itemInicial: item) {
-                registrar = nil
-                Task { await store.carregarStatus(carroId: carroId) }
-            }
+        .sheet(item: $registrar) { alvo in
+            RegistrarTrocaView(
+                carroId: carroId,
+                itemInicial: alvo.item,
+                onSaved: { def, dataMs in
+                    registrar = nil
+                    mostrarAviso("Troca registrada · \(def.nome) · \(fmtDataCurta(dataMs))")
+                    Task { await store.carregarStatus(carroId: carroId) }
+                },
+                onClose: { registrar = nil })
             .environmentObject(store)
+        }
+    }
+
+    /// Mostra a confirmação no topo e some sozinha depois de alguns segundos.
+    /// O contador de geração garante que só o aviso MAIS RECENTE agenda o
+    /// desaparecimento (dois salvamentos idênticos seguidos não se atropelam).
+    private func mostrarAviso(_ texto: String) {
+        avisoGeracao += 1
+        let geracao = avisoGeracao
+        withAnimation(.easeOut(duration: 0.25)) { aviso = texto }
+        Task {
+            try? await Task.sleep(nanoseconds: 3_500_000_000)
+            await MainActor.run {
+                if avisoGeracao == geracao {
+                    withAnimation(.easeIn(duration: 0.3)) { aviso = nil }
+                }
+            }
         }
     }
 
@@ -139,7 +190,7 @@ struct ManutencaoConsumiveisView: View {
                         .font(.system(size: 11, weight: .semibold)).tracking(1.4)
                         .foregroundStyle(Color.textFaint)
                     ForEach(lista, id: \.0.codigo) { item, status in
-                        Button { registrar = item } label: { itemCard(item, status: status, compacto: true) }
+                        Button { registrar = AlvoRegistro(item: item) } label: { itemCard(item, status: status, compacto: true) }
                             .buttonStyle(.plain)
                     }
                 }
@@ -155,7 +206,7 @@ struct ManutencaoConsumiveisView: View {
                     .foregroundStyle(Color.accent)
                     .padding(.top, 4)
                 ForEach(itens, id: \.codigo) { item in
-                    Button { registrar = item } label: {
+                    Button { registrar = AlvoRegistro(item: item) } label: {
                         itemCard(item, status: store.statusPorItem[item.codigo], compacto: false)
                     }
                     .buttonStyle(.plain)
@@ -166,7 +217,7 @@ struct ManutencaoConsumiveisView: View {
 
     private func itemCard(_ item: ConsumivelDef, status: StatusManutencao?, compacto: Bool) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            Circle().fill(corStatus(status?.severidade))
+            Circle().fill(corStatus(status))
                 .frame(width: 10, height: 10).padding(.top, 5)
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.nome)
@@ -180,18 +231,28 @@ struct ManutencaoConsumiveisView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 if let s = status {
-                    Text(s.resumo)
-                        .font(.system(size: 11.5))
-                        .foregroundStyle(corStatus(s.severidade))
-                        .fixedSize(horizontal: false, vertical: true)
+                    if let trocaMs = s.ultimaTrocaMs {
+                        Text(linhaUltimaTroca(s, trocaMs: trocaMs))
+                            .font(.system(size: 11.5, weight: .medium))
+                            .foregroundStyle(corStatus(s))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    // Sem média ainda, o resumo do motor ("registre as trocas…")
+                    // confundiria logo depois de salvar — a linha acima já informa.
+                    if !(s.severidade == .semHistorico && s.ultimaTrocaMs != nil) {
+                        Text(s.resumo)
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(corStatus(s))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
             Spacer(minLength: 0)
-            Text(textoSeveridade(status?.severidade))
+            Text(textoSeveridade(status))
                 .font(.system(size: 10, weight: .bold)).tracking(0.4)
                 .padding(.horizontal, 8).padding(.vertical, 3)
-                .background(Capsule().fill(corStatus(status?.severidade).opacity(0.16)))
-                .foregroundStyle(corStatus(status?.severidade))
+                .background(Capsule().fill(corStatus(status).opacity(0.16)))
+                .foregroundStyle(corStatus(status))
         }
         .padding(.horizontal, 12).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -209,6 +270,8 @@ struct RegistrarTrocaView: View {
 
     let carroId: String
     let itemInicial: ConsumivelDef?
+    /// Chamado SÓ quando gravou de verdade — leva o item e a data pro aviso.
+    let onSaved: (ConsumivelDef, Int64) -> Void
     let onClose: () -> Void
 
     @State private var itemCodigo: String
@@ -217,12 +280,18 @@ struct RegistrarTrocaView: View {
     @State private var validade: Date = Date()
     @State private var observacao: String = ""
     @State private var salvando = false
+    @State private var erroSalvar: String?
 
-    init(carroId: String, itemInicial: ConsumivelDef?, onClose: @escaping () -> Void) {
+    init(carroId: String, itemInicial: ConsumivelDef?,
+         onSaved: @escaping (ConsumivelDef, Int64) -> Void,
+         onClose: @escaping () -> Void) {
         self.carroId = carroId
         self.itemInicial = itemInicial
+        self.onSaved = onSaved
         self.onClose = onClose
-        _itemCodigo = State(initialValue: itemInicial?.codigo ?? CatalogoConsumiveisCelta.itens.first?.codigo ?? "")
+        // Sem item pré-escolhido (botão geral), o formulário OBRIGA a escolha —
+        // foi assim que uma troca de pneus virou "óleo do motor" em 11/06.
+        _itemCodigo = State(initialValue: itemInicial?.codigo ?? "")
     }
 
     private var itemDef: ConsumivelDef? { CatalogoConsumiveisCelta.find(itemCodigo) }
@@ -237,12 +306,19 @@ struct RegistrarTrocaView: View {
                 VStack(alignment: .leading, spacing: Spacing.md) {
                     secao("Item") {
                         Picker("Item", selection: $itemCodigo) {
+                            if itemCodigo.isEmpty {
+                                Text("Escolha o item").tag("")
+                            }
                             ForEach(CatalogoConsumiveisCelta.itens, id: \.codigo) { it in
                                 Text(it.nome).tag(it.codigo)
                             }
                         }
                         .pickerStyle(.menu)
                         .tint(Color.accent)
+                        if itemCodigo.isEmpty {
+                            Text("Escolha qual item foi trocado — o Salvar libera depois disso.")
+                                .font(.system(size: 11)).foregroundStyle(Color.yellow)
+                        }
                     }
                     secao("Quando foi a troca") {
                         DatePicker("Data", selection: $data, in: ...Date(), displayedComponents: .date)
@@ -274,10 +350,18 @@ struct RegistrarTrocaView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Salvar") { Task { await salvar() } }
-                        .foregroundStyle(salvando ? Color.textFaint : Color.accent).disabled(salvando)
+                        .foregroundStyle((salvando || itemDef == nil) ? Color.textFaint : Color.accent)
+                        .disabled(salvando || itemDef == nil)
                 }
             }
             .preferredColorScheme(.dark)
+            .alert("Não foi salvo", isPresented: Binding(
+                get: { erroSalvar != nil },
+                set: { if !$0 { erroSalvar = nil } })) {
+                Button("Entendi", role: .cancel) {}
+            } message: {
+                Text(erroSalvar ?? "")
+            }
         }
     }
 
@@ -285,16 +369,25 @@ struct RegistrarTrocaView: View {
     private func salvar() async {
         guard let def = itemDef else { return }
         salvando = true; defer { salvando = false }
+        let ocorridoMs = Int64(data.timeIntervalSince1970 * 1000)
         let validadeMs: Int64? = (ehValidade) ? Int64(validade.timeIntervalSince1970 * 1000) : nil
         do {
             try await store.registrarTroca(
                 carroId: carroId, itemCodigo: def.codigo,
-                ocorridoEm: Int64(data.timeIntervalSince1970 * 1000),
+                ocorridoEm: ocorridoMs,
                 validadeEtiqueta: validadeMs,
                 observacao: observacao)
-            onClose()
+            onSaved(def, ocorridoMs)
         } catch {
+            // Detalhe técnico fica no registro interno; pra tela, português claro.
             print("RegistrarTrocaView.salvar falhou: \(error)")
+            let detalhe: String
+            if case ManutencaoConsumiveisStore.StoreErro.semTime = error {
+                detalhe = "O app está sem time ativo — feche e abra o app antes de tentar de novo."
+            } else {
+                detalhe = "Tente de novo."
+            }
+            erroSalvar = "A troca de \(def.nome) NÃO foi registrada. \(detalhe)"
         }
     }
 
@@ -315,8 +408,12 @@ struct RegistrarTrocaView: View {
 // MARK: - Helpers de apresentação
 // ─────────────────────────────────────────────────────────────
 
-private func corStatus(_ s: SeveridadeManutencao?) -> Color {
-    switch s {
+private func corStatus(_ s: StatusManutencao?) -> Color {
+    // Acabou de trocar = VERDE, mesmo enquanto a inteligência ainda aprende a
+    // vida do item (decisão Flávio 12/06: troquei → fica verde; amarelo perto
+    // da troca esperada; vermelho passou dela).
+    if s?.severidade == .semHistorico, s?.ultimaTrocaMs != nil { return Color.bom }
+    switch s?.severidade {
     case .verde:        return Color.bom
     case .amarelo:      return Color.yellow
     case .vermelho:     return Color.atencao
@@ -325,8 +422,9 @@ private func corStatus(_ s: SeveridadeManutencao?) -> Color {
     }
 }
 
-private func textoSeveridade(_ s: SeveridadeManutencao?) -> String {
-    switch s {
+private func textoSeveridade(_ s: StatusManutencao?) -> String {
+    if s?.severidade == .semHistorico, s?.ultimaTrocaMs != nil { return "EM DIA" }
+    switch s?.severidade {
     case .verde:        return "EM DIA"
     case .amarelo:      return "ATENÇÃO"
     case .vermelho:     return "TROCAR"
@@ -334,6 +432,31 @@ private func textoSeveridade(_ s: SeveridadeManutencao?) -> String {
     case .recomendacao: return "OPCIONAL"
     case .semHistorico, .none: return "SEM DADO"
     }
+}
+
+/// "Trocado em 10/06/2026 · 0 h de uso · aprendendo a vida útil"
+/// (a parte de aprendizado só nos preditivos ainda sem média).
+private func linhaUltimaTroca(_ s: StatusManutencao, trocaMs: Int64) -> String {
+    var partes = ["Trocado em \(fmtDataCurta(trocaMs))"]
+    if let horas = s.horasDesdeUltima {
+        partes.append("\(fmtHorasUso(horas)) de uso")
+    }
+    if s.severidade == .semHistorico {
+        partes.append("aprendendo a vida útil")
+    }
+    return partes.joined(separator: " · ")
+}
+
+private func fmtDataCurta(_ ms: Int64) -> String {
+    let df = DateFormatter()
+    df.dateFormat = "dd/MM/yyyy"
+    return df.string(from: Date(timeIntervalSince1970: Double(ms) / 1000))
+}
+
+private func fmtHorasUso(_ horas: Double) -> String {
+    if horas <= 0 { return "0 h" }
+    if horas >= 10 { return "\(Int(horas.rounded())) h" }
+    return String(format: "%.1f h", horas).replacingOccurrences(of: ".", with: ",")
 }
 
 private func descricaoChecagem(_ item: ConsumivelDef) -> String {

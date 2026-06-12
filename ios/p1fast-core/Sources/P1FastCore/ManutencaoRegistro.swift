@@ -109,7 +109,14 @@ public enum ManutencaoHistorico {
         let diasAteValidade: Int? = h.last?.validadeEtiqueta.map {
             Int(Double($0 - agoraMs) / (24.0 * 60.0 * 60.0 * 1000.0))
         }
-        return avaliarTroca(troca: item.troca, contador: contador,
-                            diasAteValidade: diasAteValidade, mediaHorasAprendida: media)
+        let base = avaliarTroca(troca: item.troca, contador: contador,
+                                diasAteValidade: diasAteValidade, mediaHorasAprendida: media)
+        // Com troca registrada, o status carrega a data dela e o uso desde então —
+        // é o que deixa a tela mostrar a mudança na hora ("Trocado em DD/MM · X h").
+        guard let ultima = h.last else { return base }
+        return StatusManutencao(severidade: base.severidade, fracao: base.fracao,
+                                resumo: base.resumo,
+                                ultimaTrocaMs: ultima.ocorridoEm,
+                                horasDesdeUltima: contador.horas)
     }
 }
