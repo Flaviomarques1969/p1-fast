@@ -257,6 +257,8 @@ struct RegistrarTrocaView: View {
 
     let carroId: String
     let itemInicial: ConsumivelDef?
+    /// Chamado SÓ quando gravou de verdade — leva o item e a data pro aviso.
+    let onSaved: (ConsumivelDef, Int64) -> Void
     let onClose: () -> Void
 
     @State private var itemCodigo: String
@@ -265,12 +267,18 @@ struct RegistrarTrocaView: View {
     @State private var validade: Date = Date()
     @State private var observacao: String = ""
     @State private var salvando = false
+    @State private var erroSalvar: String?
 
-    init(carroId: String, itemInicial: ConsumivelDef?, onClose: @escaping () -> Void) {
+    init(carroId: String, itemInicial: ConsumivelDef?,
+         onSaved: @escaping (ConsumivelDef, Int64) -> Void,
+         onClose: @escaping () -> Void) {
         self.carroId = carroId
         self.itemInicial = itemInicial
+        self.onSaved = onSaved
         self.onClose = onClose
-        _itemCodigo = State(initialValue: itemInicial?.codigo ?? CatalogoConsumiveisCelta.itens.first?.codigo ?? "")
+        // Sem item pré-escolhido (botão geral), o formulário OBRIGA a escolha —
+        // foi assim que uma troca de pneus virou "óleo do motor" em 11/06.
+        _itemCodigo = State(initialValue: itemInicial?.codigo ?? "")
     }
 
     private var itemDef: ConsumivelDef? { CatalogoConsumiveisCelta.find(itemCodigo) }
