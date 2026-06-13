@@ -92,7 +92,15 @@ const server = http.createServer((req, res) => {
     if (!alvo.startsWith(ROOT)) { res.writeHead(403); return res.end('proibido'); }
     fs.readFile(alvo, (err, data) => {
       if (err) { res.writeHead(404); return res.end('não encontrado'); }
-      res.writeHead(200, { 'Content-Type': TIPOS[path.extname(alvo)] || 'application/octet-stream' });
+      const ext = path.extname(alvo);
+      if (ext === '.html') {
+        let html = data.toString('utf8');
+        const seed = seedScript(alvo);   // injeta a última versão salva (só se a memória do navegador estiver vazia)
+        if (seed) html = html.replace(/<body([^>]*)>/i, '<body$1>\n' + seed);
+        res.writeHead(200, { 'Content-Type': TIPOS['.html'] });
+        return res.end(html);
+      }
+      res.writeHead(200, { 'Content-Type': TIPOS[ext] || 'application/octet-stream' });
       res.end(data);
     });
     return;
