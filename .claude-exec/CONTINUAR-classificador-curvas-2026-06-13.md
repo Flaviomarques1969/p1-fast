@@ -3,8 +3,11 @@
 ## GATILHO DE RETOMADA (o que o Flávio cola depois do /clear)
 `/voltei classificador-curvas` — e SE este arquivo não for aberto automaticamente, leia-o:
 `/Users/imac/Projetos/P1 Fast/.claude-exec/CONTINUAR-classificador-curvas-2026-06-13.md`
-Ao retomar: rode TASK_INIT (frente "classificador de curvas — 1ª fatia"), leia os 6 protocolos do
-Padrão Flávio, e continue do bloco "PRÓXIMO PASSO" abaixo. NÃO recomeçar do zero — está quase pronto.
+Ao retomar: rode TASK_INIT (frente "Command Box dos trechos — 1ª versão, classificação viva"), leia os
+6 protocolos do Padrão Flávio, e CONSTRUA a 1ª versão conforme o bloco "PLANO DA 1ª VERSÃO" abaixo
+(ordem do Flávio: construir já, auto-aperfeiçoável, sem re-perguntar direção; defaults declarados).
+A 1ª fatia (8 curvas) JÁ está validada = estado inicial. NÃO recomeçar do zero nem reabrir o motor
+`classificador-trecho.js` já revisado.
 
 ## O QUE É ESTA TAREFA
 Pedido literal do Flávio (13/06): "pode começar o classificador" (após decidir liberar a 1ª fatia).
@@ -56,14 +59,56 @@ já chegou). Só 4 dos 7 tipos apareceram (T2/T3/T4/T5 ausentes) — declarado n
   (d) T0/T1 agora citam a aceleração de saída no motivo. Bateria VERDE + 24 testes verdes após as
   correções. ESTADO: LIMPO.
 
-## PRÓXIMO PASSO (em ordem, ao retomar) — ESTÁ LIMPO, FALTA SÓ ABRIR
-1. Abrir a página pro Flávio (EU abro — regra dura). A página JÁ está gerada e verificada:
-   `open "/Users/imac/Projetos/p1fast-worktrees/classificador-trail/relatorios/classificacao-brasilia-validacao.html"`
-   (Opcional, garantir fresca antes: `cd` no worktree e
-   `node tools/classificar-brasilia.mjs && node tools/gerar-pagina-validacao.mjs`.)
-2. Flávio valida/corrige o tipo de cada curva (a página exporta um JSON, ou ele responde no chat).
-   Registrar a decisão em `~/.claude-decisoes` (padrão de cards).
-3. Fechar com TASK_DONE. Nada vai pra produção sem a frase "MIGRAR PARA PRODUÇÃO".
+## VALIDADO 13/06 + VIRADA DE CONCEITO (classificação VIVA)
+1ª fatia VALIDADA pelo Flávio: 8/8 curvas confirmadas sem correção (T0=Curva 01; T1=Reta Oposta/
+Curva 2/Junção; SF=Placar; ND=Bruxa/S/Vitória). Registrado em ~/.claude-decisoes
+(`20260613-150345-p1fast-validacao-curvas-e-classificador-vivo`) e na memória
+`p1-fast-classificador-vivo-command-box-trechos-2026-06-13`.
+VIRADA ditada: a classificação do trecho é VIVA, não fixa. Um agente observa cada passagem; quando o
+piloto evolui (ex: deixa de frear numa curva), o tipo do trecho MUDA (proposto). Todos os trechos sob
+observação. Criar um COMMAND BOX DOS TRECHOS: painel propõe mudar o trecho de uma condição pra outra
+("parece melhor") e o Flávio aprova/ajusta no celular. A 1ª fatia vira o estado inicial aprovado.
+
+## ORDEM DO FLÁVIO 13/06 (pós-validação): CONSTRUIR JÁ A 1ª VERSÃO, auto-aperfeiçoável
+Literal: "podemos ter uma versão agora, e à medida que vai rodando você vai se auto aperfeiçoando.
+Se organiza pra dar um clear e dar um comando completo pra que você saiba exatamente de onde continuar."
+=> Ao retomar: rodar TASK_INIT (frente "Command Box dos trechos — 1ª versão"), ler os 6 protocolos, e
+CONSTRUIR DIRETO (sem re-perguntar direção). Defaults declarados abaixo, ajustáveis depois.
+
+## PLANO DA 1ª VERSÃO — Command Box dos trechos + classificador vivo (CONSTRUIR ao retomar)
+Ambiente: seguir no ambiente isolado `classificador-trail` (já tem o motor e os dados). O motor
+`classificador-trecho.js` (1 passagem -> tipo) é o NÚCLEO do agente — NÃO reabrir os 15+2 achados já
+corrigidos. O que construir por cima:
+1. `web/cockpit/trecho-estado.js` (módulo PURO): estado por trecho = { tipoAprovado,
+   historicoObservacoes[], propostaPendente }. Funções: `observar(estado, passagemClassificada)` ->
+   empilha tipo observado + confiança (janela rolante); `avaliarProposta(estado)` -> gera proposta se
+   a tendência recente divergir de forma CONSISTENTE do tipoAprovado; `aplicarDecisao(estado,
+   'aprovar'|'recusar', tipoNovo?)`. Auto-aperfeiçoar: ao aprovar, tipoAprovado muda e o histórico
+   passa a ser a base nova.
+2. `tools/observar-brasilia.mjs`: roda o ciclo sobre as 7 voltas reais (volta a volta, por trecho,
+   classificando cada passagem com classificador-trecho.js, alimentando trecho-estado, gerando
+   propostas). Estado inicial = a 1ª fatia VALIDADA (Curva 01=T0; Reta Oposta/Curva 2/Junção=T1;
+   Placar=SF; Bruxa/S/Vitória=ND). Salva em `relatorios/command-box-trechos-estado.json`.
+3. `tools/gerar-command-box-trechos.mjs`: gera o painel RESPONSIVO (abre no CELULAR) — lista os 8
+   trechos: tipo aprovado vs tendência observada + propostas pendentes (de X pra Y + evidência) +
+   botões aprovar/ajustar/recusar por proposta. Sem emojis, tratamento "você", largura total, dados
+   embutidos (abre com `open`). Aprovação exporta JSON (padrão de cards) — banco/celular real = fatia
+   seguinte.
+4. `tests/node-smoke-trecho-estado.mjs` (entra na bateria via package.json): observar empilha; proposta
+   só com consistência; ruído (1 divergência isolada / confiança baixa) é ignorado; aplicarDecisao
+   muda o aprovado.
+5. Revisão adversarial (Workflow, padrão do projeto) + `npm run smoke` verde + abrir o painel POR MIM.
+
+DEFAULTS declarados (Flávio ajusta depois):
+- Propõe mudança após 3 passagens recentes com o MESMO tipo observado divergente do aprovado, todas
+  com confiança média+ (baixa não conta). 1 divergência isolada = ruído, ignora.
+- Janela de observação: últimas 5 passagens por trecho (rolante).
+- Aprovação no celular: página responsiva; aprovar/recusar exporta JSON no MVP. Integração com banco e
+  celular real = fatia seguinte.
+- ND (sem freada visível no dado de maio ~1 Hz) continua ND, marcado "aguardando dado melhor (25 Hz)";
+  o agente NÃO força tipo onde o dado não permite.
+- Telemetria do ciclo: usar as 7 voltas reais (passagens-bubi-aplicadas.json). 25 Hz (RaceBox) entra
+  quando houver captura nova.
 
 ## DECISÕES DO FLÁVIO JÁ TOMADAS (13/06, registradas em ~/.claude-decisoes/respostas/p1-fast/)
 1. "Trail certo" = as 3 condições juntas; a 3ª é "manteve a frenagem até a VELOCIDADE MÍNIMA (Vmin)",

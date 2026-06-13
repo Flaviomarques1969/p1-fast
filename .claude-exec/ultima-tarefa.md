@@ -183,3 +183,12 @@ Achados-chave honestos:
 
 Entregue: `_design-reference/PLANO-command-box-conexao-real-2026-06-13.html` (aberto no navegador).
 NÃO toquei o painel do Flávio (arranjo no navegador segue intacto; versionamento pronto via tools/cb-salvar-versao.sh).
+
+## REGRA — DETECÇÃO AUTOMÁTICA DE SENSOR (Flávio 13/06/2026, plano aprovado)
+Flávio aprovou o plano ("está perfeito") e definiu: o painel deve detectar sozinho cada sensor novo
+(via central T4000 ou app); o bloco acende quando o dado começa a chegar. Vai instalar sensores essa
+semana e ao longo do tempo.
+Feito: trocada a lista fixa "sem sensor" por DETECÇÃO AUTOMÁTICA em web/command-box/vista-piloto.html e
+vista-engenheiro.html (SENSOR_SEEN + MAPA_CAMPO c/ campos futuros previstos + SENSOR_DE + atualizarBlocos 1s).
+3 estados: ao vivo (cb-vivo) / aguardando sensor (cb-aguardando) / aguardando ligação (cb-sem-real).
+Sintaxe OK nos dois. Regra salva na memória do projeto. Painel do Flávio (arranjo no navegador) intocado.
