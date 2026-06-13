@@ -7439,6 +7439,7 @@ html,body{
     function onSample(s){
       if(!s) return;
       REAL.ts=performance.now(); REAL.fresh=true;
+      registrarSensores(s);
       if(s.rpm!=null) REAL.rpm=s.rpm;
       if(typeof s.lambda==='number' && s.lambda>0) REAL.lambda=s.lambda;
       if(s.waterTempC!=null) REAL.water=s.waterTempC;
