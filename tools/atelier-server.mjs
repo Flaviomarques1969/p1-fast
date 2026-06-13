@@ -87,7 +87,7 @@ const server = http.createServer((req, res) => {
   cors(res);
   if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
 
-  const u = new URL(req.url, `http://localhost:${PORT}`);
+  const u = new URL(req.url, `http://localhost:${PORT}/`);
 
   // ---- gravar versão ----
   if (req.method === 'POST' && u.pathname === '/atelier/salvar-versao') {
