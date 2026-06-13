@@ -7446,7 +7446,7 @@ html,body{
     }
     function onGps(g){
       if(!g) return;
-      if(typeof g.kmh==='number'){ REAL.kmh=g.kmh; SENSOR_SEEN['kmh']=performance.now(); }
+      if(typeof g.kmh==='number'){ REAL.kmh=g.kmh; REAL.fresh=true; REAL.ts=performance.now(); SENSOR_SEEN['kmh']=performance.now(); }
       if(typeof g.lat==='number') REAL.lat=g.lat;
       if(typeof g.lng==='number') REAL.lng=g.lng;
       if(g.numSV!=null) REAL.sv=g.numSV;
