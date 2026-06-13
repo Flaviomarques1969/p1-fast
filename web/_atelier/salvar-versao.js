@@ -10,7 +10,7 @@
  * (ajuste o caminho relativo conforme a pasta do mockup; ATELIER_VISTA = nome da vista)
  */
 (function () {
-  var SERVIDOR = 'http://localhost:8077/atelier/salvar-versao';
+  var SERVIDOR = 'http://localhost:8078/atelier/salvar-versao';
 
   function vistaDoArquivo() {
     if (window.ATELIER_VISTA) return String(window.ATELIER_VISTA);
