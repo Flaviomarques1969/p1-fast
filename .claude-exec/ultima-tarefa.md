@@ -166,3 +166,20 @@ TASK_DONE (fatia 2 — painel montado ligado):
 - Testes: sim (sintaxe OK; aberto no navegador)
 - Resultado: CONCLUÍDO (fatia: HUD real no painel montado) — demais blocos dependem de dado a capturar/gravar
 - Pendências: ligar vídeo (Daily.co) e construir a captura/banco das análises pros outros blocos
+
+---
+
+## CONSELHO + PLANO DE CONEXÃO REAL (13/06/2026)
+Workflow "command-box-conexao-real-conselho": 36 agentes (16 elementos × propor+verificar + 3 estratégias + juiz).
+Cada fonte foi CONFERIDA nos arquivos reais (verificação adversarial).
+
+Achados-chave honestos:
+- LIGA/JÁ ACESO: HUD (rotação/lambda/água reais), Vídeo (estrutura Daily.co pronta), Vmin ao vivo, Shift light (rotação real).
+- PARCIAL: Mapa (carro ao vivo via GPS liga; fantasma/delta dependem de referência), Carro (só água), Stint (plano sim/execução não), Checklist, Delta acumulado (referência JÁ tem dados no banco — verificador consultou), Barra do stint, Cabeçalho.
+- PRECISA LIGAÇÃO (lógica existe noutra tela): Coach, Passagem, Frenagem, Shift — exigem PUXAR os módulos pra vista (NÃO é flag).
+- SEM SENSOR (não inventar): Combustível (litros), Pneus (temp/press), Óleo/Câmbio (número), Marcha (estimada).
+- Correção dura do conselho: as vistas Command Box NÃO importam os calculadores do cockpit (0 referência) → destravar bloco = WIRING.
+- Caminho: Fase 0 (validar HUD) → 1 (carro no mapa) → 2 (frenagem/vmin) → 3 (shift) → 4 (provar gravação em campo) → 5 (delta/barra) → 6 (vídeo) → 7 (plano/config).
+
+Entregue: `_design-reference/PLANO-command-box-conexao-real-2026-06-13.html` (aberto no navegador).
+NÃO toquei o painel do Flávio (arranjo no navegador segue intacto; versionamento pronto via tools/cb-salvar-versao.sh).
