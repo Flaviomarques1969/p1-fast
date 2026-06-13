@@ -127,3 +127,42 @@ TASK_DONE (fase de construção — fatia 1):
 - Testes/validação executados: sim (sintaxe OK; 74 amostras no ciclo ao vivo; telas abertas)
 - Resultado: CONCLUÍDO (fatia 1: tela real ligada ao canal) — próximas fatias dependem de sensores/banco
 - Pendências reais: demo com valores reais exige carro transmitindo ou autorização pra publicar teste no canal; fatias de engenharia (lambda/pace/motor/saúde) dependem de dado que ainda falta
+
+---
+
+## CORREÇÃO DE RUMO (Flávio): usar o PAINEL JÁ MONTADO, não tela nova
+
+Flávio apontou que o Command Box já tem layout montado (vídeo à esquerda, pista abaixo, blocos com padrões).
+Identificado: `_design-reference/mockup-command-box-vista-piloto.html` (e gêmeo vista-engenheiro) — vídeo em
+left:4.5%/top:8.12%, mapa logo abaixo (left:4.5%/top:53%), 16 blocos. É esse que vamos fazer funcionar.
+
+### Feito (preservando os originais)
+- Cópias funcionais: `web/command-box/vista-piloto.html` e `vista-engenheiro.html` (originais em _design-reference intactos).
+- Botões Piloto/Engenheiro apontando pras cópias.
+- Injetada LIGAÇÃO AO VIVO dentro do bloco principal (antes do `})();` final), additiva, sem mexer no layout:
+  - troca a FONTE das funções que o painel já usa (liveSpeed/liveRPM/liveLambda/liveCarro) pelo canal real;
+  - reescreve updateLiveHUD pra mostrar real (velocidade GPS, rotação, lambda, água) e "—" onde não há sensor;
+  - congela a narrativa fictícia (detectLapWrap/updateLiveCarroPneus viram no-op);
+  - marca honestamente 13 blocos sem dado real (vídeo, coach, delta, frenagem, passagem, vmin, pneus, carro,
+    stint, stint-bar, fuel-gauge, checklist, shift-light) com esmaecido + selo "sem dado real"; HUD recebe selo "ao vivo";
+  - selo de conexão no topo (CONECTANDO/AO VIVO/aguardando/SEM CONEXÃO);
+  - modo `?preview` = prévia 100% local (não transmite nada).
+
+### Testes
+- Sintaxe do script principal: OK nos dois (node --check).
+- Painel Piloto aberto no navegador: prévia local populada + versão real conectada ao canal.
+
+### Verdade dura (o que NÃO dá pra fazer real hoje)
+- Só HUD/gauge/água/lambda/rotação/velocidade(GPS) têm dado real. Os outros 13 blocos são análise que depende de
+  captura/banco que ainda NÃO existe (delta vs melhor volta, Vmin, pace, passagem, pneus, câmbio/óleo, combustível, vídeo).
+  Por isso ficam marcados "sem dado real" — não invento número.
+
+TASK_DONE (fatia 2 — painel montado ligado):
+- Pedido conferido: sim (usar o painel já montado)
+- Ambiente: desenvolvimento (cópias locais + leitura do canal)
+- Produção alterada: não (originais preservados; sem escrita no banco/canal)
+- Arquivos inspecionados: sim
+- Alterações: sim (2 cópias funcionais novas; nada removido)
+- Testes: sim (sintaxe OK; aberto no navegador)
+- Resultado: CONCLUÍDO (fatia: HUD real no painel montado) — demais blocos dependem de dado a capturar/gravar
+- Pendências: ligar vídeo (Daily.co) e construir a captura/banco das análises pros outros blocos
