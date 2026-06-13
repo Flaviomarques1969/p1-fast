@@ -220,3 +220,13 @@ Conselho (13 agentes, verificado) confirmou:
 - HONESTO: hoje 0 propostas reais → por padrão NÃO pisca. O pisca só aparece com ?demo-proposta (demonstração).
 - Sintaxe OK. Aberto real + demo no navegador.
 Próximo: FATIA 2 (aviso 'proposta' no canal acende o pisca sozinho) + FATIA 3 (painel de decisão no celular: aprovar/ajustar/recusar + gravar).
+
+## VERIFICAÇÃO (2 conselhos) + CORREÇÕES — 13/06/2026 noite
+Conselho 1 (ligação geral): 4 campos reais (velocidade-GPS, rotação, lambda-WB, água) CERTOS, sem invenção; velocidade vem do GPS (não speedKmh T3000). 2 defeitos: shift-light dizia "ao vivo" sobre rotação fictícia; velocidade só atualizava com amostra de motor. CORRIGIDOS.
+Conselho 2 (frenagem/passagem):
+- P1 rótulo: ainda aparece "curva N" nos 2 blocos. PASSAGEM já tem título "passagem" + entrada/ápice/saída. FRENAGEM diz "curva N" e NÃO tem entrada/ápice/saída (é gráfico de força g x distância vc vs ideal).
+- P2: frenagem do painel é DEMONSTRAÇÃO (VERDICTS_FRENAGEM/FRENAGEM_GHOST + FAKE_LAPS). Não ligada à lógica real.
+- P3: a LÓGICA REAL (oportunidade-trecho.js + trecho-detector.js) FAZ certo: compara ponto de freada real vs melhor passagem histórica e dá veredito direcional. No painel é encenação.
+- P4: mede da LINHA DE ENTRADA da curva (distFromEntradaM, trecho-detector.js:261-269), freada por desaceleração GPS -0,5g (sem sensor de pedal). NÃO do meio da reta anterior — e o conselho diz que a linha de entrada é o CERTO (bate com decisão antiga do Flávio).
+Correção honesta aplicada: só HUD acende "ao vivo"; carro/pneus/fuel = "aguardando sensor"; mapa/vmin/frenagem/shift-light/coach/delta/passagem/stint/stint-bar/checklist = "aguardando ligação". Sintaxe OK. Posições intactas.
+A FAZER: trocar rótulo "curva N"→trecho/passagem; plugar frenagem na lógica real do cockpit; destravar referência (re-etiquetar 56 passagens); decidir estrutura do bloco frenagem.
