@@ -90,3 +90,40 @@ TASK_DONE (fase de análise):
 - Testes/validação executados: sim (8/8 smoke verde)
 - Resultado: PARCIAL — análise + teste concluídos; construção das ligações BLOQUEADA aguardando decisão de arquitetura (card aberto)
 - Pendências reais: decisão do Flávio sobre por onde começar (card 20260613-120746)
+
+---
+
+## CONSTRUÇÃO (13/06/2026) — decisão A escolhida pelo Flávio
+
+Decisão registrada: "A) Tela ao vivo em web, no canal que já funciona" (card 20260613-120746).
+
+### Entregue
+- NOVA tela real: `web/command-box/index.html` — primeira ligação real do Command Box.
+  - Assina o canal REAL `cockpit-bubi-live` (Supabase Realtime), eventos 'sample' (motor) e 'gps' (pista).
+  - Reusa o padrão de assinatura provado de monitor-bubi-live.html / painel.html.
+  - Mostra valor SÓ onde há sensor real hoje (rotação, velocidade GPS, lambda, água, coletor/MAP, borboleta, bateria, posição/satélites). Itens sem sensor (pneus, marcha, óleo, câmbio, freio, ar) marcados "sem sensor" — nada inventado.
+  - Só visualização (sem botão de ação) — respeita a regra do Command Box.
+  - Status de conexão (conectando/aguardando/ao vivo/sem conexão), Hz, última leitura, alarmes do motor.
+  - Sem emoji (ícones SVG de traço); usa a largura toda.
+  - Modo `?preview` = pré-visualização 100% LOCAL (não transmite nada) pra ver a tela populada.
+
+### Testes/validação executados (saída real)
+- Sintaxe do script da tela: OK (node --check).
+- Ciclo ao vivo no canal real: 74 amostras recebidas pelo ouvinte com o simulador do repo (tools/sim-publish + sim-listen). Prova que a assinatura funciona ponta a ponta.
+- Telas abertas no navegador (servidor local porta 8099): prévia populada + real conectada.
+
+### Honestidade / limitações
+- NÃO mostrei a tela REAL com valores ao vivo porque isso exigiria (a) o carro transmitindo de verdade, ou (b) publicar dados de teste no canal compartilhado de produção — o que é ESCRITA em infra de produção e foi (corretamente) bloqueado. A prévia local cobre o visual sem tocar produção.
+- Transparência: rodei UMA vez o simulador do repo (15s) pra provar o ciclo antes do bloqueio. Não voltei a publicar.
+- @supabase/supabase-js foi instalado com --no-save (só pra rodar os simuladores/ouvintes); package.json NÃO foi alterado. Observação: os tools sim-*/listen-* dependem de @supabase, que não está em package.json (lacuna pré-existente, não corrigida sem autorização).
+- Velocidade/posição na tela real dependem da Central transmitir o evento 'gps'.
+
+TASK_DONE (fase de construção — fatia 1):
+- Pedido original conferido: sim
+- Ambiente trabalhado: desenvolvimento (tela nova local + leitura do canal)
+- Produção foi alterada: não (banco intocado; 1 transmissão efêmera de teste no canal antes do bloqueio, sem gravar nada)
+- Arquivos reais inspecionados: sim
+- Alterações feitas: sim (web/command-box/index.html novo; nada existente removido)
+- Testes/validação executados: sim (sintaxe OK; 74 amostras no ciclo ao vivo; telas abertas)
+- Resultado: CONCLUÍDO (fatia 1: tela real ligada ao canal) — próximas fatias dependem de sensores/banco
+- Pendências reais: demo com valores reais exige carro transmitindo ou autorização pra publicar teste no canal; fatias de engenharia (lambda/pace/motor/saúde) dependem de dado que ainda falta
