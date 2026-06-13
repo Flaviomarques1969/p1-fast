@@ -7365,6 +7365,122 @@ html,body{
   } else {
     init();
   }
+
+  /* ============================================================================
+     LIGAÇÃO AO VIVO — canal real cockpit-bubi-live (decisão Flávio 2026-06-13, opção A).
+     Acende com dado REAL só o que tem sensor hoje (velocidade GPS, rotação, lambda, água);
+     congela a narrativa fictícia e marca os demais blocos como "sem dado real".
+     Additivo: NÃO altera o layout. Roda dentro do mesmo bloco (vê liveSpeed, updateLiveHUD…).
+     ============================================================================ */
+  (function setupLigacaoAoVivo(){
+    var SUPABASE_URL  = 'https://fvhwltzhytpnhlqbttmd.supabase.co';
+    var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2aHdsdHpoeXRwbmhscWJ0dG1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTExNDAsImV4cCI6MjA5MzM4NzE0MH0._ZpxksUnuVFhLzCB5x7bBiZ_VLQQR5cH4A1T-0-mvrA';
+    var CHANNEL = 'cockpit-bubi-live';
+    var REAL = { fresh:false, ts:0, rpm:null, kmh:null, lambda:null, water:null, mapBar:null, tps:null, bat:null, lat:null, lng:null, sv:null };
+
+    var selo = document.createElement('div');
+    selo.id = 'cb-live-selo'; selo.className = 'cb-wait';
+    selo.innerHTML = '<span class="cb-dot"></span><span class="cb-txt">CONECTANDO…</span>';
+    document.body.appendChild(selo);
+    function setEstado(cls, txt){ selo.className = cls; selo.querySelector('.cb-txt').textContent = txt; }
+
+    var st = document.createElement('style');
+    st.textContent = ''
+      + '#cb-live-selo{position:fixed;top:10px;right:14px;z-index:9999;display:flex;align-items:center;gap:8px;'
+      + 'padding:6px 12px;border-radius:999px;background:rgba(10,12,16,.82);border:1px solid #2a2f3a;'
+      + 'font:700 12px/1 -apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.06em;color:#cfd3d8;backdrop-filter:blur(4px);}'
+      + '#cb-live-selo .cb-dot{width:10px;height:10px;border-radius:50%;background:#586273;}'
+      + '#cb-live-selo.cb-on .cb-dot{background:#22c55e;animation:cbpulse 1.6s infinite;}'
+      + '#cb-live-selo.cb-wait .cb-dot{background:#f59e0b;}'
+      + '#cb-live-selo.cb-err .cb-dot{background:#ef4444;}'
+      + '@keyframes cbpulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.5)}70%{box-shadow:0 0 0 8px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}'
+      + '.cb-sem-real{filter:grayscale(.9);opacity:.42;}'
+      + '.cb-sem-real::after{content:"sem dado real";position:absolute;top:7px;right:9px;z-index:6;'
+      + 'background:#3a2a12;color:#f6b042;font:700 9px/1 -apple-system,Segoe UI,sans-serif;letter-spacing:.05em;'
+      + 'text-transform:uppercase;padding:3px 7px;border-radius:999px;pointer-events:none;}'
+      + '.cb-vivo::after{content:"ao vivo";position:absolute;top:7px;right:9px;z-index:6;'
+      + 'background:#0f2a18;color:#3fe08c;font:700 9px/1 -apple-system,Segoe UI,sans-serif;letter-spacing:.05em;'
+      + 'text-transform:uppercase;padding:3px 7px;border-radius:999px;pointer-events:none;}';
+    document.head.appendChild(st);
+
+    function marca(){
+      var SEM = ['video','coach','delta-acum','frenagem','passagem','vmin','pneus','carro','stint','stint-bar','fuel-gauge','checklist','shift-light'];
+      SEM.forEach(function(id){ var el=document.querySelector('[data-block-id="'+id+'"]'); if(el) el.classList.add('cb-sem-real'); });
+      var VIVO = ['hud'];
+      VIVO.forEach(function(id){ var el=document.querySelector('[data-block-id="'+id+'"]'); if(el) el.classList.add('cb-vivo'); });
+    }
+    marca();
+
+    liveSpeed  = function(){ return (REAL.fresh && REAL.kmh    != null) ? REAL.kmh    : 0; };
+    liveRPM    = function(){ return (REAL.fresh && REAL.rpm    != null) ? REAL.rpm    : 0; };
+    liveLambda = function(){ return (REAL.fresh && REAL.lambda != null) ? REAL.lambda : 0; };
+    liveGear   = function(){ return '—'; };
+    liveParcial= function(){ return '—'; };
+    liveDelta  = function(){ return 0; };
+    liveCarro  = function(){ return { tempMotor:(REAL.water!=null?REAL.water:0), tempCambio:0, pressOleo:0, pressCambio:0 }; };
+    detectLapWrap = function(){};
+    updateLiveCarroPneus = function(){};
+
+    updateLiveHUD = function(){
+      function set(f,v){ var el=document.querySelector('[data-hud="'+f+'"]'); if(el) el.textContent=v; }
+      set('velocidade', (REAL.fresh && REAL.kmh!=null) ? Math.round(REAL.kmh) : '—');
+      if(typeof window.__updateSpeedNeedle === 'function') window.__updateSpeedNeedle();
+      set('rpm',       (REAL.fresh && REAL.rpm!=null) ? REAL.rpm : '—');
+      set('lambda',    (REAL.fresh && REAL.lambda!=null) ? REAL.lambda.toFixed(2) : '—');
+      set('tempMotor', (REAL.water!=null) ? Math.round(REAL.water) : '—');
+      set('marcha','—'); set('parcial','—');
+      var d=document.querySelector('[data-hud="delta"]'); if(d){ d.textContent='—'; d.style.color=''; }
+    };
+
+    setInterval(function(){
+      if(REAL.ts && (performance.now()-REAL.ts>2500)){ REAL.fresh=false; setEstado('cb-wait','AO VIVO · aguardando o carro'); }
+    }, 1000);
+
+    function onSample(s){
+      if(!s) return;
+      REAL.ts=performance.now(); REAL.fresh=true;
+      if(s.rpm!=null) REAL.rpm=s.rpm;
+      if(typeof s.lambda==='number' && s.lambda>0) REAL.lambda=s.lambda;
+      if(s.waterTempC!=null) REAL.water=s.waterTempC;
+      if(typeof s.mapBar==='number') REAL.mapBar=s.mapBar;
+      if(s.tpsPct!=null) REAL.tps=s.tpsPct;
+      if(s.batteryV!=null) REAL.bat=s.batteryV;
+      var sim=/sim|preview|demo/i.test(s.source||'');
+      setEstado('cb-on','AO VIVO'+(sim?' · simulação':''));
+    }
+    function onGps(g){
+      if(!g) return;
+      if(typeof g.kmh==='number') REAL.kmh=g.kmh;
+      if(typeof g.lat==='number') REAL.lat=g.lat;
+      if(typeof g.lng==='number') REAL.lng=g.lng;
+      if(g.numSV!=null) REAL.sv=g.numSV;
+    }
+
+    if(/(\?|&)preview/.test(location.search)){
+      setEstado('cb-on','PRÉ-VISUALIZAÇÃO (local)');
+      var pt=0;
+      setInterval(function(){ pt+=0.2;
+        var tps=Math.max(0,55+45*Math.sin(pt*0.6));
+        onSample({ source:'preview-local', rpm:Math.round(3200+2900*Math.abs(Math.sin(pt*0.6))),
+          lambda:0.88+0.06*Math.sin(pt*0.9), waterTempC:Math.round(84+6*((pt%80)/80)),
+          mapBar:0.30+0.65*(tps/100), tpsPct:tps, batteryV:13.2 });
+        onGps({ kmh:Math.round(70+90*Math.abs(Math.sin(pt*0.6))), lat:-15.7720, lng:-47.9920, numSV:12 });
+      }, 200);
+      return;
+    }
+
+    import('https://esm.sh/@supabase/supabase-js@2.45.0').then(function(m){
+      var client = m.createClient(SUPABASE_URL, SUPABASE_ANON, { realtime:{ params:{ eventsPerSecond:20 } } });
+      var ch = client.channel(CHANNEL, { config:{ broadcast:{ ack:false, self:false } } });
+      ch.on('broadcast', { event:'sample' }, function(msg){ onSample(msg && msg.payload); });
+      ch.on('broadcast', { event:'gps' },    function(msg){ onGps(msg && msg.payload); });
+      ch.subscribe(function(stt){
+        if(stt==='SUBSCRIBED') setEstado('cb-wait','AO VIVO · aguardando o carro');
+        else if(stt==='CHANNEL_ERROR' || stt==='TIMED_OUT') setEstado('cb-err','SEM CONEXÃO');
+      });
+      window.__cbLive = { client:client, ch:ch, REAL:REAL };
+    }).catch(function(e){ setEstado('cb-err','SEM CONEXÃO'); });
+  })();
 })();
 </script>
 </body>
