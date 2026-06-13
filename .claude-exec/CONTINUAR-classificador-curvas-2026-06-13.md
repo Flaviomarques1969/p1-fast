@@ -7,7 +7,21 @@ NÃO recomeçar: ela já existe no ambiente isolado `classificador-trail`.
 - Ciclo: `tools/observar-brasilia.mjs` -> `relatorios/command-box-trechos-estado.json`.
 - Painel: `tools/gerar-command-box-trechos.mjs` -> `relatorios/command-box-trechos.html` (responsivo, celular).
 - Testes: `tests/node-smoke-trecho-estado.mjs` (31) na bateria; `npm run smoke` verde (919).
-RESULTADO: 0 propostas — a observação das 7 voltas CONFIRMA a 1ª fatia; as 3 ND seguem aguardando 25 Hz.
+PADRÃO DEFINITIVO (13/06 TARDE) ditado pelo Flávio no Command Box — SUBSTITUI a 1ª fatia da manhã:
+Curva 01=T5, Reta Oposta=T1, Curva 2=T0, Junção=T2, Bruxa=T0, Placar=T2, S=T4, Vitória=SF.
+Fonte no código: `PADRAO_FLAVIO` em tools/observar-brasilia.mjs. Backup do estado anterior em
+relatorios/_backup-estado-validado-pre-padrao-flavio-2026-06-13.json. Decisão registrada em
+~/.claude-decisoes/respostas/p1-fast/20260613-172700-p1fast-padrao-definitivo-curvas-brasilia.json.
+Maio virou referência (não gera proposta de reverter); proposta nova só com dado a 25 Hz.
+
+CICLO AO VIVO (construído em DEV, provado por replay) + TELA DO APP (APROVADA 13/06):
+- Ponte: web/cockpit/classificador-vivo-bridge.js (recebe passagem-fechada do LiveDataBridge ->
+  classifica -> propõe; decidir() aplica; store injetado, sem banco). Replay: tools/replay-classificador-vivo.mjs.
+- Tela do app (ONDE se ajusta, não é o Command Box): tools/gerar-config-curvas-app.mjs ->
+  relatorios/config-curvas-app.html. Curva com mudança fica vermelha/piscando; toca -> tela de seleção
+  com os 8 tipos + explicação. Texto único: web/cockpit/tipos-curva-texto.js. Bateria verde (932).
+FALTA (só com "MIGRAR PARA PRODUÇÃO"): tabela nova dedicada no banco; app iOS nativo; ligar a ponte no
+cockpit real (canal cockpit-bubi-live); captura nova a 25 Hz pras propostas valerem.
 Revisão adversarial (20 agentes): 13 achados, 0 críticos, todos os de honestidade/UX corrigidos.
 PENDENTE: (1) validação visual do Flávio no painel; (2) ligar o ciclo ao vivo (hoje one-shot offline,
 aprovar/recusar exporta JSON, ainda não realimenta o motor nem grava em banco/celular = fatia seguinte).

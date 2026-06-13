@@ -1,10 +1,11 @@
 {
-  "device": "TV 32\" landscape · Vista Piloto",
+  "device": "Mockup polido — Command Box · Vista Piloto (P1 Fast)",
+  "vista": "piloto",
   "stage_px": {
     "w": 1280,
     "h": 720
   },
-  "ts": "2026-06-13T19:27:14.459Z",
+  "ts": "2026-06-13T20:30:24.290Z",
   "blocks": [
     {
       "id": "header",
@@ -269,13 +270,13 @@
         "x": 28,
         "y": 0,
         "w": 28,
-        "h": 8
+        "h": 7.98
       },
       "px": {
         "x": 358,
         "y": 0,
         "w": 358,
-        "h": 58
+        "h": 57
       }
     }
   ]
