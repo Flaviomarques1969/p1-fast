@@ -49,10 +49,12 @@ function salvarVersao(vista, nota, json) {
   const texto = JSON.stringify(json, null, 2);
   fs.writeFileSync(arquivo, texto);
   fs.writeFileSync(atual, texto);
-  if (!fs.existsSync(HIST)) {
-    fs.writeFileSync(HIST, '# Histórico de versões — Command Box (layout)\n\nCada linha é uma versão salva do arranjo dos blocos. Nada é apagado.\n\n| Quando | Vista | Arquivo | Nota |\n|---|---|---|---|\n');
-  }
-  fs.appendFileSync(HIST, `| ${ts.humano} | ${v} | ${path.basename(arquivo)} | ${nota || '—'} |\n`);
+  // Manter SÓ a última versão (Flávio 13/06/2026): apaga os snapshots anteriores desta vista.
+  fs.readdirSync(VERSOES)
+    .filter((f) => f.startsWith(`vista-${v}-layout-`) && f.endsWith('.json') && f !== path.basename(arquivo))
+    .forEach((f) => { try { fs.unlinkSync(path.join(VERSOES, f)); } catch (e) {} });
+  // Histórico = só a última linha desta vista (uma versão por vista).
+  fs.writeFileSync(HIST, '# Última versão salva — Command Box (layout)\n\n| Quando | Vista | Arquivo | Nota |\n|---|---|---|---|\n' + `| ${ts.humano} | ${v} | ${path.basename(arquivo)} | ${nota || '—'} |\n`);
   return { ok: true, arquivo: path.relative(ROOT, arquivo), blocos: blocks.length };
 }
 
