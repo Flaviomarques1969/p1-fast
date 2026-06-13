@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>P1 Fast — Decisões do cockpit-treino (trail braking)</title>
+<style>
+  :root{
+    --bg:#0c0e12; --card:#161922; --card2:#1b1f2a; --fg:#eef1f5; --muted:#98a0ab;
+    --line:#2a3040; --accent:#4f8cff; --ok:#22c55e; --okbg:rgba(34,197,94,.12);
+    --warn:#f59e0b;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:radial-gradient(1200px 600px at 50% -10%,#141925 0%,var(--bg) 60%);
+    color:var(--fg);padding:28px 32px 60px;}
+  .wrap{max-width:1280px;margin:0 auto;}
+  header{margin-bottom:22px;}
+  h1{font-size:1.5rem;margin:0 0 6px;letter-spacing:.2px;}
+  .sub{color:var(--muted);font-size:.95rem;line-height:1.5;max-width:920px;}
+  .grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:18px;margin-top:8px;}
+  .dec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;
+    display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.35);}
+  .num{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;
+    border-radius:8px;background:var(--accent);color:#fff;font-weight:700;font-size:.9rem;margin-right:8px;}
+  .dec h2{font-size:1.08rem;margin:0 0 8px;display:flex;align-items:center;}
+  .ctx{color:var(--muted);font-size:.9rem;line-height:1.5;margin:0 0 8px;}
+  .hoje{font-size:.82rem;color:var(--warn);background:rgba(245,158,11,.1);
+    border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:6px 10px;margin:0 0 14px;}
+  .opcoes{display:flex;flex-direction:column;gap:9px;}
+  .opcao{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid var(--line);
+    border-radius:10px;cursor:pointer;transition:border-color .15s,background .15s;background:var(--card2);}
+  .opcao:hover{border-color:var(--accent);}
+  .opcao.rec{border-color:rgba(34,197,94,.5);background:var(--okbg);}
+  .opcao input{margin-top:3px;flex:0 0 auto;}
+  .o-corpo{flex:1;}
+  .o-tit{font-weight:600;font-size:.96rem;}
+  .badge{display:inline-block;background:var(--ok);color:#06210f;padding:1px 8px;border-radius:999px;
+    font-size:.68rem;font-weight:700;margin-left:8px;vertical-align:middle;text-transform:uppercase;letter-spacing:.4px;}
+  .o-just{color:var(--muted);font-size:.85rem;margin-top:3px;line-height:1.45;}
+  .outra-wrap{display:none;margin-top:10px;}
+  .outra-wrap.ativo{display:block;}
+  textarea{width:100%;background:#0c0e12;color:var(--fg);border:1px solid var(--line);border-radius:8px;
+    padding:9px;resize:vertical;font-family:inherit;font-size:.9rem;}
+  .rodape{margin-top:24px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;}
+  .rodape label{display:block;color:var(--muted);font-size:.85rem;margin-bottom:6px;}
+  .acoes{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;}
+  button{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px 22px;
+    font-size:1rem;font-weight:600;cursor:pointer;}
+  button.sec{background:transparent;border:1px solid var(--line);color:var(--fg);}
+  .status{margin-top:14px;color:var(--muted);font-size:.9rem;line-height:1.5;white-space:pre-wrap;}
+  .resumo{margin-top:14px;background:#0c0e12;border:1px solid var(--line);border-radius:10px;
+    padding:14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85rem;
+    color:var(--fg);display:none;white-space:pre-wrap;}
+  .resumo.ativo{display:block;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Cockpit-treino (trail braking) — 3 decisões pra você</h1>
+    <p class="sub">Marque a opção que você prefere em cada item (já deixei a minha recomendação
+      pré-selecionada e marcada em verde). Se quiser outra coisa, escolha "Outra" e escreva.
+      No fim, clique em <strong>Registrar minhas decisões</strong> — ele gera o arquivo de
+      resposta e mostra o resumo. Pode também só me dizer aqui no chat.</p>
+  </header>
+
+  <form id="form">
+    <div class="grade">
+
+      <!-- DECISÃO 1 -->
+      <div class="dec">
+        <h2><span class="num">1</span> Quando o painel diz "trail certo"?</h2>
+        <p class="ctx">Quando você freia pra uma curva, o painel julga a frenada como
+          <strong>trail certo</strong> ou <strong>errado</strong>. São 3 condições candidatas:
+          (a) freou no ponto certo (dentro da faixa de aceite), (b) seguiu o formato da sua
+          melhor passagem naquele trecho, (c) chegou na velocidade mínima ainda com o pé no freio
+          (trail até o ápice).</p>
+        <div class="hoje">Hoje está aplicado: exige as 3 juntas (default que coloquei).</div>
+        <div class="opcoes">
+          <label class="opcao rec">
+            <input type="radio" name="dec1" value="As 3 condições juntas" checked>
+            <span class="o-corpo"><span class="o-tit">As 3 condições juntas<span class="badge">Recomendo</span></span>
+            <span class="o-just">Trail braking só é "certo" quando as 3 acontecem. Faltando uma, é
+              um erro com nome (freou cedo/tarde, soltou de uma vez, largou o freio antes do ápice).
+              Treino mais honesto e mais exigente.</span></span>
+          </label>
+          <label class="opcao">
+            <input type="radio" name="dec1" value="2 das 3 condições">
+            <span class="o-corpo"><span class="o-tit">Bastam 2 das 3</span>
+            <span class="o-just">Mais tolerante, menos vermelho na tela. Risco: aprova uma frenada
+              que largou o freio antes do ápice — o que descaracteriza o trail.</span></span>
+          </label>
+          <label class="opcao">
+            <input type="radio" name="dec1" value="So freou no ponto certo">
+            <span class="o-corpo"><span class="o-tit">Só "freou no ponto certo"</span>
+            <span class="o-just">Simples, mas vira só "freou no lugar" — não avalia o trail de verdade.</span></span>
+          </label>
+          <label class="opcao">
+            <input type="radio" name="dec1" value="Outra">
+            <span class="o-corpo"><span class="o-tit">Outra</span>
+            <span class="o-just">Escreva o critério que você quer.</span></span>
+          </label>
+        </div>
+        <div class="outra-wrap" data-for="dec1">
+          <textarea rows="2" placeholder="Descreva o critério..."></textarea>
+        </div>
+      </div>
+
+      <!-- DECISÃO 2 -->
+      <div class="dec">
+        <h2><span class="num">2</span> Gráfico-alvo: toda reta ou só onde erra?</h2>
+        <p class="ctx">Na metade da reta antes da curva, o painel pode mostrar o
+          <strong>gráfico do alvo de frenagem</strong> (a forma da sua melhor passagem: onde pisa,
+          quanto segura, como solta até o ápice). A pergunta é se ele aparece sempre ou só quando
+          você está errando aquele trecho.</p>
+        <div class="hoje">Hoje está aplicado: aparece em toda reta (com anti-saturação dos outros avisos).</div>
+        <div class="opcoes">
+          <label class="opcao rec">
+            <input type="radio" name="dec2" value="Em toda reta" checked>
+            <span class="o-corpo"><span class="o-tit">Em toda reta<span class="badge">Recomendo</span></span>
+            <span class="o-just">No modo treino, o gráfico-alvo É a ferramenta que você foi treinar.
+              Sumir com ele tira justo o que ensina a frear. A anti-saturação já segura a poluição
+              dos outros elementos.</span></span>
+          </label>
+          <label class="opcao">
+            <input type="radio" name="dec2" value="So onde esta errando">
+            <span class="o-corpo"><span class="o-tit">Só nos trechos onde você erra</span>
+            <span class="o-just">Tela mais limpa nos trechos que você domina; o gráfico volta sozinho
+              quando você sai do alvo. Menos distração, mas perde a confirmação visual de que acertou.</span></span>
+          </label>
+          <label class="opcao">
+            <input type="radio" name="dec2" value="Liga desliga no plano do stint">
+            <span class="o-corpo"><span class="o-tit">Você liga/desliga antes do treino</span>
+            <span class="o-just">Flexível, fica do seu jeito. Custo: é mais uma escolha pra fazer
+              no planejamento de cada stint.</span></span>
+          </label>
+          <label class="opcao">
+            <input type="radio" name="dec2" value="Outra">
+            <span class="o-corpo"><span class="o-tit">Outra</span>
+            <span class="o-just">Escreva como você quer.</span></span>
+          </label>
+        </div>
+        <div class="outra-wrap" data-for="dec2">
+          <textarea rows="2" placeholder="Descreva como você quer..."></textarea>
+        </div>
+      </div>
+
+      <!-- DECISÃO 3 -->
+      <div class="dec">
+        <h2><span class="num">3</span> Libero a 1ª fatia do classificador de curvas?</h2>
+        <p class="ctx">O <strong>classificador</strong> identifica que tipo de curva é cada trecho
+          (rápida, lenta, raio decrescente etc.) pra escolher o formato de trail certo de cada uma.
+          A proposta já foi auditada por 4 análises independentes (aprovada com ressalvas). A 1ª
+          fatia: classificar as 8 curvas de Brasília fora do carro (offline) e te entregar uma
+          página pra você conferir curva a curva.</p>
+        <div class="hoje">Hoje está aplicado: nada feito — aguarda seu "ok" pra começar.</div>
+        <div class="opcoes">
+          <label class="opcao rec">
+            <input type="radio" name="dec3" value="Sim, liberar a 1a fatia" checked>
+            <span class="o-corpo"><span class="o-tit">Sim, pode começar<span class="badge">Recomendo</span></span>
+            <span class="o-just">É offline, não toca produção e não depende do sensor de pressão
+              (que chega 15-16/06). Te entrega uma página pra validar as 8 curvas antes de qualquer
+              coisa entrar no painel. Risco baixo, avança o treino.</span></span>
+          </label>
+          <label class="opcao">
+            <input type="radio" name="dec3" value="Ainda nao, validar painel primeiro">
+            <span class="o-corpo"><span class="o-tit">Ainda não — validar o painel primeiro</span>
+            <span class="o-just">Uma frente de cada vez. O classificador entra depois que o
+              cockpit-treino estiver aprovado por você.</span></span>
+          </label>
+          <label class="opcao">
+            <input type="radio" name="dec3" value="Outra">
+            <span class="o-corpo"><span class="o-tit">Outra</span>
+            <span class="o-just">Escreva sua orientação.</span></span>
+          </label>
+        </div>
+        <div class="outra-wrap" data-for="dec3">
+          <textarea rows="2" placeholder="Descreva sua orientação..."></textarea>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rodape">
+      <label for="comentario">Comentário geral (opcional) — qualquer ressalva, prazo ou observação</label>
+      <textarea id="comentario" rows="3" placeholder="Ex.: prefiro decidir o item 2 depois de ver o painel rodando..."></textarea>
+      <div class="acoes">
+        <button type="button" id="registrar">Registrar minhas decisões</button>
+        <button type="button" class="sec" id="limpar">Limpar tudo</button>
+      </div>
+      <div class="status" id="status"></div>
+      <div class="resumo" id="resumo"></div>
+    </div>
+  </form>
+</div>
+
+<script>
+  const PERGUNTA_ID = "20260613-p1fast-decisoes-cockpit-treino";
+  const STORAGE_KEY = "padrao-flavio:" + PERGUNTA_ID;
+  const DECISOES = [
+    { name:"dec1", titulo:"Quando o painel diz trail certo" },
+    { name:"dec2", titulo:"Gráfico-alvo: toda reta ou só onde erra" },
+    { name:"dec3", titulo:"Liberar a 1a fatia do classificador de curvas" },
+  ];
+
+  function textareaDe(name){
+    const wrap = document.querySelector('.outra-wrap[data-for="'+name+'"]');
+    return wrap ? wrap.querySelector('textarea') : null;
+  }
+  function atualizarOutras(){
+    DECISOES.forEach(d => {
+      const sel = document.querySelector('input[name="'+d.name+'"]:checked');
+      const wrap = document.querySelector('.outra-wrap[data-for="'+d.name+'"]');
+      if (wrap) wrap.classList.toggle('ativo', !!sel && sel.value === 'Outra');
+    });
+  }
+  function salvar(){
+    const dados = { comentario: document.getElementById('comentario').value };
+    DECISOES.forEach(d => {
+      const sel = document.querySelector('input[name="'+d.name+'"]:checked');
+      dados[d.name] = sel ? sel.value : "";
+      const ta = textareaDe(d.name);
+      dados[d.name+"_outra"] = ta ? ta.value : "";
+    });
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(dados)); } catch(e){}
+  }
+  function carregar(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return;
+      const d = JSON.parse(raw);
+      DECISOES.forEach(x => {
+        if(d[x.name]){
+          const r = document.querySelector('input[name="'+x.name+'"][value="'+CSS.escape(d[x.name])+'"]');
+          if(r) r.checked = true;
+        }
+        const ta = textareaDe(x.name);
+        if(ta && d[x.name+"_outra"]) ta.value = d[x.name+"_outra"];
+      });
+      if(d.comentario) document.getElementById('comentario').value = d.comentario;
+      atualizarOutras();
+    }catch(e){}
+  }
+  function montarPayload(){
+    const escolhas = DECISOES.map(d => {
+      const sel = document.querySelector('input[name="'+d.name+'"]:checked');
+      const valor = sel ? sel.value : "";
+      const ta = textareaDe(d.name);
+      const outra = ta ? ta.value.trim() : "";
+      return {
+        item: d.name, titulo: d.titulo,
+        escolha: (valor === 'Outra') ? (outra || 'Outra') : valor,
+        outra_opcao_usada: valor === 'Outra',
+      };
+    });
+    return {
+      pergunta_id: PERGUNTA_ID,
+      projeto: "p1-fast",
+      tema: "cockpit-treino trail braking — 3 decisões",
+      decisoes: escolhas,
+      comentario: document.getElementById('comentario').value.trim(),
+      respondido_em: new Date().toISOString(),
+    };
+  }
+  function registrar(){
+    const faltando = DECISOES.find(d => !document.querySelector('input[name="'+d.name+'"]:checked'));
+    if(faltando){
+      document.getElementById('status').textContent = "Falta marcar uma opção em todos os 3 itens.";
+      return;
+    }
+    const payload = montarPayload();
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = PERGUNTA_ID + ".json";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    document.getElementById('status').textContent =
+      "Arquivo gerado: " + PERGUNTA_ID + ".json (foi pra sua pasta de Downloads).\n" +
+      "Coloque em ./.claude-perguntas/respostas/ e diga 'fiz' — ou só me diga as escolhas aqui no chat.";
+    const r = document.getElementById('resumo');
+    r.textContent = "SUAS DECISÕES\n\n" + payload.decisoes
+      .map((d,i)=> (i+1) + ") " + d.titulo + "\n   -> " + d.escolha).join("\n\n")
+      + (payload.comentario ? "\n\nComentário: " + payload.comentario : "");
+    r.classList.add('ativo');
+  }
+  function limpar(){
+    document.querySelectorAll('input[type=radio]').forEach(r=>r.checked=false);
+    document.querySelectorAll('.outra-wrap textarea').forEach(t=>t.value="");
+    document.getElementById('comentario').value="";
+    try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+    atualizarOutras();
+    document.getElementById('resumo').classList.remove('ativo');
+    document.getElementById('status').textContent = "Limpo.";
+  }
+  document.addEventListener('DOMContentLoaded', ()=>{
+    carregar();
+    document.querySelectorAll('input[type=radio]').forEach(r=>{
+      r.addEventListener('change', ()=>{ salvar(); atualizarOutras(); });
+    });
+    document.querySelectorAll('.outra-wrap textarea, #comentario').forEach(t=>{
+      t.addEventListener('input', salvar);
+    });
+    document.getElementById('registrar').addEventListener('click', registrar);
+    document.getElementById('limpar').addEventListener('click', limpar);
+    atualizarOutras();
+  });
+</script>
+</body>
+</html>
