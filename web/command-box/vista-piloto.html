@@ -7369,14 +7369,44 @@ html,body{
       + 'text-transform:uppercase;padding:3px 7px;border-radius:999px;pointer-events:none;}';
     document.head.appendChild(st);
 
-    // marca os blocos honestamente, uma vez
-    function marca(){
-      var SEM = ['video','coach','delta-acum','frenagem','passagem','vmin','pneus','carro','stint','stint-bar','fuel-gauge','checklist','shift-light'];
-      SEM.forEach(function(id){ var el=document.querySelector('[data-block-id="'+id+'"]'); if(el) el.classList.add('cb-sem-real'); });
-      var VIVO = ['hud'];
-      VIVO.forEach(function(id){ var el=document.querySelector('[data-block-id="'+id+'"]'); if(el) el.classList.add('cb-vivo'); });
+    // === DETECÇÃO AUTOMÁTICA DE SENSOR (regra Flávio 13/06/2026) ===
+    // Cada bloco com sensor acende SOZINHO quando o dado dele começa a chegar (T4000/app).
+    // Instalou o sensor -> o campo passa a chegar -> o bloco vira "ao vivo". Sem mexer no código.
+    var SENSOR_SEEN = {};  // campo -> última vez visto com valor válido
+    var MAPA_CAMPO = { rpm:'rpm', lambda:'lambda', waterTempC:'water', mapBar:'mapBar', tpsPct:'tps', batteryV:'bat',
+      oilPressBar:'oilPressBar', oilTempC:'oilTempC', cambioTempC:'cambioTempC', cambioPressBar:'cambioPressBar',
+      tireTempC:'tireTempC', tirePressBar:'tirePressBar', fuelLevelL:'fuelLevelL', fuelPct:'fuelPct' };
+    function campoValido(k,v){
+      if(v==null || (typeof v==='number' && isNaN(v))) return false;
+      if(k==='lambda') return v>0;
+      if(k==='waterTempC'||k==='oilTempC'||k==='cambioTempC') return v>-40;
+      return true;
     }
-    marca();
+    function registrarSensores(s){
+      var now=performance.now();
+      Object.keys(MAPA_CAMPO).forEach(function(k){ if(s && (k in s) && campoValido(k,s[k])) SENSOR_SEEN[MAPA_CAMPO[k]]=now; });
+    }
+    // bloco -> campos de sensor que o acendem (quando qualquer um chega, o bloco fica "ao vivo")
+    var SENSOR_DE = {
+      'hud':['rpm','lambda','water','kmh'], 'carro':['water','oilPressBar','oilTempC','cambioTempC','cambioPressBar'],
+      'mapa':['kmh'], 'shift-light':['rpm'], 'vmin':['kmh'], 'frenagem':['kmh'],
+      'pneus':['tireTempC','tirePressBar'], 'fuel-gauge':['fuelLevelL','fuelPct']
+    };
+    // blocos que dependem de LIGAÇÃO/cálculo (não de sensor cru) — ficam "aguardando ligação"
+    var DEP_LIGACAO = ['coach','delta-acum','passagem','stint','stint-bar','checklist'];
+    function vistoFresco(f){ return SENSOR_SEEN[f] && (performance.now()-SENSOR_SEEN[f]<2500); }
+    function atualizarBlocos(){
+      Object.keys(SENSOR_DE).forEach(function(id){
+        var el=document.querySelector('[data-block-id="'+id+'"]'); if(!el) return;
+        var vivo=SENSOR_DE[id].some(vistoFresco);
+        el.classList.toggle('cb-vivo', vivo);
+        el.classList.toggle('cb-aguardando', !vivo);
+        el.classList.remove('cb-sem-real');
+      });
+      DEP_LIGACAO.forEach(function(id){ var el=document.querySelector('[data-block-id="'+id+'"]'); if(el){ el.classList.add('cb-sem-real'); el.classList.remove('cb-aguardando','cb-vivo'); } });
+    }
+    setInterval(atualizarBlocos, 1000);
+    atualizarBlocos();
 
     // ---- TROCA DE FONTE: as funções que o painel já usa passam a devolver dado REAL ----
     liveSpeed  = function(){ return (REAL.fresh && REAL.kmh    != null) ? REAL.kmh    : 0; };
