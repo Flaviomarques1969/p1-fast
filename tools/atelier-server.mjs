@@ -16,7 +16,7 @@ const __dir = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dir, '..');
 const VERSOES = path.join(ROOT, '_design-reference', 'command-box-versoes');
 const HIST = path.join(VERSOES, 'HISTORICO.md');
-const PORT = 8077;
+const PORT = 8078;
 
 fs.mkdirSync(VERSOES, { recursive: true });
 
