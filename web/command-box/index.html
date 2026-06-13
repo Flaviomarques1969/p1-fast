@@ -248,6 +248,34 @@
   channel.on('broadcast', { event:'sample' }, () => { if(!primeiro){ primeiro=true; estado('on','AO VIVO'); } });
 
   window.__commandbox = { client, channel };
+
+  // ---- PRÉ-VISUALIZAÇÃO LOCAL (não transmite nada; só alimenta a tela no próprio navegador) ----
+  // Ativa com ?preview na URL. Serve pra ver a tela populada sem depender do carro nem escrever no canal.
+  if (/(\?|&)preview/.test(location.search)) {
+    estado('on', 'PRÉ-VISUALIZAÇÃO (local · sem transmitir)');
+    $('fonte').textContent = 'pré-visualização local';
+    $('simBadge').classList.add('ativo'); simVisto = true;
+    let pt = 0;
+    setInterval(() => {
+      pt += 0.2;
+      const lap = (pt % 80) / 80;
+      const rpm = Math.round(3200 + 2900 * Math.abs(Math.sin(pt * 0.6)));
+      const tps = Math.max(0, 55 + 45 * Math.sin(pt * 0.6));
+      renderSample({
+        source: 'preview-local', rpm,
+        batteryV: 13.2 + 0.15 * Math.sin(pt * 2),
+        mapBar: 0.30 + 0.65 * (tps / 100),
+        tpsPct: tps, waterTempC: Math.round(84 + 6 * lap),
+        lambda: 0.88 + 0.06 * Math.sin(pt * 0.9), airTempC: null,
+        alarmes: { excessoRotacao: rpm > 6300, baixaPressaoOleo: false },
+      });
+      renderGps({
+        lat: -15.7720 + 0.004 * Math.sin(lap * 2 * Math.PI),
+        lng: -47.9920 + 0.004 * Math.cos(lap * 2 * Math.PI),
+        kmh: Math.round(70 + 90 * Math.abs(Math.sin(pt * 0.6))), numSV: 12,
+      });
+    }, 200);
+  }
 </script>
 </body>
 </html>
