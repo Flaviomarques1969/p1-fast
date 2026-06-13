@@ -192,3 +192,31 @@ Feito: trocada a lista fixa "sem sensor" por DETECÇÃO AUTOMÁTICA em web/comma
 vista-engenheiro.html (SENSOR_SEEN + MAPA_CAMPO c/ campos futuros previstos + SENSOR_DE + atualizarBlocos 1s).
 3 estados: ao vivo (cb-vivo) / aguardando sensor (cb-aguardando) / aguardando ligação (cb-sem-real).
 Sintaxe OK nos dois. Regra salva na memória do projeto. Painel do Flávio (arranjo no navegador) intocado.
+
+## VERSIONAMENTO 1-CLIQUE + PADRÃO (Flávio 13/06/2026)
+Flávio pediu botão "salvar última versão" (1 clique) + virar padrão de todo mockup.
+Feito e TESTADO de ponta a ponta:
+- web/_atelier/salvar-versao.js (botão reaproveitável; POST p/ ajudante; baixa reserva se ajudante off).
+- tools/atelier-server.mjs (Node puro, porta 8078): grava versão+ATUAL+HISTORICO; RECUSA arranjo vazio;
+  ao servir o mockup por http injeta a última versão salva (seed só se memória vazia).
+- Botão incluído nos originais vista-piloto.html e vista-engenheiro.html (backup em _backup-pre-botao-salvar-2026-06-13).
+- Porta: 8077 estava ocupada por Python antigo (RaceBox) — preservei; ajudante foi pra 8078.
+- Testes reais: recusa vazio (ok:false) + grava cheio (ok:true, 16 blocos). Página servida = painel certo (303KB) com seed+botão.
+- Versão 1 do Flávio salva: vista-piloto-layout-20260613-162726.json (16 blocos, layout real).
+- Padrão gravado na memória do projeto.
+Painel aberto pela 8078 (com arranjo + botão).
+
+## (c) CLASSIFICAÇÃO DOS TRECHOS NO COMMAND BOX — design + 1ª fatia (Flávio 13/06/2026)
+Flávio escolheu (c): trazer a classificação viva dos trechos pro Command Box. Regra: tela mostra + PISCA quando há
+proposta pendente; DECISÃO no celular que transmite; ao decidir, o pisca apaga.
+Conselho (13 agentes, verificado) confirmou:
+- Mapa já desenha as 8 curvas, cada uma endereçável (.trecho[data-curve="0..7"] + grupo de ápice por curva).
+- Tipo de curva NÃO existe na tela ainda (criar). Pisca = copiar efeito existente (off-track-blink/apex-pulse).
+- Compartilhamento = reusar o canal cockpit-bubi-live (bidirecional) + 1 evento novo 'proposta'.
+- NÃO existe ainda: o conceito 'proposta pendente' no canal/schema; o painel de DECISÃO no celular que publica+grava; mapeamento curva↔dado conferido em campo.
+1ª FATIA construída (web/command-box/vista-piloto.html, no IIFE da ligação ao vivo):
+- Faixa "CLASSIFICAÇÃO DOS TRECHOS" mostra C1..C8 com o tipo real (T0/T1/SF/ND, cores).
+- Mecanismo de PISCA na curva do mapa (.trecho is-proposta) + aviso "ponto de mudança — decidir no celular".
+- HONESTO: hoje 0 propostas reais → por padrão NÃO pisca. O pisca só aparece com ?demo-proposta (demonstração).
+- Sintaxe OK. Aberto real + demo no navegador.
+Próximo: FATIA 2 (aviso 'proposta' no canal acende o pisca sozinho) + FATIA 3 (painel de decisão no celular: aprovar/ajustar/recusar + gravar).

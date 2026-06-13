@@ -1,5 +1,22 @@
 # CONTINUAR — CLASSIFICADOR DE CURVAS (P1 Fast) — checkpoint 13/06/2026
 
+## >>> ATUALIZAÇÃO 13/06 (fim do dia): 1ª VERSÃO DO COMMAND BOX CONSTRUÍDA <<<
+A 1ª versão do "Command Box dos trechos" (classificação viva) FOI CONSTRUÍDA e auto-revisada.
+NÃO recomeçar: ela já existe no ambiente isolado `classificador-trail`.
+- Motor: `web/cockpit/trecho-estado.js` (observar/avaliarProposta/aplicarDecisao/tendencia).
+- Ciclo: `tools/observar-brasilia.mjs` -> `relatorios/command-box-trechos-estado.json`.
+- Painel: `tools/gerar-command-box-trechos.mjs` -> `relatorios/command-box-trechos.html` (responsivo, celular).
+- Testes: `tests/node-smoke-trecho-estado.mjs` (31) na bateria; `npm run smoke` verde (919).
+RESULTADO: 0 propostas — a observação das 7 voltas CONFIRMA a 1ª fatia; as 3 ND seguem aguardando 25 Hz.
+Revisão adversarial (20 agentes): 13 achados, 0 críticos, todos os de honestidade/UX corrigidos.
+PENDENTE: (1) validação visual do Flávio no painel; (2) ligar o ciclo ao vivo (hoje one-shot offline,
+aprovar/recusar exporta JSON, ainda não realimenta o motor nem grava em banco/celular = fatia seguinte).
+Registro da tarefa: `.claude-exec/ultima-tarefa-command-box-trechos-2026-06-13.md` (no worktree).
+Memória: `p1-fast-classificador-vivo-command-box-trechos-2026-06-13`.
+Reabrir o painel: `cd /Users/imac/Projetos/p1fast-worktrees/classificador-trail && open relatorios/command-box-trechos.html`.
+## <<< FIM DA ATUALIZAÇÃO <<<
+
+
 ## GATILHO DE RETOMADA (o que o Flávio cola depois do /clear)
 `/voltei classificador-curvas` — e SE este arquivo não for aberto automaticamente, leia-o:
 `/Users/imac/Projetos/P1 Fast/.claude-exec/CONTINUAR-classificador-curvas-2026-06-13.md`
