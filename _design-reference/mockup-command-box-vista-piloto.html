@@ -7380,15 +7380,13 @@ html,body{
       var now=performance.now();
       Object.keys(MAPA_CAMPO).forEach(function(k){ if(s && (k in s) && campoValido(k,s[k])) SENSOR_SEEN[MAPA_CAMPO[k]]=now; });
     }
-    // bloco -> campos de sensor que o acendem (quando qualquer um chega, o bloco fica "ao vivo")
-    var SENSOR_DE = {
-      'hud':['rpm','lambda','water','kmh'], 'carro':['water','oilPressBar','oilTempC','cambioTempC','cambioPressBar'],
-      'mapa':['kmh'], 'vmin':['kmh'], 'frenagem':['kmh'],
-      'pneus':['tireTempC','tirePressBar'], 'fuel-gauge':['fuelLevelL','fuelPct']
-    };
-    // blocos que dependem de LIGAÇÃO/cálculo (não de sensor cru) — ficam "aguardando ligação".
-    // shift-light entra aqui: a rotação do HUD é real, mas os LEDs ainda desenham rotação fictícia (precisa puxar a real).
-    var DEP_LIGACAO = ['coach','delta-acum','passagem','stint','stint-bar','checklist','shift-light'];
+    // HONESTO (conselho 13/06): só ACENDE "ao vivo" o bloco cujo conteúdo exibido é dado REAL hoje.
+    // Hoje só o HUD (rotação, velocidade, lambda, água) mostra real. O resto ainda desenha demonstração.
+    var SENSOR_DE = { 'hud':['rpm','lambda','water','kmh'] };
+    // sensor-backed: acendem sozinhos quando o sensor for instalado (hoje sem sensor) -> "aguardando sensor"
+    var AGUARDA_SENSOR = ['carro','pneus','fuel-gauge'];
+    // a lógica existe no cockpit, falta puxar pro painel -> "aguardando ligação"
+    var DEP_LIGACAO = ['mapa','vmin','frenagem','shift-light','coach','delta-acum','passagem','stint','stint-bar','checklist'];
     function vistoFresco(f){ return SENSOR_SEEN[f] && (performance.now()-SENSOR_SEEN[f]<2500); }
     function atualizarBlocos(){
       Object.keys(SENSOR_DE).forEach(function(id){
@@ -7398,6 +7396,7 @@ html,body{
         el.classList.toggle('cb-aguardando', !vivo);
         el.classList.remove('cb-sem-real');
       });
+      AGUARDA_SENSOR.forEach(function(id){ var el=document.querySelector('[data-block-id="'+id+'"]'); if(el){ el.classList.add('cb-aguardando'); el.classList.remove('cb-vivo','cb-sem-real'); } });
       DEP_LIGACAO.forEach(function(id){ var el=document.querySelector('[data-block-id="'+id+'"]'); if(el){ el.classList.add('cb-sem-real'); el.classList.remove('cb-aguardando','cb-vivo'); } });
     }
     setInterval(atualizarBlocos, 1000);
