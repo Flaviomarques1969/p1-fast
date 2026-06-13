@@ -58,6 +58,31 @@ function salvarVersao(vista, nota, json) {
 
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json', '.css': 'text/css', '.svg': 'image/svg+xml' };
 
+// Identifica a vista pelo nome do arquivo e a chave que o painel usa na memória do navegador.
+function vistaKey(alvo) {
+  const n = path.basename(alvo).toLowerCase();
+  if (n.indexOf('engenheiro') >= 0) return { vista: 'engenheiro', key: 'p1fast-vista-engenheiro-layout-v1' };
+  if (n.indexOf('piloto') >= 0) return { vista: 'piloto', key: 'p1fast-vista-piloto-layout-v1' };
+  return null;
+}
+
+// Monta um <script> que semeia a ÚLTIMA versão salva na memória do navegador, SÓ se estiver vazia.
+// Assim, abrir o painel pelo ajudante já mostra o último arranjo salvo — sem editar o arquivo do painel.
+function seedScript(alvo) {
+  const vk = vistaKey(alvo);
+  if (!vk) return '';
+  const atual = path.join(VERSOES, `vista-${vk.vista}-ATUAL.json`);
+  if (!fs.existsSync(atual)) return '';
+  try {
+    const j = JSON.parse(fs.readFileSync(atual, 'utf8'));
+    const positions = {}; const customs = [];
+    (j.blocks || []).forEach((b) => { positions[b.id] = { x: b.pct.x, y: b.pct.y, w: b.pct.w, h: b.pct.h }; if (b.custom) customs.push({ id: b.id, name: b.name }); });
+    if (!Object.keys(positions).length) return '';
+    const seed = JSON.stringify({ positions, customs });
+    return '<script>(function(){try{var k=' + JSON.stringify(vk.key) + ';if(!localStorage.getItem(k))localStorage.setItem(k,' + JSON.stringify(seed) + ');}catch(e){}})();</script>';
+  } catch (e) { return ''; }
+}
+
 const server = http.createServer((req, res) => {
   cors(res);
   if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
