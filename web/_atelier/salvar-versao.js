@@ -78,12 +78,12 @@
     if (document.getElementById('atelier-salvar-btn')) return;
     var css = document.createElement('style');
     css.textContent = ''
-      + '#atelier-salvar-wrap{position:fixed;left:14px;bottom:14px;z-index:99999;display:flex;align-items:center;gap:10px;'
+      + '#atelier-salvar-wrap{position:fixed;right:18px;bottom:22px;z-index:2147483647;display:flex;align-items:center;gap:10px;'
       + 'font:600 12px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}'
-      + '#atelier-salvar-btn{display:inline-flex;align-items:center;gap:8px;background:#1f6feb;color:#fff;border:none;'
-      + 'border-radius:10px;padding:11px 16px;font:700 13px/1 inherit;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.45);}'
+      + '#atelier-salvar-btn{display:inline-flex;align-items:center;gap:9px;background:#1f6feb;color:#fff;border:none;'
+      + 'border-radius:12px;padding:15px 22px;font:800 15px/1 inherit;cursor:pointer;box-shadow:0 8px 26px rgba(31,111,235,.55),0 0 0 1px rgba(255,255,255,.14);}'
       + '#atelier-salvar-btn:hover{background:#388bfd;}'
-      + '#atelier-salvar-btn svg{width:16px;height:16px;}'
+      + '#atelier-salvar-btn svg{width:18px;height:18px;}'
       + '#atelier-salvar-status{color:#9aa0a6;background:rgba(10,12,16,.8);padding:6px 10px;border-radius:8px;border:1px solid #2a2f3a;backdrop-filter:blur(4px);}';
     document.head.appendChild(css);
     var wrap = document.createElement('div');
