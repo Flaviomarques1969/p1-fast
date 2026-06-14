@@ -508,7 +508,15 @@ function aplicaTipo(tipo){
 document.querySelectorAll('#ed-cat button').forEach(b=>b.onclick=()=>setSeg('ed-cat', b.dataset.cat));
 document.querySelectorAll('#ed-tipo button').forEach(b=>b.onclick=()=>{ setSeg('ed-tipo', b.dataset.tipo); aplicaTipo(b.dataset.tipo); });
 document.querySelectorAll('#ed-kind button').forEach(b=>b.onclick=()=>setSeg('ed-kind', b.dataset.kind));
-document.querySelectorAll('#ed-escopo button').forEach(b=>b.onclick=()=>setSeg('ed-escopo', b.dataset.escopo));
+// "Onde fica" = Estoque geral + 1 botão por carro (à medida que adiciona carros, vira mais botões)
+const CARROS = ['Celta 1.4'];
+function renderEscopo(){
+  const w=document.getElementById('ed-escopo');
+  w.innerHTML = `<button data-escopo="geral" data-on="true">Estoque geral</button>`
+    + CARROS.map(c=>`<button data-escopo="${c}">${c}</button>`).join('');
+  w.querySelectorAll('button').forEach(b=>b.onclick=()=>setSeg('ed-escopo', b.dataset.escopo));
+}
+renderEscopo();
 function stepField(id,d){ const s=document.getElementById(id); s.textContent = Math.max(1,(+s.textContent)+d); }
 function renderPartes(arr){ const w=document.getElementById('ed-partes'); w.innerHTML=''; arr.forEach(p=>addParte(p.nome,p.qtd)); }
 function addParte(nome,qtd){
