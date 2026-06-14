@@ -62,45 +62,41 @@ function selecionarModo() {
 
 function renderEnvelope() {
   const envEl = document.getElementById('envelope');
-  if (!modoSelecionado) {
-    envEl.innerHTML = '<p style="color:#888;font-size:13px;">Selecione um modo acima pra ver o envelope.</p>';
-    return;
-  }
-  const j = janelaParaModo(modoSelecionado);
+  if (!envEl) return;
   const e = ENVELOPE_DEFAULT_BUBI;
-  // Cor do modo influencia a barra lateral dos itens
-  envEl.style.setProperty('--cor-ativa-envelope', `var(--cor-${modoSelecionado})`);
+  const alvo = PERFIL_BUBI.picoPotenciaRpm;
+  envEl.style.setProperty('--cor-ativa-envelope', `var(--cor-agressivo)`);
 
   envEl.innerHTML = `
     <div class="envelope-item">
-      <div class="envelope-item__label">Janela do shift light</div>
-      <div class="envelope-item__valor">${j.rpmMin} – ${j.rpmMax} rpm</div>
-      <div class="envelope-item__desc">IA escolhe o ponto exato em cada trecho dentro desta janela.</div>
+      <div class="envelope-item__label">Ponto de troca da luz</div>
+      <div class="envelope-item__valor">${alvo} rpm (potência máxima)</div>
+      <div class="envelope-item__desc">A luz acende na potência máxima do motor e afina sozinha pelo menor tempo de passagem, com a antecipação do seu tempo de reação.</div>
     </div>
     <div class="envelope-item">
       <div class="envelope-item__label">Teto duro do motor</div>
       <div class="envelope-item__valor">${e.rpm_max_absoluto} rpm</div>
-      <div class="envelope-item__desc">Limite absoluto. IA nunca propõe troca acima disso.</div>
+      <div class="envelope-item__desc">Limite absoluto. A luz nunca propõe troca acima disso (sirene de segurança).</div>
     </div>
     <div class="envelope-item">
       <div class="envelope-item__label">Temperatura mínima da água</div>
       <div class="envelope-item__valor">${e.rpm_min_motor_celsius} °C</div>
-      <div class="envelope-item__desc">Abaixo disso, modo agressivo rebaixa pra Normal automaticamente.</div>
+      <div class="envelope-item__desc">Abaixo disso, a luz recua pra proteger o motor frio.</div>
     </div>
     <div class="envelope-item">
       <div class="envelope-item__label">Força lateral máxima pra trocar</div>
       <div class="envelope-item__valor">${e.forca_lateral_max_g} g</div>
-      <div class="envelope-item__desc">IA nunca propõe trocar marcha em curva com força lateral acima disso (proteção do eixo).</div>
+      <div class="envelope-item__desc">A luz nunca propõe trocar marcha em curva com força lateral acima disso (proteção do eixo).</div>
     </div>
     <div class="envelope-item">
       <div class="envelope-item__label">Óleo máximo</div>
       <div class="envelope-item__valor">${e.oleo_max_celsius} °C</div>
-      <div class="envelope-item__desc">Acima disso, alarme + rebaixamento automático pra Durabilidade.</div>
+      <div class="envelope-item__desc">Acima disso, alarme + a luz recua automaticamente (proteção do motor).</div>
     </div>
     <div class="envelope-item">
       <div class="envelope-item__label">Água máxima</div>
       <div class="envelope-item__valor">${e.agua_max_celsius} °C</div>
-      <div class="envelope-item__desc">Acima disso, alarme + rebaixamento automático pra Durabilidade.</div>
+      <div class="envelope-item__desc">Acima disso, alarme + a luz recua automaticamente (proteção do motor).</div>
     </div>
   `;
 }
