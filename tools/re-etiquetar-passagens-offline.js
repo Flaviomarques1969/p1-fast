@@ -53,15 +53,28 @@ function acharFreadaT(pts, vminIdx) {
   return null;  // sem freada nítida a 1 Hz — não inventa
 }
 
-// apiceT: t do ponto de aproximação mínima ao apice_gps (<= 60 m). Igual ao detector.
-function acharApiceT(pts, apiceGps) {
+// ápice geométrico: ponto de aproximação mínima ao apice_gps. Retorna {t, idx, dist} ou null.
+// Igual ao detector (menor distância ao ponto ideal).
+function acharApiceGeo(pts, apiceGps) {
   if (!apiceGps) return null;
-  let melhor = Infinity, melhorT = null;
-  for (const p of pts) {
-    const d = distM(p, apiceGps);
-    if (d < melhor) { melhor = d; melhorT = p.t; }
-  }
-  return (melhor <= APICE_DIST_MAX_M) ? melhorT : null;
+  let melhor = Infinity, melhorT = null, melhorIdx = -1;
+  pts.forEach((p, i) => { const d = distM(p, apiceGps); if (d < melhor) { melhor = d; melhorT = p.t; melhorIdx = i; } });
+  return { t: melhorT, idx: melhorIdx, dist: melhor };
+}
+
+// Âncora do ápice + confiança. Hierarquia HONESTA:
+//   • 'alta'       → ápice geométrico casa (<= 60 m do ponto ideal cadastrado).
+//   • 'baixa'      → ápice geométrico longe/ausente, mas o Vmin está no MEIO da passagem
+//                    (não na borda) → ancora no Vmin (slowest point ≈ apex do recorte).
+//   • 'borda'      → Vmin na 1ª/última amostra → recorte parcial (entrada-só ou saída-só);
+//                    sem ápice nítido. Ainda etiqueta (0 nulos), mas declara o limite.
+function ancorarApice(pts, apiceGps, vminIdx) {
+  const geo = acharApiceGeo(pts, apiceGps);
+  if (geo && geo.dist <= APICE_DIST_MAX_M) return { apiceT: geo.t, confianca: 'alta', distApiceM: Math.round(geo.dist) };
+  if (vminIdx == null) return { apiceT: null, confianca: 'borda', distApiceM: geo ? Math.round(geo.dist) : null };
+  const naBorda = (vminIdx === 0 || vminIdx === pts.length - 1);
+  if (!naBorda) return { apiceT: pts[vminIdx - 1].t, confianca: 'baixa', distApiceM: geo ? Math.round(geo.dist) : null };
+  return { apiceT: pts[vminIdx].t, confianca: 'borda', distApiceM: geo ? Math.round(geo.dist) : null };
 }
 
 function main() {
