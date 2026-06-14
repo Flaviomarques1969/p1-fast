@@ -6028,17 +6028,18 @@ html,body{
     return 'lit-blue';
   }
 
-  // Curva de RPM realista — loop 14s: gear 2 acel → shift gear 3 → shift gear 4 → freio + downshift duplo
+  // Curva de RPM realista pro BUBI — loop 12s, marchas 3→4→5 (90% da volta em Brasília).
+  // Sobe até a POTÊNCIA MÁXIMA (6.050) e troca; na reta encosta no limite (6.300); freia + reduz.
   var SHIFT_LIGHT_PHASES = [
-    { t:0.0,  rpm:5800, gear:2 },
-    { t:3.4,  rpm:8200, gear:2 },
-    { t:3.4,  rpm:6500, gear:3 },
-    { t:6.8,  rpm:8200, gear:3 },
-    { t:6.8,  rpm:6600, gear:4 },
-    { t:9.8,  rpm:8200, gear:4 },
-    { t:11.0, rpm:6900, gear:3 },
-    { t:12.0, rpm:5400, gear:2 },
-    { t:14.0, rpm:5800, gear:2 }
+    { t:0.0,  rpm:5200, gear:3 },
+    { t:2.6,  rpm:6050, gear:3 },
+    { t:2.6,  rpm:4900, gear:4 },
+    { t:5.6,  rpm:6050, gear:4 },
+    { t:5.6,  rpm:5050, gear:5 },
+    { t:8.6,  rpm:6300, gear:5 },
+    { t:9.8,  rpm:5200, gear:4 },
+    { t:10.8, rpm:4600, gear:3 },
+    { t:12.0, rpm:5200, gear:3 }
   ];
   var SHIFT_LIGHT_CFG = {
     // Calibrado pro Bubi (Celta 1.4) — dinamômetro 18/05. Troca na POTÊNCIA MÁXIMA.
