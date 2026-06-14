@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Command Box · Vista Piloto — Mapa das 16 funções</title>
+<style>
+  :root{
+    --bg:#0b0d10; --panel:#13171c; --panel2:#171c22; --line:#262d35;
+    --tx:#e8edf2; --tx2:#9aa6b2; --tx3:#6b7480;
+    --real:#27c08a; --sem:#e0a23a; --demo:#4d8ff0; --fixo:#e3554b;
+    --alerta:#e3554b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--tx);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;width:100vw}
+  .wrap{width:100%;padding:26px 30px 60px}
+  h1{font-size:23px;font-weight:700;margin:0 0 4px;letter-spacing:.2px}
+  .sub{color:var(--tx2);font-size:14px;margin:0 0 22px}
+  .sub b{color:var(--tx)}
+
+  .resumo{display:flex;flex-wrap:wrap;gap:14px;margin:0 0 26px}
+  .rcard{flex:1 1 200px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .rcard .n{font-size:30px;font-weight:800;line-height:1}
+  .rcard .l{color:var(--tx2);font-size:12.5px;margin-top:6px;text-transform:uppercase;letter-spacing:.6px}
+  .rcard.real .n{color:var(--real)} .rcard.sem .n{color:var(--sem)}
+  .rcard.demo .n{color:var(--demo)} .rcard.fixo .n{color:var(--fixo)}
+
+  .legenda{display:flex;flex-wrap:wrap;gap:18px;margin:0 0 18px;color:var(--tx2);font-size:13px;align-items:center}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;vertical-align:middle}
+  .d-real{background:var(--real)} .d-sem{background:var(--sem)} .d-demo{background:var(--demo)} .d-fixo{background:var(--fixo)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-left-width:4px;border-radius:12px;padding:14px 16px 15px;position:relative}
+  .card.real{border-left-color:var(--real)}
+  .card.sem{border-left-color:var(--sem)}
+  .card.demo{border-left-color:var(--demo)}
+  .card.fixo{border-left-color:var(--fixo)}
+  .card .top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+  .card h3{font-size:16px;margin:0;font-weight:700}
+  .tag{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:3px 8px;border-radius:20px;white-space:nowrap}
+  .tag.real{background:rgba(39,192,138,.14);color:var(--real)}
+  .tag.sem{background:rgba(224,162,58,.14);color:var(--sem)}
+  .tag.demo{background:rgba(77,143,240,.14);color:var(--demo)}
+  .tag.fixo{background:rgba(227,85,75,.14);color:var(--fixo)}
+  .row{display:flex;gap:8px;margin:7px 0;font-size:13px}
+  .row .k{color:var(--tx3);min-width:62px;flex-shrink:0;text-transform:uppercase;font-size:10.5px;letter-spacing:.5px;padding-top:1px}
+  .row .v{color:var(--tx);flex:1}
+  .row .v.melhor{color:#cde3d6}
+  .alerta{margin-top:10px;display:flex;gap:8px;align-items:flex-start;background:rgba(227,85,75,.10);border:1px solid rgba(227,85,75,.32);border-radius:8px;padding:8px 10px;font-size:12.5px;color:#f1b7b1}
+  .alerta svg{flex-shrink:0;margin-top:1px}
+  .num{position:absolute;top:13px;right:14px;color:var(--tx3);font-size:12px;font-weight:700;display:none}
+  footer{margin-top:30px;color:var(--tx3);font-size:12.5px;border-top:1px solid var(--line);padding-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Command Box · Vista Piloto — mapa das 16 funções</h1>
+  <p class="sub">Estado real de cada função hoje (o que mostra, de onde vem o dado, o que dá pra melhorar). Levantado e conferido no código em <b>14/06/2026</b>. Sem inventar: tudo bate com o arquivo.</p>
+
+  <div class="resumo">
+    <div class="rcard real"><div class="n">1</div><div class="l">mostra o carro de verdade</div></div>
+    <div class="rcard sem"><div class="n">3</div><div class="l">esperando sensor (sem peça no carro)</div></div>
+    <div class="rcard demo"><div class="n">10</div><div class="l">demonstração (roteiro fixo, não é o carro)</div></div>
+    <div class="rcard fixo"><div class="n">2</div><div class="l">enfeite fixo (nunca muda)</div></div>
+  </div>
+
+  <div class="legenda">
+    <span><span class="dot d-real"></span>Dado real ao vivo</span>
+    <span><span class="dot d-sem"></span>Aguarda sensor</span>
+    <span><span class="dot d-demo"></span>Demonstração</span>
+    <span><span class="dot d-fixo"></span>Enfeite fixo</span>
+    <span style="margin-left:auto;color:var(--alerta)">▲ = tem erro real no código (não é só falta de dado)</span>
+  </div>
+
+  <div class="grid">
+
+    <!-- VELOCIDADE -->
+    <div class="card real">
+      <div class="top"><h3>Velocidade</h3><span class="tag real">Dado real</span></div>
+      <div class="row"><span class="k">Hoje</span><span class="v">Velocímetro + número em km/h. A ÚNICA função com dado de verdade.</span></div>
+      <div class="row"><span class="k">Fonte</span><span class="v">GPS do iPhone, ao vivo. Marcha fica em "—" mesmo no real.</span></div>
+      <div class="row"><span class="k">Melhorar</span><span class="v melhor">Mostrar se está rápido/lento vs a melhor volta naquele ponto. Odômetro é falso. Faixa vermelha do mostrador é de outro carro.</span></div>
+    </div>
+
+    <!-- CARRO -->
+    <div class="card sem">
+      <div class="top"><h3>Carro (temperaturas e óleos)</h3><span class="tag sem">Aguarda sensor</span></div>
+      <div class="row"><span class="k">Hoje</span><span class="v">4 medidas: temp. motor, temp. câmbio, pressão óleo motor e câmbio.</span></div>
+      <div class="row"><span class="k">Fonte</span><span class="v">Só a temp. do motor é real. As outras 3 não têm sensor no carro.</span></div>
+      <div class="row"><span class="k">Melhorar</span><span class="v melhor">Sem sensor, mostrar "—" em vez de ZERO (zero parece pane). Limites são de "Stock Car", não do Celta.</span></div>
+      <div class="alerta"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 1L13 12H1L7 1z" fill="none" stroke="#e3554b" stroke-width="1.3"/><line x1="7" y1="5" x2="7" y2="8.5" stroke="#e3554b" stroke-width="1.3"/><circle cx="7" cy="10.2" r=".7" fill="#e3554b"/></svg><span>Câmbio/óleo mostram zero = igual a falha real. Confunde quem olha.</span></div>
+    </div>
+
+    <!-- PNEUS -->
+    <div class="card sem">
+      <div class="top"><h3>Pneus</h3><span class="tag sem">Aguarda sensor</span></div>
+      <div class="row"><span class="k">Hoje</span><span class="v">4 pneus: temperatura, pressão e vida útil + desgaste do jogo.</span></div>
+      <div class="row"><span class="k">Fonte</span><span class="v">Tudo inventado. T4000 não mede temp./pressão de pneu.</span></div>
+      <div class="row"><span class="k">Melhorar</span><span class="v melhor">O "km" do rodapé é inventado — trocar por volta X/Y. Limites são de outro carro. Estrutura pronta pro dia que tiver sensor.</span></div>
+    </div>
+
+    <!-- COMBUSTÍVEL -->
+    <div class="card sem">
+      <div class="top"><h3>Combustível</h3><span class="tag sem">Aguarda sensor</span></div>
+      <div class="row"><span class="k">Hoje</span><span class="v">Ponteiro com litros estimados, fica vermelho abaixo de 15%.</span></div>
+      <div class="row"><span class="k">Fonte</span><span class="v">Estimado por conta linear. Não há sensor de nível no carro.</span></div>
+      <div class="row"><span class="k">Melhorar</span><span class="v melhor">Mostrar "voltas restantes" (o que o chefe usa pra decidir parada), não só litros. Marcas de escala estão invisíveis.</span></div>
+    </div>
+
+    <!-- SHIFT LIGHT -->
+    <div class="card demo">
+      <div class="top"><h3>Shift Light (luz de marcha)</h3><span class="tag demo">Demonstração</span></div>
+      <div class="row"><span class="k">Hoje</span><span class="v">Marcha, rotação e 12 luzes que sobem e piscam na hora de trocar.</span></div>
+      <div class="row"><span class="k">Fonte</span><span class="v">Roteiro fixo de 14s, motor genérico. Nunca lê o carro real.</span></div>
+      <div class="row"><span class="k">Melhorar</span><span class="v melhor">Calibrar pro Bubi (troca por torque na roda; 6.300 = só sirene). Ligar na rotação real. Marcha nunca aparece. Mostrar o modo (Durabilidade/Normal/Agressivo).</span></div>
+      <div class="alerta"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 1L13 12H1L7 1z" fill="none" stroke="#e3554b" stroke-width="1.3"/><line x1="7" y1="5" x2="7" y2="8.5" stroke="#e3554b" stroke-width="1.3"/><circle cx="7" cy="10.2" r=".7" fill="#e3554b"/></svg><span>Calibrada pro MOTOR ERRADO (7.800/8.400 rpm). Contraria sua regra: luz por torque, redline 6.300.</span></div>
+    </div>
+
+    <!-- MAPA -->
+    <div class="card demo">
+      <div class="top"><h3>Mapa do traçado</h3><span class="tag demo">Demonstração</span></div>
+      <div class="row"><span class="k">Hoje</span><span class="v">Pista de Brasília, carro + "fantasma" da melhor volta, trechos verde/vermelho.</span></div>
+      <div class="row"><span class="k">Fonte</span><span class="v">Volta simulada (150s). Tempos do painel são fixos.</span></div>
+      <div class="row"><span class="k">Melhorar</span><span class="v melhor">Os 3 tempos que mais importam (última / melhor do dia / melhor histórico) estão CONGELADOS. O rastro do carro nunca é desenhado. Mostrar o nome do trecho atual.</span></div>
+    </div>
+
+    <!-- P1 COACH -->
+    <div class="card demo">
+      <div class="top"><h3>P1 Coach</h3><span class="tag demo">Demonstração</span></div>
+      <div class="row"><span class="k">Hoje</span><span class="v">Frase de comando, nota da volta (0-100), lição em andamento, alerta preditivo.</span></div>
+      <div class="row"><span class="k">Fonte</span><span class="v">Todas as frases e notas escritas à mão por volta. Nada calculado.</span></div>
+      <div class="row"><span class="k">Melhorar</span><span class="v melhor">O alerta preditivo ("crítico em ~6 voltas") é só decoração — ligar no dado real. Nota da volta deveria sair dos vereditos, não ser inventada.</span></div>
+    </div>
+
+    <!-- PLANO DO STINT -->
+    <div class="card demo">
+      <div class="top"><h3>Plano do stint</h3><span class="tag demo">Demonstração</span></div>
+      <div class="row"><span class="k">Hoje</span><span class="v">Volta atual, meta do stint, "6 de 8 na meta", ritmo vs plano.</span></div>
+      <div class="row"><span class="k">Fonte</span><span class="v">Voltas simuladas. Metade dos campos é fixa no código.</span></div>
+      <div class="row"><span class="k">Melhorar</span><span class="v melhor">Ritmo vs plano e a contagem "na meta" seriam o ouro do chefe — hoje congelados.</span></div>
+      <div class="alerta"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 1L13 12H1L7 1z" fill="none" stroke="#e3554b" stroke-width="1.3"/><line x1="7" y1="5" x2="7" y2="8.5" stroke="#e3554b" stroke-width="1.3"/><circle cx="7" cy="10.2" r=".7" fill="#e3554b"/></svg><span>A barra de progresso e o ritmo NÃO mexem: o código escreve num campo que não existe na tela.</span></div>
+    </div>
+
+    <!-- BARRA DO STINT -->
+    <div class="card demo">
+      <div class="top"><h3>Barra do stint (lateral)</h3><span class="tag demo">Demonstração</span></div>
+      <div class="row"><span class="k">Hoje</span><span class="v">Coluna com todas as voltas empilhadas, cor por desempenho, marcas de box.</span></div>
+      <div class="row"><span class="k">Fonte</span><span class="v">Histórico de tempos inventado no código.</span></div>
+      <div class="row"><span class="k">Melhorar</span><span class="v melhor">Mostrar quantas voltas faltam pro fim do stint.</span></div>
+      <div class="alerta"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 1L13 12H1L7 1z" fill="none" stroke="#e3554b" stroke-width="1.3"/><line x1="7" y1="5" x2="7" y2="8.5" stroke="#e3554b" stroke-width="1.3"/><circle cx="7" cy="10.2" r=".7" fill="#e3554b"/></svg><span>Total de voltas travado em 8 (ignora 12). Marcas de "box" somem depois da 1ª volta.</span></div>
+    </div>
+
+    <!-- DELTA ACUMULADO -->
+    <div class="card demo">
+      <div class="top"><h3>Delta acumulado</h3><span class="tag demo">Demonstração</span></div>
+      <div class="row"><span class="k">Hoje</span><span class="v">Saldo de tempo da sessão (ganhando/perdendo) + gráfico de evolução.</span></div>
+      <div class="row"><span class="k">Fonte</span><span class="v">Deltas das voltas fixos no código + flutuação artificial.</span></div>
+      <div class="row"><span class="k">Melhorar</span><span class="v melhor">Mostrar o sinal (−0,34 / +1,21), não só a cor. Faixa muito baixa na TV — centésimos somem.</span></div>
+      <div class="alerta"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 1L13 12H1L7 1z" fill="none" stroke="#e3554b" stroke-width="1.3"/><line x1="7" y1="5" x2="7" y2="8.5" stroke="#e3554b" stroke-width="1.3"/><circle cx="7" cy="10.2" r=".7" fill="#e3554b"/></svg><span>Em 0,00s a cor fica vermelha (parece perda quando está empatado).</span></div>
+    </div>
+
+    <!-- PASSAGEM -->
+    <div class="card demo">
+      <div class="top"><h3>Passagem (parcial da curva)</h3><span class="tag demo">Demonstração</span></div>
+      <div class="row"><span class="k">Hoje</span><span class="v">Entrada / ápice / saída da curva com delta de cada, + posição do ápice.</span></div>
+      <div class="row"><span class="k">Fonte</span><span class="v">Curvas simuladas, números fixos por volta.</span></div>
+      <div class="row"><span class="k">Melhorar</span><span class="v melhor">A marcha em cada ponto já existe nos dados mas não aparece. Quando o ápice erra mais de 1m, a barra "mente" (some na borda sem avisar).</span></div>
+    </div>
+
+    <!-- FRENAGEM -->
+    <div class="card demo">
+      <div class="top"><h3>Frenagem</h3><span class="tag demo">Demonstração</span></div>
+      <div class="row"><span class="k">Hoje</span><span class="v">Gráfico do freio (você vs ideal) + veredito ("tarde", "no ponto").</span></div>
+      <div class="row"><span class="k">Fonte</span><span class="v">10 perfis fixos no código. Sem sensor de freio (chega seg/ter).</span></div>
+      <div class="row"><span class="k">Melhorar</span><span class="v melhor">Gráfico sem escala (não diz "quão forte"). Uma referência só pra todas as curvas (errado: C1 lenta ≠ C8 rápida).</span></div>
+      <div class="alerta"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 1L13 12H1L7 1z" fill="none" stroke="#e3554b" stroke-width="1.3"/><line x1="7" y1="5" x2="7" y2="8.5" stroke="#e3554b" stroke-width="1.3"/><circle cx="7" cy="10.2" r=".7" fill="#e3554b"/></svg><span>O delta fica sempre vermelho — mesmo quando o veredito ao lado é verde (bom).</span></div>
+    </div>
+
+    <!-- VMIN -->
+    <div class="card demo">
+      <div class="top"><h3>Vmin (velocidade mínima)</h3><span class="tag demo">Demonstração</span></div>
+      <div class="row"><span class="k">Hoje</span><span class="v">Velocidade mínima na curva (você vs ideal) + veredito + diferença km/h.</span></div>
+      <div class="row"><span class="k">Fonte</span><span class="v">Referência fixa no código (não a sua melhor volta real).</span></div>
+      <div class="row"><span class="k">Melhorar</span><span class="v melhor">Puxar a referência da melhor volta real (carro+pneu). Marcar se o ponto de mínimo foi cedo/tarde. Mostrar se o erro se repete na sessão.</span></div>
+    </div>
+
+    <!-- CHECKLIST -->
+    <div class="card demo">
+      <div class="top"><h3>Checklist do stint</h3><span class="tag demo">Demonstração</span></div>
+      <div class="row"><span class="k">Hoje</span><span class="v">Itens pendentes de saída/chegada por responsável, pisca se falta obrigatório.</span></div>
+      <div class="row"><span class="k">Fonte</span><span class="v">Lista fixa no código. Status só muda por atalho de teste.</span></div>
+      <div class="row"><span class="k">Melhorar</span><span class="v melhor">A lista de CHEGADA é um vazio marcado "Flávio define lista real". Status deveria vir de quem marca no celular.</span></div>
+    </div>
+
+    <!-- HEADER -->
+    <div class="card fixo">
+      <div class="top"><h3>Topo (saúde do sistema)</h3><span class="tag fixo">Enfeite fixo</span></div>
+      <div class="row"><span class="k">Hoje</span><span class="v">Nome, pista, 10 indicadores (bateria, GPS, conexão...) e mensagem do box.</span></div>
+      <div class="row"><span class="k">Fonte</span><span class="v">Todos os números são fixos no HTML. Nada muda nunca.</span></div>
+      <div class="row"><span class="k">Melhorar</span><span class="v melhor">Ligar bateria/GPS/conexão no real (vira painel de confiança). Mensagem do box está morta. Botão Piloto/Engenheiro não serve na TV.</span></div>
+    </div>
+
+    <!-- VÍDEO -->
+    <div class="card fixo">
+      <div class="top"><h3>Vídeo (câmeras)</h3><span class="tag fixo">Enfeite fixo</span></div>
+      <div class="row"><span class="k">Hoje</span><span class="v">Retângulo com "REC" e uma 2ª câmera no canto. Sem imagem real.</span></div>
+      <div class="row"><span class="k">Fonte</span><span class="v">Nada conectado. Relógio "02:48" é falso e nunca anda.</span></div>
+      <div class="row"><span class="k">Melhorar</span><span class="v melhor">Marcar "aguardando câmera" enquanto não liga o vídeo (Daily.co). Relógio de verdade.</span></div>
+    </div>
+
+  </div>
+
+  <footer>
+    Fonte: <code>_design-reference/mockup-command-box-vista-piloto.html</code> · levantamento por 16 leitores + 1 conferente, 14/06/2026.
+    "Demonstração" e "enfeite fixo" não são defeito — é mockup. O ponto é: pra cada função virar útil de verdade, é isto que falta. ▲ marca erro de código (independe de sensor).
+  </footer>
+</div>
+</body>
+</html>
