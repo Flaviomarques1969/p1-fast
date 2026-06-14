@@ -337,17 +337,13 @@ private struct ItemRow: View {
         .onLongPressGesture(minimumDuration: 0.5) { if !item.isExtra { onLongPress() } }
     }
 
-    private func miniTag(_ text: String, color: Color) -> some View {
-        Text(text)
-            .font(.system(size: 9, weight: .semibold))
-            .tracking(0.06 * 9)
-            .foregroundStyle(color)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 1)
-            .background(
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(color.opacity(0.12))
-            )
+    /// Cor do nome por categoria — sem etiqueta colada no nome (regra do Flávio):
+    /// obrigatório = levemente avermelhado · desejável = amarelo · feito = apagado.
+    private var tituloColor: Color {
+        if item.checado { return Color.textMuted }
+        return item.obrigatorio
+            ? Color(red: 0.89, green: 0.62, blue: 0.60)   // levemente avermelhado
+            : Color(red: 0.91, green: 0.79, blue: 0.42)   // amarelo (desejável)
     }
 
     private var checkbox: some View {
