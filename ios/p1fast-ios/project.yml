@@ -86,6 +86,11 @@ targets:
         NSMotionUsageDescription: P1 Fast usa o acelerômetro do iPhone pra medir aceleração lateral, longitudinal e curvas durante o stint.
         # 2026-05-31 — câmera pra ler código de barras da caixa da peça + fotos no Estoque.
         NSCameraUsageDescription: P1 Fast usa a câmera pra ler o código de barras da caixa da peça e pra tirar fotos das peças no Estoque.
+        # 2026-06-09 — chaves exigidas pelo SDK Daily.co (vídeo ao vivo). No
+        # teste ao vivo o app só ASSISTE (não publica), mas o SDK pede as
+        # descrições de uso de microfone e de rede local.
+        NSMicrophoneUsageDescription: P1 Fast usa o microfone no vídeo ao vivo do espelhamento (no teste o app não publica áudio).
+        NSLocalNetworkUsageDescription: P1 Fast usa a rede local pra transmitir o vídeo ao vivo entre o notebook e o iPhone com menor latência.
         # MS-2.2 — GPS continua em background. Wake lock
         # (isIdleTimerDisabled) é controlado em runtime pelo recorder.
         UIBackgroundModes:

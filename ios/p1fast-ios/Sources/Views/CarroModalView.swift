@@ -97,6 +97,18 @@ struct CarroModalView: View {
             )
         }
         .preferredColorScheme(.dark)
+        // Botão "Concluído" acima do teclado: fecha só o campo, sem cancelar a
+        // tela. Antes, com o teclado aberto, o "Cancelar" da barra de baixo era
+        // o único toque visível e saía da tela inteira (cobrado Flávio 03/06).
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Concluído") {
+                    UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
+            }
+        }
         .task {
             await load()
             fotoCarro = CarroFoto.carregar(carroId: carroId)

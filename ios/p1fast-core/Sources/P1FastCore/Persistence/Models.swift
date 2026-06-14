@@ -1158,6 +1158,11 @@ public struct PendenciaTemplate: Codable, FetchableRecord, PersistableRecord, Eq
     public var observacao: String?
     public var obrigatorio: Bool
     public var ordem: Int
+    /// Pendência consumível (óleo, gasolina): consome quantidade do estoque
+    /// na hora de checar. v19 + 0024_iphone_sync_compat.
+    public var ehConsumivel: Bool
+    /// Unidade do consumível (litros, ml, unidade…). nil pra não-consumíveis.
+    public var unidade: String?
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -1169,6 +1174,8 @@ public struct PendenciaTemplate: Codable, FetchableRecord, PersistableRecord, Eq
         case grupoTitulo = "grupo_titulo"
         case grupoNum = "grupo_num"
         case titulo, observacao, obrigatorio, ordem
+        case ehConsumivel = "eh_consumivel"
+        case unidade
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
@@ -1177,12 +1184,14 @@ public struct PendenciaTemplate: Codable, FetchableRecord, PersistableRecord, Eq
     public init(id: String, grupoId: String, grupoTitulo: String, grupoNum: String,
                 titulo: String, observacao: String? = nil,
                 obrigatorio: Bool = false, ordem: Int,
+                ehConsumivel: Bool = false, unidade: String? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id
         self.grupoId = grupoId; self.grupoTitulo = grupoTitulo; self.grupoNum = grupoNum
         self.titulo = titulo; self.observacao = observacao
         self.obrigatorio = obrigatorio; self.ordem = ordem
+        self.ehConsumivel = ehConsumivel; self.unidade = unidade
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }
@@ -1195,6 +1204,9 @@ public struct EventoPendencia: Codable, FetchableRecord, PersistableRecord, Equa
     public var checado: Bool
     public var checadoAt: Int64?
     public var nota: String?
+    /// Quantidade consumida (litros de óleo, ml de fluido…). nil para
+    /// pendências não-consumíveis. v19 + 0024_iphone_sync_compat.
+    public var quantidade: Double?
     public var createdAt: Int64
     public var updatedAt: Int64
     public var syncedAt: Int64?
@@ -1207,6 +1219,7 @@ public struct EventoPendencia: Codable, FetchableRecord, PersistableRecord, Equa
         case checado
         case checadoAt = "checado_at"
         case nota
+        case quantidade
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case syncedAt = "synced_at"
@@ -1214,10 +1227,12 @@ public struct EventoPendencia: Codable, FetchableRecord, PersistableRecord, Equa
 
     public init(id: String, eventoId: String, templateId: String,
                 checado: Bool = false, checadoAt: Int64? = nil, nota: String? = nil,
+                quantidade: Double? = nil,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.eventoId = eventoId; self.templateId = templateId
         self.checado = checado; self.checadoAt = checadoAt; self.nota = nota
+        self.quantidade = quantidade
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }

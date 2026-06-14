@@ -14,6 +14,7 @@
 // Tokens só de Theme.swift. Tratamento "você", sem ícones decorativos.
 
 import SwiftUI
+import UIKit
 
 enum HomeState {
     case filled(HomeData)
@@ -43,6 +44,13 @@ enum HomeNavTarget: Hashable {
     /// Stint. Botão fica embaixo do conteúdo da Home, marcado como
     /// "(dev)" pra não ser confundido com fluxo canônico.
     case telemetriaDemo
+    /// Tela de TESTE do espelhamento ao vivo (viewer Daily.co + overlay GPS).
+    /// Adicionada pra validar o vídeo do notebook no iPhone. Não faz parte
+    /// do fluxo canônico — entrada explícita via botão "TESTE AO VIVO".
+    case testeAoVivo
+    /// Tela de ESPECTADOR (decisão Flávio 09/06): vídeo da pista em cima +
+    /// dados básicos de volta/trecho do piloto embaixo.
+    case assistir
 }
 
 /// Dados necessários para renderizar o estado cheio. Por enquanto vêm
@@ -81,6 +89,17 @@ struct CarroMock: Identifiable, Equatable {
 
 // MARK: - View raiz
 
+/// Fonte de verdade ESTÁVEL do caminho de navegação. Vive como
+/// @StateObject no ReadyRoot (criado UMA vez), então o histórico de telas
+/// sobrevive às recriações da HomeView disparadas pelos repositórios (timer
+/// de sincronização a cada 30s, status de manutenção ao abrir o hub, etc.).
+/// Antes o caminho era @State volátil dentro da HomeView e se perdia nessas
+/// recriações, fazendo o "Cancelar" cair na tela inicial em vez de voltar
+/// pra tela anterior (cobrado Flávio 2026-06-03).
+final class NavRouter: ObservableObject {
+    @Published var path = NavigationPath()
+}
+
 struct HomeView: View {
     let state: HomeState
     /// Opcional pra previews — quando presente, mostra SyncStatusBadge no
@@ -95,7 +114,7 @@ struct HomeView: View {
     var initialRoute: [HomeNavTarget] = []
     @State private var navSelection: BottomNavItem.ID?
     @State private var showSyncSheet = false
-    @State private var navPath = NavigationPath()
+    @EnvironmentObject private var router: NavRouter
     private let navItems: [BottomNavItem] = [
         BottomNavItem("Home"),
         BottomNavItem("Eventos"),
@@ -105,7 +124,7 @@ struct HomeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            NavigationStack(path: $navPath) {
+            NavigationStack(path: $router.path) {
                 shell
                     .navigationDestination(for: HomeNavTarget.self) { target in
                         destinationView(for: target)
@@ -122,8 +141,8 @@ struct HomeView: View {
         .preferredColorScheme(.dark)
         .onAppear {
             if navSelection == nil { navSelection = navItems.first?.id }
-            if navPath.isEmpty {
-                for r in initialRoute { navPath.append(r) }
+            if router.path.isEmpty {
+                for r in initialRoute { router.path.append(r) }
             }
         }
     }
@@ -139,7 +158,7 @@ struct HomeView: View {
         .background(Color.surface)
         .overlay(alignment: .bottomTrailing) {
             if case .filled = state {
-                FAB("Novo evento", action: { navPath.append(HomeNavTarget.eventosNovo) })
+                FAB("Novo evento", action: { router.path.append(HomeNavTarget.eventosNovo) })
                     .padding(.trailing, Spacing.md)
                     .padding(.bottom, Spacing.md)
             }
@@ -169,16 +188,25 @@ struct HomeView: View {
                 FilledContent(data: data)
             case .empty:
                 EmptyContent(
-                    onCadastrarCarro: { navPath.append(HomeNavTarget.garagemNovo) },
-                    onCriarEvento: { navPath.append(HomeNavTarget.eventosNovo) }
+                    onCadastrarCarro: { router.path.append(HomeNavTarget.garagemNovo) },
+                    onCriarEvento: { router.path.append(HomeNavTarget.eventosNovo) }
                 )
             }
+            // ASSISTIR AO VIVO — tela de espectador (vídeo + volta/trecho).
+            AssistirButton(onAbrir: {
+                router.path.append(HomeNavTarget.assistir)
+            })
+            // Botão de TESTE do espelhamento ao vivo — visível em qualquer
+            // estado da Home. Abre a TesteAoVivoView (viewer Daily.co).
+            TesteAoVivoButton(onAbrir: {
+                router.path.append(HomeNavTarget.testeAoVivo)
+            })
             // Atalho dev pra captura rápida em test drive — fica embaixo
             // do conteúdo canônico. Só renderiza quando o caller injetou
             // um builder válido.
             if telemetriaDevView != nil {
                 DevShortcuts(onAbrirTelemetria: {
-                    navPath.append(HomeNavTarget.telemetriaDemo)
+                    router.path.append(HomeNavTarget.telemetriaDemo)
                 })
             }
         }
@@ -205,38 +233,54 @@ struct HomeView: View {
         case .garagemNovo:
             GaragemView(initialSheet: .novo, onNavSelect: nav)
         case .carroHub(let id):
-            CarroHubView(carroId: id, onClose: { navPath.removeLast() })
+            CarroHubView(carroId: id, onClose: { voltarUmaTela() })
         case .carroCadastro(let id):
-            CarroModalView(carroId: id, onClose: { navPath.removeLast() })
+            CarroModalView(carroId: id, onClose: { voltarUmaTela() })
         case .manutencao(let id):
-            ManutencaoConsumiveisView(carroId: id, onClose: { navPath.removeLast() })
+            ManutencaoConsumiveisView(carroId: id, onClose: { voltarUmaTela() })
         case .estoque(let id):
-            PecaListaView(carroInicial: id, onClose: { navPath.removeLast() })
+            PecaListaView(carroInicial: id, onClose: { voltarUmaTela() })
         case .eventoDetalhe(let id):
-            EventoDetalheView(eventoId: id, onClose: { navPath.removeLast() })
+            EventoDetalheView(eventoId: id, onClose: { voltarUmaTela() })
         case .telemetriaDemo:
             if let builder = telemetriaDevView {
                 builder()
             } else {
                 EmptyView()
             }
+        case .testeAoVivo:
+            TesteAoVivoView(onClose: { voltarUmaTela() })
+                .navigationBarBackButtonHidden(true)
+        case .assistir:
+            AssistirView(onClose: { voltarUmaTela() })
+                .navigationBarBackButtonHidden(true)
         }
+    }
+
+    /// Volta exatamente UMA tela. Fecha o teclado antes (um campo em edição
+    /// poderia fazer a pilha colapsar) e faz pop incremental do caminho — que
+    /// agora é estável (NavRouter), então o "Cancelar"/voltar leva pra tela
+    /// anterior em vez de cair na tela inicial (cobrado Flávio 2026-06-03).
+    private func voltarUmaTela() {
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        if !router.path.isEmpty { router.path.removeLast() }
     }
 
     /// Handler usado pelas sub-views quando o usuário toca em outro
     /// item do menu inferior. Reset do navPath + push do novo destino.
     /// "Home" só limpa o stack (volta pra raiz).
     private func navigateFromSubView(to item: BottomNavItem) {
-        navPath = NavigationPath()
+        router.path = NavigationPath()
         switch item.label {
         case "Home":
             break
         case "Eventos":
-            navPath.append(HomeNavTarget.eventos)
+            router.path.append(HomeNavTarget.eventos)
         case "Cadastros":
-            navPath.append(HomeNavTarget.cadastros)
+            router.path.append(HomeNavTarget.cadastros)
         case "Garagem":
-            navPath.append(HomeNavTarget.garagem)
+            router.path.append(HomeNavTarget.garagem)
         default:
             break
         }
@@ -247,16 +291,16 @@ struct HomeView: View {
     /// profundidade — inclusive de dentro do hub/cadastro/estoque.
     private func handleNavSelect(_ item: BottomNavItem) {
         navSelection = item.id
-        navPath = NavigationPath()
+        router.path = NavigationPath()
         switch item.label {
         case "Home":
             break // a raiz do stack já é a Home
         case "Eventos":
-            navPath.append(HomeNavTarget.eventos)
+            router.path.append(HomeNavTarget.eventos)
         case "Cadastros":
-            navPath.append(HomeNavTarget.cadastros)
+            router.path.append(HomeNavTarget.cadastros)
         case "Garagem":
-            navPath.append(HomeNavTarget.garagem)
+            router.path.append(HomeNavTarget.garagem)
         default:
             break
         }
@@ -783,6 +827,80 @@ extension HomeData {
 /// cinza, label "ATALHOS DEV", **não faz parte do mockup canônico** —
 /// some quando o ContentView resolver os entry points reais (Stint
 /// real → captura ao vivo).
+/// Botão que abre a tela de ESPECTADOR (vídeo da pista + volta/trecho).
+/// Decisão Flávio 09/06 — é a tela de produto; o TESTE AO VIVO continua
+/// embaixo como ferramenta de validação de campo.
+private struct AssistirButton: View {
+    let onAbrir: () -> Void
+
+    var body: some View {
+        Button(action: onAbrir) {
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(Color.red)
+                    .frame(width: 10, height: 10)
+                Text("ASSISTIR AO VIVO")
+                    .font(.system(size: 16, weight: .bold))
+                    .tracking(0.4)
+                    .foregroundStyle(Color.text)
+                Spacer(minLength: 0)
+                Text("›")
+                    .font(.system(size: 18, weight: .regular))
+                    .foregroundStyle(Color.textMuted)
+            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .fill(Color.surfaceRaised)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .stroke(Color.red.opacity(0.55), lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(.plain)
+        .padding(.top, Spacing.lg)
+    }
+}
+
+/// Botão prominente que abre a tela de TESTE do espelhamento ao vivo.
+/// Visível em qualquer estado da Home. Verde pra destacar como ação de
+/// teste de campo (assistir o vídeo do notebook + GPS).
+private struct TesteAoVivoButton: View {
+    let onAbrir: () -> Void
+
+    var body: some View {
+        Button(action: onAbrir) {
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(Color.green)
+                    .frame(width: 10, height: 10)
+                Text("TESTE AO VIVO")
+                    .font(.system(size: 16, weight: .bold))
+                    .tracking(0.4)
+                    .foregroundStyle(Color.text)
+                Spacer(minLength: 0)
+                Text("›")
+                    .font(.system(size: 18, weight: .regular))
+                    .foregroundStyle(Color.textMuted)
+            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .fill(Color.surfaceRaised)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .stroke(Color.green.opacity(0.55), lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(.plain)
+        .padding(.top, Spacing.lg)
+    }
+}
+
 private struct DevShortcuts: View {
     let onAbrirTelemetria: () -> Void
 
@@ -824,10 +942,12 @@ private struct DevShortcuts: View {
 
 #Preview("Home — cheio") {
     HomeView(state: .filled(HomeData.mockFilled))
+        .environmentObject(NavRouter())
 }
 
 #Preview("Home — vazio") {
     HomeView(state: .empty)
+        .environmentObject(NavRouter())
 }
 
 #Preview("EmptyContent — taps") {

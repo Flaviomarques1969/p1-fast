@@ -76,6 +76,8 @@ private enum AppRoute {
     case licoes
     case setupAvancado
     case telemetria
+    case testeAoVivo
+    case assistir
 
     static var fromLaunchArgs: AppRoute {
         let args = ProcessInfo.processInfo.arguments
@@ -100,6 +102,8 @@ private enum AppRoute {
         if args.contains("--p1-licoes") { return .licoes }
         if args.contains("--p1-setup-avancado") { return .setupAvancado }
         if args.contains("--p1-telemetria") { return .telemetria }
+        if args.contains("--p1-teste-aovivo") { return .testeAoVivo }
+        if args.contains("--p1-assistir") { return .assistir }
         if args.contains("--p1-eventos") { return .eventos }
         return .home
     }
@@ -190,6 +194,10 @@ private struct ReadyRoot: View {
     @StateObject private var voltaVideoRepo: VoltaVideoRepository
     @StateObject private var manutencaoStore: ManutencaoConsumiveisStore
     @StateObject private var pecaRepo: PecaRepository
+    /// Histórico de navegação estável (ver NavRouter em HomeView.swift):
+    /// criado UMA vez aqui pra não se perder quando os repositórios acima
+    /// publicam e re-renderizam esta view.
+    @StateObject private var router = NavRouter()
 
     init(queue: DatabaseQueue) {
         self.queue = queue
@@ -234,6 +242,7 @@ private struct ReadyRoot: View {
             .environmentObject(voltaVideoRepo)
             .environmentObject(manutencaoStore)
             .environmentObject(pecaRepo)
+            .environmentObject(router)
             .task {
                 await carroRepo.bootstrap()
                 // EventoRepo seeda o TrackRow brasília — TrackRepo
@@ -340,6 +349,10 @@ private struct ReadyRoot: View {
             // MS-2.6.c: passa o bundle vindo de TrackRepository.currentTrack
             // se já bootstrapou; senão TelemetriaView usa fallback SeedBrasilia.
             TelemetriaView(queue: queue, trackBundle: trackRepo.currentTrack())
+        case .testeAoVivo:
+            TesteAoVivoView()
+        case .assistir:
+            AssistirView()
         }
     }
 }

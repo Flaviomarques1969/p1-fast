@@ -16,14 +16,16 @@
 // Callers que precisam dos IDs canônicos referenciam `PilotoRepository.*`
 // direto (Sprint 1A.4 #16 removeu os aliases que existiam aqui).
 //
-// Voltas: na criação do stint só temos `voltas_planejadas`. As linhas
-// reais em `voltas` chegam quando o stint é finalizado — esse repo
-// expõe `finalize(...)` que recebe a lista de tempos e grava todas as
-// voltas + atualiza `sessao.dataFim` + status='finalizada'.
+// Voltas: na criação do stint só temos `voltas_planejadas`. As voltas
+// REAIS são gravadas pelo PAINEL ao cruzar a linha de chegada, direto na
+// nuvem, com origem='painel-ao-vivo' (web/cockpit/voltas-persister.js +
+// migração 0040 — contagem real, autorização Flávio 10-11/06/2026).
+// `finalize(...)` aqui só fecha a sessão (dataFim + status) e persiste
+// segment_executions de eventos com volta conhecida.
 //
-// Sprint 1A.3 trabalha com voltas FAKE (geradas ao finalizar com um
-// gerador determinístico). Sprint 1B substitui pelo input do cockpit
-// real (telemetria + cronômetro automatizado).
+// HISTÓRICO: a Sprint 1A.3 gerava voltas FAKE ao finalizar (gerador
+// determinístico) — removido em 11/06/2026; inflava a vida útil e
+// contaria 2× com a gravação real ligada.
 
 import Foundation
 import GRDB
@@ -184,36 +186,16 @@ final class StintRepository: ObservableObject {
         // commit da escrita — incrementarCiclos abre transação própria.
         let (pneuIdMontado, voltasGeradas): (String?, Int) = try await queue.write { db in
             guard var sessao = try Sessao.fetchOne(db, key: stintId) else { return (nil, 0) }
-            let planejadas = sessao.voltasPlanejadas ?? 0
 
-            // Gera N voltas com tempos plausíveis em torno da média (±5%).
-            // Deterministic-ish: usa stintId hash como seed pra mesma sessao
-            // dar sempre os mesmos tempos no preview.
-            // Mantém um índice numero→voltaId pra mapear segmentEvents abaixo.
-            var voltaIdByNumero: [Int: String] = [:]
-            let seed = abs(stintId.hashValue)
-            for i in 0..<planejadas {
-                let jitter = Int(((seed &+ i &* 9973) % 200) - 100) * mediaVoltaMs / 5_000
-                // Volta 1 = aquecimento (mais lenta); volta 2+ = perto da média.
-                let base = (i == 0) ? mediaVoltaMs + 1500 : mediaVoltaMs
-                let tempoMs = base + jitter
-                let voltaId = UUID().uuidString
-                let numero = i + 1
-                let volta = Volta(
-                    id: voltaId,
-                    timeId: teamId,
-                    sessaoId: stintId,
-                    numero: numero,
-                    tempoMs: tempoMs,
-                    temposPorParcial: nil,
-                    valida: true,
-                    motivoInvalidacao: nil,
-                    inicioAt: nil
-                )
-                try volta.insert(db)
-                try SyncQueue.enqueueRecord(db, tableName: "voltas", rowId: voltaId, op: .insert, record: volta)
-                voltaIdByNumero[numero] = voltaId
-            }
+            // CONTAGEM REAL (autorização Flávio 10-11/06/2026): o app NÃO gera
+            // mais voltas provisórias ao finalizar (mock da Sprint 1A.3). As
+            // voltas DE VERDADE são gravadas pelo painel ao cruzar a linha de
+            // chegada, direto na nuvem, com origem='painel-ao-vivo'
+            // (web/cockpit/voltas-persister.js + migração 0040). O mock inflava
+            // a vida útil e contaria 2× com a gravação real ligada.
+            // Índice numero→voltaId fica vazio: segmentEvents sem volta local
+            // continuam sendo ignorados pelo contrato existente (abaixo).
+            let voltaIdByNumero: [Int: String] = [:]
 
             // MS-2.5: persiste 1 SegmentExecution por DetectorSegmentEndEvent.
             // Lógica de mapeamento (m/s → km/h, vmin trio, velocidadeMax) vive
@@ -243,11 +225,14 @@ final class StintRepository: ObservableObject {
             sessao.syncedAt = nil
             try sessao.update(db)
             try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: stintId, op: .update, record: sessao)
-            return (pid, planejadas)
+            // Sem voltas geradas: ciclos do pneu passam a derivar das voltas
+            // REAIS da nuvem (contagem real) — incremento local desligado.
+            return (pid, 0)
         }
 
         // Sprint 1A.4 — auto-incrementa pneus.ciclos quando o stint tem
-        // pneu montado. No-op silencioso se pneu_id == nil.
+        // pneu montado. Desligado na contagem real (voltasGeradas é sempre 0;
+        // o ciclo verdadeiro vem das voltas origem='painel-ao-vivo' na nuvem).
         if let pneuIdMontado, voltasGeradas > 0 {
             try await incrementarCiclos(pneuId: pneuIdMontado, by: voltasGeradas)
         }
