@@ -112,6 +112,36 @@ export function criarAcumuladorConfianca({ numTrechos = NUM_TRECHOS_BRASILIA, ma
     },
 
     /**
+     * Exporta o aprendizado (marchas vistas + pontos por trecho×marcha + voltas
+     * limpas) para persistir entre sessões. Sem isto, o % volta a zero ao fechar.
+     */
+    exportarEstado() {
+      return {
+        versao: 1,
+        marchasDetectadas: Array.from(marchasDetectadas),
+        voltasLimpas,
+        pontos: Array.from(pontosPorChave.entries()).map(([chave, v]) => ({ chave, rpm: v.rpm, amostras: v.amostras })),
+      };
+    },
+
+    /** Importa aprendizado persistido (idempotente; substitui o estado atual). */
+    importarEstado(estado) {
+      marchasDetectadas.clear();
+      pontosPorChave.clear();
+      voltasLimpas = 0;
+      if (!estado) return;
+      for (const m of (estado.marchasDetectadas || [])) {
+        if (typeof m === 'number' && m >= 1 && m <= 5) marchasDetectadas.add(m);
+      }
+      if (Number.isFinite(estado.voltasLimpas)) voltasLimpas = estado.voltasLimpas;
+      for (const p of (estado.pontos || [])) {
+        if (p && typeof p.chave === 'string' && Number.isFinite(p.rpm)) {
+          pontosPorChave.set(p.chave, { rpm: p.rpm, amostras: Number.isFinite(p.amostras) ? p.amostras : 0 });
+        }
+      }
+    },
+
+    /**
      * Reseta tudo (ex: ao trocar configuração mecânica do carro).
      */
     reset() {
