@@ -1,12 +1,12 @@
 # CONTINUAR — CLASSIFICADOR DE CURVAS (P1 Fast) — checkpoint 13/06/2026
 
-## >>> ATIVO 14/06: TRAVOU NA MIGRAÇÃO DA TABELA EM PRODUÇÃO — LER O DOSSIÊ PRIMEIRO <<<
-Antes de qualquer coisa, LER: `/Users/imac/Projetos/P1 Fast/.claude-exec/PROBLEMA-migracao-tabela-curvas-2026-06-14.md`
-Flávio pediu: depois do clear, RETOMAR, CONVOCAR UM CONSELHO (vários agentes / Workflow) pra avaliar o
-problema e trazer UMA proposta certeira, sem inventar. Resumo do bloqueio: criar a tabela
-`public.tipos_curva_vivos` em produção (p1-fast) travou porque o `db push` é perigoso aqui (migrações
-com número DUPLICADO + uma 0028_rollback_brasilia_seed PENDENTE que apagaria as 8 curvas) e o acesso
-direto (psql) precisa da senha do banco (no Chaveiro). Tabela ainda NÃO criada. Detalhes/IDs/comandos no dossiê.
+## >>> ATIVO 14/06: EXECUTAR A MIGRAÇÃO DA TABELA (conselho concluído, caminho seguro achado) <<<
+AO RETOMAR: abrir e EXECUTAR o roteiro `/Users/imac/Projetos/P1 Fast/.claude-exec/EXECUTAR-migracao-tabela-curvas-2026-06-14.md`
+(passo a passo exato, já verificado). Contexto/porquê no dossiê `PROBLEMA-migracao-tabela-curvas-2026-06-14.md`.
+RESUMO: o conselho (4 agentes, unânime) achou a porta segura — `supabase db query --linked --file ...`
+cria a tabela `public.tipos_curva_vivos` usando o acesso já logado, SEM senha e SEM tocar na fila de
+migrações (logo, NÃO dispara a mina 0028_rollback que apaga as curvas). Flávio autorizou e pediu pra
+deixar o comando pronto e executar após o clear. Tabela ainda NÃO criada (verificado). NUNCA usar db push.
 ## <<< FIM DO ATIVO <<<
 
 
