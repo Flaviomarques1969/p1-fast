@@ -109,9 +109,11 @@ struct PendenciasView: View {
                         onToggleExpand: { toggleExpand(g.id) },
                         onToggleItem: { item in toggleItem(item) },
                         onEditarNota: { item in
-                            notaText = item.instance.nota ?? ""
+                            notaText = item.nota ?? ""
                             editandoNota = item
-                        }
+                        },
+                        onIncluir: { incluindoNoGrupo = g },
+                        onRemoverItem: { item in removerItem(item) }
                     )
                 }
                 if grupos.isEmpty {
