@@ -26,7 +26,14 @@ const DEFAULTS = Object.freeze({
   speedTolPct: 0.05,     // velocidade não pode variar mais que 5% durante shift
   cooldownMs: 400,       // ms — bloqueia detecção dupla logo em seguida
   maxDtMs: 250,          // janela máxima entre samples consecutivos pra contar como shift
-  tpsMin: 10             // ignora samples com TPS < 10 (provável neutro/embreagem)
+  tpsMin: 10,            // ignora samples com TPS < 10 (provável neutro/embreagem)
+  // CRUZAR SINAIS (visão Flávio 14/06): no upshift a tração é cortada → a
+  // aceleração longitudinal (força-G) CAI no instante da troca. Com esta trava
+  // ligada, um degrau de RPM só vira troca se a aceleração também cair — corta
+  // falsos positivos. DESLIGADA por padrão (comportamento atual preservado);
+  // será validada no dia de pista 15-16 antes de virar padrão.
+  accelCorroboraUpshift: false,
+  accelDropMin: 1.0      // m/s² — queda mínima de aceleração pra corroborar o upshift
 });
 
 export function createShiftEventDetector(opts = {}) {
