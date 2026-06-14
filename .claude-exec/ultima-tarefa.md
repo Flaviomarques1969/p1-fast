@@ -74,6 +74,49 @@
     mexer no menu/sub-abas toca várias telas; não quebrar roteamento da tab-bar fixa.
 12. **Status inicial:** iniciado — mapa do código em curso, depois build em estágios.
 
+## TASK_DONE — 2026-06-14 (noite) — Estoque geral + Editor unificado + Pendências + ligação ao estoque
+
+```
+TASK_DONE:
+- Pedido original conferido: sim (4 itens, item por item)
+- Ambiente trabalhado: desenvolvimento (app iOS + simulador iPhone 17 Pro)
+- Produção foi alterada: não
+- Se produção foi alterada, autorização explícita registrada: n/a
+- Arquivos reais inspecionados: sim (mapa de 5 áreas + leitura direta antes de editar)
+- Alterações feitas: sim
+- Testes/validação executados: sim (BUILD SUCCEEDED; schema-parity 15/0; migration 3/0; migration-port 8/0; 3 screenshots reais)
+- Resultado: concluído em DEV (os 4 itens)
+- Pendências reais: reconciliar futuramente estoque local novo × estoque do carro sincronizado (Peca) = decisão+autorização separada. Interações por toque (concluir/sai-da-lista/Gerenciar) validadas por código+build, não por toque simulado.
+```
+
+### Arquivos alterados/criados (app iOS, DEV — produção intocada)
+- `ios/p1fast-core/.../Persistence/Migrations.swift` — migration v30 LOCAL-ONLY (`estoque_item` + `evento_pendencia_pegou`).
+- `ios/p1fast-core/.../Persistence/Models.swift` — structs `EstoqueItem` (+Parte/alvo) e `EventoPendenciaPegou` (local-only).
+- `ios/p1fast-ios/.../Persistence/EstoqueRepository.swift` — NOVO: CRUD do estoque + "peguei" por evento (sem SyncQueue).
+- `ios/p1fast-ios/.../Views/EstoqueViews.swift` — NOVO: EstoqueGeralView (lista) + EstoqueItemEditorView (editor único botões+câmera/OCR) + SegPicker/Stepper2.
+- `ios/p1fast-ios/.../Views/GaragemView.swift` — sub-aba "Estoque geral" entre Carros e Pilotos + initialSubTab.
+- `ios/p1fast-ios/.../Views/PendenciasView.swift` — redesenho: contador "peguei" (alvo do estoque) + concluir-só-no-quadradinho + sai-da-lista + "N concluídas" + "Gerenciar itens" (Adicionar/Editar/Excluir); nota preservada (toque longo).
+- `ios/p1fast-ios/.../Views/ContentView.swift` + `HubMockLauncher.swift` + `EventoDetalheView.swift` — injeção do EstoqueRepository + caminhos de screenshot (`--p1-estoque`, `--p1-estoque-editar`).
+- `tests/node-smoke-schema-parity.mjs` — 2 tabelas locais novas em GRDB_LOCAL_ONLY (35→37).
+- `ios/p1fast-ios/p1fast-ios.xcodeproj/project.pbxproj` — registra os 2 arquivos novos.
+
+### O que foi preservado
+Catálogo de pendências sincronizado (PendenciaTemplate/EventoPendencia), itens extras locais, estoque do carro (`Peca`, que sobe pra nuvem), edição de nota (toque longo). Nada removido da nuvem/produção.
+
+### Validação executada
+- `xcodebuild ... -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build` → BUILD SUCCEEDED (várias vezes).
+- `node tests/node-smoke-schema-parity.mjs` 15/0 · `node tests/node-smoke-migration.mjs` 3/0 · `node tests/node-smoke-migration-port.mjs` 8/0.
+- Screenshots reais no simulador: `relatorios/estoque-2026-06-14/01-estoque-geral.png`, `02-editor-item.png`, `03-pendencias.png`.
+
+### Checagem contra o pedido (item por item)
+1. Estoque geral na Garagem + modelo do item → FEITO (sub-aba + EstoqueItem com onde-fica/item-ferramenta/qtd/espec). Tela 01.
+2. Editor único em botões + câmera que lê o rótulo → FEITO (EstoqueItemEditorView reaproveita EtiquetaOCR/CameraPicker). Tela 02.
+3. Pendências (contador "peguei", concluir só no quadradinho, sai da lista, "concluídas", Gerenciar Adicionar/Editar/Excluir) → FEITO. Tela 03 (contador 0/4 no Óleo motor).
+4. Ligar Pendência ao estoque (quantidade vem do estoque) → FEITO (alvo do contador = quantidade do item de mesmo nome no Estoque geral; Adicionar/Editar gravam no estoque).
+
+### Pendências ou riscos
+Reconciliar o estoque local novo com o estoque do carro sincronizado (`Peca`) é decisão futura com autorização própria. Produção não foi tocada.
+
 ---
 
 
