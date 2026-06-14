@@ -24,11 +24,14 @@ function geraReta(kmh, sub = 'freio', n = 20) {
   return pontos;
 }
 
-t('DC-01 SUB_TRECHOS canônico tem 4 itens', () => {
-  if (SUB_TRECHOS.length !== 4) throw new Error(`tem ${SUB_TRECHOS.length}`);
-  for (const s of ['entrada','freio','apice','saida']) {
+t('DC-01 SUB_TRECHOS canônico tem 5 itens (com pace, 5º marco Flávio 13/06)', () => {
+  if (SUB_TRECHOS.length !== 5) throw new Error(`tem ${SUB_TRECHOS.length}`);
+  for (const s of ['entrada','freio','apice','pace','saida']) {
     if (!SUB_TRECHOS.includes(s)) throw new Error(`falta ${s}`);
   }
+  // ordem importa: pace vem entre apice e saida
+  if (SUB_TRECHOS.indexOf('pace') !== SUB_TRECHOS.indexOf('apice') + 1) throw new Error('pace fora de ordem');
+  if (SUB_TRECHOS.indexOf('saida') !== SUB_TRECHOS.indexOf('pace') + 1) throw new Error('saida deve vir após pace');
 });
 
 t('DC-02 referência ausente lança erro explícito', () => {
