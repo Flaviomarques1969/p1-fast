@@ -31,7 +31,7 @@ const APICE_DIST_MAX_M = 60;      // mesmo valor do trecho-detector
 const G = 9.80665;                // m/s²
 
 const HOME = process.env.HOME;
-const RAIZ = new URL('..', import.meta.url).pathname;
+const RAIZ = dirname(dirname(fileURLToPath(import.meta.url)));
 const ENTRADA = join(HOME, 'Documents/p1fast-backup-voltas-reais/passagens-bubi-aplicadas.json');
 const GEO = join(RAIZ, '_design-reference/PONTOS-TRECHOS-BRASILIA-2026-05-28.json');
 const SAIDA = join(RAIZ, 'relatorios/passagens-bubi-reetiquetadas-2026-06-14.json');
