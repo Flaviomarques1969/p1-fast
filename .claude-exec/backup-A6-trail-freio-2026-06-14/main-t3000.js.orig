@@ -37,9 +37,6 @@ import { criarClassificadorVivo } from './classificador-vivo-bridge.js';
 import { carregarTipoCurvaPorTrecho } from './tipo-trecho-loader.js';
 // ── Treino de técnica (Stint Revestido — autorização Flávio 11/06) ──
 import { resolvePlanoStint, buscarPlanoStintDaNuvem, TreinoStint } from './treino-stint.js';
-// ── Cockpit em modo treino TRAIL BRAKING (ditado 11-12/06, mockup VIVO) ──
-import { TrailCockpitMotor } from './trail-cockpit-motor.js';
-import { criarTrailCockpitTela } from './trail-cockpit-tela.js';
 import { APICES_SEMENTE_BRASILIA } from './apices-semente-brasilia.js';
 import { onSample } from './cloud-bridge.js';
 // segments-loader/melhores-loader importam Supabase via esm.sh — dynamic
@@ -132,67 +129,10 @@ if (!_planoStint) {
     atualizarSeloTreino();
     if (window.__t3) { window.__t3.treinoStint = treinoStint; window.__t3.planoStint = _planoStint; }
     log(`treino armado: ${treinoStint.seloTexto()} (origem: nuvem — plano do último envelope aprovado hoje)`);
-    tentarArmarTrailCockpit(); // trechos podem já ter carregado antes do plano
   }).catch((e) => console.warn('[treino] fallback da nuvem falhou:', e?.message));
 }
 const telaOrientacao = criarTelaOrientacao({});
 let coreografia = null;
-
-// ── Cockpit em modo treino TRAIL BRAKING ──────────────────────
-// O treino MONTA a tela (ditado 11/06): com foco trail-braking armado E os
-// trechos+melhores carregados, a camada visual própria é criada. Sem treino
-// trail, NADA é criado — painel byte-idêntico (mesma regra do treino v1).
-let trailCockpit = null;   // { motor, tela } quando armado
-let _trailCtx = null;      // { ordenados, melhores } — preenchido na carga
-// A3: rótulo de honestidade da FONTE do freio, fora do palco. Troca sozinho de
-// FÍSICA GPS pra SENSOR quando o canal de pressão/pedal do T4000 começa a variar.
-function atualizarSeloFonteFreio(fonte) {
-  const selo = $('seloTreino');
-  if (!selo) return;
-  const rot = fonte === 'sensor-pressao' ? 'FREIO: SENSOR (pressão)'
-            : fonte === 'sensor-pedal'   ? 'FREIO: SENSOR (pedal)'
-            : 'FREIO: FÍSICA GPS';
-  const base = selo.textContent.replace(/\s·\sFREIO:.*$/, ''); // troca só o sufixo da fonte
-  selo.textContent = base + ' · ' + rot;
-  selo.title = (typeof fonte === 'string' && fonte.startsWith('sensor'))
-    ? `Curva de freio vinda do SENSOR de ${fonte === 'sensor-pressao' ? 'pressão' : 'pedal'} (T4000), fundida por tempo (±250 ms).`
-    : 'Curva de freio derivada da física real do GPS (rotulada) até o sensor de pressão entrar (instalação 15-16/06).';
-}
-function tentarArmarTrailCockpit() {
-  if (trailCockpit) return;
-  if (!treinoStint || treinoStint.treino?.id !== 'trail-braking') return;
-  if (!_trailCtx) return;
-  try {
-    const motor = new TrailCockpitMotor({
-      segments: _trailCtx.ordenados,
-      refs: _trailCtx.melhores,
-      storage: (typeof localStorage !== 'undefined') ? localStorage : null,
-      // par da blindagem (mesmo padrão do bridge): replay/simulador nunca
-      // ensina a reação aprendida nem grava no armazenamento
-      origemSimulador: () => !!window.__P1_ORIGEM_SIM__,
-    });
-    const tela = criarTrailCockpitTela({ cockpitState });
-    tela._setAlvoResolver((segId) => motor.alvoDoTrecho(segId));
-    motor.onRender((s) => tela.render(s));
-    motor.onEfeito((e) => {
-      // a metade da reta é do gráfico de frenagem: o resumo da volta
-      // (overlay de tela cheia) sai de cena quando a aproximação entra
-      if (e?.tipo === 'aproximacao') telaOrientacao.esconder();
-      // A3: o sensor de freio acendeu/apagou — troca o rótulo de honestidade da fonte
-      if (e?.tipo === 'fonte-freio') atualizarSeloFonteFreio(e.fonteFreio);
-      tela.efeito(e);
-    });
-    trailCockpit = { motor, tela };
-    tela.render(motor.snapshot());
-    if (window.__t3) window.__t3.trailCockpit = trailCockpit;
-    const armados = _trailCtx.ordenados.filter(sg => motor.alvoDoTrecho(sg.id)).length;
-    log(`cockpit-treino TRAIL armado: ${armados}/${_trailCtx.ordenados.length} trechos com alvo de frenagem da melhor passagem`);
-    // rótulo de fonte FORA do palco (regra de honestidade do freio-trecho.js):
-    // até o sensor de pressão entrar, a curva de freio vem da física do GPS.
-    // Acende sozinho pra SENSOR quando o canal começa a variar (A3 · efeito fonte-freio).
-    if (!$('seloTreino')?.textContent.includes('FREIO:')) atualizarSeloFonteFreio(motor.fonteFreio());
-  } catch (e) { console.warn('[trail-cockpit] não armou:', e?.message); }
-}
 // tempos de volta locais (pro resumo na reta longa)
 const voltas = { n: null, inicioTs: null, ultimaS: null, melhorS: null };
 
@@ -332,9 +272,6 @@ const bridge = new LiveDataBridge({
   onTrechoEvent: (ev) => {
     if (!ev) return;
     if (coreografia) coreografia.evento(ev);
-    // Cockpit-treino trail: o motor consome os MESMOS eventos do detector
-    // (entrada/freada/ápice/saída/passagem-fechada) — nada novo é inventado.
-    if (trailCockpit) { try { trailCockpit.motor.evento(ev); } catch {} }
     if (ev.type === 'delta-calculado') {
       oportunidade.registrarDelta(ev);
       // Motor pedagógico do treino: consistência, falhas, consolidação.
@@ -348,11 +285,6 @@ const bridge = new LiveDataBridge({
     // apontar pra ELA (antes ficava na referência do boot até recarregar).
     if (ev.type === 'passagem-salva' && ev.ref) {
       oportunidade.setReferencia(ev.segmentId, ev.ref);
-      // Cockpit-treino trail: o alvo de frenagem do trecho também passa a ser
-      // a nova melhor (é assim que a régua nasce com dado denso no dia de pista).
-      if (trailCockpit && Array.isArray(ev.ref.pontos)) {
-        try { trailCockpit.motor.atualizarReferencia(ev.segmentId, ev.ref.pontos); } catch {}
-      }
     }
     // Toda passagem fechada (melhor ou não) vira o hábito mais recente do
     // piloto — antes só as "novas melhores" alimentavam as marcas VOCÊ.
@@ -430,20 +362,6 @@ bridge.ingestT4000 = (sample) => {
       console.warn('[orquestrador] ingestSample falhou:', e?.message);
     }
   }
-  // A2: leva a amostra de freio (pressão/pedal do T4000) ao motor do trail,
-  // bufferizada por tempo (mesmo tMono do GPS) pra fusão em A3. NÃO muda a fonte
-  // do veredito — proxy GPS segue como fonte até o sensor entrar (A3).
-  if (trailCockpit && (Number.isFinite(sample?.pressaoFreioBar) || Number.isFinite(sample?.pedalFreioPct))) {
-    try {
-      const n = trailCockpit.motor.amostraFreio({
-        t: sample.tMono ?? sample.t ?? Date.now(),
-        pressaoFreioBar: sample.pressaoFreioBar,
-        pedalFreioPct: sample.pedalFreioPct,
-        pedalAceleradorPct: sample.pedalAceleradorPct,
-      });
-      if (n === 1) log('cockpit-treino TRAIL: 1ª amostra de freio chegou ao motor (transporte A2 OK; fonte segue FÍSICA GPS até o sensor entrar em A3)');
-    } catch {}
-  }
 };
 
 // ── GPS vindo do canal da nuvem (RaceBox publicado pela Central de Pista) ──
@@ -478,14 +396,6 @@ bridge.ingestImuGps = (envelope) => {
   if (chegadaDetector) chegadaDetector.ingestGps(gps);
   if (boxDetector) boxDetector.ingestGps(gps);
   if (coreografia) coreografia.gps({ lat: gps.lat, lng: gps.lng });
-  if (trailCockpit) {
-    try {
-      trailCockpit.motor.gps({
-        lat: gps.lat, lng: gps.lng, t: gps.t,
-        kmh: typeof envelope.payload.kmh === 'number' ? envelope.payload.kmh : null,
-      });
-    } catch {}
-  }
 };
 
 // Carga assíncrona dos segmentos (Supabase). Sem segmentos = detector
@@ -577,9 +487,6 @@ bridge.ingestImuGps = (envelope) => {
         },
         onOrientacao: (seg, prog) => {
           if (mensagemGraveAtiva()) { telaOrientacao.esconder(); return; }
-          // Cockpit-treino trail: a metade da reta é do GRÁFICO DE FRENAGEM
-          // ALVO (ditado 11/06) — a tela de orientação não entra neste modo.
-          if (trailCockpit) { telaOrientacao.esconder(); return; }
           // Treino: calibração (2 passagens), trecho consolidado/saturado e
           // consolidação pré-box NÃO recebem meta nova — painel padrão.
           if (treinoStint && !treinoStint.deveOrientar(seg.id)) { telaOrientacao.esconder(); return; }
@@ -593,9 +500,6 @@ bridge.ingestImuGps = (envelope) => {
         },
       });
       log(`coreografia da volta ativa (${ordenados.length} trechos; reta longa após ${coreografia.retaMaisLonga().deSegId.slice(0, 8)})`);
-      // Cockpit-treino trail: precisa dos trechos ordenados + melhores passagens.
-      _trailCtx = { ordenados, melhores };
-      tentarArmarTrailCockpit();
       try {
         const marco = await loadMarcoChegada('0dc85cfb-6236-567e-814c-eddf610b301f');
         if (marco) {
@@ -617,8 +521,6 @@ bridge.ingestImuGps = (envelope) => {
               voltas.n = voltaN; voltas.inicioTs = agora;
               // Consolidação pré-box do treino depende da volta atual.
               if (treinoStint) treinoStint.setVoltaAtual(voltaN);
-              // Trilho do cockpit-treino é POR VOLTA: virada limpa as células.
-              if (trailCockpit) { try { trailCockpit.motor.setVoltaAtual(voltaN); } catch {} }
               // Tela ASSISTIR: a Central calcula o tempo da volta pela
               // diferença entre duas chegadas consecutivas (tWall).
               publishEvento({ tipo: 'volta', n: voltaN });
@@ -1114,4 +1016,4 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Expose pra DevTools
 window.__t3 = { t3, cockpitState, bridge, oportunidade, getCoreografia: () => coreografia, telaOrientacao,
-                treinoStint, planoStint: _planoStint, getTrailCockpit: () => trailCockpit };
+                treinoStint, planoStint: _planoStint };
