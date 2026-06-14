@@ -144,6 +144,8 @@ struct EventoDetalheView: View {
                     onClose: { sheet = nil }
                 )
                 .environmentObject(pendenciaRepo)
+                .environmentObject(estoqueRepo)
+                .environmentObject(carroRepo)
             } else {
                 EmptyView()
             }
