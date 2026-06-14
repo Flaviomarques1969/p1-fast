@@ -40,7 +40,10 @@
     "smoke:padrao": "node tests/node-smoke-padrao-acumulador.mjs",
     "smoke:treino-stint": "node tests/node-smoke-treino-stint.mjs",
     "smoke:catalogo-treinos": "node tests/node-smoke-catalogo-treinos.mjs",
-    "smoke:retag-vmin": "node tests/node-smoke-retag-vmin.mjs"
+    "smoke:retag-vmin": "node tests/node-smoke-retag-vmin.mjs",
+    "smoke:freio-trecho": "node tests/node-smoke-freio-trecho.mjs",
+    "smoke:trail-cockpit": "node tests/node-smoke-trail-cockpit.mjs",
+    "smoke:trail-religacao": "node tests/node-smoke-trail-religacao.mjs"
   },
   "engines": {
     "node": ">=20"
