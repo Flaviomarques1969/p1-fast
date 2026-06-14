@@ -393,7 +393,7 @@ function itemHTML(gi, it){
       <button class="cstep plus" onclick="incPegou('${it.id}',1)">+</button>` : '';
   return `<div class="pitem" data-done="${it.done}" data-cat="${it.cat}">
     <button class="pcheck" onclick="toggleItem('${it.id}')">✓</button>
-    <span class="pitem__txt" onclick="toggleItem('${it.id}')">${nomeHTML(it)}</span>
+    <span class="pitem__txt">${nomeHTML(it)}</span>
     ${cnt?`<span class="pitem__slot">${cnt}</span>`:''}
   </div>`;
 }
