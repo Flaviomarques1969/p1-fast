@@ -79,5 +79,8 @@ FRENTE C: C1[x] C2[x] C3[ GATE-FLÁVIO ] C4[ ] C5[ GATE-FLÁVIO ]
   patch do trail no main-t3000.js via merge de 3 vias (preservou as 47 linhas que a oficial tinha) +
   3 testes (freio-trecho/trail-cockpit/trail-religacao) no package.json (atalhos + agregador smoke).
   Backup: .claude-exec/backup-A6-trail-freio-2026-06-14 (main-t3000.js.orig, package.json.orig, ponto 7a5fb39).
-  BATERIA INTEIRA 64/64 VERDE. Marco: commit bb8c2410 na branch consolidacao-onda1-2026-06-14 (NÃO enviado ao
-  repositório remoto — aguarda Flávio). Salvamento automático da pasta oficial registrou a maior parte junto.
+  BATERIA INTEIRA 64/64 VERDE. Marco: commit bb8c2410 (na linha main local; salvamento automático registrou o
+  resto junto). ENVIADO À NUVEM 14/06 como LINHA SEPARADA feat/freio-trail-braking-2026-06-14 (autorização Flávio
+  "linha separada"): origin/main (bff34e0f, app iPhone) INTACTA — divergência local x nuvem detectada (nuvem tem
+  consolidacao onda 1/3 que o PC não tinha; PC tinha 334 commits à frente, 327 auto-saves). PR opcional:
+  github.com/Flaviomarques1969/p1-fast/pull/new/feat/freio-trail-braking-2026-06-14. A7 (sensor seg/ter) pendente.
