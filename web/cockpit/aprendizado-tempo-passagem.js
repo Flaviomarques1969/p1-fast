@@ -139,7 +139,7 @@ export function criarAprendizadoTempoPassagem({
     if (!estado || !estado.dados) return;
     for (const [chave, lista] of Object.entries(estado.dados)) {
       const bins = new Map();
-      for (const it of (lista || [])) {
+      for (const it of (Array.isArray(lista) ? lista : [])) {
         if (!Number.isFinite(it.rpm)) continue;
         bins.set(it.rpm, {
           amostras: it.amostras || 0,
