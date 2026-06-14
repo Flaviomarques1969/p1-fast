@@ -115,7 +115,31 @@ Catálogo de pendências sincronizado (PendenciaTemplate/EventoPendencia), itens
 4. Ligar Pendência ao estoque (quantidade vem do estoque) → FEITO (alvo do contador = quantidade do item de mesmo nome no Estoque geral; Adicionar/Editar gravam no estoque).
 
 ### Pendências ou riscos
-Reconciliar o estoque local novo com o estoque do carro sincronizado (`Peca`) é decisão futura com autorização própria. Produção não foi tocada.
+Reconciliar o estoque local novo com o estoque do carro sincronizado (`Peca`) é decisão futura com autorização própria.
+
+## MIGRAÇÃO PARA PRODUÇÃO — EXECUTADA 2026-06-14 (noite)
+Autorização literal de Flávio: "MIGRAR PARA PRODUÇÃO: estoque geral + pendências."
+
+```
+PROD_RELEASE_PLAN (executado):
+- O que foi migrado: estoque geral + editor único + pendências novas (código, camada LOCAL).
+- Origem: versão de trabalho (main local, já commitada por auto-save).
+- Destino: app no iPhone 16 Pro Max real (device 00008140-000E2D611E6A801C).
+- Banco da nuvem afetado: NÃO (feature é local-only).
+- Migration: v30 LOCAL no iPhone (aditiva, CREATE TABLE IF NOT EXISTS) — roda na abertura.
+- Risco de perda de dados: não (instalação por cima, container preservado).
+- Rollback: reinstalar versão anterior; tabelas novas ficam inertes.
+- Validação pós-deploy: app instalado + aberto sem queda (migração rodou). Falta Flávio conferir visualmente Garagem→Estoque geral e Pendências.
+```
+Execução real:
+- `xcodebuild ... -destination 'platform=iOS,id=00008140...' -allowProvisioningUpdates build` → BUILD SUCCEEDED (assinado com perfil com.flaviomarques.p1fast).
+- `xcrun devicectl device install app` → "App installed: com.flaviomarques.p1fast" (aviso "No provider" é inofensivo; instalou).
+- `xcrun devicectl device process launch` → "Launched application ... com.flaviomarques.p1fast" (subiu sem queda).
+
+PENDÊNCIA de produção (não-bloqueante): a cópia oficial na nuvem (origin/main no GitHub) está com
+backlog grande pré-existente (main local 529 commits à frente / 3 atrás de origin). Registrar a cópia
+oficial é operação à parte e cuidadosa (NÃO enviei tudo em massa pra não publicar trabalho inacabado de
+outras frentes). O código DESTA feature está no aparelho + na versão de trabalho local.
 
 ---
 
