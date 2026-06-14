@@ -52,7 +52,11 @@
 
 ## PROGRESSO
 
-### FASE 0 — Trazer o classificador pro app principal — EM EXECUÇÃO
-- Verificado: oficial e worktree diferem APENAS nos 4 módulos novos (diff -rq limpo).
-- Os 3 testes novos não existem no oficial; passam no worktree (24+31+13 = 68 ok / 0 fail).
-- A executar: copiar 4 módulos + 3 testes; registrar 3 testes no smoke do oficial; rodar smoke.
+### FASE 0 — Trazer o classificador pro app principal — CONCLUÍDA (14/06 00:54)
+- Copiados pro oficial: web/cockpit/{classificador-trecho,trecho-estado,classificador-vivo-bridge,tipos-curva-texto}.js
+- Copiados pro oficial: tests/node-smoke-{classificador-trecho,trecho-estado,classificador-vivo-bridge}.mjs
+- package.json: +3 testes no script `smoke` e +3 atalhos (smoke:classificador / :trecho-estado / :classificador-vivo).
+- Evidência: `npm run smoke` = 310 ok / 0 fail (23 arquivos de teste). Diff vs HEAD vazio.
+- Auto-save do repo commitou local (ceacf29b..46a2710e). NÃO enviado ao remoto (origin 216 atrás). Produção intocada.
+
+### FASE 1 — Perfil de trail por tipo — EM EXECUÇÃO
