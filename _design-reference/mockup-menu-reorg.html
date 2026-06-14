@@ -99,7 +99,8 @@ body{padding:0 0 96px;}
 .pgroup__items{display:none;border-top:1px solid var(--hairline);}
 .pgroup[data-open="true"] .pgroup__items{display:block;}
 
-.pitem{display:flex;align-items:flex-start;gap:12px;padding:11px 16px;border-bottom:1px solid oklch(33% 0.005 240 / .5);}
+.pitem{display:block;padding:11px 16px;border-bottom:1px solid oklch(33% 0.005 240 / .5);}
+.pitem__top{display:flex;align-items:flex-start;gap:12px;}
 .pitem:last-child{border-bottom:0;}
 .pcheck{flex:0 0 auto;width:20px;height:20px;border-radius:5px;border:1.5px solid var(--hairline);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:1px;color:transparent;font-size:12px;font-weight:700;transition:.15s;}
 .pitem[data-done="true"] .pcheck{border-color:var(--bom);color:var(--bom);}
