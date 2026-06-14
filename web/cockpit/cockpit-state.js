@@ -61,6 +61,17 @@ export const ApexEstado = Object.freeze({
   OK_PIOR:   'ok-pior',
 });
 
+// Status da barra de aprendizado do shift light contextual.
+// Decisão Flávio 2026-05-29: barra no canto esquerdo informa o quanto o
+// sistema já aprendeu sobre a combinação atual (carro × câmbio × pneu ×
+// autódromo × modo). 0% = só regras-semente. 100% = mapa calibrado.
+export const AprendizadoStatus = Object.freeze({
+  INATIVO:    'inativo',    // não há combinação ativa (stint não configurado)
+  APRENDENDO: 'aprendendo', // 0-33% — só regras-semente, ainda sem dados reais
+  PARCIAL:    'parcial',    // 33-66% — começou a aprender mas confiança baixa
+  CALIBRADO:  'calibrado',  // 66-100% — sistema confiante na decisão
+});
+
 export const SHIFT_LEVEL_MIN = 0;
 export const SHIFT_LEVEL_MAX = 6; // sequência canônica vai 0..6 → fire → overrev
 export const SHIFT_DOTS_TOTAL = 12; // mockup tem 12 LEDs, level 6 = todos acesos
@@ -76,15 +87,52 @@ export function defaultCockpitState() {
       fire:  ShiftFire.IDLE,
     },
     message: null, // null = oculta; { tipo, texto } quando ativa
+    // Modo silencioso (decisão Flávio 2026-05-28): silencia mensagens de
+    // pilotagem (COMUNICACAO). Alertas críticos (GRAVE) NUNCA são silenciados.
+    silencioso: false,
+    // Estado do box: true = carro dentro do pit lane (após cruzar pit-in,
+    // antes de cruzar pit-out). Pausa cronômetro e silencia pilotagem.
+    noBox: false,
     delta: { value: '0.00', tone: Tone.NEUTRO },
     acao:  { texto: '',     tone: Tone.NEUTRO },
     apex: {
+      // Entrada: único ponto, marcado quando o carro cruza a linha de entrada
+      // do trecho. valorKmh = velocidade ali.
       entrada: { estado: ApexEstado.PENDENTE, valorKmh: null, nomeCurva: null },
-      freio:   { estado: ApexEstado.PENDENTE, atualM: null, refM: null, deltaM: null, lat: null, lng: null },
-      apice:   { estado: ApexEstado.PENDENTE, valorKmh: null, deltaM: null, lat: null, lng: null, nomeCurva: null },
+      // Freio: ponto de frenagem. atualM/refM = distância (m) desde a linha de
+      // entrada (atual vs. melhor passagem); deltaM = diferença; valorKmh = vel
+      // registrada nesse ponto.
+      freio:   { estado: ApexEstado.PENDENTE, atualM: null, refM: null, deltaM: null, valorKmh: null, lat: null, lng: null },
+      // Ápice: a "bolinha" — ponto mais interno da curva na passagem mais rápida
+      // do trecho. distM = distância do carro a esse ponto ideal (m);
+      // angleDeg = direção da bolinha vs. heading do carro (0..360, 0=frente).
+      apice:   { estado: ApexEstado.PENDENTE, distM: null, angleDeg: null },
+      // Saída: velocidade ao cruzar a linha de saída do trecho.
       saida:   { estado: ApexEstado.PENDENTE, valorKmh: null, nomeCurva: null },
     },
+    // Barra de aprendizado do shift light contextual.
+    // pct: 0..100 (% de calibração da combinação ativa).
+    // status: derivado de pct (inativo/aprendendo/parcial/calibrado).
+    // Decisão Flávio 2026-05-29 após auditoria de engenheiro de competição.
+    aprendizado: {
+      status: AprendizadoStatus.INATIVO,
+      pct:    0,
+    },
+    // Flash de celebração quando a IA atinge 100% (calibrado).
+    // Em produção, dispara no meio da próxima reta. No protótipo dispara
+    // imediatamente. Decisão Flávio 2026-05-29.
+    flashIa: false,
   };
+}
+
+// Calcula status da barra a partir do % aprendido.
+// Bordas: 0 = inativo; 1-33 = aprendendo; 34-66 = parcial; 67-100 = calibrado.
+export function statusFromPct(pct) {
+  if (typeof pct !== 'number' || !Number.isFinite(pct)) return AprendizadoStatus.INATIVO;
+  if (pct <= 0)   return AprendizadoStatus.INATIVO;
+  if (pct <= 33)  return AprendizadoStatus.APRENDENDO;
+  if (pct <= 66)  return AprendizadoStatus.PARCIAL;
+  return AprendizadoStatus.CALIBRADO;
 }
 
 // ── Validações ───────────────────────────────────────────────
@@ -191,6 +239,9 @@ export class CockpitState {
     if (typeof texto !== 'string' || texto.length === 0) {
       throw new Error('CockpitState: message.texto precisa ser string não-vazia');
     }
+    // Modo silencioso: bloqueia comunicações (coach), mas NUNCA bloqueia
+    // alertas críticos (GRAVE — motor, óleo, pneu, segurança).
+    if (this._state.silencioso && tipo === MsgTipo.COMUNICACAO) return;
     const next = { tipo, texto };
     const cur = this._state.message;
     if (cur && cur.tipo === tipo && cur.texto === texto) return;
@@ -198,6 +249,30 @@ export class CockpitState {
     this._state = { ...prev, message: next };
     this._emit(prev, ['message']);
   }
+
+  setNoBox(v) {
+    const next = !!v;
+    if (this._state.noBox === next) return;
+    const prev = this._state;
+    this._state = { ...prev, noBox: next };
+    this._emit(prev, ['noBox']);
+  }
+  isNoBox() { return this._state.noBox; }
+
+  setSilencioso(v) {
+    const next = !!v;
+    if (this._state.silencioso === next) return;
+    const prev = this._state;
+    this._state = { ...prev, silencioso: next };
+    // Quando ativa silêncio, esconde mensagem de comunicação corrente.
+    if (next && prev.message && prev.message.tipo === MsgTipo.COMUNICACAO) {
+      this._state = { ...this._state, message: null };
+      this._emit(prev, ['silencioso', 'message']);
+    } else {
+      this._emit(prev, ['silencioso']);
+    }
+  }
+  isSilencioso() { return this._state.silencioso; }
 
   hideMessage() {
     if (this._state.message === null) return;
@@ -227,7 +302,9 @@ export class CockpitState {
   }
 
   setApexPonto(papel, fields) {
-    if (!['entrada', 'freio', 'apice', 'saida'].includes(papel)) {
+    // 'pace' (5º marco, Flávio 13/06): aceitamos como papel válido pro estado guardar o ponto
+    // de aceleração pós-Vmin. A tela mostra Pace CENTRAL (não como 4º widget) — decisão 26/05.
+    if (!['entrada', 'freio', 'apice', 'pace', 'saida'].includes(papel)) {
       throw new Error(`CockpitState: apex papel="${papel}" inválido`);
     }
     const cur = this._state.apex[papel];
@@ -242,6 +319,32 @@ export class CockpitState {
       apex: { ...prev.apex, [papel]: next },
     };
     this._emit(prev, ['apex']);
+  }
+
+  // Atualiza a barra de aprendizado do shift light contextual.
+  // pct: 0..100. status é derivado automaticamente.
+  // O flash de 100% NÃO dispara aqui — quem dispara é o orquestrador,
+  // que sabe quando o carro entrou no meio da próxima reta (decisão
+  // Flávio 2026-05-29: "pisca a tela verde no meio da próxima reta").
+  setAprendizado(pct) {
+    if (typeof pct !== 'number' || !Number.isFinite(pct)) {
+      throw new Error(`CockpitState: aprendizado.pct precisa ser número finito (recebeu ${pct})`);
+    }
+    const clamped = Math.max(0, Math.min(100, pct));
+    const status = statusFromPct(clamped);
+    const cur = this._state.aprendizado;
+    if (cur.pct === clamped && cur.status === status) return;
+    const prev = this._state;
+    this._state = { ...prev, aprendizado: { pct: clamped, status } };
+    this._emit(prev, ['aprendizado']);
+  }
+
+  setFlashIa(v) {
+    const next = !!v;
+    if (this._state.flashIa === next) return;
+    const prev = this._state;
+    this._state = { ...prev, flashIa: next };
+    this._emit(prev, ['flashIa']);
   }
 
   // ── Atalho usado pelo demo loop / debug — aplica preset do mockup ──

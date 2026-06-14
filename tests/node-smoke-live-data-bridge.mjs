@@ -88,19 +88,22 @@ t('LDB-07 rpmToShift respeita redlineRpm injetado', () => {
 
 // ── checkCriticalAlerts puro ────────────────────────────
 
-t('LDB-08 checkCriticalAlerts: erro ECU != 0 → grave Erro ECU', () => {
-  const a = checkCriticalAlerts(FRESH_T4000({ ecuErrorBits: 0x0005 }));
+// (10/06/2026) LDB-08/09/18/19/24 atualizados: ecuErrorBits era da especificação
+// ANTERIOR ao protocolo real do T3000 (25/05) — o dado real traz
+// sample.alarmes.{baixaPressaoOleo,...} (bitfield da central, ALARM_PRIORITY).
+t('LDB-08 checkCriticalAlerts: alarme da central (óleo baixo) → grave', () => {
+  const a = checkCriticalAlerts(FRESH_T4000({ alarmes: { baixaPressaoOleo: true } }));
   if (!a) throw new Error('deveria alertar');
   if (a.tipo !== MsgTipo.GRAVE) throw new Error('tipo');
-  if (!/erro ecu/i.test(a.texto)) throw new Error(`texto ${a.texto}`);
+  if (!/óleo baixo/i.test(a.texto)) throw new Error(`texto ${a.texto}`);
 });
 
-t('LDB-09 checkCriticalAlerts: prioridade — erro ECU vence outras condições', () => {
+t('LDB-09 checkCriticalAlerts: prioridade — alarme da central vence outras condições', () => {
   const a = checkCriticalAlerts(FRESH_T4000({
-    ecuErrorBits: 0x0001,
-    waterTempC: 130, // tb crítico, mas ECU vence
+    alarmes: { baixaPressaoOleo: true },
+    waterTempC: 130, // tb crítico, mas o bitfield da central vence
   }));
-  if (!/erro ecu/i.test(a.texto)) throw new Error('ECU deveria ter prioridade');
+  if (!/óleo baixo/i.test(a.texto)) throw new Error('bitfield deveria ter prioridade');
 });
 
 t('LDB-10 checkCriticalAlerts: água acima do limite → grave', () => {
@@ -155,22 +158,22 @@ t('LDB-17 ingestT4000 com RPM 5000 (66%) → cockpit.shift.mode=LIT, level médi
   if (s.level < 1 || s.level > 6) throw new Error(`level ${s.level}`);
 });
 
-t('LDB-18 ingestT4000 com erro ECU → cockpit.message=GRAVE Erro ECU', () => {
+t('LDB-18 ingestT4000 com alarme da central → cockpit.message GRAVE', () => {
   const cs = new CockpitState();
   const b = new LiveDataBridge({ cockpitState: cs });
-  b.ingestT4000(FRESH_T4000({ ecuErrorBits: 0x0001 }));
+  b.ingestT4000(FRESH_T4000({ alarmes: { baixaPressaoOleo: true } }));
   const m = cs.get().message;
   if (!m) throw new Error('sem message');
   if (m.tipo !== MsgTipo.GRAVE) throw new Error();
-  if (!/erro ecu/i.test(m.texto)) throw new Error();
+  if (!/óleo baixo/i.test(m.texto)) throw new Error();
 });
 
 t('LDB-19 ingestT4000 com alerta resolvido → cockpit.message volta a null', () => {
   const cs = new CockpitState();
   const b = new LiveDataBridge({ cockpitState: cs });
-  b.ingestT4000(FRESH_T4000({ ecuErrorBits: 0x0001 })); // alerta
+  b.ingestT4000(FRESH_T4000({ alarmes: { baixaPressaoOleo: true } })); // alerta
   if (!cs.get().message) throw new Error('alerta não setou');
-  b.ingestT4000(FRESH_T4000({ ecuErrorBits: 0 })); // resolveu
+  b.ingestT4000(FRESH_T4000({ alarmes: { baixaPressaoOleo: false } })); // resolveu
   if (cs.get().message !== null) throw new Error('alerta não limpou');
 });
 
@@ -216,8 +219,8 @@ t('LDB-24 stats expõe contadores', () => {
   const cs = new CockpitState();
   const b = new LiveDataBridge({ cockpitState: cs });
   b.ingestT4000(FRESH_T4000());
-  b.ingestT4000(FRESH_T4000({ ecuErrorBits: 1 }));
-  b.ingestT4000(FRESH_T4000({ ecuErrorBits: 0 }));
+  b.ingestT4000(FRESH_T4000({ alarmes: { baixaPressaoOleo: true } }));
+  b.ingestT4000(FRESH_T4000({ alarmes: { baixaPressaoOleo: false } }));
   b.ingestImuGps({ tMono: 1, source: 'iphone-imu', payload: { x: 0, y: 0 } });
   const s = b.getStats();
   if (s.t4000Count !== 3) throw new Error('t4000Count');

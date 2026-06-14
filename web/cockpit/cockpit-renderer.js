@@ -65,6 +65,44 @@ export class CockpitRenderer {
     if (all || changedKeys.includes('delta'))        this._renderDelta(state);
     if (all || changedKeys.includes('acao'))         this._renderAcao(state);
     if (all || changedKeys.includes('apex'))         this._renderApex(state);
+    if (all || changedKeys.includes('silencioso'))   this._renderSilencioso(state);
+    if (all || changedKeys.includes('aprendizado'))  this._renderAprendizado(state);
+    if (all || changedKeys.includes('flashIa'))      this._renderFlashIa(state);
+  }
+
+  // Pisca a tela verde quando a IA atinge 100% (calibrado).
+  // Decisão Flávio 2026-05-29.
+  _renderFlashIa(s) {
+    if (!this._b.device) return;
+    if (s.flashIa) {
+      this._b.device.dataset.flashIa = 'on';
+    } else {
+      delete this._b.device.dataset.flashIa;
+    }
+  }
+
+  // Barra de aprendizado do shift light contextual (canto esquerdo).
+  // Aplica --pct CSS custom property + data-status + texto numérico + texto status.
+  // Decisão Flávio 2026-05-29.
+  _renderAprendizado(s) {
+    const { aprendizadoBar, aprendizadoPct, aprendizadoStatusText } = this._b;
+    if (!aprendizadoBar) return;
+    const ap = s.aprendizado || { status: 'inativo', pct: 0 };
+    aprendizadoBar.dataset.status = ap.status;
+    if (aprendizadoBar.style && typeof aprendizadoBar.style.setProperty === 'function') {
+      aprendizadoBar.style.setProperty('--pct', `${Math.round(ap.pct)}%`);
+    }
+    if (aprendizadoPct) {
+      aprendizadoPct.textContent = `${Math.round(ap.pct)}%`;
+    }
+    if (aprendizadoStatusText) {
+      aprendizadoStatusText.textContent = ap.status;
+    }
+  }
+
+  _renderSilencioso(s) {
+    if (!this._b.device) return;
+    this._b.device.dataset.silencioso = s.silencioso ? 'sim' : 'nao';
   }
 
   _renderTrechoStatus(s) {
@@ -171,23 +209,6 @@ export class CockpitRenderer {
     }
   }
 
-  _renderApexApice(s) {
-    const ponto = this._b.apexApice;
-    const val = this._b.apexApiceVal;
-    if (!ponto) return;
-    const a = s.apex.apice;
-    if (a.estado) ponto.dataset.estado = a.estado;
-    if (val) {
-      if (typeof a.deltaM === 'number') {
-        // distância do Vmin ao ápice geométrico (+ = depois, - = antes, 0 = perfeito)
-        const sinal = a.deltaM > 0 ? '+' : '';
-        val.innerHTML = sinal + a.deltaM + '<small>m</small>';
-      } else {
-        val.innerHTML = '—';
-      }
-    }
-  }
-
   _renderApexSaida(s) {
     const ponto = this._b.apexSaida;
     const val = this._b.apexSaidaVal;
@@ -198,6 +219,33 @@ export class CockpitRenderer {
       val.innerHTML = e.valorKmh + '<small>km/h</small>';
     } else if (val && e.valorKmh === null) {
       val.innerHTML = '—';
+    }
+  }
+
+  _renderApexApice(s) {
+    // Decisão Flávio 27/05/2026: bolinha aponta pra ONDE ESTAVA o ápice
+    // ideal em relação à posição do carro. Número central = distância ao
+    // ponto ideal (m). Cor pelo estado (ok-melhor/ok-pior/pendente).
+    const ponto = this._b.apexApice;
+    const bola  = this._b.apexApiceBola;
+    const num   = this._b.apexApiceNum;
+    if (!ponto) return;
+    const a = s.apex.apice;
+    if (a.estado) ponto.dataset.estado = a.estado;
+    if (bola) {
+      if (typeof a.angleDeg === 'number' && Number.isFinite(a.angleDeg)) {
+        if (typeof bola.style?.setProperty === 'function') {
+          bola.style.setProperty('--erro-angulo', a.angleDeg + 'deg');
+        }
+      }
+      // cor da bolinha segue estado: ok-melhor=verde, ok-pior=vermelho.
+      if (a.estado === ApexEstado.OK_MELHOR) bola.dataset.erroCor = 'verde';
+      else if (a.estado === ApexEstado.OK_PIOR) bola.dataset.erroCor = 'vermelho';
+    }
+    if (num && typeof a.distM === 'number' && Number.isFinite(a.distM)) {
+      // formata em pt-BR com vírgula decimal (mantém paridade com mockup "1,2").
+      const fixed = a.distM >= 10 ? a.distM.toFixed(0) : a.distM.toFixed(1);
+      num.textContent = fixed.replace('.', ',');
     }
   }
 }
@@ -225,11 +273,16 @@ export function attachRendererToDocument(cockpitState, document) {
     apexFreio,
     apexFreioVal: apexFreio ? apexFreio.querySelector('.apex__valor') : null,
     apexApice,
-    apexApiceVal: apexApice ? apexApice.querySelector('.apex__valor') : null,
+    apexApiceBola: apexApice ? apexApice.querySelector('.apex__bola') : null,
+    apexApiceNum:  apexApice ? apexApice.querySelector('.apex__bola__num') : null,
     apexSaida,
     apexSaidaVal: apexSaida ? apexSaida.querySelector('.apex__valor') : null,
     alertBloco:   document.getElementById('alertBloco'),
     alertMsg:     document.getElementById('alertMsg'),
+    // Barra de aprendizado do shift light contextual (Flávio 2026-05-29)
+    aprendizadoBar:        document.getElementById('aprendizadoBar'),
+    aprendizadoPct:        document.getElementById('aprendizadoPct'),
+    aprendizadoStatusText: document.getElementById('aprendizadoStatusText'),
   };
   return new CockpitRenderer({ cockpitState, bindings });
 }

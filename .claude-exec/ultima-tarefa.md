@@ -38,7 +38,7 @@
 12. **Status inicial:** plano aprovado para execução pós-clear (aguardando clear do Flávio).
 
 ## STATUS DOS PEDAÇOS — espelho do plano (atualizar aqui também ao executar)
-FRENTE A: A1[x] A2[x] A3[x] A4[x] A5[ GATE-FLÁVIO ] A6[ ] A7[ ]
+FRENTE A: A1[x] A2[x] A3[x] A4[x] A5[x] A6[x] A7[ ]  (A7 = calibrar com sensor real seg/ter 15-16/06)
 FRENTE B: B1[x] B2[ ] B3[x] B4[x] B5[ ] B6[ ] B7[ ] B8[ ] (B2/B5-B8 = ETAPA 3, precisam do aparelho/ar livre)
 FRENTE C: C1[x] C2[x] C3[ GATE-FLÁVIO ] C4[ ] C5[ GATE-FLÁVIO ]
 
@@ -66,3 +66,21 @@ FRENTE C: C1[x] C2[x] C3[ GATE-FLÁVIO ] C4[ ] C5[ GATE-FLÁVIO ]
   src/telemetry/racebox-packet-parser.js + 9 testes na bateria. SEM pacote real salvo → validação
   byte-a-byte fica pra B2/B5 (aparelho/ar livre). Memória p1-fast-racebox-decodificador-2026-06-14.
   ETAPA 1 AUTÔNOMA COMPLETA. Restam só gates: A5 (navegador), C2/C3/C4/C5 (iPhone), A7 (sensor), B2/B5-B8 (ar livre).
+- A5 [x] 14/06 (REPOSICIONADO): tentei demonstrar a troca de fonte com tela rolando/comparação de gráficos —
+  Flávio reprovou ("não dá pra avaliar", "enchendo linguiça"). Ele ESCLARECEU o conceito: volta livre NÃO
+  tem tela de freio (só pontos do trecho); a tela de freio é a do TREINO trail braking (mockup vivo
+  mockup-cockpit-treino-trail-braking-VIVO-2026-06-11), que ELE JÁ APROVOU ("está pronta, não precisa
+  melhorar") — confirmado por print que ele mandou. Aprendizado: a troca de fonte (estimativa GPS→sensor)
+  é INVISÍVEL na tela (mesma curva, dado mais preciso); não havia tela nova a validar. Telas que inventei
+  (comparacao-fonte-freio.html + scripts demo) REMOVIDAS do worktree. Validação técnica da troca: bateria verde.
+- A6 [x] 14/06: Flávio autorizou "incorporar à versão oficial agora" (com cópia de segurança, sem pôr no ar).
+  Porte ADITIVO (ambiente isolado está atrás da oficial — só trouxe o trail, nunca o contrário):
+  freio-trecho.js + trail-cockpit-motor.js + trail-cockpit-tela.js (novos) + index-t3000.html (tela 10,5) +
+  patch do trail no main-t3000.js via merge de 3 vias (preservou as 47 linhas que a oficial tinha) +
+  3 testes (freio-trecho/trail-cockpit/trail-religacao) no package.json (atalhos + agregador smoke).
+  Backup: .claude-exec/backup-A6-trail-freio-2026-06-14 (main-t3000.js.orig, package.json.orig, ponto 7a5fb39).
+  BATERIA INTEIRA 64/64 VERDE. Marco: commit bb8c2410 (na linha main local; salvamento automático registrou o
+  resto junto). ENVIADO À NUVEM 14/06 como LINHA SEPARADA feat/freio-trail-braking-2026-06-14 (autorização Flávio
+  "linha separada"): origin/main (bff34e0f, app iPhone) INTACTA — divergência local x nuvem detectada (nuvem tem
+  consolidacao onda 1/3 que o PC não tinha; PC tinha 334 commits à frente, 327 auto-saves). PR opcional:
+  github.com/Flaviomarques1969/p1-fast/pull/new/feat/freio-trail-braking-2026-06-14. A7 (sensor seg/ter) pendente.

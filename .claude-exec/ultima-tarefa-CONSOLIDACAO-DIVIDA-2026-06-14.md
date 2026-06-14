@@ -28,3 +28,46 @@
 7. **Riscos:** registrar trabalho em andamento (trail-braking) na oficial = colocar não-validado.
    Mitigar: classificar status e só propor registro do que está pronto/validado.
 8. **Status inicial:** iniciado.
+
+---
+
+## ONDA 1 — CONCLUÍDA 14/06 (registrada na versão oficial)
+- Método: linha de consolidação a partir de origin/main + trazidos SÓ os paths seguros
+  (docs, supabase/migrations, _design-reference, tools, .claude-perguntas, .claude-exec, raiz .md).
+  Código em andamento (web/ios/tests/windows) NUNCA foi trazido. Trava verificou = 0.
+- Resultado: commit `f40132b5` "consolidacao onda 1" enviado a origin/main (deb46bed→f40132b5).
+  336 arquivos registrados. Dívida caiu de 483 → 151 arquivos.
+- Migrations registradas refletem o que JÁ está na nuvem (alinha código↔banco). Duplicata 0028
+  registrada COMO ESTÁ (não resolvida — tratar no futuro; resolver mexe no histórico, arriscado).
+- Trabalho na máquina intacto (supabase-config.js etc presentes).
+- DIVERGÊNCIA conhecida: main LOCAL tem o trabalho (326 registros) mas NÃO tem o commit de
+  consolidação (que está só em origin/main). Não reconciliei a main local de propósito. A Onda 2
+  usará o MESMO método (branch a partir de origin/main + trazer paths do painel) — não precisa pull.
+
+## ONDA 3 — CONCLUÍDA 14/06 (app iPhone registrado)
+- Conferência (workflow): app PRONTO — compila (BUILD SUCCEEDED) + 546 testes Swift verdes;
+  manutenção (12/06), treinos v1 (11/06) e telas Assistir/Teste Ao Vivo completas, sem nada pela metade.
+- Registrado SÓ `ios/` (20 arquivos) → commit `bff34e0f` em origin/main. Trava: fora-do-app = 0.
+- NÃO instalei no iPhone físico (registrar ≠ empacotar/instalar — passo à parte, não pedido).
+- Os testes JS (tests/) NÃO entraram: pertencem à Onda 2 (testam o painel; um deles falha pelo trail em andamento).
+
+## TELA 10,5 — JÁ ESTAVA PRONTA (verificado 14/06)
+- Flávio pediu "ajustar a tela 10,5". Ao verificar: `web/cockpit/index-t3000.html` JÁ TEM o ajuste
+  (`.device { height:590px; border-radius:0 }` + `.device .notch { display:none }`, conforme regra 12/06).
+- A conferência anterior reportou RL-08 FALHANDO — estava DESATUALIZADA. Rodei o teste: passa.
+- `node tests/node-smoke-trail-religacao.mjs` = 10 ok/0 fail. `npm run smoke` completo = EXIT 0 (tudo verde).
+- Não precisei editar nada. NÃO coloquei no ar.
+
+## PENDENTE — ONDA 2 (painel + testes JS + windows): SEM bloqueio técnico
+- Todos os testes passam; o painel está íntegro (tela 10,5 + motor do trail via GPS ligado, RL-09).
+- O que resta NÃO é técnico — é DECISÃO do Flávio: publicar o painel no ar agora (trail funciona com
+  régua de freio via GPS; o sensor de freio 15-16/06 refina depois) ou esperar o sensor + validação.
+- Recomendação: esperar o sensor/validação do trail pra publicar com confiança. Quando decidir publicar:
+  registrar painel+testes (método seletivo de origin/main) + deploy Vercel + reconciliar a main local.
+- Divergência da main local vs origin/main aumentou (3 commits de consolidação só no remoto) —
+  reconciliar quando fechar a Onda 2. NÃO fazer git pull na main local até lá.
+
+TASK_DONE (Onda 1):
+- Pedido conferido: sim · Ambiente: versão oficial (origin/main) · Produção (app/painel no ar) alterada: NÃO
+- Autorização: "resolve a onda 1" · Arquivos inspecionados: sim · Testes: trava de exclusão (0 código)
+- Resultado: concluído (Onda 1) · Pendências: Ondas 2 e 3.

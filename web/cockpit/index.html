@@ -14,10 +14,16 @@
 
   <!-- data-msg-state: oculta | ativa
        data-msg-tipo:  comunicacao | grave (define cor + comportamento de saída) -->
-  <div class="device" id="device" data-trecho-status="neutro" data-msg-state="oculta" data-shift-fire="idle">
+  <div class="device" id="device" data-trecho-status="neutro" data-msg-state="oculta" data-shift-fire="idle" data-rain="cooldown-alto" data-alerta-critico="ativo">
     <div class="notch"></div>
     <!-- overlay do FIRE — flash do device inteiro sincronizado com os 3 pulsos dos LEDs -->
     <div class="fire-overlay"></div>
+    <!-- chuva térmica premium (overlay global, intensidade decai com a temperatura) -->
+    <div class="rain-layer" id="rainLayer"></div>
+    <!-- alerta escandaloso (preditivo / crítico) — halo vermelho + mensagem piscando -->
+    <div class="alerta-escandaloso">
+      <div class="alerta-escandaloso__texto" id="alertaEscandalosoTexto"><span>MOTOR</span><span>AQUECENDO</span></div>
+    </div>
 
     <div class="telemetria-chip">
       <span class="telemetria-chip__dot ok"></span>
@@ -47,21 +53,46 @@
     </div>
 
     <section class="apex">
-      <div class="apex__ponto" data-estado="ok-pior">
+      <div class="apex__ponto" data-estado="ok-melhor">
+        <!-- Entrada = delta de velocidade vs melhor histórica daquele carro +
+             autódromo + configuração de pneu. Persiste entre sessões. -->
+        <span class="apex__valor">+3<small>km/h</small></span>
         <span class="apex__label">Entrada</span>
-        <span class="apex__valor">88<small>km/h</small></span>
       </div>
-      <div class="apex__ponto" data-estado="ok-pior" data-papel="freio">
+      <div class="apex__ponto is-pior-impacto" data-estado="ok-melhor" data-papel="freio">
+        <!-- Freio = delta em metros entre atual e referência histórica.
+             Positivo = passou do ponto (freou mais tarde do que deveria).
+             Negativo = faltou do ponto (freou antes). -->
+        <span class="apex__valor">+2<small>m</small></span>
         <span class="apex__label">Freio</span>
-        <span class="apex__valor">18<span class="apex__valor__sep">/</span>16<small>m</small></span>
       </div>
-      <div class="apex__ponto" data-estado="ativo">
+      <div class="apex__ponto apex__ponto--bola" data-estado="ok-pior" data-papel="apice">
+        <!-- ÁPICE: círculo cinza + bolinha na direção do ápice de referência.
+             Bolinha aponta pra ONDE ESTAVA o ápice ideal, em relação ao carro.
+             data-erro-angulo controla rotação (graus, 0 = pra direita do painel,
+             sentido horário; o JS define em runtime).
+             data-erro-cor: 'verde' ou 'vermelho'. -->
+        <span class="apex__bola" data-erro-cor="vermelho" style="--erro-angulo:180deg">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle cx="60" cy="60" r="44" fill="oklch(8% 0 0)"
+                    stroke="oklch(45% 0 0)" stroke-width="2"/>
+            <g class="apex__bola__sat-wrap">
+              <!-- bolinha com CENTRO EXATAMENTE na linha do círculo (raio=44 do
+                   centro 60,60 → cx=104). Metade dela fica dentro do círculo,
+                   metade fora. O ângulo gira via CSS conforme o vetor pro ápice
+                   de referência. -->
+              <circle class="apex__bola__sat" cx="104" cy="60" r="8"/>
+            </g>
+          </svg>
+          <span class="apex__bola__num">1,2</span>
+        </span>
         <span class="apex__label">Ápice</span>
-        <span class="apex__valor">71<small>km/h</small></span>
       </div>
-      <div class="apex__ponto" data-estado="pendente">
+      <div class="apex__ponto" data-estado="ok-pior">
+        <!-- Saída = delta de velocidade vs melhor histórica.
+             Mesma regra de persistência da Entrada. -->
+        <span class="apex__valor">−2<small>km/h</small></span>
         <span class="apex__label">Saída</span>
-        <span class="apex__valor">—</span>
       </div>
     </section>
 
@@ -77,19 +108,22 @@
       <div class="alert__msg" id="alertMsg">Pneu DD acima da janela</div>
     </aside>
 
+    <!-- Stint bar: voltas já rodadas (com cor) · box planejado · volta atual em
+         andamento (preenchimento progressivo) · voltas futuras (cinza apagado).
+         Marcas de recorde sempre em voltas JÁ rodadas (antes da atual). -->
     <div class="stint-bar">
-      <div class="stint-bar__block is-neutral"></div>
+      <div class="stint-bar__block is-warmup"></div>
       <div class="stint-bar__block is-faster"></div>
-      <div class="stint-bar__block is-slower"></div>
-      <div class="stint-bar__block is-faster"></div>
+      <div class="stint-bar__block is-best-alltime"></div>
       <div class="stint-bar__block is-slower"></div>
       <div class="stint-bar__block is-best-stint"></div>
-      <div class="stint-bar__block is-best-alltime"></div>
-      <div class="stint-bar__block is-current"></div>
+      <div class="stint-bar__block is-pit is-pit-now"></div>
+      <div class="stint-bar__block is-current" data-pace="faster" style="--pct:65%"></div>
       <div class="stint-bar__block"></div>
       <div class="stint-bar__block"></div>
       <div class="stint-bar__block"></div>
       <div class="stint-bar__block"></div>
+      <div class="stint-bar__block is-cooldown"></div>
     </div>
   </div>
 
@@ -118,6 +152,7 @@
     <button class="controls__btn" id="btnAuto" data-action="auto">Auto-loop (4s)</button>
     <button class="controls__btn" id="btnComm" data-action="comunicacao">Comunicação · sai em 4s</button>
     <button class="controls__btn" id="btnGrave" data-action="grave">Grave · fica até resolver</button>
+    <button class="controls__btn" id="btnBox" data-action="box">Box · volta agora</button>
     <button class="controls__btn" id="btnHide" data-action="ocultar">Ocultar</button>
   </div>
 

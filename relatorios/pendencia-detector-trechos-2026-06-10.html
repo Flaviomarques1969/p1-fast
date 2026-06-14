@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1 Fast — A pendência que continua, explicada (10/06/2026)</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system,Segoe UI,Roboto,sans-serif; background:#0a0d12; color:#e8edf2; line-height:1.6; }
+  .wrap { max-width:860px; margin:0 auto; padding:28px 20px 60px; }
+  h1 { font-size:21px; margin:0 0 6px; }
+  .sub { color:#8a97a6; font-size:13px; margin-bottom:24px; }
+  h2 { font-size:16px; margin:32px 0 12px; padding-bottom:6px; border-bottom:1px solid #1d2530; }
+  .card { background:#11161e; border:1px solid #1d2530; border-radius:12px; padding:16px 18px; margin:12px 0; }
+  .ok { color:#4ade80; font-weight:700; } .ruim { color:#f87171; font-weight:700; } .meio { color:#fbbf24; font-weight:700; }
+  .passos { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0; }
+  .passo { flex:1; min-width:130px; background:#0b0f15; border:1px solid #2a3442; border-radius:10px; padding:10px 12px; text-align:center; }
+  .passo .t { font-size:11px; letter-spacing:1.5px; color:#8a97a6; font-weight:800; }
+  .passo .s { font-size:22px; margin-top:4px; }
+  .curvas { display:flex; gap:6px; flex-wrap:wrap; margin:10px 0; }
+  .curva { flex:1; min-width:86px; border-radius:10px; padding:10px 6px; text-align:center; font-weight:800; font-size:13px; }
+  .curva.completa { background:#0d3320; color:#4ade80; border:1px solid #14532d; }
+  .curva.perdida { background:#3a1212; color:#f87171; border:1px solid #7f1d1d; }
+  .fluxo { display:flex; flex-direction:column; gap:6px; margin:12px 0; }
+  .fluxo .item { background:#0b0f15; border-left:3px solid #f59e0b; border-radius:8px; padding:10px 14px; font-size:14px; }
+  .fluxo .seta { text-align:center; color:#f59e0b; font-weight:700; }
+  table { width:100%; border-collapse:collapse; font-size:13.5px; margin:8px 0; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid #1d2530; }
+  th { color:#8a97a6; font-size:12px; text-transform:uppercase; letter-spacing:.5px; }
+  .muted { color:#8a97a6; font-size:13px; }
+  b.verde { color:#4ade80; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>A pendência que continua — o "vigia de curvas" perde passos</h1>
+  <div class="sub">Explicação da única pendência técnica aberta depois da migração de 10/06.</div>
+
+  <h2>1 · O que é o "vigia de curvas"</h2>
+  <div class="card">
+    <p>Dentro do painel existe uma peça que olha o GPS e reconhece, em cada curva, a sequência completa de 4 passos:</p>
+    <div class="passos">
+      <div class="passo"><div class="t">1 · ENTRADA</div><div class="s">cruzou a linha</div></div>
+      <div class="passo"><div class="t">2 · FREIO</div><div class="s">começou a frear</div></div>
+      <div class="passo"><div class="t">3 · ÁPICE</div><div class="s">passou no ponto</div></div>
+      <div class="passo"><div class="t">4 · SAÍDA</div><div class="s">cruzou a linha</div></div>
+    </div>
+    <p>Só quando os <b>4 passos fecham em sequência</b> a passagem daquela curva é medida e comparada com a melhor passagem histórica. <b>Se UM passo escapa, a curva inteira fica sem medição naquela volta.</b></p>
+  </div>
+
+  <h2>2 · O que o ensaio de ontem mostrou</h2>
+  <div class="card">
+    <p>Rodando as suas voltas reais no simulador, das 8 curvas de Brasília o vigia fechou a sequência completa em só <b>2 a 3 por volta</b> — nas outras, ele perdeu algum dos passos no meio:</p>
+    <div class="curvas">
+      <div class="curva completa">CURVA ✓</div>
+      <div class="curva completa">CURVA ✓</div>
+      <div class="curva perdida">CURVA ✗</div>
+      <div class="curva perdida">CURVA ✗</div>
+      <div class="curva completa">CURVA ✓</div>
+      <div class="curva perdida">CURVA ✗</div>
+      <div class="curva perdida">CURVA ✗</div>
+      <div class="curva perdida">CURVA ✗</div>
+    </div>
+    <p class="muted">Ilustrativo — o ponto é a proporção: ~3 medidas, ~5 perdidas por volta.</p>
+  </div>
+
+  <h2>3 · A consequência prática (por que importa)</h2>
+  <div class="card">
+    <div class="fluxo">
+      <div class="item">Curva sem os 4 passos fechados → <b>a passagem não é medida</b></div>
+      <div class="seta">↓</div>
+      <div class="item">Sem medição → <b>sem comparação</b> com a melhor passagem (sem delta daquela curva)</div>
+      <div class="seta">↓</div>
+      <div class="item">Sem comparação → a <b>tela de orientação</b> ("o que fazer no trecho que vem") não tem munição pra aquela curva → <b>fica oculta</b> (comportamento seguro: ela nunca inventa)</div>
+    </div>
+    <p>Resultado: hoje, na pista, a orientação só apareceria em <b>2-3 das 8 curvas</b>. Pra valer o seu conceito — melhorar continuamente em <b>cada</b> trecho — ela tem que aparecer nas 8.</p>
+  </div>
+
+  <h2>4 · O que NÃO é afetado (funcionando em produção)</h2>
+  <div class="card">
+    <table>
+      <tr><th>Função</th><th>Situação</th></tr>
+      <tr><td>Voltas fechando na linha de chegada (nº e tempo de volta)</td><td class="ok">funcionando</td></tr>
+      <tr><td>Dados do motor, shift light, mensagens críticas e de orientação por mensagem</td><td class="ok">funcionando</td></tr>
+      <tr><td>Vídeo + GPS + tela ASSISTIR (velocidade, volta, mapa com a bolinha)</td><td class="ok">funcionando</td></tr>
+      <tr><td>Religação automática de tudo (cabo, nuvem, GPS, vídeo)</td><td class="ok">funcionando</td></tr>
+      <tr><td>Medição por curva → comparação → tela de orientação nas 8 curvas</td><td class="meio">parcial (2-3 de 8)</td></tr>
+    </table>
+  </div>
+
+  <h2>5 · Por que acontece e como vou consertar</h2>
+  <div class="card">
+    <p><b>Por quê:</b> os 4 passos são em sequência rígida — perdeu um, perdeu a curva.
+    <b>Atualização 10/06 (observação do Flávio):</b> a suspeita do ápice a "24 m da linha" estava errada na FONTE —
+    ápice de verdade nunca fica a mais de ~10 m da linha do carro. Os pontos-semente foram REFEITOS a partir
+    das 4 voltas reais (ponto mais fundo do arco em cada curva): agora todos ficam entre <b>0,7 e 10,2 m</b> da
+    linha real. Com isso, as suspeitas restantes se concentram nos passos do FREIO (reconhecimento da
+    desaceleração) e na sequência rígida (perdeu um passo, perde a curva e talvez a seguinte). Importante:
+    <b>ontem foi a primeira vez na história do projeto que essa peça viu uma volta real</b> — as voltas de
+    23/05 eram artificiais. O defeito sempre existiu; agora ele tem nome e pistas boas.</p>
+    <p><b>Como consertar (próxima sessão, em desenvolvimento):</b></p>
+    <table>
+      <tr><th>Passo</th><th>O quê</th></tr>
+      <tr><td>1</td><td>Rodar o replay com a sonda já instalada e listar, curva a curva, QUAL passo escapa</td></tr>
+      <tr><td>2</td><td>Afrouxar o que estiver rígido demais (raio do ápice-semente, tolerância das linhas, rearme quando pula uma curva)</td></tr>
+      <tr><td>3</td><td>Repetir o replay até as <b class="verde">8 de 8 curvas</b> fecharem, volta após volta</td></tr>
+      <tr><td>4</td><td>Te mostrar a tela de orientação acendendo de verdade, e aí você autoriza a atualização do painel no ar</td></tr>
+    </table>
+    <p class="muted">Bônus que ajuda de graça: na próxima ida à pista, o GPS de 25x/segundo do RaceBox (vs 1x/segundo dos dados antigos) torna os 4 passos muito mais fáceis de reconhecer — e as melhores passagens regravadas com ele aposentam os ápices-semente.</p>
+  </div>
+
+  <h2>Resumo em 1 frase</h2>
+  <div class="card">
+    <p>O sistema já <b>vê a volta inteira</b>, mas ainda só <b>mede bem 2-3 das 8 curvas</b> — e sem medição a tela de orientação fica muda naquelas curvas; a próxima sessão é afinar o vigia até medir as 8. Pra retomar: diga <b>"continua a orientação"</b>.</p>
+  </div>
+</div>
+</body>
+</html>

@@ -4,6 +4,7 @@ const alertMsg = document.getElementById('alertMsg');
 const btnAuto = document.getElementById('btnAuto');
 const btnComm = document.getElementById('btnComm');
 const btnGrave = document.getElementById('btnGrave');
+const btnBox = document.getElementById('btnBox');
 const btnHide = document.getElementById('btnHide');
 
 let autoTimer = null;
@@ -15,6 +16,8 @@ function setMessage(tipo){
     alertMsg.textContent = 'Pneu DD acima da janela';
   } else if(tipo === 'grave'){
     alertMsg.textContent = 'Pressão óleo crítica';
+  } else if(tipo === 'box'){
+    alertMsg.textContent = 'VOLTAR AO BOX AGORA';
   }
   device.dataset.msgState = 'ativa';
   if(commTimer) clearTimeout(commTimer);
@@ -29,7 +32,7 @@ function hideMessage(){
   device.dataset.msgState = 'oculta';
 }
 function clearActive(){
-  [btnAuto, btnComm, btnGrave, btnHide].forEach(b => b.classList.remove('is-active'));
+  [btnAuto, btnComm, btnGrave, btnBox, btnHide].forEach(b => b.classList.remove('is-active'));
 }
 function startAutoLoop(){
   if(autoTimer) clearInterval(autoTimer);
@@ -69,6 +72,12 @@ btnGrave.addEventListener('click', () => {
   clearActive();
   btnGrave.classList.add('is-active');
   setMessage('grave');
+});
+btnBox.addEventListener('click', () => {
+  stopAutoLoop();
+  clearActive();
+  btnBox.classList.add('is-active');
+  setMessage('box');
 });
 btnHide.addEventListener('click', () => {
   stopAutoLoop();
@@ -208,3 +217,34 @@ shiftButtons.forEach(b => {
 
 // boot — auto-cycle do shift light pra mostrar a progressão completa
 startShiftAutoCycle();
+
+// ─── Chuva térmica premium — gera 90 gotas em 3 camadas (foreground/midground/background)
+const rainLayer = document.getElementById('rainLayer');
+function gerarChuva(n=90){
+  if(!rainLayer) return;
+  rainLayer.innerHTML = '';
+  for(let i=0; i<n; i++){
+    const drop = document.createElement('span');
+    drop.className = 'drop';
+    const r = Math.random();
+    let camada;
+    if(r < 0.15){
+      camada = { w: 2.4 + Math.random()*0.8, h: 26 + Math.random()*18,
+                 dur: 1.0 + Math.random()*0.6, op: 0.85 + Math.random()*0.15 };
+    } else if(r < 0.70){
+      camada = { w: 1.4 + Math.random()*0.6, h: 14 + Math.random()*14,
+                 dur: 1.5 + Math.random()*1.0, op: 0.65 + Math.random()*0.30 };
+    } else {
+      camada = { w: 0.9 + Math.random()*0.4, h: 8 + Math.random()*10,
+                 dur: 2.4 + Math.random()*1.5, op: 0.30 + Math.random()*0.30 };
+    }
+    drop.style.left = (Math.random()*100) + '%';
+    drop.style.width = camada.w.toFixed(2) + 'px';
+    drop.style.height = camada.h.toFixed(0) + 'px';
+    drop.style.animationDelay = (-Math.random()*2.5).toFixed(2) + 's';
+    drop.style.animationDuration = camada.dur.toFixed(2) + 's';
+    drop.style.opacity = camada.op.toFixed(2);
+    rainLayer.appendChild(drop);
+  }
+}
+gerarChuva();

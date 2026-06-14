@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>P1 Fast — Configuração de Stint</title>
+<style>
+  :root{
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --border: #2a2a2a;
+    --hairline: #3a3a3a;
+    --ink: #fff;
+    --muted: #888;
+    --faint: #555;
+    --cor-durabilidade: oklch(70% 0.18 230);
+    --cor-normal:       oklch(75% 0.20 145);
+    --cor-agressivo:    oklch(70% 0.24 25);
+    --ff: 'Inter', system-ui, sans-serif;
+    --ff-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:var(--ff);background:var(--bg);color:var(--ink);
+    min-height:100vh;padding:32px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .container{max-width:1180px;margin:0 auto;}
+  h1{
+    font-size:24px;font-weight:600;letter-spacing:-0.02em;
+    margin-bottom:6px;
+  }
+  .subtitle{color:var(--muted);font-size:13px;margin-bottom:32px;}
+
+  .section{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:12px;padding:24px;margin-bottom:24px;
+  }
+  .section h2{
+    font-size:11px;text-transform:uppercase;letter-spacing:0.25em;
+    color:var(--muted);font-weight:600;margin-bottom:16px;
+  }
+
+  /* Combinação */
+  .combinacao{display:grid;grid-template-columns:repeat(4, 1fr);gap:16px;}
+  .field label{
+    display:block;font-size:10px;text-transform:uppercase;
+    letter-spacing:0.18em;color:var(--muted);margin-bottom:6px;
+  }
+  .field select, .field input{
+    width:100%;background:#0a0a0a;border:1px solid var(--border);
+    border-radius:6px;padding:10px 12px;color:var(--ink);
+    font-family:var(--ff);font-size:14px;
+  }
+  .field select:focus, .field input:focus{
+    outline:none;border-color:var(--cor-normal);
+  }
+
+  /* Modos */
+  .modos{display:grid;grid-template-columns:repeat(3, 1fr);gap:16px;}
+  .modo{
+    background:#0a0a0a;border:2px solid var(--border);border-radius:12px;
+    padding:20px;cursor:pointer;transition:all 240ms ease;
+    position:relative;overflow:hidden;
+  }
+  .modo:hover{border-color:var(--hairline);transform:translateY(-2px);}
+  .modo.is-selected{
+    border-color:var(--cor-ativa);
+    box-shadow:0 0 0 4px color-mix(in oklab, var(--cor-ativa) 22%, transparent),
+               0 16px 40px color-mix(in oklab, var(--cor-ativa) 18%, transparent);
+  }
+  .modo[data-modo="durabilidade"]{--cor-ativa:var(--cor-durabilidade);}
+  .modo[data-modo="normal"]      {--cor-ativa:var(--cor-normal);}
+  .modo[data-modo="agressivo"]   {--cor-ativa:var(--cor-agressivo);}
+
+  .modo__nome{
+    font-size:18px;font-weight:600;letter-spacing:-0.01em;
+    color:var(--cor-ativa);margin-bottom:8px;
+  }
+  .modo__faixa{
+    font-family:var(--ff-mono);font-size:13px;
+    color:var(--ink);margin-bottom:14px;
+    background:#000;padding:8px 12px;border-radius:6px;
+    display:inline-block;letter-spacing:0.06em;
+  }
+  .modo__desc{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:14px;}
+  .modo__meta{
+    display:grid;grid-template-columns:repeat(2, 1fr);gap:8px;
+    font-size:11px;color:var(--faint);
+  }
+  .modo__meta span{display:block;}
+  .modo__meta strong{color:var(--ink);font-weight:500;}
+
+  /* Envelope */
+  .envelope{display:grid;grid-template-columns:repeat(2, 1fr);gap:24px 32px;}
+  .envelope-item{
+    border-left:3px solid var(--cor-ativa-envelope, var(--cor-normal));
+    padding-left:14px;
+  }
+  .envelope-item__label{
+    font-size:10px;text-transform:uppercase;letter-spacing:0.18em;
+    color:var(--muted);margin-bottom:4px;
+  }
+  .envelope-item__valor{
+    font-family:var(--ff-mono);font-size:18px;color:var(--ink);
+  }
+  .envelope-item__desc{font-size:11px;color:var(--faint);margin-top:2px;}
+
+  /* Ações */
+  .actions{
+    display:flex;justify-content:flex-end;gap:12px;margin-top:24px;
+  }
+  .btn{
+    padding:14px 28px;border-radius:8px;font-family:var(--ff);
+    font-size:14px;font-weight:600;letter-spacing:0.02em;cursor:pointer;
+    border:none;transition:all 200ms ease;
+  }
+  .btn-primary{
+    background:var(--cor-ativa-envelope, var(--cor-normal));
+    color:#000;
+  }
+  .btn-primary:hover{transform:translateY(-1px);filter:brightness(1.1);}
+  .btn-secondary{
+    background:transparent;color:var(--muted);
+    border:1px solid var(--border);
+  }
+  .btn-secondary:hover{color:var(--ink);border-color:var(--hairline);}
+  .btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+  /* Vida útil do item */
+  .vida-util{
+    margin-top:18px;border:1px solid var(--border);border-radius:10px;
+    background:#0a0a0a;padding:14px 16px;
+  }
+  .vida-util__titulo{
+    font-size:10px;text-transform:uppercase;letter-spacing:0.18em;
+    color:var(--muted);margin-bottom:10px;
+  }
+  .vida-util__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .vida-util__item{display:flex;flex-direction:column;gap:2px;}
+  .vida-util__num{font-family:var(--ff-mono);font-size:22px;font-weight:700;color:var(--ink);}
+  .vida-util__rotulo{font-size:11px;color:var(--faint);}
+  .vida-util__nota{font-size:11px;color:var(--faint);margin-top:10px;}
+
+  /* Propósito do stint */
+  .propositos{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start;}
+  .proposito{
+    background:#0a0a0a;border:2px solid var(--border);border-radius:12px;
+    padding:20px;cursor:pointer;transition:all 240ms ease;
+  }
+  .proposito:hover{border-color:var(--hairline);transform:translateY(-2px);}
+  .proposito.is-selected{
+    border-color:var(--cor-normal);
+    box-shadow:0 0 0 4px color-mix(in oklab, var(--cor-normal) 22%, transparent),
+               0 16px 40px color-mix(in oklab, var(--cor-normal) 14%, transparent);
+  }
+  .proposito__icone{width:28px;height:28px;color:var(--cor-normal);margin-bottom:10px;}
+  .proposito__nome{font-size:18px;font-weight:600;margin-bottom:6px;}
+  .proposito__desc{font-size:13px;color:var(--muted);line-height:1.5;}
+  .subescolha{
+    display:none;flex-wrap:wrap;gap:8px;margin-top:14px;
+    border-top:1px solid var(--border);padding-top:14px;
+  }
+  .proposito.is-selected .subescolha{display:flex;}
+  .subescolha__divisor{
+    width:100%;font-size:10px;text-transform:uppercase;letter-spacing:0.18em;
+    color:var(--faint);margin-top:4px;
+  }
+  .chip{
+    padding:8px 14px;border:1px solid var(--border);border-radius:999px;
+    font-size:13px;color:var(--muted);cursor:pointer;transition:all 160ms ease;
+  }
+  .chip:hover{color:var(--ink);border-color:var(--hairline);}
+  .chip.is-on{
+    color:#000;background:var(--cor-normal);border-color:var(--cor-normal);font-weight:600;
+  }
+  .chip--tecnica.is-on{background:oklch(74% 0.16 73);border-color:oklch(74% 0.16 73);}
+  /* Etiqueta de honestidade do treino (pleno × proxy) — catálogo 11/06 */
+  .chip__etq{font-size:9px;letter-spacing:0.08em;opacity:0.65;margin-left:6px;font-weight:700;}
+
+  /* Brief do treino — o "como fazer" se ensina parado; trava o APROVAR */
+  .brief{
+    margin-top:18px;border:1px solid var(--border);border-left:4px solid oklch(74% 0.16 73);
+    border-radius:10px;background:#0a0a0a;padding:16px 18px;
+  }
+  .brief__titulo{font-size:14px;font-weight:700;letter-spacing:0.04em;}
+  .brief__etq{display:inline-block;font-size:10px;letter-spacing:0.12em;border:1px solid var(--hairline);
+    border-radius:999px;padding:2px 10px;margin-left:8px;color:var(--muted);vertical-align:middle;}
+  .brief__texto{font-size:13px;color:var(--muted);line-height:1.55;margin-top:8px;max-width:860px;}
+  .brief__sub{font-size:10px;text-transform:uppercase;letter-spacing:0.18em;color:var(--faint);margin-top:12px;}
+  .brief ul{margin:6px 0 0 18px;font-size:13px;color:var(--muted);line-height:1.5;}
+  .brief__ressalva{font-size:12px;color:oklch(74% 0.16 73);margin-top:10px;max-width:860px;}
+  .brief__ok{
+    margin-top:14px;padding:10px 18px;border-radius:8px;border:1px solid oklch(74% 0.16 73);
+    background:transparent;color:oklch(74% 0.16 73);font-size:13px;font-weight:700;cursor:pointer;
+    letter-spacing:0.04em;transition:all 160ms ease;
+  }
+  .brief__ok:hover{background:oklch(74% 0.16 73 / .12);}
+  .brief__ok.is-ok{background:oklch(74% 0.16 73);color:#000;cursor:default;}
+
+  /* Ghost */
+  .ghost-linha{
+    display:flex;align-items:center;justify-content:space-between;gap:24px;
+    margin-top:18px;border:1px solid var(--border);border-radius:10px;
+    background:#0a0a0a;padding:14px 16px;
+  }
+  .ghost-linha__nome{font-size:14px;font-weight:600;}
+  .ghost-linha__desc{font-size:12px;color:var(--muted);margin-top:2px;max-width:640px;}
+  .toggle{
+    width:52px;height:28px;border-radius:999px;background:var(--border);
+    position:relative;cursor:pointer;transition:background 200ms ease;flex:none;
+  }
+  .toggle__bola{
+    position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;
+    background:var(--muted);transition:all 200ms ease;
+  }
+  .toggle.is-on{background:var(--cor-normal);}
+  .toggle.is-on .toggle__bola{left:27px;background:#000;}
+
+  /* Voltas e paradas */
+  .plano-voltas{display:grid;grid-template-columns:180px 1fr;gap:24px;align-items:start;}
+  .field--voltas input{font-family:var(--ff-mono);font-size:22px;text-align:center;}
+  .paradas__rotulo{
+    display:block;font-size:10px;text-transform:uppercase;
+    letter-spacing:0.18em;color:var(--muted);margin-bottom:8px;
+  }
+  .paradas__lista{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
+  .parada{
+    display:grid;grid-template-columns:130px 1fr 36px;gap:10px;align-items:center;
+  }
+  .parada input{
+    background:#0a0a0a;border:1px solid var(--border);border-radius:6px;
+    padding:9px 12px;color:var(--ink);font-size:13px;width:100%;
+  }
+  .parada input[type=number]{font-family:var(--ff-mono);text-align:center;}
+  .parada__remover{
+    width:32px;height:32px;border-radius:6px;border:1px solid var(--border);
+    background:transparent;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;
+  }
+  .parada__remover:hover{color:var(--ink);border-color:var(--hairline);}
+  .btn-mini{
+    padding:9px 16px;border-radius:6px;border:1px solid var(--border);
+    background:transparent;color:var(--muted);font-size:13px;cursor:pointer;
+    transition:all 160ms ease;
+  }
+  .btn-mini:hover{color:var(--ink);border-color:var(--hairline);}
+
+  /* Status */
+  .status{
+    margin-top:16px;padding:12px 16px;border-radius:6px;
+    background:#0a0a0a;font-size:13px;color:var(--muted);
+    border:1px solid var(--border);min-height:46px;
+  }
+  .status.ok{color:oklch(80% 0.22 145);border-color:oklch(50% 0.16 145);}
+  .status.err{color:oklch(70% 0.24 25);border-color:oklch(50% 0.18 25);}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Planejamento do Stint</h1>
+  <p class="subtitle">Combinação já vem preenchida (um carro, um piloto, um autódromo). Escolha o propósito, o plano de voltas, o modo do shift light e aprove o envelope.</p>
+
+  <!-- COMBINAÇÃO -->
+  <div class="section">
+    <h2>Combinação ativa — padrões naturais</h2>
+    <div class="combinacao">
+      <div class="field">
+        <label>Carro</label>
+        <select id="selCarro">
+          <option value="641a81e7-3192-4e68-8183-b8401f105574">Bubi — Celta 1.4 (motor Onix preparado)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Piloto</label>
+        <select id="selPiloto">
+          <option value="flavio">Flávio</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Autódromo</label>
+        <select id="selAutodromo">
+          <option value="brasilia">Brasília — completo</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Tipo de pneu / roda</label>
+        <select id="selPneu">
+          <option value="westlake-z108-185-60-r14">Westlake Z108 185/60 R14</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Vida do pneu</label>
+        <select id="selVida">
+          <option value="0-30">Novo (0-30% gasto)</option>
+          <option value="30-60">Médio (30-60% gasto)</option>
+          <option value="60+">Gasto (60%+ gasto)</option>
+        </select>
+      </div>
+    </div>
+    <div class="vida-util" id="vidaUtil">
+      <div class="vida-util__titulo">Vida útil do item selecionado — desde a última troca registrada</div>
+      <div class="vida-util__grid">
+        <div class="vida-util__item"><span class="vida-util__num" id="vuTempo">—</span><span class="vida-util__rotulo">tempo de carro ligado</span></div>
+        <div class="vida-util__item"><span class="vida-util__num" id="vuVoltas">—</span><span class="vida-util__rotulo">voltas reais</span></div>
+        <div class="vida-util__item"><span class="vida-util__num" id="vuKm">—</span><span class="vida-util__rotulo">quilômetros</span></div>
+      </div>
+      <div class="vida-util__nota" id="vuNota">Consultando registros…</div>
+    </div>
+  </div>
+
+  <!-- PROPÓSITO DO STINT -->
+  <div class="section">
+    <h2>Propósito do stint — o que você quer desta sessão</h2>
+    <div class="propositos" id="propositosContainer">
+      <div class="proposito" data-proposito="livre">
+        <svg class="proposito__icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c4-1 5-9 9-9s5 6 9 5"/><path d="M3 21h18"/></svg>
+        <div class="proposito__nome">Rodar livre</div>
+        <div class="proposito__desc">Volta livre, painel padrão completo. Sem foco específico.</div>
+      </div>
+      <div class="proposito" data-proposito="testar">
+        <svg class="proposito__icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4.5 4.5 0 0 0-6.1 5.9L3 17.8V21h3.2l5.6-5.6a4.5 4.5 0 0 0 5.9-6.1l-3 3-2.4-2.4 3-3z"/></svg>
+        <div class="proposito__nome">Testar o carro</div>
+        <div class="proposito__desc">O painel foca na parte escolhida e mostra os dados dela o stint inteiro.</div>
+        <div class="subescolha" id="subTestar">
+          <div class="chip" data-foco="motor">Motor</div>
+          <div class="chip" data-foco="freios">Freios</div>
+          <div class="chip" data-foco="pneus">Pneus e rodas</div>
+          <div class="chip" data-foco="cambio">Câmbio</div>
+          <div class="chip" data-foco="suspensao">Suspensão</div>
+          <div class="chip" data-foco="eletrica">Elétrica</div>
+        </div>
+      </div>
+      <div class="proposito" data-proposito="treinar">
+        <svg class="proposito__icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg>
+        <div class="proposito__nome">Treinar habilidade</div>
+        <div class="proposito__desc">Voltas focadas numa disciplina: técnica de pilotagem ou um dos 6 pontos do trecho.</div>
+        <div class="subescolha" id="subTreinar">
+          <!-- Chips gerados do catálogo canônico (catalogo-treinos.js) — uma
+               fonte só pra tela, motor do treino e painel (decisão 11/06). -->
+        </div>
+      </div>
+    </div>
+    <!-- Brief do treino: aparece ao escolher a habilidade e TRAVA o Aprovar
+         até ser confirmado. O "como fazer" se ensina parado, no box. -->
+    <div class="brief" id="briefTreino" style="display:none"></div>
+    <div class="ghost-linha">
+      <div>
+        <div class="ghost-linha__nome">Ghost na tela</div>
+        <div class="ghost-linha__desc">Mapa do trecho com o traçado da melhor passagem pra seguir. A escolha fica registrada no plano; o mapa ao vivo entra na próxima frente.</div>
+      </div>
+      <div class="toggle" id="toggleGhost" role="switch" aria-checked="false" tabindex="0"><div class="toggle__bola"></div></div>
+    </div>
+  </div>
+
+  <!-- VOLTAS E PARADAS -->
+  <div class="section">
+    <h2>Plano de voltas e paradas</h2>
+    <div class="plano-voltas">
+      <div class="field field--voltas">
+        <label>Voltas do stint</label>
+        <input type="number" id="inpVoltas" min="1" max="99" value="10">
+      </div>
+      <div class="paradas">
+        <label class="paradas__rotulo">Paradas no box — em qual volta e por quê</label>
+        <div id="paradasLista" class="paradas__lista"></div>
+        <button type="button" class="btn-mini" id="btnAddParada">Adicionar parada</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODO -->
+  <div class="section">
+    <h2>Modo do shift light</h2>
+    <div class="modos" id="modosContainer">
+      <!-- Cartões inseridos via JS -->
+    </div>
+  </div>
+
+  <!-- ENVELOPE -->
+  <div class="section">
+    <h2>Envelope de segurança — limites duros que a IA NÃO pode violar</h2>
+    <div class="envelope" id="envelope">
+      <!-- Preenchido via JS -->
+    </div>
+  </div>
+
+  <!-- AÇÕES -->
+  <div class="actions">
+    <button class="btn btn-secondary" id="btnCancelar">Cancelar</button>
+    <button class="btn btn-primary"   id="btnAprovar" disabled>Aprovar envelope e iniciar stint</button>
+  </div>
+
+  <div class="status" id="status">Selecione um modo pra aprovar o envelope.</div>
+
+</div>
+
+<script type="module" src="./configuracao-stint.js"></script>
+</body>
+</html>

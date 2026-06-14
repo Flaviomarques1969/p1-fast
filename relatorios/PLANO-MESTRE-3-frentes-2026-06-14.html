@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1 Fast — Plano Mestre · 3 Frentes</title>
+<style>
+  :root{
+    --bg:#0b0d10; --panel:#13171c; --panel2:#171c22; --line:#232a32;
+    --ink:#eef2f6; --mut:#9aa6b2; --mut2:#6b7682;
+    --eu:#36c98d; --voce:#f4b740; --hard:#e0573e; --prod:#c64f9a; --info:#5aa6f0;
+    --shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 14px 40px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:none;width:100%;padding:30px clamp(20px,4vw,64px) 80px}
+  header.top{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap;
+    padding-bottom:22px;border-bottom:1px solid var(--line);margin-bottom:26px}
+  h1{font-size:27px;font-weight:700;letter-spacing:.2px;margin:0 0 6px}
+  .sub{color:var(--mut);font-size:14px;max-width:70ch}
+  .date{color:var(--mut2);font-size:13px;white-space:nowrap;text-align:right}
+  .status{display:flex;gap:14px;flex-wrap:wrap;margin:22px 0 30px}
+  .stat{flex:1 1 240px;background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow)}
+  .stat .k{display:flex;align-items:center;gap:9px;color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.7px}
+  .stat .v{font-size:15px;margin-top:7px;color:var(--ink)}
+  .stat .v b{color:#fff}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:20px;align-items:start}
+  .col{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+  .col > .head{padding:18px 20px 14px;border-bottom:1px solid var(--line)}
+  .col .tag{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut2)}
+  .col h2{margin:6px 0 8px;font-size:18px}
+  .col .est{color:var(--mut);font-size:13.5px}
+  .pieces{padding:10px 14px 18px}
+  .piece{display:flex;gap:12px;padding:12px 8px;border-bottom:1px solid #1a1f26}
+  .piece:last-child{border-bottom:0}
+  .num{flex:0 0 auto;width:30px;height:30px;border-radius:9px;border:1px solid var(--line);
+    background:#0f1318;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;color:var(--mut)}
+  .pbody{flex:1 1 auto;min-width:0}
+  .ptitle{font-weight:600;font-size:14.5px;margin-bottom:3px}
+  .pdesc{color:var(--mut);font-size:13px}
+  .who{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;
+    padding:3px 9px;border-radius:999px;margin-top:8px;border:1px solid transparent}
+  .w-eu{color:var(--eu);background:rgba(54,201,141,.10);border-color:rgba(54,201,141,.30)}
+  .w-voce{color:var(--voce);background:rgba(244,183,64,.10);border-color:rgba(244,183,64,.30)}
+  .w-prod{color:var(--prod);background:rgba(198,79,154,.10);border-color:rgba(198,79,154,.30)}
+  .w-hard{color:var(--hard);background:rgba(224,87,62,.10);border-color:rgba(224,87,62,.30)}
+  .ico{width:14px;height:14px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .ico-lg{width:16px;height:16px;stroke:var(--mut);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  section.block{margin-top:34px}
+  section.block > h3{font-size:13px;letter-spacing:1.3px;text-transform:uppercase;color:var(--mut2);
+    margin:0 0 16px;display:flex;align-items:center;gap:9px}
+  .dec{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px}
+  .card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
+    border-radius:14px;padding:16px 18px;box-shadow:var(--shadow)}
+  .card .qid{font-size:11px;font-weight:700;letter-spacing:1px;color:var(--voce)}
+  .card .q{font-size:14.5px;font-weight:600;margin:6px 0 10px}
+  .card .rec{font-size:13px;color:var(--mut)}
+  .card .rec b{color:var(--eu)}
+  .tl{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+  .tl .card .when{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--info);font-weight:700}
+  .tl .card ul{margin:10px 0 0;padding-left:18px;color:var(--mut);font-size:13px}
+  .tl .card li{margin:4px 0}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0 0;color:var(--mut);font-size:12.5px}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .foot{margin-top:38px;color:var(--mut2);font-size:12.5px;border-top:1px solid var(--line);padding-top:18px}
+  .foot b{color:var(--mut)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>P1 Fast — Plano Mestre · 3 Frentes</h1>
+      <div class="sub">A tarefa do trail-braking está concluída de ponta a ponta (o tipo de cada curva já está no ar). Estas são as três frentes que você mandou planejar. Depois do clear, eu executo um pedaço por vez até terminar tudo.</div>
+    </div>
+    <div class="date">14/06/2026 (sábado)<br>sensor de freio chega seg/ter</div>
+  </header>
+
+  <div class="status">
+    <div class="stat">
+      <div class="k"><svg class="ico-lg" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Já entregue</div>
+      <div class="v">Trail-braking + passagem completa. <b>Tipo da curva já em produção.</b> Sem pendência dessa tarefa.</div>
+    </div>
+    <div class="stat">
+      <div class="k"><svg class="ico-lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> O que manda o ritmo</div>
+      <div class="v">O <b>sensor de pressão do freio chega segunda/terça</b>. É ele que troca a estimativa por GPS por medição real.</div>
+    </div>
+    <div class="stat">
+      <div class="k"><svg class="ico-lg" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg> Como vou tocar</div>
+      <div class="v">Passo a passo, pedaço por pedaço. Os pontos onde <b>preciso de você</b> estão marcados em cada cartão.</div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><i class="dot" style="background:var(--eu)"></i> Eu faço sozinho</span>
+    <span><i class="dot" style="background:var(--voce)"></i> Você decide / valida</span>
+    <span><i class="dot" style="background:var(--prod)"></i> Produção só em leitura</span>
+    <span><i class="dot" style="background:var(--hard)"></i> Depende de hardware / ar livre</span>
+  </div>
+
+  <section class="block">
+  <div class="grid">
+
+    <!-- FRENTE A -->
+    <div class="col">
+      <div class="head">
+        <div class="tag">Frente A · prioridade</div>
+        <h2>Trail-braking pronto pro sensor de freio</h2>
+        <div class="est">O treino de freio já existe e o módulo que lê o sensor real já está pronto — mas vive num ambiente isolado e o caminho ao vivo ainda usa só estimativa por GPS. Objetivo: ligar a pressão real e deixar tudo no lugar antes do sensor chegar.</div>
+      </div>
+      <div class="pieces">
+        <div class="piece"><div class="num">A1</div><div class="pbody"><div class="ptitle">Fechar as decisões do treino</div><div class="pdesc">Critério do acerto + quando o gráfico-alvo aparece.</div><span class="who w-voce"><svg class="ico" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg> Você decide (D1, D2)</span></div></div>
+        <div class="piece"><div class="num">A2</div><div class="pbody"><div class="ptitle">Levar a pressão até o motor do treino</div><div class="pdesc">Só trafegar o dado (já existe); sem mudar a tela ainda.</div><span class="who w-eu"><svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7-7-7M5 12h14"/></svg> Eu faço</span></div></div>
+        <div class="piece"><div class="num">A3</div><div class="pbody"><div class="ptitle">Ligar a fusão real (estimativa → medida)</div><div class="pdesc">Detecta o sensor; usa a pressão; mostra a fonte na tela.</div><span class="who w-eu"><svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7-7-7M5 12h14"/></svg> Eu faço</span></div></div>
+        <div class="piece"><div class="num">A4</div><div class="pbody"><div class="ptitle">Simulador com freada de verdade</div><div class="pdesc">Hoje manda pressão zero; criar perfil realista pra testar sem hardware.</div><span class="who w-eu"><svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7-7-7M5 12h14"/></svg> Eu faço</span></div></div>
+        <div class="piece"><div class="num">A5</div><div class="pbody"><div class="ptitle">Você confere no navegador</div><div class="pdesc">Ver a troca de fonte e a curva mudando, em velocidade real.</div><span class="who w-voce"><svg class="ico" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> Você valida</span></div></div>
+        <div class="piece"><div class="num">A6</div><div class="pbody"><div class="ptitle">Incorporar à versão oficial</div><div class="pdesc">Trazer do ambiente isolado pro oficial, com testes. Backup antes.</div><span class="who w-eu"><svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7-7-7M5 12h14"/></svg> Eu faço</span></div></div>
+        <div class="piece"><div class="num">A7</div><div class="pbody"><div class="ptitle">Calibrar com o sensor físico</div><div class="pdesc">Ajustar faixas com o dado real do Bubi quando instalar.</div><span class="who w-hard"><svg class="ico" viewBox="0 0 24 24"><path d="M14 7l-1.5-1.5a3.5 3.5 0 00-5 5L4 14l2 2 3.5-3.5a3.5 3.5 0 005-5L18 6"/></svg> Sensor (seg/ter)</span></div></div>
+      </div>
+    </div>
+
+    <!-- FRENTE B -->
+    <div class="col">
+      <div class="head">
+        <div class="tag">Frente B</div>
+        <h2>Integrar o RaceBox (GPS/IMU externo)</h2>
+        <div class="est">O aparelho já foi testado e funciona. No código ainda não tem nada — só a "casca de espera". A frente é construir a leitura. Boa parte eu faço sozinho; precisa só de uma decisão sua e de testes ao ar livre/aparelho ligado.</div>
+      </div>
+      <div class="pieces">
+        <div class="piece"><div class="num">B1</div><div class="pbody"><div class="ptitle">Travar por onde ele entra</div><div class="pdesc">Notebook Windows, Mini PC ou iPhone. Recomendo Windows (bate com a decisão ADR-023).</div><span class="who w-voce"><svg class="ico" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg> Você decide (D3)</span></div></div>
+        <div class="piece"><div class="num">B3</div><div class="pbody"><div class="ptitle">Decodificador do pacote</div><div class="pdesc">Transforma os bytes em dados (posição, força G, bateria).</div><span class="who w-eu"><svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7-7-7M5 12h14"/></svg> Eu faço</span></div></div>
+        <div class="piece"><div class="num">B4</div><div class="pbody"><div class="ptitle">Teste automático do decodificador</div><div class="pdesc">Pacote bom, checksum errado, duplicado, fora de ordem.</div><span class="who w-eu"><svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7-7-7M5 12h14"/></svg> Eu faço</span></div></div>
+        <div class="piece"><div class="num">B2</div><div class="pbody"><div class="ptitle">Confirmar sinal de GPS ao ar livre</div><div class="pdesc">Recriar o leitor (sumiu) e testar com satélites de verdade.</div><span class="who w-hard"><svg class="ico" viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M3 12h18M12 3a15 15 0 010 18"/></svg> Ar livre</span></div></div>
+        <div class="piece"><div class="num">B5</div><div class="pbody"><div class="ptitle">Driver de conexão</div><div class="pdesc">Conecta no aparelho e recebe o fluxo contínuo; reconecta sozinho.</div><span class="who w-hard"><svg class="ico" viewBox="0 0 24 24"><path d="M14 7l-1.5-1.5a3.5 3.5 0 00-5 5L4 14l2 2 3.5-3.5a3.5 3.5 0 005-5L18 6"/></svg> Aparelho ligado</span></div></div>
+        <div class="piece"><div class="num">B6</div><div class="pbody"><div class="ptitle">Ligar no sistema de telemetria</div><div class="pdesc">Vira a fonte primária de posição quando estiver presente.</div><span class="who w-eu"><svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7-7-7M5 12h14"/></svg> Eu faço</span></div></div>
+        <div class="piece"><div class="num">B7</div><div class="pbody"><div class="ptitle">Testes de falha e reconexão</div><div class="pdesc">Buraco de sinal, drift, queda e volta.</div><span class="who w-eu"><svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7-7-7M5 12h14"/></svg> Eu faço</span></div></div>
+        <div class="piece"><div class="num">B8</div><div class="pbody"><div class="ptitle">Atualizar a especificação</div><div class="pdesc">Trocar "Mini PC" pelo caminho decidido; preservar o histórico.</div><span class="who w-eu"><svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7-7-7M5 12h14"/></svg> Eu faço</span></div></div>
+      </div>
+    </div>
+
+    <!-- FRENTE C -->
+    <div class="col">
+      <div class="head">
+        <div class="tag">Frente C</div>
+        <h2>Validar pendências antigas</h2>
+        <div class="est">A sincronização de estoque e manutenção já está no ar desde 03/06. Falta só comprovar que funciona ponta a ponta — e isso depende de você com o iPhone desbloqueado na mão por 1 minuto. O resto eu faço.</div>
+      </div>
+      <div class="pieces">
+        <div class="piece"><div class="num">C1</div><div class="pbody"><div class="ptitle">Foto do estado da nuvem</div><div class="pdesc">Contar o que tem hoje, pra comparar depois.</div><span class="who w-prod"><svg class="ico" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> Eu faço (leitura)</span></div></div>
+        <div class="piece"><div class="num">C2</div><div class="pbody"><div class="ptitle">Roteiro do teste (1 página)</div><div class="pdesc">Que peça mexer e por onde. Sem jargão.</div><span class="who w-voce"><svg class="ico" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg> Você decide (D4, D5)</span></div></div>
+        <div class="piece"><div class="num">C3</div><div class="pbody"><div class="ptitle">Você roda o teste no iPhone</div><div class="pdesc">Mexe numa peça, toca "Sincronizar agora", vê zerar.</div><span class="who w-voce"><svg class="ico" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg> Você no iPhone</span></div></div>
+        <div class="piece"><div class="num">C4</div><div class="pbody"><div class="ptitle">Confirmo na nuvem que chegou</div><div class="pdesc">Comparo com a foto do passo C1.</div><span class="who w-prod"><svg class="ico" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> Eu faço (leitura)</span></div></div>
+        <div class="piece"><div class="num">C5</div><div class="pbody"><div class="ptitle">Conferência visual da oficial</div><div class="pdesc">Hub, Estoque, Manutenção, Sincronização no aparelho.</div><span class="who w-voce"><svg class="ico" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg> Você no iPhone</span></div></div>
+      </div>
+    </div>
+
+  </div>
+  </section>
+
+  <!-- DECISÕES -->
+  <section class="block">
+    <h3><svg class="ico-lg" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg> Decisões suas (recomendação pronta em cada uma)</h3>
+    <div class="dec">
+      <div class="card"><div class="qid">D1 · FRENTE A</div><div class="q">Quando a passagem conta como acerto no treino de freio?</div><div class="rec"><b>Recomendo: 2 de 2</b> — seguiu o formato da melhor passagem daquele trecho + ainda freando no ponto mais lento. O ponto exato da freada vira aviso, não reprovação. Quando a pressão real entrar, aperto pra 3 de 3 sem mudar a tela.</div></div>
+      <div class="card"><div class="qid">D2 · FRENTE A</div><div class="q">O gráfico de freio aparece sempre ou só quando erra?</div><div class="rec"><b>Recomendo: híbrido</b> — contagem e luzes do freio sempre visíveis; o gráfico detalhado (verde/vermelho) só aparece quando há desvio. Tela limpa por padrão, leitura fácil em pista.</div></div>
+      <div class="card"><div class="qid">D3 · FRENTE B</div><div class="q">Por onde o RaceBox entra?</div><div class="rec"><b>Recomendo: notebook Windows</b> — é o centro de captura que você já confirmou (junto com T4000 e câmera) e bate com a decisão de arquitetura já fechada. A especificação antiga dizia "Mini PC", está desatualizada.</div></div>
+      <div class="card"><div class="qid">D4 · FRENTE C</div><div class="q">Como testar o envio automático?</div><div class="rec"><b>Recomendo: botão "Sincronizar agora"</b> — você vê o contador "Pendentes" zerar na hora, prova visual imediata.</div></div>
+      <div class="card"><div class="qid">D5 · FRENTE C</div><div class="q">Que mexida usar no teste, sem sujar o estoque?</div><div class="rec"><b>Recomendo: +1 e depois −1</b> numa peça existente — o saldo não muda e prova o caminho mais usado.</div></div>
+    </div>
+  </section>
+
+  <!-- TIMELINE -->
+  <section class="block">
+    <h3><svg class="ico-lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Sequência recomendada</h3>
+    <div class="tl">
+      <div class="card"><div class="when">Etapa 1 · fim de semana</div><ul>
+        <li>Frente A: A1 (você decide) → A2 → A3 → A4 → A5 (você no navegador) → A6</li>
+        <li>Adianto em paralelo: C1 (leitura) e B1 (você decide) → B3 → B4</li>
+        <li>Quase tudo autônomo, só 2 decisões rápidas e 1 olhada no navegador</li>
+      </ul></div>
+      <div class="card"><div class="when">Etapa 2 · quando você puder, iPhone na mão</div><ul>
+        <li>Frente C: C2 (decide) → C3 (você testa) → C4 (confirmo) → C5 (você confere)</li>
+        <li>Fecha a pendência que está aberta desde 03/06</li>
+      </ul></div>
+      <div class="card"><div class="when">Etapa 3 · seg/ter, com o sensor e ar livre</div><ul>
+        <li>Frente A: A7 — calibrar com o sensor físico instalado</li>
+        <li>Frente B: B2 (ar livre) → B5 → B6 → B7 → B8</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <div class="foot">
+    <b>Como vai funcionar:</b> você revisa este mapa, dá o clear, e eu começo pela Etapa 1, um pedaço por vez, marcando cada um como pronto com a prova (teste rodado, tela validada). Onde eu precisar de você, eu paro e mostro um cartão de decisão ou de ação — a não ser que você me diga agora "segue todas as recomendações", aí eu não paro nas decisões D1 a D5.<br><br>
+    <b>Contrato salvo em:</b> .claude-exec/PLANO-MESTRE-3-frentes-2026-06-14.md · retomada em .claude-exec/ultima-tarefa.md · tarefa anterior preservada no backup.
+  </div>
+
+</div>
+</body>
+</html>

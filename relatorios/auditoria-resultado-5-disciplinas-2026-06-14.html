@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resultado da Auditoria — P1 Fast — 5 disciplinas</title>
+<style>
+  :root{
+    --bg:#0e1726; --card:#152033; --card2:#1b2840; --line:#27374f;
+    --tx:#e8eef7; --tx2:#a9b8cd; --tx3:#7b8aa3;
+    --azul:#4c8dff;
+    --grave:#ff5c6c; --grave-bg:#3a1820; --grave-bd:#5a2630;
+    --medio:#ffb454; --medio-bg:#3a2d16; --medio-bd:#5a4520;
+    --baixo:#8aa0c0; --baixo-bg:#1d2740; --baixo-bd:#34466a;
+    --ok:#46c98b; --ok-bg:#11331f; --ok-bd:#1f5a3a;
+    --ref:#6f7d96; --ref-bg:#1a2236; --ref-bd:#2c3a55;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg); color:var(--tx); font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; width:100%}
+  .wrap{width:100%; padding:0 28px 64px}
+  header.top{width:100%; padding:30px 28px 22px; border-bottom:1px solid var(--line); background:linear-gradient(180deg,#11203a,#0e1726)}
+  h1{margin:0; font-size:27px}
+  .sub{color:var(--tx2); margin-top:6px}
+  .meta-row{display:flex; flex-wrap:wrap; gap:10px; margin-top:16px}
+  .pill{font-size:12.5px; padding:6px 12px; border-radius:999px; border:1px solid var(--line); color:var(--tx2); background:#0f1a2e}
+  .pill b{color:var(--tx)}
+  .pill.read{border-color:var(--azul); color:#bcd4ff}
+  .section-title{font-size:13px; letter-spacing:1.4px; text-transform:uppercase; color:var(--tx3); margin:34px 0 12px; font-weight:700}
+
+  /* placar */
+  .placar{display:grid; grid-template-columns:repeat(5,1fr); gap:14px}
+  .kpi{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; text-align:center}
+  .kpi .n{font-size:30px; font-weight:800; line-height:1}
+  .kpi .l{color:var(--tx2); font-size:12.5px; margin-top:7px}
+  .kpi.grave .n{color:var(--grave)} .kpi.medio .n{color:var(--medio)} .kpi.baixo .n{color:var(--baixo)}
+  .kpi.ok .n{color:var(--ok)} .kpi.ref .n{color:var(--ref)}
+
+  .destaque{background:var(--card2); border:1px solid var(--line); border-left:4px solid var(--azul); border-radius:12px; padding:18px 20px; margin-top:16px}
+  .destaque h3{margin:0 0 8px; font-size:16px}
+  .destaque p{margin:7px 0; color:var(--tx2)}
+  .destaque b{color:var(--tx)}
+
+  /* disciplina */
+  .disc{background:var(--card); border:1px solid var(--line); border-radius:14px; margin-top:18px; overflow:hidden}
+  .disc > .head{padding:18px 22px; background:linear-gradient(180deg,#1a2945,#152033); border-bottom:1px solid var(--line); display:flex; gap:16px; align-items:flex-start}
+  .num{font-size:28px; font-weight:800; color:var(--azul); min-width:38px}
+  .head h2{margin:0; font-size:19px}
+  .head p{margin:5px 0 0; color:var(--tx2); font-size:14px; max-width:1150px}
+  .body{padding:16px 22px}
+  .funciona{background:var(--ok-bg); border:1px solid var(--ok-bd); border-radius:9px; padding:11px 14px; margin-bottom:14px; font-size:13.5px; color:#bfe6cf}
+  .funciona b{color:#dafbe7}
+
+  table.ach{width:100%; border-collapse:collapse}
+  table.ach th{font-size:11px; letter-spacing:.6px; text-transform:uppercase; color:var(--tx3); text-align:left; padding:8px; border-bottom:1px solid var(--line); font-weight:700}
+  table.ach td{padding:11px 8px; border-bottom:1px solid var(--line); vertical-align:top; font-size:13.4px; color:var(--tx2)}
+  table.ach tr:last-child td{border-bottom:none}
+  table.ach .id{font-family:ui-monospace,Menlo,monospace; font-size:12px; color:var(--tx3); white-space:nowrap}
+  table.ach b{color:var(--tx)}
+  .ev{display:block; margin-top:4px; color:var(--tx3); font-size:11.5px; font-family:ui-monospace,Menlo,monospace}
+
+  .sev{display:inline-block; font-size:11px; padding:2px 8px; border-radius:6px; font-weight:700; white-space:nowrap}
+  .s-grave{background:var(--grave-bg); color:var(--grave); border:1px solid var(--grave-bd)}
+  .s-medio{background:var(--medio-bg); color:var(--medio); border:1px solid var(--medio-bd)}
+  .s-baixo{background:var(--baixo-bg); color:var(--baixo); border:1px solid var(--baixo-bd)}
+  .s-ok{background:var(--ok-bg); color:var(--ok); border:1px solid var(--ok-bd)}
+  .s-ref{background:var(--ref-bg); color:var(--ref); border:1px solid var(--ref-bd)}
+  .arrow{color:var(--tx3); margin:0 4px}
+  .strike{text-decoration:line-through; opacity:.5}
+  .status-tag{font-size:10.5px; color:var(--tx3); display:block; margin-top:3px}
+
+  .footer{margin-top:30px; background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:20px 22px}
+  .footer h3{margin:0 0 10px; font-size:17px}
+  .footer ol{margin:0; padding-left:20px}
+  .footer li{margin:10px 0; color:var(--tx2); font-size:14px}
+  .footer li b{color:var(--tx)}
+  .nota{margin-top:14px; padding:12px 14px; background:#0f1a2e; border:1px solid var(--line); border-radius:9px; color:var(--tx2); font-size:13px}
+  @media (max-width:1000px){ .placar{grid-template-columns:repeat(2,1fr)} }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>Resultado da Auditoria — P1 Fast</h1>
+  <div class="sub">Cinco disciplinas auditadas a fundo. Cada achado sério passou por uma segunda checagem (um avaliador tentou derrubá-lo).</div>
+  <div class="meta-row">
+    <span class="pill"><b>Data:</b> 14/06/2026</span>
+    <span class="pill read"><b>Modo:</b> somente leitura — nada foi alterado</span>
+    <span class="pill"><b>Testes rodados:</b> 345+ na telemetria e 546 no app — zero falha</span>
+    <span class="pill"><b>Achados:</b> 40 (1 grave real, 3 médios, 12 baixos, resto confirmado OK ou descartado)</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="section-title">Placar geral (severidade final, depois da segunda checagem)</div>
+  <div class="placar">
+    <div class="kpi grave"><div class="n">1</div><div class="l">Grave real</div></div>
+    <div class="kpi medio"><div class="n">3</div><div class="l">Médios</div></div>
+    <div class="kpi baixo"><div class="n">12</div><div class="l">Baixos (higiene)</div></div>
+    <div class="kpi ok"><div class="n">19</div><div class="l">Confirmado funcionando</div></div>
+    <div class="kpi ref"><div class="n">5</div><div class="l">Falso alarme descartado</div></div>
+  </div>
+
+  <div class="destaque">
+    <h3>O que a segunda checagem revelou</h3>
+    <p>O primeiro levantamento acendeu <b>7 alarmes graves</b>. Depois da checagem (um avaliador tentando derrubar cada um), <b>nenhum dos 7 se confirmou como grave</b>: 3 eram falso alarme e 4 foram rebaixados. Em compensação, <b>1 ponto de segurança que parecia médio subiu para grave</b>.</p>
+    <p><b>Saldo honesto:</b> o sistema está mais saudável do que o susto inicial sugeria. Sobra <b>1 achado grave de verdade</b> — e é de segurança (porta aberta do painel). O núcleo técnico — captura, telemetria, alertas, dados de referência — está sólido e testado.</p>
+    <p><b>Falsos alarmes que a checagem desarmou:</b> o suposto erro de unidade no alvo de potência (a conta está certa), a "contaminação" da referência por voltas de teste (não acontece, os fluxos são separados) e calibrações de alerta "pendentes" (já existe um módulo novo calibrado e aprovado por você em uso).</p>
+  </div>
+
+  <!-- 1 SEGURANCA -->
+  <div class="disc">
+    <div class="head"><div class="num">1</div><div>
+      <h2>Segurança e acesso à nuvem</h2>
+      <p>É a disciplina com o único achado grave real. Resumo: o painel está no ar publicamente e algumas tabelas do shift light aceitam leitura/escrita de qualquer um pela internet. O dano hoje é contido — porque o painel usa limites fixos no código, não os do banco — mas a porta precisa ser fechada.</p>
+    </div></div>
+    <div class="body">
+      <div class="funciona"><b>Confirmado seguro:</b> a chave mestra (de administrador) NÃO está exposta no código; as rotinas da nuvem exigem login e checam a equipe; o canal de comando que parecia perigoso (do aparelho do carro) não tem ninguém o usando — está órfão.</div>
+      <table class="ach">
+        <tr><th style="width:64px">Item</th><th style="width:150px">Gravidade</th><th>Achado e o que fazer</th></tr>
+        <tr>
+          <td class="id">SEG-05</td>
+          <td><span class="sev s-medio strike">médio</span><span class="arrow">→</span><span class="sev s-grave">grave</span><span class="status-tag">elevado na checagem</span></td>
+          <td><b>Painel no ar sem trava: dá pra escrever nas tabelas do shift light pela internet.</b> O painel está publicado (p1t4000) e as tabelas de envelope de segurança e pontos de troca aceitam escrita com a chave pública, sem validar quem está mandando. Qualquer pessoa poderia ler, alterar ou apagar esses dados de aprendizado.<br><b>Fazer:</b> ligar a trava de acesso por equipe nessas tabelas (em desenvolvimento, testando que o painel continua funcionando) e migrar com sua autorização. <i>Atenção registrada: fechar o acesso público sem cuidado quebra o painel — a abertura foi uma decisão sua de 11/06; é preciso desenhar a trava certa, não fechar no muque.</i><span class="ev">migrations 0034/0035 (sem trava) · pontos-troca-persister.js / configuracao-stint.js (chave pública)</span></td>
+        </tr>
+        <tr>
+          <td class="id">SEG-01</td>
+          <td><span class="sev s-grave strike">grave</span><span class="arrow">→</span><span class="sev s-medio">médio</span><span class="status-tag">rebaixado</span></td>
+          <td><b>Três tabelas do shift light sem trava de acesso por equipe.</b> Envelope de segurança, pontos de troca e qualidade de troca. Rebaixado porque o painel hoje não usa esses valores na operação (ver SEG-06).<br><b>Fazer:</b> mesma correção do SEG-05 (ligar a trava).<span class="ev">POLICIES-VIVAS-2026-06-11.md · migration 0034</span></td>
+        </tr>
+        <tr>
+          <td class="id">SEG-03</td>
+          <td><span class="sev s-grave strike">grave</span><span class="arrow">→</span><span class="sev s-medio">médio</span><span class="status-tag">rebaixado</span></td>
+          <td><b>O painel grava direto no banco com a chave pública, sem login real.</b> Rebaixado porque os dados são técnicos (não financeiros/médicos) e o produto final será o painel nativo do Windows, com login de verdade.<br><b>Fazer:</b> ligar login real (já está planejado).<span class="ev">pontos-troca-persister.js · pilot-reaction-persister.js</span></td>
+        </tr>
+        <tr>
+          <td class="id">SEG-02</td>
+          <td><span class="sev s-medio strike">médio</span><span class="arrow">→</span><span class="sev s-baixo">baixo</span><span class="status-tag">rebaixado</span></td>
+          <td><b>Chave pública repetida em 35 arquivos.</b> É chave pública por natureza (risco baixo), mas desorganizado e pode levar alguém a repetir o padrão com uma chave que NÃO devia ser pública.<br><b>Fazer:</b> centralizar a chave num lugar só.<span class="ev">grep do token em web/cockpit/*.js = 35</span></td>
+        </tr>
+        <tr>
+          <td class="id">SEG-06</td>
+          <td><span class="sev s-grave strike">grave</span><span class="arrow">→</span><span class="sev s-ref">descartado</span><span class="status-tag">falso alarme</span></td>
+          <td><b>"Painel aceitaria limite de motor adulterado" — não procede.</b> O shift light usa limites fixos no código (do Bubi), não os do banco. Mesmo que alguém adultere a tabela, a operação do carro não muda. Por isso o dano de SEG-01/05 é contido.<span class="ev">shift-light-orquestrador.js usa ENVELOPE_DEFAULT_BUBI fixo</span></td>
+        </tr>
+        <tr>
+          <td class="id">SEG-04</td>
+          <td><span class="sev s-medio strike">médio</span><span class="arrow">→</span><span class="sev s-ok">sem risco</span><span class="status-tag">descartado</span></td>
+          <td><b>Fila de comandos do aparelho do carro aberta — mas órfã.</b> A tabela existe e está aberta, mas ninguém a usa no sistema real (o fluxo de verdade é outro). Sem porta de entrada efetiva.<span class="ev">migration 0023 · nenhum consumidor encontrado</span></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 2 DESEMPENHO -->
+  <div class="disc">
+    <div class="head"><div class="num">2</div><div>
+      <h2>Desempenho e tempo real</h2>
+      <p>Sólido no que dá para medir pelo código. Nenhum problema grave. O que sobra só fecha de verdade medindo numa sessão real de pista (aquecimento do iPhone, fluidez do painel, atraso do dado).</p>
+    </div></div>
+    <div class="body">
+      <div class="funciona"><b>Confirmado funcionando:</b> captura de movimento a 100x/seg com folga; o cálculo que encaixa o carro no traçado é rapidíssimo (0,009 milésimo de segundo por ponto); a troca automática entre cabo e nuvem está implementada e testada.</div>
+      <table class="ach">
+        <tr><th style="width:64px">Item</th><th style="width:150px">Gravidade</th><th>Achado e o que fazer</th></tr>
+        <tr><td class="id">DES-08</td><td><span class="sev s-medio strike">médio</span><span class="arrow">→</span><span class="sev s-baixo">baixo</span></td><td><b>iPhone não monitora a própria temperatura.</b> Rebaixado: já há leitura de modo de economia + indicadores ao vivo de frequência que avisam se cair, e a orientação operacional é ventilar e evitar sol. <b>Fazer:</b> medir numa sessão longa real; se necessário, ler a temperatura no app.<span class="ev">LiveTelemetryRecorder.swift (sem thermalState) · mitigação em 3 camadas</span></td></tr>
+        <tr><td class="id">DES-03</td><td><span class="sev s-medio strike">médio</span><span class="arrow">→</span><span class="sev s-baixo">baixo</span></td><td><b>Painel redesenha a cada amostra, sem agrupar.</b> Rebaixado: a frequência real é de só 10x/seg e o redesenho é seletivo; o produto final é nativo. <b>Fazer:</b> medir a fluidez na tela 10,5" numa volta real.<span class="ev">cockpit-renderer.js / cockpit-state.js</span></td></tr>
+        <tr><td class="id">DES-02</td><td><span class="sev s-medio strike">médio</span><span class="arrow">→</span><span class="sev s-ref">descartado</span></td><td><b>"Captura pausa em segundo plano" — é limitação conhecida do iPhone, já tratada.</b> Documentada, testada em campo, e o painel do piloto nem usa esse dado.</td></tr>
+        <tr><td class="id">DES-06 / DES-07</td><td><span class="sev s-baixo">baixo</span></td><td><b>Detalhes de eficiência:</b> janelas de cálculo que crescem com a sessão e ausência de gestão de conexão na rotina da nuvem. Sem impacto observado. Acompanhar quando houver muitos carros simultâneos.</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 3 CONFIABILIDADE -->
+  <div class="disc">
+    <div class="head"><div class="num">3</div><div>
+      <h2>Confiabilidade — o que funciona e o que está quebrado de verdade</h2>
+      <p>O núcleo está confiável e testado. Os dois maiores sustos eram falso alarme. Sobra uma pendência que é decisão sua: a análise de "acertou o ápice" só liga quando você marcar as curvas.</p>
+    </div></div>
+    <div class="body">
+      <div class="funciona"><b>Confirmado funcionando (com prova):</b> 345 testes da telemetria + 546 testes do app passando, zero falha; detector ao vivo, captura/armazenamento sem perda, troca cabo↔nuvem; curva do motor e dados de Brasília aprovados e íntegros.</div>
+      <table class="ach">
+        <tr><th style="width:64px">Item</th><th style="width:150px">Gravidade</th><th>Achado e o que fazer</th></tr>
+        <tr><td class="id">CONF-01</td><td><span class="sev s-grave strike">grave</span><span class="arrow">→</span><span class="sev s-ok">pendência sua</span></td><td><b>Análise de ápice desligada até você calibrar as 8 curvas de Brasília.</b> Não é defeito: é etapa pendente. O sistema detecta o ápice real, mas só diz se você acertou "cedo / na hora / tarde" depois que você marcar visualmente o ponto de cada curva. <b>Fazer:</b> você marca as 8 curvas no configurador (decisão/ação sua).<span class="ev">seed-tracks.js (8 trechos em DEFAULT) · modo degradado documentado</span></td></tr>
+        <tr><td class="id">CONF-03</td><td><span class="sev s-grave strike">grave</span><span class="arrow">→</span><span class="sev s-ref">descartado</span></td><td><b>"6 alertas do motor sem calibração" — falso alarme.</b> Esse código antigo não é usado. Foi substituído por um módulo novo com 20 regras já calibradas e aprovadas por você em 27/05, em uso hoje.<span class="ev">critical-rules.js não é importado · alertas-criticos.js (v2 aprovado) ativo</span></td></tr>
+        <tr><td class="id">CONF-07</td><td><span class="sev s-medio strike">médio</span><span class="arrow">→</span><span class="sev s-ref">descartado</span></td><td><b>"Curva do motor não integrada" — falso alarme.</b> Integração completa e testada (104 testes); só falta aplicar a carga inicial na nuvem, com modo seguro de reserva caso falte dado.</td></tr>
+        <tr><td class="id">CONF-02</td><td><span class="sev s-medio strike">médio</span><span class="arrow">→</span><span class="sev s-ok">sem risco</span></td><td><b>Código de detecção antigo convive com o novo — por decisão.</b> O caminho que está no ar não usa o antigo. Separação intencional e documentada.</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 4 INTEGRIDADE -->
+  <div class="disc">
+    <div class="head"><div class="num">4</div><div>
+      <h2>Integridade e fidelidade dos dados</h2>
+      <p>Alta — cerca de 95% íntegro. Os dois maiores sustos (alvo de potência e contaminação da referência) foram descartados na checagem. Sobra higiene menor.</p>
+    </div></div>
+    <div class="body">
+      <div class="funciona"><b>Confirmado correto:</b> a conta do alvo de potência (a conversão de unidade está certa); a leitura da sonda lambda (banda larga, como deve ser); o ápice que se recalcula sozinho (por sua decisão); a curva do motor selada e aprovada.</div>
+      <table class="ach">
+        <tr><th style="width:64px">Item</th><th style="width:150px">Gravidade</th><th>Achado e o que fazer</th></tr>
+        <tr><td class="id">INT-01</td><td><span class="sev s-medio strike">suspeita</span><span class="arrow">→</span><span class="sev s-ok">sem erro</span></td><td><b>"Alvo de potência com unidade errada (CV x kW)" — falso alarme.</b> A conta está certa: o sistema converte corretamente (120 CV = 89,48 kW, conferido). Nada a fazer.<span class="ev">dyno-csv-parser.js (×0,7457) · teste conferido</span></td></tr>
+        <tr><td class="id">INT-03</td><td><span class="sev s-grave strike">grave</span><span class="arrow">→</span><span class="sev s-ref">descartado</span></td><td><b>"Voltas de teste contaminam o melhor tempo" — não acontece.</b> A referência é alimentada só pelo painel ao vivo (com bloqueio de simulador). As voltas de teste vivem em outra tabela. Os fluxos são separados.</td></tr>
+        <tr><td class="id">INT-02</td><td><span class="sev s-medio strike">médio</span><span class="arrow">→</span><span class="sev s-baixo">baixo</span></td><td><b>Tipo de pneu como texto livre.</b> Rebaixado: os valores hoje vêm do código (não digitados à mão). <b>Fazer:</b> padronizar a lista de pneus quando for abrir pra digitação.<span class="ev">migration 0026 (tipo_pneu text, sem lista fixa)</span></td></tr>
+        <tr><td class="id">INT-05</td><td><span class="sev s-medio strike">médio</span><span class="arrow">→</span><span class="sev s-baixo">baixo</span></td><td><b>Separar volta real de provisória depende de quem consulta.</b> Rebaixado: o único consumidor já filtra certo, e foi decisão sua autorizada. <b>Fazer:</b> criar uma "vista" só com voltas reais, pra blindar consultas futuras.<span class="ev">configuracao-stint.js filtra origem=painel-ao-vivo</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 5 QUALIDADE -->
+  <div class="disc">
+    <div class="head"><div class="num">5</div><div>
+      <h2>Qualidade de código e disciplina de processo</h2>
+      <p>Base forte: muitos testes e documentação completa. O ponto real é higiene — muito trabalho preso em linhas/ambientes separados, alinhado a uma dor sua conhecida (perder versões finais).</p>
+    </div></div>
+    <div class="body">
+      <div class="funciona"><b>Confirmado saudável:</b> 928 testes ao todo (telemetria + app), zero falha; documentação de decisões completa (14 decisões registradas); o arquivo que garante empacotamento reproduzível está protegido.</div>
+      <table class="ach">
+        <tr><th style="width:64px">Item</th><th style="width:150px">Gravidade</th><th>Achado e o que fazer</th></tr>
+        <tr><td class="id">QUAL-07</td><td><span class="sev s-medio">médio</span><span class="status-tag">mantido</span></td><td><b>15 ambientes de trabalho separados ativos ao mesmo tempo.</b> Já houve um incidente real de conflito (02/05) e não há trava automática que impeça. <b>Fazer:</b> faxina (fechar os que já foram incorporados) + decidir uma regra de proteção.<span class="ev">git worktree list = 15</span></td></tr>
+        <tr><td class="id">QUAL-01</td><td><span class="sev s-grave strike">grave</span><span class="arrow">→</span><span class="sev s-baixo">baixo</span></td><td><b>169 linhas de trabalho nunca incorporadas (algumas bem atrasadas).</b> Rebaixado: é intencional (cada uma é um experimento isolado, incorporado com sua aprovação). Mas casa com sua regra de "incorporar a versão final na hora" pra não perder trabalho. <b>Fazer:</b> faxina + incorporar versões finais soltas.<span class="ev">git branch -r = 172</span></td></tr>
+        <tr><td class="id">QUAL-02</td><td><span class="sev s-medio strike">médio</span><span class="arrow">→</span><span class="sev s-ok">seguro</span></td><td><b>Duas mudanças de banco idênticas (0026/0027).</b> Rebaixado: foi renumeração intencional e é inofensivo (rodar a segunda não causa erro). <b>Fazer (opcional, em desenvolvimento):</b> consolidar pra limpar o histórico.</td></tr>
+        <tr><td class="id">QUAL-04</td><td><span class="sev s-medio strike">médio</span><span class="arrow">→</span><span class="sev s-baixo">baixo</span></td><td><b>A verificação automática não roda em envio direto à versão oficial.</b> Rebaixado: é decisão sua pra economizar custo, e na prática tudo entra por aprovação formal. <b>Fazer:</b> opcional ligar uma trava no servidor de código.</td></tr>
+        <tr><td class="id">QUAL-03/05/06</td><td><span class="sev s-baixo">baixo</span></td><td><b>Pendências menores de higiene:</b> 6 anotações de "fazer depois" no código, uma linha de depuração esquecida, e uma limpeza de dados antiga bem documentada. Sem urgência.</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    <h3>Plano de correção proposto — você autoriza o que entra</h3>
+    <ol>
+      <li><b>Fechar a porta do painel (segurança) — prioridade 1.</b> Ligar a trava de acesso por equipe nas tabelas do shift light e desenhar o login real. Faço em desenvolvimento, testo que o painel continua funcionando e te chamo pra validar antes de qualquer coisa ir pro ar. <i>Não fecho o acesso "no muque" — a abertura foi decisão sua; vou desenhar a trava certa.</i></li>
+      <li><b>Calibrar o ápice das 8 curvas de Brasília — depende de você.</b> É marcar visualmente o ponto de cada curva no configurador. Aí a análise de "acertou o ápice" liga. Posso preparar a tela pra você fazer isso rápido.</li>
+      <li><b>Faxina das linhas e ambientes de trabalho.</b> Fechar o que já foi incorporado, recuperar versões finais soltas, reduzir o risco de perder trabalho. Higiene, sem mexer no que está no ar.</li>
+      <li><b>Higiene menor (quando der):</b> centralizar a chave pública, padronizar a lista de pneus, criar a "vista" de voltas reais, consolidar as duas mudanças de banco duplicadas.</li>
+      <li><b>Medir em pista (próxima sessão):</b> aquecimento do iPhone numa sessão longa, fluidez do painel e atraso real do dado. Só dá pra fechar com o carro rodando.</li>
+    </ol>
+    <div class="nota">Nada disso foi alterado nesta auditoria — é tudo diagnóstico. Qualquer correção é preparada em desenvolvimento e só vai pro ar quando você autorizar com a frase de migração. Me diga por qual item começo (recomendo o item 1).</div>
+  </div>
+
+</div>
+</body>
+</html>

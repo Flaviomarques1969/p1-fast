@@ -1,0 +1,52 @@
+{
+  "name": "p1-fast",
+  "version": "0.1.0",
+  "description": "P1 Fast — pacote de telemetria + domínio + backends de track day. Extraído do FAM Racing em 2026-04-30, sem nenhuma UI legada.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "smoke": "node tests/node-smoke-perna1-iphone.mjs && node tests/node-smoke-detector.mjs && node tests/node-smoke-detector-snapshot.mjs && node tests/node-smoke-box-detector.mjs && node tests/node-smoke-chegada-detector.mjs && node tests/node-smoke-delta-calculator.mjs && node tests/node-smoke-bridge-delta-referencia.mjs && node tests/node-smoke-padrao-acumulador.mjs && node tests/node-smoke-alertas-criticos.mjs && node tests/node-smoke-voltas-persister.mjs && node tests/node-smoke-migration-port.mjs && node tests/node-smoke-migration.mjs && node tests/node-smoke-projector.mjs && node tests/node-smoke-telemetry-p0.mjs && node tests/node-smoke-contracts.mjs && node tests/node-smoke-concurrency.mjs && node tests/node-smoke-proximity-watcher.mjs && node tests/node-smoke-p1-coach.mjs && node tests/node-smoke-trajectory-monitor.mjs && node tests/node-smoke-replay.mjs && node tests/node-smoke-csv-iphone-loader.mjs && node tests/node-smoke-cross-validation.mjs && node tests/node-smoke-ingest-edge.mjs && node tests/node-smoke-oklch.mjs && node tests/node-smoke-schema-parity.mjs && node tests/node-smoke-no-tracked-artifacts.mjs && node tests/node-smoke-sync-edge.mjs && node tests/node-smoke-pull-edge.mjs && node tests/node-smoke-health-edge.mjs && node tests/node-smoke-t4000.mjs && node tests/node-smoke-cockpit-web.mjs && node tests/node-smoke-cockpit-state.mjs && node tests/node-smoke-transport.mjs && node tests/node-smoke-live-data-bridge.mjs && node tests/node-smoke-cockpit-renderer.mjs && node tests/node-smoke-cockpit-bootstrap.mjs && node tests/node-smoke-timebase-swift-parity.mjs && node tests/node-smoke-advisor-findings.mjs && node tests/node-smoke-oportunidade-trecho.mjs && node tests/node-smoke-coreografia-volta.mjs && node tests/node-smoke-trecho-advisor.mjs && node tests/node-smoke-trecho-detector-resync.mjs && node tests/node-smoke-apice-calculator.mjs && node tests/node-smoke-daily-recording-hook.mjs && node tests/node-smoke-mensagens-pedagogicas.mjs && node tests/node-smoke-pilot-reaction-integracao.mjs && node tests/node-smoke-pilot-reaction-persistencia.mjs && node tests/node-smoke-shift-light-e2e.mjs && node tests/node-smoke-shift-light-inteligente.mjs && node tests/node-smoke-silencioso.mjs && node tests/node-smoke-t3000-usb-parser.mjs && node tests/node-smoke-t3000-watchdog.mjs && node tests/node-smoke-tipos-e-pontos.mjs && node tests/node-smoke-trecho-detector.mjs && node tests/node-smoke-catalogo-treinos.mjs && node tests/node-smoke-treino-stint.mjs && node tests/node-smoke-retag-vmin.mjs && node tests/node-smoke-classificador-trecho.mjs && node tests/node-smoke-trecho-estado.mjs && node tests/node-smoke-classificador-vivo-bridge.mjs && node tests/node-smoke-perfil-trail-por-tipo.mjs && node tests/node-smoke-re-etiquetar-offline.mjs",
+    "smoke:perfil-trail": "node tests/node-smoke-perfil-trail-por-tipo.mjs",
+    "smoke:classificador": "node tests/node-smoke-classificador-trecho.mjs",
+    "smoke:trecho-estado": "node tests/node-smoke-trecho-estado.mjs",
+    "smoke:classificador-vivo": "node tests/node-smoke-classificador-vivo-bridge.mjs",
+    "smoke:timebase-parity": "node tests/node-smoke-timebase-swift-parity.mjs",
+    "smoke:advisor-findings": "node tests/node-smoke-advisor-findings.mjs",
+    "smoke:t4000": "node tests/node-smoke-t4000.mjs",
+    "smoke:cockpit-web": "node tests/node-smoke-cockpit-web.mjs",
+    "smoke:cockpit-state": "node tests/node-smoke-cockpit-state.mjs",
+    "smoke:transport": "node tests/node-smoke-transport.mjs",
+    "smoke:live-data-bridge": "node tests/node-smoke-live-data-bridge.mjs",
+    "smoke:cockpit-renderer": "node tests/node-smoke-cockpit-renderer.mjs",
+    "smoke:cockpit-bootstrap": "node tests/node-smoke-cockpit-bootstrap.mjs",
+    "smoke:p1-coach": "node tests/node-smoke-p1-coach.mjs",
+    "smoke:trajectory": "node tests/node-smoke-trajectory-monitor.mjs",
+    "smoke:replay": "node tests/node-smoke-replay.mjs",
+    "smoke:csv-iphone": "node tests/node-smoke-csv-iphone-loader.mjs",
+    "smoke:cross-validation": "node tests/node-smoke-telemetry-p0.mjs",
+    "smoke:perna1": "node tests/node-smoke-perna1-iphone.mjs",
+    "smoke:detector": "node tests/node-smoke-detector.mjs",
+    "test:shift-light": "node tests/domain/gear-estimation.spec.js && node tests/domain/shift-target.spec.js && node tests/pipeline/shift-event-detector.spec.js && node tests/domain/shift-analysis.spec.js && node tests/domain/pilot-reaction.spec.js && node tests/domain/dyno-target-calculator.spec.js && node tests/pipeline/shift-event-trecho-integration.spec.js && node tests/pipeline/shift-light-bridge.spec.js && node tests/pipeline/shift-light-e2e.spec.js && node tests/pipeline/rpm-source.spec.js && node tests/ui/shift-light-cockpit.spec.js && node tests/ui/reaction-profiles-view.spec.js",
+    "smoke:oportunidade-trecho": "node tests/node-smoke-oportunidade-trecho.mjs",
+    "smoke:coreografia-volta": "node tests/node-smoke-coreografia-volta.mjs",
+    "smoke:trecho-advisor": "node tests/node-smoke-trecho-advisor.mjs",
+    "smoke:trecho-resync": "node tests/node-smoke-trecho-detector-resync.mjs",
+    "smoke:box-detector": "node tests/node-smoke-box-detector.mjs",
+    "smoke:chegada-detector": "node tests/node-smoke-chegada-detector.mjs",
+    "smoke:delta-calculator": "node tests/node-smoke-delta-calculator.mjs",
+    "smoke:bridge-delta": "node tests/node-smoke-bridge-delta-referencia.mjs",
+    "smoke:voltas-persister": "node tests/node-smoke-voltas-persister.mjs",
+    "smoke:alertas": "node tests/node-smoke-alertas-criticos.mjs",
+    "smoke:padrao": "node tests/node-smoke-padrao-acumulador.mjs",
+    "smoke:treino-stint": "node tests/node-smoke-treino-stint.mjs",
+    "smoke:catalogo-treinos": "node tests/node-smoke-catalogo-treinos.mjs",
+    "smoke:retag-vmin": "node tests/node-smoke-retag-vmin.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dexie": "^4.4.2",
+    "fake-indexeddb": "^6.2.5"
+  }
+}

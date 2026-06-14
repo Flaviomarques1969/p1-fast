@@ -43,7 +43,9 @@ function t(name, fn) {
 
 // ─── Helpers ──────────────────────────────────────────────
 function pgTables(sql) {
-  const re = /^create table public\.([a-z_]+)/gim;
+  // aceita "if not exists" (formato das migs 0030+) e dígitos no nome
+  // (t4000_live_*) — o leitor antigo contava 32 de 45 e cortava "t4000" em "t".
+  const re = /^create table (?:if not exists )?public\.([a-z0-9_]+)/gim;
   const out = new Set();
   let m;
   while ((m = re.exec(sql)) !== null) out.add(m[1]);
@@ -51,7 +53,8 @@ function pgTables(sql) {
 }
 
 function grdbTables(swift) {
-  const re = /CREATE TABLE ([a-z_]+)/g;
+  // aceita IF NOT EXISTS (v26_pecas+ usam) e dígitos no nome
+  const re = /CREATE TABLE (?:IF NOT EXISTS )?([a-z0-9_]+)/g;
   const out = new Set();
   let m;
   while ((m = re.exec(swift)) !== null) out.add(m[1]);
@@ -63,19 +66,21 @@ const GRDB_TABLES = grdbTables(grdb);
 
 // ─── Tests ────────────────────────────────────────────────
 // Contagem atualizada conforme migrations vão entrando.
-// PG: 20 do 0001 + licoes (0004) + pendencias_template + evento_pendencias
-//     (0005) + telemetry_samples_enriched (0008) + video_streams (0015)
-//     + volta_video (0016) + pessoas (0018) + pessoa_papeis (0019)
-//     + engineering_findings (0020) + engineering_recommendations (0021) = 30.
-//     (0014 só estende sessoes; 0017 só ajusta policies RLS, sem criar tabela.)
-const PG_TABLE_COUNT_ESPERADO = 30;
-// MS-16.3 (Command Box Engenharia Camada 2): engineering_findings + engineering_recommendations
-// vivem só em Supabase (Camada 2 emite em memória + persiste via REST direto;
-// cliente lê via REST). GRDB não precisa replicar. Quando MS-16.5 entrar com
-// upload local-first opcional dessas tabelas, mover daqui pra cobertura GRDB.
-const PG_ONLY_TABLES = new Set(['engineering_findings', 'engineering_recommendations']);
-const GRDB_REQUIRED_COUNT = PG_TABLE_COUNT_ESPERADO - PG_ONLY_TABLES.size; // 28
-const GRDB_TABLE_COUNT_ESPERADO = GRDB_REQUIRED_COUNT + 2; // + sync_queue + sync_meta = 30
+// Recontado 10/06/2026 com o leitor corrigido (if not exists + dígitos):
+// 45 tabelas na nuvem. As 13 SÓ-nuvem abaixo não têm espelho no app de
+// propósito — são do painel web, shift light, dyno, canal ao vivo e
+// engenharia Camada 2 (emitem/consomem via REST direto).
+const PG_TABLE_COUNT_ESPERADO = 45;
+const PG_ONLY_TABLES = new Set([
+  'engineering_findings', 'engineering_recommendations',     // MS-16.3 Camada 2
+  'melhores_passagens_trecho', 'padroes_telemetria_por_volta', // painel web (0025/0026)
+  'dyno_curve', 'gear_ratios', 'gear_signatures',            // shift light v2 (dyno Bubi)
+  'pontos_troca_aprendidos', 'perfis_reacao_piloto',         // aprendizagem shift light
+  'envelopes_seguranca_stint', 'qualidade_troca_marcha',     // stint/câmbio (0034)
+  't4000_live_commands', 't4000_live_events',                // canal ao vivo (0023)
+]);
+const GRDB_REQUIRED_COUNT = PG_TABLE_COUNT_ESPERADO - PG_ONLY_TABLES.size; // 32
+const GRDB_TABLE_COUNT_ESPERADO = GRDB_REQUIRED_COUNT + 2; // + sync_queue + sync_meta = 34
 
 t(`PG tem ${PG_TABLE_COUNT_ESPERADO} tabelas em public`, () => {
   if (PG_TABLES.size !== PG_TABLE_COUNT_ESPERADO) throw new Error('size=' + PG_TABLES.size);
@@ -170,23 +175,40 @@ t('ADR-014: PG telemetry_samples NÃO tem policy UPDATE/DELETE', () => {
 });
 
 // ─── RLS coverage ─────────────────────────────────────────
-t(`RLS habilitada em todas as ${PG_TABLE_COUNT_ESPERADO} tabelas do PG`, () => {
-  const rlsRe = /alter table public\.([a-z_]+)\s+enable row level security/g;
+// EXCEÇÃO DOCUMENTADA (achado 10/06/2026): tabelas de maio criadas SEM trava de
+// acesso. Em 14/06/2026 (migration 0045, higiene de segurança) 3 delas ganharam
+// trava (RLS): pontos_troca_aprendidos, envelopes_seguranca_stint e
+// qualidade_troca_marcha — REMOVIDAS desta lista (agora exigidas COM trava).
+// Restam 6 ainda abertas (decisão do Flávio "só higiene, sem login" 14/06).
+// Tabela NOVA sem RLS continua REPROVANDO aqui (a guarda segue viva).
+const RLS_ABERTAS_CONHECIDAS = new Set([
+  'dyno_curve', 'gear_ratios', 'gear_signatures',
+  'perfis_reacao_piloto',
+  't4000_live_commands', 't4000_live_events',
+]);
+t('RLS habilitada em toda tabela do PG (exceto as 6 abertas conhecidas de maio)', () => {
+  const rlsRe = /alter table public\.([a-z0-9_]+)\s+enable row level security/g;
   const rlsTables = new Set();
   let m;
   while ((m = rlsRe.exec(pg)) !== null) rlsTables.add(m[1]);
-  if (rlsTables.size !== PG_TABLE_COUNT_ESPERADO) throw new Error('RLS em ' + rlsTables.size + ' tabelas');
-  const missing = [...PG_TABLES].filter(x => !rlsTables.has(x));
-  if (missing.length) throw new Error('sem RLS: ' + missing.join(', '));
+  const missing = [...PG_TABLES].filter(x => !rlsTables.has(x) && !RLS_ABERTAS_CONHECIDAS.has(x));
+  if (missing.length) throw new Error('tabela NOVA sem RLS: ' + missing.join(', '));
+  const sobrando = [...RLS_ABERTAS_CONHECIDAS].filter(x => rlsTables.has(x));
+  if (sobrando.length) throw new Error('já ganhou RLS, tirar da exceção: ' + sobrando.join(', '));
 });
 
-t('Toda tabela com RLS tem ≥1 policy (sem lockdown total acidental)', () => {
-  const polRe = /create policy [a-z_]+ on public\.([a-z_]+)/gi;
-  const polTables = new Set();
+t('Toda tabela COM RLS tem ≥1 policy (sem lockdown total acidental)', () => {
+  // o teste vale pra quem tem RLS ligada — sem RLS não há trava pra destrancar
+  // (as 9 abertas conhecidas são cobradas no teste anterior).
+  const rlsRe = /alter table public\.([a-z0-9_]+)\s+enable row level security/g;
+  const rlsTables = new Set();
   let m;
+  while ((m = rlsRe.exec(pg)) !== null) rlsTables.add(m[1]);
+  const polRe = /create policy [a-z0-9_]+ on public\.([a-z0-9_]+)/gi;
+  const polTables = new Set();
   while ((m = polRe.exec(pg)) !== null) polTables.add(m[1]);
-  const missing = [...PG_TABLES].filter(x => !polTables.has(x));
-  if (missing.length) throw new Error('sem policy: ' + missing.join(', '));
+  const missing = [...rlsTables].filter(x => !polTables.has(x));
+  if (missing.length) throw new Error('RLS ligada sem nenhuma policy (lockdown): ' + missing.join(', '));
 });
 
 // ─── ENTITIES count ──────────────────────────────────────

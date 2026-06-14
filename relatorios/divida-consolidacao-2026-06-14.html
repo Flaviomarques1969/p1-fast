@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dívida de Consolidação — P1 Fast</title>
+<style>
+  :root{
+    --bg:#0e1726; --card:#152033; --card2:#1b2840; --line:#27374f;
+    --tx:#e8eef7; --tx2:#a9b8cd; --tx3:#7b8aa3; --azul:#4c8dff;
+    --ok:#46c98b; --ok-bg:#11331f; --ok-bd:#1f5a3a;
+    --med:#ffb454; --med-bg:#3a2d16; --med-bd:#5a4520;
+    --seg:#ff5c6c; --seg-bg:#3a1820; --seg-bd:#5a2630;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{background:var(--bg); color:var(--tx); font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; width:100%}
+  .wrap{width:100%; padding:0 28px 64px}
+  header.top{width:100%; padding:30px 28px 22px; border-bottom:1px solid var(--line); background:linear-gradient(180deg,#11203a,#0e1726)}
+  h1{margin:0; font-size:26px} .sub{color:var(--tx2); margin-top:6px}
+  .meta-row{display:flex; flex-wrap:wrap; gap:10px; margin-top:16px}
+  .pill{font-size:12.5px; padding:6px 12px; border-radius:999px; border:1px solid var(--line); color:var(--tx2); background:#0f1a2e}
+  .pill b{color:var(--tx)} .pill.read{border-color:var(--azul); color:#bcd4ff}
+  .section-title{font-size:13px; letter-spacing:1.4px; text-transform:uppercase; color:var(--tx3); margin:32px 0 12px; font-weight:700}
+  table.map{width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden}
+  table.map th{font-size:11px; letter-spacing:.6px; text-transform:uppercase; color:var(--tx3); text-align:left; padding:11px 12px; border-bottom:1px solid var(--line); font-weight:700; background:#1a2945}
+  table.map td{padding:12px; border-bottom:1px solid var(--line); vertical-align:top; font-size:13.6px; color:var(--tx2)}
+  table.map tr:last-child td{border-bottom:none}
+  table.map b{color:var(--tx)}
+  .n{font-weight:800; font-size:16px; color:var(--azul)}
+  .tag{display:inline-block; font-size:11px; padding:2px 9px; border-radius:6px; font-weight:700; white-space:nowrap}
+  .t-ok{background:var(--ok-bg); color:var(--ok); border:1px solid var(--ok-bd)}
+  .t-med{background:var(--med-bg); color:var(--med); border:1px solid var(--med-bd)}
+  .t-seg{background:var(--seg-bg); color:var(--seg); border:1px solid var(--seg-bd)}
+  .ondas{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
+  .onda{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; border-top:4px solid var(--line)}
+  .onda.o1{border-top-color:var(--ok)} .onda.o2{border-top-color:var(--seg)} .onda.o3{border-top-color:var(--med)}
+  .onda h3{margin:0 0 4px; font-size:16px} .onda .q{color:var(--tx3); font-size:12px; margin-bottom:10px}
+  .onda ul{margin:0; padding-left:18px} .onda li{margin:6px 0; color:var(--tx2); font-size:13.2px}
+  .footer{margin-top:28px; background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:20px 22px}
+  .footer h3{margin:0 0 8px; font-size:16px} .footer p{margin:6px 0; color:var(--tx2); font-size:14px} .footer b{color:var(--tx)}
+  .nota{margin-top:12px; padding:11px 13px; background:#0f1a2e; border:1px solid var(--line); border-radius:9px; color:var(--tx2); font-size:13px}
+  @media(max-width:1000px){ .ondas{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Dívida de Consolidação — P1 Fast</h1>
+  <div class="sub">O que está na sua máquina e ainda não foi pra versão oficial. Diagnóstico — nada foi registrado.</div>
+  <div class="meta-row">
+    <span class="pill"><b>Versão oficial parou em:</b> 03/06</span>
+    <span class="pill"><b>Trabalho acumulado:</b> 08→14/06 (325 registros automáticos)</span>
+    <span class="pill"><b>Arquivos fora da oficial:</b> 483</span>
+    <span class="pill read"><b>Modo:</b> só leitura</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="section-title">Mapa por frente — o que é e em que pé está</div>
+  <table class="map">
+    <tr><th style="width:40px">Qtd</th><th style="width:210px">Área</th><th>O que é</th><th style="width:150px">Status</th></tr>
+    <tr><td class="n">21</td><td><b>Mudanças de banco</b><br>(migrations 0023–0045)</td><td>Estrutura e regras da nuvem. <b>A maioria JÁ está aplicada na nuvem</b> (a operação real já usa). Falta só registrar os arquivos pra alinhar código e banco. <b>Atenção:</b> há uma duplicata (dois arquivos "0028") a resolver.</td><td><span class="tag t-ok">já na nuvem</span></td></tr>
+    <tr><td class="n">209</td><td><b>Documentação</b><br>(pesquisa, arquivo, auditorias)</td><td>Relatórios, dados de pesquisa (dinamômetro), auditorias, históricos. Não afeta o app nem o que está no ar.</td><td><span class="tag t-ok">sem risco</span></td></tr>
+    <tr><td class="n">~26</td><td><b>Decisões e cards</b><br>(.claude-perguntas)</td><td>Suas decisões registradas (cards respondidos). Registro histórico.</td><td><span class="tag t-ok">sem risco</span></td></tr>
+    <tr><td class="n">~17</td><td><b>Mockups, backups, ferramentas, testes</b></td><td>Versões de tela, cópias de segurança, ajudantes e testes automáticos. Baixo risco.</td><td><span class="tag t-ok">baixo risco</span></td></tr>
+    <tr><td class="n">18</td><td><b>App do iPhone</b><br>(ios)</td><td>Manutenção (concluída 12/06) e treinos (no ar 11/06) — em tese validados. Precisa só conferir que não há nada pela metade.</td><td><span class="tag t-med">conferir</span></td></tr>
+    <tr><td class="n">53</td><td><b>Código do painel</b><br>(web/cockpit)</td><td><b>O ponto sensível.</b> Mistura o que está pronto (higiene, segurança, tipo de curva) com o <b>trail-braking em andamento</b> — e estão entrelaçados nos mesmos arquivos. Não dá pra separar "só o pronto" sem trabalho manual arriscado.</td><td><span class="tag t-seg">em andamento</span></td></tr>
+  </table>
+
+  <div class="section-title">Plano de consolidação em 3 ondas (o seguro primeiro)</div>
+  <div class="ondas">
+    <div class="onda o1">
+      <h3>Onda 1 — registrar já</h3>
+      <div class="q">Seguro · não toca o app no ar</div>
+      <ul>
+        <li>Mudanças de banco (já estão na nuvem) — alinhar código e banco</li>
+        <li>Resolver a duplicata "0028" antes</li>
+        <li>Documentação, cards, mockups, backups, ferramentas, testes</li>
+        <li><b>~400 arquivos</b> saem da dívida sem nenhum risco pra operação</li>
+      </ul>
+    </div>
+    <div class="onda o2">
+      <h3>Onda 2 — esperar o trail-braking</h3>
+      <div class="q">Código do painel · entrelaçado</div>
+      <ul>
+        <li>Os 53 arquivos do painel só devem ser registrados quando o trail-braking estiver pronto e validado</li>
+        <li>Aí o painel vai pra versão oficial e pro ar de uma vez (inclui a higiene e a segurança)</li>
+        <li>Tentar separar agora = risco de quebrar</li>
+      </ul>
+    </div>
+    <div class="onda o3">
+      <h3>Onda 3 — app do iPhone</h3>
+      <div class="q">Conferir e registrar</div>
+      <ul>
+        <li>Confirmar que manutenção e treinos estão completos (sem nada pela metade)</li>
+        <li>Se ok, registrar na versão oficial</li>
+        <li>Empacotar/instalar no iPhone é passo à parte</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer">
+    <h3>Recomendação e próximo passo</h3>
+    <p><b>Fazer a Onda 1 agora.</b> Tira ~400 arquivos da dívida sem risco nenhum pra operação (a maior parte é documentação e mudanças de banco que a nuvem já usa). Isso encolhe o problema de 483 pra ~70 arquivos e alinha o código com o banco real.</p>
+    <p><b>Segurar a Onda 2</b> (painel) até o trail-braking ficar pronto — aí registra e coloca no ar tudo junto, validado. <b>Onda 3</b> (iPhone) eu confiro e te digo se está pronta pra registrar.</p>
+    <div class="nota">Cada "registrar na versão oficial" é diferente de "colocar no ar". A Onda 1 é registro (organização do histórico) — não muda o painel no ar nem o app no iPhone. Nada disso roda sem você autorizar. Recomendo começar pela Onda 1.</div>
+  </div>
+
+</div>
+</body>
+</html>

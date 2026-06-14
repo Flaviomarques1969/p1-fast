@@ -1,0 +1,118 @@
+# Regras de acesso VIVAS no banco p1-fast — fotografia de 11/06/2026
+
+Gerado por consulta autenticada (pg_policies + pg_class). Algumas regras foram
+aplicadas direto no banco e NÃO existem nos arquivos de migração — recriar o
+banco só pelos arquivos NÃO reproduz este estado (achado da auditoria 10/06).
+
+## Tabelas SEM trava de linha (RLS desligada): 3
+
+- envelopes_seguranca_stint
+- pontos_troca_aprendidos
+- qualidade_troca_marcha
+
+## Políticas vivas (todas)
+
+- **public.carros** · carros_all · ALL · papéis {public}
+  - condição: 
+- **public.combustiveis** · combustiveis_all · ALL · papéis {public}
+  - condição: 
+- **public.configuracoes** · configuracoes_all · ALL · papéis {public}
+  - condição: 
+- **public.dyno_curve** · dyno_curve_select · SELECT · papéis {public}
+  - condição: 
+- **public.dyno_curve** · dyno_curve_write · ALL · papéis {public}
+  - condição: 
+- **public.evento_dias** · evento_dias: delete pelo time · DELETE · papéis {authenticated}
+  - condição: 
+- **public.evento_dias** · evento_dias: insert pelo time · INSERT · papéis {authenticated}
+- **public.evento_dias** · evento_dias: select pelo time · SELECT · papéis {authenticated}
+  - condição: 
+- **public.evento_dias** · evento_dias: update pelo time · UPDATE · papéis {authenticated}
+  - condição: 
+- **public.evento_pendencias** · evento_pendencias_select · SELECT · papéis {public}
+  - condição: 
+- **public.evento_pendencias** · evento_pendencias_write · ALL · papéis {public}
+  - condição: 
+- **public.eventos** · eventos_all · ALL · papéis {public}
+  - condição: 
+- **public.gear_ratios** · gear_ratios_select_team · SELECT · papéis {authenticated}
+  - condição: 
+- **public.licoes** · licoes_public_read · SELECT · papéis {public}
+  - condição: 
+- **public.manutencoes** · manutencoes_all · ALL · papéis {public}
+  - condição: 
+- **public.marcos** · marcos_public_read · SELECT · papéis {public}
+  - condição: 
+- **public.melhores_passagens_trecho** · melhores_select_all · SELECT · papéis {public}
+  - condição: 
+- **public.melhores_passagens_trecho** · melhores_write_team · ALL · papéis {public}
+  - condição: 
+- **public.mensagens** · mensagens_all · ALL · papéis {public}
+  - condição: 
+- **public.padroes_telemetria_por_volta** · padroes_select_all · SELECT · papéis {public}
+  - condição: 
+- **public.padroes_telemetria_por_volta** · padroes_write_team · ALL · papéis {public}
+  - condição: 
+- **public.passageiros** · passageiros_all · ALL · papéis {public}
+  - condição: 
+- **public.pecas** · pecas_all · ALL · papéis {public}
+  - condição: 
+- **public.pecas_locais** · pecas_locais_all · ALL · papéis {public}
+  - condição: 
+- **public.pecas_movimentacoes** · pecas_movimentacoes_all · ALL · papéis {public}
+  - condição: 
+- **public.pendencias_template** · pendencias_template_public_read · SELECT · papéis {public}
+  - condição: 
+- **public.perfis_reacao_piloto** · perfis_reacao_all · ALL · papéis {public}
+  - condição: 
+- **public.pilotos** · pilotos_all · ALL · papéis {public}
+  - condição: 
+- **public.pneus** · pneus_all · ALL · papéis {public}
+  - condição: 
+- **public.retas_especiais** · retas_especiais_select · SELECT · papéis {public}
+  - condição: 
+- **public.retas_especiais** · retas_especiais_write · ALL · papéis {public}
+  - condição: 
+- **public.segment_executions** · segment_executions_all · ALL · papéis {public}
+  - condição: 
+- **public.sessoes** · sessoes_all · ALL · papéis {public}
+  - condição: 
+- **public.t4000_live_commands** · t4000_commands_anon_all · ALL · papéis {anon}
+  - condição: 
+- **public.t4000_live_events** · t4000_events_anon_all · ALL · papéis {anon}
+  - condição: 
+- **public.telemetry_samples** · telemetry_samples_insert · INSERT · papéis {public}
+- **public.telemetry_samples** · telemetry_samples_select · SELECT · papéis {public}
+  - condição: 
+- **public.telemetry_samples_enriched** · telemetry_samples_enriched_insert · INSERT · papéis {public}
+- **public.telemetry_samples_enriched** · telemetry_samples_enriched_select · SELECT · papéis {public}
+  - condição: 
+- **public.times** · times_select · SELECT · papéis {public}
+  - condição: 
+- **public.times** · times_update · UPDATE · papéis {public}
+  - condição: 
+- **public.track_layouts** · track_layouts_public_read · SELECT · papéis {public}
+  - condição: 
+- **public.track_segments** · track_segments_public_read · SELECT · papéis {public}
+  - condição: 
+- **public.tracks** · tracks_public_read · SELECT · papéis {public}
+  - condição: 
+- **public.trofeus_ganhos** · trofeus_select · SELECT · papéis {public}
+  - condição: 
+- **public.usuarios_time** · usuarios_time_admin_write · ALL · papéis {public}
+  - condição: 
+- **public.usuarios_time** · usuarios_time_select · SELECT · papéis {public}
+  - condição: 
+- **public.video_streams** · video_streams_admin_write · ALL · papéis {public}
+  - condição: 
+- **public.video_streams** · video_streams_select_member · SELECT · papéis {public}
+  - condição: 
+- **public.volta_video** · volta_video_delete_admin · DELETE · papéis {public}
+  - condição: 
+- **public.volta_video** · volta_video_insert_member · INSERT · papéis {public}
+- **public.volta_video** · volta_video_select_member · SELECT · papéis {public}
+  - condição: 
+- **public.volta_video** · volta_video_update_triagem · UPDATE · papéis {public}
+  - condição: 
+- **public.voltas** · voltas_all · ALL · papéis {public}
+  - condição: 

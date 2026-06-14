@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>P1 Fast — Barra de aprendizado, 4 estados lado a lado</title>
+<link rel="stylesheet" href="./cockpit.css">
+<style>
+  body{
+    background:#0a0a0a;color:#fff;
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;padding:48px 24px;
+    display:flex;flex-direction:column;align-items:center;gap:24px;
+  }
+  h1{font-size:18px;font-weight:600;letter-spacing:-0.01em;margin-bottom:8px;}
+  .subtitle{color:#888;font-size:12px;margin-bottom:20px;}
+  .galeria{
+    display:flex;gap:40px;align-items:center;justify-content:center;
+    flex-wrap:wrap;
+  }
+  .case{
+    position:relative;
+    background:#000;border:1px solid #1a1a1a;border-radius:24px;
+    width:120px;height:380px;
+    padding:24px 8px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    box-shadow:0 16px 32px rgba(0,0,0,.55);
+  }
+  /* a aprendizado-bar dentro do .case é posicionada normalmente */
+  .case .aprendizado-bar{
+    position:relative;left:auto;top:auto;transform:none;
+    margin:auto;
+  }
+  .case__caption{
+    position:absolute;bottom:-30px;left:0;right:0;
+    text-align:center;
+    font-size:11px;color:#666;
+    letter-spacing:0.1em;text-transform:uppercase;
+    font-family:'JetBrains Mono',ui-monospace,monospace;
+  }
+  .case__caption strong{display:block;color:#fff;font-size:14px;margin-bottom:2px;letter-spacing:0;text-transform:none;font-family:'Inter',system-ui,sans-serif;}
+  .legenda{
+    margin-top:48px;font-size:11px;color:#666;
+    max-width:680px;text-align:center;line-height:1.6;
+  }
+</style>
+</head>
+<body>
+  <h1>Barra de aprendizado — os 4 estados</h1>
+  <p class="subtitle">Cada caixa mostra a barra parada em um momento diferente do aprendizado.</p>
+
+  <div class="galeria">
+
+    <div class="case">
+      <aside class="aprendizado-bar" data-status="inativo" style="--pct:0%">
+        <span class="aprendizado-bar__label">IA</span>
+        <div class="aprendizado-bar__track"><div class="aprendizado-bar__fill"></div></div>
+        <span class="aprendizado-bar__pct">0%</span>
+      </aside>
+      <span class="case__caption"><strong>Inativo</strong>Stint não configurado</span>
+    </div>
+
+    <div class="case">
+      <aside class="aprendizado-bar" data-status="aprendendo" style="--pct:18%">
+        <span class="aprendizado-bar__label">IA</span>
+        <div class="aprendizado-bar__track"><div class="aprendizado-bar__fill"></div></div>
+        <span class="aprendizado-bar__pct">18%</span>
+      </aside>
+      <span class="case__caption"><strong>Aprendendo</strong>1ª/2ª volta — pouco dado</span>
+    </div>
+
+    <div class="case">
+      <aside class="aprendizado-bar" data-status="parcial" style="--pct:48%">
+        <span class="aprendizado-bar__label">IA</span>
+        <div class="aprendizado-bar__track"><div class="aprendizado-bar__fill"></div></div>
+        <span class="aprendizado-bar__pct">48%</span>
+      </aside>
+      <span class="case__caption"><strong>Parcial</strong>3ª/4ª volta — meio confiante</span>
+    </div>
+
+    <div class="case">
+      <aside class="aprendizado-bar" data-status="calibrado" style="--pct:88%">
+        <span class="aprendizado-bar__label">IA</span>
+        <div class="aprendizado-bar__track"><div class="aprendizado-bar__fill"></div></div>
+        <span class="aprendizado-bar__pct">88%</span>
+      </aside>
+      <span class="case__caption"><strong>Calibrado</strong>8ª volta em diante — pronto</span>
+    </div>
+
+  </div>
+
+  <p class="legenda">
+    Inativo = cinza apagado. Aprendendo = brasa/laranja. Parcial = âmbar dourado. Calibrado = verde elétrico.<br>
+    O percentual sobe sozinho conforme o sistema acumula amostras estáveis em mais marchas e mais trechos da pista.
+  </p>
+</body>
+</html>
