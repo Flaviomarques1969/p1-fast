@@ -27,6 +27,10 @@ final class PendenciaRepository: ObservableObject {
     /// Map: eventoId → [EventoPendencia], indexado pra atualização rápida.
     @Published private(set) var instanciasPorEvento: [String: [EventoPendencia]] = [:]
 
+    /// Itens ADICIONAIS (incluídos à mão) por evento. LOCAL-ONLY — não sobem
+    /// pra nuvem (ver EventoPendenciaExtra / migration v29).
+    @Published private(set) var extrasPorEvento: [String: [EventoPendenciaExtra]] = [:]
+
     private let queue: DatabaseQueue
 
     init(queue: DatabaseQueue) {
