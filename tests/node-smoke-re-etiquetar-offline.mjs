@@ -56,5 +56,23 @@ const ptsGeo = [0, 1, 2, 3, 4].map(i => ({ lat: 0, lng: i * 0.0001, kmh: 100 - i
   t('ancorarApice sem geo nem Vmin → borda/null', a.confianca === 'borda' && a.apiceT === null, JSON.stringify(a));
 }
 
+// ── acharPaceIdx (5º marco): 1ª aceleração SUSTENTADA após o Vmin (proxy por velocidade) ──
+{
+  // V claro: cai até idx3 (90), depois 98,103,109 (sobe sustentado) → pace começa em idx4
+  const pts = [120, 110, 100, 90, 98, 103, 109].map((kmh, i) => ({ kmh, t: i }));
+  t('acharPaceIdx acha a retomada sustentada após o Vmin', acharPaceIdx(pts, 3) === 4, String(acharPaceIdx(pts, 3)));
+}
+{
+  // só cai / fica plano após o Vmin → sem retomada clara → null (não inventa pace)
+  const pts = [100, 95, 92, 90, 90, 89].map((kmh, i) => ({ kmh, t: i }));
+  t('acharPaceIdx sem retomada → null', acharPaceIdx(pts, 3) === null, String(acharPaceIdx(pts, 3)));
+}
+{
+  // um repique isolado (sobe 1 e cai) NÃO conta como retomada sustentada
+  const pts = [100, 90, 95, 88, 85].map((kmh, i) => ({ kmh, t: i }));
+  t('acharPaceIdx ignora repique isolado (não sustentado)', acharPaceIdx(pts, 1) === null, String(acharPaceIdx(pts, 1)));
+}
+t('acharPaceIdx sem Vmin → null', acharPaceIdx([{ kmh: 100, t: 0 }], null) === null);
+
 console.log(`\n${ok} ok / ${fail} fail`);
 if (fail > 0) process.exit(1);
