@@ -57,4 +57,25 @@
 
 ## Decisão 1 — estrutura da Garagem (2026-06-14)
 Flávio escolheu **Sub-abas no topo** (Carros · Pilotos · Passageiros · Combustível · Lições).
-Mockup: `_design-reference/mockup-menu-reorg.html`. Aguardando aprovação visual pra portar pro app (DEV).
+Mockup: `_design-reference/mockup-menu-reorg.html`. Flávio: "pode seguir" → portado pro app (DEV).
+
+## TASK_DONE — 2026-06-14
+
+Arquivos alterados (app iOS, DEV — produção intocada):
+- `ios/p1fast-core/.../Migrations.swift` — migration v29: tabela LOCAL-ONLY `evento_pendencias_extra` (não sincroniza).
+- `ios/p1fast-core/.../Models.swift` — struct `EventoPendenciaExtra`.
+- `ios/p1fast-ios/.../PendenciaRepository.swift` — addExtra/removeExtra/toggleExtra/reloadExtras + grupos() mescla extras + PendenciaItemView vira catálogo OU extra.
+- `ios/p1fast-ios/.../PendenciasView.swift` — incluir (botão por grupo) / excluir (lixeira) / ticar; eyebrow + showFootBar configuráveis.
+- `ios/p1fast-ios/.../PessoasView.swift` — modo embutido (esconde header/sub-abas próprias) pra viver dentro da Garagem.
+- `ios/p1fast-ios/.../GaragemView.swift` — sub-abas Carros·Pilotos·Passageiros·Combustível·Lições.
+- `ios/p1fast-ios/.../HomeView.swift` — menu 3ª aba Cadastros→Pendências (abre no próximo evento via novo launcher).
+- `ios/p1fast-ios/.../HubMockLauncher.swift` — injeta os repos novos (corrige crash latente no mock) + NavRouter estável + args `--p1-menu`/`--p1-pend`.
+- `tests/node-smoke-schema-parity.mjs` — reconhece `evento_pendencias_extra` como local-only.
+
+Validação executada:
+- Empacotamento simulador: `xcodebuild ... build` → **BUILD SUCCEEDED** (3x).
+- Testes: schema-parity 15/0, migration 3/0, migration-port 8/0.
+- App real no simulador: `real-garagem-reorg.png` (Garagem com sub-abas + menu "Pendências") e `real-pendencias-proximo.png` (Pendências no próximo evento, 45 itens reais nos 6 grupos).
+
+Status: concluído em DEV. Produção NÃO alterada (sem "MIGRAR PARA PRODUÇÃO").
+Pendência real: nenhuma técnica. Observação: incluir/excluir é LOCAL-ONLY de propósito (não sobe pra nuvem) — se Flávio quiser sincronizar entre aparelhos, é decisão+autorização de produção separada.
