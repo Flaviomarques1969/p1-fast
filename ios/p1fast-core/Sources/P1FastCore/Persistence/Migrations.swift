@@ -538,6 +538,52 @@ enum Migrations {
             """)
             try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_evento_pendencias_extra_evento ON evento_pendencias_extra(evento_id);")
         }
+
+        // v30 — Estoque geral (unificado) + contador "peguei" por evento.
+        // LOCAL-ONLY: estas duas tabelas NÃO passam pelo SyncQueue, então o
+        // estoque do carro (`pecas`, que sobe pra nuvem/produção) fica intacto.
+        // Desenho aprovado por Flávio em 2026-06-14.
+        //   • estoque_item: item unificado (estoque geral OU de um carro), com a
+        //     riqueza nova (item/ferramenta, bloco, categoria, especificação,
+        //     como conta a quantidade — simples/embalagem/conjunto).
+        //   • evento_pendencia_pegou: quantos já "peguei" de cada item, por
+        //     evento (a posse mora no estoque; o "peguei" é por evento).
+        m.registerMigration("v30_estoque_geral_e_pegou") { db in
+            try db.execute(sql: """
+                CREATE TABLE IF NOT EXISTS estoque_item (
+                    id             TEXT PRIMARY KEY,
+                    time_id        TEXT NOT NULL,
+                    escopo         TEXT NOT NULL DEFAULT 'geral',
+                    kind           TEXT NOT NULL DEFAULT 'item',
+                    grupo_id       TEXT NOT NULL,
+                    grupo_titulo   TEXT NOT NULL,
+                    grupo_num      TEXT NOT NULL,
+                    nome           TEXT NOT NULL,
+                    especificacao  TEXT,
+                    categoria      TEXT NOT NULL DEFAULT 'obrig',
+                    contagem       TEXT NOT NULL DEFAULT 'simples',
+                    quantidade     INTEGER NOT NULL DEFAULT 1,
+                    volume         REAL,
+                    unidade        TEXT,
+                    embalagens     INTEGER,
+                    partes_json    TEXT,
+                    foto_url       TEXT,
+                    created_at     INTEGER NOT NULL,
+                    updated_at     INTEGER NOT NULL
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_estoque_item_escopo ON estoque_item(escopo);")
+            try db.execute(sql: """
+                CREATE TABLE IF NOT EXISTS evento_pendencia_pegou (
+                    id          TEXT PRIMARY KEY,
+                    evento_id   TEXT NOT NULL,
+                    item_id     TEXT NOT NULL,
+                    pegou       INTEGER NOT NULL DEFAULT 0,
+                    updated_at  INTEGER NOT NULL
+                );
+            """)
+            try db.execute(sql: "CREATE UNIQUE INDEX IF NOT EXISTS idx_evento_pendencia_pegou_uq ON evento_pendencia_pegou(evento_id, item_id);")
+        }
     }
 
     // swiftlint:disable:next function_body_length
