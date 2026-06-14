@@ -5747,6 +5747,25 @@ html,body{
     svg += drawUnit(APEX);
     svg += drawUnit(EXIT);
 
+    // ──────── MARCOS extras: freio · Vmin · PACE (Flávio 13/06) ────────
+    // Pequenos sobre o MESMO arco — NÃO movem os 3 dots heróis. freio entre entrada→ápice,
+    // Vmin no ápice (a velocidade mínima da passagem), PACE entre ápice→saída.
+    function bezier(t){
+      var mt = 1 - t, cx = APEX.x, cy = APEX.y + 22; // ponto de controle da ps-track
+      return { x: mt*mt*ENTRY.x + 2*mt*t*cx + t*t*EXIT.x, y: mt*mt*ENTRY.y + 2*mt*t*cy + t*t*EXIT.y };
+    }
+    function marcoMini(t, label, cor, mostra){
+      var p = bezier(t), op = mostra ? 1 : 0.22;
+      var s = '';
+      s += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4" fill="'+cor+'" opacity="'+op+'"/>';
+      s += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="7" fill="none" stroke="'+cor+'" stroke-width="1" opacity="'+(op*0.5)+'"/>';
+      s += '<text x="'+p.x.toFixed(1)+'" y="'+(p.y+18).toFixed(1)+'" text-anchor="middle" font-size="8.5" letter-spacing="0.06em" fill="'+cor+'" opacity="'+op+'">'+label+'</text>';
+      return s;
+    }
+    svg += marcoMini(0.30, 'freio', '#FF5A4E', revealEntrada);
+    svg += marcoMini(0.50, 'Vmin',  '#FFD24A', revealApex);
+    svg += marcoMini(0.72, 'PACE',  '#3FE08C', revealSaida);
+
     // ──────── BAR de distância do APEX ────────
     // Range: -1m (antes) … 0 (ideal) … +1m (depois). Bar deslocado pra esquerda;
     // valor absoluto em destaque grande à direita, sem sinal — cor verde/vermelha pela magnitude.
