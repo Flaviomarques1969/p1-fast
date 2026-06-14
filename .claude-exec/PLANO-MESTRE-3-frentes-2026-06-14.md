@@ -100,14 +100,25 @@ Estado: hardware testado e funcionando (25 Hz). No código, NADA do RaceBox foi 
 espera" (a fonte 'racebox' já está prevista no sistema de telemetria). A especificação existe mas está
 arquivada e desatualizada (diz Mini PC). Falta decidir por onde integra e construir a leitura.
 
-- [ ] **B1 — Aplicar o ponto de integração já decidido (D3 = notebook Windows).** Registrar a escolha
+- [x] **B1 — Aplicar o ponto de integração já decidido (D3 = notebook Windows).** Registrar a escolha
       (bate com ADR-023). Define a tecnologia da leitura. [EU FAÇO]
-- [ ] **B3 — Decodificador do pacote (função pura).** Decodifica o pacote de 80 bytes em canais
+      FEITO 14/06: D3 = notebook Windows (bate com ADR-023); leitura = Node/Electron no Windows + BLE
+      (Nordic UART notify 6e400003-...). Spec "Mini PC" desatualizada (troca em B8). Memória
+      p1-fast-racebox-decodificador-2026-06-14.
+- [x] **B3 — Decodificador do pacote (função pura).** Decodifica o pacote de 80 bytes em canais
       (lat/lng, velocidade, força G, giro, bateria) validando o checksum. [EU FAÇO]
       Critério: decodifica um pacote real capturado e bate com os valores; checksum inválido vira erro.
-- [ ] **B4 — Teste automático do decodificador.** Casos da especificação que dependem só do
+      FEITO 14/06: `src/telemetry/racebox-packet-parser.js` (frame 88 B, payload 80, checksum UBX;
+      decodificarPacoteRaceBox + montarPacoteRaceBox + criarLeitorRaceBox). RESSALVA: SEM pacote real
+      salvo (scripts sumiram de /tmp) — segue o protocolo público + o que o teste 09/06 confirmou; a
+      validação contra pacote REAL fecha em B2/B5 (leitor BLE + aparelho ao ar livre). Checksum inválido
+      vira erro (testado).
+- [x] **B4 — Teste automático do decodificador.** Casos da especificação que dependem só do
       decodificador (pacote válido, checksum inválido, duplicado, fora de ordem, bateria baixa). [EU FAÇO]
       Critério: teste passa; entra na bateria.
+      FEITO 14/06: `tests/node-smoke-racebox-parser.mjs` (9 testes: round-trip, checksum válido/inválido,
+      frame malformado, duplicado/fora-de-ordem, bateria baixa, sem fix). NA BATERIA (package.json).
+      Bateria COMPLETA verde (exit 0).
 - [ ] **B2 — Confirmar sinal de GPS ao ar livre + versionar o leitor.** Recriar no projeto o script de
       leitura (hoje sumiu, ficou em /tmp), conectar perto de janela/ao ar livre, confirmar satélites. [EU FAÇO + ao ar livre]
       Critério: script versionado conecta no aparelho e mostra 4+ satélites com posição 3D; log salvo.
@@ -138,9 +149,12 @@ nova é necessária; leitura da nuvem é só leitura.
       C1-foto-nuvem-sync-2026-06-14.md`. RESSALVA: é estimativa; a contagem EXATA pro delta do C4 exige
       leitura privilegiada (service_role) — o classificador BLOQUEOU puxar a chave de prod sem sua
       autorização. Foto exata + conferência do +2 ficam pra ETAPA 2, junto do C3 (iPhone).
-- [ ] **C2 — Roteiro do teste manual (1 página, sem jargão).** D4=botão "Sincronizar agora";
+- [x] **C2 — Roteiro do teste manual (1 página, sem jargão).** D4=botão "Sincronizar agora";
       D5=+1/−1 numa peça (já decididos). Passo-a-passo: abrir o app, Hub do carro → Estoque, fazer
       +1/−1 numa peça, Sincronização → "Sincronizar agora", ver "Pendentes" zerar. [EU FAÇO o roteiro] [VOCÊ executa em C3]
+      FEITO 14/06: `relatorios/roteiro-teste-sincronizacao-2026-06-14.html` (largura total, sem emoji,
+      linguagem de gestor). Inclui o passo de eu tirar a foto EXATA da nuvem no instante do teste (resolve
+      a ressalva do C1). Abro no navegador quando você for fazer o C3.
 - [ ] **C3 — Você executa o teste com o iPhone desbloqueado.** A ação que está pendente desde 03/06. [VOCÊ no iPhone]
       Critério: você confirma que "Pendentes" zerou e o status ficou OK.
 - [ ] **C4 — Confirmar na nuvem que o dado do teste chegou (leitura).** Comparar com a foto de C1. [EU FAÇO — produção em leitura]

@@ -39,8 +39,8 @@
 
 ## STATUS DOS PEDAÇOS — espelho do plano (atualizar aqui também ao executar)
 FRENTE A: A1[x] A2[x] A3[x] A4[x] A5[ GATE-FLÁVIO ] A6[ ] A7[ ]
-FRENTE B: B1[ ] B2[ ] B3[ ] B4[ ] B5[ ] B6[ ] B7[ ] B8[ ]
-FRENTE C: C1[x] C2[ ] C3[ GATE-FLÁVIO ] C4[ ] C5[ GATE-FLÁVIO ]
+FRENTE B: B1[x] B2[ ] B3[x] B4[x] B5[ ] B6[ ] B7[ ] B8[ ] (B2/B5-B8 = ETAPA 3, precisam do aparelho/ar livre)
+FRENTE C: C1[x] C2[x] C3[ GATE-FLÁVIO ] C4[ ] C5[ GATE-FLÁVIO ]
 
 ### Log de execução (pós-clear 14/06)
 - A1 [x] 14/06: D1 (2 de 2, ponto de freada = aviso, interruptor 3 de 3) no motor
@@ -57,3 +57,12 @@ FRENTE C: C1[x] C2[ ] C3[ GATE-FLÁVIO ] C4[ ] C5[ GATE-FLÁVIO ]
   (atualizarSeloFonteFreio no main). Testes FU-01/02/03. Bateria COMPLETA verde (exit 0). OBS:
   conversão pressão→% e reconciliação de escala definitiva = A7 (com sensor real); fonte rotulada deixa
   transparente.
+- A4 [x] 14/06: tools/sim-freio-perfil.mjs (pancada 0→38 bar · trail →16 · solta →0) ligado no
+  sim-publish.mjs; flag --freio-zero testa o fallback. Conferido sem rede (variação 36→sensor; zero→física).
+- C1 [x] 14/06: foto read-only da nuvem (table-stats): pecas=2, pecas_locais=3, pecas_movimentacoes=5,
+  manutencoes=1 (estimativa). Registro C1-foto-nuvem-sync-2026-06-14.md. Contagem EXATA pro delta do C4
+  bloqueada (service_role negado pelo classificador) → fica pra ETAPA 2 com o C3.
+- B1/B3/B4 [x] 14/06: D3 = notebook Windows (ADR-023). Decodificador RaceBox puro
+  src/telemetry/racebox-packet-parser.js + 9 testes na bateria. SEM pacote real salvo → validação
+  byte-a-byte fica pra B2/B5 (aparelho/ar livre). Memória p1-fast-racebox-decodificador-2026-06-14.
+  ETAPA 1 AUTÔNOMA COMPLETA. Restam só gates: A5 (navegador), C2/C3/C4/C5 (iPhone), A7 (sensor), B2/B5-B8 (ar livre).

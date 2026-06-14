@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roteiro — Teste de sincronização (estoque/manutenção)</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0d1117; color: #e6edf3;
+         font: 16px/1.6 -apple-system, "Segoe UI", system-ui, sans-serif; }
+  .wrap { width: 100%; max-width: none; padding: 28px clamp(20px, 5vw, 80px); }
+  h1 { font-size: clamp(22px, 3vw, 32px); margin: 0 0 4px; }
+  .sub { color: #9aa7b4; margin: 0 0 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
+  .card { background: #161b22; border: 1px solid #283039; border-radius: 12px; padding: 20px 22px; }
+  .card h2 { margin: 0 0 10px; font-size: 18px; }
+  .passo { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid #21262d; }
+  .passo:last-child { border-bottom: 0; }
+  .num { flex: 0 0 34px; height: 34px; border-radius: 50%; background: #1f6feb; color: #fff;
+         font-weight: 700; display: grid; place-items: center; }
+  .passo div { align-self: center; }
+  .nota { background: #1c2433; border-left: 4px solid #d29922; border-radius: 8px;
+          padding: 14px 18px; margin-top: 22px; color: #d7e0ea; }
+  b.ok { color: #3fb950; }
+  .rod { margin-top: 24px; color: #768390; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Teste de sincronização — estoque e manutenção</h1>
+  <p class="sub">O que provar: o que você mexe no app do carro sobe pra nuvem. Leva cerca de 1 minuto, com o iPhone na mão e desbloqueado. Nada de produção é alterado de forma arriscada — é uma peça de teste, com saldo final igual ao inicial.</p>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Antes de começar</h2>
+      <div class="passo"><div class="num">1</div><div>Abra o app no iPhone e deixe a tela ligada (o envio acontece com o app aberto na frente).</div></div>
+      <div class="passo"><div class="num">2</div><div>Me avise que vai começar: vou tirar a foto exata da nuvem nesse instante, pra comparação valer.</div></div>
+    </div>
+
+    <div class="card">
+      <h2>O teste (peça existente, +1 e depois -1)</h2>
+      <div class="passo"><div class="num">3</div><div>Vá no <b>Hub do carro</b> e entre em <b>Estoque</b>.</div></div>
+      <div class="passo"><div class="num">4</div><div>Escolha uma peça que já existe e dê <b>+1</b> na quantidade.</div></div>
+      <div class="passo"><div class="num">5</div><div>Em seguida dê <b>-1</b> na mesma peça. O saldo volta ao que era — o estoque real não muda, mas ficam duas movimentações registradas.</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Enviar e conferir</h2>
+      <div class="passo"><div class="num">6</div><div>Vá em <b>Sincronização</b> e toque em <b>Sincronizar agora</b>.</div></div>
+      <div class="passo"><div class="num">7</div><div>Olhe o contador <b>Pendentes</b>: ele tem que <b class="ok">zerar</b>, e o status ficar OK.</div></div>
+      <div class="passo"><div class="num">8</div><div>Me avise quando zerar. Eu confirmo na nuvem que as duas movimentações chegaram (a diferença tem que bater exatamente com a sua mexida).</div></div>
+    </div>
+  </div>
+
+  <div class="nota">
+    Por que escolhemos assim: <b>"Sincronizar agora"</b> dá a prova na hora (você vê o contador zerar) em vez de esperar o envio automático. E a mexida <b>+1 / -1</b> testa o caminho de movimentação sem alterar o estoque de verdade — o saldo termina igual ao que começou.
+  </div>
+
+  <p class="rod">Frente C, passos C2 e C3 da campanha de 14/06. A conferência na nuvem (C4) é só leitura. Decisões D4 (botão "Sincronizar agora") e D5 (+1 / -1) já fechadas por você.</p>
+</div>
+</body>
+</html>
