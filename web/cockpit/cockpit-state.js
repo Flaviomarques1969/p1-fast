@@ -302,7 +302,9 @@ export class CockpitState {
   }
 
   setApexPonto(papel, fields) {
-    if (!['entrada', 'freio', 'apice', 'saida'].includes(papel)) {
+    // 'pace' (5º marco, Flávio 13/06): aceitamos como papel válido pro estado guardar o ponto
+    // de aceleração pós-Vmin. A tela mostra Pace CENTRAL (não como 4º widget) — decisão 26/05.
+    if (!['entrada', 'freio', 'apice', 'pace', 'saida'].includes(papel)) {
       throw new Error(`CockpitState: apex papel="${papel}" inválido`);
     }
     const cur = this._state.apex[papel];
