@@ -307,18 +307,20 @@ export function criarShiftLightOrquestrador({
     },
 
     /**
-     * Troca o modo (Durabilidade/Normal/Agressivo) e invalida cache.
+     * Modos (Durabilidade/Normal/Agressivo) REVOGADOS por decisão do Flávio
+     * 14/06/2026: carro de corrida = um comportamento só (máximo desempenho,
+     * troca na potência máxima). Mantido como no-op por compatibilidade com os
+     * chamadores existentes (tela de configuração / painel) — não afeta o alvo.
      */
-    setModoStint(modo) {
-      modoAtual = modo;
-      _ultimoCalcPorMarcha = {};
-    },
+    setModoStint(_modo) { /* sem efeito: o alvo é sempre a potência máxima + refino por tempo de passagem */ },
 
     /**
-     * Carrega ou atualiza a curva do motor (do banco ou cache).
+     * Carrega ou atualiza a curva do motor (do banco ou cache). Recalcula o
+     * alvo-semente = pico de potência da nova curva (ou o perfil, como fallback).
      */
     setCurva(novaCurva) {
       curva = novaCurva;
+      _alvoSementeRpm = _picoPotenciaDaCurva(novaCurva) ?? PERFIL_BUBI.picoPotenciaRpm;
       _ultimoCalcPorMarcha = {};
     },
 
