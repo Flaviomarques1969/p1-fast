@@ -22,6 +22,7 @@ struct HubMockLauncher: View {
     @StateObject private var combustivelRepo: CombustivelRepository
     @StateObject private var licaoRepo: LicaoRepository
     @StateObject private var pendenciaRepo: PendenciaRepository
+    @StateObject private var estoqueRepo: EstoqueRepository
     /// NavRouter ESTÁVEL (como no ReadyRoot real) — sem isto, cada publish dos
     /// repos recriaria o router e jogaria a navegação de volta pra raiz.
     @StateObject private var router = NavRouter()
