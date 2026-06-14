@@ -114,9 +114,9 @@ nova é necessária; leitura da nuvem é só leitura.
 - [ ] **C1 — Foto do estado atual da nuvem (leitura).** Contar as linhas das 4 tabelas hoje, pra
       comparar depois. [EU FAÇO — produção em leitura]
       Critério: 4 números registrados; nenhuma escrita.
-- [ ] **C2 — Roteiro do teste manual (1 página, sem jargão) (D4 + D5).** Passo-a-passo: abrir o app,
-      Hub do carro → Estoque, fazer +1/−1 numa peça, Sincronização → "Sincronizar agora", ver
-      "Pendentes" zerar. [VOCÊ DECIDE o roteiro]
+- [ ] **C2 — Roteiro do teste manual (1 página, sem jargão).** D4=botão "Sincronizar agora";
+      D5=+1/−1 numa peça (já decididos). Passo-a-passo: abrir o app, Hub do carro → Estoque, fazer
+      +1/−1 numa peça, Sincronização → "Sincronizar agora", ver "Pendentes" zerar. [EU FAÇO o roteiro] [VOCÊ executa em C3]
 - [ ] **C3 — Você executa o teste com o iPhone desbloqueado.** A ação que está pendente desde 03/06. [VOCÊ no iPhone]
       Critério: você confirma que "Pendentes" zerou e o status ficou OK.
 - [ ] **C4 — Confirmar na nuvem que o dado do teste chegou (leitura).** Comparar com a foto de C1. [EU FAÇO — produção em leitura]
