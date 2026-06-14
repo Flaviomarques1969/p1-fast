@@ -158,10 +158,17 @@ nova é necessária; leitura da nuvem é só leitura.
       FEITO 14/06: `relatorios/roteiro-teste-sincronizacao-2026-06-14.html` (largura total, sem emoji,
       linguagem de gestor). Inclui o passo de eu tirar a foto EXATA da nuvem no instante do teste (resolve
       a ressalva do C1). Abro no navegador quando você for fazer o C3.
-- [ ] **C3 — Você executa o teste com o iPhone desbloqueado.** A ação que está pendente desde 03/06. [VOCÊ no iPhone]
+- [x] **C3 — Você executa o teste com o iPhone desbloqueado.** A ação que está pendente desde 03/06. [VOCÊ no iPhone]
       Critério: você confirma que "Pendentes" zerou e o status ficou OK.
-- [ ] **C4 — Confirmar na nuvem que o dado do teste chegou (leitura).** Comparar com a foto de C1. [EU FAÇO — produção em leitura]
+      FEITO 14/06: Flávio rodou o teste e confirmou "sim" — "Pendentes" zerou e status OK no iPhone.
+      Frente C (sincronização) VALIDADA pela prova do iPhone.
+- [x] **C4 — Confirmar na nuvem que o dado do teste chegou (leitura).** Comparar com a foto de C1. [EU FAÇO — produção em leitura]
       Critério: a diferença bate exatamente com a mexida (+2 movimentações).
+      RESOLVIDO 14/06 pela prova do iPhone (C3). Conferência pela nuvem (leitura pública anon, REST
+      count=exact, sem escrita): manutencoes=1 (baseline intacto — o teste não tocou). pecas/pecas_locais/
+      pecas_movimentacoes NÃO legíveis pela chave pública (RLS → count 0; não é perda, é falta de permissão
+      de leitura). Contagem exata do +2 exigiria a chave service_role de produção (só leitura) — Flávio NÃO
+      autorizou e considerou a prova do iPhone suficiente. C4 fechado por C3.
 - [ ] **C5 — Conferência visual da versão oficial no iPhone.** Hub / Estoque / Manutenção /
       Sincronização — confirmar que a oficial está igual ao que você aprovou. [VOCÊ no iPhone]
       Critério: você confirma tela por tela; divergência vira pendência nova.
