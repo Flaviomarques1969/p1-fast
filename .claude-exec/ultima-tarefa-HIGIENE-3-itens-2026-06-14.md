@@ -73,8 +73,10 @@ da chain para nessa falha, rodei à parte os 37 testes que vêm depois: TODOS pa
 (tipos-e-pontos 13/13, treino-stint 59/59, voltas/box/chegada/padrão/catálogo e os demais 35
 pós-schema-parity = 35/35). Normalizer testado isolado: 9/9.
 
-**Pendência herdada (não deste refactor):** node-smoke-schema-parity.mjs falha desde antes
-(lista de exceção RLS desatualizada). Não mexi — fora do escopo desta higiene.
+**Teste de conferência (schema-parity): RESOLVIDO 14/06.** A falha era a lista de exceção de
+RLS desatualizada após a 0045 (as 3 tabelas ganharam trava). Removi as 3 da lista de exceção
+em tests/node-smoke-schema-parity.mjs (agora EXIGE trava nelas — guarda anti-regressão). Isolado
+15 ok/0 fail; conjunto completo percorre todas as suítes sem parar.
 
 TASK_DONE (itens 2 e 3):
 - Pedido conferido: sim · Ambiente: desenvolvimento · Produção alterada: não
