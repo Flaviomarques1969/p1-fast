@@ -515,6 +515,29 @@ enum Migrations {
             try? db.execute(sql: "ALTER TABLE pendencias_template ADD COLUMN unidade TEXT;")
             try? db.execute(sql: "ALTER TABLE evento_pendencias ADD COLUMN quantidade REAL;")
         }
+
+        // v29 — pendências ADICIONAIS (incluídas pelo usuário) por evento.
+        // LOCAL-ONLY: esta tabela NÃO passa pelo SyncQueue, então a tabela
+        // `evento_pendencias` (que sobe pra nuvem/produção) fica intacta. O app
+        // é mono-iPhone (ADR-018), então não precisa sincronizar estes itens.
+        // Cada item: título livre + grupo escolhido + checado. Removível.
+        m.registerMigration("v29_pendencias_adicionais") { db in
+            try db.execute(sql: """
+                CREATE TABLE IF NOT EXISTS evento_pendencias_extra (
+                    id           TEXT PRIMARY KEY,
+                    evento_id    TEXT NOT NULL REFERENCES eventos(id) ON DELETE CASCADE,
+                    grupo_id     TEXT NOT NULL,
+                    grupo_titulo TEXT NOT NULL,
+                    grupo_num    TEXT NOT NULL,
+                    titulo       TEXT NOT NULL,
+                    checado      INTEGER NOT NULL DEFAULT 0,
+                    checado_at   INTEGER,
+                    created_at   INTEGER NOT NULL,
+                    updated_at   INTEGER NOT NULL
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_evento_pendencias_extra_evento ON evento_pendencias_extra(evento_id);")
+        }
     }
 
     // swiftlint:disable:next function_body_length
