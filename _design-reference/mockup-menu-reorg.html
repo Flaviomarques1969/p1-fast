@@ -381,6 +381,7 @@ function toggleGrupo(gi){ const el=document.querySelectorAll('.pgroup')[gi]; el.
 function target(it){ if(it.tipo==='embalagem') return it.emb||1; if(it.tipo==='conjunto'&&it.partes) return it.partes.reduce((s,p)=>s+(+p.qtd||0),0); return it.qtd||1; }
 function incPegou(id,d){ const f=findItem(id); if(!f) return; const tg=target(f.it); f.it.pegou=Math.max(0,Math.min(tg,(f.it.pegou||0)+d)); renderPend(); }
 function toggleItem(id){ const f=findItem(id); if(!f) return; f.it.done=!f.it.done; if(f.it.done) f.it.pegou=target(f.it); renderPend(); }
+function excluirItem(gi,id){ const it=state[gi].itens.find(x=>x.id===id); if(it && confirm(`Excluir "${it.txt}"? Não dá pra desfazer.`)){ state[gi].itens=state[gi].itens.filter(x=>x.id!==id); renderPend(); } }
 
 // ── editor ──
 let editing = null;
