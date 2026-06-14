@@ -7,9 +7,9 @@
 // Detalhes em docs/research/bubi-dyno-2026-05-18/.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
 
-const SUPABASE_URL  = 'https://fvhwltzhytpnhlqbttmd.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2aHdsdHpoeXRwbmhscWJ0dG1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTExNDAsImV4cCI6MjA5MzM4NzE0MH0._ZpxksUnuVFhLzCB5x7bBiZ_VLQQR5cH4A1T-0-mvrA';
+const SUPABASE_ANON = SUPABASE_ANON_KEY;
 
 // Carro Bolinha (Bubi) — hardcoded no MVP. Futuro: vem do usuário logado.
 export const BUBI_CARRO_ID = '641A81E7-3192-4E68-8183-B8401F105574';
