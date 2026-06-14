@@ -13,8 +13,9 @@
 //   - Banco pode recusar por permissão (postura em decisão no card
 //     20260610-191605) → devolve false e o chamador loga honesto.
 
-const SUPABASE_URL  = 'https://fvhwltzhytpnhlqbttmd.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2aHdsdHpoeXRwbmhscWJ0dG1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTExNDAsImV4cCI6MjA5MzM4NzE0MH0._ZpxksUnuVFhLzCB5x7bBiZ_VLQQR5cH4A1T-0-mvrA';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
+
+const SUPABASE_ANON = SUPABASE_ANON_KEY;
 
 let _client = null;
 async function client() {
