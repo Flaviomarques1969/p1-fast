@@ -224,7 +224,7 @@ private struct GrupoCard: View {
 
             if expandido {
                 VStack(spacing: 0) {
-                    ForEach(Array(grupo.itens.enumerated()), id: \.element.id) { idx, item in
+                    ForEach(Array(itensOrdenados.enumerated()), id: \.element.id) { idx, item in
                         if idx > 0 {
                             Rectangle()
                                 .fill(Color.border)
