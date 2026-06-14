@@ -130,11 +130,11 @@ export function criarAcumuladorConfianca({ numTrechos = NUM_TRECHOS_BRASILIA, ma
       pontosPorChave.clear();
       voltasLimpas = 0;
       if (!estado) return;
-      for (const m of (estado.marchasDetectadas || [])) {
+      for (const m of (Array.isArray(estado.marchasDetectadas) ? estado.marchasDetectadas : [])) {
         if (typeof m === 'number' && m >= 1 && m <= 5) marchasDetectadas.add(m);
       }
       if (Number.isFinite(estado.voltasLimpas)) voltasLimpas = estado.voltasLimpas;
-      for (const p of (estado.pontos || [])) {
+      for (const p of (Array.isArray(estado.pontos) ? estado.pontos : [])) {
         if (p && typeof p.chave === 'string' && Number.isFinite(p.rpm)) {
           pontosPorChave.set(p.chave, { rpm: p.rpm, amostras: Number.isFinite(p.amostras) ? p.amostras : 0 });
         }
