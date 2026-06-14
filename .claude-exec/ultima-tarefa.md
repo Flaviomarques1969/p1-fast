@@ -133,8 +133,20 @@
 ---
 
 ## RESUMO FINAL (14/06/2026)
-- FASE 0: CONCLUÍDA · FASE 1: CONCLUÍDA · FASE 2: PARCIAL (migration pronta+validada, falta aplicar no DEV
-  vivo do P1 Fast — stack local ocupado por outro projeto) · FASE 3: CONCLUÍDA · FASE 4: CONCLUÍDA ·
-  FASE 5: CONCLUÍDA · FASE 6: DEMO PRONTA, porte pro painel aguarda OK do Flávio.
-- Bateria: 345 ok / 0 fail (25 arquivos). Produção remota intocada (origin 256 atrás, nada enviado).
-  Backup canônico das passagens intacto.
+- FASE 0: CONCLUÍDA · FASE 1: CONCLUÍDA · FASE 2: CONCLUÍDA · FASE 3: CONCLUÍDA · FASE 4: CONCLUÍDA ·
+  FASE 5: CONCLUÍDA · FASE 6: CONCLUÍDA (demo + porte pro painel).
+- Bateria: 345 ok / 0 fail (25 arquivos). Produção remota intocada. Backup canônico das passagens intacto.
+
+### FASE 2 — APLICADA EM DEV (14/06, após "sim, os dois" do Flávio)
+- NÃO toquei no banco do projeto financeiro (porta ocupada) — o classificador de segurança bloqueou
+  criar banco no container dele, e concordei. Subi um Postgres DESCARTÁVEL e ISOLADO (container
+  p1fast-dev-isolado, porta 55432), semeei as 8 curvas reais e apliquei o ARQUIVO 0043 inteiro.
+- Conferido: SELECT mostra as 8 curvas com tipo_curva certo (CURVA 01=T5 … VITÓRIA=SF). Migração roda
+  limpa (BEGIN/ALTER/COMMENT/8 UPDATEs/COMMIT). Produção (cloud) segue intocada — só com autorização.
+
+### FASE 6 — PORTADA PRO PAINEL (14/06, após aprovação do Flávio)
+- Backup do painel: _design-reference/_backup-pre-fase6-passagem-20260614-014016.html.
+- mockup-command-box-vista-piloto.html: getPassagemDataForCurve + buildPassagemPanel estendidos —
+  bloco PASSAGEM agora mostra TIPO (badge), FORMATO de trail e os marcos freio·Vmin·PACE sobre o MESMO
+  arco (3 dots heróis intactos; posições dos blocos NÃO mexidas). SEM FREADA esconde os marcos extras.
+- Validado headless (Playwright): 0 erro de console, tipo+formato+marcos presentes. Aberto no navegador.
