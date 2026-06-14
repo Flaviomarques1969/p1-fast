@@ -1,28 +1,56 @@
 # Última tarefa
 
-> Tarefa ANTERIOR (campanha 3 frentes — trail/RaceBox/pendências) preservada em
-> `ultima-tarefa-backup-campanha-3frentes-2026-06-14.md`. Pendências dela (A7 sensor seg/ter,
-> B2/B5-B8 ar livre) seguem abertas, mas dependem de hardware/dia de pista — não é trabalho ativo agora.
+> Tarefa ANTERIOR (Vista Piloto / Command Box) preservada em
+> `ultima-tarefa-backup-vista-piloto-2026-06-14.md`.
 
-## TASK_INIT — 2026-06-14 — Avaliar funções da Vista Piloto (Command Box)
+## TASK_INIT — 2026-06-14 — Reorganizar menu de baixo (Cadastros → Garagem, Pendências no lugar)
 
-1. **Pedido original de Flávio:** "vamo ver o command box... há algumas funções lá dentro que eu quero que você avalie e a gente possa melhorar." Refere-se à **Vista Piloto do Command Box** (a tela "na visão do piloto").
-2. **Objetivo (1 frase):** avaliar as funções (blocos) da Vista Piloto do Command Box e propor melhorias, a partir das funções que o Flávio apontar.
-3. **Critérios objetivos de conclusão:** funções apontadas pelo Flávio avaliadas com diagnóstico + recomendação; nenhuma melhoria aplicada sem decisão dele; arranjo dos blocos (vista-piloto-ATUAL.json) e mockup preservados (backup antes de qualquer alteração).
-4. **Leitura confirmada:** ~/.claude/CLAUDE.md (sim) · ~/.claude-decisoes/padroes.md (sim, vazio) · FLAVIO_EXECUTION_PROTOCOL.md (sim) · FLAVIO_DONE_CHECKLIST.md (sim) · FLAVIO_ENVIRONMENT_RULES.md (sim) · FLAVIO_COMMUNICATION_RULES.md (sim) · CLAUDE.md do projeto + memórias Command Box (sim).
+1. **Pedido original de Flávio:**
+   "Em P1 Fast, no menu principal de baixo, mudar: pegar a parte de Cadastro e colocar dentro
+   de Garagem (lá no cadastro a gente cadastra piloto, passageiro, combustível e lições — isso
+   não faz mais sentido como aba própria). Colocar isso dentro de Garagem, como já tem novo
+   carro / novo piloto. E onde está Cadastro, colocar a função Pendências — que NÃO é o
+   checklist do carro, são as pendências para um determinado evento que a gente vai participar
+   (sempre o próximo). Lista de pendências acessada direto: ver o que falta, incluir, excluir, ticar."
+
+2. **Objetivo (1 frase):**
+   Tirar a aba "Cadastros" do menu de baixo, mover seu conteúdo (pilotos/passageiros/combustível/
+   lições) para dentro de Garagem, e pôr "Pendências do próximo evento" no lugar da aba liberada.
+
+3. **Critérios objetivos de conclusão:**
+   - Menu de baixo passa a ser: Home · Eventos · **Pendências** · Garagem.
+   - Garagem passa a hospedar Carros + Pilotos + Passageiros + Combustível + Lições (cada um com seu "+ Cadastrar").
+   - Pendências abre direto no próximo evento, com incluir / excluir / ticar item.
+   - Nada do que existe é perdido (PessoasView, PendenciasView, repos preservados).
+   - Mockup aprovado por Flávio no navegador ANTES de portar pro Swift.
+
+4. **Leitura confirmada:**
+   - `~/.claude/CLAUDE.md`: sim
+   - `~/.claude-decisoes/padroes.md`: sim (zerado, 0 decisões)
+   - `~/.claude/FLAVIO_EXECUTION_PROTOCOL.md`: sim
+   - `~/.claude/FLAVIO_DONE_CHECKLIST.md`: sim
+   - `~/.claude/FLAVIO_ENVIRONMENT_RULES.md`: sim
+   - `~/.claude/FLAVIO_COMMUNICATION_RULES.md`: sim
+   - `P1 Fast/CLAUDE.md` + memórias (global e P1 Fast): sim
+
 5. **Plano (≤5 passos):**
-   1. Mapear as funções reais da Vista Piloto (FEITO: 16 blocos via vista-piloto-ATUAL.json).
-   2. Abrir a tela pela 8078 pro Flávio ver (FEITO).
-   3. Flávio aponta QUAIS funções quer avaliar/melhorar.
-   4. Avaliar função por função (diagnóstico + recomendação), backup antes de mexer.
-   5. Aplicar melhorias só após decisão; preservar arranjo e a regra "Command Box é só visualização".
-6. **Áreas a inspecionar:** `_design-reference/mockup-command-box-vista-piloto.html`; `_design-reference/command-box-versoes/vista-piloto-ATUAL.json`; memórias de Command Box.
-7. **Ambiente alvo:** desenvolvimento (mockup de design local, servido pela 8078).
+   1. Mapear estado real do menu e telas (FEITO — ver "evidência").
+   2. Construir mockup interativo da reorganização (Garagem com sub-abas + Pendências do próximo evento) e abrir no navegador.
+   3. Flávio decide a estrutura da Garagem (sub-abas x lista de atalhos) e aprova o visual.
+   4. Portar pro Swift em DEV: trocar label/rota da 3ª aba; mover conteúdo de PessoasView pra Garagem; criar tela Pendências-próximo-evento com incluir/excluir/ticar.
+   5. Validar no simulador + abrir pro Flávio. Só depois cogitar produção.
+
+6. **Áreas/arquivos inspecionados (evidência real):**
+   - `ios/.../Components/BottomNav.swift` — componente do menu (4 vagas).
+   - `ios/.../Views/HomeView.swift:118-123` — menu REAL do app vivo = Home · Eventos · **Cadastros** · Garagem (NÃO Pendências ainda). Roteamento em `handleNavSelect`/`navigateFromSubView`.
+   - `ios/.../Views/PessoasView.swift` — a aba "Cadastros": sub-abas Pilotos/Passageiros/Combustível/Lições.
+   - `ios/.../Views/GaragemView.swift` — hoje só lista de carros + FAB "Novo carro" + link "Trechos da pista".
+   - `ios/.../Views/PendenciasView.swift` — JÁ EXISTE, mas por evento (eventoId), 6 grupos, só ticar/nota; NÃO inclui/exclui item; aberta dentro do detalhe do evento.
+   - `_design-reference/mockup-garagem.html` + nav dos mockups: já mostram "Pendências" no slot (o desenho já anteviu, mas o app vivo ainda não).
+
+7. **Ambiente alvo:** desenvolvimento (mockup + iOS DEV).
 8. **Produção protegida:** sim.
 9. **Autorização para produção:** não.
-10. **Evidência da autorização:** não recebida.
-11. **Riscos:** (a) mexer no arranjo/posições dos blocos = regressão grave (posições são do Flávio); (b) pôr botão de ação no Command Box viola regra dura (é só visualização); (c) servir por porta errada mostra layout padrão (sempre 8078).
-12. **Status inicial:** iniciado — aguardando Flávio apontar quais funções avaliar.
-
-## Funções (blocos) atuais da Vista Piloto — 16
-header (shift light+branding) · video (1-2 câmeras) · mapa (atelier) · hud (velocidade/gauge) · coach (P1 Coach) · stint (plano do stint) · checklist (do stint) · fuel-gauge (combustível) · delta-acum (delta acumulado de voltas) · carro · pneus · stint-bar (barra lateral) · passagem · frenagem · vmin · shift-light
+10. **Evidência da autorização para produção:** não recebida.
+11. **Riscos:** mexer no menu toca todas as telas (cada sub-view replica `navItems`); PendenciasView é por-evento e precisa de "próximo evento" + incluir/excluir (capacidade nova); não quebrar roteamento da tab-bar fixa.
+12. **Status inicial:** iniciado — fase de mockup.
