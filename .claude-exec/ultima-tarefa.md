@@ -54,3 +54,7 @@
 10. **Evidência da autorização para produção:** não recebida.
 11. **Riscos:** mexer no menu toca todas as telas (cada sub-view replica `navItems`); PendenciasView é por-evento e precisa de "próximo evento" + incluir/excluir (capacidade nova); não quebrar roteamento da tab-bar fixa.
 12. **Status inicial:** iniciado — fase de mockup.
+
+## Decisão 1 — estrutura da Garagem (2026-06-14)
+Flávio escolheu **Sub-abas no topo** (Carros · Pilotos · Passageiros · Combustível · Lições).
+Mockup: `_design-reference/mockup-menu-reorg.html`. Aguardando aprovação visual pra portar pro app (DEV).
