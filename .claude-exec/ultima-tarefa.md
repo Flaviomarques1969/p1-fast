@@ -66,3 +66,18 @@ FRENTE C: C1[x] C2[x] C3[ GATE-FLÁVIO ] C4[ ] C5[ GATE-FLÁVIO ]
   src/telemetry/racebox-packet-parser.js + 9 testes na bateria. SEM pacote real salvo → validação
   byte-a-byte fica pra B2/B5 (aparelho/ar livre). Memória p1-fast-racebox-decodificador-2026-06-14.
   ETAPA 1 AUTÔNOMA COMPLETA. Restam só gates: A5 (navegador), C2/C3/C4/C5 (iPhone), A7 (sensor), B2/B5-B8 (ar livre).
+- A5 [x] 14/06 (REPOSICIONADO): tentei demonstrar a troca de fonte com tela rolando/comparação de gráficos —
+  Flávio reprovou ("não dá pra avaliar", "enchendo linguiça"). Ele ESCLARECEU o conceito: volta livre NÃO
+  tem tela de freio (só pontos do trecho); a tela de freio é a do TREINO trail braking (mockup vivo
+  mockup-cockpit-treino-trail-braking-VIVO-2026-06-11), que ELE JÁ APROVOU ("está pronta, não precisa
+  melhorar") — confirmado por print que ele mandou. Aprendizado: a troca de fonte (estimativa GPS→sensor)
+  é INVISÍVEL na tela (mesma curva, dado mais preciso); não havia tela nova a validar. Telas que inventei
+  (comparacao-fonte-freio.html + scripts demo) REMOVIDAS do worktree. Validação técnica da troca: bateria verde.
+- A6 [x] 14/06: Flávio autorizou "incorporar à versão oficial agora" (com cópia de segurança, sem pôr no ar).
+  Porte ADITIVO (ambiente isolado está atrás da oficial — só trouxe o trail, nunca o contrário):
+  freio-trecho.js + trail-cockpit-motor.js + trail-cockpit-tela.js (novos) + index-t3000.html (tela 10,5) +
+  patch do trail no main-t3000.js via merge de 3 vias (preservou as 47 linhas que a oficial tinha) +
+  3 testes (freio-trecho/trail-cockpit/trail-religacao) no package.json (atalhos + agregador smoke).
+  Backup: .claude-exec/backup-A6-trail-freio-2026-06-14 (main-t3000.js.orig, package.json.orig, ponto 7a5fb39).
+  BATERIA INTEIRA 64/64 VERDE. Marco: commit bb8c2410 na branch consolidacao-onda1-2026-06-14 (NÃO enviado ao
+  repositório remoto — aguarda Flávio). Salvamento automático da pasta oficial registrou a maior parte junto.
