@@ -487,6 +487,7 @@ private struct EventoDetalheViewSheet: View {
     @EnvironmentObject private var pneuRepo: PneuRepository
     @EnvironmentObject private var combustivelRepo: CombustivelRepository
     @EnvironmentObject private var pendenciaRepo: PendenciaRepository
+    @EnvironmentObject private var estoqueRepo: EstoqueRepository
     let eventoId: String
     let openSheet: WhichSheet
 
