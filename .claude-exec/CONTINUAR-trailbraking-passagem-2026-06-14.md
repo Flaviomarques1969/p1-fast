@@ -23,11 +23,12 @@ A tela da passagem foi APROVADA pelo Flávio. Só falta UMA decisão: subir o ti
 - FASE 6: bloco PASSAGEM no painel — tipo + formato de trail + marcos freio/Vmin/PACE. APROVADO 14/06.
   Cópia carimbada: _design-reference/mockup-command-box-vista-piloto-APROVADO-PASSAGEM-2026-06-14.html.
 
-### A ÚNICA decisão aberta
-Gravar o `tipo_curva` na PRODUÇÃO (nuvem fvhwltzhytpnhlqbttmd) — é o que faz aparecer pra valer no painel.
-SÓ com autorização literal do Flávio: `MIGRAR PARA PRODUÇÃO: tipo_curva`.
-- NÃO precisa de banco local. O app lê os dados das curvas da nuvem, não de banco no Mac.
-- Se autorizar: montar PROD_RELEASE_PLAN, aplicar a migration 0043 na nuvem, conferir, reportar.
+### A ÚNICA decisão aberta — RESOLVIDA 14/06/2026
+Flávio autorizou ("MIGRAR PARA PRODUÇÃO: tipo_curva") e a 0043 foi APLICADA na nuvem
+fvhwltzhytpnhlqbttmd. Validado: 8 curvas com tipo_curva certo (CURVA 01=T5 … VITÓRIA=SF).
+Detalhe completo do método (trava dos arquivos órfãos duplicados + solução) em
+.claude-exec/ultima-tarefa.md, seção "FASE 2 — GRAVADA EM PRODUÇÃO".
+TAREFA DE TRAIL-BRAKING + PASSAGEM CONCLUÍDA FIM A FIM. Nada pendente.
 
 ## REGRAS DURAS (não repetir erros de 14/06)
 - COMMAND BOX: abrir SEMPRE pela porta 8078 (ajudante tools/atelier-server.mjs, injeta o arranjo salvo).
