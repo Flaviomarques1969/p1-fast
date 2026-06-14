@@ -51,10 +51,19 @@
 - NÃO instalei no iPhone físico (registrar ≠ empacotar/instalar — passo à parte, não pedido).
 - Os testes JS (tests/) NÃO entraram: pertencem à Onda 2 (testam o painel; um deles falha pelo trail em andamento).
 
-## PENDENTE — ONDA 2 (painel + testes JS + windows)
-- Espera o trail-braking: `tests/node-smoke-trail-religacao.mjs` FALHA no RL-08 porque
-  `web/cockpit/index-t3000.html` ainda está no layout de celular (precisa TELA 10,5: height 590, sem notch).
-- Quando o RL-08 ficar verde, registrar painel + testes JUNTOS e colocar o painel no ar.
+## TELA 10,5 — JÁ ESTAVA PRONTA (verificado 14/06)
+- Flávio pediu "ajustar a tela 10,5". Ao verificar: `web/cockpit/index-t3000.html` JÁ TEM o ajuste
+  (`.device { height:590px; border-radius:0 }` + `.device .notch { display:none }`, conforme regra 12/06).
+- A conferência anterior reportou RL-08 FALHANDO — estava DESATUALIZADA. Rodei o teste: passa.
+- `node tests/node-smoke-trail-religacao.mjs` = 10 ok/0 fail. `npm run smoke` completo = EXIT 0 (tudo verde).
+- Não precisei editar nada. NÃO coloquei no ar.
+
+## PENDENTE — ONDA 2 (painel + testes JS + windows): SEM bloqueio técnico
+- Todos os testes passam; o painel está íntegro (tela 10,5 + motor do trail via GPS ligado, RL-09).
+- O que resta NÃO é técnico — é DECISÃO do Flávio: publicar o painel no ar agora (trail funciona com
+  régua de freio via GPS; o sensor de freio 15-16/06 refina depois) ou esperar o sensor + validação.
+- Recomendação: esperar o sensor/validação do trail pra publicar com confiança. Quando decidir publicar:
+  registrar painel+testes (método seletivo de origin/main) + deploy Vercel + reconciliar a main local.
 - Divergência da main local vs origin/main aumentou (3 commits de consolidação só no remoto) —
   reconciliar quando fechar a Onda 2. NÃO fazer git pull na main local até lá.
 
