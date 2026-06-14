@@ -188,6 +188,8 @@ private struct GrupoCard: View {
     let onToggleExpand: () -> Void
     let onToggleItem: (PendenciaItemView) -> Void
     let onEditarNota: (PendenciaItemView) -> Void
+    let onIncluir: () -> Void
+    let onRemoverItem: (PendenciaItemView) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
