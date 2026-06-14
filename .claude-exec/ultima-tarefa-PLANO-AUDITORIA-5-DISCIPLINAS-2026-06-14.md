@@ -77,4 +77,34 @@
 - Metodo: 5 auditores a fundo (1 por disciplina) + verificacao adversarial de cada achado grave/medio (cetico tenta refutar) — alinhado a "validar uso real antes de alarmar".
 - Testes read-only permitidos (npm run smoke; tentar swift smoke).
 - Entrega prevista: relatorio de auditoria em HTML (formato mapa) + plano de correcao PROPOSTO (sem executar).
-- Status: em execucao (workflow disparado).
+- Status: CONCLUIDA.
+
+### TASK_DONE EXECUCAO 14/06/2026 (auditoria completa)
+- Pedido original conferido: sim ("roda tudo" = auditar as 5 disciplinas).
+- Ambiente trabalhado: desenvolvimento (somente leitura).
+- Producao foi alterada: NAO.
+- Autorizacao para producao: nao se aplica (nada migrado).
+- Arquivos reais inspecionados: sim (25 agentes; ~858 acoes de leitura/grep/testes).
+- Alteracoes feitas: NAO em codigo/banco. So gerei 2 relatorios HTML + este registro.
+- Testes executados (read-only): npm run smoke = 345 ok/0 fail (e 382 ok/0 fail em outra contagem de suites); swift run p1fast-smoke = 546 ok/0 fail; node-smoke-* por disciplina, todos verdes.
+- Resultado: CONCLUIDO.
+
+### Entregas
+- `relatorios/plano-auditoria-5-disciplinas-2026-06-14.html` (o plano).
+- `relatorios/auditoria-resultado-5-disciplinas-2026-06-14.html` (o resultado).
+
+### Veredito consolidado (pos 2a checagem adversarial)
+- 40 achados: 1 GRAVE real, 3 medios, 12 baixos, 19 OK confirmados, 5 falso-alarme descartados.
+- Dos 7 alarmes graves do 1o levantamento, NENHUM se confirmou grave (3 falso-alarme: CV/kW INT-01, contaminacao referencia INT-03, calibracoes CONF-03; 4 rebaixados). 1 medio subiu pra grave (SEG-05).
+- GRAVE REAL = SEG-05: painel publico (p1t4000) + tabelas do shift light sem trava (RLS) + chave anon = qualquer um escreve nessas tabelas pela internet. Dano CONTIDO hoje porque o painel usa ENVELOPE_DEFAULT_BUBI fixo no codigo, nao o do banco (SEG-06 refutado). CUIDADO: fechar anon sem desenhar a trava certa quebra o painel (abertura foi decisao do Flavio 11/06).
+- Pendencia do Flavio (nao defeito): calibrar apice das 8 curvas de Brasilia (CONF-01) liga a analise de apice.
+
+### Plano de correcao proposto (aguardando Flavio escolher)
+1) Seguranca (RLS + login real) — prioridade 1, preparar em DEV, validar, so migrar com autorizacao.
+2) Calibrar apice (acao do Flavio no configurador).
+3) Faxina linhas/ambientes orfaos.
+4) Higiene menor (chave central, enum pneu, view voltas reais, consolidar 0026/0027).
+5) Medir em pista (aquecimento iPhone, fluidez painel, atraso do dado).
+
+### Pendencias reais
+- Nenhuma da auditoria em si. Aguarda decisao do Flavio sobre qual item de correcao executar.
