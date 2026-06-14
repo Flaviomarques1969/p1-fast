@@ -30,6 +30,7 @@ function client() {
  */
 export async function loadPadrao({ carroId, trackId, tipoPneu }) {
   if (!carroId || !trackId || !tipoPneu) return null;
+  tipoPneu = normalizarTipoPneu(tipoPneu);
   try {
     const sb = client();
     const { data, error } = await sb
