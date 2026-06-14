@@ -81,9 +81,6 @@ export function validarPlanoStint(plano, origem) {
   return { ...plano, origem };
 }
 
-const NUVEM_URL_DEFAULT  = 'https://fvhwltzhytpnhlqbttmd.supabase.co';
-const NUVEM_ANON_DEFAULT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2aHdsdHpoeXRwbmhscWJ0dG1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTExNDAsImV4cCI6MjA5MzM4NzE0MH0._ZpxksUnuVFhLzCB5x7bBiZ_VLQQR5cH4A1T-0-mvrA';
-
 /**
  * Fallback: o plano viaja com o envelope (decisão 11/06). Quando o navegador
  * não tem plano local (notebook do carro ≠ máquina onde o chefe aprovou),
