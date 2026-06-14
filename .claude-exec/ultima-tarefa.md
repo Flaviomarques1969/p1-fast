@@ -84,4 +84,17 @@
   (cloud fvhwltzhytpnhlqbttmd) é protegida. Então a migration está pronta e validada, mas NÃO foi
   aplicada num banco DEV vivo do P1 Fast. Aplicar exige subir o stack do P1 Fast (decisão do Flávio).
 
-### FASE 3 — Re-etiquetar frenagem/Vmin nas 56 passagens (offline, em cópia) — EM EXECUÇÃO
+### FASE 3 — Re-etiquetar frenagem/Vmin nas 56 passagens (offline, em cópia) — CONCLUÍDA (14/06)
+- Dado real: ~/Documents/p1fast-backup-voltas-reais/passagens-bubi-aplicadas.json (56 passagens, 565
+  pontos, sub:null). Trabalhei SÓ em cópia: snapshot em relatorios/_passagens-bubi-ORIGINAL-snapshot-
+  2026-06-14.json; backup canônico INTACTO (MD5 d5797cd1... antes e depois).
+- Criado tools/re-etiquetar-passagens-offline.js: calcula freada (desacel 0,5 g, igual ao detector),
+  ápice (aprox. mínima ao apice_gss <=60 m) e Vmin (acharVminBuffer), e re-etiqueta com
+  retagSubsPorEventos (MESMA função do ao vivo). Saída: relatorios/passagens-bubi-reetiquetadas-2026-06-14.json.
+- RESULTADO: 0 pontos sub:null (era 565/565). Confiança do ápice declarada: alta=27 (ápice geométrico
+  casa) / baixa=8 (âncora no Vmin) / borda=21 (recorte parcial, Vmin na 1ª/última amostra). Honesto:
+  não forcei marca onde o dado a 1 Hz não dá — flag por passagem em _marcos.confiancaApice.
+- Criado tests/node-smoke-re-etiquetar-offline.mjs (8 ok) + ligado na bateria.
+- Evidência: `npm run smoke` = 341 ok / 0 fail (25 arquivos).
+
+### FASE 4 — 5º marco PACE (ponto de aceleração pós-Vmin) — EM EXECUÇÃO
