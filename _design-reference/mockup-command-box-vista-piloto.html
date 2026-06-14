@@ -7478,6 +7478,17 @@ html,body{
     detectLapWrap = function(){};         // congela a troca de voltas fictícias
     updateLiveCarroPneus = function(){};  // para de redesenhar carro/pneus fictícios (bloco já marcado)
 
+    // SHIFT LIGHT no modo REAL (Flávio 14/06): para a animação de demonstração
+    // (que mostrava marcha 3/4/5 e RPM varrendo falsos) e passa a desenhar o bloco
+    // com o RPM REAL do carro. A MARCHA fica "—" até o cérebro inferir a marcha ao
+    // vivo (resolvido com o dado do dia de pista 15-16). Calibração Bubi intacta (6.050/6.300).
+    stopShiftLightAnimation();
+    if(window.__shiftLightRealId){ clearInterval(window.__shiftLightRealId); }
+    window.__shiftLightRealId = setInterval(function(){
+      var rpmReal = (REAL.fresh && REAL.rpm != null) ? REAL.rpm : 0;
+      renderShiftLightFromValues(rpmReal, '—');
+    }, 100);
+
     // HUD honesto: real onde há sensor, "—" onde não há
     updateLiveHUD = function(){
       function set(f,v){ var el=document.querySelector('[data-hud="'+f+'"]'); if(el) el.textContent=v; }
