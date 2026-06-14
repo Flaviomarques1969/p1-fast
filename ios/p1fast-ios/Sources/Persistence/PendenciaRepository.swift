@@ -322,18 +322,37 @@ struct PendenciaGrupoView: Identifiable, Equatable {
     let itens: [PendenciaItemView]
 
     var id: String { grupoId }
-    var checados: Int { itens.filter(\.instance.checado).count }
+    var checados: Int { itens.filter(\.checado).count }
     var total: Int { itens.count }
     var allChecked: Bool { checados == total && total > 0 }
     var anyChecked: Bool { checados > 0 }
     var allMandatoryChecked: Bool {
-        itens.filter(\.template.obrigatorio).allSatisfy(\.instance.checado)
+        itens.filter(\.obrigatorio).allSatisfy(\.checado)
     }
 }
 
+/// Item de pendência pra UI. Representa OU um item do catálogo (template +
+/// instância sincronizada), OU um item adicional incluído à mão (extra,
+/// local-only e removível). Os acessores unificam os dois casos pra a View.
 struct PendenciaItemView: Identifiable, Equatable {
-    let template: PendenciaTemplate
-    let instance: EventoPendencia
+    let template: PendenciaTemplate?
+    let instance: EventoPendencia?
+    let extra: EventoPendenciaExtra?
 
-    var id: String { instance.id }
+    init(template: PendenciaTemplate, instance: EventoPendencia) {
+        self.template = template; self.instance = instance; self.extra = nil
+    }
+    init(extra: EventoPendenciaExtra) {
+        self.template = nil; self.instance = nil; self.extra = extra
+    }
+
+    /// id estável: da instância (catálogo) ou do extra.
+    var id: String { instance?.id ?? extra?.id ?? "" }
+    var titulo: String { template?.titulo ?? extra?.titulo ?? "" }
+    var checado: Bool { instance?.checado ?? extra?.checado ?? false }
+    var nota: String? { instance?.nota }
+    /// Só itens do catálogo têm "obrigatório"; adicionais nunca são.
+    var obrigatorio: Bool { template?.obrigatorio ?? false }
+    /// true = item incluído à mão (removível). false = item do catálogo.
+    var isExtra: Bool { extra != nil }
 }
