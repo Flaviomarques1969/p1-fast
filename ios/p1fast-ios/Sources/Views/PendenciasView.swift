@@ -16,12 +16,21 @@ struct PendenciasView: View {
     let eventoId: String
     let eventoTitulo: String?
     let onClose: () -> Void
+    /// Texto do eyebrow do topo. Quando aberta como aba do menu (próximo
+    /// evento), a HomeView passa "Pendências · próximo evento".
+    var eyebrow: String = "Pendências do evento"
+    /// Mostra a barra inferior "Fechar". Aba do menu passa `false` (o menu
+    /// de baixo já fica fixo na tela, não precisa de barra de fechar).
+    var showFootBar: Bool = true
 
     @EnvironmentObject private var repo: PendenciaRepository
     @State private var grupos: [PendenciaGrupoView] = []
     @State private var grupoExpandido: String?
     @State private var editandoNota: PendenciaItemView?
     @State private var notaText: String = ""
+    /// Grupo que está recebendo um item adicional (abre o alerta de incluir).
+    @State private var incluindoNoGrupo: PendenciaGrupoView?
+    @State private var novoItemTitulo: String = ""
 
     var body: some View {
         ZStack(alignment: .bottom) {
