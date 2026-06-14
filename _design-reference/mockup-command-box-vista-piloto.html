@@ -6850,9 +6850,9 @@ html,body{
         if(gearEl) gearEl.textContent = s.gear;
         if(rpmWrap){
           rpmWrap.classList.remove('zone-champagne','zone-amber','zone-red');
-          if(s.rpm > SHIFT_LIGHT_CFG.redline) rpmWrap.classList.add('zone-red');
-          else if(s.rpm > SHIFT_LIGHT_CFG.shiftPoint) rpmWrap.classList.add('zone-amber');
-          else if(s.rpm > 5700) rpmWrap.classList.add('zone-champagne');
+          if(s.rpm >= SHIFT_LIGHT_CFG.redline) rpmWrap.classList.add('zone-red');
+          else if(s.rpm >= SHIFT_LIGHT_CFG.shiftPoint) rpmWrap.classList.add('zone-amber');
+          else if(s.rpm >= 5700) rpmWrap.classList.add('zone-champagne');
         }
         host.classList.toggle('shift-now', s.rpm >= SHIFT_LIGHT_CFG.shiftPoint);
       }
