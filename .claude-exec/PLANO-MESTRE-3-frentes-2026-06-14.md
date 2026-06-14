@@ -41,10 +41,16 @@ física do GPS. O módulo que lê o sensor real (`freio-trecho.js`) JÁ EXISTE e
 detecção de presença do sensor, fusão por tempo), mas vive só em ambiente isolado e o caminho ao vivo
 ainda não usa a pressão real. Sensor de pressão chega seg/ter 15-16/06.
 
-- [ ] **A1 — Aplicar as decisões já fechadas do trail (D1 + D2).** D1=2 de 2; D2=híbrido (já
+- [x] **A1 — Aplicar as decisões já fechadas do trail (D1 + D2).** D1=2 de 2; D2=híbrido (já
       decididas). Gravar na memória do projeto; refletir o critério do CERTO na avaliação do motor.
       Atualizar "Decisões em aberto" (3 → 0; a decisão 2 já estava resolvida pelas rodadas 11/19). [EU FAÇO]
       Critério pronto: decisões gravadas; seção atualizada; constante do motor reflete D1 (2 de 2).
+      FEITO 14/06: motor `trail-cockpit-motor.js` — `pontoFreadaReprova=false` (2 de 2: formato +
+      mínima), ponto de freada virou `.aviso` (FREOU CEDO/TARDE), interruptor pra 3 de 3 quando a
+      pressão real entrar (A3). Tela `trail-cockpit-tela.js` — D2 híbrido (traço detalhado só após
+      desvio). Decisão gravada: memória `p1-fast-trail-criterio-certo-d1-d2-2026-06-14` + seção
+      "Decisões em aberto" do ditado atualizada (3→0; rótulo FREIO/FREIA AQUI segue aberto, fora do
+      plano). Testes: bateria COMPLETA verde (trail-cockpit 39 ok, freio-trecho 29, religação 9, 0 fail).
 - [ ] **A2 — Levar pressão/pedal do evento de amostra até o motor do trail.** Sem mudar a tela: só
       trafegar `pressaoFreioBar`/`pedalFreioPct` (já existem no parser e na transmissão) até o motor,
       casados por tempo. [EU FAÇO]
