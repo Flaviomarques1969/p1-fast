@@ -169,9 +169,11 @@ nova é necessária; leitura da nuvem é só leitura.
       pecas_movimentacoes NÃO legíveis pela chave pública (RLS → count 0; não é perda, é falta de permissão
       de leitura). Contagem exata do +2 exigiria a chave service_role de produção (só leitura) — Flávio NÃO
       autorizou e considerou a prova do iPhone suficiente. C4 fechado por C3.
-- [ ] **C5 — Conferência visual da versão oficial no iPhone.** Hub / Estoque / Manutenção /
+- [x] **C5 — Conferência visual da versão oficial no iPhone.** Hub / Estoque / Manutenção /
       Sincronização — confirmar que a oficial está igual ao que você aprovou. [VOCÊ no iPhone]
       Critério: você confirma tela por tela; divergência vira pendência nova.
+      FEITO 14/06: Flávio confirmou que fez a conferência em outra tela e deu certo. Sem divergência.
+      FRENTE C 100% concluída.
 
 ---
 
