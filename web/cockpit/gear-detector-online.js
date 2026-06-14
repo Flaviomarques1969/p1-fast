@@ -160,6 +160,42 @@ export function criarGearDetectorOnline({ numMarchas = 5, onMarchaDetectada = nu
       return Math.round(rpmAntes * (destino.ratioMedia / origem.ratioMedia));
     },
 
+    /**
+     * Exporta as assinaturas aprendidas do câmbio (razão por marcha) para
+     * persistir entre sessões — sem isto, o aprendizado some ao fechar.
+     */
+    exportarEstado() {
+      return {
+        versao: 1,
+        marchas: marchas.map(m => ({
+          ratioMedia: m.ratioMedia, amostras: m.amostras, rpmMin: m.rpmMin, rpmMax: m.rpmMax,
+        })),
+      };
+    },
+
+    /**
+     * Importa assinaturas persistidas (idempotente; substitui o estado atual).
+     * Mantém a ordem canônica (1ª→Nª por razão decrescente).
+     */
+    importarEstado(estado) {
+      marchas.length = 0;
+      bufferRecente = [];
+      marchaAtual = null;
+      confiancaAtual = 0;
+      if (!estado || !Array.isArray(estado.marchas)) return;
+      for (const m of estado.marchas) {
+        if (!m || !Number.isFinite(m.ratioMedia)) continue;
+        marchas.push({
+          ratioMedia: m.ratioMedia,
+          amostras: Number.isFinite(m.amostras) ? m.amostras : 0,
+          rpmMin: Number.isFinite(m.rpmMin) ? m.rpmMin : m.ratioMedia,
+          rpmMax: Number.isFinite(m.rpmMax) ? m.rpmMax : m.ratioMedia,
+          ultimaAtualizacao: Date.now(),
+        });
+      }
+      marchas.sort((a, b) => b.ratioMedia - a.ratioMedia);
+    },
+
     /** Reseta o detector (ex: ao trocar configuração de câmbio). */
     reset() {
       marchas.length = 0;
