@@ -477,11 +477,13 @@ function abrirEditor(gi, id){
   editing = id ? {id} : null;
   const grupoSel = document.getElementById('ed-grupo');
   grupoSel.innerHTML = state.map((g,i)=>`<option value="${i}">${g.titulo}</option>`).join('');
-  let it = {txt:'', cat:'obrig', espec:'', tipo:'simples', qtd:1, vol:1, unid:'L', emb:1, partes:null};
+  let it = {txt:'', cat:'obrig', espec:'', tipo:'simples', qtd:1, vol:1, unid:'L', emb:1, partes:null, escopo:'geral', kind:'item'};
   if(id){ const f=findItem(id); it=f.it; gi=state.indexOf(f.g); }
   document.getElementById('ed-titulo').textContent = id ? 'Editar item' : 'Cadastrar item';
   document.getElementById('ed-nome').value = it.txt;
   grupoSel.value = (gi!=null?gi:0);
+  document.getElementById('ed-escopo').value = it.escopo||'geral';
+  setSeg('ed-kind', it.kind||'item');
   setSeg('ed-cat', it.cat);
   document.getElementById('ed-espec').value = it.espec||'';
   setSeg('ed-tipo', it.tipo);
