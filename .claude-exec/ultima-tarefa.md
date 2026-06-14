@@ -175,3 +175,20 @@
 - Observação (dívida antiga, NÃO introduzida agora): a duplicação de número 0025-0028 segue no repositório
   e vai travar o próximo `db push` de novo — convém renumerar/limpar quando for mexer em migração.
 - STATUS FINAL: tipo_curva em produção. Tarefa de trail-braking + passagem CONCLUÍDA fim a fim.
+
+### LIMPEZA DA NUMERAÇÃO DUPLICADA (14/06/2026, após "pode arrumar a numeração que está travando")
+- Diagnóstico: 8 arquivos com número repetido (0025-0028). Comparei com o histórico REAL da nuvem
+  (dump de supabase_migrations.schema_migrations): a nuvem usa 0025=padroes, 0026=melhores,
+  0027=melhores(renum), 0028=rollback. Os 4 ARQUIVOS sem correspondência (órfãos) eram os que travavam.
+- Classificação por evidência: 0026_padroes = cópia idêntica da 0025 (só muda comentário) → descartável;
+  0027_seed/0028_seed = seeds antigos das curvas, JÁ revertidos (0028_rollback) e substituídos
+  (0029_v2 + 0030) → descartáveis e destrutivos se rodassem; 0025_video_streams_recording = ÚNICA fonte
+  das colunas recording_* (que JÁ existem em produção, conferido no schema) → preservar.
+- Ação: BACKUP total (docs/_archive/backup-migrations-pre-renumeracao-2026-06-14, 47 arquivos). Os 3
+  descartáveis movidos pra docs/_archive/migrations-orfaos-2026-06-14/ (+ README). O 0025_video virou
+  0044_video_streams_recording.sql e ficou IDEMPOTENTE (add column IF NOT EXISTS) — quando aplicado é
+  no-op em prod (colunas já existem) e recria em ambiente novo.
+- Validação: 0 números duplicados; `db push --dry-run` = "Would push: 0044" SEM erro de include-all
+  (DESTRAVADO); bateria `npm run smoke` = exit 0, 967 ok / 0 fail (inclui schema-parity e daily-recording).
+- PRODUÇÃO NÃO foi tocada (nenhum push real; dados intactos). A 0044 fica pendente e entra limpa no
+  próximo push autorizado. Migrações ativas: 47 -> 44.
