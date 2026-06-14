@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Passagem completa da curva — entrada · freio · Vmin · ápice · PACE · saída</title>
+<style>
+  :root{
+    --bg:#0b0e12; --card:#141a21; --line:#222c36; --ink:#e8eef4; --dim:#8aa0b4;
+    --entrada:#5aa9ff; --freio:#ff5a4e; --apice:#ffb347; --pace:#3fe08c; --saida:#9b8cff; --vmin:#ffd24a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  header{padding:22px 28px 6px}
+  h1{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:.2px}
+  .sub{color:var(--dim);font-size:13px;margin:0}
+  .aviso{margin:14px 28px;padding:10px 14px;border:1px solid var(--line);border-left:3px solid var(--apice);border-radius:8px;color:var(--dim);font-size:13px;background:#11161c}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(560px,1fr));gap:16px;padding:8px 28px 40px;width:100%}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .chead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:4px}
+  .cnome{font-size:18px;font-weight:700}
+  .ctipo{font-size:12px;color:#0b0e12;background:var(--apice);padding:3px 9px;border-radius:999px;font-weight:700;letter-spacing:.3px}
+  .cformato{color:var(--dim);font-size:13px;margin:2px 0 10px}
+  .resumo{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+  .pill{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--ink)}
+  .pill b{color:var(--apice)}
+  .tl-wrap{position:relative}
+  svg{width:100%;height:auto;display:block}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--dim)}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .conf{font-size:11px;color:var(--dim);margin-top:8px}
+  .facil{font-size:12.5px;color:var(--dim);margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
+  text{font-family:inherit}
+</style>
+</head>
+<body>
+<header>
+  <h1>Passagem completa da curva</h1>
+  <p class="sub">Para cada curva: o TIPO, o FORMATO de trail-braking prescrito e a linha do tempo da passagem real — entrada · freio · Vmin · ápice · PACE · saída.</p>
+</header>
+<div class="aviso" id="aviso">Carregando dados reais…</div>
+<div class="grid" id="grid"></div>
+
+<script type="module">
+import { perfilDeTrail, resumoTrail } from '../web/cockpit/perfil-trail-por-tipo.js';
+import { TEXTO_FACIL } from '../web/cockpit/tipos-curva-texto.js';
+
+// Padrão definitivo do Flávio (13/06) por nome — mesmo da migration 0043.
+const PADRAO = {
+  'CURVA 01':'T5','CURVA DA RETA OPOSTA':'T1','CURVA 2':'T0','CURVA DA JUNÇÃO':'T2',
+  'CURVA DA BRUXA':'T0','CURVA DO PLACAR':'T2','CURVA "S"':'T4','CURVA DA VITÓRIA':'SF',
+};
+const ORDEM = ['CURVA 01','CURVA DA RETA OPOSTA','CURVA 2','CURVA DA JUNÇÃO','CURVA DA BRUXA','CURVA DO PLACAR','CURVA "S"','CURVA DA VITÓRIA'];
+const COR = { entrada:'#5aa9ff', freio:'#ff5a4e', apice:'#ffb347', pace:'#3fe08c', saida:'#9b8cff' };
+
+function escolherPassagem(lista){
+  // prefere a de maior confiança de ápice; depois a com mais pontos
+  const ordem = { alta:0, baixa:1, borda:2 };
+  return lista.slice().sort((a,b)=>{
+    const ca = ordem[a._marcos?.confiancaApice] ?? 3, cb = ordem[b._marcos?.confiancaApice] ?? 3;
+    if(ca!==cb) return ca-cb;
+    return (b.pontos_json?.length||0)-(a.pontos_json?.length||0);
+  })[0];
+}
+
+function timelineSVG(p){
+  const pts = p.pontos_json || [];
+  const m = p._marcos || {};
+  const W=520,H=150,padL=18,padR=18,padT=40,padB=34;
+  const x0=padL, x1=W-padR, plotW=x1-x0;
+  const kmhs = pts.map(x=>x.kmh).filter(Number.isFinite);
+  const vmax=Math.max(...kmhs), vmin=Math.min(...kmhs), span=Math.max(1,vmax-vmin);
+  const yTop=padT, yBot=H-padB, plotH=yBot-yTop;
+  const fx = i => x0 + (pts.length<=1?0:(i/(pts.length-1))*plotW);
+  const fy = k => yBot - ((k-vmin)/span)*plotH;
+  let s = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">`;
+  // faixas de sub coloridas (fundo)
+  for(let i=0;i<pts.length-1;i++){
+    const sub = pts[i].sub || 'entrada';
+    s += `<rect x="${fx(i).toFixed(1)}" y="${yTop}" width="${(fx(i+1)-fx(i)).toFixed(1)}" height="${plotH}" fill="${COR[sub]||'#444'}" opacity="0.10"/>`;
+  }
+  // linha de velocidade
+  let d='';
+  pts.forEach((pt,i)=>{ if(Number.isFinite(pt.kmh)) d += (d?'L':'M')+fx(i).toFixed(1)+','+fy(pt.kmh).toFixed(1)+' '; });
+  s += `<path d="${d}" fill="none" stroke="#cdd9e4" stroke-width="2"/>`;
+  // pontos coloridos por sub
+  pts.forEach((pt,i)=>{ if(Number.isFinite(pt.kmh)) s += `<circle cx="${fx(i).toFixed(1)}" cy="${fy(pt.kmh).toFixed(1)}" r="3.4" fill="${COR[pt.sub]||'#888'}"/>`; });
+  // marcos verticais: freada, ápice, vmin, pace
+  function idxDeT(t){ if(t==null) return null; let best=null,bd=Infinity; pts.forEach((pt,i)=>{const dd=Math.abs(pt.t-t); if(dd<bd){bd=dd;best=i;}}); return best; }
+  function marco(idx,label,cor){
+    if(idx==null||!pts[idx]) return '';
+    const x=fx(idx);
+    return `<line x1="${x.toFixed(1)}" y1="${yTop-6}" x2="${x.toFixed(1)}" y2="${yBot+4}" stroke="${cor}" stroke-width="1.4" stroke-dasharray="3 3"/>`+
+           `<text x="${x.toFixed(1)}" y="${yTop-10}" fill="${cor}" font-size="10" text-anchor="middle">${label}</text>`;
+  }
+  s += marco(idxDeT(m.freadaT),'freio','#ff5a4e');
+  s += marco(m.vminIdx,'Vmin','#ffd24a');
+  s += marco(idxDeT(m.apiceT),'ápice','#ffb347');
+  s += marco(m.paceIdx,'PACE','#3fe08c');
+  // eixos: velocidade min/max
+  s += `<text x="${x0}" y="${yBot+22}" fill="#8aa0b4" font-size="11">início</text>`;
+  s += `<text x="${x1}" y="${yBot+22}" fill="#8aa0b4" font-size="11" text-anchor="end">saída</text>`;
+  s += `<text x="${x0}" y="${yTop-22}" fill="#8aa0b4" font-size="11">${vmax.toFixed(0)} km/h</text>`;
+  s += `<text x="${x0}" y="${yBot+0}" fill="#8aa0b4" font-size="11">Vmin ${vmin.toFixed(0)}</text>`;
+  s += `</svg>`;
+  return s;
+}
+
+async function main(){
+  let dados;
+  try {
+    const resp = await fetch('passagens-bubi-reetiquetadas-2026-06-14.json');
+    dados = await resp.json();
+  } catch(e){
+    document.getElementById('aviso').textContent = 'Não consegui ler as passagens re-etiquetadas. Rode antes: node tools/re-etiquetar-passagens-offline.js';
+    return;
+  }
+  const porCurva = {};
+  for(const p of dados){ (porCurva[p._curva]=porCurva[p._curva]||[]).push(p); }
+
+  document.getElementById('aviso').innerHTML =
+    'Dado real das voltas do Bubi (maio/2026, ~1 leitura por segundo). O FORMATO de trail é o ALVO prescrito do tipo (não é medição — não há sensor de pedal). PACE é proxy por velocidade. <b>Desenho proposto para a sua aprovação antes de entrar no painel.</b>';
+
+  const grid = document.getElementById('grid');
+  for(const nome of ORDEM){
+    const lista = porCurva[nome]; if(!lista||!lista.length) continue;
+    const p = escolherPassagem(lista);
+    const tipo = PADRAO[nome] || 'ND';
+    const perfil = perfilDeTrail(tipo);
+    const m = p._marcos || {};
+    const conf = m.confiancaApice || '—';
+
+    const card = document.createElement('div');
+    card.className='card';
+    card.innerHTML =
+      `<div class="chead"><span class="cnome">${nome.toLowerCase().replace('curva','curva')}</span>`+
+      `<span class="ctipo">${perfil.rotulo}</span></div>`+
+      `<div class="cformato">${perfil.formato}</div>`+
+      `<div class="resumo">`+
+        `<span class="pill">trail: <b>${resumoTrail(tipo)}</b></span>`+
+        `<span class="pill">Vmin: <b>${m.vminKmh!=null?Math.round(m.vminKmh)+' km/h':'—'}</b></span>`+
+        `<span class="pill">PACE: <b>${m.paceIdx!=null?'sim':'—'}</b></span>`+
+      `</div>`+
+      `<div class="tl-wrap">${timelineSVG(p)}</div>`+
+      `<div class="legend">`+
+        `<span><i class="dot" style="background:${COR.entrada}"></i>entrada</span>`+
+        `<span><i class="dot" style="background:${COR.freio}"></i>freio</span>`+
+        `<span><i class="dot" style="background:${COR.apice}"></i>ápice</span>`+
+        `<span><i class="dot" style="background:${COR.pace}"></i>pace</span>`+
+        `<span><i class="dot" style="background:${COR.saida}"></i>saída</span>`+
+      `</div>`+
+      `<div class="conf">passagem ${p._dia} volta ${p._volta} · confiança do ápice: ${conf}${conf!=='alta'?' (recorte a 1 Hz — marca ancorada no Vmin)':''}</div>`+
+      `<div class="facil">${TEXTO_FACIL[tipo]||''}</div>`;
+    grid.appendChild(card);
+  }
+}
+main();
+</script>
+</body>
+</html>
