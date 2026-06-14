@@ -153,7 +153,19 @@ struct PendenciasView: View {
 
     private func toggleItem(_ item: PendenciaItemView) {
         Task {
-            try? await repo.toggle(instanceId: item.id, novo: !item.instance.checado)
+            if item.isExtra {
+                try? await repo.toggleExtra(id: item.id, eventoId: eventoId, novo: !item.checado)
+            } else {
+                try? await repo.toggle(instanceId: item.id, novo: !item.checado)
+            }
+            await refresh()
+        }
+    }
+
+    private func removerItem(_ item: PendenciaItemView) {
+        guard item.isExtra else { return }
+        Task {
+            try? await repo.removeExtra(id: item.id, eventoId: eventoId)
             await refresh()
         }
     }
