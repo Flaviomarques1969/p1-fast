@@ -79,12 +79,15 @@ ainda não usa a pressão real. Sensor de pressão chega seg/ter 15-16/06.
       na reta) ligado no `tools/sim-publish.mjs`; flag `--freio-zero` (ou P1_FREIO=zero) testa o
       fallback. Conferido sem rede: variação 36 bar → detecta 'sensor-pressao'; zerado → 'simulado-fisica'.
       A alternância AO VIVO no cockpit (sensor↔proxy) em velocidade real é o que se valida em A5.
-- [ ] **A5 — Validação visual no navegador (DEV).** Servir o cockpit-treino, abrir na tela exata,
-      demonstrar a troca de fonte e a curva de freio mudando de estimativa pra medida. [VOCÊ no navegador]
-      Critério: você vê a troca funcionando; 0 erro de console; aprovação registrada.
-- [ ] **A6 — Incorporar à versão oficial.** Trazer `freio-trecho.js` + cockpit-treino dos ambientes
-      isolados pra versão oficial, com testes ligados. Só depois de A5 aprovado. Backup do que existia. [EU FAÇO]
-      Critério: arquivos na versão oficial; bateria verde com os testes novos; backup preservado.
+- [x] **A5 — Validação visual (REPOSICIONADO 14/06).** A tela do freio é a do TREINO trail braking (mockup
+      vivo), que o Flávio JÁ APROVOU ("está pronta, não precisa melhorar"). Volta livre não tem tela de freio.
+      A troca de fonte (estimativa GPS→sensor) é invisível na tela (mesma curva, dado mais preciso) — não havia
+      tela nova a validar. Demos/comparações que tentei foram reprovadas e removidas. Troca validada por teste.
+- [x] **A6 — Incorporado à versão oficial (14/06, autorizado pelo Flávio).** Porte aditivo: freio-trecho.js +
+      trail-cockpit-motor.js + trail-cockpit-tela.js + index-t3000.html + patch do trail no main-t3000.js
+      (merge 3 vias, preservou as 47 linhas da oficial) + 3 testes no package.json. Backup em
+      .claude-exec/backup-A6-trail-freio-2026-06-14. BATERIA 64/64 VERDE. Commit bb8c2410 (consolidacao-onda1).
+      Pendente: enviar ao repositório remoto (aguarda Flávio) + A7 (calibrar com o sensor real seg/ter).
 - [ ] **A7 — Calibrar com o sensor físico real (seg/ter 15-16/06).** Conferir nos dados reais: faixa
       de pressão do Bubi, se o canal varia mesmo, conversão pressão → %. Ajustar só as constantes de
       calibração, sem mexer na lógica. [PRECISA DO SENSOR]
