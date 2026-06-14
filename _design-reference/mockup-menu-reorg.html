@@ -522,6 +522,7 @@ function salvarEditor(){
   const gi=+document.getElementById('ed-grupo').value;
   const dados={
     txt:nome, cat:segVal('ed-cat'), espec:document.getElementById('ed-espec').value.trim(),
+    escopo:document.getElementById('ed-escopo').value, kind:segVal('ed-kind'),
     tipo:segVal('ed-tipo'),
     qtd:+document.getElementById('ed-qtd').textContent||1,
     vol:+document.getElementById('ed-vol').value||1, unid:document.getElementById('ed-unid').value,
