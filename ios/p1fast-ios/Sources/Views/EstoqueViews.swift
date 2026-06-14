@@ -412,7 +412,12 @@ struct EstoqueItemEditorView: View {
 
     private func carregar() {
         escopo = escopoInicial
-        guard let it = item else { return }
+        guard let it = item else {
+            // Novo item: pode vir pré-preenchido (Pendências → Adicionar/Editar).
+            if let n = nomeInicial { nome = n }
+            if let b = blocoIdInicial { blocoId = b }
+            return
+        }
         nome = it.nome
         escopo = it.escopo
         kind = it.kind
