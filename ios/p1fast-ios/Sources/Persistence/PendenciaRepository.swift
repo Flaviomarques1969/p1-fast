@@ -75,6 +75,7 @@ final class PendenciaRepository: ObservableObject {
             }
         }
         try await reloadInstancesForEvento(eventoId)
+        try await reloadExtras(eventoId)
     }
 
     func reloadInstancesForEvento(_ eventoId: String) async throws {
@@ -84,6 +85,50 @@ final class PendenciaRepository: ObservableObject {
                 .fetchAll(db)
         }
         instanciasPorEvento[eventoId] = rows
+    }
+
+    // MARK: - Itens adicionais (incluir / excluir / ticar) — LOCAL-ONLY
+
+    func reloadExtras(_ eventoId: String) async throws {
+        let rows = try await queue.read { db in
+            try EventoPendenciaExtra
+                .filter(Column("evento_id") == eventoId)
+                .order(Column("created_at").asc)
+                .fetchAll(db)
+        }
+        extrasPorEvento[eventoId] = rows
+    }
+
+    /// Inclui uma pendência adicional (à mão) num grupo do evento. NÃO enfileira
+    /// no SyncQueue — fica só no iPhone, não sobe pra nuvem/produção.
+    func addExtra(eventoId: String, grupoId: String, grupoTitulo: String,
+                  grupoNum: String, titulo: String) async throws {
+        let item = EventoPendenciaExtra(
+            id: UUID().uuidString, eventoId: eventoId,
+            grupoId: grupoId, grupoTitulo: grupoTitulo, grupoNum: grupoNum,
+            titulo: titulo
+        )
+        try await queue.write { db in try item.insert(db) }
+        try await reloadExtras(eventoId)
+    }
+
+    /// Remove uma pendência adicional (só itens incluídos à mão são removíveis).
+    func removeExtra(id: String, eventoId: String) async throws {
+        try await queue.write { db in
+            _ = try EventoPendenciaExtra.deleteOne(db, key: id)
+        }
+        try await reloadExtras(eventoId)
+    }
+
+    func toggleExtra(id: String, eventoId: String, novo: Bool) async throws {
+        try await queue.write { db in
+            guard var item = try EventoPendenciaExtra.fetchOne(db, key: id) else { return }
+            item.checado = novo
+            item.checadoAt = novo ? DB.nowMs() : nil
+            item.updatedAt = DB.nowMs()
+            try item.update(db)
+        }
+        try await reloadExtras(eventoId)
     }
 
     func toggle(instanceId: String, novo: Bool) async throws {
