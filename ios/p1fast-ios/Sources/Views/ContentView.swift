@@ -215,6 +215,7 @@ private struct ReadyRoot: View {
         _voltaVideoRepo = StateObject(wrappedValue: VoltaVideoRepository(queue: queue))
         _manutencaoStore = StateObject(wrappedValue: ManutencaoConsumiveisStore(queue: queue))
         _pecaRepo = StateObject(wrappedValue: PecaRepository(queue: queue))
+        _estoqueRepo = StateObject(wrappedValue: EstoqueRepository(queue: queue))
         let reach = Reachability()
         _reachability = StateObject(wrappedValue: reach)
         _syncCoordinator = StateObject(
