@@ -148,6 +148,7 @@ struct PessoasView: View {
         .preferredColorScheme(.dark)
         .onAppear {
             if let s = initialSubTab { subTab = s }
+            if let e = embeddedSubTab { subTab = e }
             if let sh = initialSheet, sheet == nil { sheet = sh }
         }
         .sheet(item: $sheet) { which in
