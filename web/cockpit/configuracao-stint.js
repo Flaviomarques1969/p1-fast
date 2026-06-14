@@ -35,36 +35,25 @@ let briefVisto = false;
 
 // ── Render dos cartões ────────────────────────────────────────
 
+// Antes: 3 cartões de modo clicáveis. Agora (14/06): um bloco único informativo —
+// não há escolha de modo. A luz troca na potência máxima e afina pelo menor tempo
+// de passagem conforme o piloto roda.
 function renderModos() {
   const container = document.getElementById('modosContainer');
-  const modos = listarModos();
-  container.innerHTML = '';
-  for (const m of modos) {
-    const slug = m.nome.toLowerCase();
-    const card = document.createElement('div');
-    card.className = 'modo';
-    card.dataset.modo = slug;
-    card.dataset.rpmMin = m.rpmMin;
-    card.dataset.rpmMax = m.rpmMax;
-    card.innerHTML = `
-      <div class="modo__nome">${m.nome}</div>
-      <div class="modo__faixa">${m.rpmMin}–${m.rpmMax} rpm</div>
-      <div class="modo__desc">${m.descLonga}</div>
-      <div class="modo__meta">
-        <span>Ganho de volta<br><strong>${m.ganhoVoltaEstimadoS > 0 ? '+' : ''}${m.ganhoVoltaEstimadoS.toFixed(1)} s</strong></span>
-        <span>Desgaste do motor<br><strong>${m.desgasteRelativo}</strong></span>
-      </div>
-    `;
-    card.addEventListener('click', () => selecionarModo(slug));
-    container.appendChild(card);
-  }
+  if (!container) return;
+  const alvo = PERFIL_BUBI.picoPotenciaRpm;
+  const teto = PERFIL_BUBI.redlineRpm;
+  container.innerHTML = `
+    <div class="modo is-selected" data-modo="${MODO_STINT_REGISTRO}" style="cursor:default;">
+      <div class="modo__nome">Máximo desempenho</div>
+      <div class="modo__faixa">Troca na potência máxima · ~${alvo} rpm</div>
+      <div class="modo__desc">Comportamento único do carro de corrida. A luz acende na potência máxima do motor (${alvo} rpm) e afina sozinha pelo MENOR TEMPO de passagem conforme você roda. Teto de segurança em ${teto} rpm. Os 3 modos antigos (Durabilidade / Normal / Agressivo) foram aposentados.</div>
+    </div>
+  `;
 }
 
-function selecionarModo(slug) {
-  modoSelecionado = slug;
-  document.querySelectorAll('.modo').forEach(el => {
-    el.classList.toggle('is-selected', el.dataset.modo === slug);
-  });
+// Sem escolha de modo (revogados 14/06): mantém só o refresh do envelope/botões.
+function selecionarModo() {
   renderEnvelope();
   atualizarBotoes();
 }
