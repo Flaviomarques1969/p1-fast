@@ -28,7 +28,6 @@
   .col .cap{font-size:12.5px;color:var(--tx3);margin:0 0 18px}
   .col.hoje h2{color:var(--red)} .col.bubi h2{color:var(--green)}
 
-  /* réplica da luz */
   .luz{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px 20px;display:flex;align-items:center;gap:20px}
   .gear{display:flex;flex-direction:column;align-items:center;min-width:62px}
   .gear .n{font-size:46px;font-weight:800;line-height:.9}
@@ -45,10 +44,11 @@
   .rpm{display:flex;flex-direction:column;align-items:center;min-width:84px}
   .rpm .n{font-size:30px;font-weight:800;line-height:.9}
   .rpm .l{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--tx3);margin-top:3px}
-  .rpm.red .n{color:var(--red)} .rpm.amber .n{color:var(--amber)} .rpm.blue .n{color:var(--blue)}
+  .rpm.red .n{color:var(--red)} .rpm.blue .n{color:var(--blue)} .rpm.green .n{color:var(--green)}
 
   .modo{margin-top:14px;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--tx2)}
-  .badge{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;padding:3px 10px;border-radius:20px;background:rgba(94,162,255,.16);color:var(--blue)}
+  .badge{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;padding:3px 10px;border-radius:20px}
+  .badge.alvo{background:rgba(39,192,138,.16);color:var(--green)}
   .badge.none{background:rgba(227,85,75,.14);color:var(--red)}
 
   .facts{margin-top:16px;font-size:12.7px;color:var(--tx2);list-style:none;padding:0}
@@ -57,46 +57,44 @@
   .col.hoje .facts li.bad:before{background:var(--red)}
   .col.bubi .facts li.good:before{background:var(--green)}
 
-  /* régua de rpm do bubi */
-  .regua-wrap{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 22px 24px;margin-bottom:24px}
-  .regua-wrap h3{font-size:15px;margin:0 0 16px}
-  .regua{position:relative;height:64px;margin:0 8px}
-  .track{position:absolute;top:30px;left:0;right:0;height:8px;border-radius:4px;background:linear-gradient(90deg,#1c2229 0%,#27c08a 28%,#e8c66a 55%,#e0a23a 72%,#e3554b 90%,#7a1f18 100%)}
-  .mk{position:absolute;top:0;transform:translateX(-50%);text-align:center;width:120px}
-  .mk .tick{width:2px;height:38px;background:var(--tx3);margin:0 auto}
+  .regua-wrap{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 22px 26px;margin-bottom:24px}
+  .regua-wrap h3{font-size:15px;margin:0 0 18px}
+  .regua{position:relative;height:74px;margin:0 8px}
+  .track{position:absolute;top:34px;left:0;right:0;height:8px;border-radius:4px;background:linear-gradient(90deg,#1c2229 0%,#27c08a 30%,#27c08a 70%,#e0a23a 84%,#e3554b 95%,#7a1f18 100%)}
+  .mk{position:absolute;top:0;transform:translateX(-50%);text-align:center;width:150px}
+  .mk .tick{width:2px;height:42px;background:var(--tx3);margin:0 auto}
   .mk .lab{font-size:11px;color:var(--tx2);margin-top:3px;line-height:1.25}
   .mk .lab b{color:var(--tx);display:block;font-size:12px}
+  .mk.cedo .tick{background:var(--amber)} .mk.cedo .lab b{color:var(--amber)}
   .mk.hot .tick{background:var(--red)} .mk.hot .lab b{color:var(--red)}
-  .mk.torque .tick{background:var(--green)} .mk.torque .lab b{color:var(--green)}
-  .mk.shift .tick{background:var(--blue);height:46px;width:3px} .mk.shift .lab b{color:var(--blue)}
+  .mk.alvo .tick{background:var(--green);height:52px;width:4px} .mk.alvo .lab b{color:var(--green);font-size:14px}
 
-  .modos{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+  .modos{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
   @media(max-width:760px){.modos{grid-template-columns:1fr}}
   .mcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
   .mcard .nome{font-weight:700;font-size:15px}
-  .mcard .janela{font-size:22px;font-weight:800;margin:6px 0 2px}
+  .mcard .pos{font-size:15px;font-weight:800;margin:6px 0 2px}
   .mcard .uso{font-size:12.5px;color:var(--tx2)}
-  .mcard.dur{border-left:4px solid var(--champ)} .mcard.dur .janela{color:var(--champ)}
-  .mcard.nor{border-left:4px solid var(--blue)} .mcard.nor .janela{color:var(--blue)}
-  .mcard.agr{border-left:4px solid var(--red)} .mcard.agr .janela{color:var(--red)}
-  .mcard .def{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--blue);margin-top:6px}
+  .mcard.dur{border-left:4px solid var(--champ)} .mcard.dur .pos{color:var(--champ)}
+  .mcard.nor{border-left:4px solid var(--green)} .mcard.nor .pos{color:var(--green)}
+  .mcard.agr{border-left:4px solid var(--red)} .mcard.agr .pos{color:var(--red)}
+  .mcard .def{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--green);margin-top:6px}
 
   .nota{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--amber);border-radius:10px;padding:14px 18px;font-size:13px;color:var(--tx2);margin-bottom:14px}
   .nota b{color:var(--tx)}
   footer{margin-top:24px;color:var(--tx3);font-size:12.5px;border-top:1px solid var(--line);padding-top:14px}
-  code{color:#cdd7e0;font-size:12px}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Shift Light — hoje vs calibrado pro Bubi</h1>
-  <p class="sub">A luz de marcha que aparece no topo do Command Box. <b>Hoje ela está calibrada pra um motor que não é o seu</b> (gira a 8.500 rpm). Do lado direito, a mesma luz com os números reais do Bubi — tudo já decidido por você (dinamômetro de 18/05 + os 3 modos de 29/05). <b>Nada inventado.</b></p>
+  <p class="sub">A luz de marcha do Command Box. <b>Hoje está calibrada pra um motor que não é o seu</b> (gira a 8.500 rpm). Do lado direito, a mesma luz com o ponto certo de troca: a <b>potência máxima do Bubi — 6.050 rpm</b>, conferida nos pontos do dinamômetro de 18/05.</p>
 
   <div class="cols">
     <!-- HOJE -->
     <div class="col hoje">
       <h2>Hoje — motor errado</h2>
-      <p class="cap">Luz mostrada a 8.200 rpm (impossível no Bubi)</p>
+      <p class="cap">Pisca pra trocar em 8.200 rpm (impossível no Bubi)</p>
       <div class="luz">
         <div class="gear"><span class="n">3</span><span class="l">marcha</span></div>
         <div class="leds">
@@ -107,9 +105,9 @@
         </div>
         <div class="rpm red"><span class="n">8200</span><span class="l">rpm</span></div>
       </div>
-      <div class="modo">modo ativo: <span class="badge none">não mostra</span></div>
+      <div class="modo">ponto de troca: <span class="badge none">7.800 rpm — motor errado</span></div>
       <ul class="facts">
-        <li class="bad">Pisca pra trocar em <b>7.800 rpm</b>; sirene em 8.400. O Bubi nem chega lá (limite 6.350).</li>
+        <li class="bad">Manda trocar em <b>7.800 rpm</b>; o Bubi nem chega lá (limite 6.350).</li>
         <li class="bad">A <b>marcha some</b> quando liga o carro de verdade — fica sempre "—".</li>
         <li class="bad">Atualiza a cada 0,35s (lento pra uma luz de troca).</li>
         <li class="bad">Roda um vídeo de demonstração por baixo, sem ler a rotação real.</li>
@@ -119,21 +117,21 @@
     <!-- BUBI -->
     <div class="col bubi">
       <h2>Calibrado pro Bubi</h2>
-      <p class="cap">Modo Normal · troca na janela 6.100–6.250 rpm</p>
+      <p class="cap">Pisca pra trocar na potência máxima — 6.050 rpm</p>
       <div class="luz">
         <div class="gear"><span class="n">4</span><span class="l">marcha</span></div>
         <div class="leds">
           <span class="led green"></span><span class="led green"></span><span class="led green"></span>
           <span class="led champ"></span><span class="led champ"></span><span class="led champ"></span>
           <span class="led amber"></span><span class="led amber"></span>
-          <span class="led blue flash"></span><span class="led blue flash"></span>
+          <span class="led green flash"></span><span class="led green flash"></span>
           <span class="led red"></span><span class="led red"></span>
         </div>
-        <div class="rpm blue"><span class="n">6180</span><span class="l">rpm</span></div>
+        <div class="rpm green"><span class="n">6050</span><span class="l">rpm</span></div>
       </div>
-      <div class="modo">modo ativo: <span class="badge">Normal</span></div>
+      <div class="modo">ponto de troca: <span class="badge alvo">6.050 rpm — potência máxima</span></div>
       <ul class="facts">
-        <li class="good">Pisca pra trocar <b>na janela do modo</b> (Normal: 6.100–6.250). Sirene só em 6.350.</li>
+        <li class="good">Pisca pra trocar na <b>potência máxima (6.050)</b>. Sirene só em 6.350.</li>
         <li class="good"><b>Marcha real</b> sempre na tela (vem do dado ao vivo).</li>
         <li class="good">Atualiza ~3x mais rápido, lendo a rotação real do carro.</li>
         <li class="good">Mostra <b>em que modo</b> o piloto está (o box precisa saber).</li>
@@ -143,44 +141,43 @@
 
   <!-- RÉGUA -->
   <div class="regua-wrap">
-    <h3>Os números reais do Bubi (dinamômetro 18/05)</h3>
+    <h3>Onde trocar — os números reais do Bubi (dinamômetro 18/05)</h3>
     <div class="regua">
       <div class="track"></div>
-      <div class="mk torque" style="left:18%"><div class="tick"></div><div class="lab"><b>5.200</b>pico de torque</div></div>
-      <div class="mk" style="left:50%"><div class="tick"></div><div class="lab"><b>6.050</b>pico de potência</div></div>
-      <div class="mk shift" style="left:66%"><div class="tick"></div><div class="lab"><b>6.100–6.250</b>troca (Normal)</div></div>
-      <div class="mk hot" style="left:82%"><div class="tick"></div><div class="lab"><b>6.300</b>redline</div></div>
-      <div class="mk hot" style="left:93%"><div class="tick"></div><div class="lab"><b>6.350</b>sirene</div></div>
+      <div class="mk cedo" style="left:15%"><div class="tick"></div><div class="lab"><b>5.200</b>torque máx · trocar aqui é cedo</div></div>
+      <div class="mk alvo" style="left:74%"><div class="tick"></div><div class="lab"><b>6.050 · TROCAR</b>potência máxima</div></div>
+      <div class="mk hot" style="left:92%"><div class="tick"></div><div class="lab"><b>6.300</b>redline</div></div>
+      <div class="mk hot" style="left:97%"><div class="tick"></div><div class="lab"><b>6.350</b>sirene</div></div>
     </div>
   </div>
 
-  <!-- 3 MODOS -->
+  <!-- 3 MODOS realinhados ao pico de potência -->
   <div class="modos">
     <div class="mcard dur">
       <div class="nome">Durabilidade</div>
-      <div class="janela">5.800–6.000</div>
-      <div class="uso">Stint longo, motor frio, chuva, treino tranquilo.</div>
+      <div class="pos">um pouco antes do pico</div>
+      <div class="uso">Poupa o motor; perde pouquíssimo cavalo. Stint longo, motor frio, chuva.</div>
     </div>
     <div class="mcard nor">
       <div class="nome">Normal</div>
-      <div class="janela">6.100–6.250</div>
-      <div class="uso">O dia a dia na pista.</div>
+      <div class="pos">na potência máxima · 6.050</div>
+      <div class="uso">O dia a dia na pista — onde rende mais.</div>
       <div class="def">padrão</div>
     </div>
     <div class="mcard agr">
       <div class="nome">Agressivo</div>
-      <div class="janela">6.250–6.350</div>
-      <div class="uso">Volta de classificação, aceita risco mecânico.</div>
+      <div class="pos">segura um tico além</div>
+      <div class="uso">Classificação; aceita esticar a marcha, sem chegar no redline.</div>
     </div>
   </div>
 
   <div class="nota">
-    <b>A regra que você fechou:</b> a luz pisca pra trocar pelo <b>torque na roda de cada marcha</b> — não no limite do motor. O ponto fino muda por dupla de marcha (3→4 e 4→5 são as que importam em Brasília). Esse ajuste fino por marcha só fecha quando a relação de cada marcha (caixa de câmbio) entrar no sistema — hoje ela ainda não está na nuvem. <b>Até lá, a luz usa a janela do modo</b> como ponto de troca, que é o caminho honesto e já correto pro Bubi.
+    <b>Os 3 modos agora giram em torno da potência máxima</b> (antes você tinha fechado janelas em rotação mais alta — elas precisam ser realinhadas a esse novo alvo). Os limites exatos de cada modo a gente afina junto. E o ponto fino de cada marcha (3→4, 4→5) a função aprende sozinha do carro real, sempre em torno do pico de potência.
   </div>
 
   <footer>
-    Fontes: dinamômetro Bubi 18/05/2026 (pico torque 162 Nm @ 5.200 · pico potência 122 HP @ 6.050 · redline 6.300/6.350) · decisão dos 3 modos 29/05/2026 · regra "troca por torque na roda, redline só sirene".
-    Proposta de calibração — a aprovar antes de aplicar no Command Box. A distribuição exata dos 12 pontos de luz é ajustável.
+    Fontes: dinamômetro Bubi 18/05/2026 — <b>potência máxima 122,77 HP @ 6.050 rpm</b> (conferido ponto a ponto); torque máx 162 Nm @ 5.200; redline 6.300/6.350.
+    Proposta de calibração — a aprovar antes de aplicar no Command Box. A distribuição dos 12 pontos de luz é ajustável.
   </footer>
 </div>
 </body>
