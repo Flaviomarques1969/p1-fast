@@ -1236,3 +1236,45 @@ public struct EventoPendencia: Codable, FetchableRecord, PersistableRecord, Equa
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }
+
+// MARK: - evento_pendencias_extra (itens adicionais por evento — LOCAL-ONLY)
+//
+// Itens de pendência que o usuário INCLUI à mão pra um evento, fora do
+// catálogo curado (`pendencias_template`). Vivem só no iPhone — NÃO
+// sincronizam com a nuvem (não há `synced_at` e o repo nunca enfileira no
+// SyncQueue). Isso mantém `evento_pendencias` (que sobe pra produção) intacta.
+public struct EventoPendenciaExtra: Codable, FetchableRecord, PersistableRecord, Equatable {
+    public var id: String
+    public var eventoId: String
+    public var grupoId: String
+    public var grupoTitulo: String
+    public var grupoNum: String
+    public var titulo: String
+    public var checado: Bool
+    public var checadoAt: Int64?
+    public var createdAt: Int64
+    public var updatedAt: Int64
+
+    public static let databaseTableName = "evento_pendencias_extra"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case eventoId = "evento_id"
+        case grupoId = "grupo_id"
+        case grupoTitulo = "grupo_titulo"
+        case grupoNum = "grupo_num"
+        case titulo, checado
+        case checadoAt = "checado_at"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(id: String, eventoId: String, grupoId: String, grupoTitulo: String,
+                grupoNum: String, titulo: String, checado: Bool = false,
+                checadoAt: Int64? = nil, createdAt: Int64 = DB.nowMs(),
+                updatedAt: Int64 = DB.nowMs()) {
+        self.id = id; self.eventoId = eventoId
+        self.grupoId = grupoId; self.grupoTitulo = grupoTitulo; self.grupoNum = grupoNum
+        self.titulo = titulo; self.checado = checado; self.checadoAt = checadoAt
+        self.createdAt = createdAt; self.updatedAt = updatedAt
+    }
+}
