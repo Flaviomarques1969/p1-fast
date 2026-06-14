@@ -170,7 +170,7 @@ function main() {
   console.log(`gravado em: ${SAIDA.replace(RAIZ, '')}`);
   console.log('\n--- amostras (conferência) ---');
   for (const s of spot) {
-    console.log(`\n${s.curva} (${s.dia} v${s.volta})  Vmin=${s.marcos.vminKmh}km/h @idx${s.marcos.vminIdx}  freadaT=${s.marcos.freadaT}  apiceT=${s.marcos.apiceT}`);
+    console.log(`\n${s.curva} (${s.dia} v${s.volta})  Vmin=${s.marcos.vminKmh}km/h @idx${s.marcos.vminIdx}  freadaT=${s.marcos.freadaT}  apiceT=${s.marcos.apiceT}  paceIdx=${s.marcos.paceIdx}`);
     console.log('  kmh:', s.kmh.join(' '));
     console.log('  sub:', s.sub.join(' '));
   }
