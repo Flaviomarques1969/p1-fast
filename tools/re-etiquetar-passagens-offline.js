@@ -139,6 +139,7 @@ function main() {
   console.log(`passagens: ${saida.length}`);
   console.log(`pontos: ${totalPts}  | sub:null ANTES = ${nullAntes}  | sub:null DEPOIS = ${nullDepois}`);
   console.log(`com freada=${comFreada}  com ápice=${comApice}  com Vmin=${comVmin}  (de ${saida.length})`);
+  console.log(`confiança do ápice: alta=${conf.alta}  baixa(âncora Vmin)=${conf.baixa}  borda(recorte parcial)=${conf.borda}`);
   console.log(`distribuição de sub:`, JSON.stringify(dist));
   console.log(`gravado em: ${SAIDA.replace(RAIZ, '')}`);
   console.log('\n--- amostras (conferência) ---');
