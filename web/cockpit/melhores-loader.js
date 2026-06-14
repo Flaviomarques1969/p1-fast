@@ -49,6 +49,7 @@ export async function loadMelhoresPassagens({ carroId, autodromoId, tipoPneu }) 
     console.warn('[melhores-loader] params obrigatórios: carroId, autodromoId, tipoPneu');
     return new Map();
   }
+  tipoPneu = normalizarTipoPneu(tipoPneu);
   try {
     const sb = client();
     // Busca todas as passagens dessa combinação ordenadas pelo tempo (menor
