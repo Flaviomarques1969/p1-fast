@@ -62,6 +62,23 @@ function acharApiceGeo(pts, apiceGps) {
   return { t: melhorT, idx: melhorIdx, dist: melhor };
 }
 
+// PACE (5º marco, Flávio 13/06): ponto onde a velocidade VOLTA A SUBIR de forma SUSTENTADA
+// depois do Vmin — proxy do "pé no acelerador". NÃO INVENTAR: sem sensor de acelerador casado
+// por tempo, é PROXY por velocidade. Retorna o índice do 1º ponto pós-Vmin que inicia uma subida
+// sustentada (sobe e o seguinte não cai), ou null se a passagem não tem retomada clara no recorte.
+export function acharPaceIdx(pts, vminIdx) {
+  if (vminIdx == null) return null;
+  for (let i = vminIdx + 1; i < pts.length; i++) {
+    const a = pts[i - 1].kmh, b = pts[i].kmh;
+    if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
+    if (b > a) {
+      const c = pts[i + 1] ? pts[i + 1].kmh : null;
+      if (c == null || !Number.isFinite(c) || c >= b) return i; // subida sustentada começa em i
+    }
+  }
+  return null; // sem retomada clara no recorte
+}
+
 // Âncora do ápice + confiança. Hierarquia HONESTA:
 //   • 'alta'       → ápice geométrico casa (<= 60 m do ponto ideal cadastrado).
 //   • 'baixa'      → ápice geométrico longe/ausente, mas o Vmin está no MEIO da passagem
