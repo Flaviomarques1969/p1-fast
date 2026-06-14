@@ -29,7 +29,11 @@ enum HomeState {
 enum HomeNavTarget: Hashable {
     case eventos
     case eventosNovo
+    /// Antiga aba "Cadastros" — preservada (não some), mas o conteúdo agora
+    /// vive dentro da Garagem. Não é mais um item do menu de baixo.
     case cadastros
+    /// Aba "Pendências" (substituiu Cadastros no menu) — abre no próximo evento.
+    case pendencias
     case garagem
     case garagemNovo
     /// Fluxo do carro empilhado (push) em vez de folha modal — assim o
