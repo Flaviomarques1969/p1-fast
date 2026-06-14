@@ -94,15 +94,21 @@ struct PessoasView: View {
 
     var initialSheet: PessoasSheet?
     var initialSubTab: PessoasSubTab?
+    /// Quando setado, a tela roda EMBUTIDA dentro da Garagem: mostra só a
+    /// lista da sub-aba indicada (esconde o cabeçalho e a fileira de
+    /// sub-abas próprios — a Garagem já fornece os dois). 2026-06-14.
+    var embeddedSubTab: PessoasSubTab?
     /// Handler do menu inferior — injetado pela HomeView pra permitir
     /// pular pra outra aba direto desta sub-view (fix tab-bar 2026-05-12).
     var onNavSelect: (BottomNavItem) -> Void = { _ in }
 
     init(initialSheet: PessoasSheet? = nil,
          initialSubTab: PessoasSubTab? = nil,
+         embeddedSubTab: PessoasSubTab? = nil,
          onNavSelect: @escaping (BottomNavItem) -> Void = { _ in }) {
         self.initialSheet = initialSheet
         self.initialSubTab = initialSubTab
+        self.embeddedSubTab = embeddedSubTab
         self.onNavSelect = onNavSelect
     }
 
