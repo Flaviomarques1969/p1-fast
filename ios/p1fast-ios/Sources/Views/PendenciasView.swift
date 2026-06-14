@@ -191,6 +191,12 @@ private struct GrupoCard: View {
     let onIncluir: () -> Void
     let onRemoverItem: (PendenciaItemView) -> Void
 
+    /// Abertos primeiro; os já checados afundam pro fim da lista (mantendo a
+    /// ordem relativa dentro de cada bloco).
+    private var itensOrdenados: [PendenciaItemView] {
+        grupo.itens.filter { !$0.checado } + grupo.itens.filter { $0.checado }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button(action: onToggleExpand) {
