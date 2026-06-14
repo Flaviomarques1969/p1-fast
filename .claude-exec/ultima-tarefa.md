@@ -4,6 +4,30 @@
 > `ultima-tarefa-backup-vista-piloto-2026-06-14.md`.
 > A tarefa de menu (Garagem/Pendências) abaixo está TASK_DONE; preservada na íntegra.
 
+## TASK_INIT — 2026-06-14 (madrugada) — "siga": reconciliar painel (sem modos / alvo 6.050) + ligar módulos novos no orquestrador
+
+1. **Pedido original de Flávio:** "siga" — após eu reapresentar os 2 passos pendentes do shift light:
+   (a) reconciliar o painel vivo (`web/cockpit`) tirando os 3 modos e mirando na potência máxima 6.050;
+   (b) ligar no orquestrador os módulos novos (aprendizado tempo de passagem + persistência + LED com
+   antecipação `getRpmVisualLuz`). A 3ª parte (fonte RPM real T3000 + GPS ao vivo) só o dia de pista 15-16 fecha.
+2. **Objetivo:** Trocar o alvo da luz de marcha do painel vivo de "janela do modo" para "potência máxima
+   6.050 + refino por tempo de passagem", removendo os 3 modos, e ligar os módulos prontos — em DEV, sem publicar.
+3. **Critérios:** alvo-semente 6.050; módulos novos ligados; 3 modos preservados (backup) sem efeito no alvo;
+   test:shift-light + smokes verdes; navegador sem publicar; mudança de fluxo da tela Configuração de Stint NÃO escondida.
+4. **Leitura confirmada:** CLAUDE.md · padroes.md (zerado) · FLAVIO_EXECUTION/DONE/ENVIRONMENT/COMMUNICATION · P1 Fast/CLAUDE.md + memórias (global+P1 Fast) — sim.
+5. **Plano:** (1) mapa verificado das superfícies [FEITO]; (2) apresentar bifurcação de escopo ao Flávio [decisão dele];
+   (3) backup + reconciliar cérebro preservando modos/forca-integrada/tela; (4) testes + navegador; (5) registro. Prod só com "MIGRAR PARA PRODUÇÃO".
+6. **Superfícies mapeadas:** shift-light-orquestrador.js(487) · shift-light-modos.js(136) · aprendizado-tempo-passagem.js(165, novo, NÃO ligado) ·
+   main.js:272(demo) · main-t3000.js:421(LED usa getRpmOtimoTroca)/:836(instancia)/:69,283(resolveModo) ·
+   configuracao-stint.js(443, TELA EM USO que existe só pra escolher os 3 modos e salva modo_stint no banco) ·
+   testes: node-smoke-shift-light-e2e/pilot-reaction-integracao/shift-light-inteligente; test:shift-light (specs de src/, não do orquestrador web).
+7. **Ambiente alvo:** desenvolvimento (web/cockpit está publicado em p1t4000 — editar é dev, publicar é prod).
+8. **Produção protegida:** sim. 9. **Autorização produção:** não. 10. **Evidência:** "não recebida" — "siga" autoriza DEV, não publicação.
+11. **Riscos:** (a) "6.050" aposenta o cálculo por torque na roda como fonte do alvo — regra dura cobrada 2x; registros 14/06 resolvem a favor de 6.050, mas é o carro dele.
+   (b) "sem modos" desmonta a base da tela Configuração de Stint — mudança de fluxo de tela em uso (pedir OK). (c) a barra de aprendizado % hoje é alimentada pelo cálculo por torque. (d) painel publicado: não publicar.
+   (e) ALERTA: ultima-tarefa.md foi reescrito por auto-save/sessão concorrente entre leituras — checar concorrência antes de editar código.
+12. **Status inicial:** iniciado — diagnóstico verificado concluído; aguardando decisão de escopo do Flávio.
+
 ## TASK_INIT — 2026-06-14 (noite) — Estoque geral + Editor unificado + Pendências (contador/quadradinho/Gerenciar) + ligação Pendência↔Estoque
 
 1. **Pedido original de Flávio (pós /clear, "execute"):**
