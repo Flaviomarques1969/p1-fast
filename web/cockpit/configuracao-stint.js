@@ -424,10 +424,7 @@ carregarVidaUtil();
 
 document.getElementById('btnAprovar').addEventListener('click', aprovarEnvelope);
 document.getElementById('btnCancelar').addEventListener('click', () => {
-  modoSelecionado = null;
-  document.querySelectorAll('.modo').forEach(el => el.classList.remove('is-selected'));
-  renderEnvelope();
-  atualizarBotoes();
+  // Não há mais modo a limpar (revogados 14/06) — cancelar só zera o status.
   document.getElementById('status').textContent = 'Cancelado.';
 });
 
