@@ -40,7 +40,7 @@
 ## STATUS DOS PEDAÇOS — espelho do plano (atualizar aqui também ao executar)
 FRENTE A: A1[x] A2[x] A3[x] A4[x] A5[ GATE-FLÁVIO ] A6[ ] A7[ ]
 FRENTE B: B1[ ] B2[ ] B3[ ] B4[ ] B5[ ] B6[ ] B7[ ] B8[ ]
-FRENTE C: C1[ ] C2[ ] C3[ ] C4[ ] C5[ ]
+FRENTE C: C1[x] C2[ ] C3[ GATE-FLÁVIO ] C4[ ] C5[ GATE-FLÁVIO ]
 
 ### Log de execução (pós-clear 14/06)
 - A1 [x] 14/06: D1 (2 de 2, ponto de freada = aviso, interruptor 3 de 3) no motor
