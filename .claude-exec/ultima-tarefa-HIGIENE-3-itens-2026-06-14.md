@@ -47,4 +47,36 @@
 - Nota: muito trabalho acumulado não incorporado (161 linhas). Faxina "completa" segura = só os 6 lixos;
   o resto exige incorporar/arquivar (sessão à parte) — não dá pra apagar sem perder.
 
-### ITENS 2 e 3 — em execução (workflow w0a5vam58): normalizar pneu + centralizar chave + teste.
+### ITENS 2 e 3 — CONCLUÍDOS (refactor de higiene, só desenvolvimento)
+
+**ITEM 3 — CHAVE pública centralizada (Parte A): FEITO.**
+- Criado `web/cockpit/supabase-config.js` (exporta `SUPABASE_URL` + `SUPABASE_ANON_KEY`).
+- 14 módulos passaram a importar de lá; chave hardcoded REMOVIDA dos 14. Onde o nome da
+  constante variava (SUPABASE_ANON, NUVEM_URL_DEFAULT, NUVEM_ANON_DEFAULT, e os locais
+  URL/ANON dentro de loadMarcosBox/loadMarcoChegada), foi mantido um ALIAS local apontando
+  pro import — resto do arquivo intocado. Comportamento 100% preservado.
+- Verificado: a chave eyJ... agora existe SÓ em supabase-config.js; os 14 arquivos têm
+  exatamente 0 ocorrências hardcoded; valor idêntico em todos antes do refactor (1 ocorrência
+  por arquivo, nenhuma chave divergente em todo o cockpit). `node --check` OK nos 16 arquivos.
+
+**ITEM 2 — PNEU normalizado no código (Parte B): FEITO (só normalização de texto, NUNCA bloqueia).**
+- Criado `web/cockpit/tipo-pneu-normalizer.js` (`normalizarTipoPneu` + `TIPOS_PNEU_CANONICOS`).
+- Aplicado em: melhores-loader.js (loadMelhoresPassagens + gravarPassagem), padrao-persister.js
+  (loadPadrao + savePadrao), pontos-troca-persister.js (loadPontos + savePonto — só quando
+  tipoPneu existe, pra preservar o fallback 'desconhecido' e o filtro vazio), configuracao-stint.js
+  (payload do envelope). Nada de banco tocado.
+
+**Testes (npm run smoke):** 14/14 dos arquivos sem chave hardcoded; smoke FULL = saída
+byte-idêntica ao baseline pré-refactor (mesma e ÚNICA falha pré-existente em
+node-smoke-schema-parity.mjs — assertion de RLS de produção, NÃO relacionada). Como o `&&`
+da chain para nessa falha, rodei à parte os 37 testes que vêm depois: TODOS passam
+(tipos-e-pontos 13/13, treino-stint 59/59, voltas/box/chegada/padrão/catálogo e os demais 35
+pós-schema-parity = 35/35). Normalizer testado isolado: 9/9.
+
+**Pendência herdada (não deste refactor):** node-smoke-schema-parity.mjs falha desde antes
+(lista de exceção RLS desatualizada). Não mexi — fora do escopo desta higiene.
+
+TASK_DONE (itens 2 e 3):
+- Pedido conferido: sim · Ambiente: desenvolvimento · Produção alterada: não
+- Arquivos inspecionados: sim · Alterações feitas: sim · Testes executados: sim
+- Resultado: concluído (parte A e B) · Pendências: schema-parity pré-existente (fora de escopo).
