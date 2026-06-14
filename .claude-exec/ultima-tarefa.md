@@ -38,7 +38,7 @@
 12. **Status inicial:** plano aprovado para execução pós-clear (aguardando clear do Flávio).
 
 ## STATUS DOS PEDAÇOS — espelho do plano (atualizar aqui também ao executar)
-FRENTE A: A1[x] A2[ ] A3[ ] A4[ ] A5[ ] A6[ ] A7[ ]
+FRENTE A: A1[x] A2[x] A3[ ] A4[ ] A5[ ] A6[ ] A7[ ]
 FRENTE B: B1[ ] B2[ ] B3[ ] B4[ ] B5[ ] B6[ ] B7[ ] B8[ ]
 FRENTE C: C1[ ] C2[ ] C3[ ] C4[ ] C5[ ]
 
@@ -47,3 +47,7 @@ FRENTE C: C1[ ] C2[ ] C3[ ] C4[ ] C5[ ]
   trail-cockpit-motor.js + D2 (gráfico híbrido) na tela trail-cockpit-tela.js. Decisões gravadas
   (memória p1-fast-trail-criterio-certo-d1-d2-2026-06-14 + seção do ditado). Bateria completa verde
   (exit 0). Ambiente isolado cockpit-treino-trail. NADA em produção.
+- A2 [x] 14/06: motor.amostraFreio() + buffer rolante (60s) + amostrasFreioNaJanela() em
+  trail-cockpit-motor.js; religação em main-t3000.js (bridge.ingestT4000 leva pressão/pedal ao motor
+  por tMono, log na 1ª amostra). Fonte do veredito segue física GPS (proxy) até A3. Testes AF-01/02/03
+  + RL-10. trail-cockpit 42 ok, religação 10 ok, 0 fail.

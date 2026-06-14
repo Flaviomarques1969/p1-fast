@@ -51,11 +51,15 @@ ainda não usa a pressão real. Sensor de pressão chega seg/ter 15-16/06.
       desvio). Decisão gravada: memória `p1-fast-trail-criterio-certo-d1-d2-2026-06-14` + seção
       "Decisões em aberto" do ditado atualizada (3→0; rótulo FREIO/FREIA AQUI segue aberto, fora do
       plano). Testes: bateria COMPLETA verde (trail-cockpit 39 ok, freio-trecho 29, religação 9, 0 fail).
-- [ ] **A2 — Levar pressão/pedal do evento de amostra até o motor do trail.** Sem mudar a tela: só
+- [x] **A2 — Levar pressão/pedal do evento de amostra até o motor do trail.** Sem mudar a tela: só
       trafegar `pressaoFreioBar`/`pedalFreioPct` (já existem no parser e na transmissão) até o motor,
       casados por tempo. [EU FAÇO]
       Critério: console mostra o motor recebendo amostras de freio; bateria de testes verde; proxy
       GPS segue sendo a fonte até A3.
+      FEITO 14/06: `motor.amostraFreio()` + buffer rolante 60 s + `amostrasFreioNaJanela()` (prontos
+      pra fusão A3); religação em `bridge.ingestT4000` (main-t3000.js) levando pressão/pedal por tMono;
+      log "1ª amostra de freio chegou ao motor" (prova de console, visível em A5). Proxy GPS segue a
+      fonte (AF-03 prova veredito inalterado). Testes AF-01/02/03 + RL-10. Bateria verde.
 - [ ] **A3 — Ligar a fusão real (proxy → pressão).** Detectar presença do sensor; se houver, usar a
       pressão medida (fusão por tempo, tolerância 250 ms); senão, manter o GPS. Expor a "fonte do
       freio" (sensor-pressão / sensor-pedal / simulado-física) na tela. [EU FAÇO]

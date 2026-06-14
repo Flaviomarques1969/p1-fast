@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pergunta — 20260614-seguranca-painel-fechamento</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --fg:#e8e8e8; --muted:#9aa0a6; --accent:#4f8cff; --ok:#22c55e; --warn:#f59e0b; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--fg); padding:24px; }
+  .wrap { max-width: 820px; margin: 0 auto; }
+  .card { background:var(--card); border-radius:12px; padding:24px; box-shadow: 0 8px 32px rgba(0,0,0,.35); }
+  h1 { font-size: 1.25rem; margin: 0 0 4px; }
+  .meta { color: var(--muted); font-size: .85rem; margin-bottom: 16px; }
+  .pergunta { font-size: 1.05rem; line-height: 1.5; margin: 0 0 20px; }
+  .opcoes { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .opcao { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1px solid #2a2f3a; border-radius: 10px; cursor: pointer; transition: all .15s; }
+  .opcao:hover { border-color: var(--accent); }
+  .opcao input { margin-top: 4px; }
+  .opcao-corpo { flex: 1; }
+  .opcao-titulo { font-weight: 600; }
+  .opcao-just { color: var(--muted); font-size: .9rem; margin-top: 2px; }
+  .recomendado { display: inline-block; background: rgba(34,197,94,.15); color: var(--ok); padding: 1px 8px; border-radius: 999px; font-size: .75rem; margin-left: 8px; }
+  textarea { width: 100%; background:#0f1115; color:var(--fg); border:1px solid #2a2f3a; border-radius: 8px; padding: 10px; resize: vertical; font-family: inherit; font-size: .95rem; }
+  label.bloco { display: block; margin: 16px 0 6px; color: var(--muted); font-size: .85rem; }
+  .acoes { display: flex; gap: 10px; margin-top: 18px; }
+  button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 10px 16px; font-size: 1rem; cursor: pointer; }
+  button.secundario { background: transparent; border: 1px solid #2a2f3a; color: var(--fg); }
+  .status { margin-top: 12px; color: var(--muted); font-size: .85rem; }
+  .outra-wrap { display: none; }
+  .outra-wrap.ativo { display: block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Decisão — Segurança do painel</h1>
+    <div class="meta">ID: <code>20260614-seguranca-painel-fechamento</code> · tipo: seguranca</div>
+    <p class="pergunta">Hoje o painel funciona <b>sem login</b> (decisão sua de 11/06): ele grava direto na nuvem com uma chave pública que fica no próprio navegador. Eu já preparei a <b>higiene</b> — ligar as travas de acesso nas tabelas do shift light, tirar de qualquer um o poder de <b>apagar</b> esses dados, e fechar as filas do aparelho do carro que ninguém usa. Isso reduz bem o risco, mas <b>não fecha tudo</b>: enquanto for sem login, qualquer um com a chave pública ainda pode poluir os dados de aprendizado (não apaga, e não afeta a operação do carro — o shift light usa limites fixos no código). O fechamento <b>definitivo</b> exige login de verdade no painel — é obra maior e passa a exigir login no notebook na pista. Como você quer seguir?</p>
+
+    <form id="form">
+      <div class="opcoes">
+        <label class="opcao">
+          <input type="radio" name="opcao" value="Higiene agora + login depois" />
+          <span class="opcao-corpo">
+            <span class="opcao-titulo">Higiene agora + login real depois <span class="recomendado">recomendado</span></span>
+            <span class="opcao-just">Aplico a higiene na nuvem já (com sua autorização) e tratamos o login real como projeto à parte, com calma. Fecha o pior — o estado sem trava, o poder de apagar e as filas órfãs do aparelho — sem mexer na operação da pista. O risco que sobra é baixo: poluição de dados técnicos de aprendizado, reversível, sem afetar o carro.</span>
+          </span>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="opcao" value="Login real agora" />
+          <span class="opcao-corpo">
+            <span class="opcao-titulo">Login real agora (fechar de vez antes de tudo)</span>
+            <span class="opcao-just">Proteção total imediata. Mas é obra maior e o painel passa a exigir login no notebook na pista — pode atrapalhar se tiver dia de pista próximo. A higiene entra junto, como primeiro passo.</span>
+          </span>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="opcao" value="So higiene, sem login" />
+          <span class="opcao-corpo">
+            <span class="opcao-titulo">Só a higiene, manter o painel sem login</span>
+            <span class="opcao-just">Aceita de propósito o risco residual (poluição de dados de aprendizado, sem afetar o carro), com zero impacto na operação. Revisita o login quando quiser.</span>
+          </span>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="opcao" value="Outra" />
+          <span class="opcao-corpo">
+            <span class="opcao-titulo">Outra</span>
+            <span class="opcao-just">Descreva abaixo o caminho que você prefere.</span>
+          </span>
+        </label>
+      </div>
+
+      <div class="outra-wrap" id="outra-wrap">
+        <label class="bloco" for="outra-texto">Sua opção</label>
+        <textarea id="outra-texto" rows="2" placeholder="Descreva a sua opção"></textarea>
+      </div>
+
+      <label class="bloco" for="comentario">Comentário (opcional)</label>
+      <textarea id="comentario" rows="3" placeholder="Contexto, ressalvas, prazos..."></textarea>
+
+      <div class="acoes">
+        <button type="button" id="exportar">Exportar JSON</button>
+        <button type="button" class="secundario" id="limpar">Limpar</button>
+      </div>
+      <div class="status" id="status"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const PERGUNTA_ID = "20260614-seguranca-painel-fechamento";
+  const STORAGE_KEY = "padrao-flavio:" + PERGUNTA_ID;
+
+  function carregarLocalStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const dados = JSON.parse(raw);
+      if (dados.escolha) {
+        const radio = document.querySelector('input[name="opcao"][value="' + CSS.escape(dados.escolha) + '"]');
+        if (radio) radio.checked = true;
+      }
+      if (dados.outra_texto) document.getElementById("outra-texto").value = dados.outra_texto;
+      if (dados.comentario) document.getElementById("comentario").value = dados.comentario;
+      atualizarOutraWrap();
+    } catch (e) { /* noop */ }
+  }
+
+  function salvarLocalStorage() {
+    const escolhaEl = document.querySelector('input[name="opcao"]:checked');
+    const dados = {
+      escolha: escolhaEl ? escolhaEl.value : "",
+      outra_texto: document.getElementById("outra-texto").value,
+      comentario: document.getElementById("comentario").value,
+    };
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(dados)); } catch (e) { /* noop */ }
+  }
+
+  function atualizarOutraWrap() {
+    const escolhaEl = document.querySelector('input[name="opcao"]:checked');
+    const ativo = escolhaEl && escolhaEl.value === "Outra";
+    document.getElementById("outra-wrap").classList.toggle("ativo", ativo);
+  }
+
+  function montarPayload() {
+    const escolhaEl = document.querySelector('input[name="opcao"]:checked');
+    const escolha = escolhaEl ? escolhaEl.value : "";
+    const outraOpcaoUsada = escolha === "Outra";
+    const outraTexto = document.getElementById("outra-texto").value.trim();
+    const comentario = document.getElementById("comentario").value.trim();
+    return {
+      pergunta_id: PERGUNTA_ID,
+      pergunta: document.querySelector(".pergunta").innerText.trim(),
+      escolha: outraOpcaoUsada ? (outraTexto || "Outra") : escolha,
+      outra_opcao_usada: outraOpcaoUsada,
+      comentario: comentario,
+      respondido_em: new Date().toISOString(),
+    };
+  }
+
+  function exportar() {
+    const payload = montarPayload();
+    if (!payload.escolha) {
+      document.getElementById("status").textContent = "Escolha uma opção antes de exportar.";
+      return;
+    }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = PERGUNTA_ID + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    document.getElementById("status").textContent = "JSON exportado: " + PERGUNTA_ID + ".json — coloque em ./.claude-perguntas/respostas/ e diga 'fiz'.";
+  }
+
+  function limpar() {
+    document.querySelectorAll('input[name="opcao"]').forEach(r => r.checked = false);
+    document.getElementById("outra-texto").value = "";
+    document.getElementById("comentario").value = "";
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    atualizarOutraWrap();
+    document.getElementById("status").textContent = "Limpo.";
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    carregarLocalStorage();
+    document.querySelectorAll('input[name="opcao"]').forEach(r => {
+      r.addEventListener("change", () => { salvarLocalStorage(); atualizarOutraWrap(); });
+    });
+    document.getElementById("outra-texto").addEventListener("input", salvarLocalStorage);
+    document.getElementById("comentario").addEventListener("input", salvarLocalStorage);
+    document.getElementById("exportar").addEventListener("click", exportar);
+    document.getElementById("limpar").addEventListener("click", limpar);
+  });
+</script>
+</body>
+</html>
