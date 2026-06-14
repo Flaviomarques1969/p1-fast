@@ -117,7 +117,8 @@ struct PendenciasView: View {
                         onInc: { incPegou($0, $1) },
                         onToggleDone: { toggleDone(g.id) },
                         onAbrirEditor: { abrirEditar($0, grupo: g) },
-                        onToggleSel: { toggleSel($0) }
+                        onToggleSel: { toggleSel($0) },
+                        onEditarNota: { item in notaText = item.nota ?? ""; editandoNota = item }
                     )
                 }
                 if grupos.isEmpty {
