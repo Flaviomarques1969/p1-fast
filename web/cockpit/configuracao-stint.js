@@ -201,7 +201,7 @@ async function aprovarEnvelope() {
     rpm_max_absoluto:   ENVELOPE_DEFAULT_BUBI.rpm_max_absoluto,
     rpm_min_motor_celsius: ENVELOPE_DEFAULT_BUBI.rpm_min_motor_celsius,
     forca_lateral_max_g:   ENVELOPE_DEFAULT_BUBI.forca_lateral_max_g,
-    observacoes:        `Envelope aprovado via tela de configuração (chefe). Janela ${janelaParaModo(modoSelecionado).rpmMin}-${janelaParaModo(modoSelecionado).rpmMax} rpm.`,
+    observacoes:        `Envelope aprovado via tela de configuração (chefe). Máximo desempenho — troca na potência máxima (${PERFIL_BUBI.picoPotenciaRpm} rpm), teto ${PERFIL_BUBI.redlineRpm}.`,
     plano_stint:        planoCompleto,
   };
 
