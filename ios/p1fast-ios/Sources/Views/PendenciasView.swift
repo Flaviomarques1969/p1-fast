@@ -301,17 +301,10 @@ private struct ItemRow: View {
         HStack(alignment: .top, spacing: Spacing.sm) {
             checkbox
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(item.titulo)
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundStyle(item.checado ? Color.textMuted : Color.text)
-                        .strikethrough(item.checado, color: Color.textMuted)
-                    if item.obrigatorio {
-                        miniTag("obrig.", color: Color.erro)
-                    } else if item.isExtra {
-                        miniTag("adicional", color: Color.accent)
-                    }
-                }
+                Text(item.titulo)
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(tituloColor)
+                    .strikethrough(item.checado, color: Color.textMuted)
                 if let nota = item.nota, !nota.isEmpty {
                     Text(nota)
                         .font(.system(size: 11, weight: .regular))
