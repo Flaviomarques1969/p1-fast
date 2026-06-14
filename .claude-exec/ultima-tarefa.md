@@ -119,4 +119,22 @@
   na nuvem de produção; onProposta loga + marca localStorage pra o celular rever.
 - Evidência: sintaxe OK; cockpit-bootstrap 7 ok, cockpit-web 16 ok; `npm run smoke` 345 ok / 0 fail.
 
-### FASE 6 — Bloco PASSAGEM na tela (entrada/freio/Vmin/ápice/PACE/saída + tipo + formato) — EM EXECUÇÃO
+### FASE 6 — Bloco PASSAGEM na tela — DEMO PRONTA E VALIDADA; porte pro painel aguarda OK do Flávio
+- Construído relatorios/demo-passagem-completa-2026-06-14.html: por curva mostra TIPO (rótulo), FORMATO
+  de trail prescrito, resumo (carga+residual+ancoragem), Vmin, e a LINHA DO TEMPO da passagem real com
+  os marcos entrada·freio·Vmin·ápice·PACE·saída. Importa os módulos REAIS (perfilDeTrail/resumoTrail/
+  TEXTO_FACIL) + lê passagens-bubi-reetiquetadas (FASE 3/4). Sem emoji, largura total, "você".
+- Validação headless (Playwright): 8 cards, 8 linhas do tempo, 0 erro de console; rótulos batem com o
+  padrão definitivo. Aberto no navegador (http://localhost:8079/relatorios/demo-passagem-completa-2026-06-14.html).
+- NÃO toquei no painel aprovado do Flávio (mockup-command-box-vista-piloto.html buildPassagemPanel) —
+  regra "não tocar nas posições dos blocos" + "aprovar visual antes". O PORTE pro painel é o próximo
+  passo, depois do OK dele.
+
+---
+
+## RESUMO FINAL (14/06/2026)
+- FASE 0: CONCLUÍDA · FASE 1: CONCLUÍDA · FASE 2: PARCIAL (migration pronta+validada, falta aplicar no DEV
+  vivo do P1 Fast — stack local ocupado por outro projeto) · FASE 3: CONCLUÍDA · FASE 4: CONCLUÍDA ·
+  FASE 5: CONCLUÍDA · FASE 6: DEMO PRONTA, porte pro painel aguarda OK do Flávio.
+- Bateria: 345 ok / 0 fail (25 arquivos). Produção remota intocada (origin 256 atrás, nada enviado).
+  Backup canônico das passagens intacto.
