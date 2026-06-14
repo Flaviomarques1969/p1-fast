@@ -104,9 +104,9 @@ function main() {
   for (const tr of geoDoc.trechos) geoPorNome[tr.nome] = tr;
 
   let totalPts = 0, nullAntes = 0, nullDepois = 0;
-  let comFreada = 0, comApice = 0, comVmin = 0;
+  let comFreada = 0, comApice = 0, comVmin = 0, comPace = 0;
   const conf = { alta: 0, baixa: 0, borda: 0 };
-  const dist = { entrada: 0, freio: 0, apice: 0, saida: 0, outro: 0 };
+  const dist = { entrada: 0, freio: 0, apice: 0, pace: 0, saida: 0, outro: 0 };
   const spot = [];
 
   const saida = passagens.map(p => {
