@@ -51,7 +51,22 @@ struct HubMockLauncher: View {
     var body: some View {
         Group {
             if ready, let id = carroId {
-                if ProcessInfo.processInfo.arguments.contains("--p1-preco-ml") {
+                if ProcessInfo.processInfo.arguments.contains("--p1-estoque-editar") {
+                    // Editor único de item (botões + câmera/OCR) — screenshot do editor.
+                    EstoqueItemEditorView(item: nil, escopoInicial: EstoqueRepository.escopoGeral,
+                                          onClose: {}, onSaved: { _ in })
+                        .environmentObject(estoqueRepo)
+                        .environmentObject(carroRepo)
+                } else if ProcessInfo.processInfo.arguments.contains("--p1-estoque") {
+                    // Garagem aberta direto na sub-aba "Estoque geral".
+                    GaragemView(initialSubTab: .estoqueGeral)
+                        .environmentObject(carroRepo)
+                        .environmentObject(estoqueRepo)
+                        .environmentObject(pilotoRepo)
+                        .environmentObject(passageiroRepo)
+                        .environmentObject(combustivelRepo)
+                        .environmentObject(licaoRepo)
+                } else if ProcessInfo.processInfo.arguments.contains("--p1-preco-ml") {
                     // Busca de preço no Mercado Livre (navegador embutido) — valida
                     // que o app lê o preço de dentro do próprio aparelho.
                     BuscaPrecoMLView(termo: "sabo 02370", onUsar: { _ in }, onClose: {})
