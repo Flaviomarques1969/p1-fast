@@ -28,3 +28,27 @@
 7. **Riscos:** registrar trabalho em andamento (trail-braking) na oficial = colocar não-validado.
    Mitigar: classificar status e só propor registro do que está pronto/validado.
 8. **Status inicial:** iniciado.
+
+---
+
+## ONDA 1 — CONCLUÍDA 14/06 (registrada na versão oficial)
+- Método: linha de consolidação a partir de origin/main + trazidos SÓ os paths seguros
+  (docs, supabase/migrations, _design-reference, tools, .claude-perguntas, .claude-exec, raiz .md).
+  Código em andamento (web/ios/tests/windows) NUNCA foi trazido. Trava verificou = 0.
+- Resultado: commit `f40132b5` "consolidacao onda 1" enviado a origin/main (deb46bed→f40132b5).
+  336 arquivos registrados. Dívida caiu de 483 → 151 arquivos.
+- Migrations registradas refletem o que JÁ está na nuvem (alinha código↔banco). Duplicata 0028
+  registrada COMO ESTÁ (não resolvida — tratar no futuro; resolver mexe no histórico, arriscado).
+- Trabalho na máquina intacto (supabase-config.js etc presentes).
+- DIVERGÊNCIA conhecida: main LOCAL tem o trabalho (326 registros) mas NÃO tem o commit de
+  consolidação (que está só em origin/main). Não reconciliei a main local de propósito. A Onda 2
+  usará o MESMO método (branch a partir de origin/main + trazer paths do painel) — não precisa pull.
+
+## PENDENTE
+- ONDA 2 (painel web/cockpit ~49): esperar trail-braking ficar pronto; registra + coloca no ar junto.
+- ONDA 3 (app iPhone ~18 + testes): conferir se está completo e registrar.
+
+TASK_DONE (Onda 1):
+- Pedido conferido: sim · Ambiente: versão oficial (origin/main) · Produção (app/painel no ar) alterada: NÃO
+- Autorização: "resolve a onda 1" · Arquivos inspecionados: sim · Testes: trava de exclusão (0 código)
+- Resultado: concluído (Onda 1) · Pendências: Ondas 2 e 3.
