@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>P1 Fast — Simulação: IA chegando a 100%</title>
+<link rel="stylesheet" href="./cockpit.css">
+<style>
+  body{
+    background:#0a0a0a;color:#fff;
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;padding:32px 24px;
+    display:flex;flex-direction:column;align-items:center;gap:24px;
+  }
+  h1{font-size:18px;font-weight:600;letter-spacing:-0.01em;margin-bottom:4px;}
+  .subtitle{color:#888;font-size:12px;margin-bottom:8px;text-align:center;max-width:700px;line-height:1.5;}
+  .controls{
+    display:flex;gap:12px;align-items:center;justify-content:center;
+    margin-bottom:8px;
+  }
+  .btn{
+    padding:14px 28px;border-radius:8px;font-family:'Inter',system-ui,sans-serif;
+    font-size:14px;font-weight:600;letter-spacing:0.02em;cursor:pointer;
+    border:none;transition:all 200ms ease;
+    background:oklch(75% 0.20 145);color:#000;
+  }
+  .btn:hover{transform:translateY(-1px);filter:brightness(1.1);}
+  .btn-secondary{
+    background:transparent;color:#888;border:1px solid #333;
+  }
+  .btn-secondary:hover{color:#fff;border-color:#555;}
+  .status-line{
+    font-family:'JetBrains Mono',ui-monospace,monospace;
+    font-size:12px;color:#888;min-height:20px;
+  }
+  .status-line strong{color:#fff;}
+</style>
+</head>
+<body>
+  <h1>Simulação — IA atingindo 100% e ativando</h1>
+  <p class="subtitle">
+    Clique em "RODAR SIMULAÇÃO". A barra de IA no canto esquerdo do painel
+    vai subir de 0% até 100% em 5 segundos. No exato momento que cruzar 100%,
+    a tela vai piscar verde duas vezes (sinal de que a IA terminou de aprender
+    e passa a atuar de verdade). Depois disso, a barra fica parada em 100%.
+  </p>
+
+  <div class="controls">
+    <button class="btn" id="btnRodar">▶ RODAR SIMULAÇÃO</button>
+    <button class="btn btn-secondary" id="btnResetar">Resetar pra 0%</button>
+  </div>
+  <p class="status-line" id="status">Pronto. Clique pra começar.</p>
+
+  <!-- O painel propriamente dito -->
+  <div class="device" id="device" data-trecho-status="neutro" data-msg-state="oculta" data-shift-fire="idle" data-rain="off" data-alerta-critico="inativo">
+    <div class="notch"></div>
+
+    <aside class="aprendizado-bar" id="aprendizadoBar" data-status="inativo" style="--pct:0%">
+      <span class="aprendizado-bar__label">IA</span>
+      <div class="aprendizado-bar__track">
+        <div class="aprendizado-bar__fill"></div>
+      </div>
+      <span class="aprendizado-bar__pct" id="aprendizadoPct">0%</span>
+    </aside>
+
+    <div class="fire-overlay"></div>
+    <div class="rain-layer" id="rainLayer"></div>
+
+    <div class="alerta-escandaloso">
+      <div class="alerta-escandaloso__texto"><span>MOTOR</span><span>AQUECENDO</span></div>
+    </div>
+
+    <div class="telemetria-chip">
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+    </div>
+
+    <div class="shift-light" id="shiftLight" data-state="off">
+      <span class="shift-light__dot" data-tier="1"></span>
+      <span class="shift-light__dot" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="1"></span>
+    </div>
+
+    <section class="apex">
+      <div class="apex__ponto" data-estado="ok-melhor" data-papel="entrada">
+        <span class="apex__label">Entrada</span>
+        <span class="apex__valor">+3<small>km/h</small></span>
+      </div>
+      <div class="apex__ponto is-pior-impacto" data-estado="ok-melhor" data-papel="freio">
+        <span class="apex__label">Freio</span>
+        <span class="apex__valor">+2<small>m</small></span>
+      </div>
+      <div class="apex__ponto apex__ponto--bola" data-estado="ok-pior" data-papel="apice">
+        <span class="apex__label">Ápice</span>
+        <div class="apex__bola">
+          <div class="apex__bola__num"></div>
+        </div>
+      </div>
+      <div class="apex__ponto" data-estado="ok-melhor" data-papel="saida">
+        <span class="apex__label">Saída</span>
+        <span class="apex__valor">+4<small>km/h</small></span>
+      </div>
+    </section>
+
+    <div class="info-bloco">
+      <div class="info__delta">0.00</div>
+      <div class="info__acao">BUSCAR LIMITE</div>
+    </div>
+
+    <aside class="alert-bloco" id="alertBloco" data-tipo="comunicacao">
+      <div class="alert__msg" id="alertMsg"></div>
+    </aside>
+
+    <div class="stint-bar">
+      <div class="stint-bar__block is-warmup"></div>
+      <div class="stint-bar__block is-faster"></div>
+      <div class="stint-bar__block is-best-alltime"></div>
+      <div class="stint-bar__block is-slower"></div>
+      <div class="stint-bar__block is-best-stint"></div>
+      <div class="stint-bar__block is-pit is-pit-now"></div>
+      <div class="stint-bar__block is-current" data-pace="faster" style="--pct:65%"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block is-cooldown"></div>
+    </div>
+  </div>
+
+<script type="module">
+import { CockpitState } from './cockpit-state.js';
+import { attachRendererToDocument } from './cockpit-renderer.js';
+import { criarShiftLightOrquestrador } from './shift-light-orquestrador.js';
+
+const state = new CockpitState();
+attachRendererToDocument(state, document);
+
+const orquestrador = criarShiftLightOrquestrador({
+  cockpitState: state,
+  dynoCurve: [],
+  modoStintInicial: 'normal',
+});
+
+const statusEl = document.getElementById('status');
+
+// Limpa flashIa após a animação CSS terminar (1100ms)
+state.onChange((s, prev, keys) => {
+  if (keys.includes('flashIa') && s.flashIa) {
+    setTimeout(() => state.setFlashIa(false), 1150);
+  }
+});
+
+let rodando = false;
+
+document.getElementById('btnRodar').addEventListener('click', async () => {
+  if (rodando) return;
+  rodando = true;
+  state.setAprendizado(0);
+
+  // FASE 1: simular aprendizado subindo 0% → 100% em 5 segundos.
+  // No carro real, isso acontece ao longo de várias voltas conforme o
+  // detector identifica marchas e o acumulador acumula pontos por trecho.
+  statusEl.innerHTML = '<strong>Volta 1 começou na curva 1.</strong> ⏳ Aprendendo... <strong>0%</strong>';
+  // Simulamos que durante o aprendizado o carro está nas 8 curvas (não-reta)
+  orquestrador.setTrechoAtual('curva-1');
+
+  const DURACAO_MS = 5000;
+  const PASSO_MS = 50;
+  const INICIO = Date.now();
+
+  await new Promise(resolve => {
+    const iv = setInterval(() => {
+      const elapsed = Date.now() - INICIO;
+      const pct = Math.min(100, (elapsed / DURACAO_MS) * 100);
+      state.setAprendizado(pct);
+
+      const round = Math.round(pct);
+      const cor =
+        round >= 67 ? '#7ed957' :
+        round >= 34 ? '#e8c554' :
+        round >= 1  ? '#ff8a4c' : '#888';
+      statusEl.innerHTML = `<strong>Aprendendo durante as voltas...</strong> <strong style="color:${cor}">${round}%</strong>`;
+
+      if (pct >= 100) {
+        clearInterval(iv);
+        resolve();
+      }
+    }, PASSO_MS);
+  });
+
+  // FASE 2: cruzou 100%. Sistema marca "flash pendente até a próxima reta".
+  // Carro ainda está dentro de uma curva — flash NÃO dispara aí.
+  statusEl.innerHTML = '✓ <strong style="color:#7ed957">Calibrado em 100%</strong>. Carro ainda na curva 4. Aguardando o final dela...';
+  await new Promise(r => setTimeout(r, 1300));
+
+  // FASE 3: carro sai da curva e entra na reta principal.
+  statusEl.innerHTML = '🏁 <strong>Saiu da curva 4 — entrou na reta principal.</strong> Flash vai disparar no meio dela (~1,5s)...';
+  orquestrador.setTrechoAtual('reta-principal'); // tipo "reta" → flash agendado
+
+  // Espera o flash + animação CSS (1500ms até meio + 1100ms animação)
+  await new Promise(r => setTimeout(r, 2800));
+
+  statusEl.innerHTML = '✓ <strong style="color:#7ed957">IA ATIVA</strong> — daqui em diante o shift light usa o ponto aprendido por trecho.';
+  rodando = false;
+});
+
+document.getElementById('btnResetar').addEventListener('click', () => {
+  if (rodando) return;
+  state.setAprendizado(0);
+  state.setFlashIa(false);
+  orquestrador.reset();
+  statusEl.innerHTML = 'Pronto. Clique pra começar.';
+});
+
+console.log('[simulacao-ia-100] pronto');
+</script>
+</body>
+</html>
