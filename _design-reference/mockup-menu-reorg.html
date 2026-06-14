@@ -448,7 +448,7 @@ function salvarEditor(){
     if(state.indexOf(f.g)!==gi){ f.g.itens=f.g.itens.filter(x=>x.id!==it.id); state[gi].itens.push(it); }
     Object.assign(it, dados);
   } else {
-    state[gi].itens.push(Object.assign({id:'i'+(UID++), done:false}, dados));
+    state[gi].itens.push(Object.assign({id:'i'+(UID++), done:false, pegou:0}, dados));
   }
   fecharEditor(); renderPend();
 }
