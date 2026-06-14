@@ -114,8 +114,10 @@ struct PessoasView: View {
 
     var body: some View {
         List {
-                contextHeadRow
-                subTabBarRow
+                if embeddedSubTab == nil {
+                    contextHeadRow
+                    subTabBarRow
+                }
                 switch subTab {
                 case .pilotos:
                     pilotosRows
