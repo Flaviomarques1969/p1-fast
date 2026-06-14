@@ -262,6 +262,21 @@ body{padding:0 0 96px;}
   <button class="bottom-nav__item" data-nav="garagem" data-on="true"><span class="bottom-nav__dot"></span>Garagem</button>
 </nav>
 
+<!-- menu Gerenciar itens -->
+<div class="modal" id="menu">
+  <div class="sheet">
+    <h3>Gerenciar itens</h3>
+    <button class="menu-act" onclick="menuAdicionar()"><b>Adicionar item</b><span>cadastrar um novo</span></button>
+    <button class="menu-act" onclick="menuEditar()"><b>Editar um item</b><span>toque no item que quer mudar</span></button>
+    <button class="menu-act" onclick="menuExcluir()"><b>Excluir itens</b><span>selecione e apague vários de uma vez</span></button>
+    <div class="sheet__foot"><button onclick="fecharMenu()">Cancelar</button></div>
+  </div>
+</div>
+<!-- barra do modo Editar -->
+<div class="modebar" id="modebar"><span id="modebar-txt">Toque no item que quer editar</span><button onclick="cancelarModo()">Concluir</button></div>
+<!-- barra do modo Excluir -->
+<div class="delbar" id="delbar"><button onclick="cancelarModo()">Cancelar</button><button class="del" onclick="confirmarExclusao()">Excluir selecionados (<span id="delN">0</span>)</button></div>
+
 <!-- ════════ EDITOR DE ITEM ════════ -->
 <div class="modal" id="editor">
   <div class="sheet">
