@@ -363,6 +363,7 @@ function subLine(it){
 
 let mode = 'normal';              // 'normal' | 'editar' | 'excluir'
 const selected = new Set();
+const showDone = new Set();        // grupos com as "concluídas" reveladas
 
 function nomeHTML(it){
   const b=badge(it), sub=subLine(it);
