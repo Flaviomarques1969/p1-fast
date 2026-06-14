@@ -19,6 +19,10 @@
 //   - Debounce: ignora cruzamentos consecutivos a menos de 5 segundos
 //     (evita falso disparo se carro fica em pé sobre a linha).
 
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
+
+const SUPABASE_ANON = SUPABASE_ANON_KEY;
+
 const DEBOUNCE_MS = 5000;
 // Cruzamento só vale se o CAMINHO entre 2 amostras corta a linha DE VERDADE
 // (segmento a–b com folga). Sem isso, o prolongamento infinito da linha corta a
