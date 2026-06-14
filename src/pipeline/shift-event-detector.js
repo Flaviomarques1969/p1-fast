@@ -80,6 +80,14 @@ export function createShiftEventDetector(opts = {}) {
       if (dRpm <= -cfg.rpmDrop) type = 'up';
       else if (dRpm >= cfg.rpmRise) type = 'down';
       if (!type) return;
+      // Cruzar com a aceleração (só upshift, só se a trava estiver ligada):
+      // exige queda de força-G concomitante. Se não há leitura de aceleração,
+      // degrada com elegância e mantém o gatilho por RPM (não bloqueia).
+      if (type === 'up' && cfg.accelCorroboraUpshift) {
+        const aPrev = prev && prev.accel && Number.isFinite(prev.accel.x) ? prev.accel.x : null;
+        const aCur  = cur  && cur.accel  && Number.isFinite(cur.accel.x)  ? cur.accel.x  : null;
+        if (aPrev != null && aCur != null && !(aCur <= aPrev - cfg.accelDropMin)) return;
+      }
       pending = { type, atTimestamp: cur.timestamp, beforeSample: prev, atSample: cur };
       state = 'pending';
       return;
