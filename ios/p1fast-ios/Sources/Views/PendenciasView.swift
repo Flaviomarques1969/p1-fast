@@ -290,6 +290,7 @@ struct PendenciasView: View {
         do {
             try await repo.ensureInstancesForEvento(eventoId)
             let novos = repo.grupos(forEventoId: eventoId)
+            if grupoExpandido == nil { grupoExpandido = novos.first?.id }
             withAnimation(.easeInOut(duration: 0.22)) { grupos = novos }
         } catch { print("PendenciasView.refresh failed: \(error)") }
     }
