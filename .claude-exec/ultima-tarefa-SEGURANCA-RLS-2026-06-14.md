@@ -50,4 +50,26 @@
 - Método cirúrgico (memória 14/06): 0044 movida p/ /tmp/p1fast-0044-hold/ para o push aplicar
   SÓ a 0045. Restaurar 0044 ao fim. NUNCA --include-all.
 - Em andamento: dry-run após espera (background be8p9mlpa).
-- Status: EM EXECUÇÃO (aguardando janela de conexão).
+- Status: CONCLUÍDO.
+
+## TASK_DONE — 0045 aplicada em produção 14/06
+- Pedido original conferido: sim (começar pela Segurança / "roda tudo" → item 1).
+- Ambiente trabalhado: produção (nuvem fvhwltzhytpnhlqbttmd).
+- Produção foi alterada: SIM (apenas regras de acesso/RLS; nenhuma linha de dado tocada).
+- Autorização explícita registrada: SIM — "MIGRAR PARA PRODUÇÃO: higiene de segurança do painel (0045)".
+- Arquivos reais inspecionados: sim (migrations 0001/0023/0034/0035/0041, POLICIES-VIVAS, consumidores JS).
+- Alterações feitas: 0045 criada e aplicada. 0044 (vídeo) preservada/devolvida — NÃO aplicada.
+- Testes/validação executados: sim — migration list (0045 remoto OK; 0044 segue pendente);
+  leitura anônima HTTP 200 nas 4 tabelas (painel continua lendo); push sem erro.
+- Resultado: CONCLUÍDO (Camada 1 / higiene).
+- Pendências reais:
+  - Login real do painel (Camada 2) ADIADO por decisão do Flávio (escolheu "só higiene, sem login").
+  - 0044 (vídeo) segue pendente, aguardando Flávio validar o vídeo (não autorizada).
+  - Higiene menor restante da auditoria (chave central, enum pneu, view voltas reais, consolidar 0026/0027) — fora desta etapa.
+
+### O que mudou no banco (0045)
+- RLS ligada em: pontos_troca_aprendidos, envelopes_seguranca_stint, qualidade_troca_marcha
+  (espelhando o acesso anon que o painel já usa: select/insert/update onde aplicável).
+- perfis_reacao_piloto: trocada policy FOR ALL (permitia DELETE a qualquer um) por select/insert/update anon.
+- t4000_live_commands / t4000_live_events: removido acesso anônimo (filas órfãs; ninguém consome).
+- Rollback documentado dentro do próprio 0045.
