@@ -1,5 +1,10 @@
 # CONTINUAR — Pendências + Estoque (DESIGN APROVADO 2026-06-14)
 
+> ✅ PARTE 2 CONSTRUÍDA EM DEV (2026-06-14 noite) — os 4 itens feitos e validados
+> (BUILD SUCCEEDED + screenshots em `relatorios/estoque-2026-06-14/`). Detalhes:
+> `.claude-exec/ultima-tarefa.md` (bloco TASK_DONE). Produção INTOCADA.
+> Próximo possível: reconciliar estoque local novo × estoque do carro sincronizado (Peca) — decisão+autorização à parte; e publicar (só com "MIGRAR PARA PRODUÇÃO").
+
 Flávio aprovou ("sim") o desenho COMPLETO. Construir no app (DEV) em estágios.
 Mockup final aprovado: `_design-reference/mockup-pendencias-estoque-APROVADO-2026-06-14.html`
 (snapshot de `mockup-menu-reorg.html` na aprovação.)
