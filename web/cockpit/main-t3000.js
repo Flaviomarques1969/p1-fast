@@ -418,12 +418,16 @@ bridge.ingestT4000 = (sample) => {
         kmh: sample.speedKmh ?? 0,
         ts:  sample.tMono ?? sample.t ?? Date.now(),
       });
-      const rpmOtimo = shiftOrquestrador.getRpmOtimoTroca();
-      if (Number.isFinite(rpmOtimo) && rpmOtimo > 0) {
-        // Atualiza o ponto em que o LED dispara o FIRE. Offset de 300 rpm
-        // antes pra acender progressivamente. peakTorqueRpm é nome legado
-        // do bridge — semanticamente agora é "rpm ótimo de troca".
-        bridge.setLimits({ peakTorqueRpm: rpmOtimo });
+      // Onda 7 / reconciliação 14/06: o LED acende no ponto VISUAL (com a
+      // antecipação do tempo de reação do piloto descontada), não no alvo cru —
+      // assim a troca REAL cai no ponto certo (potência máxima 6.050). Cai pro
+      // alvo cru se ainda não há ritmo de giro pra calcular a antecipação.
+      const luz = shiftOrquestrador.getRpmVisualLuz();
+      const rpmLuz = (luz && Number.isFinite(luz.rpmVisual)) ? luz.rpmVisual : null;
+      if (Number.isFinite(rpmLuz) && rpmLuz > 0) {
+        // peakTorqueRpm é nome legado do bridge — semanticamente agora é
+        // "rpm onde a luz de troca acende".
+        bridge.setLimits({ peakTorqueRpm: rpmLuz });
       }
     } catch (e) {
       // Não derrubar o cockpit. Logar e seguir com BUBI_LIMITS estáticos.
