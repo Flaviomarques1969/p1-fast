@@ -152,6 +152,32 @@ struct HubMockLauncher: View {
         }
     }
 
+    /// Semeia alguns itens no estoque geral pra screenshot não ficar vazio.
+    /// Mostra os 3 tipos de "como conta": simples, embalagem e conjunto.
+    private func seedEstoqueMockIfNeeded() async {
+        guard estoqueRepo.itens.isEmpty else { return }
+        func b(_ id: String) -> BlocoPend { EstoqueRepository.bloco(id: id) }
+        _ = try? await estoqueRepo.criar(escopo: EstoqueRepository.escopoGeral, kind: "ferramenta",
+            bloco: b("G1"), nome: "Compressor de ar", especificacao: nil, categoria: "obrig",
+            contagem: "simples", quantidade: 1, volume: nil, unidade: nil, embalagens: nil, partes: [], foto: nil)
+        _ = try? await estoqueRepo.criar(escopo: EstoqueRepository.escopoGeral, kind: "ferramenta",
+            bloco: b("G6"), nome: "Caixa de ferramentas", especificacao: nil, categoria: "obrig",
+            contagem: "simples", quantidade: 1, volume: nil, unidade: nil, embalagens: nil, partes: [], foto: nil)
+        _ = try? await estoqueRepo.criar(escopo: EstoqueRepository.escopoGeral, kind: "item",
+            bloco: b("G5"), nome: "Extintor", especificacao: nil, categoria: "obrig",
+            contagem: "simples", quantidade: 1, volume: nil, unidade: nil, embalagens: nil, partes: [], foto: nil)
+        _ = try? await estoqueRepo.criar(escopo: EstoqueRepository.escopoGeral, kind: "item",
+            bloco: b("G1"), nome: "Óleo motor", especificacao: "Mobil 5W30 sintético", categoria: "obrig",
+            contagem: "embalagem", quantidade: 1, volume: 1, unidade: "L", embalagens: 4, partes: [], foto: nil)
+        _ = try? await estoqueRepo.criar(escopo: EstoqueRepository.escopoGeral, kind: "item",
+            bloco: b("G3"), nome: "Jacks (cavaletes)", especificacao: nil, categoria: "obrig",
+            contagem: "simples", quantidade: 4, volume: nil, unidade: nil, embalagens: nil, partes: [], foto: nil)
+        _ = try? await estoqueRepo.criar(escopo: EstoqueRepository.escopoGeral, kind: "item",
+            bloco: b("G3"), nome: "Rodas sobressalentes", especificacao: nil, categoria: "desej",
+            contagem: "conjunto", quantidade: 1, volume: nil, unidade: nil, embalagens: nil,
+            partes: [.init(nome: "Aro 15", qtd: 4), .init(nome: "Aro 14", qtd: 4)], foto: nil)
+    }
+
     /// Rota inicial do mock: hub do carro; com `--p1-deep` empilha tb o Estoque.
     private func rotaMock(carroId id: String) -> [HomeNavTarget] {
         if ProcessInfo.processInfo.arguments.contains("--p1-menu") {
