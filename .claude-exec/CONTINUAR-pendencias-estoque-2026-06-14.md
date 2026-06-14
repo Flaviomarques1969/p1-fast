@@ -1,9 +1,12 @@
 # CONTINUAR — Pendências + Estoque (DESIGN APROVADO 2026-06-14)
 
-> ✅ PARTE 2 CONSTRUÍDA EM DEV (2026-06-14 noite) — os 4 itens feitos e validados
-> (BUILD SUCCEEDED + screenshots em `relatorios/estoque-2026-06-14/`). Detalhes:
-> `.claude-exec/ultima-tarefa.md` (bloco TASK_DONE). Produção INTOCADA.
-> Próximo possível: reconciliar estoque local novo × estoque do carro sincronizado (Peca) — decisão+autorização à parte; e publicar (só com "MIGRAR PARA PRODUÇÃO").
+> ✅ PARTE 2 CONSTRUÍDA E EM PRODUÇÃO NO IPHONE (2026-06-14 noite) — os 4 itens feitos,
+> validados (BUILD SUCCEEDED + screenshots em `relatorios/estoque-2026-06-14/`) e INSTALADOS
+> no iPhone 16 Pro Max real com autorização literal ("MIGRAR PARA PRODUÇÃO: estoque geral + pendências").
+> Feature é LOCAL-ONLY — banco da nuvem NÃO foi tocado. Detalhes: `.claude-exec/ultima-tarefa.md`
+> (TASK_DONE + MIGRAÇÃO PARA PRODUÇÃO).
+> Pendências: (a) reconciliar estoque local novo × estoque do carro sincronizado (Peca) — decisão à parte;
+> (b) registrar a cópia oficial na nuvem (origin/main) — backlog grande pré-existente, fazer com cuidado à parte.
 
 Flávio aprovou ("sim") o desenho COMPLETO. Construir no app (DEV) em estágios.
 Mockup final aprovado: `_design-reference/mockup-pendencias-estoque-APROVADO-2026-06-14.html`
