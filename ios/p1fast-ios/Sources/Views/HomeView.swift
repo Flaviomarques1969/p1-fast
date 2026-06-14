@@ -283,8 +283,8 @@ struct HomeView: View {
             break
         case "Eventos":
             router.path.append(HomeNavTarget.eventos)
-        case "Cadastros":
-            router.path.append(HomeNavTarget.cadastros)
+        case "Pendências":
+            router.path.append(HomeNavTarget.pendencias)
         case "Garagem":
             router.path.append(HomeNavTarget.garagem)
         default:
@@ -303,8 +303,8 @@ struct HomeView: View {
             break // a raiz do stack já é a Home
         case "Eventos":
             router.path.append(HomeNavTarget.eventos)
-        case "Cadastros":
-            router.path.append(HomeNavTarget.cadastros)
+        case "Pendências":
+            router.path.append(HomeNavTarget.pendencias)
         case "Garagem":
             router.path.append(HomeNavTarget.garagem)
         default:
