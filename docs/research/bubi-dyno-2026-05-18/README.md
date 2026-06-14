@@ -32,10 +32,14 @@ Curva oficial do motor do Bubi, rodada na Lenza Powerchips em 2026-05-18. Esta �
 
 ## Implicações pro shift light no painel do piloto
 
-- Acionamento progressivo: a partir de **~4.900 rpm** (200 rpm antes do pico).
-- **Máximo (vermelho) em 5.200 rpm** = pico de torque atingido.
-- Halo de aviso acima de 5.400 rpm = "passou do ponto ideal, está perdendo torque".
-- Limite hard em 6.350 rpm — sirene visual + halo vermelho fixo.
+> CORRIGIDO 14/06/2026 (decisão Flávio): a troca é na **POTÊNCIA MÁXIMA (6.050 rpm)**, não no torque (5.200).
+> A versão antiga desta seção mandava "máximo em 5.200" — estava errada (trocava cedo). Carro de corrida:
+> um comportamento só, máximo desempenho. Ver memória `feedback_p1fast_shift_light_torque_nao_redline`.
+
+- Acionamento progressivo: enche conforme se aproxima do **pico de potência (6.050 rpm)**.
+- **Máximo / pisca pra trocar em 6.050 rpm** = potência máxima (máximo desempenho).
+- Acima de 6.100 rpm a potência já cai — não esticar a marcha à toa.
+- Limite hard em 6.350 rpm — sirene visual + halo vermelho fixo (só segurança, NÃO é o ponto de troca).
 
 ## Arquivos nesta pasta
 
