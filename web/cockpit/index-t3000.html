@@ -10,7 +10,15 @@
 <link rel="stylesheet" href="cockpit.css">
 <style>
   /* topo de conexão — minimal, fora do cockpit canônico */
-  body { margin: 0; }
+  body { margin: 0; background: #000; }
+
+  /* TELA REAL = 10,5" DE PISTA (PDM-10.5T, 1920×1280) — NÃO é celular.
+     Cobrança do Flávio 12/06: sem recorte (notch), sem moldura arredondada,
+     sem faixa preta sobrando. O palco vira ~3:2 e preenche a tela inteira.
+     O cockpit.css canônico segue intocado (teste byte a byte) — a adaptação
+     é só desta página, onde o painel roda de verdade. */
+  .device { height: 590px; border-radius: 0; box-shadow: none; }
+  .device .notch { display: none; }
   .conn-bar {
     position: fixed; top: 0; left: 0; right: 0;
     display: flex; align-items: center; gap: 12px; padding: 8px 14px;
@@ -172,17 +180,17 @@
 <div class="conn-log" id="connLog"></div>
 
 <script>
-// Tela de pista PDM-10.5T (1920×1280): o painel 956×440 escala uniforme pra
-// caber na janela (em 1920×1280 dá ~2× = 1912×880 com faixas pretas ~200 px
-// em cima/embaixo — MS-13.1, fechado 2026-05-10). Em janela de bancada (~956)
-// a escala fica 1 e nada muda.
+// Tela de pista PDM-10.5T (1920×1280): o palco 956×590 (~3:2, proporção da
+// tela real) escala uniforme pra PREENCHER a tela — sem faixas pretas
+// (Flávio 12/06: "a tela é 10,5", não celular). Em 1920×1280 dá ~1,96× =
+// ~1880×1280 com a barra de conexão. Em janela de bancada escala o que couber.
 (function () {
   const stage = document.querySelector('.stage');
   if (!stage) return;
   function ajustaEscala() {
-    const s = Math.min(window.innerWidth / 980, window.innerHeight / 530, 2.2);
+    const s = Math.min(window.innerWidth / 960, window.innerHeight / 652, 2.2);
     stage.style.transform = s > 1.01 ? `scale(${s.toFixed(3)})` : '';
-    stage.style.transformOrigin = 'center center';
+    stage.style.transformOrigin = 'center top';
   }
   window.addEventListener('resize', ajustaEscala);
   ajustaEscala();
