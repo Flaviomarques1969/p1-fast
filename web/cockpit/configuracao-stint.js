@@ -174,7 +174,6 @@ function esconderBriefTreino() {
 // ── Gravar envelope no banco ──────────────────────────────────
 
 async function aprovarEnvelope() {
-  if (!modoSelecionado) return;
   const status = document.getElementById('status');
   status.className = 'status';
   status.textContent = 'Aprovando envelope…';
