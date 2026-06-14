@@ -449,6 +449,8 @@ private struct ItemRow: View {
             if alvo > 1, !item.checado { contador }
         }
         .padding(.horizontal, Spacing.md).padding(.vertical, 10)
+        .contentShape(Rectangle())
+        .onLongPressGesture(minimumDuration: 0.5) { onEditarNota() }
     }
 
     // Editar: lápis + nome; toca pra abrir o editor.
