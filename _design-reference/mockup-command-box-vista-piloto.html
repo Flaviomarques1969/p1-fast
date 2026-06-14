@@ -5821,12 +5821,22 @@ html,body{
          '<span class="ps-delta-tot empty">—</span>'+
        '</div>');
 
+    var perfil = data.perfil || { rotulo:'', resumo:'' };
+    var tipoHtml = perfil.rotulo
+      ? '<span class="ps-tipo" style="font-family:\'JetBrains Mono\',monospace;font-size:9.5px;letter-spacing:.14em;color:#0b0e12;background:#D4AF37;padding:2px 7px;border-radius:999px;font-weight:700;text-transform:uppercase;">'+perfil.rotulo+'</span>'
+      : '';
+    var formatoHtml = perfil.resumo
+      ? '<div class="ps-formato" style="text-align:center;font-size:10px;letter-spacing:.04em;color:rgba(212,175,55,0.78);padding:2px 4px 0;">trail · '+perfil.resumo+'</div>'
+      : '';
+
     return ''+
       '<div class="ps-header">'+
         '<span class="ps-title">passagem</span>'+
         '<span class="ps-curva">'+curvaLabel+'</span>'+
+        tipoHtml+
       '</div>'+
       '<div class="ps-canvas">'+svg+'</div>'+
+      formatoHtml+
       verdictHtml;
   }
 
