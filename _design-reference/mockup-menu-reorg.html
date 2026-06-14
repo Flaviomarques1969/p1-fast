@@ -352,25 +352,22 @@ function renderPend(){
         ${abertos.map(it=>{
           const b=badge(it), sub=subLine(it), tg=target(it);
           const full = (it.pegou||0)>=tg;
-          const counter = tg>1 ? `
-            <div class="counter">
-              <button class="cbtn minus" onclick="incPegou('${it.id}',-1)">–</button>
-              <div class="cval ${full?'full':''}"><b>${it.pegou||0} / ${tg}</b><span>peguei</span></div>
-              <button class="cbtn plus" onclick="incPegou('${it.id}',1)">+</button>
-            </div>` : '';
+          const cnt = tg>1 ? `
+              <button class="cstep minus" onclick="incPegou('${it.id}',-1)">–</button>
+              <span class="ccount ${full?'full':''}">${it.pegou||0}/${tg}</span>
+              <button class="cstep plus" onclick="incPegou('${it.id}',1)">+</button>` : '';
           return `
           <div class="pitem" data-done="${it.done}" data-cat="${it.cat}">
-            <div class="pitem__top">
-              <button class="pcheck" onclick="toggleItem('${it.id}')">✓</button>
-              <span class="pitem__txt" onclick="toggleItem('${it.id}')">
-                <span class="pitem__name">${it.txt}${b?`<span class="pqty">${b}</span>`:''}</span>
-                ${sub?`<span class="pitem__sub">${sub}</span>`:''}
-              </span>
-              <span class="pitem__slot">
-                <button class="picon" title="Editar" onclick="abrirEditor(${gi},'${it.id}')">${PENCIL}</button>
-              </span>
-            </div>
-            ${counter}
+            <button class="pcheck" onclick="toggleItem('${it.id}')">✓</button>
+            <span class="pitem__txt" onclick="toggleItem('${it.id}')">
+              <span class="pitem__name">${it.txt}${b?`<span class="pqty">${b}</span>`:''}</span>
+              ${sub?`<span class="pitem__sub">${sub}</span>`:''}
+            </span>
+            <span class="pitem__slot">
+              <button class="picon" title="Editar" onclick="abrirEditor(${gi},'${it.id}')">${PENCIL}</button>
+              ${cnt}
+              <button class="picon del" title="Excluir" onclick="excluirItem(${gi},'${it.id}')">${TRASH}</button>
+            </span>
           </div>`;
         }).join('')}
       </div>`;
