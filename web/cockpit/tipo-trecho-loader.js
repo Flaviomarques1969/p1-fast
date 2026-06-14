@@ -42,3 +42,33 @@ export async function carregarTiposPorTrecho(layoutId) {
 export function ehReta(tipo) {
   return tipo === 'reta_longa' || tipo === 'reta_curta';
 }
+
+/**
+ * Carrega { trechoId → tipo_curva } (T0–T5/SF/ND) pra um layout — o tipo FINO
+ * da curva, padrão Flávio 13/06/2026 (migration 0043_track_segments_tipo_curva).
+ *
+ * TOLERANTE A FALHA DE PROPÓSITO: se a coluna `tipo_curva` ainda não existe no
+ * banco lido (ex.: produção antes de "MIGRAR PARA PRODUÇÃO"), o REST devolve erro
+ * e a função retorna {} — a tela degrada pro tipo grosso/sem proposta, NUNCA
+ * quebra a leitura ao vivo. Por isso fica separada do segments-loader (que carrega
+ * a geometria e não pode falhar por uma coluna nova).
+ *
+ * @param {string} layoutId
+ * @returns {Promise<Object>} dict trechoId → 'T0'|...|'SF'|'ND' (só dos trechos com valor)
+ */
+export async function carregarTipoCurvaPorTrecho(layoutId) {
+  if (!layoutId) return {};
+  const url = `${SUPABASE_URL}/rest/v1/track_segments?layout_id=eq.${layoutId}&select=id,tipo_curva,ordem`;
+  let resp;
+  try { resp = await fetch(url, { headers: HEADERS }); }
+  catch { return {}; }
+  if (!resp.ok) return {}; // coluna ausente (banco não migrado) ou rede: degrada em silêncio
+  let rows;
+  try { rows = await resp.json(); } catch { return {}; }
+  if (!Array.isArray(rows)) return {};
+  const out = {};
+  for (const r of rows) {
+    if (r.id && r.tipo_curva) out[r.id] = r.tipo_curva;
+  }
+  return out;
+}
