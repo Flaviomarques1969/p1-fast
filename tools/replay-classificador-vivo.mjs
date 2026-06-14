@@ -72,16 +72,22 @@ function main() {
   for (const s of snap) {
     const e = s.estado, tend = s.tendencia;
     const obs = (tend && tend.dominante) ? tend.dominante : '—';
+    const prop = e.propostaPendente ? `${e.propostaPendente.de}→${e.propostaPendente.para}` : '—';
     console.log(
       `${(s.nome || s.segmentId.slice(0, 8)).padEnd(22)} aprovado=${String(e.tipoAprovado).padEnd(3)} observado≈${String(obs).padEnd(3)} ` +
-      `passagens=${e.historico ? e.historico.length : 0} proposta=${e.propostaPendente ? e.propostaPendente.tipo : '—'}`
+      `passagens=${e.historico ? e.historico.length : 0} proposta=${prop}`
     );
   }
   if (propostas.length) {
-    console.log('\n--- propostas ---');
-    for (const pr of propostas) console.log(`  ${pr.trecho}: → ${pr.proposta.tipo}`);
+    console.log('\n--- propostas nascidas (evolução consistente diverge do aprovado) ---');
+    for (const pr of propostas) {
+      console.log(`  ${pr.trecho}: ${pr.proposta.de} (${pr.proposta.rotuloDe}) → ${pr.proposta.para} (${pr.proposta.rotuloPara})`);
+    }
+    console.log('\n  NOTA HONESTA: estas curvas são exatamente onde o Flávio OVERRODE a telemetria de maio');
+    console.log('  ao fixar o padrão definitivo. O agente detecta a divergência (faz o trabalho dele). Em PRODUÇÃO,');
+    console.log('  as voltas de maio entram como REFERÊNCIA já decidida — proposta real virá de dado novo a 25 Hz.');
   } else {
-    console.log('\n✓ 0 propostas — a observação de maio (~1 Hz) CONFIRMA o padrão do Flávio (esperado e honesto).');
+    console.log('\n✓ 0 propostas — a observação de maio (~1 Hz) CONFIRMA o padrão do Flávio.');
   }
   // critério da FASE 5: o estado acumulou em todos os trechos observados
   const semHistorico = snap.filter(s => !s.estado.historico || s.estado.historico.length === 0);
