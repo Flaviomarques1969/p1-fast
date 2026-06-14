@@ -7485,6 +7485,7 @@ html,body{
     // (que mostrava marcha 3/4/5 e RPM varrendo falsos) e passa a desenhar o bloco
     // com o RPM REAL do carro. A MARCHA fica "—" até o cérebro inferir a marcha ao
     // vivo (resolvido com o dado do dia de pista 15-16). Calibração Bubi intacta (6.050/6.300).
+    window.__shiftLightRealMode = true;   // trava: demo não religa, mesmo se init() rodar depois
     stopShiftLightAnimation();
     if(window.__shiftLightRealId){ clearInterval(window.__shiftLightRealId); }
     window.__shiftLightRealId = setInterval(function(){
