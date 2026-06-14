@@ -41,7 +41,7 @@ export function segundos(t) { return t > 1000 ? t / 1000 : t; }
 
 // freadaT: t do ponto-pico imediatamente ANTES da 1ª desaceleração média >= 0,5 g (até o Vmin).
 // Espelha o trecho-detector (avgDecel <= -FREADA_LIMIAR_G), mas sobre os pontos já recortados.
-function acharFreadaT(pts, vminIdx) {
+export function acharFreadaT(pts, vminIdx) {
   for (let i = 1; i <= vminIdx && i < pts.length; i++) {
     const v0 = pts[i - 1].kmh, v1 = pts[i].kmh;
     if (!Number.isFinite(v0) || !Number.isFinite(v1)) continue;
@@ -68,7 +68,7 @@ function acharApiceGeo(pts, apiceGps) {
 //                    (não na borda) → ancora no Vmin (slowest point ≈ apex do recorte).
 //   • 'borda'      → Vmin na 1ª/última amostra → recorte parcial (entrada-só ou saída-só);
 //                    sem ápice nítido. Ainda etiqueta (0 nulos), mas declara o limite.
-function ancorarApice(pts, apiceGps, vminIdx) {
+export function ancorarApice(pts, apiceGps, vminIdx) {
   const geo = acharApiceGeo(pts, apiceGps);
   if (geo && geo.dist <= APICE_DIST_MAX_M) return { apiceT: geo.t, confianca: 'alta', distApiceM: Math.round(geo.dist) };
   if (vminIdx == null) return { apiceT: null, confianca: 'borda', distApiceM: geo ? Math.round(geo.dist) : null };
@@ -154,4 +154,5 @@ function main() {
   console.log('\n✓ 0 pontos com sub:null');
 }
 
-main();
+import { fileURLToPath as _f } from "node:url";
+if (process.argv[1] && _f(import.meta.url) === process.argv[1]) main();
