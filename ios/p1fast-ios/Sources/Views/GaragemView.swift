@@ -21,6 +21,9 @@ import P1FastCore
 struct GaragemView: View {
     @EnvironmentObject private var repo: CarroRepository
     @State private var sheet: GaragemSheet?
+    /// Sub-aba ativa: Carros (lista de carros) ou um dos cadastros que
+    /// migraram pra cá (Pilotos/Passageiros/Combustível/Lições). 2026-06-14.
+    @State private var subTab: GaragemSubTab = .carros
 
     /// Permite abrir a tela já com uma sheet visível — usado pelos
     /// launch args `--p1-garagem-novo` / `--p1-garagem-carro` pra
