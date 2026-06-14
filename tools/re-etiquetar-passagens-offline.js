@@ -120,13 +120,21 @@ function main() {
     const freadaT = (vminIdx != null) ? acharFreadaT(pts, vminIdx) : null;
     const anc = ancorarApice(pts, geo && geo.apice_gps, vminIdx);
     const apiceT = anc.apiceT;
+    const paceIdx = acharPaceIdx(pts, vminIdx);
+    const paceT = (paceIdx != null) ? pts[paceIdx].t : null;
 
     if (freadaT != null) comFreada++;
     if (apiceT != null) comApice++;
     if (vminIdx != null) comVmin++;
+    if (paceT != null) comPace++;
     conf[anc.confianca] = (conf[anc.confianca] || 0) + 1;
 
-    const novosPts = retagSubsPorEventos(pts, { freadaT, apiceT, vminIdx });
+    // re-etiqueta os 4 subs base (entrada/freio/apice/saida)…
+    const novosPts = retagSubsPorEventos(pts, { freadaT, apiceT, vminIdx }).map(x => ({ ...x }));
+    // …e PROMOVE a zona de aceleração pós-Vmin (sub 'saida' a partir do paceT) para 'pace'.
+    if (paceT != null) {
+      for (const x of novosPts) if (x.sub === 'saida' && x.t >= paceT) x.sub = 'pace';
+    }
     for (const x of novosPts) {
       if (x.sub == null) { nullDepois++; dist.outro++; }
       else if (dist[x.sub] != null) dist[x.sub]++;
@@ -137,6 +145,7 @@ function main() {
     const marcos = {
       freadaT, apiceT, confiancaApice: anc.confianca, distApiceM: anc.distApiceM,
       vminIdx, vminKmh: vmin ? vmin.kmh : null, vminT: (vminIdx != null) ? pts[vminIdx].t : null,
+      paceIdx, paceT, paceProxy: true, // PACE = proxy por velocidade (sem sensor de acelerador)
     };
 
     if (spot.length < 4) {
