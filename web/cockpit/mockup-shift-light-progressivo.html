@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Luz de marcha — progressão das luzes</title>
+<style>
+  :root{
+    --bg:#070708; --card:#0d0d10; --line:#1d1d22; --txt:#e9e9ee; --dim:#8a8a93;
+    --verde: oklch(80% 0.23 145);
+    --amarelo: oklch(86% 0.21 92);
+    --vermelho: oklch(74% 0.26 28);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    padding:28px 32px;}
+  h1{font-size:22px;font-weight:650;margin:0 0 4px;}
+  .sub{color:var(--dim);margin:0 0 24px;font-size:14px;}
+  .rotbar{display:flex;align-items:baseline;gap:24px;margin:0 0 22px;flex-wrap:wrap;}
+  .rot{font-variant-numeric:tabular-nums;font-size:40px;font-weight:700;letter-spacing:-.5px;}
+  .rot small{font-size:16px;color:var(--dim);font-weight:500;margin-left:6px;}
+  .marca{font-size:14px;color:var(--dim);}
+  .marca b{color:var(--txt);font-weight:600;}
+  .painel{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:22px 26px;margin:0 0 18px;width:100%;}
+  .painel h2{font-size:15px;font-weight:600;margin:0 0 4px;display:flex;align-items:center;gap:10px;}
+  .painel .nota{color:var(--dim);font-size:13px;margin:0 0 18px;}
+  .tag{font-size:11px;font-weight:700;letter-spacing:.4px;padding:3px 9px;border-radius:999px;text-transform:uppercase;}
+  .tag.ruim{background:oklch(74% 0.26 28 / .16);color:oklch(80% 0.2 28);}
+  .tag.bom{background:oklch(80% 0.23 145 / .15);color:oklch(85% 0.2 145);}
+  .leds{display:flex;gap:14px;justify-content:center;align-items:center;padding:14px 0 6px;}
+  .led{width:46px;height:46px;border-radius:50%;background:#15151a;
+    border:1px solid #232329;transition:none;position:relative;}
+  .led.on{}
+  .led.on.g{background:radial-gradient(circle at 35% 30%, oklch(96% .1 145), var(--verde) 60%, oklch(58% .23 148));
+    box-shadow:0 0 14px oklch(82% .23 145 / .9),0 0 30px oklch(72% .23 148 / .5);}
+  .led.on.y{background:radial-gradient(circle at 35% 30%, oklch(98% .13 95), var(--amarelo) 58%, oklch(66% .21 88));
+    box-shadow:0 0 14px oklch(88% .21 92 / .9),0 0 30px oklch(80% .21 90 / .5);}
+  .led.on.r{background:radial-gradient(circle at 35% 30%, oklch(95% .1 32), var(--vermelho) 55%, oklch(54% .26 25));
+    box-shadow:0 0 16px oklch(76% .26 28 / .95),0 0 36px oklch(66% .27 27 / .55);}
+  .fire .led{animation:pisca .18s steps(1) infinite;}
+  @keyframes pisca{50%{opacity:.25;}}
+  .controles{display:flex;align-items:center;gap:16px;margin-top:8px;color:var(--dim);font-size:13px;}
+  button{background:#16161b;color:var(--txt);border:1px solid var(--line);border-radius:10px;
+    padding:9px 16px;font-size:14px;cursor:pointer;}
+  button:hover{border-color:#33333a;}
+  .slider{flex:1;min-width:200px;}
+  input[type=range]{width:100%;accent-color:oklch(80% .2 145);}
+</style>
+</head>
+<body>
+  <h1>Luz de marcha — como as luzes acendem</h1>
+  <p class="sub">Comparação da rotação subindo até o ponto de troca. Em cima, como está hoje. Embaixo, a proposta progressiva.</p>
+
+  <div class="rotbar">
+    <div class="rot" id="rotVal">0 <small>rpm</small></div>
+    <div class="marca">Troca na potência máxima: <b>6.050 rpm</b> &nbsp;·&nbsp; teto: <b>6.300 rpm</b></div>
+  </div>
+
+  <div class="painel" id="painelHoje">
+    <h2>Como está hoje <span class="tag ruim">em blocos</span></h2>
+    <p class="nota">Acende das pontas pro centro, em 3 saltos: 4 verdes juntas, depois 4 amarelas, depois 4 vermelhas. É o que você apontou.</p>
+    <div class="leds" id="ledsHoje"></div>
+  </div>
+
+  <div class="painel" id="painelNovo">
+    <h2>Proposta: progressiva <span class="tag bom">uma a uma</span></h2>
+    <p class="nota">Enche da esquerda pra direita, uma luz por vez, mudando de cor suave (verde → amarela → vermelha) conforme se aproxima da troca. No ponto de troca, tudo pisca.</p>
+    <div class="leds" id="ledsNovo"></div>
+  </div>
+
+  <div class="controles">
+    <button id="btnAuto">Pausar</button>
+    <span>Rotação</span>
+    <input class="slider" id="sld" type="range" min="4600" max="6450" value="4600">
+  </div>
+
+<script>
+  const N = 12;
+  const TROCA = 6050, TETO = 6300, START = 6050 - 300; // 5750
+  // cor por POSIÇÃO na barra progressiva: 1-4 verde, 5-8 amarelo, 9-12 vermelho
+  function corLinear(i){ return i < 4 ? 'g' : i < 8 ? 'y' : 'r'; }
+  // cor espelhada do layout de hoje (pontas verde, centro vermelho)
+  function tierHoje(i){ return i < 6 ? i+1 : 12-i; }     // 1..6..1
+  function corHoje(t){ return t <= 2 ? 'g' : t <= 4 ? 'y' : 'r'; }
+
+  const elHoje = document.getElementById('ledsHoje');
+  const elNovo = document.getElementById('ledsNovo');
+  const dotsHoje = [], dotsNovo = [];
+  for (let i = 0; i < N; i++){
+    const a = document.createElement('div'); a.className = 'led'; elHoje.appendChild(a); dotsHoje.push(a);
+    const b = document.createElement('div'); b.className = 'led'; elNovo.appendChild(b); dotsNovo.push(b);
+  }
+
+  function render(rpm){
+    document.getElementById('rotVal').innerHTML = Math.round(rpm).toLocaleString('pt-BR') + ' <small>rpm</small>';
+    const fire = rpm >= TROCA && rpm <= TETO;
+    const over = rpm > TETO;
+    document.getElementById('painelHoje').classList.toggle('fire', fire || over);
+    document.getElementById('painelNovo').classList.toggle('fire', fire || over);
+
+    // proporção 0..1 dentro da faixa de acendimento
+    const norm = Math.max(0, Math.min(1, (rpm - START) / (TROCA - START)));
+
+    // HOJE: 3 saltos (4 / 8 / 12), das pontas pro centro
+    const nivel = norm <= 0 ? 0 : Math.min(3, Math.ceil(norm * 3)); // 0,1,2,3
+    const acesasHoje = (fire || over) ? 6 : nivel * 2;              // tiers acesos: 0,2,4,6
+    dotsHoje.forEach((d, i) => {
+      const t = tierHoje(i);
+      const on = (fire || over) ? true : t <= acesasHoje;
+      d.className = 'led' + (on ? ' on ' + corHoje(t) : '');
+    });
+
+    // PROPOSTA: progressiva, esquerda→direita, uma a uma
+    const acesasNovo = (fire || over) ? N : Math.round(norm * N);   // 0..12
+    dotsNovo.forEach((d, i) => {
+      const on = (fire || over) ? true : i < acesasNovo;
+      d.className = 'led' + (on ? ' on ' + corLinear(i) : '');
+    });
+  }
+
+  // animação automática: sobe 4600→6450 em loop
+  let rpm = 4600, dir = 1, auto = true;
+  const sld = document.getElementById('sld');
+  function tick(){
+    if (auto){
+      rpm += dir * 12;
+      if (rpm >= 6450) dir = -1;
+      if (rpm <= 4600) dir = 1;
+      sld.value = rpm;
+    }
+    render(rpm);
+  }
+  setInterval(tick, 16);
+  sld.addEventListener('input', () => { auto = false; document.getElementById('btnAuto').textContent = 'Retomar'; rpm = +sld.value; render(rpm); });
+  document.getElementById('btnAuto').addEventListener('click', (e) => {
+    auto = !auto; e.target.textContent = auto ? 'Pausar' : 'Retomar';
+  });
+  render(rpm);
+</script>
+</body>
+</html>
