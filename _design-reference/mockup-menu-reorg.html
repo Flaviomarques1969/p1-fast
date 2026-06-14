@@ -294,6 +294,12 @@ body{padding:0 0 96px;}
     <h3 id="ed-titulo">Cadastrar item</h3>
     <button class="cam-btn" onclick="simulateOCR()"><svg viewBox="0 0 24 24"><path d="M3 7h4l2-2h6l2 2h4v12H3z"/><circle cx="12" cy="13" r="4"/></svg>Tirar foto e ler o item</button>
     <div class="field"><label>Nome</label><input id="ed-nome" placeholder="Ex: Macaco, Jacks, Óleo motor…"></div>
+    <div class="field"><label>Onde fica (estoque)</label>
+      <select id="ed-escopo"><option value="geral">Estoque geral</option><option value="carro">Estoque do Celta 1.4</option></select>
+    </div>
+    <div class="field"><label>É</label>
+      <div class="seg" id="ed-kind"><button data-kind="item" data-on="true">Item</button><button data-kind="ferramenta">Ferramenta</button></div>
+    </div>
     <div class="field"><label>Bloco</label><select id="ed-grupo"></select></div>
     <div class="field"><label>Categoria</label>
       <div class="seg" id="ed-cat">
