@@ -68,3 +68,13 @@
 
 ### O que foi preservado
 - `.claude-exec/ultima-tarefa.md` (checkpoint da frente trail-braking) — NAO tocado.
+
+---
+
+## EXECUCAO 14/06/2026 — "roda tudo" (auditoria completa das 5 disciplinas)
+- Autorizacao: Flavio escreveu "roda tudo".
+- Modo: SOMENTE LEITURA. Sem migration, sem deploy, sem escrita em banco. Producao protegida.
+- Metodo: 5 auditores a fundo (1 por disciplina) + verificacao adversarial de cada achado grave/medio (cetico tenta refutar) — alinhado a "validar uso real antes de alarmar".
+- Testes read-only permitidos (npm run smoke; tentar swift smoke).
+- Entrega prevista: relatorio de auditoria em HTML (formato mapa) + plano de correcao PROPOSTO (sem executar).
+- Status: em execucao (workflow disparado).
