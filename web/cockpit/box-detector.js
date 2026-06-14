@@ -119,8 +119,8 @@ export class BoxDetector {
  */
 export async function loadMarcosBox(layoutId) {
   const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.45.0');
-  const URL  = 'https://fvhwltzhytpnhlqbttmd.supabase.co';
-  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2aHdsdHpoeXRwbmhscWJ0dG1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTExNDAsImV4cCI6MjA5MzM4NzE0MH0._ZpxksUnuVFhLzCB5x7bBiZ_VLQQR5cH4A1T-0-mvrA';
+  const URL  = SUPABASE_URL;
+  const ANON = SUPABASE_ANON_KEY;
   const sb = createClient(URL, ANON);
   const { data, error } = await sb
     .from('marcos')
