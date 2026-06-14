@@ -43,13 +43,18 @@
 //       entrada: { deltaS, ... },
 //       freio:   { deltaS, ... },
 //       apice:   { deltaS, ... },
+//       pace:    { deltaS, ... },   // aceleração pós-Vmin (5º marco, Flávio 13/06)
 //       saida:   { deltaS, ... },
 //     },
 //     piorSubTrecho: 'freio',      // nome do que mais custou tempo
 //     piorDeltaS: 0.18,
 //   }
 
-export const SUB_TRECHOS = Object.freeze(['entrada', 'freio', 'apice', 'saida']);
+// PACE = ponto/zona de aceleração depois do Vmin (5º marco, decisão Flávio 13/06/2026).
+// Entra na PARTIÇÃO de dados da passagem (entrada→freio→apice→pace→saida). NÃO vira um 4º+1
+// widget: a tela mantém os 4 widgets canônicos + Pace CENTRAL (decisão 26/05). Sem sensor de
+// acelerador casado por tempo, PACE é PROXY por velocidade (ver acharPaceIdx).
+export const SUB_TRECHOS = Object.freeze(['entrada', 'freio', 'apice', 'pace', 'saida']);
 
 /**
  * Distância em metros entre dois pontos GPS (equirectangular, mesma
