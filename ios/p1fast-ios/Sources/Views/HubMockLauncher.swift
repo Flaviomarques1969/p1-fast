@@ -125,6 +125,8 @@ struct HubMockLauncher: View {
             await combustivelRepo.bootstrap()
             await licaoRepo.bootstrap()
             await pendenciaRepo.bootstrap()
+            await estoqueRepo.bootstrap()
+            await seedEstoqueMockIfNeeded()
             // Evento FUTURO de demonstração: a seed só tem eventos passados,
             // então a aba "Pendências" (próximo evento) abriria vazia no mock.
             // 7 dias à frente, na pista seed (Brasília).
