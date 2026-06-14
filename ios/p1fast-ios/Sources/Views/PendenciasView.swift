@@ -369,7 +369,8 @@ private struct GrupoCard: View {
                 onCheck: { onCheck(item) },
                 onInc: { onInc(item, $0) },
                 onAbrirEditor: { onAbrirEditor(item) },
-                onToggleSel: { onToggleSel(item) }
+                onToggleSel: { onToggleSel(item) },
+                onEditarNota: { onEditarNota(item) }
             )
         }
     }
