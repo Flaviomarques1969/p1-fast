@@ -22,8 +22,16 @@ Mockup canônico aprovado: `_design-reference/mockup-pendencias-APROVADO-2026-06
 5. **Câmera no editor**: "Tirar foto e ler o item" (OCR do rótulo preenche sozinho). App já tem OCR: `EtiquetaOCR.swift`, `BarcodeScannerView`, `CameraPicker` — reutilizar.
 6. **Concluir item só pelo quadradinho da esquerda** (NÃO clicar na linha toda — evita erro). Item concluído SAI da lista; rodapé "✓ N concluídas" revela/desmarca.
 
-## DECISÃO PENDENTE antes de construir
-- Quantidade é **fixa do item** (cadastra 1x, vale sempre) ou **por evento** (ajusta a cada track day)? `pegou` é sempre por evento.
+## MODELO DE ESTOQUE (confirmado por Flávio 2026-06-14) — resolve a quantidade
+- **Garagem = Carros + Estoque geral.**
+- **Estoque do carro** (JÁ EXISTE no app: CarroHubView → "Estoque do carro" → PecaListaView/PecaRepository; `Peca` tem carroId, nome, especificacao, quantidade, area, tipo): itens específicos daquele carro (ex: óleo daquele carro).
+- **Estoque geral** (NOVO): itens e **ferramentas** que não são de um carro específico. Provável: `Peca` com carroId nulo (verificar — vi `carroId: String?` num modelo) OU escopo "geral".
+- **Item unificado, cadastrável de 3 lugares (circular):** dentro de um carro, no estoque geral, ou direto na Pendência. No cadastro escolhe **escopo** = Estoque geral OU Estoque do carro X, + quantidades. A partir daí administra.
+- **Quantidade mora no ESTOQUE** (geral ou do carro). Pendência do evento PUXA disso (o que levar) e você marca "peguei". Resolve a dúvida fixa-vs-por-evento: a posse é no estoque; o "peguei" é por evento.
+- Campo novo no cadastro: **Item ou Ferramenta** (estoque geral pode ter os dois).
+
+## CUIDADO extra
+- `Peca` (estoque do carro) SINCRONIZA com a nuvem (produção). Mexer no schema de Peca = produção. Estoque geral pode ser Peca com carroId nulo (menos risco) — verificar antes.
 
 ## CUIDADO de produção (ler antes de construir)
 - A riqueza nova (quantidade/spec/embalagem/conjunto/pegou) deve ficar em camada **LOCAL** (não sincronizar), igual `evento_pendencias_extra`, pra NÃO mexer no schema do catálogo na nuvem (produção). Catálogo dá só os nomes-base; o resto é local por evento.
