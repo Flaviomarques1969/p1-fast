@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Inventário dos 33 ambientes isolados — P1 Fast · 13/05/2026</title>
+<style>
+  :root{
+    --bg:#0c0f14; --panel:#141923; --panel2:#1b2230;
+    --text:#e7ecf2; --muted:#9aa4b2; --line:#28303e;
+    --gold:#d6b86b; --ouro:#f0d27a;
+    --vermelho:#e87268; --laranja:#e6a25a; --amarelo:#d8c465;
+    --verde:#7bc18a; --azul:#7aa7e2;
+  }
+  *{box-sizing:border-box;font-family:'Helvetica Neue','Helvetica',Arial,sans-serif;}
+  body{background:var(--bg);color:var(--text);margin:0;padding:24px;line-height:1.45;}
+  .wrap{max-width:1100px;margin:0 auto;}
+  h1{font-size:22px;font-weight:700;margin:0 0 4px;letter-spacing:-.01em;}
+  .subtitle{font-size:13px;color:var(--muted);margin-bottom:18px;}
+  .help{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:18px;font-size:13px;}
+  .help strong{color:var(--ouro);}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;}
+  .legend span{font-size:11px;padding:4px 10px;border-radius:4px;font-weight:600;}
+  .leg-v{background:rgba(123,193,138,.18);color:var(--verde);}
+  .leg-a{background:rgba(216,196,101,.18);color:var(--amarelo);}
+  .leg-l{background:rgba(230,162,90,.18);color:var(--laranja);}
+  .leg-r{background:rgba(232,114,104,.18);color:var(--vermelho);}
+  .leg-azul{background:rgba(122,167,226,.18);color:var(--azul);}
+  .sumario{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 18px;margin-bottom:24px;}
+  .sumario .row{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line);}
+  .sumario .row:last-child{border-bottom:none;}
+  .sumario .row b{color:var(--ouro);}
+  .grupo{margin-bottom:32px;}
+  .grupo-titulo{font-size:14px;font-weight:700;margin-bottom:10px;padding:8px 12px;border-radius:6px;}
+  .g-v{background:rgba(123,193,138,.10);border-left:3px solid var(--verde);}
+  .g-a{background:rgba(216,196,101,.10);border-left:3px solid var(--amarelo);}
+  .g-l{background:rgba(230,162,90,.10);border-left:3px solid var(--laranja);}
+  .g-r{background:rgba(232,114,104,.10);border-left:3px solid var(--vermelho);}
+  .g-azul{background:rgba(122,167,226,.10);border-left:3px solid var(--azul);}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:10px;}
+  .card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;}
+  .card-nome{font-size:14px;font-weight:700;color:var(--text);font-family:'Menlo','SF Mono',monospace;}
+  .card-data{font-size:11px;color:var(--muted);}
+  .card-body{font-size:12.5px;color:var(--text);line-height:1.5;}
+  .card-body ul{margin:6px 0;padding-left:18px;}
+  .card-body li{margin:2px 0;color:var(--muted);}
+  .recom{background:var(--panel2);border-radius:6px;padding:10px 12px;margin-top:8px;font-size:12px;}
+  .recom-label{color:var(--ouro);font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:10px;margin-right:6px;}
+  .acoes{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+  .btn{font-size:11px;padding:6px 12px;border-radius:4px;cursor:pointer;border:1px solid transparent;background:var(--panel2);color:var(--muted);transition:all .15s;font-weight:600;}
+  .btn:hover{border-color:var(--line);color:var(--text);}
+  .btn.sel-manter{background:var(--azul);color:#fff;border-color:var(--azul);}
+  .btn.sel-submeter{background:var(--gold);color:#000;border-color:var(--gold);}
+  .btn.sel-apagar{background:var(--vermelho);color:#fff;border-color:var(--vermelho);}
+  .btn.sel-revisar{background:var(--laranja);color:#fff;border-color:var(--laranja);}
+  .obs{margin-top:8px;width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:4px;color:var(--text);padding:6px 10px;font-size:12px;font-family:inherit;display:none;}
+  .obs.show{display:block;}
+  .footer{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px;margin-top:24px;text-align:center;}
+  .copy-btn{background:var(--ouro);color:#000;font-weight:700;padding:12px 28px;border-radius:6px;border:none;cursor:pointer;font-size:13px;}
+  .copy-btn:hover{background:#e8c577;}
+  .saved-note{font-size:11px;color:var(--muted);margin-top:8px;}
+  pre.resp{background:#000;color:var(--text);padding:14px;border-radius:6px;font-size:11px;overflow-x:auto;max-height:300px;text-align:left;display:none;}
+  pre.resp.show{display:block;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Inventário dos 33 ambientes isolados de trabalho</h1>
+<div class="subtitle">P1 Fast · 13/05/2026 · gerado pela conversa</div>
+
+<div class="help">
+<strong>Pra que serve esta página:</strong> mostrar pra você, ambiente por ambiente, o estado de cada um. Por que isso é importante: você criou o repositório oficial pra ser ponto único, e hoje 33 ambientes paralelos guardam pedaços do seu trabalho. Alguns têm trabalho real não enviado (o "ouro" — corre risco de perder), outros são lixo de cópia automática de salvamento (sem trabalho real, pode apagar), outros já foram entregues e ficaram esquecidos.<br><br>
+<strong>Como decidir:</strong> em cada cartão, clique numa das 4 opções: <b>MANTER</b> (não mexe), <b>SUBMETER pra aprovação formal</b> (envia o trabalho pra versão oficial), <b>APAGAR ambiente isolado</b> (libera o lugar), <b>REVISAR depois</b> (sai do radar agora, decide depois). Você pode adicionar uma observação em qualquer item.<br><br>
+<strong>Auto-save:</strong> tudo o que você marcar fica gravado no navegador automaticamente. No fim da página tem botão "COPIAR RESPOSTAS" pra você me colar de volta.
+</div>
+
+<div class="legend">
+  <span class="leg-v">VERDE — pode apagar (zero risco)</span>
+  <span class="leg-a">AMARELO — já entregue por outra via (apagar)</span>
+  <span class="leg-l">LARANJA — modificações soltas (revisar manual)</span>
+  <span class="leg-r">VERMELHO — trabalho real não enviado (ouro, urgente)</span>
+  <span class="leg-azul">AZUL — ambiente atual (não mexer)</span>
+</div>
+
+<div class="sumario">
+  <div class="row"><span>Total de ambientes isolados</span><b>33</b></div>
+  <div class="row"><span>Com trabalho real ainda não enviado</span><b>7</b></div>
+  <div class="row"><span>Só com lixo de salvamento automático (zero trabalho real)</span><b>3</b></div>
+  <div class="row"><span>Já entregues por outra via (cópia já está na versão oficial)</span><b>17</b></div>
+  <div class="row"><span>Com modificações soltas que precisam revisão manual</span><b>3</b></div>
+  <div class="row"><span>Ambientes "vazios" (sem nada ahead)</span><b>2</b></div>
+  <div class="row"><span>Ambiente atual desta conversa</span><b>1</b></div>
+</div>
+
+<!-- VERMELHO — Trabalho real não enviado (PRIORIDADE) -->
+<div class="grupo">
+<div class="grupo-titulo g-r">🔴 VERMELHO — Trabalho real não enviado (PRIORIDADE — corre risco de perder)</div>
+
+<div class="card" data-id="rodada1-s1">
+  <div class="card-head">
+    <span class="card-nome">rodada1-s1</span>
+    <span class="card-data">linha: claude/rodada1-s1 · 13 mudanças · ontem (12/05)</span>
+  </div>
+  <div class="card-body">
+    <b>O OURO maior do inventário.</b> Toda a rodada de telas novas do app iPhone que você combinou em 24 itens (S1 a S8):
+    <ul>
+      <li>S1: esconder botões em evento passado, pendências</li>
+      <li>S2: card do carro com 3 métricas (km/vmax/autódromos) + foto principal</li>
+      <li>S3: tela inicial (saudação, 6 cards, garagem) + 4 telas próprias (Stints/Voltas/Autódromos/Recordes)</li>
+      <li>S4: autódromos com cidade + seletor agrupado</li>
+      <li>S5: evento passado (resumo, histórico pendências, Stint Bar)</li>
+      <li>S6: <b>detalhe da volta com player de vídeo + dados de engenharia</b> ← a tela que você queria ver</li>
+      <li>S7: replicação de configuração (volta passada → evento futuro)</li>
+      <li>S8: evento futuro (histórico do piloto, pneus, ações)</li>
+      <li>+ stints clicáveis + mini-mapa + lista de trechos + massa fictícia pra popular telas</li>
+    </ul>
+  </div>
+  <div class="recom"><span class="recom-label">Recomendação</span>SUBMETER pra aprovação formal (PR) e incorporar à versão oficial. <b>Não apagar antes disso.</b></div>
+  <div class="acoes">
+    <button class="btn" onclick="marcar(this,'manter')">Manter como está</button>
+    <button class="btn" onclick="marcar(this,'submeter')">Submeter pra aprovação</button>
+    <button class="btn" onclick="marcar(this,'apagar')">Apagar ambiente</button>
+    <button class="btn" onclick="marcar(this,'revisar')">Revisar depois</button>
+  </div>
+  <textarea class="obs" placeholder="Observação (opcional)"></textarea>
+</div>
+
+<div class="card" data-id="f4-triagem-video">
+  <div class="card-head">
+    <span class="card-nome">f4-triagem-video</span>
+    <span class="card-data">linha: claude/f4-triagem-video · 6 mudanças · ontem (12/05)</span>
+  </div>
+  <div class="card-body">
+    Triagem de vídeo volta-por-volta (Frente 4):
+    <ul>
+      <li>F4.1: checklist operacional da gravação Daily.co</li>
+      <li>F4.2: tabela volta_video + repositório + 8 testes automáticos</li>
+      <li>F4.3: indexador de voltas dentro da gravação</li>
+      <li>F4.4: tela de triagem de voltas gravadas</li>
+      <li>F4.5: bloqueio do próximo stint até triar pendentes</li>
+      <li>F4.6: permissão de triagem só pra piloto + chefe + admin</li>
+    </ul>
+    <b>Memória diz que isso foi entregue na PR #190</b> — preciso confirmar antes de apagar.
+  </div>
+  <div class="recom"><span class="recom-label">Recomendação</span>CONFIRMAR se PR #190 já foi mergeada. Se sim → APAGAR. Se não → SUBMETER agora.</div>
+  <div class="acoes">
+    <button class="btn" onclick="marcar(this,'manter')">Manter</button>
+    <button class="btn" onclick="marcar(this,'submeter')">Submeter</button>
+    <button class="btn" onclick="marcar(this,'apagar')">Apagar</button>
+    <button class="btn" onclick="marcar(this,'revisar')">Revisar depois</button>
+  </div>
+  <textarea class="obs" placeholder="Observação (opcional)"></textarea>
+</div>
+
+<div class="card" data-id="f4-glue">
+  <div class="card-head">
+    <span class="card-nome">f4-glue</span>
+    <span class="card-data">linha: claude/f4-glue · 1 mudança · ontem (12/05)</span>
+  </div>
+  <div class="card-body">
+    Plugar a tela de triagem de vídeo no fluxo natural pós-stint (complemento da F4 acima).
+  </div>
+  <div class="recom"><span class="recom-label">Recomendação</span>SUBMETER junto com a F4 acima.</div>
+  <div class="acoes">
+    <button class="btn" onclick="marcar(this,'manter')">Manter</button>
+    <button class="btn" onclick="marcar(this,'submeter')">Submeter</button>
+    <button class="btn" onclick="marcar(this,'apagar')">Apagar</button>
+    <button class="btn" onclick="marcar(this,'revisar')">Revisar depois</button>
+  </div>
+  <textarea class="obs" placeholder="Observação (opcional)"></textarea>
+</div>
+
+<div class="card" data-id="f1-pessoas">
+  <div class="card-head">
+    <span class="card-nome">f1-pessoas</span>
+    <span class="card-data">linha: claude/f1-pessoas · 1 mudança · ontem (12/05)</span>
+  </div>
+  <div class="card-body">
+    Tabelas pessoas + pessoa_papeis (Fase A — preparação sem risco). Base pra cadastro de pessoas com papéis múltiplos.
+  </div>
+  <div class="recom"><span class="recom-label">Recomendação</span>SUBMETER.</div>
+  <div class="acoes">
+    <button class="btn" onclick="marcar(this,'manter')">Manter</button>
+    <button class="btn" onclick="marcar(this,'submeter')">Submeter</button>
+    <button class="btn" onclick="marcar(this,'apagar')">Apagar</button>
+    <button class="btn" onclick="marcar(this,'revisar')">Revisar depois</button>
+  </div>
+  <textarea class="obs" placeholder="Observação (opcional)"></textarea>
+</div>
+
+<div class="card" data-id="auditoria-estrutura">
+  <div class="card-head">
+    <span class="card-nome">auditoria-estrutura</span>
+    <span class="card-data">linha: claude/auditoria-estrutura · 4 mudanças · ontem (12/05)</span>
+  </div>
+  <div class="card-body">
+    Regularização pós-auditoria de estrutura + decisão arquitetural ADR-025 promovida de proposta a decisão fechada (12/05).
+  </div>
+  <div class="recom"><span class="recom-label">Recomendação</span>SUBMETER (são docs, baixo risco).</div>
+  <div class="acoes">
+    <button class="btn" onclick="marcar(this,'manter')">Manter</button>
+    <button class="btn" onclick="marcar(this,'submeter')">Submeter</button>
+    <button class="btn" onclick="marcar(this,'apagar')">Apagar</button>
+    <button class="btn" onclick="marcar(this,'revisar')">Revisar depois</button>
+  </div>
+  <textarea class="obs" placeholder="Observação (opcional)"></textarea>
+</div>
+
+<div class="card" data-id="tender-lalande-0f034a">
+  <div class="card-head">
+    <span class="card-nome">tender-lalande-0f034a</span>
+    <span class="card-data">linha: claude/develop-cockpit-app-rotation · 8 mudanças · 3 dias atrás (10/05)</span>
+  </div>
+  <div class="card-body">
+    Cockpit do notebook Windows — rotação 180° controlada pelo app (toggle Ctrl+R por display). Trabalho técnico do MS-13.2 PR-L que passou por revert e re-aplicar.
+  </div>
+  <div class="recom"><span class="recom-label">Recomendação</span>REVISAR primeiro — tem revert no meio, pode ter conflito. Decidir submeter ou descartar depois de olhar com calma.</div>
+  <div class="acoes">
+    <button class="btn" onclick="marcar(this,'manter')">Manter</button>
+    <button class="btn" onclick="marcar(this,'submeter')">Submeter</button>
+    <button class="btn" onclick="marcar(this,'apagar')">Apagar</button>
+    <button class="btn" onclick="marcar(this,'revisar')">Revisar depois</button>
+  </div>
+  <textarea class="obs" placeholder="Observação (opcional)"></textarea>
+</div>
+
+<div class="card" data-id="kind-goldberg-1caba1">
+  <div class="card-head">
+    <span class="card-nome">kind-goldberg-1caba1</span>
+    <span class="card-data">linha: claude/t4000-capture-usb-diag · 1 mudança real · 2 dias atrás (11/05)</span>
+  </div>
+  <div class="card-body">
+    Diagnóstico USB inteligente do T4000 — varredura WMI antes de tentar abrir a porta (resolveu o problema do "console abriu vazio").
+  </div>
+  <div class="recom"><span class="recom-label">Recomendação</span>SUBMETER — corrige um problema que já te incomodou.</div>
+  <div class="acoes">
+    <button class="btn" onclick="marcar(this,'manter')">Manter</button>
+    <button class="btn" onclick="marcar(this,'submeter')">Submeter</button>
+    <button class="btn" onclick="marcar(this,'apagar')">Apagar</button>
+    <button class="btn" onclick="marcar(this,'revisar')">Revisar depois</button>
+  </div>
+  <textarea class="obs" placeholder="Observação (opcional)"></textarea>
+</div>
+</div>
+
+<!-- LARANJA — Modificações soltas -->
+<div class="grupo">
+<div class="grupo-titulo g-l">🟠 LARANJA — Modificações soltas (precisam revisão manual)</div>
+
+<div class="card" data-id="fix-tab-bar">
+  <div class="card-head">
+    <span class="card-nome">fix-tab-bar</span>
+    <span class="card-data">linha: claude/fix-tab-bar · 4 telas modificadas sem salvar · ontem (12/05)</span>
+  </div>
+  <div class="card-body">
+    4 telas SwiftUI do app iPhone modificadas e sem salvar em ponto de retorno:
+    <ul>
+      <li>EventosListaView.swift</li>
+      <li>GaragemView.swift</li>
+      <li>HomeView.swift</li>
+      <li>PessoasView.swift</li>
+    </ul>
+    Pode ser ajuste do menu de abas inferior — precisa olhar.
+  </div>
+  <div class="recom"><span class="recom-label">Recomendação</span>REVISAR — abrir o ambiente, ver se as mudanças fazem sentido, decidir salvar ou descartar.</div>
+  <div class="acoes">
+    <button class="btn" onclick="marcar(this,'manter')">Manter</button>
+    <button class="btn" onclick="marcar(this,'submeter')">Submeter</button>
+    <button class="btn" onclick="marcar(this,'apagar')">Apagar</button>
+    <button class="btn" onclick="marcar(this,'revisar')">Revisar depois</button>
+  </div>
+  <textarea class="obs" placeholder="Observação (opcional)"></textarea>
+</div>
+
+<div class="card" data-id="exciting-ardinghelli">
+  <div class="card-head">
+    <span class="card-nome">exciting-ardinghelli-572eec</span>
+    <span class="card-data">linha: claude/exciting-ardinghelli · 3 mockups modif. + 4 novos + 93 auto-saves · 4 dias atrás (09/05)</span>
+  </div>
+  <div class="card-body">
+    Ambiente do Command Box <b>vista do piloto polida</b> (14 rodadas de polimento):
+    <ul>
+      <li>Mockup do Command Box vista piloto (modificado, não salvo) — é o "ouro" visual</li>
+      <li>Mockup do cockpit piloto + mockup do stint (modificados)</li>
+      <li>4 páginas novas de dúvidas/comparação (vmin, frenagem, pneus)</li>
+      <li>1 commit real "reativa overlay de trechos" + 93 auto-saves de lixo</li>
+    </ul>
+  </div>
+  <div class="recom"><span class="recom-label">Recomendação</span>REVISAR — esse mockup do Command Box é referência importante. Decidir se vale puxar pro repositório oficial ou se já temos versão mais atual.</div>
+  <div class="acoes">
+    <button class="btn" onclick="marcar(this,'manter')">Manter</button>
+    <button class="btn" onclick="marcar(this,'submeter')">Submeter</button>
+    <button class="btn" onclick="marcar(this,'apagar')">Apagar</button>
+    <button class="btn" onclick="marcar(this,'revisar')">Revisar depois</button>
+  </div>
+  <textarea class="obs" placeholder="Observação (opcional)"></textarea>
+</div>
+
+<div class="card" data-id="edge-detector">
+  <div class="card-head">
+    <span class="card-nome">edge-detector</span>
+    <span class="card-data">linha: feat/MS-3-edge-detector · 1 arquivo novo (deno.lock) · 7 dias atrás (06/05)</span>
+  </div>
+  <div class="card-body">
+    Trabalho antigo do detector, único arquivo solto é um <code>deno.lock</code> (arquivo gerado automaticamente, descartável). O commit real já está na versão oficial.
+  </div>
+  <div class="recom"><span class="recom-label">Recomendação</span>APAGAR ambiente.</div>
+  <div class="acoes">
+    <button class="btn" onclick="marcar(this,'manter')">Manter</button>
+    <button class="btn" onclick="marcar(this,'submeter')">Submeter</button>
+    <button class="btn" onclick="marcar(this,'apagar')">Apagar</button>
+    <button class="btn" onclick="marcar(this,'revisar')">Revisar depois</button>
+  </div>
+  <textarea class="obs" placeholder="Observação (opcional)"></textarea>
+</div>
+</div>
+
+<!-- VERDE — Pode apagar imediatamente -->
+<div class="grupo">
+<div class="grupo-titulo g-v">🟢 VERDE — Só lixo de salvamento automático, ZERO trabalho real (apagar)</div>
+
+<div class="card" data-id="objective-black">
+  <div class="card-head">
+    <span class="card-nome">objective-black-9f7583</span>
+    <span class="card-data">50 mudanças de salvamento automático · ontem (12/05)</span>
+  </div>
+  <div class="card-body">Não tem trabalho real não enviado. As 50 "mudanças" são todas auto-save do hook (lixo do ambiente).</div>
+  <div class="recom"><span class="recom-label">Recomendação</span>APAGAR.</div>
+  <div class="acoes">
+    <button class="btn" onclick="marcar(this,'manter')">Manter</button>
+    <button class="btn" onclick="marcar(this,'apagar')">Apagar</button>
+    <button class="btn" onclick="marcar(this,'revisar')">Revisar depois</button>
+  </div>
+  <textarea class="obs" placeholder="Observação (opcional)"></textarea>
+</div>
+
+<div class="card" data-id="strange-rhodes">
+  <div class="card-head">
+    <span class="card-nome">strange-rhodes-db9740</span>
+    <span class="card-data">92 mudanças de salvamento automático · 3 dias atrás (10/05)</span>
+  </div>
+  <div class="card-body">Trabalho real (Command Box mockup das rodadas anteriores) já foi pra versão oficial. As 92 "mudanças" aqui são auto-save lixo.</div>
+  <div class="recom"><span class="recom-label">Recomendação</span>APAGAR.</div>
+  <div class="acoes">
+    <button class="btn" onclick="marcar(this,'manter')">Manter</button>
+    <button class="btn" onclick="marcar(this,'apagar')">Apagar</button>
+    <button class="btn" onclick="marcar(this,'revisar')">Revisar depois</button>
+  </div>
+  <textarea class="obs" placeholder="Observação (opcional)"></textarea>
+</div>
+
+<div class="card" data-id="competent-feynman">
+  <div class="card-head">
+    <span class="card-nome">competent-feynman-6b2af5</span>
+    <span class="card-data">zero mudanças não enviadas · 5 dias atrás (08/05)</span>
+  </div>
+  <div class="card-body">Ambiente vazio. Tudo já está na versão oficial.</div>
+  <div class="recom"><span class="recom-label">Recomendação</span>APAGAR.</div>
+  <div class="acoes">
+    <button class="btn" onclick="marcar(this,'manter')">Manter</button>
+    <button class="btn" onclick="marcar(this,'apagar')">Apagar</button>
+  </div>
+  <textarea class="obs" placeholder="Observação (opcional)"></textarea>
+</div>
+
+<div class="card" data-id="infallible-wozniak">
+  <div class="card-head">
+    <span class="card-nome">infallible-wozniak-e34db9</span>
+    <span class="card-data">zero mudanças não enviadas · 5 dias atrás (08/05)</span>
+  </div>
+  <div class="card-body">Ambiente vazio. Tudo já está na versão oficial.</div>
+  <div class="recom"><span class="recom-label">Recomendação</span>APAGAR.</div>
+  <div class="acoes">
+    <button class="btn" onclick="marcar(this,'manter')">Manter</button>
+    <button class="btn" onclick="marcar(this,'apagar')">Apagar</button>
+  </div>
+  <textarea class="obs" placeholder="Observação (opcional)"></textarea>
+</div>
+
+<div class="card" data-id="iphone-install">
+  <div class="card-head">
+    <span class="card-nome">iphone-install</span>
+    <span class="card-data">zero mudanças não enviadas · ontem (12/05)</span>
+  </div>
+  <div class="card-body">Ambiente temporário pra instalar no iPhone. Tudo já incorporado.</div>
+  <div class="recom"><span class="recom-label">Recomendação</span>APAGAR.</div>
+  <div class="acoes">
+    <button class="btn" onclick="marcar(this,'manter')">Manter</button>
+    <button class="btn" onclick="marcar(this,'apagar')">Apagar</button>
+  </div>
+  <textarea class="obs" placeholder="Observação (opcional)"></textarea>
+</div>
+</div>
+
+<!-- AMARELO — Já entregue por outra via -->
+<div class="grupo">
+<div class="grupo-titulo g-a">🟡 AMARELO — Trabalho antigo já entregue por outra via (apagar ambiente; cópia já está na versão oficial)</div>
+
+<div class="card" data-id="amarelo-grupo">
+  <div class="card-head">
+    <span class="card-nome">17 ambientes antigos (datas de 02/05 a 06/05)</span>
+    <span class="card-data">cherry-pick confirma: commits equivalentes já estão na versão oficial</span>
+  </div>
+  <div class="card-body">
+    <ul>
+      <li>auth-session, bg-visibility, cv-paridade, gap-once, garagem, icon, icon-clean, icon-pr51</li>
+      <li>kalman-defensives, kalman-gap, kalman-persist, login-view, route-auth, stint-coord</li>
+      <li>status-update, status-update-v2</li>
+    </ul>
+    Cada um tem 1-11 mudanças que <b>já estão presentes na versão oficial</b> (cherry-pick confirmou equivalência). A versão oficial avançou 70-170 mudanças desde então. Ambientes são lixo histórico.
+  </div>
+  <div class="recom"><span class="recom-label">Recomendação</span>APAGAR todos os 17 de uma vez.</div>
+  <div class="acoes">
+    <button class="btn" onclick="marcar(this,'manter')">Manter todos</button>
+    <button class="btn" onclick="marcar(this,'apagar')">Apagar todos os 17</button>
+    <button class="btn" onclick="marcar(this,'revisar')">Revisar um por um</button>
+  </div>
+  <textarea class="obs" placeholder="Observação (opcional)"></textarea>
+</div>
+</div>
+
+<!-- AZUL — ambiente atual -->
+<div class="grupo">
+<div class="grupo-titulo g-azul">🔵 AZUL — Ambiente atual (a conversa que estamos agora)</div>
+<div class="card" data-id="competent-volhard">
+  <div class="card-head">
+    <span class="card-nome">competent-volhard-b272c8</span>
+    <span class="card-data">esta conversa · 4 auto-saves</span>
+  </div>
+  <div class="card-body">Ambiente desta sessão. Vai ser fechado quando esta tarefa terminar (auto-save lixo é normal).</div>
+  <div class="recom"><span class="recom-label">Recomendação</span>MANTER agora; apagar quando esta tarefa terminar.</div>
+  <div class="acoes">
+    <button class="btn" onclick="marcar(this,'manter')">Manter</button>
+  </div>
+</div>
+</div>
+
+<!-- Pergunta final de plano -->
+<div class="grupo">
+<div class="grupo-titulo g-r" style="background:rgba(240,210,122,.15);border-left-color:var(--gold);">⭐ DECISÃO FINAL — Como você quer que eu execute</div>
+<div class="card" data-id="plano-execucao">
+  <div class="card-body">
+    Depois que você marcar item por item acima, eu sigo um de três caminhos:
+    <ul>
+      <li><b>A — Executar tudo de uma vez</b>: apago os ambientes verdes/amarelos imediatamente, submeto os vermelhos pra aprovação formal (PRs separadas pra cada frente: rodada1-s1, F4, F1, auditoria, etc.), reviso os laranjas comigo abrindo cada arquivo. Tempo: ~45 min de trabalho meu, você só revisa as PRs.</li>
+      <li><b>B — Por etapas, com pausa de aprovação entre cada</b>: primeiro apago só o lixo garantido (verdes), te peço OK. Depois submeto cada frente vermelha separadamente, você aprova uma a uma. Tempo total maior, mas você vê cada passo.</li>
+      <li><b>C — Só limpar o lixo agora, deixar o ouro pra depois</b>: apago só verdes+amarelos hoje (libera 22 ambientes), os vermelhos ficam pra você decidir quando tiver cabeça.</li>
+      <li><b>Outra</b> — escreva abaixo.</li>
+    </ul>
+  </div>
+  <div class="acoes">
+    <button class="btn" onclick="marcar(this,'planoA')">A — Tudo de uma vez</button>
+    <button class="btn" onclick="marcar(this,'planoB')">B — Por etapas, com pausa</button>
+    <button class="btn" onclick="marcar(this,'planoC')">C — Só lixo agora</button>
+    <button class="btn" onclick="marcar(this,'planoOutro')">Outra</button>
+  </div>
+  <textarea class="obs" placeholder="Se 'Outra', descreve aqui"></textarea>
+</div>
+</div>
+
+<div class="footer">
+  <button class="copy-btn" onclick="copiar()">📋 COPIAR RESPOSTAS (cole de volta pra mim)</button>
+  <div class="saved-note" id="savedNote">Auto-save no navegador: ativo</div>
+  <pre class="resp" id="respPre"></pre>
+</div>
+
+</div>
+
+<script>
+const KEY = 'p1-inventario-2026-05-13';
+let state = {};
+try{ state = JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){}
+
+function marcar(btn, valor){
+  const card = btn.closest('.card');
+  const id = card.dataset.id;
+  card.querySelectorAll('.btn').forEach(b=>b.classList.remove('sel-manter','sel-submeter','sel-apagar','sel-revisar'));
+  btn.classList.add('sel-'+(valor.startsWith('plano')?'submeter':valor));
+  if(!state[id]) state[id]={};
+  state[id].decisao = valor;
+  const obs = card.querySelector('.obs');
+  if(obs){ obs.classList.add('show'); obs.value = state[id].obs||''; obs.oninput = () => { state[id].obs = obs.value; salvar(); }; }
+  salvar();
+}
+function salvar(){
+  localStorage.setItem(KEY, JSON.stringify(state));
+  document.getElementById('savedNote').textContent = 'Auto-save: ' + new Date().toLocaleTimeString();
+}
+function aplicar(){
+  document.querySelectorAll('.card').forEach(card=>{
+    const id = card.dataset.id;
+    if(state[id]){
+      if(state[id].decisao){
+        card.querySelectorAll('.btn').forEach(b=>{
+          const txt = (b.getAttribute('onclick')||'').match(/'([^']+)'/);
+          if(txt && txt[1]===state[id].decisao){
+            b.classList.add('sel-'+(state[id].decisao.startsWith('plano')?'submeter':state[id].decisao));
+          }
+        });
+      }
+      if(state[id].obs){
+        const obs = card.querySelector('.obs');
+        if(obs){ obs.classList.add('show'); obs.value = state[id].obs; }
+      }
+    }
+  });
+}
+function copiar(){
+  const out = { pergunta_id: '20260513-125419-inventario-ambientes', decisoes: state, ts: new Date().toISOString() };
+  const txt = JSON.stringify(out, null, 2);
+  navigator.clipboard.writeText(txt).then(()=>{
+    document.getElementById('respPre').textContent = txt;
+    document.getElementById('respPre').classList.add('show');
+    document.getElementById('savedNote').textContent = '✅ COPIADO! Cole de volta na conversa.';
+  });
+}
+document.querySelectorAll('.obs').forEach(o=>{
+  o.oninput = () => {
+    const card = o.closest('.card');
+    if(!state[card.dataset.id]) state[card.dataset.id]={};
+    state[card.dataset.id].obs = o.value;
+    salvar();
+  };
+});
+aplicar();
+</script>
+</body>
+</html>

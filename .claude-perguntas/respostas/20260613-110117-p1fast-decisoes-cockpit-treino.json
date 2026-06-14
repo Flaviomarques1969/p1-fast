@@ -1,0 +1,29 @@
+{
+  "pergunta_id": "20260613-p1fast-decisoes-cockpit-treino",
+  "projeto": "p1-fast",
+  "tema": "cockpit-treino trail braking — 3 decisões",
+  "decisoes": [
+    {
+      "item": "dec1",
+      "titulo": "Quando o painel diz trail certo",
+      "escolha": "As 3 condições juntas",
+      "outra_opcao_usada": false
+    },
+    {
+      "item": "dec2",
+      "titulo": "Gráfico-alvo: toda reta ou só onde erra",
+      "escolha": "Na verdade, a função do treinamento, se você ativou no planejamento Stint a função de treinamento, então, ele vai aparecer sempre na metade da reta anterior do trecho, sempre, se tiver ativado a função de treinamento .",
+      "outra_opcao_usada": true
+    },
+    {
+      "item": "dec3",
+      "titulo": "Liberar a 1a fatia do classificador de curvas",
+      "escolha": "Sim, liberar a 1a fatia",
+      "outra_opcao_usada": false
+    }
+  ],
+  "comentario": "Mais um comentário sobre a questão da primeira opção.Não deveria ser \"manteve a frenagem até ouvir mim\" e não \"o ápice\"?",
+  "respondido_em": "2026-06-13T14:01:17.916Z",
+  "tipo": "ux",
+  "registrado_em": "2026-06-13T14:06:29.138Z"
+}

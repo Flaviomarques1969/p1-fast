@@ -1,0 +1,11 @@
+{
+  "pergunta_id": "20260613-120746-command-box-ligacao-real-inicio",
+  "pergunta": "Hoje o Command Box inteiro é maquete (números fixos). A única fonte de dado real já provada e funcionando é o canal ao vivo do Cockpit do Piloto (canal \"cockpit-bubi-live\"). E desse canal, só 6 leituras estão confirmadas no carro (rotação, água, lambda, pressão do coletor, posição da borboleta, bateria) — o resto (pneus, câmbio, óleo, freio, marcha) ainda não tem sensor. Por onde você quer começar a ligar o Command Box de verdade?",
+  "escolha": "A) Tela ao vivo em web, no canal que ja funciona",
+  "outra_opcao_usada": false,
+  "comentario": "",
+  "respondido_em": "2026-06-13T15:42:43.304Z",
+  "projeto": "p1-fast",
+  "tipo": "arquitetura",
+  "registrado_em": "2026-06-13T15:43:41.023Z"
+}

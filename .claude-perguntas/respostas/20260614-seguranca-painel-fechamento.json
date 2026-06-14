@@ -1,0 +1,11 @@
+{
+  "pergunta_id": "20260614-seguranca-painel-fechamento",
+  "pergunta": "Hoje o painel funciona sem login (decisão sua de 11/06): ele grava direto na nuvem com uma chave pública que fica no próprio navegador. Eu já preparei a higiene — ligar as travas de acesso nas tabelas do shift light, tirar de qualquer um o poder de apagar esses dados, e fechar as filas do aparelho do carro que ninguém usa. Isso reduz bem o risco, mas não fecha tudo: enquanto for sem login, qualquer um com a chave pública ainda pode poluir os dados de aprendizado (não apaga, e não afeta a operação do carro — o shift light usa limites fixos no código). O fechamento definitivo exige login de verdade no painel — é obra maior e passa a exigir login no notebook na pista. Como você quer seguir?",
+  "escolha": "So higiene, sem login",
+  "outra_opcao_usada": false,
+  "comentario": "",
+  "respondido_em": "2026-06-14T15:44:25.833Z",
+  "projeto": "p1-fast",
+  "tipo": "seguranca",
+  "registrado_em": "2026-06-14T15:45:25Z"
+}

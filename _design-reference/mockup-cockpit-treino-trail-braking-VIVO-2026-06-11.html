@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>MOCKUP VIVO — Cockpit em modo treino · Trail Braking (rodada 8 · 11/06/2026)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+<!-- COMPONENTES REAIS do painel: shift light premium 12 LEDs, clarão de disparo, palco, faixa de voltas -->
+<link rel="stylesheet" href="../web/cockpit/cockpit.css">
+<style>
+  /* página do mockup (vence o layout de página do painel; os COMPONENTES ficam intactos) */
+  body { display:block !important; background:#0b0f14 !important; padding:26px 34px 60px !important;
+         min-height:auto !important; user-select:text !important; color:#e8eef5 !important;
+         font-family:'Inter',-apple-system,sans-serif !important; }
+  h1 { font-size:19px; font-weight:900; letter-spacing:.04em; color:#e8eef5; }
+  h1 small { color:#64748b; font-weight:500; }
+  .sub { color:#64748b; margin:6px 0 22px; font-size:14px; line-height:1.5; }
+
+  /* tela + painel lateral usando a largura toda */
+  .palco-wrap { display:flex; gap:30px; align-items:flex-start; width:100%; }
+  .lado { flex:1; min-width:300px; font-size:13.5px; }
+  .lado h2 { font-size:12px; letter-spacing:.14em; color:#e7c463; font-weight:800; margin:0 0 10px; }
+  .lado li { color:#a8b6c6; line-height:1.65; margin:0 0 6px 18px; }
+  .lado li b { color:#e8eef5; }
+  .fase-info { font:800 12px 'JetBrains Mono',monospace; letter-spacing:1.5px; color:#8a99a8;
+    background:#11161d; border:1px solid #232c37; border-radius:7px; padding:10px 14px; margin-bottom:14px; }
+  .fase-info b { color:#e7c463; }
+
+  .controles { display:flex; flex-wrap:wrap; gap:9px; margin:0 0 18px; }
+  .controles button { font:800 11px 'JetBrains Mono',monospace; letter-spacing:1.5px; color:#a8b6c6;
+    background:#11161d; border:1px solid #232c37; border-radius:7px; padding:9px 14px; cursor:pointer; }
+  .controles button:hover { border-color:#3a4757; color:#e8eef5; }
+  .controles button.ativo { color:#0b0f14; background:oklch(85% 0.17 80); border-color:transparent; }
+
+  /* selo TREINO */
+  .selo { position:absolute; top:34px; right:18px; z-index:60; font:800 11px 'JetBrains Mono',monospace;
+    letter-spacing:1.5px; color:#e7c463; border:1px solid #a8841f; background:#2b2008;
+    padding:3px 10px; border-radius:5px; }
+
+  /* pedaço BOX na faixa de voltas */
+  .stint-bar__block.box-lap { background:repeating-linear-gradient(45deg,#1a222c 0 4px,#2a3645 4px 8px); }
+  .stint-bar__block.box-lap::after { content:'BOX'; position:absolute; inset:0; display:flex;
+    align-items:center; justify-content:center; font:800 9px 'JetBrains Mono',monospace;
+    color:#8a99a8; letter-spacing:1px; background:none; animation:none; }
+
+  /* trilho vertical de trechos — FAIXA PRÓPRIA (ditado rodada 10): o gráfico começa depois dele */
+  .trilho { position:absolute; top:36px; bottom:140px; left:64px; width:126px; z-index:40;
+    display:flex; flex-direction:column; gap:5px; transition:opacity 420ms var(--ease-out); }
+  .trilho .titulo { font:800 9px 'JetBrains Mono',monospace; color:#e7c463; letter-spacing:1px; }
+  .tr { flex:1; display:flex; align-items:center; gap:5px; }
+  .tr .nome { width:24px; font:800 11px 'JetBrains Mono',monospace; color:#8a99a8; }
+  .tr.atual .nome { color:#fff; }
+  .tr .passes { display:flex; gap:4px; flex:1; }
+  .tr .p { width:18px; height:18px; border-radius:4px; background:#1a222c; }
+  .tr .p.certo { background:oklch(80% 0.22 145); box-shadow:0 0 6px oklch(80% 0.22 145 / .5); }
+  .tr .p.errado { background:oklch(68% 0.26 27); box-shadow:0 0 6px oklch(68% 0.26 27 / .5); }
+  .tr .p.calib { background:#2a3645; }
+  .tr .p.agora { outline:2px solid #fff; outline-offset:1px; animation:agoraPulsa 1.1s ease-in-out infinite; }
+  @keyframes agoraPulsa { 0%,100%{outline-color:#fff} 50%{outline-color:#5b6b7c} }
+  .tr.atual { background:rgba(231,196,99,.07); border-radius:5px; }
+
+  /* fundo da janela de orientação (palco preto, componentes por cima) */
+  .orient { position:absolute; inset:0; background:#000; z-index:5; }
+  /* rodada 15: fundo sempre preto — halo de cor do veredito não é usado neste modo */
+
+  /* SHIFT LIGHT DE FREIO — o componente REAL na VERTICAL, em DUAS COLUNAS LATERAIS
+     (ditado rodada 9). Mesmo LED, mesmo espaçamento de 18px entre bolinhas, mesma
+     contagem do horizontal: acendem DE CIMA PRA BAIXO conforme a distância cai
+     (verde em cima → amarelo → vermelho embaixo); fechou embaixo = FREIA. */
+  .shift-light--freio-v { bottom:auto; left:auto; top:50%; transform:translateY(-50%);
+    flex-direction:column; gap:18px; padding:26px 9px; z-index:46;
+    transition:opacity 480ms var(--ease-out); }
+  .shift-light--freio-v.lado-esq { left:58px; }   /* logo depois do recorte físico da tela */
+  .shift-light--freio-v.lado-dir { right:20px; }
+
+  /* shift light de MARCHA (real, embaixo) — sai durante a janela de frenagem, volta depois */
+  .shift-light--marcha { transition:opacity 480ms var(--ease-out); }
+
+  .escondido { opacity:0 !important; pointer-events:none; }
+
+  /* palco do gráfico vivo — mais à DIREITA: faixa do trilho à esquerda é só dele (rodada 10).
+     Rodada 12: o gráfico SÓ entra quando começa a reta — dentro do trecho ele sai,
+     nada fica sobreposto a nada. */
+  .palco-grafico { position:absolute; left:21%; top:8%; bottom:32%; width:70%; z-index:9;
+    transition:opacity 420ms var(--ease-out); }
+  .palco-grafico svg { width:100%; height:100%; }
+
+  /* CONTAGEM REGRESSIVA — tipografia métrica gigante com brilho em camadas */
+  .contagem { font:800 118px 'JetBrains Mono',monospace; letter-spacing:-5px;
+    fill:oklch(85% 0.17 80); filter:drop-shadow(0 0 16px oklch(78% 0.18 65 / .5));
+    transform-box:fill-box; transform-origin:50% 50%; }
+  .contagem.puls { animation:ctPulse 240ms var(--ease-out); }
+  @keyframes ctPulse { 0%{transform:scale(1.16)} 100%{transform:scale(1)} }
+  /* rodada 14: sem textos pequenos perto do gráfico — piloto não lê em movimento */
+
+  /* PISCA DE ERRO — clarão VERMELHO do dispositivo inteiro, 3 pulsos a ~10Hz
+     (mesma vibração do disparo real, cor própria do erro), com brasa contínua
+     enquanto a freada segue fora da linha */
+  .flash-erro { position:absolute; inset:0; border-radius:inherit; pointer-events:none; z-index:210;
+    background:
+      radial-gradient(ellipse 110% 70% at 50% 100%,
+        oklch(62% 0.26 27 / .55) 0%, oklch(58% 0.25 27 / .25) 35%,
+        oklch(50% 0.22 27 / .06) 65%, transparent 85%),
+      linear-gradient(0deg, oklch(60% 0.25 27 / .35) 0%, transparent 22%);
+    box-shadow: inset 0 0 0 2px oklch(66% 0.25 27 / .6), inset 0 0 70px oklch(58% 0.25 27 / .4);
+    opacity:0; transition:opacity 300ms var(--ease-out); }
+  .flash-erro.sustain { opacity:.32; }
+  .flash-erro.fire { animation:flashErroFire 300ms linear; }
+  @keyframes flashErroFire {
+    0%{opacity:0} 3%{opacity:1} 28%{opacity:1} 33%{opacity:0} 39%{opacity:0}
+    43%{opacity:1} 65%{opacity:1} 71%{opacity:0} 76%{opacity:0} 80%{opacity:1}
+    92%{opacity:.9} 100%{opacity:.32} }
+
+  /* régua inferior = componente REAL .apex do painel (rótulo em cima, dado embaixo);
+     estados reais: verde = melhor · vermelho = pior · traço apagado = ainda não passou */
+
+  /* momento "dentro do trecho" (base do treino) */
+  .centro-m1 { position:absolute; left:200px; right:36px; top:70px; bottom:120px; z-index:9;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+    transition:opacity 360ms var(--ease-out); }
+  .centro-m1 .info__acao { color:#e7c463; font-weight:900; font-size:26px; letter-spacing:2px; margin-top:4px; }
+
+  /* rodada 10: SEM letreiro de resultado por cima do gráfico — o gráfico pintado É o
+     resultado. O nome do veredito vai pra faixa de status do mockup (fora da tela). */
+  .fase-info .certo { color:oklch(80% 0.22 145); }
+  .fase-info .errado { color:oklch(68% 0.26 27); }
+
+  /* notas em largura total */
+  .notas-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:18px;
+    width:100%; margin-top:30px; }
+  .nota { background:#10151c; border:1px solid #1d2632; border-radius:10px; padding:16px 18px; }
+  .nota h3 { font:800 12px 'JetBrains Mono',monospace; letter-spacing:1.5px; color:#e7c463; margin:0 0 8px; }
+  .nota p { color:#a8b6c6; font-size:13px; line-height:1.6; margin:0; }
+  .nota p b { color:#e8eef5; }
+</style>
+</head>
+<body>
+
+<h1>MOCKUP VIVO · TREINO TRAIL BRAKING <small>— a tela RODA: aproximação, ponto, freada e veredito com os componentes reais do painel (palco 956×440)</small></h1>
+<p class="sub">Rodada 8 do ditado (11/06/2026). Deixe rodando: a tela repete os 4 cenários sozinha — freada certa,
+soltou de uma vez, freou cedo e freou tarde. Os números são simulados só pra dar vida ao mockup; a régua de verdade
+é a melhor passagem real do carro.</p>
+
+<div class="palco-wrap">
+  <div class="device" id="device" data-trecho-status="neutro" data-shift-fire="idle">
+    <div class="notch"></div>
+    <div class="orient"></div>
+    <div class="fire-overlay"></div>
+    <div class="flash-erro" id="flashErro"></div>
+
+    <div class="stint-bar" style="z-index:40">
+      <div class="stint-bar__block is-faster"></div>
+      <div class="stint-bar__block is-slower"></div>
+      <div class="stint-bar__block is-best-stint"></div>
+      <div class="stint-bar__block box-lap"></div>
+      <div class="stint-bar__block is-faster"></div>
+      <div class="stint-bar__block is-neutral"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+    </div>
+    <span class="selo">TREINO · TRAIL BRAKING</span>
+
+    <!-- trilho ENXUTO (rodada 11): só a passagem ANTERIOR + a ÚLTIMA por trecho,
+         janela rolante, atualizada logo depois de cada passagem -->
+    <div class="trilho" id="trilho">
+      <div class="titulo">TRAIL POR TRECHO</div>
+      <div class="tr"><span class="nome">C1</span><div class="passes"><i class="p certo"></i><i class="p certo"></i></div></div>
+      <div class="tr"><span class="nome">RO</span><div class="passes"><i class="p errado"></i><i class="p certo"></i></div></div>
+      <div class="tr"><span class="nome">C2</span><div class="passes"><i class="p certo"></i><i class="p errado"></i></div></div>
+      <div class="tr atual"><span class="nome">JU</span><div class="passes" id="passesJU"></div></div>
+      <div class="tr"><span class="nome">BR</span><div class="passes"><i class="p certo"></i><i class="p certo"></i></div></div>
+      <div class="tr"><span class="nome">PL</span><div class="passes"><i class="p calib"></i><i class="p calib"></i></div></div>
+      <div class="tr"><span class="nome">S</span><div class="passes"><i class="p errado"></i><i class="p certo"></i></div></div>
+      <div class="tr"><span class="nome">VI</span><div class="passes"><i class="p certo"></i><i class="p certo"></i></div></div>
+    </div>
+
+    <!-- SHIFT LIGHT DE FREIO (componente real na VERTICAL, duas colunas laterais):
+         acendem de cima pra baixo conforme a distância cai; fechou embaixo = clarão.
+         Régua = metros até o ponto de freada da melhor. -->
+    <div class="shift-light shift-light--freio-v lado-esq escondido" id="freioEsq" data-state="off">
+      <span class="shift-light__dot" data-tier="1"></span>
+      <span class="shift-light__dot" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+    </div>
+    <div class="shift-light shift-light--freio-v lado-dir escondido" id="freioDir" data-state="off">
+      <span class="shift-light__dot" data-tier="1"></span>
+      <span class="shift-light__dot" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+    </div>
+
+    <!-- GRÁFICO VIVO: alvo + banda + chão que se pinta + freada pintando verde/vermelho -->
+    <div class="palco-grafico">
+      <svg viewBox="0 0 860 320" id="svgG">
+        <defs>
+          <linearGradient id="gAlvo" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="oklch(86% 0.17 80)"/>
+            <stop offset="1" stop-color="oklch(62% 0.14 65)"/>
+          </linearGradient>
+          <linearGradient id="gBanda" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="oklch(78% 0.18 65)" stop-opacity=".22"/>
+            <stop offset="1" stop-color="oklch(78% 0.18 65)" stop-opacity=".035"/>
+          </linearGradient>
+          <linearGradient id="gPinta" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="oklch(74% 0.16 73)" stop-opacity=".25"/>
+            <stop offset=".75" stop-color="oklch(85% 0.17 80)"/>
+            <stop offset="1" stop-color="oklch(99% 0.02 90)"/>
+          </linearGradient>
+          <filter id="fGlow" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="6" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- grade de instrumento -->
+        <g stroke="oklch(22% 0 0)" stroke-width="1">
+          <line x1="50" y1="64" x2="820" y2="64"/><line x1="50" y1="158" x2="820" y2="158"/>
+        </g>
+        <line x1="50" y1="252" x2="820" y2="252" stroke="oklch(30% 0 0)" stroke-width="1.5"/>
+
+        <!-- marcos de distância na aproximação (a contagem anda sobre eles) -->
+        <g id="marcosDist"></g>
+
+        <!-- ÁREA-ALVO + CURVA-ALVO: desenhadas pelo motor a partir do alvo DAQUELE trecho
+             (cada curva tem seu próprio trail — formatos trocam por cenário) -->
+        <path id="bandaPath" d="" fill="url(#gBanda)" stroke="oklch(78% 0.18 65 / .35)" stroke-width="1"/>
+        <path id="haloPath" d="" fill="none" stroke="oklch(78% 0.18 65 / .35)" stroke-width="12" filter="url(#fGlow)"/>
+        <path id="alvoPath" d="" fill="none" stroke="url(#gAlvo)" stroke-width="4" stroke-linecap="round"/>
+
+        <!-- marca do ponto de freada da melhor (vira COLUNA DE LUZ quando bate no ponto) -->
+        <line id="marcaPonto" x1="300" y1="36" x2="300" y2="252" stroke="oklch(78% 0.18 65 / .6)"
+              stroke-width="1.6" stroke-dasharray="2 5"/>
+        <circle id="pontoBase" cx="300" cy="252" r="9" fill="oklch(99% 0.02 90)" opacity="0"
+                style="filter:drop-shadow(0 0 16px oklch(95% 0.06 88)) drop-shadow(0 0 36px oklch(80% 0.17 75))"/>
+        <!-- ZERO ADIANTADO: a IA dispara o zero ANTES do ponto, pelo tempo de reação aprendido
+             (sem rótulo — piloto não lê texto pequeno; a linha tracejada basta) -->
+        <line x1="281" y1="44" x2="281" y2="252" stroke="oklch(82% 0.17 78 / .45)"
+              stroke-width="1.2" stroke-dasharray="5 4"/>
+
+        <!-- PINTURA DA APROXIMAÇÃO (chão percorrido) -->
+        <path id="pintaChao" d="" stroke="url(#gPinta)" stroke-width="7" stroke-linecap="round" filter="url(#fGlow)"/>
+
+        <!-- A FREADA DELE pintando ao vivo: verde dentro da área, vermelho fora -->
+        <path id="tracoVerde" d="" fill="none" stroke="oklch(80% 0.22 145)" stroke-width="7"
+              stroke-linecap="round" filter="url(#fGlow)"/>
+        <path id="tracoVermelho" d="" fill="none" stroke="oklch(68% 0.26 27)" stroke-width="7"
+              stroke-linecap="round" filter="url(#fGlow)"/>
+
+        <!-- cabeça luminosa (o carro) -->
+        <circle id="cabeca" r="7.5" fill="oklch(99% 0.02 90)" opacity="0"
+                style="filter:drop-shadow(0 0 12px oklch(90% 0.12 85)) drop-shadow(0 0 26px oklch(78% 0.18 65 / .7))"/>
+
+        <!-- CONTAGEM REGRESSIVA gigante (número só — sem rótulo pequeno) -->
+        <g id="gContagem" text-anchor="middle" opacity="0">
+          <text id="contagemNum" x="182" y="170" class="contagem">143</text>
+        </g>
+      </svg>
+    </div>
+
+    <!-- momento base "dentro do trecho": só o delta, em fundo limpo (rodada 12 — sem nome sobreposto) -->
+    <div class="centro-m1 escondido" id="centroM1">
+      <span class="info__delta bom" style="font-size:112px">-0.18</span>
+    </div>
+
+    <!-- resultado: sem letreiro por cima do gráfico (rodada 10) — gráfico + trilho contam a história -->
+
+    <!-- padrão combinado do painel: 4 pontos com rótulo em cima e DADO embaixo (componente real) -->
+    <section class="apex">
+      <div class="apex__ponto" data-k="entrada" data-estado="pendente">
+        <span class="apex__label">Entrada</span><span class="apex__valor">—</span>
+      </div>
+      <div class="apex__ponto" data-k="freio" data-papel="freio" data-estado="pendente">
+        <span class="apex__label">Freio</span><span class="apex__valor">—</span>
+      </div>
+      <div class="apex__ponto" data-k="apice" data-estado="pendente">
+        <span class="apex__label">Ápice</span><span class="apex__valor">—</span>
+      </div>
+      <div class="apex__ponto" data-k="saida" data-estado="pendente">
+        <span class="apex__label">Saída</span><span class="apex__valor">—</span>
+      </div>
+    </section>
+
+    <!-- shift light de MARCHA (real, embaixo) -->
+    <div class="shift-light shift-light--marcha" id="marchaLight" data-state="on">
+      <span class="shift-light__dot" data-tier="1"></span>
+      <span class="shift-light__dot" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="1"></span>
+    </div>
+  </div>
+
+  <aside class="lado">
+    <div class="fase-info" id="faseInfo">CENÁRIO: — · FASE: —</div>
+    <div class="controles" id="controles">
+      <button data-cen="tudo" class="ativo">RODAR TUDO</button>
+      <button data-cen="certa">FREADA CERTA</button>
+      <button data-cen="soltou">SOLTOU DE UMA VEZ</button>
+      <button data-cen="cedo">FREOU CEDO</button>
+      <button data-cen="tarde">FREOU TARDE</button>
+      <button data-cen="residual">CURVA DE RESIDUAL</button>
+      <button id="btnPausa">PAUSAR</button>
+    </div>
+    <h2>O QUE A TELA FAZ, NA ORDEM</h2>
+    <ul>
+      <li><b>Aproximação:</b> contagem regressiva gigante (143 → 0 m) com o chão se pintando
+      até a cabeça luminosa. Nas laterais, as <b>duas colunas do shift light de freio</b>
+      (componente real do painel, na vertical) acendem de cima pra baixo junto com a contagem.</li>
+      <li><b>O zero é ADIANTADO pela reação:</b> a inteligência mede quanto tempo você leva
+      entre a luz e o pé (aqui, 0,31 s aprendido) e dispara o zero esse tempo ANTES do ponto —
+      quando o pé chega, está em cima do ponto correto. Vem o clarão + coluna de luz no ponto
+      real, e a <b>contagem CONTINUA depois do zero</b> (dá pra frear depois): branca até o
+      ponto, vermelha se passou.</li>
+      <li><b>Freando:</b> a freada dele pinta o gráfico ao vivo — <b>verde</b> dentro da
+      área-alvo, <b>vermelho</b> onde escapou. Sem nenhum texto pequeno: só forma e cor.</li>
+      <li><b>Saiu da linha:</b> a tela <b>pisca em vermelho na hora</b> (3 pulsos + brasa
+      enquanto continuar fora).</li>
+      <li><b>Pós-trecho:</b> o gráfico pintado fica INTEIRO na tela como resultado — sem
+      letreiro por cima (não dá pra olhar gráfico e número juntos). A célula acende no trilho,
+      o shift light de marcha volta, e o nome do resultado aparece aqui na faixa de status.</li>
+    </ul>
+  </aside>
+</div>
+
+<div class="notas-grid">
+  <div class="nota"><h3>CONTAGEM + COLUNAS LATERAIS DE FREIO</h3>
+    <p>A régua das colunas é <b>distância até o ponto de freada da melhor passagem</b>
+    (medida da linha de entrada). As duas colunas laterais são espelhadas — mesmo LED premium,
+    mesmo espaçamento do shift light de marcha — e acendem <b>de cima pra baixo</b>: cada bolinha
+    é uma faixa de metros, a contagem grande mostra o número exato. Fechou embaixo = ponto.
+    O clarão fica <b>exclusivo do freio</b> no modo treino.</p></div>
+  <div class="nota"><h3>VERDE / VERMELHO NA QUANTIDADE</h3>
+    <p>A cor não julga só o instante de pisar: julga a <b>quantidade de freio ao longo de toda a
+    soltura</b> contra a banda de aceite da melhor. Hoje a fonte é a física do GPS (rotulado);
+    com o sensor de pressão (instala segunda/terça 15-16/06) o mesmo gráfico passa a usar o pedal real.</p></div>
+  <div class="nota"><h3>PISCA NO CAMINHO ERRADO</h3>
+    <p>No instante em que o traço sai da banda, o dispositivo inteiro pisca vermelho na mesma
+    vibração do disparo real (3 pulsos a ~10 Hz) e mantém uma brasa nas bordas enquanto seguir fora.
+    Azul-branco = ponto de freada · vermelho = caminho errado. Cores diferentes, leitura periférica.</p></div>
+  <div class="nota"><h3>ZERO ADIANTADO PELA REAÇÃO</h3>
+    <p>A inteligência cronometra, a cada passagem, o tempo entre o zero e o pé no freio.
+    Aprendeu o seu tempo (demonstração: <b>0,31 s ≈ 12 m</b> na velocidade da reta), o zero
+    passa a disparar esse tanto antes do ponto — o aperto cai no ponto correto. A linha
+    tracejada no gráfico mostra onde a luz dispara; a coluna de luz mostra o ponto real.
+    A medição da reação alimenta a inteligência e o registro do treino — não vira texto
+    na tela do piloto.</p></div>
+  <div class="nota"><h3>DEFAULTS ASSUMIDOS (ajustáveis)</h3>
+    <p>CERTO = freou na banda + <b>seguiu o formato da melhor passagem DAQUELE trecho</b> +
+    chegou na mínima ainda freando. Cada curva tem seu próprio trail: 100% e soltura
+    gradativa, ou percentual com residual constante — o alvo é a curva real da melhor
+    naquele trecho, não um modelo fixo. Trilho: decidido — só a última passagem e a
+    anterior. <b>Decisões em aberto:</b> critério do CERTO (3 de 3?) e alvo em toda reta
+    ou só onde está errando.</p></div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var $ = function(id){ return document.getElementById(id); };
+  var device=$('device'), marcha=$('marchaLight'),
+      flashErro=$('flashErro'), trilho=$('trilho'), centroM1=$('centroM1'), faseInfo=$('faseInfo'),
+      pintaChao=$('pintaChao'), tracoVerde=$('tracoVerde'), tracoVermelho=$('tracoVermelho'),
+      cabeca=$('cabeca'), gContagem=$('gContagem'), contagemNum=$('contagemNum'),
+      marcosDist=$('marcosDist'),
+      marcaPonto=$('marcaPonto'), pontoBase=$('pontoBase'),
+      palcoGrafico=document.querySelector('.palco-grafico'),
+      freios=[$('freioEsq'),$('freioDir')];   /* duas colunas laterais, sempre espelhadas */
+
+  var SVG='http://www.w3.org/2000/svg';
+  var X0=70, XB=300, XA=740, YG=252, PLATO=56, BAND=16, DIST_TOTAL=143;
+  var PX_POR_M=(XB-X0)/DIST_TOTAL;
+  /* ZERO ADIANTADO pela IA: reação aprendida 0,31 s a ~38 m/s ≈ 12 m antes do ponto real */
+  var VEL_MS=38, REACAO_S=0.31, ADIANTO_PX=Math.round(REACAO_S*VEL_MS*PX_POR_M), XZ=XB-ADIANTO_PX;
+
+  function smooth(a,b,x){
+    var t=Math.min(1,Math.max(0,(x-a)/(b-a)));
+    return t*t*(3-2*t);
+  }
+  function pctY(p){ return YG-(YG-PLATO)*p/100; }   /* % de freio → altura no gráfico */
+
+  /* CADA CURVA TEM SEU PRÓPRIO TRAIL (rodada 16-17): o alvo é a freada real da melhor
+     passagem DAQUELE trecho. Dois formatos de exemplo no mockup: */
+  var LUT=[];
+  (function(){
+    var P=[390,56,540,77,660,154,740,191];
+    for(var i=0;i<=200;i++){
+      var t=i/200, mt=1-t;
+      LUT.push([ mt*mt*mt*P[0]+3*mt*mt*t*P[2]+3*mt*t*t*P[4]+t*t*t*P[6],
+                 mt*mt*mt*P[1]+3*mt*mt*t*P[3]+3*mt*t*t*P[5]+t*t*t*P[7] ]);
+    }
+  })();
+  var ALVOS={
+    /* 100% na pancada inicial + soltura gradativa até o ápice */
+    classico:{ y:function(x){
+      if(x<XB) return YG;
+      if(x<=390) return PLATO;
+      if(x>=XA) return LUT[LUT.length-1][1];
+      var lo=0, hi=LUT.length-1;
+      while(lo<hi){ var mid=(lo+hi)>>1; if(LUT[mid][0]<x) lo=mid+1; else hi=mid; }
+      var b=LUT[lo], a=LUT[Math.max(0,lo-1)];
+      var f=(x-a[0])/((b[0]-a[0])||1);
+      return a[1]+(b[1]-a[1])*f;
+    } },
+    /* pancada parcial (65%) + RESIDUAL CONSTANTE (45%) por um tempo + soltura no fim */
+    residual:{ y:function(x){
+      if(x<XB) return YG;
+      if(x<330) return YG+(pctY(65)-YG)*smooth(XB,330,x);
+      if(x<380) return pctY(65)+(pctY(45)-pctY(65))*smooth(330,380,x);
+      if(x<560) return pctY(45);
+      return pctY(45)+(pctY(25)-pctY(45))*smooth(560,XA,x);
+    } }
+  };
+  var alvoAtual=ALVOS.classico;
+  function alvoY(x){ return alvoAtual.y(x); }
+
+  /* desenha alvo/halo/banda do alvo vigente (amostragem da curva real) */
+  function dCurva(alvo,desde,offset){
+    var d='';
+    for(var x=desde;x<=XA;x+=4) d+=(d?'L':'M')+x+','+(alvo.y(x)+offset).toFixed(1);
+    return d;
+  }
+  function aplicaAlvo(alvo){
+    alvoAtual=alvo;
+    document.getElementById('alvoPath').setAttribute('d','M'+X0+','+YG+' L'+(XB-1)+','+YG+' '+dCurva(alvo,XB,0).replace('M','L'));
+    document.getElementById('haloPath').setAttribute('d',dCurva(alvo,XB,0));
+    var top=dCurva(alvo,XB,-BAND), bot='';
+    for(var x=XA;x>=XB;x-=4) bot+='L'+x+','+(alvo.y(x)+BAND).toFixed(1);
+    document.getElementById('bandaPath').setAttribute('d',top+bot+'Z');
+  }
+  function wob(x,amp,per,ph){ return amp*Math.sin((x-XB)/per+ph); }
+
+  /* cenários — y do piloto em função de x */
+  var CENARIOS=[
+    { id:'certa', rotulo:'FREADA CERTA', erro:null, motivo:null, xIni:XB,
+      saidaV:'139', saidaE:'ok-melhor',
+      y:function(x){ return alvoY(x)+wob(x,5,41,0)+wob(x,3.5,17,1.2); } },
+    { id:'soltou', rotulo:'SOLTOU DE UMA VEZ', erro:'SOLTOU DE UMA VEZ', motivo:'SOLTOU RÁPIDO', xIni:XB,
+      saidaV:'127', saidaE:'ok-pior',
+      y:function(x){
+        var base=alvoY(x)+wob(x,4,37,0.4);
+        if(x<500) return base;
+        if(x<590) return base+(YG-8-base)*smooth(500,590,x);
+        return YG-8+wob(x,1.5,23,0);
+      } },
+    { id:'cedo', rotulo:'FREOU CEDO', erro:'FREOU CEDO', motivo:'FREOU CEDO', xIni:XB-48,
+      saidaV:'133', saidaE:'ok-pior',
+      y:function(x){
+        if(x<XB) return YG+(PLATO-YG)*smooth(XB-48,XB,x);
+        return alvoY(x)+wob(x,4,39,0.6)+wob(x,2.5,15,0.2);
+      } },
+    { id:'tarde', rotulo:'FREOU TARDE', erro:'FREOU TARDE', motivo:'PASSOU DO PONTO', xIni:XB,
+      saidaV:'130', saidaE:'ok-pior',
+      y:function(x){
+        if(x<340) return YG;
+        if(x<400) return YG+(46-YG)*smooth(340,400,x);
+        var yT=alvoY(x)-10*Math.exp(-(x-400)/160);
+        return yT+wob(x,3,29,0);
+      } },
+    /* outro TIPO de curva: alvo com pancada parcial + residual constante + soltura no fim */
+    { id:'residual', rotulo:'CURVA DE RESIDUAL', erro:null, motivo:null, xIni:XB,
+      alvo:'residual', saidaV:'141', saidaE:'ok-melhor',
+      y:function(x){ return alvoY(x)+wob(x,4,43,0.3)+wob(x,3,19,1.1); } }
+  ];
+
+  var DUR={ entrada:1400, aproxima:3600, freia:3400, veredito:2600, gap:500 };
+  var NOME_FASE={ entrada:'DENTRO DO TRECHO', aproxima:'APROXIMANDO (CONTAGEM)',
+    freia:'FREANDO (PINTA O GRÁFICO)', veredito:'PÓS-TRECHO (RESULTADO)',
+    gap:'PRÓXIMO CENÁRIO' };
+  var THR_LUZ=[130,105,80,55,35,18];   /* metros → pares fechando das pontas */
+
+  /* marcos de distância sob o chão da aproximação — só risquinhos, sem número
+     (rodada 14: piloto não lê texto pequeno) */
+  [120,90,60,30].forEach(function(m){
+    var x=XB-m*PX_POR_M;
+    var l=document.createElementNS(SVG,'line');
+    l.setAttribute('x1',x); l.setAttribute('x2',x);
+    l.setAttribute('y1',252); l.setAttribute('y2',244);
+    l.setAttribute('stroke','oklch(28% 0 0)'); l.setAttribute('stroke-width','1');
+    marcosDist.appendChild(l);
+  });
+
+  /* trilho — janela rolante de 2 (rodada 11): a ANTERIOR + a ÚLTIMA (ou a de agora) */
+  var passesJU=$('passesJU');
+  var histJU=['errado','errado'];
+  function desenhaJU(comAgora){
+    passesJU.innerHTML='';
+    histJU.slice(comAgora?-1:-2).forEach(function(k){
+      var i=document.createElement('i'); i.className='p '+k; passesJU.appendChild(i);
+    });
+    if(comAgora){
+      var a=document.createElement('i'); a.className='p agora'; passesJU.appendChild(a);
+    }
+  }
+
+  /* shift lights — nível 0..6 (marcha: pares das pontas pro centro; freio: de cima pra baixo) */
+  function setNivel(el,nivel){
+    var dots=el.querySelectorAll('.shift-light__dot');
+    for(var i=0;i<dots.length;i++){
+      var tier=+dots[i].getAttribute('data-tier');
+      dots[i].classList.toggle('is-on', tier<=nivel);
+    }
+  }
+  function setNivelFreio(n){ freios.forEach(function(f){ setNivel(f,n); }); }
+  function setFreioEstado(s){ freios.forEach(function(f){ f.setAttribute('data-state',s); }); }
+  function setFreioVisivel(v){ freios.forEach(function(f){ f.classList.toggle('escondido',!v); }); }
+
+  /* padrão combinado: dado embaixo do rótulo, com estado real (verde/vermelho/pendente) */
+  var apexPts={};
+  ['entrada','freio','apice','saida'].forEach(function(k){
+    apexPts[k]=document.querySelector('.apex__ponto[data-k="'+k+'"]');
+  });
+  function setPonto(k,valor,estado){
+    apexPts[k].setAttribute('data-estado',estado);
+    apexPts[k].querySelector('.apex__valor').textContent=valor;
+  }
+  function resetPontos(){
+    ['entrada','freio','apice','saida'].forEach(function(k){ setPonto(k,'—','pendente'); });
+  }
+
+  function corContagem(d){
+    if(d>60)  return ['oklch(85% 0.17 80)','drop-shadow(0 0 16px oklch(78% 0.18 65 / .5))'];
+    if(d>25)  return ['oklch(92% 0.12 85)','drop-shadow(0 0 20px oklch(82% 0.16 75 / .6))'];
+    return ['oklch(99% 0.02 90)','drop-shadow(0 0 24px oklch(92% 0.10 85 / .8)) drop-shadow(0 0 50px oklch(80% 0.17 75 / .5))'];
+  }
+
+  /* contador vivo: conta até o ZERO ADIANTADO e CONTINUA contando depois (ele pode frear
+     depois). Sem rótulo: a cor conta a história — âmbar caindo, branco depois do zero,
+     vermelho se passou do ponto real. */
+  var modoContador='antes';
+  function atualizaContador(distZ){
+    if(freou) return;
+    var n;
+    if(distZ>0){
+      n=Math.ceil(distZ);
+      if(modoContador!=='antes' || contagemNum.textContent!==String(n)){
+        modoContador='antes';
+        contagemNum.textContent=n;
+        var dec=Math.floor(distZ/10);
+        if(decadaAnterior!==null && dec!==decadaAnterior){
+          contagemNum.classList.remove('puls');
+          void contagemNum.getBoundingClientRect();
+          contagemNum.classList.add('puls');
+        }
+        decadaAnterior=dec;
+        var c=corContagem(distZ);
+        contagemNum.style.fill=c[0]; contagemNum.style.filter=c[1];
+      }
+    } else {
+      n=Math.max(0,Math.floor(-distZ));
+      var modo = (-distZ > ADIANTO_PX/PX_POR_M + 2) ? 'passou' : 'depois';
+      if(modoContador!==modo || contagemNum.textContent!==String(n)){
+        modoContador=modo;
+        contagemNum.textContent=n;
+        contagemNum.style.fill= modo==='passou'?'oklch(70% 0.24 27)':'oklch(99% 0.02 90)';
+        contagemNum.style.filter= modo==='passou'
+          ?'drop-shadow(0 0 22px oklch(68% 0.26 27 / .7))'
+          :'drop-shadow(0 0 24px oklch(92% 0.10 85 / .8))';
+      }
+    }
+  }
+
+  /* o zero (adiantado pela reação aprendida): clarão + coluna de luz no PONTO REAL */
+  function disparaZero(){
+    if(pontoDisparado) return;
+    pontoDisparado=true;
+    setNivelFreio(6);
+    setFreioEstado('fire');
+    device.setAttribute('data-shift-fire','idle');
+    void device.offsetWidth;
+    device.setAttribute('data-shift-fire','active');
+    marcaPonto.setAttribute('stroke','oklch(99% 0.02 90)');
+    marcaPonto.setAttribute('stroke-width','4');
+    marcaPonto.removeAttribute('stroke-dasharray');
+    marcaPonto.setAttribute('filter','url(#fGlow)');
+    pontoBase.setAttribute('opacity','1');
+    tmrPosFire=setTimeout(function(){ setFreioEstado('on'); },380);
+  }
+
+  /* primeiro toque REAL no freio: some contador+colunas e registra a reação medida */
+  function marcaFreou(x){
+    freou=true;
+    gContagem.setAttribute('opacity','0');
+    setFreioVisivel(false); setFreioEstado('off');
+    /* FREIO no padrão combinado: distância da linha de entrada até onde pisou.
+       A medição da reação alimenta a IA e o registro — não vira texto na tela. */
+    var mFre=87+Math.round((x-XB)/PX_POR_M);
+    setPonto('freio', mFre+' m', Math.abs(x-XB)<=7?'ok-melhor':'ok-pior');
+  }
+
+  function disparaFlashErro(){
+    flashErro.classList.remove('fire');
+    void flashErro.offsetWidth;
+    flashErro.classList.add('fire');
+    flashErro.classList.add('sustain');
+  }
+  function encerraFlashErro(){ flashErro.classList.remove('fire','sustain'); }
+
+  /* motor de cenas */
+  var modo='tudo', cenIdx=0, cen=CENARIOS[0];
+  var fase='entrada', tF=0, lastTs=null, pausado=false;
+  var pts=[], foraDaLinha=false, motivoPosto=false, decadaAnterior=null, pontoDisparado=false;
+  var freou=false, tmrPosFire=null, apicePosto=false;
+
+  function easeFreio(p){ return 1-Math.pow(1-p,1.7); }
+
+  function rebuildTraco(){
+    var dG='', dR='';
+    for(var i=1;i<pts.length;i++){
+      var a=pts[i-1], b=pts[i];
+      var seg='M'+a.x.toFixed(1)+','+a.y.toFixed(1)+'L'+b.x.toFixed(1)+','+b.y.toFixed(1);
+      if(b.ok) dG+=seg; else dR+=seg;
+    }
+    tracoVerde.setAttribute('d',dG);
+    tracoVermelho.setAttribute('d',dR);
+  }
+
+  function anota(x){
+    var y=cen.y(x);
+    if(!freou && y<YG-3) marcaFreou(x);
+    var ok=Math.abs(y-alvoY(x))<=BAND;
+    pts.push({x:x,y:y,ok:ok});
+    if(!ok && !foraDaLinha){
+      foraDaLinha=true;
+      disparaFlashErro();
+      if(fase==='aproxima') gContagem.setAttribute('opacity','0'); /* já pisou — contagem perdeu função */
+    } else if(ok && foraDaLinha){
+      foraDaLinha=false;
+      encerraFlashErro();
+    }
+    cabeca.setAttribute('cx',x); cabeca.setAttribute('cy',y);
+    cabeca.style.filter = ok
+      ? 'drop-shadow(0 0 12px oklch(90% 0.12 85)) drop-shadow(0 0 26px oklch(80% 0.22 145 / .8))'
+      : 'drop-shadow(0 0 12px oklch(90% 0.12 85)) drop-shadow(0 0 26px oklch(70% 0.24 27 / .9))';
+    rebuildTraco();
+  }
+
+  function resetCena(){
+    pts=[]; foraDaLinha=false; motivoPosto=false; decadaAnterior=null; pontoDisparado=false;
+    freou=false; apicePosto=false;
+    if(tmrPosFire){ clearTimeout(tmrPosFire); tmrPosFire=null; }
+    aplicaAlvo(ALVOS[cen.alvo||'classico']);   /* o alvo é o da curva deste trecho */
+    resetPontos();
+    tracoVerde.setAttribute('d',''); tracoVermelho.setAttribute('d','');
+    pintaChao.setAttribute('d','');
+    cabeca.setAttribute('opacity','0');
+    cabeca.style.filter='drop-shadow(0 0 12px oklch(90% 0.12 85)) drop-shadow(0 0 26px oklch(78% 0.18 65 / .7))';
+    contagemNum.textContent='143';
+    contagemNum.style.fill=''; contagemNum.style.filter='';
+    modoContador='antes';
+    marcaPonto.setAttribute('stroke','oklch(78% 0.18 65 / .6)');
+    marcaPonto.setAttribute('stroke-width','1.6');
+    marcaPonto.setAttribute('stroke-dasharray','2 5');
+    marcaPonto.removeAttribute('filter');
+    pontoBase.setAttribute('opacity','0');
+    palcoGrafico.style.opacity='0';   /* dentro do trecho o gráfico não está na tela */
+    gContagem.setAttribute('opacity','0');
+    encerraFlashErro();
+    device.setAttribute('data-trecho-status','neutro');
+    device.setAttribute('data-shift-fire','idle');
+    setFreioEstado('off'); setNivelFreio(0);
+    setFreioVisivel(false);
+    marcha.classList.remove('escondido');
+    centroM1.classList.remove('escondido');
+    trilho.style.opacity='1';
+    desenhaJU(true);
+  }
+
+  function entraFase(nova){
+    fase=nova; tF=0;
+    if(nova==='aproxima'){
+      centroM1.classList.add('escondido');
+      marcha.classList.add('escondido');           /* freando só se reduz — assunto do freio */
+      trilho.style.opacity='0';
+      palcoGrafico.style.opacity='1';              /* a reta começou: entra o gráfico */
+      setFreioVisivel(true);
+      setFreioEstado('on');
+      gContagem.setAttribute('opacity','1');
+      cabeca.setAttribute('opacity','1');
+      cabeca.setAttribute('cx',X0); cabeca.setAttribute('cy',YG);
+    }
+    if(nova==='freia'){
+      /* contador e colunas CONTINUAM na tela até ele frear de verdade (rodada 10) */
+      device.setAttribute('data-shift-fire','idle');
+    }
+    if(nova==='veredito'){
+      encerraFlashErro();
+      /* rodada 10: NADA por cima do gráfico — o gráfico pintado É o resultado.
+         O nome do veredito vai pra faixa de status, fora da tela do piloto.
+         Rodada 15: fundo SEMPRE preto — sem brilho de cor no veredito (nem dourado,
+         nem roxo, nem nenhum). */
+      device.setAttribute('data-trecho-status','neutro');
+      marcha.classList.remove('escondido');
+      trilho.style.opacity='1';
+      histJU.push(cen.erro?'errado':'certo');
+      if(histJU.length>2) histJU.shift();
+      desenhaJU(false);   /* logo depois da passagem, a janela troca: anterior + última */
+      setPonto('saida', cen.saidaV, cen.saidaE);
+    }
+    if(nova==='gap'){ /* respiro entre cenários */ }
+    if(nova==='entrada'){
+      resetCena();
+      setPonto('entrada','142','ok-melhor');   /* entrou no trecho: dado da entrada já existe */
+    }
+    var extra='';
+    if(fase==='veredito'||fase==='gap')
+      extra=' · RESULTADO: '+(cen.erro
+        ? '<b class="errado">TRAIL ERRADO — '+cen.erro+'</b>'
+        : '<b class="certo">TRAIL CERTO — SEGUIU O FORMATO</b>');
+    faseInfo.innerHTML='CENÁRIO: <b>'+cen.rotulo+'</b> · FASE: <b>'+NOME_FASE[fase]+'</b>'+extra;
+  }
+
+  function proximoCenario(){
+    if(modo==='tudo'){ cenIdx=(cenIdx+1)%CENARIOS.length; cen=CENARIOS[cenIdx]; }
+    entraFase('entrada');
+  }
+
+  function frame(ts){
+    if(lastTs===null) lastTs=ts;
+    if(pausado){ lastTs=ts; requestAnimationFrame(frame); return; }
+    var dt=Math.min(ts-lastTs,50);   /* aba em segundo plano não pula fase */
+    lastTs=ts;
+    tF+=dt;
+
+    if(fase==='entrada'){
+      /* marcha trabalhando normal: nível oscila como na pista */
+      var seq=[2,3,4,5,4,3];
+      setNivel(marcha, seq[Math.floor(tF/260)%seq.length]);
+      if(tF>=DUR.entrada) entraFase('aproxima');
+
+    } else if(fase==='aproxima'){
+      var p=Math.min(1,tF/DUR.aproxima);
+      var headX=X0+(XB-X0)*p;
+      var distZ=(XZ-headX)/PX_POR_M;          /* distância até o ZERO adiantado pela IA */
+
+      pintaChao.setAttribute('d','M'+X0+','+YG+' L'+headX.toFixed(1)+','+YG);
+      atualizaContador(distZ);
+      if(!freou) setNivelFreio(THR_LUZ.filter(function(t){ return distZ<=t; }).length);
+      if(distZ<=0) disparaZero();
+
+      if(cen.id==='cedo' && headX>=cen.xIni){
+        anota(headX);                 /* pisou antes do ponto — já é traço (e vermelho) */
+      } else if(!freou){
+        cabeca.setAttribute('cx',headX); cabeca.setAttribute('cy',YG);
+      }
+      if(tF>=DUR.aproxima) entraFase('freia');
+
+    } else if(fase==='freia'){
+      var p2=Math.min(1,tF/DUR.freia);
+      var x=XB+(XA-XB)*easeFreio(p2);
+      if(!freou) atualizaContador((XZ-x)/PX_POR_M);
+      if(pts.length===0) anota(XB+0.5);
+      var ultimo=pts[pts.length-1].x;
+      /* anota em passos curtos pra curva ficar lisa mesmo em quadros longos */
+      for(var xs=ultimo+3; xs<=x; xs+=3) anota(xs);
+      if(x-ultimo>0.5) anota(x);
+      if(!apicePosto && x>=700){
+        apicePosto=true;
+        var pa=Math.max(0,Math.round((YG-cen.y(XA))/(YG-PLATO)*100));
+        var paAlvo=Math.round((YG-alvoY(XA))/(YG-PLATO)*100);
+        setPonto('apice', pa+'%', Math.abs(pa-paAlvo)<=12?'ok-melhor':'ok-pior');
+      }
+      if(tF>=DUR.freia) entraFase('veredito');
+
+    } else if(fase==='veredito'){
+      var seq2=[1,2,3,4,5,4,3,2];
+      setNivel(marcha, seq2[Math.floor(tF/240)%seq2.length]);
+      if(tF>=DUR.veredito) entraFase('gap');
+
+    } else if(fase==='gap'){
+      if(tF>=DUR.gap) proximoCenario();
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  /* controles */
+  var botoes=$('controles').querySelectorAll('button[data-cen]');
+  for(var i=0;i<botoes.length;i++){
+    botoes[i].addEventListener('click', function(){
+      for(var j=0;j<botoes.length;j++) botoes[j].classList.remove('ativo');
+      this.classList.add('ativo');
+      var k=this.getAttribute('data-cen');
+      if(k==='tudo'){ modo='tudo'; }
+      else {
+        modo='um';
+        for(var c=0;c<CENARIOS.length;c++) if(CENARIOS[c].id===k) cenIdx=c;
+        cen=CENARIOS[cenIdx];
+      }
+      entraFase('entrada');
+    });
+  }
+  $('btnPausa').addEventListener('click', function(){
+    pausado=!pausado;
+    this.textContent=pausado?'CONTINUAR':'PAUSAR';
+  });
+
+  resetCena();
+  entraFase('entrada');
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

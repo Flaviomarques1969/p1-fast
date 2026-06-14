@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Comparação de suavização — Mapa de Brasília</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #0c0e12;
+    --panel: #131720;
+    --panel-2: #1a1f2c;
+    --line: #2a3142;
+    --text: #e9ecf3;
+    --muted: #8b94a8;
+    --accent: #4aa3ff;
+    --warn: #ffb547;
+    --track-base: #2a3142;
+    --track-overlay: #4aa3ff;
+    --dot: #ffb547;
+    --hl: #ff4f6d;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Inter", "Helvetica Neue", Arial, sans-serif;
+  }
+  header {
+    padding: 18px 24px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  h1 {
+    margin: 0 0 4px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
+  header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .controles {
+    display: flex;
+    gap: 8px;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .controles .grupo-label {
+    color: var(--muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-right: 4px;
+  }
+  .btn {
+    appearance: none;
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--line);
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn.ativo {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0c0e12;
+    font-weight: 600;
+  }
+  .toggle {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .toggle input { transform: scale(1.1); cursor: pointer; }
+  main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    padding: 14px 24px 24px;
+  }
+  .cartao {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .cartao header.card-hd {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel-2);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .cartao h2 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
+  .cartao .desc {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+    max-width: 320px;
+  }
+  .stats {
+    text-align: right;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .stats b { color: var(--text); font-weight: 600; }
+  .mapa {
+    aspect-ratio: 823 / 799;
+    width: 100%;
+    background: #0a0d12;
+    display: block;
+  }
+  .legenda {
+    padding: 10px 14px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    gap: 18px;
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--panel-2);
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .legenda .swatch {
+    display: inline-block;
+    width: 22px;
+    height: 4px;
+    border-radius: 2px;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  .legenda .swatch.bruto { background: var(--track-base); }
+  .legenda .swatch.suav { background: var(--track-overlay); }
+  .legenda .swatch.dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--dot);
+  }
+  .legenda .swatch.hl {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--hl);
+    box-shadow: 0 0 0 2px rgba(255,79,109,0.25);
+  }
+  footer {
+    padding: 14px 24px 22px;
+    color: var(--muted);
+    font-size: 12px;
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--text); }
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Comparação de suavização — Mapa de Brasília</h1>
+  <p>Quatro versões do mesmo desenho do circuito, lado a lado. Use a região de zoom para focar nos pontos problemáticos (Curva da Bruxa, Curva 01).</p>
+</header>
+
+<div class="controles">
+  <span class="grupo-label">Região</span>
+  <button class="btn ativo" data-regiao="todo">Brasília inteira</button>
+  <button class="btn" data-regiao="bruxa">Só Curva da Bruxa</button>
+  <button class="btn" data-regiao="curva01">Só Curva 01</button>
+  <button class="btn" data-regiao="bruxa-mergulho">Mergulho da Bruxa</button>
+  <label class="toggle">
+    <input type="checkbox" id="mostrar-pontos" checked>
+    Mostrar vértices (pontinhos)
+  </label>
+</div>
+
+<main>
+  <section class="cartao">
+    <header class="card-hd">
+      <div>
+        <h2>1. Atual sem filtro nenhum</h2>
+        <p class="desc">Desenho oficial congelado em 2026-05-17. Path SVG bruto: 134 pontos ligados por linhas retas. Toda a quina é original do arquivo.</p>
+      </div>
+      <div class="stats"><b id="stats-v1">—</b><br>pontos no desenho</div>
+    </header>
+    <svg class="mapa" id="svg-v1" viewBox="0 0 823 799" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="legenda">
+      <span><span class="swatch bruto"></span> referência</span>
+      <span><span class="swatch suav"></span> desenho da versão</span>
+      <span><span class="swatch dot"></span> vértices</span>
+      <span><span class="swatch hl"></span> Curva da Bruxa (apex)</span>
+    </div>
+  </section>
+
+  <section class="cartao">
+    <header class="card-hd">
+      <div>
+        <h2>2. Filtro leve + suavização (versão atual do aplicativo)</h2>
+        <p class="desc">Douglas-Peucker com tolerância 1,5 + curvas suaves Catmull-Rom. É o que está rodando no iPhone agora. Você testou e achou que <b>não melhorou</b>.</p>
+      </div>
+      <div class="stats"><b id="stats-v2">—</b><br>pontos no desenho</div>
+    </header>
+    <svg class="mapa" id="svg-v2" viewBox="0 0 823 799" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="legenda">
+      <span><span class="swatch bruto"></span> referência</span>
+      <span><span class="swatch suav"></span> desenho da versão</span>
+      <span><span class="swatch dot"></span> vértices</span>
+      <span><span class="swatch hl"></span> Curva da Bruxa (apex)</span>
+    </div>
+  </section>
+
+  <section class="cartao">
+    <header class="card-hd">
+      <div>
+        <h2>3. Filtro mais agressivo + suavização</h2>
+        <p class="desc">Douglas-Peucker com tolerância 4 + curvas suaves Catmull-Rom. Remove mais vértices originais e deixa o Catmull-Rom interpolar com mais força. Tira micro-curvas, mas pode arredondar o traçado real.</p>
+      </div>
+      <div class="stats"><b id="stats-v3">—</b><br>pontos no desenho</div>
+    </header>
+    <svg class="mapa" id="svg-v3" viewBox="0 0 823 799" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="legenda">
+      <span><span class="swatch bruto"></span> referência</span>
+      <span><span class="swatch suav"></span> desenho da versão</span>
+      <span><span class="swatch dot"></span> vértices</span>
+      <span><span class="swatch hl"></span> Curva da Bruxa (apex)</span>
+    </div>
+  </section>
+
+  <section class="cartao">
+    <header class="card-hd">
+      <div>
+        <h2>4. Pontos intermediários (ressampleamento) + suavização</h2>
+        <p class="desc">Antes de desenhar, divide cada segmento longo em pontos a cada 8 pixels. Dá mais "comida" para o Catmull-Rom suavizar. Mantém a geometria original mas adiciona densidade.</p>
+      </div>
+      <div class="stats"><b id="stats-v4">—</b><br>pontos no desenho</div>
+    </header>
+    <svg class="mapa" id="svg-v4" viewBox="0 0 823 799" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="legenda">
+      <span><span class="swatch bruto"></span> referência</span>
+      <span><span class="swatch suav"></span> desenho da versão</span>
+      <span><span class="swatch dot"></span> vértices</span>
+      <span><span class="swatch hl"></span> Curva da Bruxa (apex)</span>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <b>Como usar:</b> alterne entre as 4 versões com o seletor de região para focar na Curva da Bruxa ou na Curva 01.
+  Ligue/desligue os vértices (pontinhos amarelos) para enxergar onde o desenho tem ângulos originais.
+  O ponto rosa marca o ápice da Curva da Bruxa, que foi a região reportada como problemática.
+  <br><br>
+  <b>Próxima decisão sua:</b> qual das 4 versões resolve a Curva da Bruxa sem deformar o resto da pista? Se nenhuma resolver, partimos pra opção C do parecer (refazer Brasília a partir de imagem de satélite).
+</footer>
+
+<script>
+// ─── Desenho oficial congelado de Brasília ─────────────────────────────────
+const PATH_SVG = "M 420.20 707.58 L 242.63 705.75 L 223.63 704.27 L 206.67 699.64 L 190.46 690.06 L 177.44 675.92 L 163.53 640.49 L 173.07 615.32 L 177.09 595.50 L 181.56 552.34 L 189.99 507.41 L 195.17 485.19 L 201.93 462.25 L 207.99 438.19 L 229.60 366.52 L 237.64 341.92 L 252.10 290.03 L 260.17 264.58 L 279.72 194.33 L 291.15 161.70 L 294.72 156.29 L 298.66 150.33 L 311.63 145.96 L 326.58 143.68 L 343.19 148.38 L 358.95 155.60 L 374.08 164.69 L 388.56 176.62 L 401.91 190.62 L 426.33 224.01 L 454.76 257.96 L 469.70 274.35 L 488.13 287.86 L 508.65 299.03 L 530.47 307.88 L 553.93 313.11 L 602.62 318.12 L 625.66 321.92 L 645.47 326.63 L 661.43 333.14 L 674.27 342.65 L 683.96 355.44 L 688.29 370.67 L 686.56 387.23 L 679.94 402.31 L 668.35 415.01 L 653.49 424.27 L 635.14 427.77 L 615.99 423.99 L 599.32 414.02 L 563.03 395.14 L 544.62 386.15 L 524.16 377.79 L 502.83 371.66 L 478.87 368.78 L 455.47 367.00 L 432.13 368.11 L 407.30 371.47 L 382.97 378.12 L 335.78 393.87 L 314.58 402.85 L 295.48 415.65 L 279.26 431.18 L 265.73 450.19 L 255.25 471.55 L 248.52 494.81 L 234.11 513.72 L 238.41 537.37 L 234.92 549.83 L 233.49 560.58 L 237.93 572.18 L 246.95 583.62 L 259.77 593.13 L 276.11 598.40 L 327.75 611.39 L 528.57 671.64 L 542.60 672.98 L 556.32 670.11 L 567.69 660.39 L 574.68 647.16 L 575.82 631.31 L 573.66 615.56 L 566.35 600.49 L 554.99 587.43 L 541.29 575.59 L 513.98 548.01 L 498.16 534.88 L 478.96 526.19 L 458.62 521.37 L 436.90 521.82 L 415.24 527.50 L 373.61 546.75 L 354.89 553.63 L 338.93 557.39 L 324.68 557.18 L 311.28 554.18 L 299.36 546.38 L 289.53 535.43 L 285.49 521.07 L 288.02 505.40 L 296.27 490.63 L 309.55 478.98 L 325.18 470.45 L 342.41 464.46 L 379.49 454.28 L 439.98 435.42 L 461.07 430.16 L 483.11 427.44 L 505.75 428.57 L 528.04 434.62 L 549.64 443.47 L 570.90 453.24 L 591.54 464.27 L 624.25 484.01 L 634.38 492.47 L 640.90 503.88 L 640.91 518.80 L 634.34 534.24 L 624.59 547.53 L 617.04 562.63 L 616.26 580.34 L 620.02 598.86 L 627.99 616.73 L 632.73 634.83 L 632.38 653.04 L 626.28 670.72 L 615.99 687.30 L 600.08 701.09 L 580.92 709.60 L 559.69 712.35 L 492.40 708.43 L 420.77 707.60 Z";
+
+// ─── Parser bem simples: aceita só M / L / Z (que é o que o path tem) ──────
+function parsePath(d) {
+  const tokens = d.replace(/,/g, " ").split(/\s+/).filter(Boolean);
+  const pts = [];
+  let i = 0;
+  let closed = false;
+  while (i < tokens.length) {
+    const t = tokens[i++];
+    if (t === "M" || t === "L") {
+      const x = parseFloat(tokens[i++]);
+      const y = parseFloat(tokens[i++]);
+      pts.push({ x, y });
+    } else if (t === "Z" || t === "z") {
+      closed = true;
+    } else {
+      // qualquer outro comando: ignora (path do seed só tem M/L/Z)
+    }
+  }
+  return { pts, closed };
+}
+
+// ─── Douglas-Peucker iterativo, pra não estourar pilha em caminho longo ────
+function dpDistance(p, a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const len2 = dx*dx + dy*dy;
+  if (len2 === 0) return Math.hypot(p.x - a.x, p.y - a.y);
+  let t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2;
+  if (t < 0) t = 0; else if (t > 1) t = 1;
+  const px = a.x + t*dx, py = a.y + t*dy;
+  return Math.hypot(p.x - px, p.y - py);
+}
+function douglasPeucker(points, epsilon) {
+  if (points.length < 3) return points.slice();
+  const keep = new Array(points.length).fill(false);
+  keep[0] = true;
+  keep[points.length - 1] = true;
+  const stack = [[0, points.length - 1]];
+  while (stack.length) {
+    const [lo, hi] = stack.pop();
+    let maxD = 0, idx = -1;
+    for (let i = lo + 1; i < hi; i++) {
+      const d = dpDistance(points[i], points[lo], points[hi]);
+      if (d > maxD) { maxD = d; idx = i; }
+    }
+    if (maxD > epsilon && idx !== -1) {
+      keep[idx] = true;
+      stack.push([lo, idx]);
+      stack.push([idx, hi]);
+    }
+  }
+  return points.filter((_, i) => keep[i]);
+}
+
+// ─── Ressampleamento: garante distância máxima entre pontos consecutivos ──
+function resample(points, maxDist, closed) {
+  if (points.length < 2) return points.slice();
+  const out = [points[0]];
+  const last = closed ? points.length : points.length - 1;
+  for (let i = 1; i <= last; i++) {
+    const a = points[(i - 1)];
+    const b = points[i % points.length];
+    const d = Math.hypot(b.x - a.x, b.y - a.y);
+    if (d > maxDist) {
+      const n = Math.ceil(d / maxDist);
+      for (let k = 1; k < n; k++) {
+        const t = k / n;
+        out.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+      }
+    }
+    if (i < points.length) out.push(b);
+  }
+  return out;
+}
+
+// ─── Catmull-Rom → SVG cubic Bezier (uniforme, fechado) ────────────────────
+function catmullRomToSvgPath(points, closed, tension) {
+  if (points.length < 2) return "";
+  const t = (tension === undefined ? 0.5 : tension);
+  const n = points.length;
+  const getP = (i) => {
+    if (closed) return points[((i % n) + n) % n];
+    if (i < 0) return points[0];
+    if (i >= n) return points[n - 1];
+    return points[i];
+  };
+  let d = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+  const limit = closed ? n : n - 1;
+  for (let i = 0; i < limit; i++) {
+    const p0 = getP(i - 1);
+    const p1 = getP(i);
+    const p2 = getP(i + 1);
+    const p3 = getP(i + 2);
+    const cp1x = p1.x + (p2.x - p0.x) * t / 3;
+    const cp1y = p1.y + (p2.y - p0.y) * t / 3;
+    const cp2x = p2.x - (p3.x - p1.x) * t / 3;
+    const cp2y = p2.y - (p3.y - p1.y) * t / 3;
+    d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+  }
+  if (closed) d += " Z";
+  return d;
+}
+
+// ─── Path bruto reconstruído como sequência de retas (versão 1) ───────────
+function rawLinePath(points, closed) {
+  if (points.length === 0) return "";
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 1; i < points.length; i++) {
+    d += ` L ${points[i].x} ${points[i].y}`;
+  }
+  if (closed) d += " Z";
+  return d;
+}
+
+// ─── Regiões de zoom ──────────────────────────────────────────────────────
+const REGIOES = {
+  todo:           { vb: "0 0 823 799",    label: "Brasília inteira" },
+  bruxa:          { vb: "150 470 220 200", label: "Curva da Bruxa" },
+  bruxaMergulho:  { vb: "210 250 220 200", label: "Mergulho da Bruxa" },
+  curva01:        { vb: "30 580 250 180", label: "Curva 01" },
+};
+
+// ─── Apex da Curva da Bruxa (ponto rosa) ──────────────────────────────────
+const APEX_BRUXA = { x: 225, y: 570 };
+
+// ─── Builda as 4 versões ───────────────────────────────────────────────────
+const parsed = parsePath(PATH_SVG);
+const pontosBrutos = parsed.pts.slice();
+const fechado = parsed.closed;
+
+// V1: bruto
+const v1Pts = pontosBrutos;
+const v1Path = rawLinePath(v1Pts, fechado);
+
+// V2: DP eps=1.5 + Catmull-Rom
+const v2Pts = douglasPeucker(pontosBrutos, 1.5);
+const v2Path = catmullRomToSvgPath(v2Pts, fechado);
+
+// V3: DP eps=4 + Catmull-Rom
+const v3Pts = douglasPeucker(pontosBrutos, 4);
+const v3Path = catmullRomToSvgPath(v3Pts, fechado);
+
+// V4: Resample 8 + Catmull-Rom (DP eps=2 antes, pra tirar redundância)
+const v4Step1 = douglasPeucker(pontosBrutos, 2);
+const v4Pts = resample(v4Step1, 8, fechado);
+const v4Path = catmullRomToSvgPath(v4Pts, fechado);
+
+const versoes = [
+  { id: "v1", titulo: "Atual sem filtro", path: v1Path, pontos: v1Pts },
+  { id: "v2", titulo: "Filtro leve", path: v2Path, pontos: v2Pts },
+  { id: "v3", titulo: "Filtro agressivo", path: v3Path, pontos: v3Pts },
+  { id: "v4", titulo: "Ressampleamento", path: v4Path, pontos: v4Pts },
+];
+
+// ─── Renderização ──────────────────────────────────────────────────────────
+function renderSVG(svgId, versao, mostrarPontos) {
+  const svg = document.getElementById(svgId);
+  const xmlns = "http://www.w3.org/2000/svg";
+
+  // limpa
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+  // path de referência (cinza), igual em todas — bruto
+  const ref = document.createElementNS(xmlns, "path");
+  ref.setAttribute("d", v1Path);
+  ref.setAttribute("fill", "none");
+  ref.setAttribute("stroke", "rgba(255,255,255,0.08)");
+  ref.setAttribute("stroke-width", "10");
+  ref.setAttribute("stroke-linejoin", "round");
+  svg.appendChild(ref);
+
+  // path da versão (azul)
+  const main = document.createElementNS(xmlns, "path");
+  main.setAttribute("d", versao.path);
+  main.setAttribute("fill", "none");
+  main.setAttribute("stroke", "#4aa3ff");
+  main.setAttribute("stroke-width", "5");
+  main.setAttribute("stroke-linejoin", "round");
+  main.setAttribute("stroke-linecap", "round");
+  svg.appendChild(main);
+
+  // vértices
+  if (mostrarPontos) {
+    for (const p of versao.pontos) {
+      const c = document.createElementNS(xmlns, "circle");
+      c.setAttribute("cx", p.x);
+      c.setAttribute("cy", p.y);
+      c.setAttribute("r", "2.4");
+      c.setAttribute("fill", "#ffb547");
+      svg.appendChild(c);
+    }
+  }
+
+  // apex da Curva da Bruxa (rosa)
+  const halo = document.createElementNS(xmlns, "circle");
+  halo.setAttribute("cx", APEX_BRUXA.x);
+  halo.setAttribute("cy", APEX_BRUXA.y);
+  halo.setAttribute("r", "8");
+  halo.setAttribute("fill", "rgba(255,79,109,0.18)");
+  svg.appendChild(halo);
+  const dot = document.createElementNS(xmlns, "circle");
+  dot.setAttribute("cx", APEX_BRUXA.x);
+  dot.setAttribute("cy", APEX_BRUXA.y);
+  dot.setAttribute("r", "4");
+  dot.setAttribute("fill", "#ff4f6d");
+  svg.appendChild(dot);
+}
+
+function renderAll(regiaoKey, mostrarPontos) {
+  const r = REGIOES[regiaoKey] || REGIOES.todo;
+  for (const v of versoes) {
+    const svg = document.getElementById("svg-" + v.id);
+    svg.setAttribute("viewBox", r.vb);
+    renderSVG("svg-" + v.id, v, mostrarPontos);
+    document.getElementById("stats-" + v.id).textContent = v.pontos.length;
+  }
+}
+
+// ─── Eventos ───────────────────────────────────────────────────────────────
+let regiaoAtiva = "todo";
+let mostrarPontos = true;
+document.querySelectorAll(".controles .btn[data-regiao]").forEach(b => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll(".controles .btn[data-regiao]").forEach(x => x.classList.remove("ativo"));
+    b.classList.add("ativo");
+    regiaoAtiva = b.dataset.regiao === "bruxa-mergulho" ? "bruxaMergulho" : b.dataset.regiao;
+    renderAll(regiaoAtiva, mostrarPontos);
+  });
+});
+document.getElementById("mostrar-pontos").addEventListener("change", (e) => {
+  mostrarPontos = e.target.checked;
+  renderAll(regiaoAtiva, mostrarPontos);
+});
+
+// primeira renderização
+renderAll(regiaoAtiva, mostrarPontos);
+</script>
+</body>
+</html>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Técnicas de Pilotagem — Turismo Tração Dianteira (FWD)</title>
+<style>
+  :root{
+    --bg:#0d1117; --card:#161b22; --border:#2d333b; --txt:#e6edf3; --dim:#9da7b3;
+    --gold:#d4a843; --blue:#58a6ff; --green:#3fb950; --red:#f85149; --amber:#d29922;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.55;padding:48px 24px}
+  .wrap{max-width:980px;margin:0 auto}
+  header{border-bottom:2px solid var(--gold);padding-bottom:24px;margin-bottom:8px}
+  h1{font-size:30px;font-weight:700;letter-spacing:-.5px}
+  .sub{color:var(--dim);font-size:15px;margin-top:8px;max-width:760px}
+  .meta{color:var(--dim);font-size:12.5px;margin-top:14px;text-transform:uppercase;letter-spacing:1px}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin:22px 0 36px;font-size:13px;color:var(--dim)}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+  section{margin-bottom:44px}
+  h2{font-size:14px;text-transform:uppercase;letter-spacing:2px;color:var(--gold);border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:20px}
+  .tech{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:8px;padding:20px 22px;margin-bottom:14px}
+  .tech.audited{border-left-color:var(--green)}
+  .tech.warn{border-left-color:var(--red)}
+  .tech.refuted{border-left-color:var(--red);opacity:.92}
+  .tech h3{font-size:17.5px;font-weight:650;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .tech h3 .en{color:var(--dim);font-size:13.5px;font-weight:400;font-style:italic}
+  .badge{font-size:10.5px;text-transform:uppercase;letter-spacing:1px;padding:3px 9px;border-radius:20px;font-weight:600;white-space:nowrap}
+  .b-aud{background:rgba(63,185,80,.13);color:var(--green);border:1px solid rgba(63,185,80,.4)}
+  .b-exp{background:rgba(88,166,255,.12);color:var(--blue);border:1px solid rgba(88,166,255,.35)}
+  .b-no{background:rgba(248,81,73,.12);color:var(--red);border:1px solid rgba(248,81,73,.4)}
+  .tech p{margin-top:10px;font-size:14.5px;color:var(--txt)}
+  .tech p.why{color:var(--dim);font-size:13.5px;margin-top:8px}
+  .tech p.why b{color:var(--amber);font-weight:600}
+  .intro{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px 22px;margin-bottom:28px;font-size:14.5px;color:var(--txt)}
+  .intro b{color:var(--gold)}
+  .src{font-size:12.5px;color:var(--dim);margin-top:10px;word-break:break-all}
+  .src a{color:var(--blue);text-decoration:none}
+  footer{border-top:1px solid var(--border);margin-top:40px;padding-top:18px;color:var(--dim);font-size:12.5px}
+  ol.fontes{margin:12px 0 0 18px;font-size:12.5px;color:var(--dim)}
+  ol.fontes a{color:var(--blue);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Técnicas de Pilotagem — Carros de Turismo de Tração Dianteira</h1>
+  <div class="sub">Estudo das habilidades que o piloto precisa dominar em um carro de corrida de tração dianteira (FWD — força do motor só nas rodas da frente, caso do Celta/Onix de competição e dos turismos TCR/BTCC/WTCC). Cada técnica traz o título e a descrição do que é, na prática.</div>
+  <div class="meta">Pesquisa profunda · 18 fontes lidas · 88 afirmações extraídas · 25 auditadas por 3 verificadores independentes · 20 confirmadas · 5 derrubadas · 10/06/2026</div>
+</header>
+
+<div class="legend">
+  <span><span class="dot" style="background:var(--green)"></span>Auditada 3×0 — confirmada por 3 verificadores independentes contra as fontes</span>
+  <span><span class="dot" style="background:var(--blue)"></span>Consenso de especialista — técnica consagrada nas escolas de pilotagem, não passou pela auditoria formal desta rodada</span>
+  <span><span class="dot" style="background:var(--red)"></span>Não se aplica a FWD / derrubada na auditoria</span>
+</div>
+
+<div class="intro">
+  <b>A regra-mãe do FWD:</b> os pneus da frente fazem TRÊS trabalhos ao mesmo tempo — frear, fazer curva e acelerar. Os de trás quase não trabalham. Toda técnica abaixo existe para administrar essa sobrecarga da dianteira: ou tirando trabalho dos pneus da frente, ou usando a traseira "preguiçosa" a favor do piloto. Ross Bentley (Speed Secrets) resume: as técnicas fundamentais são as mesmas de qualquer carro — o que muda no FWD é a dosagem, o lugar e o momento de aplicar cada uma.
+</div>
+
+<!-- ============ FUNDAMENTOS ============ -->
+<section>
+<h2>Fundamentos físicos (a base de tudo)</h2>
+
+<div class="tech audited">
+  <h3>1. Círculo de Tração <span class="en">Traction Circle / Friction Circle</span> <span class="badge b-aud">Auditada 3×0</span></h3>
+  <p>Cada pneu tem um orçamento fixo de aderência. O piloto pode gastar esse orçamento freando, virando ou acelerando — ou numa combinação — mas nunca pode gastar mais do que existe, senão o pneu desliza. Frenagem e curva não somam de forma simples: combinam-se como os lados de um triângulo, e é por isso que dá pra entrar na curva ainda com um resto de freio.</p>
+  <p class="why"><b>Por que importa no FWD:</b> se o pneu da frente está usando 80% da aderência pra fazer a curva, sobram só 20% pra acelerar. Passou disso, o carro sai de frente. É o fundamento matemático de quase todas as técnicas desta lista.</p>
+</div>
+
+<div class="tech audited">
+  <h3>2. Transferência de Peso <span class="en">Weight Transfer</span> <span class="badge b-aud">Auditada 3×0</span></h3>
+  <p>Frear joga o peso do carro pra frente (mais aderência na dianteira, menos na traseira). Acelerar joga o peso pra trás. Soltar o acelerador no meio da curva também joga peso pra frente. O piloto rápido não sofre essas transferências — ele as provoca de propósito, no momento certo, pra colocar aderência onde precisa.</p>
+  <p class="why"><b>Por que importa no FWD:</b> é a alavanca número 1 do piloto de tração dianteira: peso na frente = o carro vira; peso atrás = o carro empurra de frente.</p>
+</div>
+</section>
+
+<!-- ============ FRENAGEM ============ -->
+<section>
+<h2>Frenagem</h2>
+
+<div class="tech">
+  <h3>3. Frenagem no Limite <span class="en">Threshold Braking</span> <span class="badge b-exp">Consenso de especialista</span></h3>
+  <p>Frear com força máxima no limiar do travamento das rodas, em linha reta, no ponto mais tardio possível. É a fase inicial de toda frenagem de competição: pressão forte e imediata no pedal, depois modulação fina conforme a velocidade cai.</p>
+  <p class="why"><b>Por que importa no FWD:</b> como a saída de curva do FWD é limitada pela tração, o tempo se ganha principalmente na freada — frear tarde e fundo é uma das poucas armas de ultrapassagem da plataforma.</p>
+</div>
+
+<div class="tech audited">
+  <h3>4. Trail Braking (freio arrastado até o ápice) <span class="badge b-aud">Auditada 3×0</span></h3>
+  <p>Depois da freada forte em reta, em vez de soltar o freio de uma vez, o piloto vai aliviando a pressão gradualmente enquanto entra na curva, arrastando um resto de freio até perto do ápice. Isso mantém o peso sobre as rodas da frente (que ganham aderência pra virar) e alivia a traseira (que ajuda o carro a rotacionar).</p>
+  <p class="why"><b>Por que importa no FWD:</b> as fontes profissionais tratam como <b>quase obrigatório</b> em tração dianteira — é a principal arma contra o subesterço (carro saindo de frente) na entrada da curva. É a técnica que você citou, e é de fato a porta de entrada de todas as outras.</p>
+</div>
+
+<div class="tech audited">
+  <h3>5. Rotação pela Soltura do Freio <span class="en">Brake Release Rotation</span> <span class="badge b-aud">Auditada 3×0</span></h3>
+  <p>Refinamento do trail braking: o jeito como o piloto SOLTA o pedal vira uma ferramenta de direção. Soltar mais devagar mantém o carro rotacionando; soltar mais rápido estabiliza. Em FWD é possível provocar sobre-esterço (traseira escapando) na entrada da curva só com a modulação da soltura do freio, sem tocar no volante.</p>
+  <p class="why"><b>Por que importa no FWD:</b> é o "volante invisível" do piloto de tração dianteira — gira o carro sem gastar a aderência dos pneus da frente.</p>
+</div>
+
+<div class="tech audited">
+  <h3>6. Freio com o Pé Esquerdo / Sobreposição Freio + Acelerador <span class="en">Left-Foot Braking / Brake-Throttle Overlap</span> <span class="badge b-aud">Uso em curva: auditada 3×0</span></h3>
+  <p>Frear com o pé esquerdo enquanto o direito fica no acelerador. Em curvas rápidas, quase planas, um toque leve de freio com o acelerador ainda pisado transfere aderência pra dianteira e corrige o subesterço sem o risco que um alívio brusco de acelerador traria.</p>
+  <p class="why"><b>Honestidade da auditoria:</b> o uso em curva (descrito acima) foi confirmado 3×0. Já a afirmação popular de que "frear com o pé esquerdo é sempre mais rápido porque economiza o tempo de troca de pedal" foi DERRUBADA 0×3 na verificação. E num câmbio manual com embreagem (caso do Celta), o pé esquerdo tem dono na hora da redução — a técnica vale só em curvas sem troca de marcha.</p>
+</div>
+
+<div class="tech">
+  <h3>7. Punta-Tacco e Acerto de Giro <span class="en">Heel-and-Toe / Rev Matching</span> <span class="badge b-exp">Consenso de especialista</span></h3>
+  <p>Na redução de marcha durante a freada, o piloto toca o acelerador com a borda do pé direito (que segue freando) pra subir o giro do motor e casar a rotação com a marcha menor. Sem isso, o engate da marcha dá um tranco que trava momentaneamente as rodas de tração.</p>
+  <p class="why"><b>Por que importa no FWD:</b> no FWD o tranco da redução malfeita cai justamente nas rodas DIANTEIRAS — as mesmas que estão freando e virando. Redução grosseira em curva = carro fora de linha. Em câmbio manual H (Celta), é habilidade obrigatória.</p>
+</div>
+</section>
+
+<!-- ============ CURVA E ROTACAO ============ -->
+<section>
+<h2>Curva e rotação do carro</h2>
+
+<div class="tech">
+  <h3>8. Traçado e Ápice Tardio <span class="en">Racing Line / Late Apex</span> <span class="badge b-exp">Consenso de especialista</span></h3>
+  <p>Escolher o caminho dentro da curva: entrada por fora, ápice (ponto mais interno) e saída abrindo. O ápice tardio significa "atrasar" o ponto interno da curva, fazendo mais rotação antes dele — pra sair da curva com o volante já quase reto.</p>
+  <p class="why"><b>Por que importa no FWD:</b> a plataforma pede ápice mais tardio que a tração traseira, porque o FWD precisa do volante reto pra poder acelerar (item 12). Curva "em V": gira primeiro, acelera depois.</p>
+</div>
+
+<div class="tech audited">
+  <h3>9. Rotação Completa Antes do Ápice <span class="badge b-aud">Auditada 3×0</span></h3>
+  <p>O objetivo central da entrada de curva em FWD: fazer o carro girar (apontar pra saída) nas fases iniciais da curva, usando freio e transferência de peso, de modo que no ápice o carro já esteja alinhado com a reta seguinte. Aí — e só aí — vem o acelerador.</p>
+  <p class="why"><b>Por que importa no FWD:</b> quem chega no ápice ainda virando não consegue acelerar; quem chega apontado acelera antes de todo mundo. É a diferença entre brigar com o carro e usar o carro.</p>
+</div>
+
+<div class="tech audited">
+  <h3>10. Sobre-esterço de Alívio (deliberado) <span class="en">Lift-off Oversteer</span> <span class="badge b-aud">Auditada 3×0</span></h3>
+  <p>Soltar o acelerador de forma calculada no início da curva pra jogar peso na frente e soltar a traseira de propósito, fazendo o carro apontar pro ápice. Randy Pobst (piloto profissional, campeão em FWD): um FWD bem acertado é naturalmente "solto de traseira" fora do acelerador — e isso é perfeito pra mirar o ápice.</p>
+  <p class="why"><b>Por que importa no FWD:</b> é o fenômeno que assusta o motorista comum virando ferramenta do piloto de corrida. Dominar = saber a dose; errar a dose = rodada. É a técnica-irmã do trail braking.</p>
+</div>
+
+<div class="tech audited">
+  <h3>11. Jogar e Segurar <span class="en">Pitch and Catch</span> <span class="badge b-aud">Auditada 3×0</span></h3>
+  <p>O estilo de pilotagem rápido do FWD de corrida bem acertado: jogar o carro pra dentro da curva (pitch), deixar a traseira começar a girar e "pegar" essa rotação com o acelerador (catch) — porque no FWD acelerar estica o carro e segura a traseira. Resultado: o piloto pisa no acelerador bem ANTES do ápice.</p>
+  <p class="why"><b>Por que importa no FWD:</b> é a forma mais avançada de juntar os itens 4, 5 e 10. Em carro turbo, ainda gera pressão de turbo mais cedo pra saída. É o estilo que faz turismo FWD parecer "agressivo" na TV.</p>
+</div>
+
+<div class="tech audited">
+  <h3>12. Abrir o Volante Cedo <span class="en">Steering Unwinding</span> <span class="badge b-aud">Auditada 3×0</span></h3>
+  <p>Reduzir o ângulo de esterço o mais cedo possível dentro da curva, antes de pisar no acelerador. Cada grau de volante consome aderência do pneu da frente; volante mais reto = mais orçamento sobrando pra tração.</p>
+  <p class="why"><b>Por que importa no FWD:</b> acelerar com o volante torto é a receita do famoso "power-on push" — o carro empurra de frente e a saída morre. Regra prática das fontes: primeiro desvira, depois pisa.</p>
+</div>
+</section>
+
+<!-- ============ ACELERACAO ============ -->
+<section>
+<h2>Aceleração e tração</h2>
+
+<div class="tech audited">
+  <h3>13. Paciência de Acelerador — Aplicação Única e Progressiva <span class="badge b-aud">Auditada 3×0</span></h3>
+  <p>Desacelerar o suficiente antes, fazer a rotação, achar o ápice e então acelerar em UMA aplicação progressiva, sem alívios. Se o piloto precisa modular ou soltar o acelerador na saída pra não sair largo, o erro já foi cometido metros antes (entrou rápido demais ou girou de menos).</p>
+  <p class="why"><b>Por que importa no FWD:</b> acelerar cedo demais induz subesterço e frita o pneu dianteiro. A saída do FWD se ganha com disciplina, não com coragem.</p>
+</div>
+
+<div class="tech audited warn">
+  <h3>14. Correção de Derrapagem em FWD — Pé NO Acelerador <span class="badge b-aud">Auditada 3×0</span></h3>
+  <p>Quando a traseira escapa num FWD, a correção é MANTER ou aumentar o acelerador: as rodas da frente puxam o carro pra fora do escorregão. É o oposto exato da tração traseira, onde se alivia o acelerador e corrige no volante.</p>
+  <p class="why"><b>Por que importa no FWD:</b> é o reflexo que salva o carro — e o reflexo mais perigoso de transferir entre plataformas. As fontes alertam: piloto treinado em FWD que muda pra tração traseira e mantém o pé pisado num escorregão pode causar acidente.</p>
+</div>
+
+<div class="tech">
+  <h3>15. Largada e Controle de Patinação <span class="en">Launch Control manual</span> <span class="badge b-exp">Consenso de especialista</span></h3>
+  <p>Na largada parada, equilibrar giro do motor e embreagem pra acelerar com o mínimo de patinação das rodas dianteiras. Roda da frente patinando = carro parado E pneu queimado (o pneu que vai trabalhar a corrida inteira).</p>
+  <p class="why"><b>Por que importa no FWD:</b> o peso sai de cima das rodas de tração na arrancada (peso vai pra trás), então o FWD patina mais fácil que a tração traseira na largada. Saída limpa vale posições.</p>
+</div>
+</section>
+
+<!-- ============ PNEUS ============ -->
+<section>
+<h2>Gestão de pneus</h2>
+
+<div class="tech">
+  <h3>16. Preservação dos Pneus Dianteiros <span class="en">Front Tire Management</span> <span class="badge b-exp">Consenso de especialista</span></h3>
+  <p>Administrar temperatura e desgaste dos pneus da frente ao longo do stint: suavizar entradas, evitar patinação e subesterço prolongado (arrastar o pneu de frente é lixa), e aceitar perder décimos no começo pra ter pneu no fim.</p>
+  <p class="why"><b>Por que importa no FWD:</b> a dianteira freia, vira E acelera — os pneus da frente degradam muito mais rápido que os de trás. Em prova longa, quem frita a dianteira nas primeiras voltas anda de marcha lenta nas últimas. É a gestão estratégica número 1 do turismo FWD.</p>
+</div>
+
+<div class="tech">
+  <h3>17. Uso de Zebras <span class="en">Kerb Riding</span> <span class="badge b-exp">Consenso de especialista</span></h3>
+  <p>Usar as zebras (guias pintadas) pra alargar o traçado — subir na zebra interna pra retificar a curva e usar a externa na saída. Exige saber quais zebras o carro aceita sem desestabilizar a traseira leve.</p>
+  <p class="why"><b>Por que importa no FWD:</b> turismo FWD ataca zebra de forma agressiva (a traseira leve "pula" sem grandes consequências), e cada metro de pista a mais é velocidade de saída. Mas zebra molhada ou alta no meio da curva tira a dianteira do chão — e dianteira no ar em FWD = sem freio, sem direção e sem tração ao mesmo tempo.</p>
+</div>
+</section>
+
+<!-- ============ CORPO A CORPO ============ -->
+<section>
+<h2>Corpo a corpo (racecraft)</h2>
+
+<div class="tech">
+  <h3>18. Ultrapassagem sob Frenagem <span class="en">Out-braking / Late Braking Pass</span> <span class="badge b-exp">Consenso de especialista</span></h3>
+  <p>Construir a ultrapassagem na zona de frenagem: sair do vácuo, emparelhar por dentro e frear mais tarde que o rival, conquistando a linha interna da curva. Exige dominar a frenagem no limite (item 3) com o carro fora da linha ideal — onde a pista tem menos borracha.</p>
+  <p class="why"><b>Por que importa no FWD:</b> como o FWD não ganha do rival na saída de curva (tração limitada), a freada é O lugar de ultrapassar no turismo. Por isso a categoria é famosa pelo corpo a corpo.</p>
+</div>
+
+<div class="tech">
+  <h3>19. Defesa de Posição <span class="en">Defensive Driving</span> <span class="badge b-exp">Consenso de especialista</span></h3>
+  <p>Posicionar o carro pra tirar do rival a opção de ataque: cobrir o lado de dentro na aproximação da curva (um movimento defensivo, feito cedo — não reação em cima da hora), aceitando um traçado mais lento porém impassável.</p>
+  <p class="why"><b>Por que importa no FWD:</b> defender por dentro compromete a saída — e a saída já é o ponto fraco do FWD. O piloto precisa decidir a cada volta o que custa menos: a posição ou o ritmo.</p>
+</div>
+
+<div class="tech">
+  <h3>20. Corrida Lado a Lado <span class="en">Side-by-side Racing</span> <span class="badge b-exp">Consenso de especialista</span></h3>
+  <p>Manter o carro estável dividindo a curva com outro carro: traçado comprometido, menos pista disponível, e consciência exata de onde o rival está sem vê-lo. Inclui saber ceder espaço pra não transformar disputa em abandono duplo.</p>
+  <p class="why"><b>Por que importa no FWD:</b> no turismo as disputas duram voltas, não segundos. Quem só sabe andar sozinho na linha ideal perde a corrida no primeiro pelotão.</p>
+</div>
+</section>
+
+<!-- ============ NAO SE APLICA ============ -->
+<section>
+<h2>O que NÃO se aplica ao FWD (técnicas de tração traseira)</h2>
+
+<div class="tech refuted">
+  <h3>Dirigir com o Acelerador / Sobre-esterço de Potência <span class="en">Throttle Steering / Power Oversteer</span> <span class="badge b-no">Não se aplica — auditada 3×0</span></h3>
+  <p>Na tração traseira potente, o piloto pisa no acelerador pra sobrecarregar o pneu traseiro e completar a rotação no meio da curva (a base do drift). No FWD isso é fisicamente impossível: pisar no acelerador ESTICA o carro e aumenta o subesterço — nunca gira a traseira.</p>
+</div>
+
+<div class="tech refuted">
+  <h3>Reflexo de Correção da Tração Traseira <span class="en">Lift + Countersteer</span> <span class="badge b-no">Não se aplica — auditada 3×0</span></h3>
+  <p>Na tração traseira, traseira escapando = aliviar o acelerador + contraesterço. No FWD esse reflexo AGRAVA o escorregão (o alívio joga ainda mais peso pra frente e solta mais a traseira). A correção certa em FWD é o item 14: pé no acelerador.</p>
+</div>
+</section>
+
+<!-- ============ AUDITORIA ============ -->
+<section>
+<h2>O que a auditoria derrubou (transparência)</h2>
+
+<div class="tech refuted">
+  <h3>"Frear com o pé esquerdo é sempre mais rápido" <span class="badge b-no">Derrubada 0×3</span></h3>
+  <p>A afirmação de que o pé esquerdo ganha tempo por eliminar a troca de pedal não resistiu à verificação — o ganho não é automático e depende de carro, câmbio e curva. O que sobreviveu foi o uso específico em curva rápida (item 6).</p>
+</div>
+
+<div class="tech refuted">
+  <h3>"FWD não subesterça por natureza — é só acerto de carro" <span class="badge b-no">Derrubada 0×3</span></h3>
+  <p>A tese (atribuída a discussões sobre pneus iguais nas 4 rodas) foi rejeitada pelos verificadores: o acerto reduz muito o subesterço, mas a física da plataforma — peso e os três trabalhos concentrados na frente — mantém a tendência. O piloto trata via técnica; o engenheiro, via acerto. Os dois juntos.</p>
+</div>
+</section>
+
+<footer>
+  <b>Fontes principais (lidas e citadas na auditoria):</b>
+  <ol class="fontes">
+    <li><a href="https://speedsecrets.com/q-how-should-i-adapt-my-driving-to-a-front-wheel-drive-car/">Speed Secrets (Ross Bentley) — adaptação da pilotagem ao FWD</a></li>
+    <li><a href="https://windingroad.com/articles/features/speed-secrets-fwd-vs-rwd/">Speed Secrets / Winding Road — FWD vs RWD</a></li>
+    <li><a href="https://grassrootsmotorsports.com/articles/make-your-front-wheel-drive-car-faster-advice-pro-/">Grassroots Motorsports — conselhos de piloto profissional para FWD</a></li>
+    <li><a href="https://grassrootsmotorsports.com/articles/randy-pobst-front-wheel-drive-understeer/">Randy Pobst — subesterço em FWD</a></li>
+    <li><a href="https://driver61.com/uni/left-foot-braking/">Driver61 — freio com pé esquerdo</a></li>
+    <li><a href="https://driver61.com/sim-racing/sim-fwd-cars/">Driver61 — pilotando carros FWD</a></li>
+    <li><a href="https://www.miata.net/sport/Physics/07-Circle.html">Physics of Racing — círculo de tração</a></li>
+    <li><a href="https://nasaspeed.news/tech/suspension/tire-management-how-to-get-the-most-out-of-your-race-tires-from-behind-the-wheel/">NASA Speed News — gestão de pneus de corrida</a></li>
+    <li><a href="https://blayze.io/blog/car-racing/racecraft-201-advanced-wheel-to-wheel-racing">Blayze — corpo a corpo avançado</a></li>
+    <li><a href="https://blayze.io/blog/car-racing/defend-your-position-on-track">Blayze — defesa de posição</a></li>
+  </ol>
+  <p style="margin-top:14px">Método: pergunta decomposta em 5 ângulos de busca → 18 fontes lidas → 88 afirmações extraídas → as 25 centrais auditadas cada uma por 3 verificadores independentes instruídos a REFUTAR → 20 confirmadas, 5 derrubadas. Técnicas marcadas "consenso de especialista" vêm das mesmas fontes e do conhecimento consagrado das escolas de pilotagem, mas não passaram pela rodada formal de verificação tripla.</p>
+</footer>
+
+</div>
+</body>
+</html>

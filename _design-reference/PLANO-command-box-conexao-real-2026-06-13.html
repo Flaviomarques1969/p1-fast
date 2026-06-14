@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>P1 Fast — Plano de Conexão Real do Command Box</title>
+<style>
+  :root{
+    --bg:#0b0d12; --panel:#141821; --panel2:#1b212c; --line:#262d3a;
+    --fg:#eef1f5; --muted:#9aa0a6; --dim:#6b7483;
+    --ok:#22c55e; --amber:#f59e0b; --blue:#4f8cff; --red:#ef4444; --gray:#6b7280;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:26px 30px;line-height:1.5;}
+  h1{font-size:1.5rem;margin:0 0 4px;}
+  h1 b{color:var(--blue);}
+  .sub{color:var(--muted);font-size:.95rem;margin-bottom:4px;}
+  .sub2{color:var(--dim);font-size:.82rem;margin-bottom:22px;}
+  h2{font-size:1.05rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:34px 0 14px;border-bottom:1px solid var(--line);padding-bottom:8px;}
+
+  .legenda{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 18px;}
+  .pill{display:inline-flex;align-items:center;gap:7px;font-size:.78rem;font-weight:700;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);}
+  .pill .b{width:9px;height:9px;border-radius:50%;}
+  .b-ok{background:var(--ok)} .b-amber{background:var(--amber)} .b-blue{background:var(--blue)} .b-red{background:var(--red)}
+
+  .grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:14px;width:100%;}
+  .card{background:var(--panel);border:1px solid var(--line);border-left-width:4px;border-radius:12px;padding:15px 17px;}
+  .card.s-ok{border-left-color:var(--ok)} .card.s-amber{border-left-color:var(--amber)} .card.s-blue{border-left-color:var(--blue)} .card.s-red{border-left-color:var(--red)}
+  .card .top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px;}
+  .card .nome{font-weight:800;font-size:1.02rem;}
+  .selo{font-size:.7rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:4px 9px;border-radius:999px;white-space:nowrap;flex:none;}
+  .se-ok{background:rgba(34,197,94,.16);color:#6ee7a0;} .se-amber{background:rgba(245,158,11,.16);color:#fbbf24;}
+  .se-blue{background:rgba(79,140,255,.16);color:#93b4ff;} .se-red{background:rgba(239,68,68,.16);color:#fca5a5;}
+  .mostra{color:var(--dim);font-size:.82rem;margin-bottom:10px;}
+  .linha{display:flex;gap:8px;font-size:.88rem;margin:6px 0;}
+  .linha .k{flex:none;width:130px;color:var(--muted);font-weight:600;}
+  .linha .v{flex:1;}
+  .v .neg{color:#fca5a5;} .v .pos{color:#86efac;}
+
+  .fases{display:flex;flex-direction:column;gap:10px;}
+  .fase{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 16px;display:grid;grid-template-columns:230px 1fr 120px;gap:14px;align-items:start;}
+  .fase .ft{font-weight:800;}
+  .fase .fl{font-size:.9rem;}
+  .fase .fl small{color:var(--dim);display:block;margin-top:3px;font-size:.8rem;}
+  .fase .fe{font-size:.78rem;color:var(--amber);font-weight:700;text-align:right;}
+  .fase.bloq{border-color:#3a2f12;}
+
+  .aviso{background:#1a130a;border:1px solid #3a2a12;border-radius:12px;padding:16px 20px;margin:22px 0;}
+  .aviso h3{margin:0 0 8px;color:#fbbf24;font-size:1rem;}
+  .aviso ul{margin:0;padding-left:18px;} .aviso li{margin:6px 0;font-size:.9rem;color:#e7d9c4;}
+  .aviso b{color:#fff;}
+
+  .naoda{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:10px;}
+  .naoda .item{background:var(--panel2);border:1px dashed #3a3030;border-radius:10px;padding:11px 14px;font-size:.86rem;color:#d7c9c9;}
+  .naoda .item b{color:#fca5a5;}
+  .rodape{margin-top:26px;color:var(--dim);font-size:.8rem;border-top:1px solid var(--line);padding-top:14px;}
+</style>
+</head>
+<body>
+
+  <h1>P1 <b>Fast</b> — Plano de Conexão Real do Command Box</h1>
+  <div class="sub">Cada elemento do painel (Vista Piloto) ligado ao que o carro realmente entrega — aproveitando o máximo do que já existe.</div>
+  <div class="sub2">Construído por um conselho de 36 agentes: um propôs a ligação de cada elemento, outro conferiu nos arquivos se a fonte REALMENTE faz a função. 13/06/2026.</div>
+
+  <div class="legenda">
+    <span class="pill"><span class="b b-ok"></span>LIGA / JÁ ACESO — dado real, só ligar</span>
+    <span class="pill"><span class="b b-amber"></span>PARCIAL — parte é real, parte falta</span>
+    <span class="pill"><span class="b b-blue"></span>PRECISA LIGAÇÃO — a lógica existe, mas noutra tela</span>
+    <span class="pill"><span class="b b-red"></span>SEM SENSOR — não há como medir hoje</span>
+  </div>
+
+  <div class="grade">
+
+    <div class="card s-amber">
+      <div class="top"><div class="nome">Cabeçalho (identidade + status + condições)</div><span class="selo se-amber">Parcial</span></div>
+      <div class="mostra">Mostra: piloto, carro, sessão, status de conexão, condições de pista.</div>
+      <div class="linha"><div class="k">Liga hoje</div><div class="v">O <b>status de conexão</b> (verde/amarelo/vermelho) é real e já está pronto.</div></div>
+      <div class="linha"><div class="k">Reaproveita</div><div class="v">O indicador de conexão e a detecção de queda já existem prontos.</div></div>
+      <div class="linha"><div class="k">Falta</div><div class="v">A identidade (piloto/carro/objetivo) está no banco, mas precisa de uma <b>consulta nova</b> — não é só reaproveitar.</div></div>
+      <div class="linha"><div class="k">Não inventar</div><div class="v"><span class="neg">Temperatura do ar/pista, clima, umidade: não há sensor. Nunca mostrar como medido.</span></div></div>
+    </div>
+
+    <div class="card s-ok">
+      <div class="top"><div class="nome">Vídeo (câmera onboard)</div><span class="selo se-ok">Liga — peça pronta</span></div>
+      <div class="mostra">Mostra: imagem ao vivo da câmera onboard (canto esquerdo).</div>
+      <div class="linha"><div class="k">Liga hoje</div><div class="v">A estrutura de vídeo ao vivo <b>já está construída e funciona</b>. Hoje o quadro no painel é só enfeite (texto fixo).</div></div>
+      <div class="linha"><div class="k">Reaproveita</div><div class="v">Praticamente tudo: sala de vídeo, permissões, link público pra família/patrocinador.</div></div>
+      <div class="linha"><div class="k">Falta</div><div class="v">Trocar o enfeite pelo player real e a câmera transmitindo. A câmera hoje é a <b>DJI por cabo</b> (sua decisão de 09/06), não o iPhone.</div></div>
+    </div>
+
+    <div class="card s-amber">
+      <div class="top"><div class="nome">Mapa da pista (carro ao vivo + fantasma)</div><span class="selo se-amber">Parcial — carro ao vivo: sim</span></div>
+      <div class="mostra">Mostra: traçado de Brasília, carro ao vivo, volta-fantasma (melhor), delta.</div>
+      <div class="linha"><div class="k">Liga hoje</div><div class="v">O <b>ponto do carro</b> pode acender com o GPS real — que já chega, mas hoje é ignorado (o ponto anda por animação).</div></div>
+      <div class="linha"><div class="k">Reaproveita</div><div class="v">Quase tudo: o traçado, os pontos e as cores já estão prontos e aprovados.</div></div>
+      <div class="linha"><div class="k">Falta</div><div class="v">Código pra desenhar o GPS real no traçado. <b>Maior impacto visual.</b> Fantasma e delta dependem de referência gravada.</div></div>
+    </div>
+
+    <div class="card s-ok">
+      <div class="top"><div class="nome">HUD + Velocímetro</div><span class="selo se-ok">Já aceso (parcial)</span></div>
+      <div class="mostra">Mostra: velocidade, marcha, rotação, temp. motor, parcial, lambda, delta.</div>
+      <div class="linha"><div class="k">Já real</div><div class="v"><span class="pos">Rotação, lambda e temperatura da água do motor já acendem com dado real.</span></div></div>
+      <div class="linha"><div class="k">Falta</div><div class="v">Velocidade entra com o <b>GPS</b>. Delta depende de referência.</div></div>
+      <div class="linha"><div class="k">Não inventar</div><div class="v"><span class="neg">Marcha é ESTIMADA (não há sensor de câmbio) — mostrar como estimativa, não como leitura.</span></div></div>
+    </div>
+
+    <div class="card s-blue">
+      <div class="top"><div class="nome">P1 Coach (IA)</div><span class="selo se-blue">Precisa ligação</span></div>
+      <div class="mostra">Mostra: frase de comando, curva alvo, lição, progresso, análise.</div>
+      <div class="linha"><div class="k">O que existe</div><div class="v">O cérebro (as <b>17 frases aprovadas</b> + análise por trecho) já existe e roda no cockpit do piloto.</div></div>
+      <div class="linha"><div class="k">Falta</div><div class="v">Não está ligado NESTA tela — precisa puxar pra cá. Depende de referência por trecho.</div></div>
+      <div class="linha"><div class="k">Não inventar</div><div class="v"><span class="neg">A pontuação 0-100 não existe em lugar nenhum — é só demonstração.</span></div></div>
+    </div>
+
+    <div class="card s-amber">
+      <div class="top"><div class="nome">Stint (plano)</div><span class="selo se-amber">Parcial</span></div>
+      <div class="mostra">Mostra: meta, trecho de foco, voltas, próxima parada de box, ritmo.</div>
+      <div class="linha"><div class="k">Liga hoje</div><div class="v">A metade <b>plano</b> (meta/foco/voltas/paradas) vem do que o chefe configura — liga.</div></div>
+      <div class="linha"><div class="k">Falta</div><div class="v">A metade <b>execução</b> (volta X/Y, %, ritmo, decorrido) depende da fundação de dados em campo.</div></div>
+    </div>
+
+    <div class="card s-amber">
+      <div class="top"><div class="nome">Checklist saída/chegada</div><span class="selo se-amber">Parcial</span></div>
+      <div class="mostra">Mostra: itens obrigatórios e adicionais de saída e chegada do box.</div>
+      <div class="linha"><div class="k">O que existe</div><div class="v">O catálogo de <b>45 itens</b> e onde guardar já existem.</div></div>
+      <div class="linha"><div class="k">Falta</div><div class="v">Ligar nesta tela e separar saída/chegada. São confirmações <b>por toque humano</b> (não há sensor de freio/cinto).</div></div>
+    </div>
+
+    <div class="card s-red">
+      <div class="top"><div class="nome">Combustível</div><span class="selo se-red">Sem sensor — só estimativa</span></div>
+      <div class="mostra">Mostra: litros restantes, consumo por volta, voltas restantes.</div>
+      <div class="linha"><div class="k">Realidade</div><div class="v">O Bubi <b>não tem medidor de combustível</b>. A central só dá um alarme de nível baixo (liga/desliga).</div></div>
+      <div class="linha"><div class="k">Dá pra fazer</div><div class="v">Mostrar uma <b>estimativa</b> (abastecido − consumo médio), sempre rotulada como estimativa. Nunca como leitura.</div></div>
+    </div>
+
+    <div class="card s-amber">
+      <div class="top"><div class="nome">Delta acumulado</div><span class="selo se-amber">Parcial</span></div>
+      <div class="mostra">Mostra: ganho/perda acumulado vs volta-fantasma.</div>
+      <div class="linha"><div class="k">Liga</div><div class="v">O cálculo está pronto e usa GPS real. A referência (melhor passagem) <b>já tem dados gravados</b> no banco — o verificador consultou e confirmou.</div></div>
+      <div class="linha"><div class="k">Falta</div><div class="v">Ligar nesta tela. A 1ª passagem de cada trecho sempre fica sem referência.</div></div>
+    </div>
+
+    <div class="card s-amber">
+      <div class="top"><div class="nome">Carro (temperaturas/pressões)</div><span class="selo se-amber">Parcial — água: sim</span></div>
+      <div class="mostra">Mostra: temp. motor, temp. câmbio, pressão óleo, pressão câmbio.</div>
+      <div class="linha"><div class="k">Liga hoje</div><div class="v">Só a <b>temperatura da água do motor</b> tem sensor real — com cores e alertas já calibrados pro Bubi (ideal 50 / quente 80°C).</div></div>
+      <div class="linha"><div class="k">Não inventar</div><div class="v"><span class="neg">Óleo e câmbio não têm sensor — qualquer número ali é inventado.</span></div></div>
+    </div>
+
+    <div class="card s-red">
+      <div class="top"><div class="nome">Pneus</div><span class="selo se-red">Sem sensor — vida: config</span></div>
+      <div class="mostra">Mostra: temperatura, pressão e vida dos 4 pneus.</div>
+      <div class="linha"><div class="k">Não inventar</div><div class="v"><span class="neg">Temperatura e pressão de pneu não têm sensor — nada de número.</span></div></div>
+      <div class="linha"><div class="k">Dá pra fazer</div><div class="v">A <b>vida</b>: tipo + desgaste configurado pelo chefe + idade real (tempo/voltas desde a troca). Um card só, não 4 cantos.</div></div>
+    </div>
+
+    <div class="card s-amber">
+      <div class="top"><div class="nome">Barra do stint (status por volta)</div><span class="selo se-amber">Parcial</span></div>
+      <div class="mostra">Mostra: cor por volta (melhor/pior/melhor-do-stint/recorde).</div>
+      <div class="linha"><div class="k">O que existe</div><div class="v">A lógica de pintar as cores está pronta.</div></div>
+      <div class="linha"><div class="k">Falta</div><div class="v">O fechamento de volta real chegar nesta tela e a sessão estar aberta (pelo app do iPhone).</div></div>
+    </div>
+
+    <div class="card s-blue">
+      <div class="top"><div class="nome">Passagem por curva</div><span class="selo se-blue">Precisa ligação + referência</span></div>
+      <div class="mostra">Mostra: veredicto entrada/ápice/saída + delta por curva.</div>
+      <div class="linha"><div class="k">O que existe</div><div class="v">O desenho e o cálculo existem (noutra tela).</div></div>
+      <div class="linha"><div class="k">Falta</div><div class="v">Puxar a lógica pra cá <b>e</b> ter uma passagem de referência gravada por curva.</div></div>
+    </div>
+
+    <div class="card s-blue">
+      <div class="top"><div class="nome">Frenagem</div><span class="selo se-blue">Liga — com ligação</span></div>
+      <div class="mostra">Mostra: da linha de entrada da curva até o ponto de freada.</div>
+      <div class="linha"><div class="k">Liga</div><div class="v">Funciona só com GPS, <b>já na 1ª volta</b> — não precisa sensor de freio. Mede o PONTO de freada.</div></div>
+      <div class="linha"><div class="k">Falta</div><div class="v">Puxar a lógica do cockpit pra esta tela.</div></div>
+      <div class="linha"><div class="k">Não inventar</div><div class="v"><span class="neg">A pressão do freio / "freia menos" não tem sensor.</span></div></div>
+    </div>
+
+    <div class="card s-ok">
+      <div class="top"><div class="nome">Vmin por curva</div><span class="selo se-ok">Liga ao vivo (parcial vs referência)</span></div>
+      <div class="mostra">Mostra: velocidade mínima na curva vs referência.</div>
+      <div class="linha"><div class="k">Liga hoje</div><div class="v">A velocidade mínima ao vivo liga com o GPS, e o cálculo já está pronto.</div></div>
+      <div class="linha"><div class="k">Falta</div><div class="v">Comparar com a sua melhor passagem depende de <b>liberar a gravação da referência</b> (decisão sua já pendente).</div></div>
+    </div>
+
+    <div class="card s-blue">
+      <div class="top"><div class="nome">Shift light (luz de troca)</div><span class="selo se-blue">Liga — com ligação</span></div>
+      <div class="mostra">Mostra: LEDs por rotação, marcha, zonas (por torque na roda).</div>
+      <div class="linha"><div class="k">Liga</div><div class="v">A <b>rotação é 100% real</b> e a lógica (3 modos + torque na roda) já existe e foi testada.</div></div>
+      <div class="linha"><div class="k">Falta</div><div class="v">Puxar pra esta tela. Sem a curva do dinamômetro carregada, cai em limites fixos de segurança.</div></div>
+      <div class="linha"><div class="k">Não inventar</div><div class="v"><span class="neg">A marcha é estimada, não medida.</span></div></div>
+    </div>
+
+  </div>
+
+  <div class="aviso">
+    <h3>A verdade dura que o conselho confirmou (leia antes de decidir)</h3>
+    <ul>
+      <li><b>"Destravar um bloco" não é apertar um botão.</b> O painel montado (Vista Piloto) NÃO está ligado aos cálculos do cockpit do piloto — eles vivem em outra tela. Acender frenagem, Vmin, delta e shift light aqui exige <b>puxar essa lógica pra cá</b> (trabalho de ligação), não trocar uma chavinha.</li>
+      <li><b>Nada acende sem o carro transmitindo.</b> Tudo depende do notebook do carro mandando os dados ao vivo. Sem isso, todas as telas mostram "aguardando o carro". A prévia local é só demonstração, não dado de pista.</li>
+      <li><b>Nunca inventar número.</b> Combustível, temperatura/pressão de pneu, pressão de óleo e marcha NÃO têm sensor no Bubi. Onde não há medição, fica "sem sensor".</li>
+      <li><b>Colocar no ar é decisão sua.</b> Hoje tudo isto é desenvolvimento. Ligar pra valer (produção) só com sua autorização explícita.</li>
+    </ul>
+  </div>
+
+  <h2>Caminho recomendado (do mais fácil e real ao que precisa de fundação)</h2>
+  <div class="fases">
+    <div class="fase"><div class="ft">Fase 0 — Validar o que já acende</div><div class="fl">HUD: rotação, lambda, água do motor (e velocidade quando o GPS estiver no ar).<small>Sem código novo — confirmar no navegador.</small></div><div class="fe">esforço baixo</div></div>
+    <div class="fase"><div class="ft">Fase 1 — Carro ao vivo no mapa</div><div class="fl">O ponto do carro andando no traçado de Brasília pelo GPS real.<small>Maior impacto visual. O dado já chega; falta desenhar.</small></div><div class="fe">esforço médio</div></div>
+    <div class="fase"><div class="ft">Fase 2 — Frenagem e Vmin</div><div class="fl">Ponto de freada e velocidade mínima por curva — só com GPS, já na 1ª volta.<small>Exige puxar a lógica do cockpit pra esta tela.</small></div><div class="fe">médio-alto</div></div>
+    <div class="fase"><div class="ft">Fase 3 — Shift light</div><div class="fl">Luz de troca pela rotação real (e por torque, com a curva do dinamômetro).<small>Lógica pronta noutra tela — precisa puxar pra cá.</small></div><div class="fe">esforço médio</div></div>
+    <div class="fase bloq"><div class="ft">Fase 4 — Provar a gravação em campo</div><div class="fl">Gravar passagens e voltas reais rodando na pista.<small>Pré-requisito de delta e barra do stint. Não é construir — é PROVAR que grava com o carro andando.</small></div><div class="fe">esforço médio</div></div>
+    <div class="fase bloq"><div class="ft">Fase 5 — Delta e barra do stint</div><div class="fl">Ganho/perda acumulado e status por volta.<small>Só viram número real depois da Fase 4. Até lá: "aguardando referência".</small></div><div class="fe">baixo-médio</div></div>
+    <div class="fase"><div class="ft">Fase 6 — Vídeo onboard</div><div class="fl">Embutir a câmera ao vivo num quadro da tela.<small>Peça pronta, independente da telemetria.</small></div><div class="fe">esforço médio</div></div>
+    <div class="fase"><div class="ft">Fase 7 — Plano e configuração</div><div class="fl">Stint (plano), vida do pneu, checklist, identidade do cabeçalho.<small>Dados de configuração, pouco efeito visual imediato.</small></div><div class="fe">esforço baixo</div></div>
+  </div>
+
+  <h2>O que NÃO dá pra fazer real ainda (honestidade)</h2>
+  <div class="naoda">
+    <div class="item"><b>Combustível em litros:</b> sem medidor no Bubi. Só estimativa.</div>
+    <div class="item"><b>Temperatura/pressão de pneu:</b> sem sensor. A "vida" que liga é configuração, não medição.</div>
+    <div class="item"><b>Pressão/temperatura de óleo (número):</b> só existe o alarme liga/desliga. Sem valor pra mostrar.</div>
+    <div class="item"><b>Temperatura de câmbio:</b> sem sensor.</div>
+    <div class="item"><b>Marcha engatada:</b> é estimada pela rotação×velocidade, não medida.</div>
+    <div class="item"><b>Delta e shift como número/ponto:</b> dependem de referência gravada (melhor volta / curva do dinamômetro). Sem isso, não mostrar zero como se fosse real.</div>
+    <div class="item"><b>Qualquer coisa ao vivo:</b> depende do carro transmitindo. Sem isso, é "aguardando o carro".</div>
+  </div>
+
+  <div class="rodape">
+    Conselho de 36 agentes com verificação adversarial (cada fonte conferida nos arquivos reais). Tudo em desenvolvimento — colocar no ar só com autorização do Flávio.
+    Próximo passo sugerido: aprovar as Fases 0 e 1 (carro ao vivo no mapa) como primeira entrega real visível.
+  </div>
+
+</body>
+</html>

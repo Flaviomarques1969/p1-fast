@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Command Box — seleção de conteúdo (v2)</title>
+<style>
+  :root{
+    --bg:oklch(8% 0 0);
+    --bg-elev:oklch(13% 0 0);
+    --bg-card:oklch(16% 0 0);
+    --border:oklch(22% 0 0);
+    --border-strong:oklch(32% 0 0);
+    --text:oklch(96% 0 0);
+    --text-dim:oklch(70% 0 0);
+    --text-faint:oklch(50% 0 0);
+    --bom:oklch(78% 0.18 145);
+    --foco:oklch(82% 0.19 70);
+    --grave:oklch(68% 0.22 27);
+    --info:oklch(75% 0.15 240);
+    --novo:oklch(78% 0.16 320);
+    --ease:cubic-bezier(.16,1,.3,1);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Inter','Helvetica Neue',sans-serif;font-feature-settings:'tnum';-webkit-font-smoothing:antialiased;}
+  body{padding:32px 48px 120px;max-width:1280px;margin:0 auto;}
+
+  header{position:sticky;top:0;background:linear-gradient(to bottom,var(--bg) 70%,transparent);padding:16px 0 24px;z-index:10;border-bottom:1px solid var(--border);margin-bottom:24px;}
+  h1{font-size:28px;font-weight:600;letter-spacing:-.01em;}
+  .version{display:inline-block;background:var(--novo);color:oklch(15% 0 0);font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.06em;margin-left:8px;vertical-align:6px;}
+  .subtitle{color:var(--text-dim);font-size:14px;margin-top:4px;}
+  .toolbar{display:flex;align-items:center;gap:16px;margin-top:20px;flex-wrap:wrap;}
+  .counter{font-size:13px;color:var(--text-dim);font-variant-numeric:tabular-nums;}
+  .counter strong{color:var(--bom);font-size:15px;}
+  .btn{background:var(--bg-elev);color:var(--text);border:1px solid var(--border-strong);padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;transition:all 200ms var(--ease);}
+  .btn:hover{background:var(--bg-card);border-color:var(--text-faint);}
+  .btn.primary{background:var(--bom);color:oklch(15% 0 0);border-color:var(--bom);font-weight:600;}
+  .btn.primary:hover{background:oklch(85% 0.18 145);}
+
+  .changelog{background:var(--bg-elev);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:24px;border-left:3px solid var(--novo);}
+  .changelog h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--novo);margin-bottom:12px;font-weight:600;}
+  .changelog ul{padding-left:20px;color:var(--text-dim);font-size:13px;line-height:1.7;}
+  .changelog ul strong{color:var(--text);}
+  .changelog ul code{background:var(--bg-card);padding:1px 6px;border-radius:3px;font-family:ui-monospace,monospace;font-size:11px;color:var(--foco);}
+
+  .zone{background:var(--bg-elev);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:24px;}
+  .zone.is-new{border-left:3px solid var(--novo);}
+  .zone-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:6px;}
+  .zone-title-wrap{flex:1;}
+  .zone-title{font-size:18px;font-weight:600;letter-spacing:-.005em;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .zone-badge{font-size:9px;text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:4px;font-weight:700;background:var(--novo);color:oklch(15% 0 0);}
+  .zone-desc{color:var(--text-dim);font-size:13px;margin-top:4px;line-height:1.5;}
+  .zone-actions{display:flex;gap:6px;flex-shrink:0;}
+  .zone-action{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);background:transparent;border:none;cursor:pointer;padding:4px 8px;font-family:inherit;}
+  .zone-action:hover{color:var(--text);}
+
+  .items{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-radius:8px;overflow:hidden;margin-top:18px;}
+  @media (max-width:760px){ .items{grid-template-columns:1fr;} }
+
+  .item{background:var(--bg-card);padding:14px 16px;display:flex;align-items:flex-start;gap:12px;cursor:pointer;transition:background 150ms var(--ease);min-height:64px;}
+  .item:hover{background:oklch(19% 0 0);}
+  .item input[type=checkbox]{appearance:none;-webkit-appearance:none;width:18px;height:18px;border:1.5px solid var(--text-faint);border-radius:5px;cursor:pointer;flex-shrink:0;margin-top:1px;position:relative;background:transparent;transition:all 150ms var(--ease);}
+  .item input[type=checkbox]:hover{border-color:var(--text);}
+  .item input[type=checkbox]:checked{background:var(--bom);border-color:var(--bom);}
+  .item input[type=checkbox]:checked::after{content:'';position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid oklch(15% 0 0);border-width:0 2px 2px 0;transform:rotate(45deg);}
+  .item-body{flex:1;min-width:0;}
+  .item-label{font-size:14px;font-weight:500;line-height:1.35;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .item-desc{color:var(--text-dim);font-size:12px;margin-top:4px;line-height:1.4;}
+  .item.checked .item-label{color:var(--bom);}
+
+  .tier{font-size:9px;text-transform:uppercase;letter-spacing:.08em;padding:2px 6px;border-radius:4px;font-weight:600;font-variant-numeric:tabular-nums;}
+  .tier-0{background:oklch(25% 0 0);color:var(--text-dim);}
+  .tier-1{background:oklch(30% 0.05 240);color:var(--info);}
+  .tier-2{background:oklch(28% 0.08 70);color:var(--foco);}
+  .tier-3{background:oklch(28% 0.10 27);color:var(--grave);}
+  .tag{font-size:9px;text-transform:uppercase;letter-spacing:.08em;padding:2px 6px;border-radius:4px;font-weight:600;}
+  .tag-novo{background:var(--novo);color:oklch(15% 0 0);}
+  .tag-pos{background:oklch(25% 0.05 280);color:oklch(80% 0.10 280);}
+  .tag-revisado{background:oklch(28% 0.10 50);color:var(--foco);}
+
+  .freetext{margin-top:12px;}
+  .freetext label{display:block;font-size:13px;color:var(--text-dim);margin-bottom:8px;}
+  .freetext textarea{width:100%;min-height:110px;background:var(--bg-card);border:1px solid var(--border-strong);border-radius:8px;color:var(--text);padding:12px 14px;font-family:inherit;font-size:13px;line-height:1.5;resize:vertical;}
+  .freetext textarea:focus{outline:none;border-color:var(--text-faint);}
+
+  footer{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(to top,var(--bg) 70%,transparent);padding:24px 48px;z-index:10;display:flex;justify-content:center;}
+  .footer-inner{max-width:1280px;width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--bg-elev);border:1px solid var(--border-strong);border-radius:12px;padding:14px 20px;}
+  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bom);color:oklch(15% 0 0);padding:12px 24px;border-radius:8px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:all 300ms var(--ease);}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Command Box — seleção de conteúdo<span class="version">v2</span></h1>
+  <div class="subtitle">Refeito após leitura do doc da filosofia P1 Fast. Suas marcações da v1 estão preservadas. Verifique zonas <strong style="color:var(--novo)">novas</strong> e itens <strong style="color:var(--foco)">revisados</strong>.</div>
+  <div class="toolbar">
+    <div class="counter"><strong id="count-selected">0</strong> de <span id="count-total">0</span> selecionados</div>
+    <button class="btn" id="btn-all">Marcar todos</button>
+    <button class="btn" id="btn-none">Desmarcar todos</button>
+    <button class="btn primary" id="btn-export">Exportar seleção</button>
+  </div>
+</header>
+
+<section class="changelog">
+  <h2>O que mudou da v1</h2>
+  <ul>
+    <li><strong>ECU Injepro confirmada na Fase 1</strong> — temperaturas, pressões, lambda, voltagem agora têm fonte. Mantidos todos os Tier 2.</li>
+    <li><strong>Zona 3 renomeada</strong> de "volta em curso" para <strong>"pós-volta"</strong> — gráficos atualizam quando a volta fecha, não ao vivo (limite da arquitetura: realtime só carrega eventos, não 100Hz).</li>
+    <li><strong>"Top 3 onde está perdendo" virou "3 padrões recorrentes"</strong> — é o que o sistema produz (error-classifier), não snapshot instantâneo.</li>
+    <li><strong>Mirror do info-bloco confirmado fora</strong> — frase do piloto não pertence ao box. Substituído por <code>feed de comandos enviados</code> + <code>mensagens estruturadas pro box</code>.</li>
+    <li><strong>5 zonas novas:</strong> mensageria & papéis · cadastro & saúde · modos de comparação · Setup Coach · ápice (12 classificações).</li>
+    <li><strong>Zona multi-piloto descartada</strong> — confirmado solo-operator também no box.</li>
+  </ul>
+</section>
+
+<main id="zones"></main>
+
+<section class="zone">
+  <div class="zone-head"><div class="zone-title-wrap"><div class="zone-title">Outras ideias</div><div class="zone-desc">Algo ainda não está na lista? Escreva aqui.</div></div></div>
+  <div class="freetext"><textarea id="extra" placeholder="Ex.: meteograma de raios próximos · plano de pneus por composto..."></textarea></div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="counter"><strong id="count-selected-foot">0</strong> de <span id="count-total-foot">0</span> selecionados · <span id="zones-with-content">0</span> zonas com conteúdo</div>
+    <button class="btn primary" id="btn-export-foot">Exportar seleção</button>
+  </div>
+</footer>
+
+<div class="toast" id="toast">Seleção copiada e baixada</div>
+
+<script>
+const PRESELECTED = new Set([
+  'h-piloto-carro-pista','h-condicao','h-stint-num','h-relogio',
+  'l-mini-mapa','l-velocidade','l-marcha-est','l-saude-sinal','l-bateria-iphone',
+  'l-rpm-real','l-marcha-real','l-temp-agua','l-temp-oleo-motor','l-temp-oleo-cambio','l-temp-ar','l-press-oleo','l-press-comb','l-lambda','l-volt','l-tpms',
+  't-speed','t-brake-throttle','t-delta','t-trecho-marks','t-pos-atual','t-gforce-overlay',
+  'c-4pontos','c-delta-trecho','c-alert-bloco','c-shift-light','c-halo',
+  'a-voltas-lista','a-volta-atual-highlight','a-heatmap','a-padroes-recorrentes','a-tendencia','a-consistencia','a-pendencias','a-reacoes',
+  's-combustivel','s-voltas-restantes','s-proximo-ato','s-timer-stint-prog','s-video-daily','s-audio-piloto',
+  'p-resumo','p-ganhos-perdas','p-reacoes-novas','p-foco-proximo','p-saude-carro','p-volta-back',
+]);
+
+const ZONES = [
+  {
+    id:'header',
+    title:'1 · Header — identidade & contexto',
+    desc:'Sempre visível no topo. ~8% da altura.',
+    items:[
+      {id:'h-piloto-carro-pista',label:'Piloto · carro · pista · evento',tier:0},
+      {id:'h-condicao',label:'Condição: temp ar, temp pista, vento, chuva',tier:0,desc:'Manual ou via API meteorológica.'},
+      {id:'h-stint-num',label:'Stint nº · tempo decorrido · voltas dadas',tier:0},
+      {id:'h-bandeira',label:'Bandeira atual (verde / amarela / vermelha)',tier:0,desc:'Manual no MVP.'},
+      {id:'h-relogio',label:'Relógio + cronômetro do stint',tier:0},
+      {id:'h-papel-operador',label:'Papel ativo do operador no box (Engenheiro / Professor / Mecânico)',tier:0,novo:true},
+    ],
+  },
+  {
+    id:'live-carro',
+    title:'2 · Coluna esquerda — situação ao vivo do carro',
+    desc:'Tier 0 = só celular do piloto · T4000 = sensor BLE de RPM · ECU = Injepro (Fase 1 confirmada) · TPMS = pressão/temperatura de pneu.',
+    items:[
+      {id:'l-mini-mapa',label:'Mini-mapa do traçado com dot do carro',tier:0},
+      {id:'l-velocidade',label:'Velocidade GPS instantânea',tier:0},
+      {id:'l-g-lat-long',label:'G lateral · G longitudinal',tier:0},
+      {id:'l-marcha-est',label:'Marcha estimada',tier:0,desc:'Inferida quando sem T4000/ECU.'},
+      {id:'l-saude-sinal',label:'Saúde de sinal (GPS sat, IMU bias, BLE link, latência)',tier:0},
+      {id:'l-bateria-iphone',label:'% bateria do iPhone do piloto',tier:0},
+
+      {id:'l-rpm-real',label:'RPM real (T4000 ou ECU)',tier:1},
+      {id:'l-marcha-real',label:'Marcha real',tier:2},
+      {id:'l-throttle',label:'Throttle %',tier:2},
+      {id:'l-brake',label:'Brake % (sensor de pressão)',tier:2},
+      {id:'l-clutch',label:'Clutch %',tier:2},
+      {id:'l-temp-agua',label:'Temperatura da água',tier:2},
+      {id:'l-temp-oleo-motor',label:'Temperatura do óleo do motor',tier:2},
+      {id:'l-temp-oleo-cambio',label:'Temperatura do óleo do câmbio',tier:2},
+      {id:'l-temp-ar',label:'Temperatura do ar de admissão',tier:2},
+      {id:'l-press-oleo',label:'Pressão de óleo',tier:2},
+      {id:'l-press-comb',label:'Pressão de combustível',tier:2},
+      {id:'l-press-boost',label:'Pressão de turbo (boost)',tier:2,desc:'Só se motor turbo.'},
+      {id:'l-lambda',label:'Lambda / AFR',tier:2},
+      {id:'l-volt',label:'Voltagem do alternador',tier:2},
+
+      {id:'l-tpms',label:'Pressão e temperatura de pneu (TPMS)',tier:3},
+    ],
+  },
+  {
+    id:'volta-trace',
+    title:'3 · Centro topo — gráficos pós-volta',
+    desc:'Atualizam quando a volta fecha, não ao vivo. Toggle de comparação (zona 10) controla com qual referência sobrepor.',
+    revisado:true,
+    items:[
+      {id:'t-speed',label:'Gráfico de velocidade (volta atual sobreposta à referência)',tier:0,revisado:true},
+      {id:'t-brake-throttle',label:'Gráfico de freio + acelerador',tier:2,revisado:true},
+      {id:'t-delta',label:'Gráfico de delta acumulado vs referência',tier:0,revisado:true},
+      {id:'t-trecho-marks',label:'Marcações dos trechos no eixo do gráfico',tier:0},
+      {id:'t-pos-atual',label:'Marca de onde a volta atual está no traçado',tier:0,desc:'Útil enquanto a volta ainda corre — atualiza por evento de fim de trecho.'},
+      {id:'t-gforce-overlay',label:'Gráfico de G-force ao longo da volta',tier:0,revisado:true},
+      {id:'t-rpm',label:'Gráfico de RPM ao longo da volta',tier:1,novo:true},
+    ],
+  },
+  {
+    id:'trecho-comando',
+    title:'4 · Centro base — trecho atual & comando ao piloto',
+    desc:'O que está acontecendo nesta curva agora. Frase do piloto NÃO aparece aqui — ela está na zona 8 como log.',
+    revisado:true,
+    items:[
+      {id:'c-4pontos',label:'Os 4 pontos canônicos (Entrada / Freio / Ápice / Saída) com cor por estado',tier:0},
+      {id:'c-delta-trecho',label:'Delta do trecho atual em fonte grande',tier:0},
+      {id:'c-alert-bloco',label:'Alert grave do piloto (espelhado)',tier:0,desc:'Só o alert grave, não a frase pedagógica.'},
+      {id:'c-shift-light',label:'Estado da shift-light (build-up / FIRE / OVERREV)',tier:1},
+      {id:'c-halo',label:'Halo do trecho (recorde stint laranja · all-time ouro · pior roxo)',tier:0},
+      {id:'c-msg-box',label:'Mensagem estruturada para o box (frase longa do error-classifier)',tier:0,novo:true,desc:'"Antecipa apex 7m em 4 das 5 voltas — abre cedo, perde 0,4s na reta."'},
+    ],
+  },
+  {
+    id:'apex',
+    title:'5 · Painel do ápice — 12 classificações',
+    desc:'Tally do stint atual nas 12 classificações canônicas, por trecho.',
+    novo:true,
+    items:[
+      {id:'ap-tally-stint',label:'Tally do trecho atual ("C3: 4 antecipados · 1 correto · 0 tardio")',tier:0,novo:true},
+      {id:'ap-vmin-georef',label:'Vmin georef do melhor do TIME no trecho atual (número + dot no mini-mapa)',tier:0,novo:true},
+      {id:'ap-divergencia-cadastro',label:'Alerta de divergência cadastro vs empírico (>2m)',tier:0,novo:true,desc:'"Cadastro da Curva 3 diverge 4m do que o piloto faz. Revisar?"'},
+      {id:'ap-3-padroes',label:'3 padrões recorrentes detectados pelo error-classifier',tier:0,novo:true,desc:'Substitui o "top 3 instantâneo".'},
+      {id:'ap-historico-classificacao',label:'Histórico das últimas 10 execuções do trecho com classificação',tier:0,novo:true},
+    ],
+  },
+  {
+    id:'analise',
+    title:'6 · Coluna direita — voltas & deltas',
+    desc:'Tabela e heatmap.',
+    items:[
+      {id:'a-voltas-lista',label:'Lista de voltas do stint (nº, tempo, Δ vs ref, status)',tier:0},
+      {id:'a-volta-atual-highlight',label:'Highlight visual da volta em curso',tier:0},
+      {id:'a-heatmap',label:'Heatmap de trechos coloridos por delta médio',tier:0},
+      {id:'a-padroes-recorrentes',label:'3 padrões recorrentes globais (não por trecho)',tier:0,revisado:true,desc:'Antes era "top 3 onde está perdendo". Agora vem do error-classifier.'},
+      {id:'a-tendencia',label:'Tendência: melhorando ou piorando ao longo do stint',tier:0},
+      {id:'a-consistencia',label:'Consistência (desvio padrão das voltas limpas)',tier:0},
+      {id:'a-pendencias',label:'Pendências vivas obrigatórias e adicionais',tier:0},
+      {id:'a-reacoes',label:'Reações aprendidas pelo piloto neste evento',tier:0},
+    ],
+  },
+  {
+    id:'sessao',
+    title:'7 · Rodapé — saúde da sessão & próxima ação',
+    desc:'Estratégia, timing e StintPlan.',
+    items:[
+      {id:'s-stintplan',label:'StintPlan ativo (meta · abordagem · trechos-foco · lição)',tier:0,novo:true},
+      {id:'s-combustivel',label:'Combustível restante (sensor ou estimativa)',tier:2},
+      {id:'s-voltas-restantes',label:'Estimativa de voltas restantes',tier:2,desc:'Combustível ÷ consumo médio.'},
+      {id:'s-proximo-ato',label:'Próximo ato sugerido pelo chefe de equipe',tier:0,desc:'Manual: "voltar ao box em 3 voltas para pneu".'},
+      {id:'s-timer-stint-prog',label:'Timer de stint programado (countdown)',tier:0},
+      {id:'s-video-daily',label:'Janela de vídeo Daily.co (cam embarcada)',tier:0},
+      {id:'s-audio-piloto',label:'Indicador de áudio do piloto',tier:0},
+    ],
+  },
+  {
+    id:'pos-stint',
+    title:'8 · Pós-stint — overlay quando carro encosta no box',
+    desc:'A tela pivota para modo debrief automaticamente.',
+    items:[
+      {id:'p-trofeus',label:'4 troféus do stint (consistência · evolução · Vmin · saída)',tier:0,novo:true,desc:'Port do score.js que o piloto vê na PosStintView.'},
+      {id:'p-resumo',label:'Resumo: melhor volta, média, consistência',tier:0},
+      {id:'p-ganhos-perdas',label:'Ganhos/perdas por trecho vs referência ativa',tier:0},
+      {id:'p-reacoes-novas',label:'Reações aprendidas no stint que acabou',tier:0},
+      {id:'p-foco-proximo',label:'Próximo foco proposto para o stint seguinte',tier:0,desc:'Sugestão do pedagogical-decider.'},
+      {id:'p-saude-carro',label:'Saúde do carro: redline hits, hard brakings, kerbs',tier:2},
+      {id:'p-volta-back',label:'Botão "voltar para Live" quando carro reentrar',tier:0},
+    ],
+  },
+  {
+    id:'mensageria',
+    title:'9 · Mensageria & papéis',
+    desc:'Conversa entre operador e piloto + quem está online.',
+    novo:true,
+    items:[
+      {id:'m-compositor',label:'Compositor de mensagem operador → piloto',tier:0,novo:true,desc:'Caixa de texto + botão enviar via Realtime.'},
+      {id:'m-toggle-tv',label:'Toggle "mostrar na TV" por mensagem',tier:0,novo:true,desc:'Algumas conversas devem rodar privadas entre engenheiros.'},
+      {id:'m-feed-comandos',label:'Feed de comandos enviados ao piloto pelo app',tier:0,novo:true,desc:'Log read-only do que o app já comunicou ("17:42 freie tarde").'},
+      {id:'m-painel-papeis',label:'Painel de quem está online (Piloto/Professor/Mecânico/Read-only/Box TV)',tier:0,novo:true},
+      {id:'m-historico-msg',label:'Histórico das mensagens trocadas no stint',tier:0,novo:true},
+    ],
+  },
+  {
+    id:'cadastro-saude',
+    title:'10 · Cadastro & saúde do dado',
+    desc:'Status de quão completo está o cadastro da pista. Sem isso, time não percebe que análise está degradada.',
+    novo:true,
+    items:[
+      {id:'cs-status-pista',label:'Status do cadastro da pista (N trechos · X completos · Y degradados)',tier:0,novo:true},
+      {id:'cs-trechos-degradados',label:'Lista de trechos em modo degradado',tier:0,novo:true,desc:'Pra revisar antes de levar a sério a análise.'},
+      {id:'cs-faixas-termicas',label:'Faixas térmicas (aquecimento azul / cooldown vermelho)',tier:0,novo:true,desc:'Espelhamento das 3 camadas que o cockpit mostra.'},
+      {id:'cs-temp-pneu-estimado',label:'Estimativa de temperatura/desgaste de pneu (sem TPMS)',tier:0,novo:true},
+    ],
+  },
+  {
+    id:'comparacao',
+    title:'11 · Modos de comparação',
+    desc:'Toggle global que controla qual referência os gráficos e o heatmap usam.',
+    novo:true,
+    items:[
+      {id:'cmp-instantaneo',label:'Modo instantâneo por trecho (default)',tier:0,novo:true},
+      {id:'cmp-melhor-stint',label:'Modo: vs melhor volta DESTE stint',tier:0,novo:true},
+      {id:'cmp-ultima-volta',label:'Modo: vs última volta',tier:0,novo:true},
+      {id:'cmp-melhor-historica',label:'Modo: vs melhor histórica daquele carro+config+autódromo',tier:0,novo:true,desc:'Exige índice histórico por chave carro × configuração × pista × trecho.'},
+      {id:'cmp-painel-trecho',label:'Painel "passagem por trecho" — duas colunas (atual × melhor histórica)',tier:0,novo:true,desc:'Componente fixo enquanto carro atravessa o trecho.'},
+    ],
+  },
+  {
+    id:'setup-coach',
+    title:'12 · Setup Coach — aprendizado de dinâmica do carro',
+    desc:'Aprende inclinação/rolagem do carro pelo IMU do iPhone. Detecta drift quando setup muda.',
+    novo:true,
+    items:[
+      {id:'sc-baseline',label:'Baseline do setup atual (inclinação no freio · rolagem na curva)',tier:0,novo:true,desc:'Aprendido após N voltas com setup conhecido.'},
+      {id:'sc-snapshot-setup',label:'Botão "salvar snapshot do setup" (ancora a baseline)',tier:0,novo:true},
+      {id:'sc-drift-alerta',label:'Alerta de drift ("rolando 18% mais que setup anterior — endurecer dianteira?")',tier:0,novo:true},
+      {id:'sc-historico-setup',label:'Histórico de snapshots do carro (setup A → B → C com voltas associadas)',tier:0,novo:true},
+      {id:'sc-sugestao-acao',label:'Sugestão de ajuste com base no drift',tier:0,novo:true,desc:'"endurecer dianteira", "ajustar pressão LD". Sugestão, não ordem.'},
+    ],
+  },
+];
+
+const main = document.getElementById('zones');
+ZONES.forEach(zone=>{
+  const sec = document.createElement('section');
+  sec.className = 'zone' + (zone.novo ? ' is-new' : '');
+  sec.dataset.zoneId = zone.id;
+  sec.innerHTML = `
+    <div class="zone-head">
+      <div class="zone-title-wrap">
+        <div class="zone-title">${zone.title}${zone.novo?'<span class="zone-badge">NOVO</span>':''}${zone.revisado?'<span class="zone-badge" style="background:var(--foco)">REVISADO</span>':''}</div>
+        <div class="zone-desc">${zone.desc}</div>
+      </div>
+      <div class="zone-actions">
+        <button class="zone-action" data-action="all">Marcar zona</button>
+        <button class="zone-action" data-action="none">Limpar</button>
+      </div>
+    </div>
+    <div class="items">
+      ${zone.items.map(it => `
+        <label class="item${PRESELECTED.has(it.id)?' checked':''}" data-id="${it.id}">
+          <input type="checkbox" data-id="${it.id}" ${PRESELECTED.has(it.id)?'checked':''}>
+          <div class="item-body">
+            <div class="item-label">
+              <span>${it.label}</span>
+              <span class="tier tier-${it.tier}">Tier ${it.tier}</span>
+              ${it.novo?'<span class="tag tag-novo">Novo</span>':''}
+              ${it.revisado?'<span class="tag tag-revisado">Revisado</span>':''}
+            </div>
+            ${it.desc ? `<div class="item-desc">${it.desc}</div>` : ''}
+          </div>
+        </label>
+      `).join('')}
+    </div>
+  `;
+  main.appendChild(sec);
+
+  sec.querySelectorAll('.zone-action').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const checked = btn.dataset.action === 'all';
+      sec.querySelectorAll('input[type=checkbox]').forEach(cb=>{ cb.checked = checked; cb.dispatchEvent(new Event('change')); });
+    });
+  });
+});
+
+document.querySelectorAll('.item').forEach(item=>{
+  const cb = item.querySelector('input[type=checkbox]');
+  cb.addEventListener('change',()=>{
+    item.classList.toggle('checked', cb.checked);
+    refresh();
+  });
+});
+
+const totalEls = [document.getElementById('count-total'),document.getElementById('count-total-foot')];
+const selEls = [document.getElementById('count-selected'),document.getElementById('count-selected-foot')];
+const zonesEl = document.getElementById('zones-with-content');
+const allBoxes = ()=>document.querySelectorAll('.item input[type=checkbox]');
+
+function refresh(){
+  const all = allBoxes();
+  const sel = [...all].filter(b=>b.checked);
+  totalEls.forEach(e=>e.textContent = all.length);
+  selEls.forEach(e=>e.textContent = sel.length);
+  const zones = new Set();
+  sel.forEach(b=>{ const z = b.closest('.zone'); if (z) zones.add(z.dataset.zoneId); });
+  zonesEl.textContent = zones.size;
+}
+
+document.getElementById('btn-all').addEventListener('click',()=>{ allBoxes().forEach(b=>{b.checked=true;b.dispatchEvent(new Event('change'));}); });
+document.getElementById('btn-none').addEventListener('click',()=>{ allBoxes().forEach(b=>{b.checked=false;b.dispatchEvent(new Event('change'));}); });
+
+function exportSelection(){
+  const out = {
+    versao:2,
+    geradoEm: new Date().toISOString(),
+    zonas: ZONES.map(zone => ({
+      id: zone.id,
+      titulo: zone.title,
+      novo: !!zone.novo,
+      revisado: !!zone.revisado,
+      itens: zone.items.filter(it => document.querySelector(`input[data-id="${it.id}"]`).checked).map(it => ({
+        id: it.id, label: it.label, tier: it.tier, novo:!!it.novo, revisado:!!it.revisado,
+      })),
+    })).filter(z => z.itens.length > 0),
+    extra: document.getElementById('extra').value.trim() || null,
+  };
+  const json = JSON.stringify(out, null, 2);
+  navigator.clipboard.writeText(json).then(()=>{
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 1800);
+  });
+  const blob = new Blob([json],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'command-box-selecao-v2.json';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+document.getElementById('btn-export').addEventListener('click', exportSelection);
+document.getElementById('btn-export-foot').addEventListener('click', exportSelection);
+
+refresh();
+</script>
+</body>
+</html>

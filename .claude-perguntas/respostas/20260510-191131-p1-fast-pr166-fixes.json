@@ -1,0 +1,31 @@
+{
+  "pergunta_id": "20260510-191131-p1-fast-pr166-fixes",
+  "contexto": "Plano de fixes pra 2 bugs confirmados pelo /ultrareview da PR #166 (rotação 180° cockpit Windows)",
+  "respondido_em": "2026-05-10T22:14:38.650Z",
+  "respostas": {
+    "worktree": {
+      "pergunta": "Onde aplicar os fixes?",
+      "escolha": "tender-lalande",
+      "outra_opcao_usada": false,
+      "comentario": ""
+    },
+    "abordagem": {
+      "pergunta": "Como o código deve saber que o display escolhido não existe?",
+      "escolha": "bool-retorno",
+      "outra_opcao_usada": false,
+      "comentario": ""
+    },
+    "testes": {
+      "pergunta": "Que cobertura de teste exigir antes do commit?",
+      "escolha": "xunit-rotationkey",
+      "outra_opcao_usada": false,
+      "comentario": ""
+    },
+    "commit": {
+      "pergunta": "Como organizar o commit e o push pra PR #166?",
+      "escolha": "um-commit",
+      "outra_opcao_usada": false,
+      "comentario": ""
+    }
+  }
+}

@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Marcação E/S/A — Mapa de Brasília</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #0a0d12;
+    --panel: #131720;
+    --panel-2: #1a1f2c;
+    --line: #2a3142;
+    --text: #e9ecf3;
+    --muted: #8b94a8;
+    --accent: #4aa3ff;
+    --ok: #4ade80;
+    --warn: #ffb547;
+    --entrada: #4aa3ff;
+    --saida: #4ade80;
+    --apice: #ffb547;
+    --remove: #ff4f6d;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Inter", "Helvetica Neue", Arial, sans-serif;
+    overflow: hidden;
+  }
+  .topbar {
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .topbar h1 { margin: 0; font-size: 15px; font-weight: 700; }
+  .topbar .desc { color: var(--muted); font-size: 12px; }
+  .topbar .info { margin-left: auto; color: var(--muted); font-size: 12px; display: flex; gap: 14px; }
+  .topbar .info b { color: var(--text); }
+  .topbar button {
+    appearance: none;
+    background: var(--accent);
+    color: #0a0d12;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .topbar button.secundario {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--line);
+    font-weight: 400;
+  }
+  .grid {
+    position: absolute;
+    top: 51px; left: 0; right: 0; bottom: 0;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+  }
+  .stage {
+    position: relative;
+    overflow: hidden;
+    background: radial-gradient(1200px 800px at 50% 50%, #11151c 0%, #07090d 70%);
+    cursor: grab;
+  }
+  .stage.dragging-pan { cursor: grabbing; }
+  .stage.dragging-pt { cursor: crosshair; }
+  svg#mapa { width: 100%; height: 100%; touch-action: none; }
+  .ponto {
+    cursor: grab;
+    stroke: rgba(0,0,0,0.6);
+    stroke-width: 1.2;
+    transition: r 0.1s;
+  }
+  .ponto.arrastando { cursor: grabbing; stroke: var(--text); stroke-width: 2; }
+  .ponto.inativo { opacity: 0.28; cursor: default; }
+  .ponto-label {
+    pointer-events: none;
+    font-weight: 700;
+    text-anchor: middle;
+    fill: #0a0d12;
+  }
+  .ponto-label.inativo { opacity: 0.4; }
+
+  .painel {
+    background: var(--panel);
+    border-left: 1px solid var(--line);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .painel h2 {
+    margin: 0;
+    padding: 14px 16px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line);
+  }
+  .trecho-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .trecho-item:hover { background: rgba(74,163,255,0.06); }
+  .trecho-item.ativo {
+    background: rgba(74,163,255,0.14);
+    border-left: 3px solid var(--accent);
+    padding-left: 13px;
+  }
+  .trecho-nome { font-weight: 600; font-size: 13px; }
+  .trecho-meta { color: var(--muted); font-size: 11px; margin-top: 2px; display: flex; gap: 10px; }
+  .trecho-meta .badge { display: inline-flex; align-items: center; gap: 4px; }
+  .trecho-meta .badge .dot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  }
+  .dot-e { background: var(--entrada); }
+  .dot-s { background: var(--saida); }
+  .dot-a { background: var(--apice); }
+
+  .editor-trecho {
+    border-bottom: 1px solid var(--line);
+    background: var(--panel-2);
+    padding: 14px 16px;
+  }
+  .editor-trecho .titulo {
+    font-size: 13px;
+    font-weight: 700;
+    margin: 0 0 10px;
+  }
+  .editor-trecho .tipo-grupo {
+    margin-bottom: 12px;
+  }
+  .editor-trecho .tipo-cab {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; color: var(--muted); margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: 0.7px;
+  }
+  .editor-trecho .tipo-cab .dot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    margin-right: 6px; vertical-align: middle;
+  }
+  .editor-trecho .add-btn {
+    appearance: none;
+    background: var(--panel);
+    color: var(--text);
+    border: 1px dashed var(--line);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .editor-trecho .add-btn:hover { border-color: var(--accent); border-style: solid; }
+  .editor-trecho .pontos-lista {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .editor-trecho .ponto-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 6px; padding: 6px 10px; font-size: 12px;
+  }
+  .editor-trecho .ponto-item .coord {
+    color: var(--muted); font-family: "SF Mono", Menlo, monospace; font-size: 11px;
+  }
+  .editor-trecho .ponto-item .remover {
+    appearance: none;
+    background: transparent;
+    color: var(--remove);
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    padding: 0 4px;
+  }
+  .editor-trecho .vazio {
+    color: var(--muted); font-size: 11px; font-style: italic;
+  }
+
+  .controles-mapa {
+    position: absolute;
+    top: 12px; left: 12px;
+    display: flex; gap: 6px;
+    background: rgba(19,23,32,0.92);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 6px;
+  }
+  .controles-mapa button {
+    appearance: none;
+    background: transparent; color: var(--text);
+    border: none; padding: 4px 10px;
+    cursor: pointer; font-size: 13px;
+  }
+  .controles-mapa button:hover { background: var(--panel-2); border-radius: 6px; }
+
+  .legenda-mapa {
+    position: absolute;
+    bottom: 12px; left: 12px;
+    background: rgba(19,23,32,0.92);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 11px;
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .legenda-mapa .row { display: flex; align-items: center; gap: 6px; margin: 2px 0; }
+  .legenda-mapa .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  .modal {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.78);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 100;
+  }
+  .modal.aberto { display: flex; }
+  .modal-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px;
+    width: min(680px, 92vw);
+    max-height: 80vh;
+    overflow: auto;
+  }
+  .modal-card h2 { margin: 0 0 6px; font-size: 16px; }
+  .modal-card p { margin: 0 0 10px; color: var(--muted); font-size: 13px; }
+  .modal-card textarea {
+    width: 100%; height: 280px;
+    background: #0a0d12; color: var(--text);
+    border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px;
+    font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11px;
+    resize: vertical;
+  }
+  .modal-card .row {
+    display: flex; gap: 8px; margin-top: 12px; align-items: center;
+  }
+  .modal-card .ok-msg { color: var(--ok); font-size: 12px; margin-left: auto; }
+  .modal-card button {
+    appearance: none;
+    background: var(--accent); color: #0a0d12;
+    border: none; padding: 8px 14px;
+    border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  .modal-card button.secundario {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--line); font-weight: 400;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Marcação de Entradas, Saídas e Ápices</h1>
+  <span class="desc">Brasília · arraste os pontos no mapa, adicione ou remova pelo painel da direita</span>
+  <div class="info">
+    <span>Trechos: <b id="info-trechos">8</b></span>
+    <span>Pontos totais: <b id="info-pontos">—</b></span>
+    <span>Alterações: <b id="info-edits">0</b></span>
+  </div>
+  <button class="secundario" id="btn-resetar">Resetar tudo</button>
+  <button id="btn-exportar">Salvar e exportar</button>
+</div>
+
+<div class="grid">
+  <div class="stage" id="stage">
+    <svg id="mapa" viewBox="0 0 823 799" preserveAspectRatio="xMidYMid meet">
+      <path id="path-pista-bg" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="14" stroke-linejoin="round"/>
+      <path id="path-pista" fill="none" stroke="#3a4255" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <g id="g-pontos"></g>
+      <g id="g-labels"></g>
+    </svg>
+    <div class="controles-mapa">
+      <button id="btn-zoom-out">−</button>
+      <button id="btn-zoom-100">100%</button>
+      <button id="btn-zoom-in">+</button>
+    </div>
+    <div class="legenda-mapa">
+      <div class="row"><span class="dot" style="background:var(--entrada)"></span> Entrada (E)</div>
+      <div class="row"><span class="dot" style="background:var(--saida)"></span> Saída (S)</div>
+      <div class="row"><span class="dot" style="background:var(--apice)"></span> Ápice (A)</div>
+    </div>
+  </div>
+
+  <div class="painel">
+    <h2>Trechos</h2>
+    <div id="lista-trechos"></div>
+  </div>
+</div>
+
+<div class="modal" id="modal-export">
+  <div class="modal-card">
+    <h2>Marcação salva</h2>
+    <p>Copie o texto abaixo e cole aqui no Claude. Eu uso para colocar os novos pontos no aplicativo iOS, empacotar e instalar no seu iPhone.</p>
+    <textarea id="export-text" readonly></textarea>
+    <div class="row">
+      <button id="btn-copiar">Copiar para área de transferência</button>
+      <button class="secundario" id="btn-fechar-modal">Fechar</button>
+      <span class="ok-msg" id="copiado-msg" style="display:none">Copiado!</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ───────────────────────────────────────────────────────────────
+// Desenho v2 OFICIAL — aprovado por Flávio em 2026-05-17 23h15. NÃO suavizar.
+// ───────────────────────────────────────────────────────────────
+const PATH_SVG = "M 420.20 707.58 L 412.48 707.50 L 404.76 707.42 L 397.04 707.34 L 389.32 707.26 L 381.60 707.18 L 373.88 707.10 L 366.16 707.02 L 358.44 706.94 L 350.72 706.86 L 343.00 706.78 L 335.28 706.70 L 327.55 706.63 L 319.83 706.55 L 312.11 706.47 L 304.39 706.39 L 296.67 706.31 L 288.95 706.23 L 281.23 706.15 L 273.51 706.07 L 265.79 705.99 L 258.07 705.91 L 250.35 705.83 L 242.63 705.75 L 236.30 705.26 L 230.26 704.61 L 224.07 703.88 L 217.98 702.73 L 212.32 701.18 L 206.79 699.22 L 201.27 696.45 L 195.86 693.25 L 190.70 689.52 L 186.12 685.35 L 181.78 680.63 L 178.17 675.31 L 174.66 668.83 L 171.88 661.75 L 169.09 654.66 L 167.66 647.36 L 167.04 640.29 L 167.56 634.15 L 168.79 627.53 L 169.94 620.44 L 171.24 612.76 L 172.76 605.51 L 173.56 599.11 L 174.98 592.82 L 175.81 586.36 L 176.80 579.73 L 178.03 572.95 L 179.42 566.07 L 180.44 559.16 L 181.56 552.34 L 182.97 544.85 L 184.37 537.36 L 185.78 529.88 L 187.18 522.39 L 188.59 514.90 L 189.99 507.41 L 191.72 500.00 L 193.44 492.60 L 195.17 485.19 L 197.42 477.54 L 199.68 469.90 L 201.93 462.25 L 203.44 456.24 L 204.96 450.22 L 206.48 444.20 L 207.99 438.19 L 210.15 431.02 L 212.31 423.86 L 214.47 416.69 L 216.63 409.52 L 218.80 402.36 L 220.96 395.19 L 223.12 388.02 L 225.28 380.85 L 227.44 373.69 L 229.60 366.52 L 231.61 360.37 L 233.62 354.22 L 235.63 348.07 L 237.64 341.92 L 239.71 334.51 L 241.77 327.09 L 243.84 319.68 L 245.90 312.27 L 247.97 304.86 L 250.03 297.44 L 252.10 290.03 L 254.12 283.67 L 256.13 277.30 L 258.15 270.94 L 260.17 264.58 L 262.13 257.56 L 264.08 250.53 L 266.04 243.50 L 267.99 236.48 L 269.95 229.45 L 271.90 222.43 L 273.86 215.41 L 275.81 208.38 L 277.77 201.36 L 279.72 194.33 L 282.01 187.80 L 284.29 181.28 L 286.58 174.75 L 288.86 168.23 L 291.15 161.70 L 294.72 156.29 L 299.47 151.49 L 305.14 148.15 L 311.63 145.96 L 319.42 143.70 L 326.62 143.72 L 332.25 144.93 L 337.65 146.81 L 343.35 148.56 L 348.44 150.79 L 353.70 153.19 L 358.95 155.60 L 363.99 158.63 L 369.04 161.66 L 374.08 164.69 L 378.91 168.67 L 383.73 172.64 L 388.56 176.62 L 393.01 181.29 L 397.46 185.95 L 401.91 190.62 L 405.98 196.19 L 410.05 201.75 L 414.12 207.31 L 418.19 212.88 L 422.26 218.44 L 426.33 224.01 L 431.07 229.67 L 435.81 235.33 L 440.54 240.98 L 445.28 246.64 L 450.02 252.30 L 454.76 257.96 L 459.74 263.42 L 464.72 268.89 L 469.70 274.35 L 475.84 278.85 L 481.99 283.36 L 488.13 287.86 L 494.97 291.58 L 501.81 295.31 L 508.65 299.03 L 515.92 301.98 L 523.20 304.93 L 530.47 307.88 L 536.34 309.19 L 542.20 310.50 L 548.06 311.80 L 553.93 313.11 L 560.89 313.83 L 567.84 314.54 L 574.80 315.26 L 581.75 315.97 L 588.71 316.69 L 595.66 317.40 L 602.62 318.12 L 610.30 319.39 L 617.98 320.65 L 625.66 321.92 L 632.26 323.49 L 638.87 325.06 L 645.47 326.63 L 650.79 328.80 L 656.11 330.97 L 662.30 334.01 L 668.45 338.08 L 674.27 342.65 L 677.50 346.91 L 680.73 351.18 L 684.00 356.65 L 686.13 363.06 L 687.78 369.79 L 687.71 376.19 L 687.14 381.71 L 686.56 387.23 L 684.35 392.26 L 682.15 397.28 L 679.94 402.31 L 676.08 406.54 L 672.21 410.78 L 667.86 414.69 L 663.40 418.10 L 658.44 421.18 L 653.31 423.67 L 647.37 425.44 L 641.26 426.60 L 635.14 426.89 L 628.76 426.51 L 622.37 425.25 L 615.97 423.22 L 610.43 420.67 L 604.88 417.34 L 599.32 414.02 L 593.27 410.87 L 587.22 407.73 L 581.17 404.58 L 575.13 401.43 L 569.08 398.29 L 563.03 395.14 L 556.89 392.14 L 550.76 389.15 L 544.62 386.15 L 537.80 383.36 L 530.98 380.58 L 524.16 377.79 L 517.05 375.75 L 509.94 373.70 L 502.83 371.66 L 496.84 370.94 L 490.85 370.22 L 484.86 369.50 L 478.87 368.78 L 471.07 368.19 L 463.27 367.59 L 455.47 367.00 L 447.69 367.37 L 439.91 367.74 L 432.13 368.11 L 425.92 368.95 L 419.72 369.79 L 413.51 370.63 L 407.30 371.47 L 401.22 373.13 L 395.13 374.80 L 389.05 376.46 L 382.97 378.12 L 376.23 380.37 L 369.49 382.62 L 362.75 384.87 L 356.00 387.12 L 349.26 389.37 L 342.52 391.62 L 335.78 393.87 L 328.71 396.86 L 321.65 399.86 L 314.58 402.85 L 308.21 407.12 L 301.85 411.38 L 295.48 415.65 L 290.07 420.83 L 284.67 426.00 L 279.26 431.18 L 274.75 437.52 L 270.24 443.85 L 265.73 450.19 L 261.34 456.17 L 257.28 462.73 L 253.95 468.32 L 251.39 472.82 L 248.99 477.89 L 246.48 483.49 L 243.58 490.08 L 240.43 497.94 L 238.15 504.71 L 235.84 511.17 L 234.14 518.24 L 233.32 523.73 L 232.56 529.68 L 232.61 536.25 L 233.03 542.43 L 232.91 548.53 L 232.98 554.72 L 233.49 560.58 L 235.71 566.38 L 237.93 572.18 L 242.44 577.90 L 246.95 583.62 L 253.36 588.38 L 259.77 593.13 L 265.22 594.89 L 270.66 596.64 L 276.11 598.40 L 283.49 600.26 L 290.86 602.11 L 298.24 603.97 L 305.62 605.82 L 313.00 607.68 L 320.37 609.53 L 327.75 611.39 L 335.19 613.62 L 342.63 615.85 L 350.06 618.08 L 357.50 620.32 L 364.94 622.55 L 372.38 624.78 L 379.81 627.01 L 387.25 629.24 L 394.69 631.47 L 402.13 633.70 L 409.57 635.94 L 417.00 638.17 L 424.44 640.40 L 431.88 642.63 L 439.32 644.86 L 446.75 647.09 L 454.19 649.33 L 461.63 651.56 L 469.07 653.79 L 476.51 656.02 L 483.94 658.25 L 491.38 660.48 L 498.82 662.71 L 506.26 664.95 L 513.69 667.18 L 521.13 669.41 L 528.32 671.26 L 535.59 672.31 L 542.50 672.56 L 549.40 671.22 L 556.38 668.66 L 561.88 664.88 L 567.19 659.61 L 571.18 653.77 L 574.07 646.60 L 575.25 639.23 L 575.82 631.31 L 574.74 623.43 L 573.29 616.35 L 571.22 610.54 L 568.79 605.51 L 566.03 600.81 L 562.56 596.14 L 558.78 591.78 L 554.99 587.43 L 550.42 583.48 L 545.86 579.54 L 541.29 575.59 L 535.83 570.07 L 530.37 564.56 L 524.90 559.04 L 519.44 553.53 L 513.98 548.01 L 508.71 543.63 L 503.43 539.26 L 498.03 535.33 L 491.76 531.98 L 485.36 529.09 L 478.91 526.80 L 472.18 524.58 L 465.40 522.98 L 458.65 521.92 L 451.38 521.52 L 444.01 521.46 L 436.98 522.16 L 429.68 523.71 L 422.46 525.61 L 415.50 527.84 L 408.30 530.71 L 401.36 533.92 L 394.43 537.13 L 387.49 540.33 L 380.55 543.54 L 373.61 546.75 L 367.37 549.04 L 361.13 551.34 L 354.89 553.63 L 349.57 554.88 L 344.25 556.14 L 338.38 557.09 L 331.81 557.28 L 324.81 557.17 L 317.64 556.04 L 311.34 553.72 L 304.95 550.76 L 299.33 546.20 L 293.91 541.20 L 290.04 534.94 L 287.51 528.25 L 286.40 521.13 L 286.75 513.24 L 288.65 505.88 L 290.77 500.48 L 293.52 495.55 L 296.87 490.93 L 300.70 486.75 L 305.12 482.86 L 309.82 479.10 L 314.76 476.14 L 319.97 473.29 L 325.18 470.45 L 330.92 468.45 L 336.67 466.46 L 342.41 464.46 L 349.83 462.42 L 357.24 460.39 L 364.66 458.35 L 372.07 456.32 L 379.49 454.28 L 387.05 451.92 L 394.61 449.56 L 402.17 447.21 L 409.74 444.85 L 417.30 442.49 L 424.86 440.13 L 432.42 437.78 L 439.98 435.42 L 447.01 433.67 L 454.04 431.91 L 461.07 430.16 L 468.42 429.25 L 475.76 428.35 L 483.39 427.68 L 490.73 427.54 L 498.62 427.81 L 506.09 428.54 L 513.00 429.96 L 520.57 432.15 L 528.04 434.62 L 535.24 437.57 L 542.44 440.52 L 549.64 443.47 L 556.73 446.73 L 563.81 449.98 L 570.90 453.24 L 577.78 456.92 L 584.66 460.59 L 591.54 464.27 L 598.08 468.22 L 604.62 472.17 L 611.17 476.11 L 617.71 480.06 L 623.65 484.08 L 629.32 488.24 L 634.10 493.13 L 638.23 497.82 L 641.35 504.47 L 642.29 511.55 L 641.53 518.20 L 639.73 523.95 L 637.40 529.13 L 634.34 534.24 L 631.09 538.67 L 627.84 543.10 L 624.97 547.60 L 622.07 552.56 L 619.56 557.60 L 617.98 562.91 L 616.78 568.53 L 616.52 574.44 L 616.61 580.23 L 617.51 586.51 L 618.77 592.69 L 620.68 599.13 L 622.68 604.82 L 625.33 610.77 L 627.71 616.87 L 629.57 622.76 L 631.15 628.80 L 632.38 634.90 L 632.61 640.90 L 632.50 646.97 L 632.06 652.79 L 631.13 659.25 L 629.19 664.87 L 627.11 670.53 L 623.72 676.20 L 620.06 681.40 L 615.80 687.02 L 610.69 691.90 L 605.38 696.49 L 600.01 700.72 L 594.24 704.52 L 587.99 707.17 L 580.92 709.60 L 573.75 711.25 L 566.37 712.42 L 559.07 713.33 L 551.14 713.16 L 544.39 713.20 L 537.16 712.69 L 530.05 712.00 L 522.76 711.18 L 515.13 710.33 L 507.72 709.51 L 499.92 708.93 L 492.40 708.63 L 484.44 708.34 L 476.48 708.25 L 468.52 708.15 L 460.56 708.06 L 452.61 707.97 L 444.65 707.88 L 436.69 707.78 L 428.73 707.69 L 420.77 707.60 Z";
+
+// ───────────────────────────────────────────────────────────────
+// Estado inicial de pontos E/S/A (do SeedBrasilia.faixas)
+// ───────────────────────────────────────────────────────────────
+const TRECHOS_INICIAIS = [
+  {
+    ordem: 0, nome: "CURVA 01", apelido: "lenta · ápice tardio",
+    pontos: { entrada: [{x:195,y:690}], saida: [{x:165,y:615}], apice: [{x:145,y:645}] }
+  },
+  {
+    ordem: 2, nome: "MERGULHO DA BRUXA", apelido: "rápida · ápice neutro",
+    pontos: { entrada: [{x:220,y:380}], saida: [{x:290,y:200}], apice: [{x:315,y:305}] }
+  },
+  {
+    ordem: 3, nome: "CURVA 2", apelido: "média · ápice tardio",
+    pontos: { entrada: [{x:305,y:150}], saida: [{x:390,y:175}], apice: [{x:290,y:85}] }
+  },
+  {
+    ordem: 4, nome: "CURVA DA JUNÇÃO", apelido: "média · ápice neutro",
+    pontos: { entrada: [{x:555,y:313}], saida: [{x:660,y:340}], apice: [{x:600,y:330}] }
+  },
+  {
+    ordem: 6, nome: "CURVA DA BRUXA", apelido: "lenta · ápice tardio",
+    pontos: { entrada: [{x:250,y:585}], saida: [{x:245,y:555}], apice: [{x:225,y:570}] }
+  },
+  {
+    ordem: 8, nome: "CURVA DO PLACAR", apelido: "média · ápice neutro",
+    pontos: { entrada: [{x:295,y:488}], saida: [{x:380,y:455}], apice: [{x:335,y:475}] }
+  },
+  {
+    ordem: 9, nome: "CURVA S", apelido: "rápida · ápice duplo",
+    pontos: { entrada: [{x:595,y:470}], saida: [{x:640,y:565}], apice: [{x:630,y:510},{x:620,y:540}] }
+  },
+  {
+    ordem: 10, nome: "CURVA DA VITÓRIA", apelido: "média · ápice tardio",
+    pontos: { entrada: [{x:632,y:620}], saida: [{x:615,y:685}], apice: [{x:645,y:650}] }
+  },
+];
+
+// ───────────────────────────────────────────────────────────────
+// localStorage
+// ───────────────────────────────────────────────────────────────
+const STORAGE_KEY = "p1fast-marcacao-brasilia-v1";
+
+function carregarLocal() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (!s || !Array.isArray(s.trechos)) return null;
+    return s;
+  } catch (_) { return null; }
+}
+
+function salvarLocal(estado) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(estado)); } catch (_) {}
+}
+
+let estado;
+const carregado = carregarLocal();
+if (carregado && carregado.trechos.length === TRECHOS_INICIAIS.length) {
+  estado = carregado;
+} else {
+  estado = {
+    trechos: JSON.parse(JSON.stringify(TRECHOS_INICIAIS)),
+    trechoAtivoOrdem: 0,
+    edicoes: 0,
+  };
+}
+
+// ───────────────────────────────────────────────────────────────
+// Setup do mapa (path)
+// ───────────────────────────────────────────────────────────────
+document.getElementById("path-pista-bg").setAttribute("d", PATH_SVG);
+document.getElementById("path-pista").setAttribute("d", PATH_SVG);
+
+// ───────────────────────────────────────────────────────────────
+// viewBox / zoom / pan
+// ───────────────────────────────────────────────────────────────
+const VIEW_BASE = { x: 0, y: 0, w: 823, h: 799 };
+let view = { ...VIEW_BASE };
+const svg = document.getElementById("mapa");
+const stage = document.getElementById("stage");
+
+function aplicarViewBox() {
+  svg.setAttribute("viewBox", `${view.x} ${view.y} ${view.w} ${view.h}`);
+}
+function clientToSvg(cx, cy) {
+  const pt = svg.createSVGPoint(); pt.x = cx; pt.y = cy;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+document.getElementById("btn-zoom-in").addEventListener("click", () => {
+  const cx = view.x + view.w/2, cy = view.y + view.h/2;
+  view.w /= 1.4; view.h /= 1.4;
+  view.x = cx - view.w/2; view.y = cy - view.h/2;
+  aplicarViewBox(); renderPontos();
+});
+document.getElementById("btn-zoom-out").addEventListener("click", () => {
+  const cx = view.x + view.w/2, cy = view.y + view.h/2;
+  view.w *= 1.4; view.h *= 1.4;
+  view.x = cx - view.w/2; view.y = cy - view.h/2;
+  aplicarViewBox(); renderPontos();
+});
+document.getElementById("btn-zoom-100").addEventListener("click", () => {
+  view = { ...VIEW_BASE }; aplicarViewBox(); renderPontos();
+});
+stage.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const svgP = clientToSvg(e.clientX, e.clientY);
+  const fator = e.deltaY > 0 ? 1.15 : 1/1.15;
+  const nw = view.w * fator, nh = view.h * fator;
+  if (nw < 30 || nw > 4000) return;
+  view.x = svgP.x - (svgP.x - view.x) * (nw/view.w);
+  view.y = svgP.y - (svgP.y - view.y) * (nh/view.h);
+  view.w = nw; view.h = nh;
+  aplicarViewBox(); renderPontos();
+}, { passive: false });
+
+// pan
+let panning = null;
+svg.addEventListener("pointerdown", (e) => {
+  if (e.target.classList.contains("ponto")) return;
+  const svgP = clientToSvg(e.clientX, e.clientY);
+  panning = { startX: svgP.x, startY: svgP.y, viewX: view.x, viewY: view.y };
+  stage.classList.add("dragging-pan");
+  svg.setPointerCapture(e.pointerId);
+});
+svg.addEventListener("pointermove", (e) => {
+  if (!panning) return;
+  const svgP = clientToSvg(e.clientX, e.clientY);
+  view.x = panning.viewX - (svgP.x - panning.startX);
+  view.y = panning.viewY - (svgP.y - panning.startY);
+  aplicarViewBox();
+});
+svg.addEventListener("pointerup", () => {
+  if (panning) { panning = null; stage.classList.remove("dragging-pan"); }
+});
+
+// ───────────────────────────────────────────────────────────────
+// Render pontos no mapa
+// ───────────────────────────────────────────────────────────────
+const groupPontos = document.getElementById("g-pontos");
+const groupLabels = document.getElementById("g-labels");
+
+function corTipo(tipo) {
+  if (tipo === "entrada") return "#4aa3ff";
+  if (tipo === "saida") return "#4ade80";
+  return "#ffb547";
+}
+function letraTipo(tipo) {
+  if (tipo === "entrada") return "E";
+  if (tipo === "saida") return "S";
+  return "A";
+}
+function raioPonto(ativo) {
+  const fator = view.w / VIEW_BASE.w;
+  if (ativo) return Math.max(6, 11 * fator);
+  return Math.max(3, 5 * fator);
+}
+function tamanhoFonte(ativo) {
+  const fator = view.w / VIEW_BASE.w;
+  if (ativo) return Math.max(8, 12 * fator);
+  return 0;
+}
+
+function renderPontos() {
+  while (groupPontos.firstChild) groupPontos.removeChild(groupPontos.firstChild);
+  while (groupLabels.firstChild) groupLabels.removeChild(groupLabels.firstChild);
+
+  const xmlns = "http://www.w3.org/2000/svg";
+  let totalPontos = 0;
+
+  for (const trecho of estado.trechos) {
+    const ativo = trecho.ordem === estado.trechoAtivoOrdem;
+    for (const tipo of ["entrada","saida","apice"]) {
+      const arr = trecho.pontos[tipo] || [];
+      for (let i = 0; i < arr.length; i++) {
+        const p = arr[i];
+        totalPontos++;
+        const c = document.createElementNS(xmlns, "circle");
+        c.setAttribute("cx", p.x);
+        c.setAttribute("cy", p.y);
+        c.setAttribute("r", raioPonto(ativo));
+        c.setAttribute("fill", corTipo(tipo));
+        c.setAttribute("class", "ponto" + (ativo ? "" : " inativo"));
+        c.dataset.ordem = trecho.ordem;
+        c.dataset.tipo = tipo;
+        c.dataset.indice = i;
+        groupPontos.appendChild(c);
+
+        if (ativo) {
+          const t = document.createElementNS(xmlns, "text");
+          t.setAttribute("x", p.x);
+          t.setAttribute("y", p.y + tamanhoFonte(ativo)/3);
+          t.setAttribute("font-size", tamanhoFonte(ativo));
+          t.setAttribute("class", "ponto-label");
+          t.textContent = letraTipo(tipo);
+          groupLabels.appendChild(t);
+        }
+      }
+    }
+  }
+
+  document.getElementById("info-pontos").textContent = totalPontos;
+}
+
+// ───────────────────────────────────────────────────────────────
+// Drag de pontos (só do trecho ativo)
+// ───────────────────────────────────────────────────────────────
+let dragging = null;
+groupPontos.addEventListener("pointerdown", (e) => {
+  if (!e.target.classList.contains("ponto")) return;
+  if (e.target.classList.contains("inativo")) return;
+  const ordem = parseInt(e.target.dataset.ordem, 10);
+  const tipo = e.target.dataset.tipo;
+  const idx = parseInt(e.target.dataset.indice, 10);
+  const trecho = estado.trechos.find(t => t.ordem === ordem);
+  if (!trecho) return;
+  const svgP = clientToSvg(e.clientX, e.clientY);
+  const ponto = trecho.pontos[tipo][idx];
+  dragging = {
+    ordem, tipo, idx,
+    offX: svgP.x - ponto.x, offY: svgP.y - ponto.y,
+    el: e.target
+  };
+  e.target.classList.add("arrastando");
+  stage.classList.add("dragging-pt");
+  svg.setPointerCapture(e.pointerId);
+  e.stopPropagation();
+});
+svg.addEventListener("pointermove", (e) => {
+  if (!dragging) return;
+  const svgP = clientToSvg(e.clientX, e.clientY);
+  const trecho = estado.trechos.find(t => t.ordem === dragging.ordem);
+  if (!trecho) return;
+  trecho.pontos[dragging.tipo][dragging.idx] = {
+    x: Math.round((svgP.x - dragging.offX) * 100) / 100,
+    y: Math.round((svgP.y - dragging.offY) * 100) / 100
+  };
+  dragging.el.setAttribute("cx", trecho.pontos[dragging.tipo][dragging.idx].x);
+  dragging.el.setAttribute("cy", trecho.pontos[dragging.tipo][dragging.idx].y);
+  // atualiza label
+  renderLabelsAtivos();
+  atualizarPainel();
+});
+svg.addEventListener("pointerup", () => {
+  if (dragging) {
+    estado.edicoes++;
+    document.getElementById("info-edits").textContent = estado.edicoes;
+    salvarLocal(estado);
+    dragging.el.classList.remove("arrastando");
+    dragging = null;
+    stage.classList.remove("dragging-pt");
+  }
+});
+
+function renderLabelsAtivos() {
+  while (groupLabels.firstChild) groupLabels.removeChild(groupLabels.firstChild);
+  const xmlns = "http://www.w3.org/2000/svg";
+  const trecho = estado.trechos.find(t => t.ordem === estado.trechoAtivoOrdem);
+  if (!trecho) return;
+  for (const tipo of ["entrada","saida","apice"]) {
+    const arr = trecho.pontos[tipo] || [];
+    for (const p of arr) {
+      const t = document.createElementNS(xmlns, "text");
+      t.setAttribute("x", p.x);
+      t.setAttribute("y", p.y + tamanhoFonte(true)/3);
+      t.setAttribute("font-size", tamanhoFonte(true));
+      t.setAttribute("class", "ponto-label");
+      t.textContent = letraTipo(tipo);
+      groupLabels.appendChild(t);
+    }
+  }
+}
+
+// ───────────────────────────────────────────────────────────────
+// Painel: lista de trechos + editor
+// ───────────────────────────────────────────────────────────────
+const lista = document.getElementById("lista-trechos");
+
+function atualizarPainel() {
+  while (lista.firstChild) lista.removeChild(lista.firstChild);
+  for (const trecho of estado.trechos) {
+    const ativo = trecho.ordem === estado.trechoAtivoOrdem;
+    const item = document.createElement("div");
+    item.className = "trecho-item" + (ativo ? " ativo" : "");
+    item.innerHTML = `
+      <div class="trecho-nome">${trecho.nome}</div>
+      <div class="trecho-meta">
+        <span>${trecho.apelido}</span>
+      </div>
+      <div class="trecho-meta">
+        <span class="badge"><span class="dot dot-e"></span> ${trecho.pontos.entrada.length} E</span>
+        <span class="badge"><span class="dot dot-s"></span> ${trecho.pontos.saida.length} S</span>
+        <span class="badge"><span class="dot dot-a"></span> ${trecho.pontos.apice.length} A</span>
+      </div>
+    `;
+    item.addEventListener("click", () => {
+      estado.trechoAtivoOrdem = trecho.ordem;
+      salvarLocal(estado);
+      atualizarPainel();
+      renderPontos();
+    });
+    lista.appendChild(item);
+
+    if (ativo) {
+      const editor = document.createElement("div");
+      editor.className = "editor-trecho";
+      editor.appendChild(renderEditorTrecho(trecho));
+      lista.appendChild(editor);
+    }
+  }
+}
+
+function renderEditorTrecho(trecho) {
+  const wrap = document.createDocumentFragment();
+  const titulo = document.createElement("div");
+  titulo.className = "titulo";
+  titulo.textContent = "Pontos deste trecho — arraste no mapa ou edite aqui";
+  wrap.appendChild(titulo);
+
+  for (const tipo of ["entrada","saida","apice"]) {
+    const grupo = document.createElement("div");
+    grupo.className = "tipo-grupo";
+    const cab = document.createElement("div");
+    cab.className = "tipo-cab";
+    cab.innerHTML = `
+      <span><span class="dot dot-${tipo === "entrada" ? "e" : tipo === "saida" ? "s" : "a"}"></span>
+      ${tipo === "entrada" ? "Entradas (E)" : tipo === "saida" ? "Saídas (S)" : "Ápices (A)"}</span>
+    `;
+    const add = document.createElement("button");
+    add.className = "add-btn";
+    add.textContent = "+ adicionar";
+    add.addEventListener("click", () => {
+      const cx = view.x + view.w/2, cy = view.y + view.h/2;
+      trecho.pontos[tipo].push({ x: Math.round(cx*100)/100, y: Math.round(cy*100)/100 });
+      estado.edicoes++;
+      salvarLocal(estado);
+      atualizarPainel();
+      renderPontos();
+      document.getElementById("info-edits").textContent = estado.edicoes;
+    });
+    cab.appendChild(add);
+    grupo.appendChild(cab);
+
+    const pontosLista = document.createElement("div");
+    pontosLista.className = "pontos-lista";
+    const arr = trecho.pontos[tipo] || [];
+    if (arr.length === 0) {
+      const v = document.createElement("div");
+      v.className = "vazio";
+      v.textContent = "Nenhum ponto cadastrado neste tipo.";
+      pontosLista.appendChild(v);
+    } else {
+      arr.forEach((p, idx) => {
+        const item = document.createElement("div");
+        item.className = "ponto-item";
+        item.innerHTML = `
+          <span>${letraTipo(tipo)}${arr.length > 1 ? " #" + (idx+1) : ""}</span>
+          <span class="coord">x: ${p.x.toFixed(0)} · y: ${p.y.toFixed(0)}</span>
+        `;
+        const rem = document.createElement("button");
+        rem.className = "remover";
+        rem.textContent = "×";
+        rem.title = "Remover este ponto";
+        rem.addEventListener("click", () => {
+          if (!confirm(`Remover ${letraTipo(tipo)}${arr.length > 1 ? " #" + (idx+1) : ""} desta curva?`)) return;
+          trecho.pontos[tipo].splice(idx, 1);
+          estado.edicoes++;
+          salvarLocal(estado);
+          atualizarPainel();
+          renderPontos();
+          document.getElementById("info-edits").textContent = estado.edicoes;
+        });
+        item.appendChild(rem);
+        pontosLista.appendChild(item);
+      });
+    }
+    grupo.appendChild(pontosLista);
+    wrap.appendChild(grupo);
+  }
+
+  return wrap;
+}
+
+// ───────────────────────────────────────────────────────────────
+// Resetar / Exportar
+// ───────────────────────────────────────────────────────────────
+document.getElementById("btn-resetar").addEventListener("click", () => {
+  if (!confirm(`Resetar vai jogar fora ${estado.edicoes} alteração(ões) e voltar para os pontos originais. Continuar?`)) return;
+  estado = {
+    trechos: JSON.parse(JSON.stringify(TRECHOS_INICIAIS)),
+    trechoAtivoOrdem: 0,
+    edicoes: 0,
+  };
+  salvarLocal(estado);
+  view = { ...VIEW_BASE };
+  aplicarViewBox();
+  atualizarPainel();
+  renderPontos();
+  document.getElementById("info-edits").textContent = 0;
+});
+
+const modal = document.getElementById("modal-export");
+const exportText = document.getElementById("export-text");
+document.getElementById("btn-exportar").addEventListener("click", () => {
+  const out = estado.trechos.map(t => ({
+    ordem: t.ordem,
+    nome: t.nome,
+    entradas: t.pontos.entrada.map(p => ({ x: p.x, y: p.y })),
+    saidas: t.pontos.saida.map(p => ({ x: p.x, y: p.y })),
+    apices: t.pontos.apice.map(p => ({ x: p.x, y: p.y })),
+  }));
+  exportText.value = JSON.stringify(out, null, 2);
+  modal.classList.add("aberto");
+});
+document.getElementById("btn-fechar-modal").addEventListener("click", () => modal.classList.remove("aberto"));
+document.getElementById("btn-copiar").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(exportText.value);
+    const m = document.getElementById("copiado-msg");
+    m.style.display = "inline";
+    setTimeout(() => m.style.display = "none", 1800);
+  } catch (_) {
+    exportText.select(); document.execCommand("copy");
+  }
+});
+
+// ───────────────────────────────────────────────────────────────
+// Boot
+// ───────────────────────────────────────────────────────────────
+aplicarViewBox();
+atualizarPainel();
+renderPontos();
+document.getElementById("info-edits").textContent = estado.edicoes;
+</script>
+</body>
+</html>

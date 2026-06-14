@@ -210,9 +210,21 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 
 ---
 
-## ADR-024 — (reservada para MS-11 vídeo ao vivo MVP, 2026-05-11)
+## ADR-024 — Vídeo ao vivo MVP: câmera DJI no notebook + Daily.co (atualizada 2026-06-09)
 
-Reservada pra documentar a decisão arquitetural do MS-11 (stream MVP = câmera frontal iPhone + Daily.co; Insta360 fora; Cloudflare/LiveKit fora). Registro formal acontece quando MS-11 entrar em execução. Memória de retomada cobre o conteúdo até lá.
+**Status:** decisão fechada, validada em campo 2026-06-09 (teste de aparelhos: "a imagem apareceu e o gps também").
+
+**Histórico:** reservada em 2026-05-11 com stream MVP = câmera frontal do iPhone + Daily.co (Insta360 fora; Cloudflare/LiveKit fora). Em 2026-06-09, com a chegada do hardware, o Flávio trocou a fonte da imagem: **a câmera deixa de ser o iPhone e passa a ser a DJI Osmo Action 6 ligada no notebook Windows** (modo webcam USB/UVC, 1080p).
+
+**Decisão vigente:**
+- Transporte: **Daily.co** (inalterado). Qualidade: **1080p** (inalterado).
+- Fonte da imagem: **DJI Osmo Action 6 → cabo USB → notebook Windows da pista** (a DJI vira webcam padrão; não existe API da DJI pra PC comandar gravação interna — quem captura é o notebook).
+- Transmissor: página web no navegador do notebook (`web/teste-aparelhos/` · publicada no endereço de teste p1tv.vercel.app), junto com o GPS RaceBox.
+- Quem assiste: app iOS P1 Fast (tela ao vivo) e/ou página `/painel` no celular.
+- Subida pela internet da pista (**Starlink**).
+- Insta360, Cloudflare e LiveKit continuam fora.
+
+**Consequência:** o iPhone sai do caminho do vídeo. Captura de telemetria iOS (ADR-018) não muda.
 
 ---
 

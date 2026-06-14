@@ -1,57 +1,88 @@
 # P1 Fast — STATUS
 
-**Data deste checkpoint:** 2026-05-13 (sessão MS-16 — Command Box Engenharia entregue ponta-a-ponta em domain layer)
-**Estado:** Plano `docs/PLANO_FASE_1.md` em execução. **MS-2 + MS-3 + MS-16.1..16.5a fechados em main.** Mini-sprint novo **MS-16 (Command Box Engenharia)** entregue em 6 PRs (#194..#199): auditoria + 3 camadas (Engine Core + Calibration Engine + Senior Advisor IA) + Tab Engenharia domain (gating D17/D18 fechadas). **UI SwiftUI fica pra MS-16.5b** quando Xcode pegar (camada domain pura toda em main, smoke verde). Detalhes em `docs/COMMAND_BOX_ENGENHARIA.md` + `docs/SESSION_HANDOFF_2026-05-13_pre-clear.md`.
+**Data deste checkpoint:** 2026-06-08 (auditoria profunda — ver `.claude-exec/ultima-tarefa.md`)
+
+## Estado real hoje (verificado, não inferido)
+
+- **Versão oficial (origin/main, topo `deb46bed` 2026-06-03)** já tem: Hub do carro, Estoque
+  (peças/locais/±1), Manutenção reformada (Checagem≠Troca, catálogo Celta), cadastro de peça
+  (leitor de código, 5 fotos, OCR de etiqueta, preço Mercado Livre, Editar/Apagar), navegação de
+  menu fixo (NavRouter), e **sincronização de Estoque/Manutenção com a nuvem**.
+- **Núcleo testável Swift: 545 testes verdes / 0 falhas** (`swift run p1fast-smoke`, 2026-06-08).
+- **App iOS empacota: BUILD SUCCEEDED** (só avisos, nenhum erro).
+- **Estoque já subiu pra nuvem de ponta a ponta**: 2 peças + 3 locais + 5 movimentações
+  confirmadas por consulta direta. Schema da nuvem alinhado (drift dos 197 dead-letters resolvido).
+- **Painel web do cockpit consertado em 2026-06-08** (3 arquivos tinham junção mal resolvida;
+  resolvidos pelo modelo do Flávio: entrada/freio-metros+vel/ápice-bolinha; 4 testes verdes).
+  Em desenvolvimento — NÃO no ar (precisa `MIGRAR PARA PRODUÇÃO` se for ligar o p1t4000.vercel.app).
+
+## Correções de rumo desta auditoria (este STATUS estava 10 dias atrasado e contradizia o PLANO)
+
+- **MS-4 (StintPlan iOS): FECHADO em 2026-05-11** (PRs #176–#181, extensão da tabela `sessoes`) —
+  a tabela de mini-sprints mais abaixo dizia "não feito"; está ERRADA, ver `PLANO_FASE_1.md`.
+- **MS-16 (Command Box Engenharia): ENTREGUE 2026-05-13** (mockups Lambda/PAce/Vista Engenheiro) —
+  estava invisível neste STATUS.
+- **Estoque/Manutenção** não constam no `PLANO_FASE_1.md` como mini-sprint formal, mas foram
+  entregues e estão na oficial. Pendente: o Flávio decidir se viram MS formal.
+
+## Pendências de validação no iPhone (aguardam o Flávio)
+
+1. Botão "Cancelar" do cadastro do carro volta pro hub (conserto NavRouter de 03/06).
+2. Registrar uma manutenção com app aberto/desbloqueado → confirmar que sobe pra nuvem
+   (hoje `manutencoes` tem 0 linhas; o envio só roda com o app em primeiro plano).
+3. Validar no aparelho: OCR de etiqueta, preço Mercado Livre, 5 fotos, Editar/Apagar peça.
+
+## Trabalho órfão (ambientes isolados) — retrato honesto 2026-06-08
+
+A maior parte do que parecia "preso" JÁ está na oficial ou é histórico: Vista Piloto v04 e
+Mapa Brasília definitivo **já estão na oficial**; grande volume é card de pergunta antigo (lixo).
+**Único item novo, de valor e baixo risco: `mockup-command-box-vista-engenheiro.html`** (Vista
+Engenheiro do Command Box, aprovado 13/05, nunca entrou). Telas .swift soltas (CockpitOrientationTest,
+StintRodando, edições de Stint) divergem da estrutura atual da oficial → alto risco, avaliar 1 a 1.
+
+---
+
+### (histórico) Checkpoint 2026-05-24 — simulador T4000
+
+**Estado (à época):** Plano `docs/PLANO_FASE_1.md` em execução. **MS-2 + MS-3 fechados em main.** Virada arquitetural 2026-05-09: cockpit-display do piloto migra de SwiftUI iPhone pra **web app no notebook Windows 10,5"**, T4000 deixa de ser BLE iOS e vira USB/CAN no Windows, transporte entre as duas plataformas via Supabase Realtime. Detalhes em **ADR-023**. PRs totais até **#120** mergeados, **404 smoke tests verdes**.
+
+## Sessão 2026-05-24 — simulador T4000 + leitor ao vivo + demo + cadastro carros
+
+Flávio não tem carro pra plugar agora. Pra não travar o projeto, montei o pipeline T4000 inteiro com simulador no lugar do hardware real. Quando ele finalmente plugar a central, troca o simulador pela porta serial real (1 dia de trabalho).
+
+**Entregue nesta sessão (branch `wip/20260519-090857`):**
+
+- **MS-9.3 (parte sim)** — `windows/cockpit/P1Fast.Cockpit.Domain/T4000Simulator.cs` — gera ciclos de 5 pacotes (40 bytes) com checksum válido. 10 cenários: Idle, Cruise, Accelerating, NearRedline, Redline, Overrev, OverheatWater, LowOilPressure, EcuError, PdfFixture (exemplo exato do manual 0x91). 11 testes (SIM-01..08 + Theory de 10 cenários × 2).
+- **MS-9.3 (parte reader)** — `windows/cockpit/P1Fast.Cockpit.Domain/T4000SerialReader.cs` — leitor que pega bytes brutos (ISerialBytePort) e alimenta T4000Provider pacote a pacote. InMemorySerialBytePort pra testes. 6 testes (RDR-01..06).
+- **MS-9.5** — `windows/cockpit/P1Fast.Cockpit.Domain/T4000RealtimePublisher.cs` — agrega samples a 10Hz e publica num canal Realtime via IRealtimeClient (fake injetável). 7 testes (PUB-01..07).
+- **Demo fim-a-fim** — `windows/cockpit/P1Fast.Cockpit.T4000LiveDemo/` — programa de console que pluga simulador → leitor → provider → bridge → CockpitState + publisher. Cicla por todos os cenários a cada 3s. Validado rodando no Docker .NET 8: cenários trocam, painel reage (shift=lit(3) em Accelerating), throttle Realtime correto (~10Hz publicado, ~10Hz descartado por ciclo a 20Hz).
+- **MS-9.6** — `supabase/migrations/0014_carros_gears_dyno.sql` — 4 tabelas: carros (com redline_rpm + shift_lit_pct + shift_fire_pct), gear_ratios (1ª..8ª por carro), dyno_curve (rpm × torque × potência), gear_signatures (assinaturas observadas em campo). Soft delete + updated_at trigger. NÃO aplicada em prod — Flávio aplica quando autorizar.
+- **CI** — `.github/workflows/windows-cockpit.yml` ganhou job `t4000-live-demo-publish` (publish single-file win-x64 self-contained, artifact 14d). T4000LiveDemo adicionado ao `P1Fast.Cockpit.sln` pra job `domain-test` validar build em todo PR.
+
+**Totais:**
+- 3 arquivos novos em P1Fast.Cockpit.Domain (Simulator + SerialReader + RealtimePublisher).
+- 3 arquivos de teste novos (35 testes novos: 11 SIM + 6 RDR + 7 PUB + Theories).
+- 1 projeto novo P1Fast.Cockpit.T4000LiveDemo (Program.cs + .csproj + README.md).
+- 1 migration nova (0014_carros_gears_dyno.sql).
+- 1 job CI novo.
+- **129 testes verdes** (94 pré-existentes + 35 novos).
+
+**MS-9 status atualizado:**
+- 9.0 (decisão container Windows) — fechada por ADR-023 amendment 4 (C# .NET 8 nativo).
+- 9.1 (captura real do barramento) — **ainda bloqueada — depende do carro**.
+- 9.2 (T4000PacketParser C#) — ✅ pronto desde sessão 2026-05-09.
+- 9.3 (T4000Reader) — ✅ pronto via T4000SerialReader + InMemorySerialBytePort. Falta só a implementação real de ISerialBytePort em cima de System.IO.Ports.SerialPort — trivial, 1 dia quando o carro plugar.
+- 9.4 (T4000Provider) — ✅ pronto desde sessão 2026-05-09.
+- 9.5 (Realtime publisher) — ✅ pronto via T4000RealtimePublisher + IRealtimeClient. Falta só implementação real Supabase — 1-2 dias.
+- 9.6 (cadastro carros/marchas/dyno) — ✅ schema pronto, falta UI no hub iOS.
+- 9.7 (validação em bancada) — bloqueada na 9.1.
+
+**Próximo passo concreto:** rodar o demo no notebook Windows pra Flávio ver visualmente. Quando ele aprovar, próximo sprint pluga IRealtimeClient real (Supabase) + ISerialBytePort real (System.IO.Ports).
+
+---
 
 > **Se você é Claude abrindo esta sessão pela primeira vez:**
-> Leia este arquivo primeiro, depois `docs/PLANO_FASE_1.md` (doc mestre), depois `docs/SESSION_HANDOFF_2026-05-13_pre-clear.md` se vier do "voltei" do Flávio, depois `~/.claude/projects/-Users-imac/memory/MEMORY.md` (memória global) + `~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/MEMORY.md` (memória do projeto).
->
-> **Coração da fonte de dados:** `docs/FONTE_DADOS_AO_VIVO.md` — ponte T3000 → Supabase Realtime, validada em campo 2026-05-26. Painel em `p1t4000.vercel.app`. NÃO substituir sem decisão explícita.
-
----
-
-## Sessão 2026-05-26 — fonte de dados ao vivo entregue
-
-Painel T3000 do Bubi agora **espelha cada amostra em tempo real num canal de broadcast da nuvem (Supabase Realtime)**. Coração da fonte de dados de pilotagem do projeto. Validado em campo: 2.901 amostras com motor parado/ligado, sensores conferidos contra software oficial INJEPRO T LINE v3.3.5 via foto.
-
-- PR #216 incorporada à versão oficial.
-- Conserto: sonda lambda agora lê banda larga (WB) em vez de estreita (NB).
-- 5 sensores verificados (RPM, TPS, bateria, água, lambda WB). MAP confere com oficial (-0,02 bar — pendência mecânica, não software).
-- Detalhes técnicos completos em `docs/FONTE_DADOS_AO_VIVO.md`.
-- Amostras brutas da sessão arquivadas em `docs/research/t3000-sessao-2026-05-26/`.
-
----
-
-## Sessão 2026-05-13 — MS-16 Command Box Engenharia (auditoria + Camadas 1/2/3 + UI domain)
-
-`swift run p1fast-smoke` em CI macos-14 verde em todos os PRs. Tab Engenharia domain pronto pra Views SwiftUI consumirem.
-
-| # | PR | Sub-sprint | Conteúdo |
-|---|---|---|---|
-| 194 | docs | **MS-16.0** | `docs/COMMAND_BOX_ENGENHARIA.md` (~970 linhas) — auditoria profunda do sistema existente + arquitetura aprovada em 3 camadas. Refinada por 4 clarificações do Flávio. 7 decisões fechadas (D1, D2+D3, D6, D14, D17, D18). Bloco MS-16 em `PLANO_FASE_1.md` §6. |
-| 195 | feat | **MS-16.1** | `TelemetryTimebase.swift` (porte 1:1 de `timebase.js`) — sincronização multi-fonte, freshness, LATE/MISSING. Smokes TB-01..12 (Swift) + TPB-01..12 (Node parity). Resolve gap G1. |
-| 196 | feat | **MS-16.2** | `VehicleContextAggregator.swift` — modelo contextual evolutivo (lap window + stint history + thermal phase + Vmin trend). Helpers `waterTempDriftPerMinute()` + `vminTrend()`. Smokes VCA-01..10. Resolve gap G2. Fix lateral: `public init` em `DetectorLapEvent` + `DetectorSegmentStartEvent`. |
-| 197 | feat | **MS-16.3** | `CalibrationEngine` + 3 rules MVP (`fuel-lean-sustained-load`, `water-temp-drift-no-cooling`, `vmin-progressive-loss-segment`) + tipos `EngineeringFinding`/`EngineeringRecommendation` + migrations 0020/0021 Supabase (RLS por time, insert-only findings). Smokes CE-01..15. Resolve gaps G3 + G4. |
-| 198 | feat | **MS-16.4** | `/api/advisor.js` aceita `findings[]` opcional. System prompt ganha §"FINDINGS CODIFICADOS" (governança IA: priorizar, explicar, validar, não contradizer). Smokes node AF-01..09. Schema-parity atualizado pra 30 tabelas PG com `PG_ONLY_TABLES` set excluindo as 2 novas da cobertura GRDB. |
-| 199 | feat | **MS-16.5a** | `EngControlModel` + `EngineeringDecisionPolicy` (domain puro, sem UIKit). Slider/knob/toggle com clamp + snap + permission gating (D17 fechada). Transitions pendente→aprovada/editada/rejeitada com regras D8. Smokes ECM-01..12. **Views SwiftUI ficam pra MS-16.5b** (precisa Xcode). |
-
-**Totais nesta sessão:** ~4.600 linhas Swift + JS novas. 67 testes automáticos novos verdes. 6 PRs (1 docs + 5 código), todos squash-merged em sequência (#194 → 0bdafd9, #195 → b84a2a9, #196 → 639ec1e, #197 → 57c552a, #198 → 430d151, #199 → 2ee12a3).
-
-**Decisões fechadas 2026-05-13 (7):**
-- **D1** — Aprovar MS-16 como novo mini-sprint
-- **D2+D3** — UI = iOS Box Mode → AirPlay → Apple TV → TV 32" + Cockpit Pilot 10,5" como canal contextual. Notebook fica kiosk; operação só pelos iPhones (chefe + engenheiro + piloto, cada um no seu)
-- **D6** — Catálogo MVP = 3 rules (fuel-lean, water-drift, vmin-loss)
-- **D14** — Heurística carro parado/andando absorvida por D18
-- **D17** — Piloto edita/simula no celular só com carro parado; chefe + engenheiro livres a qualquer momento
-- **D18** — Switch padrão piloto ↔ engenharia no Cockpit Pilot é **automático** via `cockpitModeResolver`: `(modulo_engenharia_ativado) AND (carro_parado)` → padrão ENGENHARIA; resto → padrão PILOTO; voltar a andar força PILOTO imediato
-
-**Decisões abertas (13):** D4 (granularidade célula), D5 (mapa ECU upload — pular no MVP), D7 (confiança mínima recommendation — default `Média` no código), D8 (RLS UPDATE refinado por papel), D9 (Realtime cross-device decisão), D10 (pilotagem×mecânica), D11 (IA→piloto), D12 (calibração Celta), D13 (simulação sem mapa real), D15 (catálogo overlays Cockpit Pilot), D16 (publishers canal), D19 (latência ~250ms slider→propagação), D20 (onde persistir flag módulo engenharia). Nenhuma bloqueia o caminho.
-
-**Pendências do Flávio (fora do escopo do Claude):**
-- Aplicar migrations `0020_engineering_findings.sql` + `0021_engineering_recommendations.sql` em prod via `supabase db push`. Versionadas em main mas NÃO aplicadas.
-- MS-16.5b (Views SwiftUI) quando Xcode aberto — toda lógica de domain já em main.
-
-**Próximo passo concreto (pós-/clear):** Ver `docs/SESSION_HANDOFF_2026-05-13_pre-clear.md`.
+> Leia este arquivo primeiro, depois `docs/PLANO_FASE_1.md` (doc mestre), depois `~/.claude/projects/-Users-imac/memory/MEMORY.md` (memória global) + `~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/MEMORY.md` (memória do projeto).
 
 ---
 
@@ -174,20 +205,6 @@ SQL pulled via `xcrun devicectl device copy from --domain-type appDataContainer`
 - `0009_track_geo_anchors_view_box.sql` (geo_ancoras + view_box)
 
 Verificadas via REST: HTTP 200 + `[]` em todas (RLS OK, colunas existentes — se não existissem, retornaria 400).
-
-**Estado consolidado das migrations em prod (auditoria 2026-05-12):** todas as 15 migrations (0001 a 0015) estão aplicadas em produção. Conferência via REST anon contra `fvhwltzhytpnhlqbttmd.supabase.co`:
-- `0006_v2_schema_columns.sql` — `sessoes.pneu_id`, `sessoes.combustivel_id`, `pilotos.altura_cm` retornam 200.
-- `0007_vmin_georef.sql` — `segment_executions.vmin_kmh` retorna 200.
-- `0008_telemetry_samples_enriched.sql` — tabela `telemetry_samples_enriched` retorna 200.
-- `0009_track_geo_anchors_view_box.sql` — `tracks.geo_ancoras` + `track_layouts.view_box` retornam 200.
-- `0010_kalman_gap_duration.sql` — `telemetry_samples_enriched.gap_duration_ms` retorna 200.
-- `0011_ensure_personal_team.sql` — RPC retorna 401 com mensagem "requires authenticated user" (função existe; se não existisse, retornaria 404).
-- `0012_seed_brasilia.sql` — row tracks com UUID `e8335412-…` retorna 200.
-- `0013_set_updated_at_respects_client.sql` — implícito (0015 depende e está aplicada).
-- `0014_ms4_sessoes_extensions.sql` — `sessoes.paradas_box`, `ia_ligada`, `licao_id`, `cancelado_em` retornam 200.
-- `0015_ms11_video_streams.sql` — tabela `video_streams` + `eventos.link_publico_video_token` retornam 200.
-
-A nota "aplicar manualmente após merge" que aparece em algumas migrations e em PENDENCIAS_GATE.md está desatualizada: o ciclo manual já foi feito. Não há migrations pendentes de aplicação em produção a partir de 2026-05-12.
 
 ---
 
@@ -369,11 +386,6 @@ Esses precisam de Xcode pra build/validar. Domínio Swift puro pode continuar at
 | 5 | `LiveDataBridge` (RpmToShift, CheckCriticalAlerts) | `web/cockpit/live-data-bridge.js` | 26 (LDB-01..26) |
 
 Próxima fase do cockpit Windows = camada XAML/WinUI 3 (consome o Domain via observer do `CockpitState`). Quando entrar, a CI passa a precisar de runner `windows-latest`.
-
-**Sessão 2026-05-10 (tarde) — logo + rotação:**
-
-- **PR #167 merged** (logo P1 Fast no `.exe`, Caminho A do diagnóstico): `Assets/P1Fast.ico` multi-resolução (256→16 px) gerado de `ios/p1fast-ios/Resources/Assets.xcassets/AppIcon.appiconset/icon-1024.png` via ImageMagick + `<ApplicationIcon>` no `.csproj`. Mantém `WindowsPackageType=None` (sem MSIX). Caminho B (MSIX completo, item 5 do roadmap) fica pra outro PR.
-- **PR #166 aberta — rotação 180° controlada pelo app (ADR-023 amendment 6):** `RotateTransform` na raiz do XAML + Ctrl+R toggle, persiste por display em `%LOCALAPPDATA%\P1Fast.Cockpit\rotation.json`. CI `ui-build` vermelho — 3 tentativas às cegas falharam. **Bloqueada aguardando `/ultrareview 166` rodado da sessão local do Mac** (não roda na web do Claude Code) pra ver o erro real do compilador.
 
 **Pendências externas aguardando Flávio:**
 - Captura real do barramento T4000 (resolve as 3 dúvidas residuais do `T4000_CAN_SPEC.md`).

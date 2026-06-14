@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>P1 Fast — Command Box · AO VIVO</title>
+<!--
+  Command Box · Vista AO VIVO — PRIMEIRA LIGAÇÃO REAL (decisão Flávio 2026-06-13, opção A).
+  Consome o canal real cockpit-bubi-live (Supabase Realtime broadcast), eventos 'sample' (motor T3000)
+  e 'gps' (RaceBox/iPhone via Central). Só visualização (sem botão de ação), conforme regra do Command Box.
+  HONESTIDADE: mostra valor só onde HÁ sensor de verdade hoje; o resto fica marcado "sem sensor".
+  Nenhuma escrita no banco. Padrão de assinatura reusado de tools/monitor-bubi-live.html e web/teste-aparelhos/painel.html.
+-->
+<style>
+  :root{
+    --bg:#0b0d12; --panel:#141821; --panel2:#1b212c; --line:#262d3a;
+    --fg:#eef1f5; --muted:#8b93a1; --dim:#586273;
+    --ok:#22c55e; --warn:#f59e0b; --crit:#ef4444; --accent:#4f8cff;
+    --sem:#2a313d;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg); color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    padding:18px 22px; min-height:100vh;
+  }
+  .topo{display:flex;align-items:center;gap:18px;margin-bottom:16px}
+  .marca{font-weight:800;font-size:1.15rem;letter-spacing:.5px}
+  .marca span{color:var(--accent)}
+  .vivo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.8rem;letter-spacing:1px;color:var(--muted)}
+  .dot{width:11px;height:11px;border-radius:50%;background:var(--dim);box-shadow:0 0 0 0 rgba(34,197,94,.5)}
+  .dot.on{background:var(--ok);animation:pulse 1.6s infinite}
+  .dot.wait{background:var(--warn)}
+  .dot.err{background:var(--crit)}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.45)}70%{box-shadow:0 0 0 9px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+  .carro{margin-left:auto;color:var(--muted);font-size:.9rem}
+  .carro b{color:var(--fg)}
+  .sim{display:none;margin-left:10px;padding:2px 9px;border-radius:999px;background:rgba(245,158,11,.16);color:var(--warn);font-size:.72rem;font-weight:700;letter-spacing:.5px}
+  .sim.ativo{display:inline-block}
+
+  .grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;width:100%}
+  .tile{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden}
+  .tile .lab{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.82rem;font-weight:600;letter-spacing:.4px;text-transform:uppercase}
+  .tile .val{font-size:2.9rem;font-weight:800;line-height:1.05;margin-top:8px;font-variant-numeric:tabular-nums}
+  .tile .un{font-size:1.05rem;color:var(--muted);font-weight:600;margin-left:4px}
+  .tile .sub{margin-top:4px;color:var(--dim);font-size:.78rem}
+  .tile.frio .val{color:var(--fg)}
+  .tile .ic{width:16px;height:16px;color:var(--dim);flex:none}
+  .tile.semsinal .val{color:var(--dim)}
+  .tile.alerta{border-color:var(--warn)}
+  .tile.critico{border-color:var(--crit)}
+  .tile.critico .val{color:var(--crit)}
+
+  .secao{margin:22px 0 10px;display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.82rem;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+  .secao::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  .semgrade{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;width:100%}
+  .semtile{background:var(--panel2);border:1px dashed var(--sem);border-radius:12px;padding:13px 15px;opacity:.85}
+  .semtile .lab{color:var(--dim);font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+  .semtile .val{font-size:1.5rem;font-weight:700;color:var(--dim);margin-top:6px}
+  .semtile .tag{margin-top:4px;font-size:.72rem;color:var(--warn);font-weight:600}
+
+  .alarmes{display:flex;flex-wrap:wrap;gap:10px;width:100%}
+  .al{padding:8px 14px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);font-size:.84rem;font-weight:600}
+  .al.on{background:rgba(239,68,68,.16);border-color:var(--crit);color:#fecaca}
+
+  .rodape{margin-top:22px;display:flex;flex-wrap:wrap;gap:18px;align-items:center;color:var(--dim);font-size:.8rem;border-top:1px solid var(--line);padding-top:14px}
+  .rodape b{color:var(--muted)}
+  .nota{color:var(--dim);font-size:.78rem;margin-top:6px;max-width:980px;line-height:1.5}
+</style>
+</head>
+<body>
+
+  <div class="topo">
+    <div class="marca">P1 <span>Fast</span> · Command Box</div>
+    <div class="vivo"><span class="dot wait" id="dot"></span><span id="estado">CONECTANDO…</span></div>
+    <div class="carro">Carro <b id="carroNome">Bubi · Celta 1.4</b><span class="sim" id="simBadge">SIMULAÇÃO</span></div>
+  </div>
+
+  <!-- DADO REAL: só campos com sensor confirmado hoje -->
+  <div class="grade" id="gradeReal">
+    <div class="tile semsinal" id="t-rpm">
+      <div class="lab"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 12l5-3M4 12a8 8 0 1 1 16 0"/></svg>Rotação</div>
+      <div class="val"><span data-v>—</span><span class="un">rpm</span></div>
+      <div class="sub">motor (T3000)</div>
+    </div>
+    <div class="tile semsinal" id="t-vel">
+      <div class="lab"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 14l4-4M5 19a9 9 0 1 1 14 0"/></svg>Velocidade</div>
+      <div class="val"><span data-v>—</span><span class="un">km/h</span></div>
+      <div class="sub">GPS de pista</div>
+    </div>
+    <div class="tile semsinal" id="t-lambda">
+      <div class="lab"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20c4-12 12 4 16-8"/></svg>Mistura λ</div>
+      <div class="val"><span data-v>—</span></div>
+      <div class="sub">sonda banda larga</div>
+    </div>
+    <div class="tile semsinal" id="t-agua">
+      <div class="lab"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></svg>Água</div>
+      <div class="val"><span data-v>—</span><span class="un">°C</span></div>
+      <div class="sub">temp. motor</div>
+    </div>
+    <div class="tile semsinal" id="t-map">
+      <div class="lab"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>Coletor</div>
+      <div class="val"><span data-v>—</span><span class="un">bar</span></div>
+      <div class="sub">pressão admissão (MAP)</div>
+    </div>
+    <div class="tile semsinal" id="t-tps">
+      <div class="lab"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 16V8l8 8"/></svg>Borboleta</div>
+      <div class="val"><span data-v>—</span><span class="un">%</span></div>
+      <div class="sub">acelerador (TPS)</div>
+    </div>
+    <div class="tile semsinal" id="t-bat">
+      <div class="lab"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 10v4M11 9l-2 5h4l-2 5"/></svg>Bateria</div>
+      <div class="val"><span data-v>—</span><span class="un">V</span></div>
+      <div class="sub">alternador</div>
+    </div>
+    <div class="tile semsinal" id="t-gps">
+      <div class="lab"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Posição</div>
+      <div class="val" style="font-size:1.25rem"><span data-v>—</span></div>
+      <div class="sub"><span id="gpsSat">—</span> satélites</div>
+    </div>
+  </div>
+
+  <div class="secao">Alarmes do motor (central de injeção)</div>
+  <div class="alarmes" id="alarmes"><span class="al">aguardando sinal</span></div>
+
+  <!-- HONESTIDADE: sem sensor instalado hoje. Nada de número inventado. -->
+  <div class="secao">Sem sensor no carro hoje</div>
+  <div class="semgrade">
+    <div class="semtile"><div class="lab">Pneus</div><div class="val">—</div><div class="tag">sem sensor</div></div>
+    <div class="semtile"><div class="lab">Marcha</div><div class="val">—</div><div class="tag">não medida</div></div>
+    <div class="semtile"><div class="lab">Óleo (pressão/temp)</div><div class="val">—</div><div class="tag">só alarme</div></div>
+    <div class="semtile"><div class="lab">Câmbio</div><div class="val">—</div><div class="tag">sem sensor</div></div>
+    <div class="semtile"><div class="lab">Freio (pressão)</div><div class="val">—</div><div class="tag">sem sensor</div></div>
+    <div class="semtile"><div class="lab">Ar admissão</div><div class="val">—</div><div class="tag">sem sensor</div></div>
+  </div>
+
+  <div class="rodape">
+    <div>Última leitura: <b id="ultima">—</b></div>
+    <div>Frequência: <b id="hz">—</b></div>
+    <div>Fonte: <b id="fonte">canal ao vivo</b></div>
+    <div>Canal: <b>cockpit-bubi-live</b></div>
+  </div>
+  <div class="nota">
+    Tela de visualização do box. Mostra ao vivo apenas o que o carro realmente mede hoje; itens sem sensor ficam marcados, sem número inventado.
+    Velocidade e posição vêm do GPS de pista; o restante, da central de injeção via notebook do carro.
+  </div>
+
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+
+  const SUPABASE_URL  = 'https://fvhwltzhytpnhlqbttmd.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2aHdsdHpoeXRwbmhscWJ0dG1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTExNDAsImV4cCI6MjA5MzM4NzE0MH0._ZpxksUnuVFhLzCB5x7bBiZ_VLQQR5cH4A1T-0-mvrA';
+  const CHANNEL = 'cockpit-bubi-live';
+
+  const $ = (id) => document.getElementById(id);
+  const setV = (tileId, txt) => { const t=$(tileId); const el=t.querySelector('[data-v]'); el.textContent = txt; t.classList.toggle('semsinal', txt === '—'); };
+
+  // estado de conexão
+  function estado(cls, txt){ const d=$('dot'); d.className='dot '+cls; $('estado').textContent=txt; }
+
+  // ---- métricas de recebimento (Hz + última leitura + watchdog) ----
+  let lastSampleTs = 0, recv = [], simVisto = false;
+  function marcaRecebido(isSim){
+    const now = performance.now();
+    recv.push(now); recv = recv.filter(t => now - t < 2000);
+    $('hz').textContent = (recv.length/2).toFixed(1) + ' Hz';
+    $('ultima').textContent = 'agora';
+    lastSampleTs = now;
+    if (isSim && !simVisto){ simVisto = true; $('simBadge').classList.add('ativo'); $('fonte').textContent='simulação (teste)'; }
+  }
+  setInterval(() => {
+    if (!lastSampleTs) return;
+    const dt = performance.now() - lastSampleTs;
+    if (dt > 2500){ $('ultima').textContent = (dt/1000).toFixed(0)+'s atrás'; $('hz').textContent='0 Hz';
+      document.querySelectorAll('#gradeReal .tile').forEach(t=>t.classList.add('semsinal')); }
+  }, 1000);
+
+  // ---- desenhar amostra de motor (evento 'sample') ----
+  function renderSample(s){
+    const isSim = typeof s.source === 'string' && /sim/i.test(s.source);
+    marcaRecebido(isSim);
+
+    setV('t-rpm', s.rpm != null ? String(s.rpm) : '—');
+    setV('t-lambda', (typeof s.lambda === 'number' && s.lambda > 0) ? s.lambda.toFixed(2) : '—');
+    setV('t-agua', s.waterTempC != null ? String(Math.round(s.waterTempC)) : '—');
+    setV('t-map', (typeof s.mapBar === 'number') ? s.mapBar.toFixed(2) : '—');
+    setV('t-tps', s.tpsPct != null ? String(Math.round(s.tpsPct)) : '—');
+    setV('t-bat', s.batteryV != null ? s.batteryV.toFixed(1) : '—');
+
+    // faixas de cor honestas pro Bubi (opera frio: água ideal ~84, crítico alto)
+    cor('t-agua', s.waterTempC, {warn:98, crit:105});
+    corRpm('t-rpm', s.rpm);
+
+    renderAlarmes(s.alarmes);
+  }
+
+  function cor(tileId, v, lim){
+    const t=$(tileId); t.classList.remove('alerta','critico');
+    if (v==null) return;
+    if (lim.crit!=null && v>=lim.crit) t.classList.add('critico');
+    else if (lim.warn!=null && v>=lim.warn) t.classList.add('alerta');
+  }
+  function corRpm(tileId, rpm){
+    const t=$(tileId); t.classList.remove('alerta','critico');
+    if (rpm==null) return;
+    if (rpm>=6300) t.classList.add('critico'); else if (rpm>=6000) t.classList.add('alerta');
+  }
+
+  const ALARME_LABEL = {
+    excessoRotacao:'Excesso de rotação', excessoTempMotor:'Temp. motor alta',
+    baixaPressaoOleo:'Pressão de óleo baixa', baixaTensaoBateria:'Bateria baixa',
+    sondaInvalida:'Sonda inválida', corteCombustivel:'Corte de combustível',
+  };
+  function renderAlarmes(al){
+    const box=$('alarmes');
+    if (!al || typeof al!=='object'){ box.innerHTML='<span class="al">sem alarme</span>'; return; }
+    const ativos = Object.keys(al).filter(k => al[k]===true);
+    if (!ativos.length){ box.innerHTML='<span class="al">sem alarme ativo</span>'; return; }
+    box.innerHTML = ativos.map(k => `<span class="al on">${ALARME_LABEL[k]||k}</span>`).join('');
+  }
+
+  // ---- desenhar GPS (evento 'gps') ----
+  let gpsTs = 0;
+  function renderGps(g){
+    gpsTs = performance.now();
+    if (typeof g.kmh === 'number') setV('t-vel', String(Math.round(g.kmh)));
+    if (typeof g.lat === 'number' && typeof g.lng === 'number'){
+      setV('t-gps', g.lat.toFixed(5)+', '+g.lng.toFixed(5));
+    }
+    if (g.numSV != null) $('gpsSat').textContent = g.numSV;
+  }
+
+  // ---- assinar o canal real (mesmo padrão do monitor/painel que já funcionam) ----
+  const client = createClient(SUPABASE_URL, SUPABASE_ANON, { realtime:{ params:{ eventsPerSecond:20 } } });
+  const channel = client.channel(CHANNEL, { config:{ broadcast:{ ack:false, self:false } } });
+  channel.on('broadcast', { event:'sample' }, (m) => { if (m && m.payload) renderSample(m.payload); });
+  channel.on('broadcast', { event:'gps' }, (m) => { if (m && m.payload) renderGps(m.payload); });
+  channel.subscribe((status) => {
+    if (status==='SUBSCRIBED') estado('wait','AO VIVO · aguardando o carro transmitir');
+    else if (status==='CHANNEL_ERROR' || status==='TIMED_OUT') estado('err','SEM CONEXÃO');
+    else estado('wait','CONECTANDO…');
+  });
+  // quando chega o primeiro dado, vira verde
+  const origRender = renderSample;
+  let primeiro=false;
+  channel.on('broadcast', { event:'sample' }, () => { if(!primeiro){ primeiro=true; estado('on','AO VIVO'); } });
+
+  window.__commandbox = { client, channel };
+
+  // ---- PRÉ-VISUALIZAÇÃO LOCAL (não transmite nada; só alimenta a tela no próprio navegador) ----
+  // Ativa com ?preview na URL. Serve pra ver a tela populada sem depender do carro nem escrever no canal.
+  if (/(\?|&)preview/.test(location.search)) {
+    estado('on', 'PRÉ-VISUALIZAÇÃO (local · sem transmitir)');
+    $('fonte').textContent = 'pré-visualização local';
+    $('simBadge').classList.add('ativo'); simVisto = true;
+    let pt = 0;
+    setInterval(() => {
+      pt += 0.2;
+      const lap = (pt % 80) / 80;
+      const rpm = Math.round(3200 + 2900 * Math.abs(Math.sin(pt * 0.6)));
+      const tps = Math.max(0, 55 + 45 * Math.sin(pt * 0.6));
+      renderSample({
+        source: 'preview-local', rpm,
+        batteryV: 13.2 + 0.15 * Math.sin(pt * 2),
+        mapBar: 0.30 + 0.65 * (tps / 100),
+        tpsPct: tps, waterTempC: Math.round(84 + 6 * lap),
+        lambda: 0.88 + 0.06 * Math.sin(pt * 0.9), airTempC: null,
+        alarmes: { excessoRotacao: rpm > 6300, baixaPressaoOleo: false },
+      });
+      renderGps({
+        lat: -15.7720 + 0.004 * Math.sin(lap * 2 * Math.PI),
+        lng: -47.9920 + 0.004 * Math.cos(lap * 2 * Math.PI),
+        kmh: Math.round(70 + 90 * Math.abs(Math.sin(pt * 0.6))), numSV: 12,
+      });
+    }, 200);
+  }
+</script>
+</body>
+</html>

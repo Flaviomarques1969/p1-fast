@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Finalizar webhook Daily.co — 3 ações suas</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --fg:#e8e8e8; --muted:#9aa0a6; --accent:#4f8cff; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--fg); padding:24px; line-height: 1.5; }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  .card { background:var(--card); border-radius:12px; padding:24px; box-shadow: 0 8px 32px rgba(0,0,0,.35); margin-bottom: 18px; }
+  h1 { font-size: 1.4rem; margin: 0 0 6px; }
+  h2 { font-size: 1.1rem; margin: 0 0 14px; color: var(--accent); }
+  .meta { color: var(--muted); font-size: .85rem; margin-bottom: 8px; }
+  .feito { background: rgba(34,197,94,.08); border-left: 4px solid var(--ok); padding: 14px 16px; border-radius: 8px; }
+  .feito h2 { color: var(--ok); }
+  .acao { background: rgba(245,158,11,.06); border-left: 4px solid var(--warn); padding: 14px 16px; border-radius: 8px; margin-bottom: 14px; }
+  .acao h2 { color: var(--warn); }
+  ol li, ul li { margin: 6px 0; }
+  pre { background: #0b0d12; border: 1px solid #2a2f3a; border-radius: 8px; padding: 14px; overflow-x: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85rem; line-height: 1.5; }
+  .copia { display: flex; align-items: center; gap: 10px; margin: 10px 0 4px; }
+  .botao-copia { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 6px 14px; font-size: .85rem; cursor: pointer; font-weight: 600; }
+  .botao-copia:hover { opacity: .9; }
+  .botao-copia.copiado { background: var(--ok); }
+  a.link { color: var(--accent); text-decoration: none; }
+  a.link:hover { text-decoration: underline; }
+  .grande { background: var(--accent); color: #fff; padding: 10px 22px; border-radius: 8px; display: inline-block; font-weight: 600; text-decoration: none; }
+  .grande:hover { opacity: .9; text-decoration: none; }
+  code.inline { background: rgba(255,255,255,.07); padding: 1px 6px; border-radius: 4px; font-family: ui-monospace, monospace; font-size: .88rem; }
+  .destaque { background: rgba(79,140,255,.06); border: 1px solid rgba(79,140,255,.25); padding: 12px 14px; border-radius: 8px; margin: 10px 0; font-size: .9rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Finalizar a videoconferência — 3 ações suas</h1>
+    <div class="meta">Submissão #220 já está incorporada. A rota nova já está no ar. Falta só configurar o gravador.</div>
+  </div>
+
+  <div class="card">
+    <div class="feito">
+      <h2>✅ O que eu já fiz</h2>
+      <ul>
+        <li>Incorporei a submissão #220 à versão oficial (2026-05-27 15:33Z)</li>
+        <li>Implantei a rota nova <code class="inline">daily-recording-ready</code> em produção</li>
+        <li>Testei a rota nova: responde <strong>500 — env-missing-DAILY_WEBHOOK_SECRET</strong> (o esperado, porque o segredo ainda não foi cadastrado)</li>
+        <li>Configurei a rota como pública (sem precisar de login) — pra a Daily.co conseguir chamar de fora</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="acao">
+      <h2>🟡 Ação 1 — Aplicar a mudança no banco (3 min)</h2>
+      <p>Não consegui aplicar automaticamente daqui (a linha de comando do Supabase está exigindo correções no histórico que prefiro não tocar sem você ver). É colar e clicar.</p>
+
+      <p><strong>Passo a passo:</strong></p>
+      <ol>
+        <li>Clique aqui pra abrir o editor de banco do Supabase já no projeto certo:</li>
+      </ol>
+
+      <p><a class="grande" href="https://supabase.com/dashboard/project/fvhwltzhytpnhlqbttmd/sql/new" target="_blank">📝 Abrir Editor SQL do Supabase</a></p>
+
+      <ol start="2">
+        <li>Cole o SQL abaixo na janela do editor.</li>
+        <li>Clique em <strong>RUN</strong> (canto inferior direito) ou pressione <strong>Cmd+Enter</strong>.</li>
+        <li>Espere a mensagem <strong>"Success. No rows returned."</strong> aparecer.</li>
+      </ol>
+
+      <div class="copia">
+        <strong>SQL pra colar:</strong>
+        <button class="botao-copia" id="copia-sql">Copiar SQL</button>
+      </div>
+      <pre id="sql-bloco">alter table public.video_streams
+  add column recording_id              text,
+  add column recording_s3_key          text,
+  add column recording_duration_s      integer
+    check (recording_duration_s is null or recording_duration_s &gt;= 0),
+  add column recording_max_participants integer
+    check (recording_max_participants is null or recording_max_participants &gt;= 0),
+  add column recording_started_at      timestamptz,
+  add column recording_ready_at        timestamptz;
+
+create unique index if not exists idx_video_streams_recording_id
+  on public.video_streams (recording_id)
+  where recording_id is not null;</pre>
+
+      <div class="destaque">
+        <strong>Risco:</strong> zero. É só adicionar 6 colunas vazias. Não apaga nada. Se quiser desfazer depois, é só dizer e eu reverto.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="acao">
+      <h2>🟡 Ação 2 — Cadastrar o webhook no painel da Daily.co (5 min)</h2>
+
+      <ol>
+        <li>Entre no painel da Daily.co:</li>
+      </ol>
+      <p><a class="grande" href="https://dashboard.daily.co/" target="_blank">🎥 Abrir painel Daily.co</a></p>
+
+      <ol start="2">
+        <li>No menu da esquerda, vá em <strong>Developers → Webhooks</strong>.</li>
+        <li>Clique em <strong>Create Webhook</strong> (canto direito).</li>
+        <li>Cole a URL abaixo:</li>
+      </ol>
+
+      <div class="copia">
+        <strong>URL do webhook:</strong>
+        <button class="botao-copia" id="copia-url">Copiar URL</button>
+      </div>
+      <pre id="url-bloco">https://fvhwltzhytpnhlqbttmd.supabase.co/functions/v1/daily-recording-ready</pre>
+
+      <ol start="5">
+        <li>Em <strong>Event types</strong>, marque APENAS: <code class="inline">recording.ready-to-download</code></li>
+        <li>Clique em <strong>Create</strong>.</li>
+        <li>A Daily.co vai mostrar um <strong>segredo (em base64)</strong>. <strong>COPIE</strong> esse segredo — sem ele, nada funciona.</li>
+      </ol>
+
+      <div class="destaque">
+        <strong>Atenção:</strong> a Daily.co mostra o segredo UMA VEZ só. Se você fechar a janela sem copiar, vai precisar gerar outro.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="acao">
+      <h2>🟡 Ação 3 — Me passar o segredo (10 seg)</h2>
+      <p>Depois de copiar o segredo da Daily.co (Ação 2 passo 7), <strong>cole aqui pra mim na próxima mensagem</strong>:</p>
+      <pre>O segredo é: SEU_SEGREDO_AQUI</pre>
+      <p>Eu vou configurar como <code class="inline">DAILY_WEBHOOK_SECRET</code> no painel do Supabase. Faço em 5 segundos.</p>
+
+      <div class="destaque">
+        <strong>Segurança:</strong> esse segredo é só usado pra autenticar que o aviso veio mesmo da Daily.co (não é o mesmo que a chave da API que cria salas). Pode ficar tranquilo de me passar — o segredo fica criptografado no servidor.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Depois das 3 ações</h2>
+    <p>Quando você terminar as 3 ações acima, eu termino sozinho:</p>
+    <ul>
+      <li>Configuro o segredo que você me passar</li>
+      <li>Disparo o teste do próprio painel da Daily.co (botão "Send test event")</li>
+      <li>Confirmo que o teste retornou <strong>200 OK</strong> e que o registro foi gravado no banco</li>
+      <li>Aviso aqui no chat quando estiver tudo verde</li>
+    </ul>
+    <p>Aí a videoconferência fica pronta pra a primeira validação em pista.</p>
+  </div>
+</div>
+
+<script>
+  function copia(btn, alvoId) {
+    const txt = document.getElementById(alvoId).innerText;
+    navigator.clipboard.writeText(txt).then(() => {
+      const txtAntigo = btn.innerText;
+      btn.innerText = "✓ Copiado!";
+      btn.classList.add("copiado");
+      setTimeout(() => {
+        btn.innerText = txtAntigo;
+        btn.classList.remove("copiado");
+      }, 2000);
+    });
+  }
+  document.getElementById("copia-sql").addEventListener("click", (e) => copia(e.target, "sql-bloco"));
+  document.getElementById("copia-url").addEventListener("click", (e) => copia(e.target, "url-bloco"));
+</script>
+</body>
+</html>
