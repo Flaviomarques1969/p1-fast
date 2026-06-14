@@ -89,8 +89,40 @@ SPLIT em dois lugares + um mockup, todos ANTERIORES à visão de 14/06:
 Visão 14/06 = trocar na potência máxima 6050. Auditor 29/05 (no código `forca-integrada-calculator.js`)
 = com câmbio Wide Ratio amador, o ótimo "estica" pra perto do redline. Os dois conflitam.
 
-**Status: PARCIALMENTE CONCLUÍDO** — bug ao vivo corrigido e validado; reconciliação do cérebro à visão
-14/06 aguarda direção do Flávio (mexe em comportamento de função em uso + decisão do alvo).
+**Status (1ª etapa): bug ao vivo corrigido e validado.**
+
+## DECISÃO Flávio (card) — "Fundações pra pista (recomendado)"
+Construir agora o que faz o dia de pista ENSINAR o cérebro, SEM mexer no painel publicado.
+Reconciliação do painel (tirar modos / alvo 6050) fica pra depois.
+
+## TASK_DONE — 2026-06-14 (noite) — Fundações pra pista (escopo escolhido)
+
+Arquivos ACRESCENTADOS (DEV, nada publicado):
+- `web/cockpit/aprendizado-tempo-passagem.js` — NOVO. Aprendizado #2: escolhe o ponto de troca por
+  (trecho×marcha) pelo MENOR TEMPO medido. É o que resolve 6.050-vs-redline com dado, não opinião.
+  Tem export/import (persistência). Teste `tests/node-smoke-aprendizado-tempo-passagem.mjs` (15/0).
+- `tests/node-smoke-aprendizado-persistencia.mjs` — NOVO (9/0).
+- `tests/node-smoke-deteccao-acel-gate.mjs` — NOVO (6/0).
+
+Arquivos ALTERADOS (aditivo, sem mudar comportamento atual):
+- `web/cockpit/gear-detector-online.js` — +`exportarEstado()/importarEstado()` (persistir assinaturas do câmbio).
+- `web/cockpit/aprendizado-confianca.js` — +`exportarEstado()/importarEstado()` (persistir marchas+pontos+voltas).
+  (Blindei import contra estado corrompido — bug que MEU teste pegou: número no lugar de lista quebrava.)
+- `src/pipeline/shift-event-detector.js` — +trava OPCIONAL `accelCorroboraUpshift` (default FALSE):
+  exige queda de força-G pra confirmar o upshift (cruzar sinais). Default off = 13 testes existentes intactos.
+- `package.json` — +3 testes no `smoke` + atalhos `smoke:tempo-passagem|aprendizado-persistencia|deteccao-acel-gate`.
+
+NÃO fiz (de propósito, conforme a decisão "painel fica como está"): NÃO liguei esses módulos no
+orquestrador do painel publicado (isso muda comportamento de função em uso). Ficam prontos e testados
+pra ligar quando reconciliarmos o painel.
+
+Validação executada:
+- `npm run test:shift-light` → 12 specs, 153/0.
+- `node tests/node-smoke-shift-light-inteligente.mjs` → 24/0.
+- 3 testes novos → 15/0, 9/0, 6/0. Detector existente sem regressão (`node-smoke-detector` 3/0, spec 13/0).
+
+Resultado: **CONCLUÍDO o escopo escolhido (fundações)**. Pendente por decisão/dado: reconciliar painel
+(sem modos / alvo 6050) e ligar a fonte de RPM real + GPS ao vivo (dia de pista 15-16).
 
 ## TASK_INIT — 2026-06-14 — Reorganizar menu de baixo (Cadastros → Garagem, Pendências no lugar)
 
