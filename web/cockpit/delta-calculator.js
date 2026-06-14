@@ -110,6 +110,7 @@ export function calcularDelta({ atual, referencia }) {
     entrada: { deltaS: 0, distM: 0, amostras: 0 },
     freio:   { deltaS: 0, distM: 0, amostras: 0 },
     apice:   { deltaS: 0, distM: 0, amostras: 0 },
+    pace:    { deltaS: 0, distM: 0, amostras: 0 },
     saida:   { deltaS: 0, distM: 0, amostras: 0 },
   };
 
