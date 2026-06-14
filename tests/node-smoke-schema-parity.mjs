@@ -80,7 +80,11 @@ const PG_ONLY_TABLES = new Set([
   't4000_live_commands', 't4000_live_events',                // canal ao vivo (0023)
 ]);
 const GRDB_REQUIRED_COUNT = PG_TABLE_COUNT_ESPERADO - PG_ONLY_TABLES.size; // 32
-const GRDB_TABLE_COUNT_ESPERADO = GRDB_REQUIRED_COUNT + 2; // + sync_queue + sync_meta = 34
+// Tabelas SÓ-locais (não espelham a nuvem de propósito): infraestrutura de
+// sync + evento_pendencias_extra (pendências incluídas à mão pelo usuário —
+// migration v29, app mono-iPhone, não sincroniza).
+const GRDB_LOCAL_ONLY = ['evento_pendencias_extra', 'sync_meta', 'sync_queue'];
+const GRDB_TABLE_COUNT_ESPERADO = GRDB_REQUIRED_COUNT + GRDB_LOCAL_ONLY.length; // 32 + 3 = 35
 
 t(`PG tem ${PG_TABLE_COUNT_ESPERADO} tabelas em public`, () => {
   if (PG_TABLES.size !== PG_TABLE_COUNT_ESPERADO) throw new Error('size=' + PG_TABLES.size);
