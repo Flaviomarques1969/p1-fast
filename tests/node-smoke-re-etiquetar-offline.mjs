@@ -3,7 +3,7 @@
 // A re-etiquetagem em si (retagSubsPorEventos / acharVminBuffer) já é coberta por
 // node-smoke-retag-vmin; aqui cobre só o que a FASE 3 acrescentou.
 import {
-  segundos, acharFreadaT, ancorarApice,
+  segundos, acharFreadaT, ancorarApice, acharPaceIdx,
 } from '../tools/re-etiquetar-passagens-offline.js';
 
 let ok = 0, fail = 0;
