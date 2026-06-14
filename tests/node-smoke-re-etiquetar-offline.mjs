@@ -16,18 +16,19 @@ function t(nome, cond, extra) {
 t('segundos: 2000ms vira 2s', segundos(2000) === 2);
 t('segundos: valor pequeno já é s', segundos(5) === 5);
 
-// ── acharFreadaT: pico antes da 1ª desaceleração >= 0,5 g ──
+// ── acharFreadaT: pico antes da 1ª desaceleração >= 0,5 g (t = ms de época, como o dado real) ──
+const T0 = 1779562246088; // base epoch-ms realista
 {
-  // 140→140→100 km/h em 1 s = ~11 m/s² (>> 4,9). freada começa no pico (idx1, t=1000).
+  // 140→140→100 km/h em 1 s = ~11 m/s² (>> 4,9). freada começa no pico (idx1, t=T0+1000).
   const pts = [
-    { kmh: 140, t: 0 }, { kmh: 140, t: 1000 }, { kmh: 100, t: 2000 },
-    { kmh: 95, t: 3000 }, { kmh: 110, t: 4000 },
+    { kmh: 140, t: T0 }, { kmh: 140, t: T0 + 1000 }, { kmh: 100, t: T0 + 2000 },
+    { kmh: 95, t: T0 + 3000 }, { kmh: 110, t: T0 + 4000 },
   ];
-  t('acharFreadaT marca o pico antes do tombo', acharFreadaT(pts, 3) === 1000, String(acharFreadaT(pts, 3)));
+  t('acharFreadaT marca o pico antes do tombo', acharFreadaT(pts, 3) === T0 + 1000, String(acharFreadaT(pts, 3)));
 }
 {
   // queda suave (sem cruzar 0,5 g): 100→98→96 em 1 s = ~0,55 m/s² → null (não inventa)
-  const pts = [{ kmh: 100, t: 0 }, { kmh: 98, t: 1000 }, { kmh: 96, t: 2000 }];
+  const pts = [{ kmh: 100, t: T0 }, { kmh: 98, t: T0 + 1000 }, { kmh: 96, t: T0 + 2000 }];
   t('acharFreadaT sem freada nítida → null', acharFreadaT(pts, 2) === null);
 }
 
