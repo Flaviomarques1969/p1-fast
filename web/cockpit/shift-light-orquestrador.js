@@ -1,30 +1,38 @@
-// shift-light-orquestrador.js — costura os 4 módulos novos do shift light
-// inteligente e expõe uma única interface pro painel piloto.
+// shift-light-orquestrador.js — costura os módulos do shift light inteligente
+// e expõe uma única interface pro painel piloto.
 //
-// Decisão Flávio 2026-05-29 + auditor.
+// Decisão Flávio 2026-05-29 (origem) + RECONCILIAÇÃO 2026-06-14: SEM MODOS.
+// Carro de corrida = um comportamento só (máximo desempenho). A luz troca na
+// POTÊNCIA MÁXIMA do motor (Bubi 6.050 rpm), e o aprendizado por TEMPO DE
+// PASSAGEM afina esse ponto com o dado real da pista (menor tempo vence).
+// Os 3 modos (Durabilidade/Normal/Agressivo) foram revogados — shift-light-modos.js
+// e forca-integrada-calculator.js seguem no projeto (PRESERVADOS), mas NÃO são
+// mais a fonte do alvo. Ver memória p1-fast-shift-light-funcao-inteligente-2026-06-14.
 //
 // Quem ele costura:
-//   - shift-light-modos.js: janela do modo ativo do stint
 //   - gear-detector-online.js: identifica marcha em tempo real
-//   - forca-integrada-calculator.js: calcula RPM ótimo de troca por marcha
 //   - aprendizado-confianca.js: calcula % de aprendizado da combinação ativa
+//   - aprendizado-tempo-passagem.js: ponto de troca por menor tempo medido (refino)
+//   - pilot-reaction.js: antecipa a luz pelo tempo de reação do piloto (Onda 7)
 //
 // Quem ele alimenta:
 //   - cockpitState.setAprendizado(pct) → barra de aprendizado no painel
-//   - (futuro) shift-target consumindo getRpmOtimoTroca() pra acender LEDs
+//   - LED do painel consumindo getRpmVisualLuz() pra acender no ponto antecipado
 
 import { criarGearDetectorOnline } from './gear-detector-online.js';
 import { criarAcumuladorConfianca } from './aprendizado-confianca.js';
-import { calcularPontoOtimoTroca } from './forca-integrada-calculator.js';
-import { janelaParaModo, ENVELOPE_DEFAULT_BUBI, ModoStint } from './shift-light-modos.js';
+import { criarAprendizadoTempoPassagem } from './aprendizado-tempo-passagem.js';
+import { PERFIL_BUBI, ModoStint } from './shift-light-modos.js';
 // Onda 7 (Flávio 2026-05-29): antecipação adaptativa baseada no tempo de
 // troca do piloto + ritmo de subida do giro. Aprendido por trecho × marcha.
 import { computeCompensation, learnFromEvent } from './pilot-reaction.js';
 import { loadPerfis, savePerfis } from './pilot-reaction-persister.js';
 
-const RAIO_RODA_BUBI_M = 0.2888;     // 577,6 mm de diâmetro / 2 (memória reference_p1fast_bubi_pneu)
-const DIFERENCIAL_BUBI = 3.94;        // F17 Wide Ratio — só seed; ajustável depois
 const TRECHO_CRITICOS_BRASILIA = [3, 4, 5]; // marchas que mais importam (memória)
+// Confiança mínima do aprendizado por tempo de passagem pra ASSUMIR o ponto medido
+// no lugar da semente (potência máxima). Abaixo disso, manda a semente. Decisão de
+// produto: só troca o alvo quando o dado de pista é claro o suficiente.
+const CONFIANCA_MIN_TEMPO_PASSAGEM = 0.5;
 
 /**
  * @param {Object} opts
