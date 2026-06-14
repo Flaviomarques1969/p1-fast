@@ -385,7 +385,9 @@ function renderPend(){
 }
 function findItem(id){ for(const g of state){ const it=g.itens.find(x=>x.id===id); if(it) return {g,it}; } return null; }
 function toggleGrupo(gi){ const el=document.querySelectorAll('.pgroup')[gi]; el.dataset.open = el.dataset.open==='true'?'false':'true'; }
-function toggleItem(id){ const f=findItem(id); if(f){ f.it.done=!f.it.done; renderPend(); } }
+function target(it){ if(it.tipo==='embalagem') return it.emb||1; if(it.tipo==='conjunto'&&it.partes) return it.partes.reduce((s,p)=>s+(+p.qtd||0),0); return it.qtd||1; }
+function incPegou(id,d){ const f=findItem(id); if(!f) return; const tg=target(f.it); f.it.pegou=Math.max(0,Math.min(tg,(f.it.pegou||0)+d)); renderPend(); }
+function toggleItem(id){ const f=findItem(id); if(!f) return; f.it.done=!f.it.done; if(f.it.done) f.it.pegou=target(f.it); renderPend(); }
 
 // ── editor ──
 let editing = null;
