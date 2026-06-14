@@ -228,6 +228,16 @@ let _ultimoSegmentId = null;
 let chegadaDetector = null;
 let boxDetector = null;
 let _ctxConfig = { carroId: CARRO_ATIVO, trackId: null, layoutId: null, tipoPneu: null };
+// Agente vivo de classificação de curva (instanciado após carregar os segmentos). Null-safe:
+// se não montar, o resto do cockpit segue normal.
+let classificadorVivo = null;
+// Padrão DEFINITIVO do Flávio (13/06) por nome de curva — fonte de verdade: migration 0043 /
+// _decisao-flavio-padrao-curvas-2026-06-13.json. Fallback do tipo APROVADO enquanto o banco lido
+// (produção) ainda não tem a coluna tipo_curva (carregarTipoCurvaPorTrecho retorna {} sem ela).
+const PADRAO_TIPO_CURVA = {
+  'CURVA 01': 'T5', 'CURVA DA RETA OPOSTA': 'T1', 'CURVA 2': 'T0', 'CURVA DA JUNÇÃO': 'T2',
+  'CURVA DA BRUXA': 'T0', 'CURVA DO PLACAR': 'T2', 'CURVA "S"': 'T4', 'CURVA DA VITÓRIA': 'SF',
+};
 
 const bridge = new LiveDataBridge({
   cockpitState,
