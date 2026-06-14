@@ -173,7 +173,8 @@ struct PendenciasView: View {
     private func refresh() async {
         do {
             try await repo.ensureInstancesForEvento(eventoId)
-            grupos = repo.grupos(forEventoId: eventoId)
+            let novos = repo.grupos(forEventoId: eventoId)
+            withAnimation(.easeInOut(duration: 0.22)) { grupos = novos }
         } catch {
             print("PendenciasView.refresh failed: \(error)")
         }
