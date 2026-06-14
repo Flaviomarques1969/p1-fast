@@ -244,22 +244,22 @@ export function criarShiftLightOrquestrador({
         _rpmAntesUltimo = sample.rpm;
       }
 
-      // Sempre que a marcha atual estiver estável, recalcula o ponto ótimo
-      // pra ela e pra próxima. Em cache pra não recomputar a cada amostra.
+      // Sempre que a marcha atual estiver estável, fixa o alvo de troca pra ela
+      // (cache por marcha). Quando o trecho é conhecido, conta como ponto aprendido
+      // (alimenta a barra de %). O VALOR do alvo é a potência máxima (ou o ponto
+      // por tempo de passagem, quando há dado) — não mais o cruzamento por torque.
       const marchaAtual = detector.getMarchaAtual();
-      if (marchaAtual && !_ultimoCalcPorMarcha[`${modoAtual}:${marchaAtual}`]) {
-        const r = _calcularRpmOtimoParaMarcha(marchaAtual);
-        if (r) {
-          _ultimoCalcPorMarcha[`${modoAtual}:${marchaAtual}`] = r;
-          // Quando o trecho atual é conhecido, registra ponto aprendido
-          if (trechoAtual) {
-            acumulador.registrarPontoAprendido({
-              trechoId:     trechoAtual,
-              marchaOrigem: marchaAtual,
-              rpmAprendido: r.rpmOtimo,
-            });
-            _atualizarPctNoEstado();
-          }
+      if (marchaAtual && !_ultimoCalcPorMarcha[marchaAtual]) {
+        const r = _alvoTrocaParaMarcha(marchaAtual);
+        _ultimoCalcPorMarcha[marchaAtual] = r;
+        if (onPontoCalculado) { try { onPontoCalculado({ marcha: marchaAtual, ...r }); } catch {} }
+        if (trechoAtual) {
+          acumulador.registrarPontoAprendido({
+            trechoId:     trechoAtual,
+            marchaOrigem: marchaAtual,
+            rpmAprendido: r.rpmOtimo,
+          });
+          _atualizarPctNoEstado();
         }
       }
     },
