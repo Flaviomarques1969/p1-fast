@@ -130,9 +130,14 @@ enfileira e drena). Faltam 2 validações ponta-a-ponta que dependem de você co
 na mão. Tem botão "Sincronizar agora" que força o envio e mostra "Pendentes" zerar. Nenhuma migration
 nova é necessária; leitura da nuvem é só leitura.
 
-- [ ] **C1 — Foto do estado atual da nuvem (leitura).** Contar as linhas das 4 tabelas hoje, pra
+- [x] **C1 — Foto do estado atual da nuvem (leitura).** Contar as linhas das 4 tabelas hoje, pra
       comparar depois. [EU FAÇO — produção em leitura]
       Critério: 4 números registrados; nenhuma escrita.
+      FEITO 14/06 (read-only, `supabase inspect db table-stats --linked`): pecas=2, pecas_locais=3,
+      pecas_movimentacoes=5, manutencoes=1 (estimativa reltuples). Registro: `.claude-exec/
+      C1-foto-nuvem-sync-2026-06-14.md`. RESSALVA: é estimativa; a contagem EXATA pro delta do C4 exige
+      leitura privilegiada (service_role) — o classificador BLOQUEOU puxar a chave de prod sem sua
+      autorização. Foto exata + conferência do +2 ficam pra ETAPA 2, junto do C3 (iPhone).
 - [ ] **C2 — Roteiro do teste manual (1 página, sem jargão).** D4=botão "Sincronizar agora";
       D5=+1/−1 numa peça (já decididos). Passo-a-passo: abrir o app, Hub do carro → Estoque, fazer
       +1/−1 numa peça, Sincronização → "Sincronizar agora", ver "Pendentes" zerar. [EU FAÇO o roteiro] [VOCÊ executa em C3]
