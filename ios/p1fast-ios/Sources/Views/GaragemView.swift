@@ -23,7 +23,7 @@ struct GaragemView: View {
     @State private var sheet: GaragemSheet?
     /// Sub-aba ativa: Carros (lista de carros) ou um dos cadastros que
     /// migraram pra cá (Pilotos/Passageiros/Combustível/Lições). 2026-06-14.
-    @State private var subTab: GaragemSubTab = .carros
+    @State private var subTab: GaragemSubTab
 
     /// Permite abrir a tela já com uma sheet visível — usado pelos
     /// launch args `--p1-garagem-novo` / `--p1-garagem-carro` pra
@@ -34,9 +34,11 @@ struct GaragemView: View {
     var onNavSelect: (BottomNavItem) -> Void = { _ in }
 
     init(initialSheet: GaragemSheet? = nil,
+         initialSubTab: GaragemSubTab? = nil,
          onNavSelect: @escaping (BottomNavItem) -> Void = { _ in }) {
         self.initialSheet = initialSheet
         self.onNavSelect = onNavSelect
+        _subTab = State(initialValue: initialSubTab ?? .carros)
     }
 
     var body: some View {
