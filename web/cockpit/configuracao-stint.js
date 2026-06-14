@@ -414,7 +414,7 @@ async function carregarVidaUtil() {
 // ── Init ──────────────────────────────────────────────────────
 
 renderModos();
-selecionarModo('agressivo'); // sugestão default = Agressivo (decisão Flávio 2026-05-29)
+selecionarModo(); // sem escolha de modo (revogados 14/06): só monta envelope/botões
 renderChipsTreinar();        // chips nascem do catálogo canônico (11/06)
 ligarPropositos();
 selecionarProposito('livre'); // padrão natural: rodar livre
