@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plano de Auditoria — P1 Fast — 5 disciplinas</title>
+<style>
+  :root{
+    --bg:#0e1726; --card:#152033; --card2:#1b2840; --line:#27374f;
+    --tx:#e8eef7; --tx2:#a9b8cd; --tx3:#7b8aa3;
+    --azul:#4c8dff; --azul2:#2f6fe0;
+    --grave:#ff5c6c; --grave-bg:#3a1820;
+    --medio:#ffb454; --medio-bg:#3a2d16;
+    --baixo:#46c98b; --baixo-bg:#11331f; --baixo-bd:#1f5a3a;
+    --ok:#46c98b; --quebra:#ff5c6c; --incerto:#ffb454;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--tx);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    width:100%;
+  }
+  .wrap{width:100%; padding:0 28px 64px}
+  header.top{
+    width:100%; padding:30px 28px 22px; border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#11203a 0%, #0e1726 100%);
+  }
+  h1{margin:0; font-size:27px; letter-spacing:.2px}
+  .sub{color:var(--tx2); margin-top:6px; font-size:15px}
+  .meta-row{display:flex; flex-wrap:wrap; gap:10px; margin-top:16px}
+  .pill{
+    font-size:12.5px; padding:6px 12px; border-radius:999px;
+    border:1px solid var(--line); color:var(--tx2); background:#0f1a2e;
+  }
+  .pill b{color:var(--tx)}
+  .pill.read{border-color:var(--azul); color:#bcd4ff}
+  .section-title{
+    font-size:13px; letter-spacing:1.4px; text-transform:uppercase;
+    color:var(--tx3); margin:34px 0 12px; font-weight:700;
+  }
+  /* metodo */
+  .metodo{display:grid; grid-template-columns:repeat(4,1fr); gap:14px}
+  .metodo .m{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px}
+  .metodo .m h4{margin:0 0 6px; font-size:14px; color:#bcd4ff}
+  .metodo .m p{margin:0; color:var(--tx2); font-size:13.5px}
+  /* veredito */
+  .veredito{display:grid; grid-template-columns:1.2fr 1fr; gap:18px}
+  .vbox{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px}
+  .vbox h3{margin:0 0 12px; font-size:15px}
+  .vbox ul{margin:0; padding-left:18px}
+  .vbox li{margin:7px 0; color:var(--tx2); font-size:13.5px}
+  .vbox li b{color:var(--tx)}
+  .tagline{font-size:11.5px; padding:2px 8px; border-radius:6px; font-weight:700; letter-spacing:.3px; white-space:nowrap}
+  .t-ok{background:var(--baixo-bg); color:var(--baixo); border:1px solid var(--baixo-bd)}
+  .t-grave{background:var(--grave-bg); color:var(--grave); border:1px solid #5a2630}
+  .t-medio{background:var(--medio-bg); color:var(--medio); border:1px solid #5a4520}
+  /* disciplinas */
+  .disc{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:0; margin-top:18px; overflow:hidden}
+  .disc > .head{display:flex; align-items:flex-start; gap:16px; padding:20px 22px; background:linear-gradient(180deg,#1a2945,#152033); border-bottom:1px solid var(--line)}
+  .num{font-size:30px; font-weight:800; color:var(--azul); line-height:1; min-width:42px}
+  .head .h-tx h2{margin:0; font-size:19px}
+  .head .h-tx p{margin:5px 0 0; color:var(--tx2); font-size:14px; max-width:1100px}
+  .grid{display:grid; grid-template-columns:1.1fr 1.6fr; gap:0}
+  .col{padding:18px 22px}
+  .col + .col{border-left:1px solid var(--line)}
+  .lbl{font-size:12px; letter-spacing:.6px; text-transform:uppercase; color:var(--tx3); font-weight:700; margin:0 0 10px}
+  .lbl.again{margin-top:20px}
+  .col ul{margin:0; padding-left:17px}
+  .col li{margin:6px 0; color:var(--tx2); font-size:13.5px}
+  .col li b{color:var(--tx)}
+  .crit{color:#bcd4ff; font-size:13.5px; background:#0f1a2e; border:1px solid var(--line); border-radius:9px; padding:11px 13px; margin-top:4px}
+  /* riscos */
+  table.risk{width:100%; border-collapse:collapse; margin-top:2px}
+  table.risk td{padding:9px 8px; border-top:1px solid var(--line); vertical-align:top; font-size:13.3px; color:var(--tx2)}
+  table.risk tr:first-child td{border-top:none}
+  table.risk .sev{width:78px}
+  table.risk .ev{color:var(--tx3); font-size:12px; display:block; margin-top:3px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  table.risk b{color:var(--tx)}
+  .footer{margin-top:30px; background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:20px 22px}
+  .footer h3{margin:0 0 8px; font-size:16px}
+  .footer p{margin:6px 0; color:var(--tx2); font-size:14px}
+  .footer .next{display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-top:14px}
+  .footer .next div{background:#0f1a2e; border:1px solid var(--line); border-radius:9px; padding:11px; font-size:13px; color:var(--tx2)}
+  .footer .next b{color:#bcd4ff; display:block; margin-bottom:3px; font-size:13px}
+  @media (max-width:1100px){
+    .metodo{grid-template-columns:repeat(2,1fr)} .veredito{grid-template-columns:1fr}
+    .grid{grid-template-columns:1fr} .col + .col{border-left:none; border-top:1px solid var(--line)}
+    .footer .next{grid-template-columns:1fr 1fr}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>Plano de Auditoria — P1 Fast</h1>
+  <div class="sub">Cinco disciplinas de auditoria, fundamentadas em leitura real do sistema. Documento de planejamento — não é a execução.</div>
+  <div class="meta-row">
+    <span class="pill"><b>Data:</b> 14/06/2026</span>
+    <span class="pill"><b>Ambiente:</b> desenvolvimento</span>
+    <span class="pill read"><b>Modo:</b> somente leitura — produção protegida</span>
+    <span class="pill"><b>Base:</b> app iPhone, telemetria, nuvem, painéis, dados de referência</span>
+    <span class="pill"><b>Evidência:</b> 6 frentes de mapeamento, ~240 verificações reais</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="section-title">Como esta auditoria funciona</div>
+  <div class="metodo">
+    <div class="m"><h4>Tudo em leitura</h4><p>Auditar é olhar e medir. Nada é alterado, nada vai pro ar. Correção, se houver, é proposta depois e só entra em produção com sua autorização literal.</p></div>
+    <div class="m"><h4>Prova, não opinião</h4><p>Cada achado aponta o arquivo ou o comando que comprova. Onde não deu pra confirmar, fica marcado como "a verificar" — sem inventar.</p></div>
+    <div class="m"><h4>Funciona de verdade?</h4><p>Para cada função, três estados: funciona (com prova), quebrado (com prova) ou incerto (nunca testado de ponta a ponta). Sem "deve funcionar".</p></div>
+    <div class="m"><h4>O que não se mexe</h4><p>Curvas e marcos de Brasília, curva do motor (dyno), mockups aprovados e regras críticas são intocáveis. A auditoria só lê.</p></div>
+  </div>
+
+  <div class="section-title">Veredito preliminar — só do mapeamento (antes de auditar a fundo)</div>
+  <div class="veredito">
+    <div class="vbox">
+      <h3>Já está provado funcionando</h3>
+      <ul>
+        <li><b>App do iPhone:</b> empacota sem erro e passa em 546 testes automáticos. Captura de movimento e GPS validada em pista real (2026-05-06).</li>
+        <li><b>Telemetria e alertas:</b> 345 testes automáticos passando, zero falha — alertas críticos do motor, validação cruzada de sensores e frases autorizadas.</li>
+        <li><b>Painel do piloto:</b> validado ao vivo com o motor real do Bubi (826 amostras em 2,5 min, 2026-06-10).</li>
+        <li><b>Dados de referência:</b> curva do motor (dyno), curvas e marcos de Brasília e leitura da sonda lambda estão corretos e aprovados por você.</li>
+      </ul>
+    </div>
+    <div class="vbox">
+      <h3>Já apareceu como risco (a confirmar na auditoria)</h3>
+      <ul>
+        <li><span class="tagline t-grave">GRAVE</span> &nbsp;Tabelas que guardam os <b>limites do motor</b> e os <b>comandos do aparelho do carro</b> estão abertas para acesso público — qualquer um com a chave pública lê e altera.</li>
+        <li><span class="tagline t-medio">MÉDIO</span> &nbsp;<b>Envio do iPhone para a nuvem</b> teve travamento histórico; conserto aplicado, mas falta sua validação final de 1 minuto.</li>
+        <li><span class="tagline t-medio">MÉDIO</span> &nbsp;<b>Voltas de teste</b> não têm marca que as separe das voltas reais — podem contaminar o "melhor tempo" de referência.</li>
+        <li><span class="tagline t-medio">MÉDIO</span> &nbsp;Possível erro de unidade no <b>alvo de potência</b> (a tabela guarda em CV, o cálculo lê como kW).</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-title">As cinco disciplinas</div>
+
+  <!-- 1 SEGURANCA -->
+  <div class="disc">
+    <div class="head">
+      <div class="num">1</div>
+      <div class="h-tx">
+        <h2>Segurança e acesso à nuvem</h2>
+        <p>Garantir que só quem deve consegue ler e alterar os dados — em especial os dados que mexem com o motor e com o aparelho dentro do carro. Hoje há tabelas abertas para qualquer pessoa.</p>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="col">
+        <p class="lbl">O que vamos olhar</p>
+        <ul>
+          <li>Travas de acesso por usuário/equipe em todas as tabelas da nuvem (Supabase)</li>
+          <li>A fila de <b>comandos do aparelho do carro</b> (T4000) e os <b>eventos ao vivo</b></li>
+          <li>Tabelas dos <b>limites do motor</b> e do <b>aprendizado do shift light</b></li>
+          <li>Chaves de acesso espalhadas pelo código</li>
+          <li>As rotinas da nuvem e as rotas do servidor (quem exige login, quem não)</li>
+        </ul>
+        <p class="lbl again">Como audita</p>
+        <ul>
+          <li>Listar tabela por tabela: tem trava ou está aberta?</li>
+          <li>Tentar ler/gravar com acesso público e ver o que passa</li>
+          <li>Conferir se o aparelho no carro valida a origem antes de obedecer um comando</li>
+        </ul>
+      </div>
+      <div class="col">
+        <p class="lbl">Riscos já detectados (com prova)</p>
+        <table class="risk">
+          <tr><td class="sev"><span class="tagline t-grave">GRAVE</span></td><td><b>Limites do motor sem trava de acesso.</b> Três tabelas do shift light (pontos de troca, envelope de segurança e qualidade de troca) ficaram sem trava por usuário — qualquer um lê e altera o limite de giro e de força lateral, contaminando o aprendizado para todos os pilotos.<span class="ev">migration 0034 · POLICIES-VIVAS-2026-06-11.md ("3 tabelas sem trava de linha")</span></td></tr>
+          <tr><td class="sev"><span class="tagline t-grave">GRAVE</span></td><td><b>Fila de comandos do carro aberta ao público.</b> As tabelas de eventos e de comandos do aparelho (T4000) aceitam leitura/escrita de qualquer um com a chave pública. Precisa confirmar se o aparelho no carro valida a origem — se não validar, é risco físico.<span class="ev">migration 0023 · policy "anon_all USING(true) WITH CHECK(true)"</span></td></tr>
+          <tr><td class="sev"><span class="tagline t-grave">GRAVE</span></td><td><b>Perfil de reação do piloto aberto.</b> A tabela que modela o reflexo do piloto aceita leitura/escrita/exclusão por qualquer um. O próprio código admite que foi "pra simplificar no protótipo" e acabou indo pro ar.<span class="ev">migration 0035 (linha 70) · comentário "anon lê e grava"</span></td></tr>
+          <tr><td class="sev"><span class="tagline t-medio">MÉDIO</span></td><td><b>Chave pública dentro do código.</b> A chave de leitura do painel está escrita dentro de ~13 arquivos enviados ao repositório. É uma chave pública por natureza, mas facilita varredura automática por robôs.<span class="ev">grep do token em web/cockpit/*.js</span></td></tr>
+          <tr><td class="sev"><span class="tagline t-ok">OK</span></td><td><b>Chave mestra não está exposta.</b> A chave de administrador (service_role) não aparece no código; fica em variável de ambiente. As rotinas da nuvem exigem login e checam a equipe.<span class="ev">0 ocorrências no código · functions/ingest valida Bearer + membership</span></td></tr>
+        </table>
+        <p class="lbl again">Aprovado quando</p>
+        <div class="crit">Nenhuma tabela sensível aberta ao público; comandos do carro só aceitos de origem validada; chaves mestras só em ambiente. Cuidado registrado: o painel web usa a chave pública para ler/gravar — fechar acesso exige testar em desenvolvimento antes, para não derrubar o painel.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 DESEMPENHO -->
+  <div class="disc">
+    <div class="head">
+      <div class="num">2</div>
+      <div class="h-tx">
+        <h2>Desempenho e tempo real</h2>
+        <p>O sistema é "ao vivo": o dado tem que chegar rápido e o iPhone tem que aguentar a sessão inteira. O ponto mais sensível é o aquecimento do celular e a velocidade real do dado em pista, que nunca foram medidos de fato.</p>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="col">
+        <p class="lbl">O que vamos olhar</p>
+        <ul>
+          <li>Aquecimento do iPhone em sessão longa (captura de movimento a 100x por segundo)</li>
+          <li>Tempo real do dado entre o carro e o painel (cabo vs nuvem)</li>
+          <li>Fluidez do painel na tela de 10,5"</li>
+          <li>Carga das rotinas da nuvem em rajada de dados</li>
+          <li>Custo do cálculo que "encaixa" o carro no traçado a cada amostra</li>
+        </ul>
+        <p class="lbl again">Como audita</p>
+        <ul>
+          <li>Sessão controlada de 30–40 min medindo temperatura e perda de captura</li>
+          <li>Medir o atraso real do dado em pista (com Starlink), não só na bancada</li>
+          <li>Medir travadas de imagem no painel durante aceleração</li>
+        </ul>
+      </div>
+      <div class="col">
+        <p class="lbl">Riscos já detectados (com prova)</p>
+        <table class="risk">
+          <tr><td class="sev"><span class="tagline t-medio">MÉDIO</span></td><td><b>Aquecimento do iPhone não é monitorado.</b> A captura roda a 100x/seg sem nenhum controle de temperatura no código. Já houve desligamento por calor (17 min). Sessões longas de treino podem derrubar a captura.<span class="ev">LiveTelemetryRecorder.swift · sem leitura de thermalState · field test 2026-05-06</span></td></tr>
+          <tr><td class="sev"><span class="tagline t-medio">MÉDIO</span></td><td><b>Atraso real do dado nunca medido em pista.</b> O cabo promete 5–15 ms e a nuvem 150–500 ms, mas isso nunca foi medido com o carro a ~200 km/h.<span class="ev">transport.js (latências documentadas, não medidas)</span></td></tr>
+          <tr><td class="sev"><span class="tagline t-baixo">BAIXO</span></td><td><b>Painel redesenha a cada amostra, sem agrupar.</b> A 10x/seg deve aguentar, mas não há medição de travadas na tela 10,5".<span class="ev">cockpit-renderer.js (sem agrupamento de atualizações)</span></td></tr>
+          <tr><td class="sev"><span class="tagline t-baixo">BAIXO</span></td><td><b>Cálculo de "encaixe no traçado" cresce com a sessão.</b> 920 pontos × 36 mil amostras = ~33 milhões de comparações por sessão, sem otimização. Não observado como problema, mas não medido.<span class="ev">path-mapper.js (busca linear, sem índice)</span></td></tr>
+        </table>
+        <p class="lbl again">Aprovado quando</p>
+        <div class="crit">iPhone aguenta a sessão mais longa prevista sem desligar nem perder captura; atraso do dado medido e dentro do tolerável em pista; painel sem travadas perceptíveis na aceleração.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 CONFIABILIDADE -->
+  <div class="disc">
+    <div class="head">
+      <div class="num">3</div>
+      <div class="h-tx">
+        <h2>Confiabilidade funcional — o que funciona e o que está quebrado de verdade</h2>
+        <p>Separar, com prova, o que realmente funciona do que só parece funcionar. O núcleo está sólido e testado; os furos estão nas pontas: envio para a nuvem e dados de curva incompletos.</p>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="col">
+        <p class="lbl">O que vamos olhar</p>
+        <ul>
+          <li>Envio do iPhone para a nuvem (já travou no passado)</li>
+          <li>Dados das 8 curvas de Brasília (estão completos?)</li>
+          <li>Calibrações do motor ainda marcadas como "confirmar"</li>
+          <li>Troca automática entre cabo e nuvem quando o cabo cai</li>
+          <li>Limites do motor fixos no código vs vindos da nuvem</li>
+          <li>Leitura real do aparelho do carro (T4000), nunca feita de fato</li>
+        </ul>
+        <p class="lbl again">Como audita</p>
+        <ul>
+          <li>Teste de ponta a ponta: capturar, enviar e confirmar que chegou na nuvem</li>
+          <li>Conferir cada função "incerta" com dado real, não com simulador</li>
+          <li>Forçar queda de cabo e ver se a nuvem assume sem perder o fio</li>
+        </ul>
+      </div>
+      <div class="col">
+        <p class="lbl">Riscos já detectados (com prova)</p>
+        <table class="risk">
+          <tr><td class="sev"><span class="tagline t-medio">MÉDIO</span></td><td><b>Envio para a nuvem pendente de validação.</b> Já houve 102 mil amostras presas e 197 itens parados; o conserto foi aplicado, mas falta seu teste final (1 min com o app aberto). O formato da nuvem ainda está atrás do app em alguns campos.<span class="ev">PR #217 (8b4f31aa) · memória envio-nuvem-2026-05-25</span></td></tr>
+          <tr><td class="sev"><span class="tagline t-medio">MÉDIO</span></td><td><b>Dados das curvas de Brasília incompletos.</b> As 8 curvas estão sem alguns campos (referência de ápice, estratégia, tipo de curva, reta seguinte). Sem isso, a análise pedagógica por curva fica cega.<span class="ev">docs/PENDENCIAS_GATE.md (P0) · classifyApex() retorna vazio</span></td></tr>
+          <tr><td class="sev"><span class="tagline t-medio">MÉDIO</span></td><td><b>Calibrações do motor ainda "a confirmar".</b> Cinco limites (pressão de óleo, temperatura, lambda, bateria) usam valores conservadores não validados no motor real.<span class="ev">critical-rules.js (marcas NEEDS_CALIBRATION)</span></td></tr>
+          <tr><td class="sev"><span class="tagline t-baixo">BAIXO</span></td><td><b>Troca cabo↔nuvem nunca testada de verdade.</b> A lógica existe, mas nunca houve queda real de cabo em pista para comprovar.<span class="ev">transport.js (TransportSelector, sem teste de campo)</span></td></tr>
+          <tr><td class="sev"><span class="tagline t-baixo">BAIXO</span></td><td><b>Limites do motor fixos no código.</b> Mudar o limite na nuvem não atualiza o painel sozinho (hoje vale só pro Bubi).<span class="ev">main-t3000.js (BUBI_LIMITS fixo)</span></td></tr>
+        </table>
+        <p class="lbl again">Aprovado quando</p>
+        <div class="crit">Envio iPhone→nuvem confirmado de ponta a ponta; 8 curvas completas; calibrações validadas no motor real; queda de cabo coberta sem perda de dado; cada função "incerta" passou para "funciona" ou "quebrado" — sem zona cinzenta.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 INTEGRIDADE -->
+  <div class="disc">
+    <div class="head">
+      <div class="num">4</div>
+      <div class="h-tx">
+        <h2>Integridade e fidelidade dos dados</h2>
+        <p>O dado tem que ser fiel: a unidade certa, a referência certa, o tempo certo. Aqui o perigo não é o sistema parar — é ele mostrar um número errado parecendo certo, e o piloto confiar.</p>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="col">
+        <p class="lbl">O que vamos olhar</p>
+        <ul>
+          <li>Unidades da curva do motor (CV vs kW) usadas no alvo de potência</li>
+          <li>Separação entre voltas reais e voltas de teste</li>
+          <li>Leitura da sonda lambda (banda larga, não a estreita)</li>
+          <li>Tipo de pneu na referência de melhor tempo (chave consistente?)</li>
+          <li>Ápice de referência que se recalcula sozinho</li>
+          <li>Traçado limpo de Brasília (20 pontos removidos, sem registro de quais)</li>
+        </ul>
+        <p class="lbl again">Como audita</p>
+        <ul>
+          <li>Refazer a conta do alvo de potência e comparar com a curva oficial</li>
+          <li>Procurar voltas de teste sendo usadas como referência</li>
+          <li>Conferir leitura da lambda contra o software oficial da injeção</li>
+        </ul>
+      </div>
+      <div class="col">
+        <p class="lbl">Riscos já detectados (com prova)</p>
+        <table class="risk">
+          <tr><td class="sev"><span class="tagline t-medio">MÉDIO</span></td><td><b>Possível erro de unidade no alvo de potência.</b> A tabela guarda a potência em CV, mas o cálculo lê o campo como kW. CV e kW não são iguais (~1,4% de diferença) — pode jogar o alvo do shift light pra fora.<span class="ev">dyno_curve_seed.sql (potencia_cv) × dyno-target-calculator.js (lê power_kw)</span></td></tr>
+          <tr><td class="sev"><span class="tagline t-medio">MÉDIO</span></td><td><b>Voltas reais e de teste sem separação.</b> Não há marca no banco que distinga volta real de volta sintética. Uma volta de teste pode virar "melhor tempo" de referência sem querer.<span class="ev">tabela voltas (sem campo de origem) · histórico de 10 voltas sintéticas</span></td></tr>
+          <tr><td class="sev"><span class="tagline t-baixo">BAIXO</span></td><td><b>Risco de regressão na sonda lambda.</b> Hoje lê a banda larga (correto). Se um código novo copiar a versão antiga, volta a ler a estreita (não instalada) e mostra 0,00 sempre.<span class="ev">PR #216 corrigiu · t4000-packet-parser.js</span></td></tr>
+          <tr><td class="sev"><span class="tagline t-baixo">BAIXO</span></td><td><b>Tipo de pneu como texto livre.</b> Sem padronização, "Radial 185/14" e "R185" viram chaves diferentes e fragmentam a referência de melhor tempo.<span class="ev">0026_melhores_passagens_trecho.sql (tipo_pneu text, sem restrição)</span></td></tr>
+          <tr><td class="sev"><span class="tagline t-baixo">BAIXO</span></td><td><b>Ápice de referência se move sozinho.</b> É de propósito (mostra a melhor passagem), mas pode mudar a referência do piloto sem aviso. Confirmar se o comportamento é o que você decidiu.<span class="ev">apice_modo: calculado-da-melhor-passagem (mig 0030)</span></td></tr>
+        </table>
+        <p class="lbl again">Aprovado quando</p>
+        <div class="crit">Alvo de potência confere com a curva oficial; voltas de teste não entram como referência; lambda lê a banda larga; chave de pneu padronizada; comportamento do ápice é o que você aprovou. Intocável: curva do motor, curvas e marcos de Brasília.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 QUALIDADE -->
+  <div class="disc">
+    <div class="head">
+      <div class="num">5</div>
+      <div class="h-tx">
+        <h2>Qualidade de código e disciplina de processo</h2>
+        <p>Saúde da "oficina": dá pra mudar o sistema sem quebrar o que já funciona e sem perder trabalho? O código está testado, mas o processo deixa trabalho órfão e tem armadilhas na hora de subir mudança pra nuvem.</p>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="col">
+        <p class="lbl">O que vamos olhar</p>
+        <ul>
+          <li>Trabalho preso em linhas separadas que nunca chegou à versão oficial</li>
+          <li>Mudanças de banco duplicadas que travam a atualização da nuvem</li>
+          <li>Verificação automática a cada envio (existe rede de segurança?)</li>
+          <li>Dívida técnica registrada e em aberto</li>
+          <li>Versões finais de tela que ficaram órfãs</li>
+        </ul>
+        <p class="lbl again">Como audita</p>
+        <ul>
+          <li>Mapear o que está em linha separada e não chegou à versão oficial</li>
+          <li>Conferir a sequência de mudanças de banco e os pontos que travam</li>
+          <li>Verificar se os testes rodam sozinhos a cada envio ou só na mão</li>
+        </ul>
+      </div>
+      <div class="col">
+        <p class="lbl">Riscos já detectados (com prova)</p>
+        <table class="risk">
+          <tr><td class="sev"><span class="tagline t-medio">MÉDIO</span></td><td><b>Mudanças de banco duplicadas travam a atualização.</b> Há mudanças repetidas (0026=0027) e uma de limpeza que apaga dados (0028). O método de subir pra nuvem trava nelas e exige reparo manual — e re-rodar a errada pode apagar dados bons (as curvas).<span class="ev">supabase/migrations 0025–0028 · memória migracao-producao-2026-06-14</span></td></tr>
+          <tr><td class="sev"><span class="tagline t-baixo">BAIXO</span></td><td><b>Muito trabalho órfão em linhas separadas.</b> 172 linhas de trabalho e 15 ambientes isolados; algumas versões finais não chegaram à versão oficial. Dificulta achar a última versão de cada tela.<span class="ev">git branch -r (172) · git worktree list (15)</span></td></tr>
+          <tr><td class="sev"><span class="tagline t-baixo">BAIXO</span></td><td><b>Testes sem rede automática.</b> Os 546 testes do app rodam por um atalho próprio, não numa verificação automática a cada envio. Se alguém esquecer de rodar, uma quebra passa.<span class="ev">Package.swift (alvo "p1fast-smoke") · sem verificação automática dedicada</span></td></tr>
+          <tr><td class="sev"><span class="tagline t-baixo">BAIXO</span></td><td><b>Dívida técnica em aberto.</b> Itens prioritários listados: curvas incompletas, calibração de alertas, dúvidas do aparelho do carro.<span class="ev">docs/PENDENCIAS_GATE.md · BLOCKERS.md (E2)</span></td></tr>
+        </table>
+        <p class="lbl again">Aprovado quando</p>
+        <div class="crit">Sequência de mudanças de banco saneada e segura de subir; versões finais incorporadas à versão oficial; testes rodando como rede automática; dívida priorizada e datada. Intocável: arquivo que garante a reprodutibilidade do app e mockups aprovados.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <h3>Próximo passo — você decide por onde começar</h3>
+    <p>Este é o plano. A auditoria de verdade é uma decisão sua: posso rodar tudo de uma vez ou por disciplina. Minha recomendação é começar pela <b>Segurança</b> — é onde já apareceu o achado mais sério (tabelas do motor abertas ao público) e tem correção objetiva.</p>
+    <p>Importante: qualquer correção depois é preparada em desenvolvimento e só vai pro ar com sua autorização. Auditar não muda nada por si só.</p>
+    <div class="next">
+      <div><b>1. Segurança</b>Recomendado começar aqui. Achados graves, correção clara.</div>
+      <div><b>2. Desempenho</b>Precisa de uma sessão real para medir.</div>
+      <div><b>3. Confiabilidade</b>Fecha o que está "incerto".</div>
+      <div><b>4. Integridade</b>Caça o número errado que parece certo.</div>
+      <div><b>5. Qualidade</b>Saneia o processo e a dívida.</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
