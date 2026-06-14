@@ -38,23 +38,25 @@ struct PendenciasView: View {
                 content
                     .padding(.horizontal, Spacing.lg)
                     .padding(.top, Spacing.md)
-                    .padding(.bottom, 120)
+                    .padding(.bottom, showFootBar ? 120 : 140)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .background(Color.surface)
 
-            FootBar(
-                onCancel: onClose,
-                onSave: onClose,
-                saveLabel: "Fechar",
-                canSave: true
-            )
+            if showFootBar {
+                FootBar(
+                    onCancel: onClose,
+                    onSave: onClose,
+                    saveLabel: "Fechar",
+                    canSave: true
+                )
+            }
         }
         .preferredColorScheme(.dark)
         .task { await refresh() }
         .sheet(item: $editandoNota) { item in
             NotaSheet(
-                titulo: item.template.titulo,
+                titulo: item.titulo,
                 nota: $notaText,
                 onCancel: { editandoNota = nil },
                 onSave: {
@@ -66,6 +68,32 @@ struct PendenciasView: View {
                     }
                 }
             )
+        }
+        .alert("Incluir pendência", isPresented: Binding(
+            get: { incluindoNoGrupo != nil },
+            set: { if !$0 { incluindoNoGrupo = nil; novoItemTitulo = "" } }
+        ), presenting: incluindoNoGrupo) { grupo in
+            TextField("O que está faltando?", text: $novoItemTitulo)
+            Button("Cancelar", role: .cancel) { novoItemTitulo = "" }
+            Button("Incluir") { confirmarIncluir(grupo) }
+        } message: { grupo in
+            Text("Novo item em \(grupo.grupoTitulo) — só pra este evento.")
+        }
+    }
+
+    private func confirmarIncluir(_ grupo: PendenciaGrupoView) {
+        let titulo = novoItemTitulo.trimmingCharacters(in: .whitespacesAndNewlines)
+        novoItemTitulo = ""
+        guard !titulo.isEmpty else { return }
+        Task {
+            try? await repo.addExtra(
+                eventoId: eventoId,
+                grupoId: grupo.grupoId,
+                grupoTitulo: grupo.grupoTitulo,
+                grupoNum: grupo.grupoNum,
+                titulo: titulo
+            )
+            await refresh()
         }
     }
 
