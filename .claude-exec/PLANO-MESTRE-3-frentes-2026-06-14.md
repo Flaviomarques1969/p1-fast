@@ -16,7 +16,9 @@
 - Sem inventar carga de freio: sem sensor físico, é ALVO/estimativa, sempre rotulado.
 - Validação visual SEMPRE em velocidade real (regra do Flávio, rodada 20). Abrir no navegador.
 
-## DECISÕES (recomendação pronta; confirmar 1 card por vez no momento de cada pedaço)
+## DECISÕES — FECHADAS (Flávio 14/06: "segue todas as recomendações")
+> NÃO parar pra perguntar D1..D5 na execução. Usar a opção recomendada de cada uma (abaixo).
+> Flávio pode reabrir qualquer uma depois; nenhuma é irreversível, nenhuma toca produção.
 - **D1 (Frente A) — Critério do trail CERTO:** REC = **2 de 2** (seguiu o formato da melhor daquele
   trecho + mínima ainda freando); ponto de freada vira AVISO, não reprovação. Sobe pra 3 de 3 quando
   a pressão real entrar, sem mudar a tela. (Hoje, a 1 Hz por GPS, exigir 3 de 3 reprovaria passagem boa.)
