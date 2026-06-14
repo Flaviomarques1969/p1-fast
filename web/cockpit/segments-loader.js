@@ -22,9 +22,9 @@
 //   saida_lat_a, saida_lng_a, saida_lat_b, saida_lng_b.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
 
-const SUPABASE_URL  = 'https://fvhwltzhytpnhlqbttmd.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2aHdsdHpoeXRwbmhscWJ0dG1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTExNDAsImV4cCI6MjA5MzM4NzE0MH0._ZpxksUnuVFhLzCB5x7bBiZ_VLQQR5cH4A1T-0-mvrA';
+const SUPABASE_ANON = SUPABASE_ANON_KEY;
 
 // IDs canônicos registrados na memória (P1 Fast, 26/05/2026).
 export const BRASILIA_AUTODROMO_ID = 'e8335412-3312-54fe-b634-db2d02c7fa81';
