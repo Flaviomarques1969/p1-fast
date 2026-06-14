@@ -186,6 +186,8 @@ struct EstoqueItemEditorView: View {
 
     let item: EstoqueItem?
     let escopoInicial: String
+    var nomeInicial: String? = nil
+    var blocoIdInicial: String? = nil
     let onClose: () -> Void
     let onSaved: (EstoqueItem) -> Void
 
