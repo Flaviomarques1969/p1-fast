@@ -6041,12 +6041,11 @@ html,body{
     { t:14.0, rpm:5800, gear:2 }
   ];
   var SHIFT_LIGHT_CFG = {
-    // Calibrado pro Bubi (Celta 1.4) — dinamômetro 18/05. Troca na POTÊNCIA MÁXIMA.
-    rpmMin: 4800,
-    rpmMax: 6350,
-    shiftPoint: 6050,   // potência máxima = ponto de troca (máximo desempenho)
-    redline: 6300,      // sirene / limite de segurança — NÃO é ponto de troca
-    totalT: 12.0
+    rpmMin: 4000,
+    rpmMax: 8500,
+    shiftPoint: 7800,
+    redline: 8400,
+    totalT: 14.0
   };
 
   function shiftLightSample(dt){
