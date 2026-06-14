@@ -6824,6 +6824,36 @@ html,body{
   }
 
   var shiftLightAnimId = null;
+  // Renderiza o bloco do shift light a partir de VALORES (rpm, marcha).
+  // Usado tanto pela demonstração (roteiro) quanto pelo modo REAL (RPM do carro).
+  // Calibração vem de SHIFT_LIGHT_CFG (Bubi: troca em 6.050, sirene em 6.300).
+  function renderShiftLightFromValues(rpm, gear){
+    var pct = (rpm - SHIFT_LIGHT_CFG.rpmMin) / (SHIFT_LIGHT_CFG.rpmMax - SHIFT_LIGHT_CFG.rpmMin);
+    var litCount = Math.max(0, Math.min(12, Math.round(pct * 12)));
+
+    var hosts = document.querySelectorAll('.b-custom.is-shift-light');
+    for(var h=0; h<hosts.length; h++){
+      var host = hosts[h];
+      var leds = host.querySelectorAll('.sl-led');
+      for(var i=0; i<leds.length; i++){
+        var led = leds[i];
+        led.classList.remove('lit-green','lit-champagne','lit-amber','lit-red','lit-blue');
+        if(i < litCount) led.classList.add(shiftLightLedClass(i));
+      }
+      var rpmEl  = host.querySelector('[data-sl-rpm]');
+      var gearEl = host.querySelector('[data-sl-gear]');
+      var rpmWrap = host.querySelector('[data-sl-rpm-wrap]');
+      if(rpmEl)  rpmEl.textContent  = Math.round(rpm);
+      if(gearEl) gearEl.textContent = gear;
+      if(rpmWrap){
+        rpmWrap.classList.remove('zone-champagne','zone-amber','zone-red');
+        if(rpm >= SHIFT_LIGHT_CFG.redline) rpmWrap.classList.add('zone-red');
+        else if(rpm >= SHIFT_LIGHT_CFG.shiftPoint) rpmWrap.classList.add('zone-amber');
+        else if(rpm >= 5700) rpmWrap.classList.add('zone-champagne');
+      }
+      host.classList.toggle('shift-now', rpm >= SHIFT_LIGHT_CFG.shiftPoint);
+    }
+  }
   function startShiftLightAnimation(){
     if(shiftLightAnimId !== null) return;
     var tStart = performance.now();
@@ -6831,34 +6861,14 @@ html,body{
       var now = performance.now();
       var dt = ((now - tStart) / 1000) % SHIFT_LIGHT_CFG.totalT;
       var s = shiftLightSample(dt);
-      var pct = (s.rpm - SHIFT_LIGHT_CFG.rpmMin) / (SHIFT_LIGHT_CFG.rpmMax - SHIFT_LIGHT_CFG.rpmMin);
-      var litCount = Math.max(0, Math.min(12, Math.round(pct * 12)));
-
-      var hosts = document.querySelectorAll('.b-custom.is-shift-light');
-      for(var h=0; h<hosts.length; h++){
-        var host = hosts[h];
-        var leds = host.querySelectorAll('.sl-led');
-        for(var i=0; i<leds.length; i++){
-          var led = leds[i];
-          led.classList.remove('lit-green','lit-champagne','lit-amber','lit-red','lit-blue');
-          if(i < litCount) led.classList.add(shiftLightLedClass(i));
-        }
-        var rpmEl  = host.querySelector('[data-sl-rpm]');
-        var gearEl = host.querySelector('[data-sl-gear]');
-        var rpmWrap = host.querySelector('[data-sl-rpm-wrap]');
-        if(rpmEl)  rpmEl.textContent  = Math.round(s.rpm);
-        if(gearEl) gearEl.textContent = s.gear;
-        if(rpmWrap){
-          rpmWrap.classList.remove('zone-champagne','zone-amber','zone-red');
-          if(s.rpm >= SHIFT_LIGHT_CFG.redline) rpmWrap.classList.add('zone-red');
-          else if(s.rpm >= SHIFT_LIGHT_CFG.shiftPoint) rpmWrap.classList.add('zone-amber');
-          else if(s.rpm >= 5700) rpmWrap.classList.add('zone-champagne');
-        }
-        host.classList.toggle('shift-now', s.rpm >= SHIFT_LIGHT_CFG.shiftPoint);
-      }
+      renderShiftLightFromValues(s.rpm, s.gear);
     }
     shiftLightAnimId = setInterval(tick, 100);
     tick();
+  }
+  // Para a animação de demonstração (usada ao entrar no modo REAL — Flávio 14/06).
+  function stopShiftLightAnimation(){
+    if(shiftLightAnimId !== null){ clearInterval(shiftLightAnimId); shiftLightAnimId = null; }
   }
 
   // ─── STINT BAR — barra vertical com status colorido por volta ────
