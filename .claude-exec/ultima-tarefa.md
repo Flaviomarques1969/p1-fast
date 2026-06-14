@@ -69,4 +69,19 @@
   (tests/domain antigos, sem jest/vitest). Usei node-smoke pra entrar na bateria de verdade.
 - Evidência: `npm run smoke` = 333 ok / 0 fail (24 arquivos).
 
-### FASE 2 — tipo_curva no banco DEV — EM EXECUÇÃO
+### FASE 2 — tipo_curva no banco — PARCIAL (artefato pronto e validado; falta aplicar no DEV vivo)
+- Criada migration supabase/migrations/0043_track_segments_tipo_curva.sql (ADD COLUNA tipo_curva +
+  CHECK T0–T5/SF/ND + COMMENT + 8 UPDATEs por nome no layout de Brasília). Padrão conferido na FONTE
+  DE VERDADE (relatorios/_decisao-flavio-padrao-curvas-2026-06-13.json do worktree), não só memória.
+- Adicionado web/cockpit/tipo-trecho-loader.js :: carregarTipoCurvaPorTrecho() — TOLERANTE A FALHA
+  (retorna {} se a coluna não existe, ex.: produção não migrada — não quebra a leitura ao vivo).
+  NÃO mexi no segments-loader (não pode falhar por coluna nova).
+- VALIDAÇÃO real: rodei a ALTER+CHECK+8 UPDATEs num Postgres 17 real, em tabela TEMPORÁRIA isolada
+  (zero impacto): 8 curvas com tipo_curva certo, CHECK rejeitou valor inválido, 0 nulos / 0 fora do enum.
+- Evidência: `npm run smoke` = 333 ok / 0 fail; schema-parity 15 ok / 0 fail (lê a 0043).
+- BLOQUEIO HONESTO: o stack Supabase LOCAL do P1 Fast (DEV) NÃO está no ar — a porta 54322 está
+  ocupada por OUTRO projeto (cgf_*, em uso há 4 dias). Não derrubo o que não é meu. E produção
+  (cloud fvhwltzhytpnhlqbttmd) é protegida. Então a migration está pronta e validada, mas NÃO foi
+  aplicada num banco DEV vivo do P1 Fast. Aplicar exige subir o stack do P1 Fast (decisão do Flávio).
+
+### FASE 3 — Re-etiquetar frenagem/Vmin nas 56 passagens (offline, em cópia) — EM EXECUÇÃO
