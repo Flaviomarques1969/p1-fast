@@ -194,6 +194,7 @@ private struct ReadyRoot: View {
     @StateObject private var voltaVideoRepo: VoltaVideoRepository
     @StateObject private var manutencaoStore: ManutencaoConsumiveisStore
     @StateObject private var pecaRepo: PecaRepository
+    @StateObject private var estoqueRepo: EstoqueRepository
     /// Histórico de navegação estável (ver NavRouter em HomeView.swift):
     /// criado UMA vez aqui pra não se perder quando os repositórios acima
     /// publicam e re-renderizam esta view.
