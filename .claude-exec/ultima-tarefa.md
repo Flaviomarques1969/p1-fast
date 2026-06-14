@@ -2,6 +2,52 @@
 
 > Tarefa ANTERIOR (Vista Piloto / Command Box) preservada em
 > `ultima-tarefa-backup-vista-piloto-2026-06-14.md`.
+> A tarefa de menu (Garagem/Pendências) abaixo está TASK_DONE; preservada na íntegra.
+
+## TASK_INIT — 2026-06-14 (noite) — Shift Light Inteligente: cérebro dos 3 aprendizados + ligação ao dado real
+
+1. **Pedido original de Flávio:**
+   "O que falta (próxima fase — o cérebro que aprende): os 3 aprendizados (o câmbio, o tempo de
+   passagem, a sua reação) e ligar na rotação real. É aí que também se resolve a marcha real no ao
+   vivo. Esse cérebro só ganha vida de verdade com o dado do dia de pista (15–16). continue"
+
+2. **Objetivo (1 frase):**
+   Levar o cérebro do shift light (3 aprendizados) do estado atual até estar LIGADO ao RPM real e
+   resolvendo a marcha ao vivo — construindo agora tudo que não depende do dado de pista, com testes.
+
+3. **Critérios objetivos de conclusão:**
+   - Mapa VERIFICADO do que já existe vs a visão de 14/06 (sem inventar).
+   - Câmbio: relação por marcha REAPRENDE sozinha quando a regulagem muda (online), não só em lote.
+   - Tempo de passagem: alvo na POTÊNCIA MÁXIMA (6.050 Bubi) + refino por passagem (o que der sem pista).
+   - Reação: confirmada completa (mede delta luz→troca e antecipa).
+   - Ligação ao vivo: no modo REAL para a animação demo, consome RPM real e mostra marcha "—" até inferir.
+   - test:shift-light + smoke verdes; validação no navegador SEM publicar.
+
+4. **Leitura confirmada:** `~/.claude/CLAUDE.md` sim · `~/.claude-decisoes/padroes.md` sim (zerado, 0 decisões) ·
+   FLAVIO_EXECUTION_PROTOCOL sim · FLAVIO_DONE_CHECKLIST sim · FLAVIO_ENVIRONMENT_RULES sim ·
+   FLAVIO_COMMUNICATION_RULES sim · `P1 Fast/CLAUDE.md` + memórias (global e P1 Fast) sim.
+
+5. **Plano (≤5 passos):**
+   1. Mapear estado real verificado (3 aprendizados + detecção + ligação ao vivo + alvo) vs visão 14/06 — leitura paralela com verificação adversarial. [só leitura]
+   2. Apresentar o buraco real ao Flávio (existe / falta / só o dia de pista fecha).
+   3. Construir o construível agora, com testes (relearning online do câmbio; refino do ponto por passagem; alvo na potência máxima; bug da animação demo no modo real).
+   4. Rodar test:shift-light + smoke; validar no navegador sem publicar.
+   5. Atualizar registro e relatar. Produção só com "MIGRAR PARA PRODUÇÃO".
+
+6. **Áreas/arquivos a inspecionar:**
+   - `src/domain/{gear-estimation,gear-signatures,gear-shift-detector,pilot-reaction,dyno-target-calculator,shift-target}.js`
+   - `src/pipeline/{rpm-source,shift-light-bridge,shift-event-detector}.js`
+   - `web/cockpit/{shift-light-orquestrador,pilot-reaction}.js`
+   - `_design-reference/mockup-command-box-vista-piloto.html` (startShiftLightAnimation/liveGear/SHIFT_LIGHT_*)
+   - `tests/{domain,pipeline,ui}/*shift*` · `relatorios/shift-light-*-2026-06-14.html`
+   - Dados reais p/ teste: `~/Documents/p1fast-backup-voltas-reais/` (GPS 23-24/05 — tem velocidade, NÃO tem RPM).
+
+7. **Ambiente alvo:** desenvolvimento (domínio/pipeline JS + mockup + painel local).
+8. **Produção protegida:** sim.
+9. **Autorização para produção:** não.
+10. **Evidência da autorização para produção:** não recebida.
+11. **Riscos:** `web/cockpit` ESTÁ publicado (p1t4000) — editar local é dev, publicar é prod (proibido sem ordem); o fix da animação NÃO pode mexer nas posições aprovadas (ATUAL.json) nem na calibração Bubi aplicada 14/06; validação real do câmbio só no dia de pista 15-16 (precisa RPM+aceleração reais juntos, que o GPS não dá).
+12. **Status inicial:** iniciado — fase de mapeamento verificado.
 
 ## TASK_INIT — 2026-06-14 — Reorganizar menu de baixo (Cadastros → Garagem, Pendências no lugar)
 
