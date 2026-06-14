@@ -108,4 +108,15 @@
 - Teste DC-01 atualizado (5 sub-trechos, ordem pace entre apice e saida). +4 testes de acharPaceIdx.
 - Evidência: `npm run smoke` = 345 ok / 0 fail. Backup canônico intacto.
 
-### FASE 5 — Ligar o agente vivo (classificação chega ao app, DEV/replay) — EM EXECUÇÃO
+### FASE 5 — Ligar o agente vivo (classificação chega ao app, DEV/replay) — CONCLUÍDA (14/06)
+- Harness tools/replay-classificador-vivo.mjs: roda as 56 passagens reais pelo bridge VIVO real
+  (criarClassificadorVivo). Resultado: 8 trechos, 56 passagens, estado acumulou em todos; nasceram
+  3 propostas EXATAMENTE onde o Flávio sobrepôs a telemetria de maio (PLACAR T2→SF, CURVA 01 T5→T0,
+  CURVA 2 T0→T1) — bate com os "era X" da memória (validação cruzada). Honesto: maio entra como
+  REFERÊNCIA em produção; proposta real virá de dado a 25 Hz.
+- main-t3000.js: agente vivo LIGADO (guardado, null-safe). tipoAprovado do banco (carregarTipoCurvaPorTrecho,
+  Fase 2) com fallback ao padrão definitivo embutido; persistência LOCAL (localStorage) — NÃO grava
+  na nuvem de produção; onProposta loga + marca localStorage pra o celular rever.
+- Evidência: sintaxe OK; cockpit-bootstrap 7 ok, cockpit-web 16 ok; `npm run smoke` 345 ok / 0 fail.
+
+### FASE 6 — Bloco PASSAGEM na tela (entrada/freio/Vmin/ápice/PACE/saída + tipo + formato) — EM EXECUÇÃO
