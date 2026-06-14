@@ -216,7 +216,7 @@ export function criarShiftLightOrquestrador({
             ? Math.max(0, (_rpmHistory[_rpmHistory.length - 1].rpm - _rpmHistory[0].rpm) /
                 Math.max(0.05, (_rpmHistory[_rpmHistory.length - 1].ts - _rpmHistory[0].ts) / 1000))
             : 0;
-          const alvoVisualAtUltimo = _ultimoCalcPorMarcha[`${modoAtual}:${_ultimaMarchaVista}`]?.rpmOtimo;
+          const alvoVisualAtUltimo = _alvoTrocaParaMarcha(_ultimaMarchaVista).rpmOtimo;
           if (Number.isFinite(_rpmAntesUltimo) && Number.isFinite(alvoVisualAtUltimo)) {
             const novosProfiles = learnFromEvent({
               piloto_id:     _pilotoId,
