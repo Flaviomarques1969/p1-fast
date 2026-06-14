@@ -81,8 +81,8 @@ Estado: hardware testado e funcionando (25 Hz). No código, NADA do RaceBox foi 
 espera" (a fonte 'racebox' já está prevista no sistema de telemetria). A especificação existe mas está
 arquivada e desatualizada (diz Mini PC). Falta decidir por onde integra e construir a leitura.
 
-- [ ] **B1 — Travar o ponto de integração (D3).** Card com os 3 caminhos + recomendação notebook
-      Windows; registrar. Define a tecnologia da leitura. [VOCÊ DECIDE]
+- [ ] **B1 — Aplicar o ponto de integração já decidido (D3 = notebook Windows).** Registrar a escolha
+      (bate com ADR-023). Define a tecnologia da leitura. [EU FAÇO]
 - [ ] **B3 — Decodificador do pacote (função pura).** Decodifica o pacote de 80 bytes em canais
       (lat/lng, velocidade, força G, giro, bateria) validando o checksum. [EU FAÇO]
       Critério: decodifica um pacote real capturado e bate com os valores; checksum inválido vira erro.
