@@ -25,9 +25,9 @@ Curva oficial do motor do Bubi, rodada na Lenza Powerchips em 2026-05-18. Esta �
 
 - **2.500–2.700 rpm:** motor ainda subindo (torque saltando de 0 pra 160 Nm).
 - **2.800–5.200 rpm:** torque vive num platô entre **150-162 Nm** — zona de uso na pista.
-- **5.200 rpm:** **PICO DE TORQUE — 162,06 Nm.** Ponto ideal pra trocar de marcha.
+- **5.200 rpm:** **PICO DE TORQUE — 162,06 Nm.** NÃO é o ponto de troca — trocar aqui é cedo (perde potência).
 - **5.400–6.000 rpm:** torque cai (158 → 145 Nm) mas potência ainda sobe (porque RPM compensa).
-- **6.050 rpm:** **pico de potência.**
+- **6.050 rpm:** **PICO DE POTÊNCIA — é AQUI que se troca de marcha** (máximo desempenho). Confirmado ponto a ponto: 122,77 HP.
 - **Acima de 6.200 rpm:** queda abrupta — motor não responde mais. NÃO passar de 6.350.
 
 ## Implicações pro shift light no painel do piloto
