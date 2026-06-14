@@ -5,12 +5,18 @@
 //   - IA opera sozinha DENTRO do envelope durante o stint.
 //   - Tudo persistido pra revisão pós-stint.
 
-import { listarModos, janelaParaModo, ENVELOPE_DEFAULT_BUBI, ModoStint } from './shift-light-modos.js';
+import { PERFIL_BUBI, ENVELOPE_DEFAULT_BUBI } from './shift-light-modos.js';
 import { listarTreinos, treinoPorFoco } from './catalogo-treinos.js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
 import { normalizarTipoPneu } from './tipo-pneu-normalizer.js';
 
-let modoSelecionado = null;
+// Modos (Durabilidade/Normal/Agressivo) REVOGADOS por decisão do Flávio 14/06/2026:
+// carro de corrida = um comportamento só (máximo desempenho, troca na potência
+// máxima). A tela não oferece mais escolha. Mantém-se um valor compatível com o
+// banco (a coluna modo_stint aceita os valores antigos) — 'agressivo' = "máximo
+// ganho de volta", o mais próximo de "máximo desempenho".
+const MODO_STINT_REGISTRO = 'agressivo';
+let modoSelecionado = MODO_STINT_REGISTRO; // sempre selecionado (não há mais escolha)
 
 // ── Plano do stint (ditado Flávio 10/06/2026) ─────────────────
 // propósito: livre | testar (parte do carro) | treinar (trail braking ou um
