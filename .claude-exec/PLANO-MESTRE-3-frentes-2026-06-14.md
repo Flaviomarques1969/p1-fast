@@ -60,16 +60,25 @@ ainda não usa a pressão real. Sensor de pressão chega seg/ter 15-16/06.
       pra fusão A3); religação em `bridge.ingestT4000` (main-t3000.js) levando pressão/pedal por tMono;
       log "1ª amostra de freio chegou ao motor" (prova de console, visível em A5). Proxy GPS segue a
       fonte (AF-03 prova veredito inalterado). Testes AF-01/02/03 + RL-10. Bateria verde.
-- [ ] **A3 — Ligar a fusão real (proxy → pressão).** Detectar presença do sensor; se houver, usar a
+- [x] **A3 — Ligar a fusão real (proxy → pressão).** Detectar presença do sensor; se houver, usar a
       pressão medida (fusão por tempo, tolerância 250 ms); senão, manter o GPS. Expor a "fonte do
       freio" (sensor-pressão / sensor-pedal / simulado-física) na tela. [EU FAÇO]
       Critério: teste novo — com pressão variável a fonte vira "sensor-pressão" e usa a pressão; com
       pressão zerada vira "simulado-física" e usa o GPS. Bateria verde. Rótulo de fonte muda na tela.
-- [ ] **A4 — Stream de teste com pressão de freio não-nula.** Estender o simulador (hoje manda
+      FEITO 14/06: `computarVeredito(...,amostrasFreio)` funde pressão (fundirFreioNosPontos ±250 ms)
+      quando o sensor varia; senão física GPS. `fonteFreio` no veredito + snapshot; `_reavaliarFonteFreio`
+      emite efeito 'fonte-freio'; selo troca FÍSICA GPS↔SENSOR (atualizarSeloFonteFreio). Testes
+      FU-01 (pressão variável→sensor, usa a pressão) / FU-02 (zero chapado→física) / FU-03 (motor troca
+      fonte + efeito). Bateria COMPLETA verde. Conversão pressão→% definitiva = A7 (sensor real).
+- [x] **A4 — Stream de teste com pressão de freio não-nula.** Estender o simulador (hoje manda
       pressão 0) com uma freada realista (sobe na frenagem, residual na curva, solta na saída) +
       manter o perfil zerado pra testar o fallback. [EU FAÇO]
       Critério: no replay em DEV o cockpit alterna certo entre fonte sensor e fonte proxy; validado
       em velocidade real.
+      FEITO 14/06: `tools/sim-freio-perfil.mjs` (pancada 0→38 bar · trail 38→16 · solta →0, pé fora
+      na reta) ligado no `tools/sim-publish.mjs`; flag `--freio-zero` (ou P1_FREIO=zero) testa o
+      fallback. Conferido sem rede: variação 36 bar → detecta 'sensor-pressao'; zerado → 'simulado-fisica'.
+      A alternância AO VIVO no cockpit (sensor↔proxy) em velocidade real é o que se valida em A5.
 - [ ] **A5 — Validação visual no navegador (DEV).** Servir o cockpit-treino, abrir na tela exata,
       demonstrar a troca de fonte e a curva de freio mudando de estimativa pra medida. [VOCÊ no navegador]
       Critério: você vê a troca funcionando; 0 erro de console; aprovação registrada.
