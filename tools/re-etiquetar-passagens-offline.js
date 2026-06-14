@@ -88,6 +88,7 @@ function main() {
 
   let totalPts = 0, nullAntes = 0, nullDepois = 0;
   let comFreada = 0, comApice = 0, comVmin = 0;
+  const conf = { alta: 0, baixa: 0, borda: 0 };
   const dist = { entrada: 0, freio: 0, apice: 0, saida: 0, outro: 0 };
   const spot = [];
 
@@ -100,11 +101,13 @@ function main() {
     const vmin = acharVminBuffer(pts);
     const vminIdx = vmin ? vmin.idx : null;
     const freadaT = (vminIdx != null) ? acharFreadaT(pts, vminIdx) : null;
-    const apiceT = acharApiceT(pts, geo && geo.apice_gps);
+    const anc = ancorarApice(pts, geo && geo.apice_gps, vminIdx);
+    const apiceT = anc.apiceT;
 
     if (freadaT != null) comFreada++;
     if (apiceT != null) comApice++;
     if (vminIdx != null) comVmin++;
+    conf[anc.confianca] = (conf[anc.confianca] || 0) + 1;
 
     const novosPts = retagSubsPorEventos(pts, { freadaT, apiceT, vminIdx });
     for (const x of novosPts) {
@@ -115,7 +118,7 @@ function main() {
 
     // marcos calculados, anexados pra a tela (FASE 6) e auditoria
     const marcos = {
-      freadaT, apiceT,
+      freadaT, apiceT, confiancaApice: anc.confianca, distApiceM: anc.distApiceM,
       vminIdx, vminKmh: vmin ? vmin.kmh : null, vminT: (vminIdx != null) ? pts[vminIdx].t : null,
     };
 
