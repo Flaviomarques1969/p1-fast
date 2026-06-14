@@ -256,11 +256,12 @@ enum GaragemSheet: Identifiable, Equatable {
 
 /// Carros + os cadastros que migraram da antiga aba "Cadastros" (2026-06-14).
 enum GaragemSubTab: String, CaseIterable, Identifiable {
-    case carros, pilotos, passageiros, combustivel, licoes
+    case carros, estoqueGeral, pilotos, passageiros, combustivel, licoes
     var id: String { rawValue }
     var label: String {
         switch self {
         case .carros: return "Carros"
+        case .estoqueGeral: return "Estoque geral"
         case .pilotos: return "Pilotos"
         case .passageiros: return "Passageiros"
         case .combustivel: return "Combustível"
