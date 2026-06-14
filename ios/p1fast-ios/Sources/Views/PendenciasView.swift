@@ -423,6 +423,7 @@ private struct ItemRow: View {
     let onInc: (Int) -> Void
     let onAbrirEditor: () -> Void
     let onToggleSel: () -> Void
+    let onEditarNota: () -> Void
 
     var body: some View {
         switch mode {
