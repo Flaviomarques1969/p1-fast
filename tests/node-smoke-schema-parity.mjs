@@ -175,16 +175,15 @@ t('ADR-014: PG telemetry_samples NÃO tem policy UPDATE/DELETE', () => {
 });
 
 // ─── RLS coverage ─────────────────────────────────────────
-// EXCEÇÃO DOCUMENTADA (achado 10/06/2026): 9 tabelas de maio (dyno, shift
-// light, canal ao vivo, envelopes) foram criadas SEM trava de acesso — escrita
-// aberta pra quem tiver a chave pública. Postura inconsistente com as tabelas
-// do painel (só-time, que o painel anônimo NEM consegue escrever). A decisão
-// de fechar/abrir é do Flávio: ver supabase/PROPOSTA-escrita-painel-anon.sql.
+// EXCEÇÃO DOCUMENTADA (achado 10/06/2026): tabelas de maio criadas SEM trava de
+// acesso. Em 14/06/2026 (migration 0045, higiene de segurança) 3 delas ganharam
+// trava (RLS): pontos_troca_aprendidos, envelopes_seguranca_stint e
+// qualidade_troca_marcha — REMOVIDAS desta lista (agora exigidas COM trava).
+// Restam 6 ainda abertas (decisão do Flávio "só higiene, sem login" 14/06).
 // Tabela NOVA sem RLS continua REPROVANDO aqui (a guarda segue viva).
 const RLS_ABERTAS_CONHECIDAS = new Set([
   'dyno_curve', 'gear_ratios', 'gear_signatures',
-  'pontos_troca_aprendidos', 'perfis_reacao_piloto',
-  'envelopes_seguranca_stint', 'qualidade_troca_marcha',
+  'perfis_reacao_piloto',
   't4000_live_commands', 't4000_live_events',
 ]);
 t('RLS habilitada em toda tabela do PG (exceto as 9 abertas conhecidas de maio)', () => {
