@@ -95,6 +95,7 @@ export async function loadMelhoresPassagens({ carroId, autodromoId, tipoPneu }) 
  * trecho). Só vira referência se for melhor que a atual.
  */
 export async function gravarPassagem({ carroId, autodromoId, layoutId, segmentId, tipoPneu, tempoS, pontos }) {
+  tipoPneu = normalizarTipoPneu(tipoPneu);
   try {
     const sb = client();
     const { error } = await sb
