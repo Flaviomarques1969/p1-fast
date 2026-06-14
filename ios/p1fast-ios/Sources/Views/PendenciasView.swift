@@ -313,6 +313,7 @@ private struct GrupoCard: View {
     let onToggleDone: () -> Void
     let onAbrirEditor: (PendenciaItemView) -> Void
     let onToggleSel: (PendenciaItemView) -> Void
+    let onEditarNota: (PendenciaItemView) -> Void
 
     private var pendentes: [PendenciaItemView] { grupo.itens.filter { !$0.checado } }
     private var concluidas: [PendenciaItemView] { grupo.itens.filter { $0.checado } }
