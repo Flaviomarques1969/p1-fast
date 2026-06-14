@@ -179,31 +179,17 @@ export function criarShiftLightOrquestrador({
     }, _meioRetaDelayMs);
   }
 
-  function _calcularRpmOtimoParaMarcha(marchaOrigem) {
-    if (!Array.isArray(curva) || curva.length < 5) return null;
-    const marchas = detector.getMarchasIdentificadas();
-    if (marchas.length < 2) return null;
-    const origem = marchas[marchaOrigem - 1];
-    const destino = marchas[marchaOrigem];
-    if (!origem || !destino) return null;
-
-    const janela = janelaParaModo(modoAtual);
-    // Envelope teto duro tem prioridade sobre janela do modo
-    const rpmMaxClamp = Math.min(janela.rpmMax, ENVELOPE_DEFAULT_BUBI.rpm_max_absoluto);
-
-    const resultado = calcularPontoOtimoTroca({
-      curva,
-      razaoMarchaAtual:   origem.ratioMedia / DIFERENCIAL_BUBI,
-      razaoMarchaProxima: destino.ratioMedia / DIFERENCIAL_BUBI,
-      diferencial:        DIFERENCIAL_BUBI,
-      raioRodaM:          RAIO_RODA_BUBI_M,
-      janelaRpmMin:       janela.rpmMin,
-      janelaRpmMax:       rpmMaxClamp,
-    });
-    if (onPontoCalculado) {
-      try { onPontoCalculado({ marcha: marchaOrigem, ...resultado }); } catch {}
+  // Alvo de troca pra marcha atual: refino por TEMPO DE PASSAGEM (dado real de
+  // pista) quando há confiança suficiente; senão, a SEMENTE = potência máxima.
+  // Sempre clampado no teto (redline = sirene). Decisão Flávio 14/06 (sem modos).
+  function _alvoTrocaParaMarcha(marcha) {
+    if (trechoAtual && typeof marcha === 'number') {
+      const porTempo = tempoPassagem.getMelhorPontoPorTempo({ trechoId: trechoAtual, marcha });
+      if (porTempo && porTempo.confianca >= CONFIANCA_MIN_TEMPO_PASSAGEM) {
+        return { rpmOtimo: Math.min(_tetoRpm, porTempo.rpm), fonte: 'tempo_passagem', confianca: porTempo.confianca };
+      }
     }
-    return resultado;
+    return { rpmOtimo: Math.min(_tetoRpm, _alvoSementeRpm), fonte: 'potencia_maxima', confianca: 0 };
   }
 
   return {
