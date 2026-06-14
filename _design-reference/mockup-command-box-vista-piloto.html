@@ -6855,6 +6855,9 @@ html,body{
     }
   }
   function startShiftLightAnimation(){
+    // No modo REAL a demonstração não pode (re)ligar — mesmo se init() rodar
+    // depois da ligação ao vivo (ordem de carregamento). Flávio 14/06.
+    if(window.__shiftLightRealMode) return;
     if(shiftLightAnimId !== null) return;
     var tStart = performance.now();
     function tick(){
