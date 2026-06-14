@@ -98,6 +98,20 @@ struct HubMockLauncher: View {
         .task {
             await carroRepo.bootstrap()
             await pecaRepo.bootstrap()
+            await eventoRepo.bootstrap()
+            await pilotoRepo.bootstrap()
+            await passageiroRepo.bootstrap()
+            await combustivelRepo.bootstrap()
+            await licaoRepo.bootstrap()
+            await pendenciaRepo.bootstrap()
+            // Evento FUTURO de demonstração: a seed só tem eventos passados,
+            // então a aba "Pendências" (próximo evento) abriria vazia no mock.
+            // 7 dias à frente, na pista seed (Brasília).
+            if eventoRepo.proximoEvento() == nil {
+                let trackId = eventoRepo.eventos.first?.evento.trackId
+                let em7dias = Int64(Date().timeIntervalSince1970 * 1000) + 7 * 86_400_000
+                _ = try? await eventoRepo.create(trackId: trackId, tipo: "track-day", dataEvento: em7dias)
+            }
             var id = carroRepo.carros.first?.id
             if id == nil {
                 id = try? await carroRepo.create(
