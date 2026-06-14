@@ -204,7 +204,7 @@ async function aprovarEnvelope() {
   const payload = {
     carro_id:           document.getElementById('selCarro').value,
     modo_stint:         modoSelecionado,
-    tipo_pneu:          document.getElementById('selPneu').value,
+    tipo_pneu:          normalizarTipoPneu(document.getElementById('selPneu').value),
     vida_pneu_faixa:    document.getElementById('selVida').value,
     config_cambio:      'padrao',
     rpm_max_absoluto:   ENVELOPE_DEFAULT_BUBI.rpm_max_absoluto,
