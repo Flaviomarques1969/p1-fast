@@ -59,4 +59,14 @@
 - Evidência: `npm run smoke` = 310 ok / 0 fail (23 arquivos de teste). Diff vs HEAD vazio.
 - Auto-save do repo commitou local (ceacf29b..46a2710e). NÃO enviado ao remoto (origin 216 atrás). Produção intocada.
 
-### FASE 1 — Perfil de trail por tipo — EM EXECUÇÃO
+### FASE 1 — Perfil de trail por tipo — CONCLUÍDA (14/06)
+- Criado web/cockpit/perfil-trail-por-tipo.js (PERFIL_POR_TIPO + perfilDeTrail + resumoTrail).
+  Reescreve em forma estruturada o `formato` canônico (TIPOS de classificador-trecho.js), importando
+  rotulo/formato de lá (fonte única). Onde o formato é qualitativo (T0/T4/T5), carga numérica = null
+  (não inventei %). Tudo medivel:false (sem sensor de pedal).
+- Criado tests/node-smoke-perfil-trail-por-tipo.mjs (23 ok / 0 fail) + ligado na bateria + atalho smoke:perfil-trail.
+- DIVERGÊNCIA do plano (declarada): plano sugeria tests/domain/*.spec.js, mas o runner vivo é node-smoke
+  (tests/domain antigos, sem jest/vitest). Usei node-smoke pra entrar na bateria de verdade.
+- Evidência: `npm run smoke` = 333 ok / 0 fail (24 arquivos).
+
+### FASE 2 — tipo_curva no banco DEV — EM EXECUÇÃO
