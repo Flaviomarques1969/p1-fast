@@ -400,7 +400,19 @@ function renderPend(){
   state.forEach((g, gi) => {
     const done=g.itens.filter(i=>i.done).length; tot+=g.itens.length; totDone+=done;
     const st = done===0?'none':(done===g.itens.length?'all':'some');
-    const lista = mode==='normal' ? g.itens.filter(i=>!i.done).concat(g.itens.filter(i=>i.done)) : g.itens;
+    let itensHTML;
+    if(mode==='normal'){
+      const pend=g.itens.filter(i=>!i.done), dones=g.itens.filter(i=>i.done);
+      itensHTML = pend.map(it=>itemHTML(gi,it)).join('');
+      if(pend.length===0 && dones.length) itensHTML += `<div class="vazio-ok">Tudo pronto neste bloco.</div>`;
+      if(dones.length){
+        const open=showDone.has(g.id);
+        itensHTML += `<button class="done-toggle" onclick="toggleDone('${g.id}')">✓ ${dones.length} concluída${dones.length>1?'s':''}<span>${open?'▾':'›'}</span></button>`;
+        if(open) itensHTML += dones.map(it=>itemHTML(gi,it)).join('');
+      }
+    } else {
+      itensHTML = g.itens.map(it=>itemHTML(gi,it)).join('');
+    }
     const el=document.createElement('div'); el.className='pgroup';
     el.dataset.open = (mode!=='normal') ? 'true' : (gi===0?'true':'false');
     el.innerHTML = `
@@ -409,7 +421,7 @@ function renderPend(){
         <span class="pgroup__title">${g.titulo}</span>
         <span class="pgroup__count"><b style="color:${done?'var(--ouro)':'var(--text-3)'}">${done}</b><span style="color:var(--text-3)">/${g.itens.length}</span><small>PRONTAS</small></span>
       </button>
-      <div class="pgroup__items">${lista.map(it=>itemHTML(gi,it)).join('')}</div>`;
+      <div class="pgroup__items">${itensHTML}</div>`;
     wrap.appendChild(el);
   });
   document.getElementById('p-count').textContent = totDone;
