@@ -90,7 +90,7 @@ t(`PG tem ${PG_TABLE_COUNT_ESPERADO} tabelas em public`, () => {
   if (PG_TABLES.size !== PG_TABLE_COUNT_ESPERADO) throw new Error('size=' + PG_TABLES.size);
 });
 
-t(`GRDB tem ${GRDB_TABLE_COUNT_ESPERADO} tabelas (${GRDB_REQUIRED_COUNT} PG espelhadas + sync_queue + sync_meta local-only)`, () => {
+t(`GRDB tem ${GRDB_TABLE_COUNT_ESPERADO} tabelas (${GRDB_REQUIRED_COUNT} PG espelhadas + ${GRDB_LOCAL_ONLY.length} local-only)`, () => {
   if (GRDB_TABLES.size !== GRDB_TABLE_COUNT_ESPERADO) throw new Error('size=' + GRDB_TABLES.size);
 });
 
