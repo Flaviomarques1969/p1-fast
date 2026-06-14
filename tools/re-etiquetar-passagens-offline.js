@@ -37,7 +37,7 @@ const GEO = join(RAIZ, '_design-reference/PONTOS-TRECHOS-BRASILIA-2026-05-28.jso
 const SAIDA = join(RAIZ, 'relatorios/passagens-bubi-reetiquetadas-2026-06-14.json');
 
 // converte t pra segundos (o dado vem em ms; se já vier pequeno, assume s)
-function segundos(t) { return t > 1000 ? t / 1000 : t; }
+export function segundos(t) { return t > 1000 ? t / 1000 : t; }
 
 // freadaT: t do ponto-pico imediatamente ANTES da 1ª desaceleração média >= 0,5 g (até o Vmin).
 // Espelha o trecho-detector (avgDecel <= -FREADA_LIMIAR_G), mas sobre os pontos já recortados.
