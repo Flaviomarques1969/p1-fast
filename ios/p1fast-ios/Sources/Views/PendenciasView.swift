@@ -196,19 +196,26 @@ private struct GrupoCard: View {
             Button(action: onToggleExpand) {
                 HStack(spacing: 10) {
                     progressDot
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(grupo.grupoTitulo.uppercased())
-                            .font(.system(size: 13, weight: .semibold))
-                            .tracking(0.06 * 13)
-                            .foregroundStyle(Color.text)
-                        Text("\(grupo.checados) de \(grupo.total) checadas")
-                            .font(.system(size: 11, weight: .regular))
-                            .foregroundStyle(progressColor)
+                    Text(grupo.grupoTitulo.uppercased())
+                        .font(.system(size: 13, weight: .semibold))
+                        .tracking(0.06 * 13)
+                        .foregroundStyle(Color.text)
+                    Spacer(minLength: 12)
+                    // Contagem à direita (sem setinha, espaçada do título).
+                    VStack(alignment: .trailing, spacing: 2) {
+                        HStack(spacing: 1) {
+                            Text("\(grupo.checados)")
+                                .foregroundStyle(progressColor)
+                            Text("/\(grupo.total)")
+                                .foregroundStyle(Color.textFaint)
+                        }
+                        .font(.system(size: 16, weight: .semibold))
+                        .monospacedDigit()
+                        Text("PRONTAS")
+                            .font(.system(size: 9, weight: .semibold))
+                            .tracking(0.08 * 9)
+                            .foregroundStyle(Color.textFaint)
                     }
-                    Spacer(minLength: 0)
-                    Text(expandido ? "▾" : "›")
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundStyle(Color.textMuted)
                 }
                 .padding(.horizontal, Spacing.md)
                 .padding(.vertical, 14)
