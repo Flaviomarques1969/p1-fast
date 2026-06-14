@@ -252,6 +252,45 @@ enum GaragemSheet: Identifiable, Equatable {
     }
 }
 
+// MARK: - Sub-abas da Garagem
+
+/// Carros + os cadastros que migraram da antiga aba "Cadastros" (2026-06-14).
+enum GaragemSubTab: String, CaseIterable, Identifiable {
+    case carros, pilotos, passageiros, combustivel, licoes
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .carros: return "Carros"
+        case .pilotos: return "Pilotos"
+        case .passageiros: return "Passageiros"
+        case .combustivel: return "Combustível"
+        case .licoes: return "Lições"
+        }
+    }
+}
+
+/// Pill da sub-aba (mesmo visual do segmented control de Cadastros).
+private struct GaragemSubTabPill: View {
+    let label: String
+    let isActive: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(label.uppercased())
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(1.32)
+                .foregroundStyle(isActive ? Color.onAccent : Color.textMuted)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(Capsule().fill(isActive ? Color.accent : Color.clear))
+                .overlay(Capsule().stroke(isActive ? Color.clear : Color.border, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .animation(Layout.snap, value: isActive)
+    }
+}
+
 // MARK: - CarroCard
 
 private struct CarroCard: View {
