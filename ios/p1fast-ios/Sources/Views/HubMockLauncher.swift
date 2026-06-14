@@ -15,6 +15,13 @@ struct HubMockLauncher: View {
     @StateObject private var manutencaoStore: ManutencaoConsumiveisStore
     @StateObject private var pecaRepo: PecaRepository
     @StateObject private var pneuRepo: PneuRepository
+    // Repos que a Garagem (sub-abas) e a aba Pendências precisam — 2026-06-14.
+    @StateObject private var eventoRepo: EventoRepository
+    @StateObject private var pilotoRepo: PilotoRepository
+    @StateObject private var passageiroRepo: PassageiroRepository
+    @StateObject private var combustivelRepo: CombustivelRepository
+    @StateObject private var licaoRepo: LicaoRepository
+    @StateObject private var pendenciaRepo: PendenciaRepository
 
     @State private var carroId: String?
     @State private var ready = false
@@ -28,6 +35,12 @@ struct HubMockLauncher: View {
         _manutencaoStore = StateObject(wrappedValue: ManutencaoConsumiveisStore(queue: queue))
         _pecaRepo = StateObject(wrappedValue: PecaRepository(queue: queue))
         _pneuRepo = StateObject(wrappedValue: PneuRepository(queue: queue))
+        _eventoRepo = StateObject(wrappedValue: EventoRepository(queue: queue))
+        _pilotoRepo = StateObject(wrappedValue: PilotoRepository(queue: queue))
+        _passageiroRepo = StateObject(wrappedValue: PassageiroRepository(queue: queue))
+        _combustivelRepo = StateObject(wrappedValue: CombustivelRepository(queue: queue))
+        _licaoRepo = StateObject(wrappedValue: LicaoRepository(queue: queue))
+        _pendenciaRepo = StateObject(wrappedValue: PendenciaRepository(queue: queue))
     }
 
     var body: some View {
