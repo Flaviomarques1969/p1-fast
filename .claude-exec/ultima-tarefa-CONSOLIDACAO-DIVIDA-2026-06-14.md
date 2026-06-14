@@ -44,9 +44,19 @@
   consolidação (que está só em origin/main). Não reconciliei a main local de propósito. A Onda 2
   usará o MESMO método (branch a partir de origin/main + trazer paths do painel) — não precisa pull.
 
-## PENDENTE
-- ONDA 2 (painel web/cockpit ~49): esperar trail-braking ficar pronto; registra + coloca no ar junto.
-- ONDA 3 (app iPhone ~18 + testes): conferir se está completo e registrar.
+## ONDA 3 — CONCLUÍDA 14/06 (app iPhone registrado)
+- Conferência (workflow): app PRONTO — compila (BUILD SUCCEEDED) + 546 testes Swift verdes;
+  manutenção (12/06), treinos v1 (11/06) e telas Assistir/Teste Ao Vivo completas, sem nada pela metade.
+- Registrado SÓ `ios/` (20 arquivos) → commit `bff34e0f` em origin/main. Trava: fora-do-app = 0.
+- NÃO instalei no iPhone físico (registrar ≠ empacotar/instalar — passo à parte, não pedido).
+- Os testes JS (tests/) NÃO entraram: pertencem à Onda 2 (testam o painel; um deles falha pelo trail em andamento).
+
+## PENDENTE — ONDA 2 (painel + testes JS + windows)
+- Espera o trail-braking: `tests/node-smoke-trail-religacao.mjs` FALHA no RL-08 porque
+  `web/cockpit/index-t3000.html` ainda está no layout de celular (precisa TELA 10,5: height 590, sem notch).
+- Quando o RL-08 ficar verde, registrar painel + testes JUNTOS e colocar o painel no ar.
+- Divergência da main local vs origin/main aumentou (3 commits de consolidação só no remoto) —
+  reconciliar quando fechar a Onda 2. NÃO fazer git pull na main local até lá.
 
 TASK_DONE (Onda 1):
 - Pedido conferido: sim · Ambiente: versão oficial (origin/main) · Produção (app/painel no ar) alterada: NÃO
