@@ -120,30 +120,37 @@ check('E2E-06 status da barra reflete o pct',
 simularSegundosEmMarcha(4, 5500, 0.5);
 
 const rpmOtimo = orq.getRpmOtimoTroca();
-check('E2E-07 RPM ótimo retornado (não null com marcha + próxima identificadas)',
+check('E2E-07 RPM ótimo retornado (não null com marcha identificada)',
   rpmOtimo !== null,
   `rpmOtimo=${rpmOtimo}`);
-if (rpmOtimo !== null) {
-  check('E2E-07b RPM ótimo dentro da janela Normal (6100-6300) ou no teto',
-    rpmOtimo >= 6100 && rpmOtimo <= 6300,
-    `rpm=${rpmOtimo}`);
-} else {
-  check('E2E-07b RPM ótimo no range Normal (não testado, null)', false);
-}
+// RECONCILIAÇÃO 14/06: alvo-semente = POTÊNCIA MÁXIMA da curva (6050), não mais a
+// janela do modo. A curva BUBI do teste tem pico de potência (124 cv) em 6050 rpm.
+check('E2E-07b RPM ótimo = potência máxima da curva (6050), abaixo do teto 6300',
+  rpmOtimo === 6050,
+  `rpm=${rpmOtimo} alvoSemente=${orq.getAlvoSemente()}`);
 
-// Troca de modo invalida cache e recalcula
-orq.setModoStint(ModoStint.AGRESSIVO);
-const rpmOtimoAgr = orq.getRpmOtimoTroca();
-check('E2E-08 modo Agressivo retornou RPM',
-  rpmOtimoAgr !== null,
-  `rpm=${rpmOtimoAgr}`);
-if (rpmOtimoAgr !== null) {
-  check('E2E-08b modo Agressivo no range 6250-6350',
-    rpmOtimoAgr >= 6250 && rpmOtimoAgr <= 6350,
-    `rpm=${rpmOtimoAgr}`);
-} else {
-  check('E2E-08b range Agressivo (não testado, null)', false);
+// Modos revogados (14/06): setModoStint é no-op — o alvo NÃO muda.
+orq.setModoStint('agressivo');
+const rpmAposModo = orq.getRpmOtimoTroca();
+check('E2E-08 setModoStint não altera o alvo (modos revogados) — segue 6050',
+  rpmAposModo === 6050,
+  `rpm=${rpmAposModo}`);
+
+// Refino por TEMPO DE PASSAGEM (aprendizado #2): num trecho+marcha onde trocar mais
+// alto (6250) rendeu MENOR tempo, o alvo passa a seguir o dado real medido — acima da
+// semente, mas sempre abaixo do teto (6300). É o que resolve "6050 vs esticar" com dado.
+orq.setTrechoAtual('t-tempo');
+const mAtual = orq.getEstado().marchaAtual;
+check('E2E-08b-pre há marcha atual pra registrar passagem',
+  typeof mAtual === 'number', `marchaAtual=${mAtual}`);
+for (let i = 0; i < 4; i++) {
+  orq.registrarPassagemTempo({ trechoId: 't-tempo', marcha: mAtual, shiftRpm: 6250, tempoMs: 90000 }); // rápido
+  orq.registrarPassagemTempo({ trechoId: 't-tempo', marcha: mAtual, shiftRpm: 5900, tempoMs: 92000 }); // lento
 }
+const rpmRefinado = orq.getRpmOtimoTroca();
+check('E2E-08b com tempo de passagem, alvo segue o ponto de MENOR tempo (6250), sob o teto',
+  rpmRefinado === 6250,
+  `rpm=${rpmRefinado} fonte=${orq.getFonteRpmOtimo()}`);
 
 // Reset zera tudo
 orq.reset();
