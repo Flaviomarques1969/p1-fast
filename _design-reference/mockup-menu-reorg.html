@@ -361,50 +361,77 @@ function subLine(it){
   return it.espec || '';
 }
 
+let mode = 'normal';              // 'normal' | 'editar' | 'excluir'
+const selected = new Set();
+
+function nomeHTML(it){
+  const b=badge(it), sub=subLine(it);
+  return `<span class="pitem__name">${it.txt}${b?`<span class="pqty">${b}</span>`:''}</span>${sub?`<span class="pitem__sub">${sub}</span>`:''}`;
+}
+function itemHTML(gi, it){
+  if(mode==='editar'){
+    return `<div class="pitem pitem--tap" data-cat="${it.cat}" onclick="abrirEditor(${gi},'${it.id}')">
+      <span class="pitem__txt">${nomeHTML(it)}</span>
+      <span class="pitem__slot"><span class="picon-hint">${PENCIL}</span></span>
+    </div>`;
+  }
+  if(mode==='excluir'){
+    const on=selected.has(it.id);
+    return `<div class="pitem pitem--tap ${on?'sel':''}" data-cat="${it.cat}" onclick="toggleSel('${it.id}')">
+      <button class="selbox ${on?'on':''}">✓</button>
+      <span class="pitem__txt">${nomeHTML(it)}</span>
+    </div>`;
+  }
+  const tg=target(it), full=(it.pegou||0)>=tg;
+  const cnt = tg>1 ? `
+      <button class="cstep minus" onclick="incPegou('${it.id}',-1)">–</button>
+      <span class="ccount ${full?'full':''}">${it.pegou||0}/${tg}</span>
+      <button class="cstep plus" onclick="incPegou('${it.id}',1)">+</button>` : '';
+  return `<div class="pitem" data-done="${it.done}" data-cat="${it.cat}">
+    <button class="pcheck" onclick="toggleItem('${it.id}')">✓</button>
+    <span class="pitem__txt" onclick="toggleItem('${it.id}')">${nomeHTML(it)}</span>
+    ${cnt?`<span class="pitem__slot">${cnt}</span>`:''}
+  </div>`;
+}
 function renderPend(){
-  const wrap = document.getElementById('pgroups');
-  wrap.innerHTML = '';
+  const wrap = document.getElementById('pgroups'); wrap.innerHTML='';
   let totDone=0, tot=0;
   state.forEach((g, gi) => {
-    const done = g.itens.filter(i=>i.done).length;
-    tot += g.itens.length; totDone += done;
-    const st = done===0 ? 'none' : (done===g.itens.length ? 'all' : 'some');
-    const abertos = g.itens.filter(i=>!i.done).concat(g.itens.filter(i=>i.done));
-    const el = document.createElement('div');
-    el.className='pgroup'; el.dataset.open = gi===0 ? 'true':'false';
+    const done=g.itens.filter(i=>i.done).length; tot+=g.itens.length; totDone+=done;
+    const st = done===0?'none':(done===g.itens.length?'all':'some');
+    const lista = mode==='normal' ? g.itens.filter(i=>!i.done).concat(g.itens.filter(i=>i.done)) : g.itens;
+    const el=document.createElement('div'); el.className='pgroup';
+    el.dataset.open = (mode!=='normal') ? 'true' : (gi===0?'true':'false');
     el.innerHTML = `
-      <button class="pgroup__head" onclick="toggleGrupo(${gi})">
+      <button class="pgroup__head" ${mode==='normal'?`onclick="toggleGrupo(${gi})"`:''}>
         <span class="pgroup__dot" data-st="${st}"></span>
         <span class="pgroup__title">${g.titulo}</span>
         <span class="pgroup__count"><b style="color:${done?'var(--ouro)':'var(--text-3)'}">${done}</b><span style="color:var(--text-3)">/${g.itens.length}</span><small>PRONTAS</small></span>
       </button>
-      <div class="pgroup__items">
-        ${abertos.map(it=>{
-          const b=badge(it), sub=subLine(it), tg=target(it);
-          const full = (it.pegou||0)>=tg;
-          const cnt = tg>1 ? `
-              <button class="cstep minus" onclick="incPegou('${it.id}',-1)">–</button>
-              <span class="ccount ${full?'full':''}">${it.pegou||0}/${tg}</span>
-              <button class="cstep plus" onclick="incPegou('${it.id}',1)">+</button>` : '';
-          return `
-          <div class="pitem" data-done="${it.done}" data-cat="${it.cat}">
-            <button class="pcheck" onclick="toggleItem('${it.id}')">✓</button>
-            <span class="pitem__txt" onclick="toggleItem('${it.id}')">
-              <span class="pitem__name">${it.txt}${b?`<span class="pqty">${b}</span>`:''}</span>
-              ${sub?`<span class="pitem__sub">${sub}</span>`:''}
-            </span>
-            <span class="pitem__slot">
-              <button class="picon" title="Editar" onclick="abrirEditor(${gi},'${it.id}')">${PENCIL}</button>
-              ${cnt}
-              <button class="picon del" title="Excluir" onclick="excluirItem(${gi},'${it.id}')">${TRASH}</button>
-            </span>
-          </div>`;
-        }).join('')}
-      </div>`;
+      <div class="pgroup__items">${lista.map(it=>itemHTML(gi,it)).join('')}</div>`;
     wrap.appendChild(el);
   });
   document.getElementById('p-count').textContent = totDone;
   document.getElementById('p-total').textContent = tot;
+  document.getElementById('modebar').dataset.on = (mode==='editar');
+  document.getElementById('delbar').dataset.on = (mode==='excluir');
+  document.getElementById('delN').textContent = selected.size;
+}
+
+// ── menu Gerenciar + modos ──
+function abrirMenu(){ document.getElementById('menu').dataset.on='true'; }
+function fecharMenu(){ document.getElementById('menu').dataset.on='false'; }
+function menuAdicionar(){ fecharMenu(); abrirEditor(null); }
+function menuEditar(){ fecharMenu(); mode='editar'; renderPend(); }
+function menuExcluir(){ fecharMenu(); mode='excluir'; selected.clear(); renderPend(); }
+function cancelarModo(){ mode='normal'; selected.clear(); renderPend(); }
+function toggleSel(id){ selected.has(id)?selected.delete(id):selected.add(id); renderPend(); }
+function confirmarExclusao(){
+  if(!selected.size){ alert('Selecione ao menos um item.'); return; }
+  if(confirm(`Excluir ${selected.size} item(ns)? Não dá pra desfazer.`)){
+    state.forEach(g=> g.itens=g.itens.filter(x=>!selected.has(x.id)));
+    cancelarModo();
+  }
 }
 function findItem(id){ for(const g of state){ const it=g.itens.find(x=>x.id===id); if(it) return {g,it}; } return null; }
 function toggleGrupo(gi){ const el=document.querySelectorAll('.pgroup')[gi]; el.dataset.open = el.dataset.open==='true'?'false':'true'; }
