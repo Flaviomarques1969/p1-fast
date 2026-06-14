@@ -327,58 +327,29 @@ export function criarShiftLightOrquestrador({
     /**
      * Devolve o RPM ótimo pra trocar AGORA (na marcha que o piloto está).
      *
-     * Lógica de produto (Flávio 2026-05-29):
-     *   - Enquanto a barra está aprendendo (pct < 100): usa o cálculo da
-     *     curva do motor + janela do modo (Durabilidade/Normal/Agressivo).
-     *     Esse é o "padrão semente" — funciona desde a primeira volta.
-     *   - Quando a barra atinge 100% (calibrado) E há ponto aprendido
-     *     específico do trecho atual: usa o ponto aprendido (respeitando
-     *     o envelope da janela do modo).
-     *
-     * Sempre dentro dos padrões do motor (janelas vêm da curva do dyno
-     * do carro específico — outro motor terá outras janelas).
+     * Lógica de produto (RECONCILIAÇÃO Flávio 14/06/2026 — sem modos):
+     *   - Semente: a luz mira a POTÊNCIA MÁXIMA do motor (Bubi 6.050 rpm). Vale
+     *     desde a primeira volta, sem depender de aprendizado.
+     *   - Refino: quando o aprendizado por TEMPO DE PASSAGEM tem dado claro o
+     *     suficiente pro trecho+marcha atual (menor tempo medido), o alvo passa a
+     *     ser o ponto que rendeu o melhor tempo na pista — sempre abaixo do teto
+     *     (redline = sirene de segurança).
      */
     getRpmOtimoTroca() {
       const m = detector.getMarchaAtual();
       if (!m) return null;
-
-      const pctAprendido = acumulador.getPct();
-      const calibrado = pctAprendido >= 100;
-
-      // Se calibrado E temos ponto aprendido específico desse trecho+marcha,
-      // usa ele (preferência por dado real sobre estimativa).
-      if (calibrado && trechoAtual) {
-        const aprendido = acumulador.getPontoAprendido({
-          trechoId:     trechoAtual,
-          marchaOrigem: m,
-        });
-        if (aprendido) {
-          // Clampa dentro da janela do modo (envelope sempre respeitado)
-          const janela = janelaParaModo(modoAtual);
-          const rpmClamp = Math.max(janela.rpmMin, Math.min(janela.rpmMax, aprendido.rpm));
-          return rpmClamp;
-        }
-      }
-
-      // Modo semente: usa cálculo da curva + janela do modo
-      const r = _ultimoCalcPorMarcha[`${modoAtual}:${m}`] || _calcularRpmOtimoParaMarcha(m);
-      return r ? r.rpmOtimo : null;
+      return _alvoTrocaParaMarcha(m).rpmOtimo;
     },
 
     /**
-     * Informa qual é a fonte do RPM atual ('aprendido' ou 'semente').
-     * Útil pra UI mostrar se a luz está usando dado real ou estimativa.
+     * Informa qual é a fonte do alvo atual ('aprendido' = ponto por tempo de
+     * passagem; 'semente' = potência máxima). Útil pra UI mostrar se a luz está
+     * usando dado real de pista ou a semente.
      */
     getFonteRpmOtimo() {
       const m = detector.getMarchaAtual();
       if (!m) return 'indisponivel';
-      if (acumulador.getPct() >= 100 && trechoAtual) {
-        const aprendido = acumulador.getPontoAprendido({
-          trechoId: trechoAtual, marchaOrigem: m,
-        });
-        if (aprendido) return 'aprendido';
-      }
-      return 'semente';
+      return _alvoTrocaParaMarcha(m).fonte === 'tempo_passagem' ? 'aprendido' : 'semente';
     },
 
     /**
@@ -386,12 +357,14 @@ export function criarShiftLightOrquestrador({
      */
     getEstado() {
       return {
-        modoAtual,
+        alvoSementeRpm: _alvoSementeRpm,
+        tetoRpm: _tetoRpm,
         marchaAtual: detector.getMarchaAtual(),
         confiancaMarcha: detector.getConfianca(),
         marchasIdentificadas: detector.getMarchasIdentificadas(),
         aprendizadoPct: acumulador.getPct(),
         detalheAprendizado: acumulador.getDetalhes(),
+        tempoPassagem: tempoPassagem.getDetalhes(),
         ultimoCalc: _ultimoCalcPorMarcha,
       };
     },
