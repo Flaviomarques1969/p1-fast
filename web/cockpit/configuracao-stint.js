@@ -239,8 +239,8 @@ async function aprovarEnvelope() {
     const id = Array.isArray(data) && data[0] ? data[0].id : '?';
     status.className = 'status ok';
     status.textContent = planoFicouSoLocal
-      ? `✓ Envelope aprovado (id ${id.substring(0, 8)}…). Modo: ${modoSelecionado.toUpperCase()}. ATENÇÃO: o plano do stint NÃO foi pro banco (banco ainda sem a atualização 0042) — o treino só arma neste navegador.`
-      : `✓ Envelope aprovado (id ${id.substring(0, 8)}…). Modo: ${modoSelecionado.toUpperCase()}. Plano do stint registrado. Painel piloto pode iniciar.`;
+      ? `✓ Envelope aprovado (id ${id.substring(0, 8)}…). Máximo desempenho. ATENÇÃO: o plano do stint NÃO foi pro banco (banco ainda sem a atualização 0042) — o treino só arma neste navegador.`
+      : `✓ Envelope aprovado (id ${id.substring(0, 8)}…). Máximo desempenho. Plano do stint registrado. Painel piloto pode iniciar.`;
     // Cache local — painel principal lê na próxima abertura.
     try { localStorage.setItem('p1fast-modo-stint-v1', modoSelecionado); } catch {}
     // Plano completo do stint (propósito/foco/ghost/voltas/paradas) — cache
