@@ -21,7 +21,8 @@
 // LEITURA e GRAVA num arquivo NOVO no repositório. Recusa-se a escrever sobre o backup.
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { acharVminBuffer, retagSubsPorEventos } from '../web/cockpit/live-data-bridge.js';
 import { distM } from '../web/cockpit/classificador-trecho.js';
 
