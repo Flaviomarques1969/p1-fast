@@ -182,6 +182,9 @@ final class PendenciaRepository: ObservableObject {
             return (t, inst)
         }
         let porGrupo = Dictionary(grouping: pares, by: { $0.template.grupoId })
+        // Itens adicionais (incluídos à mão) deste evento, agrupados.
+        let extras = extrasPorEvento[eventoId] ?? []
+        let extrasPorGrupo = Dictionary(grouping: extras, by: { $0.grupoId })
         let grupoIds = Set(templates.map(\.grupoId))
         return grupoIds.sorted { l, r in
             (templates.first { $0.grupoId == l }?.grupoNum ?? "9") <
@@ -189,11 +192,13 @@ final class PendenciaRepository: ObservableObject {
         }.compactMap { gid in
             guard let parsDoGrupo = porGrupo[gid], let firstT = parsDoGrupo.first?.template else { return nil }
             let sorted = parsDoGrupo.sorted { $0.template.ordem < $1.template.ordem }
+            let extrasOrdenados = (extrasPorGrupo[gid] ?? []).sorted { $0.createdAt < $1.createdAt }
             return PendenciaGrupoView(
                 grupoId: gid,
                 grupoTitulo: firstT.grupoTitulo,
                 grupoNum: firstT.grupoNum,
                 itens: sorted.map { PendenciaItemView(template: $0.template, instance: $0.instance) }
+                    + extrasOrdenados.map { PendenciaItemView(extra: $0) }
             )
         }
     }
