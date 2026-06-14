@@ -13,18 +13,15 @@
 -- pra saber se a gravação está disponível; quando precisa reproduzir,
 -- chama uma rota do servidor que gera URL temporária a partir do recording_id.
 
--- RENUMERADA de 0025 -> 0044 em 14/06/2026 (a versão 0025 ja estava em uso na nuvem
--- por padroes_telemetria_por_volta). O efeito abaixo JA esta em producao; por isso o
--- ADD COLUMN agora e idempotente (IF NOT EXISTS) e re-aplicar e no-op seguro.
 alter table public.video_streams
-  add column if not exists recording_id              text,
-  add column if not exists recording_s3_key          text,
-  add column if not exists recording_duration_s      integer
+  add column recording_id              text,
+  add column recording_s3_key          text,
+  add column recording_duration_s      integer
     check (recording_duration_s is null or recording_duration_s >= 0),
-  add column if not exists recording_max_participants integer
+  add column recording_max_participants integer
     check (recording_max_participants is null or recording_max_participants >= 0),
-  add column if not exists recording_started_at      timestamptz,
-  add column if not exists recording_ready_at        timestamptz;
+  add column recording_started_at      timestamptz,
+  add column recording_ready_at        timestamptz;
 
 -- Índice pra busca por recording_id (a Edge Function precisa achar o
 -- stream pelo recording_id ou pelo room_name)

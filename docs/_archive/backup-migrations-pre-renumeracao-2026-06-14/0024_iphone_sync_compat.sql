@@ -1,0 +1,15 @@
+-- ═══════════════════════════════════════════════════════════
+-- 0024_iphone_sync_compat — OBSOLETA. NÃO APLICAR.
+-- ═══════════════════════════════════════════════════════════
+-- O plano original desta migration era dropar e recriar evento_pendencias
+-- e pendencias_template. Em 26/05 essas tabelas estavam vazias em produção.
+-- Em 30/05 (antes de aplicar), reconferi e descobri 135 pendências + 45
+-- templates + 6 eventos REAIS em produção (time "Flavio P1 Fast", inclusive
+-- o track-day de Brasília 23/05).
+--
+-- Substituída por 0038_iphone_sync_compat_preservando.sql, que ALTERA as
+-- colunas em vez de recriar — preserva todos os 180+ registros existentes.
+--
+-- Esta migration fica como NO-OP só pra manter a numeração sequencial.
+
+-- (sem operações)
