@@ -186,7 +186,7 @@ const RLS_ABERTAS_CONHECIDAS = new Set([
   'perfis_reacao_piloto',
   't4000_live_commands', 't4000_live_events',
 ]);
-t('RLS habilitada em toda tabela do PG (exceto as 9 abertas conhecidas de maio)', () => {
+t('RLS habilitada em toda tabela do PG (exceto as 6 abertas conhecidas de maio)', () => {
   const rlsRe = /alter table public\.([a-z0-9_]+)\s+enable row level security/g;
   const rlsTables = new Set();
   let m;
