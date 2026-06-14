@@ -97,4 +97,15 @@
 - Criado tests/node-smoke-re-etiquetar-offline.mjs (8 ok) + ligado na bateria.
 - Evidência: `npm run smoke` = 341 ok / 0 fail (25 arquivos).
 
-### FASE 4 — 5º marco PACE (ponto de aceleração pós-Vmin) — EM EXECUÇÃO
+### FASE 4 — 5º marco PACE (ponto de aceleração pós-Vmin) — CONCLUÍDA (14/06)
+- 'pace' no enum: SUB_TRECHOS de delta-calculator.js (entrada→freio→apice→PACE→saida) + porSub;
+  cockpit-state.js setApexPonto aceita 'pace'. Reconciliação declarada: a tela mantém 4 widgets +
+  Pace CENTRAL (decisão 26/05); 'pace' entra só na PARTIÇÃO de dados, não vira 4º+1 widget.
+- Detector acharPaceIdx(pts, vminIdx) no re-etiquetador: 1ª aceleração SUSTENTADA pós-Vmin. NÃO
+  INVENTAR: sem sensor de acelerador casado por tempo, é PROXY por velocidade (marcos.paceProxy=true).
+- Integrado no offline: promove a zona pós-Vmin (sub 'saida' a partir do paceT) para 'pace'. RESULTADO:
+  44/56 passagens com PACE; distribuição entrada=229/freio=66/apice=26/pace=234/saida=10; 0 nulos.
+- Teste DC-01 atualizado (5 sub-trechos, ordem pace entre apice e saida). +4 testes de acharPaceIdx.
+- Evidência: `npm run smoke` = 345 ok / 0 fail. Backup canônico intacto.
+
+### FASE 5 — Ligar o agente vivo (classificação chega ao app, DEV/replay) — EM EXECUÇÃO
