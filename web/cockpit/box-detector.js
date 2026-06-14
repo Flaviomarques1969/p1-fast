@@ -19,6 +19,8 @@
 // muda entre amostras consecutivas em relação a cada linha. Estado interno
 // rastreia se o carro está NO BOX ou NA PISTA, sem reagir a falsos cruzamentos.
 
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
+
 const DEBOUNCE_MS = 5000;
 // Cruzamento só vale se o CAMINHO entre 2 amostras corta a linha DE VERDADE
 // (segmento a–b). Sem isso, o prolongamento infinito da pit-in corta a
