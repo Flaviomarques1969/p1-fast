@@ -125,7 +125,7 @@ struct PendenciasView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Eyebrow(text: "Pendências do evento")
+            Eyebrow(text: eyebrow)
             Text(eventoTitulo ?? "Pendências")
                 .font(.system(size: 24, weight: .semibold))
                 .tracking(-0.6)
