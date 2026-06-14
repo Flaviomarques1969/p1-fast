@@ -486,7 +486,7 @@ function abrirEditor(gi, id){
   document.getElementById('ed-titulo').textContent = id ? 'Editar item' : 'Cadastrar item';
   document.getElementById('ed-nome').value = it.txt;
   grupoSel.value = (gi!=null?gi:0);
-  document.getElementById('ed-escopo').value = it.escopo||'geral';
+  setSeg('ed-escopo', it.escopo||'geral');
   setSeg('ed-kind', it.kind||'item');
   setSeg('ed-cat', it.cat);
   document.getElementById('ed-espec').value = it.espec||'';
