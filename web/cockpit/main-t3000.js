@@ -851,7 +851,7 @@ async function connectAndRun() {
           shiftOrquestrador.carregarPerfisDoBanco()
             .then(r => log(`perfis de reação: ${r.ok ? r.carregados + ' carregados' : 'sem perfil ainda (' + r.motivo + ')'}`))
             .catch(e => log('perfis: erro ' + e.message));
-          log(`shift light v2 ligado (modo ${_modoStintAtual})`);
+          log(`shift light v2 ligado (máximo desempenho — troca na potência máxima, sem modos)`);
           atualizarBadgeSafeMode(false);
         } catch (e) {
           log('shift light v2 falhou ao ligar: ' + e.message);
