@@ -31,6 +31,10 @@ import { criarT3000Watchdog } from './t3000-watchdog.js';
 import { OportunidadeTrecho } from './oportunidade-trecho.js';
 import { criarTelaOrientacao } from './tela-orientacao.js';
 import { CoreografiaVolta } from './coreografia-volta.js';
+// Agente VIVO de classificação de curva (Flávio 13/06): a cada passagem fechada, classifica o
+// trecho e PROPÕE mudar o tipo quando a evolução é consistente. Persistência LOCAL (não a nuvem).
+import { criarClassificadorVivo } from './classificador-vivo-bridge.js';
+import { carregarTipoCurvaPorTrecho } from './tipo-trecho-loader.js';
 // ── Treino de técnica (Stint Revestido — autorização Flávio 11/06) ──
 import { resolvePlanoStint, buscarPlanoStintDaNuvem, TreinoStint } from './treino-stint.js';
 import { APICES_SEMENTE_BRASILIA } from './apices-semente-brasilia.js';
