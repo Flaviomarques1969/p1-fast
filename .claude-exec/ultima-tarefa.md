@@ -49,6 +49,49 @@
 11. **Riscos:** `web/cockpit` ESTÁ publicado (p1t4000) — editar local é dev, publicar é prod (proibido sem ordem); o fix da animação NÃO pode mexer nas posições aprovadas (ATUAL.json) nem na calibração Bubi aplicada 14/06; validação real do câmbio só no dia de pista 15-16 (precisa RPM+aceleração reais juntos, que o GPS não dá).
 12. **Status inicial:** iniciado — fase de mapeamento verificado.
 
+## PROGRESSO — 2026-06-14 (noite)
+
+### Mapa VERIFICADO (leitura direta + workflow de 14 agentes, conferência adversarial)
+Achado central: o "cérebro" NÃO está pendente como a nota das 18:17 dizia — está ~90% construído, mas
+SPLIT em dois lugares + um mockup, todos ANTERIORES à visão de 14/06:
+- `src/domain` + `src/pipeline` (Bloco 5/6, 01/05): funções puras + 153 testes verdes (`test:shift-light`).
+  `gear_signatures` aqui é praticamente CÓDIGO MORTO (só testes; `car.gear_signatures` sempre null).
+- `web/cockpit` (Onda 7/8, 29/05): cérebro VIVO que alimenta o painel publicado (p1t4000). TEM os 3
+  aprendizados: câmbio online (`gear-detector-online.js`, reaprende via média móvel 5%), refino por
+  passagem (`aprendizado-confianca.js` registra rpm por trecho+marcha), reação completa+persistida.
+  PORÉM gira em torno dos 3 MODOS (revogados 14/06) e mira na janela do modo, não na potência máxima.
+- `_design-reference/mockup-command-box-vista-piloto.html`: Vista Piloto (calibração Bubi 6050 aplicada 14/06).
+
+### FEITO nesta sessão (DEV, produção intocada):
+- **Bug da marcha falsa ao vivo CORRIGIDO** no mockup Command Box. No modo real a animação demo
+  (`startShiftLightAnimation`) continuava rodando por baixo e mostrava marcha 3/4/5 e RPM varrendo FALSOS.
+  Agora: extraí `renderShiftLightFromValues(rpm,gear)`; criei `stopShiftLightAnimation()`; no modo real
+  paro a demo, desenho o shift light com RPM REAL e marcha "—" até o cérebro inferir; trava
+  `window.__shiftLightRealMode` impede a demo religar (ordem init×ligação). Calibração 6050/6300 e
+  posições (ATUAL.json) INTACTAS. Backup: `.claude-exec/backup-shiftlight-aovivo-2026-06-14/`.
+- Validação: `test:shift-light` 153/0; sintaxe JS do mockup 0 erros (vm.Script nos 3 blocos);
+  servido pela 8078 (ajudante injeta arranjo) e aberto no navegador com `?preview` (simulador local).
+
+### LACUNAS REAIS verificadas (construíveis AGORA, sem dado de pista):
+1. Persistir assinaturas do câmbio (ratioMedia/marcha) e learned_targets entre sessões (hoje se perdem).
+2. SEM MODOS: remover Durabilidade/Normal/Agressivo → comportamento único (máximo desempenho).
+3. Alvo na POTÊNCIA MÁXIMA 6050 (conferir o que o cruzamento/força-integrada devolve p/ o Bubi vs 6050).
+4. Aprendizado #2 por TEMPO DE PASSAGEM (lapTime vs melhor histórica → afinar ponto pelo melhor tempo).
+5. Aceleração (força-G) entrar no GATILHO da detecção (hoje só registrada pós-fato).
+6. Ligar `getRpmVisualLuz` (antecipação da reação) no LED ao vivo (hoje só `getRpmOtimoTroca` é usado).
+7. Testes: re-aprendizado online do câmbio; marcha sem RPM (iPhone); freio só por aceleração.
+
+### SÓ O DIA DE PISTA 15-16 FECHA:
+- Fonte de RPM real plugada (adaptador T3000) + GPS ao vivo → marcha real inferida ao vivo.
+- Fixture histórica com RPM+aceleração COMBINADOS (hoje só GPS de 23-24/05, sem RPM).
+
+### TENSÃO a decidir com Flávio (não decido sozinho — é o carro dele):
+Visão 14/06 = trocar na potência máxima 6050. Auditor 29/05 (no código `forca-integrada-calculator.js`)
+= com câmbio Wide Ratio amador, o ótimo "estica" pra perto do redline. Os dois conflitam.
+
+**Status: PARCIALMENTE CONCLUÍDO** — bug ao vivo corrigido e validado; reconciliação do cérebro à visão
+14/06 aguarda direção do Flávio (mexe em comportamento de função em uso + decisão do alvo).
+
 ## TASK_INIT — 2026-06-14 — Reorganizar menu de baixo (Cadastros → Garagem, Pendências no lugar)
 
 1. **Pedido original de Flávio:**
