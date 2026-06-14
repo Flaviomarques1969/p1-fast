@@ -5652,26 +5652,6 @@ html,body{
     }
   }
 
-  // ── Tipo da curva + formato de trail (Flávio 13/06) ──────────────────────
-  // Fonte canônica do rótulo/formato: web/cockpit/classificador-trecho.js (TIPOS) e
-  // web/cockpit/perfil-trail-por-tipo.js (resumoTrail). Espelhado aqui porque este painel é
-  // um HTML autocontido (sem imports). Tipo das 8 curvas = padrão definitivo (migration 0043).
-  var TIPO_POR_CURVA = ['T5','T1','T0','T2','T0','T2','T4','SF']; // C1..C8 na ordem da pista
-  var PERFIL_TRAIL = {
-    T0: { rotulo:'MÉDIA CLÁSSICA', resumo:'pancada inicial · solta suave até o ápice' },
-    T1: { rotulo:'LENTA PÓS-RETA', resumo:'100% · solta fundo até o ápice' },
-    T2: { rotulo:'RAIO DECRESCENTE', resumo:'60–75% + residual 35–50% · até o Vmin' },
-    T3: { rotulo:'RÁPIDA', resumo:'toque até 40% (ou só tirar o pé)' },
-    T4: { rotulo:'ENCADEADA', resumo:'residual mantido · até a troca de direção' },
-    T5: { rotulo:'RAIO CRESCENTE', resumo:'ápice cedo · trail curto · acelera cedo' },
-    SF: { rotulo:'SEM FREADA', resumo:'pé embaixo — sem freio' },
-    ND: { rotulo:'INDETERMINADO', resumo:'dado não permite afirmar' },
-  };
-  function perfilDaCurva(curveIdx){
-    var tipo = TIPO_POR_CURVA[curveIdx] || 'ND';
-    return Object.assign({ tipo: tipo }, PERFIL_TRAIL[tipo] || PERFIL_TRAIL.ND);
-  }
-
   function getPassagemDataForCurve(curveIdx){
     var c = CURVES[curveIdx];
     var corner = currentLap().corners[curveIdx];
@@ -5682,8 +5662,7 @@ html,body{
       saida:   { speed: corner.saidaKmh,   delta: corner.saidaDelta.replace(/[+−]/,''),   tone: corner.saidaTone },
       verdict: corner.passagemVerdict,
       verdictTone: corner.passagemTone,
-      totalDelta: corner.passagemDelta,
-      perfil: perfilDaCurva(curveIdx)
+      totalDelta: corner.passagemDelta
     };
   }
 
