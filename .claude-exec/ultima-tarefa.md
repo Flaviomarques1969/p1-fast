@@ -150,3 +150,8 @@
   bloco PASSAGEM agora mostra TIPO (badge), FORMATO de trail e os marcos freio·Vmin·PACE sobre o MESMO
   arco (3 dots heróis intactos; posições dos blocos NÃO mexidas). SEM FREADA esconde os marcos extras.
 - Validado headless (Playwright): 0 erro de console, tipo+formato+marcos presentes. Aberto no navegador.
+- APROVADO pelo Flávio 14/06 servindo pela porta 8078 (ajudante atelier-server, injeta o arranjo salvo).
+  Cópia carimbada: _design-reference/mockup-command-box-vista-piloto-APROVADO-PASSAGEM-2026-06-14.html.
+- INCIDENTE/LIÇÃO: abri antes pela porta 8079 (servidor comum, sem injeção) → apareceu o layout padrão
+  e o Flávio achou que tinha perdido a config (estava intacta no disco: command-box-versoes/vista-piloto-
+  ATUAL.json). Regra gravada na memória feedback-command-box-servir-pela-8078: SEMPRE abrir pela 8078.
