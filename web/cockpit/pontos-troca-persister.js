@@ -22,6 +22,7 @@ function isUuid(v) {
  */
 export async function loadPontos({ carroId, trackId, tipoPneu, modoStint }) {
   if (!isUuid(carroId) || !isUuid(trackId)) return [];
+  if (tipoPneu) tipoPneu = normalizarTipoPneu(tipoPneu);
   const filtros = [
     `carro_id=eq.${carroId}`,
     `track_id=eq.${trackId}`,
