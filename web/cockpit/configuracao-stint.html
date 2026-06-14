@@ -55,8 +55,8 @@
     outline:none;border-color:var(--cor-normal);
   }
 
-  /* Modos */
-  .modos{display:grid;grid-template-columns:repeat(3, 1fr);gap:16px;}
+  /* Comportamento da luz (antes: 3 modos lado a lado; agora 1 bloco único — largura total) */
+  .modos{display:grid;grid-template-columns:1fr;gap:16px;}
   .modo{
     background:#0a0a0a;border:2px solid var(--border);border-radius:12px;
     padding:20px;cursor:pointer;transition:all 240ms ease;
