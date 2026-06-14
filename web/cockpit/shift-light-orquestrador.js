@@ -457,10 +457,28 @@ export function criarShiftLightOrquestrador({
       return dt > 0.05 ? (l.rpm - f.rpm) / dt : 0;
     },
 
+    /**
+     * Registra uma passagem concluída (dado REAL de pista): em que rotação a
+     * troca foi feita + o tempo daquela passagem. É o que afina o ponto de troca
+     * pelo MENOR TEMPO medido (aprendizado #2, visão Flávio 14/06). Alimentado
+     * pela coreografia da volta quando há setor/volta limpa cronometrada.
+     */
+    registrarPassagemTempo({ trechoId, marcha, shiftRpm, tempoMs } = {}) {
+      return tempoPassagem.registrarPassagem({ trechoId, marcha, shiftRpm, tempoMs });
+    },
+
+    /** Exporta o aprendizado por tempo de passagem (persistir entre sessões). */
+    exportarTempoPassagem() { return tempoPassagem.exportarEstado(); },
+    /** Importa aprendizado por tempo de passagem persistido (idempotente). */
+    importarTempoPassagem(estado) { tempoPassagem.importarEstado(estado); },
+    /** Alvo-semente atual = potência máxima (rpm). Debug. */
+    getAlvoSemente() { return _alvoSementeRpm; },
+
     /** Reseta tudo (ex: trocou configuração mecânica). */
     reset() {
       detector.reset();
       acumulador.reset();
+      tempoPassagem.reset();
       _ultimoCalcPorMarcha = {};
       _rpmHistory = [];
       _profiles = {};
