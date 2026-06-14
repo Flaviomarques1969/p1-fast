@@ -8,8 +8,8 @@
 2. Achar o primeiro pedaço com `[ ]`, executar, marcar `[x]` com evidência, repetir.
 3. Ordem: ETAPA 1 (Frente A A1→A6 + C1 + B1/B3/B4) → ETAPA 2 (Frente C com o iPhone) →
    ETAPA 3 (seg/ter, sensor + RaceBox ao ar livre).
-4. Decisões (D1..D5): card por vez, recomendação pronta no plano, no momento de cada pedaço —
-   a menos que o Flávio já tenha dito "segue todas as recomendações".
+4. Decisões (D1..D5): FECHADAS — Flávio disse "segue todas as recomendações" (14/06).
+   NÃO parar pra perguntar; usar a opção recomendada gravada no plano. Ele pode reabrir depois.
 
 1. **Pedido original (Flávio, 14/06):** "planeje fazer os três [trail-braking pronto pro sensor /
    RaceBox / validar pendências]. aí dou clear e você executa todos passo a passo, um pedaço por vez
