@@ -511,6 +511,7 @@ function aplicaTipo(tipo){
 document.querySelectorAll('#ed-cat button').forEach(b=>b.onclick=()=>setSeg('ed-cat', b.dataset.cat));
 document.querySelectorAll('#ed-tipo button').forEach(b=>b.onclick=()=>{ setSeg('ed-tipo', b.dataset.tipo); aplicaTipo(b.dataset.tipo); });
 document.querySelectorAll('#ed-kind button').forEach(b=>b.onclick=()=>setSeg('ed-kind', b.dataset.kind));
+document.querySelectorAll('#ed-escopo button').forEach(b=>b.onclick=()=>setSeg('ed-escopo', b.dataset.escopo));
 function stepField(id,d){ const s=document.getElementById(id); s.textContent = Math.max(1,(+s.textContent)+d); }
 function renderPartes(arr){ const w=document.getElementById('ed-partes'); w.innerHTML=''; arr.forEach(p=>addParte(p.nome,p.qtd)); }
 function addParte(nome,qtd){
