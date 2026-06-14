@@ -131,6 +131,11 @@ struct HubMockLauncher: View {
 
     /// Rota inicial do mock: hub do carro; com `--p1-deep` empilha tb o Estoque.
     private func rotaMock(carroId id: String) -> [HomeNavTarget] {
+        if ProcessInfo.processInfo.arguments.contains("--p1-menu") {
+            // Mostra a Garagem reorganizada direto (sem empilhar o hub) — pra
+            // validar/screenshot do menu novo (sub-abas + aba Pendências).
+            return [.garagem]
+        }
         if ProcessInfo.processInfo.arguments.contains("--p1-deep") {
             return [.garagem, .carroHub(carroId: id), .carroCadastro(carroId: id)]
         }
