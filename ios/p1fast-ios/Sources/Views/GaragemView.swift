@@ -47,6 +47,8 @@ struct GaragemView: View {
                 switch subTab {
                 case .carros:
                     carrosScroll
+                case .estoqueGeral:
+                    EstoqueGeralView()
                 case .pilotos:
                     PessoasView(embeddedSubTab: .pilotos)
                 case .passageiros:
