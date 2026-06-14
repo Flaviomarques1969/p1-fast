@@ -190,7 +190,7 @@ struct PendenciasView: View {
                 Text("Excluir selecionados (\(selecionados.count))")
                     .font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
                     .frame(maxWidth: .infinity).padding(.vertical, 12)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(Color.erroForte))
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color.erro))
             }
             .buttonStyle(.plain)
             .opacity(selecionados.isEmpty ? 0.5 : 1)
@@ -468,7 +468,7 @@ private struct ItemRow: View {
             HStack(spacing: Spacing.sm) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 6).stroke(selecionado ? Color.clear : Color.border, lineWidth: 1.5)
-                        .background(RoundedRectangle(cornerRadius: 6).fill(selecionado ? Color.erroForte : Color.clear))
+                        .background(RoundedRectangle(cornerRadius: 6).fill(selecionado ? Color.erro : Color.clear))
                         .frame(width: 22, height: 22)
                     if selecionado { Text("✓").font(.system(size: 13, weight: .bold)).foregroundStyle(.white) }
                 }
