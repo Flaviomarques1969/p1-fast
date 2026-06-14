@@ -40,7 +40,7 @@
 ## STATUS DOS PEDAÇOS — espelho do plano (atualizar aqui também ao executar)
 FRENTE A: A1[x] A2[x] A3[x] A4[x] A5[x] A6[x] A7[ ]  (A7 = calibrar com sensor real seg/ter 15-16/06)
 FRENTE B: B1[x] B2[ ] B3[x] B4[x] B5[ ] B6[ ] B7[ ] B8[ ] (B2/B5-B8 = ETAPA 3, precisam do aparelho/ar livre)
-FRENTE C: C1[x] C2[x] C3[ GATE-FLÁVIO ] C4[ ] C5[ GATE-FLÁVIO ]
+FRENTE C: C1[x] C2[x] C3[x] C4[x-prova iPhone] C5[ GATE-FLÁVIO ]
 
 ### Log de execução (pós-clear 14/06)
 - A1 [x] 14/06: D1 (2 de 2, ponto de freada = aviso, interruptor 3 de 3) no motor
