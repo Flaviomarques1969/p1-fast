@@ -92,7 +92,7 @@ struct HubMockLauncher: View {
                         .environmentObject(combustivelRepo)
                         .environmentObject(licaoRepo)
                         .environmentObject(pendenciaRepo)
-                        .environmentObject(NavRouter())
+                        .environmentObject(router)
                 }
             } else {
                 Color.black.ignoresSafeArea()
