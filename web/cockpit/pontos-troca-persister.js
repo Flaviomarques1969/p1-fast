@@ -49,6 +49,7 @@ export async function savePonto({
   melhorTempoTrechoMs,
 }) {
   if (!isUuid(carroId) || !isUuid(trackId) || !isUuid(trechoId)) return false;
+  if (tipoPneu) tipoPneu = normalizarTipoPneu(tipoPneu);
   const payload = {
     carro_id:           carroId,
     track_id:           trackId,
