@@ -59,11 +59,28 @@ export function criarShiftLightOrquestrador({
 
   const acumulador = criarAcumuladorConfianca({ marchasCriticas: TRECHO_CRITICOS_BRASILIA });
 
-  let modoAtual = modoStintInicial;
   let curva = dynoCurve;
   let trechoAtual = null; // setado pelo trecho-detector externo
   let trechoAnterior = null;
-  let _ultimoCalcPorMarcha = {}; // cache de rpmOtimo por marcha pra cada modo
+  let _ultimoCalcPorMarcha = {}; // cache de alvo por marcha (chave = marcha)
+
+  // Aprendizado #2 (visão Flávio 14/06): ponto de troca por MENOR TEMPO de passagem.
+  const tempoPassagem = criarAprendizadoTempoPassagem();
+  // Alvo-semente = POTÊNCIA MÁXIMA do motor (Bubi 6.050). Derivado da curva do dyno
+  // quando disponível (rpm de maior potência); senão, do perfil. Teto = redline (sirene).
+  let _alvoSementeRpm = _picoPotenciaDaCurva(dynoCurve) ?? PERFIL_BUBI.picoPotenciaRpm;
+  const _tetoRpm = PERFIL_BUBI.redlineRpm;
+
+  // Pico de potência da curva = rpm onde potencia_cv é máxima (alvo de troca, 14/06).
+  function _picoPotenciaDaCurva(c) {
+    if (!Array.isArray(c) || c.length === 0) return null;
+    let melhor = null;
+    for (const p of c) {
+      if (!p || !Number.isFinite(p.rpm) || !Number.isFinite(p.potencia_cv)) continue;
+      if (!melhor || p.potencia_cv > melhor.potencia_cv) melhor = p;
+    }
+    return melhor ? melhor.rpm : null;
+  }
 
   // Flash IA: agendado quando IA cruza 100%, dispara no meio da próxima reta.
   // Decisão Flávio 2026-05-29: "vc tem o mapa todo do autódromo, já rodou
