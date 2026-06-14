@@ -101,10 +101,10 @@ t(`GRDB cobre TODAS as ${GRDB_REQUIRED_COUNT} tabelas do PG espelhadas (excl. ${
   if (missing.length) throw new Error('faltam no GRDB: ' + missing.join(', '));
 });
 
-t(`GRDB tem só sync_queue + sync_meta além das ${GRDB_REQUIRED_COUNT} do PG espelhadas`, () => {
+t(`GRDB tem só ${GRDB_LOCAL_ONLY.join(' + ')} além das ${GRDB_REQUIRED_COUNT} do PG espelhadas`, () => {
   const extras = [...GRDB_TABLES].filter(x => !PG_TABLES.has(x)).sort();
-  const expected = ['sync_meta', 'sync_queue'];
-  if (extras.length !== 2 || extras[0] !== expected[0] || extras[1] !== expected[1]) {
+  const expected = [...GRDB_LOCAL_ONLY].sort();
+  if (extras.length !== expected.length || expected.some((e, i) => extras[i] !== e)) {
     throw new Error('extras inesperadas: ' + extras.join(', '));
   }
 });
