@@ -1,232 +1,58 @@
-# TASK_INIT 13/06/2026 — LIGAÇÕES REAIS DO COMMAND BOX COM O SISTEMA (análise honesta + teste)
+# TASK_INIT 14/06/2026 — TRAIL-BRAKING + PASSAGEM COMPLETA (padrão da curva → frenagem/Vmin/PACE)
 
-> Tarefa anterior (classificador de curvas) preservada em
-> `.claude-exec/ultima-tarefa-backup-pre-command-box-2026-06-13.md`.
+> Tarefa anterior (ligações reais do Command Box) preservada em
+> `.claude-exec/ultima-tarefa-backup-pre-trailbraking-2026-06-14.md`.
+> Plano-fonte: `.claude-exec/CONTINUAR-trailbraking-passagem-2026-06-13.md` (7 fases).
 
-1. **Pedido original (Flávio, literal):** "em p1 fast eu Gostaria de começar a criar as
-   ligações reais, verdadeiras do Box Command Center com o sistema. Faz uma análise honesta,
-   com evidência, teste as funcionalidades para a gente poder fazer funcionar."
+1. **Pedido original (Flávio, literal 13/06):** "Em função do padrão da curva, qual tipo de
+   trailbraking que vai ser aplicado para aquela curva. Então qual é o ponto de frenagem, quanto
+   de carga tem e como é que distribui ele até o Vmin. Além disso, nessa passagem da curva, nós
+   precisamos também incluir ali o ponto de frenagem e o Vmin e o PACE. Montem o planejamento
+   para todos esses itens e vamos avançar de um jeito profissional."
 
-2. **Objetivo em 1 frase:** mapear com evidência o que existe hoje no Command Box, o que já
-   está ligado a dado real e o que é mockup, testar o que dá pra testar, e entregar um plano
-   honesto e faseado para começar as ligações reais — sem tocar produção.
+2. **Objetivo em 1 frase:** entregar, por fases, a cadeia tipo-da-curva → formato de trail-braking
+   (carga/distribuição até o Vmin) + passagem completa da curva com ponto de frenagem, Vmin e PACE,
+   tudo em desenvolvimento, sem tocar produção.
 
-3. **Critérios objetivos de conclusão:**
-   (a) inventário verificado de cada tela do Command Box com origem real do dado (estático vs vivo);
-   (b) fonte de dado ao vivo real (canal cockpit-bubi-live, Supabase prod fvhwltzhytpnhlqbttmd) e formato;
-   (c) levantamento do persistido/histórico (Supabase, advisor) que alimentaria engenharia;
-   (d) execução dos testes automáticos relevantes com saída real PASS/FAIL;
-   (e) mapa de lacunas honesto;
-   (f) plano faseado em linguagem de gestor;
-   (g) revisão adversarial antes de entregar;
-   (h) NADA alterado em produção nem no cockpit ao vivo.
+3. **Critérios objetivos de conclusão (por fase do plano):**
+   - FASE 0: os 4 módulos do classificador presentes em `web/cockpit/` do oficial; testes verdes; smoke verde.
+   - FASE 1: `perfil-trail-por-tipo.js` + teste; perfil-alvo por tipo (carga inicial, soltura, residual).
+   - FASE 2: coluna `tipo_curva` no banco DEV com o padrão das 8 curvas; loader lê do banco.
+   - FASE 3: re-etiquetar (cópia) as 56 passagens reais → freada/ápice/vmin gravados; 0 sub:null.
+   - FASE 4: 5º marco PACE no enum/schema + detector proxy por velocidade.
+   - FASE 5: agente vivo ligado em DEV/replay → classifica e propõe mudança de tipo.
+   - FASE 6: bloco PASSAGEM na tela (entrada/freio/Vmin/ápice/PACE/saída) + tipo + formato de trail.
 
-4. **Leitura confirmada:** ~/.claude/CLAUDE.md (sim) · padroes.md (sim, vazio) ·
+4. **Leitura confirmada:** ~/.claude/CLAUDE.md (sim) · ~/.claude-decisoes/padroes.md (sim, vazio) ·
    FLAVIO_EXECUTION_PROTOCOL (sim) · FLAVIO_DONE_CHECKLIST (sim) · FLAVIO_ENVIRONMENT_RULES (sim) ·
-   FLAVIO_COMMUNICATION_RULES (sim) · CLAUDE.md do projeto (sim) · AMBIENTES_P1_FAST (sim) ·
-   memórias Command Box (só visualização; cockpit vs command box) (sim).
+   FLAVIO_COMMUNICATION_RULES (sim) · memória P1 Fast dois caminhos (sim) · CONTINUAR-trailbraking (sim).
 
-5. **Plano <=5 passos:** (1) inventariar cada tela e provar origem do dado; (2) mapear fonte ao
-   vivo real e o que entrega; (3) mapear histórico/persistido (Supabase+advisor); (4) rodar testes
-   relevantes e capturar saída real; (5) sintetizar lacunas + plano faseado, revisão adversarial,
-   abrir pro Flávio.
+5. **Plano curto (≤5 passos macro):**
+   (1) FASE 0 — trazer 4 módulos + 3 testes pro oficial, smoke verde.
+   (2) FASE 1 — perfil de trail por tipo (módulo puro + teste).
+   (3) FASE 2 — tipo_curva no banco DEV + loader.
+   (4) FASES 3–4 — re-etiquetar passagens (freio/vmin) + marco PACE.
+   (5) FASES 5–6 — agente vivo em DEV/replay + bloco passagem na tela. Validar no navegador.
 
-6. **Arquivos/áreas:** _design-reference/mockup-command-box-*.html + selecao-command-box.html ·
-   web/cockpit/cloud-bridge.js, main-t3000.js, cockpit-renderer.js, advisors · api/advisor.js ·
-   supabase/migrations, functions, config.toml · tests/node-smoke-* · docs/FONTE_DADOS_AO_VIVO.md.
+6. **Arquivos/áreas a inspecionar:** web/cockpit/ (classificador-*, trecho-*, oportunidade-trecho.js,
+   live-data-bridge.js, delta-calculator.js, segments-loader.js, main-t3000.js, mockups);
+   tests/node-smoke-*; supabase/migrations; tools/ (observar-brasilia, re-etiquetar); relatorios/.
 
-7. **Ambiente alvo:** desenvolvimento (análise local + leitura). Nada de deploy/escrita.
+7. **Ambiente alvo:** DESENVOLVIMENTO.
 8. **Produção protegida:** sim.
 9. **Autorização para produção:** não.
-10. **Evidência da autorização para produção:** não recebida (tarefa é só análise/teste).
-11. **Riscos:** (a) Command Box hoje é mockup -> não superestimar "pronto"; (b) canal ao vivo
-    aponta pro Supabase de PRODUÇÃO -> leitura segura, não escrever; (c) afirmar "ligado" sem
-    prova -> revisão adversarial; (d) telas de engenharia dependem de sensores talvez não instalados.
+10. **Evidência da autorização para produção:** não recebida.
+11. **Riscos:** (a) quebrar smoke ao trazer módulos — mitigado: módulos puros, testados; (b) tocar
+    posições dos blocos do painel do Flávio — proibido, não mexer; (c) re-etiquetar dado de
+    referência — só em cópia com backup; (d) confundir banco DEV/PROD em FASE 2 — só DEV; (e) inventar
+    carga de freio % — proibido (sem sensor de pedal); mostrar como ALVO prescrito.
 12. **Status inicial:** iniciado.
 
 ---
 
-## RESULTADO DA ANÁLISE (13/06/2026) — evidência + testes
+## PROGRESSO
 
-Análise multi-agente (28 agentes, com checagem adversarial). Achados centrais (todos com arquivo:linha provados):
-
-### Telas do Command Box = maquete
-- NÃO existe app real (sem web/command-box). 7 telas em `_design-reference/`.
-- vista-piloto / vista-engenheiro (~7.300 linhas): 100% estático, dado de array FAKE_LAPS (4 voltas fictícias), animação = replay determinístico. Zero conexão (grep ZERO supabase/fetch/websocket).
-- mockup-command-box.html: 100% HTML estático (nem relógio anda).
-- lambda / pace / motor-saude / saude-carro: por padrão mock; têm gancho de fetch a um "Tradutor" local (localhost:8765) que NÃO é o canal ao vivo e envia pacote sintético (rpm=0) → na prática volta vazio. NÃO usam cockpit-bubi-live.
-- selecao-command-box.html: NÃO é lançador; é formulário de curadoria (exporta JSON).
-
-### Fonte ao vivo real (existe e funciona — do Cockpit do Piloto)
-- Canal `cockpit-bubi-live`, Supabase prod fvhwltzhytpnhlqbttmd, evento 'sample', 5 Hz. (cloud-bridge.js:14/17/18/131; main-t3000.js:756)
-- PROVADO contra software oficial (carro PARADO): rpm, bateria, água, TPS, lambda WB (offset 62/1000), MAP. (FONTE_DADOS_AO_VIVO.md:54-65)
-- GPS/velocidade-de-pista vem por OUTRO evento 'gps' (RaceBox/iPhone). Marcha/EGT/óleo/pneu/câmbio: NÃO existem como leitura (parser:219-223). Ar/pedal/freio sem sensor → null.
-
-### Banco
-- Dado real em prod: dyno_curve (79 pts Bubi), track_segments (8 curvas), marcos, gear_ratios, carro Bubi.
-- LAMBDA: sem tabela/coluna tipada (só dentro de payload jsonb). PACE/Vmin: schema existe, gravação histórica NÃO confirmada. MOTOR/SAÚDE: só médias agregadas ou cru; qualidade_troca_marcha VAZIA (sem sensor).
-- Riscos a checar no banco: migrations 0025-0028 numeradas em duplicidade; conflito carros.time_id vs team_id (colunas de shift-por-carro podem faltar em prod).
-
-### Análise/IA já pronta e testada (alimenta o piloto, não a engenharia)
-- alertas-criticos, padrao-acumulador, oportunidade-trecho, mensagens-pedagogicas, shift-light-modos, forca-integrada, coreografia-volta, advisor.
-
-### Testes que rodei (reais)
-- 8/8 smoke VERDE, 141 asserções ok / 0 falhas:
-  live-data-bridge 26/0 · cockpit-web 16/0 · cockpit-renderer 17/0 · cockpit-state 24/0 · transport 17/0 · advisor-findings 9/0 · cockpit-bootstrap 7/0 · alertas 25/0.
-- RESSALVA honesta: verde cobre a LÓGICA de software (módulos JS), NÃO o hardware T3000/T4000 real nem o canal ao vivo em campo.
-
-### Recomendação
-Começar a ligação real pela tela AO VIVO em web, bebendo do canal cockpit-bubi-live (caminho provado), mostrando só o que tem sensor real e marcando o resto como "sem sensor". Card de decisão aberto: 20260613-120746-command-box-ligacao-real-inicio.
-
----
-
-TASK_DONE (fase de análise):
-- Pedido original conferido: sim
-- Ambiente trabalhado: desenvolvimento (análise + leitura)
-- Produção foi alterada: não
-- Se produção foi alterada, autorização explícita registrada: n/a
-- Arquivos reais inspecionados: sim (telas, ponte, banco, advisor)
-- Alterações feitas: não (só análise + card de decisão)
-- Testes/validação executados: sim (8/8 smoke verde)
-- Resultado: PARCIAL — análise + teste concluídos; construção das ligações BLOQUEADA aguardando decisão de arquitetura (card aberto)
-- Pendências reais: decisão do Flávio sobre por onde começar (card 20260613-120746)
-
----
-
-## CONSTRUÇÃO (13/06/2026) — decisão A escolhida pelo Flávio
-
-Decisão registrada: "A) Tela ao vivo em web, no canal que já funciona" (card 20260613-120746).
-
-### Entregue
-- NOVA tela real: `web/command-box/index.html` — primeira ligação real do Command Box.
-  - Assina o canal REAL `cockpit-bubi-live` (Supabase Realtime), eventos 'sample' (motor) e 'gps' (pista).
-  - Reusa o padrão de assinatura provado de monitor-bubi-live.html / painel.html.
-  - Mostra valor SÓ onde há sensor real hoje (rotação, velocidade GPS, lambda, água, coletor/MAP, borboleta, bateria, posição/satélites). Itens sem sensor (pneus, marcha, óleo, câmbio, freio, ar) marcados "sem sensor" — nada inventado.
-  - Só visualização (sem botão de ação) — respeita a regra do Command Box.
-  - Status de conexão (conectando/aguardando/ao vivo/sem conexão), Hz, última leitura, alarmes do motor.
-  - Sem emoji (ícones SVG de traço); usa a largura toda.
-  - Modo `?preview` = pré-visualização 100% LOCAL (não transmite nada) pra ver a tela populada.
-
-### Testes/validação executados (saída real)
-- Sintaxe do script da tela: OK (node --check).
-- Ciclo ao vivo no canal real: 74 amostras recebidas pelo ouvinte com o simulador do repo (tools/sim-publish + sim-listen). Prova que a assinatura funciona ponta a ponta.
-- Telas abertas no navegador (servidor local porta 8099): prévia populada + real conectada.
-
-### Honestidade / limitações
-- NÃO mostrei a tela REAL com valores ao vivo porque isso exigiria (a) o carro transmitindo de verdade, ou (b) publicar dados de teste no canal compartilhado de produção — o que é ESCRITA em infra de produção e foi (corretamente) bloqueado. A prévia local cobre o visual sem tocar produção.
-- Transparência: rodei UMA vez o simulador do repo (15s) pra provar o ciclo antes do bloqueio. Não voltei a publicar.
-- @supabase/supabase-js foi instalado com --no-save (só pra rodar os simuladores/ouvintes); package.json NÃO foi alterado. Observação: os tools sim-*/listen-* dependem de @supabase, que não está em package.json (lacuna pré-existente, não corrigida sem autorização).
-- Velocidade/posição na tela real dependem da Central transmitir o evento 'gps'.
-
-TASK_DONE (fase de construção — fatia 1):
-- Pedido original conferido: sim
-- Ambiente trabalhado: desenvolvimento (tela nova local + leitura do canal)
-- Produção foi alterada: não (banco intocado; 1 transmissão efêmera de teste no canal antes do bloqueio, sem gravar nada)
-- Arquivos reais inspecionados: sim
-- Alterações feitas: sim (web/command-box/index.html novo; nada existente removido)
-- Testes/validação executados: sim (sintaxe OK; 74 amostras no ciclo ao vivo; telas abertas)
-- Resultado: CONCLUÍDO (fatia 1: tela real ligada ao canal) — próximas fatias dependem de sensores/banco
-- Pendências reais: demo com valores reais exige carro transmitindo ou autorização pra publicar teste no canal; fatias de engenharia (lambda/pace/motor/saúde) dependem de dado que ainda falta
-
----
-
-## CORREÇÃO DE RUMO (Flávio): usar o PAINEL JÁ MONTADO, não tela nova
-
-Flávio apontou que o Command Box já tem layout montado (vídeo à esquerda, pista abaixo, blocos com padrões).
-Identificado: `_design-reference/mockup-command-box-vista-piloto.html` (e gêmeo vista-engenheiro) — vídeo em
-left:4.5%/top:8.12%, mapa logo abaixo (left:4.5%/top:53%), 16 blocos. É esse que vamos fazer funcionar.
-
-### Feito (preservando os originais)
-- Cópias funcionais: `web/command-box/vista-piloto.html` e `vista-engenheiro.html` (originais em _design-reference intactos).
-- Botões Piloto/Engenheiro apontando pras cópias.
-- Injetada LIGAÇÃO AO VIVO dentro do bloco principal (antes do `})();` final), additiva, sem mexer no layout:
-  - troca a FONTE das funções que o painel já usa (liveSpeed/liveRPM/liveLambda/liveCarro) pelo canal real;
-  - reescreve updateLiveHUD pra mostrar real (velocidade GPS, rotação, lambda, água) e "—" onde não há sensor;
-  - congela a narrativa fictícia (detectLapWrap/updateLiveCarroPneus viram no-op);
-  - marca honestamente 13 blocos sem dado real (vídeo, coach, delta, frenagem, passagem, vmin, pneus, carro,
-    stint, stint-bar, fuel-gauge, checklist, shift-light) com esmaecido + selo "sem dado real"; HUD recebe selo "ao vivo";
-  - selo de conexão no topo (CONECTANDO/AO VIVO/aguardando/SEM CONEXÃO);
-  - modo `?preview` = prévia 100% local (não transmite nada).
-
-### Testes
-- Sintaxe do script principal: OK nos dois (node --check).
-- Painel Piloto aberto no navegador: prévia local populada + versão real conectada ao canal.
-
-### Verdade dura (o que NÃO dá pra fazer real hoje)
-- Só HUD/gauge/água/lambda/rotação/velocidade(GPS) têm dado real. Os outros 13 blocos são análise que depende de
-  captura/banco que ainda NÃO existe (delta vs melhor volta, Vmin, pace, passagem, pneus, câmbio/óleo, combustível, vídeo).
-  Por isso ficam marcados "sem dado real" — não invento número.
-
-TASK_DONE (fatia 2 — painel montado ligado):
-- Pedido conferido: sim (usar o painel já montado)
-- Ambiente: desenvolvimento (cópias locais + leitura do canal)
-- Produção alterada: não (originais preservados; sem escrita no banco/canal)
-- Arquivos inspecionados: sim
-- Alterações: sim (2 cópias funcionais novas; nada removido)
-- Testes: sim (sintaxe OK; aberto no navegador)
-- Resultado: CONCLUÍDO (fatia: HUD real no painel montado) — demais blocos dependem de dado a capturar/gravar
-- Pendências: ligar vídeo (Daily.co) e construir a captura/banco das análises pros outros blocos
-
----
-
-## CONSELHO + PLANO DE CONEXÃO REAL (13/06/2026)
-Workflow "command-box-conexao-real-conselho": 36 agentes (16 elementos × propor+verificar + 3 estratégias + juiz).
-Cada fonte foi CONFERIDA nos arquivos reais (verificação adversarial).
-
-Achados-chave honestos:
-- LIGA/JÁ ACESO: HUD (rotação/lambda/água reais), Vídeo (estrutura Daily.co pronta), Vmin ao vivo, Shift light (rotação real).
-- PARCIAL: Mapa (carro ao vivo via GPS liga; fantasma/delta dependem de referência), Carro (só água), Stint (plano sim/execução não), Checklist, Delta acumulado (referência JÁ tem dados no banco — verificador consultou), Barra do stint, Cabeçalho.
-- PRECISA LIGAÇÃO (lógica existe noutra tela): Coach, Passagem, Frenagem, Shift — exigem PUXAR os módulos pra vista (NÃO é flag).
-- SEM SENSOR (não inventar): Combustível (litros), Pneus (temp/press), Óleo/Câmbio (número), Marcha (estimada).
-- Correção dura do conselho: as vistas Command Box NÃO importam os calculadores do cockpit (0 referência) → destravar bloco = WIRING.
-- Caminho: Fase 0 (validar HUD) → 1 (carro no mapa) → 2 (frenagem/vmin) → 3 (shift) → 4 (provar gravação em campo) → 5 (delta/barra) → 6 (vídeo) → 7 (plano/config).
-
-Entregue: `_design-reference/PLANO-command-box-conexao-real-2026-06-13.html` (aberto no navegador).
-NÃO toquei o painel do Flávio (arranjo no navegador segue intacto; versionamento pronto via tools/cb-salvar-versao.sh).
-
-## REGRA — DETECÇÃO AUTOMÁTICA DE SENSOR (Flávio 13/06/2026, plano aprovado)
-Flávio aprovou o plano ("está perfeito") e definiu: o painel deve detectar sozinho cada sensor novo
-(via central T4000 ou app); o bloco acende quando o dado começa a chegar. Vai instalar sensores essa
-semana e ao longo do tempo.
-Feito: trocada a lista fixa "sem sensor" por DETECÇÃO AUTOMÁTICA em web/command-box/vista-piloto.html e
-vista-engenheiro.html (SENSOR_SEEN + MAPA_CAMPO c/ campos futuros previstos + SENSOR_DE + atualizarBlocos 1s).
-3 estados: ao vivo (cb-vivo) / aguardando sensor (cb-aguardando) / aguardando ligação (cb-sem-real).
-Sintaxe OK nos dois. Regra salva na memória do projeto. Painel do Flávio (arranjo no navegador) intocado.
-
-## VERSIONAMENTO 1-CLIQUE + PADRÃO (Flávio 13/06/2026)
-Flávio pediu botão "salvar última versão" (1 clique) + virar padrão de todo mockup.
-Feito e TESTADO de ponta a ponta:
-- web/_atelier/salvar-versao.js (botão reaproveitável; POST p/ ajudante; baixa reserva se ajudante off).
-- tools/atelier-server.mjs (Node puro, porta 8078): grava versão+ATUAL+HISTORICO; RECUSA arranjo vazio;
-  ao servir o mockup por http injeta a última versão salva (seed só se memória vazia).
-- Botão incluído nos originais vista-piloto.html e vista-engenheiro.html (backup em _backup-pre-botao-salvar-2026-06-13).
-- Porta: 8077 estava ocupada por Python antigo (RaceBox) — preservei; ajudante foi pra 8078.
-- Testes reais: recusa vazio (ok:false) + grava cheio (ok:true, 16 blocos). Página servida = painel certo (303KB) com seed+botão.
-- Versão 1 do Flávio salva: vista-piloto-layout-20260613-162726.json (16 blocos, layout real).
-- Padrão gravado na memória do projeto.
-Painel aberto pela 8078 (com arranjo + botão).
-
-## (c) CLASSIFICAÇÃO DOS TRECHOS NO COMMAND BOX — design + 1ª fatia (Flávio 13/06/2026)
-Flávio escolheu (c): trazer a classificação viva dos trechos pro Command Box. Regra: tela mostra + PISCA quando há
-proposta pendente; DECISÃO no celular que transmite; ao decidir, o pisca apaga.
-Conselho (13 agentes, verificado) confirmou:
-- Mapa já desenha as 8 curvas, cada uma endereçável (.trecho[data-curve="0..7"] + grupo de ápice por curva).
-- Tipo de curva NÃO existe na tela ainda (criar). Pisca = copiar efeito existente (off-track-blink/apex-pulse).
-- Compartilhamento = reusar o canal cockpit-bubi-live (bidirecional) + 1 evento novo 'proposta'.
-- NÃO existe ainda: o conceito 'proposta pendente' no canal/schema; o painel de DECISÃO no celular que publica+grava; mapeamento curva↔dado conferido em campo.
-1ª FATIA construída (web/command-box/vista-piloto.html, no IIFE da ligação ao vivo):
-- Faixa "CLASSIFICAÇÃO DOS TRECHOS" mostra C1..C8 com o tipo real (T0/T1/SF/ND, cores).
-- Mecanismo de PISCA na curva do mapa (.trecho is-proposta) + aviso "ponto de mudança — decidir no celular".
-- HONESTO: hoje 0 propostas reais → por padrão NÃO pisca. O pisca só aparece com ?demo-proposta (demonstração).
-- Sintaxe OK. Aberto real + demo no navegador.
-Próximo: FATIA 2 (aviso 'proposta' no canal acende o pisca sozinho) + FATIA 3 (painel de decisão no celular: aprovar/ajustar/recusar + gravar).
-
-## VERIFICAÇÃO (2 conselhos) + CORREÇÕES — 13/06/2026 noite
-Conselho 1 (ligação geral): 4 campos reais (velocidade-GPS, rotação, lambda-WB, água) CERTOS, sem invenção; velocidade vem do GPS (não speedKmh T3000). 2 defeitos: shift-light dizia "ao vivo" sobre rotação fictícia; velocidade só atualizava com amostra de motor. CORRIGIDOS.
-Conselho 2 (frenagem/passagem):
-- P1 rótulo: ainda aparece "curva N" nos 2 blocos. PASSAGEM já tem título "passagem" + entrada/ápice/saída. FRENAGEM diz "curva N" e NÃO tem entrada/ápice/saída (é gráfico de força g x distância vc vs ideal).
-- P2: frenagem do painel é DEMONSTRAÇÃO (VERDICTS_FRENAGEM/FRENAGEM_GHOST + FAKE_LAPS). Não ligada à lógica real.
-- P3: a LÓGICA REAL (oportunidade-trecho.js + trecho-detector.js) FAZ certo: compara ponto de freada real vs melhor passagem histórica e dá veredito direcional. No painel é encenação.
-- P4: mede da LINHA DE ENTRADA da curva (distFromEntradaM, trecho-detector.js:261-269), freada por desaceleração GPS -0,5g (sem sensor de pedal). NÃO do meio da reta anterior — e o conselho diz que a linha de entrada é o CERTO (bate com decisão antiga do Flávio).
-Correção honesta aplicada: só HUD acende "ao vivo"; carro/pneus/fuel = "aguardando sensor"; mapa/vmin/frenagem/shift-light/coach/delta/passagem/stint/stint-bar/checklist = "aguardando ligação". Sintaxe OK. Posições intactas.
-A FAZER: trocar rótulo "curva N"→trecho/passagem; plugar frenagem na lógica real do cockpit; destravar referência (re-etiquetar 56 passagens); decidir estrutura do bloco frenagem.
+### FASE 0 — Trazer o classificador pro app principal — EM EXECUÇÃO
+- Verificado: oficial e worktree diferem APENAS nos 4 módulos novos (diff -rq limpo).
+- Os 3 testes novos não existem no oficial; passam no worktree (24+31+13 = 68 ok / 0 fail).
+- A executar: copiar 4 módulos + 3 testes; registrar 3 testes no smoke do oficial; rodar smoke.
