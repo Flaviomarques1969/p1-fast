@@ -83,6 +83,12 @@ struct HubMockLauncher: View {
                         .environmentObject(manutencaoStore)
                         .environmentObject(pecaRepo)
                         .environmentObject(pneuRepo)
+                        .environmentObject(eventoRepo)
+                        .environmentObject(pilotoRepo)
+                        .environmentObject(passageiroRepo)
+                        .environmentObject(combustivelRepo)
+                        .environmentObject(licaoRepo)
+                        .environmentObject(pendenciaRepo)
                         .environmentObject(NavRouter())
                 }
             } else {
