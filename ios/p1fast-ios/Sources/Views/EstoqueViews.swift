@@ -18,16 +18,22 @@ import P1FastCore
 // MARK: - Semente do editor (sheet)
 
 /// O que abrir no editor: item existente (edição) ou novo, num escopo inicial.
+/// Para "Adicionar/Editar" vindo das Pendências, pode pré-preencher nome+bloco.
 struct EstoqueEditorSeed: Identifiable {
     let id: String
     let item: EstoqueItem?
     let escopoInicial: String
+    var nomeInicial: String?
+    var blocoIdInicial: String?
 
-    static func novo(escopo: String = EstoqueRepository.escopoGeral) -> EstoqueEditorSeed {
-        EstoqueEditorSeed(id: "novo", item: nil, escopoInicial: escopo)
+    static func novo(escopo: String = EstoqueRepository.escopoGeral,
+                     nome: String? = nil, blocoId: String? = nil) -> EstoqueEditorSeed {
+        EstoqueEditorSeed(id: "novo-\(nome ?? "")-\(blocoId ?? "")", item: nil,
+                          escopoInicial: escopo, nomeInicial: nome, blocoIdInicial: blocoId)
     }
     static func editar(_ item: EstoqueItem) -> EstoqueEditorSeed {
-        EstoqueEditorSeed(id: item.id, item: item, escopoInicial: item.escopo)
+        EstoqueEditorSeed(id: item.id, item: item, escopoInicial: item.escopo,
+                          nomeInicial: nil, blocoIdInicial: nil)
     }
 }
 
