@@ -76,12 +76,13 @@ export async function loadPadrao({ carroId, trackId, tipoPneu }) {
  */
 export async function savePadrao(snapshot) {
   if (!snapshot || !snapshot.carroId || !snapshot.trackId || !snapshot.tipoPneu) return false;
+  const tipoPneuNorm = normalizarTipoPneu(snapshot.tipoPneu);
   try {
     const sb = client();
     const row = {
       carro_id:                snapshot.carroId,
       track_id:                snapshot.trackId,
-      tipo_pneu:               snapshot.tipoPneu,
+      tipo_pneu:               tipoPneuNorm,
       voltas_acumuladas:       snapshot.voltasAcumuladas ?? 0,
       voltas_json:             snapshot.voltas ?? [],
       desvio_pct:              snapshot.desvioPct ?? 0.20,
