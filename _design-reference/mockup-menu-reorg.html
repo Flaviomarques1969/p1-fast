@@ -446,6 +446,7 @@ function confirmarExclusao(){
     cancelarModo();
   }
 }
+function toggleDone(gid){ showDone.has(gid)?showDone.delete(gid):showDone.add(gid); renderPend(); }
 function findItem(id){ for(const g of state){ const it=g.itens.find(x=>x.id===id); if(it) return {g,it}; } return null; }
 function toggleGrupo(gi){ const el=document.querySelectorAll('.pgroup')[gi]; el.dataset.open = el.dataset.open==='true'?'false':'true'; }
 function target(it){ if(it.tipo==='embalagem') return it.emb||1; if(it.tipo==='conjunto'&&it.partes) return it.partes.reduce((s,p)=>s+(+p.qtd||0),0); return it.qtd||1; }
