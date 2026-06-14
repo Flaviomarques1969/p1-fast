@@ -290,6 +290,15 @@ const bridge = new LiveDataBridge({
     // piloto — antes só as "novas melhores" alimentavam as marcas VOCÊ.
     if (ev.type === 'passagem-fechada') {
       oportunidade.registrarPassagem({ segmentId: ev.segmentId, pontos: ev.pontos, vminKmh: ev.vminKmh });
+      // Agente VIVO: classifica esta passagem e acumula. Guardado — nunca quebra o cockpit.
+      if (classificadorVivo) {
+        try {
+          classificadorVivo.aoFecharPassagem({
+            segmentId: ev.segmentId, pontos: ev.pontos, vminKmh: ev.vminKmh,
+            contexto: { tipo_pneu: _ctxConfig.tipoPneu },
+          });
+        } catch (e) { log('classificador vivo: ' + e.message); }
+      }
     }
     // Espelha eventos básicos pro canal da nuvem (tela ASSISTIR no app).
     if (ev.type === 'entrada-cruzou') {
