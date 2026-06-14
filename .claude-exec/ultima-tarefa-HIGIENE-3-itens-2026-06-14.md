@@ -81,4 +81,7 @@ em tests/node-smoke-schema-parity.mjs (agora EXIGE trava nelas — guarda anti-r
 TASK_DONE (itens 2 e 3):
 - Pedido conferido: sim · Ambiente: desenvolvimento · Produção alterada: não
 - Arquivos inspecionados: sim · Alterações feitas: sim · Testes executados: sim
-- Resultado: concluído (parte A e B) · Pendências: schema-parity pré-existente (fora de escopo).
+- Resultado: concluído (parte A + B + teste de conferência alinhado, tudo verde).
+- Código (chave/pneu/teste) está em DESENVOLVIMENTO (working tree do principal), testado. NÃO
+  commitado/colocado no ar — aguarda Flávio decidir registrar na versão oficial + colocar o painel
+  no ar (deploy). A faxina já valeu (é no servidor de código, não no app).
