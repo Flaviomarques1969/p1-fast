@@ -226,6 +226,7 @@ private struct GrupoCard: View {
                 }
                 .padding(.horizontal, Spacing.md)
                 .padding(.vertical, 14)
+                .contentShape(Rectangle()) // a linha INTEIRA abre/fecha (inclui o vão e a contagem)
             }
             .buttonStyle(.plain)
 
