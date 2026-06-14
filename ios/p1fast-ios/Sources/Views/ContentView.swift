@@ -504,6 +504,7 @@ private struct EventoDetalheViewSheet: View {
                 .environmentObject(pneuRepo)
                 .environmentObject(combustivelRepo)
                 .environmentObject(pendenciaRepo)
+                .environmentObject(estoqueRepo)
             // Overlay invisível só pra disparar a sheet automaticamente.
             Color.clear
                 .frame(width: 0, height: 0)
