@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=430,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Reorganização do menu — P1 Fast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(20% 0.005 240);
+  --surface: oklch(24% 0.005 240);
+  --surface-2: oklch(28% 0.005 240);
+  --hairline: oklch(33% 0.005 240);
+  --text: oklch(95% 0.003 240);
+  --text-2: oklch(75% 0.01 240);
+  --text-3: oklch(58% 0.012 240);
+  --accent: oklch(78% 0.13 235);
+  --accent-2: oklch(82% 0.10 235 / .15);
+  --bom: oklch(78% 0.16 150);
+  --atencao: oklch(82% 0.16 80);
+  --ouro: oklch(83% 0.14 90);
+  --erro: oklch(70% 0.20 25);
+  --radius: 12px;
+  --radius-sm: 10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{
+  min-height:100dvh;width:100vw;
+  background:linear-gradient(160deg, oklch(22% 0.005 240) 0%, oklch(18% 0.005 240) 100%);
+  color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;font-weight:400;
+}
+body{padding:0 0 96px;}
+.app{max-width:430px;margin:0 auto;padding:16px 20px 0;}
+
+/* ─── context head ─── */
+.context-head{padding:14px 4px 8px;}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:7px;padding:5px 12px;
+  background:var(--accent-2);border:1px solid oklch(78% 0.13 235 / .35);
+  border-radius:999px;font-size:10px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;
+}
+.eyebrow__dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+.context-head__title{font-size:24px;font-weight:600;letter-spacing:-.025em;line-height:1.15;color:var(--text);margin-bottom:4px;}
+.context-head__when{font-size:13px;color:var(--text-2);}
+.context-head__when strong{color:var(--accent);font-weight:600;}
+
+/* ─── sub-tab pills ─── */
+.subtabs{display:flex;gap:6px;overflow-x:auto;padding:6px 4px 16px;scrollbar-width:none;}
+.subtabs::-webkit-scrollbar{display:none;}
+.subtab{
+  flex:0 0 auto;background:transparent;border:1px solid var(--hairline);
+  color:var(--text-2);border-radius:999px;padding:8px 14px;
+  font-family:inherit;font-size:11px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;cursor:pointer;transition:.18s;
+}
+.subtab[data-on="true"]{background:var(--accent);border-color:transparent;color:oklch(20% 0.02 240);}
+
+/* ─── summary card ─── */
+.summary-card{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;}
+.summary-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.summary-cell{text-align:center;padding:10px 4px;background:var(--surface-2);border-radius:var(--radius-sm);}
+.summary-cell__num{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em;display:block;line-height:1;}
+.summary-cell--total .summary-cell__num{color:var(--text);}
+.summary-cell--ativos .summary-cell__num{color:var(--bom);}
+.summary-cell--manut .summary-cell__num{color:var(--atencao);}
+.summary-cell__lbl{font-size:10px;font-weight:500;color:var(--text-3);letter-spacing:.08em;text-transform:uppercase;display:block;margin-top:6px;}
+
+/* ─── group head ─── */
+.group-head{display:flex;align-items:center;justify-content:space-between;padding:10px 4px 8px;}
+.group-head__lbl{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);}
+.group-head__count{font-size:11px;font-weight:600;color:var(--accent);}
+
+/* ─── car card ─── */
+.car{display:flex;align-items:flex-start;gap:14px;padding:14px 16px;background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius);margin-bottom:10px;cursor:pointer;text-align:left;width:100%;transition:.18s;}
+.car:hover{background:var(--surface-2);}
+.car--ativo{border-color:oklch(78% 0.13 235 / .55);background:var(--accent-2);}
+.car__swatch{flex:0 0 auto;width:48px;height:48px;border-radius:50%;border:2px solid var(--hairline);display:flex;align-items:center;justify-content:center;}
+.car__swatch__dot{width:34px;height:34px;border-radius:50%;}
+.car__body{flex:1 1 auto;min-width:0;}
+.car__name{display:block;font-size:17px;font-weight:600;letter-spacing:-.005em;color:var(--text);line-height:1.2;}
+.car__model{display:block;font-size:13px;color:var(--text-2);margin-top:3px;line-height:1.35;}
+.car__meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;}
+.tag{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);border:1px solid var(--hairline);background:transparent;}
+.tag--proximo{color:var(--accent);border-color:oklch(78% 0.13 235 / .45);background:oklch(78% 0.13 235 / .10);}
+.car__chev{flex:0 0 auto;width:24px;height:24px;border-radius:8px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;color:var(--text-2);font-size:14px;margin-top:12px;}
+
+/* ─── person / item row ─── */
+.row{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius);margin-bottom:8px;}
+.row__name{flex:1 1 auto;font-size:16px;font-weight:600;letter-spacing:-.005em;color:var(--text);min-width:0;}
+.row__sub{display:block;font-size:12px;font-weight:400;color:var(--text-3);margin-top:2px;}
+.row__chev{flex:0 0 auto;width:24px;height:24px;border-radius:8px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;color:var(--text-2);font-size:14px;}
+
+.add-row{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px 16px;border:1px dashed var(--hairline);border-radius:var(--radius);background:transparent;color:var(--text-2);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:.18s;margin-top:2px;}
+.add-row:hover{border-color:var(--accent);color:var(--accent);}
+.add-row__plus{font-size:18px;line-height:1;}
+
+.empty-hint{font-size:13px;color:var(--text-3);padding:8px 6px 14px;}
+
+/* ─── pendências: grupo colapsável ─── */
+.pgroup{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;}
+.pgroup__head{display:flex;align-items:center;gap:10px;width:100%;padding:14px 16px;background:transparent;border:0;color:var(--text);font-family:inherit;cursor:pointer;text-align:left;}
+.pgroup__dot{flex:0 0 auto;width:10px;height:10px;border-radius:50%;background:var(--text-3);}
+.pgroup__dot[data-st="some"]{background:var(--ouro);}
+.pgroup__dot[data-st="all"]{background:var(--bom);}
+.pgroup__body{flex:1 1 auto;min-width:0;}
+.pgroup__title{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text);}
+.pgroup__count{font-size:11px;color:var(--text-3);margin-top:3px;}
+.pgroup__chev{flex:0 0 auto;color:var(--text-2);font-size:14px;}
+.pgroup__items{display:none;border-top:1px solid var(--hairline);}
+.pgroup[data-open="true"] .pgroup__items{display:block;}
+
+.pitem{display:flex;align-items:flex-start;gap:12px;padding:11px 16px;border-bottom:1px solid oklch(33% 0.005 240 / .5);}
+.pitem:last-child{border-bottom:0;}
+.pcheck{flex:0 0 auto;width:20px;height:20px;border-radius:5px;border:1.5px solid var(--hairline);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:1px;color:transparent;font-size:12px;font-weight:700;transition:.15s;}
+.pitem[data-done="true"] .pcheck{border-color:var(--bom);color:var(--bom);}
+.pitem__txt{flex:1 1 auto;font-size:14px;color:var(--text);line-height:1.35;min-width:0;}
+.pitem[data-done="true"] .pitem__txt{color:var(--text-3);text-decoration:line-through;}
+.pitem__tagwrap{display:flex;gap:6px;align-items:center;margin-top:4px;}
+.minitag{font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:1px 5px;border-radius:4px;}
+.minitag--obrig{color:var(--erro);background:oklch(70% 0.20 25 / .12);}
+.minitag--extra{color:var(--accent);background:oklch(78% 0.13 235 / .12);}
+/* slot fixo do botão remover — reserva espaço mesmo quando vazio (alinhamento) */
+.pitem__slot{flex:0 0 auto;width:30px;display:flex;justify-content:flex-end;align-items:center;}
+.pdel{width:28px;height:28px;border-radius:8px;border:1px solid var(--hairline);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
+.pdel:hover{border-color:var(--erro);}
+.pdel svg{width:15px;height:15px;stroke:var(--text-3);}
+.pdel:hover svg{stroke:var(--erro);}
+.padd{display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 32px);margin:6px 16px 12px;padding:11px;border:1px dashed var(--hairline);border-radius:10px;background:transparent;color:var(--text-2);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;}
+.padd:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ─── FAB ─── */
+.fab{position:fixed;bottom:88px;right:24px;z-index:30;background:var(--accent);color:oklch(12% 0.005 240);padding:12px 18px;border:0;border-radius:999px;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 10px 28px oklch(78% 0.13 235 / .25);display:inline-flex;align-items:center;gap:8px;}
+.fab__plus{font-size:20px;line-height:1;}
+
+/* ─── bottom nav ─── */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:40;max-width:430px;margin:0 auto;background:oklch(18% 0.005 240 / .92);-webkit-backdrop-filter:blur(20px) saturate(140%);backdrop-filter:blur(20px) saturate(140%);border-top:1px solid var(--hairline);padding:10px 0 22px;display:grid;grid-template-columns:repeat(4,1fr);}
+.bottom-nav__item{background:transparent;border:0;padding:8px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;font-family:inherit;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);transition:color .18s;}
+.bottom-nav__item[data-on="true"]{color:var(--accent);}
+.bottom-nav__dot{width:5px;height:5px;border-radius:50%;background:transparent;transition:background .18s;}
+.bottom-nav__item[data-on="true"] .bottom-nav__dot{background:var(--accent);}
+
+/* banner explicativo (só no mockup, fora do app) */
+.note{max-width:430px;margin:0 auto 0;padding:10px 20px;font-size:11px;color:var(--text-3);line-height:1.5;border-bottom:1px solid var(--hairline);background:oklch(22% 0.01 240);}
+.note b{color:var(--accent);}
+.view{display:none;}
+.view[data-on="true"]{display:block;}
+</style>
+</head>
+<body>
+
+<div class="note" id="note"></div>
+
+<!-- ════════ VIEW: GARAGEM ════════ -->
+<div class="app view" id="view-garagem" data-on="true">
+  <header class="context-head">
+    <span class="eyebrow"><span class="eyebrow__dot"></span>Garagem</span>
+    <h1 class="context-head__title" id="g-title">1 carro</h1>
+    <p class="context-head__when" id="g-when">Celta 1.4 vai pra <strong>Brasília · 15/05</strong></p>
+  </header>
+
+  <div class="subtabs">
+    <button class="subtab" data-tab="carros" data-on="true">Carros</button>
+    <button class="subtab" data-tab="pilotos">Pilotos</button>
+    <button class="subtab" data-tab="passageiros">Passageiros</button>
+    <button class="subtab" data-tab="combustivel">Combustível</button>
+    <button class="subtab" data-tab="licoes">Lições</button>
+  </div>
+
+  <!-- CARROS -->
+  <div class="gtab" data-tab="carros">
+    <div class="summary-card">
+      <div class="summary-row">
+        <div class="summary-cell summary-cell--total"><span class="summary-cell__num">1</span><span class="summary-cell__lbl">Total</span></div>
+        <div class="summary-cell summary-cell--ativos"><span class="summary-cell__num">1</span><span class="summary-cell__lbl">Pronto</span></div>
+        <div class="summary-cell summary-cell--manut"><span class="summary-cell__num">0</span><span class="summary-cell__lbl">Manutenção</span></div>
+      </div>
+    </div>
+    <button class="car car--ativo" type="button">
+      <span class="car__swatch"><span class="car__swatch__dot" style="background:#f5c400"></span></span>
+      <span class="car__body">
+        <span class="car__name">Celta 1.4</span>
+        <span class="car__model">Chevrolet Celta 1.4 · Turismo</span>
+        <span class="car__meta"><span class="tag tag--proximo">Próximo evento</span><span class="tag">12 stints</span></span>
+      </span>
+      <span class="car__chev">›</span>
+    </button>
+  </div>
+
+  <!-- PILOTOS -->
+  <div class="gtab" data-tab="pilotos" hidden>
+    <div class="group-head"><span class="group-head__lbl">Cadastrados</span><span class="group-head__count">2</span></div>
+    <div class="row"><span class="row__name">Flávio</span><span class="row__chev">›</span></div>
+    <div class="row"><span class="row__name">Bubi</span><span class="row__chev">›</span></div>
+    <button class="add-row" type="button"><span class="add-row__plus">+</span>Cadastrar piloto</button>
+  </div>
+
+  <!-- PASSAGEIROS -->
+  <div class="gtab" data-tab="passageiros" hidden>
+    <div class="group-head"><span class="group-head__lbl">Cadastrados</span><span class="group-head__count">0</span></div>
+    <p class="empty-hint">Nenhum passageiro cadastrado. Cadastre uma vez e reaproveite em qualquer stint.</p>
+    <button class="add-row" type="button"><span class="add-row__plus">+</span>Cadastrar passageiro</button>
+  </div>
+
+  <!-- COMBUSTÍVEL -->
+  <div class="gtab" data-tab="combustivel" hidden>
+    <div class="group-head"><span class="group-head__lbl">Tipos cadastrados</span><span class="group-head__count">2</span></div>
+    <div class="row"><span class="row__name">Gasolina aditivada<span class="row__sub">Posto da pista</span></span><span class="row__chev">›</span></div>
+    <div class="row"><span class="row__name">Etanol<span class="row__sub">Tanque vermelho 50L</span></span><span class="row__chev">›</span></div>
+    <button class="add-row" type="button"><span class="add-row__plus">+</span>Cadastrar combustível</button>
+  </div>
+
+  <!-- LIÇÕES -->
+  <div class="gtab" data-tab="licoes" hidden>
+    <div class="group-head"><span class="group-head__lbl">Catálogo curado</span><span class="group-head__count">12</span></div>
+    <p class="empty-hint">12 lições — 7 ativas com sinais do iPhone, 5 esperando sensores.</p>
+    <div class="row"><span class="row__name">V-Min no ápice<span class="row__sub">Ativa · GPS</span></span><span class="row__chev">›</span></div>
+    <div class="row"><span class="row__name">Ponto de freada<span class="row__sub">Ativa · GPS</span></span><span class="row__chev">›</span></div>
+    <div class="row"><span class="row__name">Traçado de saída<span class="row__sub">Esperando sensores</span></span><span class="row__chev">›</span></div>
+  </div>
+</div>
+
+<!-- ════════ VIEW: PENDÊNCIAS ════════ -->
+<div class="app view" id="view-pendencias">
+  <header class="context-head">
+    <span class="eyebrow"><span class="eyebrow__dot"></span>Pendências · próximo evento</span>
+    <h1 class="context-head__title">Brasília · 15 de maio</h1>
+    <p class="context-head__when"><strong id="p-count">0</strong> de <span id="p-total">0</span> itens prontos · <span style="color:var(--text-3)">trocar evento ›</span></p>
+  </header>
+  <div id="pgroups"></div>
+</div>
+
+<!-- FAB só na aba Carros -->
+<button class="fab" id="fab" type="button"><span class="fab__plus">+</span>Novo carro</button>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="bottom-nav__item" data-nav="home"><span class="bottom-nav__dot"></span>Home</button>
+  <button class="bottom-nav__item" data-nav="eventos"><span class="bottom-nav__dot"></span>Eventos</button>
+  <button class="bottom-nav__item" data-nav="pendencias"><span class="bottom-nav__dot"></span>Pendências</button>
+  <button class="bottom-nav__item" data-nav="garagem" data-on="true"><span class="bottom-nav__dot"></span>Garagem</button>
+</nav>
+
+<script>
+// ── dados REAIS dos 6 grupos de pendência (do app: PendenciaRepository.swift) ──
+const GRUPOS = [
+  {id:'G1', titulo:'Mecânica', itens:['Óleo motor','Óleo câmbio','Óleo (geral)','Graxa','Bacia de óleo','Funil','Compressor de ar','Ferro de solda']},
+  {id:'G2', titulo:'Combustível', itens:['Combustível motos — tanque amarelo','Combustível carro — tanque vermelho 50L + barril 50L','Medidor de temperatura']},
+  {id:'G3', titulo:'Pneus & Suspensão', itens:['Macaco','Jacks (cavaletes)','Rodas sobressalentes','Medidor de pressão dos pneus']},
+  {id:'G4', titulo:'Elétrica', itens:['Bateria','Fio de ligação elétrica','Terminal de ligação elétrica','Lâmpada traseira','Lâmpada de teste','Luz reserva de freio','Luz LED','Fusível sobressalente','Carregador de telefone','Powerbank para carregar bateria','Extensão elétrica']},
+  {id:'G5', titulo:'Segurança', itens:['Extintor','Protetor de pescoço','Capa do carro','Desembaçador']},
+  {id:'G6', titulo:'Logística & Apoio', itens:['Tie-down (cintas de amarração)','Cabo para rebocar o Celta','Carro de transporte','Caixa de ferramentas','Caixa de ferramentas pequena','Armário de ferramentas','Mesa de apoio','Cadeiras pra sentar','Cooler','Pano','Rolo de pano para limpeza','WD','TV','Suporte da TV','Limpar câmera de ré do caminhão']},
+];
+// estado: cada item {txt, obrig, done}. obrigatórios = catálogo fixo; extras = incluídos pelo usuário (removíveis)
+const state = GRUPOS.map(g => ({...g, itens: g.itens.map(t => ({txt:t, obrig:true, done:false}))}));
+// demonstra "incluir": um item extra já adicionado no grupo Logística
+state[5].itens.push({txt:'Toalha extra (adicionado por você)', obrig:false, done:false});
+
+const TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>';
+
+function renderPend(){
+  const wrap = document.getElementById('pgroups');
+  wrap.innerHTML = '';
+  let totDone=0, tot=0;
+  state.forEach((g, gi) => {
+    const done = g.itens.filter(i=>i.done).length;
+    tot += g.itens.length; totDone += done;
+    const st = done===0 ? 'none' : (done===g.itens.length ? 'all' : 'some');
+    const el = document.createElement('div');
+    el.className='pgroup'; el.dataset.open = gi===0 ? 'true':'false';
+    el.innerHTML = `
+      <button class="pgroup__head">
+        <span class="pgroup__dot" data-st="${st}"></span>
+        <span class="pgroup__body">
+          <span class="pgroup__title">${g.titulo}</span>
+          <span class="pgroup__count">${done} de ${g.itens.length} checadas</span>
+        </span>
+        <span class="pgroup__chev">${el.dataset.open==='true'?'▾':'›'}</span>
+      </button>
+      <div class="pgroup__items">
+        ${g.itens.map((i,ii)=>`
+          <div class="pitem" data-done="${i.done}">
+            <button class="pcheck" data-g="${gi}" data-i="${ii}">✓</button>
+            <span class="pitem__txt">${i.txt}
+              <span class="pitem__tagwrap">${i.obrig?'<span class="minitag minitag--obrig">obrigatório</span>':'<span class="minitag minitag--extra">adicional</span>'}</span>
+            </span>
+            <span class="pitem__slot">${i.obrig?'':`<button class="pdel" data-g="${gi}" data-i="${ii}" title="Remover">${TRASH}</button>`}</span>
+          </div>`).join('')}
+        <button class="padd" data-g="${gi}"><span style="font-size:16px">+</span>Adicionar pendência</button>
+      </div>`;
+    wrap.appendChild(el);
+  });
+  document.getElementById('p-count').textContent = totDone;
+  document.getElementById('p-total').textContent = tot;
+  wirePend();
+}
+
+function wirePend(){
+  document.querySelectorAll('.pgroup__head').forEach(h=>{
+    h.onclick = ()=>{ const g=h.parentElement; g.dataset.open = g.dataset.open==='true'?'false':'true'; h.querySelector('.pgroup__chev').textContent = g.dataset.open==='true'?'▾':'›'; };
+  });
+  document.querySelectorAll('.pcheck').forEach(b=>{
+    b.onclick = (e)=>{ e.stopPropagation(); const it=state[b.dataset.g].itens[b.dataset.i]; it.done=!it.done; renderPend(); };
+  });
+  document.querySelectorAll('.pdel').forEach(b=>{
+    b.onclick = (e)=>{ e.stopPropagation(); state[b.dataset.g].itens.splice(b.dataset.i,1); renderPend(); };
+  });
+  document.querySelectorAll('.padd').forEach(b=>{
+    b.onclick = (e)=>{ e.stopPropagation(); const nome=prompt('Nova pendência para este evento:'); if(nome&&nome.trim()){ state[b.dataset.g].itens.push({txt:nome.trim(),obrig:false,done:false}); renderPend(); } };
+  });
+}
+
+// ── sub-abas da Garagem ──
+document.querySelectorAll('.subtab').forEach(t=>{
+  t.onclick = ()=>{
+    document.querySelectorAll('.subtab').forEach(x=>x.dataset.on='false');
+    t.dataset.on='true';
+    const tab=t.dataset.tab;
+    document.querySelectorAll('.gtab').forEach(x=> x.hidden = (x.dataset.tab!==tab));
+    document.getElementById('fab').style.display = (tab==='carros')?'inline-flex':'none';
+  };
+});
+
+// ── navegação inferior ──
+const NOTES = {
+  garagem:'Mockup da reorganização — <b>Garagem</b> agora guarda Carros + Pilotos + Passageiros + Combustível + Lições (sub-abas no topo). A antiga aba "Cadastros" sai do menu.',
+  pendencias:'Mockup da reorganização — <b>Pendências</b> entrou no lugar de "Cadastros". Abre direto no próximo evento. Toque pra ticar, use "Adicionar pendência" pra incluir e o ícone de lixeira pra excluir (itens adicionais).',
+  home:'No app real "Home" abre a tela inicial. Aqui o foco é Garagem e Pendências.',
+  eventos:'No app real "Eventos" abre a lista de eventos. Aqui o foco é Garagem e Pendências.'
+};
+function showView(v){
+  document.querySelectorAll('.bottom-nav__item').forEach(x=>x.dataset.on = (x.dataset.nav===v));
+  const isGar = v==='garagem', isPend = v==='pendencias';
+  document.getElementById('view-garagem').dataset.on = isGar;
+  document.getElementById('view-pendencias').dataset.on = isPend;
+  document.getElementById('fab').style.display = (isGar && document.querySelector('.subtab[data-on="true"]').dataset.tab==='carros')?'inline-flex':'none';
+  document.getElementById('note').innerHTML = NOTES[v] || NOTES.garagem;
+  if(isPend) renderPend();
+}
+document.querySelectorAll('.bottom-nav__item').forEach(b=>{ b.onclick = ()=>showView(b.dataset.nav); });
+
+// init
+renderPend();
+showView('garagem');
+</script>
+</body>
+</html>
