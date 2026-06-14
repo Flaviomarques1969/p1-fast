@@ -4,6 +4,55 @@
 > `ultima-tarefa-backup-vista-piloto-2026-06-14.md`.
 > A tarefa de menu (Garagem/Pendências) abaixo está TASK_DONE; preservada na íntegra.
 
+## TASK_INIT — 2026-06-14 (noite) — Estoque geral + Editor unificado + Pendências (contador/quadradinho/Gerenciar) + ligação Pendência↔Estoque
+
+1. **Pedido original de Flávio (pós /clear, "execute"):**
+   "O que vem agora (construir no app, em desenvolvimento):
+   1. Estoque geral na Garagem + modelo do item (onde fica, item/ferramenta, quantidade, especificação).
+   2. Editor único em botões + câmera que lê o rótulo (o app já tem essa leitura, vou reaproveitar).
+   3. Pendências: contador 'peguei', concluir só pelo quadradinho, item sai da lista, 'concluídas', e o menu Gerenciar (Adicionar/Editar/Excluir).
+   4. Ligar a Pendência ao estoque (a quantidade vem do estoque)."
+   (Esclareceu: é no P1 Fast.)
+
+2. **Objetivo (1 frase):**
+   Construir no app iOS (DEV) a parte 2 do design já APROVADO por Flávio em 14/06 — Estoque geral na Garagem,
+   editor unificado de item em botões com câmera/OCR reaproveitada, Pendências redesenhadas e ligadas ao estoque.
+
+3. **Critérios objetivos de conclusão:**
+   - Garagem ganha sub-aba "Estoque geral" (itens + ferramentas que não são de 1 carro).
+   - Editor unificado em botões (Onde fica/escopo, Item/Ferramenta, Bloco, Categoria, Especificação, Como conta) + botão câmera "Tirar foto e ler o item" reusando EtiquetaOCR.
+   - Pendências: contador inline −/+ ("peguei N/alvo"); concluir SÓ pelo quadradinho; item concluído sai da lista; rodapé "✓ N concluídas"; topo "Gerenciar itens" → Adicionar/Editar/Excluir.
+   - Quantidade mora no estoque; Pendência puxa dela; "peguei" é por evento.
+   - Riqueza nova fica em camada LOCAL (não toca schema sincronizado de Peca). Build simulador SUCCEEDED + screenshots.
+
+4. **Leitura confirmada:** `~/.claude/CLAUDE.md` sim · `~/.claude-decisoes/padroes.md` sim (zerado) ·
+   FLAVIO_EXECUTION_PROTOCOL sim · FLAVIO_DONE_CHECKLIST sim · FLAVIO_ENVIRONMENT_RULES sim ·
+   FLAVIO_COMMUNICATION_RULES sim · `P1 Fast/CLAUDE.md` + memórias (global e P1 Fast) sim ·
+   CONTINUAR-pendencias-estoque-2026-06-14.md + mockup APROVADO (mockup-pendencias-estoque-APROVADO-2026-06-14.html) sim.
+
+5. **Plano (≤5 passos):**
+   1. Estoque geral na Garagem (sub-aba) + modelo de item (escopo geral/carro, item/ferramenta, qtd, espec) — LOCAL-safe ou Peca carroId nulo (VERIFICAR no mapa).
+   2. Editor unificado (botões + câmera OCR reusando EtiquetaOCR).
+   3. Pendências: contador "peguei" + concluir-só-no-quadradinho + sai-da-lista + "concluídas" + menu Gerenciar.
+   4. Ligar Pendência ↔ estoque (puxa quantidade do estoque).
+   5. Build simulador + screenshots + chamar Flávio. Produção só com "MIGRAR PARA PRODUÇÃO".
+
+6. **Áreas/arquivos a inspecionar (mapeamento em workflow paralelo de 5 agentes — em curso):**
+   PendenciasView/PendenciaRepository; PecaModels/PecaRepository/PecaViews; GaragemView/CarroHubView;
+   EtiquetaOCR/BarcodeScannerView/CameraPicker/BuscaPrecoMLView; Models/Migrations/schema-parity.
+
+7. **Ambiente alvo:** desenvolvimento (app iOS DEV + simulador).
+8. **Produção protegida:** sim.
+9. **Autorização para produção:** não.
+10. **Evidência da autorização para produção:** não recebida.
+11. **Riscos:** `Peca` (estoque do carro) SINCRONIZA com a nuvem — mexer no schema dela = produção; a riqueza nova
+    (pegou/escopo/embalagem/conjunto/espec) DEVE ficar em camada LOCAL (igual `evento_pendencias_extra`);
+    mexer no menu/sub-abas toca várias telas; não quebrar roteamento da tab-bar fixa.
+12. **Status inicial:** iniciado — mapa do código em curso, depois build em estágios.
+
+---
+
+
 ## TASK_INIT — 2026-06-14 (noite) — Shift Light Inteligente: cérebro dos 3 aprendizados + ligação ao dado real
 
 1. **Pedido original de Flávio:**
