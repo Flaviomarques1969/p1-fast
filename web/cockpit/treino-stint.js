@@ -25,6 +25,10 @@
 
 import { treinoPorFoco, MENSAGENS_SEMPRE } from './catalogo-treinos.js';
 import { PEDAGOGICA } from './mensagens-pedagogicas.js';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
+
+const NUVEM_URL_DEFAULT  = SUPABASE_URL;
+const NUVEM_ANON_DEFAULT = SUPABASE_ANON_KEY;
 
 // ── Constantes do contrato (aprovadas 11/06) ─────────────────
 export const DEGRAU_FRACAO = 0.30;       // ~30% do caminho até a melhor
