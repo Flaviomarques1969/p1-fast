@@ -227,9 +227,26 @@ private struct GrupoCard: View {
                         ItemRow(
                             item: item,
                             onToggle: { onToggleItem(item) },
-                            onLongPress: { onEditarNota(item) }
+                            onLongPress: { onEditarNota(item) },
+                            onRemove: { onRemoverItem(item) }
                         )
                     }
+                    Rectangle()
+                        .fill(Color.border)
+                        .frame(height: 1)
+                        .padding(.horizontal, Spacing.md)
+                    Button(action: onIncluir) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 12, weight: .semibold))
+                            Text("Incluir pendência")
+                                .font(.system(size: 13, weight: .semibold))
+                        }
+                        .foregroundStyle(Color.accent)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
