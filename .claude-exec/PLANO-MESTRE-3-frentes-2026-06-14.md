@@ -41,10 +41,10 @@ física do GPS. O módulo que lê o sensor real (`freio-trecho.js`) JÁ EXISTE e
 detecção de presença do sensor, fusão por tempo), mas vive só em ambiente isolado e o caminho ao vivo
 ainda não usa a pressão real. Sensor de pressão chega seg/ter 15-16/06.
 
-- [ ] **A1 — Registrar as decisões do trail (D1 + D2).** Card por decisão; gravar resposta na memória
-      do projeto; refletir o critério do CERTO na avaliação do motor. Atualizar "Decisões em aberto"
-      (3 → 0; a decisão 2 já estava resolvida pelas rodadas 11/19). [VOCÊ DECIDE]
-      Critério pronto: 2 decisões gravadas; seção atualizada; constante do motor reflete D1.
+- [ ] **A1 — Aplicar as decisões já fechadas do trail (D1 + D2).** D1=2 de 2; D2=híbrido (já
+      decididas). Gravar na memória do projeto; refletir o critério do CERTO na avaliação do motor.
+      Atualizar "Decisões em aberto" (3 → 0; a decisão 2 já estava resolvida pelas rodadas 11/19). [EU FAÇO]
+      Critério pronto: decisões gravadas; seção atualizada; constante do motor reflete D1 (2 de 2).
 - [ ] **A2 — Levar pressão/pedal do evento de amostra até o motor do trail.** Sem mudar a tela: só
       trafegar `pressaoFreioBar`/`pedalFreioPct` (já existem no parser e na transmissão) até o motor,
       casados por tempo. [EU FAÇO]
