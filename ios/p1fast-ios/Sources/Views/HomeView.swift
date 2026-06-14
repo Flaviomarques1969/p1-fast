@@ -232,6 +232,8 @@ struct HomeView: View {
             EventosListaView(initialSheet: .novo, onNavSelect: nav)
         case .cadastros:
             PessoasView(onNavSelect: nav)
+        case .pendencias:
+            PendenciasProximoEventoLauncher()
         case .garagem:
             GaragemView(onNavSelect: nav)
         case .garagemNovo:
