@@ -136,6 +136,10 @@ struct HubMockLauncher: View {
             // validar/screenshot do menu novo (sub-abas + aba Pendências).
             return [.garagem]
         }
+        if ProcessInfo.processInfo.arguments.contains("--p1-pend") {
+            // Abre a aba Pendências (próximo evento) direto.
+            return [.pendencias]
+        }
         if ProcessInfo.processInfo.arguments.contains("--p1-deep") {
             return [.garagem, .carroHub(carroId: id), .carroCadastro(carroId: id)]
         }
