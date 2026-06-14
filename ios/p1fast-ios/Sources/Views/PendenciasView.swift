@@ -280,52 +280,74 @@ private struct ItemRow: View {
     let item: PendenciaItemView
     let onToggle: () -> Void
     let onLongPress: () -> Void
+    let onRemove: () -> Void
 
     var body: some View {
-        Button(action: onToggle) {
-            HStack(alignment: .top, spacing: Spacing.sm) {
-                checkbox
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Text(item.template.titulo)
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundStyle(item.instance.checado ? Color.textMuted : Color.text)
-                            .strikethrough(item.instance.checado, color: Color.textMuted)
-                        if item.template.obrigatorio {
-                            Text("obrig.")
-                                .font(.system(size: 9, weight: .semibold))
-                                .tracking(0.06 * 9)
-                                .foregroundStyle(Color.erro)
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 1)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .fill(Color.erro.opacity(0.12))
-                                )
-                        }
-                    }
-                    if let nota = item.instance.nota, !nota.isEmpty {
-                        Text(nota)
-                            .font(.system(size: 11, weight: .regular))
-                            .foregroundStyle(Color.textMuted)
-                            .lineLimit(2)
+        HStack(alignment: .top, spacing: Spacing.sm) {
+            checkbox
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(item.titulo)
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundStyle(item.checado ? Color.textMuted : Color.text)
+                        .strikethrough(item.checado, color: Color.textMuted)
+                    if item.obrigatorio {
+                        miniTag("obrig.", color: Color.erro)
+                    } else if item.isExtra {
+                        miniTag("adicional", color: Color.accent)
                     }
                 }
-                Spacer(minLength: 0)
+                if let nota = item.nota, !nota.isEmpty {
+                    Text(nota)
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundStyle(Color.textMuted)
+                        .lineLimit(2)
+                }
             }
-            .padding(.horizontal, Spacing.md)
-            .padding(.vertical, 10)
+            Spacer(minLength: 0)
+            // Slot fixo do botão remover: reserva a largura mesmo quando o item
+            // não é removível, pra todas as linhas alinharem (regra do Flávio).
+            ZStack(alignment: .trailing) {
+                if item.isExtra {
+                    Button(action: onRemove) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(Color.textMuted)
+                            .frame(width: 28, height: 28)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .frame(width: 28)
+            .padding(.top, 1)
         }
-        .buttonStyle(.plain)
-        .onLongPressGesture(minimumDuration: 0.5) { onLongPress() }
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, 10)
+        .contentShape(Rectangle())
+        .onTapGesture { onToggle() }
+        .onLongPressGesture(minimumDuration: 0.5) { if !item.isExtra { onLongPress() } }
+    }
+
+    private func miniTag(_ text: String, color: Color) -> some View {
+        Text(text)
+            .font(.system(size: 9, weight: .semibold))
+            .tracking(0.06 * 9)
+            .foregroundStyle(color)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1)
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(color.opacity(0.12))
+            )
     }
 
     private var checkbox: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 5, style: .continuous)
-                .stroke(item.instance.checado ? Color.bom : Color.border, lineWidth: 1.5)
+                .stroke(item.checado ? Color.bom : Color.border, lineWidth: 1.5)
                 .frame(width: 20, height: 20)
-            if item.instance.checado {
+            if item.checado {
                 Text("✓")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(Color.bom)
