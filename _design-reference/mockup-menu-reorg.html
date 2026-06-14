@@ -453,6 +453,16 @@ function salvarEditor(){
   }
   fecharEditor(); renderPend();
 }
+function simulateOCR(){
+  // No app real: abre a câmera, fotografa o rótulo, lê (OCR) e preenche sozinho.
+  // Aqui no protótipo, simula a leitura de uma embalagem de óleo de câmbio.
+  if(!document.getElementById('ed-nome').value) document.getElementById('ed-nome').value = 'Óleo câmbio';
+  document.getElementById('ed-espec').value = '75W90 GL-5 (lido da foto)';
+  setSeg('ed-tipo','embalagem'); aplicaTipo('embalagem');
+  document.getElementById('ed-vol').value = 1;
+  document.getElementById('ed-unid').value = 'L';
+  document.getElementById('ed-emb').textContent = 4;
+}
 function excluirEditando(){
   if(!editing) return;
   const f=findItem(editing.id);
