@@ -103,14 +103,14 @@ function renderEnvelope() {
 
 function atualizarBotoes() {
   const btn = document.getElementById('btnAprovar');
+  if (!btn) return;
   // Treinar habilidade exige foco escolhido + brief visto (antes dava pra
   // aprovar treino sem foco — o painel ficava sem ter o que armar).
+  // Não há mais "escolher modo": o único bloqueio é treino incompleto.
   const treinoIncompleto = plano.proposito === 'treinar' && (!plano.foco || !briefVisto);
-  btn.disabled = !modoSelecionado || treinoIncompleto;
-  btn.style.setProperty('--cor-ativa-envelope', `var(--cor-${modoSelecionado || 'normal'})`);
-  if (modoSelecionado) {
-    btn.style.background = `var(--cor-${modoSelecionado})`;
-  }
+  btn.disabled = treinoIncompleto;
+  btn.style.setProperty('--cor-ativa-envelope', `var(--cor-agressivo)`);
+  btn.style.background = `var(--cor-agressivo)`;
 }
 
 // ── Catálogo de treinos → chips + brief ───────────────────────
