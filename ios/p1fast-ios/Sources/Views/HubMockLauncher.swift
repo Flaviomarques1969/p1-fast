@@ -45,6 +45,7 @@ struct HubMockLauncher: View {
         _combustivelRepo = StateObject(wrappedValue: CombustivelRepository(queue: queue))
         _licaoRepo = StateObject(wrappedValue: LicaoRepository(queue: queue))
         _pendenciaRepo = StateObject(wrappedValue: PendenciaRepository(queue: queue))
+        _estoqueRepo = StateObject(wrappedValue: EstoqueRepository(queue: queue))
     }
 
     var body: some View {
