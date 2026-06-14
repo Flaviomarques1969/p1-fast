@@ -40,18 +40,32 @@ struct GaragemView: View {
     }
 
     var body: some View {
-        ScrollView {
-            content
-                .padding(.horizontal, Spacing.lg)
-                .padding(.top, Spacing.md)
-                .padding(.bottom, 32)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(spacing: 0) {
+            garagemHeaderBar
+            subTabBar
+            Group {
+                switch subTab {
+                case .carros:
+                    carrosScroll
+                case .pilotos:
+                    PessoasView(embeddedSubTab: .pilotos)
+                case .passageiros:
+                    PessoasView(embeddedSubTab: .passageiros)
+                case .combustivel:
+                    PessoasView(embeddedSubTab: .combustiveis)
+                case .licoes:
+                    PessoasView(embeddedSubTab: .licoes)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(Color.surface)
         .overlay(alignment: .bottomTrailing) {
-            FAB("Novo carro") { sheet = .novo }
-                .padding(.trailing, Spacing.md)
-                .padding(.bottom, Spacing.md)
+            if subTab == .carros {
+                FAB("Novo carro") { sheet = .novo }
+                    .padding(.trailing, Spacing.md)
+                    .padding(.bottom, Spacing.md)
+            }
         }
         .preferredColorScheme(.dark)
         .onAppear {
@@ -71,33 +85,62 @@ struct GaragemView: View {
         }
     }
 
-    @ViewBuilder
-    private var content: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            contextHead
-            summaryCard
-            VStack(spacing: 10) {
-                ForEach(Array(repo.carros.enumerated()), id: \.element.id) { idx, carro in
-                    NavigationLink(value: HomeNavTarget.carroHub(carroId: carro.id)) {
-                        CarroCard(
-                            carro: carro,
-                            stints: repo.stintsPorCarro[carro.id] ?? 0,
-                            isAtivo: idx == 0
-                        )
+    /// Aba Carros: lista de carros (o conteúdo original da Garagem).
+    private var carrosScroll: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                carrosHead
+                summaryCard
+                VStack(spacing: 10) {
+                    ForEach(Array(repo.carros.enumerated()), id: \.element.id) { idx, carro in
+                        NavigationLink(value: HomeNavTarget.carroHub(carroId: carro.id)) {
+                            CarroCard(
+                                carro: carro,
+                                stints: repo.stintsPorCarro[carro.id] ?? 0,
+                                isAtivo: idx == 0
+                            )
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
             }
+            .padding(.horizontal, Spacing.lg)
+            .padding(.top, Spacing.md)
+            .padding(.bottom, 120)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
-    private var contextHead: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline) {
-                Eyebrow(text: "Garagem")
-                Spacer(minLength: 0)
-                trechosLink
+    /// Barra superior fixa da Garagem — eyebrow + atalho "Trechos da pista".
+    private var garagemHeaderBar: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Eyebrow(text: "Garagem")
+            Spacer(minLength: 0)
+            trechosLink
+        }
+        .padding(.horizontal, Spacing.lg)
+        .padding(.top, Spacing.md)
+        .padding(.bottom, Spacing.sm)
+    }
+
+    /// Fileira de sub-abas: Carros · Pilotos · Passageiros · Combustível · Lições.
+    private var subTabBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(GaragemSubTab.allCases) { tab in
+                    GaragemSubTabPill(label: tab.label, isActive: tab == subTab) {
+                        subTab = tab
+                    }
+                }
             }
+            .padding(.horizontal, Spacing.lg)
+            .padding(.bottom, Spacing.sm)
+        }
+    }
+
+    /// Título/subtítulo da aba Carros (sem eyebrow — já está na barra de cima).
+    private var carrosHead: some View {
+        VStack(alignment: .leading, spacing: 6) {
             Text(headerTitle)
                 .font(.system(size: 24, weight: .semibold))
                 .tracking(-0.6) // -0.025em em 24pt
