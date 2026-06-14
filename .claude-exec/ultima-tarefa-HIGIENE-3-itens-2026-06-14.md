@@ -31,3 +31,20 @@
 7. **Riscos:** FAXINA = perda de trabalho (mitigar: preservar em dúvida, só apagar incorporado, confirmar remoto).
    PNEU CHECK / CHAVE deploy = tocam produção (não aplicar sem autorização).
 8. **Status inicial:** iniciado.
+
+---
+
+## EXECUÇÃO 14/06
+
+### ITEM 1 — FAXINA: CONCLUÍDA (segura)
+- Critério objetivo: linha com 0 alterações exclusivas vs origin/main = lixo (apagar); com qualquer trabalho próprio = preservar.
+- Resultado: 6 linhas remotas apagadas no servidor (todas incorporadas, 0 commits exclusivos):
+  chore/archive-pr193-propostas, feat/dados-pista-brasilia-2026-05-28, feat/daily-recording-hook-rename,
+  feat/daily-recording-webhook, feat/vista-piloto-v04-mais-icone, relatorio-noturno-2026-05-26.
+- 161 linhas PRESERVADAS (têm trabalho exclusivo não incorporado) + backup/* preservadas + 15 ambientes
+  isolados preservados (ativos/com trabalho). Servidor 172 → 166.
+- git -d nas 3 locais [gone] RECUSOU (têm trabalho) → preservadas. Nada de trabalho perdido.
+- Nota: muito trabalho acumulado não incorporado (161 linhas). Faxina "completa" segura = só os 6 lixos;
+  o resto exige incorporar/arquivar (sessão à parte) — não dá pra apagar sem perder.
+
+### ITENS 2 e 3 — em execução (workflow w0a5vam58): normalizar pneu + centralizar chave + teste.
