@@ -314,7 +314,7 @@ const OVR = {
 let UID = 1;
 function novoItem(txt){
   const o = OVR[txt] || {};
-  return {id:'i'+(UID++), txt, cat:'obrig', done:false,
+  return {id:'i'+(UID++), txt, cat:'obrig', done:false, pegou:0,
     tipo:o.tipo||'simples', qtd:o.qtd||1,
     espec:o.espec||'', vol:o.vol||1, unid:o.unid||'L', emb:o.emb||1,
     partes:o.partes||null};
