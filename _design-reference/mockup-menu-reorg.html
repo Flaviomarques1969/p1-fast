@@ -495,8 +495,8 @@ function abrirEditor(gi, id){
   document.getElementById('editor').dataset.on='true';
 }
 function fecharEditor(){ document.getElementById('editor').dataset.on='false'; }
-function setSeg(segId, val){ document.querySelectorAll('#'+segId+' button').forEach(b=>{ b.dataset.on = (b.dataset.cat===val || b.dataset.tipo===val) ? 'true':'false'; }); }
-function segVal(segId){ const b=document.querySelector('#'+segId+' button[data-on="true"]'); return b.dataset.cat||b.dataset.tipo; }
+function setSeg(segId, val){ document.querySelectorAll('#'+segId+' button').forEach(b=>{ b.dataset.on = (b.dataset.cat===val || b.dataset.tipo===val || b.dataset.kind===val) ? 'true':'false'; }); }
+function segVal(segId){ const b=document.querySelector('#'+segId+' button[data-on="true"]'); return b.dataset.cat||b.dataset.tipo||b.dataset.kind; }
 function aplicaTipo(tipo){
   document.getElementById('ed-qtd-wrap').style.display = tipo==='simples'?'':'none';
   document.getElementById('ed-emb-wrap').style.display = tipo==='embalagem'?'':'none';
