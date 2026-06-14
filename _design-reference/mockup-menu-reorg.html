@@ -140,16 +140,12 @@ body{padding:0 0 96px;}
 .sheet__foot .save{background:var(--accent);border-color:transparent;color:oklch(20% 0.02 240);}
 .sheet__foot .del{color:var(--erro);border-color:oklch(70% 0.20 25 / .4);}
 
-/* contador "peguei" — dois botões grandes premium por item */
-.counter{display:flex;align-items:center;gap:10px;margin:12px 0 2px;padding-left:32px;}
-.cbtn{width:48px;height:48px;border-radius:14px;border:1px solid var(--hairline);background:var(--surface-2);color:var(--text);font-size:26px;font-weight:600;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .1s;}
-.cbtn:active{transform:scale(.92);}
-.cbtn.plus{background:var(--accent);border-color:transparent;color:oklch(20% 0.02 240);box-shadow:0 6px 16px oklch(78% 0.13 235 / .25);}
-.cbtn.minus{color:var(--text-2);}
-.cval{flex:1 1 auto;text-align:center;}
-.cval b{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);}
-.cval span{font-size:10px;color:var(--text-3);display:block;margin-top:1px;text-transform:uppercase;letter-spacing:.08em;}
-.cval.full b{color:var(--bom);}
+/* contador "peguei" — inline, na própria linha do item */
+.cstep{width:30px;height:30px;border-radius:8px;border:1px solid var(--hairline);background:var(--surface-2);color:var(--text);font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.cstep.plus{background:var(--accent);border-color:transparent;color:oklch(20% 0.02 240);}
+.cstep:active{transform:scale(.9);}
+.ccount{min-width:32px;text-align:center;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);}
+.ccount.full{color:var(--bom);}
 /* botão câmera no editor */
 .cam-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border:1px solid var(--accent);border-radius:12px;background:oklch(78% 0.13 235 / .10);color:var(--accent);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:16px;}
 .cam-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
