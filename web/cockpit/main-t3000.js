@@ -447,6 +447,30 @@ bridge.ingestImuGps = (envelope) => {
       bridge._trechoDetector = trechoDetector;
       trechoDetector._onEvent = (ev) => bridge._handleTrechoEvent(ev);
       _ultimoSegmentId = (comApice.length ? comApice[comApice.length - 1] : segments[segments.length - 1]).id;
+      // ── Agente VIVO de classificação de curva (Flávio 13/06) ──
+      // tipo aprovado: do banco (coluna tipo_curva, Fase 2) quando existir; senão o padrão
+      // definitivo embutido. Persistência LOCAL (localStorage) — NÃO grava na nuvem de produção.
+      try {
+        const tiposBanco = await carregarTipoCurvaPorTrecho('0dc85cfb-6236-567e-814c-eddf610b301f');
+        const segmentosVivo = segments.map(sg => ({
+          id: sg.id, nome: sg.nome, ordem: sg.ordem,
+          tipoAprovado: tiposBanco[sg.id] || PADRAO_TIPO_CURVA[sg.nome] || 'ND',
+          origem: tiposBanco[sg.id] ? 'banco' : 'padrao-flavio',
+        }));
+        const storeLocal = {
+          salvar(snap) { try { localStorage.setItem('p1_classificador_vivo', JSON.stringify(snap)); } catch (_) {} },
+        };
+        classificadorVivo = criarClassificadorVivo({
+          segmentos: segmentosVivo,
+          store: storeLocal,
+          onProposta: (info) => {
+            log(`PROPOSTA de tipo: ${info.trecho} ${info.proposta.de}→${info.proposta.para} (rever no celular)`);
+            try { localStorage.setItem('p1_classificador_proposta', JSON.stringify({ ...info, em: Date.now() })); } catch (_) {}
+          },
+        });
+        const comBanco = segmentosVivo.filter(s => s.origem === 'banco').length;
+        log(`agente vivo ligado: ${segmentosVivo.length} trechos (${comBanco} do banco, ${segmentosVivo.length - comBanco} do padrão)`);
+      } catch (e) { log('agente vivo não ligou: ' + e.message); }
       // ── Coreografia da volta (Flávio 09/06): painel ↔ orientação ↔ resumo ──
       const ordenados = segments.slice().sort((x, y) => (x.ordem ?? 0) - (y.ordem ?? 0));
       coreografia = new CoreografiaVolta(ordenados, {
