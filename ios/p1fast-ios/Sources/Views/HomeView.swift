@@ -272,6 +272,8 @@ struct HomeView: View {
         case .assistir:
             AssistirView(onClose: { voltarUmaTela() })
                 .navigationBarBackButtonHidden(true)
+        case .stintPlanejamento:
+            StintPlanejamentoView()
         }
     }
 
