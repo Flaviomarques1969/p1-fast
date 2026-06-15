@@ -90,5 +90,15 @@ const amostrasChapadas = trail.map(p => ({ t: p.t, pressaoFreioBar: 0 }));
 const r6 = frenagemFrxParaPassagem({ pontos: trail, amostrasFreio: amostrasChapadas });
 check('FR-14 sensor chapado (zero) não engana → volta pra física', r6 && r6.fonteFreio === 'simulado-fisica');
 
+// FR-15: devolve a curva de REFERÊNCIA (melhor) na mesma grade, pra virar linha + banda
+check('FR-15 devolve curva de referência (ref) com 18 pontos', r2 && Array.isArray(r2.ref) && r2.ref.length === 18);
+
+// FR-16: a curva ocupa a zona REAL da freada — sobe até o pico e DESCE na soltura
+// (passagem com soltura clara: freia forte, alivia, e larga antes da mínima).
+const comSoltura = passagem(d => d < 100 ? 170 : d <= 140 ? 170 - 80 * ((d - 100) / 40) : d <= 190 ? 90 - 12 * ((d - 140) / 50) : 78 + 60 * ((d - 190) / 50), 240);
+const rs = frenagemFrxParaPassagem({ pontos: comSoltura, refPontos: comSoltura });
+const maxV = rs ? Math.max(...rs.live) : 0, idxMax = rs ? rs.live.indexOf(maxV) : -1;
+check('FR-16 curva sobe e DESCE (pico no meio, não cortado no fim)', rs && idxMax > 0 && idxMax < 15 && rs.live[17] < maxV * 0.7);
+
 console.log(`\nfrenagem-real: ${ok} ok / ${fail} fail`);
 process.exit(fail ? 1 : 0);
