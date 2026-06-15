@@ -117,7 +117,7 @@ struct HomeView: View {
     /// pra validar telas profundas no simulador sem passar pelo login.
     var initialRoute: [HomeNavTarget] = []
     @State private var navSelection: BottomNavItem.ID?
-    @State private var showSyncSheet = false
+    @State private var showContaSheet = false
     @EnvironmentObject private var router: NavRouter
     private let navItems: [BottomNavItem] = [
         BottomNavItem("Home"),
