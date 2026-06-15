@@ -78,12 +78,14 @@ struct PessoasView: View {
     @EnvironmentObject private var passageiroRepo: PassageiroRepository
     @EnvironmentObject private var combustivelRepo: CombustivelRepository
     @EnvironmentObject private var licaoRepo: LicaoRepository
+    @EnvironmentObject private var arquivoRepo: ArquivoRepository
     @State private var navSelection: BottomNavItem.ID?
     @State private var sheet: PessoasSheet?
     @State private var subTab: PessoasSubTab = .pilotos
     @State private var pilotoToDelete: Piloto?
     @State private var passageiroToDelete: Passageiro?
     @State private var combustivelToDelete: Combustivel?
+    @State private var apagadosEntidade: EntidadeArquivavel?
 
     private let navItems: [BottomNavItem] = [
         BottomNavItem("Home"),
