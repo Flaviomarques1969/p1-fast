@@ -1469,6 +1469,36 @@ private extension String {
     var nilIfEmpty: String? { isEmpty ? nil : self }
 }
 
+// MARK: - StintSoltoLauncher — abre o modal "uma tela só" sem evento
+
+/// Abre o StintModalView no modo SOLTO (sem evento) a partir da navegação
+/// ("Stint livre" em StintPlanejamentoView). Decisão Flávio 15/06: o mesmo
+/// modal que tem pneu/paradas agora tem propósito/treino — uma tela só.
+/// Os repositórios chegam pelo ambiente (injetados na raiz em ContentView).
+struct StintSoltoLauncher: View {
+    /// nil = livre; com id = vinculado a um evento (mesma tela).
+    let eventoId: String?
+    @EnvironmentObject private var router: NavRouter
+    @EnvironmentObject private var carroRepo: CarroRepository
+
+    var body: some View {
+        StintModalView(
+            eventoId: eventoId,
+            proximoNumero: max(1, carroRepo.stintsPorCarro.values.reduce(0, +) + 1),
+            contextoLinha: eventoId == nil ? "Stint livre" : "Vinculado a um evento",
+            onCancel: { voltar() },
+            onCreated: { _ in voltar() }
+        )
+        .navigationBarBackButtonHidden(true)
+    }
+
+    private func voltar() {
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        if !router.path.isEmpty { router.path.removeLast() }
+    }
+}
+
 #Preview("StintModal — preview vazio") {
     let queue = try! P1FastCore.DB.makeMemoryQueue()
     let stintRepo = StintRepository(queue: queue)
