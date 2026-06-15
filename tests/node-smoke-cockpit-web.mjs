@@ -134,9 +134,9 @@ t('CKW-10 index.html preserva os 4 data-attrs do device', () => {
   }
 });
 
-t('CKW-11 index.html preserva 12 LEDs do shift-light', () => {
+t('CKW-11 index.html preserva 17 LEDs do shift-light (luz progressiva, central na troca)', () => {
   const dotMatches = indexActual.match(/<span class="shift-light__dot"/g) ?? [];
-  if (dotMatches.length !== 12) throw new Error(`esperado 12 dots, achei ${dotMatches.length}`);
+  if (dotMatches.length !== 17) throw new Error(`esperado 17 dots, achei ${dotMatches.length}`);
 });
 
 t('CKW-12 index.html preserva 4 pontos do apex (entrada, freio, ápice, saída)', () => {
