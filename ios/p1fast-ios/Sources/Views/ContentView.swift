@@ -306,6 +306,19 @@ private struct ReadyRoot: View {
         AnyView(TelemetriaView(queue: queue, trackBundle: trackRepo.currentTrack()))
     }
 
+    /// Destino do botão "Stint" do topo da Home (decisão Flávio 15/06):
+    /// - se HOJE é dia de evento → abre direto no evento (EventoDetalheView,
+    ///   onde já dá pra executar o Stint e planejar);
+    /// - senão → abre a tela que pergunta "vincular a um evento" ou "Stint
+    ///   livre" (StintPlanejamentoView).
+    private func stintTapDecision() {
+        if let ev = eventoRepo.eventoAtivoHoje() {
+            router.path.append(HomeNavTarget.eventoDetalhe(eventoId: ev.id))
+        } else {
+            router.path.append(HomeNavTarget.stintPlanejamento)
+        }
+    }
+
     @ViewBuilder
     private var routedView: some View {
         switch AppRoute.fromLaunchArgs {
