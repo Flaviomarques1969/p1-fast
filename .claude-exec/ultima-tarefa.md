@@ -3,6 +3,31 @@
 > Registro anterior (Botão APAGAR da Garagem, 14/06 noite) arquivado em
 > `.claude-exec/ultima-tarefa-ANTERIOR-garagem-apagar-2026-06-14.md`.
 
+## TASK_INIT — 2026-06-15 noite (pós-/clear) — FRENAGEM Etapa 2b: ligar a forma-ideal-por-tipo no PAINEL OFICIAL
+
+1. **Pedido de Flávio:** "RETOMAR FRENAGEM DO P1 FAST" (texto, não comando). Continuar do ponto exato: a Etapa 2a-bis
+   (linha-ideal = trail prescrito do tipo) já está pronta/aprovada na prova; falta levar pro painel oficial do Command Box.
+2. **Objetivo:** trocar a frenagem SIMULADA (FRX_CENARIOS fake) do painel oficial pela `ideal` (trail do tipo) + `live` real
+   por curva, vindos dos módulos já provados, sem tocar no Vmin nem em produção.
+3. **Critério de conclusão:** painel oficial mostra, por curva, o trail do tipo como ideal + volta real sobreposta quando há
+   dado (Bruxa/Placar/"S" não ficam em branco); 'frenagem' sai do DEP_LIGACAO; Vmin intacto; testes verdes; painel reaberto
+   na 8078 pro Flávio confirmar visualmente.
+4. **Leitura:** CLAUDE.md, padroes.md (vazio), FLAVIO_EXECUTION/DONE/ENVIRONMENT/COMMUNICATION (4), P1 Fast/CLAUDE.md,
+   memórias (global + P1 Fast: frenagem-dado-real, frenagem-command-box-redesenho, trail-criterio-certo) + ★ RETOMAR AQUI — sim.
+5. **Plano (≤5):** (a) mapear com precisão os pontos do painel (FRX_CENARIOS:4243 / getFrenagemVerdictForCurve:4351 /
+   buildFrenagemPanel:4363 / updateFrenagemFromLap:4445 / DEP_LIGACAO:7609) e a API dos módulos + como a prova os consome;
+   (b) embutir/charegar os módulos no painel; (c) trocar o cenário fake pelo {ideal,live} real por id; (d) tirar 'frenagem'
+   do DEP_LIGACAO; (e) rodar smokes + reabrir na 8078. Backup do painel JÁ feito antes de tocar.
+6. **Arquivos:** _design-reference/mockup-command-box-vista-piloto.html (alvo, 328KB/7740 linhas),
+   web/command-box/{forma-trail-tipo.js, frenagem-curvas-reais.js, frenagem-real.js, tipos-curva-brasilia.js},
+   relatorios/{frenagem-dado-real, plano-frenagem-dado-real}-2026-06-15.html (referência), tests/*.mjs.
+7. **Ambiente alvo:** desenvolvimento. **8. Produção protegida:** sim. **9. Autorização produção:** não.
+10. **Evidência autorização produção:** não recebida (mockup oficial é dev; Vercel/nuvem é produção e fica intocada).
+11. **Riscos:** edição grande em arquivo de 328KB; (a) quebrar o Vmin que compartilha fr-*/_shortRevealStateForLap —
+   mitigado usando só classes/estado frx-* e não tocando no Vmin; (b) quebrar sintaxe inline do painel — mitigado com
+   validação de sintaxe + smokes + servir 200. Backup: _design-reference/command-box-versoes/vista-piloto-PRE-etapa2b-ligar-trail-tipo-2026-06-15.html (MD5 conferido).
+12. **Status inicial:** iniciado.
+
 ## TASK_INIT — 2026-06-15 noite — FRENAGEM no dado real (Etapa 2a-bis): linha-ideal = trail PRESCRITO do tipo
 
 1. **Pedido de Flávio:** "RETOMAR FRENAGEM DO P1 FAST" → continuar a frenagem do Command Box. Feedback 15/06 (verbatim):
