@@ -119,6 +119,8 @@
 		139F414C2942139A9367A3B2 /* EventoMockSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventoMockSummary.swift; sourceTree = "<group>"; };
 		162332DAA2D671F61DFE3881 /* StintModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StintModalView.swift; sourceTree = "<group>"; };
 		1F0C67C4E0BA41DE1CC674DA /* AssistirView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistirView.swift; sourceTree = "<group>"; };
+		5717A0117E57000000000C02 /* CatalogoTreinos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogoTreinos.swift; sourceTree = "<group>"; };
+		5717A0117E57000000000C04 /* StintPlanoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StintPlanoView.swift; sourceTree = "<group>"; };
 		5717A0117E57000000000B02 /* StintPlanejamentoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StintPlanejamentoView.swift; sourceTree = "<group>"; };
 		2285A445626E15C137E07CCA /* CarroRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarroRepository.swift; sourceTree = "<group>"; };
 		253F1283A784C08D44C00419 /* p1fast-ios.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "p1fast-ios.app"; sourceTree = BUILT_PRODUCTS_DIR; };
