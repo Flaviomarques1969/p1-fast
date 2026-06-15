@@ -13,11 +13,13 @@
 
 ---
 
-## 1. 🟢 Estoque unificado + backup na nuvem — FEITO 2026-06-14
+## 1. 🔵 Estoque unificado + backup na nuvem — BLOQUEADO (falta publicar a função de sincronização)
 - **O que é:** um estoque só (geral + de cada carro) com backup na nuvem; o estoque do carro de hoje é COPIADO pra dentro (original intacto).
-- **Estado:** NO AR. (a) Migração `0046` APLICADA na nuvem (tabela `estoque_item` criada — confirmado por REST HTTP 200 e pela lista de migrações: 0046 Local+Remoto). (b) App sincronizado INSTALADO e aberto no iPhone 16 Pro Max. Código também na versão oficial (`a821ddaa`).
-- **Falta só:** você abrir o app ~1 min desbloqueado pra o envio retroativo terminar de subir o estoque pra nuvem (roda em primeiro plano).
-- **Desfazer:** rollback no rodapé da `0046` (apaga só a tabela nova) + reinstalar app anterior. A 0044 (de outra frente) NÃO foi tocada.
+- **Estado:** banco PRONTO, mas o backup NÃO acontece ainda. (a) Migração `0046` APLICADA na nuvem (tabela `estoque_item` criada). (b) App sincronizado INSTALADO no iPhone e JÁ tenta subir o estoque. (c) Código na versão oficial (`a821ddaa`).
+- **BLOQUEIO ENCONTRADO 15/06 (com prova):** a função de sincronização publicada na nuvem (`sync`, versão 9 de 03/06) NÃO aceita a tabela `estoque_item` — ela rejeita tudo que não está numa lista fixa (linha 124), e `estoque_item` nunca esteve nessa lista (confirmado no histórico). Resultado: a nuvem tem **0 linhas de estoque** (conferido por dump só-leitura) e abrir o app NÃO sobe nada (é recusado). A leitura de volta (`pull`) tinha o mesmo furo.
+- **Conserto FEITO em desenvolvimento 15/06:** `estoque_item` adicionado à lista da função `sync` e da `pull` (`supabase/functions/sync/index.ts` e `.../pull/index.ts`). Aditivo e reversível. Não dá pra testar tipo localmente (Deno não instalado nesta máquina); o empacotamento real ocorre no envio Supabase.
+- **Falta:** (1) publicar as funções `sync` + `pull` na nuvem — **decisão de produção, espera `MIGRAR PARA PRODUÇÃO: funcoes sync e pull com estoque`**; (2) depois, você abrir o app ~1 min desbloqueado pro envio retroativo subir; (3) eu confirmo as linhas na nuvem.
+- **Desfazer:** reverter as 2 linhas adicionadas e republicar a função anterior; rollback da `0046` no rodapé dela (apaga só a tabela nova). A 0044 (de outra frente) NÃO foi tocada.
 
 ## 2. 🟢 Estoque geral + Pendências (camada local)
 - **O que é:** Estoque geral na Garagem, editor único com câmera, Pendências novas (contador "peguei", concluir no quadradinho, Gerenciar).
