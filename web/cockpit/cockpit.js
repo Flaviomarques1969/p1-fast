@@ -146,12 +146,14 @@ const shiftButtons = document.querySelectorAll('[data-shift]');
 
 const SHIFT_SEQUENCE = [
   {state:'0',       dwell:500},
-  {state:'1',       dwell:360},
-  {state:'2',       dwell:360},
-  {state:'3',       dwell:360},
-  {state:'4',       dwell:360},
-  {state:'5',       dwell:360},
-  {state:'6',       dwell:160},
+  {state:'1',       dwell:300},
+  {state:'2',       dwell:300},
+  {state:'3',       dwell:300},
+  {state:'4',       dwell:300},
+  {state:'5',       dwell:300},
+  {state:'6',       dwell:300},
+  {state:'7',       dwell:300},
+  {state:'8',       dwell:160},
   {state:'fire',    dwell:300},
   {state:'overrev', dwell:800},
 ];
