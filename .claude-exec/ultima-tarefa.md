@@ -149,7 +149,12 @@ sem nova ordem.
 - Se produção foi alterada, autorização registrada: SIM — Flávio escreveu `MIGRAR PARA PRODUÇÃO: funcoes sync e pull com estoque`
 - Arquivos reais inspecionados: sim (sync/index.ts, pull/index.ts, ios EstoqueRepository/SyncBackfill/SyncCoordinator, migration 0046, dump da nuvem)
 - Alterações feitas: 2 linhas (sync + pull) em dev + publicação na nuvem; plano de migração e este registro atualizados
-- Testes/validação executados: dump só-leitura da nuvem (0 linhas estoque ANTES) ✓; versões pós-publicação confirmadas (sync v10 / pull v4) ✓; typecheck Deno NÃO (Deno ausente)
-- Resultado: PARCIAL — porta aberta (funções publicadas). Falta Flávio abrir o app ~1 min e eu confirmar as linhas subindo.
-- Pendências reais: (1) Flávio abrir o app desbloqueado ~1 min; (2) eu reconferir o estoque na nuvem (>0 linhas) e fechar o item 1.
-- Desfazer (se preciso): republicar sync v9 / pull v3 (versões anteriores ainda existem no histórico da nuvem).
+- Testes/validação executados: versões pós-publicação (sync v10 / pull v4) ✓; cruzamento FINAL app × nuvem ✓ — app: 2 itens, 0 não-sincronizados, fila vazia; nuvem: 2 itens (Sincronizador 3a marcha + Tensionador e Polia). typecheck Deno NÃO (Deno ausente).
+- Resultado: CONCLUÍDO — estoque backupado na nuvem.
+- Pendências reais: nenhuma p/ este item. Melhoria opcional proposta (não autorizada): app re-tentar dead-letter sozinho quando a condição muda.
+
+### ERRO MEU registrado (pra não repetir)
+Reportei "nuvem com 0 linhas" 2x quando os dados JÁ tinham subido. Causa: meu contador só lia o formato COPY do dump; o `supabase db dump` desta tabela saiu em INSERT (`INSERT INTO ... VALUES (...),(...);`). Contagem certa = contar as TUPLAS de VALUES, não blocos COPY nem nº de statements INSERT. Cruzar SEMPRE com o estado local do app (synced_at + sync_queue) evita o falso negativo.
+
+### Sequência real que resolveu (pra memória)
+1. Publiquei sync v10 + pull v4 (com estoque_item). 2. Os 2 itens estavam dead-letter (5 tentativas, erro "table-nao-permitida" de ontem) → reabrir o app NÃO sobe. 3. Flávio tocou "Tentar de novo" na tela Sincronização (zera contador + drena na hora) → subiram. 4. Confirmado por cópia limpa do iPhone (devicectl, app precisa estar fechado p/ não vir malformado) + dump da nuvem.
