@@ -80,9 +80,9 @@ t('CST-07 setShift aceita combinação parcial (só level, só mode, só fire)',
   if (c.get().shift.fire !== ShiftFire.ACTIVE) throw new Error();
 });
 
-t('CST-08 setShift rejeita level fora de 0..6', () => {
+t('CST-08 setShift rejeita level fora de 0..8', () => {
   const c = new CockpitState();
-  for (const bad of [-1, 7, NaN, 'x', Infinity]) {
+  for (const bad of [-1, 9, NaN, 'x', Infinity]) {
     let threw = false;
     try { c.setShift({ level: bad }); } catch { threw = true; }
     if (!threw) throw new Error(`deveria rejeitar level=${bad}`);
