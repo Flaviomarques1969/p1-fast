@@ -399,3 +399,26 @@ Decisões em card (Flávio, 15/06): destino = NOS DOIS (cockpit já pronto) · q
 - Limite honesto: o caminho AO VIVO só valida 100% com volta fluindo (carro ou reprodutor). Saber se o
   sensor de pressão/pedal de freio está na leva de 16-17/06 (muda só a validação do caminho do sensor).
 - Status: PARCIAL — Etapa 1 (núcleo de produção) concluída e protegida por teste; Etapas 2-3 pendentes.
+
+### ETAPA 2a — frenagem REAL por curva + prova no navegador (CONCLUÍDA, testada)
+- Achei georref LOCAL (sem banco): `_design-reference/PONTOS-TRECHOS-BRASILIA-2026-05-28.json` (linha entrada/ápice/saída por curva).
+- Achei voltas REAIS do Bubi no backup `~/Documents/p1fast-backup-voltas-reais/passagens-bubi-aplicadas.json`
+  (56 passagens, já fatiadas por curva, pontos {lat,lng,kmh,t}). Backup PRESERVADO (só leitura).
+- NOVO fixture local `web/command-box/fixtures/passagens-bubi-brasilia.v1.json` (60 KB, 56 passagens, 8 curvas × 7 voltas)
+  — cópia enxuta do backup. Mapeamento curva↔dado conferido: 8 curvas casam a ordem da pista, nenhuma órfã.
+- NOVO `web/command-box/frenagem-curvas-reais.js`: monta a frenagem real por curva (melhor=referência) via o adaptador.
+- NOVO teste `tests/node-smoke-frenagem-curvas-reais.mjs` = 10/10. Registrado (smoke:frenagem-curvas-reais + agregado).
+- RESULTADO REAL: 4 de 8 curvas (C1-C4) têm freada real medida; C5-C8 têm GPS ralo (4-6 pontos a 1 Hz) →
+  declaradas "sem freada medível" (NÃO inventadas). Resolve com volta ao vivo / 25 Hz.
+- PROVA VISUAL no navegador: `relatorios/frenagem-dado-real-2026-06-15.html` (servida 8078, ABERTA pro Flávio) —
+  desenha a freada real por curva no visual aprovado (banda ±8%, verde/vermelho, marcador, veredito, selo FÍSICA GPS),
+  com seletor de volta. NÃO é o painel final — é prova de que o dado é real e bate. Mockup servido NÃO alterado.
+- Validação: smoke:frenagem-real 14/0, smoke:frenagem-curvas-reais 10/0; HTTP 200 da página + módulos + fixture.
+
+### FALTA — ETAPA 2b (no painel) + ETAPA 3
+- 2b: ligar o módulo DENTRO do mockup (setupLigacaoAoVivo): override de getFrenagemVerdictForCurve com o dado real
+  por curva + driver de volta (canal ao vivo, ou replay da volta gravada) pra a tela ciclar curva a curva;
+  tirar 'frenagem' de DEP_LIGACAO. É a edição grande no arquivo de 328 KB (backup já salvo).
+- 3: selo física↔sensor no bloco + 2-de-2→3-de-3 quando a pressão variar; faxina do legado morto.
+- Status geral: PARCIAL — toda a base de cálculo + dado real + prova visual prontos e testados (risco zero ao painel);
+  falta a edição do painel em si (2b) e o acabamento (3).
