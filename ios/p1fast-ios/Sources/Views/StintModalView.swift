@@ -199,6 +199,16 @@ struct StintModalView: View {
         }
     }
 
+    /// Propósito completo: livre sempre ok; testar exige a parte; treinar
+    /// exige o treino escolhido + a explicação vista (gateia o Aprovar).
+    private var propositoOk: Bool {
+        switch proposito {
+        case .livre: return true
+        case .testar: return focoTeste != nil
+        case .treinar: return focoTreino != nil && briefConfirmado
+        }
+    }
+
     @ViewBuilder
     private var content: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
