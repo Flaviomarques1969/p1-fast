@@ -7787,5 +7787,24 @@ html,body{
 <!-- Atelier: botão "salvar última versão" (padrão Flávio 13/06/2026) -->
 <script>window.ATELIER_VISTA='piloto';</script>
 <script src="../web/_atelier/salvar-versao.js"></script>
+
+<!-- Etapa 2b (2026-06-15): liga a FRENAGEM no DADO REAL — ideal por TIPO de curva (trail clássico)
+     + volta real do Bubi (motor de produção freio-trecho.js). Servido pela 8078 a partir da raiz.
+     Se o módulo/massa não carregar (ex aberto sem servidor), o painel mantém a demonstração. -->
+<script type="module">
+  (async function(){
+    try{
+      var mod = await import('/web/command-box/frenagem-curvas-reais.js');
+      var fixture = await (await fetch('/web/command-box/fixtures/passagens-bubi-brasilia.v1.json')).json();
+      var curvas = mod.construirFrenagemRealPorCurva(fixture, {});   // {} = melhor volta de cada curva
+      var arr = [];
+      curvas.forEach(function(c){ if(c && typeof c.curveIdx === 'number') arr[c.curveIdx] = c; });
+      if(typeof window.__aplicarFrenagemReal === 'function') window.__aplicarFrenagemReal(arr);
+      else console.warn('[frenagem 2b] hook __aplicarFrenagemReal ausente');
+    }catch(e){
+      console.warn('[frenagem 2b] dado real indisponível, mantendo demonstração:', e);
+    }
+  })();
+</script>
 </body>
 </html>
