@@ -345,3 +345,15 @@ FALTA (apontado ao Flávio): (a) cartões de evento da Home clicáveis → abrir
 - (c) validar "real" sem o carro → replay de volta gravada.
 
 ### Status inicial: iniciado — verificação concluída; aguardando confirmação do caminho em card (sem alteração de código ainda).
+
+═══════════════════════════════════════════════════════════
+## TASK_DONE — 2026-06-15 — Planejamento do Stint: tela de propósito + treino (dev)
+═══════════════════════════════════════════════════════════
+Flávio escolheu "Construir o planejamento do Stint". Construído em desenvolvimento:
+- CatalogoTreinos.swift (NOVO): port fiel do catálogo do computador (1 técnica Trail braking + 6 pontos do trecho, com "o que é / o que a IA mede / ressalva") + FocoTeste (Motor/Freios/Pneus e rodas/Câmbio/Suspensão/Elétrica).
+- StintPlanoView.swift (NOVO): a tela do planejamento — Propósito (Rodar livre / Testar o carro / Treinar habilidade) + catálogo + explicação OBRIGATÓRIA (trava o Aprovar) + Ghost + Voltas. "Aprovar plano" monta o plano e mostra o resumo.
+- HomeView.swift: +destino .stintPlano(eventoId:String?). StintPlanejamentoView "Stint livre" → abre o planejamento.
+- Registrados no project.pbxproj. Empacotamento = BUILD SUCCEEDED, 0 erro (1 erro corrigido no caminho: nome `Layout` colide com tipo do projeto → troquei por rolagem horizontal nos chips). Reinstalado no simulador.
+- Produção/nuvem/iPhone do Flávio: NÃO tocados. Validação visual: Flávio toca "+ Stint" → "Stint livre" no simulador.
+- FALTA (próximo): "Aprovar" GRAVAR o plano (formato plano_stint que o painel lê) + INICIAR o Stint de verdade = parte que mexe na NUVEM → gate "MIGRAR PARA PRODUÇÃO". E conectar a Home aos eventos reais + cartões clicáveis.
+- Resultado: a EXPERIÊNCIA do planejamento (propósito/treino/voltas) pronta pra validar; gravar+iniciar pendente.
