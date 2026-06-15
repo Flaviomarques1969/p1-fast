@@ -263,7 +263,7 @@ struct PassageiroCadastroView: View {
         savingError = nil
         Task {
             do {
-                try await repo.delete(passageiroId: p.id)
+                try await repo.arquivar(passageiroId: p.id, rotulo: p.nome)
                 isSaving = false
                 onClose()
             } catch {
