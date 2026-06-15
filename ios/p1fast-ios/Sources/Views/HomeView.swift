@@ -120,6 +120,11 @@ struct HomeView: View {
     /// TelemetriaView com queue + trackBundle (a Home não tem acesso
     /// direto aos repositórios). Quando nil, o atalho dev fica oculto.
     var telemetriaDevView: (() -> AnyView)? = nil
+    /// Ação do botão "Stint" no topo da Home (iniciar o Stint). Injetada pelo
+    /// dono dos dados (ReadyRoot), que decide o destino: se HOJE é dia de
+    /// evento, abre direto no evento; senão, abre a tela que pergunta
+    /// "vincular a um evento" ou "Stint livre" (decisão Flávio 15/06).
+    var onStintTap: () -> Void = {}
     /// SÓ-DEV: rota inicial pré-empilhada — usada pelos launchers de mock
     /// pra validar telas profundas no simulador sem passar pelo login.
     var initialRoute: [HomeNavTarget] = []
