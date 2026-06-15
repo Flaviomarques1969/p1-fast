@@ -42,7 +42,7 @@ t('CKW-01 mockup canônico tem <style> e </style> nas linhas esperadas', () => {
   // barra de aprendizado). Se mudar de novo, reextraia css/js com sed e
   // atualize estes números (são apenas o limite de erro útil pra detectar
   // drift acidental).
-  if (styleOpen !== 10 || styleClose !== 902) {
+  if (styleOpen !== 10 || styleClose !== 862) {
     throw new Error(`<style> em ${styleOpen}, </style> em ${styleClose} — mockup mudou de tamanho. Atualizar este smoke + tools de extração.`);
   }
 });
