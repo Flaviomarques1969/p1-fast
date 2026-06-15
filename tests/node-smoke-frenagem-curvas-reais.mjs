@@ -47,5 +47,24 @@ check('CR-10 curva sem freada é declarada (semDado + motivo), nunca inventada',
   semDado.every(c => c.semDado === true && typeof c.motivo === 'string'));
 if (semDado.length) console.log(`   (sem freada medível: ${semDado.map(c => 'C' + (c.curveIdx + 1) + ' ' + c.curva).join(' · ')})`);
 
+// CR-11: toda curva carrega o TIPO definitivo + o trail próprio do tipo
+check('CR-11 toda curva tem tipo + rótulo + formato + texto fácil do tipo',
+  curvas.every(c => c.tipo && c.rotuloTipo && c.formatoTipo && c.textoFacilTipo));
+
+// CR-12: os tipos batem com a decisão definitiva do Flávio (cada curva, seu tipo)
+check('CR-12 tipo de cada curva = padrão definitivo (decisão Flávio 13/06)',
+  curvas.every(c => c.tipo === TIPO_POR_CURVA[c.curva]));
+console.log(`   (${curvas.map(c => 'C' + (c.curveIdx + 1) + '=' + c.tipo).join(' ')})`);
+
+// CR-13: SF (Vitória) = sem freada POR TIPO (pé embaixo), não por falta de dado
+const vit = curvas.find(c => c.curva === 'CURVA DA VITÓRIA');
+check('CR-13 curva SF é "sem freada por tipo" (não confunde com dado ralo)',
+  vit && vit.tipo === 'SF' && vit.semFreadaPorTipo === true && !vit.semDado && !vit.live);
+
+// CR-14: curva com freada traz a referência (melhor) e a curva SOBE e DESCE (zona real)
+check('CR-14 curva com freada tem ref[18] e a curva desce após o pico (zona real, não cortada)',
+  comFreada.every(c => Array.isArray(c.ref) && c.ref.length === 18
+    && c.live.indexOf(Math.max(...c.live)) < 16 && c.live[17] < Math.max(...c.live) * 0.85));
+
 console.log(`\nfrenagem-curvas-reais: ${ok} ok / ${fail} fail`);
 process.exit(fail ? 1 : 0);
