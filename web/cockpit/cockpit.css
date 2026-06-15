@@ -103,8 +103,8 @@ body{
 .shift-light{
   position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
   z-index:45;
-  display:flex;gap:18px;align-items:center;
-  padding:9px 26px;
+  display:flex;gap:13px;align-items:center;
+  padding:9px 22px;
   border-radius:999px;
   background:
     linear-gradient(180deg,
