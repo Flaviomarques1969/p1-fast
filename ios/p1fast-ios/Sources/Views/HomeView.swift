@@ -247,9 +247,9 @@ struct HomeView: View {
         case .pendencias:
             PendenciasProximoEventoLauncher()
         case .garagem:
-            GaragemView(onNavSelect: nav)
+            GaragemView(onNavSelect: nav, syncCoordinator: syncCoordinator)
         case .garagemNovo:
-            GaragemView(initialSheet: .novo, onNavSelect: nav)
+            GaragemView(initialSheet: .novo, onNavSelect: nav, syncCoordinator: syncCoordinator)
         case .carroHub(let id):
             CarroHubView(carroId: id, onClose: { voltarUmaTela() })
         case .carroCadastro(let id):
