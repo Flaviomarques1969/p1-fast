@@ -156,10 +156,10 @@ body{
 .shift-light[data-state="off"] .shift-light__dot::after{ opacity:.25; }
 
 /* LIT por tier — ativa apenas em dots com .is-on (controle via JS).
-   Tier 1 = pontas (1° a acender, glow distante e discreto)
-   Tier 6 = par central (último, peak, máximo bloom).
-   LEDs uniformes (scale 1.08) — hierarquia vem do bloom externo, não do tamanho.
-   Cor: 1-2 verde · 3-4 amarelo · 5-6 vermelho. */
+   17 LEDs espelhados: tier 1 nas pontas, tier 9 = luz central.
+   As laterais (tier 1-8) enchem par a par; a central (9) acende no FIRE,
+   quando os dois lados se juntam = troca. Bloom cresce em direção ao centro.
+   Cor: 1-4 verde · 5-7 amarelo · 8-9 vermelho. */
 
 .shift-light__dot.is-on{
   animation: ledIgnite 380ms var(--ease-out);
@@ -171,94 +171,54 @@ body{
   100% { filter: brightness(1) saturate(1); }
 }
 
-/* TIER 1 — pontas, VERDE, bloom curto e distante */
+/* ── VERDE — tiers 1-4 (pontas → meio), bloom crescente ── */
 .shift-light__dot.is-on[data-tier="1"]{
-  background:radial-gradient(circle at 35% 30%,
-    oklch(96% 0.10 145) 0%,
-    oklch(80% 0.23 145) 55%,
-    oklch(58% 0.23 148) 100%);
-  box-shadow:
-    inset 0 1px 0 oklch(100% 0 0 / .85),
-    inset 0 0 0 1px oklch(68% 0.23 148),
-    0 0 9px  oklch(82% 0.23 145 / .85),
-    0 0 18px oklch(74% 0.23 148 / .45),
-    0 0 28px oklch(64% 0.23 150 / .22);
+  background:radial-gradient(circle at 35% 30%, oklch(96% 0.10 145) 0%, oklch(80% 0.23 145) 55%, oklch(58% 0.23 148) 100%);
+  box-shadow:inset 0 1px 0 oklch(100% 0 0 / .85), inset 0 0 0 1px oklch(68% 0.23 148), 0 0 9px oklch(82% 0.23 145 / .85), 0 0 18px oklch(74% 0.23 148 / .45), 0 0 28px oklch(64% 0.23 150 / .22);
   transform:scale(1.07);
 }
-
-/* TIER 2 — VERDE, bloom maior */
 .shift-light__dot.is-on[data-tier="2"]{
-  background:radial-gradient(circle at 35% 30%,
-    oklch(97% 0.10 145) 0%,
-    oklch(82% 0.23 146) 55%,
-    oklch(60% 0.23 150) 100%);
-  box-shadow:
-    inset 0 1px 0 oklch(100% 0 0 / .9),
-    inset 0 0 0 1px oklch(70% 0.23 148),
-    0 0 11px oklch(84% 0.23 146 / .9),
-    0 0 22px oklch(76% 0.23 148 / .55),
-    0 0 34px oklch(66% 0.23 150 / .28);
+  background:radial-gradient(circle at 35% 30%, oklch(97% 0.10 145) 0%, oklch(82% 0.23 146) 55%, oklch(60% 0.23 150) 100%);
+  box-shadow:inset 0 1px 0 oklch(100% 0 0 / .9), inset 0 0 0 1px oklch(70% 0.23 148), 0 0 11px oklch(84% 0.23 146 / .9), 0 0 22px oklch(76% 0.23 148 / .55), 0 0 34px oklch(66% 0.23 150 / .28);
   transform:scale(1.08);
 }
-
-/* TIER 3 — AMARELO, bloom maior */
 .shift-light__dot.is-on[data-tier="3"]{
-  background:radial-gradient(circle at 35% 30%,
-    oklch(98% 0.13 95) 0%,
-    oklch(86% 0.21 92) 55%,
-    oklch(66% 0.21 88) 100%);
-  box-shadow:
-    inset 0 1px 0 oklch(100% 0 0 / .85),
-    inset 0 0 0 1px oklch(74% 0.21 92),
-    0 0 13px oklch(88% 0.21 92 / .9),
-    0 0 26px oklch(80% 0.21 90 / .55),
-    0 0 40px oklch(72% 0.21 88 / .28);
+  background:radial-gradient(circle at 35% 30%, oklch(97% 0.10 145) 0%, oklch(82% 0.23 146) 54%, oklch(60% 0.23 150) 100%);
+  box-shadow:inset 0 1px 0 oklch(100% 0 0 / .9), inset 0 0 0 1px oklch(71% 0.23 148), 0 0 12px oklch(85% 0.23 146 / .9), 0 0 24px oklch(77% 0.23 148 / .55), 0 0 37px oklch(67% 0.23 150 / .28);
   transform:scale(1.08);
 }
-
-/* TIER 4 — AMARELO, mais intenso (próximo do peak) */
 .shift-light__dot.is-on[data-tier="4"]{
-  background:radial-gradient(circle at 35% 30%,
-    oklch(98% 0.13 95) 0%,
-    oklch(88% 0.21 92) 52%,
-    oklch(68% 0.21 88) 100%);
-  box-shadow:
-    inset 0 1px 0 oklch(100% 0 0 / .9),
-    inset 0 0 0 1px oklch(76% 0.21 92),
-    0 0 15px oklch(90% 0.21 92 / .95),
-    0 0 30px oklch(82% 0.21 90 / .6),
-    0 0 46px oklch(74% 0.21 88 / .3);
+  background:radial-gradient(circle at 35% 30%, oklch(98% 0.10 145) 0%, oklch(84% 0.23 146) 52%, oklch(62% 0.23 150) 100%);
+  box-shadow:inset 0 1px 0 oklch(100% 0 0 / .92), inset 0 0 0 1px oklch(72% 0.23 148), 0 0 14px oklch(86% 0.23 146 / .95), 0 0 28px oklch(78% 0.23 148 / .6), 0 0 44px oklch(68% 0.23 150 / .3);
   transform:scale(1.08);
 }
 
-/* TIER 5 — VERMELHO, bloom amplo */
+/* ── AMARELO — tiers 5-7 ── */
 .shift-light__dot.is-on[data-tier="5"]{
-  background:radial-gradient(circle at 35% 30%,
-    oklch(94% 0.10 32) 0%,
-    oklch(74% 0.26 28) 50%,
-    oklch(54% 0.26 25) 100%);
-  box-shadow:
-    inset 0 1px 0 oklch(100% 0 0 / .85),
-    inset 0 0 0 1px oklch(62% 0.27 27),
-    0 0 16px oklch(76% 0.26 28 / .95),
-    0 0 32px oklch(66% 0.27 27 / .6),
-    0 0 50px oklch(56% 0.27 27 / .32);
+  background:radial-gradient(circle at 35% 30%, oklch(98% 0.13 95) 0%, oklch(86% 0.21 92) 55%, oklch(66% 0.21 88) 100%);
+  box-shadow:inset 0 1px 0 oklch(100% 0 0 / .85), inset 0 0 0 1px oklch(74% 0.21 92), 0 0 13px oklch(88% 0.21 92 / .9), 0 0 26px oklch(80% 0.21 90 / .55), 0 0 40px oklch(72% 0.21 88 / .28);
+  transform:scale(1.08);
+}
+.shift-light__dot.is-on[data-tier="6"]{
+  background:radial-gradient(circle at 35% 30%, oklch(98% 0.13 95) 0%, oklch(87% 0.21 92) 53%, oklch(67% 0.21 88) 100%);
+  box-shadow:inset 0 1px 0 oklch(100% 0 0 / .9), inset 0 0 0 1px oklch(75% 0.21 92), 0 0 14px oklch(89% 0.21 92 / .92), 0 0 28px oklch(81% 0.21 90 / .57), 0 0 43px oklch(73% 0.21 88 / .29);
+  transform:scale(1.08);
+}
+.shift-light__dot.is-on[data-tier="7"]{
+  background:radial-gradient(circle at 35% 30%, oklch(98% 0.13 95) 0%, oklch(88% 0.21 92) 52%, oklch(68% 0.21 88) 100%);
+  box-shadow:inset 0 1px 0 oklch(100% 0 0 / .9), inset 0 0 0 1px oklch(76% 0.21 92), 0 0 15px oklch(90% 0.21 92 / .95), 0 0 30px oklch(82% 0.21 90 / .6), 0 0 46px oklch(74% 0.21 88 / .3);
   transform:scale(1.08);
 }
 
-/* TIER 6 — par CENTRAL, VERMELHO, MÁXIMO BLOOM (peak/shift!) */
-.shift-light__dot.is-on[data-tier="6"]{
-  background:radial-gradient(circle at 35% 30%,
-    oklch(96% 0.10 32) 0%,
-    oklch(76% 0.27 28) 48%,
-    oklch(54% 0.27 25) 100%);
-  box-shadow:
-    inset 0 1px 0 oklch(100% 0 0 / .95),
-    inset 0 0 0 1px oklch(64% 0.27 27),
-    0 0 18px oklch(78% 0.27 28 / 1),
-    0 0 36px oklch(68% 0.27 27 / .7),
-    0 0 60px oklch(58% 0.27 27 / .42),
-    0 0 90px oklch(52% 0.27 28 / .2);
+/* ── VERMELHO — tiers 8-9 (8 = lados, 9 = central, máximo bloom) ── */
+.shift-light__dot.is-on[data-tier="8"]{
+  background:radial-gradient(circle at 35% 30%, oklch(94% 0.10 32) 0%, oklch(74% 0.26 28) 50%, oklch(54% 0.26 25) 100%);
+  box-shadow:inset 0 1px 0 oklch(100% 0 0 / .85), inset 0 0 0 1px oklch(62% 0.27 27), 0 0 16px oklch(76% 0.26 28 / .95), 0 0 32px oklch(66% 0.27 27 / .6), 0 0 50px oklch(56% 0.27 27 / .32);
+  transform:scale(1.08);
+}
+.shift-light__dot.is-on[data-tier="9"]{
+  background:radial-gradient(circle at 35% 30%, oklch(96% 0.10 32) 0%, oklch(76% 0.27 28) 48%, oklch(54% 0.27 25) 100%);
+  box-shadow:inset 0 1px 0 oklch(100% 0 0 / .95), inset 0 0 0 1px oklch(64% 0.27 27), 0 0 18px oklch(78% 0.27 28 / 1), 0 0 36px oklch(68% 0.27 27 / .7), 0 0 60px oklch(58% 0.27 27 / .42), 0 0 90px oklch(52% 0.27 28 / .2);
   transform:scale(1.10);
 }
 
