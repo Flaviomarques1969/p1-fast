@@ -104,7 +104,7 @@ let fixture=null;
 function render(volta){
   const curvas=construirFrenagemRealPorCurva(fixture, volta?{volta:Number(volta)}:{});
   const grid=document.getElementById('grid'); grid.innerHTML='';
-  let comFreada=0;
+  let comReal=0, soIdeal=0;
   for(const c of curvas){
     const card=document.createElement('div');
     const tipoBadge=`<div class="tipo">${c.tipo} · ${c.rotuloTipo}</div>`;
@@ -116,15 +116,22 @@ function render(volta){
         `<div class="nodata">Curva de <b>pé embaixo</b> — sem freada por tipo. Não há trail a avaliar aqui.</div>${desc}`;
       grid.appendChild(card); continue;
     }
-    if(c.semDado){
+
+    // tipo de freada SEM volta real utilizável: mostra só o trail IDEAL do tipo (não fica em branco).
+    if(c.semDadoReal){
+      soIdeal++;
+      const { svg }=chart(null, c.ideal);
       card.className='card semdado';
-      card.innerHTML=`<div class="ch"><span class="nome">${c.curva}</span></div>${tipoBadge}`+
+      card.innerHTML=
+        `<div class="ch"><span class="nome">${c.curva}</span><span class="volta">trail do tipo</span></div>${tipoBadge}`+
+        `<div class="body"><div>${svg}</div>`+
+          `<div class="mark"><div class="lbl">ponto de freada</div><div class="num">—</div><div class="unit">&nbsp;</div><div class="s">sem volta real</div></div></div>`+
         `<div class="nodata">${c.motivo}.</div>${desc}`;
       grid.appendChild(card); continue;
     }
 
-    comFreada++;
-    const { svg, okFrac }=chart(c.live, c.ref);
+    comReal++;
+    const { svg, okFrac }=chart(c.live, c.ideal);
     const certo=(okFrac>=FORMATO_MIN)&&c.minimaFreando;
     const d=c.deltaM==null?0:c.deltaM;
     const aviso=(Math.abs(d)>TOL)?(d>0?'freou tarde':'freou cedo'):null;
@@ -133,7 +140,7 @@ function render(volta){
     const sub=d===0?'no ponto':(d>0?'freou depois':'freou antes');
     card.className='card';
     card.innerHTML=
-      `<div class="ch"><span class="nome">${c.curva}</span><span class="volta">volta ${c.voltaMostrada} · ref melhor</span></div>${tipoBadge}`+
+      `<div class="ch"><span class="nome">${c.curva}</span><span class="volta">volta ${c.voltaMostrada} · vs ideal do tipo</span></div>${tipoBadge}`+
       `<div class="body"><div>${svg}</div>`+
         `<div class="mark ${tone}"><div class="lbl">ponto de freada</div><div class="num">${txt}</div><div class="unit">metros</div><div class="s">${sub}</div></div></div>`+
       `<div class="trail"><span><span class="k">soltou</span> <span class="v">${c.soltou}</span></span><span><span class="k">freio na mínima</span> <span class="v">${c.freioMin}</span></span></div>`+
@@ -142,9 +149,11 @@ function render(volta){
     grid.appendChild(card);
   }
   document.getElementById('foot').innerHTML=
-    `<b>${comFreada} de 8 curvas</b> com freada real medida nesta volta. A VITÓRIA é SF (pé embaixo, sem freada por tipo). `+
-    `As de tipo de freada com dado ralo (1 Hz, 4–6 pontos) entram com a volta ao vivo / GPS de 25 Hz. `+
-    `Comparação ponto a ponto contra a SUA melhor volta de cada curva; o tipo de cada curva é o padrão definitivo que você aprovou (13/06). `+
+    `<b>${comReal} de 8 curvas</b> com volta real medida (linha pintada sobre o ideal). `+
+    `<b>${soIdeal}</b> com GPS ralo (1 Hz) mostram só o <b>trail ideal do tipo</b> — a volta real entra com o GPS de 25 Hz. `+
+    `A VITÓRIA é SF (pé embaixo, sem freada por tipo). `+
+    `A linha tracejada + faixa é o <b>trail clássico do tipo</b> que você aprovou (porrada + escadinha p/ T0/T1/T5; residual p/ T2/T4); `+
+    `o tipo de cada curva é o padrão definitivo de 13/06. `+
     `Quando o sensor de pressão entrar, o veredito sobe pra 3-de-3 e a fonte vira "SENSOR (pressão)" — sem mudar a tela.`;
 }
 
