@@ -313,7 +313,8 @@ private struct ReadyRoot: View {
             HomeView(
                 state: .filled(HomeData.mockFilled),
                 syncCoordinator: syncCoordinator,
-                telemetriaDevView: telemetriaBuilder
+                telemetriaDevView: telemetriaBuilder,
+                onStintTap: stintTapDecision
             )
         case .homeEmpty:
             HomeView(
