@@ -46,7 +46,8 @@ function makeEl({ tier } = {}) {
 
 function makeBindings() {
   const dots = [];
-  for (let i = 1; i <= 12; i++) dots.push(makeEl({ tier: i }));
+  const TIERS = [1,2,3,4,5,6,7,8,9,8,7,6,5,4,3,2,1]; // 17 luzes espelhadas, central = 9
+  for (const t of TIERS) dots.push(makeEl({ tier: t }));
   return {
     device:         makeEl(),
     shiftLight:     makeEl(),
