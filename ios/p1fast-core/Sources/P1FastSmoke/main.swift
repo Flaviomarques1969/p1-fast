@@ -3853,6 +3853,35 @@ step("PERSIST-14: SyncQueue.incrementAttempts incrementa contador") {
     try assertEq(attempts, 2)
 }
 
+step("PERSIST-14b: SyncDrainer.rehabilitateDeadLetters reabilita só os dead-letter") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try SyncQueue.enqueue(db, tableName: "estoque_item", rowId: "e-1", op: .insert, payload: "{}")
+        try SyncQueue.enqueue(db, tableName: "carros", rowId: "c-1", op: .insert, payload: "{}")
+    }
+    let eId = try q.read { db in
+        try Int64.fetchOne(db, sql: "SELECT id FROM sync_queue WHERE table_name='estoque_item' LIMIT 1")!
+    }
+    let cId = try q.read { db in
+        try Int64.fetchOne(db, sql: "SELECT id FROM sync_queue WHERE table_name='carros' LIMIT 1")!
+    }
+    // estoque vira dead-letter (5 tentativas); carro segue pendente (2 tentativas)
+    try q.write { db in
+        for _ in 0..<5 { try SyncQueue.incrementAttempts(db, id: eId) }
+        for _ in 0..<2 { try SyncQueue.incrementAttempts(db, id: cId) }
+    }
+    try assertEq(try SyncDrainer.deadLetterCount(q), 1)
+
+    let reabilitados = try SyncDrainer.rehabilitateDeadLetters(q)
+    try assertEq(reabilitados, 1)
+    try assertEq(try SyncDrainer.deadLetterCount(q), 0)
+    // estoque voltou a 0 (vai ser re-tentado); o pendente normal ficou intacto
+    let eAtt = try q.read { db in try Int.fetchOne(db, sql: "SELECT attempts FROM sync_queue WHERE id = ?", arguments: [eId])! }
+    let cAtt = try q.read { db in try Int.fetchOne(db, sql: "SELECT attempts FROM sync_queue WHERE id = ?", arguments: [cId])! }
+    try assertEq(eAtt, 0)
+    try assertEq(cAtt, 2)
+}
+
 step("PERSIST-15: foreign keys habilitadas — insert com time_id inválido falha") {
     let q = try DB.makeMemoryQueue()
     var pegou = false
