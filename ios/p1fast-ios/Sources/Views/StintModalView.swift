@@ -219,6 +219,7 @@ struct StintModalView: View {
 
             sectionConfiguracao
             sectionObjetivo
+            sectionProposito
             sectionVoltas
             sectionParadas
             sectionLicao
