@@ -32,6 +32,60 @@
     as sub-abas da Garagem nem o roteamento da tab-bar.
 12. **Status inicial:** iniciado — fase de mapeamento.
 
+## TASK_DONE — 2026-06-14 (noite) — Botão APAGAR (com resgate) p/ cada elemento da Garagem
+
+```
+TASK_DONE:
+- Pedido original conferido: sim (5 entidades: carros, pilotos, passageiros, combustível, lições)
+- Ambiente trabalhado: desenvolvimento (app iOS + simulador iPhone 17 Pro)
+- Produção foi alterada: não
+- Se produção foi alterada, autorização explícita registrada: n/a
+- Arquivos reais inspecionados: sim (mapa de 6 áreas por workflow + leitura direta antes de cada edição)
+- Alterações feitas: sim
+- Testes/validação executados: sim (BUILD SUCCEEDED 2x; schema-parity 15/0; migration 3/0; migration-port 8/0; 2 screenshots reais)
+- Resultado: concluído em DEV (as 5 entidades)
+- Pendências reais: empacotar pro iPhone só com "MIGRAR PARA PRODUÇÃO" (não precisa migração na nuvem — feature é local-only)
+```
+
+ACHADO central do mapa: as 5 tabelas SINCRONIZAM com a nuvem; o "apagar" que já existia (pilotos/
+passageiros/combustível) era HARD DELETE (apagava do aparelho E da nuvem, "não dá pra desfazer"). Carros e
+lições não tinham apagar. Solução: "apagar reversível" 100% LOCAL (não toca schema sincronizado nem nuvem).
+
+### Arquivos alterados/criados (app iOS, DEV — produção/nuvem intocada)
+NOVOS:
+- `ios/p1fast-core/.../Models.swift` — struct `ItemArquivado` + helpers (arquivar/restaurar/idsArquivados/listar/notInClause).
+- `ios/p1fast-core/.../Migrations.swift` — migration v32 `item_arquivado` (LOCAL-ONLY, igual evento_pendencias_extra).
+- `ios/p1fast-ios/.../Persistence/ArquivoRepository.swift` — NOVO: lista/contador dos apagados (sem SyncQueue).
+- `ios/p1fast-ios/.../Views/ApagadosView.swift` — NOVO: tela de resgate genérica + `ApagadosAtalho` + enum `EntidadeArquivavel`.
+ALTERADOS:
+- 5 repositórios (Carro/Piloto/Passageiro/Combustivel/Licao): reload esconde arquivados (`notInClause`) + `arquivar`/`restaurar`. `delete()` hard PRESERVADO.
+- PessoasView: ação dos botões Apagar (pilotos/passageiros/combustível) vira arquivar + atalho "Apagados (N)" + tela de resgate + texto do aviso.
+- CarroHubView: botão "Apagar carro" (reusa DeleteCadastroButton) + confirmação.
+- GaragemView: atalho "Apagados (N)" na aba Carros + tela de resgate.
+- LicaoListaView: "Apagar lição" no detalhe (com confirmação).
+- PilotoCadastroView/PassageiroCadastroView/CombustivelCadastroView: botão Apagar passa de delete→arquivar + texto.
+- ContentView + HubMockLauncher: criam/injetam/bootstrapam o ArquivoRepository.
+- `tests/node-smoke-schema-parity.mjs`: item_arquivado em GRDB_LOCAL_ONLY (4→5, 37→38 tabelas).
+- `p1fast-ios.xcodeproj/project.pbxproj`: registra os 2 arquivos novos.
+- HubMockLauncher: arg de screenshot `--p1-apagados` (instrumento de DEV).
+
+### O que foi preservado
+`delete()` hard de cada repo (caminho antigo intacto); dados nas tabelas sincronizadas; catálogo de lições;
+nuvem/produção 100% intocada (item_arquivado nunca entra no SyncQueue/pull).
+
+### Validação executada
+- `xcodebuild ... -scheme p1fast-ios -destination 'iPhone 17 Pro' build` → BUILD SUCCEEDED (2x).
+- `node tests/node-smoke-schema-parity.mjs` 15/0 · `node tests/node-smoke-migration.mjs` 3/0 · `node tests/node-smoke-migration-port.mjs` 8/0.
+- Screenshots reais (simulador): `relatorios/apagados-2026-06-14/01-apagados-carros.png` (2 carros arquivados → some da Garagem + Resgatar) e `02-hub-apagar-carro.png` (botão "Apagar carro").
+
+### Checagem contra o pedido (item por item)
+1. Botão apagar p/ carros → FEITO (painel do carro). 2. pilotos → FEITO (lista + edição). 3. passageiros → FEITO.
+4. combustível → FEITO. 5. lições → FEITO (detalhe). "Deixe em memória para resgatar" → tela "Apagados" por
+entidade + Resgatar (validado: arquivar esconde, restaurar volta). Reversível e local (nuvem intocada).
+
+### Pendências ou riscos
+Empacotar pro iPhone real só com "MIGRAR PARA PRODUÇÃO". Como é local-only, NÃO precisa de migração na nuvem.
+
 ---
 
 ## TASK_INIT — 2026-06-14 (noite) — UNIR estoques (um só, com backup na nuvem) + atualizar cópia oficial
