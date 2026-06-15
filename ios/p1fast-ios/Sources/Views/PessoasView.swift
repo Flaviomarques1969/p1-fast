@@ -123,8 +123,10 @@ struct PessoasView: View {
                 switch subTab {
                 case .pilotos:
                     pilotosRows
+                    apagadosRow(.pilotos)
                 case .passageiros:
                     passageirosRows
+                    apagadosRow(.passageiros)
                 case .combustiveis:
                     CombustivelListaView(
                         onAdd: { sheet = .novoCombustivel },
@@ -132,14 +134,17 @@ struct PessoasView: View {
                         onDelete: { c in combustivelToDelete = c }
                     )
                     .environmentObject(combustivelRepo)
+                    apagadosRow(.combustiveis)
                 case .licoes:
                     Section {
                         LicaoListaView()
                             .environmentObject(licaoRepo)
+                            .environmentObject(arquivoRepo)
                             .listRowInsets(EdgeInsets())
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.surface)
                     }
+                    apagadosRow(.licoes)
                 }
                 bottomSpacerRow
             }
