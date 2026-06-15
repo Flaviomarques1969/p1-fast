@@ -32,8 +32,12 @@ em direção ao centro:
 - cockpit-state 23/0 · cockpit-renderer 17/0 · live-data-bridge 26/0.
 - Contagem de cor conferida: 17 luzes = 8 verde + 6 amarelo + 3 vermelho (central tier 9 = 1).
 - node --check nos JS tocados: OK.
-- Conferência adversarial (workflow 2 lentes): em curso.
-- Telas abertas no navegador (porta 8091): index-live (anima) + index-t3000 (oficial).
+- Conferência adversarial (workflow 2 lentes): paridade/regressão APROVADO (canônico byte-idêntico, nada quebrou,
+  alvo 6.050 intacto); fidelidade aprovado com 3 ressalvas BAIXAS — TODAS corrigidas: (1) animação de auto-demo
+  estendida de nível 6 → 8 (cockpit.js SHIFT_SEQUENCE), pra os tiers 7-8 acenderem antes do flash; (2) comentário
+  de cabeçalho do cockpit.css atualizado (12 LEDs/6 tiers → 17/9); (3) comentário overrev. Canônico re-sincronizado
+  (<script> nova fronteira </script>=1297) e re-extraído. Smoke re-rodado: EXIT 0, CKW 16/0.
+- Telas abertas no navegador (porta 8091): index.html (auto-demo cicla 0→8→troca) + index-live + index-t3000.
 
 ## Preservação
 Backup completo em `.claude-exec/backup-luz-17-shift-light-2026-06-14/` (CSS, JS, 5 HTMLs, 3 testes — estado de 12 luzes).
