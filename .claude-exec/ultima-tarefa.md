@@ -1,5 +1,27 @@
 # Última tarefa
 
+## TASK_INIT — 2026-06-14 (noite) — UNIR estoques (um só, com backup na nuvem) + atualizar cópia oficial
+
+1. **Pedido de Flávio:** "una e atualize a cópia." Card respondido: **"Um só, com backup na nuvem"**.
+2. **Objetivo:** Tornar o estoque unificado (`estoque_item`, geral + por carro) uma tabela SINCRONIZADA
+   (backup na nuvem), copiando o estoque do carro atual (`pecas`) pra dentro dela SEM tocar os dados originais;
+   depois atualizar a cópia oficial na nuvem (GitHub) só com esta função, com cuidado.
+3. **Critérios:** estoque_item sincroniza (enviar+puxar+backfill); pecas copiado pra estoque_item (idempotente, additivo);
+   cloud migration 0046 PREPARADA (não aplicada); build + testes verdes; nuvem só com "MIGRAR PARA PRODUÇÃO".
+4. **Leitura confirmada:** CLAUDE.md · padroes.md · FLAVIO_* (4) · P1 Fast/CLAUDE.md + memórias — sim.
+5. **Plano:** (a) estoque_item ganha synced_at (v31) + struct; (b) EstoqueRepository enfileira no SyncQueue +
+   copia pecas→estoque_item; (c) SyncBackfill + pullTables incluem estoque_item; (d) cloud 0046 (CREATE TABLE
+   public.estoque_item + RLS) PREPARADA; (e) UI: seletor de escopo (Geral + carros); (f) build+testes; (g) cópia oficial.
+6. **Áreas:** EstoqueRepository/Models/Migrations; SyncBackfill; SyncCoordinator.pullTables; schema-parity;
+   supabase/migrations/0046; EstoqueViews/CarroHubView.
+7. **Ambiente:** desenvolvimento (nuvem só com ordem). 8. Produção protegida: sim.
+9. **Autorização produção (cloud DB):** card aprovou a ABORDAGEM; falta a frase literal pra aplicar a nuvem.
+10. **Evidência:** "Um só, com backup na nuvem" (card 2026-06-14). 11. **Riscos:** mexer no que sincroniza =
+    produção; por isso copia (não move) pecas; cloud só prepara. 12. **Status:** iniciado.
+
+---
+
+
 > Tarefa ANTERIOR (Vista Piloto / Command Box) preservada em
 > `ultima-tarefa-backup-vista-piloto-2026-06-14.md`.
 > A tarefa de menu (Garagem/Pendências) abaixo está TASK_DONE; preservada na íntegra.
