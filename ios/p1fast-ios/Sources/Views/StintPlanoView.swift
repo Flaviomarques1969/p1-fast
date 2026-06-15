@@ -365,40 +365,10 @@ struct StintPlanoView: View {
     }
 
     private func chipsWrap<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-        // Quebra os chips em linhas conforme a largura (FlowLayout simples).
-        FlowChips { content() }
-    }
-}
-
-/// Layout que quebra os filhos em linhas (substitui o flex-wrap da web).
-private struct FlowChips: Layout {
-    var spacing: CGFloat = 8
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let maxW = proposal.width ?? .infinity
-        var x: CGFloat = 0, y: CGFloat = 0, lineH: CGFloat = 0
-        for v in subviews {
-            let s = v.sizeThatFits(.unspecified)
-            if x + s.width > maxW, x > 0 {
-                x = 0; y += lineH + spacing; lineH = 0
-            }
-            x += s.width + spacing
-            lineH = max(lineH, s.height)
-        }
-        return CGSize(width: maxW == .infinity ? x : maxW, height: y + lineH)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let maxW = bounds.width
-        var x: CGFloat = bounds.minX, y: CGFloat = bounds.minY, lineH: CGFloat = 0
-        for v in subviews {
-            let s = v.sizeThatFits(.unspecified)
-            if x - bounds.minX + s.width > maxW, x > bounds.minX {
-                x = bounds.minX; y += lineH + spacing; lineH = 0
-            }
-            v.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(s))
-            x += s.width + spacing
-            lineH = max(lineH, s.height)
+        // Chips em rolagem horizontal (mesmo padrão das sub-abas da Garagem).
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) { content() }
+                .padding(.vertical, 2)
         }
     }
 }
