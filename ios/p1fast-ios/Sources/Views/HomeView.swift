@@ -255,6 +255,8 @@ struct HomeView: View {
                 .navigationBarBackButtonHidden(true)
         case .stintPlanejamento:
             StintPlanejamentoView()
+        case .stintPlano(let eventoId):
+            StintPlanoView(eventoId: eventoId)
         }
     }
 
