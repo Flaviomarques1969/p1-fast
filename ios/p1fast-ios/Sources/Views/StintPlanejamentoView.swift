@@ -1,42 +1,59 @@
 // ═══════════════════════════════════════════════════════════
-// StintPlanejamentoView — Planejamento do Stint no celular
+// StintPlanejamentoView — escolha do Stint quando NÃO é dia de evento
 // ═══════════════════════════════════════════════════════════
-// Decisão Flávio 15/06/2026: o PLANEJAMENTO DO STINT é no CELULAR. O
-// painel do computador (web/cockpit) é só o RESULTADO do carro rodando
+// Decisão Flávio 15/06/2026: o botão "Stint" no topo da Home (iniciar o
+// Stint) decide o destino:
+//   - se HOJE é dia de evento  → abre DIRETO no evento (EventoDetalheView)
+//     — isso é resolvido em ContentView.stintTapDecision(), NÃO aqui.
+//   - se NÃO é dia de evento   → abre ESTA tela, que pergunta:
+//        · "Vincular a um evento"  (liga o Stint a um evento já criado)
+//        · "Stint livre"           (um Stint sem evento, em qualquer dia)
+//
+// O painel do computador (web/cockpit) é só o RESULTADO do carro rodando
 // conforme o que foi planejado aqui.
 //
-// FASE 0 (esta entrega) = A PORTA. O botão "Stint" no canto superior
-// direito da Home (que substituiu o botão temporário "Conta"; Conta/Sair
-// migrou pra dentro da Garagem) abre esta tela. Aberta empilhada (push),
-// então o menu inferior fixo e o botão "voltar" do sistema seguem valendo.
-//
-// PRÓXIMAS FASES (ainda NÃO nesta tela):
-//   F1 — abrir o planejamento de verdade reaproveitando a StintModalView
-//        (que já existe), agora também no modo SOLTO (qualquer dia) e
-//        auto-vinculada quando for dia de evento (eventoAtivoHoje()).
-//   F2 — PROPÓSITO (livre / testar peça do carro / treinar habilidade) +
-//        catálogo de treinos + brief obrigatório, portados da web.
-//   F3 — gravar o plano que o painel da pista lê (plano_stint, mig 0042).
+// ESTADO ATUAL (Fase 0/1 em curso):
+//   - "Vincular a um evento" já leva pra lista de Eventos (escolhe lá).
+//   - "Stint livre" ainda mostra aviso de "próxima etapa" — o planejamento
+//     livre de verdade (propósito livre/testar/treinar + StintModalView no
+//     modo solto) entra na Fase 1/2.
 
 import SwiftUI
 import P1FastCore
 
 struct StintPlanejamentoView: View {
+    @EnvironmentObject private var router: NavRouter
+    @State private var mostrarLivre = false
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.lg) {
                 Eyebrow(text: "Stint")
-                Text("Planejamento do Stint")
+                Text("Iniciar Stint")
                     .font(.system(size: 26, weight: .bold))
                     .foregroundStyle(Color.text)
-                Text("Aqui você monta o Stint antes de entrar na pista: livre, testar uma peça do carro, ou treinar uma habilidade — vinculado a um evento quando for dia de evento, ou solto, em qualquer dia.")
+                Text("Hoje não é dia de evento. Como você quer este Stint?")
                     .font(.system(size: 15))
                     .foregroundStyle(Color.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("Em construção — esta é a porta. As opções de planejamento entram no próximo passo.")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.textFaint)
-                    .padding(.top, Spacing.sm)
+
+                EscolhaStint(
+                    titulo: "Vincular a um evento",
+                    descricao: "Liga este Stint a um evento já criado.",
+                    action: { router.path.append(HomeNavTarget.eventos) }
+                )
+                EscolhaStint(
+                    titulo: "Stint livre",
+                    descricao: "Um Stint sem evento, em qualquer dia.",
+                    action: { mostrarLivre = true }
+                )
+
+                if mostrarLivre {
+                    Text("Em construção — o planejamento do Stint livre entra na próxima etapa.")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color.textFaint)
+                        .padding(.top, Spacing.xs)
+                }
             }
             .padding(.horizontal, Spacing.lg)
             .padding(.top, Spacing.md)
@@ -48,8 +65,40 @@ struct StintPlanejamentoView: View {
     }
 }
 
+/// Cartão tocável de escolha (vincular × livre). Visual neutro com borda.
+private struct EscolhaStint: View {
+    let titulo: String
+    let descricao: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(titulo)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Color.text)
+                Text(descricao)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.textFaint)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(Spacing.md)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.surfaceHover)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 #Preview {
     NavigationStack {
         StintPlanejamentoView()
+            .environmentObject(NavRouter())
     }
 }
