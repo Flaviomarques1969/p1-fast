@@ -87,25 +87,31 @@ t('CKR-02 setTrechoStatus(recorde-stint) → device.dataset.trechoStatus', () =>
 
 // ── shift LEDs ───────────────────────────────────────────
 
-t('CKR-03 applyShift(LIT, 6) → shiftLight.dataset.state="lit", todos 12 dots is-on', () => {
+t('CKR-03 applyShift(LIT, 8) → state="lit", 16 laterais on (tier 1-8), central (tier 9) off', () => {
   const cs = new CockpitState();
   const b = makeBindings();
   new CockpitRenderer({ cockpitState: cs, bindings: b });
-  cs.applyShift(ShiftMode.LIT, 6);
+  cs.applyShift(ShiftMode.LIT, 8);
   if (b.shiftLight.dataset.state !== 'lit') throw new Error('state');
-  for (let i = 0; i < 12; i++) {
-    if (!b.shiftDots[i]._classes.has('is-on')) throw new Error(`dot tier ${i+1} deveria estar on`);
+  let on = 0;
+  for (const d of b.shiftDots) {
+    const tier = Number(d.dataset.tier);
+    const lit = d._classes.has('is-on');
+    if (tier <= 8 && !lit) throw new Error(`tier ${tier} deveria estar on`);
+    if (tier === 9 && lit) throw new Error('central (tier 9) NÃO acende no LIT — só no FIRE');
+    if (lit) on++;
   }
+  if (on !== 16) throw new Error(`esperado 16 laterais, recebeu ${on}`);
 });
 
-t('CKR-04 applyShift(LIT, 3) → 6 dots acesos', () => {
+t('CKR-04 applyShift(LIT, 4) → 8 dots acesos (tier ≤ 4, 4 verdes de cada lado)', () => {
   const cs = new CockpitState();
   const b = makeBindings();
   new CockpitRenderer({ cockpitState: cs, bindings: b });
-  cs.applyShift(ShiftMode.LIT, 3); // 3/6 → 6 dots
+  cs.applyShift(ShiftMode.LIT, 4); // tier ≤ 4 → 8 dots
   let on = 0;
   for (const d of b.shiftDots) if (d._classes.has('is-on')) on++;
-  if (on !== 6) throw new Error(`esperado 6 dots, recebeu ${on}`);
+  if (on !== 8) throw new Error(`esperado 8 dots, recebeu ${on}`);
 });
 
 t('CKR-05 applyShift(FIRE) → device.dataset.shiftFire=active, dots desligados', () => {
