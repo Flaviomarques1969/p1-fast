@@ -124,3 +124,31 @@ sem nova ordem.
 - Pendências reais: (1) FECHADA por decisão permanente do Flávio 15/06 — o Command Box NUNCA vai pras 17 luzes
   (é tela mais simples, não tem a necessidade do painel do piloto); não propor de novo.
   (2) proteger as 17 luzes no teste automático (tests/ui/shift-light-cockpit.spec.js ainda mira modelo de 12) — proposto, não autorizado.
+
+---
+## TASK_INIT — 2026-06-15 — Fechar o estoque na nuvem (Flávio escolheu este próximo passo)
+1. **Pedido:** "fechar o estoque na nuvem" (opção escolhida no card de próximo passo).
+2. **Objetivo:** confirmar o estado real do estoque na nuvem e deixar o backup funcionando.
+3. **Critério:** estoque sobe pra nuvem e eu confirmo as linhas; item 1 do plano de migração fechado.
+4. **Leitura:** CLAUDE.md, padroes.md (vazio), FLAVIO_* (4), memórias P1 Fast — sim.
+5. **Ambiente:** produção (nuvem Supabase) — minha parte só LEITURA + edição de código local (dev).
+6. **Autorização produção:** item 1 autorizado antes; publicar função NÃO autorizada ainda (espera frase literal).
+
+### ACHADO (com prova, 15/06)
+- A nuvem tem **0 linhas** em `estoque_item` (dump só-leitura `supabase db dump --linked --data-only`).
+- Causa: função `sync` publicada = **versão 9 de 03/06**; sua lista fixa `ALLOWED_TABLES` (sync/index.ts:124) NÃO inclui `estoque_item` e nunca incluiu (git `-S` vazio). O app (build 14/06) JÁ envia `estoque_item` (EstoqueRepository + SyncBackfill + SyncCoordinator), mas é rejeitado. A `pull` tinha o mesmo furo.
+- Logo: "falta só abrir o app" estava ERRADO — abrir o app não sobe nada.
+
+### CONSERTO (desenvolvimento, 15/06)
+- Adicionado `estoque_item` em `supabase/functions/sync/index.ts` (ALLOWED_TABLES) e `supabase/functions/pull/index.ts` (TEAM_TABLES). Aditivo, reversível. Sem teste automático travando a lista. Deno não instalado → typecheck local não rodou (limitação declarada).
+
+### TASK_DONE
+- Pedido original conferido: sim
+- Ambiente trabalhado: desenvolvimento (código das funções) + leitura da nuvem
+- Produção foi alterada: NÃO (nenhuma publicação feita)
+- Se produção foi alterada, autorização registrada: n/a
+- Arquivos reais inspecionados: sim (sync/index.ts, pull/index.ts, ios EstoqueRepository/SyncBackfill/SyncCoordinator, migration 0046, dump da nuvem)
+- Alterações feitas: 2 linhas (sync + pull) em dev; plano de migração e este registro atualizados
+- Testes/validação executados: dump só-leitura da nuvem (0 linhas estoque) ✓; typecheck Deno NÃO (Deno ausente)
+- Resultado: PARCIAL / BLOQUEADO — espera `MIGRAR PARA PRODUÇÃO: funcoes sync e pull com estoque` pra publicar; depois você abre o app ~1 min e eu confirmo a subida
+- Pendências reais: publicar `sync`+`pull` na nuvem (autorização); confirmar linhas pós-publicação
