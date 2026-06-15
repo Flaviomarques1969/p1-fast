@@ -261,3 +261,16 @@ Escolha no card: **"Completo, fecha o ciclo"** = construir as 4 fases, incluindo
 - (Posterior) painel reagir ao foco/propósito/ghost — frente separada (TreinoStint).
 
 Próximo passo: começar Fase 0 mediante OK do Flávio (troca de botão/navegação em uso).
+
+### TASK_DONE — 2026-06-15 — FASE 0 (a porta) ENTREGUE em desenvolvimento
+- Pedido original conferido: sim (Flávio autorizou "começar pela Fase 0").
+- Ambiente trabalhado: desenvolvimento (app iOS). Produção/nuvem/iPhone do Flávio NÃO tocados.
+- Produção foi alterada: não.
+- Arquivos reais inspecionados/alterados:
+  - HomeView.swift: botão "Conta" (canto sup. dir.) → botão "Stint" (cor de destaque) que abre HomeNavTarget.stintPlanejamento; removidos @State showContaSheet + a folha de Conta da Home; destino .garagem/.garagemNovo agora recebem syncCoordinator; novo case .stintPlanejamento no destinationView.
+  - GaragemView.swift: +param/prop syncCoordinator (opcional); botão "Conta" na barra do topo (só quando coordenador presente) abrindo SincronizacaoView como folha; GaragemSheet +case .conta.
+  - StintPlanejamentoView.swift (NOVO): tela-porta do Planejamento do Stint (placeholder honesto; Fases 1-3 enchem). Registrada no projeto (4 entradas no project.pbxproj, IDs 5717A0117E57000000000B01/B02).
+- O que foi PRESERVADO: SincronizacaoView intacta (só mudou a porta de entrada, da Home pra Garagem); backup dos 3 arquivos originais em `.claude-exec/backup-fase0-stint-porta-2026-06-15/`.
+- Testes/validação executados: `xcodebuild -scheme p1fast-ios -destination 'generic/platform=iOS Simulator' build` = **BUILD SUCCEEDED**, 0 erro. App instalado e ABERTO no simulador iPhone 17 Pro (booted) sem crash (chega na tela de login). Validação VISUAL da Home/Garagem depende do Flávio tocar "Entrar como Flávio (dev)" no simulador (não há login automático por parâmetro).
+- Resultado: CONCLUÍDO em desenvolvimento (a porta). NADA no iPhone do Flávio ainda (só num próximo empacotar+assinar).
+- Pendências reais: (1) validação visual do Flávio no simulador aberto; (2) Fase 1 (abrir StintModalView solto/vinculado) é o próximo passo; (3) Fase 3 (gravar plano_stint na nuvem) continua com gate "MIGRAR PARA PRODUÇÃO".
