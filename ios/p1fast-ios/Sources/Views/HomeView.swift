@@ -171,20 +171,6 @@ struct HomeView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(Color.surface)
-        // Ações flutuantes no canto inferior direito. O botão STINT (iniciar
-        // o Stint) é o HERÓI — grande e azul cheio (decisão Flávio 15/06: tem
-        // que ser do tamanho do antigo "Novo evento", em azul). O "Novo
-        // evento" cede destaque e fica menor, logo acima.
-        .overlay(alignment: .bottomTrailing) {
-            VStack(alignment: .trailing, spacing: Spacing.sm) {
-                if case .filled = state {
-                    FAB("Novo evento", size: .small, action: { router.path.append(HomeNavTarget.eventosNovo) })
-                }
-                FAB("Stint", size: .big, action: { router.path.append(HomeNavTarget.stintPlanejamento) })
-            }
-            .padding(.trailing, Spacing.md)
-            .padding(.bottom, Spacing.md)
-        }
     }
 
     @ViewBuilder
