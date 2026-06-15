@@ -144,16 +144,38 @@ struct GaragemView: View {
         }
     }
 
-    /// Barra superior fixa da Garagem — eyebrow + atalho "Trechos da pista".
+    /// Barra superior fixa da Garagem — eyebrow + atalho "Trechos da pista"
+    /// + acesso a "Conta" (e-mail + Sair), que migrou da Home pra cá (Flávio
+    /// 15/06).
     private var garagemHeaderBar: some View {
-        HStack(alignment: .firstTextBaseline) {
+        HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
             Eyebrow(text: "Garagem")
             Spacer(minLength: 0)
             trechosLink
+            if syncCoordinator != nil {
+                contaLink
+            }
         }
         .padding(.horizontal, Spacing.lg)
         .padding(.top, Spacing.md)
         .padding(.bottom, Spacing.sm)
+    }
+
+    /// Acesso a "Conta" (e-mail + Sair) — saiu da Home (que agora tem o botão
+    /// Stint) e passou a viver na Garagem (decisão Flávio 15/06). Abre a tela
+    /// de Conta como folha. Só aparece no app real (quando o coordenador de
+    /// envio está presente); fica oculto nos launchers de screenshot.
+    private var contaLink: some View {
+        Button(action: { sheet = .conta }) {
+            Text("Conta")
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(0.9)
+                .foregroundStyle(Color.textFaint)
+                .padding(.horizontal, Spacing.sm)
+                .padding(.vertical, 6)
+                .overlay(Capsule().stroke(Color.border, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
     }
 
     /// Fileira de sub-abas: Carros · Pilotos · Passageiros · Combustível · Lições.
