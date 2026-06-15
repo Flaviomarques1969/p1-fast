@@ -173,33 +173,26 @@ struct HomeView: View {
                     .padding(.bottom, Spacing.md)
             }
         }
-        // Entrada discreta de Conta (e-mail + Sair). Substitui o antigo
-        // indicador de "Sincronização" no topo (decisão Flávio 15/06: o envio
-        // é automático, não precisa de status na primeira página). A tela de
-        // Conta segue guardando o estado de envio como detalhe técnico.
+        // Botão STINT — entrada do Planejamento do Stint no celular (decisão
+        // Flávio 15/06: é aqui que se monta o Stint). Substituiu o botão
+        // temporário "Conta": Conta/Sair agora mora dentro da Garagem. Fica
+        // no canto superior direito da Home, em cor de destaque por ser a
+        // ação principal da tela.
         .overlay(alignment: .topTrailing) {
-            if syncCoordinator != nil {
-                Button(action: { showContaSheet = true }) {
-                    Text("Conta")
-                        .font(.system(size: 11, weight: .semibold))
-                        .tracking(0.9)
-                        .foregroundStyle(Color.textFaint)
-                        .padding(.horizontal, Spacing.sm)
-                        .padding(.vertical, 6)
-                        .overlay(
-                            Capsule().stroke(Color.border, lineWidth: 1)
-                        )
-                }
-                .buttonStyle(.plain)
-                .padding(.trailing, Spacing.lg)
-                .padding(.top, Spacing.md)
+            Button(action: { router.path.append(HomeNavTarget.stintPlanejamento) }) {
+                Text("Stint")
+                    .font(.system(size: 11, weight: .semibold))
+                    .tracking(0.9)
+                    .foregroundStyle(Color.accent)
+                    .padding(.horizontal, Spacing.sm)
+                    .padding(.vertical, 6)
+                    .overlay(
+                        Capsule().stroke(Color.accent, lineWidth: 1)
+                    )
             }
-        }
-        .sheet(isPresented: $showContaSheet) {
-            if let coord = syncCoordinator {
-                SincronizacaoView()
-                    .environmentObject(coord)
-            }
+            .buttonStyle(.plain)
+            .padding(.trailing, Spacing.lg)
+            .padding(.top, Spacing.md)
         }
     }
 
