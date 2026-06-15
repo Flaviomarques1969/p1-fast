@@ -24,6 +24,7 @@ export const TEAM_TABLES = new Set([
   "carros", "configuracoes", "pilotos", "passageiros", "pneus", "combustiveis",
   "eventos", "sessoes", "voltas", "segment_executions", "mensagens",
   "retas_especiais", "trofeus_ganhos",
+  "estoque_item", // estoque unificado — restaurável em outro aparelho (0046)
 ]);
 
 export const GLOBAL_TABLES = new Set([
