@@ -4,6 +4,7 @@
 
 import fs from 'node:fs';
 import { construirFrenagemRealPorCurva } from '../web/command-box/frenagem-curvas-reais.js';
+import { TIPO_POR_CURVA } from '../web/command-box/tipos-curva-brasilia.js';
 
 const fixture = JSON.parse(
   fs.readFileSync(new URL('../web/command-box/fixtures/passagens-bubi-brasilia.v1.json', import.meta.url), 'utf8')
