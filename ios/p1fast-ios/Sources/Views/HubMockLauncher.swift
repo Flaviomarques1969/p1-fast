@@ -113,6 +113,7 @@ struct HubMockLauncher: View {
                         .environmentObject(licaoRepo)
                         .environmentObject(pendenciaRepo)
                         .environmentObject(estoqueRepo)
+                        .environmentObject(arquivoRepo)
                         .environmentObject(router)
                 }
             } else {
