@@ -249,3 +249,15 @@ CONTRATO que o painel LÊ (fechar o ciclo):
 - Hoje QUEM GRAVA = web configuracao-stint.js:183-205. QUEM LÊ = painel treino-stint.js:56-131 (fallback nuvem, válido só no dia, fuso Brasília). iOS NÃO grava/lê plano_stint ainda — é a peça de "fechar o ciclo" (única que mexe na nuvem).
 
 Status atualizado: planejamento montado; AGUARDANDO escopo do v1 no card. Sem código alterado.
+
+### DECISÃO DO FLÁVIO (15/06) — escopo do v1
+Escolha no card: **"Completo, fecha o ciclo"** = construir as 4 fases, incluindo Fase 3 (celular grava plano_stint no envelope que o painel lê). Fase 3 mexe na NUVEM (produção) → exige frase literal "MIGRAR PARA PRODUÇÃO" na hora; não publicar antes.
+
+### PLANO DE EXECUÇÃO FECHADO (ordem; tudo em desenvolvimento até empacotar)
+- **Fase 0 — Porta (dev, navegação):** HomeView.swift botão "Conta" → "Stint"; Conta/Sair migra pra Garagem (nova sub-aba/destino). Mexe em navegação EM USO → OK próprio do Flávio antes. Backup dos 3 arquivos (HomeView/GaragemView/SincronizacaoView).
+- **Fase 1 — Abrir planejamento (dev):** botão Stint abre StintModalView (já existe). Adicionar caminho "solto": overload create(eventoId:String?=nil) em StintRepository (não quebrar create vinculado); StintModalView(eventoId:String?) opcional; auto-vínculo via eventoAtivoHoje().
+- **Fase 2 — Propósito + treino (dev):** introduzir propósito livre/testar/treinar; portar catálogo (catalogo-treinos.js) + brief obrigatório que trava o Aprovar quando propósito=treinar; reusar 6 seções do modal. NÃO copiar literal — portar.
+- **Fase 3 — Fechar o ciclo (PRODUÇÃO, gate):** struct PlanoStint Swift = contrato mig 0042; celular grava plano_stint no envelope (mesmo formato da web); painel passa a ler do que o celular planejou. PARAR e pedir "MIGRAR PARA PRODUÇÃO" antes de publicar/sincronizar com a nuvem.
+- (Posterior) painel reagir ao foco/propósito/ghost — frente separada (TreinoStint).
+
+Próximo passo: começar Fase 0 mediante OK do Flávio (troca de botão/navegação em uso).
