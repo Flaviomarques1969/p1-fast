@@ -116,6 +116,23 @@ final class CombustivelRepository: ObservableObject {
         try await reload()
     }
 
+    /// Apaga (esconde) o combustível — vai pra Apagados, dá pra resgatar.
+    /// NÃO destrói o registro nem manda apagar da nuvem.
+    func arquivar(combustivelId: String, rotulo: String) async throws {
+        try await queue.write { db in
+            try ItemArquivado.arquivar(db, entidade: "combustiveis", itemId: combustivelId, rotulo: rotulo)
+        }
+        try await reload()
+    }
+
+    /// Resgata um combustível escondido.
+    func restaurar(combustivelId: String) async throws {
+        try await queue.write { db in
+            try ItemArquivado.restaurar(db, entidade: "combustiveis", itemId: combustivelId)
+        }
+        try await reload()
+    }
+
     func find(id: String) -> Combustivel? {
         combustiveis.first(where: { $0.id == id })
     }
