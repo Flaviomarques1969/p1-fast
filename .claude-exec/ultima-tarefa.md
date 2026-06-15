@@ -181,8 +181,14 @@ Reportei "nuvem com 0 linhas" 2x quando os dados JÁ tinham subido. Causa: meu c
 - **Diretrizes do Flávio pro redesenho:** (1) marcador numérico estilo cockpit do piloto — contagem regressiva (faltam X m) e, ao frear, metros do ponto: 0 / +depois / −antes; (2) linha pintada por trecho — verde onde dentro do alvo, vermelha onde fora, ponto a ponto; (3) a freada ALTERNA certo/errado em etapas (entrou certo, freou demais/passou, voltou) — "mas só duas vezes" (evitar tremedeira; pintar só troca real).
 - **Espelho do motor real:** banda ±8% (`bandaPct`), ponto de freada tolerância 3 m = aviso FREOU CEDO/TARDE (`tolFreadaM`, `pontoFreadaReprova:false`, decisão 14/06), critério CERTO = 2 de 2 (seguiu o formato ≥80% + chegou na mínima freando). Marcador e traço verde/vermelho copiados do cockpit do piloto (`web/cockpit/trail-cockpit-tela.js`: `renderTraco`, `renderContagem`).
 - **Redesenho aberto (preview, NÃO oficial):** `relatorios/redesenho-frenagem-command-box-2026-06-15.html` — 6 cenários, número/aviso/veredito todos CALCULADOS da curva. Inclui "acertou e depois errou" e "certo→errado→certo" (alternância).
-- **Pendente:** validação visual do Flávio. Só depois: portar pro mockup real (com backup; sem tocar no arranjo/ATUAL.json), validar pela 8078, rodar smokes. Ligar no dado real = etapa seguinte.
-- Status: em revisão visual.
+- **Redesenho APROVADO pelo Flávio (card):** "levar pro painel real" + aplicar a folga (histerese) da linha.
+- **PORTADO pro painel real** `_design-reference/mockup-command-box-vista-piloto.html` (15/06):
+  - Backup antes: `_design-reference/command-box-versoes/vista-piloto-PRE-frenagem-redesign-2026-06-15.html`.
+  - 5 edições: (1) máquina nova FRX_* (dados por curva + banda ±8% + histerese 2-pontos + contagem regressiva + gráfico segmentado, substituindo `frenagemChartSvg`); (2) `getFrenagemVerdictForCurve` → cenário por id; (3) `buildFrenagemPanel` novo (gráfico+marcador+trail+veredito calculados); (4) `updateFrenagemFromLap` (contagem por quadro + revelação; removida a animação de linha única `_applyLiveCurveOffset` SÓ do frenagem — VMIN intacto); (5) CSS `frx-*` próprio.
+  - REGRA respeitada: classes novas `frx-*`; VMIN compartilha `fr-*` e NÃO foi tocado; arranjo (ATUAL.json) intocado. Legado `frenagemCurveTone`/`VERDICTS_FRENAGEM`/`FRENAGEM_GHOST` deixados (sem chamada, não apaguei).
+  - Validação: sintaxe OK (3 blocos inline via new Function); lógica pura testada em node (delta/veredito/segmentos/histerese — todas asserções passam); `smoke:freio-trecho` 29/0; servido HTTP 200 pela 8078 com o código novo e aberto no navegador.
+- **Pendente:** validação VISUAL do Flávio (8078, aberto). Depois: limpar legado morto (se ele OK) + etapa seguinte = ligar no dado real (freio-trecho.js). NÃO oficial até o aval visual.
+- Status: aguardando validação visual do Flávio.
 
 ---
 ## TASK_DONE — 2026-06-15 — Retomada automática de envio + tela "Conta" na Home
