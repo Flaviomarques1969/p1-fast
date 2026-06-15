@@ -130,3 +130,10 @@ export function frenagemFrxParaPassagem(passagem, opts = {}) {
     deltaM: refRes ? Math.round(cur.metricas.freadaM - refRes.metricas.freadaM) : null,
   };
 }
+
+// Janela-ideal da grade: onde o trail COMEÇA (cruza 15%) e onde TERMINA. Exposta pra outros
+// módulos (ex.: forma-trail-tipo.js) alinharem a forma prescrita do tipo com o `live` que o
+// adaptador amostra aqui — mesma fonte (FRX_ALVO_PADRAO), pra não haver dois "onset" divergentes.
+// (Declarado no fim: usa crossing/LIMIAR já inicializados acima.)
+export const FRX_IDEAL_ONSET = crossing(FRX_ALVO_PADRAO, FRX_XS_PADRAO) ?? 14;
+export const FRX_IDEAL_END   = FRX_XS_PADRAO[FRX_XS_PADRAO.length - 1];
