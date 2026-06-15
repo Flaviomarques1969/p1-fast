@@ -36,9 +36,14 @@ ATUALIZAR A CÓPIA: enviado backup completo pra nuvem (GitHub) na branch
 `backup/estoque-pendencias-unificado-2026-06-14` (532 commits, inclui esta função). origin/main (oficial,
 consolidado à parte) NÃO foi tocado — consolidar nele é passo cuidadoso à parte.
 
-PENDENTE (gated por autorização literal de produção):
-- Aplicar 0046 na nuvem + empacotar/instalar o app sincronizado no iPhone → só com "MIGRAR PARA PRODUÇÃO".
-- (Opcional) consolidar a função na origin/main oficial, com cuidado (sem atropelar as 3 consolidações de lá).
+MIGRADO PRA PRODUÇÃO (autorizações literais de Flávio 2026-06-14):
+- "MIGRAR PARA PRODUÇÃO: incorporar estoque+pendências na versão oficial" → FEITO: origin/main `a821ddaa`
+  (fast-forward sobre `0fc0d2a4`, validado por empacotamento + testes; sem tocar painel/banco).
+- "MIGRAR PARA PRODUÇÃO: estoque unificado" → FEITO: migração nuvem 0046 aplicada (receita segura: afastei a
+  0044 de outra frente, `db push` só a 0046, devolvi a 0044) — tabela `estoque_item` confirmada (REST 200 +
+  migration list 0046 Local+Remoto, 0044 intocada). App sincronizado empacotado pro device + instalado + aberto
+  no iPhone 16 Pro Max. Falta só Flávio abrir ~1 min desbloqueado pro envio retroativo (backfill) concluir.
+- Rollback estoque unificado: rodapé da 0046 (`drop table public.estoque_item`) + reinstalar app anterior.
 
 ---
 
