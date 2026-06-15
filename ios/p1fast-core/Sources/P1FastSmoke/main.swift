@@ -8247,6 +8247,66 @@ step("migration v19: banco com tabela manutencoes ANTIGA (device 18/05) preserva
     }
 }
 
+// ── PLANO-STINT: port do plano que viaja com o envelope (15/06) ──
+step("PLANO-01: PlanoStint codifica com as chaves EXATAS do JSON da web") {
+    let plano = PlanoStint(
+        proposito: "treinar",
+        foco: "trail-braking",
+        ghost: true,
+        voltas: 12,
+        paradas: [PlanoParada(volta: 6, motivo: "trocar pneu")],
+        carroId: "carro-bolinha",
+        piloto: "Bubi",
+        autodromo: "Brasília",
+        tipoPneu: "radial-185-14",
+        vidaPneuFaixa: "media",
+        aprovadoEm: "2026-06-15T18:30:00.000Z"
+    )
+    let enc = JSONEncoder()
+    let data = try enc.encode(plano)
+    let obj = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+    // As chaves têm que casar com web/cockpit/configuracao-stint.js (planoCompleto).
+    for chave in ["proposito", "foco", "ghost", "voltas", "paradas",
+                  "carroId", "piloto", "autodromo", "tipoPneu",
+                  "vidaPneuFaixa", "modo", "aprovadoEm"] {
+        try assertTrue(obj[chave] != nil, "faltou chave \(chave) no JSON do plano")
+    }
+    try assertEq(obj["modo"] as? String, "agressivo", "modo default = registro 'agressivo'")
+    let paradas = obj["paradas"] as? [[String: Any]]
+    try assertEq(paradas?.count, 1, "uma parada")
+    try assertEq(paradas?.first?["volta"] as? Int, 6, "volta da parada")
+}
+
+step("PLANO-02: round-trip Codable preserva o plano") {
+    let original = PlanoStint(
+        proposito: "livre", foco: nil, ghost: false, voltas: 8, paradas: [],
+        carroId: "c1", piloto: "p1", autodromo: "Brasília",
+        tipoPneu: "slick", vidaPneuFaixa: "nova", aprovadoEm: "2026-06-15T00:00:00.000Z"
+    )
+    let data = try JSONEncoder().encode(original)
+    let volta = try JSONDecoder().decode(PlanoStint.self, from: data)
+    try assertEq(volta, original, "round-trip mudou o plano")
+}
+
+step("PLANO-03: valores de segurança do Bubi batem com o computador (port fiel)") {
+    try assertEq(EnvelopeDefaultBubi.rpmMaxAbsoluto, 6300, "teto duro de rpm")
+    try assertEq(EnvelopeDefaultBubi.rpmMinMotorCelsius, 80, "motor frio")
+    try assertClose(EnvelopeDefaultBubi.forcaLateralMaxG, 0.50, "força lateral máx")
+    try assertEq(EnvelopeDefaultBubi.oleoMaxCelsius, 115, "óleo máx")
+    try assertEq(EnvelopeDefaultBubi.aguaMaxCelsius, 95, "água máx")
+    try assertEq(EnvelopeDefaultBubi.picoPotenciaRpm, 6050, "pico potência")
+    try assertEq(ModoStint.registro, "agressivo", "modo registro")
+}
+
+step("PLANO-04: normalizarTipoPneu espelha o normalizador da web") {
+    try assertEq(normalizarTipoPneu("radial 185/14"), "radial-185-14", "sinônimo radial")
+    try assertEq(normalizarTipoPneu("Semi Slick"), "semi-slick", "sinônimo semi-slick (case-insensitive)")
+    try assertEq(normalizarTipoPneu("slick"), "slick", "canônico passa direto")
+    try assertEq(normalizarTipoPneu(""), "desconhecido", "vazio → desconhecido")
+    try assertEq(normalizarTipoPneu(nil), "desconhecido", "nil → desconhecido")
+    try assertEq(normalizarTipoPneu("XPTO 99"), "xpto 99", "desconhecido vira o texto minúsculo")
+}
+
 // ── relatório ────────────────────────────────────────────────
 print("\n═══ RESULTADO ═══")
 print("\(ok) ok / \(fail) fail")
