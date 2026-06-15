@@ -24,15 +24,20 @@ function infoTipo(nome) {
 
 /**
  * Para cada curva (na ordem canônica da pista) devolve a frenagem no formato do
- * desenho aprovado, JÁ com o TIPO definitivo da curva (decisão Flávio 13/06) e o
- * trail próprio daquele tipo. O alvo de comparação é a MELHOR passagem real da
- * curva (régua canônica) — não um desenho genérico.
+ * desenho aprovado, JÁ com o TIPO definitivo da curva (decisão Flávio 13/06).
+ *
+ * A linha IDEAL (tracejada + faixa) é o trail clássico PRESCRITO do TIPO (`ideal`):
+ * porrada + escadinha p/ T0/T1/T5, residual p/ T2/T4 — a régua teórica que o Flávio
+ * aprovou no cockpit de treino. NÃO é mais a melhor volta crua de GPS ~1 Hz (que ele
+ * reprovou em 15/06). A volta real entra SOBREPOSTA (`live`) quando há dado; sem dado
+ * real ainda, a curva mostra SÓ o ideal do tipo — nunca fica em branco.
  * - opts.volta: volta a mostrar (se existir); default = a melhor.
  * Cada item:
  *   { curveIdx, curva, tipo, rotuloTipo, formatoTipo, textoFacilTipo, ... }
- *   + (curva de freada) live, ref, minimaFreando, soltou, freioMin, fonteFreio, deltaM, voltaMostrada, voltasDisponiveis
- *   + (SF, pé embaixo) semFreadaPorTipo:true
- *   + (tipo de freada mas dado insuficiente) semDado:true, motivo
+ *   + (curva de freada) ideal[18]  — trail prescrito do tipo (sempre presente)
+ *   + (com volta real) live, ref, minimaFreando, soltou, freioMin, fonteFreio, deltaM, voltaMostrada, voltasDisponiveis
+ *   + (tipo de freada SEM volta real utilizável) semDadoReal:true, motivo  — mostra só o ideal
+ *   + (SF, pé embaixo) semFreadaPorTipo:true  — sem trail por tipo
  */
 export function construirFrenagemRealPorCurva(fixture, opts = {}) {
   const ordem = (fixture && fixture._meta && fixture._meta.ordemCurvas) || [];
@@ -45,15 +50,27 @@ export function construirFrenagemRealPorCurva(fixture, opts = {}) {
   return ordem.map((nome, idx) => {
     const base = { curveIdx: idx, curva: nome, ...infoTipo(nome) };
 
-    // SF = curva de pé embaixo: por TIPO não tem freada — não é falta de dado.
+    // SF = curva de pé embaixo: por TIPO não tem freada — não desenha trail.
     if (semFreadaPorTipo(base.tipo)) return { ...base, semFreadaPorTipo: true };
 
+    // FORMA-IDEAL do tipo: o trail clássico PRESCRITO (régua), sempre presente — é a
+    // linha tracejada + faixa. Independe de haver volta real medida.
+    const ideal = formaTrailTipo(base.tipo);
+
     const arr = porNome[nome] || [];
-    if (!arr.length) return { ...base, semDado: true, motivo: 'sem passagem real' };
     const best = arr[0];
     const display = (opts.volta != null && arr.find(p => p.volta === opts.volta)) || best;
-    const frx = frenagemFrxParaPassagem({ pontos: display.pontos, refPontos: best.pontos });
-    if (!frx) return { ...base, semDado: true, motivo: 'dado ralo (GPS ~1 Hz) — aguardando volta ao vivo / 25 Hz' };
-    return { ...base, voltaMostrada: display.volta, voltasDisponiveis: arr.map(p => p.volta), ...frx };
+    const frx = display ? frenagemFrxParaPassagem({ pontos: display.pontos, refPontos: best.pontos }) : null;
+    if (frx) {
+      // volta real medida: live sobreposto ao ideal do tipo (comparação ponto a ponto).
+      return { ...base, ideal, voltaMostrada: display.volta, voltasDisponiveis: arr.map(p => p.volta), ...frx };
+    }
+    // tipo de freada mas SEM volta real utilizável: mostra só o ideal do tipo (não fica em branco).
+    return {
+      ...base, ideal, semDadoReal: true,
+      motivo: arr.length
+        ? 'sem freada nítida no GPS ~1 Hz — mostrando o trail do tipo (volta real entra com 25 Hz)'
+        : 'sem passagem real — mostrando o trail do tipo',
+    };
   });
 }
