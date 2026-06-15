@@ -267,6 +267,7 @@ private struct ReadyRoot: View {
                 await pendenciaRepo.bootstrap()
                 await pecaRepo.bootstrap()
                 await estoqueRepo.bootstrap()
+                await arquivoRepo.bootstrap()
                 // Sprint E.1: enfileira retroativamente rows com
                 // synced_at IS NULL que vieram de versões anteriores
                 // (carros/eventos criados antes do fix de enqueue nos
