@@ -15,8 +15,10 @@ import P1FastCore
 
 /// As 5 entidades da Garagem que podem ser apagadas/resgatadas.
 /// O `rawValue` casa com a coluna `entidade` da tabela `item_arquivado`.
-enum EntidadeArquivavel: String {
+enum EntidadeArquivavel: String, Identifiable {
     case carros, pilotos, passageiros, combustiveis, licoes
+
+    var id: String { rawValue }
 
     var tituloApagados: String {
         switch self {
