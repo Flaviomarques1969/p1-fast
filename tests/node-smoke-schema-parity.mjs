@@ -88,8 +88,11 @@ const GRDB_REQUIRED_COUNT = PG_TABLE_COUNT_ESPERADO - PG_ONLY_TABLES.size; // 32
 // NOTA: estoque_item (v30) DEIXOU de ser local-only em 2026-06-14 — agora
 // sincroniza (espelha public.estoque_item da migration 0046). Decisão de Flávio
 // "um só, com backup na nuvem".
-const GRDB_LOCAL_ONLY = ['evento_pendencias_extra', 'evento_pendencia_pegou', 'sync_meta', 'sync_queue'];
-const GRDB_TABLE_COUNT_ESPERADO = GRDB_REQUIRED_COUNT + GRDB_LOCAL_ONLY.length; // 33 + 4 = 37
+// item_arquivado (v32, 2026-06-14): "Apagados" (lixeira) por entidade da
+// Garagem. LOCAL-ONLY de propósito — apagar é reversível e fica só no iPhone;
+// o dado original (que sobe pra nuvem) nunca é tocado.
+const GRDB_LOCAL_ONLY = ['evento_pendencias_extra', 'evento_pendencia_pegou', 'item_arquivado', 'sync_meta', 'sync_queue'];
+const GRDB_TABLE_COUNT_ESPERADO = GRDB_REQUIRED_COUNT + GRDB_LOCAL_ONLY.length; // 33 + 5 = 38
 
 t(`PG tem ${PG_TABLE_COUNT_ESPERADO} tabelas em public`, () => {
   if (PG_TABLES.size !== PG_TABLE_COUNT_ESPERADO) throw new Error('size=' + PG_TABLES.size);
