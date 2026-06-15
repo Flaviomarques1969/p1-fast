@@ -191,6 +191,9 @@ private struct ReadyRoot: View {
     @StateObject private var reachability: Reachability
     @StateObject private var syncCoordinator: SyncCoordinator
     @StateObject private var stintCaptureCoordinator: StintCaptureCoordinator
+    /// Fase do app (ativo/segundo plano) — quando volta a ATIVO, reabilita e
+    /// envia o que ficou parado, sem o usuário precisar tocar em nada.
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var voltaVideoRepo: VoltaVideoRepository
     @StateObject private var manutencaoStore: ManutencaoConsumiveisStore
     @StateObject private var pecaRepo: PecaRepository
