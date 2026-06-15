@@ -83,11 +83,13 @@ const GRDB_REQUIRED_COUNT = PG_TABLE_COUNT_ESPERADO - PG_ONLY_TABLES.size; // 32
 // Tabelas SÓ-locais (não espelham a nuvem de propósito): infraestrutura de
 // sync + evento_pendencias_extra (pendências incluídas à mão pelo usuário —
 // migration v29, app mono-iPhone, não sincroniza).
-// estoque_item + evento_pendencia_pegou (v30): estoque geral unificado e o
-// contador "peguei" por evento — local-only, não sobem pra nuvem (desenho
-// aprovado 2026-06-14; mantêm `pecas`/`evento_pendencias` de produção intactas).
-const GRDB_LOCAL_ONLY = ['evento_pendencias_extra', 'estoque_item', 'evento_pendencia_pegou', 'sync_meta', 'sync_queue'];
-const GRDB_TABLE_COUNT_ESPERADO = GRDB_REQUIRED_COUNT + GRDB_LOCAL_ONLY.length; // 32 + 5 = 37
+// evento_pendencias_extra (v29) + evento_pendencia_pegou (v30): itens à mão e o
+// contador "peguei" por evento — local-only, não sobem pra nuvem.
+// NOTA: estoque_item (v30) DEIXOU de ser local-only em 2026-06-14 — agora
+// sincroniza (espelha public.estoque_item da migration 0046). Decisão de Flávio
+// "um só, com backup na nuvem".
+const GRDB_LOCAL_ONLY = ['evento_pendencias_extra', 'evento_pendencia_pegou', 'sync_meta', 'sync_queue'];
+const GRDB_TABLE_COUNT_ESPERADO = GRDB_REQUIRED_COUNT + GRDB_LOCAL_ONLY.length; // 33 + 4 = 37
 
 t(`PG tem ${PG_TABLE_COUNT_ESPERADO} tabelas em public`, () => {
   if (PG_TABLES.size !== PG_TABLE_COUNT_ESPERADO) throw new Error('size=' + PG_TABLES.size);
