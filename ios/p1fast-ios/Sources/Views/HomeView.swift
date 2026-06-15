@@ -308,19 +308,29 @@ struct HomeView: View {
 
 private struct FilledContent: View {
     let data: HomeData
+    /// Toque no botão "Stint" do topo — decide o destino no dono dos dados
+    /// (hoje é dia de evento? abre no evento. Senão, pergunta vincular/livre).
+    var onStint: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
-            // Header — espelha `.header` do mockup-home-cheio.html
-            VStack(alignment: .leading, spacing: 6) {
-                Text("P1 FAST")
-                    .font(.system(size: 11, weight: .semibold))
-                    .tracking(1.98) // 0.18em em 11pt
-                    .foregroundStyle(Color.textFaint)
-                Text(headerStatusLine(data: data))
-                    .font(.titleP1)
-                    .tracking(-0.44) // -0.02em em 22pt
-                    .foregroundStyle(Color.text)
+            // Header — espelha `.header` do mockup-home-cheio.html.
+            // Botão "Stint" (iniciar o Stint) fica AQUI no topo, ao lado do
+            // "Hoje em <pista>", do tamanho do "Novo evento", azul cheio
+            // (decisão Flávio 15/06). É a ação principal da Home.
+            HStack(alignment: .center, spacing: Spacing.sm) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("P1 FAST")
+                        .font(.system(size: 11, weight: .semibold))
+                        .tracking(1.98) // 0.18em em 11pt
+                        .foregroundStyle(Color.textFaint)
+                    Text(headerStatusLine(data: data))
+                        .font(.titleP1)
+                        .tracking(-0.44) // -0.02em em 22pt
+                        .foregroundStyle(Color.text)
+                }
+                Spacer(minLength: Spacing.sm)
+                FAB("Stint", action: onStint)
             }
             .padding(.horizontal, Spacing.xs)
             .padding(.vertical, Spacing.sm)
