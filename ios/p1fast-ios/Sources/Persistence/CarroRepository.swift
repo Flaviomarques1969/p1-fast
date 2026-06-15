@@ -135,6 +135,24 @@ final class CarroRepository: ObservableObject {
         try await reload()
     }
 
+    /// Apaga (esconde) o carro — vai pra Apagados, dá pra resgatar. NÃO
+    /// destrói o registro nem manda apagar da nuvem: só marca como arquivado
+    /// no iPhone. O carro some das listas; resgatar traz de volta.
+    func arquivar(carroId: String, rotulo: String) async throws {
+        try await queue.write { db in
+            try ItemArquivado.arquivar(db, entidade: "carros", itemId: carroId, rotulo: rotulo)
+        }
+        try await reload()
+    }
+
+    /// Resgata um carro escondido (remove a marca de arquivado).
+    func restaurar(carroId: String) async throws {
+        try await queue.write { db in
+            try ItemArquivado.restaurar(db, entidade: "carros", itemId: carroId)
+        }
+        try await reload()
+    }
+
     /// Lê a Configuracao "Setup base" do carro (a primeira criada com ele).
     func loadConfiguracao(carroId: String) async throws -> Configuracao? {
         try await queue.read { db in
