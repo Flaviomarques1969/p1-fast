@@ -12,7 +12,7 @@
 // Em produção, `attachRendererToDocument(state, document)` resolve via
 // getElementById/querySelector. Em teste, passamos objetos fake (sem jsdom).
 
-import { ShiftMode, ShiftFire, MsgState, Tone, ApexEstado, shiftDotsForLevel } from './cockpit-state.js';
+import { ShiftMode, ShiftFire, MsgState, Tone, ApexEstado } from './cockpit-state.js';
 
 /**
  * @typedef {Object} CockpitBindings
