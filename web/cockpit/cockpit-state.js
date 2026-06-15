@@ -156,13 +156,10 @@ function assertShiftLevel(level) {
   }
 }
 
-// Quantos LEDs acendem quando mode=LIT e level=N. Map linear N=0→0 LEDs,
-// N=SHIFT_LEVEL_MAX → SHIFT_DOTS_TOTAL LEDs.
-export function shiftDotsForLevel(level) {
-  if (level <= SHIFT_LEVEL_MIN) return 0;
-  if (level >= SHIFT_LEVEL_MAX) return SHIFT_DOTS_TOTAL;
-  return Math.round((level / SHIFT_LEVEL_MAX) * SHIFT_DOTS_TOTAL);
-}
+// Acendimento das luzes = progressivo por TIER: o renderer acende todo dot com
+// tier ≤ level (cada level = um par lateral, das pontas pro centro). A função
+// antiga shiftDotsForLevel foi removida — ela convertia level→nº de dots e era
+// usada como limiar de tier, o que fazia as luzes saltarem em blocos de cor.
 
 // ── Store (model + observer) ─────────────────────────────────
 
