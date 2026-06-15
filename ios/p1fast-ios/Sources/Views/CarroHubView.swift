@@ -14,11 +14,13 @@ struct CarroHubView: View {
     @EnvironmentObject private var manutencaoStore: ManutencaoConsumiveisStore
     @EnvironmentObject private var pecaRepo: PecaRepository
     @EnvironmentObject private var pneuRepo: PneuRepository
+    @EnvironmentObject private var arquivoRepo: ArquivoRepository
 
     let carroId: String
     let onClose: () -> Void
 
     @State private var fotoCarro: UIImage?
+    @State private var mostrarConfirmaApagar = false
 
     private var carro: Carro? { carroRepo.carros.first { $0.id == carroId } }
 
