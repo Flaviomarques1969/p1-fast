@@ -19,6 +19,27 @@
 10. **Evidência:** "Um só, com backup na nuvem" (card 2026-06-14). 11. **Riscos:** mexer no que sincroniza =
     produção; por isso copia (não move) pecas; cloud só prepara. 12. **Status:** iniciado.
 
+## PROGRESSO — 2026-06-14 (noite) — unificação construída em DEV (nuvem GATED)
+FEITO em DEV (produção/nuvem INTOCADA):
+- `estoque_item` virou tabela SINCRONIZADA: `synced_at` (Models + migration v31); EstoqueRepository enfileira
+  insert/update/delete no SyncQueue; `copiarDoEstoqueDoCarroSeNecessario()` COPIA (não move) pecas→estoque_item
+  (escopo=carroId), aditivo/idempotente, `pecas` intacta.
+- SyncBackfill + SyncCoordinator.pullTables incluem `estoque_item` (enviar + puxar + reenvio retroativo).
+- UI: tela de estoque com seletor de escopo (Geral + 1 por carro) — "um só" lugar. Pendência casa alvo com
+  estoque em qualquer escopo (`itemPorNome`).
+- Cloud migration PREPARADA (não aplicada): `supabase/migrations/0046_estoque_unificado_sync.sql`
+  (CREATE TABLE public.estoque_item + RLS is_member + trigger), molde do 0039.
+- schema-parity ajustado (PG 45→46; estoque_item saiu de LOCAL_ONLY) → 15/0. migration 3/0, migration-port 8/0.
+- BUILD SUCCEEDED (simulador). Screenshot: `relatorios/estoque-2026-06-14/04-estoque-unificado.png`.
+
+ATUALIZAR A CÓPIA: enviado backup completo pra nuvem (GitHub) na branch
+`backup/estoque-pendencias-unificado-2026-06-14` (532 commits, inclui esta função). origin/main (oficial,
+consolidado à parte) NÃO foi tocado — consolidar nele é passo cuidadoso à parte.
+
+PENDENTE (gated por autorização literal de produção):
+- Aplicar 0046 na nuvem + empacotar/instalar o app sincronizado no iPhone → só com "MIGRAR PARA PRODUÇÃO".
+- (Opcional) consolidar a função na origin/main oficial, com cuidado (sem atropelar as 3 consolidações de lá).
+
 ---
 
 
