@@ -109,7 +109,10 @@ final class EstoqueRepository: ObservableObject {
             quantidade: max(0, quantidade), volume: volume, unidade: unidade,
             embalagens: embalagens, partesJson: EstoqueItem.encodePartes(partes), fotoUrl: fotoUrl
         )
-        try await queue.write { db in try item.insert(db) }
+        try await queue.write { db in
+            try item.insert(db)
+            try SyncQueue.enqueueRecord(db, tableName: "estoque_item", rowId: item.id, op: .insert, record: item)
+        }
         try await reload()
         return item
     }
@@ -117,13 +120,20 @@ final class EstoqueRepository: ObservableObject {
     func atualizar(_ item: EstoqueItem, foto: UIImage?) async throws {
         var atual = item
         atual.updatedAt = DB.nowMs()
+        atual.syncedAt = nil
         if let foto { atual.fotoUrl = Self.salvarFoto(itemId: atual.id, imagem: foto) ?? atual.fotoUrl }
-        try await queue.write { db in try atual.update(db) }
+        try await queue.write { db in
+            try atual.update(db)
+            try SyncQueue.enqueueRecord(db, tableName: "estoque_item", rowId: atual.id, op: .update, record: atual)
+        }
         try await reload()
     }
 
     func apagar(_ item: EstoqueItem) async throws {
-        try await queue.write { db in _ = try item.delete(db) }
+        try await queue.write { db in
+            _ = try item.delete(db)
+            try SyncQueue.enqueueRecord(db, tableName: "estoque_item", rowId: item.id, op: .delete, record: EstoqueItem?.none)
+        }
         Self.apagarFoto(itemId: item.id)
         try await reload()
     }
@@ -131,9 +141,47 @@ final class EstoqueRepository: ObservableObject {
     func apagar(ids: [String]) async throws {
         guard !ids.isEmpty else { return }
         try await queue.write { db in
-            _ = try EstoqueItem.filter(keys: ids).deleteAll(db)
+            for id in ids {
+                _ = try EstoqueItem.deleteOne(db, key: id)
+                try SyncQueue.enqueueRecord(db, tableName: "estoque_item", rowId: id, op: .delete, record: EstoqueItem?.none)
+            }
         }
         ids.forEach { Self.apagarFoto(itemId: $0) }
+        try await reload()
+    }
+
+    /// Copia (NÃO move) o estoque do carro (`pecas`, que já sincroniza) pra dentro
+    /// do estoque unificado (`estoque_item`, escopo = carro). Aditivo e idempotente:
+    /// pula itens já copiados (mesmo escopo + nome). Os dados originais em `pecas`
+    /// ficam intactos. Itens novos entram com synced_at = nil — o SyncBackfill os
+    /// envia pra nuvem quando a tabela de lá estiver pronta (migration 0046).
+    func copiarDoEstoqueDoCarroSeNecessario() async throws {
+        guard let teamId = TeamContext.currentTeamId else { return }
+        let bloco = Self.bloco(id: "G1")
+        try await queue.write { db in
+            let pecasRows = try Row.fetchAll(db, sql:
+                "SELECT carro_id, nome, tipo, especificacao, quantidade FROM pecas WHERE time_id = ?",
+                arguments: [teamId])
+            for r in pecasRows {
+                let carroId: String = r["carro_id"]
+                let nome: String = r["nome"]
+                let jaExiste = (try Int.fetchOne(db, sql:
+                    "SELECT COUNT(*) FROM estoque_item WHERE time_id = ? AND escopo = ? AND lower(nome) = lower(?)",
+                    arguments: [teamId, carroId, nome]) ?? 0) > 0
+                if jaExiste { continue }
+                let tipo: String = (r["tipo"] as String?) ?? "componente"
+                let espec: String? = r["especificacao"]
+                let qtd: Int = (r["quantidade"] as Int?) ?? 1
+                var item = EstoqueItem(
+                    timeId: teamId, escopo: carroId,
+                    kind: tipo == "ferramenta" ? "ferramenta" : "item",
+                    grupoId: bloco.id, grupoTitulo: bloco.titulo, grupoNum: bloco.num,
+                    nome: nome, especificacao: espec, categoria: "obrig", contagem: "simples",
+                    quantidade: max(1, qtd))
+                try item.insert(db)
+                try SyncQueue.enqueueRecord(db, tableName: "estoque_item", rowId: item.id, op: .insert, record: item)
+            }
+        }
         try await reload()
     }
 
