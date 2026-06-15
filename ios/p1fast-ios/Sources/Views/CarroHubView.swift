@@ -202,6 +202,20 @@ struct CarroHubView: View {
                            subtitulo: "Peças e ferramentas deste carro · locais e quantidades", cor: Color.yellow)
             }
             .buttonStyle(.plain)
+
+            DeleteCadastroButton(label: "Apagar carro") {
+                mostrarConfirmaApagar = true
+            }
+            .padding(.top, 4)
+        }
+    }
+
+    private func confirmarApagar() {
+        guard let c = carro else { onClose(); return }
+        Task {
+            try? await carroRepo.arquivar(carroId: c.id, rotulo: c.apelido)
+            try? await arquivoRepo.reload()
+            onClose()
         }
     }
 
