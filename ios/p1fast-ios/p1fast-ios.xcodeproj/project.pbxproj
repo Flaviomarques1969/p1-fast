@@ -582,6 +582,8 @@
 				2521481BC442C82EEFB26A3E /* VoltaVideoRepository.swift in Sources */,
 				9B39E68705CCB0EC9E4371B5 /* EstoqueRepository.swift in Sources */,
 				1D264B17999D8E55D5A9E9D2 /* EstoqueViews.swift in Sources */,
+				AA10ED17000000000000FE01 /* ArquivoRepository.swift in Sources */,
+				AA10ED17000000000000FE03 /* ApagadosView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
