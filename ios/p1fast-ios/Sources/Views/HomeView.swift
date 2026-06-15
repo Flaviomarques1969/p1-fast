@@ -62,6 +62,10 @@ enum HomeNavTarget: Hashable {
     /// Fase 0 = a porta (StintPlanejamentoView). Fases seguintes enchem o
     /// planejamento (solto/vinculado · propósito · treino · grava plano).
     case stintPlanejamento
+    /// Tela do PLANEJAMENTO do Stint (propósito livre/testar/treinar +
+    /// catálogo de treinos + ghost + voltas). eventoId nil = Stint livre;
+    /// preenchido = vinculado a um evento.
+    case stintPlano(eventoId: String?)
 }
 
 /// Dados necessários para renderizar o estado cheio. Por enquanto vêm
