@@ -368,3 +368,34 @@ Flávio escolheu "Construir o planejamento do Stint". Construído em desenvolvim
 - Produção/nuvem/iPhone do Flávio: NÃO tocados. Validação visual: Flávio toca "+ Stint" → "Stint livre" no simulador.
 - FALTA (próximo): "Aprovar" GRAVAR o plano (formato plano_stint que o painel lê) + INICIAR o Stint de verdade = parte que mexe na NUVEM → gate "MIGRAR PARA PRODUÇÃO". E conectar a Home aos eventos reais + cartões clicáveis.
 - Resultado: a EXPERIÊNCIA do planejamento (propósito/treino/voltas) pronta pra validar; gravar+iniciar pendente.
+
+═══════════════════════════════════════════════════════════
+## FRENAGEM DADO REAL — DECISÕES + ETAPA 1 ENTREGUE (15/06 noite)
+═══════════════════════════════════════════════════════════
+Decisões em card (Flávio, 15/06): destino = NOS DOIS (cockpit já pronto) · quando = LIGAR JÁ no GPS real ·
+16-17/06 = instalação de sensores na oficina (NÃO é dia de pista) · 1º passo = "COMPLETO, COMO O COCKPIT".
+
+### ETAPA 1 — adaptador do motor de produção (CONCLUÍDA, testada, risco zero ao mockup)
+- NOVO `web/command-box/frenagem-real.js`: importa o motor de produção `web/cockpit/freio-trecho.js`
+  (comDistanciaAcumulada → simularFreioPelaFisica / fundirFreioNosPontos → metricasTrail) e devolve a
+  frenagem de uma passagem real NO MESMO formato de FRX_CENARIOS: { live[18] na grade FRX_XS,
+  minimaFreando, soltou, freioMin, fonteFreio, deltaM }. Ancora a janela 0..60 m pelo ponto de freada da
+  melhor volta no mesmo x do ideal. NÃO copia lógica (importa); renderizador frx-* e Vmin NÃO tocados.
+- NOVO teste `tests/node-smoke-frenagem-real.mjs` = 14/14 (passagem real vira FRX; física sem sensor;
+  sensor de pressão vence quando varia; sensor chapado NÃO engana; sem freada → null; deltaM + quando freou
+  depois; ancoragem do onset ±6 m).
+- Registrado em package.json: `smoke:frenagem-real` + incluído no agregado `smoke`.
+- Validação: smoke:frenagem-real 14/0; base intacta (freio-trecho 29/0, trail-cockpit 45/0, trail-religacao
+  10/0, cockpit-web 16/0); package.json JSON válido. MOCKKUP servido NÃO alterado nesta etapa.
+
+### FALTA (ETAPA 2 e 3) — próximo passo
+- ETAPA 2 (mexe no mockup, com backup já salvo): dynamic-import do adaptador + segments-loader (georref) +
+  melhores-loader (volta de referência do banco, SÓ LEITURA) no setupLigacaoAoVivo; acumular GPS por curva
+  do canal; mapear segment_id ↔ CURVES (C1..C8); fazer getFrenagemVerdictForCurve/buildFrenagemPanel usarem
+  o adaptador no lugar de FRX_CENARIOS; tirar 'frenagem' de DEP_LIGACAO.
+- ETAPA 3: selo de fonte física-GPS↔sensor no bloco + 2-de-2 → 3-de-3 quando a pressão variar; validar no
+  navegador (8078) com volta real; rodar todos os smokes; faxina do legado morto
+  (frenagemCurveTone/VERDICTS_FRENAGEM/FRENAGEM_GHOST).
+- Limite honesto: o caminho AO VIVO só valida 100% com volta fluindo (carro ou reprodutor). Saber se o
+  sensor de pressão/pedal de freio está na leva de 16-17/06 (muda só a validação do caminho do sensor).
+- Status: PARCIAL — Etapa 1 (núcleo de produção) concluída e protegida por teste; Etapas 2-3 pendentes.
