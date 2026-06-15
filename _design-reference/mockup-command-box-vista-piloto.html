@@ -4323,10 +4323,10 @@ html,body{
   function getFrenagemVerdictForCurve(curveIdx){
     var corner = currentLap().corners[curveIdx];
     var id = corner ? corner.frenagemVerdictId : null;
-    for(var i=0; i<VERDICTS_FRENAGEM.length; i++){
-      if(VERDICTS_FRENAGEM[i].id === id) return VERDICTS_FRENAGEM[i];
-    }
-    return VERDICTS_FRENAGEM[curveIdx % VERDICTS_FRENAGEM.length];
+    if(id && FRX_CENARIOS[id]) return { id:id, cen:FRX_CENARIOS[id] };
+    var ids = Object.keys(FRX_CENARIOS);
+    var k = ids[curveIdx % ids.length];
+    return { id:k, cen:FRX_CENARIOS[k] };
   }
   function curvaLabelFor(curveIdx){
     var c = CURVES[curveIdx] || CURVES[0];
