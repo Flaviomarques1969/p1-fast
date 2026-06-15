@@ -547,3 +547,124 @@ enum StintObjetivoTipos {
         "Livre",
     ]
 }
+
+// ═══════════════════════════════════════════════════════════
+// EnvelopeAprovacao — grava o envelope de segurança + plano na nuvem
+// ═══════════════════════════════════════════════════════════
+// Decisão Flávio 15/06/2026 ("uma tela só" + "MIGRAR PARA PRODUÇÃO"): ao
+// aprovar um Stint no celular, o app assume o papel que o computador fazia —
+// grava uma linha em `envelopes_seguranca_stint` com o plano do stint
+// (plano_stint). O painel da pista lê o plano do ÚLTIMO envelope do carro.
+//
+// MESMO contrato que web/cockpit/configuracao-stint.js (aprovarEnvelope):
+//   - escrita DIRETA na nuvem (POST /rest/v1/envelopes_seguranca_stint),
+//     fora da sincronização (a tabela não está em ALLOWED_TABLES);
+//   - cabeçalhos Supabase iguais aos do resto do app (apikey + Bearer);
+//   - a tabela está sem trava de linha (RLS desligada) — POST autenticado passa;
+//   - plano-B idêntico ao da web: se o banco não tiver a coluna plano_stint
+//     (PGRST204), regrava SEM o plano pra a aprovação não falhar, e devolve
+//     `planoFicouSoLocal = true` pra a tela contar a verdade.
+//
+// Valores de segurança vêm de P1FastCore.EnvelopeDefaultBubi (PORT FIEL do
+// perfil real do Bubi). Nada inventado aqui.
+enum EnvelopeAprovacao {
+
+    struct Resultado {
+        /// `true` quando o banco não tinha a coluna plano_stint e o envelope
+        /// foi gravado SEM o plano (o painel não vai armar o treino).
+        let planoFicouSoLocal: Bool
+        /// id do envelope criado (8 primeiros chars), pra mensagem da tela.
+        let envelopeIdCurto: String
+    }
+
+    struct Falha: LocalizedError {
+        let mensagem: String
+        var errorDescription: String? { mensagem }
+    }
+
+    /// Corpo do POST — colunas snake_case da tabela. `vida_pneu_faixa` é
+    /// OMITIDO de propósito (o celular ainda não pergunta a faixa de vida do
+    /// pneu) → o banco usa o default '0-30'. `plano_stint` é opcional só pra o
+    /// plano-B (quando nil, a chave some do JSON e o banco grava só o envelope).
+    private struct Payload: Encodable {
+        let carro_id: String
+        let modo_stint: String
+        let tipo_pneu: String
+        let config_cambio: String
+        let rpm_max_absoluto: Int
+        let rpm_min_motor_celsius: Int
+        let forca_lateral_max_g: Double
+        let observacoes: String
+        var plano_stint: PlanoStint?
+    }
+
+    /// Grava o envelope + plano. Lança `Falha` em erro de rede/HTTP que não
+    /// seja o caso "banco sem a coluna" (esse é tratado pelo plano-B).
+    static func gravar(carroId: String, tipoPneu: String, plano: PlanoStint) async throws -> Resultado {
+        guard let base = Configuration.supabaseBaseUrl else {
+            throw Falha(mensagem: "Nuvem não configurada (sem credenciais).")
+        }
+        let url = base.appendingPathComponent("rest/v1/envelopes_seguranca_stint")
+
+        let tipo = tipoPneu.isEmpty ? "desconhecido" : tipoPneu
+        let observacoes = "Envelope aprovado via app (celular). Máximo desempenho — "
+            + "troca na potência máxima (\(EnvelopeDefaultBubi.picoPotenciaRpm) rpm), "
+            + "teto \(EnvelopeDefaultBubi.redlineRpm)."
+
+        var payload = Payload(
+            carro_id: carroId,
+            modo_stint: ModoStint.registro,
+            tipo_pneu: tipo,
+            config_cambio: "padrao",
+            rpm_max_absoluto: EnvelopeDefaultBubi.rpmMaxAbsoluto,
+            rpm_min_motor_celsius: EnvelopeDefaultBubi.rpmMinMotorCelsius,
+            forca_lateral_max_g: EnvelopeDefaultBubi.forcaLateralMaxG,
+            observacoes: observacoes,
+            plano_stint: plano
+        )
+
+        let (data1, status1, body1) = try await post(url: url, payload: payload)
+        if (200...299).contains(status1) {
+            return Resultado(planoFicouSoLocal: false, envelopeIdCurto: idCurto(data1))
+        }
+
+        // Plano-B: banco sem a coluna plano_stint (migration 0042 não aplicada).
+        // Mesma decisão da web: a aprovação NÃO pode falhar por causa do plano.
+        if status1 == 400, body1.contains("PGRST204"), body1.contains("plano_stint") {
+            payload.plano_stint = nil
+            let (data2, status2, body2) = try await post(url: url, payload: payload)
+            guard (200...299).contains(status2) else {
+                throw Falha(mensagem: "HTTP \(status2): \(body2)")
+            }
+            return Resultado(planoFicouSoLocal: true, envelopeIdCurto: idCurto(data2))
+        }
+
+        throw Falha(mensagem: "HTTP \(status1): \(body1)")
+    }
+
+    private static func post(url: URL, payload: Payload) async throws -> (Data, Int, String) {
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue(Configuration.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        req.setValue("Bearer \(Configuration.supabaseAnonKey)", forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue("return=representation", forHTTPHeaderField: "Prefer")
+        req.httpBody = try JSONEncoder().encode(payload)
+
+        let (data, response) = try await URLSession.shared.data(for: req)
+        guard let http = response as? HTTPURLResponse else {
+            throw Falha(mensagem: "Sem resposta da nuvem.")
+        }
+        let body = String(data: data, encoding: .utf8) ?? ""
+        return (data, http.statusCode, body)
+    }
+
+    /// PostgREST com Prefer=return=representation devolve `[{ id, ... }]`.
+    private static func idCurto(_ data: Data) -> String {
+        if let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+           let id = arr.first?["id"] as? String {
+            return String(id.prefix(8))
+        }
+        return "?"
+    }
+}
