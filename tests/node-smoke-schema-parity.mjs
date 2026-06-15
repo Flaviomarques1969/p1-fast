@@ -70,7 +70,7 @@ const GRDB_TABLES = grdbTables(grdb);
 // 45 tabelas na nuvem. As 13 SÓ-nuvem abaixo não têm espelho no app de
 // propósito — são do painel web, shift light, dyno, canal ao vivo e
 // engenharia Camada 2 (emitem/consomem via REST direto).
-const PG_TABLE_COUNT_ESPERADO = 45;
+const PG_TABLE_COUNT_ESPERADO = 46;
 const PG_ONLY_TABLES = new Set([
   'engineering_findings', 'engineering_recommendations',     // MS-16.3 Camada 2
   'melhores_passagens_trecho', 'padroes_telemetria_por_volta', // painel web (0025/0026)
