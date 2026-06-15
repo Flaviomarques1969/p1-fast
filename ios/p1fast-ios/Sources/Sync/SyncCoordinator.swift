@@ -47,6 +47,10 @@ public final class SyncCoordinator: ObservableObject {
     private var timerPull: Timer?
     private var timerTelemetry: Timer?
     private var draining = false
+    /// Última vez que reabilitamos itens "parados" (dead-letter). Throttle pra
+    /// não re-tentar um item de fato quebrado a cada volta ao primeiro plano.
+    private var lastRehabAt: Date?
+    private static let rehabCooldown: TimeInterval = 300  // 5 min
 
     private let syncTransport: SyncTransport
     private let pullTransport: PullTransport
