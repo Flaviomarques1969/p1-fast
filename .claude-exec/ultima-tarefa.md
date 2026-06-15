@@ -230,3 +230,22 @@ NÃO esquecer: o botão "Conta" que pus na Home hoje é TEMPORÁRIO — vira o b
 10. **Evidência da autorização para produção:** não recebida.
 11. **Riscos:** (a) recriar do zero o que já existe no StintModalView (memória manda CONFERIR e estender); (b) copiar literal a lógica web em vez de portar; (c) quebrar o caminho de criação de Stint que hoje EXIGE eventoId; (d) o botão "Conta" da Home vira Stint e Conta migra pra Garagem (não perder acesso a Conta/Sair).
 12. **Status inicial:** iniciado — mapeando estado atual; sem alteração de código.
+
+### ACHADO DO MAPEAMENTO (15/06, workflow 5 frentes, só leitura) — com arquivo:linha
+JÁ EXISTE no app iOS (estender, NÃO recriar):
+- `StintModalView` (Sources/Views/StintModalView.swift) coleta 10 campos: piloto, objetivo, voltas, lição (catálogo), pneu, combustível, paradas(volta+motivo), IA on/off, mapa ghost on/off, revezamento. Layout 6 seções + FootBar (:187-220). salvar() em :809-865.
+- `StintRepository.create()` (Sources/Persistence/StintRepository.swift:131-161) EXIGE `eventoId:String` obrigatório → falta caminho "solto". Objetivos canônicos :536-544 = Aquecimento/Ataque/Consistência/Teste/Livre. finalize() :176-242 já SEM voltas-mock (origem real = painel ao vivo).
+- `Sessao` (p1fast-core/.../Models.swift:780-916): eventoId É String? (nullable) → banco já aceita Stint solto. Campos: objetivo, pneuId, voltasPlanejadas, paradasBoxJson, mapaGhostLigado, pilotosRevezamentoJson. ParadaBox :748-756, PilotoTurno :761-777.
+- `eventoAtivoHoje()` (EventoRepository.swift:188-197) decide "hoje é dia de evento?".
+- Home: botão "Conta" temporário canto sup. dir. (HomeView.swift:174-197); BottomNav 4 abas Home/Eventos/Pendências/Garagem (:122-127). Garagem tem sub-abas (GaragemView.swift:284-297). Conta/Sair hoje em SincronizacaoView (:145-177).
+
+A PORTAR da web (lógica pura, sem DOM — portável; NÃO copiar literal):
+- PROPÓSITO livre/testar/treinar + catálogo 7 treinos (1 técnica trail-braking + 6 pontos: entrada/frenagem/vmin/apice/pace/saida) com brief{oQueE,oQueMede,comoAparece,ressalva} em web/cockpit/catalogo-treinos.js:29-170; brief obrigatório trava o Aprovar (configuracao-stint.js:138-166).
+- Motor pedagógico TreinoStint (treino-stint.js:133-339): calibração 2 passagens, consistência 3/4, banda 30ms, degrau 30% teto4m piso2m, silêncio pré-box, válvula erro grave.
+- Objeto do plano: {proposito, foco, ghost, voltas, paradas} (configuracao-stint.js:24-30).
+
+CONTRATO que o painel LÊ (fechar o ciclo):
+- `plano_stint` JSONB na tabela `envelopes_seguranca_stint` (migration 0042:29-36). Campos: proposito(livre|testar|treinar), foco, ghost, voltas, paradas[{volta,motivo}], carroId, piloto, autodromo, tipoPneu, vidaPneuFaixa, modo, aprovadoEm(ISO8601).
+- Hoje QUEM GRAVA = web configuracao-stint.js:183-205. QUEM LÊ = painel treino-stint.js:56-131 (fallback nuvem, válido só no dia, fuso Brasília). iOS NÃO grava/lê plano_stint ainda — é a peça de "fechar o ciclo" (única que mexe na nuvem).
+
+Status atualizado: planejamento montado; AGUARDANDO escopo do v1 no card. Sem código alterado.
