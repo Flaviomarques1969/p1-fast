@@ -71,18 +71,17 @@
   </div>
 
 <script>
-  const N = 12;
+  const N = 18;
+  const PARES = N / 2; // 9 tiers por lado
   const TROCA = 6050, TETO = 6300, START = 6050 - 300; // 5750
-  // layout espelhado: tier 1 nas pontas, tier 6 no centro (1,2,3,4,5,6,6,5,4,3,2,1)
-  function tier(i){ return i < 6 ? i+1 : 12-i; }
-  // cor por tier: 1-2 verde (pontas) · 3-4 amarelo · 5-6 vermelho (4 centrais)
-  function cor(t){ return t <= 2 ? 'g' : t <= 4 ? 'y' : 'r'; }
+  // layout espelhado: tier 1 nas pontas, tier 9 no centro
+  function tier(i){ return i < PARES ? i + 1 : N - i; }
+  // cor por tier: 1-4 verde · 5-7 amarelo · 8-9 vermelho (4 vermelhas no centro)
+  function cor(t){ return t <= 4 ? 'g' : t <= 7 ? 'y' : 'r'; }
 
-  const elHoje = document.getElementById('ledsHoje');
   const elNovo = document.getElementById('ledsNovo');
-  const dotsHoje = [], dotsNovo = [];
+  const dotsNovo = [];
   for (let i = 0; i < N; i++){
-    const a = document.createElement('div'); a.className = 'led'; elHoje.appendChild(a); dotsHoje.push(a);
     const b = document.createElement('div'); b.className = 'led'; elNovo.appendChild(b); dotsNovo.push(b);
   }
 
@@ -99,15 +98,11 @@
     const fire = rpm >= TROCA && rpm <= TETO;
     const over = rpm > TETO;
     const fo = fire || over;
-    document.getElementById('painelHoje').classList.toggle('fire', fo);
     document.getElementById('painelNovo').classList.toggle('fire', fo);
 
     const norm = Math.max(0, Math.min(1, (rpm - START) / (TROCA - START)));
-    const level = norm <= 0 ? 0 : Math.max(1, Math.min(6, Math.round(norm * 6))); // 0..6
-
-    // HOJE: erro de unidade → acende tier ≤ (level×2) → satura em 3 saltos (4 / 8 / 12)
-    pinta(dotsHoje, level * 2, fo);
-    // PROPOSTA: acende tier ≤ level → par a par, das pontas pro centro (2/4/6/8/10/12)
+    const level = norm <= 0 ? 0 : Math.max(1, Math.min(PARES, Math.round(norm * PARES))); // 0..9
+    // progressiva: acende tier ≤ level → par a par, das pontas pro centro
     pinta(dotsNovo, level, fo);
   }
 
