@@ -102,7 +102,12 @@ struct StintModalView: View {
         .onAppear { hidratarPilotoDefault() }
         .task {
             // MS-4.4: detecta se evento é endurance pra liberar revezamento.
-            permiteRevezamento = await repo.eventoPermiteRevezamento(eventoId: eventoId)
+            // Stint solto (sem evento) nunca é endurance.
+            if let eid = eventoId {
+                permiteRevezamento = await repo.eventoPermiteRevezamento(eventoId: eid)
+            } else {
+                permiteRevezamento = false
+            }
         }
         .sheet(item: $sheet) { which in
             sheetView(for: which)
