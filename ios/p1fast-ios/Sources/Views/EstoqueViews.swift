@@ -135,7 +135,7 @@ struct EstoqueGeralView: View {
     }
 
     private var addRow: some View {
-        Button { editor = .novo() } label: {
+        Button { editor = .novo(escopo: escopoSel) } label: {
             HStack(spacing: 8) {
                 Image(systemName: "plus").font(.system(size: 16, weight: .semibold))
                 Text("Cadastrar item").font(.system(size: 14, weight: .semibold))
