@@ -41,6 +41,7 @@ final class PassageiroRepository: ObservableObject {
         let rows = try await queue.read { db in
             try Passageiro
                 .filter(Column("time_id") == teamId)
+                .filter(sql: ItemArquivado.notInClause("passageiros"))
                 .order(Column("nome").asc)
                 .fetchAll(db)
         }
