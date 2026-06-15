@@ -136,10 +136,10 @@ btnAuto.classList.add('is-active');
 startAutoLoop();
 
 /* SMART SHIFT LIGHT — visual-only (capacete+escapamento descartam áudio).
-   Modelo: níveis 0-6 (subida par-a-par) + fire (strobe) + overrev (erro).
-   FIRE = 3 pulsos brancos a ~10Hz (sweet spot da detecção periférica)
-          + flash sincronizado do device inteiro (rim+top) pra captura periférica.
-   Auto-cycle: 0→1→2→3→4→5→6→FIRE→OVERREV→0, dwell por step. */
+   Modelo: níveis 0-8 (subida par-a-par, das pontas pro centro) + fire (strobe) + overrev (erro).
+   A luz central (tier 9) só acende no FIRE = troca. FIRE = 3 pulsos brancos a ~10Hz
+   (sweet spot da detecção periférica) + flash sincronizado do device inteiro (rim+top).
+   Auto-cycle: 0→1→…→8→FIRE→OVERREV→0, dwell por step. */
 const shiftLight = document.getElementById('shiftLight');
 const shiftDots = shiftLight.querySelectorAll('.shift-light__dot');
 const shiftButtons = document.querySelectorAll('[data-shift]');
