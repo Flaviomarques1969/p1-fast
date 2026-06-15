@@ -304,3 +304,12 @@ Flávio: "o Stint tem que ser um botão GRANDE, azul cheio, do tamanho do 'Novo 
 - HomeView.swift: tirei o botãozinho do canto sup. dir.; o "+ Stint" virou FAB GRANDE azul (size .big) no canto inf. dir. (herói) e o "+ Novo evento" ficou menor (size .small) logo acima.
 - Validação: BUILD SUCCEEDED; reinstalado no simulador (sessão persistiu → abriu direto na Home); foto /tmp/p1fast-fase0-stint-grande.png confirma o "+ Stint" grande e o "+ Novo evento" menor. NADA no iPhone do Flávio ainda.
 - PENDENTE: Flávio cortou em "inclusive..." — aguardar o resto do ajuste antes de seguir pra Fase 1.
+
+### AJUSTE 2 Fase 0/1 (15/06) — desenho FINAL do botão Stint + lógica
+Flávio (detalhou): "+ Stint do tamanho do Novo evento, mas LÁ EM CIMA, ao lado do 'Hoje em Brasília'. Dia de evento → já abre no evento. Se não, pergunta vincular a um evento ou Stint livre. O Novo evento fica só dentro de Eventos. Tocar num próximo evento da Home → vai pra dentro daquele evento, e lá também executo o Stint e planejo."
+FEITO (BUILD SUCCEEDED; reinstalado no simulador; foto /tmp/p1fast-stint-topo.png):
+- FAB.swift voltou ao original (descartei o FABSize/botão grande).
+- HomeView.swift: tirei o botão flutuante de baixo; "+ Stint" (tamanho normal) agora no cabeçalho da Home, ao lado do "Hoje em <pista>"; "Novo evento" SAIU da Home (segue em EventosListaView:59). +prop onStintTap.
+- ContentView.swift (ReadyRoot): stintTapDecision() — eventoAtivoHoje() != nil → .eventoDetalhe(ev.id); senão → .stintPlanejamento. onStintTap injetado nos 2 HomeView.
+- StintPlanejamentoView.swift: virou a tela de ESCOLHA (não-dia-de-evento) — "Vincular a um evento" (→ .eventos, funciona) / "Stint livre" (placeholder, Fase 1).
+FALTA (apontado ao Flávio): (a) cartões de evento da Home clicáveis → abrir o evento; (b) Home está em DADOS DE EXEMPLO (HomeData.mockFilled) → conectar aos eventos REAIS é pré-requisito de (a) e de o cabeçalho bater com o botão; (c) "Stint livre" de verdade = Fase 1 (create solto + StintModalView eventoId opcional). NADA no iPhone do Flávio ainda.
