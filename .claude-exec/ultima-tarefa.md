@@ -26,6 +26,22 @@
    e validação visual antes de qualquer migração. NÃO tocar Vmin (compartilha fr-*/_shortRevealStateForLap).
 12. **Status inicial:** iniciado.
 
+### TASK_DONE — 2026-06-15 noite — Etapa 2a-bis concluída (aguarda confirmação visual do Flávio)
+- Pedido original conferido: sim — linha-ideal = trail prescrito do tipo + nenhuma curva em branco.
+- Ambiente trabalhado: desenvolvimento. Produção foi alterada: não. Autorização: não se aplica (nada em produção).
+- Arquivos reais inspecionados: sim. Alterações feitas: sim (abaixo).
+- Testes/validação: smoke:forma-trail 30/0 · frenagem-real 16/0 · frenagem-curvas-reais 18/0 · perfil-trail 23/0 ·
+  freio-trecho 29/0 · trail-cockpit 45/0 · cockpit-web 16/0; bateria `npm run smoke` = 0 falhas (0 "✗").
+  Prova serve 200 na 8078; script embutido valida em `node --check`; aberta no navegador.
+- Resultado: concluído no escopo de dev. Pendências reais: (a) sua confirmação visual; (b) Etapa 2b = ligar no painel
+  oficial mockup-command-box-vista-piloto.html; (c) Etapa 3 = selo física↔sensor + 3-de-3 + faxina do legado.
+- Arquivos alterados: frenagem-real.js (2 exports aditivos FRX_IDEAL_ONSET/END) · frenagem-curvas-reais.js (ideal por
+  tipo; semDado→semDadoReal com ideal) · relatorios/frenagem-dado-real-2026-06-15.html (4 edições) ·
+  tests/node-smoke-frenagem-curvas-reais.mjs (CR-10/13 ajustados + CR-15..18) · package.json (smoke:forma-trail + bateria).
+- Acrescentados: web/command-box/forma-trail-tipo.js · tests/node-smoke-forma-trail-tipo.mjs.
+- Preservado: backups `.claude-exec/backup-frenagem-formatipo-2026-06-15/` (4 arquivos); Vmin/fr-*/_shortRevealStateForLap
+  intocados; campo `ref` (melhor volta) ainda calculado (só não é mais a linha tracejada); produção intocada.
+
 ## TASK_INIT — 2026-06-15 — P1 Fast "não está disponível" no iPhone (assinatura de 7 dias expirou)
 
 1. **Pedido de Flávio:** "o P1 Fast não está disponível mais no meu celular, que precisa resolver isso e já resolve os outros problemas."
