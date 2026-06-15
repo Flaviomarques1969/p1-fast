@@ -52,7 +52,10 @@ final class EstoqueRepository: ObservableObject {
     // MARK: - Bootstrap / reload
 
     func bootstrap() async {
-        do { try await reload() } catch { print("EstoqueRepository.bootstrap failed: \(error)") }
+        do {
+            try await reload()
+            try await copiarDoEstoqueDoCarroSeNecessario()
+        } catch { print("EstoqueRepository.bootstrap failed: \(error)") }
     }
 
     func reload() async throws {
