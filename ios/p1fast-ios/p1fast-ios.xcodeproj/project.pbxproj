@@ -297,6 +297,7 @@
 			isa = PBXGroup;
 			children = (
 				1F0C67C4E0BA41DE1CC674DA /* AssistirView.swift */,
+				5717A0117E57000000000B02 /* StintPlanejamentoView.swift */,
 				016229CBCF86E14F58ADD584 /* BarcodeScannerView.swift */,
 				8460C9EF81202B7826CE9893 /* BuscaPrecoMLView.swift */,
 				D07345B44329868693017D6D /* CameraPicker.swift */,
