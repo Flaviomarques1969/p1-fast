@@ -37,7 +37,16 @@ TASK_DONE:
 CAUSA RAIZ confirmada: assinatura de 7 dias (conta dev gratuita) venceu 15/06. Reassinado (novo perfil
 15/06→22/06). App precisou de "Confiar no desenvolvedor" no aparelho (Flávio fez: "feito"). Aberto via
 devicectl, processo 5970 vivo. P1 IMU Test tem o MESMO problema (mesma conta) — some junto a cada 7 dias.
-Solução definitiva pendente de decisão do Flávio.
+
+## DECISÃO DO FLÁVIO (15/06) — solução definitiva
+Escolha (card): **"Entrar no programa pago da Apple"** (Apple Developer Program ≈US$99/ano).
+- AÇÃO DO FLÁVIO (só ele faz — Apple ID + pagamento): inscrever-se em developer.apple.com/programs/enroll
+  (ou app "Apple Developer" no iPhone). Apple aprova em ~1-2 dias.
+- AÇÃO DO CLAUDE (quando a conta ativar): configurar App Store Connect + subir versão pro TestFlight →
+  Flávio passa a atualizar sozinho pela loja, sem cabo, e cada versão dura 1 ano.
+- COBERTURA no meio-tempo: app vale até 22/06 (cobre dia de pista 15-16/06). Se a conta paga não ativar
+  até lá, reassinar de novo (paliativo +7 dias).
+- Mesmo benefício vale pro P1 IMU Test e qualquer app futuro.
 
 ## TASK_INIT — 2026-06-15 — Luz de marcha (shift light) do cockpit do piloto: alinhar entendimento e provar no navegador
 
