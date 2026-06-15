@@ -4308,7 +4308,7 @@ html,body{
     svg+='<path d="'+up+' '+dn+' Z" fill="rgba(56,188,255,0.07)"/>';
     if(refM!=null) svg+='<line x1="'+X(refM).toFixed(1)+'" y1="'+Y(100)+'" x2="'+X(refM).toFixed(1)+'" y2="'+Y(0)+'" stroke="rgba(245,240,224,0.28)" stroke-width="1" stroke-dasharray="2 4"/>';
     svg+='<path d="'+alvoD+'" fill="none" stroke="#38BCFF" stroke-width="1" stroke-dasharray="2 2" stroke-opacity="0.6" stroke-linejoin="round"/>';
-    if(revealed){
+    if(revealed && pts.length){
       var s=frxSegPaths(pts,X,Y);
       if(s.verde)    svg+='<path d="'+s.verde+'" fill="none" stroke="#3FE08C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
       if(s.vermelho) svg+='<path d="'+s.vermelho+'" fill="none" stroke="#FF5A4E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
