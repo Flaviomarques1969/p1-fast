@@ -15,7 +15,7 @@
 
 ## 1. 🟡 Estoque unificado + backup na nuvem
 - **O que é:** um estoque só (geral + de cada carro) com backup na nuvem; o estoque do carro de hoje é COPIADO pra dentro (original intacto).
-- **Estado:** PRONTO em teste (empacotou OK; testes verdes; tela validada). Nuvem ainda NÃO tocada.
+- **Estado:** PRONTO. O CÓDIGO já está na versão oficial (marco `a821ddaa`). Falta só LIGAR a nuvem: o banco da nuvem e o app sincronizado ainda NÃO foram tocados.
 - **O que falta pra produção:** (a) aplicar a migração `0046_estoque_unificado_sync.sql` na nuvem; (b) instalar no iPhone o app que sincroniza.
 - **Risco:** baixo — só CRIA tabela nova e COPIA dados; nada é apagado/alterado.
 - **Desfazer:** a migração tem rollback pronto (apaga só a tabela nova) + reinstalar app anterior.
