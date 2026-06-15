@@ -558,3 +558,45 @@ de tocar no mockup; produção (Vercel/nuvem) intocada.
 4. AMBIENTE: desenvolvimento. PRODUÇÃO PROTEGIDA: sim. AUTORIZAÇÃO PRODUÇÃO: não. EVIDÊNCIA: não recebida.
 5. STATUS: mapeamento concluído; CARD de composição das duas telas aberto pro Flávio ANTES de codar.
    Nenhum código alterado. Aviso paralelo (a confirmar em só-leitura): Bolinha/eventos podem estar só no iPhone.
+
+### DECISÃO DO FLÁVIO (15/06, card) — composição
+"UMA TELA SÓ": levar propósito/treino PRA DENTRO do StintModalView (que já tem pneu/paradas/combustível/
+piloto/ghost/voltas e já cria a sessão). Um "Aprovar" único monta o plano completo, grava o envelope na
+nuvem (papel que o computador fazia) e inicia o Stint. CONSEQUÊNCIA registrada: o "Aprovar" do celular passa
+a GRAVAR o envelope de segurança — é a premissa "planejamento mora no celular", mas é mudança de fluxo de
+segurança (avisado ao Flávio).
+
+### PLANO DE EXECUÇÃO (uma tela só) — ordem
+- [FEITO] BASE no núcleo P1FastCore (auto-incluído, sem mexer no project.pbxproj):
+  ios/p1fast-core/Sources/P1FastCore/PlanoStint.swift — struct PlanoStint (Codable, chaves IDÊNTICAS ao JSON
+  da web: proposito/foco/ghost/voltas/paradas/carroId/piloto/autodromo/tipoPneu/vidaPneuFaixa/modo/aprovadoEm),
+  PlanoParada, EnvelopeDefaultBubi (6300/80/0.50/115/95/6050 — PORT FIEL de shift-light-modos.js, NÃO inventado),
+  ModoStint.registro="agressivo", normalizarTipoPneu (port de tipo-pneu-normalizer.js).
+  Smoke PLANO-01..04 em P1FastSmoke/main.swift = PASSARAM (swift run p1fast-smoke: 549 ok / 2 fail; os 2 fails
+  são PRÉ-EXISTENTES — PERSIST-01 contagem 34≠38, PERSIST-03 evento_pendencias_extra synced_at, NÃO meus).
+- [PRÓX 1] Caminho "Stint solto": StintRepository.create(eventoId: String?) (additivo; callers atuais passam
+  String e seguem compilando). Sessao.eventoId já é String?; sessoes já sincroniza.
+- [PRÓX 2] EnvelopeAprovacaoWriter (camada do app iOS): POST direto /rest/v1/envelopes_seguranca_stint
+  (Configuration.restURL/supabaseAnonKey + SessionManager.accessToken), corpo = colunas snake_case {carro_id,
+  modo_stint, tipo_pneu(normalizado), vida_pneu_faixa, config_cambio:'padrao', rpm_max_absoluto,
+  rpm_min_motor_celsius, forca_lateral_max_g, observacoes, plano_stint(JSON do PlanoStint)} + o MESMO fallback
+  da web (banco sem coluna plano_stint → regrava sem o plano e conta a verdade). Prefer=representation.
+- [PRÓX 3] MERGE no StintModalView: adicionar seção Propósito (livre/testar/treinar) + catálogo + brief
+  obrigatório (portar de StintPlanoView, UI já existe); eventoId vira opcional (solto); no salvar() — depois do
+  create + setStintExtensions — montar PlanoStint dos campos do modal + chamar o writer. BACKUP do modal antes.
+  StintPlanejamentoView "Stint livre" passa a abrir o StintModalView solto (em vez do StintPlanoView).
+- [PRÓX 4] Build app (xcodebuild) verde + validar no simulador SEM escrever na nuvem real do Flávio.
+- [GATE] Ativar no iPhone (o "Aprovar" gravando envelope/plano REAL na nuvem) = exige frase literal
+  "MIGRAR PARA PRODUÇÃO". Até lá, nada vai pra nuvem dele.
+
+### TASK_DONE (parcial) — 2026-06-15 — base do "fechar o ciclo"
+- Pedido original conferido: sim (retomar o planejamento do Stint).
+- Ambiente trabalhado: desenvolvimento (núcleo P1FastCore + smoke). Produção/nuvem/iPhone do Flávio: NÃO tocados.
+- Produção foi alterada: não.
+- Arquivos reais inspecionados: sim (StintPlanoView, StintModalView, StintRepository, Models, mig 0042/0034,
+  sync/index.ts, configuracao-stint.js, shift-light-modos.js, tipo-pneu-normalizer.js, Configuration/SessionManager).
+- Alterações feitas: sim — NOVO PlanoStint.swift (core) + 4 smokes (PLANO-01..04). Nada removido.
+- Testes executados: sim — swift run p1fast-smoke = 549 ok / 2 fail (os 2 são pré-existentes, não meus).
+- Resultado: PARCIAL — base do plano pronta e provada; faltam PRÓX 1-4 + GATE.
+- Pendências reais: solto path, writer do envelope, merge no modal, build do app, ativação (gate). Aviso paralelo:
+  Bolinha/eventos podem estar só no iPhone (a confirmar em só-leitura quando o Flávio pedir).
