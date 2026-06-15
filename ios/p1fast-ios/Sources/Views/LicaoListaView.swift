@@ -193,6 +193,8 @@ private struct TagPill: View {
 private struct LicaoDetalheSheet: View {
     let licao: Licao
     let onClose: () -> Void
+    let onApagar: () -> Void
+    @State private var mostrarConfirmaApagar = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -208,6 +210,10 @@ private struct LicaoDetalheSheet: View {
                     if let sinais = licao.sinaisRequeridos {
                         sinaisCard(sinais)
                     }
+                    DeleteCadastroButton(label: "Apagar lição") {
+                        mostrarConfirmaApagar = true
+                    }
+                    .padding(.top, Spacing.sm)
                 }
                 .padding(.horizontal, Spacing.lg)
                 .padding(.top, Spacing.md)
@@ -222,6 +228,12 @@ private struct LicaoDetalheSheet: View {
                 saveLabel: "Fechar",
                 canSave: true
             )
+        }
+        .alert("Apagar lição?", isPresented: $mostrarConfirmaApagar) {
+            Button("Cancelar", role: .cancel) {}
+            Button("Apagar", role: .destructive) { onApagar() }
+        } message: {
+            Text("Some da lista, mas fica em Apagados — dá pra resgatar.")
         }
         .preferredColorScheme(.dark)
     }
