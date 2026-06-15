@@ -63,6 +63,7 @@ final class CombustivelRepository: ObservableObject {
         let rows = try await queue.read { db in
             try Combustivel
                 .filter(Column("time_id") == teamId)
+                .filter(sql: ItemArquivado.notInClause("combustiveis"))
                 .order(Column("nome").asc)
                 .fetchAll(db)
         }
