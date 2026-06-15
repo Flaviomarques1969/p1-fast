@@ -65,6 +65,8 @@
 		99A8671050630E34B1F457EA /* LicaoRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FBA0DEE7AB4736707796F45 /* LicaoRepository.swift */; };
 		9AD1A7216B517716FBABA622 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A75DE870DF04512BFB7C2BA1 /* SessionManager.swift */; };
 		9B39E68705CCB0EC9E4371B5 /* EstoqueRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D48CD13346E0F0BB19DF213 /* EstoqueRepository.swift */; };
+		AA10ED17000000000000FE01 /* ArquivoRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10ED17000000000000FE02 /* ArquivoRepository.swift */; };
+		AA10ED17000000000000FE03 /* ApagadosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10ED17000000000000FE04 /* ApagadosView.swift */; };
 		9CD8AE8D16D352F6EE222F57 /* BarcodeScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 016229CBCF86E14F58ADD584 /* BarcodeScannerView.swift */; };
 		9E8DC084A44D5CF5DEFDB5AA /* Chip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F490211A002128465D71E11 /* Chip.swift */; };
 		A0A815EC111AC330FB8484AD /* BuscaPrecoMLView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8460C9EF81202B7826CE9893 /* BuscaPrecoMLView.swift */; };
