@@ -145,10 +145,11 @@ sem nova ordem.
 ### TASK_DONE
 - Pedido original conferido: sim
 - Ambiente trabalhado: desenvolvimento (código das funções) + leitura da nuvem
-- Produção foi alterada: NÃO (nenhuma publicação feita)
-- Se produção foi alterada, autorização registrada: n/a
+- Produção foi alterada: SIM — funções `sync` (v9→v10) e `pull` (v3→v4) publicadas na nuvem 15/06 17:55
+- Se produção foi alterada, autorização registrada: SIM — Flávio escreveu `MIGRAR PARA PRODUÇÃO: funcoes sync e pull com estoque`
 - Arquivos reais inspecionados: sim (sync/index.ts, pull/index.ts, ios EstoqueRepository/SyncBackfill/SyncCoordinator, migration 0046, dump da nuvem)
-- Alterações feitas: 2 linhas (sync + pull) em dev; plano de migração e este registro atualizados
-- Testes/validação executados: dump só-leitura da nuvem (0 linhas estoque) ✓; typecheck Deno NÃO (Deno ausente)
-- Resultado: PARCIAL / BLOQUEADO — espera `MIGRAR PARA PRODUÇÃO: funcoes sync e pull com estoque` pra publicar; depois você abre o app ~1 min e eu confirmo a subida
-- Pendências reais: publicar `sync`+`pull` na nuvem (autorização); confirmar linhas pós-publicação
+- Alterações feitas: 2 linhas (sync + pull) em dev + publicação na nuvem; plano de migração e este registro atualizados
+- Testes/validação executados: dump só-leitura da nuvem (0 linhas estoque ANTES) ✓; versões pós-publicação confirmadas (sync v10 / pull v4) ✓; typecheck Deno NÃO (Deno ausente)
+- Resultado: PARCIAL — porta aberta (funções publicadas). Falta Flávio abrir o app ~1 min e eu confirmar as linhas subindo.
+- Pendências reais: (1) Flávio abrir o app desbloqueado ~1 min; (2) eu reconferir o estoque na nuvem (>0 linhas) e fechar o item 1.
+- Desfazer (se preciso): republicar sync v9 / pull v3 (versões anteriores ainda existem no histórico da nuvem).
