@@ -13,13 +13,11 @@
 
 ---
 
-## 1. 🟡 Estoque unificado + backup na nuvem
+## 1. 🟢 Estoque unificado + backup na nuvem — FEITO 2026-06-14
 - **O que é:** um estoque só (geral + de cada carro) com backup na nuvem; o estoque do carro de hoje é COPIADO pra dentro (original intacto).
-- **Estado:** PRONTO. O CÓDIGO já está na versão oficial (marco `a821ddaa`). Falta só LIGAR a nuvem: o banco da nuvem e o app sincronizado ainda NÃO foram tocados.
-- **O que falta pra produção:** (a) aplicar a migração `0046_estoque_unificado_sync.sql` na nuvem; (b) instalar no iPhone o app que sincroniza.
-- **Risco:** baixo — só CRIA tabela nova e COPIA dados; nada é apagado/alterado.
-- **Desfazer:** a migração tem rollback pronto (apaga só a tabela nova) + reinstalar app anterior.
-- **Liberar com:** `MIGRAR PARA PRODUÇÃO: estoque unificado`
+- **Estado:** NO AR. (a) Migração `0046` APLICADA na nuvem (tabela `estoque_item` criada — confirmado por REST HTTP 200 e pela lista de migrações: 0046 Local+Remoto). (b) App sincronizado INSTALADO e aberto no iPhone 16 Pro Max. Código também na versão oficial (`a821ddaa`).
+- **Falta só:** você abrir o app ~1 min desbloqueado pra o envio retroativo terminar de subir o estoque pra nuvem (roda em primeiro plano).
+- **Desfazer:** rollback no rodapé da `0046` (apaga só a tabela nova) + reinstalar app anterior. A 0044 (de outra frente) NÃO foi tocada.
 
 ## 2. 🟢 Estoque geral + Pendências (camada local)
 - **O que é:** Estoque geral na Garagem, editor único com câmera, Pendências novas (contador "peguei", concluir no quadradinho, Gerenciar).
