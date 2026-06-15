@@ -320,7 +320,8 @@ private struct ReadyRoot: View {
             HomeView(
                 state: .empty,
                 syncCoordinator: syncCoordinator,
-                telemetriaDevView: telemetriaBuilder
+                telemetriaDevView: telemetriaBuilder,
+                onStintTap: stintTapDecision
             )
         case .showcase:
             ThemeShowcaseView()
