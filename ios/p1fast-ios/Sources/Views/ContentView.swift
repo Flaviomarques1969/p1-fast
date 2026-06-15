@@ -319,6 +319,60 @@ private struct ReadyRoot: View {
         }
     }
 
+    /// Monta o estado da Home com os DADOS REAIS (carros, eventos, stints) em
+    /// vez do exemplo (decisão Flávio 15/06). Sem carros E sem eventos →
+    /// onboarding (.empty).
+    private func realHomeState() -> HomeState {
+        let carros = carroRepo.carros
+        let eventos = eventoRepo.eventos
+        if carros.isEmpty && eventos.isEmpty { return .empty }
+        let data = HomeData(
+            carrosTotal: carros.count,
+            eventosTotal: eventos.count,
+            stintsTotal: carroRepo.stintsPorCarro.values.reduce(0, +),
+            eventoAtivoHoje: eventoRepo.eventoAtivoHoje().map(eventoCard),
+            proximoEvento: eventoRepo.proximoEvento().map(eventoCard),
+            carrosRecentes: carros.prefix(3).map(carroCard)
+        )
+        return .filled(data)
+    }
+
+    private func eventoCard(_ ev: EventoView) -> EventoMock {
+        EventoMock(
+            pista: ev.pistaDisplay,
+            pistaOficial: ev.pistaLayoutNome,
+            dataISO: Self.isoDate(ev.evento.dataEvento),
+            horario: Self.horario(ev.evento.dataEvento),
+            eventoId: ev.id
+        )
+    }
+
+    private func carroCard(_ c: Carro) -> CarroMock {
+        CarroMock(
+            apelido: c.apelido,
+            modeloCategoria: [c.modelo, c.categoria].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "),
+            cor: Color(hex: c.cor ?? "") ?? Color.gray,
+            stints: carroRepo.stintsPorCarro[c.id] ?? 0
+        )
+    }
+
+    /// data_evento (Int64 ms) → "yyyy-MM-dd" no fuso do aparelho.
+    private static func isoDate(_ ms: Int64) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = .current
+        f.dateFormat = "yyyy-MM-dd"
+        return f.string(from: Date(timeIntervalSince1970: Double(ms) / 1000))
+    }
+
+    /// Horário do evento (HH:mm). Meia-noite = sem horário definido → nil.
+    private static func horario(_ ms: Int64) -> String? {
+        let d = Date(timeIntervalSince1970: Double(ms) / 1000)
+        let c = Calendar.current
+        let h = c.component(.hour, from: d), m = c.component(.minute, from: d)
+        return (h == 0 && m == 0) ? nil : String(format: "%02d:%02d", h, m)
+    }
+
     @ViewBuilder
     private var routedView: some View {
         switch AppRoute.fromLaunchArgs {
