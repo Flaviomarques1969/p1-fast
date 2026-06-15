@@ -42,7 +42,7 @@ struct SincronizacaoView: View {
             }
             .background(Color.surface)
             .preferredColorScheme(.dark)
-            .navigationTitle("Sincronização")
+            .navigationTitle("Conta")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
