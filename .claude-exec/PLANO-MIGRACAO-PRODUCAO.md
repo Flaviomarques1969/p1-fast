@@ -13,13 +13,12 @@
 
 ---
 
-## 1. 🔵 Estoque unificado + backup na nuvem — BLOQUEADO (falta publicar a função de sincronização)
+## 1. 🟡 Estoque unificado + backup na nuvem — funções publicadas 15/06; falta o app subir os dados
 - **O que é:** um estoque só (geral + de cada carro) com backup na nuvem; o estoque do carro de hoje é COPIADO pra dentro (original intacto).
-- **Estado:** banco PRONTO, mas o backup NÃO acontece ainda. (a) Migração `0046` APLICADA na nuvem (tabela `estoque_item` criada). (b) App sincronizado INSTALADO no iPhone e JÁ tenta subir o estoque. (c) Código na versão oficial (`a821ddaa`).
-- **BLOQUEIO ENCONTRADO 15/06 (com prova):** a função de sincronização publicada na nuvem (`sync`, versão 9 de 03/06) NÃO aceita a tabela `estoque_item` — ela rejeita tudo que não está numa lista fixa (linha 124), e `estoque_item` nunca esteve nessa lista (confirmado no histórico). Resultado: a nuvem tem **0 linhas de estoque** (conferido por dump só-leitura) e abrir o app NÃO sobe nada (é recusado). A leitura de volta (`pull`) tinha o mesmo furo.
-- **Conserto FEITO em desenvolvimento 15/06:** `estoque_item` adicionado à lista da função `sync` e da `pull` (`supabase/functions/sync/index.ts` e `.../pull/index.ts`). Aditivo e reversível. Não dá pra testar tipo localmente (Deno não instalado nesta máquina); o empacotamento real ocorre no envio Supabase.
-- **Falta:** (1) publicar as funções `sync` + `pull` na nuvem — **decisão de produção, espera `MIGRAR PARA PRODUÇÃO: funcoes sync e pull com estoque`**; (2) depois, você abrir o app ~1 min desbloqueado pro envio retroativo subir; (3) eu confirmo as linhas na nuvem.
-- **Desfazer:** reverter as 2 linhas adicionadas e republicar a função anterior; rollback da `0046` no rodapé dela (apaga só a tabela nova). A 0044 (de outra frente) NÃO foi tocada.
+- **Estado:** porta de entrada ABERTA. (a) Migração `0046` aplicada (tabela `estoque_item`). (b) Funções `sync` (v10) e `pull` (v4) **PUBLICADAS na nuvem em 15/06 17:55** (autorização literal `MIGRAR PARA PRODUÇÃO: funcoes sync e pull com estoque`) — agora aceitam o estoque. (c) App instalado no iPhone já tenta subir.
+- **BLOQUEIO que existia (resolvido):** a função `sync` publicada estava na versão 9 de 03/06 e não aceitava `estoque_item` (rejeitava na linha 124); por isso a nuvem tinha 0 linhas de estoque. `estoque_item` adicionado às listas de `sync` e `pull` e republicado.
+- **Falta:** (1) você abrir o app ~1 min desbloqueado pro envio retroativo subir o estoque; (2) eu confirmo as linhas na nuvem (leitura) e fecho o item.
+- **Desfazer:** republicar as versões anteriores das 2 funções (sync v9 / pull v3); rollback da `0046` no rodapé dela (apaga só a tabela nova). A 0044 (de outra frente) NÃO foi tocada.
 
 ## 2. 🟢 Estoque geral + Pendências (camada local)
 - **O que é:** Estoque geral na Garagem, editor único com câmera, Pendências novas (contador "peguei", concluir no quadradinho, Gerenciar).
