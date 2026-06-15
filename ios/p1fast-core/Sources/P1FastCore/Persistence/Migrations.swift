@@ -515,6 +515,84 @@ enum Migrations {
             try? db.execute(sql: "ALTER TABLE pendencias_template ADD COLUMN unidade TEXT;")
             try? db.execute(sql: "ALTER TABLE evento_pendencias ADD COLUMN quantidade REAL;")
         }
+
+        // v29 — pendências ADICIONAIS (incluídas pelo usuário) por evento.
+        // LOCAL-ONLY: esta tabela NÃO passa pelo SyncQueue, então a tabela
+        // `evento_pendencias` (que sobe pra nuvem/produção) fica intacta. O app
+        // é mono-iPhone (ADR-018), então não precisa sincronizar estes itens.
+        // Cada item: título livre + grupo escolhido + checado. Removível.
+        m.registerMigration("v29_pendencias_adicionais") { db in
+            try db.execute(sql: """
+                CREATE TABLE IF NOT EXISTS evento_pendencias_extra (
+                    id           TEXT PRIMARY KEY,
+                    evento_id    TEXT NOT NULL REFERENCES eventos(id) ON DELETE CASCADE,
+                    grupo_id     TEXT NOT NULL,
+                    grupo_titulo TEXT NOT NULL,
+                    grupo_num    TEXT NOT NULL,
+                    titulo       TEXT NOT NULL,
+                    checado      INTEGER NOT NULL DEFAULT 0,
+                    checado_at   INTEGER,
+                    created_at   INTEGER NOT NULL,
+                    updated_at   INTEGER NOT NULL
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_evento_pendencias_extra_evento ON evento_pendencias_extra(evento_id);")
+        }
+
+        // v30 — Estoque geral (unificado) + contador "peguei" por evento.
+        // LOCAL-ONLY: estas duas tabelas NÃO passam pelo SyncQueue, então o
+        // estoque do carro (`pecas`, que sobe pra nuvem/produção) fica intacto.
+        // Desenho aprovado por Flávio em 2026-06-14.
+        //   • estoque_item: item unificado (estoque geral OU de um carro), com a
+        //     riqueza nova (item/ferramenta, bloco, categoria, especificação,
+        //     como conta a quantidade — simples/embalagem/conjunto).
+        //   • evento_pendencia_pegou: quantos já "peguei" de cada item, por
+        //     evento (a posse mora no estoque; o "peguei" é por evento).
+        m.registerMigration("v30_estoque_geral_e_pegou") { db in
+            try db.execute(sql: """
+                CREATE TABLE IF NOT EXISTS estoque_item (
+                    id             TEXT PRIMARY KEY,
+                    time_id        TEXT NOT NULL,
+                    escopo         TEXT NOT NULL DEFAULT 'geral',
+                    kind           TEXT NOT NULL DEFAULT 'item',
+                    grupo_id       TEXT NOT NULL,
+                    grupo_titulo   TEXT NOT NULL,
+                    grupo_num      TEXT NOT NULL,
+                    nome           TEXT NOT NULL,
+                    especificacao  TEXT,
+                    categoria      TEXT NOT NULL DEFAULT 'obrig',
+                    contagem       TEXT NOT NULL DEFAULT 'simples',
+                    quantidade     INTEGER NOT NULL DEFAULT 1,
+                    volume         REAL,
+                    unidade        TEXT,
+                    embalagens     INTEGER,
+                    partes_json    TEXT,
+                    foto_url       TEXT,
+                    created_at     INTEGER NOT NULL,
+                    updated_at     INTEGER NOT NULL
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_estoque_item_escopo ON estoque_item(escopo);")
+            try db.execute(sql: """
+                CREATE TABLE IF NOT EXISTS evento_pendencia_pegou (
+                    id          TEXT PRIMARY KEY,
+                    evento_id   TEXT NOT NULL,
+                    item_id     TEXT NOT NULL,
+                    pegou       INTEGER NOT NULL DEFAULT 0,
+                    updated_at  INTEGER NOT NULL
+                );
+            """)
+            try db.execute(sql: "CREATE UNIQUE INDEX IF NOT EXISTS idx_evento_pendencia_pegou_uq ON evento_pendencia_pegou(evento_id, item_id);")
+        }
+
+        // v31 — Estoque UNIFICADO passa a SINCRONIZAR (backup na nuvem).
+        // Decisão de Flávio 2026-06-14 ("um só, com backup na nuvem"). A tabela
+        // estoque_item (v30) ganha synced_at e deixa de ser local-only: a partir
+        // daqui o repo enfileira no SyncQueue e o pull traz do servidor.
+        // (A tabela na nuvem é criada pela migration 0046 — aplicada à parte.)
+        m.registerMigration("v31_estoque_item_sync") { db in
+            try? db.execute(sql: "ALTER TABLE estoque_item ADD COLUMN synced_at INTEGER;")
+        }
     }
 
     // swiftlint:disable:next function_body_length

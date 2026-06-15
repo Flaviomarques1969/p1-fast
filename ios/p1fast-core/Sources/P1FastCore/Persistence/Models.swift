@@ -1236,3 +1236,172 @@ public struct EventoPendencia: Codable, FetchableRecord, PersistableRecord, Equa
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
 }
+
+// MARK: - evento_pendencias_extra (itens adicionais por evento — LOCAL-ONLY)
+//
+// Itens de pendência que o usuário INCLUI à mão pra um evento, fora do
+// catálogo curado (`pendencias_template`). Vivem só no iPhone — NÃO
+// sincronizam com a nuvem (não há `synced_at` e o repo nunca enfileira no
+// SyncQueue). Isso mantém `evento_pendencias` (que sobe pra produção) intacta.
+public struct EventoPendenciaExtra: Codable, FetchableRecord, PersistableRecord, Equatable {
+    public var id: String
+    public var eventoId: String
+    public var grupoId: String
+    public var grupoTitulo: String
+    public var grupoNum: String
+    public var titulo: String
+    public var checado: Bool
+    public var checadoAt: Int64?
+    public var createdAt: Int64
+    public var updatedAt: Int64
+
+    public static let databaseTableName = "evento_pendencias_extra"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case eventoId = "evento_id"
+        case grupoId = "grupo_id"
+        case grupoTitulo = "grupo_titulo"
+        case grupoNum = "grupo_num"
+        case titulo, checado
+        case checadoAt = "checado_at"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(id: String, eventoId: String, grupoId: String, grupoTitulo: String,
+                grupoNum: String, titulo: String, checado: Bool = false,
+                checadoAt: Int64? = nil, createdAt: Int64 = DB.nowMs(),
+                updatedAt: Int64 = DB.nowMs()) {
+        self.id = id; self.eventoId = eventoId
+        self.grupoId = grupoId; self.grupoTitulo = grupoTitulo; self.grupoNum = grupoNum
+        self.titulo = titulo; self.checado = checado; self.checadoAt = checadoAt
+        self.createdAt = createdAt; self.updatedAt = updatedAt
+    }
+}
+
+// MARK: - estoque_item (estoque geral + por carro, unificado — LOCAL-ONLY)
+//
+// Item de estoque unificado do desenho aprovado em 2026-06-14. Pode ser do
+// "estoque geral" (escopo = "geral") ou de um carro (escopo = carroId).
+// Guarda a riqueza nova: item/ferramenta, bloco, categoria (obrig/desej),
+// especificação e como conta a quantidade (simples/embalagem/conjunto).
+// Vive só no iPhone — NÃO sincroniza (sem `synced_at`, o repo nunca enfileira
+// no SyncQueue). Mantém o estoque do carro existente (`pecas`, que sobe pra
+// produção) intacto.
+public struct EstoqueItem: Codable, FetchableRecord, PersistableRecord, Equatable, Identifiable {
+    public var id: String
+    public var timeId: String
+    public var escopo: String          // "geral" ou carroId
+    public var kind: String            // "item" | "ferramenta"
+    public var grupoId: String
+    public var grupoTitulo: String
+    public var grupoNum: String
+    public var nome: String
+    public var especificacao: String?
+    public var categoria: String       // "obrig" | "desej"
+    public var contagem: String        // "simples" | "embalagem" | "conjunto"
+    public var quantidade: Int
+    public var volume: Double?
+    public var unidade: String?
+    public var embalagens: Int?
+    public var partesJson: String?
+    public var fotoUrl: String?
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    /// Marca a sincronização com a nuvem (nil = pendente de envio). A partir de
+    /// 2026-06-14 o estoque é UNIFICADO e SINCRONIZA (backup na nuvem).
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "estoque_item"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case escopo, kind
+        case grupoId = "grupo_id"
+        case grupoTitulo = "grupo_titulo"
+        case grupoNum = "grupo_num"
+        case nome, especificacao, categoria, contagem, quantidade, volume, unidade, embalagens
+        case partesJson = "partes_json"
+        case fotoUrl = "foto_url"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+
+    public init(id: String = UUID().uuidString, timeId: String, escopo: String = "geral",
+                kind: String = "item", grupoId: String, grupoTitulo: String, grupoNum: String,
+                nome: String, especificacao: String? = nil, categoria: String = "obrig",
+                contagem: String = "simples", quantidade: Int = 1, volume: Double? = nil,
+                unidade: String? = nil, embalagens: Int? = nil, partesJson: String? = nil,
+                fotoUrl: String? = nil, createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.escopo = escopo; self.kind = kind
+        self.grupoId = grupoId; self.grupoTitulo = grupoTitulo; self.grupoNum = grupoNum
+        self.nome = nome; self.especificacao = especificacao; self.categoria = categoria
+        self.contagem = contagem; self.quantidade = quantidade; self.volume = volume
+        self.unidade = unidade; self.embalagens = embalagens; self.partesJson = partesJson
+        self.fotoUrl = fotoUrl; self.createdAt = createdAt; self.updatedAt = updatedAt
+        self.syncedAt = syncedAt
+    }
+
+    /// Alvo do "peguei": quantas unidades efetivas a levar.
+    public var alvo: Int {
+        switch contagem {
+        case "embalagem": return max(1, embalagens ?? 1)
+        case "conjunto":  return EstoqueItem.somaPartes(partesJson)
+        default:          return max(1, quantidade)
+        }
+    }
+
+    /// Peça do conjunto (ex.: Aro 15 ×4). Serializada em `partes_json`.
+    public struct Parte: Codable, Equatable, Identifiable {
+        public var nome: String
+        public var qtd: Int
+        public var id: String { nome }
+        public init(nome: String, qtd: Int) { self.nome = nome; self.qtd = qtd }
+    }
+
+    public static func somaPartes(_ json: String?) -> Int {
+        let partes = decodePartes(json)
+        let s = partes.reduce(0) { $0 + max(0, $1.qtd) }
+        return max(1, s)
+    }
+
+    public static func decodePartes(_ json: String?) -> [Parte] {
+        guard let json, let data = json.data(using: .utf8),
+              let arr = try? JSONDecoder().decode([Parte].self, from: data) else { return [] }
+        return arr
+    }
+
+    public static func encodePartes(_ partes: [Parte]) -> String? {
+        guard !partes.isEmpty, let data = try? JSONEncoder().encode(partes) else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+}
+
+// MARK: - evento_pendencia_pegou (quantos já "peguei" por evento — LOCAL-ONLY)
+//
+// A posse mora no estoque; o "peguei" (quantos já separei pra ESTE evento) é
+// por evento. LOCAL-ONLY (sem `synced_at`; nunca enfileira no SyncQueue), pra
+// não tocar `evento_pendencias` (que sobe pra produção).
+public struct EventoPendenciaPegou: Codable, FetchableRecord, PersistableRecord, Equatable, Identifiable {
+    public var id: String              // "<evento_id>|<item_id>"
+    public var eventoId: String
+    public var itemId: String
+    public var pegou: Int
+    public var updatedAt: Int64
+
+    public static let databaseTableName = "evento_pendencia_pegou"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case eventoId = "evento_id"
+        case itemId = "item_id"
+        case pegou
+        case updatedAt = "updated_at"
+    }
+
+    public init(eventoId: String, itemId: String, pegou: Int = 0, updatedAt: Int64 = DB.nowMs()) {
+        self.id = "\(eventoId)|\(itemId)"
+        self.eventoId = eventoId; self.itemId = itemId; self.pegou = pegou; self.updatedAt = updatedAt
+    }
+}

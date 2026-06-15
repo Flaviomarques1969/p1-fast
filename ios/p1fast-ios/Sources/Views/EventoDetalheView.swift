@@ -33,6 +33,7 @@ struct EventoDetalheView: View {
     @EnvironmentObject private var pneuRepo: PneuRepository
     @EnvironmentObject private var combustivelRepo: CombustivelRepository
     @EnvironmentObject private var pendenciaRepo: PendenciaRepository
+    @EnvironmentObject private var estoqueRepo: EstoqueRepository
     @EnvironmentObject private var voltaVideoRepo: VoltaVideoRepository
     let eventoId: String
     let onClose: () -> Void
@@ -143,6 +144,8 @@ struct EventoDetalheView: View {
                     onClose: { sheet = nil }
                 )
                 .environmentObject(pendenciaRepo)
+                .environmentObject(estoqueRepo)
+                .environmentObject(carroRepo)
             } else {
                 EmptyView()
             }

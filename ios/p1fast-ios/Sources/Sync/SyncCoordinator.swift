@@ -158,6 +158,7 @@ public final class SyncCoordinator: ObservableObject {
         "eventos", "sessoes", "voltas", "segment_executions",
         "licoes", "pendencias_template", "evento_pendencias",
         "mensagens", "trofeus_ganhos",
+        "estoque_item",
     ]
 
     private func drainSync() async {

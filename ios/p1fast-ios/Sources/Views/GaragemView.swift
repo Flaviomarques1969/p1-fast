@@ -21,6 +21,9 @@ import P1FastCore
 struct GaragemView: View {
     @EnvironmentObject private var repo: CarroRepository
     @State private var sheet: GaragemSheet?
+    /// Sub-aba ativa: Carros (lista de carros) ou um dos cadastros que
+    /// migraram pra cá (Pilotos/Passageiros/Combustível/Lições). 2026-06-14.
+    @State private var subTab: GaragemSubTab
 
     /// Permite abrir a tela já com uma sheet visível — usado pelos
     /// launch args `--p1-garagem-novo` / `--p1-garagem-carro` pra
@@ -31,24 +34,42 @@ struct GaragemView: View {
     var onNavSelect: (BottomNavItem) -> Void = { _ in }
 
     init(initialSheet: GaragemSheet? = nil,
+         initialSubTab: GaragemSubTab? = nil,
          onNavSelect: @escaping (BottomNavItem) -> Void = { _ in }) {
         self.initialSheet = initialSheet
         self.onNavSelect = onNavSelect
+        _subTab = State(initialValue: initialSubTab ?? .carros)
     }
 
     var body: some View {
-        ScrollView {
-            content
-                .padding(.horizontal, Spacing.lg)
-                .padding(.top, Spacing.md)
-                .padding(.bottom, 32)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(spacing: 0) {
+            garagemHeaderBar
+            subTabBar
+            Group {
+                switch subTab {
+                case .carros:
+                    carrosScroll
+                case .estoqueGeral:
+                    EstoqueGeralView()
+                case .pilotos:
+                    PessoasView(embeddedSubTab: .pilotos)
+                case .passageiros:
+                    PessoasView(embeddedSubTab: .passageiros)
+                case .combustivel:
+                    PessoasView(embeddedSubTab: .combustiveis)
+                case .licoes:
+                    PessoasView(embeddedSubTab: .licoes)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(Color.surface)
         .overlay(alignment: .bottomTrailing) {
-            FAB("Novo carro") { sheet = .novo }
-                .padding(.trailing, Spacing.md)
-                .padding(.bottom, Spacing.md)
+            if subTab == .carros {
+                FAB("Novo carro") { sheet = .novo }
+                    .padding(.trailing, Spacing.md)
+                    .padding(.bottom, Spacing.md)
+            }
         }
         .preferredColorScheme(.dark)
         .onAppear {
@@ -68,33 +89,62 @@ struct GaragemView: View {
         }
     }
 
-    @ViewBuilder
-    private var content: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            contextHead
-            summaryCard
-            VStack(spacing: 10) {
-                ForEach(Array(repo.carros.enumerated()), id: \.element.id) { idx, carro in
-                    NavigationLink(value: HomeNavTarget.carroHub(carroId: carro.id)) {
-                        CarroCard(
-                            carro: carro,
-                            stints: repo.stintsPorCarro[carro.id] ?? 0,
-                            isAtivo: idx == 0
-                        )
+    /// Aba Carros: lista de carros (o conteúdo original da Garagem).
+    private var carrosScroll: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                carrosHead
+                summaryCard
+                VStack(spacing: 10) {
+                    ForEach(Array(repo.carros.enumerated()), id: \.element.id) { idx, carro in
+                        NavigationLink(value: HomeNavTarget.carroHub(carroId: carro.id)) {
+                            CarroCard(
+                                carro: carro,
+                                stints: repo.stintsPorCarro[carro.id] ?? 0,
+                                isAtivo: idx == 0
+                            )
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
             }
+            .padding(.horizontal, Spacing.lg)
+            .padding(.top, Spacing.md)
+            .padding(.bottom, 120)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
-    private var contextHead: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline) {
-                Eyebrow(text: "Garagem")
-                Spacer(minLength: 0)
-                trechosLink
+    /// Barra superior fixa da Garagem — eyebrow + atalho "Trechos da pista".
+    private var garagemHeaderBar: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Eyebrow(text: "Garagem")
+            Spacer(minLength: 0)
+            trechosLink
+        }
+        .padding(.horizontal, Spacing.lg)
+        .padding(.top, Spacing.md)
+        .padding(.bottom, Spacing.sm)
+    }
+
+    /// Fileira de sub-abas: Carros · Pilotos · Passageiros · Combustível · Lições.
+    private var subTabBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(GaragemSubTab.allCases) { tab in
+                    GaragemSubTabPill(label: tab.label, isActive: tab == subTab) {
+                        subTab = tab
+                    }
+                }
             }
+            .padding(.horizontal, Spacing.lg)
+            .padding(.bottom, Spacing.sm)
+        }
+    }
+
+    /// Título/subtítulo da aba Carros (sem eyebrow — já está na barra de cima).
+    private var carrosHead: some View {
+        VStack(alignment: .leading, spacing: 6) {
             Text(headerTitle)
                 .font(.system(size: 24, weight: .semibold))
                 .tracking(-0.6) // -0.025em em 24pt
@@ -203,6 +253,46 @@ enum GaragemSheet: Identifiable, Equatable {
         case .editar(let id): return "editar-\(id)"
         case .trechos: return "trechos"
         }
+    }
+}
+
+// MARK: - Sub-abas da Garagem
+
+/// Carros + os cadastros que migraram da antiga aba "Cadastros" (2026-06-14).
+enum GaragemSubTab: String, CaseIterable, Identifiable {
+    case carros, estoqueGeral, pilotos, passageiros, combustivel, licoes
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .carros: return "Carros"
+        case .estoqueGeral: return "Estoque geral"
+        case .pilotos: return "Pilotos"
+        case .passageiros: return "Passageiros"
+        case .combustivel: return "Combustível"
+        case .licoes: return "Lições"
+        }
+    }
+}
+
+/// Pill da sub-aba (mesmo visual do segmented control de Cadastros).
+private struct GaragemSubTabPill: View {
+    let label: String
+    let isActive: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(label.uppercased())
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(1.32)
+                .foregroundStyle(isActive ? Color.onAccent : Color.textMuted)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(Capsule().fill(isActive ? Color.accent : Color.clear))
+                .overlay(Capsule().stroke(isActive ? Color.clear : Color.border, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .animation(Layout.snap, value: isActive)
     }
 }
 

@@ -15,6 +15,17 @@ struct HubMockLauncher: View {
     @StateObject private var manutencaoStore: ManutencaoConsumiveisStore
     @StateObject private var pecaRepo: PecaRepository
     @StateObject private var pneuRepo: PneuRepository
+    // Repos que a Garagem (sub-abas) e a aba Pendências precisam — 2026-06-14.
+    @StateObject private var eventoRepo: EventoRepository
+    @StateObject private var pilotoRepo: PilotoRepository
+    @StateObject private var passageiroRepo: PassageiroRepository
+    @StateObject private var combustivelRepo: CombustivelRepository
+    @StateObject private var licaoRepo: LicaoRepository
+    @StateObject private var pendenciaRepo: PendenciaRepository
+    @StateObject private var estoqueRepo: EstoqueRepository
+    /// NavRouter ESTÁVEL (como no ReadyRoot real) — sem isto, cada publish dos
+    /// repos recriaria o router e jogaria a navegação de volta pra raiz.
+    @StateObject private var router = NavRouter()
 
     @State private var carroId: String?
     @State private var ready = false
@@ -28,12 +39,34 @@ struct HubMockLauncher: View {
         _manutencaoStore = StateObject(wrappedValue: ManutencaoConsumiveisStore(queue: queue))
         _pecaRepo = StateObject(wrappedValue: PecaRepository(queue: queue))
         _pneuRepo = StateObject(wrappedValue: PneuRepository(queue: queue))
+        _eventoRepo = StateObject(wrappedValue: EventoRepository(queue: queue))
+        _pilotoRepo = StateObject(wrappedValue: PilotoRepository(queue: queue))
+        _passageiroRepo = StateObject(wrappedValue: PassageiroRepository(queue: queue))
+        _combustivelRepo = StateObject(wrappedValue: CombustivelRepository(queue: queue))
+        _licaoRepo = StateObject(wrappedValue: LicaoRepository(queue: queue))
+        _pendenciaRepo = StateObject(wrappedValue: PendenciaRepository(queue: queue))
+        _estoqueRepo = StateObject(wrappedValue: EstoqueRepository(queue: queue))
     }
 
     var body: some View {
         Group {
             if ready, let id = carroId {
-                if ProcessInfo.processInfo.arguments.contains("--p1-preco-ml") {
+                if ProcessInfo.processInfo.arguments.contains("--p1-estoque-editar") {
+                    // Editor único de item (botões + câmera/OCR) — screenshot do editor.
+                    EstoqueItemEditorView(item: nil, escopoInicial: EstoqueRepository.escopoGeral,
+                                          onClose: {}, onSaved: { _ in })
+                        .environmentObject(estoqueRepo)
+                        .environmentObject(carroRepo)
+                } else if ProcessInfo.processInfo.arguments.contains("--p1-estoque") {
+                    // Garagem aberta direto na sub-aba "Estoque geral".
+                    GaragemView(initialSubTab: .estoqueGeral)
+                        .environmentObject(carroRepo)
+                        .environmentObject(estoqueRepo)
+                        .environmentObject(pilotoRepo)
+                        .environmentObject(passageiroRepo)
+                        .environmentObject(combustivelRepo)
+                        .environmentObject(licaoRepo)
+                } else if ProcessInfo.processInfo.arguments.contains("--p1-preco-ml") {
                     // Busca de preço no Mercado Livre (navegador embutido) — valida
                     // que o app lê o preço de dentro do próprio aparelho.
                     BuscaPrecoMLView(termo: "sabo 02370", onUsar: { _ in }, onClose: {})
@@ -70,7 +103,14 @@ struct HubMockLauncher: View {
                         .environmentObject(manutencaoStore)
                         .environmentObject(pecaRepo)
                         .environmentObject(pneuRepo)
-                        .environmentObject(NavRouter())
+                        .environmentObject(eventoRepo)
+                        .environmentObject(pilotoRepo)
+                        .environmentObject(passageiroRepo)
+                        .environmentObject(combustivelRepo)
+                        .environmentObject(licaoRepo)
+                        .environmentObject(pendenciaRepo)
+                        .environmentObject(estoqueRepo)
+                        .environmentObject(router)
                 }
             } else {
                 Color.black.ignoresSafeArea()
@@ -79,6 +119,22 @@ struct HubMockLauncher: View {
         .task {
             await carroRepo.bootstrap()
             await pecaRepo.bootstrap()
+            await eventoRepo.bootstrap()
+            await pilotoRepo.bootstrap()
+            await passageiroRepo.bootstrap()
+            await combustivelRepo.bootstrap()
+            await licaoRepo.bootstrap()
+            await pendenciaRepo.bootstrap()
+            await estoqueRepo.bootstrap()
+            await seedEstoqueMockIfNeeded()
+            // Evento FUTURO de demonstração: a seed só tem eventos passados,
+            // então a aba "Pendências" (próximo evento) abriria vazia no mock.
+            // 7 dias à frente, na pista seed (Brasília).
+            if eventoRepo.proximoEvento() == nil {
+                let trackId = eventoRepo.eventos.first?.evento.trackId
+                let em7dias = Int64(Date().timeIntervalSince1970 * 1000) + 7 * 86_400_000
+                _ = try? await eventoRepo.create(trackId: trackId, tipo: "track-day", dataEvento: em7dias)
+            }
             var id = carroRepo.carros.first?.id
             if id == nil {
                 id = try? await carroRepo.create(
@@ -96,8 +152,43 @@ struct HubMockLauncher: View {
         }
     }
 
+    /// Semeia alguns itens no estoque geral pra screenshot não ficar vazio.
+    /// Mostra os 3 tipos de "como conta": simples, embalagem e conjunto.
+    private func seedEstoqueMockIfNeeded() async {
+        guard estoqueRepo.itens.isEmpty else { return }
+        func b(_ id: String) -> BlocoPend { EstoqueRepository.bloco(id: id) }
+        _ = try? await estoqueRepo.criar(escopo: EstoqueRepository.escopoGeral, kind: "ferramenta",
+            bloco: b("G1"), nome: "Compressor de ar", especificacao: nil, categoria: "obrig",
+            contagem: "simples", quantidade: 1, volume: nil, unidade: nil, embalagens: nil, partes: [], foto: nil)
+        _ = try? await estoqueRepo.criar(escopo: EstoqueRepository.escopoGeral, kind: "ferramenta",
+            bloco: b("G6"), nome: "Caixa de ferramentas", especificacao: nil, categoria: "obrig",
+            contagem: "simples", quantidade: 1, volume: nil, unidade: nil, embalagens: nil, partes: [], foto: nil)
+        _ = try? await estoqueRepo.criar(escopo: EstoqueRepository.escopoGeral, kind: "item",
+            bloco: b("G5"), nome: "Extintor", especificacao: nil, categoria: "obrig",
+            contagem: "simples", quantidade: 1, volume: nil, unidade: nil, embalagens: nil, partes: [], foto: nil)
+        _ = try? await estoqueRepo.criar(escopo: EstoqueRepository.escopoGeral, kind: "item",
+            bloco: b("G1"), nome: "Óleo motor", especificacao: "Mobil 5W30 sintético", categoria: "obrig",
+            contagem: "embalagem", quantidade: 1, volume: 1, unidade: "L", embalagens: 4, partes: [], foto: nil)
+        _ = try? await estoqueRepo.criar(escopo: EstoqueRepository.escopoGeral, kind: "item",
+            bloco: b("G3"), nome: "Jacks (cavaletes)", especificacao: nil, categoria: "obrig",
+            contagem: "simples", quantidade: 4, volume: nil, unidade: nil, embalagens: nil, partes: [], foto: nil)
+        _ = try? await estoqueRepo.criar(escopo: EstoqueRepository.escopoGeral, kind: "item",
+            bloco: b("G3"), nome: "Rodas sobressalentes", especificacao: nil, categoria: "desej",
+            contagem: "conjunto", quantidade: 1, volume: nil, unidade: nil, embalagens: nil,
+            partes: [.init(nome: "Aro 15", qtd: 4), .init(nome: "Aro 14", qtd: 4)], foto: nil)
+    }
+
     /// Rota inicial do mock: hub do carro; com `--p1-deep` empilha tb o Estoque.
     private func rotaMock(carroId id: String) -> [HomeNavTarget] {
+        if ProcessInfo.processInfo.arguments.contains("--p1-menu") {
+            // Mostra a Garagem reorganizada direto (sem empilhar o hub) — pra
+            // validar/screenshot do menu novo (sub-abas + aba Pendências).
+            return [.garagem]
+        }
+        if ProcessInfo.processInfo.arguments.contains("--p1-pend") {
+            // Abre a aba Pendências (próximo evento) direto.
+            return [.pendencias]
+        }
         if ProcessInfo.processInfo.arguments.contains("--p1-deep") {
             return [.garagem, .carroHub(carroId: id), .carroCadastro(carroId: id)]
         }

@@ -29,7 +29,11 @@ enum HomeState {
 enum HomeNavTarget: Hashable {
     case eventos
     case eventosNovo
+    /// Antiga aba "Cadastros" — preservada (não some), mas o conteúdo agora
+    /// vive dentro da Garagem. Não é mais um item do menu de baixo.
     case cadastros
+    /// Aba "Pendências" (substituiu Cadastros no menu) — abre no próximo evento.
+    case pendencias
     case garagem
     case garagemNovo
     /// Fluxo do carro empilhado (push) em vez de folha modal — assim o
@@ -118,7 +122,7 @@ struct HomeView: View {
     private let navItems: [BottomNavItem] = [
         BottomNavItem("Home"),
         BottomNavItem("Eventos"),
-        BottomNavItem("Cadastros"),
+        BottomNavItem("Pendências"),
         BottomNavItem("Garagem"),
     ]
 
@@ -228,6 +232,8 @@ struct HomeView: View {
             EventosListaView(initialSheet: .novo, onNavSelect: nav)
         case .cadastros:
             PessoasView(onNavSelect: nav)
+        case .pendencias:
+            PendenciasProximoEventoLauncher()
         case .garagem:
             GaragemView(onNavSelect: nav)
         case .garagemNovo:
@@ -277,8 +283,8 @@ struct HomeView: View {
             break
         case "Eventos":
             router.path.append(HomeNavTarget.eventos)
-        case "Cadastros":
-            router.path.append(HomeNavTarget.cadastros)
+        case "Pendências":
+            router.path.append(HomeNavTarget.pendencias)
         case "Garagem":
             router.path.append(HomeNavTarget.garagem)
         default:
@@ -297,8 +303,8 @@ struct HomeView: View {
             break // a raiz do stack já é a Home
         case "Eventos":
             router.path.append(HomeNavTarget.eventos)
-        case "Cadastros":
-            router.path.append(HomeNavTarget.cadastros)
+        case "Pendências":
+            router.path.append(HomeNavTarget.pendencias)
         case "Garagem":
             router.path.append(HomeNavTarget.garagem)
         default:
@@ -935,6 +941,70 @@ private struct DevShortcuts: View {
             .buttonStyle(.plain)
         }
         .padding(.top, Spacing.lg)
+    }
+}
+
+// MARK: - Pendências do próximo evento (aba do menu)
+
+/// Aba "Pendências" do menu de baixo: resolve o PRÓXIMO evento e mostra a
+/// checklist dele direto (ticar / incluir / excluir). Sem evento futuro,
+/// mostra um vazio simpático. 2026-06-14.
+private struct PendenciasProximoEventoLauncher: View {
+    @EnvironmentObject private var eventoRepo: EventoRepository
+    @State private var evento: EventoView?
+    @State private var ready = false
+
+    var body: some View {
+        Group {
+            if let ev = evento {
+                PendenciasView(
+                    eventoId: ev.id,
+                    eventoTitulo: tituloEvento(ev),
+                    onClose: {},
+                    eyebrow: "Pendências · próximo evento",
+                    showFootBar: false
+                )
+            } else if ready {
+                semEventoView
+            } else {
+                Color.surface
+            }
+        }
+        .task {
+            // Espera o repo de eventos terminar de carregar (seed/bootstrap).
+            for _ in 0..<20 {
+                if !eventoRepo.eventos.isEmpty { break }
+                try? await Task.sleep(nanoseconds: 100_000_000)
+            }
+            evento = eventoRepo.proximoEvento() ?? eventoRepo.eventoAtivoHoje()
+            ready = true
+        }
+    }
+
+    private func tituloEvento(_ ev: EventoView) -> String {
+        let d = Date(timeIntervalSince1970: Double(ev.evento.dataEvento) / 1000)
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "pt_BR")
+        f.dateFormat = "d 'de' MMMM"
+        return "\(ev.pistaDisplay) · \(f.string(from: d))"
+    }
+
+    private var semEventoView: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            Eyebrow(text: "Pendências · próximo evento")
+            Text("Nenhum evento futuro")
+                .font(.system(size: 24, weight: .semibold))
+                .tracking(-0.6)
+                .foregroundStyle(Color.text)
+            Text("Crie um evento na aba Eventos pra montar a lista de pendências dele.")
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(Color.textMuted)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, Spacing.lg)
+        .padding(.top, Spacing.md)
+        .background(Color.surface)
     }
 }
 

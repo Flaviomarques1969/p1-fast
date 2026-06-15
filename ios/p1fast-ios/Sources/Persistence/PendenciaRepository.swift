@@ -27,6 +27,10 @@ final class PendenciaRepository: ObservableObject {
     /// Map: eventoId → [EventoPendencia], indexado pra atualização rápida.
     @Published private(set) var instanciasPorEvento: [String: [EventoPendencia]] = [:]
 
+    /// Itens ADICIONAIS (incluídos à mão) por evento. LOCAL-ONLY — não sobem
+    /// pra nuvem (ver EventoPendenciaExtra / migration v29).
+    @Published private(set) var extrasPorEvento: [String: [EventoPendenciaExtra]] = [:]
+
     private let queue: DatabaseQueue
 
     init(queue: DatabaseQueue) {
@@ -71,6 +75,7 @@ final class PendenciaRepository: ObservableObject {
             }
         }
         try await reloadInstancesForEvento(eventoId)
+        try await reloadExtras(eventoId)
     }
 
     func reloadInstancesForEvento(_ eventoId: String) async throws {
@@ -80,6 +85,50 @@ final class PendenciaRepository: ObservableObject {
                 .fetchAll(db)
         }
         instanciasPorEvento[eventoId] = rows
+    }
+
+    // MARK: - Itens adicionais (incluir / excluir / ticar) — LOCAL-ONLY
+
+    func reloadExtras(_ eventoId: String) async throws {
+        let rows = try await queue.read { db in
+            try EventoPendenciaExtra
+                .filter(Column("evento_id") == eventoId)
+                .order(Column("created_at").asc)
+                .fetchAll(db)
+        }
+        extrasPorEvento[eventoId] = rows
+    }
+
+    /// Inclui uma pendência adicional (à mão) num grupo do evento. NÃO enfileira
+    /// no SyncQueue — fica só no iPhone, não sobe pra nuvem/produção.
+    func addExtra(eventoId: String, grupoId: String, grupoTitulo: String,
+                  grupoNum: String, titulo: String) async throws {
+        let item = EventoPendenciaExtra(
+            id: UUID().uuidString, eventoId: eventoId,
+            grupoId: grupoId, grupoTitulo: grupoTitulo, grupoNum: grupoNum,
+            titulo: titulo
+        )
+        try await queue.write { db in try item.insert(db) }
+        try await reloadExtras(eventoId)
+    }
+
+    /// Remove uma pendência adicional (só itens incluídos à mão são removíveis).
+    func removeExtra(id: String, eventoId: String) async throws {
+        try await queue.write { db in
+            _ = try EventoPendenciaExtra.deleteOne(db, key: id)
+        }
+        try await reloadExtras(eventoId)
+    }
+
+    func toggleExtra(id: String, eventoId: String, novo: Bool) async throws {
+        try await queue.write { db in
+            guard var item = try EventoPendenciaExtra.fetchOne(db, key: id) else { return }
+            item.checado = novo
+            item.checadoAt = novo ? DB.nowMs() : nil
+            item.updatedAt = DB.nowMs()
+            try item.update(db)
+        }
+        try await reloadExtras(eventoId)
     }
 
     func toggle(instanceId: String, novo: Bool) async throws {
@@ -133,6 +182,9 @@ final class PendenciaRepository: ObservableObject {
             return (t, inst)
         }
         let porGrupo = Dictionary(grouping: pares, by: { $0.template.grupoId })
+        // Itens adicionais (incluídos à mão) deste evento, agrupados.
+        let extras = extrasPorEvento[eventoId] ?? []
+        let extrasPorGrupo = Dictionary(grouping: extras, by: { $0.grupoId })
         let grupoIds = Set(templates.map(\.grupoId))
         return grupoIds.sorted { l, r in
             (templates.first { $0.grupoId == l }?.grupoNum ?? "9") <
@@ -140,11 +192,13 @@ final class PendenciaRepository: ObservableObject {
         }.compactMap { gid in
             guard let parsDoGrupo = porGrupo[gid], let firstT = parsDoGrupo.first?.template else { return nil }
             let sorted = parsDoGrupo.sorted { $0.template.ordem < $1.template.ordem }
+            let extrasOrdenados = (extrasPorGrupo[gid] ?? []).sorted { $0.createdAt < $1.createdAt }
             return PendenciaGrupoView(
                 grupoId: gid,
                 grupoTitulo: firstT.grupoTitulo,
                 grupoNum: firstT.grupoNum,
                 itens: sorted.map { PendenciaItemView(template: $0.template, instance: $0.instance) }
+                    + extrasOrdenados.map { PendenciaItemView(extra: $0) }
             )
         }
     }
@@ -268,18 +322,37 @@ struct PendenciaGrupoView: Identifiable, Equatable {
     let itens: [PendenciaItemView]
 
     var id: String { grupoId }
-    var checados: Int { itens.filter(\.instance.checado).count }
+    var checados: Int { itens.filter(\.checado).count }
     var total: Int { itens.count }
     var allChecked: Bool { checados == total && total > 0 }
     var anyChecked: Bool { checados > 0 }
     var allMandatoryChecked: Bool {
-        itens.filter(\.template.obrigatorio).allSatisfy(\.instance.checado)
+        itens.filter(\.obrigatorio).allSatisfy(\.checado)
     }
 }
 
+/// Item de pendência pra UI. Representa OU um item do catálogo (template +
+/// instância sincronizada), OU um item adicional incluído à mão (extra,
+/// local-only e removível). Os acessores unificam os dois casos pra a View.
 struct PendenciaItemView: Identifiable, Equatable {
-    let template: PendenciaTemplate
-    let instance: EventoPendencia
+    let template: PendenciaTemplate?
+    let instance: EventoPendencia?
+    let extra: EventoPendenciaExtra?
 
-    var id: String { instance.id }
+    init(template: PendenciaTemplate, instance: EventoPendencia) {
+        self.template = template; self.instance = instance; self.extra = nil
+    }
+    init(extra: EventoPendenciaExtra) {
+        self.template = nil; self.instance = nil; self.extra = extra
+    }
+
+    /// id estável: da instância (catálogo) ou do extra.
+    var id: String { instance?.id ?? extra?.id ?? "" }
+    var titulo: String { template?.titulo ?? extra?.titulo ?? "" }
+    var checado: Bool { instance?.checado ?? extra?.checado ?? false }
+    var nota: String? { instance?.nota }
+    /// Só itens do catálogo têm "obrigatório"; adicionais nunca são.
+    var obrigatorio: Bool { template?.obrigatorio ?? false }
+    /// true = item incluído à mão (removível). false = item do catálogo.
+    var isExtra: Bool { extra != nil }
 }

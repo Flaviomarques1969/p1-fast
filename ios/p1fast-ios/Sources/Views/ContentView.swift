@@ -194,6 +194,7 @@ private struct ReadyRoot: View {
     @StateObject private var voltaVideoRepo: VoltaVideoRepository
     @StateObject private var manutencaoStore: ManutencaoConsumiveisStore
     @StateObject private var pecaRepo: PecaRepository
+    @StateObject private var estoqueRepo: EstoqueRepository
     /// Histórico de navegação estável (ver NavRouter em HomeView.swift):
     /// criado UMA vez aqui pra não se perder quando os repositórios acima
     /// publicam e re-renderizam esta view.
@@ -214,6 +215,7 @@ private struct ReadyRoot: View {
         _voltaVideoRepo = StateObject(wrappedValue: VoltaVideoRepository(queue: queue))
         _manutencaoStore = StateObject(wrappedValue: ManutencaoConsumiveisStore(queue: queue))
         _pecaRepo = StateObject(wrappedValue: PecaRepository(queue: queue))
+        _estoqueRepo = StateObject(wrappedValue: EstoqueRepository(queue: queue))
         let reach = Reachability()
         _reachability = StateObject(wrappedValue: reach)
         _syncCoordinator = StateObject(
@@ -242,6 +244,7 @@ private struct ReadyRoot: View {
             .environmentObject(voltaVideoRepo)
             .environmentObject(manutencaoStore)
             .environmentObject(pecaRepo)
+            .environmentObject(estoqueRepo)
             .environmentObject(router)
             .task {
                 await carroRepo.bootstrap()
@@ -260,6 +263,7 @@ private struct ReadyRoot: View {
                 await licaoRepo.bootstrap()
                 await pendenciaRepo.bootstrap()
                 await pecaRepo.bootstrap()
+                await estoqueRepo.bootstrap()
                 // Sprint E.1: enfileira retroativamente rows com
                 // synced_at IS NULL que vieram de versões anteriores
                 // (carros/eventos criados antes do fix de enqueue nos
@@ -483,6 +487,7 @@ private struct EventoDetalheViewSheet: View {
     @EnvironmentObject private var pneuRepo: PneuRepository
     @EnvironmentObject private var combustivelRepo: CombustivelRepository
     @EnvironmentObject private var pendenciaRepo: PendenciaRepository
+    @EnvironmentObject private var estoqueRepo: EstoqueRepository
     let eventoId: String
     let openSheet: WhichSheet
 
@@ -499,6 +504,7 @@ private struct EventoDetalheViewSheet: View {
                 .environmentObject(pneuRepo)
                 .environmentObject(combustivelRepo)
                 .environmentObject(pendenciaRepo)
+                .environmentObject(estoqueRepo)
             // Overlay invisível só pra disparar a sheet automaticamente.
             Color.clear
                 .frame(width: 0, height: 0)

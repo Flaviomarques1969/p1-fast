@@ -70,7 +70,7 @@ const GRDB_TABLES = grdbTables(grdb);
 // 45 tabelas na nuvem. As 13 SÓ-nuvem abaixo não têm espelho no app de
 // propósito — são do painel web, shift light, dyno, canal ao vivo e
 // engenharia Camada 2 (emitem/consomem via REST direto).
-const PG_TABLE_COUNT_ESPERADO = 45;
+const PG_TABLE_COUNT_ESPERADO = 46;
 const PG_ONLY_TABLES = new Set([
   'engineering_findings', 'engineering_recommendations',     // MS-16.3 Camada 2
   'melhores_passagens_trecho', 'padroes_telemetria_por_volta', // painel web (0025/0026)
@@ -80,13 +80,22 @@ const PG_ONLY_TABLES = new Set([
   't4000_live_commands', 't4000_live_events',                // canal ao vivo (0023)
 ]);
 const GRDB_REQUIRED_COUNT = PG_TABLE_COUNT_ESPERADO - PG_ONLY_TABLES.size; // 32
-const GRDB_TABLE_COUNT_ESPERADO = GRDB_REQUIRED_COUNT + 2; // + sync_queue + sync_meta = 34
+// Tabelas SÓ-locais (não espelham a nuvem de propósito): infraestrutura de
+// sync + evento_pendencias_extra (pendências incluídas à mão pelo usuário —
+// migration v29, app mono-iPhone, não sincroniza).
+// evento_pendencias_extra (v29) + evento_pendencia_pegou (v30): itens à mão e o
+// contador "peguei" por evento — local-only, não sobem pra nuvem.
+// NOTA: estoque_item (v30) DEIXOU de ser local-only em 2026-06-14 — agora
+// sincroniza (espelha public.estoque_item da migration 0046). Decisão de Flávio
+// "um só, com backup na nuvem".
+const GRDB_LOCAL_ONLY = ['evento_pendencias_extra', 'evento_pendencia_pegou', 'sync_meta', 'sync_queue'];
+const GRDB_TABLE_COUNT_ESPERADO = GRDB_REQUIRED_COUNT + GRDB_LOCAL_ONLY.length; // 33 + 4 = 37
 
 t(`PG tem ${PG_TABLE_COUNT_ESPERADO} tabelas em public`, () => {
   if (PG_TABLES.size !== PG_TABLE_COUNT_ESPERADO) throw new Error('size=' + PG_TABLES.size);
 });
 
-t(`GRDB tem ${GRDB_TABLE_COUNT_ESPERADO} tabelas (${GRDB_REQUIRED_COUNT} PG espelhadas + sync_queue + sync_meta local-only)`, () => {
+t(`GRDB tem ${GRDB_TABLE_COUNT_ESPERADO} tabelas (${GRDB_REQUIRED_COUNT} PG espelhadas + ${GRDB_LOCAL_ONLY.length} local-only)`, () => {
   if (GRDB_TABLES.size !== GRDB_TABLE_COUNT_ESPERADO) throw new Error('size=' + GRDB_TABLES.size);
 });
 
@@ -97,10 +106,10 @@ t(`GRDB cobre TODAS as ${GRDB_REQUIRED_COUNT} tabelas do PG espelhadas (excl. ${
   if (missing.length) throw new Error('faltam no GRDB: ' + missing.join(', '));
 });
 
-t(`GRDB tem só sync_queue + sync_meta além das ${GRDB_REQUIRED_COUNT} do PG espelhadas`, () => {
+t(`GRDB tem só ${GRDB_LOCAL_ONLY.join(' + ')} além das ${GRDB_REQUIRED_COUNT} do PG espelhadas`, () => {
   const extras = [...GRDB_TABLES].filter(x => !PG_TABLES.has(x)).sort();
-  const expected = ['sync_meta', 'sync_queue'];
-  if (extras.length !== 2 || extras[0] !== expected[0] || extras[1] !== expected[1]) {
+  const expected = [...GRDB_LOCAL_ONLY].sort();
+  if (extras.length !== expected.length || expected.some((e, i) => extras[i] !== e)) {
     throw new Error('extras inesperadas: ' + extras.join(', '));
   }
 });
