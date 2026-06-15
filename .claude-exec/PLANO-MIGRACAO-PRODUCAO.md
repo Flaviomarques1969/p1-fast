@@ -44,4 +44,5 @@ Preciso VERIFICAR (sem inventar) o que está pronto-mas-não-no-ar nestas frente
 
 ## Histórico de migrações já feitas
 - 2026-06-14: Estoque geral + Pendências (camada local) → instalado no iPhone (item 2).
-- 2026-06-14: Incorporação na versão oficial (GitHub) → marco `a821ddaa` (item 3). Inclui o CÓDIGO do estoque unificado; falta só LIGAR a nuvem (item 1).
+- 2026-06-14: Incorporação na versão oficial (GitHub) → marco `a821ddaa` (item 3).
+- 2026-06-14: Estoque unificado LIGADO na nuvem → migração 0046 aplicada (tabela `estoque_item`) + app sincronizado instalado no iPhone (item 1). Falta só Flávio abrir ~1 min pro envio retroativo concluir.
