@@ -4416,18 +4416,22 @@ html,body{
   var _lastFrenagemKey = '';
   function updateFrenagemFromLap(liveT){
     var st = _shortRevealStateForLap(liveT);
-    // Rebuild só em mudanças de high-level state (revealed / curve)
-    var key = (st.revealed ? 'r' : 'e') + ':' + st.curve;
+    var countdownM = st.revealed ? null : frxCountdown(liveT);
+    // Rebuild só quando muda o estado (revelado/curva) ou liga/desliga a contagem.
+    var key = (st.revealed ? 'r' : 'e') + ':' + st.curve + ':' + (countdownM==null ? '-' : 'n');
     if(key !== _lastFrenagemKey){
       _lastFrenagemKey = key;
       var els = document.querySelectorAll('.b-custom.is-frenagem');
       if(els.length){
-        var html = '<button class="b-custom-remove" type="button">remover</button>' + buildFrenagemPanel(st.curve, st.revealed);
+        var html = '<button class="b-custom-remove" type="button">remover</button>' + buildFrenagemPanel(st.curve, st.revealed, countdownM);
         els.forEach(function(el){ el.innerHTML = html; });
       }
     }
-    // Atualiza dashoffset todo frame (drawing animation tied à volta)
-    _applyLiveCurveOffset('.b-custom.is-frenagem .fr-curve-live', st);
+    // Na aproximação, atualiza só o número da contagem a cada quadro (sem reconstruir o bloco).
+    if(!st.revealed && countdownM!=null){
+      var nEls = document.querySelectorAll('.b-custom.is-frenagem .frx-num[data-count]');
+      nEls.forEach(function(n){ n.textContent = countdownM; });
+    }
   }
 
   // ─── VMIN ────────────────────────────────────────────────────────
