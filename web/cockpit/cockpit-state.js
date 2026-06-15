@@ -29,7 +29,7 @@ export const TrechoStatus = Object.freeze({
 
 export const ShiftMode = Object.freeze({
   OFF:     'off',
-  LIT:     'lit',     // 0..6 — value de level decide quantos LEDs acendem
+  LIT:     'lit',     // 0..8 — value de level decide quantos pares laterais acendem
   FIRE:    'fire',    // strobe de troca
   OVERREV: 'overrev', // erro: além do limite
 });
