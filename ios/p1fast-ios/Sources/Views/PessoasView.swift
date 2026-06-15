@@ -158,7 +158,7 @@ struct PessoasView: View {
             if let e = embeddedSubTab { subTab = e }
             if let sh = initialSheet, sheet == nil { sheet = sh }
         }
-        .sheet(item: $sheet) { which in
+        .sheet(item: $sheet, onDismiss: { Task { try? await arquivoRepo.reload() } }) { which in
             switch which {
             case .novoPiloto:
                 PilotoCadastroView(onClose: { sheet = nil })
