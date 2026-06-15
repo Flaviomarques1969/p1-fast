@@ -1,0 +1,891 @@
+:root{
+  --bg: oklch(0% 0 0);
+  --surface: oklch(11% 0 0);
+  --border: oklch(22% 0 0);
+  --hairline: oklch(28% 0 0);
+  --ink: oklch(100% 0 0);
+  --muted: oklch(58% 0 0);
+  --faint: oklch(36% 0 0);
+  --bom: oklch(80% 0.22 145);
+  --erro: oklch(68% 0.26 27);
+  --sistema: oklch(78% 0.16 225);
+  --foco: oklch(82% 0.19 70);
+  --ouro: oklch(74% 0.16 73);
+  --halo-recorde: oklch(78% 0.18 65 / .42);
+  --halo-pior:    oklch(56% 0.22 305 / .42);
+
+  --ff-display: 'Inter', system-ui, sans-serif;
+  --ff-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --apex-h: 60px;
+  --acao-h: 44px;
+  --esp-h: 24px;
+  --fs-0: 9px;
+  --fs-1: 11px;
+  --fs-2: 13px;
+  --fs-5: 32px;
+  --fs-6: 32px;
+  --fs-9: 180px;
+  --ls-tight: -0.045em;
+  --ls-caps-s: 0.06em;
+  --ls-caps-l: 0.35em;
+  --ls-caps-m: 0.22em;
+  --lh-dom: 0.88;
+
+  --ease-out:   cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+  /* Easing dedicado pra transição de mensagem — expo-out muito suave,
+     curva mais aberta (gasta mais tempo no fim, sensação flutuante elegante) */
+  --ease-msg:   cubic-bezier(0.16, 1, 0.3, 1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:var(--ff-display);font-weight:500;
+  background:#0a0a0a;color:var(--ink);
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;padding:24px;
+  -webkit-font-smoothing:antialiased;
+  font-feature-settings:"ss01","cv11";
+  user-select:none;
+}
+
+.device{
+  width:956px;height:440px;
+  background:var(--bg);
+  border-radius:48px;border:1px solid oklch(15% 0 0);
+  box-shadow:0 30px 80px oklch(0% 0 0 / .9), 0 0 0 8px oklch(3% 0 0);
+  position:relative;overflow:hidden;
+  --halo-cor: transparent;
+  perspective:1200px;
+}
+.device::before{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:1;
+  background:radial-gradient(ellipse 65% 75% at 50% 55%, var(--halo-cor) 0%, transparent 65%);
+  transition:background 320ms var(--ease-inout);
+}
+.device[data-trecho-status="recorde-stint"]{ --halo-cor: var(--halo-recorde); }
+.device[data-trecho-status="pior-stint"]{    --halo-cor: var(--halo-pior); }
+
+.notch{
+  position:absolute;left:18px;top:50%;transform:translateY(-50%);
+  width:36px;height:128px;background:#000;border-radius:20px;z-index:50;
+  border:1px solid oklch(8% 0 0);
+}
+
+.telemetria-chip{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);z-index:60;
+  display:flex;flex-direction:column;gap:6px;
+}
+.telemetria-chip__dot{width:6px;height:6px;border-radius:50%;background:var(--faint);}
+.telemetria-chip__dot.ok{background:var(--bom);box-shadow:0 0 6px oklch(80% 0.22 145 / .4);}
+.telemetria-chip__dot.warn{background:var(--foco);box-shadow:0 0 6px oklch(82% 0.19 70 / .4);}
+
+/* Ocultar legendas e botões de teste — só painel limpo (27/05/2026) */
+.controls, .legend { display:none !important; }
+
+.apex{
+  position:absolute;bottom:60px;left:60px;right:36px;z-index:10;
+  display:flex;align-items:flex-start;justify-content:space-between;
+  min-height:var(--apex-h);
+}
+
+/* SMART SHIFT LIGHT PREMIUM — barra de 12 LEDs racing.
+   Acende UM PAR POR VEZ, DAS PONTAS PRO CENTRO (estilo F1/MotoGP invertido).
+   12 dots em 6 tiers simétricos: tier 1 = pontas (1° a acender);
+   tier 6 = par central (último, peak vermelho).
+   JS marca .is-on em dots com tier <= level. data-state="overrev" sobrepõe
+   e pisca tudo vermelho com housing alarmado.
+   Cor por tier: 1-2 verde · 3-4 amarelo · 5-6 vermelho.
+   Técnicas premium: dome glass (gradiente radial 3-stop), specular highlight
+   (::after), multi-layer bloom (até 4 sombras coloridas com aberração de raio),
+   ignition flash via filter brightness/saturate, housing recessed com hairlines. */
+.shift-light{
+  position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+  z-index:45;
+  display:flex;gap:18px;align-items:center;
+  padding:9px 26px;
+  border-radius:999px;
+  background:
+    linear-gradient(180deg,
+      oklch(8% 0 0) 0%,
+      oklch(5% 0 0) 48%,
+      oklch(9% 0 0) 100%);
+  box-shadow:
+    inset 0 1px 0 oklch(22% 0 0 / .8),
+    inset 0 -1px 0 oklch(0% 0 0 / .9),
+    inset 0 0 0 1px oklch(15% 0 0),
+    0 2px 6px oklch(0% 0 0 / .6),
+    0 8px 24px oklch(0% 0 0 / .35);
+  pointer-events:none;
+}
+.shift-light::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;
+  background:radial-gradient(ellipse 60% 100% at 50% 0%,
+    oklch(28% 0 0 / .35) 0%, transparent 70%);
+  pointer-events:none;
+}
+.shift-light__dot{
+  position:relative;
+  width:13px;height:13px;border-radius:50%;
+  /* OFF default — LED apagado com leve dome via gradiente + inset shadow */
+  background:radial-gradient(circle at 35% 30%,
+    oklch(20% 0 0) 0%,
+    oklch(11% 0 0) 60%,
+    oklch(7% 0 0) 100%);
+  box-shadow:
+    inset 0 1px 0 oklch(28% 0 0 / .6),
+    inset 0 0 0 1px oklch(18% 0 0),
+    inset 0 -1px 1px oklch(0% 0 0 / .9),
+    0 1px 1px oklch(0% 0 0 / .5);
+  transition:background 160ms var(--ease-out),
+             box-shadow 280ms var(--ease-out),
+             transform 220ms var(--ease-out);
+}
+.shift-light__dot::after{
+  /* highlight especular fino no topo do LED — sensação de vidro */
+  content:'';position:absolute;left:22%;top:14%;
+  width:38%;height:30%;border-radius:50%;
+  background:linear-gradient(180deg,
+    oklch(100% 0 0 / .55) 0%, oklch(100% 0 0 / 0) 100%);
+  filter:blur(.4px);
+  pointer-events:none;
+  opacity:.55;
+  transition:opacity 200ms var(--ease-out);
+}
+.shift-light[data-state="off"] .shift-light__dot::after{ opacity:.25; }
+
+/* LIT por tier — ativa apenas em dots com .is-on (controle via JS).
+   Tier 1 = pontas (1° a acender, glow distante e discreto)
+   Tier 6 = par central (último, peak, máximo bloom).
+   LEDs uniformes (scale 1.08) — hierarquia vem do bloom externo, não do tamanho.
+   Cor: 1-2 verde · 3-4 amarelo · 5-6 vermelho. */
+
+.shift-light__dot.is-on{
+  animation: ledIgnite 380ms var(--ease-out);
+}
+@keyframes ledIgnite{
+  0%   { filter: brightness(.25) saturate(.55); }
+  28%  { filter: brightness(2.2) saturate(1.45); }
+  62%  { filter: brightness(1.15) saturate(1.08); }
+  100% { filter: brightness(1) saturate(1); }
+}
+
+/* TIER 1 — pontas, VERDE, bloom curto e distante */
+.shift-light__dot.is-on[data-tier="1"]{
+  background:radial-gradient(circle at 35% 30%,
+    oklch(96% 0.10 145) 0%,
+    oklch(80% 0.23 145) 55%,
+    oklch(58% 0.23 148) 100%);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / .85),
+    inset 0 0 0 1px oklch(68% 0.23 148),
+    0 0 9px  oklch(82% 0.23 145 / .85),
+    0 0 18px oklch(74% 0.23 148 / .45),
+    0 0 28px oklch(64% 0.23 150 / .22);
+  transform:scale(1.07);
+}
+
+/* TIER 2 — VERDE, bloom maior */
+.shift-light__dot.is-on[data-tier="2"]{
+  background:radial-gradient(circle at 35% 30%,
+    oklch(97% 0.10 145) 0%,
+    oklch(82% 0.23 146) 55%,
+    oklch(60% 0.23 150) 100%);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / .9),
+    inset 0 0 0 1px oklch(70% 0.23 148),
+    0 0 11px oklch(84% 0.23 146 / .9),
+    0 0 22px oklch(76% 0.23 148 / .55),
+    0 0 34px oklch(66% 0.23 150 / .28);
+  transform:scale(1.08);
+}
+
+/* TIER 3 — AMARELO, bloom maior */
+.shift-light__dot.is-on[data-tier="3"]{
+  background:radial-gradient(circle at 35% 30%,
+    oklch(98% 0.13 95) 0%,
+    oklch(86% 0.21 92) 55%,
+    oklch(66% 0.21 88) 100%);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / .85),
+    inset 0 0 0 1px oklch(74% 0.21 92),
+    0 0 13px oklch(88% 0.21 92 / .9),
+    0 0 26px oklch(80% 0.21 90 / .55),
+    0 0 40px oklch(72% 0.21 88 / .28);
+  transform:scale(1.08);
+}
+
+/* TIER 4 — AMARELO, mais intenso (próximo do peak) */
+.shift-light__dot.is-on[data-tier="4"]{
+  background:radial-gradient(circle at 35% 30%,
+    oklch(98% 0.13 95) 0%,
+    oklch(88% 0.21 92) 52%,
+    oklch(68% 0.21 88) 100%);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / .9),
+    inset 0 0 0 1px oklch(76% 0.21 92),
+    0 0 15px oklch(90% 0.21 92 / .95),
+    0 0 30px oklch(82% 0.21 90 / .6),
+    0 0 46px oklch(74% 0.21 88 / .3);
+  transform:scale(1.08);
+}
+
+/* TIER 5 — VERMELHO, bloom amplo */
+.shift-light__dot.is-on[data-tier="5"]{
+  background:radial-gradient(circle at 35% 30%,
+    oklch(94% 0.10 32) 0%,
+    oklch(74% 0.26 28) 50%,
+    oklch(54% 0.26 25) 100%);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / .85),
+    inset 0 0 0 1px oklch(62% 0.27 27),
+    0 0 16px oklch(76% 0.26 28 / .95),
+    0 0 32px oklch(66% 0.27 27 / .6),
+    0 0 50px oklch(56% 0.27 27 / .32);
+  transform:scale(1.08);
+}
+
+/* TIER 6 — par CENTRAL, VERMELHO, MÁXIMO BLOOM (peak/shift!) */
+.shift-light__dot.is-on[data-tier="6"]{
+  background:radial-gradient(circle at 35% 30%,
+    oklch(96% 0.10 32) 0%,
+    oklch(76% 0.27 28) 48%,
+    oklch(54% 0.27 25) 100%);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / .95),
+    inset 0 0 0 1px oklch(64% 0.27 27),
+    0 0 18px oklch(78% 0.27 28 / 1),
+    0 0 36px oklch(68% 0.27 27 / .7),
+    0 0 60px oklch(58% 0.27 27 / .42),
+    0 0 90px oklch(52% 0.27 28 / .2);
+  transform:scale(1.10);
+}
+
+/* FIRE — evento DISCRETO "TROCA AGORA", visual-only.
+   3 pulsos brancos a ~10Hz (sweet spot da detecção periférica).
+   Cor TOTALMENTE diferente do verde/amarelo/vermelho da subida → cérebro lê
+   como "evento", não "mais um nível". 300ms total. */
+.shift-light[data-state="fire"] .shift-light__dot{
+  background:radial-gradient(circle at 35% 28%,
+    oklch(100% 0 0) 0%,
+    oklch(98% 0.04 230) 55%,
+    oklch(86% 0.12 240) 100%);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / 1),
+    inset 0 0 0 1px oklch(96% 0.05 230),
+    0 0 16px oklch(100% 0 0 / 1),
+    0 0 36px oklch(96% 0.06 230 / .95),
+    0 0 70px oklch(88% 0.13 240 / .75),
+    0 0 130px oklch(78% 0.16 245 / .45);
+  animation: shiftFire 300ms linear forwards;
+}
+.shift-light[data-state="fire"]{
+  animation: shiftHousingFire 300ms linear forwards;
+}
+/* 3 pulsos: 0-28% on, 33-39% off, 43-65% on, 71-76% off, 80-92% on, 100% decay */
+@keyframes shiftFire{
+  0%   { opacity: 0; transform: scale(0.85); }
+  3%   { opacity: 1; transform: scale(1.24); }
+  28%  { opacity: 1; transform: scale(1.22); }
+  33%  { opacity: 0; transform: scale(1.0);  }
+  39%  { opacity: 0; transform: scale(1.0);  }
+  43%  { opacity: 1; transform: scale(1.22); }
+  65%  { opacity: 1; transform: scale(1.20); }
+  71%  { opacity: 0; transform: scale(1.0);  }
+  76%  { opacity: 0; transform: scale(1.0);  }
+  80%  { opacity: 1; transform: scale(1.20); }
+  92%  { opacity: 1; transform: scale(1.18); }
+  100% { opacity: .55; transform: scale(1.10); }
+}
+@keyframes shiftHousingFire{
+  0%, 100% { box-shadow:
+    inset 0 1px 0 oklch(22% 0 0 / .8),
+    inset 0 -1px 0 oklch(0% 0 0 / .9),
+    inset 0 0 0 1px oklch(15% 0 0),
+    0 2px 6px oklch(0% 0 0 / .6),
+    0 8px 24px oklch(0% 0 0 / .35); }
+  3%, 28%, 43%, 65%, 80%, 92% { box-shadow:
+    inset 0 1px 0 oklch(60% 0.08 230 / .9),
+    inset 0 -1px 0 oklch(0% 0 0 / .9),
+    inset 0 0 0 1px oklch(82% 0.12 235),
+    0 0 0 1.5px oklch(94% 0.08 230 / .65),
+    0 2px 6px oklch(0% 0 0 / .6),
+    0 0 70px oklch(92% 0.10 235 / .65); }
+  33%, 39%, 71%, 76% { box-shadow:
+    inset 0 1px 0 oklch(22% 0 0 / .8),
+    inset 0 -1px 0 oklch(0% 0 0 / .9),
+    inset 0 0 0 1px oklch(15% 0 0),
+    0 2px 6px oklch(0% 0 0 / .6),
+    0 8px 24px oklch(0% 0 0 / .35); }
+}
+
+/* DEVICE FIRE FLASH — overlay branco-azul do dispositivo INTEIRO,
+   sincronizado com os 3 pulsos. Amplifica detecção periférica:
+   mesmo com olho na pista, o cérebro pega o flash do retângulo todo. */
+.fire-overlay{
+  position:absolute;inset:0;border-radius:inherit;
+  pointer-events:none;
+  z-index:200;
+  background:
+    radial-gradient(ellipse 110% 65% at 50% 0%,
+      oklch(96% 0.10 235 / .55) 0%,
+      oklch(88% 0.14 240 / .25) 35%,
+      oklch(72% 0.16 245 / .06) 65%,
+      transparent 85%),
+    linear-gradient(180deg,
+      oklch(94% 0.10 235 / .35) 0%,
+      transparent 22%);
+  box-shadow:
+    inset 0 0 0 2px oklch(94% 0.08 230 / .55),
+    inset 0 0 60px oklch(92% 0.10 235 / .35);
+  opacity:0;
+}
+.device[data-shift-fire="active"] .fire-overlay{
+  animation: deviceFireFlash 300ms linear forwards;
+}
+@keyframes deviceFireFlash{
+  0%   { opacity: 0; }
+  3%   { opacity: 1; }
+  28%  { opacity: 1; }
+  33%  { opacity: 0; }
+  39%  { opacity: 0; }
+  43%  { opacity: 1; }
+  65%  { opacity: 1; }
+  71%  { opacity: 0; }
+  76%  { opacity: 0; }
+  80%  { opacity: 1; }
+  92%  { opacity: .9; }
+  100% { opacity: 0; }
+}
+
+/* OVERREV — todos os 12 piscam juntos em vermelho forte */
+.shift-light[data-state="overrev"] .shift-light__dot{
+  background:radial-gradient(circle at 35% 30%,
+    oklch(92% 0.10 32) 0%,
+    oklch(70% 0.25 28) 50%,
+    oklch(50% 0.26 25) 100%);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / .65),
+    inset 0 0 0 1px oklch(58% 0.27 27),
+    0 0 16px oklch(68% 0.26 27 / .95),
+    0 0 32px oklch(60% 0.27 28 / .65),
+    0 0 56px oklch(52% 0.27 28 / .4);
+  animation:shiftOverrev 150ms steps(2, jump-none) infinite;
+}
+.shift-light[data-state="overrev"]{
+  animation:shiftHousingOverrev 150ms steps(2, jump-none) infinite;
+}
+@keyframes shiftOverrev{
+  0%, 49%   { opacity:1;  transform:scale(1.10); }
+  50%, 100% { opacity:.18; transform:scale(0.94); }
+}
+@keyframes shiftHousingOverrev{
+  0%, 49%   { box-shadow:
+    inset 0 1px 0 oklch(22% 0 0 / .8),
+    inset 0 -1px 0 oklch(0% 0 0 / .9),
+    inset 0 0 0 1px oklch(40% 0.12 27),
+    0 0 0 1px oklch(58% 0.26 27 / .35),
+    0 2px 6px oklch(0% 0 0 / .6),
+    0 0 28px oklch(68% 0.26 27 / .35); }
+  50%, 100% { box-shadow:
+    inset 0 1px 0 oklch(22% 0 0 / .8),
+    inset 0 -1px 0 oklch(0% 0 0 / .9),
+    inset 0 0 0 1px oklch(15% 0 0),
+    0 2px 6px oklch(0% 0 0 / .6),
+    0 8px 24px oklch(0% 0 0 / .35); }
+}
+.apex__ponto{
+  display:flex;flex-direction:column-reverse;align-items:flex-start;gap:6px;
+  /* rótulo em cima, dado embaixo (Shift Light foi pra baixo + barra de voltas
+     subiu, então não tem mais conflito visual na parte de cima) */
+  transition:opacity 220ms var(--ease-out);
+}
+
+/* Widget que custou MAIS tempo no trecho — só a PALAVRA pisca, binário,
+   zero ↔ visível, sem transição suave (estilo LED on/off). Número fica fixo. */
+.apex__ponto.is-pior-impacto .apex__label{
+  animation: apex-pior-blink 700ms steps(2, jump-none) infinite;
+}
+@keyframes apex-pior-blink{
+  0%,  49%  { opacity: 0; }
+  50%, 100% { opacity: 1; }
+}
+
+/* Label SEMPRE branco — independente do estado */
+.apex__label{
+  font-size:14px;font-weight:700;letter-spacing:var(--ls-caps-l);
+  color:var(--ink);text-transform:uppercase;
+  line-height:1;
+}
+
+/* Valor: cor por estado de comparação com a última passada no trecho.
+   - ok-melhor: verde
+   - ok-pior:   vermelho
+   - ativo:     branco (em curso, sem comparação ainda)
+   - pendente:  faint (placeholder, ainda não passou) */
+.apex__valor{
+  font-family:var(--ff-display);
+  font-size:var(--fs-5);font-weight:900;letter-spacing:var(--ls-tight);
+  font-variant-numeric:tabular-nums;
+  color:var(--ink);
+  display:inline-flex;align-items:center;gap:4px;
+  height:54px;line-height:1;
+}
+
+/* === ÁPICE — círculo cinza + bolinha apontando pra ápice ideal ===
+   Decisão Flávio 27/05/2026 — a bolinha aponta pra ONDE ESTAVA o ápice
+   geométrico de referência, em relação à posição do carro naquela passagem.
+   Mostra a CORREÇÃO ("siga a bolinha"), não o erro. */
+.apex__bola{
+  width:54px;height:54px;
+  position:relative;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+.apex__bola svg{
+  position:absolute;inset:-8px;width:calc(100% + 16px);height:calc(100% + 16px);
+  overflow:visible;
+}
+/* wrapper que gira pra posicionar a bolinha na direção certa */
+.apex__bola__sat-wrap{
+  transform-box:view-box;
+  transform-origin:50% 50%;
+  transform:rotate(var(--erro-angulo, 0deg));
+  transition:transform 220ms var(--ease-out);
+}
+.apex__bola__sat{
+  fill:oklch(45% 0 0);
+}
+.apex__bola[data-erro-cor="verde"] .apex__bola__sat{
+  fill:var(--bom);
+  filter:drop-shadow(0 0 4px oklch(80% 0.22 145 / 1))
+         drop-shadow(0 0 10px oklch(80% 0.22 145 / .55));
+  animation:apice-pulse-ok 1.6s ease-in-out infinite;
+}
+.apex__bola[data-erro-cor="vermelho"] .apex__bola__sat{
+  fill:var(--erro);
+  filter:drop-shadow(0 0 4px oklch(68% 0.26 27 / 1))
+         drop-shadow(0 0 10px oklch(68% 0.26 27 / .6));
+  animation:apice-pulse-bad 0.85s ease-in-out infinite;
+}
+@keyframes apice-pulse-ok  { 0%,100%{opacity:.7} 50%{opacity:1} }
+@keyframes apice-pulse-bad { 0%,100%{opacity:.75} 50%{opacity:1} }
+.apex__bola__num{
+  position:relative;z-index:3;
+  font-family:var(--ff-display);
+  font-size:18px;font-weight:900;letter-spacing:-.04em;
+  font-variant-numeric:tabular-nums;
+  line-height:1;
+}
+.apex__ponto[data-papel="apice"][data-estado="ok-melhor"] .apex__bola__num{ color:var(--bom); }
+.apex__ponto[data-papel="apice"][data-estado="ok-pior"]   .apex__bola__num{ color:var(--erro); }
+.apex__ponto--bola{ align-items:flex-start; }
+.apex__ponto[data-estado="ok-melhor"] .apex__valor{ color:var(--bom); }
+.apex__ponto[data-estado="ok-pior"]   .apex__valor{ color:var(--erro); }
+.apex__ponto[data-estado="pendente"]  .apex__valor{ color:var(--faint); }
+.apex__valor small{
+  font-size:var(--fs-0);color:var(--muted);font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+/* Separador "/" entre atual e referência (apex Freio) — discreto */
+.apex__valor__sep{
+  color:var(--faint);font-weight:600;margin:0 4px;
+}
+
+/* INFO-BLOCO — delta + frase pedagógica juntos.
+   Em estado padrão: centralizado.
+   Em estado msg-ativa: desliza pra ESQUERDA. */
+.info-bloco{
+  position:absolute;left:50%;top:40%;
+  transform:translate(-50%, -50%);
+  z-index:20;
+  display:flex;flex-direction:column;align-items:center;gap:14px;
+  pointer-events:none;
+  transition:transform 1200ms var(--ease-msg);
+}
+.device[data-msg-state="ativa"] .info-bloco{
+  transform:translate(calc(-50% - 230px), -50%);
+}
+
+.info__delta{
+  font-family:var(--ff-display);
+  font-size:var(--fs-9);font-weight:900;
+  letter-spacing:var(--ls-tight);line-height:var(--lh-dom);
+  font-variant-numeric:tabular-nums slashed-zero;
+}
+.info__delta.bom{
+  color:var(--bom);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 24px oklch(80% 0.22 145 / .35);
+}
+.info__delta.erro{
+  color:var(--erro);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 24px oklch(68% 0.26 27 / .35);
+}
+.info__acao{
+  font-size:var(--fs-6);font-weight:900;letter-spacing:var(--ls-caps-s);
+  text-transform:uppercase;
+  color:var(--foco);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 24px oklch(82% 0.19 70 / .35);
+}
+.info__acao.erro{
+  color:var(--erro);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 24px oklch(68% 0.26 27 / .35);
+}
+
+/* ALERT-BLOCO — mensagem que vem do fundo (z-axis simulado via scale + blur)
+   Estado oculto: opacity 0, scale .35, translateZ -300px (longe), blur 12px
+   Estado ativo:  opacity 1, scale 1, translateZ 0, blur 0
+   Posição: lado DIREITO da tela, centered Y. */
+.alert-bloco{
+  position:absolute;left:calc(100% - 240px);top:40%;
+  transform:translate(-50%, -50%) translateZ(-300px) scale(.35);
+  filter:blur(12px);
+  opacity:0;
+  z-index:25;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  transition:transform 1200ms var(--ease-msg),
+             opacity 1100ms var(--ease-msg),
+             filter 1100ms var(--ease-msg);
+  max-width:380px;text-align:center;
+}
+.device[data-msg-state="ativa"] .alert-bloco{
+  transform:translate(-50%, -50%) translateZ(0) scale(1);
+  filter:blur(0);
+  opacity:1;
+}
+.alert__msg{
+  font-family:var(--ff-display);
+  font-size:34px;font-weight:900;letter-spacing:-0.01em;line-height:1.05;
+  color:var(--sistema);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 28px oklch(78% 0.16 225 / .45);
+}
+.alert-bloco[data-tipo="grave"] .alert__msg{
+  color:var(--erro);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 28px oklch(68% 0.26 27 / .55);
+}
+
+/* STINT BAR */
+.stint-bar{
+  position:absolute;left:60px;right:36px;top:4px;
+  display:flex;gap:3px;height:14px;align-items:flex-end;z-index:30;
+}
+.stint-bar__block{
+  flex:1;background:var(--faint);border-radius:2px;height:14px;position:relative;
+}
+.stint-bar__block.is-neutral{background:var(--ink);}
+.stint-bar__block.is-faster{background:var(--bom);}
+.stint-bar__block.is-slower{background:var(--erro);}
+.stint-bar__block.is-best-stint{
+  background:var(--bom);overflow:hidden;
+  box-shadow:0 0 14px 0 oklch(80% 0.22 145 / .6), inset 0 0 0 1.5px var(--bg);
+}
+.stint-bar__block.is-best-stint::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg, transparent 0%, oklch(95% 0.15 145 / .9) 50%, transparent 100%);
+  background-size:50% 100%;background-repeat:no-repeat;background-position:-50% 0%;
+  animation:lightWaveBidir 3.2s var(--ease-inout) infinite;mix-blend-mode:screen;
+}
+.stint-bar__block.is-best-alltime{
+  background:var(--ouro);position:relative;z-index:5;overflow:hidden;
+  box-shadow:
+    0 0 18px 0 oklch(74% 0.16 73 / .8),
+    0 0 36px 0 oklch(74% 0.16 73 / .5),
+    0 0 60px 0 oklch(82% 0.18 70 / .25),
+    inset 0 0 0 1.5px var(--bg);
+  animation:alltimeBloom 3.2s var(--ease-inout) infinite;
+}
+.stint-bar__block.is-best-alltime::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg, transparent 0%, oklch(98% 0.12 80 / .95) 50%, transparent 100%);
+  background-size:50% 100%;background-repeat:no-repeat;background-position:-50% 0%;
+  animation:lightWaveBidir 3.2s var(--ease-inout) infinite;mix-blend-mode:screen;
+}
+/* VOLTA ATUAL — preenchimento progressivo da esquerda pra direita conforme
+   a volta vai acontecendo. Cor depende do ritmo no instante:
+   verde se a soma parcial até aqui está mais rápida que a referência;
+   vermelho se está mais lenta.
+   data-pace = "faster" | "slower". --pct = quanto da volta já passou (0%..100%). */
+.stint-bar__block.is-current{
+  --pct: 0%;
+  background:linear-gradient(90deg,
+    var(--bom) 0%, var(--bom) var(--pct),
+    var(--faint) var(--pct), var(--faint) 100%);
+  box-shadow:0 0 10px 0 oklch(80% 0.22 145 / .5);
+}
+.stint-bar__block.is-current[data-pace="slower"]{
+  background:linear-gradient(90deg,
+    var(--erro) 0%, var(--erro) var(--pct),
+    var(--faint) var(--pct), var(--faint) 100%);
+  box-shadow:0 0 10px 0 oklch(68% 0.26 27 / .5);
+}
+
+/* PARADA NO BOX — bandeira de chegada (xadrez 2 fileiras × N colunas, 7px).
+   Sem borda — qualquer borda consome o interior e desequilibra as faixas. */
+.stint-bar__block.is-pit{
+  flex:1;
+  background-color:#fff;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' shape-rendering='crispEdges'><rect width='7' height='7' x='0' y='0' fill='%23000'/><rect width='7' height='7' x='7' y='7' fill='%23000'/></svg>");
+  background-size:14px 14px;
+  background-repeat:repeat;
+  border:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0;
+  height:14px;
+  box-sizing:border-box;
+}
+.stint-bar__block.is-pit-done{
+  opacity:.45;
+  filter:grayscale(.35);
+}
+
+/* VOLTA DE AQUECIMENTO/RESFRIAMENTO — só cor de fundo na barra (a chuva
+   ANIMADA agora é overlay GLOBAL no painel inteiro via .rain-layer). */
+.stint-bar__block.is-warmup{
+  background:linear-gradient(180deg, oklch(72% 0.14 235), oklch(58% 0.18 235));
+}
+.stint-bar__block.is-cooldown{
+  background:linear-gradient(180deg, oklch(72% 0.18 35), oklch(58% 0.22 30));
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   CHUVA TÉRMICA PREMIUM (overlay GLOBAL do painel)
+   Resgatada do mockup-cockpit-ghost.html — decisão Flávio 27/05/2026.
+   3 camadas (foreground/midground/background) com 90 gotas SVG geradas
+   pelo JS. Cor varia por fase (azul aquecimento / vermelho resfriamento).
+   Intensidade decai conforme temperatura se aproxima da ideal.
+   ════════════════════════════════════════════════════════════════════ */
+.rain-layer{
+  position:absolute;inset:0;z-index:3;pointer-events:none;
+  overflow:hidden;border-radius:48px;
+  opacity:0;
+  color: oklch(78% 0.20 232);   /* azul aquecimento (default) */
+  transition:opacity 900ms var(--ease-out), color 900ms var(--ease-out);
+}
+.device[data-rain^="cooldown"] .rain-layer{ color: oklch(64% 0.30 22); }
+
+.rain-layer .drop{
+  position:absolute;top:-40px;
+  border-radius:2px;
+  background:linear-gradient(to top,
+    currentColor 0%,
+    currentColor 30%,
+    color-mix(in oklch, currentColor 50%, transparent) 60%,
+    transparent 100%);
+  box-shadow:0 0 4px currentColor, 0 0 10px color-mix(in oklch, currentColor 35%, transparent);
+  transform:rotate(8deg);
+  animation:rainFall linear infinite;
+  will-change:transform, opacity;
+}
+.device[data-rain^="cooldown"] .rain-layer .drop{
+  transform:rotate(-7deg);
+  animation-name:rainFallCold;
+}
+
+.rain-layer::after{
+  content:'';position:absolute;left:0;right:0;bottom:0;height:24%;
+  background:
+    radial-gradient(ellipse 4% 3% at 12% 70%, currentColor 0%, transparent 60%),
+    radial-gradient(ellipse 3% 2% at 28% 85%, currentColor 0%, transparent 60%),
+    radial-gradient(ellipse 5% 3% at 44% 75%, currentColor 0%, transparent 60%),
+    radial-gradient(ellipse 3% 2% at 60% 88%, currentColor 0%, transparent 60%),
+    radial-gradient(ellipse 4% 3% at 76% 72%, currentColor 0%, transparent 60%),
+    radial-gradient(ellipse 5% 3% at 90% 82%, currentColor 0%, transparent 60%);
+  opacity:.45;
+  filter:blur(.6px);
+  animation:splashFlicker 1.6s var(--ease-inout) infinite;
+  mix-blend-mode:screen;
+}
+@keyframes splashFlicker{
+  0%,100%{ opacity:.30; }
+  50%    { opacity:.65; }
+}
+
+.rain-layer::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 70% at 50% 25%,
+    color-mix(in oklch, oklch(78% 0.20 232) 35%, transparent) 0%, transparent 65%);
+  opacity:0;
+  transition:opacity 900ms var(--ease-out), background 900ms var(--ease-out);
+  mix-blend-mode:screen;
+}
+.device[data-rain^="cooldown"] .rain-layer::before{
+  background:radial-gradient(ellipse 80% 70% at 50% 75%,
+    color-mix(in oklch, oklch(64% 0.30 22) 35%, transparent) 0%, transparent 65%);
+}
+
+/* Estados de intensidade */
+.device[data-rain="off"] .rain-layer,
+.device[data-rain=""] .rain-layer,
+.device:not([data-rain]) .rain-layer{ opacity:0; }
+.device[data-rain="warmup-alto"]    .rain-layer{ opacity:1.0; }
+.device[data-rain="warmup-medio"]   .rain-layer{ opacity:.55; }
+.device[data-rain="warmup-leve"]    .rain-layer{ opacity:.20; }
+.device[data-rain="cooldown-alto"]  .rain-layer{ opacity:.95; }
+.device[data-rain="cooldown-medio"] .rain-layer{ opacity:.50; }
+.device[data-rain="cooldown-leve"]  .rain-layer{ opacity:.18; }
+
+.device[data-rain^="warmup"]   .rain-layer::before{ opacity:.85; }
+.device[data-rain^="cooldown"] .rain-layer::before{ opacity:.75; }
+.device[data-rain="warmup-leve"]   .rain-layer::before,
+.device[data-rain="cooldown-leve"] .rain-layer::before{ opacity:.30; }
+
+@keyframes rainFall{
+  0%   { transform:translateY(-40px) rotate(8deg); opacity:0; }
+  8%   { opacity:1; }
+  88%  { opacity:1; }
+  100% { transform:translateY(490px) rotate(8deg); opacity:0; }
+}
+@keyframes rainFallCold{
+  0%   { transform:translateY(-40px) rotate(-7deg); opacity:0; }
+  10%  { opacity:1; }
+  85%  { opacity:1; }
+  100% { transform:translateY(490px) rotate(-7deg); opacity:0; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ALERTA ESCANDALOSO (preditivo + crítico) — problema sério se aproximando.
+   Decisão Flávio 27/05/2026: bateu 70°C de água = visual escandaloso.
+   - Halo vermelho ao redor do painel inteiro pulsando rápido
+   - Borda inflamada (recurso visual extra)
+   - Mensagem ÁGUA SUBINDO no centro piscando a 5Hz
+   - Painel inteiro vibra sutilmente
+   ════════════════════════════════════════════════════════════════════ */
+.alerta-escandaloso{
+  position:absolute;inset:0;z-index:55;pointer-events:none;
+  border-radius:48px;
+  opacity:0;
+  transition:opacity 280ms var(--ease-out);
+}
+.device[data-alerta-critico="ativo"] .alerta-escandaloso{
+  opacity:1;
+  box-shadow:
+    inset 0 0 0 4px oklch(68% 0.26 27 / .85),
+    inset 0 0 80px oklch(68% 0.26 27 / .55),
+    0 0 60px oklch(68% 0.26 27 / .65);
+  animation: escandaloso-halo 0.42s steps(2, jump-none) infinite;
+}
+@keyframes escandaloso-halo{
+  0%, 49%   { box-shadow:
+    inset 0 0 0 4px oklch(68% 0.26 27 / .85),
+    inset 0 0 80px oklch(68% 0.26 27 / .55),
+    0 0 60px oklch(68% 0.26 27 / .65); }
+  50%, 100% { box-shadow:
+    inset 0 0 0 6px oklch(78% 0.30 27 / 1),
+    inset 0 0 120px oklch(78% 0.30 27 / .8),
+    0 0 100px oklch(78% 0.30 27 / .9); }
+}
+.alerta-escandaloso__texto{
+  position:absolute;left:50%;top:50%;
+  transform:translate(-50%, -50%);
+  font-family:var(--ff-display);
+  font-size:62px;font-weight:900;letter-spacing:-.02em;
+  color:oklch(98% 0.10 25);
+  text-shadow:
+    0 0 24px oklch(68% 0.26 27 / 1),
+    0 0 48px oklch(68% 0.26 27 / .6),
+    2px 2px 0 oklch(0% 0 0 / .9),
+    -2px -2px 0 oklch(0% 0 0 / .9);
+  text-transform:uppercase;
+  text-align:center;
+  display:flex;flex-direction:column;align-items:center;
+  line-height:0.95;
+  animation: escandaloso-blink 0.4s steps(2, jump-none) infinite;
+  opacity:0;
+}
+.alerta-escandaloso__texto span{ display:block; }
+.device[data-alerta-critico="ativo"] .alerta-escandaloso__texto{ opacity:1; }
+
+/* Quando o alerta escandaloso está ativo, esconde delta central, mensagem
+   pedagógica, mensagem lateral E os widgets canônicos da fila (Entrada,
+   Freio, Ápice, Saída) — só MOTOR AQUECENDO no foco. Decisão Flávio
+   27/05/2026: nesta mensagem super crítica, foco total. */
+.device[data-alerta-critico="ativo"] .info-bloco,
+.device[data-alerta-critico="ativo"] .alert-bloco,
+.device[data-alerta-critico="ativo"] .apex{
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 240ms var(--ease-out);
+}
+@keyframes escandaloso-blink{
+  0%,  49%  { opacity: 0.3; transform:translate(-50%, -50%) scale(1.0); }
+  50%, 100% { opacity: 1;   transform:translate(-50%, -50%) scale(1.08); }
+}
+.stint-bar__block.is-pit-now{
+  /* mesmo visual da .is-pit base — sem flash */
+}
+
+/* Tipo "box" da mensagem (alert-bloco) — fundo cinza/branco com glyph alerta. */
+.alert-bloco[data-tipo="box"]{
+  background:linear-gradient(135deg, oklch(85% 0.005 240 / .25), oklch(60% 0.005 240 / .35));
+  border:1.5px solid oklch(95% 0 0 / .85);
+  color:oklch(98% 0 0 / .95);
+}
+.alert-bloco[data-tipo="box"] .alert__msg{
+  color:oklch(98% 0 0 / .95);
+  text-shadow:0 0 8px oklch(98% 0 0 / .50);
+  letter-spacing:.10em;
+}
+@keyframes alltimeBloom{
+  0%,100%{box-shadow:
+    0 0 18px 0 oklch(74% 0.16 73 / .8),
+    0 0 36px 0 oklch(74% 0.16 73 / .5),
+    0 0 60px 0 oklch(82% 0.18 70 / .25),
+    inset 0 0 0 1.5px var(--bg);}
+  50%{box-shadow:
+    0 0 26px 0 oklch(82% 0.18 70 / .95),
+    0 0 48px 0 oklch(82% 0.18 70 / .65),
+    0 0 80px 0 oklch(95% 0.14 80 / .4),
+    inset 0 0 0 1.5px var(--bg);}
+}
+@keyframes lightWaveBidir{
+  0%{background-position:-50% 0%;}
+  50%{background-position:150% 0%;}
+  100%{background-position:-50% 0%;}
+}
+
+/* CONTROLES do mockup (não vão pra prod) */
+.controls{
+  display:flex;gap:10px;justify-content:center;align-items:center;
+  margin-top:14px;font-family:var(--ff-mono);font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--muted);
+}
+.controls__lbl{color:var(--faint);font-weight:600;}
+.controls__btn{
+  background:var(--surface);border:1px solid var(--border);color:var(--ink);
+  font-family:inherit;font-size:11px;font-weight:700;letter-spacing:.06em;
+  padding:8px 14px;border-radius:2px;cursor:pointer;text-transform:uppercase;
+  transition:background 180ms var(--ease-out);
+}
+.controls__btn:hover{background:oklch(15% 0 0);}
+.controls__btn.is-active{background:var(--sistema);color:var(--bg);border-color:var(--sistema);}
+.controls__btn[data-action="grave"].is-active{background:var(--erro);color:var(--ink);border-color:var(--erro);}
+
+.legend{
+  position:fixed;bottom:18px;right:18px;max-width:340px;
+  font-family:var(--ff-mono);
+  font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--muted);
+  background:oklch(11% 0 0 / .85);backdrop-filter:blur(12px);
+  border:1px solid var(--border);border-radius:4px;
+  padding:10px 14px;line-height:1.6;
+  text-transform:uppercase;
+}
+.legend b{color:var(--ink);font-weight:700;}
+.legend i{color:var(--foco);font-style:normal;font-weight:700;}

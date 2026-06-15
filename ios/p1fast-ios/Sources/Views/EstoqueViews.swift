@@ -41,22 +41,33 @@ struct EstoqueEditorSeed: Identifiable {
 
 struct EstoqueGeralView: View {
     @EnvironmentObject private var repo: EstoqueRepository
+    @EnvironmentObject private var carroRepo: CarroRepository
     @State private var editor: EstoqueEditorSeed?
+    /// Escopo em foco: "geral" ou um carroId. Estoque UNIFICADO — um só lugar.
+    @State private var escopoSel: String = EstoqueRepository.escopoGeral
 
     private var itens: [EstoqueItem] {
-        repo.itens(escopo: EstoqueRepository.escopoGeral)
+        repo.itens(escopo: escopoSel)
             .sorted {
                 if $0.grupoNum != $1.grupoNum { return $0.grupoNum < $1.grupoNum }
                 return $0.nome.localizedCaseInsensitiveCompare($1.nome) == .orderedAscending
             }
     }
 
+    /// Botões de escopo: Geral + 1 por carro (dinâmico).
+    private var escopos: [(id: String, label: String)] {
+        [(EstoqueRepository.escopoGeral, "Geral")] + carroRepo.carros.map { ($0.id, $0.apelido) }
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.sm) {
+                escopoPicker
                 groupHead
                 if itens.isEmpty {
-                    Text("Nenhum item no estoque geral. Cadastre itens e ferramentas que não são de um carro específico — você reaproveita em todo evento.")
+                    Text(escopoSel == EstoqueRepository.escopoGeral
+                         ? "Nenhum item no estoque geral. Cadastre itens e ferramentas que não são de um carro específico — você reaproveita em todo evento."
+                         : "Nenhum item neste carro ainda. Cadastre peças e ferramentas deste carro.")
                         .font(.system(size: 13))
                         .foregroundStyle(Color.textFaint)
                         .padding(.horizontal, Spacing.xs)
@@ -86,9 +97,31 @@ struct EstoqueGeralView: View {
         }
     }
 
+    private var escopoPicker: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(escopos, id: \.id) { esc in
+                    let ativo = escopoSel == esc.id
+                    Button { escopoSel = esc.id } label: {
+                        Text(esc.label)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(ativo ? Color.onAccent : Color.textMuted)
+                            .padding(.horizontal, 14).padding(.vertical, 8)
+                            .background(Capsule().fill(ativo ? Color.accent : Color.clear))
+                            .overlay(Capsule().stroke(ativo ? Color.clear : Color.border, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, Spacing.xs)
+        }
+    }
+
     private var groupHead: some View {
         HStack {
-            Text("ITENS E FERRAMENTAS GERAIS")
+            Text(escopoSel == EstoqueRepository.escopoGeral
+                 ? "ITENS E FERRAMENTAS GERAIS"
+                 : "ESTOQUE DESTE CARRO")
                 .font(.system(size: 11, weight: .semibold))
                 .tracking(0.06 * 11)
                 .foregroundStyle(Color.textFaint)

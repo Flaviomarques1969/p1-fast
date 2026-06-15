@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=956, initial-scale=1">
+<title>P1 Fast — Demo Cockpit Piloto (shift light no pico de torque)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="cockpit.css">
+<style>
+  body { margin: 0; background: #050a14; }
+  .controls {
+    position: fixed; top: 0; left: 0; right: 0;
+    background: rgba(0,0,0,0.92); color: #e8eef5;
+    padding: 14px 20px;
+    font: 13px/1.4 -apple-system, "Segoe UI", sans-serif;
+    z-index: 1000; border-bottom: 2px solid #1e293b;
+    display: grid; grid-template-columns: 1fr auto auto; gap: 16px; align-items: center;
+  }
+  .controls h1 { margin: 0; font-size: 16px; font-weight: 800; color: #38bdf8; }
+  .controls h1 small { font-weight: 500; color: #94a3b8; font-size: 12px; display: block; margin-top: 2px; }
+  .slider-wrap { display: flex; flex-direction: column; gap: 4px; min-width: 320px; }
+  .slider-wrap label { color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .rpm-row { display: flex; gap: 12px; align-items: center; }
+  .rpm-display { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 800; color: #38bdf8; min-width: 90px; text-align: right; }
+  .rpm-display .unit { color: #475569; font-size: 12px; font-weight: 500; margin-left: 4px; }
+  input[type=range] { flex: 1; height: 36px; }
+  .btn-row { display: flex; gap: 8px; }
+  .btn { background: #1e293b; color: #e8eef5; border: 1px solid #334155;
+         padding: 8px 14px; font-size: 12px; font-weight: 700; border-radius: 6px; cursor: pointer; }
+  .btn:hover { background: #334155; }
+  .btn.primary { background: #38bdf8; color: #001724; border: none; }
+  .badges { display: flex; gap: 10px; align-items: center; }
+  .badge { padding: 5px 11px; border-radius: 5px; font-weight: 700; font-size: 11px; }
+  .badge.ok { background: #0f3a23; color: #86efac; }
+  .badge.warn { background: #3a2a0f; color: #fcd34d; }
+  .badge.bad  { background: #3a0f0f; color: #fca5a5; }
+  .legend {
+    position: fixed; bottom: 12px; left: 12px; max-width: 380px;
+    background: rgba(0,0,0,0.7); color: #cbd5e1;
+    font: 11px/1.5 -apple-system, "Segoe UI", sans-serif;
+    padding: 10px 12px; border-radius: 6px; z-index: 999;
+  }
+  .legend h3 { margin: 0 0 6px 0; font-size: 12px; color: #38bdf8; }
+  .legend table { border-collapse: collapse; width: 100%; }
+  .legend td { padding: 2px 6px 2px 0; }
+  .legend td:first-child { color: #94a3b8; }
+  .legend .marker { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .stage { padding-top: 188px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .curves-bar {
+    position: fixed; top: 134px; left: 0; right: 0;
+    background: rgba(15,23,42,0.95); color: #e8eef5;
+    padding: 8px 20px;
+    display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+    z-index: 999; border-bottom: 1px solid #1e293b;
+    font: 11px/1.3 -apple-system, "Segoe UI", sans-serif;
+  }
+  .curves-bar strong { color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 8px; }
+  .btn.curve { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; font-size: 11px; padding: 5px 10px; }
+  .btn.curve:hover { background: #334155; color: #fff; }
+  .btn.mode-btn { background: #1e293b; color: #94a3b8; border: 1px solid #334155; font-size: 11px; padding: 5px 10px; }
+  .btn.mode-btn.is-on { background: #38bdf8; color: #001724; border-color: #38bdf8; font-weight: 800; }
+  .alarms-bar {
+    position: fixed; top: 86px; left: 0; right: 0;
+    background: rgba(15,23,42,0.95); color: #e8eef5;
+    padding: 8px 20px;
+    display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+    z-index: 999; border-bottom: 1px solid #1e293b;
+    font: 11px/1.3 -apple-system, "Segoe UI", sans-serif;
+  }
+  .alarms-bar strong { color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 8px; }
+  .btn.alarm { font-size: 11px; padding: 5px 10px; }
+  .btn.alarm.grave { background: #3a0f0f; color: #fca5a5; border-color: #7f1d1d; }
+  .btn.alarm.grave:hover { background: #5a1818; }
+  .btn.alarm.grave.is-on { background: #ef4444; color: #fff; border-color: #ef4444; }
+  .btn.alarm.aviso { background: #3a2a0f; color: #fcd34d; border-color: #7c5500; }
+  .btn.alarm.aviso:hover { background: #5a4218; }
+  .btn.alarm.aviso.is-on { background: #fcd34d; color: #001724; border-color: #fcd34d; }
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <h1>P1 Fast — Demonstração do Cockpit Piloto
+    <small>Mexe na rotação aqui pra ver o shift light reagir, sem precisar do carro plugado</small>
+  </h1>
+  <div class="slider-wrap">
+    <label>Rotação simulada</label>
+    <div class="rpm-row">
+      <input type="range" id="rpmSlider" min="0" max="7000" step="50" value="900">
+      <div class="rpm-display"><span id="rpmValue">900</span><span class="unit">rpm</span></div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn primary" id="btnPuxada">Simular puxada</button>
+    <button class="btn primary" id="btnVoltaGps">Simular volta no GPS</button>
+    <button class="btn" id="btnParar">Parar</button>
+    <span style="margin-left:14px; color:#94a3b8; font-size:11px;">Pneu:</span>
+    <button class="btn mode-btn is-on" id="btnPneuSemiSlick">Semi-slick</button>
+    <button class="btn mode-btn" id="btnPneuRadial">Radial</button>
+  </div>
+</div>
+
+<div class="alarms-bar" id="alarmsBar">
+  <strong>Alarmes da central:</strong>
+  <button class="btn alarm grave" data-alarme="baixaPressaoOleo">⚠ Óleo</button>
+  <button class="btn alarm grave" data-alarme="excessoTempMotor">⚠ Motor quente</button>
+  <button class="btn alarm grave" data-alarme="baixaPressaoCombustivel">⚠ Combustível</button>
+  <button class="btn alarm grave" data-alarme="excessoRotacao">⚠ Rotação alta</button>
+  <button class="btn alarm grave" data-alarme="excessoPressao">⚠ Pressão alta</button>
+  <button class="btn alarm aviso" data-alarme="wbMinimo">• Mistura pobre</button>
+  <button class="btn alarm aviso" data-alarme="wbMaximo">• Mistura rica</button>
+  <button class="btn alarm aviso" data-alarme="alertaNivelCombustivel">• Pouco combustível</button>
+  <button class="btn" id="btnLimparAlarmes">Limpar</button>
+</div>
+
+<div class="curves-bar" id="curvesBar">
+  <strong>Curvas de Brasília:</strong>
+  <span style="display:flex; gap:4px; margin-right:8px;">
+    <button class="btn mode-btn is-on" id="btnModePassagem">passagem completa</button>
+    <button class="btn mode-btn" id="btnModeEntrada">só entrada</button>
+    <button class="btn mode-btn" id="btnModeFreio">só freio</button>
+    <button class="btn mode-btn" id="btnModeApice">só ápice</button>
+    <button class="btn mode-btn" id="btnModeSaida">só saída</button>
+  </span>
+  <span id="curvesButtons" style="display:flex; gap:6px; flex-wrap:wrap;">carregando…</span>
+</div>
+
+<div class="badges" style="position:fixed; top:90px; right:20px; z-index:1000;">
+  <span class="badge warn" id="modeBadge">modo: aguardando</span>
+  <span class="badge ok" id="dynoBadge">curva: carregando…</span>
+</div>
+
+<div class="stage">
+  <div class="device" id="device" data-trecho-status="neutro" data-msg-state="oculta" data-shift-fire="idle">
+    <div class="notch"></div>
+    <div class="fire-overlay"></div>
+
+    <div class="telemetria-chip">
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+    </div>
+
+    <div class="shift-light" id="shiftLight" data-state="off">
+      <span class="shift-light__dot" data-tier="1"></span>
+      <span class="shift-light__dot" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="1"></span>
+    </div>
+
+    <section class="apex">
+      <div class="apex__ponto" data-estado="pendente" data-papel="entrada">
+        <span class="apex__label">Entrada</span><span class="apex__valor">—</span>
+      </div>
+      <div class="apex__ponto" data-estado="pendente" data-papel="freio">
+        <span class="apex__label">Freio</span><span class="apex__valor">—</span>
+      </div>
+      <div class="apex__ponto" data-estado="pendente" data-papel="apice">
+        <span class="apex__label">Ápice</span><span class="apex__valor">—</span>
+      </div>
+      <div class="apex__ponto" data-estado="pendente" data-papel="saida">
+        <span class="apex__label">Saída</span><span class="apex__valor">—</span>
+      </div>
+    </section>
+    <!-- nota: o widget freio mostra "+/-N m" = distância adiantada/atrasada
+         em relação ao ponto da melhor passagem. + (verde) = freou mais tarde
+         (próximo do apex) = melhor. - (vermelho) = freou antes = pior. -->
+
+
+    <div class="info-bloco">
+      <span class="info__delta">0.00</span>
+      <div class="info__acao"></div>
+    </div>
+
+    <aside class="alert-bloco" id="alertBloco" data-tipo="comunicacao">
+      <div class="alert__msg" id="alertMsg"></div>
+    </aside>
+
+    <div class="stint-bar">
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <h3>Como interpretar as luzes</h3>
+  <table>
+    <tr><td><span class="marker" style="background:#475569"></span>Apagadas</td><td>rotação abaixo de 4.900 rpm</td></tr>
+    <tr><td><span class="marker" style="background:#22c55e"></span>Verdes (1-4)</td><td>4.900 a 5.100 rpm — começou o aviso</td></tr>
+    <tr><td><span class="marker" style="background:#eab308"></span>Amarelas (5-8)</td><td>5.100 a 5.200 rpm — quase no pico</td></tr>
+    <tr><td><span class="marker" style="background:#ef4444"></span>TODAS vermelhas + brilho</td><td><b>5.200 rpm = troca AGORA</b> (pico de torque)</td></tr>
+    <tr><td><span class="marker" style="background:#7f1d1d"></span>Halo vermelho fixo</td><td>acima de 6.300 (passou do limite)</td></tr>
+  </table>
+</div>
+
+<script type="module">
+import { CockpitState, ApexEstado } from './cockpit-state.js';
+import { attachRendererToDocument } from './cockpit-renderer.js';
+import { LiveDataBridge, DEFAULT_LIMITS } from './live-data-bridge.js';
+import { loadDynoCurve, BUBI_CARRO_ID } from './dyno-loader.js';
+import { loadTrackSegments, onlyCurves, shortLabel, BRASILIA_TRACK_ID } from './track-loader.js';
+import { createDetector } from './track-detector.js';
+import { loadMelhoresPassagens, salvarPassagemSeMelhor, distanciaMetros } from './melhores-loader.js';
+
+// Defaults pro Bubi (sobrescritos pela curva da nuvem quando carregar)
+const BUBI_LIMITS = {
+  ...DEFAULT_LIMITS,
+  redlineRpm: 6300,
+  peakTorqueRpm: 5200,
+  torqueLitOffsetRpm: 300,
+};
+
+const cockpitState = new CockpitState();
+attachRendererToDocument(cockpitState, document);
+const bridge = new LiveDataBridge({ cockpitState, limits: BUBI_LIMITS });
+
+const $ = id => document.getElementById(id);
+
+// Carregar curva da nuvem
+loadDynoCurve(BUBI_CARRO_ID).then(curva => {
+  if (curva) {
+    bridge.setLimits({
+      peakTorqueRpm: curva.peakTorqueRpm,
+      redlineRpm: curva.redlineRpm ?? BUBI_LIMITS.redlineRpm,
+    });
+    $('dynoBadge').className = 'badge ok';
+    $('dynoBadge').textContent = `curva ${curva.apelido}: pico ${curva.peakTorqueNm.toFixed(0)} Nm @ ${curva.peakTorqueRpm} rpm`;
+  } else {
+    $('dynoBadge').className = 'badge warn';
+    $('dynoBadge').textContent = `curva: usando default (pico ${BUBI_LIMITS.peakTorqueRpm} rpm)`;
+  }
+}).catch(e => {
+  $('dynoBadge').className = 'badge bad';
+  $('dynoBadge').textContent = 'curva: erro ' + e.message;
+});
+
+// Estado de alarmes simulados (cada botão ativa/desativa um bit)
+const alarmesAtivos = {
+  excessoRotacao: false, excessoPressao: false, excessoTempMotor: false,
+  excessoAberturaInjetor: false, baixaPressaoOleo: false,
+  wbMinimo: false, wbMaximo: false, nbMinimo: false, nbMaximo: false,
+  baixaPressaoCombustivel: false, alertaNivelCombustivel: false,
+};
+
+// Aplicar uma amostra com RPM X
+function applyRpm(rpm) {
+  bridge.ingestT4000({
+    source: 'demo',
+    parserVersion: 'demo',
+    tMono: performance.now(),
+    checksumOk: true,
+    bytesLen: 0,
+    rpm,
+    alarmes: { ...alarmesAtivos },
+  });
+  $('rpmValue').textContent = String(rpm);
+  $('rpmSlider').value = String(rpm);
+}
+
+// Slider manual
+$('rpmSlider').addEventListener('input', (e) => {
+  const rpm = Number(e.target.value);
+  $('modeBadge').className = 'badge warn';
+  $('modeBadge').textContent = 'modo: manual';
+  cancelarPuxada();
+  applyRpm(rpm);
+});
+
+// Puxada automática (1.000 → 6.500 → 1.000)
+let puxadaTimer = null;
+function cancelarPuxada() {
+  if (puxadaTimer) { clearInterval(puxadaTimer); puxadaTimer = null; }
+}
+
+$('btnPuxada').addEventListener('click', () => {
+  cancelarPuxada();
+  $('modeBadge').className = 'badge ok';
+  $('modeBadge').textContent = 'modo: puxada automática';
+  let rpm = 1000;
+  let direcao = 1;
+  applyRpm(rpm);
+  puxadaTimer = setInterval(() => {
+    rpm += 50 * direcao;
+    if (rpm >= 6500) { direcao = -1; }
+    if (rpm <= 1000) {
+      cancelarPuxada();
+      $('modeBadge').className = 'badge warn';
+      $('modeBadge').textContent = 'modo: parado';
+    }
+    applyRpm(rpm);
+  }, 60); // 1 segundo até passar pelo pico, depois desce
+});
+
+$('btnParar').addEventListener('click', () => {
+  cancelarPuxada();
+  pararVoltaSimulada();
+  $('modeBadge').className = 'badge warn';
+  $('modeBadge').textContent = 'modo: parado';
+});
+
+// Seletor de tipo de pneu — troca a referência de comparação
+$('btnPneuSemiSlick').addEventListener('click', async () => {
+  _tipoPneu = 'semi-slick';
+  $('btnPneuSemiSlick').classList.add('is-on');
+  $('btnPneuRadial').classList.remove('is-on');
+  await recarregarMelhores();
+  // limpa o painel pra forçar nova comparação
+  cockpitState.setApexPonto('entrada', { estado: ApexEstado.PENDENTE, valorKmh: null, nomeCurva: null });
+  cockpitState.setApexPonto('saida',   { estado: ApexEstado.PENDENTE, valorKmh: null, nomeCurva: null });
+});
+$('btnPneuRadial').addEventListener('click', async () => {
+  _tipoPneu = 'radial';
+  $('btnPneuRadial').classList.add('is-on');
+  $('btnPneuSemiSlick').classList.remove('is-on');
+  await recarregarMelhores();
+  cockpitState.setApexPonto('entrada', { estado: ApexEstado.PENDENTE, valorKmh: null, nomeCurva: null });
+  cockpitState.setApexPonto('saida',   { estado: ApexEstado.PENDENTE, valorKmh: null, nomeCurva: null });
+});
+
+// Botões de alarmes — ligam/desligam um bit por vez (toggle)
+const rpmAtual = () => Number($('rpmSlider').value) || 900;
+document.querySelectorAll('.alarms-bar .btn.alarm[data-alarme]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const chave = btn.dataset.alarme;
+    alarmesAtivos[chave] = !alarmesAtivos[chave];
+    btn.classList.toggle('is-on', alarmesAtivos[chave]);
+    applyRpm(rpmAtual());
+  });
+});
+$('btnLimparAlarmes').addEventListener('click', () => {
+  for (const k of Object.keys(alarmesAtivos)) alarmesAtivos[k] = false;
+  document.querySelectorAll('.alarms-bar .btn.alarm.is-on').forEach(b => b.classList.remove('is-on'));
+  applyRpm(rpmAtual());
+});
+
+// Modo de registro: passagem (todos os 4 em sequência) | entrada | freio | apice | saida (individuais pra debug)
+let modoRegistro = 'passagem';
+const modoBtns = { passagem:'btnModePassagem', entrada:'btnModeEntrada', freio:'btnModeFreio', apice:'btnModeApice', saida:'btnModeSaida' };
+function escolherModo(m) {
+  modoRegistro = m;
+  for (const [k, id] of Object.entries(modoBtns)) {
+    $(id).classList.toggle('is-on', k === m);
+  }
+}
+$('btnModePassagem').addEventListener('click', () => escolherModo('passagem'));
+$('btnModeEntrada').addEventListener('click', () => escolherModo('entrada'));
+$('btnModeFreio').addEventListener('click', () => escolherModo('freio'));
+$('btnModeApice').addEventListener('click', () => escolherModo('apice'));
+$('btnModeSaida').addEventListener('click', () => escolherModo('saida'));
+
+// Detector automático via GPS — alimentado pelo simulador de volta abaixo
+// (e, no futuro, pelo iPhone publicando GPS no canal Realtime).
+let _detector = null;
+let _curvasGlobal = [];
+let _melhores = new Map(); // "segmentoId|momento" → velocidade_kmh
+let _tipoPneu = 'semi-slick'; // padrão; usuário escolhe nos botões "Pneu"
+const CARRO_BUBI_ID = '641a81e7-3192-4e68-8183-b8401f105574';
+
+async function recarregarMelhores() {
+  _melhores = await loadMelhoresPassagens(CARRO_BUBI_ID, _tipoPneu);
+  console.log(`[demo] melhores ${_tipoPneu}:`, _melhores.size);
+}
+
+function velocidadeAtual() {
+  const rpm = Number($('rpmSlider').value) || 900;
+  return Math.round((rpm / 3000) * 50);
+}
+
+// Converte coordenada SVG da pista pra lat/lng simulada (usa âncoras de Brasília).
+// Na pista real, GPS chega direto do iPhone; aqui na demo simulamos a partir do
+// apex da curva escolhida + pequeno offset aleatório.
+function gpsSimuladoNaCurva(curva, offsetSvg = 0) {
+  const dx = (Math.random() - 0.5) * offsetSvg;
+  const dy = (Math.random() - 0.5) * offsetSvg;
+  return svgToLatLng(curva.apex_x + dx, curva.apex_y + dy);
+}
+
+async function registrarPassagem(papel, curva) {
+  const vel = velocidadeAtual();
+  const chave = `${curva.id}|${papel}`;
+  const ref = _melhores.get(chave); // { velocidadeKmh, lat, lng } ou undefined
+  let foiMelhor;
+  let deltaM = null;
+  // GPS simulado do momento (na pista real virá do iPhone)
+  const offset = (papel === 'freio') ? 40 : (papel === 'apice') ? 8 : 20;
+  const { lat, lng } = gpsSimuladoNaCurva(curva, offset);
+
+  if (papel === 'freio') {
+    // freio: melhor = freou MAIS PRÓXIMO do apex
+    const distAtualAoApex = distanciaMetros(lat, lng, ...svgToLatLngXY(curva.apex_x, curva.apex_y));
+    if (!ref || !ref.lat) {
+      foiMelhor = true;
+      deltaM = 0;
+    } else {
+      const distRefAoApex = distanciaMetros(ref.lat, ref.lng, ...svgToLatLngXY(curva.apex_x, curva.apex_y));
+      deltaM = (distRefAoApex !== null && distAtualAoApex !== null) ? (distRefAoApex - distAtualAoApex) : null;
+      foiMelhor = deltaM !== null && deltaM > 0;
+    }
+    cockpitState.setApexPonto('freio', {
+      estado: foiMelhor ? ApexEstado.OK_MELHOR : ApexEstado.OK_PIOR,
+      deltaM: deltaM !== null ? deltaM : null,
+      lat, lng,
+    });
+  } else if (papel === 'apice') {
+    // ápice: mostra a DISTÂNCIA do Vmin (este ponto) ao ápice geométrico.
+    // Sinal: estimamos pelo offset SVG simulado — negativo (antes) vs positivo (depois).
+    // Na pista real, isso virá de comparar a ordem temporal do GPS com a linha do ápice.
+    const distAtual = distanciaMetros(lat, lng, ...svgToLatLngXY(curva.apex_x, curva.apex_y));
+    // sinal pseudo-aleatório pra simular antes/depois do ápice
+    const sinal = Math.random() > 0.5 ? 1 : -1;
+    const deltaAtual = distAtual !== null ? sinal * distAtual : null;
+    if (!ref || ref.deltaM === undefined || ref.deltaM === null) {
+      foiMelhor = true;
+      deltaM = deltaAtual;
+    } else {
+      // melhor = menor valor absoluto (mais próximo do ápice geométrico)
+      foiMelhor = Math.abs(deltaAtual) < Math.abs(ref.deltaM);
+      deltaM = deltaAtual;
+    }
+    cockpitState.setApexPonto('apice', {
+      estado: foiMelhor ? ApexEstado.OK_MELHOR : ApexEstado.OK_PIOR,
+      deltaM,
+      valorKmh: vel,  // armazena pro Comando Box, mas não mostra no painel piloto
+      lat, lng,
+      nomeCurva: shortLabel(curva.nome),
+    });
+  } else {
+    // entrada/saida: comparação por velocidade (maior = melhor)
+    foiMelhor = !ref || vel > ref.velocidadeKmh;
+    cockpitState.setApexPonto(papel, {
+      estado: foiMelhor ? ApexEstado.OK_MELHOR : ApexEstado.OK_PIOR,
+      valorKmh: vel,
+      nomeCurva: shortLabel(curva.nome),
+    });
+  }
+
+  if (foiMelhor) {
+    _melhores.set(chave, { velocidadeKmh: vel, lat, lng, deltaM });
+    try {
+      await salvarPassagemSeMelhor({
+        carroId: CARRO_BUBI_ID,
+        tipoPneu: _tipoPneu,
+        segmentoId: curva.id,
+        momento: papel,
+        velocidadeKmh: vel,
+        lat, lng,
+      });
+    } catch (e) { console.warn('[demo] erro salvar:', e.message); }
+  }
+}
+
+// Helper local: converte (x_svg, y_svg) em [lat, lng] como array
+function svgToLatLngXY(x, y) {
+  const { lat, lng } = svgToLatLng(x, y);
+  return [lat, lng];
+}
+
+function gravarEntradaPorCurva(curva) { registrarPassagem('entrada', curva); }
+function gravarSaidaPorCurva(curva)   {
+  // ao sair da curva, registramos os 3 momentos pendentes (freio, ápice, saída).
+  // No detector real, esses 3 viriam de gatilhos GPS distintos durante a curva;
+  // por enquanto disparamos juntos ao final pra que a coloração apareça completa.
+  registrarPassagem('freio', curva);
+  registrarPassagem('apice', curva);
+  registrarPassagem('saida', curva);
+}
+
+// Simulador de volta no GPS: percorre os apex em sequência com pequenas variações.
+// Usa as âncoras de Brasília pra converter SVG → lat/lng e alimentar o detector
+// (o caminho real é o inverso, mas pra simular invertemos).
+const ANCORA_A = { lat: -15.77000, lng: -47.90000, x: 410, y: 707 };
+const ANCORA_B = { lat: -15.77180, lng: -47.89800, x: 630, y: 400 };
+
+function svgToLatLng(x, y) {
+  const tX = (x - ANCORA_A.x) / (ANCORA_B.x - ANCORA_A.x);
+  const tY = (y - ANCORA_A.y) / (ANCORA_B.y - ANCORA_A.y);
+  return {
+    lat: ANCORA_A.lat + (ANCORA_B.lat - ANCORA_A.lat) * tY,
+    lng: ANCORA_A.lng + (ANCORA_B.lng - ANCORA_A.lng) * tX,
+  };
+}
+
+let _voltaTimer = null;
+function pararVoltaSimulada() {
+  if (_voltaTimer) { clearInterval(_voltaTimer); _voltaTimer = null; }
+}
+$('btnVoltaGps').addEventListener('click', () => {
+  pararVoltaSimulada();
+  if (!_detector || _curvasGlobal.length === 0) return;
+  $('modeBadge').className = 'badge ok';
+  $('modeBadge').textContent = 'modo: volta GPS simulada';
+  _detector.resetVolta();
+  let i = 0;
+  let interpStep = 0;
+  const stepsPorTrecho = 12; // 12 pontos GPS entre 1 apex e o próximo
+  _voltaTimer = setInterval(() => {
+    const cur = _curvasGlobal[i];
+    const next = _curvasGlobal[(i + 1) % _curvasGlobal.length];
+    const t = interpStep / stepsPorTrecho;
+    const x = cur.apex_x + (next.apex_x - cur.apex_x) * t;
+    const y = cur.apex_y + (next.apex_y - cur.apex_y) * t;
+    const { lat, lng } = svgToLatLng(x, y);
+    _detector.ingestGps(lat, lng);
+    interpStep += 1;
+    if (interpStep > stepsPorTrecho) { interpStep = 0; i = (i + 1) % _curvasGlobal.length; }
+    // ajusta o rpm pra "simular" velocidade variando entre curvas
+    const rpmSim = cur.corner_type === 'rapida' ? 5500 : cur.corner_type === 'media' ? 4500 : 3500;
+    applyRpm(rpmSim + Math.round(Math.random() * 200 - 100));
+  }, 200);
+});
+
+// Carregar curvas da Brasília e criar 1 botão pra cada
+loadTrackSegments(BRASILIA_TRACK_ID).then(segments => {
+  if (!segments) {
+    $('curvesButtons').textContent = 'erro ao carregar curvas';
+    return;
+  }
+  const curvas = onlyCurves(segments);
+  if (curvas.length === 0) {
+    $('curvesButtons').textContent = 'nenhuma curva cadastrada';
+    return;
+  }
+  // armazena globalmente pro simulador de volta + cria detector
+  _curvasGlobal = curvas;
+  _detector = createDetector({
+    curvas,
+    onCruzarEntrada: gravarEntradaPorCurva,
+    onCruzarSaida: gravarSaidaPorCurva,
+  });
+  // carrega melhores passagens já registradas do Bubi pro pneu atual
+  recarregarMelhores();
+  $('curvesButtons').innerHTML = '';
+  for (const c of curvas) {
+    const btn = document.createElement('button');
+    btn.className = 'btn curve';
+    btn.textContent = shortLabel(c.nome);
+    btn.title = `Toca pra registrar ${modoRegistro} de ${c.nome}`;
+    btn.addEventListener('click', async () => {
+      if (modoRegistro === 'passagem') {
+        // Sequência natural de uma curva: entrada → freio → ápice → saída
+        // Cada momento tem velocidade característica diferente; usamos a rotação
+        // atual como base e variamos pra simular a queda na frenagem/ápice e
+        // retomada na saída (na pista real cada momento captura velocidade real
+        // do sensor de roda naquele instante).
+        const rpmBase = Number($('rpmSlider').value) || 4000;
+        const baseVel = Math.round((rpmBase / 3000) * 50);
+        // entrada — velocidade chegando antes de frear
+        applyRpm(rpmBase);
+        await registrarPassagem('entrada', c);
+        // freio — momento de máxima desaceleração (velocidade cai)
+        applyRpm(Math.max(1500, rpmBase - 1500));
+        await registrarPassagem('freio', c);
+        // ápice — velocidade mínima da curva
+        applyRpm(Math.max(1200, rpmBase - 2000));
+        await registrarPassagem('apice', c);
+        // saída — começa retomando velocidade
+        applyRpm(Math.max(2000, rpmBase - 1200));
+        await registrarPassagem('saida', c);
+        // volta ao rpm que estava antes
+        applyRpm(rpmBase);
+      } else {
+        await registrarPassagem(modoRegistro, c);
+      }
+    });
+    $('curvesButtons').appendChild(btn);
+  }
+  const limpar = document.createElement('button');
+  limpar.className = 'btn';
+  limpar.textContent = 'Limpar';
+  limpar.addEventListener('click', () => {
+    for (const papel of ['entrada','saida']) {
+      cockpitState.setApexPonto(papel, {
+        estado: ApexEstado.PENDENTE,
+        valorKmh: null,
+        nomeCurva: null,
+      });
+    }
+  });
+  $('curvesButtons').appendChild(limpar);
+}).catch(e => {
+  $('curvesButtons').textContent = 'erro: ' + e.message;
+});
+
+// Boot inicial
+applyRpm(900);
+$('modeBadge').className = 'badge warn';
+$('modeBadge').textContent = 'modo: pronto — clica em "Simular puxada" ou mexe o slider';
+
+window.__demo = { cockpitState, bridge, applyRpm, alarmesAtivos };
+</script>
+
+</body>
+</html>

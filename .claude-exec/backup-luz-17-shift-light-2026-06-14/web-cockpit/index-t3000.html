@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="pt-BR" data-mobile="true">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=956, initial-scale=1">
+<title>P1 Fast — Cockpit Piloto · Bubi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="cockpit.css">
+<style>
+  /* topo de conexão — minimal, fora do cockpit canônico */
+  body { margin: 0; background: #000; }
+
+  /* TELA REAL = 10,5" DE PISTA (PDM-10.5T, 1920×1280) — NÃO é celular.
+     Cobrança do Flávio 12/06: sem recorte (notch), sem moldura arredondada,
+     sem faixa preta sobrando. O palco vira ~3:2 e preenche a tela inteira.
+     O cockpit.css canônico segue intocado (teste byte a byte) — a adaptação
+     é só desta página, onde o painel roda de verdade. */
+  .device { height: 590px; border-radius: 0; box-shadow: none; }
+  .device .notch { display: none; }
+  .conn-bar {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; align-items: center; gap: 12px; padding: 8px 14px;
+    background: rgba(0,0,0,0.85); color: #e8eef5;
+    font: 13px/1.3 -apple-system, "Segoe UI", sans-serif;
+    z-index: 1000; border-bottom: 1px solid #2a3645;
+  }
+  .conn-bar .btn {
+    background: #38bdf8; color: #001724; border: none;
+    padding: 8px 16px; font-size: 14px; font-weight: 700;
+    border-radius: 6px; cursor: pointer;
+  }
+  .conn-bar .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .conn-status { padding: 4px 10px; border-radius: 5px; font-weight: 600; font-size: 12px; }
+  .conn-status.ok   { background: #0f3a23; color: #86efac; }
+  .conn-status.warn { background: #3a2a0f; color: #fcd34d; }
+  .conn-status.bad  { background: #3a0f0f; color: #fca5a5; }
+  /* Selo do modo TREINO (Stint Revestido, 11/06) — fora do palco de ações */
+  .conn-status.treino { background: #2b2008; color: #e7c463; border: 1px solid #a8841f;
+    letter-spacing: 1px; font-weight: 800; }
+  .hud { display: flex; gap: 16px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+  .hud b { color: #8a99a8; font-weight: 600; margin-right: 4px; }
+  .conn-log {
+    position: fixed; bottom: 8px; right: 8px; max-width: 360px; max-height: 160px; overflow-y: auto;
+    background: rgba(0,0,0,0.7); color: #cbd5e1; font: 11px/1.4 ui-monospace, Consolas, monospace;
+    padding: 8px; border-radius: 6px; z-index: 999;
+  }
+  .stage { padding-top: 56px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .conn-bar .btn--ghost {
+    background: transparent; color: #cbd5e1; border: 1px solid #2a3645;
+    padding: 6px 12px; font-weight: 600; font-size: 13px;
+  }
+  .conn-bar .btn--ghost:hover { background: #2a3645; }
+  .badge-safe-mode {
+    display: none;
+    padding: 4px 10px; border-radius: 5px; font-weight: 700; font-size: 12px;
+    background: #3a2a0f; color: #fcd34d; border: 1px solid #a16207;
+    letter-spacing: 0.5px;
+  }
+  .badge-safe-mode[data-active="1"] { display: inline-block; }
+  /* Overlay "SEM SINAL" — quando o conversor T3000 perde amostras por >1,5 s */
+  .no-signal-overlay {
+    position: fixed; inset: 56px 0 0 0;
+    background: rgba(15, 4, 4, 0.78);
+    display: none; align-items: center; justify-content: center;
+    z-index: 900; pointer-events: none;
+  }
+  .no-signal-overlay[data-active="1"] { display: flex; }
+  .no-signal-overlay__card {
+    background: #2c0a0a; color: #fca5a5; border: 2px solid #b91c1c;
+    padding: 28px 40px; border-radius: 12px;
+    font-family: 'Inter', sans-serif;
+    text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  .no-signal-overlay__titulo { font-size: 32px; font-weight: 900; letter-spacing: 2px; }
+  .no-signal-overlay__detalhe { font-size: 14px; margin-top: 8px; color: #fecaca; }
+</style>
+</head>
+<body>
+
+<div class="conn-bar">
+  <button class="btn" id="btnConnect">Autorizar T3000 via WebUSB</button>
+  <span class="conn-status warn" id="connStatus">aguardando</span>
+  <span class="conn-status warn" id="cloudStatus">nuvem: desligado</span>
+  <span class="conn-status warn" id="fonteShiftStatus" title="Origem do RPM ótimo de troca">shift: semente</span>
+  <span class="badge-safe-mode" id="badgeSafeMode" title="Curva do dinamômetro ou marchas indisponíveis — operando em modo seguro" data-active="0">MODO SEGURO</span>
+  <span class="conn-status treino" id="seloTreino" style="display:none" title="Treino armado pelo Planejamento do Stint">TREINO</span>
+  <span class="hud" id="hud"><b>RPM</b>—</span>
+  <!-- Configuração do stint: abre a tela em outra aba pra escolher modo + envelope -->
+  <a class="btn btn--ghost" id="btnStint" href="./configuracao-stint.html" target="_blank" rel="noopener" title="Selecionar modo e envelope antes do stint">STINT</a>
+  <!-- Comandos do mecânico — disparam alertas manuais no painel piloto -->
+  <button class="btn" id="btnBox" style="background:#2a3645;color:#fcd34d" data-ativo="0">BOX</button>
+  <button class="btn" id="btnUltimaVolta" style="background:#2a3645;color:#cbd5e1" data-ativo="0">ÚLTIMA VOLTA</button>
+  <button class="btn" id="btnSilencioso" style="margin-left:auto;background:#2a3645;color:#fcd34d">mensagens ON</button>
+</div>
+
+<!-- Overlay "SEM SINAL" — só aparece quando o conversor T3000 deixa de mandar amostras por >1,5 s -->
+<div class="no-signal-overlay" id="noSignalOverlay" data-active="0">
+  <div class="no-signal-overlay__card">
+    <div class="no-signal-overlay__titulo">SEM SINAL</div>
+    <div class="no-signal-overlay__detalhe">Conversor T3000 sem amostras há mais de 1,5 s. Painel pode estar congelado.</div>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="device" id="device" data-trecho-status="neutro" data-msg-state="oculta" data-shift-fire="idle">
+    <div class="notch"></div>
+    <div class="fire-overlay"></div>
+
+    <div class="telemetria-chip">
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+    </div>
+
+    <div class="shift-light" id="shiftLight" data-state="off">
+      <span class="shift-light__dot" data-tier="1"></span>
+      <span class="shift-light__dot" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="1"></span>
+    </div>
+
+    <section class="apex">
+      <div class="apex__ponto" data-estado="pendente">
+        <span class="apex__label">Entrada</span>
+        <span class="apex__valor">—</span>
+      </div>
+      <div class="apex__ponto" data-estado="pendente" data-papel="freio">
+        <span class="apex__label">Freio</span>
+        <span class="apex__valor">—</span>
+      </div>
+      <div class="apex__ponto" data-estado="pendente">
+        <span class="apex__label">Ápice</span>
+        <span class="apex__valor">—</span>
+      </div>
+      <div class="apex__ponto" data-estado="pendente">
+        <span class="apex__label">Saída</span>
+        <span class="apex__valor">—</span>
+      </div>
+    </section>
+
+    <div class="info-bloco">
+      <span class="info__delta">0.00</span>
+      <div class="info__acao"></div>
+    </div>
+
+    <aside class="alert-bloco" id="alertBloco" data-tipo="comunicacao">
+      <div class="alert__msg" id="alertMsg"></div>
+    </aside>
+
+    <div class="stint-bar">
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+    </div>
+  </div>
+</div>
+
+<div class="conn-log" id="connLog"></div>
+
+<script>
+// Tela de pista PDM-10.5T (1920×1280): o palco 956×590 (~3:2, proporção da
+// tela real) escala uniforme pra PREENCHER a tela — sem faixas pretas
+// (Flávio 12/06: "a tela é 10,5", não celular). Em 1920×1280 dá ~1,96× =
+// ~1880×1280 com a barra de conexão. Em janela de bancada escala o que couber.
+(function () {
+  const stage = document.querySelector('.stage');
+  if (!stage) return;
+  function ajustaEscala() {
+    const s = Math.min(window.innerWidth / 960, window.innerHeight / 652, 2.2);
+    stage.style.transform = s > 1.01 ? `scale(${s.toFixed(3)})` : '';
+    stage.style.transformOrigin = 'center top';
+  }
+  window.addEventListener('resize', ajustaEscala);
+  ajustaEscala();
+})();
+</script>
+<script type="module" src="main-t3000.js"></script>
+</body>
+</html>
