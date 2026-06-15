@@ -4501,6 +4501,16 @@ html,body{
     }
   }
 
+  // Etapa 2b: o carregador de módulo (fim do <body>) chama isto quando o dado REAL
+  // (ideal por tipo + volta do Bubi) está pronto. Liga a fonte, força um rebuild e
+  // tira o cinza de "aguardando ligação" do bloco.
+  window.__aplicarFrenagemReal = function(arr){
+    __FRX_REAL = Array.isArray(arr) ? arr : null;
+    _lastFrenagemKey = '';                 // invalida o cache pra reconstruir já
+    try { updateFrenagemFromLap(_lastLiveT); } catch(e){}
+    document.querySelectorAll('.b-custom.is-frenagem').forEach(function(el){ el.classList.remove('cb-sem-real'); });
+  };
+
   // ─── VMIN ────────────────────────────────────────────────────────
   // Gráfico = curva de velocidade pelo corner (entrada → apex → saída).
   // Eixo X = distância em relação ao apex (m). Eixo Y = velocidade (km/h).
