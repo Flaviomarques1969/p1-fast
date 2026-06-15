@@ -4371,8 +4371,42 @@ html,body{
     if(curveIdx == null) curveIdx = 2;
     var sel = getFrenagemVerdictForCurve(curveIdx);
     var cen = sel.cen;
-    var pts = frxPontos(cen.live);
-    var delta = frxDelta(cen.live);
+    // Cabeçalho: nome REAL da curva quando o dado real informa (ex "curva da bruxa"); senão o rótulo do mockup.
+    var label = (cen && cen.curva) ? cen.curva.toLowerCase() : curvaLabelFor(curveIdx);
+    var head =
+      '<div class="fr-header">'+
+        '<span class="fr-title">FRENAGEM</span>'+
+        '<span class="fr-curva">'+label+'</span>'+
+      '</div>';
+
+    // Curva SEM freada por tipo (ex Vitória / pé embaixo): não desenha gráfico de freada.
+    if(cen && cen.semFreadaPorTipo){
+      return head +
+        '<div class="frx-body">'+
+          '<div class="frx-mark t-wait"><div class="frx-num">—</div><div class="frx-sub">sem freada<br>pé embaixo</div></div>'+
+        '</div>'+
+        '<div class="frx-trail"><span class="k">'+ (cen.rotuloTipo || 'curva sem freio') +'</span></div>';
+    }
+
+    // ideal POR TIPO da curva (trail prescrito) quando há; senão o alvo global do mockup.
+    var alvo = (cen && cen.ideal) ? cen.ideal : FRX_ALVO;
+
+    // Curva com tipo de freada mas SEM volta real medida (GPS ~1 Hz): mostra só o ideal do tipo, nunca em branco.
+    if(cen && (cen.semDadoReal || !cen.live)){
+      var mark0 = revealed
+        ? '<div class="frx-mark t-wait"><div class="frx-lbl">ponto de freada</div><div class="frx-num">—</div><div class="frx-sub">sem volta real</div></div>'
+        : frxMarkContagem(countdownM);
+      return head +
+        '<div class="frx-body">'+
+          '<div class="frx-chart">'+frxChartSvg([], false, alvo)+'</div>'+
+          mark0+
+        '</div>'+
+        '<div class="frx-trail"><span class="k">'+ (cen.motivo || 'mostrando o ideal do tipo') +'</span></div>';
+    }
+
+    var pts = frxPontos(cen.live, alvo);
+    // delta REAL em metros (do motor) quando há; senão o delta de grade do mockup.
+    var delta = (cen.deltaM != null) ? cen.deltaM : frxDelta(cen.live, alvo);
     var okFrac = pts.filter(function(p){ return p.ok; }).length / pts.length;
     var certo = (okFrac >= FRX_FORMATO_MIN) && cen.minimaFreando;
     var aviso = (Math.abs(delta) > FRX_TOL_FREADA) ? (delta>0 ? 'freou tarde' : 'freou cedo') : null;
@@ -4394,13 +4428,9 @@ html,body{
       rodape = '<div class="frx-trail"><span class="k">aguardando a freada</span></div>';
     }
 
-    return ''+
-      '<div class="fr-header">'+
-        '<span class="fr-title">FRENAGEM</span>'+
-        '<span class="fr-curva">'+curvaLabelFor(curveIdx)+'</span>'+
-      '</div>'+
+    return head +
       '<div class="frx-body">'+
-        '<div class="frx-chart">'+frxChartSvg(pts, revealed)+'</div>'+
+        '<div class="frx-chart">'+frxChartSvg(pts, revealed, alvo)+'</div>'+
         mark+
       '</div>'+
       rodape;
