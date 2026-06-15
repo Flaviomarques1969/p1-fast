@@ -158,3 +158,18 @@ Reportei "nuvem com 0 linhas" 2x quando os dados JÁ tinham subido. Causa: meu c
 
 ### Sequência real que resolveu (pra memória)
 1. Publiquei sync v10 + pull v4 (com estoque_item). 2. Os 2 itens estavam dead-letter (5 tentativas, erro "table-nao-permitida" de ontem) → reabrir o app NÃO sobe. 3. Flávio tocou "Tentar de novo" na tela Sincronização (zera contador + drena na hora) → subiram. 4. Confirmado por cópia limpa do iPhone (devicectl, app precisa estar fechado p/ não vir malformado) + dump da nuvem.
+
+## TASK_INIT — 2026-06-15 — Command Box: desenvolver a função de frenagem
+
+1. **Pedido original de Flávio:** "em p1 fast command box. vamos desenvolver a função de frenagem."
+2. **Objetivo (1 frase):** desenvolver a função de frenagem do Command Box vista-piloto — escopo exato a confirmar com o Flávio (card).
+3. **Critérios objetivos de conclusão:** dependem do escopo escolhido. Provisório: bloco FRENAGEM deixa de ser 100% simulado e passa a refletir a frenagem real da volta (e a pressão do sensor quando entrar), com fonte rotulada honestamente; validado no navegador pela porta 8078.
+4. **Confirmação de leitura:** CLAUDE.md (sim), padroes.md (sim — vazio), FLAVIO_EXECUTION_PROTOCOL (sim), FLAVIO_DONE_CHECKLIST (sim), FLAVIO_ENVIRONMENT_RULES (sim), FLAVIO_COMMUNICATION_RULES (sim), P1 Fast/CLAUDE.md (sim), memórias P1 Fast dois caminhos (sim).
+5. **Plano (≤5 passos, provisório até o card):** (a) confirmar escopo no card; (b) trabalhar em ambiente isolado com backup do mockup; (c) ligar bloco FRENAGEM ao motor `web/cockpit/freio-trecho.js` (física real agora; campo de pressão quando o sensor chegar), fonte rotulada; (d) validar no navegador pela 8078; (e) TASK_DONE.
+6. **Arquivos/áreas a inspecionar:** `_design-reference/mockup-command-box-vista-piloto.html` (bloco buildFrenagemPanel ~4238, VERDICTS_FRENAGEM ~4140, FRENAGEM_GHOST ~4170, marco freio ~5767, CURVES.brakeM ~6068), `web/cockpit/freio-trecho.js`, `tests/node-smoke-freio-trecho.mjs`, `_design-reference/command-box-versoes/vista-piloto-ATUAL.json`, `tools/atelier-server.mjs` (porta 8078).
+7. **Ambiente alvo:** desenvolvimento (mockup local + motor JS). Produção (nuvem/iPhone/Vercel) NÃO tocada.
+8. **Produção protegida:** sim.
+9. **Autorização para produção:** não.
+10. **Evidência da autorização para produção:** não recebida.
+11. **Riscos:** (a) mexer no arranjo dos blocos do Flávio (posições no ATUAL.json) — só mexer no CONTEÚDO, backup antes; (b) inventar leitura de freio sem dado real — motor já trata isso (rótulo simulado-fisica vs sensor); (c) escopo ambíguo → confirmar no card antes de codar pra não retrabalhar.
+12. **Status inicial:** iniciado — aguardando escopo no card.
