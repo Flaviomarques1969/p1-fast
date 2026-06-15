@@ -76,8 +76,9 @@ struct GaragemView: View {
         .preferredColorScheme(.dark)
         .onAppear {
             if let s = initialSheet, sheet == nil { sheet = s }
+            Task { try? await arquivoRepo.reload() }
         }
-        .sheet(item: $sheet) { which in
+        .sheet(item: $sheet, onDismiss: { Task { try? await arquivoRepo.reload() } }) { which in
             switch which {
             case .novo:
                 CarroNovoFormView(onClose: { sheet = nil })
@@ -88,6 +89,19 @@ struct GaragemView: View {
                     TrechoListaView(onClose: { sheet = nil })
                 }
             }
+        }
+        .sheet(isPresented: $mostrarApagadosCarros) {
+            ApagadosView(
+                arquivoRepo: arquivoRepo,
+                entidade: .carros,
+                onRestaurar: { item in
+                    Task {
+                        try? await repo.restaurar(carroId: item.itemId)
+                        try? await arquivoRepo.reload()
+                    }
+                },
+                onClose: { mostrarApagadosCarros = false }
+            )
         }
     }
 
