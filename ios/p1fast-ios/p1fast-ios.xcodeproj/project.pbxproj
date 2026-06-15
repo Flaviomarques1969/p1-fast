@@ -509,6 +509,8 @@
 				97C651DF50E293B5C6C03EC4 /* AirPlayDetector.swift in Sources */,
 				CAFB467014D33A664AFEA67F /* AppDatabase.swift in Sources */,
 				71CD65975AB8E77F128B5E60 /* AssistirView.swift in Sources */,
+				5717A0117E57000000000C01 /* CatalogoTreinos.swift in Sources */,
+				5717A0117E57000000000C03 /* StintPlanoView.swift in Sources */,
 				5717A0117E57000000000B01 /* StintPlanejamentoView.swift in Sources */,
 				9CD8AE8D16D352F6EE222F57 /* BarcodeScannerView.swift in Sources */,
 				C782693A038BA9D2B52AB077 /* BottomNav.swift in Sources */,
