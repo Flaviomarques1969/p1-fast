@@ -508,3 +508,30 @@ COMO REABRIR A PROVA: (server local) `node tools/atelier-server.mjs` (porta 8078
 COMO TESTAR: `npm run smoke:frenagem-real` · `smoke:frenagem-curvas-reais` · `smoke:perfil-trail`.
 REGRA DURA: NÃO mexer no Vmin (compartilha fr-*/_shortRevealStateForLap); classes próprias frx-*; backup antes
 de tocar no mockup; produção (Vercel/nuvem) intocada.
+
+════════════════════════════════════════════════════════════════════
+## TASK_INIT — 2026-06-15 (retomada pós-clear nº2) — FECHAR O CICLO DO PLANEJAMENTO DO STINT
+════════════════════════════════════════════════════════════════════
+1. PEDIDO: "retomar o planejamento do Stint".
+2. OBJETIVO: "Aprovar" passar a GRAVAR o plano completo (formato plano_stint) + INICIAR o Stint, em
+   desenvolvimento, sem tocar na nuvem sem ordem.
+3. RE-VERIFICAÇÃO (arquivo:linha, só leitura — não é suposição):
+   - StintPlanoView.swift footBar :325-343 → "Aprovar" só faz `aprovado=true`+resumo. Coleta
+     proposito/focoTeste/focoTreino/ghost/voltas. NÃO tem carro/piloto/pista/pneu/vida/paradas/modo.
+   - Contrato plano_stint (mig 0042 + web configuracao-stint.js:180-205): { proposito, foco, ghost, voltas,
+     paradas[], carroId, piloto, autodromo, tipoPneu, vidaPneuFaixa, modo, aprovadoEm } + colunas do envelope
+     (carro_id, modo_stint, tipo_pneu, vida_pneu_faixa, config_cambio, rpm_max_absoluto, rpm_min_motor_celsius,
+     forca_lateral_max_g, observacoes, plano_stint).
+   - Envelope = ESCRITA DIRETA na nuvem (POST /rest/v1/envelopes_seguranca_stint, anon key, RLS desligada).
+     NÃO passa pela sincronização (envelopes_seguranca_stint fora de ALLOWED_TABLES). iOS TEM o encanamento:
+     Configuration.restURL/supabaseAnonKey + SessionManager.accessToken + URLSessionTransports (apikey+Bearer).
+   - Sessão: StintRepository.create(eventoId:String,...) EXIGE eventoId (:132); Sessao.eventoId é String?
+     (nullable) → precisa caminho solto. sessoes JÁ sincroniza.
+   - NÓ (design = decisão do Flávio): carro/piloto/pista/pneu/paradas vivem no MODAL ANTIGO StintModalView
+     (@EnvironmentObject pneuRepo/combustivelRepo + @State paradas[]/turnos + cria a sessão). A tela nova
+     (StintPlanoView) e o modal antigo NUNCA foram unificados. Como compor = CARD aberto.
+   - Valores de segurança (rpm_max_absoluto/forca_lateral_max_g) NÃO existem no iOS — vivem em web
+     shift-light-modos.js (ENVELOPE_DEFAULT_BUBI/PERFIL_BUBI). PORTAR FIEL, não inventar.
+4. AMBIENTE: desenvolvimento. PRODUÇÃO PROTEGIDA: sim. AUTORIZAÇÃO PRODUÇÃO: não. EVIDÊNCIA: não recebida.
+5. STATUS: mapeamento concluído; CARD de composição das duas telas aberto pro Flávio ANTES de codar.
+   Nenhum código alterado. Aviso paralelo (a confirmar em só-leitura): Bolinha/eventos podem estar só no iPhone.
