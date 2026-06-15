@@ -206,7 +206,7 @@ struct PendenciasView: View {
     // MARK: - Estoque ↔ alvo / peguei
 
     private func matchedEstoque(_ item: PendenciaItemView) -> EstoqueItem? {
-        estoqueRepo.item(nome: item.titulo, escopos: [EstoqueRepository.escopoGeral])
+        estoqueRepo.itemPorNome(item.titulo)
     }
     private func alvo(_ item: PendenciaItemView) -> Int {
         if let est = matchedEstoque(item) { return est.alvo }
