@@ -196,6 +196,17 @@ Reportei "nuvem com 0 linhas" 2x quando os dados JÁ tinham subido. Causa: meu c
   - LEGADO MORTO a limpar junto na execução: `frenagemCurveTone`, `VERDICTS_FRENAGEM`, `FRENAGEM_GHOST` (sem chamada após o redesenho).
 - Status: DESENHO concluído e aprovado no painel; ligação ao vivo PLANEJADA, aguardando sensor na T4000 + aprovação do approach.
 
+### TASK_DONE — 2026-06-15 — Frenagem do Command Box (fase desenho + plano)
+- Pedido original conferido: sim ("vamos desenvolver a função de frenagem")
+- Ambiente trabalhado: desenvolvimento (mockup local `_design-reference/` + memória). Produção (nuvem/iPhone/Vercel/T4000) NÃO tocada.
+- Produção foi alterada: não
+- Se produção foi alterada, autorização registrada: n/a
+- Arquivos reais inspecionados: sim (mockup command box, freio-trecho.js, trail-cockpit-tela/motor.js, main-t3000.js, cloud-bridge, t3000-usb-parser, package.json/tests)
+- Alterações feitas: sim — bloco FRENAGEM redesenhado e portado pro painel real (classes frx-*, VMIN/arranjo intocados); backup salvo; 2 previews + 1 plano em relatorios/; memória atualizada + correção de memória antiga
+- Testes/validação executados: sim — sintaxe (new Function, 3 blocos OK); lógica pura em node (todas asserções OK); smoke:freio-trecho 29/0; servido HTTP 200 pela 8078; VALIDADO VISUALMENTE pelo Flávio (aprovado)
+- Resultado: PARCIAL POR DECISÃO DO FLÁVIO — desenho CONCLUÍDO e aprovado; ligação no dado real PLANEJADA e adiada por escolha dele ("ligar com o sensor"), não abandonada.
+- Pendências reais: (1) executar a ligação ao vivo quando o sensor estiver na T4000 e validado (plano pronto); (2) decisão de arquitetura do Flávio — destino do display (este HTML e/ou cockpit Windows); (3) faxina do legado morto (frenagemCurveTone/VERDICTS_FRENAGEM/FRENAGEM_GHOST) junto com a execução.
+
 ---
 ## TASK_DONE — 2026-06-15 — Retomada automática de envio + tela "Conta" na Home
 - Pedido original conferido: sim (Flávio: "faça a retomada automática" + "tirar o nome de sincronização da primeira página, arcaico")
