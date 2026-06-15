@@ -4479,7 +4479,9 @@ html,body{
   }
 
   var _lastFrenagemKey = '';
+  var _lastLiveT = 0;
   function updateFrenagemFromLap(liveT){
+    _lastLiveT = liveT;
     var st = _shortRevealStateForLap(liveT);
     var countdownM = st.revealed ? null : frxCountdown(liveT);
     // Rebuild só quando muda o estado (revelado/curva) ou liga/desliga a contagem.
