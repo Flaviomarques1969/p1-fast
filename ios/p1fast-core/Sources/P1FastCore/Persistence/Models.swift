@@ -1279,6 +1279,77 @@ public struct EventoPendenciaExtra: Codable, FetchableRecord, PersistableRecord,
     }
 }
 
+// MARK: - item_arquivado (Apagados / lixeira por entidade — LOCAL-ONLY)
+//
+// Pedido de Flávio 2026-06-14: poder apagar carros/pilotos/passageiros/
+// combustível/lições do app, MAS guardar pra resgatar. Em vez de apagar de
+// verdade (que tiraria da nuvem/produção, sem volta), apagar vira só um
+// registro AQUI. As listas escondem os itens com id presente nesta tabela;
+// resgatar = remover a linha. Vive só no iPhone (sem `synced_at`, nunca
+// entra no SyncQueue) — o dado original fica intacto.
+public struct ItemArquivado: Codable, FetchableRecord, PersistableRecord, Equatable, Identifiable {
+    public var id: String
+    public var entidade: String        // "carros"|"pilotos"|"passageiros"|"combustiveis"|"licoes"
+    public var itemId: String          // id do registro escondido
+    public var rotulo: String          // nome no momento do arquivamento (mostra em Apagados)
+    public var arquivadoEm: Int64
+
+    public static let databaseTableName = "item_arquivado"
+    enum CodingKeys: String, CodingKey {
+        case id, entidade
+        case itemId = "item_id"
+        case rotulo
+        case arquivadoEm = "arquivado_em"
+    }
+
+    public init(id: String = UUID().uuidString, entidade: String, itemId: String,
+                rotulo: String = "", arquivadoEm: Int64 = DB.nowMs()) {
+        self.id = id; self.entidade = entidade; self.itemId = itemId
+        self.rotulo = rotulo; self.arquivadoEm = arquivadoEm
+    }
+
+    // MARK: - Helpers (operam direto no db, dentro de uma transação)
+
+    /// Esconde um item: cria (ou atualiza) o registro de arquivamento.
+    /// Idempotente — re-arquivar o mesmo item só renova rótulo/data.
+    public static func arquivar(_ db: Database, entidade: String, itemId: String, rotulo: String) throws {
+        try db.execute(sql: """
+            INSERT INTO item_arquivado (id, entidade, item_id, rotulo, arquivado_em)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(entidade, item_id) DO UPDATE SET
+                rotulo = excluded.rotulo, arquivado_em = excluded.arquivado_em;
+        """, arguments: [UUID().uuidString, entidade, itemId, rotulo, DB.nowMs()])
+    }
+
+    /// Resgata um item: remove o registro de arquivamento.
+    public static func restaurar(_ db: Database, entidade: String, itemId: String) throws {
+        try db.execute(sql: "DELETE FROM item_arquivado WHERE entidade = ? AND item_id = ?;",
+                       arguments: [entidade, itemId])
+    }
+
+    /// IDs escondidos de uma entidade (pra filtrar as listas).
+    public static func idsArquivados(_ db: Database, entidade: String) throws -> Set<String> {
+        let ids = try String.fetchAll(db, sql: "SELECT item_id FROM item_arquivado WHERE entidade = ?;",
+                                      arguments: [entidade])
+        return Set(ids)
+    }
+
+    /// Itens escondidos de uma entidade, mais recentes primeiro.
+    public static func listar(_ db: Database, entidade: String) throws -> [ItemArquivado] {
+        try ItemArquivado
+            .filter(Column("entidade") == entidade)
+            .order(Column("arquivado_em").desc)
+            .fetchAll(db)
+    }
+
+    /// Cláusula `NOT IN` reusável que esconde os arquivados de uma entidade.
+    /// Use com `.filter(sql: ItemArquivado.notInClause("carros"))`. A entidade
+    /// é sempre uma constante do app (não entra input de usuário aqui).
+    public static func notInClause(_ entidade: String) -> String {
+        "id NOT IN (SELECT item_id FROM item_arquivado WHERE entidade = '\(entidade)')"
+    }
+}
+
 // MARK: - estoque_item (estoque geral + por carro, unificado — LOCAL-ONLY)
 //
 // Item de estoque unificado do desenho aprovado em 2026-06-14. Pode ser do
