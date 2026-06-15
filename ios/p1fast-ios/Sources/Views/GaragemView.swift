@@ -109,6 +109,12 @@ struct GaragemView: View {
                         .buttonStyle(.plain)
                     }
                 }
+                if arquivoRepo.total(entidade: "carros") > 0 {
+                    ApagadosAtalho(count: arquivoRepo.total(entidade: "carros")) {
+                        mostrarApagadosCarros = true
+                    }
+                    .padding(.top, 6)
+                }
             }
             .padding(.horizontal, Spacing.lg)
             .padding(.top, Spacing.md)
