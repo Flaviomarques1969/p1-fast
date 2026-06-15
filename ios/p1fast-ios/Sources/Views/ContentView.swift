@@ -324,7 +324,7 @@ private struct ReadyRoot: View {
         switch AppRoute.fromLaunchArgs {
         case .home:
             HomeView(
-                state: .filled(HomeData.mockFilled),
+                state: realHomeState(),
                 syncCoordinator: syncCoordinator,
                 telemetriaDevView: telemetriaBuilder,
                 onStintTap: stintTapDecision
