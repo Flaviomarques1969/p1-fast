@@ -48,7 +48,33 @@ web/cockpit/{cockpit-renderer.js, cockpit-state.js, cockpit.css, live-data-bridg
 ### 12. Status inicial: iniciado
 
 ---
-## Achado verificado (15/06)
-- PAINEL DE PISTA (index-t3000.html → main-t3000.js → cockpit-renderer.js + cockpit.css) = FORMA CERTA:
-  sobe progressivo das pontas pro centro (tier<=level, central só no fire), na troca as 17 piscam branco com tudo ligado.
-- FORMA ERRADA = web/cockpit/cockpit.js (linhas 147-187), usado SÓ pelo index.html (página demo): apaga verde/amarelo no fire + overrev tudo vermelho. + mockups antigos (12 luzes).
+## Achado verificado (15/06) — CORRIGIDO após leitura direta do código
+- FORMA CERTA (17 luzes) = TODO o web/cockpit: index-t3000.html → main-t3000.js → cockpit-renderer.js + cockpit.css
+  (pista); cockpit-demo.html (banca); simulacao-ia-100.html; E TAMBÉM index.html + cockpit.js (demo de mensagens).
+  cockpit.js:185 acende tier<=nível (progressivo); fire = 17 piscam branco; overrev = alarme separado.
+- CORREÇÃO: eu cheguei a chamar o index.html de "versão errada" e cheguei a inserir um aviso nele. ERREI —
+  index.html está CERTO e é travado byte-a-byte ao mockup canônico (teste CKW-05). DESFIZ o aviso
+  (restaurado do backup); smoke cockpit-web voltou a 16/16.
+- VERSÃO VELHA/DIFERENTE (12 luzes) = SÓ o Command Box _design-reference/mockup-command-box-vista-piloto.html
+  (código próprio buildShiftLight ~6009 for i<12; sl-led; cores green/champagne/amber/red/blue). É a barra que
+  o Flávio vê (abre via 8078). ERA a "sua versão não é a atual".
+
+## DECISÃO DO FLÁVIO (15/06)
+Mostrei as duas barras lado a lado (Command Box 8078 × cockpit-demo 8090) e perguntei se atualizo a do
+Command Box pras 17 luzes. Escolha dele: **"Deixar como está por enquanto"**. NÃO atualizar o Command Box
+sem nova ordem.
+
+---
+## TASK_DONE
+- Pedido original conferido: sim
+- Ambiente trabalhado: desenvolvimento (web/cockpit local). Command Box só LIDO/aberto.
+- Produção foi alterada: não
+- Se produção foi alterada, autorização explícita registrada: n/a
+- Arquivos reais inspecionados: sim (cockpit.js, cockpit-renderer.js, cockpit-state.js, cockpit.css,
+  live-data-bridge.js, index.html, index-t3000.html, main-t3000.js, cockpit-demo.html, mockup-command-box-vista-piloto.html)
+- Alterações feitas: nenhuma permanente. Inseri e DESFIZ um aviso no index.html (restaurado do backup). Atualizei memória.
+- Testes/validação executados: sim — `npm run smoke:cockpit-web` = 16 ok / 0 fail (após restaurar index.html);
+  páginas servidas HTTP 200 (cockpit-demo 8090, Command Box 8078).
+- Resultado: concluído (diagnóstico entregue e provado; mudança no Command Box NÃO autorizada por decisão do Flávio)
+- Pendências reais: (1) atualizar a barra do Command Box pras 17 luzes — SÓ com nova ordem do Flávio;
+  (2) proteger as 17 luzes no teste automático (tests/ui/shift-light-cockpit.spec.js ainda mira modelo de 12) — proposto, não autorizado.
