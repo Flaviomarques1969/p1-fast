@@ -4349,8 +4349,13 @@ html,body{
     return Math.round(130*(best/JANELA));
   }
 
-  // Mapeia curva → veredicto via FAKE_LAPS (cada volta tem mapeamento próprio)
+  // Etapa 2b: preenchido pelo carregador de módulo (fim do <body>) com o dado REAL
+  // por curva (ideal por tipo + volta real do Bubi). null = ainda na demonstração.
+  var __FRX_REAL = null;
+  // Mapeia curva → veredicto. Se já há dado REAL pra essa curva, usa ele;
+  // senão cai no dado SIMULADO (FRX_CENARIOS via FAKE_LAPS) — sem quebrar.
   function getFrenagemVerdictForCurve(curveIdx){
+    if(__FRX_REAL && __FRX_REAL[curveIdx]) return { id:'real-'+curveIdx, cen:__FRX_REAL[curveIdx] };
     var corner = currentLap().corners[curveIdx];
     var id = corner ? corner.frenagemVerdictId : null;
     if(id && FRX_CENARIOS[id]) return { id:id, cen:FRX_CENARIOS[id] };
