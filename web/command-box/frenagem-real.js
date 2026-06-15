@@ -20,6 +20,12 @@ import {
 export const FRX_XS_PADRAO   = [0, 6, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60];
 export const FRX_ALVO_PADRAO = [0, 0, 0, 0, 5, 40, 80, 92, 90, 86, 78, 66, 54, 42, 32, 24, 12, 0];
 
+// Janela-ideal da grade: onde o trail COMEÇA (cruza 15%) e TERMINA. Exposta pra outros
+// módulos (ex.: forma-trail-tipo.js) alinharem a forma prescrita do tipo com o `live` que o
+// adaptador amostra aqui — mesma fonte (FRX_ALVO_PADRAO), pra não haver dois "onset" divergentes.
+export const FRX_IDEAL_ONSET = crossing(FRX_ALVO_PADRAO, FRX_XS_PADRAO) ?? 14;
+export const FRX_IDEAL_END   = FRX_XS_PADRAO[FRX_XS_PADRAO.length - 1];
+
 const LIMIAR   = 15; // % — "começou a frear" (igual a LIMIAR_FREANDO do motor)
 const VMIN_MIN = 8;  // % — freio na mínima pra contar "chegou freando" (TRAIL_DEFAULTS.freioVminMinPct)
 
