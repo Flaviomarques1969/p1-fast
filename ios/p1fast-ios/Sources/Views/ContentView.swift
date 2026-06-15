@@ -247,6 +247,7 @@ private struct ReadyRoot: View {
             .environmentObject(manutencaoStore)
             .environmentObject(pecaRepo)
             .environmentObject(estoqueRepo)
+            .environmentObject(arquivoRepo)
             .environmentObject(router)
             .task {
                 await carroRepo.bootstrap()
