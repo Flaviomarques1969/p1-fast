@@ -91,5 +91,6 @@ sem nova ordem.
 - Testes/validação executados: sim — `npm run smoke:cockpit-web` = 16 ok / 0 fail (após restaurar index.html);
   páginas servidas HTTP 200 (cockpit-demo 8090, Command Box 8078).
 - Resultado: concluído (diagnóstico entregue e provado; mudança no Command Box NÃO autorizada por decisão do Flávio)
-- Pendências reais: (1) atualizar a barra do Command Box pras 17 luzes — SÓ com nova ordem do Flávio;
+- Pendências reais: (1) FECHADA por decisão permanente do Flávio 15/06 — o Command Box NUNCA vai pras 17 luzes
+  (é tela mais simples, não tem a necessidade do painel do piloto); não propor de novo.
   (2) proteger as 17 luzes no teste automático (tests/ui/shift-light-cockpit.spec.js ainda mira modelo de 12) — proposto, não autorizado.
