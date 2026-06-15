@@ -27,11 +27,14 @@ struct SincronizacaoView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: Spacing.lg) {
+                    // Conta (e-mail + Sair) no topo — é o motivo principal da
+                    // tela agora. O estado de envio fica abaixo, como detalhe
+                    // técnico (raro de aparecer porque o envio se auto-corrige).
+                    contaSection
                     statusBlock
                     statCards
                     pendingSection
                     deadLetterSection
-                    contaSection
                 }
                 .padding(.horizontal, Spacing.lg)
                 .padding(.vertical, Spacing.md)
