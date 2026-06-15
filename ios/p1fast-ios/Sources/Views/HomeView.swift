@@ -90,6 +90,9 @@ struct EventoMock: Identifiable, Equatable {
     let dataISO: String
     /// "09:00", "14:30" etc — nullable.
     let horario: String?
+    /// Id REAL do evento (eventos.id) pra abrir o evento ao tocar no card.
+    /// nil = dado de exemplo (não navegável).
+    var eventoId: String? = nil
 }
 
 struct CarroMock: Identifiable, Equatable {
