@@ -23,7 +23,6 @@ import P1FastCore
 
 struct StintPlanejamentoView: View {
     @EnvironmentObject private var router: NavRouter
-    @State private var mostrarLivre = false
 
     var body: some View {
         ScrollView {
@@ -45,15 +44,8 @@ struct StintPlanejamentoView: View {
                 EscolhaStint(
                     titulo: "Stint livre",
                     descricao: "Um Stint sem evento, em qualquer dia.",
-                    action: { mostrarLivre = true }
+                    action: { router.path.append(HomeNavTarget.stintPlano(eventoId: nil)) }
                 )
-
-                if mostrarLivre {
-                    Text("Em construção — o planejamento do Stint livre entra na próxima etapa.")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.textFaint)
-                        .padding(.top, Spacing.xs)
-                }
             }
             .padding(.horizontal, Spacing.lg)
             .padding(.top, Spacing.md)
