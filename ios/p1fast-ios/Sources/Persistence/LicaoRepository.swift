@@ -40,9 +40,10 @@ final class LicaoRepository: ObservableObject {
 
     func reload() async throws {
         let rows = try await queue.read { db in
-            try Licao.order(
-                Column("ativa").desc, Column("categoria").asc, Column("nivel").asc
-            ).fetchAll(db)
+            try Licao
+                .filter(sql: ItemArquivado.notInClause("licoes"))
+                .order(Column("ativa").desc, Column("categoria").asc, Column("nivel").asc)
+                .fetchAll(db)
         }
         self.licoes = rows
     }
