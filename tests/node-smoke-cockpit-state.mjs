@@ -45,18 +45,10 @@ t('CST-02 CockpitState.get() retorna defaults se nada passado', () => {
 
 // ── Constantes da spec ───────────────────────────────────
 
-t('CST-03 limites do shift level conferem com mockup', () => {
+t('CST-03 limites do shift level (17 luzes: 8 níveis laterais + central)', () => {
   if (SHIFT_LEVEL_MIN !== 0) throw new Error();
-  if (SHIFT_LEVEL_MAX !== 6) throw new Error();
-  if (SHIFT_DOTS_TOTAL !== 12) throw new Error();
-});
-
-t('CST-04 shiftDotsForLevel: 0→0, 6→12, monotônico no meio', () => {
-  if (shiftDotsForLevel(0) !== 0) throw new Error('0→0');
-  if (shiftDotsForLevel(6) !== 12) throw new Error('6→12');
-  if (shiftDotsForLevel(3) !== 6) throw new Error('3→6');
-  if (shiftDotsForLevel(-1) !== 0) throw new Error('clamp negativo');
-  if (shiftDotsForLevel(99) !== 12) throw new Error('clamp acima');
+  if (SHIFT_LEVEL_MAX !== 8) throw new Error();
+  if (SHIFT_DOTS_TOTAL !== 17) throw new Error();
 });
 
 // ── trechoStatus ─────────────────────────────────────────
