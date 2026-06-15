@@ -336,6 +336,7 @@
 				43F3A2677E46856380EEA8BF /* TrechoListaView.swift */,
 				8B46267F0CDD084727B426AA /* TriagemVideoView.swift */,
 				49874E5180DDD1195BB5910A /* EstoqueViews.swift */,
+				AA10ED17000000000000FE04 /* ApagadosView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
