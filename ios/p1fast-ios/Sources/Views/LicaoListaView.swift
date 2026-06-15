@@ -14,6 +14,7 @@ import P1FastCore
 
 struct LicaoListaView: View {
     @EnvironmentObject private var repo: LicaoRepository
+    @EnvironmentObject private var arquivoRepo: ArquivoRepository
     @State private var soAtivas: Bool = true
     @State private var detalhe: Licao?
 
@@ -23,7 +24,17 @@ struct LicaoListaView: View {
             list
         }
         .sheet(item: $detalhe) { l in
-            LicaoDetalheSheet(licao: l, onClose: { detalhe = nil })
+            LicaoDetalheSheet(
+                licao: l,
+                onClose: { detalhe = nil },
+                onApagar: {
+                    Task {
+                        try? await repo.arquivar(licaoId: l.id, rotulo: l.titulo)
+                        try? await arquivoRepo.reload()
+                        detalhe = nil
+                    }
+                }
+            )
         }
     }
 
