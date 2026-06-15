@@ -593,6 +593,30 @@ enum Migrations {
         m.registerMigration("v31_estoque_item_sync") { db in
             try? db.execute(sql: "ALTER TABLE estoque_item ADD COLUMN synced_at INTEGER;")
         }
+
+        // v32 — Apagados (lixeira) por entidade da Garagem. Pedido de Flávio
+        // 2026-06-14: "apagar do app, mas deixar em memória para resgatar".
+        // LOCAL-ONLY: esta tabela NÃO passa pelo SyncQueue. Apagar um carro/
+        // piloto/passageiro/combustível/lição vira apenas um registro AQUI —
+        // o dado original (que sobe pra nuvem/produção) fica INTACTO. As
+        // listas escondem os itens com id presente aqui; resgatar = remover
+        // a linha. App mono-iPhone (ADR-018), não precisa sincronizar isto.
+        //   • entidade: 'carros'|'pilotos'|'passageiros'|'combustiveis'|'licoes'
+        //   • item_id:  id do registro escondido (na tabela sincronizada).
+        //   • rotulo:   nome do item no momento do arquivamento (mostra em
+        //               Apagados sem depender de join com a tabela origem).
+        m.registerMigration("v32_item_arquivado") { db in
+            try db.execute(sql: """
+                CREATE TABLE IF NOT EXISTS item_arquivado (
+                    id            TEXT PRIMARY KEY,
+                    entidade      TEXT NOT NULL,
+                    item_id       TEXT NOT NULL,
+                    rotulo        TEXT NOT NULL DEFAULT '',
+                    arquivado_em  INTEGER NOT NULL
+                );
+            """)
+            try db.execute(sql: "CREATE UNIQUE INDEX IF NOT EXISTS idx_item_arquivado_uq ON item_arquivado(entidade, item_id);")
+        }
     }
 
     // swiftlint:disable:next function_body_length
