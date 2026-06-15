@@ -79,11 +79,10 @@
 <script>
   const N = 12;
   const TROCA = 6050, TETO = 6300, START = 6050 - 300; // 5750
-  // cor por POSIÇÃO na barra progressiva: 1-4 verde, 5-8 amarelo, 9-12 vermelho
-  function corLinear(i){ return i < 4 ? 'g' : i < 8 ? 'y' : 'r'; }
-  // cor espelhada do layout de hoje (pontas verde, centro vermelho)
-  function tierHoje(i){ return i < 6 ? i+1 : 12-i; }     // 1..6..1
-  function corHoje(t){ return t <= 2 ? 'g' : t <= 4 ? 'y' : 'r'; }
+  // layout espelhado: tier 1 nas pontas, tier 6 no centro (1,2,3,4,5,6,6,5,4,3,2,1)
+  function tier(i){ return i < 6 ? i+1 : 12-i; }
+  // cor por tier: 1-2 verde (pontas) · 3-4 amarelo · 5-6 vermelho (4 centrais)
+  function cor(t){ return t <= 2 ? 'g' : t <= 4 ? 'y' : 'r'; }
 
   const elHoje = document.getElementById('ledsHoje');
   const elNovo = document.getElementById('ledsNovo');
@@ -93,31 +92,29 @@
     const b = document.createElement('div'); b.className = 'led'; elNovo.appendChild(b); dotsNovo.push(b);
   }
 
+  function pinta(dots, tiersOn, fireOver){
+    dots.forEach((d, i) => {
+      const t = tier(i);
+      const on = fireOver || (tiersOn > 0 && t <= tiersOn);
+      d.className = 'led' + (on ? ' on ' + cor(t) : '');
+    });
+  }
+
   function render(rpm){
     document.getElementById('rotVal').innerHTML = Math.round(rpm).toLocaleString('pt-BR') + ' <small>rpm</small>';
     const fire = rpm >= TROCA && rpm <= TETO;
     const over = rpm > TETO;
-    document.getElementById('painelHoje').classList.toggle('fire', fire || over);
-    document.getElementById('painelNovo').classList.toggle('fire', fire || over);
+    const fo = fire || over;
+    document.getElementById('painelHoje').classList.toggle('fire', fo);
+    document.getElementById('painelNovo').classList.toggle('fire', fo);
 
-    // proporção 0..1 dentro da faixa de acendimento
     const norm = Math.max(0, Math.min(1, (rpm - START) / (TROCA - START)));
+    const level = norm <= 0 ? 0 : Math.max(1, Math.min(6, Math.round(norm * 6))); // 0..6
 
-    // HOJE: 3 saltos (4 / 8 / 12), das pontas pro centro
-    const nivel = norm <= 0 ? 0 : Math.min(3, Math.ceil(norm * 3)); // 0,1,2,3
-    const acesasHoje = (fire || over) ? 6 : nivel * 2;              // tiers acesos: 0,2,4,6
-    dotsHoje.forEach((d, i) => {
-      const t = tierHoje(i);
-      const on = (fire || over) ? true : t <= acesasHoje;
-      d.className = 'led' + (on ? ' on ' + corHoje(t) : '');
-    });
-
-    // PROPOSTA: progressiva, esquerda→direita, uma a uma
-    const acesasNovo = (fire || over) ? N : Math.round(norm * N);   // 0..12
-    dotsNovo.forEach((d, i) => {
-      const on = (fire || over) ? true : i < acesasNovo;
-      d.className = 'led' + (on ? ' on ' + corLinear(i) : '');
-    });
+    // HOJE: erro de unidade → acende tier ≤ (level×2) → satura em 3 saltos (4 / 8 / 12)
+    pinta(dotsHoje, level * 2, fo);
+    // PROPOSTA: acende tier ≤ level → par a par, das pontas pro centro (2/4/6/8/10/12)
+    pinta(dotsNovo, level, fo);
   }
 
   // animação automática: sobe 4600→6450 em loop
