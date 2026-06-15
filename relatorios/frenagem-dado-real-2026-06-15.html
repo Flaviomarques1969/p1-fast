@@ -72,24 +72,26 @@ import { FRX_XS_PADRAO as XS } from '/web/command-box/frenagem-real.js';
 
 const BANDA = 8, TOL = 3, FORMATO_MIN = 0.8;
 
-// pinta o trecho da passagem (live) contra a faixa da MELHOR volta (ref) — verde dentro, vermelho fora,
-// com folga de 2 pontos (não treme). Devolve o SVG + a fração de pontos dentro da faixa.
-function chart(live, ref){
+// desenha o IDEAL do tipo (tracejado + faixa). Havendo volta real (live), pinta-a verde dentro /
+// vermelho fora da faixa do ideal, com folga de 2 pontos (não treme), e devolve a fração dentro.
+// Sem volta real (live=null), mostra SÓ o ideal do tipo — a curva não fica em branco.
+function chart(live, ideal){
   const W=240,H=120,PADL=10,PADR=10,PADT=10,PADB=14;
   const X=x=>PADL+(x/60)*(W-PADL-PADR), Y=p=>(H-PADB)-(p/100)*(H-PADT-PADB);
-  const pts=XS.map((x,i)=>({x,pct:live[i],dentro:Math.abs(live[i]-ref[i])<=BANDA}));
-  let estado=pts[0].dentro,run=0;
-  for(let i=0;i<pts.length;i++){ if(pts[i].dentro===estado)run=0; else {run++; if(run>=2){estado=pts[i].dentro;run=0;}} pts[i].ok=estado; }
-  const up=XS.map((x,i)=>(i?'L':'M')+X(x).toFixed(1)+' '+Y(Math.min(100,ref[i]+BANDA)).toFixed(1)).join(' ');
-  const dn=XS.slice().reverse().map((x,k)=>{const i=XS.length-1-k; return 'L'+X(x).toFixed(1)+' '+Y(Math.max(0,ref[i]-BANDA)).toFixed(1);}).join(' ');
-  const refD=XS.map((x,i)=>(i?'L':'M')+X(x).toFixed(1)+' '+Y(ref[i]).toFixed(1)).join(' ');
-  let verde='',vermelho='';
-  for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i];const seg='M'+X(a.x).toFixed(1)+' '+Y(a.pct).toFixed(1)+' L'+X(b.x).toFixed(1)+' '+Y(b.pct).toFixed(1)+' '; if(b.ok)verde+=seg; else vermelho+=seg;}
-  let head=pts[pts.length-1]; for(let i=pts.length-1;i>=0;i--){if(pts[i].pct>=10){head=pts[i];break;}}
+  const up=XS.map((x,i)=>(i?'L':'M')+X(x).toFixed(1)+' '+Y(Math.min(100,ideal[i]+BANDA)).toFixed(1)).join(' ');
+  const dn=XS.slice().reverse().map((x,k)=>{const i=XS.length-1-k; return 'L'+X(x).toFixed(1)+' '+Y(Math.max(0,ideal[i]-BANDA)).toFixed(1);}).join(' ');
+  const idealD=XS.map((x,i)=>(i?'L':'M')+X(x).toFixed(1)+' '+Y(ideal[i]).toFixed(1)).join(' ');
   let s=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">`;
   s+=`<line x1="${PADL}" y1="${Y(0)}" x2="${W-PADR}" y2="${Y(0)}" stroke="rgba(212,175,55,0.18)" stroke-width="0.5"/>`;
   s+=`<path d="${up} ${dn} Z" fill="rgba(56,188,255,0.07)"/>`;
-  s+=`<path d="${refD}" fill="none" stroke="#38BCFF" stroke-width="1" stroke-dasharray="2 2" stroke-opacity="0.6"/>`;
+  s+=`<path d="${idealD}" fill="none" stroke="#38BCFF" stroke-width="1" stroke-dasharray="2 2" stroke-opacity="0.6"/>`;
+  if(!live){ return { svg:s+'</svg>', okFrac:null }; }
+  const pts=XS.map((x,i)=>({x,pct:live[i],dentro:Math.abs(live[i]-ideal[i])<=BANDA}));
+  let estado=pts[0].dentro,run=0;
+  for(let i=0;i<pts.length;i++){ if(pts[i].dentro===estado)run=0; else {run++; if(run>=2){estado=pts[i].dentro;run=0;}} pts[i].ok=estado; }
+  let verde='',vermelho='';
+  for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i];const seg='M'+X(a.x).toFixed(1)+' '+Y(a.pct).toFixed(1)+' L'+X(b.x).toFixed(1)+' '+Y(b.pct).toFixed(1)+' '; if(b.ok)verde+=seg; else vermelho+=seg;}
+  let head=pts[pts.length-1]; for(let i=pts.length-1;i>=0;i--){if(pts[i].pct>=10){head=pts[i];break;}}
   if(verde)s+=`<path d="${verde}" fill="none" stroke="#3FE08C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`;
   if(vermelho)s+=`<path d="${vermelho}" fill="none" stroke="#FF5A4E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`;
   if(head.pct>=10)s+=`<circle cx="${X(head.x).toFixed(1)}" cy="${Y(head.pct).toFixed(1)}" r="2.6" fill="${head.ok?'#3FE08C':'#FF5A4E'}"/>`;
