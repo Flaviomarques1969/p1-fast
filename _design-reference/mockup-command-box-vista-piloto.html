@@ -4332,20 +4332,43 @@ html,body{
     var c = CURVES[curveIdx] || CURVES[0];
     return c.name.toLowerCase().replace('c', 'curva ');
   }
-  function buildFrenagemPanel(curveIdx, revealed){
+  function buildFrenagemPanel(curveIdx, revealed, countdownM){
     if(curveIdx == null) curveIdx = 2;
-    var v = getFrenagemVerdictForCurve(curveIdx);
-    var emptyCls = revealed ? '' : ' empty';
+    var sel = getFrenagemVerdictForCurve(curveIdx);
+    var cen = sel.cen;
+    var pts = frxPontos(cen.live);
+    var delta = frxDelta(cen.live);
+    var okFrac = pts.filter(function(p){ return p.ok; }).length / pts.length;
+    var certo = (okFrac >= FRX_FORMATO_MIN) && cen.minimaFreando;
+    var aviso = (Math.abs(delta) > FRX_TOL_FREADA) ? (delta>0 ? 'freou tarde' : 'freou cedo') : null;
+
+    var mark = revealed ? frxMarkResultado(delta) : frxMarkContagem(countdownM);
+
+    var rodape;
+    if(revealed){
+      rodape =
+        '<div class="frx-trail">'+
+          '<span><span class="k">soltou</span> <span class="v">'+cen.soltou+'</span></span>'+
+          '<span><span class="k">freio na mínima</span> <span class="v">'+cen.freioMin+'</span></span>'+
+        '</div>'+
+        '<div class="frx-verdict">'+
+          (certo ? '<span class="frx-badge good">certo</span>' : '<span class="frx-badge bad">errado</span>')+
+          (aviso ? '<span class="frx-aviso warn">'+aviso+'</span>' : '<span class="frx-aviso none">sem aviso</span>')+
+        '</div>';
+    } else {
+      rodape = '<div class="frx-trail"><span class="k">aguardando a freada</span></div>';
+    }
+
     return ''+
       '<div class="fr-header">'+
         '<span class="fr-title">FRENAGEM</span>'+
         '<span class="fr-curva">'+curvaLabelFor(curveIdx)+'</span>'+
       '</div>'+
-      '<div class="fr-chart'+emptyCls+'">'+frenagemChartSvg(v)+'</div>'+
-      '<div class="fr-verdict">'+
-        '<span class="fr-badge '+(revealed ? v.tone : 'empty')+'">'+(revealed ? v.label : 'aguardando')+'</span>'+
-        '<span class="fr-delta'+emptyCls+'"><strong>'+(revealed ? v.delta.replace(/[+−]/g,'') : '—')+'</strong></span>'+
-      '</div>';
+      '<div class="frx-body">'+
+        '<div class="frx-chart">'+frxChartSvg(pts, revealed)+'</div>'+
+        mark+
+      '</div>'+
+      rodape;
   }
   // Reveal state pra Frenagem/Vmin: revela durante o evento (entry→apex desenhando),
   // segura DEPOIS DO EXIT até pouco antes da entrada da próxima curva (state='empty').
