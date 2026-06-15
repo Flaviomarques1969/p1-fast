@@ -329,7 +329,9 @@ private struct LicaoDetalheSheet: View {
 #Preview("LicaoListaView") {
     let queue = try! P1FastCore.DB.makeMemoryQueue()
     let repo = LicaoRepository(queue: queue)
+    let arquivoRepo = ArquivoRepository(queue: queue)
     return LicaoListaView()
         .environmentObject(repo)
+        .environmentObject(arquivoRepo)
         .task { await repo.bootstrap() }
 }
