@@ -44,6 +44,8 @@ public enum SyncBackfill {
         "pecas",
         "pecas_movimentacoes",
         "manutencoes",
+        // Estoque unificado (geral + por carro) — sincroniza desde 2026-06-14.
+        "estoque_item",
     ]
 
     /// Roda o backfill. Retorna o nº total de rows enfileiradas (0 quando
