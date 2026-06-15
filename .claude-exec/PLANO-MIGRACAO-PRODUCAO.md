@@ -3,7 +3,7 @@
 > Documento VIVO. O Claude mantém atualizado a cada item que fica pronto.
 > Flávio libera item por item com a frase literal **`MIGRAR PARA PRODUÇÃO: <item>`**.
 > Sem essa frase, nada vai pro ar. Regra de ouro: produção é protegida.
-> Última atualização: 2026-06-14 (noite).
+> Última atualização: 2026-06-15 — Item 1 reaberto: backup do estoque estava bloqueado (função de sincronização não aceitava a tabela). Conserto feito em desenvolvimento; falta publicar na nuvem.
 
 ## Como funciona
 - **Estados:** 🟢 NO AR · 🟡 PRONTO (aguardando sua ordem) · 🔵 EM TESTE (ainda construindo) · ⚪ A AVALIAR.
