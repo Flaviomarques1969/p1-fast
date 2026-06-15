@@ -4252,11 +4252,12 @@ html,body{
     'timido':     { live:[0,0,0,0,5,30,55,62,64,62,58,50,42,34,28,22,12,0], minimaFreando:true,  soltou:'progressivo', freioMin:'16%' },
     'cauteloso':  { live:[0,0,0,0,5,25,45,52,54,52,48,42,36,30,24,18,10,0], minimaFreando:true,  soltou:'progressivo', freioMin:'14%' }
   };
-  function frxAlvoEm(x){
-    if(x<=FRX_XS[0]) return FRX_ALVO[0];
-    if(x>=FRX_XS[FRX_XS.length-1]) return FRX_ALVO[FRX_ALVO.length-1];
+  function frxAlvoEm(x, alvo){
+    alvo = alvo || FRX_ALVO;   // Etapa 2b: ideal POR TIPO de curva quando informado; senão o global
+    if(x<=FRX_XS[0]) return alvo[0];
+    if(x>=FRX_XS[FRX_XS.length-1]) return alvo[alvo.length-1];
     for(var i=1;i<FRX_XS.length;i++){
-      if(x<=FRX_XS[i]){ var f=(x-FRX_XS[i-1])/(FRX_XS[i]-FRX_XS[i-1]); return FRX_ALVO[i-1]+(FRX_ALVO[i]-FRX_ALVO[i-1])*f; }
+      if(x<=FRX_XS[i]){ var f=(x-FRX_XS[i-1])/(FRX_XS[i]-FRX_XS[i-1]); return alvo[i-1]+(alvo[i]-alvo[i-1])*f; }
     }
     return 0;
   }
