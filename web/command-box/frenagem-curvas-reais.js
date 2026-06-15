@@ -10,6 +10,7 @@
 // navegador igual.
 
 import { frenagemFrxParaPassagem } from './frenagem-real.js';
+import { formaTrailTipo } from './forma-trail-tipo.js';
 import { TIPO_POR_CURVA, semFreadaPorTipo } from './tipos-curva-brasilia.js';
 import { TIPOS } from '../cockpit/classificador-trecho.js';
 import { TEXTO_FACIL } from '../cockpit/tipos-curva-texto.js';
