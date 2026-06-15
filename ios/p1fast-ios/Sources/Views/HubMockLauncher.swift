@@ -167,6 +167,17 @@ struct HubMockLauncher: View {
             if let id, CarroFoto.carregar(carroId: id) == nil {
                 CarroFoto.salvar(carroId: id, imagem: Self.fotoMockWide())
             }
+            // Screenshot da tela "Apagados": arquiva 2 carros de exemplo, que
+            // somem da Garagem (filtro) e aparecem na lista de resgate.
+            if ProcessInfo.processInfo.arguments.contains("--p1-apagados") {
+                if let c1 = try? await carroRepo.create(apelido: "Bolinha 2", modelo: "Celta 1.0", categoria: "Turismo", cor: nil) {
+                    try? await carroRepo.arquivar(carroId: c1, rotulo: "Bolinha 2")
+                }
+                if let c2 = try? await carroRepo.create(apelido: "Fusca de teste", modelo: "VW 1300", categoria: "Clássico", cor: nil) {
+                    try? await carroRepo.arquivar(carroId: c2, rotulo: "Fusca de teste")
+                }
+                try? await arquivoRepo.reload()
+            }
             carroId = id
             ready = true
         }
