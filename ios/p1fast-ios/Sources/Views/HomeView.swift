@@ -379,12 +379,27 @@ private struct FilledContent: View {
             }
 
             if let evento = data.eventoAtivoHoje {
-                EventoAtivoHojeCard(evento: evento)
+                eventoLink(evento) { EventoAtivoHojeCard(evento: evento) }
             }
 
             if let proximo = data.proximoEvento {
-                ProximoEventoCard(evento: proximo, hojeISO: data.eventoAtivoHoje?.dataISO ?? todayISO())
+                eventoLink(proximo) {
+                    ProximoEventoCard(evento: proximo, hojeISO: data.eventoAtivoHoje?.dataISO ?? todayISO())
+                }
             }
+        }
+    }
+
+    /// Embrulha o card do evento num link que abre o evento (decisão Flávio
+    /// 15/06: tocar no próximo evento vai pra dentro daquele evento). Só vira
+    /// link quando há id real; com dado de exemplo (eventoId nil) fica estático.
+    @ViewBuilder
+    private func eventoLink<Content: View>(_ ev: EventoMock, @ViewBuilder _ card: () -> Content) -> some View {
+        if let id = ev.eventoId {
+            NavigationLink(value: HomeNavTarget.eventoDetalhe(eventoId: id)) { card() }
+                .buttonStyle(.plain)
+        } else {
+            card()
         }
     }
 
