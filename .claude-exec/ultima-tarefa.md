@@ -530,16 +530,19 @@ As FORMAS y(x) ALVOS.classico (100% pancada + soltura gradativa até o ápice = 
 ALVOS.residual (parcial ~65% + residual ~45% + soltura curta) estão em
 _design-reference/mockup-cockpit-treino-trail-braking-VIVO-2026-06-11.html. Teste: smoke:perfil-trail.
 
-PRÓXIMO PASSO (Etapa 2a-bis — FAZER PRIMEIRO, antes de ligar no painel):
-1. A linha IDEAL (tracejada + banda) de cada curva passa a ser a FORMA PRESCRITA DO TIPO (ALVOS.classico p/
-   T0/T1/T5; ALVOS.residual p/ T2/T4; toque p/ T3; SF sem freio) — extrair ALVOS.* do mockup VIVO p/ um
-   módulo reutilizável (ex.: web/command-box/forma-trail-tipo.js) ou exportar do perfil-trail-por-tipo.
-2. TODA curva de freada mostra o trail clássico do SEU tipo (BRUXA e "S" inclusas), com a volta real
-   SOBREPOSTA quando houver dado; sem dado real ainda, mostra só o ideal do tipo (não fica em branco).
-3. Atualizar a prova (relatorios/frenagem-dado-real-2026-06-15.html) + smokes; reabrir na 8078.
-4. CONFIRMAR com Flávio: ideal = perfil por tipo AGORA (a régua da melhor volta real entra com 25 Hz/RaceBox).
-DEPOIS: ETAPA 2b = ligar no painel oficial _design-reference/mockup-command-box-vista-piloto.html (com backup;
-override de getFrenagemVerdictForCurve + driver de volta; tirar 'frenagem' de DEP_LIGACAO:7609).
+PRÓXIMO PASSO (Etapa 2a-bis) — ✅ FEITO 15/06 noite, AGUARDA SÓ CONFIRMAÇÃO VISUAL DO FLÁVIO:
+1. ✅ Módulo web/command-box/forma-trail-tipo.js criado: porta ALVOS.classico (Bézier idêntico) + ALVOS.residual do
+   mockup VIVO p/ % de freio na grade FRX; tipo→forma via perfilDeTrail; SF/ND→null. Onset/fim vêm de
+   FRX_IDEAL_ONSET/END (novos exports de frenagem-real.js) p/ ALINHAR com o live.
+2. ✅ frenagem-curvas-reais.js: toda curva de freada traz `ideal` (trail do tipo, tracejada+faixa); live sobreposto
+   quando há dado; sem dado real → `semDadoReal:true` + ideal (NÃO fica em branco). Bruxa/Placar/"S" reabilitadas.
+3. ✅ Prova atualizada (chart usa ideal; render trata só-ideal; legenda/sub/foot) + smokes (forma-trail 30/0; curvas 18/0);
+   bateria 0 falhas; reaberta na 8078.
+4. ⏳ FALTA: Flávio confirmar na tela que o ideal por tipo está certo (a régua da MELHOR volta real entra com 25 Hz/RaceBox).
+   ⚠️ Olhar especialmente JUNÇÃO (T2 residual ideal~65, mas a volta real do Bubi soca ~100 → marca "errado/freou demais"):
+   confirmar com Flávio se o veredito contra a forma do tipo é o comportamento desejado.
+DEPOIS (sem mexer ainda): ETAPA 2b = ligar no painel oficial _design-reference/mockup-command-box-vista-piloto.html
+(com backup; override de getFrenagemVerdictForCurve + driver de volta; tirar 'frenagem' de DEP_LIGACAO:7609).
 ETAPA 3 = selo física↔sensor no bloco + 2-de-2→3-de-3 quando a pressão variar + faxina do legado morto.
 
 COMO REABRIR A PROVA: (server local) `node tools/atelier-server.mjs` (porta 8078) →
