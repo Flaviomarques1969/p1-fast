@@ -59,6 +59,12 @@ struct CarroHubView: View {
         // Hub tem foto edge-to-edge + "X" próprio: esconde a barra de
         // navegação nativa pra não duplicar o "voltar" nem cortar a foto.
         .toolbar(.hidden, for: .navigationBar)
+        .alert("Apagar carro?", isPresented: $mostrarConfirmaApagar) {
+            Button("Cancelar", role: .cancel) {}
+            Button("Apagar", role: .destructive) { confirmarApagar() }
+        } message: {
+            Text("Some da Garagem, mas fica em Apagados — dá pra resgatar.")
+        }
         .task {
             fotoCarro = CarroFoto.carregar(carroId: carroId)
             await manutencaoStore.carregarStatus(carroId: carroId)
