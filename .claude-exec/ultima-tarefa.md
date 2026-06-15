@@ -346,6 +346,17 @@ FALTA (apontado ao Flávio): (a) cartões de evento da Home clicáveis → abrir
 
 ### Status inicial: iniciado — verificação concluída; aguardando confirmação do caminho em card (sem alteração de código ainda).
 
+### PROGRESSO 2 (15/06 noite) — verificação aprofundada + correções de premissa
+- **Flávio corrigiu:** 16-17/06 NÃO é dia de pista — é INSTALAÇÃO DE SENSORES na oficina. Some o risco "dia de pista"; posso construir em dev agora (com backup). Pendência: saber se o sensor de pressão/pedal de freio está nessa leva (muda só a validação, não o que construo).
+- **Backup feito:** _design-reference/command-box-versoes/vista-piloto-PRE-frenagem-dadoreal-2026-06-15.html (328536 bytes).
+- **Estado real do box (verificado linha a linha):** mostradores (HUD rpm/kmh/lambda/água) JÁ ao vivo (setupLigacaoAoVivo:7549). Bloco frenagem em DEP_LIGACAO (:7609) → hoje ESMAECIDO, selo "aguardando ligação". Motor de volta fake CONGELADO no ao vivo (detectLapWrap=noop :7633). Frenagem movida por liveT SIMULADO + FAKE_LAPS + getCornerPhase, NÃO por GPS.
+- **Cockpit do piloto JÁ PRONTO e ao vivo** com o desenho aprovado (main-t3000.js:41-194). Metade do "nos dois" feita — NÃO refazer.
+- **Fixture stint-brasilia-3-laps.v1.json NÃO tem GPS por curva** — é a narrativa do demo (brakingId/speeds), não pontos {lat,lng,kmh,t}. Pontos reais vivem em: (a) banco prod `melhores_passagens_trecho.pontos_json` (melhores-loader.js); (b) backup local de voltas reais do Bubi.
+- **Recipe headless confirmado:** freio-trecho.js (comDistanciaAcumulada→simularFreioPelaFisica→metricasTrail) e/ou trail-cockpit-motor.js (construirAlvoTrecho/computarVeredito). Georref por segments-loader.js (track_segments, prod). HTML inline mas dynamic-importa ESM (:7701) → pode importar módulos locais; atelier-server serve da raiz.
+- **Adaptador necessário:** saída do motor (curva[{distM,freioPct,kmh}]+metricas) → forma FRX (live[18] na grade FRX_XS + minimaFreando + soltou + freioMin). Renderizador frx-* e Vmin intactos.
+- **Conclusão:** "ligar no GPS real no box" = fazer o box trabalhar como o cockpit (reusar 4 módulos de prod + ler georref/melhores do banco em SÓ-LEITURA + assinar o canal ao vivo). Serviço grande; 1º passo a confirmar em card.
+- **Status:** PARCIAL — verificação concluída, plano fechado, base verde (freio-trecho 29/0, trail-cockpit 45/0, trail-religacao 10/0, cockpit-web 16/0), backup salvo. SEM alteração no mockup ainda. Aguardando escolha do tamanho do 1º passo.
+
 ═══════════════════════════════════════════════════════════
 ## TASK_DONE — 2026-06-15 — Planejamento do Stint: tela de propósito + treino (dev)
 ═══════════════════════════════════════════════════════════
