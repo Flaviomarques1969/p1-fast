@@ -422,3 +422,11 @@ Decisões em card (Flávio, 15/06): destino = NOS DOIS (cockpit já pronto) · q
 - 3: selo física↔sensor no bloco + 2-de-2→3-de-3 quando a pressão variar; faxina do legado morto.
 - Status geral: PARCIAL — toda a base de cálculo + dado real + prova visual prontos e testados (risco zero ao painel);
   falta a edição do painel em si (2b) e o acabamento (3).
+
+═══════════════════════════════════════════════════════════
+## HANDOFF (clear 15/06 noite) — PLANEJAMENTO DO STINT NO CELULAR — VALIDADO NO IPHONE
+═══════════════════════════════════════════════════════════
+RETOMAR pela memória `p1-fast-planejamento-stint-no-celular-2026-06-15.md` (bloco "▶ RETOMAR AQUI" no topo).
+DONE e VALIDADO no iPhone real do Flávio ("funcionou bem", Bolinha/Celta 1.4 aparece): botão "+ Stint" no topo da Home; "Novo evento" só em Eventos; Conta na Garagem; toque no Stint decide (dia de evento→abre evento / senão→pergunta vincular/livre); tela de planejamento (propósito livre/testar/treinar + catálogo de treinos fiel + brief obrigatório + ghost + voltas; "Aprovar" mostra resumo); Home com DADOS REAIS + cartões de evento clicáveis. App ASSINADO+INSTALADO no iPhone (cert flaviomarques@me.com, vence ~22/06).
+Arquivos: HomeView/GaragemView/ContentView/FAB.swift (alterados) + StintPlanejamentoView/StintPlanoView/CatalogoTreinos.swift (novos) + project.pbxproj. Backups em backup-fase0-stint-porta-2026-06-15/. Produção/nuvem NÃO tocadas.
+PRÓXIMO: (1) "Aprovar" GRAVAR plano_stint + INICIAR Stint = gate "MIGRAR PARA PRODUÇÃO"; (2) investigar carros/eventos não subirem pra nuvem (Bolinha só no iPhone, nuvem vazia); (3) painel reagir ao foco.
