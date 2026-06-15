@@ -289,6 +289,13 @@ private struct ReadyRoot: View {
                     }
                 }
             }
+            .onChange(of: scenePhase) { _, newPhase in
+                // App voltou ao primeiro plano → tenta reabilitar/enviar o que
+                // ficou pra trás, automaticamente.
+                if newPhase == .active {
+                    Task { await syncCoordinator.onBecameActive() }
+                }
+            }
     }
 
     /// Closure passada pra `HomeView` montar a `TelemetriaView` do
