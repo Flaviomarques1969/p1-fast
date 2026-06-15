@@ -7655,7 +7655,9 @@ html,body{
     // sensor-backed: acendem sozinhos quando o sensor for instalado (hoje sem sensor) -> "aguardando sensor"
     var AGUARDA_SENSOR = ['carro','pneus','fuel-gauge'];
     // a lógica existe no cockpit, falta puxar pro painel -> "aguardando ligação"
-    var DEP_LIGACAO = ['mapa','vmin','frenagem','shift-light','coach','delta-acum','passagem','stint','stint-bar','checklist'];
+    // 'frenagem' SAIU da lista (Etapa 2b): agora mostra dado real (ideal por tipo + volta do Bubi),
+    // então acende como bloco vivo em vez de ficar cinza. O carregador no fim do <body> liga a fonte.
+    var DEP_LIGACAO = ['mapa','vmin','shift-light','coach','delta-acum','passagem','stint','stint-bar','checklist'];
     function vistoFresco(f){ return SENSOR_SEEN[f] && (performance.now()-SENSOR_SEEN[f]<2500); }
     function atualizarBlocos(){
       Object.keys(SENSOR_DE).forEach(function(id){
