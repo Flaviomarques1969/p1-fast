@@ -122,6 +122,23 @@ final class PilotoRepository: ObservableObject {
         try await reload()
     }
 
+    /// Apaga (esconde) o piloto — vai pra Apagados, dá pra resgatar. NÃO
+    /// destrói o registro nem manda apagar da nuvem.
+    func arquivar(pilotoId: String, rotulo: String) async throws {
+        try await queue.write { db in
+            try ItemArquivado.arquivar(db, entidade: "pilotos", itemId: pilotoId, rotulo: rotulo)
+        }
+        try await reload()
+    }
+
+    /// Resgata um piloto escondido.
+    func restaurar(pilotoId: String) async throws {
+        try await queue.write { db in
+            try ItemArquivado.restaurar(db, entidade: "pilotos", itemId: pilotoId)
+        }
+        try await reload()
+    }
+
     func find(id: String) -> Piloto? {
         pilotos.first(where: { $0.id == id })
     }
