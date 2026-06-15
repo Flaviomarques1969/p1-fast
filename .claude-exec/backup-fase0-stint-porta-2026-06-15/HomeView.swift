@@ -55,13 +55,6 @@ enum HomeNavTarget: Hashable {
     /// Tela de ESPECTADOR (decisão Flávio 09/06): vídeo da pista em cima +
     /// dados básicos de volta/trecho do piloto embaixo.
     case assistir
-    /// Planejamento do Stint no celular (decisão Flávio 15/06): é AQUI que se
-    /// monta o Stint; o painel do computador é só o resultado. Aberto pelo
-    /// botão "Stint" no canto superior direito da Home — que substituiu o
-    /// botão temporário "Conta" (Conta/Sair migrou pra dentro da Garagem).
-    /// Fase 0 = a porta (StintPlanejamentoView). Fases seguintes enchem o
-    /// planejamento (solto/vinculado · propósito · treino · grava plano).
-    case stintPlanejamento
 }
 
 /// Dados necessários para renderizar o estado cheio. Por enquanto vêm
