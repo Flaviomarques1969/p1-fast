@@ -584,6 +584,15 @@ enum Migrations {
             """)
             try db.execute(sql: "CREATE UNIQUE INDEX IF NOT EXISTS idx_evento_pendencia_pegou_uq ON evento_pendencia_pegou(evento_id, item_id);")
         }
+
+        // v31 — Estoque UNIFICADO passa a SINCRONIZAR (backup na nuvem).
+        // Decisão de Flávio 2026-06-14 ("um só, com backup na nuvem"). A tabela
+        // estoque_item (v30) ganha synced_at e deixa de ser local-only: a partir
+        // daqui o repo enfileira no SyncQueue e o pull traz do servidor.
+        // (A tabela na nuvem é criada pela migration 0046 — aplicada à parte.)
+        m.registerMigration("v31_estoque_item_sync") { db in
+            try? db.execute(sql: "ALTER TABLE estoque_item ADD COLUMN synced_at INTEGER;")
+        }
     }
 
     // swiftlint:disable:next function_body_length
