@@ -219,6 +219,41 @@ struct PessoasView: View {
         } message: { _ in
             Text("Some da lista, mas fica em Apagados — dá pra resgatar.")
         }
+        .sheet(item: $apagadosEntidade) { ent in
+            ApagadosView(
+                arquivoRepo: arquivoRepo,
+                entidade: ent,
+                onRestaurar: { item in restaurar(ent, item) },
+                onClose: { apagadosEntidade = nil }
+            )
+        }
+    }
+
+    /// Atalho "Apagados (N)" da sub-aba — some quando não há nada apagado.
+    @ViewBuilder
+    private func apagadosRow(_ ent: EntidadeArquivavel) -> some View {
+        let n = arquivoRepo.total(entidade: ent.rawValue)
+        if n > 0 {
+            ApagadosAtalho(count: n) { apagadosEntidade = ent }
+                .padding(.top, 6)
+                .listRowInsets(EdgeInsets(top: 8, leading: Spacing.lg, bottom: 4, trailing: Spacing.lg))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+        }
+    }
+
+    /// Resgata o item da entidade certa e atualiza a lista de Apagados.
+    private func restaurar(_ ent: EntidadeArquivavel, _ item: ItemArquivado) {
+        Task {
+            switch ent {
+            case .pilotos:      try? await pilotoRepo.restaurar(pilotoId: item.itemId)
+            case .passageiros:  try? await passageiroRepo.restaurar(passageiroId: item.itemId)
+            case .combustiveis: try? await combustivelRepo.restaurar(combustivelId: item.itemId)
+            case .licoes:       try? await licaoRepo.restaurar(licaoId: item.itemId)
+            case .carros:       break // carros são resgatados pela Garagem
+            }
+            try? await arquivoRepo.reload()
+        }
     }
 
     // MARK: - Linhas estruturais (head + subTabs + bottom spacer)
