@@ -64,7 +64,7 @@ struct PilotoCadastroView: View {
             Button("Cancelar", role: .cancel) {}
             Button("Apagar", role: .destructive) { confirmarDelete() }
         } message: {
-            Text("Não dá pra desfazer.")
+            Text("Some da lista, mas fica em Apagados — dá pra resgatar.")
         }
     }
 
