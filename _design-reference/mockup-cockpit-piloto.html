@@ -100,13 +100,13 @@ body{
   min-height:var(--apex-h);
 }
 
-/* SMART SHIFT LIGHT PREMIUM — barra de 12 LEDs racing.
+/* SMART SHIFT LIGHT PREMIUM — barra de 17 LEDs racing.
    Acende UM PAR POR VEZ, DAS PONTAS PRO CENTRO (estilo F1/MotoGP invertido).
-   12 dots em 6 tiers simétricos: tier 1 = pontas (1° a acender);
-   tier 6 = par central (último, peak vermelho).
-   JS marca .is-on em dots com tier <= level. data-state="overrev" sobrepõe
+   17 dots espelhados: tier 1 = pontas (1° a acender); tier 8 = par vermelho lateral;
+   tier 9 = luz central, acende SÓ no FIRE (troca, quando os dois lados se juntam).
+   JS marca .is-on em dots com tier <= level (level 1-8). data-state="overrev" sobrepõe
    e pisca tudo vermelho com housing alarmado.
-   Cor por tier: 1-2 verde · 3-4 amarelo · 5-6 vermelho.
+   Cor por tier: 1-4 verde · 5-7 amarelo · 8-9 vermelho.
    Técnicas premium: dome glass (gradiente radial 3-stop), specular highlight
    (::after), multi-layer bloom (até 4 sombras coloridas com aberração de raio),
    ignition flash via filter brightness/saturate, housing recessed com hairlines. */
@@ -329,7 +329,7 @@ body{
   100% { opacity: 0; }
 }
 
-/* OVERREV — todos os 12 piscam juntos em vermelho forte */
+/* OVERREV — todos os LEDs piscam juntos em vermelho forte */
 .shift-light[data-state="overrev"] .shift-light__dot{
   background:radial-gradient(circle at 35% 30%,
     oklch(92% 0.10 32) 0%,
@@ -1180,22 +1180,24 @@ btnAuto.classList.add('is-active');
 startAutoLoop();
 
 /* SMART SHIFT LIGHT — visual-only (capacete+escapamento descartam áudio).
-   Modelo: níveis 0-6 (subida par-a-par) + fire (strobe) + overrev (erro).
-   FIRE = 3 pulsos brancos a ~10Hz (sweet spot da detecção periférica)
-          + flash sincronizado do device inteiro (rim+top) pra captura periférica.
-   Auto-cycle: 0→1→2→3→4→5→6→FIRE→OVERREV→0, dwell por step. */
+   Modelo: níveis 0-8 (subida par-a-par, das pontas pro centro) + fire (strobe) + overrev (erro).
+   A luz central (tier 9) só acende no FIRE = troca. FIRE = 3 pulsos brancos a ~10Hz
+   (sweet spot da detecção periférica) + flash sincronizado do device inteiro (rim+top).
+   Auto-cycle: 0→1→…→8→FIRE→OVERREV→0, dwell por step. */
 const shiftLight = document.getElementById('shiftLight');
 const shiftDots = shiftLight.querySelectorAll('.shift-light__dot');
 const shiftButtons = document.querySelectorAll('[data-shift]');
 
 const SHIFT_SEQUENCE = [
   {state:'0',       dwell:500},
-  {state:'1',       dwell:360},
-  {state:'2',       dwell:360},
-  {state:'3',       dwell:360},
-  {state:'4',       dwell:360},
-  {state:'5',       dwell:360},
-  {state:'6',       dwell:160},
+  {state:'1',       dwell:300},
+  {state:'2',       dwell:300},
+  {state:'3',       dwell:300},
+  {state:'4',       dwell:300},
+  {state:'5',       dwell:300},
+  {state:'6',       dwell:300},
+  {state:'7',       dwell:300},
+  {state:'8',       dwell:160},
   {state:'fire',    dwell:300},
   {state:'overrev', dwell:800},
 ];

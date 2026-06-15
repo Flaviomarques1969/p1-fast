@@ -48,7 +48,7 @@ t('CKW-01 mockup canônico tem <style> e </style> nas linhas esperadas', () => {
 });
 
 t('CKW-02 mockup canônico tem <script> e </script> nas linhas esperadas', () => {
-  if (scriptOpen !== 1044 || scriptClose !== 1295) {
+  if (scriptOpen !== 1044 || scriptClose !== 1297) {
     throw new Error(`<script> em ${scriptOpen}, </script> em ${scriptClose} — mockup mudou. Atualizar smoke.`);
   }
 });
