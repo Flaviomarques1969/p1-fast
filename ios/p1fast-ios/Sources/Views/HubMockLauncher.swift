@@ -68,6 +68,7 @@ struct HubMockLauncher: View {
                         .environmentObject(passageiroRepo)
                         .environmentObject(combustivelRepo)
                         .environmentObject(licaoRepo)
+                        .environmentObject(arquivoRepo)
                 } else if ProcessInfo.processInfo.arguments.contains("--p1-preco-ml") {
                     // Busca de preço no Mercado Livre (navegador embutido) — valida
                     // que o app lê o preço de dentro do próprio aparelho.
