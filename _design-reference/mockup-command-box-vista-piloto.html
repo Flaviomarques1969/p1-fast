@@ -4272,8 +4272,8 @@ html,body{
   }
   // ok por ponto, com FOLGA: o estado pintado só vira depois de 2 pontos seguidos discordando
   // (uma oscilada de 1 ponto NÃO troca a cor — evita tremedeira; o "só duas vezes" do Flávio).
-  function frxPontos(live){
-    var pts = FRX_XS.map(function(x,i){ return { x:x, pct:live[i], dentro:Math.abs(live[i]-frxAlvoEm(x))<=FRX_BANDA }; });
+  function frxPontos(live, alvo){
+    var pts = FRX_XS.map(function(x,i){ return { x:x, pct:live[i], dentro:Math.abs(live[i]-frxAlvoEm(x, alvo))<=FRX_BANDA }; });
     var estado = pts[0].dentro, run = 0;
     for(var i=0;i<pts.length;i++){
       if(pts[i].dentro===estado){ run=0; } else { run++; if(run>=2){ estado=pts[i].dentro; run=0; } }
