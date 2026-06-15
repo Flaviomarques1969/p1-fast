@@ -27,12 +27,10 @@
 - **O que falta:** nada pra esta parte. (Fica unificada/com nuvem no item 1.)
 - **Observação:** falta sua conferência visual no aparelho (abrir Garagem → Estoque geral e Pendências).
 
-## 3. 🟡 Cópia oficial na nuvem (GitHub)
+## 3. 🟢 Cópia oficial na nuvem (GitHub) — FEITO 2026-06-14
 - **O que é:** levar o trabalho pra "versão oficial" do projeto no GitHub.
-- **Estado:** backup COMPLETO já enviado pra nuvem (gaveta `backup/estoque-pendencias-unificado-2026-06-14`) — seu trabalho está seguro. A versão oficial (que foi arrumada à parte) NÃO foi tocada.
-- **O que falta:** incorporar só estas funções na versão oficial, com cuidado (sem atropelar a arrumação que já existe lá).
-- **Risco:** médio se feito errado (atropelar a arrumação) — por isso faço cirúrgico.
-- **Liberar com:** `MIGRAR PARA PRODUÇÃO: incorporar estoque+pendências na versão oficial`
+- **Estado:** INCORPORADO na versão oficial (marco `a821ddaa` "consolidacao onda 4", em cima da onda 2). Avançou 1 marco limpo, validado (empacotou OK + testes verdes), SEM atropelar a arrumação que já existia e SEM tocar painel ou banco da nuvem. Backup completo também na gaveta `backup/estoque-pendencias-unificado-2026-06-14`.
+- **O que falta:** nada.
 
 ---
 
