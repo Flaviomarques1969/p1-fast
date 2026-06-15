@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revisão — função de frenagem do Command Box</title>
+<style>
+  /* Variáveis do tema — copiadas do Command Box (mockup-command-box-vista-piloto.html :root) */
+  :root{
+    --gold-1: #F0DCA0;
+    --gold-2: #D4AF37;
+    --gold-3: #C9A961;
+    --warm: #C9A961;
+    --cool: #3B82F6;
+    --live: #FF7A1A;
+    --ghost: #7DD3FC;
+    --good: #6BCF6B;
+    --warn: #FFB347;
+    --bad: #FF5555;
+    --text-1: #F5F0E0;
+    --text-2: rgba(245,240,224,0.62);
+    --text-3: rgba(245,240,224,0.38);
+    --hairline: rgba(212,175,55,0.18);
+    --surface: rgba(10,14,24,0.55);
+    --surface-2: rgba(10,14,24,0.35);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 20% -10%, rgba(40,52,80,0.35), transparent 60%),
+      radial-gradient(1000px 500px at 100% 0%, rgba(60,40,20,0.25), transparent 55%),
+      #07090f;
+    color:var(--text-1);
+    font-family:'Helvetica Neue', Arial, sans-serif;
+    padding:26px 30px 70px;
+    min-height:100vh;
+  }
+  .top{
+    display:flex;flex-wrap:wrap;align-items:baseline;gap:14px;
+    border-bottom:0.5px solid var(--hairline);padding-bottom:14px;margin-bottom:6px;
+  }
+  .top h1{
+    font-size:17px;font-weight:600;letter-spacing:.04em;margin:0;color:var(--text-1);
+  }
+  .top .sub{font-size:12px;color:var(--text-2);letter-spacing:.02em;}
+  .note{
+    font-size:12.5px;color:var(--text-2);line-height:1.55;max-width:1100px;margin:14px 0 26px;
+  }
+  .note b{color:var(--gold-1);font-weight:600;}
+
+  .section-label{
+    font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+    font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--gold-2);
+    margin:30px 0 14px;
+  }
+
+  /* ── Cartão do bloco (mimetiza o painel do Command Box) ── */
+  .block-card{
+    background:var(--surface);
+    border:0.5px solid var(--hairline);
+    border-radius:10px;
+    padding:14px 16px 13px;
+    display:flex;flex-direction:column;gap:9px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.35);
+  }
+
+  /* ── HERO: um bloco grande + a leitura dos 4 elementos ── */
+  .hero{display:flex;flex-wrap:wrap;gap:30px;align-items:stretch;}
+  .hero .block-card{width:430px;max-width:100%;}
+  .hero .block-card .fr-chart{min-height:150px;}
+  .callouts{flex:1 1 360px;min-width:320px;display:flex;flex-direction:column;gap:10px;}
+  .callout{
+    display:flex;gap:12px;align-items:flex-start;
+    background:var(--surface-2);border:0.5px solid var(--hairline);border-radius:8px;
+    padding:11px 13px;
+  }
+  .callout .n{
+    flex:0 0 auto;width:22px;height:22px;border-radius:50%;
+    background:var(--gold-2);color:#0b0e12;font-weight:700;font-size:12px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .callout .ct{font-size:12.5px;line-height:1.5;color:var(--text-2);}
+  .callout .ct b{color:var(--text-1);font-weight:600;}
+  .callout .ct .gap{color:var(--bad);}
+  .callout .ct .ok{color:var(--good);}
+
+  /* ── Galeria de todos os estados ── */
+  .gallery{
+    display:grid;grid-template-columns:repeat(auto-fill, minmax(300px,1fr));gap:18px;
+  }
+  .gallery .block-card .fr-chart{min-height:96px;}
+
+  /* ==================== CSS DO BLOCO — copiado do Command Box ==================== */
+  .fr-header{
+    display:flex;justify-content:space-between;align-items:baseline;
+    border-bottom:0.5px solid rgba(212,175,55,0.18);
+    padding-bottom:5px;
+  }
+  .fr-title{
+    font-size:8px;letter-spacing:.22em;color:var(--gold-2);
+    text-transform:uppercase;font-weight:500;
+  }
+  .fr-curva{
+    font-size:7px;letter-spacing:.16em;color:var(--text-3);
+    text-transform:uppercase;
+  }
+  .fr-chart{
+    width:100%;flex:1 1 0;min-height:42px;
+    display:block;
+  }
+  .fr-chart svg{display:block;width:100%;height:100%;}
+  .fr-baseline{ stroke:rgba(212,175,55,0.18);stroke-width:0.4; }
+  .fr-curve-live{
+    fill:none;stroke:#FF5A4E;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round;
+    filter:drop-shadow(0 0 1.5px rgba(255,90,80,0.55));
+    /* No Command Box a curva é "desenhada" via animação (dashoffset). Aqui é estática:
+       mostro a curva inteira (dashoffset:0). */
+    stroke-dasharray:none;
+    stroke-dashoffset:0;
+  }
+  .fr-curve-live.tone-good{
+    stroke:#3FE08C;
+    filter:drop-shadow(0 0 1.5px rgba(63,224,140,0.55));
+  }
+  .fr-curve-live.tone-bad{
+    stroke:#FF5A4E;
+    filter:drop-shadow(0 0 1.5px rgba(255,90,80,0.55));
+  }
+  .fr-curve-live.tone-warn{
+    stroke:#FFB347;
+    filter:drop-shadow(0 0 1.5px rgba(255,179,71,0.55));
+  }
+  .fr-curve-ghost{
+    fill:none;stroke:#38BCFF;stroke-width:1.0;
+    stroke-dasharray:2 2;stroke-opacity:0.55;
+    stroke-linejoin:round;stroke-linecap:round;
+  }
+  .fr-tag{
+    font-family:'JetBrains Mono','SF Mono',Menlo,monospace;
+    font-size:6.5px;letter-spacing:.10em;text-transform:lowercase;
+  }
+  .fr-tag.live{ fill:#FF8C66; }
+  .fr-tag.ghost{ fill:#38BCFF; fill-opacity:0.75; }
+  .fr-verdict{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:10px;
+    border-top:0.5px solid rgba(212,175,55,0.12);
+    padding-top:7px;
+  }
+  .fr-badge{
+    font-family:'Helvetica Neue',sans-serif;
+    font-size:11px;font-weight:600;letter-spacing:.22em;
+    padding:4px 11px;border-radius:2px;text-transform:uppercase;
+    line-height:1;white-space:nowrap;
+  }
+  .fr-badge.bad{
+    background:rgba(255,90,80,0.20);color:#FF5A4E;
+    border:0.5px solid rgba(255,90,80,0.40);
+    box-shadow:0 0 8px rgba(255,90,80,0.25);
+  }
+  .fr-badge.good{
+    background:rgba(63,224,140,0.18);color:#3FE08C;
+    border:0.5px solid rgba(63,224,140,0.36);
+    box-shadow:0 0 8px rgba(63,224,140,0.25);
+  }
+  .fr-badge.neutral{
+    background:rgba(255,179,71,0.18);color:#FFB347;
+    border:0.5px solid rgba(255,179,71,0.36);
+  }
+  .fr-delta{
+    font-family:'Helvetica Neue',sans-serif;
+    font-size:18px;font-weight:200;letter-spacing:-.3px;
+    font-variant-numeric:tabular-nums;
+    line-height:1;
+  }
+  .fr-delta strong{color:#FF5A4E;font-weight:300;}
+  /* Na galeria/hero o gráfico é maior — aumento as fontes dos rótulos do SVG pra leitura */
+  .fr-chart svg .fr-tag{font-size:5px;}
+</style>
+</head>
+<body>
+  <div class="top">
+    <h1>Função de frenagem — bloco do Command Box</h1>
+    <span class="sub">cópia fiel do código atual, ampliada para revisão · 15/06/2026</span>
+  </div>
+
+  <p class="note">
+    Isto é o bloco <b>FRENAGEM</b> exatamente como ele está hoje na sua tela (mesmo desenho, mesmas cores, mesmos vereditos).
+    Está <b>maior</b> só pra revisão. Hoje o dado é simulado — a gente vai acertar primeiro <b>o que a tela mostra e julga</b>,
+    depois eu ligo no dado real. Abaixo, o bloco grande com a leitura dos 4 elementos, e a galeria com todos os estados que ele sabe mostrar.
+  </p>
+
+  <div class="section-label">O bloco hoje — e o que ele mostra</div>
+  <div class="hero">
+    <div class="block-card" id="hero-block"></div>
+    <div class="callouts">
+      <div class="callout">
+        <div class="n">1</div>
+        <div class="ct"><b>Curva você × ideal.</b> A linha cheia é a sua frenagem; a pontilhada azul é a "ideal".
+          O eixo horizontal é a distância e o vertical é a força da freada. A cor da sua linha fica
+          <span class="ok">verde</span> quando cola na ideal e <span class="bad">vermelha</span> quando foge.</div>
+      </div>
+      <div class="callout">
+        <div class="n">2</div>
+        <div class="ct"><b>O trail (como você soltou o freio).</b> É a descida da curva depois do pico.
+          <span class="gap">Hoje aparece só no formato da linha — não tem leitura explícita</span> de "soltou de uma vez" vs
+          "soltou progressivo até a mínima". O motor de verdade já calcula isso.</div>
+      </div>
+      <div class="callout">
+        <div class="n">3</div>
+        <div class="ct"><b>O ponto de freada.</b> Onde você começou a frear.
+          <span class="gap">Hoje não está marcado na tela</span> — a linha simplesmente começa a subir.
+          O motor já mede e compara com a sua melhor (freou X metros antes/depois).</div>
+      </div>
+      <div class="callout">
+        <div class="n">4</div>
+        <div class="ct"><b>O veredito + o tempo.</b> Uma palavra (no ponto / cedo / tarde / travou / trail fraco…) e um tempo
+          (ex.: +0,18s). <span class="gap">Esse tempo por curva é inventado no mockup</span> — sem sensor não dá pra afirmar tempo perdido só pela freada.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Todos os estados que o bloco sabe mostrar hoje (10 vereditos)</div>
+  <div class="gallery" id="gallery"></div>
+
+<script>
+  // ====== Código copiado do Command Box (mockup-command-box-vista-piloto.html) ======
+
+  // 10 veredictos canônicos — cada um com curva característica de IMU (cópia fiel)
+  var VERDICTS_FRENAGEM = [
+    { id:'no-ponto',  label:'no ponto',         tone:'good',    delta:'−0.02s',
+      live:[[0,0],[6,0],[9,0.10],[12,0.45],[15,1.05],[18,1.40],[20,1.45],[25,1.46],[29,1.42],[33,1.32],[37,1.18],[41,1.00],[45,0.78],[49,0.55],[53,0.30],[57,0.10],[60,0]] },
+    { id:'cedo',      label:'cedo',              tone:'bad',     delta:'+0.18s',
+      live:[[0,0],[3,0],[5,0.05],[8,0.35],[11,0.85],[14,1.20],[16,1.35],[20,1.36],[24,1.32],[28,1.25],[32,1.12],[36,0.95],[40,0.78],[44,0.58],[48,0.38],[52,0.18],[56,0.05],[60,0]] },
+    { id:'tarde',     label:'tarde',             tone:'bad',     delta:'+0.22s',
+      live:[[0,0],[10,0],[14,0.05],[18,0.45],[22,1.15],[24,1.55],[26,1.62],[30,1.55],[34,1.40],[38,1.20],[42,0.95],[46,0.65],[50,0.35],[54,0.10],[58,0]] },
+    { id:'timido',    label:'tímido',            tone:'bad',     delta:'+0.31s',
+      live:[[0,0],[6,0],[10,0.10],[14,0.30],[18,0.55],[22,0.75],[26,0.85],[30,0.90],[34,0.88],[38,0.82],[42,0.72],[46,0.60],[50,0.45],[54,0.30],[58,0.15],[60,0]] },
+    { id:'violento',  label:'violento',          tone:'bad',     delta:'+0.14s',
+      live:[[0,0],[6,0],[8,0.30],[10,1.10],[12,1.55],[14,1.62],[18,1.55],[22,1.35],[26,1.10],[30,0.85],[34,0.55],[38,0.25],[42,0.05],[46,0]] },
+    { id:'travou',    label:'travou',            tone:'bad',     delta:'+0.45s',
+      live:[[0,0],[6,0],[9,0.20],[12,0.80],[15,1.50],[18,1.62],[22,1.62],[26,1.62],[30,1.62],[33,0.50],[36,0.20],[40,0.05],[44,0]] },
+    { id:'aliviou',   label:'aliviou cedo',      tone:'bad',     delta:'+0.20s',
+      live:[[0,0],[6,0],[9,0.10],[12,0.45],[15,1.05],[18,1.40],[20,1.45],[24,1.40],[27,1.20],[30,0.85],[33,0.40],[36,0.10],[40,0]] },
+    { id:'trail-fraco', label:'trail fraco',     tone:'bad',     delta:'+0.17s',
+      live:[[0,0],[6,0],[9,0.10],[12,0.45],[15,1.05],[18,1.40],[20,1.45],[25,1.46],[28,1.40],[30,0.95],[34,0.95],[36,0.50],[40,0.50],[42,0.10],[46,0]] },
+    { id:'perfeito',  label:'perfeito',          tone:'good',    delta:'−0.08s',
+      live:[[0,0],[7,0],[10,0.15],[13,0.55],[16,1.20],[19,1.55],[22,1.58],[26,1.55],[30,1.45],[34,1.30],[38,1.10],[42,0.85],[46,0.60],[50,0.35],[54,0.15],[58,0]] },
+    { id:'cauteloso', label:'cauteloso demais',  tone:'bad',     delta:'+0.42s',
+      live:[[0,0],[8,0],[12,0.10],[16,0.30],[20,0.50],[24,0.65],[28,0.75],[32,0.78],[36,0.75],[40,0.65],[44,0.55],[48,0.40],[52,0.25],[56,0.10],[60,0]] }
+  ];
+
+  // Ghost = volta de referência (constante) — cópia fiel
+  var FRENAGEM_GHOST = [[0,0],[6,0],[9,0.10],[12,0.45],[15,1.05],[18,1.40],[20,1.45],[25,1.46],[29,1.42],[33,1.32],[37,1.18],[41,1.00],[45,0.78],[49,0.55],[53,0.30],[57,0.10],[60,0]];
+
+  function _curveAvgDiff(liveData, ghostData){
+    if(!liveData || !liveData.length) return 0;
+    var sum = 0, n = 0;
+    liveData.forEach(function(p){
+      var lx = p[0], ly = p[1];
+      var bestG = ghostData[0];
+      for(var j=1; j<ghostData.length; j++){
+        if(Math.abs(ghostData[j][0] - lx) < Math.abs(bestG[0] - lx)) bestG = ghostData[j];
+      }
+      sum += Math.abs(ly - bestG[1]);
+      n++;
+    });
+    return n > 0 ? sum / n : 0;
+  }
+  function frenagemCurveTone(verdict){
+    var diff = _curveAvgDiff(verdict.live, FRENAGEM_GHOST);
+    return diff < 0.18 ? 'good' : 'bad';
+  }
+
+  function frenagemChartSvg(verdict){
+    var W = 200, H = 72;
+    var pad = { l:4, r:22, t:8, b:6 };
+    var xMax = 60, yMax = 1.65;
+    function sx(x){ return pad.l + (x / xMax) * (W - pad.l - pad.r); }
+    function sy(y){ return (H - pad.b) - (y / yMax) * (H - pad.t - pad.b); }
+    function pathFrom(pts){
+      return pts.map(function(p,i){
+        return (i===0?'M':'L') + sx(p[0]).toFixed(2) + ' ' + sy(p[1]).toFixed(2);
+      }).join(' ');
+    }
+    var liveD  = pathFrom(verdict.live);
+    var ghostD = pathFrom(FRENAGEM_GHOST);
+    var liveTagY  = sy(0) - 4;
+    var ghostTagY = sy(0) + 8;
+    var curveTone = frenagemCurveTone(verdict);
+    return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">' +
+      '<line class="fr-baseline" x1="'+pad.l+'" y1="'+sy(0)+'" x2="'+(W-pad.r)+'" y2="'+sy(0)+'"/>' +
+      '<path class="fr-curve-ghost" d="'+ghostD+'"/>' +
+      '<path class="fr-curve-live tone-'+curveTone+'" pathLength="100" d="'+liveD+'"/>' +
+      '<text class="fr-tag live"  x="'+(W-pad.r+2)+'" y="'+liveTagY+'">vc</text>' +
+      '<text class="fr-tag ghost" x="'+(W-pad.r+2)+'" y="'+ghostTagY+'">ideal</text>' +
+      '</svg>';
+  }
+
+  // buildFrenagemPanel equivalente (estado revelado), cópia fiel do markup
+  function buildBlock(v, curvaLabel){
+    return ''+
+      '<div class="fr-header">'+
+        '<span class="fr-title">FRENAGEM</span>'+
+        '<span class="fr-curva">'+curvaLabel+'</span>'+
+      '</div>'+
+      '<div class="fr-chart">'+frenagemChartSvg(v)+'</div>'+
+      '<div class="fr-verdict">'+
+        '<span class="fr-badge '+v.tone+'">'+v.label+'</span>'+
+        '<span class="fr-delta"><strong>'+v.delta.replace(/[+−]/g,'')+'</strong></span>'+
+      '</div>';
+  }
+
+  // Hero = estado "perfeito" (curva 3)
+  document.getElementById('hero-block').innerHTML =
+    buildBlock(VERDICTS_FRENAGEM[8], 'curva 3');
+
+  // Galeria = todos os 10 estados
+  var g = document.getElementById('gallery');
+  VERDICTS_FRENAGEM.forEach(function(v){
+    var card = document.createElement('div');
+    card.className = 'block-card';
+    card.innerHTML = buildBlock(v, v.id.replace('-', ' '));
+    g.appendChild(card);
+  });
+</script>
+</body>
+</html>

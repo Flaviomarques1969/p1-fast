@@ -173,3 +173,13 @@ Reportei "nuvem com 0 linhas" 2x quando os dados JÁ tinham subido. Causa: meu c
 10. **Evidência da autorização para produção:** não recebida.
 11. **Riscos:** (a) mexer no arranjo dos blocos do Flávio (posições no ATUAL.json) — só mexer no CONTEÚDO, backup antes; (b) inventar leitura de freio sem dado real — motor já trata isso (rótulo simulado-fisica vs sensor); (c) escopo ambíguo → confirmar no card antes de codar pra não retrabalhar.
 12. **Status inicial:** iniciado — aguardando escopo no card.
+
+---
+## TASK_DONE — 2026-06-15 — Retomada automática de envio + tela "Conta" na Home
+- Pedido original conferido: sim (Flávio: "faça a retomada automática" + "tirar o nome de sincronização da primeira página, arcaico")
+- Ambiente trabalhado: desenvolvimento (app iOS). Produção NÃO tocada.
+- Produção foi alterada: não
+- Arquivos reais inspecionados/alterados: SyncDrainer.swift (+rehabilitateDeadLetters), SyncCoordinator.swift (+rehab throttled + onBecameActive + disparos boot/reconexão), ContentView.swift (+scenePhase), HomeView.swift (badge sync → botão "Conta"), SincronizacaoView.swift (título→"Conta", Conta no topo), P1FastSmoke/main.swift (+PERSIST-14b)
+- Testes/validação executados: smoke do núcleo PERSIST-14b ✓ (reabilita só dead-letter, preserva pendente); `xcodebuild ... build` = BUILD SUCCEEDED, 0 erro. 2 falhas PRÉ-EXISTENTES fora do escopo (PERSIST-01 contagem 34≠38; PERSIST-03 evento_pendencias_extra sem synced_at).
+- Resultado: CONCLUÍDO em desenvolvimento.
+- Pendências reais: só chega no iPhone do Flávio num próximo reinstalar (empacotar+assinar). SyncStatusBadge.swift preservado (não apagado). Sugestão pra depois: olhar PERSIST-03 (parente do bug do estoque).
