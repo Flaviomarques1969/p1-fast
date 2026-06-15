@@ -41,6 +41,8 @@
 		65468450ADCCFC8E14DBEFE0 /* Daily in Frameworks */ = {isa = PBXBuildFile; productRef = 657FCFF4ED304B535B0A1FDA /* Daily */; };
 		6F90A7452F0F5831913118ED /* CombustivelRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC43A445C874747C1D6C3A8D /* CombustivelRepository.swift */; };
 		71CD65975AB8E77F128B5E60 /* AssistirView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F0C67C4E0BA41DE1CC674DA /* AssistirView.swift */; };
+		5717A0117E57000000000C01 /* CatalogoTreinos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5717A0117E57000000000C02 /* CatalogoTreinos.swift */; };
+		5717A0117E57000000000C03 /* StintPlanoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5717A0117E57000000000C04 /* StintPlanoView.swift */; };
 		5717A0117E57000000000B01 /* StintPlanejamentoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5717A0117E57000000000B02 /* StintPlanejamentoView.swift */; };
 		736D869211707A62F9693C61 /* P1FastCore in Frameworks */ = {isa = PBXBuildFile; productRef = B3F0276D699418949A723AA1 /* P1FastCore */; };
 		73AF37D86286B893F9C9FD29 /* LowPowerModeMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12D3CA77D8F9695EEC42D36E /* LowPowerModeMonitor.swift */; };
