@@ -20,7 +20,9 @@ import P1FastCore
 
 struct GaragemView: View {
     @EnvironmentObject private var repo: CarroRepository
+    @EnvironmentObject private var arquivoRepo: ArquivoRepository
     @State private var sheet: GaragemSheet?
+    @State private var mostrarApagadosCarros = false
     /// Sub-aba ativa: Carros (lista de carros) ou um dos cadastros que
     /// migraram pra cá (Pilotos/Passageiros/Combustível/Lições). 2026-06-14.
     @State private var subTab: GaragemSubTab
