@@ -187,8 +187,14 @@ Reportei "nuvem com 0 linhas" 2x quando os dados JÁ tinham subido. Causa: meu c
   - 5 edições: (1) máquina nova FRX_* (dados por curva + banda ±8% + histerese 2-pontos + contagem regressiva + gráfico segmentado, substituindo `frenagemChartSvg`); (2) `getFrenagemVerdictForCurve` → cenário por id; (3) `buildFrenagemPanel` novo (gráfico+marcador+trail+veredito calculados); (4) `updateFrenagemFromLap` (contagem por quadro + revelação; removida a animação de linha única `_applyLiveCurveOffset` SÓ do frenagem — VMIN intacto); (5) CSS `frx-*` próprio.
   - REGRA respeitada: classes novas `frx-*`; VMIN compartilha `fr-*` e NÃO foi tocado; arranjo (ATUAL.json) intocado. Legado `frenagemCurveTone`/`VERDICTS_FRENAGEM`/`FRENAGEM_GHOST` deixados (sem chamada, não apaguei).
   - Validação: sintaxe OK (3 blocos inline via new Function); lógica pura testada em node (delta/veredito/segmentos/histerese — todas asserções passam); `smoke:freio-trecho` 29/0; servido HTTP 200 pela 8078 com o código novo e aberto no navegador.
-- **Pendente:** validação VISUAL do Flávio (8078, aberto). Depois: limpar legado morto (se ele OK) + etapa seguinte = ligar no dado real (freio-trecho.js). NÃO oficial até o aval visual.
-- Status: aguardando validação visual do Flávio.
+- **VALIDADO VISUALMENTE pelo Flávio (card):** redesenho APROVADO no painel real (8078). "Aprovado, seguir pro dado real".
+- **PRÓXIMA ETAPA (combinada): ligar a frenagem no DADO REAL.** Decisão do Flávio (card): "Plano agora, ligar com o sensor" — execução fica pra quando o sensor estiver na T4000 e validado (não mexer no painel em dia de pista 15-16/06).
+  - CORREÇÃO do Flávio: os sensores ligam na **T4000** (central Injepro). Caminho: sensor → T4000 → quadro telemetria (parser t3000-usb-parser: pressão offset 268 ÷100 bar, pedal 54 ÷10%, acel 52) → canal `cockpit-bubi-live` → Command Box.
+  - ACHADO: o mockup `_design-reference/mockup-command-box-vista-piloto.html` é AUTOCONTIDO e 100% SIMULADO — NÃO tem `setupLigacaoAoVivo` nem assina `cockpit-bubi-live`. `web/command-box/` está VAZIO (a memória `p1-fast-command-box-deteccao-automatica-sensor` de 13/06 cita um arquivo que não existe mais no main — ESTÁ DESATUALIZADA). O dado real + `freio-trecho.js` rodam no cockpit do piloto (`web/cockpit/main-t3000.js` via `trail-cockpit-motor.js`, com selo de fonte `atualizarSeloFonteFreio`).
+  - PLANO ESCRITO (mapa): `relatorios/plano-frenagem-dado-real-2026-06-15.html` (6 passos: importar motor → assinar canal → calcular por curva → trocar fake pelo real → rótulo de fonte + 3-de-3 → validar com T4000 + faxina do legado).
+  - DECISÃO PENDENTE do Flávio (sinalizada, arquitetura = dele): destino final do display do piloto migra pra Windows (CLAUDE.md ADR-023) — confirmar se o dado real entra neste HTML (visão da equipe no box) e/ou no cockpit Windows.
+  - LEGADO MORTO a limpar junto na execução: `frenagemCurveTone`, `VERDICTS_FRENAGEM`, `FRENAGEM_GHOST` (sem chamada após o redesenho).
+- Status: DESENHO concluído e aprovado no painel; ligação ao vivo PLANEJADA, aguardando sensor na T4000 + aprovação do approach.
 
 ---
 ## TASK_DONE — 2026-06-15 — Retomada automática de envio + tela "Conta" na Home
