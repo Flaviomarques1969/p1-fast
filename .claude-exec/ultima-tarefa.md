@@ -423,6 +423,27 @@ Decisões em card (Flávio, 15/06): destino = NOS DOIS (cockpit já pronto) · q
 - Status geral: PARCIAL — toda a base de cálculo + dado real + prova visual prontos e testados (risco zero ao painel);
   falta a edição do painel em si (2b) e o acabamento (3).
 
+### ETAPA 2a — 2 CORREÇÕES após Flávio ver a prova (15/06 noite)
+- DEFEITO 1 (apontado por mim ao revisar): a curva real era espremida numa janela fixa de 60 m, mas a freada
+  real vai a ~170-200 m → a linha vinha CORTADA (só a subida, "ia pra frente sem descer"). CONSERTO em
+  frenagem-real.js: `janelaFreada` + `amostrarNaGrade` — a curva agora ocupa a ZONA REAL da freada (início→soltura),
+  sobe até o pico e DESCE. Comparação passou a ser contra a MELHOR volta da curva (campo `ref`), não um ideal
+  genérico (FRX_ALVO). Marcador "+/−m" = deltaM real. Testes FR-15/FR-16 novos.
+- DEFEITO 2 (apontado pelo Flávio, mais grave): eu usava UM trail só pra todas as curvas, ignorando que cada
+  curva tem TIPO próprio com trail próprio. CONSERTO: NOVO `web/command-box/tipos-curva-brasilia.js` = tipo
+  DEFINITIVO por curva (decisão literal Flávio 13/06, registro 20260613-172700; C1=T5 RETA-OPOSTA=T1 C2=T0
+  JUNÇÃO=T2 BRUXA=T0 PLACAR=T2 S=T4 VITÓRIA=SF). frenagem-curvas-reais.js agora anexa tipo+rótulo+formato
+  (TIPOS de classificador-trecho.js) + texto fácil (tipos-curva-texto.js). SF (Vitória) = "sem freada por TIPO"
+  (pé embaixo), distinta de "dado ralo". Princípio respeitado (classificador-trecho.js:4-8): o ALVO é a melhor
+  passagem real (régua); o tipo só NOMEIA/explica. Testes CR-11..CR-14 novos.
+- Prova visual refeita: relatorios/frenagem-dado-real-2026-06-15.html — dashed = SUA melhor volta da curva,
+  verde/vermelho da volta mostrada vs a melhor, badge do tipo + descrição do trail do tipo, seletor de volta.
+  Reaberta no navegador (8078). Mockup servido ainda NÃO alterado.
+- Validação: smoke:freio-trecho 29/0, smoke:frenagem-real 16/0, smoke:frenagem-curvas-reais 14/0,
+  smoke:trail-cockpit 45/0, smoke:cockpit-web 16/0; HTTP 200 dos módulos + página.
+- Honesto: 4/8 curvas têm freada real medida (C1-C4); VITÓRIA é SF (sem freada por tipo); BRUXA/PLACAR/"S"
+  são tipo de freada mas o dado de maio é ~1 Hz (4-6 pontos) → entram com a volta ao vivo / 25 Hz.
+
 ═══════════════════════════════════════════════════════════
 ## HANDOFF (clear 15/06 noite) — PLANEJAMENTO DO STINT NO CELULAR — VALIDADO NO IPHONE
 ═══════════════════════════════════════════════════════════
