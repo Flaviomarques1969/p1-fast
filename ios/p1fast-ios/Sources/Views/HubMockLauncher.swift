@@ -130,6 +130,7 @@ struct HubMockLauncher: View {
             await licaoRepo.bootstrap()
             await pendenciaRepo.bootstrap()
             await estoqueRepo.bootstrap()
+            await arquivoRepo.bootstrap()
             await seedEstoqueMockIfNeeded()
             // Evento FUTURO de demonstração: a seed só tem eventos passados,
             // então a aba "Pendências" (próximo evento) abriria vazia no mock.
