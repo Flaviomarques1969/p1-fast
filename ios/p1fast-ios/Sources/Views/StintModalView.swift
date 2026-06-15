@@ -188,6 +188,7 @@ struct StintModalView: View {
         guard !isSaving else { return false }
         guard !objetivoTipo.isEmpty else { return false }
         guard voltasPlanejadas >= 1 else { return false }
+        guard propositoOk else { return false }
         // MS-4.4: validação muda conforme tipo do evento
         if permiteRevezamento {
             // Endurance — precisa de pelo menos 1 turno cobrindo todas as voltas
