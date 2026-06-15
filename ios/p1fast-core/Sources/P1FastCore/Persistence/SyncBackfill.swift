@@ -81,6 +81,7 @@ public enum SyncBackfill {
         "carros", "configuracoes", "pilotos", "passageiros",
         "combustiveis", "pneus", "eventos",
         "pecas_locais", "pecas", "pecas_movimentacoes", "manutencoes",
+        "estoque_item",
     ]
 
     private static func backfillTable(
