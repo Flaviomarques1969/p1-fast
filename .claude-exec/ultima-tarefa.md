@@ -538,12 +538,19 @@ PRÓXIMO PASSO (Etapa 2a-bis) — ✅ FEITO 15/06 noite, AGUARDA SÓ CONFIRMAÇ�
    quando há dado; sem dado real → `semDadoReal:true` + ideal (NÃO fica em branco). Bruxa/Placar/"S" reabilitadas.
 3. ✅ Prova atualizada (chart usa ideal; render trata só-ideal; legenda/sub/foot) + smokes (forma-trail 30/0; curvas 18/0);
    bateria 0 falhas; reaberta na 8078.
-4. ⏳ FALTA: Flávio confirmar na tela que o ideal por tipo está certo (a régua da MELHOR volta real entra com 25 Hz/RaceBox).
-   ⚠️ Olhar especialmente JUNÇÃO (T2 residual ideal~65, mas a volta real do Bubi soca ~100 → marca "errado/freou demais"):
-   confirmar com Flávio se o veredito contra a forma do tipo é o comportamento desejado.
-DEPOIS (sem mexer ainda): ETAPA 2b = ligar no painel oficial _design-reference/mockup-command-box-vista-piloto.html
-(com backup; override de getFrenagemVerdictForCurve + driver de volta; tirar 'frenagem' de DEP_LIGACAO:7609).
-ETAPA 3 = selo física↔sensor no bloco + 2-de-2→3-de-3 quando a pressão variar + faxina do legado morto.
+4. ✅ Flávio APROVOU seguir (15/06 noite, verbatim: "depois você liga no painel oficial do Command Box"). Pediu /clear ANTES.
+
+▶▶ AO RETOMAR ("RETOMAR FRENAGEM DO P1 FAST"), FAZER A ETAPA 2b — ligar a forma-ideal-por-tipo no PAINEL OFICIAL:
+   Arquivo: _design-reference/mockup-command-box-vista-piloto.html (FAZER BACKUP em
+   _design-reference/command-box-versoes/ ANTES de tocar; NÃO mexer no Vmin/fr-*/_shortRevealStateForLap).
+   O motor já está pronto em web/command-box/{forma-trail-tipo.js, frenagem-curvas-reais.js, frenagem-real.js} e
+   provado em relatorios/frenagem-dado-real-2026-06-15.html. No painel oficial hoje a frenagem é SIMULADA (FRX_CENARIOS
+   fake). Plano: trocar o alvo/cenário fake pela `ideal` (trail do tipo) + `live` real por curva via
+   construirFrenagemRealPorCurva; override de getFrenagemVerdictForCurve por id; tirar 'frenagem' de DEP_LIGACAO:7609.
+   Conferir o plano escrito: relatorios/plano-frenagem-dado-real-2026-06-15.html.
+   ⚠️ Ao mostrar a ele: apontar a JUNÇÃO (T2 residual ideal~65, mas a volta real do Bubi soca ~100 → marca
+   "errado/freou demais") e perguntar se o veredito contra a forma do tipo é o desejado — NÃO bloqueia a 2b.
+DEPOIS: ETAPA 3 = selo física↔sensor no bloco + 2-de-2→3-de-3 quando a pressão variar + faxina do legado morto.
 
 COMO REABRIR A PROVA: (server local) `node tools/atelier-server.mjs` (porta 8078) →
 `open http://localhost:8078/relatorios/frenagem-dado-real-2026-06-15.html`.
