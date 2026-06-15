@@ -95,6 +95,14 @@ struct GaragemView: View {
                 NavigationStack {
                     TrechoListaView(onClose: { sheet = nil })
                 }
+            case .conta:
+                // Tela de Conta (e-mail + Sair + estado de envio). Mesmíssima
+                // tela que abria pela Home; só mudou de porta de entrada. Ela
+                // já traz NavigationStack + "Fechar" próprios.
+                if let coord = syncCoordinator {
+                    SincronizacaoView()
+                        .environmentObject(coord)
+                }
             }
         }
         .sheet(isPresented: $mostrarApagadosCarros) {
