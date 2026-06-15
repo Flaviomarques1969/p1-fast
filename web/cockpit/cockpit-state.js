@@ -73,8 +73,8 @@ export const AprendizadoStatus = Object.freeze({
 });
 
 export const SHIFT_LEVEL_MIN = 0;
-export const SHIFT_LEVEL_MAX = 6; // sequência canônica vai 0..6 → fire → overrev
-export const SHIFT_DOTS_TOTAL = 12; // mockup tem 12 LEDs, level 6 = todos acesos
+export const SHIFT_LEVEL_MAX = 8; // 8 níveis laterais (tier 1-8); a luz central (tier 9) acende no FIRE
+export const SHIFT_DOTS_TOTAL = 17; // 17 LEDs: 16 laterais (8 por lado) + 1 central
 
 // ── Default state (espelha o que o mockup carrega ao boot) ────
 
