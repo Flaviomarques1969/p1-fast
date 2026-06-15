@@ -128,6 +128,38 @@ public final class SyncCoordinator: ObservableObject {
         }
     }
 
+    /// Reabilita automaticamente os itens "parados" (dead-letter) quando a
+    /// situação pode ter mudado — app reaberto, internet de volta, função da
+    /// nuvem atualizada. Zera o contador desses itens e tenta enviar de novo,
+    /// pra o usuário NUNCA precisar tocar em "Tentar de novo" na mão. Throttle
+    /// por cooldown evita martelar um item que esteja de fato quebrado.
+    public func rehabilitateDeadLetters(force: Bool = false) async {
+        guard Configuration.isConfigured else { return }
+        if !force, let last = lastRehabAt,
+           Date().timeIntervalSince(last) < Self.rehabCooldown { return }
+        lastRehabAt = Date()
+        do {
+            let reabilitados = try await Task.detached(priority: .background) { [queue] in
+                try SyncDrainer.rehabilitateDeadLetters(queue)
+            }.value
+            if reabilitados > 0 {
+                print("SyncCoordinator: reabilitou \(reabilitados) item(s) parado(s) — tentando de novo")
+                await refreshCounters()
+                await drainSync()
+            }
+        } catch {
+            print("SyncCoordinator.rehabilitateDeadLetters error: \(error)")
+        }
+    }
+
+    /// Chamado quando o app volta ao primeiro plano (scenePhase .active).
+    /// Reabilita itens parados (throttled) e drena a fila — assim o estoque (ou
+    /// qualquer coisa) que ficou pra trás sobe sozinho ao reabrir o app.
+    public func onBecameActive() async {
+        await rehabilitateDeadLetters()
+        await syncNow()
+    }
+
     /// Apaga definitivamente um item da fila (usado pelo swipe-to-delete
     /// na tela de dead-letters). Não há recovery — UI tem que confirmar.
     public func dropItem(_ id: Int64) async {
