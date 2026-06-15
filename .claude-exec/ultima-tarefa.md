@@ -3,6 +3,21 @@
 > Registro anterior (Botão APAGAR da Garagem, 14/06 noite) arquivado em
 > `.claude-exec/ultima-tarefa-ANTERIOR-garagem-apagar-2026-06-14.md`.
 
+## TASK_INIT — 2026-06-15 — P1 Fast "não está disponível" no iPhone (assinatura de 7 dias expirou)
+
+1. **Pedido de Flávio:** "o P1 Fast não está disponível mais no meu celular, que precisa resolver isso e já resolve os outros problemas."
+2. **Objetivo:** Fazer o P1 Fast voltar a abrir no iPhone do Flávio e dar a ele a solução definitiva pro app não morrer toda semana.
+3. **Critério:** app reassinado + reinstalado + abre sem queda no iPhone real; causa raiz documentada; recomendação de solução permanente apresentada.
+4. **Leitura:** CLAUDE.md, padroes.md (vazio), FLAVIO_* (4), P1 Fast/CLAUDE.md + memórias — sim.
+5. **Plano:** (a) diagnosticar [FEITO]; (b) reassinar+reinstalar; (c) validar abertura (precisa desbloqueio); (d) recomendar conta paga/TestFlight; (e) reportar.
+6. **CAUSA RAIZ (prova):** perfil de provisionamento `iOS Team Provisioning Profile: com.flaviomarques.p1fast`
+   criado 08/06, EXPIRA 15/06 (hoje) — validade de 7 dias por ser conta de desenvolvedor GRATUITA
+   (ProvisionsAllDevices ausente). App não foi removido (devicectl confirma instalado), mas a assinatura caducou.
+   Mesmo problema afeta P1 IMU Test e qualquer app nosso instalado direto no aparelho.
+7. **Ambiente:** produção (iPhone real). Autorização: SIM — "precisa resolver isso" + "MIGRAR PARA PRODUÇÃO: apagar com resgate na Garagem" (14/06). Banco/nuvem: NÃO tocado.
+8. **Riscos:** reassinatura grátis renova só +7 dias (volta a expirar ~22/06) — paliativo; definitivo = Apple Developer Program pago (perfil 1 ano + TestFlight). App bloqueado impede abrir remoto (precisa Flávio desbloquear + "Confiar" se pedir).
+9. **Status:** reempacotamento assinado em curso (bg bbhodvm9x).
+
 ## TASK_INIT — 2026-06-15 — Luz de marcha (shift light) do cockpit do piloto: alinhar entendimento e provar no navegador
 
 ### 1. Pedido original de Flávio
