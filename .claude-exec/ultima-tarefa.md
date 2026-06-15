@@ -214,3 +214,19 @@ A lógica rica de treino-IA hoje está na web (catalogo-treinos.js/treino-stint.
 PORTAR pro celular. Antes de codar: TASK_INIT + card de escopo (v1 em fases).
 
 NÃO esquecer: o botão "Conta" que pus na Home hoje é TEMPORÁRIO — vira o botão de Stint.
+
+═══════════════════════════════════════════════════════════
+## TASK_INIT — 2026-06-15 (pós-clear) — PLANEJAMENTO DO STINT NO CELULAR (retomada)
+═══════════════════════════════════════════════════════════
+1. **Pedido original de Flávio:** "retomar o planejamento do Stint em P1 Fast" (Stint = período de pilotagem).
+2. **Objetivo (1 frase):** montar o plano v1 em fases do Planejamento do Stint NO APP iOS (botão na Home → modal de planejamento), amarrado em arquivo:linha do que já existe, + card de escopo antes de codar.
+3. **Critérios de conclusão:** (a) estado atual do app confirmado (HomeView, StintModalView, StintRepository, EventoRepository) com arquivo:linha; (b) lógica rica de treino-IA da web mapeada pra portar; (c) contrato do plano que o painel lê confirmado (plano_stint jsonb, mig 0042); (d) plano v1 em fases entregue; (e) card de escopo aberto. NÃO codar antes do OK no card.
+4. **Confirmação de leitura:** CLAUDE.md (sim), padroes.md (sim — vazio), FLAVIO_EXECUTION/DONE/ENVIRONMENT/COMMUNICATION (sim), P1 Fast/CLAUDE.md (sim), memória dois caminhos (sim — base: p1-fast-planejamento-stint-no-celular-2026-06-15.md).
+5. **Plano (≤5 passos):** (a) mapear estado atual iOS + web (workflow paralelo); (b) confirmar contrato plano_stint; (c) montar plano v1 em fases; (d) abrir card de escopo; (e) só codar depois do OK.
+6. **Áreas a inspecionar:** ios/p1fast-ios (HomeView, StintModalView, StintRepository, EventoRepository, ContentView/Garagem), ios/p1fast-core/Models.swift, web/cockpit (configuracao-stint.js, catalogo-treinos.js, treino-stint.js), supabase migration 0042 (plano_stint).
+7. **Ambiente alvo:** desenvolvimento (planejamento; nenhum código alterado ainda).
+8. **Produção protegida:** sim.
+9. **Autorização para produção:** não.
+10. **Evidência da autorização para produção:** não recebida.
+11. **Riscos:** (a) recriar do zero o que já existe no StintModalView (memória manda CONFERIR e estender); (b) copiar literal a lógica web em vez de portar; (c) quebrar o caminho de criação de Stint que hoje EXIGE eventoId; (d) o botão "Conta" da Home vira Stint e Conta migra pra Garagem (não perder acesso a Conta/Sair).
+12. **Status inicial:** iniciado — mapeando estado atual; sem alteração de código.
