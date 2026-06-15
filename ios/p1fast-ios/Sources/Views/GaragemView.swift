@@ -34,12 +34,19 @@ struct GaragemView: View {
     /// Handler do menu inferior — injetado pela HomeView pra permitir
     /// pular pra outra aba direto desta sub-view (fix tab-bar 2026-05-12).
     var onNavSelect: (BottomNavItem) -> Void = { _ in }
+    /// Coordenador de envio — injetado pela Home pra ligar o acesso a "Conta"
+    /// (e-mail + Sair) DENTRO da Garagem (decisão Flávio 15/06: Conta saiu da
+    /// Home, que agora tem o botão Stint). Opcional: nos launchers de
+    /// screenshot fica nil e o botão "Conta" não aparece.
+    var syncCoordinator: SyncCoordinator? = nil
 
     init(initialSheet: GaragemSheet? = nil,
          initialSubTab: GaragemSubTab? = nil,
-         onNavSelect: @escaping (BottomNavItem) -> Void = { _ in }) {
+         onNavSelect: @escaping (BottomNavItem) -> Void = { _ in },
+         syncCoordinator: SyncCoordinator? = nil) {
         self.initialSheet = initialSheet
         self.onNavSelect = onNavSelect
+        self.syncCoordinator = syncCoordinator
         _subTab = State(initialValue: initialSubTab ?? .carros)
     }
 
