@@ -407,7 +407,8 @@ struct PessoasView: View {
         guard let p = pilotoToDelete else { return }
         pilotoToDelete = nil
         Task {
-            try? await pilotoRepo.delete(pilotoId: p.id)
+            try? await pilotoRepo.arquivar(pilotoId: p.id, rotulo: p.nome)
+            try? await arquivoRepo.reload()
         }
     }
 
@@ -415,7 +416,8 @@ struct PessoasView: View {
         guard let p = passageiroToDelete else { return }
         passageiroToDelete = nil
         Task {
-            try? await passageiroRepo.delete(passageiroId: p.id)
+            try? await passageiroRepo.arquivar(passageiroId: p.id, rotulo: p.nome)
+            try? await arquivoRepo.reload()
         }
     }
 
@@ -423,7 +425,8 @@ struct PessoasView: View {
         guard let c = combustivelToDelete else { return }
         combustivelToDelete = nil
         Task {
-            try? await combustivelRepo.delete(combustivelId: c.id)
+            try? await combustivelRepo.arquivar(combustivelId: c.id, rotulo: c.nome)
+            try? await arquivoRepo.reload()
         }
     }
 }
