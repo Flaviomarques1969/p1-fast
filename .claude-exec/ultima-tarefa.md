@@ -174,6 +174,16 @@ Reportei "nuvem com 0 linhas" 2x quando os dados JÁ tinham subido. Causa: meu c
 11. **Riscos:** (a) mexer no arranjo dos blocos do Flávio (posições no ATUAL.json) — só mexer no CONTEÚDO, backup antes; (b) inventar leitura de freio sem dado real — motor já trata isso (rótulo simulado-fisica vs sensor); (c) escopo ambíguo → confirmar no card antes de codar pra não retrabalhar.
 12. **Status inicial:** iniciado — aguardando escopo no card.
 
+### PROGRESSO (15/06)
+- **Escopo escolhido (card):** "acertar o que a tela mostra" primeiro, depois ligar o dado.
+- **Diagnóstico provado:** o bloco FRENAGEM existe (`buildFrenagemPanel`/`frenagemChartSvg`/`VERDICTS_FRENAGEM`) mas é 100% simulado; o motor de produção `web/cockpit/freio-trecho.js` (física/sensor/trail) NÃO está ligado nessa tela. Achei também `rebuildFrenagem`/`rebuildVmin`/`rebuildPassagem` DUPLICADOS (5445-5480) — código morto, não mexido.
+- **Revisão aberta:** `relatorios/revisao-frenagem-command-box-2026-06-15.html` (cópia fiel do bloco atual + leitura dos 4 elementos).
+- **Diretrizes do Flávio pro redesenho:** (1) marcador numérico estilo cockpit do piloto — contagem regressiva (faltam X m) e, ao frear, metros do ponto: 0 / +depois / −antes; (2) linha pintada por trecho — verde onde dentro do alvo, vermelha onde fora, ponto a ponto; (3) a freada ALTERNA certo/errado em etapas (entrou certo, freou demais/passou, voltou) — "mas só duas vezes" (evitar tremedeira; pintar só troca real).
+- **Espelho do motor real:** banda ±8% (`bandaPct`), ponto de freada tolerância 3 m = aviso FREOU CEDO/TARDE (`tolFreadaM`, `pontoFreadaReprova:false`, decisão 14/06), critério CERTO = 2 de 2 (seguiu o formato ≥80% + chegou na mínima freando). Marcador e traço verde/vermelho copiados do cockpit do piloto (`web/cockpit/trail-cockpit-tela.js`: `renderTraco`, `renderContagem`).
+- **Redesenho aberto (preview, NÃO oficial):** `relatorios/redesenho-frenagem-command-box-2026-06-15.html` — 6 cenários, número/aviso/veredito todos CALCULADOS da curva. Inclui "acertou e depois errou" e "certo→errado→certo" (alternância).
+- **Pendente:** validação visual do Flávio. Só depois: portar pro mockup real (com backup; sem tocar no arranjo/ATUAL.json), validar pela 8078, rodar smokes. Ligar no dado real = etapa seguinte.
+- Status: em revisão visual.
+
 ---
 ## TASK_DONE — 2026-06-15 — Retomada automática de envio + tela "Conta" na Home
 - Pedido original conferido: sim (Flávio: "faça a retomada automática" + "tirar o nome de sincronização da primeira página, arcaico")
