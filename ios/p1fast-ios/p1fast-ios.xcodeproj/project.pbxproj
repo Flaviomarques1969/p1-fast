@@ -390,6 +390,7 @@
 				855FED48602FC362EEA010A8 /* TrackRepository.swift */,
 				356230A6F62480E82D3CEF1A /* VoltaVideoRepository.swift */,
 				8D48CD13346E0F0BB19DF213 /* EstoqueRepository.swift */,
+				AA10ED17000000000000FE02 /* ArquivoRepository.swift */,
 			);
 			path = Persistence;
 			sourceTree = "<group>";
