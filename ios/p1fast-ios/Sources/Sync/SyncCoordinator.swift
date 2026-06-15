@@ -76,6 +76,7 @@ public final class SyncCoordinator: ObservableObject {
             Task { @MainActor in
                 if isOnline {
                     if self.status == .offline { self.status = .idle }
+                    await self.rehabilitateDeadLetters()
                     await self.syncNow()
                 } else {
                     if self.status != .notConfigured { self.status = .offline }
