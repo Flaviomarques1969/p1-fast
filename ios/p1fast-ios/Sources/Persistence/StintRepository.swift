@@ -128,8 +128,13 @@ final class StintRepository: ObservableObject {
     /// Ataque, Consistência, Teste, Livre). `licaoFocada` é texto livre
     /// armazenado no mesmo campo `objetivo` separado por " · " — não
     /// temos coluna dedicada ainda (Sprint 1A.3 #16 entrega catálogo).
+    /// `eventoId` é OPCIONAL desde 15/06/2026: nil = Stint SOLTO (sem evento),
+    /// decisão Flávio "o Stint pode ser livre". A coluna `evento_id` em
+    /// `sessoes` já é nullable (ON DELETE SET NULL) e a tabela sincroniza com
+    /// `time_id` direto — não depende de evento. Callers antigos que passam
+    /// String seguem compilando (String coage pra String?).
     @discardableResult
-    func create(eventoId: String, pilotoId: String, objetivoTipo: String,
+    func create(eventoId: String?, pilotoId: String, objetivoTipo: String,
                 licaoFocada: String, voltasPlanejadas: Int) async throws -> String {
         guard let teamId = TeamContext.currentTeamId else {
             throw NSError(domain: "StintRepository", code: -1, userInfo: [NSLocalizedDescriptionKey: "Sem equipe associada — faça login antes de criar stints."])
