@@ -180,27 +180,6 @@ struct HomeView: View {
             .padding(.trailing, Spacing.md)
             .padding(.bottom, Spacing.md)
         }
-        // Botão STINT — entrada do Planejamento do Stint no celular (decisão
-        // Flávio 15/06: é aqui que se monta o Stint). Substituiu o botão
-        // temporário "Conta": Conta/Sair agora mora dentro da Garagem. Fica
-        // no canto superior direito da Home, em cor de destaque por ser a
-        // ação principal da tela.
-        .overlay(alignment: .topTrailing) {
-            Button(action: { router.path.append(HomeNavTarget.stintPlanejamento) }) {
-                Text("Stint")
-                    .font(.system(size: 11, weight: .semibold))
-                    .tracking(0.9)
-                    .foregroundStyle(Color.accent)
-                    .padding(.horizontal, Spacing.sm)
-                    .padding(.vertical, 6)
-                    .overlay(
-                        Capsule().stroke(Color.accent, lineWidth: 1)
-                    )
-            }
-            .buttonStyle(.plain)
-            .padding(.trailing, Spacing.lg)
-            .padding(.top, Spacing.md)
-        }
     }
 
     @ViewBuilder
