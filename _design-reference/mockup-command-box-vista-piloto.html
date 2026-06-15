@@ -4281,8 +4281,8 @@ html,body{
     }
     return pts;
   }
-  function frxDelta(live){
-    var a=frxCrossing(FRX_ALVO), b=frxCrossing(live);
+  function frxDelta(live, alvo){
+    var a=frxCrossing(alvo || FRX_ALVO), b=frxCrossing(live);
     return (a!=null && b!=null) ? Math.round(b-a) : 0;
   }
   function frxSegPaths(pts, X, Y){
