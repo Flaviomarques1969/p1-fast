@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frenagem no dado real — prova (Command Box)</title>
+<style>
+  :root{
+    --gold-1:#F0DCA0;--gold-2:#D4AF37;--good:#3FE08C;--warn:#FFB347;--bad:#FF5A4E;--ideal:#38BCFF;
+    --text-1:#F5F0E0;--text-2:rgba(245,240,224,0.66);--text-3:rgba(245,240,224,0.40);
+    --hairline:rgba(212,175,55,0.18);--surface:rgba(10,14,24,0.55);--surface-2:rgba(10,14,24,0.30);
+  }
+  *{box-sizing:border-box;} html,body{margin:0;padding:0;}
+  body{background:radial-gradient(1200px 600px at 18% -10%,rgba(40,52,80,0.35),transparent 60%),#07090f;
+    color:var(--text-1);font-family:'Helvetica Neue',Arial,sans-serif;padding:24px 30px 70px;min-height:100vh;}
+  h1{font-size:18px;font-weight:600;letter-spacing:.03em;margin:0 0 2px;}
+  .sub{font-size:12px;color:var(--text-2);margin-bottom:8px;max-width:none;}
+  .bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:14px 0 20px;padding:10px 14px;
+    background:var(--surface);border:0.5px solid var(--hairline);border-radius:10px;}
+  .bar label{font-size:12px;color:var(--text-2);}
+  .bar select{background:#0c1018;color:var(--text-1);border:0.5px solid var(--hairline);border-radius:7px;padding:6px 10px;font-size:13px;}
+  .legend{display:flex;gap:16px;font-size:11px;color:var(--text-3);margin-left:auto;}
+  .legend i{display:inline-block;width:18px;height:0;border-top:2.4px solid;vertical-align:middle;margin-right:5px;}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;}
+  .card{background:var(--surface);border:0.5px solid var(--hairline);border-radius:12px;padding:14px 16px;}
+  .card.semdado{opacity:.55;}
+  .ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+  .ch .nome{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-2);}
+  .ch .volta{font-size:10px;color:var(--text-3);}
+  .body{display:grid;grid-template-columns:1fr 92px;gap:10px;align-items:center;}
+  svg{width:100%;height:auto;display:block;}
+  .mark{text-align:center;border-left:0.5px solid var(--hairline);padding-left:8px;}
+  .mark .lbl{font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);}
+  .mark .num{font:700 30px/1 'JetBrains Mono',monospace;margin:2px 0;}
+  .mark .unit{font-size:9px;color:var(--text-3);}
+  .mark .s{font-size:9.5px;margin-top:2px;}
+  .mark.good .num{color:var(--good);} .mark.warn .num{color:var(--warn);}
+  .trail{display:flex;gap:14px;margin-top:10px;font-size:11px;color:var(--text-2);}
+  .trail .k{color:var(--text-3);} .trail .v{color:var(--text-1);font-weight:600;}
+  .verd{display:flex;gap:8px;margin-top:8px;align-items:center;}
+  .badge{font:700 10px/1 monospace;letter-spacing:.06em;text-transform:uppercase;padding:4px 8px;border-radius:999px;}
+  .badge.good{background:#0f2a18;color:var(--good);} .badge.bad{background:#2e1414;color:var(--bad);}
+  .av{font-size:10px;color:var(--warn);} .av.none{color:var(--text-3);}
+  .fonte{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:#93b4ff;margin-top:8px;}
+  .nodata{font-size:12px;color:var(--text-2);line-height:1.5;padding:18px 4px;}
+  .foot{margin-top:22px;font-size:11px;color:var(--text-3);line-height:1.6;border-top:0.5px solid var(--hairline);padding-top:12px;}
+</style>
+</head>
+<body>
+  <h1>Frenagem no dado real — prova do Command Box</h1>
+  <div class="sub">Cada curva calculada pelo <b>motor de produção</b> (freio-trecho.js) a partir das <b>voltas reais do Bubi em Brasília</b> (23–24/05) — nada inventado. O visual final é o do painel aprovado; esta página prova que o dado é real e bate. 15/06/2026.</div>
+
+  <div class="bar">
+    <label>Volta mostrada: <select id="volta"><option value="">Melhor volta de cada curva</option></select></label>
+    <span class="legend">
+      <span><i style="border-color:var(--good)"></i>dentro do alvo</span>
+      <span><i style="border-color:var(--bad)"></i>fora</span>
+      <span><i style="border-color:var(--ideal);border-top-style:dashed"></i>ideal</span>
+    </span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="foot" id="foot"></div>
+
+<script type="module">
+import { construirFrenagemRealPorCurva } from '/web/command-box/frenagem-curvas-reais.js';
+import { FRX_XS_PADRAO as XS, FRX_ALVO_PADRAO as ALVO } from '/web/command-box/frenagem-real.js';
+
+const BANDA = 8, TOL = 3, LIMIAR = 15, FORMATO_MIN = 0.8;
+
+function alvoEm(x){
+  if(x<=XS[0]) return ALVO[0];
+  if(x>=XS[XS.length-1]) return ALVO[ALVO.length-1];
+  for(let i=1;i<XS.length;i++) if(x<=XS[i]){ const f=(x-XS[i-1])/(XS[i]-XS[i-1]); return ALVO[i-1]+(ALVO[i]-ALVO[i-1])*f; }
+  return 0;
+}
+function pontos(live){
+  const pts = XS.map((x,i)=>({x,pct:live[i],dentro:Math.abs(live[i]-alvoEm(x))<=BANDA}));
+  let estado=pts[0].dentro, run=0;
+  for(let i=0;i<pts.length;i++){ if(pts[i].dentro===estado){run=0;} else {run++; if(run>=2){estado=pts[i].dentro;run=0;}} pts[i].ok=estado; }
+  return pts;
+}
+function cross(arr){ for(let i=1;i<XS.length;i++){ if(arr[i-1]<LIMIAR&&arr[i]>=LIMIAR){ const f=(LIMIAR-arr[i-1])/(arr[i]-arr[i-1]); return XS[i-1]+(XS[i]-XS[i-1])*f; } } return null; }
+
+function chart(live){
+  const W=240,H=120,PADL=10,PADR=10,PADT=10,PADB=14;
+  const X=x=>PADL+(x/60)*(W-PADL-PADR), Y=p=>(H-PADB)-(p/100)*(H-PADT-PADB);
+  const pts=pontos(live);
+  const up=XS.map((x,i)=>(i?'L':'M')+X(x).toFixed(1)+' '+Y(Math.min(100,ALVO[i]+BANDA)).toFixed(1)).join(' ');
+  const dn=XS.slice().reverse().map((x,k)=>{const i=XS.length-1-k; return 'L'+X(x).toFixed(1)+' '+Y(Math.max(0,ALVO[i]-BANDA)).toFixed(1);}).join(' ');
+  const alvoD=XS.map((x,i)=>(i?'L':'M')+X(x).toFixed(1)+' '+Y(ALVO[i]).toFixed(1)).join(' ');
+  let verde='',vermelho='';
+  for(let i=1;i<pts.length;i++){ const a=pts[i-1],b=pts[i]; const seg='M'+X(a.x).toFixed(1)+' '+Y(a.pct).toFixed(1)+' L'+X(b.x).toFixed(1)+' '+Y(b.pct).toFixed(1)+' '; if(b.ok) verde+=seg; else vermelho+=seg; }
+  let head=pts[pts.length-1]; for(let i=pts.length-1;i>=0;i--){ if(pts[i].pct>=10){head=pts[i];break;} }
+  let s=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">`;
+  s+=`<line x1="${PADL}" y1="${Y(0)}" x2="${W-PADR}" y2="${Y(0)}" stroke="rgba(212,175,55,0.18)" stroke-width="0.5"/>`;
+  s+=`<path d="${up} ${dn} Z" fill="rgba(56,188,255,0.07)"/>`;
+  s+=`<path d="${alvoD}" fill="none" stroke="#38BCFF" stroke-width="1" stroke-dasharray="2 2" stroke-opacity="0.6"/>`;
+  if(verde) s+=`<path d="${verde}" fill="none" stroke="#3FE08C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`;
+  if(vermelho) s+=`<path d="${vermelho}" fill="none" stroke="#FF5A4E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`;
+  if(head.pct>=10) s+=`<circle cx="${X(head.x).toFixed(1)}" cy="${Y(head.pct).toFixed(1)}" r="2.6" fill="${head.ok?'#3FE08C':'#FF5A4E'}"/>`;
+  s+='</svg>';
+  return s;
+}
+function veredito(live, mfreando){
+  const pts=pontos(live);
+  const okFrac=pts.filter(p=>p.ok).length/pts.length;
+  const delta=(()=>{ const a=cross(ALVO),b=cross(live); return (a!=null&&b!=null)?Math.round(b-a):0; })();
+  return { certo:(okFrac>=FORMATO_MIN)&&mfreando, aviso:(Math.abs(delta)>TOL)?(delta>0?'freou tarde':'freou cedo'):null, delta };
+}
+
+let fixture=null;
+
+function render(volta){
+  const curvas=construirFrenagemRealPorCurva(fixture, volta?{volta:Number(volta)}:{});
+  const grid=document.getElementById('grid'); grid.innerHTML='';
+  let comFreada=0;
+  for(const c of curvas){
+    const card=document.createElement('div'); card.className='card'+(c.live?'':' semdado');
+    if(!c.live){
+      card.innerHTML=`<div class="ch"><span class="nome">${c.curva}</span></div><div class="nodata">Sem freada medível — dado de GPS a 1 Hz (poucos pontos nesta curva). Resolve com a volta ao vivo ou GPS de 25 Hz.</div>`;
+      grid.appendChild(card); continue;
+    }
+    comFreada++;
+    const v=veredito(c.live, c.minimaFreando);
+    const d=v.delta;
+    const tone=Math.abs(d)<=TOL?'good':'warn';
+    const txt=d===0?'0':(d>0?'+'+d:'−'+Math.abs(d));
+    const sub=d===0?'no ponto':(d>0?'freou depois':'freou antes');
+    card.innerHTML=
+      `<div class="ch"><span class="nome">${c.curva}</span><span class="volta">volta ${c.voltaMostrada} · ref melhor</span></div>`+
+      `<div class="body"><div>${chart(c.live)}</div>`+
+        `<div class="mark ${tone}"><div class="lbl">ponto de freada</div><div class="num">${txt}</div><div class="unit">metros</div><div class="s">${sub}</div></div></div>`+
+      `<div class="trail"><span><span class="k">soltou</span> <span class="v">${c.soltou}</span></span><span><span class="k">freio na mínima</span> <span class="v">${c.freioMin}</span></span></div>`+
+      `<div class="verd">${v.certo?'<span class="badge good">certo</span>':'<span class="badge bad">errado</span>'}${v.aviso?`<span class="av">${v.aviso}</span>`:'<span class="av none">sem aviso</span>'}</div>`+
+      `<div class="fonte">FREIO: FÍSICA GPS</div>`;
+    grid.appendChild(card);
+  }
+  document.getElementById('foot').innerHTML=
+    `<b>${comFreada} de 8 curvas</b> com freada real medida nesta volta. As demais têm GPS a 1 Hz (4–6 pontos) — declaradas sem freada, nunca inventadas. `+
+    `Quando o sensor de pressão de freio entrar na T4000, o veredito sobe pra 3-de-3 e a fonte vira "SENSOR (pressão)" — sem mudar a tela.`;
+}
+
+(async function(){
+  fixture = await (await fetch('/web/command-box/fixtures/passagens-bubi-brasilia.v1.json')).json();
+  // popular o seletor de voltas
+  const voltas=[...new Set(fixture.passagens.map(p=>p.volta))].sort((a,b)=>a-b);
+  const sel=document.getElementById('volta');
+  for(const v of voltas){ const o=document.createElement('option'); o.value=v; o.textContent='Volta '+v; sel.appendChild(o); }
+  sel.addEventListener('change', e=>render(e.target.value));
+  render('');
+})();
+</script>
+</body>
+</html>
