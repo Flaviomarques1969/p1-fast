@@ -280,3 +280,10 @@ Próximo passo: começar Fase 0 mediante OK do Flávio (troca de botão/navegaç
 - Testes/validação executados: `xcodebuild -scheme p1fast-ios -destination 'generic/platform=iOS Simulator' build` = **BUILD SUCCEEDED**, 0 erro. App instalado e ABERTO no simulador iPhone 17 Pro (booted) sem crash (chega na tela de login). Validação VISUAL da Home/Garagem depende do Flávio tocar "Entrar como Flávio (dev)" no simulador (não há login automático por parâmetro).
 - Resultado: CONCLUÍDO em desenvolvimento (a porta). NADA no iPhone do Flávio ainda (só num próximo empacotar+assinar).
 - Pendências reais: (1) validação visual do Flávio no simulador aberto; (2) Fase 1 (abrir StintModalView solto/vinculado) é o próximo passo; (3) Fase 3 (gravar plano_stint na nuvem) continua com gate "MIGRAR PARA PRODUÇÃO".
+
+### AJUSTE Fase 0 (15/06, após Flávio ver no simulador) — botão Stint GRANDE e azul
+Flávio: "o Stint tem que ser um botão GRANDE, azul cheio, do tamanho do 'Novo evento'; o Novo evento pode ser um pouco menor; é o botão de INICIAR o Stint." (Frase cortou em "inclusive..." — pode ter mais.)
+- FAB.swift: +enum FABSize (.small 46 / .regular 56 / .big 64); param `size:` opcional, default .regular preserva os FABs existentes.
+- HomeView.swift: tirei o botãozinho do canto sup. dir.; o "+ Stint" virou FAB GRANDE azul (size .big) no canto inf. dir. (herói) e o "+ Novo evento" ficou menor (size .small) logo acima.
+- Validação: BUILD SUCCEEDED; reinstalado no simulador (sessão persistiu → abriu direto na Home); foto /tmp/p1fast-fase0-stint-grande.png confirma o "+ Stint" grande e o "+ Novo evento" menor. NADA no iPhone do Flávio ainda.
+- PENDENTE: Flávio cortou em "inclusive..." — aguardar o resto do ajuste antes de seguir pra Fase 1.
