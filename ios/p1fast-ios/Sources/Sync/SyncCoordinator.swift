@@ -85,7 +85,12 @@ public final class SyncCoordinator: ObservableObject {
         }
 
         scheduleTimers()
-        Task { await self.refreshCounters() }
+        Task {
+            await self.refreshCounters()
+            // No boot, dá uma chance fresca pros itens "parados" (ex.: ficaram
+            // dead-letter numa versão antiga da nuvem que já foi corrigida).
+            await self.rehabilitateDeadLetters(force: true)
+        }
     }
 
     deinit {
