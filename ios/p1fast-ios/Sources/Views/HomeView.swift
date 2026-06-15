@@ -167,16 +167,29 @@ struct HomeView: View {
                     .padding(.bottom, Spacing.md)
             }
         }
+        // Entrada discreta de Conta (e-mail + Sair). Substitui o antigo
+        // indicador de "Sincronização" no topo (decisão Flávio 15/06: o envio
+        // é automático, não precisa de status na primeira página). A tela de
+        // Conta segue guardando o estado de envio como detalhe técnico.
         .overlay(alignment: .topTrailing) {
-            if let coord = syncCoordinator {
-                SyncStatusBadge(coordinator: coord, compact: false) {
-                    showSyncSheet = true
+            if syncCoordinator != nil {
+                Button(action: { showContaSheet = true }) {
+                    Text("Conta")
+                        .font(.system(size: 11, weight: .semibold))
+                        .tracking(0.9)
+                        .foregroundStyle(Color.textFaint)
+                        .padding(.horizontal, Spacing.sm)
+                        .padding(.vertical, 6)
+                        .overlay(
+                            Capsule().stroke(Color.border, lineWidth: 1)
+                        )
                 }
+                .buttonStyle(.plain)
                 .padding(.trailing, Spacing.lg)
                 .padding(.top, Spacing.md)
             }
         }
-        .sheet(isPresented: $showSyncSheet) {
+        .sheet(isPresented: $showContaSheet) {
             if let coord = syncCoordinator {
                 SincronizacaoView()
                     .environmentObject(coord)
