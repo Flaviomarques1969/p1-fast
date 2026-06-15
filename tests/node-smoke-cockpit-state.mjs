@@ -10,7 +10,6 @@ import {
   Tone,
   ApexEstado,
   defaultCockpitState,
-  shiftDotsForLevel,
   classifyFreio,
   SHIFT_LEVEL_MIN,
   SHIFT_LEVEL_MAX,
