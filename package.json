@@ -45,6 +45,7 @@
     "smoke:catalogo-treinos": "node tests/node-smoke-catalogo-treinos.mjs",
     "smoke:retag-vmin": "node tests/node-smoke-retag-vmin.mjs",
     "smoke:freio-trecho": "node tests/node-smoke-freio-trecho.mjs",
+    "smoke:frenagem-real": "node tests/node-smoke-frenagem-real.mjs",
     "smoke:trail-cockpit": "node tests/node-smoke-trail-cockpit.mjs",
     "smoke:trail-religacao": "node tests/node-smoke-trail-religacao.mjs"
   },
