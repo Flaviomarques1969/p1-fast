@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plano — ligar a frenagem do Command Box no dado real</title>
+<style>
+  :root{
+    --gold-1:#F0DCA0;--gold-2:#D4AF37;--good:#3FE08C;--warn:#FFB347;--bad:#FF5A4E;--ideal:#38BCFF;
+    --text-1:#F5F0E0;--text-2:rgba(245,240,224,0.66);--text-3:rgba(245,240,224,0.40);
+    --hairline:rgba(212,175,55,0.18);--surface:rgba(10,14,24,0.55);--surface-2:rgba(10,14,24,0.35);
+  }
+  *{box-sizing:border-box;} html,body{margin:0;padding:0;}
+  body{background:radial-gradient(1200px 600px at 18% -10%,rgba(40,52,80,0.35),transparent 60%),#07090f;
+    color:var(--text-1);font-family:'Helvetica Neue',Arial,sans-serif;padding:26px 32px 70px;min-height:100vh;}
+  h1{font-size:18px;font-weight:600;letter-spacing:.03em;margin:0 0 2px;}
+  .sub{font-size:12px;color:var(--text-2);margin-bottom:20px;}
+  h2{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold-2);margin:26px 0 10px;border-bottom:0.5px solid var(--hairline);padding-bottom:6px;}
+
+  .path{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:var(--surface);border:0.5px solid var(--hairline);border-radius:10px;padding:14px 16px;margin-bottom:6px;}
+  .node{background:var(--surface-2);border:0.5px solid var(--hairline);border-radius:8px;padding:8px 12px;font-size:12.5px;}
+  .node b{color:var(--gold-1);}
+  .node small{display:block;color:var(--text-3);font-size:10px;margin-top:2px;}
+  .arrow{color:var(--gold-2);font-size:16px;font-weight:700;}
+  .now{border-color:rgba(255,179,71,0.5);} .real{border-color:rgba(63,224,140,0.5);}
+
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:0;display:grid;gap:12px;}
+  ol.steps li{counter-increment:s;background:var(--surface);border:0.5px solid var(--hairline);border-radius:10px;padding:13px 16px 13px 52px;position:relative;}
+  ol.steps li::before{content:counter(s);position:absolute;left:14px;top:13px;width:24px;height:24px;border-radius:50%;background:var(--gold-2);color:#0b0e12;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;}
+  ol.steps b{color:var(--text-1);}
+  ol.steps .d{font-size:12.5px;color:var(--text-2);line-height:1.5;}
+  code{font-family:'JetBrains Mono','SF Mono',Menlo,monospace;font-size:11.5px;color:var(--ideal);background:rgba(56,188,255,0.08);padding:1px 5px;border-radius:3px;}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:820px){.cols{grid-template-columns:1fr;}}
+  .card{background:var(--surface);border:0.5px solid var(--hairline);border-radius:10px;padding:14px 16px;}
+  .card h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px;}
+  .card.keep h3{color:var(--good);} .card.risk h3{color:var(--warn);}
+  .card ul{margin:0;padding-left:18px;} .card li{font-size:12.5px;color:var(--text-2);line-height:1.55;margin-bottom:5px;}
+  .card li b{color:var(--text-1);}
+</style>
+</head>
+<body>
+  <h1>Plano — ligar a frenagem do Command Box no dado real</h1>
+  <div class="sub">approach pra você aprovar · execução fica pra quando o sensor estiver na T4000 e validado · 15/06/2026</div>
+
+  <h2>Caminho do dado (confirmado por você: sensores na T4000)</h2>
+  <div class="path">
+    <div class="node real">sensor de pressão<br><small>freio (e outros, ao longo do tempo)</small></div>
+    <span class="arrow">&rarr;</span>
+    <div class="node real"><b>T4000</b><br><small>central Injepro</small></div>
+    <span class="arrow">&rarr;</span>
+    <div class="node">quadro de telemetria<br><small>parser já lê: pressão offset 268 &divide;100 bar · pedal 54 &divide;10% · acelerador 52</small></div>
+    <span class="arrow">&rarr;</span>
+    <div class="node"><b>canal ao vivo</b><br><small>cockpit-bubi-live</small></div>
+    <span class="arrow">&rarr;</span>
+    <div class="node">Command Box<br><small>o bloco de frenagem</small></div>
+  </div>
+  <div class="sub">Princípio: <b>a mesma fonte que o cockpit do piloto já usa</b> — sem inventar fonte paralela. O motor <code>freio-trecho.js</code> (testado, 29/0) já trata "física do GPS até o sensor entrar" e troca pro sensor sozinho.</div>
+
+  <h2>Passos</h2>
+  <ol class="steps">
+    <li><span class="d"><b>Deixar o Command Box importar o motor.</b> Hoje o painel é um HTML fechado (sem imports). Adicionar um trecho de módulo que importa <code>freio-trecho.js</code> — usar a lógica de produção, não copiar. O ajudante da 8078 já serve o projeto, então o import resolve.</span></li>
+    <li><span class="d"><b>Assinar o canal ao vivo.</b> Ligar no <code>cockpit-bubi-live</code> do mesmo jeito que o cockpit do piloto faz, e acumular, por curva: os pontos de GPS + as amostras da T4000 (incluindo pressão/pedal de freio quando começarem a chegar).</span></li>
+    <li><span class="d"><b>Calcular a frenagem real por curva.</b> Rodar o motor: com sensor presente, funde a pressão da T4000 nos pontos por tempo (&plusmn;250 ms); sem sensor ainda, deriva da física real do GPS. Sai o ponto de freada, a forma da soltura, o freio na mínima e a curva ponto-a-ponto — exatamente o que o bloco novo desenha.</span></li>
+    <li><span class="d"><b>Trocar o simulado pelo real.</b> No bloco, trocar o dado fake (<code>FRX_CENARIOS</code>) pela leitura real. <b>O desenho não muda</b> — linha verde/vermelha, marcador 0 / + / −, contagem regressiva e veredito continuam iguais; só a origem do número vira real.</span></li>
+    <li><span class="d"><b>Rótulo de fonte honesto + troca automática.</b> Fora do gráfico: "FREIO: física (GPS)" enquanto o sensor não está na T4000; vira "FREIO: SENSOR (pressão)" sozinho quando o offset de pressão começar a variar. Aí o critério sobe pra <b>3 de 3</b> (o ponto de freada volta a reprovar) — sua decisão de 14/06. A tela continua igual.</span></li>
+    <li><span class="d"><b>Validar com a T4000 ligada.</b> Confirmar que as amostras de freio chegam no canal (offset 268 variando), que a fonte troca sozinha de física pra sensor, e ver no painel (8078) com você. Faço junto a faxina do código morto legado (sobrou do desenho velho).</span></li>
+  </ol>
+
+  <h2>Garantias e cuidados</h2>
+  <div class="cols">
+    <div class="card keep">
+      <h3>O que NÃO muda</h3>
+      <ul>
+        <li><b>O desenho aprovado</b> — só troca a origem do dado.</li>
+        <li><b>O bloco vizinho (Vmin)</b> e o seu arranjo — intocados.</li>
+        <li><b>A lógica</b> vem do motor já testado, não de cópia nova.</li>
+      </ul>
+    </div>
+    <div class="card risk">
+      <h3>Cuidados</h3>
+      <ul>
+        <li><b>Executar com a T4000 disponível</b> pra teste — sem o dado fluindo não dá pra validar 100%.</li>
+        <li><b>Não mexer no painel em pleno dia de pista.</b></li>
+        <li><b>A decidir (sua):</b> o destino final do display do piloto migra pra Windows (CLAUDE.md). Este HTML serve a equipe no box; vale confirmar se é aqui mesmo que o dado real entra, ou também no cockpit Windows.</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>
