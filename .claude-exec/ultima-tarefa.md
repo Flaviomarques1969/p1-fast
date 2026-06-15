@@ -651,3 +651,28 @@ segurança (avisado ao Flávio).
 - Resultado: PARCIAL — base do plano pronta e provada; faltam PRÓX 1-4 + GATE.
 - Pendências reais: solto path, writer do envelope, merge no modal, build do app, ativação (gate). Aviso paralelo:
   Bolinha/eventos podem estar só no iPhone (a confirmar em só-leitura quando o Flávio pedir).
+
+### MIGRAR PARA PRODUÇÃO (Flávio escreveu a frase literal 15/06) — CONSTRUÍDO em dev, app COMPILA
+PROD_RELEASE_PLAN apresentado. O que a frase cobre: o "Aprovar" do celular passa a gravar plano+envelope na
+nuvem e iniciar o Stint. NADA foi escrito na nuvem do Flávio ainda (só vira real quando ELE tocar Aprovar no
+iPhone). Backups: .claude-exec/backup-fechar-ciclo-stint-2026-06-15/ (StintModalView/StintRepository/StintPlanejamentoView).
+- FEITO (PRÓX 1-4): 
+  - StintRepository.create(eventoId: String?) — solto (additivo).
+  - EnvelopeAprovacao (StintRepository.swift, fim): POST direto /rest/v1/envelopes_seguranca_stint (apikey+Bearer
+    anon, Prefer=representation), payload snake_case {carro_id, modo_stint='agressivo', tipo_pneu(normalizado),
+    config_cambio='padrao', rpm_max/min/forca de EnvelopeDefaultBubi, observacoes, plano_stint} + plano-B PGRST204
+    (regrava sem plano). vida_pneu_faixa OMITIDO → DB default '0-30'.
+  - StintModalView: eventoId opcional; nova seção "Propósito do Stint" (livre/testar/treinar + catálogo + brief
+    obrigatório que gateia o Aprovar); salvar() agora APROVA (grava envelope+plano via EnvelopeAprovacao) e DEPOIS
+    inicia o Stint; tipoPneuBruto derivado do pneu montado (composto+medida → normalizarTipoPneu); botão "Aprovar e iniciar".
+  - StintSoltoLauncher (fim de StintModalView.swift) + HomeView .stintPlano agora abre o modal solto (StintPlanoView
+    PRESERVADA, sem rota).
+- VALIDAÇÃO: `xcodebuild -scheme p1fast-ios ... build` = **BUILD SUCCEEDED**, 0 erro. swift run p1fast-smoke 549 ok/2
+  fail (pré-existentes). NÃO escrevi na nuvem do Flávio (não poluí). Runtime do modal NÃO testado headless (precisa
+  toque) — valida no iPhone do Flávio.
+- PENDENTE (ativação): iPhone do Flávio NÃO está conectado agora (devicectl: indisponível). Pra instalar a versão
+  nova (a ativação) preciso do iPhone plugado + desbloqueado (+ "Confiar" se pedir). Quando conectar: reempacotar
+  assinado + instalar (cert flaviomarques@me.com, perfil vence ~22/06) → Flávio toca "+ Stint" → propósito → "Aprovar
+  e iniciar" → confere se o painel arma o treino. SÓ a 1ª aprovação dele grava de verdade na nuvem.
+- LIMITES honestos do v1: autodromo e vida_pneu_faixa não vão no plano ainda (painel casa pelo carro / DB usa '0-30');
+  tipo_pneu é derivado do pneu montado (best-effort). Refinar depois se o painel precisar.
