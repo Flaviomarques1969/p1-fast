@@ -259,7 +259,10 @@ struct HomeView: View {
         case .stintPlanejamento:
             StintPlanejamentoView()
         case .stintPlano(let eventoId):
-            StintPlanoView(eventoId: eventoId)
+            // Decisão Flávio 15/06 ("uma tela só"): o planejamento livre abre o
+            // StintModalView (propósito/treino + pneu/paradas), não mais a tela
+            // separada StintPlanoView (preservada no projeto, sem rota).
+            StintSoltoLauncher(eventoId: eventoId)
         }
     }
 
