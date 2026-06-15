@@ -57,6 +57,24 @@ final class LicaoRepository: ObservableObject {
         licoes.first(where: { $0.id == id })
     }
 
+    /// Apaga (esconde) a lição — vai pra Apagados, dá pra resgatar. O
+    /// catálogo curado continua intacto no banco; só fica escondido da lista.
+    /// (O seed canônico não recria a lição: ela nunca saiu da tabela.)
+    func arquivar(licaoId: String, rotulo: String) async throws {
+        try await queue.write { db in
+            try ItemArquivado.arquivar(db, entidade: "licoes", itemId: licaoId, rotulo: rotulo)
+        }
+        try await reload()
+    }
+
+    /// Resgata uma lição escondida.
+    func restaurar(licaoId: String) async throws {
+        try await queue.write { db in
+            try ItemArquivado.restaurar(db, entidade: "licoes", itemId: licaoId)
+        }
+        try await reload()
+    }
+
     // MARK: - Seed canônico (12 lições)
 
     /// Compara o conjunto seedado vs o que está no banco. Se idêntico,
