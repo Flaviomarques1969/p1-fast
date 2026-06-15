@@ -305,12 +305,14 @@ enum GaragemSheet: Identifiable, Equatable {
     case novo
     case editar(carroId: String)
     case trechos
+    case conta
 
     var id: String {
         switch self {
         case .novo: return "novo"
         case .editar(let id): return "editar-\(id)"
         case .trechos: return "trechos"
+        case .conta: return "conta"
         }
     }
 }
