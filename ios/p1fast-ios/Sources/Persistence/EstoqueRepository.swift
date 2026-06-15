@@ -90,6 +90,16 @@ final class EstoqueRepository: ObservableObject {
             && $0.nome.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == alvo }
     }
 
+    /// Encontra por nome em QUALQUER escopo, preferindo o estoque geral —
+    /// liga a Pendência à quantidade do estoque (geral ou de um carro).
+    func itemPorNome(_ nome: String) -> EstoqueItem? {
+        let alvo = nome.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        func bate(_ i: EstoqueItem) -> Bool {
+            i.nome.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == alvo
+        }
+        return itens.first { $0.escopo == Self.escopoGeral && bate($0) } ?? itens.first(where: bate)
+    }
+
     // MARK: - CRUD
 
     @discardableResult
