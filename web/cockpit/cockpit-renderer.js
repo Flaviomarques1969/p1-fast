@@ -128,9 +128,10 @@ export class CockpitRenderer {
     // data-shift-fire no device — ativa flash quando FIRE
     device.dataset.shiftFire = fire === ShiftFire.ACTIVE ? 'active' : 'idle';
 
-    // dots: liga `is-on` em tier ≤ shiftDotsForLevel(level), apenas em LIT
+    // dots: liga `is-on` em tier ≤ level (par a par, das pontas pro centro),
+    // apenas em LIT. A luz central (tier 9) nunca acende aqui — só no FIRE.
     if (Array.isArray(shiftDots)) {
-      const dotsOn = mode === ShiftMode.LIT ? shiftDotsForLevel(level) : 0;
+      const dotsOn = mode === ShiftMode.LIT ? level : 0;
       for (const dot of shiftDots) {
         if (!dot || !dot.dataset || !dot.classList) continue;
         const tier = Number(dot.dataset.tier);
