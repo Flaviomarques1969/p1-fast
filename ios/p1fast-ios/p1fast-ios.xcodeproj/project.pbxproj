@@ -153,6 +153,8 @@
 		8AFD5372AA8961DDFA575D26 /* StintCaptureCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StintCaptureCoordinator.swift; sourceTree = "<group>"; };
 		8B46267F0CDD084727B426AA /* TriagemVideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TriagemVideoView.swift; sourceTree = "<group>"; };
 		8D48CD13346E0F0BB19DF213 /* EstoqueRepository.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EstoqueRepository.swift; sourceTree = "<group>"; };
+		AA10ED17000000000000FE02 /* ArquivoRepository.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ArquivoRepository.swift; sourceTree = "<group>"; };
+		AA10ED17000000000000FE04 /* ApagadosView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ApagadosView.swift; sourceTree = "<group>"; };
 		8FB1DAD3E0069D0553F2FC75 /* CombustivelPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombustivelPickerView.swift; sourceTree = "<group>"; };
 		9082B3C66C9740F0278E7748 /* CombustivelCadastroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombustivelCadastroView.swift; sourceTree = "<group>"; };
 		91CA204B86C9BBCF364316F9 /* Reachability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reachability.swift; sourceTree = "<group>"; };
