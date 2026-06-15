@@ -191,7 +191,7 @@ struct PessoasView: View {
             Button("Cancelar", role: .cancel) {}
             Button("Apagar", role: .destructive) { confirmarDeletePiloto() }
         } message: { _ in
-            Text("Não dá pra desfazer.")
+            Text("Some da lista, mas fica em Apagados — dá pra resgatar.")
         }
         .alert(
             "Apagar passageiro?",
@@ -204,7 +204,7 @@ struct PessoasView: View {
             Button("Cancelar", role: .cancel) {}
             Button("Apagar", role: .destructive) { confirmarDeletePassageiro() }
         } message: { _ in
-            Text("Não dá pra desfazer.")
+            Text("Some da lista, mas fica em Apagados — dá pra resgatar.")
         }
         .alert(
             "Apagar combustível?",
@@ -217,7 +217,7 @@ struct PessoasView: View {
             Button("Cancelar", role: .cancel) {}
             Button("Apagar", role: .destructive) { confirmarDeleteCombustivel() }
         } message: { _ in
-            Text("Não dá pra desfazer.")
+            Text("Some da lista, mas fica em Apagados — dá pra resgatar.")
         }
     }
 
