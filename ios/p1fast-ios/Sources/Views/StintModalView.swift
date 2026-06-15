@@ -94,7 +94,7 @@ struct StintModalView: View {
             FootBar(
                 onCancel: onCancel,
                 onSave: salvar,
-                saveLabel: "Iniciar stint",
+                saveLabel: "Aprovar e iniciar",
                 canSave: canSave
             )
         }
