@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<link rel="stylesheet" href="cockpit.css">
+<style>
+  body{background:#060607;margin:0;padding:26px 34px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+  h1{color:#e9e9ee;font-size:18px;font-weight:650;margin:0 0 18px;}
+  .row{position:relative;display:flex;align-items:center;gap:24px;margin:14px 0;}
+  .lbl{color:#cfcfd6;width:260px;font-size:14px;}
+  .lbl b{color:#fff;}
+  .barwrap{position:relative;height:46px;display:flex;align-items:center;}
+  /* tira o position:absolute do cockpit.css só pra esta página de amostra */
+  .barwrap .shift-light{position:static;transform:none;}
+</style></head>
+<body>
+  <h1>Luz de marcha — 17 luzes, como acende em cada momento</h1>
+  <div class="row"><div class="lbl"><b>Subindo</b> — só verdes (longe da troca)</div>
+    <div class="barwrap"><div class="shift-light" data-state="lit" data-lvl="4"></div></div></div>
+  <div class="row"><div class="lbl"><b>Chegando</b> — verdes + amarelas</div>
+    <div class="barwrap"><div class="shift-light" data-state="lit" data-lvl="7"></div></div></div>
+  <div class="row"><div class="lbl"><b>É já</b> — as 2 vermelhas laterais acendem</div>
+    <div class="barwrap"><div class="shift-light" data-state="lit" data-lvl="8"></div></div></div>
+  <div class="row"><div class="lbl"><b>Troca</b> — a central acende (os dois lados se juntam)</div>
+    <div class="barwrap"><div class="shift-light" data-state="lit" data-lvl="9"></div></div></div>
+<script>
+  const TIERS = [1,2,3,4,5,6,7,8,9,8,7,6,5,4,3,2,1];
+  document.querySelectorAll('.shift-light').forEach(sl => {
+    const lvl = Number(sl.dataset.lvl);
+    for (const t of TIERS) {
+      const s = document.createElement('span');
+      s.className = 'shift-light__dot';
+      s.dataset.tier = String(t);
+      if (t <= lvl) s.classList.add('is-on');
+      sl.appendChild(s);
+    }
+  });
+</script>
+</body></html>
