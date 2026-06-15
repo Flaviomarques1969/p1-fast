@@ -3,6 +3,29 @@
 > Registro anterior (Botão APAGAR da Garagem, 14/06 noite) arquivado em
 > `.claude-exec/ultima-tarefa-ANTERIOR-garagem-apagar-2026-06-14.md`.
 
+## TASK_INIT — 2026-06-15 noite — FRENAGEM no dado real (Etapa 2a-bis): linha-ideal = trail PRESCRITO do tipo
+
+1. **Pedido de Flávio:** "RETOMAR FRENAGEM DO P1 FAST" → continuar a frenagem do Command Box. Feedback 15/06 (verbatim):
+   "nenhum deles é o trail braking clássico, que você dá uma porrada no freio e vem descendo em escadinha";
+   "está faltando o trail brake da curva da Bruxa e da curva dupla [a 'S']... eu acho que está errado".
+2. **Objetivo:** A linha IDEAL (tracejada + faixa) de cada curva passa a ser o trail clássico PRESCRITO do TIPO
+   (porrada + escadinha), não a melhor volta crua de GPS ~1 Hz; nenhuma curva de freada fica em branco.
+3. **Critério de conclusão:** toda curva de freada mostra o trail do seu tipo como ideal; volta real sobreposta
+   quando há dado; Bruxa/Placar/"S" deixam de ficar vazias; testes verdes; prova reaberta na 8078 pro Flávio confirmar.
+4. **Leitura:** CLAUDE.md, padroes.md (vazio), FLAVIO_* (4), P1 Fast/CLAUDE.md + memórias (global + P1 Fast) + ★ RETOMAR AQUI — sim.
+5. **Plano (≤5):** (a) módulo `web/command-box/forma-trail-tipo.js` portando ALVOS.classico/residual do mockup VIVO;
+   (b) ligar como ideal por tipo em `frenagem-curvas-reais.js` (live real sobreposto; sem dado → só o ideal, não branco);
+   (c) atualizar a prova `relatorios/frenagem-dado-real-2026-06-15.html`; (d) smokes (novo forma-trail + atualizar curvas-reais);
+   (e) rodar testes + reabrir na 8078.
+6. **Arquivos:** web/command-box/{forma-trail-tipo.js[novo],frenagem-curvas-reais.js,frenagem-real.js},
+   web/cockpit/perfil-trail-por-tipo.js (fonte do tipo→forma), relatorios/frenagem-dado-real-2026-06-15.html,
+   tests/node-smoke-{forma-trail-tipo[novo],frenagem-curvas-reais}.mjs, package.json.
+7. **Ambiente alvo:** desenvolvimento. **8. Produção protegida:** sim. **9. Autorização produção:** não.
+10. **Evidência autorização produção:** não recebida. **11. Riscos:** muda o significado da linha tracejada
+   (era "melhor volta", vira "ideal do tipo") — mitigado com backup `.claude-exec/backup-frenagem-formatipo-2026-06-15/`
+   e validação visual antes de qualquer migração. NÃO tocar Vmin (compartilha fr-*/_shortRevealStateForLap).
+12. **Status inicial:** iniciado.
+
 ## TASK_INIT — 2026-06-15 — P1 Fast "não está disponível" no iPhone (assinatura de 7 dias expirou)
 
 1. **Pedido de Flávio:** "o P1 Fast não está disponível mais no meu celular, que precisa resolver isso e já resolve os outros problemas."
