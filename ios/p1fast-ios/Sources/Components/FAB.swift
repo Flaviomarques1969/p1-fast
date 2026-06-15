@@ -19,15 +19,62 @@
 
 import SwiftUI
 
+/// Tamanho do FAB. `.regular` é o tamanho original (56). `.big` é o botão
+/// herói (ex.: "Stint" — iniciar o Stint, ação principal da Home). `.small`
+/// é o secundário (ex.: "Novo evento", que cede destaque pro Stint).
+/// Decisão Flávio 15/06: o Stint tem que ser GRANDE e azul cheio; o Novo
+/// evento pode ser um pouco menor.
+enum FABSize {
+    case small, regular, big
+
+    var height: CGFloat {
+        switch self {
+        case .small: return 46
+        case .regular: return 56
+        case .big: return 64
+        }
+    }
+    var plusSize: CGFloat {
+        switch self {
+        case .small: return 18
+        case .regular: return 20
+        case .big: return 24
+        }
+    }
+    var labelSize: CGFloat {
+        switch self {
+        case .small: return 13
+        case .regular: return 15
+        case .big: return 18
+        }
+    }
+    var leading: CGFloat {
+        switch self {
+        case .small: return 15
+        case .regular: return 18
+        case .big: return 22
+        }
+    }
+    var trailing: CGFloat {
+        switch self {
+        case .small: return 18
+        case .regular: return 22
+        case .big: return 26
+        }
+    }
+}
+
 struct FAB: View {
     let label: String
     let isDisabled: Bool
+    let size: FABSize
     let action: () -> Void
 
     @State private var isPressed = false
 
-    init(_ label: String, isDisabled: Bool = false, action: @escaping () -> Void = {}) {
+    init(_ label: String, size: FABSize = .regular, isDisabled: Bool = false, action: @escaping () -> Void = {}) {
         self.label = label
+        self.size = size
         self.isDisabled = isDisabled
         self.action = action
     }
@@ -36,15 +83,15 @@ struct FAB: View {
         Button(action: action) {
             HStack(spacing: Spacing.sm) {
                 Text("+")
-                    .font(.system(size: 20, weight: .medium))
+                    .font(.system(size: size.plusSize, weight: .medium))
                 Text(label)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: size.labelSize, weight: .semibold))
                     .tracking(-0.075) // -0.005em em 15pt
             }
             .foregroundStyle(Color.onAccent)
-            .padding(.leading, 18)
-            .padding(.trailing, 22)
-            .frame(height: 56)
+            .padding(.leading, size.leading)
+            .padding(.trailing, size.trailing)
+            .frame(height: size.height)
             .background(Capsule().fill(Color.accent))
             .shadow(color: Color.accent.opacity(0.25), radius: 14, x: 0, y: 10)
             .scaleEffect(isPressed ? 0.96 : 1.0)
