@@ -13,12 +13,12 @@
 
 ---
 
-## 1. 🟡 Estoque unificado + backup na nuvem — funções publicadas 15/06; falta o app subir os dados
+## 1. 🟢 Estoque unificado + backup na nuvem — NO AR 2026-06-15
 - **O que é:** um estoque só (geral + de cada carro) com backup na nuvem; o estoque do carro de hoje é COPIADO pra dentro (original intacto).
-- **Estado:** porta de entrada ABERTA. (a) Migração `0046` aplicada (tabela `estoque_item`). (b) Funções `sync` (v10) e `pull` (v4) **PUBLICADAS na nuvem em 15/06 17:55** (autorização literal `MIGRAR PARA PRODUÇÃO: funcoes sync e pull com estoque`) — agora aceitam o estoque. (c) App instalado no iPhone já tenta subir.
-- **BLOQUEIO que existia (resolvido):** a função `sync` publicada estava na versão 9 de 03/06 e não aceitava `estoque_item` (rejeitava na linha 124); por isso a nuvem tinha 0 linhas de estoque. `estoque_item` adicionado às listas de `sync` e `pull` e republicado.
-- **Falta:** (1) você abrir o app ~1 min desbloqueado pro envio retroativo subir o estoque; (2) eu confirmo as linhas na nuvem (leitura) e fecho o item.
-- **Desfazer:** republicar as versões anteriores das 2 funções (sync v9 / pull v3); rollback da `0046` no rodapé dela (apaga só a tabela nova). A 0044 (de outra frente) NÃO foi tocada.
+- **Estado:** CONCLUÍDO. (a) Migração `0046` aplicada (tabela `estoque_item`). (b) Funções `sync` (v10) e `pull` (v4) publicadas 15/06 17:55 (autorização literal `MIGRAR PARA PRODUÇÃO: funcoes sync e pull com estoque`). (c) Os 2 itens de estoque do iPhone SUBIRAM pra nuvem — confirmado cruzando app (0 pendentes, fila vazia) × nuvem (2 itens: Sincronizador 3a marcha + Tensionador e Polia).
+- **Bloqueio que existia (resolvido):** a função `sync` publicada estava na v9 de 03/06 e não aceitava `estoque_item`; os 2 itens já tinham batido no limite de 5 tentativas (dead-letter) ontem. Depois de publicar a v10, foi preciso o usuário tocar "Tentar de novo" na tela Sincronização (zera o contador e reenvia) — o app NÃO re-tenta dead-letter sozinho.
+- **Desfazer:** republicar sync v9 / pull v3; rollback da `0046` no rodapé dela. A 0044 (de outra frente) NÃO foi tocada.
+- **Melhoria proposta (não feita):** fazer o app re-tentar sozinho os itens dead-letter quando a condição muda (ex.: app/nuvem atualizados), pra nunca exigir toque manual. Aguarda decisão do Flávio.
 
 ## 2. 🟢 Estoque geral + Pendências (camada local)
 - **O que é:** Estoque geral na Garagem, editor único com câmera, Pendências novas (contador "peguei", concluir no quadradinho, Gerenciar).

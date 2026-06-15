@@ -21,11 +21,9 @@
 //   • usuarios_time (admin only via Studio/RPC)
 //   • trofeus_ganhos (server-awarded, sem cliente)
 //   • tracks/track_layouts/track_segments/marcos (catálogo global, write via service_role)
-
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-
 export const ALLOWED_TABLES = new Set([
   "carros",
   "configuracoes",
@@ -46,57 +44,40 @@ export const ALLOWED_TABLES = new Set([
   "manutencoes",
   // Estoque unificado (geral + por carro) — backup na nuvem desde 2026-06-14
   // (migration 0046_estoque_unificado_sync). Tem time_id direto, igual a `pecas`.
-  "estoque_item",
+  "estoque_item"
 ]);
-
-export const ALLOWED_OPS = new Set(["insert", "update", "delete"]);
-
+export const ALLOWED_OPS = new Set([
+  "insert",
+  "update",
+  "delete"
+]);
 const MAX_ROWS_PER_REQUEST = 500;
-
 /**
  * Tabelas cujo `time_id` é derivado via FK em vez de vir direto no
  * payload. Necessário pra `evento_pendencias` (referencia evento, não
  * tem coluna time_id própria) e similares. Inserts dessas tabelas
  * NÃO precisam mandar time_id; o servidor faz lookup pela parent FK.
- */
-export const TIME_VIA_FK: Record<string, { fkColumn: string; parentTable: string }> = {
-  evento_pendencias: { fkColumn: "evento_id", parentTable: "eventos" },
+ */ export const TIME_VIA_FK = {
+  evento_pendencias: {
+    fkColumn: "evento_id",
+    parentTable: "eventos"
+  }
 };
-
-interface SyncRow {
-  table_name: string;
-  op: "insert" | "update" | "delete";
-  row_id?: string;                  // obrigatório pra update/delete
-  payload?: Record<string, unknown>; // obrigatório pra insert/update
-  client_updated_at?: number;       // ms epoch — usado em LWW pra update
-}
-
-interface SyncBody {
-  rows: SyncRow[];
-}
-
-export interface RowValidation {
-  ok: boolean;
-  reason?: string;
-}
-
 /**
  * Colunas que existem só no schema LOCAL (SQLite cliente) e NÃO devem
  * ir pro Postgres. Hoje só `synced_at` — flag client-only que marca se
  * a row já foi sincronizada com o servidor; o cliente sempre envia
  * `synced_at: null` no payload (porque local NÃO está sincronizado AINDA),
  * mas o Postgres não tem essa coluna e devolve `column not found`.
- */
-const CLIENT_ONLY_COLUMNS = new Set(["synced_at"]);
-
-/** Strip de colunas client-only do payload (in-place). */
-export function stripClientOnly(payload: Record<string, unknown> | undefined): void {
+ */ const CLIENT_ONLY_COLUMNS = new Set([
+  "synced_at"
+]);
+/** Strip de colunas client-only do payload (in-place). */ export function stripClientOnly(payload) {
   if (!payload) return;
-  for (const k of CLIENT_ONLY_COLUMNS) {
+  for (const k of CLIENT_ONLY_COLUMNS){
     delete payload[k];
   }
 }
-
 /**
  * Normaliza colunas de timestamp do payload. Cliente Swift serializa
  * `created_at`/`updated_at`/`data_evento`/etc como ms epoch (Int64), mas
@@ -109,10 +90,9 @@ export function stripClientOnly(payload: Record<string, unknown> | undefined): v
  *   - termina em `_at` (created_at, updated_at, synced_at, ...)
  *   - começa com `data_` (data_evento, data_aplicacao, data_inicio, ...)
  *   - exatamente `nascimento`
- */
-export function coerceTimestamps(payload: Record<string, unknown> | undefined): void {
+ */ export function coerceTimestamps(payload) {
   if (!payload) return;
-  for (const k of Object.keys(payload)) {
+  for (const k of Object.keys(payload)){
     const isTs = k.endsWith("_at") || k.startsWith("data_") || k === "nascimento";
     if (!isTs) continue;
     const v = payload[k];
@@ -121,127 +101,173 @@ export function coerceTimestamps(payload: Record<string, unknown> | undefined): 
     }
   }
 }
-
-export function validateRow(r: any): RowValidation {
-  if (typeof r !== "object" || r === null) return { ok: false, reason: "row-nao-objeto" };
+export function validateRow(r) {
+  if (typeof r !== "object" || r === null) return {
+    ok: false,
+    reason: "row-nao-objeto"
+  };
   if (typeof r.table_name !== "string" || !ALLOWED_TABLES.has(r.table_name)) {
-    return { ok: false, reason: "table-nao-permitida" };
+    return {
+      ok: false,
+      reason: "table-nao-permitida"
+    };
   }
   if (typeof r.op !== "string" || !ALLOWED_OPS.has(r.op)) {
-    return { ok: false, reason: "op-invalida" };
+    return {
+      ok: false,
+      reason: "op-invalida"
+    };
   }
   if (r.op === "insert") {
     if (typeof r.payload !== "object" || r.payload === null) {
-      return { ok: false, reason: "insert-sem-payload" };
+      return {
+        ok: false,
+        reason: "insert-sem-payload"
+      };
     }
     // Tabelas com TIME_VIA_FK derivam time_id via parent — não exigem
     // payload.time_id (a tabela nem tem essa coluna no Postgres).
-    if (!TIME_VIA_FK[r.table_name] && typeof (r.payload as any).time_id !== "string") {
-      return { ok: false, reason: "insert-sem-time_id" };
+    if (!TIME_VIA_FK[r.table_name] && typeof r.payload.time_id !== "string") {
+      return {
+        ok: false,
+        reason: "insert-sem-time_id"
+      };
     }
   }
   if (r.op === "update") {
-    if (typeof r.row_id !== "string") return { ok: false, reason: "update-sem-row_id" };
+    if (typeof r.row_id !== "string") return {
+      ok: false,
+      reason: "update-sem-row_id"
+    };
     if (typeof r.payload !== "object" || r.payload === null) {
-      return { ok: false, reason: "update-sem-payload" };
+      return {
+        ok: false,
+        reason: "update-sem-payload"
+      };
     }
     if (typeof r.client_updated_at !== "number") {
-      return { ok: false, reason: "update-sem-client_updated_at" };
+      return {
+        ok: false,
+        reason: "update-sem-client_updated_at"
+      };
     }
   }
   if (r.op === "delete" && typeof r.row_id !== "string") {
-    return { ok: false, reason: "delete-sem-row_id" };
+    return {
+      ok: false,
+      reason: "delete-sem-row_id"
+    };
   }
-  return { ok: true };
+  return {
+    ok: true
+  };
 }
-
-function jsonResponse(status: number, body: unknown): Response {
+function jsonResponse(status, body) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json"
+    }
   });
 }
-
-serve(async (req) => {
+serve(async (req)=>{
   if (req.method !== "POST") {
-    return jsonResponse(405, { error: "method-not-allowed", expected: "POST" });
+    return jsonResponse(405, {
+      error: "method-not-allowed",
+      expected: "POST"
+    });
   }
-
   const auth = req.headers.get("authorization") || "";
   if (!auth.toLowerCase().startsWith("bearer ")) {
-    return jsonResponse(401, { error: "missing-bearer-token" });
+    return jsonResponse(401, {
+      error: "missing-bearer-token"
+    });
   }
-
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   if (!supabaseUrl || !serviceKey || !anonKey) {
-    return jsonResponse(500, { error: "supabase-env-missing" });
+    return jsonResponse(500, {
+      error: "supabase-env-missing"
+    });
   }
-
   // Cliente admin pra mutações (bypassa RLS; validamos manualmente).
   const admin = createClient(supabaseUrl, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
+    }
   });
-
   // Cliente do user pra validar JWT (não-admin, anon obrigatório).
   const userClient = createClient(supabaseUrl, anonKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-    global: { headers: { Authorization: auth } },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
+    },
+    global: {
+      headers: {
+        Authorization: auth
+      }
+    }
   });
   const { data: userData, error: userErr } = await userClient.auth.getUser();
   if (userErr || !userData?.user) {
-    return jsonResponse(401, { error: "invalid-jwt", detail: userErr?.message });
+    return jsonResponse(401, {
+      error: "invalid-jwt",
+      detail: userErr?.message
+    });
   }
   const userId = userData.user.id;
-
-  let body: SyncBody;
+  let body;
   try {
     body = await req.json();
-  } catch {
-    return jsonResponse(400, { error: "invalid-json" });
+  } catch  {
+    return jsonResponse(400, {
+      error: "invalid-json"
+    });
   }
   if (!Array.isArray(body?.rows)) {
-    return jsonResponse(400, { error: "rows-must-be-array" });
+    return jsonResponse(400, {
+      error: "rows-must-be-array"
+    });
   }
   if (body.rows.length === 0) {
-    return jsonResponse(200, { accepted: [], rejected: [], note: "empty" });
+    return jsonResponse(200, {
+      accepted: [],
+      rejected: [],
+      note: "empty"
+    });
   }
   if (body.rows.length > MAX_ROWS_PER_REQUEST) {
     return jsonResponse(413, {
       error: "too-many-rows",
       limit: MAX_ROWS_PER_REQUEST,
-      received: body.rows.length,
+      received: body.rows.length
     });
   }
-
-  const accepted: string[] = [];
-  const rejected: { row_id?: string; table_name: string; reason: string; detail?: any }[] = [];
-
+  const accepted = [];
+  const rejected = [];
   // Cache membership por time_id (1 lookup por time)
-  const memberOfTime = new Map<string, boolean>();
-  async function isMember(timeId: string): Promise<boolean> {
-    if (memberOfTime.has(timeId)) return memberOfTime.get(timeId)!;
-    const { data } = await admin
-      .from("usuarios_time")
-      .select("user_id")
-      .eq("user_id", userId)
-      .eq("time_id", timeId)
-      .maybeSingle();
+  const memberOfTime = new Map();
+  async function isMember(timeId) {
+    if (memberOfTime.has(timeId)) return memberOfTime.get(timeId);
+    const { data } = await admin.from("usuarios_time").select("user_id").eq("user_id", userId).eq("time_id", timeId).maybeSingle();
     const ok = !!data;
     memberOfTime.set(timeId, ok);
     return ok;
   }
-
-  for (const r of body.rows) {
+  for (const r of body.rows){
     const v = validateRow(r);
     if (!v.ok) {
-      rejected.push({ row_id: r.row_id, table_name: r.table_name, reason: v.reason || "invalid" });
+      rejected.push({
+        row_id: r.row_id,
+        table_name: r.table_name,
+        reason: v.reason || "invalid"
+      });
       continue;
     }
-
     // Determina time_id da row (vem do payload em insert; do server em update/delete)
-    let timeId: string | null = null;
+    let timeId = null;
     const timeViaFk = TIME_VIA_FK[r.table_name];
     if (r.op === "insert") {
       if (timeViaFk) {
@@ -249,110 +275,107 @@ serve(async (req) => {
         // (evento_id → eventos.time_id). Parent precisa existir no
         // servidor — se ainda está na fila do mesmo batch, depende
         // da ordem que veio (created_at asc no drainer cuida disso).
-        const fkValue = (r.payload as any)[timeViaFk.fkColumn];
+        const fkValue = r.payload[timeViaFk.fkColumn];
         if (typeof fkValue !== "string") {
-          rejected.push({ row_id: r.row_id, table_name: r.table_name, reason: `insert-sem-${timeViaFk.fkColumn}` });
+          rejected.push({
+            row_id: r.row_id,
+            table_name: r.table_name,
+            reason: `insert-sem-${timeViaFk.fkColumn}`
+          });
           continue;
         }
-        const { data: parent } = await admin
-          .from(timeViaFk.parentTable)
-          .select("time_id")
-          .eq("id", fkValue)
-          .maybeSingle();
+        const { data: parent } = await admin.from(timeViaFk.parentTable).select("time_id").eq("id", fkValue).maybeSingle();
         if (!parent) {
-          rejected.push({ row_id: r.row_id, table_name: r.table_name, reason: "parent-not-found", detail: { fk: timeViaFk.fkColumn, value: fkValue } });
+          rejected.push({
+            row_id: r.row_id,
+            table_name: r.table_name,
+            reason: "parent-not-found",
+            detail: {
+              fk: timeViaFk.fkColumn,
+              value: fkValue
+            }
+          });
           continue;
         }
-        timeId = (parent as any).time_id;
+        timeId = parent.time_id;
       } else {
-        timeId = (r.payload as any).time_id;
+        timeId = r.payload.time_id;
       }
     } else {
       // Update/delete: lookup do time_id atual no Postgres
-      const selectCols = timeViaFk
-        ? `${timeViaFk.fkColumn}, updated_at`
-        : "time_id, updated_at";
-      const { data: existing } = await admin
-        .from(r.table_name)
-        .select(selectCols)
-        .eq("id", r.row_id!)
-        .maybeSingle();
+      const selectCols = timeViaFk ? `${timeViaFk.fkColumn}, updated_at` : "time_id, updated_at";
+      const { data: existing } = await admin.from(r.table_name).select(selectCols).eq("id", r.row_id).maybeSingle();
       if (!existing) {
-        rejected.push({ row_id: r.row_id, table_name: r.table_name, reason: "row-not-found" });
+        rejected.push({
+          row_id: r.row_id,
+          table_name: r.table_name,
+          reason: "row-not-found"
+        });
         continue;
       }
       if (timeViaFk) {
-        const fkValue = (existing as any)[timeViaFk.fkColumn];
-        const { data: parent } = await admin
-          .from(timeViaFk.parentTable)
-          .select("time_id")
-          .eq("id", fkValue)
-          .maybeSingle();
-        timeId = (parent as any)?.time_id ?? null;
+        const fkValue = existing[timeViaFk.fkColumn];
+        const { data: parent } = await admin.from(timeViaFk.parentTable).select("time_id").eq("id", fkValue).maybeSingle();
+        timeId = parent?.time_id ?? null;
       } else {
-        timeId = (existing as any).time_id;
+        timeId = existing.time_id;
       }
-
       // LWW pra update: rejeita se cliente está stale
       if (r.op === "update" && r.client_updated_at !== undefined) {
-        const serverUpdatedAt = new Date((existing as any).updated_at).getTime();
+        const serverUpdatedAt = new Date(existing.updated_at).getTime();
         if (r.client_updated_at < serverUpdatedAt) {
           rejected.push({
             row_id: r.row_id,
             table_name: r.table_name,
             reason: "stale-write",
-            detail: { server_updated_at: serverUpdatedAt, client_updated_at: r.client_updated_at },
+            detail: {
+              server_updated_at: serverUpdatedAt,
+              client_updated_at: r.client_updated_at
+            }
           });
           continue;
         }
       }
     }
-
-    if (!timeId || !(await isMember(timeId))) {
-      rejected.push({ row_id: r.row_id, table_name: r.table_name, reason: "not-member-of-time" });
+    if (!timeId || !await isMember(timeId)) {
+      rejected.push({
+        row_id: r.row_id,
+        table_name: r.table_name,
+        reason: "not-member-of-time"
+      });
       continue;
     }
-
     // Normaliza ms epoch → ISO 8601 nas colunas de timestamp (cliente
     // Swift envia Int64 ms; Postgres `timestamptz` quebra com inteiro).
     // E remove colunas client-only (synced_at é flag do SQLite local,
     // não existe no Postgres — `column not found` se passar).
     if (r.op === "insert" || r.op === "update") {
-      coerceTimestamps(r.payload as Record<string, unknown> | undefined);
-      stripClientOnly(r.payload as Record<string, unknown> | undefined);
+      coerceTimestamps(r.payload);
+      stripClientOnly(r.payload);
     }
-
     // Executa a mutation
-    let dbError: any = null;
-    let writtenId: string | undefined;
+    let dbError = null;
+    let writtenId;
     if (r.op === "insert") {
-      const { data, error } = await admin
-        .from(r.table_name)
-        .insert(r.payload as any)
-        .select("id")
-        .single();
+      const { data, error } = await admin.from(r.table_name).insert(r.payload).select("id").single();
       dbError = error;
-      writtenId = (data as any)?.id;
+      writtenId = data?.id;
     } else if (r.op === "update") {
-      const { error } = await admin
-        .from(r.table_name)
-        .update(r.payload as any)
-        .eq("id", r.row_id!);
+      const { error } = await admin.from(r.table_name).update(r.payload).eq("id", r.row_id);
       dbError = error;
       writtenId = r.row_id;
     } else if (r.op === "delete") {
-      const { error } = await admin.from(r.table_name).delete().eq("id", r.row_id!);
+      const { error } = await admin.from(r.table_name).delete().eq("id", r.row_id);
       dbError = error;
       writtenId = r.row_id;
     }
-
     if (dbError) {
       // Idempotência (insert): chave duplicada (23505) = registro já está
       // na nuvem (retentativa após falha de rede). Trata como sucesso
       // pra cliente parar de retentar e marcar como sincronizado.
       // Sem isso, o app retenta 5x, marca dead-letter e empilha fila.
       if (r.op === "insert" && (dbError.code === "23505" || /duplicate key/i.test(dbError.message ?? ""))) {
-        const idFromPayload = (r.payload as any)?.id as string | undefined;
+        const idFromPayload = r.payload?.id;
         accepted.push(idFromPayload ?? r.row_id ?? "");
         continue;
       }
@@ -360,12 +383,14 @@ serve(async (req) => {
         row_id: r.row_id,
         table_name: r.table_name,
         reason: "db-error",
-        detail: dbError.message,
+        detail: dbError.message
       });
       continue;
     }
-    accepted.push(writtenId!);
+    accepted.push(writtenId);
   }
-
-  return jsonResponse(200, { accepted, rejected });
+  return jsonResponse(200, {
+    accepted,
+    rejected
+  });
 });
