@@ -313,3 +313,35 @@ FEITO (BUILD SUCCEEDED; reinstalado no simulador; foto /tmp/p1fast-stint-topo.pn
 - ContentView.swift (ReadyRoot): stintTapDecision() — eventoAtivoHoje() != nil → .eventoDetalhe(ev.id); senão → .stintPlanejamento. onStintTap injetado nos 2 HomeView.
 - StintPlanejamentoView.swift: virou a tela de ESCOLHA (não-dia-de-evento) — "Vincular a um evento" (→ .eventos, funciona) / "Stint livre" (placeholder, Fase 1).
 FALTA (apontado ao Flávio): (a) cartões de evento da Home clicáveis → abrir o evento; (b) Home está em DADOS DE EXEMPLO (HomeData.mockFilled) → conectar aos eventos REAIS é pré-requisito de (a) e de o cabeçalho bater com o botão; (c) "Stint livre" de verdade = Fase 1 (create solto + StintModalView eventoId opcional). NADA no iPhone do Flávio ainda.
+
+═══════════════════════════════════════════════════════════
+## TASK_INIT — 2026-06-15 (tarde/noite) — Frenagem no DADO REAL nas DUAS telas (pós-decisões em card)
+═══════════════════════════════════════════════════════════
+1. **Pedido original:** "próximo passo no breaking [frenagem] do p1 fast" → série de decisões em card: destino = NOS DOIS (painel da equipe + cockpit do piloto); quando = LIGAR JÁ no GPS real (não esperar o sensor).
+2. **Objetivo (1 frase):** ligar a frenagem (desenho aprovado 15/06) no dado real por GPS nas duas telas, sem esperar o sensor de pressão.
+3. **Critérios de conclusão:** as duas telas mostram freada calculada do GPS real (sai do roteiro de teste), desenho aprovado intacto, bloco Vmin intocado, smokes/testes passando, validado no navegador.
+4. **Leitura:** CLAUDE.md (sim), padroes.md (sim — vazio), FLAVIO_EXECUTION/DONE/ENVIRONMENT/COMMUNICATION (sim, relidos), P1 Fast/CLAUDE.md (sim), memória dois caminhos (sim — base: p1-fast-frenagem-command-box-redesenho-2026-06-15).
+5. **Ambiente alvo:** desenvolvimento (mockup _design-reference + web/cockpit local). Produção (Vercel p1t4000 / nuvem) NÃO tocada.
+6. **Produção protegida:** sim. **Autorização produção:** não. **Evidência:** não recebida.
+
+### ACHADO VERIFICADO (15/06, mapeamento 4 frentes + leitura direta + smokes) — com prova
+- **Base verde:** smoke:freio-trecho 29/0, smoke:trail-cockpit 45/0, smoke:trail-religacao 10/0, smoke:cockpit-web 16/0.
+- **COCKPIT DO PILOTO = JÁ PRONTO e ao vivo com o desenho aprovado.** main-t3000.js:41-42 importa TrailCockpitMotor + criarTrailCockpitTela; :149-194 arma o trail, selo de fonte `atualizarSeloFonteFreio` (FÍSICA GPS → SENSOR pressão sozinho); :440 leva pressaoFreioBar/pedalFreioPct do T4000 ao motor. RL-09/RL-10 travam. → metade do "nos dois" já feita; NÃO refazer.
+- **COMMAND BOX (equipe) = o trabalho real.** _design-reference/mockup-command-box-vista-piloto.html:7549 `setupLigacaoAoVivo` JÁ assina `cockpit-bubi-live` (mostradores ao vivo desde hoje — meu registro da manhã ficou DESATUALIZADO nesse ponto). MAS o bloco de frenagem roda 100% em FAKE_LAPS/FRX_CENARIOS (updateFrenagemFromLap(liveT):4445 usa liveT simulado + currentLap()=FAKE_LAPS[_currentLapIdx]:4890). NÃO há acúmulo de GPS por curva no box (quem tem é o cockpit via TrechoDetector em live-data-bridge.js).
+- **HTML é inline-only mas dynamic-importa Supabase de esm.sh (:7701)** → pode dynamic-importar os módulos locais (freio-trecho.js etc). atelier-server (8078) serve da raiz do projeto (tools/atelier-server.mjs:117) → `/web/cockpit/freio-trecho.js` resolve.
+- **web/command-box VAZIO** (confirmado) — o Command Box "vista-piloto" só existe como esse mockup servido na 8078.
+- **RISCO OPERACIONAL:** 15-16/06 é DIA DE PISTA; o painel da equipe só existe nesse arquivo. Mexer direto nele durante o evento é risco (cuidado já registrado no plano).
+
+### Plano (≤5 passos) — recomendado, aguardando confirmação em card
+1. Construir a frenagem real do box em CÓPIA isolada (backup do mockup), sem tocar no arquivo servido.
+2. Dynamic-import do motor de produção (freio-trecho.js) + acúmulo de GPS por curva; trocar FRX_CENARIOS pela leitura real, mantendo o renderizador frx-* aprovado e o Vmin intactos.
+3. Selo de fonte física-GPS↔sensor + 2-de-2 → 3-de-3 automático quando a pressão variar.
+4. Validar com volta real gravada (fixture stint-brasilia-3-laps) no navegador; rodar smokes.
+5. Trocar no painel ao vivo só DEPOIS do dia de pista, com OK do Flávio.
+
+### Riscos
+- (a) quebrar o desenho aprovado ou o Vmin (compartilham fr-*/_shortRevealStateForLap) → backup + classes frx-* próprias, não tocar Vmin.
+- (b) mexer no painel em dia de pista → trabalhar em cópia isolada; só trocar depois do evento.
+- (c) validar "real" sem o carro → replay de volta gravada.
+
+### Status inicial: iniciado — verificação concluída; aguardando confirmação do caminho em card (sem alteração de código ainda).
