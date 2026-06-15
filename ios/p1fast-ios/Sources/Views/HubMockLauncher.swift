@@ -69,6 +69,21 @@ struct HubMockLauncher: View {
                         .environmentObject(combustivelRepo)
                         .environmentObject(licaoRepo)
                         .environmentObject(arquivoRepo)
+                } else if ProcessInfo.processInfo.arguments.contains("--p1-apagados") {
+                    // Tela "Apagados" (resgate) com 2 carros arquivados de exemplo —
+                    // prova de que apagar esconde e dá pra resgatar.
+                    ApagadosView(
+                        arquivoRepo: arquivoRepo,
+                        entidade: .carros,
+                        onRestaurar: { item in
+                            Task {
+                                try? await carroRepo.restaurar(carroId: item.itemId)
+                                try? await arquivoRepo.reload()
+                            }
+                        },
+                        onClose: {}
+                    )
+                    .environmentObject(arquivoRepo)
                 } else if ProcessInfo.processInfo.arguments.contains("--p1-preco-ml") {
                     // Busca de preço no Mercado Livre (navegador embutido) — valida
                     // que o app lê o preço de dentro do próprio aparelho.
