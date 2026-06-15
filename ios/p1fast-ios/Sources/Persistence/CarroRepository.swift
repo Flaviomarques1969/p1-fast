@@ -51,6 +51,7 @@ final class CarroRepository: ObservableObject {
         let rows = try await queue.read { db in
             try Carro
                 .filter(Column("time_id") == teamId)
+                .filter(sql: ItemArquivado.notInClause("carros"))
                 .order(Column("created_at").desc)
                 .fetchAll(db)
         }
