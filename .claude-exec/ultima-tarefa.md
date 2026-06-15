@@ -18,6 +18,27 @@
 8. **Riscos:** reassinatura grátis renova só +7 dias (volta a expirar ~22/06) — paliativo; definitivo = Apple Developer Program pago (perfil 1 ano + TestFlight). App bloqueado impede abrir remoto (precisa Flávio desbloquear + "Confiar" se pedir).
 9. **Status:** reempacotamento assinado em curso (bg bbhodvm9x).
 
+## TASK_DONE — 2026-06-15 — P1 Fast de volta no iPhone
+
+```
+TASK_DONE:
+- Pedido original conferido: sim
+- Ambiente trabalhado: produção (iPhone real 00008140-000E2D611E6A801C)
+- Produção foi alterada: sim (reinstalação do app no iPhone, autorizada)
+- Autorização explícita registrada: sim ("precisa resolver isso" + MIGRAR PARA PRODUÇÃO de 14/06)
+- Banco/nuvem alterado: não
+- Arquivos reais inspecionados: sim
+- Alterações feitas: reassinatura + reinstalação no iPhone
+- Testes/validação executados: sim — empacotamento SUCEDIDO; perfil novo válido 15/06→22/06; app instalado + ABERTO + processo vivo (PID 5970) = não caiu na abertura
+- Resultado: CONCLUÍDO (app de volta; inclui a função apagar-com-resgate da Garagem)
+- Pendências reais: solução PERMANENTE (conta paga Apple / TestFlight) = decisão de negócio do Flávio, apresentada em card. Sem ela, reassinar a cada 7 dias (próximo vencimento ~22/06).
+```
+
+CAUSA RAIZ confirmada: assinatura de 7 dias (conta dev gratuita) venceu 15/06. Reassinado (novo perfil
+15/06→22/06). App precisou de "Confiar no desenvolvedor" no aparelho (Flávio fez: "feito"). Aberto via
+devicectl, processo 5970 vivo. P1 IMU Test tem o MESMO problema (mesma conta) — some junto a cada 7 dias.
+Solução definitiva pendente de decisão do Flávio.
+
 ## TASK_INIT — 2026-06-15 — Luz de marcha (shift light) do cockpit do piloto: alinhar entendimento e provar no navegador
 
 ### 1. Pedido original de Flávio
