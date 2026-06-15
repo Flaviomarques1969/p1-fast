@@ -90,13 +90,13 @@ body{
   min-height:var(--apex-h);
 }
 
-/* SMART SHIFT LIGHT PREMIUM — barra de 12 LEDs racing.
+/* SMART SHIFT LIGHT PREMIUM — barra de 17 LEDs racing.
    Acende UM PAR POR VEZ, DAS PONTAS PRO CENTRO (estilo F1/MotoGP invertido).
-   12 dots em 6 tiers simétricos: tier 1 = pontas (1° a acender);
-   tier 6 = par central (último, peak vermelho).
-   JS marca .is-on em dots com tier <= level. data-state="overrev" sobrepõe
+   17 dots espelhados: tier 1 = pontas (1° a acender); tier 8 = par vermelho lateral;
+   tier 9 = luz central, acende SÓ no FIRE (troca, quando os dois lados se juntam).
+   JS marca .is-on em dots com tier <= level (level 1-8). data-state="overrev" sobrepõe
    e pisca tudo vermelho com housing alarmado.
-   Cor por tier: 1-2 verde · 3-4 amarelo · 5-6 vermelho.
+   Cor por tier: 1-4 verde · 5-7 amarelo · 8-9 vermelho.
    Técnicas premium: dome glass (gradiente radial 3-stop), specular highlight
    (::after), multi-layer bloom (até 4 sombras coloridas com aberração de raio),
    ignition flash via filter brightness/saturate, housing recessed com hairlines. */
