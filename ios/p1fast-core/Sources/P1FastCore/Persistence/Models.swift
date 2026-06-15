@@ -1308,6 +1308,9 @@ public struct EstoqueItem: Codable, FetchableRecord, PersistableRecord, Equatabl
     public var fotoUrl: String?
     public var createdAt: Int64
     public var updatedAt: Int64
+    /// Marca a sincronização com a nuvem (nil = pendente de envio). A partir de
+    /// 2026-06-14 o estoque é UNIFICADO e SINCRONIZA (backup na nuvem).
+    public var syncedAt: Int64?
 
     public static let databaseTableName = "estoque_item"
     enum CodingKeys: String, CodingKey {
@@ -1322,6 +1325,7 @@ public struct EstoqueItem: Codable, FetchableRecord, PersistableRecord, Equatabl
         case fotoUrl = "foto_url"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
     }
 
     public init(id: String = UUID().uuidString, timeId: String, escopo: String = "geral",
@@ -1329,13 +1333,15 @@ public struct EstoqueItem: Codable, FetchableRecord, PersistableRecord, Equatabl
                 nome: String, especificacao: String? = nil, categoria: String = "obrig",
                 contagem: String = "simples", quantidade: Int = 1, volume: Double? = nil,
                 unidade: String? = nil, embalagens: Int? = nil, partesJson: String? = nil,
-                fotoUrl: String? = nil, createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs()) {
+                fotoUrl: String? = nil, createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
+                syncedAt: Int64? = nil) {
         self.id = id; self.timeId = timeId; self.escopo = escopo; self.kind = kind
         self.grupoId = grupoId; self.grupoTitulo = grupoTitulo; self.grupoNum = grupoNum
         self.nome = nome; self.especificacao = especificacao; self.categoria = categoria
         self.contagem = contagem; self.quantidade = quantidade; self.volume = volume
         self.unidade = unidade; self.embalagens = embalagens; self.partesJson = partesJson
         self.fotoUrl = fotoUrl; self.createdAt = createdAt; self.updatedAt = updatedAt
+        self.syncedAt = syncedAt
     }
 
     /// Alvo do "peguei": quantas unidades efetivas a levar.
