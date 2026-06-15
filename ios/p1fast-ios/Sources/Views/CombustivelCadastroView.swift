@@ -160,7 +160,7 @@ struct CombustivelCadastroView: View {
         savingError = nil
         Task {
             do {
-                try await repo.delete(combustivelId: c.id)
+                try await repo.arquivar(combustivelId: c.id, rotulo: c.nome)
                 isSaving = false
                 onClose()
             } catch {
