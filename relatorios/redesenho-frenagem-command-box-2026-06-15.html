@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redesenho — função de frenagem do Command Box</title>
+<style>
+  :root{
+    --gold-1:#F0DCA0; --gold-2:#D4AF37; --gold-3:#C9A961;
+    --good:#3FE08C; --warn:#FFB347; --bad:#FF5A4E; --ideal:#38BCFF;
+    --text-1:#F5F0E0; --text-2:rgba(245,240,224,0.62); --text-3:rgba(245,240,224,0.38);
+    --hairline:rgba(212,175,55,0.18);
+    --surface:rgba(10,14,24,0.55); --surface-2:rgba(10,14,24,0.35);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 18% -10%, rgba(40,52,80,0.35), transparent 60%),
+      radial-gradient(1000px 500px at 100% 0%, rgba(60,40,20,0.22), transparent 55%),
+      #07090f;
+    color:var(--text-1); font-family:'Helvetica Neue',Arial,sans-serif;
+    padding:26px 30px 70px; min-height:100vh;
+  }
+  .top{display:flex;flex-wrap:wrap;align-items:baseline;gap:14px;
+    border-bottom:0.5px solid var(--hairline);padding-bottom:14px;}
+  .top h1{font-size:17px;font-weight:600;letter-spacing:.04em;margin:0;}
+  .top .sub{font-size:12px;color:var(--text-2);}
+  .legend{display:flex;flex-wrap:wrap;gap:20px;margin:16px 0 4px;font-size:12px;color:var(--text-2);}
+  .legend b{color:var(--text-1);font-weight:600;}
+  .legend .sw{display:inline-block;width:22px;height:0;border-top-width:3px;border-top-style:solid;vertical-align:middle;margin-right:6px;border-radius:2px;}
+  .legend .sw.good{border-color:var(--good);}
+  .legend .sw.bad{border-color:var(--bad);}
+  .legend .sw.ideal{border-color:var(--ideal);border-top-style:dashed;}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:22px;margin-top:24px;}
+  .cell{display:flex;flex-direction:column;gap:8px;}
+  .cap{font-size:12px;color:var(--text-2);line-height:1.45;}
+  .cap b{color:var(--gold-1);font-weight:600;}
+
+  /* ===== bloco FRENAGEM redesenhado ===== */
+  .block-card{
+    background:var(--surface); border:0.5px solid var(--hairline); border-radius:10px;
+    padding:14px 16px 13px; display:flex; flex-direction:column; gap:10px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.35);
+  }
+  .fr-header{display:flex;justify-content:space-between;align-items:baseline;
+    border-bottom:0.5px solid var(--hairline);padding-bottom:6px;}
+  .fr-title{font-size:9px;letter-spacing:.24em;color:var(--gold-2);text-transform:uppercase;font-weight:600;}
+  .fr-curva{font-size:8px;letter-spacing:.16em;color:var(--text-3);text-transform:uppercase;}
+
+  .fr-body{display:flex;gap:14px;align-items:stretch;}
+  .fr-chart{flex:1 1 auto;min-width:0;}
+  .fr-chart svg{display:block;width:100%;height:auto;}
+
+  /* marcador numérico do ponto de freada (estilo cockpit do piloto) */
+  .fr-mark{flex:0 0 96px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    border-left:0.5px solid var(--hairline);padding-left:12px;text-align:center;}
+  .fr-mark .lbl{font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-3);margin-bottom:2px;}
+  .fr-mark .num{font-family:'JetBrains Mono','SF Mono',Menlo,monospace;font-weight:800;
+    font-size:42px;line-height:0.9;letter-spacing:-2px;font-variant-numeric:tabular-nums;}
+  .fr-mark .unit{font-size:12px;color:var(--text-2);margin-top:1px;}
+  .fr-mark .sub{font-size:9px;letter-spacing:.10em;text-transform:uppercase;margin-top:5px;font-weight:600;}
+  .fr-mark.t-good .num,.fr-mark.t-good .sub{color:var(--good);}
+  .fr-mark.t-warn .num,.fr-mark.t-warn .sub{color:var(--warn);}
+  .fr-mark.t-count .num{color:var(--gold-1);}
+  .fr-mark.t-count .sub{color:var(--gold-3);}
+
+  .fr-trail{display:flex;gap:16px;font-size:11px;color:var(--text-2);
+    border-top:0.5px solid rgba(212,175,55,0.10);padding-top:8px;}
+  .fr-trail .k{color:var(--text-3);text-transform:uppercase;letter-spacing:.10em;font-size:8.5px;}
+  .fr-trail .v{color:var(--text-1);font-weight:600;}
+
+  .fr-verdict{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    border-top:0.5px solid var(--hairline);padding-top:9px;}
+  .fr-badge{font-size:12px;font-weight:700;letter-spacing:.18em;padding:5px 13px;border-radius:3px;
+    text-transform:uppercase;line-height:1;white-space:nowrap;}
+  .fr-badge.good{background:rgba(63,224,140,0.16);color:var(--good);border:0.5px solid rgba(63,224,140,0.40);}
+  .fr-badge.bad{background:rgba(255,90,80,0.18);color:var(--bad);border:0.5px solid rgba(255,90,80,0.42);}
+  .fr-aviso{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;}
+  .fr-aviso.warn{color:var(--warn);}
+  .fr-aviso.none{color:var(--text-3);font-weight:500;}
+</style>
+</head>
+<body>
+  <div class="top">
+    <h1>Função de frenagem — redesenho do bloco do Command Box</h1>
+    <span class="sub">espelha o cockpit do piloto · banda ±8% · ponto de freada = aviso (3 m) · 15/06/2026</span>
+  </div>
+
+  <div class="legend">
+    <span><span class="sw good"></span><b>linha verde</b> — você estava dentro do alvo (±8%)</span>
+    <span><span class="sw bad"></span><b>linha vermelha</b> — você estava fora, naquele pedaço</span>
+    <span><span class="sw ideal"></span><b>tracejado</b> — a freada ideal (sua melhor)</span>
+    <span><b>número</b> — metros do ponto de freada: <b>0</b> no ponto, <b>+</b> depois, <b>−</b> antes</span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+<script>
+  // ===== parâmetros copiados do motor (TRAIL_DEFAULTS) =====
+  var BANDA_PCT = 8;       // ±8% em volta do alvo = dentro (verde)
+  var TOL_FREADA_M = 3;    // |minha freada − melhor| ≤ 3 m = no ponto (aviso fora disso)
+
+  // grade de distância (m a partir da linha de entrada) — comum a alvo e live
+  var XS = [0,6,10,12,14,16,18,20,24,28,32,36,40,44,48,52,56,60];
+  // alvo = freada IDEAL (% de freio) — a melhor passagem do trecho
+  var ALVO = [0,0,0,0,5,40,80,92,90,86,78,66,54,42,32,24,12,0];
+  var ALVO_FREADA_M = 14;  // ponto de freada de referência (onde o alvo passa do limiar)
+
+  function alvoPctEm(x){
+    if(x <= XS[0]) return ALVO[0];
+    if(x >= XS[XS.length-1]) return ALVO[ALVO.length-1];
+    for(var i=1;i<XS.length;i++){
+      if(x <= XS[i]){
+        var f = (x - XS[i-1]) / (XS[i] - XS[i-1]);
+        return ALVO[i-1] + (ALVO[i]-ALVO[i-1])*f;
+      }
+    }
+    return 0;
+  }
+  // ok por ponto = dentro da banda de ±8% do alvo naquele metro (regra do motor)
+  function pontosComOk(liveArr){
+    return XS.map(function(x,i){
+      var pct = liveArr[i];
+      var ok = Math.abs(pct - alvoPctEm(x)) <= BANDA_PCT;
+      return { x:x, pct:pct, ok:ok };
+    });
+  }
+
+  // ===== geometria do gráfico =====
+  var W=240,H=120, PADL=12,PADR=12,PADT=12,PADB=16;
+  function X(x){ return PADL + (x/60)*(W-PADL-PADR); }
+  function Y(p){ return (H-PADB) - (p/100)*(H-PADT-PADB); }
+
+  // traço verde/vermelho por trecho (espelha renderTraco do cockpit do piloto)
+  function segPaths(pts){
+    var verde='', vermelho='';
+    for(var i=1;i<pts.length;i++){
+      var a=pts[i-1], b=pts[i];
+      var seg='M'+X(a.x).toFixed(1)+' '+Y(a.pct).toFixed(1)+' L'+X(b.x).toFixed(1)+' '+Y(b.pct).toFixed(1)+' ';
+      if(b.ok) verde+=seg; else vermelho+=seg;
+    }
+    return {verde:verde.trim(), vermelho:vermelho.trim()};
+  }
+  function pathAlvo(){
+    return XS.map(function(x,i){ return (i?'L':'M')+X(x).toFixed(1)+' '+Y(ALVO[i]).toFixed(1); }).join(' ');
+  }
+  // banda ±8% como área sombreada em volta do alvo
+  function pathBanda(){
+    var up = XS.map(function(x,i){ return (i?'L':'M')+X(x).toFixed(1)+' '+Y(Math.min(100,ALVO[i]+BANDA_PCT)).toFixed(1); }).join(' ');
+    var dn = XS.slice().reverse().map(function(x,k){ var i=XS.length-1-k; return 'L'+X(x).toFixed(1)+' '+Y(Math.max(0,ALVO[i]-BANDA_PCT)).toFixed(1); }).join(' ');
+    return up+' '+dn+' Z';
+  }
+  // ponto de freada da live = primeiro x onde passa de 15%
+  function freadaDaLive(liveArr){
+    for(var i=0;i<XS.length;i++) if(liveArr[i] >= 15) return XS[i];
+    return null;
+  }
+
+  function svgFrenagem(liveArr){
+    var pts = pontosComOk(liveArr);
+    var s = segPaths(pts);
+    var ult = pts[pts.length-1];
+    // achar a cabeça no ponto mais profundo da freada (último ponto com freio relevante)
+    var headIdx = pts.length-1;
+    for(var i=pts.length-1;i>=0;i--){ if(pts[i].pct>=10){ headIdx=i; break; } }
+    var head = pts[headIdx];
+    var liveFreadaM = freadaDaLive(liveArr);
+    var xRef = X(ALVO_FREADA_M);
+    var svg = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">';
+    // base
+    svg += '<line x1="'+PADL+'" y1="'+Y(0)+'" x2="'+(W-PADR)+'" y2="'+Y(0)+'" stroke="rgba(212,175,55,0.18)" stroke-width="0.5"/>';
+    // banda
+    svg += '<path d="'+pathBanda()+'" fill="rgba(56,188,255,0.07)" stroke="none"/>';
+    // marca do ponto de freada de referência (vertical tracejada)
+    svg += '<line x1="'+xRef.toFixed(1)+'" y1="'+Y(100)+'" x2="'+xRef.toFixed(1)+'" y2="'+Y(0)+'" stroke="rgba(245,240,224,0.30)" stroke-width="1" stroke-dasharray="2 4"/>';
+    svg += '<text x="'+xRef.toFixed(1)+'" y="'+(Y(100)-2)+'" text-anchor="middle" font-size="5.5" fill="rgba(245,240,224,0.45)" font-family="JetBrains Mono,monospace">ponto</text>';
+    // alvo (ideal)
+    svg += '<path d="'+pathAlvo()+'" fill="none" stroke="#38BCFF" stroke-width="1" stroke-dasharray="2 2" stroke-opacity="0.6" stroke-linejoin="round"/>';
+    // live verde / vermelho
+    if(s.verde)    svg += '<path d="'+s.verde+'" fill="none" stroke="#3FE08C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" filter="drop-shadow(0 0 1.5px rgba(63,224,140,0.5))"/>';
+    if(s.vermelho) svg += '<path d="'+s.vermelho+'" fill="none" stroke="#FF5A4E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" filter="drop-shadow(0 0 1.5px rgba(255,90,80,0.5))"/>';
+    // cabeça (posição) — cor pelo estado do ponto
+    svg += '<circle cx="'+X(head.x).toFixed(1)+'" cy="'+Y(head.pct).toFixed(1)+'" r="2.6" fill="'+(head.ok?'#3FE08C':'#FF5A4E')+'"/>';
+    // marca de onde a LIVE freou (tick na base)
+    if(liveFreadaM!=null){
+      svg += '<line x1="'+X(liveFreadaM).toFixed(1)+'" y1="'+Y(0)+'" x2="'+X(liveFreadaM).toFixed(1)+'" y2="'+(Y(0)+5)+'" stroke="#F5F0E0" stroke-width="1.2"/>';
+    }
+    // tags
+    svg += '<text x="'+(W-PADR-1)+'" y="'+(Y(0)-3)+'" text-anchor="end" font-size="5.5" fill="#9fd9ff" font-family="JetBrains Mono,monospace">ideal</text>';
+    svg += '</svg>';
+    return svg;
+  }
+
+  // marcador numérico (resultado do ponto de freada OU contagem regressiva)
+  function markHtml(cfg){
+    if(cfg.modo === 'contagem'){
+      return '<div class="fr-mark t-count">'+
+        '<div class="lbl">faltam</div>'+
+        '<div class="num">'+cfg.n+'</div>'+
+        '<div class="unit">metros</div>'+
+        '<div class="sub">pro ponto</div>'+
+      '</div>';
+    }
+    var delta = cfg.delta; // metros: 0 / + (depois) / - (antes)
+    var tone = Math.abs(delta) <= TOL_FREADA_M ? 't-good' : 't-warn';
+    var txt = delta===0 ? '0' : (delta>0 ? '+'+delta : '−'+Math.abs(delta));
+    var sub = delta===0 ? 'no ponto' : (delta>0 ? 'freou depois' : 'freou antes');
+    return '<div class="fr-mark '+tone+'">'+
+      '<div class="lbl">ponto de freada</div>'+
+      '<div class="num">'+txt+'</div>'+
+      '<div class="unit">metros</div>'+
+      '<div class="sub">'+sub+'</div>'+
+    '</div>';
+  }
+
+  function buildBlock(sc){
+    var verd = sc.certo
+      ? '<span class="fr-badge good">certo</span>'
+      : '<span class="fr-badge bad">'+sc.erroLabel+'</span>';
+    var aviso = sc.aviso
+      ? '<span class="fr-aviso warn">'+sc.aviso+'</span>'
+      : '<span class="fr-aviso none">sem aviso</span>';
+    return '<div class="block-card">'+
+      '<div class="fr-header"><span class="fr-title">frenagem</span><span class="fr-curva">'+sc.curva+'</span></div>'+
+      '<div class="fr-body">'+
+        '<div class="fr-chart">'+svgFrenagem(sc.live)+'</div>'+
+        markHtml(sc.mark)+
+      '</div>'+
+      '<div class="fr-trail">'+
+        '<span><span class="k">soltou</span> <span class="v">'+sc.soltou+'</span></span>'+
+        '<span><span class="k">freio na mínima</span> <span class="v">'+sc.freioMin+'</span></span>'+
+      '</div>'+
+      '<div class="fr-verdict">'+verd+aviso+'</div>'+
+    '</div>';
+  }
+
+  // ===== cenários (demonstram cada caso da sua especificação) =====
+  var CENARIOS = [
+    {
+      titulo: '<b>Tudo certo.</b> Linha colada no alvo do começo ao fim (toda verde), freou no ponto.',
+      curva:'curva 3',
+      live:[0,0,0,0,5,40,80,92,90,86,78,66,54,42,32,24,12,0],
+      mark:{modo:'resultado', delta:0},
+      soltou:'progressivo', freioMin:'24%',
+      certo:true, aviso:null
+    },
+    {
+      titulo: '<b>Acertou e depois errou.</b> Começo verde (no alvo), mas soltou o freio cedo demais — o fim fica vermelho. É o caso que você descreveu.',
+      curva:'curva 5',
+      live:[0,0,0,0,5,40,80,92,90,86,78,50,30,16,8,2,0,0],
+      mark:{modo:'resultado', delta:0},
+      soltou:'de uma vez (degrau)', freioMin:'4%',
+      certo:false, erroLabel:'soltou cedo', aviso:null
+    },
+    {
+      titulo: '<b>Freou tarde.</b> Demorou pra pisar — vermelho no comecinho (onde já era pra estar freando). +5 m do ponto. É AVISO, não reprova: o resto seguiu o alvo.',
+      curva:'curva 1',
+      live:[0,0,0,0,0,0,55,88,90,86,78,66,54,42,32,24,12,0],
+      mark:{modo:'resultado', delta:5},
+      soltou:'progressivo', freioMin:'22%',
+      certo:true, aviso:'freou tarde'
+    },
+    {
+      titulo: '<b>Freou cedo.</b> Pisou antes do ponto — vermelho no início (freio onde o alvo ainda era zero). −4 m. Também é aviso.',
+      curva:'curva 6',
+      live:[0,0,30,55,75,88,90,92,90,86,78,66,54,42,32,24,12,0],
+      mark:{modo:'resultado', delta:-4},
+      soltou:'progressivo', freioMin:'20%',
+      certo:true, aviso:'freou cedo'
+    },
+    {
+      titulo: '<b>Chegando na curva (ao vivo).</b> Antes de frear, o número conta os metros que faltam pro ponto de freada, descendo — igual ao cockpit do piloto.',
+      curva:'curva 7',
+      live:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      mark:{modo:'contagem', n:22},
+      soltou:'—', freioMin:'—',
+      certo:true, aviso:null,
+      _ocultaVerdict:true
+    }
+  ];
+
+  var grid = document.getElementById('grid');
+  CENARIOS.forEach(function(sc){
+    var cell = document.createElement('div');
+    cell.className = 'cell';
+    var html = buildBlock(sc);
+    if(sc._ocultaVerdict){
+      // no estado "ao vivo" ainda não há veredito — esconde a faixa de baixo
+      html = html.replace(/<div class="fr-trail">[\s\S]*?<\/div>\s*<div class="fr-verdict">[\s\S]*?<\/div>/, '<div class="fr-trail"><span class="k">aguardando a freada…</span></div>');
+    }
+    cell.innerHTML = html + '<div class="cap">'+sc.titulo+'</div>';
+    grid.appendChild(cell);
+  });
+</script>
+</body>
+</html>
