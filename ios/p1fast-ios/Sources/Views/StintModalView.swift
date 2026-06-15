@@ -1021,8 +1021,42 @@ struct StintModalView: View {
         let ghostSnapshot = mapaGhostLigado
         let turnosSnapshot: [PilotoTurno]? = permiteRevezamento ? turnos : nil
         let convidadoSnapshot: String? = permiteRevezamento ? nil : convidadoId
+
+        // ── PLANEJAMENTO (15/06): monta o plano que o painel da pista lê. ──
+        let carroId = carroIdInferido
+        let tipoPneuNorm = normalizarTipoPneu(tipoPneuBruto)
+        let focoStr: String?
+        switch proposito {
+        case .livre:   focoStr = nil
+        case .testar:  focoStr = focoTeste?.rawValue
+        case .treinar: focoStr = focoTreino
+        }
+        let isoFmt = ISO8601DateFormatter()
+        isoFmt.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let plano = PlanoStint(
+            proposito: proposito.rawValue,
+            foco: focoStr,
+            ghost: ghostSnapshot,
+            voltas: voltasPlanejadas,
+            paradas: paradasSnapshot.map { PlanoParada(volta: $0.volta, motivo: $0.motivo) },
+            carroId: carroId,
+            piloto: pid,
+            autodromo: nil,               // v1: painel casa o plano pelo carro
+            tipoPneu: tipoPneuNorm,
+            vidaPneuFaixa: nil,           // v1: modal ainda não pergunta a faixa de vida
+            aprovadoEm: isoFmt.string(from: Date())
+        )
+
         Task {
             do {
+                // 1. APROVAR: grava plano + envelope na nuvem (papel que era do
+                //    computador). carro_id é obrigatório na tabela — sem carro,
+                //    o Stint ainda inicia, mas o plano não vai pro painel.
+                if let carroId {
+                    _ = try await EnvelopeAprovacao.gravar(
+                        carroId: carroId, tipoPneu: tipoPneuNorm, plano: plano)
+                }
+                // 2. INICIAR o Stint (como antes).
                 let stintId = try await repo.create(
                     eventoId: eventoId,
                     pilotoId: pid,
@@ -1054,9 +1088,23 @@ struct StintModalView: View {
                 onCreated(stintId)
             } catch {
                 isSaving = false
-                savingError = "Não consegui salvar: \(error.localizedDescription)"
+                savingError = "Não consegui aprovar/iniciar: \(error.localizedDescription)"
             }
         }
+    }
+
+    /// Texto bruto do tipo de pneu derivado do pneu montado (composto + medida).
+    /// Ex.: radial + "185/14" → "radial 185/14" → normaliza pra "radial-185-14".
+    /// Vazio quando nenhum pneu escolhido → normaliza pra "desconhecido".
+    private var tipoPneuBruto: String {
+        guard let pid = pneuIdSelecionado,
+              let pneu = pneusDoCarro.first(where: { $0.id == pid }) else { return "" }
+        let comp = pneu.composto?.rawValue
+        let med = pneu.medida?.trimmingCharacters(in: .whitespaces)
+        if let comp, let med, !med.isEmpty { return "\(comp) \(med)" }
+        if let comp { return comp }
+        if let med, !med.isEmpty { return med }
+        return pneu.marca ?? ""
     }
 
     private func parseLitros(_ texto: String) -> Double? {
