@@ -30,7 +30,8 @@ struct StintModalView: View {
     @EnvironmentObject private var pneuRepo: PneuRepository
     @EnvironmentObject private var combustivelRepo: CombustivelRepository
     @EnvironmentObject private var licaoRepo: LicaoRepository
-    let eventoId: String
+    /// nil = Stint SOLTO (sem evento). Decisão Flávio 15/06/2026.
+    let eventoId: String?
     let proximoNumero: Int
     let contextoLinha: String
     let onCancel: () -> Void
@@ -42,6 +43,14 @@ struct StintModalView: View {
     @State private var licaoIdSelecionada: String?
     @State private var savingError: String?
     @State private var isSaving = false
+
+    // ── Planejamento do Stint (15/06): propósito + treino vieram pra cá
+    // ("uma tela só"). Ao aprovar, viram o plano que o painel da pista lê.
+    enum Proposito: String { case livre, testar, treinar }
+    @State private var proposito: Proposito = .livre
+    @State private var focoTeste: FocoTeste?
+    @State private var focoTreino: String?      // id do treino do catálogo
+    @State private var briefConfirmado = false
 
     // Sprint 1A.4 — Prompt #17. Pneu + combustível ficam no estado local
     // do modal e são persistidos via setPneu/setCombustivel após o create.
