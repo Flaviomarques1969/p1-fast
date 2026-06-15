@@ -258,6 +258,30 @@ public enum SyncDrainer {
         }
     }
 
+    /// Reabilita itens dead-letter (attempts >= maxAttempts): zera attempts e
+    /// last_error pra que o próximo `drainBatch` tente de novo. Usado quando a
+    /// condição que causava a falha pode ter mudado — app reaberto, internet de
+    /// volta, função da nuvem atualizada (ex.: tabela que antes era recusada e
+    /// passou a ser aceita). Idempotente; só mexe em quem já estourou o limite,
+    /// nunca nos pendentes normais. Retorna quantos foram reabilitados.
+    @discardableResult
+    public static func rehabilitateDeadLetters(_ queue: DatabaseQueue, maxAttempts: Int = 5) throws -> Int {
+        try queue.write { db in
+            let n = try Int.fetchOne(
+                db,
+                sql: "SELECT COUNT(*) FROM sync_queue WHERE attempts >= ?",
+                arguments: [maxAttempts]
+            ) ?? 0
+            if n > 0 {
+                try db.execute(
+                    sql: "UPDATE sync_queue SET attempts = 0, last_error = NULL WHERE attempts >= ?",
+                    arguments: [maxAttempts]
+                )
+            }
+            return n
+        }
+    }
+
     // MARK: - Internal helpers
 
     private static func decodePayload(_ json: String?) -> [String: AnyCodable]? {
