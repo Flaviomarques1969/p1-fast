@@ -578,6 +578,175 @@ struct StintModalView: View {
         }
     }
 
+    // MARK: - Propósito do Stint (planejamento — 15/06, "uma tela só")
+    // Port fiel de StintPlanoView: o propósito + foco + treino viram o plano
+    // que o painel da pista lê. Aprovar grava o plano junto do envelope.
+
+    private var sectionProposito: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionHead("Propósito do Stint")
+
+            propositoCard(.livre, "Rodar livre", "Volta livre, painel completo. Sem foco específico.")
+
+            propositoCard(.testar, "Testar o carro", "O painel foca na parte escolhida o stint inteiro.")
+            if proposito == .testar {
+                propChipsWrap {
+                    ForEach(FocoTeste.allCases) { f in
+                        propChip(f.rotulo, ativo: focoTeste == f) { focoTeste = f }
+                    }
+                }
+            }
+
+            propositoCard(.treinar, "Treinar habilidade", "Voltas focadas numa disciplina: técnica de pilotagem ou um dos 6 pontos do trecho.")
+            if proposito == .treinar {
+                Text("TÉCNICA DE PILOTAGEM")
+                    .font(.system(size: 11, weight: .semibold)).tracking(1.1)
+                    .foregroundStyle(Color.textFaint)
+                propChipsWrap {
+                    ForEach(CatalogoTreinos.tecnica) { t in
+                        propChip(t.rotulo, ativo: focoTreino == t.id) { escolherTreinoProp(t.id) }
+                    }
+                }
+                Text("PONTOS DO TRECHO")
+                    .font(.system(size: 11, weight: .semibold)).tracking(1.1)
+                    .foregroundStyle(Color.textFaint).padding(.top, 2)
+                propChipsWrap {
+                    ForEach(CatalogoTreinos.pontos) { t in
+                        propChip(t.rotulo, ativo: focoTreino == t.id) { escolherTreinoProp(t.id) }
+                    }
+                }
+                if let id = focoTreino, let treino = CatalogoTreinos.por(id: id) {
+                    briefCardProp(treino)
+                }
+            }
+        }
+    }
+
+    private func propositoCard(_ p: Proposito, _ nome: String, _ desc: String) -> some View {
+        let selecionado = proposito == p
+        return Button {
+            proposito = p
+            if p != .testar { focoTeste = nil }
+            if p != .treinar { focoTreino = nil; briefConfirmado = false }
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(nome)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.text)
+                Text(desc)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.textFaint)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(Spacing.md)
+            .background(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .fill(selecionado ? Color.accent.opacity(0.12) : Color.surfaceRaised)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .stroke(selecionado ? Color.accent : Color.border, lineWidth: selecionado ? 2 : 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func escolherTreinoProp(_ id: String) {
+        focoTreino = id
+        briefConfirmado = false   // treino novo → reexige a explicação
+    }
+
+    private func briefCardProp(_ t: TreinoCatalogo) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            HStack(spacing: Spacing.sm) {
+                Text(t.rotulo)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(Color.text)
+                Spacer(minLength: 0)
+                etiquetaBadgeProp(t.etiqueta)
+            }
+            Text(t.oQueE)
+                .font(.system(size: 13))
+                .foregroundStyle(Color.textMuted)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text("O QUE A INTELIGÊNCIA MEDE")
+                .font(.system(size: 11, weight: .semibold)).tracking(1.1)
+                .foregroundStyle(Color.textFaint).padding(.top, 2)
+            ForEach(Array(t.oQueMede.enumerated()), id: \.offset) { _, item in
+                HStack(alignment: .top, spacing: 8) {
+                    Text("·").foregroundStyle(Color.accent)
+                    Text(item)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.textMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            if let r = t.ressalva {
+                Text(r)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.textFaint)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 2)
+            }
+            Button { briefConfirmado = true } label: {
+                Text(briefConfirmado ? "Entendido" : "Entendi — pode treinar isso")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(briefConfirmado ? Color.onAccent : Color.accent)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                            .fill(briefConfirmado ? Color.accent : Color.clear)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                            .stroke(Color.accent, lineWidth: 1)
+                    )
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 2)
+        }
+        .padding(Spacing.md)
+        .background(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .fill(Color.surfaceRaised)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .stroke(Color.border, lineWidth: 1)
+        )
+    }
+
+    private func etiquetaBadgeProp(_ etiqueta: String) -> some View {
+        let pleno = etiqueta == "pleno"
+        return Text(pleno ? "MEDIDO DE VERDADE" : "POR APROXIMAÇÃO")
+            .font(.system(size: 9, weight: .bold)).tracking(0.6)
+            .foregroundStyle(pleno ? Color.onAccent : Color.text)
+            .padding(.horizontal, 8).padding(.vertical, 4)
+            .background(Capsule().fill(pleno ? Color.accent : Color.surface))
+            .overlay(Capsule().stroke(pleno ? Color.clear : Color.border, lineWidth: 1))
+    }
+
+    private func propChip(_ texto: String, ativo: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(texto)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(ativo ? Color.onAccent : Color.textMuted)
+                .padding(.horizontal, 14).padding(.vertical, 8)
+                .background(Capsule().fill(ativo ? Color.accent : Color.clear))
+                .overlay(Capsule().stroke(ativo ? Color.clear : Color.border, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func propChipsWrap<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) { content() }.padding(.vertical, 2)
+        }
+    }
+
     private var sectionVoltas: some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionHead("Voltas planejadas")
