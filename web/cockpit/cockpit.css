@@ -319,7 +319,7 @@ body{
   100% { opacity: 0; }
 }
 
-/* OVERREV — todos os 12 piscam juntos em vermelho forte */
+/* OVERREV — todos os LEDs piscam juntos em vermelho forte */
 .shift-light[data-state="overrev"] .shift-light__dot{
   background:radial-gradient(circle at 35% 30%,
     oklch(92% 0.10 32) 0%,
