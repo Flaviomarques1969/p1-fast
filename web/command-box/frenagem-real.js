@@ -62,14 +62,38 @@ function crossing(arr, xs) {
   return null;
 }
 
+// Janela REAL da freada (m): do início (freada) ao fim da soltura (freio <10% após
+// o pico) — ou, na falta, até a velocidade mínima. É o trecho que a grade representa.
+function janelaFreada(met, ultimaDistM) {
+  const onset = met.freadaM;
+  let fim = met.solturaM > 0 ? (met.picoM + met.solturaM) : met.vminM;
+  if (!(fim > onset)) fim = met.vminM;
+  fim = Math.min(fim, ultimaDistM);
+  if (fim < onset + 20) fim = Math.min(onset + 60, ultimaDistM); // piso de janela
+  return { onset, fim };
+}
+
+// Amostra a curva de freio numa grade NORMALIZADA pela janela base: o início da
+// freada da base cai no x onde o ideal começa (~14 m) e o fim cai no fim da grade.
+// Assim a forma inteira (sobe até o pico e DESCE na soltura) ocupa a grade.
+function amostrarNaGrade(pts, janela, xs, idealOnset, idealEnd) {
+  const span = (janela.fim - janela.onset) || 1;
+  const gradeSpan = (idealEnd - idealOnset) || 1;
+  return xs.map((x) => {
+    const d = janela.onset + ((x - idealOnset) / gradeSpan) * span;
+    return Math.round(freioEm(pts, d));
+  });
+}
+
 /**
- * Converte uma passagem REAL (e a melhor, p/ ancorar) na forma de FRX_CENARIOS:
- *   { live[18], minimaFreando, soltou, freioMin, fonteFreio, deltaM }
- * - live: % de freio na grade FRX_XS (janela de 0..60 m), ancorado pelo ponto de
- *   freada da REFERÊNCIA (melhor volta) no mesmo x onde o ideal começa a frear —
- *   assim o renderizador aprovado compara a forma real contra o ideal, ponto a
- *   ponto, e o marcador 0/+/− cai no lugar certo.
- * - deltaM: metros entre o ponto de freada da passagem e o da melhor (+ = depois).
+ * Converte uma passagem REAL na forma que o desenho aprovado consome, agora com a
+ * curva ocupando a ZONA REAL da freada (início → soltura), comparada contra a
+ * MELHOR volta (referência):
+ *   { live[18], ref[18], minimaFreando, soltou, freioMin, fonteFreio, deltaM }
+ * - live: % de freio da passagem mostrada, na grade normalizada pela janela da melhor.
+ * - ref:  % de freio da MELHOR volta, na mesma grade (vira a linha de referência + banda).
+ * - deltaM: metros REAIS entre o ponto de freada da passagem e o da melhor (+ = depois).
+ * Sem referência (ex.: ao vivo antes da 1ª melhor), normaliza pela própria passagem.
  * Devolve null se a passagem não tem freada real (trecho de aceleração / dado ralo).
  */
 export function frenagemFrxParaPassagem(passagem, opts = {}) {
@@ -81,26 +105,28 @@ export function frenagemFrxParaPassagem(passagem, opts = {}) {
   const cur = motorPassagem(pontos, amostrasFreio);
   if (!cur.metricas) return null; // sem freada real
 
-  // âncora: onde o IDEAL começa a frear (15%) define o x da freada da referência.
-  const onsetIdeal = crossing(alvo, xs);
-  const ancoraX = (onsetIdeal != null) ? onsetIdeal : 14;
+  const idealOnset = crossing(alvo, xs) ?? 14;
+  const idealEnd = xs[xs.length - 1];
 
-  let refMet = null;
+  let refRes = null;
   if (Array.isArray(refPontos) && refPontos.length >= 3) {
     const r = motorPassagem(refPontos);
-    if (r.metricas) refMet = r.metricas;
+    if (r.metricas) refRes = r;
   }
-  const freadaRef   = refMet ? refMet.freadaM : cur.metricas.freadaM;
-  const windowStart = freadaRef - ancoraX; // metros reais que caem em x=0 da grade
+  // janela base = a da MELHOR volta (referência); sem ref, a da própria passagem.
+  const baseRes = refRes || cur;
+  const janela = janelaFreada(baseRes.metricas, baseRes.pts[baseRes.pts.length - 1].distM);
 
-  const live = xs.map(x => Math.round(freioEm(cur.pts, windowStart + x)));
+  const live = amostrarNaGrade(cur.pts, janela, xs, idealOnset, idealEnd);
+  const ref  = amostrarNaGrade(baseRes.pts, janela, xs, idealOnset, idealEnd);
 
   return {
     live,
+    ref,
     minimaFreando: cur.metricas.freioNaVminPct >= VMIN_MIN,
     soltou: cur.metricas.forma === 'degrau' ? 'de uma vez' : 'progressivo',
     freioMin: Math.round(cur.metricas.freioNaVminPct) + '%',
     fonteFreio: cur.fonteFreio,
-    deltaM: refMet ? Math.round(cur.metricas.freadaM - refMet.freadaM) : null,
+    deltaM: refRes ? Math.round(cur.metricas.freadaM - refRes.metricas.freadaM) : null,
   };
 }
