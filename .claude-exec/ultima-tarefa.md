@@ -451,3 +451,60 @@ RETOMAR pela memória `p1-fast-planejamento-stint-no-celular-2026-06-15.md` (blo
 DONE e VALIDADO no iPhone real do Flávio ("funcionou bem", Bolinha/Celta 1.4 aparece): botão "+ Stint" no topo da Home; "Novo evento" só em Eventos; Conta na Garagem; toque no Stint decide (dia de evento→abre evento / senão→pergunta vincular/livre); tela de planejamento (propósito livre/testar/treinar + catálogo de treinos fiel + brief obrigatório + ghost + voltas; "Aprovar" mostra resumo); Home com DADOS REAIS + cartões de evento clicáveis. App ASSINADO+INSTALADO no iPhone (cert flaviomarques@me.com, vence ~22/06).
 Arquivos: HomeView/GaragemView/ContentView/FAB.swift (alterados) + StintPlanejamentoView/StintPlanoView/CatalogoTreinos.swift (novos) + project.pbxproj. Backups em backup-fase0-stint-porta-2026-06-15/. Produção/nuvem NÃO tocadas.
 PRÓXIMO: (1) "Aprovar" GRAVAR plano_stint + INICIAR Stint = gate "MIGRAR PARA PRODUÇÃO"; (2) investigar carros/eventos não subirem pra nuvem (Bolinha só no iPhone, nuvem vazia); (3) painel reagir ao foco.
+
+════════════════════════════════════════════════════════════════════
+## ★ RETOMAR AQUI — FRENAGEM NO DADO REAL (Command Box) — pós-/clear 15/06 noite
+════════════════════════════════════════════════════════════════════
+PEDIDO ORIGINAL: "próximo passo no breaking [frenagem] do p1 fast". Decisões em card:
+destino = NOS DOIS (cockpit do piloto JÁ pronto/ao vivo — NÃO refazer; falta só o Command Box da equipe);
+quando = LIGAR JÁ no GPS real; 1º passo = "COMPLETO, COMO O COCKPIT".
+16-17/06 = instalação de SENSORES na oficina (NÃO é dia de pista).
+
+ONDE ESTÁ (tudo em DESENVOLVIMENTO; mockup oficial NÃO tocado; produção intocada):
+- ETAPA 1 ✓ motor/adaptador testado. ETAPA 2a ✓ frenagem real por curva + tipos definitivos + prova visual.
+- ARQUIVOS NOVOS:
+  - web/command-box/frenagem-real.js — adaptador: roda freio-trecho.js (produção) numa passagem e devolve
+    {live[18], ref[18], minimaFreando, soltou, freioMin, fonteFreio, deltaM}. Janela = ZONA REAL da freada
+    (início→soltura), curva sobe e DESCE. Compara contra a MELHOR volta (ref). Física agora / sensor sozinho.
+  - web/command-box/frenagem-curvas-reais.js — por curva (8), anexa TIPO definitivo + trail do tipo; SF = sem
+    freada por tipo; dado ralo = semDado honesto.
+  - web/command-box/tipos-curva-brasilia.js — TIPO_POR_CURVA (decisão Flávio 13/06): C1=T5, RETA OPOSTA=T1,
+    C2=T0, JUNÇÃO=T2, BRUXA=T0, PLACAR=T2, "S"=T4, VITÓRIA=SF.
+  - web/command-box/fixtures/passagens-bubi-brasilia.v1.json — 56 passagens reais do Bubi (cópia do backup
+    ~/Documents/p1fast-backup-voltas-reais/passagens-bubi-aplicadas.json; backup PRESERVADO).
+  - tests/node-smoke-frenagem-real.mjs (16/0) + tests/node-smoke-frenagem-curvas-reais.mjs (14/0) — na bateria.
+  - relatorios/frenagem-dado-real-2026-06-15.html — PROVA visual (não é o painel final).
+  - BACKUP do mockup oficial: _design-reference/command-box-versoes/vista-piloto-PRE-frenagem-dadoreal-2026-06-15.html
+- TESTES verdes: freio-trecho 29 · frenagem-real 16 · frenagem-curvas-reais 14 · trail-cockpit 45 · cockpit-web 16.
+
+⚠️ FEEDBACK DO FLÁVIO (15/06 noite) — AINDA NÃO ATENDIDO, é o PRÓXIMO PASSO:
+  (verbatim) "nenhum deles é o trail braking clássico, que você dá uma porrada no freio e vem descendo em
+  escadinha"; "está faltando o trail brake da curva da Bruxa e da curva dupla [a 'S'] porque é feita sem
+  frenagem... eu acho que está errado".
+DIAGNÓSTICO: o ideal/forma que mostrei veio da MELHOR VOLTA REAL (GPS ~1 Hz, grosseira) → não parece trail
+clássico; e BRUXA(T0)/"S"(T4) ficaram em BRANCO por dado ralo. O CERTO = usar o PERFIL PRESCRITO POR TIPO
+como forma-ideal (a régua teórica), que JÁ É o trail clássico (porrada + escadinha), variando por tipo.
+
+FONTE PRONTA pro conserto (NÃO recriar): web/cockpit/perfil-trail-por-tipo.js (PERFIL_POR_TIPO, perfilDeTrail,
+resumoTrail). Cada tipo aponta curvaExemplo: 'classico' (T0/T1/T5) ou 'residual' (T2/T4); T3='toque'; SF=sem.
+As FORMAS y(x) ALVOS.classico (100% pancada + soltura gradativa até o ápice = porrada+escadinha) e
+ALVOS.residual (parcial ~65% + residual ~45% + soltura curta) estão em
+_design-reference/mockup-cockpit-treino-trail-braking-VIVO-2026-06-11.html. Teste: smoke:perfil-trail.
+
+PRÓXIMO PASSO (Etapa 2a-bis — FAZER PRIMEIRO, antes de ligar no painel):
+1. A linha IDEAL (tracejada + banda) de cada curva passa a ser a FORMA PRESCRITA DO TIPO (ALVOS.classico p/
+   T0/T1/T5; ALVOS.residual p/ T2/T4; toque p/ T3; SF sem freio) — extrair ALVOS.* do mockup VIVO p/ um
+   módulo reutilizável (ex.: web/command-box/forma-trail-tipo.js) ou exportar do perfil-trail-por-tipo.
+2. TODA curva de freada mostra o trail clássico do SEU tipo (BRUXA e "S" inclusas), com a volta real
+   SOBREPOSTA quando houver dado; sem dado real ainda, mostra só o ideal do tipo (não fica em branco).
+3. Atualizar a prova (relatorios/frenagem-dado-real-2026-06-15.html) + smokes; reabrir na 8078.
+4. CONFIRMAR com Flávio: ideal = perfil por tipo AGORA (a régua da melhor volta real entra com 25 Hz/RaceBox).
+DEPOIS: ETAPA 2b = ligar no painel oficial _design-reference/mockup-command-box-vista-piloto.html (com backup;
+override de getFrenagemVerdictForCurve + driver de volta; tirar 'frenagem' de DEP_LIGACAO:7609).
+ETAPA 3 = selo física↔sensor no bloco + 2-de-2→3-de-3 quando a pressão variar + faxina do legado morto.
+
+COMO REABRIR A PROVA: (server local) `node tools/atelier-server.mjs` (porta 8078) →
+`open http://localhost:8078/relatorios/frenagem-dado-real-2026-06-15.html`.
+COMO TESTAR: `npm run smoke:frenagem-real` · `smoke:frenagem-curvas-reais` · `smoke:perfil-trail`.
+REGRA DURA: NÃO mexer no Vmin (compartilha fr-*/_shortRevealStateForLap); classes próprias frx-*; backup antes
+de tocar no mockup; produção (Vercel/nuvem) intocada.
