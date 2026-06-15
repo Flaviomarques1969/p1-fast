@@ -1,5 +1,39 @@
 # Última tarefa
 
+## TASK_INIT — 2026-06-14 (noite) — Botão APAGAR (com resgate) p/ cada elemento da Garagem
+
+1. **Pedido original de Flávio:** "crie um botão para apagar cada um dos elementos da garagem:
+   carros, pilotos, passageiros, combustível, lições. ou seja, permita que consigamos apagar do app.
+   mas deixe em memória para resgatar caso precise."
+2. **Objetivo (1 frase):** Dar a cada uma das 5 entidades da Garagem um botão de apagar que tira o
+   item das listas mas guarda o dado para resgate (apagar reversível, não destrutivo).
+3. **Critérios objetivos de conclusão:**
+   - Carros, Pilotos, Passageiros, Combustível e Lições têm botão de apagar (com confirmação).
+   - Item apagado some das listas mas continua guardado.
+   - Existe forma de resgatar (lixeira / "apagados") por entidade.
+   - Build simulador SUCCEEDED + validado por screenshot/no app.
+   - NADA migrado pra nuvem/produção sem "MIGRAR PARA PRODUÇÃO".
+4. **Leitura confirmada:** `~/.claude/CLAUDE.md` sim · `~/.claude-decisoes/padroes.md` sim (zerado) ·
+   FLAVIO_EXECUTION_PROTOCOL sim · FLAVIO_DONE_CHECKLIST sim · FLAVIO_ENVIRONMENT_RULES sim ·
+   FLAVIO_COMMUNICATION_RULES sim · `P1 Fast/CLAUDE.md` + memórias (global e P1 Fast) sim.
+5. **Plano (≤5 passos):**
+   1. Mapear (read-only, workflow paralelo) como cada entidade lê/apaga hoje e quais tabelas SINCRONIZAM com a nuvem.
+   2. Decidir arquitetura do "apagar reversível" que NÃO toca schema sincronizado (provável: camada LOCAL-ONLY de "arquivados", igual evento_pendencias_extra).
+   3. Implementar em DEV: arquivar/restaurar no repositório + filtro nas listagens + botão Apagar (confirmação) + acesso aos "apagados".
+   4. Build simulador + testes (schema-parity/migration) + screenshots.
+   5. Chamar Flávio validar. Produção só com "MIGRAR PARA PRODUÇÃO".
+6. **Áreas/arquivos a inspecionar:** CarroRepository/PilotoRepository/PassageiroRepository/CombustivelRepository/
+   LicaoRepository; PessoasView/GaragemView/Combustivel*View/Licao*View; Models/Migrations; SyncQueue/SyncBackfill/
+   SyncCoordinator.pullTables; schema-parity; padrão de Apagar já existente (PecaViews/EstoqueRepository).
+7. **Ambiente alvo:** desenvolvimento (app iOS + simulador). 8. **Produção protegida:** sim.
+9. **Autorização para produção:** não. 10. **Evidência:** não recebida.
+11. **Riscos:** entidades que sincronizam com a nuvem (carros provavelmente) — apagar não pode virar DELETE na
+    nuvem nem mudar schema sincronizado sem autorização; por isso o "apagar" será reversível e LOCAL. Não quebrar
+    as sub-abas da Garagem nem o roteamento da tab-bar.
+12. **Status inicial:** iniciado — fase de mapeamento.
+
+---
+
 ## TASK_INIT — 2026-06-14 (noite) — UNIR estoques (um só, com backup na nuvem) + atualizar cópia oficial
 
 1. **Pedido de Flávio:** "una e atualize a cópia." Card respondido: **"Um só, com backup na nuvem"**.
