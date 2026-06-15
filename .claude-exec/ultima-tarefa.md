@@ -183,3 +183,24 @@ Reportei "nuvem com 0 linhas" 2x quando os dados JÁ tinham subido. Causa: meu c
 - Testes/validação executados: smoke do núcleo PERSIST-14b ✓ (reabilita só dead-letter, preserva pendente); `xcodebuild ... build` = BUILD SUCCEEDED, 0 erro. 2 falhas PRÉ-EXISTENTES fora do escopo (PERSIST-01 contagem 34≠38; PERSIST-03 evento_pendencias_extra sem synced_at).
 - Resultado: CONCLUÍDO em desenvolvimento.
 - Pendências reais: só chega no iPhone do Flávio num próximo reinstalar (empacotar+assinar). SyncStatusBadge.swift preservado (não apagado). Sugestão pra depois: olhar PERSIST-03 (parente do bug do estoque).
+
+═══════════════════════════════════════════════════════════
+## PRÓXIMA TAREFA — PLANEJAMENTO DO STINT NO CELULAR (depois do /clear de 15/06)
+═══════════════════════════════════════════════════════════
+DECISÃO DURA Flávio 15/06: o PLANEJAMENTO DO STINT é no CELULAR (app iOS), NÃO na web.
+O painel do computador (web/cockpit) é SÓ o resultado do carro rodando conforme o planejado.
+
+CONSTRUIR (depois do clear): botão de Stint na Home (no canto onde pus "Conta") que abre o
+PLANEJAMENTO DO STINT. Pode ser: livre · vinculado ao evento (se for dia de evento) · não-vinculado
+(fora do dia de evento) · com IA / treinamento. Conta/Sair migra pra dentro da Garagem.
+
+SPEC COMPLETA + VIABILIDADE JÁ VERIFICADA (arquivo:linha) na memória:
+  ~/.claude/projects/-Users-imac-Projetos-P1-Fast/memory/p1-fast-planejamento-stint-no-celular-2026-06-15.md
+
+Resumo da viabilidade: Stint sem evento JÁ é suportado no banco (Sessao.eventoId nullable); falta o app
+expor (StintRepository.create exige eventoId — criar caminho com nil). "Livre" já é objetivo canônico.
+iOS já tem StintModalView com objetivo/lição/IA (conferir, estender, não recriar). eventoAtivoHoje() existe.
+A lógica rica de treino-IA hoje está na web (catalogo-treinos.js/treino-stint.js/configuracao-stint.js) —
+PORTAR pro celular. Antes de codar: TASK_INIT + card de escopo (v1 em fases).
+
+NÃO esquecer: o botão "Conta" que pus na Home hoje é TEMPORÁRIO — vira o botão de Stint.
