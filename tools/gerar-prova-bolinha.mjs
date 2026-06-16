@@ -118,7 +118,7 @@ const html = `<!doctype html><html lang="pt-br"><head><meta charset="utf-8">
   function frame(ts){
     if(base===null) base=ts;
     if(playing){
-      const tRel=((ts-base)%DUR);
+      const tRel=(((ts-base)%WALL)/WALL)*DUR;   // tempo real do trecho, tocado acelerado
       if(showSuav){ place(car, sFracAt(tRel)); car.style.opacity=1; } else car.style.opacity=0;
       if(showRaw){ place(raw, DEMO[rawIndexAt(tRel)][1]); raw.style.opacity=1; } else raw.style.opacity=0;
     }
