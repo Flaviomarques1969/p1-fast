@@ -148,6 +148,17 @@ for (const ln of tsv){ const c=ln.split('|'); const lat=+c[1], lng=+c[2]; if(isF
 const realErr = realGps.map(g=>distToTrack(geoParaCommandBox(g.lat,g.lng))).sort((a,b)=>a-b);
 const rMed=realErr[Math.floor(realErr.length*0.5)], rP95=realErr[Math.floor(realErr.length*0.95)], rMax=realErr[realErr.length-1];
 
+// ---------- 4b. ITEM 2 (suavização): fração de arco no traço do CB p/ cada leitura + timestamp ----------
+// cumulativo de comprimento ao longo do traço denso do CB → fração 0..1
+const cumLen=[0]; for(let i=1;i<cbDense.length;i++){ cumLen.push(cumLen[i-1]+Math.hypot(cbDense[i][0]-cbDense[i-1][0], cbDense[i][1]-cbDense[i-1][1])); }
+const totLen=cumLen[cumLen.length-1];
+function sFracOf(p){ let m=Infinity,best=0; for(let i=1;i<cbDense.length;i++){ const a=cbDense[i-1],b=cbDense[i];
+  const vx=b[0]-a[0],vy=b[1]-a[1],wx=p[0]-a[0],wy=p[1]-a[1]; const L=vx*vx+vy*vy||1; let t=(wx*vx+wy*vy)/L; t=Math.max(0,Math.min(1,t));
+  const dx=a[0]+t*vx-p[0],dy=a[1]+t*vy-p[1]; const d=dx*dx+dy*dy; if(d<m){ m=d; best=cumLen[i-1]+t*Math.hypot(vx,vy); } } return best/totLen; }
+const tsAll=[]; { let prev=null; for(const ln of tsv){ const c=ln.split('|'); const t=+c[0], lat=+c[1], lng=+c[2];
+  if(isFinite(t)&&isFinite(lat)&&isFinite(lng)&&lat<-15.7&&lat>-15.8){ tsAll.push(t); } } }
+const suav = realGps.map((g,idx)=>{ const q=geoParaCommandBox(g.lat,g.lng); return [ tsAll[idx], +q[0].toFixed(1), +q[1].toFixed(1), +sFracOf(q).toFixed(5) ]; });
+
 // ---------- 5. escreve o módulo de projeção + JSON de prova ----------
 const mod = `// pista-brasilia-commandbox.js — GERADO por tools/recalibrar-mapa-command-box.mjs (${new Date().toISOString().slice(0,10).replace(/^/, '').replace(/.*/, 'recalibração 2026-06-16')})
 // Projeta GPS (lat,lng) -> espaço do SVG da pista do Command Box (viewBox "130 110 580 660").
