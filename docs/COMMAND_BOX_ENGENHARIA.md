@@ -447,7 +447,7 @@ Quem decide **o que** aparece em cada combinação é a engenharia (canal `engin
 | Engine Core (Timebase + Snapshot + CriticalRules + CrossValidation + VehicleContext) | iPhone do carro (IMU/GPS) + notebook Windows (T4000) | Não tem UI direta — alimenta as duas telas |
 | Calibration Engine | Notebook Windows (consumidor que cruza T4000 + IMU/GPS) e/ou Edge Function Supabase (cobertura sem notebook) | Findings/recommendations vão pra Realtime, consumidos por Box Cockpit (32") e por iOS hub |
 | Senior Advisor IA | Vercel Serverless (`/api/advisor`, `/api/post-stint`) | Mesma rota: findings enriquecidos chegam pelo Realtime |
-| **Command Box Engenharia (live + post)** | iPhone Box Mode | Renderiza na TV 32" |
+| **Command Box Engenharia (live + post)** | App na nuvem | Renderiza na TV 32" pelo navegador do Fire TV Stick 4K Max _(atualizado 16/06/2026 — ver `docs/ARQUITETURA_DEFINITIVA.md`)_ |
 | **Cockpit Pilot + modo simulação** | Notebook WinUI 3 | Renderiza no 10,5" invertido (mesmo MS-13 existente, ganha layer de simulação) |
 | iOS hub Tab Engenharia (pós-stint mobile) | iPhones do time | iPhone/iPad nas mãos do engenheiro entre stints |
 | Histórico / replay | Supabase + Edge Function `/functions/v1/detector` | Cross-stint, cross-evento |
