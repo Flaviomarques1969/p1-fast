@@ -238,7 +238,7 @@ O sistema **não tem acesso ao mapa de injeção/ignição da T4000**. Sem isso,
 ### G6 — UI engenheiro `[UI]`
 
 **Nada existe.** Decisões em aberto:
-- **Onde renderiza?** iOS hub (tab "Engenharia" ao lado de "Piloto")? Windows notebook em display 1 (enquanto display 2 mostra cockpit do piloto)? Box Cockpit (AirPlay) separado do piloto? Web? Cada uma tem implicação de stack.
+- **Onde renderiza?** iOS hub (tab "Engenharia" ao lado de "Piloto")? Windows notebook em display 1 (enquanto display 2 mostra cockpit do piloto)? Command Box (TV 32" via Fire TV Stick 4K Max abrindo o app na nuvem no navegador) separado do piloto? Web? Cada uma tem implicação de stack. _(atualizado 16/06/2026 — ver `docs/ARQUITETURA_DEFINITIVA.md`)_
 - **Quando é "live" e quando é "post"?** Recomendações ao vivo (alertas críticos + λ pobre detectado já) × recomendações pós-stint (análise consolidada com IA generativa).
 
 ### G7 — Sensores externos não-instalados `[hardware]`
