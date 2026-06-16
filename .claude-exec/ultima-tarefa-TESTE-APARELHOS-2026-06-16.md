@@ -81,3 +81,24 @@ repetindo até cada aparelho ATIVO acender verde.
   eu conserto em DEV e testo, mas só chega ao notebook com "MIGRAR PARA PRODUÇÃO" (páginas são publicadas).
 
 ## Status: registrador pronto e provado — aguardando Flávio rodar no notebook pra capturar o ao vivo.
+
+---
+
+## VERIFICAÇÃO: entradas da T4000 livres (pedido extra do Flávio, 16/06)
+Fonte da prova: gravação real do motor 26/05 (web/teste-aparelhos/sim-amostras.json, 2.901 amostras, CARRO PARADO),
+analisada canal a canal, + tabela de sensores da sessão (docs/research/t3000-sessao-2026-05-26/README.md)
++ docs/COMMAND_BOX_ENGENHARIA.md:108 ("sem entrada para pressão de freio").
+
+RESSALVAS: (1) o aparelho de HOJE é o T3000; o T4000 (onde entra o sensor de freio) tem mapa de entradas próprio
+que NÃO está no repositório. (2) A gravação é com carro parado → speed/acelerômetro/cronômetro em 0 por estarem
+parados, NÃO por estarem livres.
+
+OCUPADAS (sensor lendo, prova na gravação): rpm, bateria (9.6-13.3V), temp água (37-60°C), TPS (0.4-39.4%),
+lambda banda larga, MAP (lendo mas valor suspeito -0.02 bar — pendência mecânica).
+LIVRES (sem sensor): pressão de freio (0,00 — a que recebe o sensor agora), pressão de óleo, pressão de combustível,
+temperatura do ar de admissão (lê código "off" da Injepro), sonda lambda estreita NB (desligada),
+pedal acelerador (sem sensor — Bubi usa cabo mecânico, não vale usar).
+
+NÃO VERIFICÁVEL DAQUI (não inventar): total de entradas físicas da T4000 e quais pinos do conector de 34 vias estão
+livres. Fonte autoritativa = config do Injepro T Software no notebook (USB) + manual/pinout Injepro. App proprietário
+Windows, sem acesso pelo Mac.
