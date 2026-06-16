@@ -1,7 +1,7 @@
 # Ultima tarefa — sintese estado da FRENADA (P1 Fast)
 
 ## Pedido original
-Sintetizar, em linguagem de gestor, o estado REAL da frenada nas 3 telas (cockpit piloto, app iOS, Command Box), no notebook Windows e na nuvem ao vivo, a partir de mapeamentos COM EVIDENCIA. Regra dura do dono: calculo mora no notebook Windows primeiro; demais so RECEBEM pronto; Command Box NAO calcula; sensor de pressao instala 15-16/06; sem ele a frenada e estimativa de GPS ~1 Hz.
+Sintetizar, em linguagem de gestor, o estado REAL da frenada nas 3 telas (cockpit piloto, app iOS, Command Box), no notebook Windows e na nuvem ao vivo, a partir de mapeamentos COM EVIDENCIA. Regra dura do dono (CORRIGIDA 16/06, ver p1-fast-ARQUITETURA-DEFINITIVA): processa em DOIS lugares — notebook Windows (.exe) pro cockpit do piloto + app na NUVEM pras demais funcoes. Command Box (TV via Fire TV Stick 4K Max) NAO calcula, e janela do app na nuvem. (A frase antiga "demais so recebem pronto" estava errada: a nuvem TAMBEM processa.) Sensor de pressao via T4000 instala 15-16/06; sem ele a frenada e estimativa de GPS.
 
 ## Objetivo (1 frase)
 Entregar mapa honesto por area + por que o que falta nao e tela + proximo passo real + dependencia do sensor + riscos de invencao.
