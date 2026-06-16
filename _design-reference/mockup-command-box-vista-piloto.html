@@ -7701,16 +7701,21 @@ html,body{
     detectLapWrap = function(){};         // congela a troca de voltas fictícias
     updateLiveCarroPneus = function(){};  // para de redesenhar carro/pneus fictícios (bloco já marcado)
 
-    // SHIFT LIGHT no modo REAL (Flávio 14/06): para a animação de demonstração
-    // (que mostrava marcha 3/4/5 e RPM varrendo falsos) e passa a desenhar o bloco
-    // com o RPM REAL do carro. A MARCHA fica "—" até o cérebro inferir a marcha ao
-    // vivo (resolvido com o dado do dia de pista 15-16). Calibração Bubi intacta (6.050/6.300).
+    // SHIFT LIGHT no modo REAL (Flávio 14/06 + arquitetura 15/06): para a animação
+    // de demonstração e desenha o bloco com o que vem da WEB. RPM, MARCHA e ponto de
+    // troca (rpmLuz) são enviados pelo notebook (T4000+GPS) — o Command Box só EXIBE.
+    // Enquanto a web ainda não manda marcha/ponto, a barra acende pelo RPM na
+    // calibração local (6.050) e a marcha fica "—". Visual da barra intocado.
+    // (Chamadas via window.__ porque este bloco vive noutro escopo — corrige o
+    //  ReferenceError que derrubava a ligação ao vivo.)
     window.__shiftLightRealMode = true;   // trava: demo não religa, mesmo se init() rodar depois
-    stopShiftLightAnimation();
+    if(window.__stopShiftLightAnimation) window.__stopShiftLightAnimation();
     if(window.__shiftLightRealId){ clearInterval(window.__shiftLightRealId); }
     window.__shiftLightRealId = setInterval(function(){
       var rpmReal = (REAL.fresh && REAL.rpm != null) ? REAL.rpm : 0;
-      renderShiftLightFromValues(rpmReal, '—');
+      var marcha  = (REAL.fresh && REAL.marcha != null) ? REAL.marcha : '—';
+      var rpmTroca = (REAL.rpmLuz != null) ? REAL.rpmLuz : undefined;  // undefined → usa 6.050 local
+      if(window.__renderShiftLightFromValues) window.__renderShiftLightFromValues(rpmReal, marcha, rpmTroca);
     }, 100);
 
     // HUD honesto: real onde há sensor, "—" onde não há
