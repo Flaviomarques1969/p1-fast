@@ -174,6 +174,8 @@ const prova = {
   transformacao: { scale: T.scale, R: T.R, tx: T.tx, ty: T.ty, offset: best.off, dir: best.dir },
   cb_loop_amostra: cbLoop.filter((_,i)=>i%30===0),
   volta_real_projetada_amostra: realGps.filter((_,i)=>i%Math.ceil(realGps.length/120)===0).map(g=>{ const q=geoParaCommandBox(g.lat,g.lng); return [ +q[0].toFixed(1), +q[1].toFixed(1) ]; }),
+  volta_real_projetada_full: realGps.map(g=>{ const q=geoParaCommandBox(g.lat,g.lng); return [ +q[0].toFixed(1), +q[1].toFixed(1) ]; }),
+  cb_track_d: TRACK_D,
 };
 writeFileSync('/tmp/recal-cb/prova.json', JSON.stringify(prova,null,1));
 
