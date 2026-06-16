@@ -76,8 +76,17 @@ O celular **acessa o app na nuvem**. Funções:
 
 O Command Box é a **TV de 32" do box**. **Não calcula nada** — é uma janela do app na nuvem.
 
-**Como a TV mostra o app (decisão 16/06/2026):** um **Fire TV Stick 4K Max** ligado na TV roda o
-**navegador**, que abre o **app na nuvem**.
+**Como a TV mostra o Command Box (decisão 16/06/2026):** um **Fire TV Stick 4K Max** ligado na TV roda o
+**navegador**, que abre **direto o endereço do Command Box na nuvem**. A própria TV acessa a nuvem —
+**sem celular dedicado, sem espelhamento, sem ninguém "mandando" pra TV.**
+
+**Por que mudou (do Apple TV/celular para o Fire TV Stick):**
+- Antes, um celular tinha que ficar parado, dedicado, espelhando pra TV — incômodo.
+- E criava um **papel a mais**: cada pessoa já tem login e usa o app; usar o Command Box exigiria mais esse
+  papel. Com o Fire Stick, a TV acessa direto — **esse papel some.** Bem mais prático.
+
+**Praticidade de acesso (a definir):** pode ser digitar o endereço, ou um **QR Code** que, lido, já abre o
+Command Box na TV. **Login a definir — talvez nem precise.**
 
 > **Isto substitui** o conceito anterior de "app do iPhone no modo BOX → AirPlay → Apple TV". **Não há
 > mais Apple TV nem AirPlay nem projeção/espelhamento pelo celular** no Command Box.
