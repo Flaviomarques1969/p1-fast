@@ -7726,7 +7726,7 @@ html,body{
       set('rpm',       (REAL.fresh && REAL.rpm!=null) ? REAL.rpm : '—');
       set('lambda',    (REAL.fresh && REAL.lambda!=null) ? REAL.lambda.toFixed(2) : '—');
       set('tempMotor', (REAL.water!=null) ? Math.round(REAL.water) : '—');
-      set('marcha','—'); set('parcial','—');
+      set('marcha', (REAL.fresh && REAL.marcha!=null) ? REAL.marcha : '—'); set('parcial','—');
       var d=document.querySelector('[data-hud="delta"]'); if(d){ d.textContent='—'; d.style.color=''; }
     };
 
