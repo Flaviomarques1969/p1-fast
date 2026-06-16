@@ -832,7 +832,7 @@ Reaproveita o smoke harness JS já existente (`tests/node-smoke-*.mjs`, 6.481 li
 | **C — Engenharia codificada** | MS-16.3 | 3 CalibrationRule + persistência Supabase | B |
 | **D — IA enriquecida** | MS-16.4 | `/api/advisor` aceita findings + decisão persistida | C |
 | **E — UI engenheiro pós-stint mobile** | MS-16.5 | Tab Engenharia no iOS hub, lista + decisão | C |
-| **F — Box Mode Engenharia (live TV 32")** | MS-16.6 | iOS Box Mode subscreve Realtime, renderiza na 32" | C + MS-9 + MS-12 fechados |
+| **F — Command Box Engenharia (live TV 32")** | MS-16.6 | App na nuvem subscreve Realtime, renderiza na 32" pelo navegador do Fire TV Stick 4K Max _(atualizado 16/06/2026 — ver `docs/ARQUITETURA_DEFINITIVA.md`)_ | C + MS-9 + MS-12 fechados |
 | **G — Modo simulação no Cockpit Pilot 10,5"** | MS-16.7 | Overlay XAML sincronizado pelo canal `engineering-{stintId}` | F |
 | **H — Simulação de ajuste** | MS-16.8 | Projeção visual e validação interativa | F + G |
 | **I — Engine cells (opcional)** | MS-16.9 | Histograma de células, 2 rules extras | C + decisão G5 |
