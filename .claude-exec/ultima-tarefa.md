@@ -1,53 +1,26 @@
-# Ultima tarefa — MIGRAR PARA PRODUCAO: frenagem do Command Box (vista-piloto)
+# Ultima tarefa — sintese estado da FRENADA (P1 Fast)
 
-## Pedido original (Flavio)
-"MIGRAR PARA PRODUCAO" — apos abrir o painel do Command Box (frenagem) na 8078 e ratificar 2 decisoes.
+## Pedido original
+Sintetizar, em linguagem de gestor, o estado REAL da frenada nas 3 telas (cockpit piloto, app iOS, Command Box), no notebook Windows e na nuvem ao vivo, a partir de mapeamentos COM EVIDENCIA. Regra dura do dono: calculo mora no notebook Windows primeiro; demais so RECEBEM pronto; Command Box NAO calcula; sensor de pressao instala 15-16/06; sem ele a frenada e estimativa de GPS ~1 Hz.
 
 ## Objetivo (1 frase)
-Colocar no ar o bloco de FRENAGEM do Command Box (vista-piloto) que esta pronto e validado em desenvolvimento.
+Entregar mapa honesto por area + por que o que falta nao e tela + proximo passo real + dependencia do sensor + riscos de invencao.
 
 ## Criterio de conclusao
-Frenagem do Command Box no ar no destino de producao correto, com rollback documentado e validacao pos-deploy real — OU bloqueio declarado com motivo objetivo.
+StructuredOutput preenchido com prova verificada nos arquivos, sem afirmar nada nao verificado.
 
-## Confirmacao de leitura
-- ~/.claude/CLAUDE.md: sim
-- ~/.claude-decisoes/padroes.md: sim
-- ~/.claude/FLAVIO_EXECUTION_PROTOCOL.md: sim
-- ~/.claude/FLAVIO_DONE_CHECKLIST.md: existe (protocolo de done lido no EXECUTION_PROTOCOL)
-- ~/.claude/FLAVIO_ENVIRONMENT_RULES.md: sim
-- ~/.claude/FLAVIO_COMMUNICATION_RULES.md: existe (regras de comunicacao ja replicadas no CLAUDE.md)
+## Ambiente alvo
+desenvolvimento (leitura/auditoria). Producao NAO alterada. Autorizacao producao: nao recebida.
 
-## Ambiente alvo: producao
-## Producao protegida: sim
-## Autorizacao para producao: PARCIAL — frase recebida porem SEM o item especificado e CONTRA decisao de segurar de 15/06
-## Evidencia da autorizacao: "MIGRAR PARA PRODUCAO" (sem ": [item]")
+## Verificacoes feitas (prova)
+- freio-trecho.js: simularFreioPelaFisica (fisica GPS) + detectarPresencaSensorFreio (variacao >=3 un) — JS, existe.
+- main-t3000.js:159 — "instalacao 15-16/06"; rotulo FREIO: FISICA GPS ate sensor entrar.
+- TELEMETRY_SNAPSHOT_SPEC.md:142 — brake_pressure "quando sensor de freio entrar".
+- FONTE_DADOS_AO_VIVO.md:70 — "Pressao freio (sensor nao instalado ainda)".
+- Command Box mockup: updateFrenagemFromLap (linha 4297) anima por _shortRevealStateForLap (estado por volta), NAO le realtime; bloco 'frenagem' esta em DEP_LIGACAO (7442) = forcado cb-sem-real "aguardando ligacao".
+- Windows MainWindow.xaml.cs:370-371 SetApexPonto("freio") com FreioAtualM/RefM de DemoScene (hardcoded). CockpitState.cs:245 ClassifyFreio so classifica, nao calcula.
+- iOS CockpitGpsPublisher.swift:29 — 5 Hz max, so GPS (lat/lng/speed), sem IMU/aceleracao no payload, sem pressao de freio.
+- tests/node-smoke-frenagem-real.mjs existe (prova que motor roda em JS puro).
 
-## TRAVAS IDENTIFICADAS (evidencia real)
-1. A frenagem vive num MOCKUP (`_design-reference/mockup-command-box-vista-piloto.html`). AMBIENTES_P1_FAST.md
-   lista "mockups" como fonte NAO oficial; ADR-023 trata o painel como prototipo/spec, nao produto final.
-   STATUS.md:17 = Command Box "NAO no ar". MS-12 Box Cockpit = nao feito (STATUS.md:320).
-   => Nao existe Command Box em producao pra "atualizar"; publicar = colocar um painel inteiro no ar pela 1a vez.
-2. Decisao do proprio Flavio em 15/06 (memoria p1-fast-frenagem-dado-real): SEGURAR a publicacao ate o sensor
-   de freio (instala 16-17/06) e/ou GPS 25 Hz. Dado atual = GPS ~1 Hz, ~9 pontos/curva, sem sensor. Painel mostra tarja "PROVISORIO".
-3. Versao oficial local (main) esta 827 versoes ATRAS da oficial remota (origin/main). Publicar daqui exige cuidado, nao e um botao.
-
-## Plano (<=5 passos) — SO apos confirmacao do Flavio
-1. Confirmar com Flavio: publicar AGORA com dado provisorio (reverte o segurar) OU aguardar sensor.
-2. Confirmar destino real de producao (p1t4000.vercel.app? versao oficial? mockup vira oficial?).
-3. Montar PROD_RELEASE_PLAN completo com rollback.
-4. Executar publicacao no destino confirmado.
-5. Validacao pos-deploy real + reporte.
-
-## Riscos
-- Publicar parecer de freada baseado em dado grosso (GPS 1 Hz) que o proprio Flavio classificou como nao confiavel.
-- Publicar a partir de uma versao local 827 atras da oficial.
-- Mockup nao e fonte oficial; pode quebrar o conceito de governanca do projeto.
-
-## Status inicial: BLOQUEADO aguardando decisao do Flavio (itens 1 e 2 acima)
-
-## CORRECAO DO FLAVIO (16/06) — eu me perdi e inventei conceito
-O Command Box NAO e site web novo nem usa volta gravada/simulada. E a TELA DE 32'' no box, com dado
-COMPLETAMENTE REAL ao vivo da pista: Notebook no carro -> nuvem (canal cockpit-bubi-live) -> app no
-celular -> um celular espelha -> tela 32''. Registrado em memoria
-p1-fast-command-box-producao-conceito-real-2026-06-16. NADA foi publicado. A frenagem so vai pro
-Command Box quando consumir o ao vivo real (fiacao ao vivo + sensor). Status: BLOQUEADO / conceito corrigido.
+## Status
+concluido (auditoria/sintese; nada alterado).
