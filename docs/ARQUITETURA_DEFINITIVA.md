@@ -56,11 +56,11 @@ Os dois processam. O notebook serve o piloto; a nuvem serve todo o resto.
 
 ## 5. As três telas do sistema (são exatamente três)
 
-| Tela | O que é | Quem usa | Calcula? |
-|---|---|---|---|
-| **Cockpit do piloto** | O que o piloto vê no carro (no notebook Windows) | Piloto | Sim, no notebook |
-| **App do celular** | Cliente que acessa o app na nuvem | Equipe / chefe / engenheiro / espectador | Não — a conta é na nuvem |
-| **Command Box** | Uma TV de 32" no box | Equipe no box | Não — é só uma tela |
+| Tela | O que é | Fonte do dado que mostra |
+|---|---|---|
+| **Cockpit do piloto** | O que o piloto vê no carro (no notebook Windows) | Dados processados pelo **.exe** (no carro) |
+| **App do celular** | Cliente que acessa o app na nuvem; tem várias telas dentro | Dados processados **na nuvem**, conforme cada tela |
+| **Command Box** | Uma TV de 32" no box (Fire TV Stick 4K Max → navegador → app na nuvem) | Dados gerados pelo **.exe** |
 
 Nenhuma outra superfície de tela além dessas três.
 
