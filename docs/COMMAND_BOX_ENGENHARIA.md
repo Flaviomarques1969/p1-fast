@@ -420,7 +420,7 @@ ADR-008 continua valendo: **alertas críticos NÃO passam pela IA**.
 
 | Tela | Conteúdo | Driver |
 |---|---|---|
-| **Command Box** (TV 32") | Vista do engenheiro + chefe-de-equipe: live, findings, recommendations, simulações | iPhone do box em Box Mode → AirPlay → Apple TV → TV 32" (mesma cadeia de MS-12) |
+| **Command Box** (TV 32") | Vista do engenheiro + chefe-de-equipe: live, findings, recommendations, simulações | App na nuvem aberto no navegador do Fire TV Stick 4K Max na TV 32" _(atualizado 16/06/2026 — ver `docs/ARQUITETURA_DEFINITIVA.md`; substitui a cadeia iPhone Box Mode → AirPlay → Apple TV de MS-12)_ |
 | **Cockpit Pilot** (10,5" externa invertida no painel) | Conteúdo **dirigido pela atividade da engenharia**: quando engenharia inativa = cockpit canônico (mockup `mockup-cockpit-piloto.html`); quando engenharia ativada = informações que **a engenharia decide que são importantes** para quem estiver no carro **naquele momento** (piloto na pista, ou mecânico sentado no carro durante diagnóstico no box) | Notebook Windows WinUI 3 → display 2 invertido (já em produção via MS-13) |
 
 **Clarificação Flávio 2026-05-13 (segunda):** o Cockpit Pilot 10,5" **não é fixo** no cockpit canônico. O que ele mostra depende de **dois eixos**:
