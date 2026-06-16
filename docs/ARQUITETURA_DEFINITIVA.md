@@ -112,6 +112,15 @@ Tudo contínuo, ao vivo, no mesmo instante.
    (`ios/p1fast-ios/Sources/Sync/AirPlayDetector.swift`) feito pro conceito antigo. Ficou obsoleto com a
    mudança pro Fire TV Stick. Remover é tarefa de código separada e cuidadosa — não foi feito aqui.
 
+3. **"A nuvem processa" muda o que está escrito hoje como "local-first".** Esta arquitetura diz que o app
+   na nuvem **processa** (item 3 e 5). Mas um documento de 15/06 (`.claude-exec/POLITICA-ATUALIZACAO-3-PLATAFORMAS`),
+   baseado no código real de hoje, afirma o contrário: **"local-first — cada tela calcula localmente; a nuvem é
+   só espelho/observabilidade, NÃO o cérebro ao vivo".** Ou seja: o que você decidiu (nuvem processa) é uma
+   **mudança** em relação a como o sistema funciona hoje, não só uma troca de palavra. **Precisa do Flávio
+   confirmar a direção:** a nuvem passa a processar de verdade (mudança real, com trabalho de construção), ou
+   "a nuvem processa" vale só para as funções dela (acompanhar a corrida, análise de engenharia, pós-stint),
+   enquanto o caminho ao vivo do piloto continua local no notebook? Até decidir, não tratar como resolvido.
+
 ---
 *Registrado em 16/06/2026. Fonte: questionário respondido pelo Flávio
 (`~/Downloads/p1fast-arquitetura-respostas-20260616-125214.json`).*
