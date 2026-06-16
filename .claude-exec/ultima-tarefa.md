@@ -688,3 +688,14 @@ iPhone). Backups: .claude-exec/backup-fechar-ciclo-stint-2026-06-15/ (StintModal
   e iniciar" → confere se o painel arma o treino. SÓ a 1ª aprovação dele grava de verdade na nuvem.
 - LIMITES honestos do v1: autodromo e vida_pneu_faixa não vão no plano ainda (painel casa pelo carro / DB usa '0-30');
   tipo_pneu é derivado do pneu montado (best-effort). Refinar depois se o painel precisar.
+
+### ATIVAÇÃO FEITA (15/06 noite) — app NOVO instalado + abriu no iPhone do Flávio
+- Empacotado assinado p/ device (generic/platform=iOS, perfil "iOS Team Provisioning Profile: com.flaviomarques.p1fast",
+  vence ~22/06) em /tmp/p1fast-device-build/.../p1fast-ios.app — BUILD SUCCEEDED.
+- Instalado: `xcrun devicectl device install app --device 00008140-000E2D611E6A801C ...` → "App installed:
+  com.flaviomarques.p1fast" (aviso "No provider was found" é benigno; concluiu). Device = iPhone 16 Pro Max, modo dev ligado.
+- Aberto: `devicectl device process launch` → "Launched application" = SOBE sem cair na abertura.
+- DICA p/ reinstalar: device precisa estar DESBLOQUEADO/estável; build com destination 'id=<udid>' EXPIRA esperando o
+  aparelho → empacotar com 'generic/platform=iOS' e instalar com devicectl.
+- PENDENTE = validação AO VIVO do Flávio: "+ Stint" → Stint livre → propósito (ex. treinar) → "Aprovar e iniciar"
+  (1ª aprovação grava o plano REAL na nuvem) → conferir no painel se arma o treino. Aguardando ele reportar.
