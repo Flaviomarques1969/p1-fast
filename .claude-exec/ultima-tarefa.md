@@ -44,3 +44,10 @@ Frenagem do Command Box no ar no destino de producao correto, com rollback docum
 - Mockup nao e fonte oficial; pode quebrar o conceito de governanca do projeto.
 
 ## Status inicial: BLOQUEADO aguardando decisao do Flavio (itens 1 e 2 acima)
+
+## CORRECAO DO FLAVIO (16/06) — eu me perdi e inventei conceito
+O Command Box NAO e site web novo nem usa volta gravada/simulada. E a TELA DE 32'' no box, com dado
+COMPLETAMENTE REAL ao vivo da pista: Notebook no carro -> nuvem (canal cockpit-bubi-live) -> app no
+celular -> um celular espelha -> tela 32''. Registrado em memoria
+p1-fast-command-box-producao-conceito-real-2026-06-16. NADA foi publicado. A frenagem so vai pro
+Command Box quando consumir o ao vivo real (fiacao ao vivo + sensor). Status: BLOQUEADO / conceito corrigido.
