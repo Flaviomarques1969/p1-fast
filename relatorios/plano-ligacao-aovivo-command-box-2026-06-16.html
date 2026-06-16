@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plano — Ligar o Command Box no dado real ao vivo</title>
+<title>Frenada no P1 Fast — onde está cada peça (mapa real)</title>
 <style>
   :root{
     --tinta:#1d2430; --suave:#5b6675; --linha:#e2e6ec; --fundo:#f6f7f9;
@@ -15,48 +15,43 @@
     font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
   .wrap{width:100%;max-width:none;padding:28px 40px 60px}
   h1{font-size:26px;margin:0 0 4px;letter-spacing:-.2px}
-  .sub{color:var(--suave);margin:0 0 24px;font-size:15px}
+  .sub{color:var(--suave);margin:0 0 22px;font-size:15px}
   h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--suave);
     margin:34px 0 14px;font-weight:700}
+  .destaca{background:var(--destaque-fraco);border:1px solid #cfe0f3;border-radius:12px;padding:16px 20px;font-size:16px}
+  .destaca b{color:var(--destaque)}
   .fluxo{display:flex;gap:0;align-items:stretch;flex-wrap:wrap;border:1px solid var(--linha);
-    border-radius:12px;overflow:hidden;background:var(--cartao)}
-  .etapa{flex:1 1 0;min-width:150px;padding:18px 16px;border-right:1px solid var(--linha)}
+    border-radius:12px;overflow:hidden;background:var(--cartao);margin-top:6px}
+  .etapa{flex:1 1 0;min-width:150px;padding:16px;border-right:1px solid var(--linha)}
   .etapa:last-child{border-right:0}
   .etapa .t{font-weight:700;font-size:15px;margin-bottom:4px}
-  .etapa .d{color:var(--suave);font-size:13.5px}
-  .seta{color:var(--suave);font-weight:700}
-  .nota{margin-top:12px;color:var(--suave);font-size:14px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
-  .card{background:var(--cartao);border:1px solid var(--linha);border-radius:12px;padding:18px 20px}
-  .card .tag{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
-  .pronto .tag{color:var(--ok)} .pronto{background:var(--ok-fraco);border-color:#cfe8da}
-  .falta .tag{color:var(--alerta)} .falta{background:var(--alerta-fraco);border-color:#f3d9c8}
-  .card .titulo{font-weight:700;font-size:16px;margin-bottom:6px}
-  .card p{margin:0;color:var(--tinta);font-size:14.5px}
+  .etapa .d{color:var(--suave);font-size:13px}
+  table{width:100%;border-collapse:collapse;background:var(--cartao);border:1px solid var(--linha);border-radius:12px;overflow:hidden}
+  th,td{text-align:left;padding:13px 16px;border-bottom:1px solid var(--linha);font-size:14.5px;vertical-align:top}
+  th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--suave);background:#fbfcfd}
+  tr:last-child td{border-bottom:0}
+  td.area{font-weight:700;width:230px}
+  .badge{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap}
+  .sim{background:var(--ok-fraco);color:var(--ok)} .nao{background:var(--alerta-fraco);color:var(--alerta)}
+  .buraco{background:var(--alerta-fraco);border:1px solid #f3d9c8;border-radius:12px;padding:6px 4px}
   ol.passos{list-style:none;counter-reset:p;padding:0;margin:0;display:flex;flex-direction:column;gap:12px}
   ol.passos li{counter-increment:p;background:var(--cartao);border:1px solid var(--linha);
     border-radius:12px;padding:16px 18px 16px 64px;position:relative}
   ol.passos li::before{content:counter(p);position:absolute;left:18px;top:16px;width:30px;height:30px;
-    border-radius:50%;background:var(--tinta);color:#fff;font-weight:700;display:flex;align-items:center;
+    border-radius:50%;background:var(--alerta);color:#fff;font-weight:700;display:flex;align-items:center;
     justify-content:center;font-size:15px}
   ol.passos li .t{font-weight:700;font-size:16px;margin-bottom:3px}
   ol.passos li .d{color:var(--suave);font-size:14.5px}
-  ol.passos li.decisao{border-color:var(--destaque);background:var(--destaque-fraco)}
-  ol.passos li.decisao::before{background:var(--destaque)}
-  ol.passos li.depende{border-color:#f3d9c8;background:var(--alerta-fraco)}
-  ol.passos li.depende::before{background:var(--alerta)}
-  .selo{display:inline-block;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
-    padding:2px 8px;border-radius:999px;margin-left:8px;vertical-align:middle}
-  .selo.azul{background:var(--destaque);color:#fff}
-  .selo.laranja{background:var(--alerta);color:#fff}
   .decisaobox{border:1px solid var(--destaque);background:var(--cartao);border-radius:12px;padding:20px 22px;margin-top:10px}
   .decisaobox .q{font-weight:700;font-size:17px;margin-bottom:14px}
-  .opc{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+  .opc{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
   .op{border:1px solid var(--linha);border-radius:10px;padding:14px 16px;background:var(--fundo)}
   .op.rec{border-color:var(--destaque);background:var(--destaque-fraco)}
   .op .ot{font-weight:700;margin-bottom:4px}
   .op .od{color:var(--suave);font-size:14px}
   .recflag{color:var(--destaque);font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.05em}
+  ul.honesto{margin:0;padding-left:20px;color:var(--tinta);font-size:14.5px}
+  ul.honesto li{margin-bottom:6px}
   .rodape{margin-top:30px;border-top:1px solid var(--linha);padding-top:16px;color:var(--suave);font-size:14px}
   .rodape b{color:var(--tinta)}
 </style>
@@ -64,48 +59,94 @@
 <body>
 <div class="wrap">
 
-  <h1>Ligar o Command Box no dado real ao vivo</h1>
-  <p class="sub">Plano para aprovação — nada é feito nem colocado no ar sem você. 16/06/2026.</p>
+  <h1>Frenada no P1 Fast — onde está cada peça</h1>
+  <p class="sub">Mapa real, verificado arquivo por arquivo hoje (16/06). Nada foi alterado nem colocado no ar.</p>
 
-  <h2>O que você quer (seu conceito, corrigido)</h2>
+  <div class="destaca">
+    <b>Você tem razão: não tem maquete pra fazer.</b> As três telas — cockpit do piloto, app do celular e Command Box — já existem e já foram aprovadas. O que falta <b>não é tela. É cálculo e encanamento</b> por trás de telas prontas.
+  </div>
+
+  <h2>O caminho que você quer</h2>
   <div class="fluxo">
-    <div class="etapa"><div class="t">Carro</div><div class="d">Sensores no carro leem o que acontece na pista.</div></div>
-    <div class="etapa" style="background:var(--destaque-fraco)"><div class="t">&rarr; Notebook Windows</div><div class="d"><b>Aqui a frenada é processada.</b> É onde o piloto vê ao vivo. O cálculo mora aqui.</div></div>
-    <div class="etapa"><div class="t">&rarr; Nuvem do sistema</div><div class="d">Só o <b>resultado já pronto</b> sobe pra nuvem, no mesmo instante.</div></div>
-    <div class="etapa"><div class="t">&rarr; App no celular</div><div class="d">O app recebe o resultado pronto da nuvem.</div></div>
-    <div class="etapa"><div class="t">&rarr; Command Box 32&Prime; + outros usos</div><div class="d">Um celular espelha pra tela de 32&Prime;. O mesmo dado serve a outros usos.</div></div>
-  </div>
-  <p class="nota">Duas regras duras: <b>(1)</b> o dado tem que ser <b>completamente real, vindo da pista</b> — nada gravado, nada simulado. <b>(2)</b> a frenada <b>nunca vai direto pro app</b>: ela é processada no notebook Windows primeiro; o Command Box e o app só <b>recebem pronta</b>, não recalculam.</p>
-
-  <h2>Onde estamos hoje (honesto)</h2>
-  <div class="grid">
-    <div class="card pronto"><div class="tag">Pronto</div><div class="titulo">A nuvem ao vivo já funciona</div>
-      <p>O painel do piloto já manda e lê cada leitura do carro em tempo real. Foi validado no carro em 26/05, com 2.901 leituras conferidas contra o software oficial.</p></div>
-    <div class="card falta"><div class="tag">Falta</div><div class="titulo">A frenagem ainda lê volta gravada</div>
-      <p>Hoje o bloco de frenagem do Command Box puxa 56 voltas <b>guardadas</b> do Bubi — não o ao vivo. É só trocar a torneira de onde ela bebe.</p></div>
-    <div class="card falta"><div class="tag">Falta</div><div class="titulo">O sensor de freio não está no carro</div>
-      <p>A pressão de freio ainda não é medida (sensor instala 16-17/06). Sem ele, mesmo ao vivo a freada é só estimativa do GPS, não a freada de verdade.</p></div>
-    <div class="card falta"><div class="tag">Atenção</div><div class="titulo">O que temos da frenagem é maquete</div>
-      <p>O Command Box de verdade é o app no celular na tela de 32&Prime;. O bloco de frenagem hoje existe como maquete na tela do computador.</p></div>
+    <div class="etapa"><div class="t">Carro</div><div class="d">Sensores leem a pista.</div></div>
+    <div class="etapa" style="background:var(--alerta-fraco)"><div class="t">&rarr; Notebook Windows</div><div class="d"><b>Aqui a frenada é calculada.</b> É onde o piloto vê. O cálculo mora aqui.</div></div>
+    <div class="etapa"><div class="t">&rarr; Nuvem</div><div class="d">Só o resultado pronto sobe.</div></div>
+    <div class="etapa"><div class="t">&rarr; App no celular</div><div class="d">Recebe pronto da nuvem.</div></div>
+    <div class="etapa"><div class="t">&rarr; Command Box 32&Prime; + outros usos</div><div class="d">Um celular espelha. Mesmo dado serve a outros usos.</div></div>
   </div>
 
-  <h2>O passo a passo pra ligar</h2>
-  <p class="nota" style="margin-bottom:14px">Decisão sua já tomada: <b>provar primeiro na maquete</b> (rápido e barato), antes de levar pro produto final.</p>
+  <h2>Estado real de cada peça</h2>
+  <table>
+    <tr><th>Peça</th><th>Tela pronta</th><th>Dado real ao vivo</th><th>A verdade, com prova</th></tr>
+    <tr>
+      <td class="area">Cockpit do piloto<br><span style="font-weight:400;color:var(--suave);font-size:13px">o que o piloto vê no carro</span></td>
+      <td><span class="badge sim">Sim</span></td>
+      <td><span class="badge sim">Sim</span></td>
+      <td>Mostra e <b>calcula a frenada de verdade, ao vivo</b>. Hoje a intensidade vem da física do GPS (estimativa), porque o sensor de freio ainda não está no carro.</td>
+    </tr>
+    <tr>
+      <td class="area">App iPhone<br><span style="font-weight:400;color:var(--suave);font-size:13px">o celular no carro</span></td>
+      <td><span class="badge nao">—</span></td>
+      <td><span class="badge nao">Não</span></td>
+      <td>O iPhone <b>não calcula frenada</b>. Só manda a posição (GPS) pra nuvem. A estrutura de frenada no código é gaveta vazia. Não existe Command Box no iPhone.</td>
+    </tr>
+    <tr>
+      <td class="area">Command Box 32&Prime;<br><span style="font-weight:400;color:var(--suave);font-size:13px">tela do box / engenheiro</span></td>
+      <td><span class="badge sim">Sim</span></td>
+      <td><span class="badge nao">Não</span></td>
+      <td>Tela pronta, com dado <b>gravado</b> das voltas do Bubi, e usa o mesmo motor do cockpit (não reinventa). Mas <b>o fio do ao vivo está desligado</b>: o bloco está em "aguardando ligação".</td>
+    </tr>
+    <tr class="buraco">
+      <td class="area">Notebook Windows<br><span style="font-weight:400;color:var(--suave);font-size:13px">onde a frenada DEVE nascer</span></td>
+      <td><span class="badge sim">Sim</span></td>
+      <td><span class="badge nao">Não</span></td>
+      <td><b>É o buraco.</b> O programa do notebook sabe mostrar a frenada, mas <b>não calcula</b> — os números de lá são de demonstração, chumbados no código. O motor que calcula de verdade só existe no navegador, nunca foi levado pro programa do notebook.</td>
+    </tr>
+    <tr>
+      <td class="area">Nuvem<br><span style="font-weight:400;color:var(--suave);font-size:13px">o canal que liga tudo</span></td>
+      <td><span class="badge sim">Sim</span></td>
+      <td><span class="badge sim">Sim</span></td>
+      <td>Funciona desde 26/05. Leva os ingredientes ao vivo. A frenada hoje é montada <b>depois</b> que a volta fecha, pelo navegador — ainda não pelo notebook.</td>
+    </tr>
+  </table>
+
+  <h2>O que falta de verdade (o buraco)</h2>
   <ol class="passos">
-    <li><div class="t">A frenada passa a ler o ao vivo (no lugar da volta gravada)</div>
-      <div class="d">A maquete já escuta o sinal ao vivo da nuvem (o mesmo do painel do piloto). Falta plugar a frenada nele. <b>Pra esta prova barata</b>, o cálculo da freada roda como interino dentro da maquete só pra você ver acontecendo — <b>o lugar definitivo do cálculo é o notebook Windows</b> (passo final).</div></li>
-    <li><div class="t">Consertar o errinho da ligação ao vivo</div>
-      <div class="d">Existe uma falha pequena e conhecida na parte ao vivo (ligada à luz de marcha) que precisa ser corrigida pra rodar limpo.</div></li>
-    <li class="depende"><div class="t">Sensor de freio <span class="selo laranja">16-17/06 · fora do meu controle</span></div>
-      <div class="d">Quando o sensor entrar no carro, a freada passa a ser a real (com a pressão de verdade), não mais estimativa do GPS. É o que fecha a confiança.</div></li>
-    <li><div class="t">Provar na prática</div>
-      <div class="d">Carro mandando dado real (ou simulação controlada), a freada aparecendo certa na maquete, conferida contra o que aconteceu na pista.</div></li>
-    <li class="decisao"><div class="t">Levar o cálculo pro lugar certo: notebook Windows <span class="selo azul">produto final</span></div>
-      <div class="d">Depois da prova, o cálculo da frenada vai pro notebook Windows (onde o piloto vê). De lá, o resultado pronto sobe pra nuvem, e a nuvem distribui pro app, pro Command Box na tela de 32&Prime; e pros outros usos do mesmo dado. Obra maior — entra como projeto próprio.</div></li>
+    <li><div class="t">O notebook não calcula a frenada — só mostra número de demonstração</div>
+      <div class="d">O motor real está só no navegador. Precisa ser levado pra dentro do programa do notebook, no lugar dos números chumbados — e provado que dá o mesmo resultado.</div></li>
+    <li><div class="t">O fio do ao vivo no Command Box está desligado</div>
+      <div class="d">A tela está pronta, o dado da nuvem chega, mas ninguém puxa pro bloco da frenada. Falta ligar esse fio pra ele sair de "aguardando ligação" pra "ao vivo".</div></li>
+    <li><div class="t">A freada de hoje é estimativa por GPS</div>
+      <div class="d">O sensor de pressão do pedal troca a estimativa pela freada real. O código diz instalação <b>15-16/06</b> (essa semana). Até lá dá pra construir tudo, mas não cravar o ponto exato da freada.</div></li>
   </ol>
 
+  <h2>O verdadeiro próximo passo</h2>
+  <div class="decisaobox">
+    <div class="q">Por onde começar a ligar a frenada de verdade? (os dois caminhos processam no notebook, como você quer)</div>
+    <div class="opc">
+      <div class="op rec">
+        <div class="recflag">Recomendado · começa já, sem esperar o sensor</div>
+        <div class="ot">Ligar os canos com o motor que já existe</div>
+        <div class="od">Reuso o cálculo de frenada que já roda no notebook (hoje no navegador), faço o resultado subir pra nuvem e ligo o fio que falta no Command Box. A corrente passa a funcionar de ponta a ponta — carro &rarr; notebook &rarr; nuvem &rarr; tela de 32&Prime; — rápido e sem obra grande.</div>
+      </div>
+      <div class="op">
+        <div class="ot">Reconstruir primeiro dentro do programa do notebook</div>
+        <div class="od">Levar o cálculo pra dentro do programa nativo do notebook (o destino final desenhado). É o certo no fim, mas é obra maior e demora mais até você ver funcionando.</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>O que eu NÃO posso afirmar (pra não inventar)</h2>
+  <ul class="honesto">
+    <li>Que o notebook já calcula a frenada — não calcula, os números de lá são de demonstração.</li>
+    <li>Que o Command Box mostra a frenada ao vivo — está "aguardando ligação", mostra dado gravado.</li>
+    <li>Que o iPhone contribui com a frenada — ele só manda posição (GPS).</li>
+    <li>Que a freada de hoje é a medida real do pedal — é estimativa por GPS até o sensor entrar.</li>
+    <li>Que dá pra cravar "freou X metros tarde" com o dado de hoje — o GPS é grosso demais pra isso.</li>
+  </ul>
+
   <div class="rodape">
-    <b>O que eu não faço sem você:</b> nada vai pro ar. Não mexo em produção, não publico nada, sem você ver funcionando antes e sem a frase "MIGRAR PARA PRODUÇÃO". Este documento é só o plano.
+    <b>O que eu não faço sem você:</b> nada vai pro ar. Não mexo em produção sem você ver antes e sem a frase "MIGRAR PARA PRODUÇÃO". Este documento é só o mapa.
   </div>
 
 </div>
