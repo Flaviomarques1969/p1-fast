@@ -572,7 +572,7 @@ Ações sobre findings/recommendations: [Aprovar] [Editar via slider/knob] [Reje
 
 Reaproveita `Components/BottomNav.swift`. Componente novo: `EngControl.swift` (slider/knob universais com animação tátil + haptic feedback + gating por papel × velocidade).
 
-**Sem versão live nesta sprint** — toda a interação fica disponível, mas o stream live de samples a 10 Hz só chega no Box Mode (MS-16.6). Validação visual em simulator iOS.
+**Sem versão live nesta sprint** — toda a interação fica disponível, mas o stream live de samples a 10 Hz só chega na vista Command Box (TV 32" via Fire TV Stick 4K Max abrindo o app na nuvem) em MS-16.6 _(atualizado 16/06/2026 — ver `docs/ARQUITETURA_DEFINITIVA.md`)_. Validação visual em simulator iOS.
 
 ### MS-16.6 — Command Box Engenharia: live na TV 32" (3-4 PRs)
 **Segunda UI, ao vivo**. A vista Engenharia do app na nuvem é aberta no navegador do Fire TV Stick 4K Max na TV 32" _(atualizado 16/06/2026 — ver `docs/ARQUITETURA_DEFINITIVA.md`; substitui a cadeia iOS Box Mode → AirPlay → Apple TV de MS-12)_. Subscribe Supabase Realtime no canal `live-stint-{id}` para receber:
