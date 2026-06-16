@@ -24,7 +24,7 @@
 - **Captura iOS Swift nativa preservada** (CoreMotion + CoreLocation + Daily.co), hub iOS preservado — ADR-018 com amendment 2026-05-09
 - **Plataforma do hub e captura:** iOS Swift nativo, iPhone único. Sem CarPlay, Apple Watch, Android, PWA — ADR-018
 - **Vídeo ao vivo:** Daily.co (câmera onboard frontal do iPhone) — `PLANO_FASE_1.md` §2
-- **Box cockpit:** App iOS modo BOX → AirPlay → Apple TV → TV 32" — mesmo doc, §2
+- **Box cockpit:** TV 32" via Fire TV Stick 4K Max rodando o navegador, que abre o app na nuvem. Sem Apple TV, sem AirPlay, sem espelhamento pelo celular. Processamento em dois lugares: notebook Windows (.exe) pro cockpit do piloto + app na nuvem pras demais funções. (atualizado 2026-06-16 — ver `docs/ARQUITETURA_DEFINITIVA.md`)
 - **Pendências obrigatório × adicional, vivas, por carro+evento** — `PLANO_FASE_1.md` §6 MS-5
 - **Detector ao vivo:** Port nativo Swift no iPhone + JS no Windows a partir do mesmo domínio — decidido 2026-05-03 / revisitado 2026-05-09
 - **Cockpit landscape:** forçado no notebook Windows (kiosk fullscreen) — revisitado 2026-05-09 com ADR-023
