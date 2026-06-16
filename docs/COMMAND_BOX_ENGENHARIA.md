@@ -39,7 +39,7 @@ O Command Box Engenharia **não é um app novo**. É uma **camada de produto** q
 
 **O que falta de UI:**
 
-- **Não existe nenhuma tela voltada ao engenheiro de pista** em nenhum lugar. Hub iOS tem Home/Eventos/Garagem/Pendências/PosStint (foco piloto/operação). Cockpit Windows é tela do piloto. Box Cockpit (Apple TV) é espelho. O "lado direito" do Command Box que o Flávio descreveu **não existe** como produto.
+- **Não existe nenhuma tela voltada ao engenheiro de pista** em nenhum lugar. Hub iOS tem Home/Eventos/Garagem/Pendências/PosStint (foco piloto/operação). Cockpit Windows é tela do piloto. O Command Box (TV 32") é uma janela do app na nuvem aberta no navegador do Fire TV Stick 4K Max _(atualizado 16/06/2026 — ver `docs/ARQUITETURA_DEFINITIVA.md`)_. O "lado direito" do Command Box que o Flávio descreveu **não existe** como produto.
 
 ---
 
