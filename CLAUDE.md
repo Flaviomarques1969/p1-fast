@@ -2,9 +2,10 @@
 
 ## Antes de fazer qualquer coisa, leia nesta ordem
 
-1. **`STATUS.md`** (raiz) — onde o projeto está agora
-2. **`docs/PLANO_FASE_1.md`** — DOC MESTRE, aprovado pelo Flávio 2026-05-03. Vence todos os outros. (O antigo `PLANO_FASE_1A_1B.md` foi arquivado em `docs/_archive/`.)
-3. **`ARCHITECTURE_DECISIONS.md`** (raiz) — 22 ADRs vigentes, não reabrir sem ordem
+1. **`docs/ARQUITETURA_DEFINITIVA.md`** — arquitetura canônica (Flávio 2026-06-16). Vence as demais.
+2. **`STATUS.md`** (raiz) — onde o projeto está agora
+3. **`docs/PLANO_FASE_1.md`** — DOC MESTRE, aprovado pelo Flávio 2026-05-03. Vence todos os outros. (O antigo `PLANO_FASE_1A_1B.md` foi arquivado em `docs/_archive/`.)
+4. **`ARCHITECTURE_DECISIONS.md`** (raiz) — 22 ADRs vigentes, não reabrir sem ordem
 
 ## Em caso de contradição entre docs
 
