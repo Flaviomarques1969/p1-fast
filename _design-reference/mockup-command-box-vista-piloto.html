@@ -7056,10 +7056,10 @@ html,body{
       if(rpmWrap){
         rpmWrap.classList.remove('zone-champagne','zone-amber','zone-red');
         if(rpm >= SHIFT_LIGHT_CFG.redline) rpmWrap.classList.add('zone-red');
-        else if(rpm >= SHIFT_LIGHT_CFG.shiftPoint) rpmWrap.classList.add('zone-amber');
+        else if(rpm >= ponto) rpmWrap.classList.add('zone-amber');
         else if(rpm >= 5700) rpmWrap.classList.add('zone-champagne');
       }
-      host.classList.toggle('shift-now', rpm >= SHIFT_LIGHT_CFG.shiftPoint);
+      host.classList.toggle('shift-now', rpm >= ponto);
     }
   }
   function startShiftLightAnimation(){
