@@ -28,6 +28,18 @@
    validação de sintaxe + smokes + servir 200. Backup: _design-reference/command-box-versoes/vista-piloto-PRE-etapa2b-ligar-trail-tipo-2026-06-15.html (MD5 conferido).
 12. **Status inicial:** iniciado.
 
+### TASK_DONE — Etapa 2b (2026-06-15 noite)
+- Pedido original conferido: sim
+- Ambiente trabalhado: desenvolvimento (mockup oficial; Vercel/nuvem intocada)
+- Produção foi alterada: não
+- Se produção foi alterada, autorização explícita registrada: n/a
+- Arquivos reais inspecionados: sim
+- Alterações feitas: sim — `_design-reference/mockup-command-box-vista-piloto.html` (9 edições: frxAlvoEm/frxPontos/frxDelta/frxChartSvg ganharam `alvo` opcional; `__FRX_REAL` + override em getFrenagemVerdictForCurve; buildFrenagemPanel com ideal-por-curva + nome real + delta real + 2 ramos novos SF/só-ideal; `_lastLiveT` + hook `window.__aplicarFrenagemReal`; 'frenagem' fora de DEP_LIGACAO; carregador `<script type=module>` no fim do <body>). Backup: `_design-reference/command-box-versoes/vista-piloto-PRE-etapa2b-ligar-trail-tipo-2026-06-15.html` (MD5 conferido).
+- Testes/validação executados: sim — sintaxe dos 4 blocos 0 falhas; smokes freio-trecho 29 / frenagem-real 16 / forma-trail 30 / frenagem-curvas-reais 18 (93/0); sanidade Node do dado por curva (8 curvas, 0..7; C1-C4 com volta real / Bruxa-Placar-S só-ideal / Vitória SF); navegador headless (CDP) confirmou dado real carregado, bloco aceso (sai cb-sem-real), nomes reais, ramos SF e com-volta ao vivo, ZERO erro/aviso de console, nenhum 404 na cadeia dos módulos; revisor adversarial reproduziu o ramo só-ideal (8 ok/0 fail) e confirmou Vmin intocado + sinal do delta correto.
+- Resultado: concluído em DEV — aguarda só confirmação VISUAL do Flávio no navegador (8078).
+- Pendências reais: (1) confirmar visual + frase "MIGRAR PARA PRODUÇÃO" antes de publicar; (2) DECISÃO do Flávio: veredito da JUNÇÃO (T2 residual ideal~65 vs volta real ~100 → marca "errado/freou demais") — julgar a volta real contra a forma prescrita do tipo é o desejado? não bloqueia; (3) Etapa 3 = selo física↔sensor + 2-de-2→3-de-3 quando a pressão real entrar + faxina do legado.
+- ACHADO PRÉ-EXISTENTE (não é regressão da 2b; idêntico no backup): ReferenceError `stopShiftLightAnimation is not defined` em `setupLigacaoAoVivo` (fiação shift-light/live) aborta parte daquela função. Fora do escopo; reportado ao Flávio.
+
 ## TASK_INIT — 2026-06-15 noite — FRENAGEM no dado real (Etapa 2a-bis): linha-ideal = trail PRESCRITO do tipo
 
 1. **Pedido de Flávio:** "RETOMAR FRENAGEM DO P1 FAST" → continuar a frenagem do Command Box. Feedback 15/06 (verbatim):
