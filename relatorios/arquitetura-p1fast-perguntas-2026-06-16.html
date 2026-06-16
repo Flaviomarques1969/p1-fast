@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arquitetura do P1 Fast — fechar de uma vez</title>
+<style>
+  :root{
+    --tinta:#1d2430; --suave:#5b6675; --linha:#e2e6ec; --fundo:#f6f7f9;
+    --cartao:#ffffff; --destaque:#0b5cab; --destaque-fraco:#eaf2fb;
+    --ok:#15633a; --ok-fraco:#e9f5ee; --alerta:#9a3412; --alerta-fraco:#fdf0e8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--fundo);color:var(--tinta);padding-bottom:96px;
+    font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{width:100%;max-width:none;padding:28px 40px 40px}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:-.2px}
+  .sub{color:var(--suave);margin:0 0 18px;font-size:15px}
+  .aviso{background:var(--destaque-fraco);border:1px solid #cfe0f3;border-radius:12px;padding:16px 20px;font-size:15.5px;margin-bottom:26px}
+  .aviso b{color:var(--destaque)}
+  .q{background:var(--cartao);border:1px solid var(--linha);border-radius:14px;padding:20px 22px;margin-bottom:18px}
+  .q .num{font-size:12px;font-weight:700;color:var(--destaque);letter-spacing:.05em;text-transform:uppercase}
+  .q .tit{font-size:18px;font-weight:700;margin:4px 0 6px}
+  .q .ctx{color:var(--suave);font-size:14.5px;margin-bottom:14px}
+  .q .obs{background:var(--alerta-fraco);border:1px solid #f3d9c8;border-radius:9px;padding:9px 13px;font-size:13.5px;color:var(--alerta);margin-bottom:14px}
+  .opcoes{display:flex;flex-direction:column;gap:10px}
+  label.op{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--linha);border-radius:10px;padding:13px 15px;cursor:pointer;background:var(--fundo);transition:.12s}
+  label.op:hover{border-color:#b9c4d2}
+  label.op.sel{border-color:var(--destaque);background:var(--destaque-fraco)}
+  label.op input{margin-top:3px;flex:none;width:17px;height:17px}
+  label.op .ol{font-weight:600}
+  label.op .od{color:var(--suave);font-size:13.5px;margin-top:2px}
+  .rec{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#fff;background:var(--ok);border-radius:999px;padding:1px 8px;margin-left:8px;vertical-align:middle}
+  .orient{margin-top:13px}
+  .orient label{font-size:13px;font-weight:700;color:var(--suave);text-transform:uppercase;letter-spacing:.04em}
+  textarea{width:100%;margin-top:6px;border:1px solid var(--linha);border-radius:9px;padding:10px 12px;font:inherit;font-size:14.5px;resize:vertical;min-height:46px;background:#fff}
+  textarea:focus{outline:2px solid var(--destaque-fraco);border-color:var(--destaque)}
+  .barra{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--linha);padding:14px 40px;display:flex;align-items:center;gap:18px;box-shadow:0 -4px 16px rgba(0,0,0,.05)}
+  .barra button{background:var(--destaque);color:#fff;border:0;border-radius:10px;padding:13px 26px;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+  .barra button:hover{background:#0a4f93}
+  .barra .status{color:var(--ok);font-weight:600;font-size:14.5px}
+  .barra .dica{color:var(--suave);font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Arquitetura do P1 Fast — fechar de uma vez</h1>
+  <p class="sub">16/06/2026 — você decide cada pedaço. Eu marquei a recomendação (o que entendi do seu conceito). Confirme, troque ou me oriente em cada um.</p>
+
+  <div class="aviso">
+    <b>O que isto vira:</b> as suas respostas aqui passam a ser a <b>regra definitiva e obrigatória</b> da arquitetura do P1 Fast. Tudo que eu tiver registrado em sentido contrário vai ser <b>apagado/corrigido</b> pra bater com isto. Depois de salvar, é a minha bússola — eu paro de reinterpretar.
+  </div>
+
+  <div id="perguntas"></div>
+</div>
+
+<div class="barra">
+  <button id="salvar" type="button">Salvar respostas</button>
+  <span class="dica" id="dica">Responda o que quiser e clique em Salvar. Depois me diga "fiz".</span>
+  <span class="status" id="status"></span>
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    id: 'natureza-dado',
+    tit: 'Como o dado anda: contínuo ou em lote?',
+    ctx: 'Você me corrigiu nisto agora. Quero travar.',
+    obs: 'Hoje parte do cálculo da freada no programa só fecha quando a curva termina. Você está definindo que o certo é contínuo.',
+    opcoes: [
+      { label: 'Contínuo, ponto a ponto, no instante em que é colhido', desc: 'Cada medida sai na hora (ex.: cruzou a linha de entrada, a velocidade daquele ponto já vai). É um fluxo o tempo todo.', rec: true },
+      { label: 'Em lote, quando a curva ou a volta fecha', desc: 'Junta os pontos, calcula um resultado e manda só no fim. (Foi o que eu assumi errado.)' },
+      { label: 'Misto', desc: 'Parte contínua, parte fechada no fim.' },
+    ],
+  },
+  {
+    id: 'fanout',
+    tit: 'No instante em que o dado é colhido, pra quem ele vai?',
+    ctx: 'Seu exemplo: o sensor pega a velocidade na linha de entrada e já manda.',
+    opcoes: [
+      { label: 'Ao mesmo tempo pro cockpit do piloto E pro app/nuvem', desc: 'Todas as telas veem o mesmo dado, no mesmo instante. Ninguém espera ninguém.', rec: true },
+      { label: 'Primeiro uma tela, as outras puxam depois', desc: 'Há uma ordem; uma tela vê antes, as outras atrasadas.' },
+      { label: 'Só pro cockpit; o resto é separado', desc: 'O app e o Command Box não recebem ao vivo.' },
+    ],
+  },
+  {
+    id: 'onde-processa',
+    tit: 'Onde o dado é processado (a conta da frenada, etc.)?',
+    ctx: 'Você disse: a frenada nunca vai direto pro app; primeiro roda no notebook.',
+    obs: 'Hoje o programa do notebook NÃO calcula a frenada — mostra número de demonstração. A conta real só existe no navegador. Este é o buraco que a gente vai fechar.',
+    opcoes: [
+      { label: 'No notebook (programa do Windows no carro)', desc: 'O notebook processa. As telas (cockpit, app, Command Box) recebem pronto.', rec: true },
+      { label: 'No celular', desc: 'O app do celular faz a conta.' },
+      { label: 'Em cada tela', desc: 'Cada tela calcula por conta própria.' },
+      { label: 'Na nuvem', desc: 'A conta acontece no servidor da nuvem.' },
+    ],
+  },
+  {
+    id: 'o-que-e-command-box',
+    tit: 'O que é o Command Box?',
+    ctx: 'Você disse: "o Command Box em si ele é uma tela".',
+    opcoes: [
+      { label: 'É só uma tela (mostra; não calcula)', desc: 'Recebe o dado pronto e exibe. É projetada pelo celular no Apple TV 4K, na TV de 32 polegadas.', rec: true },
+      { label: 'É um programa que também calcula', desc: 'Além de mostrar, faz contas.' },
+      { label: 'É um site/endereço na internet', desc: 'Um endereço web próprio. (Foi o que eu inventei errado.)' },
+    ],
+  },
+  {
+    id: 'papeis-celular',
+    tit: 'O que o celular (app) faz? (marque todas)',
+    ctx: 'Você listou várias funções. Confirme e complete na orientação.',
+    multi: true,
+    opcoes: [
+      { label: 'Planejamento do stint (e isso vai pro notebook)', desc: 'O piloto monta antes da volta, no evento ou fora: como vai ser o stint, se e quando parar.', rec: true },
+      { label: 'Projetar o Command Box no Apple TV 4K', desc: 'É o celular que joga a tela do Command Box pra TV.', rec: true },
+      { label: 'Gerenciar carro, garagem, manutenção, itens, pendências', desc: 'As funções de gestão do dia a dia.', rec: true },
+      { label: 'Mostrar os dados ao vivo (tela de ver dados)', desc: 'Quem olha o celular vê o dado ao vivo se estiver na tela de dados.', rec: true },
+    ],
+  },
+  {
+    id: 'planejamento-stint',
+    tit: 'O planejamento do stint: onde é feito e pra onde vai?',
+    ctx: '',
+    opcoes: [
+      { label: 'Feito no celular, antes da volta, e vai pro notebook', desc: 'No evento ou fora dele. O notebook recebe o plano.', rec: true },
+      { label: 'Feito na web', desc: 'Montado num site, não no celular.' },
+      { label: 'Feito direto no notebook', desc: 'O piloto monta no próprio notebook.' },
+    ],
+  },
+  {
+    id: 'quais-telas',
+    tit: 'Quais telas o sistema tem?',
+    ctx: 'Você disse: só três áreas têm tela.',
+    opcoes: [
+      { label: 'Exatamente três: cockpit do piloto, app do celular, Command Box', desc: 'Nenhuma outra superfície de tela além dessas.', rec: true },
+      { label: 'Tem outras', desc: 'Me oriente quais na caixa abaixo.' },
+    ],
+  },
+  {
+    id: 'papel-nuvem',
+    tit: 'Qual o papel da nuvem?',
+    ctx: '',
+    opcoes: [
+      { label: 'É o canal que liga tudo ao vivo (transporta, não calcula)', desc: 'Leva o dado contínuo do notebook pra todas as telas, no mesmo instante.', rec: true },
+      { label: 'A nuvem também calcula', desc: 'Além de transportar, faz contas.' },
+      { label: 'Não usa nuvem', desc: 'Tudo por cabo/local, sem nuvem.' },
+    ],
+  },
+  {
+    id: 'fonte-freada',
+    tit: 'A intensidade da freada hoje vem de quê?',
+    ctx: 'O sensor de pressão do freio ainda não está no carro.',
+    obs: 'O código aponta instalação do sensor em 15-16/06.',
+    opcoes: [
+      { label: 'Hoje estimativa por GPS; o sensor troca pela medida real quando entrar', desc: 'O sistema troca o rótulo sozinho de "estimativa" pra "sensor" quando a pressão real começar a chegar.', rec: true },
+      { label: 'Só com o sensor real (não usar estimativa enquanto isso)', desc: 'Nada de estimativa por GPS; esperar o sensor.' },
+    ],
+  },
+  {
+    id: 'fluxo-completo',
+    tit: 'O caminho completo do dado está certo assim?',
+    ctx: 'Confirme a corrente inteira, de ponta a ponta.',
+    opcoes: [
+      { label: 'Carro → notebook processa (contínuo) → nuvem espalha ao vivo → ao mesmo tempo: cockpit do piloto + celular (vê na tela de dados, ou projeta o Command Box no Apple TV) + outros usos', desc: 'Tudo ao vivo, ponto a ponto, todas as telas juntas.', rec: true },
+      { label: 'Está quase, mas tem coisa errada', desc: 'Me corrija exatamente na orientação abaixo.' },
+    ],
+  },
+  {
+    id: 'outros-usos',
+    tit: '"Outros usos do mesmo dado" — quais são?',
+    ctx: 'Você citou que o mesmo dado serve a outros usos. Quais? (escreva)',
+    aberta: true,
+  },
+  {
+    id: 'o-que-falta-entender',
+    tit: 'Tem algo da arquitetura que eu ainda não entendi?',
+    ctx: 'Escreva qualquer pedaço que falta pra ficar claro de uma vez.',
+    aberta: true,
+  },
+];
+
+const cont = document.getElementById('perguntas');
+QUESTIONS.forEach((q, i) => {
+  const card = document.createElement('div');
+  card.className = 'q';
+  card.dataset.qid = q.id;
+  let html = '<div class="num">Pergunta ' + (i + 1) + '</div><div class="tit">' + q.tit + '</div>';
+  if (q.ctx) html += '<div class="ctx">' + q.ctx + '</div>';
+  if (q.obs) html += '<div class="obs">Observação técnica: ' + q.obs + '</div>';
+  if (!q.aberta) {
+    html += '<div class="opcoes">';
+    q.opcoes.forEach((o, j) => {
+      const tipo = q.multi ? 'checkbox' : 'radio';
+      const checked = o.rec ? 'checked' : '';
+      const selcls = o.rec ? ' sel' : '';
+      html += '<label class="op' + selcls + '"><input type="' + tipo + '" name="' + q.id + '" value="' + j + '" ' + checked + '>'
+        + '<span><span class="ol">' + o.label + (o.rec ? '<span class="rec">Recomendado</span>' : '') + '</span>'
+        + '<span class="od">' + o.desc + '</span></span></label>';
+    });
+    html += '</div>';
+  }
+  html += '<div class="orient"><label>' + (q.aberta ? 'Sua resposta' : 'Ou me oriente (texto livre)') + '</label>'
+    + '<textarea data-orient="' + q.id + '" placeholder="' + (q.aberta ? 'Escreva aqui...' : 'Se quiser explicar ou corrigir, escreva aqui...') + '"></textarea></div>';
+  card.innerHTML = html;
+  cont.appendChild(card);
+});
+
+// realce visual da seleção
+cont.addEventListener('change', (e) => {
+  if (e.target.matches('input')) {
+    const card = e.target.closest('.q');
+    if (e.target.type === 'radio') {
+      card.querySelectorAll('label.op').forEach(l => l.classList.remove('sel'));
+      e.target.closest('label.op').classList.add('sel');
+    } else {
+      e.target.closest('label.op').classList.toggle('sel', e.target.checked);
+    }
+  }
+});
+
+document.getElementById('salvar').addEventListener('click', () => {
+  const agora = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const stamp = '' + agora.getFullYear() + pad(agora.getMonth() + 1) + pad(agora.getDate()) + '-' + pad(agora.getHours()) + pad(agora.getMinutes()) + pad(agora.getSeconds());
+  const respostas = QUESTIONS.map(q => {
+    const orient = (document.querySelector('[data-orient="' + q.id + '"]').value || '').trim();
+    if (q.aberta) return { id: q.id, pergunta: q.tit, tipo: 'aberta', resposta: orient };
+    const marcados = Array.from(document.querySelectorAll('input[name="' + q.id + '"]:checked'))
+      .map(inp => q.opcoes[Number(inp.value)].label);
+    return { id: q.id, pergunta: q.tit, tipo: q.multi ? 'multipla' : 'unica', escolha: q.multi ? marcados : (marcados[0] || null), orientacao: orient };
+  });
+  const payload = { titulo: 'Arquitetura P1 Fast — respostas definitivas do Flavio', gerado_em: agora.toISOString(), respostas };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'p1fast-arquitetura-respostas-' + stamp + '.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  document.getElementById('status').textContent = 'Salvo. Agora me diga "fiz".';
+  document.getElementById('dica').style.display = 'none';
+});
+</script>
+</body>
+</html>
