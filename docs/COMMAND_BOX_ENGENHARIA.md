@@ -837,7 +837,7 @@ Reaproveita o smoke harness JS já existente (`tests/node-smoke-*.mjs`, 6.481 li
 | **H — Simulação de ajuste** | MS-16.8 | Projeção visual e validação interativa | F + G |
 | **I — Engine cells (opcional)** | MS-16.9 | Histograma de células, 2 rules extras | C + decisão G5 |
 
-**Ordem dura: A → B → C → (D + E em paralelo) → F → (G + H em paralelo) → I.** Cada fase é mergeavel sozinha; cada uma agrega valor sozinha. Fase F precisa de MS-12 (AirPlay → Apple TV → TV 32") já fechado em produção — ainda não está; é gate adicional ao MS-9.
+**Ordem dura: A → B → C → (D + E em paralelo) → F → (G + H em paralelo) → I.** Cada fase é mergeavel sozinha; cada uma agrega valor sozinha. Fase F precisa de MS-12 (Command Box na TV 32" via Fire TV Stick 4K Max abrindo o app na nuvem) já fechado em produção — ainda não está; é gate adicional ao MS-9. _(atualizado 16/06/2026 — ver `docs/ARQUITETURA_DEFINITIVA.md`; antes era AirPlay → Apple TV)_
 
 ---
 
