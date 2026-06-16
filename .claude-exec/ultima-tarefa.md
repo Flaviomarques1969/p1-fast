@@ -3,6 +3,16 @@
 > Registro anterior (Botão APAGAR da Garagem, 14/06 noite) arquivado em
 > `.claude-exec/ultima-tarefa-ANTERIOR-garagem-apagar-2026-06-14.md`.
 
+## TASK_DONE — 2026-06-15 noite — CORRIGIR O CONCEITO da frenagem (referência = melhor volta, não régua teórica) — EM DEV, NÃO PUBLICADO
+- **Correção do Flávio (card):** a referência da frenagem NÃO é uma régua teórica por tipo que eu monto — é o **registro da melhor volta** (a curva + a volta mais rápida mostram se/quanto/onde freou). E eu afirmei "o Bubi freia ~100% na Junção" SEM base: não há sensor de freio, dado é GPS ~1 Hz do celular (a passagem que abri tem só 9 pontos pra curva inteira), não é o 25 Hz do RaceBox. Decisão dele: "Corrigir o conceito agora + segurar a publicação".
+- **O que mudou** (só `_design-reference/mockup-command-box-vista-piloto.html`, função `buildFrenagemPanel`, 3 hunks): (1) referência do parecer trocada de `cen.ideal` (régua teórica) para `cen.ref` (melhor volta registrada, que o motor `frenagem-real.js` já calcula na mesma grade); (2) ramo sem volta real (Bruxa/Placar/"S") deixou de desenhar a forma teórica — mostra estado honesto "sem dado de freio · entra com o sensor / 25 Hz" (não fica em branco, mas não inventa); (3) tarja honesta no parecer: "PROVISÓRIO · REFERÊNCIA = SUA MELHOR VOLTA · GPS ~1 Hz · SEM SENSOR DE FREIO".
+- **Vmin INTOCADO** (confirmado por diff + grep: `_shortRevealStateForLap`/`updateVminFromLap`/`_applyLiveCurveOffset` não tocados; classes frx-* próprias). Régua teórica (`forma-trail-tipo.js`/`cen.ideal`) NÃO foi apagada — só deixou de ser consumida no painel; segue valendo no cockpit de treino.
+- **Backup ANTES:** `_design-reference/command-box-versoes/vista-piloto-PRE-corrigir-conceito-2026-06-15.html` (MD5 conferido).
+- **Validação:** diff mínimo (3 hunks); motor classifica as 8 curvas certo (C1/Reta Oposta/C2/Junção = volta real; Bruxa/Placar/"S" = sem dado; Vitória = SF); navegador headless (Playwright/CDP) — Curva 01 renderiza referência=melhor volta + tarja provisório (foto /tmp/p1_frenagem_comdado.png), Vitória renderiza pé embaixo, **0 erro novo de console**; único erro = o pré-existente `stopShiftLightAnimation` (luz de marcha, NÃO é da frenagem). NÃO rodei painel adversarial completo: diff trivial e de baixo risco, já provado por motor+render+diff.
+- **Resultado:** CONCLUÍDO em DEV. **NÃO publicado.** Pendência única pra ir ao ar: confirmação visual do Flávio + frase "MIGRAR PARA PRODUÇÃO". Mas a recomendação é SEGURAR até o sensor de freio (16-17/06) / GPS 25 Hz darem base pro parecer.
+- **Ressalva honesta ao olhar:** no exemplo parado o painel mostra a SUA MELHOR volta (live = ref) → bate 100% com a referência (parece "certo / delta 0"); no ao vivo real, compara a volta do momento contra a melhor.
+- Pendência registrada à parte: erro pré-existente da luz de marcha (`stopShiftLightAnimation` em `setupLigacaoAoVivo`) — aguardo Flávio dizer se trato depois, em separado.
+
 ## TASK_INIT — 2026-06-15 noite (pós-/clear) — FRENAGEM Etapa 2b: ligar a forma-ideal-por-tipo no PAINEL OFICIAL
 
 1. **Pedido de Flávio:** "RETOMAR FRENAGEM DO P1 FAST" (texto, não comando). Continuar do ponto exato: a Etapa 2a-bis
