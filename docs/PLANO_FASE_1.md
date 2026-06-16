@@ -48,7 +48,7 @@ porque é exatamente isso que o produto entrega ao piloto.
 | Telemetria ao vivo | Supabase Realtime (eventos agregados ≤10 Hz, NÃO samples raw) | ADR-014 |
 | **Transporte iPhone ↔ notebook Windows** | **Cabo USB primário (TCP-over-USB via `usbmuxd`/`iproxy`, latência 5-15 ms) + Supabase Realtime como fallback automático.** Notebook escolhe via `TransportSelector` baseado em heartbeat 1 Hz. | **ADR-023 (amendment 2 — 2026-05-09)** |
 | Histórico | Supabase Postgres | — |
-| Box Cockpit | App iOS modo "BOX" → AirPlay → Apple TV → TV 32" | — |
+| Box Cockpit | TV 32" via Fire TV Stick 4K Max (navegador → app na nuvem) — (atualizado 16/06/2026 - ver docs/ARQUITETURA_DEFINITIVA.md) | — |
 | Convite usuário | Link gerado pelo app → share sheet iOS → WhatsApp manual | — |
 
 ---
