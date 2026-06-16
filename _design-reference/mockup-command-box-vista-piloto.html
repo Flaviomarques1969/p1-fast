@@ -7030,7 +7030,12 @@ html,body{
   // Renderiza o bloco do shift light a partir de VALORES (rpm, marcha).
   // Usado tanto pela demonstração (roteiro) quanto pelo modo REAL (RPM do carro).
   // Calibração vem de SHIFT_LIGHT_CFG (Bubi: troca em 6.050, sirene em 6.300).
-  function renderShiftLightFromValues(rpm, gear){
+  function renderShiftLightFromValues(rpm, gear, rpmTroca){
+    // rpmTroca (opcional) = ponto de troca vindo do cérebro do cockpit
+    // (shift-light-orquestrador.js: potência máxima 6.050 + aprendizado). Sem ele,
+    // usa a calibração local. O VISUAL da barra (escala das 12 luzes) NÃO muda —
+    // só o ponto onde a luz vira "TROCAR AGORA" (âmbar + shift-now).
+    var ponto = (typeof rpmTroca === 'number' && isFinite(rpmTroca)) ? rpmTroca : SHIFT_LIGHT_CFG.shiftPoint;
     var pct = (rpm - SHIFT_LIGHT_CFG.rpmMin) / (SHIFT_LIGHT_CFG.rpmMax - SHIFT_LIGHT_CFG.rpmMin);
     var litCount = Math.max(0, Math.min(12, Math.round(pct * 12)));
 
