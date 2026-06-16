@@ -574,8 +574,8 @@ Reaproveita `Components/BottomNav.swift`. Componente novo: `EngControl.swift` (s
 
 **Sem versão live nesta sprint** — toda a interação fica disponível, mas o stream live de samples a 10 Hz só chega no Box Mode (MS-16.6). Validação visual em simulator iOS.
 
-### MS-16.6 — Box Mode Engenharia: live na TV 32" (3-4 PRs)
-**Segunda UI, ao vivo**. iOS Box Mode ganha aba/visão Engenharia que renderiza para AirPlay → Apple TV → TV 32" (mesma cadeia de MS-12). Subscribe Supabase Realtime no canal `live-stint-{id}` para receber:
+### MS-16.6 — Command Box Engenharia: live na TV 32" (3-4 PRs)
+**Segunda UI, ao vivo**. A vista Engenharia do app na nuvem é aberta no navegador do Fire TV Stick 4K Max na TV 32" _(atualizado 16/06/2026 — ver `docs/ARQUITETURA_DEFINITIVA.md`; substitui a cadeia iOS Box Mode → AirPlay → Apple TV de MS-12)_. Subscribe Supabase Realtime no canal `live-stint-{id}` para receber:
 - Snapshots agregados a 10 Hz (T4000 + IMU/GPS — vindos do notebook Windows que cruza os dois fluxos)
 - Stream de findings/recommendations em tempo real
 - Stream de alertas determinísticos da Camada 1
