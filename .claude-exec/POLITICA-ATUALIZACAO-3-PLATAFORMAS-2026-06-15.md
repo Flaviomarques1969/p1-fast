@@ -2,7 +2,8 @@
 
 Data: 2026-06-15
 Plataformas: (1) Notebook Windows — .exe nativo (C#/.NET 8); (2) iOS — app P1 Fast (Swift);
-(3) Command Box — app iOS modo BOX via AirPlay → Apple TV → TV.
+(3) Command Box — TV 32" via Fire TV Stick 4K Max rodando o navegador, que abre o app na nuvem
+(atualizado 16/06/2026 — ver docs/ARQUITETURA_DEFINITIVA.md).
 Base: levantamento do código real (não suposição). Evidências com caminho:linha abaixo.
 
 ## Diagnóstico real (o que o código mostra)
