@@ -767,7 +767,7 @@ O 10,5" é **canal de retorno do Command Box para dentro do carro**. Quem decide
 
 ### 7.4 Operação (entrada) é só pelos iPhones
 
-- **iPhone do box em Box Mode**: engenheiro toca cards na TV 32" via espelho no próprio iPhone (Box Mode = iPhone sendo "mouse" + AirPlay sendo "monitor"). Botões `[Aprovar]` `[Editar]` `[Rejeitar]` `[Simular]` ficam acessíveis no iPhone (mesmo na TV o foco visual está nos cards). Ergonomicamente igual ao box do MS-12 já planejado.
+- **Celular do box + Command Box (TV 32")**: a TV 32" abre o app na nuvem pelo navegador do Fire TV Stick 4K Max (TV = monitor); o engenheiro opera os cards no próprio celular acessando o mesmo app na nuvem (celular = controle). Botões `[Aprovar]` `[Editar]` `[Rejeitar]` `[Simular]` ficam acessíveis no celular (mesmo na TV o foco visual está nos cards). _(atualizado 16/06/2026 — ver `docs/ARQUITETURA_DEFINITIVA.md`; substitui o Box Mode/AirPlay de MS-12)_
 - **iPhone do time mobilidade**: iOS hub Tab Engenharia, fora do Box Mode. Engenheiro/chefe revisa histórico, decisões cross-stint, edição offline (sincroniza por Realtime).
 - **Notebook**: zero operação. Só roda o cockpit pilot em display 2 (kiosk fullscreen) + driver T4000 + publisher Realtime. Nem teclado nem mouse no fluxo normal.
 
