@@ -24,7 +24,13 @@ mesmos dados para o app na nuvem**, que processa para tudo mais. Todas as telas 
 **3) USO DAS TELAS — três telas, cada uma com sua fonte:**
 - **Cockpit do piloto** → usa os dados processados pelo **.exe** (no carro).
 - **App (tem várias telas dentro)** → usa os dados processados **na nuvem**, conforme cada tela.
-- **Command Box** → apresenta os dados gerados pelo **.exe**.
+- **Command Box** → é UMA TELA do app: mostra o que o **app processa na nuvem** (a partir da base que o
+  .exe capturou e enviou pra nuvem). O notebook NÃO processa pro Command Box — fica focado no piloto.
+
+> **Importante (decisão Flávio):** "o Command Box não calcula" = a **TV** (a superfície) não calcula. Quem
+> processa pro Command Box é o **app na nuvem**. Ex.: converter GPS na posição da tela (projeção) é
+> processamento do **app na nuvem** — não do notebook (que só cuida do piloto) e não da TV. Assim o notebook
+> fica leve, focado no crítico do piloto, e as "consultas" do app ficam noutro nível de criticidade, na nuvem.
 
 ## 1. O dado é contínuo (streaming), nunca em lote
 
