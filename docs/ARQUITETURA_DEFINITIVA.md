@@ -11,6 +11,21 @@ O carro gera dados o tempo todo; o **notebook no carro** processa para o piloto 
 mesmos dados para o app na nuvem**, que processa para tudo mais. Todas as telas mostram o mesmo dado
 **ao vivo, no mesmo instante**.
 
+## As três áreas do sistema (o mapa mental)
+
+**1) CAPTAÇÃO** — só no carro, pelos sensores (GPS, sensores, T4000, câmera Osmo 6). O dado nasce aqui.
+
+**2) PROCESSAMENTO — em DOIS lugares:**
+- **No .exe (programa do Windows) dentro do carro.** Por dois motivos: (a) **robustez** — funciona mesmo
+  sem internet/sinal/transmissão, porque captura e processa ali mesmo; (b) **desempenho** — processa onde
+  capturou, sem latência.
+- **No app na nuvem.** O carro envia o mesmo dado pra nuvem; lá o app processa o que cada tela dele precisa.
+
+**3) USO DAS TELAS — três telas, cada uma com sua fonte:**
+- **Cockpit do piloto** → usa os dados processados pelo **.exe** (no carro).
+- **App (tem várias telas dentro)** → usa os dados processados **na nuvem**, conforme cada tela.
+- **Command Box** → apresenta os dados gerados pelo **.exe**.
+
 ## 1. O dado é contínuo (streaming), nunca em lote
 
 O dado é gerado e enviado **no instante em que é colhido**, ponto a ponto. Não existe "fecha a curva,
