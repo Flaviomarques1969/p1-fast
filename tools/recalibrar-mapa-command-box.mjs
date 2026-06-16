@@ -17,9 +17,10 @@
 //   node tools/recalibrar-mapa-command-box.mjs
 
 import { readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { geoParaDesenho, PONTOS_DESENHO } from '../web/cockpit/pista-oficial-brasilia.js';
 
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const TRACK_D = readFileSync('/tmp/recal-cb/track-d.txt', 'utf8').trim();
 const N = 360;                 // amostras por volta para o casamento
 const STROKE_W = 22;           // largura do asfalto desenhado no CB (raio 11 px, ver mockup off-track)
