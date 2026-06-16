@@ -12,3 +12,12 @@
 - **REGRA DURA:** NAO tocar no Vmin (compartilha fr-*/_shortRevealStateForLap); classes proprias; BACKUP antes de tocar no mockup; arranjo do Flavio (ATUAL.json) intocado; servir SO pela 8078; dado tem que ser CONTINUO ponto a ponto (nao em lote).
 - **Achado base (auditoria anterior, prova):** a bolinha "live" anda por RELOGIO (mockup:6979/6988), GPS real CHEGA mas e IGNORADO (:7756-7757 so escrevem), frenada em DEP_LIGACAO (:7677), pista-oficial-brasilia.js NAO e carregado no mockup.
 - **Status inicial:** iniciado — fase de mapeamento/desenho.
+
+## RESULTADO DA AUDITORIA (workflow 6 agentes, 16/06) — meu plano FOI REFUTADO
+Veredito dos 2 céticos (confiança alta): "bolinha fiel com esforço médio" é FALSO. Esforço real = ALTO. Provas:
+1. **Projeção GPS→tela não existe nesta tela e a que existe não serve.** SVG do Command Box = viewBox "130 110 580 660" (espaço 580×660, traço hardcoded mockup:3502/3533). Única função GPS→pixel do projeto = `geoParaDesenho` em pista-oficial-brasilia.js, espaço 823×799 (linhas 9-10/22-26), calibrada pra OUTRO desenho e NEM carregada no mockup (grep zero). Reuso direto joga a bolinha pra longe → precisa re-calibrar do zero pro Command Box.
+2. **GPS de hoje é ~1 Hz (grosseiro).** A ~100 km/h = ~28 m por amostra → bolinha aos saltos, não fiel. Sem suavização por GPS no mockup. O 25 Hz (RaceBox) que resolveria está SPEC ARQUIVADA/condicional (docs/hardware/RACEBOX_INTEGRATION_SPEC.md:3) — futuro, não realidade.
+3. **liveT (relógio fictício) move ~12 funções**, não só a bolinha (mockup:6976-7011: reveal, trajetória colorida, lap-wrap, passagem, frenagem, vmin, delta-acum). Mover só a bolinha dessincroniza a tela. Honesto = trocar a FONTE do liveT (relógio→fração-de-arco do GPS) = redesenho.
+4. **DECISÃO DE ARQUITETURA (do Flávio):** ARQUITETURA_DEFINITIVA.md:49/77 "Command Box não calcula nada, só apresenta o que o .exe gera". Projetar GPS = cálculo. Quem projeta — notebook (manda posição pronta, fiel à regra) ou Command Box (rápido de mostrar, viola a regra)? Canal hoje só manda lat/lng cru (cloud-bridge.js:81-87), sem progresso pronto.
+Limitação honesta: 1 das 4 frentes (fonte-gps) não devolveu estruturado; coberta pelo cético de dados. Fluidez/sincronismo/latência só se provam com carro na pista.
+Status: auditoria concluída — aguardando decisão do Flávio sobre quem projeta o GPS antes de construir.
