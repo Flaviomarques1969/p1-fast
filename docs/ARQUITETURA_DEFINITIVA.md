@@ -66,7 +66,7 @@ Os dois processam. O notebook serve o piloto; a nuvem serve todo o resto.
 |---|---|---|
 | **Cockpit do piloto** | O que o piloto vê no carro (no notebook Windows) | Dados processados pelo **.exe** (no carro) |
 | **App do celular** | Cliente que acessa o app na nuvem; tem várias telas dentro | Dados processados **na nuvem**, conforme cada tela |
-| **Command Box** | Uma TV de 32" no box (Fire TV Stick 4K Max → navegador → app na nuvem) | Dados gerados pelo **.exe** |
+| **Command Box** | Uma TV de 32" no box (Fire TV Stick 4K Max → navegador → app na nuvem) | O **app na nuvem** processa (a partir da base capturada/enviada pelo .exe); a TV só mostra |
 
 Nenhuma outra superfície de tela além dessas três.
 
