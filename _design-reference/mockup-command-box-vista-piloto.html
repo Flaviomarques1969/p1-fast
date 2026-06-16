@@ -7691,7 +7691,7 @@ html,body{
     liveSpeed  = function(){ return (REAL.fresh && REAL.kmh    != null) ? REAL.kmh    : 0; };
     liveRPM    = function(){ return (REAL.fresh && REAL.rpm    != null) ? REAL.rpm    : 0; };
     liveLambda = function(){ return (REAL.fresh && REAL.lambda != null) ? REAL.lambda : 0; };
-    liveGear   = function(){ var m = window.__marchaBrain ? window.__marchaBrain.getMarcha() : null; return (m!=null) ? m : '—'; };
+    liveGear   = function(){ return (REAL.fresh && REAL.marcha != null) ? REAL.marcha : '—'; };
     liveParcial= function(){ return '—'; };
     liveDelta  = function(){ return 0; };
     liveCarro  = function(){ return { tempMotor:(REAL.water!=null?REAL.water:0), tempCambio:0, pressOleo:0, pressCambio:0 }; };
