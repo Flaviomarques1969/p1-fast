@@ -21,3 +21,29 @@ Veredito dos 2 céticos (confiança alta): "bolinha fiel com esforço médio" é
 4. **DECISÃO DE ARQUITETURA (do Flávio):** ARQUITETURA_DEFINITIVA.md:49/77 "Command Box não calcula nada, só apresenta o que o .exe gera". Projetar GPS = cálculo. Quem projeta — notebook (manda posição pronta, fiel à regra) ou Command Box (rápido de mostrar, viola a regra)? Canal hoje só manda lat/lng cru (cloud-bridge.js:81-87), sem progresso pronto.
 Limitação honesta: 1 das 4 frentes (fonte-gps) não devolveu estruturado; coberta pelo cético de dados. Fluidez/sincronismo/latência só se provam com carro na pista.
 Status: auditoria concluída — aguardando decisão do Flávio sobre quem projeta o GPS antes de construir.
+
+## EXECUÇÃO — ITEM 1 (recalibração) + ITEM 2 (suavização), 16/06 (autorizado: "faça primeiro a recalibração e depois siga para o item 2")
+Ambiente: DESENVOLVIMENTO. Produção NÃO tocada. Mockup do Command Box NÃO tocado (diff contra backup = idêntico).
+BACKUP: `_design-reference/_backups/mockup-command-box-vista-piloto.BACKUP-recalibracao-2026-06-16.html`.
+
+ITEM 1 — RECALIBRAÇÃO (feita e provada):
+- `tools/recalibrar-mapa-command-box.mjs` — acha a transformação de semelhança (escala+rotação+posição+espelho) desenho-oficial(823×799) → traço do Command Box (viewBox 130 110 580 660), testando todas as rotações/direções/espelho. Reusa a amarração provada GPS→desenho-oficial (pista-oficial-brasilia.js).
+- Saída: `web/cockpit/pista-brasilia-commandbox.js` (função `geoParaCommandBox(lat,lng)`).
+- VALIDADO com volta REAL do Bubi (gps-23-05.tsv, 1013 leituras, independente do ajuste): mediana 7,3 px (0,33 largura de pista), p95 22,9 px (~1 largura), máx 53,8 px (~2,4 larguras, 1-2 curvas onde o desenho estilizado abre). Sobreposição de caixas 100%, centros a 15 px.
+
+ITEM 2 — SUAVIZAÇÃO (feita, testada, demonstrada):
+- Verificado: GPS real é ~1 leitura/seg (mediana 1000 ms; buraco máx 9,2 s) → ~28 m/leitura a 100 km/h. Suavização necessária confirmada.
+- `web/cockpit/suavizador-bolinha.js` — desliza pela FRAÇÃO DE ARCO do traço (sempre na pista), trata virada de volta e NÃO inventa trajeto em perda de sinal (marca perdido).
+- `tests/node-smoke-suavizador-bolinha.mjs` — 10/10 verdes.
+
+PROVA VISUAL (aberta no navegador): `relatorios/prova-bolinha-command-box.html` — pista do CB + volta real por cima + 2 bolinhas (crua pulando 1/seg vs suavizada deslizando 60 q/s), trecho limpo de ~95 s tocado em 14 s.
+
+PENDENTE (NÃO feito de propósito — é item 3 + decisão do Flávio): ligar de verdade no mockup (trocar o relógio fictício liveT pela fração derivada do GPS ao vivo) e DECISÃO A vs B (quem projeta: notebook ou Command Box).
+
+TASK_DONE:
+- Pedido conferido: sim (item 1 depois item 2)
+- Ambiente: desenvolvimento | Produção alterada: não | Mockup alterado: não
+- Arquivos inspecionados/criados: sim (6 novos; mockup preservado, backup feito)
+- Validação executada: sim (volta real projetada + 10 testes do suavizador + prova visual no navegador)
+- Resultado: concluído (itens 1 e 2). Item 3 (ligar ao vivo no mockup) aguarda decisão A vs B.
+- Pendências reais: decisão A vs B (quem projeta o GPS) antes de fundir no mockup ao vivo.
