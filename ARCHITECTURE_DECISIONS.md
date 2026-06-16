@@ -125,7 +125,7 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 | **Notebook Windows** (host) | Hospeda o app cockpit (WinUI 3 + C# .NET 8), driver T4000 (USB/CAN), processamento ao vivo (delta, halo, shift light, apex) com dados próprios + IMU/GPS recebidos do iPhone via cabo USB / Supabase Realtime. Display interno do notebook fica com a área de trabalho normal pra engenheiro/instalador. |
 | **Tela 10,5" externa** (target visual do piloto) | Plugada no notebook (HDMI/USB-C/DisplayPort), montada **invertida** no painel, rotação 180° via Windows Display Settings. Recebe a janela cockpit fullscreen (`--display-index 2`). É a tela cuja resolução nativa define o viewport alvo do mockup canônico (MS-13.1). |
 | **iPhone 16 Pro Max** | Captura IMU 100 Hz + GPS 1 Hz (CoreMotion / CoreLocation), câmera onboard frontal (Daily.co), agregador de tudo (sensores próprios + T4000 lido do canal Realtime do Windows) e uploader pro mundo externo. **Sem cockpit-display ativo durante a pilotagem.** |
-| **Apple TV (Box Cockpit)** | Inalterado — espelha o cockpit via Supabase Realtime, AirPlay do iPhone do operador do box. |
+| **Command Box (TV 32")** | TV de 32" no box, acessada por um **Fire TV Stick 4K Max** que roda o navegador e abre o **app na nuvem** (que consome o canal Supabase Realtime). Não há mais Apple TV nem AirPlay/espelhamento pelo celular. (atualizado 16/06/2026 — ver docs/ARQUITETURA_DEFINITIVA.md) |
 
 **Transporte entre Windows e iPhone**: ambos publicam no **Supabase Realtime** e ambos assinam o canal contrário. Sem cabo de dados entre eles. O cabo USB iPhone↔notebook serve só pra manter a bateria do iPhone. Latência típica 150-500 ms — aceita pra primeiro field test, pode migrar pra Wi-Fi local (iPhone hotspot + WebSocket) se virar dor.
 
