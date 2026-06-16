@@ -1,89 +1,135 @@
-// gerar-prova-bolinha.mjs — monta a prova visual da recalibração:
-// desenho EXATO da pista do Command Box + a volta REAL do Bubi projetada por cima
-// + a bolinha andando com esse dado real. Não toca no mockup. Tela cheia, sem ícones.
+// gerar-prova-bolinha.mjs — prova visual da recalibração (item 1) + suavização (item 2).
+// Desenho EXATO da pista do Command Box + volta REAL do Bubi projetada por cima
+// + DUAS bolinhas: CRUA (pula de 1 em 1 segundo) e SUAVIZADA (desliza pela pista a 60 q/s).
+// Não toca no mockup. Tela cheia, sem ícones.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const P = JSON.parse(readFileSync('/tmp/recal-cb/prova.json','utf8'));
 const trackD = P.cb_track_d;
-const lap = P.volta_real_projetada_full;
 const vr = P.volta_real_bubi_projetada;
-const cm = P.casamento_desenho_oficial_para_cb;
-const polyline = lap.map(p=>p.join(',')).join(' ');
+const polyline = P.volta_real_projetada_full.map(p=>p.join(',')).join(' ');
+
+// --- isola UMA volta limpa do dado real (6 voltas + 3 buracos) para o demo lado a lado ---
+let s = P.suavizacao.slice().sort((a,b)=>a[0]-b[0]).filter((p,i,a)=> i===0 || p[0]!==a[i-1][0]);
+const laps=[]; let cur=[];
+for(let i=0;i<s.length;i++){ if(i>0 && s[i][3] < s[i-1][3]-0.5){ laps.push(cur); cur=[]; } cur.push(s[i]); }
+if(cur.length) laps.push(cur);
+// escolhe a volta com mais pontos e sem buraco grande (>2,5s)
+function maxGap(l){ let m=0; for(let i=1;i<l.length;i++) m=Math.max(m,l[i][0]-l[i-1][0]); return m; }
+const candidatas = laps.filter(l=>l.length>=40 && maxGap(l)<2500).sort((a,b)=>b.length-a.length);
+const volta = (candidatas[0]||laps.sort((a,b)=>b.length-a.length)[0]);
+const t0 = volta[0][0];
+// [tRel_ms, sFrac] — sFrac já em [0,1) crescente dentro da volta
+const demo = volta.map(p=>[ p[0]-t0, p[3] ]);
+const durMs = demo[demo.length-1][0] + 1000;
 
 const html = `<!doctype html><html lang="pt-br"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Prova — bolinha do carro no Command Box (recalibração)</title>
+<title>Prova — bolinha do carro no Command Box (recalibração + suavização)</title>
 <style>
-  :root{ --bg:#06080c; --pista:#2a2f37; --linha:#39d0ff; --car:#ff3b3b; --txt:#e7eaef; --mut:#8b93a1; }
+  :root{ --bg:#06080c; --pista:#2a2f37; --linha:#39d0ff; --car:#ff3b3b; --raw:#7b8493; --txt:#e7eaef; --mut:#8b93a1; }
   *{box-sizing:border-box} html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);
-    font:14px/1.4 -apple-system,Segoe UI,Roboto,sans-serif}
+    font:14px/1.45 -apple-system,Segoe UI,Roboto,sans-serif}
   .wrap{display:flex;flex-direction:column;height:100vh;width:100vw}
-  header{padding:14px 22px;border-bottom:1px solid #1a2029;display:flex;gap:28px;align-items:baseline;flex-wrap:wrap}
-  h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.01em}
-  .stat{color:var(--mut)} .stat b{color:var(--txt)}
-  .ok{color:#3fe08c} .warn{color:#ffcc4d}
+  header{padding:13px 22px;border-bottom:1px solid #1a2029;display:flex;gap:26px;align-items:baseline;flex-wrap:wrap}
+  h1{font-size:18px;margin:0;font-weight:700}
+  .stat{color:var(--mut)} .stat b{color:var(--txt)} .ok{color:#3fe08c}
   main{flex:1;min-height:0;display:flex}
   .palco{flex:1;min-height:0;position:relative}
   svg{width:100%;height:100%;display:block}
-  .lado{width:300px;border-left:1px solid #1a2029;padding:18px 20px;overflow:auto}
-  .lado h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:0 0 8px}
+  .lado{width:320px;border-left:1px solid #1a2029;padding:18px 20px;overflow:auto}
+  .lado h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:18px 0 8px}
+  .lado h2:first-child{margin-top:0}
   .lg{display:flex;align-items:center;gap:9px;margin:7px 0}
-  .sw{width:26px;height:5px;border-radius:3px} .dotsw{width:12px;height:12px;border-radius:50%}
-  ul{margin:8px 0 18px;padding-left:18px;color:var(--mut)} li{margin:4px 0}
-  .big{font-size:30px;font-weight:800;letter-spacing:-.01em} .unidade{font-size:13px;color:var(--mut)}
-  .ctrl{margin-top:8px} button{background:#141a23;color:var(--txt);border:1px solid #2a3340;border-radius:8px;
-    padding:8px 14px;font-weight:700;cursor:pointer} button:hover{border-color:#3a4654}
+  .sw{width:26px;height:5px;border-radius:3px} .dotsw{width:13px;height:13px;border-radius:50%}
+  ul{margin:8px 0 6px;padding-left:18px;color:var(--mut)} li{margin:5px 0}
+  .big{font-size:28px;font-weight:800} .unidade{font-size:13px;color:var(--mut)}
+  .ctrl{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  button{background:#141a23;color:var(--txt);border:1px solid #2a3340;border-radius:8px;padding:8px 13px;font-weight:700;cursor:pointer}
+  button:hover{border-color:#3a4654} button.off{opacity:.4}
 </style></head>
 <body><div class="wrap">
   <header>
-    <h1>Bolinha do carro no Command Box — prova da recalibração</h1>
-    <span class="stat">Volta REAL do Bubi (23/05) projetada: <b>${vr.n_pontos}</b> pontos de GPS</span>
-    <span class="stat">Cai na pista a — mediana <b class="ok">${vr.mediana_em_larguras_de_pista}</b> largura · 95% <b>${vr.p95_em_larguras_de_pista}</b> largura</span>
+    <h1>Bolinha do carro no Command Box — recalibração (item 1) + suavização (item 2)</h1>
+    <span class="stat">Volta REAL do Bubi (23/05): <b>${vr.n_pontos}</b> leituras de GPS, ~1 por segundo</span>
+    <span class="stat">Cai na pista a — mediana <b class="ok">${vr.mediana_em_larguras_de_pista}</b> largura</span>
   </header>
   <main>
     <div class="palco">
-      <svg viewBox="130 110 580 660" preserveAspectRatio="xMidYMid meet">
-        <path d="${trackD}" fill="none" stroke="var(--pista)" stroke-width="22" stroke-linejoin="round" stroke-linecap="round"/>
-        <path d="${trackD}" fill="none" stroke="#11161d" stroke-width="2" stroke-dasharray="3 9" opacity="0.6"/>
-        <polyline points="${polyline}" fill="none" stroke="var(--linha)" stroke-width="2" opacity="0.85"/>
+      <svg id="svg" viewBox="130 110 580 660" preserveAspectRatio="xMidYMid meet">
+        <path id="track" d="${trackD}" fill="none" stroke="var(--pista)" stroke-width="22" stroke-linejoin="round" stroke-linecap="round"/>
+        <polyline points="${polyline}" fill="none" stroke="var(--linha)" stroke-width="1.5" opacity="0.55"/>
+        <circle id="raw" r="8" fill="none" stroke="var(--raw)" stroke-width="2.5"/>
         <circle id="car" r="9" fill="var(--car)" stroke="#fff" stroke-width="2"/>
       </svg>
     </div>
     <aside class="lado">
-      <h2>O que esta tela mostra</h2>
-      <div class="lg"><span class="sw" style="background:var(--pista)"></span> Pista DESENHADA do Command Box (a mesma do painel)</div>
-      <div class="lg"><span class="sw" style="background:var(--linha)"></span> Linha que o carro REALMENTE fez (GPS de 23/05)</div>
-      <div class="lg"><span class="dotsw" style="background:var(--car)"></span> A bolinha do carro andando por esse dado real</div>
+      <h2>As duas bolinhas</h2>
+      <div class="lg"><span class="dotsw" style="background:var(--car)"></span> SUAVIZADA — desliza pela pista (60 q/s)</div>
+      <div class="lg"><span class="dotsw" style="border:2.5px solid var(--raw)"></span> CRUA — pula a cada leitura (1/seg)</div>
+      <div class="lg"><span class="sw" style="background:var(--linha)"></span> Linha real do carro (GPS de 23/05)</div>
+      <div class="lg"><span class="sw" style="background:var(--pista)"></span> Pista desenhada do Command Box</div>
 
-      <h2 style="margin-top:22px">Encaixe na pista</h2>
-      <div class="big ok">${vr.mediana_em_larguras_de_pista}<span class="unidade"> largura de pista (mediana)</span></div>
+      <h2>Por que suavizar</h2>
+      <div class="big">~28 m<span class="unidade"> de salto por leitura (a 100 km/h)</span></div>
       <ul>
-        <li>Mediana: ${vr.mediana_px} px (~1/3 da largura)</li>
-        <li>95% dos pontos: ${vr.p95_px} px (~1 largura)</li>
-        <li>Pior ponto: ${vr.max_px} px (~${(vr.max_px/vr.largura_pista_px).toFixed(1)} larguras)</li>
-        <li>Largura do asfalto desenhado: ${vr.largura_pista_px} px</li>
+        <li>O GPS de hoje dá ~1 leitura por segundo (medido: 1000 ms).</li>
+        <li>Sem suavizar, a bolinha teleporta de 28 em 28 metros (a cinza).</li>
+        <li>Suavizada, ela desliza pela pista entre as leituras (a vermelha).</li>
       </ul>
 
       <h2>Honesto</h2>
       <ul>
-        <li>O resto do erro vem do desenho ser estilizado (à mão), não de conta errada.</li>
-        <li>1–2 curvas o desenho "abre" do traçado real — é onde a bolinha mais desencosta.</li>
-        <li>Dado de 23/05 é ~1 leitura/segundo (por isso a linha tem "degraus"). A suavização é o item 2.</li>
+        <li>A suavizada gruda no traço da pista entre leituras — fica lisa e sempre na pista.</li>
+        <li>Quando o sinal cai (teve buraco de 9 s na volta), ela NÃO inventa trajeto: espera a próxima leitura.</li>
+        <li>O desvio lateral real (carro abrir na curva) volta com o sensor rápido (25/seg) — item 3.</li>
       </ul>
 
-      <div class="ctrl"><button id="toggle">Pausar / continuar a bolinha</button></div>
+      <div class="ctrl">
+        <button id="bSuav">Suavizada: ligada</button>
+        <button id="bRaw">Crua: ligada</button>
+        <button id="bPausa">Pausar</button>
+      </div>
     </aside>
   </main>
 </div>
 <script>
-  const LAP = ${JSON.stringify(lap)};
-  const car = document.getElementById('car');
-  let i = 0, playing = true;
-  function step(){ if(playing){ const p = LAP[i % LAP.length]; car.setAttribute('cx', p[0]); car.setAttribute('cy', p[1]); i++; } }
-  setInterval(step, 60);
-  document.getElementById('toggle').onclick = ()=>{ playing = !playing; };
+  const DEMO = ${JSON.stringify(demo)};        // [tRel_ms, sFrac]
+  const DUR  = ${durMs};
+  const track = document.getElementById('track');
+  const L = track.getTotalLength();
+  const car = document.getElementById('car'), raw = document.getElementById('raw');
+  let playing=true, showSuav=true, showRaw=true, base=null;
+
+  function sFracAt(tRel){
+    // interpola a fração de arco entre as leituras que cercam tRel
+    if(tRel<=DEMO[0][0]) return DEMO[0][1];
+    for(let i=1;i<DEMO.length;i++){ if(tRel<=DEMO[i][0]){
+      const a=DEMO[i-1], b=DEMO[i]; const f=(tRel-a[0])/((b[0]-a[0])||1);
+      let s0=a[1], s1=b[1]; if(s1<s0) s1+=1;            // trata virada de volta
+      let s=s0+(s1-s0)*f; return s%1;
+    }}
+    return DEMO[DEMO.length-1][1];
+  }
+  function rawIndexAt(tRel){ let idx=0; for(let i=0;i<DEMO.length;i++){ if(DEMO[i][0]<=tRel) idx=i; else break; } return idx; }
+  function place(el,sFrac){ const p=track.getPointAtLength(sFrac*L); el.setAttribute('cx',p.x); el.setAttribute('cy',p.y); }
+
+  function frame(ts){
+    if(base===null) base=ts;
+    if(playing){
+      const tRel=((ts-base)%DUR);
+      if(showSuav){ place(car, sFracAt(tRel)); car.style.opacity=1; } else car.style.opacity=0;
+      if(showRaw){ place(raw, DEMO[rawIndexAt(tRel)][1]); raw.style.opacity=1; } else raw.style.opacity=0;
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  document.getElementById('bSuav').onclick=function(){ showSuav=!showSuav; this.textContent='Suavizada: '+(showSuav?'ligada':'desligada'); this.classList.toggle('off',!showSuav); };
+  document.getElementById('bRaw').onclick =function(){ showRaw=!showRaw;  this.textContent='Crua: '+(showRaw?'ligada':'desligada'); this.classList.toggle('off',!showRaw); };
+  document.getElementById('bPausa').onclick=function(){ playing=!playing; this.textContent=playing?'Pausar':'Continuar'; };
 </script>
 </body></html>`;
 writeFileSync(ROOT+'relatorios/prova-bolinha-command-box.html', html);
-console.log('Escrito: relatorios/prova-bolinha-command-box.html');
+console.log('Escrito: relatorios/prova-bolinha-command-box.html  | volta demo:', demo.length, 'leituras, dur', (durMs/1000).toFixed(1),'s');
