@@ -284,14 +284,14 @@ Depende de MS-10 (auth).
 | 11.2 | Sessão ao vivo 2 câmeras (cockpit + onboard) — escolha do piloto | Cloud |
 | 11.3 | Persistência de sessões (id, link, participantes) em Supabase | Cloud |
 
-### MS-12 — Box Cockpit + AirPlay + mensagens Realtime
+### MS-12 — Box Cockpit (TV 32" via Fire TV Stick) + mensagens Realtime — (atualizado 16/06/2026 - ver docs/ARQUITETURA_DEFINITIVA.md)
 
 Depende de MS-10 + MS-11.
 
 | # | Task | Onde |
 |---|---|---|
-| 12.1 | Box Cockpit modo iOS — visão histórica + interação (tela diferente do cockpit do piloto) | Cloud |
-| 12.2 | Validação AirPlay → Apple TV → TV 32" | Aqui (Flávio) |
+| 12.1 | Box Cockpit — visão histórica + interação na TV 32" (app na nuvem aberto no navegador do Fire TV Stick 4K Max; tela diferente do cockpit do piloto) | Cloud |
+| 12.2 | Validação Fire TV Stick 4K Max → navegador → app na nuvem → TV 32" | Aqui (Flávio) |
 | 12.3 | Canal de mensagens via Supabase Realtime | Cloud |
 | 12.4 | Flag `visivelNoBox` por mensagem | Cloud |
 
