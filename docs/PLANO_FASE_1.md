@@ -62,7 +62,7 @@ porque é exatamente isso que o produto entrega ao piloto.
 | Professor | 1 | Leitura+escrita, manda mensagem |
 | Mecânico | 1 | Leitura+escrita, foco em alertas |
 | Read-only (mãe, amigos) | 1-3 | Só lê, não escreve, não convida |
-| Box TV | 1 sessão (sem login extra) | Reflete celular do operador via AirPlay |
+| Box TV | 1 sessão (sem login extra) | TV 32" abre o app na nuvem via Fire TV Stick 4K Max (navegador) — (atualizado 16/06/2026 - ver docs/ARQUITETURA_DEFINITIVA.md) |
 
 **Regra de visibilidade:** time é workspace aberto — todos os membros veem
 todos os dados. Mensagens podem ser visíveis no box ou privadas (escolha
