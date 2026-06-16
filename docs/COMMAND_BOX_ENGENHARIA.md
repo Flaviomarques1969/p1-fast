@@ -616,7 +616,7 @@ Fluxo:
 1. Membro abre Tab Engenharia → seleciona finding → toca [Simular]
 2. UI abre painel com **sliders e knobs interativos** (ex.: knob "Ajuste combustível" gira de -10% a +10% em incrementos de 0.5%; slider "Janela RPM" desliza de 4 000 a 7 500)
 3. A cada gesto, sistema recalcula projeção determinística (extrapolação linear nos samples atuais da célula) e publica `SimulationProposal` no canal `engineering-{stintId}` (debounce 100 ms)
-4. TV 32" (Box Mode) mostra projeção visual atualizada em tempo real
+4. TV 32" (Command Box, app na nuvem no navegador do Fire TV Stick 4K Max) mostra projeção visual atualizada em tempo real _(atualizado 16/06/2026 — ver `docs/ARQUITETURA_DEFINITIVA.md`)_
 5. Cockpit Pilot 10,5" (se modo `engenharia` ativo) mostra `SIMULATION_INSTRUCTION` correspondente
 6. Funciona com **carro andando** — simulação é projeção visual (Camada 2 determinística), não aplica mudança real no mapa. Piloto continua dirigindo; engenheiro/chefe vê comportamento projetado vs real lado a lado.
 7. Decisão final: [Aprovar] (salva recommendation em `engineering_recommendations.decisao = 'aprovada'`) ou [Rejeitar] ou [Salvar como rascunho]
