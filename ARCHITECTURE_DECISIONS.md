@@ -201,7 +201,7 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 - **MS-9 reescrito**: deixa de ser "BLE T4000 via CoreBluetooth" e vira "driver T4000 USB/CAN no Windows + publish em Supabase Realtime". Move pra antes de MS-13.
 - **MS-13 reescrito**: deixa de ser "CockpitDevice 956×440 SwiftUI" e vira "cockpit web app rodando em Windows 10,5" (e em iOS WKWebView no Box, se vier a fazer sentido)". O mockup canônico vira o produto, com tweaks pra dimensão alvo 10,5" (área visível ~954×517 a ~1280×692 dependendo de DPR).
 - **MS-2 ganha 2.8**: publish IMU/GPS agregado a 10 Hz em canal Realtime.
-- **MS-12 Box Cockpit**: inalterado. Continua iOS + AirPlay + Apple TV.
+- **MS-12 Command Box**: TV de 32" no box exibida por um **Fire TV Stick 4K Max** rodando o navegador, que abre o **app na nuvem**. Substitui "iOS + AirPlay + Apple TV" — não há mais Apple TV, AirPlay nem espelhamento pelo celular. (atualizado 16/06/2026 — ver docs/ARQUITETURA_DEFINITIVA.md)
 - **MS-11 Daily.co**: papel da câmera onboard fica mais explícito (frente do carro, pra Supabase pra ver no Box).
 
 **ADR-018 NÃO é revogado** — recebe amendment apontando pra cá. iOS continua mandatório pra captura, hub e Box. PWA continua descartado **pra captura**. O cockpit-display web no Windows é caso novo (não cabe no escopo original do ADR-018, que é específico do celular).
