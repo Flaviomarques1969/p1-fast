@@ -204,6 +204,8 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 - **MS-12 Command Box**: TV de 32" no box exibida por um **Fire TV Stick 4K Max** rodando o navegador, que abre o **app na nuvem**. Substitui "iOS + AirPlay + Apple TV" — não há mais Apple TV, AirPlay nem espelhamento pelo celular. (atualizado 16/06/2026 — ver docs/ARQUITETURA_DEFINITIVA.md)
 - **MS-11 Daily.co**: papel da câmera onboard fica mais explícito (frente do carro, pra Supabase pra ver no Box).
 
+> **AMENDMENT 6 (Flávio 2026-06-16):** o mecanismo de exibição do **Command Box** muda. O box deixa de ser "app iOS modo BOX → AirPlay → Apple TV → TV 32"" e passa a ser uma **TV de 32" acessada por um Fire TV Stick 4K Max**, que roda o **navegador** e abre o **app na nuvem** (este consome o canal Supabase Realtime). **Não há mais Apple TV, AirPlay nem espelhamento/projeção pelo celular** no Command Box. Além disso, o **processamento acontece em DOIS lugares**: o notebook Windows (.exe) processa o cockpit do piloto (latência baixa, canal garantido) e o **app na nuvem TAMBÉM processa** as demais funções. Doc canônico: **docs/ARQUITETURA_DEFINITIVA.md** (este vence em caso de conflito). As partes deste ADR-023 sobre captura iOS, transporte iPhone↔Windows e stack do cockpit Windows (notebook + tela 10,5") permanecem.
+
 **ADR-018 NÃO é revogado** — recebe amendment apontando pra cá. iOS continua mandatório pra captura, hub e Box. PWA continua descartado **pra captura**. O cockpit-display web no Windows é caso novo (não cabe no escopo original do ADR-018, que é específico do celular).
 
 **Aplica-se a**: PLANO_FASE_1.md §2 (stack), §6 (mini-sprints MS-2/9/13), §10 (decisões fechadas); STATUS.md; CLAUDE.md (decisões fechadas).
