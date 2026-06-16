@@ -56,3 +56,28 @@ repetindo até cada aparelho ATIVO acender verde.
 - Páginas p1tv/p1t4000 estão publicadas; não republicar no ar sem "MIGRAR PARA PRODUÇÃO".
 
 ## Status inicial: iniciado — aguardando Flávio confirmar a máquina onde os aparelhos serão ligados.
+
+---
+
+## DECISÃO DO FLÁVIO (16/06): rodar no NOTEBOOK WINDOWS.
+- Aparelhos ficam no notebook; ele roda em p1tv.vercel.app + p1t4000.vercel.app.
+- Eu não vejo a tela do notebook. Caminho achado: GPS e dados do carro que o notebook lê SOBEM pro canal
+  `cockpit-bubi-live`; eu assino o canal do Mac e registro dado + formato ao vivo. Vídeo (Osmo) não passa
+  pelo canal (é ponto a ponto Daily.co) → Flávio confirma a câmera visualmente.
+
+## CONSTRUÍDO E PROVADO (16/06, ambiente DEV, nada em produção)
+- `tools/registrar-aparelhos.mjs` (NOVO) — assina o canal (só leitura), grava dado bruto em /tmp/registro-aparelhos-*.jsonl,
+  levanta formato (campos/tipo/faixa/Hz/maior buraco), alerta fora-de-faixa e ausência, distingue real x sim.
+  Aceita CANAL=... só pra auto-teste isolado (padrão = canal real).
+- `tools/_sim-publish-teste.mjs` (NOVO, só auto-teste) — publica amostras de mentira num canal isolado; recusa o canal real.
+- PROVA (canal isolado teste-registrador-local): 21 gps + 16 sample + 3 evento capturados; formato levantado;
+  alertas corretos (gps lat/lng null + fix=0; rpm=50000 fora de faixa). Conexão à nuvem OK (Ethernet).
+- Testes automáticos dos leitores: T4000 27/0, parser USB T3000 21/0 (verdes).
+
+## PENDENTE (loop ao vivo, depende do Flávio rodar no notebook)
+- Ligar o registrador no canal REAL durante a corrida de teste e registrar o formato real de cada aparelho ativo.
+- Câmera: confirmar no notebook (luz VÍDEO no ar + imagem + qual câmera).
+- Correção: problema de configuração (cabo/porta/posição/câmera) Flávio ajusta no notebook; bug de código/decodificação
+  eu conserto em DEV e testo, mas só chega ao notebook com "MIGRAR PARA PRODUÇÃO" (páginas são publicadas).
+
+## Status: registrador pronto e provado — aguardando Flávio rodar no notebook pra capturar o ao vivo.
