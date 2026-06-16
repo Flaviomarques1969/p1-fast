@@ -127,11 +127,12 @@ Tudo contínuo, ao vivo, no mesmo instante.
 
 ## Pontos em aberto (precisam de decisão do Flávio)
 
-1. **App nativo do iPhone x app de navegador.** O Command Box passa a abrir o app pelo **navegador** do
-   Fire TV Stick. Isso sugere um app acessível por navegador. Decisões antigas do projeto (ADR-018) dizem
-   "app iOS nativo, sem versão de navegador (PWA)". **Precisa do Flávio confirmar** se o app continua
-   nativo no iPhone (e o navegador do Fire Stick é só pra TV) ou se vira app de navegador. Até decidir,
-   NÃO mexer nessa parte.
+1. **(RESOLVIDO para o Command Box em 16/06.)** O Command Box é uma tela de **navegador (web)**: o Fire TV
+   Stick abre o endereço do Command Box direto na nuvem, sem celular. Isso **adiciona uma superfície web** ao
+   sistema (o Command Box), que a decisão antiga ADR-018 ("só app nativo no iPhone, sem versão de navegador")
+   não previa. **O que o Flávio ainda NÃO disse:** se o app do **celular** continua nativo no iPhone ou também
+   vira navegador — **não inferir**; tratar o app do celular como está (nativo, ADR-018) até ele decidir.
+   Menores a definir: login do Command Box (talvez nenhum) e se usa QR Code pra abrir.
 2. **Código antigo de AirPlay.** Existe um detector de AirPlay no app do iPhone
    (`ios/p1fast-ios/Sources/Sync/AirPlayDetector.swift`) feito pro conceito antigo. Ficou obsoleto com a
    mudança pro Fire TV Stick. Remover é tarefa de código separada e cuidadosa — não foi feito aqui.
