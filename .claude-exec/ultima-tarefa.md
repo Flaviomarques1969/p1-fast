@@ -1,26 +1,33 @@
-# Ultima tarefa — sintese estado da FRENADA (P1 Fast)
+# Última tarefa — P1 Fast — auditoria da bolinha do carro no Command Box (16/06/2026)
 
-## Pedido original
-Sintetizar, em linguagem de gestor, o estado REAL da frenada nas 3 telas (cockpit piloto, app iOS, Command Box), no notebook Windows e na nuvem ao vivo, a partir de mapeamentos COM EVIDENCIA. Regra dura do dono (CORRIGIDA 16/06, ver p1-fast-ARQUITETURA-DEFINITIVA): processa em DOIS lugares — notebook Windows (.exe) pro cockpit do piloto + app na NUVEM pras demais funcoes. Command Box (TV via Fire TV Stick 4K Max) NAO calcula, e janela do app na nuvem. (A frase antiga "demais so recebem pronto" estava errada: a nuvem TAMBEM processa.) Sensor de pressao via T4000 instala 15-16/06; sem ele a frenada e estimativa de GPS.
+## TASK_INIT
+- **Pedido original (Flávio):** "Na tela do Command Box, a função do pontinho na pista que representa o carro — como está, está ligada de verdade, está mostrando realmente onde o carro está, isso está funcionando?"
+- **Objetivo (1 frase):** Auditar, em modo só leitura, se a bolinha do carro no mapa do Command Box (Vista Piloto) é alimentada por dado real ao vivo ou por animação.
+- **Critério de conclusão:** Dizer com prova (arquivo:linha) qual é a fonte que move a bolinha hoje, se o GPS real chega, e se está ligado ao mapa.
+- **Leitura confirmada:** ~/.claude/CLAUDE.md; padroes.md; FLAVIO_EXECUTION_PROTOCOL.md; FLAVIO_DONE_CHECKLIST.md; FLAVIO_ENVIRONMENT_RULES.md; FLAVIO_COMMUNICATION_RULES.md; memória global + memória P1 Fast.
+- **Plano:** (1) ler arquitetura canônica e memória do Command Box; (2) localizar a bolinha no mockup; (3) achar o que move ela; (4) achar a fiação ao vivo; (5) cruzar com o plano de conexão real.
+- **Áreas inspecionadas:** `_design-reference/mockup-command-box-vista-piloto.html`; `_design-reference/PLANO-command-box-conexao-real-2026-06-13.html`; `web/cockpit/pista-oficial-brasilia.js` (existe, mas não é carregado no mockup).
+- **Ambiente alvo:** desenvolvimento (mockup/protótipo do Command Box; produção do Command Box = TV 32'' com ao vivo real, não este arquivo).
+- **Produção protegida:** sim. **Autorização para produção:** não. **Evidência:** não recebida.
+- **Riscos:** nenhum (só leitura). Status: concluído.
 
-## Objetivo (1 frase)
-Entregar mapa honesto por area + por que o que falta nao e tela + proximo passo real + dependencia do sensor + riscos de invencao.
+## Achado (prova)
+A bolinha "live" do carro NÃO está ligada ao dado real. Ela é **animação por relógio**:
+- `mockup-command-box-vista-piloto.html:6979` — `liveT = (elapsed % MAP_CFG.lapMs)/MAP_CFG.lapMs` (posição vem do tempo decorrido).
+- `:6936` — assinatura da volta vem de `currentLap().trajetoria` = FAKE_LAPS (voltas fictícias, `:4657`).
+- `:6988` — `setMarkerPos('live', liveP.x, liveP.y)` movido só pelo tick do relógio.
+- GPS real CHEGA mas é IGNORADO: `:7756-7757` gravam `REAL.lat/REAL.lng` e **nada lê** (grep confirma: só escrita).
+- Bloco `mapa` está em `DEP_LIGACAO` (`:7677`) → recebe selo cinza "aguardando ligação" (`:7688`, CSS `:7639`).
+- `pista-oficial-brasilia.js` (projeção GPS→tela) NÃO é carregado neste mockup.
+- Corrobora o plano: `PLANO-command-box-conexao-real-2026-06-13.html:94` — "o ponto do carro pode acender com o GPS real — que já chega, mas hoje é ignorado (o ponto anda por animação)".
 
-## Criterio de conclusao
-StructuredOutput preenchido com prova verificada nos arquivos, sem afirmar nada nao verificado.
-
-## Ambiente alvo
-desenvolvimento (leitura/auditoria). Producao NAO alterada. Autorizacao producao: nao recebida.
-
-## Verificacoes feitas (prova)
-- freio-trecho.js: simularFreioPelaFisica (fisica GPS) + detectarPresencaSensorFreio (variacao >=3 un) — JS, existe.
-- main-t3000.js:159 — "instalacao 15-16/06"; rotulo FREIO: FISICA GPS ate sensor entrar.
-- TELEMETRY_SNAPSHOT_SPEC.md:142 — brake_pressure "quando sensor de freio entrar".
-- FONTE_DADOS_AO_VIVO.md:70 — "Pressao freio (sensor nao instalado ainda)".
-- Command Box mockup: updateFrenagemFromLap (linha 4297) anima por _shortRevealStateForLap (estado por volta), NAO le realtime; bloco 'frenagem' esta em DEP_LIGACAO (7442) = forcado cb-sem-real "aguardando ligacao".
-- Windows MainWindow.xaml.cs:370-371 SetApexPonto("freio") com FreioAtualM/RefM de DemoScene (hardcoded). CockpitState.cs:245 ClassifyFreio so classifica, nao calcula.
-- iOS CockpitGpsPublisher.swift:29 — 5 Hz max, so GPS (lat/lng/speed), sem IMU/aceleracao no payload, sem pressao de freio.
-- tests/node-smoke-frenagem-real.mjs existe (prova que motor roda em JS puro).
-
-## Status
-concluido (auditoria/sintese; nada alterado).
+## TASK_DONE
+- Pedido original conferido: sim
+- Ambiente trabalhado: desenvolvimento (só leitura)
+- Produção foi alterada: não
+- Autorização explícita registrada: n/a
+- Arquivos reais inspecionados: sim
+- Alterações feitas: não (auditoria)
+- Testes/validação executados: leitura de código + grep (prova arquivo:linha)
+- Resultado: concluído
+- Pendências reais: ligar o GPS real ao mapa (Fase 1 do plano) — não autorizado/não pedido ainda
