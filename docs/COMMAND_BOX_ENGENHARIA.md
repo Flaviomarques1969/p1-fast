@@ -668,9 +668,11 @@ Cores:
 - 🔵 azul = oportunidade pedagógica/performance (deltas grandes)
 - 🟢 verde = consistente, manter (reforço positivo)
 
-### 7.2 Engenheiro live no Box Cockpit (iOS Box Mode → AirPlay → TV 32", MS-16.6)
+### 7.2 Engenheiro live no Command Box (app na nuvem no navegador do Fire TV Stick 4K Max → TV 32", MS-16.6)
 
-Layout otimizado para 32" landscape, distância de visão 2-3 m, **alta legibilidade** (font ≥ 32 pt, contraste forte). Operado pelo iPhone do box (Box Mode), navegação por toque no iPhone — TV é só projeção.
+_(atualizado 16/06/2026 — ver `docs/ARQUITETURA_DEFINITIVA.md`)_
+
+Layout otimizado para 32" landscape, distância de visão 2-3 m, **alta legibilidade** (font ≥ 32 pt, contraste forte). A TV 32" abre o app na nuvem pelo navegador do Fire TV Stick 4K Max; a operação (navegação por toque) é feita no celular acessando o mesmo app — a TV é só uma tela.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
