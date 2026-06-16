@@ -95,7 +95,8 @@ const html = `<!doctype html><html lang="pt-br"><head><meta charset="utf-8">
 </div>
 <script>
   const DEMO = ${JSON.stringify(demo)};        // [tRel_ms, sFrac]
-  const DUR  = ${durMs};
+  const DUR  = ${durMs};                        // duração real do trecho (ms)
+  const WALL = ${WALL_MS};                       // duração na tela (acelerado)
   const track = document.getElementById('track');
   const L = track.getTotalLength();
   const car = document.getElementById('car'), raw = document.getElementById('raw');
