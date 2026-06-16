@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Status — Programa .exe do Cockpit do Piloto</title>
+<style>
+  :root{
+    --verde:#2ecc71; --ambar:#f1c40f; --cinza:#6b7280; --azul:#3b82f6; --vermelho:#e74c3c;
+    --bg:#0e1116; --card:#161b22; --line:#222a35; --txt:#e6edf3; --sub:#9aa6b2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.45}
+  .wrap{width:100%;padding:28px 40px 60px}
+  header h1{font-size:24px;font-weight:700;letter-spacing:.2px}
+  header .meta{color:var(--sub);font-size:14px;margin-top:6px}
+  .barra{height:14px;background:#0b0e12;border:1px solid var(--line);border-radius:8px;margin:20px 0 8px;overflow:hidden}
+  .barra > span{display:block;height:100%;width:27%;background:linear-gradient(90deg,#2ecc71,#27ae60)}
+  .barra-info{color:var(--sub);font-size:13px;margin-bottom:24px}
+  .legenda{display:flex;flex-wrap:wrap;gap:18px;margin:14px 0 28px;font-size:13px;color:var(--sub)}
+  .legenda span{display:inline-flex;align-items:center;gap:7px}
+  .dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto}
+  .d-verde{background:var(--verde)} .d-ambar{background:var(--ambar)} .d-cinza{background:var(--cinza)}
+  .d-azul{background:var(--azul)} .d-vermelho{background:var(--vermelho)}
+  .grupos{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:20px}
+  .grupo{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .grupo h2{font-size:15px;font-weight:700;color:#c9d4e0;margin-bottom:14px;text-transform:uppercase;letter-spacing:.6px}
+  .item{display:grid;grid-template-columns:14px 1fr 130px;align-items:start;gap:12px;padding:11px 0;border-top:1px solid var(--line)}
+  .item:first-of-type{border-top:none}
+  .item .ind{width:11px;height:11px;border-radius:50%;margin-top:5px}
+  .item .nome{font-size:14.5px;color:var(--txt)}
+  .item .nota{font-size:12.5px;color:var(--sub);margin-top:3px}
+  .item .status{justify-self:end;text-align:right;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap}
+  .s-verde{color:#0c2a16;background:var(--verde)} .s-ambar{color:#3a2f05;background:var(--ambar)}
+  .s-cinza{color:#e6edf3;background:#2b333d;border:1px solid var(--line)} .s-azul{color:#06122b;background:var(--azul)}
+  .s-vermelho{color:#fff;background:var(--vermelho)}
+  footer{color:var(--sub);font-size:12.5px;margin-top:30px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Programa .exe do Cockpit do Piloto — Mapa de Status</h1>
+    <div class="meta">Windows nativo (C#/.NET 8) &middot; lê motor (Injepro) + GPS 25 Hz (RaceBox) &middot; 100% local &middot; atualizado 2026-06-15</div>
+  </header>
+
+  <div class="barra"><span></span></div>
+  <div class="barra-info">Fundação pronta (decisão de tecnologia, formatos de dados, cérebro lógico, tela). Construção das ligações com o aparelho começando.</div>
+
+  <div class="legenda">
+    <span><i class="dot d-verde"></i> Funcionando / pronto</span>
+    <span><i class="dot d-ambar"></i> Em construção</span>
+    <span><i class="dot d-cinza"></i> A fazer</span>
+    <span><i class="dot d-azul"></i> Depende do seu olho</span>
+    <span><i class="dot d-vermelho"></i> Com problema</span>
+  </div>
+
+  <div class="grupos">
+
+    <div class="grupo">
+      <h2>Fundação</h2>
+      <div class="item"><div class="ind d-verde"></div><div><div class="nome">Decisão de tecnologia (auditada, sem viés)</div><div class="nota">5 caminhos avaliados + juiz + advogado do diabo. Escolhido C#/.NET 8.</div></div><div class="status s-verde">Pronto</div></div>
+      <div class="item"><div class="ind d-verde"></div><div><div class="nome">Formato dos dados do motor levantado</div><div class="nota">Comandos e posições dos sensores extraídos do caminho provado (site).</div></div><div class="status s-verde">Pronto</div></div>
+      <div class="item"><div class="ind d-verde"></div><div><div class="nome">Formato dos dados do GPS (RaceBox) levantado</div><div class="nota">Conexão Bluetooth e leitura dos pacotes a 25 Hz mapeadas.</div></div><div class="status s-verde">Pronto</div></div>
+      <div class="item"><div class="ind d-verde"></div><div><div class="nome">Roteiro de organização da sessão no notebook</div><div class="nota">Passo a passo, critérios de pronto e plano B registrados.</div></div><div class="status s-verde">Pronto</div></div>
+    </div>
+
+    <div class="grupo">
+      <h2>Leitura do motor (Injepro pelo cabo)</h2>
+      <div class="item"><div class="ind d-cinza"></div><div><div class="nome">Confirmar o formato real do aparelho</div><div class="nota">Passo 1 no notebook: plugar e comparar com o site. Resolve a dúvida do formato.</div></div><div class="status s-cinza">A fazer</div></div>
+      <div class="item"><div class="ind d-ambar"></div><div><div class="nome">Tradutor dos dados do motor (do formato provado)</div><div class="nota">Portando do site, conferido contra o software oficial em 26/05.</div></div><div class="status s-ambar">Em construção</div></div>
+      <div class="item"><div class="ind d-cinza"></div><div><div class="nome">Abrir e ler o cabo USB de verdade</div><div class="nota">Só fecha no notebook com a Injepro plugada.</div></div><div class="status s-cinza">A fazer</div></div>
+      <div class="item"><div class="ind d-cinza"></div><div><div class="nome">Religar sozinho se o cabo cair</div><div class="nota">Testado por queda forçada.</div></div><div class="status s-cinza">A fazer</div></div>
+      <div class="item"><div class="ind d-azul"></div><div><div class="nome">Números batem com o software oficial</div><div class="nota">Conferência no notebook com motor ligado.</div></div><div class="status s-azul">Conferir</div></div>
+    </div>
+
+    <div class="grupo">
+      <h2>Leitura do GPS (RaceBox por Bluetooth)</h2>
+      <div class="item"><div class="ind d-ambar"></div><div><div class="nome">Conectar no RaceBox por Bluetooth</div><div class="nota">Prioridade 1: peça nova, a mais delicada. Escrevendo o leitor.</div></div><div class="status s-ambar">Em construção</div></div>
+      <div class="item"><div class="ind d-cinza"></div><div><div class="nome">Receber a posição 25 vezes por segundo</div><div class="nota">Validar no notebook com o aparelho ligado.</div></div><div class="status s-cinza">A fazer</div></div>
+      <div class="item"><div class="ind d-cinza"></div><div><div class="nome">Religar sozinho se o sinal cair</div><div class="nota">Cenário real da pista. Testado por queda forçada.</div></div><div class="status s-cinza">A fazer</div></div>
+      <div class="item"><div class="ind d-azul"></div><div><div class="nome">Posição bate com a pista real</div><div class="nota">Precisa de céu aberto e do seu olho.</div></div><div class="status s-azul">Conferir</div></div>
+    </div>
+
+    <div class="grupo">
+      <h2>Painel na tela</h2>
+      <div class="item"><div class="ind d-verde"></div><div><div class="nome">Tela desenhada</div><div class="nota">12 luzes, halo, delta, barra de stint, alertas — já existe.</div></div><div class="status s-verde">Pronto</div></div>
+      <div class="item"><div class="ind d-verde"></div><div><div class="nome">Cérebro: luz de marcha e alertas (lógica)</div><div class="nota">Pronto e com 151 testes automáticos passando.</div></div><div class="status s-verde">Pronto</div></div>
+      <div class="item"><div class="ind d-ambar"></div><div><div class="nome">Ligar a tela ao dado real (tirar a demonstração)</div><div class="nota">Trocar as cenas falsas pela leitura ao vivo.</div></div><div class="status s-ambar">Em construção</div></div>
+      <div class="item"><div class="ind d-azul"></div><div><div class="nome">Aprovação visual do painel</div><div class="nota">Seu aval de que a tela está do jeito certo.</div></div><div class="status s-azul">Conferir</div></div>
+    </div>
+
+    <div class="grupo">
+      <h2>Estabilidade (requisito nº 1)</h2>
+      <div class="item"><div class="ind d-cinza"></div><div><div class="nome">Não travar / sem engasgos</div><div class="nota">Medido no próprio notebook, não no chute.</div></div><div class="status s-cinza">A fazer</div></div>
+      <div class="item"><div class="ind d-cinza"></div><div><div class="nome">Abrir rápido</div><div class="nota">Programa preparado pra partida rápida.</div></div><div class="status s-cinza">A fazer</div></div>
+      <div class="item"><div class="ind d-cinza"></div><div><div class="nome">Teste de horas seguidas com quedas forçadas</div><div class="nota">Trava de segurança: nada vai pra pista sem passar aqui.</div></div><div class="status s-cinza">A fazer</div></div>
+    </div>
+
+    <div class="grupo">
+      <h2>Entrega</h2>
+      <div class="item"><div class="ind d-cinza"></div><div><div class="nome">Empacotar o .exe</div><div class="nota">Gerar o programa instalável no notebook.</div></div><div class="status s-cinza">A fazer</div></div>
+      <div class="item"><div class="ind d-verde"></div><div><div class="nome">Plano B (site empacotado) de prontidão</div><div class="nota">Rede de segurança: já conversa com os dois aparelhos hoje.</div></div><div class="status s-verde">Guardado</div></div>
+    </div>
+
+  </div>
+
+  <footer>
+    Como ler: cada peça tem seu próprio teste automático. Quando algo não funciona, o registro aponta a peça exata e o motivo — é assim que a correção é cirúrgica. Este mapa é atualizado a cada passo, aqui no Mac e na sessão do notebook Windows.
+  </footer>
+</div>
+</body>
+</html>
