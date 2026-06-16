@@ -699,3 +699,18 @@ iPhone). Backups: .claude-exec/backup-fechar-ciclo-stint-2026-06-15/ (StintModal
   aparelho → empacotar com 'generic/platform=iOS' e instalar com devicectl.
 - PENDENTE = validação AO VIVO do Flávio: "+ Stint" → Stint livre → propósito (ex. treinar) → "Aprovar e iniciar"
   (1ª aprovação grava o plano REAL na nuvem) → conferir no painel se arma o treino. Aguardando ele reportar.
+
+### DIAGNÓSTICO + CONSERTO (15/06 noite) — Flávio: "clico em iniciar, não acontece nada, volta na tela anterior"
+- VERIFICADO NA NUVEM (só-leitura, REST GET, projeto fvhwltzhytpnhlqbttmd): FUNCIONOU. 3 ENVELOPES gravados
+  16/06 ~01:19 UTC (carro 641a81e7…, modo agressivo, plano {proposito:livre, voltas:10, ghost:false, paradas:[],
+  tipoPneu:desconhecido}) + 3 SESSOES "ativa" evento_id=null (Stint solto). Ou seja a gravação + o início do Stint
+  estavam OK — o defeito era SÓ de experiência: a tela voltava CALADA (onCreated → voltar()), parecia que nada
+  acontecia, e o Flávio tocou 3x (3 duplicatas).
+- ACHADO secundário: sessoes.carro_id = null (StintRepository.create sempre cria com carroId:nil — pré-existente,
+  não é regressão; o envelope leva o carro certo, então o painel casa pelo carro). tipoPneu "desconhecido" = nenhum
+  pneu escolhido (esperado).
+- CONSERTO: StintSoltoLauncher agora tem @State `iniciado`; onCreated → mostra tela de CONFIRMAÇÃO ("Stint iniciado",
+  ícone de traço checkmark.circle SEM emoji, botão "Voltar pra Home" que esvazia a pilha). Reempacotado + reinstalado +
+  aberto no iPhone (BUILD SUCCEEDED; App installed; Launched). O fluxo de EVENTO (sheet → captureAtivo) não mudou.
+- PENDENTE: (a) Flávio revalidar com a confirmação nova (de preferência propósito=treinar pra ver o painel armar);
+  (b) OFERECIDO encerrar os 3 stints "ativa" de teste (espera ok do Flávio — mexe em dado).
