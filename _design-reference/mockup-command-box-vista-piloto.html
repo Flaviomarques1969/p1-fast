@@ -7745,6 +7745,8 @@ html,body{
       if(typeof s.mapBar==='number') REAL.mapBar=s.mapBar;
       if(s.tpsPct!=null) REAL.tps=s.tpsPct;
       if(s.batteryV!=null) REAL.bat=s.batteryV;
+      if(s.marcha!=null) REAL.marcha=s.marcha;   // marcha JÁ calculada pelo notebook (T4000+GPS)
+      if(s.rpmLuz!=null) REAL.rpmLuz=s.rpmLuz;   // ponto de troca (potência máx + aprendizado), idem
       var sim=/sim|preview|demo/i.test(s.source||'');
       setEstado('cb-on','AO VIVO'+(sim?' · simulação':''));
     }
