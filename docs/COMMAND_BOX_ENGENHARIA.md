@@ -433,7 +433,7 @@ Quem decide **o que** aparece em cada combinação é a engenharia (canal `engin
 
 | Surface de entrada | Quem usa | O que controla |
 |---|---|---|
-| **iPhone do box em Box Mode** | Engenheiro / chefe-de-equipe | Espelha sessão Tab Engenharia na TV 32"; controles táteis (sliders, knobs) editam parâmetros + disparam simulações; aprovar/editar/rejeitar findings |
+| **Command Box** (TV 32" via Fire TV Stick 4K Max) + celular do box | Engenheiro / chefe-de-equipe | A TV 32" abre a sessão Tab Engenharia do app na nuvem no navegador do Fire TV Stick 4K Max; a operação (controles táteis — sliders, knobs — que editam parâmetros + disparam simulações; aprovar/editar/rejeitar findings) é feita no celular acessando o mesmo app na nuvem _(atualizado 16/06/2026 — ver `docs/ARQUITETURA_DEFINITIVA.md`)_ |
 | **iPhone do time fora do Box Mode** (iOS hub) | Engenheiro / chefe-de-equipe / mecânico / **piloto** (cada um no SEU celular) | Tab Engenharia: cada papel pode **editar configurações** e **rodar simulações** com sliders + knobs (botões giratórios) no próprio iPhone. Histórico cross-stint, decisões offline (sincronizam por Realtime). |
 | **iPhone do carro** | Piloto (mãos ocupadas durante stint) | Roda `LiveTelemetryRecorder` (captura IMU/GPS). Entre stints OU quando aceitar (ex.: passageiro/piloto reserva conferindo no box), opera Tab Engenharia normalmente. |
 | **Notebook Windows** | Ninguém (kiosk) | Apenas roda o Cockpit Pilot em display 2 + processa T4000 + publica Realtime |
