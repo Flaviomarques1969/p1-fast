@@ -9,7 +9,7 @@
 
 ## Em caso de contradição entre docs
 
-`PLANO_FASE_1.md` vence. Sub-docs (`SPRINT_*.md`, `HANDOFF_*.md`, `READY_PROMPTS/*`, `IMPLEMENTATION_COVERAGE.md`, `STATUS.md`) são derivados e podem estar desatualizados. Se achar contradição, **alertar o Flávio**, não escolher silenciosamente.
+`docs/ARQUITETURA_DEFINITIVA.md` vence em arquitetura do sistema (Flávio 2026-06-16). Depois, `PLANO_FASE_1.md` vence no resto. Sub-docs (`SPRINT_*.md`, `HANDOFF_*.md`, `READY_PROMPTS/*`, `IMPLEMENTATION_COVERAGE.md`, `STATUS.md`) são derivados e podem estar desatualizados. Se achar contradição, **alertar o Flávio**, não escolher silenciosamente.
 
 ## Tratamento — REGRA DURA
 
