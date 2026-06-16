@@ -72,7 +72,8 @@ Base: levantamento do código real (não suposição). Evidências com caminho:l
 3. Começar pela luz de marcha (a regressão real): gerar o gabarito → o teste C# falha hoje →
    prova o valor no primeiro dia → fica verde quando o torque for portado pro C#.
 4. Command Box (web) já importa o cérebro único de produção (`web/command-box/marcha-real.js`,
-   `frenagem-real.js`) — estender esse padrão ao app iOS modo BOX.
+   `frenagem-real.js`) — estender esse padrão ao app na nuvem aberto no navegador via Fire TV
+   Stick 4K Max na TV 32" (atualizado 16/06/2026 — ver docs/ARQUITETURA_DEFINITIVA.md).
 
 REGRA DE OURO: paridade verde é pré-requisito de build. Sem verde, não empacota .exe nem gera
 build de pista.
