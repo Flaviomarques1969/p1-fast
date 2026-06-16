@@ -220,7 +220,7 @@ A camada 2 do brief (engenharia codificada → hipóteses de calibração) **nã
 
 ### G4 — Persistência Supabase de achados de engenharia `[persistência]`
 
-`AdvisorSuggestion` é Dexie-only e ADR-009 diz "syncQueue não dreina até Fase 20". Para o Command Box Engenharia atravessar dispositivos (iPhone do engenheiro × notebook Windows × Box Cockpit Apple TV), preciso de **tabela Supabase com RLS por time**. Não existe.
+`AdvisorSuggestion` é Dexie-only e ADR-009 diz "syncQueue não dreina até Fase 20". Para o Command Box Engenharia atravessar dispositivos (celular do engenheiro × notebook Windows × Command Box TV 32" via Fire TV Stick 4K Max), preciso de **tabela Supabase com RLS por time**. Não existe. _(atualizado 16/06/2026 — ver `docs/ARQUITETURA_DEFINITIVA.md`)_
 
 Proposta de tabelas novas (NÃO criadas — só desenho):
 - `engineering_findings` — cada finding (id, time_id, sessao_id, volta_id?, segment_id?, tipo enum, severidade enum, payload jsonb, evidencias jsonb, t timestamp, tmono).
