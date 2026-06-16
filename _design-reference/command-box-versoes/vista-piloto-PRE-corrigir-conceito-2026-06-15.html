@@ -4388,21 +4388,20 @@ html,body{
         '<div class="frx-trail"><span class="k">'+ (cen.rotuloTipo || 'curva sem freio') +'</span></div>';
     }
 
-    // CONCEITO (decisão Flávio 15/06): a REFERÊNCIA é a SUA MELHOR VOLTA registrada
-    // (cen.ref, vinda do motor frenagem-real.js, na mesma grade) — NÃO uma régua teórica
-    // por tipo. cen.ideal (forma prescrita) NÃO entra mais no parecer do Command Box.
-    var alvo = (cen && cen.ref) ? cen.ref : FRX_ALVO;
+    // ideal POR TIPO da curva (trail prescrito) quando há; senão o alvo global do mockup.
+    var alvo = (cen && cen.ideal) ? cen.ideal : FRX_ALVO;
 
-    // Curva com tipo de freada mas SEM volta real utilizável (GPS ~1 Hz não capturou a
-    // freada, ou sem passagem). HONESTIDADE (decisão Flávio 15/06): NÃO inventamos uma
-    // forma teórica — mostramos o estado real. A freada de verdade entra com o sensor de
-    // freio (16-17/06) / GPS 25 Hz.
-    if(cen && (cen.semDadoReal || !cen.live || !cen.ref)){
+    // Curva com tipo de freada mas SEM volta real medida (GPS ~1 Hz): mostra só o ideal do tipo, nunca em branco.
+    if(cen && (cen.semDadoReal || !cen.live)){
+      var mark0 = revealed
+        ? '<div class="frx-mark t-wait"><div class="frx-lbl">ponto de freada</div><div class="frx-num">—</div><div class="frx-sub">sem volta real</div></div>'
+        : frxMarkContagem(countdownM);
       return head +
         '<div class="frx-body">'+
-          '<div class="frx-mark t-wait"><div class="frx-num">—</div><div class="frx-sub">sem dado<br>de freio</div></div>'+
+          '<div class="frx-chart">'+frxChartSvg([], false, alvo)+'</div>'+
+          mark0+
         '</div>'+
-        '<div class="frx-trail"><span class="k">sem freada nítida aqui no GPS ~1 Hz — entra com o sensor de freio / 25 Hz</span></div>';
+        '<div class="frx-trail"><span class="k">'+ (cen.motivo || 'mostrando o ideal do tipo') +'</span></div>';
     }
 
     var pts = frxPontos(cen.live, alvo);
