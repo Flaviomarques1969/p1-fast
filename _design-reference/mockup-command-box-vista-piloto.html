@@ -7082,6 +7082,13 @@ html,body{
     if(shiftLightAnimId !== null){ clearInterval(shiftLightAnimId); shiftLightAnimId = null; }
   }
 
+  // Exposição pro bloco AO VIVO (setupLigacaoAoVivo vive noutra "caixa" de escopo,
+  // dentro de buildSpeedGauge). Sem isto, chamá-las de lá dá ReferenceError e
+  // DERRUBA a ligação ao vivo inteira (bug pré-existente — selo trava em
+  // "CONECTANDO…"). Conserto Flávio 15/06.
+  window.__renderShiftLightFromValues = renderShiftLightFromValues;
+  window.__stopShiftLightAnimation     = stopShiftLightAnimation;
+
   // ─── STINT BAR — barra vertical com status colorido por volta ────
   // Cores das voltas regulares:
   //   • better    → verde (igual/melhor que volta anterior)
