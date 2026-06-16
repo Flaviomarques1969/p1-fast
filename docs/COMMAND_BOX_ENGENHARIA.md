@@ -452,7 +452,7 @@ Quem decide **o que** aparece em cada combinação é a engenharia (canal `engin
 | iOS hub Tab Engenharia (pós-stint mobile) | iPhones do time | iPhone/iPad nas mãos do engenheiro entre stints |
 | Histórico / replay | Supabase + Edge Function `/functions/v1/detector` | Cross-stint, cross-evento |
 
-**Implicação prática**: o esforço de UI nova é **iOS only** para o Engenharia (Tab + Box Mode). O Cockpit Pilot existente recebe apenas um **modo simulação adicional** (overlay/painel sincronizado por Realtime quando carro parado). **Nada de janela nova no Windows.** Notebook fica intocado como produto.
+**Implicação prática**: o esforço de UI nova para o Engenharia fica no **app na nuvem** (Tab Engenharia, acessada pelo celular e pela TV 32" do Command Box via navegador do Fire TV Stick 4K Max) _(atualizado 16/06/2026 — ver `docs/ARQUITETURA_DEFINITIVA.md`)_. O Cockpit Pilot existente recebe apenas um **modo simulação adicional** (overlay/painel sincronizado por Realtime quando carro parado). **Nada de janela nova no Windows.** Notebook fica intocado como produto.
 
 ### 5.3 Persistência (gap G4)
 
