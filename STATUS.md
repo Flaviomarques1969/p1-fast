@@ -317,7 +317,7 @@ Pull do container via `xcrun devicectl device copy from`. SQLite mostrou:
 | **MS-9** | BLE T4000 (CoreBluetooth real) | ❌ não feito |
 | **MS-10** | Multi-usuário + Auth + RLS | ❌ não feito |
 | **MS-11** | Daily.co | ❌ não feito |
-| **MS-12** | Box Cockpit + AirPlay + Realtime | ❌ não feito |
+| **MS-12** | Command Box (TV 32" via Fire TV Stick 4K Max → navegador → app na nuvem) + Realtime _(atualizado 16/06/2026 — ver `docs/ARQUITETURA_DEFINITIVA.md`; substitui AirPlay/Apple TV)_ | ❌ não feito |
 | **MS-13** | Cockpit ao vivo (UI 956×440) | ❌ não feito |
 | **MS-14** | Ghost map + reference line | ❌ não feito |
 | **MS-15** | Fases térmicas + chuva | ❌ não feito |
