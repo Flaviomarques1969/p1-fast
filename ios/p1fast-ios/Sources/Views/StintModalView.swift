@@ -1480,22 +1480,74 @@ struct StintSoltoLauncher: View {
     let eventoId: String?
     @EnvironmentObject private var router: NavRouter
     @EnvironmentObject private var carroRepo: CarroRepository
+    /// Vira true quando o Stint é aprovado/iniciado — troca o modal pela
+    /// confirmação (antes a tela voltava CALADA e parecia que nada acontecia).
+    @State private var iniciado = false
 
     var body: some View {
-        StintModalView(
-            eventoId: eventoId,
-            proximoNumero: max(1, carroRepo.stintsPorCarro.values.reduce(0, +) + 1),
-            contextoLinha: eventoId == nil ? "Stint livre" : "Vinculado a um evento",
-            onCancel: { voltar() },
-            onCreated: { _ in voltar() }
-        )
+        Group {
+            if iniciado {
+                confirmacao
+            } else {
+                StintModalView(
+                    eventoId: eventoId,
+                    proximoNumero: max(1, carroRepo.stintsPorCarro.values.reduce(0, +) + 1),
+                    contextoLinha: eventoId == nil ? "Stint livre" : "Vinculado a um evento",
+                    onCancel: { voltar() },
+                    onCreated: { _ in iniciado = true }   // mostra a confirmação
+                )
+            }
+        }
         .navigationBarBackButtonHidden(true)
+    }
+
+    // Confirmação explícita pós-aprovação (feedback claro, sem voltar calado).
+    private var confirmacao: some View {
+        VStack(spacing: Spacing.lg) {
+            Spacer()
+            Image(systemName: "checkmark.circle")
+                .font(.system(size: 56, weight: .regular))
+                .foregroundStyle(Color.accent)
+            VStack(spacing: Spacing.sm) {
+                Text("Stint iniciado")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundStyle(Color.text)
+                Text("Plano aprovado e enviado pro painel. O painel da pista já pode armar o treino conforme você escolheu.")
+                    .font(.system(size: 15))
+                    .foregroundStyle(Color.textMuted)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, Spacing.lg)
+            Spacer()
+            Button(action: voltarHome) {
+                Text("Voltar pra Home")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.onAccent)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(Capsule().fill(Color.accent))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, Spacing.lg)
+            .padding(.bottom, Spacing.lg)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.surface)
+        .preferredColorScheme(.dark)
     }
 
     private func voltar() {
         UIApplication.shared.sendAction(
             #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         if !router.path.isEmpty { router.path.removeLast() }
+    }
+
+    /// Volta até a Home (esvazia a pilha de navegação).
+    private func voltarHome() {
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        while !router.path.isEmpty { router.path.removeLast() }
     }
 }
 
