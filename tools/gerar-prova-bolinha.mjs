@@ -10,19 +10,18 @@ const trackD = P.cb_track_d;
 const vr = P.volta_real_bubi_projetada;
 const polyline = P.volta_real_projetada_full.map(p=>p.join(',')).join(' ');
 
-// --- isola UMA volta limpa do dado real (6 voltas + 3 buracos) para o demo lado a lado ---
+// --- pega o trecho contínuo mais longo SEM buraco de sinal (>1,5s) e usa ~95s dele ---
 let s = P.suavizacao.slice().sort((a,b)=>a[0]-b[0]).filter((p,i,a)=> i===0 || p[0]!==a[i-1][0]);
-const laps=[]; let cur=[];
-for(let i=0;i<s.length;i++){ if(i>0 && s[i][3] < s[i-1][3]-0.5){ laps.push(cur); cur=[]; } cur.push(s[i]); }
-if(cur.length) laps.push(cur);
-// escolhe a volta com mais pontos e sem buraco grande (>2,5s)
-function maxGap(l){ let m=0; for(let i=1;i<l.length;i++) m=Math.max(m,l[i][0]-l[i-1][0]); return m; }
-const candidatas = laps.filter(l=>l.length>=40 && maxGap(l)<2500).sort((a,b)=>b.length-a.length);
-const volta = (candidatas[0]||laps.sort((a,b)=>b.length-a.length)[0]);
-const t0 = volta[0][0];
-// [tRel_ms, sFrac] — sFrac já em [0,1) crescente dentro da volta
-const demo = volta.map(p=>[ p[0]-t0, p[3] ]);
+let melhor=[], cur=[s[0]];
+for(let i=1;i<s.length;i++){ if(s[i][0]-s[i-1][0] <= 1500){ cur.push(s[i]); } else { if(cur.length>melhor.length) melhor=cur; cur=[s[i]]; } }
+if(cur.length>melhor.length) melhor=cur;
+const JANELA_MS = 95000;
+const t0 = melhor[0][0];
+const trecho = melhor.filter(p => (p[0]-t0) <= JANELA_MS);
+// [tRel_ms, sFrac] — sFrac em [0,1); a virada de volta é tratada na interpolação
+const demo = trecho.map(p=>[ p[0]-t0, p[3] ]);
 const durMs = demo[demo.length-1][0] + 1000;
+const WALL_MS = 14000;  // toca o trecho acelerado: ~14s por loop, pra ver o contraste rápido
 
 const html = `<!doctype html><html lang="pt-br"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
