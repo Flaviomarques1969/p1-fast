@@ -160,7 +160,9 @@ export function imprimir({ grupos, resumo }) {
 }
 
 // Execução direta: imprime a lista de referência (sem dado capturado).
-if (import.meta.url === `file://${process.argv[1]}`) {
+// pathToFileURL trata corretamente caminho com espaço (a pasta é "P1 Fast").
+import { pathToFileURL } from 'node:url';
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const vazio = { gps: { n: 0 }, sample: { n: 0 }, evento: { n: 0 } };
   imprimir(avaliar(vazio));
 }
