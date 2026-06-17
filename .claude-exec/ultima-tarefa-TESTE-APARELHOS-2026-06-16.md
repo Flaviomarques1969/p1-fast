@@ -102,3 +102,16 @@ pedal acelerador (sem sensor — Bubi usa cabo mecânico, não vale usar).
 NÃO VERIFICÁVEL DAQUI (não inventar): total de entradas físicas da T4000 e quais pinos do conector de 34 vias estão
 livres. Fonte autoritativa = config do Injepro T Software no notebook (USB) + manual/pinout Injepro. App proprietário
 Windows, sem acesso pelo Mac.
+
+---
+
+## LISTA DE VERIFICAÇÃO embutida no código (pedido Flávio, 16-17/06)
+- NOVO: `tools/checklist-aparelhos.mjs` — 22 itens por aparelho (câmera/GPS/carro/nuvem), cada um AUTO
+  (o registrador confere sozinho pelo dado da nuvem) ou MANUAL (conferir no notebook). Faixas vindas das specs.
+  Roda sozinho (`node tools/checklist-aparelhos.mjs`) imprimindo a lista de referência.
+- ALTERADO: `tools/registrar-aparelhos.mjs` — importa a lista e, no fim de cada captura, mostra cada item com
+  status [OK] / [FALHOU] / [!] / [aguardando] / [conferir no notebook] + resumo.
+- Provado: lista de referência imprime; avaliada com dado de teste deu 11 OK, 1 atenção (pressão de freio em 0),
+  1 falhou (rpm fora de faixa, alerta proposital), 8 manuais. Conserto: guard de execução direta tratava errado
+  caminho com espaço ("P1 Fast") → corrigido com pathToFileURL; re-testado OK.
+- Tudo em DEV. Nada publicado/produção. Páginas p1tv/p1t4000 não foram tocadas.
