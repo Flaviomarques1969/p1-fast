@@ -139,6 +139,7 @@ function relatorioFormato(){
 async function encerrar(){
   clearInterval(painel);
   relatorioFormato();
+  imprimirChecklist(avaliarChecklist(tipos));   // lista de verificação dos aparelhos
   try { await ch.unsubscribe(); } catch {}
   process.exit(0);
 }
