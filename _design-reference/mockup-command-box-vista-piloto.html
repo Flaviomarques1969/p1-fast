@@ -6988,10 +6988,13 @@ html,body{
         _seloReal = _real;
         var _selo = document.getElementById('cb-live-selo');
         if(_selo && _real){
-          var _rep = window.__cbPos && window.__cbPos.modo === 'replay';
-          _selo.className = _rep ? 'cb-wait' : 'cb-on';
+          var _modo = (window.__cbPos && window.__cbPos.modo) || '';
+          _selo.className = (_modo === 'nuvem') ? 'cb-on' : 'cb-wait';
           var _txt = _selo.querySelector('.cb-txt');
-          if(_txt) _txt.textContent = _rep ? 'DEV · VOLTA GRAVADA 23/05 (não é ao vivo)' : 'AO VIVO · GPS real';
+          if(_txt) _txt.textContent =
+              _modo === 'nuvem'  ? 'AO VIVO · posição da nuvem'
+            : _modo === 'replay' ? 'DEV · VOLTA GRAVADA 23/05 (não é ao vivo)'
+            :                      'GPS local (provisório, sem nuvem)';
         }
       }
       var ghostT = liveT + ghostLeadFrac;
