@@ -26,7 +26,8 @@ export function calcularPosicao(g) {
 }
 
 // --- LIGAÇÃO NA REDE: só roda quando executado direto E com CANAL definido (nunca no import) ---
-const executadoDireto = import.meta.url === `file://${process.argv[1]}`;
+let executadoDireto = false;
+try { executadoDireto = !!process.argv[1] && realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]); } catch {}
 if (executadoDireto) {
   const CANAL = process.env.CANAL;
   if (!CANAL) {
