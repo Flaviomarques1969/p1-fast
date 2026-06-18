@@ -6,7 +6,8 @@
 // SEGURANÇA DE PRODUÇÃO (regra dura): NÃO conecta quando importado; ao rodar, SÓ liga se CANAL
 // estiver definido; RECUSA o canal de produção `cockpit-bubi-live` sem PERMITIR_PROD_CANAL=1.
 // Uso seguro (canal de desenvolvimento): CANAL=cb-dev-flavio node tools/nuvem-replay-gps.mjs 23-05 8
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const CANAL_PRODUCAO = 'cockpit-bubi-live';
 
