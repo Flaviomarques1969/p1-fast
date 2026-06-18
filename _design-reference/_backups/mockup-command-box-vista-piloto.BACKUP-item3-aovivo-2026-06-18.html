@@ -6973,27 +6973,10 @@ html,body{
     var deltaOv       = document.querySelector('[data-overlay-delta]');
 
     var tStart = performance.now();
-    var _seloReal = null;   // ITEM 3 (18/06): último estado do selo (real vs relógio) p/ não reescrever todo frame
     function tick(){
       var now = performance.now();
       var elapsed = now - tStart;
       var liveT  = (elapsed % MAP_CFG.lapMs) / MAP_CFG.lapMs;
-      // ITEM 3 (18/06): com GPS real (ou replay DEV) fresco, a tela anda pela FRAÇÃO DE ARCO real,
-      // não pelo relógio fictício. Sem GPS, mantém o relógio (demonstração padrão intacta).
-      var _pos  = window.__cbPos ? window.__cbPos.fracAt(now) : null;
-      var _real = !!(_pos && !_pos.perdido);
-      window.__cbPosDriving = _real;
-      if(_real){ liveT = _pos.frac; }
-      if(_real !== _seloReal){
-        _seloReal = _real;
-        var _selo = document.getElementById('cb-live-selo');
-        if(_selo && _real){
-          var _rep = window.__cbPos && window.__cbPos.modo === 'replay';
-          _selo.className = _rep ? 'cb-wait' : 'cb-on';
-          var _txt = _selo.querySelector('.cb-txt');
-          if(_txt) _txt.textContent = _rep ? 'DEV · VOLTA GRAVADA 23/05 (não é ao vivo)' : 'AO VIVO · GPS real';
-        }
-      }
       var ghostT = liveT + ghostLeadFrac;
       if(ghostT >= 1) ghostT -= 1;
 
