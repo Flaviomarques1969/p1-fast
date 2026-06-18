@@ -7773,6 +7773,8 @@ html,body{
       if(typeof g.lat==='number') REAL.lat=g.lat;
       if(typeof g.lng==='number') REAL.lng=g.lng;
       if(g.numSV!=null) REAL.sv=g.numSV;
+      // ITEM 3 (18/06): GPS real → posição ao vivo (projeção + suavização) → bolinha/tela.
+      if(window.__cbPos && typeof g.lat==='number' && typeof g.lng==='number') window.__cbPos.pushGps(g.lat, g.lng, 'live');
     }
 
     // modo prévia local (?preview): alimenta a tela SEM rede e SEM transmitir nada
