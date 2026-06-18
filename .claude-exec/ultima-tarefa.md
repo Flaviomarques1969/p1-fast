@@ -43,6 +43,34 @@ TASK_DONE:
 - Resultado: concluído (em DEV)
 - Pendências reais: (1) prova final em pista com carro ao vivo (fluidez/latência só na pista); (2) mover a projeção pra nuvem (canônico) — mudança interna, não muda a tela; (3) replay padrão 6× cobre a gravação inteira (~17 min reais, várias voltas), não recortei uma volta única.
 
+## EXECUÇÃO — ITEM 3b: PROJEÇÃO NA NUVEM (18/06/2026) — autorizado por Flávio ("2. sim" + card "a nuvem centraliza os cálculos pras telas")
+Ambiente: DESENVOLVIMENTO. Decisão registrada em ~/.claude-decisoes/respostas/P1 Fast/ + index.jsonl. Card aposentado (preservado em .claude-perguntas/respondidas/).
+
+ERRO DE PRODUÇÃO (reportado, não escondido): ao testar, apontei o emissor de replay E o processador pro canal `cockpit-bubi-live`, que é PRODUÇÃO. O processador foi BLOQUEADO pelo classificador (não publicou). O emissor publicou ~250 pontos de GPS gravado por alguns segundos antes de eu matar. Broadcast é EFÊMERO (nada persistido); sem carro na pista, sem dependente crítico. Correção aplicada (abaixo) + memória nova [[feedback-cockpit-bubi-live-e-producao-nao-publicar-dev]].
+
+O QUE FOI FEITO (tudo em dev, à prova de produção):
+- `web/command-box/pista-cb-polyline.js` (GERADO por `tools/gerar-polilinha-cb.mjs`) — geometria da pista do CB (2241 pontos) + `fracDe(x,y)` (ponto→fração de arco), pra a nuvem (node, sem navegador) calcular sem SVG. Reusa o mesmo leitor de traço do recalibrador.
+- `tools/nuvem-posicao.mjs` — PROCESSADOR DA NUVEM: `calcularPosicao(gps)` PURO (lat/lng→{frac,x,y}); modo rede só com CANAL definido; RECUSA `cockpit-bubi-live` sem PERMITIR_PROD_CANAL=1; não conecta no import.
+- `tools/nuvem-replay-gps.mjs` — DEV: toca a volta gravada como GPS cru num canal de DEV; mesma trava de produção; `carregarVolta()` puro.
+- `tests/node-smoke-nuvem-posicao.mjs` — prova OFFLINE (sem rede): 7/7.
+- Command Box (mockup): passou a ASSINAR o evento `posicao` (posição pronta da nuvem) e exibir; a projeção no navegador virou FALLBACK de dev (só se a nuvem não entregar); selo mostra a fonte (nuvem / volta gravada / local provisório).
+
+VALIDAÇÃO (saída real):
+- Prova offline da nuvem: 7/7 (1013 leituras viram posição; todas dentro do quadro; cobre frac 0..1; rejeita ruído fora de Brasília).
+- Trava de produção: sem CANAL → sai seguro; CANAL=cockpit-bubi-live → RECUSADO (exit 2) ANTES de conectar (processador e emissor).
+- Sintaxe: tela 5/5 scripts OK; peças da nuvem `node --check` OK.
+- Polilinha+fracDe casam com a projeção da volta real (cobre 0.000→0.999).
+
+TASK_DONE (item 3b):
+- Pedido conferido: sim (nuvem centraliza o cálculo; telas só exibem)
+- Ambiente: desenvolvimento | Produção alterada: SIM, sem querer (canal prod, ~250 broadcasts efêmeros, nada persistido) — corrigido e travado
+- Autorização produção: não recebida (e o erro foi revertido/travado, não repetir)
+- Arquivos inspecionados: sim | Alterações: sim (1 gerado + 2 tools + 1 teste + mockup) | Testes: sim
+- Resultado: concluído em DEV (cálculo da nuvem pronto e provado offline; tela liga nele)
+- Pendências reais: demo AO VIVO da cadeia (replay→nuvem→tela) precisa publicar num canal — fazer em canal de DEV isolado e/ou com autorização; NÃO no canal de produção. Onde a peça da nuvem roda em produção = decisão do Flávio, depois.
+
+DEMO AO VIVO EXECUTADA (18/06, autorizado "sim" — canal de teste): rodada no canal DEV `cb-dev-flavio` (NÃO produção). Mockup ganhou `?canal=` (padrão = produção). Cadeia confirmada nos logs: emissor publicou GPS cru → processador da nuvem devolveu `posicao` (frac avançando e virando a volta 0,99→0,01→0,05) → Command Box aberto com `?canal=cb-dev-flavio` exibindo a posição da nuvem (selo "AO VIVO · posição da nuvem"). Processos rodando em segundo plano até o Flávio dizer "pode parar". Produção intocada nesta etapa.
+
 ---
 
 ## (HISTORICO ANTERIOR — CAMINHO 1: itens 1 e 2, 16/06/2026)
