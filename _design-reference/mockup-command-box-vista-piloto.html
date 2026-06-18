@@ -7800,6 +7800,11 @@ html,body{
       var ch = client.channel(CHANNEL, { config:{ broadcast:{ ack:false, self:false } } });
       ch.on('broadcast', { event:'sample' }, function(msg){ onSample(msg && msg.payload); });
       ch.on('broadcast', { event:'gps' },    function(msg){ onGps(msg && msg.payload); });
+      // ITEM 3 (18/06): POSIÇÃO PRONTA calculada pela NUVEM — a tela só exibe (não projeta).
+      ch.on('broadcast', { event:'posicao' }, function(msg){
+        var p = msg && msg.payload;
+        if(p && window.__cbPos && typeof p.frac === 'number'){ window.__cbPos.pushPronto(p.frac); REAL.fresh = true; REAL.ts = performance.now(); }
+      });
       ch.subscribe(function(stt){
         if(stt==='SUBSCRIBED') setEstado('cb-wait','AO VIVO · aguardando o carro');
         else if(stt==='CHANNEL_ERROR' || stt==='TIMED_OUT') setEstado('cb-err','SEM CONEXÃO');
