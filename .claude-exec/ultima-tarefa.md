@@ -1,4 +1,21 @@
-# Ultima tarefa — P1 Fast — CAMINHO 1: ligar o Command Box no ao vivo (16/06/2026)
+# Ultima tarefa — P1 Fast — ITEM 3: fundir o ao vivo no Command Box (18/06/2026)
+
+## TASK_INIT — ITEM 3 (18/06/2026)
+- **Pedido original (Flavio):** "faca" — seguir minha recomendacao: em DEV, plugar o que ja esta pronto (bolinha por GPS real, recalibrada+suavizada) direto no mockup do Command Box, pra ele VER a bolinha real andando na tela. Depois mover a conta pra nuvem.
+- **Objetivo (1 frase):** fazer o mockup do Command Box mover a tela pela FRACAO DE ARCO derivada do GPS real (item 1+2 ja prontos), no lugar do relogio ficticio (liveT), com fallback pro relogio quando nao ha GPS, e um modo DEV de replay da volta real gravada (23/05) pra ver agora sem carro na pista.
+- **Criterio de conclusao:** com `?replay=23-05`, a bolinha (e a tela, em sincronia) anda pela volta REAL gravada, projetada+suavizada, validado no navegador pela 8078, arranjo do Flavio intacto, demonstracao padrao intacta sem o parametro. Nada em producao.
+- **Leitura confirmada (18/06):** ~/.claude/CLAUDE.md; ~/.claude-decisoes/padroes.md; FLAVIO_EXECUTION_PROTOCOL.md; FLAVIO_DONE_CHECKLIST.md; FLAVIO_ENVIRONMENT_RULES.md; FLAVIO_COMMUNICATION_RULES.md; P1 Fast/CLAUDE.md; memoria do Command Box (arquitetura definitiva 16/06, conceito producao 16/06, frenagem redesenho 15/06, servir-pela-8078).
+- **Ambiente alvo:** DESENVOLVIMENTO (mockup/prototipo). Producao do Command Box (TV via Fire TV Stick) NAO e este arquivo.
+- **Producao protegida:** sim. **Producao alterada:** nao. **Autorizacao producao:** nao recebida (nao necessaria — e dev).
+- **Plano (<=5 passos):** (1) backup do mockup; (2) gerar fixture da volta real (dado real, aditivo); (3) modulo de posicao ao vivo (reusa geoParaCommandBox + suavizador, ponto->fracao de arco) expondo window.__cbPos; (4) ligar: onGps alimenta __cbPos, tick usa a fracao real como liveT quando fresca (senao relogio), selo "ao vivo/replay" + modo DEV replay; (5) validar na 8078 + navegador e mostrar.
+- **Arquivos a tocar:** `_design-reference/mockup-command-box-vista-piloto.html` (tick ~6985; onGps 7757; checador 1s 7735; novo <script type=module> antes do </body>). Reuso (NAO duplicar): `web/cockpit/pista-brasilia-commandbox.js`, `web/cockpit/suavizador-bolinha.js`, `web/cockpit/pista-oficial-brasilia.js`. Novo fixture: `web/command-box/fixtures/volta-real-gps-23-05.json`.
+- **REGRA DURA:** NAO tocar no Vmin (fr-*/_shortRevealStateForLap); BACKUP antes; arranjo do Flavio (ATUAL.json) intocado; servir SO pela 8078; comportamento padrao (sem ?replay) identico; dado da producao tem que ser real ao vivo (replay e DEV, rotulado).
+- **Decisao de arquitetura assumida (recomendacao aceita por "faca"):** projetar GPS no proprio Command Box agora e DEV stand-in; a conta vai pra nuvem depois (mudanca interna, nao muda o que a tela mostra). Rotular honestamente.
+- **Status inicial:** iniciado.
+
+---
+
+## (HISTORICO ANTERIOR — CAMINHO 1: itens 1 e 2, 16/06/2026)
 
 ## TASK_INIT
 - **Pedido original (Flavio):** "siga" — seguir o caminho 1 ja escolhido: ligar a frenada/dados ao vivo no Command Box, reusando o motor que ja existe, em desenvolvimento.
