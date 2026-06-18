@@ -17,7 +17,8 @@ export function carregarVolta(id = '23-05') {
   return j.amostras || [];
 }
 
-const executadoDireto = import.meta.url === `file://${process.argv[1]}`;
+let executadoDireto = false;
+try { executadoDireto = !!process.argv[1] && realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]); } catch {}
 if (executadoDireto) {
   const CANAL = process.env.CANAL;
   if (!CANAL) {
