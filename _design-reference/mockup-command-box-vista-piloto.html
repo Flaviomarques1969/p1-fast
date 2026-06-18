@@ -7749,7 +7749,7 @@ html,body{
 
     // watchdog: sem amostra há >2,5s → "aguardando"
     setInterval(function(){
-      if(REAL.ts && (performance.now()-REAL.ts>2500)){ REAL.fresh=false; setEstado('cb-wait','AO VIVO · aguardando o carro'); }
+      if(!window.__cbPosDriving && REAL.ts && (performance.now()-REAL.ts>2500)){ REAL.fresh=false; setEstado('cb-wait','AO VIVO · aguardando o carro'); }
     }, 1000);
 
     function onSample(s){
