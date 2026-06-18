@@ -1,3 +1,20 @@
+# Ultima tarefa — P1 Fast — AVANCAR PLANEJAMENTO DO STINT NO CELULAR (18/06/2026 noite)
+
+## TASK_INIT — Planejamento do Stint no celular (18/06/2026)
+- **Pedido original (Flavio):** "em p1 fast avancar o Planejamento do Stint no celular (app do iPhone)".
+- **Objetivo (1 frase):** dar o proximo passo do recurso "Planejamento do Stint" no app iOS, na direcao que o Flavio escolher (card aberto).
+- **Criterio de conclusao:** a direcao escolhida pelo Flavio entregue e validada em DESENVOLVIMENTO (sem tocar producao sem autorizacao literal), com prova real (build/teste/navegador/aparelho conforme o caso).
+- **Leitura confirmada (18/06):** ~/.claude/CLAUDE.md; ~/.claude-decisoes/padroes.md; FLAVIO_EXECUTION_PROTOCOL.md; FLAVIO_DONE_CHECKLIST.md; FLAVIO_ENVIRONMENT_RULES.md; FLAVIO_COMMUNICATION_RULES.md; P1 Fast/CLAUDE.md; memoria p1-fast-planejamento-stint-no-celular-2026-06-15 + p1-fast-plano-stint-e-tela-105-2026-06-10 + apps-iphone-expiram-7-dias.
+- **Ambiente alvo:** DESENVOLVIMENTO. (Diagnostico do aparelho do Flavio = so leitura.)
+- **Producao protegida:** sim. **Producao alterada:** nao. **Autorizacao producao:** nao recebida.
+- **Verificacao ja feita (codigo real, 18/06):** (a) planejamento no celular CONSTRUIDO e completo v1 (StintModalView: proposito livre/testar/treinar + catalogo + brief que trava o Aprovar + paradas + ghost + voltas + licao; "Aprovar e iniciar" grava envelope+plano na nuvem e cria Stint solto; provado na nuvem 15/06). (b) Codigo de subida de carros/eventos pra nuvem EXISTE e esta completo (fila->funcao sync->Postgres). (c) Banco do iPhone do Flavio (copia so-leitura): 2 carros (Bolinha, subaru) + 5 eventos, TODOS com synced_at preenchido, sync_queue VAZIA, time c027a716 -> aparelho diz que JA SUBIU. Suspeita de 15/06 ("nuvem 0 carros") NAO confirmada e contradita pelo local. Nuvem nao confirmada de forma autoritativa (RLS bloqueia anon; caminho autenticado em prod barrado sem autorizacao nominal).
+- **FALTA (fronts possiveis):** (1) reinstalar app (vence ~22/06) + validar ciclo ao vivo; (2) painel reagir ao plano (WEB, nao celular); (3) vida util do item no planejamento (falta fonte de km).
+- **Plano (<=5 passos):** (1) [feito] verificar estado real; (2) [feito] diagnosticar garagem no aparelho; (3) card de direcao aberto -> AGUARDANDO Flavio; (4) executar a direcao escolhida em DEV; (5) validar com prova e reportar.
+- **Riscos:** mexer em producao sem autorizacao; perda de dados da garagem (baixa, local diz sincronizado); app vencer e sumir do celular esta semana.
+- **Status inicial:** iniciado — AGUARDANDO decisao do card (.claude-perguntas/pendentes/20260618-204009-avancar-planejamento-stint.html).
+
+---
+
 # Ultima tarefa — P1 Fast — ITEM 3: fundir o ao vivo no Command Box (18/06/2026)
 
 ## TASK_INIT — ITEM 3 (18/06/2026)
