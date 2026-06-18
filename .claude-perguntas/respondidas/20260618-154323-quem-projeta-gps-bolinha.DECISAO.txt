@@ -1,0 +1,4 @@
+DECISAO (Flavio, no chat 18/06/2026): a NUVEM faz a projecao do GPS -> posicao na tela.
+Bate com a arquitetura definitiva 16/06 ("processamento do app na nuvem, nao da TV, nao do .exe").
+O card recomendava o NOTEBOOK (opcao 1) -> moldura ERRADA contra o canonico. Card aposentado.
+Command Box continua so EXIBINDO. Stand-in atual (projecao no navegador) e DEV; sai quando a nuvem entregar pronto.
