@@ -13,6 +13,36 @@
 - **Decisao de arquitetura assumida (recomendacao aceita por "faca"):** projetar GPS no proprio Command Box agora e DEV stand-in; a conta vai pra nuvem depois (mudanca interna, nao muda o que a tela mostra). Rotular honestamente.
 - **Status inicial:** iniciado.
 
+## EXECUÇÃO — ITEM 3 (18/06/2026)
+Ambiente: DESENVOLVIMENTO. Produção NÃO tocada. Arranjo do Flávio (ATUAL.json) intocado. Vmin NÃO tocado.
+BACKUP: `_design-reference/_backups/mockup-command-box-vista-piloto.BACKUP-item3-aovivo-2026-06-18.html`.
+
+O QUE FOI FEITO:
+- Novo fixture (dado REAL, aditivo): `web/command-box/fixtures/volta-real-gps-23-05.json` — 1013 pontos de GPS real da volta 23/05 (gerado do backup gps-23-05.tsv; rótulo "DEV, não é ao vivo").
+- Novo `<script type="module">` no mockup (antes do </body>): reusa `geoParaCommandBox` (recalibração, item 1) + `criarSuavizador` (item 2); amostra o MESMO traço #track e converte ponto→fração de arco (mesma conta do recalibrador, sFracOf); expõe `window.__cbPos` (pushGps/fracAt). Modo DEV `?replay=23-05` (&speed, padrão 6×) toca a volta real, 1 amostra por vez como o ao vivo, em loop.
+- `onGps` (canal cockpit-bubi-live) passou a alimentar `window.__cbPos.pushGps` com o GPS real.
+- `tick()`: quando há posição real fresca, `liveT` (que move a TELA inteira, em sincronia) passa a vir da FRAÇÃO DE ARCO real, não do relógio; sem GPS, mantém o relógio (demonstração padrão idêntica). Selo vira "AO VIVO · GPS real" (ou "DEV · VOLTA GRAVADA 23/05" no replay).
+- Checador de 1s não derruba o selo enquanto a posição real conduz.
+
+VALIDAÇÃO EXECUTADA (saída real):
+- `tests/node-smoke-suavizador-bolinha.mjs` → 10 passaram, 0 falharam.
+- `npm run smoke:freio-trecho` → 29 ok / 0 fail.
+- Pipeline reusado na volta REAL → projeção: 1013/1013 pontos dentro do quadro (x[133,692] y[128,725] no viewBox 130 110 580 660); suavização desliza (meio=0.150); perda de sinal marca perdido=true.
+- Sintaxe de TODOS os scripts do mockup: 3 clássicos OK + 2 módulos OK + 0 falhas.
+- Servido pela 8078: mockup + 3 módulos reusados + fixture todos HTTP 200.
+- Aberto no navegador pela 8078 com `?replay=23-05` pro Flávio ver a bolinha/tela andando pela volta real.
+
+TASK_DONE:
+- Pedido original conferido: sim ("faça" = recomendação aceita: plugar em DEV o pronto, ver a bolinha real andando)
+- Ambiente trabalhado: desenvolvimento
+- Produção foi alterada: não
+- Se produção foi alterada, autorização explícita registrada: n/a
+- Arquivos reais inspecionados: sim
+- Alterações feitas: sim (1 mockup editado + 1 fixture novo; backup feito)
+- Testes/validação executados: sim (smokes + pipeline + sintaxe + HTTP 200 + navegador)
+- Resultado: concluído (em DEV)
+- Pendências reais: (1) prova final em pista com carro ao vivo (fluidez/latência só na pista); (2) mover a projeção pra nuvem (canônico) — mudança interna, não muda a tela; (3) replay padrão 6× cobre a gravação inteira (~17 min reais, várias voltas), não recortei uma volta única.
+
 ---
 
 ## (HISTORICO ANTERIOR — CAMINHO 1: itens 1 e 2, 16/06/2026)
