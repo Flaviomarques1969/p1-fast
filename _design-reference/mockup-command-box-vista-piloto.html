@@ -7884,11 +7884,23 @@ html,body{
     var suav   = criarSuavizador({ janelaMaxMs: 2500 });
     window.__cbPos = {
       modo: null,
+      recebeuNuvem: false,
+      // POSIÇÃO PRONTA da nuvem (já é fração de arco): a tela só desliza/desenha, NÃO calcula.
+      // É o caminho canônico (Flávio 16/06): a nuvem centraliza o cálculo pras telas.
+      pushPronto: function(frac){
+        if(typeof frac !== 'number') return;
+        this.recebeuNuvem = true;
+        suav.push({ t: performance.now(), frac: frac });
+        this.modo = 'nuvem';
+      },
+      // FALLBACK de DESENVOLVIMENTO: se a nuvem não estiver entregando, a tela projeta o GPS cru
+      // localmente (provisório, rotulado). Assim que a nuvem entrega, isto é ignorado.
       pushGps: function(lat, lng, modo){
+        if(this.recebeuNuvem) return;            // nuvem manda → a tela não projeta
         if(typeof lat !== 'number' || typeof lng !== 'number') return;
         var p = geoParaCommandBox(lat, lng);
         suav.push({ t: performance.now(), frac: fracDe(p.x, p.y) });
-        this.modo = modo || 'live';
+        this.modo = modo || 'live-local';
       },
       fracAt: function(now){ return suav.fracAt(now); }   // {frac,perdido} | null
     };
