@@ -7849,5 +7849,74 @@ html,body{
     }
   })();
 </script>
+
+<!-- ITEM 3 (Flávio 18/06/2026): a bolinha (e a tela em sincronia) anda pela FRAÇÃO DE ARCO
+     derivada do GPS REAL — reusa geoParaCommandBox (recalibração, item 1) + suavizador (item 2).
+     DEV stand-in: a projeção roda aqui no protótipo; na produção a conta vai pra nuvem (não muda
+     o que a tela mostra). Sem GPS e sem ?replay, a demonstração padrão segue idêntica. -->
+<script type="module">
+  import { geoParaCommandBox } from '/web/cockpit/pista-brasilia-commandbox.js';
+  import { criarSuavizador }   from '/web/cockpit/suavizador-bolinha.js';
+
+  // Amostra densamente o MESMO traço do mapa (#track) e devolve uma função
+  // (x,y) -> fração de arco 0..1 (projeção no segmento mais próximo). Mesma conta
+  // usada na recalibração (tools/recalibrar-mapa-command-box.mjs: sFracOf).
+  function construirFracDe(path, N){
+    var L = path.getTotalLength(); var pts = []; var cum = [0];
+    for(var i=0;i<=N;i++){ var p = path.getPointAtLength(L*i/N); pts.push([p.x,p.y]);
+      if(i>0) cum.push(cum[i-1] + Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1])); }
+    var tot = cum[cum.length-1] || 1;
+    return function(x,y){
+      var m = Infinity, best = 0;
+      for(var i=1;i<pts.length;i++){ var a=pts[i-1], b=pts[i];
+        var vx=b[0]-a[0], vy=b[1]-a[1], wx=x-a[0], wy=y-a[1];
+        var sq=vx*vx+vy*vy||1; var t=(wx*vx+wy*vy)/sq; t = t<0?0:(t>1?1:t);
+        var dx=a[0]+t*vx-x, dy=a[1]+t*vy-y, d=dx*dx+dy*dy;
+        if(d<m){ m=d; best = cum[i-1] + t*Math.hypot(vx,vy); } }
+      return best/tot;
+    };
+  }
+
+  function iniciar(){
+    var path = document.getElementById('track');
+    if(!path || typeof path.getTotalLength !== 'function' || path.getTotalLength() === 0){ return setTimeout(iniciar, 80); }
+    var fracDe = construirFracDe(path, 2400);
+    var suav   = criarSuavizador({ janelaMaxMs: 2500 });
+    window.__cbPos = {
+      modo: null,
+      pushGps: function(lat, lng, modo){
+        if(typeof lat !== 'number' || typeof lng !== 'number') return;
+        var p = geoParaCommandBox(lat, lng);
+        suav.push({ t: performance.now(), frac: fracDe(p.x, p.y) });
+        this.modo = modo || 'live';
+      },
+      fracAt: function(now){ return suav.fracAt(now); }   // {frac,perdido} | null
+    };
+
+    // ── MODO DEV: replay da volta REAL gravada (não é ao vivo; rótulo honesto) ──
+    // Uso: ?replay=23-05 (opcional &speed=N, padrão 6×). Sem o parâmetro, nada muda.
+    var mRep = /(?:\?|&)replay=([\w-]+)/.exec(location.search);
+    if(mRep){
+      var speed = (function(){ var s=/(?:\?|&)speed=([\d.]+)/.exec(location.search); return s ? Math.max(0.25, +s[1]) : 6; })();
+      fetch('/web/command-box/fixtures/volta-real-gps-'+mRep[1]+'.json')
+        .then(function(r){ return r.json(); })
+        .then(function(j){
+          var a = (j && j.amostras) || []; if(!a.length){ console.warn('[item3 replay] fixture vazio'); return; }
+          var dur = a[a.length-1][0] || 1;
+          var t0 = performance.now(), lastIdx = -1, lastTg = 0;
+          (function passo(){
+            var tg = ((performance.now() - t0) * speed) % dur;   // tempo gravado, acelerado, em loop
+            if(tg < lastTg) lastIdx = -1;                         // virou a volta → recomeça a varredura
+            lastTg = tg;
+            var idx = 0; for(var i=0;i<a.length;i++){ if(a[i][0] <= tg) idx = i; else break; }
+            if(idx !== lastIdx){ lastIdx = idx; window.__cbPos.pushGps(a[idx][1], a[idx][2], 'replay'); } // 1 amostra por vez, como o ao vivo
+            requestAnimationFrame(passo);
+          })();
+        })
+        .catch(function(e){ console.warn('[item3 replay] fixture indisponível:', e); });
+    }
+  }
+  iniciar();
+</script>
 </body>
 </html>
