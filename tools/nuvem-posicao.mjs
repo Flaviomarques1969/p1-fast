@@ -7,6 +7,8 @@
 // e ao ser executado SÓ liga na rede se a variável CANAL for definida. Recusa o canal de produção
 // `cockpit-bubi-live` a menos que PERMITIR_PROD_CANAL=1 (autorização explícita). O cálculo (a parte
 // que importa) é PURO e testável offline, sem tocar em produção.
+import { fileURLToPath } from 'node:url';
+import { realpathSync } from 'node:fs';
 import { geoParaCommandBox } from '../web/cockpit/pista-brasilia-commandbox.js';
 import { fracDe } from '../web/command-box/pista-cb-polyline.js';
 
