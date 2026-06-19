@@ -13,6 +13,42 @@
 - **Riscos:** mudança aditiva (3 metas + 1 selo + 1 const + 2 linhas), sintaxe validada; deploy Vercel atômico e reversível.
 - **Status inicial:** iniciado.
 
+## TASK_DONE (19/06/2026)
+- Pedido original conferido: sim.
+- Ambiente trabalhado: ferramental de teste da pista (p1tv / projeto Vercel p1-teste-aparelhos). CDAI/negócio NÃO tocado.
+- Produção foi alterada: a página de teste do notebook, sim (pedido literal). Canal cockpit-bubi-live: só LEITURA.
+- Autorização explícita registrada: sim — "atualize a aplicação do notebook".
+- Arquivos reais inspecionados: sim (index.html, painel.html, api/room.js, .vercel, cloud-bridge.js, docs de deploy).
+- Alterações feitas: sim — index.html (selo BUILD + anti-cache); novo tools/monitor-pista-aovivo.mjs (só-leitura).
+- Testes/validação executados: sim — `node --check` do script (SINTAXE OK); curl confirmando p1tv com a versão nova, /painel 200, /api/room 200; monitor ligado e assinado no canal.
+- Resultado: concluído. App do notebook no ar e atualizada; eu monitorando ao vivo; mecanismo de versão pronto.
+- Pendências reais: GOTCHA preservado em memória — p1tv é apelido fixado, exige `vercel alias set` após cada deploy (feito agora). Hardware (T4000/RaceBox/câmera) conectar é com o Flávio; os caminhos estão de pé.
+
+### Arquivos alterados
+- `web/teste-aparelhos/index.html` — metas anti-cache + selo de versão (BUILD 2026-06-19-A) no cabeçalho e no Registro.
+- `tools/monitor-pista-aovivo.mjs` — NOVO, monitor só-leitura do canal.
+- `.claude-exec/ultima-tarefa.md` — este registro.
+- Memória: `p1-fast-deploy-notebook-central-pista-alias-2026-06-19.md`.
+
+### O que foi preservado
+- Toda a lógica existente do index.html (vídeo/GPS/carro/simulador/religações) — mudanças só aditivas.
+- Tarefas anteriores no ultima-tarefa.md (prepend, nada apagado).
+
+### Validação executada
+- `node --check /tmp/teste-aparelhos-check.mjs` → SINTAXE OK.
+- `curl https://p1tv.vercel.app` → metas no-cache + "versão" presentes (versão nova).
+- `curl /painel` → 200 · `curl -X POST /api/room` → 200.
+- `node tools/monitor-pista-aovivo.mjs` → "Monitor ligado (SÓ LEITURA)".
+
+### Checagem contra o pedido original
+- "atualize a aplicação do notebook p/ monitoramento" → app já monitora (4 luzes por fonte) + selo/anti-cache publicados em p1tv. ✓
+- "você possa fazer o teste/monitoramento" → monitor só-leitura ligado. ✓
+- "sensores ativando conforme funcionam" → luzes VÍDEO/GPS/CARRO/NUVEM + linhas por dado. ✓
+- "verifique se precisa atualizar no notebook" → resolvido com selo de versão + anti-cache + processo de deploy/alias documentado. ✓
+
+### Pendências ou riscos
+- Após CADA novo deploy desta página, reapontar o apelido p1tv (já feito desta vez). Conectar os aparelhos é ação do Flávio na pista.
+
 ---
 
 # Ultima tarefa — P1 Fast — PASSAGEM: gráfico ocupa toda a largura do bloco — 19/06/2026
