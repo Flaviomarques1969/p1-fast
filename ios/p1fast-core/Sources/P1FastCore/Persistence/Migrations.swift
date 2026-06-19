@@ -624,6 +624,29 @@ enum Migrations {
         m.registerMigration("v33_carro_combustivel") { db in
             try db.execute(sql: "ALTER TABLE carros ADD COLUMN combustivel TEXT DEFAULT 'etanol';")
         }
+
+        // ═══ v34_freios ═══════════════════════════════════════
+        // Cadastro próprio de itens de freio por carro (decisão Flávio
+        // 19/06/2026: "criar cadastro próprio igual pneu"). Mesmo molde de
+        // `pneus`: FK pra carros/times, sincroniza pela sync_queue. `tipo`
+        // guarda o código do componente (pastilhas/discos/fluido_freio).
+        m.registerMigration("v34_freios") { db in
+            try db.execute(sql: """
+                CREATE TABLE IF NOT EXISTS freios (
+                    id            TEXT PRIMARY KEY,
+                    time_id       TEXT NOT NULL REFERENCES times(id) ON DELETE CASCADE,
+                    carro_id      TEXT NOT NULL REFERENCES carros(id) ON DELETE CASCADE,
+                    tipo          TEXT,
+                    marca         TEXT,
+                    especificacao TEXT,
+                    created_at    INTEGER NOT NULL,
+                    updated_at    INTEGER NOT NULL,
+                    synced_at     INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_freios_carro ON freios(carro_id);")
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_freios_time ON freios(time_id);")
+        }
     }
 
     // swiftlint:disable:next function_body_length
