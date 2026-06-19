@@ -588,15 +588,6 @@ struct StintModalView: View {
         sheet = .pneuPicker
     }
 
-    private var sectionObjetivo: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionHead("Objetivo")
-            FormField(label: "Tipo", small: "obrigatório") {
-                ObjetivoPicker(selection: $objetivoTipo)
-            }
-        }
-    }
-
     // MARK: - Propósito do Stint (planejamento — 15/06, "uma tela só")
     // Port fiel de StintPlanoView: o propósito + foco + treino viram o plano
     // que o painel da pista lê. Aprovar grava o plano junto do envelope.
