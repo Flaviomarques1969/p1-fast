@@ -6070,6 +6070,19 @@ html,body{
       ? '<div class="ps-formato" style="text-align:center;font-size:10px;letter-spacing:.04em;color:rgba(212,175,55,0.78);padding:2px 4px 0;">trail · '+perfil.resumo+'</div>'
       : '';
 
+    // Marcação da CONFIGURAÇÃO (carro + pneu): a referência/aprendizado é separado por
+    // config (Celta 1.4 radial e semi-slick são bases distintas — decisão Flávio).
+    function configLabel(tp){
+      if(!tp) return '';
+      if(tp === 'radial-185-14') return 'radial 185/14';
+      if(tp === 'semi-slick') return 'semi slick';
+      return String(tp).replace(/-/g,' ');
+    }
+    var cfg = configLabel(data.tipoPneu);
+    var configHtml = cfg
+      ? '<div class="ps-config" style="text-align:center;font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:rgba(150,160,175,0.72);padding-top:3px;">celta 1.4 · '+cfg+'</div>'
+      : '';
+
     return ''+
       '<div class="ps-header">'+
         '<span class="ps-title">passagem</span>'+
@@ -6078,6 +6091,7 @@ html,body{
       '</div>'+
       '<div class="ps-canvas">'+svg+'</div>'+
       formatoHtml+
+      configHtml+
       verdictHtml;
   }
 
