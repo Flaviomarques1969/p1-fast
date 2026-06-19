@@ -185,6 +185,7 @@ private struct ReadyRoot: View {
     @StateObject private var combustivelRepo: CombustivelRepository
     @StateObject private var stintRepo: StintRepository
     @StateObject private var pneuRepo: PneuRepository
+    @StateObject private var freioRepo: FreioRepository
     @StateObject private var trackRepo: TrackRepository
     @StateObject private var licaoRepo: LicaoRepository
     @StateObject private var pendenciaRepo: PendenciaRepository
