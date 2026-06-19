@@ -151,6 +151,19 @@ struct CarroModalView: View {
         } message: { _ in
             Text("Não dá pra desfazer.")
         }
+        .alert(
+            "Apagar item de freio?",
+            isPresented: Binding(
+                get: { freioToDelete != nil },
+                set: { if !$0 { freioToDelete = nil } }
+            ),
+            presenting: freioToDelete
+        ) { _ in
+            Button("Cancelar", role: .cancel) {}
+            Button("Apagar", role: .destructive) { confirmarDeleteFreio() }
+        } message: { _ in
+            Text("Não dá pra desfazer.")
+        }
         .sheet(item: $pneuSheet) { mode in
             switch mode {
             case .novo:
