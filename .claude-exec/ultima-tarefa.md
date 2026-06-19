@@ -21,6 +21,24 @@
 - **Riscos:** dado antigo (slick/rua) — tratado com decode tolerante (preserva, não quebra). Não atropelar a frente VMIN (não toco em web/command-box nem no normalizador/smoke).
 - **Status inicial:** iniciado.
 
+## EXECUÇÃO + TASK_DONE — 2 tipos de pneu (19/06/2026)
+- EDIT `Models.swift` (Pneu.Composto): {radial, slick, rua} → {radial, semiSlick="semi-slick"} + init(from:) tolerante (rua→radial, slick→semi-slick, desconhecido→radial) + encode(to:) explícito. Preserva pneus já gravados.
+- EDIT `PneuCadastroView.swift`: CompostoRail 3 botões (Radial/Slick/Rua) → 2 (Radial/Semi-slick); comentários do cabeçalho atualizados.
+- NÃO toquei no normalizador compartilhado (PlanoStint.swift) nem no web/command-box (frente VMIN ativa em paralelo) — só apontei pra alinhar depois.
+- VALIDAÇÃO: `xcodebuild ... -destination 'generic/platform=iOS Simulator'` => **BUILD SUCCEEDED**. (Prova clicando ao vivo pendente — automação de clique do simulador estava falhando nesta sessão.)
+- Resultado: concluído no código (compila). Pendência: confirmar visual no aparelho.
+
+---
+
+# Ultima tarefa — P1 Fast — PLANO: reorganizar cadastro do carro (padrão x configuração) — 19/06/2026
+
+## TASK_INIT + ENTREGA DE PLANO (19/06/2026)
+- **Pedido (Flávio):** "no cadastro do carro, separar o que é PADRÃO do carro (freio, pastilha, combustível etanol/gasolina-padrão-etanol, pneus cadastrados — logo após a foto) do que é CONFIGURAÇÃO conferida a cada stint (pressão, alinhamento, suspensão). Corrigir o botão Apagar quebrando linha (Yokohama A09). Faça um planejamento e reorganize."
+- **Ambiente:** DESENVOLVIMENTO. Produção NÃO tocada.
+- **Mapeamento (workflow 6 agentes, prova arquivo:linha):** carro hoje só tem apelido/modelo/categoria/cor/fonte_temperatura — NÃO tem foto (foto é arquivo LOCAL, não sincroniza), NÃO tem combustível, NÃO tem freio nem pastilha. Setup (pressão/alinhamento/suspensão/bias/mapa/diferencial) vive em Configuracao.overrides (JSON livre). Tela CarroModalView = 7 seções misturadas. Combustível duplicado (catálogo por stint + texto solto). Botão Apagar do pneu (TireItem CarroModalView:620-632) sem lineLimit/fixedSize → quebra linha. Rótulo voltas vs saídas; unidade mola kg/mm vs lb/in divergentes.
+- **Entrega:** mapa HTML `.claude-exec/plano-cadastro-carro-2026-06-19.html` (aberto no navegador) — 2 grupos (Padrão do carro / Configuração) + 3 decisões (1: freio/pastilha texto livre vs lista; 2: criar combustível Etanol/Gasolina padrão Etanol; 3: persistir foto que hoje some) + correções inclusas.
+- **Status:** AGUARDANDO aprovação do plano + 3 decisões do Flávio antes de implementar (freio/pastilha/combustível exigem campo novo + alteração de banco).
+
 ---
 
 # Ultima tarefa — P1 Fast — VMIN no BLOCO DEDICADO (ligar real por config de pneu) — 19/06/2026
