@@ -4513,6 +4513,19 @@ html,body{
     document.querySelectorAll('.b-custom.is-frenagem').forEach(function(el){ el.classList.remove('cb-sem-real'); });
   };
 
+  // Etapa 2c (Flávio 18/06/2026): mesma ideia da Frenagem, agora pra PASSAGEM.
+  // O carregador de módulo (fim do <body>) chama isto com os campos REAIS por curva
+  // (velocidades entrada/ápice/saída + tempo do trecho do Bubi). Liga a fonte, força
+  // rebuild e tira o cinza de "aguardando ligação". A barra ±1 m do ápice segue
+  // honesta (pendente) — 1 Hz não resolve 1 m (entra com 25 Hz).
+  var __PASSAGEM_REAL = null;
+  window.__aplicarPassagemReal = function(arr){
+    __PASSAGEM_REAL = Array.isArray(arr) ? arr : null;
+    _lastPassagemKey = '';                 // invalida o cache pra reconstruir já
+    try { updatePassagemFromLap(_lastLiveT); } catch(e){}
+    document.querySelectorAll('.b-custom.is-passagem').forEach(function(el){ el.classList.remove('cb-sem-real'); });
+  };
+
   // ─── VMIN ────────────────────────────────────────────────────────
   // Gráfico = curva de velocidade pelo corner (entrada → apex → saída).
   // Eixo X = distância em relação ao apex (m). Eixo Y = velocidade (km/h).
