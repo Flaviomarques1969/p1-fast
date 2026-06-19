@@ -13,6 +13,37 @@
 - **Riscos:** editar HTML grande (backup+ediçoes cirurgicas+smoke); 1 Hz nao da +-1 m no apice (tratado com honestidade, nao forjado).
 - **Status inicial:** iniciado.
 
+## EXECUÇÃO — PASSAGEM NO DADO REAL (18/06/2026)
+Ambiente: DESENVOLVIMENTO. Produção NÃO tocada. Frenagem/Vmin NÃO tocados.
+BACKUP: `_design-reference/_backups/mockup-command-box-vista-piloto.BACKUP-passagem-real-2026-06-18.html`.
+
+ARQUIVOS:
+- NOVO `web/command-box/passagem-real.js` — adaptador puro (passagem real → entrada/ápice/saída km/h + deltas km/h vs melhor + tempo do trecho s + veredito). Barra ±1 m do ápice = apexOffsetM:null (pendente, honesto; estimativa só em apexOffsetMbruto).
+- NOVO `web/command-box/passagem-curvas-reais.js` — por curva: referência = melhor volta (menor tempo); mostrada = volta mediana. Espelha frenagem-curvas-reais.js.
+- NOVO `tests/node-smoke-passagem-real.mjs` — 27 checagens (adaptador + por-curva na massa real). Incluído na cadeia `npm run smoke` + script `smoke:passagem-real`.
+- EDITADO `_design-reference/mockup-command-box-vista-piloto.html` (5 edições cirúrgicas): global `__PASSAGEM_REAL` + hook `window.__aplicarPassagemReal`; `getPassagemDataForCurve` prefere real; barra do ápice honesta (mostra "—" quando offsetM null); 'passagem' removida do DEP_LIGACAO; bloco "Etapa 2c" no fim do body.
+- EDITADO `package.json` (cadeia smoke + script).
+
+VALIDAÇÃO (saída real):
+- `node tests/node-smoke-passagem-real.mjs` → 27 ok / 0 fail.
+- `npm run smoke` (suíte completa, 68 arquivos) → EXIT 0, nenhuma falha real (fail=0 em todos).
+- Sintaxe de TODOS os scripts embutidos do mockup → 3 clássicos + 3 módulos OK / 0 falhas.
+- HTTP pela 8078: `/`, passagem-real.js, passagem-curvas-reais.js, fixture → todos 200.
+- Tela aberta no navegador (http://localhost:8078/) pro Flávio ver.
+
+LIMITAÇÃO HONESTA: a ~1 Hz, em várias curvas o ponto mais lento medido coincide com a entrada (ápice ≈ entrada) e a barra ±1 m do ápice fica "—". Velocidades e tempo do trecho são reais; o ponto exato do ápice e o ±1 m entram com 25 Hz. Prova final de fluidez só na pista com carro.
+
+TASK_DONE:
+- Pedido original conferido: sim ("sim." ao próximo passo: ligar a Passagem no dado real espelhando a Frenagem)
+- Ambiente trabalhado: desenvolvimento
+- Produção foi alterada: não
+- Se produção foi alterada, autorização explícita registrada: n/a
+- Arquivos reais inspecionados: sim
+- Alterações feitas: sim (2 módulos + 1 teste novos; mockup + package.json editados; backup feito)
+- Testes/validação executados: sim (smoke novo 27/27 + suíte completa EXIT 0 + sintaxe + HTTP 200 + navegador)
+- Resultado: concluído (em DEV)
+- Pendências reais: (1) ±1 m do ápice e ponto exato do ápice = aguardam 25 Hz; (2) prova de fluidez na pista com carro ao vivo; (3) ao vivo, a "mostrada" vira a volta corrente (hoje, em DEV, é a mediana gravada).
+
 ---
 
 # Ultima tarefa — P1 Fast — AVANCAR PLANEJAMENTO DO STINT NO CELULAR (18/06/2026 noite)
