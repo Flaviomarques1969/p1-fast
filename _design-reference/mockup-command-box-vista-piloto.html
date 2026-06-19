@@ -7715,7 +7715,9 @@ html,body{
     // a lógica existe no cockpit, falta puxar pro painel -> "aguardando ligação"
     // 'frenagem' SAIU da lista (Etapa 2b): agora mostra dado real (ideal por tipo + volta do Bubi),
     // então acende como bloco vivo em vez de ficar cinza. O carregador no fim do <body> liga a fonte.
-    var DEP_LIGACAO = ['mapa','vmin','shift-light','coach','delta-acum','passagem','stint','stint-bar','checklist'];
+    // 'passagem' SAIU da lista (Etapa 2c, 18/06): agora mostra dado real (velocidades
+    // entrada/ápice/saída + tempo do trecho do Bubi). A barra ±1 m do ápice segue honesta.
+    var DEP_LIGACAO = ['mapa','vmin','shift-light','coach','delta-acum','stint','stint-bar','checklist'];
     function vistoFresco(f){ return SENSOR_SEEN[f] && (performance.now()-SENSOR_SEEN[f]<2500); }
     function atualizarBlocos(){
       Object.keys(SENSOR_DE).forEach(function(id){
