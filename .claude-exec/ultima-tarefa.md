@@ -1,3 +1,14 @@
+# Ultima tarefa — P1 Fast — PASSAGEM: gráfico ocupa toda a largura do bloco — 19/06/2026
+
+## EXECUÇÃO — Passagem com largura adaptável (19/06/2026)
+- **Pedido (Flávio):** "o gráfico da passagem está muito pequeno perto do espaço que demos; ocupar todo o espaço à esquerda e à direita pra melhorar a visibilidade."
+- **Causa:** bloco Passagem é 397×187 (~2,1:1, largo) mas o gráfico era desenhado em 280×195 (~1,44:1) com `xMidYMid meet` → encolhia por altura e sobrava espaço nas laterais.
+- **Feito (`buildPassagemPanel`, mockup-command-box-vista-piloto.html):** largura ADAPTÁVEL — mede a área real da `.ps-canvas`, calcula W = 195×proporção e ESPALHA tudo na horizontal por fator `kx=W/280` (entrada/ápice/saída, arco, barra de distância, número grande). Círculos seguem REDONDOS (meet = escala uniforme). R 22→24. Fallback 2,6 até medir. `_reflowPassagem` força redesenho em 350ms/1200ms + no resize.
+- **Validação:** sintaxe dos 3 <script> clássicos OK; escalas kx presentes; painel reaberto sem cache pela 8078. (Sem headless → confirmação visual = Flávio.)
+- **Status:** concluído (DEV), aguardando validação visual.
+
+---
+
 # Ultima tarefa — P1 Fast — TIPO DE PNEU: 2 tipos (Radial + Semi-slick) no cadastro do app iOS — 19/06/2026
 
 ## TASK_INIT — Tipo de pneu = 2 tipos (19/06/2026)
