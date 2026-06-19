@@ -7881,6 +7881,27 @@ html,body{
   })();
 </script>
 
+<!-- Etapa 2c (2026-06-18): liga a PASSAGEM no DADO REAL — velocidades de entrada/ápice/
+     saída + tempo do trecho do Bubi (mesma massa de voltas reais da Frenagem). Referência
+     = melhor volta de cada curva; mostrada = volta típica (mediana) → diferenças reais.
+     A barra ±1 m do ápice fica honesta (pendente: 1 Hz não resolve 1 m).
+     Se o módulo/massa não carregar, o bloco mantém a demonstração. -->
+<script type="module">
+  (async function(){
+    try{
+      var mod = await import('/web/command-box/passagem-curvas-reais.js');
+      var fixture = await (await fetch('/web/command-box/fixtures/passagens-bubi-brasilia.v1.json')).json();
+      var curvas = mod.construirPassagemRealPorCurva(fixture, {});   // {} = mostrada = volta mediana de cada curva
+      var arr = [];
+      curvas.forEach(function(c){ if(c && typeof c.curveIdx === 'number') arr[c.curveIdx] = c; });
+      if(typeof window.__aplicarPassagemReal === 'function') window.__aplicarPassagemReal(arr);
+      else console.warn('[passagem 2c] hook __aplicarPassagemReal ausente');
+    }catch(e){
+      console.warn('[passagem 2c] dado real indisponível, mantendo demonstração:', e);
+    }
+  })();
+</script>
+
 <!-- ITEM 3 (Flávio 18/06/2026): a bolinha (e a tela em sincronia) anda pela FRAÇÃO DE ARCO
      derivada do GPS REAL — reusa geoParaCommandBox (recalibração, item 1) + suavizador (item 2).
      DEV stand-in: a projeção roda aqui no protótipo; na produção a conta vai pra nuvem (não muda
