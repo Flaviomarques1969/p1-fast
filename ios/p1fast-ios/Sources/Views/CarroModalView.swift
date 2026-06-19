@@ -597,6 +597,7 @@ private struct TireItem: View {
                     .font(.system(size: 14, weight: .semibold))
                     .tracking(-0.07)
                     .foregroundStyle(Color.text)
+                    .lineLimit(1)
                 Text(metaLine)
                     .font(.system(size: 12, weight: .regular))
                     .foregroundStyle(Color.textFaint)
