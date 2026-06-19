@@ -49,6 +49,8 @@ struct CarroModalView: View {
     @State private var carro: Carro?
     @State private var pneuSheet: PneuSheetMode?
     @State private var pneuToDelete: Pneu?
+    @State private var freioSheet: FreioSheetMode?
+    @State private var freioToDelete: Freio?
 
     private enum PneuSheetMode: Identifiable {
         case novo
@@ -58,6 +60,18 @@ struct CarroModalView: View {
             switch self {
             case .novo: return "novo"
             case .editar(let p): return "editar-\(p.id)"
+            }
+        }
+    }
+
+    private enum FreioSheetMode: Identifiable {
+        case novo
+        case editar(Freio)
+
+        var id: String {
+            switch self {
+            case .novo: return "novo"
+            case .editar(let f): return "editar-\(f.id)"
             }
         }
     }
