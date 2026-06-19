@@ -5989,12 +5989,6 @@ html,body{
       svg += marcoMini(0.30, 'freio', '#FF5A4E', revealEntrada);
       svg += marcoMini(0.50, 'Vmin',  '#FFD24A', revealApex);
       svg += marcoMini(0.72, 'PACE',  '#3FE08C', revealSaida);
-      // NÚMERO do Vmin (km/h) sob o marcador — a velocidade mínima REAL da curva,
-      // referência = melhor passagem daquela config de pneu. Só quando é VALE confiável;
-      // senão "—" (1 Hz não bracketou a freada / config sem dado → enche com 25 Hz).
-      var pv = bezier(0.50);
-      var vminOk = revealApex && data.vmin && data.vmin.confiavel && data.vmin.speed != null;
-      svg += '<text x="'+pv.x.toFixed(1)+'" y="'+(pv.y + 30).toFixed(1)+'" text-anchor="middle" font-size="11" font-weight="700" letter-spacing="0.02em" fill="'+(vminOk ? '#FFD24A' : 'rgba(255,210,74,0.28)')+'">'+(vminOk ? (data.vmin.speed + '') : '—')+'</text>';
     }
 
     // ──────── BAR de distância do APEX ────────
