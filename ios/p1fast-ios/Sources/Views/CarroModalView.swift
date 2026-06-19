@@ -195,6 +195,7 @@ struct CarroModalView: View {
             grupoHeader(title: "Padrão do carro",
                         subtitle: "Define o carro. Você cadastra uma vez e não confere de novo.")
             sectionIdentidade
+            sectionFreiosCadastrados
             sectionPneusCadastrados
 
             // GRUPO 2 — Configuração: conferida e ajustada a cada stint.
