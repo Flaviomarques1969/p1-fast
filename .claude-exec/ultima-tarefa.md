@@ -1,3 +1,19 @@
+# Ultima tarefa — P1 Fast — AUDITORIA DE BOTÕES DO APP DO CELULAR (iOS) — 19/06/2026
+
+## TASK_INIT — Auditoria de botões do app iOS (19/06/2026)
+- **Pedido original (Flávio):** "em p1 fast, no app no celular todos os botões estão funcionando?"
+- **Objetivo (1 frase):** auditar todos os botões do app do celular (iOS Swift nativo, `ios/p1fast-ios/Sources`) e dizer, com prova, quais estão ligados a função real e quais são vazios/stub/desabilitados.
+- **Critério de conclusão:** inventário de 100% dos botões; classificação por botão (funcional / stub-vazio / desabilitado / inconclusivo); verificação adversarial dos suspeitos (rastrear função chamada); relatório por tela:linha; tentativa de build; declarar limite (análise estática ≠ prova de execução no aparelho).
+- **Leitura confirmada (19/06):** ~/.claude/CLAUDE.md; ~/.claude-decisoes/padroes.md (vazio); FLAVIO_EXECUTION_PROTOCOL.md; FLAVIO_DONE_CHECKLIST.md; FLAVIO_ENVIRONMENT_RULES.md; FLAVIO_COMMUNICATION_RULES.md; P1 Fast/CLAUDE.md.
+- **Verificação já feita (código real):** app do celular = iOS Swift nativo (ADR-018, iPhone único, sem PWA); fonte em `ios/p1fast-ios/Sources`; 40 telas com controles; 244 ocorrências de `Button`; 95 sinais de TODO/print/placeholder a investigar.
+- **Ambiente alvo:** DESENVOLVIMENTO (só leitura/auditoria, nenhuma alteração de código).
+- **Produção protegida:** sim. **Produção alterada:** não. **Autorização produção:** não recebida (não necessária, tarefa só leitura).
+- **Plano (≤5 passos):** (1) inventário telas/botões [feito]; (2) workflow 1 agente por tela classifica cada botão; (3) verificação adversarial dos suspeitos; (4) tentar `xcodebuild` pra confirmar que compila; (5) relatório por tela:linha + limitações.
+- **Riscos:** 1143 arquivos Swift; build pode falhar por assinatura/simulador; análise estática prova "ligado no código", não execução real no iPhone.
+- **Status inicial:** iniciado.
+
+---
+
 # Ultima tarefa — P1 Fast — LIGAR A PASSAGEM NO DADO REAL (espelho da Frenagem) — 18/06/2026 noite
 
 ## TASK_INIT — Passagem no dado real (18/06/2026)
