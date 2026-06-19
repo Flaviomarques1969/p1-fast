@@ -33,6 +33,7 @@ import P1FastCore
 struct CarroModalView: View {
     @EnvironmentObject private var repo: CarroRepository
     @EnvironmentObject private var pneuRepo: PneuRepository
+    @EnvironmentObject private var freioRepo: FreioRepository
     @EnvironmentObject private var manutencaoStore: ManutencaoConsumiveisStore
     let carroId: String
     let initialPneuSheet: Bool
