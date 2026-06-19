@@ -745,6 +745,255 @@ private struct AddStintCTA: View {
     }
 }
 
+// MARK: - EventoEditarFormView (editar a data do evento)
+// 2026-06-19 — Flávio pediu pra "ligar" o botão "Editar" do topbar,
+// que tinha ação vazia. Hoje o evento só tem a DATA como campo
+// editável (pista fixa "Brasília", tipo fixo "track-day"); este form
+// espelha o molde do EventoNovoFormView e grava via repo.update.
+
+struct EventoEditarFormView: View {
+    @EnvironmentObject private var repo: EventoRepository
+    let eventoId: String
+    let onClose: () -> Void
+
+    @State private var dataEvento: Date
+    @State private var isSaving = false
+    @State private var savingError: String?
+
+    init(eventoId: String, dataInicial: Date, onClose: @escaping () -> Void) {
+        self.eventoId = eventoId
+        self.onClose = onClose
+        _dataEvento = State(initialValue: dataInicial)
+    }
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                editarContent
+                    .padding(.horizontal, Spacing.lg)
+                    .padding(.top, Spacing.md)
+                    .padding(.bottom, 140)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(Color.surface)
+
+            FootBar(
+                onCancel: onClose,
+                onSave: save,
+                saveLabel: "Salvar",
+                canSave: !isSaving
+            )
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    @ViewBuilder
+    private var editarContent: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            VStack(alignment: .leading, spacing: 6) {
+                Eyebrow(text: "Editar evento")
+                Text("Editar evento")
+                    .font(.system(size: 24, weight: .semibold))
+                    .tracking(-0.6)
+                    .foregroundStyle(Color.text)
+                Text("Você ajusta a data aqui; pista e tipo seguem fixos por enquanto.")
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundStyle(Color.textMuted)
+                    .lineSpacing(2)
+            }
+            .padding(.horizontal, Spacing.xs)
+            .padding(.bottom, Spacing.sm)
+
+            FormField(label: "Pista") {
+                HStack {
+                    Text("Brasília · Auto. Int. Nelson Piquet")
+                        .font(.system(size: 15, weight: .medium))
+                        .tracking(-0.075)
+                        .foregroundStyle(Color.text)
+                        .lineLimit(1)
+                    Spacer()
+                    Text("única hoje")
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundStyle(Color.textFaint)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .fill(Color.surfaceRaised)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .stroke(Color.border, lineWidth: 1)
+                )
+            }
+
+            FormField(label: "Data do evento") {
+                DatePicker(
+                    "Data do evento",
+                    selection: $dataEvento,
+                    displayedComponents: [.date]
+                )
+                .datePickerStyle(.compact)
+                .labelsHidden()
+                .environment(\.locale, Locale(identifier: "pt_BR"))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .fill(Color.surfaceRaised)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .stroke(Color.border, lineWidth: 1)
+                )
+            }
+
+            if let erro = savingError {
+                Text(erro)
+                    .font(.captionP1)
+                    .foregroundStyle(Color.erro)
+                    .padding(.horizontal, Spacing.xs)
+            }
+
+            HelperNote(text: "Stints, pilotos e setup você gerencia abrindo o evento — aqui você só muda a data reservada.")
+                .padding(.top, Spacing.sm)
+        }
+    }
+
+    private func save() {
+        isSaving = true
+        savingError = nil
+        Task {
+            do {
+                guard var evento = repo.find(id: eventoId)?.evento else {
+                    isSaving = false
+                    savingError = "Evento não encontrado. Feche e abra de novo."
+                    return
+                }
+                // Mesma convenção de fuso do create: meia-noite local em ms.
+                let cal = Calendar(identifier: .iso8601)
+                let inicioDia = cal.startOfDay(for: dataEvento)
+                evento.dataEvento = Int64(inicioDia.timeIntervalSince1970 * 1000)
+                try await repo.update(evento: evento)
+                isSaving = false
+                onClose()
+            } catch {
+                isSaving = false
+                savingError = "Não consegui salvar: \(error.localizedDescription)"
+            }
+        }
+    }
+}
+
+// MARK: - StintMockDetalheView (resumo só-leitura do stint de exemplo)
+// 2026-06-19 — "liga" o tap no card de stint dos eventos seedados
+// (exemplo). Stints reais abrem PosStintView (lê do StintRepository);
+// como o exemplo não tem sessão no banco, mostramos um resumo só-leitura
+// com os próprios dados do StintMock, claramente marcado como exemplo.
+
+struct StintMockDetalheView: View {
+    let stint: StintMock
+    let contextoLinha: String
+    let onClose: () -> Void
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            Color.surface.ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack {
+                        Button(action: onClose) {
+                            Text("‹ Voltar")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(Color.textMuted)
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 4)
+                        }
+                        .buttonStyle(.plain)
+                        Spacer()
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Eyebrow(text: "Stint \(stint.numero) · exemplo")
+                        Text(stint.titulo)
+                            .font(.system(size: 28, weight: .semibold))
+                            .tracking(-0.7)
+                            .foregroundStyle(Color.text)
+                        Text(contextoLinha)
+                            .font(.system(size: 14, weight: .regular))
+                            .monospacedDigit()
+                            .foregroundStyle(Color.textMuted)
+                    }
+                    .padding(.horizontal, Spacing.xs)
+                    .padding(.top, 14)
+
+                    HStack(spacing: 8) {
+                        statCell(value: "\(stint.numero)", label: "Stint", isOuro: false)
+                        statCell(value: "\(stint.voltas)", label: "Voltas", isOuro: false)
+                        statCell(value: formatTempoMs(stint.melhorVoltaMs), label: "Melhor", isOuro: true)
+                    }
+                    .padding(Spacing.md)
+                    .background(
+                        RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                            .fill(Color.surfaceRaised)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                            .stroke(Color.border, lineWidth: 1)
+                    )
+                    .padding(.top, 18)
+
+                    HStack(spacing: 6) {
+                        EventTag(text: stint.piloto, kind: .neutral)
+                        EventTag(text: stint.licao, kind: .neutral)
+                        if let especial = stint.tagEspecial {
+                            switch especial {
+                            case .pbDoDia:
+                                EventTag(text: "PB do dia", kind: .ouro)
+                            case .desvioBaixo:
+                                EventTag(text: "Desvio < 0.4s", kind: .bom)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, Spacing.xs)
+                    .padding(.top, 14)
+
+                    HelperNote(text: "Este é um stint de exemplo (evento seedado). O resumo completo com voltas e vídeo aparece nos stints que você registrar de verdade no evento.")
+                        .padding(.top, 18)
+                }
+                .padding(.horizontal, Spacing.lg)
+                .padding(.top, 4)
+                .padding(.bottom, 40)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private func statCell(value: String, label: String, isOuro: Bool) -> some View {
+        VStack(spacing: 6) {
+            Text(value)
+                .font(.system(size: 18, weight: .semibold))
+                .monospacedDigit()
+                .tracking(-0.36)
+                .foregroundStyle(isOuro ? Color.ouro : Color.text)
+                .lineLimit(1)
+            Text(label.uppercased())
+                .font(.system(size: 10, weight: .medium))
+                .tracking(0.6)
+                .foregroundStyle(Color.textFaint)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.surfaceHover)
+        )
+    }
+}
+
 // MARK: - Preview
 
 #Preview("EventoDetalhe — 25/04 (4 stints)") {
