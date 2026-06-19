@@ -416,7 +416,27 @@ public struct Combustivel: Codable, FetchableRecord, PersistableRecord {
 // MARK: - pneus
 public struct Pneu: Codable, FetchableRecord, PersistableRecord {
     public enum Composto: String, Codable {
-        case radial, slick, rua
+        // Só existem 2 tipos de pneu hoje (decisão Flávio 19/06/2026):
+        // "radial" (o de rua) e "semi-slick". Não há um terceiro "slick".
+        case radial
+        case semiSlick = "semi-slick"
+
+        // Decodificação tolerante pra NÃO quebrar pneus já gravados com os
+        // valores antigos: "rua" era sinônimo de radial; "slick" puro não
+        // existe na prática → semi-slick. Valor desconhecido → radial.
+        public init(from decoder: Decoder) throws {
+            let raw = (try? decoder.singleValueContainer().decode(String.self)) ?? "radial"
+            switch raw.lowercased() {
+            case "radial", "rua": self = .radial
+            case "semi-slick", "semislick", "semi slick", "slick": self = .semiSlick
+            default: self = .radial
+            }
+        }
+
+        public func encode(to encoder: Encoder) throws {
+            var c = encoder.singleValueContainer()
+            try c.encode(rawValue)
+        }
     }
 
     public var id: String
