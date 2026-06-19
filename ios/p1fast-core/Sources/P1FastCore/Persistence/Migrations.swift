@@ -617,6 +617,13 @@ enum Migrations {
             """)
             try db.execute(sql: "CREATE UNIQUE INDEX IF NOT EXISTS idx_item_arquivado_uq ON item_arquivado(entidade, item_id);")
         }
+
+        // Combustível padrão do carro (etanol/gasolina) — decisão Flávio
+        // 19/06/2026. Default 'etanol' (hoje o time só roda etanol). Carros
+        // já cadastrados ganham 'etanol' automaticamente.
+        m.registerMigration("v33_carro_combustivel") { db in
+            try db.execute(sql: "ALTER TABLE carros ADD COLUMN combustivel TEXT DEFAULT 'etanol';")
+        }
     }
 
     // swiftlint:disable:next function_body_length
