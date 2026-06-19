@@ -4527,6 +4527,17 @@ html,body{
     document.querySelectorAll('.b-custom.is-passagem').forEach(function(el){ el.classList.remove('cb-sem-real'); });
   };
 
+  // Etapa VMIN (Flávio 19/06): liga o bloco VMIN no DADO REAL — gráfico da curva de
+  // velocidade por configuração de pneu (vmin-curvas-reais.js). Tira o cinza
+  // "aguardando ligação" e mostra o número da mínima só onde é vale confiável.
+  var __VMIN_REAL = null;
+  window.__aplicarVminReal = function(arr){
+    __VMIN_REAL = Array.isArray(arr) ? arr : null;
+    _lastVminKey = '';                     // invalida o cache pra reconstruir já
+    try { updateVminFromLap(_lastLiveT); } catch(e){}
+    document.querySelectorAll('.b-custom.is-vmin').forEach(function(el){ el.classList.remove('cb-sem-real'); });
+  };
+
   // ─── VMIN ────────────────────────────────────────────────────────
   // Gráfico = curva de velocidade pelo corner (entrada → apex → saída).
   // Eixo X = distância em relação ao apex (m). Eixo Y = velocidade (km/h).
