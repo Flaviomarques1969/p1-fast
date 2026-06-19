@@ -1,3 +1,20 @@
+# Ultima tarefa — P1 Fast — APP DO NOTEBOOK p/ monitoramento do teste ao vivo — 19/06/2026
+
+## TASK_INIT (19/06/2026)
+- **Pedido original (Flávio):** "Atualize a aplicação do notebook pra que ele faça o monitoramento e você possa acompanhar o teste — vou testar agora. Os sensores vão ativando à medida que forem funcionando: T4000 um pouco, GPS, transmissão de vídeo. Quando fizermos várias alterações, verifique se é necessário atualizar no notebook pra rodar."
+- **Objetivo (1 frase):** deixar a Central de Pista do notebook (`web/teste-aparelhos/index.html`, p1tv.vercel.app) pronta pra monitorar T4000+GPS+vídeo acendendo conforme entram, eu acompanhando o canal ao vivo, e com mecanismo confiável de "versão certa no notebook".
+- **Critério de conclusão:** (a) página com selo de versão visível + anti-cache; (b) eu com monitor só-leitura do canal `cockpit-bubi-live`; (c) confirmar deploy e publicar a versão nova; (d) sintaxe validada.
+- **Leitura dos obrigatórios:** CLAUDE.md ✓ · padroes.md ✓ · FLAVIO_EXECUTION_PROTOCOL ✓ · DONE_CHECKLIST ✓ · ENVIRONMENT_RULES ✓ · COMMUNICATION_RULES ✓ · CLAUDE.md do projeto ✓ · memórias P1 Fast (racebox-aovivo 19/06, teste-video-gps 09/06, hardware-racebox-dji, t4000-pedais, ARQUITETURA-DEFINITIVA, cockpit-bubi-live-é-produção, FONTE_DADOS_AO_VIVO) ✓
+- **Achados (evidência real):** app do notebook = `web/teste-aparelhos/index.html` ("Central de Pista"), servido em p1tv.vercel.app e p1-teste-aparelhos.vercel.app (curl 200, mesmo código). Já tem 4 luzes (VÍDEO/GPS/CARRO/NUVEM) acendendo por fonte. GPS lido por RaceBox WebBluetooth. Carro (T4000) lido pela OUTRA aba p1t4000.vercel.app (web/cockpit, cloud-bridge.js:131 publica 'sample'). Deploy = `npx vercel deploy --prod` (.vercel já vinculado; FONTE_DADOS_AO_VIVO.md:50). Vercel logado: flaviomarques-6007. Doc prevê "Claude no Mac monitorando" (leitura sancionada).
+- **Plano (≤5):** (1) selo de versão + anti-cache; (2) validar sintaxe; (3) monitor só-leitura ligado; (4) publicar e conferir URL; (5) reportar + acompanhar.
+- **Ambiente alvo:** ferramental de TESTE da pista (p1tv), não o app de negócio. Atualizar foi pedido literal.
+- **Produção protegida:** sim (CDAI/negócio não tocado). Canal `cockpit-bubi-live` = produção; meu uso é SÓ LEITURA.
+- **Autorização p/ publicar a Central de Pista:** sim — pedido literal "atualize a aplicação do notebook".
+- **Riscos:** mudança aditiva (3 metas + 1 selo + 1 const + 2 linhas), sintaxe validada; deploy Vercel atômico e reversível.
+- **Status inicial:** iniciado.
+
+---
+
 # Ultima tarefa — P1 Fast — PASSAGEM: gráfico ocupa toda a largura do bloco — 19/06/2026
 
 ## EXECUÇÃO — Passagem com largura adaptável (19/06/2026)
