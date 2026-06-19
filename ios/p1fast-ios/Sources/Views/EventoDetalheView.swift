@@ -457,9 +457,10 @@ enum EventoDetalheSheet: Identifiable, Equatable {
 
 private struct StintCardMock: View {
     let stint: StintMock
+    let onTap: () -> Void
 
     var body: some View {
-        Button(action: { /* drill-down do mock chega no Sprint 1A.3 */ }) {
+        Button(action: onTap) {
             HStack(alignment: .top, spacing: 14) {
                 numCircle
                 bodyBlock
