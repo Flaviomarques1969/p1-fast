@@ -89,6 +89,7 @@ final class CarroRepository: ObservableObject {
                 modelo: modelo,
                 categoria: categoria,
                 cor: cor,
+                combustivel: "etanol", // padrão do carro (decisão Flávio 19/06/2026)
                 fonteTemperatura: .motor,
                 createdAt: now,
                 updatedAt: now,
