@@ -25,6 +25,20 @@
 - **Riscos:** 1143 arquivos Swift; build pode falhar por assinatura/simulador; análise estática prova "ligado no código", não execução real no iPhone.
 - **Status inicial:** iniciado.
 
+## RESULTADO — Auditoria de botões (19/06/2026)
+- **Build atual:** `xcodebuild ... -destination 'generic/platform=iOS Simulator'` => **BUILD SUCCEEDED** (app compila hoje; pré-requisito de qualquer botão funcionar).
+- **Cobertura:** 294 controles em 40 telas (workflow multi-agente, 47 agentes) + 2 telas conferidas à mão (EventoNovoFormView "Salvar" => repo.create real:139; CameraPicker = câmera do sistema). Telas display-only (ContentView/PosStintView) e de showcase (ThemeShowcaseView/HubMockLauncher) sem controle de usuário.
+- **Números:** funcional 283 | stub 10 | desabilitado 1 | inconclusivo 0.
+- **Botões REAIS mortos (que o usuário toca numa tela do app) = 4, todos adiamento consciente marcado no código:**
+  1. LoginView:103 "Entrar com Apple" — mostra "fica pra próxima sprint, use email"; não loga.
+  2. LoginView:106 "Entrar com Google" — idem.
+  3. EventoDetalheView:257 "Editar" — closure vazio `{ /* Edit fica pro Sprint 1A.3 */ }`.
+  4. EventoDetalheView:458 card de stint de evento de EXEMPLO/mock — `{ /* drill-down do mock chega no Sprint 1A.3 */ }`.
+- **Os outros 7 flagueados NÃO são botão de tela real:** Chip (3) e FAB (3) só em #Preview/showcase do componente (não vão pro celular); SyncStatusBadge:24 = componente sem nenhum uso em tela (grep de instanciação vazio).
+- **Limite declarado:** prova é de CÓDIGO (botão ligado à função certa + tela-destino existe + app compila). NÃO é teste tela-a-tela com toque real no aparelho. Para "cliquei e abriu" literal: rodar no simulador e dirigir os toques (viável, build OK).
+- **Ambiente:** DESENVOLVIMENTO. Produção NÃO tocada. Nenhuma alteração de código (só leitura + build em DerivedData).
+- **Status:** concluído (auditoria).
+
 ---
 
 # Ultima tarefa — P1 Fast — LIGAR A PASSAGEM NO DADO REAL (espelho da Frenagem) — 18/06/2026 noite
