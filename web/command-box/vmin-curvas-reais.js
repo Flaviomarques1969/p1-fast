@@ -88,12 +88,14 @@ export function construirVminRealPorCurva(fixture, opts = {}) {
 
     const mp = mostrada.pontos;
     const iv = idxVmin(mp);
-    const vminKmh = R(mp[iv].kmh);
-    const entrada = mp[0].kmh, saida = mp[mp.length - 1].kmh;
-    const vminConfiavel = vminKmh < entrada && vminKmh < saida; // VALE de verdade
+    // Confiável = VALE de verdade, comparando valores CRUS (sem arredondar) pra não
+    // criar falso-positivo em empate (ex.: 86,4 vs 86,0). Mesma regra do passagem-real.
+    const vminRaw = mp[iv].kmh, entradaRaw = mp[0].kmh, saidaRaw = mp[mp.length - 1].kmh;
+    const vminConfiavel = vminRaw < entradaRaw && vminRaw < saidaRaw;
+    const vminKmh = R(vminRaw);
 
-    const bestVmin = Array.isArray(best.pontos) && best.pontos.length ? best.pontos[idxVmin(best.pontos)].kmh : mp[iv].kmh;
-    const d = vminKmh - bestVmin;
+    const bestVmin = Array.isArray(best.pontos) && best.pontos.length ? best.pontos[idxVmin(best.pontos)].kmh : vminRaw;
+    const d = vminRaw - bestVmin;
     const label = Math.abs(d) <= KMH_BOM ? 'no ponto' : (d > 0 ? 'alto' : 'baixo');
 
     return {
