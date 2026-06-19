@@ -6088,7 +6088,7 @@ html,body{
     var distTone = distAbs <= 0.2 ? 'good' : (distAbs <= 0.5 ? 'warn' : 'bad');
     var apexDistOk = APEX.reveal && !apexDistPend;
     var bigCls = apexDistOk ? distTone : 'empty';
-    var BIG_X = (BX + BW + 22) + 13;
+    var BIG_X = BX + BW + 35*kx;
     svg += '<text class="ps-bar-big '+bigCls+'" x="'+BIG_X+'" y="'+(BY + 4)+'">'+(apexDistOk ? distAbs.toFixed(1) : '—')+'</text>';
     svg += '<text class="ps-bar-big-unit'+(apexDistOk?'':' empty')+'" x="'+BIG_X+'" y="'+(BY + 14)+'">m</text>';
 
