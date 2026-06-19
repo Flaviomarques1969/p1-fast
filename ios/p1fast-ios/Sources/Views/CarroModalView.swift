@@ -581,6 +581,14 @@ struct CarroModalView: View {
             try? await pneuRepo.delete(id: p.id)
         }
     }
+
+    private func confirmarDeleteFreio() {
+        guard let f = freioToDelete else { return }
+        freioToDelete = nil
+        Task {
+            try? await freioRepo.delete(id: f.id)
+        }
+    }
 }
 
 // MARK: - Helpers de input
