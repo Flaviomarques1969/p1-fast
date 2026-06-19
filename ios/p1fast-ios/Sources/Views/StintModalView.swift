@@ -1059,7 +1059,7 @@ struct StintModalView: View {
                 let stintId = try await repo.create(
                     eventoId: eventoId,
                     pilotoId: pid,
-                    objetivoTipo: objetivoTipo,
+                    objetivoTipo: objetivoDerivado,
                     licaoFocada: licaoTitulo,
                     voltasPlanejadas: voltasPlanejadas
                 )
