@@ -509,6 +509,61 @@ setInterval(()=>{
   }
 }, 200);
 
+// ════════════════ RESILIÊNCIA: não deixar parar sozinho ════════════════
+// Causa observada 19/06 ~18:02: vídeo e GPS pararam JUNTOS e não voltaram —
+// sinal de aba/notebook suspenso (Windows/navegador congelam a aba em segundo
+// plano ou ao dormir). Conserto: (1) manter a tela acordada; (2) ao voltar o
+// foco ou a internet, religar tudo; (3) vigia que força religação quando o dado
+// fica velho — sem depender de o navegador avisar que caiu.
+let wakeLock = null;
+async function manterAcordado(){
+  try {
+    if ('wakeLock' in navigator && document.visibilityState === 'visible') {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    }
+  } catch(e){ /* alguns navegadores negam sem gesto; tentamos de novo no próximo evento */ }
+}
+
+function religarTudo(motivo){
+  log('Religando tudo ('+motivo+')…');
+  manterAcordado();
+  try { connectCloud(); } catch(e){}
+  if (rb.quero && rb.device && !rb.religando) religarRaceBox();
+  if (videoQuero) {
+    const st = call && call.meetingState ? call.meetingState() : 'none';
+    if (st !== 'joined-meeting' && st !== 'joining-meeting') startVideo();
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') religarTudo('tela voltou ao foco');
+});
+window.addEventListener('online',  () => religarTudo('internet voltou'));
+window.addEventListener('offline', () => {
+  boardPill($('bVideo'),'VÍDEO · sem internet','bad');
+  boardPill($('bGps'),'GPS · sem internet','bad');
+  log('Internet caiu no notebook.');
+});
+
+// Vigia a cada 5s: se QUEREMOS a fonte mas o dado está velho, força religar.
+let lastVideoOkTs = 0;
+setInterval(() => {
+  if (rb.quero && rb.device && !rb.religando) {
+    const age = gps.lastPktTs ? performance.now() - gps.lastPktTs : Infinity;
+    if (age > 6000) { log('Vigia: GPS sem dados há >6s — religando sozinho.'); religarRaceBox(); }
+  }
+  if (videoQuero) {
+    const st = call && call.meetingState ? call.meetingState() : 'none';
+    if (st === 'joined-meeting') lastVideoOkTs = performance.now();
+    else if (performance.now() - lastVideoOkTs > 12000) {
+      log('Vigia: vídeo fora da sala há >12s — religando sozinho.');
+      lastVideoOkTs = performance.now();
+      startVideo();
+    }
+  }
+}, 5000);
+
 // ════════════════ boot ════════════════
 $('btnStart').onclick = startVideo;
 $('btnRb').onclick = connectRaceBox;
