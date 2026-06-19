@@ -766,6 +766,126 @@ private struct TireItem: View {
     }
 }
 
+// MARK: - Componentes da lista de freios (espelham os do pneu)
+// No Padrão do carro o TIPO (Pastilha/Disco/Fluido) vem em destaque —
+// é o que o Flávio pediu pra aparecer; marca/especificação ficam abaixo.
+
+private struct EmptyFreioHint: View {
+    var body: some View {
+        Text("Nenhum item de freio cadastrado pra esse carro ainda.")
+            .font(.system(size: 13, weight: .regular))
+            .foregroundStyle(Color.textFaint)
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .fill(Color.surfaceRaised)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .stroke(Color.border, lineWidth: 1)
+            )
+    }
+}
+
+private struct AddFreioButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Text("+").font(.system(size: 16, weight: .medium))
+                Text("Adicionar freio")
+                    .font(.system(size: 13, weight: .semibold))
+                    .tracking(-0.065)
+            }
+            .foregroundStyle(Color.textMuted)
+            .padding(.vertical, 11)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .strokeBorder(Color.border, style: StrokeStyle(lineWidth: 1, dash: [4]))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct FreioItem: View {
+    let freio: Freio
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: Spacing.md) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(FreioTipo.rotulo(de: freio.tipo))
+                    .font(.system(size: 14, weight: .semibold))
+                    .tracking(-0.07)
+                    .foregroundStyle(Color.text)
+                    .lineLimit(1)
+                Text(metaLine)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(Color.textFaint)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: Spacing.sm)
+            HStack(spacing: 6) {
+                Button(action: onEdit) {
+                    Text("Editar")
+                        .font(.system(size: 12, weight: .semibold))
+                        .tracking(-0.06)
+                        .foregroundStyle(Color.textMuted)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .stroke(Color.border, lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+
+                Button(action: onDelete) {
+                    Text("Apagar")
+                        .font(.system(size: 12, weight: .semibold))
+                        .tracking(-0.06)
+                        .foregroundStyle(Color.erro)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .stroke(Color.erro.opacity(0.5), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .fill(Color.surfaceRaised)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .stroke(Color.border, lineWidth: 1)
+        )
+    }
+
+    private var metaLine: String {
+        var parts: [String] = []
+        if let m = freio.marca, !m.isEmpty { parts.append(m) }
+        if let e = freio.especificacao, !e.isEmpty { parts.append(e) }
+        return parts.isEmpty ? "sem marca" : parts.joined(separator: " · ")
+    }
+}
+
 // MARK: - Combustível rail (Etanol / Gasolina)
 // Padrão do carro: 2 opções, default etanol (decisão Flávio 19/06/2026).
 
