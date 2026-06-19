@@ -460,6 +460,7 @@ struct CarroModalView: View {
             self.modelo = row.modelo ?? ""
             self.categoria = row.categoria
             if let hex = row.cor { self.corHex = hex }
+            self.combustivel = row.combustivel ?? "etanol"
         }
         // Setup overrides
         do {
