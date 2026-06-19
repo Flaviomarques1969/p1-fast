@@ -15,6 +15,7 @@ struct HubMockLauncher: View {
     @StateObject private var manutencaoStore: ManutencaoConsumiveisStore
     @StateObject private var pecaRepo: PecaRepository
     @StateObject private var pneuRepo: PneuRepository
+    @StateObject private var freioRepo: FreioRepository
     // Repos que a Garagem (sub-abas) e a aba Pendências precisam — 2026-06-14.
     @StateObject private var eventoRepo: EventoRepository
     @StateObject private var pilotoRepo: PilotoRepository
