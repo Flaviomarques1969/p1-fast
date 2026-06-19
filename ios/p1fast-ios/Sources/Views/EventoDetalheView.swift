@@ -149,6 +149,27 @@ struct EventoDetalheView: View {
             } else {
                 EmptyView()
             }
+        case .editar:
+            if let ev = repo.find(id: eventoId) {
+                EventoEditarFormView(
+                    eventoId: eventoId,
+                    dataInicial: Date(timeIntervalSince1970: Double(ev.evento.dataEvento) / 1000),
+                    onClose: { sheet = nil }
+                )
+                .environmentObject(repo)
+            } else {
+                EmptyView()
+            }
+        case .stintMock(let stint):
+            if let ev = repo.find(id: eventoId) {
+                StintMockDetalheView(
+                    stint: stint,
+                    contextoLinha: contextoStintModal(ev: ev),
+                    onClose: { sheet = nil }
+                )
+            } else {
+                EmptyView()
+            }
         }
     }
 
