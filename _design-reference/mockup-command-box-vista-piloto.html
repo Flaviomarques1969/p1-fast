@@ -5961,11 +5961,24 @@ html,body{
     var revealSaida   = phase.state === 'exit';
     var revealAny     = revealEntrada || revealApex || revealSaida;
 
-    var W = 280, H = 195;
-    var ENTRY = { x: 42,  y: 88,  speed: data.entrada.speed, delta: data.entrada.delta, tone: data.entrada.tone, reveal: revealEntrada };
-    var APEX  = { x: 152, y: 116, speed: data.apex.speed,    delta: data.apex.delta,    tone: data.apex.tone,    reveal: revealApex };
-    var EXIT  = { x: 240, y: 88,  speed: data.saida.speed,   delta: data.saida.delta,   tone: data.saida.tone,   reveal: revealSaida };
-    var R = 22;
+    // Largura ADAPTÁVEL (Flávio 19/06): o bloco da Passagem é largo (~2:1) e o gráfico
+    // era desenhado num quadro estreito (280×195) e centralizado → sobrava espaço nas
+    // laterais. Mede a área real disponível e estica o desenho na horizontal pra ocupar
+    // tudo. Os círculos seguem REDONDOS: "meet" escala de forma uniforme (nunca distorce).
+    var H = 195;
+    var RATIO = (function(){
+      try{
+        var c = document.querySelector('.b-custom.is-passagem .ps-canvas');
+        if(c){ var w=c.clientWidth, h=c.clientHeight; if(w>20 && h>20){ var r=w/h; if(r>1.2 && r<7) return r; } }
+      }catch(e){}
+      return 2.6; // fallback razoável até medir
+    })();
+    var W = Math.max(280, Math.round(H * RATIO));
+    var kx = W / 280;                 // fator de espalhamento horizontal (1 = largura antiga)
+    var R = 24;
+    var ENTRY = { x: 42*kx,  y: 88,  speed: data.entrada.speed, delta: data.entrada.delta, tone: data.entrada.tone, reveal: revealEntrada };
+    var APEX  = { x: 152*kx, y: 116, speed: data.apex.speed,    delta: data.apex.delta,    tone: data.apex.tone,    reveal: revealApex };
+    var EXIT  = { x: 240*kx, y: 88,  speed: data.saida.speed,   delta: data.saida.delta,   tone: data.saida.tone,   reveal: revealSaida };
     var apexOffsetM = data.apex.offsetM;
     // ±1 m do ápice pendente quando o dado não resolve 1 m (GPS real ~1 Hz). Honesto:
     // a barra fica apagada e o número vira "—" (entra com 25 Hz). Não força precisão.
