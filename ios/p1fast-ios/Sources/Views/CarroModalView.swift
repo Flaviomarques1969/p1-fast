@@ -321,6 +321,9 @@ struct CarroModalView: View {
                     Spacer(minLength: 0)
                 }
             }
+            FormField(label: "Combustível") {
+                CombustivelRail(selection: $combustivel)
+            }
         }
     }
 
