@@ -478,49 +478,6 @@ public struct Pneu: Codable, FetchableRecord, PersistableRecord {
     }
 }
 
-// MARK: - freios
-// Cadastro próprio de itens de freio por carro (decisão Flávio 19/06/2026:
-// "criar cadastro próprio igual pneu"). O `tipo` diz QUAL componente de freio
-// (pastilha/disco/fluido) e espelha os códigos da área "Freios" do catálogo de
-// consumíveis já aprovado (CatalogoConsumiveisCelta) — NÃO é inventado. No
-// "Padrão do carro" aparece só o tipo + a marca; o detalhe mora aqui. Mesmo
-// molde de `Pneu`: FK obrigatória pra `carros`, sincroniza pela sync_queue.
-public struct Freio: Codable, FetchableRecord, PersistableRecord {
-    public var id: String
-    public var timeId: String
-    public var carroId: String
-    /// Componente de freio: "pastilhas" | "discos" | "fluido_freio".
-    /// Espelha os códigos da área "Freios" de CatalogoConsumiveisCelta.
-    public var tipo: String?
-    /// Marca/modelo do item (texto livre) — ex "Cobreq Racing".
-    public var marca: String?
-    /// Especificação livre, opcional — ex "dianteira · cerâmica".
-    public var especificacao: String?
-    public var createdAt: Int64
-    public var updatedAt: Int64
-    public var syncedAt: Int64?
-
-    public static let databaseTableName = "freios"
-    enum CodingKeys: String, CodingKey {
-        case id
-        case timeId = "time_id"
-        case carroId = "carro_id"
-        case tipo, marca, especificacao
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
-        case syncedAt = "synced_at"
-    }
-
-    public init(id: String, timeId: String, carroId: String,
-                tipo: String? = nil, marca: String? = nil, especificacao: String? = nil,
-                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
-                syncedAt: Int64? = nil) {
-        self.id = id; self.timeId = timeId; self.carroId = carroId
-        self.tipo = tipo; self.marca = marca; self.especificacao = especificacao
-        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
-    }
-}
-
 // MARK: - eventos
 public struct Evento: Codable, FetchableRecord, PersistableRecord {
     public var id: String
