@@ -4628,6 +4628,18 @@ html,body{
     if(curveIdx == null) curveIdx = 2;
     var v = getVminVerdictForCurve(curveIdx);
     var emptyCls = revealed ? '' : ' empty';
+    // Dado real traz o NÚMERO da mínima (vminKmh) + se é vale confiável (por config de pneu).
+    var temVmin   = (v && typeof v.vminKmh === 'number');
+    var confiavel = !!(v && v.vminConfiavel);
+    var showNum   = revealed && temVmin && confiavel;
+    // Selo honesto: "aguardando" (antes de cruzar) · "sem leitura limpa" (vale não
+    // capturado a 1 Hz) · senão o status (no ponto / alto / baixo).
+    var badgeLabel = !revealed ? 'aguardando' : (temVmin && !confiavel ? 'sem leitura limpa' : v.label);
+    var badgeTone  = !revealed ? 'empty'      : (temVmin && !confiavel ? 'neutral'           : v.tone);
+    // Marcação da configuração (carro + pneu) — bases SEPARADAS (radial × semi-slick).
+    function cfgLabel(tp){ if(!tp) return ''; if(tp==='radial-185-14') return 'radial 185/14'; if(tp==='semi-slick') return 'semi slick'; return String(tp).replace(/-/g,' '); }
+    var cfg = cfgLabel(v && v.tipoPneu);
+    var configHtml = cfg ? '<div class="vmin-config">celta 1.4 · '+cfg+'</div>' : '';
     return ''+
       '<div class="fr-header">'+
         '<span class="fr-title">VMIN</span>'+
@@ -4635,9 +4647,10 @@ html,body{
       '</div>'+
       '<div class="fr-chart'+emptyCls+'">'+vminChartSvg(v)+'</div>'+
       '<div class="fr-verdict">'+
-        '<span class="fr-badge '+(revealed ? v.tone : 'empty')+'">'+(revealed ? v.label : 'aguardando')+'</span>'+
-        '<span class="fr-delta'+emptyCls+'"><strong>'+(revealed ? v.delta.replace(/[+−]/g,'') : '—')+'</strong></span>'+
-      '</div>';
+        '<span class="fr-badge '+badgeTone+'">'+badgeLabel+'</span>'+
+        '<span class="fr-delta'+(showNum?'':' empty')+'"><strong>'+(showNum ? v.vminKmh : '—')+'</strong>'+(showNum?'<em class="vmin-unit">km/h</em>':'')+'</span>'+
+      '</div>'+
+      configHtml;
   }
   var _lastVminKey = '';
   function updateVminFromLap(liveT){
