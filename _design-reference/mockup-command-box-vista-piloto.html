@@ -5890,7 +5890,9 @@ html,body{
 
   function getPassagemDataForCurve(curveIdx){
     var c = CURVES[curveIdx];
-    var corner = currentLap().corners[curveIdx];
+    // Dado REAL (Etapa 2c) quando carregado; senão a demonstração (currentLap).
+    var real = (typeof __PASSAGEM_REAL !== 'undefined' && __PASSAGEM_REAL) ? __PASSAGEM_REAL[curveIdx] : null;
+    var corner = (real && !real.semDadoReal) ? real : currentLap().corners[curveIdx];
     return {
       name: c.name,
       entrada: { speed: corner.entradaKmh, delta: corner.entradaDelta.replace(/[+−]/,''), tone: corner.entradaTone },
