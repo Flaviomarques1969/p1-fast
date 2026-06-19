@@ -170,7 +170,8 @@ struct PneuCadastroView: View {
     }
 }
 
-// MARK: - 3-button rail (Radial / Slick / Rua)
+// MARK: - 2-button rail (Radial / Semi-slick)
+// Só 2 tipos hoje (decisão Flávio 19/06/2026): radial (o de rua) e semi-slick.
 
 private struct CompostoRail: View {
     @Binding var selection: Pneu.Composto
@@ -178,8 +179,7 @@ private struct CompostoRail: View {
     var body: some View {
         HStack(spacing: 8) {
             CompostoButton(label: "Radial", value: .radial, selection: $selection)
-            CompostoButton(label: "Slick", value: .slick, selection: $selection)
-            CompostoButton(label: "Rua", value: .rua, selection: $selection)
+            CompostoButton(label: "Semi-slick", value: .semiSlick, selection: $selection)
         }
     }
 }
