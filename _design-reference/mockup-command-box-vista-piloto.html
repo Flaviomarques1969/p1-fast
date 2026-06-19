@@ -4219,8 +4219,9 @@ html,body{
     return diff < 0.18 ? 'good' : 'bad';
   }
   function vminCurveTone(verdict){
-    // Threshold em km/h: < 4 km/h de diferença média = verde
-    var diff = _curveAvgDiff(verdict.live, VMIN_GHOST);
+    // Threshold em km/h: < 4 km/h de diferença média = verde. Referência = ghost do
+    // próprio veredicto (dado real por curva/config) ou o ghost padrão (demonstração).
+    var diff = _curveAvgDiff(verdict.live, verdict.ghost || VMIN_GHOST);
     return diff < 4 ? 'good' : 'bad';
   }
 
