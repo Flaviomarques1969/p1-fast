@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plano — Reorganização do Cadastro do Carro</title>
+<style>
+  :root{
+    --bg:#0c0d10; --surface:#15171c; --raised:#1c1f26; --hover:#23262f;
+    --border:#2b2f39; --text:#eef1f6; --muted:#9aa3b2; --faint:#6b7280;
+    --accent:#3fa9f5; --ok:#43c08a; --warn:#e7b449; --erro:#e5685f; --ouro:#d9b35a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
+  .wrap{width:100%;max-width:none;padding:32px 40px 80px}
+  h1{font-size:30px;font-weight:700;letter-spacing:-.6px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 28px}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--faint);margin:0 0 10px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
+  @media(max-width:1100px){.grid2,.grid3{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 22px}
+  .card.pad{border-color:#2f5d7a}
+  .card.cfg{border-color:#5d4a2f}
+  .card h2{font-size:18px;margin:0 0 2px;font-weight:650}
+  .card .tag{font-size:12px;color:var(--muted);margin:0 0 14px}
+  ul{margin:8px 0 0;padding:0;list-style:none}
+  li{padding:9px 0;border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-start}
+  li:first-child{border-top:0}
+  .item-nome{font-weight:600}
+  .item-sub{color:var(--muted);font-size:13px}
+  .pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;border:1px solid}
+  .pill.novo{color:var(--warn);border-color:#5d4a2f;background:#241d10}
+  .pill.existe{color:var(--ok);border-color:#274d3c;background:#11241b}
+  .pill.move{color:var(--accent);border-color:#244a63;background:#0f2330}
+  .slot{margin-left:auto}
+  .secao{margin:34px 0 14px}
+  .hoje{background:#19140f;border:1px solid #4a3b22;border-radius:14px;padding:18px 22px;color:#e9d9b8}
+  .dec{background:var(--raised);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:18px 20px;margin-bottom:14px}
+  .dec h3{margin:0 0 6px;font-size:16px}
+  .dec .rec{color:var(--ok);font-weight:650}
+  .dec p{margin:6px 0;color:var(--muted)}
+  .fix{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--border)}
+  .fix:first-child{border-top:0}
+  .fix b{color:var(--text)}
+  .check{color:var(--ok);font-weight:700;flex:0 0 auto}
+  .nota{color:var(--faint);font-size:13px;margin-top:8px}
+  .arrow{text-align:center;color:var(--faint);font-size:22px;margin:18px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Reorganização do Cadastro do Carro</h1>
+  <p class="sub">Separar o que é <b>padrão do carro</b> (define o carro, não muda) do que é <b>configuração</b> (conferida e ajustada a cada stint). Plano para você aprovar antes de eu mexer. — 19/06/2026</p>
+
+  <div class="hoje">
+    <div class="eyebrow" style="color:#c9a24a">Hoje — o problema</div>
+    Tudo fica numa <b>tela só</b>, misturado em 7 blocos: Identidade · Pneus (pressão) · Alinhamento · Suspensão · Freios · Motor/transmissão · Pneus cadastrados.
+    Não dá pra saber o que é fixo do carro e o que muda toda saída. E o sistema <b>nem tem</b> hoje campo de tipo de freio, tipo de pastilha, nem combustível etanol/gasolina do carro — só existe "bias de freio" e um combustível em texto solto.
+  </div>
+
+  <div class="secao eyebrow">A proposta — dois grupos claros na tela do carro</div>
+  <div class="grid2">
+
+    <div class="card pad">
+      <h2>1 · Padrão do carro</h2>
+      <p class="tag">Logo após a foto. Define o carro. Você cadastra uma vez e não pergunta de novo.</p>
+      <ul>
+        <li><span><span class="item-nome">Foto do carro</span><br><span class="item-sub">Trocar ou manter</span></span><span class="slot"><span class="pill existe">já existe</span></span></li>
+        <li><span><span class="item-nome">Apelido · Modelo · Categoria</span><br><span class="item-sub">Identidade (ex: Bolinha · Celta 1.4)</span></span><span class="slot"><span class="pill existe">já existe</span></span></li>
+        <li><span><span class="item-nome">Tipo de freio</span><br><span class="item-sub">Característica do carro</span></span><span class="slot"><span class="pill novo">criar</span></span></li>
+        <li><span><span class="item-nome">Tipo de pastilha</span><br><span class="item-sub">Característica do carro</span></span><span class="slot"><span class="pill novo">criar</span></span></li>
+        <li><span><span class="item-nome">Combustível</span><br><span class="item-sub">Etanol / Gasolina — padrão Etanol (Bolinha sempre etanol)</span></span><span class="slot"><span class="pill novo">criar</span></span></li>
+        <li><span><span class="item-nome">Pneus cadastrados</span><br><span class="item-sub">Clica e seleciona. 2 tipos: Radial / Semi-slick (já corrigido)</span></span><span class="slot"><span class="pill existe">já existe</span></span></li>
+      </ul>
+    </div>
+
+    <div class="card cfg">
+      <h2>2 · Configuração</h2>
+      <p class="tag">Conferida a cada stint. Pode mudar de uma saída pra outra.</p>
+      <ul>
+        <li><span><span class="item-nome">Pressão dos pneus</span><br><span class="item-sub">4 rodas (saída de box, PSI)</span></span><span class="slot"><span class="pill move">mover pra cá</span></span></li>
+        <li><span><span class="item-nome">Alinhamento</span><br><span class="item-sub">Cambagem (diant./tras.) e convergência</span></span><span class="slot"><span class="pill move">mover pra cá</span></span></li>
+        <li><span><span class="item-nome">Suspensão</span><br><span class="item-sub">Molas (diant./tras.) e altura</span></span><span class="slot"><span class="pill move">mover pra cá</span></span></li>
+        <li><span><span class="item-nome">Bias de freio</span><br><span class="item-sub">% dianteiro (ajuste de pista)</span></span><span class="slot"><span class="pill move">mover pra cá</span></span></li>
+        <li><span><span class="item-nome">Mapa de injeção</span><br><span class="item-sub">Ex: T4000 — mapa seco-1</span></span><span class="slot"><span class="pill move">a confirmar</span></span></li>
+      </ul>
+      <p class="nota">"Pneu montado no stint" e "combustível abastecido (litros)" já são por stint hoje — continuam onde estão (na hora de planejar o stint).</p>
+    </div>
+
+  </div>
+
+  <div class="secao eyebrow">Decisões que preciso de você (com minha recomendação)</div>
+
+  <div class="dec">
+    <h3>1 · Tipo de freio e tipo de pastilha — como cadastrar?</h3>
+    <p>Não existem hoje no sistema. Tenho que criar do zero.</p>
+    <p class="rec">Recomendo: começar como <b>texto livre</b> (você escreve o que é). Rápido e não trava em lista. Se quiser, depois viramos lista fixa de opções.</p>
+    <p>Alternativa: você me dá agora a lista de opções (ex: freio = original / esportivo / competição) e eu já faço como botões.</p>
+  </div>
+
+  <div class="dec">
+    <h3>2 · Combustível do carro — criar Etanol/Gasolina (padrão Etanol)?</h3>
+    <p>Hoje combustível só é escolhido <b>por stint</b> (litros + tipo) e tem um campo de texto solto no setup. Não há "combustível padrão do carro".</p>
+    <p class="rec">Recomendo: criar no padrão do carro o campo <b>Etanol / Gasolina (padrão Etanol)</b>; o "abastecido por stint" continua pra registrar o que foi posto no tanque.</p>
+  </div>
+
+  <div class="dec">
+    <h3>3 · Foto do carro — hoje some se reinstalar o app</h3>
+    <p>A foto fica gravada <b>só no aparelho</b> — não sincroniza entre celulares e some numa reinstalação. Parece "padrão do carro", mas não está guardada de verdade.</p>
+    <p class="rec">Recomendo: passar a guardar a foto no sistema (sincroniza e não some). Dá um pouco mais de trabalho, mas é o certo pra algo "padrão do carro".</p>
+  </div>
+
+  <div class="secao eyebrow">Correções que já entram juntas (não precisa decidir)</div>
+  <div class="card">
+    <div class="fix"><span class="check">✓</span><span><b>Botão "Apagar" do pneu quebrando linha</b> — é o que você viu no Yokohama A09. Vou travar o texto numa linha só (botão com largura fixa) pra não quebrar o "R".</span></div>
+    <div class="fix"><span class="check">✓</span><span><b>Mesma coisa com dois nomes</b> — a lista do carro chama "N voltas" e a tela do stint chama "N saídas" pro mesmo número. Vou padronizar.</span></div>
+    <div class="fix"><span class="check">✓</span><span><b>Unidade da mola trocada</b> — uma tela diz "kg/mm" e a outra "lb/in" pro mesmo campo. Vou deixar uma unidade só.</span></div>
+    <div class="fix"><span class="check">✓</span><span><b>Dois "Pneus" colados</b> — hoje tem seção "Pneus" (pressão) e "Pneus cadastrados" (os pneus físicos) na mesma tela. Com os dois grupos separados, isso deixa de confundir.</span></div>
+  </div>
+
+  <p class="nota" style="margin-top:26px">Depois que você aprovar e responder as 3 decisões, eu reorganizo a tela, crio os campos novos (com a alteração de banco necessária), corrijo os itens acima e mostro funcionando. Nada disso vai pra produção sem sua autorização — é tudo em desenvolvimento.</p>
+
+</div>
+</body>
+</html>
