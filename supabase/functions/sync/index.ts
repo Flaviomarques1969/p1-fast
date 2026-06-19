@@ -30,6 +30,7 @@ export const ALLOWED_TABLES = new Set([
   "pilotos",
   "passageiros",
   "pneus",
+  "freios",
   "combustiveis",
   "eventos",
   "sessoes",
