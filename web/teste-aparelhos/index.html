@@ -335,6 +335,7 @@ async function getRoom(){
 
 async function startVideo(){
   videoQuero = true;
+  manterAcordado();
   $('btnStart').disabled = true;
   try {
     pill($('vStatus'),'conectando…','warn'); boardPill($('bVideo'),'VÍDEO · conectando…','warn');
