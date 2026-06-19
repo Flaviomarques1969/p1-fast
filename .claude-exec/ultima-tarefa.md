@@ -49,6 +49,13 @@
 ### Pendências ou riscos
 - Após CADA novo deploy desta página, reapontar o apelido p1tv (já feito desta vez). Conectar os aparelhos é ação do Flávio na pista.
 
+## ADENDO — conserto da causa (vídeo+GPS pararam juntos) — 19/06/2026
+- **Sintoma:** durante o teste, vídeo e GPS pararam JUNTOS ~18:02:45 e NÃO voltaram sozinhos. Servidores/sala de vídeo OK o tempo todo (room válida até 20:16, /api/room 200). Carro (T4000) nunca chegou na nuvem (aba p1t4000 não publicou).
+- **Causa raiz:** aba/notebook suspenso (Windows/navegador congelam aba em 2º plano ou ao dormir) — a religação que existia só reagia a evento de "caiu", que não dispara quando a aba congela.
+- **Conserto (index.html, BUILD 2026-06-19-B, aditivo):** (1) `manterAcordado()` = Screen Wake Lock (tela não dorme; chamado no Iniciar transmissão, Conectar RaceBox e ao voltar o foco); (2) `religarTudo()` em `visibilitychange`(visível) e `window.online` (+ aviso em `offline`); (3) vigia 5s que força religação se GPS fica >6s sem pacote ou vídeo >12s fora da sala — reusa religarRaceBox()/startVideo() sem pedir seleção de novo.
+- **Validação:** `node --check` OK; publicado e p1tv reapontado pro deploy 7srjwuw3x; curl confirma BUILD B + manterAcordado + vigia no ar; /api/room 200.
+- **Pendência honesta:** não reproduzo o congelamento aqui (precisa do navegador real do notebook). Prova final = teste do Flávio; se cair, agora deve voltar sozinho em segundos (Registro mostra "Vigia: … religando sozinho" / "Religando tudo …").
+
 ---
 
 # Ultima tarefa — P1 Fast — PASSAGEM: gráfico ocupa toda a largura do bloco — 19/06/2026
