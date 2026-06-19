@@ -268,6 +268,7 @@ private struct ReadyRoot: View {
                 await combustivelRepo.bootstrap()
                 await stintRepo.bootstrap()
                 await pneuRepo.bootstrap()
+                await freioRepo.bootstrap()
                 await trackRepo.bootstrap()
                 await licaoRepo.bootstrap()
                 await pendenciaRepo.bootstrap()
