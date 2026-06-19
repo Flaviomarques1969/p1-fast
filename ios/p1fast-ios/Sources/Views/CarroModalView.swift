@@ -259,7 +259,7 @@ struct CarroModalView: View {
                 .font(.system(size: 24, weight: .semibold))
                 .tracking(-0.6)
                 .foregroundStyle(Color.text)
-            Text("Setup base · usado em todos os stints (cada stint pode sobrescrever).")
+            Text("O que é fixo do carro e o que muda a cada stint.")
                 .font(.system(size: 13, weight: .regular))
                 .foregroundStyle(Color.textMuted)
         }
