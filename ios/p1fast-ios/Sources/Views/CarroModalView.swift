@@ -398,12 +398,8 @@ struct CarroModalView: View {
 
     private var sectionMotorTransmissao: some View {
         sectionFrame(title: "Motor · transmissão") {
-            FormField(label: "Combustível") {
-                FormInput(
-                    text: Binding(get: { setup.combustivel ?? "" }, set: { setup.combustivel = $0.isEmpty ? nil : $0 }),
-                    placeholder: "Gasolina aditivada"
-                )
-            }
+            // Combustível saiu daqui: virou padrão do carro (Etanol/Gasolina)
+            // no grupo "Padrão do carro". Decisão Flávio 19/06/2026.
             FormField(label: "Mapa / injeção") {
                 FormInput(
                     text: Binding(get: { setup.mapaInjecao ?? "" }, set: { setup.mapaInjecao = $0.isEmpty ? nil : $0 }),
