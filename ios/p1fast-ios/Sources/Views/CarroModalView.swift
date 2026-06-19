@@ -169,6 +169,24 @@ struct CarroModalView: View {
                 .environmentObject(pneuRepo)
             }
         }
+        .sheet(item: $freioSheet) { mode in
+            switch mode {
+            case .novo:
+                FreioCadastroView(
+                    carroId: carroId,
+                    freioToEdit: nil,
+                    onClose: { freioSheet = nil }
+                )
+                .environmentObject(freioRepo)
+            case .editar(let freio):
+                FreioCadastroView(
+                    carroId: carroId,
+                    freioToEdit: freio,
+                    onClose: { freioSheet = nil }
+                )
+                .environmentObject(freioRepo)
+            }
+        }
         .sheet(isPresented: $setupAvancadoOpen, onDismiss: {
             // Recarrega o setup do banco caso a sheet avançada tenha salvado.
             Task { await load() }
