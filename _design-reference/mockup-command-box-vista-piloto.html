@@ -6025,12 +6025,13 @@ html,body{
     svg += '<text class="ps-bar-end ps-bar-end-right'+apexEmpty+'" x="'+(BX + BW + 2)+'" y="'+(BY + BH + 12)+'">depois</text>';
 
     // BIG number à direita do bar — magnitude absoluta, cor por distância (sem sinal)
-    var distAbs = Math.abs(apexOffsetM);
+    var distAbs = Math.abs(apexOffNum);
     var distTone = distAbs <= 0.2 ? 'good' : (distAbs <= 0.5 ? 'warn' : 'bad');
-    var bigCls = APEX.reveal ? distTone : 'empty';
+    var apexDistOk = APEX.reveal && !apexDistPend;
+    var bigCls = apexDistOk ? distTone : 'empty';
     var BIG_X = (BX + BW + 22) + 13;
-    svg += '<text class="ps-bar-big '+bigCls+'" x="'+BIG_X+'" y="'+(BY + 4)+'">'+(APEX.reveal ? distAbs.toFixed(1) : '—')+'</text>';
-    svg += '<text class="ps-bar-big-unit'+(APEX.reveal?'':' empty')+'" x="'+BIG_X+'" y="'+(BY + 14)+'">m</text>';
+    svg += '<text class="ps-bar-big '+bigCls+'" x="'+BIG_X+'" y="'+(BY + 4)+'">'+(apexDistOk ? distAbs.toFixed(1) : '—')+'</text>';
+    svg += '<text class="ps-bar-big-unit'+(apexDistOk?'':' empty')+'" x="'+BIG_X+'" y="'+(BY + 14)+'">m</text>';
 
     svg += '</svg>';
 
