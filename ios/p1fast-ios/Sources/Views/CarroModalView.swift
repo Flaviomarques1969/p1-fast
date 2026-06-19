@@ -486,6 +486,7 @@ struct CarroModalView: View {
         current.modelo = trimmedOrNil(modelo)
         current.categoria = categoria
         current.cor = corHex
+        current.combustivel = combustivel
         let json = setup.encodedJSON()
         Task {
             do {
