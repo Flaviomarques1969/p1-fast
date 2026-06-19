@@ -370,7 +370,7 @@ struct EventoDetalheView: View {
                 } else {
                     // Eventos seedados — fallback pros mocks de design.
                     ForEach(mocks) { stint in
-                        StintCardMock(stint: stint)
+                        StintCardMock(stint: stint, onTap: { sheet = .stintMock(stint) })
                     }
                 }
                 AddStintCTA(onTap: { sheet = .novoStint })
