@@ -58,6 +58,15 @@
 - **Ambiente:** DESENVOLVIMENTO. Produção NÃO tocada. Nenhuma alteração de código (só leitura + build em DerivedData).
 - **Status:** concluído (auditoria).
 
+## PROVA AO VIVO no simulador (19/06/2026) — Flávio pediu "sim" pra ver clicando
+- Ferramenta: simulador iPhone 17 (Xcode) + cliclick (toque por coordenada; idb não roda no Python 3.14). Mapeamento calibrado e validado (janela 439x938 em {60,40}; barra título 28; escala 1.0412). Fotos em `.claude-exec/shots-botoes-2026-06-19/`.
+- App abre (01-inicial = tela Entrar). Login via atalho dev → Home abre (02).
+- "Cadastrar primeiro carro" → abre formulário Cadastrar carro (03). Garagem hub com abas Carros/Estoque/Pilotos/Passageiros + "Novo carro" (04).
+- Aba EVENTOS → "Sem eventos" + "Novo evento" (05). Aba PENDÊNCIAS → "Nenhum evento futuro" (07). As 4 seções de baixo abrem.
+- BOTÃO MORTO confirmado AO VIVO: "Entrar com Apple" (09) → mostra aviso laranja "Apple Sign In: configuração específica fica pra próxima sprint. Use email por enquanto." e NÃO loga. Igual ao que a auditoria de código apontou.
+- Cobertura da prova ao vivo: fluxos principais (login, Home, Garagem, Eventos, Pendências, formulário de carro) + 1 dos 4 botões mortos. Os outros 3 mortos (Google login, Editar e abrir-stint-mock no Detalhe do Evento) ficam provados pelo código (closures vazios). Demo dos 294 controles um a um exigiria suíte de teste de tela dedicada.
+- Simulador deixado logado e em primeiro plano pro Flávio interagir.
+
 ---
 
 # Ultima tarefa — P1 Fast — LIGAR A PASSAGEM NO DADO REAL (espelho da Frenagem) — 18/06/2026 noite
