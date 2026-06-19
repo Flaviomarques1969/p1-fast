@@ -7763,7 +7763,10 @@ html,body{
     // então acende como bloco vivo em vez de ficar cinza. O carregador no fim do <body> liga a fonte.
     // 'passagem' SAIU da lista (Etapa 2c, 18/06): agora mostra dado real (velocidades
     // entrada/ápice/saída + tempo do trecho do Bubi). A barra ±1 m do ápice segue honesta.
-    var DEP_LIGACAO = ['mapa','vmin','shift-light','coach','delta-acum','stint','stint-bar','checklist'];
+    // 'vmin' SAIU da lista (Etapa VMIN, 19/06): mostra dado real (gráfico da curva de
+    // velocidade por config de pneu) — acende como bloco vivo. O carregador no fim do
+    // <body> liga a fonte (vmin-curvas-reais.js).
+    var DEP_LIGACAO = ['mapa','shift-light','coach','delta-acum','stint','stint-bar','checklist'];
     function vistoFresco(f){ return SENSOR_SEEN[f] && (performance.now()-SENSOR_SEEN[f]<2500); }
     function atualizarBlocos(){
       Object.keys(SENSOR_DE).forEach(function(id){
