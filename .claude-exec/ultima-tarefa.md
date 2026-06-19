@@ -28,6 +28,33 @@
 - **Riscos:** não quebrar os fluxos de stint real (StintCardReal/PosStint) nem a criação de evento; manter "você"; sem emojis.
 - **Status inicial:** iniciado.
 
+## EXECUÇÃO — Ligar os 2 botões (19/06/2026)
+Ambiente: DESENVOLVIMENTO (app iOS, não publicado). Produção NÃO tocada. Login Apple/Google NÃO tocado (decisão do Flávio).
+ARQUIVOS (1 só, já no projeto — evitei criar arquivo novo porque o projeto NÃO usa grupo sincronizado; cada arquivo precisa estar listado no pbxproj):
+- EDIT `ios/p1fast-ios/Sources/Views/EventoDetalheView.swift`:
+  - enum EventoDetalheSheet: +2 casos (`.editar`, `.stintMock(StintMock)`) + ids.
+  - topbar "Editar" (era `{ /* Edit fica pro Sprint 1A.3 */ }`) → `{ sheet = .editar }`.
+  - StintCardMock: +`onTap: () -> Void`; Button(action: onTap) (era closure vazio); call site passa `onTap: { sheet = .stintMock(stint) }`.
+  - sheetView(for:): +destino `.editar` (EventoEditarFormView) e `.stintMock` (StintMockDetalheView).
+  - NOVO struct `EventoEditarFormView` (no mesmo arquivo): espelha o molde do EventoNovoFormView (FootBar+FormField+DatePicker), pré-preenche a data atual e grava via `EventoRepository.update(evento:)` (Evento.dataEvento é var).
+  - NOVO struct `StintMockDetalheView` (no mesmo arquivo): resumo só-leitura do stint de exemplo (nº/voltas/melhor + tags piloto/lição/especial + nota "exemplo"). Não usa PosStintView porque exemplo não tem sessão real no banco.
+VALIDAÇÃO:
+- `xcodebuild build -scheme p1fast-ios -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO` => **BUILD SUCCEEDED** (compila com as mudanças; nenhum erro).
+- Mudança aditiva e isolada; fluxos de criar evento e de stint real NÃO alterados.
+LIMITE da prova ao vivo (honesto): NÃO consegui completar o clique-a-clique no simulador. Motivos: (1) a ferramenta de clique automatizado (cliclick) parou de registrar cliques no app no meio da sessão — cursor move e Simulador fica na frente, mas o toque não chega nem na tela de login que antes respondia (limitação da automação, NÃO do código; os formulários são telas modais iguais às que rodam no iPhone e funcionam no toque humano); (2) os 3 eventos de exemplo do banco pertencem à equipe c027a716 e a sessão dev não os mostrava. Apontei a sessão pra essa equipe (UserDefaults p1fast.currentTeamId no simulador — artefato dev, nenhum dado de evento alterado), mas sem clique não dá pra navegar. Nenhuma alteração de dados de evento. 
+PRÓXIMO (se Flávio quiser prova automatizada robusta): suíte de teste de tela (XCUITest) dirigindo o fluxo — exige adicionar alvo de teste ao projeto.
+
+## TASK_DONE
+- Pedido original conferido: sim (ligar os 2 botões mortos do Detalhe do Evento, exceto login)
+- Ambiente trabalhado: desenvolvimento (app iOS)
+- Produção foi alterada: não
+- Se produção foi alterada, autorização explícita registrada: não se aplica
+- Arquivos reais inspecionados: sim
+- Alterações feitas: sim (1 arquivo: EventoDetalheView.swift — 2 botões ligados + 2 telas novas)
+- Testes/validação executados: sim (xcodebuild = BUILD SUCCEEDED); prova ao vivo clique-a-clique: NÃO concluída (ferramenta de clique falhou no meio da sessão)
+- Resultado: concluído no código (compila); validação visual ao vivo PENDENTE
+- Pendências reais: confirmar visualmente no aparelho/simulador que "Editar" abre a edição da data e que o card de exemplo abre o resumo (clique humano funciona; minha automação de clique falhou)
+
 ---
 
 # Ultima tarefa — P1 Fast — VMIN no bloco PASSAGEM + APRENDIZADO por config de pneu — 19/06/2026
