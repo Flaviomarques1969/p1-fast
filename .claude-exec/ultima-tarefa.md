@@ -1,3 +1,16 @@
+# Ultima tarefa — P1 Fast — DIAGNOSTICO DO VMIN no Command Box — 19/06/2026 (READ-ONLY, nada alterado)
+
+## TASK_INIT — Diagnostico VMIN (19/06/2026)
+- **Pedido original (Flavio):** "em p1 fast. passa curva no command box. esta faltando vmin. ele esta conectado de verdade? o componente esta funcionando?"
+- **Objetivo (1 frase):** responder, com prova no codigo, por que o bloco VMIN aparece vazio quando passa a curva, se ele esta ligado em dado real e se funciona.
+- **Criterio de conclusao:** apontar arquivo:linha de (a) se ha gancho de dado real do VMIN, (b) por que fica cinza "aguardando ligacao", (c) o que o bloco mostra de numero — sem alterar nada.
+- **Leitura confirmada:** ~/.claude/CLAUDE.md; padroes.md; FLAVIO_EXECUTION_PROTOCOL/DONE/ENVIRONMENT/COMMUNICATION; P1 Fast/CLAUDE.md; memorias VMIN/Command Box.
+- **Ambiente alvo:** DESENVOLVIMENTO (prototipo). **Producao protegida:** sim. **Producao alterada:** nao. **Autorizacao producao:** nao recebida.
+- **Achados (codigo real, _design-reference/mockup-command-box-vista-piloto.html):** VMIN NAO tem gancho de dado real (existe so __aplicarFrenagemReal:4509 e __aplicarPassagemReal:4522; nao ha __aplicarVminReal nem carregador de modulo no fim do body). VMIN esta em DEP_LIGACAO (linha 7720) -> recebe a classe cb-sem-real a cada 1s (7731) -> cinza + selo "aguardando ligacao" (7680-7683). Conteudo 100% demonstracao fixa: VERDICTS_VMIN/VMIN_GHOST (4533-4549) movidos pela simulacao FAKE_LAPS via updateVminFromLap (4610). buildVminPanel (4594) mostra grafico + selo + delta-vs-ideal, NAO mostra o numero da velocidade minima (km/h). Massa real (web/command-box/fixtures/passagens-bubi-brasilia.v1.json) tem kmh ponto-a-ponto -> a Vmin REAL e calculavel (min do kmh por curva), igual Frenagem/Passagem.
+- **Status:** concluido (diagnostico). Nenhuma alteracao de codigo. Proximo passo proposto ao Flavio: ligar o VMIN no dado real (espelho da Passagem), aguardando "sim".
+
+---
+
 # Ultima tarefa — P1 Fast — AUDITORIA DE BOTÕES DO APP DO CELULAR (iOS) — 19/06/2026
 
 ## TASK_INIT — Auditoria de botões do app iOS (19/06/2026)
