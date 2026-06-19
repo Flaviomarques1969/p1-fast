@@ -7708,6 +7708,14 @@ html,body{
     init();
   }
 
+  // PASSAGEM com largura adaptável: o desenho mede a área real do bloco pra ocupar toda
+  // a largura. Força um redesenho depois do layout assentar (e em qualquer mudança de
+  // tamanho da janela) pra a medida valer mesmo com a tela parada. (Flávio 19/06)
+  function _reflowPassagem(){ try{ _lastPassagemKey=''; updatePassagemFromLap(_lastLiveT); }catch(e){} }
+  setTimeout(_reflowPassagem, 350);
+  setTimeout(_reflowPassagem, 1200);
+  window.addEventListener('resize', _reflowPassagem);
+
   (function setupLigacaoAoVivo(){
     var SUPABASE_URL  = 'https://fvhwltzhytpnhlqbttmd.supabase.co';
     var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2aHdsdHpoeXRwbmhscWJ0dG1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTExNDAsImV4cCI6MjA5MzM4NzE0MH0._ZpxksUnuVFhLzCB5x7bBiZ_VLQQR5cH4A1T-0-mvrA';
