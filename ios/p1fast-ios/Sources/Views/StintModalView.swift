@@ -207,6 +207,17 @@ struct StintModalView: View {
         }
     }
 
+    /// O título do stint (campo `objetivo` da sessão) passa a vir do PROPÓSITO,
+    /// não de um campo separado. Decisão Flávio 18/06: "Objetivo" e "Propósito"
+    /// eram dois campos competindo; evoluímos só pro Propósito.
+    private var objetivoDerivado: String {
+        switch proposito {
+        case .livre: return "Rodar livre"
+        case .testar: return "Testar o carro"
+        case .treinar: return "Treinar habilidade"
+        }
+    }
+
     @ViewBuilder
     private var content: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
