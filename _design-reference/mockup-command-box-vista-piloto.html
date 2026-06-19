@@ -4596,6 +4596,10 @@ html,body{
   }
 
   function getVminVerdictForCurve(curveIdx){
+    // Dado REAL (Etapa VMIN) quando carregado: {live, ghost, vminKmh, vminConfiavel,
+    // label, tone, delta, tipoPneu}. Senão a demonstração (VERDICTS_VMIN).
+    var real = (typeof __VMIN_REAL !== 'undefined' && __VMIN_REAL) ? __VMIN_REAL[curveIdx] : null;
+    if(real && !real.semDadoReal) return real;
     var corner = currentLap().corners[curveIdx];
     var id = corner ? corner.vminVerdictId : null;
     for(var i=0; i<VERDICTS_VMIN.length; i++){
