@@ -472,6 +472,7 @@ async function religarRaceBox(){
 
 async function connectRaceBox(){
   if(!navigator.bluetooth){ log('Este navegador não tem Bluetooth (use Chrome ou Edge).'); return; }
+  manterAcordado();
   try {
     pill($('rbConn'),'procurando…','warn'); boardPill($('bGps'),'GPS · procurando…','warn');
     const dev = await navigator.bluetooth.requestDevice({ filters:[{ namePrefix:'RaceBox' }], optionalServices:[NUS_SVC] });
