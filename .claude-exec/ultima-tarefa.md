@@ -13,6 +13,18 @@
 - **Riscos:** mexer em producao sem autorizacao; perda de dados da garagem (baixa, local diz sincronizado); app vencer e sumir do celular esta semana.
 - **Status inicial:** iniciado — AGUARDANDO decisao do card (.claude-perguntas/pendentes/20260618-204009-avancar-planejamento-stint.html).
 
+## DECISAO DO CARD (18/06): "Reinstalar e validar o ciclo ao vivo" (recomendada). Registrada em ~/.claude-decisoes/respostas/P1 Fast/ + index.jsonl.
+EXECUCAO 1 — REINSTALAR: app empacotado (xcodebuild p1fast-ios, BUILD SUCCEEDED) + instalado + aberto no iPhone do Flavio (devicectl, UDID 00008140-000E2D611E6A801C). Renova +7 dias (~25/06). Aviso "No provider was found" inofensivo. Passos de validacao passados ao Flavio.
+
+## AJUSTE PEDIDO PELO FLAVIO (18/06, durante a validacao): tirar o campo "Objetivo" (Aquecimento/Ataque/Consistencia/Teste/Livre) da tela de iniciar Stint — competia com "Proposito do Stint" (Rodar livre/Testar o carro/Treinar habilidade). Evoluimos so pro Proposito.
+VERIFICACAO (codigo real): campo "objetivo" da Sessao so e usado pra EXIBIR titulo do stint em EventoDetalheView.swift:632 e PosStintView.swift:104 (objetivoDecomposto). O PAINEL (web/cockpit) e funcoes da nuvem NAO leem "objetivo" (grep 0) — leem o plano (proposito/foco). Caminhos de demo (ContentView PosStintLauncher, TelemetriaView) usam valor fixo, separados do modal.
+ALTERACAO (so StintModalView.swift, DEV; backup em .claude-exec/backup-remover-objetivo-stint-2026-06-18/):
+- removida a secao "Objetivo" da tela (sectionObjetivo) + o seletor antigo (struct ObjetivoPicker) + o estado objetivoTipo + o guard de canSave que o exigia.
+- novo computed `objetivoDerivado` (livre->"Rodar livre", testar->"Testar o carro", treinar->"Treinar habilidade"); o salvar() agora grava esse valor como titulo do stint. Assim os titulos nas duas telas seguem fazendo sentido.
+- NADA de dado apagado: stints antigos mantem o titulo que ja tinham; sem migracao; painel intacto.
+- Consequencia (avisar Flavio): as categorias Aquecimento/Ataque/Consistencia somem como opcao (era o objetivo); o titulo passa a ser o proposito.
+Status: empacotando a versao com o ajuste pra reinstalar e validar.
+
 ---
 
 # Ultima tarefa — P1 Fast — ITEM 3: fundir o ao vivo no Command Box (18/06/2026)
