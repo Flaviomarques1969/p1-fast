@@ -35,9 +35,11 @@ export function vminDaPassagem(pontos) {
   for (let i = 1; i < pontos.length; i++) if (pontos[i].kmh < pontos[mi].kmh) mi = i;
   const vmin = pontos[mi].kmh;
   const entrada = pontos[0].kmh;
-  // interior + abaixo da entrada = a freada/valley foi capturada no recorte
-  const confiavel = mi > 0 && mi < pontos.length - 1 && vmin < entrada;
-  return { vminKmh: Math.round(vmin), idx: mi, entradaKmh: Math.round(entrada), confiavel };
+  const saida = pontos[pontos.length - 1].kmh;
+  // VALE de verdade: mínima abaixo da entrada E da saída = a freada foi capturada
+  // DENTRO do recorte. Se cair na borda, o número não vale (entra com 25 Hz).
+  const confiavel = vmin < entrada && vmin < saida;
+  return { vminKmh: Math.round(vmin), idx: mi, entradaKmh: Math.round(entrada), saidaKmh: Math.round(saida), confiavel };
 }
 
 /**
