@@ -1,3 +1,17 @@
+# Ultima tarefa — P1 Fast — TIPO DE PNEU: 2 tipos (Radial + Semi-slick) no cadastro do app iOS — 19/06/2026
+
+## TASK_INIT — Tipo de pneu = 2 tipos (19/06/2026)
+- **Pedido (Flávio):** "nós só temos dois tipos de pneu hoje: radial (o de rua) e semi-slick. Não vamos fazer três (radial, semi-slick e slick). É o que você vai colocar lá."
+- **Objetivo (1 frase):** o cadastro de pneu do app iOS passa a oferecer só 2 tipos — "Radial" e "Semi-slick" — em vez de 3 (Radial/Slick/Rua), sem quebrar pneus já cadastrados.
+- **Critério de conclusão:** PneuCadastroView mostra 2 botões (Radial, Semi-slick); enum Pneu.Composto vira {radial, semiSlick} com decodificação tolerante (rua→radial, slick→semi-slick) pra não quebrar dado existente; build OK.
+- **Achados (código real):** `Pneu.Composto` (Models.swift:419) = {radial, slick, rua} (String). PneuCadastroView (180-182) = 3 botões Radial/Slick/Rua. Usos: só leitura via composto.rawValue (CarroModalView:651, PneuPickerView:164, StintModalView:578,1101). Existe normalizador compartilhado normalizarTipoPneu (PlanoStint.swift:127-129) com radial-185-14/semi-slick/slick + smokes — DOMÍNIO DA FRENTE VMIN (outra sessão ativa) → NÃO mexer agora, só alinhar depois.
+- **Ambiente:** DESENVOLVIMENTO (app iOS, não publicado). Produção NÃO tocada.
+- **Plano:** (1) enum Composto {radial, semiSlick="semi-slick"} + init(from:) tolerante; (2) CompostoRail 2 botões; (3) build; (4) reportar + apontar VMIN/normalizador pra alinhar.
+- **Riscos:** dado antigo (slick/rua) — tratado com decode tolerante (preserva, não quebra). Não atropelar a frente VMIN (não toco em web/command-box nem no normalizador/smoke).
+- **Status inicial:** iniciado.
+
+---
+
 # Ultima tarefa — P1 Fast — VMIN no BLOCO DEDICADO (ligar real por config de pneu) — 19/06/2026
 
 ## EXECUÇÃO — Vmin = bloco dedicado, ligado no real (19/06/2026)
