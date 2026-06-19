@@ -123,6 +123,7 @@ struct HubMockLauncher: View {
                         .environmentObject(manutencaoStore)
                         .environmentObject(pecaRepo)
                         .environmentObject(pneuRepo)
+                        .environmentObject(freioRepo)
                         .environmentObject(eventoRepo)
                         .environmentObject(pilotoRepo)
                         .environmentObject(passageiroRepo)
