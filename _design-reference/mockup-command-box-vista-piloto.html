@@ -4563,8 +4563,17 @@ html,body{
   function vminChartSvg(verdict){
     var W = 200, H = 72;
     var pad = { l:6, r:22, t:10, b:6 };
-    var xMin = -80, xMax = 40;
-    var yMin = 78, yMax = 160;
+    // ghost (referência) = melhor passagem da config (dado real) ou o ghost padrão (demo).
+    var ghost = verdict.ghost || VMIN_GHOST;
+    var live  = verdict.live;
+    // Eixos DINÂMICOS: ajustam à extensão real dos dados (o dado real tem outro alcance
+    // de distância/velocidade que a demonstração). Vmin fica em x=0 (ponto mais lento).
+    var xs = live.concat(ghost).map(function(p){ return p[0]; });
+    var ys = live.concat(ghost).map(function(p){ return p[1]; });
+    var xMin = Math.min.apply(null, xs), xMax = Math.max.apply(null, xs);
+    var yMin = Math.min.apply(null, ys), yMax = Math.max.apply(null, ys);
+    var xPad = (xMax - xMin) * 0.04 || 1, yPad = (yMax - yMin) * 0.12 || 2;
+    xMin -= xPad; xMax += xPad; yMin -= yPad; yMax += yPad;
     function sx(x){ return pad.l + ((x - xMin) / (xMax - xMin)) * (W - pad.l - pad.r); }
     function sy(y){ return (H - pad.b) - ((y - yMin) / (yMax - yMin)) * (H - pad.t - pad.b); }
     function pathFrom(pts){
@@ -4572,26 +4581,26 @@ html,body{
         return (i===0?'M':'L') + sx(p[0]).toFixed(2) + ' ' + sy(p[1]).toFixed(2);
       }).join(' ');
     }
-    var liveD  = pathFrom(verdict.live);
-    var ghostD = pathFrom(VMIN_GHOST);
-    var apexX  = sx(0);
-    var liveBottom  = verdict.live.reduce(function(m,p){return p[1]<m[1]?p:m;}, verdict.live[0]);
-    var ghostBottom = VMIN_GHOST.reduce(function(m,p){return p[1]<m[1]?p:m;}, VMIN_GHOST[0]);
+    var liveD  = pathFrom(live);
+    var ghostD = pathFrom(ghost);
+    var vminX  = sx(0);
+    var liveBottom  = live.reduce(function(m,p){return p[1]<m[1]?p:m;}, live[0]);
+    var ghostBottom = ghost.reduce(function(m,p){return p[1]<m[1]?p:m;}, ghost[0]);
 
     return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">' +
-      // linha vertical do apex
-      '<line x1="'+apexX.toFixed(2)+'" y1="'+pad.t+'" x2="'+apexX.toFixed(2)+'" y2="'+(H-pad.b)+'" stroke="rgba(212,175,55,0.30)" stroke-width="0.4" stroke-dasharray="2 2"/>' +
-      '<text x="'+apexX.toFixed(2)+'" y="'+(pad.t-2)+'" text-anchor="middle" fill="rgba(212,175,55,0.55)" font-size="5" font-family="JetBrains Mono,monospace" letter-spacing="0.1em">apex</text>' +
-      // ghost (referência)
+      // linha vertical do Vmin (ponto mais lento)
+      '<line x1="'+vminX.toFixed(2)+'" y1="'+pad.t+'" x2="'+vminX.toFixed(2)+'" y2="'+(H-pad.b)+'" stroke="rgba(212,175,55,0.30)" stroke-width="0.4" stroke-dasharray="2 2"/>' +
+      '<text x="'+vminX.toFixed(2)+'" y="'+(pad.t-2)+'" text-anchor="middle" fill="rgba(212,175,55,0.55)" font-size="5" font-family="JetBrains Mono,monospace" letter-spacing="0.1em">Vmin</text>' +
+      // ghost (referência = melhor passagem)
       '<path class="fr-curve-ghost" d="'+ghostD+'"/>' +
       // live (animada — cor pela proximidade visual ao ghost, não pelo veredicto)
       '<path class="fr-curve-live tone-'+vminCurveTone(verdict)+'" pathLength="100" d="'+liveD+'"/>' +
-      // marker do bottom de cada curva (= Vmin)
+      // marker do ponto mais lento (= Vmin) da referência e da volta mostrada
       '<circle cx="'+sx(ghostBottom[0]).toFixed(2)+'" cy="'+sy(ghostBottom[1]).toFixed(2)+'" r="1.6" fill="#38BCFF" fill-opacity="0.85"/>' +
       '<circle cx="'+sx(liveBottom[0]).toFixed(2)+'" cy="'+sy(liveBottom[1]).toFixed(2)+'" r="2.2" fill="#FF8C66" stroke="rgba(255,255,255,0.4)" stroke-width="0.4"/>' +
       // tags
-      '<text class="fr-tag live"  x="'+(W-pad.r+2)+'" y="'+(sy(verdict.live[0][1])).toFixed(2)+'">vc</text>' +
-      '<text class="fr-tag ghost" x="'+(W-pad.r+2)+'" y="'+(sy(VMIN_GHOST[0][1])+10).toFixed(2)+'">ideal</text>' +
+      '<text class="fr-tag live"  x="'+(W-pad.r+2)+'" y="'+(sy(live[0][1])).toFixed(2)+'">vc</text>' +
+      '<text class="fr-tag ghost" x="'+(W-pad.r+2)+'" y="'+(sy(ghost[0][1])+10).toFixed(2)+'">ideal</text>' +
       '</svg>';
   }
 
