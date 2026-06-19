@@ -37,7 +37,21 @@
 - **Ambiente:** DESENVOLVIMENTO. Produção NÃO tocada.
 - **Mapeamento (workflow 6 agentes, prova arquivo:linha):** carro hoje só tem apelido/modelo/categoria/cor/fonte_temperatura — NÃO tem foto (foto é arquivo LOCAL, não sincroniza), NÃO tem combustível, NÃO tem freio nem pastilha. Setup (pressão/alinhamento/suspensão/bias/mapa/diferencial) vive em Configuracao.overrides (JSON livre). Tela CarroModalView = 7 seções misturadas. Combustível duplicado (catálogo por stint + texto solto). Botão Apagar do pneu (TireItem CarroModalView:620-632) sem lineLimit/fixedSize → quebra linha. Rótulo voltas vs saídas; unidade mola kg/mm vs lb/in divergentes.
 - **Entrega:** mapa HTML `.claude-exec/plano-cadastro-carro-2026-06-19.html` (aberto no navegador) — 2 grupos (Padrão do carro / Configuração) + 3 decisões (1: freio/pastilha texto livre vs lista; 2: criar combustível Etanol/Gasolina padrão Etanol; 3: persistir foto que hoje some) + correções inclusas.
-- **Status:** AGUARDANDO aprovação do plano + 3 decisões do Flávio antes de implementar (freio/pastilha/combustível exigem campo novo + alteração de banco).
+- **Status:** plano aprovado; 3 decisões respondidas (19/06/2026).
+
+## DECISÕES DO FLÁVIO (19/06/2026)
+1. **Freio/pastilha = item cadastrado.** Flávio cadastra o item no Estoque/Peças (com muita info detalhada); no CARRO mostrar APENAS O TIPO. "Vale para tudo" (mesma lógica do pneu: clica e seleciona). NÃO é texto livre. → design: padrão do carro referencia/seleciona item de estoque (EstoqueItem escopo=carroId, grupo Freios) e exibe só o tipo/nome.
+2. **Combustível: campo Etanol/Gasolina, hoje só ETANOL** (default Etanol). Criar campo estruturado no carro.
+3. **Foto: persistir de verdade** (sincroniza, não some). Hoje é arquivo local (CarroFoto). → adicionar foto_url em carros + upload/sync.
+
+## FEITO neste ciclo (build OK)
+- Botão "Apagar" do pneu (TireItem CarroModalView:606-632): +lineLimit(1)+fixedSize nos 2 botões (Editar/Apagar) + lineLimit(1) no nome → não quebra mais linha (caso Yokohama A09). BUILD SUCCEEDED.
+- (antes) 2 tipos de pneu Radial/Semi-slick. BUILD SUCCEEDED.
+
+## PRÓXIMO (reorganização grande — muda estrutura de dados salvos)
+- Reorganizar CarroModalView em 2 grupos: "Padrão do carro" (identidade+foto, freio, pastilha, combustível, pneus cadastrados) e "Configuração" (pressão, alinhamento, suspensão, bias).
+- NOVO no carro: campo combustível (Etanol/Gasolina, default Etanol) + coluna foto_url + referência/seleção de item de freio e pastilha (mostra só o tipo). Exige migração espelhada no Supabase (CUIDADO: regra do projeto + frente VMIN ativa).
+- Sistema de itens (verificado): EstoqueItem (Models.swift:1382, escopo geral/carroId, nome/especificacao/grupo/fotoUrl/categoria obrig|desej) + catálogo ManutencaoConsumiveis (área "Freios": pastilhas, discos, fluido).
 
 ---
 
