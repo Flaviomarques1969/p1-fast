@@ -174,13 +174,21 @@ struct CarroModalView: View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
             header
 
+            // GRUPO 1 — Padrão do carro: define o carro, cadastra uma vez.
+            // (Decisão Flávio 19/06/2026: separar padrão de configuração.)
+            grupoHeader(title: "Padrão do carro",
+                        subtitle: "Define o carro. Você cadastra uma vez e não confere de novo.")
             sectionIdentidade
+            sectionPneusCadastrados
+
+            // GRUPO 2 — Configuração: conferida e ajustada a cada stint.
+            grupoHeader(title: "Configuração",
+                        subtitle: "Confere a cada stint — pode mudar de uma saída pra outra.")
             sectionPneus
             sectionAlinhamento
             sectionSuspensao
             sectionFreios
             sectionMotorTransmissao
-            sectionPneusCadastrados
 
             if let erro = savingError {
                 Text(erro)
@@ -189,6 +197,28 @@ struct CarroModalView: View {
                     .padding(.horizontal, Spacing.xs)
             }
         }
+    }
+
+    /// Cabeçalho de grupo (Padrão do carro / Configuração) — separa
+    /// visualmente o que é fixo do carro do que muda a cada stint.
+    @ViewBuilder
+    private func grupoHeader(title: String, subtitle: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Rectangle()
+                .fill(Color.border)
+                .frame(height: 1)
+                .padding(.bottom, Spacing.sm)
+            Text(title)
+                .font(.system(size: 18, weight: .semibold))
+                .tracking(-0.3)
+                .foregroundStyle(Color.text)
+            Text(subtitle)
+                .font(.system(size: 12, weight: .regular))
+                .foregroundStyle(Color.textMuted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, Spacing.xs)
     }
 
     /// Seção que abre a função Manutenção (consumíveis · modelo
