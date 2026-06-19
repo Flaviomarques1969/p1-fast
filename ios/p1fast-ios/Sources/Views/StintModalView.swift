@@ -1115,47 +1115,6 @@ struct StintModalView: View {
 
 // MARK: - Sub-componentes
 
-/// Picker dos 5 tipos canônicos. Visual idêntico ao CategoriaPicker do
-/// CarroNovoFormView mas alimentado por `StintObjetivoTipos.canonicos`.
-private struct ObjetivoPicker: View {
-    @Binding var selection: String
-
-    var body: some View {
-        Menu {
-            ForEach(StintObjetivoTipos.canonicos, id: \.self) { tipo in
-                Button(tipo) { selection = tipo }
-            }
-        } label: {
-            HStack {
-                Text(selection)
-                    .font(.system(size: 15, weight: .medium))
-                    .tracking(-0.075)
-                    .foregroundStyle(Color.text)
-                Spacer()
-                Text("›")
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundStyle(Color.textMuted)
-                    .frame(width: 20, height: 20)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .fill(Color.surfaceHover)
-                    )
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .fill(Color.surfaceRaised)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .stroke(Color.border, lineWidth: 1)
-            )
-        }
-        .menuStyle(.button)
-    }
-}
-
 /// Stepper numérico — ± / valor central. Mais legível que TextField
 /// num campo "voltas planejadas" que só aceita ints positivos.
 private struct VoltasStepper: View {
