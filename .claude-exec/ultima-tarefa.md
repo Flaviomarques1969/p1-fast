@@ -1,3 +1,18 @@
+# Ultima tarefa — P1 Fast — LIGAR 2 BOTÕES MORTOS do Detalhe do Evento (iOS) — 19/06/2026
+
+## TASK_INIT — Ligar "Editar" + abrir stint de exemplo (19/06/2026)
+- **Pedido (Flávio):** depois da auditoria — "pode ligar todos exceto o login. vamos manter por enquanto como está." => ligar os 2 botões mortos REAIS do Detalhe do Evento; NÃO mexer no login Apple/Google.
+- **Objetivo (1 frase):** os 2 botões mortos do EventoDetalheView passam a abrir função real — "Editar" abre edição da data do evento (repo.update) e o card de stint de exemplo abre um resumo só-leitura.
+- **Critério de conclusão:** "Editar" (EventoDetalheView:257) abre formulário que altera a data e grava via EventoRepository.update; card de exemplo (StintCardMock:458) abre resumo só-leitura com os dados do exemplo; login NÃO tocado; build OK; `npm run smoke` sem quebrar; provado no simulador clicando.
+- **Leitura confirmada:** CLAUDE.md global + protocolos + P1 Fast/CLAUDE.md; código real lido (EventoDetalheView, EventoRepository, EventoNovoFormView, EventoMockSummary/StintMock, PosStintView, modelo Evento).
+- **Achados que guiam a solução:** Evento só tem data como campo editável (pista fixa Brasília, tipo fixo). Evento.dataEvento é var; EventoRepository.update(evento:) existe. StintMock não tem sessão real no banco => PosStintView (que lê do StintRepository) não serve pro card de exemplo => resumo só-leitura honesto a partir do StintMock.
+- **Ambiente alvo:** DESENVOLVIMENTO (app iOS, não publicado). **Produção protegida:** sim. **Produção alterada:** não. **Autorização produção:** não se aplica (app não é publicado).
+- **Plano (≤5 passos):** (1) novo EventoEditarFormView (espelha o molde do EventoNovoFormView, grava via update); (2) novo StintMockDetalheView (resumo só-leitura); (3) editar EventoDetalheView (enum +2 casos, wire do "Editar" e do card de exemplo, sheetView); (4) build simulador; (5) `npm run smoke` + provar clicando no simulador.
+- **Riscos:** não quebrar os fluxos de stint real (StintCardReal/PosStint) nem a criação de evento; manter "você"; sem emojis.
+- **Status inicial:** iniciado.
+
+---
+
 # Ultima tarefa — P1 Fast — VMIN no bloco PASSAGEM + APRENDIZADO por config de pneu — 19/06/2026
 
 ## EXECUÇÃO — Vmin na Passagem + aprendizado por carro+pneu+trecho (19/06/2026)
