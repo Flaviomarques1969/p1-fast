@@ -38,6 +38,7 @@ struct StintModalView: View {
     let onCreated: (String) -> Void
 
     @State private var pilotoId: String?
+    @State private var objetivoTipo: String = "Aquecimento"
     @State private var voltasPlanejadas: Int = 10
     @State private var licaoIdSelecionada: String?
     @State private var savingError: String?
