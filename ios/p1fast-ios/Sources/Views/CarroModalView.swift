@@ -66,6 +66,7 @@ struct CarroModalView: View {
     @State private var modelo: String = ""
     @State private var categoria: String? = nil
     @State private var corHex: String = CarroPalette.opcoes[1].hex
+    @State private var combustivel: String = "etanol" // padrão do carro: etanol|gasolina
     @State private var photoItem: PhotosPickerItem? = nil
     @State private var fotoCarro: UIImage? = nil
 
