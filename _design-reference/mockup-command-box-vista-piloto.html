@@ -5921,6 +5921,10 @@ html,body{
     var EXIT  = { x: 240, y: 88,  speed: data.saida.speed,   delta: data.saida.delta,   tone: data.saida.tone,   reveal: revealSaida };
     var R = 22;
     var apexOffsetM = data.apex.offsetM;
+    // ±1 m do ápice pendente quando o dado não resolve 1 m (GPS real ~1 Hz). Honesto:
+    // a barra fica apagada e o número vira "—" (entra com 25 Hz). Não força precisão.
+    var apexDistPend = (apexOffsetM == null);
+    var apexOffNum = apexDistPend ? 0 : apexOffsetM;
 
     var svg = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
 
