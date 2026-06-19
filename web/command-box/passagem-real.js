@@ -137,9 +137,9 @@ export function passagemRealParaCorner(passagem, refPassagem) {
 
   // VMIN (velocidade mínima da curva): é o mesmo ponto mais lento que define o ápice
   // a ~1 Hz (apex e Vmin coincidem com esse dado; separam de verdade com 25 Hz).
-  // CONFIÁVEL só quando o ponto mais lento é INTERIOR (não o 1º nem o último) e está
-  // abaixo da entrada — senão a freada não foi capturada no recorte e o número não vale.
-  const vminConfiavel = cur.apexIdx > 0 && cur.apexIdx < pts.length - 1 && cur.apexKmh < cur.entradaKmh;
+  // CONFIÁVEL só quando a mínima é um VALE de verdade — abaixo da entrada E da saída
+  // (freada capturada dentro do recorte). Na borda, o número não vale (entra com 25 Hz).
+  const vminConfiavel = cur.apexKmh < cur.entradaKmh && cur.apexKmh < cur.saidaKmh;
   const dVmin = ref ? cur.apexKmh - ref.apexKmh : 0;
 
   return {
