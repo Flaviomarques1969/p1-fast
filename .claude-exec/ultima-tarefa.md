@@ -1,3 +1,20 @@
+# Ultima tarefa — P1 Fast — LIGAR A PASSAGEM NO DADO REAL (espelho da Frenagem) — 18/06/2026 noite
+
+## TASK_INIT — Passagem no dado real (18/06/2026)
+- **Pedido original (Flavio):** diagnostico "como esta o componente passagem do trecho. que fica acima de frenagem" -> Flavio respondeu "sim." ao proximo passo proposto: ligar a Passagem no dado real, espelhando o que foi feito na Frenagem.
+- **Objetivo (1 frase):** o bloco Passagem (entrada/apice/saida) do Command Box vista-piloto passa a exibir dado REAL do Bubi em Brasilia (velocidades + tempo do trecho), espelhando a Frenagem, sem tocar producao.
+- **Criterio de conclusao:** velocidades de entrada/apice/saida e tempo total do trecho vindos das passagens reais (fixture passagens-bubi-brasilia.v1.json); mesma arquitetura da Frenagem (modulo adaptador + por curva + hook window.__aplicarPassagemReal + bloco "Etapa 2c"); cai pra demonstracao se a massa nao carregar; barra "apice-distancia" (+-1 m) NAO forjada (1 Hz nao resolve -> fica honesta/pendente); nada removido; backup antes; teste automatico novo passando + npm run smoke sem quebrar; validado no navegador e mostrado ao Flavio.
+- **Leitura confirmada (18/06):** ~/.claude/CLAUDE.md; ~/.claude-decisoes/padroes.md; FLAVIO_EXECUTION_PROTOCOL.md; FLAVIO_DONE_CHECKLIST.md; FLAVIO_ENVIRONMENT_RULES.md; FLAVIO_COMMUNICATION_RULES.md; P1 Fast/CLAUDE.md.
+- **Verificacao ja feita (codigo real):** bloco Passagem (buildPassagemPanel ~5893, getPassagemDataForCurve ~5878) ainda desenha demonstracao (currentLap().corners) e esta em DEP_LIGACAO ("cb-sem-real", mockup:7698); Frenagem JA real desde 15/06 (frenagem-real.js + frenagem-curvas-reais.js, hook __aplicarFrenagemReal mockup:4509, Etapa 2b mockup:7846); fixture real = lat/lng/kmh/t a ~1 Hz (~9 pontos/curva), 56 passagens, 8 curvas; formato dos numeros: delta das bolinhas em KM/H ('+1'/'−2', sinal unicode −), total embaixo em SEGUNDOS ('−0.04s').
+- **Ambiente alvo:** DESENVOLVIMENTO (prototipo/referencia executavel). Produto final do cockpit = app Windows nativo (ADR-023), nao tocado aqui.
+- **Producao protegida:** sim. **Producao alterada:** nao. **Autorizacao producao:** nao recebida.
+- **Decisao de engenharia (honestidade, espelho da Frenagem):** referencia = melhor volta de cada curva; mostrada = volta tipica (mediana de tempo) vs melhor -> deltas REAIS e nao-zero; velocidades + tempo do trecho REAIS; barra do apice +-1 m fica PENDENTE (1 Hz nao resolve), igual a Frenagem e honesta sobre o GPS 1 Hz.
+- **Plano (<=5 passos):** (1) backup + passagem-real.js (adaptador puro); (2) passagem-curvas-reais.js (por curva); (3) editar mockup (global __PASSAGEM_REAL + getPassagemDataForCurve prefere real + hook __aplicarPassagemReal + tirar 'passagem' do DEP_LIGACAO + barra apice honesta + Etapa 2c); (4) teste node-smoke-passagem-real.mjs + cadeia smoke; (5) servir + abrir navegador pro Flavio.
+- **Riscos:** editar HTML grande (backup+ediçoes cirurgicas+smoke); 1 Hz nao da +-1 m no apice (tratado com honestidade, nao forjado).
+- **Status inicial:** iniciado.
+
+---
+
 # Ultima tarefa — P1 Fast — AVANCAR PLANEJAMENTO DO STINT NO CELULAR (18/06/2026 noite)
 
 ## TASK_INIT — Planejamento do Stint no celular (18/06/2026)
