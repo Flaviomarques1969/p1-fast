@@ -135,6 +135,13 @@ export function passagemRealParaCorner(passagem, refPassagem) {
   // estimativa grosseira do deslocamento do ápice (só registro; NÃO exibida como ±1 m).
   const apexOffsetMbruto = ref ? Math.round((cur.apexDistM - ref.apexDistM) * 10) / 10 : null;
 
+  // VMIN (velocidade mínima da curva): é o mesmo ponto mais lento que define o ápice
+  // a ~1 Hz (apex e Vmin coincidem com esse dado; separam de verdade com 25 Hz).
+  // CONFIÁVEL só quando o ponto mais lento é INTERIOR (não o 1º nem o último) e está
+  // abaixo da entrada — senão a freada não foi capturada no recorte e o número não vale.
+  const vminConfiavel = cur.apexIdx > 0 && cur.apexIdx < pts.length - 1 && cur.apexKmh < cur.entradaKmh;
+  const dVmin = ref ? cur.apexKmh - ref.apexKmh : 0;
+
   return {
     entradaKmh: R(cur.entradaKmh), entradaDelta: fmtKmh(dEnt), entradaTone: toneKmh(Math.abs(dEnt)),
     apexKmh: R(cur.apexKmh), apexDelta: fmtKmh(dApx), apexTone: toneKmh(Math.abs(dApx)),
@@ -143,6 +150,8 @@ export function passagemRealParaCorner(passagem, refPassagem) {
     apexDistMotivo: 'GPS ~1 Hz não resolve ±1 m — barra entra com 25 Hz',
     apexOffsetMbruto,
     saidaKmh: R(cur.saidaKmh), saidaDelta: fmtKmh(dSai), saidaTone: toneKmh(Math.abs(dSai)),
+    // Vmin da volta mostrada + diferença pra melhor (referência aprendida por config).
+    vminKmh: R(cur.apexKmh), vminDelta: fmtKmh(dVmin), vminTone: toneKmh(Math.abs(dVmin)), vminConfiavel,
     passagemVerdict, passagemTone, passagemDelta: fmtSeg(dTot),
     fonte: 'real',
   };
