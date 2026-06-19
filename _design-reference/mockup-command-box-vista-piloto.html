@@ -6053,7 +6053,7 @@ html,body{
     // ──────── BAR de distância do APEX ────────
     // Range: -1m (antes) … 0 (ideal) … +1m (depois). Bar deslocado pra esquerda;
     // valor absoluto em destaque grande à direita, sem sinal — cor verde/vermelha pela magnitude.
-    var BX = 18, BY = 167, BW = 168, BH = 6;
+    var BX = 18*kx, BY = 167, BW = 168*kx, BH = 6;
     var BMID = BX + BW / 2;
     var pxPerMeter = (BW / 2) / 1.0;
     var markerX = BMID + apexOffNum * pxPerMeter;
