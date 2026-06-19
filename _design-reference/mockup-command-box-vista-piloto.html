@@ -5997,9 +5997,9 @@ html,body{
     var BX = 18, BY = 167, BW = 168, BH = 6;
     var BMID = BX + BW / 2;
     var pxPerMeter = (BW / 2) / 1.0;
-    var markerX = BMID + apexOffsetM * pxPerMeter;
+    var markerX = BMID + apexOffNum * pxPerMeter;
 
-    var apexEmpty = APEX.reveal ? '' : ' empty';
+    var apexEmpty = (APEX.reveal && !apexDistPend) ? '' : ' empty';
 
     // Header label do bar (alinhado com bar à esquerda)
     svg += '<text class="ps-bar-title'+apexEmpty+'" x="'+(BX + BW/2)+'" y="'+(BY - 14)+'">apex · distância</text>';
