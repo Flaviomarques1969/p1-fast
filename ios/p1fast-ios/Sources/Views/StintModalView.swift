@@ -185,7 +185,6 @@ struct StintModalView: View {
 
     private var canSave: Bool {
         guard !isSaving else { return false }
-        guard !objetivoTipo.isEmpty else { return false }
         guard voltasPlanejadas >= 1 else { return false }
         guard propositoOk else { return false }
         // MS-4.4: validação muda conforme tipo do evento
