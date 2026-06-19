@@ -41,6 +41,7 @@ struct HubMockLauncher: View {
         _manutencaoStore = StateObject(wrappedValue: ManutencaoConsumiveisStore(queue: queue))
         _pecaRepo = StateObject(wrappedValue: PecaRepository(queue: queue))
         _pneuRepo = StateObject(wrappedValue: PneuRepository(queue: queue))
+        _freioRepo = StateObject(wrappedValue: FreioRepository(queue: queue))
         _eventoRepo = StateObject(wrappedValue: EventoRepository(queue: queue))
         _pilotoRepo = StateObject(wrappedValue: PilotoRepository(queue: queue))
         _passageiroRepo = StateObject(wrappedValue: PassageiroRepository(queue: queue))
