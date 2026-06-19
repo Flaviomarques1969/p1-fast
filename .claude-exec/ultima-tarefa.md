@@ -1,3 +1,22 @@
+# Ultima tarefa — P1 Fast — VMIN no bloco PASSAGEM + APRENDIZADO por config de pneu — 19/06/2026
+
+## EXECUÇÃO — Vmin na Passagem + aprendizado por carro+pneu+trecho (19/06/2026)
+- **Pedido (Flavio):** card "Vmin so onde e confiavel" + "cria uma funcao pra ir aprendendo: ve sempre o Vmin da melhor passagem naquele trecho, daquele carro, naquela configuracao. Celta 1.4 tera 2 pneus: radial e semi slick — marcar os dados por config."
+- **Ambiente:** DESENVOLVIMENTO (prototipo). Producao NAO tocada. Frenagem/Vmin-bloco-grafico NAO tocados.
+- **Descoberta importante (corrige o que eu disse):** o print do Flavio (entrada 182 + "AGUARDANDO LIGACAO") era CACHE do navegador. Versao servida pela 8078 JA estava real (Passagem fora do DEP_LIGACAO + Etapa 2c) — reabri sem cache (?v=). E o criterio HONESTO de Vmin (vale: minima < entrada E < saida) so da Vmin confiavel em 2 curvas hoje (CURVA 01 e CURVA 2), nao 4 — a 1 Hz a freada cai na borda do recorte nas outras.
+- **BACKUP:** _design-reference/_backups/mockup-command-box-vista-piloto.BACKUP-vmin-passagem-2026-06-19.html
+- **ARQUIVOS:**
+  - NOVO web/command-box/vmin-aprendizado.js — funcao de aprendizado PURA: melhor passagem (menor tempo) por (carro|tipo_pneu|curva); referencia = Vmin dessa melhor; SEPARADO por config (radial vs semi-slick = bases distintas); confiavel = vale (min < entrada E < saida). Espelha melhores_passagens_trecho (Flavio 27/05).
+  - EDIT web/command-box/passagem-real.js — emite vminKmh + vminDelta + vminTone + vminConfiavel (regra de vale).
+  - EDIT web/command-box/passagem-curvas-reais.js — agrupa/filtra por tipo_pneu (referencia da MESMA config); default = config mais frequente (hoje radial-185-14); export configuracoesNaMassa(). semi-slick => tudo semDadoReal (sem dado ainda).
+  - EDIT _design-reference/mockup-command-box-vista-piloto.html — getPassagemDataForCurve leva vmin{speed,delta,confiavel}+tipoPneu; buildPassagemPanel mostra NUMERO do Vmin sob o marcador "Vmin" (so quando vale confiavel, senao "—") + tag "celta 1.4 · <pneu>" no rodape.
+  - NOVO tests/node-smoke-vmin-aprendizado.mjs (13 checagens) + package.json (cadeia smoke + script smoke:vmin-aprendizado).
+- **VALIDACAO:** vmin-aprendizado 13/0; passagem-real 27/0 (nao quebrou); sintaxe dos 3 <script> do painel OK; `npm run smoke` rodou ate o fim (cadeia && = tudo verde). Painel reaberto sem cache pela 8078.
+- **Hoje aparece:** Vmin real (numero km/h) em CURVA 01 (109) e CURVA 2 (100); "—" nas outras 6 (1 Hz nao bracketou a freada). semi-slick = sem dado (preenche quando rodar). Enche tudo com 25 Hz (RaceBox).
+- **Status:** concluido (DEV). Aguardando validacao visual do Flavio no painel.
+
+---
+
 # Ultima tarefa — P1 Fast — DIAGNOSTICO DO VMIN no Command Box — 19/06/2026 (READ-ONLY, nada alterado)
 
 ## TASK_INIT — Diagnostico VMIN (19/06/2026)
