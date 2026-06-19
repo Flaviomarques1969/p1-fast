@@ -53,6 +53,20 @@
 - NOVO no carro: campo combustível (Etanol/Gasolina, default Etanol) + coluna foto_url + referência/seleção de item de freio e pastilha (mostra só o tipo). Exige migração espelhada no Supabase (CUIDADO: regra do projeto + frente VMIN ativa).
 - Sistema de itens (verificado): EstoqueItem (Models.swift:1382, escopo geral/carroId, nome/especificacao/grupo/fotoUrl/categoria obrig|desej) + catálogo ManutencaoConsumiveis (área "Freios": pastilhas, discos, fluido).
 
+## EXECUÇÃO — etapas 1 e 2 (19/06/2026) — BUILD SUCCEEDED + app abre limpo
+- ETAPA 1 (sem banco) — CarroModalView.content reorganizado em 2 grupos com `grupoHeader`: **Padrão do carro** (Identidade+foto, Pneus cadastrados) e **Configuração** (Pressão, Alinhamento, Suspensão, Freios, Motor). Subtítulo do topo trocado ("Setup base..." → "O que é fixo do carro e o que muda a cada stint").
+- ETAPA 2 (com banco) — Combustível Etanol/Gasolina (padrão Etanol):
+  - Models.swift Carro: +campo `combustivel: String?` (CodingKeys+init).
+  - Migrations.swift: +`v33_carro_combustivel` = ALTER TABLE carros ADD COLUMN combustivel TEXT DEFAULT 'etanol' (carros antigos viram etanol).
+  - CarroRepository.create: combustivel "etanol".
+  - CarroModalView: @State combustivel + load(row.combustivel ?? etanol) + save(current.combustivel) + `CombustivelRail` (2 botões Etanol/Gasolina) no grupo Padrão (dentro de Identidade) + REMOVIDO o combustível texto-livre do bloco Motor (dado antigo no JSON preservado, só saiu da tela).
+- VALIDAÇÃO: build simulador **BUILD SUCCEEDED**; app reinstalado abre na tela de login sem tela branca (migração v33 aplicou OK). Navegação clique-a-clique não dirigida (automação de clique do simulador instável nesta sessão) — Flávio vê na tela aberta.
+- PENDÊNCIA PROD (quando for o caso): espelhar coluna `combustivel` no Supabase (carros) — NÃO feito (DEV, sem autorização prod).
+
+## FALTAM (etapas 3 e 4 — as mais pesadas)
+- ETAPA 3 — Freio e pastilha como item selecionado (mostra só o tipo). Precisa: desenhar o vínculo carro→item de estoque (qual freio/pastilha "atual"), UI de seleção no Padrão, exibir tipo. Confirmar desenho com Flávio antes (há +de uma forma).
+- ETAPA 4 — Foto persistir/sincronizar. Checar se já existe mecanismo de upload de imagem (pecas/estoque_item já têm foto_url) pra reusar; depois +coluna foto_url em carros + UI.
+
 ---
 
 # Ultima tarefa — P1 Fast — VMIN no BLOCO DEDICADO (ligar real por config de pneu) — 19/06/2026
