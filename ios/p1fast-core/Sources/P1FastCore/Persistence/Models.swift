@@ -243,6 +243,9 @@ public struct Carro: Codable, FetchableRecord, PersistableRecord {
     public var modelo: String?
     public var categoria: String?
     public var cor: String?
+    /// Combustível padrão do carro: "etanol" | "gasolina". Decisão Flávio
+    /// 19/06/2026 — 2 opções, default etanol (hoje o Bolinha é sempre etanol).
+    public var combustivel: String?
     public var fonteTemperatura: FonteTemperatura
     public var createdAt: Int64
     public var updatedAt: Int64
@@ -252,7 +255,7 @@ public struct Carro: Codable, FetchableRecord, PersistableRecord {
     enum CodingKeys: String, CodingKey {
         case id
         case timeId = "time_id"
-        case apelido, modelo, categoria, cor
+        case apelido, modelo, categoria, cor, combustivel
         case fonteTemperatura = "fonte_temperatura"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
@@ -260,12 +263,13 @@ public struct Carro: Codable, FetchableRecord, PersistableRecord {
     }
 
     public init(id: String, timeId: String, apelido: String, modelo: String? = nil,
-                categoria: String? = nil, cor: String? = nil,
+                categoria: String? = nil, cor: String? = nil, combustivel: String? = nil,
                 fonteTemperatura: FonteTemperatura = .motor,
                 createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(),
                 syncedAt: Int64? = nil) {
         self.id = id; self.timeId = timeId; self.apelido = apelido
         self.modelo = modelo; self.categoria = categoria; self.cor = cor
+        self.combustivel = combustivel
         self.fonteTemperatura = fonteTemperatura
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
     }
