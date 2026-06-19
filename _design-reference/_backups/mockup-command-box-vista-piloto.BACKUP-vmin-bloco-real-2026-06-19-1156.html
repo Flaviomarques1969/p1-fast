@@ -5893,11 +5893,20 @@ html,body{
     // Dado REAL (Etapa 2c) quando carregado; senão a demonstração (currentLap).
     var real = (typeof __PASSAGEM_REAL !== 'undefined' && __PASSAGEM_REAL) ? __PASSAGEM_REAL[curveIdx] : null;
     var corner = (real && !real.semDadoReal) ? real : currentLap().corners[curveIdx];
+    // VMIN: vem do dado real (vminKmh/vminConfiavel, por config de pneu); na demonstração,
+    // deriva do ápice (é a mínima) com o mesmo critério de vale (abaixo da entrada E saída).
+    var vminKmh = (corner.vminKmh != null) ? corner.vminKmh : corner.apexKmh;
+    var vminConfiavel = (corner.vminConfiavel != null) ? corner.vminConfiavel
+                        : (corner.apexKmh < corner.entradaKmh && corner.apexKmh < corner.saidaKmh);
+    var vminDelta = (corner.vminDelta != null) ? corner.vminDelta : (corner.apexDelta || '');
+    var tipoPneu = corner.tipoPneu || (real && real.tipoPneu) || null;
     return {
       name: c.name,
       entrada: { speed: corner.entradaKmh, delta: corner.entradaDelta.replace(/[+−]/,''), tone: corner.entradaTone },
       apex:    { speed: corner.apexKmh,    delta: corner.apexDelta.replace(/[+−]/,''),    tone: corner.apexTone, offsetM: corner.apexOffsetM },
       saida:   { speed: corner.saidaKmh,   delta: corner.saidaDelta.replace(/[+−]/,''),   tone: corner.saidaTone },
+      vmin:    { speed: vminKmh, delta: String(vminDelta).replace(/[+−]/,''), confiavel: vminConfiavel },
+      tipoPneu: tipoPneu,
       verdict: corner.passagemVerdict,
       verdictTone: corner.passagemTone,
       totalDelta: corner.passagemDelta,
