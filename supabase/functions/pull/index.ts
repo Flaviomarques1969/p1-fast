@@ -21,7 +21,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 export const TEAM_TABLES = new Set([
-  "carros", "configuracoes", "pilotos", "passageiros", "pneus", "combustiveis",
+  "carros", "configuracoes", "pilotos", "passageiros", "pneus", "freios", "combustiveis",
   "eventos", "sessoes", "voltas", "segment_executions", "mensagens",
   "retas_especiais", "trofeus_ganhos",
   "estoque_item", // estoque unificado — restaurável em outro aparelho (0046)
