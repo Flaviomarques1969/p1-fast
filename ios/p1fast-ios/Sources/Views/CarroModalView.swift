@@ -608,6 +608,8 @@ private struct TireItem: View {
                         .font(.system(size: 12, weight: .semibold))
                         .tracking(-0.06)
                         .foregroundStyle(Color.textMuted)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                         .background(
