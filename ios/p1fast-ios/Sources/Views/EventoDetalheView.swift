@@ -254,7 +254,7 @@ struct EventoDetalheView: View {
             }
             .buttonStyle(.plain)
             Spacer()
-            Button(action: { /* Edit fica pro Sprint 1A.3 */ }) {
+            Button(action: { sheet = .editar }) {
                 Text("Editar")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(Color.textMuted)
