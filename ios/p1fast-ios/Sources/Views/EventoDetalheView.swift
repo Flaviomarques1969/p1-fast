@@ -437,6 +437,8 @@ enum EventoDetalheSheet: Identifiable, Equatable {
     case triagemVideo(stintId: String)
     case posStint(stintId: String)
     case pendencias
+    case editar
+    case stintMock(StintMock)
 
     var id: String {
         switch self {
@@ -445,6 +447,8 @@ enum EventoDetalheSheet: Identifiable, Equatable {
         case .triagemVideo(let id): return "triagem-\(id)"
         case .posStint(let id): return "pos-\(id)"
         case .pendencias: return "pendencias"
+        case .editar: return "editar"
+        case .stintMock(let stint): return "stintmock-\(stint.id)"
         }
     }
 }
