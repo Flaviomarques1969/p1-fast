@@ -690,3 +690,39 @@ private struct TireItem: View {
         return parts.joined(separator: " · ")
     }
 }
+
+// MARK: - Combustível rail (Etanol / Gasolina)
+// Padrão do carro: 2 opções, default etanol (decisão Flávio 19/06/2026).
+
+private struct CombustivelRail: View {
+    @Binding var selection: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            opcao("Etanol", value: "etanol")
+            opcao("Gasolina", value: "gasolina")
+        }
+    }
+
+    @ViewBuilder
+    private func opcao(_ label: String, value: String) -> some View {
+        let isActive = selection == value
+        Button { selection = value } label: {
+            Text(label)
+                .font(.system(size: 14, weight: .semibold))
+                .tracking(-0.07)
+                .foregroundStyle(isActive ? Color.onAccent : Color.textMuted)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .fill(isActive ? Color.accent : Color.surfaceRaised)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .stroke(isActive ? Color.accent : Color.border, lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+}
