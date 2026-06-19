@@ -7,8 +7,8 @@
 // Decisões do prompt #14:
 //   "Marca / composto" (input livre, ex "Pirelli P1 — radial") → coluna `marca`
 //   "Medida" (ex "205/50R16")                                  → coluna `medida`
-//   "Tipo" (3-button rail)                                     → coluna `composto`
-//                                                                (radial | slick | rua)
+//   "Tipo" (2-button rail)                                     → coluna `composto`
+//                                                                (radial | semi-slick)
 //   "Apelido" (mockup) — OMITIDO no v1, schema não tem coluna.
 //   "modelo" da tabela fica NULL — v1 não separa marca/modelo.
 //
