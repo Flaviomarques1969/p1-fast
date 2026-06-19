@@ -2749,6 +2749,14 @@ html,body{
 }
 .fr-delta strong{color:#FF5A4E;font-weight:300;}
 
+/* Bloco VMIN ligado no dado real (Flávio 19/06): título VISÍVEL, número da mínima em
+   ouro (não vermelho de erro), unidade pequena e marcação da configuração (carro + pneu). */
+.b-custom.is-vmin .fr-title{ font-size:11px; color:#EAD9A0; font-weight:600; }
+.b-custom.is-vmin .fr-delta strong{ color:#FFD24A; font-weight:400; }
+.b-custom.is-vmin .fr-delta.empty strong{ color:rgba(255,210,74,0.30); }
+.vmin-unit{ font-size:8px; font-weight:400; letter-spacing:.06em; color:rgba(255,210,74,0.6); margin-left:3px; text-transform:lowercase; }
+.vmin-config{ text-align:center; font-size:9px; letter-spacing:.09em; text-transform:uppercase; color:rgba(150,160,175,0.72); padding-top:5px; }
+
 /* ===== FRENAGEM redesenhada (Flávio 15/06) — classes próprias; NÃO compartilha com VMIN ===== */
 .frx-body{display:flex;gap:10px;align-items:stretch;min-height:54px;margin-top:2px;}
 .frx-chart{flex:1 1 auto;min-width:0;display:block;}
