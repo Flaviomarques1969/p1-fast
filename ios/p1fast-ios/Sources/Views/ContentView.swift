@@ -242,6 +242,7 @@ private struct ReadyRoot: View {
             .environmentObject(combustivelRepo)
             .environmentObject(stintRepo)
             .environmentObject(pneuRepo)
+            .environmentObject(freioRepo)
             .environmentObject(trackRepo)
             .environmentObject(licaoRepo)
             .environmentObject(pendenciaRepo)
