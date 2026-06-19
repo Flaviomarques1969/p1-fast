@@ -17,9 +17,9 @@
 // pura: não acessa rede nem DOM. Roda em Node e no navegador igual.
 
 import { normalizarTipoPneu } from '../cockpit/tipo-pneu-normalizer.js';
-import { _internos } from './passagem-real.js';
+import { _internos as _passagemInternos } from './passagem-real.js';
 
-const metros = _internos.metros;
+const metros = _passagemInternos.metros;
 const R = (n) => Math.round(n);
 
 const KMH_BOM = 1;   // |Δ| ≤ 1 km/h → no ponto
