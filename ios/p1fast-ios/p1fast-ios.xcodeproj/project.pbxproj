@@ -14,11 +14,11 @@
 		055C18B1478B09138871A657 /* SincronizacaoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81212C05D55C55EC7D0C0005 /* SincronizacaoView.swift */; };
 		1300778DB047AD216AF6FDDB /* PilotoCadastroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7258210661C7A35F7DAFA577 /* PilotoCadastroView.swift */; };
 		142C9DCAC1EF4B03B0ABAB71 /* EventoDetalheView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F057E5C739BCFEF58D4DC92A /* EventoDetalheView.swift */; };
-		1D264B17999D8E55D5A9E9D2 /* EstoqueViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49874E5180DDD1195BB5910A /* EstoqueViews.swift */; };
 		2114E39350EB63E1FFABAD27 /* SyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96D7C90709E3E3EF698E6047 /* SyncCoordinator.swift */; };
 		2314BD7294F0A120604868B8 /* URLSessionTransports.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF3C03E3CAAE9097BE43C56 /* URLSessionTransports.swift */; };
 		2521481BC442C82EEFB26A3E /* VoltaVideoRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 356230A6F62480E82D3CEF1A /* VoltaVideoRepository.swift */; };
 		2841E12C02FD0F7E9A5A9506 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4251545DEF1F73BD4CF7690E /* HomeView.swift */; };
+		2C154C626F0D9663D975F124 /* FreioCadastroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B1887BA3FF1254C827063C /* FreioCadastroView.swift */; };
 		2C67A010E1492394FB16EDAA /* SupabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A98EA0B59E53DA250FFA24 /* SupabaseManager.swift */; };
 		2E22B429D84E982E66BF487A /* GaragemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A2A5CD812FBBD663E27ECE1 /* GaragemView.swift */; };
 		312FC3DBAC191F0E3F648CD1 /* TrackRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 855FED48602FC362EEA010A8 /* TrackRepository.swift */; };
@@ -29,9 +29,12 @@
 		3A3D994CDA33E819A491FC90 /* RealtimeCockpitTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D8DB443040FF0628B1627B /* RealtimeCockpitTransport.swift */; };
 		3C723CF342C94B20D9DDC593 /* PilotoRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E4DC20BF1F609324F2C9EE9 /* PilotoRepository.swift */; };
 		3C8251E2BB2C8FB4CECCC2AA /* Reachability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91CA204B86C9BBCF364316F9 /* Reachability.swift */; };
+		3D16141CCD0BEB74D7B1AC04 /* FreioRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E53E3A33CD5AC911BCFB2B4 /* FreioRepository.swift */; };
+		3D83D40BA4689651831FE2A6 /* ArquivoRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EF2821E36C0CBA71A934E88 /* ArquivoRepository.swift */; };
 		3EA4182833C07B9ADF3BDBED /* ConfiguradorTrechoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E650BB555CE33EF937913221 /* ConfiguradorTrechoView.swift */; };
 		3FA48650CF026367DF94E0C0 /* LicaoListaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B004900D5C1698CE0C161937 /* LicaoListaView.swift */; };
 		4A50FE8B113FA568C5955E0A /* CarroSetupOverrides.swift in Sources */ = {isa = PBXBuildFile; fileRef = C76C98240888EE064C4D2EC5 /* CarroSetupOverrides.swift */; };
+		4AAAA3319B66F7C1BF69E54A /* EstoqueRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 843A485DEE1D84BF8A0F2EDD /* EstoqueRepository.swift */; };
 		4C929D902D2C80185A3A89F8 /* PecaViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBF64001749C7FEA85FB9446 /* PecaViews.swift */; };
 		57CA37433E4010E13BE3EFD4 /* CameraPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = D07345B44329868693017D6D /* CameraPicker.swift */; };
 		5B8DB25B850377BB0D0DE5EF /* CarroNovoFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2871683CCDBF80DA9CED8A64 /* CarroNovoFormView.swift */; };
@@ -39,11 +42,9 @@
 		5E4293E8007960583EF0C9F6 /* PassageiroCadastroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 929E850CB75095F3CADEF4B6 /* PassageiroCadastroView.swift */; };
 		5F5D9D3E8629E83D6CD0E261 /* EventoRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D475C80F681ED1F05FC53B5 /* EventoRepository.swift */; };
 		65468450ADCCFC8E14DBEFE0 /* Daily in Frameworks */ = {isa = PBXBuildFile; productRef = 657FCFF4ED304B535B0A1FDA /* Daily */; };
+		68972A87B78B98D432557DEA /* StintPlanejamentoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36764A94CBF4003D3C59D62 /* StintPlanejamentoView.swift */; };
 		6F90A7452F0F5831913118ED /* CombustivelRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC43A445C874747C1D6C3A8D /* CombustivelRepository.swift */; };
 		71CD65975AB8E77F128B5E60 /* AssistirView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F0C67C4E0BA41DE1CC674DA /* AssistirView.swift */; };
-		5717A0117E57000000000C01 /* CatalogoTreinos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5717A0117E57000000000C02 /* CatalogoTreinos.swift */; };
-		5717A0117E57000000000C03 /* StintPlanoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5717A0117E57000000000C04 /* StintPlanoView.swift */; };
-		5717A0117E57000000000B01 /* StintPlanejamentoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5717A0117E57000000000B02 /* StintPlanejamentoView.swift */; };
 		736D869211707A62F9693C61 /* P1FastCore in Frameworks */ = {isa = PBXBuildFile; productRef = B3F0276D699418949A723AA1 /* P1FastCore */; };
 		73AF37D86286B893F9C9FD29 /* LowPowerModeMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12D3CA77D8F9695EEC42D36E /* LowPowerModeMonitor.swift */; };
 		7840C75F60712E4685E865CA /* StintCaptureCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AFD5372AA8961DDFA575D26 /* StintCaptureCoordinator.swift */; };
@@ -52,12 +53,14 @@
 		7D9C6DCB181D22F53E8E0AC4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 839526E2A03B6C2ED09D4907 /* ContentView.swift */; };
 		7DD12AAE384BF8B717015A32 /* HubMockLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 409F50C780B13E771E4147CB /* HubMockLauncher.swift */; };
 		7DEE37DA3AE91D671C006B0D /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEAFFC3CE0E3700619673CEE /* LoginView.swift */; };
+		800B07F85E6CB706EDC162D8 /* EstoqueViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA20A5976153FD8640143758 /* EstoqueViews.swift */; };
 		81D2590E20F42F5E8634D88B /* CarroHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA34E80FDFC9B17B68632F35 /* CarroHubView.swift */; };
 		82318A9F1DB6BFFD6D20BB07 /* SummaryStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = B17051FF421D051EE979161D /* SummaryStats.swift */; };
 		878C19864476206B162D941B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9AF697E035B2E094B09108F9 /* Assets.xcassets */; };
 		8E31E4CDC675BA24DA6E323C /* StintCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 771504D0E86F29E7E1F615E2 /* StintCaptureView.swift */; };
 		8E3DAF8B6F3BE8E346213A37 /* StintRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52184FDD398B02FA4752681B /* StintRepository.swift */; };
 		8FB6DBD08681434559524D83 /* CarroModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0390017441A8A36F834BDC25 /* CarroModalView.swift */; };
+		903455C9BA7BFFAE7336A54D /* CatalogoTreinos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E92639021F1621F9AC3F72C /* CatalogoTreinos.swift */; };
 		91C3521B7A7A4CC1C6B0E4DA /* LiveTelemetryRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 053AA78D342F7B78C9FFC17E /* LiveTelemetryRecorder.swift */; };
 		93671B3442FECF7D886A1861 /* CarroFoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D0AE27887C241162055EE07 /* CarroFoto.swift */; };
 		95A022ADA0074FA202C414F5 /* ThemeShowcaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6589CA76112B0192B9A53BD8 /* ThemeShowcaseView.swift */; };
@@ -67,10 +70,8 @@
 		986B13F9CB4F35A8CBDC9D46 /* VoltaVideoIndexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 825CC2373970AE8D997CFBC4 /* VoltaVideoIndexer.swift */; };
 		99A8671050630E34B1F457EA /* LicaoRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FBA0DEE7AB4736707796F45 /* LicaoRepository.swift */; };
 		9AD1A7216B517716FBABA622 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A75DE870DF04512BFB7C2BA1 /* SessionManager.swift */; };
-		9B39E68705CCB0EC9E4371B5 /* EstoqueRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D48CD13346E0F0BB19DF213 /* EstoqueRepository.swift */; };
-		AA10ED17000000000000FE01 /* ArquivoRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10ED17000000000000FE02 /* ArquivoRepository.swift */; };
-		AA10ED17000000000000FE03 /* ApagadosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10ED17000000000000FE04 /* ApagadosView.swift */; };
 		9CD8AE8D16D352F6EE222F57 /* BarcodeScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 016229CBCF86E14F58ADD584 /* BarcodeScannerView.swift */; };
+		9D390F314F8FF2B47D7D79CD /* StintPlanoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAC883E1802B405F4ABE798C /* StintPlanoView.swift */; };
 		9E8DC084A44D5CF5DEFDB5AA /* Chip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F490211A002128465D71E11 /* Chip.swift */; };
 		A0A815EC111AC330FB8484AD /* BuscaPrecoMLView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8460C9EF81202B7826CE9893 /* BuscaPrecoMLView.swift */; };
 		A7B742B5C40132488FA7F925 /* CockpitGpsPublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5930CA18B70B0173C7E443B /* CockpitGpsPublisher.swift */; };
@@ -96,6 +97,7 @@
 		D6B8549319597DDE53204224 /* PistaBrasilia.swift in Sources */ = {isa = PBXBuildFile; fileRef = 069205E993CEA73B40F2BE45 /* PistaBrasilia.swift */; };
 		DB5448127DA0BD4BDC8C15C4 /* EventoNovoFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8DF3C81C1D5F70ECA1A616 /* EventoNovoFormView.swift */; };
 		DC2DC3AACC3A5F929DA5BDFD /* LiveKalmanProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFB1764FEF40BC9C2356501 /* LiveKalmanProcessor.swift */; };
+		DCD8E140A31065E8B209679C /* ApagadosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48DE8DADE09B1CADB2BE07D8 /* ApagadosView.swift */; };
 		DE0267B6AE71F7084BD54C53 /* PneuRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0369DF419BB97181FF6FE6D0 /* PneuRepository.swift */; };
 		DE4CFD7C365B51A21024530A /* SetupAvancadoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0EF99757FD0516FA77EC279 /* SetupAvancadoView.swift */; };
 		E3DE2A8186A74405CD4D2586 /* SyncStatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9411252FE97C94D57AF341A7 /* SyncStatusBadge.swift */; };
@@ -118,14 +120,13 @@
 		12D3CA77D8F9695EEC42D36E /* LowPowerModeMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LowPowerModeMonitor.swift; sourceTree = "<group>"; };
 		139F414C2942139A9367A3B2 /* EventoMockSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventoMockSummary.swift; sourceTree = "<group>"; };
 		162332DAA2D671F61DFE3881 /* StintModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StintModalView.swift; sourceTree = "<group>"; };
+		1E53E3A33CD5AC911BCFB2B4 /* FreioRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreioRepository.swift; sourceTree = "<group>"; };
 		1F0C67C4E0BA41DE1CC674DA /* AssistirView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistirView.swift; sourceTree = "<group>"; };
-		5717A0117E57000000000C02 /* CatalogoTreinos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogoTreinos.swift; sourceTree = "<group>"; };
-		5717A0117E57000000000C04 /* StintPlanoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StintPlanoView.swift; sourceTree = "<group>"; };
-		5717A0117E57000000000B02 /* StintPlanejamentoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StintPlanejamentoView.swift; sourceTree = "<group>"; };
 		2285A445626E15C137E07CCA /* CarroRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarroRepository.swift; sourceTree = "<group>"; };
 		253F1283A784C08D44C00419 /* p1fast-ios.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "p1fast-ios.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		2871683CCDBF80DA9CED8A64 /* CarroNovoFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarroNovoFormView.swift; sourceTree = "<group>"; };
 		2DB77BA69E229FB9FB0640EF /* PecaRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PecaRepository.swift; sourceTree = "<group>"; };
+		2EF2821E36C0CBA71A934E88 /* ArquivoRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArquivoRepository.swift; sourceTree = "<group>"; };
 		334E323E30AB4D759B43CCD6 /* CombustivelListaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombustivelListaView.swift; sourceTree = "<group>"; };
 		356230A6F62480E82D3CEF1A /* VoltaVideoRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoltaVideoRepository.swift; sourceTree = "<group>"; };
 		39166EFD333716A606E1E58D /* LocalSocketCockpitTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalSocketCockpitTransport.swift; sourceTree = "<group>"; };
@@ -136,7 +137,7 @@
 		4657F1C12D473CEBB9B300D5 /* AppDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDatabase.swift; sourceTree = "<group>"; };
 		46BE3B245CF0DD85E14B841F /* BottomNav.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomNav.swift; sourceTree = "<group>"; };
 		47338A7791A1070397DBB87C /* LiveDetectorBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveDetectorBridge.swift; sourceTree = "<group>"; };
-		49874E5180DDD1195BB5910A /* EstoqueViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EstoqueViews.swift; sourceTree = "<group>"; };
+		48DE8DADE09B1CADB2BE07D8 /* ApagadosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApagadosView.swift; sourceTree = "<group>"; };
 		49D8DB443040FF0628B1627B /* RealtimeCockpitTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeCockpitTransport.swift; sourceTree = "<group>"; };
 		4BA50367740870D4FAE7DC8F /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		4D475C80F681ED1F05FC53B5 /* EventoRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventoRepository.swift; sourceTree = "<group>"; };
@@ -154,13 +155,12 @@
 		81212C05D55C55EC7D0C0005 /* SincronizacaoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SincronizacaoView.swift; sourceTree = "<group>"; };
 		825CC2373970AE8D997CFBC4 /* VoltaVideoIndexer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoltaVideoIndexer.swift; sourceTree = "<group>"; };
 		839526E2A03B6C2ED09D4907 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		843A485DEE1D84BF8A0F2EDD /* EstoqueRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EstoqueRepository.swift; sourceTree = "<group>"; };
 		8460C9EF81202B7826CE9893 /* BuscaPrecoMLView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuscaPrecoMLView.swift; sourceTree = "<group>"; };
 		855FED48602FC362EEA010A8 /* TrackRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackRepository.swift; sourceTree = "<group>"; };
 		8AFD5372AA8961DDFA575D26 /* StintCaptureCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StintCaptureCoordinator.swift; sourceTree = "<group>"; };
 		8B46267F0CDD084727B426AA /* TriagemVideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TriagemVideoView.swift; sourceTree = "<group>"; };
-		8D48CD13346E0F0BB19DF213 /* EstoqueRepository.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EstoqueRepository.swift; sourceTree = "<group>"; };
-		AA10ED17000000000000FE02 /* ArquivoRepository.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ArquivoRepository.swift; sourceTree = "<group>"; };
-		AA10ED17000000000000FE04 /* ApagadosView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ApagadosView.swift; sourceTree = "<group>"; };
+		8E92639021F1621F9AC3F72C /* CatalogoTreinos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogoTreinos.swift; sourceTree = "<group>"; };
 		8FB1DAD3E0069D0553F2FC75 /* CombustivelPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombustivelPickerView.swift; sourceTree = "<group>"; };
 		9082B3C66C9740F0278E7748 /* CombustivelCadastroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombustivelCadastroView.swift; sourceTree = "<group>"; };
 		91CA204B86C9BBCF364316F9 /* Reachability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reachability.swift; sourceTree = "<group>"; };
@@ -172,6 +172,8 @@
 		9BB101BF9D5EA4E710E46135 /* AirPlayDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirPlayDetector.swift; sourceTree = "<group>"; };
 		9D0AE27887C241162055EE07 /* CarroFoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarroFoto.swift; sourceTree = "<group>"; };
 		9EBAFD865ABE66878E6C6387 /* TesteAoVivoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TesteAoVivoView.swift; sourceTree = "<group>"; };
+		A1B1887BA3FF1254C827063C /* FreioCadastroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreioCadastroView.swift; sourceTree = "<group>"; };
+		A36764A94CBF4003D3C59D62 /* StintPlanejamentoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StintPlanejamentoView.swift; sourceTree = "<group>"; };
 		A75DE870DF04512BFB7C2BA1 /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
 		ACAB3545025A5E78E5DE8AEE /* ManutencaoConsumiveisView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManutencaoConsumiveisView.swift; sourceTree = "<group>"; };
 		AF8DF3C81C1D5F70ECA1A616 /* EventoNovoFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventoNovoFormView.swift; sourceTree = "<group>"; };
@@ -185,6 +187,7 @@
 		C44B2A9473ECC2C908EFE331 /* PessoasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PessoasView.swift; sourceTree = "<group>"; };
 		C76C98240888EE064C4D2EC5 /* CarroSetupOverrides.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarroSetupOverrides.swift; sourceTree = "<group>"; };
 		C8419148994E63AE6CDDCE16 /* PassageiroRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PassageiroRepository.swift; sourceTree = "<group>"; };
+		CA20A5976153FD8640143758 /* EstoqueViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EstoqueViews.swift; sourceTree = "<group>"; };
 		CBF64001749C7FEA85FB9446 /* PecaViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PecaViews.swift; sourceTree = "<group>"; };
 		CE01C3EC39E2EC1C53915E08 /* PneuPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PneuPickerView.swift; sourceTree = "<group>"; };
 		CEF3C03E3CAAE9097BE43C56 /* URLSessionTransports.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLSessionTransports.swift; sourceTree = "<group>"; };
@@ -201,6 +204,7 @@
 		F057E5C739BCFEF58D4DC92A /* EventoDetalheView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventoDetalheView.swift; sourceTree = "<group>"; };
 		F1B65222D51333D963A315CB /* EtiquetaOCR.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EtiquetaOCR.swift; sourceTree = "<group>"; };
 		FA34E80FDFC9B17B68632F35 /* CarroHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarroHubView.swift; sourceTree = "<group>"; };
+		FAC883E1802B405F4ABE798C /* StintPlanoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StintPlanoView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -300,26 +304,27 @@
 		55EA84D49EE64D7CA3CD17E6 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				48DE8DADE09B1CADB2BE07D8 /* ApagadosView.swift */,
 				1F0C67C4E0BA41DE1CC674DA /* AssistirView.swift */,
-				5717A0117E57000000000C02 /* CatalogoTreinos.swift */,
-				5717A0117E57000000000C04 /* StintPlanoView.swift */,
-				5717A0117E57000000000B02 /* StintPlanejamentoView.swift */,
 				016229CBCF86E14F58ADD584 /* BarcodeScannerView.swift */,
 				8460C9EF81202B7826CE9893 /* BuscaPrecoMLView.swift */,
 				D07345B44329868693017D6D /* CameraPicker.swift */,
 				FA34E80FDFC9B17B68632F35 /* CarroHubView.swift */,
 				0390017441A8A36F834BDC25 /* CarroModalView.swift */,
 				2871683CCDBF80DA9CED8A64 /* CarroNovoFormView.swift */,
+				8E92639021F1621F9AC3F72C /* CatalogoTreinos.swift */,
 				9082B3C66C9740F0278E7748 /* CombustivelCadastroView.swift */,
 				334E323E30AB4D759B43CCD6 /* CombustivelListaView.swift */,
 				8FB1DAD3E0069D0553F2FC75 /* CombustivelPickerView.swift */,
 				E650BB555CE33EF937913221 /* ConfiguradorTrechoView.swift */,
 				839526E2A03B6C2ED09D4907 /* ContentView.swift */,
+				CA20A5976153FD8640143758 /* EstoqueViews.swift */,
 				F1B65222D51333D963A315CB /* EtiquetaOCR.swift */,
 				F057E5C739BCFEF58D4DC92A /* EventoDetalheView.swift */,
 				139F414C2942139A9367A3B2 /* EventoMockSummary.swift */,
 				AF8DF3C81C1D5F70ECA1A616 /* EventoNovoFormView.swift */,
 				D86DDF0483C4332C5AD704DC /* EventosListaView.swift */,
+				A1B1887BA3FF1254C827063C /* FreioCadastroView.swift */,
 				5A2A5CD812FBBD663E27ECE1 /* GaragemView.swift */,
 				4251545DEF1F73BD4CF7690E /* HomeView.swift */,
 				409F50C780B13E771E4147CB /* HubMockLauncher.swift */,
@@ -338,14 +343,14 @@
 				81212C05D55C55EC7D0C0005 /* SincronizacaoView.swift */,
 				771504D0E86F29E7E1F615E2 /* StintCaptureView.swift */,
 				162332DAA2D671F61DFE3881 /* StintModalView.swift */,
+				A36764A94CBF4003D3C59D62 /* StintPlanejamentoView.swift */,
+				FAC883E1802B405F4ABE798C /* StintPlanoView.swift */,
 				9411252FE97C94D57AF341A7 /* SyncStatusBadge.swift */,
 				1298033562868A4C30B884D8 /* TelemetriaView.swift */,
 				9EBAFD865ABE66878E6C6387 /* TesteAoVivoView.swift */,
 				6589CA76112B0192B9A53BD8 /* ThemeShowcaseView.swift */,
 				43F3A2677E46856380EEA8BF /* TrechoListaView.swift */,
 				8B46267F0CDD084727B426AA /* TriagemVideoView.swift */,
-				49874E5180DDD1195BB5910A /* EstoqueViews.swift */,
-				AA10ED17000000000000FE04 /* ApagadosView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -384,11 +389,14 @@
 		AE3A9493BC39695B12A2E3BB /* Persistence */ = {
 			isa = PBXGroup;
 			children = (
+				2EF2821E36C0CBA71A934E88 /* ArquivoRepository.swift */,
 				9D0AE27887C241162055EE07 /* CarroFoto.swift */,
 				2285A445626E15C137E07CCA /* CarroRepository.swift */,
 				C76C98240888EE064C4D2EC5 /* CarroSetupOverrides.swift */,
 				EC43A445C874747C1D6C3A8D /* CombustivelRepository.swift */,
+				843A485DEE1D84BF8A0F2EDD /* EstoqueRepository.swift */,
 				4D475C80F681ED1F05FC53B5 /* EventoRepository.swift */,
+				1E53E3A33CD5AC911BCFB2B4 /* FreioRepository.swift */,
 				3FBA0DEE7AB4736707796F45 /* LicaoRepository.swift */,
 				C8419148994E63AE6CDDCE16 /* PassageiroRepository.swift */,
 				2DB77BA69E229FB9FB0640EF /* PecaRepository.swift */,
@@ -398,8 +406,6 @@
 				52184FDD398B02FA4752681B /* StintRepository.swift */,
 				855FED48602FC362EEA010A8 /* TrackRepository.swift */,
 				356230A6F62480E82D3CEF1A /* VoltaVideoRepository.swift */,
-				8D48CD13346E0F0BB19DF213 /* EstoqueRepository.swift */,
-				AA10ED17000000000000FE02 /* ArquivoRepository.swift */,
 			);
 			path = Persistence;
 			sourceTree = "<group>";
@@ -478,7 +484,7 @@
 				12C8328A3FCB297587A87187 /* XCRemoteSwiftPackageReference "daily-client-ios" */,
 				FC43FCCC12172E3266EEE8CD /* XCRemoteSwiftPackageReference "GRDB.swift" */,
 				9DFEDACA3CE3368532DF317E /* XCRemoteSwiftPackageReference "supabase-swift" */,
-				3C48F76374C6E06E226DE5FB /* XCLocalSwiftPackageReference "p1fast-core" */,
+				3C48F76374C6E06E226DE5FB /* XCLocalSwiftPackageReference "../p1fast-core" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 286941A5E939DBF355AC9FE9 /* Products */;
@@ -507,11 +513,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				97C651DF50E293B5C6C03EC4 /* AirPlayDetector.swift in Sources */,
+				DCD8E140A31065E8B209679C /* ApagadosView.swift in Sources */,
 				CAFB467014D33A664AFEA67F /* AppDatabase.swift in Sources */,
+				3D83D40BA4689651831FE2A6 /* ArquivoRepository.swift in Sources */,
 				71CD65975AB8E77F128B5E60 /* AssistirView.swift in Sources */,
-				5717A0117E57000000000C01 /* CatalogoTreinos.swift in Sources */,
-				5717A0117E57000000000C03 /* StintPlanoView.swift in Sources */,
-				5717A0117E57000000000B01 /* StintPlanejamentoView.swift in Sources */,
 				9CD8AE8D16D352F6EE222F57 /* BarcodeScannerView.swift in Sources */,
 				C782693A038BA9D2B52AB077 /* BottomNav.swift in Sources */,
 				A0A815EC111AC330FB8484AD /* BuscaPrecoMLView.swift in Sources */,
@@ -523,6 +528,7 @@
 				5B8DB25B850377BB0D0DE5EF /* CarroNovoFormView.swift in Sources */,
 				BF1BC3D206E1BFE771A190FE /* CarroRepository.swift in Sources */,
 				4A50FE8B113FA568C5955E0A /* CarroSetupOverrides.swift in Sources */,
+				903455C9BA7BFFAE7336A54D /* CatalogoTreinos.swift in Sources */,
 				9E8DC084A44D5CF5DEFDB5AA /* Chip.swift in Sources */,
 				A7B742B5C40132488FA7F925 /* CockpitGpsPublisher.swift in Sources */,
 				356C87BA35F17C3FAF721842 /* CombustivelCadastroView.swift in Sources */,
@@ -532,6 +538,8 @@
 				3EA4182833C07B9ADF3BDBED /* ConfiguradorTrechoView.swift in Sources */,
 				ACD0C3333CFD8B23EC8CF654 /* Configuration.swift in Sources */,
 				7D9C6DCB181D22F53E8E0AC4 /* ContentView.swift in Sources */,
+				4AAAA3319B66F7C1BF69E54A /* EstoqueRepository.swift in Sources */,
+				800B07F85E6CB706EDC162D8 /* EstoqueViews.swift in Sources */,
 				B057719AA91D218EA6637B51 /* EtiquetaOCR.swift in Sources */,
 				142C9DCAC1EF4B03B0ABAB71 /* EventoDetalheView.swift in Sources */,
 				95B2A32565288C523837A89E /* EventoMockSummary.swift in Sources */,
@@ -540,6 +548,8 @@
 				C37D93B3C8526BF4FC557D07 /* EventosListaView.swift in Sources */,
 				B39F7F077B8D314FB9A3C41E /* EyebrowHeader.swift in Sources */,
 				BF29F7E9696A4AFE2820D3B1 /* FAB.swift in Sources */,
+				2C154C626F0D9663D975F124 /* FreioCadastroView.swift in Sources */,
+				3D16141CCD0BEB74D7B1AC04 /* FreioRepository.swift in Sources */,
 				2E22B429D84E982E66BF487A /* GaragemView.swift in Sources */,
 				2841E12C02FD0F7E9A5A9506 /* HomeView.swift in Sources */,
 				7DD12AAE384BF8B717015A32 /* HubMockLauncher.swift in Sources */,
@@ -575,6 +585,8 @@
 				7840C75F60712E4685E865CA /* StintCaptureCoordinator.swift in Sources */,
 				8E31E4CDC675BA24DA6E323C /* StintCaptureView.swift in Sources */,
 				D5156CC89A714F94B6DDCB60 /* StintModalView.swift in Sources */,
+				68972A87B78B98D432557DEA /* StintPlanejamentoView.swift in Sources */,
+				9D390F314F8FF2B47D7D79CD /* StintPlanoView.swift in Sources */,
 				8E3DAF8B6F3BE8E346213A37 /* StintRepository.swift in Sources */,
 				38B14E40E77BB8CC1FAD4FA2 /* StreamCoordinator.swift in Sources */,
 				82318A9F1DB6BFFD6D20BB07 /* SummaryStats.swift in Sources */,
@@ -592,10 +604,6 @@
 				2314BD7294F0A120604868B8 /* URLSessionTransports.swift in Sources */,
 				986B13F9CB4F35A8CBDC9D46 /* VoltaVideoIndexer.swift in Sources */,
 				2521481BC442C82EEFB26A3E /* VoltaVideoRepository.swift in Sources */,
-				9B39E68705CCB0EC9E4371B5 /* EstoqueRepository.swift in Sources */,
-				1D264B17999D8E55D5A9E9D2 /* EstoqueViews.swift in Sources */,
-				AA10ED17000000000000FE01 /* ArquivoRepository.swift in Sources */,
-				AA10ED17000000000000FE03 /* ApagadosView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -790,7 +798,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		3C48F76374C6E06E226DE5FB /* XCLocalSwiftPackageReference "p1fast-core" */ = {
+		3C48F76374C6E06E226DE5FB /* XCLocalSwiftPackageReference "../p1fast-core" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "../p1fast-core";
 		};

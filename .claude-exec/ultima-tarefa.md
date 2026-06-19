@@ -82,6 +82,44 @@
 - **Riscos:** subir foto em bucket de produção sem autorização (mitigado: só DEV); colisão de migração com outra frente (mitigado: VMIN é web); novo subsistema de imagem ainda não existe (peça nova, mais pesada).
 - **Status inicial:** iniciado — fase de mapeamento (workflow rodando).
 
+## DECISÕES DO FLÁVIO (19/06, retomada) — registradas em ~/.claude-decisoes/respostas/P1 Fast/20260619-163205-...
+- ETAPA 3: "Criar cadastro próprio (igual pneu)" — cadastro próprio de freio/pastilha por carro; Padrão do carro mostra o tipo.
+- ETAPA 4: "Construir agora; depósito em produção depois" — upload de foto construído em DEV agora; bucket em produção só com autorização literal depois.
+
+## MAPEAMENTO (workflow 4 leitores, prova arquivo:linha) — achados que guiaram o desenho
+- Catálogo "Manutenção · consumíveis" (CatalogoConsumiveisCelta) é FIXO/hardcoded; lá não se "cadastra item pra escolher" como no pneu → por isso Flávio pediu cadastro próprio. Área "Freios" tem pastilhas/discos/fluido_freio/linhas_freio (reais, aprovados).
+- Molde a espelhar = PNEU: tabela `pneus` (carro_id FK) + PneuRepository + PneuCadastroView + seção CRUD em CarroModalView.
+- FOTO hoje 100% local (CarroFoto/EstoqueRepository/PecaRepository); `fotoUrl` = caminho local, NÃO sobe imagem. Cano de sync de DADOS existe (SyncQueue→Edge `sync`/`pull`) mas não carrega binário. SDK Supabase tem módulo Storage disponível, nunca usado. Só existe 1 projeto Supabase (fvhwltzhytpnhlqbttmd = PRODUÇÃO); sem projeto DEV separado → testar Storage de verdade exige bucket em produção (autorização).
+
+## EXECUÇÃO — ETAPA 3 (freio/pastilha como cadastro próprio, igual pneu) — 19/06/2026
+Ambiente: DESENVOLVIMENTO. Produção NÃO alterada. Backup: `.claude-exec/backup-etapa3-freios-20260619-163831/`.
+Desenho (fiel às palavras do Flávio, nada inventado): seção "Freios cadastrados" no grupo Padrão do carro (logo após Identidade/foto, antes dos Pneus); cada item = Tipo (Pastilha/Disco/Fluido, do catálogo real) + Marca/modelo (livre) + Especificação (opcional). No carro aparece o TIPO em destaque + marca.
+Arquivos:
+- NOVO modelo `Freio` em Models.swift (tabela `freios`, espelha Pneu; CodingKeys snake_case → sobe pela sync_queue).
+- Migração local `v34_freios` (Migrations.swift) — CREATE TABLE freios + índices (espelha pneus). Próxima após v33.
+- NOVO `FreioRepository.swift` (espelha PneuRepository: bootstrap/list/loadAll/upsert/delete + enqueue na sync_queue) + enum `FreioTipo` (pastilhas/discos/fluido_freio, do catálogo).
+- NOVO `FreioCadastroView.swift` (espelha PneuCadastroView: rail de Tipo + Marca/modelo + Especificação + Apagar com confirmação).
+- EDIT `CarroModalView.swift`: @EnvironmentObject freioRepo + estado/sheet/alert + `sectionFreiosCadastrados` no grupo Padrão + componentes FreioItem/AddFreioButton/EmptyFreioHint.
+- EDIT `ContentView.swift` e `HubMockLauncher.swift`: cria/injeta/bootstrap do FreioRepository (igual pneu).
+- SERVIDOR (DEV, NÃO aplicado em prod): `freios` em ALLOWED_TABLES (sync) e TEAM_TABLES (pull) + nova migração Postgres `supabase/migrations/0047_freios.sql` (espelha pneus, RLS por time).
+- Projeto regenerado com `xcodegen` (2 arquivos novos entraram).
+VALIDAÇÃO (saída real):
+- `xcodebuild build -scheme p1fast-ios -destination 'generic/platform=iOS Simulator'` → **BUILD SUCCEEDED, 0 erros**.
+- App subido no simulador (modo `--p1-hub-mock`) → boot limpo, PID vivo, SEM crash/relatório de falha = migração v34 (tabela freios) aplica OK no banco.
+- `--p1-deep` abriu o Cadastro e, rolando, a seção **FREIOS CADASTRADOS** aparece no lugar certo (após foto/combustível, antes de Pneus) com estado vazio + botão "+ Adicionar freio". Provas: `.claude-exec/etapa3-freios-boot.png`, `etapa3-freios-cadastro.png`, `etapa3-freios-secao.png`.
+LIMITES HONESTOS: não cliquei "+ Adicionar freio" pra abrir o formulário (automação de clique do simulador é instável; o sheet é ligado idêntico ao do pneu, que funciona). Avisos de compilação sobre `var copy` no FreioRepository são IDÊNTICOS aos do PneuRepository (mesmo padrão aceito) — avisos, não erros.
+
+## TASK_DONE — ETAPA 3
+- Pedido original conferido: sim (Etapa 3 = freio/pastilha cadastro próprio igual pneu, mostra o tipo, em Manutenção/consumíveis)
+- Ambiente trabalhado: desenvolvimento
+- Produção foi alterada: não (servidor/migração escritos mas NÃO aplicados em prod)
+- Se produção foi alterada, autorização explícita registrada: n/a
+- Arquivos reais inspecionados: sim
+- Alterações feitas: sim (2 arquivos novos + 7 editados + 1 migração Postgres)
+- Testes/validação executados: sim (BUILD SUCCEEDED 0 erros + boot no simulador sem crash + 3 screenshots da seção)
+- Resultado: concluído em DEV (Etapa 3)
+- Pendências reais: (1) ETAPA 4 (fotos pra nuvem) ainda a construir em DEV — autorizada; (2) servidor (whitelist sync/pull) + Postgres 0047 aguardam "MIGRAR PARA PRODUÇÃO" pra valer na nuvem; (3) prova de clicar "+ Adicionar freio" no aparelho (clique humano).
+
 ---
 
 # Ultima tarefa — P1 Fast — VMIN no BLOCO DEDICADO (ligar real por config de pneu) — 19/06/2026
