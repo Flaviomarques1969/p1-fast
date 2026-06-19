@@ -67,6 +67,21 @@
 - ETAPA 3 — Freio e pastilha como item selecionado (mostra só o tipo). Precisa: desenhar o vínculo carro→item de estoque (qual freio/pastilha "atual"), UI de seleção no Padrão, exibir tipo. Confirmar desenho com Flávio antes (há +de uma forma).
 - ETAPA 4 — Foto persistir/sincronizar. Checar se já existe mecanismo de upload de imagem (pecas/estoque_item já têm foto_url) pra reusar; depois +coluna foto_url em carros + UI.
 
+## TASK_INIT — ETAPAS 3 e 4 (19/06/2026, retomada após /clear)
+- **Contexto:** o histórico do chat foi limpo (/clear). Recuperei o contexto pelo próprio diário + código real (não inferi de memória).
+- **Pedido (respostas do Flávio que fecham as 2 decisões pendentes):** "3. consumíveis. 4. b. para tudo. tudo deve ser enviado para nuvem."
+  - ETAPA 3 → freio e pastilha são cadastrados em "Manutenção · consumíveis"; no carro mostra SÓ O TIPO (clica e seleciona, igual pneu).
+  - ETAPA 4 → opção B: construir o envio de imagem pra nuvem AGORA e PARA TUDO (foto do carro + estoque + peças, que hoje são só locais).
+- **Objetivo (1 frase):** terminar a reorganização do cadastro do carro — Etapa 3 (vínculo carro→item de consumível mostrando só o tipo) e Etapa 4 (subir todas as fotos pra nuvem) — em DESENVOLVIMENTO.
+- **Critério de conclusão:** carro referencia freio/pastilha de "consumíveis" e exibe só o tipo; mecanismo de upload de imagem pra Supabase Storage construído e ligado para carro+estoque+peças, validado em DEV; build OK; nada de produção tocada sem autorização literal.
+- **Leitura confirmada (19/06):** ~/.claude/CLAUDE.md; ~/.claude-decisoes/padroes.md (vazio, 0 decisões); FLAVIO_EXECUTION_PROTOCOL.md; FLAVIO_DONE_CHECKLIST.md; FLAVIO_ENVIRONMENT_RULES.md; FLAVIO_COMMUNICATION_RULES.md; P1 Fast/CLAUDE.md.
+- **Ambiente alvo:** DESENVOLVIMENTO. **Produção protegida:** sim. **Produção alterada:** não. **Autorização produção:** NÃO recebida.
+- **ALERTA DE AMBIENTE (FLAVIO_ENVIRONMENT_RULES):** Etapa 4 mexe em STORAGE. "Alteração em storage/bucket produtivo" é PROIBIDA sem "MIGRAR PARA PRODUÇÃO". Logo, construir/testar SÓ contra storage de DEV. Subir bucket/foto em produção exige autorização literal depois.
+- **Verificação já feita (código real):** (a) NENHUMA foto vai pra nuvem hoje — CarroFoto/EstoqueRepository.salvarFoto/PecaRepository salvam imagem em arquivo LOCAL; `fotoUrl` é caminho local, não link de nuvem. (b) Existe cano de sync de DADOS (SyncQueue → Edge Functions sync/ingest/pull) que NÃO carrega imagem. (c) Última migração = v33_carro_combustivel → próxima é v34. (d) Frente VMIN ativa em paralelo mexe em web/command-box, NÃO em Migrations/iOS → sem colisão de número de migração.
+- **Plano (≤5 passos):** (1) [em curso] mapear infra real com workflow de 4 leitores (carro+migrações / itens-consumíveis-pneu / foto+storage+ambiente / pipeline-sync); (2) desenhar Etapa 3 (vínculo) e Etapa 4 (upload) com base no real e confirmar com Flávio o que tiver +de um caminho; (3) implementar em DEV (migração v34+, Models/Repository/UI; subsistema de upload de imagem só DEV); (4) build simulador + smokes; (5) reportar com prova + flag de produção.
+- **Riscos:** subir foto em bucket de produção sem autorização (mitigado: só DEV); colisão de migração com outra frente (mitigado: VMIN é web); novo subsistema de imagem ainda não existe (peça nova, mais pesada).
+- **Status inicial:** iniciado — fase de mapeamento (workflow rodando).
+
 ---
 
 # Ultima tarefa — P1 Fast — VMIN no BLOCO DEDICADO (ligar real por config de pneu) — 19/06/2026
