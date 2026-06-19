@@ -196,6 +196,12 @@ RESULTADO: cadastro de freios no ar de ponta a ponta em produção (tabela + fun
 - Resultado: concluído
 - Pendências reais: 0044 (vídeo) segue pendente e NÃO autorizada (deixei intacta de propósito); ETAPA 4 (fotos) a construir em DEV.
 
+## CORREÇÃO — instalar no iPhone do Flávio (19/06/2026)
+PROBLEMA reportado: "não aparece freios cadastrados" + "não fez a mudança que pedi" (ordem fixos→configuráveis).
+CAUSA REAL: a Etapa 3 + reorganização só tinham sido validadas no SIMULADOR; o aparelho do Flávio estava com a versão ANTIGA. Erro de processo (mandei validar onde a melhoria não chegou — anti-padrão já cobrado). CÓDIGO conferido e CORRETO: `var content` (CarroModalView:222-239) = header → "Padrão do carro" (Identidade[+foto+combustível] → Freios cadastrados → Pneus cadastrados) → "Configuração" (Pneus/pressão → Alinhamento/cambagem → Suspensão → Freios/bias → Motor). Bate com o pedido.
+AÇÃO: empacotei assinado pro device (xcodebuild generic/platform=iOS -allowProvisioningUpdates → BUILD SUCCEEDED) + instalei no iPhone do Flávio (devicectl UDID 00008140-000E2D611E6A801C → "App installed" rc0, é atualização por cima = dados preservados, migração v34 roda no 1º open) + abri o app (rc0).
+PENDENTE: confirmação visual do Flávio (carro → Cadastro → Padrão do carro com Freios cadastrados; Configuração abaixo).
+
 ---
 
 # Ultima tarefa — P1 Fast — VMIN no BLOCO DEDICADO (ligar real por config de pneu) — 19/06/2026
