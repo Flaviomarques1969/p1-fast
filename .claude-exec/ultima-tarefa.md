@@ -1,3 +1,20 @@
+# Ultima tarefa — P1 Fast — VMIN no BLOCO DEDICADO (ligar real por config de pneu) — 19/06/2026
+
+## EXECUÇÃO — Vmin = bloco dedicado, ligado no real (19/06/2026)
+- **Pedido (Flávio):** mostrou o bloco VMIN separado ("não consigo ver o título") → escolheu "ligar e consertar ele"; depois: "se esse bloco é o Vmin, NÃO precisa colocar o Vmin no componente Passagem".
+- **Ambiente:** DESENVOLVIMENTO (protótipo). Produção NÃO tocada.
+- **Feito:**
+  - REVERTI o Vmin que eu tinha posto na Passagem (número + tag de config saíram do buildPassagemPanel/getPassagemDataForCurve). Passagem voltou a entrada/ápice/saída.
+  - NOVO `web/command-box/vmin-curvas-reais.js` — gráfico do Vmin (série velocidade×distância-ao-Vmin; live=mediana, ghost=melhor) por config de pneu. Confiável = vale CRU (min < entrada E < saída).
+  - Painel: hook `__aplicarVminReal` + carregador "Etapa VMIN" no fim do body; `getVminVerdictForCurve` prefere o real; `vminChartSvg` eixos DINÂMICOS + ghost real + rótulo "Vmin"; `buildVminPanel` número da mínima (ouro) + selo honesto ("sem leitura limpa" onde não é vale) + tag "celta 1.4 · pneu"; **'vmin' fora do DEP_LIGACAO** (some o cinza); CSS do título visível.
+  - Backup: `_design-reference/_backups/mockup-...BACKUP-vmin-bloco-real-2026-06-19-1156.html`.
+- **Validação:** `node-smoke-vmin-curvas-reais.mjs` 9/0 (inclui CONSISTÊNCIA com o módulo da Passagem) + `node-smoke-vmin-aprendizado.mjs` 13/0; `npm run smoke` verde até o fim; sintaxe dos 3 <script> clássicos do painel OK; servidor 8078 entrega versão nova (vmin fora do DEP_LIGACAO=0, hook presente, Etapa VMIN presente, módulo+massa 200). Painel reaberto sem cache.
+- **Resultado:** Vmin real no bloco dedicado — número em CURVA 01 (109) e CURVA 2 (100); "sem leitura limpa"/"—" nas outras 6 (1 Hz não bracketou a freada); semi-slick sem dado (enche ao rodar); tudo enche com 25 Hz.
+- **Limite:** sem ferramenta headless no projeto → confirmação visual = Flávio no painel.
+- **Status:** concluído (DEV), aguardando validação visual do Flávio.
+
+---
+
 # Ultima tarefa — P1 Fast — LIGAR 2 BOTÕES MORTOS do Detalhe do Evento (iOS) — 19/06/2026
 
 ## TASK_INIT — Ligar "Editar" + abrir stint de exemplo (19/06/2026)
