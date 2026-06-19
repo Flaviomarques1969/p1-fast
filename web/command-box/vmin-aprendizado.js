@@ -14,9 +14,11 @@
 // devolvem a mesma referência.
 //
 // HONESTIDADE (igual ao resto do bloco a ~1 Hz): um Vmin só é CONFIÁVEL se o ponto
-// mais lento da passagem é INTERIOR (não o 1º nem o último ponto) e está abaixo da
-// entrada. Senão a freada não foi capturada no recorte do GPS de 1 Hz (a 100 km/h
-// cada leitura é ~28 m) e o número não vale — entra de verdade com 25 Hz (RaceBox).
+// mais lento da passagem é um VALE de verdade — mais baixo que a entrada E que a
+// saída (a freada foi capturada DENTRO do recorte). Se a mínima cair na borda
+// (ainda freando no fim do trecho), a freada continua fora do recorte do GPS de
+// 1 Hz (a 100 km/h cada leitura é ~28 m) e o número não vale — entra de verdade
+// com 25 Hz (RaceBox).
 //
 // Função pura: não acessa rede nem DOM. Roda em Node e no navegador igual.
 
