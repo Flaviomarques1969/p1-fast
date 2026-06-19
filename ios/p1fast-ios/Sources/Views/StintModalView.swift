@@ -238,7 +238,6 @@ struct StintModalView: View {
             .padding(.bottom, Spacing.sm)
 
             sectionConfiguracao
-            sectionObjetivo
             sectionProposito
             sectionVoltas
             sectionParadas
