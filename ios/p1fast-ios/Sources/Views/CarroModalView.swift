@@ -482,6 +482,26 @@ struct CarroModalView: View {
         }
     }
 
+    private var sectionFreiosCadastrados: some View {
+        sectionFrame(title: "Freios cadastrados") {
+            let freios = freioRepo.freiosByCarroId[carroId] ?? []
+            VStack(spacing: Spacing.sm) {
+                if freios.isEmpty {
+                    EmptyFreioHint()
+                } else {
+                    ForEach(freios, id: \.id) { freio in
+                        FreioItem(
+                            freio: freio,
+                            onEdit: { freioSheet = .editar(freio) },
+                            onDelete: { freioToDelete = freio }
+                        )
+                    }
+                }
+                AddFreioButton { freioSheet = .novo }
+            }
+        }
+    }
+
     @ViewBuilder
     private func sectionFrame<C: View>(title: String, @ViewBuilder content: () -> C) -> some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
