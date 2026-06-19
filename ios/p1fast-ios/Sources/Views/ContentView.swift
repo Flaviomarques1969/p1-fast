@@ -214,6 +214,7 @@ private struct ReadyRoot: View {
         _combustivelRepo = StateObject(wrappedValue: CombustivelRepository(queue: queue))
         _stintRepo = StateObject(wrappedValue: StintRepository(queue: queue))
         _pneuRepo = StateObject(wrappedValue: PneuRepository(queue: queue))
+        _freioRepo = StateObject(wrappedValue: FreioRepository(queue: queue))
         _trackRepo = StateObject(wrappedValue: TrackRepository(queue: queue))
         _licaoRepo = StateObject(wrappedValue: LicaoRepository(queue: queue))
         _pendenciaRepo = StateObject(wrappedValue: PendenciaRepository(queue: queue))
