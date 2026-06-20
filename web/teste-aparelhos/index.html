@@ -153,6 +153,7 @@ function renderGravacao(){
   }
 }
 function mostrarResumo(r){
+  recTela = 'salva';
   ultimaSessaoId = r.id;
   $('btnBaixar').disabled = false;
   const lac  = r.maiorLacunaMs ? (', maior buraco '+(r.maiorLacunaMs/1000).toFixed(1)+'s') : ', sem buracos';
