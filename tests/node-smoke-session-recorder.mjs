@@ -124,5 +124,21 @@ console.log('node-smoke-session-recorder');
   eq(dump.amostras[1].dados.rpm, 4200, '8.3 guardou o dado completo do motor');
 }
 
+// 9) Recuperação de órfã: recarregou a tela / notebook dormiu sem fechar a sessão
+{
+  const store = criarStoreMemoria();
+  const a = novo(store);                    // 1ª "carga" da página
+  a.g.gps({ lat: 1, lng: 2 }); a.r.av(40);
+  a.g.motor({ rpm: 3000, source: 'carro' }); // sessão fica aberta (status 'gravando')
+  const b = novo(store);                    // simula recarregar: novo gravador, MESMO armazenamento
+  const orfas = await b.g.recuperarOrfas();
+  eq(orfas.length, 1, '9.1 recuperou 1 sessão órfã (recarregou sem fechar)');
+  eq(orfas[0].nGps, 1, '9.2 órfã com 1 GPS');
+  eq(orfas[0].nMotor, 1, '9.3 órfã com 1 do motor');
+  eq(orfas[0].status, 'interrompida', '9.4 marcou como interrompida');
+  eq((await b.g.recuperarOrfas()).length, 0, '9.5 não recupera de novo (já fechada)');
+  ok('9.6 dado cru preservado: ' + store._debug.amostras.length + ' amostras intactas');
+}
+
 console.log(`\n${okN} ok / ${failN} fail`);
 process.exit(failN ? 1 : 0);
