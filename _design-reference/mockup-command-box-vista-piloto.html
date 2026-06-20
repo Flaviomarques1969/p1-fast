@@ -7791,7 +7791,7 @@ html,body{
     // <body> liga a fonte (vmin-curvas-reais.js).
     // 'stint' SAIU (Onda 1, 19/06): Voltas + Ritmo agora vêm do dado real (cérebro do
     // painel) — carregador no fim do <body>. 'coach' e 'stint-bar' seguem aguardando ligação.
-    var DEP_LIGACAO = ['mapa','shift-light','coach','delta-acum','stint-bar','checklist'];
+    var DEP_LIGACAO = ['mapa','shift-light','delta-acum','stint-bar','checklist'];  // 'coach' SAIU (Onda 3): comando real ligado
     function vistoFresco(f){ return SENSOR_SEEN[f] && (performance.now()-SENSOR_SEEN[f]<2500); }
     function atualizarBlocos(){
       Object.keys(SENSOR_DE).forEach(function(id){
