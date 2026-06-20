@@ -8055,6 +8055,43 @@ html,body{
   })();
 </script>
 
+<!-- ONDA 3 (2026-06-19): liga o bloco P1 COACH no DADO REAL via o motor pedagógico real
+     (src/domain/trecho-advisor.js). COMANDO + LIÇÃO + ANÁLISE saem das passagens reais do
+     Bubi. NOTA da volta e % da lição NÃO têm fonte real (faltam regras) -> sub-blocos marcados
+     "aguardando". ALERTA PREDITIVO é a Onda 5 -> também "aguardando". Sem carregar, mantém demo. -->
+<script type="module">
+  window.__coachRealMode = true;  // trava: a demonstração do coach não reescreve mais
+  window.__aplicarPainelCoach = function(c){
+    if(!c) return;
+    function setT(k,v){ var el=document.querySelector('[data-coach="'+k+'"]'); if(el!=null && v!=null) el.textContent=v; }
+    if(!document.getElementById('cb-subpend-css')){
+      var st=document.createElement('style'); st.id='cb-subpend-css';
+      st.textContent='.cb-subpend{position:relative;filter:grayscale(.9);opacity:.5;}'
+        +'.cb-subpend::after{content:"aguardando";position:absolute;top:2px;right:4px;'
+        +'background:#1a2236;color:#93b4ff;font:700 8px/1 -apple-system,Segoe UI,sans-serif;'
+        +'letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border-radius:999px;pointer-events:none;}';
+      document.head.appendChild(st);
+    }
+    setT('frase', c.frase);
+    setT('meta', (c.comando||'comando ativo') + (c.curva!=null ? ' · curva '+c.curva : ''));
+    setT('licao', c.licaoTitulo);
+    setT('licaoDesc', c.licaoDesc);
+    setT('analise', c.analise);
+    var pont=document.querySelector('.coach-pontuacao'); if(pont) pont.classList.add('cb-subpend');
+    var prog=document.querySelector('.coach-progresso'); if(prog) prog.classList.add('cb-subpend');
+    var pred=document.querySelector('.coach-preditivo'); if(pred) pred.classList.add('cb-subpend');
+    var bloco=document.querySelector('[data-block-id="coach"]'); if(bloco) bloco.classList.remove('cb-sem-real');
+  };
+  (async function(){
+    try{
+      var mod = await import('/web/command-box/cerebro/cerebro-coach.js');
+      var fx  = await (await fetch('/web/command-box/fixtures/passagens-bubi-brasilia.v1.json')).json();
+      var c = mod.avaliarCoach(fx.passagens, (fx._meta && fx._meta.ordemCurvas) || []);
+      window.__aplicarPainelCoach(c);
+    }catch(e){ console.warn('[onda3] coach real indisponível, mantendo demonstração:', e); }
+  })();
+</script>
+
 <!-- ITEM 3 (Flávio 18/06/2026): a bolinha (e a tela em sincronia) anda pela FRAÇÃO DE ARCO
      derivada do GPS REAL — reusa geoParaCommandBox (recalibração, item 1) + suavizador (item 2).
      DEV stand-in: a projeção roda aqui no protótipo; na produção a conta vai pra nuvem (não muda
