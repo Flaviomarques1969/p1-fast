@@ -59,6 +59,26 @@
 
 const PARSER_VERSION = '2.0.0';
 
+// ── Faixas físicas plausíveis do Bubi (Celta 1.4) ──────────────────────────
+// Usadas pelo filtro de sanidade leituraPlausivel(). Limites FOLGADOS de
+// propósito: o objetivo é pegar lixo grosseiro de leitura corrompida
+// (ex.: u16 0xFFFF -> rpm 65535, bateria 6553.5 V, lambda 65.535), NÃO recusar
+// dado de pista no limite. Memória do projeto: redline hard 6300/6350; Bubi
+// opera FRIO (água ideal 50, crítico 80); lambda WB (offset 62 ÷1000).
+// Limite é INCLUSIVO (reprova só com < min OU > max).
+export const FAIXAS_FISICAS = {
+  rpm:                { min: 0,    max: 8000 },  // redline hard 6300/6350; folga p/ ruído
+  batteryV:           { min: 6,    max: 16 },    // 12V automotivo; <6 morto, >16 regulador louco
+  waterTempC:         { min: -20,  max: 130 },   // Bubi opera FRIO; >130 impossível no Celta
+  airTempC:           { min: -20,  max: 90 },    // ar de admissão
+  lambda:             { min: 0.3,  max: 1.6 },   // sonda WB; Bubi ~0.77-0.92; fora = leitura suja
+  tpsPct:             { min: 0,    max: 100 },    // borboleta %
+  pedalAceleradorPct: { min: 0,    max: 100 },
+  pedalFreioPct:      { min: 0,    max: 100 },
+  speedKmh:           { min: 0,    max: 400 },    // teto generoso; uso real muito abaixo
+  mapBar:             { min: -1.1, max: 4 },      // aspirado vai a vácuo ~-0.5/-1; teto p/ turbo
+};
+
 function u16le(b, o) { return b[o] | (b[o+1] << 8); }
 function i16le(b, o) { const v = u16le(b,o); return v > 0x7FFF ? v - 0x10000 : v; }
 function u32le(b, o) { return (b[o] | (b[o+1]<<8) | (b[o+2]<<16) | (b[o+3]<<24)) >>> 0; }
