@@ -10,7 +10,7 @@
 import { CockpitState, ApexEstado } from './cockpit-state.js';
 import { attachRendererToDocument } from './cockpit-renderer.js';
 import { LiveDataBridge, DEFAULT_LIMITS } from './live-data-bridge.js';
-import { parseT3000RIBlock, ACK_BYTES, RI_BYTES, isAckOk } from './t3000-usb-parser.js';
+import { parseT3000RIBlock, ACK_BYTES, RI_BYTES, isAckOk, leituraPlausivel } from './t3000-usb-parser.js';
 import { startCloudBridge, publishSample, publishEvento, onStatusChange, onGpsPoint, getStats } from './cloud-bridge.js';
 import { loadDynoCurve, loadGearRatios, BUBI_CARRO_ID } from './dyno-loader.js';
 import { TrechoDetector } from './trecho-detector.js';
