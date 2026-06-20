@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1 Fast — Relatório do teste da Central de Pista (19/06/2026)</title>
+<style>
+  :root{
+    --bg:#0c1016; --panel:#141a23; --panel2:#1a2230; --line:#243040;
+    --ink:#eef3f8; --muted:#93a2b4; --soft:#b9c6d4;
+    --ok:#37d399; --okbg:#0e2e22; --warn:#f5b94a; --warnbg:#332710; --bad:#f0726f; --badbg:#33161a;
+    --blue:#5b9bff; --bluebg:#11233f;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg); color:var(--ink); font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; line-height:1.5;}
+  .wrap{width:100%; padding:28px clamp(16px,4vw,56px) 64px;}
+  header.top{display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px; border-bottom:1px solid var(--line); padding-bottom:20px;}
+  h1{font-size:clamp(22px,2.6vw,32px); margin:0 0 6px; letter-spacing:.2px;}
+  .sub{color:var(--muted); font-size:14px;}
+  .verdict{display:flex; align-items:center; gap:12px; background:var(--okbg); border:1px solid #1d5c44; color:var(--ok); padding:12px 16px; border-radius:12px; font-weight:600; font-size:15px;}
+  h2{font-size:13px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin:38px 0 14px; display:flex; align-items:center; gap:10px;}
+  h2 svg{stroke:var(--blue); flex:none}
+  .grid{display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr));}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 18px;}
+  .card h3{margin:0 0 8px; font-size:15.5px; display:flex; align-items:center; gap:10px; justify-content:space-between;}
+  .card p{margin:6px 0 0; color:var(--soft); font-size:14px;}
+  .card .was{color:var(--muted); font-size:13px; margin-top:8px;}
+  .card .fix{color:var(--ink); font-size:14px; margin-top:8px; border-top:1px solid var(--line); padding-top:8px;}
+  .badge{font-size:11px; font-weight:700; padding:4px 9px; border-radius:999px; white-space:nowrap; letter-spacing:.3px;}
+  .b-ok{background:var(--okbg); color:var(--ok); border:1px solid #1d5c44;}
+  .b-fix{background:var(--bluebg); color:var(--blue); border:1px solid #244a7a;}
+  .b-warn{background:var(--warnbg); color:var(--warn); border:1px solid #5c4715;}
+  .b-bad{background:var(--badbg); color:var(--bad); border:1px solid #5c2227;}
+  .metrics{display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));}
+  .metric{background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:14px 16px;}
+  .metric .n{font-size:26px; font-weight:800; font-variant-numeric:tabular-nums;}
+  .metric .u{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; margin-top:4px;}
+  .metric .n.green{color:var(--ok)}
+  table{width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden;}
+  th,td{text-align:left; padding:12px 16px; font-size:14px; border-bottom:1px solid var(--line);}
+  th{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.6px; background:var(--panel2);}
+  tr:last-child td{border-bottom:0;}
+  td code{background:#0a0e14; padding:2px 7px; border-radius:6px; color:var(--blue); font-size:13px;}
+  .next li{margin:9px 0; color:var(--soft); font-size:14px;}
+  .next b{color:var(--ink);}
+  .foot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted); font-size:13px;}
+  .pill-row{display:flex; flex-wrap:wrap; gap:10px; margin-top:4px;}
+  .src{display:flex; align-items:center; gap:10px; background:var(--panel); border:1px solid var(--line); border-radius:999px; padding:8px 14px; font-size:14px;}
+  .dot{width:10px; height:10px; border-radius:999px; flex:none;}
+  .dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>Central de Pista — Relatório do teste</h1>
+      <div class="sub">Teste ao vivo da noite de 19/06/2026 · carro Bubi (Celta 1.4) · objetivo: ler a T4000 ao vivo e monitorar o funcionamento</div>
+    </div>
+    <div class="verdict">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      Sistema validado de ponta a ponta — dado real e limpo chegando
+    </div>
+  </header>
+
+  <!-- ESTADO DAS FONTES -->
+  <h2>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+    Como cada fonte terminou o teste
+  </h2>
+  <div class="pill-row">
+    <div class="src"><span class="dot ok"></span> Motor (T4000 / Injepro) — lendo e enviando, dado limpo</div>
+    <div class="src"><span class="dot ok"></span> GPS (RaceBox) — sinal travado, 16 satélites</div>
+    <div class="src"><span class="dot ok"></span> Vídeo (câmera) — transmissão de pé</div>
+    <div class="src"><span class="dot ok"></span> Nuvem (ponto de encontro dos dados) — recebendo ao vivo</div>
+  </div>
+
+  <!-- O QUE ENCONTREI -->
+  <h2>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    O que eu encontrei (e corrigi)
+  </h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Leitor do carro não enviava pra nuvem <span class="badge b-fix">Resolvido</span></h3>
+      <p>A versão publicada do leitor lia a T4000 e mostrava na tela do notebook (RPM aparecia), mas <b>não mandava os dados pra nuvem</b> — por isso só aparecia na tela do carro e não chegava a mim nem ao resto do sistema.</p>
+      <div class="fix">Publiquei a versão correta, que envia cada leitura pra nuvem.</div>
+    </div>
+    <div class="card">
+      <h3>Leitura virava lixo na partida do motor <span class="badge b-fix">Resolvido</span></h3>
+      <p>No instante em que o motor pegava, os números viravam impossíveis (água 470°C, bateria 0V) e a leitura travava. O programa não se recuperava sozinho.</p>
+      <div class="fix">Coloquei dois mecanismos: <b>descartar leitura impossível</b> (não guarda lixo, segura o último valor bom) e <b>religar a leitura sozinho</b> quando trava. Testado e aprovado.</div>
+    </div>
+    <div class="card">
+      <h3>Vídeo e GPS paravam juntos e não voltavam <span class="badge b-fix">Resolvido</span></h3>
+      <p>Durante o teste, vídeo e GPS caíram ao mesmo tempo e ficaram fora. Causa: a tela do notebook <b>congela</b> em segundo plano ou quando a máquina cochila.</p>
+      <div class="fix">Coloquei: <b>manter a tela acordada</b>, <b>religar tudo</b> quando o foco/internet voltam e um <b>vigia</b> que reconecta sozinho.</div>
+    </div>
+    <div class="card">
+      <h3>Endereço confuso (com e sem traço) <span class="badge b-fix">Resolvido</span></h3>
+      <p>Havia dois endereços quase idênticos: o sem traço mostrava um modelo de tela (não lia nada), o com traço era o leitor real. Isso custou tempo no teste.</p>
+      <div class="fix">Agora <b>os dois endereços abrem o leitor</b> — tanto faz com ou sem traço.</div>
+    </div>
+  </div>
+
+  <!-- RESULTADO COMPROVADO -->
+  <h2>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg>
+    Resultado comprovado ao vivo (motor em marcha lenta, 23h57)
+  </h2>
+  <div class="metrics">
+    <div class="metric"><div class="n green">~900</div><div class="u">RPM (motor)</div></div>
+    <div class="metric"><div class="n green">44&deg;C</div><div class="u">Água do motor</div></div>
+    <div class="metric"><div class="n green">13,4 V</div><div class="u">Bateria</div></div>
+    <div class="metric"><div class="n green">0,80</div><div class="u">Lambda (mistura)</div></div>
+    <div class="metric"><div class="n green">16</div><div class="u">Satélites (GPS)</div></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <p>Valores <b>reais e coerentes</b> (não é mais o simulador, não é mais lixo). O dado chegou limpo e contínuo na nuvem, com o GPS travado. Testes automáticos do leitor: <b>leitor 29/29, vigia 12/12, religação 6/6 — tudo passou.</b></p>
+    <p class="was">Importante: o carro ficou <b>parado o tempo todo (0 km/h)</b>. Hoje validamos o sistema; <b>não há voltas gravadas para analisar ainda</b>. Quando o carro de fato rodar na pista, é aí que eu capturo o stint e as voltas.</p>
+  </div>
+
+  <!-- ENDEREÇOS -->
+  <h2>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
+    Os endereços (o que abrir no notebook)
+  </h2>
+  <table>
+    <tr><th>Endereço</th><th>Para que serve</th><th>Estado</th></tr>
+    <tr><td><code>p1-t4000.vercel.app</code><br><span class="sub">(com ou sem traço — tanto faz)</span></td><td>Leitor do carro (motor T4000). É onde você clica em "Autorizar" e a leitura começa.</td><td><span class="badge b-ok">No ar, com o conserto</span></td></tr>
+    <tr><td><code>p1tv.vercel.app</code></td><td>Central de Pista: junta vídeo, GPS e carro numa tela só, com as luzes de status.</td><td><span class="badge b-ok">No ar</span></td></tr>
+    <tr><td><code>p1tv.vercel.app/painel</code></td><td>Para assistir pelo celular: vídeo + GPS + dados do carro ao vivo.</td><td><span class="badge b-ok">No ar</span></td></tr>
+  </table>
+
+  <!-- PENDÊNCIAS -->
+  <h2>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+    O que ainda falta (próximos passos)
+  </h2>
+  <ul class="next">
+    <li><b>Aviso quando a internet da pista oscilar.</b> Hoje, se o sinal (Starlink) cai, o dado do carro deixa de subir <b>sem alarme forte</b> — só muda um indicador discreto. Recomendo um aviso claro ao operador. <span class="badge b-warn">Atenção</span></li>
+    <li><b>Command Box (a TV do box) ainda é protótipo.</b> Existe como tela de desenho, mas não está publicada como endereço que a TV abre sozinha. Só 4 medidas estão reais hoje. <span class="badge b-warn">A fazer</span></li>
+    <li><b>Marcha e luz de troca de marcha</b> ainda não são enviados pelo leitor — a TV já sabe receber, falta o carro mandar. <span class="badge b-warn">A fazer</span></li>
+    <li><b>Posição do carro na pista</b> já é calculada, mas nenhuma tela usa ainda — a ligação está pela metade. <span class="badge b-warn">A fazer</span></li>
+    <li><b>Risco de segurança:</b> existe um programa de teste que joga dado falso direto no canal real <b>sem trava</b>. Recomendo pôr a mesma trava que os outros já têm. <span class="badge b-bad">Risco</span></li>
+    <li><b>Sensores que o carro não tem</b> (marcha física, temperatura/pressão de óleo, pneu): nunca devem aparecer como se fossem medidos. Já está mapeado para não confundir. <span class="badge b-warn">Regra</span></li>
+  </ul>
+
+  <div class="foot">
+    Guardei o <b>padrão completo dos dados</b> (o formato de cada informação e de cada canal, com a fonte no código) em <code>docs/PADRAO_CENTRAL_DADOS_AO_VIVO.md</code> — é o que me permite registrar e analisar as voltas quando o carro rodar de verdade.<br>
+    Relatório gerado em 20/06/2026 a partir do que foi observado e medido no teste da noite de 19/06/2026. Produção do sistema CDAI não foi tocada.
+  </div>
+
+</div>
+</body>
+</html>
