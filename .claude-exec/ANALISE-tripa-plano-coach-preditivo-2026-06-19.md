@@ -68,3 +68,15 @@ Rumo decidido: construir o **cérebro do painel na nuvem** (arquitetura definiti
 - `web/command-box/cerebro/cerebro-painel.js` — cérebro host-agnóstico. `criarCerebroPainel({plano,pbEverSec,stintNumero,stintTotal})` → `onVolta/onSample/snapshot()`. Contrato de saída `PainelPronto` { stint, ritmo, coach, meta, preditivo, _pendentes }. Onda 1 calcula stint(voltas) + ritmo(PB vs melhor do stint); coach/meta/preditivo saem `null` (honesto).
 - `web/command-box/cerebro/cerebro-painel.smoke.mjs` — teste offline com o stint gravado `web/cockpit/fixtures/stint-brasilia-3-laps.v1.json`.
 - Resultado do teste: STINT volta 8/12 67%; RITMO "à frente -0.06/volta" PB 1:31.95 stint 1:31.89; 8 conferências verdes; EXIT=0.
+
+**Correção 19/06 (Flávio viu desconfigurado):** causa = abri no endereço 8079 (layout salvo mora no localStorage do 8078). Conteúdo idêntico, oficial não tinha sido tocada. Conserto: levei a Onda 1 pra OFICIAL (8078) com backup `_backup-pre-cerebro-stint-2026-06-19.html`. Flávio validou ("está certa agora") e mandou seguir pro Coach SEM mexer no formato. A partir daqui trabalho na OFICIAL (não mais no worktree), sempre com backup.
+
+**Onda 2 (na tela) — FEITA e validada por Flávio no 8078.** Bloco Plano·Stint mostra Voltas+Ritmo reais; Meta marcada "aguardando". Só preenche campos + tira o cinza; formato intocado.
+
+**Onda 3 (Coach) — FEITA e provada (8078):**
+- `web/command-box/cerebro/cerebro-coach.js` + `.smoke.mjs`. Reusa `src/domain/trecho-advisor.js` (gerarConselho) sobre as passagens reais `passagens-bubi-brasilia.v1.json` (56 passagens, 7 voltas × 8 curvas). Extrai indicadores de velocidade dos pontos (kmh), acha a curva de maior perda, gera COMANDO + LIÇÃO + ANÁLISE.
+- Mockup oficial: backup `_backup-pre-cerebro-coach-2026-06-19.html`. 4 alterações: guarda `__coachRealMode` em rebuildCoach (5417) e updateLiveCoach (5471) p/ a demo não reescrever; 'coach' fora do DEP_LIGACAO; carregador da Onda 3 (preenche frase/meta/licao/licaoDesc/analise; marca pontuacao/progresso/preditivo como "aguardando"; tira cb-sem-real).
+- Resultado: frase "carregue mais no apex na 2"; análise "CURVA DA RETA OPOSTA: Vmin 9.4 km/h abaixo da sua melhor"; pontuação/% lição/preditivo = "aguardando". Smoke EXIT=0; headless 8078 confere.
+- HONESTO: NOTA da volta e % da lição não têm fonte real (faltam regras de pontuação — decisão de produto do Flávio). Alerta preditivo = Onda 5.
+
+**Faltam:** Onda 4 (Meta do piloto: tempo-alvo + voltas seguidas) · Onda 5 (Alerta preditivo: +°C/curva/ETA). E a regra de pontuação da volta (decisão Flávio) p/ ligar nota+%lição.
