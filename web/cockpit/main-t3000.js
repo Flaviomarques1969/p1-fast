@@ -966,6 +966,7 @@ async function runReadLoop() {
       log('leitura interrompida: ' + e.message);
       const voltou = await reconectarT3000();
       if (!voltou) { setStatus('leitura encerrada', 'bad'); t3.reading = false; break; }
+      t3.blocosCurtos = 0; t3.leiturasRuins = 0; // religou: zera contadores de trava
       continue;
     }
     // throttle pra ~10Hz total (intervalo + tempo de transferência)
