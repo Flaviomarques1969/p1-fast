@@ -3639,7 +3639,7 @@ func makeTestDB() throws -> DatabaseQueue {
     return q
 }
 
-step("PERSIST-01: makeMemoryQueue + migrations v1..v27 cria 34 tabelas") {
+step("PERSIST-01: makeMemoryQueue + migrations v1..v35 cria 41 tabelas") {
     let q = try DB.makeMemoryQueue()
     let names = try q.read { db in
         try String.fetchAll(db, sql:
