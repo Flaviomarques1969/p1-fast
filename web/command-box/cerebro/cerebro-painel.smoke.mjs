@@ -48,8 +48,11 @@ const checks = [
   ['melhor volta do stint calculada', p.ritmo.stintStr === fmtTempo(stintBest)],
   ['delta = stintBest - PB', Math.abs(p.ritmo.deltaPorVoltaSec - (stintBest - pbEverSec)) < 1e-6],
   ['lado coerente com o delta', (stintBest < pbEverSec) ? p.ritmo.lado === 'a-frente' : true],
-  ['coach/meta/preditivo ainda pendentes (honesto)', p.coach === null && p.meta === null && p.preditivo === null],
+  ['META ligada: alvo 1:32', p.meta && p.meta.tempoAlvoStr === '1:32'],
+  ['META atingidas = voltas <= alvo', p.meta && p.meta.atingidas === entradas.slice(1).filter(e => e.timeSec <= 92.0).length],
+  ['coach/preditivo ainda pendentes (honesto)', p.coach === null && p.preditivo === null],
 ];
+console.log('META  :', JSON.stringify(p.meta));
 
 let ok = true;
 console.log('\n=== CONFERÊNCIAS ===');
