@@ -180,7 +180,7 @@ export function parseT3000RIBlock(buf, opts = {}) {
   const waterTempC = tempC(tempMotorRaw);
   const airTempC = tempC(tempArRaw);
 
-  return {
+  const sample = {
     // metadados
     source: 't3000-usb',
     parserVersion: PARSER_VERSION,
