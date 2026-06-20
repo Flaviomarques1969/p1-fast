@@ -54,6 +54,10 @@ export function criarCerebroPainel(opts = {}) {
     // ritmo cai na melhor volta histórica (PB) — comparação real e honesta.
     alvoRitmoSec: plano.tempoAlvoSec != null ? plano.tempoAlvoSec
                  : (opts.pbEverSec != null ? opts.pbEverSec : null),
+    // meta do piloto (Onda 4): tempo-alvo por volta + nº de voltas seguidas.
+    // Default (decisão Flávio 19/06, ajustável no plano): sub 1:32 (92.0s) em 8 voltas.
+    alvoMetaSec: plano.tempoAlvoSec != null ? plano.tempoAlvoSec : 92.0,
+    metaN: plano.metaVoltasSeguidas != null ? plano.metaVoltasSeguidas : 8,
   };
 
   // ---- estado vivo do stint -------------------------------------------------
