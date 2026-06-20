@@ -115,13 +115,14 @@ console.log('node-smoke-session-recorder');
   const store = criarStoreMemoria();
   const { g, r } = novo(store);
   g.gps({ lat: -15.1, lng: -47.1, spd: 70 }, 'b56201...'); r.av(40);
-  g.motor({ rpm: 4200, waterTempC: 88, lambda: 0.78, source: 'carro' });
+  g.motor({ rpm: 4200, waterTempC: 88, lambda: 0.78, source: 'carro' }, 'cafe9988'); // motor na origem leva bytes crus
   const id = g.sessaoAtiva.id;
   g.encerrar();
   const dump = await g.exportarSessao(id);
   eq(dump.amostras.length, 2, '8.1 exporta as 2 amostras da sessão');
   eq(dump.amostras[0].rawHex, 'b56201...', '8.2 guardou os bytes crus do GPS (sem perda)');
   eq(dump.amostras[1].dados.rpm, 4200, '8.3 guardou o dado completo do motor');
+  eq(dump.amostras[1].rawHex, 'cafe9988', '8.4 guardou os bytes crus do MOTOR (origem, sem perda)');
 }
 
 // 9) Recuperação de órfã: recarregou a tela / notebook dormiu sem fechar a sessão
