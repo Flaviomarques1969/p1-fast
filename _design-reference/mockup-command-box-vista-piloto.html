@@ -7894,6 +7894,7 @@ html,body{
     // seam (Onda velocidade, 19/06): expõe a entrada de GPS e o selo de estado, pra um
     // carregador externo alimentar o velocímetro com a velocidade da VOLTA GRAVADA.
     window.__cbFeedGps = onGps; window.__cbSetEstado = setEstado;
+    window.__cbCanalCfg = { url: SUPABASE_URL, anon: SUPABASE_ANON, canal: CHANNEL };
 
     // assinatura do canal real (import dinâmico — este bloco é script clássico)
     import('https://esm.sh/@supabase/supabase-js@2.45.0').then(function(m){
