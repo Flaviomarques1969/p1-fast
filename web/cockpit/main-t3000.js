@@ -42,8 +42,39 @@ import { TrailCockpitMotor } from './trail-cockpit-motor.js';
 import { criarTrailCockpitTela } from './trail-cockpit-tela.js';
 import { APICES_SEMENTE_BRASILIA } from './apices-semente-brasilia.js';
 import { onSample } from './cloud-bridge.js';
+import { criarGravador, criarStoreIndexedDB } from './session-recorder.js';
 // segments-loader/melhores-loader importam Supabase via esm.sh — dynamic
 // import dentro da IIFE evita quebra em smoke Node.
+
+// ── Gravador de sessão (motor na ORIGEM: 10 Hz, amostra completa + bytes crus) ──
+// Conserta o gap da auditoria 20/06: o motor só sobrevivia a 5 Hz e reduzido (via
+// canal). Aqui grava a amostra INTEIRA do parser + os bytes crus, append-only, no
+// IndexedDB local — sem tocar no layout do painel do piloto. Export pelo helper do
+// console (window.__P1_BAIXAR_SESSAO__). Banco próprio do cockpit (separado da Central).
+const RecCockpit = criarGravador({ store: criarStoreIndexedDB('p1fast-sessoes-cockpit') });
+const _hexBytes = (u8) => { let s = ''; for (let i = 0; i < u8.length; i++) s += u8[i].toString(16).padStart(2, '0'); return s; };
+try { setInterval(() => { try { RecCockpit.tick(); } catch (e) {} }, 1000); } catch (e) {}
+(async () => {
+  try {
+    const orfas = await RecCockpit.recuperarOrfas();
+    if (orfas.length) console.info('[gravador-cockpit] sessão anterior recuperada:', orfas[0]);
+  } catch (e) {}
+})();
+if (typeof window !== 'undefined') {
+  window.__P1_REC__ = RecCockpit;
+  window.__P1_BAIXAR_SESSAO__ = async (id) => {
+    try {
+      const lista = await RecCockpit.listarSessoes();
+      const alvo = id || (lista.slice().sort((a, b) => (b.fimWall || b.inicioWall || 0) - (a.fimWall || a.inicioWall || 0))[0] || {}).id;
+      if (!alvo) { console.warn('[gravador-cockpit] nenhuma sessão gravada'); return; }
+      const dump = await RecCockpit.exportarSessao(alvo);
+      const blob = new Blob([JSON.stringify(dump, null, 1)], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = alvo + '.json'; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      console.info('[gravador-cockpit] baixou', dump.amostras.length, 'amostras de', alvo);
+    } catch (e) { console.warn('[gravador-cockpit] falha ao baixar:', e); }
+  };
+}
 
 // ── Identificação do carro ativo ───────────────────────────────
 // Bubi é o único carro hoje. Pra plugar outro carro no futuro, basta definir
