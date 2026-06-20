@@ -27,7 +27,7 @@ const checks = [
   ['velocidade: máx coerente com volta real (100..170)', vmax >= 100 && vmax <= 170],
   ['velocidade: média coerente (>40)', vmed > 40],
   ['preditivo: gerou alerta', !!pred],
-  ['preditivo: desvio ~+8°C', pred && Math.abs(pred._desvioC - (95.8 - 88)) < 0.6],
+  ['preditivo: desvio vs base (média das 3 1as voltas)', pred && Math.abs(pred._desvioC - (95.8 - (88 + 89.3 + 90.6) / 3)) < 0.3],
   ['preditivo: taxa ~1,3°C/volta', pred && Math.abs(pred._taxaPorVolta - 1.3) < 0.2],
   ['preditivo: aponta a curva', pred && pred.frase.includes('curva 5')],
   ['preditivo: ETA projetada', pred && pred._voltasAteLimite > 0],
