@@ -8131,6 +8131,40 @@ html,body{
   })();
 </script>
 
+<!-- CÉREBRO VIVO (2026-06-19, Flávio "quero que seja real"): escuta a transmissão AO VIVO
+     do carro (cockpit-bubi-live — SÓ OUVE, nunca publica). Quando há carro na pista, mostra
+     o dado REAL ao vivo (Plano·Stint do cérebro, tirando o tempo da volta do cronômetro das
+     amostras) e pausa o gravado. Sem carro, o gravado (volta real) segue de referência. -->
+<script type="module">
+  (async function(){
+    try{
+      var cfg = window.__cbCanalCfg; if(!cfg) return;
+      var vivo = await import('/web/command-box/cerebro/cerebro-vivo.js');
+      var fxS = await (await fetch('/web/cockpit/fixtures/stint-brasilia-3-laps.v1.json')).json();
+      var orq = vivo.criarOrquestradorVivo({
+        plano:{ voltas: fxS.stintHistory.totalLaps, duracaoS: 28*60 },
+        pbEverSec: fxS.track.pbEverSec, stintNumero: 3, stintTotal: 5
+      });
+      var ultimoLive = -1;
+      var sb = await import('https://esm.sh/@supabase/supabase-js@2.45.0');
+      var client = sb.createClient(cfg.url, cfg.anon, { realtime:{ params:{ eventsPerSecond:20 } } });
+      var ch = client.channel(cfg.canal, { config:{ broadcast:{ ack:false, self:false } } });
+      ch.on('broadcast', { event:'sample' }, function(m){ if(m&&m.payload){ ultimoLive=performance.now(); orq.feedSample(m.payload); } });
+      ch.on('broadcast', { event:'evento' }, function(m){ var p=m&&m.payload; if(p&&p.tipo==='volta'){ ultimoLive=performance.now(); orq.feedVolta(p); } });
+      ch.subscribe();
+      setInterval(function(){
+        var temCarro = ultimoLive>=0 && (performance.now()-ultimoLive < 5000);
+        window.__velAoVivoReal = temCarro;            // velocímetro: ao vivo assume / gravado volta
+        if(temCarro){
+          window.__liveCarPresente = performance.now();
+          if(window.__aplicarPainelStint) window.__aplicarPainelStint(orq.snapshot());
+          if(window.__cbSetEstado) window.__cbSetEstado('cb-on','AO VIVO · dado real do carro');
+        }
+      }, 1000);
+    }catch(e){ console.warn('[cérebro vivo] indisponível:', e); }
+  })();
+</script>
+
 <!-- ITEM 3 (Flávio 18/06/2026): a bolinha (e a tela em sincronia) anda pela FRAÇÃO DE ARCO
      derivada do GPS REAL — reusa geoParaCommandBox (recalibração, item 1) + suavizador (item 2).
      DEV stand-in: a projeção roda aqui no protótipo; na produção a conta vai pra nuvem (não muda
