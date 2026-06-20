@@ -146,7 +146,38 @@ export function criarGravador(opts = {}) {
   async function exportarSessao(id) { return store.lerSessao(id); }
   async function listarSessoes()    { return store.listarSessoes(); }
 
-  return { gps, motor, tick, encerrar, estado, exportarSessao, listarSessoes,
+  // Recuperação de órfãs: chamado no boot, ANTES de qualquer dado novo. Acha
+  // sessões que ficaram com status 'gravando' (a tela foi recarregada ou o
+  // notebook dormiu sem fechar) e as marca 'interrompida', recompondo o resumo
+  // a partir das amostras cruas já gravadas. O dado nunca se perde (é append-only);
+  // isto só devolve o acesso a ele pela tela. Retorna as órfãs recuperadas.
+  async function recuperarOrfas() {
+    const lista = await store.listarSessoes();
+    const orfas = [];
+    for (const s of (lista || [])) {
+      if (s && s.status === 'gravando') {
+        const dump = await store.lerSessao(s.id);
+        const am = (dump && dump.amostras) || [];
+        const nG = am.filter(a => a.tipo === 'gps').length;
+        const nM = am.filter(a => a.tipo === 't4000').length;
+        const tw = am.map(a => a.tWall).filter(v => typeof v === 'number');
+        const durMs = tw.length ? (Math.max(...tw) - Math.min(...tw)) : 0;
+        const resumo = {
+          id: s.id, sim: !!s.sim, status: 'interrompida', motivoFim: 'interrompida',
+          inicioWall: s.inicioWall, fimWall: tw.length ? Math.max(...tw) : s.inicioWall,
+          duracaoS: Math.round(durMs / 100) / 10, nGps: nG, nMotor: nM,
+          hzGpsMedia:   durMs > 0 ? Math.round(nG / (durMs / 1000) * 10) / 10 : 0,
+          hzMotorMedia: durMs > 0 ? Math.round(nM / (durMs / 1000) * 10) / 10 : 0,
+        };
+        await store.finalizar(s.id, resumo);
+        orfas.push(resumo);
+      }
+    }
+    // mais recente primeiro
+    return orfas.sort((a, b) => (b.fimWall || 0) - (a.fimWall || 0));
+  }
+
+  return { gps, motor, tick, encerrar, estado, exportarSessao, listarSessoes, recuperarOrfas,
            get sessaoAtiva() { return sessao; } };
 }
 
