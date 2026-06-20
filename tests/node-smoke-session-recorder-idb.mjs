@@ -23,12 +23,13 @@ const Rec = criarGravador({
 });
 
 const N_GPS = 250, N_MOTOR = 250;
-// Sessão contínua: GPS a ~25/s e motor a ~10/s, sem buraco que feche a sessão.
+// Sessão contínua: a cada passo, 1 ponto de GPS + 1 amostra de motor, sem buraco
+// que feche a sessão. Prova captura simultânea dos dois canais.
 for (let i = 0; i < N_GPS; i++) {
   const p = gpsPts[i % gpsPts.length];
   const raw = new Uint8Array([0xB5, 0x62, i & 0xff, (i >> 8) & 0xff]);
   Rec.gps({ fix: 3, numSV: 9, hacc: 2, spd: (p.v || 0), lat: p.lat, lon: p.lng }, hexOf(raw), false);
-  if (i % 2 === 0 && i / 2 < N_MOTOR) Rec.motor({ ...motor[(i / 2) % motor.length], source: 'carro' });
+  Rec.motor({ ...motor[i % motor.length], source: 'carro' });
   c.mono += 40; c.wall += 40;
 }
 const resumo = Rec.encerrar('manual');
