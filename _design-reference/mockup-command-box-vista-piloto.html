@@ -8032,8 +8032,17 @@ html,body{
       if(fill){ fill.classList.toggle('sr-bar-fill--good', p.ritmo.lado!=='atras');
                 fill.style.background = (p.ritmo.lado==='atras') ? '#FFB347' : ''; }
     }
-    // META DO PILOTO ainda não construída (Onda 4) -> marca o sub-bloco como aguardando
-    var meta=document.querySelector('.stint-meta'); if(meta) meta.classList.add('cb-subpend');
+    // META DO PILOTO (Onda 4): N voltas seguidas abaixo do tempo-alvo (real, das voltas)
+    var metaEl=document.querySelector('.stint-meta');
+    if(p.meta){
+      if(metaEl) metaEl.classList.remove('cb-subpend');
+      setT('metaTag', p.meta.tag);
+      setT('metaTempo', p.meta.tempoAlvoStr);
+      setT('metaVoltas', p.meta.voltasSeguidas);
+      setW('metaFill', p.meta.fillPct);
+      setT('metaAtingidas', p.meta.atingidas);
+      setT('metaTotal', p.meta.total);
+    } else if(metaEl){ metaEl.classList.add('cb-subpend'); }
     // tira o "aguardando ligação" do bloco PLANO·STINT (agora tem dado real)
     var bloco=document.querySelector('[data-block-id="stint"]'); if(bloco) bloco.classList.remove('cb-sem-real');
   };
