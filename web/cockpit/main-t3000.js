@@ -967,6 +967,7 @@ async function runReadLoop() {
         // Caminho feliz — dado bom: tudo igual a antes.
         bridge.ingestT4000(sample); // bridge é agnóstico de fonte; aceita t3000
         publishSample(sample);      // espelha pra nuvem (não-bloqueante; throttle interno)
+        try { RecCockpit.motor(sample, _hexBytes(merged)); } catch (e) {} // grava o motor na ORIGEM (10 Hz, completo + cru)
         t3.lastSampleTs = performance.now();
         // atualiza HUD curto
         updateHud(sample);
