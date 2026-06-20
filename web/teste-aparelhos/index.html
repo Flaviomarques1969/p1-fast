@@ -124,6 +124,58 @@ function log(m){ const t=new Date().toLocaleTimeString(); $('log').textContent =
 function pill(el, txt, cls){ el.textContent = txt; el.className = 'pill ' + cls; }
 const boardPill = pill;
 
+// ════════════════ GRAVADOR DE SESSÃO (liga→desliga, no próprio notebook) ════
+// Conserta a causa-raiz da auditoria 20/06: o notebook não gravava nada — o dado
+// só passava ao vivo e morria. Aqui cada ponto de GPS (na taxa cheia que o RaceBox
+// entrega) e cada amostra do motor (T4000) são gravados append-only no IndexedDB
+// local, do primeiro dado (carro ligou) até 8 s de silêncio (carro desligou).
+const hex = u8 => Array.from(u8, b => b.toString(16).padStart(2,'0')).join('');
+const Rec = criarGravador({ store: criarStoreIndexedDB('p1fast-sessoes') });
+let ultimaSessaoId = null;
+
+function renderGravacao(){
+  const e = Rec.estado();
+  if (e.gravando){
+    boardPill($('bRec'), 'GRAVAÇÃO · ' + (e.sim?'sim ':'') + 'ativa ✓', 'ok');
+    pill($('recEstado'), 'GRAVANDO'+(e.sim?' (sim)':''), e.dropped?'warn':'ok');
+    $('recTempo').textContent   = e.tempoS.toFixed(1)+'s';
+    $('recNGps').textContent    = e.nGps;
+    $('recNMotor').textContent  = e.nMotor;
+    $('recHzGps').textContent   = e.hzGps.toFixed(1)+'/s';
+    $('recHzMotor').textContent = e.hzMotor.toFixed(1)+'/s';
+    $('recLac').textContent     = e.lacunas;
+  } else if ($('bRec').textContent.indexOf('salva') < 0) {
+    boardPill($('bRec'), 'GRAVAÇÃO · parada', 'idle');
+    pill($('recEstado'), 'parada', 'idle');
+  }
+}
+function mostrarResumo(r){
+  ultimaSessaoId = r.id;
+  $('btnBaixar').disabled = false;
+  const lac  = r.maiorLacunaMs ? (', maior buraco '+(r.maiorLacunaMs/1000).toFixed(1)+'s') : ', sem buracos';
+  const drop = r.dropped ? (' · '+r.dropped+' descartes') : '';
+  const txt  = 'Sessão gravada'+(r.sim?' (simulada)':'')+': '+r.duracaoS+'s · '+r.nGps+' pontos de GPS ('
+    +r.hzGpsMedia+'/s) · '+r.nMotor+' do motor ('+r.hzMotorMedia+'/s)'+lac+drop+'.';
+  $('recResumo').style.display = 'block';
+  $('recResumo').textContent = txt;
+  pill($('recEstado'), 'sessão salva ✓', 'ok');
+  boardPill($('bRec'), 'GRAVAÇÃO · sessão salva ✓', 'ok');
+  log(txt);
+}
+async function baixarSessao(){
+  if (!ultimaSessaoId) { log('Nenhuma sessão gravada ainda.'); return; }
+  try {
+    const dump = await Rec.exportarSessao(ultimaSessaoId);
+    const blob = new Blob([JSON.stringify(dump, null, 1)], { type:'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = ultimaSessaoId + '.json'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+    log('Arquivo da sessão gerado: '+ultimaSessaoId+'.json ('+dump.amostras.length+' amostras).');
+  } catch(e){ log('Falha ao gerar arquivo: '+e.message); }
+}
+setInterval(renderGravacao, 500);
+setInterval(() => { const r = Rec.tick(); if (r) mostrarResumo(r); }, 1000);
+
 // ════════════════ NUVEM (canal canônico cockpit-bubi-live) ════════════════
 // Mesma nuvem e mesmo canal que o painel do piloto usa desde 26/05.
 // Regra do projeto: dados ao vivo trafegam SÓ por este canal (não criar fonte paralela).
