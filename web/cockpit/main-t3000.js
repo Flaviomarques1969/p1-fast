@@ -717,8 +717,26 @@ function log(msg) {
 }
 
 // ── Estado da leitura ─────────────────────────────────────────
+// blocosCurtos / leiturasRuins: contadores de "trava silenciosa" — leitura que
+// não cai no catch (cabo entregando lixo curto ou amostra fora de faixa) mas
+// também não é dado bom. Quando estouram o limite, forçamos religação do USB.
 const t3 = { device:null, iface:null, epIn:null, epOut:null, reading:false, lastSampleTs:0,
-             vid:null, pid:null, religando:false };
+             vid:null, pid:null, religando:false, blocosCurtos:0, leiturasRuins:0 };
+
+// Limites de tolerância antes de forçar religação do USB sem erro explícito.
+// 30 blocos curtos seguidos ≈ 3 s de lixo curto a ~10 Hz.
+// 8 leituras inválidas seguidas = sintoma do "tranco" da partida do motor
+// (decisão deste fix: religa pra refazer o handshake e estabilizar a leitura).
+const T3_MAX_BLOCOS_CURTOS = 30;
+const T3_MAX_LEITURAS_RUINS = 8;
+
+// Filtro de sanidade do main: usa a MESMA função pura do parser pra decidir se
+// a amostra pode alimentar bridge/nuvem/painel. Conservador: segura o último
+// valor bom quando reprova (não sobrescreve a tela com lixo).
+function sampleValido(s) {
+  if (!s || typeof s !== 'object') return false;
+  return leituraPlausivel(s).ok;
+}
 
 // ── Abrir + saudação (usado na 1ª conexão e em toda religação) ─
 async function abrirEHandshake(dev) {
