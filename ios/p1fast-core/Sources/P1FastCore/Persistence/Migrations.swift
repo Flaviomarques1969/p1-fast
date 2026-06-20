@@ -647,6 +647,45 @@ enum Migrations {
             try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_freios_carro ON freios(carro_id);")
             try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_freios_time ON freios(time_id);")
         }
+
+        m.registerMigration("v35_checklist_pista") { db in
+            // Checklist de Pista — lista padrão editável de checagens de SAÍDA e
+            // CHEGADA. Itens são desativados (ativo=0), nunca apagados do padrão.
+            try db.execute(sql: """
+                CREATE TABLE IF NOT EXISTS checklist_item (
+                    id            TEXT PRIMARY KEY,
+                    time_id       TEXT NOT NULL REFERENCES times(id) ON DELETE CASCADE,
+                    momento       TEXT NOT NULL,
+                    nome          TEXT NOT NULL,
+                    papel         TEXT NOT NULL,
+                    obrigatorio   INTEGER NOT NULL DEFAULT 1,
+                    ativo         INTEGER NOT NULL DEFAULT 1,
+                    ordem         INTEGER NOT NULL DEFAULT 0,
+                    created_at    INTEGER NOT NULL,
+                    updated_at    INTEGER NOT NULL,
+                    synced_at     INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_checklist_item_time ON checklist_item(time_id);")
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_checklist_item_momento ON checklist_item(momento);")
+
+            // Tique por EVENTO (quem já fez o quê na corrida do dia).
+            try db.execute(sql: """
+                CREATE TABLE IF NOT EXISTS checklist_tique (
+                    id              TEXT PRIMARY KEY,
+                    time_id         TEXT NOT NULL REFERENCES times(id) ON DELETE CASCADE,
+                    evento_id       TEXT NOT NULL,
+                    item_id         TEXT NOT NULL,
+                    checado         INTEGER NOT NULL DEFAULT 0,
+                    checado_por     TEXT,
+                    checado_papel   TEXT,
+                    checado_at      INTEGER,
+                    updated_at      INTEGER NOT NULL,
+                    synced_at       INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE UNIQUE INDEX IF NOT EXISTS idx_checklist_tique_uq ON checklist_tique(evento_id, item_id);")
+        }
     }
 
     // swiftlint:disable:next function_body_length
