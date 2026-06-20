@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checklist de Pista — desenho da função (P1 Fast)</title>
+<style>
+  :root{ --bg:#0d1016; --card:#141925; --line:#232a38; --tx:#e7ecf3; --mut:#8a93a6;
+         --gold:#d8b15a; --ok:#3fe08c; --obr:#ff7a6e; --adi:#f5c451; --azul:#7db1ff; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--tx); font:15px/1.5 -apple-system,Segoe UI,Roboto,sans-serif; }
+  .wrap{ width:100%; padding:28px 36px 60px; }
+  h1{ font-size:24px; letter-spacing:.04em; margin:0 0 2px; }
+  .sub{ color:var(--mut); margin:0 0 22px; }
+  .tag{ display:inline-block; font:700 10px/1 sans-serif; letter-spacing:.08em; text-transform:uppercase;
+        padding:4px 8px; border-radius:999px; border:1px solid var(--line); color:var(--mut); }
+  .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:18px 0 26px; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+  .card h3{ margin:0 0 8px; font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--gold); }
+  .card p{ margin:6px 0; color:var(--tx); }
+  .card .m{ color:var(--mut); font-size:13px; }
+  .cols{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .listcard{ background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .listcard > .hd{ padding:13px 18px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+  .listcard .hd b{ font-size:15px; letter-spacing:.06em; text-transform:uppercase; }
+  .listcard .hd.saida b{ color:var(--ok); } .listcard .hd.chegada b{ color:var(--azul); }
+  table{ width:100%; border-collapse:collapse; }
+  td,th{ text-align:left; padding:10px 18px; border-bottom:1px solid var(--line); font-size:14px; }
+  th{ color:var(--mut); font:700 11px/1 sans-serif; letter-spacing:.06em; text-transform:uppercase; }
+  tr:last-child td{ border-bottom:none; }
+  .pill{ font:700 10px/1 sans-serif; letter-spacing:.05em; text-transform:uppercase; padding:3px 7px; border-radius:999px; white-space:nowrap; }
+  .pill.obr{ background:rgba(255,122,110,.14); color:var(--obr); }
+  .pill.adi{ background:rgba(245,196,81,.14); color:var(--adi); }
+  .who{ color:var(--azul); font-size:13px; white-space:nowrap; }
+  .legend{ color:var(--mut); font-size:13px; margin:8px 0 0; }
+  .dec{ background:#161b13; border:1px solid #2c3a22; border-radius:12px; padding:16px 18px; margin-top:10px; }
+  .dec h3{ color:var(--adi); margin:0 0 8px; font-size:13px; letter-spacing:.06em; text-transform:uppercase; }
+  .dec li{ margin:6px 0; }
+  .rec{ color:var(--ok); font-weight:600; }
+  .cmd{ background:#0a0d13; border:1px dashed var(--line); border-radius:12px; padding:16px 18px; }
+  .cmd .row{ display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid #1a212e; }
+  .cmd .row:last-child{ border-bottom:none; }
+  .secao{ font:700 12px/1 sans-serif; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin:30px 0 12px; }
+  .nota{ color:var(--obr); font-weight:600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>CHECKLIST DE PISTA — desenho da função</h1>
+  <p class="sub">Função nova no app (não existe ainda). Diferente de Pendências. <span class="tag">proposta — para você editar</span></p>
+
+  <div class="secao">O que a função faz (no app)</div>
+  <div class="grid">
+    <div class="card">
+      <h3>Lista padrão editável</h3>
+      <p>Uma lista padrão de checagens já vem pronta.</p>
+      <p class="m">Você pode <b>adicionar</b> itens novos e <b>desativar</b> os que não usa — sem apagar (fica desligado, pode religar).</p>
+    </div>
+    <div class="card">
+      <h3>Dois momentos</h3>
+      <p><b>Saída:</b> checagens antes do carro entrar na pista.</p>
+      <p><b>Chegada:</b> checagens quando o carro volta ao box.</p>
+    </div>
+    <div class="card">
+      <h3>Quem tica</h3>
+      <p>Cada item tem um responsável. As pessoas ticam o que fizeram:</p>
+      <p class="m">Piloto · Chefe de equipe · Engenheiro · Mecânico</p>
+    </div>
+  </div>
+
+  <div class="secao">Lista padrão proposta (edite à vontade)</div>
+  <div class="cols">
+    <div class="listcard">
+      <div class="hd saida"><b>Saída · antes de entrar</b><span class="tag">proposta</span></div>
+      <table>
+        <tr><th>Checagem</th><th>Responsável</th><th>Tipo</th></tr>
+        <tr><td>Capacete e equipamento do piloto travados</td><td class="who">Piloto</td><td><span class="pill obr">obrigatório</span></td></tr>
+        <tr><td>Cinto de 5 pontos regulado</td><td class="who">Piloto</td><td><span class="pill obr">obrigatório</span></td></tr>
+        <tr><td>Freios sangrados · pedal firme</td><td class="who">Mecânico</td><td><span class="pill obr">obrigatório</span></td></tr>
+        <tr><td>Pressão de óleo OK</td><td class="who">Engenheiro</td><td><span class="pill obr">obrigatório</span></td></tr>
+        <tr><td>Nível de água / arrefecimento</td><td class="who">Mecânico</td><td><span class="pill obr">obrigatório</span></td></tr>
+        <tr><td>Pneus calibrados (a frio)</td><td class="who">Mecânico</td><td><span class="pill obr">obrigatório</span></td></tr>
+        <tr><td>Porcas de roda no torque</td><td class="who">Mecânico</td><td><span class="pill obr">obrigatório</span></td></tr>
+        <tr><td>Combustível suficiente pro stint</td><td class="who">Chefe de equipe</td><td><span class="pill obr">obrigatório</span></td></tr>
+        <tr><td>Rádio / comunicação testada</td><td class="who">Chefe de equipe</td><td><span class="pill adi">adicional</span></td></tr>
+        <tr><td>Câmera ligada e gravando</td><td class="who">Engenheiro</td><td><span class="pill adi">adicional</span></td></tr>
+        <tr><td>Telemetria transmitindo</td><td class="who">Engenheiro</td><td><span class="pill adi">adicional</span></td></tr>
+      </table>
+    </div>
+    <div class="listcard">
+      <div class="hd chegada"><b>Chegada · depois que volta</b><span class="tag">proposta</span></div>
+      <table>
+        <tr><th>Checagem</th><th>Responsável</th><th>Tipo</th></tr>
+        <tr><td>Pressão e temperatura dos pneus (quentes)</td><td class="who">Mecânico</td><td><span class="pill obr">obrigatório</span></td></tr>
+        <tr><td>Telemetria salva / descarregada</td><td class="who">Engenheiro</td><td><span class="pill obr">obrigatório</span></td></tr>
+        <tr><td>Combustível restante medido</td><td class="who">Chefe de equipe</td><td><span class="pill obr">obrigatório</span></td></tr>
+        <tr><td>Nível de óleo conferido</td><td class="who">Mecânico</td><td><span class="pill obr">obrigatório</span></td></tr>
+        <tr><td>Freios e pastilhas inspecionados</td><td class="who">Mecânico</td><td><span class="pill obr">obrigatório</span></td></tr>
+        <tr><td>Danos / avarias inspecionados</td><td class="who">Mecânico</td><td><span class="pill adi">adicional</span></td></tr>
+        <tr><td>Notas do piloto registradas</td><td class="who">Piloto</td><td><span class="pill adi">adicional</span></td></tr>
+        <tr><td>Próximo stint planejado</td><td class="who">Chefe de equipe</td><td><span class="pill adi">adicional</span></td></tr>
+      </table>
+    </div>
+  </div>
+  <p class="legend">Obrigatório = trava de segurança (não pode sair com pendente). Adicional = importante, mas não trava.</p>
+
+  <div class="secao">Como aparece no Command Box (a TV do box)</div>
+  <div class="cols">
+    <div class="cmd">
+      <div class="row"><b>CHECKLIST · SAÍDA</b><span class="who">3 pendentes</span></div>
+      <div class="row"><span>Cinto de 5 pontos regulado</span><span class="who">Piloto</span></div>
+      <div class="row"><span>Pneus calibrados (a frio)</span><span class="who">Mecânico</span></div>
+      <div class="row"><span>Combustível suficiente</span><span class="who">Chefe de equipe</span></div>
+      <p class="legend">Mostra só o que <b>falta</b>, obrigatórios em cima. O que já foi ticado some da TV (fica no app).</p>
+    </div>
+    <div class="cmd">
+      <div class="row"><b>Fluxo</b><span class="who">automático</span></div>
+      <div class="row"><span>Antes de entrar na pista</span><span class="who">mostra Saída</span></div>
+      <div class="row"><span>Carro na pista</span><span class="who">some (ou pisca se faltar obrigatório)</span></div>
+      <div class="row"><span>Carro volta ao box</span><span class="who">mostra Chegada</span></div>
+      <p class="legend">A troca de momento segue o estado real do stint (carro no box / na pista).</p>
+    </div>
+  </div>
+
+  <div class="secao">3 decisões suas (antes de eu construir)</div>
+  <div class="dec">
+    <ul>
+      <li><b>1. Papéis:</b> Piloto, Chefe de equipe, Engenheiro, Mecânico. <span class="rec">Recomendado: manter esses quatro.</span> Confirma ou muda?</li>
+      <li><b>2. Quem pode ticar:</b> <span class="rec">Recomendado: cada item tem 1 responsável, e qualquer pessoa da equipe pode ticar (o responsável é só a referência de quem deveria).</span> Ou só o responsável tica?</li>
+      <li><b>3. A lista padrão acima:</b> edite — tire, acrescente, mude responsável ou obrigatório/adicional. É só uma <span class="nota">proposta</span>, não está aprovada.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>
