@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1 Fast — Validação do Gravador de Sessão</title>
+<!--
+  PÁGINA DE VALIDAÇÃO (não faz parte do app; prefixo "_").
+  Exercita o gravador REAL (session-recorder.js) com os DADOS REAIS (motor 26/05 +
+  GPS de Brasília), usando o IndexedDB REAL do navegador. NÃO conecta na nuvem e
+  NÃO publica nada no canal de produção — só prova que a gravação funciona e o
+  arquivo sai completo. Pode apagar este arquivo a qualquer momento.
+-->
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system,Segoe UI,Roboto,sans-serif; background:#0a0d12; color:#e8edf2; }
+  header { padding:16px 20px; background:#11161e; border-bottom:1px solid #1d2530; }
+  header h1 { margin:0; font-size:18px; }
+  header p { margin:6px 0 0; font-size:12.5px; color:#8a97a6; max-width:760px; line-height:1.5; }
+  .wrap { padding:18px; display:grid; gap:14px; max-width:760px; margin:0 auto; }
+  .card { background:#11161e; border:1px solid #1d2530; border-radius:12px; padding:16px; }
+  .card h2 { margin:0 0 12px; font-size:13px; color:#8a97a6; text-transform:uppercase; letter-spacing:.6px; }
+  button { font-size:15px; padding:12px 16px; border-radius:10px; border:1px solid #2a3442; background:#1b2330; color:#e8edf2; cursor:pointer; width:100%; margin-top:8px; }
+  button.primary { background:#2563eb; border-color:#2563eb; font-weight:600; }
+  button:disabled { opacity:.5; cursor:default; }
+  .row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #161d27; font-size:15px; }
+  .row:last-child { border:0; }
+  .lbl { color:#8a97a6; } .val { font-variant-numeric:tabular-nums; font-weight:700; font-size:18px; }
+  .pill { display:inline-block; padding:4px 12px; border-radius:999px; font-size:13px; font-weight:700; }
+  .ok { background:#0d3320; color:#4ade80; } .warn { background:#3a2d0d; color:#fbbf24; } .idle{ background:#1b2330; color:#8a97a6; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:4px 22px; }
+  #resumo { font-size:14px; color:#4ade80; line-height:1.6; display:none; margin-top:6px; }
+  .note { font-size:12.5px; color:#8a97a6; line-height:1.5; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Validação do Gravador de Sessão</h1>
+  <p>Prova que o gravador grava do liga ao desliga, na taxa cheia, e que o arquivo sai completo —
+  com os dados reais (motor de 26/05 + GPS de Brasília), no armazenamento real do navegador.
+  Esta página <b>não conecta na nuvem</b> e <b>não publica nada</b>.</p>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <h2>Estado da gravação</h2>
+    <div class="row"><span class="lbl">Gravação</span><span id="estado" class="pill idle">parada</span></div>
+    <div class="grid2" style="margin-top:6px">
+      <div class="row"><span class="lbl">Tempo</span><span id="tempo" class="val">—</span></div>
+      <div class="row"><span class="lbl">Lacunas</span><span id="lac" class="val">—</span></div>
+      <div class="row"><span class="lbl">GPS gravados</span><span id="nGps" class="val">0</span></div>
+      <div class="row"><span class="lbl">Motor gravados</span><span id="nMotor" class="val">0</span></div>
+      <div class="row"><span class="lbl">Taxa GPS</span><span id="hzGps" class="val">—</span></div>
+      <div class="row"><span class="lbl">Taxa motor</span><span id="hzMotor" class="val">—</span></div>
+    </div>
+    <div id="resumo"></div>
+  </div>
+
+  <div class="card">
+    <h2>Controle</h2>
+    <button id="btnRodar" class="primary">▶ Rodar sessão (motor + GPS reais)</button>
+    <button id="btnParar" disabled>⏹ Parar e fechar sessão</button>
+    <button id="btnBaixar" disabled>Baixar a sessão gravada (arquivo)</button>
+    <p class="note" style="margin-top:10px">Ao rodar, alimenta o gravador com GPS a 25/s e motor a 10/s
+    (os números reais), exatamente como o carro faria. Pare quando quiser e baixe o arquivo da sessão
+    completa pra conferir cada ponto.</p>
+  </div>
+</div>
+
+<script type="module">
+import { criarGravador, criarStoreIndexedDB } from './session-recorder.js';
+
+const $ = id => document.getElementById(id);
+const pill = (el,t,c)=>{ el.textContent=t; el.className='pill '+c; };
+
+// Gravador real + IndexedDB real (banco separado pra não misturar com o do app)
+const Rec = criarGravador({ store: criarStoreIndexedDB('p1fast-sessoes-validacao') });
+let ultimaSessaoId = null, motor = null, gpsPts = null, tGps = null, tMotor = null, idx = 0, gi = 0;
+
+function render(){
+  const e = Rec.estado();
+  if (e.gravando){
+    pill($('estado'), 'GRAVANDO'+(e.sim?' (sim)':''), e.dropped?'warn':'ok');
+    $('tempo').textContent = e.tempoS.toFixed(1)+'s';
+    $('lac').textContent = e.lacunas;
+    $('nGps').textContent = e.nGps;
+    $('nMotor').textContent = e.nMotor;
+    $('hzGps').textContent = e.hzGps.toFixed(1)+'/s';
+    $('hzMotor').textContent = e.hzMotor.toFixed(1)+'/s';
+  } else {
+    $('nGps').textContent = e.nGps; $('nMotor').textContent = e.nMotor;
+  }
+}
+setInterval(render, 300);
+setInterval(() => { const r = Rec.tick(); if (r) fechou(r); }, 1000);
+
+async function carregar(){
+  if (!motor)  motor  = await (await fetch('./sim-amostras.json')).json();
+  if (!gpsPts) gpsPts = await (await fetch('./sim-gps.json')).json();
+}
+
+async function rodar(){
+  $('btnRodar').disabled = true;
+  $('resumo').style.display = 'none';
+  await carregar();
+  pill($('estado'), 'carregado — gravando…', 'ok');
+  $('btnParar').disabled = false;
+  // GPS a 25/s (taxa cheia) com bytes "crus" de exemplo
+  tGps = setInterval(()=>{
+    const p = gpsPts[gi++ % gpsPts.length];
+    const raw = new Uint8Array([0xB5,0x62,(gi&0xff),((gi>>8)&0xff)]);
+    const hex = Array.from(raw,b=>b.toString(16).padStart(2,'0')).join('');
+    Rec.gps({ fix:3, numSV:9, hacc:2, spd:(p.v||0), lat:p.lat, lon:p.lng }, hex, false);
+  }, 40);
+  // motor a 10/s
+  tMotor = setInterval(()=>{
+    Rec.motor({ ...motor[idx++ % motor.length], source:'carro' });
+  }, 100);
+}
+
+function pararFluxo(){ if(tGps){clearInterval(tGps);tGps=null;} if(tMotor){clearInterval(tMotor);tMotor=null;} }
+
+function parar(){
+  pararFluxo();
+  const r = Rec.encerrar('manual');
+  if (r) fechou(r);
+}
+function fechou(r){
+  pararFluxo();
+  ultimaSessaoId = r.id;
+  pill($('estado'), 'sessão salva ✓', 'ok');
+  $('btnParar').disabled = true;
+  $('btnRodar').disabled = false;
+  $('btnBaixar').disabled = false;
+  const lac = r.maiorLacunaMs ? (', maior buraco '+(r.maiorLacunaMs/1000).toFixed(1)+'s') : ', sem buracos';
+  $('resumo').style.display = 'block';
+  $('resumo').textContent = 'Sessão gravada: '+r.duracaoS+'s · '+r.nGps+' pontos de GPS ('+r.hzGpsMedia+'/s) · '
+    +r.nMotor+' do motor ('+r.hzMotorMedia+'/s)'+lac+(r.dropped?(' · '+r.dropped+' descartes'):'')+'. Guardada no notebook.';
+}
+async function baixar(){
+  if (!ultimaSessaoId) return;
+  const dump = await Rec.exportarSessao(ultimaSessaoId);
+  const blob = new Blob([JSON.stringify(dump,null,1)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = ultimaSessaoId+'.json'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+}
+
+$('btnRodar').onclick = rodar;
+$('btnParar').onclick = parar;
+$('btnBaixar').onclick = baixar;
+</script>
+</body>
+</html>
