@@ -8308,6 +8308,50 @@ step("PLANO-04: normalizarTipoPneu espelha o normalizador da web") {
     try assertEq(normalizarTipoPneu("XPTO 99"), "xpto 99", "desconhecido vira o texto minúsculo")
 }
 
+step("CHECKLIST-01: v35 cria tabelas + bootstrap semeia a lista padrão (19 itens)") {
+    let q = try makeTestDB()
+    try q.write { db in
+        let n = try ChecklistCatalogo.bootstrap(db, timeId: "team-1")
+        try assertEq(n, 19, "semeou 19 itens")
+        let saida = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM checklist_item WHERE momento = 'saida'") ?? 0
+        let chegada = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM checklist_item WHERE momento = 'chegada'") ?? 0
+        try assertEq(saida, 11, "11 de saída")
+        try assertEq(chegada, 8, "8 de chegada")
+        let n2 = try ChecklistCatalogo.bootstrap(db, timeId: "team-1")
+        try assertEq(n2, 0, "bootstrap idempotente (não duplica)")
+    }
+}
+
+step("CHECKLIST-02: pendentes (obrigatório em cima) + desativar + ticar saem da lista") {
+    let q = try makeTestDB()
+    try q.write { db in
+        try ChecklistCatalogo.bootstrap(db, timeId: "team-1")
+        let pend0 = try ChecklistCatalogo.pendentes(db, timeId: "team-1", eventoId: "ev-1", momento: "saida")
+        try assertEq(pend0.count, 11, "11 pendentes na saída")
+        try assertTrue(pend0.first!.obrigatorio, "obrigatório em cima")
+        try assertTrue(!pend0.last!.obrigatorio, "adicional embaixo")
+
+        // desativar o 1º item tira ele da lista (sem apagar)
+        var it = pend0.first!
+        it.ativo = false
+        try it.update(db)
+        let pend1 = try ChecklistCatalogo.pendentes(db, timeId: "team-1", eventoId: "ev-1", momento: "saida")
+        try assertEq(pend1.count, 10, "item desativado sai da lista")
+
+        // ticar um item no evento tira ele dos pendentes daquele evento
+        let alvo = pend1.first!
+        let tq = ChecklistTique(timeId: "team-1", eventoId: "ev-1", itemId: alvo.id,
+                                checado: true, checadoPapel: "mecanico", checadoAt: DB.nowMs())
+        try tq.insert(db)
+        let pend2 = try ChecklistCatalogo.pendentes(db, timeId: "team-1", eventoId: "ev-1", momento: "saida")
+        try assertEq(pend2.count, 9, "item ticado some dos pendentes")
+
+        // o tique é por EVENTO: outro evento não é afetado
+        let pendOutro = try ChecklistCatalogo.pendentes(db, timeId: "team-1", eventoId: "ev-2", momento: "saida")
+        try assertEq(pendOutro.count, 10, "tique é por evento (ev-2 vê os 10 ativos)")
+    }
+}
+
 // ── relatório ────────────────────────────────────────────────
 print("\n═══ RESULTADO ═══")
 print("\(ok) ok / \(fail) fail")
