@@ -180,7 +180,8 @@ export function criarGravador(opts = {}) {
   }
 
   return { gps, motor, tick, encerrar, estado, exportarSessao, listarSessoes, recuperarOrfas,
-           get sessaoAtiva() { return sessao; } };
+           get sessaoAtiva() { return sessao; },
+           get ativo() { return !storeMorto; } };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
