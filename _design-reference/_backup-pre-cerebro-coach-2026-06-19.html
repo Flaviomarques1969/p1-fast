@@ -5415,7 +5415,6 @@ html,body{
   // ─── P1 COACH (IA) ────────────────────────────────────────────
   // Lê currentLap().ia + pontuacao da volta. innerHTML pra suportar <em>.
   function rebuildCoach(){
-    if(window.__coachRealMode) return;   // Onda 3: dado real liga, demonstração não reescreve
     var lap = currentLap();
     var ia  = lap.ia || {};
     function setHTML(field, value){
