@@ -4,7 +4,7 @@
 // reversa do software T LINE v3.3.7. Fixtures derivadas de captura real
 // com o Celta "Bubi" + bytes sintéticos pros campos que não capturamos ainda.
 
-import { parseT3000RIBlock, ACK_BYTES, RI_BYTES, isAckOk } from '../web/cockpit/t3000-usb-parser.js';
+import { parseT3000RIBlock, ACK_BYTES, RI_BYTES, isAckOk, leituraPlausivel, FAIXAS_FISICAS } from '../web/cockpit/t3000-usb-parser.js';
 
 let ok = 0, fail = 0;
 const test = (name, fn) => {
