@@ -180,6 +180,24 @@ async function baixarSessao(){
 setInterval(renderGravacao, 500);
 setInterval(() => { const r = Rec.tick(); if (r) mostrarResumo(r); }, 1000);
 
+// Boot: recupera sessão que ficou aberta (a tela foi recarregada ou o notebook
+// dormiu sem fechar). O dado cru não se perde; isto devolve o acesso pela tela.
+(async () => {
+  try {
+    const orfas = await Rec.recuperarOrfas();
+    if (orfas.length) {
+      const o = orfas[0];
+      recTela = 'salva'; ultimaSessaoId = o.id;
+      $('btnBaixar').disabled = false;
+      $('recResumo').style.display = 'block';
+      $('recResumo').textContent = 'Sessão anterior recuperada: '+o.nGps+' pontos de GPS · '+o.nMotor+' do motor ('+o.duracaoS+'s). Baixe pelo botão.';
+      pill($('recEstado'), 'sessão recuperada', 'warn');
+      boardPill($('bRec'), 'GRAVAÇÃO · sessão recuperada', 'warn');
+      log('Sessão anterior não fechada foi recuperada ('+o.nGps+' GPS + '+o.nMotor+' motor). Baixe pelo botão.');
+    }
+  } catch(e){ log('Recuperação de sessão: '+e.message); }
+})();
+
 // ════════════════ NUVEM (canal canônico cockpit-bubi-live) ════════════════
 // Mesma nuvem e mesmo canal que o painel do piloto usa desde 26/05.
 // Regra do projeto: dados ao vivo trafegam SÓ por este canal (não criar fonte paralela).
