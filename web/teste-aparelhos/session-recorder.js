@@ -41,7 +41,7 @@ export function criarGravador(opts = {}) {
 
   let sessao = null;     // { id, inicioWall, inicioMono, sim }
   let seq = 0;
-  let nGps = 0, nMotor = 0, dropped = 0;
+  let nGps = 0, nMotor = 0, dropped = 0, okWrites = 0, storeMorto = false;
   let ultimoMono = 0, ultimoGpsMono = 0, ultimoMotorMono = 0;
   const janGps = [], janMotor = [];
   const lacunas = [];
