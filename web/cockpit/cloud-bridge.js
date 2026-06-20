@@ -122,6 +122,13 @@ export function publishSample(sample) {
     _stats.dropped += 1;
     return false;
   }
+  // Defesa em profundidade: qualquer produtor (cabo, modo sem fio, simulador)
+  // que tente publicar amostra fora das faixas físicas é barrado aqui também.
+  // O main já filtra o caminho do cabo; esta guarda cobre os demais produtores.
+  if (!leituraPlausivel(sample).ok) {
+    _stats.dropped += 1;
+    return false;
+  }
   const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
   if (now - _lastPublishTs < PUBLISH_PERIOD) {
     _stats.dropped += 1;
