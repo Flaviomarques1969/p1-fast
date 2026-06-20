@@ -132,14 +132,40 @@ export function criarCerebroPainel(opts = {}) {
     };
   }
 
+  // ---- ONDA 4: bloco META DO PILOTO ----------------------------------------
+  // Meta = fazer N voltas (seguidas) abaixo de um tempo-alvo. atingidas = quantas
+  // das voltas do stint ficaram <= alvo. tag pela última volta (no caminho/atrás).
+  function fmtAlvo(sec) {
+    if (sec == null) return '—';
+    const m = Math.floor(sec / 60), s = Math.round(sec - m * 60);
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+  function calcMeta() {
+    if (!voltas.length || cfg.alvoMetaSec == null || cfg.metaN == null) return null;
+    const consideradas = voltas.length > 1 ? voltas.slice(1) : voltas; // ignora out-lap
+    const atingidas = consideradas.filter(v => v.tempoSec <= cfg.alvoMetaSec).length;
+    const ultima = voltas[voltas.length - 1];
+    const noCaminho = ultima.tempoSec <= cfg.alvoMetaSec;
+    const tag = atingidas >= cfg.metaN ? 'batida' : (noCaminho ? 'no caminho' : 'atrás');
+    return {
+      tag,
+      tempoAlvoStr: fmtAlvo(cfg.alvoMetaSec),     // "1:32"
+      voltasSeguidas: cfg.metaN,
+      atingidas,
+      total: cfg.metaN,
+      fillPct: Math.max(0, Math.min(100, Math.round((atingidas / cfg.metaN) * 100))),
+    };
+  }
+
   /** Devolve o RESULTADO PRONTO do painel (o que a nuvem manda pra TV exibir). */
   function snapshot() {
     const stint = calcStint();
     const ritmo = calcRitmo();
+    const meta = calcMeta();
     const pendentes = [];
     // ondas ainda não construídas — declaradas como pendentes (painel fica honesto)
     const coach = null;     if (coach == null) pendentes.push('coach');
-    const meta = null;      if (meta == null) pendentes.push('meta');
+    if (meta == null) pendentes.push('meta');
     const preditivo = null; if (preditivo == null) pendentes.push('preditivo');
     return {
       _versao: 1,
