@@ -1131,9 +1131,22 @@ window.addEventListener('DOMContentLoaded', () => {
           log('dados reais de volta há 10 s — gravações religadas');
         }
       }
-      bridge.ingestT4000(s);
-      t3.lastSampleTs = performance.now();
-      updateHud(s);
+      // Mesmo filtro de sanidade do cabo: amostra da nuvem fora de faixa não
+      // alimenta o bridge nem sobrescreve a tela (segura o último valor bom).
+      // Sem cabo aqui = sem religação USB; só descarta e avisa uma vez.
+      if (sampleValido(s)) {
+        bridge.ingestT4000(s);
+        t3.lastSampleTs = performance.now();
+        updateHud(s);
+        t3.leiturasRuins = 0;
+      } else {
+        t3.leiturasRuins = (t3.leiturasRuins || 0) + 1;
+        if (t3.leiturasRuins === 1) {
+          const motivos = (s?.sanidade?.motivos || []).slice(0, 4).join(', ');
+          setStatus('leitura instável (sem fio) — segurando último valor', 'warn');
+          log(`amostra inválida da nuvem descartada${motivos ? ' (' + motivos + ')' : ''}`);
+        }
+      }
     });
     setCloudStatus('connecting');
     startCloudBridge().then(st => log('canal ao vivo: ' + st)).catch(e => log('canal falhou: ' + e.message));
