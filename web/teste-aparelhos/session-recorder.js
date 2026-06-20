@@ -196,6 +196,14 @@ export function criarStoreMemoria() {
     async finalizar(id, resumo) { sessoes.set(id, { ...(sessoes.get(id) || { id }), ...resumo }); },
     async lerSessao(id)    { return { sessao: sessoes.get(id) || null,
                                       amostras: amostras.filter(a => a.sessaoId === id) }; },
+    async resumirSessao(id) {
+      const am = amostras.filter(a => a.sessaoId === id);
+      const tw = am.map(a => a.tWall).filter(v => typeof v === 'number');
+      return { nGps: am.filter(a => a.tipo === 'gps').length,
+               nMotor: am.filter(a => a.tipo === 't4000').length,
+               durMs: tw.length ? Math.max(...tw) - Math.min(...tw) : 0,
+               fimWall: tw.length ? Math.max(...tw) : null };
+    },
     async listarSessoes()  { return [...sessoes.values()]; },
     _debug: { sessoes, amostras },
   };
