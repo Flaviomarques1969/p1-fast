@@ -1517,6 +1517,78 @@ public struct EstoqueItem: Codable, FetchableRecord, PersistableRecord, Equatabl
     }
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// CHECKLIST DE PISTA (v35) — lista padrão editável de checagens de SAÍDA e
+// CHEGADA do carro. Itens podem ser desativados (ativo=false), nunca apagados
+// do padrão. Responsável = papel (piloto|chefe_equipe|engenheiro|mecanico).
+// É o que aparece no Command Box (só os pendentes, obrigatório em cima).
+// ════════════════════════════════════════════════════════════════════════
+public struct ChecklistItem: Codable, FetchableRecord, PersistableRecord, Equatable, Identifiable {
+    public var id: String
+    public var timeId: String
+    public var momento: String        // "saida" | "chegada"
+    public var nome: String
+    public var papel: String          // responsável (referência)
+    public var obrigatorio: Bool
+    public var ativo: Bool            // false = desativado (some da lista, mas não é apagado)
+    public var ordem: Int
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "checklist_item"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case momento, nome, papel, obrigatorio, ativo, ordem
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+    public init(id: String = UUID().uuidString, timeId: String, momento: String, nome: String,
+                papel: String, obrigatorio: Bool = true, ativo: Bool = true, ordem: Int = 0,
+                createdAt: Int64 = DB.nowMs(), updatedAt: Int64 = DB.nowMs(), syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.momento = momento; self.nome = nome
+        self.papel = papel; self.obrigatorio = obrigatorio; self.ativo = ativo; self.ordem = ordem
+        self.createdAt = createdAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}
+
+/// Estado do tique de um item POR EVENTO (quem já fez o quê na corrida do dia).
+public struct ChecklistTique: Codable, FetchableRecord, PersistableRecord, Equatable, Identifiable {
+    public var id: String
+    public var timeId: String
+    public var eventoId: String
+    public var itemId: String
+    public var checado: Bool
+    public var checadoPor: String?       // pessoa que ticou
+    public var checadoPapel: String?     // papel de quem ticou
+    public var checadoAt: Int64?
+    public var updatedAt: Int64
+    public var syncedAt: Int64?
+
+    public static let databaseTableName = "checklist_tique"
+    enum CodingKeys: String, CodingKey {
+        case id
+        case timeId = "time_id"
+        case eventoId = "evento_id"
+        case itemId = "item_id"
+        case checado
+        case checadoPor = "checado_por"
+        case checadoPapel = "checado_papel"
+        case checadoAt = "checado_at"
+        case updatedAt = "updated_at"
+        case syncedAt = "synced_at"
+    }
+    public init(id: String = UUID().uuidString, timeId: String, eventoId: String, itemId: String,
+                checado: Bool = false, checadoPor: String? = nil, checadoPapel: String? = nil,
+                checadoAt: Int64? = nil, updatedAt: Int64 = DB.nowMs(), syncedAt: Int64? = nil) {
+        self.id = id; self.timeId = timeId; self.eventoId = eventoId; self.itemId = itemId
+        self.checado = checado; self.checadoPor = checadoPor; self.checadoPapel = checadoPapel
+        self.checadoAt = checadoAt; self.updatedAt = updatedAt; self.syncedAt = syncedAt
+    }
+}
+
 // MARK: - evento_pendencia_pegou (quantos já "peguei" por evento — LOCAL-ONLY)
 //
 // A posse mora no estoque; o "peguei" (quantos já separei pra ESTE evento) é
