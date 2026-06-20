@@ -8105,6 +8105,31 @@ html,body{
   })();
 </script>
 
+<!-- ONDA VELOCIDADE (2026-06-19): o velocímetro mostra a velocidade da VOLTA GRAVADA,
+     calculada do GPS (a distância andada entre pontos ÷ tempo) — igual à frenagem, que
+     também lê a volta gravada. Selo honesto "volta gravada". Quando o carro roda ao vivo,
+     o GPS ao vivo assume. Sem o seam/fixture, nada muda (mantém demonstração). -->
+<script type="module">
+  (async function(){
+    try{
+      if(typeof window.__cbFeedGps !== 'function') return;
+      var mod = await import('/web/command-box/cerebro/cerebro-velocidade.js');
+      var j = await (await fetch('/web/command-box/fixtures/volta-real-gps-23-05-rodando.json')).json();
+      var serie = mod.velocidadesDaVolta(j.amostras);
+      if(!serie.length) return;
+      if(window.__cbSetEstado) window.__cbSetEstado('cb-wait','VELOCÍMETRO · volta gravada (do GPS)');
+      var dur = serie[serie.length-1].tMs || 1, t0 = performance.now(), vel = 4; // 4× pra demonstração
+      (function passo(){
+        if(window.__velAoVivoReal) return;            // se o carro ao vivo chegar, para o gravado
+        var tg = ((performance.now()-t0)*vel) % dur;
+        var i=0; for(var k=0;k<serie.length;k++){ if(serie[k].tMs<=tg) i=k; else break; }
+        window.__cbFeedGps({ kmh: serie[i].kmh });    // só velocidade (não mexe no mapa)
+        requestAnimationFrame(passo);
+      })();
+    }catch(e){ console.warn('[velocidade gravada] indisponível:', e); }
+  })();
+</script>
+
 <!-- ITEM 3 (Flávio 18/06/2026): a bolinha (e a tela em sincronia) anda pela FRAÇÃO DE ARCO
      derivada do GPS REAL — reusa geoParaCommandBox (recalibração, item 1) + suavizador (item 2).
      DEV stand-in: a projeção roda aqui no protótipo; na produção a conta vai pra nuvem (não muda
