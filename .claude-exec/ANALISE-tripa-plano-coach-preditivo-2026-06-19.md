@@ -69,4 +69,18 @@ Construir a função Checklist no app (lista padrão editável + ticar por papel
 
 ## Ambiente: desenvolvimento. Produção protegida: sim. Autorização produção: não.
 ## Riscos: app iOS exige empacotar + instalar no iPhone; nuvem é única (produção) → tabela nova só aplica com ordem literal; checklist de corrida = não inventar (lista é proposta editável).
-## Status: iniciado (mapeamento do app).
+## Status: Etapa 1 (base no app) FEITA E PROVADA.
+
+### Etapa 1 — base de dados no app (testável sem iPhone) — CONCLUÍDA
+Mapeamento via Explore: app iOS em `ios/p1fast-ios/` (Views SwiftUI + Persistence repos), núcleo testável `ios/p1fast-core/` (Models/Migrations/SyncQueue, teste `swift run p1fast-smoke`). Papéis JÁ existem (`pessoa_papeis`: piloto/engenheiro/mecanico/chefe_equipe). Última migration era v34.
+Construído (padrão Estoque):
+- `Models.swift`: structs `ChecklistItem` (momento saida/chegada, nome, papel, obrigatorio, ativo, ordem, synced_at) + `ChecklistTique` (evento_id, item_id, checado, checado_por/papel).
+- `Migrations.swift`: **v35_checklist_pista** cria `checklist_item` + `checklist_tique`.
+- `ChecklistCatalogo.swift`: lista padrão aprovada (11 saída + 8 chegada) + `bootstrap` (semeia se vazio, idempotente) + `pendentes` (ativos, não checados, obrigatório em cima — pro Command Box).
+- Testes `main.swift`: PERSIST-01 atualizado p/ 41 tabelas (consertou falha antiga 34→39); CHECKLIST-01/02 novos.
+Resultado: `swift run p1fast-smoke` = **552 ok / 1 fail**. A 1 falha é PRÉ-EXISTENTE e sem relação (PERSIST-03 `evento_pendencias_extra` sem synced_at). Nada em produção; app não reinstalado (é só a base).
+
+### Faltam (próximas etapas)
+2. Telas no app (SwiftUI): editar a lista padrão (adicionar/desativar) + ticar por papel. EXIGE empacotar + instalar no iPhone (Team K3MU9U9952).
+3. Guardar na nuvem: tabela espelho `checklist_item`/`checklist_tique` no Supabase (migration nova) + sync. SÓ aplica em produção com ordem "MIGRAR PARA PRODUÇÃO".
+4. Ligar o componente do Command Box no checklist real (espelho ao vivo dos pendentes).
