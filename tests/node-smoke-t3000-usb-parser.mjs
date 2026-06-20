@@ -184,6 +184,56 @@ test('buffer null → null', () => assert(parseT3000RIBlock(null) === null));
 test('buffer curto < 110 → null', () => assert(parseT3000RIBlock(new Uint8Array(50)) === null));
 test('não Uint8Array → null', () => assert(parseT3000RIBlock([0,0]) === null));
 
+// ── Filtro de sanidade (leituraPlausivel) ─────────────
+test('leitura normal Bubi é plausível', () => {
+  const buf = buildBlock({ rpm: 4500, batRaw: 138, tempMotorRaw: 60, lambdaRaw: 880, velocidadeRaw: 800 });
+  const s = parseT3000RIBlock(buf);
+  assertEq(s.leituraPlausivel, true);
+  assertEq(s.sanidade.motivos.length, 0);
+});
+test('filtro reprova rpm e bateria absurdos (u16 0xFFFF)', () => {
+  const buf = buildBlock({ rpm: 65535, batRaw: 65535, lambdaRaw: 800, velocidadeRaw: 800 });
+  const s = parseT3000RIBlock(buf);
+  assertEq(s.leituraPlausivel, false);
+  assert(s.sanidade.motivos.some(m => m.startsWith('rpm')), 'rpm fora de faixa');
+  assert(s.sanidade.motivos.some(m => m.startsWith('batteryV')), 'bateria fora de faixa');
+});
+test('água 470°C reprova (sensor de água louco)', () => {
+  const buf = buildBlock({ rpm: 3000, batRaw: 130, tempMotorRaw: 470, lambdaRaw: 800 });
+  const s = parseT3000RIBlock(buf);
+  assertEq(s.leituraPlausivel, false);
+  assert(s.sanidade.motivos.some(m => m.startsWith('waterTempC')), 'água fora de faixa');
+});
+test('sensor de água ausente (null) NÃO reprova', () => {
+  // tempMotorRaw 0xFFEC (-20) → tempC devolve null → ignorado pelo filtro
+  const buf = buildBlock({ rpm: 3000, batRaw: 130, tempMotorRaw: 0xFFEC, lambdaRaw: 800 });
+  const s = parseT3000RIBlock(buf);
+  assertEq(s.waterTempC, null);
+  assertEq(s.leituraPlausivel, true);
+});
+test('MAP em vácuo (-0.5 bar) é plausível (min negativo)', () => {
+  const buf = buildBlock({ rpm: 900, batRaw: 130, mapRaw: -50, lambdaRaw: 800 });
+  const s = parseT3000RIBlock(buf);
+  assertEq(s.leituraPlausivel, true);
+});
+test('leituraPlausivel(null) → ok:false', () => {
+  const r = leituraPlausivel(null);
+  assertEq(r.ok, false);
+  assert(r.motivos.includes('sample_invalido'), 'motivo sample_invalido');
+});
+test('FAIXAS_FISICAS exportado com limites de rpm', () => {
+  assertEq(FAIXAS_FISICAS.rpm.min, 0);
+  assertEq(FAIXAS_FISICAS.rpm.max, 8000);
+});
+test('contrato preservado: sample tem sanidade SEM perder campos antigos', () => {
+  const buf = buildBlock({ rpm: 3500, batRaw: 132, tempMotorRaw: 90, lambdaRaw: 880 });
+  const s = parseT3000RIBlock(buf);
+  assert('sanidade' in s);
+  assert('leituraPlausivel' in s);
+  // campos antigos intactos
+  assert('rpm' in s && 'ecuErrorBits' in s && 'waterTempC' in s && 'checksumOk' in s);
+});
+
 // ── Compatibilidade com LiveDataBridge ────────────────
 test('sample tem todos os campos esperados pela LiveDataBridge', () => {
   const buf = buildBlock({ rpm: 3500, batRaw: 132, tempMotorRaw: 90, alarmesBits: 1<<4 });
