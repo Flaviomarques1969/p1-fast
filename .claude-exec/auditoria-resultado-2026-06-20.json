@@ -1,0 +1,465 @@
+{
+ "evidencias": [
+  {
+   "area": "Caminho do GPS (RaceBox -> notebook -> canal da nuvem) em web/teste-aparelhos/index.html",
+   "comoFunciona": "O RaceBox manda pacotes UBX por Bluetooth; o notebook recebe TUDO que chega (onNotify->decode, linhas 402/420), atualizando um snapshot unico gps.* e a taxa medida gps.hz. Mas o que SAI do notebook nao acompanha essa entrada: dois setInterval de 200ms (linhas 500-505 video, 506-510 nuvem) leem o ultimo snapshot e o transmitem a 5 Hz fixos. O dado so trafega como broadcast efemero (Daily app-message + Supabase 'gps' no canal cockpit-bubi-live). Quem ouve esse 'gps' (cloud-bridge.js:82) repassa para logica viva, sem gravar. Nada em index.html nem painel.html escreve em disco/banco. Nao existe estado/indicador de \"gravando\".",
+   "ondeQuebra": [
+    {
+     "fato": "O GPS sai do notebook a 5 Hz fixos, nao na taxa que o RaceBox le. Dois loops independentes de 200ms transmitem o ultimo snapshot gps.*; se o RaceBox entrega a 25 Hz, 4 de cada 5 pacotes decodificados sao sobrescritos antes do proximo disparo e nunca saem. A reducao a 5 Hz e real e acontece no envio, nao na decodificacao.",
+     "arquivo": "web/teste-aparelhos/index.html:500-510",
+     "evidencia": "linha 504 call.sendAppMessage({t:'gps',...}) e linha 508 cloudSend('gps',{...}) ambos dentro de setInterval(...,200) -> 200ms = 5 Hz"
+    },
+    {
+     "fato": "O comentario 'Pelo canal da nuvem (painel do piloto pode usar o GPS de 25 Hz), 5x/segundo' confirma a taxa de 5 Hz no codigo, mas a justificativa esta incompleta: o loop e travado em 200ms, entao 25 Hz nunca chega a sair por este caminho.",
+     "arquivo": "web/teste-aparelhos/index.html:497-499",
+     "evidencia": "linha 499: '// 2) Pelo canal da nuvem (painel do piloto pode usar o GPS de 25 Hz), 5x/segundo.' seguido do setInterval(...,200) da linha 510"
+    },
+    {
+     "fato": "O notebook RECEBE o GPS na taxa nativa do RaceBox (decode roda a cada pacote valido e mede gps.hz), mas essa taxa so e mostrada na tela; nada do que e recebido acima de 5 Hz e enviado nem guardado.",
+     "arquivo": "web/teste-aparelhos/index.html:414-432",
+     "evidencia": "linha 414 chama decode(p) para cada pacote cls 0xFF id 0x01; linha 430 gps.hz = pkts/(now-t0) (taxa de ENTRADA medida); linha 438 mostra rbHz na tela"
+    },
+    {
+     "fato": "Nenhum dado de GPS e gravado em disco ou banco neste arquivo. Todas as saidas sao broadcasts efemeros (Daily app-message e Supabase broadcast). Os unicos fetch sao para LER os JSONs do simulador e pegar a sala de video.",
+     "arquivo": "web/teste-aparelhos/index.html (arquivo inteiro)",
+     "evidencia": "grep por indexeddb|localstorage|insert|.from(|writeFile|fs.|download|save retorna ZERO ocorrencias de escrita; os 3 unicos fetch sao sim-gps.json (259), sim-amostras.json (293) e /api/room (331)"
+    },
+    {
+     "fato": "Nao existe indicador de 'gravando' em nenhum lugar da tela. Os quatro selos do board sao VIDEO/GPS/CARRO/NUVEM e todos refletem estado de conexao/vivacidade, nunca gravacao de sessao.",
+     "arquivo": "web/teste-aparelhos/index.html:44-49",
+     "evidencia": "linhas 45-48: bVideo, bGps, bCarro, bNuvem; o selo de GPS (linhas 487-495) so reporta idade do ultimo pacote ('travado','sem pacotes'), nao gravacao"
+    },
+    {
+     "fato": "O ponto GPS publicado no canal e consumido AO VIVO pelo cockpit e descartado; cloud-bridge entrega ao callback _onGpsPoint sem persistir o ponto bruto continuo.",
+     "arquivo": "web/cockpit/cloud-bridge.js:82-86",
+     "evidencia": "linha 82 _channel.on('broadcast',{event:'gps'}, msg => _onGpsPoint(msg.payload)) — repasse para callback vivo, sem escrita em banco/disco"
+    }
+   ],
+   "oQueNaoExiste": [
+    "Gravacao da sessao de GPS: nao ha buffer/arquivo/tabela que acumule a faixa GPS continua do liga-ao-desliga em web/teste-aparelhos/index.html (zero IndexedDB, localStorage, insert ou writeFile)",
+    "Envio do GPS na taxa nativa: o caminho de saida e travado em 5 Hz (setInterval 200ms, linhas 504 e 508); nao ha caminho que transmita os 25 Hz que o RaceBox pode ler",
+    "Indicador/estado de 'gravando': nenhum selo ou flag de gravacao de sessao; os selos so mostram conexao/vivacidade (linhas 44-49, 487-495)",
+    "Persistencia downstream do ponto bruto: o ouvinte do evento 'gps' no cockpit (cloud-bridge.js:82) so repassa ao vivo via _onGpsPoint, nao grava o ponto bruto continuo",
+    "Garantia/confirmacao de captura: nao ha contador de pacotes gravados, marca de inicio/fim de sessao, nem retencao — a perda de 4/5 pacotes e silenciosa"
+   ]
+  },
+  {
+   "area": "Caminho da T4000 (motor): leitura, transmissão ao vivo e persistência",
+   "comoFunciona": "Quem lê a T4000/T3000 é a aba cockpit/p1t4000.vercel.app (main-t3000.js): WebUSB pede o bloco RI a ~10 Hz (runReadLoop, setTimeout 50ms), t3000-usb-parser.js decodifica rpm/água/lambda/MAP/freio/cronômetro, e cada amostra boa vai pra bridge.ingestT4000(sample) + publishSample(sample). O publishSample (cloud-bridge.js) só faz broadcast no canal Supabase Realtime 'cockpit-bubi-live' a 5 Hz (PUBLISH_HZ=5), throttle que descarta o excedente; é mensagem efêmera, sem gravar. A aba teste-aparelhos (Central de Pista) NÃO lê a T4000 — ela só RECEBE o broadcast e mostra na tela ('Quem lê o carro é a outra aba'). O único dado contínuo que a T4000 alimenta e que sobrevive é um RESUMO por volta (máx/mín de água/pneu/câmbio) gravado pelo padrão-acumulador. O stream cru do motor liga-ao-desliga não é gravado em lugar nenhum.",
+   "ondeQuebra": [
+    {
+     "fato": "A amostra crua da T4000 só é PUBLICADA ao vivo e descartada: publishSample faz broadcast efêmero, sem nenhum insert/upsert. Não há gravação contínua do motor.",
+     "arquivo": "web/cockpit/cloud-bridge.js:120",
+     "evidencia": "publishSample() chama _channel.send({ type:'broadcast', event:'sample', payload: stripSample(sample) }) (linha 139) — broadcast Realtime não persiste; o cabeçalho do arquivo (linha 4) diz literalmente 'Ela é enviada, sem persistência, num canal nomeado.'"
+    },
+    {
+     "fato": "O broadcast do motor é limitado a 5 Hz: 4 de cada 5 amostras (a ~10 Hz do cabo) são jogadas fora antes de chegar à nuvem, e nem essas 5 são gravadas.",
+     "arquivo": "web/cockpit/cloud-bridge.js:19",
+     "evidencia": "const PUBLISH_HZ = 5; e publishSample retorna false com _stats.dropped+=1 quando now - _lastPublishTs < PUBLISH_PERIOD (linhas 132-136)."
+    },
+    {
+     "fato": "No loop de leitura, a amostra do motor vai SÓ para bridge (tela ao vivo) e publishSample (broadcast). Não há chamada de persistência da amostra.",
+     "arquivo": "web/cockpit/main-t3000.js:937",
+     "evidencia": "bridge.ingestT4000(sample); publishSample(sample); updateHud(sample); — três destinos, todos ao vivo; nenhum grava o sample (linhas 937-941)."
+    },
+    {
+     "fato": "O único dado de motor que sobrevive é um RESUMO por volta (só máx de água, máx pneu, mín pressão, máx câmbio + contagem), não a série temporal. rpm, lambda, MAP, TPS, freio, acelerômetro NÃO são guardados.",
+     "arquivo": "web/cockpit/padrao-acumulador.js:122",
+     "evidencia": "ingestT4000(sample) só faz v.motorMaxC=Math.max(...waterTempC), pneuMaxC, pneuMinPressBar, cambioMaxC e v.amostras++ (linhas 122-130). O snapshot gravado em padrao-persister.js:84 grava apenas medias (motor_max_media_c, pneu_temp_max_media_c, etc.) na tabela padroes_telemetria_por_volta."
+    },
+    {
+     "fato": "A tabela 'voltas' (voltas-persister) NÃO contém nada do motor — só tempo da volta.",
+     "arquivo": "web/cockpit/voltas-persister.js:73",
+     "evidencia": ".from('voltas').insert({ time_id, sessao_id, numero, tempo_ms, inicio_at, ... }) — sem rpm/água/lambda (linhas 71-79)."
+    },
+    {
+     "fato": "A aba teste-aparelhos (Central de Pista) NÃO lê a T4000: ela apenas recebe o broadcast 'sample' e exibe. Os únicos inserts/upserts do projeto são os 3 persisters derivados; teste-aparelhos não tem nenhum.",
+     "arquivo": "web/teste-aparelhos/index.html:84",
+     "evidencia": "O HTML afirma 'Quem lê o carro é a outra aba do notebook (painel do piloto, p1t4000.vercel.app)... Este quadro só confirma que estão chegando' (linhas 84-85). O listener ch.on('broadcast',{event:'sample'}) só chama onCarSample (linha 129); grep por insert/upsert/persist no arquivo não retorna nenhuma gravação de dado."
+    },
+    {
+     "fato": "Correção de precisão ao briefing: o '5x/segundo' citado na linha ~499 de teste-aparelhos é do GPS, não do motor. O motor é limitado a 5 Hz na cloud-bridge. O GPS sai a 5 Hz mesmo o RaceBox podendo ler a 25 Hz.",
+     "arquivo": "web/teste-aparelhos/index.html:499",
+     "evidencia": "Comentário 'Pelo canal da nuvem (painel do piloto pode usar o GPS de 25 Hz), 5x/segundo' (linha 499) seguido de cloudSend('gps',...) dentro de setInterval(...,200) = 5 Hz (linhas 508,510)."
+    }
+   ],
+   "oQueNaoExiste": [
+    "Gravação contínua (série temporal) da T4000 do liga ao desliga — não existe nenhum insert/upsert que receba o objeto 'sample' do motor; o broadcast é efêmero",
+    "Tabela ou buffer que armazene rpm/lambda/MAP/TPS/freio/acelerômetro amostra a amostra — só sobrevivem médias máx/mín por volta em padroes_telemetria_por_volta",
+    "Persistência das amostras na taxa do cabo (~10 Hz) ou da T4000 plena — o broadcast já corta para 5 Hz e mesmo essas 5 Hz não são salvas",
+    "Gravador de sessão (start/stop ligado à partida/desligamento do motor) — main-t3000.js só transmite ao vivo; teste-aparelhos (Central de Pista) monitora mas não grava sessão",
+    "Leitura da T4000 pela aba teste-aparelhos — ela depende inteiramente do broadcast da aba p1t4000; sozinha não tem WebUSB/parser do motor",
+    "Garantia de captura 'toda vez': se a nuvem/canal cair ou o throttle descartar, a amostra do motor some sem fila de repescagem (só voltas reais têm repescagem, e voltas não carregam dado de motor)"
+   ]
+  },
+  {
+   "area": "Camada de persistencia (P1 Fast)",
+   "comoFunciona": "O caminho ao vivo (notebook/web) so persiste DADO DERIVADO, nunca a sessao crua. O cockpit web (main-t3000.js) recebe cada amostra do bridge e: (1) grava a melhor passagem por trecho em melhores_passagens_trecho via gravarPassagem (melhores-loader.js) quando fecha um trecho; (2) acumula MAX/MIN de motor/pneu/cambio por volta (padrao-acumulador.js) e faz upsert de UMA linha por combinacao em padroes_telemetria_por_volta (padrao-persister.js); (3) grava o tempo de cada volta em voltas (voltas-persister.js). A amostra crua continua (T4000 + GPS) so e BROADCAST pelo canal Realtime cockpit-bubi-live (cloud-bridge.js publishSample) e desaparece. O GPS sai a 5 Hz (setInterval 200ms em teste-aparelhos/index.html), nao a 25 Hz. As unicas escritas de amostra crua/enriquecida existem em codigo iOS (Swift/GRDB), que grava em SQLite LOCAL e, pela ADR-023, nao e o cockpit em uso hoje.",
+   "ondeQuebra": [
+    {
+     "fato": "Nenhum codigo web/notebook insere amostra crua continua em tabela. cloud-bridge so faz broadcast efemero no Realtime; a amostra nao toca banco. As unicas escritas em web/cockpit sao derivadas (upsert de padrao, insert de melhor passagem, insert de volta).",
+     "arquivo": "web/cockpit/cloud-bridge.js:139",
+     "evidencia": "_channel.send({ type: 'broadcast', event: 'sample', payload: stripSample(sample) }); — envio ao vivo, sem .from()/.insert(). grep '.insert(/.upsert(' em web/cockpit so achou padrao-persister.js:97, voltas-persister.js:73, melhores-loader.js:103 (todas derivadas)."
+    },
+    {
+     "fato": "GPS vai pra nuvem a 5 Hz, descartando 4 de cada 5 pontos do RaceBox (25 Hz). E broadcast, nao gravacao.",
+     "arquivo": "web/teste-aparelhos/index.html:499-510",
+     "evidencia": "Comentario 'Pelo canal da nuvem (painel do piloto pode usar o GPS de 25 Hz), 5x/segundo' seguido de setInterval(()=>{ ... cloudSend('gps', {...}) }, 200) — 200ms = 5 Hz. cloudSend nao persiste, so transmite."
+    },
+    {
+     "fato": "melhores_passagens_trecho grava SO a melhor passagem por trecho (3 linhas hoje = 3 curvas), e SO GPS (lat/lng/kmh) — nenhum campo de motor/T4000 no schema nem no insert.",
+     "arquivo": "web/cockpit/melhores-loader.js:103",
+     "evidencia": "insert({ carro_id, track_id, layout_id, segment_id, tipo_pneu, tempo_trecho_s, pontos_json, gravado_em }); pontos_json e array { lat, lng, kmh, t, fracao, sub } (migration 0026/0027 linha 24-28). Sem motor, rpm, temperatura, pressao."
+    },
+    {
+     "fato": "Os dados de motor/T4000 que entram no acumulador NAO sao guardados ponto a ponto: so o MAX da volta (e MIN da pressao) sobrevivem, depois viram media por combinacao. A serie temporal e perdida.",
+     "arquivo": "web/cockpit/padrao-acumulador.js:122-130",
+     "evidencia": "ingestT4000 faz v.motorMaxC = Math.max(...), v.pneuMinPressBar = Math.min(...). snapshot() (linha 174) so emite voltas (resumos MAX/MIN) e padrao (medias). savePadrao faz upsert de UMA linha por (carro,track,pneu) — padrao-persister.js:95-97."
+    },
+    {
+     "fato": "As tabelas raw de motor/eventos foram criadas mas nenhum codigo de producao escreve nelas. t4000_live_events so e referenciada por migration e por teste de paridade de schema; nunca por codigo de captura.",
+     "arquivo": "supabase/migrations/0023_t4000_live_channel.sql:6",
+     "evidencia": "grep t4000_live_events em web/ios/tests/scripts: so aparece em tests/node-smoke-schema-parity.mjs:80,199. Zero writers. A propria migration 0023 descreve a tabela como canal de debug Claude<->pagina, nao captura de sessao."
+    },
+    {
+     "fato": "telemetry_samples_enriched so e escrita por codigo iOS/Swift, em SQLite LOCAL (GRDB), nunca no Supabase a partir do cockpit web. A migration 0008 diz explicitamente que e schema-only e sem sync remoto implementado.",
+     "arquivo": "ios/p1fast-core/Sources/P1FastCore/Telemetry/EnrichedTelemetryWriter.swift:25",
+     "evidencia": "return try queue.write { db in ... .insert(db) } — escrita em DatabaseQueue (SQLite local GRDB), nao Supabase. Migration 0008 linha 13-19: 'Sync remoto sera por batch quando existir' e 'Schema-only nesta rodada — escrita real chega no MS-2.7 PR C'. Nenhuma ocorrencia de telemetry_samples_enriched em web/."
+    },
+    {
+     "fato": "telemetry_samples (GPS cru, append-only) tambem so tem caminho iOS; o cockpit web em uso hoje nunca insere nela.",
+     "arquivo": "supabase/migrations/0001_initial.sql:306",
+     "evidencia": "create table public.telemetry_samples existe, mas grep 'telemetry_samples' em web/ retornou VAZIO. Os writers/menções estao so em ios/* e docs."
+    },
+    {
+     "fato": "O doc canonico confirma o desenho: dado e streaming, nunca em lote, e nao ha mencao de gravar/armazenar a sessao inteira. Persistencia de sessao crua nao esta no projeto arquitetural.",
+     "arquivo": "docs/ARQUITETURA_DEFINITIVA.md:35-39",
+     "evidencia": "'## 1. O dado e continuo (streaming), nunca em lote' / 'Nao existe \"fecha a curva, calcula e manda o resultado\"'. grep por armazena/grava/persist/batch nesse doc so retornou esta secao 1 — nenhum requisito de gravar a sessao do liga ao desliga."
+    }
+   ],
+   "oQueNaoExiste": [
+    "Nenhuma tabela/codigo que grave a serie temporal crua continua (T4000 + GPS, ponto a ponto, do liga ao desliga) na nuvem. So existem derivados: melhor passagem por trecho, media por combinacao, e tempo de volta.",
+    "Nenhum writer de producao (web/notebook) para telemetry_samples (GPS cru append-only) — existe a tabela e o writer iOS, mas o cockpit em uso nao a alimenta.",
+    "Nenhum writer de producao para telemetry_samples_enriched — so o writer iOS/GRDB em SQLite local; sync remoto declarado como 'quando existir' na migration 0008, nunca implementado.",
+    "Nenhum writer para t4000_live_events: tabela criada como canal de debug (mig 0023), zero codigo de captura grava motor cru nela.",
+    "Nenhum campo de motor/RPM/temperatura/pressao na unica tabela de pontos persistida (melhores_passagens_trecho.pontos_json so tem lat/lng/kmh/t/fracao/sub) — logo, mesmo o derivado que sobrevive NAO carrega dado de motor por ponto.",
+    "Nenhuma garantia de captura 'TODA vez': a gravacao depende de fechar trecho/volta com sucesso e do banco aceitar (gravarPassagem retorna false se RLS de acesso recusar — main-t3000.js:329); falha = perda silenciosa, sem retentativa nem buffer local de sessao.",
+    "Nenhum buffer/arquivo local da sessao bruta no caminho web — a amostra so existe em transito no Realtime (cloud-bridge), entao o que nao for transmitido/derivado naquele instante e perdido."
+   ]
+  },
+  {
+   "area": "Intenção da arquitetura — persistência da sessão crua (liga→desliga)",
+   "comoFunciona": "A arquitetura canônica (docs/ARQUITETURA_DEFINITIVA.md, decisão Flávio 16/06) descreve o dado como STREAMING ao vivo: nasce no carro, o notebook processa para o piloto na hora e espelha o mesmo dado para a nuvem, e todas as telas mostram o mesmo instante. O canal de transporte é o `cockpit-bubi-live` (Supabase Realtime broadcast), explicitamente \"sem persistência\". O que de fato é salvo na nuvem pelo caminho ao vivo de hoje (web/cockpit) é só DERIVADO/AGREGADO: sessões, voltas, melhores passagens por trecho, snapshots de padrão, perfis de reação, pontos de troca — via insert/upsert. O fluxo bruto contínuo (cada `sample` do motor T3000 + cada ponto `gps`) é transmitido e consumido, mas nunca escrito em lugar nenhum. Existe um stack de persistência crua append-only no repositório (ADR-003/004/014 + src/telemetry/sample-store.js + session-recorder.js), porém ele pertence ao hub iOS/cockpit-mobile legado e NÃO está ligado no caminho ao vivo atual.",
+   "ondeQuebra": [
+    {
+     "fato": "O documento canônico de arquitetura define o dado como streaming ponto a ponto e NUNCA menciona gravar/armazenar a sessão inteira. A seção 1 é literalmente 'O dado é contínuo (streaming), nunca em lote' e o fluxo completo (seção 10) termina em 'Tudo contínuo, ao vivo, no mesmo instante' — sem nenhum estágio de armazenamento bruto.",
+     "arquivo": "docs/ARQUITETURA_DEFINITIVA.md:35-39,116-132",
+     "evidencia": "L35 '## 1. O dado é contínuo (streaming), nunca em lote'; L37-39 'Não existe \"fecha a curva, calcula e manda o resultado\"'; L132 'Tudo contínuo, ao vivo, no mesmo instante'. Grep por grava|armazen|persist|sessao inteira|historico no doc: zero ocorrências."
+    },
+    {
+     "fato": "O canal de transporte ao vivo é declarado SEM persistência, em DOIS docs canônicos. Não é descuido de redação: está na tabela 'Onde está hospedado' e na descrição do canal.",
+     "arquivo": "docs/FONTE_DADOS_AO_VIVO.md:52",
+     "evidencia": "L52 '| Canal de broadcast | `cockpit-bubi-live` (sem persistência, latência baixa) |'. Reforçado em docs/PADRAO_CENTRAL_DADOS_AO_VIVO.md:25 'Supabase Realtime broadcast' e L52 do FONTE."
+    },
+    {
+     "fato": "O dado bruto contínuo (sample do motor e ponto gps) é explicitamente tratado como efêmero: é publicado, assinado e consumido, mas NENHUM consumidor o escreve. O payload do sample sequer carrega timestamp de captura fiel persistível (tWall é reescrito no envio).",
+     "arquivo": "docs/PADRAO_CENTRAL_DADOS_AO_VIVO.md:78-93,159-184",
+     "evidencia": "L78-93 layout do payload publicado (stripSample) — é só transporte; L161 'Canal Supabase Realtime broadcast'; L93 'tWall é reescrito com Date.now() no momento do ENVIO, não da captura'. A seção 6 (LACUNAS) lista falhas de cobertura mas NÃO lista 'sessão não é gravada' como lacuna — sinal de que efêmero é o desenho assumido, não um bug reconhecido."
+    },
+    {
+     "fato": "A INTENÇÃO de persistir telemetria crua append-only EXISTE nas ADRs — mas como source-of-truth LOCAL no dispositivo, com sincronização remota apenas por batch/arquivo FUTURO, nunca como gravação contínua na nuvem. Isso significa que a arquitetura definitiva de 16/06 (streaming puro p/ nuvem) não herdou esse requisito.",
+     "arquivo": "ARCHITECTURE_DECISIONS.md:17-24,46-51",
+     "evidencia": "ADR-003 L18 'IndexedDB no dispositivo mestre é canonical durante sessão'; ADR-004 L22-24 'amostras de telemetria nunca são editáveis... integridade dos dados brutos'; ADR-014 L47 'Sincronização remota, quando existir, será por batch/arquivo consolidado — não por row' e L49 'replay remoto fino de uma sessão exigirá drainer-de-batch específico no futuro (item registrado em TECH_DEBT_TRACKER)'."
+    },
+    {
+     "fato": "O código que grava telemetria crua append-only EXISTE mas não está no caminho ao vivo atual: pertence ao hub iOS/cockpit-mobile legado. O live path (web/cockpit/main-t3000.js) NÃO importa sampleStore nem SessionRecorder; só importa persisters de dado derivado.",
+     "arquivo": "src/telemetry/sample-store.js:1-11,107 + web/cockpit/main-t3000.js:10-44",
+     "evidencia": "sample-store.js L4-11 'persistência append-only de telemetria (ADR-004/014)'. Único caller real é src/telemetry/provider.js:107 'sampleStore.enqueue(sample)' (pipeline antigo). Em main-t3000.js (live de hoje) os imports são cockpit-state, cloud-bridge, melhores-loader, voltas-persister — nenhum de telemetria crua. SessionRecorder só aparece em tests/ e em cockpit-mobile.html (hub iOS), nunca no web/cockpit live."
+    },
+    {
+     "fato": "Tudo que o caminho ao vivo de hoje escreve na nuvem é DERIVADO/agregado, confirmando que persistência de sessão crua simplesmente não acontece. voltas-persister grava 'voltas' (contagem/tempo), melhores-loader grava 'melhores_passagens_trecho', padrao-persister faz upsert de snapshot.",
+     "arquivo": "web/cockpit/voltas-persister.js:72-73 + web/cockpit/melhores-loader.js:103 + web/cockpit/padrao-persister.js:97",
+     "evidencia": "voltas-persister L72-73 '.from(\\'voltas\\').insert({'; melhores-loader L103 '.insert({' em melhores_passagens_trecho; padrao-persister L97 '.upsert(row, { onConflict: \\'carro_id,track_id,tipo_pneu\\' })'. Nenhum insere o stream sample/gps cru. Grep por telemetry_samples|t4000_live_events|segment_executions no web/cockpit: zero escritas."
+    }
+   ],
+   "oQueNaoExiste": [
+    "Nos 3 docs canônicos pedidos (ARQUITETURA_DEFINITIVA, FONTE_DADOS_AO_VIVO, PADRAO_CENTRAL_DADOS_AO_VIVO) NÃO existe nenhuma frase exigindo gravar a sessão inteira liga→desliga crua. O desenho é streaming + derivados. A ausência é por escolha (canal 'sem persistência', 'nunca em lote'), não por esquecimento mencionado.",
+    "No caminho ao vivo de hoje (web/cockpit) NÃO existe nenhum componente que escreva o stream bruto contínuo (sample do motor ou ponto gps) em banco/arquivo — não há gravador de sessão raw plugado.",
+    "NÃO existe gravação remota contínua na arquitetura: a única persistência crua prevista (ADR-014) é LOCAL no device e a sincronização remota é declarada como trabalho FUTURO por batch (TECH_DEBT_TRACKER), nunca como streaming-para-armazenar.",
+    "O stack que poderia gravar a sessão crua (sample-store.js + session-recorder.js + ADR-003/004/014) existe no repo mas NÃO está ligado ao caminho ao vivo definitivo — está órfão do pipeline iOS legado.",
+    "CONCLUSÃO: persistência de sessão crua liga→desliga é uma DECISÃO EXPLÍCITA DE NÃO TER na arquitetura definitiva (streaming efêmero p/ nuvem). Como REQUISITO bruto-local-com-sync-futuro ela só existe nas ADRs antigas, que a arquitetura de 16/06 não reincorporou — logo, em relação ao objetivo do Flávio (dado completo da T4000+GPS o tempo todo, gravado com garantia), é requisito NÃO contemplado no desenho ao vivo atual."
+   ]
+  }
+ ],
+ "julgadas": [
+  {
+   "tese": {
+    "id": "ARQUITETURA",
+    "tese": "A causa-raiz e ARQUITETURAL: o sistema nunca foi projetado para gravar a sessao continua; foi desenhado como monitor ao vivo + derivados (melhor passagem, padrao). O doc canonico nao manda gravar a sessao. Logo, mesmo com tudo perfeito, nao haveria gravacao do liga ao desliga."
+   },
+   "defesa": {
+    "id": "arquitetura",
+    "defesa": "A causa-raiz é ARQUITETURAL, não um bug pontual. O sistema foi projetado como monitor ao vivo + derivados, nunca como gravador de sessão. O doc canônico (ARQUITETURA_DEFINITIVA.md, decisão Flávio 16/06) define o dado como \"streaming, nunca em lote\" e o fluxo completo termina em \"Tudo contínuo, ao vivo, no mesmo instante\" — sem nenhum estágio de armazenamento bruto. O canal de transporte cockpit-bubi-live é declarado \"sem persistência\" em DOIS docs canônicos. Logo, mesmo com transporte perfeito, internet estável e throttle desligado, NÃO haveria gravação do liga-ao-desliga: não existe gravador plugado no caminho ao vivo. As correções pontuais (5 Hz, throttle, queda de canal) só melhorariam o que aparece na tela; nenhuma delas faz nascer uma gravação que o desenho nunca previu. A persistência crua existe só como código órfão (iOS/SQLite local, ADR-014), com sync remoto declarado \"quando existir\" — nunca reincorporado na arquitetura de 16/06.",
+    "provas": [
+     {
+      "ponto": "O doc canônico de arquitetura define o dado como streaming ponto a ponto e nunca manda gravar a sessão. Seção 1 literal: 'O dado é contínuo (streaming), nunca em lote' / 'Não existe fecha a curva, calcula e manda o resultado'. O fluxo completo (seção 10) termina em 'Tudo contínuo, ao vivo, no mesmo instante' — zero estágio de armazenamento bruto.",
+      "arquivoOuFato": "docs/ARQUITETURA_DEFINITIVA.md:35-39 e :132 (lidos integralmente)"
+     },
+     {
+      "ponto": "O canal de transporte ao vivo é declarado SEM persistência na tabela 'Onde está hospedado'. Não é descuido: é o desenho.",
+      "arquivoOuFato": "docs/FONTE_DADOS_AO_VIVO.md:52 — '| Canal de broadcast | cockpit-bubi-live (sem persistência, latência baixa) |'"
+     },
+     {
+      "ponto": "O próprio cabeçalho do código de transporte afirma que a amostra é efêmera: 'Ela é enviada, sem persistência, num canal nomeado.' E publishSample só faz _channel.send broadcast — nenhum .insert/.upsert/.from em todo o caminho do sample cru.",
+      "arquivoOuFato": "web/cockpit/cloud-bridge.js:4 (comentário) e :139 (publishSample faz só broadcast). PUBLISH_HZ=5 em :19"
+     },
+     {
+      "ponto": "O caminho ao vivo de hoje (main-t3000.js) NÃO importa nenhum gravador de telemetria crua: os imports são cockpit-state, cloud-bridge, melhores-loader, voltas-persister, padrao — todos derivados. sampleStore/SessionRecorder não aparecem.",
+      "arquivoOuFato": "web/cockpit/main-t3000.js:10-44 (imports verificados via sed)"
+     },
+     {
+      "ponto": "Tudo que o caminho ao vivo escreve na nuvem é DERIVADO/agregado. As únicas 3 escritas em web/cockpit são: voltas (só tempo/contagem), melhores_passagens_trecho (só lat/lng/kmh, sem campo de motor) e padroes_telemetria_por_volta (upsert de UMA linha com médias máx/mín). Nenhuma grava o stream cru.",
+      "arquivoOuFato": "grep '.insert(/.upsert(/.from(' em web/cockpit: só voltas-persister.js:73, melhores-loader.js:103, padrao-persister.js:97"
+     },
+     {
+      "ponto": "As tabelas raw existem mas têm ZERO writers no web: grep telemetry_samples em web/ retorna VAZIO; grep t4000_live_events em web/ retorna VAZIO. A intenção de persistir cru só vive em código iOS/SQLite local (ADR-014), com sync remoto 'quando existir' — nunca implementado.",
+      "arquivoOuFato": "grep telemetry_samples e t4000_live_events em web/ (ambos vazios). ARCHITECTURE_DECISIONS.md ADR-014:47 'sincronização remota, quando existir, será por batch'"
+     },
+     {
+      "ponto": "Prova de que a ausência de gravação é DESENHO, não bug: a seção 6 (LACUNAS) do PADRAO_CENTRAL lista 8 falhas reconhecidas (queda de canal, sim-publish sem guarda, arquivos faltando, sensores inexistentes, Command Box não publicado) e NENHUMA delas é 'a sessão crua não é gravada'. Se fosse falha esperada, estaria na lista. Não está porque nunca foi requisito.",
+      "arquivoOuFato": "docs/PADRAO_CENTRAL_DADOS_AO_VIVO.md:256-293 (seção 6 lida integralmente — 6.1 a 6.8, nenhuma cita gravação de sessão)"
+     }
+    ],
+    "forcaAutoavaliada": "forte",
+    "oQueMeRefutaria": "Me refutaria encontrar, no caminho ao vivo ATUAL (web/cockpit, não no iOS órfão), um writer plugado que grave o stream cru contínuo — por exemplo main-t3000.js importando e chamando sampleStore.enqueue ou um SessionRecorder ligado à partida/desligamento do motor, escrevendo em telemetry_samples / t4000_live_events / IndexedDB / arquivo. Também me refutaria uma frase explícita num dos 3 docs canônicos (ARQUITETURA_DEFINITIVA, FONTE_DADOS_AO_VIVO, PADRAO_CENTRAL) exigindo gravar a sessão liga→desliga crua — o que tornaria a falta de gravação um bug de implementação, não uma decisão de arquitetura. Eu busquei ambos e não achei nenhum: grep de telemetry_samples/t4000_live_events em web/ deu vazio, e a seção de lacunas não cita o tema. Se a tese concorrente provar que o objetivo do Flávio ('dado completo gravado com garantia') foi formalizado como requisito em algum doc vigente que a arquitetura de 16/06 deveria ter herdado, isso enfraqueceria meu enquadramento de 'decisão explícita de não ter' para 'requisito esquecido na transição'."
+   },
+   "veredito": {
+    "evidencia": "ARCHITECTURE_DECISIONS.md:22-24 e 46-49 (ADR-004/014 vigentes, nao cancelados); STATUS.md:159 e 195-198 (telemetry_samples raw validado fim-a-fim em hardware real, 56314 amostras); ADR-023 (iPhone como agregador de tudo + uploader); web/cockpit/cloud-bridge.js:120-147; docs/PADRAO_CENTRAL_DADOS_AO_VIVO.md:256-293",
+    "id": "arquitetura",
+    "veredito": "mecanismo",
+    "porque": "A defesa acerta no caminho web: cloud-bridge.js so faz broadcast efemero (PUBLISH_HZ=5, sem insert), main-t3000.js importa so persisters derivados, e as LACUNAS do PADRAO_CENTRAL nao citam gravacao de sessao. Isso e um MECANISMO real do estado de hoje. Mas a defesa exagerou ao chamar de causa-raiz e de decisao explicita de NAO ter. Tres fatos cortam: (1) persistencia crua append-only e requisito VIGENTE, nao orfao (ADR-003/004/014, listados no CLAUDE.md como nao reabrir, nenhum revogado; ADR-014 deixa o sync remoto como tech debt, nao cancelado); (2) foi construido e validado fim-a-fim no iOS (STATUS.md: 56314 amostras raw, pipeline raw-Kalman-Detector-SQLite validado em hardware real) — nao e intencao que nunca existiu; (3) ARQUITETURA_DEFINITIVA.md nao cancela nada disso: e silente sobre armazenamento (zero mencao a ADR-014/grava/persist/telemetry_samples), e o ADR-023 mantem o iPhone como agregador de tudo + uploader assinando o canal do Windows, preservando por desenho o componente dono do gravador raw. Logo a falta no caminho web e lacuna de cobertura/implementacao numa peca que o ADR-023 chama de prototipo, nao produto final; o drainer remoto segue como tech debt. A tese acerta o mecanismo proximal e erra ao promove-lo a causa-raiz e a decisao de nunca gravar.</porque>\n</invoke>\n"
+   }
+  },
+  {
+   "tese": {
+    "id": "CONEXAO/OPERACAO",
+    "tese": "A causa-raiz e de CAPTACAO/CONEXAO no dia: o GPS entrou mas a T4000 nao estava transmitindo (USB nao plugado / aba do cockpit fechada / leitor caido). A capacidade existe; faltou ligar/conectar corretamente. Falha operacional, nao de design."
+   },
+   "defesa": {
+    "id": "conexao-operacao",
+    "defesa": "A causa-raiz do dia é de CAPTAÇÃO/CONEXÃO, não de design. GPS e T4000 são DOIS canais fisicamente independentes: o GPS entra por Bluetooth (RaceBox) direto na aba teste-aparelhos (index.html:443-482), enquanto a T4000 só é lida por WebUSB em OUTRA aba (p1t4000/main-t3000.js:829) e chega à Central por broadcast. Por isso o GPS pode entrar perfeitamente e a T4000 sumir ao mesmo tempo — exatamente o sintoma relatado. A capacidade de transmitir e religar a T4000 EXISTE e é robusta (reconexão automática a cada 2s sem novo diálogo, watchdog SEM SINAL, religação por blocos curtos). Se o dado do motor não veio, foi porque a aba do cockpit não estava aberta, o USB não estava plugado, ou o leitor caiu — a própria tela distingue \"nunca veio\" (selo idle) de \"parou\" (selo bad), que é o tell operacional de não ter ligado o canal corretamente.",
+    "provas": [
+     {
+      "ponto": "GPS e T4000 são canais SEPARADOS e independentes: GPS via Bluetooth na própria aba; T4000 via USB em outra aba. Um funciona sem o outro — explica GPS OK + T4000 ausente no mesmo dia.",
+      "arquivoOuFato": "web/teste-aparelhos/index.html:443-482 (assinarRaceBox/connectRaceBox por navigator.bluetooth) vs main-t3000.js:829 (navigator.usb.requestDevice). O GPS sai pela linha 508 só dependendo de gps.lastPktTs do RaceBox, sem nenhuma dependência do carro."
+     },
+     {
+      "ponto": "A T4000 NÃO é lida pela Central de Pista: ela só RECEBE o broadcast da outra aba. Se essa aba não estiver aberta/lendo, não chega NADA do motor — sem que isso afete o GPS.",
+      "arquivoOuFato": "web/teste-aparelhos/index.html:84 'Quem lê o carro é a outra aba do notebook (painel do piloto, p1t4000.vercel.app)' e linha 573 'O quadro CARRO acende quando o painel do piloto (outra aba) estiver lendo a T4000'"
+     },
+     {
+      "ponto": "O selo CARRO distingue 'nunca recebeu amostra' (idle) de 'parou' (bad) — é o indicador operacional exato de canal não ligado. lastSampleTs nulo = a aba T4000 nunca transmitiu naquela sessão.",
+      "arquivoOuFato": "web/teste-aparelhos/index.html:227 boardPill($('bCarro'), 'CARRO · sem dados', nuvem.lastSampleTs ? 'bad' : 'idle') — idle = nunca veio nenhuma amostra do motor"
+     },
+     {
+      "ponto": "A capacidade de captar e RELIGAR a T4000 existe e é robusta: reconexão automática sem novo diálogo a cada 2s quando o cabo/energia volta. Falha de captura é recuperável por conexão, não por falta de arquitetura.",
+      "arquivoOuFato": "web/cockpit/main-t3000.js:772-800 reconectarT3000(): navigator.usb.getDevices() reusa autorização e re-handshake a cada 2000ms enquanto t3.reading"
+     },
+     {
+      "ponto": "Watchdog dedicado avisa SEM SINAL quando a T4000 silencia >1,5s — prova que o sistema trata queda de captura como evento operacional esperado, com recuperação automática.",
+      "arquivoOuFato": "web/cockpit/t3000-watchdog.js:10-12 (toleranciaMs:1500) e main-t3000.js:803-815 onMudancaSinal -> setStatus('SEM SINAL — conversor T3000 silenciou')"
+     },
+     {
+      "ponto": "Há até recuperação de trava silenciosa: blocos curtos repetidos forçam religação do USB. O design previu e mitiga a falha de captura física da T4000.",
+      "arquivoOuFato": "web/cockpit/main-t3000.js:916-924 contador t3.blocosCurtos >= T3_MAX_BLOCOS_CURTOS -> reconectarT3000()"
+     },
+     {
+      "ponto": "Incidente real já registrado no código foi de aba/notebook suspenso (operacional), não de design: vídeo e GPS pararam JUNTOS por aba congelada em segundo plano — mesma classe de falha (conexão/sessão), corrigida com wakeLock e religar-tudo.",
+      "arquivoOuFato": "web/teste-aparelhos/index.html:514-516 'Causa observada 19/06 ~18:02: vídeo e GPS pararam JUNTOS... sinal de aba/notebook suspenso'"
+     }
+    ],
+    "forcaAutoavaliada": "media",
+    "oQueMeRefutaria": "Um log/print do dia mostrando o selo CARRO em 'bad' (parou) e não 'idle' enquanto o GPS gravava — isso provaria que a T4000 ESTAVA conectada e transmitindo e mesmo assim o dado se perdeu, jogando a culpa para a camada de persistência (que de fato não grava o stream cru), não para a conexão. Também me refutaria: confirmação de que a aba p1t4000 estava aberta e o selo CARRO 'ao vivo ✓' no momento — aí a captação funcionou e o problema é de design (nada grava o sample cru do motor, conforme cloud-bridge.js:139 só faz broadcast efêmero e nenhum persister carrega rpm/temperatura por ponto). Sem evidência do estado do selo CARRO naquela sessão específica, não consigo descartar que a captação funcionou e o buraco foi a ausência de gravação — por isso minha força é média, não forte."
+   },
+   "veredito": {
+    "id": "conexao-operacao",
+    "veredito": "fator-contribuinte",
+    "porque": "A tese explica o SINTOMA AO VIVO (T4000 some, GPS fica), mas nao a perda do dia. O codigo confirma os canais independentes (GPS Bluetooth na aba teste-aparelhos:443-484 vs T4000 WebUSB em main-t3000.js, chega so por broadcast index.html:84-85,129) e o selo CARRO distinguindo idle (nunca veio) de bad (parou) em index.html:227 — entao conexao/operacao PODE deixar o motor sem aparecer ao vivo, e e um fator real. Mas isso nao e a causa-raiz porque, mesmo no MELHOR cenario da defesa (T4000 conectada e transmitindo), nada e gravado: publishSample so faz broadcast efemero (cloud-bridge.js:139), throttle 5 Hz, e grep por insert/upsert em web/cockpit retorna SO 3 persisters derivados (padrao, melhores, voltas) — zero writer de sample/gps cru (telemetry_samples, t4000_live_events, SessionRecorder, sampleStore: zero ocorrencias em web/). O GPS recebido tambem so alimenta detectores vivos e e descartado (cloud-bridge.js:82-84 -> _onGpsPoint -> main-t3000.js:456-471 bridge.ingestImuGps, sem escrita). A perda e INCONDICIONAL e por DESIGN (ARQUITETURA_DEFINITIVA.md:35 'streaming, nunca em lote'; FONTE_DADOS_AO_VIVO.md:52 canal 'sem persistencia'). Logo a falha de conexao e, no maximo, fator-contribuinte do no-show ao vivo; a causa-raiz da perda do dado e arquitetural (nao existe gravacao de sessao crua, sem buffer/repescagem = perda silenciosa). A defesa exagerou ao chamar de 'falha operacional, nao de design' e se auto-refutou: ela mesma admite forca media e que sem o estado do selo daquele dia nao descarta que a captacao funcionou e o buraco foi a ausencia de gravacao.",
+    "evidencia": "web/cockpit/cloud-bridge.js:139 (publishSample so broadcast, sem .insert/.upsert) + grep insert/upsert em web/cockpit = so padrao-persister.js:97, melhores-loader.js:103, voltas-persister.js:73 (derivados) + grep telemetry_samples|t4000_live_events|SessionRecorder|sampleStore em web/ = ZERO + web/teste-aparelhos/index.html:227 (selo idle vs bad) e :506-510 (GPS so broadcast 5 Hz) + docs/ARQUITETURA_DEFINITIVA.md:35 e docs/FONTE_DADOS_AO_VIVO.md:52 (canal 'sem persistencia')"
+   }
+  },
+  {
+   "tese": {
+    "id": "PERSISTENCIA/DESCARTE",
+    "tese": "A causa-raiz e o CAMINHO DE SALVAMENTO que descarta de proposito: throttle a 5 Hz e gravacao so da \"melhor passagem por trecho\". Mesmo com T4000+GPS perfeitos a 25 Hz, o sistema jogaria fora 4/5 dos pontos e guardaria so curvas isoladas. O resto e silenciosamente perdido."
+   },
+   "defesa": {
+    "id": "persistencia-descarte",
+    "defesa": "A causa-raiz e o CAMINHO DE SALVAMENTO, que descarta de proposito em DOIS pontos antes de qualquer dado tocar o banco. Primeiro, o throttle: o GPS sai do notebook travado em 5 Hz (setInterval de 200ms) e o motor e cortado a 5 Hz na cloud-bridge (PUBLISH_HZ=5, dropped++). Mesmo com RaceBox+T4000 perfeitos a 25/10 Hz, 4 de cada 5 pontos sao jogados fora ANTES de sair do notebook. Segundo, a gravacao: o unico ponto-a-ponto que sobrevive e a \"melhor passagem por trecho\" (so 3 curvas hoje), e o registro guardado e SO GPS (lat/lng/kmh/t/fracao/sub) — zero motor. Do resto da volta, do resto da sessao e de todo o stream do motor, nada e gravado: e broadcast efemero e some. O dado bruto liga-ao-desliga nao existe em lugar nenhum porque o salvamento nunca foi feito pra existir — e descarte por desenho, nao falha de leitura.",
+    "provas": [
+     {
+      "ponto": "GPS travado em 5 Hz na saida do notebook: o loop de envio pra nuvem e um setInterval de 200ms (=5 Hz) que le o ultimo snapshot gps.*. Se o RaceBox entrega a 25 Hz, 4 de cada 5 pacotes ja decodificados sao sobrescritos antes do disparo e nunca saem. O proprio comentario admite '25 Hz... 5x/segundo'.",
+      "arquivoOuFato": "web/teste-aparelhos/index.html:499-510 — L499 '// painel do piloto pode usar o GPS de 25 Hz, 5x/segundo' seguido de setInterval(()=>{ cloudSend('gps',{...}) },200) — VERIFICADO lendo o arquivo"
+     },
+     {
+      "ponto": "Motor cortado a 5 Hz na nuvem: publishSample descarta a amostra (dropped++) quando now-_lastPublishTs < PUBLISH_PERIOD. PUBLISH_HZ=5 fixo. E o envio e broadcast Realtime ('event:sample') — nao toca banco.",
+      "arquivoOuFato": "web/cockpit/cloud-bridge.js:19-20,133-139 — const PUBLISH_HZ=5; PUBLISH_PERIOD=1000/5; e L139 _channel.send({type:'broadcast',event:'sample',...}) — VERIFICADO"
+     },
+     {
+      "ponto": "So existem 3 escritas em banco em todo web/cockpit, TODAS derivadas: insert de melhor passagem, upsert de snapshot de padrao, insert de tempo de volta. Nenhuma grava o stream bruto.",
+      "arquivoOuFato": "grep '.insert(/.upsert(' web/cockpit/*.js => melhores-loader.js:103, padrao-persister.js:97, voltas-persister.js:73 — APENAS essas 3, VERIFICADO"
+     },
+     {
+      "ponto": "O unico ponto-a-ponto persistido (melhores_passagens_trecho.pontos_json) e GPS PURO: cada ponto e {lat,lng,kmh,t,fracao,sub}. Nenhum campo de motor/rpm/temperatura/pressao/lambda. Mesmo o derivado que sobrevive nao carrega motor por ponto.",
+      "arquivoOuFato": "web/cockpit/melhores-loader.js:97-112 (insert de pontos_json) + delta-calculator.js:27 documenta a forma { lat, lng, kmh, t, fracao, sub } — VERIFICADO; grep de campos de motor no shape = zero"
+     },
+     {
+      "ponto": "gravarPassagem so guarda a MELHOR por trecho ('So vira referencia se for melhor que a atual') e o loader pula o segmento se ja tem a melhor. Logo nao e a sessao: e uma curva isolada por configuracao.",
+      "arquivoOuFato": "web/cockpit/melhores-loader.js:71 ('ja temos a melhor desse segmento') e L94-95 ('So vira referencia se for melhor que a atual') — VERIFICADO"
+     },
+     {
+      "ponto": "Do motor, fora a melhor passagem (que nem tem motor), so sobrevive MAX/MIN por volta (agua, pneu, pressao, cambio) que viram media por combinacao. A serie temporal de rpm/lambda/MAP/TPS/freio e perdida.",
+      "arquivoOuFato": "web/cockpit/padrao-acumulador.js:42-46 (motorMaxC/pneuMaxC/pneuMinPressBar/cambioMaxC/amostras) e padrao-persister.js:97 upsert de UMA linha por carro+track+pneu — VERIFICADO"
+     },
+     {
+      "ponto": "Nenhum writer de bruto no caminho ao vivo: grep por telemetry_samples / t4000_live_events / segment_executions em web/ retorna VAZIO. As tabelas raw existem (migrations) mas so o codigo iOS/GRDB escreve, em SQLite LOCAL, e a ADR-023 diz que esse pipeline nao e o cockpit em uso hoje.",
+      "arquivoOuFato": "grep 'telemetry_samples|t4000_live_events|segment_executions' web/ => sem resultados — VERIFICADO; writers iOS em ios/* + ADR-014 ('sync remoto quando existir, por batch')"
+     }
+    ],
+    "forcaAutoavaliada": "forte",
+    "oQueMeRefutaria": "Tres coisas me refutariam: (1) Se o objetivo declarado do Flavio for SO o painel ao vivo do piloto (5 Hz e mais que suficiente pra reacao humana) e nunca gravar a sessao bruta — entao o descarte nao e bug, e o desenho aprovado (docs/ARQUITETURA_DEFINITIVA.md diz 'streaming, nunca em lote' e o canal e 'sem persistencia'). Nesse caso a tese de 'persistencia' confunde uma DECISAO com uma FALHA. (2) Se existir um gravador de sessao bruta plugado no caminho ao vivo que eu nao achei — mas verifiquei: grep por telemetry_samples em web/ deu vazio e os imports de main-t3000.js nao incluem sample-store nem SessionRecorder. (3) Se a queixa real do Flavio for de DADO ERRADO/AUSENTE na tela ao vivo (ex: lambda 0,00, GPS congelado, motor que nao chega), a causa-raiz seria de LEITURA/transmissao, nao de persistencia — meu eixo so explica perda de HISTORICO, nao falha do tempo real. Se a dor for 'nao consigo revisar a sessao depois', minha tese e a forte; se for 'a tela ao vivo esta errada', nao e."
+   },
+   "veredito": {
+    "id": "persistencia-descarte",
+    "veredito": "fator-contribuinte",
+    "porque": "Confrontei cada prova com o código e o mecanismo da tese é REAL: o GPS sai a 5 Hz em dois setInterval(...,200) (só broadcast, teste-aparelhos/index.html:497-510), o motor é cortado a 5 Hz na cloud-bridge (PUBLISH_HZ=5, dropped++, só _channel.send broadcast — cloud-bridge.js:19-20,132-139), e no caminho ao vivo (main-t3000.js:937-941) o sample vai SÓ pra bridge/publishSample/updateHud, nenhum writer. Achei até MAIS writers derivados do que a defesa contou (ela disse 3; são 5: melhores_passagens_trecho, padroes_telemetria_por_volta, voltas, perfis_reacao_piloto via REST, pontos_troca_aprendidos via REST) — mas TODOS derivados/agregados, nenhum grava o stream cru. O único ponto-a-ponto salvo (pontos_json) é GPS puro {lat,lng,kmh,t,fracao,sub} (trecho-detector.js:345,372 monta o buffer só com isso; zero rpm/água/lambda) e só da MELHOR passagem por trecho. sample-store.js/SessionRecorder NÃO são importados em web/cockpit (só vivem em src/telemetry, pipeline iOS legado). PORÉM não é causa-raiz: o descarte é uma DECISÃO ARQUITETURAL EXPLÍCITA, não uma falha. ARQUITETURA_DEFINITIVA.md (doc canônico, Flávio 16/06) é streaming puro — grep por grava/armazen/persist retornou ZERO; o canal é documentado 'sem persistência'; ADR-014 difere o sync cru remoto pra 'no futuro, por batch (TECH_DEBT_TRACKER)'. Logo a tese confunde uma decisão com um bug: ela é a causa SE e somente SE o objetivo do Flávio for gravar a sessão T4000+GPS completa pra revisar depois — aí o requisito nunca foi implementado no caminho ao vivo. Se a dor for dado errado/ausente na tela ao vivo (lambda 0,00, GPS congelado, motor que não chega), a causa-raiz é LEITURA/transmissão e essa tese vira irrelevante. A própria defesa admite essa fronteira no 'oQueMeRefutaria'. Por isso: fator-contribuinte forte e bem-provado pra perda de histórico, não a causa-raiz universal.",
+    "evidencia": "web/cockpit/cloud-bridge.js:19-20,132-139 (PUBLISH_HZ=5 + broadcast sem insert); web/teste-aparelhos/index.html:497-510 (GPS 2x setInterval 200ms = 5 Hz, cloudSend broadcast); web/cockpit/main-t3000.js:937-941 (sample só vai pra bridge/publishSample/updateHud); web/cockpit/trecho-detector.js:345,372 (buffer de pontos = {lat,lng,kmh,t}, zero motor) → web/cockpit/melhores-loader.js:103 (pontos_json GPS puro, só melhor passagem); 5 writers derivados (melhores-loader.js:103, padrao-persister.js:97, voltas-persister.js:73, pilot-reaction-persister.js:91, pontos-troca-persister.js:76), nenhum grava stream cru; sample-store/SessionRecorder ausentes em web/cockpit (só src/telemetry); docs/ARQUITETURA_DEFINITIVA.md:35-39,132 (streaming, grep persist=zero) + docs/FONTE_DADOS_AO_VIVO.md:52 ('sem persistência') + ARCHITECTURE_DECISIONS.md:47-49 (ADR-014: sync remoto 'no futuro, por batch')"
+   }
+  },
+  {
+   "tese": {
+    "id": "GARANTIA/CONTRATO",
+    "tese": "A causa-raiz e a AUSENCIA DE GARANTIA: nao ha contrato de gravacao — nenhum indicador de \"estou gravando\", nenhum arquivo de sessao, nenhuma verificacao pos-sessao de integridade. Por isso a perda e silenciosa e nao repetivel: nada no sistema promete nem prova que o dado foi guardado."
+   },
+   "defesa": {
+    "id": "garantia-contrato",
+    "defesa": "A causa-raiz e a ausencia de um CONTRATO DE GRAVACAO. O sistema nunca promete nem prova que guardou o dado, entao a perda e silenciosa e nao repetivel. Tres provas convergem: (1) nenhum selo de \"gravando\" existe — os quatro selos (bVideo/bGps/bCarro/bNuvem) so reportam conexao/vivacidade, jamais sessao; (2) o stream cru (sample do motor + ponto gps) so e BROADCAST: publishSample/cloudSend incrementam _stats.dropped em falha e devolvem um booleano que NINGUEM le, sem fila nem repescagem; (3) o unico caminho com repescagem e a tabela 'voltas' (so tempo/contagem, zero dado de motor/GPS). O proprio codigo confessa o sintoma em main-t3000.js:327: \"antes o log dizia 'salva' sem conferir e num dia de pista real ninguem perceberia a perda (achado 10/06)\". Onde havia contrato (conferir retorno), a perda apareceu; onde nao ha (o stream cru), a perda continua invisivel por desenho.",
+    "provas": [
+     {
+      "ponto": "Nenhum indicador de 'gravando': os unicos selos da Central de Pista reportam estado de conexao/vivacidade, nunca gravacao de sessao. Sem contrato visual, o operador nao tem como saber se algo esta sendo guardado.",
+      "arquivoOuFato": "web/teste-aparelhos/index.html:44-49 (bVideo 'VIDEO·parado', bGps 'GPS·desligado', bCarro 'CARRO·sem dados', bNuvem 'NUVEM·desligada') e selo GPS 487-495 so reporta idade do pacote ('travado','sem pacotes'). grep por 'gravando|recording|integridade|checksum|verif' no arquivo = ZERO."
+     },
+     {
+      "ponto": "O stream cru e efemero por contrato faltante: publishSample so faz broadcast Realtime, e em falha so incrementa um contador silencioso. Quem chama (main-t3000.js) nem usa o retorno — nao ha fila, retentativa nem buffer da amostra perdida.",
+      "arquivoOuFato": "web/cockpit/cloud-bridge.js:120-145 — em offline/throttle/erro faz _stats.dropped+=1 e return false; em sucesso _channel.send(broadcast 'sample'). main-t3000.js:14 importa publishSample e a chama sem verificar o retorno (sem if). Mesma situacao para cloudSend('gps') e sendAppMessage em teste-aparelhos/index.html:504,508 (dentro de try{}catch{} vazio)."
+     },
+     {
+      "ponto": "A prova viva do contrato: quando ALGUEM finalmente checou o retorno de gravacao (voltas), descobriu-se a perda que ate entao era invisivel. O comentario no codigo e uma confissao literal de que sem contrato a perda nao e percebida.",
+      "arquivoOuFato": "web/cockpit/main-t3000.js:325-329 — 'gravarPassagem devolve false quando o banco recusa ... antes o log dizia salva sem conferir e num dia de pista real ninguem perceberia a perda (achado 10/06).' Hoje so as voltas tem repescagem real (main-t3000.js:230-241: okGravou false -> _voltasPendentes.push(v), _persistStats.recusadas++)."
+     },
+     {
+      "ponto": "O contrato (repescagem/confirmacao) existe SO para 'voltas' (tempo/contagem) e nao carrega nenhum dado bruto de motor/GPS. Logo, mesmo o unico caminho garantido nao prova nem guarda o dado que o Flavio quer (T4000+GPS continuo).",
+      "arquivoOuFato": "web/cockpit/voltas-persister.js:71-79 insere {time_id,sessao_id,numero,tempo_ms,inicio_at} — sem rpm/agua/lambda/lat/lng. melhores-loader.js:103 grava so lat/lng/kmh por trecho. padrao-persister.js:97 faz upsert de medias max/min. Nenhum grava a serie temporal crua."
+     },
+     {
+      "ponto": "Nao ha verificacao pos-sessao de integridade: zero contador de pacotes gravados confrontado com recebidos, zero marca de inicio/fim de sessao bruta, zero retencao do stream. A unica metrica e _stats.dropped, que conta descarte mas nunca dispara alarme nem reparo.",
+      "arquivoOuFato": "web/teste-aparelhos/index.html arquivo inteiro: grep 'indexeddb|localstorage|.insert(|.upsert(|writeFile|fs.|download|sessionrecorder|samplestore' = ZERO. cloud-bridge.js so expoe getStats() (sent/dropped/errors) consumido como display, nunca como gate de integridade da sessao."
+     }
+    ],
+    "forcaAutoavaliada": "forte",
+    "oQueMeRefutaria": "Me refutaria se existisse, em qualquer caminho ao vivo de hoje, UM gravador de sessao raw plugado (start no ligar / stop no desligar) escrevendo o stream continuo T4000+GPS em banco/arquivo — porque ai a perda nao seria por falta de contrato, e sim por bug pontual nesse gravador. Tambem me enfraqueceria se a arquitetura definitiva (docs/ARQUITETURA_DEFINITIVA.md) EXIGISSE gravar a sessao inteira e o codigo simplesmente nao cumprisse: nesse caso a causa-raiz seria 'requisito existe mas nao implementado', e o contrato/garantia seria so o sintoma. Mas o doc define o dado como 'streaming, nunca em lote' (L35) e o canal como 'sem persistencia' (FONTE_DADOS_AO_VIVO.md:52) — ou seja, a ausencia de contrato e ela mesma a decisao de desenho, o que me favorece. O ponto honesto onde minha tese e mais 'consequencia' que 'causa primeira': a decisao arquitetural de streaming-efemero antecede a falta de contrato; um auditor poderia argumentar que a causa-raiz real e a NAO-PERSISTENCIA DA SESSAO CRUA, e a ausencia de garantia e o que torna essa lacuna invisivel e nao repetivel."
+   },
+   "veredito": {
+    "evidencia": "main-t3000.js:938 ignora o retorno de publishSample e :325-329 confessa perda invisivel (achado 10/06); cloud-bridge.js:120-145 incrementa dropped sem fila; as unicas escritas web sao derivadas (padrao-persister.js:97, melhores-loader.js:103, voltas-persister.js:73); sample-store.js e session-recorder.js so sao usados por src/telemetry/provider.js:107 do pipeline iOS legado e o web/cockpit nunca os importa; ADR-003/004/014 em ARCHITECTURE_DECISIONS.md:17-51 exigem telemetria crua append-only com sync remoto futuro; ARQUITETURA_DEFINITIVA.md:35 diz streaming nunca em lote",
+    "id": "garantia-contrato",
+    "veredito": "mecanismo",
+    "porque": "A tese e verdadeira no codigo mas e a camada de consequencia, nao a causa primeira. O stream cru (sample do motor e ponto gps) so vai a broadcast efemero e a perda e silenciosa e nao repetivel porque ninguem checa o retorno nem ha fila/selo de gravando: isso e o mecanismo, e ele e real. A causa mais funda que o codigo expoe: a persistencia crua append-only da sessao NAO e decisao de nao ter, e REQUISITO explicito nas ADR-003/004/014, e o stack que a cumpre (sample-store.js + session-recorder.js) foi construido mas ficou orfao do pipeline iOS legado (provider.js -> mobile-telemetry.js); o caminho ao vivo de hoje (web/cockpit/main-t3000.js) nunca o importa, so escreve 3 derivados. Logo a causa-raiz e o requisito de gravar a sessao crua que nunca foi religado ao caminho ao vivo atual (a ARQUITETURA_DEFINITIVA de 16/06 \"streaming nunca em lote\" nao o reincorporou e o ADR-014 jogou o sync remoto pra divida tecnica futura). A ausencia de contrato de gravacao e o efeito visivel dessa lacuna e o motivo de ela ser invisivel, nao a origem dela. A propria defesa admite isso em oQueMeRefutaria. Por haver algo mais fundo que a explica, o veredito honesto e mecanismo, nao causa-raiz."
+   }
+  }
+ ],
+ "sintese": {
+  "cadeiaCausal": [
+   "FUNDO (causa-raiz arquitetural): no caminho ao vivo de hoje (web/teste-aparelhos/index.html + web/cockpit/main-t3000.js) NAO existe nenhum gravador de sessao crua plugado. main-t3000.js importa so persisters derivados (melhores-loader, padrao-persister, voltas-persister); nao importa sample-store nem session-recorder.",
+   "O requisito de gravar a sessao crua append-only EXISTE (ADR-003/004/014, vigentes, nao revogados) e ja foi construido e validado no iOS (STATUS.md: 56.314 amostras raw em hardware real), mas o stack (sample-store.js + session-recorder.js) ficou ORFAO do pipeline iOS legado e nunca foi religado ao caminho web atual. A ARQUITETURA_DEFINITIVA de 16/06 ('streaming, nunca em lote') e silente sobre armazenamento e nao reincorporou esse requisito.",
+   "MECANISMO 1 (descarte na saida): o GPS sai do notebook travado em 5 Hz — dois setInterval(...,200) em index.html:501 e 506 leem o ultimo snapshot gps.* e fazem broadcast. Se o RaceBox entrega a 25 Hz, 4 de cada 5 pontos sao sobrescritos antes do disparo e nunca saem.",
+   "MECANISMO 2 (descarte na nuvem): a amostra do motor (T4000) e cortada a 5 Hz na cloud-bridge.js (PUBLISH_HZ=5, dropped++) e so vai a _channel.send broadcast 'sample' — efemero, sem .insert/.upsert.",
+   "MECANISMO 3 (so derivado sobrevive): as unicas 3 escritas em banco no web/cockpit sao melhores_passagens_trecho (so a MELHOR passagem por curva, pontos_json = lat/lng/kmh, ZERO motor), padroes_telemetria_por_volta (upsert de medias max/min por combinacao) e voltas (so tempo). Nenhuma grava a serie temporal crua.",
+   "MECANISMO 4 (sem contrato/garantia): publishSample devolve booleano que main-t3000.js:938 ignora; em falha so incrementa _stats.dropped sem fila nem repescagem. Nenhum selo de 'gravando'. Os 4 selos (VIDEO/GPS/CARRO/NUVEM) so reportam conexao/vivacidade. Resultado: perda silenciosa e nao repetivel.",
+   "FATOR OPERACIONAL DO DIA: GPS e T4000 sao canais fisicamente independentes (GPS por Bluetooth na aba teste-aparelhos; T4000 por WebUSB na aba p1t4000, chega so por broadcast). No dia, a aba do cockpit nao estava lendo a T4000 (USB desconectado / aba fechada / leitor caido) — selo CARRO em 'idle' (nunca veio) — entao o motor nem apareceu ao vivo, enquanto o GPS entrava normal.",
+   "SINTOMA OBSERVADO POR FLAVIO: GPS aparecendo, T4000 ausente, e — mesmo onde apareceu — nada ficou gravado da sessao completa do liga ao desliga pra revisar depois."
+  ],
+  "causaRaiz": "Nao existe gravador de sessao crua (T4000 + GPS, ponto a ponto, do liga ao desliga) plugado no caminho ao vivo do notebook. O caminho web so transmite o dado por broadcast efemero (canal 'sem persistencia') e so grava DERIVADOS (melhor passagem por curva, medias por volta, tempo de volta). O requisito de persistir a sessao crua existe e ja foi validado no iOS (ADR-003/004/014, 56.314 amostras reais), mas ficou orfao do pipeline iOS legado e a arquitetura de 16/06 nao o religou ao caminho web. Logo, mesmo com T4000 e GPS perfeitos a 25/10 Hz, internet estavel e throttle desligado, a sessao nao seria gravada — porque nada no caminho atual foi feito pra grava-la.",
+  "mecanismos": [
+   "GPS travado em 5 Hz na saida do notebook: dois setInterval(...,200) (index.html:501 e 506) leem o ultimo snapshot gps.* e fazem broadcast; 4 de cada 5 pacotes do RaceBox a 25 Hz sao sobrescritos antes do disparo e nunca saem.",
+   "Motor (T4000) cortado a 5 Hz na cloud-bridge.js (PUBLISH_HZ=5; dropped++ quando vem antes do periodo). Das 10 Hz do cabo, sobram 5 Hz — e mesmo essas 5 so viram broadcast, nunca gravacao.",
+   "Broadcast efemero sem persistencia: publishSample (cloud-bridge.js:139) e cloudSend('gps') so fazem _channel.send no canal Realtime 'cockpit-bubi-live'. Quem ouve (cloud-bridge.js:82 -> _onGpsPoint) repassa pra logica viva e descarta. Nada toca banco/disco.",
+   "So-melhor-passagem: gravarPassagem (melhores-loader.js) so guarda a MELHOR passagem por trecho (3 curvas hoje) e pula o segmento se ja tem a melhor. Nao e a sessao, e uma curva isolada por configuracao — e o pontos_json so tem lat/lng/kmh, zero motor.",
+   "Resumo por volta no lugar da serie: padrao-acumulador.js so guarda MAX de agua/pneu/cambio e MIN de pressao por volta, depois vira media por combinacao (upsert de UMA linha). rpm/lambda/MAP/TPS/freio/acelerometro amostra-a-amostra sao perdidos.",
+   "Retorno de gravacao ignorado: publishSample devolve true/false e main-t3000.js:938 nao le. So _stats.dropped conta o descarte, sem alarme, fila ou repescagem do stream cru."
+  ],
+  "fatoresOperacionais": [
+   "T4000 desconectada/sem leitura no dia: a aba p1t4000 (unica que le a T4000 por WebUSB) nao estava aberta/lendo, ou o USB nao estava plugado, ou o leitor caiu — selo CARRO em 'idle' (nunca veio amostra). O motor nem chegou ao vivo na Central de Pista.",
+   "GPS e T4000 sao canais independentes: GPS entra por Bluetooth direto na aba teste-aparelhos; T4000 so chega por broadcast da outra aba. Por isso o GPS pode entrar perfeito enquanto a T4000 some — exatamente o sintoma do dia.",
+   "Aba/notebook suspenso em segundo plano: incidente registrado 19/06 ~18:02 (video e GPS pararam juntos por aba congelada). Windows/navegador congelam a aba ao dormir ou em segundo plano, derrubando o envio — agravante de captura, ja com mitigacao parcial (wakeLock + religar)."
+  ],
+  "porQueSemGarantia": "Porque nao existe contrato de gravacao em nenhuma etapa. O stream cru (sample do motor + ponto gps) so vai a broadcast efemero num canal documentado como 'sem persistencia' (FONTE_DADOS_AO_VIVO.md:52). publishSample/cloudSend devolvem um booleano que ninguem checa (main-t3000.js:938), em falha so incrementam um contador silencioso (_stats.dropped) sem fila nem repescagem. Nao ha selo de 'gravando' (os 4 selos so mostram conexao/vivacidade), nao ha arquivo/tabela de sessao crua, nao ha contagem de pacotes gravados vs recebidos, nem verificacao pos-sessao de integridade. A unica repescagem que existe e da tabela 'voltas' (so tempo/contagem, zero dado de motor/GPS). Resultado: a perda e silenciosa e nao repetivel — nada no sistema promete nem prova que o dado foi guardado.",
+  "planoNotebook": [
+   {
+    "passo": "Criar um GRAVADOR DE SESSAO local no app do notebook (web/teste-aparelhos/index.html): ao detectar carro ligado (chegou amostra da T4000 OU GPS com fix valido), abre uma sessao com id+inicio e passa a gravar TODA amostra crua (sample completo da T4000 + ponto GPS completo) em IndexedDB local, append-only, na taxa de chegada (nao na de envio). Ao desligar (sem dado por N segundos), fecha a sessao.",
+    "oQueMuda": "Do liga ao desliga, toda a sessao fica gravada no proprio notebook, completa e detalhada, independente de internet, throttle ou da nuvem. E o que hoje simplesmente nao existe.",
+    "porque": "A causa-raiz e nao haver gravador nenhum no caminho web. IndexedDB local e a unica forma de garantir captura mesmo com nuvem caida. Append-only preserva a integridade (ADR-004).",
+    "esforco": "alto",
+    "risco": "baixo",
+    "prioridade": 1
+   },
+   {
+    "passo": "Gravar na TAXA NATIVA, separada do envio: o gravador local deve consumir cada pacote decodificado (GPS a cada decode do RaceBox; T4000 a cada amostra boa), NAO o snapshot lido pelos setInterval de 200ms. Manter os dois setInterval de 5 Hz APENAS para o broadcast ao vivo (tela do piloto), que nao precisa de mais que isso.",
+    "oQueMuda": "A gravacao guarda 25 Hz de GPS e 10 Hz de motor (tudo que o aparelho le), enquanto a tela ao vivo continua leve a 5 Hz. Separa 'mostrar' de 'guardar'.",
+    "porque": "Hoje os 25 Hz do RaceBox e 10 Hz do cabo sao sobrescritos antes de sair porque o unico caminho de saida e o de 5 Hz. Desacoplar gravacao de transmissao resolve o descarte sem inundar o canal ao vivo.",
+    "esforco": "medio",
+    "risco": "baixo",
+    "prioridade": 2
+   },
+   {
+    "passo": "Incluir a T4000 na gravacao do notebook: como a T4000 e lida na aba p1t4000 e chega na Central por broadcast, gravar a amostra 'sample' recebida no listener ch.on('broadcast',{event:'sample'}) da Central. ALEM disso, religar o gravador raw da T4000 na propria aba p1t4000 (main-t3000.js, onde a amostra nasce a 10 Hz crus, antes do throttle de 5 Hz), pra capturar a taxa plena na origem.",
+    "oQueMuda": "O motor passa a ser gravado de verdade, na taxa cheia, na aba que o le — e tambem ecoado na Central. Hoje nenhum dos dois grava o motor cru.",
+    "porque": "O melhor dado da T4000 esta na origem (10 Hz, antes do corte a 5 Hz). Gravar so o broadcast ja perderia metade. Gravar na origem + ecoar garante o stream completo.",
+    "esforco": "alto",
+    "risco": "medio",
+    "prioridade": 3
+   },
+   {
+    "passo": "Adicionar um SELO/INDICADOR de 'GRAVANDO' na Central de Pista, ao lado dos selos VIDEO/GPS/CARRO/NUVEM: mostra estado (gravando/parado), tempo de sessao, e contadores ao vivo de amostras gravadas de GPS e de T4000. Em vermelho se a gravacao parou ou se ha buraco.",
+    "oQueMuda": "O operador VE, a qualquer momento, que esta gravando e quanto ja gravou. Acaba a perda silenciosa — se algo parar, aparece na hora.",
+    "porque": "Hoje nao ha nenhum selo de gravacao; os 4 existentes so mostram conexao. Sem contrato visual, ninguem percebe a perda (o proprio codigo confessa isso em main-t3000.js:325-329, achado 10/06).",
+    "esforco": "baixo",
+    "risco": "baixo",
+    "prioridade": 4
+   },
+   {
+    "passo": "Verificacao pos-sessao + exportacao: ao fechar a sessao, calcular um resumo de integridade (amostras GPS gravadas vs pacotes recebidos pelo RaceBox via gps.hz; amostras T4000 gravadas vs recebidas; lacunas de tempo > limiar) e mostrar um cartao 'Sessao gravada: X pontos GPS, Y amostras T4000, Z lacunas'. Oferecer botao para exportar a sessao (arquivo) e/ou enfileirar upload para a nuvem.",
+    "oQueMuda": "No fim de cada sessao ha PROVA do que foi gravado e alerta se faltou algo. O dado sai do notebook (arquivo/nuvem) e nao depende de um unico aparelho.",
+    "porque": "Garantia exige prova e retencao. Hoje a unica metrica e _stats.dropped, que nem dispara alarme. Sem verificacao pos-sessao, 'gravou' continua sendo fe, nao fato.",
+    "esforco": "medio",
+    "risco": "baixo",
+    "prioridade": 5
+   },
+   {
+    "passo": "Reforcar a resiliencia de captura ja existente para nao perder sessao por aba suspensa: garantir wakeLock ativo durante gravacao, religar leitura e gravacao ao voltar foco/internet, e marcar no arquivo de sessao qualquer intervalo em que a aba esteve suspensa (em vez de fingir continuidade).",
+    "oQueMuda": "Sessao longa de pista nao morre silenciosamente por o notebook dormir; e quando houver buraco, ele fica registrado e visivel, nao escondido.",
+    "porque": "Incidente real de 19/06 (video+GPS pararam juntos por aba congelada) e a mesma classe de falha que pode interromper a gravacao. A mitigacao parcial ja existe; falta liga-la ao novo gravador e registrar lacunas com honestidade.",
+    "esforco": "medio",
+    "risco": "baixo",
+    "prioridade": 6
+   }
+  ],
+  "comoGarantir": [
+   "Indicador 'GRAVANDO' visivel na Central de Pista com tempo de sessao e contadores ao vivo de amostras de GPS e T4000 (vermelho se parou ou ha buraco) — acaba a perda silenciosa.",
+   "Arquivo de sessao append-only em IndexedDB local no notebook, aberto no liga e fechado no desliga, com TODA amostra crua de T4000 + GPS na taxa nativa — independente de internet e da nuvem.",
+   "Verificacao pos-sessao automatica: amostras gravadas vs recebidas (usando gps.hz e contagem da T4000), deteccao de lacunas de tempo, e cartao-resumo com a PROVA do que foi capturado.",
+   "Retencao e saida do dado: exportacao em arquivo e/ou fila de upload para a nuvem ao fechar a sessao, pra o dado nao morrer num unico aparelho.",
+   "Reconexao ja existente (reconectarT3000 a cada 2s, watchdog SEM SINAL >1,5s, blocos curtos -> religar, wakeLock) ligada ao gravador, com registro honesto de qualquer intervalo suspenso em vez de continuidade falsa."
+  ],
+  "riscoSeNaoFizer": "Continua impossivel revisar a sessao depois: do liga ao desliga, o dado completo e detalhado da T4000 + GPS nao fica gravado em lugar nenhum — so sobrevivem 3 curvas (melhor passagem, so GPS) e medias por volta. Em dia de pista real, a perda e silenciosa (nada avisa que nao gravou) e nao repetivel (a sessao acabou, o dado se foi). Toda corrida vira diagnostico de momento, sem historico cru pra analisar motor, calibrar shift light, validar curvas ou auditar o que aconteceu. E o sistema vai continuar dando a falsa impressao de que 'esta tudo no ar' quando, na verdade, nada do bruto esta sendo guardado."
+ }
+}

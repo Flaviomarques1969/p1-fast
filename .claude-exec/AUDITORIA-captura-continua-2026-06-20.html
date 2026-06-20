@@ -1,0 +1,202 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>P1 Fast — Auditoria: captura contínua T4000 + GPS</title>
+<style>
+:root{--bg:#0a0d14;--panel:#11161f;--panel2:#161c28;--line:#222b3a;--ink:#e8edf5;--mut:#8a97ad;--accent:#5b9dff;--good:#3ddc97;--warn:#ffb340;--bad:#ff5d6c;--fator:#5b9dff;--mec:#ffb340;--raiz:#ff5d6c}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 85% -12%,#16203233,#0a0d14),var(--bg);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{width:100%;padding:36px clamp(20px,4vw,68px) 96px}
+.ic{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.13em}
+header{border-bottom:1px solid var(--line);padding-bottom:24px}
+.brand{font-weight:800;letter-spacing:.03em;font-size:12.5px;color:var(--mut);text-transform:uppercase}
+h1{font-size:clamp(27px,3.6vw,44px);font-weight:800;letter-spacing:-.025em;margin-top:8px;line-height:1.03}
+h1 b{color:var(--accent)}
+.sub{color:var(--mut);margin-top:12px;max-width:880px}
+.meta{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--panel);padding:7px 13px;border-radius:999px;font-size:12px;color:var(--mut);font-weight:600}
+.verdict{margin:26px 0 0;border:1px solid #3a1c20;background:linear-gradient(180deg,#1b1013,#140d10);border-left:4px solid var(--bad);border-radius:16px;padding:22px 26px;display:flex;gap:18px;align-items:flex-start}
+.verdict .ic{color:var(--bad);font-size:26px;flex:0 0 auto;margin-top:2px}
+.verdict h2{font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:var(--bad);font-weight:800}
+.verdict p{font-size:18px;line-height:1.5;margin-top:8px;color:var(--ink)}
+.verdict p b{color:#fff}
+.section-t{margin:46px 0 4px;font-size:12px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--mut);display:flex;align-items:center;gap:9px}
+.section-t .ic{color:var(--accent);font-size:15px}
+.lead{color:var(--mut);margin:8px 0 18px;max-width:920px}
+.grid{display:grid;gap:16px}
+.teses{grid-template-columns:repeat(2,1fr)}
+@media(max-width:880px){.teses{grid-template-columns:1fr}}
+.tcard{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;padding:20px;border-top:3px solid var(--mec)}
+.tcard.raiz{border-top-color:var(--raiz)}.tcard.fator{border-top-color:var(--fator)}.tcard.mec{border-top-color:var(--mec)}.tcard.sint{border-top-color:var(--mut)}
+.th{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.tt{font-size:17px;font-weight:800;letter-spacing:-.01em}
+.vbadge{font-size:10.5px;font-weight:800;letter-spacing:.05em;padding:4px 9px;border-radius:7px;white-space:nowrap}
+.vbadge.raiz{background:#2a1115;color:#ff8a95;border:1px solid #4a1c22}
+.vbadge.mec{background:#2a2110;color:#ffce7a;border:1px solid #4a3a18}
+.vbadge.fator{background:#0f1c2e;color:#8fbcff;border:1px solid #1d3a5c}
+.vbadge.sint{background:#1a2029;color:var(--mut);border:1px solid var(--line)}
+.tq{color:var(--ink);font-size:13.5px;margin:9px 0 12px;font-weight:600}
+.tv{color:var(--mut);font-size:12.8px;line-height:1.5;border-top:1px solid var(--line);padding-top:12px}
+.tv b{color:var(--ink)}
+.found{margin-top:18px;border:1px solid #15301f;background:#0e1a12;border-left:4px solid var(--good);border-radius:14px;padding:18px 22px;display:flex;gap:16px;align-items:flex-start}
+.found .ic{color:var(--good);font-size:22px;flex:0 0 auto;margin-top:2px}
+.found h3{font-size:15px;color:var(--good);margin-bottom:5px}
+.found p{color:var(--mut);font-size:13.5px}
+.found b{color:var(--ink)}
+.chain{counter-reset:c;margin-top:6px;border-left:2px solid var(--line);padding-left:0}
+.cstep{position:relative;padding:0 0 16px 30px;margin-left:8px}
+.cstep:before{counter-increment:c;content:counter(c);position:absolute;left:-13px;top:-2px;width:24px;height:24px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);color:var(--mut);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.cstep.r:before{border-color:var(--raiz);color:#ff8a95}
+.cstep.sy:before{border-color:var(--warn);color:#ffce7a}
+.cstep .ct{font-size:13.6px;color:var(--ink);line-height:1.5}
+.cstep .ck{font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);display:block;margin-bottom:2px}
+.cstep.r .ck{color:#ff8a95}.cstep.sy .ck{color:#ffce7a}
+.card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;padding:22px 24px}
+.card p{color:var(--mut);font-size:14px;line-height:1.6}
+.card p b{color:var(--ink)}
+.plano{display:grid;gap:14px}
+.pcard{display:flex;gap:18px;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;padding:20px 22px}
+.pn{flex:0 0 auto;width:40px;height:40px;border-radius:11px;background:#0f1722;border:1px solid var(--line);color:var(--accent);font-size:19px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.pbody{flex:1}
+.pt{font-size:17px;font-weight:800;letter-spacing:-.01em}
+.pm{color:var(--ink);font-size:13.8px;margin:7px 0 8px;line-height:1.5}
+.pp{color:var(--mut);font-size:12.8px;line-height:1.5}.pp b{color:var(--ink)}
+.ptags{margin-top:12px;display:flex;gap:8px}
+.tag{font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;border:1px solid var(--line)}
+.tag.e-baixo,.tag.r-baixo{background:#0e1a12;color:#7fe0b0;border-color:#15301f}
+.tag.e-medio,.tag.r-medio{background:#2a2110;color:#ffce7a;border-color:#4a3a18}
+.tag.e-alto,.tag.r-alto{background:#2a1115;color:#ff8a95;border-color:#4a1c22}
+.gar{display:grid;gap:10px;margin-top:6px}
+.gitem{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:var(--mut);font-size:13.4px;line-height:1.5}
+.gitem .ic{color:var(--good);font-size:17px;flex:0 0 auto;margin-top:1px}
+.risk{margin-top:18px;border:1px solid #3a2a13;background:#14110a;border-left:4px solid var(--warn);border-radius:14px;padding:18px 22px;color:var(--mut);font-size:13.6px;line-height:1.6}
+.risk b{color:var(--ink)}
+.foot{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);color:var(--mut);font-size:12.3px;line-height:1.6}
+.foot b{color:var(--ink)}
+</style></head><body><div class="wrap">
+
+<header>
+  <div class="brand">P1 Fast — Auditoria independente</div>
+  <h1>Por que você <b>não teve</b> o dado completo do liga ao desliga</h1>
+  <p class="sub">Investigação adversarial: 4 auditores defenderam causas diferentes, cada um foi atacado por um cético que tentou derrubá-lo lendo o código de verdade, e um juiz reconciliou tudo. Objetivo: dizer a causa real, por que o sistema não te garante o dado, e o que fazer no app do notebook.</p>
+  <div class="meta">
+    <span class="chip"><svg viewBox="0 0 24 24" class="ic"><path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0L7 7Zm10 0-3 7a3 3 0 0 0 6 0l-3-7Z"/></svg> 13 auditores</span>
+    <span class="chip">4 teses confrontadas</span>
+    <span class="chip">prova lida no código (arquivo e linha)</span>
+    <span class="chip">20/06/2026</span>
+  </div>
+</header>
+
+<div class="verdict">
+  <svg viewBox="0 0 24 24" class="ic"><path d="M12 4 2 20h20L12 4ZM12 10v5M12 18h.01"/></svg>
+  <div>
+    <h2>Veredito em uma frase</h2>
+    <p><b>Não existe um "gravador de sessão" ligado no app do notebook.</b> O caminho de hoje só transmite o dado ao vivo (uma transmissão que não fica guardada) e só salva resumos (a melhor curva, médias por volta, tempo). Mesmo que a T4000 e o GPS estivessem perfeitos, a sessão não seria gravada — porque <b>nada no sistema atual foi feito pra gravá-la</b>.</p>
+  </div>
+</div>
+
+<div class="section-t"><svg viewBox="0 0 24 24" class="ic"><path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0L7 7Zm10 0-3 7a3 3 0 0 0 6 0l-3-7Z"/></svg> Os auditores se contrapuseram — e nenhuma das 4 explicações sozinha era a raiz</div>
+<p class="lead">Cada cético testou uma tese contra o código. O resultado: três delas são reais, mas são <b>consequência</b> de algo mais fundo. Só uma análise mais funda achou a verdadeira raiz (logo abaixo).</p>
+<div class="grid teses">
+  <div class="tcard mec">
+    <div class="th"><div class="tt">Foi a ARQUITETURA?</div><span class="vbadge mec">MECANISMO</span></div>
+    <div class="tq">O sistema nunca foi feito pra gravar a sessão inteira.</div>
+    <div class="tv"><b>Veredito do cético:</b> A defesa acerta no caminho web: cloud-bridge.js so faz broadcast efemero (PUBLISH_HZ=5, sem insert), main-t3000.js importa so persisters derivados, e as LACUNAS do PADRAO_CENTRAL nao citam gravacao de sessao. Isso e um MECANISMO real do estado de hoje. Mas a defesa exagerou ao chamar de causa-raiz e de decisao explicita de NAO ter. Tres fatos cortam: (1) persistencia crua append-only e requisito VIGENTE, nao orfao (ADR-003/004/014, listados no CLAUDE.md como nao reabrir, nenhum revogado; ADR-014 deixa o sync remoto como tech debt, nao cancelado); (2) foi construido e validado fim-a-fim no iOS (STATUS.md: 56314 amostras raw, pipeline raw-Kalman-Detector-SQLite validado em hardware real) — nao e intencao que nunca existiu; (3) ARQUITETURA_DEFINITIVA.md nao cancela nada disso: e silente sobre armazenamento (zero mencao a ADR-014/grava/persist/telemetry_samples), e o ADR-023 mantem o iPhone como agregador de tudo + uploader assinando o canal do Windows, preservando por desenho o componente dono do gravador raw. Logo a falta no caminho web e lacuna de cobertura/implementacao numa peca que o ADR-023 chama de prototipo, nao produto final; o drainer remoto segue como tech debt. A tese acerta o mecanismo proximal e erra ao promove-lo a causa-raiz e a decisao de nunca gravar.&lt;/porque&gt;
+&lt;/invoke&gt;
+</div>
+  </div><div class="tcard fator">
+    <div class="th"><div class="tt">Foi a CONEXÃO no dia?</div><span class="vbadge fator">FATOR QUE AGRAVA</span></div>
+    <div class="tq">A T4000 não estava ligada/transmitindo na hora do teste.</div>
+    <div class="tv"><b>Veredito do cético:</b> A tese explica o SINTOMA AO VIVO (T4000 some, GPS fica), mas nao a perda do dia. O codigo confirma os canais independentes (GPS Bluetooth na aba teste-aparelhos:443-484 vs T4000 WebUSB em main-t3000.js, chega so por broadcast index.html:84-85,129) e o selo CARRO distinguindo idle (nunca veio) de bad (parou) em index.html:227 — entao conexao/operacao PODE deixar o motor sem aparecer ao vivo, e e um fator real. Mas isso nao e a causa-raiz porque, mesmo no MELHOR cenario da defesa (T4000 conectada e transmitindo), nada e gravado: publishSample so faz broadcast efemero (cloud-bridge.js:139), throttle 5 Hz, e grep por insert/upsert em web/cockpit retorna SO 3 persisters derivados (padrao, melhores, voltas) — zero writer de sample/gps cru (telemetry_samples, t4000_live_events, SessionRecorder, sampleStore: zero ocorrencias em web/). O GPS recebido tambem so alimenta detectores vivos e e descartado (cloud-bridge.js:82-84 -&gt; _onGpsPoint -&gt; main-t3000.js:456-471 bridge.ingestImuGps, sem escrita). A perda e INCONDICIONAL e por DESIGN (ARQUITETURA_DEFINITIVA.md:35 'streaming, nunca em lote'; FONTE_DADOS_AO_VIVO.md:52 canal 'sem persistencia'). Logo a falha de conexao e, no maximo, fator-contribuinte do no-show ao vivo; a causa-raiz da perda do dado e arquitetural (nao existe gravacao de sessao crua, sem buffer/repescagem = perda silenciosa). A defesa exagerou ao chamar de 'falha operacional, nao de design' e se auto-refutou: ela mesma admite forca media e que sem o estado do selo daquele dia nao descarta que a captacao funcionou e o buraco foi a ausencia de gravacao.</div>
+  </div><div class="tcard fator">
+    <div class="th"><div class="tt">Foi o DESCARTE de dado?</div><span class="vbadge fator">FATOR QUE AGRAVA</span></div>
+    <div class="tq">O sistema joga 4 de cada 5 pontos fora e só guarda curva isolada.</div>
+    <div class="tv"><b>Veredito do cético:</b> Confrontei cada prova com o código e o mecanismo da tese é REAL: o GPS sai a 5 Hz em dois setInterval(...,200) (só broadcast, teste-aparelhos/index.html:497-510), o motor é cortado a 5 Hz na cloud-bridge (PUBLISH_HZ=5, dropped++, só _channel.send broadcast — cloud-bridge.js:19-20,132-139), e no caminho ao vivo (main-t3000.js:937-941) o sample vai SÓ pra bridge/publishSample/updateHud, nenhum writer. Achei até MAIS writers derivados do que a defesa contou (ela disse 3; são 5: melhores_passagens_trecho, padroes_telemetria_por_volta, voltas, perfis_reacao_piloto via REST, pontos_troca_aprendidos via REST) — mas TODOS derivados/agregados, nenhum grava o stream cru. O único ponto-a-ponto salvo (pontos_json) é GPS puro {lat,lng,kmh,t,fracao,sub} (trecho-detector.js:345,372 monta o buffer só com isso; zero rpm/água/lambda) e só da MELHOR passagem por trecho. sample-store.js/SessionRecorder NÃO são importados em web/cockpit (só vivem em src/telemetry, pipeline iOS legado). PORÉM não é causa-raiz: o descarte é uma DECISÃO ARQUITETURAL EXPLÍCITA, não uma falha. ARQUITETURA_DEFINITIVA.md (doc canônico, Flávio 16/06) é streaming puro — grep por grava/armazen/persist retornou ZERO; o canal é documentado 'sem persistência'; ADR-014 difere o sync cru remoto pra 'no futuro, por batch (TECH_DEBT_TRACKER)'. Logo a tese confunde uma decisão com um bug: ela é a causa SE e somente SE o objetivo do Flávio for gravar a sessão T4000+GPS completa pra revisar depois — aí o requisito nunca foi implementado no caminho ao vivo. Se a dor for dado errado/ausente na tela ao vivo (lambda 0,00, GPS congelado, motor que não chega), a causa-raiz é LEITURA/transmissão e essa tese vira irrelevante. A própria defesa admite essa fronteira no 'oQueMeRefutaria'. Por isso: fator-contribuinte forte e bem-provado pra perda de histórico, não a causa-raiz universal.</div>
+  </div><div class="tcard mec">
+    <div class="th"><div class="tt">Foi a falta de GARANTIA?</div><span class="vbadge mec">MECANISMO</span></div>
+    <div class="tq">Nada avisa nem prova que gravou — a perda é invisível.</div>
+    <div class="tv"><b>Veredito do cético:</b> A tese e verdadeira no codigo mas e a camada de consequencia, nao a causa primeira. O stream cru (sample do motor e ponto gps) so vai a broadcast efemero e a perda e silenciosa e nao repetivel porque ninguem checa o retorno nem ha fila/selo de gravando: isso e o mecanismo, e ele e real. A causa mais funda que o codigo expoe: a persistencia crua append-only da sessao NAO e decisao de nao ter, e REQUISITO explicito nas ADR-003/004/014, e o stack que a cumpre (sample-store.js + session-recorder.js) foi construido mas ficou orfao do pipeline iOS legado (provider.js -&gt; mobile-telemetry.js); o caminho ao vivo de hoje (web/cockpit/main-t3000.js) nunca o importa, so escreve 3 derivados. Logo a causa-raiz e o requisito de gravar a sessao crua que nunca foi religado ao caminho ao vivo atual (a ARQUITETURA_DEFINITIVA de 16/06 "streaming nunca em lote" nao o reincorporou e o ADR-014 jogou o sync remoto pra divida tecnica futura). A ausencia de contrato de gravacao e o efeito visivel dessa lacuna e o motivo de ela ser invisivel, nao a origem dela. A propria defesa admite isso em oQueMeRefutaria. Por haver algo mais fundo que a explica, o veredito honesto e mecanismo, nao causa-raiz.</div>
+  </div>
+</div>
+
+<div class="found">
+  <svg viewBox="0 0 24 24" class="ic"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+  <div>
+    <h3>A revelação que muda a conversa</h3>
+    <p>Esse gravador de sessão <b>não precisa ser feito do zero</b>. Ele já foi construído e testado no aplicativo do iPhone — gravou <b>56.314 medições reais</b> de telemetria em equipamento de verdade. Só que ficou "órfão" do caminho antigo do iPhone e <b>nunca foi religado</b> ao caminho atual (notebook). A arquitetura nova de 16/06 ("dado é sempre ao vivo, nunca em lote") não falou de guardar a sessão e deixou essa peça desligada. Ou seja: a capacidade existe na casa — falta plugar no lugar certo.</p>
+  </div>
+</div>
+
+<div class="section-t"><svg viewBox="0 0 24 24" class="ic"><path d="M9 12h6M8 9a4 4 0 0 0 0 6h1M16 9a4 4 0 0 1 0 6h-1"/></svg> A cadeia até o que você viu</div>
+<div class="chain">
+  <div class="cstep r"><span class="ck">Raiz</span><div class="ct">no caminho ao vivo de hoje (web/teste-aparelhos/index.html + web/cockpit/main-t3000.js) NAO existe nenhum gravador de sessao crua plugado. main-t3000.js importa so persisters derivados (melhores-loader, padrao-persister, voltas-persister); nao importa sample-store nem session-recorder.</div></div><div class="cstep "><span class="ck">Mecanismo</span><div class="ct">O requisito de gravar a sessao crua append-only EXISTE (ADR-003/004/014, vigentes, nao revogados) e ja foi construido e validado no iOS (STATUS.md: 56.314 amostras raw em hardware real), mas o stack (sample-store.js + session-recorder.js) ficou ORFAO do pipeline iOS legado e nunca foi religado ao caminho web atual. A ARQUITETURA_DEFINITIVA de 16/06 ('streaming, nunca em lote') e silente sobre armazenamento e nao reincorporou esse requisito.</div></div><div class="cstep "><span class="ck">Mecanismo</span><div class="ct">o GPS sai do notebook travado em 5 Hz — dois setInterval(...,200) em index.html:501 e 506 leem o ultimo snapshot gps.* e fazem broadcast. Se o RaceBox entrega a 25 Hz, 4 de cada 5 pontos sao sobrescritos antes do disparo e nunca saem.</div></div><div class="cstep "><span class="ck">Mecanismo</span><div class="ct">a amostra do motor (T4000) e cortada a 5 Hz na cloud-bridge.js (PUBLISH_HZ=5, dropped++) e so vai a _channel.send broadcast 'sample' — efemero, sem .insert/.upsert.</div></div><div class="cstep "><span class="ck">Mecanismo</span><div class="ct">as unicas 3 escritas em banco no web/cockpit sao melhores_passagens_trecho (so a MELHOR passagem por curva, pontos_json = lat/lng/kmh, ZERO motor), padroes_telemetria_por_volta (upsert de medias max/min por combinacao) e voltas (so tempo). Nenhuma grava a serie temporal crua.</div></div><div class="cstep "><span class="ck">Mecanismo</span><div class="ct">publishSample devolve booleano que main-t3000.js:938 ignora; em falha so incrementa _stats.dropped sem fila nem repescagem. Nenhum selo de 'gravando'. Os 4 selos (VIDEO/GPS/CARRO/NUVEM) so reportam conexao/vivacidade. Resultado: perda silenciosa e nao repetivel.</div></div><div class="cstep "><span class="ck">No dia</span><div class="ct">GPS e T4000 sao canais fisicamente independentes (GPS por Bluetooth na aba teste-aparelhos; T4000 por WebUSB na aba p1t4000, chega so por broadcast). No dia, a aba do cockpit nao estava lendo a T4000 (USB desconectado / aba fechada / leitor caido) — selo CARRO em 'idle' (nunca veio) — entao o motor nem apareceu ao vivo, enquanto o GPS entrava normal.</div></div><div class="cstep sy"><span class="ck">O que você viu</span><div class="ct">GPS aparecendo, T4000 ausente, e — mesmo onde apareceu — nada ficou gravado da sessao completa do liga ao desliga pra revisar depois.</div></div>
+</div>
+
+<div class="section-t"><svg viewBox="0 0 24 24" class="ic"><path d="M12 3 5 6v6c0 4 3 6.5 7 9 4-2.5 7-5 7-9V6l-7-3Z"/></svg> Por que o sistema não te garante o dado</div>
+<div class="card"><p>Porque nao existe contrato de gravacao em nenhuma etapa. O stream cru (sample do motor + ponto gps) so vai a broadcast efemero num canal documentado como 'sem persistencia' (FONTE_DADOS_AO_VIVO.md:52). publishSample/cloudSend devolvem um booleano que ninguem checa (main-t3000.js:938), em falha so incrementam um contador silencioso (_stats.dropped) sem fila nem repescagem. Nao ha selo de 'gravando' (os 4 selos so mostram conexao/vivacidade), nao ha arquivo/tabela de sessao crua, nao ha contagem de pacotes gravados vs recebidos, nem verificacao pos-sessao de integridade. A unica repescagem que existe e da tabela 'voltas' (so tempo/contagem, zero dado de motor/GPS). Resultado: a perda e silenciosa e nao repetivel — nada no sistema promete nem prova que o dado foi guardado.</p></div>
+
+<div class="section-t"><svg viewBox="0 0 24 24" class="ic"><path d="M14 7a4 4 0 0 1-5 5L5 16l3 3 4-4a4 4 0 0 0 5-5l-2 2-2-2 2-2-1-1Z"/></svg> O que fazer no app do notebook — em ordem</div>
+<p class="lead">Plano priorizado pra você ter, do liga ao desliga e toda vez, o dado completo de T4000 + GPS, gravado e com prova.</p>
+<div class="plano">
+  <div class="pcard">
+  <div class="pn">1</div>
+  <div class="pbody">
+    <div class="pt">Criar o GRAVADOR DE SESSÃO no notebook</div>
+    <div class="pm">Do liga ao desliga, toda a sessao fica gravada no proprio notebook, completa e detalhada, independente de internet, throttle ou da nuvem. E o que hoje simplesmente nao existe.</div>
+    <div class="pp"><b>Por quê:</b> A causa-raiz e nao haver gravador nenhum no caminho web. IndexedDB local e a unica forma de garantir captura mesmo com nuvem caida. Append-only preserva a integridade (ADR-004).</div>
+    <div class="ptags"><span class="tag e-alto">esforço alto</span><span class="tag r-baixo">risco baixo</span></div>
+  </div>
+</div><div class="pcard">
+  <div class="pn">2</div>
+  <div class="pbody">
+    <div class="pt">Gravar na velocidade cheia, separado do que aparece na tela</div>
+    <div class="pm">A gravacao guarda 25 Hz de GPS e 10 Hz de motor (tudo que o aparelho le), enquanto a tela ao vivo continua leve a 5 Hz. Separa 'mostrar' de 'guardar'.</div>
+    <div class="pp"><b>Por quê:</b> Hoje os 25 Hz do RaceBox e 10 Hz do cabo sao sobrescritos antes de sair porque o unico caminho de saida e o de 5 Hz. Desacoplar gravacao de transmissao resolve o descarte sem inundar o canal ao vivo.</div>
+    <div class="ptags"><span class="tag e-medio">esforço médio</span><span class="tag r-baixo">risco baixo</span></div>
+  </div>
+</div><div class="pcard">
+  <div class="pn">3</div>
+  <div class="pbody">
+    <div class="pt">Colocar a T4000 (motor) dentro da gravação</div>
+    <div class="pm">O motor passa a ser gravado de verdade, na taxa cheia, na aba que o le — e tambem ecoado na Central. Hoje nenhum dos dois grava o motor cru.</div>
+    <div class="pp"><b>Por quê:</b> O melhor dado da T4000 esta na origem (10 Hz, antes do corte a 5 Hz). Gravar so o broadcast ja perderia metade. Gravar na origem + ecoar garante o stream completo.</div>
+    <div class="ptags"><span class="tag e-alto">esforço alto</span><span class="tag r-medio">risco médio</span></div>
+  </div>
+</div><div class="pcard">
+  <div class="pn">4</div>
+  <div class="pbody">
+    <div class="pt">Selo "GRAVANDO" visível na tela</div>
+    <div class="pm">O operador VE, a qualquer momento, que esta gravando e quanto ja gravou. Acaba a perda silenciosa — se algo parar, aparece na hora.</div>
+    <div class="pp"><b>Por quê:</b> Hoje nao ha nenhum selo de gravacao; os 4 existentes so mostram conexao. Sem contrato visual, ninguem percebe a perda (o proprio codigo confessa isso em main-t3000.js:325-329, achado 10/06).</div>
+    <div class="ptags"><span class="tag e-baixo">esforço baixo</span><span class="tag r-baixo">risco baixo</span></div>
+  </div>
+</div><div class="pcard">
+  <div class="pn">5</div>
+  <div class="pbody">
+    <div class="pt">Conferência no fim da sessão + tirar o dado do notebook</div>
+    <div class="pm">No fim de cada sessao ha PROVA do que foi gravado e alerta se faltou algo. O dado sai do notebook (arquivo/nuvem) e nao depende de um unico aparelho.</div>
+    <div class="pp"><b>Por quê:</b> Garantia exige prova e retencao. Hoje a unica metrica e _stats.dropped, que nem dispara alarme. Sem verificacao pos-sessao, 'gravou' continua sendo fe, nao fato.</div>
+    <div class="ptags"><span class="tag e-medio">esforço médio</span><span class="tag r-baixo">risco baixo</span></div>
+  </div>
+</div><div class="pcard">
+  <div class="pn">6</div>
+  <div class="pbody">
+    <div class="pt">Blindar contra o notebook "dormir" no meio</div>
+    <div class="pm">Sessao longa de pista nao morre silenciosamente por o notebook dormir; e quando houver buraco, ele fica registrado e visivel, nao escondido.</div>
+    <div class="pp"><b>Por quê:</b> Incidente real de 19/06 (video+GPS pararam juntos por aba congelada) e a mesma classe de falha que pode interromper a gravacao. A mitigacao parcial ja existe; falta liga-la ao novo gravador e registrar lacunas com honestidade.</div>
+    <div class="ptags"><span class="tag e-medio">esforço médio</span><span class="tag r-baixo">risco baixo</span></div>
+  </div>
+</div>
+</div>
+
+<div class="section-t"><svg viewBox="0 0 24 24" class="ic"><path d="M4 12l5 5L20 6"/></svg> Como passa a ser garantido</div>
+<div class="gar">
+  <div class="gitem"><svg viewBox="0 0 24 24" class="ic"><path d="M4 12l5 5L20 6"/></svg><div>Indicador 'GRAVANDO' visivel na Central de Pista com tempo de sessao e contadores ao vivo de amostras de GPS e T4000 (vermelho se parou ou ha buraco) — acaba a perda silenciosa.</div></div><div class="gitem"><svg viewBox="0 0 24 24" class="ic"><path d="M4 12l5 5L20 6"/></svg><div>Arquivo de sessao append-only em IndexedDB local no notebook, aberto no liga e fechado no desliga, com TODA amostra crua de T4000 + GPS na taxa nativa — independente de internet e da nuvem.</div></div><div class="gitem"><svg viewBox="0 0 24 24" class="ic"><path d="M4 12l5 5L20 6"/></svg><div>Verificacao pos-sessao automatica: amostras gravadas vs recebidas (usando gps.hz e contagem da T4000), deteccao de lacunas de tempo, e cartao-resumo com a PROVA do que foi capturado.</div></div><div class="gitem"><svg viewBox="0 0 24 24" class="ic"><path d="M4 12l5 5L20 6"/></svg><div>Retencao e saida do dado: exportacao em arquivo e/ou fila de upload para a nuvem ao fechar a sessao, pra o dado nao morrer num unico aparelho.</div></div><div class="gitem"><svg viewBox="0 0 24 24" class="ic"><path d="M4 12l5 5L20 6"/></svg><div>Reconexao ja existente (reconectarT3000 a cada 2s, watchdog SEM SINAL &gt;1,5s, blocos curtos -&gt; religar, wakeLock) ligada ao gravador, com registro honesto de qualquer intervalo suspenso em vez de continuidade falsa.</div></div>
+</div>
+
+<div class="risk"><b>Se não fizer:</b> Continua impossivel revisar a sessao depois: do liga ao desliga, o dado completo e detalhado da T4000 + GPS nao fica gravado em lugar nenhum — so sobrevivem 3 curvas (melhor passagem, so GPS) e medias por volta. Em dia de pista real, a perda e silenciosa (nada avisa que nao gravou) e nao repetivel (a sessao acabou, o dado se foi). Toda corrida vira diagnostico de momento, sem historico cru pra analisar motor, calibrar shift light, validar curvas ou auditar o que aconteceu. E o sistema vai continuar dando a falsa impressao de que 'esta tudo no ar' quando, na verdade, nada do bruto esta sendo guardado.</div>
+
+<div class="foot">
+  <b>Como foi feito:</b> 4 auditores de evidência mapearam o caminho real do dado (GPS, T4000, gravação e arquitetura); 4 teses opostas foram defendidas e cada uma atacada por um cético independente que leu o código pra tentar derrubá-la; 1 juiz reconciliou. Toda afirmação tem prova em arquivo e linha do projeto (guardadas no registro técnico da auditoria). Nenhum código foi alterado — isto é diagnóstico.<br>
+  <b>Arquivos-chave citados:</b> web/teste-aparelhos/index.html (app do notebook), web/cockpit/main-t3000.js + cloud-bridge.js (leitura/transmissão da T4000), web/cockpit/melhores-loader.js e padrao-acumulador.js (o que é salvo), docs/ARQUITETURA_DEFINITIVA.md.
+</div>
+
+</div></body></html>
