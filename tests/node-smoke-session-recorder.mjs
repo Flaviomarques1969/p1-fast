@@ -141,5 +141,28 @@ console.log('node-smoke-session-recorder');
   ok('9.6 dado cru preservado: ' + store._debug.amostras.length + ' amostras intactas');
 }
 
+// 10) Armazenamento morto: após muitas falhas sem 1 sucesso, o gravador se marca inativo
+//     (o chamador para de gastar trabalho montando hex/registro à toa)
+{
+  const storeRuim = {
+    async novaSessao() {}, async gravar() { throw new Error('sem disco'); },
+    async finalizar() {}, async lerSessao() { return { sessao: null, amostras: [] }; },
+    async listarSessoes() { return []; }, async resumirSessao() { return { nGps: 0, nMotor: 0, durMs: 0, fimWall: null }; },
+  };
+  const { g } = novo(storeRuim);
+  eq(g.ativo, true, '10.1 começa ativo');
+  for (let i = 0; i < 60; i++) g.gps({ lat: 1, lng: 2 });
+  await microtask();
+  eq(g.ativo, false, '10.2 se desativa quando o armazenamento está morto (60 falhas, 0 sucesso)');
+}
+
+// 11) Marca de simulação por override (modo cabo usa flag global, não o campo source)
+{
+  const store = criarStoreMemoria();
+  const { g } = novo(store);
+  g.motor({ rpm: 5000, source: 'carro' }, 'aa', true); // override sim=true mesmo sem source sim-replay
+  eq(g.estado().sim, true, '11.1 override marca a sessão como simulação');
+}
+
 console.log(`\n${okN} ok / ${failN} fail`);
 process.exit(failN ? 1 : 0);
