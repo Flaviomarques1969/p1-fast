@@ -229,6 +229,7 @@ function onCarSample(s){
   nuvem.lastSampleTs = now;
   nuvem.lastSample = s;
   nuvem.lastSampleSource = s.source === 'sim-replay' ? 'simulador' : 'carro real';
+  try { Rec.motor(s); } catch(e){}   // grava a amostra do motor (T4000)
   nuvem.sampleWindow.push(now);
   while (nuvem.sampleWindow.length && now - nuvem.sampleWindow[0] > 5000) nuvem.sampleWindow.shift();
   // Simulador não pode misturar com carro real: se chegou amostra REAL, desliga o replay.
