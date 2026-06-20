@@ -92,6 +92,25 @@ function tempC(raw) {
   return raw;
 }
 
+// ── Filtro de sanidade (função pura) ────────────────────────────────────────
+// Recebe a amostra JÁ decodificada e devolve { ok, motivos[] }.
+// Política CONSERVADORA (decisão: "sistema AVISA, humano/bridge decide"): só
+// SINALIZA, não derruba a amostra. Campos null/undefined são IGNORADOS (sensor
+// ausente já virou null em tempC e não deve marcar implausível). NaN/tipo errado
+// é tratado defensivamente como motivo ':NaN'.
+export function leituraPlausivel(sample) {
+  if (!sample || typeof sample !== 'object') return { ok: false, motivos: ['sample_invalido'] };
+  const motivos = [];
+  for (const campo of Object.keys(FAIXAS_FISICAS)) {
+    const faixa = FAIXAS_FISICAS[campo];
+    const v = sample[campo];
+    if (v === null || v === undefined) continue;           // ausente = não avalia
+    if (typeof v !== 'number' || Number.isNaN(v)) { motivos.push(campo + ':NaN'); continue; }
+    if (v < faixa.min || v > faixa.max) motivos.push(campo + ':' + v);
+  }
+  return { ok: motivos.length === 0, motivos };
+}
+
 export function parseT3000RIBlock(buf, opts = {}) {
   if (!(buf instanceof Uint8Array)) return null;
   if (buf.length < 110) return null;
