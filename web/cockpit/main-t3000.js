@@ -913,17 +913,52 @@ async function runReadLoop() {
         total += r.data.byteLength;
         if (total >= 460) break;
       }
-      if (total < 92) { /* bloco curto — pula */ continue; }
+      if (total < 92) {
+        // Bloco curto — antes era pulado em silêncio (trava silenciosa: nunca
+        // caía no catch, nunca religava). Agora conta e, após N seguidos,
+        // força religação do USB reaproveitando a lógica que já existe.
+        t3.blocosCurtos = (t3.blocosCurtos || 0) + 1;
+        if (t3.blocosCurtos >= T3_MAX_BLOCOS_CURTOS) {
+          log(`${T3_MAX_BLOCOS_CURTOS} blocos curtos seguidos — religando leitura…`);
+          t3.blocosCurtos = 0;
+          const voltou = await reconectarT3000();
+          // Só encerra se reconectar falhou E não há outra tentativa em curso
+          // (evita break prematuro quando o catch já está religando em paralelo).
+          if (!voltou && !t3.religando) { setStatus('leitura encerrada', 'bad'); t3.reading = false; break; }
+        }
+        continue;
+      }
       const merged = new Uint8Array(total);
       let off = 0;
       for (const c of chunks) { merged.set(c, off); off += c.byteLength; }
       const sample = parseT3000RIBlock(merged, { tMono: performance.now() });
-      if (sample) {
+      if (sample && sampleValido(sample)) {
+        // Caminho feliz — dado bom: tudo igual a antes.
         bridge.ingestT4000(sample); // bridge é agnóstico de fonte; aceita t3000
         publishSample(sample);      // espelha pra nuvem (não-bloqueante; throttle interno)
         t3.lastSampleTs = performance.now();
         // atualiza HUD curto
         updateHud(sample);
+        t3.blocosCurtos = 0;
+        t3.leiturasRuins = 0; // zera contadores de trava silenciosa
+      } else if (sample) {
+        // Amostra chegou mas reprovou na sanidade (fora de faixa física):
+        // NÃO publica na nuvem, NÃO sobrescreve a tela com lixo (segura o
+        // último valor bom), NÃO atualiza lastSampleTs (watchdog acende SEM
+        // SINAL e a guarda de trava conta).
+        t3.leiturasRuins = (t3.leiturasRuins || 0) + 1;
+        if (t3.leiturasRuins === 1) {
+          const motivos = (sample.sanidade?.motivos || []).slice(0, 4).join(', ');
+          setStatus('leitura instável — segurando último valor', 'warn');
+          log(`leitura inválida descartada (fora de faixa: ${motivos}) — não publicada`);
+        }
+        if (t3.leiturasRuins >= T3_MAX_LEITURAS_RUINS) {
+          // N inválidas seguidas = tranco da partida / leitura corrompida persistente.
+          log(`${T3_MAX_LEITURAS_RUINS} leituras inválidas seguidas — religando leitura…`);
+          t3.leiturasRuins = 0;
+          const voltou = await reconectarT3000();
+          if (!voltou && !t3.religando) { setStatus('leitura encerrada', 'bad'); t3.reading = false; break; }
+        }
       }
     } catch (e) {
       // NÃO desiste: religa sozinho (cabo solto, queda de energia, USB resetada).
