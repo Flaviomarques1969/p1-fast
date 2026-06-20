@@ -77,8 +77,13 @@ export function criarGravador(opts = {}) {
       tWall: wall(), tMono: Math.round(agora),
       dados, ...(rawHex ? { rawHex } : {}),
     };
-    // append-only; falha de escrita conta como descartado (visível, nunca silencioso)
-    Promise.resolve(store.gravar(registro)).catch(() => { dropped++; });
+    // append-only; falha de escrita conta como descartado (visível, nunca silencioso).
+    // Se o armazenamento estiver morto (aba privada / sem IndexedDB), nada nunca
+    // grava: após 50 falhas sem 1 sucesso, marca morto e o chamador para de gastar
+    // trabalho (ver getter `ativo`).
+    Promise.resolve(store.gravar(registro))
+      .then(() => { okWrites++; })
+      .catch(() => { dropped++; if (okWrites === 0 && dropped >= 50) storeMorto = true; });
     ultimoMono = agora;
     if (tipo === 'gps')   { nGps++;   ultimoGpsMono = agora;   janGps.push(agora); }
     else                  { nMotor++; ultimoMotorMono = agora; janMotor.push(agora); }
