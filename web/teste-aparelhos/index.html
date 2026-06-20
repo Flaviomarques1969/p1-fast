@@ -526,7 +526,7 @@ function decode(p){
   if(now-t0>0) gps.hz = pkts/(now-t0);
   gps.ver = gps.fix===0 ? 'sem sinal' : (gps.numSV<4 ? 'fraco' : (gps.numSV<6?'ok':'travado ✓'));
   // grava o ponto na TAXA CHEIA do RaceBox + os bytes crus (sem perda)
-  try { Rec.gps({ fix:gps.fix, numSV:gps.numSV, hacc:gps.hacc, spd:gps.spd, lat:gps.lat, lon:gps.lon }, hex(p), false); } catch(e){}
+  if (Rec.ativo) { try { Rec.gps({ fix:gps.fix, numSV:gps.numSV, hacc:gps.hacc, spd:gps.spd, lat:gps.lat, lon:gps.lon }, hex(p), false); } catch(e){} }
   renderGps();
 }
 function renderGps(){
