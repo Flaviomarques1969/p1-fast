@@ -161,18 +161,15 @@ export function criarGravador(opts = {}) {
     const orfas = [];
     for (const s of (lista || [])) {
       if (s && s.status === 'gravando') {
-        const dump = await store.lerSessao(s.id);
-        const am = (dump && dump.amostras) || [];
-        const nG = am.filter(a => a.tipo === 'gps').length;
-        const nM = am.filter(a => a.tipo === 't4000').length;
-        const tw = am.map(a => a.tWall).filter(v => typeof v === 'number');
-        const durMs = tw.length ? (Math.max(...tw) - Math.min(...tw)) : 0;
+        // conta sem materializar todas as amostras (sessão de pista tem milhares)
+        const r = await store.resumirSessao(s.id);
+        const durMs = r.durMs || 0;
         const resumo = {
           id: s.id, sim: !!s.sim, status: 'interrompida', motivoFim: 'interrompida',
-          inicioWall: s.inicioWall, fimWall: tw.length ? Math.max(...tw) : s.inicioWall,
-          duracaoS: Math.round(durMs / 100) / 10, nGps: nG, nMotor: nM,
-          hzGpsMedia:   durMs > 0 ? Math.round(nG / (durMs / 1000) * 10) / 10 : 0,
-          hzMotorMedia: durMs > 0 ? Math.round(nM / (durMs / 1000) * 10) / 10 : 0,
+          inicioWall: s.inicioWall, fimWall: r.fimWall || s.inicioWall,
+          duracaoS: Math.round(durMs / 100) / 10, nGps: r.nGps, nMotor: r.nMotor,
+          hzGpsMedia:   durMs > 0 ? Math.round(r.nGps   / (durMs / 1000) * 10) / 10 : 0,
+          hzMotorMedia: durMs > 0 ? Math.round(r.nMotor / (durMs / 1000) * 10) / 10 : 0,
         };
         await store.finalizar(s.id, resumo);
         orfas.push(resumo);
