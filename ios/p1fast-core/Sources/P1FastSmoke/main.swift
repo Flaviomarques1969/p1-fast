@@ -3650,11 +3650,12 @@ step("PERSIST-01: makeMemoryQueue + migrations v1..v35 cria 41 tabelas") {
     // + telemetry_samples_enriched (v7) + video_streams (v15) + volta_video (v16)
     // + pessoas (v17) + pessoa_papeis (v18) + manutencoes (v19) = 31
     // + pecas + pecas_locais + pecas_movimentacoes (v26) = 34
-    try assertEq(names.count, 34, "esperava 34 tabelas")
+    try assertEq(names.count, 41, "esperava 41 tabelas (39 anteriores + checklist_item + checklist_tique)")
     for expected in ["times", "carros", "configuracoes", "sessoes", "voltas",
                      "marcos", "retas_especiais", "telemetry_samples",
                      "telemetry_samples_enriched", "sync_queue", "sync_meta",
-                     "video_streams", "volta_video", "pessoas", "pessoa_papeis"] {
+                     "video_streams", "volta_video", "pessoas", "pessoa_papeis",
+                     "checklist_item", "checklist_tique"] {
         try assertTrue(names.contains(expected), "tabela \(expected) ausente")
     }
 }
