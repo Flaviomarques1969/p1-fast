@@ -1,3 +1,5 @@
+> ★ RETOMADA 19/06 noite: a tarefa MAIS RECENTE não é esta. Flávio disse "se organize para continuar depois do clear". LER PRIMEIRO `.claude-exec/CONTINUAR-AQUI.md` — paramos na Etapa 2 do **Checklist de Pista** (telas no app iOS). Gatilho: "RETOMAR CHECKLIST P1 FAST".
+
 # Ultima tarefa — P1 Fast — APP DO NOTEBOOK p/ monitoramento do teste ao vivo — 19/06/2026
 
 ## TASK_INIT (19/06/2026)
