@@ -92,8 +92,8 @@ export function criarGravador(opts = {}) {
 
   // Entradas públicas de dado
   function gps(decoded, rawHex = null, sim = false)  { return gravar('gps', decoded, rawHex, sim); }
-  function motor(sample, rawHex = null) {
-    const sim = sample && sample.source === 'sim-replay';
+  function motor(sample, rawHex = null, simOverride = undefined) {
+    const sim = simOverride !== undefined ? !!simOverride : !!(sample && sample.source === 'sim-replay');
     return gravar('t4000', sample, rawHex, sim);
   }
 
