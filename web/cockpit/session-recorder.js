@@ -41,7 +41,7 @@ export function criarGravador(opts = {}) {
 
   let sessao = null;     // { id, inicioWall, inicioMono, sim }
   let seq = 0;
-  let nGps = 0, nMotor = 0, dropped = 0;
+  let nGps = 0, nMotor = 0, dropped = 0, okWrites = 0, storeMorto = false;
   let ultimoMono = 0, ultimoGpsMono = 0, ultimoMotorMono = 0;
   const janGps = [], janMotor = [];
   const lacunas = [];
@@ -77,8 +77,13 @@ export function criarGravador(opts = {}) {
       tWall: wall(), tMono: Math.round(agora),
       dados, ...(rawHex ? { rawHex } : {}),
     };
-    // append-only; falha de escrita conta como descartado (visível, nunca silencioso)
-    Promise.resolve(store.gravar(registro)).catch(() => { dropped++; });
+    // append-only; falha de escrita conta como descartado (visível, nunca silencioso).
+    // Se o armazenamento estiver morto (aba privada / sem IndexedDB), nada nunca
+    // grava: após 50 falhas sem 1 sucesso, marca morto e o chamador para de gastar
+    // trabalho (ver getter `ativo`).
+    Promise.resolve(store.gravar(registro))
+      .then(() => { okWrites++; })
+      .catch(() => { dropped++; if (okWrites === 0 && dropped >= 50) storeMorto = true; });
     ultimoMono = agora;
     if (tipo === 'gps')   { nGps++;   ultimoGpsMono = agora;   janGps.push(agora); }
     else                  { nMotor++; ultimoMotorMono = agora; janMotor.push(agora); }
@@ -87,8 +92,8 @@ export function criarGravador(opts = {}) {
 
   // Entradas públicas de dado
   function gps(decoded, rawHex = null, sim = false)  { return gravar('gps', decoded, rawHex, sim); }
-  function motor(sample, rawHex = null) {
-    const sim = sample && sample.source === 'sim-replay';
+  function motor(sample, rawHex = null, simOverride = undefined) {
+    const sim = simOverride !== undefined ? !!simOverride : !!(sample && sample.source === 'sim-replay');
     return gravar('t4000', sample, rawHex, sim);
   }
 
@@ -156,18 +161,15 @@ export function criarGravador(opts = {}) {
     const orfas = [];
     for (const s of (lista || [])) {
       if (s && s.status === 'gravando') {
-        const dump = await store.lerSessao(s.id);
-        const am = (dump && dump.amostras) || [];
-        const nG = am.filter(a => a.tipo === 'gps').length;
-        const nM = am.filter(a => a.tipo === 't4000').length;
-        const tw = am.map(a => a.tWall).filter(v => typeof v === 'number');
-        const durMs = tw.length ? (Math.max(...tw) - Math.min(...tw)) : 0;
+        // conta sem materializar todas as amostras (sessão de pista tem milhares)
+        const r = await store.resumirSessao(s.id);
+        const durMs = r.durMs || 0;
         const resumo = {
           id: s.id, sim: !!s.sim, status: 'interrompida', motivoFim: 'interrompida',
-          inicioWall: s.inicioWall, fimWall: tw.length ? Math.max(...tw) : s.inicioWall,
-          duracaoS: Math.round(durMs / 100) / 10, nGps: nG, nMotor: nM,
-          hzGpsMedia:   durMs > 0 ? Math.round(nG / (durMs / 1000) * 10) / 10 : 0,
-          hzMotorMedia: durMs > 0 ? Math.round(nM / (durMs / 1000) * 10) / 10 : 0,
+          inicioWall: s.inicioWall, fimWall: r.fimWall || s.inicioWall,
+          duracaoS: Math.round(durMs / 100) / 10, nGps: r.nGps, nMotor: r.nMotor,
+          hzGpsMedia:   durMs > 0 ? Math.round(r.nGps   / (durMs / 1000) * 10) / 10 : 0,
+          hzMotorMedia: durMs > 0 ? Math.round(r.nMotor / (durMs / 1000) * 10) / 10 : 0,
         };
         await store.finalizar(s.id, resumo);
         orfas.push(resumo);
@@ -178,7 +180,8 @@ export function criarGravador(opts = {}) {
   }
 
   return { gps, motor, tick, encerrar, estado, exportarSessao, listarSessoes, recuperarOrfas,
-           get sessaoAtiva() { return sessao; } };
+           get sessaoAtiva() { return sessao; },
+           get ativo() { return !storeMorto; } };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -193,6 +196,14 @@ export function criarStoreMemoria() {
     async finalizar(id, resumo) { sessoes.set(id, { ...(sessoes.get(id) || { id }), ...resumo }); },
     async lerSessao(id)    { return { sessao: sessoes.get(id) || null,
                                       amostras: amostras.filter(a => a.sessaoId === id) }; },
+    async resumirSessao(id) {
+      const am = amostras.filter(a => a.sessaoId === id);
+      const tw = am.map(a => a.tWall).filter(v => typeof v === 'number');
+      return { nGps: am.filter(a => a.tipo === 'gps').length,
+               nMotor: am.filter(a => a.tipo === 't4000').length,
+               durMs: tw.length ? Math.max(...tw) - Math.min(...tw) : 0,
+               fimWall: tw.length ? Math.max(...tw) : null };
+    },
     async listarSessoes()  { return [...sessoes.values()]; },
     _debug: { sessoes, amostras },
   };
@@ -256,6 +267,25 @@ export function criarStoreIndexedDB(dbName = 'p1fast-sessoes') {
     },
     listarSessoes() {
       return tx('sessoes', 'readonly', os => os.getAll());
+    },
+    // conta e mede a sessão percorrendo o índice SEM materializar o array inteiro
+    resumirSessao(id) {
+      return abrir().then(db => new Promise((res, rej) => {
+        const t = db.transaction('amostras', 'readonly');
+        const idx = t.objectStore('amostras').index('porSessao');
+        let nGps = 0, nMotor = 0, minT = Infinity, maxT = -Infinity;
+        idx.openCursor(IDBKeyRange.only(id)).onsuccess = e => {
+          const c = e.target.result;
+          if (c) {
+            const v = c.value;
+            if (v.tipo === 'gps') nGps++; else nMotor++;
+            if (typeof v.tWall === 'number') { if (v.tWall < minT) minT = v.tWall; if (v.tWall > maxT) maxT = v.tWall; }
+            c.continue();
+          }
+        };
+        t.oncomplete = () => res({ nGps, nMotor, durMs: maxT >= minT ? maxT - minT : 0, fimWall: maxT > -Infinity ? maxT : null });
+        t.onerror = () => rej(t.error);
+      }));
     },
   };
 }
