@@ -265,6 +265,15 @@ export function parseT3000RIBlock(buf, opts = {}) {
     // ── sensores externos genéricos ──
     sensoresExternos,
   };
+
+  // ── Sanidade ADITIVA (não altera nenhum campo acima) ──
+  // ATENÇÃO conservadora: NÃO retornamos null quando implausível — só anexamos
+  // o veredito pra quem consome decidir (igual ao padrão de ecuErrorBits).
+  const s = leituraPlausivel(sample);
+  sample.sanidade = s;             // { ok, motivos[] }
+  sample.leituraPlausivel = s.ok;  // atalho booleano
+
+  return sample;
 }
 
 export const ACK_BYTES = new Uint8Array([0x41, 0x43, 0x4B]);
