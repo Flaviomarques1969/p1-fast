@@ -87,9 +87,9 @@ export function criarGravador(opts = {}) {
 
   // Entradas públicas de dado
   function gps(decoded, rawHex = null, sim = false)  { return gravar('gps', decoded, rawHex, sim); }
-  function motor(sample) {
+  function motor(sample, rawHex = null) {
     const sim = sample && sample.source === 'sim-replay';
-    return gravar('t4000', sample, null, sim);
+    return gravar('t4000', sample, rawHex, sim);
   }
 
   // Vigia do fim: chamado ~1x/s. Sem dado há `silencioMs` => carro desligou.
