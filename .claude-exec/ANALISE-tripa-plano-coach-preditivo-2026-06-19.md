@@ -48,3 +48,23 @@ Quem deve calcular essa tripa é o **app na nuvem** (não a TV, não o notebook 
 - Testes/validação executados: leitura de código + grep + verificação adversarial por agentes independentes
 - Resultado: concluído (análise + plano entregues)
 - Pendências reais: 2 decisões de produto do Flávio (conceito de meta/ritmo-alvo no plano; construir na nuvem vs ligar o cockpit direto)
+
+---
+
+## EXECUÇÃO — Flávio mandou "completo e do jeito certo e definitivo" (19/06)
+
+Rumo decidido: construir o **cérebro do painel na nuvem** (arquitetura definitiva 16/06), reusando os miolos existentes, provado com volta gravada, sem tocar produção. A nuvem só de produção existe — então NÃO publicar no canal `cockpit-bubi-live` em teste (memória 18/06); valida-se OFFLINE.
+
+**Ambiente isolado de trabalho:** `/Users/imac/Projetos/p1fast-worktrees/cerebro-nuvem-tripa` (linha de trabalho `cerebro-nuvem-tripa`, criada de main HEAD 72a16590). NADA na versão oficial ainda.
+
+**Plano em ondas (executar até o fim):**
+1. Base + Voltas/Ritmo — **FEITO E PROVADO (Onda 1)**
+2. Ligar na tela (tirar `stint`/`coach` de DEP_LIGACAO; setter lê PainelPronto) — próximo
+3. Coach (reusar `src/domain/p1-coach.js`)
+4. Meta do piloto (criar tempo-alvo + voltas seguidas no plano)
+5. Alerta preditivo (construir conta +°C/curva/ETA; reusar `web/cockpit/padrao-acumulador.js`)
+
+**Onda 1 — entregue:**
+- `web/command-box/cerebro/cerebro-painel.js` — cérebro host-agnóstico. `criarCerebroPainel({plano,pbEverSec,stintNumero,stintTotal})` → `onVolta/onSample/snapshot()`. Contrato de saída `PainelPronto` { stint, ritmo, coach, meta, preditivo, _pendentes }. Onda 1 calcula stint(voltas) + ritmo(PB vs melhor do stint); coach/meta/preditivo saem `null` (honesto).
+- `web/command-box/cerebro/cerebro-painel.smoke.mjs` — teste offline com o stint gravado `web/cockpit/fixtures/stint-brasilia-3-laps.v1.json`.
+- Resultado do teste: STINT volta 8/12 67%; RITMO "à frente -0.06/volta" PB 1:31.95 stint 1:31.89; 8 conferências verdes; EXIT=0.

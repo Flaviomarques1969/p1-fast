@@ -7787,9 +7787,7 @@ html,body{
     // 'vmin' SAIU da lista (Etapa VMIN, 19/06): mostra dado real (gráfico da curva de
     // velocidade por config de pneu) — acende como bloco vivo. O carregador no fim do
     // <body> liga a fonte (vmin-curvas-reais.js).
-    // 'stint' SAIU (Onda 1, 19/06): Voltas + Ritmo agora vêm do dado real (cérebro do
-    // painel) — carregador no fim do <body>. 'coach' e 'stint-bar' seguem aguardando ligação.
-    var DEP_LIGACAO = ['mapa','shift-light','coach','delta-acum','stint-bar','checklist'];
+    var DEP_LIGACAO = ['mapa','shift-light','coach','delta-acum','stint','stint-bar','checklist'];
     function vistoFresco(f){ return SENSOR_SEEN[f] && (performance.now()-SENSOR_SEEN[f]<2500); }
     function atualizarBlocos(){
       Object.keys(SENSOR_DE).forEach(function(id){
@@ -7992,64 +7990,6 @@ html,body{
     }catch(e){
       console.warn('[vmin] dado real indisponível, mantendo demonstração:', e);
     }
-  })();
-</script>
-
-<!-- ONDA 1 (2026-06-19): liga o bloco PLANO·STINT no DADO REAL via o "cérebro do painel"
-     (web/command-box/cerebro/cerebro-painel.js). Voltas + Ritmo saem de conta de verdade
-     (tempos reais de volta), não mais texto fixo. Prova fora do ar: alimenta com o stint
-     gravado stint-brasilia-3-laps.v1.json. META DO PILOTO fica marcada "aguardando" até a
-     Onda 4 (o plano ainda não tem tempo-alvo). Se não carregar, mantém a demonstração. -->
-<script type="module">
-  // hook: escreve o RESULTADO PRONTO no bloco PLANO·STINT (Voltas + Ritmo) e tira o cinza.
-  window.__aplicarPainelStint = function(p){
-    if(!p) return;
-    function setT(k,v){ var el=document.querySelector('[data-stint="'+k+'"]'); if(el!=null && v!=null) el.textContent=v; }
-    function setW(k,pct){ var el=document.querySelector('[data-stint="'+k+'"]'); if(el!=null && pct!=null) el.style.width=pct+'%'; }
-    if(!document.getElementById('cb-subpend-css')){
-      var st=document.createElement('style'); st.id='cb-subpend-css';
-      st.textContent='.cb-subpend{position:relative;filter:grayscale(.9);opacity:.5;}'
-        +'.cb-subpend::after{content:"aguardando";position:absolute;top:2px;right:4px;'
-        +'background:#1a2236;color:#93b4ff;font:700 8px/1 -apple-system,Segoe UI,sans-serif;'
-        +'letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border-radius:999px;pointer-events:none;}';
-      document.head.appendChild(st);
-    }
-    if(p.stint){
-      setT('voltaN', p.stint.voltaAtual);
-      setT('voltaPct', (p.stint.voltaPct!=null ? p.stint.voltaPct+'%' : '—'));
-      setW('voltaFill', p.stint.voltaPct);
-      setT('decorrido', p.stint.decorridoStr+' decorrido');
-      setT('restante', p.stint.restanteStr+' restante');
-    }
-    if(p.ritmo){
-      setT('ritmoTag', p.ritmo.tag);
-      setW('ritmoFill', p.ritmo.fillPct);
-      setT('ritmoFootL', 'PB '+p.ritmo.pbStr);
-      setT('ritmoFootR', 'stint '+p.ritmo.stintStr);
-      var fill=document.querySelector('[data-stint="ritmoFill"]');
-      if(fill){ fill.classList.toggle('sr-bar-fill--good', p.ritmo.lado!=='atras');
-                fill.style.background = (p.ritmo.lado==='atras') ? '#FFB347' : ''; }
-    }
-    // META DO PILOTO ainda não construída (Onda 4) -> marca o sub-bloco como aguardando
-    var meta=document.querySelector('.stint-meta'); if(meta) meta.classList.add('cb-subpend');
-    // tira o "aguardando ligação" do bloco PLANO·STINT (agora tem dado real)
-    var bloco=document.querySelector('[data-block-id="stint"]'); if(bloco) bloco.classList.remove('cb-sem-real');
-  };
-
-  (async function(){
-    try{
-      var mod = await import('/web/command-box/cerebro/cerebro-painel.js');
-      var fx  = await (await fetch('/web/cockpit/fixtures/stint-brasilia-3-laps.v1.json')).json();
-      var cerebro = mod.criarCerebroPainel({
-        plano: { voltas: fx.stintHistory.totalLaps, duracaoS: 28*60 },
-        pbEverSec: fx.track.pbEverSec, stintNumero: 3, stintTotal: 5
-      });
-      fx.stintHistory.entries.forEach(function(e){
-        if(typeof e.timeSec === 'number') cerebro.onVolta({ n:e.lapNumber, tempoSec:e.timeSec });
-      });
-      cerebro.onSample({ cronometroTotalS: fx.stintHistory.entries.reduce(function(a,e){ return a+(typeof e.timeSec==='number'?e.timeSec:0); },0) });
-      window.__aplicarPainelStint(cerebro.snapshot());
-    }catch(e){ console.warn('[onda1] dado real indisponível, mantendo demonstração:', e); }
   })();
 </script>
 
