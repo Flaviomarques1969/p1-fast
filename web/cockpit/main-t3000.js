@@ -501,7 +501,7 @@ onGpsPoint((p) => {
   });
   // grava também o GPS que chega ao painel (espelho), pra a sessão do cockpit
   // ter motor (origem) + linha do GPS juntos
-  try { RecCockpit.gps({ lat: p.lat, lng: p.lng, kmh: p.kmh, accM: p.accM }, null, !!p.sim); } catch (e) {}
+  if (RecCockpit.ativo) { try { RecCockpit.gps({ lat: p.lat, lng: p.lng, kmh: p.kmh, accM: p.accM }, null, !!p.sim); } catch (e) {} }
 });
 
 const _bridgeIngestImu_t = bridge.ingestImuGps.bind(bridge);
