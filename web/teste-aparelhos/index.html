@@ -344,6 +344,7 @@ async function ligarSimEventos(){
                     hz:5, hacc:2, ver:'simulador', sim:true };
       if (call) { try { call.sendAppMessage(pkt, '*'); } catch(e){} }
       cloudSend('gps', { lat:p.lat, lng:p.lng, kmh:(p.v||0), numSV:0, fix:3, accM:2, sim:true, tWall:Date.now() });
+      try { Rec.gps({ fix:3, numSV:0, hacc:2, spd:(p.v||0), lat:p.lat, lon:p.lng }, null, true); } catch(e){} // grava o GPS simulado
     }, 200);
   }
 }
