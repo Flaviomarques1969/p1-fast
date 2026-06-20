@@ -268,6 +268,25 @@ export function criarStoreIndexedDB(dbName = 'p1fast-sessoes') {
     listarSessoes() {
       return tx('sessoes', 'readonly', os => os.getAll());
     },
+    // conta e mede a sessão percorrendo o índice SEM materializar o array inteiro
+    resumirSessao(id) {
+      return abrir().then(db => new Promise((res, rej) => {
+        const t = db.transaction('amostras', 'readonly');
+        const idx = t.objectStore('amostras').index('porSessao');
+        let nGps = 0, nMotor = 0, minT = Infinity, maxT = -Infinity;
+        idx.openCursor(IDBKeyRange.only(id)).onsuccess = e => {
+          const c = e.target.result;
+          if (c) {
+            const v = c.value;
+            if (v.tipo === 'gps') nGps++; else nMotor++;
+            if (typeof v.tWall === 'number') { if (v.tWall < minT) minT = v.tWall; if (v.tWall > maxT) maxT = v.tWall; }
+            c.continue();
+          }
+        };
+        t.oncomplete = () => res({ nGps, nMotor, durMs: maxT >= minT ? maxT - minT : 0, fimWall: maxT > -Infinity ? maxT : null });
+        t.onerror = () => rej(t.error);
+      }));
+    },
   };
 }
 
