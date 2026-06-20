@@ -1,0 +1,106 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>P1 Fast — Entrega: Gravador de Sessão</title>
+<style>
+:root{--bg:#0a0d14;--panel:#11161f;--panel2:#161c28;--line:#222b3a;--ink:#e8edf5;--mut:#8a97ad;--accent:#5b9dff;--good:#3ddc97;--warn:#ffb340;--bad:#ff5d6c}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 85% -12%,#16203233,#0a0d14),var(--bg);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{width:100%;padding:36px clamp(20px,4vw,68px) 90px}
+.ic{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.13em}
+header{border-bottom:1px solid var(--line);padding-bottom:22px}
+.brand{font-weight:800;letter-spacing:.03em;font-size:12.5px;color:var(--mut);text-transform:uppercase}
+h1{font-size:clamp(26px,3.4vw,42px);font-weight:800;letter-spacing:-.025em;margin-top:8px;line-height:1.04}
+h1 b{color:var(--good)}
+.sub{color:var(--mut);margin-top:11px;max-width:880px}
+.chips{margin-top:16px;display:flex;gap:9px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--panel);padding:7px 13px;border-radius:999px;font-size:12.5px;color:var(--mut);font-weight:600}
+.chip.ok{border-color:#15301f;background:#0e1a12;color:var(--good)}
+.section-t{margin:42px 0 6px;font-size:12px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--mut);display:flex;align-items:center;gap:9px}
+.section-t .ic{color:var(--accent);font-size:15px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:1fr 1fr}@media(max-width:880px){.g2{grid-template-columns:1fr}}
+.card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;padding:22px 24px}
+.card h3{font-size:17px;font-weight:800;display:flex;align-items:center;gap:9px;letter-spacing:-.01em}
+.card h3 .ic{color:var(--good);font-size:18px}
+.card p{color:var(--mut);font-size:13.6px;margin-top:8px;line-height:1.55}
+.card p b{color:var(--ink)}
+ul{list-style:none;margin-top:12px;display:grid;gap:9px}
+li{display:flex;gap:10px;align-items:flex-start;color:var(--mut);font-size:13.6px;line-height:1.5}
+li .ic{color:var(--good);font-size:16px;flex:0 0 auto;margin-top:2px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-top:8px}
+.kpi{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:14px;padding:18px}
+.kpi .v{font-size:30px;font-weight:800;letter-spacing:-.03em;color:var(--good)}
+.kpi .l{color:var(--mut);font-size:12px;margin-top:6px;font-weight:600}
+.dec{border-left:3px solid var(--warn)}
+.dec h3 .ic{color:var(--warn)}
+.dec li .ic{color:var(--warn)}
+.foot{margin-top:46px;padding-top:20px;border-top:1px solid var(--line);color:var(--mut);font-size:12.5px;line-height:1.6}
+.foot b{color:var(--ink)}
+.tag{display:inline-block;font-size:11px;font-weight:800;padding:3px 8px;border-radius:6px;background:#0e1a12;color:var(--good);border:1px solid #15301f;margin-left:6px}
+</style></head><body><div class="wrap">
+
+<header>
+  <div class="brand">P1 Fast — Entrega</div>
+  <h1>Gravador de Sessão <b>pronto</b> — do liga ao desliga</h1>
+  <p class="sub">O notebook agora GRAVA a sessão inteira: cada ponto de GPS na velocidade cheia e cada amostra do motor, do momento que o carro liga até desligar, guardado no próprio notebook. Construído, ligado e testado em desenvolvimento. Nada foi publicado.</p>
+  <div class="chips">
+    <span class="chip ok"><svg viewBox="0 0 24 24" class="ic"><path d="M4 12l5 5L20 6"/></svg> 43 testes automáticos verdes</span>
+    <span class="chip ok"><svg viewBox="0 0 24 24" class="ic"><path d="M4 12l5 5L20 6"/></svg> revisão adversarial aprovada</span>
+    <span class="chip">nada publicado (desenvolvimento)</span>
+    <span class="chip">20/06/2026</span>
+  </div>
+</header>
+
+<div class="grid kpis">
+  <div class="kpi"><div class="v">GPS</div><div class="l">completo — taxa cheia (~25/s) + dado cru, sem perda</div></div>
+  <div class="kpi"><div class="v">Motor</div><div class="l">completo — 10/s na origem, amostra inteira + dado cru</div></div>
+  <div class="kpi"><div class="v">Auto</div><div class="l">liga sozinho no 1º dado, fecha sozinho ao desligar</div></div>
+  <div class="kpi"><div class="v">Seguro</div><div class="l">grava no notebook mesmo sem internet</div></div>
+</div>
+
+<div class="section-t"><svg viewBox="0 0 24 24" class="ic"><path d="M5 13l4 4L19 7"/></svg> O que ficou pronto</div>
+<div class="grid g2">
+  <div class="card">
+    <h3><svg viewBox="0 0 24 24" class="ic"><path d="M3 12a9 9 0 1 1 18 0 9 9 0 0 1-18 0Z"/><path d="M12 8v4l3 2"/></svg> Na Central de Pista (GPS)</h3>
+    <p>A tela do notebook que lê o GPS agora grava cada ponto na <b>velocidade cheia</b> do aparelho, com o dado cru junto (nada se perde). Ganhou um selo <b>"GRAVAÇÃO"</b>, contadores ao vivo, resumo no fim e botão pra baixar a sessão.</p>
+    <ul>
+      <li><svg viewBox="0 0 24 24" class="ic"><path d="M4 12l5 5L20 6"/></svg> Liga na 1ª leitura, fecha após 8s sem dado (carro desligou)</li>
+      <li><svg viewBox="0 0 24 24" class="ic"><path d="M4 12l5 5L20 6"/></svg> Marca buracos se o notebook dormir (não finge continuidade)</li>
+      <li><svg viewBox="0 0 24 24" class="ic"><path d="M4 12l5 5L20 6"/></svg> Recupera a sessão se a tela for recarregada</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3><svg viewBox="0 0 24 24" class="ic"><path d="M5 7h14M5 12h14M5 17h9"/></svg> No painel do piloto (motor)</h3>
+    <p>O painel que lê a central do motor (T4000) agora grava o motor <b>na origem</b>, a 10 por segundo — a amostra inteira mais o dado cru — <b>antes</b> do afunilamento que mandava só 5 por segundo reduzido pra nuvem. Sem mudar nada na tela do piloto.</p>
+    <ul>
+      <li><svg viewBox="0 0 24 24" class="ic"><path d="M4 12l5 5L20 6"/></svg> Amostra completa do motor + bytes crus (reconstruível)</li>
+      <li><svg viewBox="0 0 24 24" class="ic"><path d="M4 12l5 5L20 6"/></svg> Roda em paralelo, protegido — não atrapalha o piloto</li>
+      <li><svg viewBox="0 0 24 24" class="ic"><path d="M4 12l5 5L20 6"/></svg> Desliga sozinho se o armazenamento faltar</li>
+    </ul>
+  </div>
+</div>
+
+<div class="section-t"><svg viewBox="0 0 24 24" class="ic"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Como foi testado (de verdade)</div>
+<div class="card">
+  <ul>
+    <li><svg viewBox="0 0 24 24" class="ic"><path d="M4 12l5 5L20 6"/></svg> <b>32 testes de lógica</b>: liga/desliga, contagem, taxa cheia, lacunas, simulação, recuperação de sessão, desligar quando o armazenamento morre.</li>
+    <li><svg viewBox="0 0 24 24" class="ic"><path d="M4 12l5 5L20 6"/></svg> <b>11 testes no armazenamento real</b> (mesma tecnologia do navegador) com os <b>dados reais</b> (motor 26/05 + GPS de Brasília): gravou 500 amostras e exportou tudo, completo e cru.</li>
+    <li><svg viewBox="0 0 24 24" class="ic"><path d="M4 12l5 5L20 6"/></svg> <b>Bateria completa do projeto</b>: só restaram 3 falhas <b>pré-existentes</b> (paridade do Checklist de 19/06), nenhuma do gravador.</li>
+    <li><svg viewBox="0 0 24 24" class="ic"><path d="M4 12l5 5L20 6"/></svg> <b>Página de validação aberta no Chrome</b>: roda a gravação ao vivo com os dados reais e baixa o arquivo.</li>
+  </ul>
+</div>
+
+<div class="section-t"><svg viewBox="0 0 24 24" class="ic"><path d="M12 4 2 20h20L12 4Z"/><path d="M12 10v5M12 18h.01"/></svg> Falta só decisão sua (não é defeito)</div>
+<div class="card dec">
+  <ul>
+    <li><svg viewBox="0 0 24 24" class="ic"><path d="M12 5v14M5 12h14"/></svg> <b>Juntar num lugar só:</b> hoje o GPS completo fica na Central e o motor completo fica no painel — são duas abas/aplicações diferentes. Unir tudo numa sessão só é escolha de arquitetura.</li>
+    <li><svg viewBox="0 0 24 24" class="ic"><path d="M12 5v14M5 12h14"/></svg> <b>Tirar do notebook:</b> o dado fica guardado no notebook. Mandar pra um lugar central (fora do canal ao vivo) pra não depender de uma máquina só — decisão + autorização de produção.</li>
+    <li><svg viewBox="0 0 24 24" class="ic"><path d="M12 5v14M5 12h14"/></svg> <b>Limpeza:</b> em sessões muito longas, quando e como apagar/rodar o que já foi baixado.</li>
+  </ul>
+</div>
+
+<div class="foot">
+  <b>Arquivos:</b> web/teste-aparelhos/session-recorder.js (novo) · web/teste-aparelhos/index.html (Central) · web/cockpit/main-t3000.js + web/cockpit/session-recorder.js (painel do piloto) · web/teste-aparelhos/_validar-gravador.html (validação) · 2 baterias de teste novas.<br>
+  <b>Tudo aditivo</b> — nada existente foi removido. <b>Nada publicado</b> — sobe pro notebook só com a sua ordem "MIGRAR PARA PRODUÇÃO".
+</div>
+
+</div></body></html>
