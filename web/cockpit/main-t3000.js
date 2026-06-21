@@ -118,6 +118,43 @@ if (typeof window !== 'undefined') {
   try { setInterval(vigia, 4000); vigia(); } catch (e) {}
 })();
 
+// ── Autoteste OFFLINE da blindagem (SÓ com ?teste=1 no endereço) ─────────────
+// Para você ver, no PRÓPRIO painel do piloto e no notebook, o alarme vermelho e o
+// aviso de espaço funcionando — SEM o carro e SEM tocar no canal de produção. Usa
+// uma gravação de TESTE só na memória (nada vai pro arquivo real nem pro canal).
+// No painel normal (endereço sem ?teste=1) isto não existe e não muda nada.
+(function autotesteBlindagem() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  if (!/[?&]teste=1(&|$)/.test(window.location.search)) return;
+  let modo = 'ok';                       // 'ok' grava de verdade; 'perda' faz a escrita falhar
+  const base = criarStoreMemoria();
+  const store = {
+    novaSessao: (m) => base.novaSessao(m),
+    async gravar(reg) { if (modo === 'perda') throw new Error('escrita falhou (teste)'); return base.gravar(reg); },
+    finalizar: (id, r) => base.finalizar(id, r),
+    lerSessao: (id) => base.lerSessao(id),
+    resumirSessao: () => ({ nGps: 0, nMotor: 0, durMs: 0, fimWall: null }),
+    listarSessoes: () => base.listarSessoes(),
+  };
+  const testRec = criarGravador({ store });
+  window.__P1_TESTE_REC__ = testRec;      // o vigia passa a olhar esta gravação de teste
+  // motor de mentira, 1x/s, marcado como simulação (nunca publicado)
+  setInterval(() => { if (modo !== 'parada') testRec.motor({ rpm: 5200, waterTempC: 50, source: 'sim-replay' }, 'cafe', true); }, 1000);
+  const bar = document.createElement('div');
+  bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#14171b;border-top:1px solid #2c3540;padding:8px;text-align:center;font:600 13px system-ui,sans-serif';
+  bar.appendChild(Object.assign(document.createElement('span'), { textContent: 'TESTE da blindagem (só nesta tela): ', style: 'color:#9aa3ad;margin-right:8px' }));
+  const botao = (txt, fn) => {
+    const b = document.createElement('button');
+    b.textContent = txt;
+    b.style.cssText = 'margin:0 4px;padding:8px 12px;border-radius:8px;border:1px solid #2c3540;background:#1f2630;color:#e6e8ea;font-weight:600;cursor:pointer';
+    b.onclick = fn; bar.appendChild(b);
+  };
+  botao('Gravar normal', () => { modo = 'ok'; });
+  botao('Forçar PERDA', () => { modo = 'perda'; });
+  botao('Forçar PARADA', () => { modo = 'parada'; for (let i = 0; i < 60; i++) testRec.gps({ lat: 1, lng: 2 }); });
+  document.body.appendChild(bar);
+})();
+
 // ── Identificação do carro ativo ───────────────────────────────
 // Bubi é o único carro hoje. Pra plugar outro carro no futuro, basta definir
 // window.__P1_CARRO_ID__ no HTML ou gravar em localStorage. Default = Bubi.
