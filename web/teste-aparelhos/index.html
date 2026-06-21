@@ -138,6 +138,15 @@ let recTela = 'parada';   // 'parada' | 'gravando' | 'salva' — estado explíci
 
 function renderGravacao(){
   const e = Rec.estado();
+  // Alarme VISÍVEL, nunca silencioso (blindagem — decisão Flávio 21/06).
+  if (e.alarme){
+    $('recAlarme').style.display = 'block';
+    $('recAlarme').textContent = e.alarme === 'parada-armazenamento'
+      ? 'GRAVAÇÃO PAROU — o armazenamento do notebook falhou. O dado ao vivo continua, mas NÃO está sendo guardado.'
+      : 'PERDENDO AMOSTRAS (' + (e.dropped || 0) + ' descarte(s)). Verifique o espaço/erro do navegador.';
+  } else {
+    $('recAlarme').style.display = 'none';
+  }
   if (e.gravando){
     recTela = 'gravando';
     boardPill($('bRec'), 'GRAVAÇÃO · ' + (e.sim?'sim ':'') + 'ativa ✓', 'ok');
