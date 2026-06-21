@@ -28,20 +28,24 @@
   .vazio { color: #9aa7b4; padding: 10px 2px; }
   #log { white-space: pre-wrap; color: #9aa7b4; font-size: 13px; margin-top: 16px; }
   .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #2b3a4d; color: #cbd5e1; }
+  .prog { height: 10px; background: #11202f; border-radius: 999px; overflow: hidden; margin-top: 8px; }
+  .prog > i { display: block; height: 100%; background: #2f9e5b; width: 0%; transition: width .2s; }
 </style>
 </head>
 <body>
 <header>
   <h1>Resgate dos dados gravados neste notebook</h1>
-  <div class="sub">Esta página lê o que ficou guardado no navegador <b>deste computador</b> e deixa você baixar em arquivo. Nada é apagado. Não fecha esta aba até terminar.</div>
+  <div class="sub">Esta página lê o que ficou guardado no navegador <b>deste computador</b>, <b>envia sozinha para a nuvem</b> (pra você não precisar fazer nada) e ainda deixa baixar em arquivo como reserva. Nada é apagado. Não feche esta aba até terminar.</div>
 </header>
 <main>
   <div class="barra">
-    <button id="btnProcurar">Procurar dados gravados</button>
-    <button id="btnTudo" class="primario" disabled>Baixar TUDO</button>
+    <button id="btnProcurar">Procurar de novo</button>
+    <button id="btnEnviar" class="primario" disabled>Enviar tudo pra nuvem</button>
+    <button id="btnTudo" disabled>Baixar tudo (reserva)</button>
     <span id="espaco" class="pill"></span>
   </div>
   <div id="status"></div>
+  <div class="prog" id="progWrap" style="display:none"><i id="progBar"></i></div>
   <div id="listas"></div>
   <div id="log"></div>
 </main>
@@ -49,9 +53,13 @@
 <script type="module">
 import { criarStoreIndexedDB, estimarArmazenamento } from './session-recorder.js';
 
-// As duas "gavetas" possiveis neste navegador:
-//  - p1fast-sessoes-cockpit = MOTOR (painel do piloto / p1t4000)
-//  - p1fast-sessoes         = GPS (Central de Pista, se foi aberta nesta mesma pagina)
+// Caixa de correio na nuvem (tabela temporaria sessao_dumps). Chave publica anon (igual ao painel).
+const SUPA_URL = 'https://fvhwltzhytpnhlqbttmd.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2aHdsdHpoeXRwbmhscWJ0dG1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTExNDAsImV4cCI6MjA5MzM4NzE0MH0._ZpxksUnuVFhLzCB5x7bBiZ_VLQQR5cH4A1T-0-mvrA';
+const CHUNK = 1000;            // amostras por bloco enviado
+const ENVIO = 'r' + Date.now() + '-' + Math.floor(Math.random() * 1e6);
+const ORIGEM = location.host + location.pathname;
+
 const BANCOS = [
   { db: 'p1fast-sessoes-cockpit', rotulo: 'Motor (painel do piloto)' },
   { db: 'p1fast-sessoes',         rotulo: 'GPS (Central de Pista)' },
@@ -59,107 +67,132 @@ const BANCOS = [
 
 const $ = (id) => document.getElementById(id);
 const status = $('status'), listas = $('listas'), logEl = $('log');
-let achadas = []; // {db, rotulo, sessao, resumo}
+let achadas = [];
 
 function log(m) { logEl.textContent += m + '\n'; }
 function fmtDur(ms) { if (!ms) return '—'; const s = Math.round(ms / 1000); const m = Math.floor(s / 60); return m ? (m + 'm ' + (s % 60) + 's') : (s + 's'); }
 function fmtData(wall) { if (!wall) return '—'; try { return new Date(wall).toLocaleString('pt-BR'); } catch (e) { return String(wall); } }
+function setProg(p) { $('progWrap').style.display = 'block'; $('progBar').style.width = Math.round(p * 100) + '%'; }
 
 async function procurar() {
   achadas = []; listas.innerHTML = ''; status.innerHTML = ''; logEl.textContent = '';
-  $('btnTudo').disabled = true;
-  try {
-    const esp = await estimarArmazenamento();
-    if (esp && esp.suportado) $('espaco').textContent = 'Espaço usado no notebook: ' + esp.usadoMB + ' MB';
-  } catch (e) {}
+  $('btnEnviar').disabled = true; $('btnTudo').disabled = true;
+  try { const esp = await estimarArmazenamento(); if (esp && esp.suportado) $('espaco').textContent = 'Espaço usado: ' + esp.usadoMB + ' MB'; } catch (e) {}
 
-  let totalSessoes = 0;
+  let total = 0;
   for (const b of BANCOS) {
     const store = criarStoreIndexedDB(b.db);
     let lista = [];
-    try { lista = (await store.listarSessoes()) || []; }
-    catch (e) { log('Falha ao abrir ' + b.db + ': ' + e.message); continue; }
-
+    try { lista = (await store.listarSessoes()) || []; } catch (e) { log('Falha ao abrir ' + b.db + ': ' + e.message); continue; }
     const div = document.createElement('div');
     div.innerHTML = '<div class="grupo">' + b.rotulo + ' <span class="pill">' + b.db + '</span></div>';
-    if (!lista.length) {
-      div.innerHTML += '<div class="vazio">Nenhuma sessão guardada nesta gaveta.</div>';
-      listas.appendChild(div);
-      continue;
-    }
+    if (!lista.length) { div.innerHTML += '<div class="vazio">Nenhuma sessão guardada nesta gaveta.</div>'; listas.appendChild(div); continue; }
     const tab = document.createElement('table');
-    tab.innerHTML = '<thead><tr><th>Quando</th><th>Duração</th><th class="num">Amostras motor</th><th class="num">Amostras GPS</th><th>Status</th><th>Ação</th></tr></thead>';
+    tab.innerHTML = '<thead><tr><th>Quando</th><th>Duração</th><th class="num">Motor</th><th class="num">GPS</th><th>Status</th><th>Nuvem</th><th>Ação</th></tr></thead>';
     const tb = document.createElement('tbody');
-    // mais recente primeiro
     lista.sort((a, b2) => (b2.fimWall || b2.inicioWall || 0) - (a.fimWall || a.inicioWall || 0));
     for (const s of lista) {
       let resumo = { nMotor: s.nMotor, nGps: s.nGps, durMs: null };
-      try { const r = await store.resumirSessao(s.id); resumo = r; } catch (e) {}
+      try { resumo = await store.resumirSessao(s.id); } catch (e) {}
+      const idx = achadas.length;
       achadas.push({ db: b.db, rotulo: b.rotulo, sessao: s, resumo });
-      totalSessoes++;
+      total++;
       const tr = document.createElement('tr');
-      const quando = fmtData(s.fimWall || s.inicioWall);
-      const dur = fmtDur(resumo.durMs || (s.fimWall && s.inicioWall ? s.fimWall - s.inicioWall : 0));
       tr.innerHTML =
-        '<td>' + quando + (s.sim ? ' <span class="pill">teste</span>' : '') + '</td>' +
-        '<td>' + dur + '</td>' +
+        '<td>' + fmtData(s.fimWall || s.inicioWall) + (s.sim ? ' <span class="pill">teste</span>' : '') + '</td>' +
+        '<td>' + fmtDur(resumo.durMs) + '</td>' +
         '<td class="num">' + (resumo.nMotor ?? '—') + '</td>' +
         '<td class="num">' + (resumo.nGps ?? '—') + '</td>' +
         '<td>' + (s.status || '—') + '</td>' +
-        '<td><button data-db="' + b.db + '" data-id="' + s.id + '">Baixar</button></td>';
+        '<td id="nuvem-' + idx + '">—</td>' +
+        '<td><button data-i="' + idx + '">Baixar</button></td>';
       tb.appendChild(tr);
     }
-    tab.appendChild(tb);
-    div.appendChild(tab);
-    listas.appendChild(div);
+    tab.appendChild(tb); div.appendChild(tab); listas.appendChild(div);
   }
 
-  if (!totalSessoes) {
-    status.innerHTML = '<div class="aviso"><b>Nenhuma sessão encontrada neste navegador.</b><br>' +
-      'Isso quer dizer que o painel não chegou a gravar aqui — geralmente porque o aparelho (T4000) não estava conectado durante o teste, ou foi usado outro endereço. Não há o que recuperar nesta página.</div>';
-  } else {
-    status.innerHTML = '<div class="ok"><b>' + totalSessoes + ' sessão(ões) encontrada(s).</b> Clique em “Baixar” em cada linha, ou em “Baixar TUDO”. Cada arquivo vai para a pasta Downloads.</div>';
-    $('btnTudo').disabled = false;
+  if (!total) {
+    status.innerHTML = '<div class="aviso"><b>Nenhuma sessão encontrada neste navegador.</b><br>O painel não chegou a gravar aqui (aparelho não conectado, ou outro endereço). Não há o que recuperar nesta página.</div>';
+    return;
   }
-
-  listas.querySelectorAll('button[data-id]').forEach(btn => {
-    btn.onclick = () => baixar(btn.getAttribute('data-db'), btn.getAttribute('data-id'), btn);
-  });
+  status.innerHTML = '<div class="ok"><b>' + total + ' sessão(ões) encontrada(s).</b> Vou enviar pra nuvem automaticamente. Pode acompanhar abaixo.</div>';
+  $('btnEnviar').disabled = false; $('btnTudo').disabled = false;
+  listas.querySelectorAll('button[data-i]').forEach(btn => { btn.onclick = () => baixar(+btn.getAttribute('data-i'), btn); });
+  enviarNuvem(); // envio automatico
 }
 
-async function baixar(db, id, btn) {
+async function postRows(rows) {
+  for (let tent = 0; tent < 3; tent++) {
+    try {
+      const r = await fetch(SUPA_URL + '/rest/v1/sessao_dumps', {
+        method: 'POST',
+        headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify(rows),
+      });
+      if (r.ok) return true;
+      const txt = await r.text();
+      log('  nuvem respondeu ' + r.status + ': ' + txt.slice(0, 160));
+      if (r.status === 404 || r.status === 401) return false; // tabela/permite ausente: nao adianta repetir
+    } catch (e) { log('  falha de rede: ' + e.message); }
+    await new Promise(res => setTimeout(res, 800));
+  }
+  return false;
+}
+
+async function enviarNuvem() {
+  $('btnEnviar').disabled = true;
+  let okSes = 0, falhou = false;
+  const totalChunksGeral = achadas.reduce((acc, a) => acc + Math.max(1, Math.ceil((a.resumo.nGps + a.resumo.nMotor || 1) / CHUNK)) + 1, 0);
+  let feitos = 0;
+  for (let i = 0; i < achadas.length; i++) {
+    const a = achadas[i];
+    const cel = $('nuvem-' + i); if (cel) cel.textContent = 'enviando...';
+    try {
+      const store = criarStoreIndexedDB(a.db);
+      const dump = await store.lerSessao(a.sessao.id);
+      const am = dump.amostras || [];
+      const nChunks = Math.max(1, Math.ceil(am.length / CHUNK));
+      // parte 0 = metadados
+      let ok = await postRows([{ envio: ENVIO, origem: ORIGEM, sessao_id: a.sessao.id, parte: 0, total: nChunks, sessao_meta: dump.sessao, amostras: null }]);
+      feitos++; setProg(feitos / totalChunksGeral);
+      for (let c = 0; c < nChunks && ok; c++) {
+        const bloco = am.slice(c * CHUNK, (c + 1) * CHUNK);
+        ok = await postRows([{ envio: ENVIO, origem: ORIGEM, sessao_id: a.sessao.id, parte: c + 1, total: nChunks, amostras: bloco }]);
+        feitos++; setProg(feitos / totalChunksGeral);
+        if (cel) cel.textContent = 'enviando ' + (c + 1) + '/' + nChunks;
+      }
+      if (ok) { okSes++; if (cel) cel.textContent = 'ENVIADO'; log('Enviado pra nuvem: ' + a.sessao.id + ' (' + am.length + ' amostras)'); }
+      else { falhou = true; if (cel) cel.textContent = 'falhou'; }
+    } catch (e) { falhou = true; if (cel) cel.textContent = 'erro'; log('ERRO ao enviar ' + a.sessao.id + ': ' + e.message); }
+  }
+  setProg(1);
+  if (okSes && !falhou) status.innerHTML = '<div class="ok"><b>Pronto. ' + okSes + ' sessão(ões) enviada(s) pra nuvem.</b> Pode me avisar — eu pego daqui. Identificação do envio: ' + ENVIO + '</div>';
+  else if (okSes) status.innerHTML = '<div class="aviso">' + okSes + ' sessão(ões) enviada(s), mas alguma falhou. Use também o "Baixar tudo (reserva)". Envio: ' + ENVIO + '</div>';
+  else status.innerHTML = '<div class="erro"><b>Não consegui enviar pra nuvem</b> (a caixa de correio pode não estar pronta). Use o "Baixar tudo (reserva)" e me mande os arquivos.</div>';
+  $('btnEnviar').disabled = false;
+}
+
+async function baixar(i, btn) {
+  const a = achadas[i]; if (!a) return;
   if (btn) { btn.disabled = true; btn.textContent = 'Baixando...'; }
   try {
-    const store = criarStoreIndexedDB(db);
-    const dump = await store.lerSessao(id);
-    const pacote = { db, exportadoEm: new Date().toISOString(), sessao: dump.sessao, totalAmostras: (dump.amostras || []).length, amostras: dump.amostras };
+    const store = criarStoreIndexedDB(a.db);
+    const dump = await store.lerSessao(a.sessao.id);
+    const pacote = { db: a.db, exportadoEm: new Date().toISOString(), sessao: dump.sessao, totalAmostras: (dump.amostras || []).length, amostras: dump.amostras };
     const blob = new Blob([JSON.stringify(pacote)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'p1fast_' + db + '_' + id + '.json';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    log('Baixado: ' + db + ' / ' + id + ' (' + pacote.totalAmostras + ' amostras)');
+    const el = document.createElement('a'); el.href = URL.createObjectURL(blob); el.download = 'p1fast_' + a.db + '_' + a.sessao.id + '.json';
+    document.body.appendChild(el); el.click(); el.remove(); setTimeout(() => URL.revokeObjectURL(el.href), 4000);
+    log('Baixado: ' + a.sessao.id + ' (' + pacote.totalAmostras + ' amostras)');
     if (btn) btn.textContent = 'Baixado';
-  } catch (e) {
-    log('ERRO ao baixar ' + id + ': ' + e.message);
-    if (btn) { btn.disabled = false; btn.textContent = 'Tentar de novo'; }
-  }
+  } catch (e) { log('ERRO ao baixar: ' + e.message); if (btn) { btn.disabled = false; btn.textContent = 'Tentar de novo'; } }
 }
 
-async function baixarTudo() {
-  $('btnTudo').disabled = true;
-  for (const a of achadas) {
-    await baixar(a.db, a.sessao.id, null);
-    await new Promise(r => setTimeout(r, 900)); // dá tempo do navegador processar cada download
-  }
-  status.innerHTML += '<div class="ok">Terminou de baixar tudo. Os arquivos estão na pasta Downloads deste notebook.</div>';
-  $('btnTudo').disabled = false;
-}
+async function baixarTudo() { $('btnTudo').disabled = true; for (let i = 0; i < achadas.length; i++) { await baixar(i, null); await new Promise(r => setTimeout(r, 900)); } $('btnTudo').disabled = false; }
 
 $('btnProcurar').onclick = procurar;
+$('btnEnviar').onclick = enviarNuvem;
 $('btnTudo').onclick = baixarTudo;
-procurar(); // roda sozinho ao abrir
+procurar();
 </script>
 </body>
 </html>
