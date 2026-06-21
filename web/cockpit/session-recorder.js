@@ -301,5 +301,27 @@ export function criarStoreIndexedDB(dbName = 'p1fast-sessoes') {
   };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ESPAÇO NO ARMAZENAMENTO (blindagem contra perda por disco/cota cheia)
+// classificarEspaco é puro (testável em Node); estimarArmazenamento lê o navegador.
+// Decisão Flávio 21/06: manter os dois bancos separados e SÓ blindar contra perda
+// (alarme visível se a gravação parar + aviso quando o espaço estiver acabando).
+// ─────────────────────────────────────────────────────────────────────────────
+export function classificarEspaco(usage, quota) {
+  const usadoMB = Math.round((usage || 0) / 1e6);
+  const cotaMB  = Math.round((quota || 0) / 1e6);
+  const pct = quota > 0 ? Math.round((usage / quota) * 100) : 0;
+  const nivel = pct >= 90 ? 'critico' : pct >= 75 ? 'atencao' : 'ok';
+  return { usadoMB, cotaMB, pct, nivel };
+}
+export async function estimarArmazenamento() {
+  try {
+    if (typeof navigator === 'undefined' || !navigator.storage || !navigator.storage.estimate)
+      return { suportado: false };
+    const est = await navigator.storage.estimate();
+    return { suportado: true, ...classificarEspaco(est.usage, est.quota) };
+  } catch (e) { return { suportado: false }; }
+}
+
 // Suporte a ambientes sem ESM (testes podem usar require via import())
-export default { criarGravador, criarStoreMemoria, criarStoreIndexedDB };
+export default { criarGravador, criarStoreMemoria, criarStoreIndexedDB, classificarEspaco, estimarArmazenamento };
