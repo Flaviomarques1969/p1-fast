@@ -72,7 +72,7 @@ public class T3000UsbLiveReaderTests
         var canal = new InMemoryT3000UsbChannel(); // "OK" por padrão
         canal.EnqueueBlock(BlocoBom(rpm: 5200));
 
-        var amostras = await Rodar(canal, alvoAmostras: 1, readerOut: out var reader);
+        var (amostras, reader) = await Rodar(canal, alvoAmostras: 1);
 
         Assert.Single(amostras);
         Assert.Equal(5200, amostras[0].Rpm);
@@ -88,7 +88,7 @@ public class T3000UsbLiveReaderTests
         var canal = new InMemoryT3000UsbChannel(handshakeResponse: new byte[] { 0x4E, 0x4F }); // "NO"
         canal.EnqueueBlock(BlocoBom());
 
-        var amostras = await Rodar(canal, alvoAmostras: 1, readerOut: out var reader);
+        var (amostras, reader) = await Rodar(canal, alvoAmostras: 1);
 
         Assert.Empty(amostras);
         var st = reader.GetStats();
@@ -104,7 +104,7 @@ public class T3000UsbLiveReaderTests
         var canal = new InMemoryT3000UsbChannel(maxPerRead: 16);
         canal.EnqueueBlock(BlocoBom(rpm: 6050));
 
-        var amostras = await Rodar(canal, alvoAmostras: 1, readerOut: out _);
+        var (amostras, reader) = await Rodar(canal, alvoAmostras: 1);
 
         Assert.Single(amostras);
         Assert.Equal(6050, amostras[0].Rpm);          // chegou inteiro mesmo picado
@@ -118,7 +118,7 @@ public class T3000UsbLiveReaderTests
         for (int i = 0; i < 30; i++) canal.EnqueueBlock(BlocoCurto()); // 30 curtos → religa
         canal.EnqueueBlock(BlocoBom());                                 // depois um bom
 
-        var amostras = await Rodar(canal, alvoAmostras: 1, readerOut: out var reader);
+        var (amostras, reader) = await Rodar(canal, alvoAmostras: 1);
 
         Assert.Single(amostras);
         var st = reader.GetStats();
@@ -136,7 +136,7 @@ public class T3000UsbLiveReaderTests
         for (int i = 0; i < 8; i++) canal.EnqueueBlock(BlocoForaDeFaixa()); // 8 ruins → religa
         canal.EnqueueBlock(BlocoBom(rpm: 5200));
 
-        var amostras = await Rodar(canal, alvoAmostras: 1, readerOut: out var reader);
+        var (amostras, reader) = await Rodar(canal, alvoAmostras: 1);
 
         Assert.Single(amostras);
         Assert.Equal(5200, amostras[0].Rpm);
@@ -155,7 +155,7 @@ public class T3000UsbLiveReaderTests
         canal.EnqueueBlock(BlocoBom());     // este bloco se perde no tranco da queda
         canal.EnqueueBlock(BlocoBom(rpm: 4800)); // este chega depois da religação
 
-        var amostras = await Rodar(canal, alvoAmostras: 1, readerOut: out var reader);
+        var (amostras, reader) = await Rodar(canal, alvoAmostras: 1);
 
         Assert.Single(amostras);
         Assert.Equal(4800, amostras[0].Rpm);
@@ -174,7 +174,7 @@ public class T3000UsbLiveReaderTests
         canal.EnqueueBlock(BlocoBom());          // perdido na queda
         canal.EnqueueBlock(BlocoBom(rpm: 5300)); // chega quando a USB volta
 
-        var amostras = await Rodar(canal, alvoAmostras: 1, readerOut: out var reader);
+        var (amostras, reader) = await Rodar(canal, alvoAmostras: 1);
 
         Assert.Single(amostras);
         Assert.Equal(5300, amostras[0].Rpm);
@@ -190,7 +190,7 @@ public class T3000UsbLiveReaderTests
         canal.EnqueueBlock(BlocoBom(rpm: 3000));
         canal.EnqueueBlock(BlocoBom(rpm: 6100));
 
-        var amostras = await Rodar(canal, alvoAmostras: 2, readerOut: out var reader);
+        var (amostras, reader) = await Rodar(canal, alvoAmostras: 2);
 
         Assert.Equal(2, amostras.Count);
         Assert.Equal(3000, amostras[0].Rpm);
