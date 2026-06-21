@@ -68,3 +68,13 @@ Reforço pedido: (1) alarme VISÍVEL se a gravação parar; (2) aviso quando o e
 
 ## Ambiente: desenvolvimento. Produção alterada: não. Nada publicado, gravação 100% local.
 ## Status final: concluído (blindagem entregue e testada). Unificação e upload seguem como decisão futura.
+
+## Acréscimo 21/06 — testar a blindagem NO painel do piloto, no notebook
+- web/cockpit/main-t3000.js: modo de autoteste OFFLINE guardado por `?teste=1` no endereço. Cria um
+  gravador de TESTE só em memória (não toca no IndexedDB real nem no canal de produção), alimenta motor
+  de mentira marcado como simulação e mostra uma barra com 3 botões (Gravar normal / Forçar PERDA /
+  Forçar PARADA). O `vigia` passa a olhar o gravador de teste quando ele existe. No endereço NORMAL
+  (sem ?teste=1) nada disso aparece — painel do piloto intocado.
+- Servido em 127.0.0.1:8095 (web/cockpit) e aberto: index-t3000.html?teste=1. node --check OK; 43+11 verdes.
+- Teste REAL (com o carro): abrir index-t3000.html e conectar o T3000 pelo cabo (botão "Autorizar T3000
+  via WebUSB"); o motor grava sozinho. Faking no canal cockpit-bubi-live é PROIBIDO (produção).
