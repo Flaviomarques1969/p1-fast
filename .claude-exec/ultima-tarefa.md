@@ -35,7 +35,14 @@ Rodar as funções reais do cérebro do cockpit contra a sessão real colhida ho
 ## 9. Autorização para produção: não
 ## 10. Evidência da autorização para produção: não recebida
 ## 11. Riscos: nenhum (só leitura dos dados + teste fora do ar; não toca canal ao vivo nem nuvem)
-## 12. Status: iniciado
+## 12. Status: concluído
+
+## Resultado do teste (node .claude-exec/teste-cockpit-dados-hoje.mjs → EXIT 0)
+- VELOCIDADE: OK. A 1 Hz erro mediano 0,1 km/h vs GPS (vMax 157 ≈ 159,8). A 24,5 Hz cru estoura pico falso de 317 km/h — precisa reamostrar pra ~1 Hz.
+- PAINEL (stint/ritmo/meta): coerente, mas SEM saída — cronômetro de volta da injeção ficou ZERADO a sessão toda (0 voltas). Blocos ficam "aguardando" (honesto).
+- PREDITIVO: temperatura de água existe (49-58°C), mas precisa de máx por volta (≥4 voltas) — não há voltas. Não rodou.
+- COACH: carregou e respondeu; precisa de passagens segmentadas por curva — sessão crua não tem.
+- DADO colhido: GPS 26.815 válidos / 495 lixo. Motor VIVO: rpm, lambda, bateria, água, tpsPct(acelerador). ZERO: acelerômetro, pedal de freio, pressão de freio, velocidade-injeção, cronômetro de volta.
 
 ---
 ---
