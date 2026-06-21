@@ -91,6 +91,7 @@
   <div class="card">
     <h2>Gravação da sessão</h2>
     <div class="row"><span class="lbl">Estado</span><span id="recEstado" class="pill idle">parada</span></div>
+    <div id="recAlarme" style="display:none;margin-top:8px;background:#b91c1c;color:#fff;font-weight:700;padding:8px 10px;border-radius:6px"></div>
     <div class="grid2" style="margin-top:6px">
       <div class="row"><span class="lbl">Tempo</span><span id="recTempo" class="val">—</span></div>
       <div class="row"><span class="lbl">Lacunas</span><span id="recLac" class="val">—</span></div>
@@ -99,6 +100,7 @@
       <div class="row"><span class="lbl">Taxa GPS</span><span id="recHzGps" class="val">—</span></div>
       <div class="row"><span class="lbl">Taxa motor</span><span id="recHzMotor" class="val">—</span></div>
     </div>
+    <div class="row" style="margin-top:6px"><span class="lbl">Espaço no notebook</span><span id="recEspaco" class="val">—</span></div>
     <div id="recResumo" class="note" style="display:none;color:#4ade80"></div>
     <button id="btnBaixar" style="margin-top:10px" disabled>Baixar última sessão (arquivo)</button>
     <p class="note">Grava sozinho do liga ao desliga do carro: cada ponto de GPS (na taxa cheia) e cada
