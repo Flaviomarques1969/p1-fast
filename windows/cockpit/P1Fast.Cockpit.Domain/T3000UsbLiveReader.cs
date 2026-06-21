@@ -373,7 +373,7 @@ public sealed class InMemoryT3000UsbChannel : IT3000UsbChannel
         cancellationToken.ThrowIfCancellationRequested();
         lock (_lock)
         {
-            if (FailNextReads > 0) { FailNextReads--; throw new System.IO.IOException("queda na leitura USB (simulada)"); }
+            if (_lastWriteWasRi && FailNextReads > 0) { FailNextReads--; throw new System.IO.IOException("queda na leitura USB (simulada)"); }
             if (_pending.Count == 0) return Task.FromResult(0);
             int n = Math.Min(Math.Min(buffer.Length, _maxPerRead), _pending.Count);
             for (int i = 0; i < n; i++) buffer[i] = _pending.Dequeue();
