@@ -43,6 +43,20 @@ auditar minhas afirmações, e entregar um plano de trabalho para o app do noteb
 ## Risco: alta carga emocional + prazo (3 dias) + tests de pista perdidos. Não inventar, não prometer.
 ## Status inicial: iniciado (comissão + auditor disparados).
 
+## PUBLICAÇÃO AUTORIZADA E FEITA 21/06 (produção)
+- Autorização literal do Flávio: "MIGRAR PARA PRODUÇÃO: página de resgate dos dados (resgate.html no p1t4000)".
+- Construído: web/cockpit/resgate.html (NOVO, aditivo). Lê os bancos locais do navegador
+  (p1fast-sessoes-cockpit = motor; p1fast-sessoes = GPS), lista sessões com contagem/duração e baixa
+  cada uma em arquivo JSON. NÃO escreve em nuvem, NÃO cria tabela, NÃO toca no painel.
+- Por que NÃO foi envio automático pra nuvem: não há bucket de storage; criar tabela nova exigiria
+  `db push` que arrastaria a migração 0044 (vídeo) NÃO aplicada em prod = mudança não autorizada. Evitado.
+- Publicado via Vercel (projeto p1t4000), deployment dpl_7Jp6ZN8DZXneWo7fvuzFc6f5hfSp, target production, READY.
+- Validação pós-publicação: p1t4000.vercel.app/resgate.html = HTTP 200 (título + "Baixar TUDO" presentes);
+  p1t4000.vercel.app/ = HTTP 200, main-t3000.js AINDA com RecCockpit(11)/__P1_BAIXAR_SESSAO__/blindagem
+  = painel do piloto intacto. Rollback se preciso: remover resgate.html e republicar.
+- PENDENTE de fato real: saber se há dado gravado naquele notebook (só verificável abrindo a página LÁ).
+- Comissão + auditor (em segundo plano) seguem montando a tabela de verdade + plano dos 3 dias.
+
 ## ACHADOS VERIFICADOS 21/06 (resgate do dado) — leitura, sem alterar nada
 - NUVEM (projeto fvhwltzhytpnhlqbttmd, leitura via REST com chave anon):
   - tabela `sessoes`: NENHUMA sessão real de 20/06 (dia) nem de 21/06. As de junho são blips de
