@@ -2,7 +2,7 @@
 // Prova, sem navegador, a lógica que a auditoria de 20/06 pediu: gravar do liga ao
 // desliga, contar GPS e motor, manter a taxa cheia, marcar lacunas, identificar
 // simulação e nunca perder dado em silêncio.
-import { criarGravador, criarStoreMemoria } from '../web/teste-aparelhos/session-recorder.js';
+import { criarGravador, criarStoreMemoria, classificarEspaco } from '../web/teste-aparelhos/session-recorder.js';
 
 let okN = 0, failN = 0;
 const ok   = (m) => { okN++;  console.log('  ok   ' + m); };
