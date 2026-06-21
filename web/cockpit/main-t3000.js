@@ -42,7 +42,7 @@ import { TrailCockpitMotor } from './trail-cockpit-motor.js';
 import { criarTrailCockpitTela } from './trail-cockpit-tela.js';
 import { APICES_SEMENTE_BRASILIA } from './apices-semente-brasilia.js';
 import { onSample } from './cloud-bridge.js';
-import { criarGravador, criarStoreIndexedDB, estimarArmazenamento } from './session-recorder.js';
+import { criarGravador, criarStoreIndexedDB, criarStoreMemoria, estimarArmazenamento } from './session-recorder.js';
 // segments-loader/melhores-loader importam Supabase via esm.sh — dynamic
 // import dentro da IIFE evita quebra em smoke Node.
 
