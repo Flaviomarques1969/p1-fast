@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1 Fast — Resgate dos dados do notebook</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0b0f14; color: #e6edf3; font: 16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  header { padding: 20px 24px; border-bottom: 1px solid #1f2937; }
+  h1 { margin: 0 0 6px; font-size: 22px; }
+  .sub { color: #9aa7b4; font-size: 14px; }
+  main { padding: 18px 24px 40px; width: 100%; max-width: 100%; }
+  .barra { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 8px 0 18px; }
+  button { font: 600 15px/1 system-ui; padding: 12px 18px; border-radius: 10px; border: 1px solid #2b3a4d; background: #15314f; color: #e6edf3; cursor: pointer; }
+  button.primario { background: #1d6f3f; border-color: #2f9e5b; }
+  button:disabled { opacity: .5; cursor: default; }
+  button:hover:not(:disabled) { filter: brightness(1.12); }
+  .aviso { background: #3a2a0c; border: 1px solid #6b5012; color: #ffe9b0; padding: 12px 14px; border-radius: 10px; margin: 12px 0; }
+  .ok { background: #0e2a18; border: 1px solid #1f6f3f; color: #b9f5cf; padding: 12px 14px; border-radius: 10px; margin: 12px 0; }
+  .erro { background: #3a1212; border: 1px solid #7a2020; color: #ffc9c9; padding: 12px 14px; border-radius: 10px; margin: 12px 0; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid #1f2937; vertical-align: middle; }
+  th { color: #9aa7b4; font-size: 13px; font-weight: 600; }
+  td.num { font-variant-numeric: tabular-nums; }
+  .grupo { margin: 22px 0 6px; font-size: 15px; color: #cbd5e1; font-weight: 700; }
+  .vazio { color: #9aa7b4; padding: 10px 2px; }
+  #log { white-space: pre-wrap; color: #9aa7b4; font-size: 13px; margin-top: 16px; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #2b3a4d; color: #cbd5e1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Resgate dos dados gravados neste notebook</h1>
+  <div class="sub">Esta página lê o que ficou guardado no navegador <b>deste computador</b> e deixa você baixar em arquivo. Nada é apagado. Não fecha esta aba até terminar.</div>
+</header>
+<main>
+  <div class="barra">
+    <button id="btnProcurar">Procurar dados gravados</button>
+    <button id="btnTudo" class="primario" disabled>Baixar TUDO</button>
+    <span id="espaco" class="pill"></span>
+  </div>
+  <div id="status"></div>
+  <div id="listas"></div>
+  <div id="log"></div>
+</main>
+
+<script type="module">
+import { criarStoreIndexedDB, estimarArmazenamento } from './session-recorder.js';
+
+// As duas "gavetas" possiveis neste navegador:
+//  - p1fast-sessoes-cockpit = MOTOR (painel do piloto / p1t4000)
+//  - p1fast-sessoes         = GPS (Central de Pista, se foi aberta nesta mesma pagina)
+const BANCOS = [
+  { db: 'p1fast-sessoes-cockpit', rotulo: 'Motor (painel do piloto)' },
+  { db: 'p1fast-sessoes',         rotulo: 'GPS (Central de Pista)' },
+];
+
+const $ = (id) => document.getElementById(id);
+const status = $('status'), listas = $('listas'), logEl = $('log');
+let achadas = []; // {db, rotulo, sessao, resumo}
+
+function log(m) { logEl.textContent += m + '\n'; }
+function fmtDur(ms) { if (!ms) return '—'; const s = Math.round(ms / 1000); const m = Math.floor(s / 60); return m ? (m + 'm ' + (s % 60) + 's') : (s + 's'); }
+function fmtData(wall) { if (!wall) return '—'; try { return new Date(wall).toLocaleString('pt-BR'); } catch (e) { return String(wall); } }
+
+async function procurar() {
+  achadas = []; listas.innerHTML = ''; status.innerHTML = ''; logEl.textContent = '';
+  $('btnTudo').disabled = true;
+  try {
+    const esp = await estimarArmazenamento();
+    if (esp && esp.suportado) $('espaco').textContent = 'Espaço usado no notebook: ' + esp.usadoMB + ' MB';
+  } catch (e) {}
+
+  let totalSessoes = 0;
+  for (const b of BANCOS) {
+    const store = criarStoreIndexedDB(b.db);
+    let lista = [];
+    try { lista = (await store.listarSessoes()) || []; }
+    catch (e) { log('Falha ao abrir ' + b.db + ': ' + e.message); continue; }
+
+    const div = document.createElement('div');
+    div.innerHTML = '<div class="grupo">' + b.rotulo + ' <span class="pill">' + b.db + '</span></div>';
+    if (!lista.length) {
+      div.innerHTML += '<div class="vazio">Nenhuma sessão guardada nesta gaveta.</div>';
+      listas.appendChild(div);
+      continue;
+    }
+    const tab = document.createElement('table');
+    tab.innerHTML = '<thead><tr><th>Quando</th><th>Duração</th><th class="num">Amostras motor</th><th class="num">Amostras GPS</th><th>Status</th><th>Ação</th></tr></thead>';
+    const tb = document.createElement('tbody');
+    // mais recente primeiro
+    lista.sort((a, b2) => (b2.fimWall || b2.inicioWall || 0) - (a.fimWall || a.inicioWall || 0));
+    for (const s of lista) {
+      let resumo = { nMotor: s.nMotor, nGps: s.nGps, durMs: null };
+      try { const r = await store.resumirSessao(s.id); resumo = r; } catch (e) {}
+      achadas.push({ db: b.db, rotulo: b.rotulo, sessao: s, resumo });
+      totalSessoes++;
+      const tr = document.createElement('tr');
+      const quando = fmtData(s.fimWall || s.inicioWall);
+      const dur = fmtDur(resumo.durMs || (s.fimWall && s.inicioWall ? s.fimWall - s.inicioWall : 0));
+      tr.innerHTML =
+        '<td>' + quando + (s.sim ? ' <span class="pill">teste</span>' : '') + '</td>' +
+        '<td>' + dur + '</td>' +
+        '<td class="num">' + (resumo.nMotor ?? '—') + '</td>' +
+        '<td class="num">' + (resumo.nGps ?? '—') + '</td>' +
+        '<td>' + (s.status || '—') + '</td>' +
+        '<td><button data-db="' + b.db + '" data-id="' + s.id + '">Baixar</button></td>';
+      tb.appendChild(tr);
+    }
+    tab.appendChild(tb);
+    div.appendChild(tab);
+    listas.appendChild(div);
+  }
+
+  if (!totalSessoes) {
+    status.innerHTML = '<div class="aviso"><b>Nenhuma sessão encontrada neste navegador.</b><br>' +
+      'Isso quer dizer que o painel não chegou a gravar aqui — geralmente porque o aparelho (T4000) não estava conectado durante o teste, ou foi usado outro endereço. Não há o que recuperar nesta página.</div>';
+  } else {
+    status.innerHTML = '<div class="ok"><b>' + totalSessoes + ' sessão(ões) encontrada(s).</b> Clique em “Baixar” em cada linha, ou em “Baixar TUDO”. Cada arquivo vai para a pasta Downloads.</div>';
+    $('btnTudo').disabled = false;
+  }
+
+  listas.querySelectorAll('button[data-id]').forEach(btn => {
+    btn.onclick = () => baixar(btn.getAttribute('data-db'), btn.getAttribute('data-id'), btn);
+  });
+}
+
+async function baixar(db, id, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = 'Baixando...'; }
+  try {
+    const store = criarStoreIndexedDB(db);
+    const dump = await store.lerSessao(id);
+    const pacote = { db, exportadoEm: new Date().toISOString(), sessao: dump.sessao, totalAmostras: (dump.amostras || []).length, amostras: dump.amostras };
+    const blob = new Blob([JSON.stringify(pacote)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'p1fast_' + db + '_' + id + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    log('Baixado: ' + db + ' / ' + id + ' (' + pacote.totalAmostras + ' amostras)');
+    if (btn) btn.textContent = 'Baixado';
+  } catch (e) {
+    log('ERRO ao baixar ' + id + ': ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = 'Tentar de novo'; }
+  }
+}
+
+async function baixarTudo() {
+  $('btnTudo').disabled = true;
+  for (const a of achadas) {
+    await baixar(a.db, a.sessao.id, null);
+    await new Promise(r => setTimeout(r, 900)); // dá tempo do navegador processar cada download
+  }
+  status.innerHTML += '<div class="ok">Terminou de baixar tudo. Os arquivos estão na pasta Downloads deste notebook.</div>';
+  $('btnTudo').disabled = false;
+}
+
+$('btnProcurar').onclick = procurar;
+$('btnTudo').onclick = baixarTudo;
+procurar(); // roda sozinho ao abrir
+</script>
+</body>
+</html>
