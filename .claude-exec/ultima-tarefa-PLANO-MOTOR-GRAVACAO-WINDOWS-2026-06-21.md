@@ -33,5 +33,18 @@ faseado com dependências, definição de pronto e riscos; (4) decisões pendent
   confirmar offsets exatos, mas o protocolo está decidido).
 
 ## Método: workflow multi-agente (6 especialistas em paralelo lendo código real + 1 arquiteto síntese).
+## EXECUÇÃO — Fase 1, passo 1 (21/06): tradutor USB portado pro C# + paridade provada
+- Escopo travado por Flávio: mínimo viável = Fases 1-3 (motor USB + gravação local blindada + nuvem com fila).
+- Ambiente: .NET 8 (alvo dos projetos) NÃO roda neste Mac (só .NET 10) -> testes do CI não rodam aqui;
+  build (compilação) roda. Paridade validada aqui via harness net10 + node (JS).
+- ADITIVO (nada existente alterado): 
+  - windows/cockpit/P1Fast.Cockpit.Domain/T3000RIBlockParser.cs (port fiel de web/cockpit/t3000-usb-parser.js v2.0.0).
+  - windows/cockpit/P1Fast.Cockpit.Domain.Tests/T3000RIBlockParserTests.cs (4 fatos; paridade + sanidade + bloco curto + ACK).
+- PROVA: mesmo bloco RI de 410 bytes -> JS e C# deram NÚMEROS IDÊNTICOS em 21 campos (rpm, lambda, freio,
+  accel, alarmes, sanidade). Domain e Domain.Tests compilam 0 erros/0 warnings com o código novo.
+- PRÓXIMO (Fase 1 resto): ISerialBytePort real sobre System.IO.Ports.SerialPort + handshake ACK->RI + loop
+  ~10Hz alimentando este parser (precisa do notebook Windows + carro pra prova final). Depois Fase 2 (gravação
+  local) e Fase 3 (nuvem com fila), construíveis aqui.
+
 ## Ambiente alvo: desenvolvimento (análise/planejamento, sem alterar produção). Produção protegida: sim.
 ## Autorização para produção: não se aplica (sem alteração). Status inicial: análise iniciada.
