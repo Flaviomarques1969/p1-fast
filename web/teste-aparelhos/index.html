@@ -191,6 +191,21 @@ async function baixarSessao(){
 setInterval(renderGravacao, 500);
 setInterval(() => { const r = Rec.tick(); if (r) mostrarResumo(r); }, 1000);
 
+// Aviso de espaço no notebook (blindagem): mostra quanto está usado e alarma quando
+// o armazenamento está perto de encher — antes de começar a perder amostra.
+async function renderEspaco(){
+  const s = await estimarArmazenamento();
+  const el = $('recEspaco');
+  if (!s.suportado){ el.textContent = 'não informado'; el.style.color = ''; return; }
+  el.textContent = s.usadoMB + ' MB / ' + s.cotaMB + ' MB (' + s.pct + '%)';
+  el.style.color = s.nivel === 'critico' ? '#f87171' : s.nivel === 'atencao' ? '#fbbf24' : '';
+  if (s.nivel === 'critico' && !Rec.estado().alarme){
+    $('recAlarme').style.display = 'block';
+    $('recAlarme').textContent = 'ESPAÇO QUASE CHEIO (' + s.pct + '%). Baixe e libere as sessões antigas antes de gravar mais.';
+  }
+}
+setInterval(renderEspaco, 5000); renderEspaco();
+
 // Boot: recupera sessão que ficou aberta (a tela foi recarregada ou o notebook
 // dormiu sem fechar). O dado cru não se perde; isto devolve o acesso pela tela.
 (async () => {
