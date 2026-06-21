@@ -121,7 +121,7 @@ import { criarGravador, criarStoreIndexedDB, estimarArmazenamento } from './sess
 const $ = id => document.getElementById(id);
 // Versão da página. Bump a cada alteração para confirmar no notebook que a
 // versão certa está rodando (compare o selo do cabeçalho com este valor).
-const BUILD = '2026-06-20-GRAVADOR';
+const BUILD = '2026-06-21-BLINDAGEM';
 function log(m){ const t=new Date().toLocaleTimeString(); $('log').textContent = `${t}  ${m}\n` + $('log').textContent; }
 function pill(el, txt, cls){ el.textContent = txt; el.className = 'pill ' + cls; }
 const boardPill = pill;
