@@ -41,3 +41,30 @@ contra perda. Recomendação: A. Aguardando escolha antes de alterar.
 ## Risco: tocar no painel do piloto (layout sagrado) e contradizer ADR-023 (iPhone agregador). Mitigar
    fazendo a captura completa na Central (engenharia), sem mexer no cockpit, e como protótipo web.
 ## Status inicial: iniciado (aguardando decisão de convergência).
+
+## DECISÃO DO FLÁVIO (21/06) — opção C: manter os dois bancos separados e SÓ blindar
+Não unificar agora. Cada app continua gravando 100% do seu lado (painel=motor, Central=GPS).
+Reforço pedido: (1) alarme VISÍVEL se a gravação parar; (2) aviso quando o espaço estiver acabando.
+
+## O que foi feito (aditivo, nada removido)
+1. web/cockpit/session-recorder.js (+ cópia idêntica em teste-aparelhos): estado() agora expõe
+   `ativo` e `alarme` ('parada-armazenamento' | 'perdendo-amostras' | null). Novos `classificarEspaco`
+   (puro, testável) e `estimarArmazenamento` (lê navigator.storage.estimate → usado/cota/pct/nível).
+2. web/teste-aparelhos/index.html (Central): faixa de alarme vermelha no card de gravação + linha
+   "Espaço no notebook" (verde/amarelo/vermelho). BUILD = 2026-06-21-BLINDAGEM.
+3. web/cockpit/main-t3000.js (painel do piloto): vigia que só aparece SE falhar (faixa vermelha no
+   topo, some sozinha ao normalizar) — NÃO toca no layout normal. Saúde em window.__P1_SESSAO_SAUDE__.
+4. web/teste-aparelhos/_validar-blindagem.html (NOVO): página de prova isolada (sem nuvem) com botões
+   pra forçar perda/parada e ver o alarme + espaço de verdade.
+5. tests/node-smoke-session-recorder.mjs: +11 casos (alarme e classificação de espaço).
+
+## Validação executada (resultado real)
+- node --check: main-t3000, os dois session-recorder → OK. Módulos idênticos (diff -q).
+- node tests/node-smoke-session-recorder.mjs → 43 ok / 0 fail.
+- node tests/node-smoke-session-recorder-idb.mjs → 11 ok / 0 fail.
+- npm run smoke (bateria) → só as 3 falhas PRÉ-EXISTENTES de paridade de banco (checklist_item/
+  checklist_tique, do trabalho de 19/06). Nenhuma falha nova.
+- Página de prova aberta no Chrome (127.0.0.1:8094/_validar-blindagem.html).
+
+## Ambiente: desenvolvimento. Produção alterada: não. Nada publicado, gravação 100% local.
+## Status final: concluído (blindagem entregue e testada). Unificação e upload seguem como decisão futura.
