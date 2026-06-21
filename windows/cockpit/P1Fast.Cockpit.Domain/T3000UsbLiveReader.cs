@@ -354,10 +354,12 @@ public sealed class InMemoryT3000UsbChannel : IT3000UsbChannel
         {
             if (IsEqual(data, T3000RIBlockParser.AckBytes))
             {
+                _lastWriteWasRi = false;
                 foreach (var b in _handshakeResponse) _pending.Enqueue(b);
             }
             else if (IsEqual(data, T3000RIBlockParser.RiBytes))
             {
+                _lastWriteWasRi = true;
                 if (_riBlocks.Count > 0)
                     foreach (var b in _riBlocks.Dequeue()) _pending.Enqueue(b);
                 // sem bloco roteirado: nada a entregar → o reader verá bloco curto/vazio.
