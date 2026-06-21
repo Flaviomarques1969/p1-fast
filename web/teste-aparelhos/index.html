@@ -116,7 +116,7 @@
 
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { criarGravador, criarStoreIndexedDB } from './session-recorder.js';
+import { criarGravador, criarStoreIndexedDB, estimarArmazenamento } from './session-recorder.js';
 
 const $ = id => document.getElementById(id);
 // Versão da página. Bump a cada alteração para confirmar no notebook que a
