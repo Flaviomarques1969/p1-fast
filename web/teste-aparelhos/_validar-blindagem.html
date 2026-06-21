@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Validar blindagem da gravação — P1 Fast</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#0b0d10; color:#e6e8ea; font:15px/1.45 system-ui,Segoe UI,Roboto,sans-serif; }
+  .wrap { max-width:none; padding:18px 22px; }
+  h1 { font-size:18px; margin:0 0 4px; }
+  .sub { color:#9aa3ad; margin:0 0 16px; font-size:13px; }
+  .card { background:#14171b; border:1px solid #222831; border-radius:10px; padding:16px; margin-bottom:14px; }
+  .card h2 { font-size:14px; margin:0 0 10px; color:#cbd3db; text-transform:uppercase; letter-spacing:.5px; }
+  .row { display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #1c2127; }
+  .lbl { color:#9aa3ad; } .val { font-variant-numeric:tabular-nums; font-weight:600; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 28px; }
+  .pill { padding:2px 10px; border-radius:999px; font-size:12px; font-weight:700; }
+  .pill.idle { background:#2a313a; color:#9aa3ad; }
+  .pill.ok   { background:#16361f; color:#5fd37f; }
+  .pill.warn { background:#3a2f12; color:#fbbf24; }
+  button { background:#1f2630; color:#e6e8ea; border:1px solid #2c3540; border-radius:8px;
+           padding:10px 14px; font-size:14px; font-weight:600; cursor:pointer; margin:4px 6px 4px 0; }
+  button:hover { border-color:#3a4654; }
+  button.danger { background:#3a1414; border-color:#5a1f1f; color:#fca5a5; }
+  .note { color:#9aa3ad; font-size:13px; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Validar a blindagem da gravação (alarme + aviso de espaço)</h1>
+  <p class="sub">Página de prova ISOLADA — sem nuvem, sem publicar nada. Usa o gravador REAL
+  (session-recorder.js) e o espaço REAL do navegador. Decisão Flávio 21/06: manter os dois bancos
+  separados e só blindar contra perda silenciosa.</p>
+
+  <div class="card">
+    <h2>Gravação da sessão</h2>
+    <div class="row"><span class="lbl">Estado</span><span id="recEstado" class="pill idle">parada</span></div>
+    <div id="recAlarme" style="display:none;margin-top:8px;background:#b91c1c;color:#fff;font-weight:700;padding:8px 10px;border-radius:6px"></div>
+    <div class="grid2" style="margin-top:6px">
+      <div class="row"><span class="lbl">Tempo</span><span id="recTempo" class="val">—</span></div>
+      <div class="row"><span class="lbl">Descartes</span><span id="recDrop" class="val">—</span></div>
+      <div class="row"><span class="lbl">GPS gravados</span><span id="recNGps" class="val">—</span></div>
+      <div class="row"><span class="lbl">Motor gravados</span><span id="recNMotor" class="val">—</span></div>
+    </div>
+    <div class="row" style="margin-top:6px"><span class="lbl">Espaço no notebook</span><span id="recEspaco" class="val">—</span></div>
+  </div>
+
+  <div class="card">
+    <h2>Simular cenários</h2>
+    <button id="bNormal">Gravar normal (1 GPS + 1 motor por segundo)</button>
+    <button id="bPerda" class="danger">Forçar PERDA de amostras</button>
+    <button id="bParada" class="danger">Forçar gravação PARADA</button>
+    <button id="bReiniciar">Reiniciar</button>
+    <p class="note">"Gravar normal" deixa o card verde, sem alarme. "Forçar PERDA" faz a próxima escrita
+    falhar → faixa vermelha "PERDENDO AMOSTRAS". "Forçar PARADA" simula o armazenamento morto →
+    faixa "GRAVAÇÃO PAROU". "Reiniciar" zera tudo.</p>
+  </div>
+
+  <div class="card">
+    <h2>Registro</h2>
+    <div id="log" style="font:12px/1.5 ui-monospace,Menlo,monospace; white-space:pre-wrap; color:#9aa3ad; max-height:180px; overflow:auto"></div>
+  </div>
+</div>
+
+<script type="module">
+import { criarGravador, criarStoreMemoria, estimarArmazenamento } from './session-recorder.js';
+
+const $ = id => document.getElementById(id);
+function log(m){ const t=new Date().toLocaleTimeString(); $('log').textContent = `${t}  ${m}\n` + $('log').textContent; }
+function pill(el, txt, cls){ el.textContent = txt; el.className = 'pill ' + cls; }
+
+// Store controlável: 'ok' grava de verdade; 'perda' faz a escrita falhar (simula
+// disco cheio / erro do navegador). Mesmo contrato do criarStoreMemoria.
+function criarStoreControlavel(){
+  const base = criarStoreMemoria();
+  let modo = 'ok';
+  return {
+    set modo(v){ modo = v; },
+    get modo(){ return modo; },
+    novaSessao: (m)=>base.novaSessao(m),
+    async gravar(reg){ if (modo === 'perda') throw new Error('escrita falhou (simulado)'); return base.gravar(reg); },
+    finalizar:(id,r)=>base.finalizar(id,r),
+    lerSessao:(id)=>base.lerSessao(id),
+    resumirSessao:(id)=>base.resumirSessao ? base.resumirSessao(id) : { nGps:0,nMotor:0,durMs:0,fimWall:null },
+    listarSessoes:()=>base.listarSessoes(),
+  };
+}
+
+let store, Rec, alimentando = null;
+
+function reiniciar(){
+  if (alimentando){ clearInterval(alimentando); alimentando = null; }
+  store = criarStoreControlavel();
+  Rec = criarGravador({ store });
+  $('recAlarme').style.display = 'none';
+  log('Reiniciado. Gravador zerado.');
+  render();
+}
+
+function render(){
+  const e = Rec.estado();
+  if (e.alarme){
+    $('recAlarme').style.display = 'block';
+    $('recAlarme').textContent = e.alarme === 'parada-armazenamento'
+      ? 'GRAVAÇÃO PAROU — o armazenamento do notebook falhou. O dado ao vivo continua, mas NÃO está sendo guardado.'
+      : 'PERDENDO AMOSTRAS (' + (e.dropped || 0) + ' descarte(s)). Verifique o espaço/erro do navegador.';
+  } else {
+    $('recAlarme').style.display = 'none';
+  }
+  pill($('recEstado'), e.gravando ? 'GRAVANDO' : 'parada', e.alarme ? 'warn' : (e.gravando ? 'ok' : 'idle'));
+  $('recTempo').textContent  = e.gravando ? (e.tempoS||0).toFixed(1)+'s' : '—';
+  $('recDrop').textContent   = e.dropped || 0;
+  $('recNGps').textContent   = e.nGps || 0;
+  $('recNMotor').textContent = e.nMotor || 0;
+}
+
+async function renderEspaco(){
+  const s = await estimarArmazenamento();
+  const el = $('recEspaco');
+  if (!s.suportado){ el.textContent = 'não informado'; el.style.color=''; return; }
+  el.textContent = s.usadoMB + ' MB / ' + s.cotaMB + ' MB (' + s.pct + '%) — ' + s.nivel;
+  el.style.color = s.nivel === 'critico' ? '#f87171' : s.nivel === 'atencao' ? '#fbbf24' : '';
+}
+
+$('bNormal').onclick = () => {
+  store.modo = 'ok';
+  if (!alimentando) alimentando = setInterval(() => {
+    Rec.gps({ lat:-15.77, lng:-47.89, spd:90, fix:3, numSV:9 }, 'b56201aa');
+    Rec.motor({ rpm:5200, waterTempC:50, source:'carro' }, 'cafe9988');
+  }, 1000);
+  log('Gravando normal: 1 GPS + 1 motor por segundo.');
+};
+$('bPerda').onclick = () => { store.modo = 'perda'; log('Modo PERDA: a próxima escrita vai falhar.'); };
+$('bParada').onclick = async () => {
+  store.modo = 'perda';
+  for (let i=0;i<60;i++) Rec.gps({ lat:1, lng:2 });   // 60 falhas sem sucesso => armazenamento morto
+  await new Promise(r=>setTimeout(r,0));
+  log('Forçada PARADA: 60 escritas falharam, o gravador se marcou inativo.');
+  render();
+};
+$('bReiniciar').onclick = reiniciar;
+
+reiniciar();
+setInterval(render, 400);
+setInterval(renderEspaco, 2000); renderEspaco();
+</script>
+</body>
+</html>
