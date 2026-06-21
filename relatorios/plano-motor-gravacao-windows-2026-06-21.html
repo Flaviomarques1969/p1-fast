@@ -45,7 +45,7 @@ h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#7da2c9;ma
 <li><b>A tela do piloto que parece pronta está em modo DEMONSTRAÇÃO</b> (cenas fixas trocando a cada 2s), não ligada a dado real.</li>
 <li><b>Não salva a telemetria</b> decodificada em lugar nenhum (só bytes crus), e <b>não manda pra nuvem de verdade</b> — manda pra um "faz de conta".</li>
 <li><b>Quando a internet cai, o dado é jogado fora.</b> Essa é a causa raiz do "carro só aparece na tela local". Falta uma fila que segura e reenvia.</li>
-<li><b>Dúvida de protocolo:</b> o programa foi construído em cima de um formato de motor (T4000-CAN) que só foi testado no simulador. O que funcionou <b>na pista de verdade</b> é outro (T3000 por USB). Precisa ratificar qual é o caminho — é a Decisão 1.</li>
+<li><b>Pegadinha de protocolo — JÁ RESOLVIDA:</b> o programa em C# foi construído pra ler a injeção pela "rede CAN" do carro (só testada no simulador). Mas a ligação é <b>sempre USB‑C com USB‑C</b> — não existe CAN no notebook. Então o programa novo vai ler pela <b>USB</b>, o jeito que já leu seu carro hoje. Decisão 1 fechada.</li>
 </ul>
 </div>
 
