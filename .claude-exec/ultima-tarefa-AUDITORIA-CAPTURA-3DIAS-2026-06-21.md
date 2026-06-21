@@ -57,6 +57,21 @@ auditar minhas afirmações, e entregar um plano de trabalho para o app do noteb
 - PENDENTE de fato real: saber se há dado gravado naquele notebook (só verificável abrindo a página LÁ).
 - Comissão + auditor (em segundo plano) seguem montando a tabela de verdade + plano dos 3 dias.
 
+## RECUPERAÇÃO 21/06 — RESULTADO REAL (dado de pista de hoje)
+- Painel (p1t4000): 0 MB, NADA gravado → o motor em alta taxa (10 Hz) desta corrida SE PERDEU.
+- Central de Pista (outro endereço): TINHA sessão. Flávio baixou pelo botão nativo.
+  Arquivo: sessao-2026-06-21T14-40-01-885Z.json (16 MB). BACKUP salvo em
+  ~/Documents/p1fast-backup-voltas-reais/recuperado-2026-06-21/.
+- Conteúdo (verificado): janela 14:40→14:58Z = 18,6 min. 29.252 amostras.
+  GPS: 27.310 pontos a ~24,5 Hz, COM bytes crus (rawHex em todos), lat/lon/spd reais de Brasília,
+  velocidade até 160,6 km/h. Tem ruído/outliers a limpar (fix/hacc/bounding box) — normal, dado cru existe.
+  MOTOR (t4000): 1.942 amostras a ~1,7 Hz (taxa BAIXA = espelho/broadcast da Central), campos completos
+  (rpm, tpsPct, pedalFreioPct, pressaoFreioBar, lambda, waterTempC, batteryV...), SEM bytes crus.
+- VEREDITO: recuperado o GPS completo da corrida + um traçado de motor em baixa resolução. O motor em alta
+  resolução (10 Hz, cru) era do painel e ele não gravou → essa parte se perdeu. Recuperação PARCIAL real.
+- Possível pendência: pode haver OUTRAS sessões na Central (o botão baixa só a última). Para pegar todas,
+  publicar resgate.html também no endereço da Central (precisa de autorização).
+
 ## ACHADOS VERIFICADOS 21/06 (resgate do dado) — leitura, sem alterar nada
 - NUVEM (projeto fvhwltzhytpnhlqbttmd, leitura via REST com chave anon):
   - tabela `sessoes`: NENHUMA sessão real de 20/06 (dia) nem de 21/06. As de junho são blips de

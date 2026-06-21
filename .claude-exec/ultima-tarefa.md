@@ -1,80 +1,33 @@
-# Continuar — gravar 100% dos dados (T4000 motor + GPS, liga→desliga)
+# Tarefa: Plano 3 dias — captura T4000+GPS+vídeo gravando ACESSÍVEL no notebook
 
-## Pedido (Flávio) — 2026-06-21
-"p1 fast continue o trabalho de gravar 100% dos dados"
+## Pedido original (Flávio, via orquestrador)
+Apurar a verdade (só evidência) sobre por que os testes de pista 20-21/06 se perderam e
+montar PLANO DE 3 DIAS para o app do notebook Windows capturar T4000 (motor) + GPS + vídeo
+do Osmo 6, gravando de forma GARANTIDA e ACESSÍVEL (Flávio precisa pegar o dado depois).
 
 ## Objetivo (1 frase)
-Garantir que UMA sessão grave 100% do motor (T4000) E 100% do GPS juntos, do liga ao desliga, no notebook.
+Garantir que toda sessão de pista fique salva e recuperável pelo Flávio em até 3 dias,
+priorizando o caminho mínimo do dado garantido antes de qualquer enfeite.
 
-## Critério objetivo de conclusão
-Existir um caminho que produz um arquivo de sessão único com motor cru completo + GPS cru completo,
-validado com dado real e testes verdes — OU decisão de arquitetura registrada do Flávio sobre ONDE os
-dois fluxos se juntam (cockpit / Central / iPhone), porque hoje estão em apps e bancos separados.
+## Critério de conclusão
+Plano realista de 3 dias com: diagnóstico provado, buraco principal, tarefas por dia com
+critério de pronto, decisões que dependem do Flávio, riscos.
 
-## Leitura confirmada
-- ~/.claude/CLAUDE.md: sim
-- ~/.claude-decisoes/padroes.md: sim
-- ~/.claude/FLAVIO_EXECUTION_PROTOCOL.md: sim
-- ~/.claude/FLAVIO_DONE_CHECKLIST.md: sim
-- ~/.claude/FLAVIO_ENVIRONMENT_RULES.md: sim
-- ~/.claude/FLAVIO_COMMUNICATION_RULES.md: sim
-- Memória global + memória P1 Fast: sim
-- CLAUDE.md do projeto + ADR-023/ARQUITETURA_DEFINITIVA: sim
+## Ambiente: desconhecido (trabalho = DEV; nuvem PROD consultada SÓ leitura)
+## Produção protegida: sim | Autorização produção: não recebida
+## Status: concluído (apuração + plano)
 
-## Estado REAL verificado hoje (não inferido)
-- Gravador construído ontem (20/06) está intacto. Testes: 32 ok + 11 ok (IndexedDB real). 
-- web/cockpit/main-t3000.js (painel do piloto), banco `p1fast-sessoes-cockpit`:
-  - linha 973: grava MOTOR na origem, 10 Hz, completo + cru. (MOTOR 100%)
-  - linha 504: grava GPS só do espelho/broadcast (sem cru). (GPS PARCIAL)
-- web/teste-aparelhos/index.html (Central de Pista), banco `p1fast-sessoes`:
-  - linha 529: grava GPS na taxa cheia do RaceBox + cru. (GPS 100%)
-  - linha 254: grava MOTOR só do broadcast (5 Hz, sem cru). (MOTOR PARCIAL)
-- CONCLUSÃO: nenhum banco tem os DOIS em cheio. Falta convergir motor+GPS numa sessão só.
-
-## Ponto de decisão (arquitetura — do Flávio)
-Onde motor e GPS se juntam para a sessão 100% completa: A) Central vira gravador completo (conecta
-T4000 + RaceBox na mesma tela); B) roda os dois apps e funde por horário; C) deixa separado e só blinda
-contra perda. Recomendação: A. Aguardando escolha antes de alterar.
-
-## Ambiente alvo: desenvolvimento. Produção protegida: sim.
-## Autorização para produção: não. Evidência: não recebida.
-## Risco: tocar no painel do piloto (layout sagrado) e contradizer ADR-023 (iPhone agregador). Mitigar
-   fazendo a captura completa na Central (engenharia), sem mexer no cockpit, e como protótipo web.
-## Status inicial: iniciado (aguardando decisão de convergência).
-
-## DECISÃO DO FLÁVIO (21/06) — opção C: manter os dois bancos separados e SÓ blindar
-Não unificar agora. Cada app continua gravando 100% do seu lado (painel=motor, Central=GPS).
-Reforço pedido: (1) alarme VISÍVEL se a gravação parar; (2) aviso quando o espaço estiver acabando.
-
-## O que foi feito (aditivo, nada removido)
-1. web/cockpit/session-recorder.js (+ cópia idêntica em teste-aparelhos): estado() agora expõe
-   `ativo` e `alarme` ('parada-armazenamento' | 'perdendo-amostras' | null). Novos `classificarEspaco`
-   (puro, testável) e `estimarArmazenamento` (lê navigator.storage.estimate → usado/cota/pct/nível).
-2. web/teste-aparelhos/index.html (Central): faixa de alarme vermelha no card de gravação + linha
-   "Espaço no notebook" (verde/amarelo/vermelho). BUILD = 2026-06-21-BLINDAGEM.
-3. web/cockpit/main-t3000.js (painel do piloto): vigia que só aparece SE falhar (faixa vermelha no
-   topo, some sozinha ao normalizar) — NÃO toca no layout normal. Saúde em window.__P1_SESSAO_SAUDE__.
-4. web/teste-aparelhos/_validar-blindagem.html (NOVO): página de prova isolada (sem nuvem) com botões
-   pra forçar perda/parada e ver o alarme + espaço de verdade.
-5. tests/node-smoke-session-recorder.mjs: +11 casos (alarme e classificação de espaço).
-
-## Validação executada (resultado real)
-- node --check: main-t3000, os dois session-recorder → OK. Módulos idênticos (diff -q).
-- node tests/node-smoke-session-recorder.mjs → 43 ok / 0 fail.
-- node tests/node-smoke-session-recorder-idb.mjs → 11 ok / 0 fail.
-- npm run smoke (bateria) → só as 3 falhas PRÉ-EXISTENTES de paridade de banco (checklist_item/
-  checklist_tique, do trabalho de 19/06). Nenhuma falha nova.
-- Página de prova aberta no Chrome (127.0.0.1:8094/_validar-blindagem.html).
-
-## Ambiente: desenvolvimento. Produção alterada: não. Nada publicado, gravação 100% local.
-## Status final: concluído (blindagem entregue e testada). Unificação e upload seguem como decisão futura.
-
-## Acréscimo 21/06 — testar a blindagem NO painel do piloto, no notebook
-- web/cockpit/main-t3000.js: modo de autoteste OFFLINE guardado por `?teste=1` no endereço. Cria um
-  gravador de TESTE só em memória (não toca no IndexedDB real nem no canal de produção), alimenta motor
-  de mentira marcado como simulação e mostra uma barra com 3 botões (Gravar normal / Forçar PERDA /
-  Forçar PARADA). O `vigia` passa a olhar o gravador de teste quando ele existe. No endereço NORMAL
-  (sem ?teste=1) nada disso aparece — painel do piloto intocado.
-- Servido em 127.0.0.1:8095 (web/cockpit) e aberto: index-t3000.html?teste=1. node --check OK; 43+11 verdes.
-- Teste REAL (com o carro): abrir index-t3000.html e conectar o T3000 pelo cabo (botão "Autorizar T3000
-  via WebUSB"); o motor grava sozinho. Faking no canal cockpit-bubi-live é PROIBIDO (produção).
+## Evidência coletada (somente leitura)
+- Gravador local: MD5 idêntico 504b68f0... nas 2 telas; testes 43/0 e 11/0 OK.
+- session-recorder.js sem nuvem (grep supabase/fetch/upload = EXIT 1, zero).
+- main-t3000.js NÃO chama telemetry_samples/ingest/blob (EXIT 1). Só publishSample (volátil),
+  gravarVoltaReal (só resumo), RecCockpit.motor (local 10Hz cru, novo 20/06).
+- cloud-bridge.js: "sem persistência" + throttle nuvem 5 Hz.
+- Central (teste-aparelhos): motor via onCarSample = broadcast nuvem 5Hz; GPS taxa cheia.
+- .sln só tem Domain/Tests/LiveDemo (UI e T4000Capture fora do build).
+- NUVEM PROD: sessão recente 20/06 ~3s carro nulo; nenhuma 21/06; telemetry_samples e voltas
+  da 20/06 vazias; video_streams */0 (zero gravações de sempre).
+- api/video/room.js (caminho Osmo) SEM enable_recording. stream-start (iPhone) tem, mas é
+  o caminho descontinuado (ADR-024) e depende de plano pago Daily.
+- resgate.html (21/06) lê os 2 bancos e baixa arquivo — corrige export-só-console, mas é novo.
+- git: nada gravava IndexedDB antes de 20/06 (busca vazia). Causa-raiz provada.
