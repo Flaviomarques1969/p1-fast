@@ -40,3 +40,22 @@ endereço EXATO em que cada app gravou; (2) Flávio abre no notebook e baixa/env
 ## Produção protegida: sim. Autorização para produção: NÃO recebida ainda.
 ## Evidência da autorização: não recebida.
 ## Status inicial: iniciado — investigação read-only feita; deploy aguarda autorização.
+
+## PUBLICAÇÃO FEITA 21/06 (autorizada)
+- Autorização literal: "MIGRAR PARA PRODUÇÃO: página de resgate no p1tv (Central)".
+- Publicado na Central (projeto p1-teste-aparelhos), deploy dpl_Er819z4cLd3yGh9hKcaiNdWEzxbf,
+  target production READY. Apelido p1tv reapontado pro deploy novo (gotcha do alias respeitado).
+- ESCOPO RESPEITADO: tela do piloto (index.html) CONGELADA na versão do ar (2026-06-20-GRAVADOR);
+  publicados só `resgate.html` (novo) + `session-recorder.js` novo (superset: só acrescenta
+  estimarArmazenamento/classificarEspaco + campo `alarme`; nenhum export removido/alterado — a
+  página de resgate precisa dele). Backup da tela do disco em /tmp/index-disco-BLINDAGEM.html;
+  disco restaurado para 2026-06-21-BLINDAGEM depois do deploy.
+- VERIFICAÇÃO (com cache-buster):
+  - https://p1tv.vercel.app/resgate -> HTTP 200, título "Resgate dos dados gravados neste notebook",
+    botões "Enviar tudo pra nuvem" + "Baixar tudo (reserva)", lê os 2 bancos (motor+gps).
+  - session-recorder.js no ar exporta estimarArmazenamento (resgate não quebra).
+  - p1tv (raiz) BUILD = 2026-06-20-GRAVADOR -> tela do piloto INALTERADA (sem regressão).
+- PENDENTE (do Flávio, no notebook): abrir p1tv.vercel.app/resgate NO MESMO notebook da pista e
+  baixar/enviar todas as sessões. Confere por contagem (amostras/duração) cada sessão.
+- Verdade dura mantida: motor alta-resolução do painel (p1t4000) = 0 MB, nunca gravado, irrecuperável.
+- Status: aguardando Flávio rodar no notebook pra fechar 100% do que está guardado.
