@@ -1,0 +1,225 @@
+<!doctype html><html lang=pt-br><head><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>P1 Fast — Motor de gravação do Windows: diagnóstico e plano</title>
+<style>
+*{box-sizing:border-box} body{margin:0;background:#0e1116;color:#e7edf3;font:16px/1.5 -apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{width:100%;padding:0 28px 60px}
+header{padding:26px 28px;border-bottom:2px solid #21card2b;background:#11161d;position:sticky;top:0;z-index:5;border-bottom:1px solid #232d3a}
+h1{margin:0;font-size:24px} .sub{color:#9fb0c0;margin-top:4px;font-size:14px}
+h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#7da2c9;margin:38px 0 14px;border-bottom:1px solid #232d3a;padding-bottom:8px}
+.verdade{background:#1a1410;border:1px solid #5a3a1a;border-left:5px solid #c97a1f;border-radius:12px;padding:18px 22px;margin-top:20px}
+.verdade h3{margin:0 0 10px;color:#ffcf99} .verdade ul{margin:0;padding-left:20px} .verdade li{margin:7px 0}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.card{background:#141a22;border:1px solid #232d3a;border-radius:12px;padding:16px 20px}
+.card h3{margin:0 0 10px;font-size:16px} .card ul{margin:0;padding-left:18px;font-size:14px;color:#c7d4e0} .card li{margin:6px 0}
+.green{border-left:4px solid #1f8a4c} .red{border-left:4px solid #b23b3b}
+.arq{background:#101820;border:1px solid #243244;border-radius:12px;padding:18px 22px;white-space:pre-wrap;font-size:14.5px;color:#cfe0ee}
+.fase{display:flex;gap:16px;background:#141a22;border:1px solid #232d3a;border-radius:12px;padding:16px 20px;margin-bottom:14px}
+.fnum{flex:0 0 44px;height:44px;width:44px;border-radius:50%;background:#1c2937;color:#7db8ff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;border:1px solid #2c3f55}
+.fbody{flex:1} .fbody h3{margin:0 0 4px;font-size:17px} .obj{margin:0 0 8px;color:#aebfce}
+.meta{margin:6px 0} .tag{font-size:12px;padding:3px 9px;border-radius:999px;background:#1b2330;color:#9db4c9;border:1px solid #2b3a4d}
+.tarefas{margin:8px 0;padding-left:18px;font-size:14px;color:#c7d4e0} .tarefas li{margin:5px 0}
+.pronto{background:#0f1d14;border:1px solid #1f5a36;border-radius:8px;padding:8px 12px;font-size:13.5px;color:#bfe8cf;margin:8px 0 6px}
+.risco{font-size:13px;color:#e6b89c;margin:0}
+.dec{background:#15151f;border:1px solid #34344a;border-left:5px solid #7d6ad6;border-radius:12px;padding:16px 20px;margin-bottom:14px}
+.dtop{display:flex;align-items:center;gap:12px;margin-bottom:6px} .dnum{font-weight:700;color:#b9aaff} .dtema{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:#8a90b5;border:1px solid #3a3a52;border-radius:999px;padding:2px 10px}
+.dperg{margin:6px 0 12px;font-size:15.5px} .ops{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.op{background:#1b1b28;border:1px solid #34344a;border-radius:8px;padding:9px 14px;font-size:14px;color:#d4d8f0}
+.op:first-child{border-color:#5a4fa0;background:#221f3a}
+.drec{background:#10221a;border:1px solid #1f6a40;border-radius:8px;padding:9px 13px;font-size:14px;color:#c8efd7;margin:0}
+.areac{background:#141a22;border:1px solid #232d3a;border-radius:10px;padding:12px 16px;margin-bottom:10px}
+.areah{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:5px}
+.badge{font-size:11px;color:#fff;padding:2px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em}
+.areac p{margin:0;font-size:13.5px;color:#b6c4d2}
+@media(max-width:900px){.cols{grid-template-columns:1fr}}
+</style></head><body>
+<header><h1>Motor de gravação do Windows — diagnóstico e plano de trabalho</h1>
+<div class="sub">Análise de 7 especialistas sêniores sobre o código real · P1 Fast · 21/06/2026 · o .exe do notebook ligando T4000 (motor), GPS e Osmo 6 ao cockpit do piloto e ao app na nuvem</div></header>
+<div class="wrap">
+
+<div class="verdade">
+<h3>A verdade de hoje (sem maquiar)</h3>
+<ul>
+<li><b>O "cérebro" existe e é bom:</b> a parte que decodifica o motor e monta a tela do cockpit está pronta e bem testada (151 testes passando).</li>
+<li><b>Mas o programa NÃO lê o carro de verdade ainda.</b> A entrada de dado real do motor não existe no caminho ao vivo — o que roda hoje é alimentado por um <b>simulador</b>.</li>
+<li><b>A tela do piloto que parece pronta está em modo DEMONSTRAÇÃO</b> (cenas fixas trocando a cada 2s), não ligada a dado real.</li>
+<li><b>Não salva a telemetria</b> decodificada em lugar nenhum (só bytes crus), e <b>não manda pra nuvem de verdade</b> — manda pra um "faz de conta".</li>
+<li><b>Quando a internet cai, o dado é jogado fora.</b> Essa é a causa raiz do "carro só aparece na tela local". Falta uma fila que segura e reenvia.</li>
+<li><b>Dúvida de protocolo:</b> o programa foi construído em cima de um formato de motor (T4000-CAN) que só foi testado no simulador. O que funcionou <b>na pista de verdade</b> é outro (T3000 por USB). Precisa ratificar qual é o caminho — é a Decisão 1.</li>
+</ul>
+</div>
+
+<h2>Estado real por área</h2>
+<div class="areac">
+       <div class="areah"><b>Programa Windows (.exe) do cockpit — windows/cockpit/</b><span class="badge" style="background:#b8860b">parcial</span></div>
+       <p>A pasta tem 4 projetos C#/.NET 8, mas só 3 entram na solução (Domain, Domain.Tests, T4000LiveDemo); UI (WinUI) e T4000Capture ficam de fora do .sln. O &quot;cérebro&quot; do parse T4000 está completo e bem testado: cadeia reader→feeder→parser→provider→bridge→CockpitState→publisher existe, compila com 0 erros/0 warnings e roda 151 testes. PORÉM tudo o que toca hardware/rede real é abstrato e só tem implementação em memória/mock: não existe ISerialBytePort sobre SerialPort, nem IRealtimeClient sobre Supabase, nem ITransport sobre cabo USB (iproxy). O único caminho que abre porta serial de verdade é o T4000Capture, que é um GRAVADOR DE BYTES CRUS para arquivo .bin (não decodifica nada, não alimenta cockpit nem nuvem). A tela WinUI (MainWindow) existe e desenha o cockpit, mas roda um loop de cenas hardcoded (DemoScenes) e NÃO está ligada ao LiveDataBridge/provider/transporte — é demonstração. Não há gravação local contínua estruturada (SQLite/telemetria append-only) no caminho ao vivo.</p></div><div class="areac">
+       <div class="areah"><b>Leitura e decodificação do dado do MOTOR (T4000/T3000) — comparação web (campo) vs JS t4000 vs C# (.exe)</b><span class="badge" style="background:#b8860b">parcial</span></div>
+       <p>Existem DOIS protocolos diferentes no repositório, não duas implementações do mesmo. A que FUNCIONOU EM CAMPO é a Injepro T3000 lida por USB CDC-ACM (WebUSB) com handshake ACK→OK + polling RI a ~10 Hz, decodificando UM bloco de ~410-490 bytes little-endian por leitura (web/cockpit/t3000-usb-parser.js, validada contra o software oficial T LINE em 2026-05-26, 2.901 amostras reais). A implementação C# do .exe (T4000PacketParser.cs + T4000SerialReader.cs + T4000Models.cs) e o JS src/telemetry/t4000-*.js decodificam OUTRA coisa: o stream CAN da Injepro T4000 (5 pacotes de 8 bytes, CAN ID 0x7FB, big-endian, ~20 Hz), a partir de um PDF com 3 dúvidas residuais e NUNCA validado contra captura real de barramento. A fonte de verdade do protocolo de campo é o T3000 USB; o C# está alinhado a um protocolo T4000-CAN ainda não confirmado no carro. Não há uma linha de T3000/RI/little-endian em todo o C#. O formato da amostra (&#x27;sample&#x27;) que sai dos dois é diferente em estrutura e em campos.</p></div><div class="areac">
+       <div class="areah"><b>Captura de GPS (RaceBox / GNSS de alta taxa)</b><span class="badge" style="background:#b8860b">parcial</span></div>
+       <p>O GPS é lido HOJE pelo NAVEGADOR do notebook (Web Bluetooth), não pelo .exe. Toda a leitura RaceBox vive INLINE dentro de web/teste-aparelhos/index.html (Central de Pista): conecta por BLE (filtro namePrefix &#x27;RaceBox&#x27;, serviço Nordic UART NUS), remonta o stream UBX (0xB5 0x62, classe 0xFF id 0x01), valida checksum Fletcher e decodifica lat/lon/spd/numSV/fix/hacc. Os arquivos racebox-provider.js e racebox-ble-reader.js que o pedido cita NÃO EXISTEM em lugar nenhum (nem no main, nem em src/telemetry, nem em worktree) — foram especificados em docs/hardware/RACEBOX_INTEGRATION_SPEC.md mas o RaceBox foi rebaixado/arquivado em 2026-05-01 e nunca implementado como classe. O ponto de GPS é republicado a 5 Hz (não na taxa cheia) em dois caminhos: nuvem (canal cockpit-bubi-live, evento &#x27;gps&#x27;) e sala de vídeo Daily. A gravação contínua ponto-a-ponto da taxa cheia só foi resolvida em 21/06 pelo session-recorder local (IndexedDB), que está testado. No lado Windows (.exe), há ZERO código de GPS/BLE/GNSS — o projeto C# inteiro é só motor T4000/T3000.</p></div><div class="areac">
+       <div class="areah"><b>Vídeo do DJI Osmo 6 (captura, transmissão, gravação e sincronização A/V com a telemetria)</b><span class="badge" style="background:#b8860b">parcial</span></div>
+       <p>Hoje o vídeo é capturado pela DJI Osmo Action 6 ligada por cabo USB ao notebook Windows, funcionando como webcam padrão (UVC). O navegador do notebook (página `web/teste-aparelhos/index.html`, publicada em p1tv.vercel.app) usa o Daily.co (`@daily-co/daily-js` via CDN) para entrar numa sala e transmitir essa imagem ao vivo. Quem assiste é o app iOS ou a página `/painel`. O vídeo NÃO passa pelo canal de telemetria (`cockpit-bubi-live`) — ele trafega exclusivamente pela sala Daily.co; pelo `app-message` da sala só viajam GPS e os números do carro (overlay), não a imagem. A transmissão pelo notebook NÃO grava o vídeo em lugar nenhum: o gravador local (`session-recorder.js`) só grava motor e GPS, e a sala do notebook vem de um backend (`fam-racing`) que não liga gravação. Existe um caminho de gravação na nuvem (Daily cloud recording) e de sincronização por timecode, mas ele é do app iOS (ADR antigo iPhone-câmera), está desconectado do fluxo atual do notebook e não foi confirmado em uso real.</p></div><div class="areac">
+       <div class="areah"><b>Transporte do .exe para a NUVEM e contrato de dados (canal cockpit-bubi-live)</b><span class="badge" style="background:#b23b3b">demo/simulado</span></div>
+       <p>A ponte real para a nuvem existe SÓ em JavaScript (web/cockpit/cloud-bridge.js): conecta no Supabase Realtime, mantém assinatura no canal de produção &#x27;cockpit-bubi-live&#x27; e publica 4 tipos de evento (sample, gps, evento; posicao é derivado pela nuvem). O cockpit JS chama publishSample() a cada amostra. O publicador C# existe (T4000RealtimePublisher.cs) mas NÃO é equivalente: modela um protocolo CAN fictício &#x27;T4000&#x27; (5 pacotes de 8 bytes, 16 grandezas incluindo Marcha/EGT/óleo/combustível que NÃO existem na T3000 real), nunca conecta no Supabase (não há IRealtimeClient real — só InMemory de teste), não conhece o nome do canal de produção e usa um payload com campos diferentes do stripSample do JS. O app WinUI C# (.exe candidato) hoje roda um loop de DEMO hardcoded (30 cenas a cada 2s) e nunca instancia provider/publisher/transporte. Não existe buffer/fila/reenvio em lugar nenhum: quando a nuvem está offline, a amostra é simplesmente DESCARTADA (publishSample retorna false e incrementa _stats.dropped) — essa é a causa raiz do &#x27;carro só na tela local&#x27; quando o Starlink oscila.</p></div><div class="areac">
+       <div class="areah"><b>UX do cockpit do piloto (tela ao vivo, baixa latência) — saídas mínimas, fonte de cada uma, local vs nuvem, e o estado do CockpitState C#</b><span class="badge" style="background:#b8860b">parcial</span></div>
+       <p>O contrato de saída do cockpit está MADURO e completo em JavaScript: cockpit-state.js define o modelo, cockpit-renderer.js o desenha no DOM canônico, e live-data-bridge.js converte T4000+GPS nas saídas (shift light, alertas, ápice ao vivo). Os calculadores de apoio (apice, freio, delta, gear, alertas v2, orquestrador de shift light com aprendizado) existem e são coerentes. PORÉM o programa Windows real (.exe WinUI 3, MainWindow.xaml.cs) NÃO consome nada disso ao vivo: ele roda um loop de cenas demo a cada 2s (DemoScenes) e o modelo C# (CockpitStateModel.cs) está MUITO atrás do JS. O C# tem só shift + 4 apex pontos + delta + ação + 1 mensagem; faltam ápice-bolinha, saída, silencioso/noBox, barra de aprendizado e flashIa. O LiveDataBridge C# existe e é testado, mas não é instanciado pela UI. Conclusão: a tela do piloto, como produto no .exe, hoje é demo; a lógica de produção vive no JS de referência.</p></div>
+
+<h2>Como vai funcionar (arquitetura-alvo)</h2>
+<div class="arq">Alvo: um único .exe Windows (.NET 8) rodando no notebook do carro que é o MOTOR DE GRAVAÇÃO ponta a ponta. Fontes -&gt; ingestão contínua -&gt; 2 saídas + gravação local blindada.
+
+(1) FONTES no carro: T3000 (motor) por USB CDC-ACM com handshake ACK-&gt;OK + loop ~10 Hz escrevendo &#x27;RI&#x27; e lendo bloco RI ~460 bytes little-endian (este é o protocolo PROVADO em campo, web/cockpit/t3000-usb-parser.js + main-t3000.js:803-921; o T4000-CAN do C# é OUTRO protocolo, ainda não confirmado no carro); GPS RaceBox por BLE (NUS/UBX, hoje lido no navegador em web/teste-aparelhos/index.html:395-557); Osmo Action 6 como webcam UVC por USB (ADR-024). Cada amostra recebe carimbo de tempo de CAPTURA (epoch ms real) na entrada — relógio único do notebook.
+
+(2) INGESTÃO CONTÍNUA ponto-a-ponto: cada amostra T3000/GPS passa por sanidade (segura último valor bom, não pinta tela com lixo), vira um record de sample CANÔNICO ÚNICO (o esquema do stripSample em web/cockpit/cloud-bridge.js:173-210: source, parserVersion, tMono, tCapture, rpm, lambda WB /1000, waterTempC, speedKmh, pedalFreioPct, pressaoFreioBar, accelXYZg, alarmes 11 flags, statusSinais, cronometros). NÃO o payload T4000RealtimePayload (que tem Marcha/EGT/óleo inexistentes no Bubi).
+
+(3) DUAS SAÍDAS a partir da MESMA amostra: (a) COCKPIT LOCAL baixa-latência — LiveDataBridge computa NO .exe shift light (pico de potência 6.050 do Bubi, 3 modos, 17 LEDs), alertas GRAVE do agora e bolinha do ápice ao vivo (GPS vs referência); o MainWindow observa o CockpitState mutado por dado real, sem demo. Estes três NUNCA dependem da nuvem. (b) NUVEM detalhada — IRealtimeClient real publica no canal cockpit-bubi-live (broadcast ack:false/self:false) eventos sample/gps/evento, no contrato exato do cloud-bridge.js. O recorte fino (delta por sub-trecho, trail braking, posição na pista) é processado na NUVEM pelas telas do app/Command Box, não no notebook.
+
+(4) GRAVAÇÃO LOCAL BLINDADA (anti-perda, ADR-003/004): cada amostra decodificada gravada append-only em disco (SQLite/arquivo de sessão, fonte da verdade) ANTES e INDEPENDENTE da nuvem; mais uma FILA de reenvio persistente — quando a nuvem cai (Starlink oscila), a amostra é enfileirada e drenada ao voltar, não descartada (hoje publishSample dá _stats.dropped++ e return false: cloud-bridge.js:120-122 e T4000RealtimePublisher.cs:117-121 — é a causa raiz do &#x27;carro só na tela local&#x27;). Indicador forte de saúde (online/offline/queued/dropped) pro operador. Vídeo Osmo grava localmente em paralelo (.mp4) e/ou Daily, separado do canal de telemetria, mas com o MESMO carimbo de tempo de captura pra casar imagem e dado depois.</div>
+
+<h2>O que dá pra reaproveitar × o que é novo de verdade</h2>
+<div class="cols">
+<div class="card green"><h3>Reaproveita (já existe e presta)</h3><ul><li>Parser do motor PROVADO EM CAMPO a portar/reusar: web/cockpit/t3000-usb-parser.js (offsets RI little-endian, lambda WB /1000 @62, pressaoFreio @268, accel @270/272/274, alarmes u32 @288, FAIXAS_FISICAS) — fonte de verdade, validado contra T LINE com 2.901 amostras (docs/PADRAO_CENTRAL_DADOS_AO_VIVO.md:35-93)</li><li>Loop de leitura robusto do motor: web/cockpit/main-t3000.js:803-921 (handshake ACK-&gt;OK, escrita &#x27;RI&#x27;, acúmulo de chunks até ~460 bytes, timeout 200ms, descarte de bloco curto, religação USB automática) — comportamento a portar, não reinventar</li><li>Contrato canônico de publicação na nuvem: web/cockpit/cloud-bridge.js:120-210 (CHANNEL_NAME cockpit-bubi-live, stripSample define o payload byte-a-byte, reconexão backoff 2s-&gt;15s, getStats sent/dropped/errors) — é a especificação direta do que o .exe deve emitir</li><li>Arcabouço de robustez serial em C# (reusável p/ QUALQUER protocolo, só trocar o decodificador): T4000SerialReader.cs (loop async+CancellationToken+buffer), T4000AutoRecoveringReader.cs (reabrir/trocar baud/resync), T4000ConnectionDiagnostic.cs (8 estados PT-BR), UsbScanner (WMI, detecta chip por VID, acha COM)</li><li>Domínio de cockpit em C# testado: CockpitState.cs (store imutável+observer+validações), LiveDataBridge.cs:117-158 (RpmToShift + CheckCriticalAlerts, base a evoluir), TransportSelector (failover cabo&lt;-&gt;nuvem com heartbeat/debounce) — ~151 testes verdes, build Release 0/0</li><li>Casca visual do cockpit já desenhada em WinUI 3: MainWindow.xaml (shift light LEDs, halo, ápice, delta, stint bar) espelha o mockup canônico — reaproveitável, só falta ligar ao dado real</li><li>Gravação local contínua de referência (comportamento provado, 43/43 testes): web/teste-aparelhos/session-recorder.js (append-only IndexedDB, sobrevive a recarga/queda, alarme de perda/disco cheio) — modelo do que o .exe precisa ter em disco</li><li>Gravador de bytes crus já funcional p/ destravar hardware: P1Fast.Cockpit.T4000Capture (abre SerialPort real, grava .bin + timing.csv; já tem System.IO.Ports e System.Management no csproj — verificado) — ferramenta pronta pra capturar a amostra real do carro</li><li>Inteligência de cockpit em JS pronta a portar: shift-light-orquestrador.js (aprendizado por tempo de passagem, antecipação por reação, alvo na potência máxima), alertas-criticos.js (catálogo v2, 20 alertas, 4 gravidades), delta-calculator.js, apice-calculator.js, gear-detector-online.js</li><li>Sincronização vídeo&lt;-&gt;telemetria já modelada e testada (código puro): ios VoltaVideoOffsetCalculator.swift + VoltaVideoIndexer.swift (offset relativo ao started_at) — lógica reusável, mas a origem do relógio precisa migrar do iPhone pro notebook</li><li>Parser T4000-CAN C#/JS 1:1 com testes verdes (T4000PacketParser.cs, fixture 0x91) — reusável SE/QUANDO a captura real confirmar que o carro emite CAN 0x7FB; hoje é caminho futuro/opcional</li></ul></div>
+<div class="card red"><h3>Novo de verdade (precisa construir)</h3><ul><li>Implementação REAL de ISerialBytePort sobre System.IO.Ports.SerialPort no caminho ao vivo do cockpit (hoje só existe InMemorySerialBytePort de teste; o único que abre porta real é o T4000Capture, que grava .bin e não alimenta o pipeline)</li><li>Decodificador T3000 em C# (T3000RIBlockParser): port do t3000-usb-parser.js com handshake ACK/RI, acúmulo do bloco RI ~460 bytes, offsets little-endian, sanidade — NÃO existe nenhuma linha de T3000/RI/little-endian no C# hoje (grep = 0)</li><li>IRealtimeClient REAL em C# falando Supabase Realtime broadcast por WebSocket no canal cockpit-bubi-live (hoje só InMemoryRealtimeClient; nenhum pacote Supabase nos .csproj — verificado)</li><li>FILA/BUFFER de reenvio persistente em disco: enfileira amostra quando offline e drena quando volta — não existe em NENHUM lado (nem JS nem C#); é o conserto direto do &#x27;carro só na tela local&#x27;</li><li>Gravação local append-only ESTRUTURADA da telemetria decodificada no .exe (SQLite/arquivo de sessão, fonte da verdade) — hoje o caminho ao vivo C# não persiste nada decodificado</li><li>Carimbo de tempo de CAPTURA (epoch real) por amostra, separado do tempo de envio (hoje tWall é reescrito no send: cloud-bridge.js:179) — pré-requisito pra fila/reenvio com tempo correto e pra casar com vídeo</li><li>Ligação do MainWindow WinUI ao pipeline real: trocar _demoTimer/DemoScenes (MainWindow.xaml.cs:138-147,198-358) por LiveDataBridge alimentado por dado real, mantendo o demo atrás de flag --demo</li><li>Leitor de GPS no .exe (decisão pendente do Flávio): ou BLE nativo .NET (Windows.Devices.Bluetooth) portando o parser UBX, ou o .exe consome o GPS do navegador — em ambos os casos o parser UBX precisa sair do HTML pra um módulo testável (hoje 0 testes)</li><li>Calibração do LiveLimits por carro+config com a curva real do Bubi (pico potência 6.050 / redline 6.300) substituindo o redline genérico 7.500, e shift light 0..8 / 17 LEDs em vez de 0..6 / 12 LEDs</li><li>Paridade do CockpitStateModel C# com o JS: adicionar ápice-bolinha (distM/angleDeg), saída (km/h), silencioso, noBox, barra de aprendizado, flashIa</li><li>Gravação local do VÍDEO da Osmo no notebook (MediaRecorder/captura local) — confirmado AUSENTE por busca; hoje o vídeo não é gravado em lugar nenhum no fluxo do notebook</li><li>Relógio comum no notebook pro vídeo: o .exe carimba started_at no instante que abre o stream e usa o MESMO relógio em cada amostra (hoje a sincronização vive amarrada ao caminho iOS/stream-start)</li><li>Empacotamento do .exe: pôr UI e T4000Capture na P1Fast.Cockpit.sln (verificado: a sln só tem Domain, Domain.Tests e T4000LiveDemo) e fazer o CI publicar um .exe gráfico real (o publish da UI falhou 3x, está em job diagnóstico com continue-on-error)</li></ul></div>
+</div>
+
+<h2>Plano de trabalho — 8 fases (em ordem de dependência)</h2>
+
+    <div class="fase">
+      <div class="fnum">1</div>
+      <div class="fbody">
+        <h3>Fase 0 — Destravar hardware e ratificar o protocolo do motor</h3>
+        <p class="obj">Confirmar, com captura real do carro, QUAL protocolo o .exe deve ler (T3000 USB provado em campo vs T4000-CAN só simulado) antes de escrever o decodificador definitivo.</p>
+        <div class="meta"><span class="tag dep">Depende de: Carro disponível para plugar (bloqueio MS-9.1, registrado em STATUS.md:72 como &#x27;ainda bloqueada — depende do carro&#x27;)</span></div>
+        <ul class="tarefas"><li>Plugar o carro e capturar amostra real com o T4000Capture já pronto (grava .bin + timing.csv) — confirmar se a USB do Injepro transmite o bloco RI do T3000 (provado em campo) ou exige adaptador USB-CAN p/ o T4000</li><li>Confirmar na captura: offset 54 é mesmo o freio; tamanho real do bloco RI do Bubi; valores de sensor ausente; e (se T4000) as 3 dúvidas do CAN_SPEC (diferenciação dos 5 pacotes, bytes 2-6 do pacote 5, range EGT)</li><li>Ratificar por escrito do Flávio: o motor do .exe lê T3000 USB (caminho de campo) e o T4000-CAN é futuro/opcional — hoje o C# faz o oposto</li></ul>
+        <p class="pronto"><b>Pronto quando:</b> Existe ao menos 1 .bin real do carro; está decidido e escrito qual protocolo o .exe vai decodificar; as 3 dúvidas (ou as do T3000) estão resolvidas com dado real.</p>
+        <p class="risco"><b>Risco:</b> Bloqueio físico: sem carro, a fase não fecha. Mitigar começando a Fase 1 em paralelo com o decodificador T3000 (que é o caminho provado), tratando T4000-CAN como contingência.</p>
+      </div>
+    </div>
+    <div class="fase">
+      <div class="fnum">2</div>
+      <div class="fbody">
+        <h3>Fase 1 — Motor de leitura real do T3000 no .exe (entrada de dados)</h3>
+        <p class="obj">O .exe abre a porta serial real e produz amostras T3000 decodificadas e sanitizadas, em streaming contínuo.</p>
+        <div class="meta"><span class="tag dep">Depende de: Fase 0 (protocolo ratificado e framing confirmado pela captura real)</span></div>
+        <ul class="tarefas"><li>Implementar ISerialBytePort real sobre System.IO.Ports.SerialPort e plugar em T4000SerialReader/T4000Provider</li><li>Portar o t3000-usb-parser.js para C# (T3000RIBlockParser): handshake ACK-&gt;OK, escrita &#x27;RI&#x27; por ciclo, acúmulo de chunks até ~460 bytes com timeout, descarte de bloco curto, offsets little-endian, lambda WB /1000, pressaoFreio @268, accel @270-274, alarmes u32 @288</li><li>Definir o record de sample CANÔNICO ÚNICO (esquema stripSample, com tCapture epoch) e fazer o provider emitir exatamente esse formato</li><li>Reusar a blindagem provada: segurar último valor bom na falha, contadores de trava silenciosa, religação USB automática (portar de main-t3000.js, base de robustez T4000AutoRecoveringReader/UsbScanner)</li><li>Criar testes do parser T3000 em C# (paridade numérica com o JS, casos de bloco curto/duplicado/fora de ordem)</li></ul>
+        <p class="pronto"><b>Pronto quando:</b> Com o carro plugado, o .exe emite amostras T3000 decodificadas em ~10 Hz que batem numericamente com o t3000-usb-parser.js sobre o mesmo .bin; sobrevive a desconexão/religação USB; testes verdes no CI.</p>
+        <p class="risco"><b>Risco:</b> Se a captura da Fase 0 divergir do framing inferido, o parser precisa de ajuste. WMI/SerialPort são Windows-only — testar de fato em Windows, não em macOS.</p>
+      </div>
+    </div>
+    <div class="fase">
+      <div class="fnum">3</div>
+      <div class="fbody">
+        <h3>Fase 2 — Gravação local blindada (fonte da verdade anti-perda)</h3>
+        <p class="obj">Cada amostra decodificada é persistida em disco append-only ANTES e independente da nuvem; a sessão sobrevive a queda total de internet/energia.</p>
+        <div class="meta"><span class="tag dep">Depende de: Fase 1 (amostras decodificadas existem)</span></div>
+        <ul class="tarefas"><li>Implementar persistência append-only no .exe (SQLite ou arquivo de sessão) gravando cada sample com tCapture, espelhando o comportamento provado do session-recorder.js</li><li>Gravar também GPS e eventos na mesma sessão, com o mesmo relógio de captura</li><li>Alarme visível de falha de gravação (disco cheio/erro de I/O), modelado no session-recorder</li><li>Ferramenta de leitura/replay da gravação local pra conferência pós-sessão</li></ul>
+        <p class="pronto"><b>Pronto quando:</b> Rodar uma sessão, derrubar a internet no meio, e ao final TODA a telemetria do período está no arquivo local íntegra e relê sem buraco; alarme dispara em disco cheio simulado.</p>
+        <p class="risco"><b>Risco:</b> Volume de escrita a 10 Hz por horas — validar tamanho/rotação de arquivo. ADR-003/004 exigem append-only e fora do syncQueue: respeitar.</p>
+      </div>
+    </div>
+    <div class="fase">
+      <div class="fnum">4</div>
+      <div class="fbody">
+        <h3>Fase 3 — Saída pra nuvem com fila de reenvio (conserta &#x27;carro só na tela local&#x27;)</h3>
+        <p class="obj">O .exe publica no canal de produção no contrato exato e NÃO perde dado quando a nuvem oscila.</p>
+        <div class="meta"><span class="tag dep">Depende de: Fase 1 (amostras) e Fase 2 (fonte da verdade local de onde a fila drena)</span></div>
+        <ul class="tarefas"><li>Implementar IRealtimeClient real (WebSocket Supabase Realtime broadcast) no canal cockpit-bubi-live, broadcast ack:false/self:false, reconexão backoff 2s-&gt;15s (paridade cloud-bridge.js)</li><li>Publicar o contrato do stripSample (sample/gps/evento), descartando os campos inexistentes no Bubi (Marcha/EGT/óleo/combustível) — NÃO o T4000RealtimePayload</li><li>Implementar FILA persistente: enfileira quando offline, drena quando volta; tCapture preservado, tWall de envio separado; política de descarte controlada por idade/tamanho</li><li>Guarda dura de produção: canal de teste por padrão, exigir flag explícita (PERMITIR_PROD_CANAL) pra tocar em cockpit-bubi-live; nunca publicar amostra sintética/teste em produção</li><li>Indicador forte de saúde de transmissão pro operador (online/offline/queued/dropped/errors), reusando o modelo getStats()</li></ul>
+        <p class="pronto"><b>Pronto quando:</b> Com a internet caindo e voltando, o canal recebe TODAS as amostras do período (reenviadas com tCapture correto), não só as do tempo online; nenhuma publicação acidental no canal de produção sem flag; operador vê fila acumulando e drenando.</p>
+        <p class="risco"><b>Risco:</b> Banda do Starlink em backlog grande — definir com o Flávio a política de fila (reenvio completo vs só ao-vivo). Risco de produção: o canal é sagrado, validar guarda antes de qualquer teste.</p>
+      </div>
+    </div>
+    <div class="fase">
+      <div class="fnum">5</div>
+      <div class="fbody">
+        <h3>Fase 4 — Cockpit ao vivo de verdade na tela do piloto (latência baixa)</h3>
+        <p class="obj">O MainWindow WinUI mostra dado REAL processado localmente; shift light, alertas GRAVE e bolinha do ápice nunca dependem da nuvem.</p>
+        <div class="meta"><span class="tag dep">Depende de: Fase 1 (dado real do motor). GPS ao vivo depende da Fase 6, mas shift light/alertas do motor já funcionam sem GPS</span></div>
+        <ul class="tarefas"><li>Ligar o pipeline na UI: instanciar T4000Provider/T3000 reader + LiveDataBridge e fazer o MainWindow observar o MESMO CockpitState mutado por dado real; demo só atrás de flag --demo</li><li>Levar o CockpitStateModel à paridade com o JS: ápice-bolinha (distM/angleDeg), saída (km/h), silencioso, noBox, aprendizado (status/pct), flashIa</li><li>Calibrar shift light pro Bubi: pico de potência 6.050 (não redline 7.500 genérico), 3 modos, 0..8 níveis / 17 LEDs; portar a inteligência local (orquestrador com aprendizado/antecipação + catálogo v2 de alertas)</li><li>Computar local a bolinha do ápice ao vivo (GPS vs referência) e os alertas críticos do agora</li></ul>
+        <p class="pronto"><b>Pronto quando:</b> Na pista, o piloto vê shift light disparando no rpm certo do Bubi e alertas GRAVE reais; ao tirar a internet, o cockpit local continua 100% (latência baixa, sem buraco); a tela bate com o mockup canônico aprovado.</p>
+        <p class="risco"><b>Risco:</b> Divergência shift light 12 vs 17 LEDs pode confundir o piloto se não corrigida. Latência cabo vs Realtime ainda não medida em campo (naoVerificado).</p>
+      </div>
+    </div>
+    <div class="fase">
+      <div class="fnum">6</div>
+      <div class="fbody">
+        <h3>Fase 5 — Empacotar e publicar o .exe gráfico distribuível</h3>
+        <p class="obj">Existe um binário do cockpit gráfico que roda no notebook do carro, gerado pelo CI.</p>
+        <div class="meta"><span class="tag dep">Depende de: Fase 4 (a UI já mostra dado real — senão publica-se um demo)</span></div>
+        <ul class="tarefas"><li>Pôr UI e T4000Capture na P1Fast.Cockpit.sln (hoje fora — verificado na sln)</li><li>Resolver a falha de publish self-contained do WindowsAppSDK (job hoje em continue-on-error, 3 falhas) e gerar .exe publicável no CI</li><li>Empacotamento básico (ícone/instalador) — cosmético, não bloqueia captura</li><li>Modo kiosk fullscreen landscape no notebook + tela 10,5&quot; externa invertida (ADR-023)</li></ul>
+        <p class="pronto"><b>Pronto quando:</b> O CI gera um .exe que instala e abre no notebook Windows mostrando o cockpit ao vivo em tela cheia; sem depender de ambiente de dev.</p>
+        <p class="risco"><b>Risco:</b> Publish self-contained do WindowsAppSDK já falhou 3x — pode exigir investigação de tooling. Não validável em macOS.</p>
+      </div>
+    </div>
+    <div class="fase">
+      <div class="fnum">7</div>
+      <div class="fbody">
+        <h3>Fase 6 — GPS no caminho do .exe e fusão por trecho (ápice/freio/delta reais)</h3>
+        <p class="obj">Ápice, freio e delta vêm de telemetria real (GPS), não de demo; resolve a decisão GPS nativo vs navegador.</p>
+        <div class="meta"><span class="tag dep">Depende de: Fase 4 (cockpit ligado ao dado real). Pode rodar em paralelo às Fases 2-3</span></div>
+        <ul class="tarefas"><li>Decidir e implementar a estratégia de GPS (Fase de decisão do Flávio): BLE nativo .NET no .exe (Windows.Devices.Bluetooth, portar parser UBX) OU .exe consome do navegador</li><li>Portar o parser UBX do HTML pra módulo testável (offsets 20/23/24/28/40/48, checksum Fletcher, reassembly, descarte de duplicado/fora-de-ordem) + os 8 testes que a spec já lista</li><li>Confirmar layout binário oficial do RaceBox com o PDF do fabricante (offsets hoje inferidos empiricamente)</li><li>Implementar a fusão por trecho (MS-13.5): ápice/freio/delta computados da comparação com a melhor volta histórica daquele carro+config</li><li>Unificar o esquema do ponto GPS num formato canônico (resolver lng/kmh/accM vs lon/spd/hacc) e manter marca real-vs-simulado explícita</li></ul>
+        <p class="pronto"><b>Pronto quando:</b> Na pista, a bolinha do ápice e o widget de freio reagem ao GPS real comparado à referência; o parser UBX tem testes verdes; nenhum dado simulado contamina volta real.</p>
+        <p class="risco"><b>Risco:</b> PDF oficial do RaceBox não está no repo (offsets inferidos) — confirmar antes de congelar. Viabilidade/latência de BLE nativo .NET não tem protótipo (naoVerificado).</p>
+      </div>
+    </div>
+    <div class="fase">
+      <div class="fnum">8</div>
+      <div class="fbody">
+        <h3>Fase 7 — Vídeo Osmo: gravação local + relógio comum (depois do caminho crítico)</h3>
+        <p class="obj">O vídeo é gravado de forma robusta e casável com a telemetria pelo mesmo relógio do notebook. NÃO bloqueia o motor de gravação.</p>
+        <div class="meta"><span class="tag dep">Depende de: Fases 1-3 (relógio de captura e fonte da verdade já existem). Explicitamente DEPOIS do caminho crítico</span></div>
+        <ul class="tarefas"><li>Decidir (Flávio) se o .exe toca no vídeo agora ou depois e se grava local (robusto sem internet) e/ou cloud Daily</li><li>Se local: capturar a Osmo como UVC e gravar .mp4/.webm no notebook em paralelo à transmissão Daily</li><li>Estabelecer relógio comum: o .exe carimba started_at no instante que abre o stream e usa o MESMO tCapture em cada amostra, reusando a lógica do VoltaVideoOffsetCalculator com origem no notebook</li><li>Unificar o backend da sala (hoje notebook via fam-racing não liga gravação; iOS via stream-start liga) pra não haver duas verdades sobre &#x27;qual sala/se grava&#x27;</li></ul>
+        <p class="pronto"><b>Pronto quando:</b> Cada volta vira offset relativo ao vídeo a partir do relógio do notebook; o vídeo do período existe localmente mesmo com internet caída; não há ambiguidade de sala/gravação.</p>
+        <p class="risco"><b>Risco:</b> Sem API da DJI pra comandar gravação interna (ADR-024). Precisão hoje ~1-2s (heartbeat 5s); frame-accurate exige carimbar no momento da captura. Cloud recording depende de plano pago não confirmado ativo.</p>
+      </div>
+    </div>
+
+<h2>Decisões que dependem de você (7)</h2>
+
+    <div class="dec" style="border-left-color:#1f8a4c;background:#10201a">
+      <div class="dtop"><span class="dnum" style="color:#7ff0a8">Decisão 1 — DECIDIDA (Flávio, 21/06)</span><span class="dtema">arquitetura</span></div>
+      <p class="dperg"><b>Ler a injeção pela USB.</b> Não é "T3000 ou T4000" — é o mesmo aparelho (T4000), e "T3000" é só o nome do jeito de conversar com ele pela USB. A ligação no carro é <b>sempre USB‑C com USB‑C</b>; não existe cabo de rede CAN no notebook, então o caminho CAN nem é opção física.</p>
+      <div class="ops"><div class="op" style="border-color:#2f9e5b;background:#143524"><b>ESCOLHIDO:</b> o programa do Windows lê pela USB (o leitor provado, que captou o carro hoje e em todas as pistas). O trabalho é trazer esse leitor pra dentro do programa.</div><div class="op" style="opacity:.45">Descartado: ler pela rede CAN do carro (nunca testado no carro; sem cabo).</div></div>
+      <p class="drec"><b>Consequência:</b> o "tradutor do dado" que a equipe tinha montado em C# era pra CAN — esse é trocado pelo leitor da USB. A parte de robustez (religação, diagnóstico, tela) se aproveita. Isso <b>elimina a maior incerteza do plano</b> e tira o bloqueio "depende do carro" da ratificação.</p>
+    </div>
+    <div class="dec">
+      <div class="dtop"><span class="dnum">Decisão 2</span><span class="dtema">arquitetura</span></div>
+      <p class="dperg">O GPS continua sendo lido pelo navegador do notebook ou vira leitura nativa BLE dentro do .exe?</p>
+      <div class="ops"><div class="op">BLE nativo no .exe (Windows.Devices.Bluetooth) — robusto, sem depender de aba de navegador que pode suspender</div><div class="op">Manter GPS no navegador e o .exe consome dele — menos trabalho agora, menos robusto</div><div class="op">Outra</div></div>
+      <p class="drec"><b>Recomendação:</b> BLE nativo no .exe. A arquitetura definitiva exige o .exe robusto sem depender de internet nem de aba suspensa. Custo: portar o parser UBX (hoje inline no HTML, 0 testes) e validar BLE .NET no notebook (sem protótipo ainda). Pode entrar na Fase 6, depois do caminho crítico do motor.</p>
+    </div>
+    <div class="dec">
+      <div class="dtop"><span class="dnum">Decisão 3</span><span class="dtema">operacao</span></div>
+      <p class="dperg">Quando a nuvem cai, o app na nuvem precisa de TODO o dado depois (reenvio completo, fila grande/persistente) ou basta o ao-vivo (descartar o atrasado)?</p>
+      <div class="ops"><div class="op">Fila persistente com reenvio completo — a nuvem recebe tudo quando a conexão volta (mais banda no retorno)</div><div class="op">Só ao-vivo — descarta o que ficou pra trás durante a queda (mais simples, perde histórico do intervalo)</div><div class="op">Outra</div></div>
+      <p class="drec"><b>Recomendação:</b> Fila persistente com reenvio completo. A arquitetura definitiva diz que o app na nuvem usa &#x27;dados detalhados&#x27;; a gravação local já é a fonte da verdade, então drenar dela quando a rede volta fecha o buraco do &#x27;carro só na tela local&#x27; sem perder histórico.</p>
+    </div>
+    <div class="dec">
+      <div class="dtop"><span class="dnum">Decisão 4</span><span class="dtema">negocio</span></div>
+      <p class="dperg">O .exe (C# WinUI) vai SUBSTITUIR o painel JS p1t4000.vercel.app como publicador de produção, ou os dois coexistem por enquanto?</p>
+      <div class="ops"><div class="op">O .exe substitui o JS como publicador único (paridade total exigida agora)</div><div class="op">Coexistem: o JS continua publicando enquanto o .exe amadurece (paridade pode ser gradual)</div><div class="op">Outra</div></div>
+      <p class="drec"><b>Recomendação:</b> Coexistir no curto prazo, com o .exe assumindo a publicação só depois de validado em pista. Reduz risco no canal de produção sagrado. Mas o .exe precisa, desde já, emitir o contrato exato do stripSample pra não quebrar os consumidores quando assumir.</p>
+    </div>
+    <div class="dec">
+      <div class="dtop"><span class="dnum">Decisão 5</span><span class="dtema">operacao</span></div>
+      <p class="dperg">O .exe grava o vídeo da Osmo localmente no notebook agora, ou o vídeo entra no escopo só depois do motor/gravação/nuvem?</p>
+      <div class="ops"><div class="op">Vídeo depois — primeiro destravar motor+gravação+nuvem (caminho crítico), vídeo numa fase posterior</div><div class="op">Vídeo já no escopo do .exe agora — gravar local em paralelo desde o início</div><div class="op">Outra</div></div>
+      <p class="drec"><b>Recomendação:</b> Vídeo depois. O furo central é o motor de gravação da telemetria; o vídeo hoje funciona via Daily e o caminho crítico é capturar/gravar/transmitir o DADO sem perda. Vídeo local + relógio comum entram na Fase 7.</p>
+    </div>
+    <div class="dec">
+      <div class="dtop"><span class="dnum">Decisão 6</span><span class="dtema">operacao</span></div>
+      <p class="dperg">Qual a precisão de sincronização vídeo&lt;-&gt;telemetria que você quer: &#x27;por volta&#x27; (~1-2s, já modelado) ou &#x27;fina/quadro-a-quadro&#x27; (exige carimbar timecode no momento da captura)?</p>
+      <div class="ops"><div class="op">Por volta (~1-2s) — suficiente pra triagem volta-a-volta, já existe</div><div class="op">Fina/quadro-a-quadro — pra sobrepor telemetria no vídeo no ponto exato de freada (mais trabalho)</div><div class="op">Outra</div></div>
+      <p class="drec"><b>Recomendação:</b> Começar por &#x27;por volta&#x27; (já modelado) e subir pra fina só se o objetivo for análise no ponto de freada. O relógio comum no notebook (Fase 7) já prepara o terreno pra apertar a precisão depois sem retrabalho.</p>
+    </div>
+    <div class="dec">
+      <div class="dtop"><span class="dnum">Decisão 7</span><span class="dtema">negocio</span></div>
+      <p class="dperg">Qual a meta de prazo para o .exe gravar ponta a ponta (motor + gravação local + nuvem com fila)? Isso define quanto entra antes de uma pista.</p>
+      <div class="ops"><div class="op">Mínimo viável pra próxima pista: Fases 1-3 (motor real + gravação local + nuvem com fila), cockpit e GPS depois</div><div class="op">Pacote completo antes de ir à pista: Fases 1-6 (inclui cockpit ao vivo e GPS/fusão)</div><div class="op">Outra</div></div>
+      <p class="drec"><b>Recomendação:</b> Mínimo viável (Fases 1-3) pra próxima pista, porque resolve o problema central (não perder dado) e destrava tudo. Cockpit real (Fase 4) e GPS (Fase 6) vêm logo em seguida. Depende da Fase 0 (carro plugado) — sem captura real, o prazo escorrega.</p>
+    </div>
+
+<h2>Maiores lacunas</h2>
+<div class="card red"><ul><li>O .exe NÃO lê o motor real: não existe ISerialBytePort sobre SerialPort no caminho ao vivo, e o C# nem sabe o protocolo T3000 que funcionou em campo (0 ocorrências de T3000/RI/little-endian no C#). A entrada de dados de produção não existe.</li><li>Não há gravação local estruturada da telemetria decodificada no .exe (só o .bin cru de bytes do T4000Capture). A &#x27;fonte da verdade da sessão&#x27; exigida por ADR-003/004 não está implementada no caminho ao vivo.</li><li>Não há fila/buffer/reenvio em lugar nenhum (JS nem C#): amostra publicada com a nuvem offline é perdida para sempre. É a causa raiz do &#x27;carro só na tela local&#x27;.</li><li>Não há cliente Supabase Realtime real em C# (só InMemory; zero pacote Supabase nos .csproj — verificado). A saída pra nuvem, uma das duas saídas exigidas, publica num fake.</li><li>A tela do piloto no .exe é demo: MainWindow roda DemoScenes num timer de 2s e nunca instancia provider/bridge/transporte. Nada do que o sistema calcula chega ao piloto na pista.</li><li>GPS e fusão por trecho não existem no caminho do .exe: ápice/freio/delta da tela vêm todos da demo, não de telemetria real (MS-13.5 não feita). O parser UBX vive inline em HTML, sem um único teste.</li><li>Vídeo não é gravado em lugar nenhum no fluxo do notebook (confirmado ausente por busca), e a sincronização vídeo&lt;-&gt;telemetria está amarrada ao caminho iOS, não ao notebook — não há relógio comum estabelecido no .exe.</li><li>UI e T4000Capture estão fora da solução (verificado na .sln) e não há .exe gráfico publicável; o que existe pra rodar é o gravador de bytes crus ou o demo de console.</li></ul></div>
+<h2>Riscos globais</h2>
+<div class="card"><ul><li>Bloqueio físico de hardware: a captura real do barramento (MS-9.1) está bloqueada &#x27;depende do carro&#x27; (STATUS.md:72). Sem 1 .bin real, o decodificador do motor não fecha com segurança — é o gargalo de cronograma de tudo.</li><li>Risco de protocolo errado: o .exe inteiro foi construído sobre o T4000-CAN (só validado por simulador), enquanto o que funcionou em campo é o T3000 USB. Marcar o pipeline C# como &#x27;pronto&#x27; é enganoso — ele decodifica o que o SIMULADOR gera, não o que o Bubi emite.</li><li>Canal de produção sagrado: cockpit-bubi-live não tem RLS; qualquer cliente com a chave anon publica. tools/sim-publish.mjs já publica nele SEM guarda (PADRAO §6.2). O .exe precisa de guarda dura (canal de teste por padrão + flag explícita) antes de qualquer teste, ou injeta dado falso em produção.</li><li>Perda de dado por design: hoje, com a nuvem offline, a amostra é descartada (cloud-bridge.js:120-122 e T4000RealtimePublisher.cs:117-121). Até a fila persistente existir (Fase 3), todo intervalo de queda de Starlink é buraco permanente — exatamente o sintoma que motivou o trabalho.</li><li>Tudo é Windows-only e não foi rodado em Windows real nesta análise: SerialPort/WMI/BLE .NET/WinUI publish não puderam ser validados (ambiente macOS; testhost net8 vs runtime net10 impediu rodar os 151 testes localmente). Há suposição de que o CI está verde.</li><li>Divergências de contrato silenciosas: payload T4000 (Marcha/EGT/óleo) vs stripSample T3000; nomes de campo GPS (lng/kmh/accM vs lon/spd/hacc); shift light 12 vs 17 LEDs; redline 7.500 genérico vs 6.050 do Bubi. Cada uma quebra paridade entre cockpit, nuvem e Command Box se não for unificada num contrato versionado.</li><li>Publish do .exe gráfico nunca passou no CI (job diagnóstico, continue-on-error, 3 falhas). Sem resolver o publish self-contained do WindowsAppSDK, não há binário do cockpit distribuível — só o gravador de bytes ou o demo de console.</li></ul></div>
+
+</div></body></html>
