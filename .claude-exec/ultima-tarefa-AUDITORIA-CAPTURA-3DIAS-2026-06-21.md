@@ -42,3 +42,20 @@ auditar minhas afirmações, e entregar um plano de trabalho para o app do noteb
 ## Autorização para produção: não. Evidência: não recebida.
 ## Risco: alta carga emocional + prazo (3 dias) + tests de pista perdidos. Não inventar, não prometer.
 ## Status inicial: iniciado (comissão + auditor disparados).
+
+## ACHADOS VERIFICADOS 21/06 (resgate do dado) — leitura, sem alterar nada
+- NUVEM (projeto fvhwltzhytpnhlqbttmd, leitura via REST com chave anon):
+  - tabela `sessoes`: NENHUMA sessão real de 20/06 (dia) nem de 21/06. As de junho são blips de
+    segundos (20/06 02:23 = 2,8 s; 18/06 = 5 s). Sessões reais mais recentes = MAIO (24/05, 23/05).
+  - tabela `voltas`: última volta real gravada = 25/05 (created_at). NADA de 20-21/06.
+  - tabela `passagens`: NÃO EXISTE (PGRST205). O JSON dados-nuvem-HOJE veio de outra origem.
+  - CONCLUSÃO: o dado de pista NÃO subiu pra nuvem. Confirmado por consulta direta.
+- PÁGINA PUBLICADA p1t4000.vercel.app (a que estava no notebook): TEM o gravador embutido —
+  marcadores no JS publicado: session-recorder, criarGravador, RecCockpit (10x), __P1_BAIXAR_SESSAO__,
+  p1fast-sessoes-cockpit, blindagem. Ou seja, se o painel estava aberto com o T3000/T4000 ligado, o
+  MOTOR foi gravado no IndexedDB `p1fast-sessoes-cockpit` DAQUELE notebook (local, não na nuvem).
+- ACESSO AO DADO LOCAL: a página expõe no navegador `window.__P1_REC__` (gravador),
+  `window.__P1_REC__.listarSessoes()` (lista) e `window.__P1_BAIXAR_SESSAO__(id)` (baixa arquivo).
+  Recarregar a página NÃO apaga o IndexedDB (mesma origem). LIMPAR cache/dados do site APAGA.
+- GPS completo só existe se a página da Central (teste-aparelhos) também estivesse aberta; o painel
+  grava GPS só do espelho (parcial). Motor é o que está garantido se o painel gravou.
