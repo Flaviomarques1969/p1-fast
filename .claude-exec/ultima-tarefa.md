@@ -43,7 +43,28 @@ com as travas de segurança (bloco curto, leitura ruim, religação automática)
 ## 10. Evidência da autorização para produção: não recebida
 ## 11. Riscos: nenhum em DEV (só código + testes fora do ar). A prova física da porta USB só no
 ##     notebook Windows com o carro — declarada como pendência, não simulada como pronta.
-## 12. Status: em andamento
+## 12. Status: concluído (cérebro da leitura ao vivo pronto e provado; tomada física = bancada)
+
+## Resultado
+- Criado `windows/cockpit/P1Fast.Cockpit.Domain/T3000UsbLiveReader.cs`:
+  - `IT3000UsbChannel` (a tomada física, abstrata) + `T3000UsbLiveReader` (o cérebro) +
+    `InMemoryT3000UsbChannel` (canal-fake pros testes) + config + contadores (stats).
+  - Handshake ACK→OK; loop ~10 Hz mandando RI; montagem do bloco multi-pacote; entrega a
+    amostra ao tradutor (T3000RIBlockParser); travas: 30 blocos curtos / 8 leituras fora de
+    faixa → religação automática; religa sozinho em erro de leitura. Portado fiel do
+    web/cockpit/main-t3000.js (leitor que JÁ leu o carro em campo).
+- Criado `...Domain.Tests/T3000UsbLiveReaderTests.cs` (8 testes).
+- Validação: `DOTNET_ROLL_FORWARD=Major dotnet test P1Fast.Cockpit.sln`
+  → bateria nova 8/8 verde; suíte completa 176 aprovados / 1 falha.
+  A 1 falha (LivePanelTests.PAN_04) é PRÉ-EXISTENTE e de localidade do Mac (espera "90.0"/"0.98"
+  com ponto; a máquina formata com vírgula). Não tem relação com este trabalho.
+- Detalhe de ambiente: a máquina só tem runtime .NET 10; projetos miram net8.0 → rodar testes
+  com `DOTNET_ROLL_FORWARD=Major`.
+
+## Pendência real (Fase 1, só no notebook + carro)
+- Implementação REAL do `IT3000UsbChannel` (abrir/escrever/ler/fechar a porta USB física) e a
+  prova de bancada (abrir a USB de verdade com o carro plugado). É o item nº1 dos "próximos
+  passos" — só prova no notebook Windows. Não foi simulado como pronto.
 
 ---
 # Última tarefa ANTERIOR — P1 Fast (21/06/2026, tarde)
