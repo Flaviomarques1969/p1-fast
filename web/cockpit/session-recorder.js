@@ -130,20 +130,31 @@ export function criarGravador(opts = {}) {
     return resumo;
   }
 
+  // Alarme de saúde da gravação — para a tela mostrar, NUNCA silencioso:
+  //  - 'parada-armazenamento': o IndexedDB morreu (nada mais grava) → perda total daqui pra frente.
+  //  - 'perdendo-amostras': alguma escrita falhou (dropped>0) → perda parcial.
+  function alarme() {
+    if (storeMorto)  return 'parada-armazenamento';
+    if (dropped > 0) return 'perdendo-amostras';
+    return null;
+  }
+
   function estado() {
-    if (!sessao) return { gravando: false, nGps, nMotor };
+    const saude = { ativo: !storeMorto, dropped, alarme: alarme() };
+    if (!sessao) return { gravando: false, nGps, nMotor, ...saude };
     const agora = now();
     return {
       gravando: true,
       sessaoId: sessao.id,
       sim: sessao.sim,
       tempoS: Math.round((agora - sessao.inicioMono) / 100) / 10,
-      nGps, nMotor, dropped,
+      nGps, nMotor,
       hzGps:   Math.round(taxaHz(janGps, agora)   * 10) / 10,
       hzMotor: Math.round(taxaHz(janMotor, agora) * 10) / 10,
       gpsParadoS:   ultimoGpsMono   ? Math.round((agora - ultimoGpsMono) / 100) / 10   : null,
       motorParadoS: ultimoMotorMono ? Math.round((agora - ultimoMotorMono) / 100) / 10 : null,
       lacunas: lacunas.length,
+      ...saude,
     };
   }
 
