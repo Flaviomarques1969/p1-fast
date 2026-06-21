@@ -99,7 +99,9 @@ if (typeof window !== 'undefined') {
   function esconder() { if (faixa) faixa.style.display = 'none'; }
   async function vigia() {
     try {
-      const e = RecCockpit.estado();
+      // No painel real olha a gravação real; em modo teste (?teste=1) olha a de teste.
+      const rec = (window.__P1_TESTE_REC__ && window.__P1_TESTE_REC__.estado) ? window.__P1_TESTE_REC__ : RecCockpit;
+      const e = rec.estado();
       const esp = await estimarArmazenamento();
       window.__P1_SESSAO_SAUDE__ = { alarme: e.alarme, dropped: e.dropped, ativo: e.ativo, espaco: esp };
       let msg = null;
