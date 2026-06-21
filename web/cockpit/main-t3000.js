@@ -76,6 +76,46 @@ if (typeof window !== 'undefined') {
   };
 }
 
+// ── Blindagem contra perda silenciosa (decisão Flávio 21/06) ─────────────────
+// O painel do piloto é SÓ ação: em operação normal NADA novo aparece. Só quando a
+// gravação do motor falha de verdade (armazenamento morto, descarte de amostra) ou
+// o espaço do notebook fica crítico é que surge uma faixa vermelha no topo — porque
+// perder o dado do motor em silêncio é o pior caso. A faixa some sozinha quando
+// normaliza. A saúde também fica em window.__P1_SESSAO_SAUDE__ (sai no export/console).
+(function blindagemGravacaoCockpit() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  let faixa = null;
+  function mostrar(txt) {
+    if (!faixa) {
+      faixa = document.createElement('div');
+      faixa.id = 'p1-alarme-gravacao';
+      faixa.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#b91c1c;' +
+        'color:#fff;font:700 14px system-ui,sans-serif;padding:8px 12px;text-align:center;letter-spacing:.3px';
+      document.body.appendChild(faixa);
+    }
+    faixa.textContent = txt;
+    faixa.style.display = 'block';
+  }
+  function esconder() { if (faixa) faixa.style.display = 'none'; }
+  async function vigia() {
+    try {
+      const e = RecCockpit.estado();
+      const esp = await estimarArmazenamento();
+      window.__P1_SESSAO_SAUDE__ = { alarme: e.alarme, dropped: e.dropped, ativo: e.ativo, espaco: esp };
+      let msg = null;
+      if (e.alarme === 'parada-armazenamento')
+        msg = 'GRAVAÇÃO DO MOTOR PAROU — o armazenamento do notebook falhou. O dado NÃO está sendo guardado.';
+      else if (e.alarme === 'perdendo-amostras')
+        msg = 'GRAVAÇÃO PERDENDO AMOSTRAS DO MOTOR (' + e.dropped + '). Verifique o espaço/erro do navegador.';
+      else if (esp.suportado && esp.nivel === 'critico')
+        msg = 'ESPAÇO DO NOTEBOOK QUASE CHEIO (' + esp.pct + '%). Baixe e libere as sessões antigas.';
+      if (msg) { console.error('[gravador-cockpit] ALARME:', msg, window.__P1_SESSAO_SAUDE__); mostrar(msg); }
+      else esconder();
+    } catch (e) {}
+  }
+  try { setInterval(vigia, 4000); vigia(); } catch (e) {}
+})();
+
 // ── Identificação do carro ativo ───────────────────────────────
 // Bubi é o único carro hoje. Pra plugar outro carro no futuro, basta definir
 // window.__P1_CARRO_ID__ no HTML ou gravar em localStorage. Default = Bubi.
