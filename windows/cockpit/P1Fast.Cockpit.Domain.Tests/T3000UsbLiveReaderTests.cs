@@ -49,12 +49,11 @@ public class T3000UsbLiveReaderTests
 
     // Roda o reader coletando amostras; cancela sozinho ao atingir alvoAmostras,
     // com um teto de segurança pra nunca travar a bateria.
-    private static async Task<List<T3000Sample>> Rodar(
+    private static async Task<(List<T3000Sample> Amostras, T3000UsbLiveReader Reader)> Rodar(
         InMemoryT3000UsbChannel canal,
         int alvoAmostras,
         T3000UsbLiveReaderConfig? cfg = null,
-        int tetoMs = 5000,
-        out T3000UsbLiveReader readerOut)
+        int tetoMs = 5000)
     {
         var amostras = new List<T3000Sample>();
         var cts = new CancellationTokenSource();
@@ -63,9 +62,8 @@ public class T3000UsbLiveReaderTests
             canal,
             cfg ?? Fast,
             onSample: s => { amostras.Add(s); if (amostras.Count >= alvoAmostras) cts.Cancel(); });
-        readerOut = reader;
         await reader.RunAsync(cts.Token);
-        return amostras;
+        return (amostras, reader);
     }
 
     [Fact]
