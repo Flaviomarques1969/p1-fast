@@ -314,8 +314,8 @@ public sealed class InMemoryT3000UsbChannel : IT3000UsbChannel
     public int OpenCount { get; private set; }
     public int CloseCount { get; private set; }
 
-    /// <summary>Se setado, o próximo OpenAsync lança (simula aparelho ausente).
-    /// É consumido em uma chamada (decrementa).</summary>
+    /// <summary>Se setado, a próxima REABERTURA (religação) lança (simula aparelho
+    /// ainda ausente). Não afeta a abertura inicial. Consumido em uma chamada.</summary>
     public int FailNextOpens { get; set; }
 
     /// <summary>Se setado, o próximo ReadAsync do loop lança (simula queda no fio).
