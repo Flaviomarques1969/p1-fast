@@ -164,5 +164,48 @@ console.log('node-smoke-session-recorder');
   eq(g.estado().sim, true, '11.1 override marca a sessão como simulação');
 }
 
+// 12) Alarme de saúde: VISÍVEL, nunca silencioso (blindagem — decisão Flávio 21/06)
+{
+  const store = criarStoreMemoria();
+  const { g } = novo(store);
+  eq(g.estado().alarme, null, '12.1 sem alarme em operação normal');
+  eq(g.estado().ativo, true,  '12.2 ativo em operação normal');
+}
+{
+  // perda parcial: descarta amostra mas o armazenamento não morreu → alarme de perda
+  const storeRuim = {
+    async novaSessao() {}, async gravar() { throw new Error('falhou'); },
+    async finalizar() {}, async lerSessao() { return { sessao: null, amostras: [] }; },
+    async listarSessoes() { return []; },
+  };
+  const { g } = novo(storeRuim);
+  g.gps({ lat: 1, lng: 2 }); g.gps({ lat: 1, lng: 2 });
+  await microtask();
+  eq(g.estado().alarme, 'perdendo-amostras', '12.3 alarme de perda parcial quando descarta amostra');
+}
+{
+  // armazenamento morto (50+ falhas, 0 sucesso) → alarme de gravação parada
+  const storeRuim = {
+    async novaSessao() {}, async gravar() { throw new Error('sem disco'); },
+    async finalizar() {}, async lerSessao() { return { sessao: null, amostras: [] }; },
+    async listarSessoes() { return []; }, async resumirSessao() { return { nGps: 0, nMotor: 0, durMs: 0, fimWall: null }; },
+  };
+  const { g } = novo(storeRuim);
+  for (let i = 0; i < 60; i++) g.gps({ lat: 1, lng: 2 });
+  await microtask();
+  eq(g.estado().alarme, 'parada-armazenamento', '12.4 alarme de gravação parada quando o armazenamento morre');
+  eq(g.estado().ativo,  false,                   '12.5 inativo quando o armazenamento morre');
+}
+
+// 13) Aviso de espaço: classificação pura dos níveis (verde / amarelo / vermelho)
+{
+  eq(classificarEspaco(0, 0).nivel,          'ok',      '13.1 sem cota conhecida = ok (não alarma à toa)');
+  eq(classificarEspaco(50e6, 100e6).nivel,   'ok',      '13.2 50% = ok');
+  eq(classificarEspaco(75e6, 100e6).nivel,   'atencao', '13.3 75% = atenção');
+  eq(classificarEspaco(90e6, 100e6).nivel,   'critico', '13.4 90% = crítico');
+  eq(classificarEspaco(50e6, 100e6).usadoMB, 50,        '13.5 reporta os MB usados');
+  eq(classificarEspaco(50e6, 100e6).pct,     50,        '13.6 reporta o percentual');
+}
+
 console.log(`\n${okN} ok / ${failN} fail`);
 process.exit(failN ? 1 : 0);
