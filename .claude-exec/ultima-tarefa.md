@@ -1,4 +1,52 @@
-# Última tarefa — P1 Fast (21/06/2026, tarde)
+# Última tarefa — P1 Fast (21/06/2026, noite) — LEITURA AO VIVO DA USB (Fase 1)
+
+## 1. Pedido original do Flávio
+"p1 fast. continue." (em resposta ao fim da tarefa anterior, que perguntou se eu seguia
+montando a LEITURA AO VIVO DA USB — a conversa ACK→RI a 10x/s que entrega os blocos pro
+tradutor — ou se adiantava a Fase 2. "continue" = seguir na sequência: montar a leitura ao vivo.)
+
+## 2. Objetivo (1 frase)
+Construir e provar (fora do carro) o leitor ao vivo da USB no .exe: handshake ACK→OK, loop a
+~10 Hz mandando RI, juntando os pedaços num bloco e entregando ao tradutor (T3000RIBlockParser),
+com as travas de segurança (bloco curto, leitura ruim, religação automática).
+
+## 3. Critérios objetivos de conclusão
+- Reader em C# que faz handshake, lê em loop, acumula multi-pacote e produz T3000Sample.
+- Travas portadas do leitor provado em campo: bloco curto (30), leitura ruim (8), religação.
+- Bateria de testes nova cobrindo cada trava, rodando verde.
+- Bench real (porta USB de verdade no notebook + carro) declarado como pendência da Fase 1.
+
+## 4. Confirmação de leitura
+- ~/.claude/CLAUDE.md: sim
+- ~/.claude-decisoes/padroes.md: sim
+- ~/.claude/FLAVIO_EXECUTION_PROTOCOL.md: sim
+- ~/.claude/FLAVIO_DONE_CHECKLIST.md: sim
+- ~/.claude/FLAVIO_ENVIRONMENT_RULES.md: sim
+- ~/.claude/FLAVIO_COMMUNICATION_RULES.md: sim
+- Projeto: CLAUDE.md, docs/ARQUITETURA_DEFINITIVA.md (canônico), memórias 21/06 (USB-não-CAN, plano motor)
+
+## 5. Plano (<=5 passos)
+1. Mapear o leitor provado em campo (web/cockpit/main-t3000.js runReadLoop + handshake). [FEITO]
+2. Criar T3000UsbLiveReader.cs (interface de transporte + reader + canal-fake) no Domain.
+3. Portar travas: bloco curto, leitura ruim/fora de faixa, religação automática.
+4. Escrever T3000UsbLiveReaderTests.cs e rodar a bateria.
+5. Reportar honesto + apontar a tomada real (bancada) como pendência.
+
+## 6. Arquivos/áreas a inspecionar
+- web/cockpit/main-t3000.js (referência: handshake + runReadLoop + reconectar)
+- windows/cockpit/P1Fast.Cockpit.Domain/T3000RIBlockParser.cs (o tradutor, já pronto)
+- windows/cockpit/P1Fast.Cockpit.Domain/T4000SerialReader.cs (padrão de interface/fake já usado)
+
+## 7. Ambiente alvo: desenvolvimento
+## 8. Produção protegida: sim
+## 9. Autorização para produção: não
+## 10. Evidência da autorização para produção: não recebida
+## 11. Riscos: nenhum em DEV (só código + testes fora do ar). A prova física da porta USB só no
+##     notebook Windows com o carro — declarada como pendência, não simulada como pronta.
+## 12. Status: em andamento
+
+---
+# Última tarefa ANTERIOR — P1 Fast (21/06/2026, tarde)
 
 ## 1. Pedido original do Flávio
 "os dados foram obtidos hoje no notebook. teste as funções da tela de cockpit com os dados colhidos."
