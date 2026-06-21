@@ -341,8 +341,9 @@ public sealed class InMemoryT3000UsbChannel : IT3000UsbChannel
         cancellationToken.ThrowIfCancellationRequested();
         lock (_lock)
         {
-            if (FailNextOpens > 0) { FailNextOpens--; throw new InvalidOperationException("aparelho ainda não voltou na USB"); }
+            if (_everOpened && FailNextOpens > 0) { FailNextOpens--; throw new InvalidOperationException("aparelho ainda não voltou na USB"); }
             OpenCount++;
+            _everOpened = true;
             _pending.Clear();
         }
         return Task.CompletedTask;
