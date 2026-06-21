@@ -307,6 +307,7 @@ public sealed class InMemoryT3000UsbChannel : IT3000UsbChannel
     private readonly Queue<byte> _pending = new();
     private byte[] _handshakeResponse;
     private readonly int _maxPerRead;
+    private bool _lastWriteWasRi; // a falha simulada de leitura só vale pra dado RI, não pra saudação
 
     /// <summary>Quantas vezes OpenAsync foi chamado (1ª conexão + religações).</summary>
     public int OpenCount { get; private set; }
