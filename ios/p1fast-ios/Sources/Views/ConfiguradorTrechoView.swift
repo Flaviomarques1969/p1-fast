@@ -398,7 +398,7 @@ struct ConfiguradorTrechoView: View {
     private func addApex() {
         guard apexes.count < Self.maxApexes else { return }
         let seed = apexSeedPoint()
-        let snapped = (lookup.flatMap { snapToPath(seed, lookup: $0) }) ?? seed
+        let snapped = (lookup.flatMap { snapApexToInnerEdge(seed, lookup: $0) }) ?? seed
         apexes.append(snapped)
         activeApexIdx = apexes.count - 1
         active = .apex
