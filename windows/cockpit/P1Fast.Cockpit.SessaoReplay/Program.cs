@@ -210,11 +210,11 @@ for (var i = jIni; i <= jFim; i++)
     var b = Ghost.CalcularBolinha(car, heading, apice.Ponto);
     cockpit.SetApexPonto("apice", estado: b.Estado, distM: b.DistM, angleDeg: b.AngleDeg); // escreve no estado real
     if (b.DistM < menorDist) menorDist = b.DistM;
-    if (i == apice.Idx - 25 && b.AngleDeg is { } a1) angAntes = a1;
-    if (i == apice.Idx + 25 && b.AngleDeg is { } a2) angDepois = a2;
+    if (i == apice.Idx - 6 && b.AngleDeg is { } a1) angAntes = a1;
+    if (i == apice.Idx + 6 && b.AngleDeg is { } a2) angDepois = a2;
 }
 Console.WriteLine($"Bolinha na passagem pelo ápice: distância mínima {menorDist:0.0} m (chega na mira)");
-Console.WriteLine($"   direção ~25 amostras ANTES: {(angAntes is { } x ? x.ToString("0") + " graus" : "—")}  |  ~25 DEPOIS: {(angDepois is { } y ? y.ToString("0") + " graus" : "—")}");
+Console.WriteLine($"   direção ANTES do ápice: {(angAntes is { } x ? x.ToString("0") + " graus" : "—")}  |  DEPOIS: {(angDepois is { } y ? y.ToString("0") + " graus" : "—")}");
 Console.WriteLine($"Estado do cockpit ao fim: apex.distM={cockpit.Get().Apex.Apice.DistM:0.0} m  apex.angleDeg={cockpit.Get().Apex.Apice.AngleDeg:0}");
 Console.WriteLine("   (frente ~0 / lado ~90 / atrás ~180: a bolinha cruza o lado quando passa pelo ápice — 'siga a bolinha')");
 return 0;
