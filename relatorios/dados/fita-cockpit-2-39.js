@@ -1,4 +1,4 @@
-[
+window.FITA = [
 {"t":0.0,"rpm":0,"shiftMode":"Off","shiftLevel":0,"trecho":"Neutro","delta":"0.00","deltaTone":"Neutro","acao":"","acaoTone":"Neutro","msg":"","msgTipo":"","apiceDist":null,"apiceAng":null,"apiceEstado":"Pendente","curva":""},
 {"t":0.9,"rpm":0,"shiftMode":"Off","shiftLevel":0,"trecho":"Neutro","delta":"0.00","deltaTone":"Neutro","acao":"","acaoTone":"Neutro","msg":"","msgTipo":"","apiceDist":null,"apiceAng":null,"apiceEstado":"Pendente","curva":""},
 {"t":1.9,"rpm":0,"shiftMode":"Off","shiftLevel":0,"trecho":"Neutro","delta":"0.00","deltaTone":"Neutro","acao":"","acaoTone":"Neutro","msg":"","msgTipo":"","apiceDist":null,"apiceAng":null,"apiceEstado":"Pendente","curva":""},
@@ -3285,4 +3285,4 @@
 {"t":1114.3,"rpm":4039,"shiftMode":"Lit","shiftLevel":2,"trecho":"RecordeStint","delta":"-1.11","deltaTone":"Bom","acao":"RECORDE","acaoTone":"Bom","msg":"MISTURA RICA","msgTipo":"Comunicacao","apiceDist":40.1,"apiceAng":179.7,"apiceEstado":"OkPior","curva":"CURVA DA JUNÇÃO"},
 {"t":1114.5,"rpm":4039,"shiftMode":"Lit","shiftLevel":2,"trecho":"RecordeStint","delta":"-1.11","deltaTone":"Bom","acao":"RECORDE","acaoTone":"Bom","msg":"MISTURA RICA","msgTipo":"Comunicacao","apiceDist":47.0,"apiceAng":175.3,"apiceEstado":"OkPior","curva":"CURVA DA JUNÇÃO"},
 {"t":1114.7,"rpm":4039,"shiftMode":"Lit","shiftLevel":2,"trecho":"RecordeStint","delta":"-1.11","deltaTone":"Bom","acao":"RECORDE","acaoTone":"Bom","msg":"MISTURA RICA","msgTipo":"Comunicacao","apiceDist":53.8,"apiceAng":171.5,"apiceEstado":"OkPior","curva":"CURVA DA JUNÇÃO"}
-]
+];

@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cockpit do Piloto — volta real de 2:39 (Brasília)</title>
+<style>
+  :root{
+    --bom:#4fe060; --erro:#e04040; --foco:#f0c040; --sistema:#82c8ff;
+    --muted:#a0a0a0; --faint:#606060; --white:#fff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#0a0a0a;color:#ededed;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden}
+  .topbar{position:fixed;top:0;left:0;right:0;height:46px;display:flex;align-items:center;gap:14px;
+    padding:0 16px;background:#0d0d0d;border-bottom:1px solid #1c1c1c;z-index:10;font-size:13px;color:var(--muted)}
+  .topbar b{color:#fff}
+  .topbar button{background:#1a1a1a;color:#ededed;border:1px solid #333;border-radius:7px;padding:6px 12px;font-size:13px;cursor:pointer}
+  .topbar button:hover{background:#262626}
+  .topbar .sel{color:var(--foco)}
+  #scrub{flex:1;cursor:pointer}
+  .palco{position:fixed;inset:46px 0 0 0;display:flex;align-items:center;justify-content:center;}
+  /* device 956x440 — espelha o cockpit canônico / MainWindow.xaml */
+  .device{position:relative;width:956px;height:440px;background:#171717;border-radius:48px;
+    border:1px solid #262626;overflow:hidden;transform-origin:center}
+  .halo{position:absolute;inset:0;pointer-events:none;transition:background .5s, opacity .9s}
+  /* shift light */
+  .shift{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:18px;
+    padding:9px 26px;background:#0f0f0f;border:1px solid #1f1f1f;border-radius:999px}
+  .led{width:13px;height:13px;border-radius:50%;background:#1a1a1a;transition:background .05s}
+  /* cabeçalho curva + rpm */
+  .hdr{position:absolute;top:62px;left:60px;right:36px;display:flex;justify-content:space-between;align-items:flex-start}
+  .curva{font-size:15px;font-weight:800;letter-spacing:1px;color:#fff}
+  .curva small{display:block;font-size:11px;color:var(--faint);font-weight:600;letter-spacing:.5px;margin-top:2px}
+  .rpm{font-size:15px;font-weight:800;color:var(--muted);text-align:right}
+  .rpm small{display:block;font-size:11px;color:var(--faint);font-weight:600}
+  /* bolinha do ápice (esquerda) */
+  .apex{position:absolute;left:70px;top:50%;transform:translateY(-50%);width:120px;height:120px}
+  .apex .ring{position:absolute;inset:0;border:2px solid #2c2c2c;border-radius:50%}
+  .apex .dot{position:absolute;width:16px;height:16px;border-radius:50%;background:var(--faint);
+    left:calc(50% - 8px);top:-8px;transform-origin:8px 68px;transition:transform .15s, background .15s}
+  .apex .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:20px;font-weight:800;color:var(--muted)}
+  .apex .lab{position:absolute;bottom:-22px;width:100%;text-align:center;font-size:11px;color:var(--faint);letter-spacing:1px}
+  /* delta gigante + acao */
+  .info{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center}
+  .delta{font-size:170px;font-weight:800;line-height:1;color:var(--muted);letter-spacing:-4px}
+  .acao{font-size:30px;font-weight:800;color:var(--foco);margin-top:10px;min-height:34px;letter-spacing:1px}
+  /* alerta (direita) */
+  .alerta{position:absolute;right:46px;top:50%;transform:translateY(-50%);max-width:300px;text-align:right;
+    font-size:30px;font-weight:800;color:var(--sistema);opacity:0;transition:opacity .2s}
+  .alerta.on{opacity:1}
+  /* rodapé */
+  .rodape{position:absolute;left:60px;right:36px;bottom:18px;display:flex;justify-content:space-between;
+    font-size:12px;color:var(--faint)}
+  .pulse{animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <b>Cockpit do Piloto</b> · volta real 2:39 (Brasília, 21/06)
+    <button id="play">⏸ pausar</button>
+    <button id="vel">velocidade 6x</button>
+    <button id="prox">curva ▶</button>
+    <span id="tempo" class="sel">0s</span>
+    <input id="scrub" type="range" min="0" value="0" step="1">
+    <span id="status">carregando…</span>
+  </div>
+  <div class="palco">
+    <div class="device">
+      <div class="halo" id="halo"></div>
+      <div class="shift" id="shift"></div>
+      <div class="hdr">
+        <div class="curva"><span id="curva">—</span><small>CURVA ATUAL</small></div>
+        <div class="rpm"><span id="rpm">—</span><small>ROTAÇÃO</small></div>
+      </div>
+      <div class="apex">
+        <div class="ring"></div>
+        <div class="dot" id="apexDot"></div>
+        <div class="num" id="apexNum">—</div>
+        <div class="lab">ÁPICE</div>
+      </div>
+      <div class="info">
+        <div class="delta" id="delta">0.00</div>
+        <div class="acao" id="acao"></div>
+      </div>
+      <div class="alerta" id="alerta"></div>
+      <div class="rodape">
+        <span id="rodapeEsq">dado real · sem simulação</span>
+        <span id="rodapeDir"></span>
+      </div>
+    </div>
+  </div>
+
+<script src="dados/fita-cockpit-2-39.js"></script>
+<script>
+(function(){
+  const F = window.FITA || [];
+  const TIER = [1,2,3,4,5,6,6,5,4,3,2,1];
+  const haloCor = { Neutro:'transparent', RecordeStint:'rgba(240,160,96,.42)',
+    MelhorHistorico:'rgba(224,192,96,.50)', PiorStint:'rgba(146,82,200,.42)' };
+  const toneCor = { Bom:'var(--bom)', Erro:'var(--erro)', Neutro:'var(--muted)' };
+  const estadoCor = { OkMelhor:'var(--bom)', OkPior:'var(--erro)', Pendente:'var(--faint)' };
+
+  // monta os 12 leds
+  const shiftEl = document.getElementById('shift');
+  const leds = [];
+  for(let i=0;i<12;i++){ const d=document.createElement('div'); d.className='led'; shiftEl.appendChild(d); leds.push(d); }
+  function corTier(t){ return t<=2 ? 'var(--bom)' : t<=4 ? 'var(--foco)' : 'var(--erro)'; }
+  function dotsForLevel(l){ if(l<=0)return 0; if(l>=6)return 12; return Math.round(l/6*12); }
+  function renderShift(mode, level){
+    if(mode==='Fire'){ leds.forEach(d=>d.style.background='#fff'); return; }
+    if(mode==='Overrev'){ leds.forEach(d=>d.style.background='#c01010'); return; }
+    leds.forEach(d=>d.style.background='#1a1a1a');
+    if(mode!=='Lit'||level<=0) return;
+    const dots=dotsForLevel(level), half=Math.floor(dots/2), c=6;
+    for(let k=0;k<half;k++){ const L=c-1-k, R=c+k;
+      if(L>=0) leds[L].style.background=corTier(TIER[L]);
+      if(R<12) leds[R].style.background=corTier(TIER[R]); }
+  }
+
+  const $=id=>document.getElementById(id);
+  const halo=$('halo');
+  function render(f){
+    if(!f) return;
+    renderShift(f.shiftMode, f.shiftLevel);
+    halo.style.background = `radial-gradient(ellipse 65% 75% at 50% 55%, ${haloCor[f.trecho]||'transparent'} 0%, transparent 65%)`;
+    halo.className = 'halo' + ((f.trecho==='RecordeStint'||f.trecho==='MelhorHistorico')?' pulse':'');
+    const dl=$('delta'); dl.textContent=f.delta||'0.00'; dl.style.color=toneCor[f.deltaTone]||'var(--muted)';
+    const ac=$('acao'); ac.textContent=f.acao||''; ac.style.color = f.acaoTone==='Bom'?'var(--bom)':f.acaoTone==='Erro'?'var(--erro)':'var(--foco)';
+    const al=$('alerta');
+    if(f.msg){ al.textContent=f.msg; al.classList.add('on'); al.style.color = f.msgTipo==='Grave'?'var(--erro)':'var(--sistema)'; }
+    else al.classList.remove('on');
+    $('curva').textContent = f.curva || '—';
+    $('rpm').textContent = (f.rpm!=null? Math.round(f.rpm)+' rpm':'—');
+    // bolinha do ápice
+    const dot=$('apexDot'), num=$('apexNum');
+    if(f.apiceDist!=null){
+      num.textContent = f.apiceDist.toFixed(0)+' m'; num.style.color=estadoCor[f.apiceEstado]||'var(--muted)';
+      dot.style.background=estadoCor[f.apiceEstado]||'var(--faint)';
+      dot.style.transform = `rotate(${f.apiceAng||0}deg)`;
+    } else { num.textContent='—'; num.style.color='var(--faint)'; dot.style.background='var(--faint)'; dot.style.transform='rotate(0deg)'; }
+    $('tempo').textContent = Math.floor(f.t)+'s';
+    $('rodapeDir').textContent = f.curva ? ('na '+f.curva) : 'reta / box';
+  }
+
+  // escala o device pra caber
+  function escala(){ const d=document.querySelector('.device');
+    const s=Math.min((window.innerWidth-40)/956,(window.innerHeight-86)/440);
+    d.style.transform='scale('+s.toFixed(3)+')'; }
+  window.addEventListener('resize',escala); escala();
+
+  const scrub=$('scrub'); scrub.max=F.length-1;
+  let i=0, tocando=true, vel=6, acc=0, last=performance.now();
+  // índices de início de cada curva (pra pular pros momentos bons)
+  const momentos=[]; let curAnt='';
+  F.forEach((f,idx)=>{ if(f.curva && f.curva!==curAnt) momentos.push(idx); curAnt=f.curva; });
+
+  function loop(now){
+    const dt=now-last; last=now;
+    if(tocando){ acc += dt*vel; while(acc>=200){ acc-=200; i++; if(i>=F.length){i=0;} } scrub.value=i; render(F[i]); }
+    requestAnimationFrame(loop);
+  }
+  scrub.addEventListener('input',()=>{ i=+scrub.value; render(F[i]); });
+  $('play').addEventListener('click',()=>{ tocando=!tocando; $('play').textContent=tocando?'⏸ pausar':'▶ tocar'; last=performance.now(); });
+  $('vel').addEventListener('click',()=>{ vel = vel===6?12: vel===12?20: vel===20?1:6; $('vel').textContent='velocidade '+vel+'x'; });
+  $('prox').addEventListener('click',()=>{ const m=momentos.find(x=>x>i)||momentos[0]; if(m!=null){ i=m; scrub.value=i; render(F[i]); } });
+
+  $('status').textContent = F.length+' quadros · '+(F.length?Math.floor(F[F.length-1].t/60):0)+' min de sessão real';
+  render(F[0]);
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
