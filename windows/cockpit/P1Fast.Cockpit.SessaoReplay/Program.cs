@@ -217,4 +217,35 @@ Console.WriteLine($"Bolinha na passagem pelo ápice: distância mínima {menorDi
 Console.WriteLine($"   direção ANTES do ápice: {(angAntes is { } x ? x.ToString("0") + " graus" : "—")}  |  DEPOIS: {(angDepois is { } y ? y.ToString("0") + " graus" : "—")}");
 Console.WriteLine($"Estado do cockpit ao fim: apex.distM={cockpit.Get().Apex.Apice.DistM:0.0} m  apex.angleDeg={cockpit.Get().Apex.Apice.AngleDeg:0}");
 Console.WriteLine("   (frente ~0 / lado ~90 / atrás ~180: a bolinha cruza o lado quando passa pelo ápice — 'siga a bolinha')");
+
+// ── DELTA + COACH (encanamento completo na linha REAL) ──────────
+Console.WriteLine();
+Console.WriteLine("== DELTA + COACH (encanamento completo) ==");
+int w0 = Math.Max(0, apice.Idx - 25), w1 = Math.Min(gpsMov.Count - 1, apice.Idx + 25);
+var janela = gpsMov.GetRange(w0, w1 - w0 + 1);
+int nn = janela.Count;
+string SubDe(double f) => f < 0.2 ? "entrada" : f < 0.4 ? "freio" : f < 0.6 ? "apice" : f < 0.8 ? "pace" : "saida";
+if (nn >= 6)
+{
+    // Referência = a linha real da curva a 100 km/h.
+    var refPts = new List<PontoPassagem>();
+    var atualPts = new List<PontoPassagem>();
+    for (var i = 0; i < nn; i++)
+    {
+        var f = (double)i / (nn - 1);
+        refPts.Add(new PontoPassagem(janela[i].Lat, janela[i].Lng, 100, i, f, SubDe(f)));
+        // Passagem ATUAL: mais lenta SÓ na freada (simulada — só há 1 volta real).
+        var kmh = (f >= 0.2 && f < 0.4) ? 72 : 100;
+        atualPts.Add(new PontoPassagem(janela[i].Lat, janela[i].Lng, kmh, i, f, SubDe(f)));
+    }
+    var delta = DeltaCalculator.Calcular(new Passagem("brasilia-curva", atualPts), new Passagem("brasilia-curva", refPts));
+    var coach = MensagensPedagogicas.Decidir(delta, new ContextoApice(cockpit.Get().Apex.Apice.AngleDeg, cockpit.Get().Apex.Apice.DistM));
+    if (coach is not null) cockpit.SetAcao(coach.Texto, Tone.Erro);
+
+    Console.WriteLine($"Linha real usada: {nn} pontos da curva (ápice no meio).");
+    Console.WriteLine($"Diferença de tempo (passagem mais lenta na freada vs referência): {delta.DeltaTotalS:0.000} s no total");
+    Console.WriteLine($"   pior sub-trecho: {delta.PiorSubTrecho} ({delta.PiorDeltaS:0.000} s)");
+    Console.WriteLine($"Frase do coach na tela: \"{coach?.Texto ?? "(nenhuma)"}\"  ->  cockpit.acao = \"{cockpit.Get().Acao.Texto}\"");
+    Console.WriteLine("   (passagem mais lenta SIMULADA: só há 1 volta real; o valor real vem com uma 2ª volta mais rápida)");
+}
 return 0;
