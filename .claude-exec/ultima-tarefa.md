@@ -1,3 +1,48 @@
+# Última tarefa — P1 Fast (21/06/2026, noite) — DESTRAVAR OS DADOS DE HOJE (voltas pelo GPS)
+
+## 1. Pedido original do Flávio
+Escolheu, em card de decisão, "Destravar dados de hoje" — resolver os canais que vieram zerados
+(principalmente a detecção de volta) pra painel/coach/preditivo funcionarem com o dado JÁ colhido
+hoje (sessão 2026-06-21).
+
+## 2. Objetivo (1 frase)
+Fazer a sessão real de hoje produzir VOLTAS (que vieram zeradas pela injeção) detectando o
+cruzamento da linha de chegada pelo GPS, e com isso destravar painel (stint/ritmo/meta) e preditivo.
+
+## 3. Critérios objetivos de conclusão
+- Voltas detectadas pelo GPS na sessão de hoje, com tempo por volta plausível (Brasília ~85-110s).
+- Painel (cérebro da nuvem) produz stint/ritmo/meta com essas voltas (deixa de ficar "aguardando").
+- Preditivo recebe temperatura de água máx POR volta (mesmo que conclua "sem risco" — honesto).
+- Relatório honesto do que destravou e do que NÃO dá pra destravar (canal não capturado = sensor
+  não instalado; coach exige segmentação por curva). Nada inventado.
+
+## 4. Confirmação de leitura
+- ~/.claude/CLAUDE.md: sim · ~/.claude-decisoes/padroes.md: sim (0 decisões)
+- FLAVIO_EXECUTION_PROTOCOL / DONE_CHECKLIST / ENVIRONMENT_RULES / COMMUNICATION_RULES: sim
+- Projeto: CLAUDE.md, cerebro-painel.js, cerebro-vivo.js, cerebro-preditivo.js, chegada-detector.js,
+  teste-cockpit-dados-hoje.mjs, MAPA-BRASILIA-DEFINITIVO.json
+
+## 5. Plano (<=5 passos)
+1. [FEITO] Mapear por que veio 0 volta: painel só conta volta por evento da injeção (zerado hoje);
+   já existe ChegadaDetector (GPS) no cockpit. Ler a linha de chegada GPS oficial da nuvem (read-only).
+2. Tool fora do ar: rodar o GPS de hoje no ChegadaDetector real → voltas + tempo por volta.
+3. Alimentar essas voltas no orquestrador/cérebro REAL do painel → snapshot (stint/ritmo/meta).
+4. Calcular temp de água máx por volta e rodar o preditivo real.
+5. Rodar, conferir números, reportar honesto. (Fixar isso no cérebro vivo = próximo passo proposto.)
+
+## 6. Arquivos/áreas
+- web/cockpit/chegada-detector.js (detector real) · web/command-box/cerebro/* (painel/preditivo)
+- .claude-exec/dados-pista/sessao-2026-06-21-1140-brasilia-COMPLETA.json (dado real)
+- Linha de chegada GPS lida da nuvem (tabela marcos, tipo=chegada, layout "Principal" Brasília)
+
+## 7. Ambiente: desenvolvimento | 8. Produção protegida: sim | 9. Autorização produção: não
+## 10. Evidência: não recebida
+## 11. Riscos: nenhum em DEV (só leitura do dado + tool fora do ar; produção foi SÓ LIDA pra pegar
+##     a linha de chegada). Não escrevo nada na nuvem.
+## 12. Status: iniciado
+
+---
+
 # Última tarefa — P1 Fast (21/06/2026, noite) — FASE 2: GRAVAÇÃO LOCAL BLINDADA
 
 ## 1. Pedido original do Flávio
