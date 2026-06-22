@@ -169,8 +169,9 @@ public sealed class CockpitOrchestrator
         }
         else
         {
-            // 1ª passagem: vira a referência; mostra REGISTRANDO.
+            // 1ª passagem: vira a referência (volta + velocidades por ponto); mostra REGISTRANDO.
             _referencias[segId] = passagem;
+            _refPontos[segId] = (_pEnt, _pFre, _pApi, _pSai);
             var coach = MensagensPedagogicas.Decidir(primeiraPassagem: true);
             if (coach is not null) _cockpit.SetAcao(coach.Texto, Tone.Neutro);
         }
