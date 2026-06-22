@@ -403,6 +403,8 @@ if (File.Exists(barrasPath))
                     $"\"saiKmh\":{Num(apx.Saida.ValorKmh)},\"saiEst\":{J(apx.Saida.Estado.ToString())}," +
                     // barra de stint: resultado REAL por curva (na ordem da pista) + a atual
                     $"\"stint\":[{string.Join(",", segs.Select(sg => J(sg.Id == maestroT.CurvaAtualId ? "current" : (maestroT.EstadoDoTrecho(sg.Id) is var st2 && st2 != "" ? st2 : "pending"))))}]," +
+                    // sinais vivos de verdade (pro indicador de telemetria não ser fixo)
+                    $"\"motorVivo\":{(e.T - lastMotorT < 2000 ? "true" : "false")},\"gpsVivo\":{(e.T - lastGpsT < 2000 ? "true" : "false")}," +
                     $"\"curva\":{J(curva)}" +
                     "}");
             }
