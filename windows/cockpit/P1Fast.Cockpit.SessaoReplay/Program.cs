@@ -387,10 +387,15 @@ if (File.Exists(barrasPath))
                 var st = telaC.Get();
                 var ap = st.Apex.Apice;
                 var apx = st.Apex;
+                // HONESTIDADE: sem motor vivo (injeção não gravou nesta parte), NÃO mostra luz/rotação
+                // velha — apaga a luz e deixa a rotação em branco. Só o que é real aparece.
+                var mVivo = e.T - lastMotorT < 2000;
+                var shMode = mVivo ? st.Shift.Mode.ToString() : "Off";
+                var shLevel = mVivo ? st.Shift.Level : 0;
                 frames.Add("{" +
                     $"\"t\":{(rel / 1000).ToString("0.0", inv)}," +
-                    $"\"rpm\":{lastRpm.ToString("0", inv)}," +
-                    $"\"shiftMode\":{J(st.Shift.Mode.ToString())},\"shiftLevel\":{st.Shift.Level}," +
+                    $"\"rpm\":{(mVivo ? lastRpm.ToString("0", inv) : "null")}," +
+                    $"\"shiftMode\":{J(shMode)},\"shiftLevel\":{shLevel}," +
                     $"\"trecho\":{J(st.TrechoStatus.ToString())}," +
                     $"\"delta\":{J(st.Delta.Value)},\"deltaTone\":{J(st.Delta.Tone.ToString())}," +
                     $"\"acao\":{J(st.Acao.Texto)},\"acaoTone\":{J(st.Acao.Tone.ToString())}," +
