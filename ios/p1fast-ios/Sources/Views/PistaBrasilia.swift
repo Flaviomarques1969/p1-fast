@@ -529,3 +529,33 @@ enum PistaBrasilia {
         CGPoint(x: 367.50, y: 228.40),
     ]
 }
+
+// ═══════════════════════════════════════════════════════════
+// PistaBrasiliaMapa — desenho reutilizável do traçado oficial
+// ═══════════════════════════════════════════════════════════
+// Mesma fonte medida e aprovada por Flávio (PistaBrasilia.desenho) já
+// usada na tela "Assistir ao vivo". Estático: só o traçado, escalado pra
+// caber e centralizado. Sem carro/bolinha (essa view é o mapa parado).
+struct PistaBrasiliaMapa: View {
+    var cor: Color = Color(white: 0.62)
+    var espessura: CGFloat = 3
+
+    var body: some View {
+        GeometryReader { geo in
+            let escala = min(geo.size.width / PistaBrasilia.larguraDesenho,
+                             geo.size.height / PistaBrasilia.alturaDesenho) * 0.92
+            let ox = (geo.size.width - PistaBrasilia.larguraDesenho * escala) / 2
+            let oy = (geo.size.height - PistaBrasilia.alturaDesenho * escala) / 2
+            Path { p in
+                let pts = PistaBrasilia.desenho
+                guard let primeiro = pts.first else { return }
+                p.move(to: CGPoint(x: ox + primeiro.x * escala, y: oy + primeiro.y * escala))
+                for pt in pts.dropFirst() {
+                    p.addLine(to: CGPoint(x: ox + pt.x * escala, y: oy + pt.y * escala))
+                }
+                p.closeSubpath()
+            }
+            .stroke(cor, style: StrokeStyle(lineWidth: espessura, lineCap: .round, lineJoin: .round))
+        }
+    }
+}
