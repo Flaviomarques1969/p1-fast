@@ -397,6 +397,7 @@ if (File.Exists(barrasPath))
                 var mVivo = e.T - lastMotorT < 2000;
                 var shMode = mVivo ? st.Shift.Mode.ToString() : "Off";
                 var shLevel = mVivo ? st.Shift.Level : 0;
+                var vnum = duas ? (e.T >= seam ? 2 : 1) : voltaN; // qual volta (1=aquecimento, 2=rápida)
                 // volta isolada: sem comparação (recorde/diferença/coach) — não há referência válida.
                 var trechoOut = semComp ? "Neutro" : st.TrechoStatus.ToString();
                 var deltaOut = semComp ? "" : st.Delta.Value;
