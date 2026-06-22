@@ -63,6 +63,18 @@ public enum ApexEstado
     OkPior,
 }
 
+/// <summary>
+/// Status da barra de aprendizado da IA da luz de marcha. Derivado do pct.
+/// Espelha AprendizadoStatus do cockpit-state.js (statusFromPct).
+/// </summary>
+public enum AprendizadoStatus
+{
+    Inativo,
+    Aprendendo,
+    Parcial,
+    Calibrado,
+}
+
 /// <summary>Mapeamento string ↔ enum pra paridade com data-attrs do mockup.</summary>
 public static class EnumMapping
 {
