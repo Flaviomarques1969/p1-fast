@@ -1,4 +1,54 @@
-# TASK_INIT — P1 Fast (22/06/2026) — PLANO FINAL DO .EXE NATIVO (cockpit do piloto + captura)
+# TASK_INIT — P1 Fast (22/06/2026) — FASE 4: LIGAR A TELA NATIVA AOS DADOS REAIS + MENSAGENS/GHOST/IA
+
+## 1. Pedido original do Flávio
+"vamos antes ligar a tela do cockpit aos dados reais e às funções reais de mensagens, ghost e ia."
+
+## 2. Objetivo (1 frase)
+Tirar a tela nativa do cockpit (WinUI) do modo demonstração e ligá-la ao dado real, levando à paridade
+com a referência aprovada (JS) as funções de mensagens (coach + alertas), ghost (delta/ápice/freio por
+trecho vs volta de referência) e IA (luz de marcha que aprende + antecipa + flash).
+
+## 3. Critérios objetivos de conclusão (obra em incrementos, cada um testado)
+- Modelo de estado em C# com PARIDADE de campos com cockpit-state.js (silencioso, noBox, bolinha do
+  ápice distM/angleDeg, pace, aprendizado status/pct, flashIa) — testado.
+- Calibração do Bubi na luz de marcha (alvo = pico de potência 6.050, não redline genérico 7.500).
+- Mensagens do coach portadas (decidirMensagemPedagogica, 17 mensagens) + catálogo de alertas completo.
+- Ghost: ápice (curvatura), delta por sub-trecho e freio por física, comparados à volta de referência.
+- IA da luz: detector de marcha + aprendizado por tempo de passagem + antecipação (Onda 7) + flash.
+- Tela observa o estado mutado por dado REAL (demonstração atrás de --demo); fonte de prova em DEV =
+  replay de sessão gravada (sem carro). Prova VISUAL final só no Windows (declarado, não fingido).
+
+## 4. Confirmação de leitura
+- ~/.claude/CLAUDE.md: sim · ~/.claude-decisoes/padroes.md: sim (0 decisões)
+- FLAVIO_EXECUTION_PROTOCOL / DONE_CHECKLIST / ENVIRONMENT_RULES / COMMUNICATION_RULES: sim
+- Memória global + memória P1 Fast (2 caminhos): sim · CLAUDE.md do projeto + ARQUITETURA_DEFINITIVA: sim
+- C# inspecionado: MainWindow.xaml(.cs), CockpitState.cs, CockpitStateModel.cs, LiveDataBridge.cs.
+- JS referência mapeado (agente Explore): cockpit-state.js, cockpit-renderer.js, alertas-criticos.js,
+  mensagens-pedagogicas.js, delta-calculator.js, apice-calculator.js, freio-trecho.js,
+  gear-detector-online.js, shift-light-orquestrador.js, shift-light-modos.js, live-data-bridge.js.
+
+## 5. Plano (incrementos, cada um construído E testado; prova visual só no Windows)
+1. [INCREMENTO 1 — em curso] Paridade do modelo de estado em C# + calibração do Bubi na luz de marcha.
+2. [INCREMENTO 2] Mensagens reais: coach (decidirMensagemPedagogica) + orquestrador de alertas completo.
+3. [INCREMENTO 3] IA da luz: marcha + aprendizado por tempo de passagem + antecipação + flash.
+4. [INCREMENTO 4] Ghost: ápice/delta/freio por trecho vs volta de referência (depende de GPS no pipeline).
+5. [INCREMENTO 5] Ligar a tela ao feed real + replay de sessão gravada; demonstração atrás de --demo.
+
+## 6. Arquivos/áreas
+- EDITA: windows/cockpit/P1Fast.Cockpit.Domain/{CockpitStateModel,CockpitState,LiveDataBridge}.cs (+ novos)
+- EDITA depois: windows/cockpit/P1Fast.Cockpit.UI/MainWindow.xaml(.cs) (feed real; só prova no Windows)
+- NOVO: testes em P1Fast.Cockpit.Domain.Tests
+- REFERÊNCIA (não alterar): web/cockpit/*.js
+
+## 7. Ambiente: desenvolvimento | 8. Produção protegida: sim | 9. Autorização produção: não
+## 10. Evidência: não recebida | 11. Riscos: WinUI só renderiza no Windows (no Mac eu construo e testo
+##     a lógica via roll-forward, mas a prova VISUAL é na bancada); ghost/IA dependem de GPS no pipeline
+##     (Fase 6); mudança 12 vs 17 LEDs é decisão de UX (NÃO mudo sozinho — levo ao Flávio). Mudanças
+##     ADITIVAS e preservando a demonstração. 12. Status: iniciado (Incremento 1).
+
+---
+
+# TASK_DONE — P1 Fast (22/06/2026) — PLANO FINAL DO .EXE NATIVO (cockpit do piloto + captura)
 
 ## 1. Pedido original do Flávio
 "em p1 fast quero que vc [faça] o último plano para criar um .exe para rodar no Windows do notebook e
