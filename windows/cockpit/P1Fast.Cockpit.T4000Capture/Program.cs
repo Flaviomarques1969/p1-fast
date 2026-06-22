@@ -229,6 +229,147 @@ internal static class Program
         return 0;
     }
 
+    // === MODO --gravar: captura de sessão ponta a ponta (motor T3000 -> disco) ===
+    //
+    // Liga o leitor USB PROVADO (T3000UsbLiveReader) ao gravador blindado PROVADO
+    // (SessionRecorder + FileSessionStore). Cada amostra do motor é gravada
+    // append-only em disco ANTES e independente de qualquer rede — é a fonte da
+    // verdade que faltava em 20-21/06. GPS continua na Central (navegador), Fase 6.
+    private static int RunGravarMode(string[] args)
+    {
+        var portName = ParseArg(args, "--port");
+        var pasta    = ParseArg(args, "--pasta")
+            ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "p1fast-sessoes");
+
+        Console.WriteLine("=== P1 Fast — GRAVAÇÃO DE SESSÃO (motor T3000 pela USB) ===");
+        Console.WriteLine($"Pasta de gravação: {pasta}");
+        Console.WriteLine();
+
+        // Diagnóstico USB + resolução de porta (mesma lógica do capturador cru).
+        var devices = UsbScanner.ScanAll();
+        UsbScanner.PrintReport(devices);
+        if (portName is null)
+        {
+            portName = UsbScanner.FindBestComPort(devices);
+            if (portName is null)
+            {
+                var ports = SerialPort.GetPortNames().OrderBy(x => x, StringComparer.Ordinal).ToArray();
+                if (ports.Length > 0)
+                {
+                    portName = ports[^1];
+                    Console.WriteLine($"Sem candidato óbvio. Usando porta: {portName}");
+                }
+            }
+            else Console.WriteLine($"Candidato T4000 identificado: {portName}");
+        }
+        if (portName is null)
+        {
+            Console.Error.WriteLine("Não achei porta serial. Veja o diagnóstico acima (cabo? driver? use --port=COMx).");
+            return 1;
+        }
+
+        // Gravador blindado (fonte da verdade) + recuperação de sessão órfã no boot.
+        using var store = new FileSessionStore(pasta);
+        var recorder = new SessionRecorder(store);
+        var orfas = recorder.RecuperarOrfas();
+        if (orfas.Count > 0)
+        {
+            Console.WriteLine($"Recuperei {orfas.Count} sessão(ões) que ficaram abertas (notebook caiu sem fechar):");
+            foreach (var o in orfas)
+                Console.WriteLine($"  - {o.Id}  motor={o.NMotor} gps={o.NGps} -> marcada 'interrompida' (dado preservado)");
+            Console.WriteLine();
+        }
+
+        // Leitor ao vivo na tomada real -> cada amostra do motor cai no gravador.
+        var channel = new SerialPortT3000UsbChannel(portName);
+        var reader = new T3000UsbLiveReader(
+            channel,
+            onSample: s => recorder.Motor(s),
+            onStatus: (txt, nivel) => Console.WriteLine($"[{nivel.ToUpperInvariant()}] {txt}"),
+            onLog:    txt => Console.WriteLine("  " + txt));
+
+        Console.WriteLine($"Lendo de {portName}. Aperte Q ou Esc pra encerrar (Ctrl+C também).");
+        Console.WriteLine();
+
+        var cts = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
+        var readerTask = reader.RunAsync(cts.Token);
+
+        // Painel de saúde ~1x/s + vigia de tecla, no fio principal. Alarme NUNCA silencioso.
+        SessionResumo? resultado = null;
+        while (!cts.IsCancellationRequested)
+        {
+            Thread.Sleep(1000);
+            var fimSilencio = recorder.Tick();        // atualiza estado; encerra por silêncio
+            if (fimSilencio is not null) resultado = fimSilencio;
+
+            var e = recorder.Estado();
+            var alarme = e.Alarme is null ? "" : $"   *** ALARME: {e.Alarme} ***";
+            Console.WriteLine(
+                $"[{DateTime.Now:HH:mm:ss}] gravando={(e.Gravando ? "sim" : "não")}  " +
+                $"motor={e.NMotor} ({e.HzMotor:0.0} Hz)  lacunas={e.Lacunas}  descartadas={e.Dropped}{alarme}");
+
+            if (Console.KeyAvailable)
+            {
+                var key = Console.ReadKey(intercept: true).Key;
+                if (key is ConsoleKey.Q or ConsoleKey.Escape) cts.Cancel();
+            }
+            if (readerTask.IsCompleted && !recorder.Gravando) break;
+        }
+
+        cts.Cancel();
+        try { readerTask.Wait(3000); } catch { /* cancelamento esperado */ }
+        resultado ??= recorder.Encerrar("manual");
+
+        Console.WriteLine();
+        if (resultado is not null)
+        {
+            Console.WriteLine($"Sessão encerrada: {resultado.Id}  (motivo: {resultado.MotivoFim})");
+            Console.WriteLine($"  motor={resultado.NMotor}  gps={resultado.NGps}  duração={resultado.DuracaoS:0.0}s  " +
+                              $"descartadas={resultado.Dropped}  maior lacuna={resultado.MaiorLacunaMs} ms");
+            Console.WriteLine($"  arquivo: {Path.Combine(pasta, resultado.Id + ".jsonl")}");
+            var conf = SessionIntegrity.Conferir(resultado.Id, recorder.ExportarSessao(resultado.Id));
+            Console.WriteLine("  conferência: " + conf.Linha);
+            if (resultado.NMotor == 0)
+                Console.WriteLine("  AVISO: zero amostras de motor — confira cabo/driver (diagnóstico USB acima).");
+        }
+        else Console.WriteLine("Nenhuma sessão gravada (não chegou dado do motor).");
+
+        var st = reader.GetStats();
+        Console.WriteLine($"  leitor: emitidas={st.SamplesEmitted} religações={st.Reconnects} " +
+                          $"blocosCurtos={st.ShortBlocks} leiturasRuins={st.BadReads} errosLeitura={st.ReadErrors}");
+        return 0;
+    }
+
+    // === MODO --conferir: relê as sessões gravadas e reporta integridade ===
+    private static int RunConferirMode(string[] args)
+    {
+        var pasta = ParseArg(args, "--pasta")
+            ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "p1fast-sessoes");
+
+        Console.WriteLine($"=== Conferência das sessões gravadas em: {pasta} ===");
+        if (!Directory.Exists(pasta))
+        {
+            Console.WriteLine("(a pasta não existe — nada foi gravado aqui ainda)");
+            return 0;
+        }
+
+        using var store = new FileSessionStore(pasta);
+        var sessoes = store.ListarSessoes();
+        if (sessoes.Count == 0)
+        {
+            Console.WriteLine("(nenhuma sessão encontrada)");
+            return 0;
+        }
+
+        foreach (var s in sessoes.OrderBy(x => x.InicioWall))
+        {
+            var conf = SessionIntegrity.Conferir(s.Id, store.LerSessao(s.Id));
+            Console.WriteLine($"[{s.Status}] " + conf.Linha);
+        }
+        return 0;
+    }
+
     private static string? ParseArg(string[] args, string name)
     {
         var prefix = name + "=";
