@@ -366,7 +366,7 @@ private struct FilledContent: View {
 
                 VStack(spacing: Spacing.sm) {
                     ForEach(Array(data.carrosRecentes.prefix(3))) { carro in
-                        CarroRow(carro: carro)
+                        carroLink(carro) { CarroRow(carro: carro) }
                     }
                 }
             }
