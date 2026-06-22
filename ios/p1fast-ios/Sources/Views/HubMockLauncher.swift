@@ -132,7 +132,6 @@ struct HubMockLauncher: View {
                         .environmentObject(pendenciaRepo)
                         .environmentObject(estoqueRepo)
                         .environmentObject(arquivoRepo)
-                        .environmentObject(stintRepo) // TEMP-PROVA mapa 22/06 — reverter
                         .environmentObject(router)
                 }
             } else {
