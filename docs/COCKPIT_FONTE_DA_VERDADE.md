@@ -48,11 +48,10 @@ Em paralelo, o notebook **manda ao vivo pra nuvem** (canal `cockpit-bubi-live`),
   provado na **sua volta real de 2:39 (domingo 21/06)** — **255 testes passando** (1 falha cosmética de vírgula no Mac, sem efeito na lógica; re-rodado 22/06).
 - **A tela do piloto** já está codificada com as entradas certas para receber motor e GPS ao vivo.
 
-## 7. O ÚNICO degrau que falta pra VOCÊ ver funcionar
-**Rodar no notebook Windows:** montar a tela + plugar a entrada de dados e ver acender.
-**Isso não roda no meu lado (Mac)** — a tela do piloto é tecnologia Windows.
-- **Atalho sem ir pra pista:** usar o **replay da sua volta de 2:39** alimentando a tela → você vê o painel reagindo **na bancada**, repetível, quantas vezes quiser.
-- **Na pista:** a mesma tela, alimentada pela USB do carro ao vivo.
+## 7. O caminho pra ver funcionar (decidido com Flávio 22/06)
+1. **Tudo na WEB primeiro** — fazer cada parte do painel funcionar no navegador, com a sua volta real reproduzida (replay). É onde a gente desenvolve e valida. Já há uma tela rodando sozinha (offline, sem clique): `web/cockpit/cockpit-vitrine.html`.
+2. **Windows por último** — quando o painel estiver completo e aprovado na web, fazemos a versão pra rodar no notebook Windows (a tela definitiva no carro).
+A tela do piloto na pista é Windows; mas o **desenvolvimento e a prova do dia a dia são na web**.
 
 ## 8. Como a gente prova que "está funcionando"
 A tela acende no Windows e, durante a volta (replay ou ao vivo):
