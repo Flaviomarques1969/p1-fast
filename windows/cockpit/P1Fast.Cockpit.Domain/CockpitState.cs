@@ -116,6 +116,10 @@ public sealed class CockpitState
         if (string.IsNullOrEmpty(texto))
             throw new ArgumentException("message.texto precisa ser string não-vazia", nameof(texto));
 
+        // Modo silencioso: bloqueia comunicações (coach), mas NUNCA bloqueia
+        // alertas críticos (GRAVE). Paridade com cockpit-state.js:241.
+        if (_state.Silencioso && tipo == MsgTipo.Comunicacao) return;
+
         var cur = _state.Message;
         if (cur is not null && cur.Tipo == tipo && cur.Texto == texto) return;
         var prev = _state;
