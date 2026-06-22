@@ -40,6 +40,12 @@ if (root.TryGetProperty("sessao", out var meta))
 var cockpit = new CockpitState();
 var bridge  = new LiveDataBridge(cockpit, LiveLimits.Bubi);
 
+// Motor de alertas (Incremento 2) — fiel ao alertas-criticos.js, com sensor
+// ausente tratado como "sem dado". A mensagem principal vai pra tela.
+var alertas = new AlertasCriticos(AlertaLimites.Default);
+var msgTally = new Dictionary<string, int>(); // id do alerta -> nº de amostras
+int amostrasSemAlerta = 0;
+
 // Captura o que a tela mostrou: histograma de modo da luz, nível máximo,
 // pico de rotação + a luz nesse pico, e toda mensagem que apareceu.
 var modos = new Dictionary<ShiftMode, int>();
