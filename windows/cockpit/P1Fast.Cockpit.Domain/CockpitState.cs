@@ -135,6 +135,66 @@ public sealed class CockpitState
         Emit(prev, new[] { "message" });
     }
 
+    public bool IsNoBox() => _state.NoBox;
+
+    public void SetNoBox(bool value)
+    {
+        if (_state.NoBox == value) return;
+        var prev = _state;
+        _state = prev with { NoBox = value };
+        Emit(prev, new[] { "noBox" });
+    }
+
+    public bool IsSilencioso() => _state.Silencioso;
+
+    /// <summary>
+    /// Liga/desliga o modo silencioso. Ao LIGAR, esconde a mensagem de comunicação
+    /// corrente (mantém GRAVE). Paridade com cockpit-state.js:259-271.
+    /// </summary>
+    public void SetSilencioso(bool value)
+    {
+        if (_state.Silencioso == value) return;
+        var prev = _state;
+        _state = prev with { Silencioso = value };
+
+        if (value && prev.Message is { Tipo: MsgTipo.Comunicacao })
+        {
+            _state = _state with { Message = null };
+            Emit(prev, new[] { "silencioso", "message" });
+        }
+        else
+        {
+            Emit(prev, new[] { "silencioso" });
+        }
+    }
+
+    /// <summary>
+    /// Atualiza a barra de aprendizado da IA. pct é clampado em 0..100; o status é
+    /// derivado (StatusFromPct). O flash de 100% NÃO dispara aqui (quem dispara é o
+    /// orquestrador, no meio da próxima reta). Paridade com cockpit-state.js:326-337.
+    /// </summary>
+    public void SetAprendizado(double pct)
+    {
+        if (double.IsNaN(pct) || double.IsInfinity(pct))
+            throw new ArgumentException($"aprendizado.pct precisa ser número finito (recebeu {pct})", nameof(pct));
+
+        var clamped = Math.Max(0, Math.Min(100, pct));
+        var status = StatusFromPct(clamped);
+        var cur = _state.Aprendizado;
+        if (cur.Pct == clamped && cur.Status == status) return;
+        var prev = _state;
+        _state = prev with { Aprendizado = new AprendizadoInfo(status, clamped) };
+        Emit(prev, new[] { "aprendizado" });
+    }
+
+    public void SetFlashIa(bool value)
+    {
+        if (_state.FlashIa == value) return;
+        var prev = _state;
+        _state = prev with { FlashIa = value };
+        Emit(prev, new[] { "flashIa" });
+    }
+
     public void SetDelta(string value, Tone tone)
     {
         ArgumentNullException.ThrowIfNull(value);
