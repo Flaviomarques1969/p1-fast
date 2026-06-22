@@ -30,12 +30,16 @@ public partial class App : Application
 }
 
 /// <summary>Configuração resolvida dos argumentos de linha de comando.</summary>
-public sealed record LaunchOptions(int? DisplayIndex)
+/// <param name="DisplayIndex">Monitor pra abrir em tela cheia (1-indexado).</param>
+/// <param name="Demo">--demo liga a demonstração de cenas fixas. Sem ela, a tela
+/// é comandada pelo dado real (maestro) — o jeito de produção.</param>
+public sealed record LaunchOptions(int? DisplayIndex, bool Demo = false)
 {
     /// <summary>Faz parsing dos args do <see cref="Environment.GetCommandLineArgs"/>.</summary>
     public static LaunchOptions FromCommandLine(string[] args)
     {
         int? displayIndex = null;
+        var demo = false;
         for (var i = 0; i < args.Length; i++)
         {
             var a = args[i];
@@ -49,7 +53,11 @@ public sealed record LaunchOptions(int? DisplayIndex)
                 if (int.TryParse(args[i + 1], out var n) && n >= 1)
                     displayIndex = n;
             }
+            else if (a == "--demo")
+            {
+                demo = true;
+            }
         }
-        return new LaunchOptions(displayIndex);
+        return new LaunchOptions(displayIndex, demo);
     }
 }
