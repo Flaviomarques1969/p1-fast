@@ -1330,12 +1330,15 @@ struct MelhorVoltaView: View {
                 .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(Color.border, lineWidth: 1))
 
                 VStack(alignment: .leading, spacing: Spacing.sm) {
-                    Text("MAPA DA PISTA E DADOS POR TRECHO")
+                    Text("MAPA DA PISTA — BRASÍLIA")
                         .font(.system(size: 11, weight: .semibold)).tracking(1.1)
                         .foregroundStyle(Color.textFaint)
+                    PistaBrasiliaMapa()
+                        .frame(height: 220)
+                        .frame(maxWidth: .infinity)
                     Text(melhorMs == nil
-                         ? "Aparece quando houver uma volta real gravada na pista. As voltas entram pelo painel ao vivo ao cruzar a linha."
-                         : "O mapa do traçado e os tempos por trecho (entrada, freio, ápice, V-min, saída) aparecem aqui quando a melhor volta tiver o traçado gravado.")
+                         ? "Traçado oficial de Brasília. Os tempos por trecho (entrada, freio, ápice, V-min, saída) acendem sobre o mapa quando houver uma volta real gravada na pista."
+                         : "Traçado oficial de Brasília. Os tempos por trecho acendem sobre o mapa quando a melhor volta tiver o caminho gravado.")
                         .font(.system(size: 13))
                         .foregroundStyle(Color.textMuted)
                 }
