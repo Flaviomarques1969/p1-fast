@@ -127,8 +127,18 @@ public static class EnumMapping
 
     public static string ToCockpitString(this ApexEstado v) => v switch
     {
+        ApexEstado.Pendente => "pendente",
         ApexEstado.OkMelhor => "ok-melhor",
         ApexEstado.OkPior   => "ok-pior",
+        _ => throw new ArgumentOutOfRangeException(nameof(v)),
+    };
+
+    public static string ToCockpitString(this AprendizadoStatus v) => v switch
+    {
+        AprendizadoStatus.Inativo    => "inativo",
+        AprendizadoStatus.Aprendendo => "aprendendo",
+        AprendizadoStatus.Parcial    => "parcial",
+        AprendizadoStatus.Calibrado  => "calibrado",
         _ => throw new ArgumentOutOfRangeException(nameof(v)),
     };
 
