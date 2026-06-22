@@ -48,7 +48,34 @@ sessão não perder dado como em 20-21/06.
 ## 10. Evidência: não recebida | 11. Riscos: a tomada USB física só prova no notebook (declaro, não
 ##     finjo pronto); .NET 8 não roda neste Mac (uso roll-forward p/ net10 nos testes); o capturador
 ##     antigo é preservado (mudança só aditiva). Nada toca nuvem/canal/produção.
-## 12. Status inicial: iniciado
+## 12. Status: CONCLUÍDO em DEV (composição local provada; tomada física e Fase 3 = pendências declaradas)
+
+## Resultado
+- NOVO windows/cockpit/P1Fast.Cockpit.T4000Capture/SerialPortT3000UsbChannel.cs — a tomada USB real
+  (IT3000UsbChannel sobre System.IO.Ports.SerialPort). Fina de propósito; prova física = bancada.
+- NOVO windows/cockpit/P1Fast.Cockpit.Domain/SessionIntegrity.cs — conferência pura (contagem por tipo,
+  sequência contígua, lacuna de tempo, duração).
+- EDITADO (aditivo) windows/cockpit/P1Fast.Cockpit.T4000Capture/Program.cs — modos --gravar (liga
+  leitor->gravador, painel de saúde, recupera órfã, encerra com resumo + conferência) e --conferir.
+  O capturador cru .bin (CAN, legado) foi PRESERVADO: só roda quando os modos novos estão ausentes.
+- NOVO testes Domain.Tests: SessionIntegrityTests (4) + CapturaPontaAPontaTests (2 — leitor->gravador->
+  disco->releitura sem buraco + recuperação de órfã sem perder registro).
+- NOVO docs/RUNBOOK_DIA_DE_PISTA_CAPTURA.md — passos do operador (antes/durante/depois) + limites honestos.
+
+## Validação executada (DOTNET_ROLL_FORWARD=Major, .NET 10 no Mac)
+- dotnet test (só os novos): 6/6 verdes.
+- dotnet test (bateria completa): 188 aprovados / 1 falha = a PAN_04 PRÉ-EXISTENTE (formatação de
+  número com vírgula no Mac, LivePanelTests.cs:93, não toquei). Zero regressão.
+- dotnet build T4000Capture (fora da .sln): êxito, 0 aviso / 0 erro (Program.cs + tomada real compilam).
+
+## Pendências reais (declaradas, não escondidas)
+- TOMADA FÍSICA: abrir a porta serial de verdade com o carro plugado — só prova no notebook (bancada).
+  Toda a lógica já é provada por teste automático.
+- FASE 3 (nuvem com fila): NÃO feita. Há contradição a resolver com você: o plano recomenda Fases 1-3,
+  mas a decisão de 21/06 foi "manter local, sem upload agora". Levado pra decisão, não construído.
+  O canal cockpit-bubi-live é produção/sagrado — não toco sem autorização literal.
+- GPS dentro do .exe (Fase 6) e cockpit gráfico publicável (Fase 5): fora deste passo.
+- O T4000Capture e a UI seguem FORA da .sln (a .sln só tem Domain/Tests/LiveDemo) — empacotamento é Fase 5.
 
 ---
 
