@@ -32,7 +32,32 @@ provado `web/cockpit/session-recorder.js` (43 testes).
 ## 7. Ambiente: desenvolvimento | 8. Produção protegida: sim | 9. Autorização produção: não
 ## 10. Evidência: não recebida | 11. Riscos: nenhum em DEV (arquivo local + testes; não toca
 ##     nuvem/canal). ADR-003/004: append-only e fora da fila de sync — respeitados.
-## 12. Status: em andamento
+## 12. Status: concluído
+
+## Resultado
+- Criado `windows/cockpit/P1Fast.Cockpit.Domain/SessionRecorder.cs`:
+  - `SessionRecorder` (lógica pura, port fiel do session-recorder.js): abre sessão no 1º dado,
+    grava append-only motor/GPS/evento com tWall (tCapture), conta amostras, marca lacunas,
+    encerra por silêncio (8 s), recupera sessão órfã, e expõe ALARME de saúde
+    ('perdendo-amostras' / 'parada-armazenamento') — perda nunca silenciosa.
+  - `FileSessionStore` (disco real, append-only, flush por registro; System.IO puro, sem
+    dependência de Windows → provado aqui) + `InMemorySessionStore` (testes).
+  - Contrato `ISessionStore` (store injetável), tipos SessionRecord/Meta/Resumo/Estado.
+- Criado `...Domain.Tests/SessionRecorderTests.cs` (6 testes), incluindo ponta a ponta
+  leitor da USB (Fase 1) → tradutor → gravação no disco (Fase 1+2 juntas).
+- Validação: `DOTNET_ROLL_FORWARD=Major dotnet test P1Fast.Cockpit.sln`
+  → bateria nova 6/6 verde; suíte completa 182 aprovados / 1 falha (a mesma PAN_04 de localidade
+  do Mac, PRÉ-EXISTENTE, sem relação com este trabalho).
+- "Pronto quando" do plano atendido: grava e relê SEM buraco (sequência contígua 1..100);
+  alarme dispara em disco cheio simulado; recupera sessão órfã sem perder dado; o caminho não
+  toca rede (queda de internet não afeta a gravação local).
+
+## Pendências reais
+- Ligar o gravador no programa do notebook de verdade (composição: onSample do leitor →
+  SessionRecorder com FileSessionStore numa pasta do notebook) + escolher a pasta/rotação de
+  arquivo pra sessões de horas (risco de volume citado no plano). Decisão de pasta/rotação e a
+  ferramenta visual de replay ficam pra quando ligar no .exe real.
+- Fase 3 (nuvem com fila que não perde dado) é o próximo passo do plano.
 
 ---
 # Última tarefa ANTERIOR — P1 Fast (21/06/2026, noite) — LEITURA AO VIVO DA USB (Fase 1)
