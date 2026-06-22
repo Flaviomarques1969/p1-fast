@@ -172,8 +172,9 @@ function aplicarGps(p) {
   if (!curvaAtiva) {
     const { best, bd } = curvaMaisProxima(pos);
     if (best && bd <= RAIO) {
-      curvaAtiva = { c: best, tEnt: p.t };
+      curvaAtiva = { c: best, tEnt: p.t, vmin: ultKmh, distMin: bd };
       $('hCurva').textContent = best.nome;
+      $('hVmin').textContent = '—'; $('hApice').textContent = Math.round(bd) + ' m';
       cockpitState.setApexPonto('entrada', { estado: ApexEstado.OK_MELHOR, valorKmh: Math.round(ultKmh), nomeCurva: best.nome });
       cockpitState.setApexPonto('freio', { estado: ApexEstado.PENDENTE });
       cockpitState.setApexPonto('apice', { estado: ApexEstado.PENDENTE });
@@ -181,6 +182,11 @@ function aplicarGps(p) {
     }
   } else {
     const d = metros(pos, curvaAtiva.c.apice);
+    if (ultKmh > 0 && ultKmh < curvaAtiva.vmin) curvaAtiva.vmin = ultKmh;
+    if (d < curvaAtiva.distMin) curvaAtiva.distMin = d;
+    $('hApice').textContent = Math.round(d) + ' m';
+    $('hVmin').textContent = Math.round(curvaAtiva.vmin);
+    // bolinha do ápice ao vivo: verde quando passa rente ao ápice ideal
     cockpitState.setApexPonto('apice', { estado: d <= 10 ? ApexEstado.OK_MELHOR : ApexEstado.OK_PIOR, distM: Math.round(d) });
     if (d > SAIR) fecharPassagem(p);
   }
