@@ -74,8 +74,18 @@ final class CarroRepository: ObservableObject {
                 acc[row[0]] = row[1]
             }
         }
+        // Agregado global de voltas reais: total + melhor tempo válido. Pode vir
+        // 0/nil quando ainda não há volta registrada (origem painel ao vivo).
+        let resumo = try await queue.read { db -> (Int, Int?) in
+            let total = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM voltas") ?? 0
+            let melhor = try Int.fetchOne(
+                db, sql: "SELECT MIN(tempo_ms) FROM voltas WHERE valida = 1 AND tempo_ms IS NOT NULL")
+            return (total, melhor)
+        }
         self.carros = rows
         self.stintsPorCarro = counts
+        self.voltasTotal = resumo.0
+        self.melhorVoltaMs = resumo.1
     }
 
     /// Cria um carro novo + uma `Configuracao` vazia (placeholder de
