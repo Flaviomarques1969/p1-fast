@@ -1,3 +1,22 @@
+# TASK — Home clicável (primeira tela) — 22/06/2026 (em andamento)
+
+## Pedido de Flávio
+"primeira tela do p1 fast tem componentes que não funcionam: eventos 7 → tela de eventos; 134 voltas → resumo estratégico (melhor volta, média de delta das 10 melhores); stints → lista; melhor → melhor volta (mapa + dados por trecho); carro Bolinha → tela do carro."
+
+## Mapa real (verificado)
+- Primeira tela = HomeView (ContentView.realHomeState, dados reais). Os 4 números canônicos (Eventos/Voltas/Celta/Melhor, ver SummaryStats preview) foram encolhidos pra 3 (Carros/Eventos/Stints) e nenhum é clicável (StatCell só visual).
+- Já existem telas: Eventos (EventosListaView, rota .eventos) e Carro (CarroHubView, rota .carroHub).
+- NÃO existem: resumo de voltas, lista de stints, detalhe de melhor volta (mapa + por trecho).
+- Dado real: total de voltas + melhor tempo = consultáveis. MAS "delta das 10 melhores" e "dados por trecho" são esparsos/sintéticos hoje. Mapa SwiftUI da pista NÃO existe (só PathMapper puro).
+
+## Feito neste turno (DEV, compila — BUILD SUCCEEDED)
+- Carro Bolinha clicável: CarroMock ganhou carroId real; carroCard passa c.id; linha do carro vira NavigationLink → CarroHubView (helper carroLink). Mocks preservados (carroId default "").
+
+## Pendente (aguardando rumo — buraco de dado real na melhor volta/delta)
+- 4 números reais + Eventos/Stints/Voltas/Melhor clicáveis; lista de stints; resumo de voltas; melhor volta (mapa+trecho+delta).
+
+---
+
 # TASK — Fase 4, Incremento 2: MENSAGENS/ALERTAS REAIS + conserto do "sensor ausente" (22/06/2026)
 # (registro da sessão do COCKPIT WINDOWS; preservado acima do trabalho de iOS de outra sessão)
 
