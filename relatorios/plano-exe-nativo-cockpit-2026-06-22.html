@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1 Fast — Plano final do .exe nativo do cockpit</title>
+<style>
+  :root{
+    --bg:#0a0a0a; --card:#141414; --card2:#181818; --line:#262626;
+    --txt:#ededed; --mut:#a0a0a0; --faint:#6b6b6b;
+    --ok:#4fe060; --okbg:#0f2417; --okline:#1f5c33;
+    --pend:#f0c040; --pendbg:#241f0d; --pendline:#5c4d1f;
+    --crit:#e06a6a; --critbg:#241010; --critline:#5c2222;
+    --info:#82c8ff; --infobg:#0d1a24; --infoline:#1f4257;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+       font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{width:100%;max-width:none;padding:32px 40px 80px;}
+  h1{font-size:30px;font-weight:800;margin:0 0 4px;letter-spacing:-.5px;}
+  .sub{color:var(--mut);font-size:15px;margin:0 0 6px;}
+  .stamp{color:var(--faint);font-size:13px;margin:0 0 28px;}
+  h2{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
+     color:var(--faint);margin:40px 0 14px;border-bottom:1px solid var(--line);padding-bottom:8px;}
+  .lead{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 24px;margin:0 0 8px;}
+  .lead b{color:#fff}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;}
+  .card h3{margin:0 0 10px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:10px;}
+  .tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
+       padding:3px 9px;border-radius:999px;white-space:nowrap;}
+  .t-ok{background:var(--okbg);color:var(--ok);border:1px solid var(--okline);}
+  .t-pend{background:var(--pendbg);color:var(--pend);border:1px solid var(--pendline);}
+  .t-crit{background:var(--critbg);color:var(--crit);border:1px solid var(--critline);}
+  .t-info{background:var(--infobg);color:var(--info);border:1px solid var(--infoline);}
+  .card p{margin:6px 0;color:var(--mut);font-size:14px;}
+  .card .ev{color:var(--faint);font-size:12.5px;margin-top:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .phase{display:flex;gap:18px;background:var(--card);border:1px solid var(--line);
+         border-radius:14px;padding:18px 22px;margin-bottom:12px;align-items:flex-start;}
+  .phase .n{font-size:34px;font-weight:800;color:var(--faint);min-width:46px;line-height:1;}
+  .phase.done{border-left:4px solid var(--ok);}
+  .phase.now{border-left:4px solid var(--pend);}
+  .phase.later{border-left:4px solid var(--info);}
+  .phase .body{flex:1;}
+  .phase h3{margin:0 0 4px;font-size:17px;font-weight:700;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .phase .what{color:var(--mut);margin:4px 0;}
+  .phase .det{color:var(--faint);font-size:13px;margin:6px 0 0;}
+  .pronto{color:var(--ok);font-size:13px;margin-top:6px;}
+  .now .pronto{color:var(--pend);}
+  .later .pronto{color:var(--info);}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  th,td{text-align:left;padding:13px 16px;border-bottom:1px solid var(--line);vertical-align:top;font-size:14px;}
+  th{color:var(--faint);text-transform:uppercase;font-size:11px;letter-spacing:1px;}
+  tr:last-child td{border-bottom:none;}
+  td b{color:#fff}
+  .rec{color:var(--ok);font-weight:600;}
+  .foot{margin-top:36px;color:var(--faint);font-size:13px;border-top:1px solid var(--line);padding-top:18px;}
+  .pill{display:inline-block;background:var(--card2);border:1px solid var(--line);border-radius:8px;
+        padding:2px 8px;font-size:12.5px;color:var(--mut);margin:2px 4px 2px 0;font-family:ui-monospace,Menlo,monospace;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>O .exe nativo do cockpit — plano final</h1>
+  <p class="sub">Um único aplicativo Windows rodando no notebook do carro que faz o papel completo do cockpit do piloto E captura os dados. Sem a aplicação web.</p>
+  <p class="stamp">P1 Fast · 22/06/2026 · estado verificado no código de hoje · ambiente: desenvolvimento · produção não tocada</p>
+
+  <div class="lead">
+    <p style="margin:0 0 8px"><b>A verdade de hoje, em uma frase:</b> a parte de <b>capturar os dados</b> já está construída e provada por teste em desenvolvimento (lê o motor pela USB, grava no notebook sem perder nada, e manda ao vivo pra nuvem com fila que reenvia). O que falta pra virar o aplicativo que você pediu são <b>duas coisas</b>: (1) a <b>tela do piloto</b>, que já está desenhada igual ao mockup aprovado, ainda roda em <b>modo demonstração</b> — precisa ser ligada ao dado real; e (2) juntar tela + captura num <b>único .exe instalável</b> que abre em tela cheia no notebook.</p>
+    <p style="margin:0"><b>Falta física que destrava tudo:</b> plugar o carro e capturar um arquivo real na bancada. Hoje tudo foi provado por teste automático e conectando na nuvem de verdade num canal de teste — mas a porta USB com o carro só prova no notebook.</p>
+  </div>
+
+  <h2>Onde estamos — verificado no código (22/06)</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Ler o motor pela USB <span class="tag t-ok">Pronto em DEV</span></h3>
+      <p>O leitor que captou o carro em campo foi trazido pra dentro do programa. Lê pela USB (decisão sua de 21/06), com religação automática.</p>
+      <p class="ev">T3000RIBlockParser.cs (300 l) · SerialPortT3000UsbChannel.cs · provado por teste</p>
+    </div>
+    <div class="card">
+      <h3>Gravar no notebook sem perder <span class="tag t-ok">Pronto em DEV</span></h3>
+      <p>Cada amostra é salva em disco na hora, antes e independente da internet. Sobrevive a queda de energia/rede, relê sem buraco, alarme se o disco falhar.</p>
+      <p class="ev">SessionRecorder.cs (446 l) · SessionIntegrity.cs · 188 testes verdes</p>
+    </div>
+    <div class="card">
+      <h3>Mandar ao vivo pra nuvem com fila <span class="tag t-ok">Pronto em DEV</span></h3>
+      <p>Envia no formato exato do app/Command Box. Quando a internet cai, segura e reenvia ao voltar (conserta o "carro só na tela local"). Trava dura: não toca o canal real sem autorização.</p>
+      <p class="ev">LivePublisher.cs (214 l) · SupabaseRealtimeChannel.cs · prova real: 30 amostras na nuvem em canal de TESTE, 0 erro</p>
+    </div>
+    <div class="card">
+      <h3>A tela do cockpit (visual) <span class="tag t-pend">Demonstração</span></h3>
+      <p>A casca já está desenhada em app nativo igual ao mockup aprovado (luz de marcha, halo, ápice, delta gigante, barra de stint). Mas troca cenas fixas a cada 2 segundos — <b>não está ligada ao dado real</b>.</p>
+      <p class="ev">MainWindow.xaml(.cs) · ainda roda _demoTimer / DemoScenes</p>
+    </div>
+    <div class="card">
+      <h3>Virar UM .exe instalável <span class="tag t-pend">Falta</span></h3>
+      <p>A tela e o capturador ainda nem estão na mesma "solução" do programa. O empacotamento do app gráfico já falhou 3x no robô de montagem (CI).</p>
+      <p class="ev">.sln só tem Domain/Tests/LiveDemo (verificado)</p>
+    </div>
+    <div class="card">
+      <h3>GPS dentro do .exe <span class="tag t-pend">Falta</span></h3>
+      <p>Hoje o GPS é lido pelo navegador. Pra ápice, freio e delta serem reais no app nativo, o GPS precisa entrar no .exe. Tem uma decisão sua aqui (abaixo).</p>
+      <p class="ev">parser do GPS hoje vive solto no HTML, sem teste</p>
+    </div>
+  </div>
+
+  <h2>O plano — fases em ordem de dependência</h2>
+
+  <div class="phase done">
+    <div class="n">0</div>
+    <div class="body">
+      <h3>Provar a captura no carro de verdade <span class="tag t-crit">Depende do carro</span></h3>
+      <p class="what">Plugar o carro na bancada e capturar 1 arquivo real, confirmando que o que o programa lê bate com o carro.</p>
+      <p class="det">Tudo abaixo foi provado por teste automático e na nuvem (canal de teste). Esta é a única coisa que <b>só prova com o carro físico no notebook</b> — e ela destrava a confiança em tudo.</p>
+      <p class="pronto">Pronto quando: existe ao menos 1 captura real do carro e ela confere com o leitor.</p>
+    </div>
+  </div>
+
+  <div class="phase done">
+    <div class="n">1·2·3</div>
+    <div class="body">
+      <h3>Captura ponta a ponta <span class="tag t-ok">Construído e provado em DEV</span></h3>
+      <p class="what">Ler o motor pela USB → gravar no notebook sem perder → mandar ao vivo pra nuvem com fila de reenvio.</p>
+      <p class="det">Hoje isso roda como programa de <b>linha de comando</b> (modos <span class="pill">--gravar</span> <span class="pill">--conferir</span> <span class="pill">--nuvem</span>). É o miolo das "funções de capturar os dados" que você pediu — já pronto, falta só a prova física da Fase 0 e o empacotamento da Fase 5.</p>
+      <p class="pronto">Pronto quando: com a internet caindo e voltando, a nuvem recebe TODAS as amostras do período. — atendido em DEV.</p>
+    </div>
+  </div>
+
+  <div class="phase now">
+    <div class="n">4</div>
+    <div class="body">
+      <h3>Tela do piloto ao vivo de verdade <span class="tag t-pend">Próximo — coração do pedido</span></h3>
+      <p class="what">Tirar a demonstração e ligar a tela nativa ao dado real do motor: luz de marcha no rpm certo do Bubi (pico de potência 6.050), alertas graves do agora e bolinha do ápice — sem depender da nuvem.</p>
+      <p class="det">É o que falta pra tela "fazer o papel do cockpit do piloto". A inteligência (3 modos de luz de marcha com aprendizado, catálogo de alertas) já existe na referência e é portada pra cá. A demonstração fica guardada atrás de um botão de teste.</p>
+      <p class="pronto">Pronto quando: na pista o piloto vê a luz disparar no rpm certo e os alertas reais; sem internet, o cockpit continua 100%.</p>
+    </div>
+  </div>
+
+  <div class="phase now">
+    <div class="n">5</div>
+    <div class="body">
+      <h3>Empacotar num único .exe instalável <span class="tag t-pend">Próximo — é o que torna "nativo na máquina"</span></h3>
+      <p class="what">Pôr a tela e o capturador na mesma solução e gerar um .exe que instala e abre sozinho no notebook, em tela cheia (modo kiosk, paisagem, tela 10,5" invertida no painel).</p>
+      <p class="det">É exatamente o "aplicativo nativo rodando na máquina" que você pediu, em vez da página web. Atenção: o empacotamento do app gráfico já falhou 3 vezes no robô de montagem — pode exigir investigação de ferramenta. Só se prova no Windows real.</p>
+      <p class="pronto">Pronto quando: o .exe instala e abre no notebook mostrando o cockpit ao vivo em tela cheia, sem ambiente de programador.</p>
+    </div>
+  </div>
+
+  <div class="phase later">
+    <div class="n">6</div>
+    <div class="body">
+      <h3>GPS dentro do .exe (ápice, freio e delta reais) <span class="tag t-info">Logo depois</span></h3>
+      <p class="what">Trazer o GPS pra dentro do programa pra ápice/freio/delta virem de telemetria real, comparada com a melhor volta histórica.</p>
+      <p class="det">Tem uma decisão sua: GPS nativo no .exe (mais robusto) ou continuar lendo do navegador. O leitor do GPS precisa sair do HTML pra um módulo testável de qualquer jeito.</p>
+      <p class="pronto">Pronto quando: a bolinha do ápice e o freio reagem ao GPS real na pista.</p>
+    </div>
+  </div>
+
+  <div class="phase later">
+    <div class="n">7</div>
+    <div class="body">
+      <h3>Vídeo do Osmo + relógio comum <span class="tag t-info">Depois do caminho crítico</span></h3>
+      <p class="what">Gravar o vídeo localmente no notebook e casar com a telemetria pelo mesmo relógio.</p>
+      <p class="det">Não bloqueia o motor de gravação; o vídeo hoje funciona via transmissão ao vivo. Entra por último.</p>
+      <p class="pronto">Pronto quando: cada volta casa com o vídeo pelo relógio do notebook, e o vídeo existe local mesmo sem internet.</p>
+    </div>
+  </div>
+
+  <h2>Decisões que dependem de você</h2>
+  <table>
+    <tr><th style="width:22%">Tema</th><th>A escolha</th><th style="width:34%">Recomendação</th></tr>
+    <tr>
+      <td><b>Prazo / o que entra antes da pista</b><br><span style="color:var(--faint)">negócio</span></td>
+      <td>Mínimo viável já pronto (captura: Fases 1-3) e cockpit/GPS depois — <b>ou</b> pacote completo (Fases 1-6, com cockpit ao vivo e GPS) antes de ir à pista.</td>
+      <td class="rec">Mínimo viável pra próxima pista (já está pronto): resolve não perder dado. Cockpit ao vivo (Fase 4) e GPS (Fase 6) entram logo em seguida.</td>
+    </tr>
+    <tr>
+      <td><b>GPS no .exe</b><br><span style="color:var(--faint)">arquitetura</span></td>
+      <td>GPS nativo dentro do .exe — <b>ou</b> continuar lendo pelo navegador e o .exe consome dele.</td>
+      <td class="rec">Nativo no .exe: a arquitetura definitiva exige o programa robusto sem depender de aba de navegador que pode suspender. Entra na Fase 6.</td>
+    </tr>
+    <tr>
+      <td><b>Substituir o publicador web</b><br><span style="color:var(--faint)">negócio</span></td>
+      <td>O .exe assume sozinho o envio pra nuvem — <b>ou</b> os dois coexistem enquanto o .exe amadurece.</td>
+      <td class="rec">Coexistir no curto prazo; o .exe só assume depois de validado na pista. Reduz risco no canal de produção.</td>
+    </tr>
+    <tr>
+      <td><b>Vídeo do Osmo</b><br><span style="color:var(--faint)">operação</span></td>
+      <td>Vídeo entra depois do motor/gravação/nuvem — <b>ou</b> já no escopo do .exe agora.</td>
+      <td class="rec">Depois. O furo central é capturar/gravar/transmitir o dado sem perda; o vídeo hoje já funciona por outro caminho.</td>
+    </tr>
+  </table>
+
+  <h2>Riscos a vigiar</h2>
+  <div class="grid">
+    <div class="card"><h3 style="font-size:15px">Depende do carro</h3><p>Sem plugar o carro (Fase 0), o decodificador do motor não fecha com 100% de segurança. É o gargalo de cronograma.</p></div>
+    <div class="card"><h3 style="font-size:15px">Empacotamento do app gráfico</h3><p>A geração do .exe gráfico já falhou 3x no robô de montagem. Pode exigir investigação de ferramenta antes de existir um binário distribuível.</p></div>
+    <div class="card"><h3 style="font-size:15px">Tudo é Windows</h3><p>USB, GPS por Bluetooth e o app nativo só se provam no Windows real do notebook — não dá pra validar de verdade no Mac.</p></div>
+    <div class="card"><h3 style="font-size:15px">Canal de produção é sagrado</h3><p>O canal ao vivo não tem trava de banco; o .exe já tem guarda dura (só toca o canal real com autorização). Manter assim.</p></div>
+  </div>
+
+  <p class="foot">Documento de planejamento. Nada foi alterado no produto nem na nuvem ao gerá-lo. Plano-fonte anterior (8 fases): relatorios/plano-motor-gravacao-windows-2026-06-21.html. Este consolida e atualiza com o estado real de 22/06.</p>
+
+</div>
+</body>
+</html>
