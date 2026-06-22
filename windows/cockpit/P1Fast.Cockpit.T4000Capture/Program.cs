@@ -44,6 +44,7 @@ internal static class Program
         //   --gravar    liga o leitor USB ao gravador blindado (sessão pronta pro app)
         //   --conferir  relê as sessões gravadas e reporta integridade
         if (args.Any(a => a is "--conferir" or "--verificar")) return RunConferirMode(args);
+        if (args.Any(a => a is "--nuvem-teste"))               return RunNuvemTesteMode(args);
         if (args.Any(a => a is "--gravar"   or "--record"))    return RunGravarMode(args);
 
         // Sempre roda o diagnóstico USB antes de qualquer coisa. Mostra TODOS
