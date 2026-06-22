@@ -252,4 +252,68 @@ if (nn >= 6)
     Console.WriteLine($"Frase do coach na tela: \"{coach?.Texto ?? "(nenhuma)"}\"  ->  cockpit.acao = \"{cockpit.Get().Acao.Texto}\"");
     Console.WriteLine("   (passagem mais lenta SIMULADA: só há 1 volta real; o valor real vem com uma 2ª volta mais rápida)");
 }
+
+// ── SEGMENTAÇÃO: "em qual curva o carro está" na volta real ─────
+Console.WriteLine();
+Console.WriteLine("== EM QUAL CURVA O CARRO ESTÁ (8 curvas de Brasília) ==");
+var barrasPath = "/Users/imac/Projetos/P1 Fast/_design-reference/BARRAS-BRASILIA-FLAVIO-APROVADO-2026-05-27.json";
+if (File.Exists(barrasPath))
+{
+    using var bdoc = JsonDocument.Parse(File.ReadAllText(barrasPath));
+    PontoGps Pt(JsonElement e) => new(e.GetProperty("lat").GetDouble(), e.GetProperty("lng").GetDouble());
+    var segs = new List<TrechoSegmento>();
+    foreach (var tr in bdoc.RootElement.GetProperty("trechos").EnumerateArray())
+    {
+        var ent = tr.GetProperty("entrada_line_gps");
+        var sai = tr.GetProperty("saida_line_gps");
+        segs.Add(new TrechoSegmento(
+            tr.GetProperty("id").GetString() ?? tr.GetProperty("nome").GetString()!,
+            tr.GetProperty("nome").GetString() ?? "?",
+            new LinhaGps(Pt(ent.GetProperty("a")), Pt(ent.GetProperty("b"))),
+            Pt(tr.GetProperty("apice_gps")),
+            new LinhaGps(Pt(sai.GetProperty("a")), Pt(sai.GetProperty("b")))));
+    }
+    var nomePorId = segs.ToDictionary(s => s.Id, s => s.Nome);
+
+    // pontos em movimento (>=3 m) com velocidade REAL tirada do GPS
+    var gpsDet = new List<AmostraGps>();
+    PontoGps? prev = null; double prevT = 0;
+    for (var k = 0; k < gpsValidos.Count; k++)
+    {
+        var p = gpsValidos[k]; var tw = gpsT[k];
+        if (prev is null || Ghost.DistMeters(prev, p) >= 3)
+        {
+            double kmh = 0;
+            if (prev is not null) { var dtS = Math.Max(0.001, (tw - prevT) / 1000.0); kmh = Ghost.DistMeters(prev, p) / dtS * 3.6; }
+            gpsDet.Add(new AmostraGps(p.Lat, p.Lng, kmh, tw));
+            prev = p; prevT = tw;
+        }
+    }
+
+    var entradas = new List<string>();
+    int apices = 0, saidas = 0, freadas = 0, resyncs = 0;
+    var det = new TrechoDetector(segs, ev =>
+    {
+        switch (ev.Type)
+        {
+            case "entrada-cruzou": entradas.Add(nomePorId.GetValueOrDefault(ev.SegmentId, ev.SegmentId)); break;
+            case "apice-cruzou":   apices++; break;
+            case "saida-cruzou":   saidas++; break;
+            case "freada-iniciou": freadas++; break;
+            case "resync":         resyncs++; break;
+        }
+    });
+    foreach (var s in gpsDet) det.IngestGps(s);
+
+    Console.WriteLine($"Pontos em movimento alimentados: {gpsDet.Count}");
+    Console.WriteLine($"Curvas distintas reconhecidas: {entradas.Distinct().Count()} de {segs.Count}");
+    Console.WriteLine($"Eventos: {entradas.Count} entradas, {apices} ápices, {saidas} saídas, {freadas} freadas, {resyncs} ressincronizações");
+    Console.WriteLine("Sequência de curvas que o carro percorreu (entradas):");
+    Console.WriteLine("   " + (entradas.Count > 0 ? string.Join(" -> ", entradas.Take(20)) : "(nenhuma)"));
+    Console.WriteLine("   (o detector se vira sozinho: se perde uma curva, reengata na curva onde o carro REALMENTE está)");
+}
+else
+{
+    Console.WriteLine("   Arquivo das curvas de Brasília não encontrado.");
+}
 return 0;
