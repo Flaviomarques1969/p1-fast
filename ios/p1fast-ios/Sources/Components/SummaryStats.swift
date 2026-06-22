@@ -15,6 +15,9 @@ struct StatItem: Identifiable {
     let id = UUID()
     let value: String
     let label: String
+    /// Ação ao tocar no número. Quando presente, o card vira botão (abre a
+    /// tela do componente). Nil = card só visual (comportamento antigo).
+    var onTap: (() -> Void)? = nil
 }
 
 struct SummaryStats: View {
