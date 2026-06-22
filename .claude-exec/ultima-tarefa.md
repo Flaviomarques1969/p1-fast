@@ -69,13 +69,32 @@ Pronto e testado na volta real de 2:39: (1) luz de marcha Bubi; (2) mensagens/al
 sensor ausente + trava "carro andando"; (3) bolinha do ápice (ghost); (4) delta por trecho + frases do
 coach. Tudo no app nativo (C#), 249 testes.
 
-## Limites honestos / próximos passos
-- A passagem mais lenta do delta é SIMULADA (só há 1 volta real). Valor real = 2ª volta mais rápida.
-- Segmentação automática por curva (trecho-detector: saber em qual das 8 curvas o carro está) NÃO
-  portada — usei uma curva única em janela. É o que falta pra rodar a volta inteira curva a curva.
-- Incremento 5 = ligar tudo no MainWindow (WinUI) e tirar a demonstração: CÓDIGO eu escrevo no Mac, mas
-  a PROVA VISUAL (tela acendendo) e o empacotamento do .exe (Fase 5) só validam no notebook Windows.
-- Gate "carro em movimento" no cálculo de ápice (achado do Inc. 3).
+## INCREMENTO 5 — SEGMENTAÇÃO POR CURVA ("em qual curva o carro está"), FEITO E PROVADO ("sim")
+- NOVO Domain/TrechoDetector.cs — port fiel de trecho-detector.js: SideOfLine/CaminhoCruzaLinha +
+  a classe TrechoDetector (entrada/freada/ápice/saída por cruzamento das barras; vigia paralelo de
+  TODAS as entradas que RESSINCRONIZA na curva onde o carro está se perde uma). LinhaGps/TrechoSegmento/
+  AmostraGps/TrechoFase/TrechoEvento.
+- NOVO Domain.Tests/TrechoDetectorTests.cs (4) — curva sintética entrada->ápice->saída em ordem;
+  engata na próxima curva; ressync engata na curva certa quando pula; sem curvas lança.
+- ESTENDIDO SessaoReplay: carrega as 8 curvas reais (_design-reference/BARRAS-BRASILIA-FLAVIO-APROVADO-
+  2026-05-27.json) e passa o GPS da volta de 2:39 (em movimento, velocidade real do GPS) pelo detector.
+- PROVA REAL: reconheceu AS 8 CURVAS de Brasília, na ORDEM certa (CURVA 2 -> JUNÇÃO -> BRUXA -> RETA
+  OPOSTA -> PLACAR -> "S" -> VITÓRIA -> CURVA 01, repetindo nas voltas). 18 entradas, 18 ápices, 17
+  saídas, 17 freadas, 7 ressincronizações. Bateria completa 253 aprovados / 1 falha (PAN_04). Zero regressão.
+
+## CÉREBRO DA TELA NATIVA — COMPLETO (Fase 4), tudo provado na volta real de 2:39
+(1) luz de marcha Bubi · (2) mensagens/alertas (sensor ausente + trava "andando") · (3) bolinha do
+ápice · (4) delta por trecho + frases do coach · (5) em qual curva o carro está (8/8). 253 testes.
+Novos arquivos no app nativo: CockpitState/Model parity, AlertasCriticos, Ghost, DeltaCoach,
+TrechoDetector + SessaoReplay (ferramenta de prova, fora da .sln).
+
+## FALTA (precisa do NOTEBOOK WINDOWS — não dá no Mac)
+- Ligar tudo no MainWindow (WinUI) e tirar a demonstração: o CÓDIGO eu escrevo aqui, mas a PROVA VISUAL
+  (a tela acendendo) só no Windows.
+- Empacotar o .exe instalável (Fase 5): UI + Capture na .sln + resolver o empacotamento (falhou 3x).
+## Calibração futura (decisão, não bug)
+- Passagem mais lenta do delta é SIMULADA (só há 1 volta) → valor real com 2ª volta mais rápida.
+- Gate "carro em movimento" no cálculo de ápice; debounce nos alertas de mistura (tip-in).
 
 ---
 
