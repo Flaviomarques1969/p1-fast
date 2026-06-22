@@ -97,7 +97,7 @@ public class AlertasCriticosTests
     public void ALR_07_Mensagem_principal_pega_a_maior_gravidade()
     {
         var ac = new AlertasCriticos();
-        ac.IngestT4000(new AmostraAlerta { WaterTempC = 85, BatteryV = 11.0 }); // QUENTE(super) + BATERIA(atencao)
+        ac.IngestT4000(new AmostraAlerta { WaterTempC = 85, BatteryV = 11.0, Rpm = 4000 }); // QUENTE(super) + BATERIA(atencao)
         var m = ac.GetMensagemPrincipal();
         Assert.NotNull(m);
         Assert.Equal("MOTOR_QUENTE", m!.Id);
