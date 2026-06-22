@@ -311,6 +311,27 @@ if (File.Exists(barrasPath))
     Console.WriteLine("Sequência de curvas que o carro percorreu (entradas):");
     Console.WriteLine("   " + (entradas.Count > 0 ? string.Join(" -> ", entradas.Take(20)) : "(nenhuma)"));
     Console.WriteLine("   (o detector se vira sozinho: se perde uma curva, reengata na curva onde o carro REALMENTE está)");
+
+    // ── CAPSTONE: a sessão inteira pelo MAESTRO (tudo junto) ────────
+    Console.WriteLine();
+    Console.WriteLine("== MAESTRO: o cérebro inteiro comandando a tela com a sessão real ==");
+    var telaState = new CockpitState();
+    var maestro = new CockpitOrchestrator(telaState, segs);
+    var frasesCoach = new List<string>();
+    string ultimaAcao = "";
+    telaState.OnChange((cur, _, ks) =>
+    {
+        if (ks.Contains("acao") && cur.Acao.Texto != ultimaAcao && cur.Acao.Texto != "REGISTRANDO" && !string.IsNullOrEmpty(cur.Acao.Texto))
+            frasesCoach.Add(cur.Acao.Texto);
+        if (ks.Contains("acao")) ultimaAcao = cur.Acao.Texto;
+    });
+    foreach (var s in gpsDet) maestro.IngestGps(s); // GPS real -> curva + bolinha + coach
+    Console.WriteLine($"Curvas que viraram referência (1ª passagem): {maestro.CurvasComReferencia} de {segs.Count}");
+    Console.WriteLine($"Frases REAIS do coach na 2ª passagem (2ª volta vs 1ª, SEM simulação): {frasesCoach.Count}");
+    if (frasesCoach.Count > 0)
+        Console.WriteLine("   " + string.Join(" | ", frasesCoach.Take(12)));
+    Console.WriteLine($"Estado final da tela: acao=\"{telaState.Get().Acao.Texto}\"  apex.distM={telaState.Get().Apex.Apice.DistM:0.0}m");
+    Console.WriteLine("   (a tela observa esse mesmo estado; no Windows, o maestro o muta ao vivo e a tela acende)");
 }
 else
 {
