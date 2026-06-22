@@ -62,7 +62,7 @@ public class CockpitOrchestratorTests
         Assert.Equal("REGISTRANDO", c.Get().Acao.Texto);
 
         var volta2 = new List<AmostraGps>();
-        UmaVolta(volta2, kmhBaixo: 60, ref t); // mais devagar na curva
+        t = UmaVolta(volta2, kmhBaixo: 60, t); // mais devagar na curva
         foreach (var s in volta2) orq.IngestGps(s);
 
         // 2ª passagem: comparou com a 1ª e trocou pra uma frase do coach (perdeu tempo).
