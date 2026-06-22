@@ -171,6 +171,8 @@ public sealed class CockpitOrchestrator
             _cockpit.SetDelta(FormatDelta(delta.DeltaTotalS), tone);
             _cockpit.SetTrechoStatus(delta.DeltaTotalS < -0.05 ? TrechoStatus.RecordeStint
                 : delta.DeltaTotalS > 0.05 ? TrechoStatus.PiorStint : TrechoStatus.Neutro);
+            _estadoTrecho[segId] = delta.DeltaTotalS < -0.05 ? "faster"
+                : delta.DeltaTotalS > 0.05 ? "slower" : "neutral";
         }
         else
         {
