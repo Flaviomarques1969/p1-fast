@@ -371,9 +371,9 @@ if (File.Exists(barrasPath))
         double lapEnd = eventos2.Count > 0 ? eventos2[^1].T : 0;
         double seam = -1; // tWall onde a volta 2 começa
         bool semComp = false;     // true = sem comparação (volta isolada)
-        bool janela = false;      // true = alimenta só a janela escolhida
-        if (duas && cruz.Count >= 3) { lapStart = cruz[0]; lapEnd = cruz[2]; seam = cruz[1]; janela = true; }
-        else if (voltaN >= 1 && cruz.Count > voltaN) { lapStart = cruz[voltaN - 1]; lapEnd = cruz[voltaN]; semComp = true; janela = true; }
+        bool soDaJanela = false;      // true = alimenta só a janela escolhida
+        if (duas && cruz.Count >= 3) { lapStart = cruz[0]; lapEnd = cruz[2]; seam = cruz[1]; soDaJanela = true; }
+        else if (voltaN >= 1 && cruz.Count > voltaN) { lapStart = cruz[voltaN - 1]; lapEnd = cruz[voltaN]; semComp = true; soDaJanela = true; }
         Console.WriteLine($"Cruzamentos: {cruz.Count} | modo: {(duas ? $"DUAS VOLTAS ({(lapEnd - lapStart) / 1000:0.0}s)" : voltaN >= 1 ? $"volta #{voltaN}" : "sessao inteira")}");
 
         var frames = new List<string>();
@@ -381,7 +381,7 @@ if (File.Exists(barrasPath))
         string curva = "";
         foreach (var e in eventos2)
         {
-            if (janela && (e.T < lapStart || e.T > lapEnd)) continue; // só a janela escolhida
+            if (soDaJanela && (e.T < lapStart || e.T > lapEnd)) continue; // só a janela escolhida
             if (e.Motor) { maestroT.IngestMotor(e.Rpm, e.A!); lastRpm = e.Rpm; lastMotorT = e.T; }
             else { maestroT.IngestGps(e.G!); lastGpsT = e.T; }
             curva = maestroT.CurvaAtualNome ?? curva;

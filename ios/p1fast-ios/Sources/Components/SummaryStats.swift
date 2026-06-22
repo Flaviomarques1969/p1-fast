@@ -54,6 +54,10 @@ private struct StatCell: View {
                 .tracking(-0.4) // -0.02em em 22pt
                 .foregroundStyle(Color.text)
                 .lineLimit(1)
+                // Tempo de volta ("1:42.3") é mais largo que uma contagem ("7")
+                // e estourava a célula de 1/4 de tela. Encolhe pra caber em vez
+                // de cortar/sair da moldura.
+                .minimumScaleFactor(0.6)
             Text(item.label.uppercased())
                 .font(.system(size: 10, weight: .medium))
                 .tracking(0.6) // 0.06em em 10pt
