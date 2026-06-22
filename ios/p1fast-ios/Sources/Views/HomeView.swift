@@ -409,6 +409,19 @@ private struct FilledContent: View {
         }
     }
 
+    /// Mesmo padrão do eventoLink: a linha do carro vira link pra tela do
+    /// carro (CarroHubView) quando há id real; com dado de exemplo
+    /// (carroId vazio) fica estática.
+    @ViewBuilder
+    private func carroLink<Content: View>(_ c: CarroMock, @ViewBuilder _ row: () -> Content) -> some View {
+        if !c.carroId.isEmpty {
+            NavigationLink(value: HomeNavTarget.carroHub(carroId: c.carroId)) { row() }
+                .buttonStyle(.plain)
+        } else {
+            row()
+        }
+    }
+
     /// "Hoje em Brasília" se há evento ativo, senão "Próximo evento em N dias",
     /// senão "Pronto pra primeira pedalada".
     private func headerStatusLine(data: HomeData) -> AttributedString {
