@@ -366,6 +366,7 @@ if (File.Exists(barrasPath))
                 ultimoFrame = rel;
                 var st = telaC.Get();
                 var ap = st.Apex.Apice;
+                var apx = st.Apex;
                 frames.Add("{" +
                     $"\"t\":{(rel / 1000).ToString("0.0", inv)}," +
                     $"\"rpm\":{lastRpm.ToString("0", inv)}," +
@@ -375,6 +376,11 @@ if (File.Exists(barrasPath))
                     $"\"acao\":{J(st.Acao.Texto)},\"acaoTone\":{J(st.Acao.Tone.ToString())}," +
                     $"\"msg\":{J(st.Message?.Texto ?? "")},\"msgTipo\":{J(st.Message?.Tipo.ToString() ?? "")}," +
                     $"\"apiceDist\":{Num(ap.DistM)},\"apiceAng\":{Num(ap.AngleDeg)},\"apiceEstado\":{J(ap.Estado.ToString())}," +
+                    // 4 pontos do ápice com VELOCIDADE REAL do GPS no cruzamento
+                    $"\"entKmh\":{Num(apx.Entrada.ValorKmh)},\"entEst\":{J(apx.Entrada.Estado.ToString())}," +
+                    $"\"freM\":{Num(apx.Freio.AtualM)},\"freRef\":{Num(apx.Freio.RefM)},\"freEst\":{J(apx.Freio.Estado.ToString())}," +
+                    $"\"apiKmh\":{Num(apx.Apice.ValorKmh)},\"apiEst\":{J(apx.Apice.Estado.ToString())}," +
+                    $"\"saiKmh\":{Num(apx.Saida.ValorKmh)},\"saiEst\":{J(apx.Saida.Estado.ToString())}," +
                     $"\"curva\":{J(curva)}" +
                     "}");
             }
