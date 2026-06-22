@@ -161,7 +161,7 @@ function fecharPassagem(p) {
 }
 
 function aplicarGps(p) {
-  if (typeof p.kmh === 'number') ultKmh = p.kmh;
+  if (typeof p.kmh === 'number' && p.kmh < 200) ultKmh = p.kmh;  // descarta pico de GPS
   const pos = { lat: p.lat, lng: p.lon };
   if (!curvaAtiva) {
     const { best, bd } = curvaMaisProxima(pos);
