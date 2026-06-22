@@ -393,14 +393,23 @@ if (File.Exists(barrasPath))
                 var mVivo = e.T - lastMotorT < 2000;
                 var shMode = mVivo ? st.Shift.Mode.ToString() : "Off";
                 var shLevel = mVivo ? st.Shift.Level : 0;
+                // volta isolada: sem comparação (recorde/diferença/coach) — não há referência válida.
+                var trechoOut = semComp ? "Neutro" : st.TrechoStatus.ToString();
+                var deltaOut = semComp ? "" : st.Delta.Value;
+                var deltaTOut = semComp ? "Neutro" : st.Delta.Tone.ToString();
+                var acaoOut = semComp ? "" : st.Acao.Texto;
+                var acaoTOut = semComp ? "Neutro" : st.Acao.Tone.ToString();
+                // mensagem vem do motor (lambda etc.): só com motor VIVO, nunca dado velho.
+                var msgOut = mVivo ? (st.Message?.Texto ?? "") : "";
+                var msgTOut = mVivo && st.Message is not null ? st.Message.Tipo.ToString() : "";
                 frames.Add("{" +
                     $"\"t\":{(rel / 1000).ToString("0.0", inv)}," +
                     $"\"rpm\":{(mVivo ? lastRpm.ToString("0", inv) : "null")}," +
                     $"\"shiftMode\":{J(shMode)},\"shiftLevel\":{shLevel}," +
-                    $"\"trecho\":{J(st.TrechoStatus.ToString())}," +
-                    $"\"delta\":{J(st.Delta.Value)},\"deltaTone\":{J(st.Delta.Tone.ToString())}," +
-                    $"\"acao\":{J(st.Acao.Texto)},\"acaoTone\":{J(st.Acao.Tone.ToString())}," +
-                    $"\"msg\":{J(st.Message?.Texto ?? "")},\"msgTipo\":{J(st.Message?.Tipo.ToString() ?? "")}," +
+                    $"\"trecho\":{J(trechoOut)}," +
+                    $"\"delta\":{J(deltaOut)},\"deltaTone\":{J(deltaTOut)}," +
+                    $"\"acao\":{J(acaoOut)},\"acaoTone\":{J(acaoTOut)}," +
+                    $"\"msg\":{J(msgOut)},\"msgTipo\":{J(msgTOut)}," +
                     $"\"apiceDist\":{Num(ap.DistM)},\"apiceAng\":{Num(ap.AngleDeg)},\"apiceEstado\":{J(ap.Estado.ToString())}," +
                     // 4 pontos do ápice com VELOCIDADE REAL do GPS no cruzamento
                     $"\"entKmh\":{Num(apx.Entrada.ValorKmh)},\"entEst\":{J(apx.Entrada.Estado.ToString())}," +
