@@ -873,6 +873,8 @@ extension HomeData {
         carrosTotal: 2,
         eventosTotal: 12,
         stintsTotal: 47,
+        voltasTotal: 158,        // TEMP-PROVA mapa 22/06 — reverter
+        melhorVoltaMs: 102345,   // TEMP-PROVA mapa: 1:42.3 — reverter
         eventoAtivoHoje: EventoMock(
             pista: "Brasília",
             pistaOficial: "Auto. Int. Nelson Piquet",
