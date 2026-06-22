@@ -178,6 +178,7 @@ public static class EnumMapping
 
     public static ApexEstado ApexEstadoFromString(string s) => s switch
     {
+        "pendente"  => ApexEstado.Pendente,
         "ok-melhor" => ApexEstado.OkMelhor,
         "ok-pior"   => ApexEstado.OkPior,
         _ => throw new ArgumentException($"apex.estado=\"{s}\" inválido", nameof(s)),
