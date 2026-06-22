@@ -88,10 +88,28 @@ coach. Tudo no app nativo (C#), 249 testes.
 Novos arquivos no app nativo: CockpitState/Model parity, AlertasCriticos, Ghost, DeltaCoach,
 TrechoDetector + SessaoReplay (ferramenta de prova, fora da .sln).
 
+## INCREMENTO 6 — MAESTRO + CÓDIGO DA TELA PRONTO ("sim")
+- NOVO Domain/CockpitOrchestrator.cs — o "maestro": junta as 5 peças e muta o CockpitState a partir do
+  dado real. IngestMotor(rpm, AmostraAlerta) -> luz Bubi + alertas; IngestGps(AmostraGps) -> curva atual
+  (TrechoDetector) + bolinha (Ghost) + ao fechar a curva, delta vs a 1ª passagem -> frase do coach (acao).
+  A 1ª passagem por cada curva vira REFERÊNCIA; da 2ª em diante é diferença REAL (a sessão tem 2+ voltas).
+- NOVO Domain.Tests/CockpitOrchestratorTests.cs (2) — motor liga luz+alerta; 2 voltas numa curva =
+  referência + diferença de tempo real + frase do coach.
+- TELA (WinUI, só compila/valida no WINDOWS): App.xaml.cs ganhou a opção --demo (a demonstração vira
+  opcional); MainWindow.xaml.cs — demonstração atrás de --demo + IniciarFeedReal(curvas) +
+  AlimentarMotor/AlimentarGps (a captura USB/replay chama esses no notebook; despacha pra thread da UI).
+  Mudança ADITIVA; sem --demo a tela espera o dado real. NÃO consegui compilar a UI no Mac (WinUI =
+  Windows-only) — declarado, não fingido.
+- CAPSTONE na sessão real (replay -> maestro): 8/8 curvas viraram referência; 5 frases REAIS do coach na
+  2ª passagem (RECORDE | BUSCAR LIMITE | MANTEVE LINHA — a 2ª volta foi mais rápida), SEM simulação.
+- Validação: bateria completa 255 aprovados / 1 falha (PAN_04). Domain build 0/0. Zero regressão.
+
 ## FALTA (precisa do NOTEBOOK WINDOWS — não dá no Mac)
-- Ligar tudo no MainWindow (WinUI) e tirar a demonstração: o CÓDIGO eu escrevo aqui, mas a PROVA VISUAL
-  (a tela acendendo) só no Windows.
+- Ver a tela ACENDER: ligar a captura USB/replay aos métodos AlimentarMotor/AlimentarGps + chamar
+  IniciarFeedReal(8 curvas). O código da tela está PRONTO; falta compilar a UI no Windows e rodar.
 - Empacotar o .exe instalável (Fase 5): UI + Capture na .sln + resolver o empacotamento (falhou 3x).
+- Elementos visuais novos no XAML (bolinha desenhada, barra de aprendizado, flash IA) — o estado já tem
+  os campos (Inc.1); falta desenhar na tela (Windows).
 ## Calibração futura (decisão, não bug)
 - Passagem mais lenta do delta é SIMULADA (só há 1 volta) → valor real com 2ª volta mais rápida.
 - Gate "carro em movimento" no cálculo de ápice; debounce nos alertas de mistura (tip-in).
