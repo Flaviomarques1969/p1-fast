@@ -64,14 +64,18 @@ Só vá pra pista quando ver, na janela do `--gravar`: `gravando=sim`, `motor` s
 ## DURANTE a sessão
 
 - A janela do `--gravar` mostra uma linha por segundo. O que importa:
-  - `gravando=sim` — está salvando.
+  - `gravando=sim` — está salvando no notebook.
   - `motor=` subindo — chegando amostra.
   - `descartadas=0` — nada se perdeu na escrita.
-  - Se aparecer **`*** ALARME: ... ***`**, alguma coisa travou a gravação
+  - `nuvem=online` — mandando ao vivo. Se a internet oscilar, vira `nuvem=offline-enfileirando`
+    e a `fila=` começa a subir: **isso é normal e seguro** — o dado fica guardado e, quando a
+    internet volta, vira `nuvem=online-drenando` e a fila esvazia sozinha (reenvia o período todo).
+  - Se aparecer **`*** ALARME: ... ***`**, alguma coisa travou a gravação no disco
     (`perdendo-amostras` = disco com erro; `parada-armazenamento` = disco morreu).
     Nesse caso: liberar espaço em disco / trocar de pasta com `--pasta` e reiniciar.
-- Se o cabo cair no meio, o programa **religa sozinho** e volta a gravar. Não precisa
-  fechar nada. O intervalo da queda fica marcado como "lacuna" (honesto, não inventa dado).
+- Se o cabo do carro cair, o programa **religa sozinho** e volta a gravar. Se a internet
+  cair, ele **reenvia sozinho** quando voltar. Não precisa fechar nada. O intervalo da queda
+  fica marcado como "lacuna" (honesto, não inventa dado).
 - **Não feche a janela do `--gravar` no meio.** Se o notebook reiniciar sozinho, o dado
   já gravado está salvo (o programa recupera a sessão no próximo boot).
 
