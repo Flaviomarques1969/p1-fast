@@ -50,6 +50,11 @@ struct CarroHubView: View {
             }
             .ignoresSafeArea(edges: .top)
         }
+        .overlay(alignment: .topLeading) {
+            botaoVoltar
+                .padding(.leading, Spacing.md)
+                .padding(.top, Spacing.sm)
+        }
         .overlay(alignment: .topTrailing) {
             botaoFechar
                 .padding(.trailing, Spacing.md)
