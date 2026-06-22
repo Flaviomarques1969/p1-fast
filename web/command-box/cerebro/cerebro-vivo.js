@@ -55,11 +55,16 @@ export function criarOrquestradorVivo(opts = {}) {
     if (typeof s.cronometroParcialS === 'number' && s.cronometroParcialS > 0) {
       lastParcialS = s.cronometroParcialS;
     }
-    // GPS → detector de chegada (aceita lng ou lon; carimbo = tWall/t da amostra)
+    // GPS → detector de chegada (aceita lng ou lon; carimbo = tWall/t da amostra).
+    // GATE DE QUALIDADE: só ponto confiável entra no detector. Ponto de fix ruim
+    // ou impreciso vira salto e FECHA VOLTA FALSA — achado na sessão real 21/06
+    // (4 cruzamentos no cru vs 3 no filtrado). Campos ausentes = caller já filtrou.
     if (detectorChegada) {
       const lat = s.lat;
       const lng = typeof s.lng === 'number' ? s.lng : s.lon;
-      if (typeof lat === 'number' && typeof lng === 'number') {
+      const fixOk = (s.fix == null) || (s.fix >= 3);
+      const haccOk = (s.hacc == null) || (s.hacc < 50);
+      if (typeof lat === 'number' && typeof lng === 'number' && fixOk && haccOk) {
         detectorChegada.ingestGps({ lat, lng, t: lastSampleT });
       }
     }
