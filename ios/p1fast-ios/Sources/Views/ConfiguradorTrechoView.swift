@@ -196,7 +196,9 @@ struct ConfiguradorTrechoView: View {
         .background(Color.surface)
         .preferredColorScheme(.dark)
         .navigationBarBackButtonHidden(true)
-        .onAppear { if !didLoad { loadPoints(); buildLookup() } }
+        // buildLookup ANTES de loadPoints: a semente do ápice precisa do
+        // traçado pronto pra já nascer na borda interna da curva.
+        .onAppear { if !didLoad { buildLookup(); loadPoints() } }
         .onChange(of: segmentId) { _ in
             // Troca de trecho via Anterior/Próximo: rehidrata pontos +
             // lookup do novo segment, reseta active pra Entrada e
@@ -207,8 +209,8 @@ struct ConfiguradorTrechoView: View {
             exitP = nil; existingBraking = nil
             active = .entry
             resetView()
-            loadPoints()
             buildLookup()
+            loadPoints()
         }
     }
 
