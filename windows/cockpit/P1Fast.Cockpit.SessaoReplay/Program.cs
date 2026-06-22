@@ -91,7 +91,10 @@ foreach (var a in root.GetProperty("amostras").EnumerateArray())
             var lon  = GetNum(gd, "lon") ?? 0;
             // mesmo filtro do detector de voltas: fix 3, hacc<50, dentro de Brasília
             if (fix >= 3 && hacc < 50 && lat >= -16.1 && lat <= -15.4 && lon >= -48.3 && lon <= -47.6)
+            {
                 gpsValidos.Add(new PontoGps(lat, lon));
+                gpsT.Add(a.TryGetProperty("tWall", out var twv) && twv.ValueKind == JsonValueKind.Number ? twv.GetDouble() : 0);
+            }
         }
         continue;
     }
