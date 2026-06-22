@@ -33,7 +33,28 @@ sozinho se o aviso do notebook falhar — sem mexer no visual e sem duplicar vol
 ## 7. Ambiente: desenvolvimento | 8. Produção protegida: sim | 9. Autorização produção: não
 ## 10. Evidência: não recebida | 11. Riscos: toca a tela aprovada — mitigo com backup, mudança
 ##     aditiva (só dados, não formato) e validação no navegador. Não vai pro ar.
-## 12. Status: iniciado
+## 12. Status: concluído em DEV (validação no navegador OK; falta o Flávio ver e autorizar ar)
+
+## Resultado
+- EDITADO _design-reference/mockup-command-box-vista-piloto.html (bloco do cérebro vivo, ~8144-8163):
+  (a) orquestrador recebe marcoChegada = linha de chegada oficial de Brasília; (b) o evento 'gps'
+  do canal agora é alimentado no cérebro (orq.feedSample), com carimbo de tempo de chegada se faltar.
+  Visual NÃO foi tocado (só a ligação de dados). Backup em
+  .claude-exec/backup-redundancia-gps-painel-2026-06-21/ (md5 original 6d88abb4...).
+- Efeito: a tela passa a fechar a volta pelo GPS por conta própria (redundância ao aviso do
+  notebook); a anti-duplicidade do cérebro evita contar a volta duas vezes.
+
+## Validação executada
+- 5 smokes do cérebro (vivo-gps, vivo, painel, extras, coach) → EXIT=0 cada (lógica intacta).
+- Servidor 8078 (node tools/atelier-server.mjs) → HTTP 200, serve "Command Box · Vista Piloto".
+  Tela aberta no navegador, carrega normal. (Comportamento ao vivo da redundância só aparece com
+  carro no canal OU com um replay num canal de TESTE — não fiz no canal de produção.)
+
+## Pendências reais
+- Flávio ver a tela e autorizar. NÃO foi pro ar (a tela vai pro ar pela TV do box / nuvem).
+- Demonstração ao vivo da redundância: dá pra provar com um replay de GPS num canal de TESTE
+  (?canal=teste...), sem tocar o canal de produção — faço se o Flávio quiser ver fechar a volta.
+- Marco fixo em Brasília; pra outras pistas, carregar do layout (anotado no código como TODO).
 
 ---
 
