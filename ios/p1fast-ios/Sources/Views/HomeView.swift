@@ -365,10 +365,18 @@ private struct FilledContent: View {
             .padding(.horizontal, Spacing.xs)
             .padding(.vertical, Spacing.sm)
 
+            // 4 números canônicos (desenho original do mockup), agora clicáveis:
+            // cada um abre a tela do seu componente. "Carros" sai daqui — os
+            // carros já têm a lista "Carros recentes" logo abaixo, clicável.
             SummaryStats([
-                StatItem(value: "\(data.carrosTotal)", label: "Carros"),
-                StatItem(value: "\(data.eventosTotal)", label: "Eventos"),
-                StatItem(value: "\(data.stintsTotal)", label: "Stints"),
+                StatItem(value: "\(data.eventosTotal)", label: "Eventos",
+                         onTap: { onOpen(.eventos) }),
+                StatItem(value: "\(data.voltasTotal)", label: "Voltas",
+                         onTap: { onOpen(.voltasResumo) }),
+                StatItem(value: "\(data.stintsTotal)", label: "Stints",
+                         onTap: { onOpen(.stintsLista) }),
+                StatItem(value: data.melhorVoltaMs.map(formatVoltaCurta) ?? "—", label: "Melhor",
+                         onTap: { onOpen(.melhorVolta) }),
             ])
 
             if !data.carrosRecentes.isEmpty {
