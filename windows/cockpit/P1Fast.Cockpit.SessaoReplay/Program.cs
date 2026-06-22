@@ -182,7 +182,16 @@ Console.WriteLine("   se esses picos forem só de marcha lenta/desaceleração, 
 Console.WriteLine();
 Console.WriteLine("== GHOST (ápice + bolinha) COM O GPS REAL ==");
 Console.WriteLine($"Pontos de GPS válidos (fix 3, hacc<50, em Brasília): {gpsValidos.Count} de {gps}");
-var apice = Ghost.AcharApice(gpsValidos);
+
+// O carro ficou parado 93% do tempo: jitter de GPS parado vira "curva" falsa de
+// raio mínimo. Pra achar curva DE VERDADE, fica só com pontos em movimento
+// (>=3 m do último guardado) — isso colapsa os aglomerados parados.
+var gpsMov = new List<PontoGps>();
+foreach (var p in gpsValidos)
+    if (gpsMov.Count == 0 || Ghost.DistMeters(gpsMov[^1], p) >= 3) gpsMov.Add(p);
+Console.WriteLine($"Pontos em MOVIMENTO (>=3 m de espaçamento): {gpsMov.Count}");
+
+var apice = Ghost.AcharApice(gpsMov);
 if (apice is null)
 {
     Console.WriteLine("   Não deu pra achar ápice (passagem curta/sem ponto válido).");
