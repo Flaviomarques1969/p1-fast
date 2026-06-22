@@ -65,7 +65,11 @@ public sealed record DeltaInfo(string Value, Tone Tone);
 /// <summary>Texto da ação corretiva + tom semântico.</summary>
 public sealed record AcaoInfo(string Texto, Tone Tone);
 
-/// <summary>Os 4 apex pontos do trecho atual (entrada, freio, ápice, saída).</summary>
+/// <summary>
+/// Os apex pontos do trecho atual. 4 widgets (entrada, freio, ápice, saída) +
+/// <c>Pace</c> (5º marco, aceleração pós-Vmin — guardado no estado; a tela mostra
+/// Pace CENTRAL, não como 4º widget). Espelha o apex do cockpit-state.js.
+/// </summary>
 public sealed record ApexState(
     ApexPonto Entrada,
     ApexPonto Freio,
@@ -73,19 +77,23 @@ public sealed record ApexState(
     ApexPonto Saida
 )
 {
+    /// <summary>5º marco (Flávio 13/06): aceleração pós-Vmin. Default pendente.</summary>
+    public ApexPonto Pace { get; init; } = ApexPonto.Pendente();
+
     public static ApexState Default() => new(
-        Entrada: new ApexPonto(ApexEstado.OkPior, ValorKmh: null, AtualM: null, RefM: null),
-        Freio:   new ApexPonto(ApexEstado.OkPior, ValorKmh: null, AtualM: null, RefM: null),
-        Apice:   new ApexPonto(ApexEstado.OkPior, ValorKmh: null, AtualM: null, RefM: null),
-        Saida:   new ApexPonto(ApexEstado.OkPior, ValorKmh: null, AtualM: null, RefM: null)
+        Entrada: ApexPonto.Pendente(),
+        Freio:   ApexPonto.Pendente(),
+        Apice:   ApexPonto.Pendente(),
+        Saida:   ApexPonto.Pendente()
     );
 
-    /// <summary>Acessa apex ponto por papel canônico (entrada/freio/apice/saida).</summary>
+    /// <summary>Acessa apex ponto por papel canônico (entrada/freio/apice/pace/saida).</summary>
     public ApexPonto Get(string papel) => papel switch
     {
         "entrada" => Entrada,
         "freio"   => Freio,
         "apice"   => Apice,
+        "pace"    => Pace,
         "saida"   => Saida,
         _ => throw new ArgumentException($"apex papel=\"{papel}\" inválido", nameof(papel)),
     };
@@ -96,15 +104,37 @@ public sealed record ApexState(
         "entrada" => this with { Entrada = novo },
         "freio"   => this with { Freio   = novo },
         "apice"   => this with { Apice   = novo },
+        "pace"    => this with { Pace    = novo },
         "saida"   => this with { Saida   = novo },
         _ => throw new ArgumentException($"apex papel=\"{papel}\" inválido", nameof(papel)),
     };
 }
 
-/// <summary>Um apex ponto: estado + valor (km/h pra entrada/ápice/saída, metros pra freio).</summary>
+/// <summary>
+/// Um apex ponto. ValorKmh = velocidade (entrada/ápice/saída); AtualM/RefM/DeltaM =
+/// distância da frenagem (freio); DistM/AngleDeg = a "bolinha" do ápice ao vivo
+/// (distância e direção até o ponto ideal); NomeCurva = rótulo (debug/log).
+/// Campos extras são init com default null (paridade com o apex do cockpit-state.js).
+/// </summary>
 public sealed record ApexPonto(
     ApexEstado Estado,
     double? ValorKmh,
     double? AtualM,
     double? RefM
-);
+)
+{
+    /// <summary>Distância do carro até o ápice ideal (m) — a "bolinha" ao vivo.</summary>
+    public double? DistM { get; init; }
+
+    /// <summary>Direção da bolinha vs heading do carro (0..360°, 0 = frente).</summary>
+    public double? AngleDeg { get; init; }
+
+    /// <summary>Diferença da frenagem vs melhor passagem (atualM − refM), em metros.</summary>
+    public double? DeltaM { get; init; }
+
+    /// <summary>Nome da curva (debug/log; não desenha como número na tela).</summary>
+    public string? NomeCurva { get; init; }
+
+    /// <summary>Ponto pendente (sem referência/passagem) — usado no boot e sem volta de referência.</summary>
+    public static ApexPonto Pendente() => new(ApexEstado.Pendente, ValorKmh: null, AtualM: null, RefM: null);
+}
