@@ -50,7 +50,6 @@ struct HubMockLauncher: View {
         _pendenciaRepo = StateObject(wrappedValue: PendenciaRepository(queue: queue))
         _estoqueRepo = StateObject(wrappedValue: EstoqueRepository(queue: queue))
         _arquivoRepo = StateObject(wrappedValue: ArquivoRepository(queue: queue))
-        _stintRepo = StateObject(wrappedValue: StintRepository(queue: queue)) // TEMP-PROVA mapa 22/06 — reverter
     }
 
     var body: some View {
