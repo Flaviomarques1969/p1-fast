@@ -65,12 +65,13 @@ public class AlertasCriticosTests
     // ── Lambda (igual aos picos da sessão real: 0.6 e 1.6) ──
 
     [Fact]
-    public void ALR_05_Lambda_pobre_e_rica()
+    public void ALR_05_Lambda_pobre_e_rica_quando_andando()
     {
-        Assert.Contains("MISTURA_POBRE", CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = 1.6 }));
-        Assert.Contains("MISTURA_RICA",  CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = 0.6 }));
-        Assert.Empty(CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = 0.95 }));
-        Assert.Empty(CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = null })); // ausente
+        // sob carga (rpm alto): a mistura é avaliada.
+        Assert.Contains("MISTURA_POBRE", CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = 1.6, Rpm = 4000 }));
+        Assert.Contains("MISTURA_RICA",  CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = 0.6, Rpm = 4000 }));
+        Assert.Empty(CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = 0.95, Rpm = 4000 }));
+        Assert.Empty(CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = null, Rpm = 4000 })); // ausente
     }
 
     // ── Bateria / combustível / falhando ────────────────────
