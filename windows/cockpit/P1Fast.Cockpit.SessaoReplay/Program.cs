@@ -372,12 +372,12 @@ if (File.Exists(barrasPath))
         Console.WriteLine($"Cruzamentos da chegada: {cruz.Count} | volta isolada: {(voltaN >= 1 && cruz.Count > voltaN ? $"#{voltaN} ({(lapEnd - lapStart) / 1000:0.0}s)" : "sessao inteira")}");
 
         var frames = new List<string>();
-        double ultimoFrame = -1, lastRpm = 0;
+        double ultimoFrame = -1, lastRpm = 0, lastMotorT = -1e9, lastGpsT = -1e9;
         string curva = "";
         foreach (var e in eventos2)
         {
-            if (e.Motor) { maestroT.IngestMotor(e.Rpm, e.A!); lastRpm = e.Rpm; }
-            else maestroT.IngestGps(e.G!);
+            if (e.Motor) { maestroT.IngestMotor(e.Rpm, e.A!); lastRpm = e.Rpm; lastMotorT = e.T; }
+            else { maestroT.IngestGps(e.G!); lastGpsT = e.T; }
             curva = maestroT.CurvaAtualNome ?? curva;
             if (e.T < lapStart || e.T > lapEnd) continue; // fora da volta: processa mas nao grava
             var rel = e.T - lapStart;
