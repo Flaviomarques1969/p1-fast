@@ -148,6 +148,19 @@ struct CarroHubView: View {
         }
     }
 
+    /// Setinha "voltar" no canto esquerdo — mesma ação do "X", igual às
+    /// outras telas (Eventos, Voltas, Melhor). Pedido do Flávio 22/06.
+    private var botaoVoltar: some View {
+        Button { onClose() } label: {
+            Image(systemName: "chevron.left")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(Color.text)
+                .padding(9)
+                .background(Circle().fill(Color.surface.opacity(0.55)))
+                .overlay(Circle().stroke(Color.border.opacity(0.6), lineWidth: 1))
+        }
+    }
+
     // MARK: - Stats
 
     private var statsRow: some View {
