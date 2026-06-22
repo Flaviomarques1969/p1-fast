@@ -37,16 +37,27 @@ O envio pra nuvem precisa da chave de acesso na variável de ambiente `P1FAST_SU
    ```
    Tem que aparecer um candidato (conversor USB-serial). Se aparecer "SEM DRIVER",
    resolver o driver ANTES de ir pra pista.
-4. Começar a gravação:
+4. (Opcional, recomendado) Provar que a nuvem responde, ainda na garagem:
    ```
-   p1fast-t4000-capture --gravar
+   p1fast-t4000-capture --nuvem-teste
    ```
-   Em poucos segundos a tela tem que mostrar **`conectado — lendo a T3000`** e, logo
-   depois, linhas com `gravando=sim` e `motor=` subindo e um Hz por volta de 10.
-5. Abrir a **Central** no navegador do notebook (endereço de sempre, `p1tv`), pra o GPS
+   Tem que terminar com **`OK — o notebook FALA com a nuvem`**. Se falhar, é internet
+   ou a chave (`P1FAST_SUPABASE_ANON`) — resolver antes da pista.
+5. Começar a gravação **com envio ao vivo pra produção** (app + Command Box):
+   ```
+   p1fast-t4000-capture --gravar --nuvem --producao
+   ```
+   - Sem `--nuvem`: grava só no notebook (sem mandar pra nuvem).
+   - Com `--nuvem` sozinho: manda pra um canal de **teste** (não aparece no app real).
+   - Com `--nuvem --producao`: manda pro canal real que **todos assistem** ao vivo.
+
+   Em poucos segundos a tela tem que mostrar **`conectado — lendo a T3000`**, depois
+   `gravando=sim`, `motor=` subindo (~10 Hz) e `nuvem=online`.
+6. Abrir a **Central** no navegador do notebook (endereço de sempre, `p1tv`), pra o GPS
    e o vídeo, como já é feito.
 
-Só vá pra pista quando ver, na janela do `--gravar`: `gravando=sim` e `motor` subindo.
+Só vá pra pista quando ver, na janela do `--gravar`: `gravando=sim`, `motor` subindo e
+`nuvem=online`.
 
 ---
 
