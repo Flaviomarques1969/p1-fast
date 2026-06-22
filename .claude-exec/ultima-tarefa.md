@@ -50,11 +50,18 @@ sozinho se o aviso do notebook falhar — sem mexer no visual e sem duplicar vol
   Tela aberta no navegador, carrega normal. (Comportamento ao vivo da redundância só aparece com
   carro no canal OU com um replay num canal de TESTE — não fiz no canal de produção.)
 
+## Demonstração com DADOS DE HOJE (Flávio: "porque vc não usa os dados de hoje?")
+- NOVO web/command-box/fixtures/replay-hoje-2026-06-21.json — sessão real de hoje enxuta (GPS
+  válido + motor, 28.757 amostras, 3,28 MB). Verificado no escuro: cérebro+marco → 3 cruzamentos / 2 voltas.
+- ADITIVO na tela: bloco de REPLAY guardado por ?replay=hoje (sem a marca não faz NADA; não toca
+  rede nem canal de produção). Toca a sessão de hoje e pinta stint/ritmo pelo __aplicarPainelStint real.
+- Aberto: http://localhost:8078/?replay=hoje (fixture 200, tela 200). Mostra volta 2/12 e ritmo
+  "atrás +67s" (voltas reais de hoje 2:39 e 3:14, shakedown). É a redundância achando a volta pelo GPS.
+
 ## Pendências reais
-- Flávio ver a tela e autorizar. NÃO foi pro ar (a tela vai pro ar pela TV do box / nuvem).
-- Demonstração ao vivo da redundância: dá pra provar com um replay de GPS num canal de TESTE
-  (?canal=teste...), sem tocar o canal de produção — faço se o Flávio quiser ver fechar a volta.
+- Flávio confirmar o que viu na tela. NÃO foi pro ar (a tela vai pro ar pela TV do box / nuvem).
 - Marco fixo em Brasília; pra outras pistas, carregar do layout (anotado no código como TODO).
+- Limpeza opcional depois: o bloco de replay é só DEV/demonstração (guardado por ?replay=hoje).
 
 ---
 
