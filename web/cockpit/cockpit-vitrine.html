@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=956, initial-scale=1">
+<title>P1 Fast — Cockpit do Piloto (vitrine que roda sozinha)</title>
+<link rel="stylesheet" href="cockpit.css">
+<style>
+  body { margin: 0; background: #050a14; }
+  .topo {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    background: #0b1220; color: #e8eef5;
+    padding: 10px 18px; border-bottom: 1px solid #1e293b;
+    font: 13px/1.4 -apple-system, "Segoe UI", sans-serif;
+    display: flex; gap: 18px; align-items: center; justify-content: space-between;
+  }
+  .topo b { color: #38bdf8; }
+  .topo small { color: #94a3b8; }
+  .topo .curva { font-weight: 800; color: #fbbf24; }
+  .topo .modo { color: #cbd5e1; }
+  .stage { padding-top: 78px; display: flex; justify-content: center; }
+</style>
+</head>
+<body>
+
+<div class="topo">
+  <div><b>Cockpit do Piloto</b> — vitrine rodando sozinha
+    <small>(luz de marcha = lógica real, troca em 6.050; volta = roteiro de demonstração)</small>
+  </div>
+  <div>Curva: <span class="curva" id="curvaNome">—</span> &nbsp;·&nbsp; <span class="modo" id="modo">iniciando…</span></div>
+</div>
+
+<div class="stage">
+  <div class="device" id="device" data-trecho-status="neutro" data-msg-state="oculta" data-shift-fire="idle">
+    <div class="notch"></div>
+    <div class="fire-overlay"></div>
+
+    <div class="telemetria-chip">
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+    </div>
+
+    <div class="shift-light" id="shiftLight" data-state="off">
+      <span class="shift-light__dot" data-tier="1"></span>
+      <span class="shift-light__dot" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="7"></span>
+      <span class="shift-light__dot" data-tier="8"></span>
+      <span class="shift-light__dot" data-tier="9"></span>
+      <span class="shift-light__dot" data-tier="8"></span>
+      <span class="shift-light__dot" data-tier="7"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="1"></span>
+    </div>
+
+    <section class="apex">
+      <div class="apex__ponto" data-estado="pendente" data-papel="entrada">
+        <span class="apex__label">Entrada</span><span class="apex__valor">—</span>
+      </div>
+      <div class="apex__ponto" data-estado="pendente" data-papel="freio">
+        <span class="apex__label">Freio</span><span class="apex__valor">—</span>
+      </div>
+      <div class="apex__ponto" data-estado="pendente" data-papel="apice">
+        <span class="apex__label">Ápice</span><span class="apex__valor">—</span>
+      </div>
+      <div class="apex__ponto" data-estado="pendente" data-papel="saida">
+        <span class="apex__label">Saída</span><span class="apex__valor">—</span>
+      </div>
+    </section>
+
+    <div class="info-bloco">
+      <span class="info__delta">0.00</span>
+      <div class="info__acao"></div>
+    </div>
+
+    <aside class="alert-bloco" id="alertBloco" data-tipo="comunicacao">
+      <div class="alert__msg" id="alertMsg"></div>
+    </aside>
+
+    <div class="stint-bar">
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+// Vitrine do cockpit: roda 100% local (sem nuvem, sem clique, sem internet).
+// Reusa as PECAS REAIS do painel: CockpitState + renderer + LiveDataBridge.
+// A luz de marcha usa a logica real (rpmToShift). A "volta" e um roteiro de
+// demonstracao pra mostrar o painel reagindo de ponta a ponta.
+import { CockpitState, ApexEstado, TrechoStatus, Tone } from './cockpit-state.js';
+import { attachRendererToDocument } from './cockpit-renderer.js';
+import { LiveDataBridge } from './live-data-bridge.js';
+
+const cockpitState = new CockpitState();
+attachRendererToDocument(cockpitState, document);
+// Limites do Bubi conforme a FONTE DA VERDADE: luz troca na potencia maxima
+// (6.050 rpm), sirene/overrev acima do redline (6.300).
+const bridge = new LiveDataBridge({
+  cockpitState,
+  limits: { peakTorqueRpm: 6050, redlineRpm: 6300, torqueLitOffsetRpm: 700 },
+});
+
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function aplicarRpm(rpm) {
+  bridge.ingestT4000({
+    source: 'demo', parserVersion: 'demo', tMono: performance.now(),
+    checksumOk: true, bytesLen: 0, rpm, alarmes: {},
+  });
+}
+
+async function rampa(de, ate, passo, dt) {
+  const sobe = passo > 0;
+  for (let r = de; sobe ? r <= ate : r >= ate; r += passo) { aplicarRpm(r); await sleep(dt); }
+  aplicarRpm(ate);
+}
+
+// Nomes reais das curvas de Brasilia (fallback embutido; tenta o arquivo oficial).
+let curvas = ['Curva 2', 'Junção', 'Bruxa', 'Reta Oposta', 'Placar', 'S', 'Vitória', 'Curva 01'];
+
+// Frases do coach (subconjunto das aprovadas) + tom.
+const FRASES = [
+  { t: 'FREOU CEDO',    tone: Tone.ERRO },
+  { t: 'MANTEVE LINHA', tone: Tone.BOM  },
+  { t: 'VIROU POUCO',   tone: Tone.ERRO },
+  { t: 'RECORDE',       tone: Tone.BOM  },
+  { t: 'ACELEROU TARDE',tone: Tone.ERRO },
+  { t: 'BUSCAR LIMITE', tone: Tone.NEUTRO },
+];
+
+function limparPontos() {
+  for (const p of ['entrada', 'freio', 'apice', 'saida']) {
+    cockpitState.setApexPonto(p, { estado: ApexEstado.PENDENTE });
+  }
+}
+
+async function rodarCurva(nome, i) {
+  $('curvaNome').textContent = nome;
+
+  // 1. Reta antes da curva: acelera ate trocar de marcha (FIRE em 6.050).
+  $('modo').textContent = 'reta — acelerando';
+  cockpitState.setTrechoStatus(TrechoStatus.NEUTRO);
+  await rampa(3600, 6180, 45, 16);   // luz enche e dispara a troca
+  await sleep(280);                  // segura no "troca agora"
+
+  // 2. Frenagem + entrada na curva.
+  $('modo').textContent = 'freando pra curva';
+  cockpitState.setApexPonto('entrada', { estado: ApexEstado.OK_MELHOR, valorKmh: 132 - i * 3, nomeCurva: nome });
+  await rampa(6000, 2600, -70, 13);
+
+  // 3. Freio, apice e veredito do trecho (delta + frase do coach).
+  const freioBom = (i % 3) !== 0;
+  cockpitState.setApexPonto('freio', { estado: freioBom ? ApexEstado.OK_MELHOR : ApexEstado.OK_PIOR, deltaM: freioBom ? 3 : -4 });
+  cockpitState.setApexPonto('apice', { estado: ApexEstado.OK_MELHOR, distM: 1.4, angleDeg: 0 });
+  const f = FRASES[i % FRASES.length];
+  const d = ((i % 2 === 0) ? -1 : 1) * (0.08 + (i % 4) * 0.06);
+  cockpitState.setDelta({ value: (d >= 0 ? '+' : '') + d.toFixed(2), tone: d <= 0 ? Tone.BOM : Tone.ERRO });
+  cockpitState.setAcao({ texto: f.t, tone: f.tone });
+  cockpitState.setTrechoStatus(d <= 0 ? TrechoStatus.RECORDE_STINT : TrechoStatus.PIOR_STINT);
+  $('modo').textContent = 'ápice';
+  await sleep(1200);
+
+  // 4. Saida: retoma aceleracao.
+  $('modo').textContent = 'saída — acelerando';
+  cockpitState.setApexPonto('saida', { estado: ApexEstado.OK_MELHOR, valorKmh: 96 - i * 2, nomeCurva: nome });
+  await rampa(2800, 5400, 55, 13);
+
+  limparPontos();
+}
+
+async function rodarVolta() {
+  for (let i = 0; i < curvas.length; i++) await rodarCurva(curvas[i], i);
+}
+
+(async function boot() {
+  try {
+    const r = await fetch('/_design-reference/BARRAS-BRASILIA-FLAVIO-APROVADO-2026-05-27.json');
+    if (r.ok) {
+      const j = await r.json();
+      const arr = Array.isArray(j) ? j : (j.segments || j.curvas || j.barras || Object.values(j).find(Array.isArray));
+      if (arr && arr.length) {
+        const sorted = arr.slice().sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+        const nomes = sorted.map(c => c.nome || c.id).filter(Boolean);
+        if (nomes.length) curvas = nomes;
+      }
+    }
+  } catch (e) { /* offline: usa os nomes embutidos */ }
+
+  aplicarRpm(900);
+  while (true) { await rodarVolta(); }   // loop continuo: sempre tem movimento
+})();
+</script>
+
+</body>
+</html>
