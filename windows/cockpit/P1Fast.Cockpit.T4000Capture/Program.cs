@@ -40,6 +40,12 @@ internal static class Program
             return 0;
         }
 
+        // Modos novos (aditivos — não mexem na captura crua .bin abaixo):
+        //   --gravar    liga o leitor USB ao gravador blindado (sessão pronta pro app)
+        //   --conferir  relê as sessões gravadas e reporta integridade
+        if (args.Any(a => a is "--conferir" or "--verificar")) return RunConferirMode(args);
+        if (args.Any(a => a is "--gravar"   or "--record"))    return RunGravarMode(args);
+
         // Sempre roda o diagnóstico USB antes de qualquer coisa. Mostra TODOS
         // os cabos USB conectados, identifica candidatos a T4000, e aponta
         // quando falta driver. Se --diag, sai depois do relatório.
