@@ -1,3 +1,57 @@
+# TASK_INIT — P1 Fast (22/06/2026) — PREPARAR A PRÓXIMA CAPTURA PRA "SAIR REDONDA" (gravação local ponta-a-ponta no notebook)
+
+## 1. Pedido original do Flávio
+Em conversa sobre qualidade do dado de pista ("o carrinho andando bonito não acrescenta nada que
+você consiga avaliar; o que agrega é uma sessão de pista boa"), escolheu o **item 2: "preparo tudo
+pra próxima captura sair redonda"** + "prepare tudo para rodar correto".
+
+## 2. Objetivo (1 frase)
+Fechar o **mínimo viável de captura LOCAL** (Fases 1+2 do plano do motor de gravação) num programa
+que de fato RODE no notebook — ligar o leitor USB provado ao gravador blindado provado — pra próxima
+sessão não perder dado como em 20-21/06.
+
+## 3. Critérios objetivos de conclusão
+- Existe a tomada USB real (`IT3000UsbChannel` sobre `System.IO.Ports.SerialPort`) — compila aqui,
+  prova física fica pra bancada (notebook+carro).
+- Existe UM programa que liga leitor→gravador, grava append-only em disco, recupera sessão órfã no
+  boot, mostra saúde/alarme ao operador, e fecha com resumo + caminho do arquivo. ADITIVO: o capturador
+  de bytes crus antigo (CAN) é PRESERVADO.
+- Ferramenta de conferência: relê a sessão gravada e reporta nº de amostras, sequência contígua,
+  maior lacuna, descartadas, status — provável aqui.
+- Teste de integração ponta-a-ponta verde (leitor→gravador→disco→releitura sem buraco) na bateria.
+- Runbook de dia de pista escrito (passos do operador) pra a parte humana não derrubar a captura.
+- NADA vai pro ar. Nuvem (Fase 3) NÃO entra neste passo — flag de contradição com a decisão 21/06
+  ("manter local, sem upload agora") levado ao Flávio decidir.
+
+## 4. Confirmação de leitura
+- ~/.claude/CLAUDE.md: sim · ~/.claude-decisoes/padroes.md: sim (0 decisões)
+- FLAVIO_EXECUTION_PROTOCOL / DONE_CHECKLIST / ENVIRONMENT_RULES / COMMUNICATION_RULES: sim
+- Memória global + memória P1 Fast (2 caminhos): sim · CLAUDE.md do projeto + ARQUITETURA_DEFINITIVA: sim
+- Projeto: T3000UsbLiveReader.cs, SessionRecorder.cs, T3000UsbLiveReaderTests.cs, T4000Capture/Program.cs,
+  relatorios/plano-motor-gravacao-windows-2026-06-21.html (8 fases)
+
+## 5. Plano (<=5 passos)
+1. Tomada real `SerialPortT3000UsbChannel.cs` (em T4000Capture, que já tem System.IO.Ports).
+2. Helper puro `SessionIntegrity` (conferência) no Domain + teste.
+3. Programa: modo `--gravar` (liga leitor+gravador, saúde, órfã, encerra c/ resumo) e `--conferir`
+   no T4000Capture, ADITIVO ao capturador cru antigo.
+4. Teste de integração ponta-a-ponta no Domain.Tests + rodar a bateria (roll-forward).
+5. Runbook de dia de pista + relatório honesto. Flag da Fase 3 (nuvem) pro Flávio decidir.
+
+## 6. Arquivos/áreas
+- NOVO: windows/cockpit/P1Fast.Cockpit.T4000Capture/SerialPortT3000UsbChannel.cs
+- NOVO: windows/cockpit/P1Fast.Cockpit.Domain/SessionIntegrity.cs (+ teste)
+- EDITA (aditivo): windows/cockpit/P1Fast.Cockpit.T4000Capture/Program.cs (modos --gravar/--conferir)
+- NOVO: docs/RUNBOOK_DIA_DE_PISTA_CAPTURA.md
+
+## 7. Ambiente: desenvolvimento | 8. Produção protegida: sim | 9. Autorização produção: não
+## 10. Evidência: não recebida | 11. Riscos: a tomada USB física só prova no notebook (declaro, não
+##     finjo pronto); .NET 8 não roda neste Mac (uso roll-forward p/ net10 nos testes); o capturador
+##     antigo é preservado (mudança só aditiva). Nada toca nuvem/canal/produção.
+## 12. Status inicial: iniciado
+
+---
+
 # Última tarefa — P1 Fast (21/06/2026, noite) — REDUNDÂNCIA: VOLTA POR GPS NA TELA AO VIVO (8078)
 
 ## 1. Pedido original do Flávio
