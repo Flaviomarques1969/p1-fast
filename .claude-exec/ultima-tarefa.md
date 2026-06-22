@@ -66,8 +66,26 @@ trecho vs volta de referência) e IA (luz de marcha que aprende + antecipa + fla
 - bateria completa (P1Fast.Cockpit.sln): 213 aprovados / 1 falha = PAN_04 PRÉ-EXISTENTE (espera "90.0",
   o Mac formata "90,0" — LivePanelTests.cs:93, sem relação com este trabalho). Zero regressão.
 
+## Prova com DADO REAL (Flávio: "porque vc não usa os dados do último fim de semana?")
+- NOVO windows/cockpit/P1Fast.Cockpit.SessaoReplay/ (Program.cs + .csproj, FORA da .sln, igual ao
+  T4000Capture): toca a sessão gravada `.claude-exec/dados-pista/sessao-2026-06-21-1140-brasilia-COMPLETA.json`
+  pela LÓGICA REAL do cockpit (LiveDataBridge + CockpitState + LiveLimits.Bubi). Roda no Mac (não precisa
+  de carro nem Windows). Prova VISUAL (tela acendendo) segue só no notebook.
+- Resultado (1.942 amostras de motor reais): luz Off 92,9% / Lit 7,1%; nível LIT máx 6; pico de rotação
+  real 5.912 rpm -> Lit nível 6; NUNCA disparou fire (correto: pico < 6.050); ZERO alerta crítico.
+- ACHADO REAL (valioso): o sensor de óleo veio AUSENTE na sessão. Se o cockpit tratar "ausente" como
+  "0 bar", dispara ALERTA FALSO de pressão de óleo (CheckCriticalAlerts: OilPressBar<0,5 e rpm>2000).
+  No replay tratei ausente como "sem dado" (NaN) e não houve falso alarme. PENDÊNCIA pro Incremento 2:
+  a lógica de alertas em C# precisa de conceito de "sensor ausente", não só double — hoje ela usaria 0.
+- VOLTAS REAIS (detector oficial de chegada de Brasília, GPS): 3 cruzamentos -> 2 voltas completas:
+  v1 = 3:14.95 (195,0s), v2 = 2:39.60 (159,6s). Melhor = 2:39,60. Carro PARADO a maior parte (Off 92,9%),
+  então os tempos incluem tempo parado (sessão de acerto/shakedown, não de lapping). DIVERGE da lembrança
+  do Flávio (2:40/2:41/2:39 = 3 voltas) — só achei 2 voltas neste arquivo. Levar a ele (única sessão real
+  do fim de semana; a de 20/06 se perdeu, ~3s carro nulo).
+
 ## Pendências reais (próximos incrementos, declarados)
-- Incremento 2: mensagens reais (decidirMensagemPedagogica + orquestrador de alertas completo).
+- Incremento 2: mensagens reais (decidirMensagemPedagogica + orquestrador de alertas completo) +
+  conceito de "sensor ausente" nos alertas (achado do dado real acima).
 - Incremento 3: IA da luz (marcha + aprendizado por tempo de passagem + antecipação Onda 7 + flash).
 - Incremento 4: ghost (ápice/delta/freio por trecho vs volta de referência) — depende de GPS no pipeline.
 - Incremento 5: ligar a tela ao feed real + replay de sessão; demonstração atrás de --demo. PROVA VISUAL
