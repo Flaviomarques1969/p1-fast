@@ -139,17 +139,44 @@ public sealed partial class MainWindow : Window
         ApplyMessage(initial.Message);
         UpdateStatusText();
 
-        _demoTimer = DispatcherQueue.CreateTimer();
-        _demoTimer.Interval = TimeSpan.FromSeconds(2);
-        var sceneIndex = 0;
-        _demoTimer.Tick += (_, _) =>
+        // Demonstração de cenas fixas só com --demo. Sem a flag, a tela espera o
+        // dado real do maestro (ligado por IniciarFeedReal no notebook).
+        if (_options.Demo)
         {
-            ApplyScene(sceneIndex % DemoScenes.Count);
-            sceneIndex++;
-        };
-        _demoTimer.Start();
-        ApplyScene(0);
+            _demoTimer = DispatcherQueue.CreateTimer();
+            _demoTimer.Interval = TimeSpan.FromSeconds(2);
+            var sceneIndex = 0;
+            _demoTimer.Tick += (_, _) =>
+            {
+                ApplyScene(sceneIndex % DemoScenes.Count);
+                sceneIndex++;
+            };
+            _demoTimer.Start();
+            ApplyScene(0);
+        }
     }
+
+    // ── Feed REAL (maestro) — ligado pela captura no notebook Windows ──────
+    //
+    // A ligação USB do motor e o GPS chamam AlimentarMotor/AlimentarGps; o maestro
+    // muta o MESMO CockpitState que a tela observa. Tudo é despachado pra thread da
+    // UI. As curvas (8 de Brasília) entram opcionais — sem elas, a tela mostra luz
+    // de marcha + alertas; com elas, também bolinha do ápice + coach por curva.
+
+    /// <summary>Liga o feed de dado real. Chamar uma vez, com as curvas da pista (ou null).</summary>
+    public void IniciarFeedReal(IReadOnlyList<TrechoSegmento>? curvas = null)
+    {
+        _demoTimer?.Stop();
+        _orquestrador = new CockpitOrchestrator(_cockpitState, curvas);
+    }
+
+    /// <summary>Amostra de motor (rotação + dados pros alertas). Thread-safe.</summary>
+    public void AlimentarMotor(double rpm, AmostraAlerta alerta)
+        => DispatcherQueue.TryEnqueue(() => _orquestrador?.IngestMotor(rpm, alerta));
+
+    /// <summary>Amostra de GPS (curva atual + bolinha + coach). Thread-safe.</summary>
+    public void AlimentarGps(AmostraGps amostra)
+        => DispatcherQueue.TryEnqueue(() => _orquestrador?.IngestGps(amostra));
 
     // ── Demo loop ──────────────────────────────────────────
 
