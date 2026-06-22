@@ -32,6 +32,7 @@ public sealed record AmostraAlerta
 {
     public double? WaterTempC             { get; init; }
     public double? Rpm                    { get; init; }
+    public double? TpsPct                 { get; init; } // acelerador % (pro gate de carga)
     public double? Lambda                 { get; init; }
     public double? BatteryV               { get; init; }
     public bool?   BaixaPressaoOleo       { get; init; } // bit de alarme do T3000
