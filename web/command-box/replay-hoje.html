@@ -72,7 +72,7 @@
   var cv = document.getElementById('cv'), ctx = cv.getContext('2d');
   var estado = document.getElementById('estado'), relogio = document.getElementById('relogio');
   var flashEl = document.getElementById('flash'), voltasEl = document.getElementById('voltas');
-  var D, speed = 40;
+  var D, speed = 1;
 
   try{
     D = await (await fetch('/web/command-box/fixtures/replay-hoje-mapa.json')).json();
