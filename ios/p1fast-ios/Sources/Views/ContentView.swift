@@ -356,7 +356,8 @@ private struct ReadyRoot: View {
             apelido: c.apelido,
             modeloCategoria: [c.modelo, c.categoria].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "),
             cor: Color(hex: c.cor ?? "") ?? Color.gray,
-            stints: carroRepo.stintsPorCarro[c.id] ?? 0
+            stints: carroRepo.stintsPorCarro[c.id] ?? 0,
+            carroId: c.id
         )
     }
 
