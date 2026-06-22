@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=956, initial-scale=1">
+<title>P1 Fast — Cockpit do Piloto · SUA VOLTA REAL (Brasília 21/06)</title>
+<link rel="stylesheet" href="cockpit.css">
+<style>
+  body { margin: 0; background: #050a14; }
+  .topo {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    background: #0b1220; color: #e8eef5; border-bottom: 1px solid #1e293b;
+    padding: 8px 16px; font: 12px/1.3 -apple-system, "Segoe UI", sans-serif;
+    display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  }
+  .topo b { color: #38bdf8; }
+  .topo .real { color: #34d399; font-weight: 800; }
+  .topo small { color: #94a3b8; }
+  .hud { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .hud .item { display: flex; flex-direction: column; align-items: flex-end; min-width: 64px; }
+  .hud .item .lbl { color: #64748b; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+  .hud .item .val { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 18px; font-weight: 800; color: #e8eef5; }
+  .hud .curva .val { color: #fbbf24; font-size: 15px; min-width: 150px; text-align: right; }
+  .stage { padding-top: 86px; display: flex; justify-content: center; }
+</style>
+</head>
+<body>
+
+<div class="topo">
+  <div><b>Cockpit do Piloto</b> — <span class="real">SUA VOLTA REAL</span> · Brasília 21/06
+    <small id="tempo">00:00</small>
+  </div>
+  <div class="hud">
+    <div class="item curva"><span class="lbl">Curva</span><span class="val" id="hCurva">—</span></div>
+    <div class="item"><span class="lbl">Rotação</span><span class="val" id="hRpm">0</span></div>
+    <div class="item"><span class="lbl">Veloc.</span><span class="val" id="hVel">0</span></div>
+    <div class="item"><span class="lbl">Acel.</span><span class="val" id="hTps">0</span></div>
+    <div class="item"><span class="lbl">Freio</span><span class="val" id="hFre">0</span></div>
+    <div class="item"><span class="lbl">Água</span><span class="val" id="hAgua">—</span></div>
+    <div class="item"><span class="lbl">Lambda</span><span class="val" id="hLam">—</span></div>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="device" id="device" data-trecho-status="neutro" data-msg-state="oculta" data-shift-fire="idle">
+    <div class="notch"></div>
+    <div class="fire-overlay"></div>
+    <div class="telemetria-chip">
+      <span class="telemetria-chip__dot ok"></span><span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span><span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span><span class="telemetria-chip__dot ok"></span>
+    </div>
+    <div class="shift-light" id="shiftLight" data-state="off">
+      <span class="shift-light__dot" data-tier="1"></span><span class="shift-light__dot" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="3"></span><span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="5"></span><span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="7"></span><span class="shift-light__dot" data-tier="8"></span>
+      <span class="shift-light__dot" data-tier="9"></span>
+      <span class="shift-light__dot" data-tier="8"></span><span class="shift-light__dot" data-tier="7"></span>
+      <span class="shift-light__dot" data-tier="6"></span><span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="4"></span><span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="2"></span><span class="shift-light__dot" data-tier="1"></span>
+    </div>
+    <section class="apex">
+      <div class="apex__ponto" data-estado="pendente" data-papel="entrada"><span class="apex__label">Entrada</span><span class="apex__valor">—</span></div>
+      <div class="apex__ponto" data-estado="pendente" data-papel="freio"><span class="apex__label">Freio</span><span class="apex__valor">—</span></div>
+      <div class="apex__ponto" data-estado="pendente" data-papel="apice"><span class="apex__label">Ápice</span><span class="apex__valor">—</span></div>
+      <div class="apex__ponto" data-estado="pendente" data-papel="saida"><span class="apex__label">Saída</span><span class="apex__valor">—</span></div>
+    </section>
+    <div class="info-bloco">
+      <span class="info__delta">0.00</span>
+      <div class="info__acao"></div>
+    </div>
+    <aside class="alert-bloco" id="alertBloco" data-tipo="comunicacao"><div class="alert__msg" id="alertMsg"></div></aside>
+    <div class="stint-bar">
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+// REPLAY DA VOLTA REAL — roda 100% local (sem nuvem, sem clique).
+// Alimenta o painel real (CockpitState + renderer + LiveDataBridge) com a captura
+// de domingo 21/06 (Brasília). Luz de marcha = rotação real. Curva/ápice/entrada/
+// saída/tempo = posição real (GPS). Alertas = leitura real. Freio (distância) fica
+// pendente — precisa de volta de referência (próximo passo).
+import { CockpitState, ApexEstado, TrechoStatus, Tone } from './cockpit-state.js';
+import { attachRendererToDocument } from './cockpit-renderer.js';
+import { LiveDataBridge, DEFAULT_LIMITS } from './live-data-bridge.js';
+
+const cockpitState = new CockpitState();
+attachRendererToDocument(cockpitState, document);
+const bridge = new LiveDataBridge({
+  cockpitState,
+  // Regra real do Bubi (fonte da verdade): troca na potência máxima (6.050).
+  limits: { ...DEFAULT_LIMITS, peakTorqueRpm: 6050, redlineRpm: 6300, torqueLitOffsetRpm: 700, waterTempMaxC: 110 },
+});
+
+const $ = id => document.getElementById(id);
+const FATOR = 12;                 // reproduz a volta ~12x mais rápido pra caber na tela
+const RAIO = 40, SAIR = 60;       // metros: entra/segura/sai da zona da curva
+
+function metros(a, b) {
+  const R = 6378137, r = Math.PI / 180;
+  const la1 = a.lat * r, la2 = b.lat * r;
+  const x = (b.lng - a.lng) * r * Math.cos((la1 + la2) / 2);
+  const y = (la2 - la1);
+  return Math.sqrt(x * x + y * y) * R;
+}
+
+let curvas = [];
+let pts = [];
+let i = 0, startWall = null;
+let curvaAtiva = null;            // { c, vmin, tEnt, distMin }
+const tempoAnterior = new Map();  // curvaId -> tempoS da última passagem
+let ultKmh = 0, ultMotor = null;
+
+function setHudMotor(p) {
+  $('hRpm').textContent = Math.round(p.rpm ?? 0);
+  $('hTps').textContent = (p.tps != null ? Math.round(p.tps) : 0) + '%';
+  $('hFre').textContent = (p.fre != null ? Math.round(p.fre) : 0) + '%';
+  $('hAgua').textContent = (p.agua != null ? Math.round(p.agua) + '°' : '—');
+  $('hLam').textContent = (p.lam != null ? p.lam.toFixed(2) : '—');
+}
+
+function aplicarMotor(p) {
+  ultMotor = p;
+  bridge.ingestT4000({
+    source: 'real', parserVersion: 'real', tMono: p.t, checksumOk: true, bytesLen: 0,
+    rpm: p.rpm, tpsPct: p.tps, pedalFreioPct: p.fre, waterTempC: p.agua,
+    lambda: p.lam, batteryV: p.bat, alarmes: p.al || {},
+  });
+  setHudMotor(p);
+}
+
+function curvaMaisProxima(pos) {
+  let best = null, bd = Infinity;
+  for (const c of curvas) { const d = metros(pos, c.apice); if (d < bd) { bd = d; best = c; } }
+  return { best, bd };
+}
+
+function fecharPassagem(p) {
+  const a = curvaAtiva; if (!a) return;
+  const tempoS = (p.t - a.tEnt) / 1000;
+  cockpitState.setApexPonto('saida', { estado: ApexEstado.OK_MELHOR, valorKmh: Math.round(ultKmh), nomeCurva: a.c.nome });
+  const ref = tempoAnterior.get(a.c.id);
+  if (ref != null && tempoS > 0.5) {
+    const d = tempoS - ref;                       // segundos REAIS vs passagem anterior
+    cockpitState.setDelta({ value: (d >= 0 ? '+' : '') + d.toFixed(2), tone: d <= 0 ? Tone.BOM : Tone.ERRO });
+    cockpitState.setAcao({ texto: d <= 0 ? 'RECORDE' : 'BUSCAR LIMITE', tone: d <= 0 ? Tone.BOM : Tone.NEUTRO });
+    cockpitState.setTrechoStatus(d <= 0 ? TrechoStatus.RECORDE_STINT : TrechoStatus.PIOR_STINT);
+  } else {
+    cockpitState.setAcao({ texto: 'REGISTRANDO', tone: Tone.NEUTRO });
+    cockpitState.setTrechoStatus(TrechoStatus.NEUTRO);
+  }
+  if (tempoS > 0.5) tempoAnterior.set(a.c.id, tempoS);
+  curvaAtiva = null;
+}
+
+function aplicarGps(p) {
+  if (typeof p.kmh === 'number') ultKmh = p.kmh;
+  const pos = { lat: p.lat, lng: p.lon };
+  if (!curvaAtiva) {
+    const { best, bd } = curvaMaisProxima(pos);
+    if (best && bd <= RAIO) {
+      curvaAtiva = { c: best, vmin: ultKmh, tEnt: p.t, distMin: bd };
+      $('hCurva').textContent = best.nome;
+      cockpitState.setApexPonto('entrada', { estado: ApexEstado.OK_MELHOR, valorKmh: Math.round(ultKmh), nomeCurva: best.nome });
+      cockpitState.setApexPonto('freio', { estado: ApexEstado.PENDENTE });
+      cockpitState.setApexPonto('apice', { estado: ApexEstado.PENDENTE });
+      cockpitState.setApexPonto('saida', { estado: ApexEstado.PENDENTE });
+    }
+  } else {
+    const d = metros(pos, curvaAtiva.c.apice);
+    if (ultKmh < curvaAtiva.vmin) curvaAtiva.vmin = ultKmh;
+    if (d < curvaAtiva.distMin) curvaAtiva.distMin = d;
+    // bolinha do ápice ao vivo: distância real até o ápice ideal da curva
+    cockpitState.setApexPonto('apice', { estado: d <= 8 ? ApexEstado.OK_MELHOR : ApexEstado.OK_PIOR, distM: Math.round(d) });
+    if (d > SAIR) fecharPassagem(p);
+  }
+}
+
+function aplicar(p) { if (p.k === 'm') aplicarMotor(p); else aplicarGps(p); }
+
+function frame(now) {
+  if (startWall == null) startWall = now;
+  const tDados = (now - startWall) * FATOR;
+  while (i < pts.length && pts[i].t <= tDados) { aplicar(pts[i]); i++; }
+  const seg = Math.floor((pts[Math.min(i, pts.length - 1)]?.t || 0) / 1000);
+  $('tempo').textContent = String(Math.floor(seg / 60)).padStart(2, '0') + ':' + String(seg % 60).padStart(2, '0');
+  if (i >= pts.length) { i = 0; startWall = now; curvaAtiva = null; tempoAnterior.clear(); $('hCurva').textContent = '— (reiniciando)'; }
+  requestAnimationFrame(frame);
+}
+
+(async function boot() {
+  // curvas reais de Brasília
+  const rc = await fetch('/_design-reference/BARRAS-BRASILIA-FLAVIO-APROVADO-2026-05-27.json');
+  const jc = await rc.json();
+  const arr = Array.isArray(jc) ? jc : (jc.segments || jc.curvas || jc.barras || Object.values(jc).find(Array.isArray));
+  curvas = arr.map(c => ({ id: c.id, nome: c.nome || c.id, apice: { lat: c.apice_gps.lat, lng: c.apice_gps.lng } }));
+
+  // a volta real (replay enxuto)
+  const rv = await fetch('/web/cockpit/fixtures/volta-real-brasilia-2026-06-21.json');
+  const jv = await rv.json();
+  pts = jv.pts;
+
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
