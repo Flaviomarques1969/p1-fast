@@ -12,9 +12,8 @@ using System.Globalization;
 using System.Text.Json;
 using P1Fast.Cockpit.Domain;
 
-var caminho = args.Length > 0
-    ? args[0]
-    : "/Users/imac/Projetos/P1 Fast/.claude-exec/dados-pista/sessao-2026-06-21-1140-brasilia-COMPLETA.json";
+var caminho = args.FirstOrDefault(a => !a.StartsWith("--"))
+    ?? "/Users/imac/Projetos/P1 Fast/.claude-exec/dados-pista/sessao-2026-06-21-1140-brasilia-COMPLETA.json";
 
 if (!File.Exists(caminho))
 {
