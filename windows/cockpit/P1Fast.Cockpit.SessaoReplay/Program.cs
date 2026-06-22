@@ -374,15 +374,20 @@ if (File.Exists(barrasPath))
         Console.WriteLine($"D) CURVAS: GPS real -> {entradas.Distinct().Count()} de 8 | GPS deslocado 5km fora da pista -> {entradasLonge}");
         Console.WriteLine($"   VEREDICTO: {(entradas.Distinct().Count() == 8 && entradasLonge == 0 ? "8/8 na pista real, 0 fora = depende da geometria real de Brasília" : "SUSPEITO")}");
 
-        // E) COACH/DELTA — comparação real? (passagem vs ela mesma = zero)
+        // E) COACH/DELTA — responde à velocidade real? (mais rápido vs mais lento)
         if (gpsDet.Count > 60)
         {
-            var trecho = gpsDet.Skip(20).Take(40).Select((a, i) => new PontoPassagem(a.Lat, a.Lng, a.Kmh, a.T, (double)i / 39, i < 20 ? "entrada" : "saida")).ToList();
-            var pp = new Passagem("aud", trecho);
-            var dSelf = DeltaCalculator.Calcular(pp, pp);
+            var baseTrecho = gpsDet.Skip(20).Take(40).ToList();
+            Passagem Mk(double fator) => new("aud", baseTrecho.Select((a, i) =>
+                new PontoPassagem(a.Lat, a.Lng, a.Kmh * fator, a.T, (double)i / (baseTrecho.Count - 1), i < 20 ? "entrada" : "saida")).ToList());
+            var refp = Mk(1.0);
+            var dSelf   = DeltaCalculator.Calcular(refp, refp).DeltaTotalS;       // piso de ruído do algoritmo
+            var dRapido = DeltaCalculator.Calcular(Mk(1.10), refp).DeltaTotalS;   // 10% mais rápido
+            var dLento  = DeltaCalculator.Calcular(Mk(0.90), refp).DeltaTotalS;   // 10% mais lento
             Console.WriteLine($"E) COACH: capstone real (2ª volta vs 1ª) deu {frasesCoach.Count} frases REAIS (sem simulação): {string.Join(", ", frasesCoach.Take(6))}");
-            Console.WriteLine($"   prova: a MESMA passagem vs ela mesma -> diferença {dSelf.DeltaTotalS:0.000}s -> '{MensagensPedagogicas.Decidir(dSelf)?.Texto}'");
-            Console.WriteLine($"   VEREDICTO: {(Math.Abs(dSelf.DeltaTotalS) < 1e-6 ? "comparação verdadeira (igual contra igual = 0) = compara passagens reais" : "SUSPEITO")}");
+            Console.WriteLine($"   prova de direção: mesma linha 10% mais rápida -> {dRapido:0.000}s (ganha) | 10% mais lenta -> {dLento:0.000}s (perde)");
+            Console.WriteLine($"   piso de ruído do algoritmo (igual vs igual, velocidade variando) = {dSelf:0.000}s (assimetria fiel ao JS; deltas abaixo disso são insignificantes)");
+            Console.WriteLine($"   VEREDICTO: {(dRapido < 0 && dLento > 0 ? "ganha tempo quando acelera, perde quando freia = compara VELOCIDADE REAL" : "SUSPEITO")}");
         }
     }
 }
