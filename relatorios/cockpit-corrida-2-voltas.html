@@ -624,7 +624,6 @@ body{
 .legend b{color:var(--ink);font-weight:700;}
 .legend i{color:var(--foco);font-style:normal;font-weight:700;}
 </style>
-<style>.stint-bar__block.is-reference{background-image:linear-gradient(45deg,#999 25%,transparent 25%,transparent 75%,#999 75%),linear-gradient(45deg,#999 25%,#555 25%,#555 75%,#999 75%);background-size:6px 6px;background-position:0 0,3px 3px;background-color:#555;}</style>
 </head>
 <body>
 <div class="stage" id="stage">
@@ -849,7 +848,7 @@ fitStage();
   const mapTrecho=t=>t==='RecordeStint'||t==='MelhorHistorico'?'recorde-stint':t==='PiorStint'?'pior-stint':'neutro';
   const toneCls=t=>t==='Bom'?'bom':t==='Erro'?'erro':'';
   const mapEstado=e=>e==='OkMelhor'?'ok-melhor':e==='OkPior'?'ok-pior':'pendente';
-  const mapStint=s=>s==='faster'?'is-faster':s==='slower'?'is-slower':s==='neutral'?'is-neutral':s==='current'?'is-current':s==='reference'?'is-reference':'';
+  const mapStint=s=>s==='faster'?'is-faster':s==='slower'?'is-slower':s==='neutral'?'is-neutral':s==='current'?'is-current':s==='best'?'is-best-stint':'';
   const shiftArg=f=>f.shiftMode==='Fire'?'fire':f.shiftMode==='Overrev'?'overrev':f.shiftMode==='Lit'?f.shiftLevel:0;
   const $=id=>document.getElementById(id); const r0=v=>v==null?null:Math.round(v);
   function setApex(i,html,est){const p=apexPontos[i];if(!p)return;const v=p.querySelector('.apex__valor');if(v)v.innerHTML=html;if(est)p.dataset.estado=mapEstado(est);}
@@ -870,7 +869,7 @@ fitStage();
     if(c)c.textContent=f.curva||'reta / box';
     if(r)r.textContent=f.motorVivo?(f.rpm!=null?Math.round(f.rpm)+' rpm':'—'):'motor: sem dado';
     if(tm){const s=Math.floor(f.t);tm.textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
-    if(vl){vl.textContent=f.volta===1?'VOLTA 1 — aquecimento (referência)':'VOLTA 2 — rápida (2:39)'; vl.style.color=f.volta===2?'#4fe060':'#a0a0a0';}
+    if(vl){vl.textContent=f.volta===1?'VOLTA 1 — aquecimento (referência)':'VOLTA 2 — rápida (2:39)';vl.style.color=f.volta===2?'#4fe060':'#a0a0a0';}
   }
   let di=0,dtocando=true,dvel=1,elapsed=0,dlast=performance.now();
   const fim=FITA.length?FITA[FITA.length-1].t:0;
