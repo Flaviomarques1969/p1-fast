@@ -241,8 +241,19 @@ internal static class Program
         var pasta    = ParseArg(args, "--pasta")
             ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "p1fast-sessoes");
 
+        // Nuvem ao vivo (opcional). O LOCAL sempre grava; a nuvem é a redundância ao
+        // vivo pro app P1 Fast e a tela do Command Box, com fila que não perde na queda.
+        var usarNuvem  = args.Any(a => a is "--nuvem");
+        var producao   = args.Any(a => a is "--producao");
+        var canalNuvem = ParseArg(args, "--canal") ?? (producao ? LivePublisher.CanalProducao : "cockpit-bubi-dev-teste");
+        var urlNuvem   = ParseArg(args, "--url") ?? "https://fvhwltzhytpnhlqbttmd.supabase.co";
+        var anon       = Environment.GetEnvironmentVariable("P1FAST_SUPABASE_ANON");
+
         Console.WriteLine("=== P1 Fast — GRAVAÇÃO DE SESSÃO (motor T3000 pela USB) ===");
         Console.WriteLine($"Pasta de gravação: {pasta}");
+        Console.WriteLine(usarNuvem
+            ? $"Nuvem ao vivo: LIGADA — canal '{canalNuvem}'{(producao ? " (PRODUÇÃO)" : " (teste)")}"
+            : "Nuvem ao vivo: desligada (use --nuvem pra ligar)");
         Console.WriteLine();
 
         // Diagnóstico USB + resolução de porta (mesma lógica do capturador cru).
@@ -280,20 +291,38 @@ internal static class Program
             Console.WriteLine();
         }
 
-        // Leitor ao vivo na tomada real -> cada amostra do motor cai no gravador.
-        var channel = new SerialPortT3000UsbChannel(portName);
+        var cts = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
+
+        // Fio + publicador da nuvem (só se ligado E com a chave configurada).
+        SupabaseRealtimeChannel? nuvem = null;
+        LivePublisher? publisher = null;
+        if (usarNuvem)
+        {
+            if (string.IsNullOrWhiteSpace(anon))
+                Console.WriteLine("AVISO: --nuvem pedido, mas falta a chave (variável de ambiente P1FAST_SUPABASE_ANON). Seguindo SÓ local.");
+            else
+            {
+                nuvem = new SupabaseRealtimeChannel(urlNuvem, anon, canalNuvem);
+                publisher = new LivePublisher(nuvem, canalNuvem, permitirProducao: producao);
+                Console.WriteLine($"Conectando na nuvem (canal '{canalNuvem}')…");
+                try { nuvem.ConnectAsync(cts.Token).Wait(4000); } catch { /* tenta de novo no laço */ }
+            }
+        }
+
+        // Leitor ao vivo na tomada real -> cada amostra GRAVA no disco E entra na fila da nuvem.
+        var serial = new SerialPortT3000UsbChannel(portName);
         var reader = new T3000UsbLiveReader(
-            channel,
-            onSample: s => recorder.Motor(s),
+            serial,
+            onSample: s => { var reg = recorder.Motor(s); publisher?.Oferecer(s, reg.TWall); },
             onStatus: (txt, nivel) => Console.WriteLine($"[{nivel.ToUpperInvariant()}] {txt}"),
             onLog:    txt => Console.WriteLine("  " + txt));
 
         Console.WriteLine($"Lendo de {portName}. Aperte Q ou Esc pra encerrar (Ctrl+C também).");
         Console.WriteLine();
 
-        var cts = new CancellationTokenSource();
-        Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
         var readerTask = reader.RunAsync(cts.Token);
+        long ultimaTentativaNuvem = 0;
 
         // Painel de saúde ~1x/s + vigia de tecla, no fio principal. Alarme NUNCA silencioso.
         SessionResumo? resultado = null;
@@ -303,11 +332,28 @@ internal static class Program
             var fimSilencio = recorder.Tick();        // atualiza estado; encerra por silêncio
             if (fimSilencio is not null) resultado = fimSilencio;
 
+            // Nuvem: religa sozinho se caiu, depois drena a fila (reenvia o acumulado).
+            if (publisher is not null && nuvem is not null)
+            {
+                if (!nuvem.Online)
+                {
+                    long agora = Environment.TickCount64;
+                    if (agora - ultimaTentativaNuvem > 2000)
+                    {
+                        ultimaTentativaNuvem = agora;
+                        try { nuvem.ConnectAsync(cts.Token).Wait(4000); } catch { /* tenta depois */ }
+                    }
+                }
+                try { publisher.DrenarAsync(cts.Token).Wait(2000); } catch { /* mantém na fila */ }
+            }
+
             var e = recorder.Estado();
             var alarme = e.Alarme is null ? "" : $"   *** ALARME: {e.Alarme} ***";
+            var linhaNuvem = publisher is null ? "" :
+                $"  | nuvem={publisher.Saude()} enviadas={publisher.GetStats().Enviadas} fila={publisher.GetStats().NaFila}";
             Console.WriteLine(
                 $"[{DateTime.Now:HH:mm:ss}] gravando={(e.Gravando ? "sim" : "não")}  " +
-                $"motor={e.NMotor} ({e.HzMotor:0.0} Hz)  lacunas={e.Lacunas}  descartadas={e.Dropped}{alarme}");
+                $"motor={e.NMotor} ({e.HzMotor:0.0} Hz)  lacunas={e.Lacunas}  descartadas={e.Dropped}{linhaNuvem}{alarme}");
 
             if (Console.KeyAvailable)
             {
@@ -319,6 +365,8 @@ internal static class Program
 
         cts.Cancel();
         try { readerTask.Wait(3000); } catch { /* cancelamento esperado */ }
+        // Última drenada do que sobrou na fila antes de fechar (se a nuvem estiver de pé).
+        if (publisher is not null) { try { publisher.DrenarAsync(CancellationToken.None).Wait(3000); } catch { } }
         resultado ??= recorder.Encerrar("manual");
 
         Console.WriteLine();
@@ -338,7 +386,59 @@ internal static class Program
         var st = reader.GetStats();
         Console.WriteLine($"  leitor: emitidas={st.SamplesEmitted} religações={st.Reconnects} " +
                           $"blocosCurtos={st.ShortBlocks} leiturasRuins={st.BadReads} errosLeitura={st.ReadErrors}");
+        if (publisher is not null)
+        {
+            var cs = publisher.GetStats();
+            Console.WriteLine($"  nuvem: enviadas={cs.Enviadas} fila={cs.NaFila} descartadas={cs.Descartadas} " +
+                              $"erros={cs.Erros} barradas={cs.BarradasGuarda}");
+        }
+        if (nuvem is not null) { try { nuvem.DisposeAsync().AsTask().Wait(2000); } catch { } }
         return 0;
+    }
+
+    // === MODO --nuvem-teste: prova o FIO da nuvem na bancada (sem carro) ===
+    // Conecta num canal de TESTE e manda algumas amostras sintéticas, mostrando se a
+    // nuvem aceitou. NUNCA toca o canal de produção. Pra o operador confirmar, antes
+    // da pista, que o notebook fala com a nuvem.
+    private static int RunNuvemTesteMode(string[] args)
+    {
+        var canal = ParseArg(args, "--canal") ?? "cockpit-bubi-dev-teste";
+        var url   = ParseArg(args, "--url")   ?? "https://fvhwltzhytpnhlqbttmd.supabase.co";
+        var anon  = Environment.GetEnvironmentVariable("P1FAST_SUPABASE_ANON");
+        if (canal == LivePublisher.CanalProducao)
+        {
+            Console.Error.WriteLine("Recusado: --nuvem-teste NÃO publica no canal de produção. Use um canal de teste.");
+            return 1;
+        }
+        if (string.IsNullOrWhiteSpace(anon))
+        {
+            Console.Error.WriteLine("Falta a chave: defina a variável de ambiente P1FAST_SUPABASE_ANON.");
+            return 1;
+        }
+
+        Console.WriteLine($"=== Teste do fio da nuvem — canal de teste '{canal}' ===");
+        var cts = new CancellationTokenSource();
+        cts.CancelAfter(15000);
+        var nuvem = new SupabaseRealtimeChannel(url, anon, canal);
+        var pub = new LivePublisher(nuvem, canal);
+        try { nuvem.ConnectAsync(cts.Token).Wait(6000); } catch { }
+
+        for (int i = 0; i < 30 && !cts.IsCancellationRequested; i++)
+        {
+            var s = new T3000Sample { Rpm = 3000 + i * 50, SpeedKmh = 100 + i, LeituraPlausivel = true, Source = "sim-replay", TMono = i * 200 };
+            pub.Oferecer(s, Environment.TickCount64);
+            try { pub.DrenarAsync(cts.Token).Wait(2000); } catch { }
+            Console.WriteLine($"  online={nuvem.Online}  saude={pub.Saude()}  enviadas={pub.GetStats().Enviadas} fila={pub.GetStats().NaFila}");
+            Thread.Sleep(300);
+        }
+
+        var st = pub.GetStats();
+        Console.WriteLine($"Resultado: enviadas={st.Enviadas} fila={st.NaFila} erros={st.Erros}");
+        Console.WriteLine(st.Enviadas > 0
+            ? "OK — o notebook FALA com a nuvem (canal de teste)."
+            : "FALHOU — não consegui publicar. Verifique internet / chave / URL.");
+        try { nuvem.DisposeAsync().AsTask().Wait(2000); } catch { }
+        return st.Enviadas > 0 ? 0 : 2;
     }
 
     // === MODO --conferir: relê as sessões gravadas e reporta integridade ===
