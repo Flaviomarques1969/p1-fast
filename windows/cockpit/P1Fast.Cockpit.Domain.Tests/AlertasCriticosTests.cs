@@ -118,6 +118,24 @@ public class AlertasCriticosTests
         Assert.Null(ac.GetMensagemPrincipal());
     }
 
+    // ── Gate de "carro andando" (achado do dado real 21/06) ─────────
+
+    [Fact]
+    public void ALR_10_Marcha_lenta_nao_dispara_mistura_nem_bateria()
+    {
+        // Caso real: carro parado/marcha lenta, lambda pobre e bateria caída.
+        var idle = new AmostraAlerta { Rpm = 1000, Lambda = 1.6, BatteryV = 11.0, WaterTempC = 85 };
+        var ids = CatalogoAlertas.AvaliarT4000(idle);
+        Assert.DoesNotContain("MISTURA_POBRE", ids); // gate de carga segurou
+        Assert.DoesNotContain("BATERIA", ids);       // gate de carga segurou
+        Assert.Contains("MOTOR_QUENTE", ids);        // segurança NÃO é gated (vale parado)
+
+        // Acelerador aberto (mesmo em rpm baixo) = sob carga -> volta a avaliar.
+        var pisando = idle with { TpsPct = 50 };
+        Assert.Contains("MISTURA_POBRE", CatalogoAlertas.AvaliarT4000(pisando));
+        Assert.Contains("BATERIA", CatalogoAlertas.AvaliarT4000(pisando));
+    }
+
     [Fact]
     public void ALR_09_Manual_BOX_some_so_no_clear()
     {
