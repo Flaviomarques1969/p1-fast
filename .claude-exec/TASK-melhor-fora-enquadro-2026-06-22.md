@@ -36,3 +36,11 @@ Fazer o número "Melhor" (tempo da melhor volta) caber dentro da célula na prim
 ## Evidência da autorização: não recebida
 ## Riscos: baixo — mudança só de layout (encolhe número quando não cabe). Sem mexer em dado, banco, prod.
 ## Status inicial: iniciado
+
+## TASK_DONE (22/06/2026)
+- Causa: StatCell (Components/SummaryStats.swift) tinha lineLimit(1) sem minimumScaleFactor; o tempo de volta ("1:42.3") é mais largo que as contagens e estourava a célula de 1/4 de tela.
+- Correção: adicionado .minimumScaleFactor(0.6) ao número da StatCell. Encolhe pra caber em vez de cortar/sair da moldura.
+- Prova: BUILD SUCCEEDED (xcodebuild simulador iPhone 17) + screenshot da Home cheia mostrando "1:42.3" dentro da célula (.claude-exec/home-strip-melhor-2026-06-22.png).
+- Ajustes temporários de teste (mock preenchido + atalho --p1-home-nu) revertidos; build final OK.
+- Ambiente: desenvolvimento. Produção: não alterada.
+- Resultado: concluído.
