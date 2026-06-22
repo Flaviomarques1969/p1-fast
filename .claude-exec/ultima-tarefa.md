@@ -1,4 +1,41 @@
-# Última tarefa — P1 Fast (21/06/2026, noite) — LEITURA AO VIVO DA USB (Fase 1)
+# Última tarefa — P1 Fast (21/06/2026, noite) — FASE 2: GRAVAÇÃO LOCAL BLINDADA
+
+## 1. Pedido original do Flávio
+"execute o próximo passo." (após a Fase 1 — leitura ao vivo da USB — ficar pronta e provada.)
+
+## 2. Objetivo (1 frase)
+Construir no programa do notebook (.exe) a gravação local append-only que salva cada amostra
+decodificada em disco ANTES e INDEPENDENTE da nuvem, sobrevive a queda de internet/energia,
+relê sem buraco, e dispara alarme se a gravação falhar (disco cheio/erro). Espelha o gravador
+provado `web/cockpit/session-recorder.js` (43 testes).
+
+## 3. Critérios de conclusão (= "pronto quando" da Fase 2 do plano)
+- Cada amostra persistida append-only com carimbo de tempo da CAPTURA (tWall/tCapture).
+- Rodar sessão, "derrubar a internet" no meio → TODA a telemetria do período no arquivo, íntegra,
+  e relê sem buraco (sequência contínua).
+- Alarme dispara em disco cheio/erro de I/O simulado (perda nunca silenciosa).
+- Ferramenta de leitura/replay da gravação + recuperação de sessão órfã (queda sem fechar).
+
+## 4. Confirmação de leitura: CLAUDE.md, padroes.md, FLAVIO_* (sim); plano da Fase 2
+   (relatorios/plano-motor-gravacao-windows-2026-06-21.html), session-recorder.js, ADR-003/004.
+
+## 5. Plano (<=5 passos)
+1. Mapear o gravador provado (session-recorder.js). [FEITO]
+2. SessionRecorder.cs no Domain (lógica pura + store injetável), paridade com o JS.
+3. FileSessionStore real (append-only em disco, flush por registro) — provável na bancada E aqui.
+4. Testes: round-trip íntegro, alarme de disco cheio, recuperação de órfã, integração leitor→gravador.
+5. Rodar a bateria e reportar honesto.
+
+## 6. Arquivos/áreas
+- web/cockpit/session-recorder.js (referência), windows/cockpit/P1Fast.Cockpit.Domain/*
+
+## 7. Ambiente: desenvolvimento | 8. Produção protegida: sim | 9. Autorização produção: não
+## 10. Evidência: não recebida | 11. Riscos: nenhum em DEV (arquivo local + testes; não toca
+##     nuvem/canal). ADR-003/004: append-only e fora da fila de sync — respeitados.
+## 12. Status: em andamento
+
+---
+# Última tarefa ANTERIOR — P1 Fast (21/06/2026, noite) — LEITURA AO VIVO DA USB (Fase 1)
 
 ## 1. Pedido original do Flávio
 "p1 fast. continue." (em resposta ao fim da tarefa anterior, que perguntou se eu seguia
