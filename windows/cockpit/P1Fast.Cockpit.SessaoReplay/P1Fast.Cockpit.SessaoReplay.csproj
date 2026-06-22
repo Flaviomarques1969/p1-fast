@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Ferramenta de DEV (fora da .sln, igual ao T4000Capture): toca uma sessão de
+    pista JÁ GRAVADA pela LÓGICA REAL do cockpit (LiveDataBridge + CockpitState),
+    com a calibração do Bubi. Prova que a tela reage ao dado real, sem carro e
+    sem Windows. A prova VISUAL (a tela acendendo) segue sendo só no notebook.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>12.0</LangVersion>
+    <AssemblyName>p1fast-sessao-replay</AssemblyName>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\P1Fast.Cockpit.Domain\P1Fast.Cockpit.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
