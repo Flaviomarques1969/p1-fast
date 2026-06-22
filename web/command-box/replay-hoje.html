@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1 Fast — GPS real de hoje (21/06) · Brasília</title>
+<style>
+  :root{ --bg:#0a0e16; --fg:#dce6f5; --dim:#6f7f99; --line:#1d2740; --pista:#3a4straight; --traco:#4a5straight; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; height:100%; background:#0a0e16; color:#dce6f5;
+    font:14px/1.4 -apple-system,Segoe UI,Roboto,sans-serif; }
+  .wrap{ display:flex; flex-direction:column; height:100vh; width:100vw; }
+  header{ display:flex; align-items:baseline; gap:18px; padding:12px 18px; border-bottom:1px solid #1d2740; }
+  header h1{ font-size:15px; font-weight:700; letter-spacing:.04em; margin:0; }
+  header .sub{ color:#6f7f99; font-size:12px; letter-spacing:.06em; text-transform:uppercase; }
+  .stage{ flex:1; display:flex; min-height:0; }
+  .mapbox{ flex:1; position:relative; min-width:0; }
+  canvas{ display:block; width:100%; height:100%; }
+  .hud{ width:300px; border-left:1px solid #1d2740; padding:16px 18px; display:flex; flex-direction:column; gap:14px; }
+  .k{ color:#6f7f99; font-size:11px; letter-spacing:.08em; text-transform:uppercase; }
+  .big{ font-size:34px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1; }
+  .voltas{ display:flex; flex-direction:column; gap:6px; margin-top:4px; }
+  .volta{ display:flex; justify-content:space-between; padding:8px 10px; border:1px solid #1d2740;
+    border-radius:8px; font-variant-numeric:tabular-nums; opacity:.35; transition:opacity .2s, border-color .2s; }
+  .volta.on{ opacity:1; border-color:#3FE08C; }
+  .volta .t{ color:#9fb2cc; }
+  .ctrl{ margin-top:auto; display:flex; align-items:center; gap:10px; color:#6f7f99; font-size:12px; }
+  .ctrl button{ background:#13203a; color:#dce6f5; border:1px solid #2a3a5c; border-radius:7px;
+    padding:7px 12px; cursor:pointer; font-size:12px; }
+  .flash{ color:#3FE08C; font-weight:700; min-height:16px; letter-spacing:.04em; }
+  .legenda{ display:flex; gap:16px; color:#6f7f99; font-size:11px; padding:8px 18px; border-top:1px solid #1d2740; }
+  .dot-leg{ display:inline-block; width:9px; height:9px; border-radius:50%; vertical-align:middle; margin-right:6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>GPS REAL — sessão de hoje (21/06) · Brasília</h1>
+    <span class="sub" id="estado">carregando…</span>
+  </header>
+  <div class="stage">
+    <div class="mapbox"><canvas id="cv"></canvas></div>
+    <div class="hud">
+      <div>
+        <div class="k">tempo na sessão</div>
+        <div class="big" id="relogio">0:00</div>
+      </div>
+      <div>
+        <div class="k">voltas fechadas (pelo GPS)</div>
+        <div class="voltas" id="voltas"></div>
+      </div>
+      <div class="flash" id="flash"></div>
+      <div class="ctrl">
+        <button id="re">repetir</button>
+        <span>velocidade</span>
+        <button data-sp="20">20×</button>
+        <button data-sp="40">40×</button>
+        <button data-sp="80">80×</button>
+      </div>
+    </div>
+  </div>
+  <div class="legenda">
+    <span><span class="dot-leg" style="background:#4a5straight;background:#3a4a6a"></span>trajeto real de hoje</span>
+    <span><span class="dot-leg" style="background:#FFD24A"></span>carro</span>
+    <span><span class="dot-leg" style="background:#7DD3FC"></span>linha de chegada</span>
+  </div>
+</div>
+<script>
+(async function(){
+  var cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  var estado = document.getElementById('estado'), relogio = document.getElementById('relogio');
+  var flashEl = document.getElementById('flash'), voltasEl = document.getElementById('voltas');
+  var D, speed = 40;
+
+  try{
+    D = await (await fetch('/web/command-box/fixtures/replay-hoje-mapa.json')).json();
+  }catch(e){ estado.textContent = 'não consegui carregar os dados de hoje'; return; }
+  var pts = D.pts, marco = D.marco, voltas = D.voltas || [];
+  estado.textContent = pts.length + ' pontos de GPS · ' + (D.durMs/1000|0) + 's';
+
+  // monta a lista de voltas (começam apagadas, acendem ao fechar)
+  voltas.forEach(function(v,i){
+    var d=document.createElement('div'); d.className='volta'; d.id='v'+i;
+    d.innerHTML='<span>volta '+(i+1)+'</span><span class="t">'+fmt(v.lapSec)+'</span>';
+    voltasEl.appendChild(d);
+  });
+  function fmt(sec){ var m=Math.floor(sec/60), s=sec-m*60; return m+':'+(s<10?'0':'')+s.toFixed(1); }
+
+  // escala lat/lon -> tela (inclui a linha de chegada na moldura)
+  var lats=pts.map(p=>p[1]).concat([marco.a.lat,marco.b.lat]);
+  var lons=pts.map(p=>p[2]).concat([marco.a.lng,marco.b.lng]);
+  var latMin=Math.min.apply(0,lats),latMax=Math.max.apply(0,lats);
+  var lonMin=Math.min.apply(0,lons),lonMax=Math.max.apply(0,lons);
+
+  var W,H,sc,offx,offy,cosLat=Math.cos((latMin+latMax)/2*Math.PI/180);
+  function resize(){
+    var r=cv.parentNode.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+    W=r.width; H=r.height; cv.width=W*dpr; cv.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+    var pad=40;
+    var gw=(lonMax-lonMin)*cosLat||1e-6, gh=(latMax-latMin)||1e-6;
+    sc=Math.min((W-2*pad)/gw,(H-2*pad)/gh);
+    offx=(W-gw*sc)/2; offy=(H-gh*sc)/2;
+  }
+  function X(lon){ return offx+(lon-lonMin)*cosLat*sc; }
+  function Y(lat){ return offy+(latMax-lat)*sc; }      // lat maior = mais ao norte = mais acima
+  window.addEventListener('resize', resize); resize();
+
+  var t0=null, acendidas=0;
+  function draw(now){
+    if(t0==null) t0=now;
+    var sessMs=((now-t0)*speed) % (D.durMs||1);
+    // índice do ponto atual
+    var idx=0; for(var i=0;i<pts.length;i++){ if(pts[i][0]<=sessMs) idx=i; else break; }
+
+    ctx.clearRect(0,0,W,H);
+    // trajeto completo
+    ctx.beginPath();
+    for(var j=0;j<pts.length;j++){ var x=X(pts[j][2]),y=Y(pts[j][1]); j?ctx.lineTo(x,y):ctx.moveTo(x,y); }
+    ctx.strokeStyle='#27324d'; ctx.lineWidth=2; ctx.stroke();
+    // rastro até o carro
+    ctx.beginPath();
+    for(var k=0;k<=idx;k++){ var x2=X(pts[k][2]),y2=Y(pts[k][1]); k?ctx.lineTo(x2,y2):ctx.moveTo(x2,y2); }
+    ctx.strokeStyle='#3a4a6a'; ctx.lineWidth=2.5; ctx.stroke();
+    // linha de chegada
+    ctx.beginPath(); ctx.moveTo(X(marco.a.lng),Y(marco.a.lat)); ctx.lineTo(X(marco.b.lng),Y(marco.b.lat));
+    ctx.strokeStyle='#7DD3FC'; ctx.lineWidth=4; ctx.stroke();
+    // carro
+    var cx=X(pts[idx][2]),cy=Y(pts[idx][1]);
+    ctx.beginPath(); ctx.arc(cx,cy,7,0,7); ctx.fillStyle='#FFD24A'; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx,cy,12,0,7); ctx.strokeStyle='rgba(255,210,74,.4)'; ctx.lineWidth=2; ctx.stroke();
+
+    relogio.textContent=fmt(sessMs/1000);
+
+    // acende voltas conforme o carro passa do instante de cada fechamento
+    var nAcc=0; for(var v=0;v<voltas.length;v++){ if(sessMs>=voltas[v].ms) nAcc++; }
+    if(nAcc!==acendidas){
+      for(var a=0;a<voltas.length;a++){ var el=document.getElementById('v'+a); if(el) el.classList.toggle('on', sessMs>=voltas[a].ms); }
+      if(nAcc>acendidas) flashEl.textContent='VOLTA '+nAcc+' FECHADA PELO GPS — '+fmt(voltas[nAcc-1].lapSec);
+      acendidas=nAcc;
+    }
+    if(sessMs<200){ flashEl.textContent=''; acendidas=0; }
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+
+  document.getElementById('re').onclick=function(){ t0=null; };
+  Array.prototype.forEach.call(document.querySelectorAll('[data-sp]'),function(b){ b.onclick=function(){ speed=+b.dataset.sp; }; });
+})();
+</script>
+</body>
+</html>
