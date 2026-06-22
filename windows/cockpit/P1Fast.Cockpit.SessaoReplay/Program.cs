@@ -139,15 +139,26 @@ foreach (var kv in modos.OrderBy(k => k.Key.ToString()))
     Console.WriteLine($"   {kv.Key,-8} {kv.Value,6}  ({100.0*kv.Value/motorLidos:0.0}%)");
 Console.WriteLine($"Nível LIT máximo atingido: {nivelMax} (de 0..{CockpitState.ShiftLevelMax})");
 Console.WriteLine($"Pico de rotação real: {picoRpm.ToString(inv)} rpm  ->  luz = {shiftNoPico?.Mode} nível {shiftNoPico?.Level}");
-Console.WriteLine($"Alertas críticos disparados: {(mensagens.Count == 0 ? "NENHUM (correto: motor frio, sem alarme)" : string.Join(" | ", mensagens.Distinct()))}");
+Console.WriteLine();
+Console.WriteLine("Mensagens/alertas que apareceram (motor de alertas real, fiel à referência):");
+if (msgTally.Count == 0)
+    Console.WriteLine("   NENHUM em nenhuma amostra.");
+else
+    foreach (var kv in msgTally.OrderByDescending(k => k.Value))
+        Console.WriteLine($"   {CatalogoAlertas.Todos[kv.Key].Texto,-18} em {kv.Value,5} amostras ({100.0*kv.Value/motorLidos:0.0}%)");
+Console.WriteLine($"   (sem nenhum alerta em {amostrasSemAlerta} amostras)");
 
 // Veredicto honesto
 bool deuFire = modos.GetValueOrDefault(ShiftMode.Fire) > 0 || modos.GetValueOrDefault(ShiftMode.Overrev) > 0;
+bool deuOleo = msgTally.ContainsKey("OLEO_BAIXO");
 Console.WriteLine();
 Console.WriteLine("== VEREDICTO ==");
 Console.WriteLine(deuFire
-    ? "   ATENÇÃO: a luz disparou 'troca agora' — conferir, pois o pico real foi " + picoRpm + " rpm."
-    : $"   Coerente: a luz subiu com a rotação real até o nível {nivelMax}, e NUNCA deu 'troca agora'");
-Console.WriteLine(deuFire ? "" : $"   (fire) — porque o motor não passou de {picoRpm.ToString(inv)} rpm (pico de potência do Bubi = 6.050).");
-Console.WriteLine("   Nenhum alerta falso, mesmo com o sensor de óleo ausente (tratado como 'sem dado').");
+    ? $"   ATENÇÃO: a luz disparou 'troca agora' — conferir, pico real {picoRpm.ToString(inv)} rpm."
+    : $"   Luz: subiu com a rotação real até o nível {nivelMax} e NUNCA deu 'troca agora' (pico {picoRpm.ToString(inv)} < 6.050).");
+Console.WriteLine(deuOleo
+    ? "   ATENÇÃO: ÓLEO BAIXO disparou — não deveria, o sensor estava ausente. Revisar."
+    : "   Óleo: sensor AUSENTE não virou alerta falso (o conserto funcionou).");
+Console.WriteLine("   Os alertas de MISTURA (se houver) vêm dos picos reais de lambda (0,6 a 1,6) — fiel à regra aprovada;");
+Console.WriteLine("   se esses picos forem só de marcha lenta/desaceleração, fica como calibração futura.");
 return 0;
