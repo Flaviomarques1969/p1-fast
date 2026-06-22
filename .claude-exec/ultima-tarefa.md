@@ -1,3 +1,45 @@
+# Última tarefa — P1 Fast (21/06/2026, noite) — FIXAR DETECÇÃO DE VOLTA POR GPS NO CÉREBRO VIVO
+
+## 1. Pedido original do Flávio
+"próximo passo?" (em resposta à minha recomendação: fixar a detecção de volta por GPS dentro do
+cérebro vivo pra o painel nunca mais depender do cronômetro da injeção, que veio zerado).
+
+## 2. Objetivo (1 frase)
+Tornar a detecção de volta por GPS uma capacidade PERMANENTE do cérebro do painel (cerebro-vivo),
+sem depender do cronômetro da injeção, preservando o caminho da injeção quando ele funcionar.
+
+## 3. Critérios objetivos de conclusão
+- Peça PURA de detecção de chegada no cérebro (sem dependência de nuvem/cockpit), espelhando a
+  geometria provada em campo do chegada-detector.js.
+- cerebro-vivo aceita marco de chegada opcional + GPS; conta volta pelo cruzamento; calcula o tempo
+  pelo intervalo entre cruzamentos; injeção tem prioridade quando manda volta (sem dobrar).
+- Teste automático novo (sintético) verde + os 4 smokes do cérebro continuam verdes (sem regressão).
+- Provar na sessão REAL de hoje pelo caminho integrado (mesmas 2 voltas).
+- NÃO ir pro ar. Validar e chamar o Flávio antes de qualquer produção.
+
+## 4. Confirmação de leitura: CLAUDE.md, padroes.md, FLAVIO_* (sim, neste mesmo turno);
+   cerebro-vivo.js, cerebro-painel.js, chegada-detector.js, cerebro-vivo.smoke.mjs.
+
+## 5. Plano (<=5 passos)
+1. [FEITO] Baseline: 4 smokes do cérebro verdes; chegada-detector usado por 3 telas e SEM teste
+   → não mexer nele (risco no cockpit).
+2. Criar web/command-box/cerebro/chegada-gps.js (detector PURO, geometria espelhada).
+3. Ligar no cerebro-vivo.js: marcoChegada opcional + GPS no feedSample + funil registrarVolta
+   com anti-duplicidade (injeção prioritária). Não quebrar feedVolta/feedSample existentes.
+4. Smoke novo (cruzamentos sintéticos) + rodar os 4 smokes + a tool nos dados de hoje (integrada).
+5. Reportar honesto. Não ir pro ar.
+
+## 6. Arquivos/áreas
+- NOVO: web/command-box/cerebro/chegada-gps.js + cerebro-vivo-gps.smoke.mjs
+- EDITA: web/command-box/cerebro/cerebro-vivo.js (aditivo) · atualiza a tool de destravamento
+
+## 7. Ambiente: desenvolvimento | 8. Produção protegida: sim | 9. Autorização produção: não
+## 10. Evidência: não recebida | 11. Riscos: mexe no cérebro que roda ao vivo — mitigo sendo
+##     ADITIVO (marco opcional; sem marco, comportamento idêntico), com smokes de regressão. Não vai pro ar.
+## 12. Status: iniciado
+
+---
+
 # Última tarefa — P1 Fast (21/06/2026, noite) — DESTRAVAR OS DADOS DE HOJE (voltas pelo GPS)
 
 ## 1. Pedido original do Flávio
