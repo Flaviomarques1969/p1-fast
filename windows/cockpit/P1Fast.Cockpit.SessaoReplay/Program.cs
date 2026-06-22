@@ -366,18 +366,22 @@ if (File.Exists(barrasPath))
         }
         var voltaArg = args.FirstOrDefault(a => a.StartsWith("--volta="));
         int voltaN = voltaArg is not null && int.TryParse(voltaArg["--volta=".Length..], out var vn) ? vn : 0;
+        var duas = args.Contains("--duas-voltas"); // volta 1 (referência) + volta 2 (comparada), contínuas
         double lapStart = eventos2.Count > 0 ? eventos2[0].T : 0;
         double lapEnd = eventos2.Count > 0 ? eventos2[^1].T : 0;
-        if (voltaN >= 1 && cruz.Count > voltaN) { lapStart = cruz[voltaN - 1]; lapEnd = cruz[voltaN]; }
-        Console.WriteLine($"Cruzamentos da chegada: {cruz.Count} | volta isolada: {(voltaN >= 1 && cruz.Count > voltaN ? $"#{voltaN} ({(lapEnd - lapStart) / 1000:0.0}s)" : "sessao inteira")}");
+        double seam = -1; // tWall onde a volta 2 começa
+        bool semComp = false;     // true = sem comparação (volta isolada)
+        bool janela = false;      // true = alimenta só a janela escolhida
+        if (duas && cruz.Count >= 3) { lapStart = cruz[0]; lapEnd = cruz[2]; seam = cruz[1]; janela = true; }
+        else if (voltaN >= 1 && cruz.Count > voltaN) { lapStart = cruz[voltaN - 1]; lapEnd = cruz[voltaN]; semComp = true; janela = true; }
+        Console.WriteLine($"Cruzamentos: {cruz.Count} | modo: {(duas ? $"DUAS VOLTAS ({(lapEnd - lapStart) / 1000:0.0}s)" : voltaN >= 1 ? $"volta #{voltaN}" : "sessao inteira")}");
 
         var frames = new List<string>();
         double ultimoFrame = -1, lastRpm = 0, lastMotorT = -1e9, lastGpsT = -1e9;
         string curva = "";
-        bool semComp = voltaN >= 1; // volta isolada: SÓ os dados dela, sem outra volta como referência
         foreach (var e in eventos2)
         {
-            if (semComp && (e.T < lapStart || e.T > lapEnd)) continue; // só alimenta a volta isolada
+            if (janela && (e.T < lapStart || e.T > lapEnd)) continue; // só a janela escolhida
             if (e.Motor) { maestroT.IngestMotor(e.Rpm, e.A!); lastRpm = e.Rpm; lastMotorT = e.T; }
             else { maestroT.IngestGps(e.G!); lastGpsT = e.T; }
             curva = maestroT.CurvaAtualNome ?? curva;
