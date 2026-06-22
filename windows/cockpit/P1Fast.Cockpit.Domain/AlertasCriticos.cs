@@ -52,7 +52,13 @@ public sealed record AlertaLimites(
     double LambdaRica       = 0.80,
     double BatteryMinV      = 11.8,
     double TireTempMaxC     = 120,
-    double CambioTempMaxC   = 140
+    double CambioTempMaxC   = 140,
+    // Gate de "carro sob carga" (achado do dado real 21/06, NÃO está no JS):
+    // mistura e bateria só fazem sentido com o motor puxando. Em marcha lenta a
+    // lambda nada lê (corte de combustível = pobre falso) e a bateria cai sozinha.
+    // Default Bubi vindo do split real (andando = rpm>=3000; parado nunca).
+    double CargaRpmMin      = 3000,
+    double CargaTpsPctMin   = 15
 )
 {
     public static AlertaLimites Default { get; } = new();
