@@ -200,7 +200,8 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
             switch state {
             case .filled(let data):
-                FilledContent(data: data, onStint: onStintTap)
+                FilledContent(data: data, onStint: onStintTap,
+                              onOpen: { router.path.append($0) })
             case .empty:
                 EmptyContent(
                     onCadastrarCarro: { router.path.append(HomeNavTarget.garagemNovo) },
