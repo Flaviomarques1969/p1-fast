@@ -30,8 +30,14 @@ struct SummaryStats: View {
     var body: some View {
         HStack(spacing: Spacing.sm) {
             ForEach(items) { item in
-                StatCell(item: item)
-                    .frame(maxWidth: .infinity)
+                if let onTap = item.onTap {
+                    Button(action: onTap) { StatCell(item: item) }
+                        .buttonStyle(.plain)
+                        .frame(maxWidth: .infinity)
+                } else {
+                    StatCell(item: item)
+                        .frame(maxWidth: .infinity)
+                }
             }
         }
     }
