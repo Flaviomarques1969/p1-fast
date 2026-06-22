@@ -1,3 +1,43 @@
+# TASK_DONE — P1 Fast (22/06/2026) — FASE 3: ENVIO AO VIVO PRA NUVEM (app + Command Box) COM FILA
+
+## Correção de rumo
+Flávio corrigiu (com razão): o requisito SEMPRE foi "grava no notebook E manda o dado real ao vivo
+pra nuvem → app P1 Fast + tela do Command Box, todos vendo em tempo real". Eu tinha misturado isso
+com a decisão de 21/06 ("guardar o ARQUIVO só local") e criei uma dúvida que não existia. Construí.
+
+## Resultado (windows/cockpit)
+- NOVO Domain/LivePublisher.cs — cérebro do envio ao vivo: monta o pacote no formato EXATO do app
+  (stripSample, chaves camelCase, canal 'cockpit-bubi-live', evento 'sample'); throttle 5 Hz;
+  FILA que segura na queda de internet e REENVIA o acumulado quando volta (conserta o "carro só na
+  tela local"); trava DURA de produção (canal de produção exige permitirProducao=true; recusa
+  simulação no canal real); saúde online/offline-enfileirando/online-drenando. + InMemoryLiveChannel.
+- NOVO T4000Capture/SupabaseRealtimeChannel.cs — o fio real (WebSocket Supabase Realtime/Phoenix:
+  join no canal, heartbeat 25 s, broadcast). Mesmo protocolo do cloud-bridge.js.
+- EDITADO T4000Capture/Program.cs — `--gravar` agora aceita `--nuvem` (envia ao vivo) e `--producao`
+  (canal real, exige a chave em P1FAST_SUPABASE_ANON); cada amostra GRAVA no disco E entra na fila;
+  o laço religa a nuvem sozinho e drena. NOVO modo `--nuvem-teste` (prova o fio sem carro).
+- NOVO testes Domain.Tests/LivePublisherTests.cs (6): throttle, queda+reenvio sem perder, fila cheia
+  descarta o mais velho, trava de produção sem autorização não constrói, recusa simulação, fora de faixa.
+- ATUALIZADO docs/RUNBOOK_DIA_DE_PISTA_CAPTURA.md (passos da nuvem + chave + limites honestos).
+
+## Validação executada (DOTNET_ROLL_FORWARD=Major)
+- dotnet test (só LivePublisher): 6/6 verdes.
+- dotnet test (bateria completa): 194 aprovados / 1 falha = a PAN_04 PRÉ-EXISTENTE. Zero regressão.
+- dotnet build T4000Capture: 0 aviso / 0 erro (inclui o fio WebSocket).
+- PROVA REAL: `dotnet run -- --nuvem-teste --canal=cockpit-bubi-dev-teste` conectou na NUVEM REAL
+  (fvhwltzhytpnhlqbttmd) e publicou 30 amostras, online=True, 0 erros — em canal de TESTE, NUNCA o
+  de produção. O notebook fala com a nuvem de verdade (não só compila).
+
+## Pendências reais
+- Tomada física da USB (ler o carro) — só prova na bancada (notebook + carro).
+- Publicar dado REAL no canal de produção 'cockpit-bubi-live' = o comando do dia de pista
+  (`--gravar --nuvem --producao`), que VOCÊ roda na pista. Eu NÃO publiquei nada lá (só canal de teste).
+- Fila vive na memória durante a sessão (cobre internet oscilando). Queda total do notebook não
+  reenvia o backlog sozinho — mas o dado está salvo no disco (fonte da verdade) pra reenviar depois.
+- GPS dentro do programa (Fase 6) e empacotamento do .exe gráfico (Fase 5): fora deste passo.
+
+---
+
 # TASK_INIT — P1 Fast (22/06/2026) — PREPARAR A PRÓXIMA CAPTURA PRA "SAIR REDONDA" (gravação local ponta-a-ponta no notebook)
 
 ## 1. Pedido original do Flávio
