@@ -39,7 +39,30 @@ cruzamento da linha de chegada pelo GPS, e com isso destravar painel (stint/ritm
 ## 10. Evidência: não recebida
 ## 11. Riscos: nenhum em DEV (só leitura do dado + tool fora do ar; produção foi SÓ LIDA pra pegar
 ##     a linha de chegada). Não escrevo nada na nuvem.
-## 12. Status: iniciado
+## 12. Status: concluído (mecanismo destrava; dado de hoje é shakedown, fora do meu controle)
+
+## Resultado (tool: node .claude-exec/destravar-voltas-gps-hoje.mjs)
+- MECANISMO PROVADO: rodei o GPS de hoje (26.815 pontos válidos) no detector REAL de linha de
+  chegada (web/cockpit/chegada-detector.js) + a linha oficial de Brasília (lida da nuvem). Ele
+  detectou 3 cruzamentos → 2 voltas, com tempo tirado do intervalo entre cruzamentos.
+- PAINEL DESTRAVOU: alimentando essas voltas no cérebro REAL da nuvem (cerebro-vivo + cerebro-painel),
+  stint/ritmo/meta DEIXARAM de ficar "aguardando" e passaram a calcular (stint volta 2/12;
+  ritmo vs PB; meta). Antes (teste da tarde) era 0 volta e tudo "aguardando".
+- PREDITIVO: água 55°C, só 1 volta teve temperatura, sem tendência de subida → null (sem alerta).
+  Correto e honesto pra um carro que opera frio.
+- VERDADE DA SESSÃO DE HOJE (diagnóstico): carro PARADO ~59% do tempo (<5 km/h), só 3 aproximações
+  da linha de chegada, distância ~12,8 km (inflada por ruído de GPS a 24,5 Hz). Os 2 tempos de
+  volta (2:39 e 3:14) incluem tempo parado → NÃO são voltas rápidas representativas. O campo de
+  velocidade do GPS tem picos de ruído (578 km/h). Conclusão: sessão de shakedown, não de lapping.
+
+## Pendências reais
+- O dado de hoje é fino (shakedown): destravou o painel, mas não há volta rápida limpa pra ritmo
+  real. Isso é da captura em pista, não do software.
+- DURÁVEL (próximo passo proposto, NÃO feito): fixar a detecção de volta por GPS dentro do cérebro
+  vivo (cerebro-vivo.js), pra o painel nunca mais depender do cronômetro da injeção (que veio
+  zerado). Mexe no cérebro que roda ao vivo → faço em DEV, valido no navegador e te chamo antes.
+- COACH continua aguardando: precisa de passagens segmentadas por curva (TrechoDetector/8 trechos),
+  peça separada — não foi escopo deste passo.
 
 ---
 
