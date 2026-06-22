@@ -76,6 +76,7 @@ bool? GetBool(JsonElement e, string prop)
 
 int motorLidos = 0, gps = 0;
 var gpsValidos = new List<PontoGps>();
+var gpsT = new List<double>(); // tWall de cada ponto válido (alinhado com gpsValidos)
 foreach (var a in root.GetProperty("amostras").EnumerateArray())
 {
     var tipo = a.TryGetProperty("tipo", out var t) ? t.GetString() : null;
