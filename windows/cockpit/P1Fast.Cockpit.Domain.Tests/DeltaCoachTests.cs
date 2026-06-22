@@ -136,5 +136,7 @@ public class DeltaCoachTests
 
     [Fact]
     public void DC_12_Perda_imensuravel_nao_atrapalha_o_piloto()
-        => Assert.Null(MensagensPedagogicas.Decidir(Res(0.02, "freio", 0.02))); // < 0.05
+        // perdeu 0.06 no total (fora da faixa "zero"), mas espalhado: o pior
+        // sub-trecho é só 0.04 (< 0.05) — nenhuma frase, não atrapalha o piloto.
+        => Assert.Null(MensagensPedagogicas.Decidir(Res(0.06, "freio", 0.04)));
 }
