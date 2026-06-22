@@ -279,6 +279,13 @@ struct HomeView: View {
             // StintModalView (propósito/treino + pneu/paradas), não mais a tela
             // separada StintPlanoView (preservada no projeto, sem rota).
             StintSoltoLauncher(eventoId: eventoId)
+        case .voltasResumo:
+            VoltasResumoView(onClose: { voltarUmaTela() })
+        case .stintsLista:
+            StintsListaView(onAbrirEvento: { router.path.append(HomeNavTarget.eventoDetalhe(eventoId: $0)) },
+                            onClose: { voltarUmaTela() })
+        case .melhorVolta:
+            MelhorVoltaView(onClose: { voltarUmaTela() })
         }
     }
 
