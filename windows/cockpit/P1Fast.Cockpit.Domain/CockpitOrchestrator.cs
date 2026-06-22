@@ -97,7 +97,7 @@ public sealed class CockpitOrchestrator
             case "freada-iniciou":
                 _subAtual = "freio";
                 _pFre = ev.DistFromEntradaM;
-                PontoFreio(ev.DistFromEntradaM);
+                if (ev.DistFromEntradaM is { } dm) PontoFreio(dm);
                 break;
             case "apice-cruzou":
                 _subAtual = "apice";
