@@ -128,6 +128,12 @@ public sealed class CockpitOrchestrator
             var coach = MensagensPedagogicas.Decidir(delta, new ContextoApice(apex.AngleDeg, apex.DistM));
             if (coach is not null)
                 _cockpit.SetAcao(coach.Texto, delta.DeltaTotalS > 0 ? Tone.Erro : Tone.Bom);
+
+            // Número grande de tempo + halo da curva (resultado real do trecho).
+            var tone = delta.DeltaTotalS > 0.05 ? Tone.Erro : delta.DeltaTotalS < -0.05 ? Tone.Bom : Tone.Neutro;
+            _cockpit.SetDelta(FormatDelta(delta.DeltaTotalS), tone);
+            _cockpit.SetTrechoStatus(delta.DeltaTotalS < -0.05 ? TrechoStatus.RecordeStint
+                : delta.DeltaTotalS > 0.05 ? TrechoStatus.PiorStint : TrechoStatus.Neutro);
         }
         else
         {
