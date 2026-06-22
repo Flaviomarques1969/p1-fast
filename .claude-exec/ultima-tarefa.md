@@ -56,4 +56,5 @@ não recebida
 - Código morto substituído (save/saveAndAdvance → persistThen/saveAndClose/saveThen*).
 
 ## 12. Status
-em andamento
+Implementado em DEV. Compila: `xcodebuild build -scheme p1fast-ios ... -destination 'generic/platform=iOS Simulator'` → **BUILD SUCCEEDED**.
+Parcial: aguardando validação no iPhone (toque real: sair, salvar-e-voltar, ápice na borda interna).
