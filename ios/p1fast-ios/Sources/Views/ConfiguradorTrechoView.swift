@@ -1034,9 +1034,13 @@ struct ConfiguradorTrechoView: View {
         // logo de cara (não quebrar fluxo do trecho recém-aberto), seed
         // um apex no centro quando a lista está vazia.
         if let stored = blob?.apexReferences, !stored.isEmpty {
+            // Ápices já configurados pelo usuário são preservados como estão.
             apexes = Array(stored.prefix(Self.maxApexes))
         } else {
-            apexes = [P1FastCore.TrackPoint(x: cx, y: cy)]
+            // Semente padrão (trecho ainda não calibrado): já nasce na borda
+            // interna da curva, não no eixo central.
+            let c = P1FastCore.TrackPoint(x: cx, y: cy)
+            apexes = [(lookup.flatMap { snapApexToInnerEdge(c, lookup: $0) }) ?? c]
         }
         activeApexIdx = 0
         exitP = blob?.exitPoint ?? P1FastCore.TrackPoint(x: cx + 50, y: cy + 50)
