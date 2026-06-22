@@ -335,6 +335,54 @@ if (File.Exists(barrasPath))
     Console.WriteLine($"Estado final da tela: acao=\"{telaState.Get().Acao.Texto}\"  apex.distM={telaState.Get().Apex.Apice.DistM:0.0}m");
     Console.WriteLine("   (a tela observa esse mesmo estado; no Windows, o maestro o muta ao vivo e a tela acende)");
 
+    // ── EXPORTAR A FITA DA TELA (pro player no navegador) ───────────
+    var expArg = args.FirstOrDefault(a => a.StartsWith("--exportar-tela="));
+    if (expArg is not null)
+    {
+        var saida = expArg["--exportar-tela=".Length..];
+        var telaC = new CockpitState();
+        var maestroT = new CockpitOrchestrator(telaC, segs);
+
+        var eventos2 = new List<(double T, bool Motor, double Rpm, AmostraAlerta? A, AmostraGps? G)>();
+        foreach (var m in motorList) eventos2.Add((m.T, true, m.Rpm, m.A, null));
+        foreach (var g in gpsDet) eventos2.Add((g.T, false, 0, null, g));
+        eventos2.Sort((x, y) => x.T.CompareTo(y.T));
+
+        string J(string? s) => "\"" + (s ?? "").Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+        string Num(double? d) => d is { } v && !double.IsNaN(v) ? v.ToString("0.0", inv) : "null";
+
+        var frames = new List<string>();
+        double t0 = eventos2.Count > 0 ? eventos2[0].T : 0;
+        double ultimoFrame = -1, lastRpm = 0;
+        string curva = "";
+        foreach (var e in eventos2)
+        {
+            if (e.Motor) { maestroT.IngestMotor(e.Rpm, e.A!); lastRpm = e.Rpm; }
+            else maestroT.IngestGps(e.G!);
+            curva = maestroT.CurvaAtualNome ?? curva;
+            var rel = e.T - t0;
+            if (ultimoFrame < 0 || rel - ultimoFrame >= 200) // ~5 quadros por segundo
+            {
+                ultimoFrame = rel;
+                var st = telaC.Get();
+                var ap = st.Apex.Apice;
+                frames.Add("{" +
+                    $"\"t\":{(rel / 1000).ToString("0.0", inv)}," +
+                    $"\"rpm\":{lastRpm.ToString("0", inv)}," +
+                    $"\"shiftMode\":{J(st.Shift.Mode.ToString())},\"shiftLevel\":{st.Shift.Level}," +
+                    $"\"trecho\":{J(st.TrechoStatus.ToString())}," +
+                    $"\"delta\":{J(st.Delta.Value)},\"deltaTone\":{J(st.Delta.Tone.ToString())}," +
+                    $"\"acao\":{J(st.Acao.Texto)},\"acaoTone\":{J(st.Acao.Tone.ToString())}," +
+                    $"\"msg\":{J(st.Message?.Texto ?? "")},\"msgTipo\":{J(st.Message?.Tipo.ToString() ?? "")}," +
+                    $"\"apiceDist\":{Num(ap.DistM)},\"apiceAng\":{Num(ap.AngleDeg)},\"apiceEstado\":{J(ap.Estado.ToString())}," +
+                    $"\"curva\":{J(curva)}" +
+                    "}");
+            }
+        }
+        File.WriteAllText(saida, "[\n" + string.Join(",\n", frames) + "\n]");
+        Console.WriteLine($"Fita da tela exportada: {frames.Count} quadros -> {saida}");
+    }
+
     // ── AUDITORIA: provar que cada função É data-driven (falsificação) ──
     if (args.Contains("--auditoria"))
     {
