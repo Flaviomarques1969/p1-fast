@@ -54,7 +54,7 @@ public class CockpitOrchestratorTests
 
         var t = 0.0;
         var volta1 = new List<AmostraGps>();
-        UmaVolta(volta1, kmhBaixo: 100, ref t);
+        t = UmaVolta(volta1, kmhBaixo: 100, t);
         foreach (var s in volta1) orq.IngestGps(s);
 
         // 1ª passagem pela curva vira referência e mostra REGISTRANDO.
