@@ -332,6 +332,60 @@ if (File.Exists(barrasPath))
         Console.WriteLine("   " + string.Join(" | ", frasesCoach.Take(12)));
     Console.WriteLine($"Estado final da tela: acao=\"{telaState.Get().Acao.Texto}\"  apex.distM={telaState.Get().Apex.Apice.DistM:0.0}m");
     Console.WriteLine("   (a tela observa esse mesmo estado; no Windows, o maestro o muta ao vivo e a tela acende)");
+
+    // ── AUDITORIA: provar que cada função É data-driven (falsificação) ──
+    if (args.Contains("--auditoria"))
+    {
+        Console.WriteLine();
+        Console.WriteLine("== AUDITORIA (falsificação: a saída muda quando o dado muda?) ==");
+
+        // A) LUZ DE MARCHA — computada do rpm real?
+        var sReal = LiveDataBridge.RpmToShift(picoRpm, LiveLimits.Bubi);
+        var sMais = LiveDataBridge.RpmToShift(picoRpm + 400, LiveLimits.Bubi);
+        var sZero = LiveDataBridge.RpmToShift(0, LiveLimits.Bubi);
+        Console.WriteLine($"A) LUZ: rpm real {picoRpm}->{sReal.Mode} L{sReal.Level} | +400={picoRpm + 400}->{sMais.Mode} | 0->{sZero.Mode}");
+        Console.WriteLine($"   VEREDICTO: {(sReal.Mode != sMais.Mode && sZero.Mode == ShiftMode.Off ? "muda com o rpm = COMPUTADO do dado real" : "SUSPEITO")}");
+
+        // B) ALERTAS — da água/lambda reais? (pega a amostra de maior rpm = andando)
+        JsonElement md = default; double maxr = -1;
+        foreach (var a2 in root.GetProperty("amostras").EnumerateArray())
+            if (a2.TryGetProperty("tipo", out var tp2) && tp2.GetString() == "t4000" && a2.TryGetProperty("dados", out var dd))
+            { var r2 = GetNum(dd, "rpm") ?? 0; if (r2 > maxr) { maxr = r2; md = dd; } }
+        var amReal = new AmostraAlerta { WaterTempC = GetNum(md, "waterTempC"), Rpm = GetNum(md, "rpm"), TpsPct = GetNum(md, "tpsPct"), Lambda = GetNum(md, "lambda"), BatteryV = GetNum(md, "batteryV") };
+        var idsReal = CatalogoAlertas.AvaliarT4000(amReal);
+        var idsQuente = CatalogoAlertas.AvaliarT4000(amReal with { WaterTempC = 85 });
+        Console.WriteLine($"B) ALERTAS: amostra real (água {amReal.WaterTempC:0}C, rpm {amReal.Rpm:0}) -> [{string.Join(",", idsReal)}]");
+        Console.WriteLine($"   mesma amostra com água=85 -> [{string.Join(",", idsQuente)}]");
+        Console.WriteLine($"   VEREDICTO: {(!idsReal.Contains("MOTOR_QUENTE") && idsQuente.Contains("MOTOR_QUENTE") ? "aparece MOTOR QUENTE só quando a água sobe = lê o dado real" : "SUSPEITO")}");
+
+        // C) ÁPICE/BOLINHA — coordenada real de Brasília? distância varia?
+        var apiceAud = Ghost.AcharApice(gpsDet.Select(a => new PontoGps(a.Lat, a.Lng)).ToList());
+        if (apiceAud is not null)
+        {
+            var longe = Ghost.DistMeters(new PontoGps(gpsDet[0].Lat, gpsDet[0].Lng), apiceAud.Ponto);
+            Console.WriteLine($"C) ÁPICE: lat {apiceAud.Ponto.Lat:0.00000} lng {apiceAud.Ponto.Lng:0.00000} (Brasília ~ -15.77/-47.90), raio {apiceAud.RaioM:0.0}m");
+            Console.WriteLine($"   bolinha: longe dele = {longe:0}m, em cima dele = 0m (distância VARIA com a posição real)");
+            Console.WriteLine($"   VEREDICTO: {(apiceAud.Ponto.Lat < -15 && apiceAud.Ponto.Lat > -16 && longe > 10 ? "coordenada real da pista + distância varia = GPS real" : "SUSPEITO")}");
+        }
+
+        // D) SEGMENTAÇÃO — depende da pista real? (joga o GPS pra longe da pista)
+        int entradasLonge = 0;
+        var detLonge = new TrechoDetector(segs, ev => { if (ev.Type == "entrada-cruzou") entradasLonge++; });
+        foreach (var s in gpsDet) detLonge.IngestGps(s with { Lat = s.Lat + 0.05, Lng = s.Lng + 0.05 }); // ~5 km fora
+        Console.WriteLine($"D) CURVAS: GPS real -> {entradas.Distinct().Count()} de 8 | GPS deslocado 5km fora da pista -> {entradasLonge}");
+        Console.WriteLine($"   VEREDICTO: {(entradas.Distinct().Count() == 8 && entradasLonge == 0 ? "8/8 na pista real, 0 fora = depende da geometria real de Brasília" : "SUSPEITO")}");
+
+        // E) COACH/DELTA — comparação real? (passagem vs ela mesma = zero)
+        if (gpsDet.Count > 60)
+        {
+            var trecho = gpsDet.Skip(20).Take(40).Select((a, i) => new PontoPassagem(a.Lat, a.Lng, a.Kmh, a.T, (double)i / 39, i < 20 ? "entrada" : "saida")).ToList();
+            var pp = new Passagem("aud", trecho);
+            var dSelf = DeltaCalculator.Calcular(pp, pp);
+            Console.WriteLine($"E) COACH: capstone real (2ª volta vs 1ª) deu {frasesCoach.Count} frases REAIS (sem simulação): {string.Join(", ", frasesCoach.Take(6))}");
+            Console.WriteLine($"   prova: a MESMA passagem vs ela mesma -> diferença {dSelf.DeltaTotalS:0.000}s -> '{MensagensPedagogicas.Decidir(dSelf)?.Texto}'");
+            Console.WriteLine($"   VEREDICTO: {(Math.Abs(dSelf.DeltaTotalS) < 1e-6 ? "comparação verdadeira (igual contra igual = 0) = compara passagens reais" : "SUSPEITO")}");
+        }
+    }
 }
 else
 {
