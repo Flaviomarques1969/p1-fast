@@ -121,7 +121,8 @@ public class GhostTests
 
     private static bool Perto(double a, double b, double tol)
     {
-        var d = Math.Abs(((a - b + 540) % 360) - 180); // diferença angular
-        return d >= 180 - tol;
+        var diff = Math.Abs((a - b) % 360);
+        if (diff > 180) diff = 360 - diff;
+        return diff <= tol;
     }
 }
