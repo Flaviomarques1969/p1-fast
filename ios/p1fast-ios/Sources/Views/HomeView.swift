@@ -103,6 +103,9 @@ struct CarroMock: Identifiable, Equatable {
     /// Cor do swatch (token Color).
     let cor: Color
     let stints: Int
+    /// Id REAL do carro (carros.id) pra abrir a tela do carro ao tocar na
+    /// linha. Vazio = dado de exemplo (não navegável), igual ao eventoId.
+    var carroId: String = ""
 }
 
 // MARK: - View raiz
