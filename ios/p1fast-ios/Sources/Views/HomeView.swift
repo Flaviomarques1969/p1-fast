@@ -75,6 +75,10 @@ struct HomeData {
     let carrosTotal: Int
     let eventosTotal: Int
     let stintsTotal: Int
+    /// Total de voltas reais e melhor tempo válido (ms). Default mantém os
+    /// mocks/previews antigos que não passam esses campos.
+    var voltasTotal: Int = 0
+    var melhorVoltaMs: Int? = nil
     let eventoAtivoHoje: EventoMock?
     let proximoEvento: EventoMock?
     let carrosRecentes: [CarroMock]
