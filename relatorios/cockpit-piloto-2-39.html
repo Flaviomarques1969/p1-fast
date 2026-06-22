@@ -156,6 +156,7 @@
   // índices de início de cada curva (pra pular pros momentos bons)
   const momentos=[]; let curAnt='';
   F.forEach((f,idx)=>{ if(f.curva && f.curva!==curAnt) momentos.push(idx); curAnt=f.curva; });
+  if(momentos.length) i=momentos[0]; // abre já na 1ª curva (não nos minutos parados)
 
   function loop(now){
     const dt=now-last; last=now;
