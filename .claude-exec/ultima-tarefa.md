@@ -36,7 +36,33 @@ sem depender do cronômetro da injeção, preservando o caminho da injeção qua
 ## 7. Ambiente: desenvolvimento | 8. Produção protegida: sim | 9. Autorização produção: não
 ## 10. Evidência: não recebida | 11. Riscos: mexe no cérebro que roda ao vivo — mitigo sendo
 ##     ADITIVO (marco opcional; sem marco, comportamento idêntico), com smokes de regressão. Não vai pro ar.
-## 12. Status: iniciado
+## 12. Status: concluído (cérebro passa a contar volta por GPS; conectar no painel ao vivo = próximo passo)
+
+## Resultado
+- NOVO web/command-box/cerebro/chegada-gps.js — detector PURO de chegada (geometria espelhada do
+  chegada-detector.js provado em campo, sem dependência de nuvem/cockpit).
+- EDITADO cerebro-vivo.js (aditivo): aceita marcoChegada opcional; no feedSample, GPS confiável
+  (gate fix>=3 e hacc<50) entra no detector; volta fechada pelo cruzamento, tempo pelo intervalo
+  entre cruzamentos; funil registrarVolta com anti-duplicidade (injeção prioritária, janela 8 s).
+  SEM marco → comportamento idêntico ao anterior (por isso os 4 smokes seguem verdes).
+- NOVO cerebro-vivo-gps.smoke.mjs — prova sintética: 3 cruzamentos → 2 voltas, painel calcula,
+  tempo ~93 s, e injeção não duplica a volta do GPS. EXIT=0.
+- ACHADO E CORRIGIDO: no cru, ponto de GPS ruim fechava VOLTA FALSA (4 cruzamentos vs 3). O gate
+  de qualidade resolveu — caminho ligado bate com o filtrado: 3 cruzamentos → 2 voltas na sessão real.
+
+## Validação executada
+- node web/command-box/cerebro/cerebro-vivo-gps.smoke.mjs → EXIT=0 (tudo verde)
+- 4 smokes do cérebro (vivo/painel/extras/coach) → EXIT=0 cada (sem regressão)
+- node .claude-exec/destravar-voltas-gps-hoje.mjs → caminho LIGADO no cérebro = 3 cruzamentos / 2
+  voltas (igual ao standalone); painel calculando stint/ritmo/meta.
+
+## Pendências reais
+- CONECTAR no painel ao vivo (8078): o painel/transporte precisa carregar a linha de chegada e
+  passar marcoChegada + alimentar o GPS no orquestrador. Mexe no painel ao vivo → validar no
+  navegador e chamar o Flávio antes. Hoje a capacidade existe no cérebro, mas fica DORMENTE até
+  o painel passar o marco.
+- Dado de hoje continua de shakedown (2 voltas com tempo parado) — limite da captura, não do código.
+- NÃO foi pro ar.
 
 ---
 
