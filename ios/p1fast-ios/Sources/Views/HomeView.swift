@@ -66,6 +66,14 @@ enum HomeNavTarget: Hashable {
     /// catálogo de treinos + ghost + voltas). eventoId nil = Stint livre;
     /// preenchido = vinculado a um evento.
     case stintPlano(eventoId: String?)
+    /// Resumo estratégico de voltas (total + melhor + média de delta das 10
+    /// melhores). Aberto pelo número "Voltas" da Home.
+    case voltasResumo
+    /// Lista de todos os stints. Aberto pelo número "Stints" da Home.
+    case stintsLista
+    /// Detalhe da melhor volta (tempo; mapa + por trecho quando houver volta
+    /// real). Aberto pelo número "Melhor" da Home.
+    case melhorVolta
 }
 
 /// Dados necessários para renderizar o estado cheio. Por enquanto vêm
