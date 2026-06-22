@@ -1142,47 +1142,33 @@ struct ConfiguradorTrechoView: View {
         return P1FastCore.TrackPoint(x: s.x + nx * apexInnerOffset, y: s.y + ny * apexInnerOffset)
     }
 
-    private func save() {
+    /// Persiste entry/apex/exit do trecho atual e roda `done` no sucesso.
+    /// Configurador só toca em entry/apex/exit; brakingPoint é derivado
+    /// retroativamente — preservamos o que tiver no DB (pode ser nil se
+    /// nunca foi calculado ainda).
+    private func persistThen(_ done: @escaping () -> Void) {
         guard !saving else { return }
         saving = true
         Task { @MainActor in
             do {
-                // Configurador só toca em entry/apex/exit. brakingPoint
-                // é derivado retroativamente — preservamos o que tiver
-                // no DB (pode ser nil se nunca foi calculado ainda).
                 try await repo.updateCanonicalPoints(
                     segmentId: segmentId,
                     entry: entry, braking: existingBraking, apexes: apexes, exit: exitP,
                     markCalibrated: true
                 )
                 saving = false
-                onClose?()
+                done()
             } catch {
                 saving = false
             }
         }
     }
 
-    /// Salva o trecho atual e avança pro próximo (ou fecha se for o último).
-    private func saveAndAdvance() {
-        guard !saving else { return }
-        saving = true
-        Task { @MainActor in
-            do {
-                try await repo.updateCanonicalPoints(
-                    segmentId: segmentId,
-                    entry: entry, braking: existingBraking, apexes: apexes, exit: exitP,
-                    markCalibrated: true
-                )
-                saving = false
-                if canGoNext {
-                    navigateNext()
-                } else {
-                    onClose?()
-                }
-            } catch {
-                saving = false
-            }
-        }
-    }
+    /// Salva o trecho atual e volta pra primeira tela da função (lista de
+    /// trechos). Disponível em QUALQUER trecho — não precisa chegar ao fim.
+    private func saveAndClose() { persistThen { close() } }
+
+    /// Salva o trecho atual antes de navegar, pra não perder o ajuste feito.
+    private func saveThenPrev() { persistThen { navigatePrev() } }
+    private func saveThenNext() { persistThen { navigateNext() } }
 }
