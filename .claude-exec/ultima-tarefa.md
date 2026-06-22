@@ -1,3 +1,47 @@
+# TASK_INIT — P1 Fast (22/06/2026) — PLANO FINAL DO .EXE NATIVO (cockpit do piloto + captura)
+
+## 1. Pedido original do Flávio
+"em p1 fast quero que vc [faça] o último plano para criar um .exe para rodar no Windows do notebook e
+fazer papel todo do cockpit do piloto e as funções de capturar os dados, eu não quero aquela aplicação
+web, eu quero aquela aplicação como um aplicativo nativo rodando na máquina."
+
+## 2. Objetivo (1 frase)
+Entregar O PLANO FINAL e consolidado pra transformar o que já existe (motor de captura provado em DEV +
+tela nativa em modo demonstração) num único aplicativo nativo Windows (.exe) que faz o papel completo do
+cockpit do piloto e captura os dados — sem depender da aplicação web.
+
+## 3. Critérios objetivos de conclusão
+- Plano reflete o ESTADO REAL verificado no código (não o de 21/06, que é anterior ao trabalho de hoje).
+- Diz, fase a fase, o que já está PRONTO em DEV e o que FALTA pra virar o .exe nativo pedido.
+- Linguagem de gestor, formato mapa, largura total, sem emoji (entregue como HTML + resumo no chat).
+- Lista as decisões que dependem do Flávio, com recomendação.
+- Nada vai pro ar; produção (canal cockpit-bubi-live) não é tocada.
+
+## 4. Confirmação de leitura
+- ~/.claude/CLAUDE.md: sim · ~/.claude-decisoes/padroes.md: sim (0 decisões)
+- FLAVIO_EXECUTION_PROTOCOL / DONE_CHECKLIST / ENVIRONMENT_RULES / COMMUNICATION_RULES: sim
+- Memória global + memória P1 Fast (2 caminhos): sim · CLAUDE.md do projeto + ARQUITETURA_DEFINITIVA: sim
+- Verificado no código: P1Fast.Cockpit.UI/MainWindow.xaml(.cs) (ainda DemoScenes/_demoTimer), .sln (só
+  Domain/Tests/LiveDemo), T3000RIBlockParser.cs, SerialPortT3000UsbChannel.cs, SessionRecorder.cs,
+  LivePublisher.cs, SupabaseRealtimeChannel.cs; plano de 8 fases (relatorios/plano-motor-gravacao-windows-2026-06-21.html)
+
+## 5. Plano (<=5 passos)
+1. [FEITO] Carregar protocolos + arquitetura definitiva + memória dos 2 caminhos.
+2. [FEITO] Verificar o estado real do código (captura pronta em DEV; tela ainda demo; fora da solução).
+3. Gerar o plano consolidado como mapa HTML (relatorios/plano-exe-nativo-cockpit-2026-06-22.html).
+4. Abrir no navegador + resumo curto no chat (Recomendação/Por quê/Impacto/Risco/Próximo passo).
+5. Registrar TASK_DONE. Aguardar decisão do Flávio sobre GPS, prazo e coexistência com o publicador web.
+
+## 6. Arquivos/áreas
+- NOVO: relatorios/plano-exe-nativo-cockpit-2026-06-22.html (só documento; não toca código de produto)
+- LEITURA: windows/cockpit/* (UI, Domain, T4000Capture), .sln, plano 21/06
+
+## 7. Ambiente: desenvolvimento | 8. Produção protegida: sim | 9. Autorização produção: não
+## 10. Evidência: não recebida | 11. Riscos: nenhum (entrega = documento/plano; nada de código de
+##     produto alterado; nuvem/canal não tocados). 12. Status: iniciado.
+
+---
+
 # TASK_DONE — P1 Fast (22/06/2026) — FASE 3: ENVIO AO VIVO PRA NUVEM (app + Command Box) COM FILA
 
 ## Correção de rumo
