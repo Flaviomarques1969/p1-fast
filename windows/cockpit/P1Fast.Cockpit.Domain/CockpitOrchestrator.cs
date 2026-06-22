@@ -30,6 +30,11 @@ public sealed class CockpitOrchestrator
     private readonly Dictionary<string, (double? Ent, double? Fre, double? Api, double? Sai)> _refPontos = new();
     private double? _pEnt, _pFre, _pApi, _pSai; // o que está sendo medido na passagem atual
 
+    // Resultado real por curva (pra barra de stint): "faster"/"slower"/"neutral".
+    private readonly Dictionary<string, string> _estadoTrecho = new();
+    public string EstadoDoTrecho(string segId) => _estadoTrecho.GetValueOrDefault(segId, "");
+    public string? CurvaAtualId => _segAtual;
+
     public CockpitOrchestrator(CockpitState cockpit, IReadOnlyList<TrechoSegmento>? segments = null, LiveLimits? limites = null)
     {
         _cockpit = cockpit ?? throw new ArgumentNullException(nameof(cockpit));
