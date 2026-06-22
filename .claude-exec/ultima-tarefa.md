@@ -65,7 +65,15 @@ sem clique, offline), luz de marcha na regra real (troca 6.050 via rpmToShift), 
 roteirizada pelas 8 curvas reais de Brasilia (nomes do JSON aprovado). Provada por screenshot
 (/tmp/cockpit-vitrine.png): delta -0,08, "FREOU CEDO", entrada 129 km/h, curva "Reta Oposta".
 Reusa as pecas reais: cockpit-state.js + cockpit-renderer.js + live-data-bridge.js.
-PROXIMO (nº2): trocar o roteiro de demonstracao pela VOLTA REAL de 2:39 (replay no navegador).
+PROBLEMA Nº2 (volta real no navegador) — FEITO p/ GPS: web/cockpit/cockpit-volta-real.html reproduz a
+volta real 24/05 e o painel reage de verdade — curva atual, velocidade (calculada pela posicao, pois o
+spd do GPS veio 0), entrada/saida, e DELTA DE TEMPO entre passagens + frase do coach. Provado por
+screenshot (Curva da Reta Oposta: 94 km/h, delta +0,06, "BUSCAR LIMITE").
+ACHADO DE DADOS: sessao 21/06 = MOTOR real mas carro no BOX (GPS nao saiu, <=110m das curvas);
+volta 24/05 = GPS andando (8 curvas) mas SEM motor. Ver motor+GPS juntos exige gravacao com os dois
+andando (proxima pista). Luz de marcha provada na vitrine; fica fora desta tela ate ter motor junto.
+Fixtures: web/cockpit/fixtures/volta-real-pista-24-05.json. Detalhe: [[p1-fast-dados-volta-real-motor-vs-gps]].
+PROXIMO (nº3): bolinha do ápice ao vivo + (quando houver gravacao motor+GPS) luz/alertas na mesma tela.
 
 ---
 
