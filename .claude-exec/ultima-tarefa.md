@@ -1,3 +1,39 @@
+# TASK — Fase 4, Incremento 2: MENSAGENS/ALERTAS REAIS + conserto do "sensor ausente" (22/06/2026)
+# (registro da sessão do COCKPIT WINDOWS; preservado acima do trabalho de iOS de outra sessão)
+
+## Pedido
+"ok. então usa a de domingo. 2:39 e testa." (após "ligar a tela aos dados reais e às funções de
+mensagens, ghost e ia"). Usar a sessão REAL de domingo 21/06 (1 volta de 2:39) como prova.
+
+## Feito (windows/cockpit) — tudo testado em DEV (DOTNET_ROLL_FORWARD=Major)
+- NOVO Domain/AlertasCriticos.cs — port fiel de web/cockpit/alertas-criticos.js: catálogo de 19 alertas
+  (4 gravidades), AmostraAlerta com campos NULL = sensor ausente, AvaliarT4000, orquestrador
+  (IngestT4000 / GetAtivos por gravidade+estágio / GetMensagemPrincipal / Raise/ClearManual).
+  CONSERTO do achado real: óleo é BIT de alarme (baixaPressaoOleo), NÃO valor de pressão; ausente
+  nunca dispara. (O LiveDataBridge.CheckCriticalAlerts antigo — modelo T4000-CAN — foi PRESERVADO.)
+- NOVO Domain.Tests/AlertasCriticosTests.cs (13) — inclui ALR_03 (óleo ausente NÃO dispara).
+- ESTENDIDO P1Fast.Cockpit.SessaoReplay (Program.cs) — agora também roda o motor de alertas sobre a
+  sessão real e leva a mensagem principal pro CockpitState.
+
+## Validação
+- Testes do motor de alertas: 13/13 verdes. Bateria completa: 226 aprovados / 1 falha (PAN_04
+  pré-existente, vírgula no Mac). Zero regressão.
+- REPLAY da volta real (1.942 amostras): luz subiu até nível 6, nunca "troca agora" (pico 5912<6050);
+  óleo ausente NÃO virou alerta falso (conserto OK).
+- ACHADO FORTE (split andando rpx>=3000 vs parado): MISTURA POBRE (46%) e BATERIA (89%) aparecem SÓ
+  com o carro PARADO/marcha lenta (93% da sessão); ANDANDO = 0% das duas (bateria 13,0-13,4V sã,
+  alternador carregando). Ou seja: a regra aprovada, sem um "gate de carro em uso", encheria a tela de
+  alerta falso na garagem. ANDANDO o motor rodou RICO (lambda 0,55-0,97; MISTURA RICA em 59% da volta)
+  — observação REAL do acerto, não ruído.
+
+## Pendência/decisão pro Flávio (gerada pelo dado real)
+- Adicionar GATE de "carro andando / sob carga" (ou suprimir marcha lenta) antes de mistura/bateria,
+  pra não encher a tela na garagem. É calibração/decisão de produto. (Próximo passo recomendado.)
+- Coach (FREOU CEDO etc.) e ghost dependem de comparação por trecho (precisa do GPS no pipeline) —
+  Incrementos 3/4, com a volta de 2:39 como referência.
+
+---
+
 # Última tarefa — Configurador de Trecho (Garagem → Trechos) — 22/06/2026
 
 ## 1. Pedido original de Flávio
