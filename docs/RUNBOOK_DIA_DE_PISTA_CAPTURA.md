@@ -13,12 +13,17 @@ derrubar a captura por engano.
 
 | Fonte                  | Quem captura                              | Onde fica o dado |
 |------------------------|-------------------------------------------|------------------|
-| Motor (injeção T4000)  | **.exe do notebook**, modo `--gravar`     | arquivo de sessão no notebook (este runbook) |
+| Motor (injeção T4000)  | **programa do notebook**, modo `--gravar` | grava no notebook **e** manda ao vivo pra nuvem (app + Command Box) |
 | GPS / posição          | navegador na **Central** (`p1tv`)         | banco local do navegador da Central |
 | Vídeo (Osmo Action 6)  | navegador na Central, via Daily.co        | ao vivo (não grava local ainda) |
 
-Ou seja: o `--gravar` cobre o MOTOR. O GPS continua sendo o do navegador da Central,
-como hoje. Os dois rodam em paralelo no mesmo notebook.
+Ou seja: o `--gravar` cobre o MOTOR — grava nele E, com `--nuvem`, manda ao vivo pra
+nuvem com proteção contra queda de internet. O GPS continua sendo o do navegador da
+Central, como hoje. Os dois rodam em paralelo no mesmo notebook.
+
+### A chave da nuvem (configurar uma vez no notebook)
+O envio pra nuvem precisa da chave de acesso na variável de ambiente `P1FAST_SUPABASE_ANON`
+(é a mesma chave pública que o app web já usa). Configure uma vez no notebook e fica valendo.
 
 ---
 
