@@ -1,3 +1,42 @@
+# Última tarefa — P1 Fast (21/06/2026, noite) — REDUNDÂNCIA: VOLTA POR GPS NA TELA AO VIVO (8078)
+
+## 1. Pedido original do Flávio
+"próximo passo" + escolha no card: "Ligar a redundância" — a tela do painel ao vivo achar a volta
+pelo GPS por conta própria, além do aviso de volta que vem do notebook.
+
+## 2. Objetivo (1 frase)
+Dar ao cérebro da tela ao vivo (8078) a linha de chegada + o GPS do canal, pra ele fechar a volta
+sozinho se o aviso do notebook falhar — sem mexer no visual e sem duplicar volta.
+
+## 3. Critérios objetivos de conclusão
+- Tela passa marcoChegada ao orquestrador e alimenta o evento 'gps' do canal no cérebro.
+- Mudança ADITIVA: sem GPS/sem marco a tela se comporta igual; visual intocado.
+- Smokes do cérebro seguem verdes; a tela abre no 8078 sem erro (validação no navegador).
+- Backup da tela feito antes de editar. NÃO vai pro ar (chamo o Flávio antes).
+
+## 4. Confirmação de leitura: CLAUDE.md, padroes.md, FLAVIO_* (sim, neste turno);
+   mockup-command-box-vista-piloto.html (bloco do cérebro vivo, linhas 8138-8165), cerebro-vivo.js.
+
+## 5. Plano (<=5 passos)
+1. [FEITO] Mapear: a tela JÁ liga o cérebro (orq) e recebe volta do notebook ('evento'/volta);
+   o GPS ('gps') chega num canal que o cérebro IGNORA. Achei a linha de chegada oficial.
+2. Backup da tela.
+3. Editar o bloco do cérebro (8144-8153): marcoChegada + assinar 'gps' → orq.feedSample (com carimbo
+   de tempo de chegada se faltar). Visual intocado.
+4. Rodar smokes do cérebro (regressão) + abrir a tela no 8078 e conferir que carrega sem erro.
+5. Reportar e chamar o Flávio pra validar. Não ir pro ar.
+
+## 6. Arquivos/áreas
+- EDITA: _design-reference/mockup-command-box-vista-piloto.html (só ligação de dados, não o formato)
+- Usa: web/command-box/cerebro/cerebro-vivo.js (já preparado no passo anterior)
+
+## 7. Ambiente: desenvolvimento | 8. Produção protegida: sim | 9. Autorização produção: não
+## 10. Evidência: não recebida | 11. Riscos: toca a tela aprovada — mitigo com backup, mudança
+##     aditiva (só dados, não formato) e validação no navegador. Não vai pro ar.
+## 12. Status: iniciado
+
+---
+
 # Última tarefa — P1 Fast (21/06/2026, noite) — FIXAR DETECÇÃO DE VOLTA POR GPS NO CÉREBRO VIVO
 
 ## 1. Pedido original do Flávio
