@@ -100,7 +100,7 @@ const bridge = new LiveDataBridge({
 });
 
 const $ = id => document.getElementById(id);
-const FATOR = 12;                 // reproduz a volta ~12x mais rápido pra caber na tela
+const FATOR = 3;                  // a janela de movimento é curta (~50s); 3x dá pra ver bem
 const RAIO = 40, SAIR = 60;       // metros: entra/segura/sai da zona da curva
 
 function metros(a, b) {
