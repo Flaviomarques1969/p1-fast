@@ -92,16 +92,19 @@ if (voltas.length) {
   }
 }
 
-// --- 2) Alimentar o CÉREBRO REAL do painel com essas voltas ------------------
-linha(); L('2) PAINEL (cérebro real da nuvem) com as voltas detectadas pelo GPS');
+// --- 2) PAINEL pelo caminho JÁ LIGADO no cérebro (marco de chegada + GPS) -----
+linha(); L('2) PAINEL (cérebro real) — agora com a detecção de volta por GPS LIGADA dentro dele');
 const orq = criarOrquestradorVivo({
+  marcoChegada: MARCO_CHEGADA,
   plano: { voltas: 12, duracaoS: 28 * 60 },
   pbEverSec: 91.95, stintNumero: 3, stintTotal: 5,
 });
-// alimenta amostras (contexto) + as voltas detectadas (com tempo real do GPS)
-for (const a of am) orq.feedSample({ ...a.dados, tWall: a.tWall, tipo: a.tipo });
-for (const v of voltas) orq.feedVolta({ n: v.n, tempoSec: v.tempoSec });
+// feed em ORDEM DE TEMPO (o detector de GPS precisa de tempo crescente); o cérebro
+// detecta a volta sozinho a partir das amostras de GPS — não alimento volta por fora.
+const ordenadas = [...am].sort((a, b) => a.tWall - b.tWall);
+for (const a of ordenadas) orq.feedSample({ ...a.dados, tWall: a.tWall, tipo: a.tipo });
 const snap = orq.snapshot();
+L(`   cruzamentos vistos pelo detector DENTRO do cérebro: ${orq._detectorChegada.getVoltas()}`);
 L(`   voltas no cérebro: ${snap._geradoComVoltas}`);
 L(`   STINT: ${JSON.stringify(snap.stint)}`);
 L(`   RITMO: ${JSON.stringify(snap.ritmo)}`);
