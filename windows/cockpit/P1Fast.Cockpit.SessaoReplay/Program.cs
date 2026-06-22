@@ -379,7 +379,9 @@ if (File.Exists(barrasPath))
                     "}");
             }
         }
-        File.WriteAllText(saida, "[\n" + string.Join(",\n", frames) + "\n]");
+        // Escreve como .js (window.FITA) pra a tela carregar via <script src> sem
+        // travar no navegador local (fetch de file:// costuma ser bloqueado).
+        File.WriteAllText(saida, "window.FITA = [\n" + string.Join(",\n", frames) + "\n];\n");
         Console.WriteLine($"Fita da tela exportada: {frames.Count} quadros -> {saida}");
     }
 
