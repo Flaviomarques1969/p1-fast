@@ -169,7 +169,7 @@
   $('prox').addEventListener('click',()=>{ const m=momentos.find(x=>x>i)||momentos[0]; if(m!=null){ i=m; scrub.value=i; render(F[i]); } });
 
   $('status').textContent = F.length+' quadros · '+(F.length?Math.floor(F[F.length-1].t/60):0)+' min de sessão real';
-  render(F[0]);
+  scrub.value=i; render(F[i]);
   requestAnimationFrame(loop);
 })();
 </script>
