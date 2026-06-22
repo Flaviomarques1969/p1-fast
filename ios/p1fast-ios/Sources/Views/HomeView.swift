@@ -338,6 +338,9 @@ private struct FilledContent: View {
     /// Toque no botão "Stint" do topo — decide o destino no dono dos dados
     /// (hoje é dia de evento? abre no evento. Senão, pergunta vincular/livre).
     var onStint: () -> Void = {}
+    /// Abre uma tela a partir de um número/cartão da Home (injetado pela
+    /// HomeView, que tem o caminho de navegação).
+    var onOpen: (HomeNavTarget) -> Void = { _ in }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
