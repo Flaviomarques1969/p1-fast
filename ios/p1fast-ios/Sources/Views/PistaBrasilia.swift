@@ -8,6 +8,7 @@
 
 import CoreGraphics
 import Foundation
+import SwiftUI
 
 enum PistaBrasilia {
     static let larguraDesenho: CGFloat = 823
