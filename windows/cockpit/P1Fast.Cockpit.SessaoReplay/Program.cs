@@ -113,6 +113,7 @@ foreach (var a in root.GetProperty("amostras").EnumerateArray())
     {
         WaterTempC              = GetNum(dados, "waterTempC"),
         Rpm                     = GetNum(dados, "rpm"),
+        TpsPct                  = GetNum(dados, "tpsPct"),
         Lambda                  = GetNum(dados, "lambda"),
         BatteryV                = GetNum(dados, "batteryV"),
         FuelInjectionBalanced   = GetBool(dados, "fuelInjectionBalanced"),
