@@ -75,10 +75,25 @@ bool? GetBool(JsonElement e, string prop)
 }
 
 int motorLidos = 0, gps = 0;
+var gpsValidos = new List<PontoGps>();
 foreach (var a in root.GetProperty("amostras").EnumerateArray())
 {
     var tipo = a.TryGetProperty("tipo", out var t) ? t.GetString() : null;
-    if (tipo == "gps") { gps++; continue; }
+    if (tipo == "gps")
+    {
+        gps++;
+        if (a.TryGetProperty("dados", out var gd))
+        {
+            var fix  = GetNum(gd, "fix") ?? 0;
+            var hacc = GetNum(gd, "hacc") ?? double.MaxValue;
+            var lat  = GetNum(gd, "lat") ?? 0;
+            var lon  = GetNum(gd, "lon") ?? 0;
+            // mesmo filtro do detector de voltas: fix 3, hacc<50, dentro de Brasília
+            if (fix >= 3 && hacc < 50 && lat >= -16.1 && lat <= -15.4 && lon >= -48.3 && lon <= -47.6)
+                gpsValidos.Add(new PontoGps(lat, lon));
+        }
+        continue;
+    }
     if (tipo != "t4000") continue;
     if (!a.TryGetProperty("dados", out var dados)) continue;
 
