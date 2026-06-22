@@ -99,12 +99,16 @@ Só vá pra pista quando ver, na janela do `--gravar`: `gravando=sim`, `motor` s
 
 ---
 
-## Limites honestos (o que este passo NÃO faz ainda)
+## Limites honestos
 
-- **Não envia o motor pra nuvem ao vivo** com fila à prova de queda de internet. Isso é a
-  Fase 3 do plano (nuvem com fila) e está EM ABERTO — decisão sua (há uma decisão de 21/06
-  de "manter local, sem upload agora"). Enquanto isso, o motor fica salvo LOCAL e seguro.
+- **Envio ao vivo pra nuvem com fila: PRONTO e provado.** O notebook conecta na nuvem real
+  e publica (testado contra um canal de teste: 30 amostras, 0 erro). A fila que segura e
+  reenvia na queda de internet está provada por teste automático. O que falta é só você rodar
+  o comando de produção (`--gravar --nuvem --producao`) no dia de pista, com a chave configurada.
+- **Detalhe da fila:** ela vive na memória durante a sessão (cobre a internet oscilando). Se o
+  notebook DESLIGAR no meio, o que ainda não tinha subido pra nuvem não reenvia sozinho — mas
+  **o dado não se perde**: ele está salvo no disco (a fonte da verdade), e dá pra reenviar depois.
 - **A prova física da tomada USB** (abrir a porta de verdade com o carro) só fecha no
   notebook, na bancada. Toda a lógica (handshake, montagem do bloco, 10 Hz, religação,
-  gravação, recuperação) já está provada por teste automático fora do carro.
-- **GPS dentro do .exe** (sem depender do navegador) é a Fase 6, ainda não feita.
+  gravação, recuperação, envio) já está provada por teste automático fora do carro.
+- **GPS dentro do programa** (sem depender do navegador) é a Fase 6, ainda não feita.
