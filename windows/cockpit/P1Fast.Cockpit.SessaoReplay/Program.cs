@@ -401,6 +401,8 @@ if (File.Exists(barrasPath))
                     $"\"freM\":{Num(apx.Freio.AtualM)},\"freRef\":{Num(apx.Freio.RefM)},\"freEst\":{J(apx.Freio.Estado.ToString())}," +
                     $"\"apiKmh\":{Num(apx.Apice.ValorKmh)},\"apiEst\":{J(apx.Apice.Estado.ToString())}," +
                     $"\"saiKmh\":{Num(apx.Saida.ValorKmh)},\"saiEst\":{J(apx.Saida.Estado.ToString())}," +
+                    // barra de stint: resultado REAL por curva (na ordem da pista) + a atual
+                    $"\"stint\":[{string.Join(",", segs.Select(sg => J(sg.Id == maestroT.CurvaAtualId ? "current" : (maestroT.EstadoDoTrecho(sg.Id) is var st2 && st2 != "" ? st2 : "pending"))))}]," +
                     $"\"curva\":{J(curva)}" +
                     "}");
             }
