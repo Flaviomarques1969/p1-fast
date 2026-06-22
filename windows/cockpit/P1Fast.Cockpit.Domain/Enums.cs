@@ -56,6 +56,9 @@ public enum Tone
 /// <summary>Estado de cada apex ponto.</summary>
 public enum ApexEstado
 {
+    // Pendente = ainda não há referência/passagem (boot e sem volta de referência).
+    // Espelha ApexEstado.PENDENTE do cockpit-state.js.
+    Pendente,
     OkMelhor,
     OkPior,
 }
