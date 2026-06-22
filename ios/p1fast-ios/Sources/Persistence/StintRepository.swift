@@ -123,6 +123,66 @@ final class StintRepository: ObservableObject {
         self.stintsPorEvento = rows.map { Stint(sessao: $0.0, voltasCount: $0.1, melhorVoltaMs: $0.2, pilotoNome: $0.3) }
     }
 
+    /// Resumo de voltas reais pra tela "Voltas" da Home: total de voltas,
+    /// melhor tempo válido e os tempos das (até) 10 voltas válidas mais rápidas
+    /// (pra média de delta das melhores). Vazio enquanto não houver volta real.
+    func resumoVoltas() async throws -> (total: Int, melhorMs: Int?, topMs: [Int]) {
+        try await queue.read { db in
+            let total = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM voltas") ?? 0
+            let melhor = try Int.fetchOne(
+                db, sql: "SELECT MIN(tempo_ms) FROM voltas WHERE valida = 1 AND tempo_ms IS NOT NULL")
+            let top = try Int.fetchAll(
+                db,
+                sql: "SELECT tempo_ms FROM voltas WHERE valida = 1 AND tempo_ms IS NOT NULL ORDER BY tempo_ms ASC LIMIT 10")
+            return (total, melhor, top)
+        }
+    }
+
+    /// Lista TODOS os stints do time (não só de um evento), pra tela "Stints"
+    /// da Home — mais recente primeiro, com contagem de voltas e melhor tempo.
+    func loadTodosStints() async throws -> [Stint] {
+        guard let teamId = TeamContext.currentTeamId else { return [] }
+        return try await queue.read { db in
+            let sql = """
+                SELECT s.*,
+                       COUNT(v.id)                                AS voltas_count,
+                       MIN(CASE WHEN v.valida = 1 THEN v.tempo_ms END) AS melhor_ms,
+                       p.nome                                     AS piloto_nome
+                FROM sessoes s
+                LEFT JOIN voltas v ON v.sessao_id = s.id
+                LEFT JOIN pilotos p ON p.id = s.piloto_id
+                WHERE s.time_id = ?
+                GROUP BY s.id
+                ORDER BY s.data_inicio DESC, s.created_at DESC
+            """
+            return try Row.fetchAll(db, sql: sql, arguments: [teamId]).map { row in
+                let sessao = Sessao(
+                    id: row["id"],
+                    timeId: row["time_id"],
+                    eventoId: row["evento_id"],
+                    carroId: row["carro_id"],
+                    pilotoId: row["piloto_id"],
+                    configuracaoId: row["configuracao_id"],
+                    status: row["status"],
+                    dataInicio: row["data_inicio"],
+                    dataFim: row["data_fim"],
+                    voltasPlanejadas: row["voltas_planejadas"],
+                    objetivo: row["objetivo"],
+                    canceladoEm: row["cancelado_em"],
+                    createdAt: row["created_at"],
+                    updatedAt: row["updated_at"],
+                    syncedAt: row["synced_at"]
+                )
+                return Stint(
+                    sessao: sessao,
+                    voltasCount: row["voltas_count"] ?? 0,
+                    melhorVoltaMs: row["melhor_ms"],
+                    pilotoNome: row["piloto_nome"]
+                )
+            }
+        }
+    }
+
     /// Cria um stint (sessao) novo no estado "ativa". Retorna o ID.
     /// `objetivo` no schema canônico SEED_OBJETIVO_TIPOS (Aquecimento,
     /// Ataque, Consistência, Teste, Livre). `licaoFocada` é texto livre
