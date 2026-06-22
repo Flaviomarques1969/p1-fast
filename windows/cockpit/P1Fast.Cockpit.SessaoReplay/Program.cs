@@ -425,6 +425,7 @@ if (File.Exists(barrasPath))
                     $"\"stint\":[{string.Join(",", segs.Select(sg => J(sg.Id == maestroT.CurvaAtualId ? "current" : (maestroT.EstadoDoTrecho(sg.Id) is var st2 && st2 != "" ? st2 : "pending"))))}]," +
                     // sinais vivos de verdade (pro indicador de telemetria não ser fixo)
                     $"\"motorVivo\":{(e.T - lastMotorT < 2000 ? "true" : "false")},\"gpsVivo\":{(e.T - lastGpsT < 2000 ? "true" : "false")}," +
+                    $"\"volta\":{vnum}," +
                     $"\"curva\":{J(curva)}" +
                     "}");
             }
