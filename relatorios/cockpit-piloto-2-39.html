@@ -163,7 +163,7 @@
     requestAnimationFrame(loop);
   }
   scrub.addEventListener('input',()=>{ i=+scrub.value; render(F[i]); });
-  $('play').addEventListener('click',()=>{ tocando=!tocando; $('play').textContent=tocando?'⏸ pausar':'▶ tocar'; last=performance.now(); });
+  $('play').addEventListener('click',()=>{ tocando=!tocando; $('play').textContent=tocando?'pausar':'tocar'; last=performance.now(); });
   $('vel').addEventListener('click',()=>{ vel = vel===6?12: vel===12?20: vel===20?1:6; $('vel').textContent='velocidade '+vel+'x'; });
   $('prox').addEventListener('click',()=>{ const m=momentos.find(x=>x>i)||momentos[0]; if(m!=null){ i=m; scrub.value=i; render(F[i]); } });
 
