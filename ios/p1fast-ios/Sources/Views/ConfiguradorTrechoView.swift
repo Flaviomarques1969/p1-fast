@@ -23,6 +23,7 @@ import P1FastCore
 
 struct ConfiguradorTrechoView: View {
     @EnvironmentObject private var repo: TrackRepository
+    @Environment(\.dismiss) private var dismiss
     @State private var segmentId: String
     let onClose: (() -> Void)?
 
