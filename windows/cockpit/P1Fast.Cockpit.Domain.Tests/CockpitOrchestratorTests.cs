@@ -32,15 +32,18 @@ public class CockpitOrchestratorTests
             new LinhaGps(new PontoGps(-0.001, 0.001), new PontoGps(0.001, 0.001)));
 
     // Uma volta num retângulo: leg de baixo (lat 0) cruza entrada e saída; volta
-    // por cima (lat alto, fora da barra) sem disparar nada.
-    private static void UmaVolta(List<AmostraGps> path, double kmhBaixo, ref double t)
+    // por cima (lat alto, fora da barra) sem disparar nada. Retorna o tempo final.
+    private static double UmaVolta(List<AmostraGps> path, double kmhBaixo, double t)
     {
-        void Add(double lat, double lng, double kmh) { path.Add(new AmostraGps(lat, lng, kmh, t)); t += 100; }
         foreach (var lng in new[] { -0.0006, -0.0002, 0.0002, 0.0004, 0.0006, 0.0010, 0.0014, 0.0018 })
-            Add(0, lng, kmhBaixo);                 // leg de baixo (cruza entrada/ápice/saída)
-        foreach (var lat in new[] { 0.002, 0.004, 0.005 }) Add(lat, 0.0018, 100); // sobe
-        foreach (var lng in new[] { 0.0010, 0.0002, -0.0006 }) Add(0.005, lng, 100); // volta por cima
-        foreach (var lat in new[] { 0.004, 0.002, 0.0 }) Add(lat, -0.0006, 100);   // desce
+        { path.Add(new AmostraGps(0, lng, kmhBaixo, t)); t += 100; }       // leg de baixo (entrada/ápice/saída)
+        foreach (var lat in new[] { 0.002, 0.004, 0.005 })
+        { path.Add(new AmostraGps(lat, 0.0018, 100, t)); t += 100; }       // sobe
+        foreach (var lng in new[] { 0.0010, 0.0002, -0.0006 })
+        { path.Add(new AmostraGps(0.005, lng, 100, t)); t += 100; }        // volta por cima
+        foreach (var lat in new[] { 0.004, 0.002, 0.0 })
+        { path.Add(new AmostraGps(lat, -0.0006, 100, t)); t += 100; }      // desce
+        return t;
     }
 
     [Fact]
