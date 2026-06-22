@@ -38,7 +38,18 @@ cockpit do piloto e captura os dados — sem depender da aplicação web.
 
 ## 7. Ambiente: desenvolvimento | 8. Produção protegida: sim | 9. Autorização produção: não
 ## 10. Evidência: não recebida | 11. Riscos: nenhum (entrega = documento/plano; nada de código de
-##     produto alterado; nuvem/canal não tocados). 12. Status: iniciado.
+##     produto alterado; nuvem/canal não tocados). 12. Status: CONCLUÍDO.
+
+## Resultado
+- NOVO relatorios/plano-exe-nativo-cockpit-2026-06-22.html — plano final consolidado (mapa, largura
+  total, sem emoji), aberto no navegador. Reflete o estado REAL de hoje verificado no código:
+  captura ponta a ponta (Fases 1-3) PRONTA em DEV; tela do cockpit (MainWindow) ainda em DEMONSTRAÇÃO
+  (Fase 4 = próximo); tela+captura fora da .sln e empacotamento gráfico pendente (Fase 5); GPS no .exe
+  (Fase 6) e vídeo (Fase 7) depois. Decisões do Flávio listadas com recomendação.
+- Verificações: MainWindow.xaml.cs ainda usa _demoTimer/DemoScenes (linhas 138-146/362); .sln só tem
+  Domain/Tests/LiveDemo (grep UI/Capture=0); T3000RIBlockParser.cs 300 l, SessionRecorder.cs 446 l,
+  LivePublisher.cs 214 l, SupabaseRealtimeChannel.cs 194 l (existem).
+- Nada de código de produto alterado; nuvem/canal não tocados. Documento apenas.
 
 ---
 
