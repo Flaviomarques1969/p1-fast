@@ -8141,14 +8141,7 @@ html,body{
       var cfg = window.__cbCanalCfg; if(!cfg) return;
       var vivo = await import('/web/command-box/cerebro/cerebro-vivo.js');
       var fxS = await (await fetch('/web/cockpit/fixtures/stint-brasilia-3-laps.v1.json')).json();
-      // Linha de chegada oficial de Brasília (mesma da nuvem, tabela marcos). Dá ao
-      // cérebro a capacidade de FECHAR A VOLTA pelo GPS por conta própria — redundância
-      // ao aviso de volta do notebook (se ele falhar, a tela ainda fecha a volta). A
-      // anti-duplicidade do cérebro evita contar a mesma volta duas vezes.
-      // (TODO: pra outras pistas, carregar o marco do layout em vez de fixar Brasília.)
-      var MARCO_CHEGADA = { a_gps:{ lat:-15.7728816, lng:-47.9000707 }, b_gps:{ lat:-15.7725493, lng:-47.9001926 } };
       var orq = vivo.criarOrquestradorVivo({
-        marcoChegada: MARCO_CHEGADA,
         plano:{ voltas: fxS.stintHistory.totalLaps, duracaoS: 28*60 },
         pbEverSec: fxS.track.pbEverSec, stintNumero: 3, stintTotal: 5
       });
@@ -8157,9 +8150,6 @@ html,body{
       var client = sb.createClient(cfg.url, cfg.anon, { realtime:{ params:{ eventsPerSecond:20 } } });
       var ch = client.channel(cfg.canal, { config:{ broadcast:{ ack:false, self:false } } });
       ch.on('broadcast', { event:'sample' }, function(m){ if(m&&m.payload){ ultimoLive=performance.now(); orq.feedSample(m.payload); } });
-      // GPS também vai pro cérebro: é dele que sai a detecção de volta por GPS (redundância).
-      // Carimba o tempo de chegada se a amostra não trouxer (o cérebro mede a volta pelo tempo).
-      ch.on('broadcast', { event:'gps' }, function(m){ if(m&&m.payload){ var g=Object.assign({}, m.payload); if(g.tWall==null && g.t==null) g.t=Date.now(); orq.feedSample(g); } });
       ch.on('broadcast', { event:'evento' }, function(m){ var p=m&&m.payload; if(p&&p.tipo==='volta'){ ultimoLive=performance.now(); orq.feedVolta(p); } });
       ch.subscribe();
       setInterval(function(){
