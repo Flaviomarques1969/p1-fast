@@ -36,11 +36,28 @@ mensagens, ghost e ia"). Usar a sessão REAL de domingo 21/06 (1 volta de 2:39) 
   ACELERADOR ABERTO, não parado — pico de tip-in; um debounce "só se durar" limparia o resto = calibração
   futura). Andando, o motor rodou RICO (lambda 0,55-0,97) — observação real do acerto.
 
+## INCREMENTO 3 — GHOST (ápice + bolinha), FEITO E PROVADO ("sim")
+- NOVO Domain/Ghost.cs — port fiel de apice-calculator.js (AcharApice: máxima curvatura por círculo de
+  3 pontos) + trecho-detector.js (DistMeters/BearingDeg/ApexErrorAngleDeg) + a bolinha ao vivo de
+  live-data-bridge.js (CalcularBolinha: distM + angleDeg + estado; dentro de 2m = OkMelhor). Usa
+  PontoGps; escreve na bolinha do estado (DistM/AngleDeg) que o Incremento 1 criou.
+- NOVO Domain.Tests/GhostTests.cs (7) — geometria de valor conhecido: arco de raio 25m recuperado;
+  curva fechada vence a aberta; rumo norte/leste; ângulo frente/direita/atrás/esquerda; bolinha.
+- ESTENDIDO SessaoReplay: junta GPS válido (fix3/hacc<50/Brasília), acha o ápice e roda a bolinha,
+  escrevendo no CockpitState real.
+- ACHADO REAL (mais um): jogar a sessão INTEIRA no cálculo de ápice acha RUÍDO (raio 2,1m = jitter de
+  GPS com o carro parado). Conserto no replay: só pontos EM MOVIMENTO (>=3m de espaçamento) -> 3.499
+  pontos -> ápice real de 9,5m; bolinha chega a 0m e a direção vira de 307° (antes) pra 180° (depois)
+  = passou pelo ápice. PENDÊNCIA real: o cálculo de ápice precisa de gate "carro em movimento" (como
+  os alertas) pra não pegar jitter — vale portar pro pipeline junto da segmentação por trecho.
+- Validação: 7 testes do ghost verdes; bateria completa 234 aprovados / 1 falha (PAN_04). Zero regressão.
+
 ## Próximos incrementos
-- Calibração fina opcional: debounce nos alertas de mistura (só se a condição durar X), pra não piscar
-  no tip-in. Decisão/ajuste, não bug.
-- Coach (FREOU CEDO etc.) e ghost dependem de comparação por trecho (precisa do GPS no pipeline) —
-  Incrementos 3/4, com a volta de 2:39 como referência.
+- Calibração fina opcional: debounce nos alertas de mistura (tip-in).
+- Incremento 4 — DELTA + COACH (FREOU CEDO etc.): dependem de (a) segmentação por trecho (trecho-detector)
+  e (b) uma volta de REFERÊNCIA pra comparar. Hoje só há 1 volta (2:39) → vira a própria referência até
+  ter uma mais rápida. O delta-calculator.js + mensagens-pedagogicas.js são o próximo port.
+- Gate "carro em movimento" no cálculo de ápice (achado acima).
 
 ---
 
