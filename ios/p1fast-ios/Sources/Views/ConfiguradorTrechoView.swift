@@ -562,6 +562,20 @@ struct ConfiguradorTrechoView: View {
         return (lookup.flatMap { snapToPath(next, lookup: $0) }) ?? next
     }
 
+    /// Igual ao `movedPoint`, mas o ápice gruda na BORDA INTERNA da curva
+    /// (lado côncavo), não no eixo central. Arrastar desliza o ápice pela
+    /// parte interna.
+    private func movedApex(
+        anchor: P1FastCore.TrackPoint,
+        drag: DragGesture.Value,
+        xform: ViewTransform
+    ) -> P1FastCore.TrackPoint {
+        let dx = drag.translation.width / xform.zoom
+        let dy = drag.translation.height / xform.zoom
+        let next = P1FastCore.TrackPoint(x: anchor.x + dx, y: anchor.y + dy)
+        return (lookup.flatMap { snapApexToInnerEdge(next, lookup: $0) }) ?? next
+    }
+
     /// Hit-test misto: entry/exit usam ponto-SEGMENTO até a barrinha;
     /// ápices usam ponto-CÍRCULO até o centro. Em empate (ex: ápice
     /// próximo da entry), vence o mais próximo independente do tipo.
