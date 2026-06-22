@@ -51,6 +51,8 @@ final class CarroRepository: ObservableObject {
         guard let teamId = TeamContext.currentTeamId else {
             self.carros = []
             self.stintsPorCarro = [:]
+            self.voltasTotal = 0
+            self.melhorVoltaMs = nil
             return
         }
         let rows = try await queue.read { db in
