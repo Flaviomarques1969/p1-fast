@@ -398,6 +398,12 @@ if (File.Exists(barrasPath))
                 var shMode = mVivo ? st.Shift.Mode.ToString() : "Off";
                 var shLevel = mVivo ? st.Shift.Level : 0;
                 var vnum = duas ? (e.T >= seam ? 2 : 1) : voltaN; // qual volta (1=aquecimento, 2=rápida)
+                // Barra de stint = RESULTADO POR VOLTA (1 bloco por volta), não por curva.
+                // Volta em curso = "current"; volta passada = resultado; volta inexistente = apagado.
+                var totalVoltas = duas ? 2 : 1;
+                var stintArr = new List<string>();
+                for (var lp = 1; lp <= 12; lp++)
+                    stintArr.Add(lp > totalVoltas ? "pending" : lp < vnum ? "neutral" : lp == vnum ? "current" : "pending");
                 // volta isolada: sem comparação (recorde/diferença/coach) — não há referência válida.
                 var trechoOut = semComp ? "Neutro" : st.TrechoStatus.ToString();
                 var deltaOut = semComp ? "" : st.Delta.Value;
