@@ -20,6 +20,22 @@ public sealed record CockpitStateModel(
     ApexState Apex
 )
 {
+    // ── Paridade com cockpit-state.js (campos adicionados, default seguro) ──
+    // Declarados como propriedades init pra não quebrar o construtor posicional
+    // existente (Default + with continuam compilando).
+
+    /// <summary>Modo silencioso: bloqueia mensagens de pilotagem (COMUNICACAO). GRAVE nunca é silenciado.</summary>
+    public bool Silencioso { get; init; }
+
+    /// <summary>Carro dentro do pit lane (após pit-in, antes de pit-out). Pausa cronômetro e silencia pilotagem.</summary>
+    public bool NoBox { get; init; }
+
+    /// <summary>Barra de aprendizado da IA da luz de marcha (status derivado do pct).</summary>
+    public AprendizadoInfo Aprendizado { get; init; } = AprendizadoInfo.Default();
+
+    /// <summary>Flash de celebração quando a IA atinge 100% (dispara no meio da próxima reta).</summary>
+    public bool FlashIa { get; init; }
+
     /// <summary>Retorna o estado default (espelha o que o mockup carrega ao boot).</summary>
     public static CockpitStateModel Default() => new(
         TrechoStatus: TrechoStatus.Neutro,
@@ -29,6 +45,12 @@ public sealed record CockpitStateModel(
         Acao: new AcaoInfo("", Tone.Neutro),
         Apex: ApexState.Default()
     );
+}
+
+/// <summary>Barra de aprendizado: % de calibração da combinação ativa + status derivado.</summary>
+public sealed record AprendizadoInfo(AprendizadoStatus Status, double Pct)
+{
+    public static AprendizadoInfo Default() => new(AprendizadoStatus.Inativo, 0);
 }
 
 /// <summary>Estado do shift light: modo + nível 0..6 + estado do flash.</summary>
