@@ -856,7 +856,7 @@ fitStage();
     if(!f)return;
     setShiftLevel(shiftArg(f));
     device.dataset.trechoStatus=mapTrecho(f.trecho);
-    info_delta.textContent=f.delta||'0.00'; info_delta.className='info__delta '+toneCls(f.deltaTone);
+    info_delta.textContent=f.delta||''; info_delta.className='info__delta '+toneCls(f.deltaTone);
     info_acao.textContent=f.acao||''; info_acao.className='info__acao '+toneCls(f.acaoTone);
     if(f.msg){alertMsg.textContent=f.msg;alertBloco.dataset.tipo=f.msgTipo==='Grave'?'grave':'comunicacao';device.dataset.msgState='ativa';}else device.dataset.msgState='oculta';
     setApex(0,f.entKmh!=null?r0(f.entKmh)+'<small>km/h</small>':'&mdash;',f.entEst);
@@ -887,7 +887,7 @@ fitStage();
 
 </script>
 <div id="drvbar" style="position:fixed;top:0;left:0;right:0;height:38px;display:flex;align-items:center;gap:12px;padding:0 14px;background:rgba(10,10,10,.82);border-bottom:1px solid #1c1c1c;z-index:99;font:13px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#a0a0a0">
-  <b style="color:#fff">Cockpit do Piloto — tela 10,5&Prime; APROVADA</b><span>· volta REAL 2:39 (só GPS — injeção parou antes; luz de marcha sem dado) · tempo real · 100% dado REAL</span>
+  <b style="color:#fff">Cockpit do Piloto — 10,5&Prime; aprovada</b><span>· volta 2:39 — SÓ GPS (sem motor, sem comparação): só velocidade por curva e freada</span>
   <button id="drvPlay" style="background:#1a1a1a;color:#ededed;border:1px solid #333;border-radius:7px;padding:5px 11px;cursor:pointer">pausar</button>
   <button id="drvVel" style="background:#1a1a1a;color:#ededed;border:1px solid #333;border-radius:7px;padding:5px 11px;cursor:pointer">velocidade 1x</button>
   <button id="drvProx" style="background:#1a1a1a;color:#ededed;border:1px solid #333;border-radius:7px;padding:5px 11px;cursor:pointer">proxima curva</button>
