@@ -63,10 +63,22 @@ sozinho se o aviso do notebook falhar — sem mexer no visual e sem duplicar vol
 - HONESTO: o replay do mapa NÃO repinta os números de stint/volta do cabeçalho (esses são da
   demonstração embutida). A prova de que o dado de hoje gera as 2 voltas segue no teste/tool.
 
+## Tela PRÓPRIA pro GPS real de hoje (o replay do mapa da tela aprovada "não andou")
+- O replay nativo da tela aprovada não moveu a bolinha (engrenagem do mapa frágil: projeção/gating).
+  Em vez de seguir mexendo na tela aprovada, fiz uma tela própria, controlada 100%.
+- NOVO web/command-box/replay-hoje.html — desenha o trajeto REAL de hoje (canvas, auto-escala
+  lat/lon), bolinha do carro andando, linha de chegada, e ACENDE as 2 voltas (195s, 159,6s) quando
+  o carro cruza. Sem libs externas, sem rede, sem emoji.
+- NOVO web/command-box/fixtures/replay-hoje-mapa.json — 6.935 pontos (~8Hz) + cruzamentos/voltas
+  já marcados (detecção na resolução cheia: 3 cruzamentos / 2 voltas). Verificado.
+- Aberto http://localhost:8078/web/command-box/replay-hoje.html (dados 200, tela 200).
+
 ## Pendências reais
-- Flávio confirmar o que viu na tela. NÃO foi pro ar (a tela vai pro ar pela TV do box / nuvem).
-- Marco fixo em Brasília; pra outras pistas, carregar do layout (anotado no código como TODO).
-- Limpeza opcional depois: o bloco de replay é só DEV/demonstração (guardado por ?replay=hoje).
+- Flávio confirmar que a bolinha anda na tela própria.
+- A tela APROVADA (Command Box) tem replay de mapa frágil — não usei; a redundância de volta por
+  GPS no cérebro segue feita e testada (passo anterior), só não foi pro ar.
+- Limpeza: fixtures de demonstração (replay-hoje-2026-06-21.json, volta-real-gps-hoje.json) podem
+  sair depois; a tela própria usa replay-hoje-mapa.json.
 
 ---
 
