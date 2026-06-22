@@ -91,20 +91,47 @@ public sealed class CockpitOrchestrator
         {
             case "entrada-cruzou":
                 IniciarPassagem(ev.SegmentId);
+                _pEnt = ev.Kmh;
+                PontoVelocidade("entrada", ev.Kmh, r => r.Ent);
                 break;
             case "freada-iniciou":
                 _subAtual = "freio";
+                _pFre = ev.DistFromEntradaM;
+                PontoFreio(ev.DistFromEntradaM);
                 break;
             case "apice-cruzou":
                 _subAtual = "apice";
+                _pApi = ev.Kmh;
+                PontoVelocidade("apice", ev.Kmh, r => r.Api);
                 break;
             case "saida-cruzou":
+                _pSai = ev.Kmh;
+                PontoVelocidade("saida", ev.Kmh, r => r.Sai);
                 FecharPassagem(ev.SegmentId);
                 break;
             case "resync":
                 IniciarPassagem(ev.ParaSegmentId ?? ev.SegmentId);
+                _pEnt = ev.Kmh;
+                PontoVelocidade("entrada", ev.Kmh, r => r.Ent);
                 break;
         }
+    }
+
+    // Escreve o ponto do ápice com a velocidade REAL do cruzamento e colore
+    // comparando com a 1ª passagem (mais rápido = melhor; sem referência = pendente).
+    private void PontoVelocidade(string papel, double kmh, Func<(double? Ent, double? Fre, double? Api, double? Sai), double?> sel)
+    {
+        ApexEstado estado = ApexEstado.Pendente;
+        if (_segAtual is not null && _refPontos.TryGetValue(_segAtual, out var r) && sel(r) is { } refKmh && refKmh > 0)
+            estado = kmh >= refKmh ? ApexEstado.OkMelhor : ApexEstado.OkPior;
+        _cockpit.SetApexPonto(papel, estado: estado, valorKmh: kmh);
+    }
+
+    private void PontoFreio(double atualM)
+    {
+        double? refM = _segAtual is not null && _refPontos.TryGetValue(_segAtual, out var r) ? r.Fre : null;
+        var estado = refM is { } rm && rm > 0 ? CockpitState.ClassifyFreio(atualM, rm) : ApexEstado.Pendente;
+        _cockpit.SetApexPonto("freio", estado: estado, atualM: atualM, refM: refM);
     }
 
     private void IniciarPassagem(string segId)
