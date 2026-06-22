@@ -28,6 +28,24 @@ public sealed record LiveLimits(
 )
 {
     public static LiveLimits Default { get; } = new();
+
+    /// <summary>
+    /// Calibração do Bubi (Celta 1.4 "Bolinha"). Fontes reais:
+    /// PERFIL_BUBI/ENVELOPE_DEFAULT_BUBI (shift-light-modos.js) — redline 6.300,
+    /// pico de potência 6.050; alertas-criticos.js + memória "Bubi opera frio"
+    /// (Flávio 27/05) — água crítica 80°C, óleo 115°C.
+    /// Aqui está só o modelo SIMPLES (faixa por razão até o redline). A mira fina
+    /// na POTÊNCIA MÁXIMA (6.050) + antecipação/aprendizado vivem no orquestrador
+    /// da IA da luz de marcha (incremento seguinte), não neste mapa linear.
+    /// </summary>
+    public static LiveLimits Bubi { get; } = new(
+        RedlineRpm:         6300,
+        FireThresholdRatio: 6050.0 / 6300.0, // dispara perto do pico de potência
+        LitStartRatio:      0.50,
+        OilPressMinBar:     0.5,
+        OilPressMinAtRpm:   2000,
+        OilTempMaxC:        115,
+        WaterTempMaxC:      80);
 }
 
 /// <summary>Resultado de RpmToShift: modo do shift light + nível 0..6.</summary>
