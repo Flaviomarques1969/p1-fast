@@ -50,13 +50,18 @@ sozinho se o aviso do notebook falhar — sem mexer no visual e sem duplicar vol
   Tela aberta no navegador, carrega normal. (Comportamento ao vivo da redundância só aparece com
   carro no canal OU com um replay num canal de TESTE — não fiz no canal de produção.)
 
-## Demonstração com DADOS DE HOJE (Flávio: "porque vc não usa os dados de hoje?")
-- NOVO web/command-box/fixtures/replay-hoje-2026-06-21.json — sessão real de hoje enxuta (GPS
-  válido + motor, 28.757 amostras, 3,28 MB). Verificado no escuro: cérebro+marco → 3 cruzamentos / 2 voltas.
-- ADITIVO na tela: bloco de REPLAY guardado por ?replay=hoje (sem a marca não faz NADA; não toca
-  rede nem canal de produção). Toca a sessão de hoje e pinta stint/ritmo pelo __aplicarPainelStint real.
-- Aberto: http://localhost:8078/?replay=hoje (fixture 200, tela 200). Mostra volta 2/12 e ritmo
-  "atrás +67s" (voltas reais de hoje 2:39 e 3:14, shakedown). É a redundância achando a volta pelo GPS.
+## Demonstração com DADOS DE HOJE (Flávio: "porque vc não usa os dados de hoje?" + "mapa aguardando?")
+- DESCOBERTA: o mapa pega posição por OUTRA entrada (window.__cbPos.pushGps) — meu atalho só
+  alimentava o cálculo de volta, não o mapa → mapa ficou "aguardando ligação". E os tempos do
+  cabeçalho (1:31/1:32) são da DEMONSTRAÇÃO embutida (bloco ~8055), não do replay.
+- CORREÇÃO: revertido o atalho que eu havia inserido (colidia com o ?replay= que a tela JÁ tem).
+  A tela tem replay próprio do mapa (?replay=NOME → volta-real-gps-NOME.json [[tMs,lat,lng]]).
+- NOVO web/command-box/fixtures/volta-real-gps-hoje.json — trajetória REAL de hoje, 1.048 pontos
+  (~1 Hz), formato do replay da tela. Aberto http://localhost:8078/?replay=hoje&speed=8 (HTTP 200)
+  → o MAPA mostra a bolinha andando pela trajetória REAL de hoje.
+- SUPERSEDO (pode remover): web/command-box/fixtures/replay-hoje-2026-06-21.json (do atalho revertido).
+- HONESTO: o replay do mapa NÃO repinta os números de stint/volta do cabeçalho (esses são da
+  demonstração embutida). A prova de que o dado de hoje gera as 2 voltas segue no teste/tool.
 
 ## Pendências reais
 - Flávio confirmar o que viu na tela. NÃO foi pro ar (a tela vai pro ar pela TV do box / nuvem).
