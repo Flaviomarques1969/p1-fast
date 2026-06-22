@@ -43,10 +43,9 @@ public class GhostTests
     public void GH_02_BearingDeg_norte_e_leste()
     {
         var p = new PontoGps(Lat0, Lng0);
-        Assert.InRange(Ghost.BearingDeg(p, new PontoGps(Lat0 + 0.001, Lng0)), 359, 360.0001); // norte ~0/360
-        var norte = Ghost.BearingDeg(p, new PontoGps(Lat0 + 0.001, Lng0)) % 360;
-        Assert.True(norte < 1 || norte > 359);
-        Assert.InRange(Ghost.BearingDeg(p, new PontoGps(Lat0, Lng0 + 0.001)), 89, 91);       // leste ~90
+        var norte = Ghost.BearingDeg(p, new PontoGps(Lat0 + 0.001, Lng0)); // ~0/360
+        Assert.True(norte < 1 || norte > 359, $"norte={norte}");
+        Assert.InRange(Ghost.BearingDeg(p, new PontoGps(Lat0, Lng0 + 0.001)), 89, 91); // leste ~90
     }
 
     // ── Ângulo da bolinha (referencial do carro) ────────────
