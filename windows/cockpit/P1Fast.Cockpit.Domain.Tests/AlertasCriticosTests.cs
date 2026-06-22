@@ -79,8 +79,8 @@ public class AlertasCriticosTests
     [Fact]
     public void ALR_06_Bateria_combustivel_e_falhando()
     {
-        Assert.Contains("BATERIA", CatalogoAlertas.AvaliarT4000(new AmostraAlerta { BatteryV = 11.0 }));
-        Assert.Empty(CatalogoAlertas.AvaliarT4000(new AmostraAlerta { BatteryV = 12.5 }));
+        Assert.Contains("BATERIA", CatalogoAlertas.AvaliarT4000(new AmostraAlerta { BatteryV = 11.0, Rpm = 4000 }));
+        Assert.Empty(CatalogoAlertas.AvaliarT4000(new AmostraAlerta { BatteryV = 12.5, Rpm = 4000 }));
 
         Assert.Contains("COMBUSTIVEL_BAIXO",
             CatalogoAlertas.AvaliarT4000(new AmostraAlerta { AlertaNivelCombustivel = true }));
