@@ -66,6 +66,14 @@ double? GetNum(JsonElement e, string prop)
     return null; // null/ausente => sem dado
 }
 
+bool? GetBool(JsonElement e, string prop)
+{
+    if (!e.TryGetProperty(prop, out var v)) return null;
+    if (v.ValueKind == JsonValueKind.True)  return true;
+    if (v.ValueKind == JsonValueKind.False) return false;
+    return null; // ausente => sem dado
+}
+
 int motorLidos = 0, gps = 0;
 foreach (var a in root.GetProperty("amostras").EnumerateArray())
 {
