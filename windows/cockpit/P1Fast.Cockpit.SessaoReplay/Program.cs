@@ -427,9 +427,8 @@ if (File.Exists(barrasPath))
                     $"\"freM\":{Num(apx.Freio.AtualM)},\"freRef\":{Num(apx.Freio.RefM)},\"freEst\":{J(apx.Freio.Estado.ToString())}," +
                     $"\"apiKmh\":{Num(apx.Apice.ValorKmh)},\"apiEst\":{J(apx.Apice.Estado.ToString())}," +
                     $"\"saiKmh\":{Num(apx.Saida.ValorKmh)},\"saiEst\":{J(apx.Saida.Estado.ToString())}," +
-                    // barra de stint: resultado REAL por curva (na ordem da pista) — ESTÁVEL,
-                    // sem destaque de "curva atual" (que ficava piscando). A curva atual vai no alto.
-                    $"\"stint\":[{string.Join(",", segs.Select(sg => J(maestroT.EstadoDoTrecho(sg.Id) is var st2 && st2 != "" ? st2 : "pending")))}]," +
+                    // barra de stint = 1 bloco por VOLTA (não por curva): volta atual em curso + voltas feitas.
+                    $"\"stint\":[{string.Join(",", stintArr.Select(J))}]," +
                     // sinais vivos de verdade (pro indicador de telemetria não ser fixo)
                     $"\"motorVivo\":{(e.T - lastMotorT < 2000 ? "true" : "false")},\"gpsVivo\":{(e.T - lastGpsT < 2000 ? "true" : "false")}," +
                     $"\"volta\":{vnum}," +
