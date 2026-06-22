@@ -128,7 +128,7 @@ foreach (var a in root.GetProperty("amostras").EnumerateArray())
 
     // Motor de alertas com os campos REAIS do T3000 (ausente = null = sem dado).
     var alarmes = dados.TryGetProperty("alarmes", out var alm) ? alm : default;
-    alertas.IngestT4000(new AmostraAlerta
+    var amAlerta = new AmostraAlerta
     {
         WaterTempC              = GetNum(dados, "waterTempC"),
         Rpm                     = GetNum(dados, "rpm"),
@@ -139,7 +139,9 @@ foreach (var a in root.GetProperty("amostras").EnumerateArray())
         BaixaPressaoOleo        = alarmes.ValueKind == JsonValueKind.Object ? GetBool(alarmes, "baixaPressaoOleo") : null,
         AlertaNivelCombustivel  = alarmes.ValueKind == JsonValueKind.Object ? GetBool(alarmes, "alertaNivelCombustivel") : null,
         BaixaPressaoCombustivel = alarmes.ValueKind == JsonValueKind.Object ? GetBool(alarmes, "baixaPressaoCombustivel") : null,
-    });
+    };
+    alertas.IngestT4000(amAlerta);
+    motorList.Add((a.TryGetProperty("tWall", out var twm) && twm.ValueKind == JsonValueKind.Number ? twm.GetDouble() : 0, rpm, amAlerta));
     var principal = alertas.GetMensagemPrincipal();
     if (principal is null) { cockpit.HideMessage(); amostrasSemAlerta++; }
     else { cockpit.ShowMessage(principal.Tipo, principal.Texto); msgTally[principal.Id] = msgTally.GetValueOrDefault(principal.Id) + 1; }
