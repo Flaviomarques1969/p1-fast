@@ -8175,6 +8175,31 @@ html,body{
   })();
 </script>
 
+<!-- REPLAY DEV (Flávio 21/06, "use os dados de hoje"): SÓ com ?replay=hoje na barra de endereço,
+     toca a SESSÃO REAL de hoje na tela — o cérebro acha a volta pelo GPS (linha de chegada) e pinta
+     stint/ritmo. Sem a marca, este bloco não faz NADA. Não toca rede nem o canal de produção. -->
+<script type="module">
+  (async function(){
+    if(!/[?&]replay=hoje/.test(location.search)) return;
+    try{
+      var vivo = await import('/web/command-box/cerebro/cerebro-vivo.js');
+      var data = await (await fetch('/web/command-box/fixtures/replay-hoje-2026-06-21.json')).json();
+      var MARCO = { a_gps:{ lat:-15.7728816, lng:-47.9000707 }, b_gps:{ lat:-15.7725493, lng:-47.9001926 } };
+      var orq = vivo.criarOrquestradorVivo({ marcoChegada: MARCO, plano:{ voltas:12, duracaoS:28*60 }, pbEverSec:91.95, stintNumero:3, stintTotal:5 });
+      var arr = data.amostras || [], i = 0;
+      function selo(t){ if(window.__cbSetEstado) window.__cbSetEstado('cb-on', t); }
+      selo('REPLAY · dados de hoje (21/06)');
+      (function passo(){
+        var fim = Math.min(i + 250, arr.length);
+        for(; i < fim; i++){ orq.feedSample(arr[i]); }
+        if(window.__aplicarPainelStint) window.__aplicarPainelStint(orq.snapshot());
+        if(i < arr.length){ selo('REPLAY · dados de hoje (21/06)'); setTimeout(passo, 100); }
+        else selo('REPLAY · fim — voltas de hoje, achadas pelo GPS');
+      })();
+    }catch(e){ console.warn('[replay hoje] indisponível:', e); }
+  })();
+</script>
+
 <!-- ITEM 3 (Flávio 18/06/2026): a bolinha (e a tela em sincronia) anda pela FRAÇÃO DE ARCO
      derivada do GPS REAL — reusa geoParaCommandBox (recalibração, item 1) + suavizador (item 2).
      DEV stand-in: a projeção roda aqui no protótipo; na produção a conta vai pra nuvem (não muda
