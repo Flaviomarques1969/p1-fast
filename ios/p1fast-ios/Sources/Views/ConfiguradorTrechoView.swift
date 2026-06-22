@@ -1096,6 +1096,33 @@ struct ConfiguradorTrechoView: View {
         return P1FastCore.TrackPoint(x: s.x, y: s.y)
     }
 
+    /// Snap do ÁPICE: cai na pista mais próxima e desloca pro LADO INTERNO
+    /// (parte mais interna) da curva, não pro eixo central. A direção interna
+    /// é o vetor centrípeto — a variação da tangente unitária aponta pro lado
+    /// côncavo. Em reta a variação é ~0 e o ápice fica no eixo (curva
+    /// degenerada, sem lado interno definido).
+    private func snapApexToInnerEdge(_ p: P1FastCore.TrackPoint, lookup: PathMapper.Lookup) -> P1FastCore.TrackPoint {
+        let s = snapClean(at: lookup, x: p.x, y: p.y)
+        let pts = lookup.points
+        let n = pts.count
+        let w = 8
+        guard n > 2 * w + 1 else { return P1FastCore.TrackPoint(x: s.x, y: s.y) }
+        let idx = max(w, min(n - 1 - w, s.idx))
+        let inDx = pts[idx].x - pts[idx - w].x
+        let inDy = pts[idx].y - pts[idx - w].y
+        let outDx = pts[idx + w].x - pts[idx].x
+        let outDy = pts[idx + w].y - pts[idx].y
+        let inLen = (inDx * inDx + inDy * inDy).squareRoot()
+        let outLen = (outDx * outDx + outDy * outDy).squareRoot()
+        guard inLen > 1e-6, outLen > 1e-6 else { return P1FastCore.TrackPoint(x: s.x, y: s.y) }
+        var nx = outDx / outLen - inDx / inLen
+        var ny = outDy / outLen - inDy / inLen
+        let nLen = (nx * nx + ny * ny).squareRoot()
+        guard nLen > 1e-4 else { return P1FastCore.TrackPoint(x: s.x, y: s.y) }
+        nx /= nLen; ny /= nLen
+        return P1FastCore.TrackPoint(x: s.x + nx * apexInnerOffset, y: s.y + ny * apexInnerOffset)
+    }
+
     private func save() {
         guard !saving else { return }
         saving = true
