@@ -52,12 +52,30 @@ mensagens, ghost e ia"). Usar a sessão REAL de domingo 21/06 (1 volta de 2:39) 
   os alertas) pra não pegar jitter — vale portar pro pipeline junto da segmentação por trecho.
 - Validação: 7 testes do ghost verdes; bateria completa 234 aprovados / 1 falha (PAN_04). Zero regressão.
 
-## Próximos incrementos
-- Calibração fina opcional: debounce nos alertas de mistura (tip-in).
-- Incremento 4 — DELTA + COACH (FREOU CEDO etc.): dependem de (a) segmentação por trecho (trecho-detector)
-  e (b) uma volta de REFERÊNCIA pra comparar. Hoje só há 1 volta (2:39) → vira a própria referência até
-  ter uma mais rápida. O delta-calculator.js + mensagens-pedagogicas.js são o próximo port.
-- Gate "carro em movimento" no cálculo de ápice (achado acima).
+## INCREMENTO 4 — DELTA + COACH, FEITO E PROVADO ("sim")
+- NOVO Domain/DeltaCoach.cs — port fiel de delta-calculator.js (DeltaCalculator.Calcular: perda de
+  tempo por sub-trecho entrada/freio/apice/pace/saida + pior sub) + mensagens-pedagogicas.js
+  (MensagensPedagogicas.Decidir: as 13 frases 01-13 — REGISTRANDO/BUSCAR LIMITE/MANTEVE/RECORDE/
+  MELHOR STINT + foco no pior sub: PISOU POUCO/FREOU CEDO|TARDE/VIROU POUCO|MUITO|TARDE|CEDO/ACELEROU
+  TARDE). Reusa Ghost.DistMeters.
+- NOVO Domain.Tests/DeltaCoachTests.cs (15) — delta self=0; mais lento acha o pior sub; cada frase.
+- ESTENDIDO SessaoReplay: encanamento completo na LINHA REAL da curva de 2:39 — referência 100 km/h +
+  passagem mais lenta SIMULADA na freada (só há 1 volta) -> delta 0,251 s, pior=freio 0,233 s ->
+  coach "FREOU CEDO" -> escrito em cockpit.acao. Prova a cadeia real até a frase na tela.
+- Validação: 15 testes verdes; bateria completa 249 aprovados / 1 falha (PAN_04). Zero regressão.
+
+## ESTADO DA FASE 4 (cérebro da tela nativa, ligado ao dado real e provado)
+Pronto e testado na volta real de 2:39: (1) luz de marcha Bubi; (2) mensagens/alertas com conserto do
+sensor ausente + trava "carro andando"; (3) bolinha do ápice (ghost); (4) delta por trecho + frases do
+coach. Tudo no app nativo (C#), 249 testes.
+
+## Limites honestos / próximos passos
+- A passagem mais lenta do delta é SIMULADA (só há 1 volta real). Valor real = 2ª volta mais rápida.
+- Segmentação automática por curva (trecho-detector: saber em qual das 8 curvas o carro está) NÃO
+  portada — usei uma curva única em janela. É o que falta pra rodar a volta inteira curva a curva.
+- Incremento 5 = ligar tudo no MainWindow (WinUI) e tirar a demonstração: CÓDIGO eu escrevo no Mac, mas
+  a PROVA VISUAL (tela acendendo) e o empacotamento do .exe (Fase 5) só validam no notebook Windows.
+- Gate "carro em movimento" no cálculo de ápice (achado do Inc. 3).
 
 ---
 
