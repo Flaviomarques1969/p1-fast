@@ -197,16 +197,16 @@ if (apice is null)
     Console.WriteLine("   Não deu pra achar ápice (passagem curta/sem ponto válido).");
     return 0;
 }
-Console.WriteLine($"Ápice (curva mais fechada da sessão): raio {apice.RaioM:0.0} m, no ponto {apice.Idx} de {gpsValidos.Count}");
+Console.WriteLine($"Ápice (curva mais fechada andando): raio {apice.RaioM:0.0} m, no ponto {apice.Idx} de {gpsMov.Count}");
 
 // Replay da bolinha numa janela em torno do ápice: ela aponta pra FRENTE antes,
 // passa pelo lado, e vai pra ATRÁS depois — prova que a direção funciona no dado real.
-int jIni = Math.Max(1, apice.Idx - 40), jFim = Math.Min(gpsValidos.Count - 1, apice.Idx + 40);
+int jIni = Math.Max(1, apice.Idx - 10), jFim = Math.Min(gpsMov.Count - 1, apice.Idx + 10);
 double menorDist = double.MaxValue; double? angAntes = null, angDepois = null;
 for (var i = jIni; i <= jFim; i++)
 {
-    var car = gpsValidos[i];
-    double? heading = Ghost.DistMeters(gpsValidos[i - 1], car) >= 1 ? Ghost.BearingDeg(gpsValidos[i - 1], car) : null;
+    var car = gpsMov[i];
+    double? heading = Ghost.DistMeters(gpsMov[i - 1], car) >= 1 ? Ghost.BearingDeg(gpsMov[i - 1], car) : null;
     var b = Ghost.CalcularBolinha(car, heading, apice.Ponto);
     cockpit.SetApexPonto("apice", estado: b.Estado, distM: b.DistM, angleDeg: b.AngleDeg); // escreve no estado real
     if (b.DistM < menorDist) menorDist = b.DistM;
