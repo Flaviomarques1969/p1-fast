@@ -44,7 +44,35 @@ trecho vs volta de referência) e IA (luz de marcha que aprende + antecipa + fla
 ## 10. Evidência: não recebida | 11. Riscos: WinUI só renderiza no Windows (no Mac eu construo e testo
 ##     a lógica via roll-forward, mas a prova VISUAL é na bancada); ghost/IA dependem de GPS no pipeline
 ##     (Fase 6); mudança 12 vs 17 LEDs é decisão de UX (NÃO mudo sozinho — levo ao Flávio). Mudanças
-##     ADITIVAS e preservando a demonstração. 12. Status: iniciado (Incremento 1).
+##     ADITIVAS e preservando a demonstração. 12. Status: Incremento 1 CONCLUÍDO em DEV.
+
+## Resultado — Incremento 1 (paridade do modelo de estado + calibração do Bubi)
+- EDITADO Enums.cs: ApexEstado ganha `Pendente`; novo enum `AprendizadoStatus`; mapeamentos string
+  atualizados (pendente / aprendizado).
+- EDITADO CockpitStateModel.cs: campos novos no estado (Silencioso, NoBox, Aprendizado{Status,Pct},
+  FlashIa) como propriedades init (não quebram o construtor); ApexPonto ganha DistM/AngleDeg (bolinha),
+  DeltaM, NomeCurva; ApexState ganha o ponto `Pace` (5º marco). Defaults = Pendente (paridade JS).
+- EDITADO CockpitState.cs: ShowMessage respeita silencioso (bloqueia COMUNICACAO, nunca GRAVE); novos
+  setters SetNoBox/IsNoBox, SetSilencioso (esconde comunicação corrente)/IsSilencioso, SetAprendizado
+  (clampa 0..100 + StatusFromPct), SetFlashIa; SetApexPonto aceita `pace` + distM/angleDeg/deltaM/
+  nomeCurva com merge (preserva o que não vier). StatusFromPct público (bordas 0/33/66 = JS).
+- EDITADO LiveDataBridge.cs: novo preset `LiveLimits.Bubi` (redline 6.300, fire ~pico de potência
+  6.050, água crítica 80°C/óleo 115°C). ADITIVO — o Default (7.500) não mudou (sem regressão).
+- NOVO Domain.Tests/CockpitStateParidadeTests.cs (13 fatos + theory) cobrindo tudo acima.
+
+## Validação executada (DOTNET_ROLL_FORWARD=Major)
+- build Domain: 0 aviso / 0 erro.
+- testes novos (CockpitStateParidadeTests): 19/19 verdes.
+- bateria completa (P1Fast.Cockpit.sln): 213 aprovados / 1 falha = PAN_04 PRÉ-EXISTENTE (espera "90.0",
+  o Mac formata "90,0" — LivePanelTests.cs:93, sem relação com este trabalho). Zero regressão.
+
+## Pendências reais (próximos incrementos, declarados)
+- Incremento 2: mensagens reais (decidirMensagemPedagogica + orquestrador de alertas completo).
+- Incremento 3: IA da luz (marcha + aprendizado por tempo de passagem + antecipação Onda 7 + flash).
+- Incremento 4: ghost (ápice/delta/freio por trecho vs volta de referência) — depende de GPS no pipeline.
+- Incremento 5: ligar a tela ao feed real + replay de sessão; demonstração atrás de --demo. PROVA VISUAL
+  só no Windows (no Mac valido a lógica; WinUI não renderiza aqui).
+- Decisão de UX pendente: luz 12 vs 17 LEDs (não mudo sozinho).
 
 ---
 
