@@ -57,7 +57,15 @@ não recebida
 - Não criar a 151ª fonte espalhada: a página só vale se virar leitura #0 no CLAUDE.md.
 
 ## 12. Status
-iniciado.
+Em andamento. Fonte da verdade criada (docs/COCKPIT_FONTE_DA_VERDADE.md).
+METODO acordado com Flavio (22/06): UM problema por vez — eu resolvo, mostro funcionando na
+tela, ele responde sim/nao; eu decido o "como" tecnico e executo, sem encher de opcoes.
+PROBLEMA Nº1 RESOLVIDO: web/cockpit/cockpit-vitrine.html — tela que roda SOZINHA (sem nuvem,
+sem clique, offline), luz de marcha na regra real (troca 6.050 via rpmToShift), volta
+roteirizada pelas 8 curvas reais de Brasilia (nomes do JSON aprovado). Provada por screenshot
+(/tmp/cockpit-vitrine.png): delta -0,08, "FREOU CEDO", entrada 129 km/h, curva "Reta Oposta".
+Reusa as pecas reais: cockpit-state.js + cockpit-renderer.js + live-data-bridge.js.
+PROXIMO (nº2): trocar o roteiro de demonstracao pela VOLTA REAL de 2:39 (replay no navegador).
 
 ---
 
