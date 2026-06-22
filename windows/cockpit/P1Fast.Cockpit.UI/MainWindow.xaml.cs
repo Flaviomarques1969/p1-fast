@@ -19,7 +19,11 @@ public sealed partial class MainWindow : Window
 {
     private readonly CockpitState _cockpitState = new();
     private readonly LaunchOptions _options;
-    private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _demoTimer;
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer? _demoTimer;
+
+    // Maestro que comanda a tela com dado REAL (motor + GPS). Fica nulo até o feed
+    // ser ligado (IniciarFeedReal), chamado pela ligação USB/replay no notebook.
+    private CockpitOrchestrator? _orquestrador;
 
     // ── Cores ──────────────────────────────────────────────
 
