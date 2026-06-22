@@ -1101,3 +1101,260 @@ private struct PendenciasProximoEventoLauncher: View {
         .background(Color.surface)
         .preferredColorScheme(.dark)
 }
+
+// ═══════════════════════════════════════════════════════════
+// Telas dos números da Home — Voltas / Stints / Melhor volta
+// ═══════════════════════════════════════════════════════════
+// Abertas ao tocar nos números da Home. Dado REAL: voltas de verdade vêm
+// do painel ao vivo (origem='painel-ao-vivo'). Enquanto não houver volta
+// registrada, mostram estado honesto em vez de número inventado.
+
+/// ms → "1:42.3" (minuto:segundo.décimo). Tempo de volta curto.
+func formatVoltaCurta(_ ms: Int) -> String {
+    let total = Double(ms) / 1000.0
+    let m = Int(total) / 60
+    let s = total - Double(m * 60)
+    return String(format: "%d:%04.1f", m, s)
+}
+
+/// Cabeçalho padrão das telas de número (voltar + título).
+private struct TelaNumeroHeader: View {
+    let titulo: String
+    let onClose: () -> Void
+    var body: some View {
+        HStack(spacing: Spacing.sm) {
+            Button(action: onClose) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.text)
+                    .frame(width: 36, height: 36)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color.surfaceRaised))
+            }
+            .buttonStyle(.plain)
+            Text(titulo)
+                .font(.system(size: 22, weight: .semibold))
+                .tracking(-0.44)
+                .foregroundStyle(Color.text)
+            Spacer(minLength: 0)
+        }
+    }
+}
+
+/// Cartão de número grande com título + valor (+ rodapé opcional).
+private struct BlocoNumero: View {
+    let titulo: String
+    let valor: String
+    var rodape: String? = nil
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(titulo.uppercased())
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(1.1)
+                .foregroundStyle(Color.textFaint)
+            Text(valor)
+                .font(.system(size: 34, weight: .semibold))
+                .monospacedDigit()
+                .foregroundStyle(Color.text)
+            if let rodape {
+                Text(rodape)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.textMuted)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Spacing.md)
+        .background(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).fill(Color.surfaceRaised))
+        .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(Color.border, lineWidth: 1))
+    }
+}
+
+/// Resumo estratégico de voltas: total + melhor + média de delta das 10
+/// melhores (esta só aparece com 10 voltas válidas — dado real).
+struct VoltasResumoView: View {
+    @EnvironmentObject private var stintRepo: StintRepository
+    let onClose: () -> Void
+    @State private var total = 0
+    @State private var melhorMs: Int? = nil
+    @State private var topMs: [Int] = []
+    @State private var carregou = false
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Spacing.lg) {
+                TelaNumeroHeader(titulo: "Voltas", onClose: onClose)
+                BlocoNumero(titulo: "Total de voltas", valor: "\(total)")
+                BlocoNumero(titulo: "Melhor volta", valor: melhorMs.map(formatVoltaCurta) ?? "—")
+                blocoDelta
+                if carregou && total == 0 {
+                    Text("Ainda não há volta real registrada. As voltas entram sozinhas quando o painel marca cada passagem na linha, no dia de pista.")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.textMuted)
+                        .padding(.horizontal, Spacing.xs)
+                }
+            }
+            .padding(.horizontal, Spacing.lg)
+            .padding(.top, Spacing.md)
+            .padding(.bottom, 40)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(Color.surface)
+        .preferredColorScheme(.dark)
+        .navigationBarBackButtonHidden(true)
+        .task {
+            if let r = try? await stintRepo.resumoVoltas() {
+                total = r.total; melhorMs = r.melhorMs; topMs = r.topMs
+            }
+            carregou = true
+        }
+    }
+
+    @ViewBuilder
+    private var blocoDelta: some View {
+        if topMs.count >= 10, let melhor = topMs.first {
+            let deltas = topMs.map { Double($0 - melhor) / 1000.0 }
+            let media = deltas.reduce(0, +) / Double(deltas.count)
+            BlocoNumero(titulo: "Média de delta das 10 melhores", valor: String(format: "+%.2fs", media))
+        } else {
+            BlocoNumero(titulo: "Média de delta das 10 melhores", valor: "—",
+                        rodape: "Aparece com 10 voltas válidas (hoje: \(topMs.count)).")
+        }
+    }
+}
+
+/// Lista de todos os stints (mais recente primeiro). Toca → abre o evento.
+struct StintsListaView: View {
+    @EnvironmentObject private var stintRepo: StintRepository
+    let onAbrirEvento: (String) -> Void
+    let onClose: () -> Void
+    @State private var stints: [Stint] = []
+    @State private var carregou = false
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                TelaNumeroHeader(titulo: "Stints", onClose: onClose)
+                if stints.isEmpty && carregou {
+                    Text("Nenhum stint registrado ainda.")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.textMuted)
+                        .padding(.horizontal, Spacing.xs)
+                        .padding(.top, Spacing.sm)
+                } else {
+                    VStack(spacing: Spacing.sm) {
+                        ForEach(stints) { s in linhaStint(s) }
+                    }
+                }
+            }
+            .padding(.horizontal, Spacing.lg)
+            .padding(.top, Spacing.md)
+            .padding(.bottom, 40)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(Color.surface)
+        .preferredColorScheme(.dark)
+        .navigationBarBackButtonHidden(true)
+        .task {
+            stints = (try? await stintRepo.loadTodosStints()) ?? []
+            carregou = true
+        }
+    }
+
+    @ViewBuilder
+    private func linhaStint(_ s: Stint) -> some View {
+        if let ev = s.sessao.eventoId, !ev.isEmpty {
+            Button { onAbrirEvento(ev) } label: { linhaConteudo(s) }
+                .buttonStyle(.plain)
+        } else {
+            linhaConteudo(s)
+        }
+    }
+
+    private func linhaConteudo(_ s: Stint) -> some View {
+        HStack(alignment: .center, spacing: Spacing.sm) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(s.objetivoDecomposto.tipo.isEmpty ? "Stint" : s.objetivoDecomposto.tipo)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.text)
+                Text(subStint(s))
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.textFaint)
+            }
+            Spacer(minLength: 0)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("\(s.voltasCount) voltas")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Color.textMuted)
+                Text(s.melhorVoltaMs.map(formatVoltaCurta) ?? "—")
+                    .font(.system(size: 13, weight: .semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(Color.text)
+            }
+        }
+        .padding(Spacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).fill(Color.surfaceRaised))
+        .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(Color.border, lineWidth: 1))
+    }
+
+    private func subStint(_ s: Stint) -> String {
+        var partes: [String] = []
+        if let nome = s.pilotoNome, !nome.isEmpty { partes.append(nome) }
+        partes.append(s.isCancelado ? "cancelado" : s.status)
+        return partes.joined(separator: " · ")
+    }
+}
+
+/// Detalhe da melhor volta: tempo real + encaixe do mapa/por-trecho, que
+/// enche quando houver volta real gravada (escolha "dado real primeiro").
+struct MelhorVoltaView: View {
+    @EnvironmentObject private var stintRepo: StintRepository
+    let onClose: () -> Void
+    @State private var melhorMs: Int? = nil
+    @State private var carregou = false
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Spacing.lg) {
+                TelaNumeroHeader(titulo: "Melhor volta", onClose: onClose)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("MELHOR TEMPO")
+                        .font(.system(size: 11, weight: .semibold)).tracking(1.1)
+                        .foregroundStyle(Color.textFaint)
+                    Text(melhorMs.map(formatVoltaCurta) ?? "—")
+                        .font(.system(size: 44, weight: .semibold)).monospacedDigit()
+                        .foregroundStyle(Color.text)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(Spacing.md)
+                .background(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).fill(Color.surfaceRaised))
+                .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(Color.border, lineWidth: 1))
+
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    Text("MAPA DA PISTA E DADOS POR TRECHO")
+                        .font(.system(size: 11, weight: .semibold)).tracking(1.1)
+                        .foregroundStyle(Color.textFaint)
+                    Text(melhorMs == nil
+                         ? "Aparece quando houver uma volta real gravada na pista. As voltas entram pelo painel ao vivo ao cruzar a linha."
+                         : "O mapa do traçado e os tempos por trecho (entrada, freio, ápice, V-min, saída) aparecem aqui quando a melhor volta tiver o traçado gravado.")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.textMuted)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(Spacing.md)
+                .background(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).fill(Color.surfaceRaised.opacity(0.5)))
+                .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(Color.border, lineWidth: 1))
+            }
+            .padding(.horizontal, Spacing.lg)
+            .padding(.top, Spacing.md)
+            .padding(.bottom, 40)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(Color.surface)
+        .preferredColorScheme(.dark)
+        .navigationBarBackButtonHidden(true)
+        .task {
+            if let r = try? await stintRepo.resumoVoltas() { melhorMs = r.melhorMs }
+            carregou = true
+        }
+    }
+}
