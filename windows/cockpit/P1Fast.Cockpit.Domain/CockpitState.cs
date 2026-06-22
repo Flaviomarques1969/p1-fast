@@ -217,32 +217,59 @@ public sealed class CockpitState
         Emit(prev, new[] { "acao" });
     }
 
-    /// <summary>Atualiza um apex ponto (entrada/freio/apice/saida) com campos parciais.</summary>
+    /// <summary>
+    /// Atualiza um apex ponto (entrada/freio/apice/pace/saida) com campos parciais —
+    /// só os campos informados mudam, o resto é preservado (merge, igual ao JS
+    /// setApexPonto). distM/angleDeg = a bolinha do ápice ao vivo.
+    /// </summary>
     public void SetApexPonto(
         string papel,
         ApexEstado? estado = null,
         double? valorKmh   = null,
         double? atualM     = null,
-        double? refM       = null)
+        double? refM       = null,
+        double? distM      = null,
+        double? angleDeg   = null,
+        double? deltaM     = null,
+        string? nomeCurva  = null)
     {
-        if (papel is not ("entrada" or "freio" or "apice" or "saida"))
+        if (papel is not ("entrada" or "freio" or "apice" or "pace" or "saida"))
             throw new ArgumentException($"apex papel=\"{papel}\" inválido", nameof(papel));
 
         if (estado is { } e) AssertEnumDefined(e, nameof(estado));
 
         var cur = _state.Apex.Get(papel);
-        var next = new ApexPonto(
-            Estado:   estado   ?? cur.Estado,
-            ValorKmh: valorKmh ?? cur.ValorKmh,
-            AtualM:   atualM   ?? cur.AtualM,
-            RefM:     refM     ?? cur.RefM
-        );
+        var next = cur with
+        {
+            Estado    = estado    ?? cur.Estado,
+            ValorKmh  = valorKmh  ?? cur.ValorKmh,
+            AtualM    = atualM    ?? cur.AtualM,
+            RefM      = refM      ?? cur.RefM,
+            DistM     = distM     ?? cur.DistM,
+            AngleDeg  = angleDeg  ?? cur.AngleDeg,
+            DeltaM    = deltaM    ?? cur.DeltaM,
+            NomeCurva = nomeCurva ?? cur.NomeCurva,
+        };
 
         if (next == cur) return;
 
         var prev = _state;
         _state = prev with { Apex = prev.Apex.With(papel, next) };
         Emit(prev, new[] { "apex" });
+    }
+
+    /// <summary>
+    /// Status da barra a partir do % aprendido. Bordas (paridade com
+    /// cockpit-state.js statusFromPct): 0 = inativo; 1-33 = aprendendo;
+    /// 34-66 = parcial; 67-100 = calibrado.
+    /// </summary>
+    public static AprendizadoStatus StatusFromPct(double pct)
+    {
+        if (double.IsNaN(pct) || double.IsInfinity(pct)) return AprendizadoStatus.Inativo;
+        if (pct <= 0)  return AprendizadoStatus.Inativo;
+        if (pct <= 33) return AprendizadoStatus.Aprendendo;
+        if (pct <= 66) return AprendizadoStatus.Parcial;
+        return AprendizadoStatus.Calibrado;
     }
 
     /// <summary>Aplica preset canônico do mockup (haloStates) — campos ausentes ficam intactos.</summary>
