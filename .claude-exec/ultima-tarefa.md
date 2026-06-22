@@ -9,11 +9,22 @@
 - NÃO existem: resumo de voltas, lista de stints, detalhe de melhor volta (mapa + por trecho).
 - Dado real: total de voltas + melhor tempo = consultáveis. MAS "delta das 10 melhores" e "dados por trecho" são esparsos/sintéticos hoje. Mapa SwiftUI da pista NÃO existe (só PathMapper puro).
 
-## Feito neste turno (DEV, compila — BUILD SUCCEEDED)
-- Carro Bolinha clicável: CarroMock ganhou carroId real; carroCard passa c.id; linha do carro vira NavigationLink → CarroHubView (helper carroLink). Mocks preservados (carroId default "").
+## Decisão de Flávio
+"Primeiro o que tem dado real" — não construir a melhor-volta com mapa/delta vazia agora.
 
-## Pendente (aguardando rumo — buraco de dado real na melhor volta/delta)
-- 4 números reais + Eventos/Stints/Voltas/Melhor clicáveis; lista de stints; resumo de voltas; melhor volta (mapa+trecho+delta).
+## Feito (DEV, compila — BUILD SUCCEEDED)
+- Carro Bolinha clicável → CarroHubView (CarroMock.carroId + carroCard + carroLink).
+- Home com os 4 números canônicos REAIS e clicáveis: Eventos→lista; Voltas→VoltasResumoView; Stints→StintsListaView; Melhor→MelhorVoltaView. "Carros" saiu do strip (carros já têm a lista clicável abaixo).
+- StatItem ganhou onTap; StatCell vira botão quando há ação (SummaryStats.swift).
+- Dados reais: CarroRepository.reload agrega voltasTotal + melhorVoltaMs (tabela voltas). StintRepository.resumoVoltas (total/melhor/top10) + loadTodosStints (lista global).
+- 3 telas novas em HomeView.swift (sem mexer no registro do projeto): VoltasResumoView (total + melhor + média de delta das 10 melhores, esta só com ≥10 voltas válidas), StintsListaView (lista real, toca → evento), MelhorVoltaView (tempo real + encaixe honesto do mapa/por-trecho pra acender com volta real).
+- HomeData ganhou voltasTotal/melhorVoltaMs (default preserva mocks). Rotas novas: voltasResumo/stintsLista/melhorVolta.
+
+## Pendente
+- Validação no iPhone (toque real). Mapa + dados por trecho da melhor volta: encaixe pronto, enche quando houver volta real gravada na pista.
+
+## Status
+Implementado em DEV. BUILD SUCCEEDED (xcodebuild simulador). Parcial: aguarda validação no iPhone.
 
 ---
 
