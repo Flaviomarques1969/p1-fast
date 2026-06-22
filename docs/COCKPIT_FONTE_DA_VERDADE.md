@@ -7,6 +7,12 @@
 
 ---
 
+## 0. Como a gente trabalha (estratégia — Flávio 22/06)
+**Fazemos a tela funcionar INTEIRA na WEB primeiro** (no navegador — mais fácil e rápido de ver e corrigir).
+**Só quando estiver tudo concluído** é que fazemos a versão pra rodar no **notebook Windows** (a portagem final).
+A web é o ambiente de **desenvolvimento e validação**; o Windows é o **último passo**, não o caminho do dia a dia.
+**Método:** um problema por vez — eu resolvo, mostro funcionando na tela, você responde sim/não, e só então vou pro próximo.
+
 ## 1. O que é o cockpit do piloto
 A tela que **o piloto vê dentro do carro**, num notebook Windows com tela de 10,5".
 **Não confundir** com as outras duas telas:
