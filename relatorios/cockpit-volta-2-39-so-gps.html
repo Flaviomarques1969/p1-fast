@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="pt-BR" data-mobile="true">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cockpit Piloto · tela 10.5" (kiosque)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(0% 0 0);
+  --surface: oklch(11% 0 0);
+  --border: oklch(22% 0 0);
+  --hairline: oklch(28% 0 0);
+  --ink: oklch(100% 0 0);
+  --muted: oklch(58% 0 0);
+  --faint: oklch(36% 0 0);
+  --bom: oklch(80% 0.22 145);
+  --erro: oklch(68% 0.26 27);
+  --sistema: oklch(78% 0.16 225);
+  --foco: oklch(82% 0.19 70);
+  --ouro: oklch(74% 0.16 73);
+  --halo-recorde: oklch(78% 0.18 65 / .42);
+  --halo-pior:    oklch(56% 0.22 305 / .42);
+
+  --ff-display: 'Inter', system-ui, sans-serif;
+  --ff-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --apex-h: 60px;
+  --acao-h: 44px;
+  --esp-h: 24px;
+  --fs-0: 9px;
+  --fs-1: 11px;
+  --fs-2: 13px;
+  --fs-5: 32px;
+  --fs-6: 32px;
+  --fs-9: 180px;
+  --ls-tight: -0.045em;
+  --ls-caps-s: 0.06em;
+  --ls-caps-l: 0.35em;
+  --ls-caps-m: 0.22em;
+  --lh-dom: 0.88;
+
+  --ease-out:   cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+  /* Easing dedicado pra transição de mensagem — expo-out muito suave,
+     curva mais aberta (gasta mais tempo no fim, sensação flutuante elegante) */
+  --ease-msg:   cubic-bezier(0.16, 1, 0.3, 1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;width:100%;}
+body{
+  font-family:var(--ff-display);font-weight:500;
+  background:#000;color:var(--ink);
+  display:flex;align-items:center;justify-content:center;
+  height:100vh;width:100vw;padding:0;margin:0;overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+  font-feature-settings:"ss01","cv11";
+  user-select:none;
+  cursor:none;
+}
+
+/* Stage = camada que escala o painel pra caber em qualquer tela 10.5" mantendo a proporção
+   nativa do layout (956×440). JS aplica scale(min(vw/956, vh/440)) on resize. */
+.stage{
+  width:956px;height:440px;
+  transform-origin:center center;
+  position:relative;
+}
+
+.device{
+  width:956px;height:440px;
+  background:var(--bg);
+  border-radius:0;border:none;
+  box-shadow:none;
+  position:relative;overflow:hidden;
+  --halo-cor: transparent;
+  perspective:1200px;
+}
+/* Notch é detalhe de iPhone — kiosque automotivo não usa */
+.notch{ display:none !important; }
+.device::before{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:1;
+  background:radial-gradient(ellipse 65% 75% at 50% 55%, var(--halo-cor) 0%, transparent 65%);
+  transition:background 320ms var(--ease-inout);
+}
+.device[data-trecho-status="recorde-stint"]{ --halo-cor: var(--halo-recorde); }
+.device[data-trecho-status="pior-stint"]{    --halo-cor: var(--halo-pior); }
+
+.notch{
+  position:absolute;left:18px;top:50%;transform:translateY(-50%);
+  width:36px;height:128px;background:#000;border-radius:20px;z-index:50;
+  border:1px solid oklch(8% 0 0);
+}
+
+.telemetria-chip{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);z-index:60;
+  display:flex;flex-direction:column;gap:6px;
+}
+.telemetria-chip__dot{width:6px;height:6px;border-radius:50%;background:var(--faint);}
+.telemetria-chip__dot.ok{background:var(--bom);box-shadow:0 0 6px oklch(80% 0.22 145 / .4);}
+.telemetria-chip__dot.warn{background:var(--foco);box-shadow:0 0 6px oklch(82% 0.19 70 / .4);}
+
+.apex{
+  position:absolute;top:46px;left:60px;right:36px;z-index:10;
+  display:flex;align-items:baseline;justify-content:space-between;
+  min-height:var(--apex-h);
+}
+
+/* SMART SHIFT LIGHT PREMIUM — barra de 12 LEDs racing.
+   Acende UM PAR POR VEZ, DAS PONTAS PRO CENTRO (estilo F1/MotoGP invertido).
+   12 dots em 6 tiers simétricos: tier 1 = pontas (1° a acender);
+   tier 6 = par central (último, peak vermelho).
+   JS marca .is-on em dots com tier <= level. data-state="overrev" sobrepõe
+   e pisca tudo vermelho com housing alarmado.
+   Cor por tier: 1-2 verde · 3-4 amarelo · 5-6 vermelho.
+   Técnicas premium: dome glass (gradiente radial 3-stop), specular highlight
+   (::after), multi-layer bloom (até 4 sombras coloridas com aberração de raio),
+   ignition flash via filter brightness/saturate, housing recessed com hairlines. */
+.shift-light{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  z-index:45;
+  display:flex;gap:18px;align-items:center;
+  padding:9px 26px;
+  border-radius:999px;
+  background:
+    linear-gradient(180deg,
+      oklch(8% 0 0) 0%,
+      oklch(5% 0 0) 48%,
+      oklch(9% 0 0) 100%);
+  box-shadow:
+    inset 0 1px 0 oklch(22% 0 0 / .8),
+    inset 0 -1px 0 oklch(0% 0 0 / .9),
+    inset 0 0 0 1px oklch(15% 0 0),
+    0 2px 6px oklch(0% 0 0 / .6),
+    0 8px 24px oklch(0% 0 0 / .35);
+  pointer-events:none;
+}
+.shift-light::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;
+  background:radial-gradient(ellipse 60% 100% at 50% 0%,
+    oklch(28% 0 0 / .35) 0%, transparent 70%);
+  pointer-events:none;
+}
+.shift-light__dot{
+  position:relative;
+  width:13px;height:13px;border-radius:50%;
+  /* OFF default — LED apagado com leve dome via gradiente + inset shadow */
+  background:radial-gradient(circle at 35% 30%,
+    oklch(20% 0 0) 0%,
+    oklch(11% 0 0) 60%,
+    oklch(7% 0 0) 100%);
+  box-shadow:
+    inset 0 1px 0 oklch(28% 0 0 / .6),
+    inset 0 0 0 1px oklch(18% 0 0),
+    inset 0 -1px 1px oklch(0% 0 0 / .9),
+    0 1px 1px oklch(0% 0 0 / .5);
+  transition:background 160ms var(--ease-out),
+             box-shadow 280ms var(--ease-out),
+             transform 220ms var(--ease-out);
+}
+.shift-light__dot::after{
+  /* highlight especular fino no topo do LED — sensação de vidro */
+  content:'';position:absolute;left:22%;top:14%;
+  width:38%;height:30%;border-radius:50%;
+  background:linear-gradient(180deg,
+    oklch(100% 0 0 / .55) 0%, oklch(100% 0 0 / 0) 100%);
+  filter:blur(.4px);
+  pointer-events:none;
+  opacity:.55;
+  transition:opacity 200ms var(--ease-out);
+}
+.shift-light[data-state="off"] .shift-light__dot::after{ opacity:.25; }
+
+/* LIT por tier — ativa apenas em dots com .is-on (controle via JS).
+   Tier 1 = pontas (1° a acender, glow distante e discreto)
+   Tier 6 = par central (último, peak, máximo bloom).
+   LEDs uniformes (scale 1.08) — hierarquia vem do bloom externo, não do tamanho.
+   Cor: 1-2 verde · 3-4 amarelo · 5-6 vermelho. */
+
+.shift-light__dot.is-on{
+  animation: ledIgnite 380ms var(--ease-out);
+}
+@keyframes ledIgnite{
+  0%   { filter: brightness(.25) saturate(.55); }
+  28%  { filter: brightness(2.2) saturate(1.45); }
+  62%  { filter: brightness(1.15) saturate(1.08); }
+  100% { filter: brightness(1) saturate(1); }
+}
+
+/* TIER 1 — pontas, VERDE, bloom curto e distante */
+.shift-light__dot.is-on[data-tier="1"]{
+  background:radial-gradient(circle at 35% 30%,
+    oklch(96% 0.10 145) 0%,
+    oklch(80% 0.23 145) 55%,
+    oklch(58% 0.23 148) 100%);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / .85),
+    inset 0 0 0 1px oklch(68% 0.23 148),
+    0 0 9px  oklch(82% 0.23 145 / .85),
+    0 0 18px oklch(74% 0.23 148 / .45),
+    0 0 28px oklch(64% 0.23 150 / .22);
+  transform:scale(1.07);
+}
+
+/* TIER 2 — VERDE, bloom maior */
+.shift-light__dot.is-on[data-tier="2"]{
+  background:radial-gradient(circle at 35% 30%,
+    oklch(97% 0.10 145) 0%,
+    oklch(82% 0.23 146) 55%,
+    oklch(60% 0.23 150) 100%);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / .9),
+    inset 0 0 0 1px oklch(70% 0.23 148),
+    0 0 11px oklch(84% 0.23 146 / .9),
+    0 0 22px oklch(76% 0.23 148 / .55),
+    0 0 34px oklch(66% 0.23 150 / .28);
+  transform:scale(1.08);
+}
+
+/* TIER 3 — AMARELO, bloom maior */
+.shift-light__dot.is-on[data-tier="3"]{
+  background:radial-gradient(circle at 35% 30%,
+    oklch(98% 0.13 95) 0%,
+    oklch(86% 0.21 92) 55%,
+    oklch(66% 0.21 88) 100%);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / .85),
+    inset 0 0 0 1px oklch(74% 0.21 92),
+    0 0 13px oklch(88% 0.21 92 / .9),
+    0 0 26px oklch(80% 0.21 90 / .55),
+    0 0 40px oklch(72% 0.21 88 / .28);
+  transform:scale(1.08);
+}
+
+/* TIER 4 — AMARELO, mais intenso (próximo do peak) */
+.shift-light__dot.is-on[data-tier="4"]{
+  background:radial-gradient(circle at 35% 30%,
+    oklch(98% 0.13 95) 0%,
+    oklch(88% 0.21 92) 52%,
+    oklch(68% 0.21 88) 100%);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / .9),
+    inset 0 0 0 1px oklch(76% 0.21 92),
+    0 0 15px oklch(90% 0.21 92 / .95),
+    0 0 30px oklch(82% 0.21 90 / .6),
+    0 0 46px oklch(74% 0.21 88 / .3);
+  transform:scale(1.08);
+}
+
+/* TIER 5 — VERMELHO, bloom amplo */
+.shift-light__dot.is-on[data-tier="5"]{
+  background:radial-gradient(circle at 35% 30%,
+    oklch(94% 0.10 32) 0%,
+    oklch(74% 0.26 28) 50%,
+    oklch(54% 0.26 25) 100%);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / .85),
+    inset 0 0 0 1px oklch(62% 0.27 27),
+    0 0 16px oklch(76% 0.26 28 / .95),
+    0 0 32px oklch(66% 0.27 27 / .6),
+    0 0 50px oklch(56% 0.27 27 / .32);
+  transform:scale(1.08);
+}
+
+/* TIER 6 — par CENTRAL, VERMELHO, MÁXIMO BLOOM (peak/shift!) */
+.shift-light__dot.is-on[data-tier="6"]{
+  background:radial-gradient(circle at 35% 30%,
+    oklch(96% 0.10 32) 0%,
+    oklch(76% 0.27 28) 48%,
+    oklch(54% 0.27 25) 100%);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / .95),
+    inset 0 0 0 1px oklch(64% 0.27 27),
+    0 0 18px oklch(78% 0.27 28 / 1),
+    0 0 36px oklch(68% 0.27 27 / .7),
+    0 0 60px oklch(58% 0.27 27 / .42),
+    0 0 90px oklch(52% 0.27 28 / .2);
+  transform:scale(1.10);
+}
+
+/* FIRE — evento DISCRETO "TROCA AGORA", visual-only.
+   3 pulsos brancos a ~10Hz (sweet spot da detecção periférica).
+   Cor TOTALMENTE diferente do verde/amarelo/vermelho da subida → cérebro lê
+   como "evento", não "mais um nível". 300ms total. */
+.shift-light[data-state="fire"] .shift-light__dot{
+  background:radial-gradient(circle at 35% 28%,
+    oklch(100% 0 0) 0%,
+    oklch(98% 0.04 230) 55%,
+    oklch(86% 0.12 240) 100%);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / 1),
+    inset 0 0 0 1px oklch(96% 0.05 230),
+    0 0 16px oklch(100% 0 0 / 1),
+    0 0 36px oklch(96% 0.06 230 / .95),
+    0 0 70px oklch(88% 0.13 240 / .75),
+    0 0 130px oklch(78% 0.16 245 / .45);
+  animation: shiftFire 300ms linear forwards;
+}
+.shift-light[data-state="fire"]{
+  animation: shiftHousingFire 300ms linear forwards;
+}
+/* 3 pulsos: 0-28% on, 33-39% off, 43-65% on, 71-76% off, 80-92% on, 100% decay */
+@keyframes shiftFire{
+  0%   { opacity: 0; transform: scale(0.85); }
+  3%   { opacity: 1; transform: scale(1.24); }
+  28%  { opacity: 1; transform: scale(1.22); }
+  33%  { opacity: 0; transform: scale(1.0);  }
+  39%  { opacity: 0; transform: scale(1.0);  }
+  43%  { opacity: 1; transform: scale(1.22); }
+  65%  { opacity: 1; transform: scale(1.20); }
+  71%  { opacity: 0; transform: scale(1.0);  }
+  76%  { opacity: 0; transform: scale(1.0);  }
+  80%  { opacity: 1; transform: scale(1.20); }
+  92%  { opacity: 1; transform: scale(1.18); }
+  100% { opacity: .55; transform: scale(1.10); }
+}
+@keyframes shiftHousingFire{
+  0%, 100% { box-shadow:
+    inset 0 1px 0 oklch(22% 0 0 / .8),
+    inset 0 -1px 0 oklch(0% 0 0 / .9),
+    inset 0 0 0 1px oklch(15% 0 0),
+    0 2px 6px oklch(0% 0 0 / .6),
+    0 8px 24px oklch(0% 0 0 / .35); }
+  3%, 28%, 43%, 65%, 80%, 92% { box-shadow:
+    inset 0 1px 0 oklch(60% 0.08 230 / .9),
+    inset 0 -1px 0 oklch(0% 0 0 / .9),
+    inset 0 0 0 1px oklch(82% 0.12 235),
+    0 0 0 1.5px oklch(94% 0.08 230 / .65),
+    0 2px 6px oklch(0% 0 0 / .6),
+    0 0 70px oklch(92% 0.10 235 / .65); }
+  33%, 39%, 71%, 76% { box-shadow:
+    inset 0 1px 0 oklch(22% 0 0 / .8),
+    inset 0 -1px 0 oklch(0% 0 0 / .9),
+    inset 0 0 0 1px oklch(15% 0 0),
+    0 2px 6px oklch(0% 0 0 / .6),
+    0 8px 24px oklch(0% 0 0 / .35); }
+}
+
+/* DEVICE FIRE FLASH — overlay branco-azul do dispositivo INTEIRO,
+   sincronizado com os 3 pulsos. Amplifica detecção periférica:
+   mesmo com olho na pista, o cérebro pega o flash do retângulo todo. */
+.fire-overlay{
+  position:absolute;inset:0;border-radius:inherit;
+  pointer-events:none;
+  z-index:200;
+  background:
+    radial-gradient(ellipse 110% 65% at 50% 0%,
+      oklch(96% 0.10 235 / .55) 0%,
+      oklch(88% 0.14 240 / .25) 35%,
+      oklch(72% 0.16 245 / .06) 65%,
+      transparent 85%),
+    linear-gradient(180deg,
+      oklch(94% 0.10 235 / .35) 0%,
+      transparent 22%);
+  box-shadow:
+    inset 0 0 0 2px oklch(94% 0.08 230 / .55),
+    inset 0 0 60px oklch(92% 0.10 235 / .35);
+  opacity:0;
+}
+.device[data-shift-fire="active"] .fire-overlay{
+  animation: deviceFireFlash 300ms linear forwards;
+}
+@keyframes deviceFireFlash{
+  0%   { opacity: 0; }
+  3%   { opacity: 1; }
+  28%  { opacity: 1; }
+  33%  { opacity: 0; }
+  39%  { opacity: 0; }
+  43%  { opacity: 1; }
+  65%  { opacity: 1; }
+  71%  { opacity: 0; }
+  76%  { opacity: 0; }
+  80%  { opacity: 1; }
+  92%  { opacity: .9; }
+  100% { opacity: 0; }
+}
+
+/* OVERREV — todos os 12 piscam juntos em vermelho forte */
+.shift-light[data-state="overrev"] .shift-light__dot{
+  background:radial-gradient(circle at 35% 30%,
+    oklch(92% 0.10 32) 0%,
+    oklch(70% 0.25 28) 50%,
+    oklch(50% 0.26 25) 100%);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / .65),
+    inset 0 0 0 1px oklch(58% 0.27 27),
+    0 0 16px oklch(68% 0.26 27 / .95),
+    0 0 32px oklch(60% 0.27 28 / .65),
+    0 0 56px oklch(52% 0.27 28 / .4);
+  animation:shiftOverrev 150ms steps(2, jump-none) infinite;
+}
+.shift-light[data-state="overrev"]{
+  animation:shiftHousingOverrev 150ms steps(2, jump-none) infinite;
+}
+@keyframes shiftOverrev{
+  0%, 49%   { opacity:1;  transform:scale(1.10); }
+  50%, 100% { opacity:.18; transform:scale(0.94); }
+}
+@keyframes shiftHousingOverrev{
+  0%, 49%   { box-shadow:
+    inset 0 1px 0 oklch(22% 0 0 / .8),
+    inset 0 -1px 0 oklch(0% 0 0 / .9),
+    inset 0 0 0 1px oklch(40% 0.12 27),
+    0 0 0 1px oklch(58% 0.26 27 / .35),
+    0 2px 6px oklch(0% 0 0 / .6),
+    0 0 28px oklch(68% 0.26 27 / .35); }
+  50%, 100% { box-shadow:
+    inset 0 1px 0 oklch(22% 0 0 / .8),
+    inset 0 -1px 0 oklch(0% 0 0 / .9),
+    inset 0 0 0 1px oklch(15% 0 0),
+    0 2px 6px oklch(0% 0 0 / .6),
+    0 8px 24px oklch(0% 0 0 / .35); }
+}
+.apex__ponto{
+  display:inline-flex;align-items:baseline;gap:14px;
+  /* sem border, sem background — minimalismo radical */
+}
+
+/* Label SEMPRE branco — independente do estado */
+.apex__label{
+  font-size:14px;font-weight:700;letter-spacing:var(--ls-caps-l);
+  color:var(--ink);text-transform:uppercase;
+}
+
+/* Valor: cor por estado de comparação com a última passada no trecho.
+   - ok-melhor: verde
+   - ok-pior:   vermelho
+   - ativo:     branco (em curso, sem comparação ainda)
+   - pendente:  faint (placeholder, ainda não passou) */
+.apex__valor{
+  font-family:var(--ff-display);
+  font-size:var(--fs-5);font-weight:900;letter-spacing:var(--ls-tight);
+  font-variant-numeric:tabular-nums;
+  color:var(--ink);
+  display:inline-flex;align-items:baseline;gap:4px;
+}
+.apex__ponto[data-estado="ok-melhor"] .apex__valor{ color:var(--bom); }
+.apex__ponto[data-estado="ok-pior"]   .apex__valor{ color:var(--erro); }
+.apex__ponto[data-estado="pendente"]  .apex__valor{ color:var(--faint); }
+.apex__valor small{
+  font-size:var(--fs-0);color:var(--muted);font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+/* Separador "/" entre atual e referência (apex Freio) — discreto */
+.apex__valor__sep{
+  color:var(--faint);font-weight:600;margin:0 4px;
+}
+
+/* INFO-BLOCO — delta + frase pedagógica juntos.
+   Em estado padrão: centralizado.
+   Em estado msg-ativa: desliza pra ESQUERDA. */
+.info-bloco{
+  position:absolute;left:50%;top:50%;
+  transform:translate(-50%, -50%);
+  z-index:20;
+  display:flex;flex-direction:column;align-items:center;gap:14px;
+  pointer-events:none;
+  transition:transform 1200ms var(--ease-msg);
+}
+.device[data-msg-state="ativa"] .info-bloco{
+  transform:translate(calc(-50% - 230px), -50%);
+}
+
+.info__delta{
+  font-family:var(--ff-display);
+  font-size:var(--fs-9);font-weight:900;
+  letter-spacing:var(--ls-tight);line-height:var(--lh-dom);
+  font-variant-numeric:tabular-nums slashed-zero;
+}
+.info__delta.bom{
+  color:var(--bom);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 24px oklch(80% 0.22 145 / .35);
+}
+.info__delta.erro{
+  color:var(--erro);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 24px oklch(68% 0.26 27 / .35);
+}
+.info__acao{
+  font-size:var(--fs-6);font-weight:900;letter-spacing:var(--ls-caps-s);
+  text-transform:uppercase;
+  color:var(--foco);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 24px oklch(82% 0.19 70 / .35);
+}
+.info__acao.erro{
+  color:var(--erro);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 24px oklch(68% 0.26 27 / .35);
+}
+
+/* ALERT-BLOCO — mensagem que vem do fundo (z-axis simulado via scale + blur)
+   Estado oculto: opacity 0, scale .35, translateZ -300px (longe), blur 12px
+   Estado ativo:  opacity 1, scale 1, translateZ 0, blur 0
+   Posição: lado DIREITO da tela, centered Y. */
+.alert-bloco{
+  position:absolute;left:calc(100% - 240px);top:50%;
+  transform:translate(-50%, -50%) translateZ(-300px) scale(.35);
+  filter:blur(12px);
+  opacity:0;
+  z-index:25;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  transition:transform 1200ms var(--ease-msg),
+             opacity 1100ms var(--ease-msg),
+             filter 1100ms var(--ease-msg);
+  max-width:380px;text-align:center;
+}
+.device[data-msg-state="ativa"] .alert-bloco{
+  transform:translate(-50%, -50%) translateZ(0) scale(1);
+  filter:blur(0);
+  opacity:1;
+}
+.alert__msg{
+  font-family:var(--ff-display);
+  font-size:34px;font-weight:900;letter-spacing:-0.01em;line-height:1.05;
+  color:var(--sistema);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 28px oklch(78% 0.16 225 / .45);
+}
+.alert-bloco[data-tipo="grave"] .alert__msg{
+  color:var(--erro);
+  text-shadow:
+    1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+    1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+    0 0 28px oklch(68% 0.26 27 / .55);
+}
+
+/* STINT BAR */
+.stint-bar{
+  position:absolute;left:60px;right:8px;bottom:4px;
+  display:flex;gap:3px;height:14px;align-items:flex-end;z-index:30;
+}
+.stint-bar__block{
+  flex:1;background:var(--faint);border-radius:2px;height:14px;position:relative;
+}
+.stint-bar__block.is-neutral{background:var(--ink);}
+.stint-bar__block.is-faster{background:var(--bom);}
+.stint-bar__block.is-slower{background:var(--erro);}
+.stint-bar__block.is-best-stint{
+  background:var(--bom);overflow:hidden;
+  box-shadow:0 0 14px 0 oklch(80% 0.22 145 / .6), inset 0 0 0 1.5px var(--bg);
+}
+.stint-bar__block.is-best-stint::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg, transparent 0%, oklch(95% 0.15 145 / .9) 50%, transparent 100%);
+  background-size:50% 100%;background-repeat:no-repeat;background-position:-50% 0%;
+  animation:lightWaveBidir 3.2s var(--ease-inout) infinite;mix-blend-mode:screen;
+}
+.stint-bar__block.is-best-alltime{
+  background:var(--ouro);position:relative;z-index:5;overflow:hidden;
+  box-shadow:
+    0 0 18px 0 oklch(74% 0.16 73 / .8),
+    0 0 36px 0 oklch(74% 0.16 73 / .5),
+    0 0 60px 0 oklch(82% 0.18 70 / .25),
+    inset 0 0 0 1.5px var(--bg);
+  animation:alltimeBloom 3.2s var(--ease-inout) infinite;
+}
+.stint-bar__block.is-best-alltime::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg, transparent 0%, oklch(98% 0.12 80 / .95) 50%, transparent 100%);
+  background-size:50% 100%;background-repeat:no-repeat;background-position:-50% 0%;
+  animation:lightWaveBidir 3.2s var(--ease-inout) infinite;mix-blend-mode:screen;
+}
+.stint-bar__block.is-current{
+  background:var(--foco);box-shadow:0 0 12px 0 oklch(82% 0.19 70 / .6);
+}
+@keyframes alltimeBloom{
+  0%,100%{box-shadow:
+    0 0 18px 0 oklch(74% 0.16 73 / .8),
+    0 0 36px 0 oklch(74% 0.16 73 / .5),
+    0 0 60px 0 oklch(82% 0.18 70 / .25),
+    inset 0 0 0 1.5px var(--bg);}
+  50%{box-shadow:
+    0 0 26px 0 oklch(82% 0.18 70 / .95),
+    0 0 48px 0 oklch(82% 0.18 70 / .65),
+    0 0 80px 0 oklch(95% 0.14 80 / .4),
+    inset 0 0 0 1.5px var(--bg);}
+}
+@keyframes lightWaveBidir{
+  0%{background-position:-50% 0%;}
+  50%{background-position:150% 0%;}
+  100%{background-position:-50% 0%;}
+}
+
+/* CONTROLES do mockup (não vão pra prod) */
+.controls{
+  display:flex;gap:10px;justify-content:center;align-items:center;
+  margin-top:14px;font-family:var(--ff-mono);font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--muted);
+}
+.controls__lbl{color:var(--faint);font-weight:600;}
+.controls__btn{
+  background:var(--surface);border:1px solid var(--border);color:var(--ink);
+  font-family:inherit;font-size:11px;font-weight:700;letter-spacing:.06em;
+  padding:8px 14px;border-radius:2px;cursor:pointer;text-transform:uppercase;
+  transition:background 180ms var(--ease-out);
+}
+.controls__btn:hover{background:oklch(15% 0 0);}
+.controls__btn.is-active{background:var(--sistema);color:var(--bg);border-color:var(--sistema);}
+.controls__btn[data-action="grave"].is-active{background:var(--erro);color:var(--ink);border-color:var(--erro);}
+
+.legend{
+  position:fixed;bottom:18px;right:18px;max-width:340px;
+  font-family:var(--ff-mono);
+  font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--muted);
+  background:oklch(11% 0 0 / .85);backdrop-filter:blur(12px);
+  border:1px solid var(--border);border-radius:4px;
+  padding:10px 14px;line-height:1.6;
+  text-transform:uppercase;
+}
+.legend b{color:var(--ink);font-weight:700;}
+.legend i{color:var(--foco);font-style:normal;font-weight:700;}
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+
+  <!-- data-msg-state: oculta | ativa
+       data-msg-tipo:  comunicacao | grave (define cor + comportamento de saída) -->
+  <div class="device" id="device" data-trecho-status="neutro" data-msg-state="oculta" data-shift-fire="idle">
+    <div class="notch"></div>
+    <!-- overlay do FIRE — flash do device inteiro sincronizado com os 3 pulsos dos LEDs -->
+    <div class="fire-overlay"></div>
+
+    <div class="telemetria-chip">
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot warn"></span>
+      <span class="telemetria-chip__dot ok"></span>
+    </div>
+
+    <!-- SMART SHIFT LIGHT PREMIUM — 12 LEDs, acendem DAS PONTAS PRO CENTRO.
+         Tier 1 = pontas (dots 1,12, 1° a acender); tier 6 = par central (dots 6,7, último).
+         Cor por tier: 1-2 verde · 3-4 amarelo · 5-6 vermelho. -->
+    <div class="shift-light" id="shiftLight" data-state="off">
+      <span class="shift-light__dot" data-tier="1"></span>
+      <span class="shift-light__dot" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="1"></span>
+    </div>
+
+    <section class="apex">
+      <div class="apex__ponto" data-estado="ok-pior">
+        <span class="apex__label">Entrada</span>
+        <span class="apex__valor">88<small>km/h</small></span>
+      </div>
+      <div class="apex__ponto" data-estado="ok-pior" data-papel="freio">
+        <span class="apex__label">Freio</span>
+        <span class="apex__valor">18<span class="apex__valor__sep">/</span>16<small>m</small></span>
+      </div>
+      <div class="apex__ponto" data-estado="ativo">
+        <span class="apex__label">Ápice</span>
+        <span class="apex__valor">71<small>km/h</small></span>
+      </div>
+      <div class="apex__ponto" data-estado="pendente">
+        <span class="apex__label">Saída</span>
+        <span class="apex__valor">—</span>
+      </div>
+    </section>
+
+    <!-- bloco central (default centralizado): delta + frase pedagógica.
+         Quando msg ativa, desliza pra ESQUERDA. -->
+    <div class="info-bloco">
+      <span class="info__delta erro">0.42</span>
+      <div class="info__acao erro">FREIE TARDE</div>
+    </div>
+
+    <!-- bloco direito (oculto default): mensagem que vem do fundo -->
+    <aside class="alert-bloco" id="alertBloco" data-tipo="comunicacao">
+      <div class="alert__msg" id="alertMsg">Pneu DD acima da janela</div>
+    </aside>
+
+    <div class="stint-bar">
+      <div class="stint-bar__block is-neutral"></div>
+      <div class="stint-bar__block is-faster"></div>
+      <div class="stint-bar__block is-slower"></div>
+      <div class="stint-bar__block is-faster"></div>
+      <div class="stint-bar__block is-slower"></div>
+      <div class="stint-bar__block is-best-stint"></div>
+      <div class="stint-bar__block is-best-alltime"></div>
+      <div class="stint-bar__block is-current"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="dados/fita-volta-2-39.js"></script>
+<script>
+const device = document.getElementById('device');
+const alertBloco = document.getElementById('alertBloco');
+const alertMsg = document.getElementById('alertMsg');
+
+// Modo kiosque: sem botões. Mantemos só os timers + o boot inicial.
+let autoTimer = null;
+let commTimer = null;
+
+function setMessage(tipo){
+  alertBloco.dataset.tipo = tipo;
+  if(tipo === 'comunicacao'){
+    alertMsg.textContent = 'Pneu DD acima da janela';
+  } else if(tipo === 'grave'){
+    alertMsg.textContent = 'Pressão óleo crítica';
+  }
+  device.dataset.msgState = 'ativa';
+  if(commTimer) clearTimeout(commTimer);
+  if(tipo === 'comunicacao'){
+    commTimer = setTimeout(() => {
+      device.dataset.msgState = 'oculta';
+    }, 4000);
+  }
+}
+function hideMessage(){
+  if(commTimer) clearTimeout(commTimer);
+  device.dataset.msgState = 'oculta';
+}
+function startAutoLoop(){
+  if(autoTimer) clearInterval(autoTimer);
+  let phase = 0; // 0=oculto, 1=comunicacao, 2=oculto, 3=grave
+  const tick = () => {
+    phase = (phase + 1) % 4;
+    if(phase === 1) setMessage('comunicacao');
+    else if(phase === 3) setMessage('grave');
+    else hideMessage();
+  };
+  tick();
+  autoTimer = setInterval(tick, 5000);
+}
+function stopAutoLoop(){
+  if(autoTimer) clearInterval(autoTimer);
+  autoTimer = null;
+}
+
+// Modo kiosque: handlers de botão removidos. Halo permanece NEUTRO ('Normal') e
+// auto-loop dispara mensagens automaticamente em 5s.
+// startAutoLoop();
+
+/* SMART SHIFT LIGHT — visual-only (capacete+escapamento descartam áudio).
+   Modelo: níveis 0-6 (subida par-a-par) + fire (strobe) + overrev (erro).
+   FIRE = 3 pulsos brancos a ~10Hz (sweet spot da detecção periférica)
+          + flash sincronizado do device inteiro (rim+top) pra captura periférica.
+   Auto-cycle: 0→1→2→3→4→5→6→FIRE→OVERREV→0, dwell por step. */
+const shiftLight = document.getElementById('shiftLight');
+const shiftDots = shiftLight.querySelectorAll('.shift-light__dot');
+
+const SHIFT_SEQUENCE = [
+  {state:'0',       dwell:500},
+  {state:'1',       dwell:360},
+  {state:'2',       dwell:360},
+  {state:'3',       dwell:360},
+  {state:'4',       dwell:360},
+  {state:'5',       dwell:360},
+  {state:'6',       dwell:160},
+  {state:'fire',    dwell:300},
+  {state:'overrev', dwell:800},
+];
+
+let shiftAutoTimer = null;
+
+function setShiftLevel(level){
+  if(level === 'overrev'){
+    shiftLight.dataset.state = 'overrev';
+    device.dataset.shiftFire = 'idle';
+    shiftDots.forEach(d => d.classList.remove('is-on'));
+    return;
+  }
+  if(level === 'fire'){
+    shiftLight.dataset.state = 'fire';
+    shiftDots.forEach(d => d.classList.remove('is-on'));
+    // re-trigger device flash animation: toggle off then on no próximo frame
+    device.dataset.shiftFire = 'idle';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => { device.dataset.shiftFire = 'active'; });
+    });
+    return;
+  }
+  shiftLight.dataset.state = 'lit';
+  device.dataset.shiftFire = 'idle';
+  const lvl = Number(level) || 0;
+  shiftDots.forEach(d => {
+    const tier = Number(d.dataset.tier);
+    d.classList.toggle('is-on', tier <= lvl);
+  });
+}
+function startShiftAutoCycle(){
+  if(shiftAutoTimer) clearTimeout(shiftAutoTimer);
+  let i = 0;
+  const step = () => {
+    setShiftLevel(SHIFT_SEQUENCE[i].state);
+    shiftAutoTimer = setTimeout(() => {
+      i = (i + 1) % SHIFT_SEQUENCE.length;
+      step();
+    }, SHIFT_SEQUENCE[i].dwell);
+  };
+  step();
+}
+function stopShiftAutoCycle(){
+  if(shiftAutoTimer) clearTimeout(shiftAutoTimer);
+  shiftAutoTimer = null;
+}
+
+// boot — auto-cycle do shift light pra mostrar a progressão completa
+// startShiftAutoCycle();
+
+// ─── KIOSQUE: escala o painel pra preencher tela 10.5" mantendo proporção 956×440 ───
+// Funciona em qualquer resolução (1280×720, 1920×1080, 1024×600, etc.) sem letterbox feio.
+const stageEl = document.getElementById('stage');
+function fitStage(){
+  const w = window.innerWidth, h = window.innerHeight;
+  const scale = Math.min(w / 956, h / 440);
+  stageEl.style.transform = 'scale(' + scale + ')';
+}
+window.addEventListener('resize', fitStage, {passive:true});
+window.addEventListener('orientationchange', fitStage, {passive:true});
+fitStage();
+
+(function(){
+  const FITA=window.FITA||[];
+  const info_delta=document.querySelector('.info__delta'), info_acao=document.querySelector('.info__acao');
+  const apexPontos=document.querySelectorAll('.apex__ponto'), stintBlocks=document.querySelectorAll('.stint-bar__block');
+  const chipDots=document.querySelectorAll('.telemetria-chip__dot');
+  const mapTrecho=t=>t==='RecordeStint'||t==='MelhorHistorico'?'recorde-stint':t==='PiorStint'?'pior-stint':'neutro';
+  const toneCls=t=>t==='Bom'?'bom':t==='Erro'?'erro':'';
+  const mapEstado=e=>e==='OkMelhor'?'ok-melhor':e==='OkPior'?'ok-pior':'pendente';
+  const mapStint=s=>s==='faster'?'is-faster':s==='slower'?'is-slower':s==='neutral'?'is-neutral':s==='current'?'is-current':'';
+  const shiftArg=f=>f.shiftMode==='Fire'?'fire':f.shiftMode==='Overrev'?'overrev':f.shiftMode==='Lit'?f.shiftLevel:0;
+  const $=id=>document.getElementById(id); const r0=v=>v==null?null:Math.round(v);
+  function setApex(i,html,est){const p=apexPontos[i];if(!p)return;const v=p.querySelector('.apex__valor');if(v)v.innerHTML=html;if(est)p.dataset.estado=mapEstado(est);}
+  function desenha(f){
+    if(!f)return;
+    setShiftLevel(shiftArg(f));
+    device.dataset.trechoStatus=mapTrecho(f.trecho);
+    info_delta.textContent=f.delta||'0.00'; info_delta.className='info__delta '+toneCls(f.deltaTone);
+    info_acao.textContent=f.acao||''; info_acao.className='info__acao '+toneCls(f.acaoTone);
+    if(f.msg){alertMsg.textContent=f.msg;alertBloco.dataset.tipo=f.msgTipo==='Grave'?'grave':'comunicacao';device.dataset.msgState='ativa';}else device.dataset.msgState='oculta';
+    setApex(0,f.entKmh!=null?r0(f.entKmh)+'<small>km/h</small>':'&mdash;',f.entEst);
+    setApex(1,f.freM!=null?(r0(f.freM)+(f.freRef!=null?'<span class="apex__valor__sep">/</span>'+r0(f.freRef):'')+'<small>m</small>'):'&mdash;',f.freEst);
+    setApex(2,f.apiKmh!=null?r0(f.apiKmh)+'<small>km/h</small>':'&mdash;',f.apiEst);
+    setApex(3,f.saiKmh!=null?r0(f.saiKmh)+'<small>km/h</small>':'&mdash;',f.saiEst);
+    if(f.stint)stintBlocks.forEach((b,i)=>{b.className='stint-bar__block'+(i<f.stint.length?' '+mapStint(f.stint[i]):'');});
+    if(chipDots.length){chipDots.forEach(d=>d.className='telemetria-chip__dot');
+      if(chipDots[0])chipDots[0].className='telemetria-chip__dot'+(f.motorVivo?' ok':'');
+      if(chipDots[1])chipDots[1].className='telemetria-chip__dot'+(f.gpsVivo?' ok':'');}
+    const c=$('drvCurva'),r=$('drvRpm'),tm=$('drvTempo');
+    if(c)c.textContent=f.curva||'reta / box';
+    if(r)r.textContent=f.motorVivo?(f.rpm!=null?Math.round(f.rpm)+' rpm':'—'):'motor: sem dado nesta volta';
+    if(tm){const s=Math.floor(f.t);tm.textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+  }
+  let di=0,dtocando=true,dvel=1,elapsed=0,dlast=performance.now();
+  const fim=FITA.length?FITA[FITA.length-1].t:0;
+  const dscrub=$('drvScrub'); if(dscrub){dscrub.max=FITA.length-1;dscrub.value=0;}
+  const dmom=[];let dca='';FITA.forEach((f,ix)=>{if(f.curva&&f.curva!==dca)dmom.push(ix);dca=f.curva;});
+  function syncIdx(){while(di<FITA.length-1&&FITA[di+1].t<=elapsed)di++;while(di>0&&FITA[di].t>elapsed)di--;}
+  function dloop(now){const dt=(now-dlast)/1000;dlast=now;if(dtocando){elapsed+=dt*dvel;if(elapsed>fim)elapsed=0;syncIdx();if(dscrub)dscrub.value=di;desenha(FITA[di]);}requestAnimationFrame(dloop);}
+  $('drvPlay')&&$('drvPlay').addEventListener('click',e=>{dtocando=!dtocando;e.target.textContent=dtocando?'pausar':'tocar';dlast=performance.now();});
+  $('drvVel')&&$('drvVel').addEventListener('click',e=>{dvel=dvel===1?2:dvel===2?4:1;e.target.textContent='velocidade '+dvel+'x';});
+  $('drvProx')&&$('drvProx').addEventListener('click',()=>{const m=dmom.find(x=>x>di)||dmom[0];if(m!=null){di=m;elapsed=FITA[di].t;if(dscrub)dscrub.value=di;desenha(FITA[di]);}});
+  dscrub&&dscrub.addEventListener('input',()=>{di=+dscrub.value;elapsed=FITA[di].t;desenha(FITA[di]);});
+  desenha(FITA[0]); requestAnimationFrame(dloop);
+})();
+
+</script>
+<div id="drvbar" style="position:fixed;top:0;left:0;right:0;height:38px;display:flex;align-items:center;gap:12px;padding:0 14px;background:rgba(10,10,10,.82);border-bottom:1px solid #1c1c1c;z-index:99;font:13px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#a0a0a0">
+  <b style="color:#fff">Cockpit do Piloto — tela 10,5&Prime; APROVADA</b><span>· volta REAL 2:39 (só GPS — injeção parou antes; luz de marcha sem dado) · tempo real · 100% dado REAL</span>
+  <button id="drvPlay" style="background:#1a1a1a;color:#ededed;border:1px solid #333;border-radius:7px;padding:5px 11px;cursor:pointer">pausar</button>
+  <button id="drvVel" style="background:#1a1a1a;color:#ededed;border:1px solid #333;border-radius:7px;padding:5px 11px;cursor:pointer">velocidade 1x</button>
+  <button id="drvProx" style="background:#1a1a1a;color:#ededed;border:1px solid #333;border-radius:7px;padding:5px 11px;cursor:pointer">proxima curva</button>
+  <span>curva: <b id="drvCurva" style="color:#f0c040">&mdash;</b></span>
+  <span id="drvRpm">&mdash;</span>
+  <span>tempo <b id="drvTempo" style="color:#f0c040">0:00</b></span>
+  <input id="drvScrub" type="range" min="0" value="0" style="flex:1">
+</div></body>
+</html>

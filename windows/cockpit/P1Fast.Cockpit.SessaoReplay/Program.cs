@@ -374,12 +374,13 @@ if (File.Exists(barrasPath))
         var frames = new List<string>();
         double ultimoFrame = -1, lastRpm = 0, lastMotorT = -1e9, lastGpsT = -1e9;
         string curva = "";
+        bool semComp = voltaN >= 1; // volta isolada: SÓ os dados dela, sem outra volta como referência
         foreach (var e in eventos2)
         {
+            if (semComp && (e.T < lapStart || e.T > lapEnd)) continue; // só alimenta a volta isolada
             if (e.Motor) { maestroT.IngestMotor(e.Rpm, e.A!); lastRpm = e.Rpm; lastMotorT = e.T; }
             else { maestroT.IngestGps(e.G!); lastGpsT = e.T; }
             curva = maestroT.CurvaAtualNome ?? curva;
-            if (e.T < lapStart || e.T > lapEnd) continue; // fora da volta: processa mas nao grava
             var rel = e.T - lapStart;
             if (ultimoFrame < 0 || rel - ultimoFrame >= 200) // ~5 quadros por segundo
             {

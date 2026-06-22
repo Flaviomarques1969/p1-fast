@@ -55,3 +55,16 @@ esconder. O que falta de prova é só a parte VISUAL (tela) e o empacotamento �
   LIMITE) e alertas (mistura). Abre na 1ª curva; botões tocar/velocidade/próxima curva.
 - HONESTO: é o visual do cockpit (web) movido pelo cérebro REAL; o .exe nativo mostra a MESMA imagem,
   mas só renderiza no Windows. Nada aqui é simulado — vem da fita do dado real.
+
+## 5. ACHADO GRAVE (exigência "nada falso" do Flávio) — motor parou antes da volta de 2:39
+- O motor (injeção T3000) gravou até tWall 1782053674844. A volta de 2:39 (volta 2, entre o 2º e 3º
+  cruzamento da chegada) é [1782053697825, 1782053857468] — começa **23 s DEPOIS** de o motor parar.
+- **0 amostras de motor na volta de 2:39.** A luz de marcha/rotação que aparecia nela era VELHA (stale) = falsa.
+- A volta ANTERIOR (3:14, volta 1) tem **172 amostras de motor + GPS** = a única com tudo real.
+- CONSERTO: export passou a APAGAR a luz e deixar a rotação em branco quando não há motor vivo
+  (mVivo = amostra de motor < 2 s). Duas telas geradas, ambas 100% reais:
+  - relatorios/cockpit-volta-3-14-completa.html (motor + GPS — tudo real, luz acesa).
+  - relatorios/cockpit-volta-2-39-so-gps.html (só GPS — velocidades/curvas/delta/stint reais; luz APAGADA + "motor: sem dado").
+- Também consertados nesta rodada: barra de stint (era fixa da demo → agora resultado real por curva) e os
+  pontinhos de sinal (eram fixos com "alerta" falso → agora ligam só motor/GPS vivos de verdade).
+- Este é EXATAMENTE o problema que o trabalho de gravação combate: a captura do motor caiu no meio da sessão.
