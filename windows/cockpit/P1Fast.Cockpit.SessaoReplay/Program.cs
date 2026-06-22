@@ -177,4 +177,35 @@ Console.WriteLine(deuOleo
     : "   Óleo: sensor AUSENTE não virou alerta falso (o conserto funcionou).");
 Console.WriteLine("   Os alertas de MISTURA (se houver) vêm dos picos reais de lambda (0,6 a 1,6) — fiel à regra aprovada;");
 Console.WriteLine("   se esses picos forem só de marcha lenta/desaceleração, fica como calibração futura.");
+
+// ── GHOST: ápice + bolinha sobre o GPS real ─────────────────────
+Console.WriteLine();
+Console.WriteLine("== GHOST (ápice + bolinha) COM O GPS REAL ==");
+Console.WriteLine($"Pontos de GPS válidos (fix 3, hacc<50, em Brasília): {gpsValidos.Count} de {gps}");
+var apice = Ghost.AcharApice(gpsValidos);
+if (apice is null)
+{
+    Console.WriteLine("   Não deu pra achar ápice (passagem curta/sem ponto válido).");
+    return 0;
+}
+Console.WriteLine($"Ápice (curva mais fechada da sessão): raio {apice.RaioM:0.0} m, no ponto {apice.Idx} de {gpsValidos.Count}");
+
+// Replay da bolinha numa janela em torno do ápice: ela aponta pra FRENTE antes,
+// passa pelo lado, e vai pra ATRÁS depois — prova que a direção funciona no dado real.
+int jIni = Math.Max(1, apice.Idx - 40), jFim = Math.Min(gpsValidos.Count - 1, apice.Idx + 40);
+double menorDist = double.MaxValue; double? angAntes = null, angDepois = null;
+for (var i = jIni; i <= jFim; i++)
+{
+    var car = gpsValidos[i];
+    double? heading = Ghost.DistMeters(gpsValidos[i - 1], car) >= 1 ? Ghost.BearingDeg(gpsValidos[i - 1], car) : null;
+    var b = Ghost.CalcularBolinha(car, heading, apice.Ponto);
+    cockpit.SetApexPonto("apice", estado: b.Estado, distM: b.DistM, angleDeg: b.AngleDeg); // escreve no estado real
+    if (b.DistM < menorDist) menorDist = b.DistM;
+    if (i == apice.Idx - 25 && b.AngleDeg is { } a1) angAntes = a1;
+    if (i == apice.Idx + 25 && b.AngleDeg is { } a2) angDepois = a2;
+}
+Console.WriteLine($"Bolinha na passagem pelo ápice: distância mínima {menorDist:0.0} m (chega na mira)");
+Console.WriteLine($"   direção ~25 amostras ANTES: {(angAntes is { } x ? x.ToString("0") + " graus" : "—")}  |  ~25 DEPOIS: {(angDepois is { } y ? y.ToString("0") + " graus" : "—")}");
+Console.WriteLine($"Estado do cockpit ao fim: apex.distM={cockpit.Get().Apex.Apice.DistM:0.0} m  apex.angleDeg={cockpit.Get().Apex.Apice.AngleDeg:0}");
+Console.WriteLine("   (frente ~0 / lado ~90 / atrás ~180: a bolinha cruza o lado quando passa pelo ápice — 'siga a bolinha')");
 return 0;
