@@ -117,19 +117,25 @@ public static class CatalogoAlertas
         var ativos = new List<string>();
         if (s is null) return ativos;
 
-        // Motor (água da refrigeração)
+        // Carro "sob carga"? (motor puxando). Mistura e bateria só valem aqui —
+        // em marcha lenta/parado dão alarme falso (provado no dado real de 21/06).
+        // Segurança (motor quente, óleo) NÃO depende disto: vale parado também.
+        var sobCarga = (s.Rpm is { } r && r >= l.CargaRpmMin)
+                    || (s.TpsPct is { } tp && tp >= l.CargaTpsPctMin);
+
+        // Motor (água da refrigeração) — sempre vale (superaquece parado também)
         if (s.WaterTempC is { } water)
         {
             if (water >= l.WaterMaxC) ativos.Add("MOTOR_QUENTE");
             else if (water >= l.WaterPredictivoC) ativos.Add("MOTOR_AQUECENDO");
         }
 
-        // Óleo — BIT de alarme + rpm > 2000 (NÃO valor de pressão)
+        // Óleo — BIT de alarme + rpm > 2000 (NÃO valor de pressão) — sempre vale
         if (s.BaixaPressaoOleo == true && s.Rpm is { } rpm && rpm > l.OilPressRpmMin)
             ativos.Add("OLEO_BAIXO");
 
-        // Lambda (mistura)
-        if (s.Lambda is { } lambda)
+        // Lambda (mistura) — só sob carga
+        if (sobCarga && s.Lambda is { } lambda)
         {
             if (lambda > l.LambdaPobre) ativos.Add("MISTURA_POBRE");
             if (lambda < l.LambdaRica)  ativos.Add("MISTURA_RICA");
@@ -138,8 +144,8 @@ public static class CatalogoAlertas
         // Cilindros desbalanceados → FALHANDO
         if (s.FuelInjectionBalanced == false) ativos.Add("FALHANDO");
 
-        // Bateria
-        if (s.BatteryV is { } bat && bat < l.BatteryMinV) ativos.Add("BATERIA");
+        // Bateria — só sob carga (em marcha lenta/parado cai sozinha)
+        if (sobCarga && s.BatteryV is { } bat && bat < l.BatteryMinV) ativos.Add("BATERIA");
 
         // Combustível (bits): nível + baixa pressão = crítico; nível só = atenção
         if (s.AlertaNivelCombustivel == true)
