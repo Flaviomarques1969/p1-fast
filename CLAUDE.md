@@ -2,6 +2,7 @@
 
 ## Antes de fazer qualquer coisa, leia nesta ordem
 
+0. **`docs/COCKPIT_FONTE_DA_VERDADE.md`** — quando o trabalho for do **cockpit do piloto**, esta é a PRIMEIRA leitura: requisitos + estado real + decisões duras + estratégia (web primeiro, Windows por último). Fixada por Flávio em 2026-06-22 pra parar de perder requisitos entre sessões.
 1. **`docs/ARQUITETURA_DEFINITIVA.md`** — arquitetura canônica (Flávio 2026-06-16). Vence as demais.
 2. **`STATUS.md`** (raiz) — onde o projeto está agora
 3. **`docs/PLANO_FASE_1.md`** — DOC MESTRE, aprovado pelo Flávio 2026-05-03. Vence todos os outros. (O antigo `PLANO_FASE_1A_1B.md` foi arquivado em `docs/_archive/`.)
