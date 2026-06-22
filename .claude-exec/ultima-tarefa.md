@@ -26,9 +26,19 @@ mensagens, ghost e ia"). Usar a sessão REAL de domingo 21/06 (1 volta de 2:39) 
   alerta falso na garagem. ANDANDO o motor rodou RICO (lambda 0,55-0,97; MISTURA RICA em 59% da volta)
   — observação REAL do acerto, não ruído.
 
-## Pendência/decisão pro Flávio (gerada pelo dado real)
-- Adicionar GATE de "carro andando / sob carga" (ou suprimir marcha lenta) antes de mistura/bateria,
-  pra não encher a tela na garagem. É calibração/decisão de produto. (Próximo passo recomendado.)
+## TRAVA DE "CARRO ANDANDO" — IMPLEMENTADA (Flávio: "continue", seguindo a recomendação)
+- AlertaLimites ganhou CargaRpmMin=3000 / CargaTpsPctMin=15; AmostraAlerta ganhou TpsPct. Em AvaliarT4000,
+  MISTURA (pobre/rica) e BATERIA só disparam com o motor SOB CARGA (rpm>=3000 OU acelerador>=15%).
+  Segurança (MOTOR QUENTE/AQUECENDO, ÓLEO) NÃO é travada — vale parado também.
+- Teste novo ALR_10 (marcha lenta não dispara mistura/bateria; água quente sim; acelerador reativa).
+  ALR_05/06/07 ajustados pra contexto "andando". Bateria completa: 227 aprovados / 1 falha (PAN_04). 
+- REPLAY real DEPOIS da trava: BATERIA falsa 89% -> 0%; MISTURA POBRE 46% -> 14% (o que sobra é com
+  ACELERADOR ABERTO, não parado — pico de tip-in; um debounce "só se durar" limparia o resto = calibração
+  futura). Andando, o motor rodou RICO (lambda 0,55-0,97) — observação real do acerto.
+
+## Próximos incrementos
+- Calibração fina opcional: debounce nos alertas de mistura (só se a condição durar X), pra não piscar
+  no tip-in. Decisão/ajuste, não bug.
 - Coach (FREOU CEDO etc.) e ghost dependem de comparação por trecho (precisa do GPS no pipeline) —
   Incrementos 3/4, com a volta de 2:39 como referência.
 
