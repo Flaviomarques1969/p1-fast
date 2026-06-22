@@ -23,6 +23,11 @@ import P1FastCore
 final class CarroRepository: ObservableObject {
     @Published private(set) var carros: [Carro] = []
     @Published private(set) var stintsPorCarro: [String: Int] = [:]
+    /// Agregados globais de voltas reais (todas as sessões) pra Home: total de
+    /// voltas e melhor tempo válido. Voltas DE VERDADE vêm do painel ao vivo
+    /// (origem='painel-ao-vivo'); local pode estar vazio até sincronizar.
+    @Published private(set) var voltasTotal: Int = 0
+    @Published private(set) var melhorVoltaMs: Int? = nil
 
     private let queue: DatabaseQueue
 
