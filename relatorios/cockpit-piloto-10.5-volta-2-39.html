@@ -846,12 +846,18 @@ fitStage();
   const info_delta = document.querySelector('.info__delta');
   const info_acao  = document.querySelector('.info__acao');
   const apexPontos = document.querySelectorAll('.apex__ponto');
-  const apexValores = document.querySelectorAll('.apex__ponto .apex__valor');
   const mapTrecho = t => t==='RecordeStint'||t==='MelhorHistorico' ? 'recorde-stint' : t==='PiorStint' ? 'pior-stint' : 'neutro';
   const toneCls  = t => t==='Bom' ? 'bom' : t==='Erro' ? 'erro' : '';
   const mapEstado= e => e==='OkMelhor' ? 'ok-melhor' : e==='OkPior' ? 'ok-pior' : 'pendente';
   const shiftArg = f => f.shiftMode==='Fire' ? 'fire' : f.shiftMode==='Overrev' ? 'overrev' : f.shiftMode==='Lit' ? f.shiftLevel : 0;
   const $ = id => document.getElementById(id);
+  const r0 = v => v==null ? null : Math.round(v);
+
+  function setApex(i, html, est){
+    const p = apexPontos[i]; if(!p) return;
+    const v = p.querySelector('.apex__valor'); if(v) v.innerHTML = html;
+    if(est) p.dataset.estado = mapEstado(est);
+  }
 
   function desenha(f){
     if(!f) return;
@@ -863,9 +869,11 @@ fitStage();
     info_acao.className = 'info__acao ' + toneCls(f.acaoTone);
     if(f.msg){ alertMsg.textContent = f.msg; alertBloco.dataset.tipo = f.msgTipo==='Grave' ? 'grave' : 'comunicacao'; device.dataset.msgState='ativa'; }
     else device.dataset.msgState='oculta';
-    // ápice: cor pelo estado real; os 4 valores ficam "—" (ainda não vêm do cérebro ao vivo, honesto)
-    apexValores.forEach(v => v.textContent='—');
-    if(apexPontos[2]) apexPontos[2].dataset.estado = mapEstado(f.apiceEstado);
+    // 4 pontos do ápice com a VELOCIDADE REAL do GPS em cada curva
+    setApex(0, f.entKmh!=null ? r0(f.entKmh)+'<small>km/h</small>' : '&mdash;', f.entEst);
+    setApex(1, f.freM!=null ? (r0(f.freM)+(f.freRef!=null?'<span class="apex__valor__sep">/</span>'+r0(f.freRef):'')+'<small>m</small>') : '&mdash;', f.freEst);
+    setApex(2, f.apiKmh!=null ? r0(f.apiKmh)+'<small>km/h</small>' : '&mdash;', f.apiEst);
+    setApex(3, f.saiKmh!=null ? r0(f.saiKmh)+'<small>km/h</small>' : '&mdash;', f.saiEst);
     const c=$('drvCurva'), r=$('drvRpm'), tm=$('drvTempo');
     if(c) c.textContent = f.curva || 'reta / box';
     if(r) r.textContent = (f.rpm!=null ? Math.round(f.rpm)+' rpm' : '—');
@@ -874,7 +882,7 @@ fitStage();
 
   let di=0, dtocando=true, dvel=6, dacc=0, dlast=performance.now();
   const dmom=[]; let dca=''; FITA.forEach((f,ix)=>{ if(f.curva && f.curva!==dca) dmom.push(ix); dca=f.curva; });
-  if(dmom.length) di=dmom[0]; // abre na 1ª curva (não nos minutos parados)
+  if(dmom.length) di=dmom[0];
   const dscrub=$('drvScrub'); if(dscrub){ dscrub.max=FITA.length-1; dscrub.value=di; }
   function dloop(now){ const dt=now-dlast; dlast=now; if(dtocando){ dacc+=dt*dvel; while(dacc>=200){ dacc-=200; di++; if(di>=FITA.length) di=0; } if(dscrub) dscrub.value=di; desenha(FITA[di]); } requestAnimationFrame(dloop); }
   $('drvPlay') && $('drvPlay').addEventListener('click', e=>{ dtocando=!dtocando; e.target.textContent=dtocando?'pausar':'tocar'; dlast=performance.now(); });

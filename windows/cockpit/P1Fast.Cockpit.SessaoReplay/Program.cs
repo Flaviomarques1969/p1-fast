@@ -351,8 +351,27 @@ if (File.Exists(barrasPath))
         string J(string? s) => "\"" + (s ?? "").Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
         string Num(double? d) => d is { } v && !double.IsNaN(v) ? v.ToString("0.0", inv) : "null";
 
+        // Isolar UMA volta: detecta os cruzamentos da linha de chegada oficial de
+        // Brasília e corta a janela [cruzamento N, cruzamento N+1]. --volta=2 = a de 2:39.
+        var chgA = new PontoGps(-15.7728816, -47.9000707);
+        var chgB = new PontoGps(-15.7725493, -47.9001926);
+        var cruz = new List<double>();
+        for (var k = 1; k < gpsDet.Count; k++)
+        {
+            var p0 = new PontoGps(gpsDet[k - 1].Lat, gpsDet[k - 1].Lng);
+            var p1 = new PontoGps(gpsDet[k].Lat, gpsDet[k].Lng);
+            if (Math.Sign(TrechoDetector.SideOfLine(p1, chgA, chgB)) != Math.Sign(TrechoDetector.SideOfLine(p0, chgA, chgB))
+                && TrechoDetector.CaminhoCruzaLinha(p0, p1, chgA, chgB))
+                cruz.Add(gpsDet[k].T);
+        }
+        var voltaArg = args.FirstOrDefault(a => a.StartsWith("--volta="));
+        int voltaN = voltaArg is not null && int.TryParse(voltaArg["--volta=".Length..], out var vn) ? vn : 0;
+        double lapStart = eventos2.Count > 0 ? eventos2[0].T : 0;
+        double lapEnd = eventos2.Count > 0 ? eventos2[^1].T : 0;
+        if (voltaN >= 1 && cruz.Count > voltaN) { lapStart = cruz[voltaN - 1]; lapEnd = cruz[voltaN]; }
+        Console.WriteLine($"Cruzamentos da chegada: {cruz.Count} | volta isolada: {(voltaN >= 1 && cruz.Count > voltaN ? $"#{voltaN} ({(lapEnd - lapStart) / 1000:0.0}s)" : "sessao inteira")}");
+
         var frames = new List<string>();
-        double t0 = eventos2.Count > 0 ? eventos2[0].T : 0;
         double ultimoFrame = -1, lastRpm = 0;
         string curva = "";
         foreach (var e in eventos2)
@@ -360,7 +379,8 @@ if (File.Exists(barrasPath))
             if (e.Motor) { maestroT.IngestMotor(e.Rpm, e.A!); lastRpm = e.Rpm; }
             else maestroT.IngestGps(e.G!);
             curva = maestroT.CurvaAtualNome ?? curva;
-            var rel = e.T - t0;
+            if (e.T < lapStart || e.T > lapEnd) continue; // fora da volta: processa mas nao grava
+            var rel = e.T - lapStart;
             if (ultimoFrame < 0 || rel - ultimoFrame >= 200) // ~5 quadros por segundo
             {
                 ultimoFrame = rel;
