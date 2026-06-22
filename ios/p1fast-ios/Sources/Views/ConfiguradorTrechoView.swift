@@ -531,7 +531,7 @@ struct ConfiguradorTrechoView: View {
                     let next = movedPoint(anchor: anchor, drag: drag, xform: xform)
                     setPoint(next, for: kind)
                 case .markerApex(let idx, let anchor):
-                    let next = movedPoint(anchor: anchor, drag: drag, xform: xform)
+                    let next = movedApex(anchor: anchor, drag: drag, xform: xform)
                     setApex(next, at: idx)
                 case .pan:
                     panInProgress = drag.translation
