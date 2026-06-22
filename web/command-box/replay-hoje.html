@@ -146,7 +146,10 @@
   requestAnimationFrame(draw);
 
   document.getElementById('re').onclick=function(){ t0=null; };
-  Array.prototype.forEach.call(document.querySelectorAll('[data-sp]'),function(b){ b.onclick=function(){ speed=+b.dataset.sp; }; });
+  var spLabel=document.getElementById('spLabel');
+  Array.prototype.forEach.call(document.querySelectorAll('[data-sp]'),function(b){
+    b.onclick=function(){ speed=+b.dataset.sp; spLabel.textContent = (speed===1?'tempo real (1×)':speed+'× acelerado'); };
+  });
 })();
 </script>
 </body>
