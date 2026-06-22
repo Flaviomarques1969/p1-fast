@@ -207,7 +207,24 @@ function frame(now) {
   const jv = await rv.json();
   pts = jv.pts;
 
-  requestAnimationFrame(frame);
+  // recorta pra janela em que o carro REALMENTE roda (o resto é parado no box)
+  const movs = pts.filter(p => p.k === 'g' && typeof p.kmh === 'number' && p.kmh > 40 && p.kmh < 200);
+  if (movs.length) {
+    const tIni = Math.max(0, movs[0].t - 4000);
+    const tFim = movs[movs.length - 1].t + 4000;
+    pts = pts.filter(p => p.t >= tIni && p.t <= tFim).map(p => ({ ...p, t: p.t - tIni }));
+  }
+
+  // ?pose=SEGUNDOS congela o estado naquele instante (pra conferência/foto)
+  const pose = new URLSearchParams(location.search).get('pose');
+  if (pose != null) {
+    const alvo = Number(pose) * 1000;
+    while (i < pts.length && pts[i].t <= alvo) { aplicar(pts[i]); i++; }
+    const seg = Math.floor((pts[Math.min(i, pts.length - 1)]?.t || 0) / 1000);
+    $('tempo').textContent = String(Math.floor(seg / 60)).padStart(2, '0') + ':' + String(seg % 60).padStart(2, '0');
+  } else {
+    requestAnimationFrame(frame);
+  }
 })();
 </script>
 
