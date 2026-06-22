@@ -334,6 +334,8 @@ private struct ReadyRoot: View {
             carrosTotal: carros.count,
             eventosTotal: eventos.count,
             stintsTotal: carroRepo.stintsPorCarro.values.reduce(0, +),
+            voltasTotal: carroRepo.voltasTotal,
+            melhorVoltaMs: carroRepo.melhorVoltaMs,
             eventoAtivoHoje: eventoRepo.eventoAtivoHoje().map(eventoCard),
             proximoEvento: eventoRepo.proximoEvento().map(eventoCard),
             carrosRecentes: carros.prefix(3).map(carroCard)
