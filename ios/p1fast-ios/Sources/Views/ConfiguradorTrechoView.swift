@@ -860,54 +860,69 @@ struct ConfiguradorTrechoView: View {
     // MARK: - Toolbar (footer com 3 botões: Anterior · Cancelar · Salvar e próximo)
 
     private var toolbar: some View {
-        HStack(spacing: 10) {
-            // ← Anterior — disabled no primeiro trecho
-            Button {
-                navigatePrev()
-            } label: {
-                Text("← Anterior")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(canGoPrev ? Color.text : Color.textFaint)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.surfaceRaised)
-                    )
+        VStack(spacing: 10) {
+            // Linha de navegação entre trechos (só quando há mais de um).
+            // Salva o trecho atual ANTES de mover — não perde o que foi
+            // alterado. Não obriga a percorrer todos: dá pra salvar e sair
+            // a qualquer momento pela linha de baixo.
+            if orderedTrechos.count > 1 {
+                HStack(spacing: 10) {
+                    navButton(title: "← Anterior", enabled: canGoPrev) { saveThenPrev() }
+                    navButton(title: "Próximo →", enabled: canGoNext) { saveThenNext() }
+                }
             }
-            .disabled(!canGoPrev || saving)
 
-            Button {
-                onClose?()
-            } label: {
-                Text("Cancelar")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.text)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.surfaceRaised)
-                    )
-            }
-            .disabled(saving)
+            HStack(spacing: 10) {
+                // Cancelar — sai pra lista sem salvar o trecho atual.
+                Button { close() } label: {
+                    toolbarActionLabel("Cancelar", filled: false)
+                }
+                .disabled(saving)
 
-            // Salvar e próximo → / Salvar e voltar à lista (no último)
-            Button {
-                saveAndAdvance()
-            } label: {
-                Text(saving ? "Salvando…" : (canGoNext ? "Salvar e próximo →" : "Salvar e voltar"))
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.surface)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.accent)
-                    )
+                // Salvar e voltar — salva o que foi alterado neste trecho e
+                // volta pra primeira tela da função (lista de trechos).
+                // Disponível em TODO trecho, não só no último.
+                Button { saveAndClose() } label: {
+                    toolbarActionLabel(saving ? "Salvando…" : "Salvar e voltar", filled: true)
+                }
+                .disabled(saving)
             }
-            .disabled(saving)
         }
+    }
+
+    private func toolbarActionLabel(_ text: String, filled: Bool) -> some View {
+        Text(text)
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(filled ? Color.surface : Color.text)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(filled ? Color.accent : Color.surfaceRaised)
+            )
+    }
+
+    private func navButton(title: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(enabled ? Color.text : Color.textFaint)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.surfaceRaised)
+                )
+        }
+        .disabled(!enabled || saving)
+    }
+
+    /// Fecha o configurador: usa o onClose do chamador quando existe; senão
+    /// (push via NavigationLink — caso da lista de trechos) volta pela pilha
+    /// de navegação. Sem esse fallback a tela prendia o usuário (Cancelar /
+    /// Salvar não tinham efeito).
+    private func close() {
+        if let onClose { onClose() } else { dismiss() }
     }
 
     // MARK: - Navegação trecho-a-trecho
