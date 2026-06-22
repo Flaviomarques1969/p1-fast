@@ -117,6 +117,10 @@ struct ConfiguradorTrechoView: View {
     private let tickLength: Double = 56
     private let tickThickness: Double = 5
     private let focusWindow: Double = 280
+    /// Deslocamento do ápice pro lado interno da curva (parte mais interna),
+    /// em unidades de viewBox. ~meia-largura da pista (trackWidth/2) pra o
+    /// ponto encostar na borda interna em vez de ficar no eixo central.
+    private let apexInnerOffset: Double = 12
 
     private func color(for kind: CanonicalPointKind) -> Color {
         switch kind {
