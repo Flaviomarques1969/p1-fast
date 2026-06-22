@@ -38,6 +38,15 @@ public sealed class CockpitOrchestrator
     /// <summary>Quantas curvas já têm passagem de referência (1ª volta registrada).</summary>
     public int CurvasComReferencia => _referencias.Count;
 
+    /// <summary>Nome da curva em que o carro está agora (ou null fora de curva).</summary>
+    public string? CurvaAtualNome => _segAtual is not null && _segPorId.TryGetValue(_segAtual, out var s) ? s.Nome : null;
+
+    private static string FormatDelta(double s)
+    {
+        var v = s.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+        return s >= 0 ? "+" + v : v;
+    }
+
     // ── Motor ──────────────────────────────────────────────────────
 
     /// <summary>Ingere uma amostra de motor: atualiza luz de marcha + alertas.</summary>
