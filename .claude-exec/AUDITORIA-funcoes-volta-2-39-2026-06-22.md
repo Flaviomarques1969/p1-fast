@@ -45,3 +45,13 @@ Bateria de testes automáticos: 256 (1 falha pré-existente PAN_04, vírgula no 
 As 5 funções rodam de verdade sobre o dado real da sessão de domingo (que contém a volta de 2:39), e
 cada uma reage ao dado (falsificação confirmada). Os pontos simulados/padrão estão listados acima, sem
 esconder. O que falta de prova é só a parte VISUAL (tela) e o empacotamento — no Windows.
+
+## 4. DEMONSTRAÇÃO VISUAL (22/06)
+- `relatorios/cockpit-piloto-2-39.html` + `relatorios/dados/fita-cockpit-2-39.js` (3.286 quadros).
+- A fita foi gerada pelo MAESTRO em C# (as MESMAS funções auditadas) processando a sessão real
+  (motor + GPS por tempo): `dotnet run --project P1Fast.Cockpit.SessaoReplay -- --exportar-tela=...`.
+- A tela HTML só DESENHA a fita (visual idêntico ao MainWindow.xaml nativo). Conteúdo real: 1.539
+  quadros com luz acesa (giro até 5.912), 1.429 dentro de curva (as 8), coach (RECORDE/MANTEVE/BUSCAR
+  LIMITE) e alertas (mistura). Abre na 1ª curva; botões tocar/velocidade/próxima curva.
+- HONESTO: é o visual do cockpit (web) movido pelo cérebro REAL; o .exe nativo mostra a MESMA imagem,
+  mas só renderiza no Windows. Nada aqui é simulado — vem da fita do dado real.

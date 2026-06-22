@@ -26,6 +26,10 @@ public sealed class CockpitOrchestrator
     private double _cumDist;
     private AmostraGps? _lastGps;
 
+    // Velocidades/medidas reais de referência por curva (1ª passagem), pra comparar e colorir.
+    private readonly Dictionary<string, (double? Ent, double? Fre, double? Api, double? Sai)> _refPontos = new();
+    private double? _pEnt, _pFre, _pApi, _pSai; // o que está sendo medido na passagem atual
+
     public CockpitOrchestrator(CockpitState cockpit, IReadOnlyList<TrechoSegmento>? segments = null, LiveLimits? limites = null)
     {
         _cockpit = cockpit ?? throw new ArgumentNullException(nameof(cockpit));
