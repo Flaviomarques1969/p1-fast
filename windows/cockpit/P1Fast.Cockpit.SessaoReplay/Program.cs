@@ -107,6 +107,23 @@ foreach (var a in root.GetProperty("amostras").EnumerateArray())
     bridge.IngestT4000(new T4000ProviderSample(amostra, TMono: motorLidos, ChecksumOk: true));
     motorLidos++;
 
+    // Motor de alertas com os campos REAIS do T3000 (ausente = null = sem dado).
+    var alarmes = dados.TryGetProperty("alarmes", out var alm) ? alm : default;
+    alertas.IngestT4000(new AmostraAlerta
+    {
+        WaterTempC              = GetNum(dados, "waterTempC"),
+        Rpm                     = GetNum(dados, "rpm"),
+        Lambda                  = GetNum(dados, "lambda"),
+        BatteryV                = GetNum(dados, "batteryV"),
+        FuelInjectionBalanced   = GetBool(dados, "fuelInjectionBalanced"),
+        BaixaPressaoOleo        = alarmes.ValueKind == JsonValueKind.Object ? GetBool(alarmes, "baixaPressaoOleo") : null,
+        AlertaNivelCombustivel  = alarmes.ValueKind == JsonValueKind.Object ? GetBool(alarmes, "alertaNivelCombustivel") : null,
+        BaixaPressaoCombustivel = alarmes.ValueKind == JsonValueKind.Object ? GetBool(alarmes, "baixaPressaoCombustivel") : null,
+    });
+    var principal = alertas.GetMensagemPrincipal();
+    if (principal is null) { cockpit.HideMessage(); amostrasSemAlerta++; }
+    else { cockpit.ShowMessage(principal.Tipo, principal.Texto); msgTally[principal.Id] = msgTally.GetValueOrDefault(principal.Id) + 1; }
+
     var shift = cockpit.Get().Shift;
     modos[shift.Mode] = modos.GetValueOrDefault(shift.Mode) + 1;
     if (shift.Mode == ShiftMode.Lit && shift.Level > nivelMax) nivelMax = shift.Level;
