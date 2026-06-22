@@ -140,6 +140,7 @@ public sealed class CockpitOrchestrator
         _subAtual = "entrada";
         _cumDist = 0;
         _buf.Clear();
+        _pEnt = _pFre = _pApi = _pSai = null;
     }
 
     private void FecharPassagem(string segId)
