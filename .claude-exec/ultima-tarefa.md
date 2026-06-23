@@ -1,3 +1,37 @@
+# Última tarefa — Cockpit web (volta real): lapidar o ápice — 22/06/2026
+
+## Pedido original
+"siga lapidando" (continuação — eu havia oferecido "próxima curva no detalhe, ajuste fino do ápice"). Contexto perdido no /clear, recuperado pela memória do projeto.
+
+## Objetivo (1 frase)
+Consertar o veredito do ápice em `web/cockpit/cockpit-volta-real.html` pra parar de mentir (verde no ápice → vermelho na saída) e não acusar "errou" o que o GPS a 1 Hz não mede.
+
+## Critério de conclusão
+- Ápice ACENDE verde quando passa rente (≤10 m) e FICA verde até a saída.
+- Fora dos 10 m: NEUTRO, nunca vermelho (sem acusação falsa a 1 Hz).
+- Distância ao vivo segue no HUD do topo. Tela roda sozinha (replay), aberta no navegador.
+
+## Arquivos inspecionados
+- web/cockpit/cockpit-volta-real.html (alvo — editado)
+- web/cockpit/cockpit-state.js (contrato setApexPonto: estado/distM/angleDeg; PENDENTE = neutro)
+- web/cockpit/cockpit-renderer.js (cor por estado, bolinha por angleDeg)
+- docs/COCKPIT_FONTE_DA_VERDADE.md + P1 Fast/CLAUDE.md (leitura obrigatória do cockpit)
+
+## Ambiente
+desenvolvimento (web, servidor local 8078). Produção protegida: sim. Autorização produção: não. Nada em produção.
+
+## O que mudei (só uma coisa)
+Em `aplicarGps`, dentro da curva: veredito do ápice passa a usar `distMin` (melhor aproximação alcançada) em vez da distância ao vivo; verde ≤10 m, senão NEUTRO (PENDENTE) no lugar de vermelho (OK_PIOR). O 10 m NÃO foi inventado — já estava no código; só travei e tirei o vermelho indevido.
+
+## Pendente (NÃO feito de propósito)
+- Bolinha apontando direção do ápice (angleDeg / "siga a bolinha") — requisito §4 da fonte da verdade, ainda não desenhado nesta tela. Próximo passo natural; não fiz pela metade.
+- O 10 m só fica confiável com RaceBox (25×/s). A 1 Hz pode raramente acender verde — informação real, a observar na volta.
+
+## Status
+Implementado em DEV, aberto no navegador (8078) pra validação visual da próxima passagem por curva. Aguardando sim/não.
+
+---
+
 # TASK — Cockpit: FONTE DA VERDADE (dados T4000/GPS → tela do piloto) — 22/06/2026 (em andamento)
 
 ## 1. Pedido original de Flávio
