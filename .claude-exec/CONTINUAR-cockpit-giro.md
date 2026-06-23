@@ -3,6 +3,14 @@
 > GATILHO: Flávio diz **"RETOMAR COCKPIT"** ou "voltei" → LER ESTE ARQUIVO PRIMEIRO.
 > Última atualização: 2026-06-23. Tarefa em ANDAMENTO (não concluída).
 
+> ★ VIRADA 23/06 (tarde) — Flávio redefiniu: o problema NÃO era o zoom; a tela tem que ser tela de app DE VERDADE,
+> com CONEXÃO e DADO REAIS (o replay da volta 24/05 = "imagem simulada", rejeitado). FEITO nesta sessão: troquei,
+> no `Resources/Cockpit/cockpit-app.html`, o replay pela ESCUTA do canal real `cockpit-bubi-live` (cloud-bridge.js,
+> só ouve, nunca publica); sem carro = overlay "AGUARDANDO O CARRO". Conexão real PROVADA (assinatura SUBSCRIBED).
+> Replay preservado em `cockpit-app-replay.html`. BUILD OK; instalar quando o iPhone 16 voltar ao alcance e Flávio testar.
+> Detalhe completo em `.claude-exec/ultima-tarefa.md` (seção EXECUÇÃO 23/06 tarde). A questão "embute web x reescrever
+> nativo" segue ABERTA — decidir DEPOIS que ele ver a versão ao vivo com zoom travado e disser se já lê como app.
+
 ## O QUE É
 No app iOS P1 Fast: **virar o celular pra paisagem ABRE o Cockpit do Piloto** (em pé, tela cheia, sobreposto a qualquer tela); **voltar pra vertical FECHA** e volta exatamente onde estava. SEM botão. Decisão Flávio 22/06.
 O cockpit é o **painel APROVADO** da web (`web/cockpit/cockpit-volta-real.html`: cluster de sensores em cima, luz de freio nas laterais, ápice, frase do coach, mensagens críticas), embutido no app e rodando a volta real 24/05 em replay (demonstração). Espelhar o carro AO VIVO é passo futuro.
