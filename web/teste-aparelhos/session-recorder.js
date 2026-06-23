@@ -176,7 +176,7 @@ export function criarGravador(opts = {}) {
 
   function estado() {
     const saude = { ativo: !storeMorto, dropped, alarme: alarme() };
-    if (!sessao) return { gravando: false, nGps, nMotor, ...saude };
+    if (!sessao) return { gravando: false, nGps, nMotor, velKmh: Math.round(velAtual), auto: !!auto, ...saude };
     const agora = now();
     return {
       gravando: true,
@@ -184,6 +184,8 @@ export function criarGravador(opts = {}) {
       sim: sessao.sim,
       tempoS: Math.round((agora - sessao.inicioMono) / 100) / 10,
       nGps, nMotor,
+      velKmh: Math.round(velAtual),
+      auto: !!auto,
       hzGps:   Math.round(taxaHz(janGps, agora)   * 10) / 10,
       hzMotor: Math.round(taxaHz(janMotor, agora) * 10) / 10,
       gpsParadoS:   ultimoGpsMono   ? Math.round((agora - ultimoGpsMono) / 100) / 10   : null,
