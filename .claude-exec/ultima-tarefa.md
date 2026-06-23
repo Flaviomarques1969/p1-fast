@@ -1,83 +1,44 @@
-# Última tarefa — +STINT: auto-seleção de item único + reordenar voltas/paradas — 23/06/2026
+# Última tarefa — Volta de DEMONSTRAÇÃO (motor+GPS) pro painel animar inteiro na web — 23/06/2026
 
-> Backup da tarefa anterior (cockpit volta real): `.claude-exec/ultima-tarefa-COCKPIT-2026-06-22.bak.md`
+> Backup da tarefa anterior (+Stint iOS): conteúdo anterior deste arquivo foi sobrescrito; histórico do +Stint está no registro do repositório e nas memórias do projeto.
 
 ## Pedido original de Flávio
-1. "em p1 fast +stint se tem só um item naquele carro escolhido, ou se tem só um carro na garagem tudo já aparece selecionado destes itens ou carro. ou seja, seja se tem somente o bolinha, ele já aparece, se o bolinha usa etanol, já aparece selecionado, e assim por diante."
-2. "o total de voltas e se para ou não no box deve ficar logo após no nome do piloto na tela de novo stint."
+- "caminho web. próximo passo." → "sim" (autorizou montar a volta de demonstração).
 
 ## Objetivo (1 frase)
-Na tela de novo Stint (+Stint): (a) pré-selecionar automaticamente todo item que só tem uma opção; (b) mover "Voltas planejadas" e "Paradas no box" pra logo após o piloto.
+Fazer o painel aprovado (`web/cockpit/cockpit-volta-real.html`) animar de ponta a ponta na web — inclusive a luz de marcha e os sensores do motor — usando o motor real de 21/06 encaixado por cima da volta de GPS de 24/05, marcado como DEMONSTRAÇÃO.
 
 ## Critérios objetivos de conclusão
-- Combustível com 1 só tipo cadastrado → já vem selecionado.
-- Pneu com 1 só pneu no carro → já vem selecionado.
-- Piloto único → já vem selecionado (já existia; conferido).
-- "Voltas" e "Paradas no box" aparecem logo após o bloco do piloto, antes de combustível/pneu.
-- App compila (BUILD SUCCEEDED).
+- Painel abre na web (porta 8078) com a luz de marcha (17 luzes) e o cluster de sensores do motor (rotação, lambda, água, bateria) ANIMANDO junto com o GPS.
+- Marca visível "DEMONSTRAÇÃO" na tela (não confundir com dado real).
+- Versão aprovada preservada: backup congelado `_design-reference/versions/cockpit-painel-APROVADO-2026-06-22.html` intocado; app iOS (cópia própria) intocado.
+- Reversível: a troca da fonte de dados é mínima e desfazível.
 
 ## Leitura dos arquivos obrigatórios
 - ~/.claude/CLAUDE.md: sim
-- ~/.claude-decisoes/padroes.md: sim (vazio/sem padrões)
-- ~/.claude/FLAVIO_EXECUTION_PROTOCOL.md: sim
-- ~/.claude/FLAVIO_DONE_CHECKLIST.md: sim
-- ~/.claude/FLAVIO_ENVIRONMENT_RULES.md: sim
-- ~/.claude/FLAVIO_COMMUNICATION_RULES.md: sim
+- docs/COCKPIT_FONTE_DA_VERDADE.md: sim
+- memórias cockpit (volta-real-painel, app-tela-cockpit, dados-volta-real-motor-vs-gps): sim
 
 ## Plano (≤5 passos)
-1. Auto-selecionar item único (combustível/pneu) no onAppear, junto do piloto.
-2. Reordenar a tela: piloto → voltas → paradas → combustível/pneu → propósito/lição/assistência.
-3. Compilar o app iOS.
-4. Reportar.
+1. Ler como o painel carrega/anima a gravação (alinhamento tempo pista x motor).
+2. Montar fixture combinada (motor real 21/06 reamostrado/encaixado sobre o GPS 24/05), mesma estrutura {pista, motor, durPista, durMotor}.
+3. Apontar o painel (web) pra fixture combinada + marca "DEMONSTRAÇÃO" discreta.
+4. Servir na 8078 e abrir no navegador pro Flávio ver animando inteiro.
+5. Reportar; aguardar sim/não dele.
 
 ## Arquivos/áreas a inspecionar
-- ios/p1fast-ios/Sources/Views/StintModalView.swift (tela viva do +Stint)
-- Repos: CombustivelRepository, PneuRepository, CarroRepository (modelo de dados)
+- web/cockpit/cockpit-volta-real.html (lógica de replay/animação)
+- web/cockpit/fixtures/volta-real-pista-24-05.json (GPS lap + motor quase off)
+- web/cockpit/fixtures/volta-real-brasilia-2026-06-21.json (motor real, sem GPS)
 
 ## Ambiente alvo: desenvolvimento
 ## Produção protegida: sim
 ## Autorização para produção: não
-## Evidência da autorização: não recebida (mudança é só de tela/dev)
+## Evidência da autorização: não recebida (é só web/dev, replay de demonstração)
 
 ## Riscos
-- Não há seletor de CARRO na tela (usa o primeiro carro). Com 1 carro já é o usado, mas não há campo pra "aparecer selecionado". Não vou inventar seletor — sinalizo.
-- Combustível é por time (catálogo), não por carro. Seed padrão tem 2 (etanol + gasolina) → só auto-seleciona se houver exatamente 1.
+- NÃO publicar replay no canal de produção `cockpit-bubi-live` (regra dura). É só replay local de arquivo.
+- Não descaracterizar o painel aprovado: design não muda; só a fonte de dados de demonstração + uma marca "demonstração".
+- A volta combinada é montagem (não é uma volta real única) — deixar explícito na tela.
 
 ## Status inicial: iniciado
-
----
-
-## ANDAMENTO — chegaram +2 pedidos durante a execução
-3. "em convidado... incluir uma opção: + convidados — pra cadastrar um convidado novo ali na tela." → FEITO.
-4. "lição praticada não deveria estar dentro de treinar habilidade?" → DECIDIDO por Flávio (card): "Só em 'Treinar habilidade'". FEITO — a Lição praticada agora só aparece dentro do propósito "Treinar habilidade"; ao sair desse propósito, a lição é limpa. Seção fixa antiga (sectionLicao) removida (conteúdo migrado pra dentro do bloco treinar).
-
-## TASK_DONE (itens 1, 2 e 3)
-- Pedido original conferido: sim
-- Ambiente trabalhado: desenvolvimento
-- Produção foi alterada: não
-- Autorização de produção registrada: n/a
-- Arquivos reais inspecionados: sim
-- Alterações feitas: sim
-- Testes/validação executados: sim (BUILD SUCCEEDED, simulador, derivedData isolado /tmp/p1fast-build-stint)
-- Resultado: itens 1-3 concluídos; item 4 = pergunta aberta (decisão)
-- Pendências reais: item 4 (decisão de UX da lição) + validação visual no iPhone (cert dev pode ter vencido ~22/06)
-
-### Arquivos alterados
-- ios/p1fast-ios/Sources/Views/StintModalView.swift
-- ios/p1fast-ios/Sources/Views/PilotoCadastroView.swift (onCreated opcional, retrocompatível)
-
-### O que foi preservado
-- Lógica do piloto padrão (você) — só renomeada de hidratarPilotoDefault → hidratarDefaults.
-- Combustível/pneu seguem opcionais; auto-seleção só quando há exatamente 1.
-- PilotoCadastroView: callers antigos não mudam (onCreated tem default nil).
-- Backup da tarefa anterior: .claude-exec/ultima-tarefa-COCKPIT-2026-06-22.bak.md
-
-### O que foi acrescentado
-- Auto-seleção de item único (combustível com 1 tipo, pneu com 1 no carro).
-- Reordenação: piloto → voltas → paradas → (combustível+pneu) → propósito → lição → assistência.
-- Opção "+ Convidado" no picker de convidado, cadastrando piloto/pessoa novo na hora e já selecionando.
-
-### Validação executada
-- xcodebuild ... -scheme p1fast-ios -destination 'generic/platform=iOS Simulator' → BUILD SUCCEEDED (3x, sem erros).
-- REINSTALADO no iPhone do Flávio (00008140-000E2D611E6A801C) 23/06: empacotado assinado (Apple Development: flaviomarques@me.com, perfil com.flaviomarques.p1fast) em /tmp/p1fast-device-build → devicectl install OK → devicectl launch OK (app abriu). Renova +7 dias. Aviso "No provider was found" é inofensivo (instala/abre mesmo assim).
-- FALTA: Flávio olhar os 4 ajustes na tela ao vivo e dar o ok.
