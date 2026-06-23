@@ -244,9 +244,12 @@ for (const g of GRUPOS) {
   sec.appendChild(wrap); elGrupos.appendChild(sec);
 }
 
-// ── Dados: a MESMA volta real que o painel usa ──
-let pista = [], motor = [], iP = 0, iM = 0, start = null;
-let prevG = null, velBuf = [], ultKmh = 0, ultMotor = null, gpsRecebido = false;
+// ── FONTE: 'aovivo' (canal cockpit-bubi-live, só OUVIR) ou 'demo' (volta gravada) ──
+const FONTE = (params.get('fonte') === 'demo') ? 'demo' : 'aovivo';
+const FRESCOR_MS = 3000;   // sem amostra há mais que isso = "sem sinal" (carro parou de transmitir)
+let ultKmh = 0, ultMotor = null, tMotorMs = 0, tGpsMs = 0, conexao = 'off';
+// (modo demo) volta gravada
+let pista = [], motor = [], iP = 0, iM = 0, start = null, prevG = null, velBuf = [];
 function metros(a, b){ const R=6378137, r=Math.PI/180; const la1=a.lat*r, la2=b.lat*r;
   const x=(b.lon-a.lon)*r*Math.cos((la1+la2)/2), y=(la2-la1); return Math.sqrt(x*x+y*y)*R; }
 function velDe(p){
@@ -254,7 +257,7 @@ function velDe(p){
     if (dt>0){ let v=d/dt*3.6; if (v>200) v=velBuf.length?velBuf[velBuf.length-1]:0; velBuf.push(v); if (velBuf.length>5) velBuf.shift(); } }
   prevG=p; return velBuf.length ? velBuf.reduce((a,b)=>a+b,0)/velBuf.length : 0;
 }
-// status do motor — mesma regra do painel aprovado (sem inventar falha)
+// status do motor — mesma regra do painel aprovado (tem amostra = comunicando; falha só com alarme real)
 function statusMotor(m){
   const al=m.al||{}, algum=Object.values(al).some(Boolean);
   return {
@@ -289,7 +292,7 @@ function setBig(p, st, estadoTxt, dado){
   $('big'+p+'Dado').innerHTML = dado || '&nbsp;';
 }
 
-// ── Modo parado/andando por velocidade, com histerese ──
+// ── Modo parado/andando pela velocidade, com histerese ──
 const V_ANDA=15, V_PARA=8, T_PARA=800;
 let modo='parado', lentoDesde=null;
 function decidirModo(vel){
@@ -299,50 +302,92 @@ function decidirModo(vel){
   else { if (vel<=V_PARA){ if (lentoDesde==null) lentoDesde=now; else if (now-lentoDesde>=T_PARA) modo='parado'; } else lentoDesde=null; }
 }
 
+// ── Recepção AO VIVO (canal cockpit-bubi-live) — SÓ OUVIR, nunca publicar ──
+function aplicarSampleVivo(p){
+  if (!p) return;
+  ultMotor = {
+    rpm:p.rpm, tps:p.tpsPct, fre:p.pedalFreioPct, agua:p.waterTempC,
+    lam:p.lambda, bat:p.batteryV, al:p.alarmes||{},
+    accelX:p.accelXg, accelY:p.accelYg, accelZ:p.accelZg,
+  };
+  tMotorMs = performance.now();
+}
+function aplicarGpsVivo(p){
+  if (!p) return;
+  if (typeof p.kmh === 'number') ultKmh = p.kmh;
+  else if (typeof p.lat === 'number' && typeof p.lng === 'number') ultKmh = velDe({ lat:p.lat, lon:p.lng, t:(p.tWall||performance.now()) });
+  tGpsMs = performance.now();
+}
+
+// ── modo DEMO: avança a volta gravada (demonstração sem carro) ──
 const FATOR = 8;
-function frame(now){
+function passoDemo(now){
   if (start==null) start=now;
   const td=(now-start)*FATOR;
-  while (iP<pista.length && pista[iP].t<=td){ ultKmh=velDe(pista[iP]); gpsRecebido=true; iP++; }
-  while (iM<motor.length && motor[iM].t<=td){ ultMotor=motor[iM]; iM++; }
-  if (iP>=pista.length && iM>=motor.length){ iP=0; iM=0; start=now; prevG=null; velBuf=[]; ultKmh=0; gpsRecebido=false; }
+  while (iP<pista.length && pista[iP].t<=td){ ultKmh=velDe(pista[iP]); tGpsMs=now; iP++; }
+  while (iM<motor.length && motor[iM].t<=td){ const m=motor[iM]; ultMotor={rpm:m.rpm,tps:m.tps,fre:m.fre,agua:m.agua,lam:m.lam,bat:m.bat,al:m.al||{}}; tMotorMs=now; iM++; }
+  if (iP>=pista.length && iM>=motor.length){ iP=0; iM=0; start=now; prevG=null; velBuf=[]; ultKmh=0; ultMotor=null; tGpsMs=0; tMotorMs=0; }
+}
 
-  let velMostrar = ultKmh;
-  if (MODO_FIXO==='parado'){ velMostrar=0; }   // inspeção: parado coerente, mas com dados reais
-  decidirModo(velMostrar);
+function rotuloConexao(){
+  if (FONTE==='demo') return 'Demonstração (volta gravada)';
+  if (conexao==='online') return 'Ao vivo · no ar';
+  if (conexao==='connecting') return 'Ao vivo · conectando…';
+  return 'Ao vivo · sem conexão';
+}
+
+function frame(now){
+  if (FONTE==='demo') passoDemo(now);
+
+  const motorOk = !!ultMotor && tMotorMs>0 && (now - tMotorMs) < FRESCOR_MS;
+  const gpsOk   = tGpsMs>0 && (now - tGpsMs) < FRESCOR_MS;
+
+  let velParaModo = gpsOk ? ultKmh : 0;
+  if (MODO_FIXO==='parado'){ velParaModo = 0; }
+  const velMostrar = gpsOk ? Math.round(velParaModo) : 0;
+  decidirModo(velParaModo);
   document.body.dataset.modo = modo;
   $('modoTxt').textContent = (modo==='andando') ? 'andando' : 'parado';
-  $('velTxt').textContent = Math.round(velMostrar)+' km/h';
+  $('velTxt').textContent = velMostrar + ' km/h';
+  if ($('fonteTxt')) $('fonteTxt').textContent = rotuloConexao();
 
   // Motor
-  const ms = ultMotor ? statusMotor(ultMotor) : null;
-  const md = ultMotor ? dadoMotor(ultMotor) : null;
+  const ms = motorOk ? statusMotor(ultMotor) : null;
+  const md = motorOk ? dadoMotor(ultMotor) : null;
   for (const id of GRUPOS[0].ids) setCard(id, ms?ms[id]:'off', md?md[id]:'');
   // Movimento
-  const gpsSt = gpsRecebido ? 'ok' : 'off';
-  setCard('gps', gpsSt, gpsSt==='ok' ? Math.round(velMostrar)+' km/h' : '');
-  setCard('acel', 'off', '');   // acelerômetro: a volta gravada não trouxe esse dado
+  setCard('gps', gpsOk?'ok':'off', gpsOk ? velMostrar+' km/h' : '');
+  const aceleroOk = motorOk && (ultMotor.accelY!=null || ultMotor.accelX!=null);
+  setCard('acel', aceleroOk?'ok':'off', aceleroOk ? Math.abs(ultMotor.accelY ?? ultMotor.accelX ?? 0).toFixed(2)+' G' : '');
   // Chassi (a instalar)
   for (const id of GRUPOS[2].ids) setCard(id, 'instalar', '');
 
   // Destaque GPS + Motor (decidem a gravação)
-  setBig('Gps', gpsSt, gpsSt==='ok'?'Chegando':'Sem sinal', gpsSt==='ok'?(Math.round(velMostrar)+' km/h'):'');
-  const motorOn = !!ultMotor;
-  setBig('Motor', motorOn?(ms['motor-alarme']==='warn'?'warn':'ok'):'off', motorOn?'Chegando':'Sem sinal',
-         motorOn?('rotação '+md.rpm+' · '+md.agua):'');
-  const pronto = (gpsSt==='ok' && motorOn);
+  setBig('Gps', gpsOk?'ok':'off', gpsOk?'Chegando':'Sem sinal', gpsOk?(velMostrar+' km/h'):'');
+  setBig('Motor', motorOk?(ms['motor-alarme']==='warn'?'warn':'ok'):'off', motorOk?'Chegando':'Sem sinal',
+         motorOk?('rotação '+md.rpm+' · '+md.agua):'');
+  const pronto = (gpsOk && motorOk);
   $('pronto').dataset.ok = pronto?'sim':'nao';
-  $('prontoTxt').textContent = pronto ? 'Pronto pra gravar' : 'Aguardando sinal';
+  $('prontoTxt').textContent = pronto ? 'Pronto pra gravar' : (FONTE==='demo' ? 'Aguardando sinal' : 'Aguardando o carro');
 
   requestAnimationFrame(frame);
 }
 
 (async function boot(){
-  try{
-    const r = await fetch('/web/cockpit/fixtures/volta-real-pista-24-05.json');
-    const j = await r.json();
-    pista = j.pista || []; motor = j.motor || [];
-  }catch(e){ /* sem dados: a grade mostra "sem sinal" */ }
+  if (FONTE === 'demo') {
+    try { const r = await fetch('/web/cockpit/fixtures/volta-real-pista-24-05.json'); const j = await r.json(); pista = j.pista || []; motor = j.motor || []; }
+    catch(e){ /* sem dados: a grade mostra "sem sinal" */ }
+  } else {
+    // AO VIVO: ouvir o canal de produção cockpit-bubi-live — SÓ OUVIR (nunca publicar).
+    try {
+      const cb = await import('./cloud-bridge.js');
+      cb.onStatusChange(s => { conexao = s; });
+      cb.onSample(aplicarSampleVivo);
+      cb.onGpsPoint(aplicarGpsVivo);
+      conexao = 'connecting';
+      cb.startCloudBridge().catch(() => { conexao = 'error'; });
+    } catch(e){ conexao = 'error'; /* sem internet/canal: grade mostra "sem sinal", sem quebrar */ }
+  }
   requestAnimationFrame(frame);
 })();
 </script>
