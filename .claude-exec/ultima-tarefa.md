@@ -78,4 +78,6 @@ Na tela de novo Stint (+Stint): (a) pré-selecionar automaticamente todo item qu
 - Opção "+ Convidado" no picker de convidado, cadastrando piloto/pessoa novo na hora e já selecionando.
 
 ### Validação executada
-- xcodebuild ... -scheme p1fast-ios -destination 'generic/platform=iOS Simulator' → BUILD SUCCEEDED (2x, sem erros).
+- xcodebuild ... -scheme p1fast-ios -destination 'generic/platform=iOS Simulator' → BUILD SUCCEEDED (3x, sem erros).
+- REINSTALADO no iPhone do Flávio (00008140-000E2D611E6A801C) 23/06: empacotado assinado (Apple Development: flaviomarques@me.com, perfil com.flaviomarques.p1fast) em /tmp/p1fast-device-build → devicectl install OK → devicectl launch OK (app abriu). Renova +7 dias. Aviso "No provider was found" é inofensivo (instala/abre mesmo assim).
+- FALTA: Flávio olhar os 4 ajustes na tela ao vivo e dar o ok.
