@@ -173,18 +173,18 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path logs | Out-Null
           $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
-          dotnet publish windows/cockpit/P1Fast.Cockpit.UI/P1Fast.Cockpit.UI.csproj `
-            --configuration Release `
-            --runtime win-x64 `
-            --self-contained true `
-            -p:Platform=x64 `
-            -p:WindowsAppSDKSelfContained=true `
-            -p:WindowsPackageType=None `
-            -p:PublishReadyToRun=false `
-            -p:EnableMsixTooling=false `
-            -bl:logs/msbuild-publish.binlog `
-            --verbosity diagnostic `
-            -o dist/cockpit-ui *>&1 | Tee-Object -FilePath logs/publish-output.txt
+          msbuild windows/cockpit/P1Fast.Cockpit.UI/P1Fast.Cockpit.UI.csproj `
+            /t:Restore,Publish `
+            /p:Configuration=Release `
+            /p:Platform=x64 `
+            /p:RuntimeIdentifier=win-x64 `
+            /p:SelfContained=true `
+            /p:WindowsAppSDKSelfContained=true `
+            /p:WindowsPackageType=None `
+            /p:PublishReadyToRun=false `
+            /p:PublishDir=$env:GITHUB_WORKSPACE\dist\cockpit-ui\ `
+            /bl:logs/msbuild-publish.binlog `
+            /v:minimal *>&1 | Tee-Object -FilePath logs/publish-output.txt
 
       - name: List dist content (mesmo se vazio)
         shell: pwsh
