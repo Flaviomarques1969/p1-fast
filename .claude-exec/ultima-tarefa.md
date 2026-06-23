@@ -1,3 +1,39 @@
+# Última tarefa — Home iOS: alinhar "Assistir ao vivo" + "Teste ao vivo" — 22/06/2026
+
+## 1. Pedido original
+"Na tela principal nós temos assistir ao vivo e temos teste ao vivo... são estas funções embaixo. Elas estão meio deslocadas, estranhas." Card respondido: **"Só alinhar, manter os dois juntos"** (fechar o vão duplicado + bolinhas iguais e visíveis + textos alinhados).
+
+## 2. Objetivo (1 frase)
+Alinhar os dois botões "ao vivo" da Home (iPhone), tirando o respiro duplicado e igualando as bolinhas, sem mudar comportamento.
+
+## 3. Critérios de conclusão
+- Par com respiro pequeno entre si (Spacing.sm) e normal acima (Spacing.lg) — sem os 48px atuais.
+- Bolinhas da mesma cor e visíveis no escuro; textos alinhados.
+- App continua compilando (BUILD SUCCEEDED).
+
+## 4. Leitura obrigatória — confirmação
+- ~/.claude/CLAUDE.md: lido · ~/.claude-decisoes/padroes.md: lido · FLAVIO_EXECUTION_PROTOCOL/DONE_CHECKLIST/ENVIRONMENT_RULES/COMMUNICATION_RULES: lidos · (extra) P1 Fast/CLAUDE.md + memórias: lidos.
+
+## 5. Plano
+1. Agrupar os dois botões num VStack(spacing:.sm) em HomeView.content.
+2. Remover o `.padding(.top, Spacing.lg)` de AssistirButton e TesteAoVivoButton (causa do vão de 48px).
+3. Igualar bolinhas: Color.red/Color.green → Color.textMuted.
+4. Build no simulador.
+5. Reportar com prova.
+
+## 6. Arquivos inspecionados
+- ios/p1fast-ios/Sources/Views/HomeView.swift (content, AssistirButton, TesteAoVivoButton)
+- ios/p1fast-ios/Sources/Theme/Theme.swift (Spacing/cores — só leitura)
+
+## 7. Ambiente: desenvolvimento · 8. Produção protegida: sim · 9. Autorização produção: não · 10. Evidência: não recebida (não se aplica)
+
+## 11. Riscos
+- Baixo, mudança visual de layout na Home. AssistirButton/TesteAoVivoButton são `private`, usados só nesta tela.
+
+## 12. Status inicial: iniciado
+
+---
+
 # Última tarefa — Cockpit web (volta real): lapidar o ápice — 22/06/2026
 
 ## Pedido original
