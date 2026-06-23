@@ -238,9 +238,10 @@ struct StintModalView: View {
             .padding(.bottom, Spacing.sm)
 
             sectionConfiguracao
-            sectionProposito
             sectionVoltas
             sectionParadas
+            sectionItensCarro
+            sectionProposito
             sectionLicao
             sectionAssistencia
 
