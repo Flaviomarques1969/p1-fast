@@ -126,14 +126,22 @@ struct ContentView: View {
         // vertical o esconde. O app por baixo nunca desmonta → estado preservado.
         // Sobreposição (ZStack) + giro na mão = confiável no aparelho real, sem
         // depender da rotação nativa do iOS (que falhava).
+        // DEV: --p1-force-ls-right/-left força o giro (testar o overlay no
+        // simulador sem sensor); --p1-overlay-only troca o app por um fundo
+        // cinza pra ver SÓ o overlay e qualquer desalinho.
+        let ang = forcedLandscape ?? orientation.landscapeAngle
         ZStack {
-            appContent
+            if ProcessInfo.processInfo.arguments.contains("--p1-overlay-only") {
+                Color(white: 0.22).ignoresSafeArea()
+            } else {
+                appContent
+            }
             // Cockpit SEMPRE montado (não recarrega a cada giro): some por
             // transparência no retrato e aparece na paisagem. allowsHitTesting
             // off no retrato deixa o app de baixo usável normalmente.
-            CockpitPilotoView(angle: orientation.landscapeAngle ?? 90)
-                .opacity(orientation.landscapeAngle != nil ? 1 : 0)
-                .allowsHitTesting(orientation.landscapeAngle != nil)
+            CockpitPilotoView(angle: ang ?? 90)
+                .opacity(ang != nil ? 1 : 0)
+                .allowsHitTesting(ang != nil)
                 // Tela cheia REAL: como o cockpit é overlay dentro do ZStack (que
                 // respeita a área segura), sem isto a "ilha" do topo empurrava o
                 // painel pra baixo (faixa preta em cima + corte embaixo). Ignorar
