@@ -76,7 +76,7 @@ Estado em 2026-06-23 (medido no código):
 
 | Tela | Dívida | A fazer |
 |---|---|---|
-| Vista Piloto | conexão própria (2x) + dado fictício (preview-local, FAKE_LAPS) | trocar pela ponte única + apagar feed falso |
+| Vista Piloto | ~~conexão própria (2x)~~ **QUITADA 23/06** (usa a ponte única) · resta: dado fictício (preview-local, FAKE_LAPS) | trocar o feed de demonstração por dado real/cérebro |
 | Vista Engenheiro | dado fictício (FAKE_LAPS, 3 voltas em loop) | ligar no cérebro/pacote pronto |
 
 Quando uma dessas for limpa, **remover do `BASELINE`** em `node-smoke-arquitetura-dado.mjs`.
