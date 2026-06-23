@@ -144,8 +144,29 @@ const Rec = criarGravador({
 let ultimaSessaoId = null;
 let recTela = 'parada';   // 'parada' | 'gravando' | 'salva' — estado explícito (não lê o texto do selo)
 
+// Aviso GRANDE pra o operador "vigiar" de longe (captura automática):
+//  verde  = GRAVANDO, carro na pista
+//  âmbar  = EM ESPERA, carro parado/no box (vai gravar sozinho quando andar)
+//  vermelho = SEM GPS — não dá pra saber se está na pista (precisa de sinal)
+function atualizarBanner(e){
+  const b = $('recBanner'); if (!b) return;
+  const gpsChegando = e && e.gpsHaMs != null && e.gpsHaMs < 3000;
+  const kmh = Math.round(e && typeof e.velKmh === 'number' ? e.velKmh : 0);
+  if (!gpsChegando){
+    b.textContent = 'SEM GPS — não dá pra saber se o carro está na pista';
+    b.style.background = '#7f1d1d'; b.style.color = '#fecaca';
+  } else if (e.gravando){
+    b.textContent = 'GRAVANDO — NA PISTA   ·   ' + kmh + ' km/h';
+    b.style.background = '#14532d'; b.style.color = '#bbf7d0';
+  } else {
+    b.textContent = 'EM ESPERA — no box (parado)   ·   ' + kmh + ' km/h';
+    b.style.background = '#78350f'; b.style.color = '#fde68a';
+  }
+}
+
 function renderGravacao(){
   const e = Rec.estado();
+  atualizarBanner(e);
   // Alarme VISÍVEL, nunca silencioso (blindagem — decisão Flávio 21/06).
   if (e.alarme){
     $('recAlarme').style.display = 'block';
