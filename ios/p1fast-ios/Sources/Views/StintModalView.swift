@@ -1566,11 +1566,13 @@ struct StintSoltoLauncher: View {
     .environmentObject(pneuRepo)
     .environmentObject(combustivelRepo)
     .environmentObject(licaoRepo)
+    .environmentObject(pilotoRepo)
     .task {
         await stintRepo.bootstrap()
         await carroRepo.bootstrap()
         await pneuRepo.bootstrap()
         await combustivelRepo.bootstrap()
         await licaoRepo.bootstrap()
+        await pilotoRepo.bootstrap()
     }
 }
