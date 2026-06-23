@@ -30,6 +30,7 @@ struct StintModalView: View {
     @EnvironmentObject private var pneuRepo: PneuRepository
     @EnvironmentObject private var combustivelRepo: CombustivelRepository
     @EnvironmentObject private var licaoRepo: LicaoRepository
+    @EnvironmentObject private var pilotoRepo: PilotoRepository
     /// nil = Stint SOLTO (sem evento). Decisão Flávio 15/06/2026.
     let eventoId: String?
     let proximoNumero: Int
