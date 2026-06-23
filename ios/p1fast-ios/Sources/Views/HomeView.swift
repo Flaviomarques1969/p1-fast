@@ -292,8 +292,6 @@ struct HomeView: View {
                             onClose: { voltarUmaTela() })
         case .melhorVolta:
             MelhorVoltaView(onClose: { voltarUmaTela() })
-        case .cockpitPiloto:
-            CockpitPilotoView(onClose: { voltarUmaTela() })
         }
     }
 
