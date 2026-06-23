@@ -10,9 +10,6 @@ import SwiftUI
 
 @main
 struct P1FastApp: App {
-    // AppDelegate mínimo só pra application(_:supportedInterfaceOrientationsFor:)
-    // — é ele que destrava a paisagem do cockpit (ver OrientationGate.swift).
-    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var database = AppDatabase()
 
     var body: some Scene {
