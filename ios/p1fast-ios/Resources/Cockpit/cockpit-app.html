@@ -529,46 +529,76 @@ function resetVolta() {
   approachId = null; vMaxApp = 0; bdAtVmax = Infinity;   // referências por trecho PERSISTEM entre voltas
 }
 
-function passo(td) {
-  // Só a pista (GPS). O motor desta volta não foi gravado junto — luz de marcha
-  // fica fora pra não mostrar rotação incoerente com a velocidade.
-  while (iP < pista.length && pista[iP].t <= td) { aplicarGps(pista[iP]); iP++; }
-  // O motor (saúde dos sensores) avança em paralelo SÓ pros ícones do topo —
-  // não alimenta a luz de marcha (rotação desta gravação não casa com a velocidade do GPS).
-  while (iM < motor.length && motor[iM].t <= td) { aplicarMotorStatus(motor[iM]); iM++; }
-}
+// ── DADO REAL AO VIVO (substitui o replay) ──────────────────────────────
+// A tela ESCUTA o canal real do carro (cockpit-bubi-live) e desenha com as
+// MESMAS funções reais acima (aplicarGps / aplicarMotor / aplicarMotorStatus).
+// Só ESCUTA: nunca chama publishSample/publishEvento (regra dura: não publicar
+// no canal de produção). Sem carro na pista = "aguardando", nunca número
+// inventado. O canal usa 'lng'; estas funções usam 'lon' — mapeio na entrada.
 
-function frame(now) {
-  if (start == null) start = now;
-  const td = (now - start) * FATOR;
-  passo(td);
-  const seg = Math.floor(td / 1000);
-  $('tempo').textContent = String(Math.floor(seg / 60)).padStart(2, '0') + ':' + String(seg % 60).padStart(2, '0');
-  if (iP >= pista.length && iM >= motor.length) { iP = 0; iM = 0; start = now; resetVolta(); }
-  requestAnimationFrame(frame);
+// Aviso "aguardando o carro" (overlay próprio, sem ícone/emoji).
+const aguardandoEl = document.createElement('div');
+aguardandoEl.id = 'aguardando';
+Object.assign(aguardandoEl.style, {
+  position: 'fixed', inset: '0', display: 'none',
+  alignItems: 'center', justifyContent: 'center',
+  background: 'rgba(0,0,0,0.82)', color: '#cbd5e1',
+  font: '600 30px/1.35 system-ui, -apple-system, sans-serif',
+  letterSpacing: '1px', textAlign: 'center', padding: '0 8%', zIndex: '99999',
+});
+document.body.appendChild(aguardandoEl);
+
+let conn = 'off';
+function textoAguardando() {
+  if (conn === 'online')      return 'CONECTADO — AGUARDANDO O CARRO NA PISTA';
+  if (conn === 'connecting')  return 'CONECTANDO AO CANAL DO CARRO';
+  if (conn === 'sem-internet') return 'SEM CONEXÃO COM A INTERNET';
+  return 'SEM CONEXÃO — RELIGANDO';
+}
+function mostrarAguardando() { aguardandoEl.textContent = textoAguardando(); aguardandoEl.style.display = 'flex'; }
+function esconderAguardando() { aguardandoEl.style.display = 'none'; }
+
+let ultimoDado = 0;
+function ngps(p) {
+  if (!p || typeof p.lat !== 'number' || typeof p.lng !== 'number') return;
+  ultimoDado = performance.now(); esconderAguardando();
+  aplicarGps({ lat: p.lat, lon: p.lng, t: p.tWall ?? Date.now() });
+}
+function nsample(s) {
+  if (!s || typeof s.rpm !== 'number') return;
+  ultimoDado = performance.now(); esconderAguardando();
+  const m = {
+    rpm: s.rpm, tps: s.tpsPct, fre: s.pedalFreioPct, agua: s.waterTempC,
+    lam: s.lambda, bat: s.batteryV, al: s.alarmes || {}, t: s.tMono ?? Date.now(),
+  };
+  aplicarMotor(m); aplicarMotorStatus(m);
+  if (typeof s.cronometroParcialS === 'number') {
+    const seg = Math.max(0, Math.floor(s.cronometroParcialS));
+    $('tempo').textContent = String(Math.floor(seg / 60)).padStart(2, '0') + ':' + String(seg % 60).padStart(2, '0');
+  }
 }
 
 (async function boot() {
+  // curvas (trechos) — referência pro ápice e pra luz de freio
   const rc = await fetch('./BARRAS-BRASILIA-FLAVIO-APROVADO-2026-05-27.json');
   const jc = await rc.json();
   const arr = Array.isArray(jc) ? jc : (jc.segments || jc.curvas || jc.barras || Object.values(jc).find(Array.isArray));
   curvas = arr.map(c => ({ id: c.id, nome: c.nome || c.id, apice: { lat: c.apice_gps.lat, lng: c.apice_gps.lng } }));
 
-  const rv = await fetch('./volta-real-pista-24-05.json');
-  const jv = await rv.json();
-  pista = jv.pista; motor = jv.motor; durMax = Math.max(jv.durPista, jv.durMotor);
+  mostrarAguardando();
+  ['gps', ...SENS_MOTOR].forEach(id => setSensor(id, 'off'));   // "sem comunicação" até o dado real chegar
 
-  // ?pose=SEGUNDOS congela um instante DENTRO de uma curva (pra conferência/foto)
-  const pose = new URLSearchParams(location.search).get('pose');
-  if (pose != null) {
-    const alvo = Number(pose) * 1000;
-    passo(alvo);
-    let guard = 0;
-    while (!curvaAtiva && iP < pista.length && guard < 5000) { passo(pista[iP].t + 1); guard++; }
-    const seg = Math.floor((pista[Math.min(iP, pista.length - 1)]?.t || 0) / 1000);
-    $('tempo').textContent = String(Math.floor(seg / 60)).padStart(2, '0') + ':' + String(seg % 60).padStart(2, '0');
-  } else {
-    requestAnimationFrame(frame);
+  // Liga a ESCUTA do canal real. Import dinâmico: se faltar internet, o painel
+  // ainda aparece — só o dado ao vivo é que espera (não quebra a tela inteira).
+  try {
+    const cb = await import('./cloud-bridge.js');
+    cb.onStatusChange((st) => { conn = st; if (aguardandoEl.style.display !== 'none') aguardandoEl.textContent = textoAguardando(); });
+    cb.onGpsPoint(ngps);
+    cb.onSample(nsample);
+    cb.startCloudBridge().catch(() => {});   // só assina; nunca publica
+    setInterval(() => { if (performance.now() - ultimoDado > 3000) mostrarAguardando(); }, 1000);
+  } catch (e) {
+    conn = 'sem-internet'; mostrarAguardando();
   }
 })();
 </script>
