@@ -22,10 +22,17 @@ struct PilotoCadastroView: View {
     @EnvironmentObject private var repo: PilotoRepository
     let pilotoToEdit: Piloto?
     let onClose: () -> Void
+    /// Disparado só no cadastro NOVO, com o id do piloto recém-criado, antes do
+    /// onClose. Deixa quem abriu (ex.: "+ Convidado" no Stint) já selecionar o
+    /// novo cadastro. Opcional — callers antigos não precisam passar.
+    let onCreated: ((String) -> Void)?
 
-    init(pilotoToEdit: Piloto? = nil, onClose: @escaping () -> Void) {
+    init(pilotoToEdit: Piloto? = nil,
+         onClose: @escaping () -> Void,
+         onCreated: ((String) -> Void)? = nil) {
         self.pilotoToEdit = pilotoToEdit
         self.onClose = onClose
+        self.onCreated = onCreated
     }
 
     @State private var nome: String = ""
