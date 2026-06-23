@@ -1001,10 +1001,21 @@ struct StintModalView: View {
         return repo.pilotos.first(where: { $0.id == id })?.nome
     }
 
-    private func hidratarPilotoDefault() {
+    /// Pré-seleciona o que tem opção única (decisão Flávio 23/06/2026):
+    /// "se tem só um item, já aparece selecionado". Vale pra piloto (você por
+    /// padrão), combustível (1 tipo cadastrado) e pneu (1 pneu no carro).
+    /// Cada guarda só age quando o campo está vazio — nunca sobrescreve uma
+    /// escolha manual do piloto.
+    private func hidratarDefaults() {
         if pilotoId == nil {
             pilotoId = repo.pilotos.first(where: { $0.id == PilotoRepository.pilotoFlavioId })?.id
                 ?? repo.pilotos.first?.id
+        }
+        if combustivelIdSelecionado == nil, combustivelRepo.combustiveis.count == 1 {
+            combustivelIdSelecionado = combustivelRepo.combustiveis.first?.id
+        }
+        if pneuIdSelecionado == nil, pneusDoCarro.count == 1 {
+            pneuIdSelecionado = pneusDoCarro.first?.id
         }
     }
 
