@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>P1 Fast — Antes de rodar (status) · vira o painel do piloto quando anda</title>
+<style>
+  :root{
+    --bg:#050a14; --bg2:#0b1220; --linha:#1e293b;
+    --txt:#e8eef5; --txt2:#94a3b8; --txt3:#64748b;
+    --verde:#34d399; --verde-glow:rgba(52,211,153,.35);
+    --vermelho:#f87171; --vermelho-glow:rgba(248,113,113,.30);
+    --amarelo:#fbbf24; --amarelo-glow:rgba(251,191,36,.32);
+    --cinza:#5b6677;
+    --ff:-apple-system,"Segoe UI",Roboto,sans-serif;
+    --ffm:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:var(--ff);overflow:hidden}
+
+  /* ── PAINEL DO PILOTO embutido (o APROVADO, intocado) ── */
+  #cockpitFrame{
+    position:fixed; inset:0; width:100%; height:100%; border:0; background:var(--bg);
+    z-index:1;
+  }
+
+  /* ── OVERLAY DE STATUS (carro parado) ── */
+  #garagem{
+    position:fixed; inset:0; z-index:10; background:radial-gradient(120% 120% at 50% -10%, #0c1526 0%, var(--bg) 60%);
+    display:flex; flex-direction:column; padding:18px 26px 14px;
+    opacity:1; transition:opacity .45s ease;
+  }
+  body[data-modo="andando"] #garagem{ opacity:0; pointer-events:none; }
+
+  /* Cabeçalho */
+  .cab{ display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap; }
+  .cab__tit{ display:flex; flex-direction:column; gap:2px; }
+  .cab__tit h1{ margin:0; font-size:21px; font-weight:900; letter-spacing:.01em; }
+  .cab__tit p{ margin:0; font-size:12.5px; color:var(--txt2); }
+  .cab__dir{ display:flex; align-items:center; gap:14px; }
+  .modo-chip{ font-size:11px; color:var(--txt3); font-family:var(--ffm); display:flex; align-items:center; gap:7px;
+    border:1px solid var(--linha); border-radius:999px; padding:5px 11px; }
+  .modo-chip b{ color:var(--txt); }
+  .pronto{
+    display:flex; align-items:center; gap:10px; padding:10px 18px; border-radius:12px;
+    font-weight:900; font-size:15px; letter-spacing:.03em; text-transform:uppercase;
+    border:1px solid transparent;
+  }
+  .pronto[data-ok="sim"]{ color:var(--verde); background:rgba(52,211,153,.10); border-color:rgba(52,211,153,.45); box-shadow:0 0 22px var(--verde-glow); }
+  .pronto[data-ok="nao"]{ color:var(--amarelo); background:rgba(251,191,36,.08); border-color:rgba(251,191,36,.40); }
+  .pronto .dot{ width:11px; height:11px; border-radius:50%; background:currentColor; box-shadow:0 0 10px currentColor; }
+
+  /* Destaque GPS + MOTOR (os dois que decidem a gravação) */
+  .destaque{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:16px 0 14px; }
+  .big{
+    display:flex; align-items:center; gap:18px; padding:18px 22px; border-radius:16px;
+    background:linear-gradient(180deg,#0e1828,#0a1018); border:1px solid var(--linha);
+  }
+  .big__ico{ width:54px; height:54px; flex:0 0 54px; display:flex; align-items:center; justify-content:center;
+    border-radius:14px; background:#0a0f1a; border:1px solid var(--linha); color:var(--cinza); }
+  .big__ico svg{ width:32px; height:32px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+  .big__txt{ display:flex; flex-direction:column; gap:3px; min-width:0; }
+  .big__nome{ font-size:13px; color:var(--txt2); text-transform:uppercase; letter-spacing:.08em; font-weight:700; }
+  .big__estado{ font-size:23px; font-weight:900; line-height:1.05; }
+  .big__dado{ font-family:var(--ffm); font-size:13px; color:var(--txt3); height:16px; }
+  .big[data-state="ok"] .big__ico{ color:var(--verde); border-color:rgba(52,211,153,.45); box-shadow:inset 0 0 0 1px rgba(52,211,153,.25),0 0 18px var(--verde-glow); }
+  .big[data-state="ok"] .big__estado{ color:var(--verde); }
+  .big[data-state="off"] .big__ico{ color:var(--vermelho); border-color:rgba(248,113,113,.40); }
+  .big[data-state="off"] .big__estado{ color:var(--vermelho); }
+  .big[data-state="warn"] .big__ico{ color:var(--amarelo); border-color:rgba(251,191,36,.40); }
+  .big[data-state="warn"] .big__estado{ color:var(--amarelo); }
+
+  /* Grade de status — todos os aparelhos, agrupados */
+  .grupos{ flex:1; display:grid; grid-template-columns:repeat(3,1fr); gap:16px; min-height:0; }
+  .grupo{ display:flex; flex-direction:column; background:rgba(255,255,255,.015); border:1px solid var(--linha); border-radius:16px; padding:14px 16px 6px; }
+  .grupo__tit{ font-size:11px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--txt3); margin-bottom:12px; }
+  .cards{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; align-content:start; }
+  /* grupo Movimento só tem 2 -> ainda 2 colunas fica bom; Chassi tem 5 */
+
+  .card{
+    display:flex; flex-direction:column; align-items:center; text-align:center; gap:7px;
+    padding:13px 8px 12px; border-radius:13px; background:#0a1018; border:1px solid #16202f;
+    transition:border-color .25s ease, box-shadow .25s ease;
+  }
+  .card__nome{ font-size:12px; font-weight:700; color:var(--txt); letter-spacing:.01em; min-height:15px; }
+  .card__ico{ width:42px; height:42px; display:flex; align-items:center; justify-content:center; color:var(--cinza); transition:color .25s ease, filter .25s ease; }
+  .card__ico svg{ width:30px; height:30px; fill:none; stroke:currentColor; stroke-width:1.55; stroke-linecap:round; stroke-linejoin:round; }
+  .card__dado{ font-family:var(--ffm); font-size:13px; font-weight:700; color:var(--txt2); height:16px; line-height:16px; }
+  .card__estado{ font-size:11px; font-weight:700; letter-spacing:.02em; height:14px; line-height:14px; }
+
+  .card[data-state="ok"]{ border-color:rgba(52,211,153,.45); box-shadow:0 0 16px var(--verde-glow); }
+  .card[data-state="ok"] .card__ico{ color:var(--verde); filter:drop-shadow(0 0 5px var(--verde-glow)); }
+  .card[data-state="ok"] .card__estado{ color:var(--verde); }
+  .card[data-state="off"]{ border-color:rgba(248,113,113,.40); }
+  .card[data-state="off"] .card__ico{ color:var(--vermelho); }
+  .card[data-state="off"] .card__estado{ color:var(--vermelho); }
+  .card[data-state="warn"]{ border-color:rgba(251,191,36,.45); box-shadow:0 0 16px var(--amarelo-glow); }
+  .card[data-state="warn"] .card__ico{ color:var(--amarelo); animation:pulso 1.4s ease-in-out infinite; }
+  .card[data-state="warn"] .card__estado{ color:var(--amarelo); }
+  .card[data-state="instalar"]{ opacity:.62; }
+  .card[data-state="instalar"] .card__ico{ color:var(--cinza); }
+  .card[data-state="instalar"] .card__estado{ color:var(--cinza); }
+  @keyframes pulso{ 0%,100%{filter:drop-shadow(0 0 3px var(--amarelo-glow))} 50%{filter:drop-shadow(0 0 9px var(--amarelo))} }
+
+  .rodape{ margin-top:12px; text-align:center; font-size:12.5px; color:var(--txt3); }
+  .rodape b{ color:var(--txt2); font-weight:700; }
+</style>
+</head>
+<body data-modo="parado">
+
+<!-- O painel do piloto APROVADO, embutido sem qualquer alteração -->
+<iframe id="cockpitFrame" src="cockpit-volta-real.html" title="Painel do piloto"></iframe>
+
+<!-- Tela de status (aparece com o carro parado) -->
+<section id="garagem">
+  <div class="cab">
+    <div class="cab__tit">
+      <h1>Antes de rodar</h1>
+      <p>Status de todos os aparelhos. Quando o carro andar, esta tela vira o painel do piloto.</p>
+    </div>
+    <div class="cab__dir">
+      <div class="modo-chip">Carro: <b id="modoTxt">parado</b> · <span id="velTxt">0 km/h</span></div>
+      <div class="pronto" id="pronto" data-ok="nao"><span class="dot"></span><span id="prontoTxt">Aguardando sinal</span></div>
+    </div>
+  </div>
+
+  <div class="destaque">
+    <div class="big" id="bigGps" data-state="off">
+      <div class="big__ico"><svg viewBox="0 0 24 24"><path d="M12 21c-4-4.5-6-7.6-6-10a6 6 0 1 1 12 0c0 2.4-2 5.5-6 10z"/><circle cx="12" cy="11" r="2.3"/></svg></div>
+      <div class="big__txt">
+        <span class="big__nome">GPS</span>
+        <span class="big__estado" id="bigGpsEstado">Sem sinal</span>
+        <span class="big__dado" id="bigGpsDado">&nbsp;</span>
+      </div>
+    </div>
+    <div class="big" id="bigMotor" data-state="off">
+      <div class="big__ico"><svg viewBox="0 0 24 24"><path d="M5.2 17.8a9 9 0 1 1 13.6 0"/><path d="M12 12l4-2.5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><path d="M12 5v1.4M6.6 9.4l1 .6M17.4 9.4l-1 .6"/></svg></div>
+      <div class="big__txt">
+        <span class="big__nome">Motor (injeção)</span>
+        <span class="big__estado" id="bigMotorEstado">Sem sinal</span>
+        <span class="big__dado" id="bigMotorDado">&nbsp;</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="grupos" id="grupos"><!-- preenchido por JS --></div>
+
+  <div class="rodape">Verde = comunicando · Vermelho = sem sinal · Amarelo = falha · Cinza = aparelho ainda <b>a instalar</b>.</div>
+</section>
+
+<script>
+// ──────────────────────────────────────────────────────────────────────────
+// TELA "ANTES DE RODAR" — status com o carro parado; vira o painel do piloto ao andar.
+// Não duplica nada: lê o ESTADO REAL dos aparelhos e a velocidade do painel embutido
+// (cockpit-volta-real.html), que é o aprovado. Mesma origem -> leitura direta do conteúdo.
+// Limiares de velocidade são DEFAULTS de demonstração; calibrar na pista.
+// ──────────────────────────────────────────────────────────────────────────
+const SVG = {
+  rpm:'<path d="M5.2 17.8a9 9 0 1 1 13.6 0"/><path d="M12 12l4-2.5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><path d="M12 5v1.4M6.6 9.4l1 .6M17.4 9.4l-1 .6"/>',
+  acelerador:'<rect x="9" y="3.5" width="6" height="12.5" rx="3" transform="rotate(10 12 10)"/><path d="M10.6 7l3 .7M10.2 9.6l3 .7M9.8 12.2l3 .7"/><path d="M6 19.5h12"/>',
+  'freio-pedal':'<circle cx="11.5" cy="12" r="7.3"/><circle cx="11.5" cy="12" r="2.4"/><rect x="14.6" y="8.8" width="5" height="6.4" rx="1.6"/><path d="M11.5 4.7v1.5M11.5 17.8v1.5M4.6 12h1.5"/>',
+  agua:'<path d="M12 4.2a1.8 1.8 0 0 1 1.8 1.8v6.5a3.2 3.2 0 1 1-3.6 0V6a1.8 1.8 0 0 1 1.8-1.8z"/><path d="M12 8v4.2"/><circle cx="12" cy="14.6" r="1.4" fill="currentColor"/><path d="M4.6 20c.9-1 1.8-1 2.7 0s1.8 1 2.7 0M14 20c.9-1 1.8-1 2.7 0s1.8 1 2.7 0"/>',
+  lambda:'<path d="M7 19.5L12 6l5 13.5"/><path d="M12 6l-1.5-2.3"/>',
+  bateria:'<rect x="3.5" y="8.5" width="17" height="9" rx="1.6"/><path d="M7.5 8.5V6.5h2.2v2M14.3 8.5V6.5h2.2v2"/><path d="M6.5 13h2.6M7.8 11.7v2.6"/><path d="M15 13h2.6"/>',
+  'motor-alarme':'<path d="M19.4 13a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/><circle cx="12" cy="12" r="3"/>',
+  gps:'<path d="M12 21c-4-4.5-6-7.6-6-10a6 6 0 1 1 12 0c0 2.4-2 5.5-6 10z"/><circle cx="12" cy="11" r="2.3"/>',
+  acel:'<circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/><circle cx="14.6" cy="9.4" r="1.7" fill="currentColor"/>',
+  pneus:'<circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="5.6"/><circle cx="12" cy="12" r="2.6"/><path d="M12 3.6v2M12 18.4v2M3.6 12h2M18.4 12h2M6.1 6.1l1.4 1.4M16.5 16.5l1.4 1.4M17.9 6.1l-1.4 1.4M6.1 17.9l1.4-1.4"/>',
+  suspensao:'<path d="M9 4.5h6M9 19.5h6M12 4.5v1.6M12 17.9v1.6"/><path d="M9 7c0 1.3 6 1.3 6 0M9 10c0 1.3 6 1.3 6 0M9 13c0 1.3 6 1.3 6 0M9 16c0 1.3 6 1.3 6 0"/>',
+  cambio:'<circle cx="12" cy="5" r="2"/><path d="M12 7v5"/><path d="M7 12h10"/><path d="M7 12v3M12 12v4M17 12v3"/>',
+  'freio-ded':'<circle cx="12" cy="12" r="5"/><path d="M12 9.4v3.1"/><circle cx="12" cy="14.7" r="0.7" fill="currentColor"/><path d="M5 8.5a6.5 6.5 0 0 0 0 7M19 8.5a6.5 6.5 0 0 1 0 7"/>',
+  direcao:'<circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="2.3"/><path d="M9.8 12H3.6M14.2 12h6.2M12 14.3v6.1"/>',
+};
+// Aparelhos = exatamente os do painel aprovado (mesmos data-sensor), agrupados.
+const GRUPOS = [
+  { nome:'Motor', ids:['rpm','acelerador','freio-pedal','agua','lambda','bateria','motor-alarme'] },
+  { nome:'Movimento', ids:['gps','acel'] },
+  { nome:'Chassi', ids:['pneus','suspensao','cambio','freio-ded','direcao'] },
+];
+const NOME = {
+  rpm:'Rotação', acelerador:'Acelerador', 'freio-pedal':'Pedal de freio', agua:'Temp. da água',
+  lambda:'Sonda lambda', bateria:'Bateria', 'motor-alarme':'Alarmes do motor',
+  gps:'GPS', acel:'Força G',
+  pneus:'Pneus', suspensao:'Suspensão', cambio:'Câmbio', 'freio-ded':'Freio (linha)', direcao:'Direção',
+};
+// Sensores que ainda NÃO existem no carro -> nunca "sem sinal" vermelho; ficam "a instalar" (cinza).
+const A_INSTALAR = new Set(['pneus','suspensao','cambio','freio-ded','direcao']);
+const PALAVRA = { ok:'Comunicando', off:'Sem sinal', warn:'Falha', instalar:'A instalar' };
+
+// Monta a grade
+const elGrupos = document.getElementById('grupos');
+const cardEl = {};
+for (const g of GRUPOS) {
+  const sec = document.createElement('div'); sec.className = 'grupo';
+  sec.innerHTML = `<div class="grupo__tit">${g.nome}</div>`;
+  const wrap = document.createElement('div'); wrap.className = 'cards';
+  for (const id of g.ids) {
+    const c = document.createElement('div'); c.className = 'card'; c.dataset.state = 'off';
+    c.innerHTML =
+      `<div class="card__nome">${NOME[id]}</div>` +
+      `<div class="card__ico"><svg viewBox="0 0 24 24">${SVG[id]}</svg></div>` +
+      `<div class="card__dado" data-dado>&nbsp;</div>` +
+      `<div class="card__estado" data-estado>—</div>`;
+    wrap.appendChild(c); cardEl[id] = c;
+  }
+  sec.appendChild(wrap); elGrupos.appendChild(sec);
+}
+
+// ── Leitura do painel embutido (mesma origem) ──
+const frame = document.getElementById('cockpitFrame');
+function lerPainel() {
+  let doc = null;
+  try { doc = frame.contentDocument || frame.contentWindow.document; } catch (_) { doc = null; }
+  if (!doc) return null;
+  const sensores = {};
+  doc.querySelectorAll('.sensor[data-sensor]').forEach(s => { sensores[s.dataset.sensor] = s.dataset.state || 'off'; });
+  if (Object.keys(sensores).length === 0) return null;
+  const velEl = doc.getElementById('hVel');
+  const vel = velEl ? parseInt((velEl.textContent || '0').replace(/[^\d-]/g,''), 10) || 0 : 0;
+  const curvaEl = doc.getElementById('hCurva');
+  const curva = curvaEl ? (curvaEl.textContent || '').trim() : '';
+  return { sensores, vel, curva };
+}
+
+// ── Estado parado/andando por velocidade, com histerese (demonstração) ──
+const V_ANDA = 15;   // km/h: passou disso = na pista -> mostra o painel do piloto
+const V_PARA = 8;    // km/h: abaixo disso = parado/box
+const T_PARA = 800;  // ms abaixo de V_PARA pra voltar pro status (não pisca em curva)
+let modo = 'parado', lentoDesde = null;
+function decidirModo(vel) {
+  const now = performance.now();
+  if (modo === 'parado') {
+    if (vel >= V_ANDA) { modo = 'andando'; lentoDesde = null; }
+  } else {
+    if (vel <= V_PARA) { if (lentoDesde == null) lentoDesde = now; else if (now - lentoDesde >= T_PARA) modo = 'parado'; }
+    else lentoDesde = null;
+  }
+}
+
+const $ = id => document.getElementById(id);
+function setCard(id, st, dado) {
+  const c = cardEl[id]; if (!c) return;
+  if (c.dataset.state !== st) c.dataset.state = st;
+  c.querySelector('[data-estado]').textContent = PALAVRA[st];
+  c.querySelector('[data-dado]').innerHTML = dado || '&nbsp;';
+}
+function setBig(prefixo, st, estadoTxt, dado) {
+  $('big' + prefixo).dataset.state = st;
+  $('big' + prefixo + 'Estado').textContent = estadoTxt;
+  $('big' + prefixo + 'Dado').innerHTML = dado || '&nbsp;';
+}
+
+function tick() {
+  const p = lerPainel();
+  if (p) {
+    decidirModo(p.vel);
+    document.body.dataset.modo = modo;
+    $('modoTxt').textContent = modo === 'andando' ? 'andando' : 'parado';
+    $('velTxt').textContent = p.vel + ' km/h';
+
+    // Cards: refletem o estado real de cada aparelho do painel
+    for (const g of GRUPOS) for (const id of g.ids) {
+      let st = p.sensores[id] || 'off';
+      if (A_INSTALAR.has(id)) st = 'instalar';
+      let dado = '';
+      if (id === 'gps' && st === 'ok') dado = p.vel + ' km/h';
+      setCard(id, st, dado);
+    }
+
+    // Destaque GPS (movimento) e MOTOR (proxy = rotação/injeção comunicando)
+    const gps = p.sensores['gps'] || 'off';
+    setBig('Gps', gps, gps === 'ok' ? 'Chegando' : 'Sem sinal',
+           gps === 'ok' ? (p.vel + ' km/h' + (p.curva && p.curva !== '—' ? ' · ' + p.curva : '')) : '');
+    const motor = p.sensores['rpm'] || 'off';
+    setBig('Motor', motor, motor === 'ok' ? 'Chegando' : 'Sem sinal',
+           motor === 'ok' ? 'injeção comunicando' : '');
+
+    // Selo "pronto pra gravar" = os dois que decidem a gravação
+    const pronto = (gps === 'ok' && motor === 'ok');
+    $('pronto').dataset.ok = pronto ? 'sim' : 'nao';
+    $('prontoTxt').textContent = pronto ? 'Pronto pra gravar' : 'Aguardando sinal';
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
