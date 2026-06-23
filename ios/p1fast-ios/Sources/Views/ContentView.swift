@@ -152,6 +152,14 @@ struct ContentView: View {
         .onAppear { orientation.startMonitoring() }
     }
 
+    /// DEV: força o ângulo do giro por launch arg (testar overlay no simulador).
+    private var forcedLandscape: Double? {
+        let a = ProcessInfo.processInfo.arguments
+        if a.contains("--p1-force-ls-right") { return -90 }
+        if a.contains("--p1-force-ls-left") { return 90 }
+        return nil
+    }
+
     @ViewBuilder private var appContent: some View {
         if ProcessInfo.processInfo.arguments.contains("--p1-cockpit") {
             // Atalho SÓ-DEV pra ver/screenshot o Cockpit do Piloto no simulador
