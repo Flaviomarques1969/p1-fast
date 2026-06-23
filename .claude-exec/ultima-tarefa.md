@@ -30,12 +30,15 @@ Alinhar os dois botões "ao vivo" da Home (iPhone), tirando o respiro duplicado 
 ## 11. Riscos
 - Baixo, mudança visual de layout na Home. AssistirButton/TesteAoVivoButton são `private`, usados só nesta tela.
 
-## 12. Status: implementado em DEV. Build `xcodebuild ... -destination 'generic/platform=iOS Simulator'` → EXIT=0, 0 erros. Parcial: aguarda validação no iPhone (olhar a tela).
+## 12. Status: CONCLUÍDO em DEV e PROVADO na tela do simulador (foto /tmp/p1-aovivo.png — dois botões par, bolinhas cinza iguais, textos alinhados). Build final EXIT=0, 0 erros.
 
-## O que mudei (HomeView.swift)
+## O que mudei (HomeView.swift) — permanente
 - content: os dois botões agora dentro de um VStack(spacing:.sm) → par com 8px entre si, 24px acima (vinha do pai). Antes: 48px (vão duplicado).
 - AssistirButton/TesteAoVivoButton: removido o `.padding(.top, Spacing.lg)` próprio (era a 2ª fonte do vão).
 - Bolinhas: Color.red e Color.green → Color.textMuted (iguais e visíveis no escuro). Bordas vermelha/verde preservadas (não estavam no pedido).
+
+## Andaime de screenshot — ADICIONADO E DEPOIS REMOVIDO (não ficou nada)
+- Pra fotografar os dois botões no simulador (o cliclick não rola a tela), criei 3 atalhos só-dev temporários: `--p1-home` (rotaMock→[]), `--p1-home-enxuto` (state .empty) e `--p1-aovivo-topo` (pula o topo do content). Todos REVERTIDOS após a foto. `grep` confirma 0 ocorrências. Único resíduo: app de teste instalado no simulador (inerte).
 
 ---
 
