@@ -24,6 +24,12 @@
   .stage { padding-top: 86px; display: flex; justify-content: center; }
   /* Flávio 22/06: sem brilho de fundo no painel — nem âmbar (recorde) nem roxo (pior). */
   .device::before { display: none !important; }
+  /* Flávio 22/06: número FIXO na esquerda (nunca centralizado, nunca desliza).
+     A frase de PILOTAGEM fica embaixo do número, à esquerda. As mensagens
+     (crítica/motor/box) vêm pela DIREITA — lugar reservado pro ghost; um troca
+     de lugar com o outro (ghost por padrão, mensagem aparece por cima quando vier). */
+  .info-bloco { left: 72px; transform: translateY(-50%); align-items: flex-start; text-align: left; }
+  .device[data-msg-state="ativa"] .info-bloco { transform: translateY(-50%); }
 </style>
 </head>
 <body>
