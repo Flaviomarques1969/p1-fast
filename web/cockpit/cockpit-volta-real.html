@@ -74,6 +74,33 @@
     0%, 100% { box-shadow: inset 0 1px 0 oklch(100% 0 0 / .12), inset 0 0 0 1px oklch(82% 0.19 70 / .55), 0 0 9px oklch(82% 0.19 70 / .4), 0 1px 2px oklch(0% 0 0 / .55); }
     50%      { box-shadow: inset 0 1px 0 oklch(100% 0 0 / .12), inset 0 0 0 1px oklch(82% 0.19 70 / .9),  0 0 17px oklch(82% 0.19 70 / .8), 0 1px 2px oklch(0% 0 0 / .55); }
   }
+  /* LUZ DE FREIO (Flávio 22/06) — mesma lógica da luz de marcha, mas VERTICAL nas
+     duas laterais, enchendo de cima pra baixo conforme chega o ponto de freada.
+     Ao atingir o ponto, a tela PISCA (igual à troca de marcha, mas pelas bordas). */
+  .brake-light { position: absolute; top: 50%; transform: translateY(-50%); z-index: 46; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
+  .brake-light--left { left: 7px; }
+  .brake-light--right { right: 7px; }
+  .brake-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, oklch(20% 0 0), oklch(11% 0 0) 60%, oklch(7% 0 0));
+    box-shadow: inset 0 1px 0 oklch(28% 0 0 / .6), inset 0 0 0 1px oklch(18% 0 0), inset 0 -1px 1px oklch(0% 0 0 / .9), 0 1px 1px oklch(0% 0 0 / .5);
+    transition: background 140ms var(--ease-out), box-shadow 200ms var(--ease-out);
+  }
+  .brake-dot.is-on[data-tier="g"] { background: radial-gradient(circle at 35% 30%, oklch(96% .1 145), oklch(80% .23 145) 55%, oklch(60% .23 148)); box-shadow: inset 0 0 0 1px oklch(70% .23 148), 0 0 8px oklch(80% .22 145 / .8), 0 0 16px oklch(74% .23 148 / .45); }
+  .brake-dot.is-on[data-tier="a"] { background: radial-gradient(circle at 35% 30%, oklch(97% .12 95), oklch(84% .21 92) 55%, oklch(64% .21 88)); box-shadow: inset 0 0 0 1px oklch(72% .21 90), 0 0 9px oklch(84% .2 92 / .85), 0 0 18px oklch(76% .21 90 / .5); }
+  .brake-dot.is-on[data-tier="r"] { background: radial-gradient(circle at 35% 30%, oklch(94% .1 32), oklch(74% .26 28) 55%, oklch(54% .26 25)); box-shadow: inset 0 0 0 1px oklch(60% .27 27), 0 0 10px oklch(74% .26 28 / .9), 0 0 22px oklch(64% .27 27 / .55); }
+  .brake-flash {
+    position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 201; opacity: 0;
+    background:
+      radial-gradient(ellipse 60% 120% at 0% 50%, oklch(72% .26 27 / .55) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 120% at 100% 50%, oklch(72% .26 27 / .55) 0%, transparent 55%);
+    box-shadow: inset 0 0 0 2px oklch(70% .26 27 / .6), inset 0 0 60px oklch(68% .26 27 / .35);
+  }
+  .device[data-brake-fire="active"] .brake-flash { animation: brakeFireFlash 340ms linear forwards; }
+  @keyframes brakeFireFlash {
+    0% { opacity: 0; } 8% { opacity: 1; } 30% { opacity: 1; } 38% { opacity: 0; }
+    50% { opacity: 0; } 58% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; }
+  }
 </style>
 </head>
 <body>
