@@ -544,7 +544,7 @@ function frame(now) {
   const arr = Array.isArray(jc) ? jc : (jc.segments || jc.curvas || jc.barras || Object.values(jc).find(Array.isArray));
   curvas = arr.map(c => ({ id: c.id, nome: c.nome || c.id, apice: { lat: c.apice_gps.lat, lng: c.apice_gps.lng } }));
 
-  const rv = await fetch('/web/cockpit/fixtures/volta-real-pista-24-05.json');
+  const rv = await fetch('./volta-real-pista-24-05.json');
   const jv = await rv.json();
   pista = jv.pista; motor = jv.motor; durMax = Math.max(jv.durPista, jv.durMotor);
 
