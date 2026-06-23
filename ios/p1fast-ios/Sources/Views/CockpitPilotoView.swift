@@ -46,6 +46,9 @@ struct CockpitPilotoView: View {
         }
         .statusBarHidden(true)                     // tira o relógio que invadia o cockpit
         .preferredColorScheme(.dark)
+        // Com o cover JÁ na tela, re-pede a rotação pro iOS girar na hora
+        // (sem o atraso de quando o pedido sai antes do cover existir).
+        .onAppear { OrientationGate.shared.reassert() }
     }
 
     private func voltarBotao(_ action: @escaping () -> Void) -> some View {
