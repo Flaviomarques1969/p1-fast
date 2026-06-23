@@ -22,6 +22,8 @@
   .hud .item .val { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 18px; font-weight: 800; }
   .hud .curva .val { color: #fbbf24; font-size: 15px; min-width: 160px; text-align: right; }
   .stage { padding-top: 86px; display: flex; justify-content: center; }
+  /* Flávio 22/06: sem brilho de fundo no painel — nem âmbar (recorde) nem roxo (pior). */
+  .device::before { display: none !important; }
 </style>
 </head>
 <body>
