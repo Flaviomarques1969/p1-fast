@@ -262,12 +262,13 @@ struct PilotoCadastroView: View {
                     existing.nascimento = nascimento
                     try await repo.update(piloto: existing)
                 } else {
-                    try await repo.create(
+                    let novoId = try await repo.create(
                         nome: trimmed,
                         alturaCm: altura,
                         pesoKg: peso,
                         nascimento: nascimento
                     )
+                    onCreated?(novoId)
                 }
                 isSaving = false
                 onClose()
