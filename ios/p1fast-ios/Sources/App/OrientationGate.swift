@@ -78,18 +78,24 @@ final class OrientationGate: ObservableObject {
     }
 
     // ── Força o iOS a reavaliar a orientação suportada (iOS 16+) ─────────
+    // Roda no PRÓXIMO ciclo da main (async) pra acontecer DEPOIS de o SwiftUI
+    // ter apresentado/atualizado o cover — senão o pedido corre com a
+    // apresentação e o iOS ignora a rotação.
     private static func requestGeometryRefresh(toLandscape: Bool) {
-        guard let scene = UIApplication.shared.connectedScenes
-            .compactMap({ $0 as? UIWindowScene }).first else { return }
-        let rootVC = scene.windows.first(where: { $0.isKeyWindow })?.rootViewController
-            ?? scene.windows.first?.rootViewController
-        if let rootVC { topMost(from: rootVC).setNeedsUpdateOfSupportedInterfaceOrientations() }
-
-        let prefs = UIWindowScene.GeometryPreferences.iOS(
-            interfaceOrientations: toLandscape ? .landscape : .portrait)
-        scene.requestGeometryUpdate(prefs) { _ in
-            // Erro aqui é normal numa corrida com o AppDelegate; o
-            // setNeedsUpdate acima já garante a reavaliação. Ignorar é seguro.
+        DispatchQueue.main.async {
+            guard let scene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene }).first else { return }
+            for window in scene.windows {
+                if let root = window.rootViewController {
+                    topMost(from: root).setNeedsUpdateOfSupportedInterfaceOrientations()
+                }
+            }
+            let prefs = UIWindowScene.GeometryPreferences.iOS(
+                interfaceOrientations: toLandscape ? .landscape : .portrait)
+            scene.requestGeometryUpdate(prefs) { _ in
+                // Erro aqui é normal numa corrida com o AppDelegate; o
+                // setNeedsUpdate acima já garante a reavaliação. Ignorar é seguro.
+            }
         }
     }
 
