@@ -47,7 +47,9 @@ const REGRAS = {
 // ── BASELINE: dívida legada conhecida em 2026-06-23. SÓ PODE ENCOLHER. ──
 // Cada item é uma tela a migrar pra arquitetura única. Limpou a tela? REMOVER daqui.
 const BASELINE = {
-  '_design-reference/mockup-command-box-vista-piloto.html': ['conexao-propria', 'feed-falso'],
+  // Vista Piloto: conexão própria QUITADA em 23/06 (agora usa a ponte única cloud-bridge.js).
+  // Resta a dívida do feed de demonstração (preview-local/FAKE_LAPS), a migrar.
+  '_design-reference/mockup-command-box-vista-piloto.html': ['feed-falso'],
   '_design-reference/mockup-command-box-vista-engenheiro.html': ['feed-falso'],
 };
 
