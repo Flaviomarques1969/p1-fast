@@ -117,7 +117,11 @@ struct ContentView: View {
     @StateObject private var session = SessionManager()
 
     var body: some View {
-        if ProcessInfo.processInfo.arguments.contains("--p1-hub-mock") {
+        if ProcessInfo.processInfo.arguments.contains("--p1-cockpit") {
+            // Atalho SÓ-DEV pra ver/screenshot o Cockpit do Piloto no simulador
+            // sem login (a tela não depende de repositórios).
+            CockpitPilotoView(onClose: {})
+        } else if ProcessInfo.processInfo.arguments.contains("--p1-hub-mock") {
             // Atalho SÓ-DEV pra validar o hub do carro no simulador sem login.
             HubMockLauncher()
         } else {
