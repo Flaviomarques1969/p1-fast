@@ -18,95 +18,129 @@
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:var(--ff);overflow:hidden}
 
-  /* ── PAINEL DO PILOTO embutido (o APROVADO, intocado) ── */
-  #cockpitFrame{
-    position:fixed; inset:0; width:100%; height:100%; border:0; background:var(--bg);
-    z-index:1;
-  }
+  /* PAINEL DO PILOTO embutido (o APROVADO, intocado) — aparece quando o carro anda */
+  #cockpitFrame{ position:fixed; inset:0; width:100%; height:100%; border:0; background:var(--bg); z-index:1; }
 
-  /* ── OVERLAY DE STATUS (carro parado) ── */
+  /* OVERLAY DE STATUS (carro parado) */
   #garagem{
-    position:fixed; inset:0; z-index:10; background:radial-gradient(120% 120% at 50% -10%, #0c1526 0%, var(--bg) 60%);
-    display:flex; flex-direction:column; padding:18px 26px 14px;
-    opacity:1; transition:opacity .45s ease;
+    position:fixed; inset:0; z-index:10;
+    background:radial-gradient(120% 120% at 50% -10%, #0c1526 0%, var(--bg) 60%);
+    display:flex; flex-direction:column; opacity:1; transition:opacity .4s ease;
   }
   body[data-modo="andando"] #garagem{ opacity:0; pointer-events:none; }
 
   /* Cabeçalho */
-  .cab{ display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap; }
-  .cab__tit{ display:flex; flex-direction:column; gap:2px; }
-  .cab__tit h1{ margin:0; font-size:21px; font-weight:900; letter-spacing:.01em; }
-  .cab__tit p{ margin:0; font-size:12.5px; color:var(--txt2); }
-  .cab__dir{ display:flex; align-items:center; gap:14px; }
-  .modo-chip{ font-size:11px; color:var(--txt3); font-family:var(--ffm); display:flex; align-items:center; gap:7px;
-    border:1px solid var(--linha); border-radius:999px; padding:5px 11px; }
+  .cab{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .cab__tit h1{ margin:0; font-weight:900; letter-spacing:.01em; }
+  .cab__tit p{ margin:0; color:var(--txt2); }
+  .cab__dir{ display:flex; align-items:center; gap:12px; }
+  .modo-chip{ color:var(--txt3); font-family:var(--ffm); display:flex; align-items:center; gap:7px;
+    border:1px solid var(--linha); border-radius:999px; padding:5px 11px; white-space:nowrap; }
   .modo-chip b{ color:var(--txt); }
-  .pronto{
-    display:flex; align-items:center; gap:10px; padding:10px 18px; border-radius:12px;
-    font-weight:900; font-size:15px; letter-spacing:.03em; text-transform:uppercase;
-    border:1px solid transparent;
-  }
-  .pronto[data-ok="sim"]{ color:var(--verde); background:rgba(52,211,153,.10); border-color:rgba(52,211,153,.45); box-shadow:0 0 22px var(--verde-glow); }
+  .pronto{ display:flex; align-items:center; gap:9px; border-radius:11px; font-weight:900;
+    letter-spacing:.03em; text-transform:uppercase; border:1px solid transparent; white-space:nowrap; }
+  .pronto[data-ok="sim"]{ color:var(--verde); background:rgba(52,211,153,.10); border-color:rgba(52,211,153,.45); box-shadow:0 0 20px var(--verde-glow); }
   .pronto[data-ok="nao"]{ color:var(--amarelo); background:rgba(251,191,36,.08); border-color:rgba(251,191,36,.40); }
-  .pronto .dot{ width:11px; height:11px; border-radius:50%; background:currentColor; box-shadow:0 0 10px currentColor; }
+  .pronto .dot{ width:10px; height:10px; border-radius:50%; background:currentColor; box-shadow:0 0 10px currentColor; }
 
-  /* Destaque GPS + MOTOR (os dois que decidem a gravação) */
-  .destaque{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:16px 0 14px; }
-  .big{
-    display:flex; align-items:center; gap:18px; padding:18px 22px; border-radius:16px;
-    background:linear-gradient(180deg,#0e1828,#0a1018); border:1px solid var(--linha);
-  }
-  .big__ico{ width:54px; height:54px; flex:0 0 54px; display:flex; align-items:center; justify-content:center;
-    border-radius:14px; background:#0a0f1a; border:1px solid var(--linha); color:var(--cinza); }
-  .big__ico svg{ width:32px; height:32px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
-  .big__txt{ display:flex; flex-direction:column; gap:3px; min-width:0; }
-  .big__nome{ font-size:13px; color:var(--txt2); text-transform:uppercase; letter-spacing:.08em; font-weight:700; }
-  .big__estado{ font-size:23px; font-weight:900; line-height:1.05; }
-  .big__dado{ font-family:var(--ffm); font-size:13px; color:var(--txt3); height:16px; }
-  .big[data-state="ok"] .big__ico{ color:var(--verde); border-color:rgba(52,211,153,.45); box-shadow:inset 0 0 0 1px rgba(52,211,153,.25),0 0 18px var(--verde-glow); }
+  /* Destaque GPS + MOTOR (os dois que decidem a gravação) — só no notebook */
+  .destaque{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .big{ display:flex; align-items:center; gap:16px; padding:14px 18px; border-radius:15px;
+    background:linear-gradient(180deg,#0e1828,#0a1018); border:1px solid var(--linha); }
+  .big__ico{ width:48px; height:48px; flex:0 0 48px; display:flex; align-items:center; justify-content:center;
+    border-radius:13px; background:#0a0f1a; border:1px solid var(--linha); color:var(--cinza); }
+  .big__ico svg{ width:28px; height:28px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+  .big__txt{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .big__nome{ font-size:12px; color:var(--txt2); text-transform:uppercase; letter-spacing:.08em; font-weight:700; }
+  .big__estado{ font-size:21px; font-weight:900; line-height:1.05; }
+  .big__dado{ font-family:var(--ffm); font-size:12px; color:var(--txt3); height:15px; }
+  .big[data-state="ok"] .big__ico{ color:var(--verde); border-color:rgba(52,211,153,.45); box-shadow:inset 0 0 0 1px rgba(52,211,153,.25),0 0 16px var(--verde-glow); }
   .big[data-state="ok"] .big__estado{ color:var(--verde); }
   .big[data-state="off"] .big__ico{ color:var(--vermelho); border-color:rgba(248,113,113,.40); }
   .big[data-state="off"] .big__estado{ color:var(--vermelho); }
   .big[data-state="warn"] .big__ico{ color:var(--amarelo); border-color:rgba(251,191,36,.40); }
   .big[data-state="warn"] .big__estado{ color:var(--amarelo); }
 
-  /* Grade de status — todos os aparelhos, agrupados */
-  .grupos{ flex:1; display:grid; grid-template-columns:repeat(3,1fr); gap:16px; min-height:0; }
-  .grupo{ display:flex; flex-direction:column; background:rgba(255,255,255,.015); border:1px solid var(--linha); border-radius:16px; padding:14px 16px 6px; }
-  .grupo__tit{ font-size:11px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--txt3); margin-bottom:12px; }
-  .cards{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; align-content:start; }
-  /* grupo Movimento só tem 2 -> ainda 2 colunas fica bom; Chassi tem 5 */
+  /* Grade de status */
+  .grupos{ flex:1; display:grid; grid-template-columns:repeat(3,1fr); gap:14px; min-height:0; }
+  .grupo{ display:flex; flex-direction:column; background:rgba(255,255,255,.015); border:1px solid var(--linha); border-radius:15px; }
+  .grupo__tit{ font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--txt3); }
+  .cards{ display:grid; gap:10px; align-content:start; }
 
-  .card{
-    display:flex; flex-direction:column; align-items:center; text-align:center; gap:7px;
-    padding:13px 8px 12px; border-radius:13px; background:#0a1018; border:1px solid #16202f;
-    transition:border-color .25s ease, box-shadow .25s ease;
-  }
-  .card__nome{ font-size:12px; font-weight:700; color:var(--txt); letter-spacing:.01em; min-height:15px; }
-  .card__ico{ width:42px; height:42px; display:flex; align-items:center; justify-content:center; color:var(--cinza); transition:color .25s ease, filter .25s ease; }
-  .card__ico svg{ width:30px; height:30px; fill:none; stroke:currentColor; stroke-width:1.55; stroke-linecap:round; stroke-linejoin:round; }
-  .card__dado{ font-family:var(--ffm); font-size:13px; font-weight:700; color:var(--txt2); height:16px; line-height:16px; }
-  .card__estado{ font-size:11px; font-weight:700; letter-spacing:.02em; height:14px; line-height:14px; }
-
-  .card[data-state="ok"]{ border-color:rgba(52,211,153,.45); box-shadow:0 0 16px var(--verde-glow); }
+  .card{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:5px;
+    border-radius:12px; background:#0a1018; border:1px solid #16202f;
+    transition:border-color .25s ease, box-shadow .25s ease; }
+  .card__nome{ font-weight:700; color:var(--txt); letter-spacing:.01em; line-height:1.1; }
+  .card__ico{ display:flex; align-items:center; justify-content:center; color:var(--cinza); transition:color .25s ease, filter .25s ease; }
+  .card__ico svg{ fill:none; stroke:currentColor; stroke-width:1.55; stroke-linecap:round; stroke-linejoin:round; }
+  .card__dado{ font-family:var(--ffm); font-weight:800; color:var(--txt); line-height:1; }
+  .card__estado{ font-weight:700; letter-spacing:.02em; line-height:1; }
+  .card[data-state="ok"]{ border-color:rgba(52,211,153,.45); box-shadow:0 0 14px var(--verde-glow); }
   .card[data-state="ok"] .card__ico{ color:var(--verde); filter:drop-shadow(0 0 5px var(--verde-glow)); }
   .card[data-state="ok"] .card__estado{ color:var(--verde); }
   .card[data-state="off"]{ border-color:rgba(248,113,113,.40); }
   .card[data-state="off"] .card__ico{ color:var(--vermelho); }
   .card[data-state="off"] .card__estado{ color:var(--vermelho); }
-  .card[data-state="warn"]{ border-color:rgba(251,191,36,.45); box-shadow:0 0 16px var(--amarelo-glow); }
+  .card[data-state="off"] .card__dado{ color:var(--txt3); }
+  .card[data-state="warn"]{ border-color:rgba(251,191,36,.45); box-shadow:0 0 14px var(--amarelo-glow); }
   .card[data-state="warn"] .card__ico{ color:var(--amarelo); animation:pulso 1.4s ease-in-out infinite; }
   .card[data-state="warn"] .card__estado{ color:var(--amarelo); }
-  .card[data-state="instalar"]{ opacity:.62; }
+  .card[data-state="instalar"]{ opacity:.6; }
   .card[data-state="instalar"] .card__ico{ color:var(--cinza); }
   .card[data-state="instalar"] .card__estado{ color:var(--cinza); }
+  .card[data-state="instalar"] .card__dado{ color:var(--txt3); }
   @keyframes pulso{ 0%,100%{filter:drop-shadow(0 0 3px var(--amarelo-glow))} 50%{filter:drop-shadow(0 0 9px var(--amarelo))} }
 
-  .rodape{ margin-top:12px; text-align:center; font-size:12.5px; color:var(--txt3); }
+  .rodape{ text-align:center; color:var(--txt3); }
   .rodape b{ color:var(--txt2); font-weight:700; }
+
+  /* ───────────── VERSÃO NOTEBOOK (tela 10,5") ───────────── */
+  body[data-tela="notebook"] #garagem{ padding:18px 26px 14px; }
+  body[data-tela="notebook"] .cab__tit h1{ font-size:21px; }
+  body[data-tela="notebook"] .cab__tit p{ font-size:12.5px; margin-top:2px; }
+  body[data-tela="notebook"] .modo-chip{ font-size:11px; }
+  body[data-tela="notebook"] .pronto{ font-size:15px; padding:10px 18px; }
+  body[data-tela="notebook"] .destaque{ margin:16px 0 14px; }
+  body[data-tela="notebook"] .grupos{ gap:14px; }
+  body[data-tela="notebook"] .grupo{ padding:14px 16px; }
+  body[data-tela="notebook"] .grupo__tit{ font-size:11px; margin-bottom:12px; }
+  body[data-tela="notebook"] .cards{ grid-template-columns:repeat(2,1fr); }
+  body[data-tela="notebook"] .card{ padding:13px 8px; gap:6px; }
+  body[data-tela="notebook"] .card__nome{ font-size:12px; min-height:14px; }
+  body[data-tela="notebook"] .card__ico{ width:38px; height:38px; }
+  body[data-tela="notebook"] .card__ico svg{ width:28px; height:28px; }
+  body[data-tela="notebook"] .card__dado{ font-size:17px; height:18px; }
+  body[data-tela="notebook"] .card__estado{ font-size:10.5px; height:13px; }
+  body[data-tela="notebook"] .rodape{ margin-top:12px; font-size:12px; }
+
+  /* ───────────── VERSÃO CELULAR (girado, ~956×440) ───────────── */
+  body[data-tela="celular"] #garagem{ padding:9px 13px 7px; }
+  body[data-tela="celular"] .cab{ margin-bottom:8px; }
+  body[data-tela="celular"] .cab__tit h1{ font-size:15px; }
+  body[data-tela="celular"] .cab__tit p{ display:none; }
+  body[data-tela="celular"] .modo-chip{ font-size:10px; padding:4px 9px; }
+  body[data-tela="celular"] .pronto{ font-size:12px; padding:6px 12px; }
+  body[data-tela="celular"] .destaque{ display:none; }            /* GPS e Motor já estão na grade */
+  body[data-tela="celular"] .grupos{ display:flex; gap:8px; }
+  body[data-tela="celular"] .grupo{ padding:8px 8px 4px; }
+  body[data-tela="celular"] .grupo:nth-child(1){ flex:4; }        /* Motor: 7 cartões  */
+  body[data-tela="celular"] .grupo:nth-child(2){ flex:1.1; }      /* Movimento: 2      */
+  body[data-tela="celular"] .grupo:nth-child(3){ flex:3; }        /* Chassi: 5         */
+  body[data-tela="celular"] .grupo__tit{ font-size:8.5px; margin-bottom:7px; }
+  body[data-tela="celular"] .grupo:nth-child(1) .cards{ grid-template-columns:repeat(4,1fr); }
+  body[data-tela="celular"] .grupo:nth-child(2) .cards{ grid-template-columns:repeat(1,1fr); }
+  body[data-tela="celular"] .grupo:nth-child(3) .cards{ grid-template-columns:repeat(3,1fr); }
+  body[data-tela="celular"] .cards{ gap:6px; }
+  body[data-tela="celular"] .card{ padding:7px 3px 6px; gap:3px; }
+  body[data-tela="celular"] .card__nome{ font-size:9px; min-height:11px; }
+  body[data-tela="celular"] .card__ico{ width:26px; height:26px; }
+  body[data-tela="celular"] .card__ico svg{ width:19px; height:19px; }
+  body[data-tela="celular"] .card__dado{ font-size:12px; height:13px; }
+  body[data-tela="celular"] .card__estado{ font-size:8px; height:10px; }
+  body[data-tela="celular"] .rodape{ margin-top:6px; font-size:9px; }
 </style>
 </head>
-<body data-modo="parado">
+<body data-tela="notebook" data-modo="parado">
 
 <!-- O painel do piloto APROVADO, embutido sem qualquer alteração -->
 <iframe id="cockpitFrame" src="cockpit-volta-real.html" title="Painel do piloto"></iframe>
@@ -127,19 +161,11 @@
   <div class="destaque">
     <div class="big" id="bigGps" data-state="off">
       <div class="big__ico"><svg viewBox="0 0 24 24"><path d="M12 21c-4-4.5-6-7.6-6-10a6 6 0 1 1 12 0c0 2.4-2 5.5-6 10z"/><circle cx="12" cy="11" r="2.3"/></svg></div>
-      <div class="big__txt">
-        <span class="big__nome">GPS</span>
-        <span class="big__estado" id="bigGpsEstado">Sem sinal</span>
-        <span class="big__dado" id="bigGpsDado">&nbsp;</span>
-      </div>
+      <div class="big__txt"><span class="big__nome">GPS</span><span class="big__estado" id="bigGpsEstado">Sem sinal</span><span class="big__dado" id="bigGpsDado">&nbsp;</span></div>
     </div>
     <div class="big" id="bigMotor" data-state="off">
       <div class="big__ico"><svg viewBox="0 0 24 24"><path d="M5.2 17.8a9 9 0 1 1 13.6 0"/><path d="M12 12l4-2.5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><path d="M12 5v1.4M6.6 9.4l1 .6M17.4 9.4l-1 .6"/></svg></div>
-      <div class="big__txt">
-        <span class="big__nome">Motor (injeção)</span>
-        <span class="big__estado" id="bigMotorEstado">Sem sinal</span>
-        <span class="big__dado" id="bigMotorDado">&nbsp;</span>
-      </div>
+      <div class="big__txt"><span class="big__nome">Motor (injeção)</span><span class="big__estado" id="bigMotorEstado">Sem sinal</span><span class="big__dado" id="bigMotorDado">&nbsp;</span></div>
     </div>
   </div>
 
@@ -151,8 +177,10 @@
 <script>
 // ──────────────────────────────────────────────────────────────────────────
 // TELA "ANTES DE RODAR" — status com o carro parado; vira o painel do piloto ao andar.
-// Não duplica nada: lê o ESTADO REAL dos aparelhos e a velocidade do painel embutido
-// (cockpit-volta-real.html), que é o aprovado. Mesma origem -> leitura direta do conteúdo.
+// Duas versões de layout: ?tela=notebook (10,5") | ?tela=celular (girado).
+// Os DADOS (status + valor de cada aparelho + velocidade) vêm da MESMA volta real
+// que o painel usa (na bancada/pista, troca-se a fonte pelo feed real do notebook).
+// O painel do piloto APROVADO é embutido sem alteração e aparece quando o carro anda.
 // Limiares de velocidade são DEFAULTS de demonstração; calibrar na pista.
 // ──────────────────────────────────────────────────────────────────────────
 const SVG = {
@@ -171,7 +199,6 @@ const SVG = {
   'freio-ded':'<circle cx="12" cy="12" r="5"/><path d="M12 9.4v3.1"/><circle cx="12" cy="14.7" r="0.7" fill="currentColor"/><path d="M5 8.5a6.5 6.5 0 0 0 0 7M19 8.5a6.5 6.5 0 0 1 0 7"/>',
   direcao:'<circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="2.3"/><path d="M9.8 12H3.6M14.2 12h6.2M12 14.3v6.1"/>',
 };
-// Aparelhos = exatamente os do painel aprovado (mesmos data-sensor), agrupados.
 const GRUPOS = [
   { nome:'Motor', ids:['rpm','acelerador','freio-pedal','agua','lambda','bateria','motor-alarme'] },
   { nome:'Movimento', ids:['gps','acel'] },
@@ -183,9 +210,14 @@ const NOME = {
   gps:'GPS', acel:'Força G',
   pneus:'Pneus', suspensao:'Suspensão', cambio:'Câmbio', 'freio-ded':'Freio (linha)', direcao:'Direção',
 };
-// Sensores que ainda NÃO existem no carro -> nunca "sem sinal" vermelho; ficam "a instalar" (cinza).
 const A_INSTALAR = new Set(['pneus','suspensao','cambio','freio-ded','direcao']);
 const PALAVRA = { ok:'Comunicando', off:'Sem sinal', warn:'Falha', instalar:'A instalar' };
+
+// Layout pedido na URL
+const params = new URLSearchParams(location.search);
+const TELA = (params.get('tela') === 'celular') ? 'celular' : 'notebook';
+document.body.dataset.tela = TELA;
+const MODO_FIXO = params.get('modo'); // 'parado' | 'andando' trava pra inspecionar
 
 // Monta a grade
 const elGrupos = document.getElementById('grupos');
@@ -199,93 +231,114 @@ for (const g of GRUPOS) {
     c.innerHTML =
       `<div class="card__nome">${NOME[id]}</div>` +
       `<div class="card__ico"><svg viewBox="0 0 24 24">${SVG[id]}</svg></div>` +
-      `<div class="card__dado" data-dado>&nbsp;</div>` +
+      `<div class="card__dado" data-dado>—</div>` +
       `<div class="card__estado" data-estado>—</div>`;
     wrap.appendChild(c); cardEl[id] = c;
   }
   sec.appendChild(wrap); elGrupos.appendChild(sec);
 }
 
-// ── Leitura do painel embutido (mesma origem) ──
-const frame = document.getElementById('cockpitFrame');
-function lerPainel() {
-  let doc = null;
-  try { doc = frame.contentDocument || frame.contentWindow.document; } catch (_) { doc = null; }
-  if (!doc) return null;
-  const sensores = {};
-  doc.querySelectorAll('.sensor[data-sensor]').forEach(s => { sensores[s.dataset.sensor] = s.dataset.state || 'off'; });
-  if (Object.keys(sensores).length === 0) return null;
-  const velEl = doc.getElementById('hVel');
-  const vel = velEl ? parseInt((velEl.textContent || '0').replace(/[^\d-]/g,''), 10) || 0 : 0;
-  const curvaEl = doc.getElementById('hCurva');
-  const curva = curvaEl ? (curvaEl.textContent || '').trim() : '';
-  return { sensores, vel, curva };
+// ── Dados: a MESMA volta real que o painel usa ──
+let pista = [], motor = [], iP = 0, iM = 0, start = null;
+let prevG = null, velBuf = [], ultKmh = 0, ultMotor = null, gpsRecebido = false;
+function metros(a, b){ const R=6378137, r=Math.PI/180; const la1=a.lat*r, la2=b.lat*r;
+  const x=(b.lon-a.lon)*r*Math.cos((la1+la2)/2), y=(la2-la1); return Math.sqrt(x*x+y*y)*R; }
+function velDe(p){
+  if (prevG){ const d=metros(prevG,p), dt=(p.t-prevG.t)/1000;
+    if (dt>0){ let v=d/dt*3.6; if (v>200) v=velBuf.length?velBuf[velBuf.length-1]:0; velBuf.push(v); if (velBuf.length>5) velBuf.shift(); } }
+  prevG=p; return velBuf.length ? velBuf.reduce((a,b)=>a+b,0)/velBuf.length : 0;
 }
-
-// ── Estado parado/andando por velocidade, com histerese (demonstração) ──
-const V_ANDA = 15;   // km/h: passou disso = na pista -> mostra o painel do piloto
-const V_PARA = 8;    // km/h: abaixo disso = parado/box
-const T_PARA = 800;  // ms abaixo de V_PARA pra voltar pro status (não pisca em curva)
-let modo = 'parado', lentoDesde = null;
-// ?modo=parado|andando trava a tela num estado (pra inspecionar/fotografar); padrão = automático pela velocidade.
-const MODO_FIXO = new URLSearchParams(location.search).get('modo');
-function decidirModo(vel) {
-  if (MODO_FIXO === 'parado' || MODO_FIXO === 'andando') { modo = MODO_FIXO; return; }
-  const now = performance.now();
-  if (modo === 'parado') {
-    if (vel >= V_ANDA) { modo = 'andando'; lentoDesde = null; }
-  } else {
-    if (vel <= V_PARA) { if (lentoDesde == null) lentoDesde = now; else if (now - lentoDesde >= T_PARA) modo = 'parado'; }
-    else lentoDesde = null;
-  }
+// status do motor — mesma regra do painel aprovado (sem inventar falha)
+function statusMotor(m){
+  const al=m.al||{}, algum=Object.values(al).some(Boolean);
+  return {
+    rpm:'ok', acelerador:'ok', 'freio-pedal':'ok', bateria:'ok',
+    agua:(m.agua>110||al.excessoTempMotor)?'warn':'ok',
+    lambda:(al.wbMaximo||al.wbMinimo||al.nbMaximo||al.nbMinimo)?'warn':'ok',
+    'motor-alarme':algum?'warn':'ok',
+  };
+}
+function dadoMotor(m){
+  const al=m.al||{}, n=Object.values(al).filter(Boolean).length;
+  return {
+    rpm:Math.round(m.rpm||0)+' rpm',
+    acelerador:Math.round(m.tps||0)+'%',
+    'freio-pedal':Math.round(m.fre||0)+'%',
+    agua:(m.agua!=null?Math.round(m.agua)+'°C':'—'),
+    lambda:(m.lam!=null?Number(m.lam).toFixed(2):'—'),
+    bateria:(m.bat!=null?Number(m.bat).toFixed(1)+' V':'—'),
+    'motor-alarme':(n?n+(n>1?' alertas':' alerta'):'tudo ok'),
+  };
 }
 
 const $ = id => document.getElementById(id);
-function setCard(id, st, dado) {
+function setCard(id, st, dado){
   const c = cardEl[id]; if (!c) return;
   if (c.dataset.state !== st) c.dataset.state = st;
   c.querySelector('[data-estado]').textContent = PALAVRA[st];
-  c.querySelector('[data-dado]').innerHTML = dado || '&nbsp;';
+  c.querySelector('[data-dado]').textContent = (dado==null||dado==='') ? '—' : dado;
 }
-function setBig(prefixo, st, estadoTxt, dado) {
-  $('big' + prefixo).dataset.state = st;
-  $('big' + prefixo + 'Estado').textContent = estadoTxt;
-  $('big' + prefixo + 'Dado').innerHTML = dado || '&nbsp;';
+function setBig(p, st, estadoTxt, dado){
+  $('big'+p).dataset.state = st; $('big'+p+'Estado').textContent = estadoTxt;
+  $('big'+p+'Dado').innerHTML = dado || '&nbsp;';
 }
 
-function tick() {
-  const p = lerPainel();
-  if (p) {
-    decidirModo(p.vel);
-    document.body.dataset.modo = modo;
-    $('modoTxt').textContent = modo === 'andando' ? 'andando' : 'parado';
-    $('velTxt').textContent = p.vel + ' km/h';
-
-    // Cards: refletem o estado real de cada aparelho do painel
-    for (const g of GRUPOS) for (const id of g.ids) {
-      let st = p.sensores[id] || 'off';
-      if (A_INSTALAR.has(id)) st = 'instalar';
-      let dado = '';
-      if (id === 'gps' && st === 'ok') dado = p.vel + ' km/h';
-      setCard(id, st, dado);
-    }
-
-    // Destaque GPS (movimento) e MOTOR (proxy = rotação/injeção comunicando)
-    const gps = p.sensores['gps'] || 'off';
-    setBig('Gps', gps, gps === 'ok' ? 'Chegando' : 'Sem sinal',
-           gps === 'ok' ? (p.vel + ' km/h' + (p.curva && p.curva !== '—' ? ' · ' + p.curva : '')) : '');
-    const motor = p.sensores['rpm'] || 'off';
-    setBig('Motor', motor, motor === 'ok' ? 'Chegando' : 'Sem sinal',
-           motor === 'ok' ? 'injeção comunicando' : '');
-
-    // Selo "pronto pra gravar" = os dois que decidem a gravação
-    const pronto = (gps === 'ok' && motor === 'ok');
-    $('pronto').dataset.ok = pronto ? 'sim' : 'nao';
-    $('prontoTxt').textContent = pronto ? 'Pronto pra gravar' : 'Aguardando sinal';
-  }
-  requestAnimationFrame(tick);
+// ── Modo parado/andando por velocidade, com histerese ──
+const V_ANDA=15, V_PARA=8, T_PARA=800;
+let modo='parado', lentoDesde=null;
+function decidirModo(vel){
+  if (MODO_FIXO==='parado'||MODO_FIXO==='andando'){ modo=MODO_FIXO; return; }
+  const now=performance.now();
+  if (modo==='parado'){ if (vel>=V_ANDA){ modo='andando'; lentoDesde=null; } }
+  else { if (vel<=V_PARA){ if (lentoDesde==null) lentoDesde=now; else if (now-lentoDesde>=T_PARA) modo='parado'; } else lentoDesde=null; }
 }
-requestAnimationFrame(tick);
+
+const FATOR = 8;
+function frame(now){
+  if (start==null) start=now;
+  const td=(now-start)*FATOR;
+  while (iP<pista.length && pista[iP].t<=td){ ultKmh=velDe(pista[iP]); gpsRecebido=true; iP++; }
+  while (iM<motor.length && motor[iM].t<=td){ ultMotor=motor[iM]; iM++; }
+  if (iP>=pista.length && iM>=motor.length){ iP=0; iM=0; start=now; prevG=null; velBuf=[]; ultKmh=0; gpsRecebido=false; }
+
+  let velMostrar = ultKmh;
+  if (MODO_FIXO==='parado'){ velMostrar=0; }   // inspeção: parado coerente, mas com dados reais
+  decidirModo(velMostrar);
+  document.body.dataset.modo = modo;
+  $('modoTxt').textContent = (modo==='andando') ? 'andando' : 'parado';
+  $('velTxt').textContent = Math.round(velMostrar)+' km/h';
+
+  // Motor
+  const ms = ultMotor ? statusMotor(ultMotor) : null;
+  const md = ultMotor ? dadoMotor(ultMotor) : null;
+  for (const id of GRUPOS[0].ids) setCard(id, ms?ms[id]:'off', md?md[id]:'');
+  // Movimento
+  const gpsSt = gpsRecebido ? 'ok' : 'off';
+  setCard('gps', gpsSt, gpsSt==='ok' ? Math.round(velMostrar)+' km/h' : '');
+  setCard('acel', 'off', '');   // acelerômetro: a volta gravada não trouxe esse dado
+  // Chassi (a instalar)
+  for (const id of GRUPOS[2].ids) setCard(id, 'instalar', '');
+
+  // Destaque GPS + Motor (decidem a gravação)
+  setBig('Gps', gpsSt, gpsSt==='ok'?'Chegando':'Sem sinal', gpsSt==='ok'?(Math.round(velMostrar)+' km/h'):'');
+  const motorOn = !!ultMotor;
+  setBig('Motor', motorOn?(ms['motor-alarme']==='warn'?'warn':'ok'):'off', motorOn?'Chegando':'Sem sinal',
+         motorOn?('rotação '+md.rpm+' · '+md.agua):'');
+  const pronto = (gpsSt==='ok' && motorOn);
+  $('pronto').dataset.ok = pronto?'sim':'nao';
+  $('prontoTxt').textContent = pronto ? 'Pronto pra gravar' : 'Aguardando sinal';
+
+  requestAnimationFrame(frame);
+}
+
+(async function boot(){
+  try{
+    const r = await fetch('/web/cockpit/fixtures/volta-real-pista-24-05.json');
+    const j = await r.json();
+    pista = j.pista || []; motor = j.motor || [];
+  }catch(e){ /* sem dados: a grade mostra "sem sinal" */ }
+  requestAnimationFrame(frame);
+})();
 </script>
 </body>
 </html>

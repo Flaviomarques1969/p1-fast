@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=956, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>P1 Fast — Cockpit do Piloto · SUA VOLTA REAL (Brasília)</title>
+<link rel="stylesheet" href="cockpit.css">
+<style>
+  body { margin: 0; background: #050a14; }
+  .topo {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    background: #0b1220; color: #e8eef5; border-bottom: 1px solid #1e293b;
+    padding: 8px 16px; font: 12px/1.3 -apple-system, "Segoe UI", sans-serif;
+    display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  }
+  .topo b { color: #38bdf8; }
+  .topo .real { color: #34d399; font-weight: 800; }
+  .topo small { color: #94a3b8; }
+  .hud { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .hud .item { display: flex; flex-direction: column; align-items: flex-end; min-width: 60px; }
+  .hud .item .lbl { color: #64748b; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+  .hud .item .val { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 18px; font-weight: 800; }
+  .hud .curva .val { color: #fbbf24; font-size: 15px; min-width: 160px; text-align: right; }
+  .stage { padding-top: 86px; display: flex; justify-content: center; }
+  /* Flávio 22/06: sem brilho de fundo no painel — nem âmbar (recorde) nem roxo (pior). */
+  .device::before { display: none !important; }
+  /* Flávio 22/06: número FIXO na esquerda (nunca centralizado, nunca desliza).
+     A frase de PILOTAGEM fica embaixo do número, à esquerda. As mensagens
+     (crítica/motor/box) vêm pela DIREITA — lugar reservado pro ghost; um troca
+     de lugar com o outro (ghost por padrão, mensagem aparece por cima quando vier). */
+  .info-bloco { left: 72px; transform: translateY(-50%); align-items: center; text-align: center; }
+  .device[data-msg-state="ativa"] .info-bloco { transform: translateY(-50%); }
+  /* Flávio 22/06: títulos do ápice (Entrada/Freio/Ápice/Saída) FIXOS — o valor ganha
+     um slot de largura fixa, então mudar o número não desloca mais os títulos. */
+  .apex__valor { width: 110px; justify-content: flex-start; }
+  /* Flávio 22/06: 14 ícones de sensor no TOPO; barra das voltas desce um pouco;
+     coluna de bolinhas da direita sai (vira esta fileira). Cor: vermelho = sem
+     comunicação, verde = comunicando, amarelo = falha. */
+  .telemetria-chip { display: none !important; }
+  .stint-bar { top: 50px !important; }
+  /* CLUSTER DE SENSORES — bandeja de vidro com lentes, identidade própria,
+     separada da barra de voltas. Vermelho=sem comunicação, verde=comunicando, amarelo=falha. */
+  .sensor-row {
+    position: absolute; left: 50%; top: 6px; transform: translateX(-50%);
+    z-index: 40; pointer-events: none;
+    display: flex; align-items: center; gap: 56px; padding: 5px 22px;
+    border-radius: 15px;
+    background: linear-gradient(180deg, oklch(17% 0 0 / .65), oklch(8% 0 0 / .65));
+    border: 1px solid oklch(100% 0 0 / .06);
+    box-shadow:
+      inset 0 1px 0 oklch(100% 0 0 / .07),
+      inset 0 -1px 0 oklch(0% 0 0 / .55),
+      0 8px 22px oklch(0% 0 0 / .5);
+    -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+  }
+  .sensor-group { display: flex; flex-direction: row; align-items: center; gap: 10px; }
+  .sensor-group__title { font-family: var(--ff-display); font-size: 8.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: oklch(58% 0 0); white-space: nowrap; }
+  .sensor-group__icons { display: flex; align-items: center; gap: 12px; }
+  .sensor {
+    position: relative; width: 25px; height: 25px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 50% 32%, oklch(24% 0 0), oklch(9% 0 0));
+    box-shadow: inset 0 1px 0 oklch(100% 0 0 / .10), inset 0 0 0 1px oklch(100% 0 0 / .05), 0 1px 2px oklch(0% 0 0 / .55);
+    transition: color 240ms var(--ease-out), box-shadow 240ms var(--ease-out);
+  }
+  .sensor svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.55; stroke-linecap: round; stroke-linejoin: round; }
+  /* vermelho — sem comunicação: contido, sem brilho (parece "aguardando") */
+  .sensor[data-state="off"] { color: oklch(58% 0.17 27); box-shadow: inset 0 1px 0 oklch(100% 0 0 / .07), inset 0 0 0 1px oklch(55% 0.20 27 / .30), 0 1px 2px oklch(0% 0 0 / .55); }
+  .sensor[data-state="off"] svg { opacity: .82; }
+  /* verde — comunicando: vivo, com halo */
+  .sensor[data-state="ok"] { color: var(--bom); box-shadow: inset 0 1px 0 oklch(100% 0 0 / .12), inset 0 0 0 1px oklch(80% 0.22 145 / .45), 0 0 11px oklch(80% 0.22 145 / .38), 0 1px 2px oklch(0% 0 0 / .55); }
+  .sensor[data-state="ok"] svg { filter: drop-shadow(0 0 3px oklch(80% 0.22 145 / .7)); }
+  /* amarelo — falha: halo âmbar + pulso de atenção */
+  .sensor[data-state="warn"] { color: var(--foco); animation: sensorPulse 1.4s var(--ease-inout) infinite; }
+  .sensor[data-state="warn"] svg { filter: drop-shadow(0 0 4px oklch(82% 0.19 70 / .85)); }
+  @keyframes sensorPulse {
+    0%, 100% { box-shadow: inset 0 1px 0 oklch(100% 0 0 / .12), inset 0 0 0 1px oklch(82% 0.19 70 / .55), 0 0 9px oklch(82% 0.19 70 / .4), 0 1px 2px oklch(0% 0 0 / .55); }
+    50%      { box-shadow: inset 0 1px 0 oklch(100% 0 0 / .12), inset 0 0 0 1px oklch(82% 0.19 70 / .9),  0 0 17px oklch(82% 0.19 70 / .8), 0 1px 2px oklch(0% 0 0 / .55); }
+  }
+  /* LUZ DE FREIO (Flávio 22/06) — mesma lógica da luz de marcha, mas VERTICAL nas
+     duas laterais, enchendo de cima pra baixo conforme chega o ponto de freada.
+     Ao atingir o ponto, a tela PISCA (igual à troca de marcha, mas pelas bordas). */
+  .brake-light { position: absolute; top: calc(50% - 32px); transform: translateY(-50%); z-index: 51; display: flex; flex-direction: column; gap: 11px; pointer-events: none; }
+  .brake-light--left { left: 5px; }
+  .brake-light--right { right: 5px; }
+  .brake-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, oklch(20% 0 0), oklch(11% 0 0) 60%, oklch(7% 0 0));
+    box-shadow: inset 0 1px 0 oklch(28% 0 0 / .6), inset 0 0 0 1px oklch(18% 0 0), inset 0 -1px 1px oklch(0% 0 0 / .9), 0 1px 1px oklch(0% 0 0 / .5);
+    transition: background 140ms var(--ease-out), box-shadow 200ms var(--ease-out);
+  }
+  .brake-dot.is-on[data-tier="g"] { background: radial-gradient(circle at 35% 30%, oklch(96% .1 145), oklch(80% .23 145) 55%, oklch(60% .23 148)); box-shadow: inset 0 0 0 1px oklch(70% .23 148), 0 0 8px oklch(80% .22 145 / .8), 0 0 16px oklch(74% .23 148 / .45); }
+  .brake-dot.is-on[data-tier="a"] { background: radial-gradient(circle at 35% 30%, oklch(97% .12 95), oklch(84% .21 92) 55%, oklch(64% .21 88)); box-shadow: inset 0 0 0 1px oklch(72% .21 90), 0 0 9px oklch(84% .2 92 / .85), 0 0 18px oklch(76% .21 90 / .5); }
+  .brake-dot.is-on[data-tier="r"] { background: radial-gradient(circle at 35% 30%, oklch(94% .1 32), oklch(74% .26 28) 55%, oklch(54% .26 25)); box-shadow: inset 0 0 0 1px oklch(60% .27 27), 0 0 10px oklch(74% .26 28 / .9), 0 0 22px oklch(64% .27 27 / .55); }
+  .brake-flash {
+    position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 201; opacity: 0;
+    background:
+      radial-gradient(ellipse 60% 120% at 0% 50%, oklch(72% .26 27 / .55) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 120% at 100% 50%, oklch(72% .26 27 / .55) 0%, transparent 55%);
+    box-shadow: inset 0 0 0 2px oklch(70% .26 27 / .6), inset 0 0 60px oklch(68% .26 27 / .35);
+  }
+  .device[data-brake-fire="active"] .brake-flash { animation: brakeFireFlash 340ms linear forwards; }
+  @keyframes brakeFireFlash {
+    0% { opacity: 0; } 8% { opacity: 1; } 30% { opacity: 1; } 38% { opacity: 0; }
+    50% { opacity: 0; } 58% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; }
+  }
+  /* RESULTADO DA FREADA — espelha o Delta, do lado DIREITO. Mesmo tamanho/forma:
+     número grande + palavra embaixo. Verde 0 = no ponto; amarelo = freou antes;
+     vermelho = freou depois (número = metros). */
+  .brake-result {
+    position: absolute; left: 690px; top: 40%; transform: translate(-50%, -50%);
+    z-index: 20; pointer-events: none;
+    display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px;
+  }
+  .brake-result__num { font-family: var(--ff-display); font-size: var(--fs-9); font-weight: 900; letter-spacing: var(--ls-tight); line-height: var(--lh-dom); font-variant-numeric: tabular-nums slashed-zero; color: inherit; }
+  .brake-result__word { font-size: var(--fs-6); font-weight: 900; letter-spacing: var(--ls-caps-s); text-transform: uppercase; color: inherit; }
+  .brake-result__num, .brake-result__word {
+    text-shadow:
+      1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+      1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+      0 0 24px color-mix(in oklch, currentColor 38%, transparent);
+  }
+  .brake-result[data-cor="neutro"] { color: oklch(55% 0 0); }
+  .brake-result[data-cor="bom"]    { color: var(--bom); }
+  .brake-result[data-cor="foco"]   { color: var(--foco); }
+  .brake-result[data-cor="erro"]   { color: var(--erro); }
+  /* MODO CRÍTICO — super-críticas + críticas + BOX tomam a tela: mensagem vermelha
+     piscando no centro; somem delta/frenagem/ápice; as luzes "param" (apagadas).
+     O cluster de sensores do topo permanece (mostra o que falhou). */
+  .critico-overlay { display: none; position: absolute; inset: 0; z-index: 150; align-items: center; justify-content: center; padding: 0 56px; pointer-events: none; }
+  .device[data-modo="critico"] .critico-overlay { display: flex; }
+  .critico-overlay__msg {
+    font-family: var(--ff-display); font-weight: 900; font-size: 89px; line-height: .96;
+    text-transform: uppercase; text-align: center; letter-spacing: -0.01em; color: var(--erro);
+    text-shadow: 1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85), 1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85), 0 0 44px oklch(68% 0.26 27 / .65);
+    animation: criticoPisca .62s steps(1, end) infinite;
+  }
+  @keyframes criticoPisca { 0%, 54% { opacity: 1; } 55%, 100% { opacity: .1; } }
+  /* BORDA piscando — pega a VISÃO PERIFÉRICA do piloto (que enxerga brilho/flicker,
+     não cor): branco no pico de luminância (detecção) alternando com vermelho (perigo). */
+  .critico-borda { display: none; position: absolute; inset: 0; z-index: 149; pointer-events: none; border-radius: inherit; }
+  .device[data-modo="critico"] .critico-borda { display: block; animation: criticoBorda .4s steps(1, end) infinite; }
+  @keyframes criticoBorda {
+    0%  { box-shadow: inset 0 0 0 11px oklch(100% 0 0 / .95), inset 0 0 70px 12px oklch(100% 0 0 / .45); }
+    50% { box-shadow: inset 0 0 0 11px oklch(64% 0.27 27 / .98), inset 0 0 70px 12px oklch(64% 0.27 27 / .6); }
+  }
+  .device[data-modo="critico"] .info-bloco,
+  .device[data-modo="critico"] .brake-result,
+  .device[data-modo="critico"] .ultima-volta,
+  .device[data-modo="critico"] .apex { opacity: 0 !important; visibility: hidden; }
+  .device[data-modo="critico"] .shift-light,
+  .device[data-modo="critico"] .brake-light { opacity: .1; filter: grayscale(1); }
+  /* ÚLTIMA VOLTA — no mesmo espaço do número da frenagem (à direita). */
+  .ultima-volta {
+    display: none; position: absolute; left: 690px; top: 40%; transform: translate(-50%, -50%);
+    z-index: 21; text-align: center; pointer-events: none;
+    font-family: var(--ff-display); font-weight: 900; font-size: var(--fs-6); line-height: 1.0;
+    text-transform: uppercase; letter-spacing: var(--ls-caps-s); color: oklch(80% 0.15 225);
+    text-shadow: 1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85), 0 0 24px oklch(78% 0.16 225 / .5);
+  }
+  .device[data-ultima="on"] .ultima-volta { display: block; }
+  .device[data-ultima="on"] .brake-result { opacity: 0; visibility: hidden; }
+</style>
+<style>
+  /* === Adaptação P1 Fast (app iOS) — SÓ apresentação ===
+     Painel APROVADO em tela cheia, sem a barra de vitrine/HUD de debug.
+     O #device (956×440) e toda a lógica do painel seguem intactos. */
+  html, body { height: 100%; overflow: hidden; background: #050a14; }
+  .topo { display: none !important; }
+  .stage { padding: 0 !important; position: fixed; inset: 0;
+           display: flex; align-items: center; justify-content: center; }
+  #device { transform-origin: center center; }
+</style>
+</head>
+<body>
+
+<div class="topo">
+  <div><b>Cockpit do Piloto</b> — <span class="real">SUA VOLTA REAL</span>
+    <small>Pista: sua volta real 24/05 (GPS) · <span id="tempo">00:00</span></small>
+  </div>
+  <div class="hud">
+    <div class="item curva"><span class="lbl">Curva</span><span class="val" id="hCurva">—</span></div>
+    <div class="item"><span class="lbl">Veloc.</span><span class="val" id="hVel" style="color:#38bdf8">0</span></div>
+    <div class="item"><span class="lbl">Mínima</span><span class="val" id="hVmin" style="color:#a78bfa">—</span></div>
+    <div class="item"><span class="lbl">Dist. ápice</span><span class="val" id="hApice" style="color:#fbbf24">—</span></div>
+    <div class="item" style="opacity:.5"><span class="lbl">Luz de marcha</span><span class="val" style="font-size:12px;color:#64748b">precisa do motor</span></div>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="device" id="device" data-trecho-status="neutro" data-msg-state="oculta" data-shift-fire="idle" data-brake-fire="idle" data-modo="normal" data-ultima="off">
+    <div class="notch"></div>
+    <div class="fire-overlay"></div>
+    <div class="brake-flash"></div>
+    <div class="brake-light brake-light--left" id="brakeLeft">
+      <span class="brake-dot" data-tier="g"></span><span class="brake-dot" data-tier="g"></span><span class="brake-dot" data-tier="g"></span><span class="brake-dot" data-tier="g"></span><span class="brake-dot" data-tier="g"></span>
+      <span class="brake-dot" data-tier="a"></span>
+      <span class="brake-dot" data-tier="r"></span><span class="brake-dot" data-tier="r"></span><span class="brake-dot" data-tier="r"></span>
+    </div>
+    <div class="brake-light brake-light--right" id="brakeRight">
+      <span class="brake-dot" data-tier="g"></span><span class="brake-dot" data-tier="g"></span><span class="brake-dot" data-tier="g"></span><span class="brake-dot" data-tier="g"></span><span class="brake-dot" data-tier="g"></span>
+      <span class="brake-dot" data-tier="a"></span>
+      <span class="brake-dot" data-tier="r"></span><span class="brake-dot" data-tier="r"></span><span class="brake-dot" data-tier="r"></span>
+    </div>
+    <div class="sensor-row" id="sensorRow">
+      <div class="sensor-group">
+      <div class="sensor-group__title">Motor</div>
+      <div class="sensor-group__icons">
+      <div class="sensor" data-sensor="rpm" data-state="off" title="Rotação (RPM)"><svg viewBox="0 0 24 24"><path d="M5.2 17.8a9 9 0 1 1 13.6 0"/><path d="M12 12l4-2.5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><path d="M12 5v1.4M6.6 9.4l1 .6M17.4 9.4l-1 .6"/></svg></div>
+      <div class="sensor" data-sensor="acelerador" data-state="off" title="Acelerador"><svg viewBox="0 0 24 24"><rect x="9" y="3.5" width="6" height="12.5" rx="3" transform="rotate(10 12 10)"/><path d="M10.6 7l3 .7M10.2 9.6l3 .7M9.8 12.2l3 .7"/><path d="M6 19.5h12"/></svg></div>
+      <div class="sensor" data-sensor="freio-pedal" data-state="off" title="Pedal de freio (disco)"><svg viewBox="0 0 24 24"><circle cx="11.5" cy="12" r="7.3"/><circle cx="11.5" cy="12" r="2.4"/><rect x="14.6" y="8.8" width="5" height="6.4" rx="1.6"/><path d="M11.5 4.7v1.5M11.5 17.8v1.5M4.6 12h1.5"/></svg></div>
+      <div class="sensor" data-sensor="agua" data-state="off" title="Temperatura da água"><svg viewBox="0 0 24 24"><path d="M12 4.2a1.8 1.8 0 0 1 1.8 1.8v6.5a3.2 3.2 0 1 1-3.6 0V6a1.8 1.8 0 0 1 1.8-1.8z"/><path d="M12 8v4.2"/><circle cx="12" cy="14.6" r="1.4" fill="currentColor"/><path d="M4.6 20c.9-1 1.8-1 2.7 0s1.8 1 2.7 0M14 20c.9-1 1.8-1 2.7 0s1.8 1 2.7 0"/></svg></div>
+      <div class="sensor" data-sensor="lambda" data-state="off" title="Sonda lambda (mistura ar/combustível)"><svg viewBox="0 0 24 24"><path d="M7 19.5L12 6l5 13.5"/><path d="M12 6l-1.5-2.3"/></svg></div>
+      <div class="sensor" data-sensor="bateria" data-state="off" title="Bateria"><svg viewBox="0 0 24 24"><rect x="3.5" y="8.5" width="17" height="9" rx="1.6"/><path d="M7.5 8.5V6.5h2.2v2M14.3 8.5V6.5h2.2v2"/><path d="M6.5 13h2.6M7.8 11.7v2.6"/><path d="M15 13h2.6"/></svg></div>
+      <div class="sensor" data-sensor="motor-alarme" data-state="off" title="Alarmes do motor"><svg viewBox="0 0 24 24"><path d="M19.4 13a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/><circle cx="12" cy="12" r="3"/></svg></div>
+      </div>
+      </div>
+      <div class="sensor-group">
+      <div class="sensor-group__title">Movimento</div>
+      <div class="sensor-group__icons">
+      <div class="sensor" data-sensor="gps" data-state="off" title="GPS"><svg viewBox="0 0 24 24"><path d="M12 21c-4-4.5-6-7.6-6-10a6 6 0 1 1 12 0c0 2.4-2 5.5-6 10z"/><circle cx="12" cy="11" r="2.3"/></svg></div>
+      <div class="sensor" data-sensor="acel" data-state="off" title="Acelerômetro (força G)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/><circle cx="14.6" cy="9.4" r="1.7" fill="currentColor"/></svg></div>
+      </div>
+      </div>
+      <div class="sensor-group">
+      <div class="sensor-group__title">Chassi</div>
+      <div class="sensor-group__icons">
+      <div class="sensor" data-sensor="pneus" data-state="off" title="Pneus (a instalar)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="5.6"/><circle cx="12" cy="12" r="2.6"/><path d="M12 3.6v2M12 18.4v2M3.6 12h2M18.4 12h2M6.1 6.1l1.4 1.4M16.5 16.5l1.4 1.4M17.9 6.1l-1.4 1.4M6.1 17.9l1.4-1.4"/></svg></div>
+      <div class="sensor" data-sensor="suspensao" data-state="off" title="Suspensão (a instalar)"><svg viewBox="0 0 24 24"><path d="M9 4.5h6M9 19.5h6M12 4.5v1.6M12 17.9v1.6"/><path d="M9 7c0 1.3 6 1.3 6 0M9 10c0 1.3 6 1.3 6 0M9 13c0 1.3 6 1.3 6 0M9 16c0 1.3 6 1.3 6 0"/></svg></div>
+      <div class="sensor" data-sensor="cambio" data-state="off" title="Câmbio / marcha (a instalar)"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><path d="M12 7v5"/><path d="M7 12h10"/><path d="M7 12v3M12 12v4M17 12v3"/></svg></div>
+      <div class="sensor" data-sensor="freio-ded" data-state="off" title="Freio dedicado — linha (a instalar)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 9.4v3.1"/><circle cx="12" cy="14.7" r="0.7" fill="currentColor"/><path d="M5 8.5a6.5 6.5 0 0 0 0 7M19 8.5a6.5 6.5 0 0 1 0 7"/></svg></div>
+      <div class="sensor" data-sensor="direcao" data-state="off" title="Giro da direção (a instalar)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="2.3"/><path d="M9.8 12H3.6M14.2 12h6.2M12 14.3v6.1"/></svg></div>
+      </div>
+      </div>
+    </div>
+    <div class="telemetria-chip">
+      <span class="telemetria-chip__dot ok"></span><span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span><span class="telemetria-chip__dot ok"></span>
+      <span class="telemetria-chip__dot ok"></span><span class="telemetria-chip__dot ok"></span>
+    </div>
+    <div class="shift-light" id="shiftLight" data-state="off">
+      <span class="shift-light__dot" data-tier="1"></span><span class="shift-light__dot" data-tier="2"></span>
+      <span class="shift-light__dot" data-tier="3"></span><span class="shift-light__dot" data-tier="4"></span>
+      <span class="shift-light__dot" data-tier="5"></span><span class="shift-light__dot" data-tier="6"></span>
+      <span class="shift-light__dot" data-tier="7"></span><span class="shift-light__dot" data-tier="8"></span>
+      <span class="shift-light__dot" data-tier="9"></span>
+      <span class="shift-light__dot" data-tier="8"></span><span class="shift-light__dot" data-tier="7"></span>
+      <span class="shift-light__dot" data-tier="6"></span><span class="shift-light__dot" data-tier="5"></span>
+      <span class="shift-light__dot" data-tier="4"></span><span class="shift-light__dot" data-tier="3"></span>
+      <span class="shift-light__dot" data-tier="2"></span><span class="shift-light__dot" data-tier="1"></span>
+    </div>
+    <section class="apex">
+      <div class="apex__ponto" data-estado="pendente" data-papel="entrada"><span class="apex__label">Entrada</span><span class="apex__valor">—</span></div>
+      <div class="apex__ponto" data-estado="pendente" data-papel="freio"><span class="apex__label">Freio</span><span class="apex__valor">—</span></div>
+      <div class="apex__ponto" data-estado="pendente" data-papel="apice"><span class="apex__label">Ápice</span><span class="apex__valor">—</span></div>
+      <div class="apex__ponto" data-estado="pendente" data-papel="saida"><span class="apex__label">Saída</span><span class="apex__valor">—</span></div>
+    </section>
+    <div class="info-bloco">
+      <span class="info__delta">0.00</span>
+      <div class="info__acao"></div>
+    </div>
+    <div class="brake-result" id="brakeResult" data-cor="neutro">
+      <span class="brake-result__num" id="brNum">—</span>
+      <div class="brake-result__word" id="brWord">FREADA</div>
+    </div>
+    <div class="ultima-volta" id="ultimaVolta">Última<br>volta</div>
+    <div class="critico-borda"></div>
+    <div class="critico-overlay" id="criticoOverlay"><div class="critico-overlay__msg" id="criticoMsg">ÓLEO BAIXO</div></div>
+    <aside class="alert-bloco" id="alertBloco" data-tipo="comunicacao"><div class="alert__msg" id="alertMsg"></div></aside>
+    <div class="stint-bar">
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+      <div class="stint-bar__block"></div><div class="stint-bar__block"></div><div class="stint-bar__block"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+// REPLAY DA VOLTA REAL — 100% local (sem nuvem, sem clique).
+// Pista (curva/ápice/entrada/saída/delta/velocidade) = volta real 24/05 (GPS).
+//   Velocidade é CALCULADA pela posição (o sensor de velocidade do GPS veio zerado).
+// Motor (luz de marcha + água/lambda/acelerador) = sessão real 21/06 (T4000).
+// Tudo dado REAL seu. Reusa as peças reais do painel.
+import { CockpitState, ApexEstado, TrechoStatus, Tone } from './cockpit-state.js';
+import { attachRendererToDocument } from './cockpit-renderer.js';
+import { LiveDataBridge, DEFAULT_LIMITS } from './live-data-bridge.js';
+
+const cockpitState = new CockpitState();
+attachRendererToDocument(cockpitState, document);
+const bridge = new LiveDataBridge({
+  cockpitState,
+  limits: { ...DEFAULT_LIMITS, peakTorqueRpm: 6050, redlineRpm: 6300, torqueLitOffsetRpm: 700, waterTempMaxC: 110 },
+});
+
+const $ = id => document.getElementById(id);
+const FATOR = 8;
+const RAIO = 40, SAIR = 60;
+
+function metros(a, b) {
+  const R = 6378137, r = Math.PI / 180;
+  const la1 = a.lat * r, la2 = b.lat * r;
+  const x = (b.lng - a.lng) * r * Math.cos((la1 + la2) / 2);
+  const y = (la2 - la1);
+  return Math.sqrt(x * x + y * y) * R;
+}
+
+let curvas = [], pista = [], motor = [], durMax = 0;
+let iP = 0, iM = 0, start = null;
+let prevG = null, velBuf = [];
+let ultKmh = 0;
+let curvaAtiva = null;
+const tempoAnterior = new Map();
+
+// ── Sensores no topo (14 ícones): vermelho=sem comunicação, verde=comunicando, amarelo=falha.
+const sensorEls = {};
+document.querySelectorAll('.sensor[data-sensor]').forEach(el => { sensorEls[el.dataset.sensor] = el; });
+function setSensor(id, st) { const el = sensorEls[id]; if (el && el.dataset.state !== st) el.dataset.state = st; }
+const SENS_MOTOR = ['rpm', 'acelerador', 'freio-pedal', 'bateria', 'agua', 'lambda', 'motor-alarme'];
+function aplicarMotorStatus(m) {
+  // A injeção está comunicando (temos amostra) → verde. Amarelo só quando o PRÓPRIO
+  // dado mostra falha real (alarme do motor ou limite estourado). Sem inventar.
+  const al = m.al || {};
+  const algumAlarme = Object.values(al).some(Boolean);
+  setSensor('rpm', 'ok'); setSensor('acelerador', 'ok'); setSensor('freio-pedal', 'ok'); setSensor('bateria', 'ok');
+  setSensor('agua', (m.agua > 110 || al.excessoTempMotor) ? 'warn' : 'ok');
+  setSensor('lambda', (al.wbMaximo || al.wbMinimo || al.nbMaximo || al.nbMinimo) ? 'warn' : 'ok');
+  setSensor('motor-alarme', algumAlarme ? 'warn' : 'ok');
+}
+
+// ── Luz de freio (laterais): enche de cima pra baixo na aproximação da curva; no
+// ponto de freada PISCA a tela pelas bordas. Gatilho aqui = proximidade do ápice
+// mais próximo (substituto até existir o ponto ideal de freada / sensor de freio).
+const device = $('device');
+const brakeLeftDots = [...document.querySelectorAll('#brakeLeft .brake-dot')];
+const brakeRightDots = [...document.querySelectorAll('#brakeRight .brake-dot')];
+const FREIO_LEAD = 4.0;          // segundos: do 1º verde até o ponto de freada
+const FREIO_FALLBACK = 50;       // ponto de freada de PARTIDA (só na 1ª passagem, antes de ter referência)
+const FREIO_N = 9;
+let prevDFreio = Infinity, freioArmado = true, brakeTimer = null;
+function setBrakeFill(lit) {
+  for (let i = 0; i < FREIO_N; i++) {
+    const on = i < lit;
+    brakeLeftDots[i].classList.toggle('is-on', on);
+    brakeRightDots[i].classList.toggle('is-on', on);
+  }
+}
+function brakeFlash() {
+  device.setAttribute('data-brake-fire', 'active');
+  if (brakeTimer) clearTimeout(brakeTimer);
+  brakeTimer = setTimeout(() => device.setAttribute('data-brake-fire', 'idle'), 360);
+}
+function atualizarFreio(pos) {
+  const v = ultKmh / 3.6;                        // velocidade em m/s (real, calculada do GPS)
+  const { best, bd } = curvaMaisProxima(pos);    // curva mais próxima + distância ao ápice
+  if (!best) { setBrakeFill(0); prevDFreio = bd; return; }
+  if (modoCritico) { setBrakeFill(0); prevDFreio = bd; return; }   // crítico: luz de freio para
+  const id = best.id;
+  if (id !== approachId) { approachId = id; vMaxApp = 0; bdAtVmax = Infinity; }  // nova curva sendo abordada
+  const aproximando = bd < prevDFreio - 0.4;
+  // ponto de freada IDEAL = o da MELHOR passagem deste trecho; só na 1ª usa o de partida
+  const pontoFreada = brakeRef.has(id) ? brakeRef.get(id) : FREIO_FALLBACK;
+  let fill = 0;
+  if (freioArmado && aproximando && v > 1) {
+    const restoM = bd - pontoFreada;
+    if (restoM <= 0) { fill = 1; brakeFlash(); freioArmado = false; }   // chegou no ponto → pisca
+    else { const t = restoM / v; if (t <= FREIO_LEAD) fill = 1 - t / FREIO_LEAD; }  // 4 s antes = 0%
+  }
+  setBrakeFill(Math.round(fill * FREIO_N));
+  if (bd > pontoFreada + 60) freioArmado = true;   // re-arma depois de afastar do ápice
+  // INÍCIO da freada (desaceleração do GPS) = onde a velocidade para de subir e cai
+  if (aproximando && bd < 220) {
+    if (ultKmh > vMaxApp) { vMaxApp = ultKmh; bdAtVmax = bd; }
+    onsetCorner.set(id, bdAtVmax);
+  }
+  prevDFreio = bd;
+}
+
+// Estado da freada por TRECHO (curva). Persiste entre voltas: a MELHOR passagem
+// marca o ponto de freada (Flávio 22/06). Sem sensor de freio, o início da freada
+// vem da DESACELERAÇÃO do GPS (pico de velocidade = onde começou a frear).
+const brakeRef = new Map();      // id da curva → ponto de freada (distância ao ápice) da MELHOR passagem
+const bestTime = new Map();      // id da curva → melhor tempo do trecho (s)
+const onsetCorner = new Map();   // id da curva → onde a freada começou NESTA aproximação
+let approachId = null, vMaxApp = 0, bdAtVmax = Infinity;
+const FREIO_TOL = 1;             // margem de erro: ±1 m ainda é VERDE (mas informa o número)
+const brNum = $('brNum'), brWord = $('brWord'), brakeResultEl = $('brakeResult');
+function setBrakeResult(num, palavra, cor) {
+  brakeResultEl.dataset.cor = cor;
+  brWord.textContent = palavra;
+  brNum.textContent = (num === '—') ? '—' : String(num);
+}
+
+// ── MODO CRÍTICO (Flávio 22/06): super-críticas + críticas + BOX tomam a tela —
+// mensagem vermelha piscando no centro; somem delta/frenagem/ápice; as luzes param.
+// ÚLTIMA VOLTA é à parte, no espaço do número da frenagem. Ao limpar, volta ao normal.
+let modoCritico = false;
+const criticoMsgEl = $('criticoMsg');
+function setCritico(texto) {
+  if (texto) { criticoMsgEl.textContent = texto; modoCritico = true; device.setAttribute('data-modo', 'critico'); }
+  else { modoCritico = false; device.setAttribute('data-modo', 'normal'); }
+}
+function setUltimaVolta(on) { device.setAttribute('data-ultima', on ? 'on' : 'off'); }
+// Gatilhos de TESTE (nesta volta não dispara crítico real): C cicla amostras (inclui BOX); U = última volta.
+const AMOSTRA_CRITICAS = ['ÓLEO BAIXO', 'MOTOR QUENTE', 'PNEU VAZIO', 'SEM DADOS', 'BOX'];
+let critIdx = -1;
+window.addEventListener('keydown', (e) => {
+  const k = e.key.toLowerCase();
+  if (k === 'c') {
+    critIdx++;
+    if (critIdx >= AMOSTRA_CRITICAS.length) { critIdx = -1; setCritico(null); }
+    else setCritico(AMOSTRA_CRITICAS[critIdx]);
+  } else if (k === 'u') {
+    setUltimaVolta(device.getAttribute('data-ultima') !== 'on');
+  }
+});
+
+function velDe(p) {
+  if (prevG) {
+    const d = metros({ lat: prevG.lat, lng: prevG.lon }, { lat: p.lat, lng: p.lon });
+    const dt = (p.t - prevG.t) / 1000;
+    if (dt > 0) {
+      let v = d / dt * 3.6;
+      if (v > 200) v = velBuf.length ? velBuf[velBuf.length - 1] : 0;  // descarta salto de GPS
+      velBuf.push(v); if (velBuf.length > 5) velBuf.shift();
+    }
+  }
+  prevG = p;
+  return velBuf.length ? velBuf.reduce((a, b) => a + b, 0) / velBuf.length : 0;
+}
+
+function aplicarMotor(p) {
+  bridge.ingestT4000({
+    source: 'real', parserVersion: 'real', tMono: p.t, checksumOk: true, bytesLen: 0,
+    rpm: p.rpm, tpsPct: p.tps, pedalFreioPct: p.fre, waterTempC: p.agua,
+    lambda: p.lam, batteryV: p.bat, alarmes: p.al || {},
+  });
+  $('hRpm').textContent = Math.round(p.rpm ?? 0);
+  $('hTps').textContent = (p.tps != null ? Math.round(p.tps) : 0) + '%';
+  $('hAgua').textContent = (p.agua != null ? Math.round(p.agua) + '°' : '—');
+  $('hLam').textContent = (p.lam != null ? p.lam.toFixed(2) : '—');
+}
+
+function curvaMaisProxima(pos) {
+  let best = null, bd = Infinity;
+  for (const c of curvas) { const d = metros(pos, c.apice); if (d < bd) { bd = d; best = c; } }
+  return { best, bd };
+}
+
+function fecharPassagem(p) {
+  const a = curvaAtiva; if (!a) return;
+  const tempoS = (p.t - a.tEnt) / 1000;
+  cockpitState.setApexPonto('saida', { estado: ApexEstado.OK_MELHOR, valorKmh: Math.round(ultKmh), nomeCurva: a.c.nome });
+  const ref = tempoAnterior.get(a.c.id);
+  if (ref != null && tempoS > 0.5) {
+    const d = tempoS - ref;
+    // Sem sinal: só o valor. Bom = verde, ruim = vermelho (Flávio 22/06).
+    cockpitState.setDelta({ value: Math.abs(d).toFixed(2), tone: d <= 0 ? Tone.BOM : Tone.ERRO });
+    cockpitState.setAcao({ texto: d <= 0 ? 'RECORDE' : 'BUSCAR LIMITE', tone: d <= 0 ? Tone.BOM : Tone.NEUTRO });
+    cockpitState.setTrechoStatus(d <= 0 ? TrechoStatus.RECORDE_STINT : TrechoStatus.PIOR_STINT);
+  } else {
+    cockpitState.setAcao({ texto: 'REGISTRANDO', tone: Tone.NEUTRO });
+    cockpitState.setTrechoStatus(TrechoStatus.NEUTRO);
+  }
+  if (tempoS > 0.5) tempoAnterior.set(a.c.id, tempoS);
+  // RESULTADO da freada vs a MELHOR passagem deste trecho (a melhor marca o ponto):
+  const onset = onsetCorner.get(a.c.id);
+  if (Number.isFinite(onset)) {
+    if (brakeRef.has(a.c.id)) {
+      const m = Math.round(onset - brakeRef.get(a.c.id));   // + freou antes, - freou depois (vs melhor)
+      if (Math.abs(m) <= FREIO_TOL) setBrakeResult(Math.abs(m), 'NO PONTO', 'bom');
+      else if (m > 0) setBrakeResult(m, 'ANTES', 'foco');
+      else setBrakeResult(-m, 'DEPOIS', 'erro');
+    } else {
+      setBrakeResult('—', 'REFERÊNCIA', 'neutro');   // 1ª passagem vira a referência
+    }
+    // a MELHOR passagem (menor tempo) passa a marcar o ponto de freada
+    if (tempoS > 0.5 && (!bestTime.has(a.c.id) || tempoS < bestTime.get(a.c.id))) {
+      bestTime.set(a.c.id, tempoS);
+      brakeRef.set(a.c.id, onset);
+    }
+  }
+  curvaAtiva = null;
+}
+
+function aplicarGps(p) {
+  setSensor('gps', 'ok');   // GPS comunicando (estamos recebendo posição)
+  ultKmh = velDe(p);
+  $('hVel').textContent = Math.round(ultKmh);
+  const pos = { lat: p.lat, lng: p.lon };
+  atualizarFreio(pos);
+  if (!curvaAtiva) {
+    const { best, bd } = curvaMaisProxima(pos);
+    if (best && bd <= RAIO) {
+      curvaAtiva = { c: best, tEnt: p.t, vmin: ultKmh, distMin: bd };
+      $('hCurva').textContent = best.nome;
+      $('hVmin').textContent = '—'; $('hApice').textContent = Math.round(bd) + ' m';
+      cockpitState.setApexPonto('entrada', { estado: ApexEstado.OK_MELHOR, valorKmh: Math.round(ultKmh), nomeCurva: best.nome });
+      cockpitState.setApexPonto('freio', { estado: ApexEstado.PENDENTE });
+      cockpitState.setApexPonto('apice', { estado: ApexEstado.PENDENTE });
+      cockpitState.setApexPonto('saida', { estado: ApexEstado.PENDENTE });
+    }
+  } else {
+    const d = metros(pos, curvaAtiva.c.apice);
+    if (ultKmh > 0 && ultKmh < curvaAtiva.vmin) curvaAtiva.vmin = ultKmh;
+    if (d < curvaAtiva.distMin) curvaAtiva.distMin = d;
+    $('hApice').textContent = Math.round(d) + ' m';        // ao vivo: distância agora
+    $('hVmin').textContent = Math.round(curvaAtiva.vmin);
+    // Veredito do ápice = MELHOR aproximação desta passagem (distMin), não a distância
+    // ao vivo. Quando você passa rente ao ápice ideal, ACENDE verde e FICA até a saída —
+    // não volta a vermelho enquanto o carro se afasta (era a mentira de antes).
+    // Sem prova de erro a 1 Hz (GPS lê 1×/s; o carro anda ~40 m entre leituras): fora dos
+    // 10 m fica NEUTRO, nunca vermelho — o sistema não acusa "errou" o que não mede.
+    // (Com o RaceBox a 25×/s esse 10 m aperta de verdade.)
+    const dMin = curvaAtiva.distMin;
+    cockpitState.setApexPonto('apice', {
+      estado: dMin <= 10 ? ApexEstado.OK_MELHOR : ApexEstado.PENDENTE,
+      distM: Math.round(dMin),
+    });
+    if (d > SAIR) fecharPassagem(p);
+  }
+}
+
+function resetVolta() {
+  curvaAtiva = null; prevG = null; velBuf = []; tempoAnterior.clear();
+  $('hCurva').textContent = '— (reiniciando)';
+  ['gps', ...SENS_MOTOR].forEach(id => setSensor(id, 'off'));   // volta a "sem comunicação" até religar
+  prevDFreio = Infinity; freioArmado = true; setBrakeFill(0);
+  approachId = null; vMaxApp = 0; bdAtVmax = Infinity;   // referências por trecho PERSISTEM entre voltas
+}
+
+function passo(td) {
+  // Só a pista (GPS). O motor desta volta não foi gravado junto — luz de marcha
+  // fica fora pra não mostrar rotação incoerente com a velocidade.
+  while (iP < pista.length && pista[iP].t <= td) { aplicarGps(pista[iP]); iP++; }
+  // O motor (saúde dos sensores) avança em paralelo SÓ pros ícones do topo —
+  // não alimenta a luz de marcha (rotação desta gravação não casa com a velocidade do GPS).
+  while (iM < motor.length && motor[iM].t <= td) { aplicarMotorStatus(motor[iM]); iM++; }
+}
+
+function frame(now) {
+  if (start == null) start = now;
+  const td = (now - start) * FATOR;
+  passo(td);
+  const seg = Math.floor(td / 1000);
+  $('tempo').textContent = String(Math.floor(seg / 60)).padStart(2, '0') + ':' + String(seg % 60).padStart(2, '0');
+  if (iP >= pista.length && iM >= motor.length) { iP = 0; iM = 0; start = now; resetVolta(); }
+  requestAnimationFrame(frame);
+}
+
+(async function boot() {
+  const rc = await fetch('./BARRAS-BRASILIA-FLAVIO-APROVADO-2026-05-27.json');
+  const jc = await rc.json();
+  const arr = Array.isArray(jc) ? jc : (jc.segments || jc.curvas || jc.barras || Object.values(jc).find(Array.isArray));
+  curvas = arr.map(c => ({ id: c.id, nome: c.nome || c.id, apice: { lat: c.apice_gps.lat, lng: c.apice_gps.lng } }));
+
+  const rv = await fetch('./volta-real-pista-24-05.json');
+  const jv = await rv.json();
+  pista = jv.pista; motor = jv.motor; durMax = Math.max(jv.durPista, jv.durMotor);
+
+  // ?pose=SEGUNDOS congela um instante DENTRO de uma curva (pra conferência/foto)
+  const pose = new URLSearchParams(location.search).get('pose');
+  if (pose != null) {
+    const alvo = Number(pose) * 1000;
+    passo(alvo);
+    let guard = 0;
+    while (!curvaAtiva && iP < pista.length && guard < 5000) { passo(pista[iP].t + 1); guard++; }
+    const seg = Math.floor((pista[Math.min(iP, pista.length - 1)]?.t || 0) / 1000);
+    $('tempo').textContent = String(Math.floor(seg / 60)).padStart(2, '0') + ':' + String(seg % 60).padStart(2, '0');
+  } else {
+    requestAnimationFrame(frame);
+  }
+})();
+</script>
+
+<script>
+  // Escala o painel inteiro (#device 956×440, com o cluster de sensores no
+  // topo e as luzes de freio nas laterais — tudo dentro dos 956px) pra
+  // preencher a tela sem corte, mantendo a proporção.
+  (function () {
+    function fit() {
+      var d = document.getElementById('device');
+      if (!d) return;
+      d.style.transform = 'none';
+      var s = Math.min(window.innerWidth / d.offsetWidth,
+                       window.innerHeight / d.offsetHeight);
+      d.style.transform = 'scale(' + s + ')';
+    }
+    window.addEventListener('resize', fit);
+    window.addEventListener('orientationchange', function () { fit(); setTimeout(fit, 80); });
+    document.addEventListener('DOMContentLoaded', function () { fit(); setTimeout(fit, 60); });
+    window.addEventListener('load', function () { fit(); setTimeout(fit, 250); });
+  })();
+</script>
+
+</body>
+</html>
