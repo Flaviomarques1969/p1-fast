@@ -128,13 +128,14 @@ struct ContentView: View {
         // depender da rotação nativa do iOS (que falhava).
         ZStack {
             appContent
-            if let angle = orientation.landscapeAngle {
-                CockpitPilotoView(angle: angle)
-                    .transition(.opacity)
-                    .zIndex(100)
-            }
+            // Cockpit SEMPRE montado (não recarrega a cada giro): some por
+            // transparência no retrato e aparece na paisagem. allowsHitTesting
+            // off no retrato deixa o app de baixo usável normalmente.
+            CockpitPilotoView(angle: orientation.landscapeAngle ?? 90)
+                .opacity(orientation.landscapeAngle != nil ? 1 : 0)
+                .allowsHitTesting(orientation.landscapeAngle != nil)
+                .zIndex(100)
         }
-        .animation(.easeInOut(duration: 0.2), value: orientation.landscapeAngle)
         .onAppear { orientation.startMonitoring() }
     }
 
