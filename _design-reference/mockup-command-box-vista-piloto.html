@@ -7896,22 +7896,22 @@ html,body{
     window.__cbFeedGps = onGps; window.__cbSetEstado = setEstado;
     window.__cbCanalCfg = { url: SUPABASE_URL, anon: SUPABASE_ANON, canal: CHANNEL };
 
-    // assinatura do canal real (import dinâmico — este bloco é script clássico)
-    import('https://esm.sh/@supabase/supabase-js@2.45.0').then(function(m){
-      var client = m.createClient(SUPABASE_URL, SUPABASE_ANON, { realtime:{ params:{ eventsPerSecond:20 } } });
-      var ch = client.channel(CHANNEL, { config:{ broadcast:{ ack:false, self:false } } });
-      ch.on('broadcast', { event:'sample' }, function(msg){ onSample(msg && msg.payload); });
-      ch.on('broadcast', { event:'gps' },    function(msg){ onGps(msg && msg.payload); });
+    // FONTE ÚNICA: assina o canal pela PONTE COMPARTILHADA (cloud-bridge.js).
+    // A tela NÃO abre conexão própria — arquitetura "uma entrada, todos consomem"
+    // (docs/CONTRATO_DADOS.md). O cérebro (mais abaixo) ouve a MESMA ponte/conexão.
+    import('/web/cockpit/cloud-bridge.js').then(function(cb){
+      cb.onSample(onSample);
+      cb.onGpsPoint(onGps);
       // ITEM 3 (18/06): POSIÇÃO PRONTA calculada pela NUVEM — a tela só exibe (não projeta).
-      ch.on('broadcast', { event:'posicao' }, function(msg){
-        var p = msg && msg.payload;
+      cb.onPosicao(function(p){
         if(p && window.__cbPos && typeof p.frac === 'number'){ window.__cbPos.pushPronto(p.frac); REAL.fresh = true; REAL.ts = performance.now(); }
       });
-      ch.subscribe(function(stt){
-        if(stt==='SUBSCRIBED') setEstado('cb-wait','AO VIVO · aguardando o carro');
-        else if(stt==='CHANNEL_ERROR' || stt==='TIMED_OUT') setEstado('cb-err','SEM CONEXÃO');
+      cb.onStatusChange(function(s){
+        if(s==='online') setEstado('cb-wait','AO VIVO · aguardando o carro');
+        else if(s==='error') setEstado('cb-err','SEM CONEXÃO');
       });
-      window.__cbLive = { client:client, ch:ch, REAL:REAL };
+      cb.startCloudBridge().catch(function(){ setEstado('cb-err','SEM CONEXÃO'); });
+      window.__cbLive = { bridge:cb, REAL:REAL };
     }).catch(function(e){ setEstado('cb-err','SEM CONEXÃO'); });
   })();
 })();

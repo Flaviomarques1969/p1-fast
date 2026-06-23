@@ -25,8 +25,12 @@ let _status = 'off';
 let _lastPublishTs = 0;
 let _stats = { sent: 0, dropped: 0, errors: 0, lastError: null };
 let _onStatusChange = () => {};
-let _onGpsPoint = null;
-let _onSample = null;
+// Vários consumidores podem ouvir a MESMA conexão (uma fonte só, todos consomem).
+// Ex.: na Vista Piloto, o HUD e o "cérebro" ouvem juntos sem abrir 2 conexões.
+let _onGpsPoint = [];
+let _onSample = [];
+let _onEvento = [];   // aviso de volta/trecho (consumido pelo cérebro)
+let _onPosicao = [];  // posição já calculada pela NUVEM — a tela só exibe
 let _retryMs = 2000;
 let _retryTimer = null;
 let _quero = false; // intenção: a ponte deve ficar no ar (religa sozinha se cair)
@@ -54,15 +58,31 @@ export function onStatusChange(fn) {
   _onStatusChange = typeof fn === 'function' ? fn : (() => {});
 }
 
+// Entrega um payload a todos os ouvintes registrados, sem deixar um erro de um
+// derrubar os outros nem a conexão.
+function _fan(lista, payload) {
+  for (const fn of lista) { try { fn(payload); } catch (e) { /* não derruba o canal */ } }
+}
+
 /** Registrar callback pra eventos GPS recebidos do canal (lat, lng, kmh, tWall). */
 export function onGpsPoint(fn) {
-  _onGpsPoint = typeof fn === 'function' ? fn : null;
+  if (typeof fn === 'function') _onGpsPoint.push(fn);
 }
 
 /** Registrar callback pra AMOSTRAS recebidas do canal (modo sem fio: outro
  *  transmissor — ou o simulador — manda; este painel consome). */
 export function onSample(fn) {
-  _onSample = typeof fn === 'function' ? fn : null;
+  if (typeof fn === 'function') _onSample.push(fn);
+}
+
+/** Registrar callback pra EVENTOS (ex.: volta/trecho) recebidos do canal. */
+export function onEvento(fn) {
+  if (typeof fn === 'function') _onEvento.push(fn);
+}
+
+/** Registrar callback pra POSIÇÃO já calculada na nuvem (a tela só exibe). */
+export function onPosicao(fn) {
+  if (typeof fn === 'function') _onPosicao.push(fn);
 }
 
 export async function startCloudBridge() {
@@ -78,18 +98,13 @@ export async function startCloudBridge() {
     _channel = _client.channel(CHANNEL_NAME, {
       config: { broadcast: { ack: false, self: false } },
     });
-    // Listener pra pontos GPS publicados no canal (RaceBox via Central / iPhone)
-    _channel.on('broadcast', { event: 'gps' }, (msg) => {
-      if (_onGpsPoint && msg && msg.payload) {
-        try { _onGpsPoint(msg.payload); } catch (e) { /* não derruba canal */ }
-      }
-    });
-    // Listener pra amostras (modo sem fio — consumir o que outro transmissor publica)
-    _channel.on('broadcast', { event: 'sample' }, (msg) => {
-      if (_onSample && msg && msg.payload) {
-        try { _onSample(msg.payload); } catch (e) { /* não derruba canal */ }
-      }
-    });
+    // Listeners do canal — UMA fonte só, distribuída a TODOS os ouvintes registrados.
+    // RaceBox via Central / iPhone (gps), transmissor/simulador (sample), aviso de
+    // volta (evento) e posição já calculada na nuvem (posicao).
+    _channel.on('broadcast', { event: 'gps' },     (msg) => { if (msg && msg.payload) _fan(_onGpsPoint, msg.payload); });
+    _channel.on('broadcast', { event: 'sample' },  (msg) => { if (msg && msg.payload) _fan(_onSample,   msg.payload); });
+    _channel.on('broadcast', { event: 'evento' },  (msg) => { if (msg && msg.payload) _fan(_onEvento,   msg.payload); });
+    _channel.on('broadcast', { event: 'posicao' }, (msg) => { if (msg && msg.payload) _fan(_onPosicao,  msg.payload); });
     await new Promise((resolve, reject) => {
       _channel.subscribe((status, err) => {
         if (status === 'SUBSCRIBED') { _retryMs = 2000; setStatus('online'); resolve(); }
