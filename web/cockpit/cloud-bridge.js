@@ -98,18 +98,13 @@ export async function startCloudBridge() {
     _channel = _client.channel(CHANNEL_NAME, {
       config: { broadcast: { ack: false, self: false } },
     });
-    // Listener pra pontos GPS publicados no canal (RaceBox via Central / iPhone)
-    _channel.on('broadcast', { event: 'gps' }, (msg) => {
-      if (_onGpsPoint && msg && msg.payload) {
-        try { _onGpsPoint(msg.payload); } catch (e) { /* não derruba canal */ }
-      }
-    });
-    // Listener pra amostras (modo sem fio — consumir o que outro transmissor publica)
-    _channel.on('broadcast', { event: 'sample' }, (msg) => {
-      if (_onSample && msg && msg.payload) {
-        try { _onSample(msg.payload); } catch (e) { /* não derruba canal */ }
-      }
-    });
+    // Listeners do canal — UMA fonte só, distribuída a TODOS os ouvintes registrados.
+    // RaceBox via Central / iPhone (gps), transmissor/simulador (sample), aviso de
+    // volta (evento) e posição já calculada na nuvem (posicao).
+    _channel.on('broadcast', { event: 'gps' },     (msg) => { if (msg && msg.payload) _fan(_onGpsPoint, msg.payload); });
+    _channel.on('broadcast', { event: 'sample' },  (msg) => { if (msg && msg.payload) _fan(_onSample,   msg.payload); });
+    _channel.on('broadcast', { event: 'evento' },  (msg) => { if (msg && msg.payload) _fan(_onEvento,   msg.payload); });
+    _channel.on('broadcast', { event: 'posicao' }, (msg) => { if (msg && msg.payload) _fan(_onPosicao,  msg.payload); });
     await new Promise((resolve, reject) => {
       _channel.subscribe((status, err) => {
         if (status === 'SUBSCRIBED') { _retryMs = 2000; setStatus('online'); resolve(); }
