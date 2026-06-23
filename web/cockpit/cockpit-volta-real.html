@@ -30,6 +30,20 @@
      de lugar com o outro (ghost por padrão, mensagem aparece por cima quando vier). */
   .info-bloco { left: 72px; transform: translateY(-50%); align-items: flex-start; text-align: left; }
   .device[data-msg-state="ativa"] .info-bloco { transform: translateY(-50%); }
+  /* Flávio 22/06: 14 ícones de sensor no TOPO; barra das voltas desce um pouco;
+     coluna de bolinhas da direita sai (vira esta fileira). Cor: vermelho = sem
+     comunicação, verde = comunicando, amarelo = falha. */
+  .telemetria-chip { display: none !important; }
+  .stint-bar { top: 34px !important; }
+  .sensor-row {
+    position: absolute; left: 60px; right: 14px; top: 5px; height: 24px; z-index: 40;
+    display: flex; align-items: center; justify-content: space-between; pointer-events: none;
+  }
+  .sensor { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
+  .sensor svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .sensor[data-state="off"]  { color: var(--erro); opacity: .85; }   /* vermelho — sem comunicação */
+  .sensor[data-state="ok"]   { color: var(--bom); }                  /* verde — comunicando */
+  .sensor[data-state="warn"] { color: var(--foco); }                 /* amarelo — falha */
 </style>
 </head>
 <body>
