@@ -117,27 +117,32 @@
   body[data-tela="notebook"] .card__estado{ font-size:10px; height:12px; }
   body[data-tela="notebook"] .rodape{ margin-top:8px; font-size:11px; }
 
-  /* ───────────── VERSÃO CELULAR (girado, ~956×440) ─────────────
-     MESMO desenho da web (3 blocos, 2 colunas, cartões de tamanho natural),
-     só menor pra caber na tela baixa do celular. Sem esticar cartões. */
-  body[data-tela="celular"] #garagem{ padding:8px 14px 6px; }
-  body[data-tela="celular"] .cab{ margin-bottom:6px; }
+  /* ───────────── VERSÃO CELULAR (girado, ~956×440) — APROVADA Flávio 23/06 ─────────────
+     Preenche a tela do celular: 3 blocos lado a lado, cartões que ocupam a altura. */
+  body[data-tela="celular"] #garagem{ padding:8px 12px 6px; }
+  body[data-tela="celular"] .cab{ margin-bottom:7px; }
   body[data-tela="celular"] .cab__tit h1{ font-size:14px; }
   body[data-tela="celular"] .cab__tit p{ display:none; }
   body[data-tela="celular"] .modo-chip{ font-size:9.5px; padding:4px 8px; }
   body[data-tela="celular"] .pronto{ font-size:11px; padding:6px 11px; }
   body[data-tela="celular"] .destaque{ display:none; }            /* GPS e Motor já estão na grade */
-  body[data-tela="celular"] .grupos{ gap:10px; }
-  body[data-tela="celular"] .grupo{ padding:8px 10px 5px; }
-  body[data-tela="celular"] .grupo__tit{ font-size:9px; margin-bottom:6px; }
-  body[data-tela="celular"] .cards{ grid-template-columns:repeat(2,1fr); gap:6px; }
-  body[data-tela="celular"] .card{ padding:6px 4px; gap:3px; }
-  body[data-tela="celular"] .card__nome{ font-size:10px; min-height:12px; }
-  body[data-tela="celular"] .card__ico{ width:22px; height:22px; }
-  body[data-tela="celular"] .card__ico svg{ width:18px; height:18px; }
+  body[data-tela="celular"] .grupos{ display:flex; gap:8px; }
+  body[data-tela="celular"] .grupo{ padding:7px 8px; }
+  body[data-tela="celular"] .grupo:nth-child(1){ flex:4; }        /* Motor: 7 cartões  */
+  body[data-tela="celular"] .grupo:nth-child(2){ flex:1.15; }     /* Movimento: 2      */
+  body[data-tela="celular"] .grupo:nth-child(3){ flex:3; }        /* Chassi: 5         */
+  body[data-tela="celular"] .grupo__tit{ font-size:8.5px; margin-bottom:6px; }
+  body[data-tela="celular"] .grupo:nth-child(1) .cards{ grid-template-columns:repeat(4,1fr); }
+  body[data-tela="celular"] .grupo:nth-child(2) .cards{ grid-template-columns:repeat(1,1fr); }
+  body[data-tela="celular"] .grupo:nth-child(3) .cards{ grid-template-columns:repeat(3,1fr); }
+  body[data-tela="celular"] .cards{ flex:1; gap:6px; grid-auto-rows:1fr; }   /* preenche a altura */
+  body[data-tela="celular"] .card{ padding:5px 3px; gap:2px; justify-content:center; }
+  body[data-tela="celular"] .card__nome{ font-size:9px; min-height:11px; }
+  body[data-tela="celular"] .card__ico{ width:30px; height:30px; }
+  body[data-tela="celular"] .card__ico svg{ width:22px; height:22px; }
   body[data-tela="celular"] .card__dado{ font-size:12px; height:13px; }
-  body[data-tela="celular"] .card__estado{ font-size:8.5px; height:10px; }
-  body[data-tela="celular"] .rodape{ margin-top:5px; font-size:8.5px; }
+  body[data-tela="celular"] .card__estado{ font-size:8px; height:10px; }
+  body[data-tela="celular"] .rodape{ margin-top:6px; font-size:9px; }
 </style>
 </head>
 <body data-tela="notebook" data-modo="parado">
