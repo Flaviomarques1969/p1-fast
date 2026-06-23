@@ -18,6 +18,7 @@
 
 ## Decisões já fechadas — NÃO reabrir
 
+- **★ PAINEL DO PILOTO — VERSÃO APROVADA 2026-06-22:** `web/cockpit/cockpit-volta-real.html` (backup congelado em `_design-reference/versions/cockpit-painel-APROVADO-2026-06-22.html`). É o visual/comportamento oficial do painel, para **dois usos**: (1) app P1 Fast no celular **na horizontal** (em "usuário", girou o celular → abre esta tela); (2) **cockpit do piloto** na tela 10,5" do notebook. Detalhe de cada decisão na memória do projeto `p1-fast-cockpit-volta-real-painel-2026-06-22.md` e em `docs/COCKPIT_FONTE_DA_VERDADE.md`. **NÃO refazer do zero nem perder essas decisões;** mudanças só somam por cima. O replay 8× e as teclas de teste C/U são andaime — na porta entram dados reais.
 - **Não há mais Fase 2** — tudo entra em Fase 1 — `PLANO_FASE_1.md` §1 (decisão Flávio 2026-05-03)
 - **Cockpit-display ao vivo migra pra Windows nativo (WinUI 3 + C# .NET 8)** rodando em notebook + **tela 10,5" externa invertida** no painel — **ADR-023 + amendments 4 e 5** (decisões Flávio 2026-05-09 e 2026-05-10). Notebook hospeda o app, tela 10,5" externa é o que o piloto vê (rotação 180° via Windows Display Settings, NÃO no código do app). O `web/cockpit/` em HTML/JS é referência executável + protótipo + spec dos smokes, NÃO produto final.
 - **Driver T4000 fica no Windows** (USB CDC-ACM ou CAN, JS sobre Node/Electron) — **ADR-023**, substitui o plano original BLE iOS

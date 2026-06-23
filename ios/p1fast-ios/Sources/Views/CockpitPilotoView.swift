@@ -67,23 +67,31 @@ struct CockpitPilotoView: View {
     @State private var angle: Double = 90
 
     var body: some View {
-        GeometryReader { geo in
-            let w = geo.size.width
-            let h = geo.size.height
-            ZStack(alignment: .topLeading) {
-                CockpitWebView()
-                if let onClose {
-                    voltarBotao(onClose)
-                        .padding(.top, 14)
-                        .padding(.leading, 16)
+        ZStack {
+            // Fundo preto cobre TUDO (inclusive entalhe e cantos).
+            Color.black.ignoresSafeArea()
+
+            // O GeometryReader respeita a ÁREA SEGURA (sem ignoresSafeArea):
+            // o cockpit é centralizado na parte visível, livre do entalhe
+            // (ilha dinâmica) e do indicador de baixo — fica equilibrado nos
+            // dois lados quando o celular está na horizontal.
+            GeometryReader { geo in
+                let w = geo.size.width
+                let h = geo.size.height
+                ZStack(alignment: .topLeading) {
+                    CockpitWebView()
+                    if let onClose {
+                        voltarBotao(onClose)
+                            .padding(.top, 14)
+                            .padding(.leading, 16)
+                    }
                 }
+                .frame(width: h, height: w)        // canvas em paisagem (lado longo = largura)
+                .rotationEffect(.degrees(angle))
+                .frame(width: w, height: h)        // centraliza na área segura
             }
-            .frame(width: h, height: w)        // canvas em paisagem (lado longo = largura)
-            .rotationEffect(.degrees(angle))
-            .frame(width: w, height: h)        // recoloca centralizado no container retrato
         }
-        .background(Color.black)
-        .ignoresSafeArea()
+        .statusBarHidden(true)                     // tira o relógio que invadia o cockpit
         .onAppear {
             UIDevice.current.beginGeneratingDeviceOrientationNotifications()
             aplicarAngulo(UIDevice.current.orientation)
