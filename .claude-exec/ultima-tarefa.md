@@ -120,3 +120,24 @@ PENDENTE:
 - Preservadas por trabalho NOMEADO não incorporado: friendly-hopper, hardcore-nightingale, infallible-liskov (editor de pista GPS), infallible-snyder (telas iOS de Stint S2-S8), rodada1-s1 (telas iOS de Stint), vista-engenheiro/command-box-mockup-recovery (Vista Engenheiro do Command Box).
 - Preservada por mudança não salva: hardcore-napier (só Package.resolved? não — recusou no modo seguro; manter).
 - RESULTADO: 18 cópias -> 7 removidas -> 11 restantes, todas com trabalho potencialmente não incorporado. Nenhuma branch (linha de trabalho) apagada.
+
+---
+
+# TASK_INIT — Análise profunda do Command Box (conselho de agentes) — 23/06/2026
+
+## Pedido original
+"Em P1 Fast faça análise profunda com um conselho de agentes para avaliar o Command Box. A situação atual. O que precisa ser feito para atingir o objetivo dele ser real em todos os seus componentes com dados ao vivo da pista. Nas visões piloto e engenharia com lambda, sensores, pneus, amortecedores, e visão geral dos sensores."
+
+## Objetivo (1 frase)
+Classificar componente a componente cada visão do Command Box (real ao vivo / real gravado / demo-fake / aguardando ligação / ausente) com evidência, expor bloqueios físicos de sensor e entregar o plano para virar real ao vivo.
+
+## Critérios de conclusão
+- Cada visão diagnosticada com evidência (arquivo:linha), verificação adversarial das afirmações "é ao vivo".
+- Bloqueios físicos (sensor inexistente) explicitados — não prometer dado que o carro não capta hoje.
+- Plano em ondas. Linguagem de gestor.
+
+## Ambiente: desenvolvimento (SOMENTE LEITURA / ANÁLISE). Produção protegida: sim. Autorização produção: não (não aplicável; não altera nada).
+
+## Riscos: só de imprecisão — mitigado por verificação adversarial. Não escreve código, não toca produção, não publica no canal cockpit-bubi-live.
+
+## Status: iniciado (conselho de agentes disparado).
