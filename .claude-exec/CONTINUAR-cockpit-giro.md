@@ -11,9 +11,11 @@ O cockpit é o **painel APROVADO** da web (`web/cockpit/cockpit-volta-real.html`
 - ✅ Detecção do giro FUNCIONA no iPhone real (pelo sensor de gravidade; antes dependia da rotação nativa do iOS e NÃO disparava nada, ainda mais com a trava de rotação ligada).
 - ✅ Painel aprovado renderiza (sensores/freio/ápice/críticas) — provado no simulador e no aparelho.
 - ✅ Defeito "funciona e PARA" CONSERTADO: o iOS desliga o sensor em 2º plano; agora RELIGA no `didBecomeActive` (OrientationGate.startMotion via appActive).
-- 🔧 EM CORREÇÃO (último pedido Flávio 23/06): o cockpit estava vindo como **IMAGEM que dá pra dar ZOOM e arrastar** ("parece imagem, não app"). Apliquei a trava no código (FALTA reinstalar e ele testar):
+- 🔧 EM CORREÇÃO (pedido Flávio 23/06): o cockpit estava vindo como **IMAGEM que dá pra dar ZOOM e arrastar**. ESCLARECIMENTO DO FLÁVIO (importante): "aplicação NÃO tem zoom em tela — o zoom prova que é imagem; eu quero uma TELA DE APLICATIVO DE VERDADE, viva, como a que o piloto vê, dentro do P1 Fast". Ou seja: o critério dele é COMPORTAMENTO de app (sem zoom, sem arrastar, viva animando) — NÃO necessariamente reescrever nativo. Apliquei a trava no código (FALTA reinstalar e ele testar):
   - `CockpitWebView`: `isUserInteractionEnabled = false` + zoom min/max=1 + pinch desligado + scroll off.
   - `cockpit-app.html` viewport: `maximum-scale=1, user-scalable=no`.
+  - O painel CONTINUA VIVO (replay anima) — não é imagem parada; com o zoom travado, lê como tela de app.
+  - SE depois de testar ele ainda disser que "não é app", aí sim discutir reescrever o painel em SwiftUI nativo — é esforço GRANDE e arrisca DIVERGIR do painel aprovado (cockpit-volta-real.html). Não recomendar de cara; confirmar a percepção dele primeiro com a versão sem zoom.
 - ❓ "fora do lugar" (centralização): provavelmente era o próprio zoom/arraste. Depois da trava, PEDIR FOTO do aparelho na horizontal pra confirmar o equilíbrio. Se ainda torto, ajustar `safeMargin`/centralização em CockpitPilotoView.
 - ❓ Confirmar o SINAL do ângulo no aparelho (em pé dos dois lados) pelos marcadores de log "P1COCKPIT" (precisa cabo USB). A auditoria disse que o sinal está certo; confirmar.
 
