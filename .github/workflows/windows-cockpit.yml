@@ -30,6 +30,7 @@ jobs:
       ui: ${{ steps.filter.outputs.ui }}
       capture: ${{ steps.filter.outputs.capture }}
       livedemo: ${{ steps.filter.outputs.livedemo }}
+      probe: ${{ steps.filter.outputs.probe }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -53,6 +54,10 @@ jobs:
               - '.github/workflows/windows-cockpit.yml'
             livedemo:
               - 'windows/cockpit/P1Fast.Cockpit.T4000LiveDemo/**'
+              - 'windows/cockpit/P1Fast.Cockpit.Domain/**'
+              - '.github/workflows/windows-cockpit.yml'
+            probe:
+              - 'windows/cockpit/P1Fast.Cockpit.T4000UsbProbe/**'
               - 'windows/cockpit/P1Fast.Cockpit.Domain/**'
               - '.github/workflows/windows-cockpit.yml'
 
@@ -303,4 +308,51 @@ jobs:
         with:
           name: p1fast-t4000-live-demo-${{ github.sha }}
           path: dist/t4000-live-demo/
+          retention-days: 14
+
+  # ── USB probe publish ──
+  # Empacota o p1fast-t4000-usb-probe.exe (single-file, self-contained):
+  # sonda que lê a Injepro T3000/T4000 direto pela USB (WinUSB/libusb), faz o
+  # handshake ACK/RI e decodifica o bloco de 460 bytes. Roda no notebook contra
+  # a central viva pra provar a aquisição nativa antes de entrar no app WinUI.
+  t4000-usb-probe-publish:
+    needs: changes
+    if: needs.changes.outputs.probe == 'true'
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: false
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('windows/cockpit/**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Publish (single-file, win-x64, self-contained)
+        shell: pwsh
+        run: |
+          dotnet publish windows/cockpit/P1Fast.Cockpit.T4000UsbProbe/P1Fast.Cockpit.T4000UsbProbe.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:DebugType=embedded `
+            --output dist/t4000-usb-probe
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: p1fast-t4000-usb-probe-${{ github.sha }}
+          path: dist/t4000-usb-probe/
           retention-days: 14

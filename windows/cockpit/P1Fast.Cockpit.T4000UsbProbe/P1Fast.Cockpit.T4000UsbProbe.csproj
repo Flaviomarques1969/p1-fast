@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Sonda nativa de leitura da Injepro T3000/T4000 via USB (WinUSB/libusb).
+       Faz o mesmo que a página WebUSB que já funciona: handshake ACK->OK,
+       comando RI (Read Instruments), decodifica o bloco ~460 bytes com o
+       T3000RiBlockParser do Domain. É o precursor do leitor que vai dentro
+       do app WinUI. Empacota como .exe self-contained (CI) pra rodar no
+       notebook contra a central viva, sem instalar nada. -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>12.0</LangVersion>
+    <AssemblyName>p1fast-t4000-usb-probe</AssemblyName>
+    <RootNamespace>P1Fast.Cockpit.T4000UsbProbe</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LibUsbDotNet" Version="2.2.29" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\P1Fast.Cockpit.Domain\P1Fast.Cockpit.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
