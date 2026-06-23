@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: read
 
 jobs:
@@ -362,3 +362,48 @@ jobs:
           name: p1fast-t4000-usb-probe-${{ github.sha }}
           path: dist/t4000-usb-probe/
           retention-days: 14
+
+  # ── Release pública (link direto pra baixar, sem login) ──
+  # Junta os .exe gerados pelos jobs acima e publica/atualiza uma Release
+  # com tag fixa "cockpit-latest". O Flávio baixa colando a URL no navegador,
+  # sem precisar navegar pelos artifacts (que exigem login e nao tem link direto).
+  publish-release:
+    needs: [t4000-usb-probe-publish, t4000-capture-publish, t4000-live-demo-publish, ui-publish-diagnostic]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Baixa todos os artifacts deste run
+        uses: actions/download-artifact@v4
+        with:
+          path: dl
+
+      - name: Prepara os arquivos da release
+        shell: bash
+        run: |
+          set -x
+          mkdir -p out
+          # .exe single-file (sonda + utilitarios)
+          find dl -name 'p1fast-t4000-usb-probe.exe' -exec cp {} out/ \; || true
+          find dl -name 'p1fast-t4000-capture.exe'   -exec cp {} out/ \; || true
+          find dl -name 'p1fast-t4000-live-demo.exe'  -exec cp {} out/ \; || true
+          # cockpit UI vem como pasta (exe + dlls) -> zipa
+          cockpit_dir=$(find dl -type d -path '*/dist/cockpit-ui' | head -1)
+          if [ -n "$cockpit_dir" ] && [ -n "$(ls -A "$cockpit_dir" 2>/dev/null)" ]; then
+            (cd "$cockpit_dir" && zip -r "$GITHUB_WORKSPACE/out/cockpit-ui.zip" .)
+          fi
+          echo "=== conteudo da release ==="; ls -la out
+
+      - name: Publica/atualiza a Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: cockpit-latest
+          name: P1 Fast — cockpit (build mais recente)
+          body: |
+            Builds mais recentes do branch de desenvolvimento (atualiza a cada push).
+            - **p1fast-t4000-usb-probe.exe** — lê a central T4000 ao vivo (RPM/água/λ).
+            - **cockpit-ui.zip** — a tela do piloto (extrair e rodar P1Fast.Cockpit.UI.exe).
+            - p1fast-t4000-capture.exe / p1fast-t4000-live-demo.exe — utilitários.
+          prerelease: true
+          files: out/*
