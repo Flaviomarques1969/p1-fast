@@ -86,7 +86,24 @@ export function criarGravador(opts = {}) {
 
   function gravar(tipo, dados, rawHex, sim) {
     const agora = now();
-    if (!sessao) abrir(sim);            // primeiro dado da sessão = carro ligou
+    // ── Captura AUTOMÁTICA por movimento (sem botão): abre quando o carro começa a
+    //    andar (pista) e fecha quando fica parado (box). Só com `auto`; sem ela, o
+    //    fluxo é o de sempre. O motor (marcha lenta no box) NÃO abre nem segura a
+    //    gravação — só o movimento do GPS manda.
+    if (auto) {
+      if (tipo === 'gps' && dados && typeof dados.spd === 'number') {
+        velAtual = dados.spd;
+        if (velAtual >= auto.vOff) ultimoMovimentoMono = agora;
+      }
+      if (!sessao) {
+        // EM ESPERA (box/parado): só começa a gravar quando o carro começa a andar
+        if (!(tipo === 'gps' && velAtual >= auto.vOn)) { emEstado('espera'); return null; }
+      } else if (agora - ultimoMovimentoMono >= auto.paradoMs) {
+        // parado tempo suficiente => entrou no box: fecha a sessão (dado preservado)
+        return encerrar('parado');
+      }
+    }
+    if (!sessao) abrir(sim);            // primeiro dado da sessão = carro ligou (ou começou a andar)
     else marcarLacuna(agora);           // buraco dentro da sessão fica registrado
     const registro = {
       sessaoId: sessao.id, seq: ++seq, tipo,
