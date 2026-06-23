@@ -257,7 +257,11 @@ function aplicarGps(p) {
   }
 }
 
-function resetVolta() { curvaAtiva = null; prevG = null; velBuf = []; tempoAnterior.clear(); $('hCurva').textContent = '— (reiniciando)'; }
+function resetVolta() {
+  curvaAtiva = null; prevG = null; velBuf = []; tempoAnterior.clear();
+  $('hCurva').textContent = '— (reiniciando)';
+  ['gps', ...SENS_MOTOR].forEach(id => setSensor(id, 'off'));   // volta a "sem comunicação" até religar
+}
 
 function passo(td) {
   // Só a pista (GPS). O motor desta volta não foi gravado junto — luz de marcha
