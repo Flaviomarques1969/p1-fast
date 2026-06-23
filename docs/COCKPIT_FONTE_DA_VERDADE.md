@@ -7,6 +7,17 @@
 
 ---
 
+## ★ VERSÃO APROVADA DO PAINEL (Flávio 22/06/2026) — NÃO PERDER
+Flávio **provou e aprovou** o painel em `web/cockpit/cockpit-volta-real.html`. É a versão oficial do
+visual/comportamento do painel do piloto, para **DOIS usos**:
+1. **App P1 Fast (celular):** ao girar o celular na **horizontal**, em "usuário", abre ESTA tela.
+2. **Cockpit do piloto:** a tela de **10,5"** que roda no **notebook Windows** (a portagem final).
+
+- Backup congelado (imutável): `_design-reference/versions/cockpit-painel-APROVADO-2026-06-22.html`.
+- Detalhe de cada decisão: memória do projeto `p1-fast-cockpit-volta-real-painel-2026-06-22.md`.
+- O aprovado é o **design (layout + comportamentos)**. O replay 8× e as teclas de teste C/U são andaime de demonstração — na porta pro app/notebook, entram **dados reais** no lugar.
+- Resumo do que foi aprovado: número Delta à esquerda (frase de pilotagem centralizada sob ele) · sem brilho de fundo · número sem +/− · cluster de **14 sensores** no topo (3 grupos titulados MOTOR/MOVIMENTO/CHASSI; vermelho=sem comunicação, verde=comunicando, amarelo=falha) · **luz de freio** vertical nas laterais (enche por TEMPO, 4 s antes do ponto, pisca a tela no ponto; ponto de freada = melhor passagem, via desaceleração do GPS sem sensor) · **resultado da frenagem** à direita espelhando o Delta (±1 m = verde) · **MODO CRÍTICO** (super-críticas+críticas+BOX): palavra vermelha piscando no centro + borda alternando branco/vermelho pra periferia, somem delta/frenagem/ápice, luzes apagam; ÚLTIMA VOLTA no espaço da frenagem.
+
 ## 0. Como a gente trabalha (estratégia — Flávio 22/06)
 **Fazemos a tela funcionar INTEIRA na WEB primeiro** (no navegador — mais fácil e rápido de ver e corrigir).
 **Só quando estiver tudo concluído** é que fazemos a versão pra rodar no **notebook Windows** (a portagem final).
