@@ -22,6 +22,14 @@ const SILENCIO_FIM_MS = 8000;
 // suspensa / notebook dormindo não fingem continuidade — o intervalo fica marcado).
 const LACUNA_MIN_MS = 2000;
 
+// Captura AUTOMÁTICA por movimento (sem botão): grava quando o carro ANDA (pista)
+// e para quando fica PARADO (box). Só liga quando se passa `opts.auto`; sem ela, o
+// comportamento é o de sempre (abre no 1º dado, fecha por silêncio). Valores em km/h
+// e ms — defaults sensatos, a calibrar na pista.
+const AUTO_VON_KMH   = 15;     // começou a andar acima disto => abre a gravação (entrou na pista)
+const AUTO_VOFF_KMH  = 6;      // abaixo disto = parado
+const AUTO_PARADO_MS = 12000;  // parado por tanto tempo => fecha a sessão (entrou no box)
+
 // Taxa instantânea (pontos nos últimos 5 s) — para mostrar 25 Hz de GPS sem mentir.
 function taxaHz(janela, agoraMono) {
   while (janela.length && agoraMono - janela[0] > 5000) janela.shift();
