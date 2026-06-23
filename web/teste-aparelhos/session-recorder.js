@@ -131,9 +131,11 @@ export function criarGravador(opts = {}) {
   }
 
   // Vigia do fim: chamado ~1x/s. Sem dado há `silencioMs` => carro desligou.
+  // Com captura automática, também fecha se ficou parado tempo demais (entrou no box).
   function tick() {
-    if (!sessao) return null;
+    if (!sessao) { if (auto) emEstado('espera'); return null; }
     if (now() - ultimoMono >= silencioMs) return encerrar('silencio');
+    if (auto && now() - ultimoMovimentoMono >= auto.paradoMs) return encerrar('parado');
     emEstado('tick');
     return null;
   }
