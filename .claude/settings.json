@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet test *)",
+      "Bash(dotnet build *)",
+      "Bash(swift run p1fast-smoke *)",
+      "Bash(swift build *)",
+      "Bash(open *)"
+    ]
+  }
+}

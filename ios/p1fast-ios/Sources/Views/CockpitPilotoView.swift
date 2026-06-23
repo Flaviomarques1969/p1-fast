@@ -29,13 +29,14 @@ struct CockpitPilotoView: View {
     var onClose: (() -> Void)? = nil
 
     var body: some View {
-        // O cockpit fica DENTRO da zona segura do iPhone (ilha + indicador + quinas
-        // arredondadas) + uma folga, pra a BORDA FÍSICA do aparelho não comer as
-        // pontas do painel (ex.: SAÍDA na quina). Por isso o GeometryReader NÃO
-        // ignora a área segura. O fundo preto cobre a tela inteira por trás.
+        // Centralizado na TELA FÍSICA (ignoresSafeArea) com folga SIMÉTRICA igual
+        // nos 4 lados: como o painel tem a mesma proporção da tela, uma borda fina
+        // e IGUAL mantém o todo CENTRADO (sem jogar pra um lado) e tira as pontas
+        // (ex.: SAÍDA) de cima da quina arredondada/ilha do iPhone.
         GeometryReader { geo in
-            let w = geo.size.width            // zona segura (já desconta ilha/indicador)
+            let w = geo.size.width
             let h = geo.size.height
+            let p = cockpitFolga             // folga simétrica p/ as pontas não baterem na borda física
             ZStack {
                 Color.black
                 ZStack(alignment: .topLeading) {
@@ -46,16 +47,19 @@ struct CockpitPilotoView: View {
                             .padding(.leading, 16)
                     }
                 }
-                .frame(width: h, height: w)        // formato paisagem (vai ser girado)
+                .frame(width: max(h - 2 * p, 0), height: max(w - 2 * p, 0))
                 .rotationEffect(.degrees(angle))
-                .frame(width: w, height: h)         // re-centra na zona segura
+                .frame(width: w, height: h)
             }
             .frame(width: w, height: h)
         }
-        .padding(14)                               // folga extra das quinas arredondadas
-        .background(Color.black.ignoresSafeArea())
+        .ignoresSafeArea()
         .statusBarHidden(true)
     }
+
+    /// Folga simétrica (pontos) pra as pontas do painel não ficarem sob a quina
+    /// arredondada/ilha do iPhone. Ajuste fino aqui se o Flávio pedir mais/menos.
+    private var cockpitFolga: CGFloat { 46 }
 
     private func voltarBotao(_ action: @escaping () -> Void) -> some View {
         Button(action: action) {
