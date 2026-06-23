@@ -2,53 +2,54 @@
 // Cockpit do Piloto — aparece ao VIRAR o celular de lado
 // ═══════════════════════════════════════════════════════════
 // Comportamento (decisão Flávio 22/06): NÃO tem botão. Em qualquer tela do
-// app, vire o celular pra paisagem → o cockpit do piloto cobre a tela; volte
-// pra vertical → some e você está exatamente onde estava (o app por baixo
-// nunca é desmontado, então o estado é preservado).
+// app, vire o celular pra paisagem → o cockpit cobre a tela; volte pra
+// vertical → some e você está onde estava (o app por baixo nunca desmonta).
 //
-// COMO O GIRO FUNCIONA: rotação NATIVA do iOS. O app é travado em retrato, mas
-// o OrientationGate (+ AppDelegate) destrava a paisagem só pra esta tela e o
-// iOS gira de verdade. Por isso o WKWebView recebe um frame paisagem REAL e o
-// cockpit se centraliza sozinho — sem girar a view na mão (que ficava torto).
-// A apresentação (fullScreenCover dirigido pelo giro físico) vive no ContentView.
+// COMO O GIRO FUNCIONA: o app fica TRAVADO em retrato. O OrientationGate
+// detecta o giro FÍSICO pelo acelerômetro e o ContentView SOBREPÕE esta tela.
+// Aqui a gente gira o conteúdo na mão (rotationEffect) pelo ângulo que o gate
+// mandou, e centraliza no CENTRO FÍSICO da tela (ignorando a área segura, pra
+// o centro não escorregar pro lado por causa do entalhe). Confiável no
+// aparelho real, sem depender da rotação nativa do iOS.
 //
-// O cockpit é o painel APROVADO da web (web/cockpit/cockpit-volta-real.html),
-// embutido no bundle (Resources/Cockpit) e servido por um scheme próprio
-// (cockpit://) num WKWebView real. Roda a sua volta real (replay) com a luz de
-// marcha, cluster de sensores, luzes de freio, ápice, frase do coach e
-// mensagens críticas. Espelhar o carro AO VIVO é o passo seguinte.
+// O cockpit é o painel APROVADO da web (cockpit-volta-real.html), embutido no
+// bundle (Resources/Cockpit) e servido por scheme próprio (cockpit://) num
+// WKWebView. Roda a volta real (replay) com luz de marcha, cluster de sensores,
+// luzes de freio, ápice, frase do coach e mensagens críticas.
 
 import SwiftUI
 import WebKit
 import UIKit
 
 struct CockpitPilotoView: View {
-    /// Botão "Voltar" só aparece quando há onClose (atalho de teste no
-    /// simulador, --p1-cockpit). No fluxo por giro fica nil = sem botão.
+    /// Graus pra girar o conteúdo e deixá-lo EM PÉ na paisagem (+90/-90).
+    /// Default 90 só pro atalho de teste (--p1-cockpit).
+    var angle: Double = 90
+    /// Botão "Voltar" só no atalho de teste; no fluxo por giro fica nil.
     var onClose: (() -> Void)? = nil
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            // Fundo preto cobre entalhe (ilha dinâmica) e cantos.
-            Color.black.ignoresSafeArea()
-
-            // O WKWebView respeita a área segura → o cockpit fica centralizado
-            // na parte visível, livre do entalhe e do indicador de baixo, e
-            // equilibrado nos dois lados na horizontal. Sem rotação, sem frame
-            // trocado: o iOS já entregou a janela em paisagem nativa.
-            CockpitWebView()
-
-            if let onClose {
-                voltarBotao(onClose)
-                    .padding(.top, 14)
-                    .padding(.leading, 16)
+        GeometryReader { geo in
+            let w = geo.size.width            // tela FÍSICA (por causa do ignoresSafeArea)
+            let h = geo.size.height
+            ZStack {
+                Color.black
+                ZStack(alignment: .topLeading) {
+                    CockpitWebView()
+                    if let onClose {
+                        voltarBotao(onClose)
+                            .padding(.top, 14)
+                            .padding(.leading, 16)
+                    }
+                }
+                .frame(width: h, height: w)        // canvas em paisagem (lado longo = largura)
+                .rotationEffect(.degrees(angle))
+                .frame(width: w, height: h)        // re-enquadra: centro no centro FÍSICO da tela
             }
+            .frame(width: w, height: h)
         }
-        .statusBarHidden(true)                     // tira o relógio que invadia o cockpit
-        .preferredColorScheme(.dark)
-        // Com o cover JÁ na tela, re-pede a rotação pro iOS girar na hora
-        // (sem o atraso de quando o pedido sai antes do cover existir).
-        .onAppear { OrientationGate.shared.reassert() }
+        .ignoresSafeArea()
+        .statusBarHidden(true)
     }
 
     private func voltarBotao(_ action: @escaping () -> Void) -> some View {
@@ -74,7 +75,6 @@ struct CockpitPilotoView: View {
 private struct CockpitWebView: UIViewRepresentable {
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
-        // Registra o scheme ANTES de criar a WebView (regra do WKWebView).
         config.setURLSchemeHandler(CockpitSchemeHandler(), forURLScheme: CockpitSchemeHandler.scheme)
 
         let wv = WKWebView(frame: .zero, configuration: config)
@@ -84,7 +84,7 @@ private struct CockpitWebView: UIViewRepresentable {
         wv.scrollView.isScrollEnabled = false
         wv.scrollView.bounces = false
         wv.scrollView.contentInsetAdjustmentBehavior = .never
-        if #available(iOS 16.4, *) { wv.isInspectable = true }  // permite inspecionar pelo Safari em dev
+        if #available(iOS 16.4, *) { wv.isInspectable = true }
 
         if let url = URL(string: "\(CockpitSchemeHandler.scheme)://app/cockpit-app.html") {
             wv.load(URLRequest(url: url))
@@ -97,13 +97,12 @@ private struct CockpitWebView: UIViewRepresentable {
 
 // ─────────── Servidor local dos arquivos do cockpit ───────────
 // Serve Resources/Cockpit/* sob o scheme cockpit://. Um scheme próprio (em vez
-// de file://) dá uma origem válida — sem isso os `import` dos módulos ES e os
-// fetch() dos JSON quebrariam por CORS de file://.
+// de file://) dá uma origem válida — sem isso os `import` ES e os `fetch()`
+// dos JSON quebrariam por CORS de file://.
 
 final class CockpitSchemeHandler: NSObject, WKURLSchemeHandler {
     static let scheme = "cockpit"
 
-    /// Pasta Cockpit dentro do bundle do app (referência de pasta azul).
     private static let root: URL? =
         Bundle.main.resourceURL?.appendingPathComponent("Cockpit", isDirectory: true)
 
@@ -143,7 +142,7 @@ final class CockpitSchemeHandler: NSObject, WKURLSchemeHandler {
     private static func mime(for ext: String) -> String {
         switch ext.lowercased() {
         case "html": return "text/html; charset=utf-8"
-        case "js":   return "text/javascript; charset=utf-8"   // type="module" exige MIME de JS
+        case "js":   return "text/javascript; charset=utf-8"
         case "css":  return "text/css; charset=utf-8"
         case "json": return "application/json; charset=utf-8"
         case "svg":  return "image/svg+xml"
@@ -153,5 +152,5 @@ final class CockpitSchemeHandler: NSObject, WKURLSchemeHandler {
 }
 
 #Preview("Cockpit do Piloto") {
-    CockpitPilotoView(onClose: {})
+    CockpitPilotoView(angle: 90, onClose: {})
 }
