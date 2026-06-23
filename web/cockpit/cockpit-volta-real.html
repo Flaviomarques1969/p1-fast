@@ -275,13 +275,21 @@ function brakeFlash() {
   brakeTimer = setTimeout(() => device.setAttribute('data-brake-fire', 'idle'), 360);
 }
 function atualizarFreio(pos) {
-  const { bd } = curvaMaisProxima(pos);
+  const v = ultKmh / 3.6;                       // velocidade em m/s (real, calculada do GPS)
+  const { bd } = curvaMaisProxima(pos);         // distância ao ápice mais próximo
   const aproximando = bd < prevDFreio - 0.4;
   let fill = 0;
-  if (aproximando && bd <= FREIO_FAR) fill = Math.min(1, (FREIO_FAR - bd) / (FREIO_FAR - FREIO_PT));
+  if (freioArmado && aproximando && v > 1) {
+    const restoM = bd - FREIO_BRAKE_DIST;        // distância que falta até o ponto de freada
+    if (restoM <= 0) {                           // chegou no ponto → pisca
+      fill = 1; brakeFlash(); freioArmado = false;
+    } else {
+      const tBrake = restoM / v;                 // tempo até o ponto (segundos REAIS de pista)
+      if (tBrake <= FREIO_LEAD) fill = 1 - tBrake / FREIO_LEAD;   // 4 s antes = 0%; no ponto = 100%
+    }
+  }
   setBrakeFill(Math.round(fill * FREIO_N));
-  if (aproximando && bd <= FREIO_PT && freioArmado) { brakeFlash(); freioArmado = false; }
-  if (bd > FREIO_FAR) freioArmado = true;
+  if (bd > FREIO_BRAKE_DIST + 60) freioArmado = true;   // re-arma depois de afastar do ápice
   prevDFreio = bd;
 }
 
