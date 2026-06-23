@@ -1,120 +1,95 @@
 // ═══════════════════════════════════════════════════════════
-// OrientationGate — paisagem SÓ pra o Cockpit do Piloto
+// OrientationGate — detecta o GIRO físico do celular (à prova de trava)
 // ═══════════════════════════════════════════════════════════
-// O app é travado em retrato. Esta classe é o ÚNICO ponto que destrava a
-// paisagem, e só enquanto o cockpit está no ar. O AppDelegate abaixo lê o flag
-// em application(_:supportedInterfaceOrientationsFor:) — é o iOS quem rotaciona
-// a tela de verdade (rotação NATIVA), então o WKWebView do cockpit recebe um
-// frame paisagem real e o conteúdo se centraliza sozinho, sem rotationEffect.
+// Decisão Flávio 22-23/06: virar o celular pra paisagem abre o Cockpit do
+// Piloto (sem botão); voltar fecha. NO APARELHO REAL, depender da rotação
+// nativa do iOS / das notificações de UIDevice falha (não dispara nada),
+// principalmente com a TRAVA DE ROTAÇÃO ligada. Por isso aqui a detecção é
+// pelo ACELERÔMETRO (CoreMotion) — lê a gravidade direto, imune à trava.
 //
-// Fluxo (app travado não gira sozinho ao virar o aparelho):
-//   1. Observa UIDevice.orientationDidChangeNotification (a orientação FÍSICA
-//      chega mesmo com o app travado).
-//   2. Aparelho foi pra paisagem  → allowsLandscape = true + força reavaliação
-//      → iOS gira a tela do cockpit pra paisagem.
-//   3. Aparelho voltou pra retrato → allowsLandscape = false + força reavaliação
-//      → iOS volta pra retrato e o cover do cockpit some.
+// No SIMULADOR não há acelerômetro; lá caímos no UIDevice (que responde ao
+// ⌘←/→). Em qualquer caso publicamos `landscapeAngle`:
+//   - nil   = retrato (cockpit escondido)
+//   - +90/-90 = graus pra girar o conteúdo e deixá-lo EM PÉ na paisagem.
+//
+// A apresentação (sobreposição) e o giro do conteúdo vivem em ContentView +
+// CockpitPilotoView. O app fica TRAVADO em retrato (não usa rotação nativa).
+//
+// NSLog com prefixo "P1COCKPIT" pra diagnóstico no aparelho via idevicesyslog.
 
 import SwiftUI
 import UIKit
+import CoreMotion
 
 final class OrientationGate: ObservableObject {
     static let shared = OrientationGate()
 
-    /// Quando true, o AppDelegate libera paisagem. Default false = app travado.
-    @Published private(set) var allowsLandscape = false
-    /// True quando o aparelho está FISICAMENTE de lado (qualquer lado). SwiftUI
-    /// usa isso pra mostrar/esconder o cover do cockpit.
-    @Published private(set) var deviceIsLandscape = false
+    /// nil = retrato; senão, graus a girar o conteúdo pra ficar em pé (+90/-90).
+    @Published private(set) var landscapeAngle: Double? = nil
+
+    private let motion = CMMotionManager()
+    private var started = false
 
     private init() {}
 
-    /// Conjunto que o AppDelegate devolve ao iOS. Travado = só retrato.
-    var supportedMask: UIInterfaceOrientationMask {
-        allowsLandscape ? .landscape : .portrait
-    }
-
-    /// Re-pede a rotação com o cover JÁ na tela (chamado no .onAppear da
-    /// CockpitPilotoView). No 1º disparo o cover ainda não era o controller
-    /// topo; aqui ele é, então o iOS reavalia e gira de verdade.
-    func reassert() {
-        Self.requestGeometryRefresh(toLandscape: allowsLandscape)
-    }
-
-    private func setLandscapeAllowed(_ allowed: Bool) {
-        guard allowsLandscape != allowed else { return }
-        allowsLandscape = allowed
-        Self.requestGeometryRefresh(toLandscape: allowed)
-    }
-
-    // ── Monitoramento físico — chamar UMA vez (idempotente) ──────────────
-    private var started = false
     func startMonitoring() {
         guard !started else { return }
         started = true
-        UIDevice.current.beginGeneratingDeviceOrientationNotifications()
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(orientationChanged),
-            name: UIDevice.orientationDidChangeNotification, object: nil)
-        evaluate(UIDevice.current.orientation)   // estado inicial (pode subir deitado)
+
+        if motion.isAccelerometerAvailable {
+            // APARELHO: acelerômetro (imune à trava de rotação).
+            motion.accelerometerUpdateInterval = 0.12
+            motion.startAccelerometerUpdates(to: .main) { [weak self] data, _ in
+                guard let self, let a = data?.acceleration else { return }
+                self.applyGravity(x: a.x, y: a.y)
+            }
+            NSLog("P1COCKPIT startMonitoring: acelerômetro LIGADO")
+        } else {
+            // SIMULADOR: UIDevice (responde ao ⌘←/→).
+            UIDevice.current.beginGeneratingDeviceOrientationNotifications()
+            NotificationCenter.default.addObserver(
+                self, selector: #selector(deviceChanged),
+                name: UIDevice.orientationDidChangeNotification, object: nil)
+            applyDevice(UIDevice.current.orientation)
+            NSLog("P1COCKPIT startMonitoring: SEM acelerômetro -> UIDevice (simulador)")
+        }
     }
 
-    @objc private func orientationChanged() {
-        evaluate(UIDevice.current.orientation)
-    }
+    // ── Caminho simulador (UIDevice) ─────────────────────────────────────
+    @objc private func deviceChanged() { applyDevice(UIDevice.current.orientation) }
 
-    private func evaluate(_ o: UIDeviceOrientation) {
-        let landscape: Bool
+    private func applyDevice(_ o: UIDeviceOrientation) {
         switch o {
-        case .landscapeLeft, .landscapeRight: landscape = true
-        case .portrait, .portraitUpsideDown:  landscape = false
-        default: return   // faceUp/faceDown/unknown: mantém estado, não oscila
-        }
-        guard landscape != deviceIsLandscape else { return }
-        // Libera a paisagem ANTES de publicar deviceIsLandscape, pra a tela já
-        // poder girar quando o cover aparecer.
-        setLandscapeAllowed(landscape)
-        deviceIsLandscape = landscape
-    }
-
-    // ── Força o iOS a reavaliar a orientação suportada (iOS 16+) ─────────
-    // Roda no PRÓXIMO ciclo da main (async) pra acontecer DEPOIS de o SwiftUI
-    // ter apresentado/atualizado o cover — senão o pedido corre com a
-    // apresentação e o iOS ignora a rotação.
-    private static func requestGeometryRefresh(toLandscape: Bool) {
-        DispatchQueue.main.async {
-            guard let scene = UIApplication.shared.connectedScenes
-                .compactMap({ $0 as? UIWindowScene }).first else { return }
-            for window in scene.windows {
-                if let root = window.rootViewController {
-                    topMost(from: root).setNeedsUpdateOfSupportedInterfaceOrientations()
-                }
-            }
-            let prefs = UIWindowScene.GeometryPreferences.iOS(
-                interfaceOrientations: toLandscape ? .landscape : .portrait)
-            scene.requestGeometryUpdate(prefs) { _ in
-                // Erro aqui é normal numa corrida com o AppDelegate; o
-                // setNeedsUpdate acima já garante a reavaliação. Ignorar é seguro.
-            }
+        case .landscapeLeft:  setAngle(90,  src: "device.landscapeLeft")
+        case .landscapeRight: setAngle(-90, src: "device.landscapeRight")
+        case .portrait, .portraitUpsideDown: setAngle(nil, src: "device.portrait")
+        default: break   // faceUp/faceDown/unknown: mantém
         }
     }
 
-    private static func topMost(from vc: UIViewController) -> UIViewController {
-        var current = vc
-        while let presented = current.presentedViewController { current = presented }
-        return current
+    // ── Caminho aparelho (gravidade) ─────────────────────────────────────
+    // Retrato em pé ≈ (x:0, y:-1). Em paisagem, |x| domina.
+    // angle = -(rotação do aparelho) pra o conteúdo ficar EM PÉ. O sinal é
+    // confirmado pelo log no aparelho (corrijo num toque se vier de cabeça
+    // pra baixo).
+    private func applyGravity(x: Double, y: Double) {
+        let phiDeg = atan2(x, -y) * 180 / .pi      // rotação do aparelho a partir do retrato
+        let a = abs(phiDeg)
+        let angle: Double?
+        if a < 50 {
+            angle = nil                            // retrato
+        } else if a > 130 {
+            angle = nil                            // de cabeça pra baixo → trata como retrato
+        } else {
+            angle = phiDeg > 0 ? -90 : 90          // paisagem: gira o conteúdo ao contrário
+        }
+        setAngle(angle, src: String(format: "gravity phi=%.0f x=%.2f y=%.2f", phiDeg, x, y))
     }
-}
 
-/// AppDelegate mínimo — existe SÓ pra responder a orientação suportada.
-/// O app não tinha AppDelegate; é adicionado via @UIApplicationDelegateAdaptor.
-final class AppDelegate: NSObject, UIApplicationDelegate {
-    func application(
-        _ application: UIApplication,
-        supportedInterfaceOrientationsFor window: UIWindow?
-    ) -> UIInterfaceOrientationMask {
-        // Fonte ÚNICA da verdade: app travado em retrato, exceto quando o gate
-        // libera (cockpit no ar).
-        OrientationGate.shared.supportedMask
+    private func setAngle(_ angle: Double?, src: String) {
+        guard angle != landscapeAngle else { return }
+        landscapeAngle = angle
+        NSLog("P1COCKPIT landscapeAngle=%@ (%@)",
+              angle.map { String(format: "%.0f", $0) } ?? "nil", src)
     }
 }
