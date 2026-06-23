@@ -1,188 +1,208 @@
-// Program.cs — sonda nativa de leitura da Injepro T3000/T4000 via USB.
+// Program.cs — Leitor AUTO-CORRETIVO da Injepro T3000/T4000 via USB.
 //
-// Espelha o caminho da página WebUSB (web/cockpit/main-t3000.js) que JÁ
-// funciona, mas em .NET nativo com LibUsbDotNet (WinUSB/libusb):
-//   1. enumera os dispositivos USB visíveis ao WinUSB;
-//   2. escolhe a Injepro (pelo nome, ou o único com endpoints bulk in+out);
-//   3. handshake: manda "ACK" -> espera "OK";
-//   4. loop ~10 Hz: manda "RI" -> acumula ~460 bytes -> decodifica com
-//      T3000RiBlockParser (Domain) -> imprime RPM/água/λ/TPS ao vivo.
+// Filosofia (pedido do Flávio): a ferramenta tenta SOZINHA varias formas de
+// conectar, mostra o andamento NA TELA, aprende qual funciona, trava nela e
+// fica lendo ao vivo — sem o usuario mexer em config. Se nada funcionar, diz
+// em portugues claro o proximo passo (provavelmente trocar o driver no Zadig).
 //
-// Tudo é verboso de propósito: se algo falhar, a saída diz em português o
-// que houve, pra eu (Claude) corrigir sem depender de log/foto manual.
-//
-// Uso:  p1fast-t4000-usb-probe.exe            (auto-detecta)
-//       p1fast-t4000-usb-probe.exe --scan     (só lista dispositivos e sai)
-//       p1fast-t4000-usb-probe.exe --vid 1234 --pid 5678
+// Estrategias tentadas, em ordem, pra CADA par de endpoints bulk (OUT,IN):
+//   1) ACK->OK->RI   (handshake documentado)
+//   2) RI direto     (sem ACK; algumas versoes ja respondem)
+//   3) so ler        (firmware que faz streaming sem pedir)
+// Para cada combinacao mede quantos bytes vieram e se o parser entende
+// (RPM/agua coerentes). A primeira que "entende" vence.
 
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
 using P1Fast.Cockpit.Domain;
 
 Console.OutputEncoding = System.Text.Encoding.UTF8;
-Console.WriteLine("=== P1 Fast · sonda USB nativa Injepro T3000/T4000 ===");
+Banner();
 
-bool scanOnly = args.Contains("--scan");
-int? wantVid = ArgHex(args, "--vid");
-int? wantPid = ArgHex(args, "--pid");
-
-UsbRegDeviceList all = UsbDevice.AllDevices;
-Console.WriteLine($"Dispositivos USB visíveis ao WinUSB/libusb: {all.Count}\n");
-
-if (all.Count == 0)
+while (true)
 {
-    Console.WriteLine("NENHUM dispositivo no driver WinUSB/libusb.");
-    Console.WriteLine("→ A Injepro provavelmente está no driver proprietário. Rode o Zadig e");
-    Console.WriteLine("  troque o driver da Injepro pra WinUSB (uma vez só). Depois rode de novo.");
-    Pausa();
-    return;
-}
-
-UsbRegistry? chosen = null;
-foreach (UsbRegistry reg in all)
-{
-    string desc = SafeName(reg);
-    Console.WriteLine($"  • VID:{reg.Vid:X4} PID:{reg.Pid:X4}  {desc}");
-    if (wantVid is int v && wantPid is int p)
+    try
     {
-        if (reg.Vid == v && reg.Pid == p) chosen = reg;
+        if (!TentarUmaRodada())
+        {
+            Console.WriteLine();
+            Console.WriteLine("Nenhuma estrategia funcionou nesta rodada. Tentando de novo em 3s…");
+            Console.WriteLine("(Se isto se repetir muitas vezes, quase sempre e DRIVER:");
+            Console.WriteLine(" a central precisa estar no driver WinUSB — eu te passo o Zadig.)");
+            Thread.Sleep(3000);
+        }
     }
-    else if (desc.Contains("injepro", StringComparison.OrdinalIgnoreCase))
+    catch (Exception e)
     {
-        chosen ??= reg;
+        Console.WriteLine($"  erro inesperado: {e.Message} — tentando de novo em 3s");
+        Thread.Sleep(3000);
     }
 }
-Console.WriteLine();
 
-if (scanOnly) { Console.WriteLine("(--scan: só listagem)"); Pausa(); return; }
-
-// Sem match por nome/VID: se só há 1 dispositivo, usa ele.
-chosen ??= all.Count == 1 ? all[0] : null;
-if (chosen is null)
+// ─────────────────────────────────────────────────────────────────────────────
+// Uma rodada completa: enumera, escolhe a central, tenta as estrategias.
+// Retorna true se conseguiu ler (entao ja ficou no loop ao vivo).
+static bool TentarUmaRodada()
 {
-    Console.WriteLine("Não consegui escolher a Injepro automaticamente (vários dispositivos).");
-    Console.WriteLine("→ Rode de novo com --vid XXXX --pid YYYY (em hex) do dispositivo Injepro acima.");
-    Pausa();
-    return;
-}
-
-Console.WriteLine($"Abrindo VID:{chosen.Vid:X4} PID:{chosen.Pid:X4} ({SafeName(chosen)})…");
-if (!chosen.Open(out UsbDevice dev) || dev is null)
-{
-    Console.WriteLine("✗ Falhou ao abrir o dispositivo (ocupado ou sem permissão).");
-    Pausa();
-    return;
-}
-
-try
-{
-    if (dev is IUsbDevice whole)
+    var all = UsbDevice.AllDevices;
+    Console.WriteLine($"\n[{Agora()}] Dispositivos USB visiveis ao WinUSB: {all.Count}");
+    if (all.Count == 0)
     {
-        whole.SetConfiguration(1);
-        whole.ClaimInterface(0);
+        Console.WriteLine("  → Nenhum dispositivo no driver WinUSB.");
+        Console.WriteLine("  → MUITO provavelmente a central esta no driver da Injepro.");
+        Console.WriteLine("    Solucao (1 minuto, uma vez): Zadig → trocar o driver da Injepro pra WinUSB.");
+        return false;
     }
 
-    // Descobre endpoints bulk IN/OUT a partir do descritor.
-    byte epIn = 0, epOut = 0;
-    foreach (var cfg in dev.Configs)
-        foreach (var iface in cfg.InterfaceInfoList)
-            foreach (var ep in iface.EndpointInfoList)
+    // lista e escolhe candidatos (Injepro pelo nome, senao todos)
+    var candidatos = new List<UsbRegistry>();
+    foreach (UsbRegistry reg in all)
+    {
+        string nome = SafeName(reg);
+        Console.WriteLine($"  • VID:{reg.Vid:X4} PID:{reg.Pid:X4}  {nome}");
+        if (nome.Contains("injepro", StringComparison.OrdinalIgnoreCase)) candidatos.Insert(0, reg);
+        else candidatos.Add(reg);
+    }
+
+    foreach (var reg in candidatos)
+    {
+        Console.WriteLine($"\n→ Tentando VID:{reg.Vid:X4} PID:{reg.Pid:X4} ({SafeName(reg)})…");
+        if (!reg.Open(out UsbDevice dev) || dev is null)
+        {
+            Console.WriteLine("  (nao abriu — ocupado ou sem permissao; pulo)");
+            continue;
+        }
+        try
+        {
+            if (dev is IUsbDevice whole) { whole.SetConfiguration(1); whole.ClaimInterface(0); }
+
+            var ins = new List<byte>();
+            var outs = new List<byte>();
+            foreach (var cfg in dev.Configs)
+                foreach (var iface in cfg.InterfaceInfoList)
+                    foreach (var ep in iface.EndpointInfoList)
+                    {
+                        byte addr = ep.Descriptor.EndpointID;
+                        if ((addr & 0x80) != 0) ins.Add(addr); else outs.Add(addr);
+                    }
+            Console.WriteLine($"  endpoints: IN=[{Hexs(ins)}]  OUT=[{Hexs(outs)}]");
+            if (ins.Count == 0)
             {
-                byte addr = ep.Descriptor.EndpointID;
-                bool isIn = (addr & 0x80) != 0;
-                if (isIn && epIn == 0) epIn = addr;
-                if (!isIn && epOut == 0) epOut = addr;
+                Console.WriteLine("  (sem endpoint de leitura — nao e o canal de dados)");
+                continue;
             }
-    Console.WriteLine($"Endpoints: IN=0x{epIn:X2}  OUT=0x{epOut:X2}");
-    if (epIn == 0 || epOut == 0)
-    {
-        Console.WriteLine("✗ Dispositivo sem par de endpoints IN/OUT — não é o canal de dados esperado.");
-        return;
-    }
 
-    var writer = dev.OpenEndpointWriter((WriteEndpointID)epOut);
+            // tenta cada combinacao OUT x IN x modo
+            string[] modos = { "ack_ri", "ri_direto", "so_ler" };
+            foreach (byte epOut in (outs.Count > 0 ? outs : new List<byte> { 0 }))
+                foreach (byte epIn in ins)
+                    foreach (var modo in modos)
+                    {
+                        Console.Write($"  estrategia: OUT=0x{epOut:X2} IN=0x{epIn:X2} modo={modo,-9} … ");
+                        var sample = TentarEstrategia(dev, epOut, epIn, modo, out string detalhe);
+                        if (sample is not null)
+                        {
+                            Console.WriteLine($"✓ FUNCIONOU! ({detalhe})");
+                            Console.WriteLine($"\n  >>> Travado nesta estrategia. Lendo ao vivo (Ctrl+C pra sair) <<<\n");
+                            LerAoVivo(dev, epOut, epIn, modo);
+                            return true;
+                        }
+                        Console.WriteLine($"x ({detalhe})");
+                    }
+        }
+        finally
+        {
+            try { if (dev.IsOpen) { if (dev is IUsbDevice w) w.ReleaseInterface(0); dev.Close(); } } catch { }
+        }
+    }
+    return false;
+}
+
+// Tenta UMA estrategia uma vez; retorna a amostra se o parser entendeu.
+static T3000Sample? TentarEstrategia(UsbDevice dev, byte epOut, byte epIn, string modo, out string detalhe)
+{
+    detalhe = "";
+    try
+    {
+        var reader = dev.OpenEndpointReader((ReadEndpointID)epIn);
+        UsbEndpointWriter? writer = epOut != 0 ? dev.OpenEndpointWriter((WriteEndpointID)epOut) : null;
+
+        if (modo is "ack_ri" && writer is not null)
+        {
+            if (writer.Write(T3000RiBlockParser.AckBytes, 1500, out _) != ErrorCode.None) { detalhe = "sem enviar ACK"; return null; }
+            var ack = new byte[64];
+            if (reader.Read(ack, 1500, out int an) != ErrorCode.None) { detalhe = "sem resposta ao ACK"; return null; }
+            if (!T3000RiBlockParser.IsAckOk(ack.AsSpan(0, Math.Max(2, an)))) { detalhe = $"OK errado: {Hex(ack, an)}"; return null; }
+        }
+        if (modo is "ack_ri" or "ri_direto" && writer is not null)
+        {
+            if (writer.Write(T3000RiBlockParser.RiBytes, 1000, out _) != ErrorCode.None) { detalhe = "sem enviar RI"; return null; }
+        }
+
+        var (bloco, total) = AcumularBloco(reader);
+        detalhe = $"{total} bytes";
+        if (total < 92) return null;
+        var s = T3000RiBlockParser.Parse(bloco.AsSpan(0, total));
+        if (s is null) return null;
+        // coerencia: rpm plausivel e bateria plausivel evita "lixo que parseia"
+        if (s.Rpm < 0 || s.Rpm > 20000) { detalhe += " (rpm absurdo)"; return null; }
+        if (s.BatteryV < 3 || s.BatteryV > 20) { detalhe += " (bateria absurda)"; return null; }
+        return s;
+    }
+    catch (Exception e) { detalhe = e.Message; return null; }
+}
+
+static (byte[] buf, int total) AcumularBloco(UsbEndpointReader reader)
+{
+    var buf = new byte[1024];
+    var merged = new byte[1024];
+    int total = 0; var t0 = Environment.TickCount;
+    while (Environment.TickCount - t0 < 300 && total < 460)
+    {
+        var ec = reader.Read(buf, 250, out int n);
+        if (ec == ErrorCode.IoTimedOut) break;
+        if (ec != ErrorCode.None || n <= 0) break;
+        Array.Copy(buf, 0, merged, total, Math.Min(n, merged.Length - total));
+        total += n;
+    }
+    return (merged, total);
+}
+
+static void LerAoVivo(UsbDevice dev, byte epOut, byte epIn, string modo)
+{
     var reader = dev.OpenEndpointReader((ReadEndpointID)epIn);
-
-    // ── Handshake: ACK -> OK ────────────────────────────────────────────
-    int n;
-    var ec = writer.Write(T3000RiBlockParser.AckBytes, 2000, out n);
-    if (ec != ErrorCode.None) { Console.WriteLine($"✗ Falha ao mandar ACK: {ec}"); return; }
-    var ackResp = new byte[64];
-    ec = reader.Read(ackResp, 2000, out n);
-    if (ec != ErrorCode.None) { Console.WriteLine($"✗ Sem resposta ao ACK: {ec}"); return; }
-    if (!T3000RiBlockParser.IsAckOk(ackResp.AsSpan(0, Math.Max(2, n))))
-    {
-        Console.WriteLine($"✗ Saudação rejeitada (esperava 'OK'). Recebido: {Hex(ackResp, n)}");
-        return;
-    }
-    Console.WriteLine("✓ Handshake OK — central respondeu. Lendo ao vivo (Ctrl+C pra parar):\n");
-
-    // ── Loop de leitura ─────────────────────────────────────────────────
-    var buf = new byte[512];
-    int ciclos = 0, ok = 0;
+    UsbEndpointWriter? writer = epOut != 0 ? dev.OpenEndpointWriter((WriteEndpointID)epOut) : null;
+    int ok = 0;
     while (true)
     {
-        ec = writer.Write(T3000RiBlockParser.RiBytes, 1000, out n);
-        if (ec != ErrorCode.None) { Console.WriteLine($"  leitura caiu (write RI): {ec}"); break; }
-
-        // acumula até ~460 bytes (a central manda em pacotes de 64)
-        int total = 0;
-        var merged = new byte[512];
-        var t0 = Environment.TickCount;
-        while (Environment.TickCount - t0 < 200 && total < 460)
+        if (modo is "ack_ri" or "ri_direto" && writer is not null)
+            writer.Write(T3000RiBlockParser.RiBytes, 1000, out _);
+        var (bloco, total) = AcumularBloco(reader);
+        if (total >= 92)
         {
-            ec = reader.Read(buf, 200, out n);
-            if (ec == ErrorCode.IoTimedOut) break;
-            if (ec != ErrorCode.None) { break; }
-            if (n <= 0) break;
-            Array.Copy(buf, 0, merged, total, Math.Min(n, merged.Length - total));
-            total += n;
+            var s = T3000RiBlockParser.Parse(bloco.AsSpan(0, total));
+            if (s is not null)
+            {
+                ok++;
+                var a = s.Alarmes.QualquerAtivo ? "  ⚠ALARME" : "";
+                Console.WriteLine($"[{ok,5}] rpm={s.Rpm,5}  agua={(s.WaterTempC?.ToString() ?? "—")}C  " +
+                    $"λ={s.Lambda:F2}  tps={s.TpsPct:F0}%  bat={s.BatteryV:F1}V  vel={s.SpeedKmh:F0}{a}");
+            }
         }
-        ciclos++;
-        if (total < 92) continue;
-
-        var sample = T3000RiBlockParser.Parse(merged.AsSpan(0, total));
-        if (sample is null) continue;
-        ok++;
-        if (ok <= 3 || ok % 5 == 0)
-        {
-            var a = sample.Alarmes.QualquerAtivo ? " ⚠ALARME" : "";
-            Console.WriteLine(
-                $"[{ok,4}] rpm={sample.Rpm,5}  água={(sample.WaterTempC?.ToString() ?? "—")}°C  " +
-                $"λ={sample.Lambda:F2}  tps={sample.TpsPct:F0}%  bat={sample.BatteryV:F1}V  " +
-                $"vel={sample.SpeedKmh:F0}km/h  bytes={sample.BytesLen}{a}");
-        }
-        System.Threading.Thread.Sleep(50);
+        Thread.Sleep(50);
     }
-    Console.WriteLine($"\nciclos={ciclos} amostras_ok={ok}");
-}
-finally
-{
-    if (dev.IsOpen)
-    {
-        if (dev is IUsbDevice w) w.ReleaseInterface(0);
-        dev.Close();
-    }
-    UsbDevice.Exit();
 }
 
-// ── helpers ─────────────────────────────────────────────────────────────
-static string SafeName(UsbRegistry reg)
+// ─── helpers ────────────────────────────────────────────────────────────────
+static void Banner()
 {
-    try { return reg.FullName ?? reg.Name ?? "(sem nome)"; }
-    catch { return "(sem nome)"; }
+    Console.WriteLine("====================================================================");
+    Console.WriteLine("  P1 Fast · Leitor AUTO-CORRETIVO da central Injepro T3000/T4000");
+    Console.WriteLine("  Tenta sozinho varias formas de conectar e mostra o progresso aqui.");
+    Console.WriteLine("  Deixe a central LIGADA (chave/motor). Ctrl+C pra sair.");
+    Console.WriteLine("====================================================================");
 }
-static int? ArgHex(string[] args, string flag)
-{
-    int i = Array.IndexOf(args, flag);
-    if (i >= 0 && i + 1 < args.Length && int.TryParse(args[i + 1],
-        System.Globalization.NumberStyles.HexNumber, null, out int v)) return v;
-    return null;
-}
-static string Hex(byte[] b, int n)
-    => string.Join(" ", b.AsSpan(0, Math.Min(n, 8)).ToArray().Select(x => x.ToString("X2")));
-static void Pausa()
-{
-    Console.WriteLine("\n(enter pra sair)");
-    try { Console.ReadLine(); } catch { }
-}
+static string Agora() => $"{DateTime.Now:HH:mm:ss}";
+static string SafeName(UsbRegistry reg) { try { return reg.FullName ?? reg.Name ?? "(sem nome)"; } catch { return "(sem nome)"; } }
+static string Hexs(System.Collections.Generic.List<byte> xs) => string.Join(",", xs.ConvertAll(x => $"0x{x:X2}"));
+static string Hex(byte[] b, int n) => string.Join(" ", b.AsSpan(0, Math.Min(n, 8)).ToArray().Select(x => x.ToString("X2")));
