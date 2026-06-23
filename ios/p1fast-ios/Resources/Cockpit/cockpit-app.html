@@ -557,7 +557,7 @@ function textoAguardando() {
   if (conn === 'sem-internet') return 'SEM CONEXÃO COM A INTERNET';
   return 'SEM CONEXÃO — RELIGANDO';
 }
-function mostrarAguardando() { aguardandoEl.textContent = textoAguardando(); aguardandoEl.style.display = 'flex'; }
+function mostrarAguardando() { aguardandoEl.textContent = textoAguardando(); aguardandoEl.style.display = 'block'; }
 function esconderAguardando() { aguardandoEl.style.display = 'none'; }
 
 let ultimoDado = 0;
