@@ -59,6 +59,7 @@ export function criarGravador(opts = {}) {
   let ultimoMono = 0, ultimoGpsMono = 0, ultimoMotorMono = 0;
   let velAtual = 0;             // km/h da última amostra de GPS (auto por movimento)
   let ultimoMovimentoMono = 0;  // quando o carro estava acima de vOff pela última vez
+  let ultimoGpsQualquerMono = 0;// quando chegou QUALQUER GPS (mesmo parado/em espera) — p/ a tela saber se há sinal
   const janGps = [], janMotor = [];
   const lacunas = [];
 
