@@ -323,22 +323,19 @@ function atualizarFreio(pos) {
   prevDFreio = bd;
 }
 
-// Resultado da freada no lado DIREITO (espelha o Delta): 0 verde = no ponto;
-// amarelo = freou ANTES (metros); vermelho = freou DEPOIS (metros).
-let vMaxApp = 0, bdAtVmax = Infinity, freioResultPendente = false;
-const FREIO_TOL = 1;   // margem de erro: ±1 m ainda é VERDE (mas informa o número)
+// Estado da freada por TRECHO (curva). Persiste entre voltas: a MELHOR passagem
+// marca o ponto de freada (Flávio 22/06). Sem sensor de freio, o início da freada
+// vem da DESACELERAÇÃO do GPS (pico de velocidade = onde começou a frear).
+const brakeRef = new Map();      // id da curva → ponto de freada (distância ao ápice) da MELHOR passagem
+const bestTime = new Map();      // id da curva → melhor tempo do trecho (s)
+const onsetCorner = new Map();   // id da curva → onde a freada começou NESTA aproximação
+let approachId = null, vMaxApp = 0, bdAtVmax = Infinity;
+const FREIO_TOL = 1;             // margem de erro: ±1 m ainda é VERDE (mas informa o número)
 const brNum = $('brNum'), brWord = $('brWord'), brakeResultEl = $('brakeResult');
 function setBrakeResult(num, palavra, cor) {
   brakeResultEl.dataset.cor = cor;
   brWord.textContent = palavra;
   brNum.textContent = (num === '—') ? '—' : String(num);
-}
-function finalizarFreioResultado() {
-  if (!Number.isFinite(bdAtVmax)) return;
-  const m = Math.round(bdAtVmax - FREIO_BRAKE_DIST);   // + freou antes, - freou depois
-  if (Math.abs(m) <= FREIO_TOL) setBrakeResult(Math.abs(m), 'NO PONTO', 'bom');  // ±1 m = verde, mostra 0/1
-  else if (m > 0) setBrakeResult(m, 'ANTES', 'foco');     // amarelo
-  else setBrakeResult(-m, 'DEPOIS', 'erro');              // vermelho
 }
 
 function velDe(p) {
