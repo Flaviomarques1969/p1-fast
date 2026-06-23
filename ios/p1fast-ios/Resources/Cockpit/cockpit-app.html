@@ -161,6 +161,16 @@
   .device[data-ultima="on"] .ultima-volta { display: block; }
   .device[data-ultima="on"] .brake-result { opacity: 0; visibility: hidden; }
 </style>
+<style>
+  /* === Adaptação P1 Fast (app iOS) — SÓ apresentação ===
+     Painel APROVADO em tela cheia, sem a barra de vitrine/HUD de debug.
+     O #device (956×440) e toda a lógica do painel seguem intactos. */
+  html, body { height: 100%; overflow: hidden; background: #050a14; }
+  .topo { display: none !important; }
+  .stage { padding: 0 !important; position: fixed; inset: 0;
+           display: flex; align-items: center; justify-content: center; }
+  #device { transform-origin: center center; }
+</style>
 </head>
 <body>
 
