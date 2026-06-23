@@ -328,7 +328,7 @@ const brNum = $('brNum'), brWord = $('brWord'), brakeResultEl = $('brakeResult')
 function setBrakeResult(num, palavra, cor) {
   brakeResultEl.dataset.cor = cor;
   brWord.textContent = palavra;
-  brNum.textContent = (num === '—') ? '—' : (cor === 'bom' ? '0' : String(num));
+  brNum.textContent = (num === '—') ? '—' : String(num);
 }
 function finalizarFreioResultado() {
   if (!Number.isFinite(bdAtVmax)) return;
