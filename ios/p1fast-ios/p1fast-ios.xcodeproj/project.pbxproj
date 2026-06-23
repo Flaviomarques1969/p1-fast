@@ -12,6 +12,7 @@
 		02F3BE4D666904CE2A7FD6D1 /* TeamContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0912418A8A5A879D44C81474 /* TeamContext.swift */; };
 		045B0DAA04747481A02E31B5 /* ManutencaoConsumiveisView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACAB3545025A5E78E5DE8AEE /* ManutencaoConsumiveisView.swift */; };
 		055C18B1478B09138871A657 /* SincronizacaoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81212C05D55C55EC7D0C0005 /* SincronizacaoView.swift */; };
+		0EDB3438099590EA2C6963EE /* OrientationGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB39A40546360156F076C762 /* OrientationGate.swift */; };
 		1300778DB047AD216AF6FDDB /* PilotoCadastroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7258210661C7A35F7DAFA577 /* PilotoCadastroView.swift */; };
 		142C9DCAC1EF4B03B0ABAB71 /* EventoDetalheView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F057E5C739BCFEF58D4DC92A /* EventoDetalheView.swift */; };
 		2114E39350EB63E1FFABAD27 /* SyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96D7C90709E3E3EF698E6047 /* SyncCoordinator.swift */; };
@@ -209,6 +210,7 @@
 		F1B65222D51333D963A315CB /* EtiquetaOCR.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EtiquetaOCR.swift; sourceTree = "<group>"; };
 		FA34E80FDFC9B17B68632F35 /* CarroHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarroHubView.swift; sourceTree = "<group>"; };
 		FAC883E1802B405F4ABE798C /* StintPlanoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StintPlanoView.swift; sourceTree = "<group>"; };
+		FB39A40546360156F076C762 /* OrientationGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrientationGate.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -422,6 +424,7 @@
 				4657F1C12D473CEBB9B300D5 /* AppDatabase.swift */,
 				B5C6C6F116445DD82A28D553 /* Configuration.swift */,
 				EC2150F5BD2ECEAC0692DA88 /* Info.plist */,
+				FB39A40546360156F076C762 /* OrientationGate.swift */,
 				B586261B93F86A05F5C07DD9 /* P1FastApp.swift */,
 			);
 			path = App;
@@ -570,6 +573,7 @@
 				7DEE37DA3AE91D671C006B0D /* LoginView.swift in Sources */,
 				73AF37D86286B893F9C9FD29 /* LowPowerModeMonitor.swift in Sources */,
 				045B0DAA04747481A02E31B5 /* ManutencaoConsumiveisView.swift in Sources */,
+				0EDB3438099590EA2C6963EE /* OrientationGate.swift in Sources */,
 				B39DBE85EA240E9F1B6698FE /* P1FastApp.swift in Sources */,
 				5E4293E8007960583EF0C9F6 /* PassageiroCadastroView.swift in Sources */,
 				C49AFE1839DB6C37AF4DB487 /* PassageiroRepository.swift in Sources */,

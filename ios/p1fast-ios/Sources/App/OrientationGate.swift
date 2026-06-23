@@ -34,6 +34,13 @@ final class OrientationGate: ObservableObject {
         allowsLandscape ? .landscape : .portrait
     }
 
+    /// Re-pede a rotação com o cover JÁ na tela (chamado no .onAppear da
+    /// CockpitPilotoView). No 1º disparo o cover ainda não era o controller
+    /// topo; aqui ele é, então o iOS reavalia e gira de verdade.
+    func reassert() {
+        Self.requestGeometryRefresh(toLandscape: allowsLandscape)
+    }
+
     private func setLandscapeAllowed(_ allowed: Bool) {
         guard allowsLandscape != allowed else { return }
         allowsLandscape = allowed
