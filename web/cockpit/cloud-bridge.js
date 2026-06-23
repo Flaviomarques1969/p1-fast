@@ -25,8 +25,12 @@ let _status = 'off';
 let _lastPublishTs = 0;
 let _stats = { sent: 0, dropped: 0, errors: 0, lastError: null };
 let _onStatusChange = () => {};
-let _onGpsPoint = null;
-let _onSample = null;
+// Vários consumidores podem ouvir a MESMA conexão (uma fonte só, todos consomem).
+// Ex.: na Vista Piloto, o HUD e o "cérebro" ouvem juntos sem abrir 2 conexões.
+let _onGpsPoint = [];
+let _onSample = [];
+let _onEvento = [];   // aviso de volta/trecho (consumido pelo cérebro)
+let _onPosicao = [];  // posição já calculada pela NUVEM — a tela só exibe
 let _retryMs = 2000;
 let _retryTimer = null;
 let _quero = false; // intenção: a ponte deve ficar no ar (religa sozinha se cair)
