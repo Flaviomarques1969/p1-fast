@@ -651,6 +651,12 @@ struct StintModalView: View {
                 if let id = focoTreino, let treino = CatalogoTreinos.por(id: id) {
                     briefCardProp(treino)
                 }
+                // Lição praticada — só dentro de "Treinar habilidade"
+                // (decisão Flávio 23/06/2026). Fora desse propósito não aparece.
+                Text("LIÇÃO PRATICADA")
+                    .font(.system(size: 11, weight: .semibold)).tracking(1.1)
+                    .foregroundStyle(Color.textFaint).padding(.top, 2)
+                licaoPicker
             }
         }
     }
