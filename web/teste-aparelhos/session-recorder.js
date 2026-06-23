@@ -178,7 +178,8 @@ export function criarGravador(opts = {}) {
 
   function estado() {
     const saude = { ativo: !storeMorto, dropped, alarme: alarme() };
-    if (!sessao) return { gravando: false, nGps, nMotor, velKmh: Math.round(velAtual), auto: !!auto, ...saude };
+    const gpsHaMs = ultimoGpsQualquerMono ? Math.round(now() - ultimoGpsQualquerMono) : null;
+    if (!sessao) return { gravando: false, nGps, nMotor, velKmh: Math.round(velAtual), auto: !!auto, gpsHaMs, ...saude };
     const agora = now();
     return {
       gravando: true,
