@@ -74,10 +74,6 @@ enum HomeNavTarget: Hashable {
     /// Detalhe da melhor volta (tempo; mapa + por trecho quando houver volta
     /// real). Aberto pelo número "Melhor" da Home.
     case melhorVolta
-    /// Cockpit do Piloto — abre, no celular, a MESMA tela que o piloto vê no
-    /// carro (cockpit web canônico embutido, rodando offline). Botão na Home,
-    /// pedido do Flávio 22/06.
-    case cockpitPiloto
 }
 
 /// Dados necessários para renderizar o estado cheio. Por enquanto vêm
