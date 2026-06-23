@@ -376,6 +376,7 @@ function resetVolta() {
   curvaAtiva = null; prevG = null; velBuf = []; tempoAnterior.clear();
   $('hCurva').textContent = '— (reiniciando)';
   ['gps', ...SENS_MOTOR].forEach(id => setSensor(id, 'off'));   // volta a "sem comunicação" até religar
+  prevDFreio = Infinity; freioArmado = true; setBrakeFill(0);
 }
 
 function passo(td) {
