@@ -795,15 +795,6 @@ struct StintModalView: View {
         }
     }
 
-    private var sectionLicao: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionHead("Lição focada")
-            FormField(label: "Lição praticada", small: "opcional · do catálogo") {
-                licaoPicker
-            }
-        }
-    }
-
     // MS-4.3 — Paradas no box (decisão Q7 + Q2.1). Aparece como lista
     // de chips com volta + motivo, mais um "+" pra adicionar.
     private var sectionParadas: some View {
