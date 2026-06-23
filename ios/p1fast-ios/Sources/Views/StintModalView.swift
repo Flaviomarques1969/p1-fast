@@ -98,7 +98,7 @@ struct StintModalView: View {
             )
         }
         .preferredColorScheme(.dark)
-        .onAppear { hidratarPilotoDefault() }
+        .onAppear { hidratarDefaults() }
         .task {
             // MS-4.4: detecta se evento é endurance pra liberar revezamento.
             // Stint solto (sem evento) nunca é endurance.
