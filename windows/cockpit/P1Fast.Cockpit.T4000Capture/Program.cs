@@ -315,7 +315,7 @@ internal static class Program
         var serial = new SerialPortT3000UsbChannel(portName);
         var reader = new T3000UsbLiveReader(
             serial,
-            onSample: s => { var reg = recorder.Motor(s); publisher?.Oferecer(s, reg.TWall); },
+            onSample: s => { var reg = recorder.Motor(s); if (reg is not null) publisher?.Oferecer(s, reg.TWall); },
             onStatus: (txt, nivel) => Console.WriteLine($"[{nivel.ToUpperInvariant()}] {txt}"),
             onLog:    txt => Console.WriteLine("  " + txt));
 

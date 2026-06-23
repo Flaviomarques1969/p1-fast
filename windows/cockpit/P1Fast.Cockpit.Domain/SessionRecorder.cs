@@ -74,7 +74,10 @@ public sealed record SessionEstado(
     int Lacunas,
     bool Ativo,
     int Dropped,
-    string? Alarme);
+    string? Alarme,
+    double VelKmh = 0,        // velocidade do GPS (km/h) — pra tela e pro liga/desliga por movimento
+    bool Auto = false,        // captura automática por movimento está ligada?
+    long? GpsHaMs = null);    // há quanto tempo (ms) chegou o último GPS; null = nunca chegou
 
 /// <summary>Onde a sessão é persistida. Gravar() é append-only e LANÇA em falha de
 /// I/O — o recorder transforma a falha em alarme visível.</summary>
@@ -88,6 +91,14 @@ public interface ISessionStore
     IReadOnlyList<SessionRecord> LerSessao(string id);   // replay / conferência pós-sessão
 }
 
+/// <summary>Config da captura AUTOMÁTICA por movimento (pista x box). Passe ao
+/// recorder pra ligar o liga/desliga sozinho; sem ela, o gravador se comporta como
+/// sempre (abre no 1º dado, fecha por silêncio). Valores em km/h e ms.</summary>
+public sealed record AutoCaptura(
+    double VOn = SessionRecorder.AutoVOnKmh,
+    double VOff = SessionRecorder.AutoVOffKmh,
+    int ParadoMs = SessionRecorder.AutoParadoMs);
+
 public sealed class SessionRecorder
 {
     // Silêncio (sem GPS nem motor) acima disto = carro desligado.
@@ -96,18 +107,31 @@ public sealed class SessionRecorder
     // notebook dormindo não finge continuidade — o intervalo fica marcado).
     public const int LacunaMinMs = 2000;
 
+    // Captura AUTOMÁTICA por movimento (sem botão): grava quando o carro ANDA (pista)
+    // e para quando fica PARADO (box). Só liga quando se passa um AutoCaptura ao
+    // construtor; sem ele, o comportamento é o de sempre (abre no 1º dado, fecha por
+    // silêncio). Em km/h e ms — defaults sensatos, a calibrar na pista.
+    public const double AutoVOnKmh   = 15;     // andou acima disto => abre (entrou na pista)
+    public const double AutoVOffKmh  = 6;      // abaixo disto = parado
+    public const int    AutoParadoMs = 12000;  // parado por tanto tempo => fecha (entrou no box)
+
     private readonly ISessionStore _store;
     private readonly Func<double> _now;     // relógio monotônico (ms)
     private readonly Func<long> _wall;      // relógio de parede (epoch ms) = tCapture
     private readonly Func<string> _gerarId;
     private readonly Action<SessionEstado, string>? _onEstado;
     private readonly int _silencioMs;
+    private readonly AutoCaptura? _auto;
 
     private (string Id, long InicioWall, double InicioMono, bool Sim)? _sessao;
     private long _seq;
     private int _nGps, _nMotor, _dropped, _okWrites;
     private bool _storeMorto;
     private double _ultimoMono, _ultimoGpsMono, _ultimoMotorMono;
+    private double _velAtual;               // km/h da última amostra de GPS (auto por movimento)
+    private double _ultimoMovimentoMono;    // quando o carro esteve acima de VOff pela última vez
+    private double _ultimoGpsQualquerMono;  // chegada de QUALQUER GPS (mesmo parado) — pra tela saber se há sinal
+    private bool _algumGps;                 // já chegou algum GPS? (pra gpsHaMs não mentir no boot)
     private readonly List<double> _janGps = new();
     private readonly List<double> _janMotor = new();
     private readonly List<long> _lacunas = new();
@@ -118,7 +142,8 @@ public sealed class SessionRecorder
         Func<long>? wall = null,
         Func<string>? gerarId = null,
         Action<SessionEstado, string>? onEstado = null,
-        int silencioMs = SilencioFimMs)
+        int silencioMs = SilencioFimMs,
+        AutoCaptura? auto = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         _store = store;
@@ -128,10 +153,14 @@ public sealed class SessionRecorder
         _gerarId = gerarId ?? (() => "sessao-" + DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH-mm-ss-fff", CultureInfo.InvariantCulture));
         _onEstado = onEstado;
         _silencioMs = silencioMs;
+        _auto = auto;
     }
 
     public bool Ativo => !_storeMorto;
     public bool Gravando => _sessao is not null;
+    /// <summary>Por que a última sessão fechou ("parado" = entrou no box, "silencio" =
+    /// carro desligou, "manual"). Pra tela mostrar e pros testes conferirem.</summary>
+    public string? MotivoUltimoFim { get; private set; }
 
     private static double TaxaHz(List<double> janela, double agora)
     {
@@ -157,10 +186,40 @@ public sealed class SessionRecorder
             _lacunas.Add((long)Math.Round(agora - desde));
     }
 
-    private SessionRecord Gravar(string tipo, object? dados, string? rawHex, bool sim)
+    private SessionRecord? Gravar(string tipo, object? dados, string? rawHex, bool sim, double? velKmh = null)
     {
         double agora = _now();
-        if (_sessao is null) Abrir(sim);   // primeiro dado = carro ligou
+        if (tipo == "gps") { _algumGps = true; _ultimoGpsQualquerMono = agora; }
+
+        // ── Captura AUTOMÁTICA por movimento (sem botão): abre quando o carro começa a
+        //    andar (pista) e fecha quando fica parado (box). Só com _auto; sem ela, o
+        //    fluxo é o de sempre. O motor (marcha lenta no box) NÃO abre nem segura a
+        //    gravação — só o movimento do GPS manda.
+        if (_auto is not null)
+        {
+            if (tipo == "gps")
+            {
+                double? v = velKmh ?? (dados is AmostraGps ag ? ag.Kmh : (double?)null);
+                if (v is double vv)
+                {
+                    _velAtual = vv;
+                    if (_velAtual >= _auto.VOff) _ultimoMovimentoMono = agora;
+                }
+            }
+            if (_sessao is null)
+            {
+                // EM ESPERA (box/parado): só começa a gravar quando o carro anda
+                if (!(tipo == "gps" && _velAtual >= _auto.VOn)) { _onEstado?.Invoke(Estado(), "espera"); return null; }
+            }
+            else if (agora - _ultimoMovimentoMono >= _auto.ParadoMs)
+            {
+                // parado tempo suficiente => entrou no box: fecha a sessão (dado preservado)
+                Encerrar("parado");
+                return null;
+            }
+        }
+
+        if (_sessao is null) Abrir(sim);   // primeiro dado = carro ligou (ou começou a andar)
         else MarcarLacuna(agora);          // buraco dentro da sessão fica registrado
 
         var reg = new SessionRecord
@@ -185,26 +244,32 @@ public sealed class SessionRecorder
         return reg;
     }
 
-    /// <summary>Grava uma amostra de motor (T3000) decodificada.</summary>
-    public SessionRecord Motor(T3000Sample sample, string? rawHex = null, bool? simOverride = null)
+    /// <summary>Grava uma amostra de motor (T3000) decodificada. Retorna null se a
+    /// captura automática estiver em espera (carro parado no box) — o motor não abre
+    /// nem segura a gravação sozinho.</summary>
+    public SessionRecord? Motor(T3000Sample sample, string? rawHex = null, bool? simOverride = null)
     {
         bool sim = simOverride ?? (sample?.Source == "sim-replay");
         return Gravar("t4000", sample, rawHex, sim);
     }
 
-    /// <summary>Grava um ponto de GPS cru (taxa de chegada), na mesma sessão/relógio.</summary>
-    public SessionRecord Gps(object decoded, string? rawHex = null, bool sim = false)
-        => Gravar("gps", decoded, rawHex, sim);
+    /// <summary>Grava um ponto de GPS cru (taxa de chegada), na mesma sessão/relógio.
+    /// Passe velKmh quando souber a velocidade (ou um AmostraGps, de onde ela é lida)
+    /// pra a captura automática por movimento funcionar. Retorna null em espera/box.</summary>
+    public SessionRecord? Gps(object decoded, string? rawHex = null, bool sim = false, double? velKmh = null)
+        => Gravar("gps", decoded, rawHex, sim, velKmh);
 
     /// <summary>Grava um evento (ex.: passou no box, marcou volta), na mesma sessão.</summary>
-    public SessionRecord Evento(string nome, object? dados = null, bool sim = false)
+    public SessionRecord? Evento(string nome, object? dados = null, bool sim = false)
         => Gravar("evento", new { nome, dados }, null, sim);
 
-    /// <summary>Vigia do fim: chamar ~1x/s. Sem dado há silencioMs => carro desligou.</summary>
+    /// <summary>Vigia do fim: chamar ~1x/s. Sem dado há silencioMs => carro desligou.
+    /// Com captura automática, também fecha se ficou parado tempo demais (entrou no box).</summary>
     public SessionResumo? Tick()
     {
-        if (_sessao is null) return null;
+        if (_sessao is null) { if (_auto is not null) _onEstado?.Invoke(Estado(), "espera"); return null; }
         if (_now() - _ultimoMono >= _silencioMs) return Encerrar("silencio");
+        if (_auto is not null && _now() - _ultimoMovimentoMono >= _auto.ParadoMs) return Encerrar("parado");
         _onEstado?.Invoke(Estado(), "tick");
         return null;
     }
@@ -212,6 +277,7 @@ public sealed class SessionRecorder
     public SessionResumo? Encerrar(string motivo = "manual")
     {
         if (_sessao is null) return null;
+        MotivoUltimoFim = motivo;
         var s = _sessao.Value;
         double durMs = _ultimoMono - s.InicioMono;
         var resumo = new SessionResumo
@@ -243,8 +309,10 @@ public sealed class SessionRecorder
 
     public SessionEstado Estado()
     {
+        long? gpsHa = _algumGps ? (long)Math.Round(_now() - _ultimoGpsQualquerMono) : null;
         if (_sessao is null)
-            return new SessionEstado(false, null, false, 0, _nGps, _nMotor, 0, 0, 0, !_storeMorto, _dropped, Alarme());
+            return new SessionEstado(false, null, false, 0, _nGps, _nMotor, 0, 0, 0, !_storeMorto, _dropped, Alarme(),
+                                     VelKmh: Math.Round(_velAtual), Auto: _auto is not null, GpsHaMs: gpsHa);
         var s = _sessao.Value;
         double agora = _now();
         return new SessionEstado(
@@ -259,7 +327,10 @@ public sealed class SessionRecorder
             Lacunas: _lacunas.Count,
             Ativo: !_storeMorto,
             Dropped: _dropped,
-            Alarme: Alarme());
+            Alarme: Alarme(),
+            VelKmh: Math.Round(_velAtual),
+            Auto: _auto is not null,
+            GpsHaMs: gpsHa);
     }
 
     /// <summary>Replay/conferência: devolve todos os registros gravados de uma sessão.</summary>

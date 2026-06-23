@@ -152,4 +152,28 @@ Classificar componente a componente cada visão do Command Box (real ao vivo / r
 
 ## Riscos: só de imprecisão — mitigado por verificação adversarial. Não escreve código, não toca produção, não publica no canal cockpit-bubi-live.
 
-## Status: iniciado (conselho de agentes disparado).
+## Status: conselho concluído (15 agentes). Plano em ondas entregue.
+
+---
+
+# TASK_DONE — Trava de arquitetura do dado (uma entrada, um cérebro) — 23/06/2026
+
+## Pedido
+Flávio cobrou garantia ESTRUTURAL (não promessa) de que o dado parte de um lugar só, processa num lugar só, todos consomem o mesmo recurso, e novo trabalho segue isso — sem eu espalhar conexão/conta por tela.
+
+## Feito (ambiente isolado, branch `guard-arquitetura`, oficial `main` INTOCADA)
+- `tests/node-smoke-arquitetura-dado.mjs` — trava automática (catraca): reprova tela com conexão própria (`createClient`), dado falso (`preview-local`/`FAKE_LAPS`) ou tela nova não registrada. Baseline = dívida legada (Vista Piloto, Vista Engenheiro), só encolhe. Ignora cópias/arquivos (APROVADO/BACKUP/data).
+- `docs/CONTRATO_DADOS.md` — registro único: fonte (canal `cockpit-bubi-live` + ponte `cloud-bridge.js`), contrato de campos (stripSample, inclui lambda), casa de cada conta (cérebro), telas que só exibem.
+- `package.json` — liga a trava em `npm run smoke` + `npm run smoke:arquitetura`.
+- `CLAUDE.md` — regra dura em "Decisões já fechadas".
+- Memória: `feedback-arquitetura-uma-fonte-um-processamento-todos-consomem.md` + índice.
+
+## Validação executada (real)
+- Estado atual: 28 ok / 0 fail (verde).
+- Violação nova (tela com createClient): 28 ok / 1 fail (vermelho) — reprovou.
+- Removida: verde de novo.
+- `npm run smoke:arquitetura` roda pelo comando oficial; `package.json` é JSON válido.
+- `main` (oficial) confirmada sem a trava (0) — só na linha isolada.
+
+## Resultado: concluído (estrutura construída e provada). 
+## Pendências: incorporar à versão oficial é decisão do Flávio; depois, migrar Vista Piloto e Vista Engenheiro pra zerar o baseline (cada uma = ligar na fonte/cérebro únicos).
