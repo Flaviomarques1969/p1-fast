@@ -95,7 +95,14 @@ private struct CockpitWebView: UIViewRepresentable {
         wv.scrollView.backgroundColor = .black
         wv.scrollView.isScrollEnabled = false
         wv.scrollView.bounces = false
+        wv.scrollView.bouncesZoom = false
+        wv.scrollView.minimumZoomScale = 1
+        wv.scrollView.maximumZoomScale = 1
+        wv.scrollView.pinchGestureRecognizer?.isEnabled = false
         wv.scrollView.contentInsetAdjustmentBehavior = .never
+        // É um PAINEL fixo (só mostra) — sem zoom, sem arrastar, sem toque.
+        // Isso resolve o "parece uma imagem que dá pra dar zoom".
+        wv.isUserInteractionEnabled = false
         if #available(iOS 16.4, *) { wv.isInspectable = true }
 
         if let url = URL(string: "\(CockpitSchemeHandler.scheme)://app/cockpit-app.html") {
