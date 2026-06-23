@@ -134,6 +134,11 @@ struct ContentView: View {
             CockpitPilotoView(angle: orientation.landscapeAngle ?? 90)
                 .opacity(orientation.landscapeAngle != nil ? 1 : 0)
                 .allowsHitTesting(orientation.landscapeAngle != nil)
+                // Tela cheia REAL: como o cockpit é overlay dentro do ZStack (que
+                // respeita a área segura), sem isto a "ilha" do topo empurrava o
+                // painel pra baixo (faixa preta em cima + corte embaixo). Ignorar
+                // a área segura AQUI faz o overlay ocupar a tela inteira, centrado.
+                .ignoresSafeArea()
                 .zIndex(100)
         }
         .onAppear { orientation.startMonitoring() }
