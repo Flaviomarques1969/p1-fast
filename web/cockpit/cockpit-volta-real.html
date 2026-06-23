@@ -77,11 +77,11 @@
   /* LUZ DE FREIO (Flávio 22/06) — mesma lógica da luz de marcha, mas VERTICAL nas
      duas laterais, enchendo de cima pra baixo conforme chega o ponto de freada.
      Ao atingir o ponto, a tela PISCA (igual à troca de marcha, mas pelas bordas). */
-  .brake-light { position: absolute; top: 50%; transform: translateY(-50%); z-index: 46; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
-  .brake-light--left { left: 7px; }
-  .brake-light--right { right: 7px; }
+  .brake-light { position: absolute; top: 50%; transform: translateY(-50%); z-index: 46; display: flex; flex-direction: column; gap: 11px; pointer-events: none; }
+  .brake-light--left { left: 5px; }
+  .brake-light--right { right: 5px; }
   .brake-dot {
-    width: 10px; height: 10px; border-radius: 50%;
+    width: 14px; height: 14px; border-radius: 50%;
     background: radial-gradient(circle at 35% 30%, oklch(20% 0 0), oklch(11% 0 0) 60%, oklch(7% 0 0));
     box-shadow: inset 0 1px 0 oklch(28% 0 0 / .6), inset 0 0 0 1px oklch(18% 0 0), inset 0 -1px 1px oklch(0% 0 0 / .9), 0 1px 1px oklch(0% 0 0 / .5);
     transition: background 140ms var(--ease-out), box-shadow 200ms var(--ease-out);
