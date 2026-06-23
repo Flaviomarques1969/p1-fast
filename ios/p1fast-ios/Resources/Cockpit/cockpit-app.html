@@ -20,6 +20,16 @@
   .topo .modo { color: #cbd5e1; }
   .stage { padding-top: 78px; display: flex; justify-content: center; }
 </style>
+<style>
+  /* === Adaptação P1 Fast (app iOS) — SÓ apresentação ===
+     Cockpit em tela cheia, sem a barra de vitrine. O device e toda a lógica
+     (luz de marcha, ápice, coach) seguem os canônicos, intactos. */
+  html, body { height: 100%; overflow: hidden; background: #050a14; }
+  .topo { display: none !important; }
+  .stage { padding: 0 !important; position: fixed; inset: 0;
+           display: flex; align-items: center; justify-content: center; }
+  #device { transform-origin: center center; }
+</style>
 </head>
 <body>
 
