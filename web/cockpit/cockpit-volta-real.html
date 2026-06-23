@@ -332,6 +332,7 @@ function atualizarFreio(pos) {
   const v = ultKmh / 3.6;                        // velocidade em m/s (real, calculada do GPS)
   const { best, bd } = curvaMaisProxima(pos);    // curva mais próxima + distância ao ápice
   if (!best) { setBrakeFill(0); prevDFreio = bd; return; }
+  if (modoCritico) { setBrakeFill(0); prevDFreio = bd; return; }   // crítico: luz de freio para
   const id = best.id;
   if (id !== approachId) { approachId = id; vMaxApp = 0; bdAtVmax = Infinity; }  // nova curva sendo abordada
   const aproximando = bd < prevDFreio - 0.4;
