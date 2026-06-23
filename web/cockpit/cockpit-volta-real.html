@@ -101,6 +101,26 @@
     0% { opacity: 0; } 8% { opacity: 1; } 30% { opacity: 1; } 38% { opacity: 0; }
     50% { opacity: 0; } 58% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; }
   }
+  /* RESULTADO DA FREADA — espelha o Delta, do lado DIREITO. Mesmo tamanho/forma:
+     número grande + palavra embaixo. Verde 0 = no ponto; amarelo = freou antes;
+     vermelho = freou depois (número = metros). */
+  .brake-result {
+    position: absolute; right: 72px; top: 40%; transform: translateY(-50%);
+    z-index: 20; pointer-events: none;
+    display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px;
+  }
+  .brake-result__num { font-family: var(--ff-display); font-size: var(--fs-9); font-weight: 900; letter-spacing: var(--ls-tight); line-height: var(--lh-dom); font-variant-numeric: tabular-nums slashed-zero; color: inherit; }
+  .brake-result__word { font-size: var(--fs-6); font-weight: 900; letter-spacing: var(--ls-caps-s); text-transform: uppercase; color: inherit; }
+  .brake-result__num, .brake-result__word {
+    text-shadow:
+      1px 1px 0 oklch(0% 0 0 / .85), -1px -1px 0 oklch(0% 0 0 / .85),
+      1px -1px 0 oklch(0% 0 0 / .85), -1px 1px 0 oklch(0% 0 0 / .85),
+      0 0 24px color-mix(in oklch, currentColor 38%, transparent);
+  }
+  .brake-result[data-cor="neutro"] { color: oklch(55% 0 0); }
+  .brake-result[data-cor="bom"]    { color: var(--bom); }
+  .brake-result[data-cor="foco"]   { color: var(--foco); }
+  .brake-result[data-cor="erro"]   { color: var(--erro); }
 </style>
 </head>
 <body>
