@@ -51,6 +51,34 @@ cima, dado embaixo, cor por estado) e, quando o carro ANDA, vira a réplica do p
 
 ---
 
+## EXECUÇÃO 23/06 (tarde) — DADO REAL na tela do cockpit do app (andando = cockpit ao vivo)
+Foco redefinido pelo Flávio: a tela que abre ao girar o celular tem que ser tela de app DE VERDADE,
+com CONEXÃO REAL e DADO REAL (não o replay = "imagem simulada"). Primeiro o caso ANDANDO=cockpit.
+
+FEITO:
+- Achada a raiz: a tela no app (`Resources/Cockpit/cockpit-app.html`) era REPLAY 100% local (volta 24/05) = a "imagem simulada".
+- Preservado o replay como backup: `Resources/Cockpit/cockpit-app-replay.html` (não apaguei nada).
+- Trocado o MOTOR DE DADOS no `cockpit-app.html`: saiu o replay, entrou a ESCUTA do canal real `cockpit-bubi-live`
+  (via `cloud-bridge.js` onSample/onGpsPoint/startCloudBridge). SÓ ESCUTA — nunca publishSample/publishEvento
+  (regra dura: não publicar no canal de produção). Reusa as funções reais que já existiam (aplicarGps/aplicarMotor/
+  aplicarMotorStatus); mapeia lng→lon e os campos do stripSample. Sem carro = overlay "AGUARDANDO O CARRO" (nunca número
+  inventado). Import dinâmico da ponte: se faltar internet, o painel ainda aparece.
+- Empacotadas no bundle (pasta Cockpit = folder reference, entra tudo): cloud-bridge.js, supabase-config.js,
+  t3000-usb-parser.js. supabase-js carrega do endereço oficial (esm.sh) em runtime (não veio bundle autossuficiente).
+- PROVADA a conexão real (Node + supabase-js, só ouvir): assinou cockpit-bubi-live = SUBSCRIBED/online; 0 amostras em 6s
+  (= sem carro transmitindo agora, esperado). A chave anon funciona, o canal é alcançável.
+- BUILD do app: SUCEEDED. 1ª instalação no iPhone 16 (2D6E7A3B) OK; 2ª instalação FALHOU = aparelho ficou "unavailable"
+  (tela apagou/bloqueou).
+
+PENDENTE:
+- App pronto em /tmp/p1fast-dd/Build/Products/Debug-iphoneos/p1fast-ios.app — instalar quando o iPhone 16 voltar ao alcance
+  (Flávio desbloquear/manter aceso). Comando: xcrun devicectl device install app --device 2D6E7A3B-1449-5BE6-8D82-18F969ED0CCB <app>
+- Flávio TESTAR no aparelho: girar → tela do cockpit como app (sem zoom), mostrando "CONECTADO — AGUARDANDO O CARRO" (sem carro).
+- Prova com NÚMEROS reais correndo = só com carro na pista transmitindo.
+- DEPOIS: caso PARADO = status (outra sessão) — fundir na mesma tela.
+
+---
+
 ## TASK_DONE
 - Pedido original conferido: sim
 - Ambiente trabalhado: desenvolvimento (web, navegador)
