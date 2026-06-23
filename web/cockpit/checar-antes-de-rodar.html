@@ -94,50 +94,54 @@
   .rodape{ text-align:center; color:var(--txt3); }
   .rodape b{ color:var(--txt2); font-weight:700; }
 
-  /* ───────────── VERSÃO NOTEBOOK (tela 10,5") ───────────── */
-  body[data-tela="notebook"] #garagem{ padding:18px 26px 14px; }
-  body[data-tela="notebook"] .cab__tit h1{ font-size:21px; }
-  body[data-tela="notebook"] .cab__tit p{ font-size:12.5px; margin-top:2px; }
+  /* ───────────── VERSÃO NOTEBOOK (tela 10,5", ~1280×692) ───────────── */
+  body[data-tela="notebook"] #garagem{ padding:14px 24px 10px; }
+  body[data-tela="notebook"] .cab__tit h1{ font-size:20px; }
+  body[data-tela="notebook"] .cab__tit p{ font-size:12px; margin-top:2px; }
   body[data-tela="notebook"] .modo-chip{ font-size:11px; }
-  body[data-tela="notebook"] .pronto{ font-size:15px; padding:10px 18px; }
-  body[data-tela="notebook"] .destaque{ margin:16px 0 14px; }
+  body[data-tela="notebook"] .pronto{ font-size:14px; padding:9px 16px; }
+  body[data-tela="notebook"] .destaque{ margin:12px 0; }
+  body[data-tela="notebook"] .big{ padding:9px 16px; gap:14px; }
+  body[data-tela="notebook"] .big__ico{ width:40px; height:40px; flex-basis:40px; }
+  body[data-tela="notebook"] .big__ico svg{ width:24px; height:24px; }
+  body[data-tela="notebook"] .big__estado{ font-size:18px; }
   body[data-tela="notebook"] .grupos{ gap:14px; }
-  body[data-tela="notebook"] .grupo{ padding:14px 16px; }
-  body[data-tela="notebook"] .grupo__tit{ font-size:11px; margin-bottom:12px; }
-  body[data-tela="notebook"] .cards{ grid-template-columns:repeat(2,1fr); }
-  body[data-tela="notebook"] .card{ padding:13px 8px; gap:6px; }
+  body[data-tela="notebook"] .grupo{ padding:12px 14px 8px; }
+  body[data-tela="notebook"] .grupo__tit{ font-size:11px; margin-bottom:9px; }
+  body[data-tela="notebook"] .cards{ grid-template-columns:repeat(2,1fr); gap:8px; }
+  body[data-tela="notebook"] .card{ padding:8px 6px; gap:4px; }
   body[data-tela="notebook"] .card__nome{ font-size:12px; min-height:14px; }
-  body[data-tela="notebook"] .card__ico{ width:38px; height:38px; }
-  body[data-tela="notebook"] .card__ico svg{ width:28px; height:28px; }
-  body[data-tela="notebook"] .card__dado{ font-size:17px; height:18px; }
-  body[data-tela="notebook"] .card__estado{ font-size:10.5px; height:13px; }
-  body[data-tela="notebook"] .rodape{ margin-top:12px; font-size:12px; }
+  body[data-tela="notebook"] .card__ico{ width:30px; height:30px; }
+  body[data-tela="notebook"] .card__ico svg{ width:24px; height:24px; }
+  body[data-tela="notebook"] .card__dado{ font-size:15px; height:16px; }
+  body[data-tela="notebook"] .card__estado{ font-size:10px; height:12px; }
+  body[data-tela="notebook"] .rodape{ margin-top:8px; font-size:11px; }
 
   /* ───────────── VERSÃO CELULAR (girado, ~956×440) ───────────── */
-  body[data-tela="celular"] #garagem{ padding:9px 13px 7px; }
-  body[data-tela="celular"] .cab{ margin-bottom:8px; }
-  body[data-tela="celular"] .cab__tit h1{ font-size:15px; }
+  body[data-tela="celular"] #garagem{ padding:8px 12px 6px; }
+  body[data-tela="celular"] .cab{ margin-bottom:7px; }
+  body[data-tela="celular"] .cab__tit h1{ font-size:14px; }
   body[data-tela="celular"] .cab__tit p{ display:none; }
-  body[data-tela="celular"] .modo-chip{ font-size:10px; padding:4px 9px; }
-  body[data-tela="celular"] .pronto{ font-size:12px; padding:6px 12px; }
+  body[data-tela="celular"] .modo-chip{ font-size:9.5px; padding:4px 8px; }
+  body[data-tela="celular"] .pronto{ font-size:11px; padding:6px 11px; }
   body[data-tela="celular"] .destaque{ display:none; }            /* GPS e Motor já estão na grade */
   body[data-tela="celular"] .grupos{ display:flex; gap:8px; }
-  body[data-tela="celular"] .grupo{ padding:8px 8px 4px; }
+  body[data-tela="celular"] .grupo{ padding:7px 8px; }
   body[data-tela="celular"] .grupo:nth-child(1){ flex:4; }        /* Motor: 7 cartões  */
-  body[data-tela="celular"] .grupo:nth-child(2){ flex:1.1; }      /* Movimento: 2      */
+  body[data-tela="celular"] .grupo:nth-child(2){ flex:1.15; }     /* Movimento: 2      */
   body[data-tela="celular"] .grupo:nth-child(3){ flex:3; }        /* Chassi: 5         */
-  body[data-tela="celular"] .grupo__tit{ font-size:8.5px; margin-bottom:7px; }
+  body[data-tela="celular"] .grupo__tit{ font-size:8.5px; margin-bottom:6px; }
   body[data-tela="celular"] .grupo:nth-child(1) .cards{ grid-template-columns:repeat(4,1fr); }
   body[data-tela="celular"] .grupo:nth-child(2) .cards{ grid-template-columns:repeat(1,1fr); }
   body[data-tela="celular"] .grupo:nth-child(3) .cards{ grid-template-columns:repeat(3,1fr); }
-  body[data-tela="celular"] .cards{ gap:6px; }
-  body[data-tela="celular"] .card{ padding:7px 3px 6px; gap:3px; }
+  body[data-tela="celular"] .cards{ flex:1; gap:6px; grid-auto-rows:1fr; }   /* preenche a altura */
+  body[data-tela="celular"] .card{ padding:5px 3px; gap:2px; justify-content:center; }
   body[data-tela="celular"] .card__nome{ font-size:9px; min-height:11px; }
-  body[data-tela="celular"] .card__ico{ width:26px; height:26px; }
-  body[data-tela="celular"] .card__ico svg{ width:19px; height:19px; }
+  body[data-tela="celular"] .card__ico{ width:30px; height:30px; }
+  body[data-tela="celular"] .card__ico svg{ width:22px; height:22px; }
   body[data-tela="celular"] .card__dado{ font-size:12px; height:13px; }
   body[data-tela="celular"] .card__estado{ font-size:8px; height:10px; }
-  body[data-tela="celular"] .rodape{ margin-top:6px; font-size:9px; }
+  body[data-tela="celular"] .rodape{ margin-top:5px; font-size:8.5px; }
 </style>
 </head>
 <body data-tela="notebook" data-modo="parado">

@@ -109,3 +109,14 @@ PENDENTE:
 
 ### Pendências ou riscos
 - Aguardando o ok visual do Flávio. Limiares de velocidade a calibrar na pista. Força-G/valores numéricos dependem do feed real.
+
+## Investigação profunda das cópias preservadas — 23/06/2026
+- Removidas a mais (0 código exclusivo; trabalho nomeado já na oficial): cerebro-nuvem-tripa, determined-beaver-390de9 (esta tinha só Package.resolved sujo = lockfile regenerável; branch persiste = reversível).
+- TRABALHO DE CÓDIGO SOLTO (arquivos que NÃO existem na oficial — preservadas firme):
+  * infallible-bardeen-dedc29: ios/.../ProntidaoPendencia.swift
+  * classificador-trail: supabase/migrations/0043_tipos_curva_vivos.sql + web/cockpit/tipos-curva-vivos-{loader,persister}.js (ATENÇÃO: memória diz 0043 aplicada em PROD 14/06, mas o arquivo não está na oficial — revisar)
+  * cockpit-treino-trail: src/telemetry/racebox-*.js (5, integração RaceBox/GPS) + web/cockpit/revisao-treino.{html,js}
+  * revisao-treino-freio: web/cockpit/revisao-treino.{html,js}
+- Preservadas por trabalho NOMEADO não incorporado: friendly-hopper, hardcore-nightingale, infallible-liskov (editor de pista GPS), infallible-snyder (telas iOS de Stint S2-S8), rodada1-s1 (telas iOS de Stint), vista-engenheiro/command-box-mockup-recovery (Vista Engenheiro do Command Box).
+- Preservada por mudança não salva: hardcore-napier (só Package.resolved? não — recusou no modo seguro; manter).
+- RESULTADO: 18 cópias -> 7 removidas -> 11 restantes, todas com trabalho potencialmente não incorporado. Nenhuma branch (linha de trabalho) apagada.
