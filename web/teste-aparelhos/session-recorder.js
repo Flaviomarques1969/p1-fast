@@ -189,6 +189,7 @@ export function criarGravador(opts = {}) {
       nGps, nMotor,
       velKmh: Math.round(velAtual),
       auto: !!auto,
+      gpsHaMs,
       hzGps:   Math.round(taxaHz(janGps, agora)   * 10) / 10,
       hzMotor: Math.round(taxaHz(janMotor, agora) * 10) / 10,
       gpsParadoS:   ultimoGpsMono   ? Math.round((agora - ultimoGpsMono) / 100) / 10   : null,
