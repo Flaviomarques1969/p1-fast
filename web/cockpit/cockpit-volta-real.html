@@ -59,10 +59,10 @@
     box-shadow: inset 0 1px 0 oklch(100% 0 0 / .10), inset 0 0 0 1px oklch(100% 0 0 / .05), 0 1px 2px oklch(0% 0 0 / .55);
     transition: color 240ms var(--ease-out), box-shadow 240ms var(--ease-out);
   }
-  .sensor svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .sensor svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.55; stroke-linecap: round; stroke-linejoin: round; }
   /* vermelho — sem comunicação: contido, sem brilho (parece "aguardando") */
-  .sensor[data-state="off"] { color: oklch(56% 0.17 27); box-shadow: inset 0 1px 0 oklch(100% 0 0 / .07), inset 0 0 0 1px oklch(55% 0.20 27 / .30), 0 1px 2px oklch(0% 0 0 / .55); }
-  .sensor[data-state="off"] svg { opacity: .65; }
+  .sensor[data-state="off"] { color: oklch(58% 0.17 27); box-shadow: inset 0 1px 0 oklch(100% 0 0 / .07), inset 0 0 0 1px oklch(55% 0.20 27 / .30), 0 1px 2px oklch(0% 0 0 / .55); }
+  .sensor[data-state="off"] svg { opacity: .82; }
   /* verde — comunicando: vivo, com halo */
   .sensor[data-state="ok"] { color: var(--bom); box-shadow: inset 0 1px 0 oklch(100% 0 0 / .12), inset 0 0 0 1px oklch(80% 0.22 145 / .45), 0 0 11px oklch(80% 0.22 145 / .38), 0 1px 2px oklch(0% 0 0 / .55); }
   .sensor[data-state="ok"] svg { filter: drop-shadow(0 0 3px oklch(80% 0.22 145 / .7)); }
