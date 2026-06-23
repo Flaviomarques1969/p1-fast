@@ -252,6 +252,37 @@ function aplicarMotorStatus(m) {
   setSensor('motor-alarme', algumAlarme ? 'warn' : 'ok');
 }
 
+// ── Luz de freio (laterais): enche de cima pra baixo na aproximação da curva; no
+// ponto de freada PISCA a tela pelas bordas. Gatilho aqui = proximidade do ápice
+// mais próximo (substituto até existir o ponto ideal de freada / sensor de freio).
+const device = $('device');
+const brakeLeftDots = [...document.querySelectorAll('#brakeLeft .brake-dot')];
+const brakeRightDots = [...document.querySelectorAll('#brakeRight .brake-dot')];
+const FREIO_FAR = 130, FREIO_PT = 50, FREIO_N = 9;
+let prevDFreio = Infinity, freioArmado = true, brakeTimer = null;
+function setBrakeFill(lit) {
+  for (let i = 0; i < FREIO_N; i++) {
+    const on = i < lit;
+    brakeLeftDots[i].classList.toggle('is-on', on);
+    brakeRightDots[i].classList.toggle('is-on', on);
+  }
+}
+function brakeFlash() {
+  device.setAttribute('data-brake-fire', 'active');
+  if (brakeTimer) clearTimeout(brakeTimer);
+  brakeTimer = setTimeout(() => device.setAttribute('data-brake-fire', 'idle'), 360);
+}
+function atualizarFreio(pos) {
+  const { bd } = curvaMaisProxima(pos);
+  const aproximando = bd < prevDFreio - 0.4;
+  let fill = 0;
+  if (aproximando && bd <= FREIO_FAR) fill = Math.min(1, (FREIO_FAR - bd) / (FREIO_FAR - FREIO_PT));
+  setBrakeFill(Math.round(fill * FREIO_N));
+  if (aproximando && bd <= FREIO_PT && freioArmado) { brakeFlash(); freioArmado = false; }
+  if (bd > FREIO_FAR) freioArmado = true;
+  prevDFreio = bd;
+}
+
 function velDe(p) {
   if (prevG) {
     const d = metros({ lat: prevG.lat, lng: prevG.lon }, { lat: p.lat, lng: p.lon });
