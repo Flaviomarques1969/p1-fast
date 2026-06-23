@@ -267,6 +267,9 @@ function passo(td) {
   // Só a pista (GPS). O motor desta volta não foi gravado junto — luz de marcha
   // fica fora pra não mostrar rotação incoerente com a velocidade.
   while (iP < pista.length && pista[iP].t <= td) { aplicarGps(pista[iP]); iP++; }
+  // O motor (saúde dos sensores) avança em paralelo SÓ pros ícones do topo —
+  // não alimenta a luz de marcha (rotação desta gravação não casa com a velocidade do GPS).
+  while (iM < motor.length && motor[iM].t <= td) { aplicarMotorStatus(motor[iM]); iM++; }
 }
 
 function frame(now) {
