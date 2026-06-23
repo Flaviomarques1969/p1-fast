@@ -1,3 +1,35 @@
+# Última tarefa — COCKPIT (volta real) — redesenho do PAINEL — 22/06/2026
+
+## Pedido (sessão inteira, iterativa)
+Lapidar a tela `web/cockpit/cockpit-volta-real.html`: ápice, limpeza visual, cluster de sensores, luz de freio e resultado da freada — um item por vez, mostrando na 8078, com sim/não.
+
+## Ambiente
+desenvolvimento (web, servidor local 8078). Produção protegida: sim. Autorização produção: não. Nada em produção. Tudo override LOCAL nesta tela; `cockpit.css` e painel-piloto v1 das outras telas NÃO alterados (preservação).
+
+## O que foi feito e APROVADO por Flávio (todas verificadas no navegador)
+1. Ápice: veredito trava no ponto mais rente (distMin); ≤10 m verde e fica até a saída; fora = neutro (nunca vermelho a 1 Hz).
+2. Sem brilho de fundo (halo) no painel.
+3. Número sem sinal +/− (só valor; verde bom, vermelho ruim).
+4. Número (Delta) fixo à esquerda; frase de pilotagem centralizada SOB o número.
+5. Cluster de 14 sensores no topo, bandeja de vidro, lentes premium, 3 grupos titulados à esquerda (MOTOR 7 · MOVIMENTO 2 · CHASSI 5); vermelho=sem comunicação, verde=comunicando, amarelo=falha. Barra das voltas desceu.
+6. Ícones redesenhados como símbolos de painel reconhecíveis.
+7. LUZ DE FREIO vertical nas laterais (5 verde+1 amarela+3 vermelha/lado), enche por TEMPO (4 s antes do ponto, pela velocidade), pisca a tela pelas bordas no ponto; conjunto subido e por cima do encaixe.
+8. RESULTADO DA FREADA à direita espelhando o Delta: ±1 m = verde "NO PONTO" (mostra 0/1); >1 m antes = amarelo "ANTES"; depois = vermelho "DEPOIS".
+
+## Validação
+Sintaxe do script conferida a cada alteração (`node --check`). Tela reaberta no navegador a cada passo (8078). Flávio aprovou item a item; último "sim" na margem ±1 m.
+
+## PROXY / pendências reais (NÃO é dado real ainda)
+- Gatilhos de freio são proxy de GPS: ponto = 50 m antes do ápice; onde freou = pico de velocidade. Valor REAL vem do sensor de freio (motor+GPS juntos na pista).
+- Replay roda 8× → os 4 s reais aparecem comprimidos; sentir o tempo exige velocidade real.
+- Luz de marcha (horizontal) não anima nesta volta (depende da rotação do motor, incoerente com o GPS desta gravação).
+- Decisões registradas na memória do projeto: `p1-fast-cockpit-volta-real-painel-2026-06-22.md`.
+
+## Status
+Concluído o que foi pedido nesta sessão e aprovado. Aberto pra continuar (mais ícones, luz de marcha real, ou ligar no motor) quando Flávio decidir.
+
+---
+
 # Última tarefa — App iOS: tela "Cockpit do Piloto" na Home — 22/06/2026
 
 ## 1. Pedido original
