@@ -59,6 +59,7 @@ export function criarGravador(opts = {}) {
   let ultimoMono = 0, ultimoGpsMono = 0, ultimoMotorMono = 0;
   let velAtual = 0;             // km/h da última amostra de GPS (auto por movimento)
   let ultimoMovimentoMono = 0;  // quando o carro estava acima de vOff pela última vez
+  let ultimoGpsQualquerMono = 0;// quando chegou QUALQUER GPS (mesmo parado/em espera) — p/ a tela saber se há sinal
   const janGps = [], janMotor = [];
   const lacunas = [];
 
@@ -86,6 +87,7 @@ export function criarGravador(opts = {}) {
 
   function gravar(tipo, dados, rawHex, sim) {
     const agora = now();
+    if (tipo === 'gps') ultimoGpsQualquerMono = agora;   // marca chegada de GPS mesmo em espera
     // ── Captura AUTOMÁTICA por movimento (sem botão): abre quando o carro começa a
     //    andar (pista) e fecha quando fica parado (box). Só com `auto`; sem ela, o
     //    fluxo é o de sempre. O motor (marcha lenta no box) NÃO abre nem segura a
@@ -176,7 +178,8 @@ export function criarGravador(opts = {}) {
 
   function estado() {
     const saude = { ativo: !storeMorto, dropped, alarme: alarme() };
-    if (!sessao) return { gravando: false, nGps, nMotor, velKmh: Math.round(velAtual), auto: !!auto, ...saude };
+    const gpsHaMs = ultimoGpsQualquerMono ? Math.round(now() - ultimoGpsQualquerMono) : null;
+    if (!sessao) return { gravando: false, nGps, nMotor, velKmh: Math.round(velAtual), auto: !!auto, gpsHaMs, ...saude };
     const agora = now();
     return {
       gravando: true,
@@ -186,6 +189,7 @@ export function criarGravador(opts = {}) {
       nGps, nMotor,
       velKmh: Math.round(velAtual),
       auto: !!auto,
+      gpsHaMs,
       hzGps:   Math.round(taxaHz(janGps, agora)   * 10) / 10,
       hzMotor: Math.round(taxaHz(janMotor, agora) * 10) / 10,
       gpsParadoS:   ultimoGpsMono   ? Math.round((agora - ultimoGpsMono) / 100) / 10   : null,

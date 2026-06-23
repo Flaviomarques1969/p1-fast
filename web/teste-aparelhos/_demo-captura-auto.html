@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demonstração — captura automática por movimento</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#0b1220; color:#e2e8f0; font:16px/1.4 -apple-system,Segoe UI,Roboto,sans-serif; padding:24px; }
+  .wrap { max-width:1100px; margin:0 auto; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  .sub { color:#94a3b8; margin:0 0 20px; font-size:14px; }
+  #banner { padding:26px 22px; border-radius:14px; font-weight:800; font-size:30px; letter-spacing:.4px;
+            text-align:center; background:#1f2937; color:#94a3b8; transition:background .15s; }
+  .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:18px 0; }
+  .cell { background:#111a2e; border:1px solid #1e293b; border-radius:10px; padding:14px 16px; }
+  .cell .lbl { color:#94a3b8; font-size:12px; text-transform:uppercase; letter-spacing:.5px; }
+  .cell .val { font-size:26px; font-weight:700; margin-top:4px; }
+  .speedbar { height:14px; background:#1e293b; border-radius:8px; overflow:hidden; margin-top:8px; }
+  .speedbar > i { display:block; height:100%; background:#38bdf8; width:0; transition:width .1s; }
+  .note { color:#94a3b8; font-size:13px; margin-top:16px; }
+  #log { background:#0a0f1c; border:1px solid #1e293b; border-radius:10px; padding:12px 14px; margin-top:16px;
+         font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace; color:#cbd5e1; white-space:pre-wrap; max-height:180px; overflow:auto; }
+  .marca { display:inline-block; margin-top:8px; padding:3px 10px; border-radius:6px; background:#334155; color:#cbd5e1; font-size:12px; font-weight:700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Captura automática por movimento — demonstração de bancada</h1>
+  <p class="sub">Usa o <b>gravador real</b> (<code>session-recorder.js</code>, o mesmo que roda na Central de Pista e vai pra pista) e a sua <b>volta real de Brasília</b> reproduzida acelerada. <b>Sem nuvem, sem publicar nada</b> — só prova o liga/desliga sozinho. <span class="marca">DEMONSTRAÇÃO</span></p>
+
+  <div id="banner">AGUARDANDO SINAL…</div>
+
+  <div class="grid">
+    <div class="cell"><div class="lbl">Velocidade</div><div class="val"><span id="vel">0</span> km/h</div>
+      <div class="speedbar"><i id="velbar"></i></div></div>
+    <div class="cell"><div class="lbl">GPS gravados</div><div class="val" id="ngps">0</div></div>
+    <div class="cell"><div class="lbl">Motor gravados</div><div class="val" id="nmotor">0</div></div>
+    <div class="cell"><div class="lbl">Sessões fechadas</div><div class="val" id="nsess">0</div></div>
+  </div>
+
+  <p class="note">Limiares (a calibrar na pista): começa a gravar acima de <b>15 km/h</b>; para de gravar depois de <b>12 s</b> parado abaixo de <b>6 km/h</b> (box). Aqui o tempo está acelerado pra você ver a virada rápido.</p>
+  <div id="log"></div>
+</div>
+
+<script type="module">
+import { criarGravador, criarStoreMemoria } from './session-recorder.js';
+
+const $ = id => document.getElementById(id);
+function log(m){ $('log').textContent = m + '\n' + $('log').textContent; }
+
+// Relógio VIRTUAL: a demonstração avança o tempo em lockstep com o replay, então
+// os limiares reais (12 s parado) viram ~1 s de relógio de parede aqui.
+let vnow = 0;
+const Rec = criarGravador({
+  store: criarStoreMemoria(),
+  now: () => vnow,
+  wall: () => 1_700_000_000_000 + vnow,
+  auto: { vOn: 15, vOff: 6, paradoMs: 12000 },
+});
+
+let sessoesFechadas = 0;
+let estavaGravando = false;
+
+function render(){
+  const e = Rec.estado();
+  const b = $('banner');
+  const gpsChegando = e.gpsHaMs != null && e.gpsHaMs < 3000;
+  const kmh = Math.round(e.velKmh || 0);
+  $('vel').textContent = kmh;
+  $('velbar').style.width = Math.min(100, kmh / 140 * 100) + '%';
+  $('ngps').textContent = e.nGps;
+  $('nmotor').textContent = e.nMotor;
+  $('nsess').textContent = sessoesFechadas;
+  if (!gpsChegando){
+    b.textContent = 'SEM GPS — não dá pra saber se o carro está na pista';
+    b.style.background = '#7f1d1d'; b.style.color = '#fecaca';
+  } else if (e.gravando){
+    b.textContent = 'GRAVANDO — NA PISTA   ·   ' + kmh + ' km/h';
+    b.style.background = '#14532d'; b.style.color = '#bbf7d0';
+  } else {
+    b.textContent = 'EM ESPERA — no box (parado)   ·   ' + kmh + ' km/h';
+    b.style.background = '#78350f'; b.style.color = '#fde68a';
+  }
+  if (e.gravando && !estavaGravando) log('▶ COMEÇOU a gravar (carro andou / entrou na pista) — ' + kmh + ' km/h');
+  estavaGravando = e.gravando;
+}
+
+(async function boot(){
+  let pts = [];
+  try { pts = await (await fetch('./sim-gps.json?v=demo')).json(); }
+  catch(e){ log('Não carregou a volta real: ' + e.message); return; }
+  log('Volta real carregada: ' + pts.length + ' pontos de GPS. Rodando acelerado…');
+
+  let i = 0;
+  const PASSO_MS = 200;   // a volta real é ~5 pontos/s
+  setInterval(() => {
+    // avança alguns pontos por quadro (tempo acelerado, mas a LÓGICA usa os limiares reais)
+    for (let k = 0; k < 6; k++){
+      const p = pts[i % pts.length];
+      i++;
+      vnow += PASSO_MS;
+      const spd = p.v || 0;
+      const res = Rec.gps({ fix:3, numSV:9, hacc:2, spd, lat:p.lat, lon:p.lng }, null, true);
+      if (res && res.motivoFim === 'parado'){ sessoesFechadas++; log('■ PAROU de gravar (carro parado no box) — sessão guardada (' + res.nGps + ' GPS, ' + res.duracaoS + 's)'); }
+      // motor "andando junto" só enquanto grava (marcha lenta no box não conta)
+      if (Rec.estado().gravando) Rec.motor({ rpm: 3000 + Math.round(spd*20), source:'real' }, null, false);
+    }
+    Rec.tick();
+    render();
+  }, 60);
+})();
+</script>
+</body>
+</html>
