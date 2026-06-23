@@ -386,6 +386,23 @@ function fecharPassagem(p) {
     cockpitState.setTrechoStatus(TrechoStatus.NEUTRO);
   }
   if (tempoS > 0.5) tempoAnterior.set(a.c.id, tempoS);
+  // RESULTADO da freada vs a MELHOR passagem deste trecho (a melhor marca o ponto):
+  const onset = onsetCorner.get(a.c.id);
+  if (Number.isFinite(onset)) {
+    if (brakeRef.has(a.c.id)) {
+      const m = Math.round(onset - brakeRef.get(a.c.id));   // + freou antes, - freou depois (vs melhor)
+      if (Math.abs(m) <= FREIO_TOL) setBrakeResult(Math.abs(m), 'NO PONTO', 'bom');
+      else if (m > 0) setBrakeResult(m, 'ANTES', 'foco');
+      else setBrakeResult(-m, 'DEPOIS', 'erro');
+    } else {
+      setBrakeResult('—', 'REFERÊNCIA', 'neutro');   // 1ª passagem vira a referência
+    }
+    // a MELHOR passagem (menor tempo) passa a marcar o ponto de freada
+    if (tempoS > 0.5 && (!bestTime.has(a.c.id) || tempoS < bestTime.get(a.c.id))) {
+      bestTime.set(a.c.id, tempoS);
+      brakeRef.set(a.c.id, onset);
+    }
+  }
   curvaAtiva = null;
 }
 
