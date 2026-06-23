@@ -924,7 +924,7 @@ private struct AssistirButton: View {
         Button(action: onAbrir) {
             HStack(spacing: 10) {
                 Circle()
-                    .fill(Color.red)
+                    .fill(Color.textMuted)
                     .frame(width: 10, height: 10)
                 Text("ASSISTIR AO VIVO")
                     .font(.system(size: 16, weight: .bold))
