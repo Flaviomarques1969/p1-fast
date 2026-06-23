@@ -573,5 +573,25 @@ function frame(now) {
 })();
 </script>
 
+<script>
+  // Escala o painel inteiro (#device 956×440, com o cluster de sensores no
+  // topo e as luzes de freio nas laterais — tudo dentro dos 956px) pra
+  // preencher a tela sem corte, mantendo a proporção.
+  (function () {
+    function fit() {
+      var d = document.getElementById('device');
+      if (!d) return;
+      d.style.transform = 'none';
+      var s = Math.min(window.innerWidth / d.offsetWidth,
+                       window.innerHeight / d.offsetHeight);
+      d.style.transform = 'scale(' + s + ')';
+    }
+    window.addEventListener('resize', fit);
+    window.addEventListener('orientationchange', function () { fit(); setTimeout(fit, 80); });
+    document.addEventListener('DOMContentLoaded', function () { fit(); setTimeout(fit, 60); });
+    window.addEventListener('load', function () { fit(); setTimeout(fit, 250); });
+  })();
+</script>
+
 </body>
 </html>
