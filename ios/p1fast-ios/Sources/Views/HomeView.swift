@@ -947,7 +947,6 @@ private struct AssistirButton: View {
             )
         }
         .buttonStyle(.plain)
-        .padding(.top, Spacing.lg)
     }
 }
 
