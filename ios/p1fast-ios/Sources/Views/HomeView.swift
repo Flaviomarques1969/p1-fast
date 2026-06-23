@@ -208,15 +208,21 @@ struct HomeView: View {
                     onCriarEvento: { router.path.append(HomeNavTarget.eventosNovo) }
                 )
             }
-            // ASSISTIR AO VIVO — tela de espectador (vídeo + volta/trecho).
-            AssistirButton(onAbrir: {
-                router.path.append(HomeNavTarget.assistir)
-            })
-            // Botão de TESTE do espelhamento ao vivo — visível em qualquer
-            // estado da Home. Abre a TesteAoVivoView (viewer Daily.co).
-            TesteAoVivoButton(onAbrir: {
-                router.path.append(HomeNavTarget.testeAoVivo)
-            })
+            // AO VIVO — par de botões (espectador + teste de campo). Agrupados
+            // com respiro pequeno (Spacing.sm) pra lerem como uma dupla; o
+            // respiro acima vem do VStack pai (Spacing.lg). Antes cada botão
+            // somava +24 no topo e abria buracos de 48px (Flávio 2026-06-22).
+            VStack(spacing: Spacing.sm) {
+                // ASSISTIR AO VIVO — tela de espectador (vídeo + volta/trecho).
+                AssistirButton(onAbrir: {
+                    router.path.append(HomeNavTarget.assistir)
+                })
+                // Botão de TESTE do espelhamento ao vivo — abre a
+                // TesteAoVivoView (viewer Daily.co).
+                TesteAoVivoButton(onAbrir: {
+                    router.path.append(HomeNavTarget.testeAoVivo)
+                })
+            }
             // Atalho dev pra captura rápida em test drive — fica embaixo
             // do conteúdo canônico. Só renderiza quando o caller injetou
             // um builder válido.
