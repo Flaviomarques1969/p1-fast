@@ -173,8 +173,14 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path logs | Out-Null
           $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+          # 1) Restore SEPARADO (combinar com Publish pula a geracao do XAML .g.cs).
           msbuild windows/cockpit/P1Fast.Cockpit.UI/P1Fast.Cockpit.UI.csproj `
-            /t:Restore,Publish `
+            /t:Restore `
+            /p:Configuration=Release /p:Platform=x64 /p:RuntimeIdentifier=win-x64 `
+            /v:minimal *>&1 | Tee-Object -FilePath logs/restore-output.txt
+          # 2) Publish (o target Publish chama Build -> passes do XAML -> CoreCompile).
+          msbuild windows/cockpit/P1Fast.Cockpit.UI/P1Fast.Cockpit.UI.csproj `
+            /t:Publish `
             /p:Configuration=Release `
             /p:Platform=x64 `
             /p:RuntimeIdentifier=win-x64 `
