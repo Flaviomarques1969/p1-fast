@@ -184,10 +184,19 @@ function aplicarGps(p) {
     const d = metros(pos, curvaAtiva.c.apice);
     if (ultKmh > 0 && ultKmh < curvaAtiva.vmin) curvaAtiva.vmin = ultKmh;
     if (d < curvaAtiva.distMin) curvaAtiva.distMin = d;
-    $('hApice').textContent = Math.round(d) + ' m';
+    $('hApice').textContent = Math.round(d) + ' m';        // ao vivo: distância agora
     $('hVmin').textContent = Math.round(curvaAtiva.vmin);
-    // bolinha do ápice ao vivo: verde quando passa rente ao ápice ideal
-    cockpitState.setApexPonto('apice', { estado: d <= 10 ? ApexEstado.OK_MELHOR : ApexEstado.OK_PIOR, distM: Math.round(d) });
+    // Veredito do ápice = MELHOR aproximação desta passagem (distMin), não a distância
+    // ao vivo. Quando você passa rente ao ápice ideal, ACENDE verde e FICA até a saída —
+    // não volta a vermelho enquanto o carro se afasta (era a mentira de antes).
+    // Sem prova de erro a 1 Hz (GPS lê 1×/s; o carro anda ~40 m entre leituras): fora dos
+    // 10 m fica NEUTRO, nunca vermelho — o sistema não acusa "errou" o que não mede.
+    // (Com o RaceBox a 25×/s esse 10 m aperta de verdade.)
+    const dMin = curvaAtiva.distMin;
+    cockpitState.setApexPonto('apice', {
+      estado: dMin <= 10 ? ApexEstado.OK_MELHOR : ApexEstado.PENDENTE,
+      distM: Math.round(dMin),
+    });
     if (d > SAIR) fecharPassagem(p);
   }
 }
