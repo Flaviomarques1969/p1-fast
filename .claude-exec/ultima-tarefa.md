@@ -43,3 +43,40 @@ Fazer a Central de Pista gravar motor+GPS COMEÇAR e PARAR sozinha conforme o ca
 - Preservar o comportamento atual (abre no 1º dado, fecha por silêncio) — só ACRESCENTAR o gatilho por movimento.
 
 ## Status inicial: iniciado
+
+---
+
+## TASK_DONE
+- Pedido original conferido: sim
+- Ambiente trabalhado: desenvolvimento
+- Produção foi alterada: não
+- Se produção foi alterada, autorização explícita registrada: n/a
+- Arquivos reais inspecionados: sim
+- Alterações feitas: sim
+- Testes/validação executados: sim (70 testes verdes: 43 smoke + 11 idb + 16 do gatilho novo; + prova com a volta real)
+- Resultado: concluído (lógica) — demonstração visual aberta; falta o ok do Flávio na tela
+- Pendências reais: calibrar os limiares na pista; a Central real só pôde ser provada por demo local (a real auto-conecta na produção e o simulador publicaria lá — regra dura)
+
+### Arquivos alterados
+- web/teste-aparelhos/session-recorder.js (gatilho por movimento, opt-in via `auto`; expõe velKmh/gpsHaMs/auto no estado)
+- web/cockpit/session-recorder.js (cópia gêmea — mantida idêntica)
+- web/teste-aparelhos/index.html (liga o modo automático na Central + aviso GRANDE de estado; BUILD bump 2026-06-23-CAPTURA-AUTO)
+
+### O que foi acrescentado
+- tests/node-smoke-session-recorder-auto.mjs (16 provas do liga/desliga por movimento)
+- web/teste-aparelhos/_demo-captura-auto.html (demonstração local SEM nuvem, usa o gravador real + volta real)
+
+### O que foi preservado
+- Comportamento antigo do gravador intacto (sem `auto` = abre no 1º dado / fecha por silêncio); 43+11 testes seguem verdes.
+- Nada publicado no canal de produção cockpit-bubi-live (regra dura respeitada — não abri a Central conectada com o simulador).
+
+### Validação executada
+- node tests/node-smoke-session-recorder.mjs → 43 ok / 0 fail
+- node tests/node-smoke-session-recorder-idb.mjs → 11 ok / 0 fail
+- node tests/node-smoke-session-recorder-auto.mjs → 16 ok / 0 fail
+- Prova com a volta real (5520 pts): 1 sessão aberta por movimento, 1 fechada por parada; curvas lentas NÃO interromperam.
+- Demo servida em http://127.0.0.1:8087/web/teste-aparelhos/_demo-captura-auto.html (HTTP 200) e aberta no navegador.
+
+### Pendências ou riscos
+- Limiares 15/6 km/h e 12 s são defaults — calibrar na pista.
+- Depende do RaceBox (GPS) conectado: sem GPS, o aviso mostra "SEM GPS" (operador vigia).
