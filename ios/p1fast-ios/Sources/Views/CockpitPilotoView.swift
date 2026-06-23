@@ -32,6 +32,7 @@ struct CockpitPilotoView: View {
         GeometryReader { geo in
             let w = geo.size.width            // tela FÍSICA (por causa do ignoresSafeArea)
             let h = geo.size.height
+            let m = safeMargin                // margem simétrica pra limpar o entalhe/ilha
             ZStack {
                 Color.black
                 ZStack(alignment: .topLeading) {
@@ -42,7 +43,9 @@ struct CockpitPilotoView: View {
                             .padding(.leading, 16)
                     }
                 }
-                .frame(width: h, height: w)        // canvas em paisagem (lado longo = largura)
+                // canvas em paisagem ENCOLHIDO pela margem simétrica nos dois
+                // lados → o painel não fica sob o entalhe e segue centralizado.
+                .frame(width: max(h - 2 * m, 0), height: max(w - 2 * m, 0))
                 .rotationEffect(.degrees(angle))
                 .frame(width: w, height: h)        // re-enquadra: centro no centro FÍSICO da tela
             }
@@ -50,6 +53,15 @@ struct CockpitPilotoView: View {
         }
         .ignoresSafeArea()
         .statusBarHidden(true)
+    }
+
+    /// Maior folga segura do aparelho (entalhe/ilha em cima, indicador embaixo).
+    /// Vira margem IGUAL nos dois lados → limpa o entalhe sem descentralizar.
+    private var safeMargin: CGFloat {
+        let insets = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.windows.first(where: { $0.isKeyWindow })?.safeAreaInsets ?? .zero
+        return max(insets.top, insets.bottom, insets.left, insets.right, 8)
     }
 
     private func voltarBotao(_ action: @escaping () -> Void) -> some View {
