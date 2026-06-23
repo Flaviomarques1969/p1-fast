@@ -153,6 +153,22 @@ let ultKmh = 0;
 let curvaAtiva = null;
 const tempoAnterior = new Map();
 
+// ── Sensores no topo (14 ícones): vermelho=sem comunicação, verde=comunicando, amarelo=falha.
+const sensorEls = {};
+document.querySelectorAll('.sensor[data-sensor]').forEach(el => { sensorEls[el.dataset.sensor] = el; });
+function setSensor(id, st) { const el = sensorEls[id]; if (el && el.dataset.state !== st) el.dataset.state = st; }
+const SENS_MOTOR = ['rpm', 'acelerador', 'freio-pedal', 'bateria', 'agua', 'lambda', 'motor-alarme'];
+function aplicarMotorStatus(m) {
+  // A injeção está comunicando (temos amostra) → verde. Amarelo só quando o PRÓPRIO
+  // dado mostra falha real (alarme do motor ou limite estourado). Sem inventar.
+  const al = m.al || {};
+  const algumAlarme = Object.values(al).some(Boolean);
+  setSensor('rpm', 'ok'); setSensor('acelerador', 'ok'); setSensor('freio-pedal', 'ok'); setSensor('bateria', 'ok');
+  setSensor('agua', (m.agua > 110 || al.excessoTempMotor) ? 'warn' : 'ok');
+  setSensor('lambda', (al.wbMaximo || al.wbMinimo || al.nbMaximo || al.nbMinimo) ? 'warn' : 'ok');
+  setSensor('motor-alarme', algumAlarme ? 'warn' : 'ok');
+}
+
 function velDe(p) {
   if (prevG) {
     const d = metros({ lat: prevG.lat, lng: prevG.lon }, { lat: p.lat, lng: p.lon });
