@@ -79,8 +79,14 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen:
           UIColorName: SplashBackground
+        # Paisagem DECLARADA pro app todo (capacidade), mas o AppDelegate
+        # (OrientationGate) restringe a retrato em TODAS as telas, menos o
+        # Cockpit do Piloto. Sem declarar aqui, a rotação nativa do cockpit
+        # não acontece (o iOS faz interseção com esta lista).
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         SUPABASE_URL: $(SUPABASE_URL)
