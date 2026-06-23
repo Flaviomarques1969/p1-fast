@@ -219,5 +219,22 @@ async function rodarVolta() {
 })();
 </script>
 
+<script>
+  // Escala o device pra caber inteiro na tela do iPhone (mantém a proporção).
+  (function () {
+    function fit() {
+      var d = document.getElementById('device');
+      if (!d) return;
+      d.style.transform = 'none';
+      var s = Math.min(window.innerWidth / d.offsetWidth,
+                       window.innerHeight / d.offsetHeight);
+      d.style.transform = 'scale(' + s + ')';
+    }
+    window.addEventListener('resize', fit);
+    document.addEventListener('DOMContentLoaded', function () { fit(); setTimeout(fit, 60); });
+    window.addEventListener('load', function () { fit(); setTimeout(fit, 250); });
+  })();
+</script>
+
 </body>
 </html>
