@@ -116,25 +116,26 @@ struct ContentView: View {
     /// Logado → ReadyRoot. Deslogado → LoginView. Sem flicker.
     @StateObject private var session = SessionManager()
 
-    /// Gate de orientação (singleton): observa o giro físico do aparelho e
-    /// destrava a paisagem só pra o cockpit (ver OrientationGate.swift).
+    /// Gate de orientação (singleton): observa o giro físico do aparelho pelo
+    /// acelerômetro e publica o ângulo pra deixar o cockpit em pé (nil = retrato).
     @ObservedObject private var orientation = OrientationGate.shared
 
     var body: some View {
         // Gatilho global (decisão Flávio 22/06, sem botão): virar o celular pra
-        // paisagem ABRE o Cockpit do Piloto sobre QUALQUER tela; voltar pra
-        // vertical o fecha. O app por baixo nunca desmonta → estado preservado.
-        // O iOS gira a tela do cover NATIVAMENTE pra paisagem (AppDelegate +
-        // OrientationGate), então o cockpit se centraliza sozinho.
-        appContent
-            .onAppear { orientation.startMonitoring() }
-            .fullScreenCover(isPresented: Binding(
-                get: { orientation.deviceIsLandscape },
-                set: { _ in }   // fechar é 100% controlado pelo giro físico
-            )) {
-                CockpitPilotoView()
-                    .background(Color.black.ignoresSafeArea())
+        // paisagem SOBREPÕE o Cockpit do Piloto sobre QUALQUER tela; voltar pra
+        // vertical o esconde. O app por baixo nunca desmonta → estado preservado.
+        // Sobreposição (ZStack) + giro na mão = confiável no aparelho real, sem
+        // depender da rotação nativa do iOS (que falhava).
+        ZStack {
+            appContent
+            if let angle = orientation.landscapeAngle {
+                CockpitPilotoView(angle: angle)
+                    .transition(.opacity)
+                    .zIndex(100)
             }
+        }
+        .animation(.easeInOut(duration: 0.2), value: orientation.landscapeAngle)
+        .onAppear { orientation.startMonitoring() }
     }
 
     @ViewBuilder private var appContent: some View {
