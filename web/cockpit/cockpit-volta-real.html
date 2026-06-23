@@ -38,10 +38,10 @@
   /* CLUSTER DE SENSORES — bandeja de vidro com lentes, identidade própria,
      separada da barra de voltas. Vermelho=sem comunicação, verde=comunicando, amarelo=falha. */
   .sensor-row {
-    position: absolute; left: 50%; top: 7px; transform: translateX(-50%);
-    height: 34px; z-index: 40; pointer-events: none;
-    display: flex; align-items: center; padding: 0 6px;
-    border-radius: 15px;
+    position: absolute; left: 50%; top: 6px; transform: translateX(-50%);
+    z-index: 40; pointer-events: none;
+    display: flex; align-items: flex-start; gap: 36px; padding: 6px 22px 8px;
+    border-radius: 16px;
     background: linear-gradient(180deg, oklch(17% 0 0 / .65), oklch(8% 0 0 / .65));
     border: 1px solid oklch(100% 0 0 / .06);
     box-shadow:
@@ -50,8 +50,9 @@
       0 8px 22px oklch(0% 0 0 / .5);
     -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
   }
-  .sensor-group { display: flex; align-items: center; gap: 13px; padding: 0 15px; }
-  .sensor-group:not(:last-child) { border-right: 1px solid oklch(100% 0 0 / .07); }
+  .sensor-group { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .sensor-group__title { font-family: var(--ff-display); font-size: 8px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: oklch(58% 0 0); }
+  .sensor-group__icons { display: flex; align-items: center; gap: 12px; }
   .sensor {
     position: relative; width: 25px; height: 25px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
