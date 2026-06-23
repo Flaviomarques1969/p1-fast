@@ -117,6 +117,15 @@ struct ContentView: View {
     @StateObject private var session = SessionManager()
 
     var body: some View {
+        // Gatilho global (decisão Flávio 22/06, sem botão): virar o celular
+        // pra paisagem mostra o Cockpit do Piloto por cima de QUALQUER tela;
+        // voltar pra vertical o esconde.
+        CockpitOrientationGate {
+            appContent
+        }
+    }
+
+    @ViewBuilder private var appContent: some View {
         if ProcessInfo.processInfo.arguments.contains("--p1-cockpit") {
             // Atalho SÓ-DEV pra ver/screenshot o Cockpit do Piloto no simulador
             // sem login (a tela não depende de repositórios).
