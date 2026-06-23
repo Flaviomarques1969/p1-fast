@@ -323,7 +323,7 @@ function atualizarFreio(pos) {
 // Resultado da freada no lado DIREITO (espelha o Delta): 0 verde = no ponto;
 // amarelo = freou ANTES (metros); vermelho = freou DEPOIS (metros).
 let vMaxApp = 0, bdAtVmax = Infinity, freioResultPendente = false;
-const FREIO_TOL = 6;   // metros de tolerância pro "no ponto"
+const FREIO_TOL = 1;   // margem de erro: ±1 m ainda é VERDE (mas informa o número)
 const brNum = $('brNum'), brWord = $('brWord'), brakeResultEl = $('brakeResult');
 function setBrakeResult(num, palavra, cor) {
   brakeResultEl.dataset.cor = cor;
