@@ -332,10 +332,10 @@ function setBrakeResult(num, palavra, cor) {
 }
 function finalizarFreioResultado() {
   if (!Number.isFinite(bdAtVmax)) return;
-  const diff = bdAtVmax - FREIO_BRAKE_DIST;   // + = freou antes (mais longe); - = freou depois
-  if (Math.abs(diff) <= FREIO_TOL) setBrakeResult(0, 'NO PONTO', 'bom');
-  else if (diff > 0) setBrakeResult(Math.round(diff), 'ANTES', 'foco');
-  else setBrakeResult(Math.round(-diff), 'DEPOIS', 'erro');
+  const m = Math.round(bdAtVmax - FREIO_BRAKE_DIST);   // + freou antes, - freou depois
+  if (Math.abs(m) <= FREIO_TOL) setBrakeResult(Math.abs(m), 'NO PONTO', 'bom');  // ±1 m = verde, mostra 0/1
+  else if (m > 0) setBrakeResult(m, 'ANTES', 'foco');     // amarelo
+  else setBrakeResult(-m, 'DEPOIS', 'erro');              // vermelho
 }
 
 function velDe(p) {
