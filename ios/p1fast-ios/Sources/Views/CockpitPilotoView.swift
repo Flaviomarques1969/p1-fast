@@ -55,14 +55,13 @@ struct CockpitPilotoView: View {
         .statusBarHidden(true)
     }
 
-    /// Maior folga segura do aparelho (entalhe/ilha em cima, indicador embaixo).
-    /// Vira margem IGUAL nos dois lados → limpa o entalhe sem descentralizar.
-    private var safeMargin: CGFloat {
-        let insets = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .first?.windows.first(where: { $0.isKeyWindow })?.safeAreaInsets ?? .zero
-        return max(insets.top, insets.bottom, insets.left, insets.right, 8)
-    }
+    /// PREENCHER a tela: o painel aprovado tem a MESMA proporção da tela
+    /// (≈2,17:1), então margem ZERO preenche inteiro. A margem simétrica grande
+    /// de antes (≈59pt nos 4 lados, herdada do recorte do topo/ilha) era o que
+    /// ENCOLHIA o painel e deixava o monte de preto sobrando. A ilha encosta só
+    /// na borda (área escura do painel); se cobrir algo útil, aí sim inseto SÓ
+    /// aquele lado — sem voltar a espremer os quatro.
+    private var safeMargin: CGFloat { 0 }
 
     private func voltarBotao(_ action: @escaping () -> Void) -> some View {
         Button(action: action) {
