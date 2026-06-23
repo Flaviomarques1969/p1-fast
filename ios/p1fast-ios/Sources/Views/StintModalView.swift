@@ -666,7 +666,7 @@ struct StintModalView: View {
         return Button {
             proposito = p
             if p != .testar { focoTeste = nil }
-            if p != .treinar { focoTreino = nil; briefConfirmado = false }
+            if p != .treinar { focoTreino = nil; briefConfirmado = false; licaoIdSelecionada = nil }
         } label: {
             VStack(alignment: .leading, spacing: 4) {
                 Text(nome)
