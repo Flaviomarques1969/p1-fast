@@ -117,7 +117,9 @@ struct HubMockLauncher: View {
                     // Monta a Home REAL (com o menu fixo) já empilhada no hub,
                     // pra validar a navegação de verdade no simulador.
                     // `--p1-deep` empilha tb o Estoque, pra checar telas internas.
-                    HomeView(state: .filled(HomeData.mockFilled),
+                    HomeView(state: ProcessInfo.processInfo.arguments.contains("--p1-home-enxuto")
+                                ? .empty
+                                : .filled(HomeData.mockFilled),
                              initialRoute: rotaMock(carroId: id))
                         .environmentObject(carroRepo)
                         .environmentObject(manutencaoStore)
