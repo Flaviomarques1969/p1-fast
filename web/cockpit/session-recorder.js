@@ -22,6 +22,14 @@ const SILENCIO_FIM_MS = 8000;
 // suspensa / notebook dormindo não fingem continuidade — o intervalo fica marcado).
 const LACUNA_MIN_MS = 2000;
 
+// Captura AUTOMÁTICA por movimento (sem botão): grava quando o carro ANDA (pista)
+// e para quando fica PARADO (box). Só liga quando se passa `opts.auto`; sem ela, o
+// comportamento é o de sempre (abre no 1º dado, fecha por silêncio). Valores em km/h
+// e ms — defaults sensatos, a calibrar na pista.
+const AUTO_VON_KMH   = 15;     // começou a andar acima disto => abre a gravação (entrou na pista)
+const AUTO_VOFF_KMH  = 6;      // abaixo disto = parado
+const AUTO_PARADO_MS = 12000;  // parado por tanto tempo => fecha a sessão (entrou no box)
+
 // Taxa instantânea (pontos nos últimos 5 s) — para mostrar 25 Hz de GPS sem mentir.
 function taxaHz(janela, agoraMono) {
   while (janela.length && agoraMono - janela[0] > 5000) janela.shift();
@@ -38,11 +46,19 @@ export function criarGravador(opts = {}) {
   const store    = opts.store    || criarStoreMemoria();
   const onEstado = opts.onEstado || (() => {});
   const silencioMs = opts.silencioMs || SILENCIO_FIM_MS;
+  // Captura automática por movimento (pista x box). null = comportamento de sempre.
+  const auto = opts.auto ? {
+    vOn:      opts.auto.vOn      ?? AUTO_VON_KMH,
+    vOff:     opts.auto.vOff     ?? AUTO_VOFF_KMH,
+    paradoMs: opts.auto.paradoMs ?? AUTO_PARADO_MS,
+  } : null;
 
   let sessao = null;     // { id, inicioWall, inicioMono, sim }
   let seq = 0;
   let nGps = 0, nMotor = 0, dropped = 0, okWrites = 0, storeMorto = false;
   let ultimoMono = 0, ultimoGpsMono = 0, ultimoMotorMono = 0;
+  let velAtual = 0;             // km/h da última amostra de GPS (auto por movimento)
+  let ultimoMovimentoMono = 0;  // quando o carro estava acima de vOff pela última vez
   const janGps = [], janMotor = [];
   const lacunas = [];
 
@@ -70,7 +86,24 @@ export function criarGravador(opts = {}) {
 
   function gravar(tipo, dados, rawHex, sim) {
     const agora = now();
-    if (!sessao) abrir(sim);            // primeiro dado da sessão = carro ligou
+    // ── Captura AUTOMÁTICA por movimento (sem botão): abre quando o carro começa a
+    //    andar (pista) e fecha quando fica parado (box). Só com `auto`; sem ela, o
+    //    fluxo é o de sempre. O motor (marcha lenta no box) NÃO abre nem segura a
+    //    gravação — só o movimento do GPS manda.
+    if (auto) {
+      if (tipo === 'gps' && dados && typeof dados.spd === 'number') {
+        velAtual = dados.spd;
+        if (velAtual >= auto.vOff) ultimoMovimentoMono = agora;
+      }
+      if (!sessao) {
+        // EM ESPERA (box/parado): só começa a gravar quando o carro começa a andar
+        if (!(tipo === 'gps' && velAtual >= auto.vOn)) { emEstado('espera'); return null; }
+      } else if (agora - ultimoMovimentoMono >= auto.paradoMs) {
+        // parado tempo suficiente => entrou no box: fecha a sessão (dado preservado)
+        return encerrar('parado');
+      }
+    }
+    if (!sessao) abrir(sim);            // primeiro dado da sessão = carro ligou (ou começou a andar)
     else marcarLacuna(agora);           // buraco dentro da sessão fica registrado
     const registro = {
       sessaoId: sessao.id, seq: ++seq, tipo,
@@ -98,9 +131,11 @@ export function criarGravador(opts = {}) {
   }
 
   // Vigia do fim: chamado ~1x/s. Sem dado há `silencioMs` => carro desligou.
+  // Com captura automática, também fecha se ficou parado tempo demais (entrou no box).
   function tick() {
-    if (!sessao) return null;
+    if (!sessao) { if (auto) emEstado('espera'); return null; }
     if (now() - ultimoMono >= silencioMs) return encerrar('silencio');
+    if (auto && now() - ultimoMovimentoMono >= auto.paradoMs) return encerrar('parado');
     emEstado('tick');
     return null;
   }
@@ -141,7 +176,7 @@ export function criarGravador(opts = {}) {
 
   function estado() {
     const saude = { ativo: !storeMorto, dropped, alarme: alarme() };
-    if (!sessao) return { gravando: false, nGps, nMotor, ...saude };
+    if (!sessao) return { gravando: false, nGps, nMotor, velKmh: Math.round(velAtual), auto: !!auto, ...saude };
     const agora = now();
     return {
       gravando: true,
@@ -149,6 +184,8 @@ export function criarGravador(opts = {}) {
       sim: sessao.sim,
       tempoS: Math.round((agora - sessao.inicioMono) / 100) / 10,
       nGps, nMotor,
+      velKmh: Math.round(velAtual),
+      auto: !!auto,
       hzGps:   Math.round(taxaHz(janGps, agora)   * 10) / 10,
       hzMotor: Math.round(taxaHz(janMotor, agora) * 10) / 10,
       gpsParadoS:   ultimoGpsMono   ? Math.round((agora - ultimoGpsMono) / 100) / 10   : null,
