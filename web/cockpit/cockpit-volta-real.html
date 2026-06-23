@@ -133,6 +133,14 @@
     animation: criticoPisca .62s steps(1, end) infinite;
   }
   @keyframes criticoPisca { 0%, 54% { opacity: 1; } 55%, 100% { opacity: .1; } }
+  /* BORDA piscando — pega a VISÃO PERIFÉRICA do piloto (que enxerga brilho/flicker,
+     não cor): branco no pico de luminância (detecção) alternando com vermelho (perigo). */
+  .critico-borda { display: none; position: absolute; inset: 0; z-index: 149; pointer-events: none; border-radius: inherit; }
+  .device[data-modo="critico"] .critico-borda { display: block; animation: criticoBorda .4s steps(1, end) infinite; }
+  @keyframes criticoBorda {
+    0%  { box-shadow: inset 0 0 0 11px oklch(100% 0 0 / .95), inset 0 0 70px 12px oklch(100% 0 0 / .45); }
+    50% { box-shadow: inset 0 0 0 11px oklch(64% 0.27 27 / .98), inset 0 0 70px 12px oklch(64% 0.27 27 / .6); }
+  }
   .device[data-modo="critico"] .info-bloco,
   .device[data-modo="critico"] .brake-result,
   .device[data-modo="critico"] .ultima-volta,
