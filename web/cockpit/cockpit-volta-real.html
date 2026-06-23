@@ -369,6 +369,30 @@ function setBrakeResult(num, palavra, cor) {
   brNum.textContent = (num === '—') ? '—' : String(num);
 }
 
+// ── MODO CRÍTICO (Flávio 22/06): super-críticas + críticas + BOX tomam a tela —
+// mensagem vermelha piscando no centro; somem delta/frenagem/ápice; as luzes param.
+// ÚLTIMA VOLTA é à parte, no espaço do número da frenagem. Ao limpar, volta ao normal.
+let modoCritico = false;
+const criticoMsgEl = $('criticoMsg');
+function setCritico(texto) {
+  if (texto) { criticoMsgEl.textContent = texto; modoCritico = true; device.setAttribute('data-modo', 'critico'); }
+  else { modoCritico = false; device.setAttribute('data-modo', 'normal'); }
+}
+function setUltimaVolta(on) { device.setAttribute('data-ultima', on ? 'on' : 'off'); }
+// Gatilhos de TESTE (nesta volta não dispara crítico real): C cicla amostras (inclui BOX); U = última volta.
+const AMOSTRA_CRITICAS = ['ÓLEO BAIXO', 'MOTOR QUENTE', 'PNEU VAZIO', 'SEM DADOS', 'BOX'];
+let critIdx = -1;
+window.addEventListener('keydown', (e) => {
+  const k = e.key.toLowerCase();
+  if (k === 'c') {
+    critIdx++;
+    if (critIdx >= AMOSTRA_CRITICAS.length) { critIdx = -1; setCritico(null); }
+    else setCritico(AMOSTRA_CRITICAS[critIdx]);
+  } else if (k === 'u') {
+    setUltimaVolta(device.getAttribute('data-ultima') !== 'on');
+  }
+});
+
 function velDe(p) {
   if (prevG) {
     const d = metros({ lat: prevG.lat, lng: prevG.lon }, { lat: p.lat, lng: p.lon });
