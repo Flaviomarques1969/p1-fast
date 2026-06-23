@@ -42,4 +42,10 @@ Adicionar no app iOS uma tela que mostra o MESMO cockpit do piloto (visual + ló
 - Cópia vendida do cockpit web no bundle pode envelhecer se o web mudar → documentar no README da pasta.
 - Mostra volta de DEMONSTRAÇÃO; o espelho do carro AO VIVO é passo seguinte (depende do notebook transmitindo + viewer assinante).
 
-## 12. Status: em execução
+## 12. Status: CONCLUÍDO
+- BUILD SUCCEEDED (simulador, EXIT=0, sem erros).
+- Cockpit empacotado no app (bundle: app/Cockpit/*).
+- Provado no simulador (iPhone 17): cockpit renderiza vivo (luz de marcha, ENTRADA 132/FREIO −4/ÁPICE, delta −0.08, "FREOU CEDO"). Screenshot /tmp/cockpit-final.png.
+- Botão "COCKPIT DO PILOTO" adicionado na Home (estados cheio e vazio).
+- Atalho dev de simulador: `--p1-cockpit`.
+- Nada de produção alterado.
