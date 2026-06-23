@@ -1203,6 +1203,7 @@ private struct VoltasStepper: View {
 enum StintModalSheet: Identifiable, Equatable {
     case pneuPicker
     case combustivelPicker
+    case cadastrarConvidado  // "+ Convidado" — cadastra convidado novo na hora
     case paradaEditor  // MS-4.3 — abre o ParadaBoxEditorSheet
     case turnoEditor   // MS-4.4 — abre o TurnoEditorSheet (endurance)
 
@@ -1210,6 +1211,7 @@ enum StintModalSheet: Identifiable, Equatable {
         switch self {
         case .pneuPicker: return "pneu-picker"
         case .combustivelPicker: return "combustivel-picker"
+        case .cadastrarConvidado: return "cadastrar-convidado"
         case .paradaEditor: return "parada-editor"
         case .turnoEditor: return "turno-editor"
         }
