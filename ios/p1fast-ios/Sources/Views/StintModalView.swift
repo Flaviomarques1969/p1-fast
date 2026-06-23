@@ -142,6 +142,18 @@ struct StintModalView: View {
                 }
             )
             .environmentObject(combustivelRepo)
+        case .cadastrarConvidado:
+            // "+ Convidado" (decisão Flávio 23/06/2026): cadastra um convidado
+            // novo (= piloto) ali na hora. Ao salvar, já vira o convidado
+            // selecionado e a lista do picker é recarregada.
+            PilotoCadastroView(
+                onClose: { sheet = nil },
+                onCreated: { novoId in
+                    convidadoId = novoId
+                    Task { try? await repo.reloadPilotos() }
+                }
+            )
+            .environmentObject(pilotoRepo)
         case .paradaEditor:
             ParadaBoxEditorSheet(
                 inicial: paradaEditando,
