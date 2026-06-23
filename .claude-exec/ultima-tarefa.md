@@ -74,7 +74,16 @@ Adicionar no app iOS uma tela que mostra o MESMO cockpit do piloto (visual + ló
 - Cópia vendida do cockpit web no bundle pode envelhecer se o web mudar → documentar no README da pasta.
 - Mostra volta de DEMONSTRAÇÃO; o espelho do carro AO VIVO é passo seguinte (depende do notebook transmitindo + viewer assinante).
 
-## 12. Status: CONCLUÍDO
+## 13. Revisão (Flávio 22-23/06) — giro nativo + painel aprovado
+- Pedido novo: SEM botão; virar o celular pra paisagem ABRE o cockpit, voltar fecha (qualquer tela).
+- Pedido novo: usar o painel APROVADO (cockpit-volta-real.html: cluster sensores, luz de freio, msgs críticas) — não a vitrine.
+- Pedido novo: centralizar no giro (estava torto).
+- Solução (3 agentes em paralelo → síntese): ORIENTAÇÃO NATIVA do iOS (OrientationGate + AppDelegate destrava paisagem só pro cockpit; fullScreenCover no ContentView dirigido pelo giro físico) → centraliza sozinho. Painel aprovado embutido (+ 2 JSON vendidos, fetch relativos). App segue retrato em todas as outras telas.
+- Arquivos: NOVO Sources/App/OrientationGate.swift; EDIT P1FastApp.swift (adaptor), ContentView.swift (cover), CockpitPilotoView.swift (sem giro na mão), Info.plist + project.yml (paisagem declarada). Resources/Cockpit/cockpit-app.html = painel aprovado; +2 JSON.
+- BUILD SUCCEEDED (simulador + assinado p/ device). Instalado no iPhone 16 Pro Max (2D6E7A3B) via devicectl ("App installed").
+- Provado no simulador: painel aprovado renderiza; giro nativo confirmado pelo Flávio (print em paisagem).
+
+## 12. Status: AGUARDANDO validação do Flávio no iPhone 16 (giro + equilíbrio)
 - BUILD SUCCEEDED (simulador, EXIT=0, sem erros).
 - Cockpit empacotado no app (bundle: app/Cockpit/*).
 - Provado no simulador (iPhone 17): cockpit renderiza vivo (luz de marcha, ENTRADA 132/FREIO −4/ÁPICE, delta −0.08, "FREOU CEDO"). Screenshot /tmp/cockpit-final.png.
