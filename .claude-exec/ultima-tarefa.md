@@ -42,3 +42,25 @@ Fazer o painel aprovado (`web/cockpit/cockpit-volta-real.html`) animar de ponta 
 - A volta combinada é montagem (não é uma volta real única) — deixar explícito na tela.
 
 ## Status inicial: iniciado
+
+---
+
+## DESFECHO (decisão de Flávio 23/06)
+Ao investigar os dados ANTES de construir, descobri que NENHUMA gravação tem o motor girando ao longo de uma volta: tanto a de 24/05 quanto a "motor real" de 21/06 são o carro em marcha lenta no box (21/06 tem <1% das amostras com rotação útil, e são picos soltos, não arrancadas). Logo, jogar o motor real por cima do GPS deixaria a luz de marcha apagada — não atende o objetivo.
+
+Levei a decisão (luz de marcha): SIMULAR pela velocidade real (recomendado) | ESPERAR a pista | motor real cru.
+**Flávio escolheu: ESPERAR A PISTA.** Não simular. A luz de marcha e a rotação só serão validadas com uma gravação real de motor+GPS juntos (vem quando rodar na pista com o notebook lendo o carro pela USB).
+
+## TASK_DONE
+- Pedido original conferido: sim
+- Ambiente trabalhado: desenvolvimento
+- Produção foi alterada: não
+- Autorização de produção registrada: n/a
+- Arquivos reais inspecionados: sim (cockpit-volta-real.html, fixtures 24/05 e 21/06)
+- Alterações feitas: NÃO (só investigação; nada no painel foi tocado)
+- Testes/validação executados: leitura de dados (contagem de amostras de RPM nas duas gravações)
+- Resultado: encerrado por decisão de Flávio (esperar a pista); demo combinada NÃO construída
+- Pendências reais: a luz de marcha + rotação aguardam gravação real de motor+GPS na pista. "Espelho ao vivo" também depende do carro.
+
+## O que foi preservado
+- Painel aprovado `cockpit-volta-real.html` intocado. Backup congelado intocado. App iOS intocado.
