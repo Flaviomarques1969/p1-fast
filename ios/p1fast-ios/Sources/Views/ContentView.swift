@@ -238,12 +238,7 @@ private struct ReadyRoot: View {
     }
 
     var body: some View {
-        // Gatilho global: virar o celular pra paisagem mostra o Cockpit do
-        // Piloto por cima de QUALQUER tela; voltar pra vertical o esconde
-        // (decisão Flávio 22/06, sem botão).
-        CockpitOrientationGate {
-            routedView
-        }
+        routedView
             .environmentObject(carroRepo)
             .environmentObject(eventoRepo)
             .environmentObject(pilotoRepo)
