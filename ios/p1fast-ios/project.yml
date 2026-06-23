@@ -64,6 +64,12 @@ targets:
       - path: Resources/Assets.xcassets
         type: folder.assetcatalog
         buildPhase: resources
+      # Cockpit do Piloto embutido (cópia vendida de web/cockpit) — vai como
+      # referência de pasta (azul) pra preservar a estrutura e os ES modules.
+      # Servido em runtime pelo scheme cockpit:// (CockpitPilotoView).
+      - path: Resources/Cockpit
+        type: folder
+        buildPhase: resources
     resources: []
     info:
       path: Sources/App/Info.plist
