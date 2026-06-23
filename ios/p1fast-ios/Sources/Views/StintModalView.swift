@@ -269,6 +269,15 @@ struct StintModalView: View {
                     convidadoPicker
                 }
             }
+        }
+    }
+
+    // Itens do carro (combustível + pneu). Descem pra DEPOIS de voltas/paradas —
+    // decisão Flávio 23/06/2026: "total de voltas e se para ou não no box logo
+    // após o nome do piloto". Combustível/pneu ficam abaixo desse bloco.
+    private var sectionItensCarro: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionHead("Combustível e pneu")
             FormField(label: "Combustível abastecido", small: "opcional") {
                 combustivelRow
             }
