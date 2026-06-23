@@ -1,66 +1,45 @@
-# Última tarefa — Volta de DEMONSTRAÇÃO (motor+GPS) pro painel animar inteiro na web — 23/06/2026
-
-> Backup da tarefa anterior (+Stint iOS): conteúdo anterior deste arquivo foi sobrescrito; histórico do +Stint está no registro do repositório e nas memórias do projeto.
+# Última tarefa — Captura AUTOMÁTICA na pista (liga/desliga sozinho por movimento) — 23/06/2026
 
 ## Pedido original de Flávio
-- "caminho web. próximo passo." → "sim" (autorizou montar a volta de demonstração).
+- "Preparar a captura da pista" → escolheu o **Central de Pista (navegador)**, mas **SEM botão, tudo automático**:
+  "o carro tá andando, entrou na pista → já tá gravando; entrou no box → para de gravar; ligou o carro, vai saindo → começa a gravar. Você tem que saber que está dentro do autódromo e ficar vigiando. Notebook ligado, aplicação rodando."
 
 ## Objetivo (1 frase)
-Fazer o painel aprovado (`web/cockpit/cockpit-volta-real.html`) animar de ponta a ponta na web — inclusive a luz de marcha e os sensores do motor — usando o motor real de 21/06 encaixado por cima da volta de GPS de 24/05, marcado como DEMONSTRAÇÃO.
+Fazer a Central de Pista gravar motor+GPS COMEÇAR e PARAR sozinha conforme o carro está andando (pista) ou parado (box), sem botão, com aviso grande de estado pra o operador vigiar.
 
 ## Critérios objetivos de conclusão
-- Painel abre na web (porta 8078) com a luz de marcha (17 luzes) e o cluster de sensores do motor (rotação, lambda, água, bateria) ANIMANDO junto com o GPS.
-- Marca visível "DEMONSTRAÇÃO" na tela (não confundir com dado real).
-- Versão aprovada preservada: backup congelado `_design-reference/versions/cockpit-painel-APROVADO-2026-06-22.html` intocado; app iOS (cópia própria) intocado.
-- Reversível: a troca da fonte de dados é mínima e desfazível.
+- Gravação ABRE sozinha quando o carro começa a andar (velocidade sustentada acima de um limite).
+- Gravação FECHA sozinha quando o carro para/entra no box (velocidade baixa por alguns segundos) — sessão preservada intacta.
+- Volta a abrir nova sessão quando sai de novo.
+- Tela mostra GRANDE: "GRAVANDO — na pista" x "EM ESPERA — box", + GPS e motor chegando (sim/não, Hz).
+- Provado com a volta real de GPS (24/05) reproduzida: o estado vira GRAVANDO quando anda e EM ESPERA quando para.
+- Sem botão de iniciar/parar no fluxo. Notebook ligado + app rodando = único requisito manual.
 
 ## Leitura dos arquivos obrigatórios
-- ~/.claude/CLAUDE.md: sim
-- docs/COCKPIT_FONTE_DA_VERDADE.md: sim
-- memórias cockpit (volta-real-painel, app-tela-cockpit, dados-volta-real-motor-vs-gps): sim
+- ~/.claude/CLAUDE.md: sim · docs/COCKPIT_FONTE_DA_VERDADE.md: sim
+- plano-fonte das 8 fases (relatorios/plano-motor-gravacao-windows-2026-06-21.html): sim
+- memórias captura (pontaaponta, gravacao-blindada-exe, checklist-pista): sim
 
 ## Plano (≤5 passos)
-1. Ler como o painel carrega/anima a gravação (alinhamento tempo pista x motor).
-2. Montar fixture combinada (motor real 21/06 reamostrado/encaixado sobre o GPS 24/05), mesma estrutura {pista, motor, durPista, durMotor}.
-3. Apontar o painel (web) pra fixture combinada + marca "DEMONSTRAÇÃO" discreta.
-4. Servir na 8078 e abrir no navegador pro Flávio ver animando inteiro.
-5. Reportar; aguardar sim/não dele.
+1. Ler integração da Central de Pista (web/teste-aparelhos/index.html) com o gravador + sinal de velocidade do GPS + display de estado.
+2. Adicionar máquina de estado por MOVIMENTO no gravador/Central: ESPERA(box) <-> GRAVANDO(pista) por velocidade (liga/desliga sozinho). Reusa "encerra por silêncio" que já existe.
+3. Aviso GRANDE de estado na tela (GRAVANDO na pista / EM ESPERA box) + GPS e motor chegando.
+4. Testar com a volta real 24/05 (velocidade real) — provar a virada de estado; rodar os testes do gravador.
+5. Abrir a Central no navegador pro Flávio ver.
 
 ## Arquivos/áreas a inspecionar
-- web/cockpit/cockpit-volta-real.html (lógica de replay/animação)
-- web/cockpit/fixtures/volta-real-pista-24-05.json (GPS lap + motor quase off)
-- web/cockpit/fixtures/volta-real-brasilia-2026-06-21.json (motor real, sem GPS)
+- web/teste-aparelhos/index.html (Central de Pista — lê RaceBox GPS + motor USB, usa o gravador)
+- web/cockpit/session-recorder.js (gravador: abre no 1º dado, fecha por silêncio 8s, conta nGps/nMotor, estado() com hz/parado)
+- web/teste-aparelhos/_validar-gravador.html (testes do gravador)
 
 ## Ambiente alvo: desenvolvimento
 ## Produção protegida: sim
 ## Autorização para produção: não
-## Evidência da autorização: não recebida (é só web/dev, replay de demonstração)
+## Evidência da autorização: não recebida (é só web/dev na Central de Pista)
 
 ## Riscos
-- NÃO publicar replay no canal de produção `cockpit-bubi-live` (regra dura). É só replay local de arquivo.
-- Não descaracterizar o painel aprovado: design não muda; só a fonte de dados de demonstração + uma marca "demonstração".
-- A volta combinada é montagem (não é uma volta real única) — deixar explícito na tela.
+- Limiar de velocidade liga/desliga: escolher default sensato (calibrar na pista). Não cravar como verdade absoluta.
+- Não publicar nada no canal de produção cockpit-bubi-live (regra dura). É só gravação local.
+- Preservar o comportamento atual (abre no 1º dado, fecha por silêncio) — só ACRESCENTAR o gatilho por movimento.
 
 ## Status inicial: iniciado
-
----
-
-## DESFECHO (decisão de Flávio 23/06)
-Ao investigar os dados ANTES de construir, descobri que NENHUMA gravação tem o motor girando ao longo de uma volta: tanto a de 24/05 quanto a "motor real" de 21/06 são o carro em marcha lenta no box (21/06 tem <1% das amostras com rotação útil, e são picos soltos, não arrancadas). Logo, jogar o motor real por cima do GPS deixaria a luz de marcha apagada — não atende o objetivo.
-
-Levei a decisão (luz de marcha): SIMULAR pela velocidade real (recomendado) | ESPERAR a pista | motor real cru.
-**Flávio escolheu: ESPERAR A PISTA.** Não simular. A luz de marcha e a rotação só serão validadas com uma gravação real de motor+GPS juntos (vem quando rodar na pista com o notebook lendo o carro pela USB).
-
-## TASK_DONE
-- Pedido original conferido: sim
-- Ambiente trabalhado: desenvolvimento
-- Produção foi alterada: não
-- Autorização de produção registrada: n/a
-- Arquivos reais inspecionados: sim (cockpit-volta-real.html, fixtures 24/05 e 21/06)
-- Alterações feitas: NÃO (só investigação; nada no painel foi tocado)
-- Testes/validação executados: leitura de dados (contagem de amostras de RPM nas duas gravações)
-- Resultado: encerrado por decisão de Flávio (esperar a pista); demo combinada NÃO construída
-- Pendências reais: a luz de marcha + rotação aguardam gravação real de motor+GPS na pista. "Espelho ao vivo" também depende do carro.
-
-## O que foi preservado
-- Painel aprovado `cockpit-volta-real.html` intocado. Backup congelado intocado. App iOS intocado.
