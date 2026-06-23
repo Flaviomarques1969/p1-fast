@@ -255,7 +255,6 @@ struct StintModalView: View {
             sectionParadas
             sectionItensCarro
             sectionProposito
-            sectionLicao
             sectionAssistencia
 
             if let erro = savingError {
