@@ -198,15 +198,19 @@ struct HomeView: View {
     @ViewBuilder
     private var content: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
-            switch state {
-            case .filled(let data):
-                FilledContent(data: data, onStint: onStintTap,
-                              onOpen: { router.path.append($0) })
-            case .empty:
-                EmptyContent(
-                    onCadastrarCarro: { router.path.append(HomeNavTarget.garagemNovo) },
-                    onCriarEvento: { router.path.append(HomeNavTarget.eventosNovo) }
-                )
+            // SÓ-DEV: --p1-aovivo-topo pula o conteúdo do topo pra fotografar os
+            // dois botões "ao vivo" sem precisar rolar. Não afeta o app real.
+            if !ProcessInfo.processInfo.arguments.contains("--p1-aovivo-topo") {
+                switch state {
+                case .filled(let data):
+                    FilledContent(data: data, onStint: onStintTap,
+                                  onOpen: { router.path.append($0) })
+                case .empty:
+                    EmptyContent(
+                        onCadastrarCarro: { router.path.append(HomeNavTarget.garagemNovo) },
+                        onCriarEvento: { router.path.append(HomeNavTarget.eventosNovo) }
+                    )
+                }
             }
             // AO VIVO — par de botões (espectador + teste de campo). Agrupados
             // com respiro pequeno (Spacing.sm) pra lerem como uma dupla; o
