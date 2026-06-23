@@ -1553,6 +1553,7 @@ struct StintSoltoLauncher: View {
     let pneuRepo = PneuRepository(queue: queue)
     let combustivelRepo = CombustivelRepository(queue: queue)
     let licaoRepo = LicaoRepository(queue: queue)
+    let pilotoRepo = PilotoRepository(queue: queue)
     return StintModalView(
         eventoId: "preview",
         proximoNumero: 1,
