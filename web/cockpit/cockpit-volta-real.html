@@ -221,6 +221,7 @@ function fecharPassagem(p) {
 }
 
 function aplicarGps(p) {
+  setSensor('gps', 'ok');   // GPS comunicando (estamos recebendo posição)
   ultKmh = velDe(p);
   $('hVel').textContent = Math.round(ultKmh);
   const pos = { lat: p.lat, lng: p.lon };
