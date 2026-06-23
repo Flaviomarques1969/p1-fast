@@ -1,27 +1,69 @@
 // ═══════════════════════════════════════════════════════════
-// CockpitPilotoView — o MESMO cockpit do piloto, no iPhone
+// Cockpit do Piloto — aparece ao VIRAR o celular de lado
 // ═══════════════════════════════════════════════════════════
-// Mostra, dentro do app, a tela IDÊNTICA à que o piloto vê: o cockpit web
-// canônico (web/cockpit) embutido no bundle (Resources/Cockpit) e servido
-// por um scheme próprio (cockpit://) num WKWebView real.
+// Comportamento (decisão Flávio 22/06): NÃO tem botão. Em qualquer tela do
+// app, vire o celular pra paisagem → o cockpit do piloto cobre a tela; volte
+// pra vertical → some e você está exatamente onde estava (o app por baixo
+// nunca é desmontado, então o estado é preservado).
 //
-// Por que a vitrine e não a página ao vivo: index-t3000.html é a página do
-// NOTEBOOK (lê a injeção pela USB via "Autorizar", WebSerial) — não roda no
-// iPhone. A vitrine roda sozinha, offline, em loop de demonstração, com a luz
+// O cockpit em si é o MESMO da web (web/cockpit), embutido no bundle
+// (Resources/Cockpit) e servido por um scheme próprio (cockpit://) num
+// WKWebView real. Roda sozinho, offline, em loop de demonstração, com a luz
 // de marcha e a lógica REAIS. Espelhar o carro AO VIVO é o passo seguinte
 // (depende do notebook transmitindo pra nuvem + um viewer assinante).
 //
-// O app é retrato-travado e o cockpit é paisagem (tela de 10,5"). Por isso a
-// tela GIRA o conteúdo: vire o celular de lado e o cockpit fica em pé, cheio.
+// O app é retrato-travado: o cockpit não "gira" pela rotação do iOS — a gente
+// detecta a posição física do aparelho e gira o conteúdo na mão pra ele ficar
+// em pé na paisagem, pra qualquer lado que o celular seja virado.
 
 import SwiftUI
 import WebKit
 import UIKit
 
+// ─────────── Gatilho global por giro ───────────
+// Embrulha o app inteiro: mostra o cockpit por cima quando o aparelho está
+// em paisagem; esconde quando volta pra retrato.
+
+struct CockpitOrientationGate<Content: View>: View {
+    @ViewBuilder var content: () -> Content
+    @State private var paisagem = false
+
+    var body: some View {
+        ZStack {
+            content()
+            if paisagem {
+                CockpitPilotoView()           // sem botão: sai virando o celular
+                    .transition(.opacity)
+                    .zIndex(10)
+            }
+        }
+        .animation(.easeInOut(duration: 0.22), value: paisagem)
+        .onAppear {
+            UIDevice.current.beginGeneratingDeviceOrientationNotifications()
+            avaliar(UIDevice.current.orientation)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
+            avaliar(UIDevice.current.orientation)
+        }
+    }
+
+    private func avaliar(_ o: UIDeviceOrientation) {
+        switch o {
+        case .landscapeLeft, .landscapeRight: paisagem = true
+        case .portrait, .portraitUpsideDown:  paisagem = false
+        default: break   // faceUp/faceDown/unknown: mantém o estado atual
+        }
+    }
+}
+
+// ─────────── A tela do cockpit (girada pra paisagem) ───────────
+
 struct CockpitPilotoView: View {
-    let onClose: () -> Void
-    /// Ângulo do giro pra paisagem. Ajustado conforme o lado pra onde o
-    /// celular é virado (o app não gira sozinho — é travado em retrato).
+    /// Quando presente, mostra um botão "Voltar" (usado só pelo atalho de
+    /// teste no simulador). Como overlay de giro, fica nil = sem botão.
+    var onClose: (() -> Void)? = nil
+    /// Ângulo do giro pra paisagem — ajustado pro lado pra onde o celular é
+    /// virado, pra o cockpit ficar em pé dos dois lados.
     @State private var angle: Double = 90
 
     var body: some View {
@@ -30,9 +72,11 @@ struct CockpitPilotoView: View {
             let h = geo.size.height
             ZStack(alignment: .topLeading) {
                 CockpitWebView()
-                voltarBotao
-                    .padding(.top, 14)
-                    .padding(.leading, 16)
+                if let onClose {
+                    voltarBotao(onClose)
+                        .padding(.top, 14)
+                        .padding(.leading, 16)
+                }
             }
             .frame(width: h, height: w)        // canvas em paisagem (lado longo = largura)
             .rotationEffect(.degrees(angle))
@@ -40,20 +84,25 @@ struct CockpitPilotoView: View {
         }
         .background(Color.black)
         .ignoresSafeArea()
-        .navigationBarBackButtonHidden(true)
-        .onAppear { UIDevice.current.beginGeneratingDeviceOrientationNotifications() }
-        .onDisappear { UIDevice.current.endGeneratingDeviceOrientationNotifications() }
+        .onAppear {
+            UIDevice.current.beginGeneratingDeviceOrientationNotifications()
+            aplicarAngulo(UIDevice.current.orientation)
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
-            switch UIDevice.current.orientation {
-            case .landscapeLeft:  angle = 90
-            case .landscapeRight: angle = -90
-            default: break        // retrato/face up/down: mantém o último giro de paisagem
-            }
+            aplicarAngulo(UIDevice.current.orientation)
         }
     }
 
-    private var voltarBotao: some View {
-        Button(action: onClose) {
+    private func aplicarAngulo(_ o: UIDeviceOrientation) {
+        switch o {
+        case .landscapeLeft:  angle = 90
+        case .landscapeRight: angle = -90
+        default: break        // mantém o último giro de paisagem
+        }
+    }
+
+    private func voltarBotao(_ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
             HStack(spacing: 6) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 15, weight: .bold))
