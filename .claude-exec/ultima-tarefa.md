@@ -49,7 +49,7 @@ Na tela de novo Stint (+Stint): (a) pré-selecionar automaticamente todo item qu
 
 ## ANDAMENTO — chegaram +2 pedidos durante a execução
 3. "em convidado... incluir uma opção: + convidados — pra cadastrar um convidado novo ali na tela." → FEITO.
-4. "lição praticada não deveria estar dentro de treinar habilidade?" → PERGUNTA aberta (decisão de UX), aguardando Flávio.
+4. "lição praticada não deveria estar dentro de treinar habilidade?" → DECIDIDO por Flávio (card): "Só em 'Treinar habilidade'". FEITO — a Lição praticada agora só aparece dentro do propósito "Treinar habilidade"; ao sair desse propósito, a lição é limpa. Seção fixa antiga (sectionLicao) removida (conteúdo migrado pra dentro do bloco treinar).
 
 ## TASK_DONE (itens 1, 2 e 3)
 - Pedido original conferido: sim
