@@ -8153,15 +8153,16 @@ html,body{
         pbEverSec: fxS.track.pbEverSec, stintNumero: 3, stintTotal: 5
       });
       var ultimoLive = -1;
-      var sb = await import('https://esm.sh/@supabase/supabase-js@2.45.0');
-      var client = sb.createClient(cfg.url, cfg.anon, { realtime:{ params:{ eventsPerSecond:20 } } });
-      var ch = client.channel(cfg.canal, { config:{ broadcast:{ ack:false, self:false } } });
-      ch.on('broadcast', { event:'sample' }, function(m){ if(m&&m.payload){ ultimoLive=performance.now(); orq.feedSample(m.payload); } });
+      // MESMA FONTE: o cérebro ouve a PONTE COMPARTILHADA (cloud-bridge.js), sem abrir
+      // conexão própria. startCloudBridge é idempotente: se o HUD já assinou, isto só
+      // registra mais ouvintes na MESMA conexão (uma entrada, todos consomem).
+      var cb = await import('/web/cockpit/cloud-bridge.js');
+      cb.onSample(function(p){ ultimoLive=performance.now(); orq.feedSample(p); });
       // GPS também vai pro cérebro: é dele que sai a detecção de volta por GPS (redundância).
       // Carimba o tempo de chegada se a amostra não trouxer (o cérebro mede a volta pelo tempo).
-      ch.on('broadcast', { event:'gps' }, function(m){ if(m&&m.payload){ var g=Object.assign({}, m.payload); if(g.tWall==null && g.t==null) g.t=Date.now(); orq.feedSample(g); } });
-      ch.on('broadcast', { event:'evento' }, function(m){ var p=m&&m.payload; if(p&&p.tipo==='volta'){ ultimoLive=performance.now(); orq.feedVolta(p); } });
-      ch.subscribe();
+      cb.onGpsPoint(function(p){ var g=Object.assign({}, p); if(g.tWall==null && g.t==null) g.t=Date.now(); orq.feedSample(g); });
+      cb.onEvento(function(p){ if(p&&p.tipo==='volta'){ ultimoLive=performance.now(); orq.feedVolta(p); } });
+      cb.startCloudBridge().catch(function(){});
       setInterval(function(){
         var temCarro = ultimoLive>=0 && (performance.now()-ultimoLive < 5000);
         window.__velAoVivoReal = temCarro;            // velocímetro: ao vivo assume / gravado volta
