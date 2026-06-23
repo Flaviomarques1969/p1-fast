@@ -258,7 +258,9 @@ function aplicarMotorStatus(m) {
 const device = $('device');
 const brakeLeftDots = [...document.querySelectorAll('#brakeLeft .brake-dot')];
 const brakeRightDots = [...document.querySelectorAll('#brakeRight .brake-dot')];
-const FREIO_FAR = 130, FREIO_PT = 50, FREIO_N = 9;
+const FREIO_LEAD = 4.0;          // segundos: do 1º verde até o ponto de freada
+const FREIO_BRAKE_DIST = 50;     // ponto de freada ≈ 50 m antes do ápice (proxy até ter o ponto real)
+const FREIO_N = 9;
 let prevDFreio = Infinity, freioArmado = true, brakeTimer = null;
 function setBrakeFill(lit) {
   for (let i = 0; i < FREIO_N; i++) {
