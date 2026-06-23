@@ -156,7 +156,8 @@ function fecharPassagem(p) {
   const ref = tempoAnterior.get(a.c.id);
   if (ref != null && tempoS > 0.5) {
     const d = tempoS - ref;
-    cockpitState.setDelta({ value: (d >= 0 ? '+' : '') + d.toFixed(2), tone: d <= 0 ? Tone.BOM : Tone.ERRO });
+    // Sem sinal: só o valor. Bom = verde, ruim = vermelho (Flávio 22/06).
+    cockpitState.setDelta({ value: Math.abs(d).toFixed(2), tone: d <= 0 ? Tone.BOM : Tone.ERRO });
     cockpitState.setAcao({ texto: d <= 0 ? 'RECORDE' : 'BUSCAR LIMITE', tone: d <= 0 ? Tone.BOM : Tone.NEUTRO });
     cockpitState.setTrechoStatus(d <= 0 ? TrechoStatus.RECORDE_STINT : TrechoStatus.PIOR_STINT);
   } else {
