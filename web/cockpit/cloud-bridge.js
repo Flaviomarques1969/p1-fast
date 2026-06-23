@@ -58,15 +58,31 @@ export function onStatusChange(fn) {
   _onStatusChange = typeof fn === 'function' ? fn : (() => {});
 }
 
+// Entrega um payload a todos os ouvintes registrados, sem deixar um erro de um
+// derrubar os outros nem a conexão.
+function _fan(lista, payload) {
+  for (const fn of lista) { try { fn(payload); } catch (e) { /* não derruba o canal */ } }
+}
+
 /** Registrar callback pra eventos GPS recebidos do canal (lat, lng, kmh, tWall). */
 export function onGpsPoint(fn) {
-  _onGpsPoint = typeof fn === 'function' ? fn : null;
+  if (typeof fn === 'function') _onGpsPoint.push(fn);
 }
 
 /** Registrar callback pra AMOSTRAS recebidas do canal (modo sem fio: outro
  *  transmissor — ou o simulador — manda; este painel consome). */
 export function onSample(fn) {
-  _onSample = typeof fn === 'function' ? fn : null;
+  if (typeof fn === 'function') _onSample.push(fn);
+}
+
+/** Registrar callback pra EVENTOS (ex.: volta/trecho) recebidos do canal. */
+export function onEvento(fn) {
+  if (typeof fn === 'function') _onEvento.push(fn);
+}
+
+/** Registrar callback pra POSIÇÃO já calculada na nuvem (a tela só exibe). */
+export function onPosicao(fn) {
+  if (typeof fn === 'function') _onPosicao.push(fn);
 }
 
 export async function startCloudBridge() {
