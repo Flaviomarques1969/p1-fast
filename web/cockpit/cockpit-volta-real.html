@@ -339,6 +339,7 @@ function aplicarGps(p) {
   ultKmh = velDe(p);
   $('hVel').textContent = Math.round(ultKmh);
   const pos = { lat: p.lat, lng: p.lon };
+  atualizarFreio(pos);
   if (!curvaAtiva) {
     const { best, bd } = curvaMaisProxima(pos);
     if (best && bd <= RAIO) {
