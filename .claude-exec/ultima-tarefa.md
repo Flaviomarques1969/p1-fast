@@ -44,3 +44,38 @@ Na tela de novo Stint (+Stint): (a) pré-selecionar automaticamente todo item qu
 - Combustível é por time (catálogo), não por carro. Seed padrão tem 2 (etanol + gasolina) → só auto-seleciona se houver exatamente 1.
 
 ## Status inicial: iniciado
+
+---
+
+## ANDAMENTO — chegaram +2 pedidos durante a execução
+3. "em convidado... incluir uma opção: + convidados — pra cadastrar um convidado novo ali na tela." → FEITO.
+4. "lição praticada não deveria estar dentro de treinar habilidade?" → PERGUNTA aberta (decisão de UX), aguardando Flávio.
+
+## TASK_DONE (itens 1, 2 e 3)
+- Pedido original conferido: sim
+- Ambiente trabalhado: desenvolvimento
+- Produção foi alterada: não
+- Autorização de produção registrada: n/a
+- Arquivos reais inspecionados: sim
+- Alterações feitas: sim
+- Testes/validação executados: sim (BUILD SUCCEEDED, simulador, derivedData isolado /tmp/p1fast-build-stint)
+- Resultado: itens 1-3 concluídos; item 4 = pergunta aberta (decisão)
+- Pendências reais: item 4 (decisão de UX da lição) + validação visual no iPhone (cert dev pode ter vencido ~22/06)
+
+### Arquivos alterados
+- ios/p1fast-ios/Sources/Views/StintModalView.swift
+- ios/p1fast-ios/Sources/Views/PilotoCadastroView.swift (onCreated opcional, retrocompatível)
+
+### O que foi preservado
+- Lógica do piloto padrão (você) — só renomeada de hidratarPilotoDefault → hidratarDefaults.
+- Combustível/pneu seguem opcionais; auto-seleção só quando há exatamente 1.
+- PilotoCadastroView: callers antigos não mudam (onCreated tem default nil).
+- Backup da tarefa anterior: .claude-exec/ultima-tarefa-COCKPIT-2026-06-22.bak.md
+
+### O que foi acrescentado
+- Auto-seleção de item único (combustível com 1 tipo, pneu com 1 no carro).
+- Reordenação: piloto → voltas → paradas → (combustível+pneu) → propósito → lição → assistência.
+- Opção "+ Convidado" no picker de convidado, cadastrando piloto/pessoa novo na hora e já selecionando.
+
+### Validação executada
+- xcodebuild ... -scheme p1fast-ios -destination 'generic/platform=iOS Simulator' → BUILD SUCCEEDED (2x, sem erros).
