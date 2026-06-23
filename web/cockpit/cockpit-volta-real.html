@@ -314,7 +314,28 @@ function atualizarFreio(pos) {
   }
   setBrakeFill(Math.round(fill * FREIO_N));
   if (bd > FREIO_BRAKE_DIST + 60) freioArmado = true;   // re-arma depois de afastar do ápice
+  // RESULTADO da freada (proxy): pico de velocidade na aproximação ≈ onde a freada começou
+  if (aproximando && bd < 200) { freioResultPendente = true; if (ultKmh > vMaxApp) { vMaxApp = ultKmh; bdAtVmax = bd; } }
+  if (freioResultPendente && bd > FREIO_BRAKE_DIST + 60) { finalizarFreioResultado(); freioResultPendente = false; vMaxApp = 0; bdAtVmax = Infinity; }
   prevDFreio = bd;
+}
+
+// Resultado da freada no lado DIREITO (espelha o Delta): 0 verde = no ponto;
+// amarelo = freou ANTES (metros); vermelho = freou DEPOIS (metros).
+let vMaxApp = 0, bdAtVmax = Infinity, freioResultPendente = false;
+const FREIO_TOL = 6;   // metros de tolerância pro "no ponto"
+const brNum = $('brNum'), brWord = $('brWord'), brakeResultEl = $('brakeResult');
+function setBrakeResult(num, palavra, cor) {
+  brakeResultEl.dataset.cor = cor;
+  brWord.textContent = palavra;
+  brNum.textContent = (num === '—') ? '—' : (cor === 'bom' ? '0' : String(num));
+}
+function finalizarFreioResultado() {
+  if (!Number.isFinite(bdAtVmax)) return;
+  const diff = bdAtVmax - FREIO_BRAKE_DIST;   // + = freou antes (mais longe); - = freou depois
+  if (Math.abs(diff) <= FREIO_TOL) setBrakeResult(0, 'NO PONTO', 'bom');
+  else if (diff > 0) setBrakeResult(Math.round(diff), 'ANTES', 'foco');
+  else setBrakeResult(Math.round(-diff), 'DEPOIS', 'erro');
 }
 
 function velDe(p) {
