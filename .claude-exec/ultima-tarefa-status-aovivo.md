@@ -25,4 +25,17 @@ e sem carro transmitindo mostra "aguardando o carro" (nunca número inventado).
 - Sem internet → import dinâmico falha → tela mostra "sem conexão" e grade "sem sinal" (não quebra).
 - Painel do piloto (modo andando) segue sendo o aprovado embutido (replay); painel AO VIVO é a outra frente (app).
 
-## Status: iniciado
+## Status: CONCLUÍDO (DEV)
+
+## TASK_DONE
+- Pedido conferido: sim ("pode fazer" = ligar a tela de status ao dado ao vivo)
+- Ambiente: desenvolvimento (web). Produção: NÃO alterada (só leitura do canal).
+- Alterações: web/cockpit/checar-antes-de-rodar.html (fonte de dados: passou a ouvir cockpit-bubi-live; ?fonte=demo preserva a volta gravada; +chip de conexão no cabeçalho). Nada mais tocado.
+- Só ouvir confirmado: grep publishSample/publishEvento = 0; usa só onStatusChange/onSample/onGpsPoint/startCloudBridge.
+- Validação:
+  - Conexão real provada (Node + supabase-js, só ouvir): canal cockpit-bubi-live = SUBSCRIBED; 0 amostras em 6s (sem carro agora, esperado).
+  - REST do Supabase alcançável (401), esm.sh 200.
+  - Print modo ao vivo: selo "AGUARDANDO O CARRO", tudo "sem sinal" (sem inventar número). No headless o chip deu "sem conexão" (relógio congelado quebra o websocket) — no navegador real conecta.
+  - Print modo demo: dados visíveis (água 57°C, lambda 0.90, bateria 11.6 V, alarmes "tudo ok"), "PRONTO PRA GRAVAR".
+- Resultado: concluído em DEV; aberto no navegador do Flávio (ao vivo + demo).
+- Pendências: ver com números reais correndo só com carro na pista transmitindo; painel do piloto (modo andando) ainda é o aprovado embutido (replay) — painel AO VIVO é a outra frente (app). Mapa força-G ao vivo agora existe (accelXg/Yg/Zg).
