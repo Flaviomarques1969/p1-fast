@@ -176,4 +176,24 @@ Flávio cobrou garantia ESTRUTURAL (não promessa) de que o dado parte de um lug
 - `main` (oficial) confirmada sem a trava (0) — só na linha isolada.
 
 ## Resultado: concluído (estrutura construída e provada). 
-## Pendências: incorporar à versão oficial é decisão do Flávio; depois, migrar Vista Piloto e Vista Engenheiro pra zerar o baseline (cada uma = ligar na fonte/cérebro únicos).
+
+---
+
+# TASK_DONE — Incorporação à oficial + migração da Vista Piloto (conexão) — 23/06/2026
+
+## Feito
+1. **Incorporado à versão oficial (main):** trava + registro + regra + ligação no `npm run smoke`. Cirúrgico (só os 4 arquivos, via `git checkout` da branch — não arrastei a divergência do auto-save). Trava roda verde na oficial.
+2. **Ampliada a ponte única `web/cockpit/cloud-bridge.js` (+ espelho iOS):** vários ouvintes na MESMA conexão + eventos `evento` (volta) e `posicao` (posição da nuvem). Aditivo, compatível com os consumidores atuais (main-t3000, checar, app). Sintaxe ok.
+3. **Migrada a Vista Piloto — conexão:** as DUAS conexões próprias (HUD + cérebro) viraram UMA, pela ponte única. `createClient` na tela = 0 (era 2). Mesma fonte de produção (supabase-config = fvhwltzhytpnhlqbttmd). Backup: `_design-reference/_backups/...BACKUP-migracao-fonte-unica-20260623-164139.html`.
+4. **Catraca apertada:** baseline da Vista Piloto perdeu `conexao-propria` (dívida quitada); trava agora EXIGE a tela sem conexão própria e passa (27 ok / 0 fail).
+
+## Validação
+- Trava verde após quitar (27 ok / 0 fail). Se a tela tivesse conexão, reprovaria (catraca não mente).
+- 8078 serve a ponte e dependências (200). Tela aberta pro Flávio ver carregando com o arranjo dele.
+- Limite honesto: a prova de DADO ao vivo correndo só com carro na pista. Sem carro: selo "AO VIVO · aguardando o carro" (esperado). Reversível pelo backup.
+
+## Pendências reais
+- Ok visual do Flávio (layout intacto / sem erro).
+- Vista Piloto: resta a dívida do feed de demonstração (preview-local/FAKE_LAPS) — próximo passo.
+- Vista Engenheiro: ainda toda em demonstração — migrar depois.
+- `?canal=` (canal de dev por URL) não passa mais pela ponte (ela usa o canal canônico cockpit-bubi-live); se precisar de canal de teste, adicionar na ponte (um lugar só).
