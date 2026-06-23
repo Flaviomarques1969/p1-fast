@@ -77,6 +77,18 @@ PENDENTE:
 - Prova com NÚMEROS reais correndo = só com carro na pista transmitindo.
 - DEPOIS: caso PARADO = status (outra sessão) — fundir na mesma tela.
 
+## CONSERTO DE APRESENTAÇÃO 23/06 (tarde) — PREENCHER A TELA + verificação por MIM no simulador
+- Flávio (foto) viu a tela ENCOLHIDA, com muito preto sobrando e cortada. Causa achada no código:
+  CockpitPilotoView.safeMargin devolvia ~59pt (recorte da ilha) em TODOS os lados → espremia o painel ~120pt/eixo.
+  O painel tem a MESMA proporção da tela (≈2,17:1) → margem ZERO preenche inteiro. FIX: safeMargin = 0.
+- Flávio (com razão) mandou eu parar de usá-lo como testador e verificar EU MESMO no simulador. FEITO:
+  build pro simulador (iPhone 17 Pro Max), instalei, abri --p1-cockpit, capturei e girei a imagem (/tmp/cockpit-upright.png).
+  RESULTADO VERIFICADO POR MIM: PREENCHE o quadro inteiro; leiaute aprovado completo; sensores vermelhos "sem sinal";
+  selo "CONECTADO — AGUARDANDO O CARRO NA PISTA" = a conexão real fechou DENTRO do app (WebView assinou o canal).
+- O iPhone 16 do Flávio JÁ TEM esta versão (build de device com margem 0, instalada pelo cabo).
+- Obs: botão "‹ Voltar" só aparece no atalho de teste --p1-cockpit; no fluxo por GIRO não existe.
+- Próximo após o ok dele: (a) número real = carro na pista; (b) decidir web-embutido (agora preenche/sem zoom/ao vivo) x reescrever nativo; (c) caso PARADO=status.
+
 ---
 
 ## TASK_DONE
