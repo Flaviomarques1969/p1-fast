@@ -16,6 +16,7 @@
 
 import SwiftUI
 import WebKit
+import UIKit
 
 struct CockpitPilotoView: View {
     let onClose: () -> Void
