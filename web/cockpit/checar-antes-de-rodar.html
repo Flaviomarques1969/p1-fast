@@ -227,7 +227,10 @@ const V_ANDA = 15;   // km/h: passou disso = na pista -> mostra o painel do pilo
 const V_PARA = 8;    // km/h: abaixo disso = parado/box
 const T_PARA = 800;  // ms abaixo de V_PARA pra voltar pro status (não pisca em curva)
 let modo = 'parado', lentoDesde = null;
+// ?modo=parado|andando trava a tela num estado (pra inspecionar/fotografar); padrão = automático pela velocidade.
+const MODO_FIXO = new URLSearchParams(location.search).get('modo');
 function decidirModo(vel) {
+  if (MODO_FIXO === 'parado' || MODO_FIXO === 'andando') { modo = MODO_FIXO; return; }
   const now = performance.now();
   if (modo === 'parado') {
     if (vel >= V_ANDA) { modo = 'andando'; lentoDesde = null; }
