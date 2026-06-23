@@ -299,24 +299,27 @@ function brakeFlash() {
   brakeTimer = setTimeout(() => device.setAttribute('data-brake-fire', 'idle'), 360);
 }
 function atualizarFreio(pos) {
-  const v = ultKmh / 3.6;                       // velocidade em m/s (real, calculada do GPS)
-  const { bd } = curvaMaisProxima(pos);         // distância ao ápice mais próximo
+  const v = ultKmh / 3.6;                        // velocidade em m/s (real, calculada do GPS)
+  const { best, bd } = curvaMaisProxima(pos);    // curva mais próxima + distância ao ápice
+  if (!best) { setBrakeFill(0); prevDFreio = bd; return; }
+  const id = best.id;
+  if (id !== approachId) { approachId = id; vMaxApp = 0; bdAtVmax = Infinity; }  // nova curva sendo abordada
   const aproximando = bd < prevDFreio - 0.4;
+  // ponto de freada IDEAL = o da MELHOR passagem deste trecho; só na 1ª usa o de partida
+  const pontoFreada = brakeRef.has(id) ? brakeRef.get(id) : FREIO_FALLBACK;
   let fill = 0;
   if (freioArmado && aproximando && v > 1) {
-    const restoM = bd - FREIO_BRAKE_DIST;        // distância que falta até o ponto de freada
-    if (restoM <= 0) {                           // chegou no ponto → pisca
-      fill = 1; brakeFlash(); freioArmado = false;
-    } else {
-      const tBrake = restoM / v;                 // tempo até o ponto (segundos REAIS de pista)
-      if (tBrake <= FREIO_LEAD) fill = 1 - tBrake / FREIO_LEAD;   // 4 s antes = 0%; no ponto = 100%
-    }
+    const restoM = bd - pontoFreada;
+    if (restoM <= 0) { fill = 1; brakeFlash(); freioArmado = false; }   // chegou no ponto → pisca
+    else { const t = restoM / v; if (t <= FREIO_LEAD) fill = 1 - t / FREIO_LEAD; }  // 4 s antes = 0%
   }
   setBrakeFill(Math.round(fill * FREIO_N));
-  if (bd > FREIO_BRAKE_DIST + 60) freioArmado = true;   // re-arma depois de afastar do ápice
-  // RESULTADO da freada (proxy): pico de velocidade na aproximação ≈ onde a freada começou
-  if (aproximando && bd < 200) { freioResultPendente = true; if (ultKmh > vMaxApp) { vMaxApp = ultKmh; bdAtVmax = bd; } }
-  if (freioResultPendente && bd > FREIO_BRAKE_DIST + 60) { finalizarFreioResultado(); freioResultPendente = false; vMaxApp = 0; bdAtVmax = Infinity; }
+  if (bd > pontoFreada + 60) freioArmado = true;   // re-arma depois de afastar do ápice
+  // INÍCIO da freada (desaceleração do GPS) = onde a velocidade para de subir e cai
+  if (aproximando && bd < 220) {
+    if (ultKmh > vMaxApp) { vMaxApp = ultKmh; bdAtVmax = bd; }
+    onsetCorner.set(id, bdAtVmax);
+  }
   prevDFreio = bd;
 }
 
