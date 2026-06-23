@@ -87,6 +87,7 @@ export function criarGravador(opts = {}) {
 
   function gravar(tipo, dados, rawHex, sim) {
     const agora = now();
+    if (tipo === 'gps') ultimoGpsQualquerMono = agora;   // marca chegada de GPS mesmo em espera
     // ── Captura AUTOMÁTICA por movimento (sem botão): abre quando o carro começa a
     //    andar (pista) e fecha quando fica parado (box). Só com `auto`; sem ela, o
     //    fluxo é o de sempre. O motor (marcha lenta no box) NÃO abre nem segura a
