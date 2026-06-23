@@ -48,3 +48,36 @@ cima, dado embaixo, cor por estado) e, quando o carro ANDA, vira a réplica do p
 - Sensores de chassi são "a instalar": marcar cinza/"A instalar", NUNCA vermelho de falha (sem alarme falso).
 
 ## Status inicial: iniciado
+
+---
+
+## TASK_DONE
+- Pedido original conferido: sim
+- Ambiente trabalhado: desenvolvimento (web, navegador)
+- Produção foi alterada: não
+- Se produção foi alterada, autorização explícita registrada: n/a
+- Arquivos reais inspecionados: sim (painel aprovado + peças do cockpit)
+- Alterações feitas: sim (1 arquivo NOVO; nada existente alterado)
+- Testes/validação executados: sim (servidor local + 2 prints por navegador automático)
+- Resultado: concluído (1ª versão) — aberto no navegador, aguardando seu sim/não
+- Pendências reais: força-G aparece "sem sinal" no replay (a volta gravada era só GPS+motor; com o carro real ele chega); limiares de velocidade (anda 15 / para 8) são defaults pra calibrar na pista; valores numéricos por aparelho (RPM, °, V) entram com o feed real na bancada
+
+### Arquivos alterados
+- NENHUM existente alterado. Painel aprovado (cockpit-volta-real.html) intocado — usado por embute.
+
+### O que foi acrescentado
+- web/cockpit/checar-antes-de-rodar.html (tela nova: status em tela cheia quando parado; vira o painel do piloto quando anda; troca sozinha pela velocidade; ?modo=parado|andando trava pra inspecionar)
+
+### Validação executada
+- Servidor local raiz do projeto (python http.server 8091): checar-antes-de-rodar.html 200, cockpit-volta-real.html 200, curvas 200, volta-real 200, state/renderer/bridge/css 200.
+- Print automático modo auto: replay a 98 km/h -> tela mostrou o PAINEL DO PILOTO (transição "andando" OK).
+- Print automático ?modo=parado: grade de status completa, GPS+motor verdes "Comunicando", selo "PRONTO PRA GRAVAR", chassi "A instalar" cinza, força-G "Sem sinal".
+
+### Checagem contra o pedido original
+- "carro parado -> todos os status, como estão" -> grade dos 14 aparelhos, cor por estado: OK
+- "dado embaixo do ícone, título em cima" -> cartões com título em cima, ícone, dado/estado embaixo: OK
+- "tela toda" -> layout largura total: OK
+- "carro andando -> réplica do que o piloto vê" -> embute o painel aprovado, aparece ao andar: OK
+
+### Pendências ou riscos
+- Aguardando o ok visual do Flávio. Limiares de velocidade a calibrar na pista. Força-G/valores numéricos dependem do feed real.
