@@ -29,10 +29,13 @@ struct CockpitPilotoView: View {
     var onClose: (() -> Void)? = nil
 
     var body: some View {
+        // O cockpit fica DENTRO da zona segura do iPhone (ilha + indicador + quinas
+        // arredondadas) + uma folga, pra a BORDA FÍSICA do aparelho não comer as
+        // pontas do painel (ex.: SAÍDA na quina). Por isso o GeometryReader NÃO
+        // ignora a área segura. O fundo preto cobre a tela inteira por trás.
         GeometryReader { geo in
-            let w = geo.size.width            // tela FÍSICA (por causa do ignoresSafeArea)
+            let w = geo.size.width            // zona segura (já desconta ilha/indicador)
             let h = geo.size.height
-            let m = safeMargin                // margem simétrica pra limpar o entalhe/ilha
             ZStack {
                 Color.black
                 ZStack(alignment: .topLeading) {
@@ -43,25 +46,16 @@ struct CockpitPilotoView: View {
                             .padding(.leading, 16)
                     }
                 }
-                // canvas em paisagem ENCOLHIDO pela margem simétrica nos dois
-                // lados → o painel não fica sob o entalhe e segue centralizado.
-                .frame(width: max(h - 2 * m, 0), height: max(w - 2 * m, 0))
+                .frame(width: h, height: w)        // formato paisagem (vai ser girado)
                 .rotationEffect(.degrees(angle))
-                .frame(width: w, height: h)        // re-enquadra: centro no centro FÍSICO da tela
+                .frame(width: w, height: h)         // re-centra na zona segura
             }
             .frame(width: w, height: h)
         }
-        .ignoresSafeArea()
+        .padding(14)                               // folga extra das quinas arredondadas
+        .background(Color.black.ignoresSafeArea())
         .statusBarHidden(true)
     }
-
-    /// PREENCHER a tela: o painel aprovado tem a MESMA proporção da tela
-    /// (≈2,17:1), então margem ZERO preenche inteiro. A margem simétrica grande
-    /// de antes (≈59pt nos 4 lados, herdada do recorte do topo/ilha) era o que
-    /// ENCOLHIA o painel e deixava o monte de preto sobrando. A ilha encosta só
-    /// na borda (área escura do painel); se cobrir algo útil, aí sim inseto SÓ
-    /// aquele lado — sem voltar a espremer os quatro.
-    private var safeMargin: CGFloat { 0 }
 
     private func voltarBotao(_ action: @escaping () -> Void) -> some View {
         Button(action: action) {
