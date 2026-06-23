@@ -960,7 +960,7 @@ private struct TesteAoVivoButton: View {
         Button(action: onAbrir) {
             HStack(spacing: 10) {
                 Circle()
-                    .fill(Color.green)
+                    .fill(Color.textMuted)
                     .frame(width: 10, height: 10)
                 Text("TESTE AO VIVO")
                     .font(.system(size: 16, weight: .bold))
