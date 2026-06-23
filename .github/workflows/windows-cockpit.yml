@@ -10,6 +10,9 @@ name: windows-cockpit
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [claude/t3000-t4000-live-stream-tdrk70]
+  workflow_dispatch:
 
 concurrency:
   group: windows-cockpit-${{ github.ref }}
