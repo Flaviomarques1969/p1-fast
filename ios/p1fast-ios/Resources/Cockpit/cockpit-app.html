@@ -539,12 +539,14 @@ function resetVolta() {
 // Aviso "aguardando o carro" (overlay próprio, sem ícone/emoji).
 const aguardandoEl = document.createElement('div');
 aguardandoEl.id = 'aguardando';
+// SELO discreto embaixo — NÃO cobre o painel. O leiaute aprovado aparece inteiro
+// no fundo (tudo "sem sinal" enquanto não há carro); o aviso fica só num cantinho.
 Object.assign(aguardandoEl.style, {
-  position: 'fixed', inset: '0', display: 'none',
-  alignItems: 'center', justifyContent: 'center',
-  background: 'rgba(0,0,0,0.82)', color: '#cbd5e1',
-  font: '600 30px/1.35 system-ui, -apple-system, sans-serif',
-  letterSpacing: '1px', textAlign: 'center', padding: '0 8%', zIndex: '99999',
+  position: 'fixed', left: '50%', bottom: '16px', transform: 'translateX(-50%)',
+  display: 'none', background: 'rgba(0,0,0,0.62)', color: '#e2e8f0',
+  font: '600 15px/1.2 system-ui, -apple-system, sans-serif', letterSpacing: '0.4px',
+  padding: '8px 16px', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.20)',
+  textAlign: 'center', whiteSpace: 'nowrap', zIndex: '99999', pointerEvents: 'none',
 });
 document.body.appendChild(aguardandoEl);
 
