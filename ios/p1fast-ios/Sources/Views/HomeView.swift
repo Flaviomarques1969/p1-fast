@@ -983,7 +983,6 @@ private struct TesteAoVivoButton: View {
             )
         }
         .buttonStyle(.plain)
-        .padding(.top, Spacing.lg)
     }
 }
 
