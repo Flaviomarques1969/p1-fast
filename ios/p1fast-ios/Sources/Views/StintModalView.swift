@@ -409,6 +409,7 @@ struct StintModalView: View {
     private var convidadoPicker: some View {
         Menu {
             Button("Sem convidado") { convidadoId = nil }
+            Button("+ Convidado") { sheet = .cadastrarConvidado }
             ForEach(repo.pilotos.filter { $0.id != pilotoId }, id: \.id) { p in
                 Button(p.nome) { convidadoId = p.id }
             }
