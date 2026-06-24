@@ -98,6 +98,18 @@ public sealed class LiveDataBridge
         ApplyT4000ToCockpit(sample);
     }
 
+    /// <summary>
+    /// Plugado no leitor USB nativo da T3000/T4000 (bloco RI). Recebe o sample já
+    /// decodificado e aplica no cockpit: RPM → shift light + alarmes → mensagem.
+    /// É o caminho usado pelo app WinUI lendo a central de verdade.
+    /// </summary>
+    public void IngestT3000(T3000Sample sample)
+    {
+        if (sample is null) return;
+        _t4000Count++;
+        ApplyT3000ToCockpit(sample);
+    }
+
     public object? GetLastImuGps() => _lastImuGps;
     public T4000ProviderSample? GetLastT4000() => _lastT4000;
 
@@ -187,6 +199,63 @@ public sealed class LiveDataBridge
         {
             // Condição limpou. Limpa só se a mensagem ativa era um alerta deste bridge.
             // (Mensagens de coach/comunicação ficam preservadas — futuro: priority manager.)
+            _cockpitState.HideMessage();
+            _activeAlertTexto = null;
+            _alertsCleared++;
+            _onEvent?.Invoke(new LiveBridgeEvent("alert-cleared"));
+        }
+    }
+
+    /// <summary>
+    /// Alertas críticos a partir do sample RI da T3000/T4000 (bitfield de alarmes
+    /// da central + temperatura de água). Ordem de gravidade espelha o JS
+    /// (ALARM_PRIORITY em web/cockpit/live-data-bridge.js).
+    /// </summary>
+    public static LiveAlert? CheckCriticalAlertsT3000(T3000Sample s, LiveLimits? limits = null)
+    {
+        if (s is null || !s.ChecksumOk) return null;
+        var l = limits ?? LiveLimits.Default;
+        var a = s.Alarmes;
+
+        if (a.BaixaPressaoOleo)         return new LiveAlert(MsgTipo.Grave, "ÓLEO BAIXO");
+        if (a.ExcessoTempMotor)         return new LiveAlert(MsgTipo.Grave, "MOTOR QUENTE");
+        if (a.BaixaPressaoCombustivel)  return new LiveAlert(MsgTipo.Grave, "COMBUSTÍVEL BAIXO");
+        if (a.ExcessoRotacao)           return new LiveAlert(MsgTipo.Grave, "ROTAÇÃO ALTA");
+        if (a.ExcessoPressao)           return new LiveAlert(MsgTipo.Grave, "PRESSÃO ALTA");
+        if (s.WaterTempC is int w && w > l.WaterTempMaxC)
+                                        return new LiveAlert(MsgTipo.Grave, "Temperatura água crítica");
+        if (a.WbMaximo)                 return new LiveAlert(MsgTipo.Comunicacao, "Pra box");
+        if (a.WbMinimo)                 return new LiveAlert(MsgTipo.Comunicacao, "Alivie");
+        if (a.AlertaNivelCombustivel)   return new LiveAlert(MsgTipo.Comunicacao, "Abasteça");
+        return null;
+    }
+
+    private void ApplyT3000ToCockpit(T3000Sample s)
+    {
+        if (!s.ChecksumOk)
+        {
+            _onEvent?.Invoke(new LiveBridgeEvent("t3000-bad-checksum"));
+            return;
+        }
+
+        // 1. RPM → shift mode/level (mesma lógica do T4000)
+        var decision = RpmToShift(s.Rpm, _limits);
+        _cockpitState.ApplyShift(decision.Mode, decision.Level);
+
+        // 2. Alertas críticos (bitfield da central + água)
+        var alert = CheckCriticalAlertsT3000(s, _limits);
+        if (alert is not null)
+        {
+            if (_activeAlertTexto != alert.Texto)
+            {
+                _cockpitState.ShowMessage(alert.Tipo, alert.Texto);
+                _activeAlertTexto = alert.Texto;
+                _alertsRaised++;
+                _onEvent?.Invoke(new LiveBridgeEvent("alert-raised", Alert: alert));
+            }
+        }
+        else if (_activeAlertTexto is not null)
+        {
             _cockpitState.HideMessage();
             _activeAlertTexto = null;
             _alertsCleared++;
