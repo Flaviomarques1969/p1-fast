@@ -19,6 +19,7 @@ using P1Fast.Cockpit.Domain;
 
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 Banner();
+Espelho.Inicializar();   // pede 1x o token e abre o canal pro Claude acompanhar online
 
 while (true)
 {
@@ -190,6 +191,7 @@ static void LerAoVivo(UsbDevice dev, byte epOut, byte epIn, string modo)
                     $"λ={s.Lambda:F2}  tps={s.TpsPct:F0}%  bat={s.BatteryV:F1}V  vel={s.SpeedKmh:F0}{a}");
                 Nuvem.Publicar(s);   // transmite pra nuvem (best-effort; nao atrapalha a leitura)
                 Arquivo.Salvar(s);   // salva no notebook pra consulta futura (historico completo)
+                Espelho.Registrar(s); // espelha pro GitHub pra o Claude acompanhar/avisar online
             }
         }
         Thread.Sleep(50);
@@ -281,5 +283,122 @@ static class Arquivo
             if (!avisou) { avisou = true; Console.WriteLine($"  💾 salvando historico em {caminho} (mesma pasta do programa)"); }
         }
         catch { /* salvar e best-effort */ }
+    }
+}
+
+// ─── Espelho pro GitHub (pra o Claude acompanhar ONLINE e avisar) ────────────
+// Empurra um retrato rolante (ultimas amostras + status) pra um arquivo no
+// repositorio via API do GitHub, usando um token que o usuario gera 1 vez.
+// O Claude le esse arquivo e faz o monitoramento/avisos. Best-effort: sem token
+// ou com falha de rede, o programa segue lendo/salvando normalmente.
+static class Espelho
+{
+    const string Owner = "flaviomarques1969";
+    const string Repo = "p1-fast";
+    const string Branch = "claude/t3000-t4000-live-stream-tdrk70";
+    const string Path = "live/cockpit-live.json";
+    const string TokenFile = "gh-token.txt";
+
+    static string? token;
+    static string? sha;
+    static long ultimoPush = 0;
+    static int total = 0;
+    static bool avisou = false;
+    static readonly Queue<object> recentes = new();
+    static readonly HttpClient http = new() { Timeout = TimeSpan.FromSeconds(10) };
+
+    public static void Inicializar()
+    {
+        try { if (File.Exists(TokenFile)) token = File.ReadAllText(TokenFile).Trim(); } catch { }
+        http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "p1fast-probe");
+        http.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "application/vnd.github+json");
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            Console.WriteLine();
+            Console.WriteLine("====================================================================");
+            Console.WriteLine("  PARA O CLAUDE ACOMPANHAR ONLINE — falta 1 permissao (so 1 vez):");
+            Console.WriteLine();
+            Console.WriteLine("  1) Abra no navegador (Ctrl+clique ou copie):");
+            Console.WriteLine("     https://github.com/settings/tokens/new?description=P1Fast&scopes=public_repo");
+            Console.WriteLine("  2) Role ate o fim e clique em 'Generate token'.");
+            Console.WriteLine("  3) Copie o token (comeca com ghp_) e cole aqui embaixo + Enter.");
+            Console.WriteLine();
+            Console.WriteLine("  (So quer ler/salvar e nao quer que o Claude veja? deixe vazio + Enter.)");
+            Console.WriteLine("====================================================================");
+            Console.Write("  Token: ");
+            var t = Console.ReadLine();
+            if (!string.IsNullOrWhiteSpace(t))
+            {
+                token = t.Trim();
+                try { File.WriteAllText(TokenFile, token); } catch { }
+                Console.WriteLine("  ✓ Token salvo. Vou transmitir pro Claude acompanhar ao vivo.\n");
+            }
+            else Console.WriteLine("  (sem token — segue lendo/salvando; o Claude nao vera online)\n");
+        }
+        else Console.WriteLine("  📡 Token ja configurado — transmitindo pro Claude acompanhar.\n");
+    }
+
+    public static void Registrar(T3000Sample s)
+    {
+        if (string.IsNullOrEmpty(token)) return;
+        total++;
+        recentes.Enqueue(new
+        {
+            ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            rpm = s.Rpm, waterTempC = s.WaterTempC, lambda = s.Lambda, tpsPct = s.TpsPct,
+            batteryV = s.BatteryV, speedKmh = s.SpeedKmh, alarme = s.Alarmes.QualquerAtivo,
+        });
+        while (recentes.Count > 40) recentes.Dequeue();
+
+        long agora = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        if (agora - ultimoPush < 3000) return;   // ~1 push a cada 3s
+        ultimoPush = agora;
+        _ = Push();
+    }
+
+    static async Task Push()
+    {
+        try
+        {
+            var snap = new { atualizadoEm = DateTimeOffset.UtcNow.ToString("o"), fluindo = true, total, amostras = recentes.ToArray() };
+            string content = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(snap)));
+            string url = $"https://api.github.com/repos/{Owner}/{Repo}/contents/{Path}";
+
+            if (sha is null)
+            {
+                using var g = Req(HttpMethod.Get, $"{url}?ref={Branch}");
+                var gr = await http.SendAsync(g);
+                if (gr.IsSuccessStatusCode)
+                    sha = JsonDocument.Parse(await gr.Content.ReadAsStringAsync()).RootElement.GetProperty("sha").GetString();
+            }
+
+            var body = new Dictionary<string, object> { ["message"] = "live cockpit snapshot", ["content"] = content, ["branch"] = Branch };
+            if (sha is not null) body["sha"] = sha;
+            using var p = Req(HttpMethod.Put, url);
+            p.Content = new StringContent(JsonSerializer.Serialize(body), System.Text.Encoding.UTF8, "application/json");
+            var pr = await http.SendAsync(p);
+            if (pr.IsSuccessStatusCode)
+            {
+                sha = JsonDocument.Parse(await pr.Content.ReadAsStringAsync()).RootElement.GetProperty("content").GetProperty("sha").GetString();
+                if (!avisou) { avisou = true; Console.WriteLine("  📡 Claude recebendo ao vivo (live/cockpit-live.json no GitHub)"); }
+            }
+            else if ((int)pr.StatusCode is 401 or 403)
+            {
+                Console.WriteLine($"  (token recusado: HTTP {(int)pr.StatusCode}. Gere outro e apague o arquivo gh-token.txt)");
+                token = null;
+            }
+            else { sha = null; }   // re-busca o sha na proxima
+        }
+        catch { /* best-effort */ }
+    }
+
+    static HttpRequestMessage Req(HttpMethod m, string url)
+    {
+        var r = new HttpRequestMessage(m, url);
+        r.Headers.TryAddWithoutValidation("Authorization", "token " + token);
+        r.Headers.TryAddWithoutValidation("User-Agent", "p1fast-probe");
+        r.Headers.TryAddWithoutValidation("Accept", "application/vnd.github+json");
+        return r;
     }
 }
