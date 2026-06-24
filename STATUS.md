@@ -1,5 +1,39 @@
 # P1 Fast — STATUS
 
+## RETOMADA PÓS-CLEAR (próxima sessão) — seguir pro DeltaCalculator (MS-13.5)
+
+> Diga: **"continue do STATUS.md no branch `claude/t3000-t4000-live-stream-tdrk70`"**.
+> Antes de propor, leia `STATUS.md` + `PLANO_FASE_1.md` + `ARCHITECTURE_DECISIONS.md`.
+
+**Onde paramos:** o `.exe` é dono único (T4000 + GPS RaceBox nativo + troca de tela
++ vídeo + auto-start) e já **conta voltas + tempo de volta** pela linha de chegada
+(`ChegadaDetector` + `SementeBrasilia`). CI verde (domain-test + ui-build). Tudo
+pushado, working tree limpo.
+
+**Próximo passo combinado com o Flávio: portar o `DeltaCalculator` pra C#** — o
+**delta vivo vs a melhor volta** (o número gigante no centro do cockpit), que hoje
+ainda vem da simulação.
+
+- **Fonte da verdade JS:** `web/cockpit/delta-calculator.js`. Integra ponto a ponto
+  `dt = ds/v_atual − ds/v_ref`, acumulando por sub-trecho (entrada/freio/ápice/
+  **pace**/saída). Saída: `deltaTotalS` + `porSubTrecho` + `piorSubTrecho`.
+- **Dependências (ver antes de portar):** precisa de (a) **detecção de trecho**
+  (`web/cockpit/trecho-detector.js` + `classificador-trecho.js`) pra saber em qual
+  sub-trecho o carro está, e (b) uma **volta de referência** (melhor histórica) por
+  trecho. Geometria semente já existe em `web/cockpit/apices-semente-brasilia.js`
+  (8 ápices de Brasília) e pode virar `SementeBrasilia` também.
+- **Onde pluga no `.exe`:** GPS → TrechoDetector → DeltaCalculator →
+  `CockpitState.SetDelta(...)` / `SetApexPonto(...)` (já existem em `CockpitState.cs`).
+  O `MainWindow` hoje preenche delta/ápice pela SIMULAÇÃO — trocar por dado real.
+- **Regras duras:** mockup canônico **congelado** (não redesenhar widgets — 4 ápices
+  + Pace central, §9.1); ADR-025 (Detector ao vivo do iPhone = Swift; cockpit Windows
+  porta do MESMO domínio JS — consistente); paridade fiel com o JS (cada caso vira teste).
+- **Padrão que funcionou nesta sessão:** portar puro pro Domain + xUnit (roda no
+  `domain-test`/ubuntu) primeiro; só depois a fiação na UI (validada pelo `ui-build`).
+  Não dá pra compilar WinUI no Linux — confiar na CI.
+
+---
+
 ## Checkpoint 2026-06-24 (tarde) — virada: `.exe` vira dono único (ADR-024 amendment 6)
 
 **Decisão do Flávio (2026-06-24):** notebook da pista é **dedicado**; o `.exe` vira
