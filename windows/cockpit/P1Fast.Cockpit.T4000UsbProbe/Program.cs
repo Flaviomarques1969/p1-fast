@@ -175,6 +175,7 @@ static void LerAoVivo(UsbDevice dev, byte epOut, byte epIn, string modo)
     var reader = dev.OpenEndpointReader((ReadEndpointID)epIn);
     UsbEndpointWriter? writer = epOut != 0 ? dev.OpenEndpointWriter((WriteEndpointID)epOut) : null;
     int ok = 0;
+    Espelho.Estrategia = $"OUT=0x{epOut:X2} IN=0x{epIn:X2} modo={modo}";
     while (true)
     {
         if (modo is "ack_ri" or "ri_direto" && writer is not null)
@@ -191,7 +192,7 @@ static void LerAoVivo(UsbDevice dev, byte epOut, byte epIn, string modo)
                     $"λ={s.Lambda:F2}  tps={s.TpsPct:F0}%  bat={s.BatteryV:F1}V  vel={s.SpeedKmh:F0}{a}");
                 Nuvem.Publicar(s);   // transmite pra nuvem (best-effort; nao atrapalha a leitura)
                 Arquivo.Salvar(s);   // salva no notebook pra consulta futura (historico completo)
-                Espelho.Registrar(s); // espelha pro GitHub pra o Claude acompanhar/avisar online
+                Espelho.Registrar(s, bloco, total); // espelha pro GitHub (campos completos + bytes crus)
             }
         }
         Thread.Sleep(50);
@@ -304,6 +305,8 @@ static class Espelho
     static long ultimoPush = 0;
     static int total = 0;
     static bool avisou = false;
+    public static string Estrategia = "?";   // qual par de endpoints/modo venceu
+    static string ultimoRawHex = "";          // bytes crus do ultimo frame (pra eu conferir offsets)
     static readonly Queue<object> recentes = new();
     static readonly HttpClient http = new() { Timeout = TimeSpan.FromSeconds(10) };
 
@@ -339,17 +342,31 @@ static class Espelho
         else Console.WriteLine("  📡 Token ja configurado — transmitindo pro Claude acompanhar.\n");
     }
 
-    public static void Registrar(T3000Sample s)
+    public static void Registrar(T3000Sample s, byte[] raw, int rawLen)
     {
         if (string.IsNullOrEmpty(token)) return;
         total++;
+        ultimoRawHex = BitConverter.ToString(raw, 0, Math.Min(rawLen, 240)).Replace("-", " ");
         recentes.Enqueue(new
         {
             ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-            rpm = s.Rpm, waterTempC = s.WaterTempC, lambda = s.Lambda, tpsPct = s.TpsPct,
-            batteryV = s.BatteryV, speedKmh = s.SpeedKmh, alarme = s.Alarmes.QualquerAtivo,
+            rpm = s.Rpm, waterTempC = s.WaterTempC, airTempC = s.AirTempC,
+            lambda = s.Lambda, lambdaNbRaw = s.LambdaNbRaw,
+            tpsPct = s.TpsPct, tpsTargetPct = s.TpsTargetPct,
+            pedalAceleradorPct = s.PedalAceleradorPct, pedalFreioPct = s.PedalFreioPct,
+            pressaoFreioBar = s.PressaoFreioBar, mapBar = s.MapBar,
+            batteryV = s.BatteryV, speedKmh = s.SpeedKmh, mapaAtual = s.MapaAtual,
+            accelXg = s.AccelXg, accelYg = s.AccelYg, accelZg = s.AccelZg,
+            bytesLen = s.BytesLen, ecuErrorBits = s.EcuErrorBits,
+            alarmes = new
+            {
+                s.Alarmes.ExcessoRotacao, s.Alarmes.ExcessoPressao, s.Alarmes.ExcessoTempMotor,
+                s.Alarmes.ExcessoAberturaInjetor, s.Alarmes.BaixaPressaoOleo,
+                s.Alarmes.WbMinimo, s.Alarmes.WbMaximo, s.Alarmes.NbMinimo, s.Alarmes.NbMaximo,
+                s.Alarmes.BaixaPressaoCombustivel, s.Alarmes.AlertaNivelCombustivel,
+            },
         });
-        while (recentes.Count > 40) recentes.Dequeue();
+        while (recentes.Count > 30) recentes.Dequeue();
 
         long agora = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         if (agora - ultimoPush < 3000) return;   // ~1 push a cada 3s
@@ -361,7 +378,7 @@ static class Espelho
     {
         try
         {
-            var snap = new { atualizadoEm = DateTimeOffset.UtcNow.ToString("o"), fluindo = true, total, amostras = recentes.ToArray() };
+            var snap = new { atualizadoEm = DateTimeOffset.UtcNow.ToString("o"), fluindo = true, total, estrategia = Estrategia, rawHexUltimo = ultimoRawHex, amostras = recentes.ToArray() };
             string content = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(snap)));
             string url = $"https://api.github.com/repos/{Owner}/{Repo}/contents/{Path}";
 
