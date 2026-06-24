@@ -59,11 +59,12 @@
     <ul class="steps">
       <li><span class="num">1</span>Clique no botão verde. Baixa um arquivinho <code>Instalar-P1Fast.cmd</code> (alguns KB).</li>
       <li><span class="num">2</span>Na barra de downloads do navegador, dê <b>duplo-clique</b> nele. (Se aparecer "este arquivo pode prejudicar", escolha <b>Manter</b>.)</li>
-      <li><span class="num">3</span>Abre uma janela escura, baixa o cockpit (~64 MB) e <b>abre a tela do piloto sozinho</b>. Pronto — atalho <b>P1 Fast Cockpit</b> fica na área de trabalho.</li>
+      <li><span class="num">3</span>Abre uma janela escura, baixa o cockpit (~64 MB) e <b>abre a tela do piloto sozinho</b>. Pronto — atalho <b>P1 Fast Cockpit</b> na área de trabalho <b>e na inicialização do Windows</b>.</li>
     </ul>
 
     <div class="warn">
       ⚠️ Por segurança o navegador não deixa um site abrir programa direto — por isso o passo 2 (um duplo-clique). Fora isso, o instalador faz <b>todo o resto sozinho</b>. Com a central T4000 ligada, a tela já mostra dado real; sem ela, roda em demo.
+      <br><br>🔌 Como é notebook <b>dedicado</b>, o cockpit fica configurado pra <b>subir sozinho quando o Windows liga</b> — ligou o notebook, a tela do piloto aparece.
     </div>
 
     <details>
@@ -104,6 +105,11 @@ function montarCmd(token) {
     + "$ws=New-Object -ComObject WScript.Shell;"
     + "$lnk=$ws.CreateShortcut([IO.Path]::Combine([Environment]::GetFolderPath('Desktop'),'P1 Fast Cockpit.lnk'));"
     + "$lnk.TargetPath=$exe.FullName; $lnk.WorkingDirectory=$exe.Directory.FullName; $lnk.IconLocation=$exe.FullName; $lnk.Save();"
+    // Auto-start no boot (ADR-024 amendment 6): notebook dedicado liga -> cockpit sobe
+    // sozinho. Atalho na pasta Inicializar do Windows (shell:startup).
+    + "$startup=[Environment]::GetFolderPath('Startup');"
+    + "$lnk2=$ws.CreateShortcut([IO.Path]::Combine($startup,'P1 Fast Cockpit.lnk'));"
+    + "$lnk2.TargetPath=$exe.FullName; $lnk2.WorkingDirectory=$exe.Directory.FullName; $lnk2.IconLocation=$exe.FullName; $lnk2.Save();"
     + "Write-Host '  Abrindo o cockpit...';"
     + "Start-Process -FilePath $exe.FullName -WorkingDirectory $exe.Directory.FullName";
 
