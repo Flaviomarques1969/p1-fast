@@ -20,8 +20,8 @@ public delegate void CockpitStateChangedHandler(
 public sealed class CockpitState
 {
     public const int ShiftLevelMin  = 0;
-    public const int ShiftLevelMax  = 6;  // canônico vai 0..6 → fire → overrev
-    public const int ShiftDotsTotal = 12; // mockup tem 12 LEDs
+    public const int ShiftLevelMax  = 6;  // canônico vai 0..6 → fire → overrev (gatilho inalterado)
+    public const int ShiftDotsTotal = 17; // painel aprovado 22/06 tem 17 LEDs (pirâmide tier 1..9..1)
 
     private CockpitStateModel _state;
     private readonly List<CockpitStateChangedHandler> _listeners = new();

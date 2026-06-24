@@ -50,18 +50,22 @@ public sealed partial class MainWindow : Window
 
     private Storyboard? _haloPulse;
 
+    // Rampa de cor do painel APROVADO 22/06 (cockpit.css .shift-light__dot.is-on[data-tier]):
+    // tiers 1-4 verde · 5-7 amarelo · 8-9 vermelho. RGB convertidos dos oklch canônicos
+    // (verde oklch80% .23 145 · amarelo oklch86% .21 92 · vermelho oklch75% .26 28).
     private static readonly Color LedOff         = Color.FromArgb(0xFF, 0x1A, 0x1A, 0x1A);
-    private static readonly Color LedTier1Green  = Color.FromArgb(0xFF, 0x4F, 0xE0, 0x60);
-    private static readonly Color LedTier3Yellow = Color.FromArgb(0xFF, 0xF0, 0xC0, 0x40);
-    private static readonly Color LedTier5Red    = Color.FromArgb(0xFF, 0xE0, 0x40, 0x40);
+    private static readonly Color LedShiftGreen  = Color.FromArgb(0xFF, 0x39, 0xE2, 0x52);
+    private static readonly Color LedShiftYellow = Color.FromArgb(0xFF, 0xFF, 0xCA, 0x00);
+    private static readonly Color LedShiftRed    = Color.FromArgb(0xFF, 0xFF, 0x4D, 0x43);
     private static readonly Color LedFireWhite   = Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF);
     private static readonly Color LedOverrevRed  = Color.FromArgb(0xFF, 0xC0, 0x10, 0x10);
 
-    private static readonly int[] LedTierByPosition = { 1, 2, 3, 4, 5, 6, 6, 5, 4, 3, 2, 1 };
+    // 17 posições, pirâmide simétrica: tier 1 nas pontas, tier 9 no centro.
+    private static readonly int[] LedTierByPosition = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 8, 7, 6, 5, 4, 3, 2, 1 };
 
     // ── Shift light flash (troca de marcha) ───────────────────
     // Detecta upshift = RPM caiu de patamar alto (>=5) — proxy do "shift up"
-    // do volante real. Quando dispara, todos os 12 LEDs viram brancos por
+    // do volante real. Quando dispara, todos os 17 LEDs viram brancos por
     // ~140 ms e depois voltam pro patamar atual. Espelha o flash de strobe
     // que o piloto vê quando a transmissão troca.
     private int _previousShiftLevel = 0;
@@ -108,7 +112,8 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         ApplyDisplayPlacement();
 
-        _leds = new[] { Led01, Led02, Led03, Led04, Led05, Led06, Led07, Led08, Led09, Led10, Led11, Led12 };
+        _leds = new[] { Led01, Led02, Led03, Led04, Led05, Led06, Led07, Led08, Led09,
+                        Led10, Led11, Led12, Led13, Led14, Led15, Led16, Led17 };
         _stintBlocks = new[]
         {
             StintBlock01, StintBlock02, StintBlock03, StintBlock04,
@@ -454,7 +459,7 @@ public sealed partial class MainWindow : Window
 
     private void ApplyShift(ShiftState shift)
     {
-        if (_leds.Length != 12) return;
+        if (_leds.Length != 17) return;
 
         // Upshift = vinha em RPM alto (level>=5) e caiu — em modo Lit nos dois
         // lados. Em real racing equivale a "trocou pra marcha mais alta, RPM
@@ -527,26 +532,29 @@ public sealed partial class MainWindow : Window
 
         if (shift.Mode != ShiftMode.Lit || shift.Level <= 0) return;
 
+        // Acende das PONTAS pro CENTRO, par a par (igual ao aprovado: tier 1 nas
+        // pontas acende primeiro, sobe rumo ao centro). A central (tier 9, índice 8)
+        // NUNCA acende em LIT — fica reservada pro FIRE. Por isso os pares varrem só
+        // as 16 laterais: com halfDots ≤ 8, leftIdx vai 0..7 e rightIdx 16..9.
         var dots = CockpitState.ShiftDotsForLevel(shift.Level);
         var halfDots = dots / 2;
-        var center = _leds.Length / 2;
+        var n = _leds.Length;
         for (var d = 0; d < halfDots; d++)
         {
-            var leftIdx  = center - 1 - d;
-            var rightIdx = center + d;
-            if (leftIdx >= 0)
-                ((SolidColorBrush)_leds[leftIdx].Fill).Color = ColorForTier(LedTierByPosition[leftIdx]);
-            if (rightIdx < _leds.Length)
-                ((SolidColorBrush)_leds[rightIdx].Fill).Color = ColorForTier(LedTierByPosition[rightIdx]);
+            var leftIdx  = d;
+            var rightIdx = n - 1 - d;
+            ((SolidColorBrush)_leds[leftIdx].Fill).Color  = ColorForTier(LedTierByPosition[leftIdx]);
+            ((SolidColorBrush)_leds[rightIdx].Fill).Color = ColorForTier(LedTierByPosition[rightIdx]);
         }
     }
 
+    // Rampa do aprovado: tiers 1-4 verde · 5-7 amarelo · 8-9 vermelho.
     private static Color ColorForTier(int tier) => tier switch
     {
-        1 or 2 => LedTier1Green,
-        3 or 4 => LedTier3Yellow,
-        5 or 6 => LedTier5Red,
-        _      => LedOff,
+        >= 1 and <= 4 => LedShiftGreen,
+        5 or 6 or 7   => LedShiftYellow,
+        8 or 9        => LedShiftRed,
+        _             => LedOff,
     };
 
     private void ApplyDelta(DeltaInfo delta)

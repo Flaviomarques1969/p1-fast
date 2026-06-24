@@ -79,6 +79,10 @@
                             Background="#0F0F0F"
                             BorderBrush="#1F1F1F"
                             BorderThickness="1">
+                        <!-- 17 LEDs em pirâmide simétrica (tier 1..9..1), igual ao
+                             painel aprovado 22/06. Pontas (tier 1) verdes acendem
+                             primeiro; centro (tier 9) vermelho é reservado pro FIRE.
+                             Enchem das PONTAS pro CENTRO conforme sobe rumo à potência. -->
                         <StackPanel Orientation="Horizontal" Spacing="18">
                             <Ellipse x:Name="Led01" Width="13" Height="13" Fill="#1A1A1A"/>
                             <Ellipse x:Name="Led02" Width="13" Height="13" Fill="#1A1A1A"/>
@@ -92,6 +96,11 @@
                             <Ellipse x:Name="Led10" Width="13" Height="13" Fill="#1A1A1A"/>
                             <Ellipse x:Name="Led11" Width="13" Height="13" Fill="#1A1A1A"/>
                             <Ellipse x:Name="Led12" Width="13" Height="13" Fill="#1A1A1A"/>
+                            <Ellipse x:Name="Led13" Width="13" Height="13" Fill="#1A1A1A"/>
+                            <Ellipse x:Name="Led14" Width="13" Height="13" Fill="#1A1A1A"/>
+                            <Ellipse x:Name="Led15" Width="13" Height="13" Fill="#1A1A1A"/>
+                            <Ellipse x:Name="Led16" Width="13" Height="13" Fill="#1A1A1A"/>
+                            <Ellipse x:Name="Led17" Width="13" Height="13" Fill="#1A1A1A"/>
                         </StackPanel>
                     </Border>
 

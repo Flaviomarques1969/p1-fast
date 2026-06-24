@@ -48,17 +48,17 @@ public class CockpitStateTests
     {
         Assert.Equal(0,  CockpitState.ShiftLevelMin);
         Assert.Equal(6,  CockpitState.ShiftLevelMax);
-        Assert.Equal(12, CockpitState.ShiftDotsTotal);
+        Assert.Equal(17, CockpitState.ShiftDotsTotal);   // painel aprovado 22/06: 17 LEDs
     }
 
     [Fact]
-    public void CST_04_ShiftDotsForLevel_mapeia_0_para_0_e_6_para_12_e_clampa()
+    public void CST_04_ShiftDotsForLevel_mapeia_0_para_0_e_6_para_17_e_clampa()
     {
         Assert.Equal(0,  CockpitState.ShiftDotsForLevel(0));
-        Assert.Equal(12, CockpitState.ShiftDotsForLevel(6));
-        Assert.Equal(6,  CockpitState.ShiftDotsForLevel(3));
+        Assert.Equal(17, CockpitState.ShiftDotsForLevel(6));
+        Assert.Equal(9,  CockpitState.ShiftDotsForLevel(3));    // round(3/6*17)=round(8.5)=9 (away)
         Assert.Equal(0,  CockpitState.ShiftDotsForLevel(-1));   // clamp negativo
-        Assert.Equal(12, CockpitState.ShiftDotsForLevel(99));   // clamp acima
+        Assert.Equal(17, CockpitState.ShiftDotsForLevel(99));   // clamp acima
     }
 
     // ── trechoStatus ─────────────────────────────────────────
