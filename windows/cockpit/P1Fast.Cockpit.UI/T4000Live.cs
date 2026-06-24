@@ -218,6 +218,7 @@ internal static class LiveSink
     private static readonly HttpClient http = new() { Timeout = TimeSpan.FromSeconds(4) };
     private static readonly string arquivo = $"p1-t4000-{DateTime.Now:yyyyMMdd}.jsonl";
     private static long ultimoNuvem = 0;
+    private static long ultimoGps = 0;
 
     // Detecta wifi/nuvem caindo e voltando (histerese) pra avisar na saúde.
     private static readonly ConnectivityTracker conectividade = new(limiteFalhas: 3);
@@ -263,6 +264,35 @@ internal static class LiveSink
             }, TaskContinuationOptions.ExecuteSynchronously);
         }
         catch { SystemHealth.NuvemHttp(-1); RegistrarNuvem(false); }
+    }
+
+    /// <summary>
+    /// Publica o GPS do RaceBox no MESMO canal (cockpit-bubi-live), evento "gps" —
+    /// o .exe assume o papel que era da página web (ADR-024 amendment 6). Throttle
+    /// ~10 Hz. Best-effort: nunca derruba a leitura BLE.
+    /// </summary>
+    public static void PublicarGps(RaceBoxGpsSample g)
+    {
+        long agora = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        if (agora - ultimoGps < 100) return;   // ~10 Hz pra nuvem
+        ultimoGps = agora;
+        try
+        {
+            var payload = GpsCloudPayload.Build(g, agora);
+            var body = new { messages = new[] { new { topic = "cockpit-bubi-live", @event = GpsCloudPayload.Event, payload } } };
+            var req = new HttpRequestMessage(HttpMethod.Post, $"{Url}/realtime/v1/api/broadcast")
+            {
+                Content = new StringContent(JsonSerializer.Serialize(body), System.Text.Encoding.UTF8, "application/json"),
+            };
+            req.Headers.TryAddWithoutValidation("apikey", Anon);
+            req.Headers.TryAddWithoutValidation("Authorization", "Bearer " + Anon);
+            _ = http.SendAsync(req).ContinueWith(t =>
+            {
+                if (t.Status == TaskStatus.RanToCompletion) t.Result.Dispose();
+                else _ = t.Exception;
+            }, TaskContinuationOptions.ExecuteSynchronously);
+        }
+        catch { /* best-effort */ }
     }
 
     public static void Salvar(T3000Sample s)

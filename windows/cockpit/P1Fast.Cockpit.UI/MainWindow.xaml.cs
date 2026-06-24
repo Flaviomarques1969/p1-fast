@@ -27,6 +27,12 @@ public sealed partial class MainWindow : Window
     private readonly T3000LapSimulator _lapSim = new();
     private T4000LiveReader? _reader;
     private volatile bool _realDataSeen;
+    private T3000Sample? _lastSample;   // p/ o painel de sensores (carro parado)
+
+    // GPS nativo (RaceBox BLE) → troca de tela local + publish pra nuvem (ADR-024 amd 6).
+    private RaceBoxBleReader? _raceBox;
+    private readonly ModoTelaDetector _modoDetector = new();
+    private volatile bool _gpsSeen;
 
     // ── Cores ──────────────────────────────────────────────
 
@@ -164,7 +170,9 @@ public sealed partial class MainWindow : Window
         {
             if (_realDataSeen) return;
             double t = (Environment.TickCount64 - simInicioTick) / 1000.0;
-            _bridge.IngestT3000(_lapSim.Next(t));
+            var s = _lapSim.Next(t);
+            _lastSample = s;                  // alimenta o painel de sensores também na sim
+            _bridge.IngestT3000(s);
         };
         _demoTimer.Start();
 
@@ -177,6 +185,7 @@ public sealed partial class MainWindow : Window
                     DispatcherQueue.TryEnqueue(() => _demoTimer.Stop());
                     SystemHealth.Log("primeira amostra real — saindo da simulação");
                 }
+                _lastSample = s;                               // painel de sensores
                 _bridge.IngestT3000(s);                       // shift light + alarmes → tela
                 LiveSink.Publicar(s);                          // nuvem (best-effort, ~10 Hz)
                 LiveSink.Salvar(s);                            // histórico local (jsonl)
@@ -185,12 +194,31 @@ public sealed partial class MainWindow : Window
             onLog: linha => SystemHealth.Log(linha));
         _reader.Start();
 
+        // ── GPS nativo (RaceBox BLE) → troca de tela local + publish pra nuvem ──
+        // O .exe é dono único do RaceBox (ADR-024 amendment 6): decide parado→sensores
+        // / andando→cockpit SEM depender da nuvem, e ainda publica o GPS ele mesmo.
+        _raceBox = new RaceBoxBleReader(
+            onSample: g =>
+            {
+                bool primeiro = !_gpsSeen;
+                _gpsSeen = true;
+                LiveSink.PublicarGps(g);                       // nuvem (best-effort, ~10 Hz)
+                SystemHealth.Gps(g, _raceBox?.Estado ?? "?");
+                bool mudou = _modoDetector.Atualizar(g.SpeedKmh);
+                if (mudou || primeiro)
+                    DispatcherQueue.TryEnqueue(AplicarModoTela);
+            },
+            onLog: linha => SystemHealth.Log(linha));
+        _raceBox.Start();
+
         // Linha de status ao vivo (captura + nuvem) atualizada 1×/s, mesmo quando
         // o shift não muda — pra confirmar num olhar que está tudo funcionando.
         _statusTimer = DispatcherQueue.CreateTimer();
         _statusTimer.Interval = TimeSpan.FromSeconds(1);
-        _statusTimer.Tick += (_, _) => UpdateStatusText();
+        _statusTimer.Tick += (_, _) => { UpdateStatusText(); UpdateSensorsPanel(); };
         _statusTimer.Start();
+
+        AplicarModoTela();   // estado inicial: cockpit visível até o 1º GPS
 
         // Encerramento limpo: solta a USB, para a simulação e fecha o módulo de
         // saúde (grava o último retrato). Sem isso, a thread de leitura seguraria
@@ -198,10 +226,42 @@ public sealed partial class MainWindow : Window
         Closed += (_, _) =>
         {
             try { _reader?.Stop(); } catch { }
+            try { _raceBox?.Stop(); } catch { }
             try { _demoTimer.Stop(); } catch { }
             try { _statusTimer?.Stop(); } catch { }
             try { SystemHealth.Parar(); } catch { }
         };
+    }
+
+    // ── Troca de tela dirigida pelo GPS (parado→sensores / andando→cockpit) ──
+    //
+    // Até o 1º GPS chegar, mostra o cockpit (deixa a simulação visível em
+    // desenvolvimento). Depois disso, o ModoTelaDetector manda: parado = painel de
+    // sensores, andando = cockpit. Idempotente — só mexe em Visibility.
+    private void AplicarModoTela()
+    {
+        bool cockpit = !_gpsSeen || _modoDetector.Modo == ModoTela.Andando;
+        CockpitRoot.Visibility = cockpit ? Visibility.Visible : Visibility.Collapsed;
+        SensorsRoot.Visibility = cockpit ? Visibility.Collapsed : Visibility.Visible;
+        SystemHealth.ModoTela(cockpit ? "andando (cockpit)" : "parado (sensores)");
+        if (!cockpit) UpdateSensorsPanel();   // pinta os tiles na hora da troca
+    }
+
+    private void UpdateSensorsPanel()
+    {
+        var s = _lastSample;
+        if (s is not null)
+        {
+            SensorRpm.Text     = s.Rpm.ToString();
+            SensorAgua.Text    = s.WaterTempC is { } w ? $"{w}°C" : "—";
+            SensorAr.Text      = s.AirTempC is { } a ? $"{a}°C" : "—";
+            SensorBateria.Text = $"{s.BatteryV:0.0} V";
+            SensorLambda.Text  = s.Lambda.ToString("0.00");
+            SensorMap.Text     = $"{s.MapBar:0.00}";
+            SensorTps.Text     = $"{s.TpsPct:0}%";
+            SensorVel.Text     = $"{s.SpeedKmh:0} km/h";
+        }
+        SensorStatus.Text = $"{SystemHealth.ResumoCurto()} • {SystemHealth.GpsResumoCurto()}";
     }
 
     /// <summary>Versão do app pra diagnóstico (vem do assembly).</summary>

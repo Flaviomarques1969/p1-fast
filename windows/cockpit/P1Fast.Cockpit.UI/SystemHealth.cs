@@ -56,6 +56,14 @@ public static class SystemHealth
     private static int _ultimoUploadHttp = 0;   // 0 = ainda nenhum; -1 = exceção/timeout
     private static long _ultimoFrameTick = 0;
 
+    // Evidência do GPS RaceBox (nativo no .exe — ADR-024 amendment 6) + o modo de
+    // tela que ele está dirigindo (parado→sensores / andando→cockpit).
+    private static long _gpsCount;
+    private static long _ultimoGpsTick;
+    private static string _gpsResumo = "";
+    private static string _gpsEstadoBle = "?";
+    private static string _modoTela = "—";
+
     private static string? _token;
     private static string? _sha;
     private static System.Threading.Timer? _timer;
@@ -136,6 +144,30 @@ public static class SystemHealth
         else Interlocked.Increment(ref _salvosFalha);
     }
 
+    /// <summary>Registra a última amostra de GPS do RaceBox + o estado da conexão BLE.</summary>
+    public static void Gps(RaceBoxGpsSample s, string estadoBle)
+    {
+        Interlocked.Increment(ref _gpsCount);
+        Interlocked.Exchange(ref _ultimoGpsTick, Environment.TickCount64);
+        var resumo = $"fix={s.Fix} sv={s.NumSV} vel={s.SpeedKmh:0.0} km/h " +
+                     $"hAcc={s.HAccM:0.0}m {s.Lat:0.00000},{s.Lon:0.00000}";
+        lock (trava) { _gpsResumo = resumo; _gpsEstadoBle = estadoBle; }
+    }
+
+    /// <summary>Modo de tela atual dirigido pelo GPS (parado/andando).</summary>
+    public static void ModoTela(string modo)
+    {
+        lock (trava) _modoTela = modo;
+    }
+
+    /// <summary>Resumo curto do GPS pra linha de status do painel de sensores.</summary>
+    public static string GpsResumoCurto()
+    {
+        long idade = _ultimoGpsTick == 0 ? -1 : Environment.TickCount64 - _ultimoGpsTick;
+        if (idade < 0) return "GPS —";
+        return idade < 3000 ? $"GPS ✓{Interlocked.Read(ref _gpsCount)}" : "GPS reconectando";
+    }
+
     public static void Log(string linha)
     {
         var carimbado = $"{DateTime.Now:HH:mm:ss} {linha}";
@@ -192,9 +224,15 @@ public static class SystemHealth
         long uptimeS = (agora - _inicioTick) / 1000;
         double porSeg = uptimeS > 0 ? Math.Round(_amostras / (double)uptimeS, 1) : 0;
 
+        long idadeGpsMs = _ultimoGpsTick == 0 ? -1 : agora - _ultimoGpsTick;
+
         string[] evs;
-        string estrategia, dispositivos, frameHex, amostra;
-        lock (trava) { estrategia = _estrategia; dispositivos = _dispositivos; frameHex = _ultimoFrameHex; amostra = _ultimaAmostra; }
+        string estrategia, dispositivos, frameHex, amostra, gpsResumo, gpsEstadoBle, modoTela;
+        lock (trava)
+        {
+            estrategia = _estrategia; dispositivos = _dispositivos; frameHex = _ultimoFrameHex; amostra = _ultimaAmostra;
+            gpsResumo = _gpsResumo; gpsEstadoBle = _gpsEstadoBle; modoTela = _modoTela;
+        }
         evs = eventos.ToArray();
 
         var snap = new
@@ -212,6 +250,14 @@ public static class SystemHealth
                 ultimaAmostraHaMs = idadeMs,
                 ultimaAmostra = amostra,    // decodificada — confiro se os valores fazem sentido
                 ultimoFrameHex = frameHex,  // cru — confiro offsets vs firmware real
+            },
+            gps = new
+            {
+                estadoBle = gpsEstadoBle,        // procurando/ligado: RaceBox…
+                modoTela,                        // parado (sensores) / andando (cockpit)
+                amostras = Interlocked.Read(ref _gpsCount),
+                ultimaHaMs = idadeGpsMs,
+                ultima = gpsResumo,              // fix/sv/vel/hAcc/lat,lon decodificados
             },
             nuvem = new
             {
