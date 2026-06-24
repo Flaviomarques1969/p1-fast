@@ -1,35 +1,42 @@
 # P1 Fast — STATUS
 
-## RETOMADA PÓS-CLEAR (próxima sessão) — seguir pro DeltaCalculator (MS-13.5)
+## RETOMADA PÓS-CLEAR (próxima sessão) — fiação do DeltaCalculator no `.exe` (MS-13.5)
 
 > Diga: **"continue do STATUS.md no branch `claude/t3000-t4000-live-stream-tdrk70`"**.
 > Antes de propor, leia `STATUS.md` + `PLANO_FASE_1.md` + `ARCHITECTURE_DECISIONS.md`.
 
 **Onde paramos:** o `.exe` é dono único (T4000 + GPS RaceBox nativo + troca de tela
-+ vídeo + auto-start) e já **conta voltas + tempo de volta** pela linha de chegada
-(`ChegadaDetector` + `SementeBrasilia`). CI verde (domain-test + ui-build). Tudo
-pushado, working tree limpo.
++ vídeo + auto-start), já **conta voltas + tempo de volta** (`ChegadaDetector` +
+`SementeBrasilia`) e agora tem o **`DeltaCalculator` portado pra C#** (delta vivo vs
+melhor volta — o número grande no centro do cockpit). Tudo no Domain puro + xUnit.
 
-**Próximo passo combinado com o Flávio: portar o `DeltaCalculator` pra C#** — o
-**delta vivo vs a melhor volta** (o número gigante no centro do cockpit), que hoje
-ainda vem da simulação.
+**Entregue nesta sessão (commit no topo do branch):** `DeltaCalculator.cs` — porte
+fiel de `web/cockpit/delta-calculator.js`. Integra ponto a ponto
+`dt = ds/v_atual − ds/v_ref`, acumula por sub-trecho (entrada/freio/ápice/**pace**/
+saída), devolve `DeltaResultado(DeltaTotalS, PorSubTrecho, PiorSubTrecho, PiorDeltaS)`.
+Records `DeltaPonto`/`PassagemTrecho`/`SubTrechoDelta` + helper `PontoCanonico`
+(satura fração 0..1). **13 testes** (`DeltaCalculatorTests`) cobrindo: identidade=0,
+mais lento=positivo, mais rápido=negativo, pace como pior, troca atual↔ref inverte
+sinal, descarte de amostras coincidentes/paradas/NaN, sub desconhecido, <2 pontos
+lança, determinismo, saturação de fração. **Aguarda CI `domain-test` (ubuntu)** —
+não há dotnet/docker neste ambiente (egress bloqueia install do SDK por policy).
 
-- **Fonte da verdade JS:** `web/cockpit/delta-calculator.js`. Integra ponto a ponto
-  `dt = ds/v_atual − ds/v_ref`, acumulando por sub-trecho (entrada/freio/ápice/
-  **pace**/saída). Saída: `deltaTotalS` + `porSubTrecho` + `piorSubTrecho`.
-- **Dependências (ver antes de portar):** precisa de (a) **detecção de trecho**
-  (`web/cockpit/trecho-detector.js` + `classificador-trecho.js`) pra saber em qual
-  sub-trecho o carro está, e (b) uma **volta de referência** (melhor histórica) por
-  trecho. Geometria semente já existe em `web/cockpit/apices-semente-brasilia.js`
-  (8 ápices de Brasília) e pode virar `SementeBrasilia` também.
-- **Onde pluga no `.exe`:** GPS → TrechoDetector → DeltaCalculator →
+**Próximo passo combinado: a FIAÇÃO** — plugar o `DeltaCalculator` no caminho real:
+
+- **Falta a detecção de trecho:** portar `web/cockpit/trecho-detector.js` +
+  `classificador-trecho.js` pra saber em qual sub-trecho (entrada/freio/apice/pace/
+  saida) o carro está a cada amostra, e a `fracao` de progresso no segmento.
+- **Falta a volta de referência:** a melhor passagem histórica por trecho (do banco)
+  vira o `PassagemTrecho referencia`. Geometria semente em
+  `web/cockpit/apices-semente-brasilia.js` (8 ápices, já existe `SementeBrasilia`).
+- **Onde pluga no `.exe`:** GPS → TrechoDetector → `DeltaCalculator.CalcularDelta` →
   `CockpitState.SetDelta(...)` / `SetApexPonto(...)` (já existem em `CockpitState.cs`).
   O `MainWindow` hoje preenche delta/ápice pela SIMULAÇÃO — trocar por dado real.
 - **Regras duras:** mockup canônico **congelado** (não redesenhar widgets — 4 ápices
   + Pace central, §9.1); ADR-025 (Detector ao vivo do iPhone = Swift; cockpit Windows
   porta do MESMO domínio JS — consistente); paridade fiel com o JS (cada caso vira teste).
-- **Padrão que funcionou nesta sessão:** portar puro pro Domain + xUnit (roda no
-  `domain-test`/ubuntu) primeiro; só depois a fiação na UI (validada pelo `ui-build`).
+- **Padrão que funcionou:** portar puro pro Domain + xUnit (roda no `domain-test`/
+  ubuntu) primeiro; só depois a fiação na UI (validada pelo `ui-build`).
   Não dá pra compilar WinUI no Linux — confiar na CI.
 
 ---
