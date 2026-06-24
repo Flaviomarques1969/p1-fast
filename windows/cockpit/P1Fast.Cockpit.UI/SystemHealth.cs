@@ -48,6 +48,14 @@ public static class SystemHealth
     private static bool _testeParser;
     private static bool _testeEscrita;
 
+    // Evidência da primeira partida real (pra eu confirmar/diagnosticar de fora):
+    // o que o WinUSB enxergou, o frame cru e a amostra decodificada, o HTTP da nuvem.
+    private static string _dispositivos = "?";
+    private static string _ultimoFrameHex = "";
+    private static string _ultimaAmostra = "";
+    private static int _ultimoUploadHttp = 0;   // 0 = ainda nenhum; -1 = exceção/timeout
+    private static long _ultimoFrameTick = 0;
+
     private static string? _token;
     private static string? _sha;
     private static System.Threading.Timer? _timer;
@@ -96,6 +104,30 @@ public static class SystemHealth
     {
         if (ok) Interlocked.Increment(ref _nuvemOk);
         else Interlocked.Increment(ref _nuvemFalha);
+    }
+
+    /// <summary>Último código HTTP do upload (200 = ok; 4xx/5xx = motivo; -1 = exceção).</summary>
+    public static void NuvemHttp(int codigo) => Interlocked.Exchange(ref _ultimoUploadHttp, codigo);
+
+    /// <summary>Resumo dos dispositivos USB que o WinUSB enxergou (pega driver/Zadig faltando).</summary>
+    public static void Dispositivos(string resumo)
+    {
+        lock (trava) _dispositivos = resumo;
+    }
+
+    /// <summary>
+    /// Registra o frame cru + a amostra decodificada (throttle ~1/s) pra eu conferir
+    /// online se os offsets batem com o firmware desta central com o motor girando.
+    /// </summary>
+    public static void RegistrarFrame(T3000Sample s, byte[] bruto, int len)
+    {
+        long agora = Environment.TickCount64;
+        if (agora - Interlocked.Read(ref _ultimoFrameTick) < 1000) return;
+        Interlocked.Exchange(ref _ultimoFrameTick, agora);
+        var hex = BitConverter.ToString(bruto, 0, Math.Min(len, 120)).Replace("-", " ");
+        var resumo = $"rpm={s.Rpm} água={s.WaterTempC} λ={s.Lambda} bat={s.BatteryV}V " +
+                     $"tps={s.TpsPct}% vel={s.SpeedKmh} marcha={s.MapaAtual} alarme={s.Alarmes.QualquerAtivo}";
+        lock (trava) { _ultimoFrameHex = hex; _ultimaAmostra = resumo; }
     }
 
     public static void SalvoResultado(bool ok)
@@ -161,8 +193,8 @@ public static class SystemHealth
         double porSeg = uptimeS > 0 ? Math.Round(_amostras / (double)uptimeS, 1) : 0;
 
         string[] evs;
-        string estrategia;
-        lock (trava) { estrategia = _estrategia; }
+        string estrategia, dispositivos, frameHex, amostra;
+        lock (trava) { estrategia = _estrategia; dispositivos = _dispositivos; frameHex = _ultimoFrameHex; amostra = _ultimaAmostra; }
         evs = eventos.ToArray();
 
         var snap = new
@@ -174,11 +206,19 @@ public static class SystemHealth
             {
                 estado = conectado ? "conectado" : (_amostras > 0 ? "reconectando" : "procurando"),
                 estrategia,
+                dispositivosUsb = dispositivos,
                 amostras = Interlocked.Read(ref _amostras),
                 amostrasPorSeg = porSeg,
                 ultimaAmostraHaMs = idadeMs,
+                ultimaAmostra = amostra,    // decodificada — confiro se os valores fazem sentido
+                ultimoFrameHex = frameHex,  // cru — confiro offsets vs firmware real
             },
-            nuvem = new { ok = Interlocked.Read(ref _nuvemOk), falhas = Interlocked.Read(ref _nuvemFalha) },
+            nuvem = new
+            {
+                ok = Interlocked.Read(ref _nuvemOk),
+                falhas = Interlocked.Read(ref _nuvemFalha),
+                ultimoHttp = Interlocked.CompareExchange(ref _ultimoUploadHttp, 0, 0),
+            },
             historicoLocal = new { ok = Interlocked.Read(ref _salvosOk), falhas = Interlocked.Read(ref _salvosFalha) },
             autoTeste = new { usbStack = _testeUsb, parser = _testeParser, escritaLocal = _testeEscrita },
             eventos = evs,

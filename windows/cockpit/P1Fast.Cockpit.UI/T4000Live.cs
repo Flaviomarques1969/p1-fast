@@ -62,7 +62,12 @@ public sealed class T4000LiveReader
     private bool UmaRodada()
     {
         var all = UsbDevice.AllDevices;
-        if (all.Count == 0) { _onLog?.Invoke("sem dispositivo WinUSB (driver/Zadig?)"); return false; }
+        if (all.Count == 0)
+        {
+            _onLog?.Invoke("sem dispositivo WinUSB (driver/Zadig?)");
+            SystemHealth.Dispositivos("0 — nenhum dispositivo WinUSB visível (driver/Zadig?)");
+            return false;
+        }
 
         var candidatos = new List<UsbRegistry>();
         foreach (UsbRegistry reg in all)
@@ -70,6 +75,7 @@ public sealed class T4000LiveReader
             if (SafeName(reg).Contains("injepro", StringComparison.OrdinalIgnoreCase)) candidatos.Insert(0, reg);
             else candidatos.Add(reg);
         }
+        SystemHealth.Dispositivos($"{all.Count}: " + string.Join(" | ", candidatos.Select(SafeName)));
 
         foreach (var reg in candidatos)
         {
@@ -168,6 +174,7 @@ public sealed class T4000LiveReader
                 if (s is not null)
                 {
                     falhasSeguidas = 0;            // leitura boa — zera o contador
+                    SystemHealth.RegistrarFrame(s, bloco, total);  // evidência p/ diagnóstico (throttle interno)
                     try { _onSample(s); } catch { }
                 }
                 else if (++falhasSeguidas >= MaxFalhasSeguidas) break;
@@ -248,13 +255,14 @@ internal static class LiveSink
             {
                 if (t.Status == TaskStatus.RanToCompletion)
                 {
+                    SystemHealth.NuvemHttp((int)t.Result.StatusCode);
                     RegistrarNuvem(t.Result.IsSuccessStatusCode);
                     t.Result.Dispose();
                 }
-                else { RegistrarNuvem(false); _ = t.Exception; }
+                else { SystemHealth.NuvemHttp(-1); RegistrarNuvem(false); _ = t.Exception; }
             }, TaskContinuationOptions.ExecuteSynchronously);
         }
-        catch { RegistrarNuvem(false); }
+        catch { SystemHealth.NuvemHttp(-1); RegistrarNuvem(false); }
     }
 
     public static void Salvar(T3000Sample s)
