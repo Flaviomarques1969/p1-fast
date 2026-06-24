@@ -23,6 +23,7 @@ public sealed partial class MainWindow : Window
 
     // Aquisição REAL da central T3000/T4000 (USB nativo) → cockpit.
     private readonly LiveDataBridge _bridge;
+    private readonly T3000LapSimulator _lapSim = new();
     private T4000LiveReader? _reader;
     private volatile bool _realDataSeen;
 
@@ -140,20 +141,6 @@ public sealed partial class MainWindow : Window
         ApplyMessage(initial.Message);
         UpdateStatusText();
 
-        // Demo roda como FALLBACK até a central de verdade aparecer. Assim que a
-        // primeira amostra real do T4000 chega, o demo para e a tela passa a
-        // refletir só o motor (shift light + alarmes reais).
-        _demoTimer = DispatcherQueue.CreateTimer();
-        _demoTimer.Interval = TimeSpan.FromSeconds(2);
-        var sceneIndex = 0;
-        _demoTimer.Tick += (_, _) =>
-        {
-            ApplyScene(sceneIndex % DemoScenes.Count);
-            sceneIndex++;
-        };
-        _demoTimer.Start();
-        ApplyScene(0);
-
         // ── Monitoramento/saúde do módulo (auto-teste + espelho online) ──
         // Acompanha os avanços do sistema e fica integrado com manutenção/testes;
         // se houver token, transmite a saúde pro Claude acompanhar de fora.
@@ -163,6 +150,23 @@ public sealed partial class MainWindow : Window
         // + transmissão pra nuvem (iPhone/Box) + histórico local. Tudo fora da
         // thread de UI; nada disso pode travar o painel.
         _bridge = new LiveDataBridge(_cockpitState);
+
+        // FALLBACK enquanto a central não aparece: em vez de cenas de demo "de
+        // mentira", a tela é dirigida pelo MESMO pipeline real (IngestT3000) com
+        // uma volta sintética — dá pra ver o processamento de verdade (shift
+        // light + alarmes) funcionando sem o motor. Some na 1ª amostra real.
+        ApplyScene(0); // backdrop dos widgets que não vêm da ECU (delta/apex/halo)
+        var simInicioTick = Environment.TickCount64;
+        _demoTimer = DispatcherQueue.CreateTimer();
+        _demoTimer.Interval = TimeSpan.FromMilliseconds(100); // ~10 Hz
+        _demoTimer.Tick += (_, _) =>
+        {
+            if (_realDataSeen) return;
+            double t = (Environment.TickCount64 - simInicioTick) / 1000.0;
+            _bridge.IngestT3000(_lapSim.Next(t));
+        };
+        _demoTimer.Start();
+
         _reader = new T4000LiveReader(
             onSample: s =>
             {
@@ -170,7 +174,7 @@ public sealed partial class MainWindow : Window
                 {
                     _realDataSeen = true;
                     DispatcherQueue.TryEnqueue(() => _demoTimer.Stop());
-                    SystemHealth.Log("primeira amostra real — saindo do demo");
+                    SystemHealth.Log("primeira amostra real — saindo da simulação");
                 }
                 _bridge.IngestT3000(s);                       // shift light + alarmes → tela
                 LiveSink.Publicar(s);                          // nuvem (best-effort, ~10 Hz)
