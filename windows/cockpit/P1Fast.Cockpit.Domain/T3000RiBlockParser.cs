@@ -91,6 +91,16 @@ public static class T3000RiBlockParser
     public static bool IsAckOk(ReadOnlySpan<byte> buf) =>
         buf.Length >= 2 && buf[0] == 0x4F && buf[1] == 0x4B;
 
+    /// <summary>
+    /// Critério de aceitação de uma leitura "de verdade" da central: descarta
+    /// blocos com valores impossíveis (lixo de endpoint/handshake errado). É o
+    /// gate que o leitor USB usa pra confirmar que achou a central certa.
+    /// </summary>
+    public static bool EhLeituraPlausivel(T3000Sample? s) =>
+        s is not null
+        && s.Rpm >= 0 && s.Rpm <= 20000
+        && s.BatteryV >= 3 && s.BatteryV <= 20;
+
     private static int U16(ReadOnlySpan<byte> b, int o) => b[o] | (b[o + 1] << 8);
 
     private static int I16(ReadOnlySpan<byte> b, int o)

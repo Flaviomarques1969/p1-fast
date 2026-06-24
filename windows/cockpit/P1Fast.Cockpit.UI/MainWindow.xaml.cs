@@ -183,6 +183,16 @@ public sealed partial class MainWindow : Window
             },
             onLog: linha => SystemHealth.Log(linha));
         _reader.Start();
+
+        // Encerramento limpo: solta a USB, para a simulação e fecha o módulo de
+        // saúde (grava o último retrato). Sem isso, a thread de leitura seguraria
+        // o handle da central e o app não fecharia direito.
+        Closed += (_, _) =>
+        {
+            try { _reader?.Stop(); } catch { }
+            try { _demoTimer.Stop(); } catch { }
+            try { SystemHealth.Parar(); } catch { }
+        };
     }
 
     /// <summary>Versão do app pra diagnóstico (vem do assembly).</summary>

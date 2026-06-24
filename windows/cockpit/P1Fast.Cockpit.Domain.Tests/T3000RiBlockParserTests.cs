@@ -109,4 +109,34 @@ public class T3000RiBlockParserTests
         Assert.Equal(12.345, s!.CronometroParcialS!.Value, 3);
         Assert.Equal(87.654, s.CronometroTotalS!.Value, 3);
     }
+
+    // ── Gate de aceitação do leitor USB (EhLeituraPlausivel) ───────
+
+    [Fact]
+    public void Leitura_normal_eh_plausivel()
+    {
+        var s = T3000RiBlockParser.Parse(T3000RiBlockBuilder.Build(rpm: 5000, batteryV: 13.5));
+        Assert.True(T3000RiBlockParser.EhLeituraPlausivel(s));
+    }
+
+    [Fact]
+    public void Null_nao_eh_plausivel()
+    {
+        Assert.False(T3000RiBlockParser.EhLeituraPlausivel(null));
+    }
+
+    [Fact]
+    public void Bateria_impossivel_rejeita()
+    {
+        // Bloco zerado → bateria 0 V → fora da faixa [3,20] → lixo de endpoint.
+        var s = T3000RiBlockParser.Parse(new byte[200]);
+        Assert.False(T3000RiBlockParser.EhLeituraPlausivel(s));
+    }
+
+    [Fact]
+    public void Rpm_absurdo_rejeita()
+    {
+        var s = T3000RiBlockParser.Parse(T3000RiBlockBuilder.Build(rpm: 60000, batteryV: 13.0));
+        Assert.False(T3000RiBlockParser.EhLeituraPlausivel(s));
+    }
 }

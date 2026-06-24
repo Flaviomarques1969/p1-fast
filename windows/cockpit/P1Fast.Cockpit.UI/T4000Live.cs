@@ -130,29 +130,57 @@ public sealed class T4000LiveReader
             var (bloco, total) = Acumular(reader);
             if (total < 92) return null;
             var s = T3000RiBlockParser.Parse(bloco.AsSpan(0, total));
-            if (s is null || s.Rpm < 0 || s.Rpm > 20000 || s.BatteryV < 3 || s.BatteryV > 20) return null;
+            if (!T3000RiBlockParser.EhLeituraPlausivel(s)) return null;
             return s;
         }
         catch { return null; }
     }
 
+    // Frames seguidos sem dado válido antes de considerar a central caída e
+    // voltar a (re)enumerar. ~15 × (até ~320 ms) ≈ alguns segundos de tolerância
+    // a ruído antes de reconectar — rápido o bastante pro piloto, sem flapping.
+    private const int MaxFalhasSeguidas = 15;
+
     private void LerAoVivo(UsbDevice dev, byte epOut, byte epIn, string modo)
     {
         var reader = dev.OpenEndpointReader((ReadEndpointID)epIn);
         UsbEndpointWriter? writer = epOut != 0 ? dev.OpenEndpointWriter((WriteEndpointID)epOut) : null;
+        int falhasSeguidas = 0;
+
         while (_running)
         {
             if ((modo == "ack_ri" || modo == "ri_direto") && writer is not null)
-                writer.Write(T3000RiBlockParser.RiBytes, 1000, out _);
+            {
+                if (writer.Write(T3000RiBlockParser.RiBytes, 1000, out _) != ErrorCode.None)
+                {
+                    // Escrita falhou: cabo/porta caiu. Conta como falha e segue;
+                    // se persistir, o limite abaixo força a reconexão.
+                    if (++falhasSeguidas >= MaxFalhasSeguidas) break;
+                    Thread.Sleep(50);
+                    continue;
+                }
+            }
 
             var (bloco, total) = Acumular(reader);
             if (total >= 92)
             {
                 var s = T3000RiBlockParser.Parse(bloco.AsSpan(0, total));
-                if (s is not null) { try { _onSample(s); } catch { } }
+                if (s is not null)
+                {
+                    falhasSeguidas = 0;            // leitura boa — zera o contador
+                    try { _onSample(s); } catch { }
+                }
+                else if (++falhasSeguidas >= MaxFalhasSeguidas) break;
+            }
+            else if (++falhasSeguidas >= MaxFalhasSeguidas)
+            {
+                break;                            // central sumiu — sai pra re-enumerar
             }
             Thread.Sleep(20);   // ~ até 50 Hz; rápido e estável
         }
+
+        if (_running)
+            _onLog?.Invoke("central parou de responder — reprocurando");
     }
 
     private static (byte[] buf, int total) Acumular(UsbEndpointReader reader)
@@ -191,11 +219,9 @@ internal static class LiveSink
         ultimoNuvem = agora;
         try
         {
-            var payload = new
-            {
-                rpm = s.Rpm, waterTempC = s.WaterTempC, lambda = s.Lambda, tpsPct = s.TpsPct,
-                batteryV = s.BatteryV, speedKmh = s.SpeedKmh, mapBar = s.MapBar, source = "t3000-ui", ts = agora,
-            };
+            // Payload canônico completo (mesmos campos do web/cockpit/cloud-bridge.js)
+            // pra o app P1 Fast renderizar todos os sensores, não só alguns.
+            var payload = T3000CloudPayload.Build(s, agora);
             var body = new { messages = new[] { new { topic = "cockpit-bubi-live", @event = "sample", payload } } };
             var req = new HttpRequestMessage(HttpMethod.Post, $"{Url}/realtime/v1/api/broadcast")
             {
