@@ -226,6 +226,23 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 
 **Consequência:** o iPhone sai do caminho do vídeo. Captura de telemetria iOS (ADR-018) não muda.
 
+> **AMENDMENT 6 (Flávio 2026-06-24):** o notebook da pista é **dedicado e o `.exe` (`P1Fast.Cockpit.UI`) vira dono único de tudo que é dado do carro nele.** Objetivo do Flávio, textual: *"ligo o notebook, ele já vai lá, já acessa o GPS, já vai processando os dados e já vai enviando. Mais automática, mais estável possível, sem interferência. O notebook é dedicado somente para isso."*
+>
+> **O que muda em relação ao corpo do ADR-024:**
+> - **GPS deixa de vir da página web e passa a ser nativo do `.exe`.** O `.exe` lê o RaceBox **direto por Bluetooth** (`RaceBoxBleReader` em cima de `Windows.Devices.Bluetooth` + `RaceBoxParser`), decide a troca de tela **localmente** (parado→painel de sensores / andando→cockpit, via `ModoTelaDetector`) **sem round-trip pela nuvem**, e **publica o GPS pra nuvem** ele mesmo (evento `gps` no canal `cockpit-bubi-live`, mesmo shape do `cloudSend('gps')` da página web — `{ lat, lng, kmh, numSV, fix, accM, tWall }`). Assim a decisão de tela não depende de internet (Starlink pode oscilar) — máxima estabilidade.
+> - **Vídeo é embutido no `.exe`** via **WebView2 escondido** que carrega a página de vídeo (DJI Osmo Action 6 → Daily.co). Vira **uma aplicação só** que abre e faz tudo.
+> - **A página web (`web/teste-aparelhos/`) fica só com o vídeo** e **PARA de ler o RaceBox.** Motivo técnico **duro**: o RaceBox é um periférico **BLE que conecta num cliente GATT por vez** — se a página e o `.exe` disputarem o rádio, um derruba o outro. O dono único do RaceBox passa a ser o `.exe`. Quando a página roda dentro do WebView2 do `.exe`, ela entra em modo **sem-GPS** (flag `?video-only`).
+> - **Auto-start no boot:** o `.exe` sobe sozinho quando o notebook liga (atalho na pasta Startup, criado pelo instalador). Ligar o notebook = cockpit no ar.
+>
+> **Papéis finais nesta arquitetura:**
+> | Quem | Faz |
+> |---|---|
+> | **`.exe` (notebook)** | T4000 (USB) + RaceBox (BLE nativo) + processamento + troca de tela local + envio (telemetria **e** GPS) pra nuvem + vídeo embutido (WebView2). Sobe no boot. |
+> | **Página web** | Só vídeo (DJI→Daily). Não toca mais no RaceBox. |
+> | **iPhone / `/painel`** | Continua **assistindo** (telemetria + GPS + vídeo da nuvem). Captura iOS (ADR-018) inalterada. |
+>
+> **Não revoga** ADR-018 (captura iOS) nem o transporte de telemetria do ADR-023. Resolve a pendência aberta no topo do `STATUS.md` ("o `.exe` substitui o papel de dados da página web?") — **sim, substitui**: o `.exe` é o único emissor de `sample` e de `gps`; a página web não emite mais nenhum dos dois.
+
 ---
 
 ## ADR-025 — Fonte da verdade do Detector ao vivo

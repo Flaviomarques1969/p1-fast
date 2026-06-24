@@ -1,6 +1,27 @@
 # P1 Fast — STATUS
 
-## Checkpoint 2026-06-24 — app .exe do notebook (T4000 + cockpit) avançou muito
+## Checkpoint 2026-06-24 (tarde) — virada: `.exe` vira dono único (ADR-024 amendment 6)
+
+**Decisão do Flávio (2026-06-24):** notebook da pista é **dedicado**; o `.exe` vira
+**dono único** de tudo que é dado do carro. Liga o notebook → app sobe sozinho →
+acha GPS → processa → envia. Mais automático e estável possível, sem interferência.
+Formalizado no **ADR-024 amendment 6**. Resumo:
+
+- **GPS nativo no `.exe`** — lê o RaceBox **direto por Bluetooth** (`RaceBoxBleReader`
+  + `RaceBoxParser`), decide a troca de tela **localmente** (sem round-trip pela nuvem)
+  e **publica o GPS** ele mesmo (evento `gps` no `cockpit-bubi-live`).
+- **Página web fica SÓ com vídeo** e **para de ler o RaceBox** (BLE conecta num cliente
+  por vez — dono único do rádio passa a ser o `.exe`). Em modo WebView2: flag `?video-only`.
+- **Vídeo embutido** no `.exe` via **WebView2 escondido** (DJI Osmo→Daily). Uma app só.
+- **Auto-start no boot.**
+
+**Em andamento nesta sessão** (branch `claude/t3000-t4000-live-stream-tdrk70`):
+GpsCloudPayload (Domain, testado) → RaceBoxBleReader (BLE) → fiação no MainWindow
+(troca de tela + publish) → painel de sensores XAML → WebView2 de vídeo → auto-start.
+
+---
+
+## Checkpoint 2026-06-24 (manhã) — app .exe do notebook (T4000 + cockpit) avançou muito
 
 **Branch:** `claude/t3000-t4000-live-stream-tdrk70`. CI `windows-cockpit.yml` verde
 (`domain-test` + `ui-build` + publish; Release `cockpit-latest` com `cockpit-ui.zip`).

@@ -22,7 +22,8 @@
 - **Transporte iPhone↔Windows = redundante: cabo USB primário (TCP-over-USB via `iproxy`/`usbmuxd`, 5-15 ms) + Supabase Realtime fallback automático.** Notebook escolhe via `TransportSelector` (heartbeat 1 Hz, switch em 3 s, recovery com debounce 1 s). Cabo carrega **dado + carga** (não só carga). — **ADR-023 + amendment 2 de 2026-05-09**
 - **Captura iOS Swift nativa preservada** (CoreMotion + CoreLocation + Daily.co), hub iOS preservado — ADR-018 com amendment 2026-05-09
 - **Plataforma do hub e captura:** iOS Swift nativo, iPhone único. Sem CarPlay, Apple Watch, Android, PWA — ADR-018
-- **Vídeo ao vivo:** Daily.co (câmera onboard frontal do iPhone) — `PLANO_FASE_1.md` §2
+- **`.exe` do notebook = dono único do dado do carro** (notebook dedicado): T4000 (USB) + **RaceBox GPS nativo (BLE)** + processamento + **troca de tela local sem nuvem** + envio de telemetria **e** GPS pra nuvem + **vídeo embutido (WebView2)**. **Página web fica só com vídeo e NÃO lê mais o RaceBox** (BLE = 1 cliente por vez). **Auto-start no boot.** — **ADR-024 amendment 6** (decisão Flávio 2026-06-24)
+- **Vídeo ao vivo:** **DJI Osmo Action 6 → notebook (webcam UVC) → Daily.co**, embutido no `.exe` via WebView2 — **ADR-024 + amendment 6** (validado em campo 2026-06-09; substitui o plano antigo de câmera frontal do iPhone)
 - **Box cockpit:** App iOS modo BOX → AirPlay → Apple TV → TV 32" — mesmo doc, §2
 - **Pendências obrigatório × adicional, vivas, por carro+evento** — `PLANO_FASE_1.md` §6 MS-5
 - **Detector ao vivo:** Port nativo Swift no iPhone + JS no Windows a partir do mesmo domínio — decidido 2026-05-03 / revisitado 2026-05-09
