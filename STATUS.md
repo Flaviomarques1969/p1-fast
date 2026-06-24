@@ -15,9 +15,26 @@ Formalizado no **ADR-024 amendment 6**. Resumo:
 - **Vídeo embutido** no `.exe` via **WebView2 escondido** (DJI Osmo→Daily). Uma app só.
 - **Auto-start no boot.**
 
-**Em andamento nesta sessão** (branch `claude/t3000-t4000-live-stream-tdrk70`):
-GpsCloudPayload (Domain, testado) → RaceBoxBleReader (BLE) → fiação no MainWindow
-(troca de tela + publish) → painel de sensores XAML → WebView2 de vídeo → auto-start.
+**Entregue nesta sessão** (branch `claude/t3000-t4000-live-stream-tdrk70`, commits
+`8f18ffb`→`f3162cd`):
+- `GpsCloudPayload` (Domain, **4 testes**, roda no `domain-test`/ubuntu) — payload
+  `gps` no shape do `cloudSend('gps')` da página web.
+- `RaceBoxBleReader` (UI, `Windows.Devices.Bluetooth`) — casca BLE nativa que
+  alimenta o `RaceBoxParser`, com religação automática.
+- `MainWindow`: GPS → `ModoTelaDetector` decide tela **localmente** (sem nuvem) +
+  `LiveSink.PublicarGps` (nuvem). Painel de sensores XAML (carro parado). WebView2
+  escondido sobe o vídeo (`?video-only`, sem tocar no RaceBox). `SystemHealth` ganhou
+  bloco `gps`.
+- `instalar.html`: atalho na pasta Inicializar (auto-start no boot).
+
+**Falta validar (gates):**
+1. **CI `ui-build`** (windows-latest) confirma que o XAML+C# da UI compila — não dá
+   pra compilar WinUI no Linux desta sessão.
+2. **Em campo:** plugar a central + RaceBox + DJI no notebook e ligar — confirmar
+   troca de tela pelo GPS, GPS subindo pra nuvem, e vídeo no ar. A instrumentação de
+   saúde (`live/cockpit-health.json`, bloco `gps`) mostra tudo online pra diagnóstico.
+3. **Conferir:** o RaceBox conecta num cliente BLE por vez — garantir que **nenhuma
+   aba** do navegador esteja com o RaceBox conectado quando o `.exe` rodar.
 
 ---
 
