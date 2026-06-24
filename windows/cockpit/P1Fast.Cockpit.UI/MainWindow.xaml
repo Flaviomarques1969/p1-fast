@@ -74,7 +74,7 @@
                     <Border HorizontalAlignment="Center"
                             VerticalAlignment="Top"
                             Margin="0,10,0,0"
-                            Padding="26,9"
+                            Padding="22,9"
                             CornerRadius="999"
                             Background="#0F0F0F"
                             BorderBrush="#1F1F1F"
@@ -83,7 +83,7 @@
                              painel aprovado 22/06. Pontas (tier 1) verdes acendem
                              primeiro; centro (tier 9) vermelho é reservado pro FIRE.
                              Enchem das PONTAS pro CENTRO conforme sobe rumo à potência. -->
-                        <StackPanel Orientation="Horizontal" Spacing="18">
+                        <StackPanel Orientation="Horizontal" Spacing="13">
                             <Ellipse x:Name="Led01" Width="13" Height="13" Fill="#1A1A1A"/>
                             <Ellipse x:Name="Led02" Width="13" Height="13" Fill="#1A1A1A"/>
                             <Ellipse x:Name="Led03" Width="13" Height="13" Fill="#1A1A1A"/>
