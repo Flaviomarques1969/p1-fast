@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1 Fast — Instalar o cockpit (1 clique)</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: #0b0f14; color: #e8eef5;
+    font: 17px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .card {
+    width: 100%; max-width: 580px; background: #121821; border: 1px solid #233042;
+    border-radius: 18px; padding: 30px 26px; box-shadow: 0 12px 40px rgba(0,0,0,.5);
+  }
+  h1 { font-size: 23px; margin: 0 0 4px; }
+  .sub { color: #9fb0c3; margin: 0 0 20px; font-size: 15px; }
+  .btn {
+    display: block; width: 100%; text-align: center; text-decoration: none; cursor: pointer;
+    padding: 20px 20px; border-radius: 12px; font-weight: 800; font-size: 19px;
+    margin: 8px 0; border: 0; transition: transform .05s ease, filter .15s ease;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: #2bd66a; color: #04210f; }
+  .btn-primary:hover { filter: brightness(1.07); }
+  .steps { margin: 22px 0 0; padding: 0; list-style: none; }
+  .steps li { margin: 12px 0; padding-left: 34px; position: relative; }
+  .steps li b { color: #e8eef5; }
+  .num {
+    position: absolute; left: 0; top: -1px; width: 24px; height: 24px; border-radius: 50%;
+    background: #2bd66a; color: #04210f; font-weight: 800; font-size: 14px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  code { background: #0a0e13; padding: 2px 7px; border-radius: 5px; color: #cfe0f2; font-size: 14px; }
+  .warn { background:#2a1f08; border:1px solid #7a5e1b; color:#f0d28a; border-radius:10px; padding:12px 14px; font-size:14px; margin-top:20px; }
+  details { margin-top: 22px; border-top: 1px solid #233042; padding-top: 16px; }
+  summary { cursor: pointer; color: #9fb0c3; font-size: 14px; }
+  .field { margin-top: 12px; }
+  .field label { display:block; font-size: 13px; color:#9fb0c3; margin-bottom: 6px; }
+  .field input {
+    width: 100%; padding: 11px 12px; border-radius: 9px; border:1px solid #2c3a4d;
+    background:#0a0e13; color:#e8eef5; font: 14px ui-monospace, Consolas, monospace;
+  }
+  .hint { font-size: 13px; color: #7d8ea3; margin: 6px 0 0; }
+  .alt { margin-top:20px; font-size:13px; color:#7d8ea3; text-align:center; }
+  .alt a { color:#5cc8ff; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>🏁 Instalar o cockpit P1 Fast</h1>
+    <p class="sub">Um clique. O instalador baixa, descompacta, cria o atalho e abre a tela sozinho.</p>
+
+    <button class="btn btn-primary" id="go">⬇️ Baixar e instalar (1 clique)</button>
+
+    <ul class="steps">
+      <li><span class="num">1</span>Clique no botão verde. Baixa um arquivinho <code>Instalar-P1Fast.cmd</code> (alguns KB).</li>
+      <li><span class="num">2</span>Na barra de downloads do navegador, dê <b>duplo-clique</b> nele. (Se aparecer "este arquivo pode prejudicar", escolha <b>Manter</b>.)</li>
+      <li><span class="num">3</span>Abre uma janela escura, baixa o cockpit (~64 MB) e <b>abre a tela do piloto sozinho</b>. Pronto — atalho <b>P1 Fast Cockpit</b> fica na área de trabalho.</li>
+    </ul>
+
+    <div class="warn">
+      ⚠️ Por segurança o navegador não deixa um site abrir programa direto — por isso o passo 2 (um duplo-clique). Fora isso, o instalador faz <b>todo o resto sozinho</b>. Com a central T4000 ligada, a tela já mostra dado real; sem ela, roda em demo.
+    </div>
+
+    <details>
+      <summary>Quer que eu (Claude) acompanhe online? (opcional, 1 vez)</summary>
+      <div class="field">
+        <label>Cole aqui um token do GitHub (começa com <code>ghp_</code>). Gere em
+          github.com/settings/tokens/new → marque <code>public_repo</code> → Generate.</label>
+        <input id="tok" type="text" placeholder="ghp_… (opcional — deixe vazio se não quiser)" autocomplete="off" spellcheck="false">
+        <p class="hint">Com o token, o app transmite a saúde do sistema pro repositório e eu monitoro/avizo. Sem ele, tudo funciona igual — só não vejo de fora.</p>
+      </div>
+    </details>
+
+    <p class="alt">Prefere baixar manual? <a href="baixar.html">página de download direto</a></p>
+  </div>
+
+<script>
+function montarCmd(token) {
+  // Se houver token, o instalador grava p1fast-token.txt ao lado do .exe → liga o monitoramento.
+  var tokenPs = "";
+  if (token && /^ghp_|^github_pat_/.test(token.trim())) {
+    var t = token.trim().replace(/'/g, "''");
+    tokenPs = "Set-Content -Path (Join-Path $exe.Directory.FullName 'p1fast-token.txt') -Value '" + t + "' -NoNewline -Encoding ascii; ";
+  }
+  var ps = "$ErrorActionPreference='Stop';"
+    + "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;"
+    + "$dest=$env:LOCALAPPDATA+'\\P1FastCockpit';"
+    + "$zip=Join-Path $env:TEMP 'p1-cockpit-ui.zip';"
+    + "Write-Host '  Baixando o cockpit (~64 MB)...';"
+    + "Invoke-WebRequest -UseBasicParsing -Uri 'https://github.com/Flaviomarques1969/p1-fast/releases/download/cockpit-latest/cockpit-ui.zip' -OutFile $zip;"
+    + "if(Test-Path $dest){Remove-Item $dest -Recurse -Force};"
+    + "New-Item -ItemType Directory -Force -Path $dest ^| Out-Null;"
+    + "Write-Host '  Extraindo...';"
+    + "Expand-Archive -Path $zip -DestinationPath $dest -Force;"
+    + "Remove-Item $zip -Force;"
+    + "$exe=Get-ChildItem -Path $dest -Recurse -Filter 'P1Fast.Cockpit.UI.exe' ^| Select-Object -First 1;"
+    + "if(-not $exe){throw 'P1Fast.Cockpit.UI.exe nao encontrado no pacote'};"
+    + tokenPs
+    + "$ws=New-Object -ComObject WScript.Shell;"
+    + "$lnk=$ws.CreateShortcut([IO.Path]::Combine([Environment]::GetFolderPath('Desktop'),'P1 Fast Cockpit.lnk'));"
+    + "$lnk.TargetPath=$exe.FullName; $lnk.WorkingDirectory=$exe.Directory.FullName; $lnk.IconLocation=$exe.FullName; $lnk.Save();"
+    + "Write-Host '  Abrindo o cockpit...';"
+    + "Start-Process -FilePath $exe.FullName -WorkingDirectory $exe.Directory.FullName";
+
+  var cmd = [
+    "@echo off",
+    "chcp 65001 >nul",
+    "title P1 Fast - Instalando o cockpit",
+    "echo.",
+    "echo   Instalando o cockpit P1 Fast. Pode levar 1-2 min. Aguarde...",
+    "echo.",
+    'powershell -NoProfile -ExecutionPolicy Bypass -Command "' + ps + '"',
+    "if errorlevel 1 (",
+    "  echo.",
+    "  echo   Algo deu errado. Tire uma foto desta janela e me mande.",
+    "  echo.",
+    "  pause",
+    ") else (",
+    "  echo.",
+    '  echo   Pronto! O cockpit abriu e o atalho "P1 Fast Cockpit" esta na area de trabalho.',
+    "  echo   Pode fechar esta janela.",
+    "  echo.",
+    "  timeout /t 8 >nul",
+    ")"
+  ].join("\r\n");
+  return cmd;
+}
+
+function baixar() {
+  var token = document.getElementById('tok').value;
+  var blob = new Blob([montarCmd(token)], { type: 'application/octet-stream' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Instalar-P1Fast.cmd';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+
+document.getElementById('go').addEventListener('click', baixar);
+</script>
+</body>
+</html>

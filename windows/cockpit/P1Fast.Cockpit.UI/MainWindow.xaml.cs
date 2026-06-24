@@ -154,23 +154,36 @@ public sealed partial class MainWindow : Window
         _demoTimer.Start();
         ApplyScene(0);
 
+        // ── Monitoramento/saúde do módulo (auto-teste + espelho online) ──
+        // Acompanha os avanços do sistema e fica integrado com manutenção/testes;
+        // se houver token, transmite a saúde pro Claude acompanhar de fora.
+        SystemHealth.Iniciar(AppVersion);
+
         // ── Aquisição real: USB nativo → bridge → CockpitState → tela ──
         // + transmissão pra nuvem (iPhone/Box) + histórico local. Tudo fora da
         // thread de UI; nada disso pode travar o painel.
         _bridge = new LiveDataBridge(_cockpitState);
-        _reader = new T4000LiveReader(onSample: s =>
-        {
-            if (!_realDataSeen)
+        _reader = new T4000LiveReader(
+            onSample: s =>
             {
-                _realDataSeen = true;
-                DispatcherQueue.TryEnqueue(() => _demoTimer.Stop());
-            }
-            _bridge.IngestT3000(s);   // shift light + alarmes → tela
-            LiveSink.Publicar(s);     // nuvem (best-effort, ~10 Hz)
-            LiveSink.Salvar(s);       // histórico local (jsonl)
-        });
+                if (!_realDataSeen)
+                {
+                    _realDataSeen = true;
+                    DispatcherQueue.TryEnqueue(() => _demoTimer.Stop());
+                    SystemHealth.Log("primeira amostra real — saindo do demo");
+                }
+                _bridge.IngestT3000(s);                       // shift light + alarmes → tela
+                LiveSink.Publicar(s);                          // nuvem (best-effort, ~10 Hz)
+                LiveSink.Salvar(s);                            // histórico local (jsonl)
+                SystemHealth.Amostra(s, _reader?.Estrategia ?? "?");
+            },
+            onLog: linha => SystemHealth.Log(linha));
         _reader.Start();
     }
+
+    /// <summary>Versão do app pra diagnóstico (vem do assembly).</summary>
+    private static string AppVersion =>
+        System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "?";
 
     // ── Demo loop ──────────────────────────────────────────
 

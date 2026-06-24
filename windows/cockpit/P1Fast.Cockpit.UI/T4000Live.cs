@@ -203,9 +203,17 @@ internal static class LiveSink
             };
             req.Headers.TryAddWithoutValidation("apikey", Anon);
             req.Headers.TryAddWithoutValidation("Authorization", "Bearer " + Anon);
-            _ = http.SendAsync(req).ContinueWith(t => { _ = t.Exception; });
+            _ = http.SendAsync(req).ContinueWith(t =>
+            {
+                if (t.Status == TaskStatus.RanToCompletion)
+                {
+                    SystemHealth.NuvemResultado(t.Result.IsSuccessStatusCode);
+                    t.Result.Dispose();
+                }
+                else { SystemHealth.NuvemResultado(false); _ = t.Exception; }
+            }, TaskContinuationOptions.ExecuteSynchronously);
         }
-        catch { }
+        catch { SystemHealth.NuvemResultado(false); }
     }
 
     public static void Salvar(T3000Sample s)
@@ -219,7 +227,8 @@ internal static class LiveSink
                 batteryV = s.BatteryV, speedKmh = s.SpeedKmh, alarme = s.Alarmes.QualquerAtivo,
             };
             File.AppendAllText(arquivo, JsonSerializer.Serialize(o) + "\n");
+            SystemHealth.SalvoResultado(true);
         }
-        catch { }
+        catch { SystemHealth.SalvoResultado(false); }
     }
 }
