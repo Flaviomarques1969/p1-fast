@@ -111,6 +111,22 @@ public static class SystemHealth
         while (eventos.Count > 40 && eventos.TryDequeue(out _)) { }
     }
 
+    /// <summary>Resumo curto e ao vivo pra linha de status da tela (captura + nuvem).</summary>
+    public static string ResumoCurto()
+    {
+        long agora = Environment.TickCount64;
+        long idadeMs = _ultimaAmostraTick == 0 ? -1 : agora - _ultimaAmostraTick;
+        string leitor = idadeMs >= 0 && idadeMs < 3000
+            ? "central OK"
+            : (_amostras > 0 ? "reconectando" : "procurando central");
+        long uptimeS = Math.Max(1, (agora - _inicioTick) / 1000);
+        double porSeg = Math.Round(Interlocked.Read(ref _amostras) / (double)uptimeS, 1);
+        long ok = Interlocked.Read(ref _nuvemOk);
+        long falhas = Interlocked.Read(ref _nuvemFalha);
+        string nuvem = falhas == 0 ? $"nuvem ✓{ok}" : $"nuvem ✓{ok}/✗{falhas}";
+        return $"{leitor} • {porSeg}/s • {nuvem}";
+    }
+
     // ── Auto-testes (manutenção/diagnóstico na partida) ────────────
 
     private static void RodarAutoTestes()

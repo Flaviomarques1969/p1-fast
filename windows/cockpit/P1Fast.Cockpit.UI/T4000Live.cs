@@ -212,6 +212,21 @@ internal static class LiveSink
     private static readonly string arquivo = $"p1-t4000-{DateTime.Now:yyyyMMdd}.jsonl";
     private static long ultimoNuvem = 0;
 
+    // Detecta wifi/nuvem caindo e voltando (histerese) pra avisar na saúde.
+    private static readonly ConnectivityTracker conectividade = new(limiteFalhas: 3);
+    private static readonly object travaConn = new();
+
+    private static void RegistrarNuvem(bool ok)
+    {
+        SystemHealth.NuvemResultado(ok);
+        ConnTransicao transicao;
+        lock (travaConn) transicao = conectividade.Registrar(ok);
+        if (transicao == ConnTransicao.Caiu)
+            SystemHealth.Log("nuvem caiu (wifi do celular?) — seguindo, religa sozinha");
+        else if (transicao == ConnTransicao.Voltou)
+            SystemHealth.Log("nuvem voltou — transmitindo de novo");
+    }
+
     public static void Publicar(T3000Sample s)
     {
         long agora = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -233,13 +248,13 @@ internal static class LiveSink
             {
                 if (t.Status == TaskStatus.RanToCompletion)
                 {
-                    SystemHealth.NuvemResultado(t.Result.IsSuccessStatusCode);
+                    RegistrarNuvem(t.Result.IsSuccessStatusCode);
                     t.Result.Dispose();
                 }
-                else { SystemHealth.NuvemResultado(false); _ = t.Exception; }
+                else { RegistrarNuvem(false); _ = t.Exception; }
             }, TaskContinuationOptions.ExecuteSynchronously);
         }
-        catch { SystemHealth.NuvemResultado(false); }
+        catch { RegistrarNuvem(false); }
     }
 
     public static void Salvar(T3000Sample s)

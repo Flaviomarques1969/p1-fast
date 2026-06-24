@@ -20,6 +20,7 @@ public sealed partial class MainWindow : Window
     private readonly CockpitState _cockpitState = new();
     private readonly LaunchOptions _options;
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _demoTimer;
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer? _statusTimer;
 
     // Aquisição REAL da central T3000/T4000 (USB nativo) → cockpit.
     private readonly LiveDataBridge _bridge;
@@ -184,6 +185,13 @@ public sealed partial class MainWindow : Window
             onLog: linha => SystemHealth.Log(linha));
         _reader.Start();
 
+        // Linha de status ao vivo (captura + nuvem) atualizada 1×/s, mesmo quando
+        // o shift não muda — pra confirmar num olhar que está tudo funcionando.
+        _statusTimer = DispatcherQueue.CreateTimer();
+        _statusTimer.Interval = TimeSpan.FromSeconds(1);
+        _statusTimer.Tick += (_, _) => UpdateStatusText();
+        _statusTimer.Start();
+
         // Encerramento limpo: solta a USB, para a simulação e fecha o módulo de
         // saúde (grava o último retrato). Sem isso, a thread de leitura seguraria
         // o handle da central e o app não fecharia direito.
@@ -191,6 +199,7 @@ public sealed partial class MainWindow : Window
         {
             try { _reader?.Stop(); } catch { }
             try { _demoTimer.Stop(); } catch { }
+            try { _statusTimer?.Stop(); } catch { }
             try { SystemHealth.Parar(); } catch { }
         };
     }
@@ -724,10 +733,8 @@ public sealed partial class MainWindow : Window
     private void UpdateStatusText()
     {
         var s = _cockpitState.Get();
-        var displayInfo = _options.DisplayIndex is { } idx
-            ? $"display {idx} fullscreen"
-            : "janelado (primário)";
-        StatusText.Text = $"{displayInfo}  •  trecho={s.TrechoStatus}  •  shift={s.Shift.Mode} L{s.Shift.Level}  •  Δ={s.Delta.Value}";
+        var fonte = _realDataSeen ? "CENTRAL" : "simulação";
+        StatusText.Text = $"{fonte} • {SystemHealth.ResumoCurto()} • shift={s.Shift.Mode} L{s.Shift.Level}";
     }
 
     private void ApplyDisplayPlacement()
@@ -747,6 +754,14 @@ public sealed partial class MainWindow : Window
                 appWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
                 return;
             }
+        }
+
+        // Sem --display-index: por padrão é kiosk fullscreen no primário (cockpit).
+        // Só fica janelado se pedirem explicitamente --janela (desenvolvimento).
+        if (!_options.Windowed)
+        {
+            appWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
+            return;
         }
 
         var size = new SizeInt32 { Width = 1280, Height = 800 };

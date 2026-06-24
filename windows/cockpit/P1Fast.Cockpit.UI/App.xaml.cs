@@ -1,3 +1,4 @@
+using System.Threading;
 using Microsoft.UI.Xaml;
 
 namespace P1Fast.Cockpit.UI;
@@ -7,14 +8,18 @@ namespace P1Fast.Cockpit.UI;
 /// externa invertida no painel — ADR-023 amendments 4 e 5.
 ///
 /// Argumentos de linha de comando:
-///   --display-index N   abre fullscreen no monitor N (1-indexado;
-///                        Display Settings do Windows usa a mesma
-///                        numeração). Sem essa flag, abre janelado no
-///                        primário pra desenvolvimento.
+///   --display-index N   abre fullscreen no monitor N (1-indexado; Display
+///                        Settings do Windows usa a mesma numeração).
+///   --janela            abre janelado (1280×800) em vez de tela cheia — só
+///                        pra desenvolvimento. Por padrão é kiosk fullscreen.
 /// </summary>
 public partial class App : Application
 {
     private Window? _window;
+
+    // Mantido vivo pela duração do app: garante instância única (dois apps
+    // disputando a mesma central USB dão conflito).
+    private static Mutex? _instanceMutex;
 
     public App()
     {
@@ -23,6 +28,14 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        _instanceMutex = new Mutex(initiallyOwned: true, "P1Fast.Cockpit.SingleInstance", out bool ehNova);
+        if (!ehNova)
+        {
+            // Já tem um cockpit rodando — sai sem abrir outra janela nem tocar na USB.
+            Exit();
+            return;
+        }
+
         var options = LaunchOptions.FromCommandLine(Environment.GetCommandLineArgs());
         _window = new MainWindow(options);
         _window.Activate();
@@ -30,12 +43,13 @@ public partial class App : Application
 }
 
 /// <summary>Configuração resolvida dos argumentos de linha de comando.</summary>
-public sealed record LaunchOptions(int? DisplayIndex)
+public sealed record LaunchOptions(int? DisplayIndex, bool Windowed = false)
 {
     /// <summary>Faz parsing dos args do <see cref="Environment.GetCommandLineArgs"/>.</summary>
     public static LaunchOptions FromCommandLine(string[] args)
     {
         int? displayIndex = null;
+        bool windowed = false;
         for (var i = 0; i < args.Length; i++)
         {
             var a = args[i];
@@ -49,7 +63,11 @@ public sealed record LaunchOptions(int? DisplayIndex)
                 if (int.TryParse(args[i + 1], out var n) && n >= 1)
                     displayIndex = n;
             }
+            else if (a is "--janela" or "--windowed")
+            {
+                windowed = true;
+            }
         }
-        return new LaunchOptions(displayIndex);
+        return new LaunchOptions(displayIndex, windowed);
     }
 }
