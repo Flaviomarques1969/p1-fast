@@ -18,6 +18,9 @@
   .card { background:#11161e; border:1px solid #1d2530; border-radius:12px; padding:14px; }
   .card h2 { margin:0 0 10px; font-size:13px; color:#8a97a6; text-transform:uppercase; letter-spacing:.6px; }
   video { width:100%; border-radius:10px; background:#000; aspect-ratio:16/9; object-fit:cover; }
+  /* Modo embutido no .exe (ADR-024 amendment 6): a página vira SÓ vídeo. As
+     seções de GPS e de carro somem — o .exe é dono único do RaceBox e do T4000. */
+  body.video-only #cardGps, body.video-only #cardCarro { display:none; }
   button { font-size:15px; padding:12px 16px; border-radius:10px; border:1px solid #2a3442; background:#1b2330; color:#e8edf2; cursor:pointer; width:100%; }
   button.primary { background:#2563eb; border-color:#2563eb; font-weight:600; }
   button:disabled { opacity:.5; cursor:default; }
@@ -54,7 +57,7 @@
     <button id="btnStart" class="primary" style="margin-top:10px">▶ Iniciar transmissão</button>
   </div>
 
-  <div class="card">
+  <div class="card" id="cardGps">
     <h2>2 · GPS (RaceBox)</h2>
     <div class="row"><span class="lbl">Aparelho</span><span id="rbConn" class="pill idle">desligado</span></div>
     <div class="grid2" style="margin-top:6px">
@@ -68,7 +71,7 @@
     <button id="btnRb" style="margin-top:10px">Conectar RaceBox por Bluetooth</button>
   </div>
 
-  <div class="card">
+  <div class="card" id="cardCarro">
     <h2>3 · Dados do carro (T4000)</h2>
     <div class="grid2">
       <div class="row"><span class="lbl">Chegando</span><span id="t4Age" class="val">—</span></div>
@@ -505,6 +508,18 @@ setInterval(()=>{
 $('btnStart').onclick = startVideo;
 $('btnRb').onclick = connectRaceBox;
 $('btnSim').onclick = toggleSim;
+
+// ════════════════ MODO EMBUTIDO NO .EXE (?video-only) ════════════════
+// ADR-024 amendment 6: quando esta página roda dentro do WebView2 escondido do
+// .exe, ela é SÓ vídeo. Sobe a transmissão sozinha e NÃO toca no RaceBox — o .exe
+// é dono único do rádio (BLE conecta num cliente por vez). Sem a flag, a página
+// segue funcionando manual como antes (uso avulso no navegador).
+const _qs = new URLSearchParams(location.search);
+if (_qs.has('video-only') || _qs.has('videoOnly')) {
+  document.body.classList.add('video-only');
+  log('Modo vídeo-embutido (.exe): subindo transmissão automaticamente; GPS é do .exe.');
+  startVideo();
+}
 connectCloud();
 log('Central de pista pronta. 1) Iniciar transmissão  2) Conectar RaceBox. O quadro CARRO acende quando o painel do piloto (outra aba) estiver lendo a T4000 — ou use o simulador.');
 </script>

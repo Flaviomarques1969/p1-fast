@@ -7,6 +7,16 @@
 
     <Grid Background="#0a0a0a">
 
+      <!-- ════ VÍDEO EMBUTIDO (WebView2 escondido) ════
+           ADR-024 amendment 6: o .exe hospeda a transmissão do vídeo (DJI Osmo →
+           Daily) dentro de si, sem aba de navegador. Fica 1×1 invisível (não é o que
+           o piloto vê — é o transmissor); a página sobe sozinha em modo ?video-only e
+           NÃO toca no RaceBox. Primeiro filho = atrás de tudo no z-order. -->
+      <Microsoft.UI.Xaml.Controls.WebView2 x:Name="VideoWeb"
+              Width="1" Height="1" Opacity="0"
+              HorizontalAlignment="Left" VerticalAlignment="Top"
+              IsHitTestVisible="False"/>
+
       <!-- ════ COCKPIT (carro andando) ════ -->
       <Grid x:Name="CockpitRoot">
         <Viewbox HorizontalAlignment="Center"

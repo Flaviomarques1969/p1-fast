@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Shapes;
+using Microsoft.Web.WebView2.Core;
 using P1Fast.Cockpit.Domain;
 using Windows.Graphics;
 using Windows.UI;
@@ -33,6 +34,7 @@ public sealed partial class MainWindow : Window
     private RaceBoxBleReader? _raceBox;
     private readonly ModoTelaDetector _modoDetector = new();
     private volatile bool _gpsSeen;
+    private bool _videoIniciado;   // guarda contra Loaded disparar 2×
 
     // ── Cores ──────────────────────────────────────────────
 
@@ -211,6 +213,12 @@ public sealed partial class MainWindow : Window
             onLog: linha => SystemHealth.Log(linha));
         _raceBox.Start();
 
+        // ── Vídeo embutido: WebView2 escondido sobe a transmissão (DJI → Daily) ──
+        // O .exe vira a aplicação única (ADR-024 amendment 6). Inicia quando o
+        // controle entra na árvore visual; nunca derruba o cockpit se falhar.
+        if (!_options.SemVideo)
+            VideoWeb.Loaded += (_, _) => _ = IniciarVideoAsync();
+
         // Linha de status ao vivo (captura + nuvem) atualizada 1×/s, mesmo quando
         // o shift não muda — pra confirmar num olhar que está tudo funcionando.
         _statusTimer = DispatcherQueue.CreateTimer();
@@ -229,8 +237,40 @@ public sealed partial class MainWindow : Window
             try { _raceBox?.Stop(); } catch { }
             try { _demoTimer.Stop(); } catch { }
             try { _statusTimer?.Stop(); } catch { }
+            try { VideoWeb.Close(); } catch { }
             try { SystemHealth.Parar(); } catch { }
         };
+    }
+
+    // ── Vídeo embutido (WebView2 escondido) ────────────────────────
+    //
+    // Sobe a página de teste-aparelhos em modo ?video-only, que dispara a
+    // transmissão Daily sozinha e NÃO toca no RaceBox. Câmera é auto-permitida
+    // (notebook dedicado, kiosk). Se o runtime do WebView2 não estiver instalado,
+    // só registra na saúde — o cockpit + GPS + central seguem normais.
+    private async System.Threading.Tasks.Task IniciarVideoAsync()
+    {
+        if (_videoIniciado) return;
+        _videoIniciado = true;
+        try
+        {
+            await VideoWeb.EnsureCoreWebView2Async();
+
+            // Notebook dedicado: libera câmera/microfone sem perguntar.
+            VideoWeb.CoreWebView2.PermissionRequested += (_, e) =>
+            {
+                if (e.PermissionKind is CoreWebView2PermissionKind.Camera
+                                     or CoreWebView2PermissionKind.Microphone)
+                    e.State = CoreWebView2PermissionState.Allow;
+            };
+
+            VideoWeb.CoreWebView2.Navigate(_options.VideoUrl);
+            SystemHealth.Log("vídeo embutido: abrindo " + _options.VideoUrl);
+        }
+        catch (Exception e)
+        {
+            SystemHealth.Log("vídeo embutido indisponível (runtime WebView2?): " + e.Message);
+        }
     }
 
     // ── Troca de tela dirigida pelo GPS (parado→sensores / andando→cockpit) ──

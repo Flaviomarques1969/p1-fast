@@ -12,6 +12,9 @@ namespace P1Fast.Cockpit.UI;
 ///                        Settings do Windows usa a mesma numeração).
 ///   --janela            abre janelado (1280×800) em vez de tela cheia — só
 ///                        pra desenvolvimento. Por padrão é kiosk fullscreen.
+///   --video-url URL     URL da página de vídeo embutida (WebView2 escondido).
+///                        Padrão: a página de teste-aparelhos em modo ?video-only.
+///   --sem-video         não sobe o WebView2 de vídeo (desenvolvimento).
 /// </summary>
 public partial class App : Application
 {
@@ -43,13 +46,22 @@ public partial class App : Application
 }
 
 /// <summary>Configuração resolvida dos argumentos de linha de comando.</summary>
-public sealed record LaunchOptions(int? DisplayIndex, bool Windowed = false)
+public sealed record LaunchOptions(
+    int? DisplayIndex,
+    bool Windowed = false,
+    string VideoUrl = LaunchOptions.DefaultVideoUrl,
+    bool SemVideo = false)
 {
+    /// <summary>Página de teste-aparelhos em modo só-vídeo (não toca no RaceBox).</summary>
+    public const string DefaultVideoUrl = "https://p1tv.vercel.app/?video-only=1";
+
     /// <summary>Faz parsing dos args do <see cref="Environment.GetCommandLineArgs"/>.</summary>
     public static LaunchOptions FromCommandLine(string[] args)
     {
         int? displayIndex = null;
         bool windowed = false;
+        string videoUrl = DefaultVideoUrl;
+        bool semVideo = false;
         for (var i = 0; i < args.Length; i++)
         {
             var a = args[i];
@@ -63,11 +75,23 @@ public sealed record LaunchOptions(int? DisplayIndex, bool Windowed = false)
                 if (int.TryParse(args[i + 1], out var n) && n >= 1)
                     displayIndex = n;
             }
+            else if (a.StartsWith("--video-url=", StringComparison.Ordinal))
+            {
+                videoUrl = a["--video-url=".Length..];
+            }
+            else if (a == "--video-url" && i + 1 < args.Length)
+            {
+                videoUrl = args[i + 1];
+            }
+            else if (a is "--sem-video" or "--no-video")
+            {
+                semVideo = true;
+            }
             else if (a is "--janela" or "--windowed")
             {
                 windowed = true;
             }
         }
-        return new LaunchOptions(displayIndex, windowed);
+        return new LaunchOptions(displayIndex, windowed, videoUrl, semVideo);
     }
 }
