@@ -1,5 +1,54 @@
 # P1 Fast — STATUS
 
+## Checkpoint 2026-06-24 — app .exe do notebook (T4000 + cockpit) avançou muito
+
+**Branch:** `claude/t3000-t4000-live-stream-tdrk70`. CI `windows-cockpit.yml` verde
+(`domain-test` + `ui-build` + publish; Release `cockpit-latest` com `cockpit-ui.zip`).
+
+**O `.exe` (P1Fast.Cockpit.UI, WinUI 3 nativo) hoje faz:**
+- **Captura T4000 por USB** (LibUsbDotNet) — leitor auto-corretivo que acha a
+  estratégia sozinho, valida (`EhLeituraPlausivel`) e **reconecta** se a central cair.
+- **Processa + mostra** — `LiveDataBridge.IngestT3000` → shift light + alarmes →
+  `CockpitState` → tela. Sem central, roda **simulação** (`T3000LapSimulator`) pelo
+  MESMO caminho real; some na 1ª amostra de verdade.
+- **Envia pra nuvem** (wifi do celular) — `LiveSink.Publicar` manda o payload
+  canônico completo no canal `cockpit-bubi-live` evento `sample` (igual a
+  `web/cockpit/cloud-bridge.js`). Salva histórico `jsonl` local.
+- **Saúde/diagnóstico** — `SystemHealth`: auto-testes na partida + espelho
+  `live/cockpit-health.json` no GitHub com a **evidência da 1ª partida real**
+  (dispositivosUsb, ultimaAmostra decodificada, ultimoFrameHex cru, nuvem.ultimoHttp).
+- **Produção** — kiosk fullscreen padrão (`--janela` opta janelado), instância
+  única (Mutex), `ConnectivityTracker` (avisa nuvem caiu/voltou), encerramento limpo.
+- **Telas por movimento** — `ModoTelaDetector` (histerese): carro **parado → painel
+  de sensores + status**; **andando → cockpit**. Gatilho = **GPS (movimento)**, lido
+  do evento `gps` do canal (RaceBox via a página web, ver ADR-024). *Painel de
+  sensores e a fiação do toggle: EM ANDAMENTO.*
+
+**Cobertura nova (xUnit, roda no CI):** T3000RiBlockParser/Builder, LiveDataBridge
+T3000, T3000LapSimulator, T3000CloudPayload, ConnectivityTracker, ModoTelaDetector.
+
+**Distribuição:** `web/cockpit/instalar.html` (1 clique gera `.cmd` que baixa,
+extrai, cria atalho e abre) + `web/cockpit/baixar.html`.
+
+**Arquitetura confirmada (ADR-024, fechada e validada em campo 2026-06-09):**
+- **Vídeo** = DJI **Osmo Action 6 Pro** → cabo USB → notebook (webcam UVC, 1080p) →
+  **Daily.co**, transmitido pela **página web `web/teste-aparelhos/`** (p1tv.vercel.app).
+- **GPS** = **RaceBox** por Bluetooth → notebook → **mesma página web** (`cloudSend('gps')`
+  + app-message do Daily). O iPhone **sai do caminho do vídeo**.
+- Logo: **vídeo e GPS são da página web, NÃO do `.exe`.** O `.exe` cuida de
+  **T4000 + cockpit + painel de sensores** e **consome** o GPS pra alternar as telas.
+
+**Pendência real (mecânica, não de código):** o `.exe` **nunca rodou ponta-a-ponta
+com a central física** — a aquisição USB foi provada isolada (probe, em campo), mas a
+1ª partida real do app WinUI ainda não aconteceu. A instrumentação acima existe pra
+diagnosticar online assim que o Flávio plugar e abrir.
+
+**Aberto p/ confirmar:** a página web `teste-aparelhos` também tem caminho de dados do
+carro (`cloudSend('sample')`). Definir se o `.exe` **substitui** esse papel (evitar
+envio duplo de `sample`) ou convivem.
+
+---
+
 **Data deste checkpoint:** 2026-06-08 (auditoria profunda — ver `.claude-exec/ultima-tarefa.md`)
 
 ## Estado real hoje (verificado, não inferido)
