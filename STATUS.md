@@ -26,6 +26,12 @@ Formalizado no **ADR-024 amendment 6**. Resumo:
   escondido sobe o vídeo (`?video-only`, sem tocar no RaceBox). `SystemHealth` ganhou
   bloco `gps`.
 - `instalar.html`: atalho na pasta Inicializar (auto-start no boot).
+- **MS-13.5 começou** (`b6f3b8e`): `ChegadaDetector` (porte de `chegada-detector.js`)
+  + `SementeBrasilia` (linha de chegada embarcada offline, "meio da reta dos boxes" —
+  coords derivadas do traçado real `sim-gps.json`, cruza **4× = 4 voltas**). GPS →
+  fecha volta + tempo de volta, emite evento `volta` pra nuvem ({tipo:'volta',n,tempoMs}),
+  mostra contador+tempo no cockpit/painel/saúde. 9 testes novos, CI verde.
+  Próximo tijolo: `DeltaCalculator` (delta vivo vs melhor volta).
 
 **Falta validar (gates):**
 1. **CI `ui-build`** (windows-latest) confirma que o XAML+C# da UI compila — não dá
