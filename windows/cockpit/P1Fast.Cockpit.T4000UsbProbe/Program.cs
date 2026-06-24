@@ -12,6 +12,7 @@
 // Para cada combinacao mede quantos bytes vieram e se o parser entende
 // (RPM/agua coerentes). A primeira que "entende" vence.
 
+using System.Text.Json;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
 using P1Fast.Cockpit.Domain;
@@ -187,6 +188,8 @@ static void LerAoVivo(UsbDevice dev, byte epOut, byte epIn, string modo)
                 var a = s.Alarmes.QualquerAtivo ? "  ⚠ALARME" : "";
                 Console.WriteLine($"[{ok,5}] rpm={s.Rpm,5}  agua={(s.WaterTempC?.ToString() ?? "—")}C  " +
                     $"λ={s.Lambda:F2}  tps={s.TpsPct:F0}%  bat={s.BatteryV:F1}V  vel={s.SpeedKmh:F0}{a}");
+                Nuvem.Publicar(s);   // transmite pra nuvem (best-effort; nao atrapalha a leitura)
+                Arquivo.Salvar(s);   // salva no notebook pra consulta futura (historico completo)
             }
         }
         Thread.Sleep(50);
@@ -206,3 +209,77 @@ static string Agora() => $"{DateTime.Now:HH:mm:ss}";
 static string SafeName(UsbRegistry reg) { try { return reg.FullName ?? reg.Name ?? "(sem nome)"; } catch { return "(sem nome)"; } }
 static string Hexs(System.Collections.Generic.List<byte> xs) => string.Join(",", xs.ConvertAll(x => $"0x{x:X2}"));
 static string Hex(byte[] b, int n) => string.Join(" ", b.AsSpan(0, Math.Min(n, 8)).ToArray().Select(x => x.ToString("X2")));
+
+// ─── Envio pra nuvem (Supabase Realtime broadcast via HTTP) ──────────────────
+// Publica cada amostra no canal 'cockpit-bubi-live' usando o endpoint HTTP de
+// broadcast do Supabase (POST /realtime/v1/api/broadcast). O notebook alcança o
+// Supabase normalmente; assim o iPhone/Box que assinam o canal veem ao vivo.
+// Best-effort: qualquer falha de rede e ignorada e NUNCA trava a leitura.
+static class Nuvem
+{
+    const string Url  = "https://fvhwltzhytpnhlqbttmd.supabase.co";
+    const string Anon = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2aHdsdHpoeXRwbmhscWJ0dG1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTExNDAsImV4cCI6MjA5MzM4NzE0MH0._ZpxksUnuVFhLzCB5x7bBiZ_VLQQR5cH4A1T-0-mvrA";
+    static readonly HttpClient http = new() { Timeout = TimeSpan.FromSeconds(4) };
+    static long ultimoMs = 0;
+    static bool avisou = false;
+
+    public static void Publicar(T3000Sample s)
+    {
+        long agora = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        if (agora - ultimoMs < 100) return;   // ~10 Hz
+        ultimoMs = agora;
+        try
+        {
+            var payload = new
+            {
+                rpm = s.Rpm, waterTempC = s.WaterTempC, lambda = s.Lambda, tpsPct = s.TpsPct,
+                batteryV = s.BatteryV, speedKmh = s.SpeedKmh, mapBar = s.MapBar,
+                pedalAceleradorPct = s.PedalAceleradorPct, pressaoFreioBar = s.PressaoFreioBar,
+                source = "t3000-usb-exe", ts = agora,
+            };
+            var body = new { messages = new[] { new { topic = "cockpit-bubi-live", @event = "sample", payload } } };
+            var req = new HttpRequestMessage(HttpMethod.Post, $"{Url}/realtime/v1/api/broadcast")
+            {
+                Content = new StringContent(JsonSerializer.Serialize(body), System.Text.Encoding.UTF8, "application/json"),
+            };
+            req.Headers.TryAddWithoutValidation("apikey", Anon);
+            req.Headers.TryAddWithoutValidation("Authorization", "Bearer " + Anon);
+            _ = http.SendAsync(req).ContinueWith(t =>
+            {
+                if (!avisou && t.Status == TaskStatus.RanToCompletion)
+                {
+                    avisou = true;
+                    Console.WriteLine("  ↑ transmitindo pra nuvem (canal cockpit-bubi-live) — iPhone/Box podem ver");
+                }
+            });
+        }
+        catch { /* envio e best-effort; leitura continua normal */ }
+    }
+}
+
+// ─── Salvamento local pra consulta futura ────────────────────────────────────
+// Grava cada amostra (uma por linha, JSON) num arquivo do dia, na mesma pasta do
+// programa. Vira o historico completo do dia de pista, pra consultar depois.
+static class Arquivo
+{
+    static readonly string caminho = $"p1-t4000-{DateTime.Now:yyyyMMdd}.jsonl";
+    static bool avisou = false;
+
+    public static void Salvar(T3000Sample s)
+    {
+        try
+        {
+            var o = new
+            {
+                ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                rpm = s.Rpm, waterTempC = s.WaterTempC, lambda = s.Lambda, tpsPct = s.TpsPct,
+                batteryV = s.BatteryV, speedKmh = s.SpeedKmh, mapBar = s.MapBar,
+                pedalAceleradorPct = s.PedalAceleradorPct, pressaoFreioBar = s.PressaoFreioBar,
+                alarme = s.Alarmes.QualquerAtivo,
+            };
+            File.AppendAllText(caminho, JsonSerializer.Serialize(o) + "\n");
+            if (!avisou) { avisou = true; Console.WriteLine($"  💾 salvando historico em {caminho} (mesma pasta do programa)"); }
+        }
+        catch { /* salvar e best-effort */ }
+    }
+}
