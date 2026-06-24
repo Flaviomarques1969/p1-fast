@@ -33,6 +33,7 @@ public sealed partial class MainWindow : Window
     // GPS nativo (RaceBox BLE) → troca de tela local + publish pra nuvem (ADR-024 amd 6).
     private RaceBoxBleReader? _raceBox;
     private readonly ModoTelaDetector _modoDetector = new();
+    private readonly ChegadaDetector _chegada = SementeBrasilia.NovoDetectorChegada();
     private volatile bool _gpsSeen;
     private bool _videoIniciado;   // guarda contra Loaded disparar 2×
 
@@ -206,6 +207,15 @@ public sealed partial class MainWindow : Window
                 _gpsSeen = true;
                 LiveSink.PublicarGps(g);                       // nuvem (best-effort, ~10 Hz)
                 SystemHealth.Gps(g, _raceBox?.Estado ?? "?");
+
+                // Linha de chegada (semente Brasília): fecha volta + tempo de volta.
+                var volta = _chegada.IngestGps(g.Lat, g.Lon, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+                if (volta is not null)
+                {
+                    SystemHealth.Volta(volta);
+                    LiveSink.PublicarEventoVolta(volta);        // evento "volta" pra nuvem (box/celular)
+                }
+
                 bool mudou = _modoDetector.Atualizar(g.SpeedKmh);
                 if (mudou || primeiro)
                     DispatcherQueue.TryEnqueue(AplicarModoTela);
@@ -834,7 +844,7 @@ public sealed partial class MainWindow : Window
     {
         var s = _cockpitState.Get();
         var fonte = _realDataSeen ? "CENTRAL" : "simulação";
-        StatusText.Text = $"{fonte} • {SystemHealth.ResumoCurto()} • shift={s.Shift.Mode} L{s.Shift.Level}";
+        StatusText.Text = $"{fonte} • {SystemHealth.ResumoCurto()} • {SystemHealth.GpsResumoCurto()} • shift={s.Shift.Mode} L{s.Shift.Level}";
     }
 
     private void ApplyDisplayPlacement()

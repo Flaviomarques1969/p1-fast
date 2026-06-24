@@ -276,10 +276,31 @@ internal static class LiveSink
         long agora = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         if (agora - ultimoGps < 100) return;   // ~10 Hz pra nuvem
         ultimoGps = agora;
+        Broadcast(GpsCloudPayload.Event, GpsCloudPayload.Build(g, agora));
+    }
+
+    /// <summary>
+    /// Publica o fechamento de volta no canal, evento "evento" no shape canônico do
+    /// sim ({ tipo:"volta", n }) + tempo da volta. Raro (1×/volta), sem throttle.
+    /// </summary>
+    public static void PublicarEventoVolta(ChegadaEvento ev)
+    {
+        var payload = new Dictionary<string, object?>
+        {
+            ["tipo"] = "volta",
+            ["n"] = ev.VoltaN,
+            ["tempoMs"] = ev.TempoVoltaMs,
+            ["tWall"] = ev.TMs,
+        };
+        Broadcast("evento", payload);
+    }
+
+    // Broadcast best-effort no canal cockpit-bubi-live. Nunca lança.
+    private static void Broadcast(string evento, object payload)
+    {
         try
         {
-            var payload = GpsCloudPayload.Build(g, agora);
-            var body = new { messages = new[] { new { topic = "cockpit-bubi-live", @event = GpsCloudPayload.Event, payload } } };
+            var body = new { messages = new[] { new { topic = "cockpit-bubi-live", @event = evento, payload } } };
             var req = new HttpRequestMessage(HttpMethod.Post, $"{Url}/realtime/v1/api/broadcast")
             {
                 Content = new StringContent(JsonSerializer.Serialize(body), System.Text.Encoding.UTF8, "application/json"),

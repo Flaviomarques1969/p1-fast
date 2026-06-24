@@ -63,6 +63,8 @@ public static class SystemHealth
     private static string _gpsResumo = "";
     private static string _gpsEstadoBle = "?";
     private static string _modoTela = "—";
+    private static int _voltasFechadas;
+    private static long _ultimaVoltaMs = -1;
 
     private static string? _token;
     private static string? _sha;
@@ -160,12 +162,27 @@ public static class SystemHealth
         lock (trava) _modoTela = modo;
     }
 
-    /// <summary>Resumo curto do GPS pra linha de status do painel de sensores.</summary>
+    /// <summary>Registra o fechamento de uma volta (linha de chegada por GPS).</summary>
+    public static void Volta(ChegadaEvento ev)
+    {
+        lock (trava) { _voltasFechadas = ev.VoltaN; _ultimaVoltaMs = ev.TempoVoltaMs ?? -1; }
+        Log(ev.TempoVoltaMs is { } t
+            ? $"volta {ev.VoltaN} fechada — {t / 1000.0:0.000}s"
+            : $"volta {ev.VoltaN} fechada (1ª passagem)");
+    }
+
+    /// <summary>Resumo curto do GPS + voltas pra linha de status do painel/cockpit.</summary>
     public static string GpsResumoCurto()
     {
+        int voltas; long ultMs;
+        lock (trava) { voltas = _voltasFechadas; ultMs = _ultimaVoltaMs; }
+        string voltaTxt = voltas > 0
+            ? $" • V{voltas}" + (ultMs >= 0 ? $" {ultMs / 1000.0:0.000}s" : "")
+            : "";
+
         long idade = _ultimoGpsTick == 0 ? -1 : Environment.TickCount64 - _ultimoGpsTick;
-        if (idade < 0) return "GPS —";
-        return idade < 3000 ? $"GPS ✓{Interlocked.Read(ref _gpsCount)}" : "GPS reconectando";
+        if (idade < 0) return "GPS —" + voltaTxt;
+        return (idade < 3000 ? $"GPS ✓{Interlocked.Read(ref _gpsCount)}" : "GPS reconectando") + voltaTxt;
     }
 
     public static void Log(string linha)
@@ -228,10 +245,12 @@ public static class SystemHealth
 
         string[] evs;
         string estrategia, dispositivos, frameHex, amostra, gpsResumo, gpsEstadoBle, modoTela;
+        int voltas; long ultimaVoltaMs;
         lock (trava)
         {
             estrategia = _estrategia; dispositivos = _dispositivos; frameHex = _ultimoFrameHex; amostra = _ultimaAmostra;
             gpsResumo = _gpsResumo; gpsEstadoBle = _gpsEstadoBle; modoTela = _modoTela;
+            voltas = _voltasFechadas; ultimaVoltaMs = _ultimaVoltaMs;
         }
         evs = eventos.ToArray();
 
@@ -258,6 +277,8 @@ public static class SystemHealth
                 amostras = Interlocked.Read(ref _gpsCount),
                 ultimaHaMs = idadeGpsMs,
                 ultima = gpsResumo,              // fix/sv/vel/hAcc/lat,lon decodificados
+                voltas,                          // voltas fechadas pela linha de chegada
+                ultimaVoltaMs,                   // tempo da última volta (-1 = sem)
             },
             nuvem = new
             {
