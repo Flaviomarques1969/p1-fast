@@ -21,6 +21,11 @@ public sealed partial class MainWindow : Window
     private readonly LaunchOptions _options;
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _demoTimer;
 
+    // Aquisição REAL da central T3000/T4000 (USB nativo) → cockpit.
+    private readonly LiveDataBridge _bridge;
+    private T4000LiveReader? _reader;
+    private volatile bool _realDataSeen;
+
     // ── Cores ──────────────────────────────────────────────
 
     private static readonly Color White       = Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF);
@@ -135,6 +140,9 @@ public sealed partial class MainWindow : Window
         ApplyMessage(initial.Message);
         UpdateStatusText();
 
+        // Demo roda como FALLBACK até a central de verdade aparecer. Assim que a
+        // primeira amostra real do T4000 chega, o demo para e a tela passa a
+        // refletir só o motor (shift light + alarmes reais).
         _demoTimer = DispatcherQueue.CreateTimer();
         _demoTimer.Interval = TimeSpan.FromSeconds(2);
         var sceneIndex = 0;
@@ -145,6 +153,23 @@ public sealed partial class MainWindow : Window
         };
         _demoTimer.Start();
         ApplyScene(0);
+
+        // ── Aquisição real: USB nativo → bridge → CockpitState → tela ──
+        // + transmissão pra nuvem (iPhone/Box) + histórico local. Tudo fora da
+        // thread de UI; nada disso pode travar o painel.
+        _bridge = new LiveDataBridge(_cockpitState);
+        _reader = new T4000LiveReader(onSample: s =>
+        {
+            if (!_realDataSeen)
+            {
+                _realDataSeen = true;
+                DispatcherQueue.TryEnqueue(() => _demoTimer.Stop());
+            }
+            _bridge.IngestT3000(s);   // shift light + alarmes → tela
+            LiveSink.Publicar(s);     // nuvem (best-effort, ~10 Hz)
+            LiveSink.Salvar(s);       // histórico local (jsonl)
+        });
+        _reader.Start();
     }
 
     // ── Demo loop ──────────────────────────────────────────
