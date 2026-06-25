@@ -60,6 +60,18 @@ public sealed partial class MainWindow : Window
     private static readonly Color LedFireWhite   = Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF);
     private static readonly Color LedOverrevRed  = Color.FromArgb(0xFF, 0xC0, 0x10, 0x10);
 
+    // ── Luz de freio lateral (Flávio 22/06) ───────────────────
+    // Vertical nas duas laterais, enche de cima pra baixo conforme chega o ponto
+    // de freada. Tiers iguais ao HTML (.brake-dot[data-tier]): 5 verde, 1 âmbar,
+    // 3 vermelho — mesma rampa de cor do shift light.
+    private static readonly char[] BrakeTierByPosition = { 'g', 'g', 'g', 'g', 'g', 'a', 'r', 'r', 'r' };
+
+    // ── Cluster de sensores (Flávio 22/06) ────────────────────
+    // Vermelho = sem comunicação · Verde = comunicando · Amarelo = falha.
+    private static readonly Color SensorOff  = Color.FromArgb(0xFF, 0x8A, 0x3A, 0x34);
+    private static readonly Color SensorOk   = Bom;
+    private static readonly Color SensorWarn = Foco;
+
     // 17 posições, pirâmide simétrica: tier 1 nas pontas, tier 9 no centro.
     private static readonly int[] LedTierByPosition = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 8, 7, 6, 5, 4, 3, 2, 1 };
 
@@ -75,6 +87,32 @@ public sealed partial class MainWindow : Window
 
     private Ellipse[] _leds = Array.Empty<Ellipse>();
     private Microsoft.UI.Xaml.Controls.Border[] _stintBlocks = Array.Empty<Microsoft.UI.Xaml.Controls.Border>();
+
+    // Luzes de freio (9 por lado) + cluster de sensores (Motor 7 · Movimento 2 · Chassi 5).
+    private Ellipse[] _brakeLeft = Array.Empty<Ellipse>();
+    private Ellipse[] _brakeRight = Array.Empty<Ellipse>();
+    private Ellipse[] _sensorsMotor = Array.Empty<Ellipse>();
+    private Ellipse[] _sensorsMov = Array.Empty<Ellipse>();
+    private Ellipse[] _sensorsChassi = Array.Empty<Ellipse>();
+
+    // Halos (Ellipses maiores atrás de cada LED) — transbordam e criam o "wash".
+    private Ellipse[] _ledGlows = Array.Empty<Ellipse>();
+    private Ellipse[] _brakeLeftGlow = Array.Empty<Ellipse>();
+    private Ellipse[] _brakeRightGlow = Array.Empty<Ellipse>();
+
+    // Cache de pincéis (domo 3D + brilho) por cor — evita recriar a cada frame.
+    private readonly Dictionary<uint, RadialGradientBrush> _domeCache = new();
+    private readonly Dictionary<uint, RadialGradientBrush> _glowCache = new();
+    private RadialGradientBrush? _offDome;
+
+    // LEDs cujo halo já está aceso — pra disparar a "ignição" (pop) só na transição.
+    private readonly HashSet<Ellipse> _glowsLit = new();
+
+    // Animações demo: varredura sequencial do shift e da luz de freio (com flash no topo).
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer? _brakeTimer;
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer? _shiftSweepTimer;
+    private int _brakeStep;
+    private int _shiftStep;
 
     // Pulso da mensagem GRAVE: opacidade + leve escala (1.0↔1.06) num
     // Storyboard sine, autoreverse forever. Comunicação fica fixa (sem
@@ -121,6 +159,22 @@ public sealed partial class MainWindow : Window
             StintBlock09, StintBlock10, StintBlock11, StintBlock12,
         };
 
+        _ledGlows = new[] { LedGlow01, LedGlow02, LedGlow03, LedGlow04, LedGlow05, LedGlow06,
+                            LedGlow07, LedGlow08, LedGlow09, LedGlow10, LedGlow11, LedGlow12,
+                            LedGlow13, LedGlow14, LedGlow15, LedGlow16, LedGlow17 };
+        _brakeLeft  = new[] { BrakeL1, BrakeL2, BrakeL3, BrakeL4, BrakeL5, BrakeL6, BrakeL7, BrakeL8, BrakeL9 };
+        _brakeRight = new[] { BrakeR1, BrakeR2, BrakeR3, BrakeR4, BrakeR5, BrakeR6, BrakeR7, BrakeR8, BrakeR9 };
+        _brakeLeftGlow  = new[] { BrakeLGlow1, BrakeLGlow2, BrakeLGlow3, BrakeLGlow4, BrakeLGlow5, BrakeLGlow6, BrakeLGlow7, BrakeLGlow8, BrakeLGlow9 };
+        _brakeRightGlow = new[] { BrakeRGlow1, BrakeRGlow2, BrakeRGlow3, BrakeRGlow4, BrakeRGlow5, BrakeRGlow6, BrakeRGlow7, BrakeRGlow8, BrakeRGlow9 };
+
+        // Halos maiores (transbordam mais = wash mais forte) + ScaleTransform pra ignição.
+        foreach (var g in _ledGlows)        InitGlow(g, 56);
+        foreach (var g in _brakeLeftGlow)   InitGlow(g, 64);
+        foreach (var g in _brakeRightGlow)  InitGlow(g, 64);
+        _sensorsMotor  = new[] { SensorRpm, SensorAcel, SensorFreioPedal, SensorAgua, SensorLambda, SensorBateria, SensorAlarme };
+        _sensorsMov    = new[] { SensorGps, SensorAccel };
+        _sensorsChassi = new[] { SensorPneus, SensorSusp, SensorCambio, SensorFreioDed, SensorDirecao };
+
         _cockpitState.OnChange((cur, _, keys) =>
         {
             DispatcherQueue.TryEnqueue(() =>
@@ -158,6 +212,81 @@ public sealed partial class MainWindow : Window
             };
             _demoTimer.Start();
             ApplyScene(0);
+
+            // Luz de freio: varre 0→9 (sequencial), pisca vermelho no fim, repete.
+            _brakeTimer = DispatcherQueue.CreateTimer();
+            _brakeTimer.Interval = TimeSpan.FromMilliseconds(120);
+            _brakeTimer.Tick += (_, _) => { DemoBrakeRender(_brakeStep); _brakeStep = (_brakeStep + 1) % 17; };
+            _brakeTimer.Start();
+
+            // Shift light de marcha: varre das pontas pro centro (sequencial), pisca
+            // vermelho ao atingir o topo (ponto de troca), reinicia. É o "RPM subindo".
+            _shiftSweepTimer = DispatcherQueue.CreateTimer();
+            _shiftSweepTimer.Interval = TimeSpan.FromMilliseconds(110);
+            _shiftSweepTimer.Tick += (_, _) => { DemoShiftRender(_shiftStep); _shiftStep = (_shiftStep + 1) % 16; };
+            _shiftSweepTimer.Start();
+        }
+    }
+
+    // ── Varredura demo do SHIFT (marcha) ──────────────────────
+    // steps 0..8: enche par a par das pontas pro centro (ignição em cada novo LED).
+    // steps 9,11,13: pisca tudo vermelho (atingiu o ponto de troca). 10,12,14,15: apaga.
+    private void DemoShiftRender(int step)
+    {
+        if (step <= 8)                              RenderShiftFill(step);
+        else if (step == 9 || step == 11 || step == 13) RenderAllShift(LedShiftRed, on: true);
+        else                                        RenderAllShift(LedOff, on: false);
+
+        if (step == 9) WashPulse();   // bateu o máximo do giro → wash vermelho lava o painel
+    }
+
+    // Pulso de WASH: a luz vermelha sobe rápido (60 ms) e dissolve devagar (~460 ms),
+    // dando a sensação de "lavar" o painel no corte de giro.
+    private void WashPulse()
+    {
+        var a = new DoubleAnimationUsingKeyFrames();
+        a.KeyFrames.Add(new DiscreteDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(TimeSpan.Zero),                       Value = 0.0 });
+        a.KeyFrames.Add(new LinearDoubleKeyFrame   { KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(60)),  Value = 0.95 });
+        a.KeyFrames.Add(new LinearDoubleKeyFrame   { KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(460)), Value = 0.0 });
+        Storyboard.SetTarget(a, ShiftWashRect);
+        Storyboard.SetTargetProperty(a, "Opacity");
+        var sb = new Storyboard();
+        sb.Children.Add(a);
+        sb.Begin();
+    }
+
+    private void RenderShiftFill(int pairs)
+    {
+        var n = _leds.Length;
+        for (var i = 0; i < n; i++) SetLedVisual(_leds[i], _ledGlows[i], LedOff, false);
+        for (var d = 0; d < pairs; d++)
+        {
+            var li = d;
+            var ri = n - 1 - d;
+            SetLedVisual(_leds[li], _ledGlows[li], ColorForTier(LedTierByPosition[li]), on: true, animate: true);
+            SetLedVisual(_leds[ri], _ledGlows[ri], ColorForTier(LedTierByPosition[ri]), on: true, animate: true);
+        }
+    }
+
+    private void RenderAllShift(Color color, bool on)
+    {
+        for (var i = 0; i < _leds.Length; i++) SetLedVisual(_leds[i], _ledGlows[i], color, on);
+    }
+
+    // ── Varredura demo da LUZ DE FREIO ────────────────────────
+    private void DemoBrakeRender(int step)
+    {
+        if (step <= 9)                               ApplyBrake(step);
+        else if (step == 10 || step == 12 || step == 14) RenderAllBrake(LedShiftRed, on: true);
+        else                                         ApplyBrake(0);
+    }
+
+    private void RenderAllBrake(Color color, bool on)
+    {
+        for (var i = 0; i < _brakeLeft.Length; i++)
+        {
+            SetLedVisual(_brakeLeft[i],  _brakeLeftGlow[i],  color, on);
+            SetLedVisual(_brakeRight[i], _brakeRightGlow[i], color, on);
         }
     }
 
@@ -172,6 +301,8 @@ public sealed partial class MainWindow : Window
     public void IniciarFeedReal(IReadOnlyList<TrechoSegmento>? curvas = null)
     {
         _demoTimer?.Stop();
+        _brakeTimer?.Stop();
+        _shiftSweepTimer?.Stop();
         _orquestrador = new CockpitOrchestrator(_cockpitState, curvas);
     }
 
@@ -397,9 +528,10 @@ public sealed partial class MainWindow : Window
     {
         var s = DemoScenes[index];
         _cockpitState.SetTrechoStatus(s.Halo);
-        _cockpitState.ApplyShift(s.Mode, s.Level);
+        // O shift light é comandado pela varredura demo (DemoShiftRender), não pela cena.
         _cockpitState.SetDelta(s.DeltaValue, s.DeltaTone);
-        _cockpitState.SetAcao(s.AcaoTexto, s.AcaoTone);
+        // Só a mensagem — sem "C1/C2/…" na frente (o piloto não quer o nome do trecho).
+        _cockpitState.SetAcao(StripCurva(s.AcaoTexto), s.AcaoTone);
 
         if (s.EntradaKmh > 0)
             _cockpitState.SetApexPonto("entrada", estado: s.EntradaEstado, valorKmh: s.EntradaKmh);
@@ -415,6 +547,13 @@ public sealed partial class MainWindow : Window
 
         if (s.StintPattern is not null)
             ApplyStintPattern(s.StintPattern);
+
+        // Resultado da freada (à direita) — espelha o ponto de freio do trecho.
+        ApplyBrakeResult(s.FreioEstado, s.FreioAtualM, s.FreioRefM);
+
+        // Sensores: motor/movimento comunicando (verde); chassi "a instalar" (vermelho).
+        // Falha de motor (mensagem GRAVE) acende água/lambda/alarme em amarelo.
+        ApplySensors(falhaMotor: s.MsgTipo == P1Fast.Cockpit.Domain.MsgTipo.Grave);
     }
 
     // ── Apply* ─────────────────────────────────────────────
@@ -493,7 +632,7 @@ public sealed partial class MainWindow : Window
 
     private void BeginShiftFlash(ShiftState restoreAfter)
     {
-        foreach (var led in _leds) ((SolidColorBrush)led.Fill).Color = LedFireWhite;
+        for (var i = 0; i < _leds.Length; i++) SetLedVisual(_leds[i], _ledGlows[i], LedFireWhite, true);
         _flashRestoreState = restoreAfter;
 
         if (_shiftFlashTimer is null)
@@ -519,16 +658,16 @@ public sealed partial class MainWindow : Window
     {
         if (shift.Mode == ShiftMode.Fire)
         {
-            foreach (var led in _leds) ((SolidColorBrush)led.Fill).Color = LedFireWhite;
+            for (var i = 0; i < _leds.Length; i++) SetLedVisual(_leds[i], _ledGlows[i], LedFireWhite, true);
             return;
         }
         if (shift.Mode == ShiftMode.Overrev)
         {
-            foreach (var led in _leds) ((SolidColorBrush)led.Fill).Color = LedOverrevRed;
+            for (var i = 0; i < _leds.Length; i++) SetLedVisual(_leds[i], _ledGlows[i], LedOverrevRed, true);
             return;
         }
         for (var i = 0; i < _leds.Length; i++)
-            ((SolidColorBrush)_leds[i].Fill).Color = LedOff;
+            SetLedVisual(_leds[i], _ledGlows[i], LedOff, false);
 
         if (shift.Mode != ShiftMode.Lit || shift.Level <= 0) return;
 
@@ -543,10 +682,115 @@ public sealed partial class MainWindow : Window
         {
             var leftIdx  = d;
             var rightIdx = n - 1 - d;
-            ((SolidColorBrush)_leds[leftIdx].Fill).Color  = ColorForTier(LedTierByPosition[leftIdx]);
-            ((SolidColorBrush)_leds[rightIdx].Fill).Color = ColorForTier(LedTierByPosition[rightIdx]);
+            SetLedVisual(_leds[leftIdx],  _ledGlows[leftIdx],  ColorForTier(LedTierByPosition[leftIdx]),  on: true, animate: true);
+            SetLedVisual(_leds[rightIdx], _ledGlows[rightIdx], ColorForTier(LedTierByPosition[rightIdx]), on: true, animate: true);
         }
     }
+
+    // Halo: tamanho maior (mais wash) + origem central pro pop de ignição.
+    private static void InitGlow(Ellipse glow, double size)
+    {
+        glow.Width = size;
+        glow.Height = size;
+        glow.RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5);
+        glow.RenderTransform = new ScaleTransform { ScaleX = 1.0, ScaleY = 1.0 };
+    }
+
+    // ── LED premium: domo 3D no ponto + halo (glow) atrás que transborda (wash) ──
+    // `animate` dispara a ignição (pop) quando o LED passa de apagado pra aceso.
+    private void SetLedVisual(Ellipse dot, Ellipse glow, Color color, bool on, bool animate = false)
+    {
+        if (on)
+        {
+            dot.Fill = Dome(color);
+            glow.Fill = Glow(color);
+            var wasLit = _glowsLit.Contains(glow);
+            if (animate && !wasLit)
+                IgniteGlow(glow);
+            else if (!wasLit || !animate)
+                glow.Opacity = 1.0;
+            _glowsLit.Add(glow);
+        }
+        else
+        {
+            dot.Fill = OffDome();
+            glow.Opacity = 0.0;
+            if (glow.RenderTransform is ScaleTransform st) { st.ScaleX = 1.0; st.ScaleY = 1.0; }
+            _glowsLit.Remove(glow);
+        }
+    }
+
+    // Ignição: o halo "estoura" (escala 0.5 → overshoot → 1.0) e a luz sobe rápido —
+    // espelha o ledIgnite do web (brightness flash quando o LED acende).
+    private void IgniteGlow(Ellipse glow)
+    {
+        glow.Opacity = 1.0;
+        if (glow.RenderTransform is not ScaleTransform st) return;
+
+        var ease = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.7 };
+        var dur = new Duration(TimeSpan.FromMilliseconds(360));
+        var sb = new Storyboard();
+        foreach (var prop in new[] { "ScaleX", "ScaleY" })
+        {
+            var a = new DoubleAnimation { From = 0.45, To = 1.0, Duration = dur, EasingFunction = ease };
+            Storyboard.SetTarget(a, st);
+            Storyboard.SetTargetProperty(a, prop);
+            sb.Children.Add(a);
+        }
+        var op = new DoubleAnimation { From = 0.25, To = 1.0, Duration = new Duration(TimeSpan.FromMilliseconds(220)) };
+        Storyboard.SetTarget(op, glow);
+        Storyboard.SetTargetProperty(op, "Opacity");
+        sb.Children.Add(op);
+        sb.Begin();
+    }
+
+    private RadialGradientBrush OffDome()
+    {
+        if (_offDome is null)
+        {
+            _offDome = new RadialGradientBrush { Center = new(0.4, 0.32), GradientOrigin = new(0.4, 0.32), RadiusX = 0.72, RadiusY = 0.72 };
+            _offDome.GradientStops.Add(new GradientStop { Color = Color.FromArgb(0xFF, 0x26, 0x26, 0x26), Offset = 0.0 });
+            _offDome.GradientStops.Add(new GradientStop { Color = Color.FromArgb(0xFF, 0x15, 0x15, 0x15), Offset = 0.6 });
+            _offDome.GradientStops.Add(new GradientStop { Color = Color.FromArgb(0xFF, 0x0A, 0x0A, 0x0A), Offset = 1.0 });
+        }
+        return _offDome;
+    }
+
+    private RadialGradientBrush Dome(Color c)
+    {
+        var key = ColorKey(c);
+        if (!_domeCache.TryGetValue(key, out var b))
+        {
+            b = new RadialGradientBrush { Center = new(0.36, 0.28), GradientOrigin = new(0.36, 0.28), RadiusX = 0.80, RadiusY = 0.80 };
+            b.GradientStops.Add(new GradientStop { Color = MixColor(c, White, 0.78), Offset = 0.0 });
+            b.GradientStops.Add(new GradientStop { Color = MixColor(c, White, 0.18), Offset = 0.35 });
+            b.GradientStops.Add(new GradientStop { Color = c,                        Offset = 0.62 });
+            b.GradientStops.Add(new GradientStop { Color = MixColor(c, Black, 0.42), Offset = 1.0 });
+            _domeCache[key] = b;
+        }
+        return b;
+    }
+
+    private RadialGradientBrush Glow(Color c)
+    {
+        var key = ColorKey(c);
+        if (!_glowCache.TryGetValue(key, out var b))
+        {
+            b = new RadialGradientBrush { Center = new(0.5, 0.5), GradientOrigin = new(0.5, 0.5), RadiusX = 0.5, RadiusY = 0.5 };
+            b.GradientStops.Add(new GradientStop { Color = WithAlpha(MixColor(c, White, 0.30), 0xFF), Offset = 0.0 });
+            b.GradientStops.Add(new GradientStop { Color = WithAlpha(c, 0xC0), Offset = 0.22 });
+            b.GradientStops.Add(new GradientStop { Color = WithAlpha(c, 0x70), Offset = 0.48 });
+            b.GradientStops.Add(new GradientStop { Color = WithAlpha(c, 0x00), Offset = 1.0 });
+            _glowCache[key] = b;
+        }
+        return b;
+    }
+
+    private static readonly Color Black = Color.FromArgb(0xFF, 0x00, 0x00, 0x00);
+    private static uint ColorKey(Color c) => (uint)((c.A << 24) | (c.R << 16) | (c.G << 8) | c.B);
+    private static byte Lerp(byte a, byte b, double t) => (byte)Math.Round(a + (b - a) * t);
+    private static Color MixColor(Color a, Color b, double t) => Color.FromArgb(0xFF, Lerp(a.R, b.R, t), Lerp(a.G, b.G, t), Lerp(a.B, b.B, t));
+    private static Color WithAlpha(Color c, byte alpha) => Color.FromArgb(alpha, c.R, c.G, c.B);
 
     // Rampa do aprovado: tiers 1-4 verde · 5-7 amarelo · 8-9 vermelho.
     private static Color ColorForTier(int tier) => tier switch
@@ -557,9 +801,69 @@ public sealed partial class MainWindow : Window
         _             => LedOff,
     };
 
+    // ── Luz de freio lateral ───────────────────────────────
+    // Acende os primeiros `level` pontos (de cima pra baixo) nas duas laterais,
+    // cada um com a cor do seu tier (verde → âmbar → vermelho).
+    private void ApplyBrake(int level)
+    {
+        if (_brakeLeft.Length != 9 || _brakeRight.Length != 9) return;
+        for (var i = 0; i < 9; i++)
+        {
+            var on = i < level;
+            var color = on ? BrakeColorForTier(BrakeTierByPosition[i]) : LedOff;
+            SetLedVisual(_brakeLeft[i],  _brakeLeftGlow[i],  color, on, animate: true);
+            SetLedVisual(_brakeRight[i], _brakeRightGlow[i], color, on, animate: true);
+        }
+    }
+
+    private static Color BrakeColorForTier(char tier) => tier switch
+    {
+        'g' => LedShiftGreen,
+        'a' => LedShiftYellow,
+        'r' => LedShiftRed,
+        _   => LedOff,
+    };
+
+    // ── Resultado da freada (à direita, espelha o delta) ───
+    private void ApplyBrakeResult(ApexEstado estado, double atualM, double refM)
+    {
+        if (atualM <= 0 || refM <= 0)
+        {
+            BrakeResultNum.Text = "—";
+            BrakeResultNum.Foreground = new SolidColorBrush(Muted);
+            BrakeResultWord.Foreground = new SolidColorBrush(Muted);
+            return;
+        }
+        // Sem sinal — a cor (verde/vermelho) já diz se foi bom ou ruim.
+        var diff = (int)Math.Round(atualM - refM);
+        BrakeResultNum.Text = Math.Abs(diff).ToString();
+        var color = ColorForApexEstado(estado);
+        BrakeResultNum.Foreground = new SolidColorBrush(color);
+        BrakeResultWord.Foreground = new SolidColorBrush(color);
+    }
+
+    // ── Cluster de sensores (topo) ─────────────────────────
+    private void ApplySensors(bool falhaMotor)
+    {
+        foreach (var s in _sensorsMotor) ((SolidColorBrush)s.Fill).Color = SensorOk;
+        foreach (var s in _sensorsMov)   ((SolidColorBrush)s.Fill).Color = SensorOk;
+        // Chassi ainda não instalado → sem comunicação (vermelho), igual ao web.
+        foreach (var s in _sensorsChassi) ((SolidColorBrush)s.Fill).Color = SensorOff;
+
+        if (falhaMotor)
+        {
+            ((SolidColorBrush)SensorAgua.Fill).Color   = SensorWarn;
+            ((SolidColorBrush)SensorLambda.Fill).Color = SensorWarn;
+            ((SolidColorBrush)SensorAlarme.Fill).Color = SensorWarn;
+        }
+    }
+
     private void ApplyDelta(DeltaInfo delta)
     {
-        DeltaText.Text = string.IsNullOrEmpty(delta.Value) ? "0.00" : delta.Value;
+        // Sem sinal (+/-): a COR diz se é bom (verde) ou ruim (vermelho) — nem sempre
+        // negativo é ruim. Mostra só o valor absoluto.
+        var txt = string.IsNullOrEmpty(delta.Value) ? "0.00" : delta.Value.TrimStart('+', '-', ' ');
+        DeltaText.Text = txt;
         DeltaText.Foreground = new SolidColorBrush(ColorForTone(delta.Tone, fallback: Muted));
     }
 
@@ -568,6 +872,10 @@ public sealed partial class MainWindow : Window
         AcaoText.Text = acao.Texto ?? string.Empty;
         AcaoText.Foreground = new SolidColorBrush(ColorForTone(acao.Tone, fallback: Foco));
     }
+
+    // Tira o prefixo de trecho/curva ("C6 — ", "V7 — ") — fica só a mensagem.
+    private static string StripCurva(string? texto) =>
+        System.Text.RegularExpressions.Regex.Replace(texto ?? string.Empty, @"^[CV]\d+\s*[—\-:]\s*", "");
 
     private static Color ColorForTone(Tone tone, Color fallback) => tone switch
     {
@@ -625,12 +933,14 @@ public sealed partial class MainWindow : Window
         {
             StopAlertPulse();
             AlertBlocoRoot.Visibility = Visibility.Collapsed;
+            BrakeResultPanel.Visibility = Visibility.Visible;   // mensagem saiu → volta a FREADA
             return;
         }
         AlertText.Text = msg.Texto;
         AlertText.Foreground = new SolidColorBrush(
             msg.Tipo == P1Fast.Cockpit.Domain.MsgTipo.Grave ? Erro : Sistema);
         AlertBlocoRoot.Visibility = Visibility.Visible;
+        BrakeResultPanel.Visibility = Visibility.Collapsed;     // mensagem ocupa a direita → some a FREADA
 
         if (msg.Tipo == P1Fast.Cockpit.Domain.MsgTipo.Grave)
             StartAlertPulse();

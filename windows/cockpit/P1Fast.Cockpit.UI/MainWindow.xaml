@@ -5,25 +5,28 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="P1 Fast — Cockpit Piloto">
 
+    <!--
+        LAYOUT APROVADO (Flávio 22/06) — porta fiel do web/cockpit/cockpit-volta-real.html.
+        Device canônico 956×440. Cada LED é uma célula com um HALO (Ellipse maior, atrás)
+        que transborda pros vizinhos = efeito "wash" premium do shift light / luz de freio.
+          • Delta gigante à ESQUERDA · Resultado da freada à DIREITA (separados).
+          • Luzes de FREIO verticais nas DUAS laterais.
+          • Shift light (marcha) embaixo, 17 LEDs em pirâmide.
+          • Cluster de 14 sensores no TOPO · barra de voltas no topo.
+          • Ápice (Entrada/Freio/Ápice/Saída) na base.
+    -->
     <Grid Background="#0a0a0a">
         <Viewbox HorizontalAlignment="Center"
                  VerticalAlignment="Center"
                  StretchDirection="Both">
 
-            <!-- Device 956×440 do mockup canônico -->
             <Border Width="956" Height="440"
-                    Background="#171717"
+                    Background="#000000"
                     CornerRadius="48"
                     BorderThickness="1"
-                    BorderBrush="#262626">
+                    BorderBrush="#1F1F1F">
                 <Grid>
 
-                    <!--
-                        Halo radial gradiente — espelha o web/cockpit.css:
-                        radial-gradient(ellipse 65% 75% at 50% 55%, cor 0%, transparent 65%).
-                        Estados RecordeStint/MelhorHistorico pulsam via Storyboard
-                        em ApplyHalo (PiorStint fica fixo, alerta sem fadiga visual).
-                    -->
                     <Rectangle x:Name="HaloRect" IsHitTestVisible="False" Opacity="1.0">
                         <Rectangle.Fill>
                             <RadialGradientBrush x:Name="HaloBrush"
@@ -37,200 +40,170 @@
                         </Rectangle.Fill>
                     </Rectangle>
 
-                    <!--
-                        Notch — decoração à esquerda do device (mockup .notch:
-                        position:absolute left:18 top:50% width:36 height:128).
-                        Visualmente é um retângulo preto arredondado.
-                    -->
                     <Border HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             Margin="18,0,0,0"
-                            Width="36"
-                            Height="128"
+                            Width="36" Height="128"
                             CornerRadius="20"
                             Background="Black"
                             BorderBrush="#0E0E0E"
                             BorderThickness="1"/>
 
-                    <!--
-                        Telemetria chip — coluna de 3 dots à direita (mockup
-                        .telemetria-chip: position:absolute right:10 top:50%).
-                        Cores: faint default; ok=verde; warn=amarelo.
-                    -->
-                    <StackPanel HorizontalAlignment="Right"
+                    <!-- ───────── LUZ DE FREIO ESQUERDA (vertical) ───────── -->
+                    <StackPanel HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
-                                Margin="0,0,10,0"
-                                Spacing="6">
-                        <Ellipse x:Name="TelemetriaDot01" Width="6" Height="6" Fill="#4FE060"/>
-                        <Ellipse x:Name="TelemetriaDot02" Width="6" Height="6" Fill="#4FE060"/>
-                        <Ellipse x:Name="TelemetriaDot03" Width="6" Height="6" Fill="#606060"/>
+                                Margin="6,0,0,0"
+                                Spacing="11">
+                        <StackPanel.RenderTransform>
+                            <TranslateTransform Y="-32"/>
+                        </StackPanel.RenderTransform>
+                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeLGlow1" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeL1" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeLGlow2" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeL2" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeLGlow3" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeL3" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeLGlow4" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeL4" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeLGlow5" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeL5" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeLGlow6" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeL6" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeLGlow7" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeL7" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeLGlow8" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeL8" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeLGlow9" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeL9" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
                     </StackPanel>
 
-                    <!--
-                        Shift light — 12 LEDs no topo. Container Border arredondado
-                        com Padding 26,9 e Spacing 18 (mesmas dimensões do mockup
-                        .shift-light).
-                    -->
+                    <!-- ───────── LUZ DE FREIO DIREITA ───────── -->
+                    <StackPanel HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Margin="0,0,6,0"
+                                Spacing="11">
+                        <StackPanel.RenderTransform>
+                            <TranslateTransform Y="-32"/>
+                        </StackPanel.RenderTransform>
+                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeRGlow1" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeR1" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeRGlow2" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeR2" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeRGlow3" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeR3" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeRGlow4" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeR4" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeRGlow5" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeR5" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeRGlow6" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeR6" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeRGlow7" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeR7" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeRGlow8" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeR8" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeRGlow9" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeR9" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                    </StackPanel>
+
+                    <!-- ───────── CLUSTER DE SENSORES (topo) ───────── -->
                     <Border HorizontalAlignment="Center"
                             VerticalAlignment="Top"
-                            Margin="0,10,0,0"
-                            Padding="22,9"
-                            CornerRadius="999"
-                            Background="#0F0F0F"
-                            BorderBrush="#1F1F1F"
+                            Margin="0,6,0,0"
+                            Padding="22,5"
+                            CornerRadius="15"
+                            Background="#14181E"
+                            BorderBrush="#2A2F37"
                             BorderThickness="1">
-                        <!-- 17 LEDs em pirâmide simétrica (tier 1..9..1), igual ao
-                             painel aprovado 22/06. Pontas (tier 1) verdes acendem
-                             primeiro; centro (tier 9) vermelho é reservado pro FIRE.
-                             Enchem das PONTAS pro CENTRO conforme sobe rumo à potência. -->
-                        <StackPanel Orientation="Horizontal" Spacing="13">
-                            <Ellipse x:Name="Led01" Width="13" Height="13" Fill="#1A1A1A"/>
-                            <Ellipse x:Name="Led02" Width="13" Height="13" Fill="#1A1A1A"/>
-                            <Ellipse x:Name="Led03" Width="13" Height="13" Fill="#1A1A1A"/>
-                            <Ellipse x:Name="Led04" Width="13" Height="13" Fill="#1A1A1A"/>
-                            <Ellipse x:Name="Led05" Width="13" Height="13" Fill="#1A1A1A"/>
-                            <Ellipse x:Name="Led06" Width="13" Height="13" Fill="#1A1A1A"/>
-                            <Ellipse x:Name="Led07" Width="13" Height="13" Fill="#1A1A1A"/>
-                            <Ellipse x:Name="Led08" Width="13" Height="13" Fill="#1A1A1A"/>
-                            <Ellipse x:Name="Led09" Width="13" Height="13" Fill="#1A1A1A"/>
-                            <Ellipse x:Name="Led10" Width="13" Height="13" Fill="#1A1A1A"/>
-                            <Ellipse x:Name="Led11" Width="13" Height="13" Fill="#1A1A1A"/>
-                            <Ellipse x:Name="Led12" Width="13" Height="13" Fill="#1A1A1A"/>
-                            <Ellipse x:Name="Led13" Width="13" Height="13" Fill="#1A1A1A"/>
-                            <Ellipse x:Name="Led14" Width="13" Height="13" Fill="#1A1A1A"/>
-                            <Ellipse x:Name="Led15" Width="13" Height="13" Fill="#1A1A1A"/>
-                            <Ellipse x:Name="Led16" Width="13" Height="13" Fill="#1A1A1A"/>
-                            <Ellipse x:Name="Led17" Width="13" Height="13" Fill="#1A1A1A"/>
+                        <StackPanel Orientation="Horizontal" Spacing="40" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                <TextBlock Text="MOTOR" FontSize="9" FontWeight="Bold" Foreground="#8A8A8A" CharacterSpacing="120" VerticalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                                    <Ellipse x:Name="SensorRpm"        Width="22" Height="22" Fill="#8A3A34"/>
+                                    <Ellipse x:Name="SensorAcel"       Width="22" Height="22" Fill="#8A3A34"/>
+                                    <Ellipse x:Name="SensorFreioPedal" Width="22" Height="22" Fill="#8A3A34"/>
+                                    <Ellipse x:Name="SensorAgua"       Width="22" Height="22" Fill="#8A3A34"/>
+                                    <Ellipse x:Name="SensorLambda"     Width="22" Height="22" Fill="#8A3A34"/>
+                                    <Ellipse x:Name="SensorBateria"    Width="22" Height="22" Fill="#8A3A34"/>
+                                    <Ellipse x:Name="SensorAlarme"     Width="22" Height="22" Fill="#8A3A34"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                <TextBlock Text="MOVIMENTO" FontSize="9" FontWeight="Bold" Foreground="#8A8A8A" CharacterSpacing="120" VerticalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                                    <Ellipse x:Name="SensorGps"   Width="22" Height="22" Fill="#8A3A34"/>
+                                    <Ellipse x:Name="SensorAccel" Width="22" Height="22" Fill="#8A3A34"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                <TextBlock Text="CHASSI" FontSize="9" FontWeight="Bold" Foreground="#8A8A8A" CharacterSpacing="120" VerticalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                                    <Ellipse x:Name="SensorPneus"    Width="22" Height="22" Fill="#8A3A34"/>
+                                    <Ellipse x:Name="SensorSusp"     Width="22" Height="22" Fill="#8A3A34"/>
+                                    <Ellipse x:Name="SensorCambio"   Width="22" Height="22" Fill="#8A3A34"/>
+                                    <Ellipse x:Name="SensorFreioDed" Width="22" Height="22" Fill="#8A3A34"/>
+                                    <Ellipse x:Name="SensorDirecao"  Width="22" Height="22" Fill="#8A3A34"/>
+                                </StackPanel>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 
-                    <!--
-                        Apex header — 4 pontos (entrada, freio, ápice, saída) em
-                        linha. No mockup é position:absolute top:46 left:60 right:36
-                        com display:flex justify-content:space-between. Em XAML:
-                        Grid com 4 colunas iguais, ancorado ao topo com Margin.
-                    -->
-                    <Grid Margin="60,46,36,0"
-                          VerticalAlignment="Top"
-                          Height="60">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+                    <!-- ───────── BARRA DE VOLTAS / STINT ───────── -->
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Top"
+                                Margin="0,50,0,0"
+                                Spacing="3">
+                        <Border x:Name="StintBlock01" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
+                        <Border x:Name="StintBlock02" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
+                        <Border x:Name="StintBlock03" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
+                        <Border x:Name="StintBlock04" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
+                        <Border x:Name="StintBlock05" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
+                        <Border x:Name="StintBlock06" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
+                        <Border x:Name="StintBlock07" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
+                        <Border x:Name="StintBlock08" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
+                        <Border x:Name="StintBlock09" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
+                        <Border x:Name="StintBlock10" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
+                        <Border x:Name="StintBlock11" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
+                        <Border x:Name="StintBlock12" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
+                    </StackPanel>
 
-                        <!-- Entrada -->
-                        <StackPanel Grid.Column="0"
-                                    Orientation="Horizontal"
-                                    HorizontalAlignment="Left"
-                                    Spacing="14"
-                                    VerticalAlignment="Bottom">
-                            <TextBlock Text="ENTRADA"
-                                       FontSize="14"
-                                       FontWeight="Bold"
-                                       Foreground="White"
-                                       VerticalAlignment="Bottom"/>
-                            <TextBlock x:Name="ApexEntradaValor"
-                                       Text="—"
-                                       FontSize="32"
-                                       FontWeight="ExtraBold"
-                                       Foreground="#A0A0A0"
-                                       VerticalAlignment="Bottom"/>
-                        </StackPanel>
-
-                        <!-- Freio -->
-                        <StackPanel Grid.Column="1"
-                                    Orientation="Horizontal"
-                                    HorizontalAlignment="Center"
-                                    Spacing="14"
-                                    VerticalAlignment="Bottom">
-                            <TextBlock Text="FREIO"
-                                       FontSize="14"
-                                       FontWeight="Bold"
-                                       Foreground="White"
-                                       VerticalAlignment="Bottom"/>
-                            <TextBlock x:Name="ApexFreioValor"
-                                       Text="—"
-                                       FontSize="32"
-                                       FontWeight="ExtraBold"
-                                       Foreground="#A0A0A0"
-                                       VerticalAlignment="Bottom"/>
-                        </StackPanel>
-
-                        <!-- Ápice -->
-                        <StackPanel Grid.Column="2"
-                                    Orientation="Horizontal"
-                                    HorizontalAlignment="Center"
-                                    Spacing="14"
-                                    VerticalAlignment="Bottom">
-                            <TextBlock Text="ÁPICE"
-                                       FontSize="14"
-                                       FontWeight="Bold"
-                                       Foreground="White"
-                                       VerticalAlignment="Bottom"/>
-                            <TextBlock x:Name="ApexApiceValor"
-                                       Text="—"
-                                       FontSize="32"
-                                       FontWeight="ExtraBold"
-                                       Foreground="#A0A0A0"
-                                       VerticalAlignment="Bottom"/>
-                        </StackPanel>
-
-                        <!-- Saída -->
-                        <StackPanel Grid.Column="3"
-                                    Orientation="Horizontal"
-                                    HorizontalAlignment="Right"
-                                    Spacing="14"
-                                    VerticalAlignment="Bottom">
-                            <TextBlock Text="SAÍDA"
-                                       FontSize="14"
-                                       FontWeight="Bold"
-                                       Foreground="White"
-                                       VerticalAlignment="Bottom"/>
-                            <TextBlock x:Name="ApexSaidaValor"
-                                       Text="—"
-                                       FontSize="32"
-                                       FontWeight="ExtraBold"
-                                       Foreground="#A0A0A0"
-                                       VerticalAlignment="Bottom"/>
-                        </StackPanel>
-                    </Grid>
-
-                    <!--
-                        Info bloco — delta gigante no centro + ação abaixo.
-                        Mockup: position:absolute left/top 50% translate(-50%, -50%).
-                        Em XAML: StackPanel centralizado com VerticalAlignment Center.
-                    -->
-                    <StackPanel HorizontalAlignment="Center"
+                    <!-- ───────── DELTA à ESQUERDA ───────── -->
+                    <StackPanel x:Name="DeltaPanel"
+                                HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
-                                Spacing="14">
+                                Width="430"
+                                Margin="72,0,0,0"
+                                Spacing="6">
+                        <StackPanel.RenderTransform>
+                            <TranslateTransform Y="-30"/>
+                        </StackPanel.RenderTransform>
                         <TextBlock x:Name="DeltaText"
                                    Text="0.00"
-                                   FontSize="180"
+                                   FontSize="116"
                                    FontWeight="ExtraBold"
                                    Foreground="#A0A0A0"
-                                   HorizontalAlignment="Center"/>
+                                   HorizontalAlignment="Left"/>
                         <TextBlock x:Name="AcaoText"
                                    Text=""
-                                   FontSize="32"
+                                   FontSize="26"
                                    FontWeight="ExtraBold"
                                    Foreground="#F0C040"
+                                   TextWrapping="NoWrap"
+                                   HorizontalAlignment="Left"/>
+                    </StackPanel>
+
+                    <!-- ───────── RESULTADO DA FREADA à DIREITA ───────── -->
+                    <StackPanel x:Name="BrakeResultPanel"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Width="220"
+                                Margin="0,0,72,0"
+                                Spacing="4">
+                        <StackPanel.RenderTransform>
+                            <TranslateTransform Y="-30"/>
+                        </StackPanel.RenderTransform>
+                        <TextBlock x:Name="BrakeResultNum"
+                                   Text="—"
+                                   FontSize="92"
+                                   FontWeight="ExtraBold"
+                                   Foreground="#8C8C8C"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="BrakeResultWord"
+                                   Text="FREADA"
+                                   FontSize="28"
+                                   FontWeight="ExtraBold"
+                                   CharacterSpacing="120"
+                                   Foreground="#8C8C8C"
                                    HorizontalAlignment="Center"/>
                     </StackPanel>
 
-                    <!--
-                        Alert bloco — mensagem que vem do fundo (z-axis simulado
-                        via ScaleTransform). Posicionada à direita (left:100%-240).
-                        No mockup tem blur 12px → 0 + scale 0.35 → 1 + opacity 0 → 1
-                        em transition 1200 ms ease-msg. Por enquanto sem animação;
-                        Visibility liga/desliga.
-                    -->
                     <Border x:Name="AlertBlocoRoot"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Center"
                             Margin="0,0,40,0"
-                            MaxWidth="380"
+                            MaxWidth="360"
                             RenderTransformOrigin="0.5,0.5"
                             Visibility="Collapsed">
                         <Border.RenderTransform>
@@ -238,47 +211,90 @@
                         </Border.RenderTransform>
                         <TextBlock x:Name="AlertText"
                                    Text=""
-                                   FontSize="34"
+                                   FontSize="32"
                                    FontWeight="ExtraBold"
                                    Foreground="#82C8FF"
                                    TextAlignment="Center"
                                    TextWrapping="Wrap"/>
                     </Border>
 
-                    <!--
-                        Stint bar — 12 blocos ao longo do bottom mostrando
-                        o histórico de trechos do stint atual.
-                        Mockup: position:absolute left:60 right:8 bottom:4 height:14.
-                        Estados: neutral, faster, slower, best-stint (shimmer),
-                        best-alltime (bloom dourado), current (foco amarelo).
-                    -->
-                    <Grid Margin="60,0,8,4"
+                    <!-- ───────── ÁPICE na base ───────── -->
+                    <Grid Margin="60,0,36,62"
                           VerticalAlignment="Bottom"
-                          Height="14">
-                        <StackPanel Orientation="Horizontal" Spacing="3">
-                            <Border x:Name="StintBlock01" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
-                            <Border x:Name="StintBlock02" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
-                            <Border x:Name="StintBlock03" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
-                            <Border x:Name="StintBlock04" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
-                            <Border x:Name="StintBlock05" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
-                            <Border x:Name="StintBlock06" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
-                            <Border x:Name="StintBlock07" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
-                            <Border x:Name="StintBlock08" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
-                            <Border x:Name="StintBlock09" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
-                            <Border x:Name="StintBlock10" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
-                            <Border x:Name="StintBlock11" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
-                            <Border x:Name="StintBlock12" Width="60" Height="14" CornerRadius="2" Background="#606060"/>
+                          Height="62">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" HorizontalAlignment="Left" Spacing="4">
+                            <TextBlock x:Name="ApexEntradaValor" Text="—" FontSize="28" FontWeight="ExtraBold" Foreground="#606060" HorizontalAlignment="Left"/>
+                            <TextBlock Text="ENTRADA" FontSize="13" FontWeight="Bold" Foreground="White" CharacterSpacing="250" HorizontalAlignment="Left"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" HorizontalAlignment="Center" Spacing="4">
+                            <TextBlock x:Name="ApexFreioValor" Text="—" FontSize="28" FontWeight="ExtraBold" Foreground="#606060" HorizontalAlignment="Center"/>
+                            <TextBlock Text="FREIO" FontSize="13" FontWeight="Bold" Foreground="White" CharacterSpacing="250" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" HorizontalAlignment="Center" Spacing="4">
+                            <TextBlock x:Name="ApexApiceValor" Text="—" FontSize="28" FontWeight="ExtraBold" Foreground="#606060" HorizontalAlignment="Center"/>
+                            <TextBlock Text="ÁPICE" FontSize="13" FontWeight="Bold" Foreground="White" CharacterSpacing="250" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="3" HorizontalAlignment="Right" Spacing="4">
+                            <TextBlock x:Name="ApexSaidaValor" Text="—" FontSize="28" FontWeight="ExtraBold" Foreground="#606060" HorizontalAlignment="Right"/>
+                            <TextBlock Text="SAÍDA" FontSize="13" FontWeight="Bold" Foreground="White" CharacterSpacing="250" HorizontalAlignment="Right"/>
                         </StackPanel>
                     </Grid>
 
-                    <!-- Status text (debug, no rodapé) -->
+                    <!-- ───────── SHIFT LIGHT (marcha) embaixo — 17 LEDs com halo (wash) ───────── -->
+                    <Border HorizontalAlignment="Center"
+                            VerticalAlignment="Bottom"
+                            Margin="0,0,0,10"
+                            Padding="26,9"
+                            CornerRadius="999"
+                            Background="#080808"
+                            BorderBrush="#1A1A1A"
+                            BorderThickness="1">
+                        <StackPanel Orientation="Horizontal" Spacing="18">
+                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow01" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led01" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow02" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led02" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow03" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led03" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow04" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led04" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow05" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led05" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow06" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led06" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow07" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led07" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow08" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led08" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow09" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led09" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow10" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led10" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow11" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led11" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow12" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led12" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow13" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led13" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow14" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led14" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow15" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led15" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow16" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led16" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow17" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led17" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                        </StackPanel>
+                    </Border>
+
                     <TextBlock x:Name="StatusText"
                                Text="—"
-                               Foreground="#606060"
-                               FontSize="11"
+                               Foreground="#383838"
+                               FontSize="10"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Bottom"
-                               Margin="0,0,0,24"/>
+                               Margin="0,0,0,46"/>
+
+                    <!-- WASH do corte de giro: luz vermelha que transborda do shift light
+                         (base) pra cima e "lava" o painel quando atinge o máximo. -->
+                    <Rectangle x:Name="ShiftWashRect" IsHitTestVisible="False" Opacity="0">
+                        <Rectangle.Fill>
+                            <RadialGradientBrush Center="0.5,1.06" GradientOrigin="0.5,1.06" RadiusX="0.9" RadiusY="1.0">
+                                <GradientStop Offset="0.0"  Color="#D8FF3A30"/>
+                                <GradientStop Offset="0.45" Color="#66FF3A30"/>
+                                <GradientStop Offset="1.0"  Color="#00FF3A30"/>
+                            </RadialGradientBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
 
                 </Grid>
             </Border>
