@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<title>P1 Fast — Atualizar notebook</title>
+<hta:application id="app"
+  applicationname="P1Fast-Atualizar"
+  border="thin"
+  borderstyle="normal"
+  caption="yes"
+  maximizebutton="no"
+  minimizebutton="yes"
+  scroll="no"
+  showintaskbar="yes"
+  singleinstance="yes"
+  windowstate="normal" />
+<style>
+  html, body { margin:0; padding:0; height:100%; background:#0d1117; color:#e6edf3;
+    font-family:"Segoe UI", Arial, sans-serif; }
+  .wrap { box-sizing:border-box; min-height:100%; padding:34px 30px; }
+  h1 { font-size:22px; font-weight:700; margin:0 0 4px; }
+  .sub { color:#8b949e; font-size:14px; margin:0 0 26px; }
+  #btn { display:block; width:100%; padding:30px 10px; font-size:30px; font-weight:800;
+    letter-spacing:.5px; color:#fff; background:#1f883d; border:none; border-radius:14px;
+    cursor:pointer; box-shadow:0 6px 0 #145523; }
+  #btn:hover { background:#23a047; }
+  #btn:active { transform:translateY(4px); box-shadow:0 2px 0 #145523; }
+  #btn[disabled] { background:#30363d; box-shadow:0 6px 0 #21262d; cursor:default; color:#8b949e; }
+  #status { margin-top:22px; font-size:18px; font-weight:700; min-height:24px; }
+  .ok { color:#3fb950; }
+  .err { color:#f85149; }
+  .work { color:#d29922; }
+  #log { margin-top:14px; background:#010409; border:1px solid #21262d; border-radius:10px;
+    padding:14px 16px; font-family:Consolas, monospace; font-size:13px; color:#9da7b3;
+    white-space:pre-wrap; max-height:240px; overflow:auto; }
+  .foot { margin-top:18px; color:#6e7681; font-size:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Atualizar o notebook</h1>
+  <p class="sub">Puxa o que o Mac enviou para a linha do notebook. Pode apertar quantas vezes quiser.</p>
+
+  <button id="btn" onclick="atualizar()">ATUALIZAR AGORA</button>
+
+  <div id="status"></div>
+  <div id="log" style="display:none"></div>
+
+  <p class="foot">Este arquivo precisa ficar dentro da pasta do projeto P1 Fast no notebook.</p>
+</div>
+
+<script language="JScript">
+function pastaDoArquivo() {
+  // Descobre a pasta onde este arquivo .hta está, a partir da linha de comando que o abriu.
+  var cl = "" + app.commandLine;
+  var m = cl.match(/"?([A-Za-z]:[^"]*\.hta)"?/i);
+  var full = m ? m[1] : cl.replace(/^\s*"?/, "").replace(/"?\s*$/, "");
+  return full.replace(/[\\\/][^\\\/]*$/, "");
+}
+
+function setStatus(txt, cls) {
+  var s = document.getElementById("status");
+  s.className = cls || "";
+  s.innerHTML = txt;
+}
+
+function atualizar() {
+  var btn = document.getElementById("btn");
+  var logBox = document.getElementById("log");
+  btn.disabled = true;
+  setStatus("Atualizando… aguarde.", "work");
+  logBox.style.display = "block";
+  logBox.innerHTML = "";
+
+  try {
+    var dir = pastaDoArquivo();
+    var shell = new ActiveXObject("WScript.Shell");
+    var cmd = 'cmd /c cd /d "' + dir + '" && git pull 2>&1';
+    var exec = shell.Exec(cmd);
+
+    var saida = "";
+    while (!exec.StdOut.AtEndOfStream) {
+      saida += exec.StdOut.ReadLine() + "\n";
+      logBox.innerHTML = saida;
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+    while (exec.Status == 0) { /* espera terminar */ }
+
+    var code = exec.ExitCode;
+    if (code === 0) {
+      if (saida.indexOf("Already up to date") >= 0 || saida.indexOf("Already up-to-date") >= 0) {
+        setStatus("✔ Já estava em dia — nada novo pra puxar.", "ok");
+      } else {
+        setStatus("✔ Atualizado com sucesso.", "ok");
+      }
+    } else {
+      setStatus("✖ Deu problema (código " + code + "). Veja o detalhe abaixo.", "err");
+    }
+  } catch (e) {
+    setStatus("✖ Não consegui rodar: " + e.message, "err");
+  }
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>
