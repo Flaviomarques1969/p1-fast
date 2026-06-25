@@ -168,9 +168,9 @@ public sealed partial class MainWindow : Window
         _brakeRightGlow = new[] { BrakeRGlow1, BrakeRGlow2, BrakeRGlow3, BrakeRGlow4, BrakeRGlow5, BrakeRGlow6, BrakeRGlow7, BrakeRGlow8, BrakeRGlow9 };
 
         // Halos maiores (transbordam mais = wash mais forte) + ScaleTransform pra ignição.
-        foreach (var g in _ledGlows)        InitGlow(g, 56);
-        foreach (var g in _brakeLeftGlow)   InitGlow(g, 64);
-        foreach (var g in _brakeRightGlow)  InitGlow(g, 64);
+        foreach (var g in _ledGlows)        InitGlow(g, 60, 13);
+        foreach (var g in _brakeLeftGlow)   InitGlow(g, 72, 14);
+        foreach (var g in _brakeRightGlow)  InitGlow(g, 72, 14);
         _sensorsMotor  = new[] { SensorRpm, SensorAcel, SensorFreioPedal, SensorAgua, SensorLambda, SensorBateria, SensorAlarme };
         _sensorsMov    = new[] { SensorGps, SensorAccel };
         _sensorsChassi = new[] { SensorPneus, SensorSusp, SensorCambio, SensorFreioDed, SensorDirecao };
@@ -185,6 +185,7 @@ public sealed partial class MainWindow : Window
                 if (keys.Contains("acao"))         ApplyAcao(cur.Acao);
                 if (keys.Contains("apex"))         ApplyApex(cur.Apex);
                 if (keys.Contains("message"))      ApplyMessage(cur.Message);
+                if (keys.Contains("freio"))        ApplyFreio(cur.Freio);
                 UpdateStatusText();
             });
         });
@@ -226,6 +227,11 @@ public sealed partial class MainWindow : Window
             _shiftSweepTimer.Tick += (_, _) => { DemoShiftRender(_shiftStep); _shiftStep = (_shiftStep + 1) % 16; };
             _shiftSweepTimer.Start();
         }
+        else if (_options.Replay)
+        {
+            // Etapa 1 do "ligar o dado real": maestro real alimentado por sessão gravada.
+            StartReplay();
+        }
     }
 
     // ── Varredura demo do SHIFT (marcha) ──────────────────────
@@ -237,22 +243,96 @@ public sealed partial class MainWindow : Window
         else if (step == 9 || step == 11 || step == 13) RenderAllShift(LedShiftRed, on: true);
         else                                        RenderAllShift(LedOff, on: false);
 
-        if (step == 9) WashPulse();   // bateu o máximo do giro → wash vermelho lava o painel
+        if (step == 9) WashTroca();   // demo: bateu o máximo → wash da troca (branco-azul)
     }
 
-    // Pulso de WASH: a luz vermelha sobe rápido (60 ms) e dissolve devagar (~460 ms),
-    // dando a sensação de "lavar" o painel no corte de giro.
-    private void WashPulse()
+    // WASH DA TROCA (Flávio 25/06): clarão branco-azulado, 0,30 s, 3 pulsos a ~10 Hz,
+    // uma vez por troca (debounce evita disparo duplo quando FIRE e a troca caem juntos).
+    // São 3 CAMADAS sincronizadas no mesmo ritmo:
+    //   1) o LED central acende e ESTOURA (cresce);
+    //   2) a moldura do shift ganha brilho AZUL em volta;
+    //   3) a tela inteira dá o lavado branco-azul.
+    private long _lastWashTick;
+    private void WashTroca()
+    {
+        var now = Environment.TickCount64;
+        if (now - _lastWashTick < 280) return;   // uma vez por troca
+        _lastWashTick = now;
+
+        // Camada 3 (a principal): lavado da tela — storyboard PRÓPRIO, dispara sempre,
+        // mesmo que uma camada secundária falhe.
+        var sbWash = new Storyboard();
+        WashPulseInto(sbWash, ShiftWashRect, "Opacity", 1.0);
+        sbWash.Begin();
+
+        // Camada 2: moldura do shift com brilho azul (dois anéis).
+        try
+        {
+            var sbFrame = new Storyboard();
+            WashPulseInto(sbFrame, ShiftPillGlow,  "Opacity", 1.0);
+            WashPulseInto(sbFrame, ShiftPillGlow2, "Opacity", 0.85);
+            sbFrame.Begin();
+        }
+        catch { /* moldura é secundária — nunca derruba o wash */ }
+
+        // Camada 1: o LED central acende branco e o halo "estoura" (escala 1 → 2.6).
+        try
+        {
+            if (_leds.Length == 17 && _ledGlows[8].RenderTransform is ScaleTransform st)
+            {
+                SetLedVisual(_leds[8], _ledGlows[8], LedFireWhite, true);
+                var sbC = new Storyboard();
+                WashScaleInto(sbC, st, "ScaleX");
+                WashScaleInto(sbC, st, "ScaleY");
+                sbC.Begin();
+            }
+        }
+        catch { /* estouro do central é secundário */ }
+    }
+
+    // LAVADO DA FREADA: clarão VERMELHO (hora de frear), distinto do branco-azul da
+    // troca. Mesmos 3 pulsos punchy, ponto forte embaixo. Uma vez por ponto de freada.
+    private long _lastWashFreioTick;
+    private void WashFreio()
+    {
+        var now = Environment.TickCount64;
+        if (now - _lastWashFreioTick < 280) return;
+        _lastWashFreioTick = now;
+        var sb = new Storyboard();
+        WashPulseInto(sb, BrakeWashRect, "Opacity", 1.0);
+        sb.Begin();
+    }
+
+    // 3 pulsos PUNCHY (0 → pico → 0, três vezes) em 300 ms ≈ 10 Hz. Para a percepção
+    // humana ser MÁXIMA: subida quase instantânea (~8 ms), platô no pico (~50 ms) e
+    // queda rápida (~12 ms), com escuro total entre os pulsos = contraste máximo.
+    private static void WashPulseInto(Storyboard sb, DependencyObject target, string prop, double peak)
     {
         var a = new DoubleAnimationUsingKeyFrames();
-        a.KeyFrames.Add(new DiscreteDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(TimeSpan.Zero),                       Value = 0.0 });
-        a.KeyFrames.Add(new LinearDoubleKeyFrame   { KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(60)),  Value = 0.95 });
-        a.KeyFrames.Add(new LinearDoubleKeyFrame   { KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(460)), Value = 0.0 });
-        Storyboard.SetTarget(a, ShiftWashRect);
-        Storyboard.SetTargetProperty(a, "Opacity");
-        var sb = new Storyboard();
+        void K(double ms, double v) => a.KeyFrames.Add(new LinearDoubleKeyFrame
+        { KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(ms)), Value = v });
+        // 3 estrobos: cada um sobe rápido, segura no pico, cai rápido, apaga.
+        K(0, 0.0);   K(8, peak);   K(60, peak);   K(72, 0.0);    // pulso 1
+        K(100, 0.0); K(108, peak); K(160, peak);  K(172, 0.0);   // pulso 2
+        K(200, 0.0); K(208, peak); K(260, peak);  K(272, 0.0);   // pulso 3
+        K(300, 0.0);
+        Storyboard.SetTarget(a, target);
+        Storyboard.SetTargetProperty(a, prop);
         sb.Children.Add(a);
-        sb.Begin();
+    }
+
+    // Escala que "estoura" forte nos picos (3.2) e recua entre eles, terminando em 1.
+    private static void WashScaleInto(Storyboard sb, ScaleTransform st, string prop)
+    {
+        var a = new DoubleAnimationUsingKeyFrames();
+        void K(double ms, double v) => a.KeyFrames.Add(new LinearDoubleKeyFrame
+        { KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(ms)), Value = v });
+        K(0, 1.0); K(8, 3.2); K(60, 3.2); K(72, 1.2); K(100, 1.2);
+        K(108, 3.2); K(160, 3.2); K(172, 1.2); K(200, 1.2);
+        K(208, 3.2); K(260, 3.2); K(272, 1.2); K(300, 1.0);
+        Storyboard.SetTarget(a, st);
+        Storyboard.SetTargetProperty(a, prop);
+        sb.Children.Add(a);
     }
 
     private void RenderShiftFill(int pairs)
@@ -609,8 +689,16 @@ public sealed partial class MainWindow : Window
             _previousShiftLevel >= 5 &&
             shift.Level < _previousShiftLevel;
 
+        // Entrou em FIRE ("troca agora", potência máxima): wash da troca. OVERREV NÃO
+        // lava — é o alarme vermelho separado. Só na transição.
+        var entrouFire =
+            shift.Mode == ShiftMode.Fire &&
+            _previousShiftMode != ShiftMode.Fire;
+
         _previousShiftLevel = shift.Level;
         _previousShiftMode = shift.Mode;
+
+        if (entrouFire) WashTroca();
 
         if (isUpshift)
         {
@@ -632,6 +720,8 @@ public sealed partial class MainWindow : Window
 
     private void BeginShiftFlash(ShiftState restoreAfter)
     {
+        // Troca de marcha detectada (upshift): wash da troca + LEDs estouram brancos.
+        WashTroca();
         for (var i = 0; i < _leds.Length; i++) SetLedVisual(_leds[i], _ledGlows[i], LedFireWhite, true);
         _flashRestoreState = restoreAfter;
 
@@ -688,10 +778,15 @@ public sealed partial class MainWindow : Window
     }
 
     // Halo: tamanho maior (mais wash) + origem central pro pop de ignição.
-    private static void InitGlow(Ellipse glow, double size)
+    // Centraliza o halo na célula via Canvas (o Canvas, ao contrário do Grid de
+    // tamanho fixo, NÃO recorta o halo — por isso ele transborda redondo em vez de
+    // virar quadrado). Em células ainda em Grid, o Canvas.Left/Top é ignorado.
+    private static void InitGlow(Ellipse glow, double size, double cellSize)
     {
         glow.Width = size;
         glow.Height = size;
+        Microsoft.UI.Xaml.Controls.Canvas.SetLeft(glow, (cellSize - size) / 2);
+        Microsoft.UI.Xaml.Controls.Canvas.SetTop(glow, (cellSize - size) / 2);
         glow.RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5);
         glow.RenderTransform = new ScaleTransform { ScaleX = 1.0, ScaleY = 1.0 };
     }
@@ -761,11 +856,14 @@ public sealed partial class MainWindow : Window
         var key = ColorKey(c);
         if (!_domeCache.TryGetValue(key, out var b))
         {
-            b = new RadialGradientBrush { Center = new(0.36, 0.28), GradientOrigin = new(0.36, 0.28), RadiusX = 0.80, RadiusY = 0.80 };
-            b.GradientStops.Add(new GradientStop { Color = MixColor(c, White, 0.78), Offset = 0.0 });
-            b.GradientStops.Add(new GradientStop { Color = MixColor(c, White, 0.18), Offset = 0.35 });
-            b.GradientStops.Add(new GradientStop { Color = c,                        Offset = 0.62 });
-            b.GradientStops.Add(new GradientStop { Color = MixColor(c, Black, 0.42), Offset = 1.0 });
+            // Domo de vidro: especular quente no topo-esquerda, corpo na cor, borda
+            // funda pra dar volume 3D (acabamento premium — Flávio 25/06).
+            b = new RadialGradientBrush { Center = new(0.34, 0.26), GradientOrigin = new(0.30, 0.22), RadiusX = 0.95, RadiusY = 0.95 };
+            b.GradientStops.Add(new GradientStop { Color = MixColor(c, White, 0.94), Offset = 0.0 });   // brilho especular
+            b.GradientStops.Add(new GradientStop { Color = MixColor(c, White, 0.46), Offset = 0.16 });
+            b.GradientStops.Add(new GradientStop { Color = c,                        Offset = 0.52 });
+            b.GradientStops.Add(new GradientStop { Color = MixColor(c, Black, 0.28), Offset = 0.82 });
+            b.GradientStops.Add(new GradientStop { Color = MixColor(c, Black, 0.62), Offset = 1.0 });   // borda funda = volume
             _domeCache[key] = b;
         }
         return b;
@@ -776,10 +874,13 @@ public sealed partial class MainWindow : Window
         var key = ColorKey(c);
         if (!_glowCache.TryGetValue(key, out var b))
         {
+            // Bloom suave e largo (halo que transborda = "wash"). Núcleo quente,
+            // cauda longa até transparente pra lavar o painel sem borda dura.
             b = new RadialGradientBrush { Center = new(0.5, 0.5), GradientOrigin = new(0.5, 0.5), RadiusX = 0.5, RadiusY = 0.5 };
-            b.GradientStops.Add(new GradientStop { Color = WithAlpha(MixColor(c, White, 0.30), 0xFF), Offset = 0.0 });
-            b.GradientStops.Add(new GradientStop { Color = WithAlpha(c, 0xC0), Offset = 0.22 });
-            b.GradientStops.Add(new GradientStop { Color = WithAlpha(c, 0x70), Offset = 0.48 });
+            b.GradientStops.Add(new GradientStop { Color = WithAlpha(MixColor(c, White, 0.38), 0xFF), Offset = 0.0 });
+            b.GradientStops.Add(new GradientStop { Color = WithAlpha(c, 0xCC), Offset = 0.15 });
+            b.GradientStops.Add(new GradientStop { Color = WithAlpha(c, 0x8A), Offset = 0.34 });
+            b.GradientStops.Add(new GradientStop { Color = WithAlpha(c, 0x38), Offset = 0.62 });
             b.GradientStops.Add(new GradientStop { Color = WithAlpha(c, 0x00), Offset = 1.0 });
             _glowCache[key] = b;
         }
@@ -842,6 +943,60 @@ public sealed partial class MainWindow : Window
         BrakeResultWord.Foreground = new SolidColorBrush(color);
     }
 
+    // ── Luz de freio REAL (observada do CockpitState, comandada pelo maestro) ──
+    // Lit (0..9) enche por tempo; FlashSeq sobe → pisca no ponto; resultado à direita.
+    private int _lastBrakeFlashSeq;
+    private int _lastBrakeLit;
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer? _brakeRealFlashTimer;
+
+    private void ApplyFreio(FreioState f)
+    {
+        _lastBrakeLit = f.Lit;
+        ApplyBrake(f.Lit);
+        ApplyFreioResultado(f);
+
+        if (f.FlashSeq != _lastBrakeFlashSeq)
+        {
+            _lastBrakeFlashSeq = f.FlashSeq;
+            BeginBrakeRealFlash();   // luzes de freio laterais piscam no ponto
+            WashFreio();             // + a tela LAVA vermelho (hora de frear) — Flávio 25/06
+        }
+    }
+
+    private void ApplyFreioResultado(FreioState f)
+    {
+        BrakeResultNum.Text = f.ResultadoM is { } m ? m.ToString() : "—";
+        BrakeResultWord.Text = f.ResultadoPalavra;
+        var color = f.ResultadoTom switch
+        {
+            FreioTom.Bom  => Bom,
+            FreioTom.Foco => Foco,
+            FreioTom.Erro => Erro,
+            _             => Muted,
+        };
+        BrakeResultNum.Foreground = new SolidColorBrush(color);
+        BrakeResultWord.Foreground = new SolidColorBrush(color);
+    }
+
+    // Pisca as luzes laterais todas vermelhas no ponto de freada e restaura o nível.
+    private void BeginBrakeRealFlash()
+    {
+        for (var i = 0; i < _brakeLeft.Length; i++)
+        {
+            SetLedVisual(_brakeLeft[i],  _brakeLeftGlow[i],  LedShiftRed, on: true);
+            SetLedVisual(_brakeRight[i], _brakeRightGlow[i], LedShiftRed, on: true);
+        }
+        if (_brakeRealFlashTimer is null)
+        {
+            _brakeRealFlashTimer = DispatcherQueue.CreateTimer();
+            _brakeRealFlashTimer.IsRepeating = false;
+            _brakeRealFlashTimer.Interval = TimeSpan.FromMilliseconds(340);
+            _brakeRealFlashTimer.Tick += (_, _) => ApplyBrake(_lastBrakeLit);
+        }
+        _brakeRealFlashTimer.Stop();
+        _brakeRealFlashTimer.Start();
+    }
+
     // ── Cluster de sensores (topo) ─────────────────────────
     private void ApplySensors(bool falhaMotor)
     {
@@ -886,10 +1041,32 @@ public sealed partial class MainWindow : Window
 
     private void ApplyApex(ApexState apex)
     {
-        ApplyApexPonto(ApexEntradaValor, apex.Entrada, formatKmh: true);
+        // Entrada/Saída = velocidade (só o número, sem "km/h"). Ápice = distância da
+        // bolinha em METROS (não velocidade). Freio = atual/ref em metros. (Flávio 25/06)
+        ApplyApexPonto(ApexEntradaValor, apex.Entrada, formatKmh: false);
         ApplyApexFreio(ApexFreioValor,   apex.Freio);
-        ApplyApexPonto(ApexApiceValor,   apex.Apice,   formatKmh: true);
-        ApplyApexPonto(ApexSaidaValor,   apex.Saida,   formatKmh: true);
+        ApplyApexApice(ApexApiceValor,   apex.Apice);
+        ApplyApexPonto(ApexSaidaValor,   apex.Saida,   formatKmh: false);
+    }
+
+    // Ápice mostra a distância da bolinha ao ápice ideal, em metros.
+    private static void ApplyApexApice(Microsoft.UI.Xaml.Controls.TextBlock text, ApexPonto p)
+    {
+        if (p.DistM is { } d)
+        {
+            text.Text = $"{d:0} m";
+            text.Foreground = new SolidColorBrush(ColorForApexEstado(p.Estado));
+        }
+        else if (p.ValorKmh is { } kmh)
+        {
+            text.Text = kmh.ToString("0");
+            text.Foreground = new SolidColorBrush(ColorForApexEstado(p.Estado));
+        }
+        else
+        {
+            text.Text = "—";
+            text.Foreground = new SolidColorBrush(Faint);
+        }
     }
 
     private static void ApplyApexPonto(Microsoft.UI.Xaml.Controls.TextBlock text, ApexPonto p, bool formatKmh)
@@ -1027,12 +1204,36 @@ public sealed partial class MainWindow : Window
         StatusText.Text = $"{displayInfo}  •  trecho={s.TrechoStatus}  •  shift={s.Shift.Mode} L{s.Shift.Level}  •  Δ={s.Delta.Value}";
     }
 
+    // Escala o device pra caber INTEIRO na tela, centralizado, com letterbox na sobra.
+    // O conteúdo do cockpit transborda a caixa nominal 956×440 (os rótulos do ápice
+    // ficam abaixo de 440 e os halos da barra de marcha estouram pra fora). Escalar/
+    // centralizar pela caixa nominal jogava esse conteúdo de baixo pra fora da tela.
+    // Por isso usamos uma MOLDURA SEGURA que engloba a sobra.
+    private const double SafeW = 1030.0;  // 956 + folga lateral (FREADA à direita)
+    private const double SafeH = 545.0;   // 440 + folga embaixo (ápice + barra/halos do shift)
+
+    private void OnRootSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        var w = e.NewSize.Width;
+        var h = e.NewSize.Height;
+        var s = Math.Min(w / SafeW, h / SafeH);
+        if (s <= 0 || double.IsNaN(s) || double.IsInfinity(s)) return;
+        DeviceScale.ScaleX = s;
+        DeviceScale.ScaleY = s;
+        // Ancora o canto superior-esquerdo do device no canto da MOLDURA SEGURA
+        // centralizada. Como a sobra é só pra direita (FREADA) e pra baixo (ápice/halos),
+        // ela preenche o espaço extra da moldura e cabe inteira na tela.
+        DeviceTranslate.X = (w - SafeW * s) / 2.0;
+        DeviceTranslate.Y = (h - SafeH * s) / 2.0;
+    }
+
     private void ApplyDisplayPlacement()
     {
         var hwnd = WindowNative.GetWindowHandle(this);
         var windowId = Win32Interop.GetWindowIdFromWindow(hwnd);
         var appWindow = AppWindow.GetFromWindowId(windowId);
 
+        // Display externo explícito (10,5" no painel quando plugado) → tela cheia nele.
         if (_options.DisplayIndex is { } oneIndexed)
         {
             var areas = DisplayArea.FindAll();
@@ -1046,7 +1247,16 @@ public sealed partial class MainWindow : Window
             }
         }
 
-        var size = new SizeInt32 { Width = 1280, Height = 800 };
-        appWindow.Resize(size);
+        // Dev: --windowed abre janelado (não cobre a tela toda) pra ajustar/inspecionar.
+        if (_options.Windowed)
+        {
+            appWindow.Resize(new SizeInt32 { Width = 1180, Height = 660 });
+            return;
+        }
+
+        // PADRÃO neste notebook: TELA CHEIA na tela atual (a de 10,5"). Antes abria
+        // janelado 1280×800 — alto demais pra esta tela de 720 e cortava a barra de
+        // marcha embaixo. Tela cheia usa os 720 inteiros e cabe o device completo.
+        appWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
     }
 }

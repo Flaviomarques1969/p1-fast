@@ -31,15 +31,33 @@ public partial class App : Application
 
 /// <summary>Configuração resolvida dos argumentos de linha de comando.</summary>
 /// <param name="DisplayIndex">Monitor pra abrir em tela cheia (1-indexado).</param>
-/// <param name="Demo">--demo liga a demonstração de cenas fixas. Sem ela, a tela
-/// é comandada pelo dado real (maestro) — o jeito de produção.</param>
-public sealed record LaunchOptions(int? DisplayIndex, bool Demo = false)
+/// <param name="Demo">--demo liga a demonstração de cenas fixas (dados sintéticos).</param>
+/// <param name="Replay">--replay liga o maestro REAL alimentado por uma sessão de
+/// pista gravada (motor + GPS). É a Etapa 1 do "ligar o dado real": prova a tela
+/// inteira pela pipeline real, sem hardware. Sem --demo nem --replay, a tela espera
+/// o dado vivo (USB/GPS) que ainda não está plugado.</param>
+/// <param name="ReplayPath">Caminho da sessão .json pra --replay (opcional; sem ele,
+/// usa a sessão de Brasília 21/06 em .claude-exec/dados-pista/).</param>
+/// <param name="Speed">Multiplicador de velocidade do replay (1 = tempo real).</param>
+public sealed record LaunchOptions(
+    int? DisplayIndex,
+    bool Demo = false,
+    bool Replay = false,
+    string? ReplayPath = null,
+    double Speed = 1.0,
+    bool Loop = false,
+    bool Windowed = false)
 {
     /// <summary>Faz parsing dos args do <see cref="Environment.GetCommandLineArgs"/>.</summary>
     public static LaunchOptions FromCommandLine(string[] args)
     {
         int? displayIndex = null;
         var demo = false;
+        var replay = false;
+        string? replayPath = null;
+        var speed = 1.0;
+        var loop = false;
+        var windowed = false;
         for (var i = 0; i < args.Length; i++)
         {
             var a = args[i];
@@ -57,7 +75,29 @@ public sealed record LaunchOptions(int? DisplayIndex, bool Demo = false)
             {
                 demo = true;
             }
+            else if (a == "--replay")
+            {
+                replay = true;
+            }
+            else if (a.StartsWith("--replay=", StringComparison.Ordinal))
+            {
+                replay = true;
+                replayPath = a["--replay=".Length..];
+            }
+            else if (a.StartsWith("--speed=", StringComparison.Ordinal))
+            {
+                if (double.TryParse(a["--speed=".Length..], System.Globalization.CultureInfo.InvariantCulture, out var sp) && sp > 0)
+                    speed = sp;
+            }
+            else if (a == "--loop")
+            {
+                loop = true;
+            }
+            else if (a == "--windowed")
+            {
+                windowed = true;
+            }
         }
-        return new LaunchOptions(displayIndex, demo);
+        return new LaunchOptions(displayIndex, demo, replay, replayPath, speed, loop, windowed);
     }
 }

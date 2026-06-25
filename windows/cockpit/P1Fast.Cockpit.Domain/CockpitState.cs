@@ -319,6 +319,33 @@ public sealed class CockpitState
         }
     }
 
+    /// <summary>
+    /// Atualiza o preenchimento da luz de freio (0..9). <paramref name="flash"/>=true
+    /// incrementa o contador de flash (a tela pisca uma vez). Emite "freio".
+    /// </summary>
+    public void SetFreioFill(int lit, bool flash)
+    {
+        var clamped = Math.Max(0, Math.Min(LuzFreio.FreioN, lit)); // 0..9
+        var cur = _state.Freio;
+        var nextSeq = flash ? cur.FlashSeq + 1 : cur.FlashSeq;
+        if (cur.Lit == clamped && nextSeq == cur.FlashSeq) return;
+        var prev = _state;
+        _state = prev with { Freio = cur with { Lit = clamped, FlashSeq = nextSeq } };
+        Emit(prev, new[] { "freio" });
+    }
+
+    /// <summary>Atualiza o resultado da frenagem (número/palavra/tom à direita). Emite "freio".</summary>
+    public void SetFreioResultado(int? m, string palavra, FreioTom tom)
+    {
+        ArgumentNullException.ThrowIfNull(palavra);
+        AssertEnumDefined(tom, nameof(tom));
+        var cur = _state.Freio;
+        if (cur.ResultadoM == m && cur.ResultadoPalavra == palavra && cur.ResultadoTom == tom) return;
+        var prev = _state;
+        _state = prev with { Freio = cur with { ResultadoM = m, ResultadoPalavra = palavra, ResultadoTom = tom } };
+        Emit(prev, new[] { "freio" });
+    }
+
     // ── Helpers estáticos ──────────────────────────────────────────
 
     /// <summary>Quantos LEDs acendem quando mode=LIT e level=N. Map linear; clampa fora do range.</summary>

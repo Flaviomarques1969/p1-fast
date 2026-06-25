@@ -16,6 +16,7 @@ public sealed class CockpitOrchestrator
     private readonly LiveLimits _limites;
     private readonly AlertasCriticos _alertas;
     private readonly TrechoDetector? _detector;
+    private readonly LuzFreio? _luzFreio;
     private readonly Dictionary<string, TrechoSegmento> _segPorId;
 
     // Buffer da passagem atual (pra fechar a curva e comparar com a referência).
@@ -41,7 +42,11 @@ public sealed class CockpitOrchestrator
         _limites = limites ?? LiveLimits.Bubi;
         _alertas = new AlertasCriticos();
         _segPorId = segments?.ToDictionary(s => s.Id, s => s) ?? new();
-        if (segments is { Count: > 0 }) _detector = new TrechoDetector(segments, OnTrechoEvento);
+        if (segments is { Count: > 0 })
+        {
+            _detector = new TrechoDetector(segments, OnTrechoEvento);
+            _luzFreio = new LuzFreio(segments);
+        }
     }
 
     /// <summary>Quantas curvas já têm passagem de referência (1ª volta registrada).</summary>
@@ -85,6 +90,16 @@ public sealed class CockpitOrchestrator
         }
 
         AtualizarBolinha(gps);
+
+        // Luz de freio lateral: enche por tempo na aproximação do ponto de freada
+        // da melhor passagem; pisca a tela ao chegar. modoCritico = mensagem GRAVE na tela.
+        if (_luzFreio is not null)
+        {
+            var critico = _cockpit.Get().Message is { Tipo: MsgTipo.Grave };
+            var f = _luzFreio.Atualizar(gps.Lat, gps.Lng, gps.Kmh, critico);
+            _cockpit.SetFreioFill(f.Lit, f.Flash);
+        }
+
         _lastGps = gps;
     }
 
@@ -151,6 +166,16 @@ public sealed class CockpitOrchestrator
     private void FecharPassagem(string segId)
     {
         if (_segAtual is null || _buf.Count < 2) { _segAtual = null; _buf.Clear(); return; }
+
+        // Resultado da frenagem (à direita): onde freou nesta passagem vs a melhor.
+        // tempoS = entrada→saída em segundos (gps.T vem em ms, do recorder/replay).
+        if (_luzFreio is not null)
+        {
+            var tempoS = (_buf[^1].T - _buf[0].T) / 1000.0;
+            var resultado = _luzFreio.FecharTrecho(segId, tempoS);
+            if (resultado is not null)
+                _cockpit.SetFreioResultado(resultado.DiffM, resultado.Palavra, resultado.Tom);
+        }
 
         var total = Math.Max(1, _buf[^1].CumDist);
         var pontos = _buf.Select(b => new PontoPassagem(

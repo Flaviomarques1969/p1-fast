@@ -36,6 +36,9 @@ public sealed record CockpitStateModel(
     /// <summary>Flash de celebração quando a IA atinge 100% (dispara no meio da próxima reta).</summary>
     public bool FlashIa { get; init; }
 
+    /// <summary>Luz de freio lateral (preenchimento + flash) + resultado da frenagem.</summary>
+    public FreioState Freio { get; init; } = FreioState.Default();
+
     /// <summary>Retorna o estado default (espelha o que o mockup carrega ao boot).</summary>
     public static CockpitStateModel Default() => new(
         TrechoStatus: TrechoStatus.Neutro,
@@ -55,6 +58,17 @@ public sealed record AprendizadoInfo(AprendizadoStatus Status, double Pct)
 
 /// <summary>Estado do shift light: modo + nível 0..6 + estado do flash.</summary>
 public sealed record ShiftState(ShiftMode Mode, int Level, ShiftFire Fire);
+
+/// <summary>
+/// Luz de freio lateral. <c>Lit</c> = quantas das 9 luzes acendem (enche por tempo na
+/// aproximação). <c>FlashSeq</c> = contador monotônico; quando sobe, a tela PISCA (chegou
+/// no ponto). <c>ResultadoM</c>/<c>ResultadoPalavra</c>/<c>ResultadoTom</c> = o resultado da
+/// frenagem do último trecho (espelha o número à direita: NO PONTO/ANTES/DEPOIS/REFERÊNCIA).
+/// </summary>
+public sealed record FreioState(int Lit, int FlashSeq, int? ResultadoM, string ResultadoPalavra, FreioTom ResultadoTom)
+{
+    public static FreioState Default() => new(0, 0, null, "FREADA", FreioTom.Neutro);
+}
 
 /// <summary>Mensagem ativa no cockpit (alerta ou comunicação). null = oculta.</summary>
 public sealed record Message(MsgTipo Tipo, string Texto);

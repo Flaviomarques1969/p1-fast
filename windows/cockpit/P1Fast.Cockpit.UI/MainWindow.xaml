@@ -15,16 +15,27 @@
           • Cluster de 14 sensores no TOPO · barra de voltas no topo.
           • Ápice (Entrada/Freio/Ápice/Saída) na base.
     -->
-    <Grid Background="#0a0a0a">
-        <Viewbox HorizontalAlignment="Center"
-                 VerticalAlignment="Center"
-                 StretchDirection="Both">
-
+    <Grid x:Name="RootGrid" Background="#0a0a0a" SizeChanged="OnRootSizeChanged">
+        <!-- O device (956×440) é centralizado e escalado pelo code-behind
+             (OnRootSizeChanged) pelo MENOR fator min(w/956, h/440): cabe INTEIRO em
+             qualquer tela, com tarja preta (letterbox) na sobra, e a barra de marcha
+             embaixo SEMPRE aparece. (O Viewbox nativo preenchia por altura e cortava.) -->
             <Border Width="956" Height="440"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
                     Background="#000000"
                     CornerRadius="48"
                     BorderThickness="1"
                     BorderBrush="#1F1F1F">
+                <Border.RenderTransform>
+                    <!-- Ancorado no canto (0,0): escala a partir do topo-esquerda e DEPOIS
+                         translada pra centralizar (calculado no code-behind). Determinístico,
+                         sem depender de RenderTransformOrigin/CenterX (que não pegaram). -->
+                    <TransformGroup>
+                        <ScaleTransform x:Name="DeviceScale" ScaleX="1" ScaleY="1"/>
+                        <TranslateTransform x:Name="DeviceTranslate" X="0" Y="0"/>
+                    </TransformGroup>
+                </Border.RenderTransform>
                 <Grid>
 
                     <Rectangle x:Name="HaloRect" IsHitTestVisible="False" Opacity="1.0">
@@ -57,15 +68,15 @@
                         <StackPanel.RenderTransform>
                             <TranslateTransform Y="-32"/>
                         </StackPanel.RenderTransform>
-                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeLGlow1" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeL1" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeLGlow2" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeL2" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeLGlow3" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeL3" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeLGlow4" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeL4" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeLGlow5" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeL5" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeLGlow6" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeL6" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeLGlow7" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeL7" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeLGlow8" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeL8" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeLGlow9" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeL9" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                        <Canvas Width="14" Height="14"><Ellipse x:Name="BrakeLGlow1" Width="46" Height="46" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="BrakeL1" Width="14" Height="14" Fill="#161616"/></Canvas>
+                        <Canvas Width="14" Height="14"><Ellipse x:Name="BrakeLGlow2" Width="46" Height="46" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="BrakeL2" Width="14" Height="14" Fill="#161616"/></Canvas>
+                        <Canvas Width="14" Height="14"><Ellipse x:Name="BrakeLGlow3" Width="46" Height="46" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="BrakeL3" Width="14" Height="14" Fill="#161616"/></Canvas>
+                        <Canvas Width="14" Height="14"><Ellipse x:Name="BrakeLGlow4" Width="46" Height="46" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="BrakeL4" Width="14" Height="14" Fill="#161616"/></Canvas>
+                        <Canvas Width="14" Height="14"><Ellipse x:Name="BrakeLGlow5" Width="46" Height="46" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="BrakeL5" Width="14" Height="14" Fill="#161616"/></Canvas>
+                        <Canvas Width="14" Height="14"><Ellipse x:Name="BrakeLGlow6" Width="46" Height="46" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="BrakeL6" Width="14" Height="14" Fill="#161616"/></Canvas>
+                        <Canvas Width="14" Height="14"><Ellipse x:Name="BrakeLGlow7" Width="46" Height="46" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="BrakeL7" Width="14" Height="14" Fill="#161616"/></Canvas>
+                        <Canvas Width="14" Height="14"><Ellipse x:Name="BrakeLGlow8" Width="46" Height="46" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="BrakeL8" Width="14" Height="14" Fill="#161616"/></Canvas>
+                        <Canvas Width="14" Height="14"><Ellipse x:Name="BrakeLGlow9" Width="46" Height="46" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="BrakeL9" Width="14" Height="14" Fill="#161616"/></Canvas>
                     </StackPanel>
 
                     <!-- ───────── LUZ DE FREIO DIREITA ───────── -->
@@ -76,15 +87,15 @@
                         <StackPanel.RenderTransform>
                             <TranslateTransform Y="-32"/>
                         </StackPanel.RenderTransform>
-                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeRGlow1" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeR1" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeRGlow2" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeR2" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeRGlow3" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeR3" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeRGlow4" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeR4" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeRGlow5" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeR5" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeRGlow6" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeR6" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeRGlow7" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeR7" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeRGlow8" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeR8" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                        <Grid Width="14" Height="14"><Ellipse x:Name="BrakeRGlow9" Width="46" Height="46" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="BrakeR9" Width="14" Height="14" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                        <Canvas Width="14" Height="14"><Ellipse x:Name="BrakeRGlow1" Width="46" Height="46" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="BrakeR1" Width="14" Height="14" Fill="#161616"/></Canvas>
+                        <Canvas Width="14" Height="14"><Ellipse x:Name="BrakeRGlow2" Width="46" Height="46" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="BrakeR2" Width="14" Height="14" Fill="#161616"/></Canvas>
+                        <Canvas Width="14" Height="14"><Ellipse x:Name="BrakeRGlow3" Width="46" Height="46" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="BrakeR3" Width="14" Height="14" Fill="#161616"/></Canvas>
+                        <Canvas Width="14" Height="14"><Ellipse x:Name="BrakeRGlow4" Width="46" Height="46" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="BrakeR4" Width="14" Height="14" Fill="#161616"/></Canvas>
+                        <Canvas Width="14" Height="14"><Ellipse x:Name="BrakeRGlow5" Width="46" Height="46" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="BrakeR5" Width="14" Height="14" Fill="#161616"/></Canvas>
+                        <Canvas Width="14" Height="14"><Ellipse x:Name="BrakeRGlow6" Width="46" Height="46" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="BrakeR6" Width="14" Height="14" Fill="#161616"/></Canvas>
+                        <Canvas Width="14" Height="14"><Ellipse x:Name="BrakeRGlow7" Width="46" Height="46" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="BrakeR7" Width="14" Height="14" Fill="#161616"/></Canvas>
+                        <Canvas Width="14" Height="14"><Ellipse x:Name="BrakeRGlow8" Width="46" Height="46" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="BrakeR8" Width="14" Height="14" Fill="#161616"/></Canvas>
+                        <Canvas Width="14" Height="14"><Ellipse x:Name="BrakeRGlow9" Width="46" Height="46" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="BrakeR9" Width="14" Height="14" Fill="#161616"/></Canvas>
                     </StackPanel>
 
                     <!-- ───────── CLUSTER DE SENSORES (topo) ───────── -->
@@ -247,34 +258,45 @@
                     </Grid>
 
                     <!-- ───────── SHIFT LIGHT (marcha) embaixo — 17 LEDs com halo (wash) ───────── -->
-                    <Border HorizontalAlignment="Center"
-                            VerticalAlignment="Bottom"
-                            Margin="0,0,0,10"
-                            Padding="26,9"
-                            CornerRadius="999"
-                            Background="#080808"
-                            BorderBrush="#1A1A1A"
-                            BorderThickness="1">
-                        <StackPanel Orientation="Horizontal" Spacing="18">
-                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow01" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led01" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow02" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led02" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow03" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led03" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow04" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led04" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow05" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led05" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow06" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led06" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow07" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led07" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow08" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led08" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow09" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led09" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow10" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led10" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow11" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led11" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow12" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led12" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow13" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led13" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow14" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led14" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow15" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led15" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow16" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led16" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
-                            <Grid Width="13" Height="13"><Ellipse x:Name="LedGlow17" Width="40" Height="40" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/><Ellipse x:Name="Led17" Width="13" Height="13" Fill="#161616" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+                    <Grid HorizontalAlignment="Center"
+                          VerticalAlignment="Bottom"
+                          Margin="0,0,0,10">
+                        <!-- Camada 2 do WASH DA TROCA: moldura do shift ganha brilho AZUL
+                             em volta. Dois anéis (largo+suave / estreito+forte) que piscam
+                             junto com o wash. Margin negativa = transbordam a pílula. -->
+                        <Rectangle x:Name="ShiftPillGlow2" Margin="-10" RadiusX="999" RadiusY="999"
+                                   Stroke="#5599CCFF" StrokeThickness="9" Opacity="0" IsHitTestVisible="False"/>
+                        <Rectangle x:Name="ShiftPillGlow"  Margin="-4"  RadiusX="999" RadiusY="999"
+                                   Stroke="#AAB8DCFF" StrokeThickness="4" Opacity="0" IsHitTestVisible="False"/>
+                        <!-- Pílula de fundo como Rectangle: NÃO recorta os halos. Antes era
+                             um Border CornerRadius=999, que recortava o wash e deixava o
+                             brilho QUADRADO ao piscar (Flávio 25/06). -->
+                        <Rectangle RadiusX="999" RadiusY="999"
+                                   Fill="#080808" Stroke="#1A1A1A" StrokeThickness="1"/>
+                        <!-- Células em CANVAS (não Grid de tamanho fixo): o Canvas NÃO recorta
+                             o halo, então o brilho transborda redondo. Com Grid 13×13 o halo
+                             de 60px era recortado num QUADRADO (Flávio 25/06). O halo é
+                             posicionado/centralizado no code-behind (InitGlow). -->
+                        <StackPanel Orientation="Horizontal" Spacing="18" Margin="26,9">
+                            <Canvas Width="13" Height="13"><Ellipse x:Name="LedGlow01" Width="40" Height="40" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="Led01" Width="13" Height="13" Fill="#161616"/></Canvas>
+                            <Canvas Width="13" Height="13"><Ellipse x:Name="LedGlow02" Width="40" Height="40" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="Led02" Width="13" Height="13" Fill="#161616"/></Canvas>
+                            <Canvas Width="13" Height="13"><Ellipse x:Name="LedGlow03" Width="40" Height="40" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="Led03" Width="13" Height="13" Fill="#161616"/></Canvas>
+                            <Canvas Width="13" Height="13"><Ellipse x:Name="LedGlow04" Width="40" Height="40" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="Led04" Width="13" Height="13" Fill="#161616"/></Canvas>
+                            <Canvas Width="13" Height="13"><Ellipse x:Name="LedGlow05" Width="40" Height="40" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="Led05" Width="13" Height="13" Fill="#161616"/></Canvas>
+                            <Canvas Width="13" Height="13"><Ellipse x:Name="LedGlow06" Width="40" Height="40" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="Led06" Width="13" Height="13" Fill="#161616"/></Canvas>
+                            <Canvas Width="13" Height="13"><Ellipse x:Name="LedGlow07" Width="40" Height="40" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="Led07" Width="13" Height="13" Fill="#161616"/></Canvas>
+                            <Canvas Width="13" Height="13"><Ellipse x:Name="LedGlow08" Width="40" Height="40" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="Led08" Width="13" Height="13" Fill="#161616"/></Canvas>
+                            <Canvas Width="13" Height="13"><Ellipse x:Name="LedGlow09" Width="40" Height="40" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="Led09" Width="13" Height="13" Fill="#161616"/></Canvas>
+                            <Canvas Width="13" Height="13"><Ellipse x:Name="LedGlow10" Width="40" Height="40" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="Led10" Width="13" Height="13" Fill="#161616"/></Canvas>
+                            <Canvas Width="13" Height="13"><Ellipse x:Name="LedGlow11" Width="40" Height="40" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="Led11" Width="13" Height="13" Fill="#161616"/></Canvas>
+                            <Canvas Width="13" Height="13"><Ellipse x:Name="LedGlow12" Width="40" Height="40" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="Led12" Width="13" Height="13" Fill="#161616"/></Canvas>
+                            <Canvas Width="13" Height="13"><Ellipse x:Name="LedGlow13" Width="40" Height="40" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="Led13" Width="13" Height="13" Fill="#161616"/></Canvas>
+                            <Canvas Width="13" Height="13"><Ellipse x:Name="LedGlow14" Width="40" Height="40" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="Led14" Width="13" Height="13" Fill="#161616"/></Canvas>
+                            <Canvas Width="13" Height="13"><Ellipse x:Name="LedGlow15" Width="40" Height="40" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="Led15" Width="13" Height="13" Fill="#161616"/></Canvas>
+                            <Canvas Width="13" Height="13"><Ellipse x:Name="LedGlow16" Width="40" Height="40" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="Led16" Width="13" Height="13" Fill="#161616"/></Canvas>
+                            <Canvas Width="13" Height="13"><Ellipse x:Name="LedGlow17" Width="40" Height="40" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="Led17" Width="13" Height="13" Fill="#161616"/></Canvas>
                         </StackPanel>
-                    </Border>
+                    </Grid>
 
                     <TextBlock x:Name="StatusText"
                                Text="—"
@@ -284,20 +306,41 @@
                                VerticalAlignment="Bottom"
                                Margin="0,0,0,46"/>
 
-                    <!-- WASH do corte de giro: luz vermelha que transborda do shift light
-                         (base) pra cima e "lava" o painel quando atinge o máximo. -->
+                    <!-- WASH DA TROCA (evento FIRE / "troca agora"): clarão BRANCO-AZULADO
+                         na tela inteira, mais forte no TOPO e espalhando pra baixo, com brilho
+                         na borda. Cor de propósito diferente do verde/amarelo/vermelho da
+                         subida e do vermelho do overrev — o cérebro lê "EVENTO: troque agora".
+                         Spec ditada pelo Flávio 25/06 (BRIEFING-NOTEBOOK-WASH-DA-TROCA.md):
+                         0,30s, 3 pulsos a 10 Hz, uma vez por troca. -->
                     <Rectangle x:Name="ShiftWashRect" IsHitTestVisible="False" Opacity="0">
                         <Rectangle.Fill>
-                            <RadialGradientBrush Center="0.5,1.06" GradientOrigin="0.5,1.06" RadiusX="0.9" RadiusY="1.0">
-                                <GradientStop Offset="0.0"  Color="#D8FF3A30"/>
-                                <GradientStop Offset="0.45" Color="#66FF3A30"/>
-                                <GradientStop Offset="1.0"  Color="#00FF3A30"/>
+                            <!-- Mais forte EMBAIXO (de onde nasce a luz de marcha), espalhando
+                                 pra cima — Flávio 25/06. Núcleo quase branco e opaco pra
+                                 intensidade máxima na percepção periférica. -->
+                            <RadialGradientBrush Center="0.5,1.10" GradientOrigin="0.5,1.10" RadiusX="1.25" RadiusY="1.45">
+                                <GradientStop Offset="0.0"  Color="#FFF3F5FF"/>
+                                <GradientStop Offset="0.30" Color="#F0DCE8FF"/>
+                                <GradientStop Offset="0.62" Color="#9078A0FF"/>
+                                <GradientStop Offset="1.0"  Color="#12305EFF"/>
+                            </RadialGradientBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+
+                    <!-- LAVADO DA FREADA (hora de frear): VERMELHO, distinto do branco-azul
+                         da troca pra não confundir. Ponto mais forte EMBAIXO, espalhando
+                         pra cima. Dispara ao chegar no ponto de freada. -->
+                    <Rectangle x:Name="BrakeWashRect" IsHitTestVisible="False" Opacity="0">
+                        <Rectangle.Fill>
+                            <RadialGradientBrush Center="0.5,1.10" GradientOrigin="0.5,1.10" RadiusX="1.25" RadiusY="1.45">
+                                <GradientStop Offset="0.0"  Color="#FFFF3A2A"/>
+                                <GradientStop Offset="0.30" Color="#EAF02A1E"/>
+                                <GradientStop Offset="0.62" Color="#80B01410"/>
+                                <GradientStop Offset="1.0"  Color="#14400806"/>
                             </RadialGradientBrush>
                         </Rectangle.Fill>
                     </Rectangle>
 
                 </Grid>
             </Border>
-        </Viewbox>
     </Grid>
 </Window>
