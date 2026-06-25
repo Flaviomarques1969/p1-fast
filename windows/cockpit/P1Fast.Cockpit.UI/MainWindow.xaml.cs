@@ -232,6 +232,11 @@ public sealed partial class MainWindow : Window
             // Etapa 1 do "ligar o dado real": maestro real alimentado por sessão gravada.
             StartReplay();
         }
+        else if (_options.Live)
+        {
+            // Etapa 2: cockpit AO VIVO — lê a T4000 de verdade pela USB e move a tela.
+            StartLive();
+        }
     }
 
     // ── Varredura demo do SHIFT (marcha) ──────────────────────

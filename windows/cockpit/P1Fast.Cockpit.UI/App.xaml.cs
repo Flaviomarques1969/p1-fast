@@ -46,7 +46,9 @@ public sealed record LaunchOptions(
     string? ReplayPath = null,
     double Speed = 1.0,
     bool Loop = false,
-    bool Windowed = false)
+    bool Windowed = false,
+    bool Live = false,
+    string? Port = null)
 {
     /// <summary>Faz parsing dos args do <see cref="Environment.GetCommandLineArgs"/>.</summary>
     public static LaunchOptions FromCommandLine(string[] args)
@@ -58,6 +60,8 @@ public sealed record LaunchOptions(
         var speed = 1.0;
         var loop = false;
         var windowed = false;
+        var live = false;
+        string? port = null;
         for (var i = 0; i < args.Length; i++)
         {
             var a = args[i];
@@ -97,7 +101,19 @@ public sealed record LaunchOptions(
             {
                 windowed = true;
             }
+            else if (a == "--live")
+            {
+                live = true;
+            }
+            else if (a.StartsWith("--port=", StringComparison.Ordinal))
+            {
+                port = a["--port=".Length..];
+            }
+            else if (a == "--port" && i + 1 < args.Length)
+            {
+                port = args[i + 1];
+            }
         }
-        return new LaunchOptions(displayIndex, demo, replay, replayPath, speed, loop, windowed);
+        return new LaunchOptions(displayIndex, demo, replay, replayPath, speed, loop, windowed, live, port);
     }
 }
