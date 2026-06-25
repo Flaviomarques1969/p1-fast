@@ -33,10 +33,15 @@ public class CockpitOrchestratorTests
 
     // Uma volta num retângulo: leg de baixo (lat 0) cruza entrada e saída; volta
     // por cima (lat alto, fora da barra) sem disparar nada. Retorna o tempo final.
+    // O delta aprovado (Flávio 25/06) é CRONÔMETRO: o número vem do tempo de relógio
+    // no trecho, não do campo kmh. Então o passo de tempo do leg de baixo precisa
+    // ESCALAR com a velocidade (ds fixo → dt = ds/v): a 100 km/h → 100 ms; mais
+    // devagar → passo maior → passagem realmente mais demorada.
     private static double UmaVolta(List<AmostraGps> path, double kmhBaixo, double t)
     {
+        var dtBaixo = 100.0 * (100.0 / kmhBaixo);
         foreach (var lng in new[] { -0.0006, -0.0002, 0.0002, 0.0004, 0.0006, 0.0010, 0.0014, 0.0018 })
-        { path.Add(new AmostraGps(0, lng, kmhBaixo, t)); t += 100; }       // leg de baixo (entrada/ápice/saída)
+        { path.Add(new AmostraGps(0, lng, kmhBaixo, t)); t += dtBaixo; }   // leg de baixo (entrada/ápice/saída)
         foreach (var lat in new[] { 0.002, 0.004, 0.005 })
         { path.Add(new AmostraGps(lat, 0.0018, 100, t)); t += 100; }       // sobe
         foreach (var lng in new[] { 0.0010, 0.0002, -0.0006 })
