@@ -385,14 +385,30 @@ function renderLocal(){
   const tr = p && p.tracks && p.tracks.video && p.tracks.video.persistentTrack;
   if(tr && $('local').srcObject == null){ $('local').srcObject = new MediaStream([tr]); }
 }
+// Escolhe SEMPRE a DJI/Osmo, nunca a câmera interna do notebook.
+function escolherOsmo(devs){
+  return devs.find(d=>/dji|osmo|action/i.test(d.label||''))
+      || devs.find(d=>!/integrated|built.?in|internal|facetime|webcam|hd camera|camera interna/i.test(d.label||''))
+      || null;
+}
 async function listCams(){
   try {
     const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
-    if(devs.length < 2) return;
-    const sel = $('cams'); sel.innerHTML=''; sel.style.display='block';
-    devs.forEach(d=>{ const o=document.createElement('option'); o.value=d.deviceId; o.textContent=d.label||'Câmera'; sel.appendChild(o); });
-    sel.onchange = async ()=>{ await call.setInputDevicesAsync({ videoDeviceId: sel.value }); $('local').srcObject=null; setTimeout(renderLocal,400); log('Câmera trocada: '+sel.selectedOptions[0].textContent); };
-    log(devs.length + ' câmeras disponíveis (escolha a DJI no seletor).');
+    if(devs.length === 0) return;
+    // FIXA a Osmo automaticamente (e a cada religação, pois listCams roda em todo startVideo).
+    const osmo = escolherOsmo(devs);
+    if(osmo){
+      try { await call.setInputDevicesAsync({ videoDeviceId: osmo.deviceId }); $('local').srcObject=null; setTimeout(renderLocal,400); } catch(e){}
+      log('Câmera fixada na DJI/Osmo: ' + (osmo.label||'externa'));
+    } else {
+      log('ATENÇÃO: não achei a DJI/Osmo — usando a câmera padrão. Conecte a Osmo (webcam USB) e religue.');
+    }
+    // seletor manual fica só de reserva (já vem na Osmo selecionada)
+    if(devs.length >= 2){
+      const sel = $('cams'); sel.innerHTML=''; sel.style.display='block';
+      devs.forEach(d=>{ const o=document.createElement('option'); o.value=d.deviceId; o.textContent=d.label||'Câmera'; if(osmo&&d.deviceId===osmo.deviceId)o.selected=true; sel.appendChild(o); });
+      sel.onchange = async ()=>{ await call.setInputDevicesAsync({ videoDeviceId: sel.value }); $('local').srcObject=null; setTimeout(renderLocal,400); log('Câmera trocada: '+sel.selectedOptions[0].textContent); };
+    }
   } catch(e){ log('Não consegui listar câmeras: '+e.message); }
 }
 
