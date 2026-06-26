@@ -1,13 +1,13 @@
 @echo off
 REM ============================================================================
-REM  P1 FAST - AO VIVO (um clique faz tudo)
-REM  Ordem proposital, pra a tela do piloto NUNCA sair:
-REM   1) abre o video da pista (p1tv) - a pagina liga SOZINHA (camera + GPS da nuvem).
-REM      Ela abre primeiro, entao fica POR TRAS.
-REM   2) sobe a tela do piloto (.exe --live --producao) em TELA CHEIA, POR CIMA.
-REM  Observacao (uma vez): no 1o uso, o navegador pede "permitir camera?". Faca esse
-REM  permitir UMA vez com o ABRIR-VIDEO-PISTA.cmd (video visivel); depois ele lembra e
-REM  o auto-inicio funciona escondido atras do cockpit.
+REM  P1 FAST - AO VIVO (um clique faz tudo) - VIDEO RODA NO PROPRIO NOTEBOOK
+REM   1) sobe o servidor de video LOCAL (serve a pagina corrigida + /api/room).
+REM      Nao depende do Vercel/Mac. Se ja estiver rodando, ele se encerra sozinho.
+REM   2) abre o video (http://localhost:8765/) - a pagina liga SOZINHA (camera+GPS).
+REM      Abre primeiro, entao fica POR TRAS.
+REM   3) sobe a tela do piloto (.exe --live --producao) em TELA CHEIA, POR CIMA.
+REM  1a vez: o navegador pede "permitir camera?" - faca esse permitir UMA vez com o
+REM  ABRIR-VIDEO-PISTA.cmd (video visivel). Depois ele lembra e liga sozinho atras.
 REM  Para ENSAIO sem ir ao ar, use IR-AO-VIVO-TESTE.cmd.
 REM ============================================================================
 setlocal
@@ -25,12 +25,18 @@ if not exist "%EXE%" (
   exit /b 1
 )
 
-REM 1) video por tras (liga sozinho)
-start "" "https://p1tv.vercel.app/"
+REM 1) servidor de video local (serve a pagina corrigida + repassa /api/room)
+start "Servidor de video P1 Fast" /min powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0servidor-video-local.ps1"
 
-REM 2) tempo pra a pagina carregar e a transmissao comecar
-timeout /t 4 >nul
+REM 2) tempo do servidor subir
+timeout /t 3 >nul
 
-REM 3) tela do piloto em TELA CHEIA, POR CIMA
+REM 3) video por tras (liga sozinho)
+start "" "http://localhost:8765/"
+
+REM 4) tempo da pagina carregar e a transmissao comecar
+timeout /t 3 >nul
+
+REM 5) tela do piloto em TELA CHEIA, POR CIMA
 start "" "%EXE%" --live --producao
 exit /b 0
