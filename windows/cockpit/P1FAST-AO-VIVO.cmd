@@ -37,6 +37,8 @@ start "" "http://localhost:8765/"
 REM 4) tempo da pagina carregar e a transmissao comecar
 timeout /t 3 >nul
 
-REM 5) tela do piloto em TELA CHEIA, POR CIMA
-start "" "%EXE%" --live --producao
+REM 5) tela do piloto em TELA CHEIA, POR CIMA, na 2a tela (a do carro).
+REM    --display-index usa a MESMA numeracao da Configuracao de Tela do Windows.
+REM    Se abrir na tela errada, troque 2 por 1 (ou 3) aqui embaixo.
+start "" "%EXE%" --live --producao --display-index 2
 exit /b 0

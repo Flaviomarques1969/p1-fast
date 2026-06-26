@@ -24,5 +24,6 @@ if not exist "%EXE%" (
 echo.
 echo  Modo ENSAIO (canal de TESTE - seguro, nao vai ao ar).
 echo  Subindo o cockpit...
-start "" "%EXE%" --live
+REM Abre na 2a tela (a do carro). Se cair na tela errada, troque 2 por 1 (ou 3).
+start "" "%EXE%" --live --display-index 2
 exit /b 0

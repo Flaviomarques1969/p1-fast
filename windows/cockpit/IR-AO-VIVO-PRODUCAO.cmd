@@ -44,5 +44,6 @@ if errorlevel 2 (
 
 echo.
 echo Subindo o cockpit AO VIVO (producao)...
-start "" "%EXE%" --live --producao
+REM Abre na 2a tela (a do carro). Se cair na tela errada, troque 2 por 1 (ou 3).
+start "" "%EXE%" --live --producao --display-index 2
 exit /b 0

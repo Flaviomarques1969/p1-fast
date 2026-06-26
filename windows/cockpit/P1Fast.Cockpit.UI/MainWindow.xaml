@@ -20,12 +20,13 @@
              (OnRootSizeChanged) pelo MENOR fator min(w/956, h/440): cabe INTEIRO em
              qualquer tela, com tarja preta (letterbox) na sobra, e a barra de marcha
              embaixo SEMPRE aparece. (O Viewbox nativo preenchia por altura e cortava.) -->
-            <Border Width="956" Height="440"
+            <Border x:Name="DeviceBorder"
+                    Width="956" Height="440"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Top"
                     Background="#000000"
-                    CornerRadius="48"
-                    BorderThickness="1"
+                    CornerRadius="0"
+                    BorderThickness="0"
                     BorderBrush="#1F1F1F">
                 <Border.RenderTransform>
                     <!-- Ancorado no canto (0,0): escala a partir do topo-esquerda e DEPOIS

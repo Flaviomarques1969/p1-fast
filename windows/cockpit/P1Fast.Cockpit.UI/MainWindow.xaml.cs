@@ -1222,27 +1222,36 @@ public sealed partial class MainWindow : Window
         StatusText.Text = $"{displayInfo}  •  trecho={s.TrechoStatus}  •  shift={s.Shift.Mode} L{s.Shift.Level}  •  Δ={s.Delta.Value}";
     }
 
-    // Escala o device pra caber INTEIRO na tela, centralizado, com letterbox na sobra.
-    // O conteúdo do cockpit transborda a caixa nominal 956×440 (os rótulos do ápice
-    // ficam abaixo de 440 e os halos da barra de marcha estouram pra fora). Escalar/
-    // centralizar pela caixa nominal jogava esse conteúdo de baixo pra fora da tela.
-    // Por isso usamos uma MOLDURA SEGURA que engloba a sobra.
-    private const double SafeW = 1030.0;  // 956 + folga lateral (FREADA à direita)
-    private const double SafeH = 545.0;   // 440 + folga embaixo (ápice + barra/halos do shift)
+    // Enquadramento que PREENCHE o painel inteiro (sem tarja preta), em QUALQUER
+    // proporção de tela — pensado pro monitor 10,5" do carro, que é 3:2 (1920×1280),
+    // mas vale também pro notebook (16:9). Estratégia (Flávio 26/06):
+    //   • escala UNIFORME pela LARGURA (s = w / ContentW) → nada de distorção;
+    //   • a altura do "device" vira h/s, então depois de escalada cobre 100% da altura;
+    //   • os blocos já ancorados (cluster em cima, ápice + barra de marcha embaixo,
+    //     delta/freio no meio) caem nas bordas reais e o halo/wash preenche o miolo.
+    // Resultado: preenche a tela toda, sem letterbox, sem esticar e sem cortar conteúdo
+    // (só os halos macios podem sangrar de leve pras laterais — invisível).
+    private const double ContentW = 956.0;  // largura nominal do conteúdo do cockpit
 
     private void OnRootSizeChanged(object sender, SizeChangedEventArgs e)
     {
         var w = e.NewSize.Width;
         var h = e.NewSize.Height;
-        var s = Math.Min(w / SafeW, h / SafeH);
+        if (w <= 0 || h <= 0) return;
+
+        var s = w / ContentW;
         if (s <= 0 || double.IsNaN(s) || double.IsInfinity(s)) return;
+
         DeviceScale.ScaleX = s;
         DeviceScale.ScaleY = s;
-        // Ancora o canto superior-esquerdo do device no canto da MOLDURA SEGURA
-        // centralizada. Como a sobra é só pra direita (FREADA) e pra baixo (ápice/halos),
-        // ela preenche o espaço extra da moldura e cabe inteira na tela.
-        DeviceTranslate.X = (w - SafeW * s) / 2.0;
-        DeviceTranslate.Y = (h - SafeH * s) / 2.0;
+
+        // O device passa a ter a ALTURA da tela (em unidades pré-escala): h/s × s = h.
+        DeviceBorder.Width = ContentW;
+        DeviceBorder.Height = h / s;
+
+        // Ancorado no canto (0,0): preenche w × h exatamente, sem sobra.
+        DeviceTranslate.X = 0;
+        DeviceTranslate.Y = 0;
     }
 
     private void ApplyDisplayPlacement()
