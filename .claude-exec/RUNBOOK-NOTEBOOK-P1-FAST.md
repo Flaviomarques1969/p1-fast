@@ -26,9 +26,16 @@ Leia também `.claude-exec/PLANO-MIGRACAO-PRODUCAO.md` (item **4**) — é o tra
 ## 3. Verifique que subiu
 Abra `https://p1tv.vercel.app/` e confirme que o HTML contém **`onCloudGps`** e o comentário **"Item 3 (RaceBox dono único)"**, e que **NÃO** tem mais a UI "GRAVAÇÃO · parada". (Se ainda tiver a versão antiga, o deploy não concluiu.)
 
+## 3b. (UMA VEZ — pedido do Flávio 2026-06-26) Criar um **Deploy Hook** do Vercel
+Objetivo: deixar o **notebook Windows** capaz de publicar o site sozinho depois (o notebook não tem CLI/painel do Vercel, mas consegue "tocar" num link). Assim o Flávio passa a pedir tudo — inclusive o deploy — direto ao Claude do notebook.
+- No painel do Vercel do projeto **`p1tv`** → **Settings → Git → Deploy Hooks** → crie um hook na branch **`main`** (nome sugerido: `notebook-deploy-main`). Copie a **URL** gerada.
+- **A URL é SECRETA.** **NÃO** comite ela no repositório (o repo é público pra esse fim) e **NÃO** escreva ela em nenhum doc do git.
+- **Entregue a URL ao Flávio** (mostre na tela / mande pra ele) com a instrução: *"cole esta URL no Claude do notebook; ele guarda como variável de ambiente `P1FAST_VERCEL_DEPLOY_HOOK` (igual a chave do Supabase) e passa a publicar o site daí."*
+- Marque no `PLANO-MIGRACAO-PRODUCAO.md` que o Deploy Hook foi criado (sem a URL).
+
 ## 4. Ao concluir, atualize os docs
 - Em `.claude-exec/PLANO-MIGRACAO-PRODUCAO.md`, mude o **item 4** de 🟡 PRONTO-aguardando-publish → **🟢 NO AR** (com a data), e adicione uma linha no "Histórico de migrações".
-- Commit + push. Reporte ao Flávio em 2-3 linhas.
+- Commit + push. Reporte ao Flávio em 2-3 linhas (inclua "Deploy Hook criado; URL entregue ao Flávio pro notebook").
 
 ## 5. Se algo der errado — desfazer
 - O site no ar voltava antes via republicar a `main` na tag **`backup/main-pre-onda5-2026-06-26`** (= `a821ddaa`, estado da `main` antes do item-3).
