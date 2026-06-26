@@ -1,5 +1,9 @@
 # P1 Fast — orientação para Claude
 
+## ⚡ Comando rápido do Flávio: "notebook p1 fast"
+
+Quando o Flávio disser **"notebook p1 fast"** (ou variações: "publica o notebook", "roda o notebook p1 fast", "faz o que o notebook deixou pendente"), **execute o runbook `.claude-exec/RUNBOOK-NOTEBOOK-P1-FAST.md`** — ele é autossuficiente, diz o que já está pronto no git (vindo do notebook Windows) e qual o trabalho pendente que só o iMac faz (hoje: **publicar o site `p1tv` no Vercel**). Faça o pendente, verifique, e reporte. Mantenha o runbook + `.claude-exec/PLANO-MIGRACAO-PRODUCAO.md` atualizados ao concluir. Produção continua protegida: só o que o runbook autoriza.
+
 ## Antes de fazer qualquer coisa, leia nesta ordem
 
 0. **`docs/COCKPIT_FONTE_DA_VERDADE.md`** — quando o trabalho for do **cockpit do piloto**, esta é a PRIMEIRA leitura: requisitos + estado real + decisões duras + estratégia (web primeiro, Windows por último). Fixada por Flávio em 2026-06-22 pra parar de perder requisitos entre sessões.
