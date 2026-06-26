@@ -122,6 +122,9 @@ async function connectCloud(){
     const ch = nuvem.client.channel(CHANNEL_NAME, { config: { broadcast: { ack:false, self:false } } });
     ch.on('broadcast', { event:'sample' }, msg => { if (msg && msg.payload) onCarSample(msg.payload); });
     ch.on('broadcast', { event:'evento' }, msg => { if (msg && msg.payload) onEvento(msg.payload); });
+    // Item 3 (RaceBox dono único): o GPS agora vem do COCKPIT (.exe) pela nuvem, NÃO do
+    // RaceBox por BLE aqui. Este web só RELAIA o GPS da nuvem pro vídeo (sala) e mostra na tela.
+    ch.on('broadcast', { event:'gps' }, msg => { if (msg && msg.payload) onCloudGps(msg.payload); });
     ch.subscribe((status, err) => {
       if (status === 'SUBSCRIBED') { nuvem.channel = ch; nuvem.retryMs = 2000; setNuvem('online'); log('Nuvem conectada (canal do carro).'); }
       else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
@@ -433,6 +436,22 @@ function renderGps(){
   $('rbLon').textContent = gps.lon!=null ? gps.lon.toFixed(6) : '—';
 }
 
+// Item 3 (RaceBox dono único): GPS vindo da NUVEM (publicado pelo .exe, ~25 Hz). Popula o
+// MESMO objeto gps que o RaceBox populava → o loop de 200ms repassa pro vídeo e renderGps
+// mostra na tela. Chaves do .exe: lat, lng, kmh, numSV, fix, accM, tWall.
+function onCloudGps(g){
+  if (g == null || g.lat == null || g.lng == null) return;
+  gps.fix = g.fix ?? 0; gps.numSV = g.numSV ?? 0;
+  gps.hacc = g.accM ?? 0; gps.spd = g.kmh ?? 0;
+  gps.lat = g.lat; gps.lon = g.lng;
+  gps.lastPktTs = performance.now();
+  const now = performance.now()/1000;
+  if(t0===null) t0=now; pkts++;
+  if(now-t0>0) gps.hz = pkts/(now-t0);
+  gps.ver = gps.fix===0 ? 'sem sinal' : (gps.numSV<4 ? 'fraco' : (gps.numSV<6?'ok':'travado ✓'));
+  renderGps();
+}
+
 async function assinarRaceBox(device){
   const gatt = await device.gatt.connect();
   const svc = await gatt.getPrimaryService(NUS_SVC);
@@ -475,35 +494,35 @@ async function connectRaceBox(){
   } catch(e){ pill($('rbConn'),'falhou','bad'); boardPill($('bGps'),'GPS · falhou','bad'); log('Falha no RaceBox: '+e.message); }
 }
 
-// Luz do GPS no quadro de cima: baseada na idade do último pacote, não só no evento de conexão.
+// Luz do GPS no quadro de cima: agora baseada na chegada do GPS pela NUVEM (item 3 — o
+// .exe é o dono do RaceBox e publica o GPS). Verde com pacote fresco; "aguardando cockpit"
+// quando não chega. Status honesto pro operador, sem depender de Bluetooth local.
 setInterval(() => {
-  if (!rb.quero) return;
   const age = gps.lastPktTs ? performance.now() - gps.lastPktTs : Infinity;
   if (age < 2000) {
-    boardPill($('bGps'), 'GPS · '+(gps.fix===0?'ligado, sem céu':'travado ✓')+' ('+gps.numSV+' sat)', gps.fix===0?'warn':'ok');
-  } else if (!rb.religando) {
-    boardPill($('bGps'), 'GPS · sem pacotes', 'bad');
+    boardPill($('bGps'), 'GPS · '+(gps.fix===0?'sem céu':'travado ✓')+' ('+gps.numSV+' sat)', gps.fix===0?'warn':'ok');
+  } else {
+    boardPill($('bGps'), 'GPS · aguardando cockpit…', 'warn');
   }
 }, 1000);
 
-// ════════════════ ENVIO DO GPS (2 caminhos em paralelo) ════════════════
-// 1) Pela sala de vídeo (app no celular — caminho provado 09/06), a cada 200ms.
-// 2) Pelo canal da nuvem (painel do piloto pode usar o GPS de 25 Hz), 5x/segundo.
+// ════════════════ RELAY DO GPS PRA SALA DE VÍDEO ════════════════
+// Item 3 (RaceBox dono único): o GPS agora chega da NUVEM (publicado pelo .exe) via
+// onCloudGps, que popula o objeto gps. Aqui só REPASSAMOS pro vídeo (overlay no app do
+// celular — caminho provado 09/06). NÃO publicamos GPS na nuvem aqui: o .exe é o dono
+// único e já publica (senão teria duas fontes do mesmo GPS no canal).
 setInterval(()=>{
-  // Só repassa GPS do RaceBox quando ele está mandando pacote DE VERDADE
-  // (senão briga com o GPS do simulador e manda dado congelado).
+  // Só repassa quando há GPS fresco (senão mandaria dado congelado).
   if (!gps.lastPktTs || performance.now() - gps.lastPktTs > 2000) return;
   if(call) try{ call.sendAppMessage({ t:'gps', fix:gps.fix, numSV:gps.numSV, spd:gps.spd, lat:gps.lat, lon:gps.lon, hz:gps.hz, hacc:gps.hacc, ver:gps.ver }, '*'); }catch(e){}
-}, 200);
-setInterval(()=>{
-  if (gps.lastPktTs && performance.now() - gps.lastPktTs < 2000) {
-    cloudSend('gps', { lat:gps.lat, lng:gps.lon, kmh:gps.spd, numSV:gps.numSV, fix:gps.fix, accM:gps.hacc, tWall:Date.now() });
-  }
 }, 200);
 
 // ════════════════ boot ════════════════
 $('btnStart').onclick = startVideo;
-$('btnRb').onclick = connectRaceBox;
+// Item 3 (RaceBox dono único): este botão NÃO abre mais o Bluetooth daqui — senão brigaria
+// com o cockpit (.exe) pelo mesmo aparelho. O RaceBox é lido SÓ pelo .exe; o GPS chega aqui
+// pela nuvem (onCloudGps) e é repassado pro vídeo.
+$('btnRb').onclick = () => { boardPill($('bGps'),'GPS · vem do cockpit pela nuvem','ok'); log('O RaceBox é lido pelo cockpit (.exe). O GPS chega aqui pela nuvem — não conecto o Bluetooth por aqui.'); };
 $('btnSim').onclick = toggleSim;
 connectCloud();
 log('Central de pista pronta. 1) Iniciar transmissão  2) Conectar RaceBox. O quadro CARRO acende quando o painel do piloto (outra aba) estiver lendo a T4000 — ou use o simulador.');
