@@ -326,7 +326,11 @@ let videoRetryMs = 3000;
 
 async function getRoom(){
   const r = await fetch('/api/room', { method:'POST' });
-  if(!r.ok) throw new Error('servidor de vídeo respondeu ' + r.status);
+  if(!r.ok){
+    const err = new Error('servidor de vídeo respondeu ' + r.status);
+    err.status = r.status;
+    throw err;
+  }
   return r.json();
 }
 
@@ -357,6 +361,9 @@ async function startVideo(){
   } catch(e){
     pill($('vStatus'),'falhou','bad'); boardPill($('bVideo'),'VÍDEO · falhou','bad');
     log('FALHA no vídeo: ' + e.message);
+    // 429 = o servidor de vídeo está LIMITANDO (pedidos demais em pouco tempo). Insistir
+    // rápido só prolonga o bloqueio — espera bem mais antes de tentar de novo.
+    if (e && e.status === 429) { videoRetryMs = 60000; log('Servidor de vídeo limitou (429, pedidos demais). Aguardando 60s — não adianta insistir agora.'); }
     onVideoDown();
   }
 }
@@ -366,7 +373,9 @@ function onVideoDown(){
   pill($('vStatus'),'religando…','warn'); boardPill($('bVideo'),'VÍDEO · religando…','warn');
   log('Vídeo caiu. Religando em '+(videoRetryMs/1000)+'s…');
   const wait = videoRetryMs;
-  videoRetryMs = Math.min(videoRetryMs * 2, 15000);
+  // teto de 60s (antes 15s): em queda persistente, espaça as tentativas pra NÃO martelar
+  // o servidor de sala (era isso que estourava o 429 e travava no "religando").
+  videoRetryMs = Math.min(videoRetryMs * 2, 60000);
   setTimeout(() => { if (videoQuero) startVideo(); }, wait);
 }
 
