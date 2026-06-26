@@ -372,9 +372,17 @@ public sealed class SessionRecorder
 /// metadado (&lt;id&gt;.meta.json). System.IO puro, sem dependência de Windows.</summary>
 public sealed class FileSessionStore : ISessionStore, IDisposable
 {
+    /// <summary>A cada N registros, força o SO a gravar no DISCO FÍSICO (Flush(true)),
+    /// não só na cache de escrita do SO. Por amostra seria um fsync a 10 Hz (engasga o
+    /// disco); N=10 ≈ perde no máximo ~1 s a 10 Hz numa queda de ENERGIA — trade-off
+    /// aprovado pelo Flávio (2026-06-25). A queda só do PROCESSO já é coberta pelo
+    /// Flush por registro (o dado vai pro SO na hora).</summary>
+    public const int FlushDiscoCada = 10;
+
     private static readonly JsonSerializerOptions JsonOpts = new() { WriteIndented = false };
     private readonly string _dir;
     private readonly Dictionary<string, StreamWriter> _writers = new();
+    private readonly Dictionary<string, int> _escritasDesdeDisco = new();
 
     public FileSessionStore(string dir)
     {
@@ -398,13 +406,32 @@ public sealed class FileSessionStore : ISessionStore, IDisposable
             _writers[registro.SessaoId] = w;
         }
         w.WriteLine(JsonSerializer.Serialize(registro, JsonOpts));
-        w.Flush();          // entrega ao SO por registro → sobrevive a queda do processo
-        w.BaseStream.Flush();
+        w.Flush();          // entrega ao SO por registro → sobrevive à queda do PROCESSO
+
+        // A cada N registros força o DISCO FÍSICO (Flush(true)): uma queda de ENERGIA não
+        // perde o que ficou só na cache do SO. Best-effort — se o fsync falhar, o dado já
+        // está no SO e o próximo ciclo tenta de novo (não conta como perda).
+        int n = (_escritasDesdeDisco.TryGetValue(registro.SessaoId, out var c) ? c : 0) + 1;
+        if (n >= FlushDiscoCada)
+        {
+            n = 0;
+            if (w.BaseStream is FileStream fsDisco) { try { fsDisco.Flush(flushToDisk: true); } catch { /* já no SO */ } }
+        }
+        _escritasDesdeDisco[registro.SessaoId] = n;
     }
 
     public void Finalizar(string id, SessionResumo resumo)
     {
-        if (_writers.TryGetValue(id, out var w)) { w.Flush(); w.Dispose(); _writers.Remove(id); }
+        if (_writers.TryGetValue(id, out var w))
+        {
+            w.Flush();
+            // Tail no disco antes de fechar: os registros desde o último flush-to-disk
+            // periódico vão pro disco físico AGORA (fim de sessão não perde o resto).
+            if (w.BaseStream is FileStream fsDisco) { try { fsDisco.Flush(flushToDisk: true); } catch { } }
+            w.Dispose();
+            _writers.Remove(id);
+        }
+        _escritasDesdeDisco.Remove(id);
         // grava o metadado já com o status final (resumo embutido)
         var obj = new { resumo.Id, resumo.Sim, resumo.Status, resumo.MotivoFim, resumo.InicioWall,
                         resumo.FimWall, resumo.DuracaoS, resumo.NGps, resumo.NMotor, resumo.Dropped, resumo.MaiorLacunaMs };
@@ -479,8 +506,12 @@ public sealed class FileSessionStore : ISessionStore, IDisposable
 
     public void Dispose()
     {
-        foreach (var w in _writers.Values) { try { w.Flush(); w.Dispose(); } catch { } }
+        foreach (var w in _writers.Values)
+        {
+            try { w.Flush(); if (w.BaseStream is FileStream fsDisco) fsDisco.Flush(flushToDisk: true); w.Dispose(); } catch { }
+        }
         _writers.Clear();
+        _escritasDesdeDisco.Clear();
     }
 }
 

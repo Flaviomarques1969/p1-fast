@@ -48,7 +48,8 @@ public sealed record LaunchOptions(
     bool Loop = false,
     bool Windowed = false,
     bool Live = false,
-    string? Port = null)
+    string? Port = null,
+    bool Producao = false)
 {
     /// <summary>Faz parsing dos args do <see cref="Environment.GetCommandLineArgs"/>.</summary>
     public static LaunchOptions FromCommandLine(string[] args)
@@ -62,6 +63,7 @@ public sealed record LaunchOptions(
         var windowed = false;
         var live = false;
         string? port = null;
+        var producao = false;
         for (var i = 0; i < args.Length; i++)
         {
             var a = args[i];
@@ -105,6 +107,13 @@ public sealed record LaunchOptions(
             {
                 live = true;
             }
+            else if (a == "--producao")
+            {
+                // Modo PRODUÇÃO: publica no canal que o app/Command Box assistem
+                // (cockpit-bubi-live). Só liga quando lançado de propósito; sem ele,
+                // a nuvem fica no canal de TESTE (seguro). Ordem expressa do Flávio.
+                producao = true;
+            }
             else if (a.StartsWith("--port=", StringComparison.Ordinal))
             {
                 port = a["--port=".Length..];
@@ -114,6 +123,6 @@ public sealed record LaunchOptions(
                 port = args[i + 1];
             }
         }
-        return new LaunchOptions(displayIndex, demo, replay, replayPath, speed, loop, windowed, live, port);
+        return new LaunchOptions(displayIndex, demo, replay, replayPath, speed, loop, windowed, live, port, producao);
     }
 }

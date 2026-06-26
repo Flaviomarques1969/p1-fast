@@ -13,10 +13,13 @@
 // AlimentarGps → curva/ápice/delta/freada ao vivo. NÃO é o iPhone (ADR-023 era
 // stale). Verificação final com o RaceBox na mão (bench), igual à T4000.
 //
-// PENDENTE: publicação na nuvem (Supabase Realtime). NÃO é redundância — é o
-// ÚNICO caminho do dado ao vivo chegar no app P1 Fast e no Command Box (o cockpit
-// do piloto é local/baixa latência; o app e o box dependem da nuvem). Camada à parte.
+// NUVEM (C5, ligada 2026-06-25): publica MOTOR (LivePublisher, fila que não perde) e
+// GPS a ~25 Hz pro app P1 Fast e o Command Box — é o ÚNICO caminho do ao-vivo até eles
+// (o cockpit do piloto é local/baixa latência; o app e o box dependem da nuvem). Canal
+// de TESTE por padrão; produção 'cockpit-bubi-live' só com ordem. Vive em LacoNuvemAsync,
+// dono único do publisher/canal; sem a chave P1FAST_SUPABASE_ANON, segue 100% local.
 
+using System.Collections.Concurrent;
 using System.Threading;
 using P1Fast.Cockpit.Domain;
 
@@ -27,8 +30,25 @@ public sealed partial class MainWindow
     private CancellationTokenSource? _liveCts;
     private SessionRecorder? _liveRecorder;
     private readonly object _liveRecLock = new();
-    private Microsoft.UI.Dispatching.DispatcherQueueTimer? _liveHealthTimer;
+    private Task? _liveReaderTask;   // motor USB numa thread dedicada (fora da thread da UI)
+    private Task? _liveHealthTask;   // vigia de saúde da gravação, em fundo (fora da UI)
     private RaceBoxBleReader? _raceBox;
+    private bool _liveParado;        // guarda de fechamento (StopLive idempotente)
+
+    // Nuvem ao vivo (C5): publica MOTOR (LivePublisher, com fila que não perde) e GPS
+    // (evento à parte). UM só dono mexe no publisher/canal — o laço da nuvem — então o
+    // motor entrega na fila abaixo e o GPS guarda o último fix; sem corrida com o leitor.
+    private SupabaseRealtimeChannel? _liveNuvem;
+    private LivePublisher? _livePublisher;
+    private Task? _liveCloudTask;
+    private readonly ConcurrentQueue<(T3000Sample s, long tWall)> _liveCloudMotor = new();
+    private volatile IDictionary<string, object?>? _liveUltimoGps;
+
+    // Nuvem: URL do projeto + canal de TESTE por padrão. PRODUÇÃO ('cockpit-bubi-live',
+    // o que o app/Command Box assistem) só com ORDEM do Flávio — exige trocar o canal E
+    // permitirProducao=true no LivePublisher (trava dura). NÃO publicar em produção aqui.
+    private const string LiveSupabaseUrl = "https://fvhwltzhytpnhlqbttmd.supabase.co";
+    private const string LiveCanalTeste  = "cockpit-bubi-dev-teste";
 
     // Liga o cockpit ao vivo: carrega as curvas fora da thread da UI, resolve a porta
     // e religa o maestro + leitor na thread da UI.
@@ -65,6 +85,10 @@ public sealed partial class MainWindow
 
         _liveCts = new CancellationTokenSource();
 
+        // Fechamento limpo: ao fechar a janela, cancela os laços e encerra a sessão
+        // (sem deixar órfã). Uma só vez (StopLive é idempotente).
+        this.Closed += (_, _) => StopLive();
+
         // Gravação local blindada (fonte da verdade), ANTES da nuvem. Best-effort:
         // falha de IO não derruba a tela do piloto.
         try
@@ -73,6 +97,25 @@ public sealed partial class MainWindow
             _liveRecorder = new SessionRecorder(new FileSessionStore(pasta));
         }
         catch { _liveRecorder = null; }
+
+        // Nuvem ao vivo (C5): liga SÓ se a chave estiver no ambiente (peça ao Flávio).
+        // Sem chave, segue 100% local — o gravador blindado acima é a durabilidade.
+        // Canal de TESTE por padrão; a redundância nunca derruba a tela do piloto.
+        try
+        {
+            var anon = Environment.GetEnvironmentVariable("P1FAST_SUPABASE_ANON");
+            if (!string.IsNullOrWhiteSpace(anon))
+            {
+                // Canal: TESTE por padrão (seguro). Só vai pra PRODUÇÃO (cockpit-bubi-live,
+                // o que o app/Command Box assistem) com --producao — ordem expressa do
+                // Flávio, por execução. A trava do LivePublisher só abre nesse caso.
+                var canal = _options.Producao ? LivePublisher.CanalProducao : LiveCanalTeste;
+                _liveNuvem = new SupabaseRealtimeChannel(LiveSupabaseUrl, anon, canal);
+                _livePublisher = new LivePublisher(_liveNuvem, canal, permitirProducao: _options.Producao);
+                _liveCloudTask = Task.Run(() => LacoNuvemAsync(_liveCts.Token));
+            }
+        }
+        catch { _liveNuvem = null; _livePublisher = null; }
 
         // GPS ao vivo: RaceBox Mini por Bluetooth — INDEPENDE da T4000. Best-effort:
         // sem RaceBox, segue varrendo; sem GPS a tela mostra o motor mesmo assim.
@@ -93,14 +136,55 @@ public sealed partial class MainWindow
                 onStatus: (txt, nivel) => DispatcherQueue.TryEnqueue(() => StatusText.Text = $"ao vivo [{nivel}]: {txt}"),
                 onLog: _ => { });
             StatusText.Text = $"ao vivo: T4000 em {port} + GPS RaceBox…";
-            _ = reader.RunAsync(_liveCts.Token);
+            // Thread DEDICADA pro motor (C8): abrir a porta + handshake + 1º Read
+            // BLOQUEIAM (até ~150 ms) — não podem rodar na thread da UI (micro-travava
+            // no boot). LongRunning = thread própria fora do pool; o loop provado
+            // (T3000UsbLiveReader, ConfigureAwait(false)) segue em fundo, nunca na UI.
+            _liveReaderTask = Task.Factory.StartNew(
+                () => reader.RunAsync(_liveCts.Token),
+                _liveCts.Token,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default).Unwrap();
         }
 
-        // Saúde da gravação ~1 Hz (fecha por silêncio; alarme nunca silencioso).
-        _liveHealthTimer = DispatcherQueue.CreateTimer();
-        _liveHealthTimer.Interval = TimeSpan.FromSeconds(1);
-        _liveHealthTimer.Tick += (_, _) => { lock (_liveRecLock) _liveRecorder?.Tick(); };
-        _liveHealthTimer.Start();
+        // Saúde da gravação ~1 Hz numa thread de FUNDO, NÃO na UI (C8): o Tick pega o
+        // _liveRecLock; tirá-lo da UI separa esse lock da thread da UI — a tela do
+        // piloto nunca mais espera o disco. Fecha por silêncio; alarme nunca silencioso.
+        _liveHealthTask = Task.Run(async () =>
+        {
+            var ct = _liveCts.Token;
+            try
+            {
+                while (!ct.IsCancellationRequested)
+                {
+                    await Task.Delay(1000, ct).ConfigureAwait(false);
+                    lock (_liveRecLock) _liveRecorder?.Tick();
+                    // Re-avalia os sensores ~1 Hz mesmo SEM amostra nova: se motor e/ou GPS
+                    // pararem, os LEDs degradam (apagam) em vez de congelar verdes. O live é
+                    // event-driven; sem este tick, no silêncio total nada mais re-pintaria.
+                    DispatcherQueue.TryEnqueue(() => AtualizarSensores(_ultimaAlerta));
+                }
+            }
+            catch (OperationCanceledException) { /* encerrando */ }
+        });
+    }
+
+    // Fechamento limpo do --live: cancela os laços de fundo (motor/saúde/nuvem) e o
+    // RaceBox (que se desliga pelo token), e ENCERRA a sessão de gravação — fechada,
+    // não órfã. Best-effort e idempotente: nunca trava o fechamento da janela. O disco
+    // já tem tudo (append-only + flush por registro); a nuvem é redundância e o laço
+    // dela libera o canal no próprio finally ao cancelar.
+    private void StopLive()
+    {
+        if (_liveParado) return;
+        _liveParado = true;
+        // 1) Encerra a sessão JÁ (síncrono, rápido): fecha o meta, nunca deixa órfã.
+        try { lock (_liveRecLock) _liveRecorder?.Encerrar("fechou-app"); } catch { /* best-effort */ }
+        // 2) Cancela laços + aparelhos em FUNDO: o Cancel() roda o teardown do RaceBox
+        //    (Stop() do watcher BLE), que pode bloquear alguns segundos numa pilha
+        //    Bluetooth fria — não pode travar o fechamento da janela.
+        var cts = _liveCts;
+        _ = Task.Run(() => { try { cts?.Cancel(); } catch { /* já caindo */ } });
     }
 
     // Cada amostra do motor (vem na thread do leitor): grava em disco e move a tela.
@@ -108,12 +192,20 @@ public sealed partial class MainWindow
     // a mutação do estado é re-enfileirada pra thread da UI.
     private void OnLiveMotor(T3000Sample s)
     {
-        lock (_liveRecLock) _liveRecorder?.Motor(s);
+        _ultimoMotorTick = Environment.TickCount64;   // chegada do motor (pra guarda de recência dos sensores)
+        SessionRecord? reg;
+        lock (_liveRecLock) reg = _liveRecorder?.Motor(s);
+
+        // Nuvem: entrega pro laço (1 só dono do publisher — sem corrida). tWall = tempo
+        // de CAPTURA (do registro gravado), pra casar com o vídeo e ordenar certo.
+        if (_livePublisher is not null && reg is not null)
+            _liveCloudMotor.Enqueue((s, reg.TWall));
 
         var (rpm, alerta) = BridgeMotor(s);
         DispatcherQueue.TryEnqueue(() =>
         {
             _orquestrador?.IngestMotor(rpm, alerta);
+            _ultimaAlerta = alerta;      // guarda pro refresh de sensores quando vier GPS
             AtualizarSensores(alerta);
         });
     }
@@ -123,12 +215,96 @@ public sealed partial class MainWindow
     private void OnLiveGps(RaceBoxFix f)
     {
         if (f.Fix < 3) return;
-        var t = (double)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        long tWall = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         lock (_liveRecLock)
             _liveRecorder?.Gps(
                 new { lat = f.Lat, lon = f.Lng, kmh = f.Kmh, fix = f.Fix, numSV = f.NumSV, hacc = f.HaccM },
                 velKmh: f.Kmh);
-        AlimentarGps(new AmostraGps(f.Lat, f.Lng, f.Kmh, t));
+
+        // Nuvem: guarda o ÚLTIMO fix (o laço amostra a ~25 Hz, taxa real do RaceBox; o
+        // disco acima já gravou TODOS os fixes). Chaves EXATAS do cloudSend('gps',…) de
+        // web/teste-aparelhos — não quebrar consumidor. (O web amostra a 5 Hz; aqui o
+        // .exe carrega o full 25 Hz pro app/Command Box terem o GPS na resolução cheia.)
+        if (_liveNuvem is not null)
+            _liveUltimoGps = new Dictionary<string, object?>
+            {
+                ["lat"]   = f.Lat,
+                ["lng"]   = f.Lng,
+                ["kmh"]   = f.Kmh,
+                ["numSV"] = f.NumSV,
+                ["fix"]   = f.Fix,
+                ["accM"]  = f.HaccM,
+                ["tWall"] = tWall,
+            };
+
+        // Move a tela na thread da UI, EM ORDEM: GPS no maestro → ponte do stint (barra
+        // de trechos) → sensores (MOVIMENTO acende). _ultimoGpsTick marca a chegada em
+        // tempo real (pro sensor de GPS). Antes só o replay fazia essas pontes.
+        _ultimoGpsTick = Environment.TickCount64;
+        var amostra = new AmostraGps(f.Lat, f.Lng, f.Kmh, (double)tWall);
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            _orquestrador?.IngestGps(amostra);
+            AtualizarStint();
+            AtualizarSensores(_ultimaAlerta);
+        });
+    }
+
+    // Laço da nuvem (C5) — UM só dono do publisher e do canal: conecta, religa sozinho
+    // (backoff ~2 s), oferece ao publisher tudo o que o motor empurrou (ele estrangula
+    // a 5 Hz e enfileira sem perder), drena pra nuvem e publica o último GPS a ~25 Hz
+    // (taxa do RaceBox; evento à parte, sem fila durável — o disco já guardou). O giro do
+    // laço (40 ms) casa com o GPS; o motor segue 5 Hz pelo throttle do Oferecer, não pelo
+    // giro. Roda em fundo até o _liveCts cair. Erro aqui NUNCA derruba a tela do piloto.
+    private async Task LacoNuvemAsync(CancellationToken ct)
+    {
+        var nuvem = _liveNuvem!;
+        var pub = _livePublisher!;
+        try { await nuvem.ConnectAsync(ct).ConfigureAwait(false); } catch { /* religa abaixo */ }
+        long ultimaTentativa = Environment.TickCount64;
+        IDictionary<string, object?>? ultimoGpsEnviado = null;
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                // 1) Motor: passa pro publisher tudo o que chegou (ele estrangula a 5 Hz).
+                while (_liveCloudMotor.TryDequeue(out var item))
+                    pub.Oferecer(item.s, item.tWall);
+
+                // 2) Religa se caiu (backoff ~2 s), igual ao console de captura.
+                if (!nuvem.Online)
+                {
+                    long agora = Environment.TickCount64;
+                    if (agora - ultimaTentativa > 2000)
+                    {
+                        ultimaTentativa = agora;
+                        try { await nuvem.ConnectAsync(ct).ConfigureAwait(false); } catch { /* tenta depois */ }
+                    }
+                }
+
+                // 3) Drena o motor acumulado (reenvia TODO o período quando a nuvem volta).
+                try { await pub.DrenarAsync(ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) { break; }
+                catch { /* erro de envio: segura na fila, tenta no próximo giro */ }
+
+                // 4) GPS ao vivo (evento à parte): só o último fix, só online e só se novo
+                //    (o guarda evita reenviar o mesmo fix quando o giro corre na frente).
+                var gps = _liveUltimoGps;
+                if (gps is not null && nuvem.Online && !ReferenceEquals(gps, ultimoGpsEnviado))
+                {
+                    try { if (await nuvem.PublishAsync("gps", gps, ct).ConfigureAwait(false)) ultimoGpsEnviado = gps; }
+                    catch (OperationCanceledException) { break; }
+                    catch { /* GPS é best-effort; o disco já guardou */ }
+                }
+
+                try { await Task.Delay(40, ct).ConfigureAwait(false); } // ~25 Hz, taxa do RaceBox
+                catch (OperationCanceledException) { break; }
+            }
+        }
+        finally
+        {
+            try { await nuvem.DisposeAsync().ConfigureAwait(false); } catch { }
+        }
     }
 
     // Ponte T3000Sample (USB) → AmostraAlerta, MESMO mapeamento que o replay usa

@@ -25,6 +25,15 @@ public sealed partial class MainWindow : Window
     // ser ligado (IniciarFeedReal), chamado pela ligação USB/replay no notebook.
     private CockpitOrchestrator? _orquestrador;
 
+    // Curvas ativas (Brasília) — partilhadas por replay E live, pra a ponte do stint
+    // funcionar nos dois (antes só o replay tinha _replaySegs). Setadas em IniciarFeedReal.
+    private IReadOnlyList<TrechoSegmento> _segsAtivos = Array.Empty<TrechoSegmento>();
+    // Chegada do último GPS e do último MOTOR em tempo REAL (monotônico). Os sensores
+    // MOVIMENTO/MOTOR só ficam verdes se o feed correspondente chegou há pouco — se a
+    // T4000 (USB) ou o RaceBox (BLE) caem, os LEDs apagam em ~3 s (não verde congelado).
+    private long _ultimoGpsTick   = long.MinValue / 2;
+    private long _ultimoMotorTick = long.MinValue / 2;
+
     // ── Cores ──────────────────────────────────────────────
 
     private static readonly Color White       = Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF);
@@ -91,9 +100,11 @@ public sealed partial class MainWindow : Window
     // Luzes de freio (9 por lado) + cluster de sensores (Motor 7 · Movimento 2 · Chassi 5).
     private Ellipse[] _brakeLeft = Array.Empty<Ellipse>();
     private Ellipse[] _brakeRight = Array.Empty<Ellipse>();
-    private Ellipse[] _sensorsMotor = Array.Empty<Ellipse>();
-    private Ellipse[] _sensorsMov = Array.Empty<Ellipse>();
-    private Ellipse[] _sensorsChassi = Array.Empty<Ellipse>();
+    // Sensores agora são ÍCONES (Path), coloridos pelo Stroke conforme o estado — antes
+    // eram Ellipse (bolinha lisa). Shape é a base comum (Ellipse e Path), então o tipo é Shape[].
+    private Shape[] _sensorsMotor = Array.Empty<Shape>();
+    private Shape[] _sensorsMov = Array.Empty<Shape>();
+    private Shape[] _sensorsChassi = Array.Empty<Shape>();
 
     // Halos (Ellipses maiores atrás de cada LED) — transbordam e criam o "wash".
     private Ellipse[] _ledGlows = Array.Empty<Ellipse>();
@@ -171,9 +182,9 @@ public sealed partial class MainWindow : Window
         foreach (var g in _ledGlows)        InitGlow(g, 60, 13);
         foreach (var g in _brakeLeftGlow)   InitGlow(g, 72, 14);
         foreach (var g in _brakeRightGlow)  InitGlow(g, 72, 14);
-        _sensorsMotor  = new[] { SensorRpm, SensorAcel, SensorFreioPedal, SensorAgua, SensorLambda, SensorBateria, SensorAlarme };
-        _sensorsMov    = new[] { SensorGps, SensorAccel };
-        _sensorsChassi = new[] { SensorPneus, SensorSusp, SensorCambio, SensorFreioDed, SensorDirecao };
+        _sensorsMotor  = new Shape[] { SensorRpm, SensorAcel, SensorFreioPedal, SensorAgua, SensorLambda, SensorBateria, SensorAlarme };
+        _sensorsMov    = new Shape[] { SensorGps, SensorAccel };
+        _sensorsChassi = new Shape[] { SensorPneus, SensorSusp, SensorCambio, SensorFreioDed, SensorDirecao };
 
         _cockpitState.OnChange((cur, _, keys) =>
         {
@@ -389,6 +400,7 @@ public sealed partial class MainWindow : Window
         _brakeTimer?.Stop();
         _shiftSweepTimer?.Stop();
         _orquestrador = new CockpitOrchestrator(_cockpitState, curvas);
+        _segsAtivos = curvas ?? Array.Empty<TrechoSegmento>();  // ponte do stint (replay E live)
     }
 
     /// <summary>Amostra de motor (rotação + dados pros alertas). Thread-safe.</summary>
@@ -1005,16 +1017,17 @@ public sealed partial class MainWindow : Window
     // ── Cluster de sensores (topo) ─────────────────────────
     private void ApplySensors(bool falhaMotor)
     {
-        foreach (var s in _sensorsMotor) ((SolidColorBrush)s.Fill).Color = SensorOk;
-        foreach (var s in _sensorsMov)   ((SolidColorBrush)s.Fill).Color = SensorOk;
-        // Chassi ainda não instalado → sem comunicação (vermelho), igual ao web.
-        foreach (var s in _sensorsChassi) ((SolidColorBrush)s.Fill).Color = SensorOff;
+        // Pinta o ÍCONE (Stroke) via SetSensorColor (null-safe). Motor/Movimento verde,
+        // Chassi vermelho (não instalado, igual ao web).
+        foreach (var s in _sensorsMotor)  SetSensorColor(s, SensorOk);
+        foreach (var s in _sensorsMov)    SetSensorColor(s, SensorOk);
+        foreach (var s in _sensorsChassi) SetSensorColor(s, SensorOff);
 
         if (falhaMotor)
         {
-            ((SolidColorBrush)SensorAgua.Fill).Color   = SensorWarn;
-            ((SolidColorBrush)SensorLambda.Fill).Color = SensorWarn;
-            ((SolidColorBrush)SensorAlarme.Fill).Color = SensorWarn;
+            SetSensorColor(SensorAgua,   SensorWarn);
+            SetSensorColor(SensorLambda, SensorWarn);
+            SetSensorColor(SensorAlarme, SensorWarn);
         }
     }
 

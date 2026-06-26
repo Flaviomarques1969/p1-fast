@@ -45,6 +45,7 @@ internal static class Program
         //   --conferir  relê as sessões gravadas e reporta integridade
         if (args.Any(a => a is "--conferir" or "--verificar")) return RunConferirMode(args);
         if (args.Any(a => a is "--nuvem-teste"))               return RunNuvemTesteMode(args);
+        if (args.Any(a => a is "--gps-teste"))                 return RunGpsTesteMode(args);
         if (args.Any(a => a is "--gravar"   or "--record"))    return RunGravarMode(args);
 
         // Sempre roda o diagnóstico USB antes de qualquer coisa. Mostra TODOS
@@ -440,6 +441,59 @@ internal static class Program
             : "FALHOU — não consegui publicar. Verifique internet / chave / URL.");
         try { nuvem.DisposeAsync().AsTask().Wait(2000); } catch { }
         return st.Enviadas > 0 ? 0 : 2;
+    }
+
+    // === MODO --gps-teste: prova o GPS na nuvem na bancada (sem RaceBox) ===
+    // Publica GPS sintético (uma voltinha andando em Brasília) no canal de TESTE, no MESMO
+    // formato que o .exe publica (lat,lng,kmh,numSV,fix,accM,tWall). Serve pro ensaio do
+    // item 3: o web (apontado pro mesmo canal) deve receber e repassar pro vídeo. NUNCA toca
+    // a produção.
+    private static int RunGpsTesteMode(string[] args)
+    {
+        var canal = ParseArg(args, "--canal") ?? "cockpit-bubi-dev-teste";
+        var url   = ParseArg(args, "--url")   ?? "https://fvhwltzhytpnhlqbttmd.supabase.co";
+        var anon  = Environment.GetEnvironmentVariable("P1FAST_SUPABASE_ANON");
+        if (canal == LivePublisher.CanalProducao)
+        {
+            Console.Error.WriteLine("Recusado: --gps-teste NÃO publica no canal de produção. Use um canal de teste.");
+            return 1;
+        }
+        if (string.IsNullOrWhiteSpace(anon))
+        {
+            Console.Error.WriteLine("Falta a chave: defina a variável de ambiente P1FAST_SUPABASE_ANON.");
+            return 1;
+        }
+
+        Console.WriteLine($"=== Teste do GPS na nuvem — canal de teste '{canal}' (gps sintético) ===");
+        var cts = new CancellationTokenSource();
+        cts.CancelAfter(30000);
+        var nuvem = new SupabaseRealtimeChannel(url, anon, canal);
+        try { nuvem.ConnectAsync(cts.Token).Wait(6000); } catch { }
+
+        double lat = -15.7720, lng = -47.8870; // andando perto da pista de Brasília
+        int enviados = 0;
+        for (int i = 0; i < 150 && !cts.IsCancellationRequested; i++)
+        {
+            lat += 0.00002; lng += 0.00001;
+            var payload = new Dictionary<string, object?>
+            {
+                ["lat"] = lat, ["lng"] = lng, ["kmh"] = 80 + (i % 40),
+                ["numSV"] = 9, ["fix"] = 3, ["accM"] = 1.2,
+                ["tWall"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            };
+            bool ok = false;
+            try { ok = nuvem.PublishAsync("gps", payload, cts.Token).Result; } catch { }
+            if (ok) enviados++;
+            if (i % 10 == 0) Console.WriteLine($"  online={nuvem.Online} enviados={enviados}  (lat={lat:F5} kmh={payload["kmh"]})");
+            Thread.Sleep(200); // ~5 Hz no ensaio (o real é 25 Hz)
+        }
+
+        Console.WriteLine($"Resultado: gps enviados={enviados}");
+        Console.WriteLine(enviados > 0
+            ? "OK — gps sintético publicado no canal de teste (o web apontado pro mesmo canal deve mostrar/repassar)."
+            : "FALHOU — não publicou. Verifique internet / chave / URL.");
+        try { nuvem.DisposeAsync().AsTask().Wait(2000); } catch { }
+        return enviados > 0 ? 0 : 2;
     }
 
     // === MODO --conferir: relê as sessões gravadas e reporta integridade ===

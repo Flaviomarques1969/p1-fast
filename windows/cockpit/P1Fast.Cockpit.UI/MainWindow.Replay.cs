@@ -23,7 +23,6 @@ public sealed partial class MainWindow
     private int _replayIdx;
     private double _replayBaseMs;
     private AmostraAlerta? _ultimaAlerta;
-    private double _ultimoGpsMs = double.NegativeInfinity;
 
     // Diário do replay: registra o que a tela mostrou (snapshot do CockpitState) a
     // cada ~1 s de tempo gravado. Útil pra conferir o dado real sem ver a tela e
@@ -130,11 +129,12 @@ public sealed partial class MainWindow
             {
                 _orquestrador.IngestMotor(ev.Rpm, ev.Alerta ?? new AmostraAlerta());
                 _ultimaAlerta = ev.Alerta;
+                _ultimoMotorTick = Environment.TickCount64;
             }
             else if (ev.Gps is { } g)
             {
                 _orquestrador.IngestGps(g);
-                _ultimoGpsMs = ev.TWallMs;
+                _ultimoGpsTick = Environment.TickCount64;
                 alimentouGps = true;
             }
         }
@@ -153,7 +153,6 @@ public sealed partial class MainWindow
                 IniciarFeedReal(_replaySegs);
                 _replayIdx = 0;
                 _ultimaAlerta = null;
-                _ultimoGpsMs = double.NegativeInfinity;
                 _lastBrakeFlashSeq = 0;
                 _replayClock?.Restart();
             }
@@ -197,14 +196,14 @@ public sealed partial class MainWindow
     // vermelho, reference/neutral→neutro, trecho em curso→amarelo, demais→apagado.
     private void AtualizarStint()
     {
-        if (_orquestrador is null || _replaySegs.Count == 0) return;
+        if (_orquestrador is null || _segsAtivos.Count == 0) return;
 
         var atual = _orquestrador.CurvaAtualId;
         var pattern = new StintBlockState[12];
         for (var i = 0; i < 12; i++)
         {
-            if (i >= _replaySegs.Count) { pattern[i] = StintBlockState.Pending; continue; }
-            var seg = _replaySegs[i];
+            if (i >= _segsAtivos.Count) { pattern[i] = StintBlockState.Pending; continue; }
+            var seg = _segsAtivos[i];
             if (seg.Id == atual) { pattern[i] = StintBlockState.Current; continue; }
             pattern[i] = _orquestrador.EstadoDoTrecho(seg.Id) switch
             {
@@ -224,31 +223,37 @@ public sealed partial class MainWindow
     // sensor. Movimento (GPS) verde se chegou ponto recente. Chassi não instalado.
     private void AtualizarSensores(AmostraAlerta? a)
     {
-        // Motor: comunica em verde por padrão; campos sem dado (null) ficam vermelho.
-        SetSensor(SensorRpm,        a?.Rpm is not null);
-        SetSensor(SensorAcel,       a?.TpsPct is not null);
-        SetSensor(SensorFreioPedal, a is not null);          // pedal vem no mesmo quadro do motor
-        SetSensor(SensorAgua,       a?.WaterTempC is not null, warn: a?.WaterTempC is > 80);
-        SetSensor(SensorLambda,     a?.Lambda is not null, warn: a?.Lambda is < 0.80 or > 1.15);
-        SetSensor(SensorBateria,    a?.BatteryV is not null, warn: a?.BatteryV is < 11.8);
-        SetSensor(SensorAlarme,     a is not null, warn: a?.BaixaPressaoOleo == true || a?.AlertaNivelCombustivel == true || a?.FuelInjectionBalanced == false);
+        // Motor: só "comunicando" (verde) se a última amostra chegou há pouco (tempo real).
+        // Se a T4000 (USB) cair, os LEDs do MOTOR apagam em ~3 s — NÃO ficam verdes com
+        // dado congelado (mesmo que o GPS, independente, siga vindo). Em replay o motor
+        // flui contínuo, então fica verde normal; em lacuna/fim, apaga (honesto).
+        var motorVivo = Environment.TickCount64 - _ultimoMotorTick < 3000;
+        var am = motorVivo ? a : null;
+        SetSensor(SensorRpm,        am?.Rpm is not null);
+        SetSensor(SensorAcel,       am?.TpsPct is not null);
+        SetSensor(SensorFreioPedal, am is not null);          // pedal vem no mesmo quadro do motor
+        SetSensor(SensorAgua,       am?.WaterTempC is not null, warn: am?.WaterTempC is > 80);
+        SetSensor(SensorLambda,     am?.Lambda is not null, warn: am?.Lambda is < 0.80 or > 1.15);
+        SetSensor(SensorBateria,    am?.BatteryV is not null, warn: am?.BatteryV is < 11.8);
+        SetSensor(SensorAlarme,     am is not null, warn: am?.BaixaPressaoOleo == true || am?.AlertaNivelCombustivel == true || am?.FuelInjectionBalanced == false);
 
-        // Movimento: GPS verde se chegou amostra há pouco; acelerômetro acompanha.
-        var gpsVivo = _replayClock is not null
-            && (_replayBaseMs + _replayClock.Elapsed.TotalMilliseconds * _options.Speed) - _ultimoGpsMs < 3000;
+        // Movimento: GPS verde se chegou amostra há pouco (tempo REAL monotônico — vale
+        // pro replay E pro live); acelerômetro acompanha.
+        var gpsVivo = Environment.TickCount64 - _ultimoGpsTick < 3000;
         foreach (var s in _sensorsMov) SetSensorColor(s, gpsVivo ? SensorOk : SensorOff);
 
         // Chassi (pneus/susp/câmbio/freio dedicado/direção): sensores a instalar.
         foreach (var s in _sensorsChassi) SetSensorColor(s, SensorOff);
     }
 
-    private static void SetSensor(Microsoft.UI.Xaml.Shapes.Ellipse s, bool comunicando, bool warn = false)
+    private static void SetSensor(Microsoft.UI.Xaml.Shapes.Shape s, bool comunicando, bool warn = false)
         => SetSensorColor(s, !comunicando ? SensorOff : warn ? SensorWarn : SensorOk);
 
-    private static void SetSensorColor(Microsoft.UI.Xaml.Shapes.Ellipse s, Windows.UI.Color color)
+    private static void SetSensorColor(Microsoft.UI.Xaml.Shapes.Shape s, Windows.UI.Color color)
     {
-        if (s.Fill is SolidColorBrush b) b.Color = color;
-        else s.Fill = new SolidColorBrush(color);
+        // O ícone do sensor é desenhado por TRAÇO (Stroke) — a cor do estado vai no Stroke.
+        if (s.Stroke is SolidColorBrush b) b.Color = color;
+        else s.Stroke = new SolidColorBrush(color);
     }
 
     // Sobe a árvore de diretórios até a raiz do repo (pasta que tem 'windows' e 'web').

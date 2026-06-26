@@ -7,6 +7,10 @@
 // provados por teste). Aqui é só: conectar, entrar no canal, mandar broadcast,
 // bater o coração (heartbeat) e dizer se está online.
 //
+// MORA NO DOMAIN (2026-06-25): a UI (.exe do cockpit) e o console de captura usam
+// o MESMO fio. Só transporte (System.Net.WebSockets), sem dependência de Windows —
+// roda e é provado fora do carro. Antes vivia em P1Fast.Cockpit.T4000Capture.
+//
 // Protocolo (igual ao supabase-js):
 //   wss://<ref>.supabase.co/realtime/v1/websocket?apikey=<anon>&vsn=1.0.0
 //   join:      {topic:"realtime:<canal>", event:"phx_join", payload:{config:{broadcast:{ack:false,self:false}}}, ref}
@@ -18,9 +22,8 @@
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
-using P1Fast.Cockpit.Domain;
 
-namespace P1Fast.Cockpit.T4000Capture;
+namespace P1Fast.Cockpit.Domain;
 
 public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
 {

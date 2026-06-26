@@ -107,34 +107,50 @@
                             Background="#14181E"
                             BorderBrush="#2A2F37"
                             BorderThickness="1">
+                        <Border.Resources>
+                            <!-- Ícones dos sensores (port fiel do painel aprovado 22/06): chip escuro + ícone
+                                 de LINHA. A cor do estado (verde/amarelo/vermelho) vai no Stroke do Path, inline
+                                 (cada um o seu brush) — o code-behind muta sem afetar os vizinhos. -->
+                            <Style x:Key="SIcon" TargetType="Path">
+                                <Setter Property="StrokeThickness" Value="1.55"/>
+                                <Setter Property="StrokeLineJoin" Value="Round"/>
+                                <Setter Property="StrokeStartLineCap" Value="Round"/>
+                                <Setter Property="StrokeEndLineCap" Value="Round"/>
+                            </Style>
+                            <Style x:Key="SChip" TargetType="Ellipse">
+                                <Setter Property="Fill" Value="#1A1E24"/>
+                                <Setter Property="Stroke" Value="#30363F"/>
+                                <Setter Property="StrokeThickness" Value="1"/>
+                            </Style>
+                        </Border.Resources>
                         <StackPanel Orientation="Horizontal" Spacing="40" VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                                 <TextBlock Text="MOTOR" FontSize="9" FontWeight="Bold" Foreground="#8A8A8A" CharacterSpacing="120" VerticalAlignment="Center"/>
                                 <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
-                                    <Ellipse x:Name="SensorRpm"        Width="22" Height="22" Fill="#8A3A34"/>
-                                    <Ellipse x:Name="SensorAcel"       Width="22" Height="22" Fill="#8A3A34"/>
-                                    <Ellipse x:Name="SensorFreioPedal" Width="22" Height="22" Fill="#8A3A34"/>
-                                    <Ellipse x:Name="SensorAgua"       Width="22" Height="22" Fill="#8A3A34"/>
-                                    <Ellipse x:Name="SensorLambda"     Width="22" Height="22" Fill="#8A3A34"/>
-                                    <Ellipse x:Name="SensorBateria"    Width="22" Height="22" Fill="#8A3A34"/>
-                                    <Ellipse x:Name="SensorAlarme"     Width="22" Height="22" Fill="#8A3A34"/>
+                                    <Grid Width="22" Height="22"><Ellipse Style="{StaticResource SChip}"/><Viewbox Width="14" Height="14"><Grid Width="24" Height="24"><Path x:Name="SensorRpm" Style="{StaticResource SIcon}" Stroke="#8A3A34" Data="M5.2 17.8a9 9 0 1 1 13.6 0 M12 12l4-2.5 M10.8,12 a1.2,1.2 0 1 0 2.4,0 a1.2,1.2 0 1 0 -2.4,0 M12 5v1.4M6.6 9.4l1 .6M17.4 9.4l-1 .6"/></Grid></Viewbox></Grid>
+                                    <Grid Width="22" Height="22"><Ellipse Style="{StaticResource SChip}"/><Viewbox Width="14" Height="14"><Grid Width="24" Height="24"><Path x:Name="SensorAcel" Style="{StaticResource SIcon}" Stroke="#8A3A34" Data="M13.13,3.6 L13.13,3.6 A3,3 10 0 1 15.56,7.07 L14.43,13.48 A3,3 10 0 1 10.96,15.91 L10.96,15.91 A3,3 10 0 1 8.52,12.43 L9.65,6.03 A3,3 10 0 1 13.13,3.6 Z M10.6 7l3 .7M10.2 9.6l3 .7M9.8 12.2l3 .7 M6 19.5h12"/></Grid></Viewbox></Grid>
+                                    <Grid Width="22" Height="22"><Ellipse Style="{StaticResource SChip}"/><Viewbox Width="14" Height="14"><Grid Width="24" Height="24"><Path x:Name="SensorFreioPedal" Style="{StaticResource SIcon}" Stroke="#8A3A34" Data="M4.2,12 a7.3,7.3 0 1 0 14.6,0 a7.3,7.3 0 1 0 -14.6,0 M9.1,12 a2.4,2.4 0 1 0 4.8,0 a2.4,2.4 0 1 0 -4.8,0 M16.2,8.8 L18,8.8 a1.6,1.6 0 0 1 1.6,1.6 L19.6,13.6 a1.6,1.6 0 0 1 -1.6,1.6 L16.2,15.2 a1.6,1.6 0 0 1 -1.6,-1.6 L14.6,10.4 a1.6,1.6 0 0 1 1.6,-1.6 Z M11.5 4.7v1.5M11.5 17.8v1.5M4.6 12h1.5"/></Grid></Viewbox></Grid>
+                                    <Grid Width="22" Height="22"><Ellipse Style="{StaticResource SChip}"/><Viewbox Width="14" Height="14"><Grid Width="24" Height="24"><Path x:Name="SensorAgua" Style="{StaticResource SIcon}" Stroke="#8A3A34" Data="M12 4.2a1.8 1.8 0 0 1 1.8 1.8v6.5a3.2 3.2 0 1 1-3.6 0V6a1.8 1.8 0 0 1 1.8-1.8z M12 8v4.2 M10.6,14.6 a1.4,1.4 0 1 0 2.8,0 a1.4,1.4 0 1 0 -2.8,0 M4.6 20c.9-1 1.8-1 2.7 0s1.8 1 2.7 0M14 20c.9-1 1.8-1 2.7 0s1.8 1 2.7 0"/></Grid></Viewbox></Grid>
+                                    <Grid Width="22" Height="22"><Ellipse Style="{StaticResource SChip}"/><Viewbox Width="14" Height="14"><Grid Width="24" Height="24"><Path x:Name="SensorLambda" Style="{StaticResource SIcon}" Stroke="#8A3A34" Data="M7 19.5L12 6l5 13.5 M12 6l-1.5-2.3"/></Grid></Viewbox></Grid>
+                                    <Grid Width="22" Height="22"><Ellipse Style="{StaticResource SChip}"/><Viewbox Width="14" Height="14"><Grid Width="24" Height="24"><Path x:Name="SensorBateria" Style="{StaticResource SIcon}" Stroke="#8A3A34" Data="M5.1,8.5 L18.9,8.5 a1.6,1.6 0 0 1 1.6,1.6 L20.5,15.9 a1.6,1.6 0 0 1 -1.6,1.6 L5.1,17.5 a1.6,1.6 0 0 1 -1.6,-1.6 L3.5,10.1 a1.6,1.6 0 0 1 1.6,-1.6 Z M7.5 8.5V6.5h2.2v2M14.3 8.5V6.5h2.2v2 M6.5 13h2.6M7.8 11.7v2.6 M15 13h2.6"/></Grid></Viewbox></Grid>
+                                    <Grid Width="22" Height="22"><Ellipse Style="{StaticResource SChip}"/><Viewbox Width="14" Height="14"><Grid Width="24" Height="24"><Path x:Name="SensorAlarme" Style="{StaticResource SIcon}" Stroke="#8A3A34" Data="M19.4 13a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z M9,12 a3,3 0 1 0 6,0 a3,3 0 1 0 -6,0"/></Grid></Viewbox></Grid>
                                 </StackPanel>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                                 <TextBlock Text="MOVIMENTO" FontSize="9" FontWeight="Bold" Foreground="#8A8A8A" CharacterSpacing="120" VerticalAlignment="Center"/>
                                 <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
-                                    <Ellipse x:Name="SensorGps"   Width="22" Height="22" Fill="#8A3A34"/>
-                                    <Ellipse x:Name="SensorAccel" Width="22" Height="22" Fill="#8A3A34"/>
+                                    <Grid Width="22" Height="22"><Ellipse Style="{StaticResource SChip}"/><Viewbox Width="14" Height="14"><Grid Width="24" Height="24"><Path x:Name="SensorGps" Style="{StaticResource SIcon}" Stroke="#8A3A34" Data="M12 21c-4-4.5-6-7.6-6-10a6 6 0 1 1 12 0c0 2.4-2 5.5-6 10z M9.7,11 a2.3,2.3 0 1 0 4.6,0 a2.3,2.3 0 1 0 -4.6,0"/></Grid></Viewbox></Grid>
+                                    <Grid Width="22" Height="22"><Ellipse Style="{StaticResource SChip}"/><Viewbox Width="14" Height="14"><Grid Width="24" Height="24"><Path x:Name="SensorAccel" Style="{StaticResource SIcon}" Stroke="#8A3A34" Data="M4,12 a8,8 0 1 0 16,0 a8,8 0 1 0 -16,0 M12 4v16M4 12h16 M12.9,9.4 a1.7,1.7 0 1 0 3.4,0 a1.7,1.7 0 1 0 -3.4,0"/></Grid></Viewbox></Grid>
                                 </StackPanel>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                                 <TextBlock Text="CHASSI" FontSize="9" FontWeight="Bold" Foreground="#8A8A8A" CharacterSpacing="120" VerticalAlignment="Center"/>
                                 <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
-                                    <Ellipse x:Name="SensorPneus"    Width="22" Height="22" Fill="#8A3A34"/>
-                                    <Ellipse x:Name="SensorSusp"     Width="22" Height="22" Fill="#8A3A34"/>
-                                    <Ellipse x:Name="SensorCambio"   Width="22" Height="22" Fill="#8A3A34"/>
-                                    <Ellipse x:Name="SensorFreioDed" Width="22" Height="22" Fill="#8A3A34"/>
-                                    <Ellipse x:Name="SensorDirecao"  Width="22" Height="22" Fill="#8A3A34"/>
+                                    <Grid Width="22" Height="22"><Ellipse Style="{StaticResource SChip}"/><Viewbox Width="14" Height="14"><Grid Width="24" Height="24"><Path x:Name="SensorPneus" Style="{StaticResource SIcon}" Stroke="#8A3A34" Data="M3.6,12 a8.4,8.4 0 1 0 16.8,0 a8.4,8.4 0 1 0 -16.8,0 M6.4,12 a5.6,5.6 0 1 0 11.2,0 a5.6,5.6 0 1 0 -11.2,0 M9.4,12 a2.6,2.6 0 1 0 5.2,0 a2.6,2.6 0 1 0 -5.2,0 M12 3.6v2M12 18.4v2M3.6 12h2M18.4 12h2M6.1 6.1l1.4 1.4M16.5 16.5l1.4 1.4M17.9 6.1l-1.4 1.4M6.1 17.9l1.4-1.4"/></Grid></Viewbox></Grid>
+                                    <Grid Width="22" Height="22"><Ellipse Style="{StaticResource SChip}"/><Viewbox Width="14" Height="14"><Grid Width="24" Height="24"><Path x:Name="SensorSusp" Style="{StaticResource SIcon}" Stroke="#8A3A34" Data="M9 4.5h6M9 19.5h6M12 4.5v1.6M12 17.9v1.6 M9 7c0 1.3 6 1.3 6 0M9 10c0 1.3 6 1.3 6 0M9 13c0 1.3 6 1.3 6 0M9 16c0 1.3 6 1.3 6 0"/></Grid></Viewbox></Grid>
+                                    <Grid Width="22" Height="22"><Ellipse Style="{StaticResource SChip}"/><Viewbox Width="14" Height="14"><Grid Width="24" Height="24"><Path x:Name="SensorCambio" Style="{StaticResource SIcon}" Stroke="#8A3A34" Data="M10,5 a2,2 0 1 0 4,0 a2,2 0 1 0 -4,0 M12 7v5 M7 12h10 M7 12v3M12 12v4M17 12v3"/></Grid></Viewbox></Grid>
+                                    <Grid Width="22" Height="22"><Ellipse Style="{StaticResource SChip}"/><Viewbox Width="14" Height="14"><Grid Width="24" Height="24"><Path x:Name="SensorFreioDed" Style="{StaticResource SIcon}" Stroke="#8A3A34" Data="M7,12 a5,5 0 1 0 10,0 a5,5 0 1 0 -10,0 M12 9.4v3.1 M11.3,14.7 a0.7,0.7 0 1 0 1.4,0 a0.7,0.7 0 1 0 -1.4,0 M5 8.5a6.5 6.5 0 0 0 0 7M19 8.5a6.5 6.5 0 0 1 0 7"/></Grid></Viewbox></Grid>
+                                    <Grid Width="22" Height="22"><Ellipse Style="{StaticResource SChip}"/><Viewbox Width="14" Height="14"><Grid Width="24" Height="24"><Path x:Name="SensorDirecao" Style="{StaticResource SIcon}" Stroke="#8A3A34" Data="M3.6,12 a8.4,8.4 0 1 0 16.8,0 a8.4,8.4 0 1 0 -16.8,0 M9.7,12 a2.3,2.3 0 1 0 4.6,0 a2.3,2.3 0 1 0 -4.6,0 M9.8 12H3.6M14.2 12h6.2M12 14.3v6.1"/></Grid></Viewbox></Grid>
                                 </StackPanel>
                             </StackPanel>
                         </StackPanel>
