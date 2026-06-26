@@ -1,10 +1,12 @@
 @echo off
 REM ============================================================================
-REM  P1 FAST - AO VIVO (um clique faz tudo)
-REM  1) sobe o cockpit do piloto AO VIVO em PRODUCAO (.exe --live --producao):
-REM     le T4000 (USB) + RaceBox (Bluetooth) e publica no canal cockpit-bubi-live
-REM     (que o app e o Command Box assistem). O .exe pega o RaceBox PRIMEIRO.
-REM  2) depois abre a pagina de video da pista (p1tv) no navegador.
+REM  P1 FAST - AO VIVO (tela do piloto)
+REM  Sobe SO o cockpit do piloto AO VIVO em PRODUCAO (.exe --live --producao),
+REM  em tela cheia. Le T4000 (USB) + RaceBox (Bluetooth) e publica no canal
+REM  cockpit-bubi-live (que o app e o Command Box assistem).
+REM  O VIDEO (p1tv) NAO abre aqui de proposito: ele vai entrar sozinho e POR TRAS
+REM  quando a pagina estiver com auto-inicio (em construcao). A tela do piloto
+REM  nunca deve sair pra mostrar o navegador.
 REM  Para ENSAIO sem ir ao ar, use IR-AO-VIVO-TESTE.cmd.
 REM ============================================================================
 setlocal
@@ -17,25 +19,10 @@ if not exist "%EXE%" (
   echo.
   echo [ERRO] Nao encontrei o cockpit em:
   echo   %EXE%
-  echo Provavel: o .exe ainda nao foi buildado neste notebook.
   echo.
   pause
   exit /b 1
 )
 
-echo.
-echo  ====================================================
-echo     P1 FAST - indo AO VIVO (PRODUCAO)
-echo  ====================================================
-echo  Confira ligados: T4000 (USB) . RaceBox (Bluetooth) . internet (hotspot iPhone)
-echo.
-
-REM 1) cockpit do piloto ao vivo em producao (pega o RaceBox primeiro)
 start "" "%EXE%" --live --producao
-
-REM 2) da uns segundos pro cockpit assumir o RaceBox, depois abre o video
-echo  Subindo o cockpit... abrindo o video em seguida.
-timeout /t 6 >nul
-start "" "https://p1tv.vercel.app/"
-
 exit /b 0
