@@ -36,7 +36,8 @@ porque é exatamente isso que o produto entrega ao piloto.
 | Camada | Tecnologia | ADR / fonte |
 |---|---|---|
 | Hub do piloto (HOME, Eventos, Garagem, Pendências, cadastros) | iOS Swift nativo (SwiftUI) | ADR-018 |
-| Captura IMU 100 Hz + GPS 1 Hz + câmera onboard | iOS Swift (CoreMotion + CoreLocation + Daily.co) | ADR-018 |
+| Captura IMU 100 Hz + GPS 1 Hz | iOS Swift (CoreMotion + CoreLocation) | ADR-018 |
+| Câmera ao vivo (vídeo) | **DJI Osmo Action 6 → webcam USB no notebook** → Daily.co (NÃO é mais a câmera do iPhone) | **ADR-024** |
 | **Cockpit-display ao vivo (PRODUTO FINAL)** | **WinUI 3 + C# (.NET 8) nativo Windows**, rodando em notebook + tela 10,5" externa invertida no painel (rotação 180° via Windows Display Settings) | **ADR-023 amendments 4 (2026-05-09) e 5 (2026-05-10)** |
 | Cockpit-display (REFERÊNCIA EXECUTÁVEL) | Web app (HTML/CSS/JS) em `web/cockpit/` — protótipo + spec dos smokes; descartado quando port C# fechar | ADR-023 amendment 3 |
 | **Driver Injepro T4000 (RPM, marcha, temp, λ, MAP, EGT, etc.)** | **Windows.Devices.SerialCommunication (USB CDC-ACM)** ou adaptador CAN-USB com bindings nativos | **ADR-023 amendment 4 + `docs/hardware/T4000_CAN_SPEC.md`** |
@@ -44,7 +45,7 @@ porque é exatamente isso que o produto entrega ao piloto.
 | Persistência local web | Dexie / IndexedDB | ADR-002 (legado, modo referência) |
 | Backend nuvem | Supabase (projeto isolado do CDAI) | — |
 | Auth | Supabase Auth (Apple ID + email/senha) | — |
-| Vídeo ao vivo | Daily.co (câmera onboard frontal do iPhone) | — |
+| Vídeo ao vivo | Daily.co — fonte = **DJI Osmo Action 6 (webcam USB no notebook)**; transmissor = página web do notebook; uplink = **internet do iPhone via Wi‑Fi (hotspot)** | **ADR-024** (2026-06-09; uplink 2026-06-25) |
 | Telemetria ao vivo | Supabase Realtime (eventos agregados ≤10 Hz, NÃO samples raw) | ADR-014 |
 | **Transporte iPhone ↔ notebook Windows** | **Cabo USB primário (TCP-over-USB via `usbmuxd`/`iproxy`, latência 5-15 ms) + Supabase Realtime como fallback automático.** Notebook escolhe via `TransportSelector` baseado em heartbeat 1 Hz. | **ADR-023 (amendment 2 — 2026-05-09)** |
 | Histórico | Supabase Postgres | — |
@@ -416,7 +417,7 @@ Núcleo lógico do sistema. Engenharia codificada + IA contextual. Operado pelos
 
 ## 10 — Decisões já fechadas — não reabrir
 
-- **Vídeo ao vivo:** Daily.co (câmera onboard frontal do iPhone) — §2 deste plano
+- **Vídeo ao vivo:** Daily.co, fonte = **DJI Osmo Action 6 (webcam USB no notebook)**, transmissor = página web do notebook, uplink = **internet do iPhone via Wi‑Fi** — **ADR-024** (supera a "câmera frontal do iPhone" do MVP antigo; decisões Flávio 2026-06-09 e uplink 2026-06-25)
 - **Box cockpit:** TV 32" via Fire TV Stick 4K Max — o navegador do Fire Stick abre o app na nuvem. Substitui o modelo antigo "App iOS modo BOX → AirPlay → Apple TV" (sem Apple TV, sem AirPlay, sem espelhamento pelo celular). — §2 — (atualizado 16/06/2026 - ver docs/ARQUITETURA_DEFINITIVA.md)
 - **Cockpit-display ao vivo migra pra Windows nativo (WinUI 3 + C#)** (notebook hospeda + tela 10,5" externa invertida no painel) — **ADR-023 + amendments 4 e 5**, decisões Flávio 2026-05-09 e 2026-05-10. O `web/cockpit/` em HTML é referência executável + spec dos smokes, não produto final.
 - **Driver T4000 fica no Windows** (USB CDC-ACM ou CAN, JS sobre Node/Electron) — **ADR-023**, substitui o plano original BLE iOS

@@ -210,6 +210,11 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 
 **Aplica-se a**: PLANO_FASE_1.md §2 (stack), §6 (mini-sprints MS-2/9/13), §10 (decisões fechadas); STATUS.md; CLAUDE.md (decisões fechadas).
 
+> **AMENDMENT 7 (Flávio 2026-06-25) — GPS = RaceBox por Bluetooth no notebook (o .exe é o dono).**
+> Supera o item desta ADR que dizia que o GPS chega ao cockpit pelo iPhone (CoreLocation → Supabase Realtime). A realidade validada em campo (2026-06-09) e o produto atual usam o **RaceBox Mini** (GNSS ≥25 Hz) lido por **Bluetooth LE direto no notebook** (Nordic UART Service, frames UBX). No `.exe` nativo isso é o `RaceBoxBleReader` (`windows/cockpit/P1Fast.Cockpit.UI/RaceBoxBleReader.cs`), que alimenta o maestro local.
+> **Dono ÚNICO do RaceBox = o `.exe`** — um RaceBox aceita só um central BLE por vez (confirmado por verificação adversarial 2026-06-25). A página de vídeo (`web/teste-aparelhos/index.html`) **NÃO deve mais abrir o RaceBox** (hoje ainda abre — é o conflito a remover); se precisar de GPS, recebe do `.exe`. O iPhone **sai do caminho do GPS**; permanece como uplink de internet (hotspot Wi‑Fi, ver ADR-024) e captura iOS própria (ADR-018).
+> Embasamento: estudo escrutinado em `.claude-exec/ESTUDO-ARQUITETURA-COCKPIT-2026-06-25.md` (alegações C4/C6). A `docs/hardware/RACEBOX_INTEGRATION_SPEC.md` (marcada "arquivada") fica **reativada** como referência de protocolo.
+
 ---
 
 ## ADR-024 — Vídeo ao vivo MVP: câmera DJI no notebook + Daily.co (atualizada 2026-06-09)
@@ -223,10 +228,10 @@ Cada ADR = uma decisão travada. Não se reabre sem upgrade formal.
 - Fonte da imagem: **DJI Osmo Action 6 → cabo USB → notebook Windows da pista** (a DJI vira webcam padrão; não existe API da DJI pra PC comandar gravação interna — quem captura é o notebook).
 - Transmissor: página web no navegador do notebook (`web/teste-aparelhos/` · publicada no endereço de teste p1tv.vercel.app), junto com o GPS RaceBox.
 - Quem assiste: app iOS P1 Fast (tela ao vivo) e/ou página `/painel` no celular.
-- Subida pela internet da pista (**Starlink**).
+- Subida pela internet da pista: **internet do iPhone via Wi‑Fi (hotspot)** — o notebook usa o celular como uplink (**amendment Flávio 2026-06-25**, substitui a Starlink que constava como uplink). O iPhone só fornece a conexão; quem publica no Daily.co continua sendo o notebook (página web).
 - Insta360, Cloudflare e LiveKit continuam fora.
 
-**Consequência:** o iPhone sai do caminho do vídeo. Captura de telemetria iOS (ADR-018) não muda.
+**Consequência:** o iPhone sai do caminho do vídeo como FONTE/transmissor (a Osmo no notebook é a fonte; o notebook publica). O iPhone reaparece só como **uplink de internet** (hotspot Wi‑Fi) a partir de 2026-06-25. Captura de telemetria iOS (ADR-018) não muda.
 
 ---
 

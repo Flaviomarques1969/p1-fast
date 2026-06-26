@@ -3,9 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="pragma" content="no-cache">
-<meta http-equiv="expires" content="0">
 <title>P1 Fast — Central de Pista (notebook)</title>
 <script crossorigin src="https://unpkg.com/@daily-co/daily-js"></script>
 <style>
@@ -38,7 +35,7 @@
 <body>
 <header>
   <h1>P1 Fast — Central de Pista</h1>
-  <p>Notebook da pista · câmera + GPS + acompanhamento dos dados do carro · quem assiste abre <b>/painel</b> · versão <b id="appVer" style="color:#4ade80">—</b></p>
+  <p>Notebook da pista · câmera + GPS + acompanhamento dos dados do carro · quem assiste abre <b>/painel</b></p>
 </header>
 
 <div class="board">
@@ -46,7 +43,6 @@
   <span id="bGps" class="pill idle">GPS · desligado</span>
   <span id="bCarro" class="pill idle">CARRO · sem dados</span>
   <span id="bNuvem" class="pill idle">NUVEM · desligada</span>
-  <span id="bRec" class="pill idle">GRAVAÇÃO · parada</span>
 </div>
 
 <div class="wrap">
@@ -89,28 +85,6 @@
   </div>
 
   <div class="card">
-    <h2>Gravação da sessão</h2>
-    <div id="recBanner" style="margin:2px 0 12px;padding:16px 18px;border-radius:10px;font-weight:800;font-size:22px;letter-spacing:.4px;text-align:center;background:#1f2937;color:#94a3b8">AGUARDANDO SINAL…</div>
-    <p class="note" style="margin-top:-6px">Captura <b>automática</b>: começa sozinha quando o carro anda (pista) e para sozinha quando fica parado (box). Você só mantém o notebook ligado com esta tela aberta e <b>vigia este aviso</b>.</p>
-    <div class="row"><span class="lbl">Estado</span><span id="recEstado" class="pill idle">parada</span></div>
-    <div id="recAlarme" style="display:none;margin-top:8px;background:#b91c1c;color:#fff;font-weight:700;padding:8px 10px;border-radius:6px"></div>
-    <div class="grid2" style="margin-top:6px">
-      <div class="row"><span class="lbl">Tempo</span><span id="recTempo" class="val">—</span></div>
-      <div class="row"><span class="lbl">Lacunas</span><span id="recLac" class="val">—</span></div>
-      <div class="row"><span class="lbl">GPS gravados</span><span id="recNGps" class="val">—</span></div>
-      <div class="row"><span class="lbl">Motor gravados</span><span id="recNMotor" class="val">—</span></div>
-      <div class="row"><span class="lbl">Taxa GPS</span><span id="recHzGps" class="val">—</span></div>
-      <div class="row"><span class="lbl">Taxa motor</span><span id="recHzMotor" class="val">—</span></div>
-    </div>
-    <div class="row" style="margin-top:6px"><span class="lbl">Espaço no notebook</span><span id="recEspaco" class="val">—</span></div>
-    <div id="recResumo" class="note" style="display:none;color:#4ade80"></div>
-    <button id="btnBaixar" style="margin-top:10px" disabled>Baixar última sessão (arquivo)</button>
-    <p class="note">Grava sozinho do liga ao desliga do carro: cada ponto de GPS (na taxa cheia) e cada
-    amostra do motor ficam guardados no próprio notebook, mesmo sem internet. Ao desligar, mostra o
-    resumo e libera o arquivo da sessão completa.</p>
-  </div>
-
-  <div class="card">
     <h2>Registro</h2>
     <div id="log"></div>
   </div>
@@ -118,140 +92,11 @@
 
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { criarGravador, criarStoreIndexedDB, estimarArmazenamento } from './session-recorder.js';
 
 const $ = id => document.getElementById(id);
-// Versão da página. Bump a cada alteração para confirmar no notebook que a
-// versão certa está rodando (compare o selo do cabeçalho com este valor).
-const BUILD = '2026-06-23-CAPTURA-AUTO';
 function log(m){ const t=new Date().toLocaleTimeString(); $('log').textContent = `${t}  ${m}\n` + $('log').textContent; }
 function pill(el, txt, cls){ el.textContent = txt; el.className = 'pill ' + cls; }
 const boardPill = pill;
-
-// ════════════════ GRAVADOR DE SESSÃO (liga→desliga, no próprio notebook) ════
-// Conserta a causa-raiz da auditoria 20/06: o notebook não gravava nada — o dado
-// só passava ao vivo e morria. Aqui cada ponto de GPS (na taxa cheia que o RaceBox
-// entrega) e cada amostra do motor (T4000) são gravados append-only no IndexedDB
-// local, do primeiro dado (carro ligou) até 8 s de silêncio (carro desligou).
-const hex = u8 => Array.from(u8, b => b.toString(16).padStart(2,'0')).join('');
-// Captura AUTOMÁTICA por movimento (sem botão): grava sozinho quando o carro ANDA
-// (entrou na pista) e para sozinho quando fica PARADO (box). Notebook ligado + esta
-// tela aberta = único requisito manual. Limiares (km/h e s) a calibrar na pista.
-const Rec = criarGravador({
-  store: criarStoreIndexedDB('p1fast-sessoes'),
-  auto: { vOn: 15, vOff: 6, paradoMs: 12000 },
-});
-let ultimaSessaoId = null;
-let recTela = 'parada';   // 'parada' | 'gravando' | 'salva' — estado explícito (não lê o texto do selo)
-
-// Aviso GRANDE pra o operador "vigiar" de longe (captura automática):
-//  verde  = GRAVANDO, carro na pista
-//  âmbar  = EM ESPERA, carro parado/no box (vai gravar sozinho quando andar)
-//  vermelho = SEM GPS — não dá pra saber se está na pista (precisa de sinal)
-function atualizarBanner(e){
-  const b = $('recBanner'); if (!b) return;
-  const gpsChegando = e && e.gpsHaMs != null && e.gpsHaMs < 3000;
-  const kmh = Math.round(e && typeof e.velKmh === 'number' ? e.velKmh : 0);
-  if (!gpsChegando){
-    b.textContent = 'SEM GPS — não dá pra saber se o carro está na pista';
-    b.style.background = '#7f1d1d'; b.style.color = '#fecaca';
-  } else if (e.gravando){
-    b.textContent = 'GRAVANDO — NA PISTA   ·   ' + kmh + ' km/h';
-    b.style.background = '#14532d'; b.style.color = '#bbf7d0';
-  } else {
-    b.textContent = 'EM ESPERA — no box (parado)   ·   ' + kmh + ' km/h';
-    b.style.background = '#78350f'; b.style.color = '#fde68a';
-  }
-}
-
-function renderGravacao(){
-  const e = Rec.estado();
-  atualizarBanner(e);
-  // Alarme VISÍVEL, nunca silencioso (blindagem — decisão Flávio 21/06).
-  if (e.alarme){
-    $('recAlarme').style.display = 'block';
-    $('recAlarme').textContent = e.alarme === 'parada-armazenamento'
-      ? 'GRAVAÇÃO PAROU — o armazenamento do notebook falhou. O dado ao vivo continua, mas NÃO está sendo guardado.'
-      : 'PERDENDO AMOSTRAS (' + (e.dropped || 0) + ' descarte(s)). Verifique o espaço/erro do navegador.';
-  } else {
-    $('recAlarme').style.display = 'none';
-  }
-  if (e.gravando){
-    recTela = 'gravando';
-    boardPill($('bRec'), 'GRAVAÇÃO · ' + (e.sim?'sim ':'') + 'ativa ✓', 'ok');
-    pill($('recEstado'), 'GRAVANDO'+(e.sim?' (sim)':''), e.dropped?'warn':'ok');
-    $('recTempo').textContent   = e.tempoS.toFixed(1)+'s';
-    $('recNGps').textContent    = e.nGps;
-    $('recNMotor').textContent  = e.nMotor;
-    $('recHzGps').textContent   = e.hzGps.toFixed(1)+'/s';
-    $('recHzMotor').textContent = e.hzMotor.toFixed(1)+'/s';
-    $('recLac').textContent     = e.lacunas;
-  } else if (recTela !== 'salva') {
-    recTela = 'parada';
-    boardPill($('bRec'), 'GRAVAÇÃO · parada', 'idle');
-    pill($('recEstado'), 'parada', 'idle');
-  }
-}
-function mostrarResumo(r){
-  recTela = 'salva';
-  ultimaSessaoId = r.id;
-  $('btnBaixar').disabled = false;
-  const lac  = r.maiorLacunaMs ? (', maior buraco '+(r.maiorLacunaMs/1000).toFixed(1)+'s') : ', sem buracos';
-  const drop = r.dropped ? (' · '+r.dropped+' descartes') : '';
-  const txt  = 'Sessão gravada'+(r.sim?' (simulada)':'')+': '+r.duracaoS+'s · '+r.nGps+' pontos de GPS ('
-    +r.hzGpsMedia+'/s) · '+r.nMotor+' do motor ('+r.hzMotorMedia+'/s)'+lac+drop+'.';
-  $('recResumo').style.display = 'block';
-  $('recResumo').textContent = txt;
-  pill($('recEstado'), 'sessão salva ✓', 'ok');
-  boardPill($('bRec'), 'GRAVAÇÃO · sessão salva ✓', 'ok');
-  log(txt);
-}
-async function baixarSessao(){
-  if (!ultimaSessaoId) { log('Nenhuma sessão gravada ainda.'); return; }
-  try {
-    const dump = await Rec.exportarSessao(ultimaSessaoId);
-    const blob = new Blob([JSON.stringify(dump, null, 1)], { type:'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = ultimaSessaoId + '.json'; a.click();
-    setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
-    log('Arquivo da sessão gerado: '+ultimaSessaoId+'.json ('+dump.amostras.length+' amostras).');
-  } catch(e){ log('Falha ao gerar arquivo: '+e.message); }
-}
-setInterval(renderGravacao, 500);
-setInterval(() => { const r = Rec.tick(); if (r) mostrarResumo(r); }, 1000);
-
-// Aviso de espaço no notebook (blindagem): mostra quanto está usado e alarma quando
-// o armazenamento está perto de encher — antes de começar a perder amostra.
-async function renderEspaco(){
-  const s = await estimarArmazenamento();
-  const el = $('recEspaco');
-  if (!s.suportado){ el.textContent = 'não informado'; el.style.color = ''; return; }
-  el.textContent = s.usadoMB + ' MB / ' + s.cotaMB + ' MB (' + s.pct + '%)';
-  el.style.color = s.nivel === 'critico' ? '#f87171' : s.nivel === 'atencao' ? '#fbbf24' : '';
-  if (s.nivel === 'critico' && !Rec.estado().alarme){
-    $('recAlarme').style.display = 'block';
-    $('recAlarme').textContent = 'ESPAÇO QUASE CHEIO (' + s.pct + '%). Baixe e libere as sessões antigas antes de gravar mais.';
-  }
-}
-setInterval(renderEspaco, 5000); renderEspaco();
-
-// Boot: recupera sessão que ficou aberta (a tela foi recarregada ou o notebook
-// dormiu sem fechar). O dado cru não se perde; isto devolve o acesso pela tela.
-(async () => {
-  try {
-    const orfas = await Rec.recuperarOrfas();
-    if (orfas.length) {
-      const o = orfas[0];
-      recTela = 'salva'; ultimaSessaoId = o.id;
-      $('btnBaixar').disabled = false;
-      $('recResumo').style.display = 'block';
-      $('recResumo').textContent = 'Sessão anterior recuperada: '+o.nGps+' pontos de GPS · '+o.nMotor+' do motor ('+o.duracaoS+'s). Baixe pelo botão.';
-      pill($('recEstado'), 'sessão recuperada', 'warn');
-      boardPill($('bRec'), 'GRAVAÇÃO · sessão recuperada', 'warn');
-      log('Sessão anterior não fechada foi recuperada ('+o.nGps+' GPS + '+o.nMotor+' motor). Baixe pelo botão.');
-    }
-  } catch(e){ log('Recuperação de sessão: '+e.message); }
-})();
 
 // ════════════════ NUVEM (canal canônico cockpit-bubi-live) ════════════════
 // Mesma nuvem e mesmo canal que o painel do piloto usa desde 26/05.
@@ -277,6 +122,9 @@ async function connectCloud(){
     const ch = nuvem.client.channel(CHANNEL_NAME, { config: { broadcast: { ack:false, self:false } } });
     ch.on('broadcast', { event:'sample' }, msg => { if (msg && msg.payload) onCarSample(msg.payload); });
     ch.on('broadcast', { event:'evento' }, msg => { if (msg && msg.payload) onEvento(msg.payload); });
+    // Item 3 (RaceBox dono único): o GPS agora vem do COCKPIT (.exe) pela nuvem, NÃO do
+    // RaceBox por BLE aqui. Este web só RELAIA o GPS da nuvem pro vídeo (sala) e mostra na tela.
+    ch.on('broadcast', { event:'gps' }, msg => { if (msg && msg.payload) onCloudGps(msg.payload); });
     ch.subscribe((status, err) => {
       if (status === 'SUBSCRIBED') { nuvem.channel = ch; nuvem.retryMs = 2000; setNuvem('online'); log('Nuvem conectada (canal do carro).'); }
       else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
@@ -306,7 +154,6 @@ function onCarSample(s){
   nuvem.lastSampleTs = now;
   nuvem.lastSample = s;
   nuvem.lastSampleSource = s.source === 'sim-replay' ? 'simulador' : 'carro real';
-  try { Rec.motor(s); } catch(e){}   // grava a amostra do motor (T4000)
   nuvem.sampleWindow.push(now);
   while (nuvem.sampleWindow.length && now - nuvem.sampleWindow[0] > 5000) nuvem.sampleWindow.shift();
   // Simulador não pode misturar com carro real: se chegou amostra REAL, desliga o replay.
@@ -421,7 +268,6 @@ async function ligarSimEventos(){
                     hz:5, hacc:2, ver:'simulador', sim:true };
       if (call) { try { call.sendAppMessage(pkt, '*'); } catch(e){} }
       cloudSend('gps', { lat:p.lat, lng:p.lng, kmh:(p.v||0), numSV:0, fix:3, accM:2, sim:true, tWall:Date.now() });
-      try { Rec.gps({ fix:3, numSV:0, hacc:2, spd:(p.v||0), lat:p.lat, lon:p.lng }, null, true); } catch(e){} // grava o GPS simulado
     }, 200);
   }
 }
@@ -486,7 +332,6 @@ async function getRoom(){
 
 async function startVideo(){
   videoQuero = true;
-  manterAcordado();
   $('btnStart').disabled = true;
   try {
     pill($('vStatus'),'conectando…','warn'); boardPill($('bVideo'),'VÍDEO · conectando…','warn');
@@ -580,8 +425,6 @@ function decode(p){
   if(t0===null) t0=now; pkts++;
   if(now-t0>0) gps.hz = pkts/(now-t0);
   gps.ver = gps.fix===0 ? 'sem sinal' : (gps.numSV<4 ? 'fraco' : (gps.numSV<6?'ok':'travado ✓'));
-  // grava o ponto na TAXA CHEIA do RaceBox + os bytes crus (sem perda)
-  if (Rec.ativo) { try { Rec.gps({ fix:gps.fix, numSV:gps.numSV, hacc:gps.hacc, spd:gps.spd, lat:gps.lat, lon:gps.lon }, hex(p), false); } catch(e){} }
   renderGps();
 }
 function renderGps(){
@@ -591,6 +434,22 @@ function renderGps(){
   $('rbHz').textContent = gps.hz.toFixed(1)+' Hz';
   $('rbLat').textContent = gps.lat!=null ? gps.lat.toFixed(6) : '—';
   $('rbLon').textContent = gps.lon!=null ? gps.lon.toFixed(6) : '—';
+}
+
+// Item 3 (RaceBox dono único): GPS vindo da NUVEM (publicado pelo .exe, ~25 Hz). Popula o
+// MESMO objeto gps que o RaceBox populava → o loop de 200ms repassa pro vídeo e renderGps
+// mostra na tela. Chaves do .exe: lat, lng, kmh, numSV, fix, accM, tWall.
+function onCloudGps(g){
+  if (g == null || g.lat == null || g.lng == null) return;
+  gps.fix = g.fix ?? 0; gps.numSV = g.numSV ?? 0;
+  gps.hacc = g.accM ?? 0; gps.spd = g.kmh ?? 0;
+  gps.lat = g.lat; gps.lon = g.lng;
+  gps.lastPktTs = performance.now();
+  const now = performance.now()/1000;
+  if(t0===null) t0=now; pkts++;
+  if(now-t0>0) gps.hz = pkts/(now-t0);
+  gps.ver = gps.fix===0 ? 'sem sinal' : (gps.numSV<4 ? 'fraco' : (gps.numSV<6?'ok':'travado ✓'));
+  renderGps();
 }
 
 async function assinarRaceBox(device){
@@ -625,7 +484,6 @@ async function religarRaceBox(){
 
 async function connectRaceBox(){
   if(!navigator.bluetooth){ log('Este navegador não tem Bluetooth (use Chrome ou Edge).'); return; }
-  manterAcordado();
   try {
     pill($('rbConn'),'procurando…','warn'); boardPill($('bGps'),'GPS · procurando…','warn');
     const dev = await navigator.bluetooth.requestDevice({ filters:[{ namePrefix:'RaceBox' }], optionalServices:[NUS_SVC] });
@@ -636,95 +494,38 @@ async function connectRaceBox(){
   } catch(e){ pill($('rbConn'),'falhou','bad'); boardPill($('bGps'),'GPS · falhou','bad'); log('Falha no RaceBox: '+e.message); }
 }
 
-// Luz do GPS no quadro de cima: baseada na idade do último pacote, não só no evento de conexão.
+// Luz do GPS no quadro de cima: agora baseada na chegada do GPS pela NUVEM (item 3 — o
+// .exe é o dono do RaceBox e publica o GPS). Verde com pacote fresco; "aguardando cockpit"
+// quando não chega. Status honesto pro operador, sem depender de Bluetooth local.
 setInterval(() => {
-  if (!rb.quero) return;
   const age = gps.lastPktTs ? performance.now() - gps.lastPktTs : Infinity;
   if (age < 2000) {
-    boardPill($('bGps'), 'GPS · '+(gps.fix===0?'ligado, sem céu':'travado ✓')+' ('+gps.numSV+' sat)', gps.fix===0?'warn':'ok');
-  } else if (!rb.religando) {
-    boardPill($('bGps'), 'GPS · sem pacotes', 'bad');
+    boardPill($('bGps'), 'GPS · '+(gps.fix===0?'sem céu':'travado ✓')+' ('+gps.numSV+' sat)', gps.fix===0?'warn':'ok');
+  } else {
+    boardPill($('bGps'), 'GPS · aguardando cockpit…', 'warn');
   }
 }, 1000);
 
-// ════════════════ ENVIO DO GPS (2 caminhos em paralelo) ════════════════
-// 1) Pela sala de vídeo (app no celular — caminho provado 09/06), a cada 200ms.
-// 2) Pelo canal da nuvem (painel do piloto pode usar o GPS de 25 Hz), 5x/segundo.
+// ════════════════ RELAY DO GPS PRA SALA DE VÍDEO ════════════════
+// Item 3 (RaceBox dono único): o GPS agora chega da NUVEM (publicado pelo .exe) via
+// onCloudGps, que popula o objeto gps. Aqui só REPASSAMOS pro vídeo (overlay no app do
+// celular — caminho provado 09/06). NÃO publicamos GPS na nuvem aqui: o .exe é o dono
+// único e já publica (senão teria duas fontes do mesmo GPS no canal).
 setInterval(()=>{
-  // Só repassa GPS do RaceBox quando ele está mandando pacote DE VERDADE
-  // (senão briga com o GPS do simulador e manda dado congelado).
+  // Só repassa quando há GPS fresco (senão mandaria dado congelado).
   if (!gps.lastPktTs || performance.now() - gps.lastPktTs > 2000) return;
   if(call) try{ call.sendAppMessage({ t:'gps', fix:gps.fix, numSV:gps.numSV, spd:gps.spd, lat:gps.lat, lon:gps.lon, hz:gps.hz, hacc:gps.hacc, ver:gps.ver }, '*'); }catch(e){}
 }, 200);
-setInterval(()=>{
-  if (gps.lastPktTs && performance.now() - gps.lastPktTs < 2000) {
-    cloudSend('gps', { lat:gps.lat, lng:gps.lon, kmh:gps.spd, numSV:gps.numSV, fix:gps.fix, accM:gps.hacc, tWall:Date.now() });
-  }
-}, 200);
-
-// ════════════════ RESILIÊNCIA: não deixar parar sozinho ════════════════
-// Causa observada 19/06 ~18:02: vídeo e GPS pararam JUNTOS e não voltaram —
-// sinal de aba/notebook suspenso (Windows/navegador congelam a aba em segundo
-// plano ou ao dormir). Conserto: (1) manter a tela acordada; (2) ao voltar o
-// foco ou a internet, religar tudo; (3) vigia que força religação quando o dado
-// fica velho — sem depender de o navegador avisar que caiu.
-let wakeLock = null;
-async function manterAcordado(){
-  try {
-    if ('wakeLock' in navigator && document.visibilityState === 'visible') {
-      wakeLock = await navigator.wakeLock.request('screen');
-      wakeLock.addEventListener('release', () => { wakeLock = null; });
-    }
-  } catch(e){ /* alguns navegadores negam sem gesto; tentamos de novo no próximo evento */ }
-}
-
-function religarTudo(motivo){
-  log('Religando tudo ('+motivo+')…');
-  manterAcordado();
-  try { connectCloud(); } catch(e){}
-  if (rb.quero && rb.device && !rb.religando) religarRaceBox();
-  if (videoQuero) {
-    const st = call && call.meetingState ? call.meetingState() : 'none';
-    if (st !== 'joined-meeting' && st !== 'joining-meeting') startVideo();
-  }
-}
-
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') religarTudo('tela voltou ao foco');
-});
-window.addEventListener('online',  () => religarTudo('internet voltou'));
-window.addEventListener('offline', () => {
-  boardPill($('bVideo'),'VÍDEO · sem internet','bad');
-  boardPill($('bGps'),'GPS · sem internet','bad');
-  log('Internet caiu no notebook.');
-});
-
-// Vigia a cada 5s: se QUEREMOS a fonte mas o dado está velho, força religar.
-let lastVideoOkTs = 0;
-setInterval(() => {
-  if (rb.quero && rb.device && !rb.religando) {
-    const age = gps.lastPktTs ? performance.now() - gps.lastPktTs : Infinity;
-    if (age > 6000) { log('Vigia: GPS sem dados há >6s — religando sozinho.'); religarRaceBox(); }
-  }
-  if (videoQuero) {
-    const st = call && call.meetingState ? call.meetingState() : 'none';
-    if (st === 'joined-meeting') lastVideoOkTs = performance.now();
-    else if (performance.now() - lastVideoOkTs > 12000) {
-      log('Vigia: vídeo fora da sala há >12s — religando sozinho.');
-      lastVideoOkTs = performance.now();
-      startVideo();
-    }
-  }
-}, 5000);
 
 // ════════════════ boot ════════════════
 $('btnStart').onclick = startVideo;
-$('btnRb').onclick = connectRaceBox;
+// Item 3 (RaceBox dono único): este botão NÃO abre mais o Bluetooth daqui — senão brigaria
+// com o cockpit (.exe) pelo mesmo aparelho. O RaceBox é lido SÓ pelo .exe; o GPS chega aqui
+// pela nuvem (onCloudGps) e é repassado pro vídeo.
+$('btnRb').onclick = () => { boardPill($('bGps'),'GPS · vem do cockpit pela nuvem','ok'); log('O RaceBox é lido pelo cockpit (.exe). O GPS chega aqui pela nuvem — não conecto o Bluetooth por aqui.'); };
 $('btnSim').onclick = toggleSim;
-$('btnBaixar').onclick = baixarSessao;
-$('appVer').textContent = BUILD;
 connectCloud();
-log('Central de pista pronta (versão '+BUILD+'). 1) Iniciar transmissão  2) Conectar RaceBox. O quadro CARRO acende quando o painel do piloto (outra aba) estiver lendo a T4000 — ou use o simulador.');
+log('Central de pista pronta. 1) Iniciar transmissão  2) Conectar RaceBox. O quadro CARRO acende quando o painel do piloto (outra aba) estiver lendo a T4000 — ou use o simulador.');
 </script>
 </body>
 </html>
