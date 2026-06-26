@@ -525,7 +525,12 @@ $('btnStart').onclick = startVideo;
 $('btnRb').onclick = () => { boardPill($('bGps'),'GPS · vem do cockpit pela nuvem','ok'); log('O RaceBox é lido pelo cockpit (.exe). O GPS chega aqui pela nuvem — não conecto o Bluetooth por aqui.'); };
 $('btnSim').onclick = toggleSim;
 connectCloud();
-log('Central de pista pronta. 1) Iniciar transmissão  2) Conectar RaceBox. O quadro CARRO acende quando o painel do piloto (outra aba) estiver lendo a T4000 — ou use o simulador.');
+// A Central de Pista LIGA SOZINHA (sem clique). connectCloud() já cuida do GPS/nuvem;
+// agora startVideo() liga a câmera no load. O navegador pede permissão de câmera UMA vez
+// (depois lembra) e startVideo se re-tenta sozinho (onVideoDown) até entrar no ar.
+// O botão "Iniciar transmissão" fica só de reserva, caso o navegador bloqueie o auto-início.
+startVideo();
+log('Central de pista: ligando sozinha (vídeo + GPS pela nuvem). Se o navegador pedir, permita a câmera uma vez — depois liga automático.');
 </script>
 </body>
 </html>
