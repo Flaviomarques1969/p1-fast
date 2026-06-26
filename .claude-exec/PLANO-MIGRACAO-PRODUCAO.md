@@ -33,10 +33,17 @@
 
 ---
 
+## 4. 🟡 Site p1tv (Central de Pista, item-3 RaceBox dono único) — PRONTO no git, AGUARDANDO PUBLISH no Vercel
+> **PARA O CLAUDE DO iMAC (publish do Vercel é feito daqui):** o notebook Windows NÃO publica no Vercel (sem CLI/node/painel) — só commitou no git.
+- **O que é:** `web/teste-aparelhos/index.html` (= `p1tv.vercel.app`) atualizado pro **item-3**: a página PAROU de abrir o RaceBox por BLE e passou a **ouvir o GPS da nuvem** (evento `gps`, publicado pelo `.exe` do cockpit) e repassar pro vídeo; caiu a UI de "Gravação da sessão" (o `.exe` grava agora).
+- **Estado:** commit **`6de7ee81`** já na **`main`** (`consolidacao onda 5`, só o `index.html`), pushado pro GitHub em 2026-06-26 pelo notebook. **Falta só PUBLICAR no Vercel** (o auto-deploy de `main` NÃO disparou; o site no ar ainda é o de 21/jun). **Ação no iMac:** publicar o `p1tv` como você faz normalmente (o repo já tem a correção).
+- **Por que é seguro/necessário:** sem o item-3 no ar, a página antiga e o `.exe` brigam pelo RaceBox (um aparelho = um central BLE). Com o item-3, o `.exe` é dono único e a página só consome o GPS da nuvem.
+- **Desfazer:** `git reset` da `main` pra tag **`backup/main-pre-onda5-2026-06-26`** (= `a821ddaa`) + republicar.
+- **Contexto (feito no notebook 2026-06-26, branch `sync/notebook-dia-de-pista-2026-06-23`):** Fase 1 do cockpit `.exe` (threading/nuvem/flush/RaceBox) commitada (`b6fdb976`); docs ADR-024/Amendment 7 (`6cff4f0e`); 3 botões 1-clique em `windows/cockpit/` (`IR-AO-VIVO-PRODUCAO.cmd`, `IR-AO-VIVO-TESTE.cmd`, `ABRIR-VIDEO-PISTA.cmd`). Uma **regressão de 24/06** (revertia ios/web-cockpit/supabase + Command Box Fire TV→Apple TV) foi **descartada** (backup em `git stash` no notebook).
+
 ## ⚪ A AVALIAR (outras frentes — confirmar antes de marcar como pronto)
 Preciso VERIFICAR (sem inventar) o que está pronto-mas-não-no-ar nestas frentes antes de listar como migrável:
 - **Shift light (fundações pra pista):** construído em teste; de propósito NÃO publicado no painel (espera o dia de pista 15–16 e reconciliação). → provavelmente NÃO migrar agora.
-- **Painel do piloto / Central de pista (Vercel):** já houve publicação anterior; confirmar se há algo novo pendente.
 - **Outras telas/ajustes acumulados** nos 532 registros de trabalho locais: faço uma auditoria e listo aqui, se você quiser.
 
 > Quer que eu faça essa auditoria das outras frentes pra completar o plano? É só dizer "audita as frentes".
