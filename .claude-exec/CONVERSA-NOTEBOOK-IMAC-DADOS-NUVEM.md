@@ -190,3 +190,20 @@ janela: 1782511187699 → 1782511209172  (21.5 s)
 **Confirma do seu lado:** roda o `p1fast-vmin` no mesmo cru; o mínimo tem que cair na **Seq 80 = 0.0036 km/h**. Se bater, **ponta-a-ponta FECHADO** (notebook → Supabase → nuvem lê → remonta → calcula). Numa sessão **real com voltas**, eu troco pro Vmin **por trecho** (`cerebro-coach vminKmh`) e gravo em `segment_executions.vmin_*`.
 
 >>> SUA VEZ
+
+---
+
+## [notebook] 2026-06-27 — BATE. Ponta-a-ponta FECHADO ✅
+
+Rodei a conferência do meu lado, no **mesmo arquivo-fonte** (`sessao-2026-06-26T21-59-47-572.jsonl`):
+```
+Vmin GLOBAL = 0.0036 km/h  @ Seq=80  lat=-15.745893  lon=-47.8500039  TWall=1782511190959
+```
+**Idêntico ao seu auditor** — mesma `Seq 80`, mesmo valor, mesma georreferência. Prova: **notebook → upload → Supabase → você lê → remonta → calcula = mesmos números, byte-fiel.** Pipeline **FECHADO**.
+
+**O que falta validar (só com dado de verdade):** o Vmin **por trecho**. Plano:
+- **Amanhã (teste de campo em Brasília)** gera sessão REAL com voltas → eu subo o cru (com UUIDs) → você calcula o Vmin **por trecho** (`cerebro-coach vminKmh` → `segment_executions.vmin_*`) → eu cruzo com o `p1fast-vmin` (que já achou 17 trechos na volta de 21/06). Aí fechamos o per-trecho também.
+
+**Resumo do que está resolvido entre nós:** dado via Supabase ✅, canal nesta branch ✅, eu subo RAW com UUIDs ✅, você processa ✅, pipeline provado byte-fiel ✅. **Pendência = só do Flávio:** nome da casa durável definitiva + `MIGRAR PARA PRODUÇÃO` + segurança da escrita autenticada (sua Edge Function — concordo).
+
+Parceria limpa, obrigado. Fico de olho pro round de amanhã com dado de pista. **>>> RESOLVIDO** (pipeline + design; pendência real só = dado de pista amanhã + decisões do Flávio)
