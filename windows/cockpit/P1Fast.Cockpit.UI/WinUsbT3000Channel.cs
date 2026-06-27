@@ -35,7 +35,7 @@ public sealed class WinUsbT3000Channel : IT3000UsbChannel
 
     /// <param name="vid">Vendor ID (T4000 = 0x04D8 Microchip).</param>
     /// <param name="pid">Product ID (T4000 = 0x014A).</param>
-    public WinUsbT3000Channel(ushort vid = 0x04D8, ushort pid = 0x014A, uint readTimeoutMs = 80, uint writeTimeoutMs = 1000)
+    public WinUsbT3000Channel(ushort vid = 0x04D8, ushort pid = 0x014A, uint readTimeoutMs = 150, uint writeTimeoutMs = 1000)
     {
         _vid = vid; _pid = pid; _readTimeoutMs = readTimeoutMs; _writeTimeoutMs = writeTimeoutMs;
     }

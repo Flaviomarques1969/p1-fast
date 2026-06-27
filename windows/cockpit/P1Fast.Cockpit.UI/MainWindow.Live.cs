@@ -124,56 +124,68 @@ public sealed partial class MainWindow
 
         // Motor: T4000 pela USB. O aparelho REAL (Injepro T4000, chip Microchip
         // VID_04D8&PID_014A) fala WinUSB — EXATAMENTE como o leitor web provado
-        // (main-t3000.js, por WebUSB). Por isso o caminho preferido aqui e' WinUSB,
-        // 100% local no notebook. O caminho COM (CDC-ACM, LiveUsbChannel) vira
-        // contingencia, caso algum dia o aparelho apareca como porta serial.
-        IT3000UsbChannel? motorChannel = null;
-        string fonteMotor = "";
-        bool temWinUsb = false;
-        try { temWinUsb = WinUsbT3000Channel.Present(); } catch { temWinUsb = false; }
-
-        if (temWinUsb && port is not null)
+        // (main-t3000.js, por WebUSB). Caminho preferido = WinUSB, 100% local; o COM
+        // (CDC-ACM, LiveUsbChannel) vira contingencia se o aparelho for porta serial.
+        //
+        // Monta o canal de acordo com o que esta presente NESTE instante (re-chamado
+        // a cada tentativa do supervisor abaixo). Null = nenhuma fonte de motor agora.
+        IT3000UsbChannel? CriarCanalMotor(out string fonte)
         {
-            // WinUSB com a serial de RESERVA: se o WinUSB nao ABRIR (driver/permissao,
-            // ou o aparelho subiu como CDC), o motor ainda entra pela COM em vez de
-            // ficar mudo. A escolha e' por abertura, nao so' por presenca.
-            motorChannel = new FallbackT3000UsbChannel(
-                new WinUsbT3000Channel(),
-                () => new LiveUsbChannel(port));
-            fonteMotor = $"T4000 (WinUSB, COM {port} de reserva)";
-        }
-        else if (temWinUsb)
-        {
-            motorChannel = new WinUsbT3000Channel();
-            fonteMotor = "T4000 (WinUSB)";
-        }
-        else if (port is not null)
-        {
-            motorChannel = new LiveUsbChannel(port);
-            fonteMotor = $"T4000 (COM {port})";
+            bool win = false;
+            try { win = WinUsbT3000Channel.Present(); } catch { win = false; }
+            if (win && port is not null)
+            {
+                // WinUSB com a serial de RESERVA: se o WinUSB nao ABRIR, cai pra COM.
+                fonte = $"T4000 (WinUSB, COM {port} de reserva)";
+                return new FallbackT3000UsbChannel(new WinUsbT3000Channel(), () => new LiveUsbChannel(port));
+            }
+            if (win) { fonte = "T4000 (WinUSB)"; return new WinUsbT3000Channel(); }
+            if (port is not null) { fonte = $"T4000 (COM {port})"; return new LiveUsbChannel(port); }
+            fonte = ""; return null;
         }
 
-        if (motorChannel is null)
+        // Supervisor do motor numa thread DEDICADA (C8): abrir + handshake + 1º Read
+        // BLOQUEIAM — nao podem rodar na thread da UI. E, igual ao GPS (que faz scan
+        // continuo), o motor NAO desiste: o RunAsync provado so' retorna se a abertura/
+        // handshake inicial falha (a religacao interna so' age DEPOIS de abrir uma vez).
+        // Como o --live sobe no boot ANTES de a injecao ser plugada/energizada, um
+        // disparo unico nunca pegava o motor (gravacoes 26/06: 0 motor, GPS cheio).
+        // Aqui o supervisor espera o aparelho aparecer e RE-TENTA pra sempre.
+        _liveReaderTask = Task.Factory.StartNew(async () =>
         {
-            StatusText.Text = "ao vivo: GPS ligando; T4000 nao achada — pluga o cabo USB da injecao";
-        }
-        else
-        {
-            var reader = new T3000UsbLiveReader(
-                motorChannel,
-                onSample: OnLiveMotor,
-                onStatus: (txt, nivel) => DispatcherQueue.TryEnqueue(() => StatusText.Text = $"ao vivo [{nivel}]: {txt}"),
-                onLog: _ => { });
-            StatusText.Text = $"ao vivo: {fonteMotor} + GPS RaceBox…";
-            // Thread DEDICADA pro motor (C8): abrir + handshake + 1º Read BLOQUEIAM —
-            // não podem rodar na thread da UI. LongRunning = thread própria fora do pool;
-            // o loop provado (T3000UsbLiveReader, ConfigureAwait(false)) segue em fundo.
-            _liveReaderTask = Task.Factory.StartNew(
-                () => reader.RunAsync(_liveCts.Token),
-                _liveCts.Token,
-                TaskCreationOptions.LongRunning,
-                TaskScheduler.Default).Unwrap();
-        }
+            var ct = _liveCts.Token;
+            bool avisouEsperando = false;
+            while (!ct.IsCancellationRequested)
+            {
+                var canal = CriarCanalMotor(out var fonte);
+                if (canal is null)
+                {
+                    if (!avisouEsperando)
+                    {
+                        avisouEsperando = true;
+                        DispatcherQueue.TryEnqueue(() => StatusText.Text = "ao vivo: GPS ok; esperando a T4000 (USB) plugar…");
+                    }
+                    try { await Task.Delay(1500, ct).ConfigureAwait(false); } catch { break; }
+                    continue;
+                }
+                avisouEsperando = false;
+                DispatcherQueue.TryEnqueue(() => StatusText.Text = $"ao vivo: {fonte} + GPS RaceBox…");
+
+                var reader = new T3000UsbLiveReader(
+                    canal,
+                    onSample: OnLiveMotor,
+                    onStatus: (txt, nivel) => DispatcherQueue.TryEnqueue(() => StatusText.Text = $"ao vivo [{nivel}]: {txt}"),
+                    onLog: _ => { });
+                try { await reader.RunAsync(ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) { break; }
+                catch { /* caiu na abertura/handshake — respira e tenta de novo */ }
+
+                // So' chega aqui se cancelou ou se a abertura/handshake inicial falhou.
+                // Nao cancelou => espera e RETENTA (cabo plugado depois, central acordando).
+                if (ct.IsCancellationRequested) break;
+                try { await Task.Delay(1500, ct).ConfigureAwait(false); } catch { break; }
+            }
+        }, _liveCts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap();
 
         // Saúde da gravação ~1 Hz numa thread de FUNDO, NÃO na UI (C8): o Tick pega o
         // _liveRecLock; tirá-lo da UI separa esse lock da thread da UI — a tela do
