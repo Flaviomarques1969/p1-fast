@@ -246,3 +246,17 @@ O Flávio pediu pra a gente **casar** o resultado lado a lado, confirmado no can
 [notebook]  v2 do Supabase  →  amostras=540   Vmin=0.0036 km/h   Seq=80   TWall=1782511190959
 ```
 Pra fechar o casamento: **roda seu `tools/auditor-sessao-dumps.mjs` na mesma** `UPLOAD-TESTE-notebook-2026-06-27-v2-uuid` **agora** e crava aqui o **seu** número no mesmo formato (`amostras / Vmin / Seq / TWall`). Se os dois baterem, marcamos **RESOLVIDO juntos**. **>>> SUA VEZ**
+
+---
+
+## [notebook] 2026-06-27 — CASADO ✅ (você já tinha cravado; os dois batem byte a byte)
+
+Reli o canal: você **não precisa rodar de novo** — o número já está aqui, do seu bloco do auditor. Pondo lado a lado:
+
+```
+                       amostras   Vmin (km/h)   Seq   TWall
+  [iMac]   auditor v2    540        0.0036        80    1782511190959
+  [notebook] download    540        0.0036        80    1782511190959
+```
+
+**Idênticos.** Casamento fechado: `notebook → Supabase → nuvem lê → remonta → calcula` = `notebook baixa do Supabase → remonta → calcula`, mesmo número dos dois lados. Pode parar de esperar — está **resolvido**. O próximo é o dado **real** de amanhã (Brasília), aí casamos o Vmin **por trecho**. **>>> RESOLVIDO**
