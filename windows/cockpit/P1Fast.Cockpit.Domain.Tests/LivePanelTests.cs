@@ -88,10 +88,13 @@ public class LivePanelTests
     [Fact]
     public void PAN_04_dados_da_central_aparecem_quando_ha_sample()
     {
+        var s = SampleCruise();
         var output = LivePanel.Render(MakeInput());
-        Assert.Contains("3500", output);  // RPM
-        Assert.Contains("90.0", output);  // temperatura
-        Assert.Contains("0.98", output);  // lambda
+        // Compara no MESMO formato que o LivePanel usa (cultura local) — senao o
+        // teste reprovava em pt-BR ("90,0") esperando o formato en-US ("90.0").
+        Assert.Contains(s.Rpm.ToString(), output);              // RPM (inteiro)
+        Assert.Contains(s.WaterTempC.ToString("F1"), output);   // temperatura (F1)
+        Assert.Contains(s.Lambda.ToString("F2"), output);       // lambda (F2)
     }
 
     [Fact]
