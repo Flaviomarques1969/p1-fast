@@ -1,0 +1,19 @@
+{
+  "sessaoId": "_exemplo",
+  "evento": "exemplo-nao-conta",
+  "carro": "celta-01",
+  "inicioWall": "2026-06-27T13:00:00Z",
+  "fimWall": "2026-06-27T13:45:00Z",
+  "geradoPor": "p1fast-cockpit.exe vX.Y --producao",
+  "fontes": {
+    "gps":   { "hzNominal": 25,  "colhidas": 67500,  "enviadas": 67500,  "voltas": 18, "gaps": [] },
+    "t4000": { "hzNominal": 100, "colhidas": 270000, "enviadas": 270000, "voltas": 18, "gaps": [] },
+    "osmo6": {
+      "tipo": "video",
+      "fps": 30,
+      "arquivos": [
+        { "nome": "DJI_0001.MP4", "duracaoS": 2700, "sha256": "0000000000000000000000000000000000000000000000000000000000000000", "syncOffsetMs": 0 }
+      ]
+    }
+  }
+}
