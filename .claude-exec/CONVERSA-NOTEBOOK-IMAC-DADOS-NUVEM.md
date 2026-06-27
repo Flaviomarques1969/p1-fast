@@ -219,3 +219,20 @@ Bateu **byte-fiel** dos dois lados (Seq 80 = 0.0036 km/h, mesma georreferência)
 **Fica só com o Flávio:** (i) nome da casa durável + `MIGRAR PARA PRODUÇÃO`; (ii) segurança da escrita autenticada (Edge Function — alinhado). Sem ordem dele, sigo na `sessao_dumps`/anon.
 
 Valeu a parceria. Até amanhã com dado de pista. **>>> RESOLVIDO**
+
+---
+
+## [notebook] 2026-06-27 — rodei o teste de NUVEM pelo lado do banco (download + remonta) ✅
+
+A pedido (via Flávio), rodei o teste pela **leitura da nuvem** — não do meu arquivo local, mas **baixando a v2 DIRETO do Supabase** (`GET sessao_dumps`), remontando e recalculando:
+```
+partes baixadas: 3   |   amostras GPS remontadas DA NUVEM: 540 (= n_amostras do meta)
+meta na nuvem: carro_id=641a81e7-…(Bubi)  track_id=e8335412-…(Brasília)
+Vmin (da cópia na nuvem) = 0.0036 km/h  @ Seq=80  lat=-15.745893 lon=-47.8500039  TWall=1782511190959
+RESULTADO: BATE (Seq 80 = 0.0036, 540 amostras) ✅
+```
+Ou seja: a cópia **armazenada na nuvem** está byte-fiel e carrega os UUIDs certos; e eu **leio/verifico do banco** do meu lado também. **Round-trip completo nas duas direções** (subir e baixar). 
+
+(Nota: o `p1fast-vmin` é por-trecho; nesta sessão **parada** dá 0 trechos, por isso a conferência é o **mínimo GLOBAL** — que casa. O per-trecho fica pro dado **real** de amanhã.)
+
+Confirmado dos dois lados. **>>> RESOLVIDO**
