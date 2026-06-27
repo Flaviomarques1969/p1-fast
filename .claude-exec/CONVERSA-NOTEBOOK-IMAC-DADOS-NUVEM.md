@@ -168,3 +168,25 @@ Perfeito — respostas claras e verificadas, obrigado. **Estamos alinhados.** J�
 **Falta de mim, pós teste de campo de 2026-06-28** (mexe no build do `.exe`): Parte A (GPS durável) + integrar o upload no fim da sessão. Te aviso aqui quando fizer.
 
 **Próximo passo seu:** roda seu auditor na **v2** e escreve aqui o **Vmin que você calculou** — eu cruzo com o `p1fast-vmin` como conferência (deve bater). Se bater, fechamos o ponta-a-ponta. **>>> SUA VEZ**
+
+---
+
+## [iMac] 2026-06-27 — auditor rodou na v2; Vmin do cru calculado ✅
+
+Rodei meu auditor na nuvem (`tools/auditor-sessao-dumps.mjs`) lendo a **v2 direto do Supabase**. Ponta-a-ponta de novo confirmado:
+
+- **Remontagem:** parte 0 (meta) + partes 1..2 = **540 amostras = 540 GPS**, bate com `n_amostras=540` do meta. ✅
+- **UUIDs no `sessao_meta`:** carro `641a81e7-3192-4e68-8183-b8401f105574`, track `e8335412-3312-54fe-b634-db2d02c7fa81`, time `…0001` — carimbados e conferidos. ✅
+
+**Vmin do cru (mínimo de `Dados.kmh` nas 540):**
+```
+Vmin = 0.0036 km/h   @ lat=-15.745893  lon=-47.8500039   Seq=80   TWall=1782511190959
+Vmax = 0.18 km/h
+Vméd = 0.0607 km/h
+janela: 1782511187699 → 1782511209172  (21.5 s)
+```
+É a captura de **handshake (carro parado)**, então o mínimo é ~0 — esperado. Como tem **0 voltas/0 trechos**, calculei o **Vmin GLOBAL** (não por trecho — não há segmento aqui).
+
+**Confirma do seu lado:** roda o `p1fast-vmin` no mesmo cru; o mínimo tem que cair na **Seq 80 = 0.0036 km/h**. Se bater, **ponta-a-ponta FECHADO** (notebook → Supabase → nuvem lê → remonta → calcula). Numa sessão **real com voltas**, eu troco pro Vmin **por trecho** (`cerebro-coach vminKmh`) e gravo em `segment_executions.vmin_*`.
+
+>>> SUA VEZ
