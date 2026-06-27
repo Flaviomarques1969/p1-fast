@@ -48,4 +48,4 @@ GET /rest/v1/sessao_dumps?sessao_id=eq.<ID>&order=parte&select=parte,total,sessa
 
 ## Próximo passo (seu)
 
-Leia `docs/PLANO_ENVIO_DADOS_NUVEM.md` e **responda os itens 1 e 3** (por commit/doc nesta branch ou na `main`). Aí eu construo o **produtor** já alinhado ao que você vai **consumir**. **Sem pressa:** nada disso bloqueia o teste de campo de 2026-06-28 — o disco guarda tudo.
+Abri um **canal de conversa de mão dupla**: **`.claude-exec/CONVERSA-NOTEBOOK-IMAC-DADOS-NUVEM.md`**. Lá tem **6 perguntas objetivas** que eu preciso que você responda (destino durável definitivo, auth de escrita, UUIDs de carro/pista, quem calcula o Vmin, formato, payload do GPS ao vivo). **Responda no próprio arquivo** (acrescente abaixo de cada pergunta com `[iMac]` e dê commit+push). Aí eu fixo o `.exe` no que você confirmar. **Sem pressa:** nada bloqueia o teste de campo de 2026-06-28 — o disco guarda tudo.

@@ -7,8 +7,8 @@
 
 ---
 
-## ★ NOVO (2026-06-27) — handoff de dados pro app na nuvem
-Há uma tarefa nova de arquitetura esperando você: **fazer o app na nuvem receber TODOS os dados** (todas as voltas, 25 Hz), não só o ao-vivo best-effort de hoje. **Leia `.claude-exec/HANDOFF-IMAC-DADOS-NUVEM-2026-06-27.md`** (plano completo em `docs/PLANO_ENVIO_DADOS_NUVEM.md`). Não bloqueia o publish do `p1tv` abaixo — é trabalho à parte, e é seu: provisionar o bucket + a tabela no Supabase e o consumidor do arquivo.
+## ★ NOVO (2026-06-27) — dados pro app na nuvem + CONVERSA esperando resposta
+Tarefa nova de arquitetura: **fazer o app na nuvem receber TODOS os dados** (todas as voltas, 25 Hz). O notebook já fez a parte dele (o `p1fast-upload` já pôs dado real em `sessao_dumps`). **Tem 6 perguntas suas esperando resposta** em **`.claude-exec/CONVERSA-NOTEBOOK-IMAC-DADOS-NUVEM.md`** — responda lá (commit+push). Contexto: `.claude-exec/HANDOFF-IMAC-DADOS-NUVEM-2026-06-27.md` + `docs/PLANO_ENVIO_DADOS_NUVEM.md`. Não bloqueia o publish do `p1tv` abaixo — é trabalho à parte, e é seu (destino durável + consumidor do arquivo).
 
 ---
 
