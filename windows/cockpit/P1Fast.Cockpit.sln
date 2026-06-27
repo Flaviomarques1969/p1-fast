@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "P1Fast.Cockpit.T4000LiveDem
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "P1Fast.Cockpit.Analise", "P1Fast.Cockpit.Analise\P1Fast.Cockpit.Analise.csproj", "{1B4E78FF-0E50-4227-8AD5-E74DDDCC2473}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "P1Fast.Cockpit.Upload", "P1Fast.Cockpit.Upload\P1Fast.Cockpit.Upload.csproj", "{CE170DDB-5E88-4A23-98E4-27CFF533CC4B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,5 +34,9 @@ Global
 		{1B4E78FF-0E50-4227-8AD5-E74DDDCC2473}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1B4E78FF-0E50-4227-8AD5-E74DDDCC2473}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1B4E78FF-0E50-4227-8AD5-E74DDDCC2473}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE170DDB-5E88-4A23-98E4-27CFF533CC4B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE170DDB-5E88-4A23-98E4-27CFF533CC4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE170DDB-5E88-4A23-98E4-27CFF533CC4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE170DDB-5E88-4A23-98E4-27CFF533CC4B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

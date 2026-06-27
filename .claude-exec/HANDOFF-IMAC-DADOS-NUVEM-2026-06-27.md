@@ -9,10 +9,24 @@
 
 `ARQUITETURA_DEFINITIVA` §3: o `.exe` processa **local** pro cockpit do piloto **E** envia os dados pra **nuvem**, onde o **app** processa conforme cada função. Flávio reafirmou em 2026-06-27: são **duas coisas em paralelo** — como o vídeo. Hoje a parte da nuvem está **parcial**: GPS best-effort (pode pular fix), **sem upload durável**; o app **não tem garantia de todas as voltas**. A verdade completa hoje vive só no disco do notebook (`~/p1fast-sessoes/*.jsonl`).
 
-## O que vem do lado do notebook (eu faço — depois do teste de campo de 2026-06-28)
+## O que vem do lado do notebook
 
-- **Parte A — GPS durável ao vivo** no canal `cockpit-bubi-live` (fila-que-não-perde, igual ao motor). Payload **igual** (`lat, lng, kmh, tWall`, +`numSV/fix/accM`). **Você não muda o consumidor ao vivo.**
-- **Parte B — o `.exe` sobe a sessão completa** (em pedaços) pro destino durável que você confirmar (reusando o schema que já existe — ver correção abaixo).
+- **✅ FEITO — Parte B (produtor): ferramenta `p1fast-upload`** (`windows/cockpit/P1Fast.Cockpit.Upload`, **fora** do `.exe`/tela). Sobe a gravação `.jsonl` completa pra **`sessao_dumps`** em pedaços (parte 0=meta; 1..N=blocos de 500 amostras). **Já há dado real seu pra consumir** — subi uma sessão de teste agora: **`sessao_id = UPLOAD-TESTE-notebook-2026-06-27`** (540 amostras, 3 partes). Formato abaixo.
+- **⏳ Parte A — GPS durável ao vivo** (fila-que-não-perde no `.exe`, canal `cockpit-bubi-live`, payload igual): **depois** do teste de campo de 2026-06-28 (mexe no build do `.exe`).
+- **⏳ Integrar o upload no fim da sessão do `.exe`** (hoje o `p1fast-upload` é manual/pós-sessão): também depois do teste de campo.
+
+## Formato na nuvem (o que você LÊ em `sessao_dumps`)
+
+Junte as partes do mesmo `sessao_id` ordenando por `parte`:
+```
+GET /rest/v1/sessao_dumps?sessao_id=eq.<ID>&order=parte&select=parte,total,sessao_meta,amostras
+```
+- **parte 0** → `sessao_meta`: `{ sessao_id_origem, origem_arquivo, n_amostras, n_gps, n_motor, t_ini_wall, t_fim_wall, enviado_por }`.
+- **parte 1..N** → `amostras`: **array das amostras cruas** do `.jsonl`, cada uma:
+  `{ "Seq", "Tipo": "gps"|"motor", "TWall", "TMono", "Dados": {…}, "RawHex", "SessaoId" }`
+  - GPS `Dados`: `{ lat, lon, kmh, fix, numSV, hacc }`.
+  - Motor `Dados`: o pacote do T4000 (rpm, temperaturas, lambda, etc. — quando houver motor na sessão).
+- **Reconstrução:** concatene `amostras` das partes 1..N na ordem de `parte` → a sessão completa, na resolução cheia (25 Hz).
 
 ## O que preciso de você (lado app na nuvem — você tem CLI/acesso ao Supabase; o notebook não)
 

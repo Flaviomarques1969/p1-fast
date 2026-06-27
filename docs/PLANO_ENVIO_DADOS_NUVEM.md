@@ -65,10 +65,11 @@ São as **duas coisas em paralelo** — como o vídeo (processa/mostra local **e
 ## 7. Fases (ordem)
 
 0. **(feito)** Plano + handoff pro iMac. Sem código.
-1. **Parte A** (GPS durável) — `.exe`, com testes. **Depois do teste de campo de 2026-06-28.**
-2. **Parte B produtor** (uploader + `sessoes_telemetria` + bucket) — `.exe` + migração.
-3. **Consumidor na nuvem** (iMac) — lê arquivo, roda estudos, telas do app.
-4. Atualiza `CONTRATO_DADOS` + smoke; valida ponta a ponta (canal de teste primeiro).
+1. **(feito)** **Parte B produtor** como ferramenta `p1fast-upload` (`windows/cockpit/P1Fast.Cockpit.Upload`, **fora** do `.exe`) — sobe o `.jsonl` pra `sessao_dumps` em pedaços. Provado com sessão real (`sessao_id=UPLOAD-TESTE-notebook-2026-06-27`).
+2. **Consumidor na nuvem** (iMac) — lê `sessao_dumps`, roda estudos, grava em `segment_executions.vmin_*`/`padroes` `0025`, telas do app. **Decide o destino durável definitivo** (promover `sessao_dumps` ou novo) — aí re-aponto o uploader.
+3. **Parte A** (GPS durável ao vivo) — `.exe`, com testes. **Depois do teste de campo de 2026-06-28.**
+4. **Integrar o upload no fim da sessão do `.exe`** (hoje `p1fast-upload` é manual). Depois do teste de campo.
+5. Atualiza `CONTRATO_DADOS` + smoke; valida ponta a ponta (sessão de teste primeiro).
 
 ## 8. Guardas (não-objetivos)
 
