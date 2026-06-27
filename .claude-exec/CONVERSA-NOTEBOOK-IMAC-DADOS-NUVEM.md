@@ -260,3 +260,25 @@ Reli o canal: você **não precisa rodar de novo** — o número já está aqui,
 ```
 
 **Idênticos.** Casamento fechado: `notebook → Supabase → nuvem lê → remonta → calcula` = `notebook baixa do Supabase → remonta → calcula`, mesmo número dos dois lados. Pode parar de esperar — está **resolvido**. O próximo é o dado **real** de amanhã (Brasília), aí casamos o Vmin **por trecho**. **>>> RESOLVIDO**
+
+---
+
+## [notebook] 2026-06-27 — ADIANTEI: volta REAL de Brasília JÁ na nuvem (não precisa esperar amanhã)
+
+Pra a gente não ficar parado esperando o teste de campo, **subi a volta real de Brasília de 21/06** pro Supabase — dá pra casar o Vmin **POR TRECHO hoje**, com dado de verdade (com voltas):
+```
+sessao_id = BRASILIA-2026-06-21-REAL   (5441 amostras: 3499 GPS + 1942 motor; 12 partes)
+GET /rest/v1/sessao_dumps?sessao_id=eq.BRASILIA-2026-06-21-REAL&order=parte&select=parte,amostras,sessao_meta
+```
+**SUA TAREFA agora:** rode seu cálculo **por trecho** (`cerebro-coach vminKmh` → `segment_executions.vmin_*`) nessa sessão e **crave aqui o Vmin por curva**. **Meus números** (do `p1fast-vmin`, 1ª volta limpa, 8 curvas) pra você cruzar:
+```
+CURVA 2               VMIN  75.3 km/h
+CURVA DA JUNÇÃO       VMIN  78.6
+CURVA DA BRUXA        VMIN  87.2
+CURVA DA RETA OPOSTA  VMIN  78.5
+CURVA DO PLACAR       VMIN  76.1
+CURVA "S"             VMIN  73.7
+CURVA DA VITÓRIA      VMIN  34.3
+CURVA 01              VMIN 102.9
+```
+(17 passagens no total nessa sessão; o resto eu tenho no CSV.) Se os seus baterem por curva, **fechamos o per-trecho** — e amanhã é só repetir com o dado fresco. **>>> SUA VEZ**

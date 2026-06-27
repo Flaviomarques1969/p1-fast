@@ -37,19 +37,40 @@ var sessoesDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolde
 string sessPath = args.FirstOrDefault(a => !a.StartsWith("--"))
     ?? new DirectoryInfo(sessoesDir).GetFiles("*.jsonl").OrderByDescending(f => f.LastWriteTime).First().FullName;
 
-// ── Lê as linhas cruas do .jsonl (cada linha já é JSON válido = uma amostra) ─
+// ── Lê as amostras cruas (cada item = JSON de uma amostra) dos DOIS formatos:
+//    .jsonl (gravação do --live) OU .json (volta de replay, SessaoReplay) ─
 var linhas = new List<string>();
 int nGps = 0, nMotor = 0; long? tIni = null, tFim = null;
-foreach (var line in File.ReadLines(sessPath))
+if (sessPath.EndsWith(".json", StringComparison.OrdinalIgnoreCase) && !sessPath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase))
 {
-    if (string.IsNullOrWhiteSpace(line)) continue;
-    if (linhas.Count >= limite) break;
-    linhas.Add(line);
-    if (line.Contains("\"Tipo\":\"gps\"")) nGps++;
-    else if (line.Contains("\"Tipo\":\"motor\"")) nMotor++;
-    var i = line.IndexOf("\"TWall\":", StringComparison.Ordinal);
-    if (i >= 0 && long.TryParse(new string(line.Skip(i + 8).TakeWhile(c => char.IsDigit(c)).ToArray()), out var tw))
-    { tIni ??= tw; tFim = tw; }
+    // Replay (.json): reconstrói as linhas no MESMO shape do .jsonl pra nuvem.
+    var sess = P1Fast.Cockpit.Domain.SessaoReplay.Carregar(File.ReadAllText(sessPath));
+    int seq = 0;
+    foreach (var e in sess.Eventos)
+    {
+        if (linhas.Count >= limite) break;
+        long tw = (long)e.TWallMs; seq++;
+        object linha = e.Gps is { } g
+            ? new { Seq = seq, Tipo = "gps", TWall = tw, Dados = new { lat = g.Lat, lon = g.Lng, kmh = g.Kmh } }
+            : (object)new { Seq = seq, Tipo = "motor", TWall = tw, Dados = new { rpm = e.Rpm } };
+        if (e.Gps is not null) nGps++; else nMotor++;
+        tIni ??= tw; tFim = tw;
+        linhas.Add(JsonSerializer.Serialize(linha));
+    }
+}
+else
+{
+    foreach (var line in File.ReadLines(sessPath))
+    {
+        if (string.IsNullOrWhiteSpace(line)) continue;
+        if (linhas.Count >= limite) break;
+        linhas.Add(line);
+        if (line.Contains("\"Tipo\":\"gps\"")) nGps++;
+        else if (line.Contains("\"Tipo\":\"motor\"")) nMotor++;
+        var i = line.IndexOf("\"TWall\":", StringComparison.Ordinal);
+        if (i >= 0 && long.TryParse(new string(line.Skip(i + 8).TakeWhile(c => char.IsDigit(c)).ToArray()), out var tw))
+        { tIni ??= tw; tFim = tw; }
+    }
 }
 var sessaoId = Arg("--sessao-id") ?? Path.GetFileNameWithoutExtension(sessPath);
 int nPartes = (linhas.Count + CHUNK - 1) / CHUNK;

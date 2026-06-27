@@ -7,4 +7,7 @@
     <AssemblyName>p1fast-upload</AssemblyName>
     <RootNamespace>P1Fast.Cockpit.Upload</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\P1Fast.Cockpit.Domain\P1Fast.Cockpit.Domain.csproj" />
+  </ItemGroup>
 </Project>
