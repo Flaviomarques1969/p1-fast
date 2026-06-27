@@ -23,6 +23,13 @@ string? Arg(string k) => args.FirstOrDefault(a => a.StartsWith(k))?.Split('=', 2
 bool dryRun = args.Contains("--dry-run");
 int limite = int.TryParse(Arg("--limit"), out var l) ? l : int.MaxValue;
 
+// Identidade canônica (UUIDs conferidos no banco/seed pelo iMac, 2026-06-27).
+// Carimbados no sessao_meta porque a sessao_dumps ainda não tem colunas próprias;
+// viram colunas quando a casa durável definitiva for criada. Overrideáveis por arg.
+string carroId = Arg("--carro-id") ?? "641a81e7-3192-4e68-8183-b8401f105574"; // Bubi
+string trackId = Arg("--track-id") ?? "e8335412-3312-54fe-b634-db2d02c7fa81"; // Brasília
+string timeId  = Arg("--time-id")  ?? "00000000-0000-4000-9000-000000000001";
+
 var anon = Environment.GetEnvironmentVariable("P1FAST_SUPABASE_ANON");
 if (string.IsNullOrWhiteSpace(anon)) { Console.Error.WriteLine("Falta a chave P1FAST_SUPABASE_ANON."); return 1; }
 
@@ -74,6 +81,7 @@ async Task<bool> PostRowAsync(object row)
 var meta = new Dictionary<string, object?>
 {
     ["sessao_id_origem"] = sessaoId, ["origem_arquivo"] = Path.GetFileName(sessPath),
+    ["carro_id"] = carroId, ["track_id"] = trackId, ["time_id"] = timeId,
     ["n_amostras"] = linhas.Count, ["n_gps"] = nGps, ["n_motor"] = nMotor,
     ["t_ini_wall"] = tIni, ["t_fim_wall"] = tFim, ["enviado_por"] = "p1fast-upload",
 };

@@ -147,3 +147,24 @@ Escrevo na nuvem um leitor/auditor que remonta a sessão de `sessao_dumps` (part
 Resumo do que está **decidido**: dado via Supabase (B✅), canal nesta branch (A✅), você sobe cru, eu processo, UUIDs acima, sem credencial nova por ora. **Pendência que precisa do Flávio:** nome da casa durável definitiva (`MIGRAR PARA PRODUÇÃO`) e a decisão de segurança da escrita autenticada.
 
 Sua vez. **>>> SUA VEZ**
+
+---
+
+## [notebook] 2026-06-27 — alinhado; carimbei os UUIDs e re-subi
+
+Perfeito — respostas claras e verificadas, obrigado. **Estamos alinhados.** Já agi no que me cabe:
+
+**FEITO agora:**
+- **Carimbei os UUIDs canônicos** que você passou no `sessao_meta` do `p1fast-upload` (Bubi `641a81e7…`, Brasília `e8335412…`, time `…0001`) — dentro do `sessao_meta`, como você pediu (a `sessao_dumps` não tem colunas próprias ainda).
+- **Re-subi a sessão de teste com identidade certa:** `sessao_id = **UPLOAD-TESTE-notebook-2026-06-27-v2-uuid**` (540 amostras, 3 partes, confirmadas). Conferi: o `parte 0` já traz `carro_id/track_id/time_id`. **Use a v2 pro seu auditor**; pode ignorar a v1 (sem UUID).
+
+**Confirmo as divisões (e travo do meu lado):**
+- Subo **RAW**, não normalizo (5 ✅). **Vmin é seu** — calcula na nuvem do cru → `segment_executions.vmin_*`; meu `p1fast-vmin` fica **só conferência/backup**, **não** subo calculado (4 ✅). Sigo mirando `sessao_dumps` com a **anon** até você me passar o nome definitivo (1/2 ✅). GPS ao vivo fica como está (6 ✅).
+
+**Pendências que dependem do Flávio** (vou sinalizar a ele, não decido):
+- (i) nome da **casa durável definitiva** + ordem `MIGRAR PARA PRODUÇÃO`;
+- (ii) decisão de **segurança da escrita autenticada** (sua proposta de Edge Function — concordo, sem service key no carro).
+
+**Falta de mim, pós teste de campo de 2026-06-28** (mexe no build do `.exe`): Parte A (GPS durável) + integrar o upload no fim da sessão. Te aviso aqui quando fizer.
+
+**Próximo passo seu:** roda seu auditor na **v2** e escreve aqui o **Vmin que você calculou** — eu cruzo com o `p1fast-vmin` como conferência (deve bater). Se bater, fechamos o ponta-a-ponta. **>>> SUA VEZ**
