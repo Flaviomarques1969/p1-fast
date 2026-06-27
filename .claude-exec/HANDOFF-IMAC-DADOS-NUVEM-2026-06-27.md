@@ -12,15 +12,17 @@
 ## O que vem do lado do notebook (eu faço — depois do teste de campo de 2026-06-28)
 
 - **Parte A — GPS durável ao vivo** no canal `cockpit-bubi-live` (fila-que-não-perde, igual ao motor). Payload **igual** (`lat, lng, kmh, tWall`, +`numSV/fix/accM`). **Você não muda o consumidor ao vivo.**
-- **Parte B — o `.exe` sobe o `.jsonl` completo da sessão** pro Storage + grava um índice `sessoes_telemetria`.
+- **Parte B — o `.exe` sobe a sessão completa** (em pedaços) pro destino durável que você confirmar (reusando o schema que já existe — ver correção abaixo).
 
 ## O que preciso de você (lado app na nuvem — você tem CLI/acesso ao Supabase; o notebook não)
 
-1. **Provisionar no Supabase:**
-   - Bucket de Storage **`telemetria-sessoes`** (privado, RLS por time).
-   - Tabela **`sessoes_telemetria`** (`session_id, carro_id, track_id, inicio, fim, n_voltas, storage_path, status, bytes`; RLS leitura/escrita por time, no padrão da `padroes_telemetria_por_volta`).
-   - *Me diga se prefere que eu escreva a migração e você só aplica.*
-2. **Consumidor do ARQUIVO:** ler o `.jsonl` do Storage (via o índice) e rodar as contas/estudos do app sobre o conjunto **COMPLETO** (Vmin por trecho, delta, padrões → `0026`). O cálculo de Vmin já existe em `web/command-box/cerebro/cerebro-coach.js` (`vminKmh`) — **reusar sobre o arquivo**, não recriar (`CONTRATO_DADOS`).
+> **CORREÇÃO 2026-06-27:** o schema **já tem** o necessário — não criar do zero. Olhei as migrações (no git; o notebook está em sparse-checkout, então elas não estão no disco dele, mas estão no seu). Reuse:
+> - **`sessao_dumps` (`0048`)** — já recebe sessão crua **em pedaços** (`parte` 0=meta, 1..N=`amostras` jsonb). **Hoje é TEMPORÁRIA (anon, "remover depois").** O formato serve ao upload.
+> - **`segment_executions.vmin_kmh / vmin_x / vmin_y` (`0007_vmin_georef`)** — casa do **Vmin georreferenciado por trecho**.
+> - **`telemetry_samples_enriched` (`0008`)**, **`padroes_telemetria_por_volta` (`0025`)**. (Os escritores dessas tabelas estão só em backups — era do sync iOS; o fluxo `.exe→Realtime` atual NÃO as alimenta.)
+
+1. **Decidir o destino durável reusando o schema acima:** ou **promover `sessao_dumps`** a permanente (RLS por time, sair do anon), ou criar a versão definitiva no mesmo molde. Você decide (é seu o schema da nuvem). *Me diga o destino final que vou mirar o uploader nele.*
+2. **Consumidor do ARQUIVO:** ler a sessão crua do destino (ex.: `sessao_dumps`) e rodar as contas/estudos sobre o conjunto **COMPLETO**, **gravando nas tabelas que já existem** (Vmin → `segment_executions.vmin_*`; padrões → `padroes_telemetria_por_volta` `0025`). O cálculo de Vmin já existe em `web/command-box/cerebro/cerebro-coach.js` (`vminKmh`) — **reusar**, não recriar (`CONTRATO_DADOS`).
 3. **Confirmar o formato** do `.jsonl` que você quer receber. Hoje é **uma linha por amostra**:
    `{ "SessaoId", "Seq", "Tipo": "gps"|"motor", "TWall", "TMono", "Dados": { … }, "RawHex" }`
    (GPS `Dados`: `lat, lon, kmh, fix, numSV, hacc`.) Se preferir outro layout pro app, **alinhe antes** de eu construir o uploader.

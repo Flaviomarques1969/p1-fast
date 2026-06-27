@@ -41,16 +41,17 @@ São as **duas coisas em paralelo** — como o vídeo (processa/mostra local **e
 ## 4. Parte B — Upload durável da gravação (o arquivo que o app estuda)
 
 - O **.exe sobe o `.jsonl`** da sessão (completo, todas as voltas, 25 Hz) pra um Storage durável, **em pedaços durante a sessão + fechamento completo ao fim**.
-- **Destino na nuvem (a provisionar):**
-  - **Bucket Supabase Storage `telemetria-sessoes`** (privado, RLS por time). Objeto = o `.jsonl` da sessão.
-  - **Tabela índice `sessoes_telemetria`**: `session_id, carro_id, track_id, inicio, fim, n_voltas, storage_path, status, bytes`. RLS: leitura/escrita por time (igual à `padroes_telemetria_por_volta`).
-- **Resiliência:** fila de upload ancorada no disco; internet caiu, retoma de onde parou (o disco é a verdade). O fechamento garante o objeto completo.
-- **NÃO é a `0026_padroes_telemetria_por_volta`** — essa é o **padrão APRENDIDO** (derivado, uma linha por carro+pista+pneu). O arquivo cru é a **base**; o cérebro lê o arquivo e atualiza a 0026/contas.
+- **Destino na nuvem — REUSAR o schema que JÁ EXISTE** (descoberto 2026-06-27; não criar do zero):
+  - **`sessao_dumps` (migração `0048`)** já recebe sessão crua **em pedaços** (`parte` 0=meta, 1..N=blocos de `amostras` jsonb; `sessao_id`, `total`) — exatamente o formato do upload. **Hoje está marcada como TEMPORÁRIA (caixa de resgate, anon insert/select).** Decisão do iMac: **promover** a permanente (RLS por time) ou criar a versão definitiva no mesmo molde.
+  - **Vmin por trecho JÁ TEM casa:** `segment_executions.vmin_kmh / vmin_x / vmin_y` (migração `0007_vmin_georef`). O cérebro grava ali o Vmin georreferenciado por trecho.
+  - **Amostras enriquecidas:** `telemetry_samples_enriched` (`0008`). **Padrão aprendido:** `padroes_telemetria_por_volta` (**`0025`**, não 0026 — corrigido).
+- **Atenção (disconnect):** essas tabelas nasceram do fluxo antigo de **sync do iOS** (functions `sync`/`pull`, hoje em backup). O fluxo atual é `.exe → Realtime`, que **não as alimenta**. A obra é **religar** o caminho durável a esse schema — **reusando, não reinventando**.
+- **Resiliência:** fila de upload ancorada no disco; internet caiu, retoma de onde parou (o disco é a verdade). O fechamento garante a sessão completa.
 
 ## 5. Quem consome (lado app na nuvem)
 
 - **Ao vivo:** já consome via `cloud-bridge.js` (`onSample`/`onGpsPoint`). Com a Parte A o GPS fica completo.
-- **Arquivo (novo):** consumidor que lê o `.jsonl` do Storage (via `sessoes_telemetria`), roda as contas/estudos do app sobre o **conjunto COMPLETO** (Vmin por trecho, delta, padrões → 0026) e expõe nas telas do app.
+- **Arquivo (novo):** consumidor que lê a sessão crua do destino durável (ex.: `sessao_dumps`), roda as contas/estudos do app sobre o **conjunto COMPLETO** e **grava nas tabelas que já existem** (Vmin por trecho → `segment_executions.vmin_*`; padrões → `padroes_telemetria_por_volta` `0025`), expondo nas telas do app.
 - O cálculo de Vmin/trecho **já existe** no cérebro web (`web/command-box/cerebro/cerebro-coach.js`, `vminKmh`) — **reusar sobre o arquivo**, não recriar (CONTRATO_DADOS).
 
 ## 6. Divisão de responsabilidade
@@ -58,7 +59,7 @@ São as **duas coisas em paralelo** — como o vídeo (processa/mostra local **e
 | Lado | Quem | Faz |
 |---|---|---|
 | Notebook (.exe) | sessão do **Windows** | Parte A (GPS durável) + Parte B **produtor** (uploader + índice) |
-| App na nuvem | sessão do **iMac** | provisiona bucket + tabela (migração + RLS); **consumidor** do arquivo; roda os estudos; telas do app |
+| App na nuvem | sessão do **iMac** | decide/promove o destino durável **reusando o schema existente** (`sessao_dumps` `0048`, `segment_executions.vmin_*` `0007`, `padroes` `0025`); **consumidor** do arquivo; roda os estudos; telas do app |
 | Contrato | ambos | atualizar `docs/CONTRATO_DADOS.md` (nova seção "ARQUIVO durável") + smoke quando construído |
 
 ## 7. Fases (ordem)
