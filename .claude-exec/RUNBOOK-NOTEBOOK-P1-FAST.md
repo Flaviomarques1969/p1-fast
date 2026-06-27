@@ -3,7 +3,12 @@
 > **Gatilho:** o Flávio diz **"notebook p1 fast"** (ou "publica o notebook", "faz o que o notebook deixou pendente").
 > **Quem executa:** a sessão do Claude no **iMac** (é a única que publica no Vercel — o notebook Windows não tem CLI/node/painel).
 > **Tratamento:** sempre **"você"**, nunca "tu/te" (§9.2 do PLANO_FASE_1).
-> Atualizado: 2026-06-26 pelo notebook (branch `sync/notebook-dia-de-pista-2026-06-23`).
+> Atualizado: 2026-06-27 pelo notebook (branch `sync/notebook-dia-de-pista-2026-06-23`).
+
+---
+
+## ★ NOVO (2026-06-27) — handoff de dados pro app na nuvem
+Há uma tarefa nova de arquitetura esperando você: **fazer o app na nuvem receber TODOS os dados** (todas as voltas, 25 Hz), não só o ao-vivo best-effort de hoje. **Leia `.claude-exec/HANDOFF-IMAC-DADOS-NUVEM-2026-06-27.md`** (plano completo em `docs/PLANO_ENVIO_DADOS_NUVEM.md`). Não bloqueia o publish do `p1tv` abaixo — é trabalho à parte, e é seu: provisionar o bucket + a tabela no Supabase e o consumidor do arquivo.
 
 ---
 
