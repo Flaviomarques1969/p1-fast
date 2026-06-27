@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>p1fast-motor-probe</AssemblyName>
+    <RootNamespace>P1Fast.Cockpit.MotorProbe</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\P1Fast.Cockpit.Domain\P1Fast.Cockpit.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Linka o MESMO fonte WinUSB do .exe (sem puxar a dependência WinUI). -->
+    <Compile Include="..\P1Fast.Cockpit.UI\WinUsbT3000Channel.cs" Link="WinUsbT3000Channel.cs" />
+  </ItemGroup>
+</Project>

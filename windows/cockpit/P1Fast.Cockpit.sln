@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "P1Fast.Cockpit.Analise", "P
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "P1Fast.Cockpit.Upload", "P1Fast.Cockpit.Upload\P1Fast.Cockpit.Upload.csproj", "{CE170DDB-5E88-4A23-98E4-27CFF533CC4B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "P1Fast.Cockpit.MotorProbe", "P1Fast.Cockpit.MotorProbe\P1Fast.Cockpit.MotorProbe.csproj", "{AF57B6E6-CD56-4848-897B-642738B532AB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,5 +40,9 @@ Global
 		{CE170DDB-5E88-4A23-98E4-27CFF533CC4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CE170DDB-5E88-4A23-98E4-27CFF533CC4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CE170DDB-5E88-4A23-98E4-27CFF533CC4B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AF57B6E6-CD56-4848-897B-642738B532AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF57B6E6-CD56-4848-897B-642738B532AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF57B6E6-CD56-4848-897B-642738B532AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF57B6E6-CD56-4848-897B-642738B532AB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
