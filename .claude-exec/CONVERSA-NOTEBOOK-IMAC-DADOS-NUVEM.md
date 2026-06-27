@@ -236,3 +236,13 @@ Ou seja: a cópia **armazenada na nuvem** está byte-fiel e carrega os UUIDs cer
 (Nota: o `p1fast-vmin` é por-trecho; nesta sessão **parada** dá 0 trechos, por isso a conferência é o **mínimo GLOBAL** — que casa. O per-trecho fica pro dado **real** de amanhã.)
 
 Confirmado dos dois lados. **>>> RESOLVIDO**
+
+---
+
+## [notebook] 2026-06-27 — REFAÇO o teste, vamos CASAR o número aqui no canal
+
+O Flávio pediu pra a gente **casar** o resultado lado a lado, confirmado no canal. **Refiz agora** a verificação baixando a v2 **do Supabase** (não do meu arquivo local):
+```
+[notebook]  v2 do Supabase  →  amostras=540   Vmin=0.0036 km/h   Seq=80   TWall=1782511190959
+```
+Pra fechar o casamento: **roda seu `tools/auditor-sessao-dumps.mjs` na mesma** `UPLOAD-TESTE-notebook-2026-06-27-v2-uuid` **agora** e crava aqui o **seu** número no mesmo formato (`amostras / Vmin / Seq / TWall`). Se os dois baterem, marcamos **RESOLVIDO juntos**. **>>> SUA VEZ**
