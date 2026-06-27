@@ -122,24 +122,52 @@ public sealed partial class MainWindow
         _raceBox = new RaceBoxBleReader(OnLiveGps, txt => DispatcherQueue.TryEnqueue(() => StatusText.Text = txt));
         _raceBox.Start(_liveCts.Token);
 
-        // Motor: T4000 pela USB. Sem porta, segue só com o GPS até plugar o cabo.
-        if (port is null)
+        // Motor: T4000 pela USB. O aparelho REAL (Injepro T4000, chip Microchip
+        // VID_04D8&PID_014A) fala WinUSB — EXATAMENTE como o leitor web provado
+        // (main-t3000.js, por WebUSB). Por isso o caminho preferido aqui e' WinUSB,
+        // 100% local no notebook. O caminho COM (CDC-ACM, LiveUsbChannel) vira
+        // contingencia, caso algum dia o aparelho apareca como porta serial.
+        IT3000UsbChannel? motorChannel = null;
+        string fonteMotor = "";
+        bool temWinUsb = false;
+        try { temWinUsb = WinUsbT3000Channel.Present(); } catch { temWinUsb = false; }
+
+        if (temWinUsb && port is not null)
         {
-            StatusText.Text = "ao vivo: GPS ligando; T4000 sem porta — pluga o cabo USB (ou --port=COMx)";
+            // WinUSB com a serial de RESERVA: se o WinUSB nao ABRIR (driver/permissao,
+            // ou o aparelho subiu como CDC), o motor ainda entra pela COM em vez de
+            // ficar mudo. A escolha e' por abertura, nao so' por presenca.
+            motorChannel = new FallbackT3000UsbChannel(
+                new WinUsbT3000Channel(),
+                () => new LiveUsbChannel(port));
+            fonteMotor = $"T4000 (WinUSB, COM {port} de reserva)";
+        }
+        else if (temWinUsb)
+        {
+            motorChannel = new WinUsbT3000Channel();
+            fonteMotor = "T4000 (WinUSB)";
+        }
+        else if (port is not null)
+        {
+            motorChannel = new LiveUsbChannel(port);
+            fonteMotor = $"T4000 (COM {port})";
+        }
+
+        if (motorChannel is null)
+        {
+            StatusText.Text = "ao vivo: GPS ligando; T4000 nao achada — pluga o cabo USB da injecao";
         }
         else
         {
-            var channel = new LiveUsbChannel(port);
             var reader = new T3000UsbLiveReader(
-                channel,
+                motorChannel,
                 onSample: OnLiveMotor,
                 onStatus: (txt, nivel) => DispatcherQueue.TryEnqueue(() => StatusText.Text = $"ao vivo [{nivel}]: {txt}"),
                 onLog: _ => { });
-            StatusText.Text = $"ao vivo: T4000 em {port} + GPS RaceBox…";
-            // Thread DEDICADA pro motor (C8): abrir a porta + handshake + 1º Read
-            // BLOQUEIAM (até ~150 ms) — não podem rodar na thread da UI (micro-travava
-            // no boot). LongRunning = thread própria fora do pool; o loop provado
-            // (T3000UsbLiveReader, ConfigureAwait(false)) segue em fundo, nunca na UI.
+            StatusText.Text = $"ao vivo: {fonteMotor} + GPS RaceBox…";
+            // Thread DEDICADA pro motor (C8): abrir + handshake + 1º Read BLOQUEIAM —
+            // não podem rodar na thread da UI. LongRunning = thread própria fora do pool;
+            // o loop provado (T3000UsbLiveReader, ConfigureAwait(false)) segue em fundo.
             _liveReaderTask = Task.Factory.StartNew(
                 () => reader.RunAsync(_liveCts.Token),
                 _liveCts.Token,
