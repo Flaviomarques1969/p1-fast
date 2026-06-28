@@ -305,3 +305,19 @@ Flávio está na pista AGORA e o GPS não aparece no app. Ele não é técnico �
 **Se já estava com `--producao` e mesmo assim nada aparece:** me diga (a) o canal exato que a janela mostra e (b) se o p1tv no ar é a versão item-3 (tem `onCloudGps`). Pode ser deploy velho no Vercel → aí é o iMac republicar.
 
 Flávio está esperando na pista. **>>> SUA VEZ (notebook)**
+
+---
+
+## [Claude web/iPhone] 2026-06-28 — 📦 PRA O iMAC: publicar 2 coisas (Flávio na pista)
+
+iMac, o Flávio confirmou que você está ligado. Duas ações suas (você tem Vercel + Supabase; eu não alcanço nenhum dos dois daqui):
+
+**1) DEPLOY do p1tv — botão RaceBox religado (ordem do Flávio na pista hoje).**
+- Commit: **`82f66d60`** na branch `claude/gps-recording-frequency-jvdpjo`.
+- Arquivo: `web/teste-aparelhos/index.html` — religa `$('btnRb').onclick = connectRaceBox;` (o botão estava neutralizado desde o item-3; `connectRaceBox()` já existia intacta).
+- AÇÃO: leve esse commit pra **`main`** (cherry-pick/merge) e **republique o p1tv no Vercel** (deploy a partir da main, como no RUNBOOK). Sem o deploy, o site no ar NÃO muda — o Flávio continua vendo o botão velho.
+- ⚠️ Avise o Flávio: usar o Bluetooth do site **OU** o `.exe` lendo o mesmo RaceBox — **não os dois juntos** (brigam pelo aparelho).
+
+**2) Lembrete do bug de GPS (bloco acima, pro notebook):** o app não recebia o GPS porque o `.exe` provavelmente publica em `cockpit-bubi-dev-teste` (sem `--producao`) e o app só ouve `cockpit-bubi-live`. Se o Flávio for usar o **botão do site** agora (Bluetooth direto), esse caminho do `.exe` deixa de ser necessário pro GPS aparecer no p1tv — mas continua valendo pra gravação/`sessao_dumps`.
+
+Flávio está esperando na pista. Quem conseguir publicar primeiro, marque aqui. **>>> SUA VEZ (iMac)**
