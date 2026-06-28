@@ -528,10 +528,11 @@ setInterval(()=>{
 
 // ════════════════ boot ════════════════
 $('btnStart').onclick = startVideo;
-// Item 3 (RaceBox dono único): este botão NÃO abre mais o Bluetooth daqui — senão brigaria
-// com o cockpit (.exe) pelo mesmo aparelho. O RaceBox é lido SÓ pelo .exe; o GPS chega aqui
-// pela nuvem (onCloudGps) e é repassado pro vídeo.
-$('btnRb').onclick = () => { boardPill($('bGps'),'GPS · vem do cockpit pela nuvem','ok'); log('O RaceBox é lido pelo cockpit (.exe). O GPS chega aqui pela nuvem — não conecto o Bluetooth por aqui.'); };
+// 2026-06-28 (ordem do Flávio): botão RELIGADO pra conectar o RaceBox por Bluetooth
+// direto aqui no site. Reverte o "RaceBox dono único" SÓ pra este caminho. ATENÇÃO: não
+// rodar isto junto com o cockpit (.exe) lendo o mesmo RaceBox — os dois brigam pelo
+// aparelho. Use OU o Bluetooth daqui, OU o .exe (que publica o GPS pela nuvem) — não os dois.
+$('btnRb').onclick = connectRaceBox;
 $('btnSim').onclick = toggleSim;
 connectCloud();
 // A Central de Pista LIGA SOZINHA (sem clique). connectCloud() já cuida do GPS/nuvem;
