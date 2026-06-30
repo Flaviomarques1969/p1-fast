@@ -94,3 +94,24 @@ A trava avisa quando uma linha do baseline já pode ser removida.
 5. uma casa-de-conta do cérebro deixar de existir.
 
 Ficou vermelho = não entra. É a catraca: só aperta, nunca afrouxa.
+
+---
+
+## 6. O ARQUIVO DURÁVEL (à parte do ao-vivo — pro app estudar TODAS as voltas)
+
+A nuvem tem **dois papéis** (`docs/ARQUITETURA_DEFINITIVA.md` §3, `PLANO_ENVIO_DADOS_NUVEM.md`):
+o **barramento ao vivo** (seções 1-3 acima, efêmero) **e** a **guarda do arquivo completo**
+(durável, pro app rodar as contas sobre o conjunto inteiro). São coisas separadas — o arquivo
+durável **NÃO** é um 2º feed ao vivo nem uma 2ª conexão de tela.
+
+| O quê | Onde | Estado |
+|---|---|---|
+| GPS ao vivo SEM perder fix (fila + reenvio) | `GpsLivePublisher` (espelha o motor) | ✅ Parte A feita (2026-06-30) |
+| Upload da gravação `.jsonl` completa | `p1fast-upload` → tabela `sessao_dumps` | ✅ Parte B (produtor) |
+| Disparo automático no fim da sessão | `MainWindow.Live.cs` `StopLive` (processo destacado, só `--producao`) | ✅ §7.4 feito (2026-06-30) |
+| Consumidor: lê o dump → calcula → grava | nuvem (iMac): `cerebro-coach vminKmh` → `segment_executions.vmin_*` / `padroes_telemetria_por_volta` | ⏳ lado do iMac |
+
+**Regra que NÃO muda:** as telas continuam só EXIBINDO (seção 3). O arquivo durável é lido pelo
+**consumidor da nuvem** (não por uma tela), que grava o resultado nas tabelas que já existem; a tela
+do app lê o **resultado pronto**. O uploader sobe **RAW** (fidelidade total); a nuvem normaliza/calcula.
+Visibilidade: o `.exe` avisa no `StatusText` se está em PRODUÇÃO ou TESTE (lição do bug de 28/06).
