@@ -231,12 +231,63 @@ public sealed partial class MainWindow
         if (_liveParado) return;
         _liveParado = true;
         // 1) Encerra a sessão JÁ (síncrono, rápido): fecha o meta, nunca deixa órfã.
-        try { lock (_liveRecLock) _liveRecorder?.Encerrar("fechou-app"); } catch { /* best-effort */ }
+        //    Captura o id ANTES (Encerrar zera a sessão) pra o upload achar o .jsonl.
+        string? sessaoFechada = null;
+        try { lock (_liveRecLock) { sessaoFechada = _liveRecorder?.SessaoAtualId; _liveRecorder?.Encerrar("fechou-app"); } }
+        catch { /* best-effort */ }
+        // 1b) Upload durável (Parte B, §7.4): dispara o p1fast-upload como processo
+        //     DESTACADO (sobrevive ao fechamento; nunca trava a tela). Só com --producao
+        //     (sessão real) + chave no ambiente. Qualquer falha é silenciosa.
+        if (_options.Producao) try { DispararUploadFimDeSessao(sessaoFechada); } catch { /* best-effort */ }
         // 2) Cancela laços + aparelhos em FUNDO: o Cancel() roda o teardown do RaceBox
         //    (Stop() do watcher BLE), que pode bloquear alguns segundos numa pilha
         //    Bluetooth fria — não pode travar o fechamento da janela.
         var cts = _liveCts;
         _ = Task.Run(() => { try { cts?.Cancel(); } catch { /* já caindo */ } });
+    }
+
+    // Dispara o p1fast-upload (ferramenta SEPARADA, fora do .exe — arquitetura) pra subir
+    // a gravação .jsonl recém-fechada pra sessao_dumps. Processo DESTACADO: sobrevive ao
+    // fechamento da janela e roda por conta própria; aqui é só "atira e esquece".
+    private void DispararUploadFimDeSessao(string? sessaoId)
+    {
+        if (string.IsNullOrWhiteSpace(sessaoId)) return;
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("P1FAST_SUPABASE_ANON"))) return;
+
+        var pasta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "p1fast-sessoes");
+        var jsonl = Path.Combine(pasta, sessaoId + ".jsonl");
+        if (!File.Exists(jsonl)) return;
+
+        var exe = ResolveUploadExe();
+        if (exe is null) return;   // sem a ferramenta por perto: desiste (best-effort)
+
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = exe,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WorkingDirectory = Path.GetDirectoryName(exe)!,
+        };
+        psi.ArgumentList.Add(jsonl);
+        psi.ArgumentList.Add($"--sessao-id={sessaoId}");
+        System.Diagnostics.Process.Start(psi);   // destacado: não esperamos o término
+    }
+
+    // Acha o p1fast-upload.exe ao lado do repo (dev). Best-effort: null se não existir.
+    private string? ResolveUploadExe()
+    {
+        try
+        {
+            var root = ResolveRepoRoot();
+            foreach (var cfg in new[] { "Debug", "Release" })
+            {
+                var p = Path.Combine(root, "windows", "cockpit", "P1Fast.Cockpit.Upload",
+                                     "bin", cfg, "net8.0", "p1fast-upload.exe");
+                if (File.Exists(p)) return p;
+            }
+        }
+        catch { /* best-effort */ }
+        return null;
     }
 
     // Cada amostra do motor (vem na thread do leitor): grava em disco e move a tela.

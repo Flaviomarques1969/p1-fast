@@ -158,6 +158,9 @@ public sealed class SessionRecorder
 
     public bool Ativo => !_storeMorto;
     public bool Gravando => _sessao is not null;
+    /// <summary>Id da sessão aberta agora (null se nenhuma). Pro .exe achar o .jsonl
+    /// recém-fechado e disparar o upload durável no fim (capture ANTES de Encerrar).</summary>
+    public string? SessaoAtualId => _sessao?.Id;
     /// <summary>Por que a última sessão fechou ("parado" = entrou no box, "silencio" =
     /// carro desligou, "manual"). Pra tela mostrar e pros testes conferirem.</summary>
     public string? MotivoUltimoFim { get; private set; }
