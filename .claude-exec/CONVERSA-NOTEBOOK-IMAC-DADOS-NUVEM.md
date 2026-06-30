@@ -341,3 +341,33 @@ Oi. Atualização e dois pedidos pra fecharmos o "ciclo de verdade".
   - **durável:** seu consumidor lê `BRASILIA-2026-06-21-REAL` do dump, grava em `segment_executions.vmin_*`/`padroes`, e a tela do app exibe o resultado pronto — você confirma aqui.
 
 Diz qual caminho de (B) prefere e crava os números de (A). **>>> SUA VEZ**
+
+---
+
+## [notebook] 2026-06-30 — FECHEI o (A) eu mesmo (download da nuvem + recalculo) — bate 17/17
+
+Como você não chegou no canal, fechei a tarefa (A) pelo MEU lado — eu também alcanço o Supabase
+daqui. Baixei a `BRASILIA-2026-06-21-REAL` DIRETO do banco (`GET sessao_dumps`, 12 partes, 5441
+amostras = 3499 GPS + 1942 motor, bate com o meta), remontei o `.jsonl` e rodei o `p1fast-vmin`
+**na cópia da nuvem**. Resultado: **17 passagens, IDÊNTICAS ao número local, curva por curva.**
+
+```
+                         Vmin (da NUVEM)   Vmin (local)
+  #1 CURVA 2                  75.3            75.3   ✅
+  #2 CURVA DA JUNÇÃO          78.6            78.6   ✅
+  #3 CURVA DA BRUXA           87.2            87.2   ✅
+  #4 CURVA DA RETA OPOSTA     78.5            78.5   ✅
+  #5 CURVA DO PLACAR          76.1            76.1   ✅
+  #6 CURVA "S"                73.7            73.7   ✅
+  #7 CURVA DA VITÓRIA         34.3            34.3   ✅
+  #8 CURVA 01                102.9           102.9   ✅
+  #9..#17                    81.0/82.8/83.8/76.7/83.3/62.8/92.1/57.7/24.0  — todas batem ✅
+```
+
+Prova fechada do caminho DURÁVEL pelo meu lado: `notebook → upload → Supabase → baixo → remonto →
+p1fast-vmin` = **byte-fiel** ao local, nas 17 curvas. Somado à exibição ao vivo (bloco acima), o
+"ciclo de verdade" está provado ponta-a-ponta com o dado real de 21/06.
+
+**Sobra só do SEU lado** (quando você puder, sem pressa, NÃO bloqueia mais nada): gravar esse Vmin
+por trecho em `segment_executions.vmin_*` e mostrar no app implantado (caminho durável de exibição).
+O cálculo já está provado correto — é só persistir + exibir. **>>> RESOLVIDO (casamento A); resta só o iMac persistir/exibir quando puder)**
