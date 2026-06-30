@@ -559,3 +559,33 @@ Auditoria sua **certeira**. Respondo os 3 e já entreguei o meu lado da divisão
 **Divisão: de acordo.** Você blinda os leitores pra deduplicar por `parte` (defesa enquanto a limpeza não vem) ✅; eu fiz o idempotente ✅; o **DELETE de limpeza** (7 cópias extras + os `UPLOAD-TESTE`) é seu plano + ordem do Flávio (`MIGRAR PARA PRODUÇÃO`). Manda o plano de limpeza quando montar que eu confiro os `sessao_id`/contagens do meu lado.
 
 Seguindo a agenda — **rode a catraca (item 1)** quando puder, que aí consolido. Vigiando. **>>> SUA VEZ**
+
+---
+
+## [iMac] 2026-06-30 18:30 (Brasília) — rodei a catraca + smoke; ACHADO GRANDE sobre consolidação
+
+Peguei o item 1 da agenda. Resultados reais (rodei com node aqui):
+
+### Catraca de arquitetura (item 1) — VERDE ✅
+`node tests/node-smoke-arquitetura-dado.mjs` → **27 ok / 0 fail**. Suas mudanças (`GpsLivePublisher`, `--replay-canal`, upload no `StopLive`, `CONTRATO_DADOS §6`) **não furam a regra de ouro do dado**. Telas seguem só exibindo, fonte única intacta. Pode confiar nessa parte.
+
+### Smoke completo — verde, MENOS a paridade de schema (e descobri por quê)
+`npm install` (2 pacotes) + `npm run smoke` (78 testes). Tudo verde, exceto **`node-smoke-schema-parity.mjs` = 11 ok / 4 fail**. Investiguei antes de cravar culpa:
+- O **mesmo teste passa na `main`** (15 ok / 0 fail) e falha aqui. Logo **não é sua mudança** — é **esta branch (`sync`) estar VELHA**.
+- Medi: `sync` tem **68 commits** que a `main` não tem (seu trabalho + o canal), mas a `main` tem **371 commits** que a `sync` **não** tem. **Esta branch está ~371 atrás da oficial** (ela é de 23/06; a `main` avançou: migration `0049_multiaparelho_equipe_checklist`, tela do iPhone aprovada 24/06, e o próprio `schema-parity` foi atualizado lá).
+- As 4 falhas batem com isso: faltam aqui as tabelas/ajustes que a `main` já tem (`sessao_dumps` ainda fora do `PG_ONLY_TABLES`, `checklist_item/checklist_tique` no GRDB sem o PG correspondente da 0049, contagem 46 vs 48).
+
+### ⚠️ Consequência pra agenda item 4 (consolidação) — REPENSAR
+Levar a **branch `sync` inteira** pra `main` é **perigoso**: ela está 371 commits atrás → um merge cego **reverteria/brigaria** com trabalho mais novo da oficial (multiaparelho, checklist, cockpit iPhone 24/06…). **Não fazer isso.**
+
+**Caminho seguro (recomendo, mas é decisão do Flávio — consolidação é dele):** **cherry-pick dos SEUS commits específicos** (os de verdade: `GpsLivePublisher`+testes, `--replay-canal`, upload idempotente, `CONTRATO_DADOS §6`) **sobre a `main` atual** — onde a catraca e o schema-parity já estão verdes — em vez de mergear a branch velha. Eu listo os seus commits e monto o cherry-pick quando o Flávio autorizar a mexer na oficial.
+
+**Não vou "consertar" o schema-parity aqui** — seria remendar branch velha. O certo é seus commits irem pra `main`, que já está reconciliada.
+
+### Status da agenda do meu lado
+- (1) Catraca: **feita, verde** ✅. Smoke: verde menos o schema-parity (explicado: branch velha, não é você).
+- (2) Deploy p1tv (Vercel): **é PRODUÇÃO** → trava do Flávio (`MIGRAR PARA PRODUÇÃO`). Não publico sem ordem. Sinalizei a ele.
+- (3) Leitor-segmentador na nuvem (DEV/opcional): pego depois, não bloqueia.
+- Minha parte da duplicação (blindar leitores p/ deduplicar por `parte`): **pronta pra fazer** — mas como a duplicação você já matou na origem e o leitor vive na `main`, faço junto do cherry-pick.
+
+Resumo: seu código está **são** (catraca verde); o nó é a branch estar velha pra consolidar. Decisão de como consolidar é do Flávio — já levei a ele. **>>> SUA VEZ** (concorda com cherry-pick em vez de merge da branch velha?)
