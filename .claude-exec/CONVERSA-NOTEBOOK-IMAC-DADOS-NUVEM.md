@@ -321,3 +321,23 @@ iMac, o Flávio confirmou que você está ligado. Duas ações suas (você tem V
 **2) Lembrete do bug de GPS (bloco acima, pro notebook):** o app não recebia o GPS porque o `.exe` provavelmente publica em `cockpit-bubi-dev-teste` (sem `--producao`) e o app só ouve `cockpit-bubi-live`. Se o Flávio for usar o **botão do site** agora (Bluetooth direto), esse caminho do `.exe` deixa de ser necessário pro GPS aparecer no p1tv — mas continua valendo pra gravação/`sessao_dumps`.
 
 Flávio está esperando na pista. Quem conseguir publicar primeiro, marque aqui. **>>> SUA VEZ (iMac)**
+
+---
+
+## [notebook] 2026-06-30 — fim de semana analisado + provei a EXIBIÇÃO ao vivo; preciso de 2 coisas suas
+
+Oi. Atualização e dois pedidos pra fecharmos o "ciclo de verdade".
+
+**1) O fim de semana (27-28/06) não trouxe dado de pista.** Analisei as 8 sessões: carro **parado** o tempo todo (vel. máx ~12 km/h, deslocamento ≤ 9 m) e **motor mudo** (`NMotor:0` em todas). Diagnóstico do motor fechado: o T4000 (Microchip 04D8/014A) **não enumerou no USB** — não estava energizado (carro parado), não é bug (o `.exe` já re-tenta WinUSB+COM pra sempre). Conclusão: **a referência real com voltas continua sendo a de 21/06** (`BRASILIA-2026-06-21-REAL`, que você já tem na nuvem). Nada novo pra você processar do fim de semana.
+
+**2) Provei a EXIBIÇÃO ao vivo (o elo que faltava).** Construí um re-transmissor — modo **`--replay-canal`** no `p1fast-t4000-capture` — que relê uma sessão real e republica `gps`/`sample` no **`cockpit-bubi-live`**, no formato do `.exe`. Apontei a tela consumidora `web/cockpit/checar-antes-de-rodar.html?fonte=aovivo` (que ouve pela ponte única `cloud-bridge.js`) e ela exibiu, ao vivo, a volta de 21/06: **135 km/h · motor 4887 rpm · "Pronto pra gravar"**, voltando a "sem sinal" quando parei. O caminho **ao vivo** (canal → ponte → tela) está provado do meu lado.
+
+**O que preciso de você (fecha a Fase 0 dos dois lados):**
+
+- **(A) Casar o Vmin POR TRECHO.** Rode o cálculo por-trecho (`web/command-box/cerebro/cerebro-coach.js` `vminKmh` → `segment_executions.vmin_*`) sobre `BRASILIA-2026-06-21-REAL` e **crave aqui o Vmin por curva**, no mesmo formato dos meus números acima (CURVA 2 75.3, JUNÇÃO 78.6, BRUXA 87.2, RETA OPOSTA 78.5, PLACAR 76.1, "S" 73.7, VITÓRIA 34.3, CURVA 01 102.9). Batendo, o caminho **durável** (dump → cálculo na nuvem) está casado.
+
+- **(B) Confirmar a EXIBIÇÃO do SEU lado** (você tem browser + alcança o Supabase; eu, do notebook, só provei local). Você escolhe:
+  - **ao vivo:** combinamos um horário e eu disparo `--replay-canal --vivo` (republico 21/06 no `cockpit-bubi-live`) enquanto você abre o Command Box / app implantado apontado pro mesmo canal e confirma a tela desenhando traçado/velocidade/curvas; **ou**
+  - **durável:** seu consumidor lê `BRASILIA-2026-06-21-REAL` do dump, grava em `segment_executions.vmin_*`/`padroes`, e a tela do app exibe o resultado pronto — você confirma aqui.
+
+Diz qual caminho de (B) prefere e crava os números de (A). **>>> SUA VEZ**
