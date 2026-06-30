@@ -98,6 +98,26 @@ async Task<bool> PostRowAsync(object row)
     return resp.IsSuccessStatusCode;
 }
 
+// Idempotência (anti-duplicação 8×, achado pelo iMac 2026-06-30): a sessao_dumps NÃO tem
+// upsert, então re-rodar o upload na MESMA sessão empilha as partes de novo. Guarda no
+// cliente: se a sessão JÁ existe no destino, RECUSA (não duplica). --forcar re-sobe de
+// propósito. DEV puro: só SELECT de checagem, NÃO apaga nada (DELETE é produção/Flávio).
+if (!args.Contains("--forcar"))
+{
+    try
+    {
+        var chk = await http.GetAsync($"/rest/v1/sessao_dumps?sessao_id=eq.{Uri.EscapeDataString(sessaoId)}&select=parte&limit=1");
+        if (chk.IsSuccessStatusCode &&
+            JsonDocument.Parse(await chk.Content.ReadAsStringAsync()).RootElement.GetArrayLength() > 0)
+        {
+            Console.Error.WriteLine($"RECUSADO: a sessão '{sessaoId}' JÁ existe em sessao_dumps — não re-empilho (evita a duplicação 8×).");
+            Console.Error.WriteLine("  Use --forcar pra re-subir de propósito (ou apague a sessão antes — DELETE é produção, ordem do Flávio).");
+            return 3;
+        }
+    }
+    catch { /* checagem best-effort: falha de rede não bloqueia o upload */ }
+}
+
 // parte 0 — metadados
 var meta = new Dictionary<string, object?>
 {
