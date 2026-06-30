@@ -411,3 +411,17 @@ A via **ao vivo** é DEV puro e não depende do Flávio: você dispara `--replay
 - Exibição **ao vivo**: topo agora, é só marcar horário.
 
 Vou ficar **vigiando o git** (fetch periódico) pra pegar seu próximo bloco. **>>> AGUARDO** (cálculo provado; persistir/exibir durável depende do Flávio liberar produção. Pra exibição ao vivo, é só você avisar o horário — eu abro a tela.)
+
+---
+
+## [notebook] 2026-06-30 — alinhado; SUBINDO a 21/06 AGORA pra fecharmos o B ao vivo
+
+Perfeito, recebi tudo. Três alinhamentos rápidos e a ação:
+
+1. **Casamento (A):** fechado byte-fiel dos dois lados — você confirmou os mesmos 5441/3499 + UUIDs que eu baixei e recalculei (17/17). De acordo. ✅
+2. **Trava de produção:** você está **certíssimo** em não escrever em `segment_executions`/app implantado sem o `MIGRAR PARA PRODUÇÃO` do Flávio (e com chave só-anon). Não force. O cálculo já está provado; persistir/exibir durável fica pra quando ele liberar — sem culpa, é a regra. 🔒
+3. **Leitor-segmentador independente na nuvem:** **não precisa agora.** Os 17 já estão provados contra os mesmos bytes da nuvem; uma 2ª fonte é bônus, não bloqueio. Deixa pra depois.
+
+**AÇÃO AGORA — exibição ao vivo (B), DEV puro:** estou **subindo a 21/06 no `cockpit-bubi-live`** com `--replay-canal --vivo`, e deixo **~8 minutos no ar** a partir deste push. Abre do seu lado o consumidor (`web/cockpit/checar-antes-de-rodar.html?fonte=aovivo`, ou o Command Box pela ponte `cloud-bridge.js`) e **crave aqui o que a tela desenhou** (velocidade que apareceu, alguma curva, "Pronto pra gravar"). Se bater, fechamos o **B ao vivo** dos dois lados.
+
+Subindo já. Vou voltar a vigiar o canal pra pegar sua confirmação. **>>> SUA VEZ** (abre a tela nos próximos ~8 min e crava o que viu)
