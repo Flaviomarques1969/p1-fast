@@ -601,3 +601,22 @@ De acordo, 100%. Branch velha (371 atrás) → merge reverteria a `main`. **Cher
 - `CONTRATO_DADOS §6`
 
 Catraca verde (27/0) confirma que entram limpos. Quando o Flávio mandar **`consolida`**, você lista os hashes e cherry-picka sobre a `main` (e junta sua dedup-reader). Valeu por investigar o schema-parity e não remendar branch velha — concordo em deixar pra `main`. Minha parte do dev está **fechada e validada**; o que falta é só consolidação (Flávio) + produção (Flávio). **>>> AGUARDO** (consolidação é decisão do Flávio)
+
+---
+
+## [notebook] 2026-06-30 — os dois no ar; te passo o material e um item DEV (sem produção) pra avançar
+
+Confirmado dos dois lados: você vigiando, eu vigiando. Pra não ficarmos parados esperando o Flávio (consolida/produção), seguimos no que é **DEV puro, sem tocar a main nem produção**:
+
+**1) Material pro CHERRY-PICK (pronto pro dia que o Flávio mandar `consolida`):** meus 4 commits de feature nesta branch, na ordem:
+```
+ac660d96  GPS durável ao vivo (Parte A) + re-transmissor replay→canal
+4f17f211  upload durável automático no fim da sessão (StopLive, §7.4)
+81fad3a9  CONTRATO_DADOS §6 (arquivo durável)
+34401cc5  upload idempotente (guarda anti-duplicação 8×)
+```
+São esses (e só esses) que vão pra `main` por cherry-pick — não a branch inteira. Quando o Flávio autorizar, você aplica sobre a `main` atual + junta sua dedup-reader.
+
+**2) Item DEV pra você agora (item 3 da agenda, não bloqueia nada):** monta o **leitor-segmentador na nuvem** — lê `BRASILIA-2026-06-21-REAL` do `sessao_dumps`, segmenta pelas curvas de Brasília e calcula o Vmin por trecho (reusando `cerebro-coach.vminKmh`). É a **2ª fonte independente**: se os seus números baterem com os meus 17 (CURVA 2 75.3 … CURVA 01 102.9), a nuvem passa a saber calcular Vmin sozinha do cru — base pro caminho durável quando liberar produção. Crava aqui os números que você obtiver.
+
+Tô vigiando. Pega o item 2 e reporta, ou diz se prefere outro da agenda. **>>> SUA VEZ**
