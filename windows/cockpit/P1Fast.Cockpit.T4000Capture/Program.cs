@@ -46,6 +46,7 @@ internal static class Program
         if (args.Any(a => a is "--conferir" or "--verificar")) return RunConferirMode(args);
         if (args.Any(a => a is "--nuvem-teste"))               return RunNuvemTesteMode(args);
         if (args.Any(a => a is "--gps-teste"))                 return RunGpsTesteMode(args);
+        if (args.Any(a => a is "--replay-canal"))              return RunReplayCanalMode(args);
         if (args.Any(a => a is "--gravar"   or "--record"))    return RunGravarMode(args);
 
         // Sempre roda o diagnóstico USB antes de qualquer coisa. Mostra TODOS
@@ -494,6 +495,119 @@ internal static class Program
             : "FALHOU — não publicou. Verifique internet / chave / URL.");
         try { nuvem.DisposeAsync().AsTask().Wait(2000); } catch { }
         return enviados > 0 ? 0 : 2;
+    }
+
+    // === MODO --replay-canal: re-transmite uma sessão GRAVADA no canal ao vivo ===
+    // Andaime de PROVA do "ciclo de verdade" (Fase 0.2): lê a sessão REAL (.json de
+    // replay) e republica os eventos 'gps' e 'sample' no MESMO canal que o Command Box
+    // assiste (web/cockpit/cloud-bridge.js), pra provar que a TELA exibe o dado real.
+    // Reusa SessaoReplay.Carregar (kmh já calculado do deslocamento) e o MESMO formato
+    // de payload do .exe ao vivo (gps: lat,lng,kmh,numSV,fix,accM,tWall). NÃO toca a tela
+    // do piloto nem o caminho ao vivo do .exe — é ferramenta de bancada, fora do produto.
+    //   uso: --replay-canal [--arquivo=<sessao.json>] [--canal=NOME] [--taxa=30]
+    //                       [--de=SEG] [--ate=SEG] [--limite=N] [--vivo]
+    //   padrão: canal de TESTE 'cockpit-bubi-dev-teste', 30 eventos/s.
+    //   --vivo: publica no canal AO VIVO 'cockpit-bubi-live' (o que o Command Box lê).
+    private static int RunReplayCanalMode(string[] args)
+    {
+        var arquivo = ParseArg(args, "--arquivo")
+            ?? Path.Combine(RepoRoot(), ".claude-exec", "dados-pista",
+                            "sessao-2026-06-21-1140-brasilia-COMPLETA.json");
+        var vivo  = args.Any(a => a is "--vivo");
+        var canal = ParseArg(args, "--canal") ?? (vivo ? LivePublisher.CanalProducao : "cockpit-bubi-dev-teste");
+        var url   = ParseArg(args, "--url")   ?? "https://fvhwltzhytpnhlqbttmd.supabase.co";
+        var anon  = Environment.GetEnvironmentVariable("P1FAST_SUPABASE_ANON");
+        double taxa = double.TryParse(ParseArg(args, "--taxa"), NumberStyles.Any, CultureInfo.InvariantCulture, out var tx) ? tx : 30.0;
+        double de   = double.TryParse(ParseArg(args, "--de"),   NumberStyles.Any, CultureInfo.InvariantCulture, out var dd) ? dd : double.NegativeInfinity;
+        double ate  = double.TryParse(ParseArg(args, "--ate"),  NumberStyles.Any, CultureInfo.InvariantCulture, out var aa) ? aa : double.PositiveInfinity;
+        int limite  = int.TryParse(ParseArg(args, "--limite"), out var li) ? li : int.MaxValue;
+
+        if (canal == LivePublisher.CanalProducao && !vivo)
+        {
+            Console.Error.WriteLine("Recusado: pra publicar no canal AO VIVO (cockpit-bubi-live) passe --vivo explicitamente.");
+            return 1;
+        }
+        if (string.IsNullOrWhiteSpace(anon))
+        {
+            Console.Error.WriteLine("Falta a chave: defina a variável de ambiente P1FAST_SUPABASE_ANON.");
+            return 1;
+        }
+        if (!File.Exists(arquivo))
+        {
+            Console.Error.WriteLine($"Sessão não encontrada: {arquivo}");
+            return 1;
+        }
+
+        Console.WriteLine($"=== replay→canal '{canal}'  ({taxa:F0} ev/s) — {Path.GetFileName(arquivo)} ===");
+        if (canal == LivePublisher.CanalProducao)
+            Console.WriteLine("  AO VIVO: abra o Command Box pra ver. Broadcast efêmero (NÃO grava no banco).");
+
+        var sess = SessaoReplay.Carregar(File.ReadAllText(arquivo));
+        var eventos = sess.Eventos.OrderBy(e => e.TWallMs).ToList();
+        if (eventos.Count == 0) { Console.Error.WriteLine("Sessão vazia."); return 2; }
+        double t0 = eventos[0].TWallMs;
+        // Janela --de/--ate em segundos relativos ao início da sessão.
+        eventos = eventos.Where(e =>
+        {
+            double s = (e.TWallMs - t0) / 1000.0;
+            return s >= de && s <= ate;
+        }).Take(limite).ToList();
+        int nGps = eventos.Count(e => e.Gps is not null);
+        int nMot = eventos.Count(e => e.IsMotor);
+        Console.WriteLine($"  eventos na janela: {eventos.Count}  (gps={nGps} motor={nMot})");
+        if (eventos.Count == 0) { Console.Error.WriteLine("Janela vazia — ajuste --de/--ate."); return 2; }
+
+        var cts = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
+        var nuvem = new SupabaseRealtimeChannel(url, anon, canal);
+        try { nuvem.ConnectAsync(cts.Token).Wait(6000); } catch { }
+        if (!nuvem.Online) Console.WriteLine("  (canal ainda offline — publica mesmo assim; SupabaseRealtimeChannel religa sozinho)");
+
+        int intervaloMs = (int)Math.Max(1, 1000.0 / Math.Max(1, taxa));
+        int gEnv = 0, mEnv = 0;
+        foreach (var ev in eventos)
+        {
+            if (cts.IsCancellationRequested) break;
+            long tWall = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            if (ev.Gps is { } g)
+            {
+                var payload = new Dictionary<string, object?>
+                {
+                    ["lat"] = g.Lat, ["lng"] = g.Lng, ["kmh"] = g.Kmh,
+                    ["numSV"] = 12, ["fix"] = 3, ["accM"] = 1.0, ["tWall"] = tWall,
+                };
+                try { if (nuvem.PublishAsync("gps", payload, cts.Token).Result) gEnv++; } catch { }
+            }
+            else if (ev.IsMotor)
+            {
+                var payload = new Dictionary<string, object?>
+                {
+                    ["source"] = "replay-canal", ["rpm"] = ev.Rpm, ["tWall"] = tWall,
+                };
+                try { if (nuvem.PublishAsync("sample", payload, cts.Token).Result) mEnv++; } catch { }
+            }
+            if ((gEnv + mEnv) % 100 == 0)
+                Console.Write($"\r  online={nuvem.Online}  gps={gEnv}/{nGps}  motor={mEnv}/{nMot}    ");
+            try { Thread.Sleep(intervaloMs); } catch { }
+        }
+        Console.WriteLine($"\nResultado: gps publicados={gEnv}  motor publicados={mEnv}  (online={nuvem.Online})");
+        Console.WriteLine((gEnv + mEnv) > 0
+            ? "OK — sessão real republicada no canal. Aponte o Command Box pro mesmo canal pra ver a tela exibir."
+            : "FALHOU — não publicou. Verifique internet / chave / URL.");
+        try { nuvem.DisposeAsync().AsTask().Wait(2000); } catch { }
+        return (gEnv + mEnv) > 0 ? 0 : 2;
+    }
+
+    // Raiz do repo (sobe até achar .claude-exec) — pra achar a sessão de prova de 21/06.
+    private static string RepoRoot()
+    {
+        var d = new DirectoryInfo(AppContext.BaseDirectory);
+        while (d is not null)
+        {
+            if (Directory.Exists(Path.Combine(d.FullName, ".claude-exec"))) return d.FullName;
+            d = d.Parent;
+        }
+        return AppContext.BaseDirectory;
     }
 
     // === MODO --conferir: relê as sessões gravadas e reporta integridade ===

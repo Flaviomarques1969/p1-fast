@@ -35,14 +35,16 @@ public sealed partial class MainWindow
     private RaceBoxBleReader? _raceBox;
     private bool _liveParado;        // guarda de fechamento (StopLive idempotente)
 
-    // Nuvem ao vivo (C5): publica MOTOR (LivePublisher, com fila que não perde) e GPS
-    // (evento à parte). UM só dono mexe no publisher/canal — o laço da nuvem — então o
-    // motor entrega na fila abaixo e o GPS guarda o último fix; sem corrida com o leitor.
+    // Nuvem ao vivo (C5): publica MOTOR (LivePublisher) e GPS (GpsLivePublisher), AMBOS
+    // com fila-que-não-perde + reenvio na religação. UM só dono mexe nos publishers/canal
+    // — o laço da nuvem — então o leitor só ENFILEIRA (motor e GPS) sem corrida.
     private SupabaseRealtimeChannel? _liveNuvem;
     private LivePublisher? _livePublisher;
+    private GpsLivePublisher? _liveGpsPublisher;
     private Task? _liveCloudTask;
     private readonly ConcurrentQueue<(T3000Sample s, long tWall)> _liveCloudMotor = new();
-    private volatile IDictionary<string, object?>? _liveUltimoGps;
+    private readonly ConcurrentQueue<IDictionary<string, object?>> _liveCloudGps = new();
+    private string _liveCanalRotulo = ""; // PRODUÇÃO vs TESTE — visível pro operador (bug 28/06)
 
     // Nuvem: URL do projeto + canal de TESTE por padrão. PRODUÇÃO ('cockpit-bubi-live',
     // o que o app/Command Box assistem) só com ORDEM do Flávio — exige trocar o canal E
@@ -112,10 +114,20 @@ public sealed partial class MainWindow
                 var canal = _options.Producao ? LivePublisher.CanalProducao : LiveCanalTeste;
                 _liveNuvem = new SupabaseRealtimeChannel(LiveSupabaseUrl, anon, canal);
                 _livePublisher = new LivePublisher(_liveNuvem, canal, permitirProducao: _options.Producao);
+                _liveGpsPublisher = new GpsLivePublisher(_liveNuvem, canal, permitirProducao: _options.Producao);
                 _liveCloudTask = Task.Run(() => LacoNuvemAsync(_liveCts.Token));
+
+                // Visibilidade do canal (lição do bug de 28/06: o .exe sem --producao publicava
+                // SILENCIOSAMENTE no canal de teste e o app não recebia). Avisa o operador qual
+                // canal está no ar — sem mexer no painel do piloto.
+                _liveCanalRotulo = _options.Producao
+                    ? "nuvem AO VIVO: PRODUÇÃO (cockpit-bubi-live) — app/Box recebem"
+                    : "nuvem AO VIVO: TESTE (cockpit-bubi-dev-teste) — app NÃO recebe; suba com --producao";
+                StatusText.Text = _liveCanalRotulo;
+                System.Diagnostics.Debug.WriteLine($"[nuvem ao vivo] canal={canal} producao={_options.Producao}");
             }
         }
-        catch { _liveNuvem = null; _livePublisher = null; }
+        catch { _liveNuvem = null; _livePublisher = null; _liveGpsPublisher = null; }
 
         // GPS ao vivo: RaceBox Mini por Bluetooth — INDEPENDE da T4000. Best-effort:
         // sem RaceBox, segue varrendo; sem GPS a tela mostra o motor mesmo assim.
@@ -163,7 +175,7 @@ public sealed partial class MainWindow
                     if (!avisouEsperando)
                     {
                         avisouEsperando = true;
-                        DispatcherQueue.TryEnqueue(() => StatusText.Text = "ao vivo: GPS ok; esperando a T4000 (USB) plugar…");
+                        DispatcherQueue.TryEnqueue(() => StatusText.Text = $"ao vivo: GPS ok; esperando a T4000 (USB) plugar… · {_liveCanalRotulo}");
                     }
                     try { await Task.Delay(1500, ct).ConfigureAwait(false); } catch { break; }
                     continue;
@@ -261,12 +273,12 @@ public sealed partial class MainWindow
                 new { lat = f.Lat, lon = f.Lng, kmh = f.Kmh, fix = f.Fix, numSV = f.NumSV, hacc = f.HaccM },
                 velKmh: f.Kmh);
 
-        // Nuvem: guarda o ÚLTIMO fix (o laço amostra a ~25 Hz, taxa real do RaceBox; o
-        // disco acima já gravou TODOS os fixes). Chaves EXATAS do cloudSend('gps',…) de
-        // web/teste-aparelhos — não quebrar consumidor. (O web amostra a 5 Hz; aqui o
-        // .exe carrega o full 25 Hz pro app/Command Box terem o GPS na resolução cheia.)
+        // Nuvem: ENFILEIRA todo fix (o laço da nuvem drena pelo GpsLivePublisher, fila-que-
+        // não-perde, e reenvia na religação — o disco acima já guarda TODOS os fixes de
+        // qualquer jeito). Chaves EXATAS do cloudSend('gps',…) de web/teste-aparelhos — não
+        // quebrar consumidor. (O web amostra a 5 Hz; aqui vai o full 25 Hz, agora SEM perder fix.)
         if (_liveNuvem is not null)
-            _liveUltimoGps = new Dictionary<string, object?>
+            _liveCloudGps.Enqueue(new Dictionary<string, object?>
             {
                 ["lat"]   = f.Lat,
                 ["lng"]   = f.Lng,
@@ -275,7 +287,7 @@ public sealed partial class MainWindow
                 ["fix"]   = f.Fix,
                 ["accM"]  = f.HaccM,
                 ["tWall"] = tWall,
-            };
+            });
 
         // Move a tela na thread da UI, EM ORDEM: GPS no maestro → ponte do stint (barra
         // de trechos) → sensores (MOVIMENTO acende). _ultimoGpsTick marca a chegada em
@@ -300,16 +312,19 @@ public sealed partial class MainWindow
     {
         var nuvem = _liveNuvem!;
         var pub = _livePublisher!;
+        var gpsPub = _liveGpsPublisher!;
         try { await nuvem.ConnectAsync(ct).ConfigureAwait(false); } catch { /* religa abaixo */ }
         long ultimaTentativa = Environment.TickCount64;
-        IDictionary<string, object?>? ultimoGpsEnviado = null;
         try
         {
             while (!ct.IsCancellationRequested)
             {
-                // 1) Motor: passa pro publisher tudo o que chegou (ele estrangula a 5 Hz).
+                // 1) Motor + GPS: passa pros publishers tudo o que chegou (cada um com sua
+                //    fila-que-não-perde; o motor estrangula a 5 Hz, o GPS é lossless a 25 Hz).
                 while (_liveCloudMotor.TryDequeue(out var item))
                     pub.Oferecer(item.s, item.tWall);
+                while (_liveCloudGps.TryDequeue(out var fix))
+                    gpsPub.Oferecer(fix);
 
                 // 2) Religa se caiu (backoff ~2 s), igual ao console de captura.
                 if (!nuvem.Online)
@@ -322,20 +337,14 @@ public sealed partial class MainWindow
                     }
                 }
 
-                // 3) Drena o motor acumulado (reenvia TODO o período quando a nuvem volta).
+                // 3) Drena motor E GPS (cada um reenvia TODO o acumulado quando a nuvem volta).
                 try { await pub.DrenarAsync(ct).ConfigureAwait(false); }
                 catch (OperationCanceledException) { break; }
                 catch { /* erro de envio: segura na fila, tenta no próximo giro */ }
 
-                // 4) GPS ao vivo (evento à parte): só o último fix, só online e só se novo
-                //    (o guarda evita reenviar o mesmo fix quando o giro corre na frente).
-                var gps = _liveUltimoGps;
-                if (gps is not null && nuvem.Online && !ReferenceEquals(gps, ultimoGpsEnviado))
-                {
-                    try { if (await nuvem.PublishAsync("gps", gps, ct).ConfigureAwait(false)) ultimoGpsEnviado = gps; }
-                    catch (OperationCanceledException) { break; }
-                    catch { /* GPS é best-effort; o disco já guardou */ }
-                }
+                try { await gpsPub.DrenarAsync(ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) { break; }
+                catch { /* erro de envio: segura na fila, tenta no próximo giro */ }
 
                 try { await Task.Delay(40, ct).ConfigureAwait(false); } // ~25 Hz, taxa do RaceBox
                 catch (OperationCanceledException) { break; }
