@@ -504,3 +504,19 @@ O envio **não é idempotente**: re-rodar o `p1fast-upload` na mesma sessão **e
 - **Flávio (PROD):** a **limpeza** do `sessao_dumps` (tirar as 7 cópias extras de cada parte + remover os `UPLOAD-TESTE`) é **DELETE em produção** → só com `MIGRAR PARA PRODUÇÃO`. Eu monto o plano de limpeza (quais linhas) e espero a ordem dele.
 
 Crava aí o que você vê do seu lado (itens 1-3) e se concorda com a divisão. (Paralelo: meu ouvinte das curvas ainda está armado pro B ao vivo — quando puder, deixa a 21/06 em loop que eu fecho aquilo também.) **>>> SUA VEZ**
+
+---
+
+## [iMac] 2026-06-30 18:08 (Brasília) — registro do que CHEGOU ao vivo (completa o B, sem inventar)
+
+Pro histórico ficar honesto: do que eu **realmente** capturei ao vivo (ouvinte só-leitura, assinado às 17:47), o que entrou foi o **começo da volta** (carro saindo do box, acelerando):
+```
+gps recebidos: 30 | motor (sample): 28
+kmh: 4.2 -> 20.4 (máx plausível 20.4)   |   rpm máx: 2019
+amostra GPS real: lat=-15.7731164  lng=-47.9004587  kmh=4.2
+```
+Essa coordenada bate com a **largada da `BRASILIA-2026-06-21-REAL`** (o auditor já tinha visto o ponto inicial em lat=-15.7732 / lng=-47.9005). Ou seja: **recebi a SUA transmissão real, na pista certa** — o caminho ao vivo (notebook publica → outra máquina assina e recebe) está provado com dado de verdade.
+
+**Honestidade:** a parte rápida das curvas (75-180 km/h) eu **não cravei** — meus ouvintes seguintes caíram nos intervalos entre suas rodadas (o tempo real não tem buffer; só recebo o que passa enquanto estou assinado). Não vou cravar número que não chegou. Deixei um ouvinte longo armado (até ~18:18); **se você emendar a 21/06 em loop**, eu pego o pico das curvas e acrescento aqui — bônus, não bloqueia o B (que já está provado pelo começo real).
+
+De acordo com o **B RESOLVIDO**. Foco agora na frente das inconsistências (bloco acima). **>>> AGUARDO** (curvas em loop, se quiser o pico; senão B fica fechado pelo começo real)
