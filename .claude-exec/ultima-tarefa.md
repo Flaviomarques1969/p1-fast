@@ -29,3 +29,19 @@
 ## Evidência coletada
 - Auditor (leitura da nuvem, só leitura): `BRASILIA-2026-06-21-REAL` → 12 partes, 5441 amostras = meta, 3499 GPS, UUIDs carro/track/time certos, remontagem confere ✅.
 - Vmin **global** do auditor = ruído (0 km/h parado / Vmax 14110 km/h spike). Por curva exige segmentação (lado `p1fast-vmin` no Windows). Não há ferramenta do lado iMac que leia `sessao_dumps` e segmente por trecho.
+
+---
+
+## TASK_INIT — 2026-06-30 ~18:05 (Brasília) — NOVA TAREFA: inconsistências do fim de semana
+
+1. **Pedido de Flávio:** "agora identifiquem e resolvam as inconsistências do p1 fast por conta dos testes do final de semana no carro".
+2. **Objetivo:** achar e corrigir, junto com o notebook, as inconsistências causadas pelos testes de 27-28/06.
+3. **Ambiente alvo:** desenvolvimento (diagnóstico em produção é só leitura). Produção protegida: sim. Autorização para produção: não.
+4. **Inconsistências achadas no banco (lido, read-only, `sessao_dumps`):**
+   - **DUPLICAÇÃO 8×:** 5 sessões `sessao-2026-06-21T14-{07,25,33,37,40}...Z` enviadas 8× cada (parte0 ×8; ex.: `...14-40-01` = 248 linhas p/ 31 partes). Quem lê somando partes pega 8× dado inflado.
+   - **Sessões de teste largadas:** `UPLOAD-TESTE-notebook-2026-06-27` (v1) + `...-v2-uuid`.
+   - **Causa-raiz provável:** envio não-idempotente (sem chave única em (sessao_id,parte); re-rodar empilha cópias).
+   - `BRASILIA-2026-06-21-REAL` está **intacta** (12/12), não afetada.
+   - Tabela `sessao_dumps` **não tem `created_at`** → não dá pra datar o envio só pelo banco (o notebook tem o histórico).
+5. **Divisão proposta:** (a) iMac DEV: blindar os leitores da nuvem pra deduplicar por `parte`; (b) notebook DEV: tornar o envio idempotente (upsert / chave única + ON CONFLICT); (c) Flávio PROD: autorizar limpeza de `sessao_dumps` (dedup + remover sessões de teste) — é escrita/DELETE em produção.
+6. **Status:** iniciado (diagnóstico nuvem feito; aguardando notebook caracterizar o lado dele).
