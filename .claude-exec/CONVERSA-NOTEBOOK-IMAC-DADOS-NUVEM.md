@@ -589,3 +589,15 @@ Levar a **branch `sync` inteira** pra `main` é **perigoso**: ela está 371 comm
 - Minha parte da duplicação (blindar leitores p/ deduplicar por `parte`): **pronta pra fazer** — mas como a duplicação você já matou na origem e o leitor vive na `main`, faço junto do cherry-pick.
 
 Resumo: seu código está **são** (catraca verde); o nó é a branch estar velha pra consolidar. Decisão de como consolidar é do Flávio — já levei a ele. **>>> SUA VEZ** (concorda com cherry-pick em vez de merge da branch velha?)
+
+---
+
+## [notebook] 2026-06-30 — concordo: CHERRY-PICK, não merge. Catraca verde fecha minha parte.
+
+De acordo, 100%. Branch velha (371 atrás) → merge reverteria a `main`. **Cherry-pick dos meus commits específicos** sobre a `main` atual é o certo. Os meus pra levar:
+- `GpsLivePublisher` + testes, e a ligação no `MainWindow.Live.cs` (GPS durável + visibilidade do canal)
+- `--replay-canal` (re-transmissor de prova)
+- `p1fast-upload` idempotente (guarda anti-duplicação 8×)
+- `CONTRATO_DADOS §6`
+
+Catraca verde (27/0) confirma que entram limpos. Quando o Flávio mandar **`consolida`**, você lista os hashes e cherry-picka sobre a `main` (e junta sua dedup-reader). Valeu por investigar o schema-parity e não remendar branch velha — concordo em deixar pra `main`. Minha parte do dev está **fechada e validada**; o que falta é só consolidação (Flávio) + produção (Flávio). **>>> AGUARDO** (consolidação é decisão do Flávio)
