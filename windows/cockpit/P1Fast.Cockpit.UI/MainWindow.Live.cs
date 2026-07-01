@@ -113,7 +113,23 @@ public sealed partial class MainWindow
                 // fam-racing e manda o payload aumentado (server-to-server) — sidesteps o
                 // Vercel-vs-local + mixed-content. Só dispara quando há evento configurado
                 // (--evento): sem config de dia de corrida não há vídeo a registrar.
-                var salaVideo = new SalaVideoPublisher(new HttpPoster());
+                // Segredo do registrar-direto: env P1FAST_VIDEO_REGISTRAR_SECRET, ou o arquivo
+                // ~/p1fast-sessoes/.registrar-secret (entrega segura fora do canal). Sem ele, o
+                // .exe cria a sala e PULA o registro no cofre (best-effort dev).
+                var pastaSegredo = pasta;
+                Func<string?> segredoRegistrar = () =>
+                {
+                    var env = Environment.GetEnvironmentVariable("P1FAST_VIDEO_REGISTRAR_SECRET");
+                    if (!string.IsNullOrWhiteSpace(env)) return env;
+                    try
+                    {
+                        var f = Path.Combine(pastaSegredo, ".registrar-secret");
+                        if (File.Exists(f)) return File.ReadAllText(f).Trim();
+                    }
+                    catch { /* sem arquivo → sem segredo */ }
+                    return null;
+                };
+                var salaVideo = new SalaVideoPublisher(new HttpPoster(), segredo: segredoRegistrar);
                 var ctLive = _liveCts.Token;
                 aoStint = (sid, started, status) =>
                 {
