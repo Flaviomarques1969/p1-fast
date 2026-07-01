@@ -55,6 +55,27 @@ while ($listener.IsListening) {
       continue
     }
 
+    if ($path -eq '/api/sessao-corrente') {
+      # Peça 3b (start/stop por stint): expõe o ponteiro da sessão corrente pra a PÁGINA
+      # (mesma máquina, same-origin, sem mixed-content). A página faz poll disto e liga/para
+      # a gravação Daily: startRecording ao virar 'gravando', stopRecording ao virar 'encerrada'.
+      # Sem ponteiro (nenhum stint ainda) => {"status":"nenhuma"}.
+      $ponteiro = Join-Path $env:USERPROFILE 'p1fast-sessoes\sessao-corrente.json'
+      if (Test-Path $ponteiro -PathType Leaf) {
+        $text = [System.IO.File]::ReadAllText($ponteiro)
+      } else {
+        $text = '{"status":"nenhuma"}'
+      }
+      $res.Headers.Add('Cache-Control','no-store, no-cache, must-revalidate')
+      $res.StatusCode = 200
+      $res.ContentType = 'application/json; charset=utf-8'
+      $bytes = [System.Text.Encoding]::UTF8.GetBytes($text)
+      $res.ContentLength64 = $bytes.Length
+      $res.OutputStream.Write($bytes, 0, $bytes.Length)
+      $res.Close()
+      continue
+    }
+
     if ($path -eq '/') { $path = '/web/teste-aparelhos/index.html' }
     $file = Join-Path $root ($path.TrimStart('/'))
     if (Test-Path $file -PathType Leaf) {
