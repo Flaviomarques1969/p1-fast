@@ -109,6 +109,19 @@ public sealed partial class MainWindow
                 var sinkPonteiro = new ArquivoPonteiroSink(Path.Combine(pasta, "sessao-corrente.json"));
                 var eventId = _options.Evento;
                 var timeId = _options.Time;
+                // a2: config do DIA escrita no LAUNCH (antes de qualquer stint), pra o servidor
+                // local + página derivarem a sala determinística `evento-<id>-<data>` desde o load
+                // (sem hardcode/fallback). Separada do ponteiro por-stint. Só com --evento setado.
+                if (!string.IsNullOrWhiteSpace(eventId))
+                {
+                    try
+                    {
+                        var dateISO = DateTime.Now.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+                        new ArquivoEventoCorrenteSink(Path.Combine(pasta, "evento-corrente.json"))
+                            .Escrever(new EventoCorrenteDados(eventId, timeId, dateISO));
+                    }
+                    catch { /* sem config do dia → servidor local cai no fallback, não quebra */ }
+                }
                 // Opção A (peça 3): no INÍCIO do stint, o .exe cria/recupera a sala de vídeo no
                 // fam-racing e manda o payload aumentado (server-to-server) — sidesteps o
                 // Vercel-vs-local + mixed-content. Só dispara quando há evento configurado

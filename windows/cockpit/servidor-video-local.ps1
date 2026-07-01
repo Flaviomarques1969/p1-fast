@@ -40,9 +40,21 @@ while ($listener.IsListening) {
     $path = [System.Uri]::UnescapeDataString($req.Url.AbsolutePath)
 
     if ($path -eq '/api/room') {
-      # porta de room.js: cria/recupera a sala do dia no backend de video (server-to-server)
+      # porta de room.js: cria/recupera a sala do dia no backend de video (server-to-server).
+      # a2: usa a config do DIA (evento-corrente.json, escrita pelo .exe no launch) pra cair
+      # na MESMA sala deterministica evento-<id>-<data> que o .exe registra no cofre. Sem ela
+      # (dev/teste solto), cai no fallback p1-teste-aparelhos + data de hoje.
+      $eventoFile = Join-Path $env:USERPROFILE 'p1fast-sessoes\evento-corrente.json'
+      $evId = $EVENT_ID
       $dateISO = (Get-Date).ToString('yyyy-MM-dd')
-      $payload = (@{ eventId=$EVENT_ID; dateISO=$dateISO } | ConvertTo-Json -Compress)
+      if (Test-Path $eventoFile -PathType Leaf) {
+        try {
+          $cfg = Get-Content $eventoFile -Raw | ConvertFrom-Json
+          if ($cfg.eventId) { $evId = $cfg.eventId }
+          if ($cfg.dateISO) { $dateISO = $cfg.dateISO }
+        } catch { }
+      }
+      $payload = (@{ eventId=$evId; dateISO=$dateISO } | ConvertTo-Json -Compress)
       $content = New-Object System.Net.Http.StringContent($payload, [System.Text.Encoding]::UTF8, 'application/json')
       $r = $http.PostAsync($ROOM_BACKEND, $content).Result
       $text = $r.Content.ReadAsStringAsync().Result
