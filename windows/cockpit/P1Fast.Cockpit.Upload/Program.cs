@@ -15,6 +15,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using P1Fast.Cockpit.Domain;
 
 const string URL = "https://fvhwltzhytpnhlqbttmd.supabase.co";
 const int CHUNK = 500;   // amostras por linha 'parte'
@@ -84,69 +85,121 @@ var http = new HttpClient { BaseAddress = new Uri(URL) };
 http.DefaultRequestHeaders.Add("apikey", anon);
 http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", anon);
 
-string envio = Guid.NewGuid().ToString("N")[..12];
-
+// INSERT idempotente (contrato da casa permanente, mig 0050 — trava UNIQUE(sessao_id,
+// parte), iMac 2026-06-30): on_conflict + resolution=ignore-duplicates → parte que já
+// existe vira 201 no-op em vez de 409. É o que deixa a fila resiliente reenviar à vontade
+// quando a internet da pista volta, sem dobrar nem quebrar.
 async Task<bool> PostRowAsync(object row)
 {
     var body = JsonSerializer.Serialize(new[] { row });
-    var req = new HttpRequestMessage(HttpMethod.Post, "/rest/v1/sessao_dumps")
+    var req = new HttpRequestMessage(HttpMethod.Post, "/rest/v1/sessao_dumps?on_conflict=sessao_id,parte")
     { Content = new StringContent(body, Encoding.UTF8, "application/json") };
-    req.Headers.Add("Prefer", "return=minimal");
+    req.Headers.Add("Prefer", "return=minimal,resolution=ignore-duplicates");
     var resp = await http.SendAsync(req);
     if (!resp.IsSuccessStatusCode)
         Console.Error.WriteLine($"  ERRO {(int)resp.StatusCode}: {await resp.Content.ReadAsStringAsync()}");
     return resp.IsSuccessStatusCode;
 }
 
-// Idempotência (anti-duplicação 8×, achado pelo iMac 2026-06-30): a sessao_dumps NÃO tem
-// upsert, então re-rodar o upload na MESMA sessão empilha as partes de novo. Guarda no
-// cliente: se a sessão JÁ existe no destino, RECUSA (não duplica). --forcar re-sobe de
-// propósito. DEV puro: só SELECT de checagem, NÃO apaga nada (DELETE é produção/Flávio).
+// RELÓGIO COMUM (pedido do iMac 2026-06-30, pro vídeo Osmo depois): carimba o started_at
+// da CAPTURA no MESMO relógio dos timestamps por amostra (TWall, epoch ms). Vem do
+// InicioWall do meta lateral (<sessão>.meta.json); cai pro 1º TWall se o meta faltar. É o
+// que deixa cruzar vídeo × volta por offset desde o início — hoje inexistente no caminho
+// do notebook (relatório plano-motor-gravacao-windows-2026-06-21).
+long? startedAt = tIni;
+try
+{
+    var metaLateral = Path.Combine(Path.GetDirectoryName(sessPath) ?? ".", Path.GetFileNameWithoutExtension(sessPath) + ".meta.json");
+    if (File.Exists(metaLateral))
+    {
+        using var md = JsonDocument.Parse(File.ReadAllText(metaLateral));
+        if (md.RootElement.TryGetProperty("InicioWall", out var iw) && iw.ValueKind == JsonValueKind.Number)
+            startedAt = iw.GetInt64();
+    }
+}
+catch { /* sem meta lateral: started_at = 1º TWall (já no relógio comum) */ }
+
+// Monta a linha de uma PARTE: parte 0 = meta, 1..nPartes = blocos de amostras (JSON cru,
+// sem reserializar — fidelidade total). 'envio' é só proveniência (a unicidade no destino
+// é UNIQUE(sessao_id, parte), mig 0050); reenviar a mesma parte é no-op idempotente.
+object MontarParte(int parte, string envioAlvo)
+{
+    if (parte == 0)
+    {
+        var meta = new Dictionary<string, object?>
+        {
+            ["sessao_id_origem"] = sessaoId, ["origem_arquivo"] = Path.GetFileName(sessPath),
+            ["carro_id"] = carroId, ["track_id"] = trackId, ["time_id"] = timeId,
+            ["n_amostras"] = linhas.Count, ["n_gps"] = nGps, ["n_motor"] = nMotor,
+            ["started_at"] = startedAt,            // relógio comum (mesmo de TWall) — âncora do vídeo
+            ["t_ini_wall"] = tIni, ["t_fim_wall"] = tFim, ["enviado_por"] = "p1fast-upload",
+        };
+        return new Dictionary<string, object?>
+        { ["envio"] = envioAlvo, ["origem"] = "p1fast-upload", ["sessao_id"] = sessaoId, ["parte"] = 0, ["total"] = total, ["sessao_meta"] = meta };
+    }
+    var bloco = linhas.Skip((parte - 1) * CHUNK).Take(CHUNK);
+    using var amostrasDoc = JsonDocument.Parse("[" + string.Join(",", bloco) + "]");
+    return new Dictionary<string, object?>
+    { ["envio"] = envioAlvo, ["origem"] = "p1fast-upload", ["sessao_id"] = sessaoId, ["parte"] = parte, ["total"] = total, ["amostras"] = amostrasDoc.RootElement.Clone() };
+}
+
+// RETOMADA SEM DUPLICAR (Fase 4): pergunta ao destino quais PARTES já chegaram pra esta
+// sessão e deixa o PlanejadorUpload (puro, provado) decidir — completa → pula; faltando →
+// envia só as faltantes. A unicidade é UNIQUE(sessao_id, parte) (mig 0050), então 'envio'
+// não conta; reenviar é no-op idempotente (header em PostRowAsync). --forcar sobe tudo de
+// novo de propósito (idempotente também). Consulta best-effort: sem rede, trata como vazio.
+IEnumerable<int> presentes = Array.Empty<int>();
 if (!args.Contains("--forcar"))
 {
     try
     {
-        var chk = await http.GetAsync($"/rest/v1/sessao_dumps?sessao_id=eq.{Uri.EscapeDataString(sessaoId)}&select=parte&limit=1");
-        if (chk.IsSuccessStatusCode &&
-            JsonDocument.Parse(await chk.Content.ReadAsStringAsync()).RootElement.GetArrayLength() > 0)
-        {
-            Console.Error.WriteLine($"RECUSADO: a sessão '{sessaoId}' JÁ existe em sessao_dumps — não re-empilho (evita a duplicação 8×).");
-            Console.Error.WriteLine("  Use --forcar pra re-subir de propósito (ou apague a sessão antes — DELETE é produção, ordem do Flávio).");
-            return 3;
-        }
+        var chk = await http.GetAsync($"/rest/v1/sessao_dumps?sessao_id=eq.{Uri.EscapeDataString(sessaoId)}&select=parte");
+        if (chk.IsSuccessStatusCode)
+            presentes = JsonDocument.Parse(await chk.Content.ReadAsStringAsync())
+                .RootElement.EnumerateArray().Select(r => r.GetProperty("parte").GetInt32()).ToList();
     }
-    catch { /* checagem best-effort: falha de rede não bloqueia o upload */ }
+    catch { /* sem rede: trata como destino vazio → sobe tudo */ }
+}
+var plano = PlanejadorUpload.Planejar(total, presentes);
+
+// Marcador de disco: prova local "esta sessão está 100% na nuvem", escrito SÓ quando
+// confirmada. É o que a fila resiliente do .exe lê pra saber o que ainda falta subir —
+// sem depender de rede a cada boot. Best-effort (falha de IO não derruba o upload).
+void MarcarSubida(string envioOk)
+{
+    try { File.WriteAllText(sessPath + ".uploaded", $"{{\"sessao_id\":\"{sessaoId}\",\"envio\":\"{envioOk}\",\"total\":{total}}}"); }
+    catch { /* best-effort */ }
 }
 
-// parte 0 — metadados
-var meta = new Dictionary<string, object?>
+if (plano.Acao == AcaoUpload.Completa)
 {
-    ["sessao_id_origem"] = sessaoId, ["origem_arquivo"] = Path.GetFileName(sessPath),
-    ["carro_id"] = carroId, ["track_id"] = trackId, ["time_id"] = timeId,
-    ["n_amostras"] = linhas.Count, ["n_gps"] = nGps, ["n_motor"] = nMotor,
-    ["t_ini_wall"] = tIni, ["t_fim_wall"] = tFim, ["enviado_por"] = "p1fast-upload",
-};
-bool ok = await PostRowAsync(new Dictionary<string, object?>
-{ ["envio"] = envio, ["origem"] = "p1fast-upload", ["sessao_id"] = sessaoId, ["parte"] = 0, ["total"] = total, ["sessao_meta"] = meta });
-Console.WriteLine($"  parte 0 (meta): {(ok ? "ok" : "FALHOU")}");
+    MarcarSubida("(já-completa)");
+    Console.WriteLine($"Resultado: já COMPLETA na nuvem ({total}/{total}) — nada a enviar (idempotente).");
+    return 0;
+}
 
-// parte 1..N — blocos de amostras (JSON cru, sem reserializar — fidelidade total)
-int enviados = ok ? 1 : 0;
-for (int p = 0; p < nPartes; p++)
+string envio = Guid.NewGuid().ToString("N")[..8];
+var faltantes = plano.PartesFaltantes;
+if (faltantes.Count < total)
+    Console.WriteLine($"  RETOMANDO: faltam {faltantes.Count} de {total} partes (reenvio idempotente, sem duplicar).");
+
+int enviados = 0;
+foreach (var parte in faltantes)
 {
-    var bloco = linhas.Skip(p * CHUNK).Take(CHUNK);
-    var amostrasJson = "[" + string.Join(",", bloco) + "]";
-    using var amostrasDoc = JsonDocument.Parse(amostrasJson);
-    var row = new Dictionary<string, object?>
-    { ["envio"] = envio, ["origem"] = "p1fast-upload", ["sessao_id"] = sessaoId, ["parte"] = p + 1, ["total"] = total, ["amostras"] = amostrasDoc.RootElement.Clone() };
-    if (await PostRowAsync(row)) enviados++;
-    Console.Write($"\r  partes enviadas: {enviados}/{total}");
+    if (await PostRowAsync(MontarParte(parte, envio))) enviados++;
+    Console.Write($"\r  partes enviadas nesta rodada: {enviados}/{faltantes.Count}");
 }
 Console.WriteLine();
 
-// Verifica: conta as partes que chegaram pra este sessao_id+envio
-var verResp = await http.GetAsync($"/rest/v1/sessao_dumps?envio=eq.{envio}&select=parte");
+// Verifica pela VERDADE do destino: conta as partes DISTINTAS desta SESSÃO (sem filtrar
+// por envio — a unicidade é UNIQUE(sessao_id, parte), mig 0050; reenvio idempotente mantém
+// a parte sob o envio que a gravou primeiro). Sucesso = as 'total' partes presentes.
+var verResp = await http.GetAsync($"/rest/v1/sessao_dumps?sessao_id=eq.{Uri.EscapeDataString(sessaoId)}&select=parte");
 var verBody = await verResp.Content.ReadAsStringAsync();
-int chegaram = verResp.IsSuccessStatusCode ? JsonDocument.Parse(verBody).RootElement.GetArrayLength() : -1;
-Console.WriteLine($"Resultado: {enviados}/{total} enviadas; {chegaram} confirmadas na nuvem (envio={envio}).");
-return enviados == total && chegaram == total ? 0 : 2;
+int chegaram = -1;
+if (verResp.IsSuccessStatusCode)
+    chegaram = JsonDocument.Parse(verBody).RootElement.EnumerateArray().Select(r => r.GetProperty("parte").GetInt32()).Distinct().Count();
+bool completou = chegaram == total;
+if (completou) MarcarSubida(envio);
+Console.WriteLine($"Resultado: {enviados}/{faltantes.Count} enviadas nesta rodada; {chegaram}/{total} confirmadas na nuvem (envio={envio}). {(completou ? "COMPLETA." : "INCOMPLETA — retoma na próxima.")}");
+return completou ? 0 : 2;

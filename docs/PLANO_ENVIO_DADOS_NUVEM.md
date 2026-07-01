@@ -67,9 +67,12 @@ São as **duas coisas em paralelo** — como o vídeo (processa/mostra local **e
 0. **(feito)** Plano + handoff pro iMac. Sem código.
 1. **(feito)** **Parte B produtor** como ferramenta `p1fast-upload` (`windows/cockpit/P1Fast.Cockpit.Upload`, **fora** do `.exe`) — sobe o `.jsonl` pra `sessao_dumps` em pedaços. Provado com sessão real (`sessao_id=UPLOAD-TESTE-notebook-2026-06-27`).
 2. **Consumidor na nuvem** (iMac) — lê `sessao_dumps`, roda estudos, grava em `segment_executions.vmin_*`/`padroes` `0025`, telas do app. **Decide o destino durável definitivo** (promover `sessao_dumps` ou novo) — aí re-aponto o uploader.
-3. **Parte A** (GPS durável ao vivo) — `.exe`, com testes. **Depois do teste de campo de 2026-06-28.**
-4. **Integrar o upload no fim da sessão do `.exe`** (hoje `p1fast-upload` é manual). Depois do teste de campo.
-5. Atualiza `CONTRATO_DADOS` + smoke; valida ponta a ponta (sessão de teste primeiro).
+3. **(feito)** **Parte A** (GPS durável ao vivo) — `GpsLivePublisher` (irmão do `LivePublisher` do motor): fila-que-não-perde + reenvio na religação, sem throttle (todo fix a ~25 Hz), com testes (`GpsLivePublisherTests`). Já ligado no `MainWindow.Live.cs`. Re-validar com o RaceBox na mão.
+4. **(feito 2026-06-30)** **Gatilho automático + fila resiliente no `.exe`** (Fase 4). Três peças, com testes da lógica pura:
+   - **Gatilho destravado:** `StopLive` dispara o `p1fast-upload` (destacado) pra TODA sessão real — antes travado em `--producao`, por isso o fim de semana (modo teste) não subia sozinho. Destino `sessao_dumps`; produção ao vivo segue à parte.
+   - **Uploader resumível e sem duplicar:** `PlanejadorUpload` (puro, provado) decide pela completude no destino — completa→pula (idempotente), parcial→reenvia só as partes faltantes sob o **mesmo envio** (retoma sem duplicar), vazia→sobe nova. Marcador `<jsonl>.uploaded` escrito só na confirmação.
+   - **Fila resiliente ancorada no disco:** `PendenciasUpload` (puro, provado) + varredura em fundo no início do `--live` (`VarrerPendentesAsync`), com retry/backoff. Entre reinícios a verdade é o disco (`.jsonl` sem `.uploaded` = pendente); rede caiu no meio → retoma de onde parou.
+5. Atualiza `CONTRATO_DADOS` + smoke; valida ponta a ponta (sessão de teste primeiro). **Falta:** re-apontar destino quando o iMac definir a casa permanente; vídeo é trilha à parte (não há arquivo gravado hoje — só ao vivo Daily.co, ADR-024).
 
 ## 8. Guardas (não-objetivos)
 

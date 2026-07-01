@@ -32,6 +32,7 @@ public sealed partial class MainWindow
     private readonly object _liveRecLock = new();
     private Task? _liveReaderTask;   // motor USB numa thread dedicada (fora da thread da UI)
     private Task? _liveHealthTask;   // vigia de saúde da gravação, em fundo (fora da UI)
+    private Task? _liveScanTask;     // fila resiliente: sobe sessões pendentes em fundo (fora da UI)
     private RaceBoxBleReader? _raceBox;
     private bool _liveParado;        // guarda de fechamento (StopLive idempotente)
 
@@ -128,6 +129,12 @@ public sealed partial class MainWindow
             }
         }
         catch { _liveNuvem = null; _livePublisher = null; _liveGpsPublisher = null; }
+
+        // Fila resiliente (Fase 4): no INÍCIO do --live, sobe em FUNDO as sessões ENCERRADAS
+        // de runs anteriores que ficaram pendentes (rede caiu no fim, app fechou antes, etc.).
+        // É o que garante a resiliência entre reinícios: o disco é a verdade (.jsonl sem
+        // .uploaded = pendente) e o uploader retoma de onde parou. Não toca a tela do piloto.
+        _liveScanTask = VarrerPendentesAsync(_liveCts.Token);
 
         // GPS ao vivo: RaceBox Mini por Bluetooth — INDEPENDE da T4000. Best-effort:
         // sem RaceBox, segue varrendo; sem GPS a tela mostra o motor mesmo assim.
@@ -235,10 +242,14 @@ public sealed partial class MainWindow
         string? sessaoFechada = null;
         try { lock (_liveRecLock) { sessaoFechada = _liveRecorder?.SessaoAtualId; _liveRecorder?.Encerrar("fechou-app"); } }
         catch { /* best-effort */ }
-        // 1b) Upload durável (Parte B, §7.4): dispara o p1fast-upload como processo
-        //     DESTACADO (sobrevive ao fechamento; nunca trava a tela). Só com --producao
-        //     (sessão real) + chave no ambiente. Qualquer falha é silenciosa.
-        if (_options.Producao) try { DispararUploadFimDeSessao(sessaoFechada); } catch { /* best-effort */ }
+        // 1b) Upload durável (Parte B / Fase 4): dispara o p1fast-upload como processo
+        //     DESTACADO (sobrevive ao fechamento; nunca trava a tela) pra TODA sessão real,
+        //     destino sessao_dumps (a ferramenta SEMPRE sobe pro dump de teste, indepe do
+        //     canal AO VIVO). Antes isto era travado em --producao — por isso o fim de
+        //     semana (modo teste) não subia sozinho. Agora só exige a chave no ambiente; a
+        //     PRODUÇÃO ao vivo (cockpit-bubi-live) segue à parte e só com ordem do Flávio.
+        //     Se a rede cair no meio, a varredura de pendentes (no próximo boot) retoma.
+        try { DispararUploadFimDeSessao(sessaoFechada); } catch { /* best-effort */ }
         // 2) Cancela laços + aparelhos em FUNDO: o Cancel() roda o teardown do RaceBox
         //    (Stop() do watcher BLE), que pode bloquear alguns segundos numa pilha
         //    Bluetooth fria — não pode travar o fechamento da janela.
@@ -288,6 +299,106 @@ public sealed partial class MainWindow
         }
         catch { /* best-effort */ }
         return null;
+    }
+
+    // Fila resiliente de upload (Fase 4): em FUNDO, sobe as sessões ENCERRADAS pendentes
+    // (sem o marcador .uploaded) com retry/backoff. O uploader é resumível+idempotente:
+    // a internet da pista cai/volta → ele retoma de onde parou; entre reinícios a verdade
+    // é o disco. NÃO mexe na sessão AO VIVO atual (ela sobe no fim, por DispararUpload).
+    // Erro aqui NUNCA derruba a tela do piloto. Sem chave ou sem a ferramenta: não faz nada.
+    private Task VarrerPendentesAsync(CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("P1FAST_SUPABASE_ANON")))
+            return Task.CompletedTask;
+        var exe = ResolveUploadExe();
+        if (exe is null) return Task.CompletedTask;
+        var pasta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "p1fast-sessoes");
+
+        return Task.Run(async () =>
+        {
+            // Algumas rodadas com espera crescente entre elas: se a rede está fora agora,
+            // tenta de novo daqui a pouco (a pista religa). Marcadores no disco encolhem a
+            // fila a cada rodada; quando nada fica pendente, encerra.
+            for (int rodada = 0; rodada < 6 && !ct.IsCancellationRequested; rodada++)
+            {
+                List<SessaoNoDisco> noDisco;
+                try { noDisco = LerSessoesDoDisco(pasta); }
+                catch { return; }
+
+                string? idAtual;
+                lock (_liveRecLock) idAtual = _liveRecorder?.SessaoAtualId;
+                var excluir = idAtual is null ? null : new HashSet<string> { idAtual };
+
+                var pend = PendenciasUpload.Selecionar(noDisco, excluir: excluir);
+                if (pend.Count == 0) return; // nada pendente: encerra a varredura
+
+                foreach (var id in pend)
+                {
+                    if (ct.IsCancellationRequested) return;
+                    try { await RodarUploadAsync(exe, pasta, id, ct).ConfigureAwait(false); }
+                    catch (OperationCanceledException) { return; }
+                    catch { /* falhou esta: tenta na próxima rodada (resumível) */ }
+                }
+
+                try { await Task.Delay(TimeSpan.FromSeconds(15 * (rodada + 1)), ct).ConfigureAwait(false); }
+                catch { return; }
+            }
+        }, ct);
+    }
+
+    // Lê o estado das sessões no disco (id, encerrada?, nº de amostras, já subiu?) pro
+    // seletor puro PendenciasUpload decidir o que enfileirar. Meta ausente/ilegível =
+    // trata como NÃO encerrada (não sobe). Marcador = <jsonl>.uploaded (escrito pelo uploader).
+    private static List<SessaoNoDisco> LerSessoesDoDisco(string pasta)
+    {
+        var lista = new List<SessaoNoDisco>();
+        var dir = new DirectoryInfo(pasta);
+        if (!dir.Exists) return lista;
+        foreach (var jsonl in dir.GetFiles("*.jsonl"))
+        {
+            var id = Path.GetFileNameWithoutExtension(jsonl.Name);
+            var metaPath = Path.Combine(pasta, id + ".meta.json");
+            bool encerrada = false; int n = 0;
+            try
+            {
+                if (File.Exists(metaPath))
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(metaPath));
+                    var root = doc.RootElement;
+                    encerrada = root.TryGetProperty("Status", out var st)
+                                && string.Equals(st.GetString(), "encerrada", StringComparison.Ordinal);
+                    int ng = root.TryGetProperty("NGps", out var g) && g.ValueKind == System.Text.Json.JsonValueKind.Number ? g.GetInt32() : 0;
+                    int nm = root.TryGetProperty("NMotor", out var m) && m.ValueKind == System.Text.Json.JsonValueKind.Number ? m.GetInt32() : 0;
+                    n = ng + nm;
+                }
+            }
+            catch { /* meta ilegível: não-encerrada → não sobe */ }
+            bool jaSubida = File.Exists(jsonl.FullName + ".uploaded");
+            lista.Add(new SessaoNoDisco(id, encerrada, n, jaSubida));
+        }
+        return lista;
+    }
+
+    // Roda o p1fast-upload pra UMA sessão e ESPERA o término (managed, pra poder retomar).
+    // Pula se a sessão já tem o marcador. O exit code não importa aqui: sucesso escreve o
+    // marcador (some da fila); falha deixa sem marcador (volta na próxima rodada/boot).
+    private static async Task RodarUploadAsync(string exe, string pasta, string sessaoId, CancellationToken ct)
+    {
+        var jsonl = Path.Combine(pasta, sessaoId + ".jsonl");
+        if (!File.Exists(jsonl) || File.Exists(jsonl + ".uploaded")) return;
+
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = exe,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WorkingDirectory = Path.GetDirectoryName(exe)!,
+        };
+        psi.ArgumentList.Add(jsonl);
+        psi.ArgumentList.Add($"--sessao-id={sessaoId}");
+        using var proc = System.Diagnostics.Process.Start(psi);
+        if (proc is null) return;
+        await proc.WaitForExitAsync(ct).ConfigureAwait(false);
     }
 
     // Cada amostra do motor (vem na thread do leitor): grava em disco e move a tela.
