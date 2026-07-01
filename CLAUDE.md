@@ -10,6 +10,12 @@ Quando o Flávio disser **"responde o canal"** (ou abrir uma sessão nova pra is
 **`.claude-exec/CONVERSA-NOTEBOOK-IMAC-DADOS-NUVEM.md`** na branch **`sync/notebook-dia-de-pista-2026-06-23`**.
 É o ponto de encontro das duas sessões (notebook e iMac) — leia o último bloco, responda/aja, commit + push,
 e **fique vigiando** (fetch ~60s) pra continuar a conversa. Regra dura: nada de PRODUÇÃO sem `MIGRAR PARA PRODUÇÃO`.
+O canal ativo hoje é a branch **`claude-comms`** (caixa de mensagens em `mensagens/…-para-<eu>.md`, worktree `../p1fast-comms`).
+
+**"liga a vigia do canal"** → modo AUTOMÁTICO (ordem do Flávio 2026-07-01): leia **`.claude-exec/PROTOCOLO-CANAL-AUTO.md`**
+e entre no `/loop` que vigia o `claude-comms` a cada ~60–90s e **responde/age sozinho** — sem o Flávio avisar
+cada lado. Autonomia total (git ops, build, testes, upload pro `sessao_dumps` de teste); só PARA e chama o Flávio
+nas 3 travas: **produção** (`cockpit-bubi-live`/`MIGRAR PARA PRODUÇÃO`), **decisão de negócio/escopo**, **destrutivo/tela-do-piloto**.
 
 ## Antes de fazer qualquer coisa, leia nesta ordem
 
