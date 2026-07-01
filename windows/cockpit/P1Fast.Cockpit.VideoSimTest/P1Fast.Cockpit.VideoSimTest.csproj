@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>p1fast-video-simtest</AssemblyName>
+    <RootNamespace>P1Fast.Cockpit.VideoSimTest</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\P1Fast.Cockpit.Domain\P1Fast.Cockpit.Domain.csproj" />
+  </ItemGroup>
+</Project>
