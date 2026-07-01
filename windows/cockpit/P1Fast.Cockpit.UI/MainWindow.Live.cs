@@ -109,10 +109,23 @@ public sealed partial class MainWindow
                 var sinkPonteiro = new ArquivoPonteiroSink(Path.Combine(pasta, "sessao-corrente.json"));
                 var eventId = _options.Evento;
                 var timeId = _options.Time;
+                // Opção A (peça 3): no INÍCIO do stint, o .exe cria/recupera a sala de vídeo no
+                // fam-racing e manda o payload aumentado (server-to-server) — sidesteps o
+                // Vercel-vs-local + mixed-content. Só dispara quando há evento configurado
+                // (--evento): sem config de dia de corrida não há vídeo a registrar.
+                var salaVideo = new SalaVideoPublisher(new HttpPoster());
+                var ctLive = _liveCts.Token;
                 aoStint = (sid, started, status) =>
                 {
-                    try { sinkPonteiro.Escrever(new PonteiroDados(sid, started, eventId, timeId, status)); }
+                    var dados = new PonteiroDados(sid, started, eventId, timeId, status);
+                    try { sinkPonteiro.Escrever(dados); }
                     catch { /* best-effort: ponteiro não derruba a gravação */ }
+                    if (status == "gravando" && !string.IsNullOrWhiteSpace(eventId))
+                    {
+                        // fire-and-forget: nunca segura o abrir do stint nem a tela do piloto
+                        try { _ = salaVideo.AbrirSalaAsync(dados, ctLive); }
+                        catch { /* best-effort */ }
+                    }
                 };
             }
             catch { aoStint = null; }
