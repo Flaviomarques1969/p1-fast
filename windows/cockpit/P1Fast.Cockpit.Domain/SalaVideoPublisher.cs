@@ -78,8 +78,38 @@ public sealed class SalaVideoPublisher
         startedAt = p.StartedAt,
     });
 
-    /// <summary>Nome determinístico da sala do dia (o iMac confirmou este formato).</summary>
+    /// <summary>Nome derivado da sala (FALLBACK). O nome REAL vem da resposta do /api/room
+    /// (ExtrairRoomName) — o fam-racing trunca o eventId e usa data sem hífens (YYYYMMDD), então
+    /// derivar aqui NÃO casa com a sala real. Só usado se a resposta não trouxer nome nem URL.</summary>
     public string DailyRoomName(PonteiroDados p) => $"evento-{p.EventId}-{_dateISO(p.StartedAt)}";
+
+    /// <summary>Nome REAL da sala a partir da resposta do /api/room: campo "roomName" (oficial),
+    /// senão o último segmento do roomUrl. Null se não achar. É este que casa com o
+    /// daily-recording-access (busca por room_name).</summary>
+    public static string? ExtrairRoomName(string corpo)
+    {
+        if (string.IsNullOrWhiteSpace(corpo)) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(corpo);
+            var r = doc.RootElement;
+            if (r.ValueKind == JsonValueKind.Object
+                && r.TryGetProperty("roomName", out var rn) && rn.ValueKind == JsonValueKind.String)
+            {
+                var s = rn.GetString();
+                if (!string.IsNullOrWhiteSpace(s)) return s;
+            }
+        }
+        catch { /* corpo não-JSON */ }
+        // fallback: último segmento do roomUrl (é o nome da sala no Daily)
+        var url = ExtrairRoomUrl(corpo);
+        if (!string.IsNullOrWhiteSpace(url))
+        {
+            var seg = url!.TrimEnd('/').Split('/');
+            if (seg.Length > 0 && !string.IsNullOrWhiteSpace(seg[^1])) return seg[^1];
+        }
+        return null;
+    }
 
     /// <summary>Payload do video-registrar (o que casa com o cofre video_streams).</summary>
     public string MontarPayloadRegistrar(PonteiroDados p, string dailyRoomName, string dailyRoomUrl) =>
@@ -124,13 +154,16 @@ public sealed class SalaVideoPublisher
             if (!r1.Ok) return false;
             var roomUrl = ExtrairRoomUrl(r1.Corpo);
             if (string.IsNullOrWhiteSpace(roomUrl)) return false;   // sem roomUrl não dá pra registrar
+            // nome REAL da sala (da resposta) — casa com o daily-recording-access. Só cai no
+            // derivado se a resposta não trouxer nome nem URL (não deve acontecer).
+            var roomName = ExtrairRoomName(r1.Corpo) ?? DailyRoomName(p);
 
             // (2) registra no cofre — SÓ com segredo (dev sem segredo: sala criada, registrar pulado)
             var segredo = _segredo();
             if (string.IsNullOrWhiteSpace(segredo)) return true;
 
             var headers = new Dictionary<string, string> { ["x-registrar-secret"] = segredo! };
-            var body = MontarPayloadRegistrar(p, DailyRoomName(p), roomUrl!);
+            var body = MontarPayloadRegistrar(p, roomName, roomUrl!);
             var r2 = await _http.PostJsonAsync(_registrarUrl, body, headers, ct).ConfigureAwait(false);
             return r2.Ok;
         }

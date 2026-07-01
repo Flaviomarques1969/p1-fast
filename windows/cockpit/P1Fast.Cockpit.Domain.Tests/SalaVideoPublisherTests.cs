@@ -32,7 +32,9 @@ public class SalaVideoPublisherTests
         }
     }
 
-    private static readonly string RoomOk = "{\"roomUrl\":\"https://cdai.daily.co/evento-EV-2026-06-21\",\"tokenPiloto\":\"x\",\"tokenBox\":\"y\",\"exp\":1}";
+    // Resposta REAL do fam-racing: roomName no topo (eventId truncado + data sem hífens),
+    // roomUrl com o MESMO nome. O nome NÃO é o derivado (`evento-EV-2026-06-21`).
+    private static readonly string RoomOk = "{\"ok\":true,\"roomName\":\"evento-EV-20260621\",\"roomUrl\":\"https://fam-racing.daily.co/evento-EV-20260621\",\"tokenPiloto\":\"x\",\"tokenBox\":\"y\",\"exp\":1}";
 
     private static PonteiroDados Ponteiro() => new(
         SessaoId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
@@ -77,7 +79,21 @@ public class SalaVideoPublisherTests
     // ── parse do roomUrl ──────────────────────────────────────────────────────
     [Fact]
     public void ExtrairRoomUrl_CampoOficial_roomUrl() =>
-        Assert.Equal("https://cdai.daily.co/evento-EV-2026-06-21", SalaVideoPublisher.ExtrairRoomUrl(RoomOk));
+        Assert.Equal("https://fam-racing.daily.co/evento-EV-20260621", SalaVideoPublisher.ExtrairRoomUrl(RoomOk));
+
+    [Fact]
+    public void ExtrairRoomName_PreferaCampoRoomName()
+    {
+        // usa o roomName da resposta (nome REAL da sala), NÃO o derivado
+        Assert.Equal("evento-EV-20260621", SalaVideoPublisher.ExtrairRoomName(RoomOk));
+    }
+
+    [Fact]
+    public void ExtrairRoomName_SemCampo_CaiNoUltimoSegmentoDoRoomUrl()
+    {
+        Assert.Equal("sala-xyz", SalaVideoPublisher.ExtrairRoomName("{\"roomUrl\":\"https://a.daily.co/sala-xyz\"}"));
+        Assert.Null(SalaVideoPublisher.ExtrairRoomName("{\"nada\":1}"));
+    }
 
     [Fact]
     public void ExtrairRoomUrl_Defensivo_url_e_roomPontoUrl()
@@ -114,8 +130,9 @@ public class SalaVideoPublisherTests
         Assert.Equal(SalaVideoPublisher.RegistrarUrlPadrao, poster.Chamadas[1].Url);
         Assert.Equal("SEGREDO-123", poster.Chamadas[1].Headers!["x-registrar-secret"]);
         using var doc = JsonDocument.Parse(poster.Chamadas[1].Body);
-        Assert.Equal("https://cdai.daily.co/evento-EV-2026-06-21", doc.RootElement.GetProperty("dailyRoomUrl").GetString());
-        Assert.Equal("evento-EV-2026-06-21", doc.RootElement.GetProperty("dailyRoomName").GetString());
+        Assert.Equal("https://fam-racing.daily.co/evento-EV-20260621", doc.RootElement.GetProperty("dailyRoomUrl").GetString());
+        // dailyRoomName vem da RESPOSTA (roomName real), não do derivado evento-EV-2026-06-21
+        Assert.Equal("evento-EV-20260621", doc.RootElement.GetProperty("dailyRoomName").GetString());
     }
 
     [Fact]
