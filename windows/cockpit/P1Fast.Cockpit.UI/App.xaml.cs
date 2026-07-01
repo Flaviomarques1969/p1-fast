@@ -49,7 +49,9 @@ public sealed record LaunchOptions(
     bool Windowed = false,
     bool Live = false,
     string? Port = null,
-    bool Producao = false)
+    bool Producao = false,
+    string Evento = "",
+    string Time = "")
 {
     /// <summary>Faz parsing dos args do <see cref="Environment.GetCommandLineArgs"/>.</summary>
     public static LaunchOptions FromCommandLine(string[] args)
@@ -64,6 +66,8 @@ public sealed record LaunchOptions(
         var live = false;
         string? port = null;
         var producao = false;
+        var evento = "";
+        var tempo = "";
         for (var i = 0; i < args.Length; i++)
         {
             var a = args[i];
@@ -122,7 +126,17 @@ public sealed record LaunchOptions(
             {
                 port = args[i + 1];
             }
+            // Config de dia de corrida pro ponteiro de vídeo (o Flávio passa no dia).
+            // eventId/timeId são UUIDs; em dev podem ficar vazios (o ponteiro sai sem eles).
+            else if (a.StartsWith("--evento=", StringComparison.Ordinal))
+            {
+                evento = a["--evento=".Length..];
+            }
+            else if (a.StartsWith("--time=", StringComparison.Ordinal))
+            {
+                tempo = a["--time=".Length..];
+            }
         }
-        return new LaunchOptions(displayIndex, demo, replay, replayPath, speed, loop, windowed, live, port, producao);
+        return new LaunchOptions(displayIndex, demo, replay, replayPath, speed, loop, windowed, live, port, producao, evento, tempo);
     }
 }

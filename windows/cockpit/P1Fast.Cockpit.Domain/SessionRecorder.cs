@@ -121,6 +121,10 @@ public sealed class SessionRecorder
     private readonly Action<SessionEstado, string>? _onEstado;
     private readonly int _silencioMs;
     private readonly AutoCaptura? _auto;
+    // Hook do ponteiro de vídeo (peça 2): dispara ao ABRIR (status "gravando") e ao
+    // ENCERRAR (status "encerrada") um stint, com (sessaoId, startedAt=InicioWall, status).
+    // Best-effort — a escrita do ponteiro NUNCA pode derrubar a gravação nem a tela.
+    private readonly Action<string, long, string>? _aoStint;
 
     private (string Id, long InicioWall, double InicioMono, bool Sim)? _sessao;
     private long _seq;
@@ -142,10 +146,12 @@ public sealed class SessionRecorder
         Func<string>? gerarId = null,
         Action<SessionEstado, string>? onEstado = null,
         int silencioMs = SilencioFimMs,
-        AutoCaptura? auto = null)
+        AutoCaptura? auto = null,
+        Action<string, long, string>? aoStint = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         _store = store;
+        _aoStint = aoStint;
         if (now is not null) _now = now;
         else { var sw = Stopwatch.StartNew(); _now = () => sw.Elapsed.TotalMilliseconds; }
         _wall = wall ?? (() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
@@ -183,6 +189,8 @@ public sealed class SessionRecorder
         _janGps.Clear(); _janMotor.Clear(); _lacunas.Clear();
         _ultimoMono = _ultimoGpsMono = _ultimoMotorMono = _now();
         try { _store.NovaSessao(new SessionMeta(id, _sessao.Value.InicioWall, sim, "gravando")); } catch { /* best-effort */ }
+        // ponteiro de vídeo: stint abriu → "gravando" (best-effort, nunca derruba a gravação)
+        try { _aoStint?.Invoke(id, _sessao.Value.InicioWall, "gravando"); } catch { /* best-effort */ }
         _onEstado?.Invoke(Estado(), "inicio");
     }
 
@@ -302,6 +310,8 @@ public sealed class SessionRecorder
             MaiorLacunaMs = _lacunas.Count > 0 ? _lacunas.Max() : 0,
         };
         try { _store.Finalizar(s.Id, resumo); } catch { /* best-effort */ }
+        // ponteiro de vídeo: stint fechou → "encerrada" (a página para a gravação do stint)
+        try { _aoStint?.Invoke(s.Id, s.InicioWall, "encerrada"); } catch { /* best-effort */ }
         _sessao = null;
         _onEstado?.Invoke(Estado(), "fim");
         return resumo;

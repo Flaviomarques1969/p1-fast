@@ -97,7 +97,27 @@ public sealed partial class MainWindow
         try
         {
             var pasta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "p1fast-sessoes");
-            _liveRecorder = new SessionRecorder(new FileSessionStore(pasta));
+
+            // Ponteiro de vídeo (peça 2): a página de campo lê ~/p1fast-sessoes/sessao-corrente.json
+            // pra ligar a gravação ao stint. Escrito ATÔMICO no abrir ("gravando") e fechar
+            // ("encerrada") de cada stint (formato 1 do contrato). eventId/timeId vêm da config
+            // do dia (--evento/--time). Best-effort duplo: falha do ponteiro nunca derruba a
+            // gravação nem a tela do piloto.
+            Action<string, long, string>? aoStint = null;
+            try
+            {
+                var sinkPonteiro = new ArquivoPonteiroSink(Path.Combine(pasta, "sessao-corrente.json"));
+                var eventId = _options.Evento;
+                var timeId = _options.Time;
+                aoStint = (sid, started, status) =>
+                {
+                    try { sinkPonteiro.Escrever(new PonteiroDados(sid, started, eventId, timeId, status)); }
+                    catch { /* best-effort: ponteiro não derruba a gravação */ }
+                };
+            }
+            catch { aoStint = null; }
+
+            _liveRecorder = new SessionRecorder(new FileSessionStore(pasta), aoStint: aoStint);
         }
         catch { _liveRecorder = null; }
 
