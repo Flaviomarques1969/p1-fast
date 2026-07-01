@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -150,7 +149,12 @@ public sealed class SessionRecorder
         if (now is not null) _now = now;
         else { var sw = Stopwatch.StartNew(); _now = () => sw.Elapsed.TotalMilliseconds; }
         _wall = wall ?? (() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-        _gerarId = gerarId ?? (() => "sessao-" + DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH-mm-ss-fff", CultureInfo.InvariantCulture));
+        // Opção A (Flávio 2026-07-01): o id da sessão/stint É um UUID gerado AQUI, na captura.
+        // É o sessao_id ÚNICO que atravessa tudo — .jsonl local, upload pro sessao_dumps, ponteiro
+        // sessao-corrente.json do vídeo, e as tabelas sessoes/video_streams na nuvem (Postgres uuid
+        // aceita direto). Cada Abrir() (carro começou a andar) = 1 stint = 1 UUID novo.
+        // Contrato: docs/CONTRATO_VIDEO_GRAVACAO.md (5 formatos).
+        _gerarId = gerarId ?? (() => Guid.NewGuid().ToString());
         _onEstado = onEstado;
         _silencioMs = silencioMs;
         _auto = auto;

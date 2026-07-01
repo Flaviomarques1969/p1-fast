@@ -84,6 +84,27 @@ public class SessionRecorderTests
     }
 
     [Fact]
+    public void IdDefault_EhUuidValido_UmPorStint()
+    {
+        // Opção A (Flávio 2026-07-01): sem gerarId injetado, o id da sessão/stint É um
+        // UUID gerado na captura — o sessao_id único que casa com sessoes/video_streams na
+        // nuvem (Postgres uuid). Cada stint (abrir→fechar) ganha um UUID DISTINTO.
+        var rec = new SessionRecorder(new InMemorySessionStore());
+
+        rec.Motor(MotorSample(3000));                 // 1º dado abre o stint 1
+        var id1 = rec.Estado().SessaoId!;
+        Assert.True(Guid.TryParse(id1, out _), $"id do stint 1 não é UUID: {id1}");
+        rec.Encerrar();
+
+        rec.Motor(MotorSample(3100));                 // novo dado abre o stint 2
+        var id2 = rec.Estado().SessaoId!;
+        Assert.True(Guid.TryParse(id2, out _), $"id do stint 2 não é UUID: {id2}");
+        rec.Encerrar();
+
+        Assert.NotEqual(id1, id2);                     // 1 UUID por stint, sem repetir
+    }
+
+    [Fact]
     public void DiscoCheio_DisparaAlarme_PerdaNuncaSilenciosa()
     {
         var rec = new SessionRecorder(new FailingSessionStore());
