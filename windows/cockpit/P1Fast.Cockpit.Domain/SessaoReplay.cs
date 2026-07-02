@@ -82,8 +82,8 @@ public sealed class SessaoReplay
                     var hacc = GetNum(gd, "hacc") ?? double.MaxValue;
                     var lat = GetNum(gd, "lat") ?? 0;
                     var lon = GetNum(gd, "lon") ?? 0;
-                    // Mesmo filtro do detector de voltas.
-                    if (fix >= 3 && hacc < 50 && lat >= -16.1 && lat <= -15.4 && lon >= -48.3 && lon <= -47.6)
+                    // Mesmo filtro de QUALIDADE do ao vivo (H3): fonte única em GpsFiltroAoVivo.
+                    if (GpsFiltroAoVivo.QualidadeOk(lat, lon, fix, hacc))
                         gpsValidos.Add((new PontoGps(lat, lon), tWall));
                     continue;
                 }
@@ -110,23 +110,13 @@ public sealed class SessaoReplay
         }
 
         // Pontos em MOVIMENTO (>=3 m), com velocidade real tirada do GPS (dist/dt).
+        // Decimação pela MESMA peça do ao vivo (H3): GpsFiltroAoVivo.AceitarValido.
         var gpsDet = new List<AmostraGps>();
-        PontoGps? prev = null;
-        double prevT = 0;
+        var filtroMov = new GpsFiltroAoVivo();
         foreach (var (p, tw) in gpsValidos)
         {
-            if (prev is null || Ghost.DistMeters(prev, p) >= 3)
-            {
-                double kmh = 0;
-                if (prev is not null)
-                {
-                    var dtS = Math.Max(0.001, (tw - prevT) / 1000.0);
-                    kmh = Ghost.DistMeters(prev, p) / dtS * 3.6;
-                }
-                gpsDet.Add(new AmostraGps(p.Lat, p.Lng, kmh, tw));
-                prev = p;
-                prevT = tw;
-            }
+            var am = filtroMov.AceitarValido(p, tw);
+            if (am is not null) gpsDet.Add(am);
         }
 
         // Cruzamentos da linha de chegada (fronteiras de volta) sobre o GPS em movimento.

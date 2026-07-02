@@ -75,4 +75,28 @@ public class CockpitOrchestratorTests
         Assert.False(string.IsNullOrEmpty(c.Get().Acao.Texto));
         Assert.Equal(Tone.Erro, c.Get().Acao.Tone); // perdeu tempo
     }
+
+    // H4 (auditoria 2026-07-02): o retag pelos marcos reais faz o sub 'saida' EXISTIR —
+    // antes todos os pontos pós-ápice iam pro bucket 'apice' e "ACELEROU TARDE" era código
+    // morto. Prova direta do port de retagSubsPorEventos (web live-data-bridge.js:187).
+    [Fact]
+    public void ORC_03_RetagSubs_produz_entrada_freio_apice_saida_pelos_marcos_reais()
+    {
+        // Velocidade cai até a Vmin (t=3) e volta a subir — freada em t=1, ápice em t=2.
+        PontoPassagem P(double t, double kmh) => new(0, 0, kmh, t, 0, "apice"); // sub inicial "errado"
+        var pts = new[] { P(0, 100), P(1, 80), P(2, 70), P(3, 60), P(4, 75), P(5, 100) };
+
+        var outp = CockpitOrchestrator.RetagSubs(pts, freadaT: 1, apiceT: 2);
+        var subs = outp.Select(p => p.Sub).ToList();
+
+        Assert.Equal("entrada", subs[0]);            // antes da freada
+        Assert.Contains("freio", subs);              // freada → ápice
+        Assert.Contains("apice", subs);              // ápice → Vmin
+        Assert.Contains("saida", subs);              // pós-Vmin = SAÍDA (o que estava morto)
+        Assert.Equal("saida", subs[^1]);             // último ponto é saída
+
+        // Sem NENHUM marco real: devolve intacto (as fases do detector não se destroem).
+        var semMarco = CockpitOrchestrator.RetagSubs(pts, freadaT: null, apiceT: null);
+        Assert.All(semMarco, p => Assert.Equal("apice", p.Sub));
+    }
 }

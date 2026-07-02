@@ -30,6 +30,13 @@ public sealed class CockpitOrchestrator
     private double _cumDist;
     private AmostraGps? _lastGps;
 
+    // Marcos REAIS da passagem: instantes da freada e do ápice (mesmo relógio do buffer, gps.T).
+    // Usados pra (H4) re-etiquetar os subs no fechamento — o sub 'saida' passa a existir de
+    // verdade (port do "conserto 11/06" web, retagSubsPorEventos/acharVminBuffer) — e pra
+    // (M2) congelar o ângulo do ápice NO cruzamento, não no instante da saída.
+    private double? _freadaT, _apiceT;
+    private double? _apiceAngulo, _apiceDist;
+
     // Velocidades/medidas reais de referência por curva (da melhor passagem), pra comparar e colorir.
     private readonly Dictionary<string, (double? Ent, double? Fre, double? Api, double? Sai)> _refPontos = new();
     private double? _pEnt, _pFre, _pApi, _pSai; // o que está sendo medido na passagem atual
@@ -120,11 +127,15 @@ public sealed class CockpitOrchestrator
             case "freada-iniciou":
                 _subAtual = "freio";
                 _pFre = ev.DistFromEntradaM;
+                _freadaT ??= ev.T;
                 if (ev.DistFromEntradaM is { } dm) PontoFreio(dm);
                 break;
             case "apice-cruzou":
                 _subAtual = "apice";
                 _pApi = ev.Kmh;
+                // Congela o marco do ápice na 1ª passagem pelo ápice (M2): ângulo/dist do
+                // CRUZAMENTO, não o da bolinha ao vivo lida perto da saída (que gira p/ ~180°).
+                if (_apiceT is null) { _apiceT = ev.T; _apiceAngulo = ev.AngleFromIdealDeg; _apiceDist = ev.DistFromIdealM; }
                 PontoVelocidade("apice", ev.Kmh, r => r.Api);
                 break;
             case "saida-cruzou":
@@ -164,6 +175,54 @@ public sealed class CockpitOrchestrator
         _cumDist = 0;
         _buf.Clear();
         _pEnt = _pFre = _pApi = _pSai = null;
+        _freadaT = _apiceT = _apiceAngulo = _apiceDist = null;
+    }
+
+    /// <summary>
+    /// Re-etiqueta os subs de uma passagem pelos marcos REAIS (instante da freada e do
+    /// ápice), fazendo o sub 'saida' existir de verdade (H4). Port fiel de
+    /// retagSubsPorEventos + acharVminBuffer (web/cockpit/live-data-bridge.js:174-211):
+    /// a Vmin (ponto mais lento) separa a desaceleração da aceleração — nunca se inventa
+    /// pedaço de ápice. SEM nenhum marco (nem freada nem ápice) devolve a lista intacta.
+    /// Puro e estático → testável direto (paridade com o web).
+    /// </summary>
+    public static IReadOnlyList<PontoPassagem> RetagSubs(IReadOnlyList<PontoPassagem> pts, double? freadaT, double? apiceT)
+    {
+        if (pts is null || pts.Count == 0) return pts ?? Array.Empty<PontoPassagem>();
+        if (freadaT is null && apiceT is null) return pts;
+
+        int vminIdx = -1; double vminKmh = double.NaN;
+        for (var i = 0; i < pts.Count; i++)
+        {
+            var v = pts[i].Kmh;
+            if (!double.IsNaN(v) && v > 0 && (double.IsNaN(vminKmh) || v < vminKmh)) { vminKmh = v; vminIdx = i; }
+        }
+        double? vminT = vminIdx >= 0 ? pts[vminIdx].T : null;
+
+        var outp = new List<PontoPassagem>(pts.Count);
+        for (var i = 0; i < pts.Count; i++)
+        {
+            var p = pts[i];
+            var t = p.T;
+            string sub;
+            if (freadaT is { } fT && t <= fT)
+                sub = "entrada";
+            else if (apiceT is { } aT)
+            {
+                if (t <= aT) sub = freadaT is null ? "entrada" : "freio";
+                else if (vminT is { } vT && t <= vT && i <= vminIdx) sub = "apice";
+                else sub = "saida";
+            }
+            else if (vminT is { } vT2)
+            {
+                if (t <= vT2 || i <= vminIdx) sub = freadaT is null ? "entrada" : "freio";
+                else sub = "saida";
+            }
+            else sub = freadaT is null ? "entrada" : "freio";
+
+            outp.Add(p with { Sub = sub });
+        }
+        return outp;
     }
 
     private void FecharPassagem(string segId)
@@ -182,8 +241,10 @@ public sealed class CockpitOrchestrator
         }
 
         var total = Math.Max(1, _buf[^1].CumDist);
-        var pontos = _buf.Select(b => new PontoPassagem(
+        var pontosRaw = _buf.Select(b => new PontoPassagem(
             b.Lat, b.Lng, b.Kmh, b.T, Math.Min(1, Math.Max(0, b.CumDist / total)), b.Sub)).ToList();
+        // H4: os subs viram entrada/freio/apice/saida pelos marcos reais ANTES do delta.
+        var pontos = RetagSubs(pontosRaw, _freadaT, _apiceT);
         var passagem = new Passagem(segId, pontos);
 
         if (_referencias.TryGetValue(segId, out var referencia) && _refTempos.TryGetValue(segId, out var tempoRefS))
@@ -198,8 +259,9 @@ public sealed class CockpitOrchestrator
             // total = cronômetro, distribuição = ghost: ganhou/perdeu pelo relógio, ONDE pelo ghost.
             var delta = ghost with { DeltaTotalS = deltaCronoS, TempoAtualS = tempoAtualS };
 
-            var apex = _cockpit.Get().Apex.Apice;
-            var coach = MensagensPedagogicas.Decidir(delta, new ContextoApice(apex.AngleDeg, apex.DistM),
+            // M2: usa o ângulo/dist CONGELADOS no cruzamento do ápice, não a bolinha ao vivo
+            // (que ao sair da curva aponta pra ~180° e envenena a frase p/ VIROU TARDE).
+            var coach = MensagensPedagogicas.Decidir(delta, new ContextoApice(_apiceAngulo, _apiceDist),
                 recordeAbsolutoS: tempoRefS);
             if (coach is not null)
                 _cockpit.SetAcao(coach.Texto, deltaCronoS > 0 ? Tone.Erro : Tone.Bom);
