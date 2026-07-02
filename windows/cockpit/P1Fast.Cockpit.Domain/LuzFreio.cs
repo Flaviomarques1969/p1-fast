@@ -41,10 +41,20 @@ public sealed class LuzFreio
     public const int    FreioN        = 9;    // luzes por lado
     public const double FreioTolM     = 1;    // ±1 m ainda é "NO PONTO"
 
+    // Reação do freio (gap 3, port de trail-cockpit-motor.js:380-396,666): o "zero" da luz é
+    // ADIANTADO pelo tempo de reação aprendido do piloto — adiantoM = reacaoS * velMs — pra
+    // ele, que reage com atraso, pisar no ponto certo. Aprende por EMA por trecho.
+    public const double ReacaoDefaultS    = 0.25;
+    public const double ReacaoMinS        = 0.10;
+    public const double ReacaoMaxS        = 0.60;
+    public const double ReacaoAlpha       = 0.25;
+    public const double ReacaoAmostraMaxS = 1.2;  // amostra acima disto não foi reação — descarta
+
     private readonly IReadOnlyList<TrechoSegmento> _segs;
     private readonly Dictionary<string, double> _pontoFreadaRef = new(); // segId → ponto de freada da MELHOR passagem
     private readonly Dictionary<string, double> _melhorTempo    = new(); // segId → menor tempo do trecho (s)
     private readonly Dictionary<string, double> _onset          = new(); // segId → onde a freada começou NESTA aproximação
+    private readonly Dictionary<string, (double ReacaoS, int N)> _reacao = new(); // segId → reação aprendida (EMA)
 
     private string? _approachId;
     private double _vMaxApp;
@@ -58,6 +68,24 @@ public sealed class LuzFreio
     /// <summary>Ponto de freada de referência do trecho (distância ao ápice da melhor passagem), se houver.</summary>
     public double? PontoFreadaDe(string segId)
         => _pontoFreadaRef.TryGetValue(segId, out var p) ? p : null;
+
+    /// <summary>Tempo de reação (s) do trecho pro zero adiantado; default enquanto não aprendeu.</summary>
+    public double ReacaoS(string segId)
+        => _reacao.TryGetValue(segId, out var r) ? r.ReacaoS : ReacaoDefaultS;
+
+    /// <summary>Aprende o tempo de reação por EMA (zero→pé medido). Pisar ANTES do zero,
+    /// amostra inválida ou grande demais (&gt; <see cref="ReacaoAmostraMaxS"/>) não vira amostra —
+    /// devolve null e não muda nada. Port fiel de registrarAmostraReacao (trail-cockpit-motor.js).</summary>
+    public (double ReacaoS, int N)? RegistrarAmostraReacao(string segId, double amostraS)
+    {
+        if (!double.IsFinite(amostraS) || amostraS <= 0 || amostraS > ReacaoAmostraMaxS) return null;
+        var clamp = Math.Min(ReacaoMaxS, Math.Max(ReacaoMinS, amostraS));
+        (double ReacaoS, int N) novo = _reacao.TryGetValue(segId, out var cur) && double.IsFinite(cur.ReacaoS)
+            ? (cur.ReacaoS + ReacaoAlpha * (clamp - cur.ReacaoS), cur.N + 1)
+            : (clamp, 1);
+        _reacao[segId] = novo;
+        return novo;
+    }
 
     private (TrechoSegmento? Best, double Bd) MaisProxima(double lat, double lng)
     {
@@ -92,7 +120,10 @@ public sealed class LuzFreio
         var flash = false;
         if (_armado && aproximando && v > 1)
         {
-            var restoM = bd - pontoFreada;
+            // Zero ADIANTADO pela reação aprendida (gap 3): o 100%/flash vem adiantoM
+            // metros ANTES do ponto de freada, compensando o atraso do piloto.
+            var adiantoM = ReacaoS(id) * v;
+            var restoM = bd - pontoFreada - adiantoM;
             if (restoM <= 0) { fill = 1; flash = true; _armado = false; }         // chegou no ponto → pisca
             else { var t = restoM / v; if (t <= FreioLeadS) fill = 1 - t / FreioLeadS; } // 4 s antes = 0%
         }
