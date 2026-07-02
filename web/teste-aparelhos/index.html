@@ -348,6 +348,7 @@ async function startVideo(){
     call.on('joined-meeting', () => {
       pill($('vStatus'),'NO AR ✓','ok'); boardPill($('bVideo'),'VÍDEO · no ar ✓','ok');
       videoRetryMs = 3000; log('Transmissão no ar.');
+      iniciarPollStint();   // peça 3b: liga/desliga a gravação conforme o stint (ponteiro)
     });
     call.on('participant-updated', renderLocal);
     call.on('left-meeting', onVideoDown);
@@ -369,6 +370,8 @@ async function startVideo(){
 }
 
 function onVideoDown(){
+  pararPollStint();          // parou o vídeo: para de vigiar o stint (e zera o estado de gravação)
+  gravandoAgora = false; stintSessaoAtual = null;
   if (!videoQuero) return;
   pill($('vStatus'),'religando…','warn'); boardPill($('bVideo'),'VÍDEO · religando…','warn');
   log('Vídeo caiu. Religando em '+(videoRetryMs/1000)+'s…');
@@ -377,6 +380,51 @@ function onVideoDown(){
   // o servidor de sala (era isso que estourava o 429 e travava no "religando").
   videoRetryMs = Math.min(videoRetryMs * 2, 60000);
   setTimeout(() => { if (videoQuero) startVideo(); }, wait);
+}
+
+// ═══════ Gravação por STINT (peça 3b) ═══════
+// A página (servida LOCALMENTE, mesma máquina do .exe) faz poll do ponteiro via
+// /api/sessao-corrente (same-origin, sem mixed-content) e liga/desliga a gravação Daily
+// IN-CALL conforme o .exe abre/fecha o stint: startRecording no 'gravando', stopRecording
+// no 'encerrada'. 1 gravação por stint. O .exe já registrou a sala no cofre (registrar-direto).
+let stintPollTimer = null;
+let gravandoAgora = false;      // estamos com uma gravação Daily ligada?
+let stintSessaoAtual = null;    // sessaoId do stint que está gravando
+
+function pararPollStint(){ if (stintPollTimer){ clearInterval(stintPollTimer); stintPollTimer = null; } }
+
+function iniciarPollStint(){
+  pararPollStint();
+  stintPollTimer = setInterval(pollStint, 2000);
+  pollStint();
+}
+
+async function pollStint(){
+  if (!call) return;
+  let p;
+  try {
+    const r = await fetch('/api/sessao-corrente', { cache:'no-store' });
+    if (!r.ok) return;
+    p = await r.json();
+  } catch { return; }   // sem servidor local/ponteiro: não faz nada (best-effort)
+  const status = p && p.status;
+  const sessaoId = p && p.sessaoId;
+
+  // ABRIU o stint (ou trocou de stint): liga a gravação
+  if (status === 'gravando' && (!gravandoAgora || sessaoId !== stintSessaoAtual)){
+    if (gravandoAgora){ try { await call.stopRecording(); } catch{} }  // fecha o anterior antes
+    try {
+      await call.startRecording();
+      gravandoAgora = true; stintSessaoAtual = sessaoId;
+      log('Gravação do stint LIGADA (sessao ' + (sessaoId||'?') + ').');
+    } catch(e){ log('Falha ao ligar gravação do stint: ' + (e && e.message)); }
+  }
+  // FECHOU o stint ('encerrada'/'nenhuma'): desliga a gravação
+  else if (status !== 'gravando' && gravandoAgora){
+    try { await call.stopRecording(); log('Gravação do stint DESLIGADA.'); }
+    catch(e){ log('Falha ao parar gravação do stint: ' + (e && e.message)); }
+    gravandoAgora = false; stintSessaoAtual = null;
+  }
 }
 
 function renderLocal(){
