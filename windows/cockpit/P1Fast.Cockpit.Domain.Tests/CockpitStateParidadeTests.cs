@@ -194,4 +194,55 @@ public class CockpitStateParidadeTests
         Assert.Equal(ShiftMode.Fire,    LiveDataBridge.RpmToShift(6100, LiveLimits.Bubi).Mode); // ~pico 6.050
         Assert.Equal(ShiftMode.Overrev, LiveDataBridge.RpmToShift(6400, LiveLimits.Bubi).Mode); // além do redline 6.300
     }
+
+    // ── Reação da MARCHA — paridade com pilot-reaction.js (gap 2) ────
+
+    [Fact]
+    public void PAR_14_PilotReaction_bate_com_o_web()
+    {
+        // observedReactionMs: delta 50 rpm / 250 rpm/s * 1000 = 200 ms (pilot-reaction.js:34-47).
+        Assert.Equal(200, PilotReaction.ObservedReactionMs(new ReactionEvent(6100, 6050, RpmRiseRate: 250))!.Value, 1);
+
+        var ag = new PilotReaction();
+        // Sem perfil → default 250 ms, comp = rt*rate/1000 = 62.5, fonte 'default' (pilot-reaction.js:90-115).
+        var d = ag.ComputeCompensation("p", "c", 3, "t", rpmRiseRate: 250);
+        Assert.Equal(250, d.RtMs, 1);
+        Assert.Equal(62.5, d.CompensationRpm, 1);
+        Assert.Equal("default", d.Source);
+        // Modo != 'assisted' → não antecipa (pilot-reaction.js:91-93).
+        Assert.Equal(0, ag.ComputeCompensation("p", "c", 3, "t", 250, mode: "learning").CompensationRpm);
+    }
+
+    // ── Reação do FREIO — paridade com trail-cockpit-motor.js (gap 3) ─
+
+    [Fact]
+    public void PAR_15_LuzFreio_reacao_bate_com_o_web()
+    {
+        var seg = new TrechoSegmento("s0", "S0",
+            new LinhaGps(new PontoGps(0, 0), new PontoGps(0.001, 0)),
+            new PontoGps(0, 0.0005),
+            new LinhaGps(new PontoGps(0, 0.001), new PontoGps(0.001, 0.001)));
+        var luz = new LuzFreio(new[] { seg });
+
+        Assert.Equal(0.25, luz.ReacaoS("s0"), 3);         // reacaoDefaultS (trail-cockpit-motor.js:44)
+        luz.RegistrarAmostraReacao("s0", 0.40);
+        luz.RegistrarAmostraReacao("s0", 0.20);           // EMA α=0.25: 0.40+0.25*(0.20-0.40)=0.35 (:388-392)
+        Assert.Equal(0.35, luz.ReacaoS("s0"), 3);
+        Assert.Null(luz.RegistrarAmostraReacao("s0", 2.0)); // > reacaoAmostraMaxS 1.2 → descarta (:48,387)
+    }
+
+    // ── 3 modos da luz — paridade com shift-light-modos.js (gap 4) ───
+
+    [Fact]
+    public void PAR_16_ShiftLightModos_janelas_do_Bubi_batem_com_o_web()
+    {
+        // Janelas derivadas do PERFIL_BUBI (shift-light-modos.js:45-88).
+        Assert.Equal((5800.0, 6050.0), (ShiftLightModos.JanelaParaModo(ModoStint.Durabilidade).RpmMin,
+                                        ShiftLightModos.JanelaParaModo(ModoStint.Durabilidade).RpmMax));
+        Assert.Equal((6100.0, 6250.0), (ShiftLightModos.JanelaParaModo(ModoStint.Normal).RpmMin,
+                                        ShiftLightModos.JanelaParaModo(ModoStint.Normal).RpmMax));
+        Assert.Equal((6250.0, 6350.0), (ShiftLightModos.JanelaParaModo(ModoStint.Agressivo).RpmMin,
+                                        ShiftLightModos.JanelaParaModo(ModoStint.Agressivo).RpmMax));
+        Assert.Equal(6050, ShiftLightModos.PerfilBubi.PicoPotenciaRpm); // shift-light-modos.js:30
+    }
 }
