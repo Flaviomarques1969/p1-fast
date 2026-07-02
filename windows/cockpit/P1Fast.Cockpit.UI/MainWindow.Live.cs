@@ -36,6 +36,11 @@ public sealed partial class MainWindow
     private RaceBoxBleReader? _raceBox;
     private bool _liveParado;        // guarda de fechamento (StopLive idempotente)
 
+    // Filtro de GPS pro CÉREBRO (H3): a MESMA peça do replay (qualidade hacc/caixa + decimação
+    // por movimento). O disco e a nuvem recebem TODOS os fixes crus; só o maestro recebe o
+    // fluxo filtrado — senão fix impreciso/jitter parado gera curva/ápice/freada falsos.
+    private readonly GpsFiltroAoVivo _gpsFiltro = new();
+
     // Nuvem ao vivo (C5): publica MOTOR (LivePublisher) e GPS (GpsLivePublisher), AMBOS
     // com fila-que-não-perde + reenvio na religação. UM só dono mexe nos publishers/canal
     // — o laço da nuvem — então o leitor só ENFILEIRA (motor e GPS) sem corrida.
@@ -58,6 +63,11 @@ public sealed partial class MainWindow
     private void StartLive()
     {
         StatusText.Text = "ao vivo: procurando T4000…";
+
+        // Fechamento limpo assinado JÁ na thread da UI (M6): se a janela fechar antes do
+        // IniciarLive assíncrono rodar, StopLive ainda encerra a sessão e cancela os laços —
+        // sem deixar sessão órfã nem threads soltas numa corrida de boot.
+        this.Closed += (_, _) => StopLive();
 
         _ = System.Threading.Tasks.Task.Run(() =>
         {
@@ -83,14 +93,14 @@ public sealed partial class MainWindow
 
     private void IniciarLive(IReadOnlyList<TrechoSegmento> segs, string? port)
     {
+        // M6: se a janela já fechou enquanto este IniciarLive estava enfileirado, aborta —
+        // não cria recorder/RaceBox/laços numa janela morta (que ficariam órfãos e sem monitor).
+        if (_liveParado) return;
+
         IniciarFeedReal(segs);    // para timers de demo + cria _orquestrador
         AtualizarSensores(null);  // motor sem amostra ainda → tudo "a comunicar"
 
         _liveCts = new CancellationTokenSource();
-
-        // Fechamento limpo: ao fechar a janela, cancela os laços e encerra a sessão
-        // (sem deixar órfã). Uma só vez (StopLive é idempotente).
-        this.Closed += (_, _) => StopLive();
 
         // Gravação local blindada (fonte da verdade), ANTES da nuvem. Best-effort:
         // falha de IO não derruba a tela do piloto.
@@ -98,6 +108,10 @@ public sealed partial class MainWindow
         {
             var pasta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "p1fast-sessoes");
             _liveRecorder = new SessionRecorder(new FileSessionStore(pasta));
+            // H1: sessões que ficaram 'gravando' (queda de energia/crash sem fechar) viram
+            // 'interrompida' AGORA, ANTES de qualquer amostra nova — assim a fila de upload as
+            // pega. Sem isto, o dado gravado à prova de queda nunca chegava no app/Command Box.
+            try { _liveRecorder.RecuperarOrfas(); } catch { /* best-effort */ }
         }
         catch { _liveRecorder = null; }
 
@@ -217,11 +231,19 @@ public sealed partial class MainWindow
                 while (!ct.IsCancellationRequested)
                 {
                     await Task.Delay(1000, ct).ConfigureAwait(false);
-                    lock (_liveRecLock) _liveRecorder?.Tick();
+                    string? alarme;
+                    lock (_liveRecLock) { _liveRecorder?.Tick(); alarme = _liveRecorder?.Estado().Alarme; }
                     // Re-avalia os sensores ~1 Hz mesmo SEM amostra nova: se motor e/ou GPS
                     // pararem, os LEDs degradam (apagam) em vez de congelar verdes. O live é
                     // event-driven; sem este tick, no silêncio total nada mais re-pintaria.
-                    DispatcherQueue.TryEnqueue(() => AtualizarSensores(_ultimaAlerta));
+                    DispatcherQueue.TryEnqueue(() =>
+                    {
+                        AtualizarSensores(_ultimaAlerta);
+                        // H6: perda de gravação NUNCA silenciosa — o alarme do gravador (disco
+                        // cheio/morto) aparece no status (sem tocar o layout aprovado).
+                        if (alarme is not null)
+                            StatusText.Text = $"GRAVACAO com perda: {alarme} · {_liveCanalRotulo}";
+                    });
                 }
             }
             catch (OperationCanceledException) { /* encerrando */ }
@@ -365,8 +387,11 @@ public sealed partial class MainWindow
                 {
                     using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(metaPath));
                     var root = doc.RootElement;
-                    encerrada = root.TryGetProperty("Status", out var st)
-                                && string.Equals(st.GetString(), "encerrada", StringComparison.Ordinal);
+                    // H1: 'encerrada' (fim normal) E 'interrompida' (órfã recuperada de uma queda)
+                    // sobem — ambas são sessões fechadas com dado durável. Só 'gravando' não.
+                    var status = root.TryGetProperty("Status", out var st) ? st.GetString() : null;
+                    encerrada = string.Equals(status, "encerrada", StringComparison.Ordinal)
+                                || string.Equals(status, "interrompida", StringComparison.Ordinal);
                     int ng = root.TryGetProperty("NGps", out var g) && g.ValueKind == System.Text.Json.JsonValueKind.Number ? g.GetInt32() : 0;
                     int nm = root.TryGetProperty("NMotor", out var m) && m.ValueKind == System.Text.Json.JsonValueKind.Number ? m.GetInt32() : 0;
                     n = ng + nm;
@@ -454,12 +479,20 @@ public sealed partial class MainWindow
         // Move a tela na thread da UI, EM ORDEM: GPS no maestro → ponte do stint (barra
         // de trechos) → sensores (MOVIMENTO acende). _ultimoGpsTick marca a chegada em
         // tempo real (pro sensor de GPS). Antes só o replay fazia essas pontes.
-        _ultimoGpsTick = Environment.TickCount64;
-        var amostra = new AmostraGps(f.Lat, f.Lng, f.Kmh, (double)tWall);
+        _ultimoGpsTick = Environment.TickCount64;   // sinal de GPS presente (LED do sensor)
+
+        // Cérebro: SÓ o fluxo FILTRADO (H3) — qualidade (hacc<50 + caixa de Brasília) + movimento
+        // (>=3 m), a MESMA peça que o replay usa. O disco e a nuvem acima já guardaram TODOS os
+        // fixes crus; só o maestro recebe o filtrado, pra fix impreciso/jitter parado não gerar
+        // curva/ápice/freada falsos na tela do piloto.
+        var cerebro = _gpsFiltro.Aceitar(f.Lat, f.Lng, f.Fix, f.HaccM, tWall);
         DispatcherQueue.TryEnqueue(() =>
         {
-            _orquestrador?.IngestGps(amostra);
-            AtualizarStint();
+            if (cerebro is not null)
+            {
+                _orquestrador?.IngestGps(cerebro);
+                AtualizarStint();
+            }
             AtualizarSensores(_ultimaAlerta);
         });
     }

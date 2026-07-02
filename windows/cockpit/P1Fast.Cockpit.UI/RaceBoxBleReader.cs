@@ -54,7 +54,7 @@ public sealed class RaceBoxBleReader
         {
             try { _watcher?.Stop(); } catch { }
             try { if (_rx is not null) _rx.ValueChanged -= OnNotify; } catch { }
-            try { _device?.Dispose(); } catch { }
+            DescartarDevice();
         });
         IniciarVarredura();
     }
@@ -94,6 +94,9 @@ public sealed class RaceBoxBleReader
     {
         var dev = await BluetoothLEDevice.FromBluetoothAddressAsync(addr);
         if (dev is null) { IniciarVarredura(); return; }
+        // H5: solta o device ANTERIOR antes de sobrescrever — senão ele fica inscrito e,
+        // ao cair mais tarde, derruba uma conexão nova e saudável (GPS caindo sozinho).
+        DescartarDevice();
         _device = dev;
         dev.ConnectionStatusChanged += OnConnChanged;
 
@@ -115,13 +118,29 @@ public sealed class RaceBoxBleReader
 
     private void OnConnChanged(BluetoothLEDevice dev, object _)
     {
+        // H5: ignora eventos de um device FANTASMA (sobrescrito numa religação anterior) —
+        // só o device corrente pode derrubar a conexão. Sem isto, o disconnect de um device
+        // velho zerava o _rx de uma conexão já reconectada e boa.
+        if (!ReferenceEquals(dev, _device)) return;
         if (dev.ConnectionStatus == BluetoothConnectionStatus.Disconnected && !_ct.IsCancellationRequested)
         {
             try { if (_rx is not null) _rx.ValueChanged -= OnNotify; } catch { }
             _rx = null;
+            DescartarDevice();     // solta o device que caiu antes de revarrer
             _onStatus?.Invoke("GPS: RaceBox caiu — religando…");
             IniciarVarredura();
         }
+    }
+
+    // Desinscreve e descarta o device atual (H5). Chamado antes de sobrescrever, na queda
+    // e no cancelamento — nunca deixa device inscrito acumulando pra disparar fantasma.
+    private void DescartarDevice()
+    {
+        var d = _device;
+        _device = null;
+        if (d is null) return;
+        try { d.ConnectionStatusChanged -= OnConnChanged; } catch { }
+        try { d.Dispose(); } catch { }
     }
 
     private void OnNotify(GattCharacteristic sender, GattValueChangedEventArgs args)
