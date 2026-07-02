@@ -233,11 +233,19 @@ public sealed partial class MainWindow
                     await Task.Delay(1000, ct).ConfigureAwait(false);
                     string? alarme;
                     lock (_liveRecLock) { _liveRecorder?.Tick(); alarme = _liveRecorder?.Estado().Alarme; }
+                    // Silêncio das fontes (só depois de a fonte ter vivido — não no boot antes
+                    // de plugar): motor sem amostra há >=3 s, GPS sem fix há >=5 s.
+                    var agora = Environment.TickCount64;
+                    var motorMudo = _ultimoMotorTick > 0 && agora - _ultimoMotorTick >= 3000;
+                    var gpsMudo   = _ultimoGpsTick   > 0 && agora - _ultimoGpsTick   >= 5000;
                     // Re-avalia os sensores ~1 Hz mesmo SEM amostra nova: se motor e/ou GPS
                     // pararem, os LEDs degradam (apagam) em vez de congelar verdes. O live é
                     // event-driven; sem este tick, no silêncio total nada mais re-pintaria.
                     DispatcherQueue.TryEnqueue(() =>
                     {
+                        // H2 + M1: fonte que emudeceu não deixa GRAVE congelado na tela — limpa
+                        // o alerta órfão do motor e mostra SEM DADOS / SEM GPS honestos.
+                        _orquestrador?.VigiarFontes(motorMudo, gpsMudo);
                         AtualizarSensores(_ultimaAlerta);
                         // H6: perda de gravação NUNCA silenciosa — o alarme do gravador (disco
                         // cheio/morto) aparece no status (sem tocar o layout aprovado).

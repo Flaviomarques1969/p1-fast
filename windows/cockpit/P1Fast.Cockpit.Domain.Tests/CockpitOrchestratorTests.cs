@@ -99,4 +99,30 @@ public class CockpitOrchestratorTests
         var semMarco = CockpitOrchestrator.RetagSubs(pts, freadaT: null, apiceT: null);
         Assert.All(semMarco, p => Assert.Equal("apice", p.Sub));
     }
+
+    // H2 + M1 (auditoria 2026-07-02): fonte que emudece não deixa GRAVE congelado — o alerta
+    // do motor expira e vira SEM DADOS honesto; GPS silencioso → SEM GPS. Age na transição.
+    [Fact]
+    public void ORC_04_VigiarFontes_expira_alerta_congelado_e_mostra_SEM_DADOS()
+    {
+        var c = new CockpitState();
+        var orq = new CockpitOrchestrator(c);
+
+        // Motor quente → GRAVE na tela.
+        orq.IngestMotor(6100, new AmostraAlerta { WaterTempC = 85, Rpm = 6100 });
+        Assert.Equal("MOTOR QUENTE", c.Get().Message!.Texto);
+
+        // Motor emudeceu (cabo caiu): o GRAVE NÃO congela — vira SEM DADOS + a luz de marcha apaga.
+        orq.VigiarFontes(motorSilencioso: true, gpsSilencioso: false);
+        Assert.Equal("SEM DADOS", c.Get().Message!.Texto);
+        Assert.Equal(ShiftMode.Off, c.Get().Shift.Mode);
+
+        // Motor voltou frio: SEM DADOS some, sem alerta.
+        orq.IngestMotor(3000, new AmostraAlerta { WaterTempC = 55, Rpm = 3000 });
+        Assert.Null(c.Get().Message);
+
+        // GPS emudeceu → SEM GPS.
+        orq.VigiarFontes(motorSilencioso: false, gpsSilencioso: true);
+        Assert.Equal("SEM GPS", c.Get().Message!.Texto);
+    }
 }

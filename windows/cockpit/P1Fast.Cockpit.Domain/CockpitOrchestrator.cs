@@ -43,6 +43,10 @@ public sealed class CockpitOrchestrator
 
     // Resultado real por curva (pra barra de stint): "faster"/"slower"/"neutral".
     private readonly Dictionary<string, string> _estadoTrecho = new();
+
+    // Vigia das FONTES (H2/M1): lembra o estado de silêncio do motor/GPS pra agir só na
+    // TRANSIÇÃO (não a cada tick) — evita re-emitir mensagem sem mudança.
+    private bool _motorMudo, _gpsMudo;
     public string EstadoDoTrecho(string segId) => _estadoTrecho.GetValueOrDefault(segId, "");
     public string? CurvaAtualId => _segAtual;
 
@@ -76,13 +80,47 @@ public sealed class CockpitOrchestrator
     /// <summary>Ingere uma amostra de motor: atualiza luz de marcha + alertas.</summary>
     public void IngestMotor(double rpm, AmostraAlerta alerta)
     {
+        if (_motorMudo) { _motorMudo = false; _alertas.ClearManual("SEM_DADOS"); } // motor voltou (M1)
         var dec = LiveDataBridge.RpmToShift(rpm, _limites);
         _cockpit.ApplyShift(dec.Mode, dec.Level);
 
         _alertas.IngestT4000(alerta);
+        AtualizarMensagem();
+    }
+
+    private void AtualizarMensagem()
+    {
         var principal = _alertas.GetMensagemPrincipal();
         if (principal is not null) _cockpit.ShowMessage(principal.Tipo, principal.Texto);
         else _cockpit.HideMessage();
+    }
+
+    /// <summary>Vigia ~1 Hz das FONTES (H2/M1). Quando o motor EMUDECE (sem amostra há N s),
+    /// limpa os alertas automáticos do motor — senão um GRAVE (ex.: MOTOR QUENTE) CONGELA na
+    /// tela sem dado vivo por trás — e levanta SEM DADOS (honesto); a luz de marcha apaga.
+    /// GPS silencioso → SEM GPS. Age só na TRANSIÇÃO. Chamar na thread do maestro (a da UI).</summary>
+    public void VigiarFontes(bool motorSilencioso, bool gpsSilencioso)
+    {
+        var mudou = false;
+        if (motorSilencioso != _motorMudo)
+        {
+            _motorMudo = motorSilencioso;
+            if (motorSilencioso)
+            {
+                _alertas.IngestT4000(new AmostraAlerta()); // amostra vazia → remove os automáticos do motor
+                _alertas.RaiseManual("SEM_DADOS");
+                _cockpit.ApplyShift(ShiftMode.Off, 0);      // sem RPM vivo → luz de marcha apaga
+            }
+            else _alertas.ClearManual("SEM_DADOS");
+            mudou = true;
+        }
+        if (gpsSilencioso != _gpsMudo)
+        {
+            _gpsMudo = gpsSilencioso;
+            if (gpsSilencioso) _alertas.RaiseManual("SEM_GPS"); else _alertas.ClearManual("SEM_GPS");
+            mudou = true;
+        }
+        if (mudou) AtualizarMensagem();
     }
 
     // ── GPS ────────────────────────────────────────────────────────
