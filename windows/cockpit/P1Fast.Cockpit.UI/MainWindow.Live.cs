@@ -107,7 +107,10 @@ public sealed partial class MainWindow
         try
         {
             var pasta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "p1fast-sessoes");
-            _liveRecorder = new SessionRecorder(new FileSessionStore(pasta));
+            // M5 (decisão Flávio 2026-07-03): captura AUTOMÁTICA por movimento — grava quando o
+            // carro ANDA (>=15 km/h) e fecha quando fica PARADO (~12 s no box). 1 sessão = 1 ida
+            // à pista; o motor em marcha lenta no box NÃO abre nem segura a gravação (só o GPS).
+            _liveRecorder = new SessionRecorder(new FileSessionStore(pasta), auto: new AutoCaptura());
             // H1: sessões que ficaram 'gravando' (queda de energia/crash sem fechar) viram
             // 'interrompida' AGORA, ANTES de qualquer amostra nova — assim a fila de upload as
             // pega. Sem isto, o dado gravado à prova de queda nunca chegava no app/Command Box.
