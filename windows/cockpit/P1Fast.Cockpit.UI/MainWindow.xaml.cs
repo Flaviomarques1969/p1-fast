@@ -975,9 +975,16 @@ public sealed partial class MainWindow : Window
     // ── Resultado da freada (à direita, espelha o delta) ───
     private void ApplyBrakeResult(ApexEstado estado, double atualM, double refM)
     {
-        // Só COR (Flávio 2026-07-03): sem número. Repouso/sem comparação = VERDE (não cinza).
-        var color = (atualM <= 0 || refM <= 0) ? Bom : ColorForApexEstado(estado);
-        BrakeResultDot.Fill = new SolidColorBrush(color);
+        // NÚMERO da distância (m) COLORIDO (Flávio 2026-07-03). Sem comparação = verde.
+        if (atualM <= 0 || refM <= 0)
+        {
+            BrakeResultNum.Text = "—";
+            BrakeResultNum.Foreground = new SolidColorBrush(Bom);
+            return;
+        }
+        var diff = (int)Math.Round(atualM - refM);
+        BrakeResultNum.Text = Math.Abs(diff).ToString();
+        BrakeResultNum.Foreground = new SolidColorBrush(ColorForApexEstado(estado));
     }
 
     // ── Luz de freio REAL (observada do CockpitState, comandada pelo maestro) ──
@@ -1002,16 +1009,17 @@ public sealed partial class MainWindow : Window
 
     private void ApplyFreioResultado(FreioState f)
     {
-        // Só COR (Flávio 2026-07-03): verde = no ponto (±0,5 m), amarelo = freou antes,
-        // vermelho = freou depois. Sem número, sem palavra.
+        // NÚMERO da distância (m) que freou vs o ponto da melhor passagem, COLORIDO (Flávio
+        // 2026-07-03): verde = no ponto (±0,5 m), amarelo = freou antes, vermelho = freou depois.
+        // Sem palavra. Repouso/referência = verde.
         var color = f.ResultadoTom switch
         {
-            FreioTom.Bom  => Bom,
-            FreioTom.Foco => Foco,
-            FreioTom.Erro => Erro,
-            _             => Bom,   // repouso/referência = VERDE (Flávio 2026-07-03), não cinza
+            FreioTom.Foco => Foco,   // freou ANTES  → amarelo
+            FreioTom.Erro => Erro,   // freou DEPOIS → vermelho
+            _             => Bom,    // no ponto / repouso → verde
         };
-        BrakeResultDot.Fill = new SolidColorBrush(color);
+        BrakeResultNum.Text = f.ResultadoM is { } m ? m.ToString() : "—";
+        BrakeResultNum.Foreground = new SolidColorBrush(color);
     }
 
     // Pisca as luzes laterais todas vermelhas no ponto de freada e restaura o nível.

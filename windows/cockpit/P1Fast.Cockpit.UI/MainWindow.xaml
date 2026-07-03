@@ -212,14 +212,16 @@
                         <StackPanel.RenderTransform>
                             <TranslateTransform Y="-30"/>
                         </StackPanel.RenderTransform>
-                        <!-- Resultado da freada = SÓ COR (Flávio 2026-07-03): sem número, sem
-                             palavra. Verde = no ponto (±0,5 m), amarelo = freou antes, vermelho
-                             = freou depois. Cinza = ainda sem resultado. -->
-                        <Ellipse x:Name="BrakeResultDot"
-                                 Width="88" Height="88"
-                                 Fill="#4FE060"
-                                 Opacity="0.92"
-                                 HorizontalAlignment="Center"/>
+                        <!-- Resultado da freada = NÚMERO da distância (m) que freou vs o ponto da
+                             MELHOR passagem naquele trecho, COLORIDO (Flávio 2026-07-03): verde =
+                             no ponto (±0,5 m), amarelo = freou antes, vermelho = freou depois.
+                             Sem palavra. -->
+                        <TextBlock x:Name="BrakeResultNum"
+                                   Text="—"
+                                   FontSize="92"
+                                   FontWeight="ExtraBold"
+                                   Foreground="#4FE060"
+                                   HorizontalAlignment="Center"/>
                     </StackPanel>
 
                     <Border x:Name="AlertBlocoRoot"
