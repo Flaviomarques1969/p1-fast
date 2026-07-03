@@ -1125,6 +1125,18 @@ public sealed partial class MainWindow : Window
 
     private void ApplyMessage(P1Fast.Cockpit.Domain.Message? msg)
     {
+        // Gap 6: mensagem GRAVE (super/crítica) = MODO CRÍTICO — toma a tela inteira.
+        var critico = msg is { Tipo: P1Fast.Cockpit.Domain.MsgTipo.Grave };
+        AplicarModoCritico(critico, msg?.Texto ?? "");
+
+        if (critico)
+        {
+            // A tela TODA vira o alerta (overlay central + borda piscando); o bloco lateral some.
+            StopAlertPulse();
+            AlertBlocoRoot.Visibility = Visibility.Collapsed;
+            return;
+        }
+
         if (msg is null)
         {
             StopAlertPulse();
@@ -1132,16 +1144,68 @@ public sealed partial class MainWindow : Window
             BrakeResultPanel.Visibility = Visibility.Visible;   // mensagem saiu → volta a FREADA
             return;
         }
+
+        // Comunicação (não-crítica): bloco lateral como antes, sem pulso.
         AlertText.Text = msg.Texto;
-        AlertText.Foreground = new SolidColorBrush(
-            msg.Tipo == P1Fast.Cockpit.Domain.MsgTipo.Grave ? Erro : Sistema);
+        AlertText.Foreground = new SolidColorBrush(Sistema);
         AlertBlocoRoot.Visibility = Visibility.Visible;
         BrakeResultPanel.Visibility = Visibility.Collapsed;     // mensagem ocupa a direita → some a FREADA
+        StopAlertPulse();
+    }
 
-        if (msg.Tipo == P1Fast.Cockpit.Domain.MsgTipo.Grave)
-            StartAlertPulse();
-        else
-            StopAlertPulse();
+    // Gap 6 (Flávio 2026-07-03): liga/desliga o MODO CRÍTICO — overlay central (palavra
+    // vermelha piscando) + borda piscando pra visão periférica; esconde delta/ápice/frenagem.
+    // O cluster de sensores do topo permanece (mostra o que falhou). Só visual — não toca dados.
+    private void AplicarModoCritico(bool on, string texto)
+    {
+        if (on) CriticoMsg.Text = texto;
+        CriticoOverlay.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+        CriticoBorda.Visibility   = on ? Visibility.Visible : Visibility.Collapsed;
+
+        var normal = on ? Visibility.Collapsed : Visibility.Visible;
+        DeltaPanel.Visibility = normal;
+        ApiceRow.Visibility   = normal;
+        if (on) BrakeResultPanel.Visibility = Visibility.Collapsed;
+
+        if (on) StartCriticoBlink(); else StopCriticoBlink();
+    }
+
+    private Storyboard? _criticoBlink;
+    private void StartCriticoBlink()
+    {
+        if (_criticoBlink is not null) return;
+        _criticoBlink = new Storyboard();
+
+        var msgOp = new DoubleAnimation
+        {
+            From = 1.0, To = 0.12,
+            Duration = new Duration(TimeSpan.FromMilliseconds(310)),
+            AutoReverse = true, RepeatBehavior = RepeatBehavior.Forever,
+        };
+        Storyboard.SetTarget(msgOp, CriticoMsg);
+        Storyboard.SetTargetProperty(msgOp, "Opacity");
+        _criticoBlink.Children.Add(msgOp);
+
+        var bordaOp = new DoubleAnimation
+        {
+            From = 1.0, To = 0.2,
+            Duration = new Duration(TimeSpan.FromMilliseconds(200)),
+            AutoReverse = true, RepeatBehavior = RepeatBehavior.Forever,
+        };
+        Storyboard.SetTarget(bordaOp, CriticoBorda);
+        Storyboard.SetTargetProperty(bordaOp, "Opacity");
+        _criticoBlink.Children.Add(bordaOp);
+
+        _criticoBlink.Begin();
+    }
+
+    private void StopCriticoBlink()
+    {
+        if (_criticoBlink is null) return;
+        try { _criticoBlink.Stop(); } catch { }
+        _criticoBlink = null;
+        CriticoMsg.Opacity = 1;
+        CriticoBorda.Opacity = 1;
     }
 
     private void StartAlertPulse()

@@ -247,7 +247,8 @@
                     </Border>
 
                     <!-- ───────── ÁPICE na base ───────── -->
-                    <Grid Margin="60,0,36,62"
+                    <Grid x:Name="ApiceRow"
+                          Margin="60,0,36,62"
                           VerticalAlignment="Bottom"
                           Height="62">
                         <Grid.ColumnDefinitions>
@@ -361,6 +362,19 @@
                             </RadialGradientBrush>
                         </Rectangle.Fill>
                     </Rectangle>
+
+                    <!-- MODO CRÍTICO (gap 6, Flávio 2026-07-03): super/críticas TOMAM a tela —
+                         palavra vermelha piscando no centro + borda piscando pra visão periférica.
+                         Delta/ápice/frenagem somem e as luzes apagam (code-behind AplicarModoCritico).
+                         O cluster de sensores do topo permanece (mostra o que falhou). -->
+                    <Border x:Name="CriticoBorda" Visibility="Collapsed" IsHitTestVisible="False"
+                            BorderThickness="11" BorderBrush="#F5FFFFFF"/>
+                    <Grid x:Name="CriticoOverlay" Visibility="Collapsed" IsHitTestVisible="False" Padding="56,0">
+                        <TextBlock x:Name="CriticoMsg" Text=""
+                                   FontSize="89" FontWeight="Black" Foreground="#FF3B30"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   TextAlignment="Center" TextWrapping="Wrap" LineHeight="86"/>
+                    </Grid>
 
                 </Grid>
             </Border>
