@@ -41,6 +41,12 @@ public sealed class CockpitOrchestrator
     private readonly Dictionary<string, (double? Ent, double? Fre, double? Api, double? Sai)> _refPontos = new();
     private double? _pEnt, _pFre, _pApi, _pSai; // o que está sendo medido na passagem atual
 
+    // Vmin por curva (Flávio 2026-07-03): velocidade MÍNIMA carregada no trecho. _vminCorrente =
+    // menor kmh da passagem ATUAL (ao vivo); _refVmin = o vmin da MELHOR passagem (referência de
+    // cor — verde se carregou >= a melhor, vermelho se menos).
+    private double _vminCorrente = double.PositiveInfinity;
+    private readonly Dictionary<string, double> _refVmin = new();
+
     // Resultado real por curva (pra barra de stint): "faster"/"slower"/"neutral".
     private readonly Dictionary<string, string> _estadoTrecho = new();
 
@@ -135,6 +141,9 @@ public sealed class CockpitOrchestrator
             if (_lastGps is not null)
                 _cumDist += Ghost.DistMeters(new PontoGps(_lastGps.Lat, _lastGps.Lng), new PontoGps(gps.Lat, gps.Lng));
             _buf.Add((gps.Lat, gps.Lng, gps.Kmh, gps.T, _cumDist, _subAtual));
+
+            // Vmin AO VIVO: menor velocidade carregada na curva até agora, colorida vs a melhor.
+            if (gps.Kmh > 0 && gps.Kmh < _vminCorrente) { _vminCorrente = gps.Kmh; AtualizarVmin(); }
         }
 
         AtualizarBolinha(gps);
@@ -214,6 +223,18 @@ public sealed class CockpitOrchestrator
         _buf.Clear();
         _pEnt = _pFre = _pApi = _pSai = null;
         _freadaT = _apiceT = _apiceAngulo = _apiceDist = null;
+        _vminCorrente = double.PositiveInfinity;
+    }
+
+    // Atualiza a célula Vmin ao vivo: o menor kmh carregado no trecho até agora, verde se >=
+    // a melhor passagem histórica (carregou mais/igual), vermelho se menos, pendente sem referência.
+    private void AtualizarVmin()
+    {
+        if (_segAtual is null || double.IsInfinity(_vminCorrente)) return;
+        var estado = _refVmin.TryGetValue(_segAtual, out var rv) && rv > 0
+            ? (_vminCorrente >= rv ? ApexEstado.OkMelhor : ApexEstado.OkPior)
+            : ApexEstado.Pendente;
+        _cockpit.SetApexPonto("vmin", estado: estado, valorKmh: _vminCorrente);
     }
 
     /// <summary>
@@ -318,6 +339,7 @@ public sealed class CockpitOrchestrator
                 _referencias[segId] = passagem;
                 _refTempos[segId] = tempoAtualS;
                 _refPontos[segId] = (_pEnt, _pFre, _pApi, _pSai);
+                if (!double.IsInfinity(_vminCorrente)) _refVmin[segId] = _vminCorrente; // vmin da nova melhor passagem
             }
         }
         else
@@ -326,6 +348,7 @@ public sealed class CockpitOrchestrator
             _referencias[segId] = passagem;
             _refTempos[segId] = tempoAtualS;
             _refPontos[segId] = (_pEnt, _pFre, _pApi, _pSai);
+            if (!double.IsInfinity(_vminCorrente)) _refVmin[segId] = _vminCorrente; // vmin de referência (1ª passagem)
             _estadoTrecho[segId] = "reference"; // marca na barra: curva já gravada como referência (quadriculado)
             var coach = MensagensPedagogicas.Decidir(primeiraPassagem: true);
             if (coach is not null) _cockpit.SetAcao(coach.Texto, Tone.Neutro);

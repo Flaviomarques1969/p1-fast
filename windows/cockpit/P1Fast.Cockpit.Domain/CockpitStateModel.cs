@@ -94,6 +94,11 @@ public sealed record ApexState(
     /// <summary>5º marco (Flávio 13/06): aceleração pós-Vmin. Default pendente.</summary>
     public ApexPonto Pace { get; init; } = ApexPonto.Pendente();
 
+    /// <summary>Vmin da curva (Flávio 2026-07-03): velocidade MÍNIMA carregada no trecho, com
+    /// cor vs a melhor histórica (verde = carregou mais/igual, vermelho = menos). Célula ENTRE
+    /// Freio e Ápice na tela. Reabre a regra "sem Vmin no painel" (docs/COCKPIT_FONTE_DA_VERDADE).</summary>
+    public ApexPonto Vmin { get; init; } = ApexPonto.Pendente();
+
     public static ApexState Default() => new(
         Entrada: ApexPonto.Pendente(),
         Freio:   ApexPonto.Pendente(),
@@ -101,11 +106,12 @@ public sealed record ApexState(
         Saida:   ApexPonto.Pendente()
     );
 
-    /// <summary>Acessa apex ponto por papel canônico (entrada/freio/apice/pace/saida).</summary>
+    /// <summary>Acessa apex ponto por papel canônico (entrada/freio/vmin/apice/pace/saida).</summary>
     public ApexPonto Get(string papel) => papel switch
     {
         "entrada" => Entrada,
         "freio"   => Freio,
+        "vmin"    => Vmin,
         "apice"   => Apice,
         "pace"    => Pace,
         "saida"   => Saida,
@@ -117,6 +123,7 @@ public sealed record ApexState(
     {
         "entrada" => this with { Entrada = novo },
         "freio"   => this with { Freio   = novo },
+        "vmin"    => this with { Vmin    = novo },
         "apice"   => this with { Apice   = novo },
         "pace"    => this with { Pace    = novo },
         "saida"   => this with { Saida   = novo },

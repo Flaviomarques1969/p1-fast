@@ -125,4 +125,23 @@ public class CockpitOrchestratorTests
         orq.VigiarFontes(motorSilencioso: false, gpsSilencioso: true);
         Assert.Equal("SEM GPS", c.Get().Message!.Texto);
     }
+
+    // Gap 1 (Flávio 2026-07-03): o Vmin da curva aparece AO VIVO e colore vs a melhor passagem.
+    [Fact]
+    public void ORC_05_Vmin_aparece_ao_vivo_e_colore_na_2a_volta()
+    {
+        var c = new CockpitState();
+        var orq = new CockpitOrchestrator(c, new[] { Curva() });
+
+        var t = 0.0;
+        var v1 = new List<AmostraGps>();
+        t = UmaVolta(v1, kmhBaixo: 100, t);
+        foreach (var s in v1) orq.IngestGps(s);
+        Assert.NotNull(c.Get().Apex.Vmin.ValorKmh);   // 1ª volta registrou o vmin da curva
+
+        var v2 = new List<AmostraGps>();
+        t = UmaVolta(v2, kmhBaixo: 60, t);            // mais devagar → carregou MENOS velocidade mínima
+        foreach (var s in v2) orq.IngestGps(s);
+        Assert.Equal(ApexEstado.OkPior, c.Get().Apex.Vmin.Estado); // vmin menor que a melhor = vermelho
+    }
 }

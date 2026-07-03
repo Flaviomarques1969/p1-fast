@@ -255,6 +255,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" HorizontalAlignment="Left" Spacing="4">
                             <TextBlock x:Name="ApexEntradaValor" Text="—" FontSize="28" FontWeight="ExtraBold" Foreground="#606060" HorizontalAlignment="Left"/>
@@ -265,10 +266,14 @@
                             <TextBlock Text="FREIO" FontSize="13" FontWeight="Bold" Foreground="White" CharacterSpacing="250" HorizontalAlignment="Center"/>
                         </StackPanel>
                         <StackPanel Grid.Column="2" HorizontalAlignment="Center" Spacing="4">
+                            <TextBlock x:Name="ApexVminValor" Text="—" FontSize="28" FontWeight="ExtraBold" Foreground="#606060" HorizontalAlignment="Center"/>
+                            <TextBlock Text="VMIN" FontSize="13" FontWeight="Bold" Foreground="White" CharacterSpacing="250" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="3" HorizontalAlignment="Center" Spacing="4">
                             <TextBlock x:Name="ApexApiceValor" Text="—" FontSize="28" FontWeight="ExtraBold" Foreground="#606060" HorizontalAlignment="Center"/>
                             <TextBlock Text="ÁPICE" FontSize="13" FontWeight="Bold" Foreground="White" CharacterSpacing="250" HorizontalAlignment="Center"/>
                         </StackPanel>
-                        <StackPanel Grid.Column="3" HorizontalAlignment="Right" Spacing="4">
+                        <StackPanel Grid.Column="4" HorizontalAlignment="Right" Spacing="4">
                             <TextBlock x:Name="ApexSaidaValor" Text="—" FontSize="28" FontWeight="ExtraBold" Foreground="#606060" HorizontalAlignment="Right"/>
                             <TextBlock Text="SAÍDA" FontSize="13" FontWeight="Bold" Foreground="White" CharacterSpacing="250" HorizontalAlignment="Right"/>
                         </StackPanel>

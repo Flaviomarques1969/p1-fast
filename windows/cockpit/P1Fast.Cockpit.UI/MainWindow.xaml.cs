@@ -1063,6 +1063,7 @@ public sealed partial class MainWindow : Window
         // bolinha em METROS (não velocidade). Freio = atual/ref em metros. (Flávio 25/06)
         ApplyApexPonto(ApexEntradaValor, apex.Entrada, formatKmh: false);
         ApplyApexFreio(ApexFreioValor,   apex.Freio);
+        ApplyApexPonto(ApexVminValor,    apex.Vmin,    formatKmh: false); // Vmin: km/h, verde/vermelho vs melhor
         ApplyApexApice(ApexApiceValor,   apex.Apice);
         ApplyApexPonto(ApexSaidaValor,   apex.Saida,   formatKmh: false);
     }

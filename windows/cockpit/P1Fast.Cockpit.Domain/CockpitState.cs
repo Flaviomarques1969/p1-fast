@@ -233,7 +233,7 @@ public sealed class CockpitState
         double? deltaM     = null,
         string? nomeCurva  = null)
     {
-        if (papel is not ("entrada" or "freio" or "apice" or "pace" or "saida"))
+        if (papel is not ("entrada" or "freio" or "vmin" or "apice" or "pace" or "saida"))
             throw new ArgumentException($"apex papel=\"{papel}\" inválido", nameof(papel));
 
         if (estado is { } e) AssertEnumDefined(e, nameof(estado));

@@ -47,7 +47,7 @@ Em paralelo, o notebook **manda ao vivo pra nuvem** (canal `cockpit-bubi-live`),
 - **Bolinha do ápice** — aponta pra onde estava o ápice ideal ("siga a bolinha").
 - **Comparação por trecho + frase do coach** — entrada / freio / ápice / saída, contra a melhor passagem (ex.: "FREOU CEDO").
 - **Mensagens e alertas críticos** — sensor que não existe **nunca** dispara alerta falso; mistura/bateria só alertam com o **carro andando**.
-- **Sem Vmin no painel do piloto** (o Vmin vive no bloco dedicado, não aqui).
+- **Vmin no painel do piloto — SIM** (Flávio **reabriu em 2026-07-03** a regra que antes dizia "sem Vmin"): célula **VMIN entre Freio e Ápice**, mostra a **velocidade mínima carregada na curva** ao vivo, **verde/vermelho** vs a melhor passagem histórica.
 
 ## 5. Onde o cálculo mora
 **No notebook** (para o cockpit do piloto). A **nuvem** só serve o app do celular e o Command Box.
@@ -76,7 +76,7 @@ a luz de marcha sobe com o RPM · a curva certa aparece · a bolinha do ápice s
 - Cálculo do cockpit mora **no notebook**; nuvem só pra celular + Command Box.
 - **Command Box é só visualização** — nenhum botão de ação.
 - Cockpit do piloto ≠ Command Box ≠ app do celular. Não misturar.
-- **Sem Vmin** no painel do piloto.
+- **Vmin no painel do piloto** — REABERTO por Flávio 2026-07-03 (antes era "sem Vmin"): célula VMIN entre Freio e Ápice, verde/vermelho vs a melhor.
 - Injeção lê-se por **USB**, não CAN.
 - `cockpit-bubi-live` é **produção**: ouvir pode; **publicar dev/replay nele, não** (sem autorização literal).
 - Sem emojis (só ícones de traço); tela **10,5"** (não formato celular); usar a **largura toda**.

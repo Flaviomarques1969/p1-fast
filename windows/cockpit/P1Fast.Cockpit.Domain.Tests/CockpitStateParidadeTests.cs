@@ -245,4 +245,22 @@ public class CockpitStateParidadeTests
                                         ShiftLightModos.JanelaParaModo(ModoStint.Agressivo).RpmMax));
         Assert.Equal(6050, ShiftLightModos.PerfilBubi.PicoPotenciaRpm); // shift-light-modos.js:30
     }
+
+    // ── Vmin na tela (gap 1, Flávio 2026-07-03 reabriu a regra §4/§9) ─
+    // Célula ENTRE Freio e Ápice; cor verde/vermelho vs a melhor histórica
+    // (cockpit-volta-real.html:546,553-554). Papel canônico novo = "vmin".
+
+    [Fact]
+    public void PAR_17_Vmin_e_papel_valido_com_cor_verde_vermelho()
+    {
+        Assert.Equal(ApexEstado.Pendente, CockpitStateModel.Default().Apex.Vmin.Estado); // nasce pendente
+
+        var c = new CockpitState();
+        c.SetApexPonto("vmin", estado: ApexEstado.OkMelhor, valorKmh: 78); // carregou >= a melhor → verde
+        Assert.Equal(78.0, c.Get().Apex.Vmin.ValorKmh);
+        Assert.Equal(ApexEstado.OkMelhor, c.Get().Apex.Vmin.Estado);
+
+        c.SetApexPonto("vmin", estado: ApexEstado.OkPior, valorKmh: 71); // carregou menos → vermelho
+        Assert.Equal(ApexEstado.OkPior, c.Get().Apex.Vmin.Estado);
+    }
 }
