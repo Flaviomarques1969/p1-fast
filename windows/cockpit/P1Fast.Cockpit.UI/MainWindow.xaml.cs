@@ -975,8 +975,8 @@ public sealed partial class MainWindow : Window
     // ── Resultado da freada (à direita, espelha o delta) ───
     private void ApplyBrakeResult(ApexEstado estado, double atualM, double refM)
     {
-        // Só COR (Flávio 2026-07-03): sem número. Verde/amarelo/vermelho já dizem o resultado.
-        var color = (atualM <= 0 || refM <= 0) ? Muted : ColorForApexEstado(estado);
+        // Só COR (Flávio 2026-07-03): sem número. Repouso/sem comparação = VERDE (não cinza).
+        var color = (atualM <= 0 || refM <= 0) ? Bom : ColorForApexEstado(estado);
         BrakeResultDot.Fill = new SolidColorBrush(color);
     }
 
@@ -1009,7 +1009,7 @@ public sealed partial class MainWindow : Window
             FreioTom.Bom  => Bom,
             FreioTom.Foco => Foco,
             FreioTom.Erro => Erro,
-            _             => Muted,
+            _             => Bom,   // repouso/referência = VERDE (Flávio 2026-07-03), não cinza
         };
         BrakeResultDot.Fill = new SolidColorBrush(color);
     }

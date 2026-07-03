@@ -217,7 +217,7 @@
                              = freou depois. Cinza = ainda sem resultado. -->
                         <Ellipse x:Name="BrakeResultDot"
                                  Width="88" Height="88"
-                                 Fill="#8C8C8C"
+                                 Fill="#4FE060"
                                  Opacity="0.92"
                                  HorizontalAlignment="Center"/>
                     </StackPanel>
@@ -344,12 +344,13 @@
                         </Rectangle.Fill>
                     </Rectangle>
 
-                    <!-- LAVADO DA FREADA (hora de frear): VERMELHO, distinto do branco-azul
-                         da troca pra não confundir. Ponto mais forte EMBAIXO, espalhando
-                         pra cima. Dispara ao chegar no ponto de freada. -->
+                    <!-- LAVADO DA FREADA (hora de frear): VERMELHO, nasce EM CIMA (Flávio 2026-07-03)
+                         — separado do wash BRANCO/azul do câmbio (que nasce EMBAIXO, de onde vem a
+                         luz de marcha) pra NÃO confundir a posição. Ponto mais forte no TOPO,
+                         espalhando pra baixo. Dispara ao chegar no ponto de freada. -->
                     <Rectangle x:Name="BrakeWashRect" IsHitTestVisible="False" Opacity="0">
                         <Rectangle.Fill>
-                            <RadialGradientBrush Center="0.5,1.10" GradientOrigin="0.5,1.10" RadiusX="1.25" RadiusY="1.45">
+                            <RadialGradientBrush Center="0.5,-0.10" GradientOrigin="0.5,-0.10" RadiusX="1.25" RadiusY="1.45">
                                 <GradientStop Offset="0.0"  Color="#FFFF3A2A"/>
                                 <GradientStop Offset="0.30" Color="#EAF02A1E"/>
                                 <GradientStop Offset="0.62" Color="#80B01410"/>
