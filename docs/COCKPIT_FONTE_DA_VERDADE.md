@@ -48,6 +48,7 @@ Em paralelo, o notebook **manda ao vivo pra nuvem** (canal `cockpit-bubi-live`),
 - **Comparação por trecho + frase do coach** — entrada / freio / ápice / saída, contra a melhor passagem (ex.: "FREOU CEDO").
 - **Mensagens e alertas críticos** — sensor que não existe **nunca** dispara alerta falso; mistura/bateria só alertam com o **carro andando**.
 - **Vmin no painel do piloto — SIM** (Flávio **reabriu em 2026-07-03** a regra que antes dizia "sem Vmin"): célula **VMIN entre Freio e Ápice**, mostra a **velocidade mínima carregada na curva** ao vivo, **verde/vermelho** vs a melhor passagem histórica.
+- **Barra de voltas (topo) = por VOLTA, não por curva** (Flávio 2026-07-03): a 1ª volta é **aquecimento**, a última é **cool down**, e as do meio são as **voltas planejadas pelo piloto no stint — inclusive parada no box** se houver. Detalhe em §11.
 
 ## 5. Onde o cálculo mora
 **No notebook** (para o cockpit do piloto). A **nuvem** só serve o app do celular e o Command Box.
@@ -86,6 +87,17 @@ a luz de marcha sobe com o RPM · a curva certa aparece · a bolinha do ápice s
   uma fila antiga separada (do app de estoque) ainda sem o "drenador". Não confundir as duas.
 - **Posição do carro no desenho da pista** (GPS → x,y): é calculada na nuvem, mas ainda não aparece em nenhuma tela.
 - **Sensores físicos de pneu e câmbio:** o código já espera por eles; faltam ser instalados no carro.
+
+---
+
+## 11. Barra de voltas (stint) — por VOLTA (Flávio 2026-07-03)
+A fileira de blocos no **topo** do painel é a **barra de voltas do stint** (não a barra de curvas):
+- **1º bloco = aquecimento** (out-lap — aquecer pneus/freios).
+- **Último bloco = cool down** (in-lap — desaquecer).
+- **Blocos do meio = voltas planejadas pelo piloto**, **inclusive parada no box** se houver.
+- A fonte do plano é o **plano do piloto** (telas só EXIBEM — vem do envelope da nuvem `plano_stint` / `p1fast-plano-stint-v1`; migration 0042). O cockpit **não inventa** o plano.
+
+**Estado (2026-07-03):** os **tipos de bloco** já existem no `.exe` — aquecimento (laranja), planejada (slate), **box (magenta)**, cool down (azul) — exibidos com um **plano de EXEMPLO (placeholder)** enquanto o plano real do piloto **não está ligado** ao cockpit. Antes desta data a barra mapeava as 8 curvas por ritmo (era "barra de curvas", não de voltas). **Pendente:** ligar o `plano_stint` real + progressão volta-a-volta (volta atual/feita/a fazer). Código: `windows/cockpit/P1Fast.Cockpit.UI/MainWindow.xaml.cs` (enum `StintBlockState`, `PlanoStintPlaceholder`) e `MainWindow.Replay.cs` (`AtualizarStint`).
 
 ---
 

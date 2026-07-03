@@ -194,27 +194,17 @@ public sealed partial class MainWindow
     // ── Ponte da BARRA DE STINT (a tela não observava EstadoDoTrecho) ──────────
     // Pinta os 8 trechos de Brasília nos 8 primeiros blocos: faster→verde, slower→
     // vermelho, reference/neutral→neutro, trecho em curso→amarelo, demais→apagado.
+    // BARRA DE VOLTAS (Flávio 2026-07-03): 1ª = aquecimento, última = cool-down, as do
+    // meio = voltas planejadas pelo piloto (incl. parada no box). Enquanto o PLANO real
+    // do stint não está ligado ao cockpit (telas só EXIBEM — virá do envelope da nuvem
+    // `plano_stint`), mostra um plano de EXEMPLO. Estático até o plano real chegar, então
+    // aplica uma vez por sessão. (Antes a barra mapeava as 8 curvas por ritmo — isso não
+    // era a barra de VOLTAS; ver docs/COCKPIT_FONTE_DA_VERDADE.md §11.)
     private void AtualizarStint()
     {
-        if (_orquestrador is null || _segsAtivos.Count == 0) return;
-
-        var atual = _orquestrador.CurvaAtualId;
-        var pattern = new StintBlockState[12];
-        for (var i = 0; i < 12; i++)
-        {
-            if (i >= _segsAtivos.Count) { pattern[i] = StintBlockState.Pending; continue; }
-            var seg = _segsAtivos[i];
-            if (seg.Id == atual) { pattern[i] = StintBlockState.Current; continue; }
-            pattern[i] = _orquestrador.EstadoDoTrecho(seg.Id) switch
-            {
-                "faster"    => StintBlockState.Faster,
-                "slower"    => StintBlockState.Slower,
-                "reference" => StintBlockState.Neutral,
-                "neutral"   => StintBlockState.Neutral,
-                _           => StintBlockState.Pending,
-            };
-        }
-        ApplyStintPattern(pattern);
+        if (_barraVoltasAplicada) return;
+        _barraVoltasAplicada = true;
+        ApplyStintPattern(PlanoStintPlaceholder);
     }
 
     // ── Ponte do CLUSTER DE SENSORES (estado real do motor) ────────────────────

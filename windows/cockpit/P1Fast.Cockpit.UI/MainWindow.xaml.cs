@@ -130,7 +130,7 @@ public sealed partial class MainWindow : Window
     // pulso — não é alerta, é informação).
     private Storyboard? _alertPulse;
 
-    /// <summary>Estados visuais de cada bloco da stint bar.</summary>
+    /// <summary>Estados visuais de cada bloco da stint bar (barra de VOLTAS).</summary>
     public enum StintBlockState
     {
         Pending,      // ainda não rodou — cinza faint
@@ -140,6 +140,12 @@ public sealed partial class MainWindow : Window
         BestStint,    // melhor do stint atual — verde com shimmer
         BestAlltime,  // melhor de todos os tempos — dourado bloom
         Current,      // trecho em curso — amarelo (foco)
+        // TIPOS de volta do PLANO do piloto (Flávio 2026-07-03): a barra de voltas é
+        // 1ª = aquecimento, última = cool-down, as do meio = planejadas (incl. box).
+        Aquecimento,  // 1ª volta — aquecendo pneus/freios — laranja
+        Planejada,    // volta de ritmo planejada pelo piloto — cinza-azulado (a rodar)
+        Box,          // parada no box planejada — magenta (destaca)
+        CoolDown,     // última volta — desaquecendo — azul
     }
 
     private static readonly Dictionary<StintBlockState, Color> StintColors = new()
@@ -151,7 +157,27 @@ public sealed partial class MainWindow : Window
         [StintBlockState.BestStint]   = Bom,
         [StintBlockState.BestAlltime] = Ouro,
         [StintBlockState.Current]     = Foco,
+        [StintBlockState.Aquecimento] = Color.FromArgb(0xFF, 0xE8, 0x84, 0x3C),  // laranja (aquecendo)
+        [StintBlockState.Planejada]   = Color.FromArgb(0xFF, 0x55, 0x60, 0x70),  // slate (planejada)
+        [StintBlockState.Box]         = Color.FromArgb(0xFF, 0xE0, 0x56, 0xA0),  // magenta (parada no box)
+        [StintBlockState.CoolDown]    = Color.FromArgb(0xFF, 0x5A, 0xA0, 0xE0),  // azul (cool down)
     };
+
+    // Plano do stint de EXEMPLO (placeholder) enquanto o plano REAL do piloto não está
+    // ligado ao cockpit (telas só exibem — virá do envelope da nuvem `plano_stint`).
+    // 1ª = aquecimento · meio = planejadas (incl. 1 parada no box) · última = cool down.
+    private static readonly StintBlockState[] PlanoStintPlaceholder =
+    {
+        StintBlockState.Aquecimento,                                   // 0  — aquecimento
+        StintBlockState.Planejada, StintBlockState.Planejada,          // 1,2
+        StintBlockState.Planejada, StintBlockState.Planejada,          // 3,4
+        StintBlockState.Box,                                           // 5  — parada no box
+        StintBlockState.Planejada, StintBlockState.Planejada,          // 6,7
+        StintBlockState.Planejada, StintBlockState.Planejada,          // 8,9
+        StintBlockState.CoolDown,                                      // 10 — cool down
+        StintBlockState.Pending,                                       // 11 — sem volta (vaga)
+    };
+    private bool _barraVoltasAplicada;
 
     public MainWindow() : this(new LaunchOptions(DisplayIndex: null)) { }
 
@@ -401,6 +427,7 @@ public sealed partial class MainWindow : Window
         _shiftSweepTimer?.Stop();
         _orquestrador = new CockpitOrchestrator(_cockpitState, curvas);
         _segsAtivos = curvas ?? Array.Empty<TrechoSegmento>();  // ponte do stint (replay E live)
+        _barraVoltasAplicada = false;   // redesenha a barra de voltas (placeholder) nesta sessão/loop
     }
 
     /// <summary>Amostra de motor (rotação + dados pros alertas). Thread-safe.</summary>
@@ -978,7 +1005,7 @@ public sealed partial class MainWindow : Window
         // NÚMERO da distância (m) COLORIDO (Flávio 2026-07-03). Sem comparação = verde.
         if (atualM <= 0 || refM <= 0)
         {
-            BrakeResultNum.Text = "—";
+            BrakeResultNum.Text = "";   // sem comparação = em branco (nunca "—")
             BrakeResultNum.Foreground = new SolidColorBrush(Bom);
             return;
         }
@@ -1018,7 +1045,9 @@ public sealed partial class MainWindow : Window
             FreioTom.Erro => Erro,   // freou DEPOIS → vermelho
             _             => Bom,    // no ponto / repouso → verde
         };
-        BrakeResultNum.Text = f.ResultadoM is { } m ? m.ToString() : "—";
+        // Sem resultado ainda (sem referência / 1ª passagem) = EM BRANCO, nunca "—"
+        // (o traço aparecia por cima da mensagem — Flávio 2026-07-03).
+        BrakeResultNum.Text = f.ResultadoM is { } m ? m.ToString() : "";
         BrakeResultNum.Foreground = new SolidColorBrush(color);
     }
 
@@ -1101,7 +1130,8 @@ public sealed partial class MainWindow : Window
     private void ApplyApex(ApexState apex)
     {
         // Entrada/Saída = velocidade (só o número, sem "km/h"). Ápice = distância da
-        // bolinha em METROS (não velocidade). Freio = atual/ref em metros. (Flávio 25/06)
+        // bolinha em METROS (não velocidade). Freio = SÓ o delta em metros vs a melhor
+        // passagem (Flávio 2026-07-03; antes era atual/ref).
         ApplyApexPonto(ApexEntradaValor, apex.Entrada, formatKmh: false);
         ApplyApexFreio(ApexFreioValor,   apex.Freio);
         ApplyApexPonto(ApexVminValor,    apex.Vmin,    formatKmh: false); // Vmin: km/h, verde/vermelho vs melhor
@@ -1143,11 +1173,18 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    // Freio = SOMENTE o delta (m) vs a melhor passagem (Flávio 2026-07-03): quanto você
+    // freou fora do ponto ideal, com sinal (+ = freou mais tarde/depois, − = freou antes).
+    // Cor pelo estado (verde no ponto / vermelho fora). SÓ com referência válida (estado
+    // ok-melhor/ok-pior); sem referência ainda = "—" (não inventa delta com ref defasada).
     private static void ApplyApexFreio(Microsoft.UI.Xaml.Controls.TextBlock text, ApexPonto p)
     {
-        if (p.AtualM is { } atual && p.RefM is { } refM)
+        var comReferencia = p.Estado is ApexEstado.OkMelhor or ApexEstado.OkPior;
+        if (comReferencia && p.AtualM is { } atual && p.RefM is { } refM)
         {
-            text.Text = $"{atual:0}/{refM:0} m";
+            var d = (int)Math.Round(atual - refM, MidpointRounding.AwayFromZero);
+            var sinal = d > 0 ? "+" : "";
+            text.Text = $"{sinal}{d} m";
             text.Foreground = new SolidColorBrush(ColorForApexEstado(p.Estado));
         }
         else

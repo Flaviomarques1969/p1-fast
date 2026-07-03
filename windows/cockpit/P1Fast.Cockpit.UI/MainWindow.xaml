@@ -217,7 +217,7 @@
                              no ponto (±0,5 m), amarelo = freou antes, vermelho = freou depois.
                              Sem palavra. -->
                         <TextBlock x:Name="BrakeResultNum"
-                                   Text="—"
+                                   Text=""
                                    FontSize="92"
                                    FontWeight="ExtraBold"
                                    Foreground="#4FE060"
