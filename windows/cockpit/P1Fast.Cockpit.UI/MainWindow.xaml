@@ -212,19 +212,14 @@
                         <StackPanel.RenderTransform>
                             <TranslateTransform Y="-30"/>
                         </StackPanel.RenderTransform>
-                        <TextBlock x:Name="BrakeResultNum"
-                                   Text="—"
-                                   FontSize="92"
-                                   FontWeight="ExtraBold"
-                                   Foreground="#8C8C8C"
-                                   HorizontalAlignment="Center"/>
-                        <TextBlock x:Name="BrakeResultWord"
-                                   Text="FREADA"
-                                   FontSize="28"
-                                   FontWeight="ExtraBold"
-                                   CharacterSpacing="120"
-                                   Foreground="#8C8C8C"
-                                   HorizontalAlignment="Center"/>
+                        <!-- Resultado da freada = SÓ COR (Flávio 2026-07-03): sem número, sem
+                             palavra. Verde = no ponto (±0,5 m), amarelo = freou antes, vermelho
+                             = freou depois. Cinza = ainda sem resultado. -->
+                        <Ellipse x:Name="BrakeResultDot"
+                                 Width="88" Height="88"
+                                 Fill="#8C8C8C"
+                                 Opacity="0.92"
+                                 HorizontalAlignment="Center"/>
                     </StackPanel>
 
                     <Border x:Name="AlertBlocoRoot"

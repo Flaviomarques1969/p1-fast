@@ -761,8 +761,38 @@ public sealed partial class MainWindow : Window
         RenderShiftLeds(restore);
     }
 
+    // Strobo VERMELHO do shift light no LIMITE (Overrev, Flávio 2026-07-03): pisca todas as
+    // luzes de marcha em vermelho — "passou do ponto, troca AGORA". Timer próprio; para ao
+    // sair do Overrev (RenderShiftLeds chama StopShiftStrobe fora do Overrev).
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer? _shiftStrobeTimer;
+    private bool _shiftStrobeOn;
+    private void StartShiftStrobe()
+    {
+        if (_shiftStrobeTimer is not null) return;
+        _shiftStrobeOn = true;
+        for (var i = 0; i < _leds.Length; i++) SetLedVisual(_leds[i], _ledGlows[i], LedOverrevRed, true);
+        _shiftStrobeTimer = DispatcherQueue.CreateTimer();
+        _shiftStrobeTimer.Interval = TimeSpan.FromMilliseconds(85);
+        _shiftStrobeTimer.Tick += (_, _) =>
+        {
+            _shiftStrobeOn = !_shiftStrobeOn;
+            var c = _shiftStrobeOn ? LedOverrevRed : LedOff;
+            for (var i = 0; i < _leds.Length; i++) SetLedVisual(_leds[i], _ledGlows[i], c, _shiftStrobeOn);
+        };
+        _shiftStrobeTimer.Start();
+    }
+    private void StopShiftStrobe()
+    {
+        if (_shiftStrobeTimer is null) return;
+        _shiftStrobeTimer.Stop();
+        _shiftStrobeTimer = null;
+        _shiftStrobeOn = false;
+    }
+
     private void RenderShiftLeds(ShiftState shift)
     {
+        if (shift.Mode != ShiftMode.Overrev) StopShiftStrobe();
+
         if (shift.Mode == ShiftMode.Fire)
         {
             for (var i = 0; i < _leds.Length; i++) SetLedVisual(_leds[i], _ledGlows[i], LedFireWhite, true);
@@ -770,7 +800,7 @@ public sealed partial class MainWindow : Window
         }
         if (shift.Mode == ShiftMode.Overrev)
         {
-            for (var i = 0; i < _leds.Length; i++) SetLedVisual(_leds[i], _ledGlows[i], LedOverrevRed, true);
+            StartShiftStrobe();   // passou do limite → luz de marcha PISCA vermelho (troca AGORA) — Flávio 2026-07-03
             return;
         }
         for (var i = 0; i < _leds.Length; i++)
@@ -945,19 +975,9 @@ public sealed partial class MainWindow : Window
     // ── Resultado da freada (à direita, espelha o delta) ───
     private void ApplyBrakeResult(ApexEstado estado, double atualM, double refM)
     {
-        if (atualM <= 0 || refM <= 0)
-        {
-            BrakeResultNum.Text = "—";
-            BrakeResultNum.Foreground = new SolidColorBrush(Muted);
-            BrakeResultWord.Foreground = new SolidColorBrush(Muted);
-            return;
-        }
-        // Sem sinal — a cor (verde/vermelho) já diz se foi bom ou ruim.
-        var diff = (int)Math.Round(atualM - refM);
-        BrakeResultNum.Text = Math.Abs(diff).ToString();
-        var color = ColorForApexEstado(estado);
-        BrakeResultNum.Foreground = new SolidColorBrush(color);
-        BrakeResultWord.Foreground = new SolidColorBrush(color);
+        // Só COR (Flávio 2026-07-03): sem número. Verde/amarelo/vermelho já dizem o resultado.
+        var color = (atualM <= 0 || refM <= 0) ? Muted : ColorForApexEstado(estado);
+        BrakeResultDot.Fill = new SolidColorBrush(color);
     }
 
     // ── Luz de freio REAL (observada do CockpitState, comandada pelo maestro) ──
@@ -982,8 +1002,8 @@ public sealed partial class MainWindow : Window
 
     private void ApplyFreioResultado(FreioState f)
     {
-        BrakeResultNum.Text = f.ResultadoM is { } m ? m.ToString() : "—";
-        BrakeResultWord.Text = f.ResultadoPalavra;
+        // Só COR (Flávio 2026-07-03): verde = no ponto (±0,5 m), amarelo = freou antes,
+        // vermelho = freou depois. Sem número, sem palavra.
         var color = f.ResultadoTom switch
         {
             FreioTom.Bom  => Bom,
@@ -991,26 +1011,39 @@ public sealed partial class MainWindow : Window
             FreioTom.Erro => Erro,
             _             => Muted,
         };
-        BrakeResultNum.Foreground = new SolidColorBrush(color);
-        BrakeResultWord.Foreground = new SolidColorBrush(color);
+        BrakeResultDot.Fill = new SolidColorBrush(color);
     }
 
     // Pisca as luzes laterais todas vermelhas no ponto de freada e restaura o nível.
+    private int _brakeStrobeTick;
     private void BeginBrakeRealFlash()
     {
-        for (var i = 0; i < _brakeLeft.Length; i++)
+        // Strobo VERMELHO no ponto de freada (Flávio 2026-07-03): pisca as luzes laterais
+        // vermelhas ON/OFF ~3 vezes e depois restaura o nível — em vez de um flash único.
+        if (_brakeRealFlashTimer is null)
+        {
+            _brakeRealFlashTimer = DispatcherQueue.CreateTimer();
+            _brakeRealFlashTimer.IsRepeating = true;
+            _brakeRealFlashTimer.Interval = TimeSpan.FromMilliseconds(90);
+            _brakeRealFlashTimer.Tick += (_, _) =>
+            {
+                _brakeStrobeTick++;
+                if (_brakeStrobeTick >= 6) { _brakeRealFlashTimer!.Stop(); ApplyBrake(_lastBrakeLit); return; }
+                var on = _brakeStrobeTick % 2 == 0;   // alterna off/on/off… (o 1º frame já é vermelho)
+                for (var i = 0; i < _brakeLeft.Length; i++)
+                {
+                    SetLedVisual(_brakeLeft[i],  _brakeLeftGlow[i],  on ? LedShiftRed : LedOff, on);
+                    SetLedVisual(_brakeRight[i], _brakeRightGlow[i], on ? LedShiftRed : LedOff, on);
+                }
+            };
+        }
+        _brakeRealFlashTimer.Stop();
+        _brakeStrobeTick = 0;
+        for (var i = 0; i < _brakeLeft.Length; i++)   // 1º frame já vermelho
         {
             SetLedVisual(_brakeLeft[i],  _brakeLeftGlow[i],  LedShiftRed, on: true);
             SetLedVisual(_brakeRight[i], _brakeRightGlow[i], LedShiftRed, on: true);
         }
-        if (_brakeRealFlashTimer is null)
-        {
-            _brakeRealFlashTimer = DispatcherQueue.CreateTimer();
-            _brakeRealFlashTimer.IsRepeating = false;
-            _brakeRealFlashTimer.Interval = TimeSpan.FromMilliseconds(340);
-            _brakeRealFlashTimer.Tick += (_, _) => ApplyBrake(_lastBrakeLit);
-        }
-        _brakeRealFlashTimer.Stop();
         _brakeRealFlashTimer.Start();
     }
 

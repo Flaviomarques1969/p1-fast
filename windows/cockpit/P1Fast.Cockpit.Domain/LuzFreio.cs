@@ -39,7 +39,7 @@ public sealed class LuzFreio
     public const double FreioLeadS    = 4.0;  // segundos: do 1º verde até o ponto de freada
     public const double FreioFallbackM = 50;  // ponto de freada de partida (antes de ter referência)
     public const int    FreioN        = 9;    // luzes por lado
-    public const double FreioTolM     = 1;    // ±1 m ainda é "NO PONTO"
+    public const double FreioTolM     = 0.5;  // ±0,5 m ainda é "NO PONTO" (Flávio 2026-07-03)
 
     // Reação do freio (gap 3, port de trail-cockpit-motor.js:380-396,666): o "zero" da luz é
     // ADIANTADO pelo tempo de reação aprendido do piloto — adiantoM = reacaoS * velMs — pra
