@@ -569,7 +569,11 @@ public sealed partial class MainWindow
             Rpm                     = s.Rpm,
             WaterTempC              = s.WaterTempC.HasValue ? (double?)s.WaterTempC.Value : null,
             TpsPct                  = s.TpsPct,
-            Lambda                  = s.Lambda,
+            // M3: sonda WB ausente/desconectada lê 0 (ou fora do físico 0.3–1.6) — NÃO é 0.0 de
+            // mistura; vira null (sem dado) pra NÃO disparar MISTURA RICA falsa (regra §9). O raw
+            // fica no disco; só o ALERTA/sensor recebe null. Alinha o ao vivo com o replay (que
+            // já lê null quando o campo falta).
+            Lambda                  = (s.LambdaWBRaw == 0 || s.Lambda < 0.3 || s.Lambda > 1.6) ? (double?)null : s.Lambda,
             BatteryV                = s.BatteryV,
             FuelInjectionBalanced   = s.FuelInjectionBalanced,
             BaixaPressaoOleo        = Alm("baixaPressaoOleo"),

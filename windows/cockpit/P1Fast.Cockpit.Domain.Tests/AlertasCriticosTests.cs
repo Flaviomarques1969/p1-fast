@@ -74,6 +74,16 @@ public class AlertasCriticosTests
         Assert.Empty(CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = null, Rpm = 4000 })); // ausente
     }
 
+    // M3 (auditoria 2026-07-02): sonda WB ausente lê 0.0 (double válido, ≠ null) — mesmo sob
+    // carga NÃO pode disparar MISTURA RICA falsa; leitura fora do físico (0.3–1.6) idem (§9).
+    [Fact]
+    public void ALR_11_Lambda_zero_ou_implausivel_nao_dispara_mistura()
+    {
+        Assert.Empty(CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = 0.0, Rpm = 4000 }));  // sonda ausente lida como 0
+        Assert.Empty(CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = 5.0, Rpm = 4000 }));  // fora do físico
+        Assert.Contains("MISTURA_RICA", CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = 0.6, Rpm = 4000 })); // real segue disparando
+    }
+
     // ── Bateria / combustível / falhando ────────────────────
 
     [Fact]

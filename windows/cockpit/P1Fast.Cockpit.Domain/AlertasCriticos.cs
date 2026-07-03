@@ -134,8 +134,11 @@ public static class CatalogoAlertas
         if (s.BaixaPressaoOleo == true && s.Rpm is { } rpm && rpm > l.OilPressRpmMin)
             ativos.Add("OLEO_BAIXO");
 
-        // Lambda (mistura) — só sob carga
-        if (sobCarga && s.Lambda is { } lambda)
+        // Lambda (mistura) — só sob carga E com leitura FISICAMENTE plausível. Lambda 0.0 (ou
+        // fora de ~0.3–1.6) = sonda WB ausente/em falha, NÃO 0.0 de mistura — nunca dispara
+        // alerta falso (regra dura §9; M3 da auditoria 2026-07-02). O 0.0 passava por ser um
+        // double válido (≠ null), disparando MISTURA RICA sem sonda.
+        if (sobCarga && s.Lambda is { } lambda && lambda is >= 0.3 and <= 1.6)
         {
             if (lambda > l.LambdaPobre) ativos.Add("MISTURA_POBRE");
             if (lambda < l.LambdaRica)  ativos.Add("MISTURA_RICA");

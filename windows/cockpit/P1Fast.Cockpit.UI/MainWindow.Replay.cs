@@ -232,9 +232,13 @@ public sealed partial class MainWindow
         SetSensor(SensorRpm,        am?.Rpm is not null);
         SetSensor(SensorAcel,       am?.TpsPct is not null);
         SetSensor(SensorFreioPedal, am is not null);          // pedal vem no mesmo quadro do motor
+        // M4: mistura e bateria só ALERTAM (amarelo) com o carro SOB CARGA (motor puxando) —
+        // em marcha lenta/parado a lambda lê pobre por corte de combustível e a bateria cai
+        // sozinha (regra §4/§9). Água e Alarme NÃO dependem disto (segurança vale parado).
+        var sobCarga = am?.Rpm is >= 3000 || am?.TpsPct is >= 15;
         SetSensor(SensorAgua,       am?.WaterTempC is not null, warn: am?.WaterTempC is > 80);
-        SetSensor(SensorLambda,     am?.Lambda is not null, warn: am?.Lambda is < 0.80 or > 1.15);
-        SetSensor(SensorBateria,    am?.BatteryV is not null, warn: am?.BatteryV is < 11.8);
+        SetSensor(SensorLambda,     am?.Lambda is not null, warn: sobCarga && (am?.Lambda is < 0.80 or > 1.15));
+        SetSensor(SensorBateria,    am?.BatteryV is not null, warn: sobCarga && am?.BatteryV is < 11.8);
         SetSensor(SensorAlarme,     am is not null, warn: am?.BaixaPressaoOleo == true || am?.AlertaNivelCombustivel == true || am?.FuelInjectionBalanced == false);
 
         // Movimento: GPS verde se chegou amostra há pouco (tempo REAL monotônico — vale
