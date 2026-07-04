@@ -66,7 +66,14 @@ public sealed record AlertaLimites(
     double RicaCargaRpmMin  = 3000,
     double RicaCargaTpsMin  = 40,
     double CargaRpmMin      = 3000,
-    double CargaTpsPctMin   = 15
+    double CargaTpsPctMin   = 15,
+    // Histerese temporal (bloco 2b, spec v2, Flávio 04/07). Precisa de relógio (tSeg).
+    //  • Óleo: só alarma depois de ~2s de motor RODANDO (suprime o pico da partida —
+    //    a pressão sobe em 1–2s ao ligar). Depois é INSTANTÂNEO em qualquer rpm.
+    //  • Rica: só avisa se a mistura rica persistir ≥1s contínuo (ignora pico transitório).
+    double MotorLigadoRpmMin     = 500,   // acima = motor rodando; abaixo = off/partida
+    double OleoPartidaSupressaoS = 2.0,
+    double RicaPersistenciaMinS  = 1.0
 )
 {
     public static AlertaLimites Default { get; } = new();
@@ -185,7 +192,39 @@ public sealed class AlertasCriticos
 
     public AlertasCriticos(AlertaLimites? limits = null) => _limits = limits ?? AlertaLimites.Default;
 
-    public void IngestT4000(AmostraAlerta sample) => Set(CatalogoAlertas.AvaliarT4000(sample, _limits));
+    // Estado temporal da histerese (bloco 2b). _ligadoDesdeT = instante em que o motor
+    // passou a rodar continuamente (pra suprimir o pico de óleo da partida). _ricaDesdeT =
+    // instante em que a mistura rica começou (pra exigir ≥1s de persistência).
+    private double? _ligadoDesdeT;
+    private double? _ricaDesdeT;
+
+    /// <summary>Ingere uma amostra. Passe <paramref name="tSeg"/> (relógio monotônico em
+    /// segundos) pra ligar a histerese temporal do óleo e da mistura rica (bloco 2b); sem
+    /// ele, avalia cru por amostra (comportamento antigo).</summary>
+    public void IngestT4000(AmostraAlerta sample, double? tSeg = null)
+    {
+        var ids = CatalogoAlertas.AvaliarT4000(sample, _limits);
+        if (tSeg is { } t) AplicarHisterese(ids, sample, t);
+        Set(ids);
+    }
+
+    // Filtra os ids crus pela histerese temporal (spec v2, bloco 2b). Óleo: alarma só depois
+    // de ~2s de motor rodando (o pico da partida some; depois é instantâneo em qualquer rpm,
+    // sem atrasar alarme real na pista). Rica: exige ≥1s contínuo de mistura rica.
+    private void AplicarHisterese(List<string> ids, AmostraAlerta s, double t)
+    {
+        var ligado = s.Rpm is { } rpm && rpm >= _limits.MotorLigadoRpmMin;
+        if (ligado) _ligadoDesdeT ??= t; else _ligadoDesdeT = null;
+        var passouDaPartida = _ligadoDesdeT is { } d && t - d >= _limits.OleoPartidaSupressaoS;
+        if (!passouDaPartida) ids.Remove("OLEO_BAIXO");
+
+        if (ids.Contains("MISTURA_RICA"))
+        {
+            _ricaDesdeT ??= t;
+            if (t - _ricaDesdeT.Value < _limits.RicaPersistenciaMinS) ids.Remove("MISTURA_RICA");
+        }
+        else _ricaDesdeT = null;
+    }
 
     public void RaiseManual(string id) { _manuais.Add(id); _ativos.Add(id); }
     public void ClearManual(string id) { _manuais.Remove(id); _ativos.Remove(id); }

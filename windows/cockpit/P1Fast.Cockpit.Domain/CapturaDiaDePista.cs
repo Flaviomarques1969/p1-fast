@@ -64,7 +64,7 @@ public sealed class CapturaDiaDePista
     /// automática está gravando (na pista) — marcha lenta no box não vira sessão.</summary>
     public void Motor(T3000Sample s)
     {
-        _painel.IngestMotor(s.Rpm, AlertaDeSample(s));            // tela ao vivo, sempre
+        _painel.IngestMotor(s.Rpm, AlertaDeSample(s), s.TMono);   // tela ao vivo, sempre (TMono = relógio da histerese 2b)
         var reg = _gravador.Motor(s);                            // grava (respeita o auto por movimento)
         if (reg is not null) _publicarNuvem?.Invoke(s, reg.TWall); // nuvem só do que foi gravado
     }

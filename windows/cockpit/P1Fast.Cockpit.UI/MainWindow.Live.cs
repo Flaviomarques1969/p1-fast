@@ -466,7 +466,7 @@ public sealed partial class MainWindow
         var (rpm, alerta) = BridgeMotor(s);
         DispatcherQueue.TryEnqueue(() =>
         {
-            _orquestrador?.IngestMotor(rpm, alerta);
+            _orquestrador?.IngestMotor(rpm, alerta, s.TMono);   // TMono = relógio da histerese 2b (óleo/rica)
             _ultimaAlerta = alerta;      // guarda pro refresh de sensores quando vier GPS
             AtualizarSensores(alerta);
         });

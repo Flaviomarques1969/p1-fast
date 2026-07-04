@@ -156,4 +156,65 @@ public class AlertasCriticosTests
         ac.ClearManual("BOX");
         Assert.Null(ac.GetMensagemPrincipal());
     }
+
+    // ── Histerese temporal (bloco 2b, spec v2 — Flávio 04/07) ───────
+
+    [Fact]
+    public void ALR_12_Oleo_suprime_o_pico_da_partida_e_depois_alarma()
+    {
+        var ac = new AlertasCriticos();
+        var oleo = new AmostraAlerta { BaixaPressaoOleo = true, Rpm = 3000 };
+
+        // motor acabou de ligar (t=0): nos primeiros ~2s o pico da partida é suprimido.
+        ac.IngestT4000(oleo, 0.0);
+        Assert.Null(ac.GetMensagemPrincipal());
+        ac.IngestT4000(oleo, 1.5);
+        Assert.Null(ac.GetMensagemPrincipal());
+
+        // passados 2s de motor rodando, o alarme REAL aparece (instantâneo dali em diante).
+        ac.IngestT4000(oleo, 2.0);
+        Assert.Equal("OLEO_BAIXO", ac.GetMensagemPrincipal()!.Id);
+    }
+
+    [Fact]
+    public void ALR_13_Oleo_nao_alarma_com_motor_desligado()
+    {
+        var ac = new AlertasCriticos();
+        // rpm ~0 (off/partida) + bit ligado: não é alarme (pressão baixa com motor parado é normal).
+        ac.IngestT4000(new AmostraAlerta { BaixaPressaoOleo = true, Rpm = 0 }, 0.0);
+        Assert.Null(ac.GetMensagemPrincipal());
+        ac.IngestT4000(new AmostraAlerta { BaixaPressaoOleo = true, Rpm = 0 }, 5.0);
+        Assert.Null(ac.GetMensagemPrincipal());
+    }
+
+    [Fact]
+    public void ALR_14_Rica_so_avisa_se_persistir_1s()
+    {
+        var ac = new AlertasCriticos();
+        var rica = new AmostraAlerta { Lambda = 0.6, Rpm = 4000, TpsPct = 50 }; // rica sob carga real
+
+        ac.IngestT4000(rica, 10.0);  // começou agora
+        Assert.Null(ac.GetMensagemPrincipal());
+        ac.IngestT4000(rica, 10.5);  // 0.5s: ainda não
+        Assert.Null(ac.GetMensagemPrincipal());
+        ac.IngestT4000(rica, 11.0);  // 1.0s contínuo → avisa
+        Assert.Equal("MISTURA_RICA", ac.GetMensagemPrincipal()!.Id);
+    }
+
+    [Fact]
+    public void ALR_15_Rica_transitoria_reseta_o_cronometro()
+    {
+        var ac = new AlertasCriticos();
+        var rica  = new AmostraAlerta { Lambda = 0.6, Rpm = 4000, TpsPct = 50 };
+        var limpa = new AmostraAlerta { Lambda = 0.9, Rpm = 4000, TpsPct = 50 }; // mistura ok
+
+        ac.IngestT4000(rica,  0.0);
+        ac.IngestT4000(rica,  0.8);   // quase 1s
+        ac.IngestT4000(limpa, 0.9);   // quebrou a mistura rica → zera o cronômetro
+        Assert.Null(ac.GetMensagemPrincipal());
+        ac.IngestT4000(rica,  1.5);   // recomeçou a contar em 1.5
+        Assert.Null(ac.GetMensagemPrincipal());
+        ac.IngestT4000(rica,  2.5);   // 1s desde o recomeço → avisa
+        Assert.Equal("MISTURA_RICA", ac.GetMensagemPrincipal()!.Id);
+    }
 }

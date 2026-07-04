@@ -382,7 +382,7 @@ if (File.Exists(barrasPath))
         foreach (var e in eventos2)
         {
             if (soDaJanela && (e.T < lapStart || e.T > lapEnd)) continue; // só a janela escolhida
-            if (e.Motor) { maestroT.IngestMotor(e.Rpm, e.A!); lastRpm = e.Rpm; lastMotorT = e.T; }
+            if (e.Motor) { maestroT.IngestMotor(e.Rpm, e.A!, e.T); lastRpm = e.Rpm; lastMotorT = e.T; }
             else { maestroT.IngestGps(e.G!); lastGpsT = e.T; }
             curva = maestroT.CurvaAtualNome ?? curva;
             var rel = e.T - lapStart;

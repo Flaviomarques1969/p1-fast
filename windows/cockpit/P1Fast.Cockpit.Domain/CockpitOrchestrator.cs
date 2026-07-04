@@ -87,8 +87,10 @@ public sealed class CockpitOrchestrator
 
     // ── Motor ──────────────────────────────────────────────────────
 
-    /// <summary>Ingere uma amostra de motor: atualiza luz de marcha + alertas + chuva térmica.</summary>
-    public void IngestMotor(double rpm, AmostraAlerta alerta)
+    /// <summary>Ingere uma amostra de motor: atualiza luz de marcha + alertas + chuva térmica.
+    /// <paramref name="tSeg"/> = relógio monotônico em segundos (ao vivo: Stopwatch; replay:
+    /// tempo da sessão). Liga a histerese temporal do óleo/rica (bloco 2b); se null, avalia cru.</summary>
+    public void IngestMotor(double rpm, AmostraAlerta alerta, double? tSeg = null)
     {
         if (_motorMudo) { _motorMudo = false; _alertas.ClearManual("SEM_DADOS"); } // motor voltou (M1)
         var dec = LiveDataBridge.RpmToShift(rpm, _limites);
@@ -98,7 +100,7 @@ public sealed class CockpitOrchestrator
         // Sem água (sensor ausente) → Off. O escandaloso ≥70/≥80 é do AlertasCriticos.
         _cockpit.SetChuva(ChuvaTermica.Avaliar(alerta.WaterTempC, _cortesChuva));
 
-        _alertas.IngestT4000(alerta);
+        _alertas.IngestT4000(alerta, tSeg);
         AtualizarMensagem();
     }
 

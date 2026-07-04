@@ -461,9 +461,10 @@ public sealed partial class MainWindow : Window
         _barraVoltasAplicada = false;   // redesenha a barra de voltas (placeholder) nesta sessão/loop
     }
 
-    /// <summary>Amostra de motor (rotação + dados pros alertas). Thread-safe.</summary>
-    public void AlimentarMotor(double rpm, AmostraAlerta alerta)
-        => DispatcherQueue.TryEnqueue(() => _orquestrador?.IngestMotor(rpm, alerta));
+    /// <summary>Amostra de motor (rotação + dados pros alertas). Thread-safe.
+    /// <paramref name="tSeg"/> = relógio monotônico (s) pra histerese 2b; passe o TMono do sample.</summary>
+    public void AlimentarMotor(double rpm, AmostraAlerta alerta, double? tSeg = null)
+        => DispatcherQueue.TryEnqueue(() => _orquestrador?.IngestMotor(rpm, alerta, tSeg));
 
     /// <summary>Amostra de GPS (curva atual + bolinha + coach). Thread-safe.</summary>
     public void AlimentarGps(AmostraGps amostra)

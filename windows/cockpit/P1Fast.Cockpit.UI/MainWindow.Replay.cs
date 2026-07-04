@@ -127,7 +127,7 @@ public sealed partial class MainWindow
             var ev = _replayEventos[_replayIdx++];
             if (ev.IsMotor)
             {
-                _orquestrador.IngestMotor(ev.Rpm, ev.Alerta ?? new AmostraAlerta());
+                _orquestrador.IngestMotor(ev.Rpm, ev.Alerta ?? new AmostraAlerta(), ev.TWallMs / 1000.0); // tempo da SESSÃO (não do replay 8×) p/ histerese 2b
                 _ultimaAlerta = ev.Alerta;
                 _ultimoMotorTick = Environment.TickCount64;
             }
