@@ -36,7 +36,9 @@ public sealed class PlanoStintReader
 
     /// <summary>Cria um leitor a partir do ambiente (chave P1FAST_SUPABASE_ANON — mesmo
     /// padrão do Heartbeat/Upload). Devolve null se não há chave: a barra segue no
-    /// placeholder, 100% local. NUNCA hardcode a chave.</summary>
+    /// placeholder, 100% local. NUNCA hardcode a chave. A URL também aceita override
+    /// por env (P1FAST_SUPABASE_URL) — validação local com stub HTTP sem tocar banco
+    /// (decisão 2026-07-04: não existe banco de teste; produção é trava).</summary>
     public static PlanoStintReader? DoAmbiente(HttpClient http, string? url = null, Action<string>? log = null)
     {
         var anon = Environment.GetEnvironmentVariable("P1FAST_SUPABASE_ANON");
@@ -44,6 +46,12 @@ public sealed class PlanoStintReader
         {
             log?.Invoke("[plano-stint] sem P1FAST_SUPABASE_ANON — barra usa placeholder.");
             return null;
+        }
+        var urlEnv = Environment.GetEnvironmentVariable("P1FAST_SUPABASE_URL");
+        if (url is null && !string.IsNullOrWhiteSpace(urlEnv))
+        {
+            log?.Invoke($"[plano-stint] URL da env: {urlEnv}");
+            url = urlEnv;
         }
         return new PlanoStintReader(http, anon, url, log);
     }

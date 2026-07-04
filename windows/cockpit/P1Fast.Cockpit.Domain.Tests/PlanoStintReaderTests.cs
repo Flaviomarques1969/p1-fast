@@ -158,4 +158,32 @@ public class PlanoStintReaderTests
             Environment.SetEnvironmentVariable("P1FAST_SUPABASE_ANON", original);
         }
     }
+
+    [Fact]
+    public async Task DoAmbiente_UrlDaEnv_RedirecionaAsRequisicoes()
+    {
+        // Override P1FAST_SUPABASE_URL (validação local com stub, 2026-07-04): a
+        // requisição tem que ir pra URL da env, não pra produção.
+        var origAnon = Environment.GetEnvironmentVariable("P1FAST_SUPABASE_ANON");
+        var origUrl  = Environment.GetEnvironmentVariable("P1FAST_SUPABASE_URL");
+        try
+        {
+            Environment.SetEnvironmentVariable("P1FAST_SUPABASE_ANON", "chave-do-ambiente");
+            Environment.SetEnvironmentVariable("P1FAST_SUPABASE_URL", "http://localhost:8123/");
+
+            Uri? chamada = null;
+            var http = new HttpClient(new FakeHandler(req => { chamada = req.RequestUri; return Ok("[]"); }));
+            var reader = PlanoStintReader.DoAmbiente(http);
+            Assert.NotNull(reader);
+
+            await reader!.BuscarAsync(PlanoStintReader.CarroIdBubi);
+            Assert.NotNull(chamada);
+            Assert.StartsWith("http://localhost:8123/rest/v1/", chamada!.ToString());
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("P1FAST_SUPABASE_ANON", origAnon);
+            Environment.SetEnvironmentVariable("P1FAST_SUPABASE_URL", origUrl);
+        }
+    }
 }
