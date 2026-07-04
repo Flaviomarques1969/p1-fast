@@ -489,9 +489,7 @@ public sealed partial class MainWindow : Window
 
     private static readonly StintBlockState P = StintBlockState.Pending;
     private static readonly StintBlockState N = StintBlockState.Neutral;
-    private static readonly StintBlockState F = StintBlockState.Faster;
     private static readonly StintBlockState S = StintBlockState.Slower;
-    private static readonly StintBlockState BS = StintBlockState.BestStint;
     private static readonly StintBlockState BA = StintBlockState.BestAlltime;
     private static readonly StintBlockState C = StintBlockState.Current;
 
@@ -689,7 +687,12 @@ public sealed partial class MainWindow : Window
         if (s.FreioAtualM > 0)
             _cockpitState.SetApexPonto("freio", estado: s.FreioEstado, atualM: s.FreioAtualM, refM: s.FreioRefM);
         if (s.ApiceKmh > 0)
-            _cockpitState.SetApexPonto("apice", estado: s.ApiceEstado, valorKmh: s.ApiceKmh);
+            // Cenas antigas guardam km/h, mas a BOLA (gap 5) mostra DISTÂNCIA ao ápice ideal +
+            // direção. O demo passa valores representativos do estado: na mira = 1,4 m à frente;
+            // fora = 7,5 m atrás-esquerda (exercita rotação, cor e número com 1 casa).
+            _cockpitState.SetApexPonto("apice", estado: s.ApiceEstado,
+                distM: s.ApiceEstado == ApexEstado.OkMelhor ? 1.4 : 7.5,
+                angleDeg: s.ApiceEstado == ApexEstado.OkMelhor ? 0 : 205);
 
         if (s.MsgTipo is { } tipo && !string.IsNullOrEmpty(s.MsgTexto))
             _cockpitState.ShowMessage(tipo, s.MsgTexto);
@@ -1162,28 +1165,77 @@ public sealed partial class MainWindow : Window
         ApplyApexPonto(ApexEntradaValor, apex.Entrada, formatKmh: false);
         ApplyApexFreio(ApexFreioValor,   apex.Freio);
         ApplyApexPonto(ApexVminValor,    apex.Vmin,    formatKmh: false); // Vmin: km/h, verde/vermelho vs melhor
-        ApplyApexApice(ApexApiceValor,   apex.Apice);
+        ApplyApexApice(apex.Apice);
         ApplyApexPonto(ApexSaidaValor,   apex.Saida,   formatKmh: false);
     }
 
-    // Ápice mostra a distância da bolinha ao ápice ideal, em metros.
-    private static void ApplyApexApice(Microsoft.UI.Xaml.Controls.TextBlock text, ApexPonto p)
+    // GAP 5 — bolinha do ápice (port do _renderApexApice, cockpit-renderer.js:226-251).
+    // Número central = distância ao ápice ideal (m): 1 casa abaixo de 10 m, vírgula
+    // pt-BR, sem unidade. Ângulo gira o satélite (0 = frente = topo do anel). Chamada
+    // a ~25 Hz (AtualizarBolinha por amostra GPS): número/ângulo mudam direto; cor e
+    // pulso SÓ na transição de estado (senão o Storyboard reiniciaria a cada amostra).
+    private ApexEstado? _bolaEstadoAplicado;
+    private Storyboard? _bolaPulse;
+
+    private void ApplyApexApice(ApexPonto p)
     {
-        if (p.DistM is { } d)
+        if (p.DistM is { } d && double.IsFinite(d))
+            ApiceBolaNum.Text = d >= 10
+                ? d.ToString("0", System.Globalization.CultureInfo.InvariantCulture)
+                : d.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',');
+
+        if (p.AngleDeg is { } a && double.IsFinite(a))
+            ApiceBolaAngulo.Angle = a;
+
+        if (_bolaEstadoAplicado == p.Estado) return;
+        _bolaEstadoAplicado = p.Estado;
+
+        _bolaPulse?.Stop();
+        _bolaPulse = null;
+        ApiceBolaSatGroup.Opacity = 1.0;
+
+        switch (p.Estado)
         {
-            text.Text = $"{d:0} m";
-            text.Foreground = new SolidColorBrush(ColorForApexEstado(p.Estado));
+            case ApexEstado.OkMelhor: // na mira (≤2 m): verde, pulso calmo 1,6 s (web apice-pulse-ok)
+                ApiceBolaSat.Fill = new SolidColorBrush(Bom);
+                ApiceBolaSatGlow.Fill = Glow(Bom);
+                ApiceBolaSatGlow.Opacity = 1.0;
+                ApiceBolaNum.Foreground = new SolidColorBrush(Bom);
+                StartBolaPulse(fromOpacity: 0.7, halfMs: 800);
+                break;
+            case ApexEstado.OkPior: // fora da mira: vermelho, pulso rápido 0,85 s (web apice-pulse-bad)
+                ApiceBolaSat.Fill = new SolidColorBrush(Erro);
+                ApiceBolaSatGlow.Fill = Glow(Erro);
+                ApiceBolaSatGlow.Opacity = 1.0;
+                ApiceBolaNum.Foreground = new SolidColorBrush(Erro);
+                StartBolaPulse(fromOpacity: 0.75, halfMs: 425);
+                break;
+            default: // pendente: satélite cinza sem pulso; número apagado (sem dado) ou mudo (dado velho)
+                ApiceBolaSat.Fill = new SolidColorBrush(BolaSatCinza);
+                ApiceBolaSatGlow.Opacity = 0.0;
+                ApiceBolaNum.Foreground = new SolidColorBrush(p.DistM is null ? Faint : Muted);
+                break;
         }
-        else if (p.ValorKmh is { } kmh)
+    }
+
+    private static readonly Color BolaSatCinza = Color.FromArgb(0xFF, 0x55, 0x55, 0x55);
+
+    // Pulso da bolinha: opacidade do grupo (satélite + glow) oscilando em seno,
+    // autoreverse infinito — mesmo desenho dos keyframes apice-pulse-ok/bad do web.
+    private void StartBolaPulse(double fromOpacity, int halfMs)
+    {
+        var anim = new DoubleAnimation
         {
-            text.Text = kmh.ToString("0");
-            text.Foreground = new SolidColorBrush(ColorForApexEstado(p.Estado));
-        }
-        else
-        {
-            text.Text = "—";
-            text.Foreground = new SolidColorBrush(Faint);
-        }
+            From = fromOpacity, To = 1.0,
+            Duration = new Duration(TimeSpan.FromMilliseconds(halfMs)),
+            AutoReverse = true, RepeatBehavior = RepeatBehavior.Forever,
+            EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut },
+        };
+        Storyboard.SetTarget(anim, ApiceBolaSatGroup);
+        Storyboard.SetTargetProperty(anim, "Opacity");
+        _bolaPulse = new Storyboard();
+        _bolaPulse.Children.Add(anim);
+        _bolaPulse.Begin();
     }
 
     private static void ApplyApexPonto(Microsoft.UI.Xaml.Controls.TextBlock text, ApexPonto p, bool formatKmh)
