@@ -39,6 +39,10 @@ public sealed record CockpitStateModel(
     /// <summary>Luz de freio lateral (preenchimento + flash) + resultado da frenagem.</summary>
     public FreioState Freio { get; init; } = FreioState.Default();
 
+    /// <summary>Fase da chuva térmica (água do motor → aquecimento azul / cool down
+    /// vermelho; spec 2026-07-04). Off = sem chuva (janela ideal ou sem dado vivo).</summary>
+    public FaseChuva Chuva { get; init; } = FaseChuva.Off;
+
     /// <summary>Retorna o estado default (espelha o que o mockup carrega ao boot).</summary>
     public static CockpitStateModel Default() => new(
         TrechoStatus: TrechoStatus.Neutro,

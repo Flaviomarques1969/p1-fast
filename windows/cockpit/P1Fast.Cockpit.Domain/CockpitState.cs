@@ -217,6 +217,17 @@ public sealed class CockpitState
         Emit(prev, new[] { "acao" });
     }
 
+    /// <summary>Fase da chuva térmica (água do motor). Chamado por amostra de motor
+    /// (~10 Hz): só emite quando a fase MUDA — a tela não repinta à toa.</summary>
+    public void SetChuva(FaseChuva fase)
+    {
+        AssertEnumDefined(fase, nameof(fase));
+        if (_state.Chuva == fase) return;
+        var prev = _state;
+        _state = prev with { Chuva = fase };
+        Emit(prev, new[] { "chuva" });
+    }
+
     /// <summary>
     /// Atualiza um apex ponto (entrada/freio/apice/pace/saida) com campos parciais —
     /// só os campos informados mudam, o resto é preservado (merge, igual ao JS

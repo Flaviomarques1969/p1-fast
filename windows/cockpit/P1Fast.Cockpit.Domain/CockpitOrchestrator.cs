@@ -56,10 +56,14 @@ public sealed class CockpitOrchestrator
     public string EstadoDoTrecho(string segId) => _estadoTrecho.GetValueOrDefault(segId, "");
     public string? CurvaAtualId => _segAtual;
 
-    public CockpitOrchestrator(CockpitState cockpit, IReadOnlyList<TrechoSegmento>? segments = null, LiveLimits? limites = null)
+    // Cortes da chuva térmica (parametrizáveis por carro — default Bubi).
+    private readonly CortesChuvaTermica _cortesChuva;
+
+    public CockpitOrchestrator(CockpitState cockpit, IReadOnlyList<TrechoSegmento>? segments = null, LiveLimits? limites = null, CortesChuvaTermica? cortesChuva = null)
     {
         _cockpit = cockpit ?? throw new ArgumentNullException(nameof(cockpit));
         _limites = limites ?? LiveLimits.Bubi;
+        _cortesChuva = cortesChuva ?? CortesChuvaTermica.Bubi;
         _alertas = new AlertasCriticos();
         _segPorId = segments?.ToDictionary(s => s.Id, s => s) ?? new();
         if (segments is { Count: > 0 })
@@ -83,12 +87,16 @@ public sealed class CockpitOrchestrator
 
     // ── Motor ──────────────────────────────────────────────────────
 
-    /// <summary>Ingere uma amostra de motor: atualiza luz de marcha + alertas.</summary>
+    /// <summary>Ingere uma amostra de motor: atualiza luz de marcha + alertas + chuva térmica.</summary>
     public void IngestMotor(double rpm, AmostraAlerta alerta)
     {
         if (_motorMudo) { _motorMudo = false; _alertas.ClearManual("SEM_DADOS"); } // motor voltou (M1)
         var dec = LiveDataBridge.RpmToShift(rpm, _limites);
         _cockpit.ApplyShift(dec.Mode, dec.Level);
+
+        // Chuva térmica (spec 2026-07-04): a fase segue a ÁGUA DO MOTOR desta amostra.
+        // Sem água (sensor ausente) → Off. O escandaloso ≥70/≥80 é do AlertasCriticos.
+        _cockpit.SetChuva(ChuvaTermica.Avaliar(alerta.WaterTempC, _cortesChuva));
 
         _alertas.IngestT4000(alerta);
         AtualizarMensagem();
@@ -116,6 +124,7 @@ public sealed class CockpitOrchestrator
                 _alertas.IngestT4000(new AmostraAlerta()); // amostra vazia → remove os automáticos do motor
                 _alertas.RaiseManual("SEM_DADOS");
                 _cockpit.ApplyShift(ShiftMode.Off, 0);      // sem RPM vivo → luz de marcha apaga
+                _cockpit.SetChuva(FaseChuva.Off);           // chuva nunca cai por água VELHA (§9)
             }
             else _alertas.ClearManual("SEM_DADOS");
             mudou = true;
