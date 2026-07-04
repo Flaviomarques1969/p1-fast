@@ -58,6 +58,7 @@ public sealed partial class MainWindow
     private Storyboard? _chuvaFade;
     private Storyboard? _splashFlicker;
     private Microsoft.UI.Composition.CompositionPropertySet? _chuvaClock;
+    private double _chuvaOpacidadeAlvo;   // último alvo do cross-fade (From confiável; Stop reverteria pra base)
 
     /// <summary>Aplica a fase vinda do cérebro. Nasce preguiçoso: os 180 retângulos e as
     /// 90 animações só existem depois da PRIMEIRA fase ≠ Off.</summary>
@@ -74,15 +75,21 @@ public sealed partial class MainWindow
         var quente = fase is FaseChuva.CooldownLeve or FaseChuva.CooldownMedio or FaseChuva.CooldownAlto;
         if (fase != FaseChuva.Off && quente != _chuvaQuente) RetargetChuva(quente);
 
-        // Halo por fase (§6.1): aquece 0.85 (0.30 no -leve) · esfria 0.75. No Off a camada
-        // inteira desce a 0, então o halo só precisa estar certo pras fases visíveis.
         if (fase != FaseChuva.Off)
+        {
+            // Volta a compor a camada ANTES de fazer o fade-in (foi colapsada no Off pra
+            // não gastar GPU rodando 90 gotas invisíveis na pista) e retoma os respingos.
+            RainLayer.Visibility = Visibility.Visible;
+            _splashFlicker?.Resume();
+
+            // Halo por fase (§6.1): aquece 0.85 (0.30 no -leve) · esfria 0.75.
             RainHalo.Opacity = fase switch
             {
                 FaseChuva.WarmupLeve => 0.30,
                 FaseChuva.WarmupMedio or FaseChuva.WarmupAlto => 0.85,
                 _ => 0.75,
             };
+        }
 
         AnimarChuvaOpacidade(OpacidadeGlobal(fase));
     }
@@ -99,13 +106,21 @@ public sealed partial class MainWindow
         _                       => 0.0,
     };
 
-    // Cross-fade de fase: 900 ms ease-out (§9) — nunca corta seco.
+    // Cross-fade de fase: 900 ms ease-out (§9) — nunca corta seco. From EXPLÍCITO: no WinUI
+    // Storyboard.Stop() reverte a Opacity pro valor BASE (0) — sem From, todo fade pularia
+    // pra preto e subiria (flash). Uso o último alvo como From (fases mudam devagar → o fade
+    // anterior já fechou, então o alvo anterior == valor visível). Ao chegar em 0, COLAPSA a
+    // camada (para de compor as 90 gotas) e pausa os respingos — nada de GPU invisível.
     private void AnimarChuvaOpacidade(double alvo)
     {
+        var de = _chuvaOpacidadeAlvo;
+        _chuvaOpacidadeAlvo = alvo;
         _chuvaFade?.Stop();
+
         var anim = new DoubleAnimation
         {
-            To = alvo, // From omitido = parte do valor corrente (cross-fade de onde estiver)
+            From = de,
+            To = alvo,
             Duration = new Duration(TimeSpan.FromMilliseconds(900)),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
         };
@@ -113,6 +128,16 @@ public sealed partial class MainWindow
         Storyboard.SetTargetProperty(anim, "Opacity");
         _chuvaFade = new Storyboard();
         _chuvaFade.Children.Add(anim);
+        if (alvo <= 0)
+            _chuvaFade.Completed += (_, _) =>
+            {
+                // Só colapsa se AINDA estamos em Off (uma fase nova pode ter chegado no meio).
+                if (_chuvaOpacidadeAlvo <= 0)
+                {
+                    RainLayer.Visibility = Visibility.Collapsed;
+                    _splashFlicker?.Pause();
+                }
+            };
         _chuvaFade.Begin();
     }
 

@@ -51,19 +51,20 @@ public class LuzFreioFechamentoTests
     }
 
     [Fact]
-    public void FCH_02_Chave_divergente_adota_o_onset_do_vizinho_colado()
+    public void FCH_02_Chave_divergente_nao_fecha_e_e_seguro()
     {
         var (luz, _, _) = NovaLuzComPar();
         AproximarDeA(luz);                        // onset gravado sob "cA" (mais próxima)
 
-        // O detector fecha o par pelo OUTRO id ("cB", ápice a ~167 m): adota o onset de cA.
-        var r = luz.FecharTrecho("cB", tempoS: 10);
+        // O detector fecha o par pelo OUTRO id ("cB"): NÃO adota o onset de cA (seria
+        // comparar a freada medida a outro ápice — dado errado). Retorno SEGURO = null
+        // (some da tela), NUNCA um ANTES/DEPOIS mentiroso.
+        Assert.Null(luz.FecharTrecho("cB", tempoS: 10));
+
+        // O onset de cA continua intacto (não foi consumido por cB) e fecha certo por cA.
+        var r = luz.FecharTrecho("cA", tempoS: 10);
         Assert.NotNull(r);
         Assert.Equal("REFERÊNCIA", r!.Palavra);
-
-        // A adoção também consome: nem cB nem cA têm freada sobrando.
-        Assert.Null(luz.FecharTrecho("cB", tempoS: 10));
-        Assert.Null(luz.FecharTrecho("cA", tempoS: 10));
     }
 
     [Fact]

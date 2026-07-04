@@ -1183,6 +1183,22 @@ public sealed partial class MainWindow : Window
 
     private void ApplyApexApice(ApexPonto p)
     {
+        // Pendente = SEM leitura viva de GPS (boot ou GPS emudeceu): traço cinza, sem
+        // pulso — NUNCA número velho na tela (§9). A bolinha só mostra número/cor com
+        // leitura viva (AtualizarBolinha sempre entrega OkMelhor/OkPior).
+        if (p.Estado is not (ApexEstado.OkMelhor or ApexEstado.OkPior))
+        {
+            _bolaEstadoAplicado = p.Estado;
+            _bolaPulse?.Stop();
+            _bolaPulse = null;
+            ApiceBolaSatGroup.Opacity = 1.0;
+            ApiceBolaSat.Fill = new SolidColorBrush(BolaSatCinza);
+            ApiceBolaSatGlow.Opacity = 0.0;
+            ApiceBolaNum.Text = "—";
+            ApiceBolaNum.Foreground = new SolidColorBrush(Faint);
+            return;
+        }
+
         if (p.DistM is { } d && double.IsFinite(d))
             ApiceBolaNum.Text = d >= 10
                 ? d.ToString("0", System.Globalization.CultureInfo.InvariantCulture)
@@ -1198,27 +1214,21 @@ public sealed partial class MainWindow : Window
         _bolaPulse = null;
         ApiceBolaSatGroup.Opacity = 1.0;
 
-        switch (p.Estado)
+        if (p.Estado == ApexEstado.OkMelhor) // na mira (≤2 m): verde, pulso calmo 1,6 s (web apice-pulse-ok)
         {
-            case ApexEstado.OkMelhor: // na mira (≤2 m): verde, pulso calmo 1,6 s (web apice-pulse-ok)
-                ApiceBolaSat.Fill = new SolidColorBrush(Bom);
-                ApiceBolaSatGlow.Fill = Glow(Bom);
-                ApiceBolaSatGlow.Opacity = 1.0;
-                ApiceBolaNum.Foreground = new SolidColorBrush(Bom);
-                StartBolaPulse(fromOpacity: 0.7, halfMs: 800);
-                break;
-            case ApexEstado.OkPior: // fora da mira: vermelho, pulso rápido 0,85 s (web apice-pulse-bad)
-                ApiceBolaSat.Fill = new SolidColorBrush(Erro);
-                ApiceBolaSatGlow.Fill = Glow(Erro);
-                ApiceBolaSatGlow.Opacity = 1.0;
-                ApiceBolaNum.Foreground = new SolidColorBrush(Erro);
-                StartBolaPulse(fromOpacity: 0.75, halfMs: 425);
-                break;
-            default: // pendente: satélite cinza sem pulso; número apagado (sem dado) ou mudo (dado velho)
-                ApiceBolaSat.Fill = new SolidColorBrush(BolaSatCinza);
-                ApiceBolaSatGlow.Opacity = 0.0;
-                ApiceBolaNum.Foreground = new SolidColorBrush(p.DistM is null ? Faint : Muted);
-                break;
+            ApiceBolaSat.Fill = new SolidColorBrush(Bom);
+            ApiceBolaSatGlow.Fill = Glow(Bom);
+            ApiceBolaSatGlow.Opacity = 1.0;
+            ApiceBolaNum.Foreground = new SolidColorBrush(Bom);
+            StartBolaPulse(fromOpacity: 0.7, halfMs: 800);
+        }
+        else // OkPior — fora da mira: vermelho, pulso rápido 0,85 s (web apice-pulse-bad)
+        {
+            ApiceBolaSat.Fill = new SolidColorBrush(Erro);
+            ApiceBolaSatGlow.Fill = Glow(Erro);
+            ApiceBolaSatGlow.Opacity = 1.0;
+            ApiceBolaNum.Foreground = new SolidColorBrush(Erro);
+            StartBolaPulse(fromOpacity: 0.75, halfMs: 425);
         }
     }
 

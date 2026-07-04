@@ -172,32 +172,14 @@ public sealed class LuzFreio
         return res;
     }
 
-    // L1: o onset é gravado pela curva MAIS PRÓXIMA na aproximação (Atualizar), que em
-    // pares de ápices vizinhos (<220 m — existem em Brasília) pode divergir do segId que
-    // o detector usa no fechamento. Aqui: tenta a chave exata; faltou → adota o onset do
-    // VIZINHO geométrico (ápice a <220 m), que é a MESMA freada física atribuída à outra
-    // chave do par. O onset é CONSUMIDO (Remove) nos dois casos: fechar de novo sem nova
-    // aproximação não reaproveita freada velha de outra volta (resultado honesto ou nada).
+    // L1: o onset da freada é CONSUMIDO ao fechar o trecho (Remove, não TryGetValue) — sem
+    // nova aproximação, fechar de novo NÃO reaproveita a freada de uma volta anterior
+    // (resultado honesto ou nada). Se a chave do detector divergir da que gravou o onset
+    // (pares de ápices <220 m em Brasília, quando a MaisProxima aponta pro vizinho), o
+    // resultado apenas NÃO fecha (some da tela) — retorno SEGURO. Deliberadamente NÃO se
+    // adota o onset do vizinho: seria comparar a freada medida a OUTRO ápice contra a
+    // referência deste, podendo mostrar um ANTES/DEPOIS ERRADO ao piloto (§9 — nunca dado
+    // errado). Some-da-tela é melhor que número mentiroso.
     private bool TomarOnset(string segId, out double onset)
-    {
-        if (_onset.Remove(segId, out onset)) return double.IsFinite(onset);
-
-        TrechoSegmento? seg = null;
-        foreach (var c in _segs) if (c.Id == segId) { seg = c; break; }
-        if (seg is null) return false;
-
-        TrechoSegmento? viz = null;
-        var vd = double.PositiveInfinity;
-        foreach (var c in _segs)
-        {
-            if (c.Id == segId) continue;
-            var d = Ghost.DistMeters(seg.ApicePoint, c.ApicePoint);
-            if (d < vd) { vd = d; viz = c; }
-        }
-        if (viz is not null && vd < 220 && _onset.Remove(viz.Id, out onset))
-            return double.IsFinite(onset);
-
-        onset = double.NaN;
-        return false;
-    }
+        => _onset.Remove(segId, out onset) && double.IsFinite(onset);
 }

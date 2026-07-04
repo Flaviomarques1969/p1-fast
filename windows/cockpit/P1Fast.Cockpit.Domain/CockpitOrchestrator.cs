@@ -132,7 +132,16 @@ public sealed class CockpitOrchestrator
         if (gpsSilencioso != _gpsMudo)
         {
             _gpsMudo = gpsSilencioso;
-            if (gpsSilencioso) _alertas.RaiseManual("SEM_GPS"); else _alertas.ClearManual("SEM_GPS");
+            if (gpsSilencioso)
+            {
+                _alertas.RaiseManual("SEM_GPS");
+                // Bolinha do ápice NUNCA pulsa com dado morto (§9): sem GPS vivo, volta a
+                // pendente (satélite cinza, "—", sem pulso) e o mínimo zera pra a próxima
+                // passagem recomeçar limpo quando o GPS voltar.
+                _bolinhaMinDist = double.PositiveInfinity;
+                _cockpit.SetApexPonto("apice", estado: ApexEstado.Pendente);
+            }
+            else _alertas.ClearManual("SEM_GPS");
             mudou = true;
         }
         if (mudou) AtualizarMensagem();
@@ -188,11 +197,14 @@ public sealed class CockpitOrchestrator
                 break;
             case "apice-cruzou":
                 _subAtual = "apice";
-                _pApi = ev.Kmh;
+                _pApi = ev.Kmh; // guardado só p/ referência da passagem (refPontos), NÃO pra tela
                 // Congela o marco do ápice na 1ª passagem pelo ápice (M2): ângulo/dist do
                 // CRUZAMENTO, não o da bolinha ao vivo lida perto da saída (que gira p/ ~180°).
                 if (_apiceT is null) { _apiceT = ev.T; _apiceAngulo = ev.AngleFromIdealDeg; _apiceDist = ev.DistFromIdealM; }
-                PontoVelocidade("apice", ev.Kmh, r => r.Api);
+                // NÃO escreve velocidade no ponto "apice": a BOLINHA (AtualizarBolinha) é a
+                // dona única dessa célula (Flávio 2026-07-04). Antes, PontoVelocidade("apice")
+                // sobrescrevia o estado da bolinha (distância) pelo estado de VELOCIDADE no
+                // cruzamento → cor errada. A velocidade do ápice vira só _pApi (referência).
                 break;
             case "saida-cruzou":
                 _pSai = ev.Kmh;
