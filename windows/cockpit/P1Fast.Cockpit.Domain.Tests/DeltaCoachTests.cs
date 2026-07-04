@@ -82,9 +82,10 @@ public class DeltaCoachTests
     }
 
     [Fact]
-    public void DC_05_Delta_zero_eh_BUSCAR_LIMITE()
+    public void DC_05_Delta_zero_nao_emite_frase()
     {
-        Assert.Equal("BUSCAR LIMITE", MensagensPedagogicas.Decidir(Res(0.0, "entrada", 0))!.Texto);
+        // spec v2 (Flávio 04/07): BUSCAR LIMITE saiu — delta ~zero não gera coach.
+        Assert.Null(MensagensPedagogicas.Decidir(Res(0.0, "entrada", 0)));
     }
 
     [Fact]
@@ -120,14 +121,15 @@ public class DeltaCoachTests
     }
 
     [Theory]
-    [InlineData(0,   "VIROU CEDO")]   // ápice à frente
-    [InlineData(90,  "VIROU POUCO")]  // ápice à direita
-    [InlineData(180, "VIROU TARDE")]  // ápice atrás
-    [InlineData(270, "VIROU MUITO")]  // ápice à esquerda
-    public void DC_10_Apice_ruim_mapeia_o_angulo_da_bolinha(double angulo, string esperado)
+    [InlineData(0)]    // ápice à frente
+    [InlineData(90)]   // ápice à direita
+    [InlineData(180)]  // ápice atrás
+    [InlineData(270)]  // ápice à esquerda
+    public void DC_10_Apice_ruim_nao_emite_frase_de_volante(double angulo)
     {
-        var m = MensagensPedagogicas.Decidir(Res(0.30, "apice", 0.30), new ContextoApice(angulo, 5));
-        Assert.Equal(esperado, m!.Texto);
+        // spec v2 (Flávio 04/07): as 4 VIROU saíram — o piloto corrige seguindo a BOLINHA
+        // do ápice (visual, gap 5). O ramo "apice" não emite frase, em qualquer ângulo.
+        Assert.Null(MensagensPedagogicas.Decidir(Res(0.30, "apice", 0.30), new ContextoApice(angulo, 5)));
     }
 
     [Fact]

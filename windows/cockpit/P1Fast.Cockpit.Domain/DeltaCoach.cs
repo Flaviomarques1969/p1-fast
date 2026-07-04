@@ -2,12 +2,13 @@
 //
 // Port fiel de:
 //   web/cockpit/delta-calculator.js     (calcularDelta: perda de tempo por sub-trecho)
-//   web/cockpit/mensagens-pedagogicas.js (decidirMensagemPedagogica: 17 frases)
+//   web/cockpit/mensagens-pedagogicas.js (decidirMensagemPedagogica)
 //
 // Compara a passagem ATUAL do trecho com a passagem de REFERÊNCIA (a melhor
 // histórica daquele carro+pneu) ponto a ponto, acumula a perda/ganho em cada
-// sub-trecho (entrada/freio/apice/pace/saida), e traduz o pior sub-trecho +
-// a bolinha do ápice numa frase aprovada ("FREOU CEDO", "VIROU POUCO"...).
+// sub-trecho (entrada/freio/apice/pace/saida), e traduz o pior sub-trecho numa
+// frase aprovada ("FREOU CEDO", "ACELERE MAIS"...). Spec v2 (Flávio 04/07): 8 frases;
+// o ápice NÃO gera mais frase de volante — o piloto corrige pela BOLINHA (visual, gap 5).
 
 namespace P1Fast.Cockpit.Domain;
 
@@ -109,18 +110,16 @@ public static class DeltaCalculator
 
 public static class MensagensPedagogicas
 {
+    // Spec v2 (Flávio 04/07): saíram BUSCAR LIMITE (12) e as 4 VIROU (03/04/06/07). O ápice
+    // deixou de ter frase de volante — o piloto corrige seguindo a BOLINHA do ápice (visual,
+    // gap 5, que FICA). Códigos 03/04/06/07/12 ficam vagos de propósito (são identificadores).
     public static readonly MensagemPedagogica FreouCedo     = new("01", "FREOU CEDO",     "Freio",      MsgTipo.Comunicacao);
     public static readonly MensagemPedagogica FreouTarde    = new("02", "FREOU TARDE",    "Freio",      MsgTipo.Comunicacao);
-    public static readonly MensagemPedagogica VirouPouco    = new("03", "VIROU POUCO",    "Volante",    MsgTipo.Comunicacao);
-    public static readonly MensagemPedagogica VirouMuito    = new("04", "VIROU MUITO",    "Volante",    MsgTipo.Comunicacao);
     public static readonly MensagemPedagogica AcelerouTarde = new("05", "ACELEROU TARDE", "Acelerador", MsgTipo.Comunicacao);
-    public static readonly MensagemPedagogica VirouTarde    = new("06", "VIROU TARDE",    "Volante",    MsgTipo.Comunicacao);
-    public static readonly MensagemPedagogica VirouCedo     = new("07", "VIROU CEDO",     "Volante",    MsgTipo.Comunicacao);
     public static readonly MensagemPedagogica PisouPouco    = new("08", "Acelere Mais",   "Acelerador", MsgTipo.Comunicacao);
     public static readonly MensagemPedagogica Recorde       = new("09", "RECORDE",        "Resultado",  MsgTipo.Comunicacao);
     public static readonly MensagemPedagogica ManteveLinha  = new("10", "MANTEVE LINHA",  "Resultado",  MsgTipo.Comunicacao);
     public static readonly MensagemPedagogica MelhorStint   = new("11", "MELHOR STINT",   "Resultado",  MsgTipo.Comunicacao);
-    public static readonly MensagemPedagogica BuscarLimite  = new("12", "BUSCAR LIMITE",  "Sugestão",   MsgTipo.Comunicacao);
     public static readonly MensagemPedagogica Registrando   = new("13", "Coletando Dados", "Sistema",   MsgTipo.Comunicacao);
 
     private const double DeltaZeroS            = 0.05;
@@ -158,8 +157,8 @@ public static class MensagensPedagogicas
             return MelhorStint;
         }
 
-        // Caso 3 — delta ~zero
-        if (!double.IsNaN(deltaTotalS) && Math.Abs(deltaTotalS) < DeltaZeroS) return BuscarLimite;
+        // Caso 3 — delta ~zero: sem frase (BUSCAR LIMITE saiu na spec v2, Flávio 04/07)
+        if (!double.IsNaN(deltaTotalS) && Math.Abs(deltaTotalS) < DeltaZeroS) return null;
 
         // Caso 4 — perdeu tempo: foco no pior sub-trecho
         if (string.IsNullOrEmpty(pior) || double.IsNaN(piorDeltaS) || piorDeltaS < SubTrechoMinS)
@@ -169,7 +168,7 @@ public static class MensagensPedagogicas
         {
             "entrada" => PisouPouco,
             "freio"   => ClassificarFreio(resultadoDelta),
-            "apice"   => ClassificarApice(contextoApice),
+            "apice"   => null,   // spec v2: sem frase de volante — a BOLINHA do ápice (visual) cobre
             "saida"   => AcelerouTarde,
             _         => null,
         };
@@ -182,14 +181,4 @@ public static class MensagensPedagogicas
         return entradaDelta < -0.02 ? FreouTarde : FreouCedo;
     }
 
-    private static MensagemPedagogica ClassificarApice(ContextoApice? ctx)
-    {
-        var angle = ctx?.AngleDeg;
-        if (angle is not { } ang || double.IsNaN(ang)) return VirouPouco;
-        var a = ((ang % 360) + 360) % 360;
-        if (a < 45 || a >= 315) return VirouCedo;   // ápice à frente = antecipou
-        if (a >= 45 && a < 135)  return VirouPouco;  // ápice à direita = não fechou
-        if (a >= 135 && a < 225) return VirouTarde;  // ápice atrás = atrasou
-        return VirouMuito;                            // ápice à esquerda = cortou demais
-    }
 }
