@@ -99,6 +99,19 @@ A fileira de blocos no **topo** do painel é a **barra de voltas do stint** (nã
 
 **Estado (2026-07-03):** os **tipos de bloco** já existem no `.exe` — aquecimento (laranja), planejada (slate), **box (magenta)**, cool down (azul) — exibidos com um **plano de EXEMPLO (placeholder)** enquanto o plano real do piloto **não está ligado** ao cockpit. Antes desta data a barra mapeava as 8 curvas por ritmo (era "barra de curvas", não de voltas). **Pendente:** ligar o `plano_stint` real + progressão volta-a-volta (volta atual/feita/a fazer). Código: `windows/cockpit/P1Fast.Cockpit.UI/MainWindow.xaml.cs` (enum `StintBlockState`, `PlanoStintPlaceholder`) e `MainWindow.Replay.cs` (`AtualizarStint`).
 
+**Atualização 2026-07-04:** o **plano real ESTÁ ligado** — `PlanoStint.cs` (parser + regra do dia fuso Brasília) + `PlanoStintReader.cs` (1ª leitura REST do `.exe`; chave `P1FAST_SUPABASE_ANON` e URL `P1FAST_SUPABASE_URL` por env; qualquer falha → placeholder) + `--carro-id` (default Bubi). **Validado ponta-a-ponta com stub local** (banco real pendente de envelope aprovado). Progressão volta-a-volta segue pendente (visual é decisão do Flávio).
+
+## 12. Chuva térmica (aquecimento/cool down) — IMPLANTADA no `.exe` (2026-07-04)
+Spec canônica: `SPEC_ELEMENTO_CHUVA_TERMICA.md` + `SPEC_TELA_AQUECIMENTO_RESFRIAMENTO.md` (iMac, canal `claude-comms`, pasta `specs/`). Sobre o painel inteiro cai uma **chuva** guiada pela **água do motor**: **azul ↘** = abaixo da janela ideal (aquecendo), **vermelha ↙** = acima (esquentando demais), intensidade decai perto do ideal e some dentro dele.
+- **Cérebro:** `Domain/ChuvaTermica.cs` — água → 7 fases (`FaseChuva`); cortes do Bubi **45/48/50–55(ideal=off)/65/70 °C** em `CortesChuvaTermica`, **parametrizáveis por carro** (ctor do maestro). Sem água / motor mudo → `Off` (nunca chove por dado velho — §9). Estado: `CockpitState.Chuva`.
+- **Visual:** `UI/MainWindow.Chuva.cs` + `RainLayer` no XAML — 90 gotas em 3 profundidades (valores 1:1 da spec), queda 100% GPU (Composition), halo topo/rodapé, respingos, cross-fade 900 ms.
+- **Escandaloso (água ≥70 "MOTOR AQUECENDO" / ≥80 "MOTOR QUENTE"):** NÃO é da camada da chuva — já é o **modo crítico** (§4; `AlertasCriticos` gravidade Super toma a tela). Uma conta, uma casa.
+
+## 13. Bolinha do ápice — na tela (2026-07-04, gap 5 autorizado 02/07)
+Célula ÁPICE da fileira da base = **anel cinza + satélite** que aponta pra ONDE ESTÁ o ápice ideal em relação ao carro (decisão Flávio 27/05: mostra a CORREÇÃO, "siga a bolinha"). Satélite em repouso no **TOPO** = ápice à frente (0°=frente, 90°=direita — `Ghost.ApexErrorAngleDeg`). **Número central = o ponto mais PRÓXIMO que o carro passou do ápice georreferenciado** (mínimo da passagem, zera por passagem — Flávio 04/07), 1 casa abaixo de 10 m, vírgula pt-BR, **sem unidade e SEM SINAL**. Verde (pulso 1,6 s) se passou a ≤2 m; vermelho (pulso 0,85 s) fora; cinza pendente.
+
+**Regra dura reforçada (Flávio 04/07): números canônicos NUNCA levam sinal/negativo — a direção/qualidade é COR** (padrão do freio: verde ±0,5 m / amarelo freou antes / vermelho freou depois).
+
 ---
 
 ### Verificado em (fontes — para auditoria)
