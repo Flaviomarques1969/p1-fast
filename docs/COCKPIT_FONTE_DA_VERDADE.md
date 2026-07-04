@@ -33,8 +33,8 @@ A tela que **o piloto vê dentro do carro**, num notebook Windows com tela de 10
 ## 2. De onde vêm os dados (3 fontes no carro)
 1. **Motor / injeção Injepro (você chama de T4000)** — lida pela **USB** do notebook.
    _Decisão 21/06: lê-se por USB, nunca por CAN. No código o protocolo USB aparece como "T3000" — é o mesmo aparelho._
-2. **GPS** — hoje pelo **iPhone** (1 vez por segundo). O **RaceBox** (25× por segundo, bem mais preciso) já está
-   programado e é a melhoria futura — entra quando for validado na pista; não é obrigatório pro primeiro funcionamento.
+2. **GPS** — pelo **RaceBox** (Bluetooth, 25× por segundo) no notebook. É a fonte de verdade do GPS hoje; o
+   alerta **"Sem GPS"** dispara quando o sinal do **RaceBox** falha (NÃO iPhone — correção spec v2, Flávio 04/07).
 3. **Câmera** (Osmo / iPhone) — é vídeo, vai por outro caminho (Daily.co); fica **fora** do painel de números.
 
 ## 3. O caminho do dado (uma linha)
