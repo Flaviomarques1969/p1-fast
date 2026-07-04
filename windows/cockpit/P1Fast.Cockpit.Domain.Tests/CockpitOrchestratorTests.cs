@@ -76,6 +76,35 @@ public class CockpitOrchestratorTests
         Assert.Equal(Tone.Erro, c.Get().Acao.Tone); // perdeu tempo
     }
 
+    [Fact]
+    public void ORC_10_Bolinha_registra_o_ponto_mais_proximo_da_passagem()
+    {
+        // Flávio 2026-07-04: o número da bolinha = o ponto mais PRÓXIMO que passou do
+        // ápice georreferenciado (mínimo da passagem), não a distância do instante.
+        var c = new CockpitState();
+        var orq = new CockpitOrchestrator(c, new[] { Curva() });
+        var t = 0.0;
+
+        // Passagem 1: chega a ~1,1 m do ápice (lng 0.00049) e se AFASTA antes de sair.
+        foreach (var lng in new[] { -0.0006, -0.0002, 0.0002, 0.00049, 0.0008, 0.0012, 0.0018 })
+        { orq.IngestGps(new AmostraGps(0, lng, 100, t)); t += 100; }
+
+        var apice = c.Get().Apex.Apice;
+        Assert.NotNull(apice.DistM);
+        Assert.True(apice.DistM! < 2, $"registrado = o mais próximo (~1,1 m), veio {apice.DistM:0.0}");
+        Assert.Equal(ApexEstado.OkMelhor, apice.Estado); // passou a ≤2 m: mira certa REGISTRADA
+
+        // Fecha a volta por cima e entra de novo: o registro ZERA (mínimo da NOVA passagem).
+        foreach (var lat in new[] { 0.002, 0.005 }) { orq.IngestGps(new AmostraGps(lat, 0.0018, 100, t)); t += 100; }
+        foreach (var lng in new[] { 0.0010, 0.0002, -0.0006 }) { orq.IngestGps(new AmostraGps(0.005, lng, 100, t)); t += 100; }
+        foreach (var lat in new[] { 0.002, 0.0 }) { orq.IngestGps(new AmostraGps(lat, -0.0006, 100, t)); t += 100; }
+        foreach (var lng in new[] { -0.0002, 0.0002 }) { orq.IngestGps(new AmostraGps(0, lng, 100, t)); t += 100; }
+
+        var deNovo = c.Get().Apex.Apice;
+        Assert.True(deNovo.DistM! > 10, $"nova passagem zera o registro (~33 m), veio {deNovo.DistM:0.0}");
+        Assert.Equal(ApexEstado.OkPior, deNovo.Estado);
+    }
+
     // H4 (auditoria 2026-07-02): o retag pelos marcos reais faz o sub 'saida' EXISTIR —
     // antes todos os pontos pós-ápice iam pro bucket 'apice' e "ACELEROU TARDE" era código
     // morto. Prova direta do port de retagSubsPorEventos (web live-data-bridge.js:187).

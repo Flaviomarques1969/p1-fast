@@ -233,6 +233,7 @@ public sealed class CockpitOrchestrator
         _pEnt = _pFre = _pApi = _pSai = null;
         _freadaT = _apiceT = _apiceAngulo = _apiceDist = null;
         _vminCorrente = double.PositiveInfinity;
+        _bolinhaMinDist = double.PositiveInfinity; // registro da bolinha zera POR PASSAGEM (mesma curva re-entrada inclusa)
     }
 
     // Atualiza a célula Vmin ao vivo: o menor kmh carregado no trecho até agora, verde se >=
@@ -369,6 +370,13 @@ public sealed class CockpitOrchestrator
 
     // ── Bolinha do ápice (contínua) ─────────────────────────────────
 
+    // Flávio 2026-07-04: o número REGISTRADO da bolinha é o ponto mais PRÓXIMO que o
+    // carro passou do ápice GEORREFERENCIADO — o mínimo da passagem, não a distância
+    // do instante (que subia de novo depois do ápice e "sujava" o registro). O ângulo
+    // continua ao vivo (a correção "siga a bolinha"). O mínimo zera em IniciarPassagem
+    // (por PASSAGEM — re-entrar na mesma curva também zera).
+    private double _bolinhaMinDist = double.PositiveInfinity;
+
     private void AtualizarBolinha(AmostraGps gps)
     {
         if (_segAtual is null || !_segPorId.TryGetValue(_segAtual, out var seg)) return;
@@ -379,6 +387,8 @@ public sealed class CockpitOrchestrator
             heading = Ghost.BearingDeg(new PontoGps(_lastGps.Lat, _lastGps.Lng), new PontoGps(gps.Lat, gps.Lng));
 
         var b = Ghost.CalcularBolinha(new PontoGps(gps.Lat, gps.Lng), heading, seg.ApicePoint);
-        _cockpit.SetApexPonto("apice", estado: b.Estado, distM: b.DistM, angleDeg: b.AngleDeg);
+        if (b.DistM < _bolinhaMinDist) _bolinhaMinDist = b.DistM;
+        var estado = _bolinhaMinDist <= 2 ? ApexEstado.OkMelhor : ApexEstado.OkPior; // mira certa se PASSOU a ≤2 m
+        _cockpit.SetApexPonto("apice", estado: estado, distM: _bolinhaMinDist, angleDeg: b.AngleDeg);
     }
 }

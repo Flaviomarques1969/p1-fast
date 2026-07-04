@@ -1256,19 +1256,23 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    // Freio = SOMENTE o delta (m) vs a melhor passagem (Flávio 2026-07-03): quanto você
-    // freou fora do ponto ideal, com sinal (+ = freou mais tarde/depois, − = freou antes).
-    // Cor pelo estado (verde no ponto / vermelho fora). SÓ com referência válida (estado
-    // ok-melhor/ok-pior); sem referência ainda = "—" (não inventa delta com ref defasada).
+    // Freio = o delta (m) vs a melhor passagem, SEM SINAL (Flávio 2026-07-04: canônicos
+    // NUNCA levam sinal/negativo — a DIREÇÃO é a COR): número absoluto, verde = no ponto
+    // (±0,5 m), amarelo = freou ANTES, vermelho = freou DEPOIS — mesma linguagem do número
+    // grande da direita (ApplyFreioResultado). SÓ com referência válida (ok-melhor/ok-pior);
+    // sem referência ainda = "—" (não inventa delta com ref defasada).
     private static void ApplyApexFreio(Microsoft.UI.Xaml.Controls.TextBlock text, ApexPonto p)
     {
         var comReferencia = p.Estado is ApexEstado.OkMelhor or ApexEstado.OkPior;
         if (comReferencia && p.AtualM is { } atual && p.RefM is { } refM)
         {
-            var d = (int)Math.Round(atual - refM, MidpointRounding.AwayFromZero);
-            var sinal = d > 0 ? "+" : "";
-            text.Text = $"{sinal}{d} m";
-            text.Foreground = new SolidColorBrush(ColorForApexEstado(p.Estado));
+            // atual/ref = distância da ENTRADA onde freou: maior = freou mais TARDE (depois).
+            var d = atual - refM;
+            var cor = Math.Abs(d) <= LuzFreio.FreioTolM ? Bom   // no ponto (±0,5 m)
+                    : d < 0                             ? Foco  // freou antes  → amarelo
+                    :                                     Erro; // freou depois → vermelho
+            text.Text = $"{Math.Abs((int)Math.Round(d, MidpointRounding.AwayFromZero))} m";
+            text.Foreground = new SolidColorBrush(cor);
         }
         else
         {
