@@ -103,5 +103,8 @@ Decisão do Flávio é "qualquer rpm avisa" — a histerese de partida não muda
 ## PENDÊNCIAS DE HARDWARE (não bloqueiam a Fase 1)
 Sensores de **pneu** (temp + pressão) e **câmbio** (temp) ainda não estão no carro. As mensagens A2 ficam latentes até instalar.
 
-## CAIXA DO TEXTO (padronização — pendente do Flávio)
-Só as 6 mensagens que o Flávio reescreveu viraram Title Case ("Motor Quente"); o resto segue em CAIXA ALTA. Definir se padroniza tudo depois (iMac leva ao Flávio).
+## CAIXA DO TEXTO — DECIDIDO (Flávio 2026-07-04): SENTENCE CASE
+**Todas** as mensagens (alertas + coach) em **primeira letra maiúscula, resto minúsculo**.
+Ex.: "Motor quente", "Óleo baixo", "Mistura pobre", "Falha cilindros", "Coletando dados", "Acelere mais".
+- Corrigir as 6 do bloco 1 que ficaram Title Case → "Motor quente" (não "Motor Quente"), "Falha cilindros", "Coletando dados", "Acelere mais", "Temperatura motor subindo". ("Desconectou" já ok.)
+- **Siglas preservadas** (padrão natural do sentence case): "Sem GPS", "BOX" pode virar "Box" (palavra comum, não sigla). Na dúvida de sigla, iMac decide pelo mais legível; regra geral = sentence case.
