@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mensagens do Piloto — Auditoria + Visão Final · P1 Fast</title>
+<style>
+  :root{
+    --bg:#0a0d12; --bg2:#0c1117; --card:#141a22; --card2:#161d26; --bd:#222c38;
+    --ink:#e8eef5; --muted:#93a1b3; --faint:#6b7888;
+    --green:#2fcf6a; --red:#ff5147; --amber:#f4c145; --blue:#4aa3ff; --violet:#a98bff;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:radial-gradient(1200px 600px at 50% -200px,#101722,transparent),var(--bg);color:var(--ink);
+       font-family:-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:34px 20px 100px}
+  .tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.10em;text-transform:uppercase;
+       color:#8fd6ff;border:1px solid #23405a;background:#0e1a26;border-radius:999px;padding:4px 11px}
+  h1{font-size:30px;line-height:1.15;margin:14px 0 6px;letter-spacing:-.01em}
+  h1 b{color:var(--amber)}
+  .sub{color:var(--muted);margin:0 0 8px;font-size:15px}
+  .meta{color:var(--faint);font-size:12.5px;margin:0 0 26px}
+  h2{font-size:13px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
+     margin:40px 0 14px;padding-bottom:0;display:flex;align-items:center;gap:10px}
+  h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--bd),transparent)}
+
+  /* veredito banner */
+  .verdict{background:linear-gradient(180deg,#1a2620,#121b16);border:1px solid #234d33;border-radius:16px;
+           padding:20px 22px;margin:6px 0 26px;display:flex;gap:16px;align-items:flex-start}
+  .verdict .dot{flex:0 0 auto;width:12px;height:12px;border-radius:50%;background:var(--amber);margin-top:6px;
+                box-shadow:0 0 0 4px rgba(244,193,69,.15)}
+  .verdict p{margin:0;font-size:15px;color:#dfeee4}
+  .verdict b{color:#fff}
+
+  /* KPIs */
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  @media(max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{background:var(--card);border:1px solid var(--bd);border-radius:13px;padding:15px 16px}
+  .kpi .n{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1}
+  .kpi .l{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin-top:8px}
+  .kpi .d{color:var(--faint);font-size:11px;margin-top:3px}
+  .kpi.good .n{color:var(--green)} .kpi.bad .n{color:var(--red)} .kpi.warn .n{color:var(--amber)}
+
+  /* diagnostico frentes */
+  .frentes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  @media(max-width:760px){.frentes{grid-template-columns:1fr}}
+  .frente{background:var(--card);border:1px solid var(--bd);border-radius:13px;padding:16px 17px}
+  .frente .h{font-weight:800;font-size:15px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .frente .h .n{font-size:12px;color:var(--faint);font-weight:800}
+  .frente p{margin:0;color:var(--muted);font-size:13.5px}
+  .frente code{background:#0c1117;border:1px solid var(--bd);border-radius:5px;padding:1px 5px;font-size:12px;color:#ccd6e2}
+
+  /* findings */
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:17px 19px;margin-bottom:12px}
+  .card .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:9px}
+  .sev{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:6px;text-transform:uppercase;letter-spacing:.04em}
+  .sev.alta{background:#3a1614;color:#ff8a82} .sev.media{background:#3a2e14;color:#f4c145} .sev.baixa{background:#14302a;color:#57d98a}
+  .vd{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:6px;text-transform:uppercase;letter-spacing:.04em;border:1px solid}
+  .vd.conf{color:#57d98a;border-color:#1f5a36;background:#0f2318} .vd.plaus{color:#f4c145;border-color:#5a4a1f;background:#221d10}
+  .card .ttl{font-weight:700;font-size:15.5px;margin-left:auto;color:var(--faint);font-variant-numeric:tabular-nums}
+  .card h3{margin:0 0 7px;font-size:16.5px;letter-spacing:-.01em}
+  .card p{margin:0 0 10px;color:var(--muted);font-size:13.5px}
+  .card p b{color:var(--ink)}
+  .ev{font-family:"SF Mono",ui-monospace,Consolas,monospace;font-size:11.5px;color:#8fb0c9;background:#0b1017;
+      border:1px solid var(--bd);border-left:2px solid #2d5a7a;border-radius:6px;padding:8px 11px;overflow-x:auto;white-space:nowrap}
+
+  /* rules */
+  .rules{counter-reset:r;display:grid;gap:9px}
+  .rule{background:linear-gradient(180deg,#12100a,#100e09);border:1px solid #3a3115;border-radius:11px;padding:13px 16px 13px 48px;position:relative;font-size:13.5px;color:#f0e6cf}
+  .rule::before{counter-increment:r;content:counter(r);position:absolute;left:14px;top:12px;width:22px;height:22px;border-radius:50%;
+     background:#3a3115;color:var(--amber);font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center}
+  .rule b{color:#ffe9a8}
+
+  /* catalog */
+  .cat{border:1px solid var(--bd);border-radius:14px;overflow:hidden}
+  .grp{background:#0e141b;border-top:1px solid var(--bd);padding:9px 16px;font-size:11px;font-weight:800;
+       text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .grp:first-child{border-top:none}
+  .grp .bar{width:9px;height:9px;border-radius:2px}
+  .row{display:grid;grid-template-columns:170px 40px 1fr 108px;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid #1a222c}
+  @media(max-width:760px){.row{grid-template-columns:1fr 34px;grid-template-areas:"msg pal" "note note" "act act";gap:6px 12px}
+    .row .msg{grid-area:msg}.row .pal{grid-area:pal}.row .note{grid-area:note}.row .act{grid-area:act;justify-self:start}}
+  .row .msg{font-weight:800;font-size:15px;letter-spacing:.01em}
+  .row .pal{font-size:12px;color:var(--faint);text-align:center;font-variant-numeric:tabular-nums}
+  .row .pal b{color:var(--muted)}
+  .row .note{color:var(--muted);font-size:12.5px}
+  .row .act{justify-self:end}
+  .act .b{font-size:10px;font-weight:800;padding:3px 8px;border-radius:5px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+  .b.keep{background:#0f2318;color:#57d98a} .b.fuse{background:#161f2e;color:#7fb4ff}
+  .b.fix{background:#2a1518;color:#ff8a82} .b.revive{background:#221a2e;color:#c3a6ff} .b.short{background:#0e2226;color:#5fd0d8}
+  .row.decision{background:#14110a}
+  .dec-flag{font-size:10px;font-weight:800;color:#0a0d12;background:var(--amber);border-radius:4px;padding:1px 6px;margin-left:8px;letter-spacing:.03em}
+
+  /* removed */
+  .rem{display:grid;gap:8px}
+  .rem .x{background:var(--card);border:1px solid #33222a;border-radius:10px;padding:11px 14px 11px 38px;position:relative;font-size:13px;color:var(--muted)}
+  .rem .x::before{content:"−";position:absolute;left:14px;top:9px;color:var(--red);font-weight:800;font-size:16px;line-height:1}
+  .rem .x b{color:#e8b4b0}
+
+  /* decisions */
+  .decs{display:grid;gap:11px}
+  .deccard{background:linear-gradient(180deg,#151108,#120f09);border:1px solid #4a3d16;border-radius:13px;padding:15px 17px}
+  .deccard .q{font-weight:800;font-size:15px;color:#ffe9a8;margin-bottom:5px}
+  .deccard p{margin:0;color:var(--muted);font-size:13px}
+  .deccard .rec{margin-top:9px;font-size:12.5px;color:#bff0d0;background:#0f2318;border:1px solid #1f5a36;border-radius:7px;padding:8px 11px}
+  .deccard .rec b{color:#7ee6a3}
+
+  /* action plan */
+  details{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:2px 4px;margin-top:6px}
+  summary{cursor:pointer;padding:13px 16px;font-weight:700;font-size:14px;list-style:none;display:flex;align-items:center;gap:9px}
+  summary::-webkit-details-marker{display:none}
+  summary .chev{color:var(--faint);transition:transform .2s}
+  details[open] summary .chev{transform:rotate(90deg)}
+  .plan{padding:2px 16px 14px}
+  .plan .step{border-top:1px solid #1a222c;padding:11px 0;font-size:13px;color:var(--muted);display:flex;gap:11px}
+  .plan .step .fn{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:#8fb0c9;flex:0 0 auto}
+  .plan .step:first-child{border-top:none}
+
+  .foot{margin-top:44px;padding-top:18px;border-top:1px solid var(--bd);color:var(--faint);font-size:12px;line-height:1.7}
+  .foot b{color:var(--muted)}
+  a{color:var(--blue);text-decoration:none} a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <span class="tag">Auditoria · Cockpit do Piloto</span>
+  <h1>Mensagens do piloto: o que <b>inchou</b> — e a visão final mínima</h1>
+  <p class="sub">A régua que você aprovou em 27/05/2026 era <b>um catálogo de 17 mensagens, todas com 1&nbsp;ou&nbsp;2 palavras</b>. A auditoria confirma: elas cresceram — mas não onde parecia.</p>
+  <p class="meta">04/07/2026 · comissão de 13 agentes · varredura web + C#/.exe + baselines aprovadas · verificação adversarial (5 CONFIRMADO · 1 PLAUSÍVEL · 0 refutado)</p>
+
+  <div class="verdict">
+    <span class="dot"></span>
+    <p><b>Sua percepção está certa.</b> As 13 frases de pilotagem (o coach: FREOU CEDO, VIROU POUCO…) continuam intactas, 1:1 com o aprovado. O inchaço veio de um <b>segundo catálogo</b> — os alertas de motor/pneu/câmbio viraram uma "v2" com <b>19 itens</b>, quase todos de 2 palavras e <b>fora dos 17</b>. Somando tudo, o piloto está exposto a <b>36 textos</b>, não 17. E 2 mensagens que você aprovou <b>sumiram</b> sem decisão.</p>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="n">17</div><div class="l">Régua aprovada</div><div class="d">catálogo único, 27/05</div></div>
+    <div class="kpi bad"><div class="n">36</div><div class="l">Textos hoje</div><div class="d">expostos ao piloto</div></div>
+    <div class="kpi good"><div class="n">13/13</div><div class="l">Pedagógicas OK</div><div class="d">coach intacto</div></div>
+    <div class="kpi bad"><div class="n">+16</div><div class="l">Alertas fora da régua</div><div class="d">catálogo "v2"</div></div>
+    <div class="kpi warn"><div class="n">2</div><div class="l">Aprovadas sumidas</div><div class="d">ALIVIA PÉ · PISTA SUJA</div></div>
+  </div>
+
+  <!-- ONDE INCHOU -->
+  <h2>Onde inchou — três frentes</h2>
+  <div class="frentes">
+    <div class="frente">
+      <div class="h"><span class="n">01</span> Mensagens novas</div>
+      <p>O <code>CatalogoAlertas</code> ganhou <b>16 alertas</b> que não estavam nos 17 (MOTOR AQUECENDO, CÂMBIO AQUECENDO, PRESSÃO PNEU, MISTURA POBRE…). Vêm de uma "v2" separada. O aprovado só tinha <b>4</b> alertas curtos.</p>
+    </div>
+    <div class="frente">
+      <div class="h"><span class="n">02</span> Duplicação &amp; ruído</div>
+      <p><b>COMBUSTÍVEL BAIXO</b> aparece 2× com o mesmo texto (crítico + atenção) — o piloto não distingue pela palavra. E há 3 variantes de motor (AQUECENDO/QUENTE/ESFRIANDO) para <b>um</b> fenômeno: temperatura da água.</p>
+    </div>
+    <div class="frente">
+      <div class="h"><span class="n">03</span> Aprovadas que sumiram</div>
+      <p><b>ALIVIA PÉ</b> (#14) virou o strobo da marcha, sem registro. <b>PISTA SUJA</b> (#16) é texto-fantasma: dispara <code>PISTA_SUJA</code> mas a chave não existe no catálogo → nunca aparece.</p>
+    </div>
+  </div>
+
+  <!-- ACHADOS -->
+  <h2>Achados verificados no código real</h2>
+
+  <div class="card">
+    <div class="top"><span class="sev alta">Alta</span><span class="vd conf">Confirmado</span><span class="ttl">+16 textos</span></div>
+    <h3>Um segundo catálogo de alertas cresceu fora da régua</h3>
+    <p>O <b>CatalogoAlertas.Todos</b> tem 19 alertas; só <b>PNEU QUENTE</b> e <b>BOX</b> pertencem aos 17. Os outros ~16 (MOTOR AQUECENDO, MOTOR QUENTE, ÓLEO BAIXO, PNEU AQUECENDO, PRESSÃO PNEU, CÂMBIO AQUECENDO, CÂMBIO QUENTE, MOTOR ESFRIANDO, MISTURA POBRE/RICA, FALHANDO, BATERIA, SEM DADOS, SEM GPS, ÚLTIMA VOLTA) são novos. Web e C# são espelho fiel — contam como um.</p>
+    <div class="ev">windows/cockpit/P1Fast.Cockpit.Domain/AlertasCriticos.cs:76–97  ·  espelho web/cockpit/alertas-criticos.js:74–101</div>
+  </div>
+
+  <div class="card">
+    <div class="top"><span class="sev alta">Alta</span><span class="vd conf">Confirmado</span><span class="ttl">#14 · sumiu</span></div>
+    <h3>ALIVIA PÉ foi aprovada mas não existe no produto</h3>
+    <p>Está nos 17 (over-rev, "alivia o pé AGORA"), mas <b>não é emitida em lugar nenhum</b> — nem web, nem .exe. Na prática virou o strobo vermelho da luz de marcha, <b>sem decisão registrada</b> de trocar a palavra pelo visual.</p>
+    <div class="ev">…/mensagens-painel-piloto-v1-aprovado-2026-05-27.json:117  ·  ausente em DeltaCoach.cs e AlertasCriticos.cs</div>
+  </div>
+
+  <div class="card">
+    <div class="top"><span class="sev alta">Alta</span><span class="vd conf">Confirmado</span><span class="ttl">#16 · fantasma</span></div>
+    <h3>PISTA SUJA dispara mas nunca aparece (regressão silenciosa)</h3>
+    <p>No web, <code>registrarDerrapagem()</code> faz <code>_add('PISTA_SUJA')</code> — mas a chave <b>PISTA_SUJA não existe</b> no objeto ALERTAS. Aí <code>getMensagemPrincipal</code> lê <code>undefined</code> e retorna <code>null</code>: a mensagem aprovada é acionada e some sem erro em tela. No .exe nem foi portada.</p>
+    <div class="ev">web/cockpit/alertas-criticos.js:270 (dispara)  vs  objeto ALERTAS :74–101 (chave ausente)  ·  ausente no .exe</div>
+  </div>
+
+  <div class="card">
+    <div class="top"><span class="sev media">Média</span><span class="vd conf">Confirmado</span><span class="ttl">texto 2×</span></div>
+    <h3>COMBUSTÍVEL BAIXO duplicado — dois níveis, mesma palavra</h3>
+    <p>Aparece como <b>Super</b> (&lt;5%) e como <b>Atenção</b> (&lt;15%) com o texto idêntico. Duas gravidades, mesma palavra na tela: o piloto não sabe se é crítico ou aviso. No v1 eram dois textos distintos (COMBUSTÍVEL + ENCHE AGORA), colapsados num só repetido.</p>
+    <div class="ev">windows/cockpit/P1Fast.Cockpit.Domain/AlertasCriticos.cs:79 e :90  ·  espelho alertas-criticos.js:79 e :92</div>
+  </div>
+
+  <div class="card">
+    <div class="top"><span class="sev media">Média</span><span class="vd conf">Confirmado</span><span class="ttl">só --demo</span></div>
+    <h3>Frases longas (3–6 palavras) escrevem nas caixas do piloto</h3>
+    <p>"PERDEU NA ENTRADA", "Foco: freie mais cedo na 3", "Temperatura motor crítica" — só rodam com a flag <code>--demo</code> (andaime), <b>mas caem nas MESMAS caixas</b> AcaoText/AlertText/CriticoMsg que o piloto vê ao vivo. No caminho real todo texto respeita o teto de 2. Provável fonte da percepção de "palavras a mais".</p>
+    <div class="ev">windows/cockpit/P1Fast.Cockpit.UI/MainWindow.xaml.cs:524,527,544,581,588,616,674  (todas sob --demo)</div>
+  </div>
+
+  <div class="card">
+    <div class="top"><span class="sev media">Média</span><span class="vd plaus">Plausível</span><span class="ttl">20 / 19 / 17</span></div>
+    <h3>Números divergentes circulando</h3>
+    <p>O comentário do topo do JS descreve "20 mensagens v1"; o código roda a "v2 com 19"; a régua de pilotagem é 17. A divergência real (comentário stale 20≠19) vale corrigir. <b>Ressalva do verificador:</b> não é "3 números pra 1 catálogo" — são <b>dois catálogos</b> distintos (pilotagem vs alertas mecânicos); e a sub-alegação do "(9) com 8 chaves" foi refutada (são 9 mesmo).</p>
+    <div class="ev">alertas-criticos.js:1–31 (comentário) vs objeto :74–101  ·  AlertasCriticos.cs:72</div>
+  </div>
+
+  <!-- VISAO FINAL -->
+  <h2>Visão final — as regras que travam o crescimento</h2>
+  <div class="rules">
+    <div class="rule"><b>Um catálogo único.</b> Uma fonte da verdade para a tela do piloto. O catálogo de "críticas v2" para de alimentar a tela por conta própria — todo texto entra pelo catálogo único ou não entra.</div>
+    <div class="rule"><b>Teto duro de 2 palavras.</b> Validado por teste no build (mesmo espírito do <code>smoke:arquitetura</code>): qualquer entrada com 3+ palavras reprova. O <code>--demo</code>/mockup fica proibido de escrever nas caixas canônicas.</div>
+    <div class="rule"><b>Uma mensagem por vez.</b> Só a de maior gravidade aparece. O campo <code>CountOutros</code> ("+N outros") sai do contrato — nunca renderizar pilha de alertas.</div>
+    <div class="rule"><b>Direção é COR, nunca texto.</b> Regra canônica sua. ANTES/DEPOIS saem do texto da freada; o número em metros + a cor (verde no ponto, âmbar/vermelho o lado) já dizem tudo.</div>
+    <div class="rule"><b>Gravidade é COR/comportamento, não palavra.</b> Um id → um texto. Crítico vs atenção = piscar vs fixo, nunca o mesmo texto duplicado.</div>
+    <div class="rule"><b>Sem emoji, sem culpa, sem sinal.</b> Alerta de segurança em <b>1 palavra</b> sempre que der (ÁGUA, ÓLEO, CÂMBIO, BOX).</div>
+  </div>
+
+  <h2>Catálogo único proposto — tudo ≤ 2 palavras</h2>
+  <div class="cat">
+
+    <div class="grp"><span class="bar" style="background:var(--blue)"></span>Pilotagem — frase do coach (por trecho)</div>
+    <div class="row"><div class="msg">FREOU CEDO</div><div class="pal"><b>2</b></div><div class="note">pior trecho = freio, no ponto cedo</div><div class="act"><span class="b keep">mantém</span></div></div>
+    <div class="row"><div class="msg">FREOU TARDE</div><div class="pal"><b>2</b></div><div class="note">freio, atropelou a curva</div><div class="act"><span class="b keep">mantém</span></div></div>
+    <div class="row"><div class="msg">VIROU POUCO</div><div class="pal"><b>2</b></div><div class="note">ápice aberto</div><div class="act"><span class="b keep">mantém</span></div></div>
+    <div class="row"><div class="msg">VIROU MUITO</div><div class="pal"><b>2</b></div><div class="note">ápice cortado</div><div class="act"><span class="b keep">mantém</span></div></div>
+    <div class="row"><div class="msg">VIROU TARDE</div><div class="pal"><b>2</b></div><div class="note">ápice atrás do piloto</div><div class="act"><span class="b keep">mantém</span></div></div>
+    <div class="row"><div class="msg">VIROU CEDO</div><div class="pal"><b>2</b></div><div class="note">ápice à frente</div><div class="act"><span class="b keep">mantém</span></div></div>
+    <div class="row"><div class="msg">PISOU POUCO</div><div class="pal"><b>2</b></div><div class="note">entrada lenta</div><div class="act"><span class="b keep">mantém</span></div></div>
+    <div class="row"><div class="msg">ACELEROU TARDE</div><div class="pal"><b>2</b></div><div class="note">saída, abriu o gás tarde</div><div class="act"><span class="b keep">mantém</span></div></div>
+
+    <div class="grp"><span class="bar" style="background:var(--green)"></span>Resultado — do trecho</div>
+    <div class="row"><div class="msg">RECORDE</div><div class="pal"><b>1</b></div><div class="note">bateu o recorde absoluto do carro+pneu</div><div class="act"><span class="b keep">mantém</span></div></div>
+    <div class="row"><div class="msg">MELHOR STINT</div><div class="pal"><b>2</b></div><div class="note">melhor do turno</div><div class="act"><span class="b keep">mantém</span></div></div>
+    <div class="row"><div class="msg">MANTEVE LINHA</div><div class="pal"><b>2</b></div><div class="note">ganhando com margem pequena</div><div class="act"><span class="b keep">mantém</span></div></div>
+    <div class="row"><div class="msg">BUSCAR LIMITE</div><div class="pal"><b>2</b></div><div class="note">delta ~zero, repetindo</div><div class="act"><span class="b keep">mantém</span></div></div>
+
+    <div class="grp"><span class="bar" style="background:var(--red)"></span>Alerta — segurança (1 palavra + cor = gravidade)</div>
+    <div class="row"><div class="msg">ÁGUA</div><div class="pal"><b>1</b></div><div class="note">temperatura da refrigeração — cor = fase</div><div class="act"><span class="b fuse">funde 3</span></div></div>
+    <div class="row"><div class="msg">ÓLEO</div><div class="pal"><b>1</b></div><div class="note">baixa pressão com rpm alto</div><div class="act"><span class="b short">encurta</span></div></div>
+    <div class="row"><div class="msg">COMBUSTÍVEL</div><div class="pal"><b>1</b></div><div class="note">nível baixo — crítico vs atenção = cor</div><div class="act"><span class="b fuse">funde 2</span></div></div>
+    <div class="row"><div class="msg">PNEU QUENTE</div><div class="pal"><b>2</b></div><div class="note">absorve AQUECENDO + PRESSÃO PNEU</div><div class="act"><span class="b fuse">funde 3</span></div></div>
+    <div class="row"><div class="msg">CÂMBIO</div><div class="pal"><b>1</b></div><div class="note">quente — funde AQUECENDO+QUENTE</div><div class="act"><span class="b fuse">funde 2</span></div></div>
+    <div class="row"><div class="msg">FALHANDO</div><div class="pal"><b>1</b></div><div class="note">misfire / cilindro desbalanceado</div><div class="act"><span class="b keep">mantém</span></div></div>
+    <div class="row"><div class="msg">BOX</div><div class="pal"><b>1</b></div><div class="note">comando do box</div><div class="act"><span class="b keep">mantém</span></div></div>
+    <div class="row decision"><div class="msg">PISTA SUJA</div><div class="pal"><b>2</b></div><div class="note">derrapagem repetida — <b>consertar chave-fantasma</b></div><div class="act"><span class="b fix">conserta</span></div></div>
+    <div class="row decision"><div class="msg">ALIVIA PÉ <span class="dec-flag">sua decisão</span></div><div class="pal"><b>2</b></div><div class="note">over-rev — palavra <i>ou</i> só o strobo?</div><div class="act"><span class="b revive">ressuscita?</span></div></div>
+    <div class="row decision"><div class="msg">BATERIA <span class="dec-flag">avaliar</span></div><div class="pal"><b>1</b></div><div class="note">tensão baixa — o piloto precisa ver?</div><div class="act"><span class="b keep">mantém?</span></div></div>
+
+    <div class="grp"><span class="bar" style="background:var(--violet)"></span>Sistema</div>
+    <div class="row"><div class="msg">REGISTRANDO</div><div class="pal"><b>1</b></div><div class="note">1ª passagem sem referência</div><div class="act"><span class="b keep">mantém</span></div></div>
+    <div class="row"><div class="msg">SEM SINAL</div><div class="pal"><b>2</b></div><div class="note">perdeu motor ou GPS — a causa é irrelevante</div><div class="act"><span class="b fuse">funde 2</span></div></div>
+
+    <div class="grp"><span class="bar" style="background:#5fd0d8"></span>Rótulo da freada — microcopy da célula (não disputa o slot central)</div>
+    <div class="row"><div class="msg">NO PONTO</div><div class="pal"><b>2</b></div><div class="note">±0,5 m do ponto de referência</div><div class="act"><span class="b keep">mantém</span></div></div>
+    <div class="row"><div class="msg">REFERÊNCIA</div><div class="pal"><b>1</b></div><div class="note">sem referência ainda</div><div class="act"><span class="b keep">mantém</span></div></div>
+  </div>
+
+  <h2>O que sai da tela</h2>
+  <div class="rem">
+    <div class="x"><b>MOTOR AQUECENDO / MOTOR QUENTE / MOTOR ESFRIANDO</b> → um só <b>ÁGUA</b>, gravidade vira cor. Três textos para um fenômeno violam "mínimas".</div>
+    <div class="x"><b>PNEU AQUECENDO / PRESSÃO PNEU</b> → absorvidos por PNEU QUENTE. O piloto não distingue os três em pista.</div>
+    <div class="x"><b>CÂMBIO AQUECENDO</b> → funde em CÂMBIO. Dois estágios = uma palavra + cor.</div>
+    <div class="x"><b>MISTURA POBRE / MISTURA RICA</b> → saem da tela do piloto. É diagnóstico de engenheiro; se for grave, FALHANDO cobre.</div>
+    <div class="x"><b>COMBUSTÍVEL BAIXO (duplicado)</b> → um texto só, níveis pela cor.</div>
+    <div class="x"><b>ÚLTIMA VOLTA</b> → fora da caixa de alerta. É cronometragem/box, não alarme.</div>
+    <div class="x"><b>SEM DADOS / SEM GPS</b> → fundidos em SEM SINAL.</div>
+    <div class="x"><b>ANTES / DEPOIS</b> (direção da freada) → viram COR. O número em metros já mostra o desvio.</div>
+    <div class="x"><b>Todas as frases de 3–6 palavras do --demo/mockup</b> → banidas das caixas canônicas. São andaime, nunca produto.</div>
+  </div>
+
+  <!-- DECISOES -->
+  <h2>Depende de você — 3 decisões</h2>
+  <div class="decs">
+    <div class="deccard">
+      <div class="q">1. ALIVIA PÉ volta como palavra, ou o strobo a substitui de vez?</div>
+      <p>Você aprovou como texto (#14), mas hoje ela é só o strobo da marcha, sem registro. Precisa fechar: se volta como palavra, religo ao over-rev; se fica o strobo, registro a remoção no JSON pra não voltar a "sumir".</p>
+      <div class="rec"><b>Recomendo:</b> deixar o strobo (é mais rápido de ler a 200 km/h que uma palavra) e registrar a remoção formal do texto.</div>
+    </div>
+    <div class="deccard">
+      <div class="q">2. Quais alertas mecânicos ficam na tela do piloto?</div>
+      <p>O aprovado tinha só 4 alertas. O carro hoje lê água/óleo/câmbio/bateria/mistura. A proposta reduz de 19 inchados para ~8 de 1 palavra — mas ainda é mais que 4. Você quer todos, ou os mecânicos "de engenheiro" (MISTURA, BATERIA) só no Command Box?</p>
+      <div class="rec"><b>Recomendo:</b> piloto vê só o que ele <i>age</i> (ÁGUA, ÓLEO, COMBUSTÍVEL, PNEU, BOX, PISTA SUJA, SEM SINAL). MISTURA e BATERIA ficam para o engenheiro.</div>
+    </div>
+    <div class="deccard">
+      <div class="q">3. Aprovar a régua "≤ 2 palavras" como trava automática?</div>
+      <p>Para o crescimento não voltar: um teste no build que reprova qualquer mensagem com 3+ palavras e barra o <code>--demo</code> de escrever nas caixas do piloto.</p>
+      <div class="rec"><b>Recomendo:</b> sim — é o que impede a próxima sessão de reintroduzir textão sem você perceber.</div>
+    </div>
+  </div>
+
+  <!-- PLANO -->
+  <h2>Plano de ação (quando você aprovar)</h2>
+  <details>
+    <summary><span class="chev">▶</span> 9 passos, por arquivo — nenhuma linha mexida ainda</summary>
+    <div class="plan">
+      <div class="step"><span class="fn">alertas-criticos.js</span><span>Reescrever <code>const ALERTAS</code> para o catálogo mínimo: fundir MOTOR_* em ÁGUA, COMBUSTÍVEL_* num id, remover MISTURA/PNEU_AQUECENDO/PRESSÃO/CÂMBIO_AQUECENDO/ÚLTIMA_VOLTA; SEM_DADOS+SEM_GPS → SEM_SINAL.</span></div>
+      <div class="step"><span class="fn">alertas-criticos.js</span><span>Adicionar a chave <b>PISTA_SUJA</b> ao objeto ALERTAS (hoje dispara mas não existe → conserta a #16).</span></div>
+      <div class="step"><span class="fn">alertas-criticos.js</span><span>Corrigir o comentário do topo ("20 v1") e alinhar <code>automaticosConhecidos</code> aos ids fundidos.</span></div>
+      <div class="step"><span class="fn">AlertasCriticos.cs</span><span>Espelhar as mesmas fusões (port fiel continua a regra): mesmos ids/textos, <code>Estagio()</code> e <code>Automaticos</code> ajustados; corrigir "19 alertas".</span></div>
+      <div class="step"><span class="fn">AlertasCriticos.cs + .js</span><span>Remover <code>CountOutros</code> do contrato — garante "uma por vez" na fonte, não só na renderização.</span></div>
+      <div class="step"><span class="fn">LuzFreio.cs</span><span>Tirar ANTES/DEPOIS do texto da freada — palavra fica NO PONTO/REFERÊNCIA; o lado vira cor + metros.</span></div>
+      <div class="step"><span class="fn">DecisãoFlávio</span><span>ALIVIA PÉ: religar ao over-rev como palavra, ou registrar a remoção formal.</span></div>
+      <div class="step"><span class="fn">smoke:mensagens</span><span>Teste novo no build: reprova texto &gt; 2 palavras e barra o --demo de escrever em AcaoText/AlertText/CriticoMsg.</span></div>
+      <div class="step"><span class="fn">…-aprovado-…json + testes</span><span>Registrar a versão final fundida como catálogo canônico; atualizar AlertasCriticosTests + LuzFreio e adicionar caso que garante PISTA_SUJA renderiza.</span></div>
+    </div>
+  </details>
+
+  <div class="foot">
+    <b>Metodologia.</b> 13 agentes em paralelo varreram web (<code>mensagens-pedagogicas.js</code>, <code>alertas-criticos.js</code>, render), C#/.exe (<code>DeltaCoach.cs</code>, <code>AlertasCriticos.cs</code>, <code>ChuvaTermica.cs</code>, XAML), e as baselines aprovadas. Cada achado de crescimento passou por verificação adversarial (agente instruído a refutar abrindo o arquivo:linha). Resultado: 5 CONFIRMADO, 1 PLAUSÍVEL, 0 refutado.<br>
+    <b>Fontes da régua:</b> <code>_design-reference/versions/mensagens-painel-piloto-v1-aprovado-2026-05-27.json</code> (os 17) · <code>docs/COCKPIT_FONTE_DA_VERDADE.md</code> · regra "canônicos são cores, nunca sinal".<br>
+    <b>Nada de código foi alterado</b> — esta é a proposta. Escopo e tela do piloto: decisão sua.
+  </div>
+
+</div>
+</body>
+</html>
