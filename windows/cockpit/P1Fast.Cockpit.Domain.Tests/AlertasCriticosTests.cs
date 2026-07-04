@@ -16,7 +16,7 @@ public class AlertasCriticosTests
     public void ALR_01_Catalogo_tem_19_alertas()
     {
         Assert.Equal(19, CatalogoAlertas.Todos.Count);
-        Assert.Equal("MOTOR QUENTE", CatalogoAlertas.Todos["MOTOR_QUENTE"].Texto);
+        Assert.Equal("Motor Quente", CatalogoAlertas.Todos["MOTOR_QUENTE"].Texto);
         Assert.Equal(AlertaGravidade.Super, CatalogoAlertas.Todos["MOTOR_QUENTE"].Gravidade);
     }
 

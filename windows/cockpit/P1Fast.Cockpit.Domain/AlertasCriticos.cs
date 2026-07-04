@@ -73,8 +73,8 @@ public static class CatalogoAlertas
     public static readonly IReadOnlyDictionary<string, Alerta> Todos = new Dictionary<string, Alerta>
     {
         // Super crítico (9)
-        ["MOTOR_AQUECENDO"]           = new("MOTOR_AQUECENDO", "MOTOR AQUECENDO", AlertaGravidade.Super),
-        ["MOTOR_QUENTE"]              = new("MOTOR_QUENTE", "MOTOR QUENTE", AlertaGravidade.Super),
+        ["MOTOR_AQUECENDO"]           = new("MOTOR_AQUECENDO", "Temperatura Motor Subindo", AlertaGravidade.Super),
+        ["MOTOR_QUENTE"]              = new("MOTOR_QUENTE", "Motor Quente", AlertaGravidade.Super),
         ["OLEO_BAIXO"]                = new("OLEO_BAIXO", "ÓLEO BAIXO", AlertaGravidade.Super),
         ["COMBUSTIVEL_BAIXO_CRITICO"] = new("COMBUSTIVEL_BAIXO_CRITICO", "COMBUSTÍVEL BAIXO", AlertaGravidade.Super),
         ["PNEU_AQUECENDO"]            = new("PNEU_AQUECENDO", "PNEU AQUECENDO", AlertaGravidade.Super),
@@ -82,14 +82,14 @@ public static class CatalogoAlertas
         ["PNEU_QUENTE"]               = new("PNEU_QUENTE", "PNEU QUENTE", AlertaGravidade.Super),
         ["CAMBIO_AQUECENDO"]          = new("CAMBIO_AQUECENDO", "CÂMBIO AQUECENDO", AlertaGravidade.Super),
         ["CAMBIO_QUENTE"]             = new("CAMBIO_QUENTE", "CÂMBIO QUENTE", AlertaGravidade.Super),
-        // Crítico (3)
+        // Crítico (4)
         ["MOTOR_ESFRIANDO"]           = new("MOTOR_ESFRIANDO", "MOTOR ESFRIANDO", AlertaGravidade.Critico),
         ["MISTURA_POBRE"]             = new("MISTURA_POBRE", "MISTURA POBRE", AlertaGravidade.Critico),
-        ["SEM_DADOS"]                 = new("SEM_DADOS", "SEM DADOS", AlertaGravidade.Critico),
-        // Atenção (4)
+        ["SEM_DADOS"]                 = new("SEM_DADOS", "Desconectou", AlertaGravidade.Critico),
+        ["FALHANDO"]                  = new("FALHANDO", "Falha Cilindros", AlertaGravidade.Critico),
+        // Atenção (3)
         ["COMBUSTIVEL_BAIXO"]         = new("COMBUSTIVEL_BAIXO", "COMBUSTÍVEL BAIXO", AlertaGravidade.Atencao),
         ["MISTURA_RICA"]              = new("MISTURA_RICA", "MISTURA RICA", AlertaGravidade.Atencao),
-        ["FALHANDO"]                  = new("FALHANDO", "FALHANDO", AlertaGravidade.Atencao),
         ["BATERIA"]                   = new("BATERIA", "BATERIA", AlertaGravidade.Atencao),
         // Informação (3)
         ["BOX"]                       = new("BOX", "BOX", AlertaGravidade.Info),

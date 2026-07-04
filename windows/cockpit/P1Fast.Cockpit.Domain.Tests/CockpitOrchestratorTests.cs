@@ -17,7 +17,7 @@ public class CockpitOrchestratorTests
 
         orq.IngestMotor(6100, new AmostraAlerta { WaterTempC = 85, Rpm = 6100 });
         Assert.Equal(ShiftMode.Fire, c.Get().Shift.Mode);      // ~pico de potência do Bubi
-        Assert.Equal("MOTOR QUENTE", c.Get().Message!.Texto);  // água 85 >= 80
+        Assert.Equal("Motor Quente", c.Get().Message!.Texto);  // água 85 >= 80
 
         orq.IngestMotor(3000, new AmostraAlerta { WaterTempC = 55, Rpm = 3000 });
         Assert.Equal(ShiftMode.Off, c.Get().Shift.Mode);       // abaixo do início da luz
@@ -62,16 +62,16 @@ public class CockpitOrchestratorTests
         t = UmaVolta(volta1, kmhBaixo: 100, t);
         foreach (var s in volta1) orq.IngestGps(s);
 
-        // 1ª passagem pela curva vira referência e mostra REGISTRANDO.
+        // 1ª passagem pela curva vira referência e mostra COLETANDO DADOS.
         Assert.Equal(1, orq.CurvasComReferencia);
-        Assert.Equal("REGISTRANDO", c.Get().Acao.Texto);
+        Assert.Equal("Coletando Dados", c.Get().Acao.Texto);
 
         var volta2 = new List<AmostraGps>();
         t = UmaVolta(volta2, kmhBaixo: 60, t); // mais devagar na curva
         foreach (var s in volta2) orq.IngestGps(s);
 
         // 2ª passagem: comparou com a 1ª e trocou pra uma frase do coach (perdeu tempo).
-        Assert.NotEqual("REGISTRANDO", c.Get().Acao.Texto);
+        Assert.NotEqual("Coletando Dados", c.Get().Acao.Texto);
         Assert.False(string.IsNullOrEmpty(c.Get().Acao.Texto));
         Assert.Equal(Tone.Erro, c.Get().Acao.Tone); // perdeu tempo
     }
@@ -139,11 +139,11 @@ public class CockpitOrchestratorTests
 
         // Motor quente → GRAVE na tela.
         orq.IngestMotor(6100, new AmostraAlerta { WaterTempC = 85, Rpm = 6100 });
-        Assert.Equal("MOTOR QUENTE", c.Get().Message!.Texto);
+        Assert.Equal("Motor Quente", c.Get().Message!.Texto);
 
         // Motor emudeceu (cabo caiu): o GRAVE NÃO congela — vira SEM DADOS + a luz de marcha apaga.
         orq.VigiarFontes(motorSilencioso: true, gpsSilencioso: false);
-        Assert.Equal("SEM DADOS", c.Get().Message!.Texto);
+        Assert.Equal("Desconectou", c.Get().Message!.Texto);
         Assert.Equal(ShiftMode.Off, c.Get().Shift.Mode);
 
         // Motor voltou frio: SEM DADOS some, sem alerta.

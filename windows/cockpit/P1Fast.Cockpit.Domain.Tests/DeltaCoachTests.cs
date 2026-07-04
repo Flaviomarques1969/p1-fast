@@ -108,7 +108,7 @@ public class DeltaCoachTests
 
     [Fact]
     public void DC_08_Entrada_ruim_eh_PISOU_POUCO()
-        => Assert.Equal("PISOU POUCO", MensagensPedagogicas.Decidir(Res(0.30, "entrada", 0.30))!.Texto);
+        => Assert.Equal("Acelere Mais", MensagensPedagogicas.Decidir(Res(0.30, "entrada", 0.30))!.Texto);
 
     [Fact]
     public void DC_09_Freio_ruim_distingue_CEDO_de_TARDE()

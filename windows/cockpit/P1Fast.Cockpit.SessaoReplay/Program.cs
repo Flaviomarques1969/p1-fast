@@ -323,7 +323,7 @@ if (File.Exists(barrasPath))
     string ultimaAcao = "";
     telaState.OnChange((cur, _, ks) =>
     {
-        if (ks.Contains("acao") && cur.Acao.Texto != ultimaAcao && cur.Acao.Texto != "REGISTRANDO" && !string.IsNullOrEmpty(cur.Acao.Texto))
+        if (ks.Contains("acao") && cur.Acao.Texto != ultimaAcao && cur.Acao.Texto != "Coletando Dados" && !string.IsNullOrEmpty(cur.Acao.Texto))
             frasesCoach.Add(cur.Acao.Texto);
         if (ks.Contains("acao")) ultimaAcao = cur.Acao.Texto;
     });

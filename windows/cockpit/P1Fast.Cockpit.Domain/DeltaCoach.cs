@@ -116,12 +116,12 @@ public static class MensagensPedagogicas
     public static readonly MensagemPedagogica AcelerouTarde = new("05", "ACELEROU TARDE", "Acelerador", MsgTipo.Comunicacao);
     public static readonly MensagemPedagogica VirouTarde    = new("06", "VIROU TARDE",    "Volante",    MsgTipo.Comunicacao);
     public static readonly MensagemPedagogica VirouCedo     = new("07", "VIROU CEDO",     "Volante",    MsgTipo.Comunicacao);
-    public static readonly MensagemPedagogica PisouPouco    = new("08", "PISOU POUCO",    "Acelerador", MsgTipo.Comunicacao);
+    public static readonly MensagemPedagogica PisouPouco    = new("08", "Acelere Mais",   "Acelerador", MsgTipo.Comunicacao);
     public static readonly MensagemPedagogica Recorde       = new("09", "RECORDE",        "Resultado",  MsgTipo.Comunicacao);
     public static readonly MensagemPedagogica ManteveLinha  = new("10", "MANTEVE LINHA",  "Resultado",  MsgTipo.Comunicacao);
     public static readonly MensagemPedagogica MelhorStint   = new("11", "MELHOR STINT",   "Resultado",  MsgTipo.Comunicacao);
     public static readonly MensagemPedagogica BuscarLimite  = new("12", "BUSCAR LIMITE",  "Sugestão",   MsgTipo.Comunicacao);
-    public static readonly MensagemPedagogica Registrando   = new("13", "REGISTRANDO",    "Sistema",    MsgTipo.Comunicacao);
+    public static readonly MensagemPedagogica Registrando   = new("13", "Coletando Dados", "Sistema",   MsgTipo.Comunicacao);
 
     private const double DeltaZeroS            = 0.05;
     private const double SubTrechoMinS         = 0.05;
