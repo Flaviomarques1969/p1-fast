@@ -103,8 +103,11 @@ Decisão do Flávio é "qualquer rpm avisa" — a histerese de partida não muda
 ## PENDÊNCIAS DE HARDWARE (não bloqueiam a Fase 1)
 Sensores de **pneu** (temp + pressão) e **câmbio** (temp) ainda não estão no carro. As mensagens A2 ficam latentes até instalar.
 
-## CAIXA DO TEXTO — DECIDIDO (Flávio 2026-07-04): SENTENCE CASE
-**Todas** as mensagens (alertas + coach) em **primeira letra maiúscula, resto minúsculo**.
-Ex.: "Motor quente", "Óleo baixo", "Mistura pobre", "Falha cilindros", "Coletando dados", "Acelere mais".
-- Corrigir as 6 do bloco 1 que ficaram Title Case → "Motor quente" (não "Motor Quente"), "Falha cilindros", "Coletando dados", "Acelere mais", "Temperatura motor subindo". ("Desconectou" já ok.)
-- **Siglas preservadas** (padrão natural do sentence case): "Sem GPS", "BOX" pode virar "Box" (palavra comum, não sigla). Na dúvida de sigla, iMac decide pelo mais legível; regra geral = sentence case.
+## CAIXA DO TEXTO — DECIDIDO (Flávio 2026-07-04): TITLE CASE (primeira letra de CADA palavra)
+**Todas** as mensagens (alertas + coach): **primeira letra de cada palavra maiúscula, resto minúsculo**,
+**EXCETO palavras de ligação** (de, da, do, e, com, a, o, para, por…) que ficam **minúsculas quando NÃO são a primeira palavra**.
+A **primeira palavra sempre** leva maiúscula (mesmo se for preposição). **Siglas mantêm caixa alta** (GPS).
+- Ex.: "Motor Quente", "Óleo Baixo", "Mistura Pobre", "Falha Cilindros", "Última Volta", "Coletando Dados", "Acelere Mais", "Sem GPS", "Box".
+- Ex. com ligação (se houver no futuro): "Pressão do Óleo" (do minúsculo), "Falha de Cilindro" (de minúsculo).
+- **O bloco 1 já está correto** (o notebook fez Title Case): "Motor Quente", "Falha Cilindros", "Coletando Dados", "Acelere Mais", "Temperatura Motor Subindo", "Desconectou". **Não mexer no bloco 1.**
+- Aplicar Title Case às demais mensagens em CAIXA ALTA conforme forem tocadas nos blocos 2–4.
