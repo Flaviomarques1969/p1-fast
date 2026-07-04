@@ -179,6 +179,33 @@ public sealed partial class MainWindow : Window
     };
     private bool _barraVoltasAplicada;
 
+    // Plano REAL do piloto (etapa 3, Flávio 2026-07-04): quando a leitura da nuvem
+    // (PlanoStintReader) traz o plano do DIA, a barra mostra ELE no lugar do placeholder.
+    // null = ainda não veio (ou sem chave/rede/plano do dia) → placeholder, idêntico a hoje.
+    private StintBlockState[]? _planoStintReal;
+
+    // Mapa trivial TipoVoltaStint (vocabulário do Domain) → StintBlockState (cor da UI). O
+    // cérebro (Domain) decide o TIPO de cada volta; a UI só escolhe a cor — o Domain não
+    // conhece StintBlockState (layering), por isso o mapa vive aqui. Telas só EXIBEM.
+    private static StintBlockState BlockDoTipoVolta(TipoVoltaStint t) => t switch
+    {
+        TipoVoltaStint.Aquecimento => StintBlockState.Aquecimento,
+        TipoVoltaStint.Planejada   => StintBlockState.Planejada,
+        TipoVoltaStint.Box         => StintBlockState.Box,
+        TipoVoltaStint.CoolDown    => StintBlockState.CoolDown,
+        _                          => StintBlockState.Pending, // Vaga (slot além do stint)
+    };
+
+    // Instala o plano real e repinta a barra AGORA (thread da UI). Marca aplicada pra o
+    // próximo tick não sobrescrever com o placeholder. Só SOMA por cima: não toca
+    // ApplyStintPattern nem o XAML (tela aprovada 22/06 intocada) — só troca QUAL array entra.
+    private void AplicarPlanoStintReal(StintBlockState[] plano)
+    {
+        _planoStintReal = plano;
+        _barraVoltasAplicada = true;
+        ApplyStintPattern(plano);
+    }
+
     public MainWindow() : this(new LaunchOptions(DisplayIndex: null)) { }
 
     public MainWindow(LaunchOptions options)

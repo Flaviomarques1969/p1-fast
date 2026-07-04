@@ -49,7 +49,8 @@ public sealed record LaunchOptions(
     bool Windowed = false,
     bool Live = false,
     string? Port = null,
-    bool Producao = false)
+    bool Producao = false,
+    string? CarroId = null)
 {
     /// <summary>Faz parsing dos args do <see cref="Environment.GetCommandLineArgs"/>.</summary>
     public static LaunchOptions FromCommandLine(string[] args)
@@ -64,6 +65,7 @@ public sealed record LaunchOptions(
         var live = false;
         string? port = null;
         var producao = false;
+        string? carroId = null;
         for (var i = 0; i < args.Length; i++)
         {
             var a = args[i];
@@ -122,7 +124,17 @@ public sealed record LaunchOptions(
             {
                 port = args[i + 1];
             }
+            else if (a.StartsWith("--carro-id=", StringComparison.Ordinal))
+            {
+                // Qual carro ler o plano do stint na nuvem (barra de voltas). Sem ele,
+                // usa o Bubi (PlanoStintReader.CarroIdBubi) — mesmo default do p1fast-upload.
+                carroId = a["--carro-id=".Length..];
+            }
+            else if (a == "--carro-id" && i + 1 < args.Length)
+            {
+                carroId = args[i + 1];
+            }
         }
-        return new LaunchOptions(displayIndex, demo, replay, replayPath, speed, loop, windowed, live, port, producao);
+        return new LaunchOptions(displayIndex, demo, replay, replayPath, speed, loop, windowed, live, port, producao, carroId);
     }
 }

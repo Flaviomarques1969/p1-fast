@@ -33,6 +33,7 @@ public sealed partial class MainWindow
     private Task? _liveReaderTask;   // motor USB numa thread dedicada (fora da thread da UI)
     private Task? _liveHealthTask;   // vigia de saúde da gravação, em fundo (fora da UI)
     private Task? _liveScanTask;     // fila resiliente: sobe sessões pendentes em fundo (fora da UI)
+    private Task? _planoStintTask;   // barra de voltas: 1ª leitura REST do plano real do piloto (etapa 3), em fundo
     private RaceBoxBleReader? _raceBox;
     private bool _liveParado;        // guarda de fechamento (StopLive idempotente)
 
@@ -146,6 +147,12 @@ public sealed partial class MainWindow
             }
         }
         catch { _liveNuvem = null; _livePublisher = null; _liveGpsPublisher = null; }
+
+        // BARRA DE VOLTAS — plano REAL do piloto (etapa 3, Flávio 2026-07-04): a PRIMEIRA
+        // leitura REST do .exe. Best-effort TOTAL, fora da thread da UI, nunca bloqueia o boot:
+        // sem chave/rede/plano-do-dia, a barra fica no placeholder (idêntica a hoje). Mesma env
+        // P1FAST_SUPABASE_ANON da nuvem; carro_id = --carro-id ou Bubi (default).
+        CarregarPlanoStintReal(_liveCts.Token);
 
         // Fila resiliente (Fase 4): no INÍCIO do --live, sobe em FUNDO as sessões ENCERRADAS
         // de runs anteriores que ficaram pendentes (rede caiu no fim, app fechou antes, etc.).
@@ -506,6 +513,34 @@ public sealed partial class MainWindow
             }
             AtualizarSensores(_ultimaAlerta);
         });
+    }
+
+    // Barra de voltas — carrega o plano REAL do piloto da nuvem (etapa 3, Flávio 2026-07-04)
+    // e, se veio o plano do DIA, repinta a barra com ele (senão fica no placeholder). É a
+    // ÚNICA leitura REST do .exe (PlanoStintReader) — antes ele só publicava. Roda FORA da
+    // thread da UI e é best-effort total: qualquer falha vira placeholder, o boot nunca quebra.
+    // Só ENFILEIRA a repintura na thread da UI (AplicarPlanoStintReal); nada de tela direto aqui.
+    private void CarregarPlanoStintReal(CancellationToken ct)
+    {
+        _planoStintTask = System.Threading.Tasks.Task.Run(async () =>
+        {
+            try
+            {
+                using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+                var leitor = PlanoStintReader.DoAmbiente(http, log: txt => System.Diagnostics.Debug.WriteLine(txt));
+                if (leitor is null) return; // sem chave → barra no placeholder (100% local)
+
+                var carroId = string.IsNullOrWhiteSpace(_options.CarroId)
+                    ? PlanoStintReader.CarroIdBubi
+                    : _options.CarroId!;
+                var barra = await leitor.BuscarBarraAsync(carroId, _stintBlocks.Length, ct).ConfigureAwait(false);
+                if (barra is null) return; // sem plano do dia → placeholder
+
+                var blocos = Array.ConvertAll(barra, BlockDoTipoVolta);
+                DispatcherQueue.TryEnqueue(() => AplicarPlanoStintReal(blocos));
+            }
+            catch { /* best-effort: barra fica no placeholder, boot nunca quebra */ }
+        }, ct);
     }
 
     // Laço da nuvem (C5) — UM só dono do publisher e do canal: conecta, religa sozinho

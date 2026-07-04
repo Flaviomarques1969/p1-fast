@@ -204,7 +204,10 @@ public sealed partial class MainWindow
     {
         if (_barraVoltasAplicada) return;
         _barraVoltasAplicada = true;
-        ApplyStintPattern(PlanoStintPlaceholder);
+        // Etapa 3 (Flávio 2026-07-04): se o plano REAL do piloto já chegou da nuvem, mostra
+        // ELE; senão o placeholder — idêntico byte-a-byte ao de hoje. (Se o plano real chegar
+        // DEPOIS, AplicarPlanoStintReal repinta e trava o guard; ver MainWindow.Live.cs.)
+        ApplyStintPattern(_planoStintReal ?? PlanoStintPlaceholder);
     }
 
     // ── Ponte do CLUSTER DE SENSORES (estado real do motor) ────────────────────
