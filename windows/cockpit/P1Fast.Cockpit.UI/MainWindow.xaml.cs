@@ -250,6 +250,7 @@ public sealed partial class MainWindow : Window
                 if (keys.Contains("apex"))         ApplyApex(cur.Apex);
                 if (keys.Contains("message"))      ApplyMessage(cur.Message);
                 if (keys.Contains("freio"))        ApplyFreio(cur.Freio);
+                if (keys.Contains("chuva"))        ApplyChuva(cur.Chuva);
                 UpdateStatusText();
             });
         });
@@ -273,6 +274,9 @@ public sealed partial class MainWindow : Window
             _demoTimer.Tick += (_, _) =>
             {
                 ApplyScene(sceneIndex % DemoScenes.Count);
+                // Demo da CHUVA TÉRMICA: cicla as 7 fases (2 s cada) — andaime pra ver
+                // aquecimento azul ↘, janela ideal (off) e cool down vermelho ↙ sem carro.
+                _cockpitState.SetChuva((FaseChuva)(sceneIndex % 7));
                 sceneIndex++;
             };
             _demoTimer.Start();

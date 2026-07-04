@@ -387,6 +387,24 @@
                         </Rectangle.Fill>
                     </Rectangle>
 
+                    <!-- CHUVA TÉRMICA (spec do canal 2026-07-04; implantada por ordem do Flávio 04/07):
+                         overlay de tela cheia guiado pela ÁGUA do motor. AZUL inclinado ↘ = aquecendo
+                         (abaixo da janela ideal 50–55 °C); VERMELHO ↙ = esquentando demais. 90 gotas em
+                         3 profundidades + halo (TOPO no aquece / RODAPÉ no esfria) + 6 respingos no chão —
+                         tudo gerado no code-behind (MainWindow.Chuva.cs: InitChuva/ApplyChuva). Opacidade
+                         global = fase (7 estados do cérebro ChuvaTermica), cross-fade 900 ms. O Clip é o
+                         device inteiro (gota entra por cima e sai por baixo sem vazar pro letterbox).
+                         O ESCANDALOSO ≥70/≥80 NÃO é desta camada: já é o modo crítico da tela
+                         (AlertasCriticos Super → CriticoOverlay logo abaixo). -->
+                    <Grid x:Name="RainLayer" IsHitTestVisible="False" Opacity="0">
+                        <Grid.Clip>
+                            <RectangleGeometry Rect="0,0,956,440"/>
+                        </Grid.Clip>
+                        <Rectangle x:Name="RainHalo" Opacity="0.85"/>
+                        <Canvas x:Name="RainCanvas"/>
+                        <Canvas x:Name="RainSplash" Height="106" VerticalAlignment="Bottom" Opacity="0.45"/>
+                    </Grid>
+
                     <!-- MODO CRÍTICO (gap 6, Flávio 2026-07-03): super/críticas TOMAM a tela —
                          palavra vermelha piscando no centro + borda piscando pra visão periférica.
                          Delta/ápice/frenagem somem e as luzes apagam (code-behind AplicarModoCritico).
