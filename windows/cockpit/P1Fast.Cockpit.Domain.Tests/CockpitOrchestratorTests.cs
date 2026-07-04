@@ -152,7 +152,7 @@ public class CockpitOrchestratorTests
 
         // GPS emudeceu → SEM GPS.
         orq.VigiarFontes(motorSilencioso: false, gpsSilencioso: true);
-        Assert.Equal("SEM GPS", c.Get().Message!.Texto);
+        Assert.Equal("Sem GPS", c.Get().Message!.Texto);
     }
 
     // Gap 1 (Flávio 2026-07-03): o Vmin da curva aparece AO VIVO e colore vs a melhor passagem.

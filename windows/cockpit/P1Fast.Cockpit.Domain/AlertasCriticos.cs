@@ -95,23 +95,23 @@ public static class CatalogoAlertas
         // Super crítico (8)
         ["MOTOR_AQUECENDO"]           = new("MOTOR_AQUECENDO", "Temperatura Motor Subindo", AlertaGravidade.Super),
         ["MOTOR_QUENTE"]              = new("MOTOR_QUENTE", "Motor Quente", AlertaGravidade.Super),
-        ["OLEO_BAIXO"]                = new("OLEO_BAIXO", "ÓLEO BAIXO", AlertaGravidade.Super),
-        ["PNEU_AQUECENDO"]            = new("PNEU_AQUECENDO", "PNEU AQUECENDO", AlertaGravidade.Super),
-        ["PRESSAO_PNEU"]              = new("PRESSAO_PNEU", "PRESSÃO PNEU", AlertaGravidade.Super),
-        ["PNEU_QUENTE"]               = new("PNEU_QUENTE", "PNEU QUENTE", AlertaGravidade.Super),
-        ["CAMBIO_AQUECENDO"]          = new("CAMBIO_AQUECENDO", "CÂMBIO AQUECENDO", AlertaGravidade.Super),
-        ["CAMBIO_QUENTE"]             = new("CAMBIO_QUENTE", "CÂMBIO QUENTE", AlertaGravidade.Super),
+        ["OLEO_BAIXO"]                = new("OLEO_BAIXO", "Óleo Baixo", AlertaGravidade.Super),
+        ["PNEU_AQUECENDO"]            = new("PNEU_AQUECENDO", "Pneu Aquecendo", AlertaGravidade.Super),
+        ["PRESSAO_PNEU"]              = new("PRESSAO_PNEU", "Pressão Pneu", AlertaGravidade.Super),
+        ["PNEU_QUENTE"]               = new("PNEU_QUENTE", "Pneu Quente", AlertaGravidade.Super),
+        ["CAMBIO_AQUECENDO"]          = new("CAMBIO_AQUECENDO", "Câmbio Aquecendo", AlertaGravidade.Super),
+        ["CAMBIO_QUENTE"]             = new("CAMBIO_QUENTE", "Câmbio Quente", AlertaGravidade.Super),
         // Crítico (3)
-        ["MISTURA_POBRE"]             = new("MISTURA_POBRE", "MISTURA POBRE", AlertaGravidade.Critico),
+        ["MISTURA_POBRE"]             = new("MISTURA_POBRE", "Mistura Pobre", AlertaGravidade.Critico),
         ["SEM_DADOS"]                 = new("SEM_DADOS", "Desconectou", AlertaGravidade.Critico),
         ["FALHANDO"]                  = new("FALHANDO", "Falha Cilindros", AlertaGravidade.Critico),
         // Atenção (2)
-        ["MISTURA_RICA"]              = new("MISTURA_RICA", "MISTURA RICA", AlertaGravidade.Atencao),
-        ["BATERIA"]                   = new("BATERIA", "BATERIA", AlertaGravidade.Atencao),
+        ["MISTURA_RICA"]              = new("MISTURA_RICA", "Mistura Rica", AlertaGravidade.Atencao),
+        ["BATERIA"]                   = new("BATERIA", "Bateria", AlertaGravidade.Atencao),
         // Informação (3)
-        ["BOX"]                       = new("BOX", "BOX", AlertaGravidade.Info),
-        ["ULTIMA_VOLTA"]              = new("ULTIMA_VOLTA", "ÚLTIMA VOLTA", AlertaGravidade.Info),
-        ["SEM_GPS"]                   = new("SEM_GPS", "SEM GPS", AlertaGravidade.Info),
+        ["BOX"]                       = new("BOX", "Box", AlertaGravidade.Info),
+        ["ULTIMA_VOLTA"]              = new("ULTIMA_VOLTA", "Última Volta", AlertaGravidade.Info),
+        ["SEM_GPS"]                   = new("SEM_GPS", "Sem GPS", AlertaGravidade.Info),
     };
 
     /// <summary>Ids automáticos que avaliarT4000 pode gerar (pra o _set substituir só esses).</summary>

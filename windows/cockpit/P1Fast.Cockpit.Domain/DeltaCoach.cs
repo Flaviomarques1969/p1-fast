@@ -7,7 +7,7 @@
 // Compara a passagem ATUAL do trecho com a passagem de REFERÊNCIA (a melhor
 // histórica daquele carro+pneu) ponto a ponto, acumula a perda/ganho em cada
 // sub-trecho (entrada/freio/apice/pace/saida), e traduz o pior sub-trecho numa
-// frase aprovada ("FREOU CEDO", "ACELERE MAIS"...). Spec v2 (Flávio 04/07): 8 frases;
+// frase aprovada ("Freou Cedo", "Acelere Mais"...). Spec v2 (Flávio 04/07): 8 frases;
 // o ápice NÃO gera mais frase de volante — o piloto corrige pela BOLINHA (visual, gap 5).
 
 namespace P1Fast.Cockpit.Domain;
@@ -113,13 +113,13 @@ public static class MensagensPedagogicas
     // Spec v2 (Flávio 04/07): saíram BUSCAR LIMITE (12) e as 4 VIROU (03/04/06/07). O ápice
     // deixou de ter frase de volante — o piloto corrige seguindo a BOLINHA do ápice (visual,
     // gap 5, que FICA). Códigos 03/04/06/07/12 ficam vagos de propósito (são identificadores).
-    public static readonly MensagemPedagogica FreouCedo     = new("01", "FREOU CEDO",     "Freio",      MsgTipo.Comunicacao);
-    public static readonly MensagemPedagogica FreouTarde    = new("02", "FREOU TARDE",    "Freio",      MsgTipo.Comunicacao);
-    public static readonly MensagemPedagogica AcelerouTarde = new("05", "ACELEROU TARDE", "Acelerador", MsgTipo.Comunicacao);
+    public static readonly MensagemPedagogica FreouCedo     = new("01", "Freou Cedo",     "Freio",      MsgTipo.Comunicacao);
+    public static readonly MensagemPedagogica FreouTarde    = new("02", "Freou Tarde",    "Freio",      MsgTipo.Comunicacao);
+    public static readonly MensagemPedagogica AcelerouTarde = new("05", "Acelerou Tarde", "Acelerador", MsgTipo.Comunicacao);
     public static readonly MensagemPedagogica PisouPouco    = new("08", "Acelere Mais",   "Acelerador", MsgTipo.Comunicacao);
-    public static readonly MensagemPedagogica Recorde       = new("09", "RECORDE",        "Resultado",  MsgTipo.Comunicacao);
-    public static readonly MensagemPedagogica ManteveLinha  = new("10", "MANTEVE LINHA",  "Resultado",  MsgTipo.Comunicacao);
-    public static readonly MensagemPedagogica MelhorStint   = new("11", "MELHOR STINT",   "Resultado",  MsgTipo.Comunicacao);
+    public static readonly MensagemPedagogica Recorde       = new("09", "Recorde",        "Resultado",  MsgTipo.Comunicacao);
+    public static readonly MensagemPedagogica ManteveLinha  = new("10", "Manteve Linha",  "Resultado",  MsgTipo.Comunicacao);
+    public static readonly MensagemPedagogica MelhorStint   = new("11", "Melhor Stint",   "Resultado",  MsgTipo.Comunicacao);
     public static readonly MensagemPedagogica Registrando   = new("13", "Coletando Dados", "Sistema",   MsgTipo.Comunicacao);
 
     private const double DeltaZeroS            = 0.05;

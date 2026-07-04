@@ -91,8 +91,8 @@ public class DeltaCoachTests
     [Fact]
     public void DC_06_Ganho_pequeno_MANTEVE_e_grande_RECORDE()
     {
-        Assert.Equal("MANTEVE LINHA", MensagensPedagogicas.Decidir(Res(-0.08, "entrada", 0))!.Texto);
-        Assert.Equal("RECORDE", MensagensPedagogicas.Decidir(Res(-0.30, "entrada", 0))!.Texto);
+        Assert.Equal("Manteve Linha", MensagensPedagogicas.Decidir(Res(-0.08, "entrada", 0))!.Texto);
+        Assert.Equal("Recorde", MensagensPedagogicas.Decidir(Res(-0.30, "entrada", 0))!.Texto);
     }
 
     [Fact]
@@ -102,7 +102,7 @@ public class DeltaCoachTests
         var m = MensagensPedagogicas.Decidir(
             Res(-0.20, "entrada", 0, tempoAtual: 95.0),
             recordeAbsolutoS: 90.0, bateuMelhorStint: true);
-        Assert.Equal("MELHOR STINT", m!.Texto);
+        Assert.Equal("Melhor Stint", m!.Texto);
     }
 
     // ── Coach: foco no pior sub-trecho ──────────────────────
@@ -115,9 +115,9 @@ public class DeltaCoachTests
     public void DC_09_Freio_ruim_distingue_CEDO_de_TARDE()
     {
         // entrada normal -> FREOU CEDO
-        Assert.Equal("FREOU CEDO", MensagensPedagogicas.Decidir(Res(0.30, "freio", 0.30, entradaDelta: 0))!.Texto);
-        // chegou mais rápido na entrada (delta < -0.02) + perdeu no freio -> FREOU TARDE
-        Assert.Equal("FREOU TARDE", MensagensPedagogicas.Decidir(Res(0.30, "freio", 0.30, entradaDelta: -0.10))!.Texto);
+        Assert.Equal("Freou Cedo", MensagensPedagogicas.Decidir(Res(0.30, "freio", 0.30, entradaDelta: 0))!.Texto);
+        // chegou mais rápido na entrada (delta < -0.02) + perdeu no freio -> Freou Tarde
+        Assert.Equal("Freou Tarde", MensagensPedagogicas.Decidir(Res(0.30, "freio", 0.30, entradaDelta: -0.10))!.Texto);
     }
 
     [Theory]
@@ -134,7 +134,7 @@ public class DeltaCoachTests
 
     [Fact]
     public void DC_11_Saida_ruim_eh_ACELEROU_TARDE()
-        => Assert.Equal("ACELEROU TARDE", MensagensPedagogicas.Decidir(Res(0.30, "saida", 0.30))!.Texto);
+        => Assert.Equal("Acelerou Tarde", MensagensPedagogicas.Decidir(Res(0.30, "saida", 0.30))!.Texto);
 
     [Fact]
     public void DC_12_Perda_imensuravel_nao_atrapalha_o_piloto()
