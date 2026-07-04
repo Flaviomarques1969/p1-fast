@@ -20,13 +20,12 @@ public class AlertasCriticosTests
         Assert.Equal(AlertaGravidade.Super, CatalogoAlertas.Todos["MOTOR_QUENTE"].Gravidade);
     }
 
-    // ── Água (Bubi opera frio: 70 aquecendo, 80 quente) ─────
+    // ── Água (Bubi opera frio: Motor Quente a 70; aquecendo fixo saiu, vira IA na Fase 2) ─────
 
     [Theory]
     [InlineData(58, null)]                 // frio: nada (como a sessão real)
-    [InlineData(70, "MOTOR_AQUECENDO")]
-    [InlineData(79, "MOTOR_AQUECENDO")]
-    [InlineData(80, "MOTOR_QUENTE")]
+    [InlineData(69, null)]                 // abaixo de 70: nada (Temperatura Subindo fixo saiu)
+    [InlineData(70, "MOTOR_QUENTE")]
     [InlineData(95, "MOTOR_QUENTE")]
     public void ALR_02_Agua_dispara_nas_bordas_do_Bubi(double water, string? esperado)
     {

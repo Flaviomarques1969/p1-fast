@@ -45,8 +45,10 @@ public sealed record AmostraAlerta
 
 /// <summary>Limites calibráveis (ALERTA_LIMITES_DEFAULT). Default = Bubi.</summary>
 public sealed record AlertaLimites(
-    double WaterPredictivoC = 70,  // MOTOR AQUECENDO
-    double WaterMaxC        = 80,  // MOTOR QUENTE (Bubi opera frio)
+    // MOTOR QUENTE. Bubi opera frio: cai de 80 -> 70 (spec v2, Flávio 04/07). O antigo
+    // "Temperatura Motor Subindo" fixo (era 70) SAIU na Fase 1 — volta como IA de padrão
+    // histórico na Fase 2 (não é mais limiar fixo), por isso não há mais WaterPredictivoC.
+    double WaterMaxC        = 70,
     double OilPressRpmMin   = 2000,
     double LambdaPobre      = 1.15,
     double LambdaRica       = 0.80,
@@ -123,12 +125,10 @@ public static class CatalogoAlertas
         var sobCarga = (s.Rpm is { } r && r >= l.CargaRpmMin)
                     || (s.TpsPct is { } tp && tp >= l.CargaTpsPctMin);
 
-        // Motor (água da refrigeração) — sempre vale (superaquece parado também)
-        if (s.WaterTempC is { } water)
-        {
-            if (water >= l.WaterMaxC) ativos.Add("MOTOR_QUENTE");
-            else if (water >= l.WaterPredictivoC) ativos.Add("MOTOR_AQUECENDO");
-        }
+        // Motor (água da refrigeração) — sempre vale (superaquece parado também).
+        // "Temperatura Motor Subindo" (aquecendo) fixo saiu na Fase 1 (spec v2, Flávio 04/07);
+        // volta como IA de padrão histórico na Fase 2. Aqui só o QUENTE fixo (Bubi opera frio, 70).
+        if (s.WaterTempC is { } water && water >= l.WaterMaxC) ativos.Add("MOTOR_QUENTE");
 
         // Óleo — BIT de alarme + rpm > 2000 (NÃO valor de pressão) — sempre vale
         if (s.BaixaPressaoOleo == true && s.Rpm is { } rpm && rpm > l.OilPressRpmMin)
