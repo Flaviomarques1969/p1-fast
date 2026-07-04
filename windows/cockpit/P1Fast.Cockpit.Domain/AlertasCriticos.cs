@@ -49,16 +49,22 @@ public sealed record AlertaLimites(
     // "Temperatura Motor Subindo" fixo (era 70) SAIU na Fase 1 — volta como IA de padrão
     // histórico na Fase 2 (não é mais limiar fixo), por isso não há mais WaterPredictivoC.
     double WaterMaxC        = 70,
-    double OilPressRpmMin   = 2000,
-    double LambdaPobre      = 1.15,
-    double LambdaRica       = 0.80,
-    double BatteryMinV      = 11.8,
+    double LambdaPobre      = 1.0,   // era 1.15 (spec v2, Flávio 04/07)
+    double LambdaRica       = 0.74,  // era 0.80
+    double BatteryMinV      = 12.5,  // era 11.8
     double TireTempMaxC     = 120,
     double CambioTempMaxC   = 140,
-    // Gate de "carro sob carga" (achado do dado real 21/06, NÃO está no JS):
-    // mistura e bateria só fazem sentido com o motor puxando. Em marcha lenta a
-    // lambda nada lê (corte de combustível = pobre falso) e a bateria cai sozinha.
-    // Default Bubi vindo do split real (andando = rpm>=3000; parado nunca).
+    // Gates de "carro sob carga" (motor puxando). Achado do dado real 21/06: mistura e
+    // bateria só fazem sentido puxando (em marcha lenta a lambda lê corte = pobre falso e
+    // a bateria cai sozinha). Pós-spec v2 o gate deixou de ser único e virou POR-ALERTA:
+    //  • Mistura Pobre: giro ≥3500 OU acelerador ≥50%.
+    //  • Mistura Rica:  giro >3000 E acelerador >40% (carga real).
+    //  • Bateria:       gate antigo (giro ≥3000 OU acelerador ≥15%).
+    // Segurança (motor quente, óleo) NÃO depende de carga (vale parado também).
+    double PobreCargaRpmMin = 3500,
+    double PobreCargaTpsMin = 50,
+    double RicaCargaRpmMin  = 3000,
+    double RicaCargaTpsMin  = 40,
     double CargaRpmMin      = 3000,
     double CargaTpsPctMin   = 15
 )
@@ -119,36 +125,39 @@ public static class CatalogoAlertas
         var ativos = new List<string>();
         if (s is null) return ativos;
 
-        // Carro "sob carga"? (motor puxando). Mistura e bateria só valem aqui —
-        // em marcha lenta/parado dão alarme falso (provado no dado real de 21/06).
-        // Segurança (motor quente, óleo) NÃO depende disto: vale parado também.
-        var sobCarga = (s.Rpm is { } r && r >= l.CargaRpmMin)
-                    || (s.TpsPct is { } tp && tp >= l.CargaTpsPctMin);
+        // Carro "sob carga"? (motor puxando). Pós-spec v2 cada alerta tem seu gate:
+        // Pobre = giro≥3500 OU tps≥50; Rica = giro>3000 E tps>40 (carga real); Bateria =
+        // gate antigo (giro≥3000 OU tps≥15). Segurança (água, óleo) NÃO depende disto.
+        var cargaPobre = (s.Rpm is { } rp && rp >= l.PobreCargaRpmMin)
+                      || (s.TpsPct is { } tpp && tpp >= l.PobreCargaTpsMin);
+        var cargaRica = (s.Rpm is { } rr && rr > l.RicaCargaRpmMin)
+                     && (s.TpsPct is { } trr && trr > l.RicaCargaTpsMin);
+        var cargaBateria = (s.Rpm is { } rb && rb >= l.CargaRpmMin)
+                        || (s.TpsPct is { } tb && tb >= l.CargaTpsPctMin);
 
         // Motor (água da refrigeração) — sempre vale (superaquece parado também).
         // "Temperatura Motor Subindo" (aquecendo) fixo saiu na Fase 1 (spec v2, Flávio 04/07);
         // volta como IA de padrão histórico na Fase 2. Aqui só o QUENTE fixo (Bubi opera frio, 70).
         if (s.WaterTempC is { } water && water >= l.WaterMaxC) ativos.Add("MOTOR_QUENTE");
 
-        // Óleo — BIT de alarme + rpm > 2000 (NÃO valor de pressão) — sempre vale
-        if (s.BaixaPressaoOleo == true && s.Rpm is { } rpm && rpm > l.OilPressRpmMin)
-            ativos.Add("OLEO_BAIXO");
+        // Óleo — BIT de alarme em QUALQUER rpm (spec v2: gate de rpm removido; NÃO é valor de
+        // pressão). A salvaguarda de PARTIDA (suprime o pico dos ~2s ao ligar) vem no bloco 2b.
+        if (s.BaixaPressaoOleo == true) ativos.Add("OLEO_BAIXO");
 
-        // Lambda (mistura) — só sob carga E com leitura FISICAMENTE plausível. Lambda 0.0 (ou
-        // fora de ~0.3–1.6) = sonda WB ausente/em falha, NÃO 0.0 de mistura — nunca dispara
-        // alerta falso (regra dura §9; M3 da auditoria 2026-07-02). O 0.0 passava por ser um
-        // double válido (≠ null), disparando MISTURA RICA sem sonda.
-        if (sobCarga && s.Lambda is { } lambda && lambda is >= 0.3 and <= 1.6)
+        // Lambda (mistura) — só com leitura FISICAMENTE plausível (0.3–1.6). Lambda 0.0 (ou fora
+        // da faixa) = sonda WB ausente/em falha, NÃO 0.0 de mistura — nunca dispara falso (§9;
+        // M3 da auditoria 2026-07-02). Pobre e rica têm gates de carga distintos (spec v2).
+        if (s.Lambda is { } lambda && lambda is >= 0.3 and <= 1.6)
         {
-            if (lambda > l.LambdaPobre) ativos.Add("MISTURA_POBRE");
-            if (lambda < l.LambdaRica)  ativos.Add("MISTURA_RICA");
+            if (cargaPobre && lambda > l.LambdaPobre) ativos.Add("MISTURA_POBRE");
+            if (cargaRica  && lambda < l.LambdaRica)  ativos.Add("MISTURA_RICA");
         }
 
         // Cilindros desbalanceados → FALHANDO
         if (s.FuelInjectionBalanced == false) ativos.Add("FALHANDO");
 
         // Bateria — só sob carga (em marcha lenta/parado cai sozinha)
-        if (sobCarga && s.BatteryV is { } bat && bat < l.BatteryMinV) ativos.Add("BATERIA");
+        if (cargaBateria && s.BatteryV is { } bat && bat < l.BatteryMinV) ativos.Add("BATERIA");
 
         // Combustível (bits): nível + baixa pressão = crítico; nível só = atenção
         if (s.AlertaNivelCombustivel == true)

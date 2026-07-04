@@ -52,12 +52,13 @@ public class AlertasCriticosTests
     }
 
     [Fact]
-    public void ALR_04_Oleo_dispara_pelo_BIT_de_alarme_com_rpm_acima_de_2000()
+    public void ALR_04_Oleo_dispara_pelo_BIT_em_qualquer_rpm()
     {
+        // spec v2 (Flávio 04/07): gate de rpm removido — o BIT dispara em qualquer rpm.
+        // A salvaguarda de PARTIDA (suprime só o pico dos ~2s ao ligar) vem no bloco 2b.
         Assert.Contains("OLEO_BAIXO",
             CatalogoAlertas.AvaliarT4000(new AmostraAlerta { BaixaPressaoOleo = true, Rpm = 3000 }));
-        // rpm baixo: não dispara (motor em marcha lenta pode ter pressão baixa normal)
-        Assert.DoesNotContain("OLEO_BAIXO",
+        Assert.Contains("OLEO_BAIXO",
             CatalogoAlertas.AvaliarT4000(new AmostraAlerta { BaixaPressaoOleo = true, Rpm = 1500 }));
     }
 
@@ -66,11 +67,12 @@ public class AlertasCriticosTests
     [Fact]
     public void ALR_05_Lambda_pobre_e_rica_quando_andando()
     {
-        // sob carga (rpm alto): a mistura é avaliada.
+        // Pobre: gate giro≥3500 OU tps≥50 — giro 4000 basta.
         Assert.Contains("MISTURA_POBRE", CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = 1.6, Rpm = 4000 }));
-        Assert.Contains("MISTURA_RICA",  CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = 0.6, Rpm = 4000 }));
-        Assert.Empty(CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = 0.95, Rpm = 4000 }));
-        Assert.Empty(CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = null, Rpm = 4000 })); // ausente
+        // Rica: gate giro>3000 E tps>40 (carga real) — precisa dos dois.
+        Assert.Contains("MISTURA_RICA",  CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = 0.6, Rpm = 4000, TpsPct = 50 }));
+        Assert.Empty(CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = 0.95, Rpm = 4000, TpsPct = 50 }));
+        Assert.Empty(CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = null, Rpm = 4000, TpsPct = 50 })); // ausente
     }
 
     // M3 (auditoria 2026-07-02): sonda WB ausente lê 0.0 (double válido, ≠ null) — mesmo sob
@@ -80,7 +82,7 @@ public class AlertasCriticosTests
     {
         Assert.Empty(CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = 0.0, Rpm = 4000 }));  // sonda ausente lida como 0
         Assert.Empty(CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = 5.0, Rpm = 4000 }));  // fora do físico
-        Assert.Contains("MISTURA_RICA", CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = 0.6, Rpm = 4000 })); // real segue disparando
+        Assert.Contains("MISTURA_RICA", CatalogoAlertas.AvaliarT4000(new AmostraAlerta { Lambda = 0.6, Rpm = 4000, TpsPct = 50 })); // real segue disparando
     }
 
     // ── Bateria / combustível / falhando ────────────────────
