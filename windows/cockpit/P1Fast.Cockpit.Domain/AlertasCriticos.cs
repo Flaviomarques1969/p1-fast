@@ -77,26 +77,28 @@ public sealed record AlertaMensagem(string Id, string Texto, AlertaGravidade Gra
 
 public static class CatalogoAlertas
 {
-    /// <summary>Catálogo v2 — 19 alertas (port fiel do ALERTAS do JS).</summary>
+    /// <summary>
+    /// Catálogo v2 — 16 alertas. Spec v2 (Flávio 04/07) removeu Combustível Baixo (os 2,
+    /// sem medição de combustível) e Motor Esfriando (virou a chuva térmica azul, §12).
+    /// Os outros 6 removidos da spec (Óleo Quente, Escape Quente, Detonação, Roda Travou,
+    /// Freio Quente, Pista Suja) nunca foram portados pro .exe — não existiam aqui.
+    /// </summary>
     public static readonly IReadOnlyDictionary<string, Alerta> Todos = new Dictionary<string, Alerta>
     {
-        // Super crítico (9)
+        // Super crítico (8)
         ["MOTOR_AQUECENDO"]           = new("MOTOR_AQUECENDO", "Temperatura Motor Subindo", AlertaGravidade.Super),
         ["MOTOR_QUENTE"]              = new("MOTOR_QUENTE", "Motor Quente", AlertaGravidade.Super),
         ["OLEO_BAIXO"]                = new("OLEO_BAIXO", "ÓLEO BAIXO", AlertaGravidade.Super),
-        ["COMBUSTIVEL_BAIXO_CRITICO"] = new("COMBUSTIVEL_BAIXO_CRITICO", "COMBUSTÍVEL BAIXO", AlertaGravidade.Super),
         ["PNEU_AQUECENDO"]            = new("PNEU_AQUECENDO", "PNEU AQUECENDO", AlertaGravidade.Super),
         ["PRESSAO_PNEU"]              = new("PRESSAO_PNEU", "PRESSÃO PNEU", AlertaGravidade.Super),
         ["PNEU_QUENTE"]               = new("PNEU_QUENTE", "PNEU QUENTE", AlertaGravidade.Super),
         ["CAMBIO_AQUECENDO"]          = new("CAMBIO_AQUECENDO", "CÂMBIO AQUECENDO", AlertaGravidade.Super),
         ["CAMBIO_QUENTE"]             = new("CAMBIO_QUENTE", "CÂMBIO QUENTE", AlertaGravidade.Super),
-        // Crítico (4)
-        ["MOTOR_ESFRIANDO"]           = new("MOTOR_ESFRIANDO", "MOTOR ESFRIANDO", AlertaGravidade.Critico),
+        // Crítico (3)
         ["MISTURA_POBRE"]             = new("MISTURA_POBRE", "MISTURA POBRE", AlertaGravidade.Critico),
         ["SEM_DADOS"]                 = new("SEM_DADOS", "Desconectou", AlertaGravidade.Critico),
         ["FALHANDO"]                  = new("FALHANDO", "Falha Cilindros", AlertaGravidade.Critico),
-        // Atenção (3)
-        ["COMBUSTIVEL_BAIXO"]         = new("COMBUSTIVEL_BAIXO", "COMBUSTÍVEL BAIXO", AlertaGravidade.Atencao),
+        // Atenção (2)
         ["MISTURA_RICA"]              = new("MISTURA_RICA", "MISTURA RICA", AlertaGravidade.Atencao),
         ["BATERIA"]                   = new("BATERIA", "BATERIA", AlertaGravidade.Atencao),
         // Informação (3)
@@ -108,9 +110,8 @@ public static class CatalogoAlertas
     /// <summary>Ids automáticos que avaliarT4000 pode gerar (pra o _set substituir só esses).</summary>
     public static readonly IReadOnlyList<string> Automaticos = new[]
     {
-        "MOTOR_AQUECENDO", "MOTOR_QUENTE", "MOTOR_ESFRIANDO",
+        "MOTOR_AQUECENDO", "MOTOR_QUENTE",
         "OLEO_BAIXO", "MISTURA_POBRE", "MISTURA_RICA", "FALHANDO", "BATERIA",
-        "COMBUSTIVEL_BAIXO", "COMBUSTIVEL_BAIXO_CRITICO",
         "PNEU_AQUECENDO", "PNEU_QUENTE", "PRESSAO_PNEU",
         "CAMBIO_AQUECENDO", "CAMBIO_QUENTE",
     };
@@ -159,9 +160,9 @@ public static class CatalogoAlertas
         // Bateria — só sob carga (em marcha lenta/parado cai sozinha)
         if (cargaBateria && s.BatteryV is { } bat && bat < l.BatteryMinV) ativos.Add("BATERIA");
 
-        // Combustível (bits): nível + baixa pressão = crítico; nível só = atenção
-        if (s.AlertaNivelCombustivel == true)
-            ativos.Add(s.BaixaPressaoCombustivel == true ? "COMBUSTIVEL_BAIXO_CRITICO" : "COMBUSTIVEL_BAIXO");
+        // Combustível: os 2 alertas SAÍRAM na spec v2 (Flávio 04/07) — não há medição real de
+        // combustível na injeção, nunca teriam base. Os bits do T4000 continuam sendo lidos em
+        // AmostraAlerta (plumbing do parser), mas não levantam mais alerta.
 
         // Pneu / câmbio (sensores a instalar)
         if (s.TireTempC is { } tt && tt > l.TireTempMaxC) ativos.Add("PNEU_QUENTE");
@@ -240,7 +241,6 @@ public sealed class AlertasCriticos
         "MOTOR_QUENTE" => 0, "MOTOR_AQUECENDO" => 1,
         "PNEU_QUENTE" => 0, "PNEU_AQUECENDO" => 1,
         "CAMBIO_QUENTE" => 0, "CAMBIO_AQUECENDO" => 1,
-        "COMBUSTIVEL_BAIXO_CRITICO" => 0,
         _ => 9,
     };
 }

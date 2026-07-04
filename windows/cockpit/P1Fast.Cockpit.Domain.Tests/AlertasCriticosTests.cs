@@ -13,9 +13,9 @@ public class AlertasCriticosTests
     // ── Catálogo ────────────────────────────────────────────
 
     [Fact]
-    public void ALR_01_Catalogo_tem_19_alertas()
+    public void ALR_01_Catalogo_tem_16_alertas()
     {
-        Assert.Equal(19, CatalogoAlertas.Todos.Count);
+        Assert.Equal(16, CatalogoAlertas.Todos.Count);
         Assert.Equal("Motor Quente", CatalogoAlertas.Todos["MOTOR_QUENTE"].Texto);
         Assert.Equal(AlertaGravidade.Super, CatalogoAlertas.Todos["MOTOR_QUENTE"].Gravidade);
     }
@@ -88,15 +88,13 @@ public class AlertasCriticosTests
     // ── Bateria / combustível / falhando ────────────────────
 
     [Fact]
-    public void ALR_06_Bateria_combustivel_e_falhando()
+    public void ALR_06_Bateria_e_falhando()
     {
         Assert.Contains("BATERIA", CatalogoAlertas.AvaliarT4000(new AmostraAlerta { BatteryV = 11.0, Rpm = 4000 }));
         Assert.Empty(CatalogoAlertas.AvaliarT4000(new AmostraAlerta { BatteryV = 12.5, Rpm = 4000 }));
 
-        Assert.Contains("COMBUSTIVEL_BAIXO",
-            CatalogoAlertas.AvaliarT4000(new AmostraAlerta { AlertaNivelCombustivel = true }));
-        Assert.Contains("COMBUSTIVEL_BAIXO_CRITICO",
-            CatalogoAlertas.AvaliarT4000(new AmostraAlerta { AlertaNivelCombustivel = true, BaixaPressaoCombustivel = true }));
+        // Combustível (os 2 alertas) saiu na spec v2 — o bit não levanta mais nada.
+        Assert.Empty(CatalogoAlertas.AvaliarT4000(new AmostraAlerta { AlertaNivelCombustivel = true, BaixaPressaoCombustivel = true }));
 
         Assert.Contains("FALHANDO",
             CatalogoAlertas.AvaliarT4000(new AmostraAlerta { FuelInjectionBalanced = false }));
