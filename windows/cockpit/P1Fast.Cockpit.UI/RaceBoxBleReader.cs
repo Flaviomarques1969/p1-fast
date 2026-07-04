@@ -21,7 +21,10 @@ using Windows.Storage.Streams;
 namespace P1Fast.Cockpit.UI;
 
 /// <summary>Um fix decodificado do RaceBox.</summary>
-public readonly record struct RaceBoxFix(double Lat, double Lng, double Kmh, int Fix, int NumSV, double HaccM);
+// HeadingDeg (L2): rumo do movimento do PACOTE (headMot, 0=norte, horário) — antes era
+// descartado e o ângulo do ápice saía por 2 posições (mais ruidoso). Null quando não
+// confiável (parado/quase parado: o RaceBox congela/inventa o rumo em baixa velocidade).
+public readonly record struct RaceBoxFix(double Lat, double Lng, double Kmh, int Fix, int NumSV, double HaccM, double? HeadingDeg = null);
 
 public sealed class RaceBoxBleReader
 {
@@ -182,7 +185,13 @@ public sealed class RaceBoxBleReader
         foreach (var f in fixes) _onFix(f);
     }
 
-    // Decodifica o payload de dados do RaceBox (offsets provados no web). o = início do payload.
+    // Velocidade mínima (km/h) pro heading do pacote valer: abaixo disto o RaceBox
+    // congela/inventa o rumo (comportamento u-blox) — vai null e o cérebro cai no
+    // rumo por 2 posições, como antes.
+    private const double HeadingMinKmh = 5.0;
+
+    // Decodifica o payload de dados do RaceBox (offsets provados no web; heading no 52
+    // conforme o protocolo RaceBox Mini — headMot, graus ×1e-5). o = início do payload.
     private static RaceBoxFix Decode(byte[] b, int o)
     {
         int fix     = b[o + 20];
@@ -191,6 +200,8 @@ public sealed class RaceBoxBleReader
         double kmh  = BitConverter.ToInt32(b, o + 48) / 1000.0 * 3.6;
         double lat  = BitConverter.ToInt32(b, o + 28) / 1e7;
         double lon  = BitConverter.ToInt32(b, o + 24) / 1e7;
-        return new RaceBoxFix(lat, lon, kmh, fix, numSV, hacc);
+        double hdg  = BitConverter.ToInt32(b, o + 52) / 1e5;
+        double? heading = kmh >= HeadingMinKmh && hdg >= 0 && hdg < 360 ? hdg : null;
+        return new RaceBoxFix(lat, lon, kmh, fix, numSV, hacc, heading);
     }
 }

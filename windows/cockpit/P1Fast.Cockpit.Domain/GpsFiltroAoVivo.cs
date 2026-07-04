@@ -41,8 +41,10 @@ public sealed class GpsFiltroAoVivo
 
     /// <summary>Decimação por movimento (com estado), assumindo qualidade JÁ aprovada.
     /// Devolve a amostra (kmh = dist/dt do GPS) só quando o carro andou >= <see cref="MovimentoMinM"/>
-    /// desde o último ponto aceito; senão <c>null</c> (parado/jitter). A 1ª amostra passa com kmh=0.</summary>
-    public AmostraGps? AceitarValido(PontoGps p, double tWall)
+    /// desde o último ponto aceito; senão <c>null</c> (parado/jitter). A 1ª amostra passa com kmh=0.
+    /// headingDeg (L2): rumo do PACOTE quando o aparelho fornece (RaceBox headMot) — só
+    /// atravessa, sem inventar; null = cérebro cai no rumo por 2 posições, como sempre.</summary>
+    public AmostraGps? AceitarValido(PontoGps p, double tWall, double? headingDeg = null)
     {
         if (_prev is { } prev && Ghost.DistMeters(prev, p) < MovimentoMinM) return null;
 
@@ -54,11 +56,11 @@ public sealed class GpsFiltroAoVivo
         }
         _prev = p;
         _prevT = tWall;
-        return new AmostraGps(p.Lat, p.Lng, kmh, tWall);
+        return new AmostraGps(p.Lat, p.Lng, kmh, tWall, headingDeg);
     }
 
     /// <summary>Fluxo AO VIVO: qualidade + decimação num passo só. Devolve a amostra pro
     /// cérebro ou <c>null</c> (reprovado ou decimado). É o que o MainWindow.Live chama por fix.</summary>
-    public AmostraGps? Aceitar(double lat, double lon, double fix, double hacc, double tWall)
-        => QualidadeOk(lat, lon, fix, hacc) ? AceitarValido(new PontoGps(lat, lon), tWall) : null;
+    public AmostraGps? Aceitar(double lat, double lon, double fix, double hacc, double tWall, double? headingDeg = null)
+        => QualidadeOk(lat, lon, fix, hacc) ? AceitarValido(new PontoGps(lat, lon), tWall, headingDeg) : null;
 }

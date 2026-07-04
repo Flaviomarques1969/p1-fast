@@ -60,9 +60,12 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
         await ws.ConnectAsync(_wsUri, ct).ConfigureAwait(false);
         _ws = ws;
 
-        _bg = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        _ = Task.Run(() => ReceiveLoopAsync(_bg.Token));
-        _ = Task.Run(() => HeartbeatLoopAsync(_bg.Token));
+        // L5: cópia local pros laços — se uma religação trocar _bg no meio, cada laço
+        // segue preso ao token da SUA conexão (nunca null/trocado por baixo).
+        var bg = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        _bg = bg;
+        _ = Task.Run(() => ReceiveLoopAsync(bg.Token));
+        _ = Task.Run(() => HeartbeatLoopAsync(bg.Token));
 
         // Entra no canal (broadcast ack:false / self:false — igual ao cloud-bridge.js).
         await SendRawAsync(new Dictionary<string, object?>
@@ -173,7 +176,12 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
 
     private async Task DisposeSocketAsync()
     {
+        // L5: Cancel + Dispose (antes só Cancel) — cada religação criava um CTS linkado
+        // novo e o anterior ficava registrado no token pai pra sempre (vazamento por
+        // reconexão). Cancelar primeiro acorda os laços; descartar solta o registro.
         try { _bg?.Cancel(); } catch { }
+        try { _bg?.Dispose(); } catch { }
+        _bg = null;
         if (_ws is not null)
         {
             try

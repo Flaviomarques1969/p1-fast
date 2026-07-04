@@ -36,20 +36,28 @@ public sealed class CapturaDiaDePista
     }
 
     /// <summary>Converte a amostra crua do motor (T3000) nos sinais que os alertas
-    /// pedem. Sensor que não existe (pneu/câmbio) e bit não decodificado ficam null —
-    /// regra dura: alerta falso NUNCA dispara.</summary>
-    public static AmostraAlerta AlertaDeSample(T3000Sample s) => new()
+    /// pedem — o mapeamento CANÔNICO (L6: era divergente do ao vivo; agora o
+    /// MainWindow.Live.BridgeMotor delega pra cá — UMA ponte só, mesma do replay
+    /// provado: tpsPct, guarda M3 da sonda, alarmes de combustível). Sensor que não
+    /// existe (pneu/câmbio) fica null — regra dura: alerta falso NUNCA dispara.</summary>
+    public static AmostraAlerta AlertaDeSample(T3000Sample s)
     {
-        Rpm = s.Rpm,
-        WaterTempC = s.WaterTempC,
-        BatteryV = s.BatteryV,
-        Lambda = s.Lambda,
-        TpsPct = s.PedalAceleradorPct,   // acelerador % (gate de "sob carga")
-        BaixaPressaoOleo = s.Alarmes.TryGetValue("baixaPressaoOleo", out var op) ? op : (bool?)null,
-        FuelInjectionBalanced = s.FuelInjectionBalanced,
-        // nível/pressão de combustível: bits ainda não decodificados → null (sem alerta falso).
-        // pneu/câmbio: sensores a instalar → null.
-    };
+        bool? Alm(string k) => s.Alarmes is not null && s.Alarmes.TryGetValue(k, out var v) ? v : (bool?)null;
+        return new AmostraAlerta
+        {
+            Rpm        = s.Rpm,
+            WaterTempC = s.WaterTempC.HasValue ? (double?)s.WaterTempC.Value : null,
+            TpsPct     = s.TpsPct,   // TPS % (gate de "sob carga") — mesmo campo do replay (tpsPct)
+            // M3: sonda WB ausente/desconectada lê 0 (ou fora do físico 0.3–1.6) — NÃO é
+            // mistura 0.0; vira null (sem dado) pra NÃO disparar MISTURA RICA falsa (§9).
+            Lambda     = (s.LambdaWBRaw == 0 || s.Lambda < 0.3 || s.Lambda > 1.6) ? (double?)null : s.Lambda,
+            BatteryV   = s.BatteryV,
+            FuelInjectionBalanced   = s.FuelInjectionBalanced,
+            BaixaPressaoOleo        = Alm("baixaPressaoOleo"),
+            AlertaNivelCombustivel  = Alm("alertaNivelCombustivel"),
+            BaixaPressaoCombustivel = Alm("baixaPressaoCombustivel"),
+        };
+    }
 
     /// <summary>Uma amostra de motor (T3000 pela USB). Acende o painel SEMPRE (mesmo
     /// parado no box a tela mostra o motor); GRAVA e PUBLICA só quando a captura

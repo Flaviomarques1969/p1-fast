@@ -62,4 +62,51 @@ public class CapturaDiaDePistaTests
         Assert.Equal("parado", rec.MotivoUltimoFim);           // motivo = entrou no box
         Assert.Equal("encerrada", store.ListarSessoes().Single().Status); // sessão guardada e encerrada
     }
+
+    // ── AlertaDeSample = a ponte CANÔNICA (L6) — o ao vivo delega pra cá ─────────
+
+    [Fact]
+    public void PONTE_01_Tps_vem_do_TPS_nao_do_pedal()
+    {
+        // L6: a cópia antiga usava PedalAceleradorPct; o canônico (replay provado) é tpsPct.
+        var a = CapturaDiaDePista.AlertaDeSample(new T3000Sample
+        {
+            Rpm = 4000, TpsPct = 42, PedalAceleradorPct = 80,
+        });
+        Assert.Equal(42, a.TpsPct);
+    }
+
+    [Fact]
+    public void PONTE_02_Guarda_M3_da_sonda_lambda()
+    {
+        // Sonda WB ausente lê raw 0 → lambda null (nunca MISTURA RICA falsa).
+        var semSonda = CapturaDiaDePista.AlertaDeSample(new T3000Sample { Rpm = 4000, Lambda = 0.0, LambdaWBRaw = 0 });
+        Assert.Null(semSonda.Lambda);
+
+        // Fora do físico (0.3–1.6) → null mesmo com raw presente.
+        var foraFisico = CapturaDiaDePista.AlertaDeSample(new T3000Sample { Rpm = 4000, Lambda = 2.5, LambdaWBRaw = 500 });
+        Assert.Null(foraFisico.Lambda);
+
+        // Sonda viva e valor físico → atravessa.
+        var ok = CapturaDiaDePista.AlertaDeSample(new T3000Sample { Rpm = 4000, Lambda = 0.95, LambdaWBRaw = 500 });
+        Assert.Equal(0.95, ok.Lambda);
+    }
+
+    [Fact]
+    public void PONTE_03_Alarmes_de_combustivel_atravessam_e_ausentes_ficam_null()
+    {
+        var com = CapturaDiaDePista.AlertaDeSample(new T3000Sample
+        {
+            Rpm = 4000,
+            Alarmes = new Dictionary<string, bool> { ["baixaPressaoOleo"] = true, ["alertaNivelCombustivel"] = false, ["baixaPressaoCombustivel"] = true },
+        });
+        Assert.True(com.BaixaPressaoOleo);
+        Assert.False(com.AlertaNivelCombustivel);
+        Assert.True(com.BaixaPressaoCombustivel);
+
+        var sem = CapturaDiaDePista.AlertaDeSample(new T3000Sample { Rpm = 4000 });
+        Assert.Null(sem.BaixaPressaoOleo);            // bit ausente = sem dado = sem alerta falso
+        Assert.Null(sem.AlertaNivelCombustivel);
+        Assert.Null(sem.BaixaPressaoCombustivel);
+    }
 }

@@ -59,8 +59,9 @@ public sealed partial class MainWindow
     private const string LiveSupabaseUrl = "https://fvhwltzhytpnhlqbttmd.supabase.co";
     private const string LiveCanalTeste  = "cockpit-bubi-dev-teste";
 
-    // Liga o cockpit ao vivo: carrega as curvas fora da thread da UI, resolve a porta
-    // e religa o maestro + leitor na thread da UI.
+    // Liga o cockpit ao vivo: carrega as curvas fora da thread da UI e religa o
+    // maestro + leitor na thread da UI. (A porta COM é resolvida POR TENTATIVA no
+    // supervisor do motor — L3 —, não mais aqui no boot.)
     private void StartLive()
     {
         StatusText.Text = "ao vivo: procurando T4000…";
@@ -84,15 +85,15 @@ public sealed partial class MainWindow
             }
             catch { /* sem curvas: a tela mostra o motor mesmo assim */ }
 
-            return (segs, port: ResolveLivePort(_options.Port));
+            return segs;
         }).ContinueWith(t =>
         {
-            var (segs, port) = t.Result;
-            DispatcherQueue.TryEnqueue(() => IniciarLive(segs, port));
+            var segs = t.Result;
+            DispatcherQueue.TryEnqueue(() => IniciarLive(segs));
         });
     }
 
-    private void IniciarLive(IReadOnlyList<TrechoSegmento> segs, string? port)
+    private void IniciarLive(IReadOnlyList<TrechoSegmento> segs)
     {
         // M6: se a janela já fechou enquanto este IniciarLive estava enfileirado, aborta —
         // não cria recorder/RaceBox/laços numa janela morta (que ficariam órfãos e sem monitor).
@@ -174,16 +175,20 @@ public sealed partial class MainWindow
         // a cada tentativa do supervisor abaixo). Null = nenhuma fonte de motor agora.
         IT3000UsbChannel? CriarCanalMotor(out string fonte)
         {
+            // L3: re-resolve a COM a CADA tentativa (antes era 1× no boot) — se a T4000
+            // enumerar como serial só depois de energizada, a contingência COM aparece
+            // sem reiniciar o app. --port explícito continua mandando.
+            var comPort = ResolveLivePort(_options.Port);
             bool win = false;
             try { win = WinUsbT3000Channel.Present(); } catch { win = false; }
-            if (win && port is not null)
+            if (win && comPort is not null)
             {
                 // WinUSB com a serial de RESERVA: se o WinUSB nao ABRIR, cai pra COM.
-                fonte = $"T4000 (WinUSB, COM {port} de reserva)";
-                return new FallbackT3000UsbChannel(new WinUsbT3000Channel(), () => new LiveUsbChannel(port));
+                fonte = $"T4000 (WinUSB, COM {comPort} de reserva)";
+                return new FallbackT3000UsbChannel(new WinUsbT3000Channel(), () => new LiveUsbChannel(comPort));
             }
             if (win) { fonte = "T4000 (WinUSB)"; return new WinUsbT3000Channel(); }
-            if (port is not null) { fonte = $"T4000 (COM {port})"; return new LiveUsbChannel(port); }
+            if (comPort is not null) { fonte = $"T4000 (COM {comPort})"; return new LiveUsbChannel(comPort); }
             fonte = ""; return null;
         }
 
@@ -503,7 +508,7 @@ public sealed partial class MainWindow
         // (>=3 m), a MESMA peça que o replay usa. O disco e a nuvem acima já guardaram TODOS os
         // fixes crus; só o maestro recebe o filtrado, pra fix impreciso/jitter parado não gerar
         // curva/ápice/freada falsos na tela do piloto.
-        var cerebro = _gpsFiltro.Aceitar(f.Lat, f.Lng, f.Fix, f.HaccM, tWall);
+        var cerebro = _gpsFiltro.Aceitar(f.Lat, f.Lng, f.Fix, f.HaccM, tWall, f.HeadingDeg);
         DispatcherQueue.TryEnqueue(() =>
         {
             if (cerebro is not null)
@@ -599,27 +604,11 @@ public sealed partial class MainWindow
 
     // Ponte T3000Sample (USB) → AmostraAlerta, MESMO mapeamento que o replay usa
     // (SessaoReplay.Carregar). Campo ausente = null = "sem dado" (nunca alerta falso).
+    // L6: delega pro mapeamento CANÔNICO do Domain (CapturaDiaDePista.AlertaDeSample) —
+    // era duplicado aqui e a cópia de lá divergia (pedal em vez de TPS, sem guarda M3,
+    // sem alarmes de combustível). Uma ponte só: mudou o mapeamento, mudou pros dois.
     private static (double rpm, AmostraAlerta alerta) BridgeMotor(T3000Sample s)
-    {
-        bool? Alm(string k) => s.Alarmes is not null && s.Alarmes.TryGetValue(k, out var v) ? v : (bool?)null;
-        var alerta = new AmostraAlerta
-        {
-            Rpm                     = s.Rpm,
-            WaterTempC              = s.WaterTempC.HasValue ? (double?)s.WaterTempC.Value : null,
-            TpsPct                  = s.TpsPct,
-            // M3: sonda WB ausente/desconectada lê 0 (ou fora do físico 0.3–1.6) — NÃO é 0.0 de
-            // mistura; vira null (sem dado) pra NÃO disparar MISTURA RICA falsa (regra §9). O raw
-            // fica no disco; só o ALERTA/sensor recebe null. Alinha o ao vivo com o replay (que
-            // já lê null quando o campo falta).
-            Lambda                  = (s.LambdaWBRaw == 0 || s.Lambda < 0.3 || s.Lambda > 1.6) ? (double?)null : s.Lambda,
-            BatteryV                = s.BatteryV,
-            FuelInjectionBalanced   = s.FuelInjectionBalanced,
-            BaixaPressaoOleo        = Alm("baixaPressaoOleo"),
-            AlertaNivelCombustivel  = Alm("alertaNivelCombustivel"),
-            BaixaPressaoCombustivel = Alm("baixaPressaoCombustivel"),
-        };
-        return (s.Rpm, alerta);
-    }
+        => (s.Rpm, CapturaDiaDePista.AlertaDeSample(s));
 
     // Porta da T4000: usa --port se veio; senão a última porta COM enumerada.
     private static string? ResolveLivePort(string? requested)

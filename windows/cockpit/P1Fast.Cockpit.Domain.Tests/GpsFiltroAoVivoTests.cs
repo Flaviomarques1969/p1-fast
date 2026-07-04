@@ -24,6 +24,25 @@ public class GpsFiltroAoVivoTests
     }
 
     [Fact]
+    public void FLT_05_Heading_do_pacote_atravessa_o_filtro_sem_ser_inventado()
+    {
+        // L2: o rumo do PACOTE (RaceBox headMot) chega ao cérebro quando fornecido;
+        // omitido → null (cérebro cai no rumo por 2 posições, como sempre).
+        var f = new GpsFiltroAoVivo();
+
+        var a = f.Aceitar(Lat, Lon, fix: 3, hacc: 10, tWall: 0, headingDeg: 123.4);
+        Assert.NotNull(a);
+        Assert.Equal(123.4, a!.HeadingDeg);
+
+        var b = f.Aceitar(Lat, Lon + 0.0001, fix: 3, hacc: 10, tWall: 200); // sem heading
+        Assert.NotNull(b);
+        Assert.Null(b!.HeadingDeg);
+
+        // Reprovado na qualidade → null (heading junto, óbvio — nada vaza).
+        Assert.Null(f.Aceitar(Lat, Lon + 0.0002, fix: 2, hacc: 10, tWall: 400, headingDeg: 90));
+    }
+
+    [Fact]
     public void FLT_02_Decima_jitter_parado_e_da_kmh_por_dist_dt_no_movimento()
     {
         var f = new GpsFiltroAoVivo();

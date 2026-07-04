@@ -252,6 +252,15 @@ internal static class Program
         var urlNuvem   = ParseArg(args, "--url") ?? "https://fvhwltzhytpnhlqbttmd.supabase.co";
         var anon       = Environment.GetEnvironmentVariable("P1FAST_SUPABASE_ANON");
 
+        // L4: a trava de produção do LivePublisher (ctor lança) virava stack trace cru
+        // com --canal=cockpit-bubi-live sem --producao. Recusa AQUI, com mensagem clara
+        // e exit 1 — mesmo padrão do modo --replay-canal.
+        if (usarNuvem && canalNuvem == LivePublisher.CanalProducao && !producao)
+        {
+            Console.Error.WriteLine("Recusado: pra publicar no canal de PRODUÇÃO (cockpit-bubi-live) passe --producao explicitamente.");
+            return 1;
+        }
+
         Console.WriteLine("=== P1 Fast — GRAVAÇÃO DE SESSÃO (motor T3000 pela USB) ===");
         Console.WriteLine($"Pasta de gravação: {pasta}");
         Console.WriteLine(usarNuvem

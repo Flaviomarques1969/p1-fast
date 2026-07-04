@@ -149,7 +149,7 @@ public sealed class LuzFreio
     /// </summary>
     public FreioResultado? FecharTrecho(string segId, double tempoS)
     {
-        if (!_onset.TryGetValue(segId, out var onset) || !double.IsFinite(onset)) return null;
+        if (!TomarOnset(segId, out var onset)) return null;
 
         FreioResultado res;
         if (_pontoFreadaRef.TryGetValue(segId, out var refOnset))
@@ -170,5 +170,34 @@ public sealed class LuzFreio
             _pontoFreadaRef[segId] = onset;
         }
         return res;
+    }
+
+    // L1: o onset é gravado pela curva MAIS PRÓXIMA na aproximação (Atualizar), que em
+    // pares de ápices vizinhos (<220 m — existem em Brasília) pode divergir do segId que
+    // o detector usa no fechamento. Aqui: tenta a chave exata; faltou → adota o onset do
+    // VIZINHO geométrico (ápice a <220 m), que é a MESMA freada física atribuída à outra
+    // chave do par. O onset é CONSUMIDO (Remove) nos dois casos: fechar de novo sem nova
+    // aproximação não reaproveita freada velha de outra volta (resultado honesto ou nada).
+    private bool TomarOnset(string segId, out double onset)
+    {
+        if (_onset.Remove(segId, out onset)) return double.IsFinite(onset);
+
+        TrechoSegmento? seg = null;
+        foreach (var c in _segs) if (c.Id == segId) { seg = c; break; }
+        if (seg is null) return false;
+
+        TrechoSegmento? viz = null;
+        var vd = double.PositiveInfinity;
+        foreach (var c in _segs)
+        {
+            if (c.Id == segId) continue;
+            var d = Ghost.DistMeters(seg.ApicePoint, c.ApicePoint);
+            if (d < vd) { vd = d; viz = c; }
+        }
+        if (viz is not null && vd < 220 && _onset.Remove(viz.Id, out onset))
+            return double.IsFinite(onset);
+
+        onset = double.NaN;
+        return false;
     }
 }
