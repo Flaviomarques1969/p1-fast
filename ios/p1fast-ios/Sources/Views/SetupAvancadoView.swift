@@ -85,7 +85,7 @@ struct SetupAvancadoView: View {
                 .font(.system(size: 24, weight: .semibold))
                 .tracking(-0.6)
                 .foregroundStyle(Color.text)
-            Text("14 overrides em 5 grupos. Use as setas pra pular entre grupos.")
+            Text("24 ajustes em 6 grupos. Use as setas pra pular entre grupos.")
                 .font(.system(size: 13, weight: .regular))
                 .foregroundStyle(Color.textMuted)
         }
