@@ -10,9 +10,8 @@
 // Best-effort TOTAL: sem chave/rede/override, ou JSON inválido → limites default do sistema
 // (idêntico a hoje) — NUNCA derruba a tela nem atrasa demais o boot (timeout curto).
 //
-// Seleção da config ativa: a linha de `configuracoes` do carro mais RECENTEMENTE aplicada
-// (data_aplicacao desc, nulls por último). É o setup que o piloto escolheu no app. [Confirmar
-// a regra com o iMac se houver outra noção de "config ativa".]
+// Seleção: UMA linha "Setup base" por carro (contrato confirmado pelo iMac 2026-07-05, a mesma
+// que o app grava em CarroRepository.saveOverrides). Basta filtrar por carro_id — sem ordenação.
 
 using System;
 using System.IO;
@@ -47,11 +46,11 @@ public sealed partial class MainWindow
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
             var baseUrl = (Environment.GetEnvironmentVariable("P1FAST_SUPABASE_URL")?.TrimEnd('/'))
                           ?? LiveSupabaseUrl;
-            // Config ativa = a mais recentemente APLICADA (data_aplicacao desc, nulls por último).
+            // Uma linha "Setup base" por carro (contrato do iMac) — filtra por carro_id; limit=1
+            // como defesa contra duplicata legada. `overrides` vem cru pra LimitesDoCarro.De.
             var url = $"{baseUrl}/rest/v1/configuracoes" +
                       $"?carro_id=eq.{Uri.EscapeDataString(carroId)}" +
-                      $"&select=overrides,data_aplicacao,updated_at" +
-                      $"&order=data_aplicacao.desc.nullslast&limit=1";
+                      $"&select=overrides&limit=1";
             using var req = new HttpRequestMessage(HttpMethod.Get, url);
             req.Headers.Add("apikey", anon);
             req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", anon);
