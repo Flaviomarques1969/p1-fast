@@ -79,6 +79,35 @@ public sealed record AlertaLimites(
     public static AlertaLimites Default { get; } = new();
 }
 
+/// <summary>
+/// Limites da Fase 2 (a "parte inteligente"): a config de aprendizado de cada canal de
+/// temperatura + os limites de PNEU QUENTE por tipo de pneu (2 níveis, spec Flávio 04/07).
+/// Motor entra em uso AGORA (sensor de água existe); pneu e câmbio ficam PREPARADOS e só
+/// disparam quando o sensor for instalado (a amostra chega null até lá — nada dispara).
+/// </summary>
+public sealed record AprendizadoLimites(
+    AprendizadoConfig Motor,
+    AprendizadoConfig Pneu,
+    AprendizadoConfig Cambio,
+    // PNEU QUENTE — 2 níveis por tipo de pneu (spec Flávio 04/07). PREPARADO: ativa com sensor.
+    //   Radial 185:     atenção 95°C  / crítico 105°C
+    //   Semi-slick 195: atenção 105°C / crítico 115°C
+    double PneuRadial185AtencaoC = 95,
+    double PneuRadial185CriticoC = 105,
+    double PneuSemiSlick195AtencaoC = 105,
+    double PneuSemiSlick195CriticoC = 115
+)
+{
+    public static AprendizadoLimites Default { get; } = new(
+        Motor:  AprendizadoConfig.MotorBubi,                                             // água (ativo)
+        Pneu:   new AprendizadoConfig(ReferenciaMaximaNormalC: 90, DeltaSubindoC: 5),    // preparado (sem sensor)
+        Cambio: new AprendizadoConfig(ReferenciaMaximaNormalC: 110, DeltaSubindoC: 5)    // preparado (sem sensor)
+    );
+}
+
+/// <summary>Estado persistível do aprendizado dos 3 canais (a "história gravada" pra salvar/restaurar).</summary>
+public sealed record AprendizadoSnapshot(AprendizadoEstado Motor, AprendizadoEstado Pneu, AprendizadoEstado Cambio);
+
 /// <summary>Mensagem principal pra tela (o alerta de maior gravidade).</summary>
 public sealed record AlertaMensagem(string Id, string Texto, AlertaGravidade Gravidade, MsgTipo Tipo, int CountOutros);
 
@@ -190,7 +219,43 @@ public sealed class AlertasCriticos
     private readonly HashSet<string> _ativos = new();
     private readonly HashSet<string> _manuais = new();
 
-    public AlertasCriticos(AlertaLimites? limits = null) => _limits = limits ?? AlertaLimites.Default;
+    // Fase 2 — aprendizes de padrão histórico por canal de temperatura. O teto de aprendizado
+    // de cada um é ligado à trava dura correspondente do AvaliarT4000 (o superaquecimento real
+    // que a trava pega não pode se ensinar como "normal"), sem duplicar o número.
+    private readonly AprendizadoTemperatura _aprMotor;
+    private readonly AprendizadoTemperatura _aprPneu;
+    private readonly AprendizadoTemperatura _aprCambio;
+
+    public AlertasCriticos(AlertaLimites? limits = null, AprendizadoLimites? aprendizado = null)
+    {
+        _limits = limits ?? AlertaLimites.Default;
+        var apr = aprendizado ?? AprendizadoLimites.Default;
+        _aprMotor  = new AprendizadoTemperatura(apr.Motor  with { TetoAprendidoC = _limits.WaterMaxC });
+        _aprPneu   = new AprendizadoTemperatura(apr.Pneu   with { TetoAprendidoC = _limits.TireTempMaxC });
+        _aprCambio = new AprendizadoTemperatura(apr.Cambio with { TetoAprendidoC = _limits.CambioTempMaxC });
+    }
+
+    /// <summary>Máxima normal da água aprendida agora (°C) — pra telemetria/UI.</summary>
+    public double MotorMaximaNormalC => _aprMotor.MaximaNormalC;
+
+    /// <summary>Limite atual do aviso "Temperatura Motor Subindo" (°C).</summary>
+    public double MotorLimiteSubindoC => _aprMotor.LimiteSubindoC;
+
+    /// <summary>Confiança 0..1 do aprendizado da água.</summary>
+    public double MotorConfianca => _aprMotor.Confianca;
+
+    /// <summary>Exporta o estado aprendido dos 3 canais (a "história gravada" pra persistir entre sessões).</summary>
+    public AprendizadoSnapshot ExportarAprendizado() =>
+        new(_aprMotor.ExportarEstado(), _aprPneu.ExportarEstado(), _aprCambio.ExportarEstado());
+
+    /// <summary>Restaura o estado aprendido (idempotente). Chamar ao abrir a sessão, com o snapshot salvo.</summary>
+    public void ImportarAprendizado(AprendizadoSnapshot? snap)
+    {
+        if (snap is null) return;
+        _aprMotor.ImportarEstado(snap.Motor);
+        _aprPneu.ImportarEstado(snap.Pneu);
+        _aprCambio.ImportarEstado(snap.Cambio);
+    }
 
     // Estado temporal da histerese (bloco 2b). _ligadoDesdeT = instante em que o motor
     // passou a rodar continuamente (pra suprimir o pico de óleo da partida). _ricaDesdeT =
@@ -204,8 +269,31 @@ public sealed class AlertasCriticos
     public void IngestT4000(AmostraAlerta sample, double? tSeg = null)
     {
         var ids = CatalogoAlertas.AvaliarT4000(sample, _limits);
-        if (tSeg is { } t) AplicarHisterese(ids, sample, t);
+        if (tSeg is { } t)
+        {
+            AplicarHisterese(ids, sample, t);
+            AplicarAprendizado(ids, sample, t);
+        }
         Set(ids);
+    }
+
+    // Fase 2 — a "parte inteligente". Alimenta os aprendizes e, quando um canal fica ACIMA do
+    // padrão do carro de forma consistente, levanta o aviso ANTECIPADO ("...Subindo/Aquecendo").
+    // Motor (água) está ativo; pneu/câmbio só aprendem/disparam quando a amostra tiver o sensor
+    // (TireTempC/CambioTempC null hoje → nada muda). O "aquecendo" nunca aparece junto do "quente"
+    // do mesmo canal (a trava dura vence). Precisa de relógio (tSeg) — sem ele, não há Fase 2.
+    private void AplicarAprendizado(List<string> ids, AmostraAlerta s, double t)
+    {
+        var rodando = s.Rpm is { } rpm && rpm >= _limits.MotorLigadoRpmMin;
+
+        var motor = _aprMotor.Avaliar(s.WaterTempC, rodando, t);
+        if (motor.Subindo && !ids.Contains("MOTOR_QUENTE")) ids.Add("MOTOR_AQUECENDO");
+
+        var pneu = _aprPneu.Avaliar(s.TireTempC, rodando, t);
+        if (pneu.Subindo && !ids.Contains("PNEU_QUENTE")) ids.Add("PNEU_AQUECENDO");
+
+        var cambio = _aprCambio.Avaliar(s.CambioTempC, rodando, t);
+        if (cambio.Subindo && !ids.Contains("CAMBIO_QUENTE")) ids.Add("CAMBIO_AQUECENDO");
     }
 
     // Filtra os ids crus pela histerese temporal (spec v2, bloco 2b). Óleo: alarma só depois

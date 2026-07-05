@@ -43,9 +43,14 @@ public sealed record AprendizadoConfig(
     // Teto de aprendizado: amostras >= isto NÃO entram na "máxima normal" (superaquecimento
     // real não pode se ensinar como normal). Em geral = a trava dura de segurança do canal.
     double TetoAprendidoC = double.PositiveInfinity,
-    // Tempo (s) pra aprender uma máxima normal MAIS ALTA (envelope subindo). Alto o bastante
-    // pra um pico de 3-5s quase não mexer, baixo o bastante pra um dia quente ser aprendido.
+    // Tempo (s) pra aprender uma máxima normal MAIS ALTA (envelope subindo) quando o aprendizado
+    // JÁ está maduro. Alto o bastante pra um pico de 3-5s quase não mexer.
     double TauSobeS = 30.0,
+    // Tempo (s) MÍNIMO do envelope subindo enquanto o aprendizado é imaturo (confiança baixa). O τ
+    // efetivo cresce de TauSobeMinS até TauSobeS conforme a confiança sobe — assim o carro "trava"
+    // rápido no normal do DIA no começo da sessão (sem alarme falso de largada), e fica estável
+    // depois pra pegar subida real. Sem número fixo de voltas; nunca trava o aprendizado.
+    double TauSobeMinS = 2.0,
     // Tempo (s) pra "esquecer" (baixar) a máxima normal. Bem mais lento — um trecho frio não
     // derruba o padrão a ponto de dar alarme falso na sessão seguinte.
     double TauDesceS = 300.0,
