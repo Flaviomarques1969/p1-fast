@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decisões — Flávio</title>
+<style>
+  :root{
+    --bg:#0b0c0e; --panel:#131417; --panel2:#17181c; --ink:#f0f1f3; --muted:#98a0ab; --faint:#6b7280;
+    --line:#212327; --line2:#2c2f34;
+    --accent:#2dd4bf; --accent-dim:#0f3d38; --accent-soft:#0e1f1d;
+    --red:#f87171; --amber:#fbbf24; --green:#34d399;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;padding:56px 24px 150px;font-weight:400}
+  .wrap{max-width:680px;margin:0 auto}
+
+  header.top{margin-bottom:34px}
+  header.top .tag{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  header.top h1{margin:12px 0 0;font-size:30px;line-height:1.2;font-weight:600;letter-spacing:-.01em}
+  header.top #subtituloGeral{margin:8px 0 0;color:var(--muted);font-size:16px}
+  header.top .origem{margin:14px 0 0;font-size:12px;color:var(--faint);letter-spacing:.02em}
+
+  .resumo{margin:0 0 30px;color:var(--muted);font-size:13.5px}
+  .resumo b{color:var(--ink);font-weight:600}
+  .resumo .sep{color:var(--line2);margin:0 9px}
+  .resumo .u-trava{color:var(--red);font-weight:600}
+  .resumo .u-espera{color:var(--amber);font-weight:600}
+  .resumo .u-refino{color:var(--green);font-weight:600}
+
+  .contexto{margin:0 0 40px}
+  .contexto h2{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--faint);font-weight:600}
+  .contexto .body{color:#c3c7cf;font-size:16px;line-height:1.65;white-space:pre-wrap}
+
+  .card{padding:34px 0;border-top:1px solid var(--line)}
+  .card:first-child{border-top:none;padding-top:0}
+  .card.excluido{opacity:.45}
+  .card .head{display:flex;align-items:baseline;gap:12px;margin-bottom:4px}
+  .card .num{font-size:13px;font-weight:600;color:var(--faint);min-width:18px}
+  .card h3{margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em;flex:1}
+  .badge{font-size:11px;font-weight:600;letter-spacing:.02em}
+  .badge.trava{color:var(--red)} .badge.espera{color:var(--amber)} .badge.refino{color:var(--green)}
+  .badge.irrev{color:var(--red);border:1px solid var(--red);border-radius:20px;padding:1px 9px;font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+  .qctx{color:var(--muted);margin:0 0 18px;font-size:15px;white-space:pre-wrap}
+
+  .histnote{color:var(--accent);background:var(--accent-soft);border-radius:10px;padding:8px 12px;margin:0 0 16px;font-size:13px}
+  .evid{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 18px}
+  .evid .el{font-size:10.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--faint);margin-bottom:6px;font-weight:600}
+  .evid pre{margin:0;white-space:pre-wrap;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;color:#c3c7cf}
+  .avisoirrev{color:#fca5a5;background:#1c1214;border:1px solid #3a1f22;border-radius:10px;padding:11px 14px;margin:0 0 18px;font-size:14px}
+  .avisoirrev b{color:var(--red)}
+
+  .alt{display:block;padding:13px 16px;margin:8px 0;border:1px solid var(--line);border-radius:12px;cursor:pointer;transition:border-color .15s,background .15s}
+  .alt:hover{border-color:var(--line2);background:var(--panel2)}
+  .alt.rec{border-color:var(--accent-dim);background:var(--accent-soft)}
+  .alt input{margin-right:11px;vertical-align:middle;accent-color:var(--accent);transform:scale(1.1)}
+  .alt .rot{font-weight:500;font-size:15.5px}
+  .alt .rec-badge{margin-left:8px;font-size:11px;font-weight:600;color:var(--accent)}
+  .conseq{margin:5px 0 0 27px;font-size:13.5px;color:var(--muted)}
+  .conseq b{color:#c3c7cf;font-weight:600}
+  .porque{margin:3px 0 0 27px;font-size:13.5px;color:var(--accent)}
+  .impacto{margin:8px 0 0 27px;font-size:12.5px;color:var(--faint)}
+  .itag b{color:var(--muted);font-weight:600}
+  .itag:not(:last-child):after{content:"·";margin:0 7px;color:var(--line2)}
+  .itag.risco-alto b{color:var(--red)} .itag.rev-nao b{color:var(--red)}
+
+  .cmpbtn{margin:10px 0 2px;background:none;border:none;color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;padding:4px 0}
+  .cmptable{width:100%;border-collapse:collapse;margin:12px 0 2px;font-size:13px;display:none}
+  .cmptable th,.cmptable td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left}
+  .cmptable th{color:var(--faint);font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+  .cmptable td.rec{color:var(--accent);font-weight:600}
+
+  .altbox textarea{width:100%;min-height:44px;background:var(--panel);border:1px solid var(--line);color:var(--ink);
+    border-radius:10px;padding:10px 12px;font-size:14px;margin-top:10px;resize:vertical;font-family:inherit}
+  .altbox textarea::placeholder{color:var(--faint)}
+  .altbox textarea:focus{outline:none;border-color:var(--accent)}
+
+  .params{margin-top:18px;padding-top:16px;border-top:1px dashed var(--line2)}
+  .params .plabel{font-size:10.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--faint);margin-bottom:10px;font-weight:600}
+  .prow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:11px}
+  .prow .pname{min-width:150px;font-weight:500;font-size:14px}
+  .prow input.pval{flex:1;min-width:150px;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:8px 11px;font-size:14px}
+  .prow input.pval:focus{outline:none;border-color:var(--accent)}
+  .prow .pwhy{width:100%;font-size:12.5px;color:var(--faint);margin-left:2px}
+
+  .statusdec{margin:18px 0 12px;font-size:14px;font-weight:600}
+  .statusdec.st-ok{color:var(--green)} .statusdec.st-alt{color:var(--amber)} .statusdec.st-excl{color:var(--red)}
+
+  .decis{margin:0}
+  .decis button{background:none;border:1px solid var(--line2);color:var(--muted);border-radius:9px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+  .decis button:hover{border-color:var(--red);color:var(--red)}
+  .decis button.del.on{background:#1c1214;border-color:var(--red);color:var(--red)}
+
+  .confirm{display:flex;align-items:flex-start;gap:9px;margin:12px 0 0;font-size:14px;color:#fca5a5}
+  .confirm input{margin-top:3px;accent-color:var(--red);transform:scale(1.15)}
+
+  .orient{margin-top:14px}
+  .orient label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--faint);margin-bottom:7px;font-weight:600}
+  .orient textarea{width:100%;min-height:56px;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:10px 12px;font-size:14px;resize:vertical;font-family:inherit}
+  .orient textarea:focus{outline:none;border-color:var(--accent)}
+
+  .actionbar{position:fixed;left:0;right:0;bottom:0;background:rgba(11,12,14,.9);border-top:1px solid var(--line);padding:14px 24px;backdrop-filter:saturate(160%) blur(12px)}
+  .actionbar .inner{max-width:680px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .actionbar button{border:none;border-radius:10px;padding:12px 20px;font-size:14.5px;font-weight:600;cursor:pointer}
+  .btn-all{background:none;color:var(--accent);border:1px solid var(--accent-dim);padding:11px 18px}
+  .btn-gen{background:var(--accent);color:#04231f}
+  .btn-save{background:var(--ink);color:#0b0c0e;display:none}
+  .btn-copy{background:none;color:var(--muted);border:1px solid var(--line2);display:none}
+  .actionbar .hint{color:var(--muted);font-size:13px;flex:1;min-width:180px}
+
+  #saida{max-width:680px;margin:34px auto 0;display:none}
+  #saida h2{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--faint);font-weight:600}
+  #saidaTxt{width:100%;min-height:300px;background:var(--panel);border:1px solid var(--line);color:#c3c7cf;border-radius:12px;padding:16px;font:13.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre}
+  .foot{max-width:680px;margin:30px auto 0;color:var(--faint);font-size:12.5px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="tag">Preciso da sua decisão</div>
+    <h1 id="tituloGeral">Decisões do projeto</h1>
+    <p id="subtituloGeral"></p>
+    <p id="origemGeral" class="origem"></p>
+  </header>
+
+  <div class="resumo" id="resumo"></div>
+
+  <div class="contexto">
+    <h2>Contexto — por que estou te trazendo isto</h2>
+    <div class="body" id="contextoGeral"></div>
+  </div>
+
+  <div id="cards"></div>
+</div>
+
+<div id="saida" class="wrap">
+  <h2>Resposta gerada</h2>
+  <textarea id="saidaTxt" readonly></textarea>
+</div>
+
+<div class="foot">Feito para Flávio · marque, oriente, gere e salve — depois é só dizer “fiz”.</div>
+
+<div class="actionbar">
+  <div class="inner">
+    <button class="btn-all" onclick="aceitarTudo()">Aceitar tudo que você recomenda</button>
+    <button class="btn-gen" onclick="gerar()">Gerar resposta</button>
+    <button class="btn-save" id="btnSave" onclick="salvar()">Salvar resposta (depois diga “fiz”)</button>
+    <button class="btn-copy" id="btnCopy" onclick="copiar()">Copiar</button>
+    <span class="hint" id="hint">Responda o que quiser e clique em “Gerar resposta”.</span>
+  </div>
+</div>
+
+<script>
+/* ===== DADOS — o Claude preenche este bloco a cada uso ===== */
+const DADOS = /*__INJECT__*/{
+  "titulo": "Fase 2 (IA de temperatura) — por onde eu sigo agora",
+  "subtitulo": "A parte inteligente já está construída e testada no ambiente de desenvolvimento. Faltam 3 acabamentos. Você decide a ordem e o escopo.",
+  "origem": "Projeto P1 Fast · .claude-perguntas/pendentes/20260705-113544-fase2-proximos-passos.html",
+  "tempoEstimado": "2 min",
+  "contexto": "As mensagens do cockpit do piloto viraram 24 (Fase 1, já concluída pelo notebook). Em cima disso, construí a inteligência que aprende a temperatura normal do carro e avisa quando o motor foge do padrão (só o motor por enquanto — pneu, óleo e câmbio ficam preparados até ter sensor). Isso já está pronto e testado no ambiente de desenvolvimento (nada foi ao ar): teste automático passou 396 de 396 no motor de regras e 25 de 25 nas mensagens. As suas 5 decisões de 05/07 já foram aplicadas. Não estou reabrindo nada disso. O que me falta é fechar 3 acabamentos, e preciso de você em dois pontos: a ordem de prioridade e o escopo da tela onde você mesmo vai mexer nos limites.",
+  "perguntas": [
+    {
+      "id": 1,
+      "titulo": "Por qual das 3 frentes eu começo?",
+      "urgencia": "espera",
+      "irreversivel": false,
+      "avisoIrreversivel": "",
+      "historico": "Em 05/07 você fechou as 5 decisões da IA de temperatura (aprendizado contínuo, aviso a +3°C, ambiente pela água antes de ligar, pneu em 2 níveis por tipo, óleo fora). Tudo isso já entrou no que construí.",
+      "evidencia": "Faltam: (1) ligar a leitura da água ANTES de ligar o motor como referência do dia — hoje só o aprendizado contínuo cobre isso; (2) entregar o pacote pro notebook montar o programa do carro (WinUI) e conferir na tela real; (3) a tela 'Garagem' no celular pra você editar os limites de pneu — pedido seu de 05/07.",
+      "dependeDe": null,
+      "contexto": "As 3 são independentes e nenhuma trava a outra. É só a ordem em que eu ataco. As duas primeiras são internas (você não vê mudar). A terceira é a única que aparece pra você na tela do celular.",
+      "alternativas": [
+        {"rotulo":"A","texto":"Internas primeiro (água antes de ligar + entregar pro notebook conferir na tela do carro), e a tela Garagem logo em seguida","consequencia":"Fecho o cérebro 100% e valido no carro real antes de investir na tela. Você vê o resultado quando o notebook confirmar na tela de verdade.","recomendada":true,"porque":"Termina a inteligência e prova ela funcionando no carro antes de gastar tempo na tela — se algo estiver errado no cérebro, aparece antes, não depois. As duas internas são rápidas.","custo":"R$ 0","prazo":"internas: rápidas · Garagem: em seguida","risco":"baixo","reversivel":true},
+        {"rotulo":"B","texto":"Tela 'Garagem' no celular primeiro (você já enxerga e mexe nos limites de pneu)","consequencia":"Você tem logo algo visível pra abrir e configurar; as duas partes internas ficam pra depois.","custo":"R$ 0","prazo":"maior (tela nova)","risco":"médio","reversivel":true},
+        {"rotulo":"C","texto":"Outra ordem — eu escrevo na orientação","consequencia":"Você define a sequência que preferir.","custo":"R$ 0","prazo":"—","risco":"baixo","reversivel":true}
+      ]
+    },
+    {
+      "id": 2,
+      "titulo": "Na tela 'Garagem' do celular, o que você quer poder editar você mesmo?",
+      "urgencia": "refino",
+      "irreversivel": false,
+      "avisoIrreversivel": "",
+      "historico": "Em 05/07 você pediu explicitamente que os limites de pneu fossem editáveis no app, numa aba 'Garagem' no celular.",
+      "evidencia": "No código, tudo já é configurável (limites de pneu por tipo, o gatilho de +3°C, o ajuste de ambiente). O que falta é a tela. Definir o escopo dela agora evita eu fazer de menos ou de mais.",
+      "dependeDe": null,
+      "contexto": "Quanto mais coisa editável, mais poderosa a tela — mas também mais botão pra você e mais chance de mexer sem querer num valor sensível. Preciso saber onde parar.",
+      "alternativas": [
+        {"rotulo":"A","texto":"Só os limites de pneu (radial e slick, os 2 níveis de alerta)","consequencia":"Tela enxuta, exatamente o que você pediu. O resto continua ajustável por mim quando precisar.","recomendada":true,"porque":"É o pedido literal que você fez, cobre o caso real (pneu é o que muda de pista pra pista) e mantém a tela simples e à prova de erro.","custo":"R$ 0","prazo":"menor","risco":"baixo","reversivel":true},
+        {"rotulo":"B","texto":"Limites de pneu + o gatilho do aviso de motor (+3°C) + o ajuste de ambiente","consequencia":"Você controla praticamente toda a sensibilidade da IA pelo celular, sem depender de mim.","custo":"R$ 0","prazo":"médio","risco":"médio","reversivel":true},
+        {"rotulo":"C","texto":"Tudo o que a IA usa, num painel de configuração completo","consequencia":"Controle total, mas tela mais cheia e mais fácil desregular algo sem querer.","custo":"R$ 0","prazo":"maior","risco":"médio","reversivel":true}
+      ]
+    }
+  ]
+}/*__/INJECT__*/;
+/* ========================================================== */
+
+const estado = {};
+const URG = {
+  trava:  {label:"Trava o projeto", cls:"trava"},
+  espera: {label:"Pode esperar",    cls:"espera"},
+  refino: {label:"Só refino",       cls:"refino"}
+};
+
+function el(t,c,txt){const e=document.createElement(t);if(c)e.className=c;if(txt!=null)e.textContent=txt;return e;}
+function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function riscoCls(r){const v=(r||'').toLowerCase();if(v.startsWith('baix'))return'risco-baixo';if(v.startsWith('méd')||v.startsWith('med'))return'risco-medio';if(v.startsWith('alt'))return'risco-alto';return'';}
+function temImpacto(a){return a.custo!=null||a.prazo!=null||a.risco!=null||a.reversivel!=null;}
+
+function impactoTags(a){
+  const box=el('div','impacto');
+  if(a.custo!=null) box.appendChild(mkTag('Custo','custo',a.custo));
+  if(a.prazo!=null) box.appendChild(mkTag('Prazo','prazo',a.prazo));
+  if(a.risco!=null){const t=mkTag('Risco','risco',a.risco);t.classList.add(riscoCls(a.risco));box.appendChild(t);}
+  if(a.reversivel!=null){const rev=a.reversivel?'Sim':'Não';const t=mkTag('Reversível','rev',rev);t.classList.add(a.reversivel?'rev-sim':'rev-nao');box.appendChild(t);}
+  return box;
+}
+function mkTag(label,cls,val){const t=el('span','itag '+cls);t.innerHTML=label+': <b>'+escapeHtml(String(val))+'</b>';return t;}
+
+function render(){
+  document.getElementById('tituloGeral').textContent = DADOS.titulo || 'Decisões do projeto';
+  document.getElementById('subtituloGeral').textContent = DADOS.subtitulo || '';
+  document.getElementById('origemGeral').textContent = DADOS.origem ? ('📍 Este painel pertence a: '+DADOS.origem) : '';
+  document.getElementById('contextoGeral').textContent = DADOS.contexto || '';
+  renderResumo();
+  const cont = document.getElementById('cards');
+  // ID ÚNICO por pergunta: se vier id repetido ou vazio, as decisões colidiriam (uma escrita
+  // por cima da outra). Normaliza para um id garantidamente único ANTES de qualquer uso.
+  const _idSeen={};
+  (DADOS.perguntas||[]).forEach((q,i)=>{
+    if(q.id===undefined||q.id===null||_idSeen[q.id]!==undefined) q.id=i+1;
+    if(_idSeen[q.id]!==undefined) q.id='p'+(i+1);
+    _idSeen[q.id]=true;
+  });
+  // PRÉ-INICIALIZAÇÃO: todo estado[q.id] precisa existir ANTES de montar qualquer cartão,
+  // porque setDec()/atualizarVisibilidade() rodam durante a montagem e leem todos os itens.
+  (DADOS.perguntas||[]).forEach(q=>{
+    estado[q.id] = {decisao:'aceitar', alt:null, recAlt:null, params:{}, altTexto:'', orient:'', confirmaIrrev:false, visivel:true};
+    const rec0 = (q.alternativas||[]).find(a=>a.recomendada);
+    if(rec0){ estado[q.id].alt = rec0.rotulo; estado[q.id].recAlt = rec0.rotulo; }
+    (q.parametros||[]).forEach(p=>{ if(p&&p.nome) estado[q.id].params[p.nome]=p.valorSugerido; });
+  });
+  (DADOS.perguntas||[]).forEach(q=>{
+    const rec = (q.alternativas||[]).find(a=>a.recomendada);
+    if(rec) estado[q.id].alt = rec.rotulo;
+    (q.parametros||[]).forEach(p=>{ if(p&&p.nome) estado[q.id].params[p.nome]=p.valorSugerido; });
+
+    const irrev = !!q.irreversivel;
+    const card = el('div','card'+(irrev?' irrev':'')); card.id='card-'+q.id;
+
+    const head = el('div','head');
+    head.appendChild(el('span','num',q.id));
+    head.appendChild(el('h3',null,q.titulo||''));
+    const u = URG[q.urgencia||'espera'] || URG.espera;
+    head.appendChild(el('span','badge '+u.cls,u.label));
+    if(irrev) head.appendChild(el('span','badge irrev','Sem volta'));
+    card.appendChild(head);
+
+    if(q.historico && q.historico.trim())
+      card.appendChild(el('div','histnote','🕘 '+q.historico.trim()));
+    if(q.contexto) card.appendChild(el('div','qctx',q.contexto));
+
+    if(q.evidencia && q.evidencia.trim()){
+      const ev=el('div','evid'); ev.appendChild(el('div','el','Evidência — o que embasa esta pergunta'));
+      const pre=document.createElement('pre'); pre.textContent=q.evidencia.trim(); ev.appendChild(pre); card.appendChild(ev);
+    }
+
+    if(irrev){
+      const a=el('div','avisoirrev');
+      a.innerHTML='<b>⚠ Decisão sem volta.</b> '+escapeHtml(q.avisoIrreversivel||'Esta escolha não pode ser desfeita facilmente. Confirme com atenção abaixo.');
+      card.appendChild(a);
+    }
+
+    (q.alternativas||[]).forEach(a=>{
+      const lab = el('label','alt'+(a.recomendada?' rec':''));
+      const r = document.createElement('input'); r.type='radio'; r.name='q'+q.id; r.value=a.rotulo;
+      if(a.recomendada) r.checked=true;
+      r.onchange=()=>{ estado[q.id].alt=a.rotulo;
+        if(estado[q.id]._refresh) estado[q.id]._refresh(); else atualizarVisibilidade();
+      };
+      lab.appendChild(r);
+      lab.appendChild(el('span','rot',(a.rotulo?a.rotulo+') ':'')+(a.texto||'')));
+      if(a.recomendada) lab.appendChild(el('span','rec-badge','Recomendo'));
+      if(a.consequencia){const c=el('div','conseq');c.innerHTML='<b>Consequência:</b> '+escapeHtml(a.consequencia);lab.appendChild(c);}
+      if(a.porque) lab.appendChild(el('div','porque','Por que recomendo: '+a.porque));
+      if(temImpacto(a)) lab.appendChild(impactoTags(a));
+      card.appendChild(lab);
+    });
+
+    // tabela comparativa (só se ao menos 2 alternativas tiverem impacto)
+    const comparaveis=(q.alternativas||[]).filter(temImpacto);
+    if(comparaveis.length>=2){
+      const btn=el('button','cmpbtn','⇄ Comparar em tabela');
+      const tbl=montarTabela(q);
+      btn.onclick=()=>{const vis=tbl.style.display==='table';tbl.style.display=vis?'none':'table';btn.textContent=vis?'⇄ Comparar em tabela':'Ocultar tabela';};
+      card.appendChild(btn); card.appendChild(tbl);
+    }
+
+    const altBox = el('div','altbox');
+    const altTa = document.createElement('textarea');
+    altTa.placeholder='Se quiser ALTERAR ou propor OUTRA saída, escreva aqui…';
+    altTa.oninput=()=>{ estado[q.id].altTexto=altTa.value;
+      if(estado[q.id]._refresh) estado[q.id]._refresh(); };
+    estado[q.id]._altTa=altTa;
+    altBox.appendChild(altTa); card.appendChild(altBox);
+
+    if(q.parametros && q.parametros.length){
+      const pb = el('div','params'); pb.appendChild(el('div','plabel','Parâmetros sugeridos — edite se quiser'));
+      q.parametros.forEach(p=>{
+        if(!p||!p.nome) return; // parâmetro sem nome é ignorado (não vira "undefined")
+        const row = el('div','prow');
+        row.appendChild(el('span','pname',p.nome));
+        const inp=document.createElement('input');inp.className='pval';inp.value=p.valorSugerido||'';
+        inp.oninput=()=>{ estado[q.id].params[p.nome]=inp.value; };
+        row.appendChild(inp);
+        if(p.porque) row.appendChild(el('div','pwhy','Por que: '+p.porque));
+        pb.appendChild(row);
+      });
+      card.appendChild(pb);
+    }
+
+    // UMA decisão só: a escolha É o rádio. Uma frase diz o que significa; um botão só (Não fazer).
+    const status = el('div','statusdec');
+    const dec = el('div','decis');
+    const bExcluir = el('button','del','Não fazer este item');
+    function statusTexto(){
+      const s=estado[q.id];
+      if(s.decisao==='excluir') return '🚫 Você marcou: NÃO fazer este item.';
+      const alt=(q.alternativas||[]).find(a=>a.rotulo===s.alt);
+      if(s.altTexto.trim()) return '✎ Você escreveu uma proposta própria (abaixo).';
+      if(alt && s.alt!==s.recAlt) return '✎ Você mudou minha recomendação — escolheu: '+((alt.rotulo?alt.rotulo+') ':'')+(alt.texto||''));
+      if(alt) return '✓ Você aceitou minha recomendação.';
+      return 'Escolha uma opção acima.';
+    }
+    function refresh(){
+      const s=estado[q.id];
+      if(s.decisao!=='excluir'){
+        s.decisao = (s.altTexto.trim() || (s.alt && s.alt!==s.recAlt)) ? 'alterar' : 'aceitar';
+      }
+      status.textContent=statusTexto();
+      status.className='statusdec'+(s.decisao==='excluir'?' st-excl':(s.decisao==='alterar'?' st-alt':' st-ok'));
+      bExcluir.classList.toggle('on',s.decisao==='excluir');
+      bExcluir.textContent = s.decisao==='excluir' ? 'Voltar a fazer este item' : 'Não fazer este item';
+      card.classList.toggle('excluido',s.decisao==='excluir');
+      atualizarVisibilidade();
+    }
+    bExcluir.onclick=()=>{ const s=estado[q.id]; s.decisao=(s.decisao==='excluir')?'aceitar':'excluir'; refresh(); };
+    estado[q.id]._refresh=refresh;
+    dec.appendChild(bExcluir);
+    card.appendChild(status);
+    card.appendChild(dec);
+    refresh();
+
+    if(irrev){
+      const cf=el('label','confirm');
+      const cb=document.createElement('input');cb.type='checkbox';
+      cb.onchange=()=>{ estado[q.id].confirmaIrrev=cb.checked; };
+      cf.appendChild(cb);
+      cf.appendChild(document.createTextNode('Confirmo que entendo que esta decisão NÃO tem volta e autorizo.'));
+      card.appendChild(cf);
+    }
+
+    const ori = el('div','orient');
+    ori.appendChild(el('label',null,'Sua orientação sobre este item (opcional — mesmo mantendo, pode orientar)'));
+    const ota=document.createElement('textarea');
+    ota.oninput=()=>{ estado[q.id].orient=ota.value; };
+    ori.appendChild(ota);card.appendChild(ori);
+
+    cont.appendChild(card);
+  });
+  atualizarVisibilidade();
+}
+
+function montarTabela(q){
+  const t=el('table','cmptable');
+  const linhas=[['Opção',a=>(a.rotulo?a.rotulo+') ':'')+(a.texto||'')],
+                ['Custo',a=>a.custo!=null?a.custo:'—'],
+                ['Prazo',a=>a.prazo!=null?a.prazo:'—'],
+                ['Risco',a=>a.risco!=null?a.risco:'—'],
+                ['Reversível',a=>a.reversivel==null?'—':(a.reversivel?'Sim':'Não')]];
+  const thead=document.createElement('tr');
+  thead.appendChild(document.createElement('th'));
+  (q.alternativas||[]).forEach(a=>{const th=document.createElement('th');th.textContent=(a.rotulo||'');if(a.recomendada)th.textContent+=' ★';thead.appendChild(th);});
+  t.appendChild(thead);
+  linhas.forEach(([nome,fn])=>{
+    const tr=document.createElement('tr');
+    const th=document.createElement('th');th.textContent=nome;tr.appendChild(th);
+    (q.alternativas||[]).forEach(a=>{const td=document.createElement('td');td.textContent=fn(a);if(a.recomendada)td.classList.add('rec');tr.appendChild(td);});
+    t.appendChild(tr);
+  });
+  return t;
+}
+
+function condicaoOk(dep){
+  if(!dep) return true;
+  const s=estado[dep.de]; if(!s) return true;
+  const cond=(dep.mostrarQuando||'').toLowerCase();
+  if(cond==='excluido') return s.decisao==='excluir';
+  if(cond==='nao-excluido'||cond==='nao_excluido') return s.decisao!=='excluir';
+  if(cond.startsWith('alt:')) return s.decisao!=='excluir' && s.alt===dep.mostrarQuando.split(':')[1];
+  return true;
+}
+
+function atualizarVisibilidade(){
+  (DADOS.perguntas||[]).forEach(q=>{
+    if(!estado[q.id]) return;
+    const vis=condicaoOk(q.dependeDe);
+    estado[q.id].visivel=vis;
+    const card=document.getElementById('card-'+q.id);
+    if(card) card.style.display=vis?'block':'none';
+  });
+}
+
+function renderResumo(){
+  const qs = DADOS.perguntas||[];
+  const c={trava:0,espera:0,refino:0};
+  qs.forEach(q=>{ c[q.urgencia||'espera']=(c[q.urgencia||'espera']||0)+1; });
+  const tempo = DADOS.tempoEstimado && DADOS.tempoEstimado.trim()
+    ? DADOS.tempoEstimado.trim()
+    : ('~'+Math.max(1,Math.round(qs.length*0.75))+' min');
+  const box=document.getElementById('resumo');
+  const parts=[];
+  parts.push('<b>'+qs.length+'</b> '+(qs.length===1?'decisão':'decisões'));
+  if(c.trava)  parts.push('<span class="u-trava">'+c.trava+' '+(c.trava===1?'trava':'travam')+'</span>');
+  if(c.espera) parts.push('<span class="u-espera">'+c.espera+' pode esperar</span>');
+  if(c.refino) parts.push('<span class="u-refino">'+c.refino+' refino</span>');
+  parts.push('tempo <b>'+tempo+'</b>');
+  box.innerHTML=parts.join('<span class="sep">·</span>');
+}
+
+function aceitarTudo(){
+  (DADOS.perguntas||[]).forEach(q=>{
+    const s=estado[q.id];
+    const rec=(q.alternativas||[]).find(a=>a.recomendada);
+    s.decisao='aceitar'; s.altTexto='';
+    if(s._altTa) s._altTa.value='';
+    if(rec){
+      s.alt=rec.rotulo;
+      const r=document.querySelector('input[name="q'+q.id+'"][value="'+rec.rotulo+'"]');
+      if(r) r.checked=true;
+    }
+    if(s._refresh) s._refresh();
+  });
+  document.getElementById('hint').textContent='Todas as recomendações marcadas. Gerando…';
+  gerar();
+}
+
+function pendenciasIrrev(){
+  const faltam=[];
+  (DADOS.perguntas||[]).forEach(q=>{
+    const s=estado[q.id];
+    if(s.visivel && q.irreversivel && s.decisao!=='excluir' && !s.confirmaIrrev) faltam.push(q.id);
+  });
+  return faltam;
+}
+
+function gerar(){
+  const faltam=pendenciasIrrev();
+  if(faltam.length){
+    document.getElementById('hint').textContent='⚠ Item(ns) '+faltam.join(', ')+' são SEM VOLTA — marque a confirmação vermelha ou escolha “Excluir”.';
+    const c=document.getElementById('card-'+faltam[0]); if(c) c.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+  // "Alterar" sem NADA de concreto (nem trocou de alternativa, nem escreveu): não deixar virar
+  // "aceitei" silenciosamente. Mas se trocou de alternativa OU escreveu, é uma mudança válida.
+  const semDetalhe=[];
+  (DADOS.perguntas||[]).forEach(q=>{ const s=estado[q.id];
+    if(s && s.visivel && s.decisao==='alterar' && !s.altTexto.trim() && (s.alt===s.recAlt || s.alt==null)) semDetalhe.push(q.id); });
+  if(semDetalhe.length){
+    document.getElementById('hint').textContent='✏ Item(ns) '+semDetalhe.join(', ')+': você clicou ALTERAR mas não mudou nada. Escolha outra opção ou escreva a mudança.';
+    const c=document.getElementById('card-'+semDetalhe[0]); if(c) c.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+  const L=[];
+  L.push('RESPOSTAS DE FLÁVIO');
+  L.push('==================================================');
+  if(DADOS.origem) L.push('PAINEL DE ORIGEM: '+DADOS.origem+'  (cole esta resposta na sessão correspondente)');
+  L.push('Assunto: '+(DADOS.titulo||''));
+  L.push('');
+  (DADOS.perguntas||[]).forEach(q=>{
+    const s=estado[q.id];
+    if(!s.visivel){ return; } // pergunta condicional que não se aplica
+    L.push('ITEM '+q.id+' — '+(q.titulo||'')+'   ['+(URG[q.urgencia||'espera']||URG.espera).label+']');
+    if(s.decisao==='excluir'){
+      L.push('  DECISÃO: EXCLUIR este item / não fazer.');
+    } else {
+      const alt=(q.alternativas||[]).find(a=>a.rotulo===s.alt);
+      const rotAlt=alt?((alt.rotulo?('Alternativa '+alt.rotulo+' — '):'')+(alt.texto||'')):'(sem alternativa marcada)';
+      if(s.decisao==='alterar'){
+        const parts=[];
+        if(alt && s.alt!==s.recAlt) parts.push('trocou a recomendação pela '+rotAlt);
+        if(s.altTexto.trim()) parts.push('proposta do Flávio: '+s.altTexto.trim());
+        L.push('  DECISÃO: ALTERAR — '+(parts.length?parts.join('; '):'(mudança não detalhada)'));
+      } else {
+        L.push('  DECISÃO: '+rotAlt);
+      }
+      if(q.irreversivel) L.push('  IRREVERSÍVEL: confirmado e autorizado por Flávio.');
+      const pk=Object.keys(s.params||{});
+      if(pk.length){
+        L.push('  PARÂMETROS:');
+        (q.parametros||[]).forEach(p=>{
+          if(!p||!p.nome) return; // ignora parâmetro sem nome
+          const atual=s.params[p.nome];
+          const mudou=(String(atual)!==String(p.valorSugerido));
+          L.push('    - '+p.nome+' = '+atual+(mudou?'  (alterado; sugestão era: '+p.valorSugerido+')':''));
+        });
+      }
+      if(s.altTexto.trim() && s.decisao!=='alterar') L.push('  OBSERVAÇÃO SOBRE ALTERNATIVAS: '+s.altTexto.trim());
+    }
+    if(s.orient.trim()) L.push('  ORIENTAÇÃO: '+s.orient.trim());
+    L.push('');
+  });
+  L.push('==================================================');
+  L.push('Fim. Siga estas decisões do Flávio: se envolver código, implemente com qualidade máxima; se for decisão de negócio/operação, execute conforme o combinado e confirme.');
+  const out=L.join('\n');
+  document.getElementById('saidaTxt').value=out;
+  document.getElementById('saida').style.display='block';
+  document.getElementById('btnSave').style.display='inline-block';
+  document.getElementById('btnCopy').style.display='inline-block';
+  document.getElementById('hint').textContent='Resposta pronta. Clique em “Salvar resposta” e depois diga “fiz” — ou copie.';
+  document.getElementById('saida').scrollIntoView({behavior:'smooth'});
+}
+
+function nomeArquivo(){
+  const raw=(DADOS.origem||DADOS.id||DADOS.titulo||'resposta').toString().toLowerCase()
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,50);
+  return 'resposta-perguntar-'+(raw||'flavio')+'.txt';
+}
+
+function salvar(){
+  const txt=document.getElementById('saidaTxt').value;
+  // 1) copia para a área de transferência (garantia: se o download falhar, o texto está no clipboard)
+  try{ navigator.clipboard && navigator.clipboard.writeText(txt); }catch(e){}
+  try{ document.getElementById('saidaTxt').select(); document.execCommand('copy'); }catch(e){}
+  // 2) baixa via data: URI (mais compatível com file:// e Safari que o blob)
+  let baixou=false;
+  try{
+    const a=document.createElement('a');
+    a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(txt);
+    a.download=nomeArquivo();
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    baixou=true;
+  }catch(e){ baixou=false; }
+  document.getElementById('hint').textContent = baixou
+    ? 'Baixado na pasta Downloads E copiado. Diga “fiz” (ou cole aqui). Arquivo: '+nomeArquivo()
+    : 'Não deu para baixar aqui, MAS já copiei o texto. É só colar na conversa.';
+}
+
+function copiar(){
+  const t=document.getElementById('saidaTxt'); t.select();
+  navigator.clipboard.writeText(t.value).then(
+    ()=>{ document.getElementById('hint').textContent='Copiado! Cole na conversa.'; },
+    ()=>{ document.execCommand('copy'); document.getElementById('hint').textContent='Copiado (selecionado). Cole na conversa.'; }
+  );
+}
+
+render();
+</script>
+</body>
+</html>

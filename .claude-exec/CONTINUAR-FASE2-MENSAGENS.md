@@ -28,7 +28,7 @@ em vez de esperar o painel de decisões. Segui as RECOMENDAÇÕES do painel + o 
     3. Ambiente (sem sensor) = **A: usar a água ANTES de ligar** como referência do dia. STATUS **PARCIAL**: o aprendizado contínuo já embute o dia; a leitura EXPLÍCITA da água pré-ignição alimentando o `AmbienteOffsetC` ainda NÃO está ligada (offset existe, default 0). → implementar em DEV.
     4. Pneu Quente = **A: 2 níveis por tipo** (radial185 95/105 · slick195 105/115). Config preparada (AprendizadoLimites); espera sensor. **PEDIDO NOVO do Flávio:** esses limites têm que ser EDITÁVEIS no APP (aba "Garagem", celular). → pendência de produto (app), abaixo.
     5. Óleo = **A: fora do aprendizado** (sem sensor de temperatura; só o aviso de pressão). JÁ está fora (saiu na Fase 1). CONFERE.
-  - Próximo: (a) ligar item 3 em DEV; (b) entregar decisões/spec pro notebook integrar+compilar (WinUI) e validar visual; (c) tela "Garagem" p/ editar limites no app celular (pendência de produto).
+  - Próximo: (a) ligar item 3 em DEV; (b) ✅ FEITO 05/07 14:38 — decisões+código EMPACOTADOS pro notebook: linha `claude/fase2-ia-temperatura` enviada pro origin + recado no canal `claude-comms` (mensagens/20260705T143854Z-de-imac-para-notebook.md). Notebook deve baixar, compilar WinUI, validar visual e mandar screenshots; (c) tela "Garagem" p/ editar limites no app celular (pendência de produto).
 
 ## ACHADOS DA VERIFICAÇÃO (confirmados no código real AmostraAlerta)
 - Carro NÃO mede temperatura de ÓLEO (só o BIT de baixa pressão). "Óleo Quente" foi tirado na Fase 1. -> P5 do painel.

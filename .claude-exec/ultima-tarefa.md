@@ -4,6 +4,20 @@
 
 ## RETOMAR: diga "RETOMAR FASE 2" (ou /voltei)
 
+---
+
+## TASK_INIT — Frente 1 (água pré-ignição como referência de ambiente) — 2026-07-05
+- Protocolo carregado: sim (FLAVIO_EXECUTION_PROTOCOL / ENVIRONMENT / DONE_CHECKLIST / COMMUNICATION + CLAUDE.md).
+- Padrões carregados: sim (~/.claude-decisoes/padroes.md).
+- Ambiente alvo: DESENVOLVIMENTO (branch de trabalho `claude/fase2-ia-temperatura`). Produção protegida: sim. Autorização produção: NÃO (não usada). Evidência: "não recebida".
+- Pedido original: painel 05/07 respondido — Item 1 = A (internas primeiro), Item 2 = C (tela Garagem completa depois). Esta frente = ligar a leitura da água ANTES de ligar o motor como referência do dia, alimentando o `AmbienteOffsetC` do aprendiz do motor (decisão 3 da Fase 2, que estava PARCIAL).
+- Objetivo (1 frase): num começo de sessão, usar a temperatura da água com o motor ainda desligado como proxy do dia (quente/frio) pra deslocar o limite do aviso "Motor Aquecendo" antes do aprendizado maturar — sem sensor de ambiente, tudo configurável, sem tocar produção.
+- Critério de conclusão: mecanismo implementado + testado (dotnet test domínio verde com DOTNET_ROLL_FORWARD=Major) + doc atualizado + registro-correcoes atualizado + nada em produção.
+- Plano (≤5): (1) AprendizadoConfig ganha referência de ambiente + ganho (NaN = desligado, preserva hoje); (2) AprendizadoTemperatura ganha offset de ambiente mutável + método ObservarAmbiente + expõe valor; (3) AlertasCriticos captura a água pré-ignição (motor ainda não rodou na sessão) e alimenta o aprendiz do motor; (4) testes novos; (5) doc + registro.
+- Arquivos a inspecionar/alterar: AprendizadoTemperatura.cs, AlertasCriticos.cs, testes AprendizadoTemperaturaTests/AlertasCriticosTests, docs/FASE2_IA_TEMPERATURA.md, registro-correcoes.md.
+- Riscos: não confundir água quente pós-corrida com ambiente (só capturar antes da 1ª partida); manter comportamento atual quando referência não configurada; não cravar número do Bubi como verdade (baseline fica configurável + marcado PENDENTE calibrar).
+- Status inicial: iniciado.
+
 ## Pedido original de Flávio
 Prompt `~/Downloads/PROMPT-P1FAST-FASE2-planejamento.txt`: planejar a Fase 2 (a parte inteligente das
 mensagens — a IA que aprende o padrão normal do carro e avisa fora do normal; motor agora, pneu/óleo/câmbio

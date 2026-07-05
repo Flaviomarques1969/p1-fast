@@ -4,6 +4,8 @@
 **Base:** Fase 1 (`origin/sync/notebook-dia-de-pista-2026-06-23`). Branch: `claude/fase2-ia-temperatura`.
 **Autor:** iMac (Claude), 05/07/2026. Autorização do Flávio: "vai até o fim e implementa tudo, no final audita e corrige".
 
+> **ATUALIZAÇÃO 05/07 pós-decisões do Flávio (painel Fase 2):** as 5 decisões foram travadas. Item 1 = aprendizado **contínuo** (já era). Item 3 (**ambiente = água ANTES de ligar**) foi **LIGADO agora** (antes só o offset manual existia): o aprendiz mede a menor água com o motor desligado (partida a frio do dia) e, na 1ª ignição, congela um offset de ambiente — dia frio baixa o limite (avisa mais cedo), dia quente sobe (avisa mais tarde), **sempre abaixo do Motor Quente** (`MargemAbaixoTetoC`). Água morna de religada (> `AmbienteTetoFrioC`) é ignorada. Tudo configurável. Testes: **401/401** (5 novos: ATP_13..17). Itens 4 (pneu 2 níveis) e 5 (óleo fora) sem mudança. **Pedido novo do Flávio (item 4):** limites de pneu editáveis no app (aba "Garagem") — pendência de produto.
+
 ## 1. O que é (em linguagem de negócio)
 
 Antes: um número-limite fixo mandava o aviso "Temperatura Motor Subindo" (era 70°C). Isso saiu na Fase 1.

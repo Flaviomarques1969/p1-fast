@@ -63,14 +63,31 @@ public sealed record AprendizadoConfig(
     // motor religado, buraco na captura) NÃO pode virar um salto no padrão — sem isso, dt gigante
     // faria a máxima normal pular pra uma leitura de box frio e dar alarme falso na volta seguinte.
     double DtMaxS = 5.0,
-    // Ajuste por temperatura de ambiente (°C somados ao limite). 0 = neutro/desligado — hoje o
-    // carro não tem sensor de ambiente; fica preparado.
-    double AmbienteOffsetC = 0.0
+    // Ajuste MANUAL/externo de ambiente (°C somados ao limite). 0 = neutro. Fica pra sensor futuro
+    // ou entrada externa; soma com o offset dinâmico da água pré-ignição (abaixo).
+    double AmbienteOffsetC = 0.0,
+    // --- Item 3 (decisão Flávio 05/07): água ANTES de ligar o motor = referência do ambiente ---
+    // Liga o uso da água pré-ignição (partida a frio do dia) como referência do ambiente.
+    bool AmbienteUsarAguaPreIgnicao = false,
+    // Água parada "de referência" (°C) em que os defaults foram pensados. Quanto o dia desvia disto
+    // desloca o limite (dia mais quente → limite um pouco mais alto; mais frio → mais baixo).
+    double AmbienteBaseC = 30.0,
+    // Fração do desvio de ambiente que vira offset (conservador; calibrar com dado real do Bubi).
+    double AmbienteFator = 0.5,
+    // Teto do |offset| de ambiente (°C) — nunca desloca demais.
+    double AmbienteOffsetMaxC = 6.0,
+    // Só aceita a água pré-ignição como "ambiente" se estiver abaixo disto (evita usar água QUENTE
+    // de box numa religada como se fosse o ambiente). Acima → offset de ambiente = 0.
+    double AmbienteTetoFrioC = 45.0,
+    // Margem (°C) que o aviso "subindo" fica ABAIXO da trava dura (TetoAprendido/Motor Quente): o
+    // aviso antecipado nunca pode subir até o ponto do Motor Quente, senão some. 0 = sem margem.
+    double MargemAbaixoTetoC = 2.0
 )
 {
     /// <summary>Default do canal ÁGUA DO MOTOR (Bubi). Teto = Motor Quente (70°C) é ligado no
     /// construtor do AlertasCriticos, pra acompanhar WaterMaxC sem duplicar o número.</summary>
-    public static AprendizadoConfig MotorBubi { get; } = new(ReferenciaMaximaNormalC: 62.0, TetoAprendidoC: 70.0);
+    public static AprendizadoConfig MotorBubi { get; } = new(
+        ReferenciaMaximaNormalC: 62.0, TetoAprendidoC: 70.0, AmbienteUsarAguaPreIgnicao: true);
 }
 
 /// <summary>Resultado de uma avaliação do aprendiz (o que a inteligência "acha" agora).</summary>
@@ -96,6 +113,9 @@ public sealed class AprendizadoTemperatura
     private double _amostras;
     private double? _lastT;
     private double? _acimaDesdeT;
+    private bool _motorJaLigou;         // já houve ignição nesta sessão? (congela o ambiente do dia)
+    private double? _aguaFriaMinC;      // menor água lida ANTES da 1ª ignição (≈ ambiente do dia)
+    private double _ambienteOffsetDinC; // offset de ambiente derivado da água pré-ignição (item 3)
 
     public AprendizadoTemperatura(AprendizadoConfig? cfg = null)
     {
@@ -109,8 +129,22 @@ public sealed class AprendizadoTemperatura
     /// <summary>Confiança 0..1 do aprendizado (informativo).</summary>
     public double Confianca => Math.Min(1.0, _amostras / Math.Max(1.0, _cfg.AmostrasConfianca));
 
-    /// <summary>Limite atual de disparo do aviso "subindo" (°C).</summary>
-    public double LimiteSubindoC => Math.Max(_cfg.PisoLimiteC, _maxNormal + _cfg.DeltaSubindoC + _cfg.AmbienteOffsetC);
+    /// <summary>Offset de ambiente atual (°C) derivado da água pré-ignição do dia (item 3).</summary>
+    public double AmbienteOffsetDinamicoC => _ambienteOffsetDinC;
+
+    /// <summary>Limite atual de disparo do aviso "subindo" (°C). Soma máxima normal + delta + ambiente
+    /// (manual + dinâmico da água pré-ignição), com piso, e SEMPRE abaixo da trava dura por
+    /// <see cref="AprendizadoConfig.MargemAbaixoTetoC"/> (o aviso antecipado não pode sumir dentro do Motor Quente).</summary>
+    public double LimiteSubindoC
+    {
+        get
+        {
+            var bruto = _maxNormal + _cfg.DeltaSubindoC + _cfg.AmbienteOffsetC + _ambienteOffsetDinC;
+            var comPiso = Math.Max(_cfg.PisoLimiteC, bruto);
+            var teto = _cfg.TetoAprendidoC - _cfg.MargemAbaixoTetoC;
+            return double.IsFinite(teto) ? Math.Min(comPiso, teto) : comPiso;
+        }
+    }
 
     /// <summary>
     /// Ensina com a amostra e decide se está "subindo". <paramref name="tempC"/> null (sensor
@@ -120,11 +154,28 @@ public sealed class AprendizadoTemperatura
     /// </summary>
     public AprendizadoResultado Avaliar(double? tempC, bool motorRodando, double t)
     {
+        // Ambiente do dia (item 3): antes da 1ª ignição, a água PARADA ≈ temperatura do ambiente.
+        // Guarda a menor leitura fria vista com o motor desligado.
+        if (_cfg.AmbienteUsarAguaPreIgnicao && !_motorJaLigou && !motorRodando && tempC is { } wFrio)
+            _aguaFriaMinC = _aguaFriaMinC is { } min ? Math.Min(min, wFrio) : wFrio;
+
         if (tempC is not { } w || !motorRodando)
         {
             _acimaDesdeT = null;   // quebrou a sequência de "acima"
             _lastT = t;
             return new AprendizadoResultado(false, LimiteSubindoC, _maxNormal, Confianca);
+        }
+
+        // 1ª ignição da sessão: congela o offset de ambiente a partir da água fria medida (item 3).
+        // Só usa se a água fria for baixa o bastante (senão foi religada com o motor ainda morno).
+        if (!_motorJaLigou)
+        {
+            _motorJaLigou = true;
+            if (_cfg.AmbienteUsarAguaPreIgnicao && _aguaFriaMinC is { } fria && fria <= _cfg.AmbienteTetoFrioC)
+            {
+                var off = (fria - _cfg.AmbienteBaseC) * _cfg.AmbienteFator;
+                _ambienteOffsetDinC = Math.Clamp(off, -_cfg.AmbienteOffsetMaxC, _cfg.AmbienteOffsetMaxC);
+            }
         }
 
         var limite = LimiteSubindoC;
@@ -176,6 +227,10 @@ public sealed class AprendizadoTemperatura
         }
         _lastT = null;
         _acimaDesdeT = null;
+        // O ambiente é do DIA, não da história: recomeça a medir a água fria na nova sessão.
+        _motorJaLigou = false;
+        _aguaFriaMinC = null;
+        _ambienteOffsetDinC = 0.0;
     }
 
     /// <summary>Reseta pro padrão de referência (ex.: trocou config mecânica/refrigeração do carro).</summary>
@@ -185,5 +240,8 @@ public sealed class AprendizadoTemperatura
         _amostras = 0;
         _lastT = null;
         _acimaDesdeT = null;
+        _motorJaLigou = false;
+        _aguaFriaMinC = null;
+        _ambienteOffsetDinC = 0.0;
     }
 }

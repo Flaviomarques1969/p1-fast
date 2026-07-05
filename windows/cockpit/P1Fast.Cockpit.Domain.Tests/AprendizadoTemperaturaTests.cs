@@ -136,4 +136,65 @@ public class AprendizadoTemperaturaTests
         Assert.Equal(65, frio.LimiteSubindoC, 3);
         Assert.Equal(69, quente.LimiteSubindoC, 3); // +4°C de ambiente sobe o limite
     }
+
+    // --- Item 3 (Flávio 05/07): água ANTES de ligar o motor = referência do ambiente do dia ---
+    private static AprendizadoConfig CfgAmb(double refC = 62) =>
+        new(ReferenciaMaximaNormalC: refC, AmbienteUsarAguaPreIgnicao: true,
+            AmbienteBaseC: 30, AmbienteFator: 0.5, AmbienteOffsetMaxC: 6,
+            AmbienteTetoFrioC: 45, TetoAprendidoC: 70, MargemAbaixoTetoC: 2);
+
+    [Fact]
+    public void ATP_13_Agua_fria_antes_de_ligar_baixa_o_limite_avisa_mais_cedo()
+    {
+        var a = new AprendizadoTemperatura(CfgAmb());
+        a.Avaliar(20, motorRodando: false, 0.0);  // dia frio: água parada 20°C, motor desligado
+        a.Avaliar(20, motorRodando: false, 1.0);
+        a.Avaliar(50, motorRodando: true, 2.0);   // liga o motor -> congela o ambiente do dia
+        Assert.Equal(-5, a.AmbienteOffsetDinamicoC, 3);                 // (20-30)*0.5
+        Assert.True(a.LimiteSubindoC < 61, $"limite {a.LimiteSubindoC:0.0} deveria cair em dia frio");
+    }
+
+    [Fact]
+    public void ATP_14_Dia_quente_sobe_o_limite_mas_NUNCA_alcanca_o_Motor_Quente()
+    {
+        var a = new AprendizadoTemperatura(CfgAmb());
+        a.Avaliar(40, motorRodando: false, 0.0);  // dia quente: água parada 40°C (< teto frio 45)
+        a.Avaliar(45, motorRodando: true, 1.0);   // liga
+        Assert.Equal(5, a.AmbienteOffsetDinamicoC, 3);                  // (40-30)*0.5
+        Assert.True(a.LimiteSubindoC <= 68.001, $"aviso nao pode subir ate o Motor Quente (70); veio {a.LimiteSubindoC:0.0}");
+        Assert.True(a.LimiteSubindoC >= 66, $"mas subiu com o dia quente; veio {a.LimiteSubindoC:0.0}");
+    }
+
+    [Fact]
+    public void ATP_15_Religada_com_agua_morna_NAO_vira_ambiente()
+    {
+        var a = new AprendizadoTemperatura(CfgAmb());
+        a.Avaliar(50, motorRodando: false, 0.0);  // religada: água ainda morna 50°C (> teto frio 45)
+        a.Avaliar(55, motorRodando: true, 1.0);   // liga
+        Assert.Equal(0, a.AmbienteOffsetDinamicoC, 3); // ignora água morna -> sem offset de ambiente
+    }
+
+    [Fact]
+    public void ATP_16_Offset_de_ambiente_CONGELA_na_1a_ignicao()
+    {
+        var a = new AprendizadoTemperatura(CfgAmb());
+        a.Avaliar(20, motorRodando: false, 0.0);  // frio
+        a.Avaliar(60, motorRodando: true, 1.0);   // liga -> offset -5 congela
+        var off1 = a.AmbienteOffsetDinamicoC;
+        a.Avaliar(66, motorRodando: true, 2.0);   // roda quente: NÃO pode virar o ambiente
+        a.Avaliar(68, motorRodando: true, 3.0);
+        Assert.Equal(-5, off1, 3);
+        Assert.Equal(off1, a.AmbienteOffsetDinamicoC, 6);
+    }
+
+    [Fact]
+    public void ATP_17_Reset_zera_o_ambiente_do_dia()
+    {
+        var a = new AprendizadoTemperatura(CfgAmb());
+        a.Avaliar(20, motorRodando: false, 0.0);
+        a.Avaliar(50, motorRodando: true, 1.0);
+        Assert.Equal(-5, a.AmbienteOffsetDinamicoC, 3);
+        a.Reset();
+        Assert.Equal(0, a.AmbienteOffsetDinamicoC, 3);  // recomeça a medir o ambiente na nova sessão
+    }
 }
