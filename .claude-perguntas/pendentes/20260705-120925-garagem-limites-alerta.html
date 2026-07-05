@@ -155,29 +155,128 @@
 <script>
 /* ===== DADOS — o Claude preenche este bloco a cada uso ===== */
 const DADOS = /*__INJECT__*/{
-  "titulo": "Exemplo",
-  "subtitulo": "",
-  "tempoEstimado": "",
-  "contexto": "Este é um exemplo. O Claude substitui este bloco pelas perguntas reais.",
+  "titulo": "Garagem — ajustar os limites de alerta pelo celular",
+  "subtitulo": "Item 4 da Fase 2. Antes de eu construir a tela, 3 decisões suas.",
+  "origem": "Projeto P1 Fast · .claude-perguntas/pendentes/20260705-120925-garagem-limites-alerta.html",
+  "tempoEstimado": "3 min",
+  "contexto": "Na Fase 2 você pediu poder ajustar os limites de pneu pelo app, na Garagem, no celular. Investiguei antes de codificar e achei o seguinte: (1) a Garagem JA existe no app do celular e guarda os carros; (2) JA existe uma ficha de 'Setup do Carro' (pressao de pneu, alinhamento, suspensao, freios, motor) que JA sincroniza sozinha entre o celular e a nuvem; (3) hoje os limites da inteligencia sao numeros fixos dentro do programa que roda no notebook, nao vem de lugar ajustavel. Entao, pra voce mexer num numero pelo celular e a inteligencia do notebook obedecer, esse numero precisa VIAJAR do celular ate o notebook. Isso e o tamanho da tela sao decisoes suas. Nada foi codificado ainda; a parte inteligente do motor (Fase 2) ja esta pronta e testada, sem tocar producao.",
   "perguntas": [
     {
       "id": 1,
-      "titulo": "Pergunta exemplo?",
+      "titulo": "Onde esses limites ficam guardados, e como chegam ao notebook?",
+      "urgencia": "trava",
+      "irreversivel": false,
+      "avisoIrreversivel": "",
+      "historico": "",
+      "evidencia": "Ja existe no app a ficha 'Setup do Carro' (CarroSetupOverrides): pressao dos 4 pneus, alinhamento, suspensao, freios e motor, salva por carro e sincronizada celular-nuvem automaticamente.",
+      "dependeDe": null,
+      "contexto": "Os limites de alerta sao propriedade do carro (o Bubi aguenta um tanto, outro carro aguenta outro). O jeito de o ajuste do celular chegar ate a inteligencia do notebook define a arquitetura.",
+      "alternativas": [
+        {
+          "rotulo": "A",
+          "texto": "Dentro da ficha 'Setup do Carro' que ja existe, numa secao nova 'Alertas'",
+          "consequencia": "Voce edita os limites junto com pressao/alinhamento, por carro. Ja sobe pra nuvem sozinho; o notebook le os limites do carro ao abrir a sessao.",
+          "recomendada": true,
+          "porque": "Aproveita o caminho que JA existe e ja sincroniza. Cada carro carrega seus proprios limites, sem inventar peca nova.",
+          "risco": "baixo",
+          "reversivel": true
+        },
+        {
+          "rotulo": "B",
+          "texto": "Uma tela separada so de 'Alertas / IA' na Garagem",
+          "consequencia": "Tela nova dedicada aos limites, tambem salva na nuvem. Mais trabalho e outro lugar pra manter.",
+          "risco": "baixo",
+          "reversivel": true
+        },
+        {
+          "rotulo": "C",
+          "texto": "Deixar so no notebook por enquanto (ajuste la), celular depois",
+          "consequencia": "Rapido de fazer, mas voce NAO ajusta pelo celular, que foi o seu pedido.",
+          "risco": "baixo",
+          "reversivel": true
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "titulo": "O que a tela deixa voce ajustar?",
+      "urgencia": "espera",
+      "irreversivel": false,
+      "avisoIrreversivel": "",
+      "historico": "Na Fase 2 voce pediu os 4 limites de pneu (radial 95/105, semi-slick 105/115).",
+      "evidencia": "Hoje o carro so tem sensor de AGUA do motor. Pneu e cambio ainda NAO tem sensor, entao ajustar o limite de pneu nao muda nada na pista ate o sensor ser instalado.",
+      "dependeDe": null,
+      "contexto": "Voce pediu os limites de pneu. Mas como o pneu ainda nao tem sensor, a tela so de pneu nao faz efeito hoje. O motor tem sensor e ja funciona.",
+      "alternativas": [
+        {
+          "rotulo": "A",
+          "texto": "So os limites de PNEU (radial atencao/critico + semi-slick atencao/critico)",
+          "consequencia": "Exatamente o que voce pediu. Fica pronto e configuravel, mas sem efeito na pista ate instalar o sensor de pneu.",
+          "risco": "baixo",
+          "reversivel": true
+        },
+        {
+          "rotulo": "B",
+          "texto": "Pneu + a temperatura do MOTOR (a referencia e o quanto acima avisa)",
+          "consequencia": "Alem do pneu, voce regula o aviso do motor, que JA tem sensor e funciona hoje. A tela passa a ter efeito real imediato.",
+          "recomendada": true,
+          "porque": "O motor e a unica temperatura com sensor hoje; incluir ele faz a tela servir JA, em vez de so esperar o sensor de pneu.",
+          "risco": "baixo",
+          "reversivel": true
+        },
+        {
+          "rotulo": "C",
+          "texto": "Todos os limites de alerta do carro (pneu, motor, bateria, mistura)",
+          "consequencia": "Controle total, mas tela maior e mais risco de voce mexer sem querer num alerta critico.",
+          "risco": "medio",
+          "reversivel": true
+        }
+      ],
+      "parametros": [
+        {
+          "nome": "Radial 185 - atencao / critico",
+          "valorSugerido": "95 / 105 C",
+          "porque": "Suas faixas da Fase 2."
+        },
+        {
+          "nome": "Semi-slick 195 - atencao / critico",
+          "valorSugerido": "105 / 115 C",
+          "porque": "Suas faixas da Fase 2."
+        },
+        {
+          "nome": "Motor - referencia / avisa acima",
+          "valorSugerido": "62 C / +3 C",
+          "porque": "Defaults conservadores do Bubi (Fase 2); calibrar com dado real."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "titulo": "Quando construir essa tela?",
       "urgencia": "espera",
       "irreversivel": false,
       "avisoIrreversivel": "",
       "historico": "",
       "evidencia": "",
       "dependeDe": null,
-      "contexto": "Por que esta pergunta existe.",
+      "contexto": "A parte inteligente do motor ja esta pronta. A tela de ajuste e uma frente do app (celular), separada.",
       "alternativas": [
-        {"rotulo":"A","texto":"Opção A","consequencia":"O que acontece.","recomendada":true,"porque":"Motivo.",
-         "custo":"R$ 0","prazo":"2h","risco":"baixo","reversivel":true},
-        {"rotulo":"B","texto":"Opção B","consequencia":"O que acontece.",
-         "custo":"R$ 500","prazo":"2 dias","risco":"médio","reversivel":false}
-      ],
-      "parametros": [
-        {"nome":"exemplo","valorSugerido":"valor","porque":"Por que este valor."}
+        {
+          "rotulo": "A",
+          "texto": "Agora, deixa pronta e testada ja",
+          "consequencia": "Voce ja ganha o ajuste pelo celular. Se o escopo incluir o motor, tem efeito hoje; se for so pneu, fica preparada pro sensor.",
+          "recomendada": true,
+          "porque": "Voce pediu e o caminho (Setup do Carro) ja existe; sai barato e nao atrapalha o notebook validar a Fase 2 em paralelo.",
+          "risco": "baixo",
+          "reversivel": true
+        },
+        {
+          "rotulo": "B",
+          "texto": "So quando o sensor de pneu for instalado",
+          "consequencia": "Adia a tela. Faz sentido se for SO pneu, que sem sensor nao muda nada hoje.",
+          "risco": "baixo",
+          "reversivel": true
+        }
       ]
     }
   ]

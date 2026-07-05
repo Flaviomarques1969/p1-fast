@@ -67,6 +67,7 @@ struct SetupAvancadoView: View {
             grupoSection(.suspensao)
             grupoSection(.freios)
             grupoSection(.motorTransmissao)
+            grupoSection(.alertas)
 
             if let erro = savingError {
                 Text(erro)
@@ -129,7 +130,7 @@ struct SetupAvancadoView: View {
                 Button(action: irProximo) {
                     Text("›")
                         .font(.system(size: 22, weight: .regular))
-                        .foregroundStyle(grupoAtivo == .motorTransmissao ? Color.textFaint : Color.text)
+                        .foregroundStyle(grupoAtivo == .alertas ? Color.textFaint : Color.text)
                         .frame(width: 36, height: 36)
                         .background(
                             RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -137,7 +138,7 @@ struct SetupAvancadoView: View {
                         )
                 }
                 .buttonStyle(.plain)
-                .disabled(grupoAtivo == .motorTransmissao)
+                .disabled(grupoAtivo == .alertas)
             }
 
             HStack(spacing: 6) {
@@ -178,6 +179,8 @@ struct SetupAvancadoView: View {
                 freiosFields
             case .motorTransmissao:
                 motorFields
+            case .alertas:
+                alertasFields
             }
         }
         .padding(Spacing.md)
@@ -236,6 +239,54 @@ struct SetupAvancadoView: View {
             fieldText("Mapa de injeção", value: $setup.mapaInjecao, placeholder: "Ex: Mapa 2 - pista")
             fieldText("Diferencial", value: $setup.diferencial, placeholder: "Ex: 60% trava")
         }
+    }
+
+    /// Limites de alerta DESTE carro (Flávio 05/07, item 4 da Fase 2). Vazio = usa o padrão do
+    /// sistema; o cérebro do cockpit (notebook) lê estes valores ao abrir a sessão do carro.
+    private var alertasFields: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text("Deixe vazio pra usar o padrão do sistema. Cada carro tem os seus.")
+                .font(.system(size: 12, weight: .regular))
+                .foregroundStyle(Color.textMuted)
+
+            alertaSub("Motor")
+            fieldNumber("Motor Quente (trava)", value: $setup.alertaMotorQuenteC, suffix: "°C")
+            HStack(spacing: Spacing.sm) {
+                fieldNumber("Referência normal", value: $setup.alertaMotorReferenciaC, suffix: "°C")
+                fieldNumber("Avisa acima de", value: $setup.alertaMotorDeltaC, suffix: "+°C")
+            }
+
+            alertaSub("Mistura")
+            HStack(spacing: Spacing.sm) {
+                fieldNumber("Pobre acima de", value: $setup.alertaLambdaPobre, suffix: "λ")
+                fieldNumber("Rica abaixo de", value: $setup.alertaLambdaRica, suffix: "λ")
+            }
+
+            alertaSub("Bateria")
+            fieldNumber("Tensão mínima", value: $setup.alertaBateriaMinV, suffix: "V")
+
+            alertaSub("Pneu · radial 185")
+            HStack(spacing: Spacing.sm) {
+                fieldNumber("Atenção", value: $setup.alertaPneuRadialAtencaoC, suffix: "°C")
+                fieldNumber("Crítico", value: $setup.alertaPneuRadialCriticoC, suffix: "°C")
+            }
+
+            alertaSub("Pneu · semi-slick 195")
+            HStack(spacing: Spacing.sm) {
+                fieldNumber("Atenção", value: $setup.alertaPneuSlickAtencaoC, suffix: "°C")
+                fieldNumber("Crítico", value: $setup.alertaPneuSlickCriticoC, suffix: "°C")
+            }
+        }
+    }
+
+    /// Mini-rótulo de sub-grupo dentro de Alertas (Motor / Mistura / Bateria / Pneu).
+    private func alertaSub(_ t: String) -> some View {
+        Text(t.uppercased())
+            .font(.system(size: 11, weight: .semibold))
+            .tracking(0.08 * 11)
+            .foregroundStyle(Color.textFaint)
+            .padding(.top, 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Helpers de campos (tipografia 18pt vs 16pt do modal inline)
@@ -358,7 +409,7 @@ struct SetupAvancadoView: View {
 // MARK: - Enum dos 5 grupos canônicos
 
 enum GrupoSetup: String, CaseIterable, Identifiable {
-    case pneus, alinhamento, suspensao, freios, motorTransmissao
+    case pneus, alinhamento, suspensao, freios, motorTransmissao, alertas
     var id: String { rawValue }
 
     var titulo: String {
@@ -368,16 +419,18 @@ enum GrupoSetup: String, CaseIterable, Identifiable {
         case .suspensao: return "Suspensão"
         case .freios: return "Freios"
         case .motorTransmissao: return "Motor · Transmissão"
+        case .alertas: return "Alertas"
         }
     }
 
     var eyebrow: String {
         switch self {
-        case .pneus: return "Grupo 1 de 5"
-        case .alinhamento: return "Grupo 2 de 5"
-        case .suspensao: return "Grupo 3 de 5"
-        case .freios: return "Grupo 4 de 5"
-        case .motorTransmissao: return "Grupo 5 de 5"
+        case .pneus: return "Grupo 1 de 6"
+        case .alinhamento: return "Grupo 2 de 6"
+        case .suspensao: return "Grupo 3 de 6"
+        case .freios: return "Grupo 4 de 6"
+        case .motorTransmissao: return "Grupo 5 de 6"
+        case .alertas: return "Grupo 6 de 6"
         }
     }
 

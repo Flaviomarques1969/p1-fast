@@ -36,6 +36,24 @@ struct CarroSetupOverrides: Codable, Equatable {
     var mapaInjecao: String?
     var diferencial: String?
 
+    // ALERTAS (10) — limites de alerta DESTE carro (Flávio 05/07, item 4 da Fase 2).
+    // Cada carro tem os seus; nil = usa o padrão do sistema. Temperatura em °C, tensão em V,
+    // lambda adimensional. O cérebro do cockpit (notebook) lê estes ao abrir a sessão do carro.
+    // MOTOR (temperatura da água)
+    var alertaMotorQuenteC: Double?       // trava dura "Motor Quente" (padrão 70)
+    var alertaMotorReferenciaC: Double?   // máxima normal semente do aprendizado (padrão 62)
+    var alertaMotorDeltaC: Double?        // quantos °C acima do normal avisa "subindo" (padrão 3)
+    // MISTURA (lambda)
+    var alertaLambdaPobre: Double?        // acima disso = mistura pobre (padrão 1.0)
+    var alertaLambdaRica: Double?         // abaixo disso = mistura rica (padrão 0.74)
+    // BATERIA
+    var alertaBateriaMinV: Double?        // abaixo disso = bateria fraca (padrão 12.5)
+    // PNEU — 2 níveis por tipo (preparado; espera o sensor de pneu)
+    var alertaPneuRadialAtencaoC: Double? // radial 185 atenção (padrão 95)
+    var alertaPneuRadialCriticoC: Double? // radial 185 crítico (padrão 105)
+    var alertaPneuSlickAtencaoC: Double?  // semi-slick 195 atenção (padrão 105)
+    var alertaPneuSlickCriticoC: Double?  // semi-slick 195 crítico (padrão 115)
+
     enum CodingKeys: String, CodingKey {
         case pressaoDE = "pressao_de"
         case pressaoDD = "pressao_dd"
@@ -51,6 +69,16 @@ struct CarroSetupOverrides: Codable, Equatable {
         case combustivel
         case mapaInjecao = "mapa_injecao"
         case diferencial
+        case alertaMotorQuenteC = "alerta_motor_quente_c"
+        case alertaMotorReferenciaC = "alerta_motor_referencia_c"
+        case alertaMotorDeltaC = "alerta_motor_delta_c"
+        case alertaLambdaPobre = "alerta_lambda_pobre"
+        case alertaLambdaRica = "alerta_lambda_rica"
+        case alertaBateriaMinV = "alerta_bateria_min_v"
+        case alertaPneuRadialAtencaoC = "alerta_pneu_radial_atencao_c"
+        case alertaPneuRadialCriticoC = "alerta_pneu_radial_critico_c"
+        case alertaPneuSlickAtencaoC = "alerta_pneu_slick_atencao_c"
+        case alertaPneuSlickCriticoC = "alerta_pneu_slick_critico_c"
     }
 
     static let empty = CarroSetupOverrides()
