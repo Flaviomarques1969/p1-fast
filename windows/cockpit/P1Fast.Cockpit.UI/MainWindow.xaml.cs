@@ -450,13 +450,17 @@ public sealed partial class MainWindow : Window
     // UI. As curvas (8 de Brasília) entram opcionais — sem elas, a tela mostra luz
     // de marcha + alertas; com elas, também bolinha do ápice + coach por curva.
 
-    /// <summary>Liga o feed de dado real. Chamar uma vez, com as curvas da pista (ou null).</summary>
-    public void IniciarFeedReal(IReadOnlyList<TrechoSegmento>? curvas = null)
+    /// <summary>Liga o feed de dado real. Chamar uma vez, com as curvas da pista (ou null).
+    /// <paramref name="alertaLimites"/>/<paramref name="aprendizadoLimites"/> = limites DESTE carro
+    /// (item 4 da Fase 2, tela Garagem); null = defaults do sistema (comportamento de sempre).</summary>
+    public void IniciarFeedReal(IReadOnlyList<TrechoSegmento>? curvas = null,
+        AlertaLimites? alertaLimites = null, AprendizadoLimites? aprendizadoLimites = null)
     {
         _demoTimer?.Stop();
         _brakeTimer?.Stop();
         _shiftSweepTimer?.Stop();
-        _orquestrador = new CockpitOrchestrator(_cockpitState, curvas);
+        _orquestrador = new CockpitOrchestrator(_cockpitState, curvas,
+            alertaLimites: alertaLimites, aprendizadoLimites: aprendizadoLimites);
         _segsAtivos = curvas ?? Array.Empty<TrechoSegmento>();  // ponte do stint (replay E live)
         _barraVoltasAplicada = false;   // redesenha a barra de voltas (placeholder) nesta sessão/loop
     }

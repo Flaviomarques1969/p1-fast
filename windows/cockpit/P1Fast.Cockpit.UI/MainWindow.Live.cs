@@ -71,7 +71,7 @@ public sealed partial class MainWindow
         // sem deixar sessão órfã nem threads soltas numa corrida de boot.
         this.Closed += (_, _) => StopLive();
 
-        _ = System.Threading.Tasks.Task.Run(() =>
+        _ = System.Threading.Tasks.Task.Run(async () =>
         {
             // Curvas de Brasília (mesmo arquivo do replay) — deixam o maestro pronto
             // pro GPS quando ele chegar; sem GPS ainda não são exercidas.
@@ -85,21 +85,25 @@ public sealed partial class MainWindow
             }
             catch { /* sem curvas: a tela mostra o motor mesmo assim */ }
 
-            return segs;
+            // Fase 2 item 4 (tela Garagem): limites de alerta DESTE carro, da nuvem (best-effort,
+            // timeout curto). Sem chave/rede/override → defaults do sistema (idêntico a hoje).
+            var (al, ap) = await BuscarLimitesDoCarroAsync(CancellationToken.None).ConfigureAwait(false);
+            return (segs, al, ap);
         }).ContinueWith(t =>
         {
-            var segs = t.Result;
-            DispatcherQueue.TryEnqueue(() => IniciarLive(segs));
+            var (segs, al, ap) = t.Result;
+            DispatcherQueue.TryEnqueue(() => IniciarLive(segs, al, ap));
         });
     }
 
-    private void IniciarLive(IReadOnlyList<TrechoSegmento> segs)
+    private void IniciarLive(IReadOnlyList<TrechoSegmento> segs,
+        AlertaLimites? alertaLimites = null, AprendizadoLimites? aprendizadoLimites = null)
     {
         // M6: se a janela já fechou enquanto este IniciarLive estava enfileirado, aborta —
         // não cria recorder/RaceBox/laços numa janela morta (que ficariam órfãos e sem monitor).
         if (_liveParado) return;
 
-        IniciarFeedReal(segs);    // para timers de demo + cria _orquestrador
+        IniciarFeedReal(segs, alertaLimites, aprendizadoLimites);  // timers off + cria _orquestrador com os limites do carro
         CarregarAprendizado();    // Fase 2: restaura a máxima normal do carro (memória entre sessões)
         AtualizarSensores(null);  // motor sem amostra ainda → tudo "a comunicar"
 
