@@ -25,7 +25,7 @@ em vez de esperar o painel de decisões. Segui as RECOMENDAÇÕES do painel + o 
   - DECISÕES TRAVADAS (5):
     1. Aprendizado = **C: contínuo, nunca trava** (NÃO "3 voltas"). → JÁ implementado assim (AprendizadoTemperatura.cs L7-8,52,88). CONFERE com o código.
     2. Gatilho "Temperatura Motor Subindo" = **+3°C acima da máxima normal** (DeltaSubindoC=3). JÁ implementado. (Flávio devolveu dúvida só sobre a mecânica do painel — respondida: escolher outra letra não é erro, é decidir diferente da recomendação.)
-    3. Ambiente (sem sensor) = **A: usar a água ANTES de ligar** como referência do dia. STATUS **PARCIAL**: o aprendizado contínuo já embute o dia; a leitura EXPLÍCITA da água pré-ignição alimentando o `AmbienteOffsetC` ainda NÃO está ligada (offset existe, default 0). → implementar em DEV.
+    3. Ambiente (sem sensor) = **A: usar a água ANTES de ligar** como referência do dia. STATUS **✅ FEITO 05/07** (commit e22ea53b): aprendiz mede a menor água com motor desligado e congela offset de ambiente na 1ª ignição (dia frio avisa mais cedo, quente mais tarde, sempre abaixo do Motor Quente; água morna de religada ignorada). Configurável. 401/401 (ATP_13..17).
     4. Pneu Quente = **A: 2 níveis por tipo** (radial185 95/105 · slick195 105/115). Config preparada (AprendizadoLimites); espera sensor. **PEDIDO NOVO do Flávio:** esses limites têm que ser EDITÁVEIS no APP (aba "Garagem", celular). → pendência de produto (app), abaixo.
     5. Óleo = **A: fora do aprendizado** (sem sensor de temperatura; só o aviso de pressão). JÁ está fora (saiu na Fase 1). CONFERE.
   - Próximo: (a) ligar item 3 em DEV; (b) ✅ FEITO 05/07 14:38 — decisões+código EMPACOTADOS pro notebook: linha `claude/fase2-ia-temperatura` enviada pro origin + recado no canal `claude-comms` (mensagens/20260705T143854Z-de-imac-para-notebook.md). Notebook deve baixar, compilar WinUI, validar visual e mandar screenshots; (c) tela "Garagem" p/ editar limites no app celular (pendência de produto).
@@ -36,7 +36,7 @@ em vez de esperar o painel de decisões. Segui as RECOMENDAÇÕES do painel + o 
 - Sensores de PNEU (temp+pressão) e CÂMBIO (temp) ainda não instalados no carro.
 
 ## PENDÊNCIAS
-- **[Fase 2 · item 3] Água pré-ignição como referência de ambiente** — ligar em DEV (alimentar `AmbienteOffsetC` com a leitura da água antes do motor rodar). Hoje só o aprendizado contínuo cobre o dia.
+- ✅ **[Fase 2 · item 3] FEITO 05/07** — água pré-ignição como referência de ambiente (commit e22ea53b, 401/401). Falta só o notebook validar visual no .exe.
 - **[Fase 2 · item 4] Tela "Garagem" no app celular** p/ o Flávio editar os limites de pneu (e demais parâmetros da IA). A base já é toda configurável no código; falta a TELA. Pedido explícito do Flávio 2026-07-05.
 - Marcha lenta REAL do Bubi (limiar de partida do óleo; 500 rpm hoje) — confirmar com Flávio.
 - Screenshots do notebook das mensagens novas (pedidos, ainda não vieram) — mostrar ao Flávio quando chegarem.
