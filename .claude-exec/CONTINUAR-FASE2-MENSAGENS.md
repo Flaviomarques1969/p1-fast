@@ -21,10 +21,14 @@ em vez de esperar o painel de decisões. Segui as RECOMENDAÇÕES do painel + o 
   - Spec canônica: canal claude-comms -> specs/SPEC_MENSAGENS_COCKPIT_PILOTO_v2.md
   - Regra de caixa: Title Case (exceto ligação de/da/do), IDs/chaves seguem CAIXA ALTA, sigla GPS mantida.
 
-- FASE 2 (a parte inteligente = IA de padrão) = **EM DEFINIÇÃO**.
-  - Painel de decisão ABERTO: .claude-perguntas/pendentes/20260705-103020-fase2-ia-temperatura.html (5 perguntas).
-  - Quando Flávio disser "fiz": ler ~/Downloads/resposta-perguntar-*.txt (mais recente), confirmar item a item, registrar em ~/.claude-decisoes/perguntar-historico.jsonl, e passar a spec da Fase 2 pro notebook implementar (só a IA da TEMPERATURA DO MOTOR entra já; pneu/câmbio esperam sensor).
-  - As 5 decisões: (1) voltas de aprendizado [rec 3]; (2) gatilho +3°C acima da máxima [rec]; (3) fonte da temperatura do AMBIENTE, já que não há sensor [rec: usar a água antes de ligar]; (4) Pneu Quente 2 níveis por tipo [rec]; (5) óleo sem sensor -> deixar fora do aprendizado [rec].
+- FASE 2 (a parte inteligente = IA de padrão) = **DECIDIDA pelo Flávio 2026-07-05** (resposta salva: `~/Downloads/resposta-perguntar-fase-2-*.txt (1)`; registrada em `~/.claude-decisoes/perguntar-historico.jsonl`).
+  - DECISÕES TRAVADAS (5):
+    1. Aprendizado = **C: contínuo, nunca trava** (NÃO "3 voltas"). → JÁ implementado assim (AprendizadoTemperatura.cs L7-8,52,88). CONFERE com o código.
+    2. Gatilho "Temperatura Motor Subindo" = **+3°C acima da máxima normal** (DeltaSubindoC=3). JÁ implementado. (Flávio devolveu dúvida só sobre a mecânica do painel — respondida: escolher outra letra não é erro, é decidir diferente da recomendação.)
+    3. Ambiente (sem sensor) = **A: usar a água ANTES de ligar** como referência do dia. STATUS **PARCIAL**: o aprendizado contínuo já embute o dia; a leitura EXPLÍCITA da água pré-ignição alimentando o `AmbienteOffsetC` ainda NÃO está ligada (offset existe, default 0). → implementar em DEV.
+    4. Pneu Quente = **A: 2 níveis por tipo** (radial185 95/105 · slick195 105/115). Config preparada (AprendizadoLimites); espera sensor. **PEDIDO NOVO do Flávio:** esses limites têm que ser EDITÁVEIS no APP (aba "Garagem", celular). → pendência de produto (app), abaixo.
+    5. Óleo = **A: fora do aprendizado** (sem sensor de temperatura; só o aviso de pressão). JÁ está fora (saiu na Fase 1). CONFERE.
+  - Próximo: (a) ligar item 3 em DEV; (b) entregar decisões/spec pro notebook integrar+compilar (WinUI) e validar visual; (c) tela "Garagem" p/ editar limites no app celular (pendência de produto).
 
 ## ACHADOS DA VERIFICAÇÃO (confirmados no código real AmostraAlerta)
 - Carro NÃO mede temperatura de ÓLEO (só o BIT de baixa pressão). "Óleo Quente" foi tirado na Fase 1. -> P5 do painel.
@@ -32,6 +36,8 @@ em vez de esperar o painel de decisões. Segui as RECOMENDAÇÕES do painel + o 
 - Sensores de PNEU (temp+pressão) e CÂMBIO (temp) ainda não instalados no carro.
 
 ## PENDÊNCIAS
+- **[Fase 2 · item 3] Água pré-ignição como referência de ambiente** — ligar em DEV (alimentar `AmbienteOffsetC` com a leitura da água antes do motor rodar). Hoje só o aprendizado contínuo cobre o dia.
+- **[Fase 2 · item 4] Tela "Garagem" no app celular** p/ o Flávio editar os limites de pneu (e demais parâmetros da IA). A base já é toda configurável no código; falta a TELA. Pedido explícito do Flávio 2026-07-05.
 - Marcha lenta REAL do Bubi (limiar de partida do óleo; 500 rpm hoje) — confirmar com Flávio.
 - Screenshots do notebook das mensagens novas (pedidos, ainda não vieram) — mostrar ao Flávio quando chegarem.
 - Banco de TESTE próprio pro P1 Fast (não existe; só produção fvhwltzhytpnhlqbttmd) — decisão do Flávio, em aberto.
