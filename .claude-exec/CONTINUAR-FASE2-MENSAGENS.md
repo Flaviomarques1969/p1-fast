@@ -1,5 +1,14 @@
-# CONTINUAR — Mensagens do cockpit (Fase 1 feita, Fase 2 IMPLEMENTADA em DEV)
-# Gatilho de retomada: "RETOMAR FASE 2" ou "voltei". Atualizado 2026-07-05.
+# CONTINUAR — Mensagens do cockpit (Fase 1 feita, Fase 2 IMPLEMENTADA + INTEGRADA)
+# Gatilho de retomada: "RETOMAR FASE 2" ou "voltei". Atualizado 2026-07-05 (tarde).
+
+## >>> ATUALIZAÇÃO 2026-07-05 TARDE — Fase 2 INTEGRADA + tela Garagem (item 4) começada <<<
+- **Fase 2 INTEGRADA no .exe pelo notebook** (commit `53e249dc`): pegou a linha `claude/fase2-ia-temperatura` (com meu item 3), rebaseou por cima a PERSISTÊNCIA em disco por carro (`~/p1fast-sessoes/aprendizado-<carroId>.json`, só no `--live`), novo `MainWindow.Aprendizado.cs`. Domínio 401/401 (no notebook, .NET 8 nativo), WinUI x64 0 erro. Prova determinística: água 68°C/30s (< 70 fixo) → "Temperatura Motor Subindo" disparou por passar o normal do carro +3, saiu ao normalizar. Persistência sobreviveu entre maestros.
+- **Item 3 (água pré-ignição):** o notebook perguntou o gancho; RESPONDI (canal 20260705T153403Z): NÃO precisa gancho novo — meu `Avaliar(tempC, motorRodando, t)` já capta a água fria com rpm<500 e congela o offset na 1ª ignição. Único requisito: alimentar `IngestMotor` desde que o T4000 conecta, com o carro desligado, antes da ignição. Seguro (sem água fria → offset 0).
+- **Item 4 (tela Garagem) — decisões do Flávio no painel `20260705-120925-garagem-limites-alerta`:** 1=dentro do "Setup do Carro" · 2=**TODOS os limites** (pneu, motor, bateria, mistura) · 3=agora. **ETAPA 1 FEITA** (branch `claude/fase2-ia-temperatura`): 10 campos em `CarroSetupOverrides.swift` (snake_case, mesmo `configuracoes.overrides` que sincroniza celular↔nuvem) + 6º grupo "Alertas" em `SetupAvancadoView.swift`. Prova: app iOS compila (xcodebuild BUILD SUCCEEDED do zero) + modelo 8/8 no smoke (round-trip, compat com carro antigo). Xcode 26.4 ESTÁ neste iMac.
+- **Achado de calibração (notebook, não é bug):** confiança só cresce com rpm≥500; carro imaturo adapta rápido. Reforça o §5: calibrar ref 62/+3/base 30/fator 0,5 com dado real do Bubi.
+- **FALTA na tela Garagem:** ETAPA 2 (sincronização já coberta pelo overrides existente) e **ETAPA 3 = o .exe LER os limites do carro (da nuvem) ao abrir a sessão**, em vez do `AlertaLimites.Default` fixo — combinar com o notebook. E mostrar a tela rodando no simulador iOS pro Flávio (adiado, como o screenshot do cockpit).
+## >>> fim da atualização tarde <<<
+
 
 ## >>> ATUALIZAÇÃO 2026-07-05 (sessão iMac) — FASE 2 FOI IMPLEMENTADA <<<
 Flávio autorizou implementar direto ("vai até o fim e implementa tudo, no final audita e corrige"),

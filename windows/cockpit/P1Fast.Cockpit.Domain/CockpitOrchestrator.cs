@@ -59,12 +59,15 @@ public sealed class CockpitOrchestrator
     // Cortes da chuva térmica (parametrizáveis por carro — default Bubi).
     private readonly CortesChuvaTermica _cortesChuva;
 
-    public CockpitOrchestrator(CockpitState cockpit, IReadOnlyList<TrechoSegmento>? segments = null, LiveLimits? limites = null, CortesChuvaTermica? cortesChuva = null)
+    public CockpitOrchestrator(CockpitState cockpit, IReadOnlyList<TrechoSegmento>? segments = null, LiveLimits? limites = null, CortesChuvaTermica? cortesChuva = null,
+        AlertaLimites? alertaLimites = null, AprendizadoLimites? aprendizadoLimites = null)
     {
+        // alertaLimites/aprendizadoLimites: limites DESTE carro (item 4 da Fase 2). O notebook os obtém
+        // com LimitesDoCarro.De(configuracoes.overrides) ao abrir a sessão; null = defaults do sistema.
         _cockpit = cockpit ?? throw new ArgumentNullException(nameof(cockpit));
         _limites = limites ?? LiveLimits.Bubi;
         _cortesChuva = cortesChuva ?? CortesChuvaTermica.Bubi;
-        _alertas = new AlertasCriticos();
+        _alertas = new AlertasCriticos(alertaLimites, aprendizadoLimites);
         _segPorId = segments?.ToDictionary(s => s.Id, s => s) ?? new();
         if (segments is { Count: > 0 })
         {
