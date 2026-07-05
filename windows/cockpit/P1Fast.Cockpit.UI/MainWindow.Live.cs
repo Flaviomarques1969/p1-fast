@@ -100,6 +100,7 @@ public sealed partial class MainWindow
         if (_liveParado) return;
 
         IniciarFeedReal(segs);    // para timers de demo + cria _orquestrador
+        CarregarAprendizado();    // Fase 2: restaura a máxima normal do carro (memória entre sessões)
         AtualizarSensores(null);  // motor sem amostra ainda → tudo "a comunicar"
 
         _liveCts = new CancellationTokenSource();
@@ -282,6 +283,9 @@ public sealed partial class MainWindow
     {
         if (_liveParado) return;
         _liveParado = true;
+        // 0) Fase 2: grava a máxima normal aprendida NESTA sessão (memória do carro pra a
+        //    próxima). Antes de tudo (rápido, síncrono) — best-effort, não trava o fechamento.
+        SalvarAprendizado();
         // 1) Encerra a sessão JÁ (síncrono, rápido): fecha o meta, nunca deixa órfã.
         //    Captura o id ANTES (Encerrar zera a sessão) pra o upload achar o .jsonl.
         string? sessaoFechada = null;
