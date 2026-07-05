@@ -1,22 +1,25 @@
 // ═══════════════════════════════════════════════════════════
 // P1FastApp — entry point SwiftUI
 // ═══════════════════════════════════════════════════════════
-// Esqueleto mínimo do app real. Boots o DatabaseQueue do P1FastCore
-// (GRDB local) na inicialização e oferece via @Environment pra views.
-// Tela única "Hello P1 Fast" — Sprint 1A.1 fecha quando a tela
-// mostra "P1 Fast vX.Y.Z · DB: ok · Tabelas: N".
+// [HARNESS TEMPORÁRIO 05/07 — abre direto na SetupAvancadoView pra o Flávio
+//  ver a seção "Alertas". REVERTER pro original após o screenshot.]
 
 import SwiftUI
+import P1FastCore
 
 @main
 struct P1FastApp: App {
-    @StateObject private var database = AppDatabase()
+    @StateObject private var repo = P1FastApp.makeRepo()
+
+    static func makeRepo() -> CarroRepository {
+        CarroRepository(queue: try! P1FastCore.DB.makeMemoryQueue())
+    }
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(database)
-                .task { await database.bootstrap() }
+            SetupAvancadoView(carroId: "harness-demo", onClose: {})
+                .environmentObject(repo)
+                .task { await repo.bootstrap() }
         }
     }
 }
