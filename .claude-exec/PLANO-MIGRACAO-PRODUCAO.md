@@ -41,6 +41,13 @@
 - **Desfazer:** `git reset` da `main` pra tag **`backup/main-pre-onda5-2026-06-26`** (= `a821ddaa`) + republicar.
 - **Contexto (feito no notebook 2026-06-26, branch `sync/notebook-dia-de-pista-2026-06-23`):** Fase 1 do cockpit `.exe` (threading/nuvem/flush/RaceBox) commitada (`b6fdb976`); docs ADR-024/Amendment 7 (`6cff4f0e`); 3 botões 1-clique em `windows/cockpit/` (`IR-AO-VIVO-PRODUCAO.cmd`, `IR-AO-VIVO-TESTE.cmd`, `ABRIR-VIDEO-PISTA.cmd`). Uma **regressão de 24/06** (revertia ios/web-cockpit/supabase + Command Box Fire TV→Apple TV) foi **descartada** (backup em `git stash` no notebook).
 
+## 5. 🟡 Fase 2 do cockpit (mensagens + IA de temperatura + memória + ajuste por carro) — INCORPORADA na linha ativa 2026-07-05, AGUARDANDO o notebook compilar
+- **O que é:** as 24 mensagens simplificadas do cockpit do piloto (Fase 1) + a IA que aprende a temperatura normal do carro e avisa fora do padrão (água antes de ligar ajusta o dia) + memória por carro (o aprendizado sobrevive entre sessões) + o ajuste dos limites de alerta pelo celular (tela "Alertas" no Setup do Carro; o cockpit lê os limites de cada carro da nuvem).
+- **Autorização literal:** Flávio 2026-07-05 — `MIGRAR PARA PRODUÇÃO: Fase 2 do cockpit (mensagens + IA de temperatura + memória + ajuste por carro)`.
+- **Estado:** iMac INCORPOROU na linha ativa `sync/notebook-dia-de-pista-2026-06-23` por avanço direto (fast-forward) `c28a532b → 04bc72aa` (só os 13 registros da Fase 2; NÃO tocou a main, banco, Vercel nem `cockpit-bubi-live`). Prova antes do push: cérebro 411/411 verde; app iOS compila; provado nos dois lados (iMac + notebook) e visual (tela Alertas no simulador + cockpit com "Temperatura Motor Subindo" na tela do piloto). **Falta o "no ar de verdade":** o notebook alinhar a linha ativa (04bc72aa), COMPILAR o `.exe` (x64) e rodar via `IR-AO-VIVO-PRODUCAO.cmd` no carro + validar na tela 10,5".
+- **Risco:** baixo. Best-effort em tudo (persistência do aprendizado e leitura dos limites do carro caem no padrão se faltar arquivo/rede). Números do Bubi (ref 62/+3/base 30/fator 0,5) são conservadores — calibrar com dado real depois (não trava).
+- **Desfazer:** reset da linha ativa pra a tag `backup/sync-pre-fase2-2026-07-05` (= c28a532b) + o notebook recompila a versão anterior.
+
 ## ⚪ A AVALIAR (outras frentes — confirmar antes de marcar como pronto)
 Preciso VERIFICAR (sem inventar) o que está pronto-mas-não-no-ar nestas frentes antes de listar como migrável:
 - **Shift light (fundações pra pista):** construído em teste; de propósito NÃO publicado no painel (espera o dia de pista 15–16 e reconciliação). → provavelmente NÃO migrar agora.
