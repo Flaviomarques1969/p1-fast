@@ -99,4 +99,22 @@ public class LimitesDoCarroTests
         Assert.Equal(95, ap.PneuRadial185AtencaoC, 6);
         Assert.Equal(115, ap.PneuSemiSlick195CriticoC, 6);
     }
+
+    // Fiação ponta a ponta: o cérebro (CockpitOrchestrator) recebe e aplica os limites do carro.
+
+    [Fact]
+    public void LDC_09_CockpitOrchestrator_aplica_os_limites_do_carro()
+    {
+        var (al, ap) = LimitesDoCarro.De("{\"alerta_motor_referencia_c\": 50}");
+        var orch = new CockpitOrchestrator(new CockpitState(), alertaLimites: al, aprendizadoLimites: ap);
+        // a máxima normal semente do motor veio do carro (50), não do default do sistema (62)
+        Assert.Equal(50, orch.MotorMaximaNormalC, 6);
+    }
+
+    [Fact]
+    public void LDC_10_CockpitOrchestrator_sem_limites_preserva_o_default_Bubi()
+    {
+        var orch = new CockpitOrchestrator(new CockpitState());
+        Assert.Equal(62, orch.MotorMaximaNormalC, 6);   // comportamento atual intacto
+    }
 }
