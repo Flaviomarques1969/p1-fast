@@ -217,4 +217,104 @@ public class AlertasCriticosTests
         ac.IngestT4000(rica,  2.5);   // 1s desde o recomeço → avisa
         Assert.Equal("MISTURA_RICA", ac.GetMensagemPrincipal()!.Id);
     }
+
+    // ── Fase 2 — "Temperatura Motor Subindo" por IA de padrão histórico (Flávio 05/07) ───────
+
+    // Aprendizado com confiança cheia em 1 amostra (τ maduro imediato) e máx normal semente 60 →
+    // limite de "subindo" em 63 — determinístico pros testes de integração.
+    private static AlertasCriticos ComIaMotor(double refC = 60) =>
+        new(limits: null, aprendizado: AprendizadoLimites.Default with
+        {
+            Motor = AprendizadoLimites.Default.Motor with { AmostrasConfianca = 1, ReferenciaMaximaNormalC = refC }
+        });
+
+    [Fact]
+    public void ALR_16_Temperatura_subindo_dispara_por_padrao_com_persistencia()
+    {
+        var ac = ComIaMotor();
+        var s = new AmostraAlerta { WaterTempC = 66, Rpm = 4000 }; // acima do padrão (63), abaixo do quente (70)
+        ac.IngestT4000(s, 0.0);
+        ac.IngestT4000(s, 1.0);
+        ac.IngestT4000(s, 2.0);
+        Assert.Null(ac.GetMensagemPrincipal());               // 2s: ainda não (persistência)
+        ac.IngestT4000(s, 3.0);
+        var m = ac.GetMensagemPrincipal();
+        Assert.Equal("MOTOR_AQUECENDO", m!.Id);
+        Assert.Equal("Temperatura Motor Subindo", m.Texto);   // texto da Fase 1
+    }
+
+    [Fact]
+    public void ALR_17_Aquecendo_NAO_aparece_junto_do_quente()
+    {
+        var ac = ComIaMotor();
+        var s = new AmostraAlerta { WaterTempC = 72, Rpm = 4000 }; // ≥70 → Motor Quente (trava dura)
+        for (var t = 0.0; t <= 4.0; t += 1.0) ac.IngestT4000(s, t);
+        Assert.Equal("MOTOR_QUENTE", ac.GetMensagemPrincipal()!.Id);
+        Assert.DoesNotContain("MOTOR_AQUECENDO", ac.GetAtivos()); // a trava dura vence
+    }
+
+    [Fact]
+    public void ALR_18_Aquecendo_SOME_quando_normaliza_nunca_trava()
+    {
+        var ac = ComIaMotor();
+        var sobe = new AmostraAlerta { WaterTempC = 66, Rpm = 4000 };
+        for (var t = 0.0; t <= 3.0; t += 1.0) ac.IngestT4000(sobe, t);
+        Assert.Equal("MOTOR_AQUECENDO", ac.GetMensagemPrincipal()!.Id);
+
+        ac.IngestT4000(new AmostraAlerta { WaterTempC = 60, Rpm = 4000 }, 4.0); // normalizou
+        Assert.Null(ac.GetMensagemPrincipal()); // o aviso saiu sozinho — não travou pra sessão
+    }
+
+    [Fact]
+    public void ALR_19_Sem_relogio_nao_ha_Fase_2()
+    {
+        var ac = ComIaMotor();
+        var s = new AmostraAlerta { WaterTempC = 66, Rpm = 4000 };
+        for (var i = 0; i < 10; i++) ac.IngestT4000(s); // sem tSeg → sem aprendizado/aviso
+        Assert.Null(ac.GetMensagemPrincipal());
+    }
+
+    [Fact]
+    public void ALR_20_Pneu_e_cambio_SEM_sensor_nunca_disparam_aquecendo()
+    {
+        var ac = new AlertasCriticos(); // defaults
+        var semSensor = new AmostraAlerta { WaterTempC = 60, Rpm = 4000, TireTempC = null, CambioTempC = null };
+        for (var t = 0.0; t <= 6.0; t += 1.0) ac.IngestT4000(semSensor, t);
+        Assert.DoesNotContain("PNEU_AQUECENDO", ac.GetAtivos());
+        Assert.DoesNotContain("CAMBIO_AQUECENDO", ac.GetAtivos());
+    }
+
+    [Fact]
+    public void ALR_21_Pneu_COM_sensor_dispara_aquecendo_prova_que_esta_fiado()
+    {
+        // Prova que a arquitetura genérica funciona: no dia em que o sensor de pneu existir,
+        // o mesmo modelo já avisa. Padrão do pneu 90 (delta 5 → limite 95).
+        var ac = new AlertasCriticos(limits: null, aprendizado: AprendizadoLimites.Default with
+        {
+            Pneu = AprendizadoLimites.Default.Pneu with { AmostrasConfianca = 1, ReferenciaMaximaNormalC = 90 }
+        });
+        ac.IngestT4000(new AmostraAlerta { WaterTempC = 60, Rpm = 4000, TireTempC = 90 }, 0.0); // firma o padrão
+        for (var t = 1.0; t <= 4.0; t += 1.0)
+            ac.IngestT4000(new AmostraAlerta { WaterTempC = 60, Rpm = 4000, TireTempC = 98 }, t); // acima e persistente
+        Assert.Contains("PNEU_AQUECENDO", ac.GetAtivos());
+    }
+
+    [Fact]
+    public void ALR_22_Historia_gravada_exportar_e_importar_o_padrao()
+    {
+        var apr = AprendizadoLimites.Default with
+        {
+            Motor = AprendizadoLimites.Default.Motor with { AmostrasConfianca = 1, ReferenciaMaximaNormalC = 60 }
+        };
+        var ac = new AlertasCriticos(limits: null, aprendizado: apr);
+        ac.IngestT4000(new AmostraAlerta { WaterTempC = 66, Rpm = 4000 }, 0.0);
+        ac.IngestT4000(new AmostraAlerta { WaterTempC = 66, Rpm = 4000 }, 5.0);
+        var maxAntes = ac.MotorMaximaNormalC;
+        Assert.True(maxAntes > 60, "deveria ter aprendido pra cima");
+
+        var snap = ac.ExportarAprendizado();
+        var ac2 = new AlertasCriticos(limits: null, aprendizado: apr);
+        ac2.ImportarAprendizado(snap);
+        Assert.Equal(maxAntes, ac2.MotorMaximaNormalC, 6);
+    }
 }

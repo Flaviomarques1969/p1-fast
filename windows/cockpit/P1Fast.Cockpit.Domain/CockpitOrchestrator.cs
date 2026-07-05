@@ -111,6 +111,23 @@ public sealed class CockpitOrchestrator
         else _cockpit.HideMessage();
     }
 
+    // ── Fase 2: história gravada do aprendizado (persistir entre sessões) ──────────
+    // A "memória do que é normal naquele carro". O app (notebook) chama ImportarAprendizado
+    // ao abrir a sessão (com o snapshot salvo) e ExportarAprendizado ao fechar (pra gravar).
+    // A gravação em disco mora na camada do app (SessionRecorder/arquivo) — aqui é só a ponte.
+
+    /// <summary>Snapshot do aprendizado dos canais de temperatura, pra gravar entre sessões.</summary>
+    public AprendizadoSnapshot ExportarAprendizado() => _alertas.ExportarAprendizado();
+
+    /// <summary>Restaura o aprendizado gravado (chamar ao abrir a sessão).</summary>
+    public void ImportarAprendizado(AprendizadoSnapshot? snap) => _alertas.ImportarAprendizado(snap);
+
+    /// <summary>Máxima normal da água aprendida agora (°C) — pra telemetria/diagnóstico.</summary>
+    public double MotorMaximaNormalC => _alertas.MotorMaximaNormalC;
+
+    /// <summary>Confiança 0..1 do aprendizado da temperatura da água.</summary>
+    public double MotorConfianca => _alertas.MotorConfianca;
+
     /// <summary>Vigia ~1 Hz das FONTES (H2/M1). Quando o motor EMUDECE (sem amostra há N s),
     /// limpa os alertas automáticos do motor — senão um GRAVE (ex.: MOTOR QUENTE) CONGELA na
     /// tela sem dado vivo por trás — e levanta SEM DADOS (honesto); a luz de marcha apaga.

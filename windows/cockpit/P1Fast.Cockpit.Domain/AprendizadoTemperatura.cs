@@ -59,6 +59,10 @@ public sealed record AprendizadoConfig(
     // Amostras válidas pra "confiança plena" (informativo — pra UI/telemetria; NÃO trava o disparo,
     // que sempre tem a semente de referência por trás).
     double AmostrasConfianca = 300.0,
+    // Teto do intervalo entre amostras usado no aprendizado (s). Uma pausa longa (parada no box,
+    // motor religado, buraco na captura) NÃO pode virar um salto no padrão — sem isso, dt gigante
+    // faria a máxima normal pular pra uma leitura de box frio e dar alarme falso na volta seguinte.
+    double DtMaxS = 5.0,
     // Ajuste por temperatura de ambiente (°C somados ao limite). 0 = neutro/desligado — hoje o
     // carro não tem sensor de ambiente; fica preparado.
     double AmbienteOffsetC = 0.0
@@ -139,10 +143,15 @@ public sealed class AprendizadoTemperatura
         // decorrido (τ), então é robusto à taxa de amostragem.
         if (w < _cfg.TetoAprendidoC)
         {
-            var dt = _lastT is { } last ? Math.Max(0.0, t - last) : 0.0;
+            // Teto no dt: uma pausa longa não vira salto no padrão (box, religada, buraco na captura).
+            var dt = _lastT is { } last ? Math.Min(_cfg.DtMaxS, Math.Max(0.0, t - last)) : 0.0;
             if (dt > 0.0)
             {
-                var tau = w > _maxNormal ? _cfg.TauSobeS : _cfg.TauDesceS;
+                // Envelope subindo: τ efetivo cresce com a confiança (rápido imaturo → estável maduro).
+                // Descendo: sempre lento (não esquecer o normal a ponto de dar alarme falso depois).
+                var tau = w > _maxNormal
+                    ? Math.Max(_cfg.TauSobeMinS, _cfg.TauSobeS * Confianca)
+                    : _cfg.TauDesceS;
                 var alfa = tau > 0.0 ? 1.0 - Math.Exp(-dt / tau) : 1.0;
                 _maxNormal += alfa * (w - _maxNormal);
             }

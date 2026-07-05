@@ -1,47 +1,46 @@
-# ÚLTIMA TAREFA — Canal notebook↔iMac (responder + vigiar)
+# Última tarefa — FASE 2: IA de padrão de temperatura (cockpit do piloto)
 
-> Backup da tarefa anterior: `.claude-exec/ultima-tarefa-backup-pre-canal-notebook-2026-06-30.md`
+> Backup da tarefa anterior: `.claude-exec/ultima-tarefa.backup-pre-fase2-2026-07-05.md`
 
-## TASK_INIT — 2026-06-30 17:08 (Brasília)
+## RETOMAR: diga "RETOMAR FASE 2" (ou /voltei)
 
-1. **Pedido original de Flávio:** "em p1 fast atualize o git, vá na branch `sync/notebook-dia-de-pista-2026-06-23`, leia o arquivo do canal (`conversa-notebook-imac-dados-novem.md`), responda o notebook e fique vigiando para continuar a conversa".
-2. **Objetivo (1 frase):** ler o canal git notebook↔iMac, responder com evidência real (lado iMac/nuvem) e ficar vigiando a branch pra continuar a conversa.
-3. **Critérios objetivos de conclusão:**
-   - Git atualizado e branch `sync/notebook-dia-de-pista-2026-06-23` lida na versão mais recente do notebook.
-   - Arquivo do canal lido inteiro (`.claude-exec/CONVERSA-NOTEBOOK-IMAC-DADOS-NUVEM.md`).
-   - Bloco de resposta `[iMac]` acrescentado ao FIM, com prova real (não inventada), commit + push na branch.
-   - Vigia ativo pra pegar o próximo bloco do notebook.
-4. **Leitura confirmada de:** `~/.claude/CLAUDE.md` ✅ · `~/.claude-decisoes/padroes.md` ✅ (zerado) · `~/.claude/FLAVIO_EXECUTION_PROTOCOL.md` ✅ · `~/.claude/FLAVIO_DONE_CHECKLIST.md` ✅ · `~/.claude/FLAVIO_ENVIRONMENT_RULES.md` ✅ · `~/.claude/FLAVIO_COMMUNICATION_RULES.md` ✅. Mais: `CLAUDE.md` do projeto (raiz + worktree) ✅.
-5. **Plano (≤5 passos):**
-   1. `git fetch` + pull da branch do canal (worktree `canal-conversa`). ✅
-   2. Ler o arquivo do canal inteiro. ✅
-   3. Verificar leitura real da nuvem (auditor em `BRASILIA-2026-06-21-REAL`) e procurar caminho de Vmin por curva do lado iMac. ✅
-   4. Acrescentar bloco `[iMac]` com evidência + travar o que é produção; commit + push.
-   5. Iniciar vigia (git fetch periódico) e reportar ao Flávio.
-6. **Arquivos/áreas inspecionados:** `.claude-exec/CONVERSA-NOTEBOOK-IMAC-DADOS-NUVEM.md`, `tools/auditor-sessao-dumps.mjs` (main), `web/command-box/cerebro/cerebro-coach.js`, `tools/replay-classificador-vivo.mjs`, busca por segmentador por curva.
-7. **Ambiente alvo:** desenvolvimento (canal git + leitura do Supabase). Persistência/exibição cairia em produção.
-8. **Produção protegida:** sim.
-9. **Autorização para produção:** não.
-10. **Evidência da autorização:** não recebida.
-11. **Riscos:** push é só na branch do canal (protocolo do próprio canal, não toca a main nem dispara deploy). Persistir em `segment_executions` seria produção → travado.
-12. **Status inicial:** iniciado.
+## Pedido original de Flávio
+Prompt `~/Downloads/PROMPT-P1FAST-FASE2-planejamento.txt`: planejar a Fase 2 (a parte inteligente das
+mensagens — a IA que aprende o padrão normal do carro e avisa fora do normal; motor agora, pneu/óleo/câmbio
+preparados; tudo configurável). DEPOIS Flávio autorizou: "vai até o fim e implementa tudo, no final audita
+e corrige tudo que identificou". → virou IMPLEMENTAÇÃO em DEV + auto-auditoria.
 
-## Evidência coletada
-- Auditor (leitura da nuvem, só leitura): `BRASILIA-2026-06-21-REAL` → 12 partes, 5441 amostras = meta, 3499 GPS, UUIDs carro/track/time certos, remontagem confere ✅.
-- Vmin **global** do auditor = ruído (0 km/h parado / Vmax 14110 km/h spike). Por curva exige segmentação (lado `p1fast-vmin` no Windows). Não há ferramenta do lado iMac que leia `sessao_dumps` e segmente por trecho.
+## Objetivo (1 frase)
+Implementar, sobre a Fase 1, a inteligência que aprende a temperatura normal do carro e avisa "Temperatura
+Motor Subindo" fora do padrão (motor ativo; pneu/câmbio preparados/desligados), tudo configurável, testado,
+sem tocar produção — e auto-auditar/corrigir.
 
----
+## Ambiente: DESENVOLVIMENTO. Produção: protegida, NÃO tocada. Autorização produção: NÃO (não usada).
+## Branch: `claude/fase2-ia-temperatura` (criado de `origin/sync/notebook-dia-de-pista-2026-06-23` = Fase 1).
 
-## TASK_INIT — 2026-06-30 ~18:05 (Brasília) — NOVA TAREFA: inconsistências do fim de semana
+## STATUS: CONCLUÍDO (em DEV) — 2026-07-05
+Commitado no branch de trabalho. Nada em produção. Falta (não trava): validação visual no .exe
+(notebook compila WinUI) + ligar a gravação em disco do aprendizado (lado notebook) + calibrar números do Bubi.
 
-1. **Pedido de Flávio:** "agora identifiquem e resolvam as inconsistências do p1 fast por conta dos testes do final de semana no carro".
-2. **Objetivo:** achar e corrigir, junto com o notebook, as inconsistências causadas pelos testes de 27-28/06.
-3. **Ambiente alvo:** desenvolvimento (diagnóstico em produção é só leitura). Produção protegida: sim. Autorização para produção: não.
-4. **Inconsistências achadas no banco (lido, read-only, `sessao_dumps`):**
-   - **DUPLICAÇÃO 8×:** 5 sessões `sessao-2026-06-21T14-{07,25,33,37,40}...Z` enviadas 8× cada (parte0 ×8; ex.: `...14-40-01` = 248 linhas p/ 31 partes). Quem lê somando partes pega 8× dado inflado.
-   - **Sessões de teste largadas:** `UPLOAD-TESTE-notebook-2026-06-27` (v1) + `...-v2-uuid`.
-   - **Causa-raiz provável:** envio não-idempotente (sem chave única em (sessao_id,parte); re-rodar empilha cópias).
-   - `BRASILIA-2026-06-21-REAL` está **intacta** (12/12), não afetada.
-   - Tabela `sessao_dumps` **não tem `created_at`** → não dá pra datar o envio só pelo banco (o notebook tem o histórico).
-5. **Divisão proposta:** (a) iMac DEV: blindar os leitores da nuvem pra deduplicar por `parte`; (b) notebook DEV: tornar o envio idempotente (upsert / chave única + ON CONFLICT); (c) Flávio PROD: autorizar limpeza de `sessao_dumps` (dedup + remover sessões de teste) — é escrita/DELETE em produção.
-6. **Status:** iniciado (diagnóstico nuvem feito; aguardando notebook caracterizar o lado dele).
+### Arquivos
+- NOVO `windows/cockpit/P1Fast.Cockpit.Domain/AprendizadoTemperatura.cs` — aprendiz contínuo genérico.
+- ALTERADO `.../AlertasCriticos.cs` — AprendizadoConfig/AprendizadoLimites + AplicarAprendizado no IngestT4000 + Exportar/ImportarAprendizado. Catálogo/travas da Fase 1 intactos.
+- ALTERADO `.../CockpitOrchestrator.cs` — pontes Exportar/ImportarAprendizado + MotorMaximaNormalC/MotorConfianca.
+- NOVO testes `AprendizadoTemperaturaTests.cs` (12) + 7 novos em `AlertasCriticosTests.cs`.
+- NOVO doc `docs/FASE2_IA_TEMPERATURA.md` (mapa de casos, fluxos, onde mora, parâmetros, riscos/decisões).
+- NOVO `.claude-exec/registro-correcoes.md`.
+
+### Prova (rodada no iMac)
+- dotnet build domínio: 0 erro / 0 aviso.
+- `DOTNET_ROLL_FORWARD=Major dotnet test` domínio: **396/396** (377 Fase 1 preservados + 19 novos). Sem roll-forward o testhost aborta (só há runtime .NET 10) — dá "exit 0" enganoso (ver registro-correcoes).
+- `node tests/node-smoke-alertas-criticos.mjs`: 25/25 (JS não tocado).
+
+### Auto-auditoria (identifiquei e corrigi/anotei)
+- CORRIGIDO: salto do padrão após pausa longa → teto DtMaxS=5s (registro-correcoes).
+- CORRIGIDO: alarme falso de largada em dia quente → τ de subida cresce com a confiança (rápido imaturo → estável maduro).
+- ANOTADO p/ Flávio (docs/FASE2_IA_TEMPERATURA.md §5): calibrar números do Bubi; aviso "subindo" exige rpm; pneu 2 níveis (nível atenção = 1 alerta a criar com sensor); óleo fora de escopo; JS de referência divergente desde a Fase 1 (não espelhei); persistência em disco = lado notebook; produção só com "MIGRAR PARA PRODUÇÃO".
+
+## Decisões do Flávio já embutidas (do prompt + DECISOES-MENSAGENS-PILOTO-2026-07-04.md)
+Motor: aprende padrão (ext+histórico), avisa +3°C acima da máxima normal, contínuo, nunca trava.
+Motor Quente = trava dura 70°C (Fase 1). Ambiente entra na conta. Pneu quente 2 níveis por tipo
+(radial 185: 95/105; semi-slick 195: 105/115) — preparado. Pneu/câmbio só com sensor.

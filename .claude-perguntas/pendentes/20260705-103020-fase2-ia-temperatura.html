@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decisões — Flávio</title>
+<style>
+  :root{
+    --bg:#0f1216; --panel:#171b22; --panel2:#1d222b; --line:#2a313d;
+    --ink:#eef2f7; --muted:#9aa6b6; --soft:#c4cdd9;
+    --teal:#2dd4bf; --teal-d:#0f766e;
+    --amber:#f59e0b; --red:#f87171; --red-d:#7f1d1d; --green:#34d399; --blue:#60a5fa;
+    --shadow:0 10px 40px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(160deg,#0c0f13,#12161c 60%);color:var(--ink);
+    font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:32px 18px 150px}
+  .wrap{max-width:960px;margin:0 auto}
+  header.top{background:linear-gradient(135deg,#0f766e,#134e4a);border:1px solid #1f7a70;
+    border-radius:18px;padding:22px 26px;box-shadow:var(--shadow);margin-bottom:16px}
+  header.top .tag{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#a7f3d0;font-weight:700}
+  header.top h1{margin:6px 0 0;font-size:24px;font-weight:800;letter-spacing:.2px}
+  header.top p{margin:8px 0 0;color:#d7fff6;font-size:15px}
+
+  .resumo{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+  .chip{border-radius:12px;padding:10px 14px;font-size:14px;font-weight:700;border:1px solid var(--line);background:var(--panel)}
+  .chip .n{font-size:20px;font-weight:800;margin-right:6px}
+  .chip.total{color:var(--ink)}
+  .chip.trava{color:#fecaca;border-color:#7f1d1d;background:#241315}
+  .chip.espera{color:#fde68a;border-color:#78560c;background:#241f10}
+  .chip.refino{color:#a7f3d0;border-color:#0f5f57;background:#0f2320}
+  .chip.tempo{color:#bfdbfe;border-color:#1e40af;background:#0f1a2e}
+
+  .contexto{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--teal);
+    border-radius:14px;padding:18px 20px;margin-bottom:22px}
+  .contexto h2{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.14em;color:var(--teal)}
+  .contexto .body{color:var(--soft);white-space:pre-wrap}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    padding:20px 22px;margin-bottom:20px;box-shadow:0 4px 18px rgba(0,0,0,.25)}
+  .card.excluido{opacity:.5}
+  .card.irrev{border-color:var(--red);box-shadow:0 0 0 1px var(--red) inset,0 4px 18px rgba(0,0,0,.25)}
+  .card .head{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+  .card .num{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+    border-radius:9px;background:var(--teal-d);color:#eafffb;font-weight:800;font-size:15px}
+  .card h3{margin:0;font-size:19px;flex:1;min-width:200px}
+  .badge{font-size:11px;font-weight:800;letter-spacing:.06em;padding:4px 10px;border-radius:20px;text-transform:uppercase}
+  .badge.trava{background:var(--red);color:#2a0a0a}
+  .badge.espera{background:var(--amber);color:#2a1c00}
+  .badge.refino{background:var(--green);color:#04231f}
+  .badge.irrev{background:#450a0a;color:#fecaca;border:1px solid var(--red)}
+  .qctx{color:var(--muted);margin:0 0 12px;white-space:pre-wrap}
+
+  .histnote{background:#0f1a2e;border:1px solid #1e40af;border-radius:9px;padding:8px 12px;margin:0 0 12px;
+    font-size:13px;color:#bfdbfe}
+  .evid{background:#0b0e12;border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:9px;
+    padding:10px 12px;margin:0 0 14px}
+  .evid .el{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);margin-bottom:5px}
+  .evid pre{margin:0;white-space:pre-wrap;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#cfe3ff}
+
+  .avisoirrev{background:#241315;border:1px solid var(--red-d);border-left:4px solid var(--red);
+    border-radius:10px;padding:12px 14px;margin:0 0 14px;color:#fecaca;font-size:14px}
+  .avisoirrev b{color:#fca5a5}
+
+  .alt{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0;
+    background:var(--panel2);cursor:pointer;transition:.15s;display:block}
+  .alt:hover{border-color:#3a4557}
+  .alt.rec{border-color:var(--teal);box-shadow:0 0 0 1px var(--teal) inset}
+  .alt input{margin-right:10px;transform:scale(1.2);vertical-align:middle;accent-color:var(--teal)}
+  .alt .rot{font-weight:700}
+  .alt .rec-badge{margin-left:8px;font-size:11px;font-weight:800;letter-spacing:.08em;
+    background:var(--teal);color:#04231f;padding:2px 8px;border-radius:20px;text-transform:uppercase}
+  .conseq{margin:6px 0 0 28px;font-size:14px;color:var(--soft)}
+  .conseq b{color:var(--amber);font-weight:700}
+  .porque{margin:6px 0 0 28px;font-size:14px;color:#bfeee6}
+  .impacto{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0 28px}
+  .itag{font-size:12px;font-weight:700;padding:3px 9px;border-radius:8px;border:1px solid var(--line);background:#0e1319;color:var(--soft)}
+  .itag b{color:var(--ink);font-weight:800}
+  .itag.risco-baixo{border-color:#0f5f57;color:#a7f3d0}
+  .itag.risco-medio{border-color:#78560c;color:#fde68a}
+  .itag.risco-alto{border-color:#7f1d1d;color:#fecaca}
+  .itag.rev-sim{border-color:#0f5f57;color:#a7f3d0}
+  .itag.rev-nao{border-color:#7f1d1d;color:#fecaca}
+
+  .cmpbtn{margin:8px 0 2px;background:#0e1319;color:var(--blue);border:1px solid var(--line);
+    border-radius:9px;padding:7px 13px;font-size:13px;font-weight:700;cursor:pointer}
+  .cmptable{width:100%;border-collapse:collapse;margin:12px 0 2px;font-size:13px;display:none;overflow:hidden;border-radius:10px}
+  .cmptable th,.cmptable td{border:1px solid var(--line);padding:8px 10px;text-align:left}
+  .cmptable th{background:#0e1319;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+  .cmptable td.rec{color:#a7f3d0;font-weight:700}
+  .cmptable tr.recrow td{background:#0f2320}
+
+  .params{margin-top:14px;border-top:1px dashed var(--line);padding-top:14px}
+  .params .plabel{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);margin-bottom:8px}
+  .prow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+  .prow .pname{min-width:150px;font-weight:600}
+  .prow input.pval{flex:1;min-width:160px;background:#0e1319;border:1px solid var(--line);color:var(--ink);
+    border-radius:8px;padding:8px 10px;font-size:14px}
+  .prow .pwhy{width:100%;font-size:13px;color:var(--muted);margin-left:2px}
+
+  .decis{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 6px}
+  .decis button{border:1px solid var(--line);background:#0e1319;color:var(--soft);
+    border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer}
+  .decis button.on{background:var(--teal);color:#04231f;border-color:var(--teal)}
+  .decis button.del.on{background:var(--red);color:#2a0a0a;border-color:var(--red)}
+
+  .confirm{display:flex;align-items:flex-start;gap:8px;margin:10px 0 0;font-size:14px;color:#fecaca}
+  .confirm input{margin-top:3px;transform:scale(1.25);accent-color:var(--red)}
+
+  .orient label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:12px 0 6px}
+  .orient textarea{width:100%;min-height:70px;background:#0e1319;border:1px solid var(--line);color:var(--ink);
+    border-radius:10px;padding:10px 12px;font-size:14px;resize:vertical;font-family:inherit}
+  .altbox textarea{width:100%;min-height:48px;background:#0e1319;border:1px dashed var(--amber);color:var(--ink);
+    border-radius:10px;padding:8px 10px;font-size:14px;margin-top:8px;font-family:inherit}
+
+  .actionbar{position:fixed;left:0;right:0;bottom:0;background:rgba(13,16,20,.96);
+    border-top:1px solid var(--line);padding:14px 18px;backdrop-filter:blur(8px);z-index:50}
+  .actionbar .inner{max-width:960px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .actionbar button{border:0;border-radius:11px;padding:13px 20px;font-size:15px;font-weight:800;cursor:pointer}
+  .btn-all{background:#0e1319;color:var(--teal);border:1px solid var(--teal)}
+  .btn-gen{background:var(--teal);color:#04231f}
+  .btn-save{background:var(--amber);color:#2a1c00;display:none}
+  .btn-copy{background:var(--blue);color:#04121f;display:none}
+  .actionbar .hint{color:var(--muted);font-size:13px;flex:1;min-width:180px}
+
+  #saida{max-width:960px;margin:24px auto 0;display:none}
+  #saida h2{font-size:14px;text-transform:uppercase;letter-spacing:.14em;color:var(--teal)}
+  #saidaTxt{width:100%;min-height:320px;background:#0b0e12;border:1px solid var(--teal-d);color:#dff7f2;
+    border-radius:12px;padding:16px;font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre}
+  .foot{max-width:960px;margin:22px auto 0;color:var(--muted);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="tag">Preciso da sua decisão</div>
+    <h1 id="tituloGeral">Decisões do projeto</h1>
+    <p id="subtituloGeral"></p>
+  </header>
+
+  <div class="resumo" id="resumo"></div>
+
+  <div class="contexto">
+    <h2>Contexto — por que estou te trazendo isto</h2>
+    <div class="body" id="contextoGeral"></div>
+  </div>
+
+  <div id="cards"></div>
+</div>
+
+<div id="saida" class="wrap">
+  <h2>Resposta gerada</h2>
+  <textarea id="saidaTxt" readonly></textarea>
+</div>
+
+<div class="foot">Feito para Flávio · marque, oriente, gere e salve — depois é só dizer “fiz”.</div>
+
+<div class="actionbar">
+  <div class="inner">
+    <button class="btn-all" onclick="aceitarTudo()">Aceitar tudo que você recomenda</button>
+    <button class="btn-gen" onclick="gerar()">Gerar resposta</button>
+    <button class="btn-save" id="btnSave" onclick="salvar()">Salvar resposta (depois diga “fiz”)</button>
+    <button class="btn-copy" id="btnCopy" onclick="copiar()">Copiar</button>
+    <span class="hint" id="hint">Responda o que quiser e clique em “Gerar resposta”.</span>
+  </div>
+</div>
+
+<script>
+/* ===== DADOS — o Claude preenche este bloco a cada uso ===== */
+const DADOS = /*__INJECT__*/{
+  "titulo": "Fase 2 — a parte inteligente das mensagens (temperatura do motor)",
+  "subtitulo": "A Fase 1 já está pronta e testada. Aqui definimos como a inteligência aprende o normal do carro.",
+  "tempoEstimado": "3 min",
+  "contexto": "As 24 mensagens do cockpit do piloto (Fase 1) estão prontas e testadas — textos, números, remoções e padronização das letras, tudo no verde, nada em produção. Agora entra a Fase 2: em vez de um número fixo, a inteligência APRENDE a temperatura normal do seu carro e avisa quando ela sobe fora do padrão. Só a temperatura do MOTOR dá pra fazer agora (o sensor de água existe); pneu e câmbio dependem de instalar sensor. Dois pontos que a verificação achou e você precisa decidir: o carro NÃO mede a temperatura do óleo (só um sinal de pressão) e NÃO tem sensor de temperatura do ambiente — por isso as perguntas 3 e 5. Nada trava; a Fase 1 já protege o essencial.",
+  "perguntas": [
+    {
+      "id": 1,
+      "titulo": "Quantas voltas a inteligência usa pra aprender o padrão normal da temperatura?",
+      "urgencia": "espera",
+      "irreversivel": false, "avisoIrreversivel": "", "historico": "", "dependeDe": null,
+      "evidencia": "Seu exemplo: normal 55°C, máxima 57°C — avisar ao bater 60-63°C subindo.",
+      "contexto": "Antes de avisar, a inteligência observa algumas voltas pra saber o que é normal naquele carro, naquele dia. Mais voltas = padrão mais confiável, mas demora mais pra começar a proteger.",
+      "alternativas": [
+        {"rotulo":"A","texto":"3 voltas","consequencia":"Começa a proteger cedo, com o carro já quente e estabilizado.","recomendada":true,"porque":"É o padrão que já usamos no projeto pra detecção por histórico; em 3 voltas o carro já mostra a temperatura de trabalho.","risco":"baixo","reversivel":true},
+        {"rotulo":"B","texto":"5 voltas","consequencia":"Aprende com mais folga, mas demora mais pra começar a avisar.","risco":"baixo","reversivel":true},
+        {"rotulo":"C","texto":"Aprendizado contínuo (nunca trava)","consequencia":"Aprende o tempo todo e se adapta, mas nunca fecha um padrão fixo — risco de 'acostumar' com uma subida lenta.","risco":"médio","reversivel":true}
+      ],
+      "parametros": [ {"nome":"Voltas de aprendizado","valorSugerido":"3","porque":"Padrão do projeto; o carro já está na temperatura de trabalho."} ]
+    },
+    {
+      "id": 2,
+      "titulo": "O que faz o aviso 'Temperatura Motor Subindo' aparecer?",
+      "urgencia": "espera",
+      "irreversivel": false, "avisoIrreversivel": "", "historico": "", "dependeDe": null,
+      "evidencia": "Seu exemplo: máxima normal 57°C -> avisar em ~60-63°C. O 'Motor Quente' crítico continua fixo em 70°C por cima disso.",
+      "contexto": "Depois de aprender o normal, a inteligência precisa de um gatilho. A ideia é pegar a subida ANTES de virar perigo.",
+      "alternativas": [
+        {"rotulo":"A","texto":"Alguns graus acima da máxima normal (ex.: +3°C)","consequencia":"Se a maior temperatura normal foi 57°C, avisa ao passar de ~60°C.","recomendada":true,"porque":"Casa exatamente com o seu exemplo (57 -> avisa em 60). Fácil de entender e ajustar.","risco":"baixo","reversivel":true},
+        {"rotulo":"B","texto":"Um percentual acima da média (ex.: +10%)","consequencia":"Dispara pela proporção, não em graus fixos — menos intuitivo de calibrar.","risco":"baixo","reversivel":true},
+        {"rotulo":"C","texto":"Os dois (o que vier primeiro)","consequencia":"Mais sensível, mas pode avisar mais vezes.","risco":"médio","reversivel":true}
+      ],
+      "parametros": [ {"nome":"Graus acima da máxima","valorSugerido":"+3 °C","porque":"Reproduz o seu exemplo (máx 57 -> avisa ~60). Ajuste à vontade."} ]
+    },
+    {
+      "id": 3,
+      "titulo": "Temperatura do ambiente: como tratar, já que o carro não tem esse sensor?",
+      "urgencia": "espera",
+      "irreversivel": false, "avisoIrreversivel": "", "historico": "", "dependeDe": null,
+      "evidencia": "Você pediu 'ajustar por dia quente/frio'. Mas o carro não tem sensor de ambiente — precisa definir a fonte do dado.",
+      "contexto": "Pra não dar alarme falso em dia quente, a inteligência ajusta pelo clima. O ponto é de onde vem esse número, já que não há sensor de ambiente no carro.",
+      "alternativas": [
+        {"rotulo":"A","texto":"Usar a temperatura da água ANTES de ligar o motor","consequencia":"Com o carro parado/frio, a água marca ~a temperatura do ambiente. A inteligência usa isso como referência do dia.","recomendada":true,"porque":"Atende o 'ajustar por dia quente/frio' que você quer, SEM peça nova e SEM depender de internet. Usa o sensor que já existe.","risco":"baixo","reversivel":true},
+        {"rotulo":"B","texto":"Puxar o clima da internet pela localização do carro","consequencia":"Mais preciso, mas depende de sinal e de um serviço externo de clima.","risco":"médio","reversivel":true},
+        {"rotulo":"C","texto":"Não usar o ambiente — só o padrão do próprio motor","consequencia":"O normal aprendido no dia já embute o clima. Mais simples, mas ignora seu pedido de ajustar por temperatura externa.","risco":"baixo","reversivel":true},
+        {"rotulo":"D","texto":"Instalar um sensor de ambiente no carro","consequencia":"O mais preciso, mas exige comprar e instalar a peça.","risco":"baixo","reversivel":true}
+      ]
+    },
+    {
+      "id": 4,
+      "titulo": "Pneu Quente: quando tiver o sensor, usa um limite ou dois níveis?",
+      "urgencia": "refino",
+      "irreversivel": false, "avisoIrreversivel": "", "historico": "", "dependeDe": null,
+      "evidencia": "Suas faixas: radial 185 trabalha 60-80°C, risco acima de 100; semi-slick 195 trabalha 70-90°C, risco acima de 110.",
+      "contexto": "Fica guardado até instalar o sensor de pneu, mas dá pra fechar a regra. Radial de rua e semi-slick de corrida aguentam calor diferente.",
+      "alternativas": [
+        {"rotulo":"A","texto":"Dois níveis, por tipo de pneu","consequencia":"Radial 185: atenção 95°C / crítico 105°C. Semi-slick 195: atenção 105°C / crítico 115°C.","recomendada":true,"porque":"Você já definiu essas faixas; cada pneu tem sua janela e o aviso fica justo pros dois.","risco":"baixo","reversivel":true},
+        {"rotulo":"B","texto":"Um limite só (105°C)","consequencia":"Serve razoável pros dois, mas menos preciso.","risco":"baixo","reversivel":true}
+      ],
+      "parametros": [
+        {"nome":"Radial 185 — atenção","valorSugerido":"95 °C","porque":"Acima da janela (60-80), começando a borrachar."},
+        {"nome":"Radial 185 — crítico","valorSugerido":"105 °C","porque":"Zona de risco de degradar/bolhar."},
+        {"nome":"Semi-slick 195 — atenção","valorSugerido":"105 °C","porque":"Acima da janela (70-90), começando a escorregar."},
+        {"nome":"Semi-slick 195 — crítico","valorSugerido":"115 °C","porque":"Zona de risco do semi-slick."}
+      ]
+    },
+    {
+      "id": 5,
+      "titulo": "Temperatura do óleo: o carro não mede (só o aviso de pressão). O que fazer?",
+      "urgencia": "refino",
+      "irreversivel": false, "avisoIrreversivel": "", "historico": "", "dependeDe": null,
+      "evidencia": "No código do carro só existe o SINAL de baixa pressão de óleo (liga/desliga), não um número de temperatura. Por isso o 'Óleo Quente' foi tirado na Fase 1.",
+      "contexto": "Seu prompt citava incluir a temperatura do óleo no aprendizado. Mas sem sensor não há esse número pra aprender.",
+      "alternativas": [
+        {"rotulo":"A","texto":"Deixar o óleo FORA do aprendizado — só o aviso de pressão que já existe","consequencia":"Nada muda no óleo: continua o 'Óleo Baixo' (pressão) da Fase 1. Sem custo, sem peça.","recomendada":true,"porque":"Não há como aprender um padrão de temperatura que o carro não mede. Incluir seria inventar dado.","risco":"baixo","reversivel":true},
+        {"rotulo":"B","texto":"Planejar instalar um sensor de temperatura de óleo depois","consequencia":"Aí sim entra no mesmo modelo do motor — mas exige comprar e instalar a peça.","risco":"baixo","reversivel":true}
+      ]
+    }
+  ]
+}/*__/INJECT__*/;
+/* ========================================================== */
+
+const estado = {};
+const URG = {
+  trava:  {label:"Trava o projeto", cls:"trava"},
+  espera: {label:"Pode esperar",    cls:"espera"},
+  refino: {label:"Só refino",       cls:"refino"}
+};
+
+function el(t,c,txt){const e=document.createElement(t);if(c)e.className=c;if(txt!=null)e.textContent=txt;return e;}
+function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function riscoCls(r){const v=(r||'').toLowerCase();if(v.startsWith('baix'))return'risco-baixo';if(v.startsWith('méd')||v.startsWith('med'))return'risco-medio';if(v.startsWith('alt'))return'risco-alto';return'';}
+function temImpacto(a){return a.custo!=null||a.prazo!=null||a.risco!=null||a.reversivel!=null;}
+
+function impactoTags(a){
+  const box=el('div','impacto');
+  if(a.custo!=null) box.appendChild(mkTag('Custo','custo',a.custo));
+  if(a.prazo!=null) box.appendChild(mkTag('Prazo','prazo',a.prazo));
+  if(a.risco!=null){const t=mkTag('Risco','risco',a.risco);t.classList.add(riscoCls(a.risco));box.appendChild(t);}
+  if(a.reversivel!=null){const rev=a.reversivel?'Sim':'Não';const t=mkTag('Reversível','rev',rev);t.classList.add(a.reversivel?'rev-sim':'rev-nao');box.appendChild(t);}
+  return box;
+}
+function mkTag(label,cls,val){const t=el('span','itag '+cls);t.innerHTML=label+': <b>'+escapeHtml(String(val))+'</b>';return t;}
+
+function render(){
+  document.getElementById('tituloGeral').textContent = DADOS.titulo || 'Decisões do projeto';
+  document.getElementById('subtituloGeral').textContent = DADOS.subtitulo || '';
+  document.getElementById('contextoGeral').textContent = DADOS.contexto || '';
+  renderResumo();
+  const cont = document.getElementById('cards');
+  // ID ÚNICO por pergunta: se vier id repetido ou vazio, as decisões colidiriam (uma escrita
+  // por cima da outra). Normaliza para um id garantidamente único ANTES de qualquer uso.
+  const _idSeen={};
+  (DADOS.perguntas||[]).forEach((q,i)=>{
+    if(q.id===undefined||q.id===null||_idSeen[q.id]!==undefined) q.id=i+1;
+    if(_idSeen[q.id]!==undefined) q.id='p'+(i+1);
+    _idSeen[q.id]=true;
+  });
+  // PRÉ-INICIALIZAÇÃO: todo estado[q.id] precisa existir ANTES de montar qualquer cartão,
+  // porque setDec()/atualizarVisibilidade() rodam durante a montagem e leem todos os itens.
+  (DADOS.perguntas||[]).forEach(q=>{
+    estado[q.id] = {decisao:'aceitar', alt:null, params:{}, altTexto:'', orient:'', confirmaIrrev:false, visivel:true};
+    const rec0 = (q.alternativas||[]).find(a=>a.recomendada);
+    if(rec0) estado[q.id].alt = rec0.rotulo;
+    (q.parametros||[]).forEach(p=>{ if(p&&p.nome) estado[q.id].params[p.nome]=p.valorSugerido; });
+  });
+  (DADOS.perguntas||[]).forEach(q=>{
+    const rec = (q.alternativas||[]).find(a=>a.recomendada);
+    if(rec) estado[q.id].alt = rec.rotulo;
+    (q.parametros||[]).forEach(p=>{ if(p&&p.nome) estado[q.id].params[p.nome]=p.valorSugerido; });
+
+    const irrev = !!q.irreversivel;
+    const card = el('div','card'+(irrev?' irrev':'')); card.id='card-'+q.id;
+
+    const head = el('div','head');
+    head.appendChild(el('span','num',q.id));
+    head.appendChild(el('h3',null,q.titulo||''));
+    const u = URG[q.urgencia||'espera'] || URG.espera;
+    head.appendChild(el('span','badge '+u.cls,u.label));
+    if(irrev) head.appendChild(el('span','badge irrev','Sem volta'));
+    card.appendChild(head);
+
+    if(q.historico && q.historico.trim())
+      card.appendChild(el('div','histnote','🕘 '+q.historico.trim()));
+    if(q.contexto) card.appendChild(el('div','qctx',q.contexto));
+
+    if(q.evidencia && q.evidencia.trim()){
+      const ev=el('div','evid'); ev.appendChild(el('div','el','Evidência — o que embasa esta pergunta'));
+      const pre=document.createElement('pre'); pre.textContent=q.evidencia.trim(); ev.appendChild(pre); card.appendChild(ev);
+    }
+
+    if(irrev){
+      const a=el('div','avisoirrev');
+      a.innerHTML='<b>⚠ Decisão sem volta.</b> '+escapeHtml(q.avisoIrreversivel||'Esta escolha não pode ser desfeita facilmente. Confirme com atenção abaixo.');
+      card.appendChild(a);
+    }
+
+    (q.alternativas||[]).forEach(a=>{
+      const lab = el('label','alt'+(a.recomendada?' rec':''));
+      const r = document.createElement('input'); r.type='radio'; r.name='q'+q.id; r.value=a.rotulo;
+      if(a.recomendada) r.checked=true;
+      r.onchange=()=>{ estado[q.id].alt=a.rotulo; atualizarVisibilidade(); };
+      lab.appendChild(r);
+      lab.appendChild(el('span','rot',(a.rotulo?a.rotulo+') ':'')+(a.texto||'')));
+      if(a.recomendada) lab.appendChild(el('span','rec-badge','Recomendo'));
+      if(a.consequencia){const c=el('div','conseq');c.innerHTML='<b>Consequência:</b> '+escapeHtml(a.consequencia);lab.appendChild(c);}
+      if(a.porque) lab.appendChild(el('div','porque','Por que recomendo: '+a.porque));
+      if(temImpacto(a)) lab.appendChild(impactoTags(a));
+      card.appendChild(lab);
+    });
+
+    // tabela comparativa (só se ao menos 2 alternativas tiverem impacto)
+    const comparaveis=(q.alternativas||[]).filter(temImpacto);
+    if(comparaveis.length>=2){
+      const btn=el('button','cmpbtn','⇄ Comparar em tabela');
+      const tbl=montarTabela(q);
+      btn.onclick=()=>{const vis=tbl.style.display==='table';tbl.style.display=vis?'none':'table';btn.textContent=vis?'⇄ Comparar em tabela':'Ocultar tabela';};
+      card.appendChild(btn); card.appendChild(tbl);
+    }
+
+    const altBox = el('div','altbox');
+    const altTa = document.createElement('textarea');
+    altTa.placeholder='Se quiser ALTERAR ou propor OUTRA saída, escreva aqui…';
+    altTa.oninput=()=>{ estado[q.id].altTexto=altTa.value; };
+    altBox.appendChild(altTa); card.appendChild(altBox);
+
+    if(q.parametros && q.parametros.length){
+      const pb = el('div','params'); pb.appendChild(el('div','plabel','Parâmetros sugeridos — edite se quiser'));
+      q.parametros.forEach(p=>{
+        if(!p||!p.nome) return; // parâmetro sem nome é ignorado (não vira "undefined")
+        const row = el('div','prow');
+        row.appendChild(el('span','pname',p.nome));
+        const inp=document.createElement('input');inp.className='pval';inp.value=p.valorSugerido||'';
+        inp.oninput=()=>{ estado[q.id].params[p.nome]=inp.value; };
+        row.appendChild(inp);
+        if(p.porque) row.appendChild(el('div','pwhy','Por que: '+p.porque));
+        pb.appendChild(row);
+      });
+      card.appendChild(pb);
+    }
+
+    const dec = el('div','decis');
+    const bAceitar = el('button',null,'Aceitar proposta');
+    const bAlterar = el('button',null,'Alterar');
+    const bExcluir = el('button','del','Excluir item');
+    function setDec(v){
+      estado[q.id].decisao=v;
+      bAceitar.classList.toggle('on',v==='aceitar');
+      bAlterar.classList.toggle('on',v==='alterar');
+      bExcluir.classList.toggle('on',v==='excluir');
+      card.classList.toggle('excluido',v==='excluir');
+      atualizarVisibilidade();
+    }
+    bAceitar.onclick=()=>setDec('aceitar');
+    bAlterar.onclick=()=>setDec('alterar');
+    bExcluir.onclick=()=>setDec('excluir');
+    setDec('aceitar');
+    dec.appendChild(bAceitar);dec.appendChild(bAlterar);dec.appendChild(bExcluir);
+    card.appendChild(dec);
+
+    if(irrev){
+      const cf=el('label','confirm');
+      const cb=document.createElement('input');cb.type='checkbox';
+      cb.onchange=()=>{ estado[q.id].confirmaIrrev=cb.checked; };
+      cf.appendChild(cb);
+      cf.appendChild(document.createTextNode('Confirmo que entendo que esta decisão NÃO tem volta e autorizo.'));
+      card.appendChild(cf);
+    }
+
+    const ori = el('div','orient');
+    ori.appendChild(el('label',null,'Sua orientação sobre este item (opcional — mesmo mantendo, pode orientar)'));
+    const ota=document.createElement('textarea');
+    ota.oninput=()=>{ estado[q.id].orient=ota.value; };
+    ori.appendChild(ota);card.appendChild(ori);
+
+    cont.appendChild(card);
+  });
+  atualizarVisibilidade();
+}
+
+function montarTabela(q){
+  const t=el('table','cmptable');
+  const linhas=[['Opção',a=>(a.rotulo?a.rotulo+') ':'')+(a.texto||'')],
+                ['Custo',a=>a.custo!=null?a.custo:'—'],
+                ['Prazo',a=>a.prazo!=null?a.prazo:'—'],
+                ['Risco',a=>a.risco!=null?a.risco:'—'],
+                ['Reversível',a=>a.reversivel==null?'—':(a.reversivel?'Sim':'Não')]];
+  const thead=document.createElement('tr');
+  thead.appendChild(document.createElement('th'));
+  (q.alternativas||[]).forEach(a=>{const th=document.createElement('th');th.textContent=(a.rotulo||'');if(a.recomendada)th.textContent+=' ★';thead.appendChild(th);});
+  t.appendChild(thead);
+  linhas.forEach(([nome,fn])=>{
+    const tr=document.createElement('tr');
+    const th=document.createElement('th');th.textContent=nome;tr.appendChild(th);
+    (q.alternativas||[]).forEach(a=>{const td=document.createElement('td');td.textContent=fn(a);if(a.recomendada)td.classList.add('rec');tr.appendChild(td);});
+    t.appendChild(tr);
+  });
+  return t;
+}
+
+function condicaoOk(dep){
+  if(!dep) return true;
+  const s=estado[dep.de]; if(!s) return true;
+  const cond=(dep.mostrarQuando||'').toLowerCase();
+  if(cond==='excluido') return s.decisao==='excluir';
+  if(cond==='nao-excluido'||cond==='nao_excluido') return s.decisao!=='excluir';
+  if(cond.startsWith('alt:')) return s.decisao!=='excluir' && s.alt===dep.mostrarQuando.split(':')[1];
+  return true;
+}
+
+function atualizarVisibilidade(){
+  (DADOS.perguntas||[]).forEach(q=>{
+    if(!estado[q.id]) return;
+    const vis=condicaoOk(q.dependeDe);
+    estado[q.id].visivel=vis;
+    const card=document.getElementById('card-'+q.id);
+    if(card) card.style.display=vis?'block':'none';
+  });
+}
+
+function renderResumo(){
+  const qs = DADOS.perguntas||[];
+  const c={trava:0,espera:0,refino:0};
+  qs.forEach(q=>{ c[q.urgencia||'espera']=(c[q.urgencia||'espera']||0)+1; });
+  const tempo = DADOS.tempoEstimado && DADOS.tempoEstimado.trim()
+    ? DADOS.tempoEstimado.trim()
+    : ('~'+Math.max(1,Math.round(qs.length*0.75))+' min');
+  const box=document.getElementById('resumo');
+  const add=(cls,n,txt)=>{const d=el('div','chip '+cls);d.innerHTML='<span class="n">'+n+'</span>'+txt;box.appendChild(d);};
+  add('total',qs.length,qs.length===1?'decisão':'decisões');
+  if(c.trava)  add('trava', c.trava, c.trava===1?'trava o projeto':'travam o projeto');
+  if(c.espera) add('espera',c.espera,'pode esperar');
+  if(c.refino) add('refino',c.refino,'só refino');
+  const t=el('div','chip tempo');t.innerHTML='⏱ tempo estimado pra você: <b>'+tempo+'</b>';box.appendChild(t);
+}
+
+function aceitarTudo(){
+  (DADOS.perguntas||[]).forEach(q=>{
+    const rec=(q.alternativas||[]).find(a=>a.recomendada);
+    estado[q.id].decisao='aceitar';
+    if(rec){
+      estado[q.id].alt=rec.rotulo;
+      const r=document.querySelector('input[name="q'+q.id+'"][value="'+rec.rotulo+'"]');
+      if(r) r.checked=true;
+    }
+    const card=document.getElementById('card-'+q.id);
+    if(card){ card.querySelectorAll('.decis button').forEach(b=>b.classList.remove('on'));
+      const first=card.querySelector('.decis button'); if(first) first.classList.add('on');
+      card.classList.remove('excluido'); }
+  });
+  atualizarVisibilidade();
+  document.getElementById('hint').textContent='Todas as recomendações marcadas. Gerando…';
+  gerar();
+}
+
+function pendenciasIrrev(){
+  const faltam=[];
+  (DADOS.perguntas||[]).forEach(q=>{
+    const s=estado[q.id];
+    if(s.visivel && q.irreversivel && s.decisao!=='excluir' && !s.confirmaIrrev) faltam.push(q.id);
+  });
+  return faltam;
+}
+
+function gerar(){
+  const faltam=pendenciasIrrev();
+  if(faltam.length){
+    document.getElementById('hint').textContent='⚠ Item(ns) '+faltam.join(', ')+' são SEM VOLTA — marque a confirmação vermelha ou escolha “Excluir”.';
+    const c=document.getElementById('card-'+faltam[0]); if(c) c.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+  // "Alterar" sem escrever a mudança: não deixar virar "aceitei a recomendada" silenciosamente.
+  const semDetalhe=[];
+  (DADOS.perguntas||[]).forEach(q=>{ const s=estado[q.id];
+    if(s && s.visivel && s.decisao==='alterar' && !s.altTexto.trim()) semDetalhe.push(q.id); });
+  if(semDetalhe.length){
+    document.getElementById('hint').textContent='✏ Item(ns) '+semDetalhe.join(', ')+': você clicou ALTERAR mas não escreveu a mudança. Descreva a alteração ou escolha uma alternativa.';
+    const c=document.getElementById('card-'+semDetalhe[0]); if(c) c.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+  const L=[];
+  L.push('RESPOSTAS DE FLÁVIO');
+  L.push('==================================================');
+  L.push('Assunto: '+(DADOS.titulo||''));
+  L.push('');
+  (DADOS.perguntas||[]).forEach(q=>{
+    const s=estado[q.id];
+    if(!s.visivel){ return; } // pergunta condicional que não se aplica
+    L.push('ITEM '+q.id+' — '+(q.titulo||'')+'   ['+(URG[q.urgencia||'espera']||URG.espera).label+']');
+    if(s.decisao==='excluir'){
+      L.push('  DECISÃO: EXCLUIR este item / não fazer.');
+    } else {
+      const alt=(q.alternativas||[]).find(a=>a.rotulo===s.alt);
+      if(s.decisao==='alterar' && s.altTexto.trim()){
+        L.push('  DECISÃO: ALTERAR — proposta do Flávio: '+s.altTexto.trim());
+      } else {
+        L.push('  DECISÃO: '+(alt?((alt.rotulo?('Alternativa '+alt.rotulo+' — '):'')+(alt.texto||'')):'(sem alternativa marcada)'));
+      }
+      if(q.irreversivel) L.push('  IRREVERSÍVEL: confirmado e autorizado por Flávio.');
+      const pk=Object.keys(s.params||{});
+      if(pk.length){
+        L.push('  PARÂMETROS:');
+        (q.parametros||[]).forEach(p=>{
+          if(!p||!p.nome) return; // ignora parâmetro sem nome
+          const atual=s.params[p.nome];
+          const mudou=(String(atual)!==String(p.valorSugerido));
+          L.push('    - '+p.nome+' = '+atual+(mudou?'  (alterado; sugestão era: '+p.valorSugerido+')':''));
+        });
+      }
+      if(s.altTexto.trim() && s.decisao!=='alterar') L.push('  OBSERVAÇÃO SOBRE ALTERNATIVAS: '+s.altTexto.trim());
+    }
+    if(s.orient.trim()) L.push('  ORIENTAÇÃO: '+s.orient.trim());
+    L.push('');
+  });
+  L.push('==================================================');
+  L.push('Fim. Siga estas decisões do Flávio: se envolver código, implemente com qualidade máxima; se for decisão de negócio/operação, execute conforme o combinado e confirme.');
+  const out=L.join('\n');
+  document.getElementById('saidaTxt').value=out;
+  document.getElementById('saida').style.display='block';
+  document.getElementById('btnSave').style.display='inline-block';
+  document.getElementById('btnCopy').style.display='inline-block';
+  document.getElementById('hint').textContent='Resposta pronta. Clique em “Salvar resposta” e depois diga “fiz” — ou copie.';
+  document.getElementById('saida').scrollIntoView({behavior:'smooth'});
+}
+
+function nomeArquivo(){
+  const base=(DADOS.id||DADOS.titulo||'resposta').toString().toLowerCase()
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40);
+  return 'resposta-perguntar-'+(base||'flavio')+'.txt';
+}
+
+function salvar(){
+  const txt=document.getElementById('saidaTxt').value;
+  const blob=new Blob([txt],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=nomeArquivo();
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  document.getElementById('hint').textContent='Salvo na pasta Downloads. Agora é só me dizer “fiz”.';
+}
+
+function copiar(){
+  const t=document.getElementById('saidaTxt'); t.select();
+  navigator.clipboard.writeText(t.value).then(
+    ()=>{ document.getElementById('hint').textContent='Copiado! Cole na conversa.'; },
+    ()=>{ document.execCommand('copy'); document.getElementById('hint').textContent='Copiado (selecionado). Cole na conversa.'; }
+  );
+}
+
+render();
+</script>
+</body>
+</html>
