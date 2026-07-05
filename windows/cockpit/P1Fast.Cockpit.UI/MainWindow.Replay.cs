@@ -86,6 +86,13 @@ public sealed partial class MainWindow
         _replayBaseMs = _replayEventos.Count > 0 ? _replayEventos[0].TWallMs : 0;
         _replayIdx = 0;
 
+        // Etapa 4 (volta atual): guarda os cruzamentos e quantos já passaram antes da janela,
+        // pra o halo dourado da volta corrente andar conforme o replay cruza a linha de chegada.
+        _replayCruzamentos = sessao.CruzamentosMs;
+        _replayCruzBase = 0;
+        foreach (var c in _replayCruzamentos) if (c <= _replayBaseMs) _replayCruzBase++;
+        ResetVoltaAtual();
+
         var nVoltas = Math.Max(0, sessao.CruzamentosMs.Count - 1);
         StatusText.Text = $"replay {_options.Speed:0.#}×  •  {_replayEventos.Count} eventos  •  {segs.Count} trechos  •  {nVoltas} voltas";
 
@@ -142,6 +149,7 @@ public sealed partial class MainWindow
         // Sensores acompanham a última amostra de motor; stint, o estado das curvas.
         AtualizarSensores(_ultimaAlerta);
         if (alimentouGps) AtualizarStint();
+        AtualizarVoltaAtualReplay(alvoMs);   // etapa 4: halo dourado anda com os cruzamentos
 
         RegistrarLog(alvoMs);
 
@@ -155,6 +163,7 @@ public sealed partial class MainWindow
                 _ultimaAlerta = null;
                 _lastBrakeFlashSeq = 0;
                 _replayClock?.Restart();
+                ResetVoltaAtual();   // etapa 4: recomeça o halo na volta 1
             }
             else
             {

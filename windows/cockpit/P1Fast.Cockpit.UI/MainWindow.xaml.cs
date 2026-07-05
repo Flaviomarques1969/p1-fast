@@ -204,6 +204,11 @@ public sealed partial class MainWindow : Window
         _planoStintReal = plano;
         _barraVoltasAplicada = true;
         ApplyStintPattern(plano);
+        // Etapa 4: o plano mudou (talvez o nº de voltas) — reafirma o halo da volta atual por cima
+        // (ApplyStintPattern só troca o Background; o contorno sobrevive, mas o último bloco real
+        // pode ter mudado). Forçar a repintura reavalia se o halo ainda cabe no plano.
+        _haloBlocoPintado = -2;
+        ApplyVoltaAtualHalo(_voltaAtualIdx);
     }
 
     public MainWindow() : this(new LaunchOptions(DisplayIndex: null)) { }

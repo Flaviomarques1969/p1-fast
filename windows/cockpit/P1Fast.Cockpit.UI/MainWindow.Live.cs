@@ -523,6 +523,7 @@ public sealed partial class MainWindow
             {
                 _orquestrador?.IngestGps(cerebro);
                 AtualizarStint();
+                RegistrarCruzamentoLive(cerebro.Lat, cerebro.Lng);   // etapa 4: halo da volta atual ao vivo
             }
             AtualizarSensores(_ultimaAlerta);
         });
