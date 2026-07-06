@@ -15,8 +15,10 @@ using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Shapes;
 using Windows.UI;
+using P1Fast.Cockpit.Domain;
 
 namespace P1Fast.Cockpit.UI;
 
@@ -42,10 +44,13 @@ public sealed partial class MainWindow
 
     private static readonly Color VagaFill  = Color.FromArgb(0xFF, 0x0E, 0x0E, 0x0E);
     private static readonly Color VagaBorda = Color.FromArgb(0xFF, 0x24, 0x24, 0x24);
-    // Gotas: branco morno no aquecimento, branco frio no cool-down (ecoa a chuva térmica).
-    // Alfa alto pra ler mesmo sobre a cápsula colorida (o azul do cool-down "comia" gotas fracas).
-    private static readonly Color ChuvaAquece = Color.FromArgb(0xC8, 0xFF, 0xEC, 0xD2);
-    private static readonly Color ChuvaEsfria = Color.FromArgb(0xD2, 0xF0, 0xF8, 0xFF);
+    // Chuva nas cápsulas de aquecimento/cool-down (Flávio 2026-07-05): AZUL quando o motor
+    // precisa ESQUENTAR, VERMELHO quando precisa ESFRIAR — mesma convenção da chuva térmica de
+    // tela cheia (ChuvaAzul/ChuvaVermelho em MainWindow.Chuva.cs). A opacidade segue a FASE do
+    // cérebro (ChuvaTermica) e SOME conforme a temperatura chega na meta (leve/médio/alto → off).
+    private Canvas? _chuvaCapAquece, _chuvaCapEsfria;
+    private double _opCapAquece, _opCapEsfria;
+    private Storyboard? _fadeCapAquece, _fadeCapEsfria;
 
     // Tira as vagas do fim (padding além de Voltas) — a barra dinâmica mostra só voltas reais.
     private static StintBlockState[] SemVagaFinal(StintBlockState[] p)
@@ -68,6 +73,8 @@ public sealed partial class MainWindow
         _capWAtual = capW;
 
         StintBar.Children.Clear();
+        _chuvaCapAquece = null; _chuvaCapEsfria = null;
+        _opCapAquece = 0; _opCapEsfria = 0;
         var blocks = new Border[n];
         var labels = new TextBlock[n];
         var rains  = new Canvas?[n];
@@ -78,8 +85,8 @@ public sealed partial class MainWindow
             var grid = new Grid();
 
             Canvas? rain = null;
-            if (st == StintBlockState.Aquecimento) rain = CriarChuva(capW, ChuvaAquece);
-            else if (st == StintBlockState.CoolDown) rain = CriarChuva(capW, ChuvaEsfria);
+            if (st == StintBlockState.Aquecimento) { rain = CriarChuva(capW, ChuvaAzul);     _chuvaCapAquece = rain; }
+            else if (st == StintBlockState.CoolDown) { rain = CriarChuva(capW, ChuvaVermelho); _chuvaCapEsfria = rain; }
             if (rain is not null) grid.Children.Add(rain);
 
             var lbl = new TextBlock
@@ -102,12 +109,14 @@ public sealed partial class MainWindow
         }
 
         _stintBlocks = blocks; _stintLabels = labels; _stintRain = rains;
+        AtualizarChuvaCapsulas(_faseChuvaAtual);   // reafirma o estado da chuva após remontar
     }
 
-    // Motivo de chuva (gotas leves na diagonal) — atrás do número, escondido por padrão.
+    // Motivo de chuva (gotas leves na diagonal) — atrás do número. Opacidade 0 por padrão;
+    // quem acende/apaga é AtualizarChuvaCapsulas conforme a fase térmica do cérebro.
     private static Canvas CriarChuva(double capW, Color tint)
     {
-        var cv = new Canvas { Width = capW, Height = BarBlockH, IsHitTestVisible = false, Visibility = Visibility.Collapsed };
+        var cv = new Canvas { Width = capW, Height = BarBlockH, IsHitTestVisible = false, Opacity = 0 };
         var brush = new SolidColorBrush(tint);
         var drops = Math.Max(3, (int)(capW / 15));
         var step = capW / (drops + 1);
@@ -138,7 +147,6 @@ public sealed partial class MainWindow
             var st  = i < plano.Length ? plano[i] : StintBlockState.Pending;
             var blk = _stintBlocks[i];
             var lbl = _stintLabels[i];
-            var rain = _stintRain.Length == n ? _stintRain[i] : null;
 
             if (st == StintBlockState.Pending)   // vaga (raro na barra dinâmica) — moldura discreta
             {
@@ -148,7 +156,6 @@ public sealed partial class MainWindow
                 blk.Opacity = 1;
                 blk.RenderTransform = null;
                 lbl.Text = "";
-                if (rain is not null) rain.Visibility = Visibility.Collapsed;
                 continue;
             }
 
@@ -166,14 +173,44 @@ public sealed partial class MainWindow
             lbl.Text = st == StintBlockState.Box ? "BOX" : (i + 1).ToString();
             lbl.FontSize = st == StintBlockState.Box ? 12 : 15;                    // número grande
             lbl.Foreground = new SolidColorBrush(TintaDe(fill));
-
-            // Chuva só nas cápsulas de aquecimento e cool-down (sempre visível nelas).
-            if (rain is not null)
-                rain.Visibility = (st == StintBlockState.Aquecimento || st == StintBlockState.CoolDown)
-                    ? Visibility.Visible : Visibility.Collapsed;
         }
 
         AtualizarGlowVoltaAtual(atual);
+    }
+
+    // Acende/apaga a chuva das cápsulas conforme a FASE térmica do cérebro: AZUL na cápsula de
+    // aquecimento enquanto o motor esquenta, VERMELHO na do cool-down enquanto esfria; a opacidade
+    // cai (leve/médio/alto → off) conforme a temperatura chega na meta — o "some lentamente".
+    private void AtualizarChuvaCapsulas(FaseChuva fase)
+    {
+        var warm = fase is FaseChuva.WarmupLeve or FaseChuva.WarmupMedio or FaseChuva.WarmupAlto;
+        var cool = fase is FaseChuva.CooldownLeve or FaseChuva.CooldownMedio or FaseChuva.CooldownAlto;
+        // Reaproveita a opacidade global por fase da spec (§5), teto 0.9 pra a cápsula não saturar.
+        var opWarm = warm ? Math.Min(0.9, OpacidadeGlobal(fase)) : 0.0;
+        var opCool = cool ? Math.Min(0.9, OpacidadeGlobal(fase)) : 0.0;
+
+        if (_chuvaCapAquece is { } a) AnimarOpacidade(a, ref _opCapAquece, ref _fadeCapAquece, opWarm);
+        if (_chuvaCapEsfria is { } e) AnimarOpacidade(e, ref _opCapEsfria, ref _fadeCapEsfria, opCool);
+    }
+
+    // Fade suave (700 ms ease-out) da opacidade de um elemento — o "some lentamente".
+    private static void AnimarOpacidade(UIElement el, ref double atual, ref Storyboard? sb, double alvo)
+    {
+        if (Math.Abs(atual - alvo) < 0.001) return;
+        sb?.Stop();
+        var anim = new DoubleAnimation
+        {
+            From = atual, To = alvo,
+            Duration = new Duration(TimeSpan.FromMilliseconds(700)),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+        };
+        Storyboard.SetTarget(anim, el);
+        Storyboard.SetTargetProperty(anim, "Opacity");
+        var s = new Storyboard();
+        s.Children.Add(anim);
+        s.Begin();
+        sb = s;
+        atual = alvo;
     }
 
     // Move o glow dourado + o sinal pra cápsula da volta atual (ou esconde se não há volta em curso).
