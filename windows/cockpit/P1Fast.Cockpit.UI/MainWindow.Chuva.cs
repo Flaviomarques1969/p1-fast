@@ -92,7 +92,6 @@ public sealed partial class MainWindow
         }
 
         AnimarChuvaOpacidade(OpacidadeGlobal(fase));
-        AtualizarChuvaCapsulas(fase);   // mesma fase acende/apaga a chuva das cápsulas (aquecimento/cool-down)
     }
 
     // Opacidade global por fase — §5 da spec, valores exatos do cockpit.css:694-708.
