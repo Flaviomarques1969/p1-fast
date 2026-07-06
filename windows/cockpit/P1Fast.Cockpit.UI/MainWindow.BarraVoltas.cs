@@ -1,87 +1,176 @@
-// MainWindow.BarraVoltas.cs — Direção "C" da barra de voltas (Flávio 2026-07-05, escolhida entre A/B/C).
+// MainWindow.BarraVoltas.cs — Direção "C" da barra de voltas (Flávio 2026-07-05), agora DINÂMICA.
 //
-// A barra do topo é o PLANO do stint por VOLTA (aquecimento · planejadas · box · cool-down). Aqui ela
-// vira CÁPSULAS NUMERADAS e reativas: RepintarBarra() lê o plano (_barraPattern) + a volta atual
-// (_voltaAtualRender, vinda da etapa 4 em MainWindow.VoltaAtual.cs) e pinta cada cápsula num de 3 estados:
-//   • FEITA  (i < atual)   — cor cheia do tipo, opaca.
-//   • ATUAL  (i == atual)  — dourada (#F0C040=Foco), sobe 3 px, com GLOW (VoltaGlow) + sinal (VoltaCaret).
-//   • A-FAZER (i > atual)   — cor do tipo esmaecida (opacity 0.42).
-// Antes de começar (atual < 0) a barra mostra o plano inteiro em cor cheia (igual ao repouso de hoje).
+// A barra é o PLANO do stint por VOLTA. Decisões do Flávio (2026-07-05):
+//   • Nº de voltas é definido no STINT → a barra tem N CÁPSULAS = nº de voltas (não mais 12 fixas);
+//     as cápsulas encolhem/alargam pra caber numa largura fixa (BarTotalW). Aquecimento e cool-down
+//     nunca somem. (Antes, stint > 12 voltas perdia a cauda; ver PlanoStint.ExpandirBarra.)
+//   • O piloto pode registrar QUANTAS paradas no box quiser → cada Box vira uma cápsula magenta.
+//   • A 1ª volta (aquecimento) e a última (cool-down) levam um MOTIVO DE CHUVA dentro da cápsula
+//     (aquecendo o motor / resfriando) — gotas leves, atrás do número.
 //
-// É a ÚNICA fonte de verdade da pintura da barra: ApplyStintPattern (plano mudou) e ApplyVoltaAtualHalo
-// (volta atual mudou) só atualizam o estado e chamam RepintarBarra(). Telas só EXIBEM — o plano vem da nuvem.
+// Cápsulas são GERADAS por código (MontarBarra) a partir do plano; a pintura de estado
+// (feita/atual/a-fazer + glow/caret) é centralizada em RepintarBarra. Telas só EXIBEM.
 
 using System;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Shapes;
 using Windows.UI;
 
 namespace P1Fast.Cockpit.UI;
 
 public sealed partial class MainWindow
 {
-    // Geometria FIXA da barra (casa 1:1 com o XAML: device 956, cápsula 56×24, gap 5, topo 50).
-    // O device inteiro é escalado como um bloco (OnRootSizeChanged), então posição fixa é consistente.
-    private const double BarBlockW = 56, BarBlockH = 24, BarGap = 5, BarTop = 50, DeviceW = 956;
-    private const int    BarN = 12;
-    private static readonly double BarLeft = (DeviceW - (BarN * BarBlockW + (BarN - 1) * BarGap)) / 2.0;
-    private const double BarLift = 3;   // quanto a cápsula atual sobe (px)
+    // Geometria da barra. Largura TOTAL fixa (device 956 escalado como um bloco); as cápsulas
+    // dividem essa largura. Topo 50, altura 24 (cápsula "padrão" do combo aprovado).
+    private const double DeviceW = 956, BarTotalW = 800, BarGap = 5, BarTop = 50, BarBlockH = 24, BarLift = 3;
+    private static readonly double BarLeft = (DeviceW - BarTotalW) / 2.0;   // 78
+    private const int BarMaxSlots = 40;   // teto de segurança de voltas (o leitor expande até aqui)
 
-    // Labels (número) de cada cápsula — preenchidas no construtor, em paralelo a _stintBlocks.
     private Microsoft.UI.Xaml.Controls.TextBlock[] _stintLabels = Array.Empty<Microsoft.UI.Xaml.Controls.TextBlock>();
+    private Canvas?[] _stintRain = Array.Empty<Canvas?>();   // motivo de chuva por cápsula (null = sem chuva)
+    private double _capWAtual = 56;                            // largura atual de cada cápsula
 
-    // Plano exibido AGORA (o real da nuvem ou o placeholder). ApplyStintPattern mantém em dia.
     private StintBlockState[] _barraPattern = PlanoStintPlaceholder;
-    // Volta atual JÁ clampeada ao plano (a etapa 4 escreve via ApplyVoltaAtualHalo). -1 = nenhuma.
     private int _voltaAtualRender = -1;
 
-    // Tinta do número: escura em cápsula clara, clara em cápsula escura (luminância perceptual).
     private static readonly Color TintaEscura = Color.FromArgb(0xFF, 0x14, 0x11, 0x0A);
     private static readonly Color TintaClara  = Color.FromArgb(0xFF, 0xF2, 0xF2, 0xF2);
     private static Color TintaDe(Color bg)
         => (0.299 * bg.R + 0.587 * bg.G + 0.114 * bg.B) > 140 ? TintaEscura : TintaClara;
 
     private static readonly Color VagaFill  = Color.FromArgb(0xFF, 0x0E, 0x0E, 0x0E);
-    private static readonly Color VagaBorda  = Color.FromArgb(0xFF, 0x24, 0x24, 0x24);
+    private static readonly Color VagaBorda = Color.FromArgb(0xFF, 0x24, 0x24, 0x24);
+    // Gotas: branco morno no aquecimento, branco frio no cool-down (ecoa a chuva térmica).
+    // Alfa alto pra ler mesmo sobre a cápsula colorida (o azul do cool-down "comia" gotas fracas).
+    private static readonly Color ChuvaAquece = Color.FromArgb(0xC8, 0xFF, 0xEC, 0xD2);
+    private static readonly Color ChuvaEsfria = Color.FromArgb(0xD2, 0xF0, 0xF8, 0xFF);
 
-    // Pinta a barra inteira a partir de (_barraPattern, _voltaAtualRender). Idempotente e barata.
+    // Tira as vagas do fim (padding além de Voltas) — a barra dinâmica mostra só voltas reais.
+    private static StintBlockState[] SemVagaFinal(StintBlockState[] p)
+    {
+        var n = p.Length;
+        while (n > 0 && p[n - 1] == StintBlockState.Pending) n--;
+        if (n == p.Length) return p;
+        if (n <= 0) return p;              // tudo vaga? deixa como veio (o chamador trata)
+        var r = new StintBlockState[n];
+        Array.Copy(p, r, n);
+        return r;
+    }
+
+    // (Re)constrói as cápsulas a partir do plano: N cápsulas = N voltas, largura dividindo BarTotalW.
+    private void MontarBarra(StintBlockState[] plano)
+    {
+        if (StintBar is null) return;
+        var n = Math.Max(1, plano.Length);
+        var capW = Math.Round((BarTotalW - (n - 1) * BarGap) / n, 2);
+        _capWAtual = capW;
+
+        StintBar.Children.Clear();
+        var blocks = new Border[n];
+        var labels = new TextBlock[n];
+        var rains  = new Canvas?[n];
+
+        for (var i = 0; i < n; i++)
+        {
+            var st = i < plano.Length ? plano[i] : StintBlockState.Pending;
+            var grid = new Grid();
+
+            Canvas? rain = null;
+            if (st == StintBlockState.Aquecimento) rain = CriarChuva(capW, ChuvaAquece);
+            else if (st == StintBlockState.CoolDown) rain = CriarChuva(capW, ChuvaEsfria);
+            if (rain is not null) grid.Children.Add(rain);
+
+            var lbl = new TextBlock
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                FontWeight = Microsoft.UI.Text.FontWeights.Bold,
+            };
+            grid.Children.Add(lbl);
+
+            var b = new Border
+            {
+                Width = capW,
+                Height = BarBlockH,
+                CornerRadius = new CornerRadius(6),
+                Child = grid,
+            };
+            StintBar.Children.Add(b);
+            blocks[i] = b; labels[i] = lbl; rains[i] = rain;
+        }
+
+        _stintBlocks = blocks; _stintLabels = labels; _stintRain = rains;
+    }
+
+    // Motivo de chuva (gotas leves na diagonal) — atrás do número, escondido por padrão.
+    private static Canvas CriarChuva(double capW, Color tint)
+    {
+        var cv = new Canvas { Width = capW, Height = BarBlockH, IsHitTestVisible = false, Visibility = Visibility.Collapsed };
+        var brush = new SolidColorBrush(tint);
+        var drops = Math.Max(3, (int)(capW / 15));
+        var step = capW / (drops + 1);
+        for (var k = 0; k < drops; k++)
+        {
+            var d = new Rectangle
+            {
+                Width = 1.6, Height = 6, RadiusX = 1, RadiusY = 1, Fill = brush,
+                RenderTransform = new RotateTransform { Angle = 22 },
+            };
+            Canvas.SetLeft(d, step * (k + 1) + (k % 2 == 0 ? -2 : 2));
+            Canvas.SetTop(d, (k % 3) * 5 + 3);
+            cv.Children.Add(d);
+        }
+        return cv;
+    }
+
+    // Pinta a barra a partir de (_barraPattern, _voltaAtualRender). Idempotente e barata.
     private void RepintarBarra()
     {
-        if (_stintBlocks.Length != BarN || _stintLabels.Length != BarN) return;
+        var n = _stintBlocks.Length;
+        if (n == 0 || _stintLabels.Length != n) return;
         var plano = _barraPattern;
         var atual = _voltaAtualRender;
 
-        for (var i = 0; i < BarN; i++)
+        for (var i = 0; i < n; i++)
         {
             var st  = i < plano.Length ? plano[i] : StintBlockState.Pending;
             var blk = _stintBlocks[i];
             var lbl = _stintLabels[i];
+            var rain = _stintRain.Length == n ? _stintRain[i] : null;
 
-            if (st == StintBlockState.Pending)   // vaga (slot além do stint) — moldura discreta, sem número
+            if (st == StintBlockState.Pending)   // vaga (raro na barra dinâmica) — moldura discreta
             {
-                blk.Background      = new SolidColorBrush(VagaFill);
-                blk.BorderBrush     = new SolidColorBrush(VagaBorda);
+                blk.Background = new SolidColorBrush(VagaFill);
+                blk.BorderBrush = new SolidColorBrush(VagaBorda);
                 blk.BorderThickness = new Thickness(1);
-                blk.Opacity         = 1;
+                blk.Opacity = 1;
                 blk.RenderTransform = null;
-                lbl.Text            = "";
+                lbl.Text = "";
+                if (rain is not null) rain.Visibility = Visibility.Collapsed;
                 continue;
             }
 
-            var isAtual    = i == atual;
-            var isAFazer   = atual >= 0 && i > atual;
-            var baseCol    = StintColors.TryGetValue(st, out var c) ? c : Faint;
-            var fill       = isAtual ? Foco : baseCol;
+            var isAtual  = i == atual;
+            var isAFazer = atual >= 0 && i > atual;
+            var baseCol  = StintColors.TryGetValue(st, out var c) ? c : Faint;
+            var fill     = isAtual ? Foco : baseCol;
 
-            blk.Background      = new SolidColorBrush(fill);
-            blk.BorderBrush     = null;
+            blk.Background = new SolidColorBrush(fill);
+            blk.BorderBrush = null;
             blk.BorderThickness = new Thickness(0);
-            blk.Opacity         = isAFazer ? 0.60 : 1.0;   // combo Flávio: a-fazer a 60%
+            blk.Opacity = isAFazer ? 0.60 : 1.0;                                  // a-fazer a 60%
             blk.RenderTransform = isAtual ? new TranslateTransform { Y = -BarLift } : null;
 
-            lbl.Text       = st == StintBlockState.Box ? "BOX" : (i + 1).ToString();
-            lbl.FontSize   = st == StintBlockState.Box ? 12 : 15;   // combo Flávio: número grande
+            lbl.Text = st == StintBlockState.Box ? "BOX" : (i + 1).ToString();
+            lbl.FontSize = st == StintBlockState.Box ? 12 : 15;                    // número grande
             lbl.Foreground = new SolidColorBrush(TintaDe(fill));
+
+            // Chuva só nas cápsulas de aquecimento e cool-down (sempre visível nelas).
+            if (rain is not null)
+                rain.Visibility = (st == StintBlockState.Aquecimento || st == StintBlockState.CoolDown)
+                    ? Visibility.Visible : Visibility.Collapsed;
         }
 
         AtualizarGlowVoltaAtual(atual);
@@ -90,23 +179,25 @@ public sealed partial class MainWindow
     // Move o glow dourado + o sinal pra cápsula da volta atual (ou esconde se não há volta em curso).
     private void AtualizarGlowVoltaAtual(int atual)
     {
-        var mostra = atual >= 0 && atual < BarN
+        var n = _stintBlocks.Length;
+        var mostra = atual >= 0 && atual < n
                      && atual < _barraPattern.Length && _barraPattern[atual] != StintBlockState.Pending;
         if (!mostra)
         {
-            VoltaGlow.Visibility  = Visibility.Collapsed;
+            VoltaGlow.Visibility = Visibility.Collapsed;
             VoltaCaret.Visibility = Visibility.Collapsed;
             return;
         }
 
-        var cx = BarLeft + atual * (BarBlockW + BarGap) + BarBlockW / 2.0;
+        var cx = BarLeft + atual * (_capWAtual + BarGap) + _capWAtual / 2.0;
 
+        VoltaGlow.Width = _capWAtual + 72;   // glow proporcional à cápsula (bloom transborda ~36 px)
         VoltaGlowXf.X = cx - VoltaGlow.Width / 2.0;
         VoltaGlowXf.Y = BarTop + BarBlockH / 2.0 - VoltaGlow.Height / 2.0 - BarLift;
         VoltaGlow.Visibility = Visibility.Visible;
 
-        VoltaCaretXf.X = cx - 6;                 // caret tem 12 px de base
-        VoltaCaretXf.Y = BarTop - BarLift - 9;   // logo acima da cápsula (que subiu BarLift)
+        VoltaCaretXf.X = cx - 6;
+        VoltaCaretXf.Y = BarTop - BarLift - 9;
         VoltaCaret.Visibility = Visibility.Visible;
     }
 }

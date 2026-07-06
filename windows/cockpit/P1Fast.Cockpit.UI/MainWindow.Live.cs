@@ -547,7 +547,7 @@ public sealed partial class MainWindow
                 var carroId = string.IsNullOrWhiteSpace(_options.CarroId)
                     ? PlanoStintReader.CarroIdBubi
                     : _options.CarroId!;
-                var barra = await leitor.BuscarBarraAsync(carroId, _stintBlocks.Length, ct).ConfigureAwait(false);
+                var barra = await leitor.BuscarBarraAsync(carroId, BarMaxSlots, ct).ConfigureAwait(false);
                 if (barra is null) return; // sem plano do dia → placeholder
 
                 var blocos = Array.ConvertAll(barra, BlockDoTipoVolta);

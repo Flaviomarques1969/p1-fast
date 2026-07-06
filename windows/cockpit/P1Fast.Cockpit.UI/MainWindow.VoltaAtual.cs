@@ -53,7 +53,7 @@ public sealed partial class MainWindow
     // alvo fora de [0, últimoBlocoReal] → nenhuma volta em curso (antes de começar / além do plano).
     private void ApplyVoltaAtualHalo(int idx)
     {
-        if (_stintBlocks.Length != 12) return;
+        if (_stintBlocks.Length == 0) return;
         var lastReal = UltimoBlocoReal();
         var alvo = (idx >= 0 && idx <= lastReal) ? idx : -1;
         if (alvo == _haloBlocoPintado) return;   // nada mudou → não repinta

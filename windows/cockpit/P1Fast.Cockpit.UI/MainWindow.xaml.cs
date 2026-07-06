@@ -166,16 +166,17 @@ public sealed partial class MainWindow : Window
     // Plano do stint de EXEMPLO (placeholder) enquanto o plano REAL do piloto não está
     // ligado ao cockpit (telas só exibem — virá do envelope da nuvem `plano_stint`).
     // 1ª = aquecimento · meio = planejadas (incl. 1 parada no box) · última = cool down.
+    // Barra DINÂMICA (Flávio 2026-07-05): o placeholder é um stint de EXEMPLO de 11 voltas reais
+    // (sem vaga no fim) — 1ª aquecimento, 1 parada no box, última cool-down. O nº real vem do stint.
     private static readonly StintBlockState[] PlanoStintPlaceholder =
     {
-        StintBlockState.Aquecimento,                                   // 0  — aquecimento
-        StintBlockState.Planejada, StintBlockState.Planejada,          // 1,2
-        StintBlockState.Planejada, StintBlockState.Planejada,          // 3,4
-        StintBlockState.Box,                                           // 5  — parada no box
-        StintBlockState.Planejada, StintBlockState.Planejada,          // 6,7
-        StintBlockState.Planejada, StintBlockState.Planejada,          // 8,9
-        StintBlockState.CoolDown,                                      // 10 — cool down
-        StintBlockState.Pending,                                       // 11 — sem volta (vaga)
+        StintBlockState.Aquecimento,                                   // 1  — aquecimento
+        StintBlockState.Planejada, StintBlockState.Planejada,          // 2,3
+        StintBlockState.Planejada, StintBlockState.Planejada,          // 4,5
+        StintBlockState.Box,                                           // 6  — parada no box
+        StintBlockState.Planejada, StintBlockState.Planejada,          // 7,8
+        StintBlockState.Planejada, StintBlockState.Planejada,          // 9,10
+        StintBlockState.CoolDown,                                      // 11 — cool down
     };
     private bool _barraVoltasAplicada;
 
@@ -221,19 +222,8 @@ public sealed partial class MainWindow : Window
 
         _leds = new[] { Led01, Led02, Led03, Led04, Led05, Led06, Led07, Led08, Led09,
                         Led10, Led11, Led12, Led13, Led14, Led15, Led16, Led17 };
-        _stintBlocks = new[]
-        {
-            StintBlock01, StintBlock02, StintBlock03, StintBlock04,
-            StintBlock05, StintBlock06, StintBlock07, StintBlock08,
-            StintBlock09, StintBlock10, StintBlock11, StintBlock12,
-        };
-        _stintLabels = new[]
-        {
-            StintLbl01, StintLbl02, StintLbl03, StintLbl04,
-            StintLbl05, StintLbl06, StintLbl07, StintLbl08,
-            StintLbl09, StintLbl10, StintLbl11, StintLbl12,
-        };
-        RepintarBarra();   // Direção C: números/cores já no boot (antes de replay/live), volta atual = nenhuma.
+        MontarBarra(_barraPattern);   // Direção C dinâmica: gera N cápsulas do placeholder já no boot.
+        RepintarBarra();              // números/cores/chuva já no boot (antes de replay/live), volta atual = nenhuma.
 
         _ledGlows = new[] { LedGlow01, LedGlow02, LedGlow03, LedGlow04, LedGlow05, LedGlow06,
                             LedGlow07, LedGlow08, LedGlow09, LedGlow10, LedGlow11, LedGlow12,
@@ -1460,10 +1450,13 @@ public sealed partial class MainWindow : Window
         AlertScale.ScaleY = 1.0;
     }
 
-    // Direção C: o plano mudou → guarda e repinta tudo (cor/número/estado) numa fonte só (RepintarBarra).
+    // Direção C dinâmica: o plano mudou → tira vaga do fim, remonta as cápsulas se o nº de voltas
+    // mudou, e repinta tudo (cor/número/estado/chuva) numa fonte só (RepintarBarra).
     private void ApplyStintPattern(StintBlockState[] pattern)
     {
+        pattern = SemVagaFinal(pattern);
         _barraPattern = pattern;
+        if (_stintBlocks.Length != pattern.Length) MontarBarra(pattern);
         RepintarBarra();
     }
 
