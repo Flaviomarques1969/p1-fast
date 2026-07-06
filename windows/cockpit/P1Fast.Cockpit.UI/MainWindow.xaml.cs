@@ -307,6 +307,12 @@ public sealed partial class MainWindow : Window
             // Etapa 2: cockpit AO VIVO — lê a T4000 de verdade pela USB e move a tela.
             StartLive();
         }
+        else if (_options.TelaTermicaDemo)
+        {
+            // Andaime: demonstra as telas dedicadas de aquecimento/resfriamento (Flávio 2026-07-06).
+            AtualizarStint();            // monta a barra (placeholder) → UltimoBlocoReal/painel válidos
+            StartTelaTermicaDemo();
+        }
     }
 
     // ── Varredura demo do SHIFT (marcha) ──────────────────────

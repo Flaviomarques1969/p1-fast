@@ -50,7 +50,8 @@ public sealed record LaunchOptions(
     bool Live = false,
     string? Port = null,
     bool Producao = false,
-    string? CarroId = null)
+    string? CarroId = null,
+    bool TelaTermicaDemo = false)
 {
     /// <summary>Faz parsing dos args do <see cref="Environment.GetCommandLineArgs"/>.</summary>
     public static LaunchOptions FromCommandLine(string[] args)
@@ -66,6 +67,7 @@ public sealed record LaunchOptions(
         string? port = null;
         var producao = false;
         string? carroId = null;
+        var telaTermicaDemo = false;
         for (var i = 0; i < args.Length; i++)
         {
             var a = args[i];
@@ -134,7 +136,14 @@ public sealed record LaunchOptions(
             {
                 carroId = args[i + 1];
             }
+            else if (a == "--tela-termica")
+            {
+                // Andaime: roda a animação sintética das telas dedicadas de aquecimento/
+                // resfriamento (warmup 40→52 vermelho→verde, cooldown 78→54), pra validar
+                // o visual sem depender da água cruzar os limiares no replay.
+                telaTermicaDemo = true;
+            }
         }
-        return new LaunchOptions(displayIndex, demo, replay, replayPath, speed, loop, windowed, live, port, producao, carroId);
+        return new LaunchOptions(displayIndex, demo, replay, replayPath, speed, loop, windowed, live, port, producao, carroId, telaTermicaDemo);
     }
 }

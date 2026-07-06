@@ -150,6 +150,7 @@ public sealed partial class MainWindow
         AtualizarSensores(_ultimaAlerta);
         if (alimentouGps) AtualizarStint();
         AtualizarVoltaAtualReplay(alvoMs);   // etapa 4: halo dourado anda com os cruzamentos
+        AtualizarTelaTermica();              // telas dedicadas de aquecimento/resfriamento (Flávio 2026-07-06)
 
         RegistrarLog(alvoMs);
 

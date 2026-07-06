@@ -267,6 +267,7 @@ public sealed partial class MainWindow
                         // o alerta órfão do motor e mostra SEM DADOS / SEM GPS honestos.
                         _orquestrador?.VigiarFontes(motorMudo, gpsMudo);
                         AtualizarSensores(_ultimaAlerta);
+                        AtualizarTelaTermica();   // ~1 Hz: a água muda devagar, mas a tela térmica acompanha
                         // H6: perda de gravação NUNCA silenciosa — o alarme do gravador (disco
                         // cheio/morto) aparece no status (sem tocar o layout aprovado).
                         if (alarme is not null)
@@ -526,6 +527,7 @@ public sealed partial class MainWindow
                 RegistrarCruzamentoLive(cerebro.Lat, cerebro.Lng);   // etapa 4: halo da volta atual ao vivo
             }
             AtualizarSensores(_ultimaAlerta);
+            AtualizarTelaTermica();   // telas dedicadas de aquecimento/resfriamento (Flávio 2026-07-06)
         });
     }
 

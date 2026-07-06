@@ -428,6 +428,72 @@
                                    TextAlignment="Center" TextWrapping="Wrap" LineHeight="86"/>
                     </Grid>
 
+                    <!-- TELAS DEDICADAS de AQUECIMENTO / RESFRIAMENTO (Flávio 2026-07-06):
+                         durante a 1ª volta (motor frio) e a última (motor quente) a telemetria
+                         normal desativa e entra esta tela cheia. Anel = PROGRESSO rumo ao ideal,
+                         SEMPRE CRESCENTE, cor semântica VERMELHO(ruim)→VERDE(bom). Cérebro puro em
+                         Domain/TelaTermica.cs; render/gatilho/auto-retorno em MainWindow.TelaTermica.cs.
+                         Textos/cores/geometria do anel são preenchidos no code-behind. -->
+                    <Grid x:Name="TermicaOverlay" Visibility="Collapsed" IsHitTestVisible="False">
+                        <Rectangle Fill="#06101A"/>
+                        <Rectangle x:Name="TermicaGlow" Opacity="0.9"/>
+                        <Canvas>
+                            <Path x:Name="TermicaTrack" Stroke="#1A2532" StrokeThickness="22"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                            <Path x:Name="TermicaFill" StrokeThickness="22"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                            <TextBlock x:Name="TermicaTemp" Canvas.Left="90" Canvas.Top="108" Width="320"
+                                       TextAlignment="Center" FontWeight="Bold" LineHeight="140"/>
+                            <TextBlock x:Name="TermicaEstado" Canvas.Left="90" Canvas.Top="300" Width="320"
+                                       TextAlignment="Center" FontSize="21" FontWeight="SemiBold" CharacterSpacing="340"/>
+
+                            <TextBlock x:Name="TermicaHlbl" Canvas.Left="524" Canvas.Top="104" FontSize="18"
+                                       Foreground="#7D8DA0" FontWeight="SemiBold" CharacterSpacing="230"/>
+                            <TextBlock x:Name="TermicaHval" Canvas.Left="520" Canvas.Top="122" FontWeight="Bold"/>
+
+                            <Grid x:Name="TermicaTiles" Canvas.Left="524" Canvas.Top="300" Width="408" Height="108">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/><ColumnDefinition Width="14"/>
+                                    <ColumnDefinition Width="*"/><ColumnDefinition Width="14"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border x:Name="Tile1" Grid.Column="0" Background="#B3111A26"
+                                        BorderThickness="1" BorderBrush="#14FFFFFF" CornerRadius="14" Padding="15,11">
+                                    <Grid>
+                                        <StackPanel>
+                                            <TextBlock x:Name="Lbl1" FontSize="15" Foreground="#7D8DA0" FontWeight="SemiBold" CharacterSpacing="140"/>
+                                            <TextBlock x:Name="Val1" FontSize="62" FontWeight="Bold" Margin="0,3,0,0"/>
+                                        </StackPanel>
+                                        <TextBlock x:Name="Tag1" Text="cérebro" FontSize="11" Foreground="#99F0C040"
+                                                   HorizontalAlignment="Right" VerticalAlignment="Top" CharacterSpacing="120" Visibility="Collapsed"/>
+                                    </Grid>
+                                </Border>
+                                <Border x:Name="Tile2" Grid.Column="2" Background="#B3111A26"
+                                        BorderThickness="1" BorderBrush="#14FFFFFF" CornerRadius="14" Padding="15,11">
+                                    <Grid>
+                                        <StackPanel>
+                                            <TextBlock x:Name="Lbl2" FontSize="15" Foreground="#7D8DA0" FontWeight="SemiBold" CharacterSpacing="140"/>
+                                            <TextBlock x:Name="Val2" FontSize="62" FontWeight="Bold" Margin="0,3,0,0"/>
+                                        </StackPanel>
+                                        <TextBlock x:Name="Tag2" Text="cérebro" FontSize="11" Foreground="#99F0C040"
+                                                   HorizontalAlignment="Right" VerticalAlignment="Top" CharacterSpacing="120" Visibility="Collapsed"/>
+                                    </Grid>
+                                </Border>
+                                <Border x:Name="Tile3" Grid.Column="4" Background="#B3111A26"
+                                        BorderThickness="1" BorderBrush="#14FFFFFF" CornerRadius="14" Padding="15,11">
+                                    <Grid>
+                                        <StackPanel>
+                                            <TextBlock x:Name="Lbl3" FontSize="15" Foreground="#7D8DA0" FontWeight="SemiBold" CharacterSpacing="140"/>
+                                            <TextBlock x:Name="Val3" FontSize="62" FontWeight="Bold" Margin="0,3,0,0"/>
+                                        </StackPanel>
+                                        <TextBlock x:Name="Tag3" Text="cérebro" FontSize="11" Foreground="#99F0C040"
+                                                   HorizontalAlignment="Right" VerticalAlignment="Top" CharacterSpacing="120" Visibility="Collapsed"/>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </Canvas>
+                    </Grid>
+
                 </Grid>
             </Border>
     </Grid>

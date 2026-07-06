@@ -78,6 +78,7 @@ public sealed partial class MainWindow
         _voltaAtualIdx = -1;
         _ultimoFixChegada = null;
         ApplyVoltaAtualHalo(-1);
+        ResetTelaTermica();   // destrava o aquecimento e some com a tela dedicada no reinício
     }
 
     // REPLAY: volta atual = cruzamentos até o tempo da sessão, menos os anteriores à janela.
