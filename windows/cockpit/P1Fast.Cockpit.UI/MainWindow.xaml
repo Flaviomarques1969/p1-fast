@@ -157,25 +157,47 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- ───────── BARRA DE VOLTAS / STINT ───────── -->
+                    <!-- ───────── BARRA DE VOLTAS / STINT — Direção C (cápsulas numeradas, Flávio 2026-07-05) ─────────
+                         Cada volta é uma cápsula com o NÚMERO (box = "BOX"); a volta ATUAL fica dourada, sobe um
+                         tico e ganha um GLOW (VoltaGlow, atrás) + um sinal (VoltaCaret, na frente). Pintura toda
+                         centralizada em RepintarBarra() (MainWindow.BarraVoltas.cs). Geometria fixa casa com as
+                         constantes Bar* do code-behind (device 956 → cápsula 56, gap 5, topo 50). -->
+                    <Rectangle x:Name="VoltaGlow" Width="104" Height="76" IsHitTestVisible="False"
+                               HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed">
+                        <Rectangle.RenderTransform><TranslateTransform x:Name="VoltaGlowXf"/></Rectangle.RenderTransform>
+                        <Rectangle.Fill>
+                            <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+                                <GradientStop Offset="0.0"  Color="#B0F0C040"/>
+                                <GradientStop Offset="0.55" Color="#40F0C040"/>
+                                <GradientStop Offset="1.0"  Color="#00F0C040"/>
+                            </RadialGradientBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+
                     <StackPanel Orientation="Horizontal"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Top"
                                 Margin="0,50,0,0"
-                                Spacing="3">
-                        <Border x:Name="StintBlock01" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
-                        <Border x:Name="StintBlock02" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
-                        <Border x:Name="StintBlock03" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
-                        <Border x:Name="StintBlock04" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
-                        <Border x:Name="StintBlock05" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
-                        <Border x:Name="StintBlock06" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
-                        <Border x:Name="StintBlock07" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
-                        <Border x:Name="StintBlock08" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
-                        <Border x:Name="StintBlock09" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
-                        <Border x:Name="StintBlock10" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
-                        <Border x:Name="StintBlock11" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
-                        <Border x:Name="StintBlock12" Width="65" Height="14" CornerRadius="2" Background="#606060"/>
+                                Spacing="5">
+                        <Border x:Name="StintBlock01" Width="56" Height="24" CornerRadius="6" Background="#606060"><TextBlock x:Name="StintLbl01" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold"/></Border>
+                        <Border x:Name="StintBlock02" Width="56" Height="24" CornerRadius="6" Background="#606060"><TextBlock x:Name="StintLbl02" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold"/></Border>
+                        <Border x:Name="StintBlock03" Width="56" Height="24" CornerRadius="6" Background="#606060"><TextBlock x:Name="StintLbl03" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold"/></Border>
+                        <Border x:Name="StintBlock04" Width="56" Height="24" CornerRadius="6" Background="#606060"><TextBlock x:Name="StintLbl04" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold"/></Border>
+                        <Border x:Name="StintBlock05" Width="56" Height="24" CornerRadius="6" Background="#606060"><TextBlock x:Name="StintLbl05" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold"/></Border>
+                        <Border x:Name="StintBlock06" Width="56" Height="24" CornerRadius="6" Background="#606060"><TextBlock x:Name="StintLbl06" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold"/></Border>
+                        <Border x:Name="StintBlock07" Width="56" Height="24" CornerRadius="6" Background="#606060"><TextBlock x:Name="StintLbl07" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold"/></Border>
+                        <Border x:Name="StintBlock08" Width="56" Height="24" CornerRadius="6" Background="#606060"><TextBlock x:Name="StintLbl08" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold"/></Border>
+                        <Border x:Name="StintBlock09" Width="56" Height="24" CornerRadius="6" Background="#606060"><TextBlock x:Name="StintLbl09" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold"/></Border>
+                        <Border x:Name="StintBlock10" Width="56" Height="24" CornerRadius="6" Background="#606060"><TextBlock x:Name="StintLbl10" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold"/></Border>
+                        <Border x:Name="StintBlock11" Width="56" Height="24" CornerRadius="6" Background="#606060"><TextBlock x:Name="StintLbl11" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold"/></Border>
+                        <Border x:Name="StintBlock12" Width="56" Height="24" CornerRadius="6" Background="#606060"><TextBlock x:Name="StintLbl12" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold"/></Border>
                     </StackPanel>
+
+                    <!-- Sinal (caret) acima da cápsula da volta atual — na FRENTE das cápsulas. -->
+                    <Polygon x:Name="VoltaCaret" Points="0,0 12,0 6,7" Fill="#F0C040" IsHitTestVisible="False"
+                             HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed">
+                        <Polygon.RenderTransform><TranslateTransform x:Name="VoltaCaretXf"/></Polygon.RenderTransform>
+                    </Polygon>
 
                     <!-- ───────── DELTA à ESQUERDA ───────── -->
                     <StackPanel x:Name="DeltaPanel"

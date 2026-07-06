@@ -48,8 +48,9 @@ public sealed partial class MainWindow
         return last;
     }
 
-    // Pinta o halo dourado SÓ no bloco da volta atual (contorno; não toca a cor do tipo/Background).
-    // alvo fora de [0, últimoBlocoReal] → nenhum halo (antes de começar / volta além do plano).
+    // Define a volta atual (clampeada ao plano) e repinta a barra se mudou. Direção C: a atual fica
+    // dourada com glow (RepintarBarra em MainWindow.BarraVoltas.cs) — não é mais só um contorno.
+    // alvo fora de [0, últimoBlocoReal] → nenhuma volta em curso (antes de começar / além do plano).
     private void ApplyVoltaAtualHalo(int idx)
     {
         if (_stintBlocks.Length != 12) return;
@@ -57,12 +58,8 @@ public sealed partial class MainWindow
         var alvo = (idx >= 0 && idx <= lastReal) ? idx : -1;
         if (alvo == _haloBlocoPintado) return;   // nada mudou → não repinta
         _haloBlocoPintado = alvo;
-        for (var i = 0; i < _stintBlocks.Length; i++)
-        {
-            var on = i == alvo;
-            _stintBlocks[i].BorderBrush = on ? new SolidColorBrush(VoltaAtualHaloCor) : null;
-            _stintBlocks[i].BorderThickness = new Thickness(on ? 1.5 : 0);
-        }
+        _voltaAtualRender = alvo;
+        RepintarBarra();
     }
 
     // Define a volta atual (clamped ao plano) e repinta o halo se mudou.

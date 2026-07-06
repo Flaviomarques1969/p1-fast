@@ -227,6 +227,13 @@ public sealed partial class MainWindow : Window
             StintBlock05, StintBlock06, StintBlock07, StintBlock08,
             StintBlock09, StintBlock10, StintBlock11, StintBlock12,
         };
+        _stintLabels = new[]
+        {
+            StintLbl01, StintLbl02, StintLbl03, StintLbl04,
+            StintLbl05, StintLbl06, StintLbl07, StintLbl08,
+            StintLbl09, StintLbl10, StintLbl11, StintLbl12,
+        };
+        RepintarBarra();   // Direção C: números/cores já no boot (antes de replay/live), volta atual = nenhuma.
 
         _ledGlows = new[] { LedGlow01, LedGlow02, LedGlow03, LedGlow04, LedGlow05, LedGlow06,
                             LedGlow07, LedGlow08, LedGlow09, LedGlow10, LedGlow11, LedGlow12,
@@ -1453,14 +1460,11 @@ public sealed partial class MainWindow : Window
         AlertScale.ScaleY = 1.0;
     }
 
+    // Direção C: o plano mudou → guarda e repinta tudo (cor/número/estado) numa fonte só (RepintarBarra).
     private void ApplyStintPattern(StintBlockState[] pattern)
     {
-        if (_stintBlocks.Length != 12) return;
-        for (var i = 0; i < _stintBlocks.Length && i < pattern.Length; i++)
-        {
-            if (StintColors.TryGetValue(pattern[i], out var color))
-                _stintBlocks[i].Background = new SolidColorBrush(color);
-        }
+        _barraPattern = pattern;
+        RepintarBarra();
     }
 
     private void UpdateStatusText()
