@@ -76,11 +76,11 @@ public sealed partial class MainWindow
             blk.Background      = new SolidColorBrush(fill);
             blk.BorderBrush     = null;
             blk.BorderThickness = new Thickness(0);
-            blk.Opacity         = isAFazer ? 0.42 : 1.0;
+            blk.Opacity         = isAFazer ? 0.60 : 1.0;   // combo Flávio: a-fazer a 60%
             blk.RenderTransform = isAtual ? new TranslateTransform { Y = -BarLift } : null;
 
             lbl.Text       = st == StintBlockState.Box ? "BOX" : (i + 1).ToString();
-            lbl.FontSize   = st == StintBlockState.Box ? 10 : 12;
+            lbl.FontSize   = st == StintBlockState.Box ? 12 : 15;   // combo Flávio: número grande
             lbl.Foreground = new SolidColorBrush(TintaDe(fill));
         }
 
