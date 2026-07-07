@@ -42,7 +42,7 @@ A tela que **o piloto vê dentro do carro**, num notebook Windows com tela de 10
 Em paralelo, o notebook **manda ao vivo pra nuvem** (canal `cockpit-bubi-live`), e é dali que o **app do celular** e o **Command Box** bebem.
 
 ## 4. O que a tela do piloto mostra (os requisitos já decididos)
-- **Luz de marcha** — 17 luzes; troca na **potência máxima (6.050 rpm)**, não no torque, não no redline (6.350 é só sirene).
+- **Luz de marcha** — 17 luzes; troca na **potência máxima (6.050 rpm)**, não no torque. A sirene (Overrev) soa acima do **redline operacional 6.300 rpm**; **6.350** é o limite mecânico. _(Correção 2026-07-07: o texto antigo dizia "6.350 é só sirene" — impreciso. A calibração aprovada do Bubi — `ShiftLightModos.PerfilBubi` / `LiveLimits.Bubi`, validada 2026-05-29 e travada por teste de paridade — é redline 6.300 / limite 6.350; o código vivo dispara a sirene a 6.300.)_
 - **Em qual curva o carro está** — reconhece as 8 curvas de Brasília, na ordem.
 - **Bolinha do ápice** — aponta pra onde estava o ápice ideal ("siga a bolinha").
 - **Comparação por trecho + frase do coach** — entrada / freio / ápice / saída, contra a melhor passagem (ex.: "FREOU CEDO").

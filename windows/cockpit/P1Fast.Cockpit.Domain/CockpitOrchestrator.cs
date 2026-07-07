@@ -65,6 +65,12 @@ public sealed class CockpitOrchestrator
     // Cortes da chuva térmica (parametrizáveis por carro — default Bubi).
     private readonly CortesChuvaTermica _cortesChuva;
 
+    // Antecipação da luz de marcha pelo tempo de reação do piloto (Onda 7, Flávio 2026-07-07).
+    // A luz mira 6.050 (potência máxima); o PilotReaction adianta o ponto VISUAL pela reação
+    // aprendida, e aprende observando as trocas (queda do giro — o USB não dá a marcha).
+    private readonly LuzMarchaAntecipacao _antecipacao = new();
+    private static readonly double AlvoTrocaRpm = ShiftLightModos.PerfilBubi.PicoPotenciaRpm; // 6.050
+
     public CockpitOrchestrator(CockpitState cockpit, IReadOnlyList<TrechoSegmento>? segments = null, LiveLimits? limites = null, CortesChuvaTermica? cortesChuva = null,
         AlertaLimites? alertaLimites = null, AprendizadoLimites? aprendizadoLimites = null)
     {
@@ -102,7 +108,17 @@ public sealed class CockpitOrchestrator
     public void IngestMotor(double rpm, AmostraAlerta alerta, double? tSeg = null)
     {
         if (_motorMudo) { _motorMudo = false; _alertas.ClearManual("SEM_DADOS"); } // motor voltou (M1)
-        var dec = LiveDataBridge.RpmToShift(rpm, _limites);
+
+        // Luz de marcha ANTECIPADA (Onda 7): o alvo é a potência máxima (6.050); o PilotReaction
+        // adianta o ponto visual pela reação do piloto quando há relógio (tSeg) e o giro sobe. Sem
+        // relógio → mapa cru (sem antecipação). A sirene (Overrev) NÃO se antecipa — segue no redline.
+        var limites = _limites;
+        if (tSeg is { } ts)
+        {
+            var visual = _antecipacao.IngerirEObterVisual(rpm, ts, AlvoTrocaRpm, _segAtual);
+            limites = _limites with { FireThresholdRatio = visual / _limites.RedlineRpm };
+        }
+        var dec = LiveDataBridge.RpmToShift(rpm, limites);
         _cockpit.ApplyShift(dec.Mode, dec.Level);
 
         // Chuva térmica (spec 2026-07-04): a fase segue a ÁGUA DO MOTOR desta amostra.
@@ -152,6 +168,7 @@ public sealed class CockpitOrchestrator
                 _alertas.IngestT4000(new AmostraAlerta()); // amostra vazia → remove os automáticos do motor
                 _alertas.RaiseManual("SEM_DADOS");
                 _cockpit.ApplyShift(ShiftMode.Off, 0);      // sem RPM vivo → luz de marcha apaga
+                _antecipacao.Reset();                       // zera o histórico de giro (sem troca-fantasma ao voltar)
                 _cockpit.SetChuva(FaseChuva.Off);           // chuva nunca cai por água VELHA (§9)
             }
             else _alertas.ClearManual("SEM_DADOS");
