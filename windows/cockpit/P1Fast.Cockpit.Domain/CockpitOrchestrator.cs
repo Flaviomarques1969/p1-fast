@@ -115,7 +115,10 @@ public sealed class CockpitOrchestrator
         var limites = _limites;
         if (tSeg is { } ts)
         {
-            var visual = _antecipacao.IngerirEObterVisual(rpm, ts, AlvoTrocaRpm, _segAtual);
+            // Velocidade do RaceBox (25 Hz) alimenta o detector de marcha (razão giro÷km/h);
+            // sem GPS ainda → 0 (aprende perfil genérico). A marcha refina a antecipação por marcha.
+            var kmh = _lastGps?.Kmh ?? 0;
+            var visual = _antecipacao.IngerirEObterVisual(rpm, kmh, ts, AlvoTrocaRpm, _segAtual);
             limites = _limites with { FireThresholdRatio = visual / _limites.RedlineRpm };
         }
         var dec = LiveDataBridge.RpmToShift(rpm, limites);

@@ -5,13 +5,13 @@
 // VISUAL da luz pelo tempo de reação do piloto, pra a troca REAL cair no ponto ótimo:
 //   rpm_visual = rpm_alvo − (tempo_reacao_ms × ritmo_subida_giro / 1000)
 //
-// E APRENDE esse tempo observando as trocas. Porém o caminho vivo é USB/T3000, que NÃO
-// fornece a marcha (T3000RIBlockParser: Marcha = null) — então o EVENTO de troca é detectado
-// pela QUEDA forte do giro vindo da zona de troca (uma subida de marcha derruba o RPM). A
-// marcha fica nula na tupla (aprende um perfil único do piloto/carro/trecho, não por marcha).
+// E APRENDE esse tempo POR MARCHA observando as trocas. Como o caminho vivo é USB/T3000
+// (sem sensor de câmbio), a MARCHA vem do DetectorMarchaOnline (razão giro÷velocidade do
+// RaceBox a 25 Hz), e o INSTANTE da troca vem da QUEDA forte do giro (o detector tem atraso;
+// a queda marca o pico exato). Assim o aprendizado é por (carro, marcha, trecho).
 //
-// Porte fiel da parte "Onda 7" de web/cockpit/shift-light-orquestrador.js + pilot-reaction.js.
-// Puro: sem I/O, sem relógio — o instante monotônico vem de fora, em segundos.
+// Porte fiel da parte "Onda 7" de web/cockpit/shift-light-orquestrador.js + pilot-reaction.js
+// + gear-detector-online.js. Puro: sem I/O, sem relógio — o instante (s) vem de fora.
 
 namespace P1Fast.Cockpit.Domain;
 
@@ -26,6 +26,7 @@ public sealed class LuzMarchaAntecipacao
     private const double AntecipacaoMaxRpm = 800;
 
     private readonly PilotReaction _reacao = new();
+    private readonly DetectorMarchaOnline _marchas = new();
     private readonly string? _carroId;
 
     private readonly List<(double Rpm, double TSeg)> _hist = new();
@@ -37,14 +38,17 @@ public sealed class LuzMarchaAntecipacao
 
     /// <summary>Perfis de reação aprendidos (debug/telemetria).</summary>
     public IReadOnlyDictionary<string, PerfilReacao> Perfis => _reacao.Profiles;
+    /// <summary>Marcha atual estimada (do DetectorMarchaOnline) — telemetria/tela.</summary>
+    public int? MarchaAtual => _marchas.MarchaAtual;
 
-    /// <summary>Zera o histórico (motor emudeceu / reinício) — evita troca-fantasma por giro velho.</summary>
+    /// <summary>Zera o histórico e o câmbio aprendido (motor emudeceu / reinício de sessão).</summary>
     public void Reset()
     {
         _hist.Clear();
         _picoCorrente = double.NegativeInfinity;
         _ritmoNoPico = 0;
         _emZonaDeTroca = false;
+        _marchas.Reset();
     }
 
     /// <summary>Ritmo de subida do giro (rpm/s) na janela; 0 se insuficiente. Também poda a janela.</summary>
@@ -57,12 +61,14 @@ public sealed class LuzMarchaAntecipacao
         return dt > 0.05 ? (l.Rpm - f.Rpm) / dt : 0;
     }
 
-    /// <summary>Ingere uma amostra de motor: guarda no histórico e, se detectar uma SUBIDA de
-    /// marcha (giro caiu forte vindo da zona de troca), ensina o PilotReaction.
-    /// <paramref name="alvoRpm"/> = ponto ótimo (6.050); <paramref name="trechoId"/> = curva atual.</summary>
-    public void Amostra(double rpm, double tSeg, double alvoRpm, string? trechoId)
+    /// <summary>Ingere uma amostra de motor+velocidade: alimenta o detector de marcha, guarda o giro
+    /// e, se detectar uma SUBIDA de marcha (queda forte vinda da zona de troca), ensina o PilotReaction
+    /// keado pela marcha atual. <paramref name="alvoRpm"/> = ponto ótimo (6.050); <paramref name="kmh"/>
+    /// = velocidade do RaceBox (0 se sem GPS — aí aprende um perfil genérico).</summary>
+    public void Amostra(double rpm, double kmh, double tSeg, double alvoRpm, string? trechoId)
     {
         if (!double.IsFinite(rpm) || !double.IsFinite(tSeg)) return;
+        _marchas.Ingest(rpm, kmh, tSeg);
         _hist.Add((rpm, tSeg));
         var ritmo = RitmoSubida(tSeg);
 
@@ -76,14 +82,16 @@ public sealed class LuzMarchaAntecipacao
         // Queda forte a partir de um pico na zona de troca = subiu de marcha → evento de reação.
         if (_emZonaDeTroca && _picoCorrente - rpm >= QuedaTrocaRpm)
         {
+            var marcha = _marchas.MarchaAtual;          // marcha ANTES da troca (detector ainda não virou)
+            var conf   = marcha is null ? 1.0 : _marchas.Confianca; // sem marcha → perfil genérico
             var ev = new ReactionEvent(
                 RpmAtShift: _picoCorrente,
                 TargetVisualRpm: alvoRpm,
                 RpmRiseRate: _ritmoNoPico > 0 ? _ritmoNoPico : null,
-                GearConfidence: 1.0,
-                DeltaRpm: _picoCorrente - alvoRpm, // <0 (trocou antes do ponto) → LearnFromEvent rejeita
+                GearConfidence: conf,
+                DeltaRpm: _picoCorrente - alvoRpm,      // <0 (trocou antes do ponto) → LearnFromEvent rejeita
                 CarroId: _carroId,
-                GearAfter: null,
+                GearAfter: marcha,
                 TrechoId: trechoId);
             _reacao.LearnFromEvent(ev, nowMs: (long)(tSeg * 1000.0));
 
@@ -94,21 +102,21 @@ public sealed class LuzMarchaAntecipacao
         }
     }
 
-    /// <summary>RPM VISUAL da luz = alvo − compensação (antecipação). mode "assisted" antecipa
-    /// (default 250 ms até aprender ≥10 trocas do piloto); "learning" não antecipa (comp 0).
-    /// Ritmo ≤ 0 (giro não sobe) → sem antecipação. Nunca antecipa além do piso de segurança.</summary>
+    /// <summary>RPM VISUAL da luz = alvo − compensação (antecipação), keado pela marcha atual. mode
+    /// "assisted" antecipa (default 250 ms até aprender ≥10 trocas daquela marcha); "learning" não
+    /// antecipa. Ritmo ≤ 0 → sem antecipação. Nunca antecipa além do piso de segurança.</summary>
     public double RpmVisual(double alvoRpm, double tSeg, string? trechoId, string mode = "assisted")
     {
         var ritmo = RitmoSubida(tSeg);
-        var comp = _reacao.ComputeCompensation(null, _carroId, null, trechoId, Math.Max(0, ritmo), mode);
+        var comp = _reacao.ComputeCompensation(null, _carroId, _marchas.MarchaAtual, trechoId, Math.Max(0, ritmo), mode);
         var visual = alvoRpm - comp.CompensationRpm;
         return Math.Max(alvoRpm - AntecipacaoMaxRpm, visual);
     }
 
-    /// <summary>Atalho: ingere a amostra e devolve o RPM visual já antecipado.</summary>
-    public double IngerirEObterVisual(double rpm, double tSeg, double alvoRpm, string? trechoId, string mode = "assisted")
+    /// <summary>Atalho: ingere a amostra (giro+velocidade) e devolve o RPM visual já antecipado.</summary>
+    public double IngerirEObterVisual(double rpm, double kmh, double tSeg, double alvoRpm, string? trechoId, string mode = "assisted")
     {
-        Amostra(rpm, tSeg, alvoRpm, trechoId);
+        Amostra(rpm, kmh, tSeg, alvoRpm, trechoId);
         return RpmVisual(alvoRpm, tSeg, trechoId, mode);
     }
 }
