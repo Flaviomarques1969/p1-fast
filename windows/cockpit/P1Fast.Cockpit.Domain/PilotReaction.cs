@@ -29,6 +29,9 @@ public sealed record ReactionEvent(
 /// <summary>Perfil aprendido de uma tupla: tempo de reação (ms) + nº de amostras.</summary>
 public sealed record PerfilReacao(string Key, double ReactionTimeMs, int SampleCount, long LastUpdated);
 
+/// <summary>Estado persistível dos perfis de reação (a "história gravada" pra sobreviver entre sessões).</summary>
+public sealed record PilotReactionSnapshot(int Versao, IReadOnlyList<PerfilReacao> Perfis);
+
 /// <summary>Resultado da compensação: tempo de reação usado, compensação em RPM e a fonte.</summary>
 public sealed record Compensacao(double RtMs, double CompensationRpm, string Source);
 
@@ -40,6 +43,21 @@ public sealed class PilotReaction
 
     private readonly Dictionary<string, PerfilReacao> _profiles = new();
     public IReadOnlyDictionary<string, PerfilReacao> Profiles => _profiles;
+
+    /// <summary>Exporta os perfis aprendidos (a "história gravada" pra persistir entre sessões).</summary>
+    public PilotReactionSnapshot ExportarEstado() => new(1, _profiles.Values.ToList());
+
+    /// <summary>Restaura perfis gravados (idempotente; ignora entradas inválidas). Chamar ao abrir a sessão.</summary>
+    public void ImportarEstado(PilotReactionSnapshot? snap)
+    {
+        if (snap?.Perfis is null) return;
+        foreach (var p in snap.Perfis)
+        {
+            if (p is null || string.IsNullOrEmpty(p.Key)) continue;
+            if (!double.IsFinite(p.ReactionTimeMs) || p.SampleCount < 0) continue;
+            _profiles[p.Key] = p;
+        }
+    }
 
     public static string TupleKey(string? pilotoId, string? carroId, int? gear, string? trechoId)
         => string.Join(':', new[]

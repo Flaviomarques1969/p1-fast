@@ -150,6 +150,16 @@ public sealed class CockpitOrchestrator
     /// <summary>Restaura o aprendizado gravado (chamar ao abrir a sessão).</summary>
     public void ImportarAprendizado(AprendizadoSnapshot? snap) => _alertas.ImportarAprendizado(snap);
 
+    // ── Onda 7: história gravada da luz de marcha (reação por marcha, entre sessões) ──────
+    // O tempo de reação por marcha leva ≥10 trocas pra amadurecer; sem persistir, o piloto
+    // reensina tudo a cada sessão. Mesma ponte da temperatura: o app grava/lê o snapshot.
+
+    /// <summary>Snapshot da antecipação da luz de marcha (reação por marcha), pra gravar entre sessões.</summary>
+    public PilotReactionSnapshot ExportarLuzMarcha() => _antecipacao.ExportarReacao();
+
+    /// <summary>Restaura o aprendizado da luz de marcha (chamar ao abrir a sessão, com o snapshot salvo).</summary>
+    public void ImportarLuzMarcha(PilotReactionSnapshot? snap) => _antecipacao.ImportarReacao(snap);
+
     /// <summary>Máxima normal da água aprendida agora (°C) — pra telemetria/diagnóstico.</summary>
     public double MotorMaximaNormalC => _alertas.MotorMaximaNormalC;
 

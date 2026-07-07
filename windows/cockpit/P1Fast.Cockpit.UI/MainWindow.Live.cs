@@ -105,6 +105,7 @@ public sealed partial class MainWindow
 
         IniciarFeedReal(segs, alertaLimites, aprendizadoLimites);  // timers off + cria _orquestrador com os limites do carro
         CarregarAprendizado();    // Fase 2: restaura a máxima normal do carro (memória entre sessões)
+        CarregarLuzMarcha();      // Onda 7: restaura a reação por marcha (antecipação da luz) do carro
         AtualizarSensores(null);  // motor sem amostra ainda → tudo "a comunicar"
 
         _liveCts = new CancellationTokenSource();
@@ -291,6 +292,7 @@ public sealed partial class MainWindow
         // 0) Fase 2: grava a máxima normal aprendida NESTA sessão (memória do carro pra a
         //    próxima). Antes de tudo (rápido, síncrono) — best-effort, não trava o fechamento.
         SalvarAprendizado();
+        SalvarLuzMarcha();     // Onda 7: grava a reação por marcha aprendida NESTA sessão (memória do carro)
         // 1) Encerra a sessão JÁ (síncrono, rápido): fecha o meta, nunca deixa órfã.
         //    Captura o id ANTES (Encerrar zera a sessão) pra o upload achar o .jsonl.
         string? sessaoFechada = null;

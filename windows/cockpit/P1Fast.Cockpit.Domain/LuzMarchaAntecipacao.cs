@@ -41,6 +41,13 @@ public sealed class LuzMarchaAntecipacao
     /// <summary>Marcha atual estimada (do DetectorMarchaOnline) — telemetria/tela.</summary>
     public int? MarchaAtual => _marchas.MarchaAtual;
 
+    /// <summary>Snapshot do aprendizado de reação (por marcha/trecho) pra persistir entre sessões.
+    /// Só a memória de longo prazo (perfis do PilotReaction) viaja — o histórico/pico da sessão é volátil.</summary>
+    public PilotReactionSnapshot ExportarReacao() => _reacao.ExportarEstado();
+
+    /// <summary>Restaura o aprendizado de reação gravado em sessões anteriores (chamar ao abrir a sessão).</summary>
+    public void ImportarReacao(PilotReactionSnapshot? snap) => _reacao.ImportarEstado(snap);
+
     /// <summary>Zera o histórico e o câmbio aprendido (motor emudeceu / reinício de sessão).</summary>
     public void Reset()
     {
