@@ -24,6 +24,13 @@ public sealed class LuzMarchaAntecipacao
     private const double QuedaTrocaRpm  = 700;    // queda que caracteriza uma subida de marcha
     // Piso de segurança: a luz nunca acende MUITO antes do alvo, por mais alto que o ritmo suba.
     private const double AntecipacaoMaxRpm = 800;
+    // Confirmação por acelerador (TPS): a queda do giro na zona vira aprendizado só se o acelerador
+    // estiver/voltar ALTO logo após — distingue TROCA de LIFT/FREADA. Cobre os dois estilos de
+    // subida de marcha: flat-shift (corte de ignição, pé no fundo → TPS já alto na hora) e troca com
+    // alívio (pisca e volta → TPS alto pouco depois). Na freada o acelerador fica baixo → descarta.
+    // Sem TPS (sensor ausente) → cai no comportamento antigo (só a queda do giro).
+    private const double TpsRetomadaMinPct = 40;  // acelerador "sob potência" logo após a queda
+    private const double TpsConfirmS       = 0.6; // janela pro acelerador confirmar a troca
 
     private readonly PilotReaction _reacao = new();
     private readonly DetectorMarchaOnline _marchas = new();
@@ -33,6 +40,13 @@ public sealed class LuzMarchaAntecipacao
     private double _picoCorrente = double.NegativeInfinity; // maior giro desde a última troca/rearme
     private double _ritmoNoPico;                             // ritmo de subida (rpm/s) capturado NO pico
     private bool _emZonaDeTroca;                             // pico já entrou na zona (armado pra detectar a queda)
+
+    private double _ultimoTpsPct = double.NaN;              // último acelerador lido (%) e quando (s)
+    private double _ultimoTpsT = double.NegativeInfinity;
+    // Troca detectada aguardando o acelerador confirmar (pico/instante já capturados no evento):
+    private ReactionEvent? _pendEvento;
+    private double _pendTSeg;                               // instante da queda (relógio do evento)
+    private double _pendDeadline;                           // até quando o acelerador pode confirmar
 
     public LuzMarchaAntecipacao(string? carroId = null) { _carroId = carroId; }
 
@@ -55,6 +69,9 @@ public sealed class LuzMarchaAntecipacao
         _picoCorrente = double.NegativeInfinity;
         _ritmoNoPico = 0;
         _emZonaDeTroca = false;
+        _pendEvento = null;
+        _ultimoTpsPct = double.NaN;
+        _ultimoTpsT = double.NegativeInfinity;
         _marchas.Reset();
     }
 
@@ -69,15 +86,18 @@ public sealed class LuzMarchaAntecipacao
     }
 
     /// <summary>Ingere uma amostra de motor+velocidade: alimenta o detector de marcha, guarda o giro
-    /// e, se detectar uma SUBIDA de marcha (queda forte vinda da zona de troca), ensina o PilotReaction
-    /// keado pela marcha atual. <paramref name="alvoRpm"/> = ponto ótimo (6.050); <paramref name="kmh"/>
-    /// = velocidade do RaceBox (0 se sem GPS — aí aprende um perfil genérico).</summary>
-    public void Amostra(double rpm, double kmh, double tSeg, double alvoRpm, string? trechoId)
+    /// e, se detectar uma SUBIDA de marcha (queda forte vinda da zona de troca CONFIRMADA pelo
+    /// acelerador), ensina o PilotReaction keado pela marcha atual. <paramref name="alvoRpm"/> = ponto
+    /// ótimo (6.050); <paramref name="kmh"/> = velocidade do RaceBox (0 se sem GPS — perfil genérico);
+    /// <paramref name="tpsPct"/> = acelerador % (null = sem sensor → gate desligado, comportamento antigo).</summary>
+    public void Amostra(double rpm, double kmh, double tSeg, double alvoRpm, string? trechoId, double? tpsPct = null)
     {
         if (!double.IsFinite(rpm) || !double.IsFinite(tSeg)) return;
         _marchas.Ingest(rpm, kmh, tSeg);
         _hist.Add((rpm, tSeg));
         var ritmo = RitmoSubida(tSeg);
+
+        if (tpsPct is { } tp && double.IsFinite(tp)) { _ultimoTpsPct = tp; _ultimoTpsT = tSeg; }
 
         if (rpm > _picoCorrente)
         {
@@ -86,26 +106,68 @@ public sealed class LuzMarchaAntecipacao
             if (rpm >= PicoZonaMinRpm) _emZonaDeTroca = true;
         }
 
-        // Queda forte a partir de um pico na zona de troca = subiu de marcha → evento de reação.
-        if (_emZonaDeTroca && _picoCorrente - rpm >= QuedaTrocaRpm)
+        // Troca já detectada, esperando o acelerador confirmar (ou expirar → foi lift/freada).
+        if (_pendEvento is not null) ResolverPendente(tSeg);
+
+        // Queda forte a partir de um pico na zona de troca = candidata a subida de marcha.
+        if (_pendEvento is null && _emZonaDeTroca && _picoCorrente - rpm >= QuedaTrocaRpm)
         {
-            var marcha = _marchas.MarchaAtual;          // marcha ANTES da troca (detector ainda não virou)
-            var conf   = marcha is null ? 1.0 : _marchas.Confianca; // sem marcha → perfil genérico
-            var ev = new ReactionEvent(
-                RpmAtShift: _picoCorrente,
-                TargetVisualRpm: alvoRpm,
-                RpmRiseRate: _ritmoNoPico > 0 ? _ritmoNoPico : null,
-                GearConfidence: conf,
-                DeltaRpm: _picoCorrente - alvoRpm,      // <0 (trocou antes do ponto) → LearnFromEvent rejeita
-                CarroId: _carroId,
-                GearAfter: marcha,
-                TrechoId: trechoId);
-            _reacao.LearnFromEvent(ev, nowMs: (long)(tSeg * 1000.0));
+            var ev = MontarEvento(alvoRpm, trechoId);
+            if (TpsDisponivel(tSeg))
+            {
+                // Arma a confirmação: só vira aprendizado se o acelerador estiver/voltar alto.
+                _pendEvento = ev;
+                _pendTSeg = tSeg;
+                _pendDeadline = tSeg + TpsConfirmS;
+                ResolverPendente(tSeg);                 // flat-shift já confirma nesta amostra (TPS alto agora)
+            }
+            else
+            {
+                _reacao.LearnFromEvent(ev, nowMs: (long)(tSeg * 1000.0)); // sem TPS → comportamento antigo
+            }
 
             // Rearma: só conta a próxima troca depois de o giro subir de novo até a zona.
             _picoCorrente = rpm;
             _ritmoNoPico = 0;
             _emZonaDeTroca = false;
+        }
+    }
+
+    /// <summary>Monta o evento de reação a partir do pico/ritmo/marcha atuais.</summary>
+    private ReactionEvent MontarEvento(double alvoRpm, string? trechoId)
+    {
+        var marcha = _marchas.MarchaAtual;              // marcha ANTES da troca (detector ainda não virou)
+        var conf   = marcha is null ? 1.0 : _marchas.Confianca; // sem marcha → perfil genérico
+        return new ReactionEvent(
+            RpmAtShift: _picoCorrente,
+            TargetVisualRpm: alvoRpm,
+            RpmRiseRate: _ritmoNoPico > 0 ? _ritmoNoPico : null,
+            GearConfidence: conf,
+            DeltaRpm: _picoCorrente - alvoRpm,          // <0 (trocou antes do ponto) → LearnFromEvent rejeita
+            CarroId: _carroId,
+            GearAfter: marcha,
+            TrechoId: trechoId);
+    }
+
+    /// <summary>Há leitura de acelerador recente o bastante pra usar o gate?</summary>
+    private bool TpsDisponivel(double tSeg)
+        => double.IsFinite(_ultimoTpsPct) && tSeg - _ultimoTpsT <= JanelaRitmoS;
+
+    /// <summary>Resolve a troca pendente: acelerador voltou/segue alto → foi TROCA (aprende, ancorado no
+    /// instante da queda); passou da janela sem voltar → foi LIFT/FREADA (descarta). O instante aprendido
+    /// é sempre o da queda, então a confirmação atrasada não desloca a reação medida.</summary>
+    private void ResolverPendente(double tSeg)
+    {
+        if (_pendEvento is null) return;
+        var tpsAlto = TpsDisponivel(tSeg) && _ultimoTpsPct >= TpsRetomadaMinPct;
+        if (tpsAlto)
+        {
+            _reacao.LearnFromEvent(_pendEvento, nowMs: (long)(_pendTSeg * 1000.0));
+            _pendEvento = null;
+        }
+        else if (tSeg >= _pendDeadline)
+        {
+            _pendEvento = null;                         // acelerador não voltou → não foi troca
         }
     }
 
@@ -120,10 +182,10 @@ public sealed class LuzMarchaAntecipacao
         return Math.Max(alvoRpm - AntecipacaoMaxRpm, visual);
     }
 
-    /// <summary>Atalho: ingere a amostra (giro+velocidade) e devolve o RPM visual já antecipado.</summary>
-    public double IngerirEObterVisual(double rpm, double kmh, double tSeg, double alvoRpm, string? trechoId, string mode = "assisted")
+    /// <summary>Atalho: ingere a amostra (giro+velocidade+acelerador) e devolve o RPM visual já antecipado.</summary>
+    public double IngerirEObterVisual(double rpm, double kmh, double tSeg, double alvoRpm, string? trechoId, string mode = "assisted", double? tpsPct = null)
     {
-        Amostra(rpm, kmh, tSeg, alvoRpm, trechoId);
+        Amostra(rpm, kmh, tSeg, alvoRpm, trechoId, tpsPct);
         return RpmVisual(alvoRpm, tSeg, trechoId, mode);
     }
 }

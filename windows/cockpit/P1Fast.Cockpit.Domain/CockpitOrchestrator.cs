@@ -118,7 +118,8 @@ public sealed class CockpitOrchestrator
             // Velocidade do RaceBox (25 Hz) alimenta o detector de marcha (razão giro÷km/h);
             // sem GPS ainda → 0 (aprende perfil genérico). A marcha refina a antecipação por marcha.
             var kmh = _lastGps?.Kmh ?? 0;
-            var visual = _antecipacao.IngerirEObterVisual(rpm, kmh, ts, AlvoTrocaRpm, _segAtual);
+            // TPS (acelerador %) confirma a troca (troca vs lift/freada). Ausente → gate desligado.
+            var visual = _antecipacao.IngerirEObterVisual(rpm, kmh, ts, AlvoTrocaRpm, _segAtual, tpsPct: alerta.TpsPct);
             limites = _limites with { FireThresholdRatio = visual / _limites.RedlineRpm };
         }
         var dec = LiveDataBridge.RpmToShift(rpm, limites);
@@ -159,6 +160,9 @@ public sealed class CockpitOrchestrator
 
     /// <summary>Restaura o aprendizado da luz de marcha (chamar ao abrir a sessão, com o snapshot salvo).</summary>
     public void ImportarLuzMarcha(PilotReactionSnapshot? snap) => _antecipacao.ImportarReacao(snap);
+
+    /// <summary>Perfis de reação por marcha aprendidos agora (telemetria/diagnóstico).</summary>
+    public IReadOnlyDictionary<string, PerfilReacao> LuzMarchaPerfis => _antecipacao.Perfis;
 
     /// <summary>Máxima normal da água aprendida agora (°C) — pra telemetria/diagnóstico.</summary>
     public double MotorMaximaNormalC => _alertas.MotorMaximaNormalC;
