@@ -471,6 +471,7 @@ public sealed partial class MainWindow : Window
             alertaLimites: alertaLimites, aprendizadoLimites: aprendizadoLimites);
         _segsAtivos = curvas ?? Array.Empty<TrechoSegmento>();  // ponte do stint (replay E live)
         _barraVoltasAplicada = false;   // redesenha a barra de voltas (placeholder) nesta sessão/loop
+        InicializarRecordes();          // armazém de recordes LOCAL (Flávio 2026-07-06): carrega + assina o evento
     }
 
     /// <summary>Amostra de motor (rotação + dados pros alertas). Thread-safe.

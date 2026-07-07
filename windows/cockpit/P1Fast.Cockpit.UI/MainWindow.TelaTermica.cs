@@ -28,8 +28,9 @@ public sealed partial class MainWindow
     private const double TermicaCx = 250, TermicaCy = 210, TermicaR = 140;
     private const double TermicaStartClock = 225, TermicaSweepTotal = 270;
 
-    private static readonly Color TermVerde   = Color.FromArgb(0xFF, 0x37, 0xE3, 0xA4);
-    private static readonly Color TermMagenta = Color.FromArgb(0xFF, 0xE0, 0x56, 0xA0);
+    private static readonly Color TermVerde    = Color.FromArgb(0xFF, 0x37, 0xE3, 0xA4);
+    private static readonly Color TermVermelho = Color.FromArgb(0xFF, 0xFF, 0x3B, 0x47);
+    private static readonly Color TermMagenta  = Color.FromArgb(0xFF, 0xE0, 0x56, 0xA0);
     private static readonly Color TermOuro    = Color.FromArgb(0x80, 0xF0, 0xC0, 0x40);
     private static readonly Color TermSlate   = Color.FromArgb(0xFF, 0x7D, 0x8D, 0xA0);
     private static readonly Color TermBranco  = Color.FromArgb(0xFF, 0xF4, 0xF7, 0xFB);
@@ -81,6 +82,13 @@ public sealed partial class MainWindow
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _termDemoTimer;   // FIELD: senão o GC coleta e congela
     private void StartTelaTermicaDemo()
     {
+        // Recordes fictícios só pro andaime mostrar os campos preenchidos (alvo/melhor/média/vs-alvo).
+        var metaDemo = new MetadadosRecorde(0, "demo", "Brasilia", "bubi", "");
+        _recordes = new ArmazemRecordes { CarroId = "bubi" };
+        _recordes.AplicarVolta(82100, metaDemo);                 // ALVO 1:22.10
+        _sessaoLapsMs.Clear();
+        _sessaoLapsMs.AddRange(new[] { 81700.0, 83400.0, 84300.0 }); // melhor 1:21.70, média ~1:23.1, bateu o alvo
+
         _termDemoClock = System.Diagnostics.Stopwatch.StartNew();
         _termDemoTimer = DispatcherQueue.CreateTimer();
         _termDemoTimer.Interval = TimeSpan.FromMilliseconds(33);
@@ -181,8 +189,10 @@ public sealed partial class MainWindow
 
         if (modo == ModoTelaTermica.Aquecimento)
         {
+            // ALVO = melhor volta HISTÓRICA (armazém local; "—" se ainda não há recorde).
             TermicaHlbl.Text = "ALVO · MELHOR VOLTA";
-            SetValor(TermicaHval, "1:22", ".10", TermBranco, 118, 62);   // placeholder (iMac)
+            var (ab, asm) = FormatarTempo(MelhorVoltaMs());
+            SetValor(TermicaHval, ab, asm, TermBranco, 118, 62);
 
             SetTile(1, "STINT", TotalInlines(total, "voltas"), TermBranco, placeholder: false, mostra: true);
             if (boxIdx >= 0)
@@ -193,11 +203,21 @@ public sealed partial class MainWindow
         }
         else // Resfriamento
         {
+            // SUA MELHOR DO STINT = melhor volta DESTA sessão; vs ALVO = quanto vs o recorde
+            // histórico (cor = qualidade, SEM sinal); MÉDIA = média das voltas da sessão.
             TermicaHlbl.Text = "SUA MELHOR DO STINT";
-            SetValor(TermicaHval, "1:21", ".70", TermVerde, 118, 62);    // placeholder (iMac)
+            var (sb, ssm) = FormatarTempo(SessaoMelhorMs());
+            SetValor(TermicaHval, sb, ssm, TermVerde, 118, 62);
 
-            SetTile(1, "VS ALVO", TotalInlines("0,4", "s"), TermVerde, placeholder: true, mostra: true);
-            SetTile(2, "MÉDIA", TotalInlines("1:23", ".4"), TermBranco, placeholder: true, mostra: true);
+            var sessao = SessaoMelhorMs(); var alvo = MelhorVoltaMs();
+            if (sessao is { } s && alvo is { } a)
+            {
+                var diff = (Math.Abs(s - a) / 1000.0).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',');
+                SetTile(1, "VS ALVO", TotalInlines(diff, "s"), s <= a + 1 ? TermVerde : TermVermelho, placeholder: false, mostra: true);
+            }
+            else SetTile(1, "VS ALVO", TotalInlines("—", ""), TermBranco, placeholder: false, mostra: true);
+
+            SetTile(2, "MÉDIA", FormatarTempo(SessaoMediaMs()), TermBranco, placeholder: false, mostra: true);
             var feitas = Math.Max(0, _voltaAtualIdx);
             SetTile(3, "VOLTAS", TotalInlines(feitas.ToString(), "/" + total), TermBranco, placeholder: false, mostra: true);
         }

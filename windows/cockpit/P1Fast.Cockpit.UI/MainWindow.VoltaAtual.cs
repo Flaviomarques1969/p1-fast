@@ -31,6 +31,10 @@ public sealed partial class MainWindow
     private int _voltaAtualIdx = -1;          // 0-based; -1 = nenhuma ainda
     private int _haloBlocoPintado = -2;        // último índice com halo pintado (-2 = nunca pintou)
 
+    // Lap time pros recordes (Flávio 2026-07-06): uma volta = entre 2 cruzamentos consecutivos.
+    private int _lapsRegistradosReplay;        // quantas voltas já entraram no armazém (replay)
+    private long _ultimoCruzTickLive;          // tick do último cruzamento (live) — 0 = ainda não cruzou
+
     // Replay: cruzamentos da sessão + quantos já tinham passado ANTES da janela de replay.
     private IReadOnlyList<double> _replayCruzamentos = Array.Empty<double>();
     private int _replayCruzBase;
@@ -88,6 +92,11 @@ public sealed partial class MainWindow
         var passados = 0;
         foreach (var c in _replayCruzamentos)
             if (c <= alvoMs) passados++;
+        // Recordes: cada volta completa = entre dois cruzamentos consecutivos. Registra as novas
+        // (pula as anteriores à janela de replay via _lapsRegistradosReplay, semeado no start).
+        for (var i = _lapsRegistradosReplay; i <= passados - 2; i++)
+            RegistrarVoltaCompleta(_replayCruzamentos[i + 1] - _replayCruzamentos[i]);
+        if (passados - 1 > _lapsRegistradosReplay) _lapsRegistradosReplay = passados - 1;
         SetVoltaAtual(passados - _replayCruzBase);
     }
 
@@ -99,11 +108,19 @@ public sealed partial class MainWindow
         {
             if (Math.Sign(TrechoDetector.SideOfLine(p, ChegadaA, ChegadaB)) != Math.Sign(TrechoDetector.SideOfLine(prev, ChegadaA, ChegadaB))
                 && TrechoDetector.CaminhoCruzaLinha(prev, p, ChegadaA, ChegadaB))
+            {
+                // Cruzou a linha: fecha a volta. Lap time = agora − último cruzamento (relógio
+                // monotônico). O 1º cruzamento só INICIA a contagem (não há volta anterior a fechar).
+                var tick = Environment.TickCount64;
+                if (_ultimoCruzTickLive > 0) RegistrarVoltaCompleta(tick - _ultimoCruzTickLive);
+                _ultimoCruzTickLive = tick;
                 SetVoltaAtual((_voltaAtualIdx < 0 ? 0 : _voltaAtualIdx) + 1);
+            }
         }
         else
         {
-            SetVoltaAtual(0);   // 1º fix válido = volta 1 (aquecimento)
+            SetVoltaAtual(0);                              // 1º fix válido = volta 1 (aquecimento)
+            _ultimoCruzTickLive = Environment.TickCount64; // arma o cronômetro da 1ª volta
         }
         _ultimoFixChegada = p;
     }

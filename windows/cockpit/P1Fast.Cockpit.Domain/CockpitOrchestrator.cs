@@ -56,6 +56,12 @@ public sealed class CockpitOrchestrator
     public string EstadoDoTrecho(string segId) => _estadoTrecho.GetValueOrDefault(segId, "");
     public string? CurvaAtualId => _segAtual;
 
+    /// <summary>Disparado ao FECHAR uma passagem por um trecho, com os dados dela (tempo +
+    /// entrada/frenagem/ápice/saída/Vmin). A UI monta os metadados (sessão/pista/relógio) e tenta
+    /// bater cada recorde independente no ArmazemRecordes local (Flávio 2026-07-06). Aditivo: o
+    /// cérebro segue PURO (sem I/O nem relógio); quem persiste é a UI.</summary>
+    public event Action<DadosPassagem>? PassagemFechada;
+
     // Cortes da chuva térmica (parametrizáveis por carro — default Bubi).
     private readonly CortesChuvaTermica _cortesChuva;
 
@@ -397,6 +403,12 @@ public sealed class CockpitOrchestrator
             var coach = MensagensPedagogicas.Decidir(primeiraPassagem: true);
             if (coach is not null) _cockpit.SetAcao(coach.Texto, Tone.Neutro);
         }
+
+        // Recordes locais persistidos (Flávio 2026-07-06): emite os dados desta passagem — um
+        // dado cada, independentes. A UI decide se bateu recorde e persiste (o cérebro não faz I/O).
+        PassagemFechada?.Invoke(new DadosPassagem(
+            segId, tempoAtualS, _pEnt, _pFre, _pApi, _pSai,
+            double.IsInfinity(_vminCorrente) ? null : _vminCorrente));
 
         _segAtual = null;
         _buf.Clear();
