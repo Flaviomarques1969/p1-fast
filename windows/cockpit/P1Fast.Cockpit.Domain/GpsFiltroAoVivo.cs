@@ -44,7 +44,8 @@ public sealed class GpsFiltroAoVivo
     /// desde o último ponto aceito; senão <c>null</c> (parado/jitter). A 1ª amostra passa com kmh=0.
     /// headingDeg (L2): rumo do PACOTE quando o aparelho fornece (RaceBox headMot) — só
     /// atravessa, sem inventar; null = cérebro cai no rumo por 2 posições, como sempre.</summary>
-    public AmostraGps? AceitarValido(PontoGps p, double tWall, double? headingDeg = null)
+    public AmostraGps? AceitarValido(PontoGps p, double tWall, double? headingDeg = null,
+        double? ax = null, double? ay = null, double? az = null)
     {
         if (_prev is { } prev && Ghost.DistMeters(prev, p) < MovimentoMinM) return null;
 
@@ -56,11 +57,13 @@ public sealed class GpsFiltroAoVivo
         }
         _prev = p;
         _prevT = tWall;
-        return new AmostraGps(p.Lat, p.Lng, kmh, tWall, headingDeg);
+        return new AmostraGps(p.Lat, p.Lng, kmh, tWall, headingDeg, ax, ay, az);
     }
 
     /// <summary>Fluxo AO VIVO: qualidade + decimação num passo só. Devolve a amostra pro
-    /// cérebro ou <c>null</c> (reprovado ou decimado). É o que o MainWindow.Live chama por fix.</summary>
-    public AmostraGps? Aceitar(double lat, double lon, double fix, double hacc, double tWall, double? headingDeg = null)
-        => QualidadeOk(lat, lon, fix, hacc) ? AceitarValido(new PontoGps(lat, lon), tWall, headingDeg) : null;
+    /// cérebro ou <c>null</c> (reprovado ou decimado). É o que o MainWindow.Live chama por fix.
+    /// ax/ay/az: aceleração crua do RaceBox (g), só atravessa — o cérebro ainda não usa (bancada).</summary>
+    public AmostraGps? Aceitar(double lat, double lon, double fix, double hacc, double tWall, double? headingDeg = null,
+        double? ax = null, double? ay = null, double? az = null)
+        => QualidadeOk(lat, lon, fix, hacc) ? AceitarValido(new PontoGps(lat, lon), tWall, headingDeg, ax, ay, az) : null;
 }

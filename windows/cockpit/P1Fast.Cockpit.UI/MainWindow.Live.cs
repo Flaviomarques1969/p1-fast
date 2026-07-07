@@ -489,7 +489,10 @@ public sealed partial class MainWindow
         long tWall = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         lock (_liveRecLock)
             _liveRecorder?.Gps(
-                new { lat = f.Lat, lon = f.Lng, kmh = f.Kmh, fix = f.Fix, numSV = f.NumSV, hacc = f.HaccM },
+                // gx/gy/gz = aceleração crua do RaceBox (g), gravada pro dia de bancada calibrar
+                // o eixo + verificar os offsets. Ainda não alimenta a lógica da tela.
+                new { lat = f.Lat, lon = f.Lng, kmh = f.Kmh, fix = f.Fix, numSV = f.NumSV, hacc = f.HaccM,
+                      gx = f.GX, gy = f.GY, gz = f.GZ },
                 velKmh: f.Kmh);
 
         // Nuvem: ENFILEIRA todo fix (o laço da nuvem drena pelo GpsLivePublisher, fila-que-
@@ -505,6 +508,9 @@ public sealed partial class MainWindow
                 ["numSV"] = f.NumSV,
                 ["fix"]   = f.Fix,
                 ["accM"]  = f.HaccM,
+                ["gx"]    = f.GX,   // aceleração crua do RaceBox (g) — chaves NOVAS, aditivas (bancada)
+                ["gy"]    = f.GY,
+                ["gz"]    = f.GZ,
                 ["tWall"] = tWall,
             });
 
@@ -517,7 +523,7 @@ public sealed partial class MainWindow
         // (>=3 m), a MESMA peça que o replay usa. O disco e a nuvem acima já guardaram TODOS os
         // fixes crus; só o maestro recebe o filtrado, pra fix impreciso/jitter parado não gerar
         // curva/ápice/freada falsos na tela do piloto.
-        var cerebro = _gpsFiltro.Aceitar(f.Lat, f.Lng, f.Fix, f.HaccM, tWall, f.HeadingDeg);
+        var cerebro = _gpsFiltro.Aceitar(f.Lat, f.Lng, f.Fix, f.HaccM, tWall, f.HeadingDeg, f.GX, f.GY, f.GZ);
         DispatcherQueue.TryEnqueue(() =>
         {
             if (cerebro is not null)

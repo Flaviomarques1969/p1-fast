@@ -24,7 +24,11 @@ namespace P1Fast.Cockpit.UI;
 // HeadingDeg (L2): rumo do movimento do PACOTE (headMot, 0=norte, horário) — antes era
 // descartado e o ângulo do ápice saía por 2 posições (mais ruidoso). Null quando não
 // confiável (parado/quase parado: o RaceBox congela/inventa o rumo em baixa velocidade).
-public readonly record struct RaceBoxFix(double Lat, double Lng, double Kmh, int Fix, int NumSV, double HaccM, double? HeadingDeg = null);
+// GX/GY/GZ: aceleração do RaceBox em g (eixos CRUS do aparelho). Decodificados dos offsets
+// 68/70/72 do pacote (protocolo RaceBox Mini, int16 mili-g) — Flávio 2026-07-07. PENDENTE de
+// verificação de BANCADA (offsets + qual eixo é o longitudinal); por isso ainda não gatilham nada.
+public readonly record struct RaceBoxFix(double Lat, double Lng, double Kmh, int Fix, int NumSV, double HaccM,
+    double? HeadingDeg = null, double GX = 0, double GY = 0, double GZ = 0);
 
 public sealed class RaceBoxBleReader
 {
@@ -202,6 +206,11 @@ public sealed class RaceBoxBleReader
         double lon  = BitConverter.ToInt32(b, o + 24) / 1e7;
         double hdg  = BitConverter.ToInt32(b, o + 52) / 1e5;
         double? heading = kmh >= HeadingMinKmh && hdg >= 0 && hdg < 360 ? hdg : null;
-        return new RaceBoxFix(lat, lon, kmh, fix, numSV, hacc, heading);
+        // gForce X/Y/Z (protocolo RaceBox Mini: int16 em mili-g @ 68/70/72). Offsets do spec,
+        // PENDENTES de verificação de bancada — hoje só são gravados/publicados, não gatilham nada.
+        double gx = BitConverter.ToInt16(b, o + 68) / 1000.0;
+        double gy = BitConverter.ToInt16(b, o + 70) / 1000.0;
+        double gz = BitConverter.ToInt16(b, o + 72) / 1000.0;
+        return new RaceBoxFix(lat, lon, kmh, fix, numSV, hacc, heading, gx, gy, gz);
     }
 }

@@ -15,7 +15,12 @@ public sealed record LinhaGps(PontoGps A, PontoGps B);
 public sealed record TrechoSegmento(string Id, string Nome, LinhaGps EntradaLine, PontoGps ApicePoint, LinhaGps SaidaLine);
 
 /// <summary>Amostra de GPS pro detector.</summary>
-public sealed record AmostraGps(double Lat, double Lng, double Kmh = 0, double T = 0, double? HeadingDeg = null);
+// AccelXg/Yg/Zg: aceleração CRUA do aparelho (RaceBox), em g, no referencial do aparelho —
+// NÃO é longitudinal/lateral ainda (o mapeamento do eixo é calibração de bancada, Flávio 2026-07-07).
+// null quando a fonte não fornece (ex.: replay antigo). Ainda NÃO usado pelo cérebro — só carregado
+// pro dia de bancada ligar a confirmação da troca de marcha pelo "tranco" longitudinal.
+public sealed record AmostraGps(double Lat, double Lng, double Kmh = 0, double T = 0, double? HeadingDeg = null,
+    double? AccelXg = null, double? AccelYg = null, double? AccelZg = null);
 
 public enum TrechoFase { AntesEntrada, EntradaFreio, FreioApice, ApiceSaida, PosSaida }
 
