@@ -397,40 +397,6 @@
                         </Rectangle.Fill>
                     </Rectangle>
 
-                    <!-- CHUVA TÉRMICA (spec do canal 2026-07-04; implantada por ordem do Flávio 04/07):
-                         overlay de tela cheia guiado pela ÁGUA do motor. AZUL inclinado ↘ = aquecendo
-                         (abaixo da janela ideal 50–55 °C); VERMELHO ↙ = esquentando demais. 90 gotas em
-                         3 profundidades + halo (TOPO no aquece / RODAPÉ no esfria) + 6 respingos no chão —
-                         tudo gerado no code-behind (MainWindow.Chuva.cs: InitChuva/ApplyChuva). Opacidade
-                         global = fase (7 estados do cérebro ChuvaTermica), cross-fade 900 ms. O Clip é o
-                         device inteiro (gota entra por cima e sai por baixo sem vazar pro letterbox).
-                         O ESCANDALOSO ≥70/≥80 NÃO é desta camada: já é o modo crítico da tela
-                         (AlertasCriticos Super → CriticoOverlay logo abaixo). -->
-                    <Grid x:Name="RainLayer" IsHitTestVisible="False" Opacity="0">
-                        <Grid.Clip>
-                            <!-- Rect atualizado no OnRootSizeChanged pra ALTURA REAL do device
-                                 (2.4): fixo em 440 cortava os respingos (Bottom) e o fundo do
-                                 painel 3:2 (~637). Nasce 956×440 (device canônico) e cresce. -->
-                            <RectangleGeometry x:Name="RainClip" Rect="0,0,956,440"/>
-                        </Grid.Clip>
-                        <Rectangle x:Name="RainHalo" Opacity="0.85"/>
-                        <Canvas x:Name="RainCanvas"/>
-                        <Canvas x:Name="RainSplash" Height="106" VerticalAlignment="Bottom" Opacity="0.45"/>
-                    </Grid>
-
-                    <!-- MODO CRÍTICO (gap 6, Flávio 2026-07-03): super/críticas TOMAM a tela —
-                         palavra vermelha piscando no centro + borda piscando pra visão periférica.
-                         Delta/ápice/frenagem somem e as luzes apagam (code-behind AplicarModoCritico).
-                         O cluster de sensores do topo permanece (mostra o que falhou). -->
-                    <Border x:Name="CriticoBorda" Visibility="Collapsed" IsHitTestVisible="False"
-                            BorderThickness="11" BorderBrush="#F5FFFFFF"/>
-                    <Grid x:Name="CriticoOverlay" Visibility="Collapsed" IsHitTestVisible="False" Padding="56,0">
-                        <TextBlock x:Name="CriticoMsg" Text=""
-                                   FontSize="89" FontWeight="Black" Foreground="#FF3B30"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   TextAlignment="Center" TextWrapping="Wrap" LineHeight="86"/>
-                    </Grid>
-
                     <!-- TELAS DEDICADAS de AQUECIMENTO / RESFRIAMENTO (Flávio 2026-07-06):
                          durante a 1ª volta (motor frio) e a última (motor quente) a telemetria
                          normal desativa e entra esta tela cheia. Anel = PROGRESSO rumo ao ideal,
@@ -495,6 +461,44 @@
                                 </Border>
                             </Grid>
                         </Canvas>
+                    </Grid>
+
+                    <!-- CHUVA TÉRMICA (spec do canal 2026-07-04; implantada por ordem do Flávio 04/07):
+                         overlay de tela cheia guiado pela ÁGUA do motor. AZUL inclinado ↘ = aquecendo
+                         (abaixo da janela ideal 50–55 °C); VERMELHO ↙ = esquentando demais. 90 gotas em
+                         3 profundidades + halo (TOPO no aquece / RODAPÉ no esfria) + 6 respingos no chão —
+                         tudo gerado no code-behind (MainWindow.Chuva.cs: InitChuva/ApplyChuva). Opacidade
+                         global = fase (7 estados do cérebro ChuvaTermica), cross-fade 900 ms. O Clip é o
+                         device inteiro (gota entra por cima e sai por baixo sem vazar pro letterbox).
+                         Declarada ACIMA da TermicaOverlay (ordem do Flávio 2026-07-10): a chuva cai
+                         também nas telas de aquecimento/resfriamento — a água que guia a chuva é a
+                         mesma que guia essas telas. O ESCANDALOSO ≥70/≥80 NÃO é desta camada: já é o
+                         modo crítico da tela (AlertasCriticos Super → CriticoOverlay, acima de tudo). -->
+                    <Grid x:Name="RainLayer" IsHitTestVisible="False" Opacity="0">
+                        <Grid.Clip>
+                            <!-- Rect atualizado no OnRootSizeChanged pra ALTURA REAL do device
+                                 (2.4): fixo em 440 cortava os respingos (Bottom) e o fundo do
+                                 painel 3:2 (~637). Nasce 956×440 (device canônico) e cresce. -->
+                            <RectangleGeometry x:Name="RainClip" Rect="0,0,956,440"/>
+                        </Grid.Clip>
+                        <Rectangle x:Name="RainHalo" Opacity="0.85"/>
+                        <Canvas x:Name="RainCanvas"/>
+                        <Canvas x:Name="RainSplash" Height="106" VerticalAlignment="Bottom" Opacity="0.45"/>
+                    </Grid>
+
+                    <!-- MODO CRÍTICO (gap 6, Flávio 2026-07-03): super/críticas TOMAM a tela —
+                         palavra vermelha piscando no centro + borda piscando pra visão periférica.
+                         Delta/ápice/frenagem somem e as luzes apagam (code-behind AplicarModoCritico).
+                         O cluster de sensores do topo permanece (mostra o que falhou). FILHO MAIS
+                         ALTO do device (2026-07-10): além da lógica (2.1, _criticoAtivo), o z-order
+                         agora também garante que NADA — térmica nem chuva — cobre o alerta crítico. -->
+                    <Border x:Name="CriticoBorda" Visibility="Collapsed" IsHitTestVisible="False"
+                            BorderThickness="11" BorderBrush="#F5FFFFFF"/>
+                    <Grid x:Name="CriticoOverlay" Visibility="Collapsed" IsHitTestVisible="False" Padding="56,0">
+                        <TextBlock x:Name="CriticoMsg" Text=""
+                                   FontSize="89" FontWeight="Black" Foreground="#FF3B30"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   TextAlignment="Center" TextWrapping="Wrap" LineHeight="86"/>
                     </Grid>
 
                 </Grid>

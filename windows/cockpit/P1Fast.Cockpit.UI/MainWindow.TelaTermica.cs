@@ -8,7 +8,9 @@
 // gigante da temperatura no centro e painel de dados à direita (alvo/melhor volta reais onde
 // dá; alvo histórico / média / vs-alvo são PLACEHOLDER — vêm do cérebro/nuvem = iMac).
 //
-// Enquanto a tela está no ar, ela COBRE a telemetria normal (é o filho mais alto do device).
+// Enquanto a tela está no ar, ela COBRE a telemetria normal — mas fica ABAIXO da chuva
+// térmica e do modo crítico (z-order do device, Flávio 2026-07-10): a chuva cai também
+// aqui (a mesma água guia as duas coisas) e o alerta crítico nunca é coberto.
 
 using System;
 using Microsoft.UI.Xaml;
@@ -119,6 +121,10 @@ public sealed partial class MainWindow
             var prog = TelaTermica.Progresso(temp, CortesChuvaTermica.Bubi,
                 TelaTermica.FrioTotalBubiC, TelaTermica.QuenteTotalBubiC);
             MostrarTelaTermica(modo, new EstadoTelaTermica(modo, prog, temp));
+            // A chuva térmica também cai nesta tela (Flávio 2026-07-10). No caminho real a
+            // fase vem do cérebro (CockpitState.Chuva → ApplyChuva); o andaime não passa por
+            // lá, então deriva a fase da MESMA água sintética, pelo MESMO Avaliar do Domain.
+            ApplyChuva(ChuvaTermica.Avaliar(temp, CortesChuvaTermica.Bubi));
         };
         _termDemoTimer.Start();
     }
