@@ -306,6 +306,11 @@ public sealed partial class MainWindow
         //     PRODUÇÃO ao vivo (cockpit-bubi-live) segue à parte e só com ordem do Flávio.
         //     Se a rede cair no meio, a varredura de pendentes (no próximo boot) retoma.
         try { DispararUploadFimDeSessao(sessaoFechada); } catch { /* best-effort */ }
+        // 1c) Fila de FIM DE APP (2026-07-09): o dia pode ter deixado VÁRIAS sessões fechadas
+        //     pela captura automática (3 stints) ainda não subidas — se o app fecha com o carro
+        //     parado, SessaoAtualId é null e, sem isto, nada delas subia até o PRÓXIMO boot.
+        //     Varre TODAS as pendentes (mesma seleção do boot) e dispara upload destacado de cada.
+        try { DispararUploadPendentesFimDeApp(sessaoFechada); } catch { /* best-effort */ }
         // 2) Cancela laços + aparelhos em FUNDO: o Cancel() roda o teardown do RaceBox
         //    (Stop() do watcher BLE), que pode bloquear alguns segundos numa pilha
         //    Bluetooth fria — não pode travar o fechamento da janela.
@@ -338,6 +343,24 @@ public sealed partial class MainWindow
         psi.ArgumentList.Add(jsonl);
         psi.ArgumentList.Add($"--sessao-id={sessaoId}");
         System.Diagnostics.Process.Start(psi);   // destacado: não esperamos o término
+    }
+
+    // Fim de app: dispara upload DESTACADO de TODAS as sessões pendentes no disco (não só a
+    // recém-fechada). Mesma seleção do boot (PendenciasUpload): fechada + não-subida + com
+    // conteúdo. Exclui a que já foi disparada por DispararUploadFimDeSessao (evita processo
+    // dobrado; o upload é idempotente de qualquer forma). Síncrono e rápido — só lê metadados
+    // e atira processos, nunca trava o fechamento da janela. Sem chave/ferramenta: não faz nada.
+    private void DispararUploadPendentesFimDeApp(string? jaDisparada)
+    {
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("P1FAST_SUPABASE_ANON"))) return;
+        if (ResolveUploadExe() is null) return;
+        var pasta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "p1fast-sessoes");
+        List<SessaoNoDisco> noDisco;
+        try { noDisco = LerSessoesDoDisco(pasta); } catch { return; }
+        var excluir = string.IsNullOrWhiteSpace(jaDisparada) ? null : new HashSet<string> { jaDisparada! };
+        var pend = PendenciasUpload.Selecionar(noDisco, excluir: excluir);
+        foreach (var id in pend)
+            try { DispararUploadFimDeSessao(id); } catch { /* best-effort: segue as outras */ }
     }
 
     // Acha o p1fast-upload.exe ao lado do repo (dev). Best-effort: null se não existir.
@@ -469,10 +492,18 @@ public sealed partial class MainWindow
         SessionRecord? reg;
         lock (_liveRecLock) reg = _liveRecorder?.Motor(s);
 
-        // Nuvem: entrega pro laço (1 só dono do publisher — sem corrida). tWall = tempo
-        // de CAPTURA (do registro gravado), pra casar com o vídeo e ordenar certo.
-        if (_livePublisher is not null && reg is not null)
-            _liveCloudMotor.Enqueue((s, reg.TWall));
+        // Nuvem DESACOPLADA do disco (2026-07-09): o app/Command Box recebem TODA amostra do
+        // motor, mesmo quando o gravador NÃO gravou este sample — carro parado no box/aquecimento
+        // (captura automática em espera, Motor() devolve null) ou gravador que falhou ao criar.
+        // Antes o gate era `reg is not null` e o box/aquecimento nunca subia (o GPS já não tinha
+        // esse gate — prova de que era acidente). tWall = tempo de CAPTURA: usa o do registro
+        // quando gravou (casa 1:1 com o disco/vídeo), senão o relógio de parede AGORA (mesma
+        // base epoch-ms do gravador) — ordena certo e casa com o vídeo do mesmo jeito.
+        if (_livePublisher is not null)
+        {
+            long tWallMotor = reg?.TWall ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _liveCloudMotor.Enqueue((s, tWallMotor));
+        }
 
         var (rpm, alerta) = BridgeMotor(s);
         DispatcherQueue.TryEnqueue(() =>
