@@ -262,6 +262,11 @@ public sealed class AlertasCriticos
     // instante em que a mistura rica começou (pra exigir ≥1s de persistência).
     private double? _ligadoDesdeT;
     private double? _ricaDesdeT;
+    // Último tSeg visto pela histerese, pra detectar GAP (motor emudeceu — USB/motor caíram
+    // juntos, as amostras PARARAM). Sem isto, a religada pós-stall pula a supressão da partida:
+    // _ligadoDesdeT retém o instante ANTIGO ⇒ passouDaPartida já verdadeiro ⇒ ÓLEO BAIXO falso no
+    // pico da partida. (A amostra vazia do VigiarFontes chega sem tSeg, então não zera nada aqui.)
+    private double? _ultimoTHisterese;
 
     /// <summary>Ingere uma amostra. Passe <paramref name="tSeg"/> (relógio monotônico em
     /// segundos) pra ligar a histerese temporal do óleo e da mistura rica (bloco 2b); sem
@@ -301,6 +306,18 @@ public sealed class AlertasCriticos
     // sem atrasar alarme real na pista). Rica: exige ≥1s contínuo de mistura rica.
     private void AplicarHisterese(List<string> ids, AmostraAlerta s, double t)
     {
+        // GAP de amostras maior que a própria janela de supressão da partida ⇒ não dá pra afirmar
+        // que o motor rodou contínuo (ex.: stall + religada, ou USB que caiu junto). REARMA a
+        // supressão da partida (e a persistência da rica) — senão a religada dispara ÓLEO BAIXO
+        // falso no pico. O silêncio real (motor mudo) chega pelo VigiarFontes sem tSeg, e a volta
+        // do motor traz um tSeg bem à frente do último — é isso que este gap pega.
+        if (_ultimoTHisterese is { } prev && t - prev > _limits.OleoPartidaSupressaoS)
+        {
+            _ligadoDesdeT = null;
+            _ricaDesdeT   = null;
+        }
+        _ultimoTHisterese = t;
+
         var ligado = s.Rpm is { } rpm && rpm >= _limits.MotorLigadoRpmMin;
         if (ligado) _ligadoDesdeT ??= t; else _ligadoDesdeT = null;
         var passouDaPartida = _ligadoDesdeT is { } d && t - d >= _limits.OleoPartidaSupressaoS;
