@@ -73,7 +73,12 @@ public sealed record AlertaLimites(
     //  • Rica: só avisa se a mistura rica persistir ≥1s contínuo (ignora pico transitório).
     double MotorLigadoRpmMin     = 500,   // acima = motor rodando; abaixo = off/partida
     double OleoPartidaSupressaoS = 2.0,
-    double RicaPersistenciaMinS  = 1.0
+    double RicaPersistenciaMinS  = 1.0,
+    // Pobre: mesma persistência de 1s da Rica (decisão Flávio 2026-07-10). Sem ela, o freio
+    // motor em giro alto (pé fora ⇒ a sonda LÊ pobre de verdade, sem ser defeito) disparava
+    // MISTURA_POBRE crítico em UMA amostra — o gate de carga (giro≥3500 OU tps≥50) passa só
+    // pelo giro nesse cenário. Problema real de mistura persiste >1s e continua alertando.
+    double PobrePersistenciaMinS = 1.0
 )
 {
     public static AlertaLimites Default { get; } = new();
@@ -262,6 +267,7 @@ public sealed class AlertasCriticos
     // instante em que a mistura rica começou (pra exigir ≥1s de persistência).
     private double? _ligadoDesdeT;
     private double? _ricaDesdeT;
+    private double? _pobreDesdeT;   // idem pra mistura POBRE (≥1s contínuo — decisão Flávio 2026-07-10)
     // Último tSeg visto pela histerese, pra detectar GAP (motor emudeceu — USB/motor caíram
     // juntos, as amostras PARARAM). Sem isto, a religada pós-stall pula a supressão da partida:
     // _ligadoDesdeT retém o instante ANTIGO ⇒ passouDaPartida já verdadeiro ⇒ ÓLEO BAIXO falso no
@@ -315,6 +321,7 @@ public sealed class AlertasCriticos
         {
             _ligadoDesdeT = null;
             _ricaDesdeT   = null;
+            _pobreDesdeT  = null;
         }
         _ultimoTHisterese = t;
 
@@ -329,6 +336,15 @@ public sealed class AlertasCriticos
             if (t - _ricaDesdeT.Value < _limits.RicaPersistenciaMinS) ids.Remove("MISTURA_RICA");
         }
         else _ricaDesdeT = null;
+
+        // Pobre: mesma regra da Rica (decisão Flávio 2026-07-10) — mata o falso do freio motor
+        // em giro alto (transitório de 1 amostra); mistura pobre REAL persiste e continua subindo.
+        if (ids.Contains("MISTURA_POBRE"))
+        {
+            _pobreDesdeT ??= t;
+            if (t - _pobreDesdeT.Value < _limits.PobrePersistenciaMinS) ids.Remove("MISTURA_POBRE");
+        }
+        else _pobreDesdeT = null;
     }
 
     public void RaiseManual(string id) { _manuais.Add(id); _ativos.Add(id); }
