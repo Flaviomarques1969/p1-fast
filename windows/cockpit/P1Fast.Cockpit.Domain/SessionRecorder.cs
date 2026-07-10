@@ -89,6 +89,10 @@ public interface ISessionStore
     SessionResumoParcial ResumirSessao(string id);
     IReadOnlyList<SessionMeta> ListarSessoes();
     IReadOnlyList<SessionRecord> LerSessao(string id);   // replay / conferência pós-sessão
+    /// <summary>Ids de sessões com dados (.jsonl) mas SEM metadado legível — órfãs de uma
+    /// queda no meio da escrita do meta. A recuperação usa isto pra não deixar dado íntegro
+    /// invisível (o meta truncado sumiria da fila de upload pra sempre).</summary>
+    IReadOnlyList<string> ListarDadosSemMeta();
 }
 
 /// <summary>Config da captura AUTOMÁTICA por movimento (pista x box). Passe ao
@@ -114,6 +118,16 @@ public sealed class SessionRecorder
     public const double AutoVOnKmh   = 15;     // andou acima disto => abre (entrou na pista)
     public const double AutoVOffKmh  = 6;      // abaixo disto = parado
     public const int    AutoParadoMs = 12000;  // parado por tanto tempo => fecha (entrou no box)
+
+    // Thread-safety (5.6): o gravador é tocado por DOIS fios — a amostra do motor chega na
+    // thread do leitor (Motor) enquanto a thread principal chama Tick()/Estado()/Encerrar().
+    // Sem serialização, TaxaHz faz RemoveAt na MESMA List que Gravar dá Add, e Encerrar anula
+    // _sessao entre o teste e o uso — corrompe/estoura. A UI já resolvia com um lock EXTERNO
+    // (_liveRecLock); o console --gravar não tinha. Optei por trava INTERNA (Monitor é
+    // reentrante: Gravar→Encerrar/Estado no mesmo fio não trava) pra proteger OS DOIS
+    // chamadores de uma vez e deixar a garantia testável no Domain. O lock externo da UI
+    // continua correto (ordem sempre externo→interno; o interno nunca pega o externo).
+    private readonly object _lock = new();
 
     private readonly ISessionStore _store;
     private readonly Func<double> _now;     // relógio monotônico (ms)
@@ -157,10 +171,10 @@ public sealed class SessionRecorder
     }
 
     public bool Ativo => !_storeMorto;
-    public bool Gravando => _sessao is not null;
+    public bool Gravando { get { lock (_lock) return _sessao is not null; } }
     /// <summary>Id da sessão aberta agora (null se nenhuma). Pro .exe achar o .jsonl
     /// recém-fechado e disparar o upload durável no fim (capture ANTES de Encerrar).</summary>
-    public string? SessaoAtualId => _sessao?.Id;
+    public string? SessaoAtualId { get { lock (_lock) return _sessao?.Id; } }
     /// <summary>Por que a última sessão fechou ("parado" = entrou no box, "silencio" =
     /// carro desligou, "manual"). Pra tela mostrar e pros testes conferirem.</summary>
     public string? MotivoUltimoFim { get; private set; }
@@ -252,33 +266,45 @@ public sealed class SessionRecorder
     /// nem segura a gravação sozinho.</summary>
     public SessionRecord? Motor(T3000Sample sample, string? rawHex = null, bool? simOverride = null)
     {
-        bool sim = simOverride ?? (sample?.Source == "sim-replay");
-        return Gravar("t4000", sample, rawHex, sim);
+        lock (_lock)
+        {
+            bool sim = simOverride ?? (sample?.Source == "sim-replay");
+            return Gravar("t4000", sample, rawHex, sim);
+        }
     }
 
     /// <summary>Grava um ponto de GPS cru (taxa de chegada), na mesma sessão/relógio.
     /// Passe velKmh quando souber a velocidade (ou um AmostraGps, de onde ela é lida)
     /// pra a captura automática por movimento funcionar. Retorna null em espera/box.</summary>
     public SessionRecord? Gps(object decoded, string? rawHex = null, bool sim = false, double? velKmh = null)
-        => Gravar("gps", decoded, rawHex, sim, velKmh);
+    {
+        lock (_lock) return Gravar("gps", decoded, rawHex, sim, velKmh);
+    }
 
     /// <summary>Grava um evento (ex.: passou no box, marcou volta), na mesma sessão.</summary>
     public SessionRecord? Evento(string nome, object? dados = null, bool sim = false)
-        => Gravar("evento", new { nome, dados }, null, sim);
+    {
+        lock (_lock) return Gravar("evento", new { nome, dados }, null, sim);
+    }
 
     /// <summary>Vigia do fim: chamar ~1x/s. Sem dado há silencioMs => carro desligou.
     /// Com captura automática, também fecha se ficou parado tempo demais (entrou no box).</summary>
     public SessionResumo? Tick()
     {
-        if (_sessao is null) { if (_auto is not null) _onEstado?.Invoke(Estado(), "espera"); return null; }
-        if (_now() - _ultimoMono >= _silencioMs) return Encerrar("silencio");
-        if (_auto is not null && _now() - _ultimoMovimentoMono >= _auto.ParadoMs) return Encerrar("parado");
-        _onEstado?.Invoke(Estado(), "tick");
-        return null;
+        lock (_lock)
+        {
+            if (_sessao is null) { if (_auto is not null) _onEstado?.Invoke(Estado(), "espera"); return null; }
+            if (_now() - _ultimoMono >= _silencioMs) return Encerrar("silencio");
+            if (_auto is not null && _now() - _ultimoMovimentoMono >= _auto.ParadoMs) return Encerrar("parado");
+            _onEstado?.Invoke(Estado(), "tick");
+            return null;
+        }
     }
 
     public SessionResumo? Encerrar(string motivo = "manual")
     {
+        lock (_lock)
+        {
         if (_sessao is null) return null;
         MotivoUltimoFim = motivo;
         var s = _sessao.Value;
@@ -301,6 +327,7 @@ public sealed class SessionRecorder
         _sessao = null;
         _onEstado?.Invoke(Estado(), "fim");
         return resumo;
+        }
     }
 
     private string? Alarme()
@@ -312,6 +339,8 @@ public sealed class SessionRecorder
 
     public SessionEstado Estado()
     {
+        lock (_lock)
+        {
         long? gpsHa = _algumGps ? (long)Math.Round(_now() - _ultimoGpsQualquerMono) : null;
         if (_sessao is null)
             return new SessionEstado(false, null, false, 0, _nGps, _nMotor, 0, 0, 0, !_storeMorto, _dropped, Alarme(),
@@ -334,17 +363,20 @@ public sealed class SessionRecorder
             VelKmh: Math.Round(_velAtual),
             Auto: _auto is not null,
             GpsHaMs: gpsHa);
+        }
     }
 
     /// <summary>Replay/conferência: devolve todos os registros gravados de uma sessão.</summary>
-    public IReadOnlyList<SessionRecord> ExportarSessao(string id) => _store.LerSessao(id);
-    public IReadOnlyList<SessionMeta> ListarSessoes() => _store.ListarSessoes();
+    public IReadOnlyList<SessionRecord> ExportarSessao(string id) { lock (_lock) return _store.LerSessao(id); }
+    public IReadOnlyList<SessionMeta> ListarSessoes() { lock (_lock) return _store.ListarSessoes(); }
 
     /// <summary>Recuperação de órfãs: chamar no boot, ANTES de qualquer dado novo. Acha
     /// sessões que ficaram 'gravando' (notebook dormiu/caiu sem fechar) e as marca
     /// 'interrompida' — o dado nunca se perde (é append-only), isto só devolve o acesso.</summary>
     public IReadOnlyList<SessionResumo> RecuperarOrfas()
     {
+        lock (_lock)
+        {
         var orfas = new List<SessionResumo>();
         foreach (var s in _store.ListarSessoes())
         {
@@ -366,7 +398,30 @@ public sealed class SessionRecorder
             try { _store.Finalizar(s.Id, resumo); } catch { /* best-effort */ }
             orfas.Add(resumo);
         }
+
+        // Órfãs de META: .jsonl íntegro no disco mas SEM metadado legível (queda de energia
+        // truncou o meta.json). Sem isto o dado ficaria INVISÍVEL pra a fila de upload pra
+        // sempre. Reconstrói o resumo a partir do próprio .jsonl e grava um meta 'interrompida'
+        // (atômico) — o dado volta a ser visível e sobe no próximo ciclo, não some em silêncio.
+        foreach (var id in _store.ListarDadosSemMeta())
+        {
+            var r = _store.ResumirSessao(id);
+            var resumo = new SessionResumo
+            {
+                Id = id,
+                Status = "interrompida",
+                MotivoFim = "meta-perdido",
+                InicioWall = r.InicioWall,
+                FimWall = r.FimWall != 0 ? r.FimWall : r.InicioWall,
+                DuracaoS = Math.Round(r.DurMs / 100.0) / 10,
+                NGps = r.NGps,
+                NMotor = r.NMotor,
+            };
+            try { _store.Finalizar(id, resumo); } catch { /* best-effort */ }
+            orfas.Add(resumo);
+        }
         return orfas.OrderByDescending(o => o.FimWall).ToList();
+        }
     }
 }
 
@@ -397,7 +452,7 @@ public sealed class FileSessionStore : ISessionStore, IDisposable
     private string MetaPath(string id) => Path.Combine(_dir, id + ".meta.json");
 
     public void NovaSessao(SessionMeta meta)
-        => File.WriteAllText(MetaPath(meta.Id), JsonSerializer.Serialize(meta, JsonOpts));
+        => EscritaAtomica.WriteAllText(MetaPath(meta.Id), JsonSerializer.Serialize(meta, JsonOpts));
 
     public void Gravar(SessionRecord registro)
     {
@@ -438,7 +493,7 @@ public sealed class FileSessionStore : ISessionStore, IDisposable
         // grava o metadado já com o status final (resumo embutido)
         var obj = new { resumo.Id, resumo.Sim, resumo.Status, resumo.MotivoFim, resumo.InicioWall,
                         resumo.FimWall, resumo.DuracaoS, resumo.NGps, resumo.NMotor, resumo.Dropped, resumo.MaiorLacunaMs };
-        File.WriteAllText(MetaPath(id), JsonSerializer.Serialize(obj, JsonOpts));
+        EscritaAtomica.WriteAllText(MetaPath(id), JsonSerializer.Serialize(obj, JsonOpts));
     }
 
     public SessionResumoParcial ResumirSessao(string id)
@@ -487,6 +542,32 @@ public sealed class FileSessionStore : ISessionStore, IDisposable
             catch { /* metadado corrompido — ignora */ }
         }
         return lista;
+    }
+
+    // .jsonl no disco cujo .meta.json está AUSENTE ou ILEGÍVEL (sem Id parseável) — órfão de
+    // uma queda que truncou o meta. É o que a recuperação usa pra não deixar dado invisível.
+    public IReadOnlyList<string> ListarDadosSemMeta()
+    {
+        var orfaos = new List<string>();
+        if (!Directory.Exists(_dir)) return orfaos;
+        foreach (var jsonl in Directory.EnumerateFiles(_dir, "*.jsonl"))
+        {
+            var id = Path.GetFileNameWithoutExtension(jsonl);
+            var meta = MetaPath(id);
+            bool metaLegivel = false;
+            if (File.Exists(meta))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(File.ReadAllText(meta));
+                    metaLegivel = doc.RootElement.TryGetProperty("Id", out var idEl)
+                                  && !string.IsNullOrEmpty(idEl.GetString());
+                }
+                catch { metaLegivel = false; } // meta truncado/corrompido = ilegível
+            }
+            if (!metaLegivel) orfaos.Add(id);
+        }
+        return orfaos;
     }
 
     public IReadOnlyList<SessionRecord> LerSessao(string id)
@@ -548,4 +629,8 @@ public sealed class InMemorySessionStore : ISessionStore
     public IReadOnlyList<SessionMeta> ListarSessoes() => _sessoes.Values.ToList();
     public IReadOnlyList<SessionRecord> LerSessao(string id)
         => _amostras.TryGetValue(id, out var l) ? l.ToList() : new List<SessionRecord>();
+    // Dados sem meta = tem amostras mas nunca teve NovaSessao (ou foi removida). Em memória
+    // não há truncamento; existe pra completar o contrato e permitir testes de recuperação.
+    public IReadOnlyList<string> ListarDadosSemMeta()
+        => _amostras.Keys.Where(k => !_sessoes.ContainsKey(k)).ToList();
 }

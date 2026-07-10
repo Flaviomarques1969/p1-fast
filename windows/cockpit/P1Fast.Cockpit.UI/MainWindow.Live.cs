@@ -64,7 +64,8 @@ public sealed partial class MainWindow
     // supervisor do motor — L3 —, não mais aqui no boot.)
     private void StartLive()
     {
-        StatusText.Text = "ao vivo: procurando T4000…";
+        _statusVivo = "ao vivo: procurando T4000…";   // 2.3: região efêmera, composta com o resto
+        RenderStatus();
 
         // Fechamento limpo assinado JÁ na thread da UI (M6): se a janela fechar antes do
         // IniciarLive assíncrono rodar, StopLive ainda encerra a sessão e cancela os laços —
@@ -103,6 +104,7 @@ public sealed partial class MainWindow
         // não cria recorder/RaceBox/laços numa janela morta (que ficariam órfãos e sem monitor).
         if (_liveParado) return;
 
+        _modoReplay = false;   // item 3.1: ao vivo persiste os recordes REAIS do carro (FileRecordesStore)
         IniciarFeedReal(segs, alertaLimites, aprendizadoLimites);  // timers off + cria _orquestrador com os limites do carro
         CarregarAprendizado();    // Fase 2: restaura a máxima normal do carro (memória entre sessões)
         CarregarLuzMarcha();      // Onda 7: restaura a reação por marcha (antecipação da luz) do carro
@@ -132,7 +134,19 @@ public sealed partial class MainWindow
         try
         {
             var anon = Environment.GetEnvironmentVariable("P1FAST_SUPABASE_ANON");
-            if (!string.IsNullOrWhiteSpace(anon))
+            if (string.IsNullOrWhiteSpace(anon))
+            {
+                // 2.5 — sem a chave, NENHUM publisher nasce: o --live roda 100% LOCAL. Antes
+                // isso era SILENCIOSO (modo de falha do bug de campo de 28/06 por outra porta).
+                // Agora vira aviso VISÍVEL e persistente no status — mais duro com --producao,
+                // que pediu nuvem e não terá efeito nenhum.
+                _liveCanalRotulo = _options.Producao
+                    ? "SEM NUVEM — falta P1FAST_SUPABASE_ANON (--producao SEM efeito; 100% local)"
+                    : "SEM NUVEM — falta P1FAST_SUPABASE_ANON (100% local; app não recebe)";
+                _statusCanal = _liveCanalRotulo;
+                RenderStatus();
+            }
+            else
             {
                 // Canal: TESTE por padrão (seguro). Só vai pra PRODUÇÃO (cockpit-bubi-live,
                 // o que o app/Command Box assistem) com --producao — ordem expressa do
@@ -149,7 +163,10 @@ public sealed partial class MainWindow
                 _liveCanalRotulo = _options.Producao
                     ? "nuvem AO VIVO: PRODUÇÃO (cockpit-bubi-live) — app/Box recebem"
                     : "nuvem AO VIVO: TESTE (cockpit-bubi-dev-teste) — app NÃO recebe; suba com --producao";
-                StatusText.Text = _liveCanalRotulo;
+                // 2.3 — o rótulo do canal é uma REGIÃO persistente do status (não mais escrito
+                // cru em StatusText.Text, que o diagnóstico a 10-25 Hz apagava).
+                _statusCanal = _liveCanalRotulo;
+                RenderStatus();
                 System.Diagnostics.Debug.WriteLine($"[nuvem ao vivo] canal={canal} producao={_options.Producao}");
             }
         }
@@ -169,7 +186,7 @@ public sealed partial class MainWindow
 
         // GPS ao vivo: RaceBox Mini por Bluetooth — INDEPENDE da T4000. Best-effort:
         // sem RaceBox, segue varrendo; sem GPS a tela mostra o motor mesmo assim.
-        _raceBox = new RaceBoxBleReader(OnLiveGps, txt => DispatcherQueue.TryEnqueue(() => StatusText.Text = txt));
+        _raceBox = new RaceBoxBleReader(OnLiveGps, txt => DispatcherQueue.TryEnqueue(() => { _statusVivo = txt; RenderStatus(); }));
         _raceBox.Start(_liveCts.Token);
 
         // Motor: T4000 pela USB. O aparelho REAL (Injepro T4000, chip Microchip
@@ -217,18 +234,20 @@ public sealed partial class MainWindow
                     if (!avisouEsperando)
                     {
                         avisouEsperando = true;
-                        DispatcherQueue.TryEnqueue(() => StatusText.Text = $"ao vivo: GPS ok; esperando a T4000 (USB) plugar… · {_liveCanalRotulo}");
+                        // 2.3 — status efêmero na sua região (o canal é região à parte, não
+                        // mais concatenado aqui; a composição junta os dois sem se apagarem).
+                        DispatcherQueue.TryEnqueue(() => { _statusVivo = "ao vivo: GPS ok; esperando a T4000 (USB) plugar…"; RenderStatus(); });
                     }
                     try { await Task.Delay(1500, ct).ConfigureAwait(false); } catch { break; }
                     continue;
                 }
                 avisouEsperando = false;
-                DispatcherQueue.TryEnqueue(() => StatusText.Text = $"ao vivo: {fonte} + GPS RaceBox…");
+                DispatcherQueue.TryEnqueue(() => { _statusVivo = $"ao vivo: {fonte} + GPS RaceBox…"; RenderStatus(); });
 
                 var reader = new T3000UsbLiveReader(
                     canal,
                     onSample: OnLiveMotor,
-                    onStatus: (txt, nivel) => DispatcherQueue.TryEnqueue(() => StatusText.Text = $"ao vivo [{nivel}]: {txt}"),
+                    onStatus: (txt, nivel) => DispatcherQueue.TryEnqueue(() => { _statusVivo = $"ao vivo [{nivel}]: {txt}"; RenderStatus(); }),
                     onLog: _ => { });
                 try { await reader.RunAsync(ct).ConfigureAwait(false); }
                 catch (OperationCanceledException) { break; }
@@ -270,9 +289,11 @@ public sealed partial class MainWindow
                         AtualizarSensores(_ultimaAlerta);
                         AtualizarTelaTermica();   // ~1 Hz: a água muda devagar, mas a tela térmica acompanha
                         // H6: perda de gravação NUNCA silenciosa — o alarme do gravador (disco
-                        // cheio/morto) aparece no status (sem tocar o layout aprovado).
-                        if (alarme is not null)
-                            StatusText.Text = $"GRAVACAO com perda: {alarme} · {_liveCanalRotulo}";
+                        // cheio/morto) aparece no status (sem tocar o layout aprovado). 2.3: é
+                        // REGIÃO própria e persistente (não some com o diagnóstico a 10-25 Hz) e
+                        // se LIMPA quando o alarme cessa — antes ficava concatenado e piscava.
+                        _statusAlarme = alarme is not null ? $"GRAVACAO com perda: {alarme}" : "";
+                        RenderStatus();
                     });
                 }
             }
@@ -306,6 +327,11 @@ public sealed partial class MainWindow
         //     PRODUÇÃO ao vivo (cockpit-bubi-live) segue à parte e só com ordem do Flávio.
         //     Se a rede cair no meio, a varredura de pendentes (no próximo boot) retoma.
         try { DispararUploadFimDeSessao(sessaoFechada); } catch { /* best-effort */ }
+        // 1c) Fila de FIM DE APP (2026-07-09): o dia pode ter deixado VÁRIAS sessões fechadas
+        //     pela captura automática (3 stints) ainda não subidas — se o app fecha com o carro
+        //     parado, SessaoAtualId é null e, sem isto, nada delas subia até o PRÓXIMO boot.
+        //     Varre TODAS as pendentes (mesma seleção do boot) e dispara upload destacado de cada.
+        try { DispararUploadPendentesFimDeApp(sessaoFechada); } catch { /* best-effort */ }
         // 2) Cancela laços + aparelhos em FUNDO: o Cancel() roda o teardown do RaceBox
         //    (Stop() do watcher BLE), que pode bloquear alguns segundos numa pilha
         //    Bluetooth fria — não pode travar o fechamento da janela.
@@ -338,6 +364,24 @@ public sealed partial class MainWindow
         psi.ArgumentList.Add(jsonl);
         psi.ArgumentList.Add($"--sessao-id={sessaoId}");
         System.Diagnostics.Process.Start(psi);   // destacado: não esperamos o término
+    }
+
+    // Fim de app: dispara upload DESTACADO de TODAS as sessões pendentes no disco (não só a
+    // recém-fechada). Mesma seleção do boot (PendenciasUpload): fechada + não-subida + com
+    // conteúdo. Exclui a que já foi disparada por DispararUploadFimDeSessao (evita processo
+    // dobrado; o upload é idempotente de qualquer forma). Síncrono e rápido — só lê metadados
+    // e atira processos, nunca trava o fechamento da janela. Sem chave/ferramenta: não faz nada.
+    private void DispararUploadPendentesFimDeApp(string? jaDisparada)
+    {
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("P1FAST_SUPABASE_ANON"))) return;
+        if (ResolveUploadExe() is null) return;
+        var pasta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "p1fast-sessoes");
+        List<SessaoNoDisco> noDisco;
+        try { noDisco = LerSessoesDoDisco(pasta); } catch { return; }
+        var excluir = string.IsNullOrWhiteSpace(jaDisparada) ? null : new HashSet<string> { jaDisparada! };
+        var pend = PendenciasUpload.Selecionar(noDisco, excluir: excluir);
+        foreach (var id in pend)
+            try { DispararUploadFimDeSessao(id); } catch { /* best-effort: segue as outras */ }
     }
 
     // Acha o p1fast-upload.exe ao lado do repo (dev). Best-effort: null se não existir.
@@ -469,15 +513,25 @@ public sealed partial class MainWindow
         SessionRecord? reg;
         lock (_liveRecLock) reg = _liveRecorder?.Motor(s);
 
-        // Nuvem: entrega pro laço (1 só dono do publisher — sem corrida). tWall = tempo
-        // de CAPTURA (do registro gravado), pra casar com o vídeo e ordenar certo.
-        if (_livePublisher is not null && reg is not null)
-            _liveCloudMotor.Enqueue((s, reg.TWall));
+        // Nuvem DESACOPLADA do disco (2026-07-09): o app/Command Box recebem TODA amostra do
+        // motor, mesmo quando o gravador NÃO gravou este sample — carro parado no box/aquecimento
+        // (captura automática em espera, Motor() devolve null) ou gravador que falhou ao criar.
+        // Antes o gate era `reg is not null` e o box/aquecimento nunca subia (o GPS já não tinha
+        // esse gate — prova de que era acidente). tWall = tempo de CAPTURA: usa o do registro
+        // quando gravou (casa 1:1 com o disco/vídeo), senão o relógio de parede AGORA (mesma
+        // base epoch-ms do gravador) — ordena certo e casa com o vídeo do mesmo jeito.
+        if (_livePublisher is not null)
+        {
+            long tWallMotor = reg?.TWall ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _liveCloudMotor.Enqueue((s, tWallMotor));
+        }
 
         var (rpm, alerta) = BridgeMotor(s);
         DispatcherQueue.TryEnqueue(() =>
         {
-            _orquestrador?.IngestMotor(rpm, alerta, s.TMono);   // TMono = relógio da histerese 2b (óleo/rica)
+            // TMono é ms (Stopwatch do leitor); o contrato do maestro é SEGUNDOS (histerese 2b
+            // do óleo/rica + Onda 7). Converte na fiação — igual ao replay (TWallMs / 1000.0).
+            _orquestrador?.IngestMotor(rpm, alerta, s.TMono / 1000.0);   // TMono ms → s (relógio da histerese 2b/Onda 7)
             _ultimaAlerta = alerta;      // guarda pro refresh de sensores quando vier GPS
             AtualizarSensores(alerta);
         });
@@ -488,7 +542,10 @@ public sealed partial class MainWindow
     private void OnLiveGps(RaceBoxFix f)
     {
         if (f.Fix < 3) return;
-        long tWall = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        // 5.3a: usa o carimbo JÁ espaçado por frame (pelo iTOW no RaceBoxBleReader). Assim,
+        // vários fixes de um mesmo notify BLE não colam no mesmo ms (dt~0 → km/h absurdo no
+        // cérebro). Fallback pra chegada só se o espaçador não informou (TWallMs == 0).
+        long tWall = f.TWallMs > 0 ? f.TWallMs : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         lock (_liveRecLock)
             _liveRecorder?.Gps(
                 // gx/gy/gz = aceleração crua do RaceBox (g), gravada pro dia de bancada calibrar

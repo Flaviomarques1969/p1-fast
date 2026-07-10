@@ -79,6 +79,7 @@ public sealed partial class MainWindow
     private void IniciarReplay(SessaoReplay sessao, IReadOnlyList<TrechoSegmento> segs)
     {
         _replaySegs = segs;
+        _modoReplay = true;                    // item 3.1: recordes em memória (não carrega nem grava no disco)
         IniciarFeedReal(segs);                 // para os timers de demo + cria _orquestrador
 
         var janela = sessao.JanelaVoltasCompletas();
@@ -91,6 +92,7 @@ public sealed partial class MainWindow
         _replayCruzamentos = sessao.CruzamentosMs;
         _replayCruzBase = 0;
         foreach (var c in _replayCruzamentos) if (c <= _replayBaseMs) _replayCruzBase++;
+        SemearLapsRegistrados();               // item 3.5: pula as voltas anteriores à janela do replay
         ResetVoltaAtual();
 
         var nVoltas = Math.Max(0, sessao.CruzamentosMs.Count - 1);
@@ -163,6 +165,7 @@ public sealed partial class MainWindow
                 _replayIdx = 0;
                 _ultimaAlerta = null;
                 _lastBrakeFlashSeq = 0;
+                SemearLapsRegistrados();   // item 3.5: IniciarFeedReal zerou _lapsRegistradosReplay — re-semeia
                 _replayClock?.Restart();
                 ResetVoltaAtual();   // etapa 4: recomeça o halo na volta 1
             }

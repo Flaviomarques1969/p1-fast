@@ -18,6 +18,19 @@ public interface IRecordesStore
     void Salvar(ArmazemRecordes armazem);
 }
 
+/// <summary>Armazém EM MEMÓRIA — usado no REPLAY (Flávio 2026-07-09, item 3.1). O replay é andaime
+/// de teste (roda a mesma sessão N vezes em 3-8×): NÃO pode carregar os recordes REAIS do carro (a
+/// tela térmica passaria a mirar tempos de replay) nem GRAVAR por cima deles (corromperia o armazém
+/// permanente `<carro>-recordes.json`). Espelha a regra dos gêmeos — aprendizado de temperatura
+/// (MainWindow.Aprendizado.cs) e luz de marcha (MainWindow.LuzMarcha.cs): replay não salva nem carrega.
+/// Carregar sempre devolve um armazém VAZIO; Salvar é no-op. A tela ainda exibe os recordes DA SESSÃO
+/// replayada (o ArmazemRecordes vive em memória durante o replay), só nada toca o disco.</summary>
+public sealed class MemoriaRecordesStore : IRecordesStore
+{
+    public ArmazemRecordes Carregar(string carroId) => new() { CarroId = carroId };
+    public void Salvar(ArmazemRecordes armazem) { /* replay não persiste — de propósito */ }
+}
+
 public sealed class FileRecordesStore : IRecordesStore
 {
     private static readonly JsonSerializerOptions JsonOpts = new() { WriteIndented = true };

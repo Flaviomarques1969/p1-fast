@@ -58,8 +58,10 @@ public sealed record T3000UsbLiveReaderConfig(
     int MaxShortBlocks      = 30,    // 30 blocos curtos seguidos (~3 s) → religa
     int MaxBadReads         = 8,     // 8 leituras fora de faixa seguidas → religa
     int MinBlockBytes       = 92,    // abaixo disso o bloco é "curto" (lixo)
-    int MaxBlockBytes       = 460,   // teto pra parar de acumular um bloco
-    int ReadChunkBytes      = 256)   // tamanho de cada transferIn
+    int MaxBlockBytes       = 460,   // teto: bloco acima disso = FIFO deslocado (descarta)
+    int ReadChunkBytes      = 256,   // tamanho de cada transferIn
+    int MaxDrainReads       = 64,    // teto de leituras ao drenar o pipe (resync)
+    int InitialHandshakeAttempts = 1) // tentativas da saudação INICIAL (console usa >1 c/ backoff)
 {
     public static T3000UsbLiveReaderConfig Default { get; } = new();
 }
@@ -126,14 +128,45 @@ public sealed class T3000UsbLiveReader
     private void Status(string txt, string nivel) => _onStatus?.Invoke(txt, nivel);
     private void Log(string txt) => _onLog?.Invoke(txt);
 
-    /// <summary>Saudação: manda "ACK" e confirma "OK". Espelha abrirEHandshake.</summary>
+    /// <summary>Saudação: manda "ACK" e confirma "OK". Espelha abrirEHandshake. ACUMULA
+    /// os pedaços dentro da janela de leitura: o "OK" pode chegar fragmentado ("O" e depois
+    /// "K") num transferIn separado — uma leitura só reprovaria um handshake bom (5.6).</summary>
     private async Task<bool> HandshakeAsync(CancellationToken ct)
     {
         await _channel.WriteAsync(T3000RIBlockParser.AckBytes, ct).ConfigureAwait(false);
-        var buf = new byte[64];
-        int n = await _channel.ReadAsync(buf, ct).ConfigureAwait(false);
-        if (n < 2) return false;
-        return T3000RIBlockParser.IsAckOk(buf);
+        var acc = new List<byte>(8);
+        var chunk = new byte[64];
+        var sw = Stopwatch.StartNew();
+        while (sw.ElapsedMilliseconds < _cfg.ReadTimeoutMs)
+        {
+            int n = await _channel.ReadAsync(chunk, ct).ConfigureAwait(false);
+            if (n > 0)
+            {
+                for (int i = 0; i < n; i++) acc.Add(chunk[i]);
+                if (acc.Count >= 2) return T3000RIBlockParser.IsAckOk(acc.ToArray());
+            }
+            else
+            {
+                // n<=0: pipe secou por ora — insiste até a janela fechar (o "K" pode faltar).
+                // Cede um instante pra não girar a CPU quando o canal não bloqueia.
+                await Task.Delay(1, ct).ConfigureAwait(false);
+            }
+        }
+        return acc.Count >= 2 && T3000RIBlockParser.IsAckOk(acc.ToArray());
+    }
+
+    /// <summary>Descarta o que estiver no pipe de entrada (resto atrasado / dado estagnado).
+    /// O WinUSB não tem DiscardInBuffer como a serial; sem isto, o resto de um bloco
+    /// anômalo entra deslocado no próximo e vira número "bom" errado. Limitado por um teto
+    /// de leituras — no canal real cada leitura vazia custa um timeout de pipe.</summary>
+    private async Task DrainInputAsync(CancellationToken ct)
+    {
+        var scratch = new byte[_cfg.ReadChunkBytes];
+        for (int guarda = 0; guarda < _cfg.MaxDrainReads; guarda++)
+        {
+            int n = await _channel.ReadAsync(scratch, ct).ConfigureAwait(false);
+            if (n <= 0) break;
+        }
     }
 
     /// <summary>Religação automática: fecha, reabre e refaz a saudação, tentando a
@@ -157,6 +190,9 @@ public sealed class T3000UsbLiveReader
                     await _channel.OpenAsync(ct).ConfigureAwait(false);
                     if (!await HandshakeAsync(ct).ConfigureAwait(false))
                         throw new InvalidOperationException("saudação recusada na religação");
+                    // Reabriu: descarta o que estiver estagnado no pipe antes de voltar a
+                    // pedir RI (o resto atrasado não pode deslocar o 1º bloco novo).
+                    await DrainInputAsync(ct).ConfigureAwait(false);
                     _reconnects++;
                     Status("conectado — lendo a T3000", "ok");
                     Log($"✓ T3000 religada sozinha (tentativa {tent})");
@@ -179,29 +215,38 @@ public sealed class T3000UsbLiveReader
     /// Se a saudação inicial falhar, NÃO entra no loop (igual ao navegador).</summary>
     public async Task RunAsync(CancellationToken cancellationToken)
     {
-        try
+        int tentativas = Math.Max(1, _cfg.InitialHandshakeAttempts);
+        bool conectou = false;
+        for (int tentativa = 1; tentativa <= tentativas && !cancellationToken.IsCancellationRequested; tentativa++)
         {
-            Status("abrindo a USB…", "warn");
-            await _channel.OpenAsync(cancellationToken).ConfigureAwait(false);
-            if (!await HandshakeAsync(cancellationToken).ConfigureAwait(false))
+            try
             {
+                Status(tentativa == 1 ? "abrindo a USB…" : $"abrindo a USB… (tentativa {tentativa})", "warn");
+                if (tentativa > 1)
+                    try { await _channel.CloseAsync().ConfigureAwait(false); } catch { /* reabertura limpa */ }
+                await _channel.OpenAsync(cancellationToken).ConfigureAwait(false);
+                if (await HandshakeAsync(cancellationToken).ConfigureAwait(false)) { conectou = true; break; }
                 _handshakeFailures++;
                 Status("saudação rejeitada — não consegui falar com a T3000", "bad");
-                Log("erro: handshake recusado (não veio 'OK')");
-                return;
+                Log($"erro: handshake recusado (não veio 'OK') — tentativa {tentativa}/{tentativas}");
             }
-            Status("conectado — lendo a T3000", "ok");
-            Log("central respondeu OK — handshake confirmado");
+            catch (OperationCanceledException) { return; }
+            catch (Exception e)
+            {
+                _handshakeFailures++;
+                Status("falha ao abrir a USB: " + e.Message, "bad");
+                Log($"erro ao abrir/saudar (tentativa {tentativa}/{tentativas}): " + e.Message);
+            }
+            if (tentativa < tentativas)
+            {
+                try { await Task.Delay(_cfg.ReconnectIntervalMs, cancellationToken).ConfigureAwait(false); }
+                catch (OperationCanceledException) { return; }
+            }
         }
-        catch (OperationCanceledException) { return; }
-        catch (Exception e)
-        {
-            _handshakeFailures++;
-            Status("falha ao abrir a USB: " + e.Message, "bad");
-            Log("erro: " + e.Message);
-            return;
-        }
+        if (!conectou) return;   // desistiu da saudação inicial; HandshakeFailures conta (o chamador decide o exit)
 
+        Status("conectado — lendo a T3000", "ok");
+        Log("central respondeu OK — handshake confirmado");
         await ReadLoopAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -212,6 +257,10 @@ public sealed class T3000UsbLiveReader
         var merged = new List<byte>(_cfg.MaxBlockBytes);
         var chunk  = new byte[_cfg.ReadChunkBytes];
 
+        // Abriu: descarta o que já estiver no pipe antes do 1º RI (dado estagnado do
+        // aparelho não pode deslocar o 1º bloco — o WinUSB não purga como a serial).
+        await DrainInputAsync(ct).ConfigureAwait(false);
+
         while (!ct.IsCancellationRequested)
         {
             try
@@ -221,16 +270,37 @@ public sealed class T3000UsbLiveReader
                 // a central manda os bytes em vários pacotes → acumula até o teto,
                 // até secar (n<=0) ou até estourar a janela de tempo.
                 merged.Clear();
+                bool estourou = false;
                 var sw = Stopwatch.StartNew();
                 while (sw.ElapsedMilliseconds < _cfg.ReadTimeoutMs)
                 {
                     int n = await _channel.ReadAsync(chunk, ct).ConfigureAwait(false);
                     if (n <= 0) break;
                     for (int i = 0; i < n; i++) merged.Add(chunk[i]);
-                    if (merged.Count >= _cfg.MaxBlockBytes) break;
+                    if (merged.Count >= _cfg.MaxBlockBytes) { estourou = true; break; }
                 }
 
-                if (merged.Count < _cfg.MinBlockBytes)
+                if (estourou)
+                {
+                    // Bloco MAIOR que o esperado = FIFO deslocado (resto atrasado colou no
+                    // início). NÃO parseia (viraria número "bom" errado): conta leitura ruim,
+                    // drena o que sobrou pra realinhar, e segue. Após N seguidas, religa.
+                    _badReads++; _badReadsTotal++;
+                    if (_badReads == 1)
+                    {
+                        Status("leitura desalinhada — resincronizando", "warn");
+                        Log($"bloco de {merged.Count}+ bytes (maior que o esperado) descartado — resync");
+                    }
+                    await DrainInputAsync(ct).ConfigureAwait(false);
+                    if (_badReads >= _cfg.MaxBadReads)
+                    {
+                        Log($"{_cfg.MaxBadReads} leituras inválidas seguidas — religando leitura…");
+                        _badReads = 0;
+                        bool back = await ReconnectAsync(ct).ConfigureAwait(false);
+                        if (!back) { Status("leitura encerrada", "bad"); break; }
+                    }
+                }
+                else if (merged.Count < _cfg.MinBlockBytes)
                 {
                     // Bloco curto — trava silenciosa: conta e, após N seguidos, religa.
                     _shortBlocks++; _shortBlocksTotal++;
@@ -253,18 +323,28 @@ public sealed class T3000UsbLiveReader
                         _samplesEmitted++;
                         _shortBlocks = 0;
                         _badReads = 0;
-                        _onSample?.Invoke(sample);
+                        // 5.5: o consumidor (gravador/publisher/tela) roda no MEU try; se ELE
+                        // estourar, isso NÃO pode religar uma USB saudável. Try/catch próprio:
+                        // loga e segue (cancelamento ainda propaga pra encerrar o loop).
+                        try { _onSample?.Invoke(sample); }
+                        catch (OperationCanceledException) { throw; }
+                        catch (Exception exCb) { Log("consumidor da amostra falhou (não religa a USB): " + exCb.Message); }
                     }
-                    else if (sample is not null)
+                    else
                     {
-                        // Amostra chegou mas reprovou na sanidade (fora de faixa física):
-                        // NÃO entrega (segura o último valor bom). Após N seguidas, religa.
+                        // Amostra reprovou na sanidade (fora de faixa) OU o bloco veio entre 92 e
+                        // 109 bytes (grande pra "curto", pequeno pro decodificador → Parse null):
+                        // NÃO entrega (segura o último valor bom) e alimenta a trava de religação.
+                        // Sem isto, o bloco 92–109 não contava em NENHUMA trava → leitura morta
+                        // silenciosa "conectado — lendo" pra sempre (5.1).
                         _badReads++; _badReadsTotal++;
                         if (_badReads == 1)
                         {
-                            string motivos = string.Join(", ", sample.SanidadeMotivos);
+                            string motivos = sample is not null
+                                ? "fora de faixa: " + string.Join(", ", sample.SanidadeMotivos)
+                                : $"bloco de {merged.Count} bytes — curto pro decodificador";
                             Status("leitura instável — segurando último valor", "warn");
-                            Log($"leitura inválida descartada (fora de faixa: {motivos}) — não entregue");
+                            Log($"leitura inválida descartada ({motivos}) — não entregue");
                         }
                         if (_badReads >= _cfg.MaxBadReads)
                         {
@@ -322,6 +402,11 @@ public sealed class InMemoryT3000UsbChannel : IT3000UsbChannel
     /// Consumido em uma chamada.</summary>
     public int FailNextReads { get; set; }
 
+    /// <summary>Se setado, a próxima saudação responde REJEIÇÃO ("NO") em vez de "OK"
+    /// (simula central que ainda não acordou). Consumido em uma chamada — pra provar o
+    /// retry da saudação inicial com backoff.</summary>
+    public int FailNextHandshakes { get; set; }
+
     /// <param name="handshakeResponse">Resposta à saudação. "OK" = aceita.</param>
     /// <param name="maxPerRead">Limita bytes por ReadAsync pra exercitar a
     /// montagem multi-pacote (a central manda em pedaços de ~64).</param>
@@ -357,7 +442,8 @@ public sealed class InMemoryT3000UsbChannel : IT3000UsbChannel
             if (IsEqual(data, T3000RIBlockParser.AckBytes))
             {
                 _lastWriteWasRi = false;
-                foreach (var b in _handshakeResponse) _pending.Enqueue(b);
+                if (FailNextHandshakes > 0) { FailNextHandshakes--; _pending.Enqueue(0x4E); _pending.Enqueue(0x4F); } // "NO"
+                else foreach (var b in _handshakeResponse) _pending.Enqueue(b);
             }
             else if (IsEqual(data, T3000RIBlockParser.RiBytes))
             {

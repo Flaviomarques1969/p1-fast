@@ -53,11 +53,21 @@ public sealed class ArmazemRecordes
     public static string ChaveTrecho(string segId, string metrica) => $"{segId}.{metrica}";
 
     // Métricas de trecho e o sentido de cada uma (menor tempo / maior velocidade).
-    public const string MetTempo   = "tempo";   // Menor
-    public const string MetVmin    = "vmin";    // Maior
-    public const string MetEntrada = "entrada"; // Maior
-    public const string MetApice   = "apice";   // Maior
-    public const string MetSaida   = "saida";   // Maior
+    public const string MetTempo    = "tempo";    // Menor
+    public const string MetVmin     = "vmin";     // Maior
+    public const string MetEntrada  = "entrada";  // Maior
+    public const string MetApice    = "apice";    // Maior
+    public const string MetSaida    = "saida";    // Maior
+    public const string MetFrenagem = "frenagem"; // Maior (freou MAIS TARDE = mais metros da linha de
+    //   entrada até o ponto de freada = carregou velocidade mais tempo). Fica na mesma família das
+    //   velocidades (Maior = melhor). É um "melhor pessoal" do ponto de freada — separado do ponto de
+    //   freada de referência da MELHOR passagem que a LuzFreio mantém. (Flávio 2026-07-09, item 3.6.)
+
+    /// <summary>Piso de plausibilidade da VOLTA (ms): abaixo disto NÃO é uma volta real — é o trecho
+    /// box→linha ou ruído do 1º cruzamento. Brasília (~1,6 km) não roda volta abaixo de 40 s; uma
+    /// "volta" mais curta que isso NÃO pode virar recorde (contaminaria o alvo da térmica pra sempre).
+    /// Configurável pelo parâmetro de <see cref="AplicarVolta"/>. (Flávio 2026-07-09, item 3.2.)</summary>
+    public const double VoltaMinimaPlausivelMs = 40_000;
 
     /// <summary>Tenta bater o recorde da chave. Se o valor supera o atual (ou não havia), grava e
     /// devolve true; senão não muda nada e devolve false. NaN/Infinito nunca vira recorde.</summary>
@@ -81,14 +91,19 @@ public sealed class ArmazemRecordes
     {
         var mudou = false;
         mudou |= Tentar(ChaveTrecho(d.SegId, MetTempo), d.TempoS, SentidoRecorde.Menor, meta);
-        if (d.VminKmh    is { } vmin) mudou |= Tentar(ChaveTrecho(d.SegId, MetVmin),    vmin, SentidoRecorde.Maior, meta);
-        if (d.EntradaKmh is { } ent)  mudou |= Tentar(ChaveTrecho(d.SegId, MetEntrada), ent,  SentidoRecorde.Maior, meta);
-        if (d.ApiceKmh   is { } api)  mudou |= Tentar(ChaveTrecho(d.SegId, MetApice),   api,  SentidoRecorde.Maior, meta);
-        if (d.SaidaKmh   is { } sai)  mudou |= Tentar(ChaveTrecho(d.SegId, MetSaida),   sai,  SentidoRecorde.Maior, meta);
+        if (d.VminKmh    is { } vmin) mudou |= Tentar(ChaveTrecho(d.SegId, MetVmin),     vmin, SentidoRecorde.Maior, meta);
+        if (d.EntradaKmh is { } ent)  mudou |= Tentar(ChaveTrecho(d.SegId, MetEntrada),  ent,  SentidoRecorde.Maior, meta);
+        if (d.FrenagemM  is { } fre)  mudou |= Tentar(ChaveTrecho(d.SegId, MetFrenagem), fre,  SentidoRecorde.Maior, meta);
+        if (d.ApiceKmh   is { } api)  mudou |= Tentar(ChaveTrecho(d.SegId, MetApice),    api,  SentidoRecorde.Maior, meta);
+        if (d.SaidaKmh   is { } sai)  mudou |= Tentar(ChaveTrecho(d.SegId, MetSaida),    sai,  SentidoRecorde.Maior, meta);
         return mudou;
     }
 
-    /// <summary>Tenta bater a melhor volta (lap time, ms). Menor é melhor.</summary>
-    public bool AplicarVolta(double tempoMs, MetadadosRecorde meta)
-        => Tentar(ChaveVolta, tempoMs, SentidoRecorde.Menor, meta);
+    /// <summary>Tenta bater a melhor volta (lap time, ms). Menor é melhor. Voltas abaixo do piso de
+    /// plausibilidade (<paramref name="pisoPlausivelMs"/>) NÃO viram recorde — não é volta real.</summary>
+    public bool AplicarVolta(double tempoMs, MetadadosRecorde meta, double pisoPlausivelMs = VoltaMinimaPlausivelMs)
+    {
+        if (tempoMs < pisoPlausivelMs) return false;   // implausível (box→linha / ruído): não é volta
+        return Tentar(ChaveVolta, tempoMs, SentidoRecorde.Menor, meta);
+    }
 }

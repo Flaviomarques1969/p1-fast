@@ -73,7 +73,12 @@ public sealed record AlertaLimites(
     //  • Rica: só avisa se a mistura rica persistir ≥1s contínuo (ignora pico transitório).
     double MotorLigadoRpmMin     = 500,   // acima = motor rodando; abaixo = off/partida
     double OleoPartidaSupressaoS = 2.0,
-    double RicaPersistenciaMinS  = 1.0
+    double RicaPersistenciaMinS  = 1.0,
+    // Pobre: mesma persistência de 1s da Rica (decisão Flávio 2026-07-10). Sem ela, o freio
+    // motor em giro alto (pé fora ⇒ a sonda LÊ pobre de verdade, sem ser defeito) disparava
+    // MISTURA_POBRE crítico em UMA amostra — o gate de carga (giro≥3500 OU tps≥50) passa só
+    // pelo giro nesse cenário. Problema real de mistura persiste >1s e continua alertando.
+    double PobrePersistenciaMinS = 1.0
 )
 {
     public static AlertaLimites Default { get; } = new();
@@ -262,6 +267,12 @@ public sealed class AlertasCriticos
     // instante em que a mistura rica começou (pra exigir ≥1s de persistência).
     private double? _ligadoDesdeT;
     private double? _ricaDesdeT;
+    private double? _pobreDesdeT;   // idem pra mistura POBRE (≥1s contínuo — decisão Flávio 2026-07-10)
+    // Último tSeg visto pela histerese, pra detectar GAP (motor emudeceu — USB/motor caíram
+    // juntos, as amostras PARARAM). Sem isto, a religada pós-stall pula a supressão da partida:
+    // _ligadoDesdeT retém o instante ANTIGO ⇒ passouDaPartida já verdadeiro ⇒ ÓLEO BAIXO falso no
+    // pico da partida. (A amostra vazia do VigiarFontes chega sem tSeg, então não zera nada aqui.)
+    private double? _ultimoTHisterese;
 
     /// <summary>Ingere uma amostra. Passe <paramref name="tSeg"/> (relógio monotônico em
     /// segundos) pra ligar a histerese temporal do óleo e da mistura rica (bloco 2b); sem
@@ -301,6 +312,19 @@ public sealed class AlertasCriticos
     // sem atrasar alarme real na pista). Rica: exige ≥1s contínuo de mistura rica.
     private void AplicarHisterese(List<string> ids, AmostraAlerta s, double t)
     {
+        // GAP de amostras maior que a própria janela de supressão da partida ⇒ não dá pra afirmar
+        // que o motor rodou contínuo (ex.: stall + religada, ou USB que caiu junto). REARMA a
+        // supressão da partida (e a persistência da rica) — senão a religada dispara ÓLEO BAIXO
+        // falso no pico. O silêncio real (motor mudo) chega pelo VigiarFontes sem tSeg, e a volta
+        // do motor traz um tSeg bem à frente do último — é isso que este gap pega.
+        if (_ultimoTHisterese is { } prev && t - prev > _limits.OleoPartidaSupressaoS)
+        {
+            _ligadoDesdeT = null;
+            _ricaDesdeT   = null;
+            _pobreDesdeT  = null;
+        }
+        _ultimoTHisterese = t;
+
         var ligado = s.Rpm is { } rpm && rpm >= _limits.MotorLigadoRpmMin;
         if (ligado) _ligadoDesdeT ??= t; else _ligadoDesdeT = null;
         var passouDaPartida = _ligadoDesdeT is { } d && t - d >= _limits.OleoPartidaSupressaoS;
@@ -312,6 +336,15 @@ public sealed class AlertasCriticos
             if (t - _ricaDesdeT.Value < _limits.RicaPersistenciaMinS) ids.Remove("MISTURA_RICA");
         }
         else _ricaDesdeT = null;
+
+        // Pobre: mesma regra da Rica (decisão Flávio 2026-07-10) — mata o falso do freio motor
+        // em giro alto (transitório de 1 amostra); mistura pobre REAL persiste e continua subindo.
+        if (ids.Contains("MISTURA_POBRE"))
+        {
+            _pobreDesdeT ??= t;
+            if (t - _pobreDesdeT.Value < _limits.PobrePersistenciaMinS) ids.Remove("MISTURA_POBRE");
+        }
+        else _pobreDesdeT = null;
     }
 
     public void RaiseManual(string id) { _manuais.Add(id); _ativos.Add(id); }

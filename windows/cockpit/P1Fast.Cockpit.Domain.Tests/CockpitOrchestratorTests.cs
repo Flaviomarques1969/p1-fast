@@ -76,6 +76,29 @@ public class CockpitOrchestratorTests
         Assert.Equal(Tone.Erro, c.Get().Acao.Tone); // perdeu tempo
     }
 
+    // Item 3.6: "Melhor Stint" era código morto — o maestro passava o melhor DA SESSÃO como se fosse
+    // o recorde absoluto (tempoRefS), então a passagem que ganhava sempre "batia o absoluto" e virava
+    // "Recorde". Agora o recorde absoluto vem SEMEADO pela UI (do armazém local); bater só o stint,
+    // não o absoluto, dá "Melhor Stint".
+    [Fact]
+    public void ORC_11_Ganho_sem_bater_recorde_absoluto_vira_MELHOR_STINT()
+    {
+        var c = new CockpitState();
+        var orq = new CockpitOrchestrator(c, new[] { Curva() });
+        orq.SemearRecordeTrecho("c0", 0.001);   // recorde absoluto minúsculo: a passagem rápida NÃO o bate
+
+        var t = 0.0;
+        var v1 = new List<AmostraGps>();
+        t = UmaVolta(v1, kmhBaixo: 60, t);      // referência lenta (melhor da sessão até aqui)
+        foreach (var s in v1) orq.IngestGps(s);
+
+        var v2 = new List<AmostraGps>();
+        t = UmaVolta(v2, kmhBaixo: 100, t);     // bem mais rápida: bate o stint, não o absoluto
+        foreach (var s in v2) orq.IngestGps(s);
+
+        Assert.Equal("Melhor Stint", c.Get().Acao.Texto);
+    }
+
     [Fact]
     public void ORC_10_Bolinha_registra_o_ponto_mais_proximo_da_passagem()
     {

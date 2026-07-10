@@ -218,6 +218,32 @@ public class AlertasCriticosTests
         Assert.Equal("MISTURA_RICA", ac.GetMensagemPrincipal()!.Id);
     }
 
+    [Fact]
+    public void ALR_20_Pobre_freio_motor_transitorio_NAO_alarma_persistente_SIM()
+    {
+        // Decisão Flávio 2026-07-10: a POBRE ganha a mesma persistência de 1s da Rica.
+        // Freio motor em giro alto (pé FORA, tps 0, giro 4500): o gate de carga da pobre
+        // passa só pelo giro e a sonda LÊ pobre de verdade — sem persistência, UMA amostra
+        // virava alerta crítico falso na tela do piloto.
+        var ac = new AlertasCriticos();
+        var pobreFreioMotor = new AmostraAlerta { Lambda = 1.3, Rpm = 4500, TpsPct = 0 };
+        var normal          = new AmostraAlerta { Lambda = 0.9, Rpm = 4500, TpsPct = 60 };
+
+        ac.IngestT4000(pobreFreioMotor, 10.0);   // 1 amostra de freio motor…
+        Assert.Null(ac.GetMensagemPrincipal());  // …não grita mais
+        ac.IngestT4000(normal, 10.3);            // pé voltou, mistura ok → cronômetro zera
+        Assert.Null(ac.GetMensagemPrincipal());
+
+        // Mistura pobre REAL (persiste sob carga): continua alertando depois de 1s contínuo.
+        var pobreReal = new AmostraAlerta { Lambda = 1.3, Rpm = 4500, TpsPct = 60 };
+        ac.IngestT4000(pobreReal, 20.0);
+        Assert.Null(ac.GetMensagemPrincipal());
+        ac.IngestT4000(pobreReal, 20.5);
+        Assert.Null(ac.GetMensagemPrincipal());
+        ac.IngestT4000(pobreReal, 21.0);         // 1s contínuo → avisa
+        Assert.Equal("MISTURA_POBRE", ac.GetMensagemPrincipal()!.Id);
+    }
+
     // ── Fase 2 — "Temperatura Motor Subindo" por IA de padrão histórico (Flávio 05/07) ───────
 
     // Aprendizado com confiança cheia em 1 amostra (τ maduro imediato) e máx normal semente 60 →

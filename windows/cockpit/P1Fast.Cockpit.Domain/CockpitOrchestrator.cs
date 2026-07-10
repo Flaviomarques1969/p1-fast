@@ -50,6 +50,22 @@ public sealed class CockpitOrchestrator
     // Resultado real por curva (pra barra de stint): "faster"/"slower"/"neutral".
     private readonly Dictionary<string, string> _estadoTrecho = new();
 
+    // RECORDE ABSOLUTO (histórico, persistido) por trecho — em SEGUNDOS. Semeado pela UI a partir do
+    // ArmazemRecordes local no início da sessão (item 3.6). Distingue "Recorde" (bateu o histórico) de
+    // "Melhor Stint" (bateu só o melhor DESTA sessão): sem esta semente o coach só sabia o melhor da
+    // sessão e a frase "Melhor Stint" era código morto. No replay a semente vem vazia (armazém em
+    // memória) → sem recorde absoluto → 1º grande ganho vira "Recorde", como antes.
+    private readonly Dictionary<string, double> _recordeAbsolutoTrechoS = new();
+
+    /// <summary>Semeia o recorde ABSOLUTO (histórico) de um trecho, em segundos — a UI chama uma vez,
+    /// no início da sessão, a partir do ArmazemRecordes local. Só a UI conhece a persistência; o
+    /// cérebro segue puro. (Flávio 2026-07-09, item 3.6.)</summary>
+    public void SemearRecordeTrecho(string segId, double tempoS)
+    {
+        if (string.IsNullOrEmpty(segId) || double.IsNaN(tempoS) || double.IsInfinity(tempoS) || tempoS <= 0) return;
+        _recordeAbsolutoTrechoS[segId] = tempoS;
+    }
+
     // Vigia das FONTES (H2/M1): lembra o estado de silêncio do motor/GPS pra agir só na
     // TRANSIÇÃO (não a cada tick) — evita re-emitir mensagem sem mudança.
     private bool _motorMudo, _gpsMudo;
@@ -404,8 +420,12 @@ public sealed class CockpitOrchestrator
 
             // M2: usa o ângulo/dist CONGELADOS no cruzamento do ápice, não a bolinha ao vivo
             // (que ao sair da curva aponta pra ~180° e envenena a frase p/ VIROU TARDE).
+            // Item 3.6: recordeAbsolutoS = o histórico persistido (semeado pela UI), NÃO o melhor da
+            // sessão (tempoRefS) — senão "Melhor Stint" nunca aparecia. bateuMelhorStint = mais rápido
+            // que o melhor DESTA sessão (tempoRefS ainda não foi atualizado com esta passagem).
+            var recordeAbsolutoS = _recordeAbsolutoTrechoS.TryGetValue(segId, out var recAbsS) ? recAbsS : (double?)null;
             var coach = MensagensPedagogicas.Decidir(delta, new ContextoApice(_apiceAngulo, _apiceDist),
-                recordeAbsolutoS: tempoRefS);
+                recordeAbsolutoS: recordeAbsolutoS, bateuMelhorStint: tempoAtualS < tempoRefS);
             if (coach is not null)
                 _cockpit.SetAcao(coach.Texto, deltaCronoS > 0 ? Tone.Erro : Tone.Bom);
 
