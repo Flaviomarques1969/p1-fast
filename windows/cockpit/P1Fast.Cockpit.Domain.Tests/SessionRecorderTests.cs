@@ -27,6 +27,34 @@ public class SessionRecorderTests
 
     private static T3000Sample MotorSample(int rpm) => new() { Rpm = rpm, Source = "t3000-usb" };
 
+    // 5.6: o gravador é tocado por DOIS fios (Motor no fio do leitor × Tick/Estado no
+    // principal). Sem trava, TaxaHz dá RemoveAt na MESMA List que Gravar dá Add → estoura.
+    // Este teste martela os dois em paralelo: com a trava interna, NENHUMA exceção escapa.
+    [Fact]
+    public async Task ThreadSafe_MotorEmParaleloComTickEstado_NaoEstoura()
+    {
+        var rec = new SessionRecorder(new InMemorySessionStore());
+        var cts = new CancellationTokenSource();
+        cts.CancelAfter(1500);
+        Exception? erro = null;
+
+        var motor = Task.Run(() =>
+        {
+            try { while (!cts.IsCancellationRequested) rec.Motor(MotorSample(3200)); }
+            catch (Exception e) { erro = e; cts.Cancel(); }
+        });
+        var principal = Task.Run(() =>
+        {
+            try { while (!cts.IsCancellationRequested) { rec.Estado(); rec.Tick(); _ = rec.SessaoAtualId; } }
+            catch (Exception e) { erro = e; cts.Cancel(); }
+        });
+
+        await Task.WhenAll(motor, principal);
+
+        Assert.Null(erro);                     // sem a trava, a corrida da List estoura aqui
+        Assert.True(rec.Estado().NMotor > 0);  // e o gravador seguiu funcionando
+    }
+
     // Bloco RI bom de 410 bytes (pro teste de ponta a ponta com o leitor real).
     private static byte[] BlocoBom(int rpm)
     {

@@ -17,6 +17,7 @@ using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.Advertisement;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Windows.Storage.Streams;
+using P1Fast.Cockpit.Domain;
 
 namespace P1Fast.Cockpit.UI;
 
@@ -27,8 +28,11 @@ namespace P1Fast.Cockpit.UI;
 // GX/GY/GZ: aceleração do RaceBox em g (eixos CRUS do aparelho). Decodificados dos offsets
 // 68/70/72 do pacote (protocolo RaceBox Mini, int16 mili-g) — Flávio 2026-07-07. PENDENTE de
 // verificação de BANCADA (offsets + qual eixo é o longitudinal); por isso ainda não gatilham nada.
+// TWallMs (5.3a): carimbo de parede JÁ espaçado por frame — quando um notify BLE traz
+// vários fixes, cada um recebe seu tempo pelo iTOW (não todos na mesma chegada). 0 = não
+// informado (fluxos que não passam pelo espaçador).
 public readonly record struct RaceBoxFix(double Lat, double Lng, double Kmh, int Fix, int NumSV, double HaccM,
-    double? HeadingDeg = null, double GX = 0, double GY = 0, double GZ = 0);
+    double? HeadingDeg = null, double GX = 0, double GY = 0, double GZ = 0, long TWallMs = 0);
 
 public sealed class RaceBoxBleReader
 {
@@ -45,7 +49,17 @@ public sealed class RaceBoxBleReader
     private GattCharacteristic? _rx;
     private CancellationToken _ct;
     private byte[] _buf = Array.Empty<byte>();
-    private bool _conectando;
+    private int _conectando;   // 0/1 via Interlocked (advertisements vêm em threads do pool)
+
+    // Teto do buffer de reassembly: acima disto o começo é lixo velho (nunca fechou um
+    // frame) — descarta o mais antigo, mantendo a cauda (onde mora um frame parcial real).
+    private const int MaxBufBytes = 2048;
+
+    // Watchdog de DADOS: conectado mas sem fix por tanto tempo = pilha BLE travada sem
+    // evento Disconnected. Derruba e religa (senão o GPS morre com o app achando que vive).
+    private const int WatchdogSemFixMs = 5000;
+    private long _ultimoFixTick;   // Environment.TickCount64 do último fix decodificado
+    private Task? _watchdogTask;
 
     public RaceBoxBleReader(Action<RaceBoxFix> onFix, Action<string>? onStatus = null)
     {
@@ -64,6 +78,34 @@ public sealed class RaceBoxBleReader
             DescartarDevice();
         });
         IniciarVarredura();
+        _watchdogTask = VigiarDadosAsync(ct);
+    }
+
+    // Watchdog de DADOS (5.4): a reconexão só por evento Disconnected não pega a pilha BLE
+    // que trava SEM disparar evento — aí o GPS morre com o app achando que está ligado. Aqui,
+    // se há assinatura viva (_rx != null) mas nenhum fix há WatchdogSemFixMs, derruba e religa.
+    private async Task VigiarDadosAsync(CancellationToken ct)
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                await Task.Delay(2000, ct).ConfigureAwait(false);
+                bool assinado = _rx is not null;
+                long ultimo = System.Threading.Interlocked.Read(ref _ultimoFixTick);
+                if (assinado && ultimo > 0 && Environment.TickCount64 - ultimo >= WatchdogSemFixMs)
+                {
+                    _onStatus?.Invoke("GPS: RaceBox mudo (sem fix) — religando…");
+                    try { if (_rx is not null) _rx.ValueChanged -= OnNotify; } catch { }
+                    _rx = null;
+                    DescartarDevice();
+                    lock (_bufLock) _buf = Array.Empty<byte>();
+                    System.Threading.Interlocked.Exchange(ref _ultimoFixTick, 0);
+                    IniciarVarredura();
+                }
+            }
+        }
+        catch (OperationCanceledException) { /* encerrando */ }
     }
 
     private void IniciarVarredura()
@@ -79,11 +121,13 @@ public sealed class RaceBoxBleReader
 
     private async void OnAdvReceived(BluetoothLEAdvertisementWatcher w, BluetoothLEAdvertisementReceivedEventArgs args)
     {
-        if (_ct.IsCancellationRequested || _conectando || _rx is not null) return;
+        if (_ct.IsCancellationRequested || _rx is not null) return;
         var name = args.Advertisement.LocalName;
         if (string.IsNullOrEmpty(name) || !name.StartsWith("RaceBox", StringComparison.OrdinalIgnoreCase)) return;
 
-        _conectando = true;
+        // H5 (por outra porta): advertisements chegam em threads do pool — duas podiam entrar
+        // em ConectarAsync ao mesmo tempo. CompareExchange garante UMA só (troca atômica).
+        if (System.Threading.Interlocked.CompareExchange(ref _conectando, 1, 0) != 0) return;
         try { w.Stop(); } catch { }
         try
         {
@@ -94,7 +138,7 @@ public sealed class RaceBoxBleReader
             _onStatus?.Invoke($"GPS: falha no RaceBox ({ex.Message}) — religando…");
             IniciarVarredura();
         }
-        finally { _conectando = false; }
+        finally { System.Threading.Interlocked.Exchange(ref _conectando, 0); }
     }
 
     private async Task ConectarAsync(ulong addr)
@@ -155,62 +199,49 @@ public sealed class RaceBoxBleReader
         var chunk = new byte[args.CharacteristicValue.Length];
         using (var r = DataReader.FromBuffer(args.CharacteristicValue)) r.ReadBytes(chunk);
 
-        // Junta os pedaços e extrai os frames UBX completos (port fiel do onNotify).
-        var fixes = new List<RaceBoxFix>();
+        // Junta os pedaços e delega a extração/decode/resync ao parser PURO (testável).
+        List<RaceBoxDecoded> decs;
         lock (_bufLock)
         {
             var buf = new byte[_buf.Length + chunk.Length];
             System.Buffer.BlockCopy(_buf, 0, buf, 0, _buf.Length);
             System.Buffer.BlockCopy(chunk, 0, buf, _buf.Length, chunk.Length);
 
-            int i = 0;
-            while (i + 8 <= buf.Length)
+            decs = RaceBoxUbxParser.Extract(buf, out int consumido);
+
+            int restante = buf.Length - consumido;
+            // Teto do buffer (5.4): nunca deixa a cauda crescer sem limite (len corrompido
+            // que nunca fecha um frame) — mantém só o final (onde um frame parcial real vive).
+            if (restante > MaxBufBytes)
             {
-                if (buf[i] != 0xB5 || buf[i + 1] != 0x62) { i++; continue; }
-                int len = buf[i + 4] | (buf[i + 5] << 8);
-                int tot = 6 + len + 2;
-                if (i + tot > buf.Length) break;
-
-                int a = 0, b = 0;
-                for (int k = i + 2; k < i + 6 + len; k++) { a = (a + buf[k]) & 0xFF; b = (b + a) & 0xFF; }
-                bool ok = a == buf[i + 6 + len] && b == buf[i + 7 + len];
-
-                if (ok && buf[i + 2] == 0xFF && buf[i + 3] == 0x01 && len >= 80)
-                    fixes.Add(Decode(buf, i + 6));
-                i += tot;
+                var corte = new byte[MaxBufBytes];
+                System.Buffer.BlockCopy(buf, buf.Length - MaxBufBytes, corte, 0, MaxBufBytes);
+                _buf = corte;
             }
-
-            var tail = new byte[buf.Length - i];
-            System.Buffer.BlockCopy(buf, i, tail, 0, tail.Length);
-            _buf = tail;
+            else
+            {
+                var tail = new byte[restante];
+                System.Buffer.BlockCopy(buf, consumido, tail, 0, restante);
+                _buf = tail;
+            }
         }
 
+        if (decs.Count == 0) return;
+
+        // 5.3a: quando vários frames vêm num MESMO notify, espaça os carimbos pelo iTOW —
+        // senão todos ganham a mesma chegada (dt~0 → km/h absurdo no cérebro).
+        _ultimoFixTick = Environment.TickCount64;
+        long chegada = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var itows = new long[decs.Count];
+        for (int k = 0; k < decs.Count; k++) itows[k] = decs[k].ITowMs;
+        var tWalls = RaceBoxUbxParser.EspacarTimestamps(itows, chegada);
+
         // Entrega FORA do lock (o consumidor re-enfileira pra thread da UI).
-        foreach (var f in fixes) _onFix(f);
-    }
-
-    // Velocidade mínima (km/h) pro heading do pacote valer: abaixo disto o RaceBox
-    // congela/inventa o rumo (comportamento u-blox) — vai null e o cérebro cai no
-    // rumo por 2 posições, como antes.
-    private const double HeadingMinKmh = 5.0;
-
-    // Decodifica o payload de dados do RaceBox (offsets provados no web; heading no 52
-    // conforme o protocolo RaceBox Mini — headMot, graus ×1e-5). o = início do payload.
-    private static RaceBoxFix Decode(byte[] b, int o)
-    {
-        int fix     = b[o + 20];
-        int numSV   = b[o + 23];
-        double hacc = BitConverter.ToUInt32(b, o + 40) / 1000.0;
-        double kmh  = BitConverter.ToInt32(b, o + 48) / 1000.0 * 3.6;
-        double lat  = BitConverter.ToInt32(b, o + 28) / 1e7;
-        double lon  = BitConverter.ToInt32(b, o + 24) / 1e7;
-        double hdg  = BitConverter.ToInt32(b, o + 52) / 1e5;
-        double? heading = kmh >= HeadingMinKmh && hdg >= 0 && hdg < 360 ? hdg : null;
-        // gForce X/Y/Z (protocolo RaceBox Mini: int16 em mili-g @ 68/70/72). Offsets do spec,
-        // PENDENTES de verificação de bancada — hoje só são gravados/publicados, não gatilham nada.
-        double gx = BitConverter.ToInt16(b, o + 68) / 1000.0;
-        double gy = BitConverter.ToInt16(b, o + 70) / 1000.0;
-        double gz = BitConverter.ToInt16(b, o + 72) / 1000.0;
-        return new RaceBoxFix(lat, lon, kmh, fix, numSV, hacc, heading, gx, gy, gz);
+        for (int k = 0; k < decs.Count; k++)
+        {
+            var d = decs[k];
+            _onFix(new RaceBoxFix(d.Lat, d.Lng, d.Kmh, d.Fix, d.NumSV, d.HaccM,
+                                  d.HeadingDeg, d.GX, d.GY, d.GZ, tWalls[k]));
+        }
     }
 }

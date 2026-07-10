@@ -490,7 +490,10 @@ public sealed partial class MainWindow
     private void OnLiveGps(RaceBoxFix f)
     {
         if (f.Fix < 3) return;
-        long tWall = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        // 5.3a: usa o carimbo JÁ espaçado por frame (pelo iTOW no RaceBoxBleReader). Assim,
+        // vários fixes de um mesmo notify BLE não colam no mesmo ms (dt~0 → km/h absurdo no
+        // cérebro). Fallback pra chegada só se o espaçador não informou (TWallMs == 0).
+        long tWall = f.TWallMs > 0 ? f.TWallMs : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         lock (_liveRecLock)
             _liveRecorder?.Gps(
                 // gx/gy/gz = aceleração crua do RaceBox (g), gravada pro dia de bancada calibrar

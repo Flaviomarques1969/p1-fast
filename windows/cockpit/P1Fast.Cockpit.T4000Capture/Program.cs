@@ -147,16 +147,28 @@ internal static class Program
         var stopwatch     = System.Diagnostics.Stopwatch.StartNew();
         var lastReportMs  = 0L;
         byte? prevByte    = null;
+        var errosSeguidos = 0;
+        const int MaxErrosSeguidos = 20;   // ~erros consecutivos antes de desistir
 
         while (!stopRequested)
         {
             int n;
-            try { n = sp.Read(buffer, 0, buffer.Length); }
+            try { n = sp.Read(buffer, 0, buffer.Length); errosSeguidos = 0; }
             catch (TimeoutException) { n = 0; }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Erro de leitura: {ex.Message}");
-                break;
+                // 5.6: um erro de leitura NÃO encerra na hora (glitch de USB acontece) — loga,
+                // espera um pouco e RETOMA. Só desiste após muitos erros seguidos.
+                errosSeguidos++;
+                Console.Error.WriteLine($"Erro de leitura ({errosSeguidos}/{MaxErrosSeguidos}): {ex.Message}");
+                if (errosSeguidos >= MaxErrosSeguidos)
+                {
+                    Console.Error.WriteLine("Erros de leitura demais seguidos — encerrando a captura.");
+                    break;
+                }
+                try { binStream.Flush(); } catch { }
+                Thread.Sleep(200);
+                continue;
             }
 
             if (n > 0)
@@ -188,6 +200,9 @@ internal static class Program
                     CultureInfo.InvariantCulture,
                     $"{unixMs},{totalBytes},{bytesThisSec},{p4Sentinels},{p5Sentinels}"));
                 timingStream.Flush();
+                // 5.6: flush do .bin por segundo (como o .timing.csv) — uma queda no meio da
+                // captura não perde o que só estava na cache do buffer de escrita.
+                try { binStream.Flush(); } catch { }
 
                 Console.WriteLine(
                     $"[{DateTime.Now:HH:mm:ss}]  total: {totalBytes,12:N0} bytes   " +
@@ -323,9 +338,12 @@ internal static class Program
         }
 
         // Leitor ao vivo na tomada real -> cada amostra GRAVA no disco E entra na fila da nuvem.
+        // 5.6: a saudação inicial pode falhar se o operador liga o app ANTES da chave ON —
+        // retry com backoff (o resto dos parâmetros fica no default provado).
         var serial = new SerialPortT3000UsbChannel(portName);
         var reader = new T3000UsbLiveReader(
             serial,
+            config:   new T3000UsbLiveReaderConfig(InitialHandshakeAttempts: 5),
             onSample: s => { var reg = recorder.Motor(s); if (reg is not null) publisher?.Oferecer(s, reg.TWall); },
             onStatus: (txt, nivel) => Console.WriteLine($"[{nivel.ToUpperInvariant()}] {txt}"),
             onLog:    txt => Console.WriteLine("  " + txt));
@@ -379,7 +397,11 @@ internal static class Program
         try { readerTask.Wait(3000); } catch { /* cancelamento esperado */ }
         // Última drenada do que sobrou na fila antes de fechar (se a nuvem estiver de pé).
         if (publisher is not null) { try { publisher.DrenarAsync(CancellationToken.None).Wait(3000); } catch { } }
-        resultado ??= recorder.Encerrar("manual");
+        // 5.6: fecha a sessão AINDA aberta e mantém o resumo da ÚLTIMA fechada. Antes o
+        // `??=` preservava a PRIMEIRA (quando um stint fechou por silêncio e outro abriu),
+        // imprimindo o resumo da sessão errada.
+        var fimManual = recorder.Encerrar("manual");
+        if (fimManual is not null) resultado = fimManual;
 
         Console.WriteLine();
         if (resultado is not null)
@@ -405,6 +427,18 @@ internal static class Program
                               $"erros={cs.Erros} barradas={cs.BarradasGuarda}");
         }
         if (nuvem is not null) { try { nuvem.DisposeAsync().AsTask().Wait(2000); } catch { } }
+
+        // 5.6: exit code HONESTO. Antes saía 0 mesmo sem falar com a central (operador achava
+        // que capturou). Se a saudação inicial desistiu e nada foi emitido, sai != 0 com aviso.
+        if (st.SamplesEmitted == 0)
+        {
+            Console.Error.WriteLine();
+            Console.Error.WriteLine("FALHOU: nenhuma amostra do motor foi lida.");
+            Console.Error.WriteLine(st.HandshakeFailures > 0
+                ? "  A central não respondeu 'OK' à saudação. Confira: chave em ON, cabo USB, e o driver (diagnóstico acima)."
+                : "  A USB abriu mas não veio bloco válido. Confira cabo/central e tente de novo.");
+            return 4;
+        }
         return 0;
     }
 
