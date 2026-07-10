@@ -431,7 +431,12 @@
                                     <Grid>
                                         <StackPanel>
                                             <TextBlock x:Name="Lbl1" FontSize="15" Foreground="#7D8DA0" FontWeight="SemiBold" CharacterSpacing="140"/>
-                                            <TextBlock x:Name="Val1" FontSize="62" FontWeight="Bold" Margin="0,3,0,0"/>
+                                            <!-- Viewbox DownOnly (Flávio 2026-07-10): valor NUNCA passa do quadro —
+                                                 fica nos 62px quando cabe e encolhe só o necessário quando não cabe
+                                                 (ex.: "11 voltas", "BOX v6", tempos 1:23.4). Vale pros 3 tiles. -->
+                                            <Viewbox StretchDirection="DownOnly" HorizontalAlignment="Left" MaxHeight="56" Margin="0,3,0,0">
+                                                <TextBlock x:Name="Val1" FontSize="62" FontWeight="Bold"/>
+                                            </Viewbox>
                                         </StackPanel>
                                         <TextBlock x:Name="Tag1" Text="cérebro" FontSize="11" Foreground="#99F0C040"
                                                    HorizontalAlignment="Right" VerticalAlignment="Top" CharacterSpacing="120" Visibility="Collapsed"/>
@@ -442,7 +447,9 @@
                                     <Grid>
                                         <StackPanel>
                                             <TextBlock x:Name="Lbl2" FontSize="15" Foreground="#7D8DA0" FontWeight="SemiBold" CharacterSpacing="140"/>
-                                            <TextBlock x:Name="Val2" FontSize="62" FontWeight="Bold" Margin="0,3,0,0"/>
+                                            <Viewbox StretchDirection="DownOnly" HorizontalAlignment="Left" MaxHeight="56" Margin="0,3,0,0">
+                                                <TextBlock x:Name="Val2" FontSize="62" FontWeight="Bold"/>
+                                            </Viewbox>
                                         </StackPanel>
                                         <TextBlock x:Name="Tag2" Text="cérebro" FontSize="11" Foreground="#99F0C040"
                                                    HorizontalAlignment="Right" VerticalAlignment="Top" CharacterSpacing="120" Visibility="Collapsed"/>
@@ -453,7 +460,9 @@
                                     <Grid>
                                         <StackPanel>
                                             <TextBlock x:Name="Lbl3" FontSize="15" Foreground="#7D8DA0" FontWeight="SemiBold" CharacterSpacing="140"/>
-                                            <TextBlock x:Name="Val3" FontSize="62" FontWeight="Bold" Margin="0,3,0,0"/>
+                                            <Viewbox StretchDirection="DownOnly" HorizontalAlignment="Left" MaxHeight="56" Margin="0,3,0,0">
+                                                <TextBlock x:Name="Val3" FontSize="62" FontWeight="Bold"/>
+                                            </Viewbox>
                                         </StackPanel>
                                         <TextBlock x:Name="Tag3" Text="cérebro" FontSize="11" Foreground="#99F0C040"
                                                    HorizontalAlignment="Right" VerticalAlignment="Top" CharacterSpacing="120" Visibility="Collapsed"/>
